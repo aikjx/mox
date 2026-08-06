@@ -1,0 +1,25 @@
+# Rust build artifacts
+/target
+target/
+
+# Node / frontend build artifacts
+node_modules/
+frontend/dist/
+dist/
+
+# Logs
+*.log
+logs/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Local env / secrets
+.env
+.env.local
+*.pem
+*.key

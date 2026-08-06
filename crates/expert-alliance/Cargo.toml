@@ -1,0 +1,18 @@
+[package]
+name = "expert-alliance"
+version = "0.1.0"
+edition = "2021"
+description = "开发专家联盟 · 全维处理工具流程图：七位专家并行诊断 + 归一化裁决 + 企业治理，复用 flow-ai 引擎做最优求解"
+license = "MIT"
+
+[dependencies]
+flow-ai = { path = "../flow-ai" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+anyhow = "1"
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "sync"] }
+axum = "0.7"
+tower-http = { version = "0.5", features = ["cors", "fs"] }
