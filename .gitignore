@@ -7,6 +7,14 @@ node_modules/
 frontend/dist/
 dist/
 
+# Python artifacts
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
 # Logs
 *.log
 logs/
