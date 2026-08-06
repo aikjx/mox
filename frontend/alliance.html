@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>璇玑 · 算法联盟智能中心</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #0b1020; color: #e6ecff; font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; }
+  #app { display: grid; grid-template-columns: 1fr 360px; grid-template-rows: 48px 1fr; height: 100%; }
+  header { grid-column: 1 / 3; display: flex; align-items: center; gap: 12px; padding: 0 16px; background: #121a33; border-bottom: 1px solid #233; }
+  header h1 { font-size: 15px; margin: 0; font-weight: 600; }
+  header .tag { font-size: 12px; color: #8aa0d8; }
+  #stage { position: relative; overflow: hidden; }
+  #canvasWrap { position: absolute; inset: 0; }
+  #side { background: #0e1530; border-left: 1px solid #233; padding: 14px; overflow-y: auto; }
+  .card { background: #131c3a; border: 1px solid #233; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+  .card h2 { font-size: 13px; margin: 0 0 8px; color: #9fb4ee; }
+  .metric { display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; }
+  .metric b { color: #7CFFB2; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; margin: 2px 3px 2px 0; }
+  .pill.ok { background: #143d27; color: #7CFFB2; }
+  .pill.block { background: #4a1620; color: #ff8aa0; }
+  .pill.kind { background: #1c2a52; color: #aab8ee; }
+  .scoreRow { display: flex; align-items: center; gap: 8px; font-size: 12px; margin: 3px 0; }
+  .bar { flex: 1; height: 6px; background: #1a2348; border-radius: 4px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; background: linear-gradient(90deg,#3b82f6,#7CFFB2); }
+  textarea { width: 100%; height: 120px; background: #0a0f22; color: #cfe; border: 1px solid #233; border-radius: 8px; padding: 8px; font-family: monospace; font-size: 12px; }
+  button { background: #2563eb; color: #fff; border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 13px; }
+  button:hover { background: #1d4ed8; }
+  .legend { font-size: 11px; color: #8aa0d8; line-height: 1.7; }
+  .legend .dot { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; vertical-align:middle; }
+  #toast { position: absolute; bottom: 14px; left: 14px; background: #1c2a52; padding: 8px 14px; border-radius: 8px; font-size: 12px; opacity: 0; transition: opacity .3s; }
+  #toast.show { opacity: 1; }
+  .viewToggle { display:flex; gap:6px; margin-left:auto; }
+  .viewToggle button { padding: 4px 10px; font-size:12px; background:#1c2a52; }
+  .viewToggle button.active { background:#2563eb; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>🌀 璇玑 · 算法联盟智能中心</h1>
+    <span class="tag">全维设计 · 分析 · 开发 · 测试 · 修复 · 优化 → 七专家并行诊断 → 算法否决网关(最高权限) → flow-ai 求解 → 治理闸门</span>
+    <div class="viewToggle">
+      <button id="btnFlow" class="active" onclick="setView('flow')">流程图</button>
+      <button id="btnTopo" onclick="setView('topo')">关系网</button>
+    </div>
+  </header>
+  <div id="stage">
+    <div id="canvasWrap"></div>
+    <div id="toast"></div>
+  </div>
+  <div id="side">
+    <div class="card">
+      <h2>提交流程图 (FlowGraph JSON)</h2>
+      <textarea id="flowJson" placeholder='{"id":"gov","name":"...","nodes":[...],"edges":[...]}'></textarea>
+      <div style="margin-top:8px; display:flex; gap:8px;">
+        <button onclick="runOptimize()">全维优化</button>
+        <button onclick="loadDemo()" style="background:#1c2a52;">载入示例</button>
+        <button id="liveBtn" onclick="toggleLive()" style="background:#0e7490;">▶ 实时联动</button>
+        <span id="liveBadge" style="display:none;margin-left:8px;color:#7CFFB2;font-size:12px;">● LIVE</span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>治理闸门</h2>
+      <div id="gateBox"><span class="tag">尚未运行</span></div>
+    </div>
+    <div class="card" style="border-color:#7CFFB2;">
+      <h2>⛨ 算法联盟验证（最高权限）</h2>
+      <div id="algoBox"><span class="tag">尚未运行</span></div>
+    </div>
+    <div class="card">
+      <h2>优化收益</h2>
+      <div id="statsBox"><span class="tag">—</span></div>
+    </div>
+    <div class="card" style="border-color:#ffd166;">
+      <h2>⚡ 一键闭环演示（核心收益量化）</h2>
+      <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <button onclick="runClosedLoop()" style="background:#ffd166; color:#1a1205; font-weight:600;">⚡ 跑闭环演示</button>
+      </div>
+      <div id="llmBox">
+        <div class="metric"><span>① 流程图优化</span><b id="llmSpeedup">—</b></div>
+        <div class="metric"><span>② LLM 调用 (linear ReAct)</span><b id="llmBase">—</b></div>
+        <div class="metric"><span>③ LLM 调用 (复用回放)</span><b id="llmBridge">—</b></div>
+        <div class="metric"><span>④ LLM 削减</span><b id="llmSaved">—</b></div>
+        <div class="metric"><span>⑤ 复用模板命中</span><b id="llmTpl">—</b></div>
+      </div>
+      <div style="font-size:11px; color:#8aa0d8; margin-top:6px;">① 加速比 = flow-ai 并行调度收益；②→④ = 命中复用模板整段回放跳过完整 ReAct；算法否决护栏保障 ③ 不破坏语义。</div>
+    </div>
+    <div class="card" style="border-color:#67e8f9;">
+      <h2>▶ 执行监控（可视化监听）</h2>
+      <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <button onclick="runExecution()" style="background:#0e7490;">执行并监听</button>
+        <button onclick="stopTrace()" style="background:#4a1620;">停止</button>
+      </div>
+      <div class="metric"><span>预测耗时</span><b id="exMakespan">—</b></div>
+      <div class="metric"><span>虚拟时钟</span><b id="exClock">0ms</b></div>
+      <div class="metric"><span>完成率</span><b id="exProgress">0%</b></div>
+      <div style="height:8px; background:#1a2348; border-radius:5px; overflow:hidden; margin:6px 0;">
+        <i id="exBar" style="display:block; height:100%; width:0%; background:linear-gradient(90deg,#3b82f6,#67e8f9);"></i>
+      </div>
+      <div id="exNodes" style="font-size:11px; color:#8aa0d8; max-height:160px; overflow-y:auto;"></div>
+      <div id="exBlocked" style="color:#ff8aa0; font-size:11px; margin-top:6px;"></div>
+    </div>
+    <div class="card">
+      <h2>七专家评分</h2>
+      <div id="scoresBox"><span class="tag">—</span></div>
+    </div>
+    <div class="card">
+      <h2>图例 / 高亮含义</h2>
+      <div class="legend">
+        <div><span class="dot" style="background:#ff5470"></span>冲突标红（阻断级需治理拦截）</div>
+        <div><span class="dot" style="background:#ffd166"></span>关键路径（瓶颈节点，优先优化）</div>
+        <div><span class="dot" style="background:#7CFFB2"></span>治理注入（脱敏/鉴权 Guard）</div>
+        <div><span class="dot" style="background:#67e8f9"></span>复用路径（关系网 fast-path 点亮）</div>
+        <div style="margin-top:6px; color:#6b7fb0;">拖拽节点 / 滚轮缩放 / 悬停查看</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+let scene, camera, renderer, controls, canvasWrap;
+let graphNodes = [], graphLinks = [], labels = [];
+let currentView = 'flow';
+let lastData = null;
+
+function initThree() {
+  canvasWrap = document.getElementById('canvasWrap');
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0b1020);
+  const w = canvasWrap.clientWidth, h = canvasWrap.clientHeight;
+  camera = new THREE.PerspectiveCamera(60, w / h, 0.1, 2000);
+  camera.position.set(0, 0, 600);
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(w, h);
+  canvasWrap.appendChild(renderer.domElement);
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  window.addEventListener('resize', onResize);
+  animate();
+}
+function onResize() {
+  const w = canvasWrap.clientWidth, h = canvasWrap.clientHeight;
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+}
+function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
+
+function clearScene() {
+  [...scene.children].forEach(c => scene.remove(c));
+  graphNodes = []; graphLinks = []; labels = [];
+}
+
+function colorFor(highlight, kind) {
+  if (highlight === 'conflict') return 0xff5470;
+  if (highlight === 'critical') return 0xffd166;
+  if (kind === 'Guard' || highlight === 'injected') return 0x7CFFB2;
+  if (kind === 'Start' || kind === 'End') return 0x8aa0d8;
+  if (kind === 'Decision') return 0xc792ea;
+  return 0x4f8bff;
+}
+
+function buildForceLayout(items, links, is3D=true) {
+  // 简单力导向：随机初始 + 斥力 + 弹簧
+  const pos = {};
+  items.forEach((it, i) => {
+    const ang = (i / items.length) * Math.PI * 2;
+    pos[it.id] = new THREE.Vector3(Math.cos(ang)*(180+Math.random()*80), Math.sin(ang)*(180+Math.random()*80), is3D?(Math.random()*200-100):0);
+  });
+  for (let iter = 0; iter < 220; iter++) {
+    const disp = {};
+    items.forEach(it => disp[it.id] = new THREE.Vector3());
+    // 斥力
+    for (let a = 0; a < items.length; a++) for (let b = a+1; b < items.length; b++) {
+      const pa = pos[items[a].id], pb = pos[items[b].id];
+      const d = pa.clone().sub(pb); let len = d.length() || 0.01;
+      const f = Math.min(6000 / (len*len), 50);
+      d.normalize().multiplyScalar(f);
+      disp[items[a].id].add(d); disp[items[b].id].sub(d);
+    }
+    // 弹簧
+    links.forEach(l => {
+      if (!pos[l.from] || !pos[l.to]) return;
+      const pa = pos[l.from], pb = pos[l.to];
+      const d = pb.clone().sub(pa); let len = d.length() || 0.01;
+      const f = (len - 140) * 0.02;
+      d.normalize().multiplyScalar(f);
+      disp[l.from].add(d); disp[l.to].sub(d);
+    });
+    items.forEach(it => { const p = pos[it.id]; p.add(disp[it.id].multiplyScalar(0.85)); });
+  }
+  return pos;
+}
+
+function makeLabel(text, color=0xffffff) {
+  const c = document.createElement('canvas');
+  const ctx = c.getContext('2d');
+  ctx.font = '28px "PingFang SC", sans-serif';
+  const w = ctx.measureText(text).width + 16;
+  c.width = w; c.height = 40;
+  ctx.font = '28px "PingFang SC", sans-serif';
+  ctx.fillStyle = 'rgba(10,16,34,0.0)'; ctx.fillRect(0,0,w,40);
+  ctx.fillStyle = '#' + color.toString(16).padStart(6,'0');
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, 8, 20);
+  const tex = new THREE.CanvasTexture(c);
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+  const sp = new THREE.Sprite(mat);
+  sp.scale.set(w * 0.6, 24, 1);
+  return sp;
+}
+
+function renderFlow(data) {
+  clearScene();
+  const items = data.flow_nodes.map(n => ({ id: n.id, label: n.label, kind: n.kind, highlight: n.highlight }));
+  const links = data.flow_edges.map(e => ({ from: e.from, to: e.to }));
+  const pos = buildForceLayout(items, links, true);
+  // 边
+  links.forEach(e => {
+    if (!pos[e.from] || !pos[e.to]) return;
+    const geo = new THREE.BufferGeometry().setFromPoints([pos[e.from], pos[e.to]]);
+    const mat = new THREE.LineBasicMaterial({ color: 0x3a4a78 });
+    scene.add(new THREE.Line(geo, mat));
+  });
+  // 节点
+  items.forEach(it => {
+    const col = colorFor(it.highlight, it.kind);
+    const isGuard = it.kind === 'Guard';
+    const r = isGuard ? 16 : 22;
+    const geo = new THREE.SphereGeometry(r, 24, 24);
+    const mat = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.35, metalness: 0.2, roughness: 0.5 });
+    const m = new THREE.Mesh(geo, mat);
+    m.position.copy(pos[it.id]);
+    m.userData = it;
+    scene.add(m);
+    if (it.highlight === 'critical' || it.highlight === 'conflict') {
+      const ring = new THREE.Mesh(new THREE.RingGeometry(r+6, r+10, 32), new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide, transparent:true, opacity:0.8 }));
+      ring.position.copy(pos[it.id]); scene.add(ring);
+    }
+    const lbl = makeLabel(it.label, col);
+    lbl.position.copy(pos[it.id]).add(new THREE.Vector3(0, r+18, 0));
+    scene.add(lbl); labels.push(lbl);
+    graphNodes.push(m);
+  });
+  addLights();
+}
+
+function renderTopo(data) {
+  clearScene();
+  const items = data.entities.map(e => ({ id: e.id, label: e.label, kind: e.kind, on: e.on_reuse_path }));
+  const links = data.relations.map(r => ({ from: r.from, to: r.to, on: r.on_reuse_path, strength: r.strength }));
+  const pos = buildForceLayout(items, links, true);
+  links.forEach(r => {
+    if (!pos[r.from] || !pos[r.to]) return;
+    const geo = new THREE.BufferGeometry().setFromPoints([pos[r.from], pos[r.to]]);
+    const col = r.on ? 0x67e8f9 : 0x2f3c66;
+    const mat = new THREE.LineBasicMaterial({ color: col, transparent:true, opacity: r.on?0.95:0.5 });
+    scene.add(new THREE.Line(geo, mat));
+  });
+  const kindColor = { FlowNode:0x4f8bff, Tool:0xf6c177, Resource:0xff9e64, Skill:0xc792ea, Rule:0xff5470, Memory:0x7CFFB2, Model:0x67e8f9 };
+  items.forEach(it => {
+    const col = kindColor[it.kind] || 0x88aaff;
+    const r = it.on ? 20 : 14;
+    const geo = new THREE.SphereGeometry(r, 20, 20);
+    const mat = new THREE.MeshStandardMaterial({ color: col, emissive: it.on?0x67e8f9:col, emissiveIntensity: it.on?0.6:0.2, metalness:0.2, roughness:0.5 });
+    const m = new THREE.Mesh(geo, mat);
+    m.position.copy(pos[it.id]); m.userData = it;
+    scene.add(m);
+    if (it.on) {
+      const ring = new THREE.Mesh(new THREE.RingGeometry(r+7, r+11, 32), new THREE.MeshBasicMaterial({ color: 0x67e8f9, side: THREE.DoubleSide, transparent:true, opacity:0.9 }));
+      ring.position.copy(pos[it.id]); scene.add(ring);
+    }
+    const lbl = makeLabel(it.label, col);
+    lbl.position.copy(pos[it.id]).add(new THREE.Vector3(0, r+16, 0));
+    scene.add(lbl); labels.push(lbl);
+    graphNodes.push(m);
+  });
+  addLights();
+}
+
+function addLights() {
+  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+  const d = new THREE.DirectionalLight(0xffffff, 0.8); d.position.set(200,300,400); scene.add(d);
+}
+
+function setView(v) {
+  currentView = v;
+  document.getElementById('btnFlow').classList.toggle('active', v==='flow');
+  document.getElementById('btnTopo').classList.toggle('active', v==='topo');
+  if (lastData) (v==='flow'?renderFlow:renderTopo)(lastData);
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+function renderSide(data) {
+  // 闸门
+  const g = data.gate;
+  document.getElementById('gateBox').innerHTML =
+    `<span class="pill ${g.approved?'ok':'block'}">${g.approved?'✅ 批准出码':'⛔ 拦截'}</span>` +
+    `<span class="pill kind">状态: ${g.status}</span><div style="margin-top:6px;font-size:12px;color:#9fb4ee;">${g.reason}</div>`;
+  // ⛨ 算法联盟验证（最高权限，不可被治理覆盖）
+  const a = data.algorithm;
+  const algoTag = a.vetoed
+    ? '<span class="pill block">⛔ 算法否决 → 强制拦截</span>'
+    : (a.all_passed ? '<span class="pill ok">✔ 全部通过</span>' : '<span class="pill warn">⚠ 通过(含告警)</span>');
+  const algoChecks = (a.checks||[]).map(c=>{
+    const m = c.passed ? '<span style="color:#7CFFB2">✔</span>' : '<span style="color:#ff5470">✘</span>';
+    const lvl = c.blocking ? '<span class="tag">阻断</span>' : '<span class="tag">告警</span>';
+    return `<div style="font-size:12px;margin:2px 0;">${m} <b>${c.name}</b> ${lvl} <span style="color:#9fb4ee">${c.detail}</span></div>`;
+  }).join('');
+  document.getElementById('algoBox').innerHTML = algoTag +
+    `<div style="margin-top:6px;">${algoChecks}</div>` +
+    `<div style="margin-top:6px;font-size:12px;color:#9fb4ee;">${a.summary||''}</div>`;
+  // 统计
+  const s = data.stats;
+  document.getElementById('statsBox').innerHTML = [
+    ['加速比', s.speedup.toFixed(2)+'×'],
+    ['时间压缩', s.time_saved_pct.toFixed(1)+'%'],
+    ['剪除伪依赖', s.removed_false_deps+' 条'],
+    ['并行层 / 峰值', s.parallel_layers+' / '+s.max_concurrency],
+    ['冲突(阻断/修复)', s.conflicts_blocking+' / '+s.conflicts_fixed],
+  ].map(([k,v])=>`<div class="metric"><span>${k}</span><b>${v}</b></div>`).join('');
+  // 专家评分
+  document.getElementById('scoresBox').innerHTML = data.expert_scores.map(([k,v])=>
+    `<div class="scoreRow"><span style="width:78px;">${k}</span><div class="bar"><i style="width:${(v*100).toFixed(0)}%"></i></div><span>${(v*100).toFixed(0)}</span></div>`
+  ).join('');
+}
+
+async function runOptimize() {
+  const txt = document.getElementById('flowJson').value.trim();
+  let flow;
+  try { flow = JSON.parse(txt); } catch(e) { toast('JSON 解析失败'); return; }
+  toast('正在全维优化…');
+  try {
+    const resp = await fetch('/api/optimize', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ flow, instruction: '' })
+    });
+    const data = await resp.json();
+    lastData = data;
+    (currentView==='flow'?renderFlow:renderTopo)(data);
+    renderSide(data);
+    toast('优化完成 ✓');
+  } catch(e) { toast('请求失败: '+e.message); }
+}
+
+// ---- Phase 3 执行监控：执行并实时监听进度（可视化监听）----
+let traceTimer = null;
+async function runExecution() {
+  const txt = document.getElementById('flowJson').value.trim();
+  let flow;
+  try { flow = JSON.parse(txt); } catch(e) { toast('JSON 解析失败'); return; }
+  if (traceTimer) { clearInterval(traceTimer); traceTimer = null; }
+  document.getElementById('exBlocked').textContent = '';
+  try {
+    const resp = await fetch('/api/run', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ flow, instruction: flow.name || '', rate: 0.02 })
+    });
+    const r = await resp.json();
+    if (!r.ok) {
+      document.getElementById('exBlocked').textContent = '⛔ 不可执行：' + (r.reason || '未知原因');
+      return;
+    }
+    document.getElementById('exMakespan').textContent = r.makespan_ms + 'ms';
+    toast('开始执行并监听 ✓');
+    // 轮询轨迹
+    await pollTrace();
+    traceTimer = setInterval(pollTrace, 200);
+  } catch(e) { toast('执行请求失败: '+e.message); }
+}
+async function pollTrace() {
+  try {
+    const resp = await fetch('/api/trace');
+    if (!resp.ok) return;
+    const t = await resp.json();
+    document.getElementById('exClock').textContent = t.clock_ms + 'ms';
+    const pct = Math.round((t.progress||0) * 100);
+    document.getElementById('exProgress').textContent = pct + '%';
+    document.getElementById('exBar').style.width = pct + '%';
+    // 节点状态列表
+    const box = document.getElementById('exNodes');
+    box.innerHTML = (t.nodes||[]).map(n => {
+      const color = n.status==='done' ? '#7CFFB2' : n.status==='running' ? '#ffd166' : n.status==='failed' ? '#ff5470' : '#8aa0d8';
+      const tag = n.on_critical ? '★' : '';
+      return '<div style="padding:2px 0;"><span style="color:'+color+'">●</span> '+tag+' '+n.label+' <span style="color:#6b7fb0">['+n.status+']</span></div>';
+    }).join('');
+    if (t.blocked_reason) document.getElementById('exBlocked').textContent = '⛔ ' + t.blocked_reason;
+    if (t.finished && traceTimer) { clearInterval(traceTimer); traceTimer = null; }
+  } catch(e) { /* 静默 */ }
+}
+function stopTrace() { if (traceTimer) { clearInterval(traceTimer); traceTimer = null; } }
+
+// ---- Step 10 实时联动：轮询 /api/live（由 hermes-flow-bridge 推送会话图）----
+let liveTimer = null;
+async function pollLive() {
+  try {
+    const resp = await fetch('/api/live');
+    if (!resp.ok) return;
+    const data = await resp.json();
+    lastData = data;
+    (currentView==='flow'?renderFlow:renderTopo)(data);
+    renderSide(data);
+    setLiveBadge(true);
+  } catch(e) { /* 静默：暂无实时图 */ }
+}
+function toggleLive() {
+  const btn = document.getElementById('liveBtn');
+  if (liveTimer) {
+    clearInterval(liveTimer); liveTimer = null;
+    btn.textContent = '▶ 实时联动'; btn.classList.remove('on');
+    setLiveBadge(false);
+  } else {
+    pollLive();
+    liveTimer = setInterval(pollLive, 1500);
+    btn.textContent = '⏸ 实时联动'; btn.classList.add('on');
+  }
+}
+function setLiveBadge(on) {
+  const b = document.getElementById('liveBadge');
+  if (b) b.style.display = on ? 'inline-block' : 'none';
+}
+
+async function runClosedLoop() {
+  toast('正在跑一键闭环…');
+  try {
+    const resp = await fetch('/api/closedloop');
+    if (!resp.ok) { toast('闭环请求失败'); return; }
+    const bundle = await resp.json();
+    lastData = bundle.viz;
+    (currentView==='flow'?renderFlow:renderTopo)(bundle.viz);
+    renderSide(bundle.viz);
+    document.getElementById('llmSpeedup').textContent = bundle.viz.stats.speedup.toFixed(2) + '×';
+    document.getElementById('llmBase').textContent = bundle.llm_baseline + ' 次';
+    document.getElementById('llmBridge').textContent = bundle.llm_bridge + ' 次';
+    document.getElementById('llmSaved').textContent = bundle.llm_saved_pct.toFixed(0) + '%';
+    document.getElementById('llmTpl').textContent = bundle.reuse_template;
+    toast('闭环演示完成 ✓');
+  } catch(e) { toast('闭环失败: ' + e.message); }
+}
+
+function loadDemo() {
+    const demo = {
+      id: "master_ai_pipeline", name: "全维度AI智能自动化主流程",
+      nodes: [
+        { id:"s", name:"开始", kind:"start" },
+        { id:"asr", name:"语音识别 ASR", kind:"task", tool:"compute", duration_ms:150 },
+        { id:"ic", name:"意图分类", kind:"decision", tool:"llm", duration_ms:200 },
+        { id:"gov", name:"政务预处理", kind:"task", tool:"compute", duration_ms:120 },
+        { id:"gen", name:"通用预处理", kind:"task", tool:"compute", duration_ms:120 },
+        { id:"pre", name:"路径/参数/合规预校验", kind:"guard", tool:"compute", duration_ms:80, tags:["path_check", "compliance"] },
+        { id:"mem", name:"记忆检索", kind:"task", tool:"llm", duration_ms:250, accesses:[{mode:"read", resource:"mem:citizen_vec"}] },
+        { id:"react", name:"ReAct 推理", kind:"task", tool:"llm", duration_ms:400 },
+        { id:"sub", name:"子Agent编排", kind:"task", tool:"llm", duration_ms:350 },
+        { id:"sel", name:"工具选择决策", kind:"task", tool:"llm", duration_ms:150 },
+        { id:"fork", name:"并行网关", kind:"parallel_fork" },
+        { id:"b1", name:"浏览器填报A", kind:"task", tool:"browser", duration_ms:500, accesses:[{mode:"read", resource:"var:citizen_safe"}] },
+        { id:"b2", name:"浏览器填报B", kind:"task", tool:"browser", duration_ms:400, accesses:[{mode:"read", resource:"var:citizen_safe"}] },
+        { id:"db", name:"读取公民库", kind:"task", tool:"database", duration_ms:300, transactional:true, idempotent:true, accesses:[{mode:"read", resource:"db:citizen_info"},{mode:"write", resource:"var:citizen"}] },
+        { id:"xls", name:"Excel读取", kind:"task", tool:"file", duration_ms:200, accesses:[{mode:"read", resource:"file:report.xlsx"}] },
+        { id:"guard", name:"脱敏", kind:"guard", tool:"compute", duration_ms:50, tags:["desensitize"], accesses:[{mode:"read", resource:"var:citizen"},{mode:"write", resource:"var:citizen_safe"}] },
+        { id:"merge", name:"汇总报告", kind:"task", tool:"compute", duration_ms:100, accesses:[{mode:"read", resource:"var:citizen_safe"}] },
+        { id:"cc", name:"冲突/事务校验", kind:"guard", tool:"compute", duration_ms:60, tags:["transaction_check"] },
+        { id:"cg", name:"代码生成", kind:"task", tool:"llm", duration_ms:500 },
+        { id:"sb", name:"沙箱运行校验", kind:"task", tool:"shell", duration_ms:300, idempotent:true },
+        { id:"err", name:"异常处理器", kind:"guard", tool:"compute", duration_ms:40, tags:["error_handler"] },
+        { id:"sk", name:"Skill提炼+冗余裁剪", kind:"task", tool:"llm", duration_ms:200 },
+        { id:"av", name:"算法联盟验证网关", kind:"guard", tool:"compute", duration_ms:70, tags:["algo_verify"] },
+        { id:"aud", name:"审计+治理闸门", kind:"guard", tool:"compute", duration_ms:50, tags:["audit", "gate"] },
+        { id:"e", name:"结束", kind:"end" },
+      ],
+      edges: [
+        { from:"s", to:"asr", kind:"sequence" },
+        { from:"asr", to:"ic", kind:"sequence" },
+        { from:"ic", to:"gov", kind:"sequence", condition:"政务" },
+        { from:"ic", to:"gen", kind:"sequence", condition:"通用" },
+        { from:"ic", to:"gen", kind:"sequence" },
+        { from:"gov", to:"pre", kind:"sequence" },
+        { from:"gen", to:"pre", kind:"sequence" },
+        { from:"pre", to:"mem", kind:"sequence" },
+        { from:"mem", to:"react", kind:"sequence" },
+        { from:"react", to:"sub", kind:"sequence" },
+        { from:"react", to:"sel", kind:"sequence" },
+        { from:"sub", to:"fork", kind:"sequence" },
+        { from:"sel", to:"fork", kind:"sequence" },
+        { from:"fork", to:"b1", kind:"sequence" },
+        { from:"fork", to:"b2", kind:"sequence" },
+        { from:"fork", to:"db", kind:"sequence" },
+        { from:"fork", to:"xls", kind:"sequence" },
+        { from:"db", to:"guard", kind:"sequence" },
+        { from:"b1", to:"merge", kind:"sequence" },
+        { from:"b2", to:"merge", kind:"sequence" },
+        { from:"xls", to:"merge", kind:"sequence" },
+        { from:"guard", to:"merge", kind:"sequence" },
+        { from:"merge", to:"cc", kind:"sequence" },
+        { from:"cc", to:"cg", kind:"sequence" },
+        { from:"cg", to:"sb", kind:"sequence" },
+        { from:"sb", to:"err", kind:"exception" },
+        { from:"err", to:"sk", kind:"sequence" },
+        { from:"sb", to:"sk", kind:"sequence" },
+        { from:"sk", to:"av", kind:"sequence" },
+        { from:"av", to:"aud", kind:"sequence" },
+        { from:"aud", to:"e", kind:"sequence" },
+      ],
+      pools: [{ name:"browser", capacity:1 }]
+    };
+  document.getElementById('flowJson').value = JSON.stringify(demo, null, 2);
+  runOptimize();
+}
+
+// 启动
+initThree();
+window.addEventListener('load', () => { loadDemo(); runClosedLoop(); });
+</script>
+</body>
+</html>

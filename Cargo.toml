@@ -1,0 +1,54 @@
+[workspace]
+members = [
+    "crates/operator-core",
+    "crates/operator-wasm",
+    "crates/operator-graph",
+    "crates/optimizer",
+    "crates/flow-ai",
+    "crates/expert-alliance",
+    "crates/hermes-flow-bridge",
+    "crates/business-catalog",
+    "crates/ai-agent",
+    "crates/runtime",
+]
+resolver = "2"
+
+[workspace.package]
+version = "3.0.0-ai-powered"
+edition = "2021"
+license = "MIT"
+authors = ["Algorithm Alliance - 最高权限开发专家联盟"]
+description = "Unified Operator System - AI-Driven Full-Dimensional Breakthrough Platform"
+
+[workspace.dependencies]
+# Core dependencies
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.0", features = ["full"] }
+anyhow = "1.0"
+thiserror = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Math dependencies
+nalgebra = "0.32"
+ndarray = "0.15"
+num-traits = "0.2"
+approx = "0.5"
+
+# WASM dependencies
+wasmer = "4.2"
+wasmer-compiler-cranelift = "4.2"
+
+# Graph dependencies
+petgraph = "0.6"
+
+# Web server
+axum = "0.7"
+tower-http = { version = "0.5", features = ["cors", "fs"] }
+
+# HTTP client for AI APIs and browser automation
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+base64 = "0.22"
