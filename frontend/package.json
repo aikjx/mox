@@ -9,13 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.4.0",
-    "three": "^0.160.0",
+    "@element-plus/icons-vue": "^2.3.0",
+    "@esbuild/win32-x64": "^0.19.12",
     "3d-force-graph": "^1.0.7",
-    "echarts": "^5.4.3",
     "axios": "^1.6.0",
+    "echarts": "^5.4.3",
     "element-plus": "^2.4.0",
-    "@element-plus/icons-vue": "^2.3.0"
+    "esbuild": "^0.19.12",
+    "three": "^0.160.0",
+    "vue": "^3.4.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.0",

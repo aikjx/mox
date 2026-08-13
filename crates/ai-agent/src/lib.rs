@@ -25,7 +25,16 @@ pub use algorithm::*;
 pub use resource_manager::*;
 pub use plugin_bus::*;
 pub use workflow_engine::*;
-pub use types::*;
+pub use types::{
+    MessageRole, ChatMessage, ChatSession, SessionContext, UserIntent, ChatResponse,
+    SuggestedAction, ActionType, AlgorithmType, AlgorithmFlow, OptimizationSuggestion,
+    OptimizationImpact, ComplexityAnalysis, ResourceType, ResourceAllocation,
+    ResourceUsageStats, ResourcePanorama, PluginInfo, PluginType, PluginStatus,
+    PluginMessage, MessageSubscription, BusinessWorkflow, WorkflowNode, WorkflowNodeType,
+    WorkflowNodeConfig, MergeStrategy, NodePosition, WorkflowEdge, WorkflowInstance,
+    WorkflowStatus, NodeExecutionRecord, WorkflowResult, WorkflowMetrics,
+    WorkflowConnection, NodeStatus, WorkflowTemplate,
+};
 pub use llm_client::*;
 pub use browser_automation::*;
 pub use flow_engine::*;
@@ -280,7 +289,7 @@ impl AIAgent {
     /// 创建流程图
     pub async fn create_flow(&self, flow: FlowDefinition) -> Result<FlowDefinition> {
         let mut engine = self.flow_engine.write().await;
-        engine.create_flow(flow).map_err(|e| OperatorError::Other(e.to_string()))
+        engine.create_flow(flow).map_err(|e| OperatorError::Other(anyhow::anyhow!(e.to_string())))
     }
 
     /// 获取流程图
@@ -303,7 +312,7 @@ impl AIAgent {
 
     /// 验证流程图
     pub fn validate_flow(flow: &FlowDefinition) -> Result<()> {
-        FlowEngine::validate_flow(flow).map_err(|e| OperatorError::Other(e.to_string()))
+        FlowEngine::validate_flow(flow).map_err(|e| OperatorError::Other(anyhow::anyhow!(e.to_string())))
     }
 
     /// 执行流程图
@@ -316,7 +325,7 @@ impl AIAgent {
         let flow_def = {
             let engine = self.flow_engine.read().await;
             engine.get_flow(flow_id).cloned()
-        }.ok_or_else(|| OperatorError::Other(format!("流程图不存在: {}", flow_id)))?;
+        }.ok_or_else(|| OperatorError::Other(anyhow::anyhow!("流程图不存在: {}", flow_id)))?;
 
         // 执行节点（支持真实的LLM、浏览器、HTTP请求）
         let mut results = Vec::new();
@@ -325,7 +334,7 @@ impl AIAgent {
 
         let start_node = flow_def.nodes.iter()
             .find(|n| matches!(n.node_type, NodeType::Start))
-            .ok_or_else(|| OperatorError::Other("缺少Start节点".into()))?;
+            .ok_or_else(|| OperatorError::Other(anyhow::anyhow!("缺少Start节点")))?;
 
         let mut current_node_id = start_node.id.clone();
         let mut max_steps = 1000;
@@ -333,13 +342,13 @@ impl AIAgent {
 
         loop {
             if max_steps == 0 {
-                return Err(OperatorError::Other("执行步数超限".into()));
+                return Err(OperatorError::Other(anyhow::anyhow!("执行步数超限")));
             }
             max_steps -= 1;
 
             let node = flow_def.nodes.iter()
                 .find(|n| n.id == current_node_id)
-                .ok_or_else(|| OperatorError::Other(format!("节点不存在: {}", current_node_id)))?
+                .ok_or_else(|| OperatorError::Other(anyhow::anyhow!("节点不存在: {}", current_node_id)))?
                 .clone();
 
             let result = self.execute_flow_node(&node, &variables).await;
@@ -448,7 +457,7 @@ impl AIAgent {
                         role: "user".into(),
                         content: prompt.clone(),
                     }];
-                    match llm.chat_with_model(messages, model).await {
+                    match llm.chat(messages).await {
                         Ok(response) => NodeExecutionResult {
                             node_id, node_name, node_type: "llm".into(),
                             status: "success".into(),
@@ -485,7 +494,7 @@ impl AIAgent {
                     .unwrap_or("navigate");
 
                 let mut browser = self.browser.write().await;
-                let result = browser.execute_action(BrowserAction::Navigate(url.clone())).await;
+                let result = browser.execute_action("default", BrowserAction::Navigate { url: url.clone() }).await;
 
                 match result {
                     Ok(page) => NodeExecutionResult {
@@ -493,9 +502,9 @@ impl AIAgent {
                         status: "success".into(),
                         input: Some(serde_json::json!({"url": url, "action": action})),
                         output: Some(serde_json::json!({
-                            "url": page.url,
-                            "title": page.title,
-                            "html_length": page.html.len(),
+                            "url": page.data.as_ref().and_then(|d| d.get("url")).and_then(|v| v.as_str()).unwrap_or(""),
+                            "title": page.data.as_ref().and_then(|d| d.get("title")).and_then(|v| v.as_str()).unwrap_or(""),
+                            "html_length": page.data.as_ref().and_then(|d| d.get("html")).and_then(|v| v.as_str()).map(|s| s.len()).unwrap_or(0),
                         })),
                         error: None,
                         duration_ms: start.elapsed().as_millis() as u64,

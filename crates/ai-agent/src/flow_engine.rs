@@ -531,7 +531,7 @@ fn resolve_template(config: Option<&serde_json::Value>, variables: &HashMap<Stri
     })
 }
 
-fn apply_template(template: &str, variables: &HashMap<String, serde_json::Value>) -> String {
+pub fn apply_template(template: &str, variables: &HashMap<String, serde_json::Value>) -> String {
     let mut result = template.to_string();
     for (key, value) in variables {
         let placeholder = format!("{{{{{}}}}}", key);
@@ -546,7 +546,7 @@ fn apply_template(template: &str, variables: &HashMap<String, serde_json::Value>
     result
 }
 
-fn evaluate_condition(condition: &str, variables: &HashMap<String, serde_json::Value>) -> bool {
+pub fn evaluate_condition(condition: &str, variables: &HashMap<String, serde_json::Value>) -> bool {
     let resolved = apply_template(condition, variables);
     let lower = resolved.to_lowercase();
     
@@ -569,7 +569,7 @@ fn evaluate_condition(condition: &str, variables: &HashMap<String, serde_json::V
         }
     } else {
         // 检查是否是存在性检查
-        if resolved.contains('{{') { return true; } // 还有未解析变量，默认true
+        if resolved.contains("{{") { return true; } // 还有未解析变量，默认true
         resolved.is_empty() == false
     }
 }
@@ -655,15 +655,35 @@ fn evaluate_script_expr(expr: &str, variables: &HashMap<String, serde_json::Valu
 }
 
 fn simple_math(expr: &str) -> Option<f64> {
-    let tokens: Vec<String> = expr.chars().collect::<Vec<char>>()
-        .split(|c: char| c == '+' || c == '-' || c == '*' || c == '/')
-        .map(|s| s.iter().collect())
-        .filter(|s| !s.is_empty())
-        .collect();
-    
-    if tokens.len() >= 2 {
-        if let (Some(a), Some(b)) = (tokens.first().and_then(|t| t.parse::<f64>().ok()), tokens.get(1).and_then(|t| t.parse::<f64>().ok())) {
-            return Some(a + b); // 简化版，实际需要完整解析器
+    let mut tokens: Vec<String> = Vec::new();
+    let mut current = String::new();
+    for c in expr.chars() {
+        if c == '+' || c == '-' || c == '*' || c == '/' {
+            if !current.is_empty() {
+                tokens.push(std::mem::take(&mut current));
+            }
+            tokens.push(c.to_string());
+        } else if !c.is_whitespace() {
+            current.push(c);
+        }
+    }
+    if !current.is_empty() {
+        tokens.push(current);
+    }
+
+    if tokens.len() >= 3 {
+        if let (Some(a), Some(b)) = (
+            tokens.first().and_then(|t| t.parse::<f64>().ok()),
+            tokens.get(2).and_then(|t| t.parse::<f64>().ok()),
+        ) {
+            let op = tokens.get(1).map(|s| s.as_str()).unwrap_or("+");
+            return Some(match op {
+                "+" => a + b,
+                "-" => a - b,
+                "*" => a * b,
+                "/" => if b != 0.0 { a / b } else { return None },
+                _ => return None,
+            });
         }
     }
     None
