@@ -1,0 +1,5 @@
+npm error code 3221225477
+npm error path D:\a10\aikjx\gitcode\算子统一系统完整工程包 (operator-unified-system.zip)\operator-unified-system\frontend\node_modules\esbuild
+npm error command failed
+npm error command C:\Windows\system32\cmd.exe /d /s /c node install.js
+npm error A complete log of this run can be found in: C:\Users\mo\AppData\Local\npm-cache\_logs\2026-08-06T07_10_25_710Z-debug-0.log
