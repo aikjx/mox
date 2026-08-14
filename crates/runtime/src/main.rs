@@ -23,6 +23,7 @@ use operator_graph::{
     KnowledgeNode, NodeRecommendation, PathResult,
 };
 use operator_wasm::WasmPluginManager;
+use business_catalog::spiral::{analyze_spiral, SpiralParams};
 use ai_agent::{
     AIAgent, ChatResponse, AlgorithmType,
     BusinessWorkflow, WorkflowResult, PluginInfo, PluginType, PluginStatus,
@@ -368,6 +369,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/ai/flows/:id", get(get_flow))
         .route("/api/ai/flows/:id", delete(delete_flow))
         .route("/api/ai/flows/validate", post(validate_flow))
+        .route("/api/analyze/spiral", post(analyze_spiral_handler))
         .route("/api/ai/flows/execute", post(execute_flow))
         .route("/api/ai/flows/node-types", get(list_flow_node_types))
         // ========== 系统API ==========
@@ -782,6 +784,37 @@ async fn get_chat_history(State(state): State<Arc<AppState>>, Path(session): Pat
 }
 
 // ========== 算法分析归一化API ==========
+
+// ========== 空间光速螺旋模型分析 API ==========
+
+#[derive(Debug, Deserialize)]
+struct SpiralAnalysisRequest {
+    /// 曲率 κ
+    curvature: f64,
+    /// 挠率 τ
+    torsion: f64,
+    /// 「一周步长」h
+    step_h: f64,
+    /// 螺旋半径（可选）
+    radius: Option<f64>,
+    /// 切向速率，默认取真空光速 c
+    speed: Option<f64>,
+}
+
+async fn analyze_spiral_handler(Json(req): Json<SpiralAnalysisRequest>) -> Json<serde_json::Value> {
+    let consts = business_catalog::spiral::PhysicalConstants::default();
+    let speed = req.speed.unwrap_or(consts.c);
+    let params = SpiralParams {
+        curvature: req.curvature,
+        torsion: req.torsion,
+        step_h: req.step_h,
+        radius: req.radius,
+    };
+    let report = analyze_spiral(&params, speed, &consts);
+    Json(serde_json::to_value(report).unwrap_or(serde_json::json!({"error": "序列化失败"})))
+}
+
+// ========== 算法分析 API ==========
 
 async fn analyze_algorithm(State(state): State<Arc<AppState>>, Json(req): Json<AnalyzeAlgorithmRequest>) -> Json<serde_json::Value> {
     let algo_type = match req.algorithm_type.as_deref() {

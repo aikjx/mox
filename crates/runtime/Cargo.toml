@@ -16,6 +16,7 @@ operator-graph = { path = "../operator-graph" }
 operator-wasm = { path = "../operator-wasm" }
 optimizer = { path = "../optimizer" }
 ai-agent = { path = "../ai-agent" }
+business-catalog = { path = "../business-catalog" }
 tokio = { workspace = true }
 axum = { workspace = true }
 tower-http = { workspace = true }

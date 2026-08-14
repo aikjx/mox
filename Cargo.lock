@@ -1978,6 +1978,7 @@ dependencies = [
  "ai-agent",
  "anyhow",
  "axum",
+ "business-catalog",
  "chrono",
  "nalgebra",
  "operator-core",
