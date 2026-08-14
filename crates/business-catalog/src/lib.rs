@@ -19,6 +19,9 @@ use flow_ai::model::{
 };
 use flow_ai::topology::{Entity, EntityKind, Relation, RelationKind, TopologyGraph};
 
+/// 空间光速螺旋模型分析算子（Frenet 螺旋运动学 + 量纲/数值诊断）
+pub mod spiral;
+
 /// Guard 节点（校验/脱敏/审计，无外部工具）
 fn guard(id: &str, name: &str, ms: u64) -> FlowNode {
     FlowNode::new(id, name, NodeKind::Guard).with_duration(ms)
@@ -313,6 +316,52 @@ fn mcp_orchestration() -> FlowGraph {
     g
 }
 
+// ---------------------------------------------------------------------------
+// 业务七：空间光速螺旋模型分析（科学计算 + 量纲/数值诊断）
+// ---------------------------------------------------------------------------
+fn spiral_analysis() -> FlowGraph {
+    let mut g = FlowGraph::new("spiral", "空间光速螺旋模型分析");
+    g.add_node(start("s"));
+    // 1. 输入参数 / 校验
+    g.add_node(
+        FlowNode::task("input", "参数校验", ToolKind::Compute, 80)
+            .with_tag("dim:algo")
+            .with_access(Access::read("var:spiral_params")),
+    );
+    // 2. Frenet 螺旋运动学（数学内核，干净）
+    g.add_node(
+        FlowNode::task("kinematics", "螺旋运动学计算", ToolKind::Compute, 200)
+            .with_tag("dim:algo"),
+    );
+    // 3. 量纲诊断（修正原报告错误）
+    g.add_node(
+        FlowNode::task("dimcheck", "量纲自洽诊断", ToolKind::Compute, 150)
+            .with_tag("dim:algo")
+            .with_tag("compliance"),
+    );
+    // 4. 数值巧合标注
+    g.add_node(
+        FlowNode::task("numcheck", "数值巧合标注", ToolKind::Compute, 120)
+            .with_tag("dim:algo"),
+    );
+    // 5. 生成报告
+    g.add_node(
+        FlowNode::task("report", "生成诊断报告", ToolKind::Compute, 100)
+            .with_tag("dim:obs")
+            .with_access(Access::write("var:spiral_report")),
+    );
+    g.add_node(end("e"));
+    g.rules.push(rule("r-spiral", "螺旋模型物理推论须经量纲校验方可对外发布", &["var:"]));
+    g.add_edge(FlowEdge::seq("s", "input"));
+    g.add_edge(FlowEdge::seq("input", "kinematics"));
+    g.add_edge(FlowEdge::seq("kinematics", "dimcheck"));
+    g.add_edge(FlowEdge::seq("kinematics", "numcheck"));
+    g.add_edge(FlowEdge::seq("dimcheck", "report"));
+    g.add_edge(FlowEdge::seq("numcheck", "report"));
+    g.add_edge(FlowEdge::seq("report", "e"));
+    g
+}
+
 /// 全部业务目录
 pub fn all_businesses() -> Vec<Business> {
     vec![
@@ -322,6 +371,7 @@ pub fn all_businesses() -> Vec<Business> {
         Business { id: "bot", name: "智能客服", domain: "service", regulated: false, build: customer_bot },
         Business { id: "etl", name: "ETL归集管道", domain: "data", regulated: false, build: etl },
         Business { id: "mcp", name: "MCP插件编排", domain: "integration", regulated: false, build: mcp_orchestration },
+        Business { id: "spiral", name: "空间光速螺旋模型分析", domain: "science", regulated: false, build: spiral_analysis },
     ]
 }
 
@@ -370,7 +420,7 @@ mod tests {
     #[test]
     fn catalog_builds_all_businesses() {
         let biz = all_businesses();
-        assert_eq!(biz.len(), 6);
+        assert_eq!(biz.len(), 7);
         for b in &biz {
             let g = (b.build)();
             assert!(!g.nodes.is_empty(), "{} 应有节点", b.id);
