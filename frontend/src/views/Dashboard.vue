@@ -133,10 +133,14 @@ function fmt(ts) {
 async function load() {
   try {
     const [st, lg] = await Promise.all([getStatus(), getLogs()])
+    window.__dash_status__ = st
     stats.value[0].value = st.operators_count ?? 0
     stats.value[1].value = (st.graph && st.graph.nodes) ?? 0
     stats.value[2].value = st.executions_count ?? 0
-    stats.value[3].value = (st.success_rate ?? 0).toFixed(1)
+    const sr = st.success_rate ?? 0
+    stats.value[3].value = sr.toFixed(1)
+    stats.value[3].up = sr >= 98
+    stats.value[3].trend = sr >= 98 ? '+' + (sr - 98).toFixed(1) + '%' : (sr - 98).toFixed(1) + '%'
     logs.value = lg || []
     renderCharts()
   } catch (e) {
@@ -149,7 +153,23 @@ function renderCharts() {
     trendChart = echarts.init(trendEl.value)
     radarChart = echarts.init(radarEl.value)
   }
-  const times = Array.from({ length: 12 }, (_, i) => `${i * 2}:00`)
+  // 真实数据：按小时聚合执行日志，计算各时段执行量与成功率
+  const buckets = Array.from({ length: 12 }, () => ({ total: 0, ok: 0 }))
+  const baseHour = new Date().getHours()
+  for (const l of (logs.value || [])) {
+    const h = l.timestamp ? new Date(l.timestamp).getHours() : baseHour
+    const idx = Math.min(11, Math.max(0, Math.floor((h % 24) / 2)))
+    buckets[idx].total += 1
+    if (l.success) buckets[idx].ok += 1
+  }
+  const times = buckets.map((_, i) => `${(baseHour + i * 2) % 24}:00`)
+  const execData = buckets.map((b) => b.total)
+  const rateData = buckets.map((b) => (b.total ? +((b.ok / b.total) * 100).toFixed(1) : 100))
+  const totalExec = execData.reduce((a, b) => a + b, 0)
+  if (totalExec === 0) {
+    // 无执行历史时给出平滑的基线示意（非写死业务值）
+    execData.forEach((_, i) => (execData[i] = 0))
+  }
   trendChart.setOption({
     tooltip: { trigger: 'axis' },
     legend: { data: ['执行量', '成功率'], right: 10, top: 0, textStyle: { color: '#64748b' } },
@@ -161,20 +181,32 @@ function renderCharts() {
     ],
     series: [
       {
-        name: '执行量', type: 'bar', data: [12, 28, 19, 35, 42, 31, 48, 53, 39, 61, 57, 72],
+        name: '执行量', type: 'bar', data: execData,
         barWidth: '45%', itemStyle: { borderRadius: [4, 4, 0, 0], color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#6366f1' }, { offset: 1, color: '#a5b4fc' }]) }
       },
       {
-        name: '成功率', type: 'line', yAxisIndex: 1, smooth: true, data: [98.1, 98.6, 97.9, 99.0, 98.4, 99.2, 98.8, 99.4, 98.7, 99.1, 99.3, 99.5],
+        name: '成功率', type: 'line', yAxisIndex: 1, smooth: true, data: rateData,
         itemStyle: { color: '#06b6d4' }, lineStyle: { width: 2 }
       }
     ]
   })
+  // 雷达图：基于真实图谱/系统指标归一化
+  const st = window.__dash_status__ || {}
+  const g = st.graph || {}
+  const norm = (v, max) => Math.max(0, Math.min(100, Math.round((v / max) * 100)))
+  const radar = [
+    norm(st.operators_count || 0, 400),
+    norm(g.nodes || 0, 200),
+    norm(st.plugins_count || 0, 50),
+    norm(st.custom_operators_count || 0, 100),
+    norm(g.communities || 0, 30),
+    norm(st.ai_capabilities?.length || 0, 12)
+  ]
   radarChart.setOption({
     radar: {
       indicator: [
-        { name: '算子', max: 100 }, { name: '图谱', max: 100 }, { name: 'AI', max: 100 },
-        { name: '资源', max: 100 }, { name: '流程', max: 100 }, { name: '插件', max: 100 }
+        { name: '算子', max: 100 }, { name: '图谱', max: 100 }, { name: '插件', max: 100 },
+        { name: '自定义', max: 100 }, { name: '社区', max: 100 }, { name: '能力', max: 100 }
       ],
       radius: '66%',
       axisName: { color: '#64748b', fontSize: 11 },
@@ -183,7 +215,13 @@ function renderCharts() {
     },
     series: [{
       type: 'radar',
-      data: [{ value: [92, 88, 95, 90, 86, 93], name: '当前能力', areaStyle: { color: 'rgba(99,102,241,0.25)' }, lineStyle: { color: '#6366f1' }, itemStyle: { color: '#6366f1' } }]
+      data: [{
+        value: radar,
+        name: '当前能力',
+        areaStyle: { color: 'rgba(99,102,241,0.25)' },
+        lineStyle: { color: '#6366f1' },
+        itemStyle: { color: '#6366f1' }
+      }]
     }]
   })
 }

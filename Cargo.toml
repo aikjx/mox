@@ -9,6 +9,7 @@ members = [
     "crates/hermes-flow-bridge",
     "crates/business-catalog",
     "crates/ai-agent",
+    "crates/template-market",
     "crates/runtime",
 ]
 resolver = "2"
@@ -30,7 +31,7 @@ thiserror = "1.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }
-chrono = { version = "0.4", features = ["serde"] }
+chrono = { version = "0.4", features = ["serde", "clock"] }
 
 # Math dependencies
 nalgebra = "0.32"
@@ -52,3 +53,4 @@ tower-http = { version = "0.5", features = ["cors", "fs"] }
 # HTTP client for AI APIs and browser automation
 reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
 base64 = "0.22"
+rusqlite = { version = "0.31", features = ["bundled"] }

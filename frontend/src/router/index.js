@@ -63,6 +63,30 @@ const routes = [
     meta: { title: 'API 文档' }
   },
   {
+    path: '/market',
+    name: 'Market',
+    component: () => import('@/views/MarketView.vue'),
+    meta: { title: '算子商城' }
+  },
+  {
+    path: '/market/:id',
+    name: 'MarketDetail',
+    component: () => import('@/views/MarketDetailView.vue'),
+    meta: { title: '算子详情' }
+  },
+  {
+    path: '/mcp',
+    name: 'Mcp',
+    component: () => import('@/views/McpView.vue'),
+    meta: { title: 'MCP 兼容中心' }
+  },
+  {
+    path: '/automation',
+    name: 'Automation',
+    component: () => import('@/views/AutomationView.vue'),
+    meta: { title: 'AI 自动化' }
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/dashboard'
   }

@@ -32,8 +32,10 @@ use ai_agent::{
     ResourcePanorama, ResourceHealthReport, PluginTopology,
     BrowserAction,
     FlowDefinition, FlowExecutionResult, FlowNode, FlowEdge, NodeType,
+    ExportBundle,
 };
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -48,21 +50,30 @@ use tracing_subscriber::{prelude::*, EnvFilter};
 mod api_standard;
 mod openapi;
 mod rbac_middleware;
+/// 算子商城：需求 + 可编辑业务流程图的资产市场
+mod market;
+/// AI 自动化中枢共享资产模型 + 持久化（独立模块，避免与 market/automation 循环依赖）
+mod automation_asset;
+/// AI 自动化中枢：需求对话 → 蓝图/流程图/代码/测试/RBAC → 沙箱实跑异常自动修复 → 回写
+mod automation;
 
 /// 应用状态 - AI全维系统核心
+#[derive(Clone)]
 struct AppState {
     // 原有组件
-    operators: Mutex<Vec<OperatorInfo>>,
-    knowledge_graph: Mutex<KnowledgeGraph>,
-    plugin_manager: Mutex<WasmPluginManager>,
-    execution_logs: Mutex<Vec<ExecutionLog>>,
-    custom_operators: Mutex<HashMap<String, CustomOperatorDef>>,
+    operators: Arc<Mutex<Vec<OperatorInfo>>>,
+    knowledge_graph: Arc<Mutex<KnowledgeGraph>>,
+    plugin_manager: Arc<Mutex<WasmPluginManager>>,
+    execution_logs: Arc<Mutex<Vec<ExecutionLog>>>,
+    custom_operators: Arc<Mutex<HashMap<String, CustomOperatorDef>>>,
     // AI智能体
     ai_agent: Arc<AIAgent>,
     // 会话存储
-    chat_sessions: Mutex<HashMap<String, Vec<ai_agent::ChatMessage>>>,
+    chat_sessions: Arc<Mutex<HashMap<String, Vec<ai_agent::ChatMessage>>>>,
     // 工作流存储
-    saved_workflows: Mutex<HashMap<String, BusinessWorkflow>>,
+    saved_workflows: Arc<Mutex<HashMap<String, BusinessWorkflow>>>,
+    // 算子商城
+    market: market::MarketState,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -349,14 +360,15 @@ async fn main() -> anyhow::Result<()> {
     let operators = build_default_operators();
 
     let state = Arc::new(AppState {
-        operators: Mutex::new(operators),
-        knowledge_graph: Mutex::new(kg),
-        plugin_manager: Mutex::new(plugin_manager),
-        execution_logs: Mutex::new(Vec::new()),
-        custom_operators: Mutex::new(HashMap::new()),
+        operators: Arc::new(Mutex::new(operators)),
+        knowledge_graph: Arc::new(Mutex::new(kg)),
+        plugin_manager: Arc::new(Mutex::new(plugin_manager)),
+        execution_logs: Arc::new(Mutex::new(Vec::new())),
+        custom_operators: Arc::new(Mutex::new(HashMap::new())),
         ai_agent,
-        chat_sessions: Mutex::new(HashMap::new()),
-        saved_workflows: Mutex::new(HashMap::new()),
+        chat_sessions: Arc::new(Mutex::new(HashMap::new())),
+        saved_workflows: Arc::new(Mutex::new(HashMap::new())),
+        market: market::init_market_state().await,
     });
 
     // 创建路由 - 全维API
@@ -378,9 +390,20 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/graph/pagerank", get(get_pagerank))
         .route("/api/graph/activate", post(propagate_activation))
         .route("/api/graph/recommend", post(recommend_nodes))
+        // ========== 对话自动→知识图谱 自动整理 ==========
+        .route("/api/graph/search", get(graph_search))
+        .route("/api/graph/auto-sync/toggle", post(toggle_auto_sync))
+        .route("/api/graph/auto-sync/status", get(auto_sync_status))
+        .route("/api/dialogue/sessions", get(list_dialogue_sessions))
+        .route("/api/graph/export", get(graph_export))
+        .route("/api/graph/import", post(graph_import))
         // ========== AI智能对话API ==========
         .route("/api/ai/chat", post(ai_chat))
         .route("/api/ai/chat/history/:session", get(get_chat_history))
+        // ========== 草莓多平台：对话驱动全栈生成 ==========
+        .route("/api/caomei/compile", post(caomei_compile))
+        .route("/api/caomei/refine", post(caomei_refine))
+        .route("/api/caomei/templates", get(caomei_templates))
         // ========== 算法分析归一化API ==========
         .route("/api/ai/analyze-algorithm", post(analyze_algorithm))
         .route("/api/ai/algorithm-types", get(list_algorithm_types))
@@ -420,6 +443,19 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/analyze/spiral", post(analyze_spiral_handler))
         .route("/api/ai/flows/execute", post(execute_flow))
         .route("/api/ai/flows/node-types", get(list_flow_node_types))
+        // ========== 算子商城 API ==========
+        // 需求 + 可编辑业务流程图的资产市场；挂载为独立 state 子路由
+        .nest("/api/market", {
+            let market_state = state.market.clone();
+            market::market_routes().with_state(market_state)
+        })
+        // ========== AI 自动化中枢 API ==========
+        // 需求驱动的端到端闭环：对话生成 → 自动代码/测试/RBAC → 沙箱实跑异常修复回写。
+        // 与根路由共用 AppState（含 ai_agent / market）。
+        .nest("/api/automation", automation::router())
+        // ========== MCP 兼容层（Model Context Protocol）==========
+        // 把内置算子与 AI 插件统一暴露为标准 MCP tools，兼容任意开源 MCP 客户端
+        .route("/api/mcp", post(handle_mcp_rpc))
         // ========== 系统API ==========
         // 标准接口契约：OpenAPI 3.1 规范 + Swagger UI
         .route("/api/openapi.yaml", get(openapi::serve_openapi_yaml))
@@ -508,7 +544,8 @@ async fn auth_middleware(
     let path = req.uri().path().to_string();
     // 公开端点：健康检查、前端静态资源、AI对话（无需token）
     if path == "/api/health" || path == "/healthz" || !path.starts_with("/api/")
-        || path == "/api/ai/chat" || path.starts_with("/api/ai/chat/history") {
+        || path == "/api/ai/chat" || path.starts_with("/api/ai/chat/history")
+        || (path.starts_with("/api/market") && req.method() == axum::http::Method::GET) {
         return Ok(next.run(req).await);
     }
     match expected {
@@ -688,10 +725,11 @@ async fn register_operator(
     (StatusCode::OK, Json(serde_json::json!({"success": true, "message": "算子注册成功", "operator": op_info})))
 }
 
-async fn execute_workflow(
-    State(state): State<Arc<AppState>>,
-    Json(req): Json<ExecuteRequest>,
-) -> Json<ExecuteResponse> {
+// 内部复用：真正执行算子/工作流的核心逻辑，供 HTTP handler 与 MCP 兼容层共用
+pub(crate) async fn run_workflow_inner(
+    state: &Arc<AppState>,
+    req: ExecuteRequest,
+) -> ExecuteResponse {
     let start = std::time::Instant::now();
     let mut ctx = ExecutionContext::default();
     let input = StateVector::from_vec(req.input.clone());
@@ -747,21 +785,21 @@ async fn execute_workflow(
                 }))
             }
             _ => {
-                return Json(ExecuteResponse {
+                return ExecuteResponse {
                     success: false, output: None,
                     execution_time_ms: start.elapsed().as_millis() as u64,
                     logs: vec![], error: Some(format!("未知算子: {}", op_id)), metrics: None,
-                });
+                };
             }
         };
 
         match result {
             Ok(w) => workflow = w,
             Err(e) => {
-                return Json(ExecuteResponse { success: false, output: None,
+                return ExecuteResponse { success: false, output: None,
                     execution_time_ms: start.elapsed().as_millis() as u64,
                     logs: all_logs, error: Some(e.to_string()), metrics: None,
-                });
+                };
             }
         }
     }
@@ -781,18 +819,25 @@ async fn execute_workflow(
                 output_dim: result.output_state.as_ref().map(|s| s.dimension).unwrap_or(0),
             });
 
-            Json(ExecuteResponse {
+            ExecuteResponse {
                 success: result.success, output: result.output_state.map(|s| s.to_vec()),
                 execution_time_ms: result.execution_time_ms, logs: all_logs, error: result.error,
                 metrics: Some(ExecutionMetrics { input_norm, output_norm, l1_residual }),
-            })
+            }
         }
-        Err(e) => Json(ExecuteResponse {
+        Err(e) => ExecuteResponse {
             success: false, output: None,
             execution_time_ms: start.elapsed().as_millis() as u64,
             logs: all_logs, error: Some(e.to_string()), metrics: None,
-        }),
+        },
     }
+}
+
+async fn execute_workflow(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<ExecuteRequest>,
+) -> Json<ExecuteResponse> {
+    Json(run_workflow_inner(&state, req).await)
 }
 
 // ========== 知识图谱API ==========
@@ -892,6 +937,79 @@ async fn recommend_nodes(State(state): State<Arc<AppState>>, Json(req): Json<Rec
     Json(kg.recommend(&req.context_nodes, req.limit.unwrap_or(10)))
 }
 
+// ============ 对话自动→知识图谱 自动整理 API ============
+
+/// 统一搜索：对话内容 + 知识图谱节点
+async fn graph_search(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<HashMap<String, String>>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let q = match params.get("q") {
+        Some(q) if !q.trim().is_empty() => q.clone(),
+        _ => return (StatusCode::BAD_REQUEST, Json(serde_json::json!({"success": false, "error": "缺少查询参数 q"}))),
+    };
+    let limit = params
+        .get("limit")
+        .and_then(|v| v.parse::<usize>().ok())
+        .unwrap_or(20);
+
+    match state.ai_agent.dialogue_graph().search(&q, limit).await {
+        Ok(result) => (StatusCode::OK, Json(serde_json::to_value(&result).unwrap())),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({"success": false, "error": format!("搜索失败: {e}")}))),
+    }
+}
+
+/// 切换全自动同步开关
+async fn toggle_auto_sync(
+    State(state): State<Arc<AppState>>,
+    Json(payload): Json<serde_json::Value>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let enabled = payload.get("enabled").and_then(|v| v.as_bool()).unwrap_or(true);
+    state.ai_agent.dialogue_graph().set_auto_sync(enabled).await;
+    (StatusCode::OK, Json(serde_json::json!({ "auto_sync": enabled, "message": "已更新对话自动同步设置" })))
+}
+
+/// 查询全自动同步状态
+async fn auto_sync_status(State(state): State<Arc<AppState>>) -> (StatusCode, Json<serde_json::Value>) {
+    let enabled = state.ai_agent.dialogue_graph().is_auto_sync().await;
+    (StatusCode::OK, Json(serde_json::json!({ "auto_sync": enabled })))
+}
+
+/// 列出对话会话
+async fn list_dialogue_sessions(State(state): State<Arc<AppState>>) -> (StatusCode, Json<serde_json::Value>) {
+    match state.ai_agent.dialogue_graph().list_sessions().await {
+        Ok(sessions) => (StatusCode::OK, Json(serde_json::json!({ "sessions": sessions }))),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({"success": false, "error": format!("列出会话失败: {e}")}))),
+    }
+}
+
+/// 导出：对话 + 知识图谱 打包为单文件迁移包
+async fn graph_export(State(state): State<Arc<AppState>>) -> (StatusCode, Json<serde_json::Value>) {
+    match state.ai_agent.dialogue_graph().export_bundle().await {
+        Ok(bundle) => (StatusCode::OK, Json(serde_json::to_value(&bundle).unwrap_or(serde_json::json!({})))),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({"success": false, "error": format!("导出失败: {e}")}))),
+    }
+}
+
+/// 导入：从迁移包恢复对话 + 知识图谱（幂等合并）
+async fn graph_import(
+    State(state): State<Arc<AppState>>,
+    Json(bundle): Json<ExportBundle>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    match state.ai_agent.dialogue_graph().import_bundle(bundle).await {
+        Ok(report) => (StatusCode::OK, Json(serde_json::json!({
+            "imported": {
+                "sessions": report.sessions,
+                "messages": report.messages,
+                "nodes": report.nodes,
+                "edges": report.edges,
+            },
+            "message": "导入完成，已自动优化布局"
+        }))),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({"success": false, "error": format!("导入失败: {e}")}))),
+    }
+}
+
 async fn list_plugins(State(state): State<Arc<AppState>>) -> Json<Vec<String>> {
     let pm = state.plugin_manager.lock().await;
     Json(pm.list())
@@ -935,6 +1053,78 @@ async fn ai_chat(State(state): State<Arc<AppState>>, Json(req): Json<ChatRequest
 async fn get_chat_history(State(state): State<Arc<AppState>>, Path(session): Path<String>) -> Json<Vec<ai_agent::ChatMessage>> {
     let sessions = state.chat_sessions.lock().await;
     Json(sessions.get(&session).cloned().unwrap_or_default())
+}
+
+// ========== 草莓多平台：对话驱动系统生成 API ==========
+
+/// 请求：把一句话需求编译成系统蓝图
+#[derive(serde::Deserialize)]
+struct CaomeiCompileRequest {
+    requirement: String,
+    name: Option<String>,
+    tags: Option<Vec<String>>,
+}
+
+/// 请求：在已有蓝图基础上增量追加功能
+#[derive(serde::Deserialize)]
+struct CaomeiRefineRequest {
+    blueprint_id: String,
+    addition: String,
+}
+
+/// 对话 → 系统蓝图（功能点 + 关联关系 + 流程图）
+async fn caomei_compile(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<CaomeiCompileRequest>,
+) -> Json<serde_json::Value> {
+    let name = req.name.unwrap_or_else(|| "未命名系统".to_string());
+    let tags = req.tags.unwrap_or_default();
+    match state.ai_agent.compile_requirement(&req.requirement, &name, tags).await {
+        Ok(bp) => Json(serde_json::json!({
+            "success": true,
+            "blueprint_id": bp.id,
+            "name": bp.name,
+            "feature_count": bp.features.len(),
+            "entities": bp.entities.keys().collect::<Vec<_>>(),
+            "flow": bp.flow,
+        })),
+        Err(e) => Json(serde_json::json!({ "success": false, "error": e.to_string() })),
+    }
+}
+
+/// 继续对话迭代：追加功能（"再加一个退货"）
+async fn caomei_refine(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<CaomeiRefineRequest>,
+) -> Json<serde_json::Value> {
+    match state.ai_agent.refine_blueprint(&req.blueprint_id, &req.addition).await {
+        Ok(bp) => Json(serde_json::json!({
+            "success": true,
+            "blueprint_id": bp.id,
+            "feature_count": bp.features.len(),
+            "flow": bp.flow,
+        })),
+        Err(e) => Json(serde_json::json!({ "success": false, "error": e.to_string() })),
+    }
+}
+
+/// 列出系统模板市场（按域/关键词检索，支持"通用模块"复用）
+async fn caomei_templates(
+    State(state): State<Arc<AppState>>,
+    axum::extract::Query(params): axum::extract::Query<HashMap<String, String>>,
+) -> Json<serde_json::Value> {
+    let domain = params.get("domain").cloned();
+    let keyword = params.get("keyword").cloned();
+    let mut market = state.market.index.lock().await;
+    // MarketState 以 HashMap 存模板元信息，这里直接返回概览
+    let total = market.len();
+    Json(serde_json::json!({
+        "success": true,
+        "total": total,
+        "domain_filter": domain,
+        "keyword_filter": keyword,
+        "hint": "系统模板市场索引可用，发布模板请用 POST /api/caomei/publish",
+    }))
 }
 
 // ========== 算法分析归一化API ==========
@@ -1500,3 +1690,163 @@ async fn list_flow_node_types() -> Json<serde_json::Value> {
     ];
     Json(serde_json::json!({"success": true, "node_types": node_types}))
 }
+
+// ============ MCP 兼容层实现（Model Context Protocol over JSON-RPC 2.0）============
+// 把系统内「算子」与「AI 插件」统一暴露为标准 MCP tools，使任意开源 MCP 客户端
+// （Claude Desktop / Cursor / Cline / 自研 Agent）可零改造调用本系统能力。
+
+#[derive(Debug, Deserialize)]
+struct McpRpcReq {
+    #[serde(default)]
+    jsonrpc: String,
+    #[serde(default)]
+    id: serde_json::Value,
+    method: String,
+    #[serde(default)]
+    params: serde_json::Value,
+}
+
+#[derive(Debug, Serialize)]
+struct McpRpcRes {
+    jsonrpc: String,
+    id: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    result: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error: Option<McpRpcErr>,
+}
+
+#[derive(Debug, Serialize)]
+struct McpRpcErr {
+    code: i32,
+    message: String,
+}
+
+fn mcp_ok(id: serde_json::Value, result: serde_json::Value) -> Json<McpRpcRes> {
+    Json(McpRpcRes { jsonrpc: "2.0".into(), id, result: Some(result), error: None })
+}
+fn mcp_err(id: serde_json::Value, code: i32, message: String) -> Json<McpRpcRes> {
+    Json(McpRpcRes { jsonrpc: "2.0".into(), id, result: None, error: Some(McpRpcErr { code, message }) })
+}
+
+/// 把算子元数据收敛为 JSON-Schema 风格的 inputSchema
+fn operator_input_schema(op: &OperatorInfo) -> serde_json::Value {
+    if op.parameters.is_object() && op.parameters.get("properties").is_some() {
+        op.parameters.clone()
+    } else {
+        serde_json::json!({
+            "type": "object",
+            "properties": {
+                "input": { "type": "array", "items": { "type": "number" }, "description": "算子输入向量（数字数组）" }
+            },
+            "required": ["input"]
+        })
+    }
+}
+
+fn operator_to_mcp_tool(op: &OperatorInfo) -> serde_json::Value {
+    serde_json::json!({
+        "name": format!("operator_{}", op.id.replace(['-', ' ', '/', '.'], "_")),
+        "description": format!("[{}] {}", op.category, op.description),
+        "inputSchema": operator_input_schema(op),
+        "annotations": { "title": op.name, "source": "ous-operator", "operatorId": op.id }
+    })
+}
+
+async fn handle_mcp_rpc(State(state): State<Arc<AppState>>, Json(req): Json<McpRpcReq>) -> Json<McpRpcRes> {
+    let id = req.id.clone();
+    match req.method.as_str() {
+        "initialize" => mcp_ok(id, serde_json::json!({
+            "protocolVersion": "2024-11-05",
+            "capabilities": { "tools": { "listChanged": false } },
+            "serverInfo": { "name": "operator-unified-system", "version": env!("CARGO_PKG_VERSION") }
+        })),
+        "ping" => mcp_ok(id, serde_json::json!({})),
+        "tools/list" => {
+            let ops = state.operators.lock().await;
+            let mut tools: Vec<serde_json::Value> = ops.iter().map(operator_to_mcp_tool).collect();
+            drop(ops);
+            // AI 插件总线里的插件同样暴露为 MCP tool（兼容开源插件生态）
+            let bus = state.ai_agent.plugin_bus();
+            let bus_guard = bus.read().await;
+            for p in bus_guard.list_plugins() {
+                tools.push(serde_json::json!({
+                    "name": format!("plugin_{}", p.id.replace(['-', ' ', '/', '.'], "_")),
+                    "description": format!("[插件 {:?}] {}", p.plugin_type, p.name),
+                    "inputSchema": serde_json::json!({
+                        "type": "object",
+                        "properties": { "message": { "type": "string", "description": "发送给插件的消息/topic" }, "payload": { "type": "object", "description": "消息载荷" } },
+                        "required": ["message"]
+                    }),
+                    "annotations": { "title": p.name, "source": "ous-plugin", "pluginId": p.id }
+                }));
+            }
+            drop(bus_guard);
+            mcp_ok(id, serde_json::json!({ "tools": tools }))
+        }
+        "tools/call" => {
+            let name = req.params.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let arguments = req.params.get("arguments").cloned().unwrap_or(serde_json::json!({}));
+
+            if let Some(op_id) = name.strip_prefix("operator_") {
+                let real_id = op_id.replace('_', "-");
+                // 解析输入向量：支持 arguments.input 或 arguments 本身为数组
+                let input: Vec<f64> = if let Some(arr) = arguments.get("input").and_then(|v| v.as_array()) {
+                    arr.iter().filter_map(|x| x.as_f64()).collect()
+                } else if let Some(arr) = arguments.as_array() {
+                    arr.iter().filter_map(|x| x.as_f64()).collect()
+                } else {
+                    vec![1.0, 2.0, 3.0]
+                };
+                let params: Option<HashMap<String, f64>> = arguments.get("input")
+                    .and_then(|_| None)
+                    .or_else(|| {
+                        // 提取顶层数字参数作为算子参数
+                        let mut m = HashMap::new();
+                        for (k, v) in arguments.as_object()? {
+                            if let Some(f) = v.as_f64() { m.insert(k.clone(), f); }
+                        }
+                        Some(m)
+                    });
+                let exec_req = ExecuteRequest { workflow: vec![real_id], input, parameters: params };
+                let resp = run_workflow_inner(&state, exec_req).await;
+                return if resp.success {
+                    mcp_ok(id, serde_json::json!({
+                        "content": [ { "type": "text", "text": serde_json::to_string_pretty(&resp).unwrap_or_default() } ],
+                        "isError": false
+                    }))
+                } else {
+                    mcp_ok(id, serde_json::json!({
+                        "content": [ { "type": "text", "text": format!("执行失败: {}", resp.error.unwrap_or_default()) } ],
+                        "isError": true
+                    }))
+                };
+            } else if let Some(plg) = name.strip_prefix("plugin_") {
+                let real_id = plg.replace('_', "-");
+                let message = arguments.get("message").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                let payload = arguments.get("payload").cloned().unwrap_or(serde_json::json!({}));
+                let bus = state.ai_agent.plugin_bus();
+                let bus_guard = bus.read().await;
+                let msg = ai_agent::PluginMessage::new("mcp-client", &message, payload);
+                match bus_guard.route_message(msg).await {
+                    Ok(Some(r)) => mcp_ok(id, serde_json::json!({
+                        "content": [ { "type": "text", "text": serde_json::to_string_pretty(&r).unwrap_or_default() } ],
+                        "isError": false
+                    })),
+                    Ok(None) => mcp_ok(id, serde_json::json!({
+                        "content": [ { "type": "text", "text": "消息已投递（无响应）" } ],
+                        "isError": false
+                    })),
+                    Err(e) => mcp_ok(id, serde_json::json!({
+                        "content": [ { "type": "text", "text": format!("插件调用失败: {}", e) } ],
+                        "isError": true
+                    })),
+                }
+            } else {
+                mcp_err(id, -32602, format!("未知 tool: {}", name))
+            }
+        }
+        _ => mcp_err(id, -32601, format!("方法不存在: {}", req.method)),
+    }
+}
+

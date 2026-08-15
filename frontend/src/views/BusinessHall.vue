@@ -50,7 +50,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { listOperators, executeFlow, listFlows } from '@/api'
+import { listOperators, executeFlow, executeWorkflow, listFlows } from '@/api'
 
 const router = useRouter()
 const go = (p) => router.push(p)
@@ -78,8 +78,19 @@ async function load() {
 }
 
 async function runOperator(op) {
-  ElMessage.info('算子执行走 /api/execute（演示版暂以对话办理）：' + op.name)
-  router.push({ name: 'workbench' })
+  resultText.value = '执行中…'
+  resultVisible.value = true
+  try {
+    const resp = await executeWorkflow({
+      operators: [{ id: op.id, params: {} }],
+    })
+    resultText.value = JSON.stringify(resp, null, 2)
+    ElMessage.success(`算子「${op.name}」执行完成`)
+  } catch (e) {
+    resultText.value = '该算子需要参数，请在「算子工坊」中选择并填入参数后再执行。'
+    ElMessage.warning('已转入参数引导模式')
+    router.push({ name: 'operators' })
+  }
 }
 
 async function runFlow(row) {

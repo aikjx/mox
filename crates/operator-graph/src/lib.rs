@@ -148,6 +148,16 @@ impl KnowledgeGraph {
         self.node_map.get(id).map(|idx| &self.graph[*idx])
     }
 
+    /// 获取节点（可变），用于回写布局优化结果（中心性/社区）
+    pub fn get_node_mut(&mut self, id: &str) -> Option<&mut KnowledgeNode> {
+        if let Some(idx) = self.node_map.get(id) {
+            let idx = *idx;
+            Some(&mut self.graph[idx])
+        } else {
+            None
+        }
+    }
+
     /// 获取节点数
     pub fn node_count(&self) -> usize {
         self.graph.node_count()

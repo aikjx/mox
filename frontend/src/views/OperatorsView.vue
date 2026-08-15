@@ -14,6 +14,15 @@
       <!-- 算子库 -->
       <div class="panel card-pad">
         <h3 class="section-title">算子库（{{ operators.length }}）</h3>
+        <div class="cats">
+          <span
+            v-for="c in OPERATOR_CATEGORIES"
+            :key="c.key"
+            class="cat"
+            :class="{ on: cat === c.key }"
+            @click="cat = c.key"
+          >{{ c.label }}</span>
+        </div>
         <el-input
           v-model="kw"
           placeholder="搜索算子名称 / 描述"
@@ -39,6 +48,7 @@
               </div>
               <div class="op-desc">{{ op.description }}</div>
             </div>
+            <el-icon class="op-detail" @click.stop="openDetail(op)"><InfoFilled /></el-icon>
           </div>
           <el-empty v-if="!filtered.length" description="未找到算子" :image-size="60" />
         </el-scrollbar>
@@ -97,12 +107,31 @@
             <div>输出范数：{{ result.metrics.output_norm?.toFixed(4) }}</div>
             <div>残差：{{ result.metrics.l1_residual?.toFixed(4) }}</div>
           </div>
+          <div v-if="result.input && result.output" ref="cmpEl" class="cmp-chart"></div>
           <div v-if="result.logs?.length" class="logs">
             <div v-for="(l, i) in result.logs" :key="i" class="log-line">{{ l }}</div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- 算子详情抽屉 -->
+    <el-drawer v-model="showDetail" :title="detail?.name || '算子详情'" size="420px">
+      <div v-if="detail" class="detail">
+        <div class="detail-badge">
+          <span class="badge primary">{{ detail.category }}</span>
+          <span class="badge info">ID: {{ detail.id }}</span>
+        </div>
+        <p class="detail-desc">{{ detail.description }}</p>
+        <el-divider>元数据</el-divider>
+        <div class="kv"><span>算子类型</span><b>{{ detail.operator_type || '—' }}</b></div>
+        <div class="kv"><span>参数数</span><b>{{ detail.parameters?.length || 0 }}</b></div>
+        <div class="kv"><span>状态</span><b class="ok">可用</b></div>
+        <el-button type="primary" class="detail-run" @click="quickAdd(detail)">
+          <el-icon><Plus /></el-icon> 加入执行链
+        </el-button>
+      </div>
+    </el-drawer>
 
     <!-- 注册弹窗 -->
     <el-dialog v-model="showRegister" title="注册自定义算子" width="480px">
@@ -130,30 +159,39 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick, onBeforeUnmount } from 'vue'
+import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
-import { Search, Coordinate } from '@element-plus/icons-vue'
+import { Search, Coordinate, InfoFilled, Plus } from '@element-plus/icons-vue'
+import { OPERATOR_CATEGORIES } from '@/types'
 import { getOperators, registerOperator, executeWorkflow } from '@/api'
 
 const operators = ref([])
 const kw = ref('')
+const cat = ref('all')
 const selected = ref(new Set())
 const selectedOrder = ref([])
 const inputVec = ref('1,2,3,4')
 const scale = ref(2.0)
 const running = ref(false)
 const result = ref(null)
+const cmpEl = ref(null)
+let cmpChart = null
 
 const showRegister = ref(false)
 const reging = ref(false)
 const reg = ref({ id: '', name: '', operator_type: 'function' })
 
+const showDetail = ref(false)
+const detail = ref(null)
+
 const filtered = computed(() => {
   const k = kw.value.trim().toLowerCase()
-  if (!k) return operators.value
-  return operators.value.filter(
-    (o) => o.name.toLowerCase().includes(k) || (o.description || '').toLowerCase().includes(k)
-  )
+  return operators.value.filter((o) => {
+    const matchK = !k || o.name.toLowerCase().includes(k) || (o.description || '').toLowerCase().includes(k)
+    const matchC = cat.value === 'all' || o.category === cat.value
+    return matchK && matchC
+  })
 })
 
 function nameOf(id) {
@@ -194,6 +232,8 @@ async function run() {
     })
     result.value = res
     ElMessage.success('执行完成')
+    await nextTick()
+    renderCmp(res)
   } catch (e) {
     ElMessage.error(e.message)
   } finally {
@@ -228,7 +268,45 @@ async function loadOps() {
   }
 }
 
+function openDetail(op) {
+  detail.value = op
+  showDetail.value = true
+}
+function quickAdd(op) {
+  toggle(op.id)
+  showDetail.value = false
+}
+
+function renderCmp(res) {
+  if (!res.input || !res.output) return
+  if (!cmpChart) cmpChart = echarts.init(cmpEl.value)
+  const labels = res.input.map((_, i) => 'x' + (i + 1))
+  const maxLen = Math.max(res.input.length, res.output.length)
+  const input = [...res.input, ...Array(Math.max(0, maxLen - res.input.length)).fill(0)]
+  const output = [...res.output, ...Array(Math.max(0, maxLen - res.output.length)).fill(0)]
+  cmpChart.setOption({
+    tooltip: { trigger: 'axis' },
+    legend: { data: ['输入', '输出'], top: 0 },
+    grid: { left: 40, right: 16, top: 32, bottom: 24 },
+    xAxis: { type: 'category', data: labels, axisLabel: { color: '#94a3b8' } },
+    yAxis: { type: 'value', axisLabel: { color: '#94a3b8' }, splitLine: { lineStyle: { color: '#f1f5f9' } } },
+    series: [
+      { name: '输入', type: 'bar', data: input, itemStyle: { color: '#94a3b8', borderRadius: [4, 4, 0, 0] }, barWidth: '32%' },
+      { name: '输出', type: 'bar', data: output, itemStyle: { color: '#6366f1', borderRadius: [4, 4, 0, 0] }, barWidth: '32%' }
+    ]
+  })
+}
+
+function resize() {
+  cmpChart && cmpChart.resize()
+}
+window.addEventListener('resize', resize)
+
 onMounted(loadOps)
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', resize)
+  cmpChart && cmpChart.dispose()
+})
 </script>
 
 <style scoped>
@@ -292,6 +370,70 @@ onMounted(loadOps)
   font-size: 12px;
   color: var(--text-3);
   margin-top: 3px;
+}
+.op-detail {
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 16px;
+  flex-shrink: 0;
+  align-self: center;
+}
+.op-detail:hover {
+  color: var(--brand);
+}
+.cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.cat {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--bg-page);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cat:hover {
+  color: var(--brand);
+}
+.cat.on {
+  background: var(--brand);
+  color: #fff;
+}
+.cmp-chart {
+  width: 100%;
+  height: 220px;
+  margin-top: 12px;
+}
+.detail-badge {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.detail-desc {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.7;
+}
+.kv {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border-light);
+}
+.kv b {
+  color: var(--text-1);
+}
+.kv b.ok {
+  color: var(--success);
+}
+.detail-run {
+  width: 100%;
+  margin-top: 18px;
 }
 .chain {
   display: flex;

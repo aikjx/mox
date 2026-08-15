@@ -1,0 +1,14 @@
+[2m2026-08-15T14:54:40.796795Z[0m [32m INFO[0m ThreadId(01) [2moperator_server[0m[2m:[0m 🚀 启动算子统一系统 v3.0 - AI驱动全维突破平台...
+[2m2026-08-15T14:54:40.799898Z[0m [32m INFO[0m ThreadId(01) [2moperator_server[0m[2m:[0m 已通过 DEEPSEEK_API_KEY 启用真实 LLM 接入 (model=deepseek-chat)
+[2m2026-08-15T14:54:40.801842Z[0m [32m INFO[0m ThreadId(01) [2mai_agent::plugin_bus[0m[2m:[0m 插件注册到消息总线: wasm-runtime (type=Builtin)
+[2m2026-08-15T14:54:40.803188Z[0m [32m INFO[0m ThreadId(01) [2mai_agent::plugin_bus[0m[2m:[0m 插件注册到消息总线: knowledge-graph (type=Builtin)
+[2m2026-08-15T14:54:40.803628Z[0m [32m INFO[0m ThreadId(01) [2moperator_server[0m[2m:[0m 已加载 5 个工作流模板
+[2m2026-08-15T14:54:40.807262Z[0m [32m INFO[0m ThreadId(01) [2moperator_server[0m[2m:[0m 📡 服务器监听在 http://0.0.0.0:3998
+[2m2026-08-15T14:54:40.807674Z[0m [32m INFO[0m ThreadId(01) [2moperator_server[0m[2m:[0m ══════════════════════════════════════════════════════════
+[2m2026-08-15T14:54:40.808278Z[0m [32m INFO[0m ThreadId(01) [2moperator_server[0m[2m:[0m   🚀 算子统一系统 v3.0 - AI驱动全维突破平台
+[2m2026-08-15T14:54:40.808769Z[0m [32m INFO[0m ThreadId(01) [2moperator_server[0m[2m:[0m   🧠 AI智能对话 · 算法归一化 · 全资源管理 · 插件互通 · 流程自动化
+[2m2026-08-15T14:54:40.809029Z[0m [32m INFO[0m ThreadId(01) [2moperator_server[0m[2m:[0m   🤖 真实AI对接(OpenAI兼容) · 浏览器自动化 · 知识图谱(34+节点)
+[2m2026-08-15T14:54:40.809267Z[0m [32m INFO[0m ThreadId(01) [2moperator_server[0m[2m:[0m   🌐 访问地址: http://localhost:3998
+[2m2026-08-15T14:54:40.809496Z[0m [32m INFO[0m ThreadId(01) [2moperator_server[0m[2m:[0m ══════════════════════════════════════════════════════════
+[2m2026-08-15T14:54:44.870800Z[0m [32m INFO[0m ThreadId(17) [2mai_agent::algorithm[0m[2m:[0m 开始算法分析: type=Custom("general")
+[2m2026-08-15T14:54:44.871616Z[0m [32m INFO[0m ThreadId(17) [2mai_agent::algorithm[0m[2m:[0m 算法分析完成: 6 节点, 6 边, 归一化工作流长度 2

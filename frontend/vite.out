@@ -1,0 +1,10 @@
+Port 5173 is in use, trying another one...
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m1512[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5174[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://198.18.0.1:[1m5174[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://169.254.211.151:[1m5174[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.124.8:[1m5174[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://169.254.67.128:[1m5174[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://169.254.193.150:[1m5174[22m/[39m
