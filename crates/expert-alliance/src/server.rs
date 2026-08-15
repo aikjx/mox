@@ -29,9 +29,13 @@ pub struct OptimizeRequest {
     /// 命名空间
     #[serde(default = "default_ns")]
     pub namespace: String,
-    /// 主体（缺省 admin，带 admin/editor 角色）
+    /// 主体标识（缺省 anonymous，仅为低权限 viewer）
     #[serde(default = "default_principal")]
     pub principal: String,
+    /// 显式角色列表（如 ["admin","editor"]）。缺省时仅授予 viewer 低权限角色，
+    /// 禁止再默认授予 admin/editor 以避免 RBAC 被绕过。
+    #[serde(default)]
+    pub roles: Option<Vec<String>>,
     /// 是否监管租户（默认 true → 触发脱敏/合规校验）
     #[serde(default = "default_true")]
     pub regulated: bool,
@@ -42,7 +46,7 @@ pub struct OptimizeRequest {
 
 fn default_tenant() -> String { "gov-tenant".into() }
 fn default_ns() -> String { "ns-gov".into() }
-fn default_principal() -> String { "admin".into() }
+fn default_principal() -> String { "anonymous".into() }
 fn default_true() -> bool { true }
 
 /// 可视化 DTO：前端唯一需要理解的结构
@@ -60,7 +64,7 @@ pub struct VizBundle {
     pub stats: VizStats,
     /// 治理结论
     pub gate: VizGate,
-    /// ⛨ 算法联盟验证结论（最高优先级，不可被治理覆盖）
+    /// ⛨ 璇玑验证结论（最高优先级，不可被治理覆盖）
     pub algorithm: VizAlgo,
     /// 审计事件
     pub audit: Vec<VizAudit>,
@@ -148,7 +152,7 @@ pub struct VizGate {
     pub reason: String,
 }
 
-/// 算法联盟验证 DTO
+/// 璇玑验证 DTO
 #[derive(Debug, Clone, Serialize)]
 pub struct VizAlgo {
     pub all_passed: bool,
@@ -414,14 +418,16 @@ fn build_topology(
     (entities, relations, reuse)
 }
 
-/// 应用请求：构造治理上下文并跑全链路
+/// 应用请求：构造治理上下文并跑全链路。
+/// 安全修复：不再硬编码 admin/editor 角色，而是透传调用方显式声明的角色；
+/// 未声明时仅授予最低权限 `viewer` 角色，避免 RBAC 被绕过导致越权治理。
 fn run(req: &OptimizeRequest) -> GovernanceReport {
     let mut tenant = Tenant::new(req.tenant.clone(), req.namespace.clone())
         .regulated(req.regulated);
     // 浏览器默认单例（政务填报互斥）
     tenant = tenant.with_pool("browser", 1);
-    let principal = Principal::new(req.principal.clone())
-        .with_roles(vec!["admin".into(), "editor".into()]);
+    let roles = req.roles.clone().unwrap_or_else(|| vec!["viewer".into()]);
+    let principal = Principal::new(req.principal.clone()).with_roles(roles);
     let ctx = GovernContext::new(tenant, principal);
     alliance_optimize(&req.flow, &ctx)
 }
@@ -482,6 +488,7 @@ fn closedloop() -> ClosedLoopBundle {
         tenant: "gov-tenant".into(),
         namespace: "ns-gov".into(),
         principal: "admin".into(),
+        roles: None,
         regulated: true,
         instruction: String::new(),
     };
@@ -518,6 +525,9 @@ pub struct RunRequest {
     pub namespace: String,
     #[serde(default = "default_principal")]
     pub principal: String,
+    /// 显式角色列表。缺省时仅授予 viewer 低权限角色，禁止默认 admin/editor。
+    #[serde(default)]
+    pub roles: Option<Vec<String>>,
     #[serde(default = "default_true")]
     pub regulated: bool,
 }
@@ -610,6 +620,7 @@ async fn live_handler(
         tenant: "live-session".into(),
         namespace: "ns-live".into(),
         principal: "bridge".into(),
+        roles: None,
         regulated: false,
         instruction: String::new(),
     };
@@ -628,9 +639,11 @@ async fn run_handler(
     let tenant = Tenant::new(req.tenant.clone(), req.namespace.clone())
         .regulated(req.regulated)
         .with_pool("browser", 1);
-    let principal = Principal::new(req.principal.clone())
-        .with_roles(vec!["admin".into(), "editor".into()]);
+    // 安全修复：透传调用方显式声明的角色；未声明时仅授予最低权限 `viewer` 角色
+    let roles = req.roles.clone().unwrap_or_else(|| vec!["viewer".into()]);
+    let principal = Principal::new(req.principal.clone()).with_roles(roles);
     let mut ctx = GovernContext::new(tenant, principal);
+    // TODO(config): 以下配额应来自外部配置（ServerConfig），避免运行时硬编码
     ctx.quota.max_parallel = 8;
     ctx.quota.max_cost_budget = 100.0;
     ctx.quota.sla_ms = 50_000;

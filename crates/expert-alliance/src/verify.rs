@@ -1,4 +1,4 @@
-//! ⛨ 算法联盟验证网关（最高权限）
+//! ⛨ 璇玑验证网关（最高权限）
 //!
 //! 在 flow-ai 求解之后、治理闸门之前插入。所有检查均为**数学/语义正确性**判定，
 //! 任何 RBAC / 合规 / 权限专家的结论都不可覆盖本层结论。
@@ -22,7 +22,7 @@ pub struct Check {
     pub detail: String,
 }
 
-/// 算法联盟验证报告
+/// 璇玑验证报告
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AlgoVerification {
     pub checks: Vec<Check>,

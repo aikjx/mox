@@ -74,7 +74,11 @@ impl ConversationEngine {
     }
 
     /// 处理用户消息 - 主入口
-    pub async fn process_message(&self, session_id: &str, message: &str) -> Result<ChatResponse> {
+    ///
+    /// 注意：调用方负责把用户消息写入会话历史（两条调用路径
+    /// `chat`/`chat_with_llm` 都会先 `add_user_message`）。本方法只负责
+    /// 把生成的助手回复持久化进会话，从而实现真正的多轮对话记忆。
+    pub async fn process_message(&mut self, session_id: &str, message: &str) -> Result<ChatResponse> {
         tracing::debug!("处理对话消息: session={}, msg={}", session_id, message);
 
         let intent = self.recognize_intent(message);
@@ -97,6 +101,9 @@ impl ConversationEngine {
             },
             referenced_operators: referenced_ops.clone(),
         };
+
+        // 持久化助手回复到会话历史，保证多轮对话上下文不丢失
+        self.add_assistant_message(session_id, &msg.content);
 
         Ok(ChatResponse {
             message: msg,
@@ -277,7 +284,7 @@ impl ConversationEngine {
                     )
                 } else {
                     let prefix = if message.contains("你好") || message.contains("hi") || message.contains("hello") {
-                        "欢迎来到算法联盟最高权限开发专家系统！\n\n".to_string()
+                        "欢迎来到璇玑开发专家系统！\n\n".to_string()
                     } else {
                         format!("关于「{}」，", message)
                     };
@@ -446,5 +453,75 @@ impl ConversationEngine {
 impl Default for ConversationEngine {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_or_create_session_creates_and_persists() {
+        let mut engine = ConversationEngine::new();
+        {
+            let s = engine.get_or_create_session("s1");
+            assert_eq!(s.id, "s1");
+            // 首条为 system prompt
+            assert_eq!(s.messages.len(), 1);
+            assert_eq!(s.messages[0].role, MessageRole::System);
+        }
+        // 再次获取同一 session 不应新建
+        let s = engine.get_or_create_session("s1");
+        assert_eq!(s.messages.len(), 1);
+    }
+
+    #[test]
+    fn test_add_user_and_assistant_messages() {
+        let mut engine = ConversationEngine::new();
+        let u = engine.add_user_message("sess", "你好");
+        assert_eq!(u.role, MessageRole::User);
+        assert_eq!(u.content, "你好");
+
+        let a = engine.add_assistant_message("sess", "世界");
+        assert_eq!(a.message.role, MessageRole::Assistant);
+        assert_eq!(a.message.content, "世界");
+
+        let s = engine.get_or_create_session("sess");
+        // system + user + assistant
+        assert_eq!(s.messages.len(), 3);
+    }
+
+    #[tokio::test]
+    async fn test_process_message_list_operators_intent() {
+        let mut engine = ConversationEngine::new();
+        let resp = engine.process_message("列出所有算子", "sess-1").await.unwrap();
+        assert!(!resp.message.content.is_empty());
+        assert!(!resp.suggestions.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_process_message_execute_intent_with_operators() {
+        let mut engine = ConversationEngine::new();
+        let resp = engine.process_message("sess-2", "执行 linear relu normalize 工作流").await.unwrap();
+        // 应识别到执行意图，响应提到工作流且含推荐算子
+        assert!(resp.message.content.contains("工作流") || resp.message.content.contains("linear"));
+        assert!(resp.actions.iter().any(|a| matches!(a.action_type, ActionType::ExecuteWorkflow)));
+        assert!(resp.recommended_operators.iter().any(|o| o == "linear" || o == "relu" || o == "normalize"));
+    }
+
+    #[tokio::test]
+    async fn test_process_message_analyze_algorithm_intent() {
+        let mut engine = ConversationEngine::new();
+        let resp = engine.process_message("sess-3", "分析快速排序算法").await.unwrap();
+        assert!(resp.message.content.contains("算法") || resp.message.content.contains("归一化"));
+        assert!(resp.actions.iter().any(|a| matches!(a.action_type, ActionType::AnalyzeAlgorithm)));
+    }
+
+    #[tokio::test]
+    async fn test_process_message_vision_recommends_conv2d() {
+        let mut engine = ConversationEngine::new();
+        let resp = engine.process_message("sess-4", "处理图像卷积任务").await.unwrap();
+        // recommend_operators 应基于中文关键词「卷积」提取 conv2d
+        assert!(resp.recommended_operators.contains(&"conv2d".to_string()));
     }
 }

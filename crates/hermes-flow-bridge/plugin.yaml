@@ -1,6 +1,6 @@
 name: flow-bridge
 version: 0.1.0
-description: "注入 flow-ai + expert-alliance 流程图/关系网优化内核（算法联盟最高权限验证网关）"
+description: "注入 flow-ai + expert-alliance 流程图/关系网优化内核（璇玑验证网关）"
 author: algorithm-alliance
 kind: plugin
 dependencies:

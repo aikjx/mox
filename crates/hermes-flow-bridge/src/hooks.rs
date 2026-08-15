@@ -63,7 +63,7 @@ pub fn on_tool_execution(state: &BridgeState) -> ExecutionDecision {
         ExecutionDecision {
             blocked: true,
             reason: Some(
-                "算法联盟验证否决：优化破坏语义依赖/一致性，流程已拦截（algorithm_veto）".into(),
+                "璇玑验证否决：优化破坏语义依赖/一致性，流程已拦截（algorithm_veto）".into(),
             ),
         }
     } else {

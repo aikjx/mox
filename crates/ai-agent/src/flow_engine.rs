@@ -758,3 +758,187 @@ pub fn create_default_templates() -> Vec<FlowDefinition> {
         },
     ]
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+    use chrono::Utc;
+
+    fn def_with(nodes: Vec<FlowNode>, edges: Vec<FlowEdge>, vars: HashMap<String, serde_json::Value>) -> FlowDefinition {
+        FlowDefinition {
+            id: "test-flow".into(),
+            name: "测试流".into(),
+            description: "单测".into(),
+            nodes, edges, variables: vars,
+            created_at: Utc::now(), updated_at: Utc::now(),
+        }
+    }
+
+    #[test]
+    fn test_apply_template_substitutes_variables() {
+        let mut vars = HashMap::new();
+        vars.insert("name".to_string(), serde_json::json!("世界"));
+        vars.insert("n".to_string(), serde_json::json!(42));
+        vars.insert("flag".to_string(), serde_json::json!(true));
+        assert_eq!(apply_template("hello {{name}}", &vars), "hello 世界");
+        assert_eq!(apply_template("num={{n}}", &vars), "num=42");
+        assert_eq!(apply_template("flag={{flag}}", &vars), "flag=true");
+        // 未提供变量保留占位
+        assert_eq!(apply_template("x={{missing}}", &HashMap::new()), "x={{missing}}");
+    }
+
+    #[test]
+    fn test_evaluate_condition_boolean_literals() {
+        let v = HashMap::new();
+        assert!(evaluate_condition("true", &v));
+        assert!(evaluate_condition("1", &v));
+        assert!(!evaluate_condition("false", &v));
+        assert!(!evaluate_condition("0", &v));
+        assert!(evaluate_condition("nonempty", &v));
+        assert!(!evaluate_condition("", &v));
+    }
+
+    #[test]
+    fn test_evaluate_condition_comparisons() {
+        let mut v = HashMap::new();
+        v.insert("a".to_string(), serde_json::json!(10));
+        v.insert("name".to_string(), serde_json::json!("bob"));
+        assert!(evaluate_condition("{{a}} > 5", &v));
+        assert!(evaluate_condition("{{a}} <= 10", &v));
+        assert!(evaluate_condition("{{a}} == 10", &v));
+        assert!(evaluate_condition("{{a}} != 11", &v));
+        assert!(evaluate_condition("{{name}} == \"bob\"", &v));
+        assert!(!evaluate_condition("{{name}} == \"alice\"", &v));
+    }
+
+    #[test]
+    fn test_create_flow_sets_timestamps_and_stores() {
+        let mut engine = FlowEngine::new();
+        let definition = def_with(
+            vec![
+                FlowNode { id: "s".into(), node_type: NodeType::Start, name: "S".into(), config: serde_json::json!({}), position: None },
+                FlowNode { id: "e".into(), node_type: NodeType::End, name: "E".into(), config: serde_json::json!({}), position: None },
+            ],
+            vec![FlowEdge { id: "se".into(), source: "s".into(), target: "e".into(), condition: None }],
+            HashMap::new());
+        let created = engine.create_flow(definition).unwrap();
+        assert!(!created.id.is_empty());
+        assert!(engine.get_flow(&created.id).is_some());
+        assert_eq!(engine.list_flows().len(), 1);
+        // 时间戳已设置
+        assert!(created.created_at <= created.updated_at);
+    }
+
+    #[test]
+    fn test_create_flow_rejects_empty_and_missing_start() {
+        let mut engine = FlowEngine::new();
+        let empty = def_with(vec![], vec![], HashMap::new());
+        assert!(engine.create_flow(empty).is_err());
+        let no_start = def_with(
+            vec![FlowNode { id: "e".into(), node_type: NodeType::End, name: "E".into(), config: serde_json::json!({}), position: None }],
+            vec![], HashMap::new());
+        assert!(engine.create_flow(no_start).is_err());
+    }
+
+    #[test]
+    fn test_validate_flow_ok_and_errors() {
+        let ok = def_with(
+            vec![
+                FlowNode { id: "s".into(), node_type: NodeType::Start, name: "S".into(), config: serde_json::json!({}), position: None },
+                FlowNode { id: "e".into(), node_type: NodeType::End, name: "E".into(), config: serde_json::json!({}), position: None },
+            ],
+            vec![FlowEdge { id: "se".into(), source: "s".into(), target: "e".into(), condition: None }],
+            HashMap::new());
+        assert!(FlowEngine::validate_flow(&ok).is_ok());
+
+        let no_end = def_with(
+            vec![FlowNode { id: "s".into(), node_type: NodeType::Start, name: "S".into(), config: serde_json::json!({}), position: None }],
+            vec![], HashMap::new());
+        assert!(FlowEngine::validate_flow(&no_end).is_err());
+
+        // 悬空边
+        let dangling = def_with(
+            vec![
+                FlowNode { id: "s".into(), node_type: NodeType::Start, name: "S".into(), config: serde_json::json!({}), position: None },
+                FlowNode { id: "e".into(), node_type: NodeType::End, name: "E".into(), config: serde_json::json!({}), position: None },
+            ],
+            vec![FlowEdge { id: "x".into(), source: "s".into(), target: "missing".into(), condition: None }],
+            HashMap::new());
+        assert!(FlowEngine::validate_flow(&dangling).is_err());
+    }
+
+    #[tokio::test]
+    async fn test_execute_flow_data_transform_condition_output() {
+        let nodes = vec![
+            FlowNode { id: "s".into(), node_type: NodeType::Start, name: "S".into(), config: serde_json::json!({}), position: None },
+            FlowNode { id: "in".into(), node_type: NodeType::DataInput, name: "IN".into(), config: serde_json::json!({"value": "hello"}), position: None },
+            FlowNode { id: "tr".into(), node_type: NodeType::Transform, name: "TR".into(), config: serde_json::json!({"template": "GOT:{{node_in}}"}), position: None },
+            FlowNode { id: "c".into(), node_type: NodeType::Condition, name: "C".into(), config: serde_json::json!({"condition": "true"}), position: None },
+            FlowNode { id: "out".into(), node_type: NodeType::DataOutput, name: "OUT".into(), config: serde_json::json!({}), position: None },
+            FlowNode { id: "e".into(), node_type: NodeType::End, name: "E".into(), config: serde_json::json!({}), position: None },
+        ];
+        let edges = vec![
+            FlowEdge { id: "a".into(), source: "s".into(), target: "in".into(), condition: None },
+            FlowEdge { id: "b".into(), source: "in".into(), target: "tr".into(), condition: None },
+            FlowEdge { id: "c".into(), source: "tr".into(), target: "c".into(), condition: None },
+            FlowEdge { id: "d".into(), source: "c".into(), target: "out".into(), condition: Some("true".into()) },
+            FlowEdge { id: "f".into(), source: "out".into(), target: "e".into(), condition: None },
+        ];
+        let mut variables = HashMap::new();
+        variables.insert("input_data".to_string(), serde_json::json!("hello"));
+        let def = def_with(nodes, edges, variables);
+
+        let mut engine = FlowEngine::new();
+        let created = engine.create_flow(def).unwrap();
+        let mut input = HashMap::new();
+        input.insert("input_data".to_string(), serde_json::json!("hello"));
+        let result = engine.execute_flow(&created.id, input).await.unwrap();
+
+        assert!(result.success);
+        assert!(result.output.is_some());
+        // 节点结果应覆盖同步节点
+        let ids: Vec<&String> = result.node_results.iter().map(|n| &n.node_id).collect();
+        assert!(ids.iter().any(|id| *id == "in"));
+        assert!(ids.iter().any(|id| *id == "tr"));
+        assert!(ids.iter().any(|id| *id == "out"));
+        assert!(ids.iter().any(|id| *id == "e"));
+    }
+
+    #[tokio::test]
+    async fn test_execute_flow_script_node_succeeds() {
+        let nodes = vec![
+            FlowNode { id: "s".into(), node_type: NodeType::Start, name: "S".into(), config: serde_json::json!({}), position: None },
+            FlowNode { id: "sc".into(), node_type: NodeType::Script, name: "SC".into(),
+                config: serde_json::json!({"code": "x = 1 + 2\nprint(x)"}), position: None },
+            FlowNode { id: "e".into(), node_type: NodeType::End, name: "E".into(), config: serde_json::json!({}), position: None },
+        ];
+        let edges = vec![
+            FlowEdge { id: "a".into(), source: "s".into(), target: "sc".into(), condition: None },
+            FlowEdge { id: "b".into(), source: "sc".into(), target: "e".into(), condition: None },
+        ];
+        let def = def_with(nodes, edges, HashMap::new());
+        let mut engine = FlowEngine::new();
+        let created = engine.create_flow(def).unwrap();
+        let result = engine.execute_flow(&created.id, HashMap::new()).await.unwrap();
+        assert!(result.success);
+        let ids: Vec<&String> = result.node_results.iter().map(|n| &n.node_id).collect();
+        assert!(ids.iter().any(|id| *id == "sc"));
+    }
+
+    #[tokio::test]
+    async fn test_execute_flow_missing_id_errors() {
+        let mut engine = FlowEngine::new();
+        let r = engine.execute_flow("nope", HashMap::new()).await;
+        assert!(r.is_err());
+    }
+
+    #[test]
+    fn test_create_default_templates_non_empty_and_valid() {
+        let templates = create_default_templates();
+        assert!(!templates.is_empty());
+        for t in &templates {
+            assert!(FlowEngine::validate_flow(t).is_ok(), "template {} should be valid", t.id);
+        }
+    }
+}

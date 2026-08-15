@@ -8,9 +8,11 @@
 //! 5. 业务流程自动化 - BPMN工作流驱动AI执行
 
 use axum::{
-    extract::{Query, State, Path},
-    http::StatusCode,
+    extract::{Query, State, Path, Request},
+    http::{StatusCode, HeaderMap},
+    middleware::{self, Next},
     response::Json,
+    response::Response,
     routing::{get, post, delete},
     Router,
 };
@@ -35,8 +37,15 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::ServeDir;
+use tracing_subscriber::{prelude::*, EnvFilter};
+
+// ========== 标准接口契约模块 ==========
+// api_standard: RFC 9457 Problem+JSON 统一错误契约 + 响应标准化中间件
+// openapi: OpenAPI 3.1 标准契约文档 + Swagger UI
+mod api_standard;
+mod openapi;
 
 /// 应用状态 - AI全维系统核心
 struct AppState {
@@ -248,8 +257,28 @@ struct BrowserNaturalRequest {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    operator_core::init_logging();
+    // 企业级可观测性：结构化日志 + 环境变量过滤（RUST_LOG，默认 info）
+    let env_filter = EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| EnvFilter::new("info"));
+    tracing_subscriber::registry()
+        .with(env_filter)
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_target(true)
+                .with_thread_ids(true)
+                .with_ansi(true),
+        )
+        .init();
+
     tracing::info!("🚀 启动算子统一系统 v3.0 - AI驱动全维突破平台...");
+
+    // 生产级安全配置：API 访问令牌（缺失则仅开放只读/健康检查接口）
+    let api_token = std::env::var("OUS_API_TOKEN").ok();
+    if api_token.is_none() {
+        tracing::warn!(
+            "未设置环境变量 OUS_API_TOKEN，写操作/执行类接口将拒绝未授权访问；生产环境务必配置"
+        );
+    }
 
     // 初始化WASM插件管理器
     let mut plugin_manager = WasmPluginManager::new("./plugins");
@@ -373,38 +402,143 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/ai/flows/execute", post(execute_flow))
         .route("/api/ai/flows/node-types", get(list_flow_node_types))
         // ========== 系统API ==========
+        // 标准接口契约：OpenAPI 3.1 规范 + Swagger UI
+        .route("/api/openapi.yaml", get(openapi::serve_openapi_yaml))
+        .route("/api/docs", get(openapi::serve_swagger_ui))
         .route("/api/plugins", get(list_plugins))
         .route("/api/logs", get(get_logs))
         .route("/api/status", get(get_status))
         .route("/api/status/full", get(get_full_status))
         // 静态前端
         .nest_service("/", ServeDir::new("./frontend/dist"))
-        .layer(CorsLayer::permissive())
+        // 响应标准化中间件（最内层，紧邻 handler）：将 HTTP 200 + {success:false}
+        // 的伪成功响应改写为正确的 4xx 状态码 + RFC 9457 Problem+JSON。
+        .layer(middleware::from_fn(api_standard::standardize_response))
+        .layer(middleware::from_fn_with_state(
+            api_token.clone(),
+            auth_middleware,
+        ))
+        .layer(build_cors()?)
         .with_state(state);
 
-    let addr = "0.0.0.0:3000";
+    // 解析命令行参数：支持 `--port <NUM>`（默认 3000）
+    let mut port: u16 = 3000;
+    let args: Vec<String> = std::env::args().collect();
+    for i in 0..args.len() {
+        if args[i] == "--port" && i + 1 < args.len() {
+            if let Ok(p) = args[i + 1].parse::<u16>() {
+                port = p;
+            }
+        }
+    }
+    let addr = format!("0.0.0.0:{}", port);
     tracing::info!("📡 服务器监听在 http://{}", addr);
-    println!("");
-    println!("╔══════════════════════════════════════════════════════════════════╗");
-    println!("║  🚀 算子统一系统 v3.0 - AI驱动全维突破平台                    ║");
-    println!("╠══════════════════════════════════════════════════════════════════╣");
-    println!("║  🧠 AI智能对话  │ 意图识别 · 算子推荐 · 自然语言交互          ║");
-    println!("║  📊 算法归一化  │ 9种算法模式 · 流程图生成 · 复杂度分析       ║");
-    println!("║  💎 全资源管理  │ 8类资源 · LRU缓存 · 配额调度 · 健康监控     ║");
-    println!("║  🔌 插件互通    │ 发布订阅 · 点对点 · 请求响应 · 内置4插件    ║");
-    println!("║  🎯 流程自动化  │ BPMN引擎 · 5个模板 · 10种节点 · 并行分支   ║");
-    println!("║  🤖 真实AI对接  │ OpenAI兼容API · LLM可配置 · 智能降级          ║");
-    println!("║  🌐 浏览器自动化│ 自然语言驱动 · 5种预置任务 · 18种操作        ║");
-    println!("╠══════════════════════════════════════════════════════════════════╣");
-    println!("║  🕸️  知识图谱: 34+算子节点, 30+关系边                         ║");
-    println!("║  🌐 访问地址: http://localhost:3000                            ║");
-    println!("╚══════════════════════════════════════════════════════════════════╝");
-    println!("");
+    tracing::info!("══════════════════════════════════════════════════════════");
+    tracing::info!("  🚀 算子统一系统 v3.0 - AI驱动全维突破平台");
+    tracing::info!("  🧠 AI智能对话 · 算法归一化 · 全资源管理 · 插件互通 · 流程自动化");
+    tracing::info!("  🤖 真实AI对接(OpenAI兼容) · 浏览器自动化 · 知识图谱(34+节点)");
+    tracing::info!("  🌐 访问地址: http://localhost:{}", port);
+    tracing::info!("══════════════════════════════════════════════════════════");
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app).await?;
+    // 生产级优雅关闭：收到 SIGINT/SIGTERM 时停止接收新连接，等待在途请求完成
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await?;
 
+    tracing::info!("🛑 运行时已优雅关闭");
     Ok(())
+}
+
+/// 受控 CORS：默认仅允许同源/本地来源，可通过 `OUS_CORS_ORIGINS` 环境变量
+/// 以逗号分隔配置额外受信来源（生产环境务必显式配置，禁止 '*'）。
+fn build_cors() -> anyhow::Result<CorsLayer> {
+    let allowed = std::env::var("OUS_CORS_ORIGINS")
+        .unwrap_or_else(|_| "http://localhost:3000,http://127.0.0.1:3000".to_string());
+    let origins: Vec<_> = allowed
+        .split(',')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .collect();
+    if origins.iter().any(|o| *o == "*") {
+        tracing::warn!("OUS_CORS_ORIGINS 包含 '*'，已退化为全开放 CORS（不推荐用于生产）");
+        return Ok(CorsLayer::permissive());
+    }
+    let origins: Vec<axum::http::HeaderValue> = origins
+        .into_iter()
+        .filter_map(|o| o.parse().ok())
+        .collect();
+    Ok(CorsLayer::new()
+        .allow_origin(origins)
+        .allow_methods([
+            axum::http::Method::GET,
+            axum::http::Method::POST,
+            axum::http::Method::DELETE,
+        ])
+        .allow_headers(Any))
+}
+
+/// 鉴权中间件：除公开端点（健康检查、静态资源）外，所有 API 必须携带
+/// `Authorization: Bearer <OUS_API_TOKEN>`。未配置 token 时拒绝一切受保护接口。
+async fn auth_middleware(
+    State(expected): State<Option<String>>,
+    headers: HeaderMap,
+    req: Request,
+    next: Next,
+) -> Result<Response, api_standard::ProblemDetail> {
+    let path = req.uri().path().to_string();
+    // 公开端点：健康检查与前端静态资源
+    if path == "/api/health" || path == "/healthz" || !path.starts_with("/api/") {
+        return Ok(next.run(req).await);
+    }
+    match expected {
+        None => {
+            tracing::warn!(target: "auth", "未配置 OUS_API_TOKEN，拒绝未授权访问: {}", path);
+            Err(api_standard::ProblemDetail::new(
+                StatusCode::SERVICE_UNAVAILABLE,
+                "服务未配置鉴权令牌 OUS_API_TOKEN，拒绝所有受保护接口",
+                Some("SERVICE_UNAVAILABLE".into()),
+            ))
+        }
+        Some(token) => {
+            let ok = headers
+                .get(axum::http::header::AUTHORIZATION)
+                .and_then(|v| v.to_str().ok())
+                .map(|v| v == format!("Bearer {}", token))
+                .unwrap_or(false);
+            if ok {
+                Ok(next.run(req).await)
+            } else {
+                tracing::warn!(target: "auth", "未授权访问被拒绝: {}", path);
+                Err(api_standard::ProblemDetail::new(
+                    StatusCode::UNAUTHORIZED,
+                    "缺少或无效的 Authorization: Bearer 令牌",
+                    Some("UNAUTHORIZED".into()),
+                ))
+            }
+        }
+    }
+}
+
+/// 优雅关闭信号：监听 SIGINT / SIGTERM
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        let _ = tokio::signal::ctrl_c().await;
+    };
+    #[cfg(unix)]
+    let terminate = async {
+        use tokio::signal::unix::{signal, SignalKind};
+        if let Ok(mut sig) = signal(SignalKind::terminate()) {
+            sig.recv().await;
+        }
+    };
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => { tracing::info!("收到 SIGINT，准备优雅关闭..."); },
+        _ = terminate => { tracing::info!("收到 SIGTERM，准备优雅关闭..."); },
+    }
 }
 
 fn build_knowledge_graph() -> KnowledgeGraph {

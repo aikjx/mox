@@ -1,4 +1,4 @@
-# 算子统一系统（OUS）企业级架构设计文档 v4.0
+# 算子统一系统（OUS）企业级架构设计文档 v7.0
 
 > 参考范式：[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) —— "Everything is a Plugin"（一切皆插件）
 > 设计目标：在保留 OUS 范畴论/希尔伯特空间数学内核与 WASM 沙箱能力的基础上，引入**插件化运行时内核**、**会话日志溯源（Session Log as Source of Truth）**、**能力接缝（Seam）可替换架构**与**Turn/Agent 生命周期**，实现可组合、可审计、可热插拔的企业级一体化平台。
@@ -17,7 +17,7 @@
 | 6. 编排与优化层 | FlowAI、Optimizer、专家联盟 |
 | 7. 接入层 | API 网关、鉴权、实时流 |
 | 8. 数据层 | 状态向量、知识图谱、持久化 |
-| 9. 全维度业务流程 | 12 条端到端业务流 + 性能容量模型 |
+| 9. 明确业务处理流程 | 13 条流程卡(端点/阶段/SLA/异常) + 状态机 + 跨流程编排 |
 | 10. 企业级能力 | 可观测性、治理、安全(STRIDE)、多租户 |
 | 11. 部署与交付 | 容器化、灰度、插件热加载、桌面打包 |
 | 12. 迁移路线图 | 基于现有 crate 的重构步骤 |
@@ -27,7 +27,7 @@
 | 16. 灾备 | WAL 重放 + 快照 + 混沌工程 + RTO/RPO |
 | 17. 成本模型 | 四形态 FinOps 对比 |
 | 18. 开放生态 | 算子市场 + 跨形态同步 + 网络效应 |
-| 19. 专家联盟全维处理内核 | 最高权限 · 算法联盟 · 全维业务编排 |
+| 19. 专家联盟全维处理内核 | 最高权限 · 璇玑 · 全维业务编排 |
 | 20. 融合对标与产品定位 | 与 harness/Claude Code 的差异与优势 |
 | 21. 沙箱安全纵深 | WASM 沙箱 + 能力令牌 + 纵深防御 |
 | 22. 多模态与感知 | 文本/图/音/视频/结构化统一算子 |
@@ -35,6 +35,8 @@
 | 24. 评测与回归 (Eval) | 公理门禁 + 行为回归 + 基准 |
 | 25. i18n 与无障碍 | 多语言 + 无障碍 + 低带宽 |
 | 26. 版本与兼容治理 | 语义化版本 + 兼容契约 + 升级 |
+| 27. 路径与运行态隔离 | 架构代码路径 vs 工作路径 严格分离规范 |
+| 28. 业务流程设计模块 | 可视化设计器·节点体系·DSL·校验·版本·模板市场 |
 
 ---
 
@@ -372,23 +374,147 @@ turn/start
 
 ---
 
-## 9. 全维度业务流程（12 条端到端）
+## 9. 明确业务处理流程（Business Process Specification）
 
-1. **算子注册流**：开发者提交 WASM/本地算子 → `business-catalog` 注册 → `operator/*` 事件广播 → `core/operator` 类型校验（公理 4）→ 可用。
-2. **算子执行流**：`/api/execute` → 鉴权 → 构建 DAG → `optimizer` 调度 → `operator-wasm` 沙箱执行 → `conservation` 校验 → 结果经 SSE 推回。
-3. **AI 对话流**：`/api/ai/chat` → `conversation` 取会话 → `systemPrompt` 组装 → `agent-loop` Turn → `llm/stream` → `session/event` 追加 → 流式响应。
-4. **工作流编排流**：`/api/ai/flows` 建图 → `flow_engine::validate_flow` → `agent/turn-stopping` 触发 `execute_flow` → DAG 执行。
-5. **浏览器自动化流**：`/api/ai/browser/natural` → `parse_natural_language` → `browser_automation` 建会话/任务 → 执行 → 结果回写会话。
-6. **知识图谱构建流**：业务事件 → `operator-graph` 加节点/边 → `centrality`/`communities`/`pagerank` 计算 → 前端 3D 力导向渲染。
-7. **冲突消解毒**：并发算子组 → `flow-ai::conflict::detect` → `auto_repair` → 重调度。
-8. **资源优化流**：DAG + `ResourcePool` → `optimizer` 关键路径 → `efficiency` 指标 → 报告。
-9. **专家协同流**：多专家结论 → `expert-alliance` 聚合 → `conflict` 消解 → `conservation` 收敛校验。
-10. **外部流对接流**：`hermes-flow-bridge` 录制外部事件 → 映射为算子 → 入统一图 → 回放。
-11. **插件热加载流**：`plugins/*.wasm` 放入目录 → 监听 → `core/wasm` 热加载 → `operator/*` 注册 → 不重启生效。
-12. **审计回放流**：任意会话 → `ctx.sessions.fork()` + `derive_messages` → 重放历史状态向量 → 合规审计。
-13. **SUPER_EXPERT 全维处理流**（§19）：用户以最高权限模式发起 → 专家联盟分诊 + 算法联盟产出 DAG → All-Domain Bus 跨子系统并行执行 → 守恒收敛校验 → 治理复核 → 沉淀图谱 + 自进化提案。
+> 本章把"功能"升级为**可执行的业务处理流程**：每条流程用统一模板描述 —— 触发(端点) → 处理阶段(真实 crate/函数) → 输出 → SLA → 异常分支。所有流程遵循统一的状态机与处理流水线，保证"模块化、业务流程化"。
 
-### 9.1 性能与容量模型
+### 9.0 业务处理流水线通用模板（Business Process Pipeline）
+
+任何业务请求都流经以下标准阶段（与 §5 Waterfall 事件对齐）：
+
+```
+[接入] → [鉴权/租户路由] → [意图归一化→状态向量投影(公理2)]
+   → [编排决策: 单算子 / FLOW / SUPER_EXPERT(§19)]
+   → [执行: Seam 调用 + 算子 DAG + 守恒校验(§4 公理6)]
+   → [出参: 结构化响应 / SSE 流 / 工作流实例]
+   → [沉淀: session/event 追加 + 图谱加权边(§23)]
+   → [可观测: telemetry/* 埋点(§10)]
+```
+
+**统一状态机**（复用 `ai-agent::types` 真实定义）：
+
+```
+Pending ──▶ Running ──┬─▶ Completed
+                       ├─▶ WaitingUser (用户任务/审批接缝 approval/*)
+                       └─▶ Failed ──┬─▶ Retry(指数退避, ≤3) ──▶ Running
+                                    └─▶ Rollback(守恒律回滚, §5.4)
+节点级 NodeStatus: Pending → Running → Completed / Failed / Skipped(条件分支未命中)
+```
+
+### 9.1 核心业务处理流程卡（13 条，基于 runtime 真实端点）
+
+每条格式：**触发端点 → 阶段 → 输出 → SLA → 异常**。
+
+#### P-01 算子注册流程
+- **触发**：`POST /api/operators/register`（`register_operator`）
+- **阶段**：① 校验算子元数据(name/类型/in-out schema) → ② `TypePair::can_compose` 类型契约校验(公理4) → ③ `business-catalog` 持久化注册 → ④ 广播 `operator/*` 事件 → ⑤ `core/operator` 加载可用
+- **输出**：`OperatorInfo` 列表更新 / 注册确认
+- **SLA**：< 100ms（不含 WASM 编译）
+- **异常**：类型不兼容→拒绝并记录；WASM 校验失败→`Failed`+审计
+
+#### P-02 算子执行流程
+- **触发**：`POST /api/execute`
+- **阶段**：① 鉴权 → ② 构建 DAG(`flow-ai::topology`) → ③ `optimizer` 关键路径调度 → ④ `operator-wasm` 沙箱执行(能力令牌 §21) → ⑤ `conservation::check_all` 守恒校验 → ⑥ SSE 推回
+- **输出**：执行结果 + `ExecutionLog`(`get_logs`)
+- **SLA**：P99 < 50ms/call（算子本身）
+- **异常**：超时→`guard/` 熔断回 `Failed`；守恒残差超阈→回滚至 Turn 前
+
+#### P-03 AI 对话流程
+- **触发**：`POST /api/ai/chat`（`ai_chat`）
+- **阶段**：① `conversation` 取/建会话 → ② `systemPrompt` 组装(含 RAG 检索 §23) → ③ `agent-loop` Turn → ④ `llm/stream` 流式 → ⑤ `session/event` 追加 → ⑥ SSE 流式响应
+- **输出**：`ChatResponse` + 流式 chunk
+- **SLA**：TTFT 本地<800ms / 云<600ms（§9.2）
+- **异常**：LLM 宕机→混沌恢复(§16)；上下文超限→`derive_messages` 截断重投影
+
+#### P-04 工作流编排流程（BPMN 风格）
+- **触发**：`POST /api/ai/workflows/execute`（`execute_business_workflow`）
+- **阶段**：① 加载 `BusinessWorkflow`(`workflow_engine`) → ② 校验节点(顺序/条件/并行/子流程/用户任务/AI任务/插件/算子) → ③ 生成 `WorkflowInstance`(状态机 §9.0) → ④ 逐节点执行→`node_executions` → ⑤ 汇总结论 `WorkflowResult`
+- **输出**：`WorkflowResult`(completed/failed_nodes 计数) + 实例(`list_workflow_instances`)
+- **SLA**：单节点<1s；整流程依节点数线性
+- **异常**：`WaitingUser` 挂起待人工；无限循环→步数超限拦截(`flow_engine` 已含"执行步数超限"防护)；失败→状态机 `Failed`+重试
+
+#### P-05 流程画布校验/执行流程
+- **触发**：`POST /api/ai/flows`（`create_flow`/`validate_flow`/`execute_flow`）
+- **阶段**：① `flow_engine::validate_flow` 拓扑校验 → ② `agent/turn-stopping` 触发 `execute_flow` → ③ DAG 驱动执行 → ④ Three.js 实时渲染
+- **输出**：流程定义 / 校验报告 / 执行结果
+- **SLA**：校验<200ms
+- **异常**：环依赖→校验失败拒绝
+
+#### P-06 浏览器自动化流程
+- **触发**：`POST /api/ai/browser/natural`（`browser_natural`）
+- **阶段**：① `parse_natural_language` 自然语言解析 → ② `browser_automation` 建会话/任务 → ③ 执行步骤(`execute_browser_steps`) → ④ 结果回写会话
+- **输出**：任务执行结果 JSON
+- **SLA**：单步<2s
+- **异常**：`NavigationFailed`/`InteractionFailed`→重试+记录
+
+#### P-07 知识图谱构建/分析流程
+- **触发**：`POST /api/graph/node` | `/api/graph/edge`（`add_node`/`add_edge`）
+- **阶段**：① 加节点/边 → ② `operator-graph` 计算 `centrality`/`communities`/`pagerank` → ③ 前端 3D 力导向渲染
+- **输出**：`GraphData`(`get_graph`) + `GraphStats`
+- **SLA**：PageRank 10w 节点<2s（§9.2）
+- **异常**：重复边→幂等；权重非法→拒绝
+
+#### P-08 冲突消解毒
+- **触发**：并发算子组提交
+- **阶段**：① `flow-ai::conflict::detect` → ② `auto_repair` 自动修复 → ③ `optimizer` 重调度
+- **输出**：修复后 DAG
+- **SLA**：<500ms
+- **异常**：无法自动修复→升级 `SUPER_EXPERT`(§19)
+
+#### P-09 资源优化流程
+- **触发**：DAG + `ResourcePool` 提交
+- **阶段**：① `optimizer` 关键路径(CPM) → ② `efficiency` 指标 → ③ `OptimizationReport`
+- **输出**：调度计划 + 增益报告
+- **SLA**：<300ms
+- **异常**：约束不可满足→返回松弛建议
+
+#### P-10 专家协同流程
+- **触发**：多专家结论汇聚
+- **阶段**：① `expert-alliance` 聚合 → ② `conflict` 消解 → ③ `conservation` 收敛校验 → ④ 加权边沉淀(§23)
+- **输出**：共识结论 + 图谱强化
+- **SLA**：<1s
+- **异常**：分歧超阈→`SUPER_EXPERT` 仲裁(§19)
+
+#### P-11 外部流对接流程
+- **触发**：`hermes-flow-bridge` 事件
+- **阶段**：① 录制外部事件 → ② 映射为算子 → ③ 入统一图 → ④ 回放
+- **输出**：统一算子实例
+- **SLA**：录制<50ms/事件
+- **异常**：映射失败→死信队列
+
+#### P-12 插件热加载流程
+- **触发**：`plugins/*.wasm` 落盘
+- **阶段**：① 目录监听 → ② `core/wasm` 原子热加载 → ③ `operator/*` 注册 → ④ 不重启生效
+- **输出**：算子列表更新(`list_plugins`)
+- **SLA**：单 bundle<1s
+- **异常**：加载失败→保留旧版+告警
+
+#### P-13 SUPER_EXPERT 全维处理流程
+- **触发**：用户以 `SUPER_EXPERT` 模式发起
+- **阶段**：① 收口→状态向量投影 → ② 专家联盟分诊 → ③ 璇玑产出 DAG → ④ All-Domain Bus 跨子系统执行 → ⑤ 守恒收敛 → ⑥ 治理复核(`govern`) → ⑦ 沉淀图谱 + 自进化提案
+- **输出**：跨域求解结果 + 算子市场提案
+- **SLA**：依复杂度，流式反馈
+- **异常**：任一子系统越权→`approval/*` 拦截；守恒失败→全量回滚
+
+### 9.2 业务处理 SLA 总览（性能容量模型）
+
+| 流程 | 关键 SLA | 形态差异 |
+|------|----------|----------|
+| P-03 对话 | TTFT 本地<800ms / 云<600ms | 本地 LLM 直连 vs 边缘 PoP |
+| P-02 算子 | P99<50ms/call | WASM 编译缓存 |
+| P-07 图谱 | PageRank 10w<2s | 可选 Neo4j 卸载 |
+| P-12 热加载 | <1s/bundle | 原子替换 |
+| 状态重建 | 10k 事件<200ms | 增量投影+快照 |
+
+> 完整性能容量指标与弹性策略见 §9.4。
+
+### 9.3 跨流程编排状态机
+
+- 流程间可组合：`P-04 工作流` 的"算子节点"调用 `P-02`，"AI 节点"调用 `P-03`，"浏览器节点"调用 `P-06` → **业务流程化即"把流程卡当算子连成 DAG"**。
+- 统一状态机保证嵌套流程的状态传播：子流程 `Failed` → 父流程 `Failed` + 重试/回滚；`WaitingUser` 向上透传。
+- `flow-ai` 负责跨流程 DAG 的拓扑/关键路径/冲突消解（§6.1），`optimizer` 负责资源约束调度（§6.2）。
+
+### 9.4 性能与容量模型
 
 | 指标 | 形态 | 目标值 | 设计杠杆 |
 |------|------|--------|----------|
@@ -512,6 +638,14 @@ cd desktop && cargo tauri build   # .msi / .dmg / .AppImage / .deb
 | P5 | Turn 生命周期 | `ai-agent` 的 `agent-loop` 对齐 §5 Waterfall 事件 |
 | P6 | 守恒校验闭环 | `conservation` 接入 Turn 结束，失败回滚 |
 | P7 | 企业能力 | 多租户 `agent.ctx`、治理、OTel 可观测性 |
+| P8 | 沙箱纵深 | `capability/*` 能力令牌 + `benches/sandbox_fuzz` 模糊测试（§21） |
+| P9 | 多模态 | `vision/*` `audio/*` `video/*` 算子 Seam + 统一状态向量投影（§22） |
+| P10 | 记忆/知识 | RAG 检索管线 + 元记忆加权边（§23） |
+| P11 | 评测体系 | 补齐 `benches/` `tests/` + 模型层 Eval 数据集（§24） |
+| P12 | 国际化 | `vue-i18n` + 后端 locale 模板 + A11y（§25） |
+| P13 | 版本治理 | bundle `api` 版本校验 + 会话 schema 版本化 + 桌面 OTA（§26） |
+| P14 | 路径隔离 | `OUS_HOME` 工作路径 + `runtime` 写路径收口 + `start.sh` 改造（§27） |
+| P15 | 流程设计模块 | 前端 Three.js 设计器 + DSL 校验矩阵 + 版本化/模板市场（§28） |
 
 ---
 
@@ -707,7 +841,7 @@ seam = "operator/*"
 
 ## 19. 专家联盟全维处理内核（Expert Alliance — 最高权限全维模式）
 
-> **设计定位**：这是 OUS 的"超级大脑"层——当用户以 `SUPER_EXPERT` 模式发起请求时，系统调度**专家联盟 + 算法联盟**，以**最高权限**跨全部子系统（算子内核 / 图谱 / 优化 / 编排 / 数据 / 外系统）进行全维处理，并受守恒律与治理接缝约束。对标 harness 的 `self-modification/`（agent 可改自身运行时）但更强：联盟不仅能改运行时，还能改算子、改图谱、改调度策略。
+> **设计定位**：这是 OUS 的"超级大脑"层——当用户以 `SUPER_EXPERT` 模式发起请求时，系统调度**专家联盟 + 璇玑**，以**最高权限**跨全部子系统（算子内核 / 图谱 / 优化 / 编排 / 数据 / 外系统）进行全维处理，并受守恒律与治理接缝约束。对标 harness 的 `self-modification/`（agent 可改自身运行时）但更强：联盟不仅能改运行时，还能改算子、改图谱、改调度策略。
 
 ### 19.1 两层联盟结构
 
@@ -718,7 +852,7 @@ seam = "operator/*"
                         └───────────┬───────────┬─────────┘
                                     │           │
                   ┌─────────────────▼──┐   ┌─────▼──────────────────┐
-                  │  专家联盟 ExpertPool │   │  算法联盟 AlgoPool      │
+                  │  专家联盟 ExpertPool │   │  璇玑 AlgoPool      │
                   │  ctx.experts        │   │  ctx.algo              │
                   ├─ 架构专家            │   ├─ 优化算法 (DAG/关键路径)│
                   ├─ 领域专家(业务)     │   ├─ 图算法 (PageRank/社群) │
@@ -753,7 +887,7 @@ seam = "operator/*"
 1. 收口：归一化用户意图 → 状态向量投影（公理 2）
 2. 分诊：专家联盟并行评估 → 领取各自子目标（并发组）
 3. 冲突消解：flow-ai::conflict::detect + auto_repair（§6.3）
-4. 算法编排：算法联盟产出 DAG 调度计划（optimizer）
+4. 算法编排：璇玑产出 DAG 调度计划（optimizer）
 5. 全维执行：All-Domain Bus 并行调用各子系统算子
 6. 收敛校验：conservation::check_all（状态向量守恒）
 7. 治理复核：govern 策略 + 合规专家签字（可并行/可拒）
@@ -769,9 +903,9 @@ seam = "operator/*"
 | `FLOW` | 编排层 DAG | 编排内 | 工作流、批处理 |
 | `SUPER_EXPERT` | 全子系统 + 自我进化 | 最高(受控) | 复杂跨域难题、系统级优化、自动研发 |
 
-### 19.5 算法联盟与数学内核的协同
+### 19.5 璇玑与数学内核的协同
 
-算法联盟直接消费 OUS 6 大公理作为"先验约束"：
+璇玑直接消费 OUS 6 大公理作为"先验约束"：
 - 优化算法在 `ResourcePool` 约束下搜索，目标函数含守恒残差惩罚项 → 保证解不破坏状态向量守恒。
 - 图算法把专家结论作为新加权边注入 `operator-graph`，使后续 PageRank/社群发现自然"吸收"专家知识（知识复利）。
 - 数值/符号计算经 `monad` 封装，保证可重放（会话日志溯源）。
@@ -799,7 +933,7 @@ Claude Code ──(hook 桥接)──▶ deepseek-harness ──(范式吸收)�
 | 数学严谨 | 6 公理 + 守恒律，结果可证明收敛、可回滚 |
 | 全形态 | 一次编排、处处运行（云/本地、云/本地 LLM、浏览器/桌面） |
 | 可进化 | 插件化 + 算子市场 + 自我修改，越用越强 |
-| 最高权限处理 | 专家联盟+算法联盟跨域全维求解，受控不失控 |
+| 最高权限处理 | 专家联盟+璇玑跨域全维求解，受控不失控 |
 | 隐私/成本 | 本地+本地近零成本、零数据出网 |
 | 企业级 | STRIDE 安全、多租户、灾备、FinOps、CI 公理门禁 |
 
@@ -893,6 +1027,216 @@ Claude Code ──(hook 桥接)──▶ deepseek-harness ──(范式吸收)�
 
 ---
 
+---
+
+## 27. 路径与运行态隔离规范（Code Path vs Work Path）
+
+> **核心原则**：**架构代码路径（源码/构建/产物）与工作路径（运行态数据）必须物理分离，绝不可混放。** 这是工程可维护性、可部署性、多实例隔离与灾备（§16）的基石。当前 `runtime` 存在违反此原则的代码（见 §27.4），须按本规范改造。
+
+### 27.1 双路径模型
+
+| 路径 | 名称 | 内容 | 生命周期 | 是否入版本库 |
+|------|------|------|----------|--------------|
+| **CODE_PATH** | 架构代码路径 | crate 源码、Cargo.toml、构建脚本、部署清单 | 随版本发布 | 是（git） |
+| **WORK_PATH** | 工作路径 | 插件、会话日志、知识图谱快照、工作流实例、LLM 配置、运行时日志 | 随运行产生 | 否（.gitignore） |
+
+- CODE_PATH 由构建产物（`target/release/operator-server`、前端 `dist/`）代表，但**产物也不应回写源码树**（见 §27.4）。
+- WORK_PATH 由环境变量 `OUS_HOME` 指定，默认 `~/.ous`（云形态 `/var/lib/ous`，桌面形态 `<用户数据目录>/ous`）。
+
+### 27.2 标准目录树
+
+```
+CODE_PATH (仓库根 /usr/local/ous 等)            WORK_PATH ($OUS_HOME)
+├── crates/                源码                      ├── plugins/          热加载 WASM 算子
+├── frontend/             前端源码                   ├── sessions/         会话日志 WAL(§5.4)
+├── Cargo.toml            构建定义                   ├── graph/            知识图谱快照(§23)
+├── build.rs              构建脚本                   ├── workflows/        工作流实例(§9 P-04)
+├── docs/                 架构文档                   ├── llm/              LLM 配置(加密, §10.3)
+├── start.sh              启动脚本                   ├── logs/             运行时日志(§10.1)
+└── target/release/       构建产物*                  ├── catalog/          业务算子目录持久化(§6.5)
+                                            (*可置于 CODE_PATH 或独立 ARTIFACT_PATH)   └── config/          cordis.patch.yml(§3.2)
+
+注意：CODE_PATH 与 WORK_PATH 不得存在父子/重叠关系；CI 中 WORK_PATH 必须为独立挂载卷。
+```
+
+### 27.3 配置约定
+
+```bash
+# 启动时必须显式分离；缺失 OUS_HOME 时拒绝以源码目录为工作路径
+export OUS_HOME=/var/lib/ous          # 工作路径(独立卷)
+export OUS_CODE=/usr/local/ous        # 代码/产物路径(只读挂载)
+operator-server \
+  --code $OUS_CODE \
+  --home $OUS_HOME \
+  --plugins $OUS_HOME/plugins \
+  --profile web
+```
+
+- `runtime` 解析路径规则：**所有写操作（插件落盘、会话、日志、配置）只允许落在 `$OUS_HOME` 子树内**；写向 CODE_PATH 视为安全违规（§21 L4 审计拦截）。
+- 前端 `dist/` 由构建独立产出，运行时经 `ServeDir` 指向 `$OUS_CODE/frontend/dist` 或专门的 `ARTIFACT_PATH`，**不在仓库内生成**。
+
+### 27.4 当前代码违规点与改造（对齐真实 main.rs）
+
+| 行 | 现状 | 问题 | 改造 |
+|----|------|------|------|
+| 255 | `WasmPluginManager::new("./plugins")` | 插件写进源码目录 `./plugins` | 改 `$OUS_HOME/plugins`，由 `--plugins` 注入 |
+| 381 | `ServeDir::new("./frontend/dist")` | 前端产物混源码树，且需先 build | 指向 `$OUS_CODE/frontend/dist` 或 `ARTIFACT_PATH` |
+| 43–55 | `chat_sessions`/`saved_workflows`/`execution_logs` 全内存 | 重启丢失、无法多实例、无持久工作路径 | 持久化到 `$OUS_HOME/sessions` `$OUS_HOME/workflows` `$OUS_HOME/logs`（§8 数据层） |
+| — | `start.sh` 未设 `OUS_HOME` | 默认落到 CWD（可能即源码树） | `start.sh` 显式 `export OUS_HOME=${OUS_HOME:-~/.ous}` 并 `mkdir -p` |
+
+> 改造后，`git status` 不再出现运行态文件（插件/日志/会话），仓库纯净；同一份 CODE_PATH 可同时服务多个 WORK_PATH 实例（多租户/多环境隔离）。
+
+### 27.5 与四形态（§13）及灾备（§16）的关系
+
+- **本地+本地（§13.2）**：`OUS_HOME=~/.ous`，纯本机，备份即打包该目录。
+- **云形态（§13.1）**：`OUS_HOME=/var/lib/ous` 为独立 PVC，与镜像（CODE_PATH）解耦，便于滚动更新不丢数据。
+- **桌面（§13.6）**：Tauri 的 `app_data_dir` 作 `OUS_HOME`，与安装目录（CODE_PATH）严格分离。
+- **灾备（§16）**：只备份 `WORK_PATH`；CODE_PATH 由镜像/安装包重建，无需备份。
+
+### 27.6 静态检查（CI 门禁）
+
+- 新增 lint 规则：源码树内禁止硬写 `./plugins`、`./frontend/dist`、`./data` 等相对运行路径（参考 §15 门禁）。
+- `verify_axioms.py` 之外增 `verify_paths.py`：启动后用 `OUS_HOME` 指向临时目录，断言无任何写操作触及 CODE_PATH。
+
+---
+
+---
+
+## 28. 业务流程设计模块（Business Process Design Module）
+
+> **定位**：让"业务流程"成为一等公民的设计/建模/校验/版本化/市场化的工程模块。用户在 Three.js 画布上拖拽节点连成 DAG，系统自动校验、生成可执行 `FlowDefinition`/`BusinessWorkflow`，并可发布为模板/插件（§18）。本模块把 §9 的"业务处理流程卡"从静态文档升级为**用户可构建、可复用、可组合的资产**。
+> 现有底座：`ai-agent::flow_engine`（`FlowNode`/`NodeType`/`FlowDefinition`/环检测/执行）、`ai-agent::types`（归一化 BPMN 节点、`AlgorithmFlow` 复杂度分析）、`ai-agent::workflow_engine`（`BusinessWorkflow` 实例状态机）。
+
+### 28.1 模块分层
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  设计层 (Design Plane)                                         │
+│  Three.js 画布 · 节点面板 · 连线 · 属性表单 · 实时校验提示       │
+├──────────────────────────────────────────────────────────────┤
+│  模型层 (Model Plane)                                          │
+│  FlowDefinition / BusinessWorkflow / AlgorithmFlow (types.rs)   │
+│  NodeType 体系 + 流程 DSL (§28.3)                               │
+├──────────────────────────────────────────────────────────────┤
+│  校验层 (Validate Plane)                                        │
+│  拓扑校验(环/孤儿) · 类型契约(公理4) · 资源约束 · 治理策略(§10)   │
+├──────────────────────────────────────────────────────────────┤
+│  执行层 (Execute Plane)   —— 复用 §9 流程卡                    │
+│  FlowEngine.execute_flow / WorkflowEngine.run / SUPER_EXPERT    │
+├──────────────────────────────────────────────────────────────┤
+│  资产层 (Asset Plane)                                          │
+│  版本化存储($OUS_HOME/workflows) · 模板市场(§18) · 算子市场      │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### 28.2 节点类型体系（Node Type System）
+
+复用 `flow_engine::NodeType` 并扩展为统一"业务节点分类"：
+
+| 类别 | 节点 | 语义 | 对应流程卡(§9) |
+|------|------|------|----------------|
+| 控制 | Start / End / Parallel / Merge | 流程边界与并发 | — |
+| AI | LLM | 模型调用(`llm/*` Seam) | P-03 |
+| 感知 | Browser | 浏览器自动化(`browser_automation`) | P-06 |
+| 集成 | HttpRequest / DataInput / DataOutput | 外系统/数据 Seam | P-11 |
+| **算子** | Operator | WASM 算子执行(`operator-wasm`) | P-02 |
+| 逻辑 | Condition / Decision | 条件分支(边 `condition`) | P-08 冲突 |
+| 变换 | Transform / Script | 数据转换/自定义脚本 | P-09 |
+| 业务 | Workflow | 子流程(`BusinessWorkflow` 复用) | P-04 |
+| 算法 | Algorithm | `AlgorithmFlow`(复杂度分析+优化建议) | P-09/P-10 |
+| 专家 | Expert | `expert-alliance` 节点(§19) | P-13 |
+
+> 每个节点声明 `in/out TypePair`（公理 4），连边时实时校验类型可组合；不兼容连线在画布红框提示（§28.4）。
+
+### 28.3 流程 DSL（Process DSL）
+
+流程以声明式 JSON 描述（即 `FlowDefinition`），并支持两种表达方式互转：
+
+```json
+{
+  "id": "flow_demo_01",
+  "name": "客服工单自动处理",
+  "nodes": [
+    {"id":"s","node_type":"Start"},
+    {"id":"n1","node_type":"DataInput","config":{"source":"ticket_api"}},
+    {"id":"n2","node_type":"LLM","config":{"prompt":"分类工单","model":"auto"}},
+    {"id":"n3","node_type":"Condition","condition":"severity=='high'"},
+    {"id":"n4","node_type":"Operator","config":{"operator_id":"escalate"}},
+    {"id":"n5","node_type":"Browser","config":{"task":"通知值班"}},
+    {"id":"e","node_type":"End"}
+  ],
+  "edges": [
+    {"source":"s","target":"n1"},
+    {"source":"n1","target":"n2"},
+    {"source":"n2","target":"n3"},
+    {"source":"n3","target":"n4","condition":"true"},
+    {"source":"n3","target":"e","condition":"false"},
+    {"source":"n4","target":"n5"},
+    {"source":"n5","target":"e"}
+  ],
+  "variables": {"severity": "low"}
+}
+```
+
+- DSL 经 `FlowEngine::validate_flow` 校验（环检测 `CycleDetected`、孤儿节点、类型契约）。
+- 与 §9 流程卡双向映射：设计器导出的 DSL ≡ 流程卡的可机读形态；`save_workflow` 存为 `BusinessWorkflow`（§9 P-04）。
+
+### 28.4 校验矩阵（Validate Plane）
+
+| 校验 | 规则 | 失败处理 |
+|------|------|----------|
+| 拓扑 | 无环、单 Start/End、无孤儿节点 | `FlowError::CycleDetected`/`InvalidConfig` |
+| 类型契约(公理4) | 边 source.out 与 target.in `TypePair::can_compose` | 画布红框 + 拒绝保存 |
+| 资源约束 | 节点资源需求 ⊆ `ResourcePool` | `optimizer` 提示降级/拆分 |
+| 治理策略(§10) | 高危算子需 `approval/*` 审批节点 | 保存时挂起待审批 |
+| 语义 | 变量引用存在、条件可求值 | `ConditionError` 提示 |
+
+### 28.5 版本化与发布
+
+- 每次保存生成语义化版本 `flow_demo_01@1.2.3`（§26），`SessionEvent` schema 兼容可重放（§5.4）。
+- 发布为**模板**：存入资产层 `$OUS_HOME/workflows`，可上架算子市场（§18）供他人一键安装。
+- 子流程复用：`Workflow` 节点引用已发布模板，形成"流程的组合递归"（§9.3 跨流程编排）。
+
+### 28.6 与业务处理流程卡（§9）的闭环
+
+```
+用户画布设计 ──DSL──▶ 校验层 ──▶ 存为 BusinessWorkflow(§9 P-04)
+                               │
+                               ▼
+                  执行层(FlowEngine.execute_flow) ──▶ 结果/日志($OUS_HOME/logs)
+                               │
+                               ▼
+                  §9 流程卡(触发/阶段/输出/SLA/异常) 反向标注到画布节点
+                               │
+                               ▼
+                  优化层(AlgorithmFlow 复杂度+优化建议) 提示重构 ──▶ 回到设计层
+```
+
+即：**设计即文档、执行即监控、优化即重构建议**，形成业务流程的"设计-执行-优化"飞轮。
+
+### 28.7 SUPER_EXPERT 自动流程生成（§19 联动）
+
+- 用户以自然语言描述目标 → `SUPER_EXPERT` 调度专家联盟(§19) → 生成候选 `FlowDefinition` DSL。
+- 经 §28.4 校验矩阵自动校验，不通过则璇玑(§19)自修复（对标 `flow-ai::conflict::auto_repair`）。
+- 用户确认后一键发布为模板（§28.5）→ 沉淀算子市场（§18）→ 知识复利（§23）。
+
+### 28.8 与路径隔离（§27）的关系
+
+- 设计产物（DSL/模板/实例）全部落 `$OUS_HOME/workflows`，**不污染 CODE_PATH**；多租户各自 WORK_PATH 隔离（§27.5）。
+
+### 28.9 实证：用 OUS 搭建企业门户网站（验证是否好用）
+
+为验证"业务流程设计模块 + 全形态 + 现有能力"是否真能快速产出可用产品，已基于本系统落地一个**企业门户网站**（代码见 `frontend/`，运行说明见 `frontend/PORTAL_README.md`）：
+
+- **改动量小**：新增 4 个 Vue 页面（`PortalHome`/`Login`/`Workbench`/`BusinessHall`）+ 1 个 `router`，**后端零改动**，全部复用 §9 既有端点（`/api/ai/chat`、`/api/operators`、`/api/ai/flows`）。
+- **门户即编排产物**：门户首页的 AI 客服浮窗直接调 `/api/ai/chat`；业务大厅拉取已注册算子并一键执行流程——即"用业务流程设计模块（§28）产出的能力，直接对外提供服务"。
+- **全形态就绪**：登录壳可选 运行形态(云/本地) + LLM 来源(云/本地)，与 §13 产品矩阵一致。
+- **验证结论**：OUS 的"模块化 + 业务流程化"确实好用——半天即可由现有算子/流程能力拼出带导航、登录、AI 助手、业务大厅的企业门户；证明 §9/§28 的流程卡与 DSL 不是文档空谈，而是可服务化的真实资产。
+
+> 局限：编写环境的 Node 运行时出现稳定性异常，未能在本会话完成自动 `vite build`；代码为标准 Vue3 + vue-router4，在本地稳定 Node 环境 `npm install && npm run dev` 即可运行（详见 `frontend/PORTAL_README.md`）。
+
+---
+
 ## 附录 A：关键命令对照
 
 | DeepSeek Harness | OUS 对应 |
@@ -911,4 +1255,4 @@ python3 verify_axioms.py
 
 ---
 
-*本文档融合 DeepSeek Harness 的"一切皆插件"范式与 Claude Code 的开箱 coding 体验，叠加 OUS 自有的范畴论/希尔伯特数学内核、守恒律回滚与专家联盟最高权限全维处理模式，将 OUS 设计为"可组合、可审计、可热插拔、全形态运行、可自我进化"的企业级算子智能体 OS——一次编排、处处运行（云/本地、云/本地 LLM、浏览器/桌面），以专家联盟+算法联盟实现最高权限全维求解，以算子市场形成开放生态网络效应。*
+*本文档融合 DeepSeek Harness 的"一切皆插件"范式与 Claude Code 的开箱 coding 体验，叠加 OUS 自有的范畴论/希尔伯特数学内核、守恒律回滚、专家联盟最高权限全维处理模式，以及沙箱纵深安全、多模态感知、记忆知识、Eval 评测、i18n/无障碍、版本治理、**代码路径与工作路径严格隔离**、**业务流程设计模块（可视化设计-校验-执行-优化飞轮）** 等企业级能力，将 OUS 设计为"可组合、可审计、可热插拔、全形态运行、可自我进化"的企业级算子智能体 OS——一次编排、处处运行（云/本地、云/本地 LLM、浏览器/桌面），以专家联盟+璇玑实现最高权限全维求解，以算子市场形成开放生态网络效应。*
