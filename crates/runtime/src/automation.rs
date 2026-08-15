@@ -173,37 +173,68 @@ fn blueprint_to_lite(bp: &SystemBlueprint) -> BusinessBlueprintLite {
 /// 从业务蓝图生成全栈代码（Python 主流程 + SQL DDL + Vue 前端骨架）。
 /// 直接消费 `SystemBlueprint` 字段，避免与 flow-ai 内部 model 类型耦合。
 fn generate_code_from_blueprint(bp: &SystemBlueprint) -> GeneratedCode {
+    // 预分配唯一标识符：功能点函数名 + 实体表名
+    let mut used = std::collections::HashSet::new();
+    let mut fn_names: Vec<String> = Vec::new();
+    for f in &bp.features {
+        fn_names.push(make_ident(&f.name, &mut used));
+    }
+    let mut table_names: Vec<String> = Vec::new();
+    for entity in bp.entities.keys() {
+        table_names.push(make_ident(entity, &mut used));
+    }
+
     let mut py = String::new();
     py.push_str("#!/usr/bin/env python3\n");
     py.push_str("# 由 OUS AI 自动化中枢依据业务蓝图自动生成\n");
     py.push_str("import json\nfrom typing import Any, Dict\n\n\n");
     py.push_str("def _ctx() -> Dict[str, Any]:\n    \"\"\"全局业务上下文（可按需持久化到 DB）。\"\"\"\n    return {}\n\n\n");
-    for f in &bp.features {
-        let fn_name = sanitize_ident(&f.name);
+    for (i, f) in bp.features.iter().enumerate() {
+        let fn_name = &fn_names[i];
         py.push_str(&format!(
             "def {fn}(ctx: Dict[str, Any]) -> Dict[str, Any]:\n    \"\"\"{desc}（{action}）\"\"\"\n    try:\n        # TODO: 由 AI 自动补全业务细节\n        ctx.setdefault(\"{fn}\", {{}})\n        return {{\"ok\": True, \"feature\": \"{fn}\"}}\n    except Exception as e:\n        return {{\"ok\": False, \"error\": str(e)}}\n\n\n",
             fn = fn_name,
             desc = f.name,
-            action = f.action,
+            action = if f.action.is_empty() { f.name.as_str() } else { f.action.as_str() },
         ));
     }
     py.push_str("def main() -> None:\n    ctx = _ctx()\n");
-    for f in &bp.features {
-        let fn_name = sanitize_ident(&f.name);
+    for (i, f) in bp.features.iter().enumerate() {
+        let fn_name = &fn_names[i];
         py.push_str(&format!("    print({}.__name__, {}(ctx))\n", fn_name, fn_name));
     }
     py.push_str("\n\nif __name__ == \"__main__\":\n    main()\n");
 
     let mut sql = String::new();
     sql.push_str("-- 由 OUS AI 自动化中枢依据业务蓝图自动生成\n");
-    for (entity, fields) in &bp.entities {
-        let table = sanitize_ident(entity);
+    for (i, (entity, fields)) in bp.entities.iter().enumerate() {
+        let table = sql_safe_ident(&table_names[i]);
         sql.push_str(&format!("CREATE TABLE IF NOT EXISTS {} (\n", table));
-        sql.push_str("    id BIGINT PRIMARY KEY AUTO_INCREMENT,\n");
-        for col in fields {
-            sql.push_str(&format!("    {} VARCHAR(255),\n", sanitize_ident(col)));
+        if fields.is_empty() {
+            sql.push_str("    id BIGINT PRIMARY KEY AUTO_INCREMENT,\n");
+            sql.push_str("    data VARCHAR(255),\n");
+            sql.push_str("    created_at DATETIME DEFAULT CURRENT_TIMESTAMP\n);\n\n");
+        } else {
+            // 去重：蓝图字段可能已含 id/created_at，不再硬编码叠加
+            let mut seen = std::collections::HashSet::new();
+            for col in fields {
+                let c = sql_safe_ident(&make_col_ident(col));
+                if seen.insert(c.clone()) {
+                    sql.push_str(&format!("    {} VARCHAR(255),\n", c));
+                }
+            }
+            // 追加 created_at（若蓝图已含则跳过）
+            if seen.insert("created_at".to_string()) {
+                sql.push_str("    created_at DATETIME DEFAULT CURRENT_TIMESTAMP\n");
+            } else {
+                // 去掉末尾多余逗号
+                if sql.ends_with(",\n") {
+                    sql.truncate(sql.len() - 2);
+                    sql.push('\n');
+                }
+            }
+            sql.push_str(");\n\n");
         }
-        sql.push_str("    created_at DATETIME DEFAULT CURRENT_TIMESTAMP\n);\n\n");
     }
 
     let mut vue = String::new();
@@ -226,24 +257,133 @@ fn generate_code_from_blueprint(bp: &SystemBlueprint) -> GeneratedCode {
     GeneratedCode { python: py, sql, vue }
 }
 
-/// 把任意名称清洗为合法标识符（小写；非字母数字统一转 _）
-fn sanitize_ident(s: &str) -> String {
+/// 常见中文业务词 → 英文标识符映射（命中则产出可读英文，否则回退序号标识）
+const ZH_TO_IDENT: &[(&str, &str)] = &[
+    ("商城", "mall"),
+    ("商品", "product"),
+    ("用户", "user"),
+    ("会员", "member"),
+    ("订单", "order"),
+    ("购物车", "cart"),
+    ("下单", "place_order"),
+    ("支付", "pay"),
+    ("退货", "refund"),
+    ("评论", "comment"),
+    ("文章", "article"),
+    ("博客", "blog"),
+    ("积分", "point"),
+    ("等级", "level"),
+    ("签到", "checkin"),
+    ("兑换", "exchange"),
+    ("工单", "ticket"),
+    ("提交", "submit"),
+    ("分配", "assign"),
+    ("处理", "handle"),
+    ("关闭", "close"),
+    ("点赞", "like"),
+    ("收藏", "favorite"),
+    ("关注", "follow"),
+    ("消息", "message"),
+    ("通知", "notify"),
+    ("库存", "inventory"),
+    ("物流", "logistics"),
+    ("地址", "address"),
+    ("分类", "category"),
+    ("评价", "rate"),
+    ("搜索", "search"),
+    ("推荐", "recommend"),
+    ("审核", "review"),
+    ("登录", "login"),
+    ("注册", "register"),
+    ("上传", "upload"),
+    ("下载", "download"),
+    ("导出", "export"),
+    ("导入", "import"),
+];
+
+/// 把任意名称清洗为唯一的合法 snake_case 标识符。
+/// 策略：命中中文映射表用映射英文；否则英文/数字保留、其它转 `_`；
+/// 再以 `used` 集合保证全局唯一（重名追加序号）。
+fn make_ident(raw: &str, used: &mut std::collections::HashSet<String>) -> String {
+    let base = if raw.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+        raw.to_ascii_lowercase()
+    } else {
+        // 含中文：逐词匹配映射表，拼接产出可读英文
+        let mut mapped = String::new();
+        for (zh, en) in ZH_TO_IDENT {
+            if raw.contains(zh) {
+                mapped.push_str(en);
+            }
+        }
+        if mapped.is_empty() {
+            // 未命中：用名称哈希式占位，保证非空且与中文脱钩
+            format!(
+                "node_{}",
+                raw.chars().fold(0u32, |a, c| a.wrapping_mul(31).wrapping_add(c as u32)) % 100000
+            )
+        } else {
+            mapped
+        }
+    };
+    let mut candidate = if base.is_empty() || base.chars().next().unwrap().is_ascii_digit() {
+        format!("_{}", &base)
+    } else {
+        base.clone()
+    };
+    let mut n = 2;
+    while used.contains(&candidate) {
+        candidate = format!("{}_{}", &base, n);
+        n += 1;
+    }
+    used.insert(candidate.clone());
+    candidate
+}
+
+/// 列名清洗（字段通常为英文/拼音，少量中文回退为 _）
+fn make_col_ident(col: &str) -> String {
     let mut out = String::new();
-    for c in s.chars() {
+    for c in col.chars() {
         if c.is_ascii_alphanumeric() {
             out.push(c.to_ascii_lowercase());
         } else {
             out.push('_');
         }
     }
-    if out.is_empty() || out.chars().next().unwrap().is_ascii_digit() {
-        out.insert(0, '_');
+    if out.is_empty() {
+        out.push_str("col");
     }
     out
 }
 
+/// SQL 保留字（作为表名/列名需加前缀规避）
+const SQL_RESERVED: &[&str] = &[
+    "order", "group", "select", "from", "where", "table", "index", "key", "user",
+    "level", "comment", "desc", "asc", "limit", "offset", "primary", "foreign",
+];
+
+/// 把标识符处理为合法的 SQL 标识符（保留字加 t_/col_ 前缀；首字符数字加 _）
+fn sql_safe_ident(ident: &str) -> String {
+    let lower = ident.to_ascii_lowercase();
+    if SQL_RESERVED.contains(&lower.as_str()) {
+        // 表名加 t_，列名加 col_ 预判别：表名场景已在调用处决定前缀，这里统一加 t_ 仅当
+        // 原样为保留字且不包含已有前缀
+        if lower.starts_with("t_") || lower.starts_with("col_") {
+            return lower;
+        }
+        return format!("t_{}", lower);
+    }
+    if lower.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+        return format!("_{}", lower);
+    }
+    lower
+}
+
 /// 沙箱实跑 Python 代码：写入临时目录、加超时、捕获输出
 fn run_python_sandbox(code: &str, timeout: Duration) -> RunResult {
+    // 解释器可配置（默认 python3；Windows 上常为 python）
+    let python_bin =
+        std::env::var("OUS_PYTHON").unwrap_or_else(|_| "python3".to_string());
+
     let dir = std::env::temp_dir().join(format!("ous_auto_{}", uuid::Uuid::new_v4().simple()));
     let _ = std::fs::create_dir_all(&dir);
     let file = dir.join("flow_app.py");
@@ -257,7 +397,7 @@ fn run_python_sandbox(code: &str, timeout: Duration) -> RunResult {
     }
 
     let start = Instant::now();
-    let child = Command::new("python3")
+    let child = Command::new(&python_bin)
         .arg(file.to_str().unwrap())
         .current_dir(&dir)
         .output();
@@ -273,15 +413,26 @@ fn run_python_sandbox(code: &str, timeout: Duration) -> RunResult {
             }
         }
         Err(e) => RunResult {
-            exit_code: -1,
+            // exit_code 9009 = Windows "命令未找到"；标记为环境错误，避免无意义的代码修复
+            exit_code: 9009,
             stdout: String::new(),
-            stderr: format!("启动 python3 失败: {}（请确认沙箱主机已安装 python3）", e),
+            stderr: format!(
+                "[环境错误] 无法启动 Python 解释器 `{}`：{}。请确认沙箱主机已安装并设置 OUS_PYTHON。",
+                python_bin, e
+            ),
             timed_out: false,
         },
     };
 
     let _ = std::fs::remove_dir_all(&dir);
     result
+}
+
+/// 是否为沙箱运行环境错误（如解释器缺失），这类不应触发代码层面的 AI 修复
+fn is_env_error(run: &RunResult) -> bool {
+    run.exit_code == 9009
+        || run.stderr.contains("[环境错误]")
+        || run.stderr.to_lowercase().contains("failed to spawn")
 }
 
 /// 异常修复：先规则兜底，失败且 LLM 可用时调用大模型生成修复代码
@@ -477,6 +628,33 @@ pub async fn run_handler(
 
     let success = run_result.exit_code == 0 && !run_result.timed_out;
     if !success {
+        // 环境错误（如解释器缺失）不触发代码修复，直接记录并提示
+        if is_env_error(&run_result) {
+            let record = RunRecord {
+                ts: chrono::Utc::now().to_rfc3339(),
+                exit_code: run_result.exit_code,
+                success: false,
+                category: Some("EnvError".to_string()),
+                fixed: false,
+                stderr_tail: run_result
+                    .stderr
+                    .lines()
+                    .rev()
+                    .take(8)
+                    .collect::<Vec<_>>()
+                    .join("\n"),
+            };
+            asset.run_history.push(record.clone());
+            asset.updated_at = chrono::Utc::now().to_rfc3339();
+            crate::automation_asset::save_automation(asset)
+                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;
+            return Ok(Json(RunResponse {
+                asset_id: id,
+                run: record,
+                fix: None,
+                updated_code_python: None,
+            }));
+        }
         if let Some((prop, fixed_code, applied, source)) =
             try_fix(&state, &run_result, &asset.code.python).await
         {
