@@ -19,8 +19,11 @@ pub mod types;
 pub mod llm_client;
 pub mod browser_automation;
 pub mod flow_engine;
+pub mod requirement_compiler;
+pub mod dialogue_graph;
 
 pub use conversation::*;
+pub use requirement_compiler::*;
 pub use algorithm::*;
 pub use resource_manager::*;
 pub use plugin_bus::*;
@@ -38,8 +41,11 @@ pub use types::{
 pub use llm_client::*;
 pub use browser_automation::*;
 pub use flow_engine::*;
+pub use dialogue_graph::*;
 
 use operator_core::{OperatorError, Result};
+use operator_graph::KnowledgeGraph;
+use rusqlite::{params, OptionalExtension};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -62,6 +68,10 @@ pub struct AIAgent {
     browser: Arc<RwLock<BrowserAutomationEngine>>,
     /// 流程图引擎
     flow_engine: Arc<RwLock<FlowEngine>>,
+    /// 草莓多平台：需求编译器（对话→系统蓝图）
+    requirement_compiler: Arc<RwLock<RequirementCompiler>>,
+    /// 对话→知识图谱自动整理同步器（全自动）
+    dialogue_graph: Arc<DialogueGraphSyncer>,
 }
 
 impl AIAgent {
@@ -71,15 +81,36 @@ impl AIAgent {
         for template in create_default_templates() {
             let _ = flow_engine.create_flow(template);
         }
+        let llm_client = Arc::new(RwLock::new(LLMClient::new(LLMConfig::default())));
+        let knowledge_graph = Arc::new(RwLock::new(KnowledgeGraph::new()));
+        let dialogue_graph = {
+            let dg = DialogueGraphSyncer::new(
+                "operator_dialogue.db",
+                knowledge_graph.clone(),
+                llm_client.clone(),
+            );
+            match dg {
+                Ok(s) => Arc::new(s),
+                Err(e) => {
+                    tracing::warn!("对话图谱同步器初始化失败，降级为禁用的空同步器: {e}");
+                    Arc::new(DialogueGraphSyncer::new_in_memory(
+                        knowledge_graph.clone(),
+                        llm_client.clone(),
+                    ))
+                }
+            }
+        };
         Self {
             conversation: Arc::new(RwLock::new(ConversationEngine::new())),
             algorithm_analyzer: Arc::new(RwLock::new(AlgorithmAnalyzer::new())),
             resource_manager: Arc::new(RwLock::new(ResourceManager::new())),
             plugin_bus: Arc::new(RwLock::new(PluginBus::new())),
             workflow_engine: Arc::new(RwLock::new(WorkflowEngine::new())),
-            llm_client: Arc::new(RwLock::new(LLMClient::new(LLMConfig::default()))),
+            llm_client,
             browser: Arc::new(RwLock::new(BrowserAutomationEngine::new())),
             flow_engine: Arc::new(RwLock::new(flow_engine)),
+            requirement_compiler: Arc::new(RwLock::new(RequirementCompiler::new())),
+            dialogue_graph,
         }
     }
 
@@ -90,6 +121,14 @@ impl AIAgent {
             let mut conv = self.conversation.write().await;
             conv.add_user_message(session_id, message);
         }
+
+        // 全自动：对话内容自动落库并同步进知识图谱（优化布局）
+        // 会话首次出现时自动建表级记录
+        let _ = self.ensure_session(session_id).await;
+        let _ = self
+            .dialogue_graph
+            .append_message(session_id, "user", message)
+            .await;
 
         // 检测是否需要浏览器自动化
         let needs_browser = self.detect_browser_intent(message);
@@ -109,6 +148,27 @@ impl AIAgent {
         // 降级到内置规则引擎（用户消息已写入，process_message 只追加助手回复）
         let mut conv = self.conversation.write().await;
         conv.process_message(session_id, message).await
+    }
+
+    /// 确保会话在对话库中存在（不存在则按 id 建立会话记录）
+    async fn ensure_session(&self, session_id: &str) -> Result<()> {
+        // 若会话不存在则创建（标题取截断 id，便于后续检索）
+        let exists = {
+            let db = self.dialogue_graph.db.lock().unwrap();
+            db.query_row(
+                "SELECT 1 FROM dialogue_sessions WHERE id = ?1",
+                params![session_id],
+                |_| Ok(true),
+            )
+            .ok()
+            .is_some()
+        };
+        if !exists {
+            self.dialogue_graph
+                .create_session(&format!("会话 {}", &session_id[..8.min(session_id.len())]))
+                .await?;
+        }
+        Ok(())
     }
 
     fn detect_browser_intent(&self, message: &str) -> bool {
@@ -233,6 +293,11 @@ impl AIAgent {
         self.browser.clone()
     }
 
+    /// 对话→知识图谱同步器（全自动对话整理）
+    pub fn dialogue_graph(&self) -> Arc<DialogueGraphSyncer> {
+        self.dialogue_graph.clone()
+    }
+
     /// 分析算法并生成归一化流程图
     pub async fn analyze_algorithm(&self, algo_code: &str, algo_type: AlgorithmType) -> Result<AlgorithmFlow> {
         let analyzer = self.algorithm_analyzer.read().await;
@@ -285,6 +350,35 @@ impl AIAgent {
 
     pub fn flow_engine(&self) -> Arc<RwLock<FlowEngine>> {
         self.flow_engine.clone()
+    }
+
+    // ============ 草莓多平台：对话驱动系统生成 ============
+
+    /// 对话入口：把一句话需求编译成系统蓝图（功能点 + 关联关系 + 流程图）
+    pub async fn compile_requirement(
+        &self,
+        requirement: &str,
+        name: &str,
+        tags: Vec<String>,
+    ) -> Result<SystemBlueprint> {
+        let mut rc = self.requirement_compiler.write().await;
+        rc.compile(requirement, name, tags)
+    }
+
+    /// 继续对话迭代：在已有蓝图基础上增量追加功能
+    pub async fn refine_blueprint(
+        &self,
+        blueprint_id: &str,
+        addition: &str,
+    ) -> Result<SystemBlueprint> {
+        let mut rc = self.requirement_compiler.write().await;
+        rc.refine(blueprint_id, addition)
+    }
+
+    /// 把蓝图直接注册为可执行的 FlowDefinition（供 execute_flow 运行）
+    pub async fn blueprint_to_flow(&self, bp: &SystemBlueprint) -> Result<()> {
+        self.create_flow(bp.flow.clone()).await?;
+        Ok(())
     }
 
     // ============ 流程图引擎API ============

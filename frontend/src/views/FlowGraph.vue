@@ -96,7 +96,7 @@ function buildOption(data) {
     lineStyle: {
       width: Math.max(0.6, Math.min(4, e.weight * 2)),
       opacity: 0.35,
-      color: '#3a4straight',
+      color: '#3a4a66',
       curveness: 0.12,
     },
   }))

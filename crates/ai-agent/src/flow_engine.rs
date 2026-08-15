@@ -46,10 +46,14 @@ pub struct Position {
     pub y: f64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum NodeType {
     Start,
     End,
+    Task,
+    Guard,
+    Decision,
+    Event,
     LLM,
     Browser,
     HttpRequest,
@@ -477,6 +481,19 @@ async fn execute_node(node: &FlowNode, variables: &HashMap<String, serde_json::V
                 status: "success".into(),
                 input: input_data,
                 output: Some(serde_json::json!({"parallel": true, "branches": node.config.get("branches").cloned().unwrap_or_default()})),
+                error: None,
+                duration_ms: start.elapsed().as_millis() as u64,
+            }
+        }
+        // 兜底：未显式处理的节点类型按"透传/算子"语义执行
+        _ => {
+            NodeExecutionResult {
+                node_id: node.id.clone(),
+                node_name: node.name.clone(),
+                node_type: format!("{:?}", node.node_type).to_lowercase(),
+                status: "success".into(),
+                input: input_data,
+                output: Some(serde_json::json!({"executed": node.node_type, "config": node.config})),
                 error: None,
                 duration_ms: start.elapsed().as_millis() as u64,
             }

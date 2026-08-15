@@ -16,9 +16,22 @@
           <span class="badge info">意图识别 · 算子推荐 · 算法分析</span>
         </div>
         <div class="chat-tools">
-          <el-tooltip content="导出对话" placement="bottom">
-            <el-button text @click="exportChat"><el-icon><Download /></el-icon></el-button>
+          <el-tooltip content="对话内容自动整理进知识图谱（全自动）" placement="bottom">
+            <el-switch
+              v-model="autoSync"
+              inline-prompt
+              active-text="自动入图"
+              inactive-text="手动"
+              @change="onToggleAutoSync"
+            />
           </el-tooltip>
+          <el-tooltip content="导出对话+图谱迁移包" placement="bottom">
+            <el-button text @click="exportBundle"><el-icon><Download /></el-icon></el-button>
+          </el-tooltip>
+          <el-tooltip content="导入迁移包" placement="bottom">
+            <el-button text @click="pickImport"><el-icon><Upload /></el-icon></el-button>
+          </el-tooltip>
+          <input ref="importInput" type="file" accept="application/json" hidden @change="onImportFile" />
           <el-button text @click="clearChat"><el-icon><Delete /></el-icon> 清空</el-button>
         </div>
       </div>
@@ -65,7 +78,13 @@ import { ref, nextTick, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import MessageBubble from '@/components/MessageBubble.vue'
 import SessionSidebar from '@/components/SessionSidebar.vue'
-import { aiChat } from '@/api'
+import {
+  aiChat,
+  getAutoSyncStatus,
+  toggleAutoSync,
+  graphExport,
+  graphImport
+} from '@/api'
 
 const sessions = ref([])
 const currentSession = ref(null)
@@ -74,6 +93,9 @@ const draft = ref('')
 const thinking = ref(false)
 const online = ref(false)
 const scrollEl = ref(null)
+// 对话自动→知识图谱 全自动同步开关（默认开）
+const autoSync = ref(true)
+const importInput = ref(null)
 
 const quickQuestions = [
   '帮我推荐一个归一化算子',
@@ -196,7 +218,59 @@ watch(messages, persist, { deep: true })
 onMounted(() => {
   loadStore()
   if (!sessions.value.length) newSession()
+  // 拉取后端全自动同步开关状态
+  getAutoSyncStatus()
+    .then((r) => { if (r && r.data) autoSync.value = !!r.data.auto_sync })
+    .catch(() => {})
 })
+
+// 切换对话自动入图开关（全自动）
+async function onToggleAutoSync(val) {
+  try {
+    await toggleAutoSync(val)
+    ElMessage.success(val ? '已开启：对话自动整理进知识图谱' : '已关闭：手动模式')
+  } catch {
+    ElMessage.error('切换同步开关失败')
+  }
+}
+
+// 导出对话 + 知识图谱 为单文件迁移包
+async function exportBundle() {
+  try {
+    const res = await graphExport()
+    const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `operator-bundle-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+    ElMessage.success('迁移包已导出（对话 + 知识图谱）')
+  } catch {
+    ElMessage.error('导出失败')
+  }
+}
+
+// 选择导入文件
+function pickImport() {
+  importInput.value?.click()
+}
+
+// 导入迁移包（对话 + 图谱）
+async function onImportFile(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  try {
+    const text = await file.text()
+    const bundle = JSON.parse(text)
+    const res = await graphImport(bundle)
+    ElMessage.success(`导入完成：会话 ${res.data.imported.sessions} / 节点 ${res.data.imported.nodes}`)
+  } catch {
+    ElMessage.error('导入失败：文件格式不合法')
+  } finally {
+    e.target.value = ''
+  }
+}
 </script>
 
 <style scoped>

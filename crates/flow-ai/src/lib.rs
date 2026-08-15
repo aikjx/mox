@@ -34,6 +34,7 @@
 //! assert!(report.gains.speedup > 1.0);
 //! ```
 
+pub mod automation;
 pub mod codegen;
 pub mod conflict;
 pub mod critpath;

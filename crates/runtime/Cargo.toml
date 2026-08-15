@@ -22,6 +22,7 @@ optimizer = { path = "../optimizer" }
 ai-agent = { path = "../ai-agent" }
 business-catalog = { path = "../business-catalog" }
 expert-alliance = { path = "../expert-alliance" }
+flow-ai = { path = "../flow-ai" }
 tokio = { workspace = true }
 axum = { workspace = true }
 tower-http = { workspace = true }
@@ -37,3 +38,7 @@ nalgebra = { version = "0.32", features = ["serde-serialize"] }
 sha2 = "0.10"
 hmac = "0.12"
 hex = "0.4"
+
+[dev-dependencies]
+tokio = { version = "1.0", features = ["full"] }
+reqwest = { version = "0.12", features = ["json"] }

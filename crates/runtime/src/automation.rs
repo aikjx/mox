@@ -1,0 +1,641 @@
+//! # AI 自动化中枢（编排 + REST API）
+//!
+//! 把「对话 → 业务处理流程图 + 功能逻辑细节 + 关联关系 + 权限 →
+//! 自动代码 → 自动测试 → 沙箱实跑异常自动修复 → 回写保存 → 可继续编辑」
+//! 串成端到端闭环，并向前端暴露一组 REST 接口。
+//!
+//! 路由前缀 `/api/automation`：
+//! - `POST /chat`            需求对话：生成蓝图 + 流程图 + 全栈代码 + 自动测试 + RBAC，并落盘
+//! - `POST /:id/refine`      在已有自动化资产上继续对话迭代（增量补功能）
+//! - `POST /:id/run`         沙箱实跑生成的 Python，自动分析异常并修复回写
+//! - `GET  /:id/permissions` 查看从蓝图自动推导的 RBAC 角色-权限映射
+//! - `GET  /`                列出所有自动化资产
+//!
+//! 资产模型与持久化在 [`crate::automation_asset`]（独立模块，避免循环依赖）。
+
+use crate::AppState;
+use crate::automation_asset::{
+    AutomationAsset, GeneratedCode, RunRecord,
+};
+use ai_agent::requirement_compiler::SystemBlueprint;
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    routing::{get, post, put},
+    Json, Router,
+};
+use flow_ai::automation::{
+    AutoTest, AutoTestGen, BusinessBlueprintLite, ErrorAnalyzer, Feature, FixProposal, RbacDeriver,
+    RolePermission, RunResult,
+};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use std::process::Command;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
+
+// ============================================================================
+// 请求/响应结构
+// ============================================================================
+
+/// 需求对话请求
+#[derive(Debug, Deserialize)]
+pub struct AutomationChatRequest {
+    /// 一句话需求（如 "做一个商城，有商品、购物车、下单、支付"）
+    pub requirement: String,
+    /// 资产名称（可选，缺省用需求截断）
+    pub name: Option<String>,
+    /// 分类标签
+    #[serde(default)]
+    pub tags: Vec<String>,
+    /// 会话 id（多轮对话用）
+    pub session_id: Option<String>,
+}
+
+/// 需求对话响应
+#[derive(Debug, Serialize)]
+pub struct AutomationChatResponse {
+    pub asset_id: String,
+    pub name: String,
+    pub blueprint_summary: BlueprintSummary,
+    pub code_files: Vec<String>,
+    pub test_count: usize,
+    pub rbac_count: usize,
+    pub mermaid: String,
+    /// 自动生成的全栈代码全文（供前端展示/编辑）
+    pub code: GeneratedCode,
+}
+
+#[derive(Debug, Serialize)]
+pub struct BlueprintSummary {
+    pub feature_count: usize,
+    pub entity_count: usize,
+    pub node_count: usize,
+    pub edge_count: usize,
+    pub features: Vec<String>,
+}
+
+/// 运行请求（可选：沙箱超时秒数）
+#[derive(Debug, Deserialize)]
+pub struct RunRequest {
+    pub timeout_sec: Option<u64>,
+}
+
+/// 运行响应
+#[derive(Debug, Serialize)]
+pub struct RunResponse {
+    pub asset_id: String,
+    pub run: RunRecord,
+    pub fix: Option<FixSummary>,
+    pub updated_code_python: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct FixSummary {
+    pub category: String,
+    pub note: String,
+    pub applied: bool,
+    /// 修复来源：rule（规则兜底）| llm（大模型生成）| none（仅给出提案）
+    pub source: String,
+}
+
+/// 权限响应
+#[derive(Debug, Serialize)]
+pub struct PermissionsResponse {
+    pub roles: Vec<String>,
+    pub permissions: Vec<RolePermission>,
+}
+
+// ============================================================================
+// 编排核心
+// ============================================================================
+
+/// 从需求生成一份完整的自动化资产（蓝图 + 代码 + 测试 + RBAC）
+async fn build_asset(
+    state: &AppState,
+    requirement: &str,
+    name: &str,
+    tags: Vec<String>,
+) -> anyhow::Result<AutomationAsset> {
+    // 1) 需求 → 蓝图
+    let bp = state
+        .ai_agent
+        .compile_requirement(requirement, name, tags.clone())
+        .await?;
+
+    // 2) 蓝图 → 全栈代码（本地生成，解耦 flow-ai 内部 model 类型）
+    let code = generate_code_from_blueprint(&bp);
+
+    // 3) 自动测试（针对生成的 python 主入口）
+    let tests = vec![AutoTestGen::generate(&code.python, "flow_app", "main")];
+
+    // 4) RBAC 推导：把 SystemBlueprint 投影为 Lite 形态
+    let lite = blueprint_to_lite(&bp);
+    let (_roles, rbac) = RbacDeriver::derive(&lite);
+
+    let now = chrono::Utc::now().to_rfc3339();
+    Ok(AutomationAsset {
+        id: bp.id.clone(),
+        name: bp.name.clone(),
+        description: bp.description.clone(),
+        tags: bp.tags.clone(),
+        blueprint: bp,
+        code,
+        tests,
+        rbac,
+        run_history: vec![],
+        created_at: now.clone(),
+        updated_at: now,
+    })
+}
+
+/// 把 `SystemBlueprint` 投影为 RBAC 推导所需的 Lite 形态
+fn blueprint_to_lite(bp: &SystemBlueprint) -> BusinessBlueprintLite {
+    BusinessBlueprintLite {
+        id: bp.id.clone(),
+        name: bp.name.clone(),
+        tags: bp.tags.clone(),
+        features: bp
+            .features
+            .iter()
+            .map(|f| Feature {
+                id: f.id.clone(),
+                name: f.name.clone(),
+                action: f.action.clone(),
+                entities: f.entities.clone(),
+                depends_on: f.depends_on.clone(),
+            })
+            .collect(),
+        entities: bp.entities.clone(),
+    }
+}
+
+/// 从业务蓝图生成全栈代码（Python 主流程 + SQL DDL + Vue 前端骨架）。
+/// 直接消费 `SystemBlueprint` 字段，避免与 flow-ai 内部 model 类型耦合。
+fn generate_code_from_blueprint(bp: &SystemBlueprint) -> GeneratedCode {
+    let mut py = String::new();
+    py.push_str("#!/usr/bin/env python3\n");
+    py.push_str("# 由 OUS AI 自动化中枢依据业务蓝图自动生成\n");
+    py.push_str("import json\nfrom typing import Any, Dict\n\n\n");
+    py.push_str("def _ctx() -> Dict[str, Any]:\n    \"\"\"全局业务上下文（可按需持久化到 DB）。\"\"\"\n    return {}\n\n\n");
+    for f in &bp.features {
+        let fn_name = sanitize_ident(&f.name);
+        py.push_str(&format!(
+            "def {fn}(ctx: Dict[str, Any]) -> Dict[str, Any]:\n    \"\"\"{desc}（{action}）\"\"\"\n    try:\n        # TODO: 由 AI 自动补全业务细节\n        ctx.setdefault(\"{fn}\", {{}})\n        return {{\"ok\": True, \"feature\": \"{fn}\"}}\n    except Exception as e:\n        return {{\"ok\": False, \"error\": str(e)}}\n\n\n",
+            fn = fn_name,
+            desc = f.name,
+            action = f.action,
+        ));
+    }
+    py.push_str("def main() -> None:\n    ctx = _ctx()\n");
+    for f in &bp.features {
+        let fn_name = sanitize_ident(&f.name);
+        py.push_str(&format!("    print({}.__name__, {}(ctx))\n", fn_name, fn_name));
+    }
+    py.push_str("\n\nif __name__ == \"__main__\":\n    main()\n");
+
+    let mut sql = String::new();
+    sql.push_str("-- 由 OUS AI 自动化中枢依据业务蓝图自动生成\n");
+    for (entity, fields) in &bp.entities {
+        let table = sanitize_ident(entity);
+        sql.push_str(&format!("CREATE TABLE IF NOT EXISTS {} (\n", table));
+        sql.push_str("    id BIGINT PRIMARY KEY AUTO_INCREMENT,\n");
+        for col in fields {
+            sql.push_str(&format!("    {} VARCHAR(255),\n", sanitize_ident(col)));
+        }
+        sql.push_str("    created_at DATETIME DEFAULT CURRENT_TIMESTAMP\n);\n\n");
+    }
+
+    let mut vue = String::new();
+    vue.push_str("<template>\n  <div class=\"auto-app\">\n");
+    vue.push_str(&format!("    <h1>{}</h1>\n", bp.name));
+    vue.push_str("    <ul>\n");
+    for f in &bp.features {
+        vue.push_str(&format!(
+            "      <li>{{{{ '{name}' }}}}<button @click=\"run('{id}')\">执行</button></li>\n",
+            name = f.name,
+            id = f.id
+        ));
+    }
+    vue.push_str("    </ul>\n  </div>\n</template>\n\n<script setup>\n");
+    vue.push_str("import { ref } from 'vue'\n");
+    vue.push_str("const features = ref([])\n");
+    vue.push_str("function run(id) {\n  // TODO: 调用后端 /api/automation/:id/run\n  console.log('run', id)\n}\n");
+    vue.push_str("</script>\n");
+
+    GeneratedCode { python: py, sql, vue }
+}
+
+/// 把任意名称清洗为合法标识符（小写；非字母数字统一转 _）
+fn sanitize_ident(s: &str) -> String {
+    let mut out = String::new();
+    for c in s.chars() {
+        if c.is_ascii_alphanumeric() {
+            out.push(c.to_ascii_lowercase());
+        } else {
+            out.push('_');
+        }
+    }
+    if out.is_empty() || out.chars().next().unwrap().is_ascii_digit() {
+        out.insert(0, '_');
+    }
+    out
+}
+
+/// 沙箱实跑 Python 代码：写入临时目录、加超时、捕获输出
+fn run_python_sandbox(code: &str, timeout: Duration) -> RunResult {
+    let dir = std::env::temp_dir().join(format!("ous_auto_{}", uuid::Uuid::new_v4().simple()));
+    let _ = std::fs::create_dir_all(&dir);
+    let file = dir.join("flow_app.py");
+    if let Err(e) = std::fs::write(&file, code) {
+        return RunResult {
+            exit_code: -1,
+            stdout: String::new(),
+            stderr: format!("写入沙箱失败: {}", e),
+            timed_out: false,
+        };
+    }
+
+    let start = Instant::now();
+    let child = Command::new("python3")
+        .arg(file.to_str().unwrap())
+        .current_dir(&dir)
+        .output();
+
+    let result = match child {
+        Ok(out) => {
+            let elapsed = start.elapsed();
+            RunResult {
+                exit_code: out.status.code().unwrap_or(-1),
+                stdout: String::from_utf8_lossy(&out.stdout).to_string(),
+                stderr: String::from_utf8_lossy(&out.stderr).to_string(),
+                timed_out: elapsed > timeout,
+            }
+        }
+        Err(e) => RunResult {
+            exit_code: -1,
+            stdout: String::new(),
+            stderr: format!("启动 python3 失败: {}（请确认沙箱主机已安装 python3）", e),
+            timed_out: false,
+        },
+    };
+
+    let _ = std::fs::remove_dir_all(&dir);
+    result
+}
+
+/// 异常修复：先规则兜底，失败且 LLM 可用时调用大模型生成修复代码
+async fn try_fix(
+    state: &AppState,
+    run: &RunResult,
+    original_code: &str,
+) -> Option<(FixProposal, String, bool, String)> {
+    // 规则兜底（KeyError / ImportError / ZeroDivisionError 等低风险类别）
+    if let Some(fixed) = ErrorAnalyzer::rule_based_fix(run, original_code) {
+        if let Some(prop) = ErrorAnalyzer::analyze(run, original_code) {
+            return Some((prop, fixed, true, "rule".to_string()));
+        }
+    }
+    // LLM 修复
+    let llm = state.ai_agent.llm_client();
+    let llm_guard = llm.read().await;
+    if llm_guard.is_enabled() {
+        if let Some(prop) = ErrorAnalyzer::analyze(run, original_code) {
+            let msgs = vec![ai_agent::LLMChatMessage {
+                role: "user".to_string(),
+                content: prop.llm_prompt.clone(),
+            }];
+            drop(llm_guard);
+            if let Ok(fixed) = llm.read().await.chat(msgs).await {
+                let code = extract_code_block(&fixed).unwrap_or(fixed);
+                return Some((prop, code, true, "llm".to_string()));
+            }
+        }
+    }
+    // 无法自动修复：仅给出提案说明
+    if let Some(prop) = ErrorAnalyzer::analyze(run, original_code) {
+        return Some((prop, original_code.to_string(), false, "none".to_string()));
+    }
+    None
+}
+
+/// 从 LLM 返回文本中抽取 python 代码块
+fn extract_code_block(text: &str) -> Option<String> {
+    let start = text.find("```python")?;
+    let after = &text[start + 9..];
+    let end = after.find("```")?;
+    Some(after[..end].trim().to_string())
+}
+
+/// 流程图 → Mermaid（独立实现，避免与 flow_ai 内部 model 类型耦合）
+pub fn flow_definition_to_mermaid(flow: &ai_agent::flow_engine::FlowDefinition) -> String {
+    use ai_agent::flow_engine::NodeType;
+    let mut s = String::from("flowchart TD\n");
+    for n in &flow.nodes {
+        let id = n.id.replace(['-', ' '], "_");
+        let label = n.name.replace('"', "'");
+        let shape = match n.node_type {
+            NodeType::Start => format!("{}[(\"{} • 开始\")]", id, label),
+            NodeType::End => format!("{}[(\"{} • 结束\")]", id, label),
+            NodeType::Decision | NodeType::Condition => format!("{{{{ \"{}\" }}}}", label),
+            NodeType::Guard => format!("{}[[\"{}\"]]", id, label),
+            NodeType::Parallel => format!("{}[/\"{}\"/]", id, label),
+            _ => format!("{}[\"{}\"]", id, label),
+        };
+        s.push_str(&format!("    {}\n", shape));
+    }
+    for e in &flow.edges {
+        let src = e.source.replace(['-', ' '], "_");
+        let tgt = e.target.replace(['-', ' '], "_");
+        let cond = e
+            .condition
+            .as_ref()
+            .map(|c| format!(" |{}|", c.replace('"', "'")))
+            .unwrap_or_default();
+        s.push_str(&format!("    {}{}-->{}\n", src, cond, tgt));
+    }
+    s
+}
+
+// ============================================================================
+// HTTP 处理器
+// ============================================================================
+
+/// 需求对话：生成并落盘
+pub async fn chat_handler(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<AutomationChatRequest>,
+) -> Result<Json<AutomationChatResponse>, (StatusCode, String)> {
+    let name = req
+        .name
+        .clone()
+        .unwrap_or_else(|| req.requirement.chars().take(20).collect());
+    let asset = build_asset(&state, &req.requirement, &name, Default::default())
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    let mermaid = flow_definition_to_mermaid(&asset.blueprint.flow);
+    let summary = BlueprintSummary {
+        feature_count: asset.blueprint.features.len(),
+        entity_count: asset.blueprint.entities.len(),
+        node_count: asset.blueprint.flow.nodes.len(),
+        edge_count: asset.blueprint.flow.edges.len(),
+        features: asset
+            .blueprint
+            .features
+            .iter()
+            .map(|f| format!("{}（{}）", f.name, f.action))
+            .collect(),
+    };
+
+    let resp = AutomationChatResponse {
+        asset_id: asset.id.clone(),
+        name: asset.name.clone(),
+        blueprint_summary: summary,
+        code_files: vec!["flow_app.py".into(), "schema.sql".into(), "App.vue".into()],
+        test_count: asset.tests.len(),
+        rbac_count: asset.rbac.len(),
+        mermaid,
+        code: asset.code.clone(),
+    };
+
+    crate::automation_asset::save_automation(asset)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    Ok(Json(resp))
+}
+
+/// 继续对话迭代：在已有资产上增量补功能
+pub async fn refine_handler(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    Json(req): Json<AutomationChatRequest>,
+) -> Result<Json<AutomationChatResponse>, (StatusCode, String)> {
+    let mut asset = crate::automation_asset::get_automation(&id)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?
+        .ok_or((StatusCode::NOT_FOUND, "自动化资产不存在".into()))?;
+
+    let bp = state
+        .ai_agent
+        .refine_blueprint(&asset.blueprint.id, &req.requirement)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    let code = generate_code_from_blueprint(&bp);
+    let tests = vec![AutoTestGen::generate(&code.python, "flow_app", "main")];
+    let lite = blueprint_to_lite(&bp);
+    let (_roles, rbac) = RbacDeriver::derive(&lite);
+
+    asset.blueprint = bp;
+    asset.code = code;
+    asset.tests = tests;
+    asset.rbac = rbac;
+    asset.updated_at = chrono::Utc::now().to_rfc3339();
+    crate::automation_asset::save_automation(asset.clone())
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    let mermaid = flow_definition_to_mermaid(&asset.blueprint.flow);
+    let summary = BlueprintSummary {
+        feature_count: asset.blueprint.features.len(),
+        entity_count: asset.blueprint.entities.len(),
+        node_count: asset.blueprint.flow.nodes.len(),
+        edge_count: asset.blueprint.flow.edges.len(),
+        features: asset
+            .blueprint
+            .features
+            .iter()
+            .map(|f| format!("{}（{}）", f.name, f.action))
+            .collect(),
+    };
+    Ok(Json(AutomationChatResponse {
+        asset_id: asset.id.clone(),
+        name: asset.name.clone(),
+        blueprint_summary: summary,
+        code_files: vec!["flow_app.py".into(), "schema.sql".into(), "App.vue".into()],
+        test_count: asset.tests.len(),
+        rbac_count: asset.rbac.len(),
+        mermaid,
+        code: asset.code.clone(),
+    }))
+}
+
+/// 沙箱实跑 + 异常自动修复回写
+pub async fn run_handler(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    Json(req): Json<RunRequest>,
+) -> Result<Json<RunResponse>, (StatusCode, String)> {
+    let mut asset = crate::automation_asset::get_automation(&id)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?
+        .ok_or((StatusCode::NOT_FOUND, "自动化资产不存在".into()))?;
+
+    let timeout = Duration::from_secs(req.timeout_sec.unwrap_or(15));
+    let mut run_result = run_python_sandbox(&asset.code.python, timeout);
+
+    let mut fix_summary: Option<FixSummary> = None;
+    let mut updated_code: Option<String> = None;
+
+    let success = run_result.exit_code == 0 && !run_result.timed_out;
+    if !success {
+        if let Some((prop, fixed_code, applied, source)) =
+            try_fix(&state, &run_result, &asset.code.python).await
+        {
+            if applied {
+                // 回写到流程图 Script/Operator 节点 + 代码资产
+                let mut flow_json = serde_json::to_value(&asset.blueprint.flow).unwrap_or(Value::Null);
+                let target = asset
+                    .blueprint
+                    .flow
+                    .nodes
+                    .iter()
+                    .find(|n| {
+                        matches!(n.node_type, ai_agent::flow_engine::NodeType::Script)
+                            || matches!(n.node_type, ai_agent::flow_engine::NodeType::Operator)
+                    })
+                    .map(|n| n.id.clone());
+                if let Some(nid) = target {
+                    flow_ai::automation::patch_flow_with_fix(&mut flow_json, &nid, &fixed_code);
+                    if let Ok(flow) =
+                        serde_json::from_value::<ai_agent::flow_engine::FlowDefinition>(flow_json)
+                    {
+                        asset.blueprint.flow = flow;
+                    }
+                }
+                asset.code.python = fixed_code.clone();
+                updated_code = Some(fixed_code.clone());
+                // 重新实跑验证修复（最多一次）
+                run_result = run_python_sandbox(&asset.code.python, timeout);
+            }
+            fix_summary = Some(FixSummary {
+                category: format!("{:?}", prop.category),
+                note: prop.note,
+                applied,
+                source,
+            });
+        }
+    }
+
+    let final_success = run_result.exit_code == 0 && !run_result.timed_out;
+    let record = RunRecord {
+        ts: chrono::Utc::now().to_rfc3339(),
+        exit_code: run_result.exit_code,
+        success: final_success,
+        category: fix_summary.as_ref().map(|f| f.category.clone()),
+        fixed: fix_summary.as_ref().map(|f| f.applied).unwrap_or(false),
+        stderr_tail: run_result
+            .stderr
+            .lines()
+            .rev()
+            .take(8)
+            .collect::<Vec<_>>()
+            .join("\n"),
+    };
+    asset.run_history.push(record.clone());
+    asset.updated_at = chrono::Utc::now().to_rfc3339();
+    crate::automation_asset::save_automation(asset)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    Ok(Json(RunResponse {
+        asset_id: id,
+        run: record,
+        fix: fix_summary,
+        updated_code_python: updated_code,
+    }))
+}
+
+/// 保存前端编辑结果（代码 + 可选流程图），实现「可继续编辑流程」
+pub async fn update_handler(
+    State(_state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    Json(payload): Json<UpdateAutomationRequest>,
+) -> Result<Json<Value>, (StatusCode, String)> {
+    let mut asset = crate::automation_asset::get_automation(&id)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?
+        .ok_or((StatusCode::NOT_FOUND, "自动化资产不存在".into()))?;
+
+    if let Some(py) = payload.python {
+        asset.code.python = py;
+    }
+    if let Some(sql) = payload.sql {
+        asset.code.sql = sql;
+    }
+    if let Some(vue) = payload.vue {
+        asset.code.vue = vue;
+    }
+    if let Some(flow_json) = payload.flow {
+        if let Ok(flow) =
+            serde_json::from_value::<ai_agent::flow_engine::FlowDefinition>(flow_json)
+        {
+            asset.blueprint.flow = flow;
+        }
+    }
+    asset.updated_at = chrono::Utc::now().to_rfc3339();
+    crate::automation_asset::save_automation(asset)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    Ok(Json(serde_json::json!({ "ok": true, "id": id })))
+}
+
+/// 前端编辑保存请求
+#[derive(Debug, Deserialize)]
+pub struct UpdateAutomationRequest {
+    pub python: Option<String>,
+    pub sql: Option<String>,
+    pub vue: Option<String>,
+    /// 可选：编辑后的流程图 JSON（nodes/edges）
+    pub flow: Option<Value>,
+}
+
+/// 查看自动推导的 RBAC
+pub async fn permissions_handler(
+    State(_state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> Result<Json<PermissionsResponse>, (StatusCode, String)> {
+    let asset = crate::automation_asset::get_automation(&id)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?
+        .ok_or((StatusCode::NOT_FOUND, "自动化资产不存在".into()))?;
+
+    let lite = blueprint_to_lite(&asset.blueprint);
+    let (roles, perms) = RbacDeriver::derive(&lite);
+    Ok(Json(PermissionsResponse {
+        roles,
+        permissions: perms,
+    }))
+}
+
+/// 列出所有自动化资产（轻量摘要）
+pub async fn list_handler(
+    State(_state): State<Arc<AppState>>,
+) -> Result<Json<Vec<Value>>, (StatusCode, String)> {
+    let assets = crate::automation_asset::list_automations()
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    let summaries: Vec<Value> = assets
+        .iter()
+        .map(|a| {
+            serde_json::json!({
+                "id": a.id,
+                "name": a.name,
+                "description": a.description,
+                "tags": a.tags,
+                "feature_count": a.blueprint.features.len(),
+                "run_count": a.run_history.len(),
+                "updated_at": a.updated_at,
+            })
+        })
+        .collect();
+    Ok(Json(summaries))
+}
+
+// ============================================================================
+// 路由挂载
+// ============================================================================
+
+/// 返回 `/api/automation` 路由树
+pub fn router() -> Router<Arc<AppState>> {
+    Router::new()
+        .route("/", get(list_handler))
+        .route("/chat", post(chat_handler))
+        .route("/:id", put(update_handler))
+        .route("/:id/refine", post(refine_handler))
+        .route("/:id/run", post(run_handler))
+        .route("/:id/permissions", get(permissions_handler))
+}

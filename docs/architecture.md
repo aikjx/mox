@@ -336,6 +336,7 @@ turn/start
 - **算子**：`/api/operators`、`/api/execute`、`/api/plugins`
 - **图谱**：`/api/graph/*`（node/edge/neighbors/centrality/communities/path/pagerank/activate/recommend）
 - **AI**：`/api/ai/chat`、`/api/ai/flows`、`/api/ai/workflows`、`/api/ai/browser`、`/api/ai/llm`、`/api/analyze/spiral`
+- **算子商城（§18 资产侧）**：`/api/market/`（列表/过滤）、`/api/market/random`（随机）、`/api/market/:id`（详情/更新）、`/api/market/upload`（上传）、`/api/market/:id/clone`（克隆）、`/api/market/:id`（DELETE）。GET 接口免登录白名单，写操作受 §7.1 鉴权。数据契约与前端见 `docs/market-module.md`。
 - **系统**：`/api/health`、`/api/status`、`/api/logs`
 
 > 重构后：路由由 `runtime` 插件挂载，每个 `ctx.*` 子系统声明自己的路由组，网关统一聚合。
@@ -830,7 +831,8 @@ seam = "operator/*"
 
 ## 18. 开放生态与算子市场（Network Effects）
 
-- **算子市场**：开发者发布 WASM 算子 → 签名上架 → 用户一键安装（`plugins/` + `business-catalog`）。
+- **算子市场（执行层）**：开发者发布 WASM 算子 → 签名上架 → 用户一键安装（`plugins/` + `business-catalog`）。
+- **需求/流程图资产市场（资产层，已落地）**：将"需求描述 + 可编辑业务流程图 + 功能点清单"作为算子包（OperatorPackage）沉淀，供他人随机浏览、克隆后继续编辑。详见 `docs/market-module.md`。该资产层与执行层互补——商城产出的结构化流程图可经 §28 DSL 转为可执行 `BusinessWorkflow`，形成"设计↔市场"飞轮。
 - **跨形态同步**：登录账号后，本地桌面与云端可同步"我的编排/工作流"（端到端加密，密钥在 `credential/*`）。
 - **可移植性**：同一份工作流定义（DAG + 算子绑定）在四种形态（§13）间无缝迁移——"一次编排、处处运行"的终极体现。
 - **贡献回流**：用户自研优质算子可反哺市场，形成算子网络效应，使 OUS 成为"算子界的插件商店 + 智能体 OS"。
@@ -1083,6 +1085,7 @@ operator-server \
 | 381 | `ServeDir::new("./frontend/dist")` | 前端产物混源码树，且需先 build | 指向 `$OUS_CODE/frontend/dist` 或 `ARTIFACT_PATH` |
 | 43–55 | `chat_sessions`/`saved_workflows`/`execution_logs` 全内存 | 重启丢失、无法多实例、无持久工作路径 | 持久化到 `$OUS_HOME/sessions` `$OUS_HOME/workflows` `$OUS_HOME/logs`（§8 数据层） |
 | — | `start.sh` 未设 `OUS_HOME` | 默认落到 CWD（可能即源码树） | `start.sh` 显式 `export OUS_HOME=${OUS_HOME:-~/.ous}` 并 `mkdir -p` |
+| 430（market 模块，`crates/runtime/src/market.rs`） | `MARKET_DIR = "./data/market"` 写进源码目录 | 商城资产落 CODE_PATH，违反双路径原则（§27.1） | 改为 `$OUS_HOME/market`，由 `OUS_HOME` 注入；种子数据仅在目录为空时生成 |
 
 > 改造后，`git status` 不再出现运行态文件（插件/日志/会话），仓库纯净；同一份 CODE_PATH 可同时服务多个 WORK_PATH 实例（多租户/多环境隔离）。
 

@@ -23,6 +23,28 @@
 
 ---
 
+## 🧠 对话自动知识图谱整理（全自动）
+
+系统支持将**对话内容自动整理进知识图谱并优化布局**，默认开启、零人工干预：
+
+1. **自动落库**：每一次对话（会话/消息）持久化到 SQLite（`operator_dialogue.db`），替代纯前端 localStorage，支持长期积累。
+2. **智能抽取**：对话发生时自动调用 LLM 从内容中识别**算子 / 算法 / 概念 / 能力 / 工作流**等实体及其关系；LLM 不可用时降级为关键词规则抽取。
+3. **自动优化布局**：抽取结果写入 `operator-graph` 知识图谱，并自动重算 PageRank 中心性与社区发现，回写 `pagerank` / `community` 元数据供前端力导向布局。
+4. **统一搜索**：`GET /api/graph/search?q=` 同时检索对话内容与图谱节点。
+5. **一键导入导出 / 迁移**：`GET /api/graph/export` 导出「对话 + 知识图谱」打包为单个 JSON 迁移文件；`POST /api/graph/import` 幂等合并恢复，导入后自动重算布局。
+
+| 能力 | 接口 | 说明 |
+|------|------|------|
+| 自动同步开关 | `POST /api/graph/auto-sync/toggle` / `GET /api/graph/auto-sync/status` | 默认开启，前端 `ChatView` 可切换 |
+| 对话会话列表 | `GET /api/dialogue/sessions` | 列出历史会话 |
+| 统一搜索 | `GET /api/graph/search?q=&limit=` | 对话 + 图谱节点 |
+| 导出迁移包 | `GET /api/graph/export` | 单文件 JSON |
+| 导入迁移包 | `POST /api/graph/import` | 幂等合并，自动优化布局 |
+
+前端入口：对话页 `ChatView.vue` 顶部「自动入图」开关 + 导出/导入按钮；图谱页 `GraphView.vue` 顶部搜索框（对话 + 节点统一检索）。
+
+---
+
 ## 🧩 六大数学公理
 
 | # | 公理 | 含义 |
@@ -105,10 +127,11 @@ operator-unified-system/
 │   ├── expert-alliance/      # 专家联盟：多专家协同、IR、管线、治理、验证
 │   ├── hermes-flow-bridge/   # 外部流系统桥接：对接、录制、回放、状态
 │   ├── business-catalog/     # 业务算子目录
-│   └── runtime/              # 运行时：Web 服务器与 API 接口
+│   └── runtime/              # 运行时：Web 服务器与 API 接口（含算子商城模块 market.rs）
 ├── frontend/                 # Vue3 前端界面 (需 npm install && build 生成 dist/)
 ├── plugins/                  # WASM 插件目录
-├── docs/                     # 数学设计文档
+├── data/market/              # 算子商城资产（运行态，默认 CWD；生产应置于 $OUS_HOME/market，见 docs/architecture.md §27）
+├── docs/                     # 企业级文档：architecture.md / enterprise-architecture-analysis.md / market-module.md / math-design.md
 ├── benches/                  # 性能基准
 ├── tests/                    # 集成测试
 ├── verify_axioms.py          # 6 大公理数学自洽性验证脚本
@@ -203,6 +226,15 @@ int operator_apply(double* input, double* output, int n);
 | `/api/plugins` | GET | 获取已加载插件列表 |
 | `/api/logs` | GET | 获取执行日志 |
 | `/api/status` | GET | 获取系统状态 |
+| `/api/market/` | GET | 算子商城：算子包列表（支持 `?category`/`?tag`/`?q`） |
+| `/api/market/random` | GET | 随机返回一个算子包 |
+| `/api/market/:id` | GET | 获取算子包详情（需求 + 可编辑流程图 + 功能点） |
+| `/api/market/upload` | POST | 上传算子包（`name`+`requirement` 必填） |
+| `/api/market/:id` | POST | 更新算子包核心字段 |
+| `/api/market/:id/clone` | POST | 克隆（fork）算子包 |
+| `/api/market/:id` | DELETE | 删除算子包 |
+
+> 算子商城（需求/流程图资产市场）的完整数据模型、API 契约与前端编辑器说明见 [`docs/market-module.md`](docs/market-module.md)。
 
 ---
 
@@ -214,6 +246,7 @@ int operator_apply(double* input, double* output, int n);
 - **外部系统桥接**：与外部流处理系统对接、会话录制回放（hermes-flow-bridge）
 - **插件沙箱隔离**：WASM 安全执行第三方算子
 - **记忆一致性**：知识图谱 + 业务目录统一建模
+- **算子商城（资产复用）**：将"需求 + 可编辑业务流程图 + 功能点"作为算子包沉淀，支持随机浏览、克隆后继续编辑，形成"需求驱动 → 流程可快速改"的知识复利闭环（见 `docs/market-module.md`）
 
 ---
 

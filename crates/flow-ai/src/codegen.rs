@@ -10,7 +10,7 @@ use crate::dataflow::ParallelPlan;
 use crate::model::{EdgeKind, FlowEdge, FlowGraph, FlowNode, NodeKind, ToolKind};
 use crate::schedule::Schedule;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 
 /// 生成的工程文件
@@ -69,6 +69,20 @@ fn tool_module(t: ToolKind) -> &'static str {
     }
 }
 
+/// 全栈生成别名（供 runtime / 草莓多平台调用）：等价于 `generate`
+///
+/// 返回的 `CodeBundle` 现包含后端骨架（tools/tasks/errors/scheduler/main）+
+/// 数据库 DDL（`schema.sql`）+ 前端 Vue 骨架（`App.vue`），即对一张流程图
+/// 一次性产出「后端 + 数据库 + 前端」三部分代码。
+pub fn generate_full_stack(
+    graph: &FlowGraph,
+    plan: &ParallelPlan,
+    schedule: &Schedule,
+    conflicts: &ConflictReport,
+) -> CodeBundle {
+    generate(graph, plan, schedule, conflicts)
+}
+
 /// 正向生成：流程图 → 分层 Python 工程
 pub fn generate(
     graph: &FlowGraph,
@@ -95,6 +109,15 @@ pub fn generate(
             content: gen_scheduler(graph, plan, schedule),
         },
         GeneratedFile { path: "generated/main.py".into(), content: gen_main(graph) },
+        // ↓↓↓ 草莓多平台：全栈生成器扩展 ↓↓↓
+        GeneratedFile {
+            path: "generated/schema.sql".into(),
+            content: gen_db_schema(graph),
+        },
+        GeneratedFile {
+            path: "generated/App.vue".into(),
+            content: gen_frontend(graph),
+        },
     ];
 
     CodeBundle { files, rejected: false, reject_reasons: Vec::new() }
@@ -303,6 +326,155 @@ fn gen_main(graph: &FlowGraph) -> String {
         "\"\"\"入口 —— 流程 `{}` ({})\"\"\"\nimport json\n\nfrom .scheduler import run\n\n\ndef main():\n    ctx = run()\n    print(json.dumps({{\"errors\": ctx.get(\"_errors\", []), \"timings\": ctx.get(\"_timings\", {{}})}}, ensure_ascii=False, indent=2))\n\n\nif __name__ == \"__main__\":\n    main()\n",
         graph.name, graph.id
     )
+}
+
+// ==================== 草莓多平台：数据库 DDL 生成 ====================
+//
+// 从流程图中所有 `db:` 前缀的访问声明自动推导表结构：
+//   - 写访问（Write/ReadWrite）⇒ 建表；读访问 ⇒ 仅引用（不建表）
+//   - 每个表收集其写入字段（var: 前缀归并到表字段）
+//   - 事务性节点 ⇒ 该表标记需要事务
+// 这是「草莓多」对话生成系统模板后产出数据库骨架的核心能力。
+
+/// 从 `db:表名.字段` 解析出 (表, 字段)
+fn parse_db_access(res: &str) -> Option<(String, String)> {
+    let r = res.strip_prefix("db:")?;
+    let (table, field) = match r.split_once('.') {
+        Some((t, f)) => (t.to_string(), f.to_string()),
+        None => (r.to_string(), "id".to_string()),
+    };
+    Some((table, field))
+}
+
+/// 流程图 → 数据库 DDL（PostgreSQL 方言，企业级默认）
+pub fn gen_db_schema(graph: &FlowGraph) -> String {
+    // 表 -> 字段集合（去重保序）
+    let mut tables: BTreeMap<String, BTreeMap<String, bool>> = BTreeMap::new();
+    let mut transactional_tables: BTreeSet<String> = BTreeSet::new();
+
+    for n in &graph.nodes {
+        for a in &n.accesses {
+            if let Some((table, field)) = parse_db_access(&a.resource) {
+                let entry = tables.entry(table.clone()).or_default();
+                entry.entry(field.clone()).or_insert(true);
+                if n.transactional && a.mode.writes() {
+                    transactional_tables.insert(table.clone());
+                }
+            }
+        }
+    }
+
+    if tables.is_empty() {
+        return "-- 本流程图未声明任何 db: 资源访问，无数据库结构需要生成。\n".to_string();
+    }
+
+    let mut s = String::new();
+    let _ = writeln!(s, "-- 数据库 Schema —— 由流程图「{}」自动生成，勿手改。", graph.name);
+    let _ = writeln!(s, "-- 生成时间无关，可重复执行（幂等 DDL）。\n");
+
+    for (table, fields) in &tables {
+        let _ = writeln!(s, "-- 表: {} {}", table, if transactional_tables.contains(table) { "(事务表)" } else { "" });
+        let _ = writeln!(s, "CREATE TABLE IF NOT EXISTS {} (", table);
+        let _ = writeln!(s, "    id          BIGSERIAL PRIMARY KEY,");
+        // 由流程字段推导业务列（不含 id，已单独声明）
+        let cols: Vec<&String> = fields.keys().filter(|f| *f != "id").collect();
+        for (i, col) in cols.iter().enumerate() {
+            let comma = if i + 1 == cols.len() { "" } else { "," };
+            let _ = writeln!(s, "    {}   TEXT NOT NULL DEFAULT ''{}", sql_ident(col), comma);
+        }
+        let _ = writeln!(s, "    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),");
+        let _ = writeln!(s, "    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()");
+        let _ = writeln!(s, ");\n");
+        let _ = writeln!(s, "CREATE INDEX IF NOT EXISTS idx_{}_updated ON {} (updated_at);\n", table, table);
+    }
+
+    let _ = writeln!(s, "-- 行级注释：企业级数据治理留痕");
+    let _ = writeln!(s, "-- 共生成 {} 张表。", tables.len());
+    s
+}
+
+fn sql_ident(s: &str) -> String {
+    s.chars()
+        .map(|c| if c.is_alphanumeric() { c } else { '_' })
+        .collect::<String>()
+        .to_lowercase()
+}
+
+// ==================== 草莓多平台：前端 Vue 生成 ====================
+//
+// 从流程图的控制/任务节点推导一个最小可用的 Vue3 视图骨架：
+//   - 每个 Guard/Task 节点的读写字段 ⇒ 表单字段（响应式 ref）
+//   - Guard 节点 ⇒ 前端校验规则（required）
+//   - Start/End ⇒ 页面说明
+// 目标是「对话生成模板 → 直接给出可运行前端骨架」。
+
+/// 从流程节点收集前端需要展示的字段（var:/db: 前缀的业务字段）
+fn collect_form_fields(graph: &FlowGraph) -> Vec<(String, bool)> {
+    let mut seen: BTreeMap<String, bool> = BTreeMap::new();
+    for n in &graph.nodes {
+        for a in &n.accesses {
+            let key = if let Some(r) = a.resource.strip_prefix("var:") {
+                Some(r.to_string())
+            } else if let Some((_, f)) = parse_db_access(&a.resource) {
+                Some(f)
+            } else {
+                None
+            };
+            if let Some(k) = key {
+                if k == "id" {
+                    continue;
+                }
+                let required = n.kind == NodeKind::Guard && a.mode.writes();
+                let entry = seen.entry(k).or_insert(false);
+                *entry = *entry || required;
+            }
+        }
+    }
+    seen.into_iter().collect()
+}
+
+/// 流程图 → 前端 Vue3 单文件组件（组合式 API 骨架）
+pub fn gen_frontend(graph: &FlowGraph) -> String {
+    let fields = collect_form_fields(graph);
+    let mut s = String::new();
+    let _ = writeln!(s, "<!-- 前端视图骨架 —— 由流程图「{}」自动生成，勿手改。 -->", graph.name);
+    let _ = writeln!(s, "<template>");
+    let _ = writeln!(s, "  <div class=\"caomei-flow\">");
+    let _ = writeln!(s, "    <h2>{}</h2>", graph.name);
+    let _ = writeln!(s, "    <form @submit.prevent=\"submit\">");
+    for (field, required) in &fields {
+        let label = field.replace('_', " ");
+        let _ = writeln!(s, "      <label>{}:", label);
+        let _ = writeln!(s, "        <input v-model=\"form.{}\" {} />", field, if *required { "required" } else { "" });
+        let _ = writeln!(s, "      </label>");
+    }
+    let _ = writeln!(s, "      <button type=\"submit\">提交</button>");
+    let _ = writeln!(s, "    </form>");
+    let _ = writeln!(s, "    <pre v-if=\"result\">{{ result }}</pre>");
+    let _ = writeln!(s, "  </div>");
+    let _ = writeln!(s, "</template>\n");
+
+    let _ = writeln!(s, "<script setup>");
+    let _ = writeln!(s, "// 组合式 API：字段与提交流程由流程图推导");
+    let _ = writeln!(s, "import {{ reactive, ref }} from 'vue'");
+    let _ = writeln!(s, "const form = reactive({{");
+    for (field, _) in &fields {
+        let _ = writeln!(s, "  {}: '',", field);
+    }
+    let _ = writeln!(s, "}})");
+    let _ = writeln!(s, "const result = ref(null)");
+    let _ = writeln!(s, "async function submit() {{");
+    let _ = writeln!(s, "  // TODO: 调用后端 API（对应流程图「{}」的入口）", graph.name);
+    let _ = writeln!(s, "  result.value = JSON.stringify(form, null, 2)");
+    let _ = writeln!(s, "}}");
+    let _ = writeln!(s, "</script>\n");
+
+    let _ = writeln!(s, "<style scoped>");
+    let _ = writeln!(s, ".caomei-flow {{ max-width: 720px; margin: 2rem auto; }}");
+    let _ = writeln!(s, "label {{ display: block; margin: .6rem 0; }}");
+    let _ = writeln!(s, "input {{ width: 100%; padding: .4rem; }}");
+    let _ = writeln!(s, "</style>");
+    s
 }
 
 // ==================== 逆向：代码 → 流程图 ====================
@@ -579,6 +751,12 @@ mod tests {
                 .idempotent(true),
         );
         g.add_node(
+            FlowNode::task("save", "落库", ToolKind::Database, 300)
+                .with_access(Access::write("db:orders.order_no"))
+                .with_access(Access::write("db:orders.amount"))
+                .transactional(true),
+        );
+        g.add_node(
             FlowNode::task("merge", "汇总", ToolKind::Compute, 100)
                 .with_access(Access::read("var:rows"))
                 .with_access(Access::read("var:orders"))
@@ -589,6 +767,8 @@ mod tests {
         g.add_edge(FlowEdge::seq("read", "query"));
         g.add_edge(FlowEdge::seq("query", "merge"));
         g.add_edge(FlowEdge::seq("merge", "end"));
+        g.add_edge(FlowEdge::seq("merge", "save"));
+        g.add_edge(FlowEdge::seq("save", "end"));
         g.add_edge(FlowEdge::exception("query", "merge"));
         g
     }
@@ -617,10 +797,14 @@ mod tests {
         let b = bundle_of(&g);
         let sched = &b.file("generated/scheduler.py").unwrap().content;
         assert!(sched.contains("ThreadPoolExecutor"));
-        // read 与 query 无依赖，应出现在同一层
+        // read 与 query 无数据依赖，应在同一并行层（同一层数组中同时出现）
+        let layer_line = sched
+            .lines()
+            .find(|l| l.contains("\"query\"") && l.contains("\"read\""))
+            .unwrap_or("");
         assert!(
-            sched.contains("[\"query\", \"read\"]") || sched.contains("[\"read\", \"query\"]"),
-            "调度层未生成并行层:\n{}",
+            layer_line.contains("\"query\"") && layer_line.contains("\"read\"") && layer_line.contains('['),
+            "调度层未将 read/query 放入同一并行层:\n{}",
             sched
         );
     }
@@ -739,5 +923,65 @@ def run():
         // 反解析应至少恢复出可执行节点
         assert!(back.graph.nodes.len() > 2);
         assert!(back.graph.topo_order().is_ok() || true);
+    }
+
+    // ============ 草莓多平台：全栈生成扩展测试 ============
+
+    #[test]
+    fn generates_db_schema_from_db_access() {
+        let g = pipeline();
+        let b = bundle_of(&g);
+        let sql = &b.file("generated/schema.sql").unwrap().content;
+        // 落库节点写入 db:orders.order_no/amount ⇒ 应建 orders 表
+        assert!(sql.contains("CREATE TABLE IF NOT EXISTS orders"), "未生成 orders 表:\n{}", sql);
+        assert!(sql.contains("order_no"), "字段推导缺失:\n{}", sql);
+        assert!(sql.contains("amount"), "字段推导缺失:\n{}", sql);
+        // 读访问 db:orders 不应重复建表
+        assert_eq!(sql.matches("CREATE TABLE IF NOT EXISTS orders").count(), 1);
+        // 事务表标记
+        assert!(sql.contains("事务表"), "事务性节点未标注:\n{}", sql);
+    }
+
+    #[test]
+    fn db_schema_is_idempotent_ddl() {
+        let g = pipeline();
+        let b = bundle_of(&g);
+        let sql = &b.file("generated/schema.sql").unwrap().content;
+        // 全部用 IF NOT EXISTS，可重复执行
+        assert!(sql.contains("IF NOT EXISTS"));
+        assert!(!sql.contains("DROP TABLE"));
+    }
+
+    #[test]
+    fn generates_vue_frontend_skeleton() {
+        let g = pipeline();
+        let b = bundle_of(&g);
+        let vue = &b.file("generated/App.vue").unwrap().content;
+        assert!(vue.contains("<template>"));
+        assert!(vue.contains("<script setup>"));
+        assert!(vue.contains("import { reactive, ref }"));
+        // 表单字段来自流程读写集
+        assert!(vue.contains("v-model=\"form.order_no\"") || vue.contains("v-model=\"form.amount\""));
+    }
+
+    #[test]
+    fn frontend_marks_guard_fields_required() {
+        // Guard 节点的写入字段应在前端标记为 required
+        let mut g = FlowGraph::new("signup", "注册");
+        g.add_node(FlowNode::new("start", "开始", NodeKind::Start));
+        g.add_node(
+            FlowNode::new("validate", "校验手机号", NodeKind::Guard)
+                .with_access(Access::write("var:phone")),
+        );
+        g.add_node(FlowNode::new("end", "结束", NodeKind::End));
+        g.add_edge(FlowEdge::seq("start", "validate"));
+        g.add_edge(FlowEdge::seq("validate", "end"));
+        let plan = dataflow::analyze(&g);
+        let sc = schedule::schedule(&g, &plan.dependencies);
+        let cf = conflict::detect(&g, &plan.layers);
+        let b = generate(&g, &plan, &sc, &cf);
+        let vue = &b.file("generated/App.vue").unwrap().content;
+        assert!(vue.contains("required"), "Guard 写入字段应为必填:\n{}", vue);
+        assert!(vue.contains("v-model=\"form.phone\""), "字段未出现在表单:\n{}", vue);
     }
 }

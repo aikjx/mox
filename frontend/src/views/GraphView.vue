@@ -6,6 +6,18 @@
         <p class="page-subtitle">算子关系网络可视化 · 中心性 / 社区发现 / 最短路径分析</p>
       </div>
       <div class="head-actions">
+        <el-input
+          v-model="searchQ"
+          placeholder="搜索对话/图谱节点"
+          clearable
+          style="width: 240px"
+          @keyup.enter="doSearch"
+          @clear="clearSearch"
+        >
+          <template #append>
+            <el-button @click="doSearch"><el-icon><Search /></el-icon></el-button>
+          </template>
+        </el-input>
         <el-button @click="reload"><el-icon><Refresh /></el-icon> 刷新</el-button>
       </div>
     </div>
@@ -29,6 +41,25 @@
       </div>
 
       <div class="side">
+        <div class="panel card-pad" v-if="searchResult">
+          <h3 class="section-title">
+            搜索结果
+            <el-button text size="small" @click="clearSearch">清空</el-button>
+          </h3>
+          <div v-if="searchResult.dialogues.length" class="nb-list">
+            <div class="nb" v-for="(d, i) in searchResult.dialogues" :key="'d'+i">
+              <span class="comm-tag">对话</span> {{ d.snippet }}
+            </div>
+          </div>
+          <div v-if="searchResult.graph_nodes.length" class="nb-list">
+            <div class="nb" v-for="(n, i) in searchResult.graph_nodes" :key="'n'+i">
+              <span class="comm-tag">节点</span> {{ n.title }}
+              <span class="muted">{{ n.snippet }}</span>
+            </div>
+          </div>
+          <el-empty v-if="!searchResult.dialogues.length && !searchResult.graph_nodes.length"
+                    description="无匹配" :image-size="50" />
+        </div>
         <div class="panel card-pad">
           <h3 class="section-title">图谱分析</h3>
           <el-tabs v-model="tab">
@@ -82,6 +113,36 @@
                 </div>
               </div>
             </el-tab-pane>
+
+            <el-tab-pane label="中心性" name="cent">
+              <el-radio-group v-model="centType" size="small" style="margin-bottom: 10px">
+                <el-radio-button value="pagerank">PageRank</el-radio-button>
+                <el-radio-button value="degree">度中心性</el-radio-button>
+                <el-radio-button value="betweenness">中介中心性</el-radio-button>
+              </el-radio-group>
+              <el-button :loading="loadingCent" @click="loadCentrality" size="small" style="width: 100%; margin-bottom: 10px">
+                计算中心性
+              </el-button>
+              <div v-if="centrality.length" class="nb-list">
+                <div v-for="(c, i) in centrality.slice(0, 15)" :key="i" class="nb">
+                  <span class="rank">#{{ i + 1 }}</span>
+                  {{ c.id }} <span class="muted">{{ c.value.toFixed(4) }}</span>
+                </div>
+              </div>
+            </el-tab-pane>
+
+            <el-tab-pane label="社区发现" name="comm">
+              <el-button :loading="loadingComm" @click="loadCommunities" size="small" style="width: 100%; margin-bottom: 10px">
+                检测社区
+              </el-button>
+              <div v-if="communities.length" class="nb-list">
+                <div v-for="(c, i) in communities" :key="i" class="nb comm">
+                  <span class="comm-tag">社区{{ c.id }}</span>
+                  <span class="muted">{{ c.nodes.length }} 节点 · 密度 {{ c.density.toFixed(3) }}</span>
+                  <div class="comm-nodes">{{ c.nodes.slice(0, 8).join('、') }}{{ c.nodes.length > 8 ? '…' : '' }}</div>
+                </div>
+              </div>
+            </el-tab-pane>
           </el-tabs>
         </div>
       </div>
@@ -99,13 +160,32 @@ import {
   getGraphStats,
   getShortestPath,
   getNeighbors,
-  recommendNodes
+  recommendNodes,
+  graphSearch
 } from '@/api'
 
 const graphEl = ref(null)
 const stats = ref(null)
 const nodeIds = ref([])
 let fg = null
+
+// 统一搜索（对话 + 图谱节点）
+const searchQ = ref('')
+const searchResult = ref(null)
+async function doSearch() {
+  const q = searchQ.value.trim()
+  if (!q) return
+  try {
+    const res = await graphSearch(q, 30)
+    searchResult.value = res.data
+  } catch (e) {
+    ElMessage.error('搜索失败：' + e.message)
+  }
+}
+function clearSearch() {
+  searchQ.value = ''
+  searchResult.value = null
+}
 
 const tab = ref('path')
 const pathSrc = ref('')
