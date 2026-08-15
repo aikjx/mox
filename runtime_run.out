@@ -1,0 +1,16 @@
+[2m2026-08-15T16:50:46.820739Z[0m [32m INFO[0m ThreadId(01) [2moperator_server[0m[2m:[0m 🚀 启动算子统一系统 v3.0 - AI驱动全维突破平台...
+[2m2026-08-15T16:50:46.825251Z[0m [32m INFO[0m ThreadId(01) [2moperator_server[0m[2m:[0m 已通过 DEEPSEEK_API_KEY 启用真实 LLM 接入 (model=deepseek-chat)
+[2m2026-08-15T16:50:46.825633Z[0m [32m INFO[0m ThreadId(01) [2mai_agent::plugin_bus[0m[2m:[0m 插件注册到消息总线: wasm-runtime (type=Builtin)
+[2m2026-08-15T16:50:46.825875Z[0m [32m INFO[0m ThreadId(01) [2mai_agent::plugin_bus[0m[2m:[0m 插件注册到消息总线: knowledge-graph (type=Builtin)
+[2m2026-08-15T16:50:46.826147Z[0m [32m INFO[0m ThreadId(01) [2moperator_server[0m[2m:[0m 已加载 5 个工作流模板
+[2m2026-08-15T16:50:46.831319Z[0m [32m INFO[0m ThreadId(01) [2moperator_server[0m[2m:[0m 📡 服务器监听在 http://0.0.0.0:3000
+[2m2026-08-15T16:50:46.831690Z[0m [32m INFO[0m ThreadId(01) [2moperator_server[0m[2m:[0m ══════════════════════════════════════════════════════════
+[2m2026-08-15T16:50:46.831934Z[0m [32m INFO[0m ThreadId(01) [2moperator_server[0m[2m:[0m   🚀 算子统一系统 v3.0 - AI驱动全维突破平台
+[2m2026-08-15T16:50:46.832180Z[0m [32m INFO[0m ThreadId(01) [2moperator_server[0m[2m:[0m   🧠 AI智能对话 · 算法归一化 · 全资源管理 · 插件互通 · 流程自动化
+[2m2026-08-15T16:50:46.832450Z[0m [32m INFO[0m ThreadId(01) [2moperator_server[0m[2m:[0m   🤖 真实AI对接(OpenAI兼容) · 浏览器自动化 · 知识图谱(34+节点)
+[2m2026-08-15T16:50:46.832669Z[0m [32m INFO[0m ThreadId(01) [2moperator_server[0m[2m:[0m   🌐 访问地址: http://localhost:3000
+[2m2026-08-15T16:50:46.832861Z[0m [32m INFO[0m ThreadId(01) [2moperator_server[0m[2m:[0m ══════════════════════════════════════════════════════════
+[2m2026-08-15T16:51:33.581700Z[0m [33m WARN[0m ThreadId(02) [2mauth[0m[2m:[0m 未授权访问被拒绝: /api/status
+[2m2026-08-15T16:51:41.724868Z[0m [32m INFO[0m ThreadId(14) [2moperator_core::category[0m[2m:[0m 执行工作流第 1/1 步: sigmoid
+[2m2026-08-15T16:52:29.682813Z[0m [33m WARN[0m ThreadId(02) [2mauth[0m[2m:[0m 未授权访问被拒绝: /api/status
+[2m2026-08-15T16:53:00.632933Z[0m [32m INFO[0m ThreadId(15) [2moperator_core::category[0m[2m:[0m 执行工作流第 1/1 步: tanh
