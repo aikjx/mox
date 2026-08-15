@@ -132,7 +132,7 @@ impl Plugin for FlowBridgePlugin {
   `algo.vetoed==true`（通过本地共享状态读取，避免同步内网络调用），则：
   ```rust
   if st.gate.vetoed() {
-      return ToolResult::error("算法联盟验证否决：优化破坏语义依赖，已拦截", None);
+      return ToolResult::error("璇玑验证否决：优化破坏语义依赖，已拦截", None);
   }
   ```
   （veto 状态由后台 optimize 任务写入 `Arc<Mutex<GateState>>`，中间件只同步读）
@@ -141,7 +141,7 @@ impl Plugin for FlowBridgePlugin {
 ```yaml
 name: flow-bridge
 version: 0.1.0
-description: "注入 flow-ai + expert-alliance 流程图/关系网优化内核（算法联盟最高权限验证）"
+description: "注入 flow-ai + expert-alliance 流程图/关系网优化内核（璇玑验证）"
 author: algorithm-alliance
 kind: plugin
 dependencies:

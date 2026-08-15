@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>璇玑 · 算法联盟智能中心</title>
+<title>璇玑 · 璇玑智能中心</title>
 <style>
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: #0b1020; color: #e6ecff; font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; }
@@ -40,7 +40,7 @@
 <body>
 <div id="app">
   <header>
-    <h1>🌀 璇玑 · 算法联盟智能中心</h1>
+    <h1>🌀 璇玑 · 璇玑智能中心</h1>
     <span class="tag">全维设计 · 分析 · 开发 · 测试 · 修复 · 优化 → 七专家并行诊断 → 算法否决网关(最高权限) → flow-ai 求解 → 治理闸门</span>
     <div class="viewToggle">
       <button id="btnFlow" class="active" onclick="setView('flow')">流程图</button>
@@ -67,7 +67,7 @@
       <div id="gateBox"><span class="tag">尚未运行</span></div>
     </div>
     <div class="card" style="border-color:#7CFFB2;">
-      <h2>⛨ 算法联盟验证（最高权限）</h2>
+      <h2>⛨ 璇玑验证（最高权限）</h2>
       <div id="algoBox"><span class="tag">尚未运行</span></div>
     </div>
     <div class="card">
@@ -306,7 +306,7 @@ function renderSide(data) {
   document.getElementById('gateBox').innerHTML =
     `<span class="pill ${g.approved?'ok':'block'}">${g.approved?'✅ 批准出码':'⛔ 拦截'}</span>` +
     `<span class="pill kind">状态: ${g.status}</span><div style="margin-top:6px;font-size:12px;color:#9fb4ee;">${g.reason}</div>`;
-  // ⛨ 算法联盟验证（最高权限，不可被治理覆盖）
+  // ⛨ 璇玑验证（最高权限，不可被治理覆盖）
   const a = data.algorithm;
   const algoTag = a.vetoed
     ? '<span class="pill block">⛔ 算法否决 → 强制拦截</span>'
@@ -473,7 +473,7 @@ function loadDemo() {
         { id:"sb", name:"沙箱运行校验", kind:"task", tool:"shell", duration_ms:300, idempotent:true },
         { id:"err", name:"异常处理器", kind:"guard", tool:"compute", duration_ms:40, tags:["error_handler"] },
         { id:"sk", name:"Skill提炼+冗余裁剪", kind:"task", tool:"llm", duration_ms:200 },
-        { id:"av", name:"算法联盟验证网关", kind:"guard", tool:"compute", duration_ms:70, tags:["algo_verify"] },
+        { id:"av", name:"璇玑验证网关", kind:"guard", tool:"compute", duration_ms:70, tags:["algo_verify"] },
         { id:"aud", name:"审计+治理闸门", kind:"guard", tool:"compute", duration_ms:50, tags:["audit", "gate"] },
         { id:"e", name:"结束", kind:"end" },
       ],

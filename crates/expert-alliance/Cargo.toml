@@ -9,6 +9,7 @@ license = "MIT"
 flow-ai = { path = "../flow-ai" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+serde_yaml = "0.9"
 thiserror = "1"
 anyhow = "1"
 uuid = { version = "1", features = ["v4"] }
@@ -16,3 +17,6 @@ chrono = { version = "0.4", features = ["serde"] }
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "sync"] }
 axum = "0.7"
 tower-http = { version = "0.5", features = ["cors", "fs"] }
+sha2 = "0.10"
+http = "1"
+hostname = "0.3"

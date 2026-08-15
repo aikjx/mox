@@ -17,6 +17,12 @@ pub mod server;
 pub mod verify;
 /// 多场景 Benchmark：用真实引擎量化核心收益（产品页可复用证据）
 pub mod bench;
+/// 外部审计 Sink：Syslog / S3(WORM) / Kafka，满足 SOC2/GDPR 合规要求
+pub mod audit;
+/// RBAC 引擎：资源级权限控制，多角色继承链，跨租户隔离
+pub mod rbac;
+/// 流程 YAML 外部化：业务人员用 YAML 增删改流程，无需碰 Rust 代码
+pub mod flow_loader;
 
 pub use context::{CompatibilityRegistry, GovernContext, LoopGuard, LoopPolicy, McpTool, Principal, ResourceQuota, SkillRef, Tenant};
 pub use expert::{dispatch, Constraint, Expert, ExpertOpinion, Risk, Suggestion};
@@ -25,6 +31,21 @@ pub use ir::{auto_dimension, Dimension, DimensionTag, DimensionedFlow};
 pub use pipeline::{alliance_optimize, GovernanceReport};
 pub use reconcile::{reconcile, ReconciledPlan, ReconcileConflict};
 pub use verify::{verify, AlgoVerification, Check};
+pub use audit::{
+    AuditContext, AuditSink, AuditError,
+    ExtAuditEvent, AuditAction, AuditOutcome,
+    AuditSeverity, AuditActor, AuditResource,
+    SyslogSink, S3Sink, NatsSink, RabbitMqSink, NoopSink, MultiSink, FlushPolicy,
+};
+pub use rbac::{
+    check, check_with_audit, PermissionCheck, PermissionResult,
+    RbacPolicy, Permission, RbacError,
+};
+pub use rbac::check::Resource;
+pub use flow_loader::{
+    FlowLoader, FlowLoadError, FlowDef, NodeDef, YamlEdgeDef,
+    ValidationError, YamlFlowLoader,
+};
 
 /// 便捷重导出 flow-ai 的公共类型
 pub mod flow {

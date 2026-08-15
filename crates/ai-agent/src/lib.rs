@@ -85,11 +85,17 @@ impl AIAgent {
 
     /// 处理用户消息 - 智能对话入口（优先使用真实LLM，降级到规则引擎）
     pub async fn chat(&self, session_id: &str, message: &str) -> Result<ChatResponse> {
+        // 先把用户消息写入会话历史，保证两条调用路径都具备多轮对话记忆
+        {
+            let mut conv = self.conversation.write().await;
+            conv.add_user_message(session_id, message);
+        }
+
         // 检测是否需要浏览器自动化
         let needs_browser = self.detect_browser_intent(message);
-        
+
         if needs_browser {
-            return self.handle_browser_automation(message).await;
+            return self.handle_browser_automation(session_id, message).await;
         }
 
         // 尝试使用真实LLM
@@ -100,8 +106,8 @@ impl AIAgent {
         }
         drop(llm);
 
-        // 降级到内置规则引擎
-        let conv = self.conversation.read().await;
+        // 降级到内置规则引擎（用户消息已写入，process_message 只追加助手回复）
+        let mut conv = self.conversation.write().await;
         conv.process_message(session_id, message).await
     }
 
@@ -118,8 +124,10 @@ impl AIAgent {
     async fn chat_with_llm(&self, session_id: &str, message: &str) -> Result<ChatResponse> {
         let mut conv = self.conversation.write().await;
         let history = conv.get_session_history(session_id);
-        
-        let mut messages: Vec<LLMChatMessage> = history.iter().map(|m| LLMChatMessage {
+        drop(conv);
+
+        // history 已包含本次用户消息（由 chat 入口写入），直接映射为 LLM 上下文
+        let messages: Vec<LLMChatMessage> = history.iter().map(|m| LLMChatMessage {
             role: match m.role {
                 MessageRole::User => "user".to_string(),
                 MessageRole::Assistant => "assistant".to_string(),
@@ -127,8 +135,6 @@ impl AIAgent {
             },
             content: m.content.clone(),
         }).collect();
-        messages.push(LLMChatMessage { role: "user".to_string(), content: message.to_string() });
-        drop(conv);
 
         let llm = self.llm_client.read().await;
         match llm.chat(messages).await {
@@ -141,21 +147,21 @@ impl AIAgent {
             Err(e) => {
                 tracing::warn!("LLM调用失败，降级到规则引擎: {}", e);
                 drop(llm);
-                let conv = self.conversation.read().await;
+                let mut conv = self.conversation.write().await;
                 conv.process_message(session_id, message).await
             }
         }
     }
 
-    async fn handle_browser_automation(&self, message: &str) -> Result<ChatResponse> {
+    async fn handle_browser_automation(&self, session_id: &str, message: &str) -> Result<ChatResponse> {
         let (url, steps) = {
             let _browser = self.browser.read().await;
             BrowserAutomationEngine::parse_natural_language(message)
         };
 
         if steps.is_empty() {
-            let conv = self.conversation.read().await;
-            return conv.process_message("browser-session", "请提供要访问的URL或具体的浏览器操作指令").await;
+            let mut conv = self.conversation.write().await;
+            return conv.process_message(session_id, "请提供要访问的URL或具体的浏览器操作指令").await;
         }
 
         let mut browser = self.browser.write().await;
@@ -195,15 +201,12 @@ impl AIAgent {
             }
         }
 
+        // 持久化浏览器回复到会话历史，保持多轮对话记忆一致
+        let mut conv = self.conversation.write().await;
+        let response = conv.add_assistant_message(session_id, &response_text);
+
         Ok(ChatResponse {
-            message: ChatMessage {
-                id: uuid::Uuid::new_v4().to_string(),
-                role: MessageRole::Assistant,
-                content: response_text,
-                timestamp: chrono::Utc::now(),
-                metadata: HashMap::from([("type".into(), serde_json::json!("browser_automation"))]),
-                referenced_operators: vec![],
-            },
+            message: response.message,
             actions: vec![],
             recommended_operators: vec![],
             suggestions: vec!["访问其他网站".to_string(), "截图网页".to_string(), "搜索内容".to_string()],

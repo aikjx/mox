@@ -516,3 +516,88 @@ pub fn analyze_spiral(params: &SpiralParams, speed: f64, k: &PhysicalConstants) 
         ],
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_dimension_mul_div_pow() {
+        let area = Dimension::LENGTH.mul(&Dimension::LENGTH);
+        assert_eq!(area.length, 2);
+        let speed = Dimension::LENGTH.div(&Dimension::TIME);
+        assert_eq!(speed.length, 1);
+        assert_eq!(speed.time, -1);
+        let vol = Dimension::LENGTH.pow(3);
+        assert_eq!(vol.length, 3);
+        let energy = Dimension::MASS.mul(&Dimension::LENGTH.pow(2)).mul(&Dimension::TIME.pow(-2));
+        assert_eq!(energy.mass, 1);
+        assert_eq!(energy.length, 2);
+        assert_eq!(energy.time, -2);
+    }
+
+    #[test]
+    fn test_dimension_is_scalar_and_symbol() {
+        assert!(Dimension::SCALAR.is_scalar());
+        assert!(!Dimension::MASS.is_scalar());
+        assert_eq!(Dimension::SCALAR.to_symbol(), "1 (标量)");
+        let accel = Dimension::LENGTH.div(&Dimension::TIME.pow(2));
+        assert_eq!(accel.to_symbol(), "L T^-2");
+    }
+
+    #[test]
+    fn test_physical_constants_default_fine_structure() {
+        let k = PhysicalConstants::default();
+        // 精细结构常数 α ≈ 1/137
+        assert!(k.alpha > 1.0 / 140.0 && k.alpha < 1.0 / 130.0, "alpha={}", k.alpha);
+        // 元电荷、光速、引力常数合理
+        assert_eq!(k.c, 299_792_458.0);
+        assert!(k.e > 1.6e-19 && k.e < 1.7e-19);
+        assert!(k.g > 6.6e-11 && k.g < 6.7e-11);
+        assert!(!k.dataset.is_empty());
+    }
+
+    #[test]
+    fn test_kinematics_relationships() {
+        let params = SpiralParams { curvature: 0.5, torsion: 0.25, step_h: 1.0, radius: Some(2.0) };
+        let kin = params.kinematics(299_792_458.0);
+        // 真实螺距 = 2π h
+        assert!((kin.true_pitch - 2.0 * std::f64::consts::PI).abs() < 1e-6);
+        // 升角 tan(β) = τ/κ
+        assert!((kin.pitch_angle_tan - 0.5).abs() < 1e-9);
+        // 角频率 ω = v·κ
+        assert!((kin.angular_frequency - 299_792_458.0 * 0.5).abs() < 1e-1);
+        // 周期 T = 2π/(v·κ)
+        assert!((kin.period_t - 2.0 * std::f64::consts::PI / (299_792_458.0 * 0.5)).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_diagnose_dimensions_finds_break() {
+        let k = PhysicalConstants::default();
+        let checks = diagnose_dimensions(&k);
+        assert!(!checks.is_empty());
+        // 至少有一条维度破裂（如 G ≈ α² μ₀）
+        assert!(checks.iter().any(|c| !c.consistent));
+    }
+
+    #[test]
+    fn test_numerical_checks_non_empty() {
+        let k = PhysicalConstants::default();
+        let checks = numerical_checks(&k);
+        assert!(!checks.is_empty());
+    }
+
+    #[test]
+    fn test_analyze_spiral_full_pipeline() {
+        let k = PhysicalConstants::default();
+        let params = SpiralParams { curvature: 1.0, torsion: 0.5, step_h: 0.1, radius: None };
+        let report = analyze_spiral(&params, k.c, &k);
+        assert!(!report.verdict.is_empty());
+        assert!(!report.reliable_parts.is_empty());
+        assert!(!report.extra_assumptions.is_empty());
+        assert_eq!(report.dimension_checks.len(), diagnose_dimensions(&k).len());
+        // 运动学字段与单独 kinematics 一致
+        let kin = params.kinematics(k.c);
+        assert_eq!(report.kinematics.true_pitch, kin.true_pitch);
+    }
+}

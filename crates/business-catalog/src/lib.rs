@@ -396,6 +396,9 @@ pub fn build_topology() -> TopologyGraph {
     // —— Rule 实体（合规约束，ingest_flow 自动 Constrains 命中节点）——
     topo.add_entity(Entity::new("rule:pii", EntityKind::Rule, "PII 必须脱敏").with_keywords(["pii", "脱敏", "政务"]));
     topo.add_entity(Entity::new("rule:dual-review", EntityKind::Rule, "文书双人复核").with_keywords(["复核", "法院", "留痕"]));
+    // —— FlowNode 实体（流程节点维度，与 Tool/Skill 形成六维关系网）——
+    topo.add_entity(Entity::new("flownode:start", EntityKind::FlowNode, "开始节点").with_keywords(["流程", "节点", "start"]));
+    topo.add_entity(Entity::new("flownode:end", EntityKind::FlowNode, "结束节点").with_keywords(["流程", "节点", "end"]));
     // —— 关系：模型服务任务类型 ——
     topo.add_relation(Relation::new("model:hermes3", "flow:gov-pii:ic", RelationKind::Serves, 0.9));
     topo.add_relation(Relation::new("model:light", "flow:bot:ic", RelationKind::Serves, 0.95));

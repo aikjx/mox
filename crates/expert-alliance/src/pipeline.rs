@@ -19,7 +19,7 @@ pub struct GovernanceReport {
     pub expert_scores: Vec<(String, f64)>,
     /// 优化报告（含并行/关键路径/调度/冲突/代码）
     pub optimization: flow_ai::pipeline::OptimizationReport,
-    /// ⛨ 算法联盟验证报告（最高权限，不可被治理覆盖）
+    /// ⛨ 璇玑验证报告（最高权限，不可被治理覆盖）
     pub algo: AlgoVerification,
     /// 治理闸门结果
     pub gate: GateResult,
@@ -59,7 +59,7 @@ pub fn alliance_optimize(raw: &FlowGraph, ctx: &GovernContext) -> GovernanceRepo
             .collect();
     }
 
-    // 5. ⛨ 算法联盟验证网关（最高权限，在治理之前）
+    // 5. ⛨ 璇玑验证网关（最高权限，在治理之前）
     // 5.5 汇总专家「否决级」风险（Risk.veto=true）→ 并入算法验证否决。
     //     这是正交机制：未来任何专家判定「不可自动修复、必须人工审批」的风险，
     //     只需 push_veto，即可自动触发否决，无需在编排层单独补丁。

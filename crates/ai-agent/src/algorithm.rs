@@ -615,3 +615,64 @@ impl Default for AlgorithmAnalyzer {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_analyze_quicksort_recognized_as_sorting() {
+        let analyzer = AlgorithmAnalyzer::new();
+        let code = "fn quicksort(arr: &[i32]) -> Vec<i32> {
+            if arr.len() <= 1 { return arr.to_vec(); }
+            let pivot = arr[arr.len()/2];
+            let mut left = vec![x for x in arr if x < pivot];
+            // divide and conquer
+            quicksort(&left);
+            quicksort(&right);
+        }";
+        let result = analyzer.analyze(code, AlgorithmType::Sorting).await.unwrap();
+        assert_eq!(result.algorithm_type, AlgorithmType::Sorting);
+        assert!(!result.nodes.is_empty());
+        assert!(!result.edges.is_empty());
+        // 快排应被识别为「快速排序」模式，产生优化建议
+        assert!(!result.optimization_suggestions.is_empty());
+        assert!(!result.normalized_workflow.is_empty());
+        // 复杂度分析应非占位
+        assert!(!result.complexity_analysis.time_complexity.contains("待定"));
+    }
+
+    #[tokio::test]
+    async fn test_analyze_pagerank_recognized_as_graph() {
+        let analyzer = AlgorithmAnalyzer::new();
+        let code = "for iter in 0..max_iter {
+            rank = damping * matmul(transition, rank) + (1.0 - damping) / n;
+            // check convergence
+        }";
+        let result = analyzer.analyze(code, AlgorithmType::Graph).await.unwrap();
+        assert_eq!(result.algorithm_type, AlgorithmType::Graph);
+        assert!(!result.nodes.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_analyze_custom_falls_back_to_generic() {
+        let analyzer = AlgorithmAnalyzer::new();
+        let code = "let x = do_something_completely_unknown();";
+        let result = analyzer.analyze(code, AlgorithmType::Custom("unknown".to_string())).await.unwrap();
+        assert!(!result.nodes.is_empty());
+        // 未知算法应给出通用归一化工作流（至少包含 linear/normalize）
+        assert!(!result.normalized_workflow.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_analyze_generated_flow_has_valid_edges() {
+        let analyzer = AlgorithmAnalyzer::new();
+        let code = "merge sort: divide array into halves, then conquer by merging sorted subarrays";
+        let result = analyzer.analyze(code, AlgorithmType::Sorting).await.unwrap();
+        let node_ids: Vec<&String> = result.nodes.iter().map(|n| &n.id).collect();
+        for e in &result.edges {
+            assert!(node_ids.iter().any(|id| **id == *e.source), "edge source {} missing", e.source);
+            assert!(node_ids.iter().any(|id| **id == *e.target), "edge target {} missing", e.target);
+        }
+    }
+}

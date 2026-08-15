@@ -55,15 +55,12 @@ impl OperatorDag {
     pub fn topological_order(&self) -> Result<Vec<String>, String> {
         let sorted = toposort(&self.graph, None)
             .map_err(|_| "DAG中存在环")?;
+        // 反向映射 O(n)，避免对排序结果逐元素反查 node_map 的 O(n²) 开销
+        let idx_to_name: std::collections::HashMap<NodeIndex, &String> =
+            self.node_map.iter().map(|(name, idx)| (*idx, name)).collect();
         Ok(sorted
             .iter()
-            .map(|idx| {
-                self.node_map
-                    .iter()
-                    .find(|(_, i)| *i == idx)
-                    .map(|(name, _)| name.clone())
-                    .unwrap()
-            })
+            .map(|idx| idx_to_name.get(idx).cloned().cloned().unwrap_or_default())
             .collect())
     }
 
@@ -229,5 +226,110 @@ mod tests {
         let path = dag.critical_path();
         assert!(path.contains(&"a".to_string()) || path.contains(&"b".to_string()));
         assert!(path.contains(&"c".to_string()));
+    }
+
+    #[test]
+    fn test_cycle_detection_self_loop_fails_toposort() {
+        let mut dag = OperatorDag::new();
+        let op = Arc::new(IdentityOperator::new(10));
+        dag.add_operator("a", op);
+        // add_dependency 接受自环边（petgraph 允许），但拓扑排序会检测到环
+        assert!(dag.add_dependency("a", "a").is_ok());
+        assert!(dag.topological_order().is_err());
+    }
+
+    #[test]
+    fn test_cycle_detection_back_edge_fails_toposort() {
+        let mut dag = OperatorDag::new();
+        let op1 = Arc::new(IdentityOperator::new(10));
+        let op2 = Arc::new(IdentityOperator::new(10));
+        dag.add_operator("a", op1);
+        dag.add_operator("b", op2);
+        dag.add_dependency("a", "b").unwrap();
+        // 加 b -> a 形成环，add_dependency 接受，但拓扑排序应失败
+        assert!(dag.add_dependency("b", "a").is_ok());
+        assert!(dag.topological_order().is_err());
+    }
+
+    #[test]
+    fn test_add_dependency_unknown_operator_errors() {
+        let mut dag = OperatorDag::new();
+        let op = Arc::new(IdentityOperator::new(10));
+        dag.add_operator("a", op);
+        assert!(dag.add_dependency("a", "ghost").is_err());
+        assert!(dag.add_dependency("ghost", "a").is_err());
+    }
+
+    #[test]
+    fn test_resource_cost_aggregation_and_within_limits() {
+        use operator_core::resource::{ResourceCost, ResourceLimits, ResourceUsage};
+
+        let c1 = ResourceCost::new(100, 1024);
+        let c2 = ResourceCost::new(200, 2048);
+        let total_cpu = c1.cpu_cycles + c2.cpu_cycles;
+        let total_mem = c1.memory_bytes + c2.memory_bytes;
+        assert_eq!(total_cpu, 300);
+        assert_eq!(total_mem, 3072);
+
+        let usage = ResourceUsage {
+            cpu_time_ms: 50,
+            memory_peak_bytes: 3000,
+            disk_io_bytes: 0,
+            network_bytes: 0,
+        };
+        let limits_ok = ResourceLimits {
+            max_cpu_time_ms: 100,
+            max_memory_bytes: 4096,
+            max_disk_io_bytes: u64::MAX,
+            max_network_bytes: u64::MAX,
+        };
+        assert!(usage.within_limits(&limits_ok));
+        let limits_tight = ResourceLimits {
+            max_cpu_time_ms: 10,
+            max_memory_bytes: 1024,
+            max_disk_io_bytes: u64::MAX,
+            max_network_bytes: u64::MAX,
+        };
+        assert!(!usage.within_limits(&limits_tight));
+    }
+
+    #[test]
+    fn test_operator_resource_cost_aggregation() {
+        use operator_core::operator::Operator;
+        use operator_core::resource::ResourceCost;
+        let mut dag = OperatorDag::new();
+        let op1 = Arc::new(IdentityOperator::new(10));
+        let op2 = Arc::new(IdentityOperator::new(10));
+        dag.add_operator("a", op1.clone());
+        dag.add_operator("b", op2.clone());
+        dag.add_dependency("a", "b").unwrap();
+        // 资源成本可分别获取并聚合
+        let total_cpu = op1.resource_cost().cpu_cycles + op2.resource_cost().cpu_cycles;
+        let total_mem = op1.resource_cost().memory_bytes + op2.resource_cost().memory_bytes;
+        assert!(total_cpu > 0);
+        assert!(total_mem > 0);
+        let _ = ResourceCost::new(total_cpu, total_mem);
+        // 拓扑序仍成立
+        assert_eq!(dag.topological_order().unwrap(), vec!["a", "b"]);
+    }
+
+    #[test]
+    fn test_multiple_dags_topological_order_with_diamond() {
+        let mut dag = OperatorDag::new();
+        let ops: Vec<Arc<IdentityOperator>> = (0..4).map(|_| Arc::new(IdentityOperator::new(4))).collect();
+        dag.add_operator("top", ops[0].clone());
+        dag.add_operator("left", ops[1].clone());
+        dag.add_operator("right", ops[2].clone());
+        dag.add_operator("bottom", ops[3].clone());
+        dag.add_dependency("top", "left").unwrap();
+        dag.add_dependency("top", "right").unwrap();
+        dag.add_dependency("left", "bottom").unwrap();
+        dag.add_dependency("right", "bottom").unwrap();
+        let order = dag.topological_order().unwrap();
+        // top 在前，bottom 在后
+        let top_pos = order.iter().position(|x| x == "top").unwrap();
+        let bottom_pos = order.iter().position(|x| x == "bottom").unwrap();
+        assert!(top_pos < bottom_pos);
+        assert!(order.len() == 4);
     }
 }

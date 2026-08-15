@@ -43,13 +43,13 @@ fn main() -> ExitCode {
 fn usage() {
     eprintln!(
         r#"┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-  🌀 璇玑 Xuanji Core · 算法联盟智能中心
+  🌀 璇玑 Xuanji Core · 璇玑智能中心
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
   全维设计·分析·开发·测试·修复·优化 → 流程图即开发产物
 
   alliance serve [--port 8080]                 启动独立 HTTP 服务 + Three.js 前端
   alliance optimize <flow.json> [--out DIR]    全维优化并输出报告
-  alliance verify <flow.json>                  算法联盟验证（最高权限，退出码 0=通过 2=否决）
+  alliance verify <flow.json>                  璇玑验证（最高权限，退出码 0=通过 2=否决）
   alliance bench                               多场景 Benchmark（量化加速比/剪伪依赖/冲突自愈/LLM削减）
   alliance demo                                内置政务场景端到端演示
 
@@ -187,7 +187,7 @@ fn cmd_verify(args: &[String]) -> anyhow::Result<()> {
     let ctx = default_ctx();
     let rep = alliance_optimize(&g, &ctx);
     let v = &rep.algo;
-    println!("=== 算法联盟验证网关（最高权限）===");
+    println!("=== 璇玑验证网关（最高权限）===");
     for c in &v.checks {
         let mark = if c.passed { "OK" } else { "FAIL" };
         let lvl = if c.blocking { "阻断" } else { "告警" };

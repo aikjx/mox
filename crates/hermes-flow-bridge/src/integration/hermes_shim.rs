@@ -55,7 +55,7 @@ impl Plugin for HermesFlowBridge {
                                             run: &mut dyn FnMut(Option<Value>) -> ToolResult| {
             let decision = on_tool_execution(&st2);
             if decision.blocked {
-                // ⛨ 算法联盟验证否决
+                // ⛨ 璇玑验证否决
                 return ToolResult::error(&decision.reason.unwrap_or_default());
             }
             run(None)

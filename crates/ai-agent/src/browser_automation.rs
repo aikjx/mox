@@ -711,7 +711,10 @@ fn normalize_url(url: &str) -> String {
 
 /// 从HTML中提取<title>
 fn extract_title(html: &str) -> String {
-    let lower = html.to_lowercase();
+    // 注意：必须使用 ASCII-only 小写化（1:1 字符映射），否则非 ASCII 字符
+    // （如 'İ'）经 to_lowercase() 会改变长度，导致 lower 与 html 的索引错位、
+    // 切片越界或提取到错误内容。title/og:title 标签均为 ASCII，足够。
+    let lower = html.to_ascii_lowercase();
     if let Some(start) = lower.find("<title") {
         let after_tag = &lower[start..];
         if let Some(close_bracket) = after_tag.find('>') {
@@ -726,7 +729,8 @@ fn extract_title(html: &str) -> String {
     }
     // 尝试og:title
     if let Some(pos) = lower.find("og:title") {
-        let snippet = &html[pos..pos+300];
+        let end = (pos + 300).min(html.len());
+        let snippet = &html[pos..end];
         if let Some(cstart) = snippet.find("content=\"") {
             let c = &snippet[cstart+9..];
             if let Some(cend) = c.find('"') {
@@ -903,4 +907,142 @@ fn extract_search_query(text: &str) -> String {
 
 impl Default for BrowserAutomationEngine {
     fn default() -> Self { Self::new() }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+
+    #[test]
+    fn test_html_to_text_strips_tags_and_scripts() {
+        let html = "<html><head><script>var x=1;</script><style>.a{color:red}</style></head>\
+                    <body><h1>Title</h1><p>Hello <b>World</b></p></body></html>";
+        let text = html_to_text(html);
+        assert!(!text.contains("<"));
+        assert!(!text.contains("var x=1"));
+        assert!(text.contains("Title"));
+        assert!(text.contains("Hello"));
+        assert!(text.contains("World"));
+    }
+
+    #[test]
+    fn test_html_unescape_decodes_entities() {
+        assert_eq!(html_unescape("a &amp; b &lt;c&gt;"), "a & b <c>");
+        assert_eq!(html_unescape("&quot;x&quot; &#39;y&#39;"), "\"x\" 'y'");
+        assert_eq!(html_unescape("&nbsp;space"), " space");
+    }
+
+    #[test]
+    fn test_extract_title_from_tag() {
+        let html = "<html><head><title>  My Page &amp; Co  </title></head><body>hi</body></html>";
+        assert_eq!(extract_title(html), "My Page & Co");
+    }
+
+    #[test]
+    fn test_extract_title_from_og_tag() {
+        let html = "<meta property=\"og:title\" content=\"OG Title Here\">";
+        assert_eq!(extract_title(html), "OG Title Here");
+    }
+
+    #[test]
+    fn test_extract_title_missing_returns_empty() {
+        assert_eq!(extract_title("<body>no title</body>"), "");
+    }
+
+    #[test]
+    fn test_urlencode_ascii_and_unicode() {
+        assert_eq!(urlencode("a b"), "a+b");
+        assert_eq!(urlencode("a-b_.~"), "a-b_.~");
+        assert_eq!(urlencode("你好"), "%E4%BD%A0%E5%A5%BD");
+    }
+
+    #[test]
+    fn test_normalize_url_adds_https() {
+        assert_eq!(normalize_url("example.com"), "https://example.com");
+        assert_eq!(normalize_url("https://example.com"), "https://example.com");
+        assert_eq!(normalize_url("  http://x.com "), "http://x.com");
+    }
+
+    #[test]
+    fn test_extract_url_full_http() {
+        let t = "访问 https://www.rust-lang.org/learn 查看文档。";
+        assert_eq!(extract_url(t).as_deref(), Some("https://www.rust-lang.org/learn"));
+    }
+
+    #[test]
+    fn test_extract_url_www_domain() {
+        let t = "去 www.example.com 看看";
+        assert_eq!(extract_url(t).as_deref(), Some("https://www.example.com"));
+    }
+
+    #[test]
+    fn test_extract_url_none() {
+        assert_eq!(extract_url("没有链接的文本"), None);
+    }
+
+    #[test]
+    fn test_parse_natural_language_search_intent() {
+        let (url, steps) = BrowserAutomationEngine::parse_natural_language("搜索 Rust 编程语言");
+        assert!(url.is_none());
+        assert!(!steps.is_empty());
+        // 第一步应为 bing 搜索导航
+        match &steps[0] {
+            BrowserAction::Navigate { url } => assert!(url.contains("bing.com/search?q=")),
+            _ => panic!("first step should be Navigate"),
+        }
+    }
+
+    #[test]
+    fn test_parse_natural_language_url_intent() {
+        let (url, steps) = BrowserAutomationEngine::parse_natural_language("打开 https://www.rust-lang.org 获取内容");
+        assert_eq!(url.as_deref(), Some("https://www.rust-lang.org"));
+        assert!(steps.iter().any(|s| matches!(s, BrowserAction::ExtractText { .. })));
+    }
+
+    #[test]
+    fn test_session_lifecycle() {
+        let mut engine = BrowserAutomationEngine::new();
+        let sid = engine.create_session();
+        assert!(sid.starts_with("browser-"));
+        assert!(engine.get_session(&sid).is_some());
+        assert!(engine.get_session("nope").is_none());
+        assert!(engine.close_session(&sid).is_ok());
+        assert!(engine.get_session(&sid).is_none());
+        assert!(engine.close_session(&sid).is_err());
+    }
+
+    #[test]
+    fn test_execute_action_without_session_errors() {
+        let mut engine = BrowserAutomationEngine::new();
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let r = rt.block_on(engine.execute_action("ghost", BrowserAction::GetTitle));
+        assert!(r.is_err());
+    }
+
+    #[test]
+    fn test_execute_action_click_and_type_are_ok() {
+        let mut engine = BrowserAutomationEngine::new();
+        let sid = engine.create_session();
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let click = rt.block_on(engine.execute_action(&sid, BrowserAction::Click { selector: "a".into(), timeout_ms: None })).unwrap();
+        assert!(click.success);
+        let typ = rt.block_on(engine.execute_action(&sid, BrowserAction::Type { selector: "i".into(), text: "hello".into(), clear_first: Some(true) })).unwrap();
+        assert!(typ.success);
+        assert_eq!(engine.get_session(&sid).unwrap().action_log.len(), 2);
+    }
+
+    #[test]
+    fn test_list_task_templates_non_empty() {
+        let engine = BrowserAutomationEngine::new();
+        assert!(!engine.list_task_templates().is_empty());
+    }
+
+    #[test]
+    fn test_replace_vars_substitution() {
+        let mut vars = HashMap::new();
+        vars.insert("query".to_string(), "test".to_string());
+        let r = replace_vars("https://x.com/search?q={{query}}", &vars);
+        assert_eq!(r, "https://x.com/search?q=test");
+    }
 }

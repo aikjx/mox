@@ -430,3 +430,139 @@ impl Default for PluginBus {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample_plugin(id: &str, status: PluginStatus, ptype: PluginType) -> PluginInfo {
+        PluginInfo {
+            id: id.to_string(),
+            name: id.to_string(),
+            version: "1.0.0".to_string(),
+            plugin_type: ptype,
+            status,
+            capabilities: vec!["cap1".to_string()],
+            input_topics: vec!["ai.converse".to_string()],
+            output_topics: vec!["ai.response".to_string()],
+            metadata: std::collections::HashMap::new(),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_register_and_list_plugins() {
+        let mut bus = PluginBus::new();
+        // bus 预置若干内置插件，注册后应 >= 2
+        let before = bus.list_plugins().len();
+        bus.register(sample_plugin("p1", PluginStatus::Active, PluginType::Builtin));
+        bus.register(sample_plugin("p2", PluginStatus::Active, PluginType::Wasm));
+
+        let plugins = bus.list_plugins();
+        assert_eq!(plugins.len(), before + 2);
+        assert!(bus.get_plugin("p1").is_some());
+        assert!(bus.get_plugin("missing").is_none());
+    }
+
+    #[tokio::test]
+    async fn test_route_to_target_plugin_returns_ack() {
+        let mut bus = PluginBus::new();
+        bus.register(sample_plugin("dst", PluginStatus::Active, PluginType::Wasm));
+
+        let msg = PluginMessage::new("src", "test.topic", serde_json::json!({"x": 1}))
+            .to_target("dst")
+            .need_response();
+        let resp = bus.route_message(msg).await.unwrap();
+        assert!(resp.is_some());
+        let r = resp.unwrap();
+        assert_eq!(r.topic, "ack");
+        assert!(r.correlation_id.is_some());
+    }
+
+    #[tokio::test]
+    async fn test_route_to_paused_plugin_returns_none() {
+        let mut bus = PluginBus::new();
+        bus.register(sample_plugin("dst", PluginStatus::Paused, PluginType::Wasm));
+
+        let msg = PluginMessage::new("src", "test.topic", serde_json::json!({"x": 1}))
+            .to_target("dst")
+            .need_response();
+        let resp = bus.route_message(msg).await.unwrap();
+        assert!(resp.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_route_to_missing_plugin_errors() {
+        let bus = PluginBus::new();
+        let msg = PluginMessage::new("src", "test.topic", serde_json::json!({"x": 1}))
+            .to_target("nope")
+            .need_response();
+        let result = bus.route_message(msg).await;
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_unregister_removes_plugin() {
+        let mut bus = PluginBus::new();
+        bus.register(sample_plugin("p1", PluginStatus::Active, PluginType::Builtin));
+        assert!(bus.get_plugin("p1").is_some());
+        assert!(bus.unregister("p1"));
+        assert!(bus.get_plugin("p1").is_none());
+        assert!(!bus.unregister("p1"));
+    }
+
+    #[test]
+    fn test_set_plugin_status() {
+        let mut bus = PluginBus::new();
+        bus.register(sample_plugin("p1", PluginStatus::Active, PluginType::Builtin));
+        bus.set_plugin_status("p1", PluginStatus::Paused).unwrap();
+        assert_eq!(bus.get_plugin("p1").unwrap().status, PluginStatus::Paused);
+        assert!(bus.set_plugin_status("ghost", PluginStatus::Active).is_err());
+    }
+
+    #[test]
+    fn test_get_topology_lists_plugins_and_topics() {
+        let mut bus = PluginBus::new();
+        bus.register(sample_plugin("p1", PluginStatus::Active, PluginType::Builtin));
+        let topo = bus.get_topology();
+        assert!(topo.plugins.iter().any(|p| p.id == "p1"));
+    }
+
+    #[test]
+    fn test_create_helper_messages() {
+        let chat = PluginBus::create_chat_message("s1", "hi");
+        assert_eq!(chat.topic, "ai.converse");
+        assert_eq!(chat.target_plugin, None);
+        assert!(chat.response_required);
+
+        let wf = PluginBus::create_workflow_start("wf-1", serde_json::json!({}));
+        assert_eq!(wf.topic, "workflow.start");
+
+        let op = PluginBus::create_operator_execute("linear", vec![1.0, 2.0]);
+        assert_eq!(op.topic, "operator.execute");
+
+        let _q = PluginBus::create_resource_query();
+    }
+
+    #[tokio::test]
+    async fn test_request_response_success() {
+        let mut bus = PluginBus::new();
+        bus.register(sample_plugin("svc", PluginStatus::Active, PluginType::Wasm));
+        let resp = bus.request_response("svc", "svc.ping", serde_json::json!({"a":1}), 1000).await.unwrap();
+        assert_eq!(resp.topic, "ack");
+    }
+
+    #[tokio::test]
+    async fn test_subscribe_and_route_broadcast() {
+        let mut bus = PluginBus::new();
+        bus.register(sample_plugin("a", PluginStatus::Active, PluginType::Builtin));
+        bus.register(sample_plugin("b", PluginStatus::Active, PluginType::Wasm));
+        // a 订阅 ai.converse
+        bus.subscribe("a", "ai.converse", None);
+        let msg = PluginMessage::new("user", "ai.converse", serde_json::json!({"c":"hi"}));
+        // 广播模式，无 target，b 不是订阅者所以不会投递；a 是订阅者但 deliver 给自身跳过
+        // 这里验证不会 panic 且返回 None（无 response_required）
+        let r = bus.route_message(msg).await.unwrap();
+        assert!(r.is_none());
+        assert!(bus.get_subscribers("ai.converse").contains(&"a".to_string()));
+    }
+}

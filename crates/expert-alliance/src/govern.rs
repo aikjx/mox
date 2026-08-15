@@ -13,7 +13,7 @@ pub enum FlowStatus {
     Draft,
     Review,
     Approved,
-    /// ⛨ 算法联盟验证否决（最高优先级，任何权限/合规不可覆盖）
+    /// ⛨ 璇玑验证否决（最高优先级，任何权限/合规不可覆盖）
     Blocked,
     Deprecated,
 }
@@ -83,6 +83,12 @@ impl AuditChain {
         self.events.push(ev.clone());
         ev
     }
+    /// 返回链上最新一个事件的哈希（作为下一个事件的 prev_hash 基准）。
+    /// 空链返回 None（调用方应以 "GENESIS" 作为起点）。
+    pub fn latest_hash(&self) -> Option<String> {
+        self.events.last().map(|e| e.hash.clone())
+    }
+
     /// 校验链完整性（防篡改）
     pub fn verify(&self) -> bool {
         let mut prev = "GENESIS".to_string();
@@ -111,7 +117,7 @@ pub struct GateResult {
     pub sla_ok: bool,
     pub budget_ok: bool,
     pub blocking_risks: usize,
-    /// 算法联盟验证否决（最高优先级，任何权限/合规都不可覆盖）
+    /// 璇玑验证否决（最高优先级，任何权限/合规都不可覆盖）
     pub algorithm_veto: bool,
     pub reason: String,
 }
@@ -132,7 +138,7 @@ pub fn govern(
     let approved = !algo_veto && status.can_emit() && blocking == 0 && sla_ok && budget_ok;
 
     let reason = if algo_veto {
-        "⛨ 算法联盟验证否决：优化破坏语义/依赖/一致性，治理强制 BLOCK".into()
+        "⛨ 璇玑验证否决：优化破坏语义/依赖/一致性，治理强制 BLOCK".into()
     } else if !status.can_emit() {
         format!("流程状态为 {:?}，仅 Approved 可出码", status)
     } else if blocking > 0 {

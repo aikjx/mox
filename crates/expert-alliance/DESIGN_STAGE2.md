@@ -1,7 +1,7 @@
 # 开发专家联盟 · 最强处理模式（Stage 2 设计）
 
 > 设计原则（用户指令）：先设计、再开发，跟文档一步步落实。所有操作明确、所有代码明确。
-> 目标：在「七专家诊断 → 全维裁决 → flow-ai 求解」之后，再加一层**算法联盟最高权限验证网关**，
+> 目标：在「七专家诊断 → 全维裁决 → flow-ai 求解」之后，再加一层**璇玑验证网关**，
 > 保证：**优化不改变语义、修复不引入新冲突、代码与流程图双向一致**。这一层数学正确性，任何治理权限都不可覆盖。
 
 ---
@@ -19,7 +19,7 @@
    │
    ├─[4] flow-ai 求解 (optimize)            —— 并行化/CPM/RCPSP/Dijkstra/冲突修复/出码
    │
-   ├─[5] ⛨ 算法联盟验证网关 (verify) ★新增★ —— 最高权限，数学正确性不可被覆盖
+   ├─[5] ⛨ 璇玑验证网关 (verify) ★新增★ —— 最高权限，数学正确性不可被覆盖
    │        5a 拓扑守恒：优化后图仍是同一 DAG 结构（节点/边计数 + 可达性闭包等价）
    │        5b 数据依赖守恒：剪除的伪依赖不会破坏真依赖（read/write 集仍满足）
    │        5c 冲突消解守恒：自动修复后 0 阻塞冲突、0 悬空异常边
@@ -83,7 +83,7 @@ pub struct Check {
     pub detail: String,            // 人类可读说明 / 反例
 }
 
-/// 算法联盟验证报告（最高权限）
+/// 璇玑验证报告（最高权限）
 pub struct AlgoVerification {
     pub checks: Vec<Check>,
     pub all_passed: bool,          // 全部通过 = true
@@ -103,7 +103,7 @@ pub struct AlgoVerification {
 - [x] **Step 2** `pipeline.rs`：`GovernanceReport` 加 `pub algo: AlgoVerification`；`alliance_optimize` 调用 `verify` 并让治理尊重 veto
 - [x] **Step 3** `govern.rs`：`GateResult` 增加 `algorithm_veto` 判定分支（最高优先级）；`FlowStatus` 新增 `Blocked` 变体
 - [x] **Step 4** `server.rs`：DTO 透出 `algorithm.checks`（前端高亮「验证通过/算法否决」）
-- [x] **Step 5** 前端 `alliance.html`：新增「⛨ 算法联盟验证」卡片
+- [x] **Step 5** 前端 `alliance.html`：新增「⛨ 璇玑验证」卡片
 - [x] **Step 6** 单测：`normal_optimization_passes_verification` 验证阻断级检查全部通过、`code_roundtrip_passes_for_generated_code` 验证往返（**5a 经实测修正为语义级**：真数据依赖守恒，普通并行化不判违规——flow-ai 正确剪除 `guard→web1/web2` 这类无数据共享边）
 - [x] **Step 7** CLI `alliance verify <flow.json>` 子命令（退出码 0=通过 / 2=否决）；`demo` 展示验证结论
 - [x] **Step 8** 编译 + 全量测试 + HTTP 实测：**lib 23 + integration 5 全通过，0 warning**

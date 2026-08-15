@@ -609,3 +609,92 @@ impl WorkflowTemplate {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_chat_message_factories_set_role() {
+        let u = ChatMessage::user("hello");
+        let a = ChatMessage::assistant("hi");
+        let s = ChatMessage::system("sys");
+        assert_eq!(u.role, MessageRole::User);
+        assert_eq!(a.role, MessageRole::Assistant);
+        assert_eq!(s.role, MessageRole::System);
+        assert!(!u.id.is_empty() && !a.id.is_empty() && !s.id.is_empty());
+        // 内容保留
+        assert_eq!(u.content, "hello");
+        assert_eq!(a.referenced_operators.is_empty(), true);
+    }
+
+    #[test]
+    fn test_plugin_message_builder_chain() {
+        let msg = PluginMessage::new("src", "topic.a", serde_json::json!({"k": 1}))
+            .to_target("dst")
+            .with_correlation("corr-1")
+            .need_response();
+        assert_eq!(msg.source_plugin, "src");
+        assert_eq!(msg.target_plugin.as_deref(), Some("dst"));
+        assert_eq!(msg.correlation_id.as_deref(), Some("corr-1"));
+        assert_eq!(msg.response_required, true);
+        assert_eq!(msg.topic, "topic.a");
+    }
+
+    #[test]
+    fn test_workflow_template_create_workflow_converts_connections_to_edges() {
+        let template = WorkflowTemplate {
+            id: "tpl-1".to_string(),
+            name: "测试模板".to_string(),
+            description: "单测模板".to_string(),
+            category: "test".to_string(),
+            nodes: vec![
+                WorkflowNode {
+                    id: "start".to_string(),
+                    node_type: WorkflowNodeType::Start,
+                    name: "开始".to_string(),
+                    config: WorkflowNodeConfig::Start,
+                    position: None,
+                },
+                WorkflowNode {
+                    id: "end".to_string(),
+                    node_type: WorkflowNodeType::End,
+                    name: "结束".to_string(),
+                    config: WorkflowNodeConfig::End,
+                    position: None,
+                },
+            ],
+            connections: vec![WorkflowConnection {
+                from: "start".to_string(),
+                to: "end".to_string(),
+                label: None,
+            }],
+            variables: HashMap::new(),
+        };
+
+        let wf = template.create_workflow("abc123");
+        assert_eq!(wf.id, "wf-abc123");
+        assert_eq!(wf.start_node_id, "start");
+        assert_eq!(wf.edges.len(), 1);
+        assert_eq!(wf.edges[0].source, "start");
+        assert_eq!(wf.edges[0].target, "end");
+        assert_eq!(wf.nodes.len(), 2);
+    }
+
+    #[test]
+    fn test_user_intent_serialization() {
+        let intent = UserIntent::ExecuteWorkflow { operators: vec!["linear".to_string()] };
+        let json = serde_json::to_string(&intent).unwrap();
+        let back: UserIntent = serde_json::from_str(&json).unwrap();
+        assert_eq!(intent, back);
+    }
+
+    #[test]
+    fn test_resource_type_snake_case_serialization() {
+        let rt = ResourceType::Cpu;
+        assert_eq!(serde_json::to_string(&rt).unwrap(), "\"cpu\"");
+        let rt2 = ResourceType::Custom("gpu_cluster".to_string());
+        let back: ResourceType = serde_json::from_str(&serde_json::to_string(&rt2).unwrap()).unwrap();
+        assert_eq!(rt2, back);
+    }
+}
+
