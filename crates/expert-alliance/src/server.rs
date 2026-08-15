@@ -1,4 +1,4 @@
-//! HTTP 服务：把全维治理报告转为前端可视化 DTO，供 Three.js 力导向图实时联动高亮
+﻿//! HTTP 服务：把全维治理报告转为前端可视化 DTO，供 Three.js 力导向图实时联动高亮
 //!
 //! 设计：本服务完全独立，仅依赖 `expert-alliance` + `flow-ai`，不触碰已失败的 runtime/ai-agent。
 //! 可视化契约（DTO）在本模块内定义，核心层类型保持纯净。
@@ -753,6 +753,7 @@ mod tests {
             tenant: "gov-tenant".into(),
             namespace: "ns-gov".into(),
             principal: "admin".into(),
+            roles: None,
             regulated: true,
             instruction: String::new(),
         }

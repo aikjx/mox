@@ -10,6 +10,7 @@ export default defineConfig({
     }
   },
   server: {
+    host: '0.0.0.0',
     port: 5173,
     proxy: {
       '/api': {
@@ -19,7 +20,11 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: 'dist',
-    assetsDir: 'assets'
+    chunkSizeWarningLimit: 2000,
+    rollupOptions: {
+      input: {
+        main: fileURLToPath(new URL('./index.html', import.meta.url))
+      }
+    }
   }
 })

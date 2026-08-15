@@ -1,4 +1,4 @@
-//! alliance —— 开发专家联盟 CLI / HTTP 服务入口
+//! alliance —— 璇玑 CLI / HTTP 服务入口
 //!
 //! 子命令：
 //!   alliance serve [--port 8080]           启动独立 HTTP 服务 + Three.js 前端

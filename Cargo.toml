@@ -17,7 +17,7 @@ resolver = "2"
 version = "3.0.0-ai-powered"
 edition = "2021"
 license = "MIT"
-authors = ["Algorithm Alliance - 最高权限开发专家联盟"]
+authors = ["Algorithm Alliance - 最高权限璇玑"]
 description = "Unified Operator System - AI-Driven Full-Dimensional Breakthrough Platform"
 
 [workspace.dependencies]

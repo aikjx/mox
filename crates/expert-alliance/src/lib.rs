@@ -1,4 +1,4 @@
-//! 开发专家联盟 · 全维处理工具流程图
+//! 璇玑 · 全维处理工具流程图
 //!
 //! 七位领域专家在归一化 IR 上并行诊断 → 裁决器按「权限/安全优先」全维归一 →
 //! flow-ai 引擎做已验证的最优求解 → 治理层把关后出码。
@@ -21,8 +21,10 @@ pub mod bench;
 pub mod audit;
 /// RBAC 引擎：资源级权限控制，多角色继承链，跨租户隔离
 pub mod rbac;
-/// 流程 YAML 外部化：业务人员用 YAML 增删改流程，无需碰 Rust 代码
+/// 流程 YAML 外部化：业务人员用 YAML 增删改流程，无需写 Rust 代码
 pub mod flow_loader;
+/// 插件化运行时：参考 DeepSeek Harness "Everything is a Plugin" 范式的共享上下文与瀑布扩展点
+pub mod harness;
 
 pub use context::{CompatibilityRegistry, GovernContext, LoopGuard, LoopPolicy, McpTool, Principal, ResourceQuota, SkillRef, Tenant};
 pub use expert::{dispatch, Constraint, Expert, ExpertOpinion, Risk, Suggestion};
@@ -45,6 +47,11 @@ pub use rbac::check::Resource;
 pub use flow_loader::{
     FlowLoader, FlowLoadError, FlowDef, NodeDef, YamlEdgeDef,
     ValidationError, YamlFlowLoader,
+};
+pub use harness::{
+    HarnessCtx, HarnessProfile, Plugin, PluginMeta, ExpertPlugin,
+    WaterfallEvent, WaterfallState, ModelAdapterConfig,
+    expert_plugins, run_experts,
 };
 
 /// 便捷重导出 flow-ai 的公共类型

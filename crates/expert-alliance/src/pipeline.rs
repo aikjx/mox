@@ -1,8 +1,11 @@
 //! 全维处理流水线：normalize → 并行派发专家 → 裁决 → flow-ai 求解 → 治理闸门 → 出码
 
 use crate::context::{ExpertContext, GovernContext};
-use crate::expert::dispatch;
 use crate::govern::{apply_rules, govern, AuditChain, FlowStatus, GateResult};
+use crate::harness::{
+    expert_plugins, run_experts, HarnessCtx, HarnessProfile, ModelAdapterConfig, WaterfallEvent,
+    WaterfallState,
+};
 use crate::ir::auto_dimension;
 use crate::reconcile::reconcile;
 use crate::verify::{verify, AlgoVerification};
@@ -28,15 +31,45 @@ pub struct GovernanceReport {
 }
 
 /// 全维优化入口
+///
+/// 采用插件化运行时（参考 DeepSeek Harness "Everything is a Plugin"）：
+/// 专家被装载为 [`ExpertPlugin`]，由 [`HarnessCtx`] 的瀑布扩展点驱动，治理钩子可在
+/// `pre_gate` / `post_gate` 注入策略与审计。无插件运行时时行为等价于旧版硬编码派发。
 pub fn alliance_optimize(raw: &FlowGraph, ctx: &GovernContext) -> GovernanceReport {
+    // 0. 构建插件化运行时：装载七位专家 + 治理/审计钩子
+    let profile = HarnessProfile {
+        name: "default-alliance".into(),
+        plugins: vec![
+            "algorithm".into(), "business".into(), "data".into(),
+            "observability".into(), "permission".into(), "resource".into(), "security".into(),
+        ],
+        audit_enabled: true,
+        model: ModelAdapterConfig::default(),
+    };
+    let harness = HarnessCtx::new(profile);
+    // 装载专家插件（保持与 all_experts() 一致的能力集）
+    for p in expert_plugins(crate::experts::all_experts()) {
+        harness.load_plugin(p);
+    }
+    // 装载治理钩子：闸门前后做审计切面（reversible effect 示例）
+    harness.hook(
+        WaterfallEvent::PostGate,
+        std::sync::Arc::new(|_ev, hctx, state, next| {
+            if let Some(gate) = &state.gate {
+                hctx.emit(if gate.approved { "gate/approved" } else { "gate/blocked" });
+            }
+            next(state)
+        }),
+    );
+
     // 1. 归一化：维度着色
     let df = auto_dimension(raw);
     let base = &df.base;
 
-    // 2. 并行派发七位专家
-    let experts = crate::experts::all_experts();
+    // 2. 并行派发七位专家（经插件化运行时 + 瀑布扩展点）
     let ectx = ExpertContext::new(base, ctx);
-    let opinions = dispatch(&ectx, &experts);
+    let experts = crate::experts::all_experts();
+    let opinions = run_experts(&harness, &ectx, &experts);
 
     // 3. 归一化裁决 → ReconciledPlan
     let plan = reconcile(&opinions, base, &base.pools);
@@ -61,8 +94,6 @@ pub fn alliance_optimize(raw: &FlowGraph, ctx: &GovernContext) -> GovernanceRepo
 
     // 5. ⛨ 璇玑验证网关（最高权限，在治理之前）
     // 5.5 汇总专家「否决级」风险（Risk.veto=true）→ 并入算法验证否决。
-    //     这是正交机制：未来任何专家判定「不可自动修复、必须人工审批」的风险，
-    //     只需 push_veto，即可自动触发否决，无需在编排层单独补丁。
     let expert_veto = opinions.iter().any(|o| o.risks.iter().any(|r| r.veto));
     let mut algo = verify(base, &opt);
     if expert_veto {
@@ -75,9 +106,26 @@ pub fn alliance_optimize(raw: &FlowGraph, ctx: &GovernContext) -> GovernanceRepo
 
     // 6. 治理闸门（尊重算法否决）
     let status = if algo.vetoed { FlowStatus::Blocked } else { FlowStatus::Approved };
-    let gate = govern(&plan, &opt, status, &ctx.quota, &ctx.principal.subject, algo.vetoed);
+    let mut gate = govern(&plan, &opt, status, &ctx.quota, &ctx.principal.subject, algo.vetoed);
 
-    // 6. 审计
+    // 6.5 闸门瀑布扩展点：PreGate 钩子可追加前置校验，PostGate 钩子做后置审计
+    let mut wf_state = WaterfallState {
+        opinions: opinions.clone(),
+        gate: Some(gate.clone()),
+        bag: std::collections::HashMap::new(),
+    };
+    if let Err(e) = harness.run_waterfall(WaterfallEvent::PreGate, &mut wf_state) {
+        tracing::warn!(target: "harness", "PreGate 瀑布执行失败: {}", e);
+    }
+    // 若 PreGate 钩子重写了闸门结果，采用之
+    if let Some(g) = wf_state.gate.clone() {
+        gate = g;
+    }
+    if let Err(e) = harness.run_waterfall(WaterfallEvent::PostGate, &mut wf_state) {
+        tracing::warn!(target: "harness", "PostGate 瀑布执行失败: {}", e);
+    }
+
+    // 7. 审计（内部链）
     let mut audit = AuditChain::new();
     audit.append(
         &ctx.principal.subject,
@@ -85,6 +133,9 @@ pub fn alliance_optimize(raw: &FlowGraph, ctx: &GovernContext) -> GovernanceRepo
         "alliance_optimize",
         if gate.approved { "approved" } else { "blocked" },
     );
+
+    // 8. 运行时收尾：unload 插件 + unwind 可逆副作用
+    harness.shutdown();
 
     GovernanceReport {
         flow_id: raw.id.clone(),
