@@ -1,5 +1,5 @@
 //! 业务全景目录：把"系统所有业务"建模成流程图 + 六维关系网，
-//! 并用开发专家联盟（expert-alliance）在运行中不断优化架构。
+//! 并用璇玑（expert-alliance）在运行中不断优化架构。
 //!
 //! 核心思想（与 Hermes / 璇玑架构一致）：
 //! - **流程图是唯一需求源与开发产物**：每个业务 = 一张 `flow_ai::FlowGraph`，
@@ -65,7 +65,7 @@ pub struct Business {
 }
 
 impl Business {
-    /// 七维着色后交给开发专家联盟优化
+    /// 七维着色后交给璇玑优化
     pub fn optimize(&self) -> expert_alliance::pipeline::GovernanceReport {
         let raw = (self.build)();
         // 七维着色：把 tags 中的 dim:* 映射到业务/算法/权限/资源/安全/数据/可观测

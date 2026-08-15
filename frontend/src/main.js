@@ -7,9 +7,11 @@ import router from './router'
 import './styles/global.css'
 
 const app = createApp(App)
-for (const [key, comp] of Object.entries(ElementPlusIconsVue)) {
-  app.component(key, comp)
+
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+  app.component(key, component)
 }
-app.use(ElementPlus)
+
 app.use(router)
+app.use(ElementPlus)
 app.mount('#app')

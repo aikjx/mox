@@ -44,8 +44,10 @@ use tracing_subscriber::{prelude::*, EnvFilter};
 // ========== 标准接口契约模块 ==========
 // api_standard: RFC 9457 Problem+JSON 统一错误契约 + 响应标准化中间件
 // openapi: OpenAPI 3.1 标准契约文档 + Swagger UI
+// rbac_middleware: RBAC + 审计中间件
 mod api_standard;
 mod openapi;
+mod rbac_middleware;
 
 /// 应用状态 - AI全维系统核心
 struct AppState {
@@ -290,6 +292,23 @@ async fn main() -> anyhow::Result<()> {
     // 初始化AI智能体
     let ai_agent = Arc::new(AIAgent::new());
 
+    // 启动时使用真实环境变量 DEEPSEEK_API_KEY 自动接入 DeepSeek LLM
+    if let Ok(deepseek_key) = std::env::var("DEEPSEEK_API_KEY") {
+        if !deepseek_key.is_empty() {
+            ai_agent.configure_llm(ai_agent::LLMConfig {
+                api_base: "https://api.deepseek.com/v1".to_string(),
+                api_key: deepseek_key,
+                model: "deepseek-chat".to_string(),
+                temperature: 0.7,
+                max_tokens: 2048,
+                enabled: true,
+            }).await;
+            tracing::info!("已通过 DEEPSEEK_API_KEY 启用真实 LLM 接入 (model=deepseek-chat)");
+        }
+    } else {
+        tracing::info!("未检测到 DEEPSEEK_API_KEY，AI 对话将使用内置规则引擎（离线降级）");
+    }
+
     // 注册内置插件到AI插件总线
     {
         let bus = ai_agent.plugin_bus();
@@ -487,8 +506,9 @@ async fn auth_middleware(
     next: Next,
 ) -> Result<Response, api_standard::ProblemDetail> {
     let path = req.uri().path().to_string();
-    // 公开端点：健康检查与前端静态资源
-    if path == "/api/health" || path == "/healthz" || !path.starts_with("/api/") {
+    // 公开端点：健康检查、前端静态资源、AI对话（无需token）
+    if path == "/api/health" || path == "/healthz" || !path.starts_with("/api/")
+        || path == "/api/ai/chat" || path.starts_with("/api/ai/chat/history") {
         return Ok(next.run(req).await);
     }
     match expected {
