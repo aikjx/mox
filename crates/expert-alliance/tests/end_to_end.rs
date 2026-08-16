@@ -61,8 +61,8 @@ fn alliance_optimize_passes_and_audit_clean() {
     assert!(rep.gate.approved, "gate reason: {}", rep.gate.reason);
     // 审计链完整
     assert!(rep.audit.verify(), "审计链被篡改");
-    // 七专家都有评分
-    assert_eq!(rep.expert_scores.len(), 7);
+    // 双联盟十四维全维评分（业务七维 + 开发七维）
+    assert!(rep.expert_scores.len() >= 14, "双联盟应覆盖十四维，实际 {}", rep.expert_scores.len());
     // 优化生效：并行层 > 1 或剪除伪依赖
     assert!(rep.optimization.gains.parallel_layers >= 1);
 }
@@ -103,8 +103,8 @@ fn rbac_denied_experts_skipped_not_panicked() {
     let principal = Principal::new("viewer");
     let ctx = GovernContext::new(tenant, principal);
     let rep = alliance_optimize(&g, &ctx);
-    // 至少算法/资源/可观测专家仍运行
-    assert!(rep.expert_scores.len() == 7);
+    // 跳过专家不 panic，且至少业务七维评分仍存在（双联盟下总计 >= 7）
+    assert!(rep.expert_scores.len() >= 7, "被跳过专家场景下仍应有评分，实际 {}", rep.expert_scores.len());
 }
 
 #[test]

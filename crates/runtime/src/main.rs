@@ -28,6 +28,8 @@ use operator_wasm::WasmPluginManager;
 // 专家联盟全维治理内核：双联盟十四维 → 治理报告
 use expert_alliance::pipeline::alliance_optimize;
 use expert_alliance::context::GovernContext;
+// OUS 前端治理台状态
+use crate::handlers::governance::GovernanceState;
 use flow_ai::model::FlowGraph;
 use business_catalog::spiral::{analyze_spiral, SpiralParams};
 use ai_agent::{
@@ -45,6 +47,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::ServeDir;
+use axum::extract::DefaultBodyLimit;
 use tracing_subscriber::{prelude::*, EnvFilter};
 
 // ========== 标准接口契约模块 ==========
@@ -56,10 +59,19 @@ mod openapi;
 mod rbac_middleware;
 /// 算子商城：需求 + 可编辑业务流程图的资产市场
 mod market;
+/// 商城版本化管理：semver 快照 / 变更日志 / 回滚 / 差异对比
+mod market_version;
+/// 商城路径迁移与存储 IO：$OUS_HOME/market/packages/ 归一化、备份、审计、ZIP、签名
+mod market_migration;
+/// 商城 DSL 转换：流程图 → FlowDefinition → BusinessWorkflow
+mod market_dsl;
 /// AI 自动化中枢共享资产模型 + 持久化（独立模块，避免与 market/automation 循环依赖）
 mod automation_asset;
 /// AI 自动化中枢：需求对话 → 蓝图/流程图/代码/测试/RBAC → 沙箱实跑异常自动修复 → 回写
 mod automation;
+/// OUS 前端治理台 API：Dashboard / Audit / Config / WebSocket
+mod handlers;
+mod routes;
 
 /// 应用状态 - AI全维系统核心
 #[derive(Clone)]
@@ -78,6 +90,8 @@ struct AppState {
     saved_workflows: Arc<Mutex<HashMap<String, BusinessWorkflow>>>,
     // 算子商城
     market: market::MarketState,
+    // 治理台状态
+    governance: Arc<GovernanceState>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -363,6 +377,11 @@ async fn main() -> anyhow::Result<()> {
     // 初始化内置算子列表
     let operators = build_default_operators();
 
+    // 初始化治理台状态（14维专家 + 审计链 + WebSocket广播）
+    let governance_state = Arc::new(GovernanceState::default());
+    governance_state.init_default_experts().await;
+    tracing::info!("治理台状态已初始化（14维专家 + 审计链 + WebSocket广播）");
+
     let state = Arc::new(AppState {
         operators: Arc::new(Mutex::new(operators)),
         knowledge_graph: Arc::new(Mutex::new(kg)),
@@ -373,6 +392,7 @@ async fn main() -> anyhow::Result<()> {
         chat_sessions: Arc::new(Mutex::new(HashMap::new())),
         saved_workflows: Arc::new(Mutex::new(HashMap::new())),
         market: market::init_market_state().await,
+        governance: governance_state,
     });
 
     // 创建路由 - 全维API
@@ -451,7 +471,10 @@ async fn main() -> anyhow::Result<()> {
         // 需求 + 可编辑业务流程图的资产市场；挂载为独立 state 子路由
         .nest("/api/market", {
             let market_state = state.market.clone();
-            market::market_routes().with_state(market_state)
+            // 基础路由 + 扩展路由（导入/导出/租户/所有者/下载），合并为完整商城 API
+            market::market_routes()
+                .with_state(market_state.clone())
+                .merge(crate::routes::market::extra_routes().with_state(market_state))
         })
         // ========== AI 自动化中枢 API ==========
         // 需求驱动的端到端闭环：对话生成 → 自动代码/测试/RBAC → 沙箱实跑异常修复回写。
@@ -471,7 +494,15 @@ async fn main() -> anyhow::Result<()> {
         // ========== 专家联盟全维治理 API ==========
         .route("/api/alliance/health", get(alliance_health))
         .route("/api/alliance/optimize", post(alliance_optimize_handler))
-        // 静态前端
+        .route("/api/alliance/publish", post(alliance_publish_handler))
+        // ========== OUS 前端治理台 API（/api/governance/*）==========
+        // 全维治理：Dashboard / 专家状态 / 否决事件 / 审计日志 / RBAC 配置 / 专家配置 / WS 实时推送 / 治理评估。
+        // 状态自包含于 GovernanceState（handlers/governance.rs），已适配 expert-alliance 当前 API。
+        .nest("/api/governance", {
+            let gov_state = state.governance.clone();
+            crate::routes::governance::governance_routes().with_state(gov_state)
+        })
+        // ========== 静态前端
         .nest_service("/", ServeDir::new("./frontend/dist"))
         // 响应标准化中间件（最内层，紧邻 handler）：将 HTTP 200 + {success:false}
         // 的伪成功响应改写为正确的 4xx 状态码 + RFC 9457 Problem+JSON。
@@ -707,6 +738,46 @@ struct AllianceOptimizeRequest {
 }
 
 /// 全维治理：返回 GovernanceReport（专家评分 + 优化 + 璇玑验证 + 闸门 + 审计 + 采纳建议）
+fn normalize_flow_to_graph(v: &serde_json::Value) -> flow_ai::model::FlowGraph {
+    let mut g = flow_ai::model::FlowGraph::new("unified", "unified-flow");
+    if let Some(nodes) = v.get("nodes").and_then(|n| n.as_array()) {
+        for n in nodes {
+            let id = n.get("id").and_then(|x| x.as_str()).unwrap_or("").to_string();
+            let name = n.get("name").and_then(|x| x.as_str()).unwrap_or("").to_string();
+            let t = n.get("type").and_then(|x| x.as_str()).unwrap_or("operator");
+            let kind = match t {
+                "start" => flow_ai::model::NodeKind::Start,
+                "end" => flow_ai::model::NodeKind::End,
+                "condition" | "decision" => flow_ai::model::NodeKind::Decision,
+                "parallel" => flow_ai::model::NodeKind::ParallelFork,
+                "guard" => flow_ai::model::NodeKind::Guard,
+                "subflow" => flow_ai::model::NodeKind::SubFlow,
+                _ => flow_ai::model::NodeKind::Task,
+            };
+            let mut node = flow_ai::model::FlowNode::new(id, name, kind);
+            if let Some(tool) = n.get("tool").and_then(|x| x.as_str()) {
+                node.tool = serde_json::from_str::<flow_ai::model::ToolKind>(&format!(
+                    "\"{}\"", tool)).ok();
+            }
+            g.add_node(node);
+        }
+    }
+    if let Some(edges) = v.get("edges").and_then(|e| e.as_array()) {
+        for e in edges {
+            let from = e.get("from").and_then(|x| x.as_str()).unwrap_or("").to_string();
+            let to = e.get("to").and_then(|x| x.as_str()).unwrap_or("").to_string();
+            let kind = if e.get("condition").is_some() || e.get("label").is_some() {
+                flow_ai::model::EdgeKind::Conditional
+            } else {
+                flow_ai::model::EdgeKind::Sequence
+            };
+            let condition = e.get("condition").and_then(|x| x.as_str()).map(|s| s.to_string());
+            let edge = flow_ai::model::FlowEdge { from, to, kind, condition };
+            g.add_edge(edge);
+        }
+    }
+    g
+}
 async fn alliance_optimize_handler(
     Json(req): Json<AllianceOptimizeRequest>,
 ) -> Json<serde_json::Value> {
@@ -718,7 +789,58 @@ async fn alliance_optimize_handler(
     Json(serde_json::to_value(&report).unwrap_or(json!({"error": "serialize"})))
 }
 
+async fn alliance_publish_handler(
+    Json(req): Json<AlliancePublishRequest>,
+) -> Json<serde_json::Value> {
+    use expert_alliance::context::{GovernContext, Tenant, Principal};
+    let ctx = GovernContext::new(
+        Tenant::new("default", "default"),
+        Principal::new("designer").with_roles(vec!["editor".into()]),
+    );
+    let report = alliance_optimize(&normalize_flow_to_graph(&req.flow), &ctx);
+    let optimized = &report.optimization.optimized_graph;
+    let score: f64 = if report.expert_scores.is_empty() {
+        0.0
+    } else {
+        report.expert_scores.iter().map(|(_, s)| s).sum::<f64>() / report.expert_scores.len() as f64
+    };
+    let name = req.name.clone().unwrap_or_else(|| "全维融合算子".into());
+    let description = req.description.clone().unwrap_or_else(|| {
+        format!("由专家联盟双联盟十四维归一化生成（治理评分 {:.2}）", score)
+    });
+    let requirement = req.requirement.clone().unwrap_or_default();
+    let tags = req.tags.clone().unwrap_or_else(|| {
+        vec!["全维融合".into(), "专家联盟".into(), "业务流程图".into()]
+    });
+    match crate::market::publish_unified(
+        name,
+        description,
+        requirement,
+        optimized.nodes.clone(),
+        optimized.edges.clone(),
+        tags,
+    ) {
+        Ok(pkg) => Json(json!({
+            "package": { "id": pkg.id, "name": pkg.name, "category": pkg.category, "nodes": pkg.nodes.len(), "edges": pkg.edges.len() },
+            "published": true,
+            "governance": { "score": score, "gate": format!("{:?}", report.gate.status) },
+            "optimization": { "critical_path_ms": report.optimization.gains.critical_path_ms, "conflicts_found": report.optimization.gains.conflicts_found },
+        })),
+        Err(e) => Json(json!({ "published": false, "error": e.to_string() })),
+    }
+}
+
 /// 治理内核健康度：列出双联盟十四维与各专家状态（供前端雷达图坐标）
+#[derive(Debug, Clone, Deserialize)]
+struct AlliancePublishRequest {
+    /// 业务蓝图（支持前端友好的 {type,params} 风格，handler 内归一化为 FlowGraph）
+    flow: serde_json::Value,
+    name: Option<String>,
+    description: Option<String>,
+    requirement: Option<String>,
+    tags: Option<Vec<String>>,
+}
+
 async fn alliance_health() -> Json<serde_json::Value> {
     let dims: Vec<&str> = vec![
         "Business", "Algorithm", "Permission", "Resource", "Security", "Data", "Observability",
@@ -1700,9 +1822,11 @@ async fn list_flow_node_types() -> Json<serde_json::Value> {
     let node_types = vec![
         serde_json::json!({"type": "Start", "name": "开始节点", "description": "流程图起始点", "config_fields": []}),
         serde_json::json!({"type": "End", "name": "结束节点", "description": "流程图结束点", "config_fields": []}),
-        serde_json::json!({"type": "LLM", "name": "AI大模型", "description": "调用LLM处理", "config_fields": [
-            {"name": "prompt", "label": "提示词模板", "type": "text", "placeholder": "{{input}} 会被替换"},
-            {"name": "model", "label": "模型名称", "type": "select", "options": ["gpt-3.5-turbo", "gpt-4", "deepseek-chat"]}
+        serde_json::json!({"type": "LLM", "name": "AI大模型(智能节点)", "description": "调用真实LLM处理，支持指定Provider与fallback链", "config_fields": [
+            {"name": "prompt", "label": "提示词模板", "type": "text", "placeholder": "{{input}} 会被替换为上游变量"},
+            {"name": "provider", "label": "模型供应商(可选)", "type": "select", "options": ["", "deepseek", "openai", "qwen", "glm", "ollama"], "hint": "留空则走AI Gateway默认fallback链(deepseek→openai→qwen→glm→ollama)"},
+            {"name": "model", "label": "模型名称(可选)", "type": "text", "placeholder": "如 deepseek-chat / gpt-4o / qwen-plus", "hint": "留空使用provider默认模型"},
+            {"name": "temperature", "label": "温度(可选)", "type": "number", "placeholder": "0.7", "hint": "0=精确,1=发散"}
         ]}),
         serde_json::json!({"type": "Browser", "name": "浏览器操作", "description": "访问网页并获取内容", "config_fields": [
             {"name": "url", "label": "URL地址", "type": "text", "placeholder": "https://example.com"},
@@ -1894,4 +2018,7 @@ async fn handle_mcp_rpc(State(state): State<Arc<AppState>>, Json(req): Json<McpR
         _ => mcp_err(id, -32601, format!("方法不存在: {}", req.method)),
     }
 }
+
+
+
 

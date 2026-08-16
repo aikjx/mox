@@ -6,10 +6,10 @@
 //! 整体闸门 BLOCK。
 //!
 //! 正交性子用例：
-//!  - 仅权限越权写 → Permission 触发 veto，整体被否决；
-//!  - 仅安全 PII 外发（regulated 租户）→ Security 给出 Blocking 级风险，但**不**触发硬 veto
-//!    （说明当前 Security 的阻断级风险走的是「记录」语义，只有 push_veto 才是硬否决入口——
-//!     这正是多专家正交机制的设计意图：任何专家想强制否决，只需 push_veto）。
+//! 仅权限越权写 → Permission 触发 veto，整体被否决；
+//! 仅安全 PII 外发（regulated 租户）→ Security 给出 Blocking 级风险，但**不**触发硬 veto
+//! （说明当前 Security 的阻断级风险走的是「记录」语义，只有 push_veto 才是硬否决入口——
+//! 这正是多专家正交机制的设计意图：任何专家想强制否决，只需 push_veto）。
 
 use expert_alliance::context::{GovernContext, Principal, Tenant};
 use expert_alliance::expert::dispatch;

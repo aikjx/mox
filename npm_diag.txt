@@ -1,0 +1,4 @@
+EXIT 0
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+UnicodeEncodeError: 'gbk' codec can't encode character '\u2713' in position 676: illegal multibyte sequence

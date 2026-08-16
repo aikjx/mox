@@ -19,15 +19,15 @@ pub struct SyslogSink {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SyslogProtocol { TCP, UDP, TLS }
+pub enum SyslogProtocol { Tcp, Udp, Tls }
 
 impl SyslogSink {
     pub fn new(address: &str, protocol: &str) -> Self {
         let proto = match protocol.to_lowercase().as_str() {
-            "tcp" => SyslogProtocol::TCP,
-            "udp" => SyslogProtocol::UDP,
-            "tls" => SyslogProtocol::TLS,
-            _ => SyslogProtocol::TCP,
+            "tcp" => SyslogProtocol::Tcp,
+            "udp" => SyslogProtocol::Udp,
+            "tls" => SyslogProtocol::Tls,
+            _ => SyslogProtocol::Tcp,
         };
         Self {
             address: address.into(),
@@ -59,7 +59,7 @@ impl SyslogSink {
         }
         write!(s, "{} ", self.app_name).unwrap();
         write!(s, "[{}] ", self.proc_id).unwrap();
-        write!(s, "{} ", event.action.to_string()).unwrap();
+        write!(s, "{} ", event.action).unwrap();
         write!(s, "[audit@32473").unwrap();
         write!(s, " event_id=\"{}\"", event.event_id).unwrap();
         write!(s, " tenant=\"{}\"", event.tenant_id).unwrap();
@@ -95,7 +95,7 @@ impl SyslogSink {
 
     fn write_frame(&self, frame: &str) -> Result<(), AuditError> {
         match self.protocol {
-            SyslogProtocol::TCP => {
+            SyslogProtocol::Tcp => {
                 let mut retry = 0;
                 loop {
                     match self.connect_tcp() {
@@ -112,14 +112,14 @@ impl SyslogSink {
                     }
                 }
             }
-            SyslogProtocol::UDP => {
+            SyslogProtocol::Udp => {
                 let addr: std::net::SocketAddr = self.address.parse::<std::net::SocketAddr>()
                     .map_err(|e| AuditError::Connection(e.to_string()))?;
                 let socket = std::net::UdpSocket::bind("0.0.0.0:0").map_err(|e| AuditError::Connection(e.to_string()))?;
                 socket.send_to(frame.as_bytes(), addr).map_err(|e| AuditError::WriteFailed(e.to_string()))?;
                 Ok(())
             }
-            SyslogProtocol::TLS => Err(AuditError::Connection("TLS not yet implemented".into())),
+            SyslogProtocol::Tls => Err(AuditError::Connection("TLS not yet implemented".into())),
         }
     }
 }
@@ -141,7 +141,7 @@ impl AuditSink for SyslogSink {
             }
             FlushPolicy::Periodic { interval_ms } => {
                 self.buffer.write().unwrap().push(frame);
-                if now_ms() - *self.last_flush_ms.read().unwrap() >= interval_ms as u64 {
+                if now_ms() - *self.last_flush_ms.read().unwrap() >= interval_ms {
                     let buf: Vec<String> = self.buffer.read().unwrap().clone();
                     for f in &buf { self.write_frame(f)?; }
                     self.buffer.write().unwrap().clear();
@@ -161,7 +161,7 @@ impl AuditSink for SyslogSink {
     }
 
     fn health_check(&self) -> Result<(), AuditError> {
-        if matches!(self.protocol, SyslogProtocol::TCP) {
+        if matches!(self.protocol, SyslogProtocol::Tcp) {
             let _ = self.connect_tcp().map_err(|e| AuditError::Connection(e.to_string()))?;
         }
         Ok(())

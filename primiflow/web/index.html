@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PrimiFlow MVP · 一句话开发好</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: -apple-system,"PingFang SC",Segoe UI,sans-serif; background:#0f1419; color:#e6edf3; }
+    #root { display:flex; flex-direction:column; height:100vh; }
+    header { padding:10px 16px; background:#161b22; border-bottom:1px solid #30363d; display:flex; gap:12px; align-items:center; }
+    header h1 { font-size:16px; margin:0; color:#58a6ff; }
+    .layout { flex:1; display:flex; min-height:0; }
+    .panel { background:#161b22; border-right:1px solid #30363d; padding:12px; overflow:auto; }
+    .left { width:320px; } .center { flex:1; display:flex; flex-direction:column; }
+    .right { width:380px; border-right:none; border-left:1px solid #30363d; }
+    textarea, input[type=text] { width:100%; background:#0d1117; color:#e6edf3; border:1px solid #30363d; border-radius:6px; padding:8px; font-size:13px; }
+    button { background:#238636; color:#fff; border:none; border-radius:6px; padding:8px 12px; cursor:pointer; font-size:13px; }
+    button.sec { background:#21262d; border:1px solid #30363d; }
+    button:hover { filter:brightness(1.1); }
+    .row { display:flex; gap:8px; align-items:center; margin:8px 0; }
+    #cy { flex:1; background:#0d1117; border:1px solid #30363d; border-radius:6px; }
+    .tag { font-size:12px; color:#8b949e; }
+    .pill { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; margin-left:6px; }
+    .ok { background:#1f6f3a; } .bad { background:#8a2b2b; }
+    .doc-tab { display:block; width:100%; text-align:left; background:#0d1117; border:1px solid #30363d; color:#e6edf3; padding:6px 8px; margin:3px 0; border-radius:4px; cursor:pointer; font-size:12px; }
+    .doc-tab.active { border-color:#58a6ff; color:#58a6ff; }
+    pre.doc { white-space:pre-wrap; font-size:12px; background:#0d1117; padding:10px; border-radius:6px; max-height:100%; overflow:auto; }
+    .hint { font-size:11px; color:#8b949e; margin-top:6px; }
+    .slider-label { font-size:12px; color:#8b949e; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useRef, useEffect, useCallback } = React;
+
+function App() {
+  const [pid, setPid] = useState(null);
+  const [projName, setProjName] = useState("我的业务系统");
+  const [text, setText] = useState("做一个电商订单系统，包含支付对账和库存扣减，要有登录鉴权和消息推送");
+  const [slider, setSlider] = useState(0.3);
+  const [status, setStatus] = useState("未生成");
+  const [domain, setDomain] = useState("");
+  const [delta, setDelta] = useState(null);
+  const [topoId, setTopoId] = useState(null);
+  const [docs, setDocs] = useState([]);
+  const [activeDoc, setActiveDoc] = useState(0);
+  const [linkMode, setLinkMode] = useState(false);
+  const [linkSource, setLinkSource] = useState(null);
+
+  const cyRef = useRef(null);
+  const cyInst = useRef(null);
+
+  const newProject = async () => {
+    const r = await fetch("/api/projects", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ name: projName })
+    }).then(r=>r.json());
+    setPid(r.id);
+    setStatus("已建项目：" + r.id);
+  };
+
+  const draw = useCallback((nodes, edges) => {
+    if (!cyInst.current) return;
+    const els = [
+      ...nodes.map(n => ({ data: { id:n.id, label:n.label, kind:n.kind||"core" } })),
+      ...edges.map((e,i) => ({ data: { id:"e"+i, source:e.source, target:e.target } }))
+    ];
+    cyInst.current.json({ elements: els });
+    cyInst.current.layout({ name:"breadthfirst", directed:true, padding:30 }).run();
+  }, []);
+
+  const generate = async () => {
+    if (!pid) { await newProject(); }
+    const r = await fetch(`/api/projects/${pid}/messages`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ content: text, slider, c: 1.0 })
+    }).then(r=>r.json());
+    setTopoId(r.topology_id);
+    setDomain(r.domain);
+    setDelta(r.topology.delta);
+    setStatus(r.topology.status === "rejected" ? "⚠ 被拒：" + r.topology.note : "✓ " + r.topology.note);
+    draw(r.topology.nodes, r.topology.edges);
+    const d = await fetch(`/api/projects/${pid}/generate-docs`).then(r=>r.json());
+    setDocs(d.docs); setActiveDoc(0);
+  };
+
+  const pushAndRegularize = async () => {
+    if (!cyInst.current || !topoId) return;
+    const nodes = cyInst.current.nodes().map(n=>({ id:n.id(), label:n.data("label"), kind:n.data("kind") }));
+    const edges = cyInst.current.edges().map(e=>({ source:e.source().id(), target:e.target().id() }));
+    const r = await fetch(`/api/topologies/${topoId}/update`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ nodes, edges, slider, c: 1.0 })
+    }).then(r=>r.json());
+    setStatus(r.status === "rejected" ? "⚠ 被拒：" + r.note : "✓ " + r.note);
+    setDelta(r.delta);
+    draw(r.nodes, r.edges);
+  };
+
+  const addNode = () => {
+    const label = prompt("节点名称：");
+    if (!label) return;
+    const id = "n_" + Math.random().toString(36).slice(2,7);
+    cyInst.current.add({ data:{ id, label, kind:"explore" } });
+  };
+  const deleteSelected = () => {
+    const sel = cyInst.current.$(":selected");
+    if (sel.empty()) { alert("先点选一个节点或边"); return; }
+    sel.remove();
+  };
+  const onNodeTap = (evt) => {
+    if (!linkMode) return;
+    const id = evt.target.id();
+    if (!linkSource) { setLinkSource(id); }
+    else if (linkSource !== id) {
+      cyInst.current.add({ data:{ id:"e_"+Math.random().toString(36).slice(2,7), source:linkSource, target:id } });
+      setLinkSource(null); setLinkMode(false);
+    }
+  };
+
+  // 语音输入（浏览器 Web Speech API，免后端 ASR）
+  const [listening, setListening] = useState(false);
+  const startVoice = () => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { alert("当前浏览器不支持语音（请用 Chrome/Edge）"); return; }
+    const rec = new SR();
+    rec.lang = "zh-CN"; rec.interimResults = false; rec.continuous = false;
+    rec.onresult = (e) => setText(e.results[0][0].transcript);
+    rec.onend = () => setListening(false);
+    rec.start(); setListening(true);
+  };
+
+  useEffect(() => {
+    cyInst.current = cytoscape({
+      container: cyRef.current,
+      style: [
+        { selector:"node", style:{
+            "background-color":"#1f6feb", "label":"data(label)", "color":"#e6edf3",
+            "font-size":10, "text-valign":"center", "text-halign":"center",
+            "width":70, "height":50, "text-wrap":"wrap", "text-max-width":60 } },
+        { selector:'node[kind="reuse"]', style:{ "background-color":"#2ea043" } },
+        { selector:'node[kind="explore"]', style:{ "background-color":"#9e6a03" } },
+        { selector:"edge", style:{ "curve-style":"bezier", "target-arrow-shape":"triangle",
+            "line-color":"#52606d", "target-arrow-color":"#52606d", "width":1.5 } },
+        { selector:":selected", style:{ "border-width":3, "border-color":"#58a6ff" } }
+      ],
+      elements: []
+    });
+    cyInst.current.on("tap", "node", onNodeTap);
+    return () => cyInst.current && cyInst.current.destroy();
+  }, []);
+
+  const doc = docs[activeDoc];
+
+  return (
+    <React.Fragment>
+      <header>
+        <h1>PrimiFlow</h1>
+        <span className="tag">一句话开发好 · 语音/文字皆可</span>
+        <input type="text" value={projName} onChange={e=>setProjName(e.target.value)} style={{width:160}} />
+        <button className="sec" onClick={newProject}>新建项目</button>
+      </header>
+
+      <div className="layout">
+        {/* 左：输入 */}
+        <div className="panel left">
+          <div className="row">
+            <button onClick={startVoice}>{listening ? "🎤 听写中…" : "🎤 语音输入"}</button>
+          </div>
+          <textarea rows={5} value={text} onChange={e=>setText(e.target.value)} placeholder="用说的或打字，描述你想做的业务…" />
+          <div className="row">
+            <span className="slider-label">稳定</span>
+            <input type="range" min="0" max="1" step="0.05" value={slider}
+                   onChange={e=>setSlider(parseFloat(e.target.value))} style={{flex:1}} />
+            <span className="slider-label">探索</span>
+          </div>
+          <div className="row"><button onClick={generate}>⚡ 生成系统（拓扑+文档）</button></div>
+          <div className="tag">状态：{status}</div>
+          {domain && <div className="tag">业务域：{domain} ｜ Δ={delta}</div>}
+          <div className="hint">提示：κ(稳定/复用) 高→优先复用历史资产；τ(探索/裂变) 高→自动加监控/实验等节点。ℛ̂ 保证预算内、无矛盾环。</div>
+        </div>
+
+        {/* 中：画布 */}
+        <div className="panel center">
+          <div className="row">
+            <button className="sec" onClick={addNode}>＋ 加节点</button>
+            <button className="sec" onClick={()=>{ setLinkMode(true); setLinkSource(null); }}>🔗 连线</button>
+            <button className="sec" onClick={deleteSelected}>🗑 删选中</button>
+            <button onClick={pushAndRegularize}>↻ 重算 ℛ̂</button>
+            <button className="sec" onClick={async ()=>{ if(topoId){ const r=await fetch(`/api/topologies/${topoId}/freeze`,{method:"POST"}).then(r=>r.json()); alert("已冻结为资产 Q："+r.asset.id); } }}>❄ 冻结资产</button>
+            {linkMode && <span className="tag">连线模式：点源节点再点目标节点</span>}
+          </div>
+          <div id="cy" ref={cyRef}></div>
+        </div>
+
+        {/* 右：文档 */}
+        <div className="panel right">
+          <div className="tag">8 份标准化说明书</div>
+          {docs.length === 0 && <div className="hint">先点「生成系统」。</div>}
+          {docs.map((d,i)=>(
+            <button key={d.kind} className={"doc-tab"+(i===activeDoc?" active":"")} onClick={()=>setActiveDoc(i)}>{i+1}. {d.title}</button>
+          ))}
+          {doc && <pre className="doc">{doc.content}</pre>}
+        </div>
+      </div>
+    </React.Fragment>
+  );
+}
+
+ReactDOM.render(<App/>, document.getElementById("root"));
+</script>
+</body>
+</html>

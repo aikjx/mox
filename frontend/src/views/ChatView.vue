@@ -299,7 +299,7 @@ onMounted(() => {
   if (!sessions.value.length) newSession()
   // 拉取后端全自动同步开关状态
   getAutoSyncStatus()
-    .then((r) => { if (r && r.data) autoSync.value = !!r.data.auto_sync })
+    .then((r) => { if (r) autoSync.value = !!(r.auto_sync ?? r.data?.auto_sync) })
     .catch(() => {})
 })
 

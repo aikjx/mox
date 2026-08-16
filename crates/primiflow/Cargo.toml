@@ -1,0 +1,44 @@
+[package]
+name = "primiflow"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "PrimiFlow 全域原语智能平台 · 关联图谱驱动的需求→代码/数据骨架生成层"
+
+[dependencies]
+flow-ai = { path = "../flow-ai" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+rusqlite = { workspace = true }
+axum = { workspace = true }
+tokio = { workspace = true }
+
+[features]
+# 默认不含 HTTP 服务层；需在构建示例/部署时显式开启 `--features server`。
+# 这样核心库（被 primiflow-fusion 依赖）的默认构建不受 server 模块波动影响。
+default = []
+server = []
+
+[dev-dependencies]
+reqwest = { version = "0.11", features = ["json"] }
+
+[[example]]
+name = "gen"
+path = "examples/gen.rs"
+
+[[example]]
+name = "enterprise_demo"
+path = "examples/enterprise_demo.rs"
+
+[[example]]
+name = "server_demo"
+path = "examples/server_demo.rs"
+required-features = ["server"]
+
+[[test]]
+name = "api_server"
+required-features = ["server"]

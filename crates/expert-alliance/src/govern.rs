@@ -98,7 +98,7 @@ impl AuditChain {
             }
             let mut re = e.clone();
             re.hash.clear();
-            let h = Self::hash(&prev, &e);
+            let h = Self::hash(&prev, e);
             if h != e.hash {
                 return false;
             }

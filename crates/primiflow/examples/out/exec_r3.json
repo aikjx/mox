@@ -1,0 +1,58 @@
+[
+  {
+    "key": "pull",
+    "label": "抓取工单",
+    "tool": "http",
+    "ok": true,
+    "note": "ok",
+    "output": {
+      "fetched_at": "2026-08-16T00:00:00Z",
+      "label": "抓取工单",
+      "op": "fetch",
+      "rows": 59,
+      "source": "抓取工单"
+    }
+  },
+  {
+    "key": "embed",
+    "label": "文本向量化",
+    "tool": "compute",
+    "ok": true,
+    "note": "ok",
+    "output": {
+      "label": "文本向量化",
+      "metric": "agg(文本向量化)",
+      "op": "compute",
+      "rows": 59,
+      "value": 81
+    }
+  },
+  {
+    "key": "cluster",
+    "label": "聚类分析",
+    "tool": "compute",
+    "ok": true,
+    "note": "ok",
+    "output": {
+      "label": "聚类分析",
+      "metric": "agg(聚类分析)",
+      "op": "compute",
+      "rows": 59,
+      "value": 81
+    }
+  },
+  {
+    "key": "report",
+    "label": "生成图表报告",
+    "tool": "llm",
+    "ok": true,
+    "note": "ok",
+    "output": {
+      "label": "生成图表报告",
+      "op": "llm",
+      "rows": 59,
+      "summary": "基于 59 条记录生成《生成图表报告》摘要",
+      "tokens": 1888
+    }
+  }
+]

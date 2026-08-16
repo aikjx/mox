@@ -67,7 +67,7 @@ impl Expert for SecurityCodeExpert {
 
                 // 4. 检查不安全依赖
                 for dep in &unit.dependencies {
-                    if is_unsafe_dependency(&dep) {
+                    if is_unsafe_dependency(dep) {
                         risks.push(Risk {
                             severity: Severity::Warning,
                             nodes: vec![unit.id.clone()],

@@ -39,6 +39,12 @@ const routes = [
     meta: { title: '知识图谱' }
   },
   {
+    path: '/alliance-fusion',
+    name: 'AllianceFusion',
+    component: () => import('@/views/AllianceFusionView.vue'),
+    meta: { title: '全维融合' }
+  },
+  {
     path: '/ai',
     name: 'AI',
     component: () => import('@/views/ChatView.vue'),

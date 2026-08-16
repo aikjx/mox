@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>算法联盟 · 全维需求业务处理流程图（归一化 · 企业级）</title>
+<style>
+  :root{
+    --ink:#1f2937; --ink-soft:#475467; --line:#d8dee9; --bg:#f7f9fc; --card:#ffffff;
+    --navy:#1f3a5f; --navy2:#2c5282; --teal:#0d9488; --amber:#d97706; --red:#dc2626;
+    --green:#16a34a; --violet:#6d28d9; --blue:#2563eb; --gray:#64748b;
+    --biz:#2563eb; --dev:#7c3aed;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.6;}
+  header.top{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:28px 36px;}
+  header.top h1{margin:0 0 6px;font-size:24px;letter-spacing:.5px;}
+  header.top .meta{font-size:13px;opacity:.9;display:flex;flex-wrap:wrap;gap:18px;}
+  header.top .meta b{color:#ffd479;}
+  main{max-width:1180px;margin:0 auto;padding:28px 24px 60px;}
+  section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px 26px;margin:20px 0;box-shadow:0 1px 3px rgba(15,23,42,.04);}
+  section>h2{margin:0 0 4px;font-size:19px;color:var(--navy);border-left:5px solid var(--teal);padding-left:12px;}
+  section>.sub{color:var(--ink-soft);font-size:13px;margin:0 0 18px 17px;}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;margin:6px 0 14px;color:var(--ink-soft);}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .dot{width:12px;height:12px;border-radius:3px;display:inline-block;}
+  .principle{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+  .principle .p{border:1px solid var(--line);border-radius:10px;padding:14px 16px;background:#fcfdff;}
+  .principle .p h4{margin:0 0 6px;color:var(--navy2);font-size:14.5px;}
+  .principle .p p{margin:0;font-size:13px;color:var(--ink-soft);}
+  /* pipeline */
+  .pipe{display:flex;flex-wrap:wrap;align-items:stretch;gap:0;margin:8px 0;}
+  .stage{flex:1 1 132px;min-width:128px;border:1px solid var(--line);border-radius:10px;padding:12px 12px 14px;background:#fff;position:relative;}
+  .stage .no{font-size:11px;font-weight:700;color:#fff;background:var(--navy);border-radius:20px;padding:1px 9px;display:inline-block;margin-bottom:6px;}
+  .stage h4{margin:2px 0 5px;font-size:13.5px;color:var(--navy);}
+  .stage .d{font-size:11.5px;color:var(--ink-soft);}
+  .stage code{background:#eef2f7;padding:1px 5px;border-radius:4px;font-size:11px;color:#334155;}
+  .arrow{flex:0 0 26px;display:flex;align-items:center;justify-content:center;color:var(--teal);font-size:22px;font-weight:700;}
+  .gate{margin:10px 0 4px;border-radius:10px;padding:12px 16px;font-size:13px;border-left:5px solid var(--amber);background:#fffbeb;}
+  .gate.red{border-left-color:var(--red);background:#fef2f2;}
+  .gate b{color:#92400e;}
+  .gate.red b{color:#991b1b;}
+  .gate .tag{font-weight:700;margin-right:8px;padding:1px 8px;border-radius:5px;background:var(--amber);color:#fff;font-size:11.5px;}
+  .gate.red .tag{background:var(--red);}
+  /* matrix table */
+  table{width:100%;border-collapse:collapse;font-size:12.8px;margin-top:6px;}
+  th,td{border:1px solid var(--line);padding:9px 10px;text-align:left;vertical-align:top;}
+  th{background:#eef2f7;color:var(--navy);font-weight:700;}
+  tr:nth-child(even) td{background:#fafcff;}
+  .biz td:first-child{box-shadow:inset 4px 0 0 var(--biz);}
+  .dev td:first-child{box-shadow:inset 4px 0 0 var(--dev);}
+  .pill{font-size:11px;padding:1px 7px;border-radius:20px;font-weight:600;}
+  .pill.hard{background:#fef2f2;color:var(--red);}
+  .pill.soft{background:#eff6ff;color:var(--blue);}
+  /* relationship graph svg */
+  .svgwrap{width:100%;overflow-x:auto;background:#fcfdff;border:1px solid var(--line);border-radius:10px;padding:8px;}
+  .svgwrap svg{display:block;max-width:100%;height:auto;}
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media(max-width:820px){.twocol{grid-template-columns:1fr;}.principle{grid-template-columns:1fr;}}
+  .note{font-size:12px;color:var(--gray);margin-top:8px;}
+  .kv{font-size:12.5px;color:var(--ink-soft);}
+  .kv b{color:var(--navy);}
+  footer{text-align:center;color:var(--gray);font-size:12px;padding:20px;}
+  .badge{display:inline-block;border:1px solid var(--teal);color:var(--teal);border-radius:6px;padding:2px 9px;font-size:11.5px;margin-right:6px;}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>算法联盟 · 全维需求业务处理流程图</h1>
+  <div class="meta">
+    <span>标准编号：<b>AA-STD-V1.0</b></span>
+    <span>承载底座：<b>GR-STD-V1.0 关图</b> + <b>PT-STD-V1.0 六维绑定</b></span>
+    <span>引擎：<b>flow-ai 已验证最优求解</b></span>
+    <span>代号：<b>璇玑（Xuanji）</b></span>
+    <span>全维视角：<b>双联盟 · 十四维</b></span>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ 0 归一化原则 ============ -->
+<section>
+  <h2>0 · 归一化总纲（Single Source of Truth）</h2>
+  <p class="sub">四条不可妥协原则，是"整理优化 / 归一化 / 企业级"的唯一解释基准。</p>
+  <div class="principle">
+    <div class="p"><h4>① 归一化</h4><p>四类流程图（业务/算法/权限/资源）在内存里是<b>同一个 FlowGraph</b>，差异仅体现于节点/边的 Dimension 着色与约束。不存在"四套图各自优化再合并"——那产生数据孤岛与冲突。物理节点唯一，维度只是标签，故"改一个节点，全维同步"天然成立。</p></div>
+    <div class="p"><h4>② 全维</h4><p>每个节点同时被<b>双联盟十四维</b>（业务七维 + 开发七维）评估；优化结论必须同时满足全维约束，不做单维最优而牺牲其他维。</p></div>
+    <div class="p"><h4>③ 最优算法处理</h4><p>最终求解交给 flow-ai 已验证算法栈（冒险分析并行化 + CPM 关键路径 + RCPSP 资源调度 + 冲突自动修复 + Dijkstra 关系网最短路）。本层只负责把全维约束<b>正确翻译</b>成引擎能吃的输入，不重造算法。</p></div>
+    <div class="p"><h4>④ 可治理</h4><p>多租户隔离、RBAC 权限、不可篡改审计、流程版本与审批、SLA/成本预算——任何"出码/执行"动作前必须过治理闸门。</p></div>
+  </div>
+  <p class="note">一句话定位：<b>七个（+七个）领域专家在归一化 IR 上并行诊断，裁决器按"权限/安全优先"全维归一，flow-ai 引擎做已验证最优求解，⛨璇玑验证网关与治理闸门把关后出码——一张图，全维最优，企业可治理。</b></p>
+</section>
+
+<!-- ============ 1 主流程图 ============ -->
+<section>
+  <h2>1 · 全维需求业务处理主流程图</h2>
+  <p class="sub">从关图 REQUIREMENT 根接入，到出码/出图，共 8 阶段、4 道强制闸门。任意闸门拒绝即阻断出码，且无降级旁路。</p>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--navy)"></i>处理阶段</span>
+    <span><i class="dot" style="background:var(--amber)"></i>G0/G1 业务/裁决闸门</span>
+    <span><i class="dot" style="background:var(--red)"></i>G2 璇玑否决 / G3 治理闸门</span>
+    <span><i class="dot" style="background:var(--teal)"></i>归一化 IR / 六维绑定</span>
+  </div>
+
+  <div class="pipe">
+    <div class="stage"><span class="no">S1</span><h4>需求接入</h4><div class="d">关图 <code>REQ</code> 根（D01~D13 / R01~R08）经 <code>Bind</code> 六维骨架接入；含租户/主体/RBAC 上下文。</div></div>
+    <div class="arrow">→</div>
+    <div class="stage"><span class="no">S2</span><h4>归一化</h4><div class="d"><code>auto_dimension</code> 维度着色；租户配额→<code>ResourcePool</code> 上限；解析为唯一归一化 <code>FlowGraph</code>（base）。</div></div>
+    <div class="arrow">→</div>
+    <div class="stage"><span class="no">S3</span><h4>双联盟并行诊断</h4><div class="d">插件化运行时 <code>run_experts</code> 并行派发 <b>14 位专家</b>（业务七维 + 开发七维），各出 <code>ExpertOpinion</code>（约束/风险/建议/评分）。</div></div>
+    <div class="arrow">→</div>
+    <div class="stage"><span class="no">S4</span><h4>归一化裁决</h4><div class="d"><code>reconcile</code> 按优先级合并约束→<code>ReconciledPlan</code>（注入 Guard/Mutex 边 + ExpertRule + 冲突日志）。</div></div>
+  </div>
+
+  <div class="gate"><span class="tag">G0</span><b>归一化闸门</b>：IR 必须可拓扑排序（DAG）；维度着色完整；孤儿/悬空边为 0（对齐关图 GR-E1/E2）。</div>
+
+  <div class="pipe">
+    <div class="stage"><span class="no">S5</span><h4>flow-ai 最优求解</h4><div class="d"><code>optimize</code>：CPM 关键路径 + RCPSP 调度 + 伪依赖剪除 + 冲突自动修复 + 代码生成（<code>emit_code</code>）+ LLM 算力路由（ModelTier）。</div></div>
+    <div class="arrow">→</div>
+    <div class="stage"><span class="no">S6</span><h4>⛨ 璇玑验证网关</h4><div class="d"><code>verify</code> 5 项<b>阻断级</b>数学/语义检查（topology / data_dep / conflict / gains / code_rt），<b>最高权限</b>，任何 RBAC/合规不可覆盖。</div></div>
+    <div class="arrow">→</div>
+    <div class="stage"><span class="no">S7</span><h4>治理闸门 Govern</h4><div class="d">审计链（哈希链不可篡改）+ 版本状态机（Draft→Review→Approved→Deprecated）+ SLA + 成本预算 + RBAC 审批。</div></div>
+    <div class="arrow">→</div>
+    <div class="stage"><span class="no">S8</span><h4>出码 / 出图</h4><div class="d"><code>emit</code>：代码工程 + 拓扑快路径 + 可视化（Three.js 力导向）+ 指标；仅 <code>Approved</code> 且未否决版本可出码。</div></div>
+  </div>
+
+  <div class="gate red"><span class="tag">G2</span><b>⛨ 璇玑否决（最高优先级）</b>：任一阻断级检查失败 → <code>vetoed=true</code> → 治理闸门强制 <code>Blocked</code>。任何权限/合规结论均不可覆盖本层。专家 <code>veto=true</code> 级风险、裁决冲突升级，亦并入否决。</div>
+  <div class="gate red"><span class="tag">G3</span><b>治理闸门</b>：<code>approved = !algorithm_veto ∧ status.can_emit() ∧ blocking==0 ∧ sla_ok ∧ budget_ok</code>。五条件任一不满足即拒；未批准版本仅允许 dry-run。</div>
+  <div class="gate"><span class="tag">G1</span><b>裁决闸门</b>：硬约束（Blocking 级）一律落地，优先于一切软约束（保证权限/安全不可被性能优化绕过）；同优先级冲突平手升级为 <code>Risk(Blocking)</code> 交人工/审批。</div>
+</section>
+
+<!-- ============ 2 双联盟十四维矩阵 ============ -->
+<section>
+  <h2>2 · 双联盟十四维专家矩阵</h2>
+  <p class="sub">业务联盟（七维，蓝）与开发联盟（七维，紫）并行、互不依赖。约束 = 归一化合并最小单元；优先级：Permission/Security &gt; Resource &gt; Data &gt; Business &gt; Observability &gt; Algorithm（开发七维参与同优先级仲裁）。</p>
+  <table>
+    <thead><tr><th>维度</th><th>联盟</th><th>专家（owner）</th><th>核心职责</th><th>典型产出（约束）</th><th>属性</th></tr></thead>
+    <tbody>
+      <tr class="biz"><td>Business</td><td>业务</td><td>业务专家</td><td>领域规则校验、分支完整性、失败兜底</td><td>缺 else 警告、必走审批分支</td><td><span class="pill soft">软</span></td></tr>
+      <tr class="biz"><td>Algorithm</td><td>业务</td><td>算法专家</td><td>关键路径瓶颈、复杂度、缓存命中</td><td>建议缓存/拆分、标记 O(n²) 节点；<code>Suggestion::Offload(tier)</code></td><td><span class="pill soft">软</span></td></tr>
+      <tr class="biz"><td>Permission</td><td>业务</td><td>权限专家</td><td>RBAC、越权、合规脱敏（政务等保）</td><td><code>MustGuard(desensitize)</code>、<code>Risk(Blocking)</code> 合规</td><td><span class="pill hard">硬</span></td></tr>
+      <tr class="biz"><td>Resource</td><td>业务</td><td>资源专家</td><td>算力/连接池/并发，翻译租户配额</td><td><code>ResourceCap(browser,1)</code>、<code>MustSerialize</code></td><td><span class="pill hard">硬</span></td></tr>
+      <tr class="biz"><td>Security</td><td>业务</td><td>安全专家</td><td>注入、PII 外发、提示词越狱</td><td><code>MustIsolate</code>、<code>Risk(Blocking)</code> 泄露</td><td><span class="pill hard">硬</span></td></tr>
+      <tr class="biz"><td>Data</td><td>业务</td><td>数据专家</td><td>血缘、schema 漂移、幂等</td><td><code>MustOrder</code>（血缘保序）、幂等建议</td><td><span class="pill hard">硬</span></td></tr>
+      <tr class="biz"><td>Observability</td><td>业务</td><td>可观测专家</td><td>埋点/追踪/告警覆盖</td><td><code>MustAudit</code>、关键路径埋点</td><td><span class="pill soft">软</span></td></tr>
+      <tr class="dev"><td>Architecture</td><td>开发</td><td>架构专家</td><td>模块边界、耦合、六维绑定一致性</td><td>架构偏离、绑定断链告警</td><td><span class="pill soft">软</span></td></tr>
+      <tr class="dev"><td>Security_Code</td><td>开发</td><td>安全代码专家</td><td>源码级注入/越权/硬编码密钥</td><td><code>Risk(Blocking)</code> 源码漏洞</td><td><span class="pill hard">硬</span></td></tr>
+      <tr class="dev"><td>Code_Quality</td><td>开发</td><td>代码质量专家</td><td>可读性、复杂度、重复</td><td>质量分、重构建议</td><td><span class="pill soft">软</span></td></tr>
+      <tr class="dev"><td>Performance</td><td>开发</td><td>性能专家</td><td>热点、分配、并发安全</td><td>性能分、瓶颈标记</td><td><span class="pill soft">软</span></td></tr>
+      <tr class="dev"><td>Testing</td><td>开发</td><td>测试专家</td><td>覆盖率、断言、边界</td><td>测试缺口、强制单测建议</td><td><span class="pill soft">软</span></td></tr>
+      <tr class="dev"><td>Documentation</td><td>开发</td><td>文档专家</td><td>注释、README、TraceMatrix 生成</td><td>文档缺口（PT-DOC）</td><td><span class="pill soft">软</span></td></tr>
+      <tr class="dev"><td>Maintainability</td><td>开发</td><td>可维护性专家</td><td>变更影响面、腐化趋势</td><td>可维护性分、重构优先级</td><td><span class="pill soft">软</span></td></tr>
+    </tbody>
+  </table>
+  <p class="note">归一化收口：MCP 工具 / Skill / Loop / LLM 不是外接插件，而是归一化 IR 的<b>第一类公民</b>，参与与企业内部节点完全相同的全维约束与最优求解。</p>
+</section>
+
+<!-- ============ 3 全维通过关系图 ============ -->
+<section>
+  <h2>3 · 全维通过关系图（六维绑定 + 十四维镜头）</h2>
+  <p class="sub">关图六维绑定是唯一可追溯链：REQ→FUN→BIZ→ALG→TSK→COD。任意核心节点须可达某 REQ 根（GR-E6 偏离治理）；十四维镜头叠加于同一物理节点之上。</p>
+  <div class="svgwrap">
+    <svg viewBox="0 0 880 360" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Microsoft YaHei, sans-serif">
+      <defs>
+        <marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#0d9488"/></marker>
+        <marker id="ard" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#6d28d9"/></marker>
+      </defs>
+      <!-- six-dim binding chain -->
+      <g font-size="13" font-weight="700" text-anchor="middle">
+        <rect x="20" y="150" width="118" height="56" rx="10" fill="#eff6ff" stroke="#2563eb"/><text x="79" y="172" fill="#1e3a8a">REQ 需求根</text><text x="79" y="192" font-size="10" font-weight="400" fill="#475467">D01~D13 / R01~R08</text>
+        <rect x="178" y="150" width="110" height="56" rx="10" fill="#f5f3ff" stroke="#7c3aed"/><text x="233" y="172" fill="#5b21b6">FUN 功能</text><text x="233" y="192" font-size="10" font-weight="400" fill="#475467">Function 节点</text>
+        <rect x="328" y="150" width="110" height="56" rx="10" fill="#ecfeff" stroke="#0891b2"/><text x="383" y="172" fill="#155e75">BIZ 业务</text><text x="383" y="192" font-size="10" font-weight="400" fill="#475467">Business 域</text>
+        <rect x="478" y="150" width="110" height="56" rx="10" fill="#fef9c3" stroke="#ca8a04"/><text x="533" y="172" fill="#854d0e">ALG 算法</text><text x="533" y="192" font-size="10" font-weight="400" fill="#475467">flow-ai 求解</text>
+        <rect x="628" y="150" width="110" height="56" rx="10" fill="#f0fdf4" stroke="#16a34a"/><text x="683" y="172" fill="#166534">TSK 任务</text><text x="683" y="192" font-size="10" font-weight="400" fill="#475467">ScheduleTask</text>
+        <rect x="760" y="150" width="100" height="56" rx="10" fill="#fef2f2" stroke="#dc2626"/><text x="810" y="172" fill="#991b1b">COD 代码</text><text x="810" y="192" font-size="10" font-weight="400" fill="#475467">CodeFile/Script</text>
+      </g>
+      <g stroke="#0d9488" stroke-width="2.5" fill="none" marker-end="url(#ar)">
+        <line x1="138" y1="178" x2="176" y2="178"/>
+        <line x1="288" y1="178" x2="326" y2="178"/>
+        <line x1="438" y1="178" x2="476" y2="178"/>
+        <line x1="588" y1="178" x2="626" y2="178"/>
+        <line x1="738" y1="178" x2="758" y2="178"/>
+      </g>
+      <text x="440" y="138" text-anchor="middle" font-size="12.5" fill="#0d9488" font-weight="700">Bind 边：六维一一绑定 · 导出 TraceMatrix · 需求→代码首层可追溯</text>
+
+      <!-- 14-dim lens overlay -->
+      <g font-size="11" text-anchor="middle">
+        <text x="79" y="60" fill="#2563eb" font-weight="700">业务七维镜头</text>
+        <rect x="20" y="70" width="118" height="22" rx="5" fill="#eff6ff" stroke="#93c5fd"/><text x="79" y="85" fill="#1e40af">Biz / Alg / Perm</text>
+        <rect x="20" y="96" width="118" height="22" rx="5" fill="#eff6ff" stroke="#93c5fd"/><text x="79" y="111" fill="#1e40af">Res / Sec / Data</text>
+        <rect x="20" y="122" width="118" height="22" rx="5" fill="#eff6ff" stroke="#93c5fd"/><text x="79" y="137" fill="#1e40af">Observability</text>
+
+        <text x="810" y="60" fill="#7c3aed" font-weight="700">开发七维镜头</text>
+        <rect x="752" y="70" width="118" height="22" rx="5" fill="#f5f3ff" stroke="#c4b5fd"/><text x="811" y="85" fill="#5b21b6">Arch / SecCode</text>
+        <rect x="752" y="96" width="118" height="22" rx="5" fill="#f5f3ff" stroke="#c4b5fd"/><text x="811" y="111" fill="#5b21b6">CodeQ / Perf</text>
+        <rect x="752" y="122" width="118" height="22" rx="5" fill="#f5f3ff" stroke="#c4b5fd"/><text x="811" y="137" fill="#5b21b6">Test / Doc / Maint</text>
+
+        <line x1="138" y1="92" x2="20" y2="92" stroke="#93c5fd" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <line x1="760" y1="92" x2="870" y2="92" stroke="#c4b5fd" stroke-width="1.5" stroke-dasharray="4 3"/>
+      </g>
+      <text x="440" y="248" text-anchor="middle" font-size="12" fill="#475467">同一物理节点，被 14 个维度同时评估；差异仅体现于 Dimension 着色与约束，无数据孤岛。</text>
+
+      <!-- external first-class citizens -->
+      <g font-size="11" text-anchor="middle">
+        <rect x="220" y="278" width="120" height="40" rx="8" fill="#fff" stroke="#64748b"/><text x="280" y="296" fill="#334155">MCP 工具</text><text x="280" y="311" font-size="9.5" fill="#64748b">FlowNode(Task)+tags</text>
+        <rect x="360" y="278" width="120" height="40" rx="8" fill="#fff" stroke="#64748b"/><text x="420" y="296" fill="#334155">Skill</text><text x="420" y="311" font-size="9.5" fill="#64748b">↔ 拓扑网快路径</text>
+        <rect x="500" y="278" width="120" height="40" rx="8" fill="#fff" stroke="#64748b"/><text x="560" y="296" fill="#334155">Loop</text><text x="560" y="311" font-size="9.5" fill="#64748b">LoopStart/End+回边</text>
+        <rect x="640" y="278" width="120" height="40" rx="8" fill="#fff" stroke="#64748b"/><text x="700" y="296" fill="#334155">LLM</text><text x="700" y="311" font-size="9.5" fill="#64748b">ModelTier 路由</text>
+        <line x1="340" y1="298" x2="358" y2="298" stroke="#64748b" stroke-width="1.5" marker-end="url(#ard)"/>
+        <line x1="480" y1="298" x2="498" y2="298" stroke="#64748b" stroke-width="1.5" marker-end="url(#ard)"/>
+        <line x1="620" y1="298" x2="638" y2="298" stroke="#64748b" stroke-width="1.5" marker-end="url(#ard)"/>
+      </g>
+      <text x="440" y="338" text-anchor="middle" font-size="11.5" fill="#6d28d9" font-weight="700">外部能力归一化为 IR 第一类公民 → 专家联盟对其做与企业内部节点完全相同的全维约束与最优求解</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ============ 4 全链路可靠可控矩阵 ============ -->
+<section>
+  <h2>4 · 全链路可靠可控矩阵</h2>
+  <p class="sub">每一层都有明确的"控制点 / 检查项 / 权威级 / 失败动作"。可靠性来自分层闸门，可控性来自审计链与版本状态机，明确性来自可机读报告。</p>
+  <table>
+    <thead><tr><th>链路层</th><th>控制点（闸门）</th><th>检查项</th><th>权威级</th><th>失败动作</th></tr></thead>
+    <tbody>
+      <tr><td><b>S1 需求接入</b></td><td>关图 REQ 根 / Bind 骨架</td><td>REQ 可达性（GR-E6 偏离）、悬空边（GR-E2）</td><td>关图规范</td><td>偏离节点挂账，增量阻断</td></tr>
+      <tr><td><b>S2 归一化</b></td><td>G0 归一化闸门</td><td>IR 可拓扑排序、维度着色完整、孤儿=0</td><td>流水线</td><td>拒绝进入诊断</td></tr>
+      <tr><td><b>S3 双联盟诊断</b></td><td>专家并行派发（tokio/rayon）</td><td>14 专家确定性 Opinion；<code>veto</code> 级风险</td><td>各专家（只读）</td><td><code>veto=true</code> → 并入璇玑否决</td></tr>
+      <tr><td><b>S4 归一化裁决</b></td><td>G1 裁决闸门</td><td>硬约束优先落地；冲突升级 Blocking</td><td>裁决优先级</td><td>平手升级交人工/审批</td></tr>
+      <tr><td><b>S5 最优求解</b></td><td>flow-ai optimize</td><td>CPM/RCPSP/Dijkstra；伪依赖剪除；CodeGen</td><td>引擎（已验证）</td><td>收益不可信仅告警</td></tr>
+      <tr><td><b>S6 ⛨ 璇玑</b></td><td>G2 验证网关（最高）</td><td>topology / data_dep / conflict（阻断级）+ gains / code_rt</td><td><b>最高权限</b></td><td><code>vetoed</code> → 强制 Blocked</td></tr>
+      <tr><td><b>S7 治理</b></td><td>G3 治理闸门</td><td>audit 哈希链 + 版本机 + SLA + 预算 + RBAC</td><td>治理层</td><td>5 条件任一不满足即拒</td></tr>
+      <tr><td><b>S8 出码/出图</b></td><td>emit 许可</td><td>仅 <code>Approved</code> 且 <code>!algorithm_veto</code></td><td>审批状态机</td><td>未批准仅 dry-run</td></tr>
+    </tbody>
+  </table>
+  <div class="twocol" style="margin-top:16px;">
+    <div>
+      <h4 style="color:var(--navy);margin:6px 0;">⛨ 璇玑 5 项检查（任一阻断级失败即否决）</h4>
+      <ul class="kv" style="margin:4px 0;">
+        <li><b>topology</b>（阻断）：原始节点全保留 + 真数据依赖可达性守恒</li>
+        <li><b>data_dep</b>（阻断）：剪除伪依赖不破坏真数据依赖；并行层无 RAW 冒险</li>
+        <li><b>conflict</b>（阻断）：0 阻塞冲突 + 异常边落点有效</li>
+        <li><b>gains</b>（软）：speedup≥1 且并行不慢于串行</li>
+        <li><b>code_rt</b>（软）：代码⇄流程图往返一致（仅告警）</li>
+      </ul>
+    </div>
+    <div>
+      <h4 style="color:var(--navy);margin:6px 0;">审计链（可控性底座）</h4>
+      <ul class="kv" style="margin:4px 0;">
+        <li><code>AuditEvent{who,when,flow,decision,diff}</code> 追加写</li>
+        <li>哈希链 <code>prev_hash → hash</code>，<code>verify()</code> 防篡改</li>
+        <li>版本状态机：Draft→Review→Approved→Deprecated</li>
+        <li>RBAC：<code>run/edit/approve/view-audit</code> 四权分离</li>
+        <li>多租户：<code>namespace</code> 隔离 + 配额→ResourcePool 上限</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5 关图承载与 CI 门禁 ============ -->
+<section>
+  <h2>5 · 关图承载与 CI 门禁（可追溯闭环）</h2>
+  <p class="sub">算法联盟的"需求→代码"链由关图六维绑定承载，CI 以信息关联关系图为唯一基准，强制"变更必须同步图"。</p>
+  <div class="twocol">
+    <div>
+      <h4 style="color:var(--teal);margin:6px 0;">六维绑定承载（REQ→COD）</h4>
+      <p class="kv">REQ 根（D01~D13 / R01~R08）经 <code>Bind</code> 边绑定到主责 crate 入口（<code>crates/*/src/lib.rs</code>），再细化 REQ→FUN→BIZ→ALG→TSK→COD 六维一一绑定，导出 TraceMatrix。偏离检测（GR-E6）：核心节点不可达任何 REQ 根即视为无需求溯源。基线覆盖率 96.6%，绝对下限护栏 <code>COVERAGE_FLOOR=90.0</code>。</p>
+    </div>
+    <div>
+      <h4 style="color:var(--navy);margin:6px 0;">CI 强制合规 8 项（非零即阻断）</h4>
+      <ol class="kv" style="margin:4px 0;padding-left:20px;">
+        <li>图文件纳入版本管理且非空</li>
+        <li>无悬空边（GR-E2）</li>
+        <li>无重复 id（GR-E4）</li>
+        <li>所有边带 evidence（GR-E3）</li>
+        <li>核心节点无孤儿（GR-E1）</li>
+        <li>无未建模隐性依赖（GR-E6）</li>
+        <li>文档引用全部有效（GR-E7）</li>
+        <li>新变更 sync 漂移 = 0（GR-E8）</li>
+      </ol>
+    </div>
+  </div>
+  <p class="note">全链路"可靠可控明确"闭环：需求有根（REQ）→ 处理有归一化 IR → 优化有已验证引擎 → 正确性有 ⛨ 璇玑最高权限否决 → 出码有治理闸门与审计链 → 演进有关图同步漂移门禁。任一层均可机读、可复核、可阻断。</p>
+</section>
+
+<footer>
+  <span class="badge">AA-STD-V1.0</span><span class="badge">归一化</span><span class="badge">双联盟·十四维</span><span class="badge">关图 GR-STD-V1.0</span>
+  本图由 infotopograph 算法联盟（璇玑）处理流程归一化整理生成 · 单一事实基准，纳入版本管理。
+</footer>
+</main>
+</body>
+</html>

@@ -33,7 +33,7 @@ pub struct MultiSink { sinks: Vec<Box<dyn AuditSink>> }
 
 impl MultiSink {
     pub fn new() -> Self { Self { sinks: Vec::new() } }
-    pub fn add(mut self, sink: Box<dyn AuditSink>) -> Self { self.sinks.push(sink); self }
+    pub fn with_sink(mut self, sink: Box<dyn AuditSink>) -> Self { self.sinks.push(sink); self }
 }
 
 impl Default for MultiSink { fn default() -> Self { Self::new() } }
@@ -80,7 +80,7 @@ mod tests {
     fn multi_empty_disabled() { assert!(!MultiSink::new().is_enabled()); }
     #[test]
     fn multi_noop_is_usable() {
-        let m = MultiSink::new().add(Box::new(NoopSink));
+        let m = MultiSink::new().with_sink(Box::new(NoopSink));
         assert!(m.append_sync(&super::super::event::test_event()).is_ok());
     }
 }

@@ -1,0 +1,13 @@
+[package]
+name = "info-graph"
+version = "1.0.0"
+edition = "2021"
+description = "信息关联关系图（关图规范 GR-STD-V1.0）参考实现：扫描/建模/校验/导出/同步"
+license = "MIT"
+
+# 作为独立工具，不加入上层 operator-unified-system workspace
+[workspace]
+
+[[bin]]
+name = "info-graph"
+path = "src/main.rs"

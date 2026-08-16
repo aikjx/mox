@@ -1,0 +1,15 @@
+# PC / 开发板 通用依赖
+# 注意：PyPI 上没有名为 crepe-onnx 的包；真实 CREPE tiny 用 torchcrepe（PyTorch/ONNXRuntime）。
+# 若仅做端到端验证且不想装 torch，可去掉 torchcrepe/torch，代码会自动降级到 librosa.pyin。
+librosa>=0.10
+torchcrepe>=0.0.24
+torch>=2.0
+onnxruntime>=1.16
+music21>=9.1
+numpy>=1.23
+soundfile>=0.12
+pyaudio>=0.2.13
+numba>=0.57
+
+# 测试（可选）
+pytest>=7.0

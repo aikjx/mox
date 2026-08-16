@@ -20,7 +20,6 @@ pub struct FlowLoader {
 
 impl FlowLoader {
     pub fn new(root: impl Into<PathBuf>) -> Self { Self { root: root.into() } }
-    pub fn default() -> Self { Self::new("flows") }
 
     /// 加载单个流程
     pub fn load(&self, filename: &str) -> Result<FlowGraph, FlowLoadError> {
@@ -129,7 +128,7 @@ impl FlowLoader {
             };
             let tool_kinds: Vec<_> = rd.tool.as_ref()
                 .and_then(|v: &serde_yaml::Value| v.as_str())
-                .and_then(|s| Self::parse_tool(s))
+                .and_then(Self::parse_tool)
                 .map(|tk| vec![tk])
                 .unwrap_or_default();
             graph.rules.push(flow_ai::model::ExpertRule {
@@ -163,7 +162,7 @@ impl FlowLoader {
                 kind: serde_yaml::Value::String(format!("{:?}", n.kind).to_lowercase()),
                 duration_ms: n.duration_ms,
                 tags: if n.tags.is_empty() { None } else { Some(n.tags.clone()) },
-                tool: n.tool.clone().map(|tk| serde_yaml::Value::String(format!("{:?}", tk).to_lowercase())),
+                tool: n.tool.map(|tk| serde_yaml::Value::String(format!("{:?}", tk).to_lowercase())),
                 access,
                 transactional: if n.transactional { Some(true) } else { None },
             }
@@ -228,7 +227,7 @@ impl FlowLoader {
 }
 
 impl Default for FlowLoader {
-    fn default() -> Self { Self::default() }
+    fn default() -> Self { Self::new("flows") }
 }
 
 // ── 错误类型 ─────────────────────────────────────────────────────────────────

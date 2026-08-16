@@ -1,0 +1,71 @@
+[
+  {
+    "key": "ingest",
+    "label": "流数据接入",
+    "tool": "http",
+    "ok": true,
+    "note": "ok",
+    "output": {
+      "fetched_at": "2026-08-16T00:00:00Z",
+      "label": "流数据接入",
+      "op": "fetch",
+      "rows": 59,
+      "source": "流数据接入"
+    }
+  },
+  {
+    "key": "feature",
+    "label": "特征计算",
+    "tool": "compute",
+    "ok": true,
+    "note": "ok",
+    "output": {
+      "label": "特征计算",
+      "metric": "agg(特征计算)",
+      "op": "compute",
+      "rows": 59,
+      "value": 81
+    }
+  },
+  {
+    "key": "model",
+    "label": "模型推理",
+    "tool": "llm",
+    "ok": true,
+    "note": "ok",
+    "output": {
+      "label": "模型推理",
+      "op": "llm",
+      "rows": 59,
+      "summary": "基于 59 条记录生成《模型推理》摘要",
+      "tokens": 1888
+    }
+  },
+  {
+    "key": "alert",
+    "label": "告警下发",
+    "tool": "shell",
+    "ok": true,
+    "note": "ok",
+    "output": {
+      "exit_code": 0,
+      "label": "告警下发",
+      "op": "shell",
+      "stdout": "executed 告警下发"
+    }
+  },
+  {
+    "key": "report",
+    "label": "生成图表报告",
+    "tool": "llm",
+    "ok": true,
+    "note": "ok",
+    "output": {
+      "label": "生成图表报告",
+      "op": "llm",
+      "rows": 1,
+      "summary": "基于 1 条记录生成《生成图表报告》摘要",
+      "tokens": 32
+    }
+  }
+]

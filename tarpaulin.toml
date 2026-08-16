@@ -1,0 +1,32 @@
+# P4 覆盖率门禁配置（骨架 §6：tarpaulin ≥70%）
+#
+# 仅对「可本地单测」的核心 crate 做行覆盖率统计；排除：
+#  - 基准(benches)/集成测试(tests)/示例(examples)：避免外部服务依赖导致门禁误伤；
+#  - 派生代码与构建产物目录。
+[tool.tarpaulin]
+fail-under = 70.0
+outcome-covered = true
+exclude-files = [
+    "*/benches/*",
+    "*/tests/*",
+    "*/examples/*",
+    "*/src/bin/*",
+    "*/.workbuddy/*",
+    "target/*",
+]
+# 仅覆盖核心可单测 crate；依赖外部服务（NATS/RabbitMQ/MinIO）的集成型 crate
+# 不纳入行覆盖率门禁，改由 graph-gate / 集成测试 CI 阶段保障。
+packages = [
+    "primiflow-fusion",
+    "primiflow",
+    "flow-ai",
+    "operator-core",
+    "optimizer",
+    "operator-graph",
+    "business-catalog",
+    "template-market",
+    "ai-agent",
+    "hermes-flow-bridge",
+    "alliance-system",
+    "operator-wasm",
+]

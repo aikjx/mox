@@ -90,20 +90,18 @@ pub fn validate(def: &FlowDef) -> ValidationResult {
 
     // ── 5. Guard 节点必须有 tags ─────────────────────────────────────────────
     for n in &def.nodes {
-        if node_kind_is(&n.kind, "guard") {
-            if n.tags.as_ref().map(|t| t.is_empty()).unwrap_or(true) {
+        if node_kind_is(&n.kind, "guard")
+            && n.tags.as_ref().map(|t| t.is_empty()).unwrap_or(true) {
                 errs.push(ValidationError::GuardWithoutTags(n.id.clone()));
             }
-        }
     }
 
     // ── 6. Blocking 规则必须有 required_guard_tags ──────────────────────────
     for r in &def.rules {
-        if severity_is(&r.severity, "blocking") || severity_is(&r.severity, "info") {
-            if r.required_guard_tags.as_ref().map(|t| t.is_empty()).unwrap_or(true) {
+        if (severity_is(&r.severity, "blocking") || severity_is(&r.severity, "info"))
+            && r.required_guard_tags.as_ref().map(|t| t.is_empty()).unwrap_or(true) {
                 errs.push(ValidationError::BlockingRuleWithoutGuardTags(r.id.clone()));
             }
-        }
     }
 
     if errs.is_empty() { Ok(()) }

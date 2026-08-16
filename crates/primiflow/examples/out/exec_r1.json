@@ -1,0 +1,44 @@
+[
+  {
+    "key": "fetch",
+    "label": "抓取销售数据",
+    "tool": "http",
+    "ok": true,
+    "note": "ok",
+    "output": {
+      "fetched_at": "2026-08-16T00:00:00Z",
+      "label": "抓取销售数据",
+      "op": "fetch",
+      "rows": 59,
+      "source": "抓取销售数据"
+    }
+  },
+  {
+    "key": "clean",
+    "label": "清洗对账",
+    "tool": "compute",
+    "ok": true,
+    "note": "ok",
+    "output": {
+      "label": "清洗对账",
+      "metric": "agg(清洗对账)",
+      "op": "compute",
+      "rows": 59,
+      "value": 81
+    }
+  },
+  {
+    "key": "report",
+    "label": "生成图表报告",
+    "tool": "llm",
+    "ok": true,
+    "note": "ok",
+    "output": {
+      "label": "生成图表报告",
+      "op": "llm",
+      "rows": 59,
+      "summary": "基于 59 条记录生成《生成图表报告》摘要",
+      "tokens": 1888
+    }
+  }
+]

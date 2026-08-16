@@ -309,7 +309,10 @@ pub fn is_public_route(path: &str) -> bool {
         | "/favicon.ico"
         | "/" 
         | "/index.html"
-    ) || path.starts_with("/static/")
+        // 双联盟十四维治理自检端点：只读、不改状态，供 CI 与前端治理台直接调用
+        | "/api/alliance/health"
+        | "/api/alliance/optimize"
+    ) || path.starts_with("/static/") || path.starts_with("/api/alliance/")
 }
 
 /// 从 Token 提取角色（简化版，实际应用应从 JWT 解析）

@@ -1,0 +1,107 @@
+{
+  "meta": {
+    "title": "PrimiFlow 全维分析 · 需求业务处理流程（企业级归一化）",
+    "source": "docs/PrimiFlow-全维分析-核心功能补全-20260816.md；crates/primiflow、primiflow-fusion、expert-alliance 源码梳理",
+    "date": "2026-08-16",
+    "normalization_rules": [
+      "节点命名统一为：动作 + 关键函数/组件",
+      "闸门统一归为两类：硬阻断（终止流程）/ 非阻断报告（记录并继续）",
+      "异常出口统一标色：红色=硬阻断，黄色=非阻断异常报告，蓝色=流程入口",
+      "六维绑定时序统一标注产生阶段（阶段1/3/5）",
+      "知识回灌以虚线闭环表示复用命中路径"
+    ]
+  },
+  "stages": [
+    {
+      "id": 1,
+      "name": "需求输入与结构化",
+      "actions": ["语音/文本归一（ASR）", "需求结构化与子任务分解", "域白名单校验 is_in_scope"],
+      "modules": ["Orchestrator::run", "AsrClient", "TopologyOperator::structure_requirement"],
+      "outputs": ["StructuredRequirement"],
+      "gate": {"name": "域白名单", "nature": "硬阻断", "on_fail": "RejectedDomain，直接拒绝"}
+    },
+    {
+      "id": 2,
+      "name": "状态初始化与资产复用检索",
+      "actions": ["κ/τ 滑块映射", "历史资产语义召回", "知识库构建，确立 REQ 维度"],
+      "modules": ["Scheduler::from_slider", "AssetService::search", "AssetService::to_knowledge_base"],
+      "outputs": ["PrimiState(κ,τ,C,Q)", "reuse_hits"],
+      "gate": null
+    },
+    {
+      "id": 3,
+      "name": "拓扑涌现与正则化",
+      "actions": ["SubFlow 复用与候选拓扑生成", "正则化增量 δ，守恒量 Q 继承", "C²=κ²+τ² 守恒闭合", "bind_trace 生成 FUN/BIZ/ALG/TSK 实体"],
+      "modules": ["TopologyOperator::emerge_topology", "Scheduler::regularize"],
+      "outputs": ["RegularizedGraph", "更新后的 PrimiState"],
+      "gate": null
+    },
+    {
+      "id": 4,
+      "name": "冒烟校验（幻觉兜底闸门）",
+      "actions": ["对正则化图做结构完整性校验"],
+      "modules": ["SmokeTester::smoke_test"],
+      "outputs": ["SmokeReport"],
+      "gate": {"name": "冒烟校验", "nature": "硬阻断", "on_fail": "SmokeFailed，不冻结资产，直接返回"}
+    },
+    {
+      "id": 5,
+      "name": "六维绑定登记与全局闸门",
+      "actions": ["构建 SixDimBinding 并注册入 SixDimRegistry", "JSON 持久化", "fuse_all 融合注册表投影，重建统一图", "full_gate 全局闸门"],
+      "modules": ["build_binding", "SixDimRegistry::register", "PrimiPlatform::rebuild_graph", "UnifiedGraph::full_gate"],
+      "outputs": ["PlatformGate（ConservationReport + BindingReport + GovernanceReport）"],
+      "gate": {"name": "R07 守恒残差 + A4 六维零孤儿 + GR-STD 8 闸门", "nature": "非阻断报告", "on_fail": "passed=false，被拒需求坐标置零，不破坏整图守恒"}
+    },
+    {
+      "id": 6,
+      "name": "专家联盟全维治理（alliance_optimize）",
+      "actions": ["14 维着色 auto_dimension", "14 位专家（业务7+开发7）并行分析", "reconcile 按优先级仲裁冲突", "flow-ai 最优调度求解", "璇玑验证网关 verify", "治理闸门 govern（尊重算法否决）", "SHA-256 审计链 AuditChain"],
+      "modules": ["pipeline::alliance_optimize", "ir::auto_dimension", "reconcile", "verify", "executor"],
+      "outputs": ["GovernanceReport（expert_scores + optimization + gate + audit）"],
+      "gate": {"name": "治理闸门", "nature": "硬阻断", "on_fail": "专家否决或冲突升级 → algo.vetoed → Blocked，执行器拒绝运行"}
+    },
+    {
+      "id": 7,
+      "name": "PT-DOC 标准文档自生成（R08）",
+      "actions": ["从事实源生成 10 份 PT-DOC 标准文档", "导出 Markdown + INDEX.md + index.json"],
+      "modules": ["PtdocSet::generate", "PtdocSet::export", "PrimiPlatform::synthesize_and_emit_docs"],
+      "outputs": ["PT-DOC-01~10（溯源矩阵/守恒/零孤儿/治理/融合/统计/拓扑涌现/合规/κ复用/术语表）"],
+      "gate": null
+    },
+    {
+      "id": 8,
+      "name": "资产冻结与知识回灌",
+      "actions": ["成功拓扑冻结为可复用资产", "κ-τ 引擎 accept 回灌", "注册表持久化 save"],
+      "modules": ["AssetService::freeze_asset", "PrimiEngine::accept", "SixDimRegistry::save"],
+      "outputs": ["frozen_asset_id", "更新的知识库", "JSON 注册表"],
+      "gate": null,
+      "closed_loop": "下次同类需求在阶段 2 命中 reuse_hits，κ 复用率提升"
+    }
+  ],
+  "sixDimChain": [
+    {"dim": "REQ", "name": "需求维", "born_at": "阶段1 需求结构化"},
+    {"dim": "FUN", "name": "功能维", "born_at": "阶段3 bind_trace"},
+    {"dim": "BIZ", "name": "业务维", "born_at": "阶段3 bind_trace"},
+    {"dim": "ALG", "name": "算法维", "born_at": "阶段3 bind_trace"},
+    {"dim": "TSK", "name": "任务维", "born_at": "阶段3 bind_trace"},
+    {"dim": "COD", "name": "代码维", "born_at": "阶段5 注册登记"}
+  ],
+  "traceabilityApi": ["by_requirement 按需求正查", "by_code 按代码反查溯源", "by_project 按项目查询", "by_dim_id 按维度ID查询", "to_unified_graph 投影统一图跑全局闸门"],
+  "sevenDimensions": [
+    {"dim": "架构", "stages": "阶段6", "key": "ArchitectureExpert 分析代码 IR；UnifiedGraph 三正交维度 Layer×EntityKind×PrimitiveCoords"},
+    {"dim": "功能", "stages": "阶段1-3", "key": "需求结构化 + 拓扑涌现"},
+    {"dim": "数据", "stages": "阶段5/6", "key": "SixDimRegistry 持久化 + DataExpert 数据流检查"},
+    {"dim": "合规 PT-Primi", "stages": "阶段5", "key": "R07 守恒残差 + A4 零孤儿 + R06 绑定 Registry + R08 PT-DOC"},
+    {"dim": "合规 GR-STD", "stages": "阶段5", "key": "8 闸门：悬空边 / evidence / 核心孤儿 / 孤岛文档"},
+    {"dim": "测试", "stages": "阶段4/6", "key": "SmokeTest 冒烟校验 + TestingExpert"},
+    {"dim": "性能/溯源", "stages": "阶段6", "key": "AlgorithmExpert + PerformanceExpert + 六维反查溯源 API"}
+  ],
+  "gates": [
+    {"gate": "域白名单校验", "stage": "阶段1", "nature": "硬阻断", "on_fail": "RejectedDomain 拒绝域外需求"},
+    {"gate": "冒烟校验 SmokeTester", "stage": "阶段4", "nature": "硬阻断", "on_fail": "SmokeFailed，不冻结资产直接返回"},
+    {"gate": "R07 守恒残差闸门", "stage": "阶段5 full_gate", "nature": "非阻断报告", "on_fail": "passed=false，坐标置零"},
+    {"gate": "A4 六维零孤儿", "stage": "阶段5 full_gate", "nature": "非阻断报告", "on_fail": "passed=false，坐标置零"},
+    {"gate": "GR-STD 8 闸门", "stage": "阶段5 full_gate", "nature": "非阻断报告", "on_fail": "passed=false，坐标置零"},
+    {"gate": "治理闸门 govern", "stage": "阶段6", "nature": "硬阻断", "on_fail": "算法否决 → Blocked，执行器拒绝运行"}
+  ]
+}

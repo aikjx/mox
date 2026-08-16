@@ -42,13 +42,13 @@ impl AlgoVerification {
 /// 最高权限验证：优化前图 vs 优化报告
 pub fn verify(before: &FlowGraph, opt: &OptimizationReport) -> AlgoVerification {
     let after = &opt.optimized_graph;
-    let mut checks: Vec<Check> = Vec::new();
-
-    checks.push(topology_invariant(before, after));
-    checks.push(data_dependency_invariant(before, after, opt));
-    checks.push(conflict_invariant(after, opt));
-    checks.push(credible_gains_invariant(opt));
-    checks.push(code_roundtrip_invariant(opt));
+    let checks: Vec<Check> = vec![
+        topology_invariant(before, after),
+        data_dependency_invariant(before, after, opt),
+        conflict_invariant(after, opt),
+        credible_gains_invariant(opt),
+        code_roundtrip_invariant(opt),
+    ];
 
     let vetoed = checks.iter().any(|c| c.blocking && !c.passed);
     let all_passed = checks.iter().all(|c| c.passed);
@@ -477,8 +477,10 @@ mod tests {
     #[test]
     fn code_roundtrip_passes_for_generated_code() {
         let g = base_flow();
-        let mut cfg = flow_ai::OptimizeConfig::default();
-        cfg.emit_code = true;
+        let cfg = flow_ai::OptimizeConfig {
+            emit_code: true,
+            ..Default::default()
+        };
         let opt = flow_ai::optimize(&g, &cfg);
         let v = verify(&g, &opt);
         // 不应因代码往返失败而否决（最多告警）

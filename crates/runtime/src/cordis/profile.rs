@@ -1,9 +1,6 @@
 //! Profile 配置加载
 
-use std::collections::HashMap;
-use std::path::Path;
 use serde::{Deserialize, Serialize};
-use async_trait::async_trait;
 
 /// Profile加载器
 pub struct ProfileLoader {
