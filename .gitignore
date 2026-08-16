@@ -32,3 +32,8 @@ Thumbs.db
 .env.local
 *.pem
 *.key
+
+# 关图 CI 门禁生成物（每次运行重建，不入库；基线 .guantu_baseline.json 需入库）
+graph.json
+graph.enterprise.json
+guantu.req.json.tmp
