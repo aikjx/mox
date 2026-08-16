@@ -1,0 +1,26 @@
+[package]
+name = "primiflow-fusion"
+version = "0.1.0"
+edition = "2021"
+description = "PrimiFlow 多维度融合归一化一体化架构层：把 13 crate 能力、关图 12 类实体、PT-Primi 六维绑定统一进一张守恒图"
+
+[dependencies]
+flow-ai = { path = "../flow-ai" }
+primiflow = { path = "../primiflow" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+uuid = { workspace = true }
+axum = { workspace = true }
+tokio = { workspace = true }
+tower-http = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+[dev-dependencies]
+criterion = { version = "0.5", default-features = false }
+tower = { version = "0.4", features = ["util"] }
+
+[[bench]]
+name = "development_experts"
+harness = false

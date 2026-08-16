@@ -1,8 +1,11 @@
 # 算子商城模块（Operator Market Module）· 企业级设计文档
 
-> 版本：v1.0 ｜ 状态：已落地（后端 `market.rs` + 前端 `MarketView.vue` / `MarketDetailView.vue`）
+> 版本：v1.0 ｜ 状态：已落地（后端 `market.rs` + 路由层 `routes/market.rs` + 前端 `MarketView.vue` / `MarketDetailView.vue`）
 > 定位：将"**需求 + 业务流程图（结构化、可编辑）**"作为可复用资产（算子包，OperatorPackage）沉淀到商城，供他人**随机浏览、克隆、继续编辑**，实现"需求确定后其他皆可快速改"的企业级知识复用闭环。
 > 与 `architecture.md` 的关系：本模块是 §18「开放生态与算子市场」的**需求/流程图资产侧**补充，与 §28「业务流程设计模块」构成"设计↔市场"双向飞轮。
+
+> **2026-08-16 实现状态更新（企业级验收）**：`crates/runtime/src/routes/market.rs`（导入/导出/租户/权限过滤扩展路由层）此前在 `lib.rs` 中被禁用、存在编译错误。现已：①在 `lib.rs` 启用 `pub mod routes;`、`routes/mod.rs` 声明 `pub mod market;`；②修复非 ASCII 裸字节串、axum `HeaderMap` 返回类型、`HeaderValue: Default` 约束、move 语义、`ImportItemResult` 字段可见性等 11 处编译错误；③修复 `market_migration::sign_doc` 未回写签名的缺陷（导致 `verify_doc` 恒为 false）；④修复 `load_package` 自动补迁时目标目录未创建导致 `NotFound` 的缺陷；⑤修复 `SemVer::precedence_cmp` 元组自比恒为 `Equal` 的语义版本比较缺陷。
+> 验收：`cargo test -p runtime` 全绿（lib 18 + 集成 10 + `market_version` 集成 10），`cargo clippy -p runtime --all-targets` 无新增告警。扩展路由（导入冲突策略 Overwrite/Skip/Rename、HMAC 签名校验、ZIP 打包、租户/创建人/权限过滤）由 `tests/market_version.rs` 第 7、8 节覆盖。
 
 ---
 

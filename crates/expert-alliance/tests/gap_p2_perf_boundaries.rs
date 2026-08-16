@@ -16,10 +16,11 @@ use flow_ai::{optimize, OptimizeConfig};
 
 /// 关闭代码生成的优化配置（性能测试聚焦 CPM 引擎本身）
 fn cpm_config() -> OptimizeConfig {
-    let mut c = OptimizeConfig::default();
-    c.emit_code = false;
-    c.auto_repair = true;
-    c
+    OptimizeConfig {
+        emit_code: false,
+        auto_repair: true,
+        ..Default::default()
+    }
 }
 
 /// 有 edit-flow 权限的安全上下文（用于联盟优化边界用例）
@@ -45,7 +46,7 @@ fn cpm_deep_chain_preserves_real_data_dependency() {
     let mut prev = "s".to_string();
     for i in 0..n {
         let id = format!("t{}", i);
-        let mut node = FlowNode::task(&id, &format!("任务{}", i), ToolKind::Compute, 10)
+        let mut node = FlowNode::task(&id, format!("任务{}", i), ToolKind::Compute, 10)
             .with_access(Access::write(format!("var:x{}", i)));
         // 除首节点外，读取上一节点写出的变量 → 形成 RAW 真依赖
         if i > 0 {
@@ -85,7 +86,7 @@ fn cpm_1000_node_independent_tasks_parallelize() {
     for i in 0..n {
         let id = format!("t{}", i);
         g.add_node(
-            FlowNode::task(&id, &format!("任务{}", i), ToolKind::Compute, 10)
+            FlowNode::task(&id, format!("任务{}", i), ToolKind::Compute, 10)
                 .with_access(Access::write(format!("var:u{}", i))),
         );
         g.add_edge(FlowEdge::seq("s", &id));
@@ -119,7 +120,7 @@ fn cpm_1000_node_fanout_is_fast_and_parallel() {
         let id = format!("c{}", i);
         // 每个子任务写独立变量，彼此无数据依赖 → 完全可并行
         g.add_node(
-            FlowNode::task(&id, &format!("子任务{}", i), ToolKind::Compute, 10)
+            FlowNode::task(&id, format!("子任务{}", i), ToolKind::Compute, 10)
                 .with_access(Access::write(format!("var:c{}", i))),
         );
         g.add_edge(FlowEdge::seq("s", &id));
@@ -154,7 +155,7 @@ fn alliance_optimize_1000_nodes_scales() {
     let mut prev = "s".to_string();
     for i in 0..n {
         let id = format!("t{}", i);
-        g.add_node(FlowNode::task(&id, &format!("任务{}", i), ToolKind::Compute, 10));
+        g.add_node(FlowNode::task(&id, format!("任务{}", i), ToolKind::Compute, 10));
         g.add_edge(FlowEdge::seq(&prev, &id));
         prev = id;
     }
@@ -292,7 +293,7 @@ fn boundary_ultra_deep_chain_with_data_deps() {
     for i in 0..n {
         let id = format!("t{}", i);
         // 写 var:x{i}，下一节点读 var:x{i} → 真数据依赖，必须严格保序
-        let mut node = FlowNode::task(&id, &format!("任务{}", i), ToolKind::Compute, 10)
+        let mut node = FlowNode::task(&id, format!("任务{}", i), ToolKind::Compute, 10)
             .with_access(Access::write(format!("var:x{}", i)));
         // 读取上一节点写出的变量 → 真实 RAW 依赖，强制严格保序
         if i > 0 {
@@ -330,7 +331,7 @@ fn boundary_ultra_large_fanout() {
     for i in 0..n {
         let id = format!("c{}", i);
         g.add_node(
-            FlowNode::task(&id, &format!("子任务{}", i), ToolKind::Compute, 10)
+            FlowNode::task(&id, format!("子任务{}", i), ToolKind::Compute, 10)
                 .with_access(Access::write(format!("var:c{}", i))),
         );
         g.add_edge(FlowEdge::seq("s", &id));

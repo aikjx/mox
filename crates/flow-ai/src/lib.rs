@@ -41,6 +41,7 @@ pub mod critpath;
 pub mod dataflow;
 pub mod model;
 pub mod pipeline;
+pub mod primitive;
 pub mod schedule;
 pub mod topology;
 
@@ -59,6 +60,11 @@ pub mod prelude {
     pub use crate::pipeline::{optimize, optimize_with_topology, OptimizationReport, OptimizeConfig};
     pub use crate::schedule::{ModelTier, Schedule, Slot};
     pub use crate::topology::{Entity, EntityKind, Relation, RelationKind, TopologyGraph};
+    pub use crate::primitive::{
+        adjust_after_failure, adjust_after_success, CandidateTopology, DeliveryPolicy, EmergeStatus,
+        EmergenceResult, KnowledgeBase, Outcome, PrimitiveState, PrimiEngine, Requirement, ResourceBudget,
+        StoredTopology, SubTask, ValidationReport, Violation, ViolationKind, generate, regularize, validate,
+    };
 }
 
 /// 从 JSON 载入流程图

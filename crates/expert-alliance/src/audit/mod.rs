@@ -27,7 +27,7 @@
 //!
 //! // 组合多个 sink（示例用 NoopSink，真实场景替换为 SyslogSink/S3Sink/NatsSink/RabbitMqSink）
 //! let multi = MultiSink::new()
-//!     .add(Box::new(NoopSink));
+//!     .with_sink(Box::new(NoopSink));
 //!
 //! let ctx = AuditContext::new(Arc::new(multi))
 //!     .with_hmac_secret("your-secret".into());

@@ -84,10 +84,8 @@ impl NatsSink {
         // js.add_stream(&cfg)
         //     .map_err(|e| AuditError::WriteFailed(e.to_string()))?;
 
-        Err(AuditError::WriteFailed(format!(
-            "JetStream stream creation requires 'nats' crate with server --jetstream flag. \
-             Run: cargo add nats && nats-server --jetstream",
-        )))
+        Err(AuditError::WriteFailed("JetStream stream creation requires 'nats' crate with server --jetstream flag. \
+             Run: cargo add nats && nats-server --jetstream".to_string()))
     }
 }
 

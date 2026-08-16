@@ -324,7 +324,10 @@ impl WorkflowEngine {
                 let base = std::env::var("OPERATOR_API_BASE")
                     .unwrap_or_else(|_| "http://127.0.0.1:3998".to_string());
                 let url = format!("{}/operators/{}", base, operator_id);
-                let client = reqwest::Client::new();
+                let client = reqwest::Client::builder()
+                    .timeout(std::time::Duration::from_secs(30))
+                    .build()
+                    .unwrap_or_default();
                 match client.post(&url).json(parameters).send().await {
                     Ok(resp) => {
                         let status = resp.status();
@@ -341,24 +344,41 @@ impl WorkflowEngine {
                             ))),
                         }
                     }
-                    Err(e) => Err(OperatorError::Other(anyhow::anyhow!(
-                        "算子 {} 调用失败: {}", operator_id, e
-                    ))),
+                    Err(e) => {
+                        // 区分超时与连接失败，便于运维定位（后端未启动 / 网络不可达 vs 处理超时）
+                        let kind = if e.is_timeout() { "超时" } else { "连接失败" };
+                        Err(OperatorError::Other(anyhow::anyhow!(
+                            "算子 {operator_id} 调用{kind}({url}): {e}", kind = kind, url = url, operator_id = operator_id, e = e
+                        )))
+                    }
                 }
             }
-            WorkflowNodeConfig::Condition { expression, true_path: _, false_path: _ } => {
+            WorkflowNodeConfig::Condition { expression, true_path, false_path } => {
                 tracing::info!("判断条件: {}", expression);
                 // 真实表达式求值：支持 ${var} 引用、==/!=/>/<、&&/|| 与括号。
                 // 未定义变量由 resolve_value 返回 Null 哨兵 + compare_values 排序比较 fail-closed=false
                 // （见 resolve_value/compare_values），流程走拒绝分支而非中断；
                 // 此处 Err 仅来自表达式语法错误（如无比较符、非法操作符），显式报错避免掩盖配置问题。
                 match eval_condition(expression, variables) {
-                    Ok(result) => Ok(Some(serde_json::json!({
-                        "condition_evaluated": true,
-                        "executed": true,
-                        "expression": expression,
-                        "result": result
-                    }))),
+                    Ok(result) => {
+                        // 记录命中的分支名 + 表达式中引用的变量实际取值，便于审计与排障
+                        let matched = if result { true_path } else { false_path };
+                        let referenced = extract_var_names(expression)
+                            .into_iter()
+                            .map(|name| {
+                                let v = variables.get(&name).cloned().unwrap_or(serde_json::Value::Null);
+                                (name, v)
+                            })
+                            .collect::<serde_json::Map<String, serde_json::Value>>();
+                        Ok(Some(serde_json::json!({
+                            "condition_evaluated": true,
+                            "executed": true,
+                            "expression": expression,
+                            "result": result,
+                            "matched_branch": matched,
+                            "referenced_variables": referenced,
+                        })))
+                    }
                     Err(e) => Err(OperatorError::Other(anyhow::anyhow!(
                         "条件表达式求值失败 [{}]: {}", expression, e
                     ))),
@@ -370,7 +390,10 @@ impl WorkflowEngine {
                 let base = std::env::var("PLUGIN_API_BASE")
                     .unwrap_or_else(|_| "http://127.0.0.1:3998".to_string());
                 let url = format!("{}/plugins/{}/{}", base, plugin_id, method);
-                let client = reqwest::Client::new();
+                let client = reqwest::Client::builder()
+                    .timeout(std::time::Duration::from_secs(30))
+                    .build()
+                    .unwrap_or_default();
                 match client.get(&url).send().await {
                     Ok(resp) => {
                         let status = resp.status();
@@ -388,9 +411,13 @@ impl WorkflowEngine {
                             ))),
                         }
                     }
-                    Err(e) => Err(OperatorError::Other(anyhow::anyhow!(
-                        "插件 {}.{} 调用失败: {}", plugin_id, method, e
-                    ))),
+                    Err(e) => {
+                        let kind = if e.is_timeout() { "超时" } else { "连接失败" };
+                        Err(OperatorError::Other(anyhow::anyhow!(
+                            "插件 {plugin}.{method} 调用{kind}({url}): {e}",
+                            kind = kind, url = url, plugin = plugin_id, method = method, e = e
+                        )))
+                    }
                 }
             }
             WorkflowNodeConfig::Parallel { branches: _, merge_strategy } => {
@@ -1015,32 +1042,51 @@ fn resolve_value(raw: &str, variables: &HashMap<String, serde_json::Value>) -> a
     Ok(serde_json::Value::String(raw.to_string()))
 }
 
+/// 将 Value 协调为可比较的数值；非数字类型（字符串/布尔/Null）返回 None。
+fn coerce_number(v: &serde_json::Value) -> Option<f64> {
+    if let Some(n) = v.as_f64() {
+        return Some(n);
+    }
+    // 布尔按 0/1 协调，便于 1 == true 这类判定
+    if let Some(b) = v.as_bool() {
+        return Some(if b { 1.0 } else { 0.0 });
+    }
+    // 字符串尝试解析为数字（如 "1" / "3.14"），失败返回 None
+    if let Some(s) = v.as_str() {
+        return s.trim().parse::<f64>().ok();
+    }
+    None
+}
+
 /// 比较两个 serde_json::Value，依据操作符返回布尔。
+/// - 等值比较 `==/!=`：支持跨类型数值协调（1 == "1"、1 == true 均等价）；
+///   纯字符串则按文本比较（"active" == "active"）。
+/// - 排序比较 `>/</>=/<=`：优先数值比较，失败退化为字符串字典序；
+///   未定义变量（Null 哨兵）一律 false（fail-closed，避免 ${loss}<0.001 误判收敛）。
 fn compare_values(lhs: &serde_json::Value, op: &str, rhs: &serde_json::Value) -> anyhow::Result<bool> {
     use std::cmp::Ordering;
     match op {
-        "==" => Ok(lhs == rhs),
-        "!=" => Ok(lhs != rhs),
+        "==" | "!=" => {
+            let eq = if let (Some(a), Some(b)) = (coerce_number(lhs), coerce_number(rhs)) {
+                // 双方都能协调为数字 → 数值相等比较（跨类型）
+                (a - b).abs() < f64::EPSILON
+            } else {
+                // 否则按 serde_json 原生相等（字符串/布尔/对象严格匹配）
+                lhs == rhs
+            };
+            Ok(if op == "==" { eq } else { !eq })
+        }
         ">" | ">=" | "<" | "<=" => {
-            // fail-closed：未定义变量（Null 哨兵）不参与排序比较，一律 false，
-            // 避免 "0.0005" 字符串比较误判（如 ${loss}<0.001 在变量缺失时误判收敛）
             if lhs.is_null() || rhs.is_null() {
                 return Ok(false);
             }
-            // 尝试数字比较，失败则字符串比较
-            let ln = lhs.as_f64();
-            let rn = rhs.as_f64();
-            if let (Some(a), Some(b)) = (ln, rn) {
-                return Ok(match op {
-                    ">" => a > b,
-                    ">=" => a >= b,
-                    "<" => a < b,
-                    _ => a <= b,
-                });
-            }
-            let a = lhs.as_str().unwrap_or("").to_string();
-            let b = rhs.as_str().unwrap_or("").to_string();
-            let ord = a.cmp(&b);
+            let ord = if let (Some(a), Some(b)) = (coerce_number(lhs), coerce_number(rhs)) {
+                a.partial_cmp(&b).unwrap_or(Ordering::Equal)
+            } else {
+                let a = lhs.as_str().unwrap_or("");
+                let b = rhs.as_str().unwrap_or("");
+                a.cmp(b)
+            };
             Ok(match op {
                 ">" => ord == Ordering::Greater,
                 ">=" => ord != Ordering::Less,
@@ -1050,6 +1096,28 @@ fn compare_values(lhs: &serde_json::Value, op: &str, rhs: &serde_json::Value) ->
         }
         _ => Err(anyhow::anyhow!("不支持的比较操作符: {}", op)),
     }
+}
+
+/// 从条件表达式中提取所有 `${var}` 引用的变量名（去重，保持出现顺序）。
+/// 供 Condition 节点输出「被引用变量的实际取值」以辅助审计。
+fn extract_var_names(expr: &str) -> Vec<String> {
+    let mut names: Vec<String> = Vec::new();
+    let bytes = expr.as_bytes();
+    let mut i = 0;
+    while i < bytes.len().saturating_sub(1) {
+        if bytes[i] == b'$' && bytes.get(i + 1) == Some(&b'{') {
+            if let Some(end) = expr[i + 2..].find('}') {
+                let name = expr[i + 2..i + 2 + end].trim().to_string();
+                if !name.is_empty() && !names.contains(&name) {
+                    names.push(name);
+                }
+                i = i + 2 + end + 1;
+                continue;
+            }
+        }
+        i += 1;
+    }
+    names
 }
 
 #[cfg(test)]
@@ -1138,5 +1206,34 @@ mod tests {
         assert_eq!(eval_condition("${missing} > 5", &vars).expect("fail-closed false"), false);
         // 语法错误（无比较符）：仍报错，避免掩盖配置错误
         assert!(eval_condition("needs_parallel", &vars).is_err());
+    }
+
+    /// compare_values：跨类型数值等值（1 == "1"、1 == true）与 Null 排序 fail-closed。
+    #[test]
+    fn test_compare_values_cross_type() {
+        // 跨类型等值
+        assert!(compare_values(&serde_json::json!(1), "==", &serde_json::json!("1")).expect("应可比较"));
+        assert!(compare_values(&serde_json::json!(1), "==", &serde_json::json!(true)).expect("应可比较"));
+        assert!(!compare_values(&serde_json::json!(1), "==", &serde_json::json!("2")).expect("应可比较"));
+        assert!(compare_values(&serde_json::json!(true), "!=", &serde_json::json!(0)).expect("应可比较"));
+        // 纯字符串严格相等（不按数字协调）
+        assert!(compare_values(&serde_json::json!("active"), "==", &serde_json::json!("active")).expect("应可比较"));
+        assert!(!compare_values(&serde_json::json!("active"), "==", &serde_json::json!("inactive")).expect("应可比较"));
+        // 排序：数值
+        assert!(compare_values(&serde_json::json!(0.0005), "<", &serde_json::json!(0.001)).expect("数值排序"));
+        assert!(!compare_values(&serde_json::json!(0.002), "<", &serde_json::json!(0.001)).expect("数值排序"));
+        // 排序：Null 哨兵 fail-closed
+        let null = serde_json::Value::Null;
+        assert!(!compare_values(&null, "<", &serde_json::json!(0.001)).expect("fail-closed false"));
+        assert!(!compare_values(&serde_json::json!(0.001), ">", &null).expect("fail-closed false"));
+    }
+
+    /// extract_var_names：正确提取 ${var} 引用（去重、保序）。
+    #[test]
+    fn test_extract_var_names() {
+        let names = extract_var_names("${a} == true && ${b} < ${a}");
+        assert_eq!(names, vec!["a".to_string(), "b".to_string()]);
+        let names2 = extract_var_names("no vars here");
+        assert!(names2.is_empty());
     }
 }

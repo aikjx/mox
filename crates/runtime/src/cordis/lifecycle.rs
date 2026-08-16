@@ -8,6 +8,7 @@
 use std::collections::HashMap;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
+use async_trait::async_trait;
 
 /// 生命周期管理器
 pub struct LifecycleManager {

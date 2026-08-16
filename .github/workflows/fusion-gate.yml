@@ -1,0 +1,57 @@
+# PrimiFlow-Fusion 企业级门禁（独立 workflow，避免与主 CI 并发改写冲突）
+
+name: PrimiFlow-Fusion Gate
+
+on:
+  push:
+    branches: [ main, release/* ]
+    paths:
+      - 'crates/primiflow-fusion/**'
+      - 'crates/primiflow/**'
+      - 'crates/flow-ai/**'
+      - '.github/workflows/fusion-gate.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'crates/primiflow-fusion/**'
+      - 'crates/primiflow/**'
+      - 'crates/flow-ai/**'
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  fusion-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-fusion-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Check formatting
+        run: cargo fmt -p primiflow-fusion -- --check
+
+      - name: Clippy (deny warnings)
+        run: cargo clippy -p primiflow-fusion --all-targets -- -D warnings
+
+      - name: Build
+        run: cargo build -p primiflow-fusion --all-targets
+
+      - name: Test (unit + integration)
+        run: cargo test -p primiflow-fusion --all-targets
+
+      - name: 守恒与治理闸门校验（不通过则失败）
+        run: cargo run -p primiflow-fusion -- verify

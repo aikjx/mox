@@ -148,7 +148,7 @@ impl OUSCordis {
         // 追加到Session Log
         self.ctx.sessions.append(SessionEntry::TurnComplete {
             turn_id: turn_id.to_string(),
-            summary: summary.clone(),
+            summary: serde_json::to_string(&summary).unwrap_or_default(),
         }).await?;
 
         // 发送事件

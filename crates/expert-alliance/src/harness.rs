@@ -115,6 +115,9 @@ pub struct WaterfallState {
 /// 可逆副作用：插件登记，流程结束/回滚时逆序执行
 type Effect = Arc<dyn Fn() + Send + Sync>;
 
+/// 事件监听器：事件名 → 处理器链（提取复杂类型，消解 clippy::type_complexity）
+type Listener = Arc<dyn Fn(&str) + Send + Sync>;
+
 /// 共享上下文（对照 deepseek-harness 的 `ctx`）。
 ///
 /// 持有三类贡献物：
@@ -125,7 +128,7 @@ pub struct HarnessCtx {
     /// 共享服务注册表：TypeId → 服务实例（Arc 以便多读者共享）
     services: Mutex<HashMap<TypeId, Arc<dyn Any + Send + Sync>>>,
     /// 事件监听器：事件名 → 处理器
-    listeners: Mutex<HashMap<String, Vec<Arc<dyn Fn(&str) + Send + Sync>>>>,
+    listeners: Mutex<HashMap<String, Vec<Listener>>>,
     /// 瀑布钩子：事件 → 责任链
     waterfalls: Arc<RwLock<HashMap<WaterfallEvent, Vec<WaterfallHandler>>>>,
     /// 可逆副作用栈（逆序执行）
@@ -280,12 +283,31 @@ pub struct ModelAdapterConfig {
 
 impl Default for ModelAdapterConfig {
     fn default() -> Self {
+        // 默认指向真实 DeepSeek（OpenAI 兼容协议），全系统统一收口 DEEPSEEK_API_KEY。
+        // api_key_env 优先读 OUS_LLM_API_KEY，缺失时回退到 DEEPSEEK_API_KEY（运行时由调用方解析）。
         Self {
-            provider: "openai-compatible".into(),
-            endpoint: "http://localhost:11434/v1".into(),
-            api_key_env: "OUS_LLM_API_KEY".into(),
+            provider: "deepseek".into(),
+            endpoint: "https://api.deepseek.com/v1".into(),
+            api_key_env: "DEEPSEEK_API_KEY".into(),
             default_tier: "standard".into(),
         }
+    }
+}
+
+impl ModelAdapterConfig {
+    /// 解析实际 API Key：优先读 `api_key_env` 指向的环境变量，缺失时回退到 `DEEPSEEK_API_KEY`。
+    pub fn resolve_api_key(&self) -> Option<String> {
+        if let Ok(k) = std::env::var(&self.api_key_env) {
+            if !k.trim().is_empty() {
+                return Some(k);
+            }
+        }
+        std::env::var("DEEPSEEK_API_KEY").ok().filter(|k| !k.trim().is_empty())
+    }
+
+    /// 是否已具备真实调用条件。
+    pub fn is_configured(&self) -> bool {
+        self.resolve_api_key().is_some()
     }
 }
 

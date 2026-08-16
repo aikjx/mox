@@ -21,6 +21,7 @@ pub mod browser_automation;
 pub mod flow_engine;
 pub mod requirement_compiler;
 pub mod dialogue_graph;
+pub mod provider;
 
 pub use conversation::*;
 pub use requirement_compiler::*;
@@ -72,6 +73,8 @@ pub struct AIAgent {
     requirement_compiler: Arc<RwLock<RequirementCompiler>>,
     /// 对话→知识图谱自动整理同步器（全自动）
     dialogue_graph: Arc<DialogueGraphSyncer>,
+    /// AI Gateway：组件化 Provider 注册表 + 路由（fallback 链）
+    router: Arc<provider::LlmRouter>,
 }
 
 impl AIAgent {
@@ -100,6 +103,11 @@ impl AIAgent {
                 }
             }
         };
+
+        // —— AI Gateway 初始化：从环境变量注册所有可用 Provider，并构建 fallback 链 ——
+        // 同步完成（基于 std::sync::RwLock），无需 async。
+        let router = provider::LlmRouter::init_from_env();
+
         Self {
             conversation: Arc::new(RwLock::new(ConversationEngine::new())),
             algorithm_analyzer: Arc::new(RwLock::new(AlgorithmAnalyzer::new())),
@@ -111,6 +119,7 @@ impl AIAgent {
             flow_engine: Arc::new(RwLock::new(flow_engine)),
             requirement_compiler: Arc::new(RwLock::new(RequirementCompiler::new())),
             dialogue_graph,
+            router,
         }
     }
 
@@ -274,10 +283,26 @@ impl AIAgent {
         })
     }
 
-    /// 配置LLM
+    /// 配置LLM：同步更新底层 `LLMClient`，并把该配置作为一个 "custom" Provider 注册进
+    /// AI Gateway 路由器（若启用），保证全系统的对话 / 需求编译 / 流程图 LLM 节点统一走最新配置。
     pub async fn configure_llm(&self, config: LLMConfig) {
-        let mut llm = self.llm_client.write().await;
-        llm.update_config(config);
+        {
+            let mut llm = self.llm_client.write().await;
+            llm.update_config(config);
+        }
+        {
+            let cfg = self.llm_client.read().await.get_config().clone();
+            if cfg.enabled && !cfg.api_key.trim().is_empty() {
+                let provider = provider::make_openai_compatible("custom", &cfg.api_base, &cfg.api_key, &cfg.model);
+                self.router.register_provider(provider);
+                // 把 custom 提到 fallback 链首位（用户显式配置优先）
+                let mut chain = self.router.chain();
+                chain.retain(|n| n != "custom");
+                chain.insert(0, "custom".to_string());
+                self.router.set_chain(chain);
+                tracing::info!(target: "ai_gateway", model = %cfg.model, "已把最新 LLM 配置注册为 Gateway provider 'custom'（优先）");
+            }
+        }
     }
 
     pub async fn test_llm_connection(&self) -> Result<serde_json::Value> {
@@ -287,6 +312,11 @@ impl AIAgent {
 
     pub fn llm_client(&self) -> Arc<RwLock<LLMClient>> {
         self.llm_client.clone()
+    }
+
+    /// 返回 AI Gateway 路由器（组件化 Provider + fallback 链）
+    pub fn router(&self) -> Arc<provider::LlmRouter> {
+        self.router.clone()
     }
 
     pub fn browser(&self) -> Arc<RwLock<BrowserAutomationEngine>> {
@@ -579,41 +609,79 @@ impl AIAgent {
                 let prompt_template = node.config.get("prompt").and_then(|p| p.as_str()).unwrap_or("");
                 let prompt = flow_engine::apply_template(prompt_template, variables);
                 let model = node.config.get("model").and_then(|m| m.as_str())
-                    .unwrap_or("gpt-3.5-turbo");
+                    .unwrap_or("deepseek-chat");
+                // 智能 AI 节点：支持在节点配置里指定 provider（如 "deepseek"/"openai"/"qwen"），
+                // 不指定则走 AI Gateway 默认 fallback 链（deepseek→openai→…）。
+                let preferred_provider = node.config.get("provider").and_then(|p| p.as_str()).map(|s| s.to_string());
+                let temperature = node.config.get("temperature").and_then(|t| t.as_f64()).unwrap_or(0.7) as f32;
 
-                let llm = self.llm_client.read().await;
-                if llm.is_enabled() {
-                    let messages = vec![LLMChatMessage {
-                        role: "user".into(),
-                        content: prompt.clone(),
-                    }];
-                    match llm.chat(messages).await {
-                        Ok(response) => NodeExecutionResult {
-                            node_id, node_name, node_type: "llm".into(),
-                            status: "success".into(),
-                            input: Some(serde_json::json!({"prompt": prompt, "model": model})),
-                            output: Some(serde_json::json!({"response": response})),
-                            error: None,
-                            duration_ms: start.elapsed().as_millis() as u64,
-                        },
-                        Err(e) => NodeExecutionResult {
-                            node_id, node_name, node_type: "llm".into(),
-                            status: "error".into(),
-                            input: Some(serde_json::json!({"prompt": prompt})),
-                            output: None,
-                            error: Some(e.to_string()),
-                            duration_ms: start.elapsed().as_millis() as u64,
-                        },
+                let messages = vec![LLMChatMessage {
+                    role: "user".into(),
+                    content: prompt.clone(),
+                }];
+                let req = provider::ChatRequest {
+                    messages,
+                    temperature,
+                    max_tokens: 2048,
+                    tenant: None,
+                    user: None,
+                    trace_id: Some(node_id.clone()),
+                };
+
+                // 1) 优先走 AI Gateway（组件化 Provider + fallback 链 / 指定 provider）
+                let gateway_result = {
+                    let router = self.router();
+                    match &preferred_provider {
+                        Some(p) => router.chat_with_provider(p, req.clone()).await,
+                        None => router.chat(req.clone()).await,
                     }
-                } else {
-                    // 模拟LLM响应
+                };
+
+                if let Ok(resp) = gateway_result {
                     NodeExecutionResult {
                         node_id, node_name, node_type: "llm".into(),
-                        status: "simulated".into(),
-                        input: Some(serde_json::json!({"prompt": prompt})),
-                        output: Some(serde_json::json!({"response": format!("[模拟LLM] 收到: {}", prompt)})),
+                        status: "success".into(),
+                        input: Some(serde_json::json!({
+                            "prompt": prompt,
+                            "model": model,
+                            "provider": preferred_provider.clone().unwrap_or_else(|| "gateway-fallback".to_string())
+                        })),
+                        output: Some(serde_json::json!({"response": resp.content, "provider": resp.provider, "model": resp.model})),
                         error: None,
                         duration_ms: start.elapsed().as_millis() as u64,
+                    }
+                } else {
+                    // 2) 降级到直接 LLMClient（保持既有兜底）
+                    let llm = self.llm_client.read().await;
+                    if llm.is_enabled() {
+                        match llm.chat(vec![LLMChatMessage { role: "user".into(), content: prompt.clone() }]).await {
+                            Ok(response) => NodeExecutionResult {
+                                node_id, node_name, node_type: "llm".into(),
+                                status: "success".into(),
+                                input: Some(serde_json::json!({"prompt": prompt, "model": model})),
+                                output: Some(serde_json::json!({"response": response, "provider": "llm_client"})),
+                                error: None,
+                                duration_ms: start.elapsed().as_millis() as u64,
+                            },
+                            Err(e) => NodeExecutionResult {
+                                node_id, node_name, node_type: "llm".into(),
+                                status: "error".into(),
+                                input: Some(serde_json::json!({"prompt": prompt})),
+                                output: None,
+                                error: Some(e.to_string()),
+                                duration_ms: start.elapsed().as_millis() as u64,
+                            },
+                        }
+                    } else {
+                        // 3) 模拟 LLM 响应（离线兜底）
+                        NodeExecutionResult {
+                            node_id, node_name, node_type: "llm".into(),
+                            status: "simulated".into(),
+                            input: Some(serde_json::json!({"prompt": prompt})),
+                            output: Some(serde_json::json!({"response": format!("[模拟LLM] 收到: {}", prompt)})),
+                            error: None,
+                            duration_ms: start.elapsed().as_millis() as u64,
+                        }
                     }
                 }
             }

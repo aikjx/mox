@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { ElMessage } from 'element-plus'
 
 // 后端运行时地址：开发期走 Vite 代理 /api -> http://localhost:3000
 const http = axios.create({
@@ -11,11 +12,25 @@ const http = axios.create({
 http.interceptors.response.use(
   (resp) => resp.data,
   (err) => {
+    const status = err.response && err.response.status
     const data = err.response && err.response.data
-    const msg =
+    let msg =
       (data && (data.detail || data.title || data.message)) ||
       err.message ||
       '网络请求失败'
+    // 鉴权/服务类错误的全局友好提示（业务校验错误仍由各视图自行处理）
+    if (status === 401 || status === 503) {
+      msg = status === 401
+        ? '鉴权失败：请检查 API 令牌（OUS_API_TOKEN）是否已配置'
+        : '服务暂不可用：后端未启动或正在重启，请稍后重试'
+      ElMessage.error(msg)
+    } else if (err.code === 'ECONNABORTED') {
+      msg = '请求超时：后端处理较慢，请稍后重试'
+      ElMessage.warning(msg)
+    } else if (!err.response) {
+      msg = '无法连接后端：请确认服务已启动（http://localhost:3000）'
+      ElMessage.error(msg)
+    }
     return Promise.reject(new Error(msg))
   }
 )
@@ -163,5 +178,7 @@ export const automationUpdate = (id, payload) => http.put(`/automation/${encodeU
 export const allianceHealth = () => http.get('/alliance/health')
 // 传入流程蓝图（FlowGraph）做全维治理，返回 GovernanceReport（专家评分/闸门/璇玑/采纳建议）
 export const allianceOptimize = (flow) => http.post('/alliance/optimize', { flow })
+// 全维融合发布：归一化 -> 取优化图 -> 一键落盘上传算子市场（插件/应用平台）
+export const alliancePublish = (payload) => http.post('/alliance/publish', payload)
 
 export default http

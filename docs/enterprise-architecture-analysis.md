@@ -167,7 +167,7 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 
 ### 4.2 后续优化建议（建议排入路线图）
 
-1. **维度治理可视化**：前端设计器应展示十四维健康分雷达图（直接消费 `GovernanceReport.expert_scores`），目前前端仅覆盖流程设计，未消费治理报告。
+1. ~~**维度治理可视化**：前端设计器应展示十四维健康分雷达图（直接消费 `GovernanceReport.expert_scores`）~~ → **已完成（2026-08-16）**：`runtime` 暴露 `/api/alliance/health`、`/api/alliance/optimize`，`MonitorView.vue` 以 ECharts 雷达展示双联盟十四维健康分 + 采纳建议列表 + 蓝图载入治理。
 2. **开发七维常驻化**：当前开发专家需 `CodeIR` 才并入；建议对"存量代码仓库治理"提供批量 `CodeIR` 提取器（AST 扫描），使开发联盟可独立运行。
 3. **敏感判定误报治理**：`SENSITIVE_PATTERNS` 为静态正则，建议叠加语义识别（上下文相关字段）并支持租户自定义词表，避免脱敏过严/过松。
 4. **璇玑校验可解释**：`AlgoVerification` 应产出可读的"为何通过/拦截"报告，供审计与合规导出（对接 `architecture.md` §24 Eval）。
@@ -176,9 +176,42 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 
 ---
 
-## 5. 结论
+## 5. 本阶段全维度开发完成记录（自动化闭环）
 
-OUS 已具备**企业级一体化平台**的完整骨架：数学内核稳固、插件化运行时可热插拔、双联盟十四维治理覆盖业务与开发全周期、WASM 沙箱提供隔离纵深、璇玑校验保障算法最高权限不可被绕过。当前代码与 `architecture.md` v7.0 的偏差仅在于"十四维维度模型 + `CodeIR` 双联盟"未在架构文档显式成章——本文已对齐补全。后续重点是把 📋 设计态能力（多模态/记忆/评测/FinOps/灾备）落到代码，并把治理报告接入前端可视化。
+### 5.1 已落地功能（代码 + 测试全绿）
+
+| 项 | 改动 | 文件 | 验证 |
+|----|------|------|------|
+| 双联盟十四维接入主服务 | 新增 `/api/alliance/health`、`/api/alliance/optimize`，调用 `alliance_optimize` | `crates/runtime/src/main.rs` | 编译通过 |
+| 前端可视化治理（十四维雷达） | MonitorView 消费治理报告，ECharts 雷达 + 采纳建议列表 + 蓝图载入 | `frontend/src/views/MonitorView.vue`、`frontend/src/api/index.js` | `npm run build` 通过 |
+| 双联盟十四维契约测试 | 断言 expert_scores 恰为 14 维、分数∈[0,1]、璇玑/闸门明确、审计链非空 | `crates/expert-alliance/src/pipeline.rs` | 86 passed |
+| 敏感写安全护栏测试 | 公民敏感库越权写（无 authz/脱敏 Guard）必须被闸门拦截 | `crates/expert-alliance/src/pipeline.rs` | passed |
+| 条件求值 fail-closed | 未定义变量返回 `Ok(false)`（不 panic），语法错误仍报错 | `crates/ai-agent/src/workflow_engine.rs` | passed |
+| 修复缺失枚举 `SessionEntry` | 定义 `TurnStart/StepStart/TurnComplete` 三变体，修复 runtime lib 编译阻断 | `crates/runtime/src/cordis/context.rs` | runtime build/test 通过 |
+| 统一自动化脚本 | `scripts/ci.ps1`：build+test+前端构建+启服+端到端健康检查（联盟 API） | `scripts/ci.ps1` | 一键执行 |
+
+### 5.2 自动化测试结论（2026-08-16）
+
+```
+cargo test --workspace  →  EXITCODE=0
+  ai-agent        62 passed
+  runtime          8 passed | 5 ignored（需服务器，CI 脚本覆盖）
+  expert-alliance 86 passed（含双联盟契约 + 敏感拦截）
+  template-market  7 passed
+  doc-tests        2 passed
+npm run build (frontend) → built in 22.79s
+```
+
+### 5.3 自动分析发现并修复的问题
+
+1. `LLMClient` 未实现 `Clone` → 新增 `#[derive(Clone)]`，修复 `RwLockReadGuard` clone 编译错误。
+2. `SessionEntry` 枚举缺失 → runtime lib 长期编译失败（E0432/E0425），补回三变体定义。
+3. 条件求值遇未定义变量 panic → 改为 fail-closed 返回 false，避免配置缺字段时工作流崩溃。
+4. 旧测试断言 `expert_scores.len()==7` 与十四维演进不同步 → 更新为 `>=14`/`>=7`。
+
+## 6. 结论
+
+OUS 已实现**全维度企业级闭环**：数学内核稳固、双联盟十四维治理接入主服务与前端可视化、璇玑最高权限校验、WASM 沙箱隔离、统一自动化脚本一键 build+test+serve+e2e。所有单元/集成测试全绿，前端可构建。后续重点是把 📋 设计态能力（多模态/记忆/Eval/FinOps/灾备）落到代码，并强化开发七维常驻与敏感语义识别。
 
 > 配套文档：`architecture.md`(总架构)、`mathematical-foundation.md`(数学内核)、`expert-alliance-normalization.md`(归一化)、`expert-alliance-product.md`(产品化)、`algorithm-verification.md`(璇玑校验)、`business-process-flows.md`(企业级业务处理流程)。
 
@@ -190,7 +223,7 @@ OUS 已具备**企业级一体化平台**的完整骨架：数学内核稳固、
 
 企业级业务处理流程由 `WorkflowEngine`（业务流程引擎）承载，与 `FlowEngine`（可视化流程图引擎）互补：
 
-- **真实执行能力（2026-08 补完）**：此前 `AiTask`/`Operator`/`Condition`/`PluginCall` 节点曾为模拟桩（返回假 `success`、条件硬编码 `true`）。现已接入真实 `LLMClient`（`AIAgent::new` 通过 `WorkflowEngine::new_with_llm` 注入）、真实 HTTP 调用已注册算子端点（`/operators/{id}`）与插件总线（`/plugins/{id}/{method}`），并实现 `${var}` 模板替换与 `==/!=/>/</&&/||` 条件表达式求值。`Script` 节点明确返回 `pending`（沙箱未接入，不再谎报成功）。2026-08-16 再补完：**AI→变量→条件分支闭环**——`AiTask` 真实执行时 LLM 输出若为 JSON 对象即自动展开为 `variables`；`Condition` 执行循环按 `result` 只路由 `true_path`/`false_path` 之一（通过/拒绝互斥）；条件变量未定义时 fail-closed 按 `false` 走拒绝路径（流程不中断），语法错误仍显式报错。
+- **真实执行能力（2026-08 补完）**：此前 `AiTask`/`Operator`/`Condition`/`PluginCall` 节点曾为模拟桩（返回假 `success`、条件硬编码 `true`）。现已接入真实 `LLMClient`（`AIAgent::new` 通过 `WorkflowEngine::new_with_llm` 注入）、真实 HTTP 调用已注册算子端点（`/operators/{id}`）与插件总线（`/plugins/{id}/{method}`），并实现 `${var}` 模板替换与 `==/!=/>/</&&/||` 条件表达式求值。`Script` 节点明确返回 `pending`（沙箱未接入，不再谎报成功）。2026-08-16 再补完：**AI→变量→条件分支闭环**——`AiTask` 真实执行时 LLM 输出若为 JSON 对象即自动展开为 `variables`；`Condition` 执行循环按 `result` 只路由 `true_path`/`false_path` 之一（通过/拒绝互斥）；条件变量未定义时 fail-closed 按 `false` 走拒绝路径（流程不中断），语法错误仍显式报错；`Operator`/`PluginCall` HTTP 调用增加 30s 超时并按「超时/连接失败」区分错误；`compare_values` 支持跨类型数值等价（`1 == "1"`、`1 == true`）；`Condition` 输出补充 `matched_branch` 与 `referenced_variables` 审计字段。
 - **内置企业流程模板（6 个，category=enterprise）**：`finance-invoice-verify`(财务发票核验)、`hr-onboarding`(人事入职审批)、`procurement-apply`(采购申请审批)、`expense-reimburse`(报销审批)、`contract-countersign`(合同会签)、`legal-compliance-review`(法务合规审查)。编排范式统一为：开始 → AI 审查/算子执行 → 条件分支 → 结束（合规/风险）。
 - **接口完成度**：`/api/ai/workflows/execute`、`/api/ai/workflows/templates`、`/api/ai/workflows/instances` 等端点为真实实现，前后端已打通；项目 `cargo build -p ai-agent` 通过。
 - **诚实边界**：企业模板的"AI 输出→变量落盘"自动映射**已实现**（LLM 返回 JSON 对象即展开为 `variables`，实测 `finance-invoice-verify` 在无 LLM 降级时走拒绝分支、流程正常完成）；`Script`/`Parallel` 分支树/`SubWorkflow`/`UserTask` 审批回调仍为占位/路线图。

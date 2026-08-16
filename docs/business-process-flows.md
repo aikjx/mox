@@ -41,9 +41,9 @@
 | `End` | `WorkflowNodeConfig::End` | 输出最终变量快照 | — |
 | `Script` | `Script { language, code }` | **预留未接入**：返回 `status:"pending"`，不假装执行 | 沙箱（WASM/进程隔离）为后续路线图 |
 | `AiTask` | `AiTask { task_type, prompt }` | 若 `LLMClient` 已注入且 `is_enabled()`：对 `prompt` 做 `${var}` 模板替换 → 调用 `LLMClient::chat` → 返回真实 LLM 输出，**输出若为 JSON 对象则自动展开为流程变量**（AI→变量闭环）；否则降级 `status:"simulated"` + `simulated:true` 标记 | LLM 需配置可用 API Key 才真实执行 |
-| `Operator` | `Operator { operator_id, parameters }` | 通过 HTTP `POST {OPERATOR_API_BASE:-http://127.0.0.1:3998}/operators/{operator_id}` 调用**真实已注册算子端点**，返回 HTTP 状态 + body；失败返回明确错误（不再返回假 success） | 与 runtime 服务同源 |
-| `Condition` | `Condition { expression, true_path, false_path }` | **真实表达式求值**：支持 `${var}` 引用、`==/!=/>/</>=/<=`、`&&`/`||`、顶层括号；执行循环按 `result` **只路由 `true_path`/`false_path` 之一**（通过/拒绝互斥）；变量未定义时 fail-closed 按 `false`（走拒绝路径），语法错误仍报错 | 不再硬编码 `true`，不再两条分支同时执行 |
-| `PluginCall` | `PluginCall { plugin_id, method, parameters }` | 通过 HTTP `GET {PLUGIN_API_BASE:-http://127.0.0.1:3998}/plugins/{plugin_id}/{method}` 调用**真实插件总线端点**；失败返回明确错误 | — |
+| `Operator` | `Operator { operator_id, parameters }` | 通过 HTTP `POST {OPERATOR_API_BASE:-http://127.0.0.1:3998}/operators/{operator_id}` 调用**真实已注册算子端点**，返回 HTTP 状态 + body；**30s 超时**，失败区分「超时/连接失败」并附 URL 便于排障 | 与 runtime 服务同源 |
+| `Condition` | `Condition { expression, true_path, false_path }` | **真实表达式求值**：支持 `${var}` 引用、`==/!=/>/</>=/<=`、`&&`/`||`、顶层括号；执行循环按 `result` **只路由 `true_path`/`false_path` 之一**（通过/拒绝互斥）；变量未定义时 fail-closed 按 `false`（走拒绝路径），语法错误仍报错；**输出补充 `matched_branch` 与 `referenced_variables`**（命中分支名 + 被引用变量实际取值，便于审计） | 不再硬编码 `true`，不再两条分支同时执行 |
+| `PluginCall` | `PluginCall { plugin_id, method, parameters }` | 通过 HTTP `GET {PLUGIN_API_BASE:-http://127.0.0.1:3998}/plugins/{plugin_id}/{method}` 调用**真实插件总线端点**；**30s 超时**，失败区分「超时/连接失败」；失败返回明确错误 | — |
 | `Parallel` | `Parallel { branches, merge_strategy }` | 并行分支占位 + 合并策略枚举（`AllComplete`/`AnyComplete`/`FirstSuccess`/`VoteMajority`） | 分支树为后续增强 |
 | `SubWorkflow` | `SubWorkflow { workflow_id }` | 子流程调用占位 | — |
 | `UserTask` | `UserTask { assignee, form }` | 挂起待人工处理（返回 `user_task_pending`） | 人工审批接入点 |
@@ -59,6 +59,7 @@
 - **AI→变量闭环**：`AiTask` 真实执行后，若 LLM 返回 JSON 对象（如 `{"verify_pass": true, "reason": "…"}`），其键自动展开到节点输出，并经「合并输出到变量」写入 `instance.variables`——因此 `Condition` 的 `${verify_pass}` 可由真实 AI 判定驱动。
 - **条件路由**：`Condition` 执行后按 `result` 只入队 `true_path`/`false_path` 指向的节点（`finance-invoice-verify` 中 `fi-ok`/`fi-risk` 互斥，不会同时执行）。
 - **fail-closed**：条件引用的变量未定义时（典型场景：LLM 未配置导致 `AiTask` 降级模拟），`resolve_value` 返回 `Null` 哨兵——等值比较为 `false`，排序比较（`>`/`<` 等）也一律 `false`（不会退化为字符串比较导致 `${loss} < 0.001` 误判），流程走拒绝/风险路径继续执行，而非整体失败；表达式语法错误（无比较符、非法操作符）仍会显式报错，避免掩盖配置错误。
+- **跨类型比较**：`==/!=` 支持数值协调（`1 == "1"`、`1 == true` 均等价），纯文本则按字符串严格相等；排序比较（`>/</>=/<=`）优先数值、退化为字典序。避免「数字写成字符串」导致的判定偏差。
 
 ---
 
@@ -189,9 +190,9 @@ self.templates.register(WorkflowTemplate {
 | `Script` 节点 | 返回 `pending`，未接入沙箱 | 接入 WASM/进程隔离沙箱 |
 | `Parallel` 分支 | 枚举与占位就绪，分支树执行待增强 | 实现真并行子图执行 |
 | `SubWorkflow` | 占位 | 支持嵌套工作流调用 |
-| `Operator`/`PluginCall` | 依赖 runtime 已注册端点（`/operators/{id}`、`/plugins/{id}/{method}`） | 与算子注册表强校验、增加超时/重试 |
+| `Operator`/`PluginCall` | **已实现（2026-08-16）**：真实 HTTP 调用，30s 超时，失败区分「超时/连接失败」并附 URL 便于排障 | 与算子注册表强校验、增加重试 |
 | ~~`AiTask` 变量回写~~ | **已实现（2026-08）**：LLM 输出 JSON 对象自动展开为 `variables`，驱动 `Condition` 分支（AI→变量→条件分支闭环） | 支持任意深度嵌套 JSON 展开、输出 schema 约束 |
-| `Condition` 分支 | **已实现**：按 `result` 只路由 `true_path`/`false_path` 之一；变量未定义 fail-closed 走拒绝路径 | 多路分支（switch）、分支计数统计 |
+| `Condition` 分支 | **已实现**：按 `result` 只路由 `true_path`/`false_path` 之一；变量未定义 fail-closed 走拒绝路径；输出含 `matched_branch`+`referenced_variables` 审计字段；比较支持跨类型数值等价 | 多路分支（switch）、分支计数统计 |
 | LLM 真实执行 | 需配置可用 API Key；未配置时降级 `simulated` | 配置注入与失败可观测 |
 | 持久化 | 工作流实例为内存态（`WorkflowInstance` 在 `running_instances`） | 持久化到 `$OUS_HOME/workflows`（见 `architecture.md` §8） |
 | 人工审批 `UserTask` | 挂起占位 | 接入工单/审批中心回调 |

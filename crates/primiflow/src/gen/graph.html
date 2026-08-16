@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>PrimiFlow 关联图谱 · 需求↔功能↔代码↔数据 可视化</title>
+<style>
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; margin: 0; background: #0f1419; color: #e6edf3; }
+  header { padding: 16px 24px; border-bottom: 1px solid #21262d; }
+  header h1 { margin: 0; font-size: 18px; }
+  header p { margin: 4px 0 0; color: #8b949e; font-size: 13px; }
+  #graph { padding: 16px 24px; }
+  .mermaid { background: #fff; border-radius: 8px; padding: 12px; }
+  details { margin: 0 24px 24px; }
+  pre { background: #161b22; padding: 12px; border-radius: 8px; overflow: auto; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>PrimiFlow 关联图谱（唯一事实源）</h1>
+  <p>由 <code>primiflow::assoc::primiflow_seed()</code> 自动生成 · 八层节点（需求/功能/业务/算法/任务/代码/数据设计/数据存储）· 带类型边保证一一对应</p>
+</header>
+<div id="graph">
+<div class="mermaid">
+flowchart LR
+  classDef req fill:#ffe0b2,stroke:#e65100;
+  classDef feat fill:#c8e6c9,stroke:#1b5e20;
+  classDef biz fill:#bbdefb,stroke:#0d47a1;
+  classDef algo fill:#e1bee7,stroke:#4a148c;
+  classDef task fill:#fff9c4,stroke:#f57f17;
+  classDef code fill:#d7ccc8,stroke:#3e2723;
+  classDef ds fill:#b2dfdb,stroke:#004d40;
+  classDef store fill:#cfd8dc,stroke:#263238;
+  R1["需求 · 自然语言需求→可渲染DAG画布"]
+  class R1 req
+  R2["需求 · ℛ̂ 合规裁剪"]
+  class R2 req
+  R3["需求 · 八份说明书自动生成"]
+  class R3 req
+  R4["需求 · 六维溯源绑定"]
+  class R4 req
+  R5["需求 · κ 复用资产 Q"]
+  class R5 req
+  R6["需求 · 冒烟兜底主链路"]
+  class R6 req
+  F1["功能 · orchestrator 编排状态机"]
+  class F1 feat
+  F2["功能 · scheduler κ/τ+ℛ̂"]
+  class F2 feat
+  F3["功能 · asset 资产检索/冻结"]
+  class F3 feat
+  F4["功能 · topology_operator 需求→DAG"]
+  class F4 feat
+  F5["功能 · doc_generator 八文档"]
+  class F5 feat
+  F6["功能 · smoke_tester 校验/冒烟"]
+  class F6 feat
+  F7["功能 · canvas 可视化可编辑画布"]
+  class F7 feat
+  F8["功能 · asr 语音转写"]
+  class F8 feat
+  B1["业务 · 需求结构化"]
+  class B1 biz
+  B2["业务 · 拓扑涌现"]
+  class B2 biz
+  B3["业务 · 正则化裁剪"]
+  class B3 biz
+  B4["业务 · 资产冻结复用"]
+  class B4 biz
+  B5["业务 · 六维溯源"]
+  class B5 biz
+  B6["业务 · 导出工程"]
+  class B6 biz
+  A1["算法 · κτ 调度"]
+  class A1 algo
+  A2["算法 · ℛ̂ 正则化"]
+  class A2 algo
+  A3["算法 · pgvector 检索"]
+  class A3 algo
+  A4["算法 · 六维溯源绑定"]
+  class A4 algo
+  T0["任务 · asr_transcribe"]
+  class T0 task
+  T1["任务 · parse_requirement"]
+  class T1 task
+  T2["任务 · emerge_topology"]
+  class T2 task
+  T3["任务 · regularize"]
+  class T3 task
+  T4["任务 · freeze_asset"]
+  class T4 task
+  T5["任务 · bind_trace"]
+  class T5 task
+  T6["任务 · generate_docs"]
+  class T6 task
+  T7["任务 · smoke_test"]
+  class T7 task
+  T8["任务 · export_project"]
+  class T8 task
+  T9["任务 · edit_canvas"]
+  class T9 task
+  C1["代码 · Orchestrator"]
+  class C1 code
+  C2["代码 · Scheduler"]
+  class C2 code
+  C3["代码 · AssetService"]
+  class C3 code
+  C4["代码 · TopologyOperator"]
+  class C4 code
+  C5["代码 · DocGenerator"]
+  class C5 code
+  C6["代码 · SmokeTester"]
+  class C6 code
+  C7["代码 · CanvasState"]
+  class C7 code
+  C8["代码 · AsrClient"]
+  class C8 code
+  S1["数据设计 · Project"]
+  class S1 ds
+  S2["数据设计 · Conversation"]
+  class S2 ds
+  S3["数据设计 · Topology"]
+  class S3 ds
+  S4["数据设计 · Asset"]
+  class S4 ds
+  S5["数据设计 · Artifact"]
+  class S5 ds
+  S6["数据设计 · TraceLink"]
+  class S6 ds
+  D1["数据存储 · PostgreSQL + pgvector"]
+  class D1 store
+  R1 -->|satisfied_by| F4
+  R1 -->|satisfied_by| F7
+  R2 -->|satisfied_by| F2
+  R3 -->|satisfied_by| F5
+  R4 -->|satisfied_by| F1
+  R5 -->|satisfied_by| F3
+  R6 -->|satisfied_by| F6
+  F1 -->|realizes| B5
+  F1 -->|realizes| B6
+  F2 -->|realizes| B3
+  F3 -->|realizes| B4
+  F4 -->|realizes| B1
+  F4 -->|realizes| B2
+  F5 -->|realizes| B6
+  F6 -->|realizes| B3
+  F7 -->|realizes| B2
+  F8 -->|realizes| B1
+  B1 -->|implemented_by| A1
+  B2 -->|implemented_by| A1
+  B3 -->|implemented_by| A1
+  B3 -->|implemented_by| A2
+  B4 -->|implemented_by| A3
+  B5 -->|implemented_by| A4
+  B6 -->|implemented_by| A4
+  A1 -->|executed_by| T0
+  A1 -->|executed_by| T1
+  A1 -->|executed_by| T2
+  A1 -->|executed_by| T3
+  A2 -->|executed_by| T3
+  A2 -->|executed_by| T7
+  A2 -->|executed_by| T9
+  A3 -->|executed_by| T4
+  A4 -->|executed_by| T5
+  A4 -->|executed_by| T6
+  A4 -->|executed_by| T8
+  T0 -->|coded_in| C8
+  T1 -->|coded_in| C1
+  T2 -->|coded_in| C4
+  T3 -->|coded_in| C2
+  T4 -->|coded_in| C3
+  T5 -->|coded_in| C1
+  T6 -->|coded_in| C5
+  T7 -->|coded_in| C6
+  T8 -->|coded_in| C5
+  T9 -->|coded_in| C7
+  C1 -->|design_for| S1
+  C1 -->|design_for| S6
+  C2 -->|design_for| S3
+  C3 -->|design_for| S4
+  C4 -->|design_for| S3
+  C5 -->|design_for| S5
+  C6 -->|design_for| S5
+  C7 -->|design_for| S3
+  C8 -->|design_for| S2
+  S1 -->|persisted_in| D1
+  S2 -->|persisted_in| D1
+  S3 -->|persisted_in| D1
+  S4 -->|persisted_in| D1
+  S5 -->|persisted_in| D1
+  S6 -->|persisted_in| D1
+  C1 -->|depends_on| C4
+  C1 -->|depends_on| C2
+  C1 -->|depends_on| C3
+  C4 -->|depends_on| C2
+  C5 -->|depends_on| C1
+  C6 -->|depends_on| C4
+</div>
+</div>
+<details>
+  <summary>Mermaid 源码（离线可读）</summary>
+  <pre>flowchart LR
+  classDef req fill:#ffe0b2,stroke:#e65100;
+  ...（同上方图谱，由 primiflow_seed 生成）...</pre>
+</details>
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({ startOnLoad: true, theme: 'default' });
+</script>
+</body>
+</html>

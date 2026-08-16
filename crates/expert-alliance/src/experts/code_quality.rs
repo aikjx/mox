@@ -88,6 +88,6 @@ fn follows_naming_convention(name: &str) -> bool {
     if name.chars().next().map(|c| c.is_uppercase()).unwrap_or(false) {
         !name.contains('_')
     } else {
-        name.chars().all(|c| c.is_lowercase() || c.is_digit(10) || c == '_')
+        name.chars().all(|c| c.is_lowercase() || c.is_ascii_digit() || c == '_')
     }
 }

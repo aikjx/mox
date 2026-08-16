@@ -5,7 +5,29 @@ use parking_lot::RwLock;
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use operator_core::Operator;
-use async_trait::async_trait;
+
+/// 会话日志条目：记录一次 Turn / Step 的生命周期事件，是溯源(SoT)的最小单元。
+/// 定义于此供 `cordis` 模块统一 re-export（`cordis::SessionEntry`）。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum SessionEntry {
+    /// Turn 开始
+    TurnStart {
+        turn_id: String,
+        agent_id: String,
+        timestamp: chrono::DateTime<chrono::Utc>,
+    },
+    /// Step 开始
+    StepStart {
+        step_id: String,
+        turn_id: String,
+        action: String,
+    },
+    /// Turn 完成（携带摘要）
+    TurnComplete {
+        turn_id: String,
+        summary: String,
+    },
+}
 
 /// 插件上下文树
 ///
@@ -28,11 +50,17 @@ pub struct PluginContext {
 
 impl PluginContext {
     pub fn new() -> Self {
+        // agent 编排侧的 LLM 适配器默认从环境变量 DEEPSEEK_API_KEY 接入真实 DeepSeek；
+        // 未设置 Key 时为 None，由具体调用方按降级策略处理。
+        let llm = std::env::var("DEEPSEEK_API_KEY")
+            .ok()
+            .filter(|k| !k.trim().is_empty())
+            .map(|_| LlmAdapter::from_env());
         Self {
             sessions: Arc::new(SessionLog::new()),
             operators: Arc::new(OperatorRegistry::new()),
             agents: Arc::new(AgentRegistry::new()),
-            llm: Arc::new(RwLock::new(None)),
+            llm: Arc::new(RwLock::new(llm)),
             system_prompt: Arc::new(SystemPromptBuilder::new()),
         }
     }
@@ -278,7 +306,7 @@ pub struct AgentConfig {
     pub tools: Option<Vec<String>>,
 }
 
-/// LLM适配器
+/// LLM适配器：agent 编排侧统一的真实 LLM 连接抽象（OpenAI 兼容协议）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LlmAdapter {
     pub provider: String,
@@ -287,10 +315,62 @@ pub struct LlmAdapter {
     pub base_url: Option<String>,
 }
 
+impl Default for LlmAdapter {
+    fn default() -> Self {
+        // 默认指向真实 DeepSeek（OpenAI 兼容协议）
+        Self {
+            provider: "deepseek".to_string(),
+            model: "deepseek-chat".to_string(),
+            api_key: std::env::var("DEEPSEEK_API_KEY").ok(),
+            base_url: Some("https://api.deepseek.com/v1".to_string()),
+        }
+    }
+}
+
 impl LlmAdapter {
-    pub fn configure(&self, _config: LlmConfig) -> Result<(), String> {
-        // TODO: 实现配置逻辑
-        Ok(())
+    /// 从环境变量构建真实 DeepSeek 适配器；未设置 DEEPSEEK_API_KEY 时返回未配置实例。
+    pub fn from_env() -> Self {
+        let key = std::env::var("DEEPSEEK_API_KEY").ok().filter(|k| !k.trim().is_empty());
+        Self {
+            provider: "deepseek".to_string(),
+            model: std::env::var("DEEPSEEK_MODEL").ok().unwrap_or_else(|| "deepseek-chat".to_string()),
+            api_key: key.clone(),
+            base_url: Some(
+                std::env::var("DEEPSEEK_BASE_URL")
+                    .ok()
+                    .unwrap_or_else(|| "https://api.deepseek.com/v1".to_string()),
+            ),
+        }
+    }
+
+    /// 是否已具备真实调用条件（必须存在 API Key）。
+    pub fn is_configured(&self) -> bool {
+        self.api_key.as_ref().map(|k| !k.trim().is_empty()).unwrap_or(false)
+    }
+
+    /// 用显式 LlmConfig 覆盖当前适配器（保留真实连接能力，支持前端/Profile 覆盖）。
+    pub fn configure(&self, config: LlmConfig) -> Result<LlmAdapter, String> {
+        if config.api_key.as_ref().map(|k| k.trim().is_empty()).unwrap_or(true) {
+            return Err("LLM 未配置：缺少 API Key（请设置 DEEPSEEK_API_KEY）".to_string());
+        }
+        Ok(LlmAdapter {
+            provider: if config.provider.trim().is_empty() {
+                "deepseek".to_string()
+            } else {
+                config.provider
+            },
+            model: if config.model.trim().is_empty() {
+                "deepseek-chat".to_string()
+            } else {
+                config.model
+            },
+            api_key: config.api_key,
+            base_url: config
+                .base_url
+                .filter(|u| !u.trim().is_empty())
+                .or_else(|| self.base_url.clone())
+                .or_else(|| Some("https://api.deepseek.com/v1".to_string())),
+        })
     }
 }
 
@@ -301,6 +381,18 @@ pub struct LlmConfig {
     pub model: String,
     pub api_key: Option<String>,
     pub base_url: Option<String>,
+}
+
+impl Default for LlmConfig {
+    fn default() -> Self {
+        // 默认读取真实 DeepSeek 配置，未设置 Key 时留空由运行时提示
+        Self {
+            provider: "deepseek".to_string(),
+            model: "deepseek-chat".to_string(),
+            api_key: std::env::var("DEEPSEEK_API_KEY").ok(),
+            base_url: Some("https://api.deepseek.com/v1".to_string()),
+        }
+    }
 }
 
 /// 系统提示组装器
@@ -343,5 +435,5 @@ impl Default for SystemPromptBuilder {
     }
 }
 
+
 // 导入必要的类型
-use crate::cordis::SessionEntry;

@@ -97,6 +97,8 @@
 
 **端到端流程**：`用户请求 → 接入层 → 运行时鉴权/路由 → 编排层构建并执行算子 DAG → 内核执行算子(可调用 WASM 插件/外部系统) → 观测回流 → 结果经 WebSocket 实时推回前端`。
 
+> 📈 **流程图可视化**：6 大企业级处理流程模板（发票核验/入职/采购/报销/合同/法务合规）、端到端时序图、SUPER_EXPERT 全维工作流、业务流程设计飞轮，均已绘制为可渲染的 Mermaid 图，见 [`docs/business-process-flowcharts.md`](docs/business-process-flowcharts.md)；企业级流程执行引擎与流程卡规范见 [`docs/business-process-flows.md`](docs/business-process-flows.md)。
+
 ---
 
 ## 🛠️ 技术栈
@@ -131,7 +133,7 @@ operator-unified-system/
 ├── frontend/                 # Vue3 前端界面 (需 npm install && build 生成 dist/)
 ├── plugins/                  # WASM 插件目录
 ├── data/market/              # 算子商城资产（运行态，默认 CWD；生产应置于 $OUS_HOME/market，见 docs/architecture.md §27）
-├── docs/                     # 企业级文档：architecture.md / enterprise-architecture-analysis.md / market-module.md / math-design.md
+├── docs/                     # 企业级文档：architecture.md / enterprise-architecture-analysis.md / market-module.md / math-design.md / business-process-flows.md / business-process-flowcharts.md
 ├── benches/                  # 性能基准
 ├── tests/                    # 集成测试
 ├── verify_axioms.py          # 6 大公理数学自洽性验证脚本

@@ -164,22 +164,20 @@ fn structural_checks(graph: &FlowGraph, out: &mut Vec<Conflict>) {
             }
         }
     }
-    for i in 0..n {
+    for (i, node) in graph.nodes.iter().enumerate() {
         if !seen[i] {
             out.push(Conflict {
                 kind: ConflictKind::Unreachable,
                 severity: Severity::Warning,
-                nodes: vec![graph.nodes[i].id.clone()],
+                nodes: vec![node.id.clone()],
                 resource: None,
-                message: format!("节点 `{}` 从起点不可达，属于死代码", graph.nodes[i].name),
+                message: format!("节点 `{}` 从起点不可达，属于死代码", node.name),
                 remedy: Some(Remedy::Manual { hint: "删除该节点或补充入边".into() }),
             });
         }
     }
 
-    for i in 0..n {
-        let node = &graph.nodes[i];
-
+    for (i, node) in graph.nodes.iter().enumerate() {
         // 悬垂终点
         if succ[i].is_empty() && node.kind != NodeKind::End {
             out.push(Conflict {
@@ -333,8 +331,8 @@ fn concurrency_checks(graph: &FlowGraph, groups: &[Vec<String>], out: &mut Vec<C
 
         // 并行段中的非幂等节点
         for nd in &nodes {
-            if nd.kind.is_executable() && !nd.idempotent && group.len() > 1 {
-                if matches!(nd.tool, Some(ToolKind::Http) | Some(ToolKind::Shell)) {
+            if nd.kind.is_executable() && !nd.idempotent && group.len() > 1
+                && matches!(nd.tool, Some(ToolKind::Http) | Some(ToolKind::Shell)) {
                     out.push(Conflict {
                         kind: ConflictKind::UnsafeRetry,
                         severity: Severity::Info,
@@ -348,7 +346,6 @@ fn concurrency_checks(graph: &FlowGraph, groups: &[Vec<String>], out: &mut Vec<C
                             hint: "标记 idempotent=true 或增加幂等键".into(),
                         }),
                     });
-                }
             }
         }
     }

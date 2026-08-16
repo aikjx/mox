@@ -3,13 +3,31 @@
 //! 把"需求 + 业务流程图（结构化、可编辑）"作为算子包(OperatorPackage)上传到商城，
 //! 他人可随机浏览、拉取并克隆后继续编辑。
 //!
-//! 数据持久化：文件型，统一存储在 `$OUS_HOME/market/<id>.json`，无需数据库。
-//! `$OUS_HOME` 默认取 `~/.ous`（即用户主目录下的 `.ous`），可通过环境变量覆盖。
-//! 旧的 `./data/market`（项目相对路径）会在首次启动时自动迁移到 `$OUS_HOME/market`，
-//! 实现 path 归一化（§27：code-path / work-path 隔离）。
+//! 数据持久化：文件型，统一存储在 `$OUS_HOME/market/packages/<id>.json`（无需数据库）。
+//! `$OUS_HOME` 默认取 `~/.ous`（用户主目录下的 `.ous`），可通过环境变量覆盖。
 //!
-//! 核心设计：需求一旦确定，其他（流程图、功能点）都可快速改 —— 因此流程图为
-//! 结构化节点/连线数据 (Vec<Node>, Vec<Edge>)，而非死图片。
+//! ## 路径归一化与迁移（§27 code-path / work-path 隔离）
+//! - 首次启动自动检测旧路径 `./data/market`（遗留布局）与 `$OUS_HOME/market/<id>.json`
+//!   （中间布局），**自动备份**到 `$OUS_HOME/market/backup/` 后迁移到 `packages/` 子目录。
+//! - 读取向后兼容：新布局 → 中间布局 → 遗留布局依次探测，命中旧路径自动补迁。
+//!
+//! ## 版本化管理（market_version）
+//! - semver（主.次.补[-预发布]）；每次实质性更新前自动快照旧版本；
+//! - 变更日志 `$OUS_HOME/market/changelog/<id>.md` 自动追加；
+//! - 版本查询 / 差异对比 / 回滚 API；历史保留 N 个（`OUS_MARKET_KEEP_VERSIONS`，默认 5）；
+//! - **版本化不阻塞读取**：快照写入 best-effort，读取始终以最新版优先。
+//!
+//! ## 导入 / 导出（routes::market）
+//! - 单包导出（JSON/YAML）、全量导出（zip，manifest 带 HMAC-SHA256 签名）；
+//! - 导入支持签名校验与冲突策略（overwrite / skip / rename）；全部审计。
+//!
+//! ## DSL 转换（market_dsl）
+//! - 流程图 JSON → FlowDefinition DSL → BusinessWorkflow 自动生成；
+//! - 前端预览页 `GET /api/market/:id/dsl/preview` 展示 DSL / Workflow / 代码。
+//!
+//! ## 权限 / 租户绑定
+//! - OperatorPackage 含 `tenant_id` / `created_by` / `permissions`；
+//! - 列表支持按租户 / 创建人 / 权限过滤（含专用路由 `/tenant/:id`、`/owner/:id`）。
 
 use axum::{
     extract::{Path, State},
@@ -24,72 +42,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-/// OUS 归一化根目录：默认 `~/.ous`，可由 `OUS_HOME` 环境变量覆盖。
-fn ous_home() -> PathBuf {
-    if let Ok(v) = std::env::var("OUS_HOME") {
-        if !v.trim().is_empty() {
-            return PathBuf::from(v.trim());
-        }
-    }
-    // 回退到用户主目录下的 .ous
-    if let Some(home) = dirs_home() {
-        return home.join(".ous");
-    }
-    PathBuf::from(".ous")
-}
-
-/// 跨平台取用户主目录（避免额外依赖）
-fn dirs_home() -> Option<PathBuf> {
-    if let Ok(v) = std::env::var("HOME") {
-        if !v.is_empty() {
-            return Some(PathBuf::from(v));
-        }
-    }
-    if let Ok(v) = std::env::var("USERPROFILE") {
-        if !v.is_empty() {
-            return Some(PathBuf::from(v));
-        }
-    }
-    None
-}
-
-/// 旧的相对路径存储目录（归一化前的遗留位置）
-fn legacy_market_dir() -> PathBuf {
-    PathBuf::from("./data/market")
-}
-
-/// 把旧的 `./data/market` 中的包文件一次性迁移到 `$OUS_HOME/market`。
-/// 仅迁移目标目录尚不存在的文件；已存在则跳过（避免覆盖）。
-fn migrate_legacy_dir() {
-    let src = legacy_market_dir();
-    if !src.exists() {
-        return;
-    }
-    let dst = market_dir();
-    let _ = std::fs::create_dir_all(&dst);
-    if let Ok(entries) = std::fs::read_dir(&src) {
-        let mut moved = 0u32;
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.extension().and_then(|e| e.to_str()) == Some("json") {
-                if let Some(name) = path.file_name() {
-                    let target = dst.join(name);
-                    if !target.exists() {
-                        if std::fs::rename(&path, &target).is_ok() {
-                            moved += 1;
-                        }
-                    } else {
-                        // 目标已存在，仅删除旧文件以免遗留
-                        let _ = std::fs::remove_file(&path);
-                    }
-                }
-            }
-        }
-        if moved > 0 {
-            tracing::info!("算子商城路径归一化：已从 ./data/market 迁移 {} 个包到 {}", moved, dst.display());
-        }
-    }
-}
+use crate::market_migration::{audit, find_package_file, now_rfc3339, packages_dir};
 
 /// 商城应用状态
 #[derive(Clone)]
@@ -103,7 +56,7 @@ pub struct MarketState {
 pub struct FlowNode {
     pub id: String,
     pub label: String,
-    /// 节点类型：start / end / process / decision / io / operator
+    /// 节点类型：start / end / process / decision / io / operator / parallel / llm / ...
     #[serde(default = "default_node_type")]
     pub node_type: String,
     /// 画布坐标
@@ -161,7 +114,7 @@ pub struct OperatorPackage {
     /// 作者
     #[serde(default)]
     pub author: String,
-    /// 版本
+    /// 版本（semver：主.次.补）
     #[serde(default = "default_version")]
     pub version: String,
     /// 简介
@@ -192,9 +145,19 @@ pub struct OperatorPackage {
     /// 派生自哪个包（克隆溯源）
     #[serde(default)]
     pub forked_from: Option<String>,
-    /// 租户归属（归一化到 agent.ctx 作用域，默认 "default"）
+    /// 租户归属（归一化到 agent.ctx 作用域，默认 "default"；兼容旧字段）
     #[serde(default = "default_tenant")]
     pub tenant: String,
+    /// ===== 权限 / 租户绑定 =====
+    /// 租户 ID（与 tenant 同步；旧数据反序列化时默认 "default"）
+    #[serde(default = "default_tenant")]
+    pub tenant_id: String,
+    /// 创建人（账号/agent 标识）
+    #[serde(default)]
+    pub created_by: String,
+    /// 权限标记列表（如 ["read", "write", "deploy"]，空 = 公开可读）
+    #[serde(default)]
+    pub permissions: Vec<String>,
 }
 
 fn default_version() -> String {
@@ -221,6 +184,15 @@ pub struct PackageMeta {
     pub node_count: usize,
     pub feature_count: usize,
     pub tenant: String,
+    /// 租户 ID（权限过滤用）
+    #[serde(default = "default_tenant")]
+    pub tenant_id: String,
+    /// 创建人
+    #[serde(default)]
+    pub created_by: String,
+    /// 权限标记（空 = 公开可读）
+    #[serde(default)]
+    pub permissions: Vec<String>,
 }
 
 impl OperatorPackage {
@@ -239,6 +211,9 @@ impl OperatorPackage {
             node_count: self.nodes.len(),
             feature_count: self.features.len(),
             tenant: self.tenant.clone(),
+            tenant_id: self.tenant_id.clone(),
+            created_by: self.created_by.clone(),
+            permissions: self.permissions.clone(),
         }
     }
 }
@@ -270,6 +245,15 @@ pub struct CreatePackageRequest {
     /// 租户归属（可选，默认 "default"）
     #[serde(default = "default_tenant")]
     pub tenant: String,
+    /// 租户 ID（可选，缺省同 tenant）
+    #[serde(default)]
+    pub tenant_id: String,
+    /// 创建人
+    #[serde(default)]
+    pub created_by: String,
+    /// 权限标记
+    #[serde(default)]
+    pub permissions: Vec<String>,
 }
 
 /// 更新算子包请求（全量覆盖核心字段）
@@ -297,65 +281,75 @@ pub struct UpdatePackageRequest {
     pub tags: Option<Vec<String>>,
     #[serde(default)]
     pub tenant: Option<String>,
+    #[serde(default)]
+    pub tenant_id: Option<String>,
+    #[serde(default)]
+    pub created_by: Option<String>,
+    #[serde(default)]
+    pub permissions: Option<Vec<String>>,
 }
 
-fn market_dir() -> PathBuf {
-    ous_home().join("market")
+/// 规范包文件路径：`$OUS_HOME/market/packages/<id>.json`
+pub fn package_path(id: &str) -> PathBuf {
+    crate::market_migration::package_path(id)
 }
 
-fn package_path(id: &str) -> PathBuf {
-    market_dir().join(format!("{}.json", id))
-}
-
-fn now_rfc3339() -> String {
-    chrono::Utc::now().to_rfc3339()
-}
-
-fn gen_id() -> String {
+pub(crate) fn gen_id() -> String {
     uuid::Uuid::new_v4().to_string().split('-').next().unwrap().to_string()
 }
 
-/// 版本号自动 bump：x.y.z -> x.y.(z+1)；解析失败则回退到 +1 补丁。
-/// 归一化规则：每次实质性更新都让版本号单调前进，便于溯源与回滚。
+/// 版本号自动 bump：x.y.z -> x.y.(z+1)（语义化版本，market_version 实现）
 fn bump_patch_version(v: &str) -> String {
-    let parts: Vec<&str> = v.split('.').collect();
-    let mut nums: Vec<u32> = parts.iter().map(|p| p.parse::<u32>().unwrap_or(0)).collect();
-    while nums.len() < 3 {
-        nums.push(0);
-    }
-    nums[2] += 1;
-    format!("{}.{}.{}", nums[0], nums[1], nums[2])
+    crate::market_version::bump_patch_version(v)
 }
 
-/// 重新从磁盘加载全部包到内存索引
-async fn reload_index(state: &MarketState) {
-    let mut map = state.index.lock().await;
-    map.clear();
-    let dir = market_dir();
-    if !dir.exists() {
-        return;
+/// 重新从磁盘加载全部包到内存索引（异步版本，锁 index）
+pub async fn reload_index(state: &MarketState) {
+    let map = &state.index;
+    if let Ok(mut guard) = map.try_lock() {
+        *guard = scan_index();
+    } else {
+        let mut guard = map.lock().await;
+        *guard = scan_index();
     }
-    let entries = std::fs::read_dir(&dir).unwrap_or_else(|_| {
-        // 返回空迭代器
-        std::fs::read_dir(".").unwrap()
-    });
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path.extension().and_then(|e| e.to_str()) == Some("json") {
-            if let Ok(content) = std::fs::read_to_string(&path) {
-                if let Ok(pkg) = serde_json::from_str::<OperatorPackage>(&content) {
-                    map.insert(pkg.id.clone(), pkg.meta());
+}
+
+/// 同步重建索引（try_lock；测试与少量同步调用点使用）
+pub fn reload_index_sync(state: &MarketState) {
+    if let Ok(mut guard) = state.index.try_lock() {
+        *guard = scan_index();
+    }
+}
+
+fn scan_index() -> HashMap<String, PackageMeta> {
+    let mut map = HashMap::new();
+    let dir = packages_dir();
+    if !dir.exists() {
+        return map;
+    }
+    if let Ok(entries) = std::fs::read_dir(&dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) == Some("json") {
+                if let Ok(content) = std::fs::read_to_string(&path) {
+                    if let Ok(pkg) = serde_json::from_str::<OperatorPackage>(&content) {
+                        map.insert(pkg.id.clone(), pkg.meta());
+                    }
                 }
             }
         }
     }
+    map
 }
 
 /// 初始化商城状态，并确保种子数据存在
 pub async fn init_market_state() -> MarketState {
-    // 路径归一化：首次启动把遗留 ./data/market 迁移到 $OUS_HOME/market
-    migrate_legacy_dir();
-    let dir = market_dir();
+    // 路径归一化：首次启动自动迁移旧路径（自动备份）
+    let report = crate::market_migration::ensure_migrated();
+    if report.migrated_from_legacy > 0 || report.migrated_from_root > 0 {
+        tracing::info!("算子商城迁移完成：legacy={} root={} backup={:?}", report.migrated_from_legacy, report.migrated_from_root, report.backup_dir);
+    }
+    let dir = packages_dir();
     if !dir.exists() {
         let _ = std::fs::create_dir_all(&dir);
     }
@@ -369,6 +363,7 @@ pub async fn init_market_state() -> MarketState {
 }
 
 /// 把商城路由挂载到指定 path 前缀（默认 /api/market）
+/// 合并：基础 CRUD + 版本化 + DSL 转换 + 导入导出/租户扩展
 pub fn market_routes() -> Router<MarketState> {
     Router::new()
         .route("/", get(list_packages))
@@ -379,49 +374,95 @@ pub fn market_routes() -> Router<MarketState> {
         .route("/:id/clone", post(clone_package))
         .route("/upload", post(upload_package))
         .route("/:id/export", get(export_package))
+        .merge(crate::market_version::version_routes())
+        .merge(crate::market_dsl::dsl_routes())
 }
 
 // ========== Handlers ==========
 
-/// 列表（支持 ?category= 与 ?tag= 过滤，?q= 关键字搜索）
+/// 列表（支持 ?category= / ?tag= / ?q= / ?tenant_id= / ?created_by= / ?perm= 过滤）
 async fn list_packages(
     State(state): State<MarketState>,
     axum::extract::Query(params): axum::extract::Query<HashMap<String, String>>,
 ) -> Json<serde_json::Value> {
-    let idx = state.index.lock().await;
     let category = params.get("category");
     let tag = params.get("tag");
     let q = params.get("q").map(|s| s.to_lowercase());
-
-    let mut list: Vec<PackageMeta> = idx
-        .values()
-        .filter(|m| {
-            if let Some(c) = category {
-                if !c.is_empty() && &m.category != c {
-                    return false;
-                }
-            }
-            if let Some(t) = tag {
-                if !t.is_empty() && !m.tags.iter().any(|x| x == t) {
-                    return false;
-                }
-            }
-            if let Some(q) = &q {
-                if !q.is_empty()
-                    && !m.name.to_lowercase().contains(q)
-                    && !m.summary.to_lowercase().contains(q)
-                {
-                    return false;
-                }
-            }
-            true
-        })
-        .cloned()
-        .collect();
-
-    // 按更新时间倒序
-    list.sort_by(|a, b| b.updated_at.cmp(&a.updated_at));
+    let tenant_id = params.get("tenant_id");
+    let created_by = params.get("created_by");
+    let perm = params.get("perm");
+    let list = list_packages_filtered(
+        &state,
+        category.map(|s| s.as_str()),
+        tag.map(|s| s.as_str()),
+        q.as_deref(),
+        tenant_id.map(|s| s.as_str()),
+        created_by.map(|s| s.as_str()),
+        perm.map(|s| s.as_str()),
+    );
     Json(serde_json::json!({ "success": true, "total": list.len(), "packages": list }))
+}
+
+/// 供本模块与 routes 扩展使用的过滤列表实现（按更新时间倒序）
+pub fn list_packages_filtered(
+    state: &MarketState,
+    category: Option<&str>,
+    tag: Option<&str>,
+    q: Option<&str>,
+    tenant_id: Option<&str>,
+    created_by: Option<&str>,
+    perm: Option<&str>,
+) -> Vec<PackageMeta> {
+    let idx = state.index.try_lock();
+    let mut list: Vec<PackageMeta> = match idx {
+        Ok(guard) => guard
+            .values()
+            .filter(|m| {
+                if let Some(c) = category {
+                    if !c.is_empty() && &m.category != c {
+                        return false;
+                    }
+                }
+                if let Some(t) = tag {
+                    if !t.is_empty() && !m.tags.iter().any(|x| x == t) {
+                        return false;
+                    }
+                }
+                if let Some(q) = q {
+                    if !q.is_empty()
+                        && !m.name.to_lowercase().contains(q)
+                        && !m.summary.to_lowercase().contains(q)
+                    {
+                        return false;
+                    }
+                }
+                if let Some(t) = tenant_id {
+                    if !t.is_empty() && &m.tenant_id != t {
+                        return false;
+                    }
+                }
+                if let Some(c) = created_by {
+                    if !c.is_empty() && &m.created_by != c {
+                        return false;
+                    }
+                }
+                if let Some(p) = perm {
+                    // 权限过滤：permissions 为空视为公开；否则须包含所请求权限
+                    if !p.is_empty()
+                        && !m.permissions.is_empty()
+                        && !m.permissions.iter().any(|x| x == p)
+                    {
+                        return false;
+                    }
+                }
+                true
+            })
+            .cloned()
+            .collect(),
+        Err(_) => Vec::new(),
+    };
+    list.sort_by(|a, b| b.updated_at.cmp(&a.updated_at));
+    list
 }
 
 /// 随机返回一个包（用于"随机浏览/随机剪饮"）
@@ -439,15 +480,11 @@ async fn random_package(State(state): State<MarketState>) -> Json<serde_json::Va
     get_package(State(state), Path(id)).await
 }
 
-/// 获取单个包完整内容
+/// 获取单个包完整内容（向后兼容：新布局 → 中间布局 → 遗留布局）
 async fn get_package(State(_state): State<MarketState>, Path(id): Path<String>) -> Json<serde_json::Value> {
-    let path = package_path(&id);
-    match std::fs::read_to_string(&path) {
-        Ok(content) => match serde_json::from_str::<OperatorPackage>(&content) {
-            Ok(pkg) => Json(serde_json::json!({ "success": true, "package": pkg })),
-            Err(e) => Json(serde_json::json!({ "success": false, "error": format!("解析失败: {}", e) })),
-        },
-        Err(_) => Json(serde_json::json!({ "success": false, "error": "算子包不存在" })),
+    match load_package(&id) {
+        Ok(pkg) => Json(serde_json::json!({ "success": true, "package": pkg })),
+        Err(e) => Json(serde_json::json!({ "success": false, "error": e })),
     }
 }
 
@@ -468,9 +505,18 @@ async fn upload_package(
             Json(serde_json::json!({ "success": false, "error": "需求描述(requirement)不能为空，这是算子包最核心的部分" })),
         );
     }
+    // 版本字段遵循 semver（主.次.补[-预发布]）
+    if !req.version.is_empty() && !crate::market_version::is_valid_version(&req.version) {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "success": false, "error": format!("版本号不是合法 semver（主.次.补）: {}", req.version) })),
+        );
+    }
 
     let id = gen_id();
     let now = now_rfc3339();
+    let tenant = if req.tenant.is_empty() { default_tenant() } else { req.tenant };
+    let tenant_id = if req.tenant_id.is_empty() { tenant.clone() } else { req.tenant_id };
     let pkg = OperatorPackage {
         id: id.clone(),
         name: req.name,
@@ -487,7 +533,10 @@ async fn upload_package(
         updated_at: now,
         clone_count: 0,
         forked_from: req.forked_from,
-        tenant: req.tenant,
+        tenant,
+        tenant_id,
+        created_by: req.created_by,
+        permissions: req.permissions,
     };
 
     if let Err(e) = save_package(&pkg) {
@@ -504,15 +553,16 @@ async fn upload_package(
     )
 }
 
-/// 全量更新算子包（需求/流程图/功能点都改）
+/// 全量更新算子包（需求/流程图/功能点都改；自动快照旧版本 + 版本号 bump）
 async fn update_package(
     State(state): State<MarketState>,
     Path(id): Path<String>,
+    headers: axum::http::HeaderMap,
     Json(req): Json<UpdatePackageRequest>,
 ) -> (StatusCode, Json<serde_json::Value>) {
-    let path = package_path(&id);
-    let content = match std::fs::read_to_string(&path) {
-        Ok(c) => c,
+    let actor = crate::market_version::actor_from_headers(&headers);
+    let mut pkg = match load_package(&id) {
+        Ok(p) => p,
         Err(_) => {
             return (
                 StatusCode::NOT_FOUND,
@@ -520,21 +570,21 @@ async fn update_package(
             )
         }
     };
-    let mut pkg: OperatorPackage = match serde_json::from_str(&content) {
-        Ok(p) => p,
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({ "success": false, "error": format!("解析失败: {}", e) })),
-            )
-        }
-    };
+
+    // 版本化：先快照旧版本（best-effort，不阻塞主流程）
+    let _ = crate::market_version::snapshot_package(&pkg, &actor, "更新前快照");
 
     if let Some(v) = req.name { pkg.name = v; }
     if let Some(v) = req.category { pkg.category = v; }
     if let Some(v) = req.author { pkg.author = v; }
     // 归一化：除非显式传了版本，否则每次实质性更新自动 +1 补丁号（版本化）
     if let Some(v) = req.version {
+        if !crate::market_version::is_valid_version(&v) {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({ "success": false, "error": format!("版本号不是合法 semver（主.次.补）: {}", v) })),
+            );
+        }
         pkg.version = v;
     } else {
         pkg.version = bump_patch_version(&pkg.version);
@@ -546,6 +596,14 @@ async fn update_package(
     if let Some(v) = req.features { pkg.features = v; }
     if let Some(v) = req.tags { pkg.tags = v; }
     if let Some(v) = req.tenant { pkg.tenant = v; }
+    if let Some(v) = req.tenant_id {
+        pkg.tenant_id = v;
+        if pkg.tenant.is_empty() {
+            pkg.tenant = pkg.tenant_id.clone();
+        }
+    }
+    if let Some(v) = req.created_by { pkg.created_by = v; }
+    if let Some(v) = req.permissions { pkg.permissions = v; }
     pkg.updated_at = now_rfc3339();
 
     if let Err(e) = save_package(&pkg) {
@@ -566,22 +624,12 @@ async fn clone_package(
     State(state): State<MarketState>,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<serde_json::Value>) {
-    let src_path = package_path(&id);
-    let content = match std::fs::read_to_string(&src_path) {
-        Ok(c) => c,
+    let mut src = match load_package(&id) {
+        Ok(p) => p,
         Err(_) => {
             return (
                 StatusCode::NOT_FOUND,
                 Json(serde_json::json!({ "success": false, "error": "源算子包不存在" })),
-            )
-        }
-    };
-    let mut src: OperatorPackage = match serde_json::from_str(&content) {
-        Ok(p) => p,
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({ "success": false, "error": format!("解析失败: {}", e) })),
             )
         }
     };
@@ -592,7 +640,7 @@ async fn clone_package(
     let _ = save_package(&src);
     state.index.lock().await.insert(src.id.clone(), src.meta());
 
-    // 生成新包
+    // 生成新包（租户保持源包归属；克隆人/权限留空由后续编辑填充）
     let new_id = gen_id();
     let now = now_rfc3339();
     let cloned = OperatorPackage {
@@ -612,6 +660,9 @@ async fn clone_package(
         clone_count: 0,
         forked_from: Some(src.id.clone()),
         tenant: src.tenant.clone(),
+        tenant_id: src.tenant_id.clone(),
+        created_by: String::new(),
+        permissions: src.permissions.clone(),
     };
     if let Err(e) = save_package(&cloned) {
         return (
@@ -626,43 +677,39 @@ async fn clone_package(
     )
 }
 
-/// 删除算子包
+/// 删除算子包（含版本快照与变更日志）
 async fn delete_package(
     State(state): State<MarketState>,
     Path(id): Path<String>,
 ) -> Json<serde_json::Value> {
-    let path = package_path(&id);
-    if !path.exists() {
-        return Json(serde_json::json!({ "success": false, "error": "算子包不存在" }));
-    }
+    let path = match find_package_file(&id) {
+        Some(p) => p,
+        None => {
+            return Json(serde_json::json!({ "success": false, "error": "算子包不存在" }));
+        }
+    };
     let _ = std::fs::remove_file(&path);
+    // 清理版本快照与变更日志
+    let _ = std::fs::remove_dir_all(crate::market_migration::versions_dir(&id));
+    let _ = std::fs::remove_file(crate::market_version::changelog_path(&id));
     state.index.lock().await.remove(&id);
+    audit("delete", "anonymous", &format!("删除算子包 {}", id));
     Json(serde_json::json!({ "success": true }))
 }
 
-/// 导出归一化 DSL（§28 FlowDefinition）：
+/// 导出归一化 DSL（§28 FlowDefinition）：保持向后兼容（前端 /market/:id/export 依赖）。
 /// 把算子包的核心资产（需求 + 流程图 + 功能点）投影为与内核 FlowDefinition
-/// 一致的规范结构，便于被编排层/执行层直接消费。
+/// 一致的规范结构。更完整的转换链路见 market_dsl（/:id/dsl、/:id/workflow、/:id/dsl/preview）。
 async fn export_package(
     State(_state): State<MarketState>,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<serde_json::Value>) {
-    let path = package_path(&id);
-    let content = match std::fs::read_to_string(&path) {
-        Ok(c) => c,
+    let pkg = match load_package(&id) {
+        Ok(p) => p,
         Err(_) => {
             return (
                 StatusCode::NOT_FOUND,
                 Json(serde_json::json!({ "success": false, "error": "算子包不存在" })),
-            )
-        }
-    };
-    let pkg: OperatorPackage = match serde_json::from_str(&content) {
-        Ok(p) => p,
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({ "success": false, "error": format!("解析失败: {}", e) })),
             )
         }
     };
@@ -714,6 +761,9 @@ async fn export_package(
         "name": pkg.name,
         "category": pkg.category,
         "tenant": pkg.tenant,
+        "tenant_id": pkg.tenant_id,
+        "created_by": pkg.created_by,
+        "permissions": pkg.permissions,
         "author": pkg.author,
         "version": pkg.version,
         "summary": pkg.summary,
@@ -744,8 +794,9 @@ async fn export_package(
 
 // ========== 存储辅助 ==========
 
-fn save_package(pkg: &OperatorPackage) -> std::io::Result<()> {
-    let dir = market_dir();
+/// 保存算子包到 `$OUS_HOME/market/packages/<id>.json`
+pub fn save_package(pkg: &OperatorPackage) -> std::io::Result<()> {
+    let dir = packages_dir();
     if !dir.exists() {
         std::fs::create_dir_all(&dir)?;
     }
@@ -754,9 +805,30 @@ fn save_package(pkg: &OperatorPackage) -> std::io::Result<()> {
     std::fs::write(package_path(&pkg.id), content)
 }
 
+/// 读取算子包（向后兼容：新布局 → 中间布局 → 遗留布局；命中旧路径自动补迁）
+pub fn load_package(id: &str) -> Result<OperatorPackage, String> {
+    let path = find_package_file(id).ok_or_else(|| "算子包不存在".to_string())?;
+    let content = std::fs::read_to_string(&path).map_err(|e| format!("读取失败: {}", e))?;
+    let pkg: OperatorPackage =
+        serde_json::from_str(&content).map_err(|e| format!("解析失败: {}", e))?;
+    // 命中旧路径（非归一化位置）时自动补迁，保持磁盘布局收敛
+    let canonical = package_path(id);
+    if path != canonical && !canonical.exists() {
+        // 确保目标目录存在（首次读取遗留包时 packages/ 可能尚未创建）
+        if let Some(parent) = canonical.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        if std::fs::copy(&path, &canonical).is_ok() {
+            audit("auto_migrate", "system", &format!("读取时自动迁移 {} → {}", path.display(), canonical.display()));
+            let _ = std::fs::remove_file(&path);
+        }
+    }
+    Ok(pkg)
+}
+
 /// 种子数据：用项目真实的"全业务流程"做示例算子包
 async fn ensure_seed(state: &MarketState) {
-    let dir = market_dir();
+    let dir = packages_dir();
     if !dir.exists() {
         let _ = std::fs::create_dir_all(&dir);
     }
@@ -804,7 +876,72 @@ async fn ensure_seed(state: &MarketState) {
         clone_count: 0,
         forked_from: None,
         tenant: default_tenant(),
+        tenant_id: default_tenant(),
+        created_by: "system".to_string(),
+        permissions: vec![],
     };
     let _ = save_package(&seed);
     state.index.lock().await.insert(seed.id.clone(), seed.meta());
+}
+
+/// 全维融合落盘：接收专家联盟归一化产出的优化流程图（flow_ai::FlowNode/FlowEdge）+
+/// 元信息，转换为算子商城节点模型并组装为算子包，上传到市场（插件/应用平台）。
+/// 这是"专家联盟 -> 业务流程图 -> 上传系统平台"融合总线的最终落点。
+pub fn publish_unified(
+    name: String,
+    description: String,
+    requirement: String,
+    nodes: Vec<flow_ai::model::FlowNode>,
+    edges: Vec<flow_ai::model::FlowEdge>,
+    tags: Vec<String>,
+) -> std::io::Result<OperatorPackage> {
+    let id = gen_id();
+    let ts = now_rfc3339();
+    // flow_ai 模型 -> 算子商城展示模型（字段结构不同，做归一化映射）
+    let market_nodes: Vec<FlowNode> = nodes
+        .into_iter()
+        .enumerate()
+        .map(|(i, n)| FlowNode {
+            id: n.id.clone(),
+            label: n.name,
+            node_type: format!("{:?}", n.kind).to_lowercase(),
+            x: 80.0 + (i % 4) as f64 * 240.0,
+            y: 40.0 + (i / 4) as f64 * 140.0,
+            note: n.tool.map(|t| format!("{:?}", t)).unwrap_or_default(),
+        })
+        .collect();
+    let market_edges: Vec<FlowEdge> = edges
+        .into_iter()
+        .enumerate()
+        .map(|(i, e)| FlowEdge {
+            id: format!("e{}", i),
+            source: e.from,
+            target: e.to,
+            label: e.condition.unwrap_or_else(|| format!("{:?}", e.kind)),
+        })
+        .collect();
+
+    let pkg = OperatorPackage {
+        id: id.clone(),
+        name,
+        category: "unified".into(),
+        author: "expert-alliance".into(),
+        version: default_version(),
+        summary: description,
+        requirement,
+        nodes: market_nodes,
+        edges: market_edges,
+        features: vec![],
+        tags,
+        created_at: ts.clone(),
+        updated_at: ts,
+        clone_count: 0,
+        forked_from: None,
+        tenant: default_tenant(),
+        tenant_id: default_tenant(),
+        created_by: "expert-alliance".into(),
+        permissions: vec![],
+    };
+    save_package(&pkg)?;
+    Ok(pkg)
 }

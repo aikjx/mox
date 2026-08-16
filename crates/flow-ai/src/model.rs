@@ -402,8 +402,8 @@ impl FlowGraph {
         let n = self.nodes.len();
         let succ = self.successors();
         let mut indeg = vec![0usize; n];
-        for u in 0..n {
-            for &v in &succ[u] {
+        for succ_u in &succ {
+            for &v in succ_u {
                 indeg[v] += 1;
             }
         }

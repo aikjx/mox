@@ -24,6 +24,18 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: fileURLToPath(new URL('./index.html', import.meta.url))
+      },
+      output: {
+        // 第三方大依赖独立分包，避免全部塞进主包，减小首屏体积
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('3d-force-graph') || id.includes('/three/')) return 'vendor-3d'
+            if (id.includes('echarts') || id.includes('zrender')) return 'vendor-echarts'
+            if (id.includes('element-plus') || id.includes('@element-plus')) return 'vendor-element'
+            if (id.includes('vue') || id.includes('vue-router')) return 'vendor-vue'
+            return 'vendor'
+          }
+        }
       }
     }
   }

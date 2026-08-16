@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
+use async_trait::async_trait;
 
 /// Seam注册表
 pub struct SeamRegistry {
