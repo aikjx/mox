@@ -19,6 +19,41 @@ use crate::flow_engine::{FlowDefinition, FlowEdge, FlowNode, NodeType, Position}
 use operator_core::OperatorError;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
+use std::future::Future;
+use std::pin::Pin;
+use std::sync::Arc;
+
+/// 喂给 LLM 的消息（与 llm_client::LLMChatMessage 同构，避免跨模块类型泄漏）
+#[derive(Debug, Clone)]
+pub struct LlmMsg {
+    pub role: String,
+    pub content: String,
+}
+
+/// 由 `AIAgent::llm_client()` 提供的 LLM 通道（OpenAI 兼容）用于"细功能拆解"。
+/// 定义为 trait 对象指针，避免 ai-agent 对 llm_client 具体类型产生循环依赖噪音。
+pub type LlmFn = Arc<
+    dyn Fn(Vec<LlmMsg>) -> Pin<Box<dyn Future<Output = anyhow::Result<String>> + Send + 'static>>
+        + Send
+        + Sync,
+>;
+
+/// LLM 拆解后返回的结构化功能点
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct LlmFeature {
+    name: String,
+    action: String,
+    #[serde(default)]
+    node_type: Option<String>,
+    #[serde(default)]
+    entities: Vec<String>,
+}
+
+/// LLM 拆解的响应外壳
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct LlmPlan {
+    features: Vec<LlmFeature>,
+}
 
 /// 从一句话里识别的"动作动词" → 流程节点类型
 /// 注：ai-agent 的 FlowNode.NodeType 变体为
@@ -140,6 +175,46 @@ impl RuleExtractor {
     }
 }
 
+/// 把 LLM 返回的 node_type 字符串映射到内部 NodeType 枚举
+fn parse_node_type(s: &str) -> Option<NodeType> {
+    match s.trim().to_lowercase().as_str() {
+        "start" => Some(NodeType::Start),
+        "end" => Some(NodeType::End),
+        "llm" => Some(NodeType::LLM),
+        "browser" => Some(NodeType::Browser),
+        "http" | "httprequest" => Some(NodeType::HttpRequest),
+        "operator" => Some(NodeType::Operator),
+        "condition" => Some(NodeType::Condition),
+        "transform" => Some(NodeType::Transform),
+        "script" => Some(NodeType::Script),
+        "data_input" | "datainput" => Some(NodeType::DataInput),
+        "data_output" | "dataoutput" => Some(NodeType::DataOutput),
+        "parallel" => Some(NodeType::Parallel),
+        _ => None,
+    }
+}
+
+/// 根据动作动词推断节点类型（与规则抽取保持一致）
+fn infer_node_type(action: &str) -> NodeType {
+    for (verb, nt) in ACTION_VERBS {
+        if action.contains(verb) {
+            return nt.clone();
+        }
+    }
+    NodeType::Operator
+}
+
+/// 取名词单数形式（简单去"功能/管理/列表"等后缀，作为实体名兜底）
+fn singular(name: &str) -> String {
+    let cleaned = name
+        .trim_end_matches("功能")
+        .trim_end_matches("管理")
+        .trim_end_matches("列表")
+        .trim_end_matches("模块")
+        .trim();
+    if cleaned.is_empty() { "item".to_string() } else { cleaned.to_string() }
+}
+
 /// 需求编译器
 pub struct RequirementCompiler {
     /// 历史蓝图缓存（会话内持续迭代）
@@ -205,6 +280,89 @@ impl RequirementCompiler {
         };
         self.cache.insert(blueprint.id.clone(), blueprint.clone());
         Ok(blueprint)
+    }
+
+    /// 接入真实 LLM 做更细的功能拆解。
+    /// - 有 LLM 通道时：让模型把一句话需求拆成结构化功能点（action/entities/node_type），
+    ///   再与规则抽取结果合并去重，得到比纯规则更细的蓝图。
+    /// - 无 LLM（未配置 key / 离线）时：自动降级到 `compile` 的规则抽取路径，保证可测可用。
+    pub async fn compile_with_llm(
+        &mut self,
+        requirement: &str,
+        name: &str,
+        tags: Vec<String>,
+        llm: Option<&LlmFn>,
+    ) -> Result<SystemBlueprint, OperatorError> {
+        // 先用规则抽取打底（保证即使 LLM 失败也有可用蓝图）
+        let mut blueprint = self.compile(requirement, name, tags.clone())?;
+
+        if let Some(llm) = llm {
+            match self.llm_disassemble(requirement, llm).await {
+                Ok(extra) => {
+                    let start_idx = blueprint.features.len();
+                    for (k, f) in extra.iter().enumerate() {
+                        let i = start_idx + k;
+                        let node_type = f
+                            .node_type
+                            .as_deref()
+                            .and_then(parse_node_type)
+                            .unwrap_or_else(|| infer_node_type(&f.action));
+                        let ents = if f.entities.is_empty() {
+                            vec![singular(&f.name)]
+                        } else {
+                            f.entities.clone()
+                        };
+                        for e in &ents {
+                            blueprint
+                                .entities
+                                .entry(e.clone())
+                                .or_insert_with(|| vec!["id".into(), "created_at".into()]);
+                        }
+                        let fid = format!("f{}", i + 1);
+                        let depends_on = if i == 0 { Vec::new() } else { vec![format!("f{}", i)] };
+                        blueprint.features.push(Feature {
+                            id: fid,
+                            name: f.name.clone(),
+                            action: f.action.clone(),
+                            node_type,
+                            entities: ents,
+                            depends_on,
+                        });
+                    }
+                    // 重新构建流程图以纳入 LLM 补充的功能点
+                    blueprint.flow = self.build_flow(&blueprint.name, &blueprint.features);
+                }
+                Err(_) => {
+                    // LLM 失败静默降级，保留规则抽取结果
+                }
+            }
+        }
+
+        self.cache.insert(blueprint.id.clone(), blueprint.clone());
+        Ok(blueprint)
+    }
+
+    /// 调用 LLM 把需求拆成结构化功能点列表
+    async fn llm_disassemble(&self, requirement: &str, llm: &LlmFn) -> anyhow::Result<Vec<LlmFeature>> {
+        let prompt = format!(
+            "你是一个系统架构拆解助手。请把下面的业务需求拆解为若干独立功能点。\n\
+             每个功能点包含：name(简短中文名)、action(动词，如 下单/支付/查询/生成/审批)、\
+             node_type(从 [start,end,llm,browser,http,operator,condition,transform,script,data_input,data_output,parallel,task,guard,decision,event] 选一)、\
+             entities(该功能涉及的实体名，如 订单/用户/商品)。\n\
+             只返回 JSON，格式: {{\"features\":[...]}}，不要解释。\n\n需求：{}",
+            requirement
+        );
+        let messages = vec![
+            LlmMsg { role: "system".to_string(), content: "你是严谨的软件架构拆解器，只输出 JSON。".to_string() },
+            LlmMsg { role: "user".to_string(), content: prompt },
+        ];
+        let resp = llm(messages).await?;
+        let json_start = resp.find('{').unwrap_or(0);
+        let json_end = resp.rfind('}').map(|i| i + 1).unwrap_or(resp.len());
+        let clean = &resp[json_start..json_end];
+        let plan: LlmPlan = serde_json::from_str(clean)
+            .map_err(|e| anyhow::anyhow!("LLM 返回无法解析: {}", e))?;
+        Ok(plan.features)
     }
 
     /// 增量迭代：在已有蓝图基础上追加新功能（"再加一个退货"）
@@ -369,5 +527,46 @@ mod tests {
         let bp = rc.compile("注册，登录，发布文章", "内容平台", vec!["thesis".into()]).unwrap();
         // 验证流程图可被 flow_engine 接受（含 Start + End + 连通）
         assert!(crate::flow_engine::FlowEngine::validate_flow(&bp.flow).is_ok());
+    }
+
+    #[tokio::test]
+    async fn compile_with_llm_degrades_without_llm() {
+        let mut rc = RequirementCompiler::new();
+        // 无 LLM 通道：应等价于规则抽取，至少产出 4 个功能点
+        let bp = rc
+            .compile_with_llm(
+                "我要做一个商城：有商品，购物车，下单，支付",
+                "商城系统",
+                vec!["mall".into()],
+                None,
+            )
+            .await
+            .unwrap();
+        assert!(bp.features.len() >= 4);
+        assert!(bp.entities.contains_key("订单"));
+    }
+
+    #[tokio::test]
+    async fn compile_with_llm_merges_llm_features() {
+        use std::sync::Arc;
+        // 提供一个假的 LLM，返回结构化拆解，验证合并逻辑
+        let fake: LlmFn = Arc::new(|_msgs| {
+            Box::pin(async {
+                Ok(
+                    r#"{"features":[{"name":"库存扣减","action":"扣减","node_type":"operator","entities":["库存"]}]}"#
+                        .to_string(),
+                )
+            })
+        });
+        let mut rc = RequirementCompiler::new();
+        let bp = rc
+            .compile_with_llm("商城：商品，下单", "商城", vec!["mall".into()], Some(&fake))
+            .await
+            .unwrap();
+        // 规则抽取 2 个 + LLM 补充 1 个 = 3
+        assert_eq!(bp.features.len(), 3);
+        assert!(bp.features.iter().any(|f| f.name.contains("库存扣减")));
+        // LLM 补充的实体入库
+        assert!(bp.entities.contains_key("库存"));
     }
 }

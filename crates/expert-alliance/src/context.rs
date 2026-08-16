@@ -1,6 +1,6 @@
 //! 企业级上下文：租户 / 主体 / 策略 / 配额 / 兼容性注册表
 
-use crate::ir::{Dimension, PolicyId};
+use crate::ir::{Dimension, PolicyId, CodeIR};
 use flow_ai::model::{FlowGraph, ResourcePool};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -168,6 +168,8 @@ pub struct GovernContext {
     pub policies: Vec<Policy>,
     pub quota: ResourceQuota,
     pub registry: CompatibilityRegistry,
+    /// 开发专家联盟的分析对象（代码的 IR）；无代码时开发专家自动 skipped
+    pub code_ir: Option<CodeIR>,
     /// 期望的大模型路由（LLM 兼容性）
     pub llm_tier: Option<flow_ai::schedule::ModelTier>,
 }
@@ -180,6 +182,7 @@ impl GovernContext {
             policies: Vec::new(),
             quota: ResourceQuota::default(),
             registry: CompatibilityRegistry::new(),
+            code_ir: None,
             llm_tier: None,
         }
     }
@@ -193,6 +196,8 @@ pub struct ExpertContext<'a> {
     pub policies: &'a [Policy],
     pub quota: &'a ResourceQuota,
     pub registry: &'a CompatibilityRegistry,
+    /// 开发专家联盟的分析对象（借用于 GovernContext，避免克隆）
+    pub code_ir: &'a Option<CodeIR>,
 }
 
 impl<'a> ExpertContext<'a> {
@@ -207,6 +212,7 @@ impl<'a> ExpertContext<'a> {
             policies: &gctx.policies,
             quota: &gctx.quota,
             registry: &gctx.registry,
+            code_ir: &gctx.code_ir,
         }
     }
 
@@ -214,15 +220,30 @@ impl<'a> ExpertContext<'a> {
         self.policies.iter().filter(|p| p.dimension == dim).collect()
     }
 
+    /// 鉴权单入口：所有能力判定统一委托 RBAC 引擎（`rbac::check`）。
+    ///
+    /// 此前 `can()` 是硬编码的角色字符串匹配（`EditFlow => "editor"`），
+    /// 与 `rbac/policy.rs` 完全脱节——任何对 RBAC 策略的修改都不会反映到专家鉴权。
+    /// 现在 `Capability` 被映射为 `(action, resource)` 资源级权限，统一走 `rbac::check`，
+    /// 让内置角色矩阵、继承链、通配符与跨租户隔离对专家鉴权真正生效。
     pub fn can(&self, cap: Capability) -> bool {
-        let required = match cap {
-            Capability::ViewAudit => "auditor",
-            Capability::RunFlow => "runner",
-            Capability::EditFlow => "editor",
-            Capability::ApproveFlow => "approver",
+        let (action, resource) = match cap {
+            // 审计查看：resource 级 read:audit:*
+            Capability::ViewAudit => ("read", "audit:*"),
+            // 运行流程：execute:flow:*
+            Capability::RunFlow => ("execute", "flow:*"),
+            // 编辑流程（所有专家的前置门禁）：write:flow:*（editor/operator 等角色已覆盖）
+            Capability::EditFlow => ("write", "flow:*"),
+            // 审批流程：admin:flow:gov-pii/*（safety_approver 等角色已覆盖）
+            Capability::ApproveFlow => ("admin", "flow:gov-pii/*"),
         };
-        self.principal.roles.iter().any(|r| r == required)
-            || self.principal.roles.contains(&"admin".to_string())
+        let check_ctx = crate::rbac::PermissionCheck::new(
+            &self.principal.subject,
+            self.principal.roles.clone(),
+            action,
+            crate::rbac::check::Resource::with_tenant(resource, &self.tenant.id),
+        );
+        crate::rbac::check(&check_ctx).is_granted()
     }
 }
 
@@ -247,6 +268,28 @@ mod tests {
         let fg = FlowGraph::new("x", "t");
         let c = ExpertContext::new(&fg, &g);
         assert!(!c.can(Capability::RunFlow));
+    }
+
+    #[test]
+    fn rbac_editor_can_edit_flow() {
+        // editor 继承 viewer 并拥有 write:flow:*，应能通过 EditFlow 门禁
+        let p = Principal::new("u").with_roles(vec!["editor".into()]);
+        let g = GovernContext::new(Tenant::new("t", "ns"), p);
+        let fg = FlowGraph::new("x", "t");
+        let c = ExpertContext::new(&fg, &g);
+        assert!(c.can(Capability::EditFlow));
+        // editor 无 admin:flow:gov-pii/*，不能通过审批
+        assert!(!c.can(Capability::ApproveFlow));
+    }
+
+    #[test]
+    fn rbac_viewer_cannot_edit_flow() {
+        // viewer 仅 read，无 write:flow:*，专家分析前置门禁应拒绝
+        let p = Principal::new("u");
+        let g = GovernContext::new(Tenant::new("t", "ns"), p);
+        let fg = FlowGraph::new("x", "t");
+        let c = ExpertContext::new(&fg, &g);
+        assert!(!c.can(Capability::EditFlow));
     }
 
     #[test]

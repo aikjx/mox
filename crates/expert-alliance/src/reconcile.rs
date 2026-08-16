@@ -25,6 +25,10 @@ pub struct ReconciledPlan {
     pub model_routes: Vec<(String, flow_ai::schedule::ModelTier)>,
     /// 各专家健康分
     pub scores: Vec<(String, f64)>,
+    /// 采纳的优化建议（经裁决器确认、未与硬约束冲突的 Suggestion）。
+    /// 此前 `suggestions` 仅由各专家产出后停留在 `ExpertOpinion` 中，裁决器从不消费，
+    /// 导致"并行化/缓存/降档"等优化建议永远无法落到最终计划。此处显式采纳并暴露给流水线。
+    pub adopted_suggestions: Vec<crate::expert::Suggestion>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -36,17 +40,141 @@ pub struct ReconcileConflict {
     pub escalated: bool,
 }
 
+impl ReconcileConflict {
+    /// 同级维度（优先级相同）约束冲突，无法按优先级仲裁 → 升级为 Blocking
+    pub fn escalated_same_priority(
+        dimension_a: Dimension,
+        dimension_b: Dimension,
+        nodes: Vec<String>,
+        resolution: String,
+    ) -> Self {
+        Self {
+            dimension_a,
+            dimension_b,
+            nodes,
+            resolution,
+            escalated: true,
+        }
+    }
+
+    /// 语义相反约束（如强制串行 vs 建议并行），记录但交由求解器兜底
+    pub fn semantic(
+        dimension_a: Dimension,
+        dimension_b: Dimension,
+        nodes: Vec<String>,
+        resolution: String,
+    ) -> Self {
+        Self {
+            dimension_a,
+            dimension_b,
+            nodes,
+            resolution,
+            escalated: false,
+        }
+    }
+}
+
+/// 约束类别，用于冲突检测时按"语义"而非"枚举变体"归类
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ConstraintKind {
+    Serialize,   // 强制串行（MustSerialize）
+    Guard,       // 脱敏/鉴权前置（MustGuard）
+    Isolate,     // 沙箱隔离（MustIsolate）
+    Other,
+}
+
+impl ConstraintKind {
+    fn from_constraint(c: &Constraint) -> Self {
+        match c {
+            Constraint::MustSerialize(_) => ConstraintKind::Serialize,
+            Constraint::MustGuard(_, _) => ConstraintKind::Guard,
+            Constraint::MustIsolate(_) => ConstraintKind::Isolate,
+            _ => ConstraintKind::Other,
+        }
+    }
+}
+
 /// 归一化裁决
 pub fn reconcile(opinions: &[ExpertOpinion], base: &FlowGraph, tenant_pools: &[ResourcePool]) -> ReconciledPlan {
     let mut graph = base.clone();
     let mut rules: Vec<ExpertRule> = Vec::new();
-    let conflicts: Vec<ReconcileConflict> = Vec::new();
+    let mut conflicts: Vec<ReconcileConflict> = Vec::new();
     let mut model_routes: Vec<(String, flow_ai::schedule::ModelTier)> = Vec::new();
     let mut scores: Vec<(String, f64)> = Vec::new();
 
     // 记录各专家健康分
     for o in opinions {
         scores.push((o.expert.clone(), o.score));
+    }
+
+    // —— 冲突预扫描（P2 修复：原 conflicts 永久为空）——
+    // 收集每个节点被哪些维度施加了哪类约束，以及全局是否存在并行化建议
+    let mut per_node: std::collections::HashMap<String, Vec<(Dimension, ConstraintKind)>> =
+        std::collections::HashMap::new();
+    let mut has_parallelize_suggestion = false;
+    let mut serialize_nodes: Vec<String> = Vec::new();
+    // P1：收集专家产出的全部 Suggestion，供裁决器采纳
+    let mut all_suggestions: Vec<crate::expert::Suggestion> = Vec::new();
+    for o in opinions {
+        for c in &o.constraints {
+            let kind = ConstraintKind::from_constraint(c);
+            let nodes = c.nodes();
+            if kind == ConstraintKind::Serialize {
+                serialize_nodes.extend(nodes.iter().cloned());
+            }
+            for n in nodes {
+                per_node.entry(n).or_default().push((o.dimension, kind));
+            }
+        }
+        for s in &o.suggestions {
+            if matches!(s, crate::expert::Suggestion::Parallelize) {
+                has_parallelize_suggestion = true;
+            }
+            all_suggestions.push(s.clone());
+        }
+    }
+    // 冲突检测：
+    //  - escalated（升级 Blocking）：同节点、不同维度、同优先级、**且约束类别相同**（如两维度都要求 MustGuard
+    //    却参数互斥）—— 此时无法按优先级仲裁，须人工/安全审批。互补类别（如 MustGuard + MustIsolate）属正交互补，不升级。
+    //  - semantic（仅记录溯源）：互补类别共存，或强制串行 vs 并行化建议。
+    for (node, dims) in &per_node {
+        for i in 0..dims.len() {
+            for j in (i + 1)..dims.len() {
+                let (da, ka) = dims[i];
+                let (db, kb) = dims[j];
+                if da != db && da.priority() == db.priority() && ka == kb {
+                    conflicts.push(ReconcileConflict::escalated_same_priority(
+                        da,
+                        db,
+                        vec![node.clone()],
+                        format!(
+                            "维度 {:?} 与 {:?} 优先级相同({})，对同一节点施加同类约束({:?})无法按优先级仲裁，升级为 Blocking 阻断",
+                            da, db, da.priority(), ka
+                        ),
+                    ));
+                } else if da != db && ka != kb {
+                    // 互补类别（如 Guard + Isolate）共存：记录但不升级
+                    conflicts.push(ReconcileConflict::semantic(
+                        da,
+                        db,
+                        vec![node.clone()],
+                        format!(
+                            "维度 {:?}({:?}) 与 {:?}({:?}) 对同一节点施加互补约束，正交互补，交由求解器合并",
+                            da, ka, db, kb
+                        ),
+                    ));
+                }
+            }
+        }
+    }
+    // 语义相反：存在强制串行(MustSerialize) 与 全局并行化(Parallelize)建议 → 记录 semantic 冲突
+    if has_parallelize_suggestion && !serialize_nodes.is_empty() {
+        conflicts.push(ReconcileConflict::semantic(
+            Dimension::Resource,
+            Dimension::Algorithm,
+            serialize_nodes.clone(),
+            "检测到强制串行约束与并行化建议语义相反，交由 flow-ai 求解器权衡".to_string(),
+        ));
     }
 
     // 按维度优先级升序处理：高优先级（大值）后处理，天然覆盖低优先级的软约束
@@ -148,6 +276,16 @@ pub fn reconcile(opinions: &[ExpertOpinion], base: &FlowGraph, tenant_pools: &[R
     }
 
     let pools = graph.pools.clone();
+    // P1：采纳建议。与硬串行约束(MustSerialize)语义相反的 Parallelize 不采纳（已记入 semantic 冲突）；
+    // 其余（Cache/Offload/Merge 等）一律采纳，交由流水线落地。
+    let adopted_suggestions: Vec<crate::expert::Suggestion> = if serialize_nodes.is_empty() {
+        all_suggestions
+    } else {
+        all_suggestions
+            .into_iter()
+            .filter(|s| !matches!(s, crate::expert::Suggestion::Parallelize))
+            .collect()
+    };
     ReconciledPlan {
         graph,
         rules,
@@ -155,6 +293,7 @@ pub fn reconcile(opinions: &[ExpertOpinion], base: &FlowGraph, tenant_pools: &[R
         conflicts,
         model_routes,
         scores,
+        adopted_suggestions,
     }
 }
 
@@ -218,5 +357,104 @@ mod tests {
         let o = ExpertOpinion::empty("algo", Dimension::Algorithm);
         let plan = reconcile(&[o], &g, &[]);
         assert!(plan.scores.iter().any(|(e, _)| e == "algo"));
+    }
+
+    #[test]
+    fn same_priority_conflict_escalates() {
+        // P2 验收：Permission(7) 与 Security(7) 对同一节点施加**同类别**约束（都 MustGuard，参数互斥）
+        // → 无法按优先级仲裁 → 升级 Blocking
+        let g = base();
+        let mut p = ExpertOpinion::empty("permission", Dimension::Permission);
+        p.constraints.push(Constraint::MustGuard("a".into(), vec!["desensitize".into()]));
+        let mut s = ExpertOpinion::empty("security", Dimension::Security);
+        // 安全维度对同节点也要求 MustGuard（不同脱敏策略）→ 同类别冲突
+        s.constraints.push(Constraint::MustGuard("a".into(), vec!["sandbox".into()]));
+        let plan = reconcile(&[p, s], &g, &[]);
+        assert!(
+            plan.conflicts.iter().any(|c| c.escalated && c.dimension_a == Dimension::Permission && c.dimension_b == Dimension::Security),
+            "同级维度同类别约束冲突应升级为 escalated Blocking"
+        );
+    }
+
+    #[test]
+    fn complementary_constraints_not_escalated() {
+        // P2 验收：Permission(MustGuard) 与 Security(MustIsolate) 同节点属正交互补 → 记录 semantic，不升级
+        let g = base();
+        let mut p = ExpertOpinion::empty("permission", Dimension::Permission);
+        p.constraints.push(Constraint::MustGuard("a".into(), vec!["desensitize".into()]));
+        let mut s = ExpertOpinion::empty("security", Dimension::Security);
+        s.constraints.push(Constraint::MustIsolate("a".into()));
+        let plan = reconcile(&[p, s], &g, &[]);
+        assert!(!plan.conflicts.iter().any(|c| c.escalated), "互补约束不应升级 Blocking");
+        assert!(
+            plan.conflicts.iter().any(|c| !c.escalated && c.dimension_a == Dimension::Permission && c.dimension_b == Dimension::Security),
+            "互补约束应记录为 semantic 溯源"
+        );
+    }
+
+    #[test]
+    fn serialize_vs_parallelize_recorded() {
+        // P2 验收：MustSerialize（强制串行）与 Parallelize 建议语义相反 → 记录 semantic 冲突
+        let g = base();
+        let mut r = ExpertOpinion::empty("resource", Dimension::Resource);
+        r.constraints.push(Constraint::MustSerialize(crate::expert::NodeEdge { from: "a".into(), to: "b".into() }));
+        let mut algo = ExpertOpinion::empty("algorithm", Dimension::Algorithm);
+        algo.suggestions.push(crate::expert::Suggestion::Parallelize);
+        let plan = reconcile(&[r, algo], &g, &[]);
+        assert!(
+            plan.conflicts.iter().any(|c| !c.escalated && c.dimension_a == Dimension::Resource && c.dimension_b == Dimension::Algorithm),
+            "串行 vs 并行应记录为 semantic 冲突"
+        );
+    }
+
+    #[test]
+    fn no_false_conflict_for_distinct_nodes() {
+        // 不同节点各自约束，不应误报升级冲突
+        let g = base();
+        let mut p = ExpertOpinion::empty("permission", Dimension::Permission);
+        p.constraints.push(Constraint::MustGuard("a".into(), vec!["desensitize".into()]));
+        let mut s = ExpertOpinion::empty("security", Dimension::Security);
+        s.constraints.push(Constraint::MustIsolate("b".into()));
+        let plan = reconcile(&[p, s], &g, &[]);
+        assert!(!plan.conflicts.iter().any(|c| c.escalated));
+    }
+
+    #[test]
+    fn non_conflicting_suggestions_adopted() {
+        // P1 验收：与硬约束不冲突的建议（Cache/Merge）应被裁决器采纳进 ReconciledPlan
+        let g = base();
+        let mut algo = ExpertOpinion::empty("algorithm", Dimension::Algorithm);
+        algo.suggestions.push(crate::expert::Suggestion::Cache);
+        let mut biz = ExpertOpinion::empty("business", Dimension::Business);
+        biz.suggestions.push(crate::expert::Suggestion::Merge);
+        let plan = reconcile(&[algo, biz], &g, &[]);
+        assert!(
+            plan.adopted_suggestions.contains(&crate::expert::Suggestion::Cache),
+            "Cache 建议应被采纳"
+        );
+        assert!(
+            plan.adopted_suggestions.contains(&crate::expert::Suggestion::Merge),
+            "Merge 建议应被采纳"
+        );
+    }
+
+    #[test]
+    fn parallelize_not_adopted_when_serialize_conflict() {
+        // P1 验收：存在 MustSerialize 硬串行约束时，语义相反的 Parallelize 建议不应被采纳
+        let g = base();
+        let mut r = ExpertOpinion::empty("resource", Dimension::Resource);
+        r.constraints.push(Constraint::MustSerialize(crate::expert::NodeEdge { from: "a".into(), to: "b".into() }));
+        let mut algo = ExpertOpinion::empty("algorithm", Dimension::Algorithm);
+        algo.suggestions.push(crate::expert::Suggestion::Parallelize);
+        algo.suggestions.push(crate::expert::Suggestion::Cache);
+        let plan = reconcile(&[r, algo], &g, &[]);
+        assert!(
+            !plan.adopted_suggestions.iter().any(|s| matches!(s, crate::expert::Suggestion::Parallelize)),
+            "与串行约束冲突的 Parallelize 不应被采纳"
+        );
+        assert!(
+            plan.adopted_suggestions.contains(&crate::expert::Suggestion::Cache),
+            "无冲突的 Cache 仍应被采纳"
+        );
     }
 }

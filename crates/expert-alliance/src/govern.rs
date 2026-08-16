@@ -208,6 +208,7 @@ mod tests {
             conflicts: vec![],
             model_routes: vec![],
             scores: vec![],
+            adopted_suggestions: vec![],
         };
         let rep = OptimizationReport {
             flow_id: "f".into(),
@@ -249,6 +250,7 @@ mod tests {
             conflicts: vec![],
             model_routes: vec![],
             scores: vec![],
+            adopted_suggestions: vec![],
         };
         let rep = OptimizationReport {
             flow_id: "f".into(),

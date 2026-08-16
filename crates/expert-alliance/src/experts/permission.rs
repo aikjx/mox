@@ -3,9 +3,19 @@
 use crate::context::ExpertContext;
 use crate::expert::{Constraint, Expert, ExpertOpinion};
 use crate::ir::Dimension;
+use crate::sensitivity::{is_sensitive_leak, is_production_or_sensitive_write};
 use flow_ai::model::{AccessMode, NodeKind, ToolKind};
 
 pub struct PermissionExpert;
+
+/// 节点 tag 形如 `desensitize:<resource>` 时，判断该资源是否已脱敏
+fn is_desensitized_by_tag(tag: &str) -> bool {
+    if let Some(res) = tag.strip_prefix("desensitize:") {
+        crate::sensitivity::is_desensitized(res)
+    } else {
+        false
+    }
+}
 
 impl Expert for PermissionExpert {
     fn id(&self) -> String { "permission".into() }
@@ -18,13 +28,12 @@ impl Expert for PermissionExpert {
         let mut o = ExpertOpinion::empty("permission", Dimension::Permission);
         let g = ctx.flow;
 
-        // 强合规策略：公民敏感字段出库前必须脱敏
-        let sensitive_prefixes = ["db:citizen_", "pii:", "id_card", "phone", "bank_card"];
+        // 强合规策略：公民敏感字段（未脱敏）出库前必须脱敏
         for n in &g.nodes {
             let touches_sensitive = n
                 .accesses
                 .iter()
-                .any(|a| sensitive_prefixes.iter().any(|p| a.resource.starts_with(p)));
+                .any(|a| is_sensitive_leak(&a.resource));
             if !touches_sensitive {
                 continue;
             }
@@ -33,6 +42,8 @@ impl Expert for PermissionExpert {
                 .tags
                 .iter()
                 .any(|t| t == "desensitize" || t == "authz")
+                || n.tags.iter().any(|t| t.starts_with("desensitize") && is_desensitized_by_tag(t));
+            let has_guard = has_guard
                 || g
                     .edges
                     .iter()
@@ -49,8 +60,6 @@ impl Expert for PermissionExpert {
         }
 
         // 外部写操作（入库/外发）需鉴权 Guard
-        let prod_prefixes = ["db:prod", "db:production", "production:", "db:main"];
-        let sensitive_prefixes_w = ["pii:", "id_card", "phone", "bank_card", "db:citizen_"];
         for n in &g.nodes {
             let writes_external = matches!(n.tool, Some(ToolKind::Database) | Some(ToolKind::Http))
                 && n.accesses.iter().any(|a| a.mode == AccessMode::Write);
@@ -61,7 +70,7 @@ impl Expert for PermissionExpert {
             let writes_prod = n
                 .accesses
                 .iter()
-                .any(|a| a.mode == AccessMode::Write && (prod_prefixes.iter().any(|p| a.resource.starts_with(p)) || sensitive_prefixes_w.iter().any(|p| a.resource.starts_with(p))));
+                .any(|a| a.mode == AccessMode::Write && is_production_or_sensitive_write(&a.resource));
             if writes_prod {
                 o.push_veto(
                     vec![n.id.clone()],

@@ -3,6 +3,7 @@
 use crate::context::ExpertContext;
 use crate::expert::{Constraint, Expert, ExpertOpinion};
 use crate::ir::Dimension;
+use crate::sensitivity::is_sensitive_leak;
 use flow_ai::model::{NodeKind, ToolKind};
 
 pub struct SecurityExpert;
@@ -47,9 +48,10 @@ impl Expert for SecurityExpert {
 
         // 强合规租户：PII 外发必须有脱敏（与权限专家互补，但安全维度独立告警）
         if ctx.tenant.regulated {
+            // 使用单一权威判定 is_sensitive_leak：已脱敏资源（如 var:citizen_safe）不再误判为泄露
             let pii_out = g.nodes.iter().any(|n| {
                 matches!(n.tool, Some(ToolKind::Http))
-                    && n.accesses.iter().any(|a| a.resource.contains("pii") || a.resource.contains("citizen"))
+                    && n.accesses.iter().any(|a| is_sensitive_leak(&a.resource))
             });
             if pii_out {
                 o.push_risk(
