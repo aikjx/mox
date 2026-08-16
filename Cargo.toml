@@ -11,6 +11,10 @@ members = [
     "crates/ai-agent",
     "crates/template-market",
     "crates/runtime",
+    "crates/alliance-system",
+    "crates/primiflow",
+    "crates/primiflow-fusion",
+    "crates/kg-hub",
 ]
 resolver = "2"
 
@@ -29,7 +33,7 @@ tokio = { version = "1.0", features = ["full"] }
 anyhow = "1.0"
 thiserror = "1.0"
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde", "clock"] }
 
@@ -38,6 +42,9 @@ nalgebra = "0.32"
 ndarray = "0.15"
 num-traits = "0.2"
 approx = "0.5"
+
+# Benchmarks (P4 性能基线)
+criterion = "0.5"
 
 # WASM dependencies
 wasmer = "4.2"
@@ -48,7 +55,7 @@ petgraph = "0.6"
 
 # Web server
 axum = "0.7"
-tower-http = { version = "0.5", features = ["cors", "fs"] }
+tower-http = { version = "0.5", features = ["cors", "fs", "limit"] }
 
 # HTTP client for AI APIs and browser automation
 reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }

@@ -21,6 +21,7 @@ pub mod category;
 pub mod resource;
 pub mod conservation;
 pub mod monad;
+pub mod engine;
 
 pub use types::*;
 pub use state::*;
