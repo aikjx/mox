@@ -25,13 +25,17 @@ use operator_graph::{
     KnowledgeNode, NodeRecommendation, PathResult,
 };
 use operator_wasm::WasmPluginManager;
+// 专家联盟全维治理内核：双联盟十四维 → 治理报告
+use expert_alliance::pipeline::alliance_optimize;
+use expert_alliance::context::GovernContext;
+use flow_ai::model::FlowGraph;
 use business_catalog::spiral::{analyze_spiral, SpiralParams};
 use ai_agent::{
     AIAgent, ChatResponse, AlgorithmType,
     BusinessWorkflow, WorkflowResult, PluginInfo, PluginType, PluginStatus,
     ResourcePanorama, ResourceHealthReport, PluginTopology,
     BrowserAction,
-    FlowDefinition, FlowExecutionResult, FlowNode, FlowEdge, NodeType,
+    FlowDefinition,
     ExportBundle,
 };
 use serde::{Deserialize, Serialize};
@@ -464,6 +468,9 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/logs", get(get_logs))
         .route("/api/status", get(get_status))
         .route("/api/status/full", get(get_full_status))
+        // ========== 专家联盟全维治理 API ==========
+        .route("/api/alliance/health", get(alliance_health))
+        .route("/api/alliance/optimize", post(alliance_optimize_handler))
         // 静态前端
         .nest_service("/", ServeDir::new("./frontend/dist"))
         // 响应标准化中间件（最内层，紧邻 handler）：将 HTTP 200 + {success:false}
@@ -687,6 +694,44 @@ fn build_default_operators() -> Vec<OperatorInfo> {
 
 async fn health() -> &'static str {
     "OK - AI Operator System v3.0 Running - Full-Dimensional Breakthrough"
+}
+
+// ========== 专家联盟全维治理 API ==========
+// 把后端双联盟十四维决策内核暴露给前端设计器：传入流程蓝图即可拿到
+// 各维度健康分、治理闸门、璇玑校验、采纳建议，驱动"可视化治理闭环"。
+
+/// 请求体：任意流程蓝图（FlowGraph）。可选传 code_ir 触发开发七维分析。
+#[derive(Debug, Clone, Deserialize)]
+struct AllianceOptimizeRequest {
+    flow: FlowGraph,
+}
+
+/// 全维治理：返回 GovernanceReport（专家评分 + 优化 + 璇玑验证 + 闸门 + 审计 + 采纳建议）
+async fn alliance_optimize_handler(
+    Json(req): Json<AllianceOptimizeRequest>,
+) -> Json<serde_json::Value> {
+    let ctx = GovernContext::new(
+        expert_alliance::context::Tenant::new("default", "default"),
+        expert_alliance::context::Principal::new("designer").with_roles(vec!["editor".into()]),
+    );
+    let report = alliance_optimize(&req.flow, &ctx);
+    Json(serde_json::to_value(&report).unwrap_or(json!({"error": "serialize"})))
+}
+
+/// 治理内核健康度：列出双联盟十四维与各专家状态（供前端雷达图坐标）
+async fn alliance_health() -> Json<serde_json::Value> {
+    let dims: Vec<&str> = vec![
+        "Business", "Algorithm", "Permission", "Resource", "Security", "Data", "Observability",
+        "ApiCompat", "Perf", "Maintain", "Test", "Style", "Cost", "Sensitive",
+    ];
+    Json(json!({
+        "alliance": "double-league-14-dim",
+        "business_league": ["Business","Algorithm","Permission","Resource","Security","Data","Observability"],
+        "dev_league": ["ApiCompat","Perf","Maintain","Test","Style","Cost","Sensitive"],
+        "dimensions": dims,
+        "experts": ["algorithm","business","data","observability","permission","resource","security"],
+        "xuanji": "algo-verification-supreme"
+    }))
 }
 
 async fn list_operators(State(state): State<Arc<AppState>>) -> Json<Vec<OperatorInfo>> {
@@ -1115,7 +1160,7 @@ async fn caomei_templates(
 ) -> Json<serde_json::Value> {
     let domain = params.get("domain").cloned();
     let keyword = params.get("keyword").cloned();
-    let mut market = state.market.index.lock().await;
+    let market = state.market.index.lock().await;
     // MarketState 以 HashMap 存模板元信息，这里直接返回概览
     let total = market.len();
     Json(serde_json::json!({
@@ -1822,7 +1867,7 @@ async fn handle_mcp_rpc(State(state): State<Arc<AppState>>, Json(req): Json<McpR
                     }))
                 };
             } else if let Some(plg) = name.strip_prefix("plugin_") {
-                let real_id = plg.replace('_', "-");
+                let _real_id = plg.replace('_', "-");
                 let message = arguments.get("message").and_then(|v| v.as_str()).unwrap_or("").to_string();
                 let payload = arguments.get("payload").cloned().unwrap_or(serde_json::json!({}));
                 let bus = state.ai_agent.plugin_bus();

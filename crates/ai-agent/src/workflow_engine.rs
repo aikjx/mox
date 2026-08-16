@@ -11,8 +11,11 @@
 //! - 算子执行集成
 
 use super::types::*;
+use super::llm_client::LLMClient;
 use operator_core::{Result, OperatorError};
 use std::collections::{HashMap, VecDeque};
+use std::sync::Arc;
+use tokio::sync::RwLock;
 use tracing;
 use uuid::Uuid;
 use chrono::Utc;
@@ -25,14 +28,23 @@ pub struct WorkflowEngine {
     running_instances: HashMap<String, WorkflowInstance>,
     /// 工作流模板库
     templates: WorkflowTemplateLibrary,
+    /// 真实 LLM 客户端句柄（可选；未注入时 AI 节点降级为模拟）
+    llm: Option<Arc<RwLock<LLMClient>>>,
 }
 
 impl WorkflowEngine {
+    /// 无 LLM 句柄的降级构造（AI 节点标记为 simulated）
     pub fn new() -> Self {
+        Self::new_with_llm(None)
+    }
+
+    /// 注入真实 LLM 句柄的构造；AI 节点将调用真实大模型
+    pub fn new_with_llm(llm: Option<Arc<RwLock<LLMClient>>>) -> Self {
         let mut engine = Self {
             workflow_definitions: HashMap::new(),
             running_instances: HashMap::new(),
             templates: WorkflowTemplateLibrary::new(),
+            llm,
         };
         engine.register_builtin_templates();
         engine
@@ -140,6 +152,27 @@ impl WorkflowEngine {
             }
 
             // 找下一个节点
+            // 条件节点按 result 只走 true_path/false_path 对应的分支（企业流程「通过/拒绝」语义）
+            if matches!(node.node_type, WorkflowNodeType::Condition) {
+                let result = node_outputs.get(&node.id)
+                    .and_then(|o| o.get("result"))
+                    .and_then(|r| r.as_bool())
+                    .unwrap_or(false);
+                let target: Option<String> = match &node.config {
+                    WorkflowNodeConfig::Condition { true_path, false_path, .. } => {
+                        Some(if result { true_path } else { false_path }.clone())
+                    }
+                    _ => None,
+                };
+                if let Some(t) = target {
+                    if let Some(next_node) = workflow.nodes.iter().find(|n| n.id == t) {
+                        queue.push_back(next_node.clone());
+                        execution_log.push(format!("✓ 条件分支 → {}", next_node.name));
+                    }
+                }
+                continue;
+            }
+
             for next_id in workflow.edges.iter()
                 .filter(|c| c.source == node.id)
                 .map(|c| c.target.clone())
@@ -218,46 +251,147 @@ impl WorkflowEngine {
             }
             WorkflowNodeConfig::Script { language, code } => {
                 tracing::info!("执行{}脚本: {}", language, &code[..code.len().min(50)]);
-                // 简化：模拟脚本执行
+                // 脚本沙箱暂未接入，标记为 pending 而非假成功，避免误导业务编排
                 Ok(Some(serde_json::json!({
-                    "script_executed": true,
+                    "script_executed": false,
+                    "status": "pending",
                     "language": language,
-                    "result": "success"
+                    "note": "脚本沙箱未接入，节点不执行，等待后续接入 WASM/进程隔离沙箱"
                 })))
             }
             WorkflowNodeConfig::AiTask { task_type, prompt } => {
-                tracing::info!("执行AI任务: {} - {}", task_type, &prompt[..prompt.len().min(50)]);
-                // 简化：模拟AI任务
-                Ok(Some(serde_json::json!({
-                    "ai_task_completed": true,
-                    "task_type": task_type,
-                    "response": format!("AI处理完成: {}", task_type)
-                })))
+                let rendered = apply_template(prompt, variables);
+                tracing::info!("执行AI任务: {} - {}", task_type, &rendered[..rendered.len().min(80)]);
+                match &self.llm {
+                    Some(llm) if llm.read().await.is_enabled() => {
+                        let client = llm.read().await;
+                        match client.chat(vec![crate::llm_client::LLMChatMessage {
+                            role: "user".to_string(),
+                            content: rendered.clone(),
+                        }]).await {
+                            Ok(resp) => {
+                                // AI → 变量闭环：LLM 输出若为 JSON 对象（如 {"verify_pass":true}），
+                                // 展开为节点输出键，随后由外层「合并输出到变量」写入 instance.variables，
+                                // 使后续 Condition 节点可通过 ${verify_pass} 等真实驱动分支。
+                                let mut out = serde_json::json!({
+                                    "ai_task_completed": true,
+                                    "executed": true,
+                                    "task_type": task_type,
+                                    "response": resp,
+                                });
+                                if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&resp) {
+                                    if let Some(map) = parsed.as_object() {
+                                        tracing::debug!("AI任务输出解析为JSON，展开变量: {:?}", map.keys().collect::<Vec<_>>());
+                                        if let Some(target) = out.as_object_mut() {
+                                            for (k, v) in map {
+                                                target.insert(k.clone(), v.clone());
+                                            }
+                                        }
+                                    }
+                                }
+                                Ok(Some(out))
+                            }
+                            Err(e) => {
+                                tracing::warn!("AI任务调用LLM失败，降级模拟: {e}");
+                                Ok(Some(serde_json::json!({
+                                    "ai_task_completed": true,
+                                    "executed": false,
+                                    "status": "simulated",
+                                    "simulated": true,
+                                    "task_type": task_type,
+                                    "response": format!("AI处理完成(模拟): {}", task_type),
+                                    "error": e.to_string()
+                                })))
+                            }
+                        }
+                    }
+                    _ => {
+                        tracing::info!("LLM未注入或未启用，AI任务降级为模拟");
+                        Ok(Some(serde_json::json!({
+                            "ai_task_completed": true,
+                            "executed": false,
+                            "status": "simulated",
+                            "simulated": true,
+                            "task_type": task_type,
+                            "response": format!("AI处理完成(模拟): {}", task_type)
+                        })))
+                    }
+                }
             }
             WorkflowNodeConfig::Operator { operator_id, parameters } => {
                 tracing::info!("执行算子: {} with params: {:?}", operator_id, parameters);
-                Ok(Some(serde_json::json!({
-                    "operator_executed": true,
-                    "operator_id": operator_id,
-                    "result": "success"
-                })))
+                // 通过 HTTP 调用已注册算子的真实端点（与 runtime 服务同源）
+                let base = std::env::var("OPERATOR_API_BASE")
+                    .unwrap_or_else(|_| "http://127.0.0.1:3998".to_string());
+                let url = format!("{}/operators/{}", base, operator_id);
+                let client = reqwest::Client::new();
+                match client.post(&url).json(parameters).send().await {
+                    Ok(resp) => {
+                        let status = resp.status();
+                        match resp.text().await {
+                            Ok(body) => Ok(Some(serde_json::json!({
+                                "operator_executed": status.is_success(),
+                                "executed": status.is_success(),
+                                "operator_id": operator_id,
+                                "http_status": status.as_u16(),
+                                "result": body
+                            }))),
+                            Err(e) => Err(OperatorError::Other(anyhow::anyhow!(
+                                "算子 {} 响应读取失败: {}", operator_id, e
+                            ))),
+                        }
+                    }
+                    Err(e) => Err(OperatorError::Other(anyhow::anyhow!(
+                        "算子 {} 调用失败: {}", operator_id, e
+                    ))),
+                }
             }
             WorkflowNodeConfig::Condition { expression, true_path: _, false_path: _ } => {
                 tracing::info!("判断条件: {}", expression);
-                Ok(Some(serde_json::json!({
-                    "condition_evaluated": true,
-                    "expression": expression,
-                    "result": true
-                })))
+                // 真实表达式求值：支持 ${var} 引用、==/!=/>/<、&&/|| 与括号。
+                // 未定义变量由 resolve_value 返回 Null 哨兵 + compare_values 排序比较 fail-closed=false
+                // （见 resolve_value/compare_values），流程走拒绝分支而非中断；
+                // 此处 Err 仅来自表达式语法错误（如无比较符、非法操作符），显式报错避免掩盖配置问题。
+                match eval_condition(expression, variables) {
+                    Ok(result) => Ok(Some(serde_json::json!({
+                        "condition_evaluated": true,
+                        "executed": true,
+                        "expression": expression,
+                        "result": result
+                    }))),
+                    Err(e) => Err(OperatorError::Other(anyhow::anyhow!(
+                        "条件表达式求值失败 [{}]: {}", expression, e
+                    ))),
+                }
             }
             WorkflowNodeConfig::PluginCall { plugin_id, method, parameters: _ } => {
                 tracing::info!("调用插件: {}.{}", plugin_id, method);
-                Ok(Some(serde_json::json!({
-                    "plugin_called": true,
-                    "plugin_id": plugin_id,
-                    "method": method,
-                    "result": "success"
-                })))
+                // 通过 HTTP 调用插件总线的真实端点
+                let base = std::env::var("PLUGIN_API_BASE")
+                    .unwrap_or_else(|_| "http://127.0.0.1:3998".to_string());
+                let url = format!("{}/plugins/{}/{}", base, plugin_id, method);
+                let client = reqwest::Client::new();
+                match client.get(&url).send().await {
+                    Ok(resp) => {
+                        let status = resp.status();
+                        match resp.text().await {
+                            Ok(body) => Ok(Some(serde_json::json!({
+                                "plugin_called": status.is_success(),
+                                "executed": status.is_success(),
+                                "plugin_id": plugin_id,
+                                "method": method,
+                                "http_status": status.as_u16(),
+                                "result": body
+                            }))),
+                            Err(e) => Err(OperatorError::Other(anyhow::anyhow!(
+                                "插件 {}.{} 响应读取失败: {}", plugin_id, method, e
+                            ))),
+                        }
+                    }
+                    Err(e) => Err(OperatorError::Other(anyhow::anyhow!(
+                        "插件 {}.{} 调用失败: {}", plugin_id, method, e
+                    ))),
+                }
             }
             WorkflowNodeConfig::Parallel { branches: _, merge_strategy } => {
                 tracing::info!("并行分支, 合并策略: {:?}", merge_strategy);
@@ -515,7 +649,7 @@ impl WorkflowEngine {
                     id: "dispatch".to_string(), node_type: WorkflowNodeType::Condition,
                     name: "任务分发".to_string(),
                     config: WorkflowNodeConfig::Condition {
-                        expression: "needs_parallel".to_string(),
+                        expression: "${needs_parallel} == true".to_string(),
                         true_path: "parallel-call".to_string(), false_path: "single-call".to_string(),
                     },
                     position: Some(NodePosition { x: 180.0, y: 200.0 }),
@@ -560,6 +694,173 @@ impl WorkflowEngine {
             ],
             variables: HashMap::new(),
         });
+
+        // ===== 企业级业务处理流程模板（category: enterprise）=====
+        // 编排范式：开始 → AI 审查/核验 → 条件分支 → 结束（合规 / 风险）
+
+        // 企业模板1: 财务发票核验
+        self.templates.register(WorkflowTemplate {
+            id: "finance-invoice-verify".to_string(),
+            name: "财务发票核验".to_string(),
+            description: "AI核验发票要素与税务风险，条件分支判定合规/风险".to_string(),
+            category: "enterprise".to_string(),
+            nodes: vec![
+                WorkflowNode { id: "fi-start".to_string(), node_type: WorkflowNodeType::Start, name: "开始".to_string(), config: WorkflowNodeConfig::Start, position: Some(NodePosition { x: 30.0, y: 200.0 }) },
+                WorkflowNode { id: "fi-ai".to_string(), node_type: WorkflowNodeType::AiTask, name: "发票核验".to_string(),
+                    config: WorkflowNodeConfig::AiTask { task_type: "invoice_verify".to_string(), prompt: "请核验以下发票的要素完整性与税务合规性：${invoice_text}".to_string() },
+                    position: Some(NodePosition { x: 200.0, y: 200.0 }) },
+                WorkflowNode { id: "fi-cond".to_string(), node_type: WorkflowNodeType::Condition, name: "合规判定".to_string(),
+                    config: WorkflowNodeConfig::Condition { expression: "${verify_pass} == true".to_string(), true_path: "fi-ok".to_string(), false_path: "fi-risk".to_string() },
+                    position: Some(NodePosition { x: 400.0, y: 200.0 }) },
+                WorkflowNode { id: "fi-ok".to_string(), node_type: WorkflowNodeType::End, name: "合规通过".to_string(), config: WorkflowNodeConfig::End, position: Some(NodePosition { x: 600.0, y: 120.0 }) },
+                WorkflowNode { id: "fi-risk".to_string(), node_type: WorkflowNodeType::End, name: "标记风险".to_string(), config: WorkflowNodeConfig::End, position: Some(NodePosition { x: 600.0, y: 280.0 }) },
+            ],
+            connections: vec![
+                WorkflowConnection { from: "fi-start".to_string(), to: "fi-ai".to_string(), label: None },
+                WorkflowConnection { from: "fi-ai".to_string(), to: "fi-cond".to_string(), label: None },
+                WorkflowConnection { from: "fi-cond".to_string(), to: "fi-ok".to_string(), label: Some("合规".to_string()) },
+                WorkflowConnection { from: "fi-cond".to_string(), to: "fi-risk".to_string(), label: Some("风险".to_string()) },
+            ],
+            variables: HashMap::new(),
+        });
+
+        // 企业模板2: 人事入职审批
+        self.templates.register(WorkflowTemplate {
+            id: "hr-onboarding".to_string(),
+            name: "人事入职审批".to_string(),
+            description: "AI补全资料并调算子创建账号/权限，条件判定资料是否齐全".to_string(),
+            category: "enterprise".to_string(),
+            nodes: vec![
+                WorkflowNode { id: "hr-start".to_string(), node_type: WorkflowNodeType::Start, name: "开始".to_string(), config: WorkflowNodeConfig::Start, position: Some(NodePosition { x: 30.0, y: 200.0 }) },
+                WorkflowNode { id: "hr-op".to_string(), node_type: WorkflowNodeType::Operator, name: "创建账号权限".to_string(),
+                    config: WorkflowNodeConfig::Operator { operator_id: "hr_create_account".to_string(), parameters: HashMap::new() },
+                    position: Some(NodePosition { x: 200.0, y: 200.0 }) },
+                WorkflowNode { id: "hr-ai".to_string(), node_type: WorkflowNodeType::AiTask, name: "资料完整性审查".to_string(),
+                    config: WorkflowNodeConfig::AiTask { task_type: "hr_review".to_string(), prompt: "审查入职资料是否齐全：${profile}".to_string() },
+                    position: Some(NodePosition { x: 360.0, y: 200.0 }) },
+                WorkflowNode { id: "hr-cond".to_string(), node_type: WorkflowNodeType::Condition, name: "资料齐全?".to_string(),
+                    config: WorkflowNodeConfig::Condition { expression: "${profile_complete} == true".to_string(), true_path: "hr-ok".to_string(), false_path: "hr-back".to_string() },
+                    position: Some(NodePosition { x: 520.0, y: 200.0 }) },
+                WorkflowNode { id: "hr-ok".to_string(), node_type: WorkflowNodeType::End, name: "入职完成".to_string(), config: WorkflowNodeConfig::End, position: Some(NodePosition { x: 700.0, y: 120.0 }) },
+                WorkflowNode { id: "hr-back".to_string(), node_type: WorkflowNodeType::End, name: "退回补充".to_string(), config: WorkflowNodeConfig::End, position: Some(NodePosition { x: 700.0, y: 280.0 }) },
+            ],
+            connections: vec![
+                WorkflowConnection { from: "hr-start".to_string(), to: "hr-op".to_string(), label: None },
+                WorkflowConnection { from: "hr-op".to_string(), to: "hr-ai".to_string(), label: None },
+                WorkflowConnection { from: "hr-ai".to_string(), to: "hr-cond".to_string(), label: None },
+                WorkflowConnection { from: "hr-cond".to_string(), to: "hr-ok".to_string(), label: Some("齐全".to_string()) },
+                WorkflowConnection { from: "hr-cond".to_string(), to: "hr-back".to_string(), label: Some("不齐".to_string()) },
+            ],
+            variables: HashMap::new(),
+        });
+
+        // 企业模板3: 采购申请审批
+        self.templates.register(WorkflowTemplate {
+            id: "procurement-apply".to_string(),
+            name: "采购申请审批".to_string(),
+            description: "AI做预算合规检查，条件判定是否超预算触发审批".to_string(),
+            category: "enterprise".to_string(),
+            nodes: vec![
+                WorkflowNode { id: "pr-start".to_string(), node_type: WorkflowNodeType::Start, name: "开始".to_string(), config: WorkflowNodeConfig::Start, position: Some(NodePosition { x: 30.0, y: 200.0 }) },
+                WorkflowNode { id: "pr-ai".to_string(), node_type: WorkflowNodeType::AiTask, name: "预算合规检查".to_string(),
+                    config: WorkflowNodeConfig::AiTask { task_type: "budget_check".to_string(), prompt: "检查采购申请是否超预算：${apply}".to_string() },
+                    position: Some(NodePosition { x: 200.0, y: 200.0 }) },
+                WorkflowNode { id: "pr-cond".to_string(), node_type: WorkflowNodeType::Condition, name: "超预算?".to_string(),
+                    config: WorkflowNodeConfig::Condition { expression: "${over_budget} == true".to_string(), true_path: "pr-approve".to_string(), false_path: "pr-auto".to_string() },
+                    position: Some(NodePosition { x: 400.0, y: 200.0 }) },
+                WorkflowNode { id: "pr-approve".to_string(), node_type: WorkflowNodeType::End, name: "转人工审批".to_string(), config: WorkflowNodeConfig::End, position: Some(NodePosition { x: 600.0, y: 120.0 }) },
+                WorkflowNode { id: "pr-auto".to_string(), node_type: WorkflowNodeType::End, name: "自动通过".to_string(), config: WorkflowNodeConfig::End, position: Some(NodePosition { x: 600.0, y: 280.0 }) },
+            ],
+            connections: vec![
+                WorkflowConnection { from: "pr-start".to_string(), to: "pr-ai".to_string(), label: None },
+                WorkflowConnection { from: "pr-ai".to_string(), to: "pr-cond".to_string(), label: None },
+                WorkflowConnection { from: "pr-cond".to_string(), to: "pr-approve".to_string(), label: Some("超预算".to_string()) },
+                WorkflowConnection { from: "pr-cond".to_string(), to: "pr-auto".to_string(), label: Some("合规".to_string()) },
+            ],
+            variables: HashMap::new(),
+        });
+
+        // 企业模板4: 报销审批
+        self.templates.register(WorkflowTemplate {
+            id: "expense-reimburse".to_string(),
+            name: "报销审批".to_string(),
+            description: "AI审查票据真实性与合规性，条件判定是否放行".to_string(),
+            category: "enterprise".to_string(),
+            nodes: vec![
+                WorkflowNode { id: "er-start".to_string(), node_type: WorkflowNodeType::Start, name: "开始".to_string(), config: WorkflowNodeConfig::Start, position: Some(NodePosition { x: 30.0, y: 200.0 }) },
+                WorkflowNode { id: "er-ai".to_string(), node_type: WorkflowNodeType::AiTask, name: "票据合规审查".to_string(),
+                    config: WorkflowNodeConfig::AiTask { task_type: "expense_review".to_string(), prompt: "审查报销票据的真实性与合规性：${receipt}".to_string() },
+                    position: Some(NodePosition { x: 200.0, y: 200.0 }) },
+                WorkflowNode { id: "er-cond".to_string(), node_type: WorkflowNodeType::Condition, name: "是否放行?".to_string(),
+                    config: WorkflowNodeConfig::Condition { expression: "${compliant} == true".to_string(), true_path: "er-ok".to_string(), false_path: "er-reject".to_string() },
+                    position: Some(NodePosition { x: 400.0, y: 200.0 }) },
+                WorkflowNode { id: "er-ok".to_string(), node_type: WorkflowNodeType::End, name: "批准报销".to_string(), config: WorkflowNodeConfig::End, position: Some(NodePosition { x: 600.0, y: 120.0 }) },
+                WorkflowNode { id: "er-reject".to_string(), node_type: WorkflowNodeType::End, name: "驳回".to_string(), config: WorkflowNodeConfig::End, position: Some(NodePosition { x: 600.0, y: 280.0 }) },
+            ],
+            connections: vec![
+                WorkflowConnection { from: "er-start".to_string(), to: "er-ai".to_string(), label: None },
+                WorkflowConnection { from: "er-ai".to_string(), to: "er-cond".to_string(), label: None },
+                WorkflowConnection { from: "er-cond".to_string(), to: "er-ok".to_string(), label: Some("合规".to_string()) },
+                WorkflowConnection { from: "er-cond".to_string(), to: "er-reject".to_string(), label: Some("不合规".to_string()) },
+            ],
+            variables: HashMap::new(),
+        });
+
+        // 企业模板5: 合同会签
+        self.templates.register(WorkflowTemplate {
+            id: "contract-countersign".to_string(),
+            name: "合同会签".to_string(),
+            description: "算子发起会签流程，AI做条款风险审查，条件判定是否通过".to_string(),
+            category: "enterprise".to_string(),
+            nodes: vec![
+                WorkflowNode { id: "ct-start".to_string(), node_type: WorkflowNodeType::Start, name: "开始".to_string(), config: WorkflowNodeConfig::Start, position: Some(NodePosition { x: 30.0, y: 200.0 }) },
+                WorkflowNode { id: "ct-op".to_string(), node_type: WorkflowNodeType::Operator, name: "发起会签".to_string(),
+                    config: WorkflowNodeConfig::Operator { operator_id: "contract_initiate".to_string(), parameters: HashMap::new() },
+                    position: Some(NodePosition { x: 200.0, y: 200.0 }) },
+                WorkflowNode { id: "ct-ai".to_string(), node_type: WorkflowNodeType::AiTask, name: "条款风险审查".to_string(),
+                    config: WorkflowNodeConfig::AiTask { task_type: "contract_review".to_string(), prompt: "审查合同条款的法律与商业风险：${contract}".to_string() },
+                    position: Some(NodePosition { x: 360.0, y: 200.0 }) },
+                WorkflowNode { id: "ct-cond".to_string(), node_type: WorkflowNodeType::Condition, name: "风险判定".to_string(),
+                    config: WorkflowNodeConfig::Condition { expression: "${risk_low} == true".to_string(), true_path: "ct-ok".to_string(), false_path: "ct-edit".to_string() },
+                    position: Some(NodePosition { x: 520.0, y: 200.0 }) },
+                WorkflowNode { id: "ct-ok".to_string(), node_type: WorkflowNodeType::End, name: "签署生效".to_string(), config: WorkflowNodeConfig::End, position: Some(NodePosition { x: 700.0, y: 120.0 }) },
+                WorkflowNode { id: "ct-edit".to_string(), node_type: WorkflowNodeType::End, name: "退回修改".to_string(), config: WorkflowNodeConfig::End, position: Some(NodePosition { x: 700.0, y: 280.0 }) },
+            ],
+            connections: vec![
+                WorkflowConnection { from: "ct-start".to_string(), to: "ct-op".to_string(), label: None },
+                WorkflowConnection { from: "ct-op".to_string(), to: "ct-ai".to_string(), label: None },
+                WorkflowConnection { from: "ct-ai".to_string(), to: "ct-cond".to_string(), label: None },
+                WorkflowConnection { from: "ct-cond".to_string(), to: "ct-ok".to_string(), label: Some("低风险".to_string()) },
+                WorkflowConnection { from: "ct-cond".to_string(), to: "ct-edit".to_string(), label: Some("高风险".to_string()) },
+            ],
+            variables: HashMap::new(),
+        });
+
+        // 企业模板6: 法务合规审查
+        self.templates.register(WorkflowTemplate {
+            id: "legal-compliance-review".to_string(),
+            name: "法务合规审查".to_string(),
+            description: "AI做合规风险审查，条件判定是否通过".to_string(),
+            category: "enterprise".to_string(),
+            nodes: vec![
+                WorkflowNode { id: "lc-start".to_string(), node_type: WorkflowNodeType::Start, name: "开始".to_string(), config: WorkflowNodeConfig::Start, position: Some(NodePosition { x: 30.0, y: 200.0 }) },
+                WorkflowNode { id: "lc-ai".to_string(), node_type: WorkflowNodeType::AiTask, name: "合规风险审查".to_string(),
+                    config: WorkflowNodeConfig::AiTask { task_type: "legal_review".to_string(), prompt: "审查以下业务/文档的合规风险：${document}".to_string() },
+                    position: Some(NodePosition { x: 200.0, y: 200.0 }) },
+                WorkflowNode { id: "lc-cond".to_string(), node_type: WorkflowNodeType::Condition, name: "合规判定".to_string(),
+                    config: WorkflowNodeConfig::Condition { expression: "${compliant} == true".to_string(), true_path: "lc-ok".to_string(), false_path: "lc-flag".to_string() },
+                    position: Some(NodePosition { x: 400.0, y: 200.0 }) },
+                WorkflowNode { id: "lc-ok".to_string(), node_type: WorkflowNodeType::End, name: "合规通过".to_string(), config: WorkflowNodeConfig::End, position: Some(NodePosition { x: 600.0, y: 120.0 }) },
+                WorkflowNode { id: "lc-flag".to_string(), node_type: WorkflowNodeType::End, name: "标记风险".to_string(), config: WorkflowNodeConfig::End, position: Some(NodePosition { x: 600.0, y: 280.0 }) },
+            ],
+            connections: vec![
+                WorkflowConnection { from: "lc-start".to_string(), to: "lc-ai".to_string(), label: None },
+                WorkflowConnection { from: "lc-ai".to_string(), to: "lc-cond".to_string(), label: None },
+                WorkflowConnection { from: "lc-cond".to_string(), to: "lc-ok".to_string(), label: Some("合规".to_string()) },
+                WorkflowConnection { from: "lc-cond".to_string(), to: "lc-flag".to_string(), label: Some("风险".to_string()) },
+            ],
+            variables: HashMap::new(),
+        });
     }
 
     pub fn list_templates(&self) -> Vec<&WorkflowTemplate> {
@@ -595,5 +896,247 @@ impl WorkflowTemplateLibrary {
 
     fn list(&self) -> Vec<&WorkflowTemplate> {
         self.templates.values().collect()
+    }
+}
+
+// ===================== 业务流程辅助函数（模块级自由函数）=====================
+
+/// 简易变量模板替换：将 input 中的 ${var} 用 variables 中的值替换。
+fn apply_template(input: &str, variables: &HashMap<String, serde_json::Value>) -> String {
+    let mut out = input.to_string();
+    for (k, v) in variables {
+        let placeholder = format!("${{{}}}", k);
+        let val = match v {
+            serde_json::Value::String(s) => s.clone(),
+            other => other.to_string(),
+        };
+        out = out.replace(&placeholder, &val);
+    }
+    out
+}
+
+/// 简易条件表达式求值：支持 ${var} 引用、==/!=/>/</>=/<=、&&/|| 与顶层括号。
+/// 返回布尔结果或错误。
+fn eval_condition(expr: &str, variables: &HashMap<String, serde_json::Value>) -> anyhow::Result<bool> {
+    for or_part in split_top_level(expr, "||") {
+        let mut and_ok = true;
+        for and_part in split_top_level(or_part.trim(), "&&") {
+            let cmp = and_part.trim();
+            if cmp.is_empty() {
+                continue;
+            }
+            let (lhs_raw, op, rhs_raw) = parse_comparison(cmp)?;
+            let lhs = resolve_value(lhs_raw.trim(), variables)?;
+            let rhs = resolve_value(rhs_raw.trim(), variables)?;
+            if !compare_values(&lhs, op, &rhs)? {
+                and_ok = false;
+                break;
+            }
+        }
+        if and_ok {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
+/// 按分隔符切分顶层（忽略括号内的分隔符）
+fn split_top_level(expr: &str, sep: &str) -> Vec<String> {
+    let mut parts = Vec::new();
+    let mut depth = 0i32;
+    let mut cur = String::new();
+    let bytes = expr.as_bytes();
+    let sep_bytes = sep.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        let c = bytes[i] as char;
+        if c == '(' {
+            depth += 1;
+            cur.push(c);
+            i += 1;
+        } else if c == ')' {
+            depth -= 1;
+            cur.push(c);
+            i += 1;
+        } else if depth == 0 && i + sep_bytes.len() <= bytes.len()
+            && &bytes[i..i + sep_bytes.len()] == sep_bytes
+        {
+            parts.push(cur.trim().to_string());
+            cur.clear();
+            i += sep_bytes.len();
+        } else {
+            cur.push(c);
+            i += 1;
+        }
+    }
+    if !cur.trim().is_empty() {
+        parts.push(cur.trim().to_string());
+    }
+    parts
+}
+
+/// 解析单个比较表达式，返回 (左操作数, 操作符, 右操作数)
+fn parse_comparison(cmp: &str) -> anyhow::Result<(&str, &str, &str)> {
+    for op in ["==", "!=", ">=", "<=", ">", "<"] {
+        if let Some(pos) = cmp.find(op) {
+            return Ok((&cmp[..pos], op, &cmp[pos + op.len()..]));
+        }
+    }
+    Err(anyhow::anyhow!("无法解析比较表达式: {}", cmp))
+}
+
+/// 解析操作数为可比较的值：支持 ${var} 引用、裸字符串、布尔、数字。
+fn resolve_value(raw: &str, variables: &HashMap<String, serde_json::Value>) -> anyhow::Result<serde_json::Value> {
+    let raw = raw.trim();
+    if let Some(var) = raw.strip_prefix("${").and_then(|s| s.strip_suffix('}')) {
+        // 未定义变量：fail-closed 返回 Null 哨兵，比较一律为 false（不抛错），
+        // 避免配置缺字段时工作流崩溃；真正的语法错误由 parse_comparison 负责报错。
+        return Ok(variables
+            .get(var.trim())
+            .cloned()
+            .unwrap_or(serde_json::Value::Null));
+    }
+    // 布尔字面量
+    if raw == "true" {
+        return Ok(serde_json::Value::Bool(true));
+    }
+    if raw == "false" {
+        return Ok(serde_json::Value::Bool(false));
+    }
+    // 数字字面量
+    if let Ok(n) = raw.parse::<f64>() {
+        return Ok(serde_json::Value::from(n));
+    }
+    // 字符串字面量（去除引号）
+    if (raw.starts_with('"') && raw.ends_with('"')) || (raw.starts_with('\'') && raw.ends_with('\'')) {
+        return Ok(serde_json::Value::String(raw[1..raw.len() - 1].to_string()));
+    }
+    // 其余视作字符串
+    Ok(serde_json::Value::String(raw.to_string()))
+}
+
+/// 比较两个 serde_json::Value，依据操作符返回布尔。
+fn compare_values(lhs: &serde_json::Value, op: &str, rhs: &serde_json::Value) -> anyhow::Result<bool> {
+    use std::cmp::Ordering;
+    match op {
+        "==" => Ok(lhs == rhs),
+        "!=" => Ok(lhs != rhs),
+        ">" | ">=" | "<" | "<=" => {
+            // fail-closed：未定义变量（Null 哨兵）不参与排序比较，一律 false，
+            // 避免 "0.0005" 字符串比较误判（如 ${loss}<0.001 在变量缺失时误判收敛）
+            if lhs.is_null() || rhs.is_null() {
+                return Ok(false);
+            }
+            // 尝试数字比较，失败则字符串比较
+            let ln = lhs.as_f64();
+            let rn = rhs.as_f64();
+            if let (Some(a), Some(b)) = (ln, rn) {
+                return Ok(match op {
+                    ">" => a > b,
+                    ">=" => a >= b,
+                    "<" => a < b,
+                    _ => a <= b,
+                });
+            }
+            let a = lhs.as_str().unwrap_or("").to_string();
+            let b = rhs.as_str().unwrap_or("").to_string();
+            let ord = a.cmp(&b);
+            Ok(match op {
+                ">" => ord == Ordering::Greater,
+                ">=" => ord != Ordering::Less,
+                "<" => ord == Ordering::Less,
+                _ => ord != Ordering::Greater,
+            })
+        }
+        _ => Err(anyhow::anyhow!("不支持的比较操作符: {}", op)),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 企业流程闭环：无 LLM 时 AiTask 降级 → 条件变量未定义 fail-closed=false
+    /// → 只走 false 分支（fi-risk），流程仍正常完成，且两条分支不同时执行。
+    #[tokio::test]
+    async fn test_finance_template_ai_degrades_and_condition_routes_false_branch() {
+        let mut engine = WorkflowEngine::new();
+        let wf_id = engine.create_from_template("finance-invoice-verify").expect("模板应存在");
+        let result = engine.execute(&wf_id).await.expect("流程应正常完成");
+
+        assert_eq!(result.instance.status, WorkflowStatus::Completed);
+        assert!(
+            result.instance.variables.get("ai_task_completed").is_some(),
+            "AiTask 降级输出应合并到变量"
+        );
+        assert_eq!(
+            result.instance.variables.get("simulated").and_then(|v| v.as_bool()),
+            Some(true),
+            "降级执行应带 simulated 标记"
+        );
+
+        // 条件变量未定义 → fail-closed false → 走 fi-risk，绝不走 fi-ok
+        let executed_ids: Vec<&str> = result.instance.node_executions.iter().map(|ne| ne.node_id.as_str()).collect();
+        assert!(executed_ids.contains(&"fi-risk"), "应走拒绝分支");
+        assert!(!executed_ids.contains(&"fi-ok"), "不应同时走通过分支");
+    }
+
+    /// 条件路由：预置 verify_pass=true 时走通过分支 fi-ok。
+    #[tokio::test]
+    async fn test_condition_routes_true_branch_when_var_set() {
+        let mut engine = WorkflowEngine::new();
+        let wf_id = engine.create_from_template("finance-invoice-verify").expect("模板应存在");
+        {
+            let wf = engine.workflow_definitions.get_mut(&wf_id).expect("工作流已注册");
+            wf.variables.insert("verify_pass".to_string(), serde_json::Value::Bool(true));
+            wf.variables.insert("invoice_text".to_string(), serde_json::Value::String("测试发票".to_string()));
+        }
+        let result = engine.execute(&wf_id).await.expect("流程应正常完成");
+        assert_eq!(result.instance.status, WorkflowStatus::Completed);
+        let executed_ids: Vec<&str> = result.instance.node_executions.iter().map(|ne| ne.node_id.as_str()).collect();
+        assert!(executed_ids.contains(&"fi-ok"), "verify_pass=true 应走通过分支");
+        assert!(!executed_ids.contains(&"fi-risk"), "不应走拒绝分支");
+    }
+
+    /// 企业模板注册完整性：纯 AiTask 型企业模板（无 Operator/PluginCall 网络依赖）
+    /// 在 LLM 降级路径下全部执行完成（fail-closed 走拒绝分支）。
+    /// 注：hr-onboarding / contract-countersign 含 Operator 节点，依赖真实算子服务，
+    /// 其失败语义见 execute_node 的错误传播，此处不触发网络调用。
+    #[tokio::test]
+    async fn test_enterprise_templates_execute_to_completion_without_network() {
+        let enterprise_ids = [
+            "finance-invoice-verify", "procurement-apply",
+            "expense-reimburse", "legal-compliance-review",
+        ];
+        for tid in enterprise_ids {
+            let mut engine = WorkflowEngine::new();
+            let wf_id = engine.create_from_template(tid).expect(&format!("模板应存在: {}", tid));
+            let result = engine.execute(&wf_id).await.expect(&format!("{} 应能执行完成", tid));
+            assert_eq!(result.instance.status, WorkflowStatus::Completed, "{} 应 Completed", tid);
+            assert!(
+                result.instance.node_executions.iter().any(|ne| ne.status == WorkflowStatus::Completed),
+                "{} 至少完成一个节点", tid
+            );
+        }
+    }
+
+    /// 条件表达式解析：变量缺失按 fail-closed false 处理，语法错误仍报错。
+    #[test]
+    fn test_eval_condition_semantics() {
+        let mut vars = HashMap::new();
+        vars.insert("verify_pass".to_string(), serde_json::Value::Bool(true));
+        vars.insert("loss".to_string(), serde_json::Value::from(0.0005f64));
+
+        assert!(eval_condition("${verify_pass} == true", &vars).expect("变量已定义应可求值"));
+        assert!(eval_condition("${loss} < 0.001", &vars).expect("数值比较应可求值"));
+        assert!(eval_condition("${loss} >= 0.001", &vars).expect("应可求值") == false);
+
+        // 未定义变量：fail-closed——resolve_value 返回 Null 哨兵，
+        // 等值比较为 false，排序比较也一律 false（不会退化为字符串比较）
+        assert_eq!(eval_condition("${missing} == true", &vars).expect("fail-closed false"), false);
+        assert_eq!(eval_condition("${missing} < 0.001", &vars).expect("fail-closed false"), false);
+        assert_eq!(eval_condition("${missing} > 5", &vars).expect("fail-closed false"), false);
+        // 语法错误（无比较符）：仍报错，避免掩盖配置错误
+        assert!(eval_condition("needs_parallel", &vars).is_err());
     }
 }

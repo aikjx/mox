@@ -25,6 +25,9 @@
               @change="onToggleAutoSync"
             />
           </el-tooltip>
+          <el-tooltip content="从后端恢复会话历史（跨设备同步）" placement="bottom">
+            <el-button text @click="openBackendHistory"><el-icon><Clock /></el-icon></el-button>
+          </el-tooltip>
           <el-tooltip content="导出对话+图谱迁移包" placement="bottom">
             <el-button text @click="exportBundle"><el-icon><Download /></el-icon></el-button>
           </el-tooltip>
@@ -35,6 +38,23 @@
           <el-button text @click="clearChat"><el-icon><Delete /></el-icon> 清空</el-button>
         </div>
       </div>
+
+      <!-- 后端历史恢复 -->
+      <el-dialog v-model="historyOpen" title="从后端恢复会话" width="440px">
+        <div class="hist-tip">这些会话由后端持久化（跨设备共享），点击即可载入对话历史。</div>
+        <el-empty v-if="!backendSessions.length" description="暂无后端会话" :image-size="60" />
+        <div v-else class="hist-list">
+          <div
+            class="hist-item"
+            v-for="s in backendSessions"
+            :key="s.id"
+            @click="restoreFromBackend(s)"
+          >
+            <div class="hist-title">{{ s.title || s.id }}</div>
+            <div class="hist-meta">{{ s.id }} · {{ s.updated_at || '' }}</div>
+          </div>
+        </div>
+      </el-dialog>
 
       <div ref="scrollEl" class="chat-body">
         <div v-if="!messages.length" class="empty">
@@ -83,7 +103,9 @@ import {
   getAutoSyncStatus,
   toggleAutoSync,
   graphExport,
-  graphImport
+  graphImport,
+  listDialogueSessions,
+  getChatHistory
 } from '@/api'
 
 const sessions = ref([])
@@ -96,6 +118,63 @@ const scrollEl = ref(null)
 // 对话自动→知识图谱 全自动同步开关（默认开）
 const autoSync = ref(true)
 const importInput = ref(null)
+
+// 后端会话历史（跨设备恢复）
+const historyOpen = ref(false)
+const backendSessions = ref([])
+const loadingHistory = ref(false)
+async function openBackendHistory() {
+  historyOpen.value = true
+  if (backendSessions.value.length) return
+  loadingHistory.value = true
+  try {
+    const r = await listDialogueSessions()
+    backendSessions.value = r.sessions || []
+  } catch (e) {
+    ElMessage.error('后端会话加载失败：' + e.message)
+  } finally {
+    loadingHistory.value = false
+  }
+}
+async function restoreFromBackend(s) {
+  if (loadingHistory.value) return
+  loadingHistory.value = true
+  try {
+    const msgs = await getChatHistory(s.id)
+    const list = Array.isArray(msgs) ? msgs : []
+    if (!list.length) {
+      ElMessage.info('该会话暂无后端聊天记录（仅自动入图会话会持久化）')
+      return
+    }
+    // 后端 ChatMessage 转为前端 MessageBubble 格式
+    messages.value = list.map((m) => ({
+      role: String(m.role || '').toLowerCase() === 'user' ? 'user' : 'assistant',
+      content: m.content || '',
+      timestamp: m.timestamp || Date.now(),
+      referenced_operators: m.referenced_operators || [],
+      confidence: m.metadata && m.metadata.confidence != null
+        ? m.metadata.confidence
+        : undefined,
+    }))
+    // 同步到本地会话列表，保证可切换
+    if (!sessions.value.find((x) => x.id === s.id)) {
+      sessions.value.unshift({
+        id: s.id,
+        title: s.title || s.id,
+        time: (s.updated_at || '').slice(0, 16).replace('T', ' '),
+      })
+    }
+    currentSession.value = s.id
+    persist()
+    historyOpen.value = false
+    ElMessage.success(`已恢复 ${messages.value.length} 条历史消息`)
+    await scroll()
+  } catch (e) {
+    ElMessage.error('恢复失败：' + e.message)
+  } finally {
+    loadingHistory.value = false
+  }
+}
 
 const quickQuestions = [
   '帮我推荐一个归一化算子',
@@ -238,7 +317,7 @@ async function onToggleAutoSync(val) {
 async function exportBundle() {
   try {
     const res = await graphExport()
-    const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' })
+    const blob = new Blob([JSON.stringify(res, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -264,7 +343,7 @@ async function onImportFile(e) {
     const text = await file.text()
     const bundle = JSON.parse(text)
     const res = await graphImport(bundle)
-    ElMessage.success(`导入完成：会话 ${res.data.imported.sessions} / 节点 ${res.data.imported.nodes}`)
+    ElMessage.success(`导入完成：会话 ${res.imported.sessions} / 节点 ${res.imported.nodes}`)
   } catch {
     ElMessage.error('导入失败：文件格式不合法')
   } finally {
@@ -310,4 +389,15 @@ async function onImportFile(e) {
 
 .chat-input { display: flex; gap: 10px; padding: 14px 18px; border-top: 1px solid var(--border); align-items: flex-end; }
 .chat-input :deep(.el-textarea) { flex: 1; }
+.hist-tip {
+  font-size: 12px; color: var(--text-3); margin-bottom: 12px; line-height: 1.6;
+}
+.hist-list { display: flex; flex-direction: column; gap: 8px; max-height: 360px; overflow-y: auto; }
+.hist-item {
+  border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; cursor: pointer;
+  transition: all 0.2s;
+}
+.hist-item:hover { border-color: var(--brand); background: var(--brand-soft, #eef4ff); }
+.hist-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+.hist-meta { font-size: 12px; color: var(--text-3); font-family: var(--font-mono, monospace); }
 </style>

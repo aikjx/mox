@@ -104,7 +104,7 @@ pub trait Operator: Send + Sync + TypeCheck {
 
 /// 恒等算子
 pub struct IdentityOperator {
-    dimension: usize,
+    pub dimension: usize,
 }
 
 impl IdentityOperator {

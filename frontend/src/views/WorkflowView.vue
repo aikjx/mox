@@ -29,6 +29,9 @@
                     <el-dropdown-item @click="doValidateFlow(f)">
                       <el-icon><CircleCheck /></el-icon> 校验
                     </el-dropdown-item>
+                    <el-dropdown-item @click="viewFlowDetail(f)">
+                      <el-icon><View /></el-icon> 详情
+                    </el-dropdown-item>
                     <el-dropdown-item divided @click="delFlow(f)">
                       <el-icon><Delete /></el-icon> 删除
                     </el-dropdown-item>
@@ -72,6 +75,19 @@
               </div>
             </div>
           </div>
+          <div class="panel card-pad">
+            <h3 class="section-title">AI 已保存工作流</h3>
+            <div class="tpl-list">
+              <div class="tpl" v-for="w in savedWorkflows" :key="w.id">
+                <div>
+                  <div class="tpl-name">{{ w.name }}</div>
+                  <div class="tpl-desc">{{ w.description || (w.nodes_count + ' 个节点') }}</div>
+                </div>
+                <el-button size="small" type="primary" plain @click="loadSavedWorkflow(w)">载入执行</el-button>
+              </div>
+            </div>
+            <el-empty v-if="!savedWorkflows.length" description="暂无已保存工作流" :image-size="60" />
+          </div>
         </div>
       </el-tab-pane>
 
@@ -98,6 +114,25 @@
           </el-form>
           <pre v-if="execResult" class="exec-out">{{ JSON.stringify(execResult, null, 2) }}</pre>
         </div>
+        <div class="panel card-pad" style="margin-top: 14px">
+          <h3 class="section-title">节点类型参考</h3>
+          <div class="nt-grid">
+            <div class="nt-card" v-for="t in nodeTypes" :key="t.type">
+              <div class="nt-head">
+                <span class="nt-type mono">{{ t.type }}</span>
+                <span class="nt-name">{{ t.name }}</span>
+              </div>
+              <div class="nt-desc">{{ t.description }}</div>
+              <div v-if="t.config_fields?.length" class="nt-fields">
+                <div v-for="f in t.config_fields" :key="f.name" class="nt-field">
+                  <code>{{ f.name }}</code>：{{ f.label }}
+                  <span v-if="f.options?.length" class="muted">[{{ f.options.join(' / ') }}]</span>
+                </div>
+              </div>
+            </div>
+            <el-empty v-if="!nodeTypes.length" description="暂无节点类型" :image-size="60" />
+          </div>
+        </div>
       </el-tab-pane>
     </el-tabs>
 
@@ -115,6 +150,31 @@
         <el-button type="primary" :loading="creating" @click="doCreate">创建</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="flowDetailVisible" title="流程图详情" width="640px">
+      <template v-if="flowDetail">
+        <div class="fd-head">
+          <span class="fd-name">{{ flowDetail.name || flowDetail.id }}</span>
+          <span class="badge info">{{ flowDetail.nodes?.length || 0 }} 节点</span>
+          <span class="badge primary">{{ flowDetail.edges?.length || 0 }} 连线</span>
+        </div>
+        <div class="fd-grid">
+          <div>
+            <div class="fd-label">节点</div>
+            <div v-for="n in flowDetail.nodes || []" :key="n.id" class="fd-node">
+              <span class="badge">{{ n.kind || 'task' }}</span> {{ n.name }}
+              <span v-if="n.tool" class="muted mono">{{ n.tool }}</span>
+            </div>
+          </div>
+          <div>
+            <div class="fd-label">连线</div>
+            <div v-for="(e, i) in flowDetail.edges || []" :key="i" class="fd-edge">
+              {{ e.from }} → {{ e.to }}
+            </div>
+          </div>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -129,6 +189,9 @@ import {
   executeFlow,
   getWorkflowTemplates,
   getWorkflowInstances,
+  getWorkflows,
+  getFlow,
+  getFlowNodeTypes,
   saveWorkflow,
   executeWorkflowDef
 } from '@/api'
@@ -137,6 +200,10 @@ const tab = ref('flows')
 const flows = ref([])
 const templates = ref([])
 const instances = ref([])
+const savedWorkflows = ref([])
+const nodeTypes = ref([])
+const flowDetail = ref(null)
+const flowDetailVisible = ref(false)
 
 const showCreate = ref(false)
 const creating = ref(false)
@@ -148,17 +215,39 @@ const execResult = ref(null)
 
 async function loadAll() {
   try {
-    const [f, t, ins] = await Promise.all([
+    const [f, t, ins, sw] = await Promise.all([
       getFlows().catch(() => []),
       getWorkflowTemplates().catch(() => []),
-      getWorkflowInstances().catch(() => [])
+      getWorkflowInstances().catch(() => []),
+      getWorkflows().catch(() => [])
     ])
     flows.value = Array.isArray(f) ? f : f.flows || f.data || []
     templates.value = t.templates || t.data || t || []
     instances.value = ins.instances || ins.data || ins || []
+    savedWorkflows.value = sw.workflows || sw.data || (Array.isArray(sw) ? sw : [])
   } catch (e) {
     ElMessage.error('加载失败：' + e.message)
   }
+  getFlowNodeTypes()
+    .then((r) => { nodeTypes.value = r.types || [] })
+    .catch(() => {})
+}
+
+async function viewFlowDetail(f) {
+  try {
+    const r = await getFlow(f.id)
+    flowDetail.value = r.flow || r || f
+    flowDetailVisible.value = true
+  } catch (e) {
+    ElMessage.error('详情加载失败：' + e.message)
+  }
+}
+
+function loadSavedWorkflow(w) {
+  execForm.value.name = w.name
+  execForm.value.definition = JSON.stringify({ workflow_id: w.id, name: w.name }, null, 2)
+  tab.value = 'exec'
+  ElMessage.success('已载入「' + w.name + '」，可直接执行或保存')
 }
 
 async function doCreate() {
@@ -182,7 +271,7 @@ async function doCreate() {
 
 async function runFlow(f) {
   try {
-    const r = await executeFlow({ id: f.id, input: {} })
+    const r = await executeFlow({ flow_id: f.id, input: {} })
     ElMessage.success('执行已触发')
     execResult.value = r
   } catch (e) {
@@ -349,5 +438,79 @@ onMounted(loadAll)
   font-size: 12px;
   overflow: auto;
   max-height: 280px;
+}
+.nt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.nt-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+}
+.nt-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.nt-type {
+  background: var(--brand-soft, #eef4ff);
+  color: var(--brand, #3b6fe0);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.nt-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+.nt-desc {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-bottom: 8px;
+}
+.nt-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.nt-field {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.fd-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.fd-name {
+  font-size: 16px;
+  font-weight: 700;
+}
+.fd-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.fd-label {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-bottom: 8px;
+}
+.fd-node,
+.fd-edge {
+  font-size: 13px;
+  padding: 4px 0;
+}
+.fd-edge {
+  font-family: monospace;
+}
+.mono {
+  font-family: monospace;
 }
 </style>

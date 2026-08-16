@@ -28,6 +28,7 @@ axum = { workspace = true }
 tower-http = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+serde_yaml = "0.9"
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
@@ -38,6 +39,8 @@ nalgebra = { version = "0.32", features = ["serde-serialize"] }
 sha2 = "0.10"
 hmac = "0.12"
 hex = "0.4"
+parking_lot = "0.12"
+async-trait = "0.1"
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["full"] }

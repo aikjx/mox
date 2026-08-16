@@ -15,6 +15,7 @@
         <el-button @click="clonePkg"><el-icon><CopyDocument /></el-icon> 克隆此包</el-button>
         <el-button @click="exportApp"><el-icon><Download /></el-icon> 导出应用包</el-button>
         <el-button type="primary" :loading="saving" @click="saveAll"><el-icon><Select /></el-icon> 保存修改</el-button>
+        <el-button type="danger" plain @click="delPkg"><el-icon><Delete /></el-icon> 删除</el-button>
       </div>
     </div>
 
@@ -138,9 +139,9 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, CopyDocument, Select, Plus, Close, Edit, Download } from '@element-plus/icons-vue'
-import { marketGet, marketUpdate, marketClone } from '@/api'
+import { marketGet, marketUpdate, marketClone, marketExport, marketDelete } from '@/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -270,41 +271,75 @@ async function clonePkg() {
   }
 }
 
-// 导出为可下载分发的应用包（.ousapp），兼容他人一键导入
-function exportApp() {
-  const app = {
-    format: 'ousapp',
-    formatVersion: '1.0',
-    exportedAt: new Date().toISOString(),
-    app: {
-      id: pkg.id,
-      name: pkg.name,
-      category: pkg.category || '未分类',
-      version: pkg.version || '1.0.0',
-      author: pkg.author || '匿名',
-      summary: pkg.summary || '',
-      requirement: pkg.requirement || '',
-      features: pkg.features || [],
-      nodes: pkg.nodes || [],
-      edges: pkg.edges || [],
-      tags: pkg.tags || [],
-    },
-    // 兼容 OpenAPI 风格的元信息，方便开源生态对接
-    openapi: {
-      info: { title: pkg.name, version: pkg.version || '1.0.0', description: pkg.summary },
-      tags: pkg.tags || [],
-    },
+async function delPkg() {
+  try {
+    await ElMessageBox.confirm(
+      `确定删除「${pkg.name}」吗？该操作不可恢复。`,
+      '删除算子包',
+      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
+    )
+  } catch {
+    return // 取消
   }
-  const blob = new Blob([JSON.stringify(app, null, 2)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `${pkg.name || 'application'}.ousapp`
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
-  ElMessage.success('应用包已导出，可分享给任何使用者一键导入')
+  try {
+    await marketDelete(pkg.id)
+    ElMessage.success('已删除')
+    router.push('/market')
+  } catch (e) {
+    ElMessage.error('删除失败：' + e.message)
+  }
+}
+
+// 导出为可下载分发的应用包：优先走后端 /market/:id/export（标准 FlowDefinition DSL 工程），
+// 后端不可用时回退到本地 .ousapp JSON，保证导出功能始终可用
+async function exportApp() {
+  try {
+    const dsl = await marketExport(pkg.id)
+    const blob = new Blob([JSON.stringify(dsl, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${pkg.name || 'application'}.flow-definition.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    ElMessage.success('已导出标准 FlowDefinition DSL 工程（可被任何 OUS 实例导入）')
+  } catch {
+    // 回退：本地 .ousapp 导出
+    const app = {
+      format: 'ousapp',
+      formatVersion: '1.0',
+      exportedAt: new Date().toISOString(),
+      app: {
+        id: pkg.id,
+        name: pkg.name,
+        category: pkg.category || '未分类',
+        version: pkg.version || '1.0.0',
+        author: pkg.author || '匿名',
+        summary: pkg.summary || '',
+        requirement: pkg.requirement || '',
+        features: pkg.features || [],
+        nodes: pkg.nodes || [],
+        edges: pkg.edges || [],
+        tags: pkg.tags || [],
+      },
+      openapi: {
+        info: { title: pkg.name, version: pkg.version || '1.0.0', description: pkg.summary },
+        tags: pkg.tags || [],
+      },
+    }
+    const blob = new Blob([JSON.stringify(app, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${pkg.name || 'application'}.ousapp`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    ElMessage.success('已导出应用包（.ousapp），可分享给任何使用者一键导入')
+  }
 }
 
 onMounted(load)

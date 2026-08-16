@@ -117,7 +117,7 @@ async function send() {
   await nextTick()
   cpBody.value?.scrollTo({ top: 1e9 })
   try {
-    const resp = await aiChat(null, text)
+    const resp = await aiChat({ message: text })
     const out = resp?.reply || resp?.response || JSON.stringify(resp)
     chat.value.push({ k: ++k, role: 'ai', text: out })
   } catch (e) {

@@ -50,7 +50,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { listOperators, executeFlow, executeWorkflow, listFlows } from '@/api'
+import { getOperators, executeFlow, executeWorkflow, getFlows } from '@/api'
 
 const router = useRouter()
 const go = (p) => router.push(p)
@@ -62,7 +62,7 @@ const resultText = ref('')
 
 async function load() {
   try {
-    const ops = await listOperators()
+    const ops = await getOperators()
     operators.value = (ops.operators || ops || []).map((o) =>
       typeof o === 'string' ? { name: o } : o
     )
@@ -70,7 +70,7 @@ async function load() {
     operators.value = []
   }
   try {
-    const fl = await listFlows()
+    const fl = await getFlows()
     flows.value = fl.flows || []
   } catch (e) {
     flows.value = []
@@ -82,7 +82,9 @@ async function runOperator(op) {
   resultVisible.value = true
   try {
     const resp = await executeWorkflow({
-      operators: [{ id: op.id, params: {} }],
+      workflow: [op.name],
+      input: [1.0],
+      parameters: {},
     })
     resultText.value = JSON.stringify(resp, null, 2)
     ElMessage.success(`算子「${op.name}」执行完成`)
@@ -95,7 +97,7 @@ async function runOperator(op) {
 
 async function runFlow(row) {
   try {
-    const resp = await executeFlow(row.id, {})
+    const resp = await executeFlow({ flow_id: row.id, input: {} })
     resultText.value = JSON.stringify(resp, null, 2)
     resultVisible.value = true
   } catch (e) {

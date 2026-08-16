@@ -11,7 +11,6 @@ use axum::{
     http::StatusCode,
     middleware::Next,
     response::Response,
-    body::Body,
 };
 use std::sync::Arc;
 use std::collections::HashMap;
@@ -276,7 +275,7 @@ impl MemoryAuditSink {
 }
 
 impl AuditSink for MemoryAuditSink {
-    fn write(&self, event: AuditEvent) -> Result<(), String> {
+    fn write(&self, _event: AuditEvent) -> Result<(), String> {
         // 同步写入（实际应用中应异步）
         // 这里简化处理
         Ok(())

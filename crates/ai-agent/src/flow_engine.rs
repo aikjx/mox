@@ -179,7 +179,7 @@ impl FlowEngine {
     pub async fn execute_flow(
         &mut self,
         flow_id: &str,
-        mut input: HashMap<String, serde_json::Value>,
+        input: HashMap<String, serde_json::Value>,
     ) -> Result<FlowExecutionResult, FlowError> {
         let flow = self.flows.get(flow_id).cloned()
             .ok_or_else(|| FlowError::NodeNotFound(flow_id.into()))?;
@@ -213,9 +213,9 @@ impl FlowEngine {
             let is_error = result.error.is_some();
             let output_data = result.output.clone();
             let node_id_for_log = node.id.clone();
-            let node_name = node.name.clone();
-            let node_type_str = format!("{:?}", node.node_type);
-            let duration = result.duration_ms;
+            let _node_name = node.name.clone();
+            let _node_type_str = format!("{:?}", node.node_type);
+            let _duration = result.duration_ms;
 
             node_results.push(result.clone());
 

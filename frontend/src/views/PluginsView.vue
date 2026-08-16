@@ -29,6 +29,36 @@
       <el-empty v-if="!plugins.length" description="暂无插件，请注册" :image-size="70" />
     </div>
 
+    <!-- 插件总线拓扑 -->
+    <div class="panel card-pad" v-if="topology.connections.length || topology.topics.length">
+      <div class="section-head">
+        <h3 class="section-title">插件总线拓扑</h3>
+        <el-button size="small" text :loading="loadingTopo" @click="loadTopology">刷新</el-button>
+      </div>
+      <div class="topo-grid">
+        <div class="topo-topics">
+          <div class="topo-label">主题（Topics）</div>
+          <div class="topic-list">
+            <el-tag v-for="t in topology.topics" :key="t" size="small" class="topic">{{ t }}</el-tag>
+            <span v-if="!topology.topics.length" class="muted">暂无主题</span>
+          </div>
+        </div>
+        <div class="topo-links">
+          <div class="topo-label">订阅关系</div>
+          <div class="conn-list">
+            <div v-for="(c, i) in topology.connections" :key="i" class="conn">
+              <span class="conn-plugin">{{ c.from }}</span>
+              <el-icon class="conn-arrow"><Right /></el-icon>
+              <span class="conn-topic">{{ c.topic }}</span>
+              <el-icon class="conn-arrow"><Right /></el-icon>
+              <span class="conn-plugin">{{ c.to }}</span>
+            </div>
+            <span v-if="!topology.connections.length" class="muted">暂无订阅关系</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 消息互通台 -->
     <div class="panel card-pad">
       <h3 class="section-title">插件消息互通</h3>
@@ -76,12 +106,32 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getAiPlugins, registerAiPlugin, sendPluginMessage } from '@/api'
+import { Right } from '@element-plus/icons-vue'
+import { getAiPlugins, registerAiPlugin, sendPluginMessage, getPluginTopology } from '@/api'
 
 const plugins = ref([])
 const messages = ref([])
 const logEl = ref(null)
 const sending = ref(false)
+
+// 插件总线拓扑
+const topology = ref({ plugins: [], connections: [], topics: [] })
+const loadingTopo = ref(false)
+async function loadTopology() {
+  loadingTopo.value = true
+  try {
+    const r = await getPluginTopology()
+    topology.value = {
+      plugins: r.plugins || [],
+      connections: r.connections || [],
+      topics: r.topics || []
+    }
+  } catch (e) {
+    ElMessage.error('拓扑获取失败：' + e.message)
+  } finally {
+    loadingTopo.value = false
+  }
+}
 
 const showReg = ref(false)
 const reging = ref(false)
@@ -119,9 +169,11 @@ async function pushMsg() {
   sending.value = true
   try {
     const r = await sendPluginMessage({
-      from: msgForm.value.from,
-      to: msgForm.value.to,
-      message: msgForm.value.content
+      source: msgForm.value.from,
+      target: msgForm.value.to,
+      topic: 'general',
+      payload: { message: msgForm.value.content },
+      need_response: true
     })
     messages.value.push({
       dir: 'out',
@@ -151,7 +203,10 @@ async function doReg() {
     await registerAiPlugin({
       id: reg.value.id,
       name: reg.value.name,
-      capabilities: reg.value.capabilities.split(',').map((s) => s.trim()).filter(Boolean)
+      plugin_type: 'custom',
+      capabilities: reg.value.capabilities.split(',').map((s) => s.trim()).filter(Boolean),
+      input_topics: [],
+      output_topics: []
     })
     ElMessage.success('注册成功')
     showReg.value = false
@@ -164,7 +219,7 @@ async function doReg() {
   }
 }
 
-onMounted(load)
+onMounted(() => { load(); loadTopology() })
 </script>
 
 <style scoped>
@@ -257,5 +312,61 @@ onMounted(load)
 .msg-input {
   display: flex;
   gap: 8px;
+}
+/* 插件总线拓扑 */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.section-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+.topo-grid {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 16px;
+  margin-top: 12px;
+}
+.topo-label {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-bottom: 8px;
+}
+.topic-list,
+.conn-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.topic {
+  font-family: var(--font-mono, monospace);
+}
+.conn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 12px;
+}
+.conn-plugin {
+  font-weight: 600;
+  color: var(--brand);
+}
+.conn-topic {
+  color: var(--text-3);
+  font-family: var(--font-mono, monospace);
+}
+.conn-arrow {
+  color: var(--text-3);
+  font-size: 12px;
+}
+.muted {
+  color: var(--text-3);
+  font-size: 12px;
 }
 </style>

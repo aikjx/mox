@@ -57,6 +57,9 @@ export const getShortestPath = (source, target) =>
 export const recommendNodes = (payload) => http.post('/graph/recommend', payload)
 export const addGraphNode = (payload) => http.post('/graph/node', payload)
 export const addGraphEdge = (payload) => http.post('/graph/edge', payload)
+// 激活传播：从种子节点沿边扩散激活能量，返回各节点激活值
+export const propagateActivation = (startNodes, iterations = 10) =>
+  http.post('/graph/activate', { start_nodes: startNodes, iterations })
 
 // ===== 对话自动→知识图谱 自动整理 =====
 // 统一搜索：对话内容 + 知识图谱节点
@@ -89,6 +92,8 @@ export const getResourceHealth = () => http.get('/ai/resources/health')
 export const getAiPlugins = () => http.get('/ai/plugins')
 export const registerAiPlugin = (payload) => http.post('/ai/plugins/register', payload)
 export const sendPluginMessage = (payload) => http.post('/ai/plugins/send-message', payload)
+// 插件拓扑：插件消息总线拓扑（节点 + 订阅/投递关系）
+export const getPluginTopology = () => http.get('/ai/plugins/topology')
 
 // ===== 工作流 =====
 export const getWorkflowTemplates = () => http.get('/ai/workflows/templates')
@@ -130,6 +135,12 @@ export const marketUpload = (payload) => http.post('/market/upload', payload)
 export const marketUpdate = (id, payload) => http.post(`/market/${encodeURIComponent(id)}`, payload)
 export const marketDelete = (id) => http.delete(`/market/${encodeURIComponent(id)}`)
 export const marketClone = (id) => http.post(`/market/${encodeURIComponent(id)}/clone`)
+// 市场导出：将算子包导出为可移植 DSL 工程（FlowDefinition JSON）
+export const marketExport = (id) => http.get(`/market/${encodeURIComponent(id)}/export`)
+// Caomei 需求编译器：自然语言 → 蓝图 / 蓝图精化 / 模板库
+export const caomeiCompile = (payload) => http.post('/caomei/compile', payload)
+export const caomeiRefine = (payload) => http.post('/caomei/refine', payload)
+export const caomeiTemplates = (params) => http.get('/caomei/templates', { params })
 
 // ===== MCP 兼容层 (Model Context Protocol) =====
 // 把系统内算子与插件以标准 MCP 协议暴露，兼容开源 MCP 客户端
@@ -146,5 +157,11 @@ export const automationRefine = (id, payload) => http.post(`/automation/${encode
 export const automationRun = (id, payload) => http.post(`/automation/${encodeURIComponent(id)}/run`, payload)
 export const automationPermissions = (id) => http.get(`/automation/${encodeURIComponent(id)}/permissions`)
 export const automationUpdate = (id, payload) => http.put(`/automation/${encodeURIComponent(id)}`, payload)
+
+// ===== 专家联盟全维治理 (双联盟十四维) =====
+// 维度清单与联盟健康度
+export const allianceHealth = () => http.get('/alliance/health')
+// 传入流程蓝图（FlowGraph）做全维治理，返回 GovernanceReport（专家评分/闸门/璇玑/采纳建议）
+export const allianceOptimize = (flow) => http.post('/alliance/optimize', { flow })
 
 export default http
