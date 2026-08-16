@@ -141,7 +141,7 @@ async function runNatural() {
   running.value = true
   naturalResult.value = null
   try {
-    naturalResult.value = await browserNatural({ instruction: task.value })
+    naturalResult.value = await browserNatural({ prompt: task.value })
     ElMessage.success('任务已提交')
     await loadAll()
   } catch (e) {
@@ -153,7 +153,7 @@ async function runNatural() {
 
 async function runTpl(t) {
   try {
-    await executeBrowserTask({ template_id: t.id, params: {} })
+    await executeBrowserTask({ task_id: t.id, variables: {} })
     ElMessage.success('模板已运行')
     await loadAll()
   } catch (e) {

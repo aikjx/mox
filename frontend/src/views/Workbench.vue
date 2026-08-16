@@ -41,7 +41,7 @@ import { ElMessage } from 'element-plus'
 import SessionSidebar from '@/components/SessionSidebar.vue'
 import ChatView from '@/views/ChatView.vue'
 import FlowGraph from '@/views/FlowGraph.vue'
-import { getStatus, executeFlow, getGraph, listFlows } from '@/api'
+import { getStatus, executeFlow, getGraph, getFlows } from '@/api'
 
 const chatRef = ref(null)
 const graphRef = ref(null)
@@ -79,7 +79,7 @@ async function onAction(a) {
       if (ops && ops.length) {
         const flowId = await ensureFlow(ops)
         if (flowId) {
-          const resp = await executeFlow(flowId, {})
+          const resp = await executeFlow({ flow_id: flowId, input: {} })
           if (resp.result && resp.result.node_results) {
             graphRef.value?.showTrace(resp.result.node_results)
             ElMessage.success('流程执行完成，已高亮处理轨迹')
@@ -101,7 +101,7 @@ async function onAction(a) {
 
 async function ensureFlow(operators) {
   try {
-    const list = await listFlows()
+    const list = await getFlows()
     const flows = list.flows || []
     if (flows.length) return flows[0].id
   } catch (e) {}

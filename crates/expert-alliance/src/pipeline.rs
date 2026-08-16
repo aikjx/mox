@@ -208,4 +208,76 @@ mod tests {
     }
 
     fn dbp(_r: &GovernanceReport) {}
+
+    /// 双联盟十四维契约：治理报告必须覆盖业务七维 + 开发七维，且含璇玑最高权限校验。
+    #[test]
+    fn alliance_double_league_fourteen_dimensions() {
+        let g = gov_flow();
+        let tenant = Tenant::new("gov-tenant", "ns-gov").regulated(true).with_pool("browser", 1);
+        let principal = Principal::new("admin").with_roles(vec!["admin".into(), "editor".into()]);
+        let ctx = GovernContext::new(tenant, principal);
+        let rep = alliance_optimize(&g, &ctx);
+
+        // 1) 专家评分维度集合须包含双联盟十四维（业务七维 + 开发七维）
+        let dims: std::collections::HashSet<String> =
+            rep.expert_scores.iter().map(|(d, _)| d.clone()).collect();
+        for expected in [
+            "business", "algorithm", "permission", "resource", "security", "data", "observability",
+            "architecture", "security_code", "code_quality", "performance",
+            "testing", "documentation", "maintainability",
+        ] {
+            assert!(
+                dims.contains(expected),
+                "治理报告缺少维度 {expected}，实际维度: {:?}",
+                rep.expert_scores
+            );
+        }
+        assert_eq!(dims.len(), 14, "应恰为双联盟十四维，实际 {}", dims.len());
+
+        // 2) 每个维度分数须落在 [0,1]
+        for (d, s) in &rep.expert_scores {
+            assert!((*s >= 0.0 && *s <= 1.0), "维度 {d} 分数越界: {s}");
+        }
+
+        // 3) 璇玑最高权限校验已执行（生成检查项与结论），且非优化态下不误否决
+        assert!(!rep.algo.checks.is_empty(), "璇玑须产出检查项");
+        assert!(!rep.algo.summary.is_empty(), "璇玑须给出结论摘要");
+        // 无优化（before==after）时不应触发阻断级否决
+        assert!(!rep.algo.vetoed, "恒等优化不应被璇玑否决");
+
+        // 4) 治理闸门结果明确
+        assert!(rep.gate.approved || rep.gate.algorithm_veto, "闸门须明确（通过或被璇玑否决）");
+
+        // 5) 审计链已记录（Debug 序列化非空即代表有审计条目）
+        assert!(format!("{:?}", rep.audit).len() > 2, "审计链须有记录");
+    }
+
+    /// 安全否决：公民敏感库越权写（无 authz/脱敏 Guard）应被权限专家否决 → 璇玑拦截（自动化安全护栏）。
+    /// 注：权限专家仅对具备 edit-flow 权限的主体做分析（无权限者本就不能提交），故此处用 admin 主体。
+    #[test]
+    fn sensitive_write_is_blocked() {
+        let mut g = FlowGraph::new("leak", "越权写敏感库");
+        g.add_node(FlowNode::new("s", "开始", NodeKind::Start));
+        g.add_node(
+            FlowNode::task("evil", "明文落库", ToolKind::Database, 100)
+                .with_access(flow_ai::model::Access::write("db:citizen_info")), // 敏感库越权写
+        );
+        g.add_node(FlowNode::new("e", "结束", NodeKind::End));
+        g.add_edge(FlowEdge::seq("s", "evil"));
+        g.add_edge(FlowEdge::seq("evil", "e"));
+
+        let tenant = Tenant::new("gov-tenant", "ns-gov").regulated(true);
+        // 具备 edit 权限的主体，但流程本身缺 authz/脱敏 Guard
+        let principal = Principal::new("admin").with_roles(vec!["admin".into(), "editor".into()]);
+        let ctx = GovernContext::new(tenant, principal);
+        let rep = alliance_optimize(&g, &ctx);
+        assert!(
+            !rep.gate.approved,
+            "敏感库越权写（无 authz/脱敏 Guard）必须被拦截（闸门不应通过）"
+        );
+        assert!(
+            rep.gate.algorithm_veto || rep.gate.blocking_risks > 0,
+            "拦截应源于璇玑否决或阻断级风险"
+        );
+    }
 }

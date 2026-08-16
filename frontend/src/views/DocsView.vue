@@ -56,9 +56,23 @@ const endpoints = [
   { method: 'GET', path: '/ai/workflows/templates', group: '工作流', desc: '工作流模板', fn: () => api.getWorkflowTemplates() },
   { method: 'GET', path: '/ai/flows', group: '工作流', desc: '流程图列表', fn: () => api.getFlows() },
   { method: 'GET', path: '/ai/llm/config', group: 'AI', desc: 'LLM 配置', fn: () => api.getLlmConfig() },
+  { method: 'POST', path: '/ai/llm/test', group: 'AI', desc: 'LLM 连通性测试', fn: () => api.testLlm({ provider: 'openai', model: 'gpt-4o-mini' }) },
+  { method: 'POST', path: '/ai/llm/config', group: 'AI', desc: '更新 LLM 配置', fn: () => api.updateLlmConfig({ provider: 'openai', model: 'gpt-4o-mini', api_key: 'sk-***' }) },
+  { method: 'POST', path: '/graph/activate', group: '图谱', desc: '激活传播', fn: () => api.propagateActivation(['identity'], 5) },
+  { method: 'GET', path: '/graph/pagerank', group: '图谱', desc: 'PageRank 中心性', fn: () => api.getPagerank() },
+  { method: 'GET', path: '/graph/centrality', group: '图谱', desc: '中心性指标', fn: () => api.getCentrality() },
+  { method: 'GET', path: '/graph/communities', group: '图谱', desc: '社区发现', fn: () => api.getCommunities() },
+  { method: 'GET', path: '/ai/plugins/topology', group: '插件', desc: '插件总线拓扑', fn: () => api.getPluginTopology() },
+  { method: 'POST', path: '/caomei/compile', group: '需求编译', desc: '自然语言编译蓝图', fn: () => api.caomeiCompile({ requirement: '做一个待办事项系统', name: '待办' }) },
+  { method: 'POST', path: '/caomei/refine', group: '需求编译', desc: '蓝图精化（需 blueprint_id）', fn: () => api.caomeiRefine({ blueprint_id: 'demo', addition: '增加提醒功能' }) },
+  { method: 'GET', path: '/caomei/templates', group: '需求编译', desc: 'Caomei 模板概览', fn: () => api.caomeiTemplates({}) },
+  { method: 'GET', path: '/ai/analyze-algorithm', group: '算法', desc: '算法代码分析', fn: () => api.analyzeAlgorithm({ code: 'function f(a,b){return a+b}' }) },
+  { method: 'GET', path: '/ai/algorithm-types', group: '算法', desc: '算法类型目录', fn: () => api.getAlgorithmTypes() },
+  { method: 'GET', path: '/analyze/spiral', group: '算法', desc: '空间光速螺旋模型', fn: () => api.analyzeSpiral({}) },
   { method: 'GET', path: '/ai/browser/templates', group: '浏览器', desc: '浏览器模板', fn: () => api.getBrowserTemplates() },
   { method: 'GET', path: '/ai/browser/sessions', group: '浏览器', desc: '浏览器会话', fn: () => api.getBrowserSessions() },
-  { method: 'GET', path: '/plugins', group: '系统', desc: '运行时插件', fn: () => api.getPlugins() }
+  { method: 'GET', path: '/plugins', group: '系统', desc: '运行时插件', fn: () => api.getPlugins() },
+  { method: 'GET', path: '/dialogue/sessions', group: '对话', desc: '后端会话列表（跨设备恢复）', fn: () => api.listDialogueSessions() }
 ]
 
 const filtered = computed(() => {

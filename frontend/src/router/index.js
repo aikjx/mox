@@ -9,6 +9,24 @@ const routes = [
     meta: { title: '工作台' }
   },
   {
+    path: '/portal',
+    name: 'Portal',
+    component: () => import('@/views/PortalHome.vue'),
+    meta: { title: '门户' }
+  },
+  {
+    path: '/hall',
+    name: 'BusinessHall',
+    component: () => import('@/views/BusinessHall.vue'),
+    meta: { title: '业务大厅' }
+  },
+  {
+    path: '/workbench',
+    name: 'Workbench',
+    component: () => import('@/views/Workbench.vue'),
+    meta: { title: '工作台执行' }
+  },
+  {
     path: '/operators',
     name: 'Operators',
     component: () => import('@/views/OperatorsView.vue'),
@@ -85,6 +103,18 @@ const routes = [
     name: 'Automation',
     component: () => import('@/views/AutomationView.vue'),
     meta: { title: 'AI 自动化' }
+  },
+  {
+    path: '/caomei',
+    name: 'Caomei',
+    component: () => import('@/views/CaomeiView.vue'),
+    meta: { title: '需求编译' }
+  },
+  {
+    path: '/algolab',
+    name: 'AlgoLab',
+    component: () => import('@/views/AlgoLabView.vue'),
+    meta: { title: '算法实验室' }
   },
   {
     path: '/:pathMatch(.*)*',

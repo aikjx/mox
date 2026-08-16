@@ -1,3 +1,4 @@
+*.err
 # Rust build artifacts
 /target
 target/

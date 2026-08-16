@@ -35,6 +35,58 @@
     </div>
 
     <div class="panel card-pad">
+      <div class="alliance-head">
+        <div>
+          <h3 class="section-title">专家联盟 · 双联盟十四维治理</h3>
+          <p class="page-subtitle">业务七维 + 开发七维全维健康分；粘贴流程蓝图实时治理评分（璇玑最高权限校验）</p>
+        </div>
+        <div class="alliance-actions">
+          <el-upload
+            action="#"
+            :auto-upload="false"
+            :show-file-list="false"
+            accept=".json"
+            :on-change="onFlowFile"
+          >
+            <el-button><el-icon><Upload /></el-icon> 载入蓝图</el-button>
+          </el-upload>
+          <el-button type="primary" :loading="governing" @click="runGovernance">
+            <el-icon><MagicStick /></el-icon> 全维治理
+          </el-button>
+        </div>
+      </div>
+
+      <div class="grid grid-2 alliance-body">
+        <div>
+          <div ref="radarEl" class="chart"></div>
+          <el-input
+            v-model="flowJson"
+            type="textarea"
+            :rows="6"
+            placeholder='粘贴 FlowGraph JSON，例如 {"nodes":[{"id":"n1","type":"input"}],"edges":[]}'
+            class="flow-input"
+          />
+        </div>
+        <div class="gov-result">
+          <div class="gov-badges">
+            <span class="badge" :class="gateApproved ? 'success' : 'warning'">
+              治理闸门：{{ gateApproved ? '通过' : (governed ? '拦截' : '待评') }}
+            </span>
+            <span class="badge info">璇玑：{{ xuanji }}</span>
+            <span class="badge info">采纳建议：{{ adopted.length }}</span>
+          </div>
+          <h4 class="sub">采纳的优化建议</h4>
+          <el-empty v-if="!adopted.length" description="暂无采纳建议" :image-size="60" />
+          <ul class="suggest-list">
+            <li v-for="(s, i) in adopted" :key="i">
+              <b>{{ s.dimension }}</b> · {{ s.summary }}
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel card-pad">
       <h3 class="section-title">执行日志</h3>
       <el-table :data="logRows" stripe height="320" style="width: 100%">
         <el-table-column prop="time" label="时间" width="180" />
@@ -54,11 +106,25 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
-import { getStatus, getFullStatus, getLogs, getPlugins } from '@/api'
+import { ElMessage } from 'element-plus'
+import { getStatus, getFullStatus, getLogs, getPlugins, allianceHealth, allianceOptimize } from '@/api'
 
 const loading = ref(false)
 const loadEl = ref(null)
 let chart = null
+
+// ===== 专家联盟双联盟十四维 =====
+const radarEl = ref(null)
+let radarChart = null
+const flowJson = ref('')
+const governing = ref(false)
+const governed = ref(false)
+const gateApproved = ref(false)
+const xuanji = ref('—')
+const adopted = ref([])
+const dimList = ref([])
+const bizLeague = ref([])
+const devLeague = ref([])
 
 const kpis = ref([])
 const comps = ref([])
@@ -138,16 +204,89 @@ function renderChart() {
 
 function resize() {
   chart && chart.resize()
+  radarChart && radarChart.resize()
 }
 window.addEventListener('resize', resize)
+
+// ===== 专家联盟治理逻辑 =====
+async function loadAllianceHealth() {
+  const h = await allianceHealth().catch(() => null)
+  if (!h) return
+  dimList.value = h.dimensions || []
+  bizLeague.value = h.business_league || []
+  devLeague.value = h.dev_league || []
+  xuanji.value = 'algo-verification-supreme'
+}
+
+function onFlowFile(file) {
+  const reader = new FileReader()
+  reader.onload = () => {
+    flowJson.value = String(reader.result || '')
+  }
+  reader.readAsText(file.raw)
+}
+
+function renderRadar(scores) {
+  if (!radarChart) radarChart = echarts.init(radarEl.value)
+  const dims = scores.length ? scores.map((s) => s[0]) : dimList.value
+  const vals = scores.length ? scores.map((s) => Math.round(s[1] * 100)) : dims.map(() => 60)
+  radarChart.setOption({
+    tooltip: {},
+    legend: { data: ['健康分'], bottom: 0, textStyle: { color: '#94a3b8' } },
+    radar: {
+      indicator: dims.map((d) => ({ name: d, max: 100 })),
+      radius: '62%',
+      axisName: { color: '#cbd5e1', fontSize: 11 },
+      splitArea: { areaStyle: { color: ['rgba(99,102,241,0.05)', 'rgba(99,102,241,0.10)'] } }
+    },
+    series: [
+      {
+        type: 'radar',
+        name: '健康分',
+        data: [{ value: vals, name: '健康分' }],
+        areaStyle: { color: 'rgba(99,102,241,0.30)' },
+        lineStyle: { color: '#6366f1', width: 2 },
+        itemStyle: { color: '#6366f1' }
+      }
+    ]
+  })
+}
+
+async function runGovernance() {
+  let flow
+  try {
+    flow = flowJson.value.trim() ? JSON.parse(flowJson.value) : { nodes: [], edges: [] }
+  } catch (e) {
+    ElMessage.error('流程图 JSON 解析失败：' + e.message)
+    return
+  }
+  governing.value = true
+  try {
+    const report = await allianceOptimize(flow)
+    governed.value = true
+    gateApproved.value = !!(report.gate && report.gate.approved)
+    xuanji.value = report.algo && report.algo.passed ? '通过' : '未通过'
+    adopted.value = (report.adopted_suggestions || []).map((s) => ({
+      dimension: s.dimension || (s.dims && s.dims[0]) || '—',
+      summary: s.summary || s.text || JSON.stringify(s)
+    }))
+    renderRadar(report.expert_scores || [])
+  } catch (e) {
+    ElMessage.error('治理失败：' + e.message)
+  } finally {
+    governing.value = false
+  }
+}
 
 onMounted(async () => {
   await nextTick()
   loadAll()
+  loadAllianceHealth()
 })
 onBeforeUnmount(() => {
   window.removeEventListener('resize', resize)
   chart && chart.dispose()
+  radarChart && radarChart.dispose()
 })
 </script>
 
@@ -223,5 +362,63 @@ onBeforeUnmount(() => {
 .comp-val {
   font-size: 12px;
   color: var(--text-3);
+}
+
+/* ===== 专家联盟治理面板 ===== */
+.alliance-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.alliance-actions {
+  display: flex;
+  gap: 8px;
+}
+.alliance-body {
+  align-items: start;
+}
+.flow-input {
+  margin-top: 10px;
+}
+.gov-result {
+  padding: 4px 2px;
+}
+.gov-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.badge.info {
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+}
+.sub {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 6px 0 8px;
+  color: var(--text-2);
+}
+.suggest-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.suggest-list li {
+  background: var(--bg-page);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.suggest-list b {
+  color: var(--accent, #6366f1);
+  margin-right: 6px;
 }
 </style>

@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 算子统一系统 - 6大公理数学自洽性验证
 验证范畴论公理、单子三定律、守恒律等数学性质
 """
+import sys
+import io
 import numpy as np
 from typing import Callable, Any, List, Tuple
+
+# 设置 UTF-8 编码输出
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 # ==================== 公理1: 万物皆算子 ====================
 class Operator:

@@ -82,7 +82,7 @@
               <div v-if="pathResult" class="path-result">
                 <template v-if="pathResult.path?.length">
                   {{ pathResult.path.join(' → ') }}
-                  <div class="muted">距离：{{ pathResult.distance }}</div>
+                  <div class="muted">权重：{{ pathResult.total_weight?.toFixed(3) }} · 跳数：{{ pathResult.length }}</div>
                 </template>
                 <el-empty v-else description="无可达路径" :image-size="50" />
               </div>
@@ -143,6 +143,25 @@
                 </div>
               </div>
             </el-tab-pane>
+
+            <el-tab-pane label="激活传播" name="act">
+              <el-select v-model="actSeeds" multiple filterable placeholder="选择种子节点（可多选）" style="width: 100%; margin-bottom: 10px">
+                <el-option v-for="n in nodeIds" :key="n" :label="n" :value="n" />
+              </el-select>
+              <div class="act-opt">
+                <span class="muted">迭代轮数</span>
+                <el-input-number v-model="actIter" :min="1" :max="50" size="small" style="width: 100px" />
+              </div>
+              <el-button type="primary" :loading="loadingAct" @click="doPropagate" size="small" style="width: 100%; margin-bottom: 10px">
+                开始传播
+              </el-button>
+              <div v-if="activation.length" class="nb-list">
+                <div v-for="(a, i) in activation.slice(0, 20)" :key="i" class="nb">
+                  <span class="rank">#{{ i + 1 }}</span>
+                  {{ a.id }} <span class="muted">激活值 {{ a.value.toFixed(4) }}</span>
+                </div>
+              </div>
+            </el-tab-pane>
           </el-tabs>
         </div>
       </div>
@@ -161,7 +180,11 @@ import {
   getShortestPath,
   getNeighbors,
   recommendNodes,
-  graphSearch
+  graphSearch,
+  getCentrality,
+  getCommunities,
+  getPagerank,
+  propagateActivation
 } from '@/api'
 
 const graphEl = ref(null)
@@ -177,7 +200,7 @@ async function doSearch() {
   if (!q) return
   try {
     const res = await graphSearch(q, 30)
-    searchResult.value = res.data
+    searchResult.value = res
   } catch (e) {
     ElMessage.error('搜索失败：' + e.message)
   }
@@ -200,6 +223,71 @@ const loadingNb = ref(false)
 const recCtx = ref([])
 const recs = ref([])
 const loadingRec = ref(false)
+
+// 中心性分析：pagerank / degree / betweenness
+const centType = ref('pagerank')
+const centrality = ref([])
+const loadingCent = ref(false)
+async function loadCentrality() {
+  loadingCent.value = true
+  try {
+    if (centType.value === 'pagerank') {
+      const map = await getPagerank()
+      centrality.value = Object.entries(map)
+        .map(([id, value]) => ({ id, value }))
+        .sort((a, b) => b.value - a.value)
+    } else {
+      const metrics = await getCentrality()
+      const src = centType.value === 'degree'
+        ? metrics.degree_centrality
+        : metrics.betweenness_centrality
+      centrality.value = Object.entries(src || {})
+        .map(([id, value]) => ({ id, value }))
+        .sort((a, b) => b.value - a.value)
+    }
+  } catch (e) {
+    ElMessage.error('中心性计算失败：' + e.message)
+  } finally {
+    loadingCent.value = false
+  }
+}
+
+// 社区发现
+const communities = ref([])
+const loadingComm = ref(false)
+async function loadCommunities() {
+  loadingComm.value = true
+  try {
+    communities.value = await getCommunities()
+  } catch (e) {
+    ElMessage.error('社区检测失败：' + e.message)
+  } finally {
+    loadingComm.value = false
+  }
+}
+
+// 激活传播：从种子节点沿边扩散激活能量，识别影响力节点
+const actSeeds = ref([])
+const actIter = ref(10)
+const activation = ref([])
+const loadingAct = ref(false)
+async function doPropagate() {
+  if (!actSeeds.value.length) {
+    ElMessage.warning('请选择至少一个种子节点')
+    return
+  }
+  loadingAct.value = true
+  try {
+    const map = await propagateActivation(actSeeds.value, actIter.value)
+    activation.value = Object.entries(map)
+      .map(([id, value]) => ({ id, value }))
+      .sort((a, b) => b.value - a.value)
+  } catch (e) {
+    ElMessage.error('激活传播失败：' + e.message)
+  } finally {
+    loadingAct.value = false
+  }
+}
 
 const statCards = computed(() => {
   const s = stats.value || {}

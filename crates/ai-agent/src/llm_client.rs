@@ -67,6 +67,7 @@ struct ResponseMessage {
 }
 
 /// 真实AI LLM客户端
+#[derive(Debug, Clone)]
 pub struct LLMClient {
     config: LLMConfig,
     client: reqwest::Client,

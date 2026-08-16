@@ -440,7 +440,7 @@ async fn random_package(State(state): State<MarketState>) -> Json<serde_json::Va
 }
 
 /// 获取单个包完整内容
-async fn get_package(State(state): State<MarketState>, Path(id): Path<String>) -> Json<serde_json::Value> {
+async fn get_package(State(_state): State<MarketState>, Path(id): Path<String>) -> Json<serde_json::Value> {
     let path = package_path(&id);
     match std::fs::read_to_string(&path) {
         Ok(content) => match serde_json::from_str::<OperatorPackage>(&content) {
@@ -644,7 +644,7 @@ async fn delete_package(
 /// 把算子包的核心资产（需求 + 流程图 + 功能点）投影为与内核 FlowDefinition
 /// 一致的规范结构，便于被编排层/执行层直接消费。
 async fn export_package(
-    State(state): State<MarketState>,
+    State(_state): State<MarketState>,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<serde_json::Value>) {
     let path = package_path(&id);

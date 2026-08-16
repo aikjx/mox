@@ -45,7 +45,7 @@ pub use dialogue_graph::*;
 
 use operator_core::{OperatorError, Result};
 use operator_graph::KnowledgeGraph;
-use rusqlite::{params, OptionalExtension};
+use rusqlite::params;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -105,7 +105,7 @@ impl AIAgent {
             algorithm_analyzer: Arc::new(RwLock::new(AlgorithmAnalyzer::new())),
             resource_manager: Arc::new(RwLock::new(ResourceManager::new())),
             plugin_bus: Arc::new(RwLock::new(PluginBus::new())),
-            workflow_engine: Arc::new(RwLock::new(WorkflowEngine::new())),
+            workflow_engine: Arc::new(RwLock::new(WorkflowEngine::new_with_llm(Some(llm_client.clone())))),
             llm_client,
             browser: Arc::new(RwLock::new(BrowserAutomationEngine::new())),
             flow_engine: Arc::new(RwLock::new(flow_engine)),
@@ -385,7 +385,7 @@ impl AIAgent {
     ) -> Result<SystemBlueprint> {
         let llm = self.llm_client.read().await;
         let llm_fn: Option<crate::requirement_compiler::LlmFn> = if llm.is_enabled() {
-            let client = llm.clone();
+            let client = (*llm).clone();
             Some(Arc::new(move |msgs: Vec<crate::requirement_compiler::LlmMsg>| {
                 let client = client.clone();
                 Box::pin(async move {

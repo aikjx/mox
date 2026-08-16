@@ -509,7 +509,9 @@ mod tests {
         let member = m.list(Some(&Domain::Mall), Some("会员")).unwrap();
         assert_eq!(member.len(), 1);
         let ddl = member[0].artifacts.get("generated/schema.sql").unwrap();
-        assert!(ddl.contains("CREATE TABLE member"));
+        // DDL 使用 `CREATE TABLE IF NOT EXISTS` 风格，断言需匹配完整建表语句
+        assert!(ddl.contains("CREATE TABLE IF NOT EXISTS member"));
+        assert!(ddl.contains("CREATE TABLE IF NOT EXISTS point_log"));
 
         // 种子按热度排序应在前面
         let ranked = m.ranked(Some(&Domain::Mall)).unwrap();

@@ -25,7 +25,7 @@ use axum::{
     Json, Router,
 };
 use flow_ai::automation::{
-    AutoTest, AutoTestGen, BusinessBlueprintLite, ErrorAnalyzer, Feature, FixProposal, RbacDeriver,
+    AutoTestGen, BusinessBlueprintLite, ErrorAnalyzer, Feature, FixProposal, RbacDeriver,
     RolePermission, RunResult,
 };
 use serde::{Deserialize, Serialize};
@@ -199,7 +199,7 @@ fn generate_code_from_blueprint(bp: &SystemBlueprint) -> GeneratedCode {
         ));
     }
     py.push_str("def main() -> None:\n    ctx = _ctx()\n");
-    for (i, f) in bp.features.iter().enumerate() {
+    for (i, _f) in bp.features.iter().enumerate() {
         let fn_name = &fn_names[i];
         py.push_str(&format!("    print({}.__name__, {}(ctx))\n", fn_name, fn_name));
     }
@@ -207,7 +207,7 @@ fn generate_code_from_blueprint(bp: &SystemBlueprint) -> GeneratedCode {
 
     let mut sql = String::new();
     sql.push_str("-- 由 OUS AI 自动化中枢依据业务蓝图自动生成\n");
-    for (i, (entity, fields)) in bp.entities.iter().enumerate() {
+    for (i, (_entity, fields)) in bp.entities.iter().enumerate() {
         let table = sql_safe_ident(&table_names[i]);
         sql.push_str(&format!("CREATE TABLE IF NOT EXISTS {} (\n", table));
         if fields.is_empty() {

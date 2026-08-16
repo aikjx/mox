@@ -27,7 +27,8 @@
 | 16. 灾备 | WAL 重放 + 快照 + 混沌工程 + RTO/RPO |
 | 17. 成本模型 | 四形态 FinOps 对比 |
 | 18. 开放生态 | 算子市场 + 跨形态同步 + 网络效应 |
-| 19. 专家联盟全维处理内核 | 最高权限 · 璇玑 · 全维业务编排 |
+| 19. 专家联盟全维处理内核 | 最高权限 · 璇玑 · 双联盟十四维全维编排 |
+| — 企业级架构分析 | 代码对齐·十四维维度模型·全维度能力矩阵·优化项（见 `enterprise-architecture-analysis.md`） |
 | 20. 融合对标与产品定位 | 与 harness/Claude Code 的差异与优势 |
 | 21. 沙箱安全纵深 | WASM 沙箱 + 能力令牌 + 纵深防御 |
 | 22. 多模态与感知 | 文本/图/音/视频/结构化统一算子 |
@@ -867,6 +868,8 @@ seam = "operator/*"
               │   算子内核 · 图谱 · 优化 · 编排 · 数据 · 外系统 │
               └─────────────────────────────────────────────┘
 ```
+
+> **实现对照（v7.1 起）**：代码层 `expert-alliance` 已将该"超级大脑"落为**双联盟十四维**模型（见 `enterprise-architecture-analysis.md` §2）。`experts::all_experts()` 常驻业务七维专家（Business/Algorithm/Permission/Resource/Security/Data/Observability）；`context::Dimension` 另含开发七维（ApiCompat/Perf/Maintain/Test/Style/Cost/Sensitive），当 `GovernContext.code_ir: Option<CodeIR>` 非空时由 `ai-agent::requirement_compiler` 注入、`sensitivity.rs` 提供 `Sensitive` 维度 SSOT 敏感判定，开发联盟自动并入治理。最高权限校验由 `verify::AlgoVerification`（璇玑）把关，不被 `govern` 覆盖。
 
 ### 19.2 最高权限的边界与约束（不失控）
 
