@@ -37,6 +37,22 @@ pub enum Constraint {
     RouteModel(String, flow_ai::schedule::ModelTier),
 }
 
+impl Constraint {
+    /// 返回该约束涉及的节点 id 集合（用于冲突检测与审计溯源）
+    pub fn nodes(&self) -> Vec<String> {
+        match self {
+            Constraint::MustOrder(e) => vec![e.from.clone(), e.to.clone()],
+            Constraint::MustGuard(t, _) => vec![t.clone()],
+            Constraint::MustSerialize(e) => vec![e.from.clone(), e.to.clone()],
+            Constraint::MustIsolate(t) => vec![t.clone()],
+            Constraint::MustAudit(t) => vec![t.clone()],
+            Constraint::ResourceCap(_, _) => vec![],
+            Constraint::Compliance(_) => vec![],
+            Constraint::RouteModel(n, _) => vec![n.clone()],
+        }
+    }
+}
+
 /// 风险：发现的问题
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Risk {
@@ -52,7 +68,7 @@ pub struct Risk {
 }
 
 /// 建议：非强制优化提议
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Suggestion {
     Parallelize,
     Cache,

@@ -28,6 +28,9 @@ pub struct GovernanceReport {
     pub gate: GateResult,
     /// 审计链（已追加 emit 事件）
     pub audit: AuditChain,
+    /// 采纳的专家优化建议（经裁决器确认、未与硬约束冲突的 Suggestion）。
+    /// P1：此前专家产出的建议停留在 ExpertOpinion，流水线从不消费；现显式采纳并对外暴露。
+    pub adopted_suggestions: Vec<crate::expert::Suggestion>,
 }
 
 /// 全维优化入口
@@ -95,12 +98,28 @@ pub fn alliance_optimize(raw: &FlowGraph, ctx: &GovernContext) -> GovernanceRepo
     // 5. ⛨ 璇玑验证网关（最高权限，在治理之前）
     // 5.5 汇总专家「否决级」风险（Risk.veto=true）→ 并入算法验证否决。
     let expert_veto = opinions.iter().any(|o| o.risks.iter().any(|r| r.veto));
+    // 5.6 裁决冲突升级：同优先级维度约束冲突无法仲裁 → 升级 Blocking 否决
+    let escalated_conflict = plan.conflicts.iter().any(|c| c.escalated);
     let mut algo = verify(base, &opt);
     if expert_veto {
         algo.vetoed = true;
         algo.summary = format!(
             "{}; 专家否决级风险(生产/敏感数据越权写等)未通过安全审批",
             algo.summary
+        );
+    }
+    if escalated_conflict {
+        algo.vetoed = true;
+        let detail: Vec<String> = plan
+            .conflicts
+            .iter()
+            .filter(|c| c.escalated)
+            .map(|c| c.resolution.clone())
+            .collect();
+        algo.summary = format!(
+            "{}; 裁决冲突升级阻断: {}",
+            algo.summary,
+            detail.join(" | ")
         );
     }
 
@@ -145,6 +164,7 @@ pub fn alliance_optimize(raw: &FlowGraph, ctx: &GovernContext) -> GovernanceRepo
         algo,
         gate,
         audit,
+        adopted_suggestions: plan.adopted_suggestions.clone(),
     }
 }
 

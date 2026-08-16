@@ -375,6 +375,39 @@ impl AIAgent {
         rc.refine(blueprint_id, addition)
     }
 
+    /// 对话入口（接入真实 LLM 版）：把一句话需求编译成更细的系统蓝图。
+    /// 内部把 `LLMClient` 适配成 `LlmFn` 喂给需求编译器；未配置 API key 时自动降级到规则抽取。
+    pub async fn compile_requirement_with_llm(
+        &self,
+        requirement: &str,
+        name: &str,
+        tags: Vec<String>,
+    ) -> Result<SystemBlueprint> {
+        let llm = self.llm_client.read().await;
+        let llm_fn: Option<crate::requirement_compiler::LlmFn> = if llm.is_enabled() {
+            let client = llm.clone();
+            Some(Arc::new(move |msgs: Vec<crate::requirement_compiler::LlmMsg>| {
+                let client = client.clone();
+                Box::pin(async move {
+                    let chat_msgs: Vec<_> = msgs
+                        .into_iter()
+                        .map(|m| crate::llm_client::LLMChatMessage {
+                            role: m.role,
+                            content: m.content,
+                        })
+                        .collect();
+                    client.chat(chat_msgs).await
+                })
+            }))
+        } else {
+            None
+        };
+        drop(llm);
+
+        let mut rc = self.requirement_compiler.write().await;
+        rc.compile_with_llm(requirement, name, tags, llm_fn.as_ref()).await
+    }
+
     /// 把蓝图直接注册为可执行的 FlowDefinition（供 execute_flow 运行）
     pub async fn blueprint_to_flow(&self, bp: &SystemBlueprint) -> Result<()> {
         self.create_flow(bp.flow.clone()).await?;
