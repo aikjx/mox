@@ -1,0 +1,31 @@
+name: 关图门禁 (GR-STD)
+
+# 信息关联关系图驱动开发门禁：任何未同步图结构的提交都将被阻断。
+# 对应 GR-STD-V1.0 §7 变更同步原则与 §10 质量度量。
+on:
+  push:
+    branches: [main, master, dev]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  graph-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Rust 工具链
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: 运行关图门禁
+        run: python3 tools/guantu_gate.py
+
+      - name: 上传企业级关图产物
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: guantu-graph
+          path: |
+            graph.json
+            graph.enterprise.json
+          if-no-files-found: warn
