@@ -22,29 +22,38 @@ import librosa
 
 
 def voice_activity_mask(y: np.ndarray, sr: int = 16000,
-                        energy_thresh: float = 0.012,
+                        energy_thresh: float = 0.008,
                         centroid_min: float = 200.0,
                         centroid_max: float = 3500.0,
                         flatness_max: float = 0.25,
                         hop_ms: int = 10,
                         min_voiced_ms: int = 80,
                         frame_ms: int = 25) -> np.ndarray:
-    """返回时间帧（与后续 pitch 帧近似对齐）的 0/1 有声掩码。
+    """返回时间帧（与后续 pitch 帧对齐）的 0/1 有声掩码。
 
-    帧采用中心对齐，帧数 = floor(len(y) / hop) + 1，与 CREPE/pyin 的等间隔
-    时间戳对齐方式一致，便于直接按索引掩掉无声 pitch 点。
+    帧采用**起点对齐**（center=False）：第 i 帧对应样本 i*hop，时间 i*hop/sr，
+    与 CREPE/pyin 的等间隔时间戳（t = frame*hop/1000）严格对齐，便于按
+    idx=round(t/hop) 精确映射。帧数取 ceil(len/hop) 与 pitch 后端一致。
     """
     hop = max(1, int(round(sr * hop_ms / 1000.0)))
     frame = max(1, int(round(sr * frame_ms / 1000.0)))
     if len(y) < frame:
         return np.array([1], dtype=np.int8)  # 极短音频直接当作有声
 
-    n_frames = int(np.floor((len(y) - frame) / hop)) + 1
+    # 帧数必须与下游 pitch 后端（CREPE/pyin 的等间隔时间戳）一致：
+    # 它们产生约 ceil(len/hop) 帧，而非 floor。沿用 floor 会让末尾若干帧
+    # 在 apply_vad 中取 idx>=len(mask) 被静默丢弃 → 整段结尾音符丢失。
+    n_frames = int(np.ceil(len(y) / hop))
     if n_frames <= 0:
         return np.array([1], dtype=np.int8)
 
+    # center=False：帧起点对齐，确保与 CREPE 的 t=i*hop/1000 一致
     S = np.abs(librosa.stft(y, n_fft=frame, hop_length=hop, win_length=frame,
-                            window="hann", center=True))
+                            window="hann", center=False))
+    # 把频谱按 n_frames 截断/补齐（与 pitch 帧数严格一致）
+    S = S[:, :n_frames]
+    if S.shape[1] < n_frames:
+        S = np.pad(S, ((0, 0), (0, n_frames - S.shape[1])), mode="edge")
     # 1) 能量（RMS，跨频带）
     energy = np.sqrt(np.mean(S ** 2, axis=0) + 1e-12)
     e_ref = max(float(np.max(energy)), 1e-6)

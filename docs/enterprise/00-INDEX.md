@@ -25,7 +25,7 @@
 > | 核心铁律 | 全维双收口（流程图归一化 + 开发璇玑全维分析验证），见 `07` §3 |
 > | 自动化入口 | `XuanjiFusionView.vue` → `POST /api/optimize` → `xuanji_optimize` 8 步闭环 |
 > | 权威需求基准 | AA-STD-V1.0（融合域）/ BR-01…BR-21（协作域），见下方配套区 |
-> | 测试基线 | workspace 全绿：xuanji-expert 86 passed、primiflow-fusion 24 passed、全维分析需求 142 passed/0 failed |
+> | 测试基线 | workspace 全绿（实测 2026-08-17 `cargo test --workspace`：**642 passed / 0 failed**，15 crate / 57 测试二进制）：xuanji-expert 90、primiflow-fusion 44、xuanji-system 82（bin 55 + lib/main/集成 27）等，详见 `09` §3 与验收报告 §6 |
 >
 > **阅读顺序（推荐）**：`00`(本索引) → `07`(全维需求+铁律) → `08`(自动化处理) → `01`(需求) → `06`(需求-架构映射) → `02`(架构) → `03`(设计) → `04`(业务) → `05`(路线图) → `09`(完成归档)。
 

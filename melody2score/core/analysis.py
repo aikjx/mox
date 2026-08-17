@@ -38,12 +38,20 @@ def segment_notes(pitch_points: List[Dict], min_note_dur: float = 0.1,
     if not pitch_points:
         return []
 
-    # 0) VAD：拿掉呼吸/停顿/气声假音高
+    # 0) VAD：把静音帧的 pitch 点置 NaN（而非删除），让下方分段在 NaN 处自然切分。
+    #    直接删除会把相邻同音间的短静音「粘」成一段（尤其 CREPE 谐波泄漏在静音处
+    #    仍解为高 conf 同音时），导致"一闪一闪"被识别成"一——"。置 NaN 可保留
+    #    时间空洞，使相邻同音正确断开。
     if vad_mask is not None and len(vad_mask) > 0:
-        from .vad import apply_vad
-        pitch_points = apply_vad(pitch_points, vad_mask, hop_ms=10,
-                                 sr=16000)
-        if not pitch_points:
+        hop_ms = 10
+        silent = 0
+        for p in pitch_points:
+            idx = int(round(p["t"] / (hop_ms / 1000.0)))
+            if not (0 <= idx < len(vad_mask)) or vad_mask[idx] == 0:
+                p["freq"] = 0.0  # freq2midi(0) -> None，分段时视为切分点
+                silent += 1
+        # 仅当几乎所有点都被判静音时才整体放弃
+        if silent >= 0.9 * len(pitch_points):
             return []
 
     # 人声模式：颤音更明显，中值窗不足时自动加窗
@@ -54,11 +62,16 @@ def segment_notes(pitch_points: List[Dict], min_note_dur: float = 0.1,
     mids = _median_filter(mids, median_win)
 
     # 半音量化 + 初分段
+    # 注意：VAD 静音帧被置 NaN（见上方步骤 0），遇到 NaN 表示此处有「时间空洞」，
+    # 应把当前正在累积的音符先收尾（append）再断开，而非直接丢弃——否则相邻同音
+    # 间的短静音会把两段都吞掉。连续多个 NaN 时仅在首次断开，避免重复 append。
     raw: List[Dict] = []
     cur = None
     for p, m in zip(pitch_points, mids):
         if np.isnan(m):
-            cur = None
+            if cur is not None:
+                raw.append(cur)
+                cur = None
             continue
         mi = int(round(m))
         if cur is None:
@@ -79,30 +92,55 @@ def segment_notes(pitch_points: List[Dict], min_note_dur: float = 0.1,
 
 
 def _merge_short(notes: List[Dict], min_note_dur: float) -> List[Dict]:
+    """合并过短段到最合理的邻居。
+
+    合并策略（比单纯「音高最近」更稳）：
+      - 短段优先并入**时间上紧邻**且**时长更长**的邻居（颤音/滑音毛刺通常
+        夹在两个长音之间，应并入相邻长音而非误并入另一个真实短音）；
+      - 仅当两侧都更长时，才在音高最近者中选；若被长段夹在中间且两侧均
+        比它长，则按音高最近合并。
+    """
     out = list(notes)
     changed = True
     while changed:
         changed = False
-        for i, n in enumerate(out):
-            if (n["end"] - n["start"]) <= min_note_dur:
-                best, best_d = None, 1e9
-                if i > 0:
-                    d = abs(out[i - 1]["midi"] - n["midi"])
-                    if d < best_d:
-                        best_d, best = d, i - 1
-                if i < len(out) - 1:
-                    d = abs(out[i + 1]["midi"] - n["midi"])
-                    if d < best_d:
-                        best_d, best = d, i + 1
-                if best is None:
-                    out.pop(i)
+        n = len(out)
+        for i in range(n):
+            dur_i = out[i]["end"] - out[i]["start"]
+            if dur_i <= min_note_dur:
+                prev_longer = out[i - 1]["end"] - out[i - 1]["start"] > dur_i if i > 0 else False
+                next_longer = out[i + 1]["end"] - out[i + 1]["start"] > dur_i if i < n - 1 else False
+
+                # 两侧都更长：按音高最近合并（典型颤音毛刺）
+                if prev_longer and next_longer:
+                    best = i - 1 if abs(out[i - 1]["midi"] - out[i]["midi"]) <= abs(out[i + 1]["midi"] - out[i]["midi"]) else i + 1
+                elif prev_longer:
+                    best = i - 1
+                elif next_longer:
+                    best = i + 1
+                elif i > 0 or i < n - 1:
+                    # 两侧都更短/等长：退化为音高最近
+                    best, best_d = None, 1e9
+                    if i > 0:
+                        d = abs(out[i - 1]["midi"] - out[i]["midi"])
+                        if d < best_d:
+                            best_d, best = d, i - 1
+                    if i < n - 1:
+                        d = abs(out[i + 1]["midi"] - out[i]["midi"])
+                        if d < best_d:
+                            best_d, best = d, i + 1
                 else:
-                    nb = out[best]
-                    nb["start"] = min(nb["start"], n["start"])
-                    nb["end"] = max(nb["end"], n["end"])
                     out.pop(i)
-                changed = True
-                break
+                    changed = True
+                    break
+
+                if best is not None:
+                    nb = out[best]
+                    nb["start"] = min(nb["start"], out[i]["start"])
+                    nb["end"] = max(nb["end"], out[i]["end"])
+                    out.pop(i)
+                    changed = True
+                    break
     return out
 
 

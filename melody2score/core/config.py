@@ -20,11 +20,12 @@ class Config:
     fmin: float = 50.0              # 基频下界（Hz）
     fmax: float = 1100.0            # 基频上界（Hz）
     enable_vad: bool = True         # 人声活动检测，过滤呼吸/停顿/气声假音高
-    vad_energy_thresh: float = 0.012    # VAD 能量门限（相对峰值）
+    vad_energy_thresh: float = 0.006    # VAD 能量门限（相对峰值，偏低以抑制谐波泄漏残留）
     vad_centroid_min: float = 200.0     # VAD 谱质心下界
     vad_centroid_max: float = 3500.0    # VAD 谱质心上界
     vad_flatness_max: float = 0.25      # VAD 谱平坦度上界（人声低）
     min_voiced_ms: int = 80         # VAD 最小有声段（短于该值的孤立段视为毛刺）
+    robust: bool = True              # 稳健重识别：多次识别取音符级共识，抑制单次偶发错误
 
     @classmethod
     def pc(cls) -> "Config":

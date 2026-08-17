@@ -37,7 +37,7 @@ def gen(out_path: str = "tests/twinkle.wav"):
         env[:atk] = np.linspace(0, 1, atk)
         env[-rel:] = np.linspace(1, 0, rel)
         segs.append(sig * env * 0.8)
-        segs.append(np.zeros(int(0.02 * SR)))  # 音符间 20ms 静音
+        segs.append(np.zeros(int(0.09 * SR)))  # 音符间 90ms 静音（>min_voiced，可分辨相邻同音）
     y = np.concatenate(segs).astype(np.float32)
     sf.write(out_path, y, SR)
     print(f"[gen] 已生成 {out_path}  (sr={SR})")
