@@ -34,13 +34,44 @@ impl Default for Quotas {
     }
 }
 
+/// 持久化后端类型（对应 Spring Boot 的多数据源抽象）
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
+pub enum Backend {
+    Sqlite,
+    Postgres,
+    MySql,
+}
+
+impl Default for Backend {
+    fn default() -> Self {
+        Backend::Sqlite
+    }
+}
+
+impl Backend {
+    pub fn parse(s: &str) -> Self {
+        match s.to_ascii_lowercase().as_str() {
+            "postgres" | "pg" | "postgresql" => Backend::Postgres,
+            "mysql" | "mariadb" => Backend::MySql,
+            _ => Backend::Sqlite,
+        }
+    }
+}
+
 /// 全局应用配置
 #[derive(Clone, Debug, Deserialize)]
 pub struct AppConfig {
-    /// 是否启用 SQLite 持久化（true=系统记录落盘，false=纯内存）
+    /// 是否启用持久化（true=系统记录落盘，false=纯内存）
     pub persist: bool,
+    /// 持久化严格模式：打开后若系统记录仓库打开/建表失败，**直接启动失败**
+    /// （fail-fast），而非静默回退内存模式。生产环境强烈建议开启，避免"连不上数据库却照常起服务"导致数据只进内存、丢失不可恢复。
+    pub strict_persist: bool,
+    /// 持久化后端：sqlite / postgres / mysql（默认 sqlite）
+    pub backend: Backend,
     /// 数据目录（SQLite 单文件与快照存放处）
     pub data_dir: String,
+    /// 数据库连接串（postgres/mysql 使用；sqlite 留空则按 data_dir 生成）
+    pub db_url: String,
     /// HTTP 绑定地址
     pub bind_addr: String,
     /// CORS 允许的源（逗号分隔；为空表示不开放跨域）
@@ -59,7 +90,11 @@ impl Default for AppConfig {
     fn default() -> Self {
         Self {
             persist: false,
+            // 默认关闭严格模式，保持与历史"静默回退内存"行为兼容（测试/演示更友好）
+            strict_persist: false,
+            backend: Backend::Sqlite,
             data_dir: "./data".to_string(),
+            db_url: String::new(),
             bind_addr: "0.0.0.0:3000".to_string(),
             cors_allowed_origins: vec![],
             rate_limit: 120,
@@ -78,6 +113,15 @@ impl AppConfig {
 
         if let Some(v) = get("PERSIST") {
             cfg.persist = v == "1" || v.eq_ignore_ascii_case("true");
+        }
+        if let Some(v) = get("STRICT_PERSIST") {
+            cfg.strict_persist = v == "1" || v.eq_ignore_ascii_case("true");
+        }
+        if let Some(v) = get("BACKEND") {
+            cfg.backend = Backend::parse(&v);
+        }
+        if let Some(v) = get("DB_URL") {
+            cfg.db_url = v;
         }
         if let Some(v) = get("DATA_DIR") {
             cfg.data_dir = v;
@@ -132,6 +176,22 @@ impl AppConfig {
     /// SQLite 数据库文件路径
     pub fn db_path(&self) -> String {
         format!("{}/xuanji.db", self.data_dir.trim_end_matches('/'))
+    }
+
+    /// 解析实际连接串（按 backend 选择）
+    /// - sqlite：data_dir/xuanji.db（或 db_url 若为 file: 形式）
+    /// - postgres/mysql：直接使用 db_url（如 postgres://user:pass@host:5432/db）
+    pub fn connection_url(&self) -> String {
+        match self.backend {
+            Backend::Sqlite => {
+                if self.db_url.starts_with("file:") || self.db_url.ends_with(".db") {
+                    self.db_url.clone()
+                } else {
+                    self.db_path()
+                }
+            }
+            _ => self.db_url.clone(),
+        }
     }
 
     /// 是否开放跨域（允许列表非空）

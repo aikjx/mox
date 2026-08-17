@@ -16,9 +16,19 @@ venv/
 .pytest_cache/
 .mypy_cache/
 
-# Logs
+# Logs / 标准输出捕获
 *.log
+*.out
 logs/
+
+# 运行时数据库（不入库）
+*.db
+*.db-wal
+*.db-shm
+primiflow_runtime/
+
+# 合成音频语料（由 gen_classic_melodies.py 生成）
+melody2score/audio/*.wav
 
 # OS / editor
 .DS_Store

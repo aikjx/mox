@@ -140,7 +140,11 @@ async fn run_server() {
     let config = AppConfig::load();
     // 内存 / 持久化统一按 12-Factor 配置构建：内存模式同样尊重 XUANJI_BIND / RATE_LIMIT / CORS
     // （持久化由 config.persist 决定；即使持久化打开失败也回退为内存，但保留同一份运行配置）
-    let sys = Arc::new(XuanjiSystem::with_config(config.clone()).expect("按配置构建璇玑系统失败"));
+    let sys = Arc::new(
+        XuanjiSystem::with_config(config.clone())
+            .await
+            .expect("按配置构建璇玑系统失败"),
+    );
 
     // 持久化模式下，若数据库中已存在璇玑则不重复引导（幂等启动）
     if sys.store.xuanji_count().await == 0 {
@@ -163,7 +167,22 @@ async fn run_server() {
         .await
         .expect("bind failed");
     println!("璇玑系统已启动: http://{}", addr);
-    println!("  持久化模式: {}", if persistent { "开启 (SQLite)".to_string() } else { "关闭 (内存)".to_string() });
+    println!(
+        "  持久化模式: {}",
+        if persistent {
+            format!(
+                "开启 (后端={:?}{})",
+                sys.config.backend,
+                if sys.config.strict_persist {
+                    ", 严格模式=开(连库失败即中止)"
+                } else {
+                    ", 严格模式=关(连库失败回退内存)"
+                }
+            )
+        } else {
+            "关闭 (内存)".to_string()
+        }
+    );
     println!("  指标端点: http://{}/api/metrics", addr);
     println!("WebSocket 实时通知: ws://{}/api/ws?token=<token>", addr);
     axum::serve(listener, app).await.expect("serve");

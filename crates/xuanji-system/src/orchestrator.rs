@@ -43,21 +43,30 @@ impl Default for XuanjiSystem {
 impl XuanjiSystem {
     /// 纯内存模式（测试 / 演示）：默认配置，无持久化
     pub fn new() -> Self {
-        let config = Arc::new(AppConfig::default());
-        Self::build(config, false)
+        Self::assemble(Arc::new(Store::new()), Arc::new(AppConfig::default()))
     }
 
-    /// 按配置构建；`persist` 为 true 时使用 SQLite 系统记录（启动时重放）
-    pub fn with_config(config: AppConfig) -> Result<Self, AppError> {
+    /// 按配置构建；`persist` 为 true 时按 `backend` 打开对应系统记录仓库（启动时重放）
+    pub async fn with_config(config: AppConfig) -> Result<Self, AppError> {
         let persist = config.persist;
-        Ok(Self::build(Arc::new(config), persist))
+        Self::build(Arc::new(config), persist).await
     }
 
-    fn build(config: Arc<AppConfig>, persist: bool) -> Self {
+    async fn build(config: Arc<AppConfig>, persist: bool) -> Result<Self, AppError> {
         let store = if persist {
-            match Store::open(&config.db_path()) {
+            match Store::open(config.backend, &config.connection_url()).await {
                 Ok(s) => Arc::new(s),
                 Err(e) => {
+                    if config.strict_persist {
+                        // 企业级 fail-fast：生产环境若无法连上配置的数据库，
+                        // 直接返回错误中止启动（而非 panic backtrace），避免
+                        // "连不上库却照常起服务、数据只写进内存、丢失不可恢复"
+                        // 的静默故障。错误会经 with_config 上浮到 main 的 expect。
+                        return Err(AppError::Internal(format!(
+                            "持久化存储打开失败（strict_persist=true，启动中止）：{}",
+                            e
+                        )));
+                    }
                     tracing::error!("持久化存储打开失败，回退到内存模式: {}", e);
                     Arc::new(Store::new())
                 }
@@ -65,6 +74,11 @@ impl XuanjiSystem {
         } else {
             Arc::new(Store::new())
         };
+        Ok(Self::assemble(store, config))
+    }
+
+    /// 组装服务图（store 已就绪后调用，纯同步）
+    fn assemble(store: Arc<Store>, config: Arc<AppConfig>) -> Self {
         let metrics = Arc::new(Metrics::new());
         // 审计计数器与 Store 共享同一原子，确保 /metrics 与内存状态一致
         let metrics = Arc::new(Metrics {

@@ -2,6 +2,7 @@
 
 use crate::context::{ExpertContext, GovernContext};
 use crate::govern::{apply_rules, govern, AuditChain, FlowStatus, GateResult};
+use crate::tenant_policy::{apply_gates, evaluate_gates};
 use crate::harness::{
     expert_plugins, run_experts, HarnessCtx, HarnessProfile, ModelAdapterConfig, WaterfallEvent,
     WaterfallState,
@@ -126,6 +127,10 @@ pub fn xuanji_optimize(raw: &FlowGraph, ctx: &GovernContext) -> GovernanceReport
     // 6. 治理闸门（尊重算法否决）
     let status = if algo.vetoed { FlowStatus::Blocked } else { FlowStatus::Approved };
     let mut gate = govern(&plan, &opt, status, &ctx.quota, &ctx.principal.subject, algo.vetoed);
+    // 6.x 治理 8 闸门全量门禁（I-06）：把租户策略 + 租户合规(G3)/敏感度(G6)/灾备(G8)
+    // 等此前未接进门禁的闸门，统一接管 approve 判定。G4 SLA/G5 预算/G1/G2/G7 复用治理内核既有结论。
+    let gates = evaluate_gates(&ctx, &opt, status, algo.vetoed, gate.sla_ok, gate.budget_ok, gate.approved);
+    gate = apply_gates(gate, &gates);
 
     // 6.5 闸门瀑布扩展点：PreGate 钩子可追加前置校验，PostGate 钩子做后置审计
     let mut wf_state = WaterfallState {

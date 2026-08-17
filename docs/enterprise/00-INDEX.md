@@ -68,6 +68,15 @@
 | `crates/xuanji-expert/DESIGN.md` / `DESIGN_STAGE2.md` | 设计（融合引擎） | 璇玑引擎实现设计 | 🟡 参考 |
 | `docs/xuanji-system-business-architecture.html` | 架构（可视化） | 全维度分层架构交互图（源为 `.md`） | 🟡 可视化 |
 | `docs/*-20260816*.md`（PrimiFlow-/xuanji-expert-验证总结- 等） | 过程稿 | 当日开发验证快照，结论已沉淀入本目录 | 🟡 过程稿 |
+| `docs/specs/PT-Primi-架构规范-V1.0-完整版.md` | 规范 | PT-STD-V1.0 全域拓扑原语架构（六维物理底座） | 🟢 权威 |
+| `docs/specs/GR-STD-信息关联关系图开发规范-V1.0.md` | 规范 | GR-STD-V1.0 关图开发规范（信息实体建模） | 🟢 权威 |
+| `docs/specs/OUS-业务功能规划与架构数据关系分析.md` | 规划 | 12 crate 现状盘点 + 能力域规划 | 🟢 权威 |
+| `docs/full-dimensional/guantu-skeleton.md` | 关图骨架 | REQ 根（D01-D13/R01-R08）+ 六维绑定 + 偏离检测（GR-E6） | 🟢 权威 |
+| `docs/full-dimensional/xuanji-requirement-baseline.md` | 索引 | 编号归一化收口（①-⑩ / C1-C8 → S1-S8） | 🟢 索引 |
+| `docs/full-dimensional/GOVERNANCE_CONSOLE_API_READY_20260816.md` | 治理台 API | RBAC/审计链契约（v3.0） | 🟢 权威 |
+| `docs/full-dimensional/关图骨架定义.md` 等四份原始文档 | 过程稿 | 已归一承载于 AA-STD / guantu-skeleton，见 `full-dimensional/00-README.md` | 🟡 过程稿 |
+| `docs/graph/graph.json` `graph.enterprise.json` `guantu.req.json` | 关图产物 | 机读图谱（代码级 352 节点 / 企业版 372 节点含 REQ/Bind） | 🟡 产物 |
+| `docs/README.md` | 专题导航 | 关图/全维快捷分区索引，本 `00-INDEX` 为唯一治理入口 | 🟢 导航 |
 
 ---
 
@@ -114,7 +123,8 @@
 | 迭代可持续 | 路线图 + DoD + KPI + 风险 | `05-iteration-roadmap.md` | ✅ |
 | 可观测性设计 | 指标/追踪/告警定义 | `05` 待补 → `02` §技术视图 | 📋 |
 | 多租户隔离 | 数据/策略按租户分层 | `01/02` 已声明，`05` 强化 | 📋 |
-| 灾备与持久化 | WAL/快照/重放 | `05` 路线图 | 📋 |
+| 持久化与可移植 | 多后端（SQLite/PG/MySQL）+ 写透重放 + fail-fast | `02` §7.4（唯一配置基准）+ `05` I-01/I-02 | ✅ |
+| 灾备 | 冷备/PITR 可用；WAL 快照与混沌演练 | `02` §7.3 + `05` I-12 | 📋 |
 
 ---
 

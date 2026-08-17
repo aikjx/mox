@@ -125,6 +125,9 @@ pub struct GateResult {
     /// 璇玑验证否决（最高优先级，任何权限/合规都不可覆盖）
     pub algorithm_veto: bool,
     pub reason: String,
+    /// 治理 8 闸门明细（I-06 全量门禁）：含 G1~G8 的逐闸结果
+    #[serde(default)]
+    pub gates: Vec<crate::tenant_policy::GateCheck>,
 }
 
 /// 治理裁决
@@ -169,6 +172,7 @@ pub fn govern(
         blocking_risks: blocking,
         algorithm_veto: algo_veto,
         reason,
+        gates: Vec::new(),
     }
 }
 

@@ -97,7 +97,7 @@
 
 首版绑定锚点示例：`Requirement:D01 --Bind--> CodeFile:crates/operator-core/src/lib.rs`
 
-> D04 实例与 TraceMatrix 主表见《璇玑全维分析需求业务处理基准》（`xuanji-requirement-baseline.md`）及其附表《TraceMatrix 六维绑定追溯》（`xuanji-trace-matrix.md`）。
+> D04 实例与六维绑定 TraceMatrix 见 AA-STD §3（`璇玑-全维需求业务处理流程图-归一化企业级.md`）与 PT-STD（`crates/primiflow/trace_matrix.md`）；文档归一化索引见 `xuanji-requirement-baseline.md`。
 
 ---
 
