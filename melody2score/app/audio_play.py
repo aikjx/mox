@@ -82,37 +82,38 @@ def play_raw(y: np.ndarray, sr: int):
     t.start()
 
 
+_HARMONICS = np.array([1.0, 0.55, 0.38, 0.22, 0.14, 0.09, 0.05], dtype=np.float64)
+_HARM_K = np.arange(1, len(_HARMONICS) + 1, dtype=np.float64)
+
+
 def _piano_note(midi: int, dur: float, sr: int = SR) -> np.ndarray:
-    """合成单个钢琴音：基频 + 谐波（1:2:3:4:5:6 加权衰减）+ 快起慢落 ADSR。"""
+    """合成单个钢琴音（向量化）：基频 + 谐波加权 + 快起慢落 ADSR。
+
+    用 np.add.outer 一次性生成所有谐波相位，避免逐样本 Python 循环。
+    """
     f0 = 440.0 * 2 ** ((midi - 69) / 12.0)
     n = max(1, int(dur * sr))
-    t = np.arange(n) / sr
-    harmonics = [1.0, 0.55, 0.38, 0.22, 0.14, 0.09, 0.05]
-    sig = np.zeros(n, dtype=np.float64)
-    for k, amp in enumerate(harmonics, start=1):
-        sig += amp * np.sin(2 * np.pi * f0 * k * t)
+    # 相位矩阵：shape (n_samples, n_harmonics)，一次运算替代嵌套循环
+    t = np.arange(n, dtype=np.float64) / sr
+    phase = 2 * np.pi * f0 * (_HARM_K[:, None] * t[None, :])
+    sig = (_HARMONICS[:, None] * np.sin(phase)).sum(axis=0)
     sig /= np.max(np.abs(sig)) + 1e-9
 
-    # ADSR：快起音(5ms) + 衰减 + 持续 + 释放(60ms)
+    # ADSR：快起音(5ms) + 释放(60ms) + 轻微自然衰减
     atk = int(0.005 * sr)
     rel = int(0.06 * sr)
     env = np.ones(n, dtype=np.float64)
-    for i in range(min(atk, n)):
-        env[i] = i / atk
+    if atk < n:
+        env[:atk] = np.linspace(0.0, 1.0, atk)
     if n > rel:
         env[-rel:] = np.linspace(1.0, 0.0, rel)
-    # 轻微整体衰减（钢琴自然衰减）
     env *= np.exp(-t * 2.2)
     sig *= env
     return sig.astype(np.float32)
 
 
-def play_score(notes: list, sr: int = SR, gap: float = 0.0) -> np.ndarray:
-    """按音符序列合成整段钢琴曲并播放，返回波形。
-
-    notes: [{'midi','start','end'}...]（start/end 用于保持时序与节拍）。
-    无 start/end 时按 dur 顺序拼接。
-    """
+def _synth_score(notes: list, sr: int = SR) -> np.ndarray:
+    """后台线程用：把音符序列合成整段钢琴波形（向量化）。"""
     if not notes:
         return np.zeros(1, dtype=np.float32)
     total_dur = float(notes[-1]["end"]) if "end" in notes[-1] else sum(
@@ -132,8 +133,15 @@ def play_score(notes: list, sr: int = SR, gap: float = 0.0) -> np.ndarray:
         out[i0:i1] += note[: i1 - i0]
     peak = np.max(np.abs(out)) + 1e-9
     out = (out / peak * 0.9).astype(np.float32)
-    out = np.ascontiguousarray(out, dtype=np.float32)
-    stop()
-    t = threading.Thread(target=_play_blocking, args=(out, sr), daemon=True)
+    return np.ascontiguousarray(out, dtype=np.float32)
+
+
+def play_score(notes: list, sr: int = SR, gap: float = 0.0) -> threading.Thread:
+    """在后台线程合成并播放钢琴曲，立即返回，不阻塞调用方（UI 线程）。"""
+    def _run():
+        out = _synth_score(notes, sr)
+        stop()
+        _play_blocking(out, sr)
+    t = threading.Thread(target=_run, daemon=True)
     t.start()
-    return out
+    return t

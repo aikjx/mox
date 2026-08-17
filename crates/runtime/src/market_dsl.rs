@@ -487,6 +487,7 @@ mod tests {
             tenant_id: "default".to_string(),
             created_by: "tester".to_string(),
             permissions: vec![],
+            ..Default::default()
         }
     }
 

@@ -104,7 +104,7 @@ fn default_status() -> String {
 }
 
 /// 算子包（商城核心资产）
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct OperatorPackage {
     pub id: String,
     pub name: String,
@@ -571,6 +571,7 @@ async fn upload_package(
         tenant_id,
         created_by: req.created_by,
         permissions: req.permissions,
+        ..Default::default()
     };
 
     if let Err(e) = save_package(&pkg) {
@@ -697,6 +698,7 @@ async fn clone_package(
         tenant_id: src.tenant_id.clone(),
         created_by: String::new(),
         permissions: src.permissions.clone(),
+        ..Default::default()
     };
     if let Err(e) = save_package(&cloned) {
         return (
@@ -913,6 +915,7 @@ async fn ensure_seed(state: &MarketState) {
         tenant_id: default_tenant(),
         created_by: "system".to_string(),
         permissions: vec![],
+        ..Default::default()
     };
     let _ = save_package(&seed);
     state.index.lock().await.insert(seed.id.clone(), seed.meta());
@@ -928,9 +931,9 @@ pub fn publish_unified(
     nodes: Vec<flow_ai::model::FlowNode>,
     edges: Vec<flow_ai::model::FlowEdge>,
     tags: Vec<String>,
-    /// 来源璇玑全维治理报告（I-07 产物来源追溯）
+    // 来源璇玑全维治理报告（I-07 产物来源追溯）
     report: Option<&xuanji_expert::pipeline::GovernanceReport>,
-    /// 来源任务 ID（双璇玑任务闭环）
+    // 来源任务 ID（双璇玑任务闭环）
     task_id: Option<String>,
 ) -> std::io::Result<OperatorPackage> {
     let id = gen_id();
@@ -962,20 +965,28 @@ pub fn publish_unified(
     // I-07 产物来源追溯：从治理报告固化"优化前/后"证据
     let (source_flow_id, dual_acceptance, provenance) = match report {
         Some(r) => {
-            let critical_before = r.optimization.graph.nodes.len();
-            let critical_after = r.optimization.gains.critical_path.len().max(1);
+            let critical_before = r.optimization.optimized_graph.nodes.len();
+            let critical_after = r
+                .optimization
+                .critical_path
+                .critical_paths
+                .iter()
+                .map(|p| p.len())
+                .max()
+                .unwrap_or(1)
+                .max(1);
             let speedup = if critical_after > 0 {
                 critical_before as f64 / critical_after as f64
             } else {
-                1.0
+                r.optimization.gains.speedup
             };
-            let conflicts = r.optimization.conflicts.all().len();
+            let conflicts = r.optimization.conflicts.conflicts.len();
             let expert_score = if r.expert_scores.is_empty() {
                 100.0
             } else {
-                r.expert_scores.iter().map(|(_, s)| s).sum::<f64>() / r.expert_scores.len() as f64
+                r.expert_scores.iter().map(|(_, s)| *s).sum::<f64>() / r.expert_scores.len() as f64
             };
-            let dual_ok = r.algo.vetoed == false && r.gate.approved;
+            let dual_ok = !r.algo.vetoed && r.gate.approved;
             (
                 Some(r.flow_id.clone()),
                 dual_ok,
@@ -983,7 +994,7 @@ pub fn publish_unified(
                     algo_verified: !r.algo.vetoed,
                     gates_passed: r.gate.approved,
                     critical_path_before: critical_before,
-                    critical_path_after,
+                    critical_path_after: critical_after,
                     speedup,
                     conflicts,
                     expert_score,

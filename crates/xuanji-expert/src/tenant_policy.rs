@@ -151,6 +151,7 @@ pub fn evaluate_gates(
     ctx: &GovernContext,
     opt: &flow_ai::pipeline::OptimizationReport,
     status: crate::govern::FlowStatus,
+    #[allow(unused_variables)]
     algo_veto: bool,
     // G4 SLA / G5 预算：直接复用治理内核 `govern()` 的判定，避免重复计算漂移
     sla_ok: bool,

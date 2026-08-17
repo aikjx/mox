@@ -177,7 +177,9 @@ export const automationUpdate = (id, payload) => http.put(`/automation/${encodeU
 // 维度清单与璇玑健康度
 export const xuanjiHealth = () => http.get('/xuanji/health')
 // 传入流程蓝图（FlowGraph）做全维治理，返回 GovernanceReport（专家评分/闸门/璇玑/采纳建议）
-export const xuanjiOptimize = (flow) => http.post('/xuanji/optimize', { flow })
+// tenant: "default"=普通商业租户 / "gov"=强合规租户（政务/金融，驱动 I-06 治理 8 闸门分层）
+export const xuanjiOptimize = (flow, tenant = 'default') =>
+  http.post('/xuanji/optimize', { flow, tenant })
 // 全维融合发布：归一化 -> 取优化图 -> 一键落盘上传算子市场（插件/应用平台）
 export const xuanjiPublish = (payload) => http.post('/xuanji/publish', payload)
 
