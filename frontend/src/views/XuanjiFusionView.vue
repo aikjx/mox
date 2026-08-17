@@ -126,6 +126,7 @@ const blueprintText = ref(JSON.stringify({
 }, null, 2))
 
 const report = ref(null)
+const tenant = ref('default')
 const loadingNorm = ref(false)
 const loadingPublish = ref(false)
 const pkgName = ref('')
@@ -166,7 +167,7 @@ async function normalize() {
   }
   loadingNorm.value = true
   try {
-    const r = await xuanjiOptimize(flow)
+    const r = await xuanjiOptimize(flow, tenant.value)
     report.value = r
     pkgName.value = pkgName.value || '全维融合算子'
     ElMessage.success('归一化完成，治理闸门：' + (r.governance?.gate || '—'))

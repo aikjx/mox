@@ -146,7 +146,7 @@ class StaffView(QWidget):
         super().__init__()
         self.notes = []
         self.key = {"tonic": "C", "mode": "major"}
-        self.setMinimumHeight(200)
+        self.setMinimumHeight(260)
 
     def setData(self, notes, key):
         self.notes = notes
@@ -206,7 +206,7 @@ class PitchView(QWidget):
     def __init__(self):
         super().__init__()
         self.notes = []
-        self.setMinimumHeight(180)
+        self.setMinimumHeight(220)
 
     def setData(self, notes):
         self.notes = notes
@@ -254,8 +254,8 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Melody2Score · 哼唱旋律转谱（企业级桌面版）")
-        self.setMinimumSize(1100, 720)
-        self.resize(1180, 780)
+        self.setMinimumSize(1360, 900)
+        self.resize(1440, 920)
         self.current = None
         self.pending_file = None
         self._raw_y = None
@@ -280,7 +280,7 @@ class MainWindow(QMainWindow):
             QTableWidget{{background:{PANEL2};gridline-color:{LINE};border:1px solid {LINE};}}
             QHeaderView::section{{background:{PANEL};color:{MUTED};border:none;padding:6px;}}
             QTextEdit{{background:#0b1020;border:1px solid {LINE};border-radius:10px;
-                color:#dfe9ff;font-family:Consolas,monospace;font-size:17px;}}
+                color:#dfe9ff;font-family:Consolas,monospace;font-size:14px;}}
             QTabBar::tab{{background:{PANEL2};color:{MUTED};padding:8px 16px;border-radius:8px;margin:2px;}}
             QTabBar::tab:selected{{background:{ACCENT};color:#06101f;}}
             QProgressBar{{background:{PANEL2};border:1px solid {LINE};border-radius:6px;text-align:center;}}
@@ -297,7 +297,7 @@ class MainWindow(QMainWindow):
 
         # 左侧控制
         left = QFrame()
-        left.setFixedWidth(310)
+        left.setFixedWidth(360)
         lv = QVBoxLayout(left)
         lv.setSpacing(10)
 
@@ -374,10 +374,6 @@ class MainWindow(QMainWindow):
         lv.addWidget(g_s)
 
         lv.addStretch(1)
-        self.btnRun = QPushButton("▶ 开始识别")
-        self.btnRun.setEnabled(False)
-        self.btnRun.clicked.connect(self.run_file)
-        lv.addWidget(self.btnRun)
         self.btnSave = QPushButton("💾 保存 Markdown")
         self.btnSave.setEnabled(False)
         self.btnSave.clicked.connect(self.save_md)
@@ -486,9 +482,14 @@ class MainWindow(QMainWindow):
         if path:
             self.pending_file = path
             self.lblFile.setText(os.path.basename(path))
-            self.btnRun.setEnabled(True)
             self.btnPreview.setEnabled(True)
-            self.status.setText(f"已选择：{os.path.basename(path)}")
+            self.status.setText(f"已选择：{os.path.basename(path)}，开始识别…")
+            try:
+                self._raw_y, self._raw_sr = load_audio_bytes(open(path, "rb").read(), 22050)
+            except Exception as e:
+                self._raw_y = None
+                self.status.setText(f"已选择（试听加载失败：{e}）")
+            self.run_file()
             # 缓存原始波形用于试听
             try:
                 self._raw_y, self._raw_sr = load_audio_bytes(open(path, "rb").read(), 22050)
@@ -536,7 +537,6 @@ class MainWindow(QMainWindow):
                      "source": f"麦克风录音 {secs}s"})
 
     def _start(self, source: Dict):
-        self.btnRun.setEnabled(False)
         self.btnSample.setEnabled(False)
         self.progress.setVisible(True)
         self.progress.setRange(0, 0)
@@ -602,7 +602,6 @@ class MainWindow(QMainWindow):
     def on_done(self, res: Dict):
         self.current = res
         self.progress.setVisible(False)
-        self.btnRun.setEnabled(True)
         self.btnSample.setEnabled(self.sampleCombo.isEnabled())
         self.btnSave.setEnabled(True)
         self.btnPlayScore.setEnabled(True)
@@ -626,7 +625,6 @@ class MainWindow(QMainWindow):
 
     def on_err(self, msg: str):
         self.progress.setVisible(False)
-        self.btnRun.setEnabled(bool(self.pending_file))
         self.btnSample.setEnabled(self.sampleCombo.isEnabled())
         self.status.setText(f"错误：{msg}")
         QMessageBox.critical(self, "识别失败", msg)
@@ -651,7 +649,7 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "播放", "尚无可播放的识别结果。")
             return
         try:
-            self.status.setText("正在播放识别后的钢琴曲…")
+            self.status.setText("合成并播放钢琴曲中…（后台进行，界面不卡）")
             play_score(self.current["notes"], sr=22050)
         except Exception as e:
             self.status.setText(f"钢琴播放失败：{e}")

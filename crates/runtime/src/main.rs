@@ -763,6 +763,10 @@ async fn health() -> &'static str {
 #[derive(Debug, Clone, Deserialize)]
 struct XuanjiOptimizeRequest {
     flow: serde_json::Value,
+    /// 租户策略分层（I-06）："gov"=强合规租户（政务/金融，强制脱敏/灾备闸门），
+    /// 其它=普通商业租户。驱动治理 8 闸门按租户严格度差异化裁决。
+    #[serde(default)]
+    tenant: Option<String>,
 }
 
 /// 全维治理：返回 GovernanceReport（专家评分 + 优化 + 璇玑验证 + 闸门 + 审计 + 采纳建议）
@@ -809,8 +813,12 @@ fn normalize_flow_to_graph(v: &serde_json::Value) -> flow_ai::model::FlowGraph {
 async fn xuanji_optimize_handler(
     Json(req): Json<XuanjiOptimizeRequest>,
 ) -> Json<serde_json::Value> {
+    let tenant = match req.tenant.as_deref() {
+        Some("gov") => xuanji_expert::context::Tenant::new("gov", "gov-ns").regulated(true),
+        _ => xuanji_expert::context::Tenant::new("default", "default"),
+    };
     let ctx = GovernContext::new(
-        xuanji_expert::context::Tenant::new("default", "default"),
+        tenant,
         xuanji_expert::context::Principal::new("designer").with_roles(vec!["editor".into()]),
     );
     let report = xuanji_optimize(&normalize_flow_to_graph(&req.flow), &ctx);
