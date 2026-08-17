@@ -85,34 +85,54 @@ class RecognizeWorker(QThread):
             y = preprocess.preprocess(y, sr, cfg.enable_denoise)
             t_pre = time.time() - t0
 
-            t0 = time.time()
-            det = pitch.PitchDetector(
-                model_size=cfg.model_size, conf_thresh=cfg.conf_thresh, hop=cfg.hop,
-                intra_op_threads=cfg.intra_op_threads, backend="auto", sr=sr,
-                fmin=cfg.fmin, fmax=cfg.fmax)
-            pts = det.detect(y, sr)
-            t_pitch = time.time() - t0
+            # 稳健重识别：同一音频跑 N 次（抖动置信阈值 / 帧移），对音符做共识合并，
+            # 抑制单次识别偶发的假音高与漏音，显著提升稳定性。
+            n_runs = 4 if cfg.robust else 1
+            runs = []
+            t_pitch_total = 0.0
+            used_backend = "auto"
+            last_pts: list = []
+            for k in range(n_runs):
+                # 每次稍扰动置信阈值，得到略不同的音高点云（帧移保持与单次识别一致，
+                # 避免 VAD 掩码帧错位）。不同阈值下 CREPE 输出不同，便于共识过滤假音高。
+                eff = Config()
+                eff.conf_thresh = max(0.05, cfg.conf_thresh - 0.06 + 0.04 * k)
+                t0 = time.time()
+                det = pitch.PitchDetector(
+                    model_size=cfg.model_size, conf_thresh=eff.conf_thresh, hop=eff.hop,
+                    intra_op_threads=cfg.intra_op_threads, backend="auto", sr=sr,
+                    fmin=cfg.fmin, fmax=cfg.fmax)
+                pts = det.detect(y, sr)
+                t_pitch_total += time.time() - t0
+                used_backend = det.used_backend
+                last_pts = pts
 
-            # VAD 人声活动检测（人声模式）
-            vad_mask = None
-            t_vad = 0.0
-            if cfg.vocal_mode and cfg.enable_vad:
-                import time as _t
-                tt = _t.time()
-                vad_mask = vad.voice_activity_mask(
-                    y, sr, energy_thresh=cfg.vad_energy_thresh,
-                    centroid_min=cfg.vad_centroid_min, centroid_max=cfg.vad_centroid_max,
-                    flatness_max=cfg.vad_flatness_max, hop_ms=cfg.hop,
-                    min_voiced_ms=cfg.min_voiced_ms)
-                t_vad = _t.time() - tt
+                vad_mask = None
+                if cfg.vocal_mode and cfg.enable_vad:
+                    vad_mask = vad.voice_activity_mask(
+                        y, sr, energy_thresh=cfg.vad_energy_thresh,
+                        centroid_min=cfg.vad_centroid_min, centroid_max=cfg.vad_centroid_max,
+                        flatness_max=cfg.vad_flatness_max, hop_ms=eff.hop,
+                        min_voiced_ms=cfg.min_voiced_ms)
+
+                notes = analysis.segment_notes(
+                    pts, cfg.min_note_dur, cfg.median_win,
+                    vocal_mode=cfg.vocal_mode, vad_mask=vad_mask)
+                runs.append(notes)
+
+            t_pitch = t_pitch_total
+            t_parse = 0.0
+
+            if n_runs > 1:
+                notes, merge_info = self._consensus(runs, cfg)
+            else:
+                notes = runs[0]
+                merge_info = None
 
             t0 = time.time()
-            notes = analysis.segment_notes(
-                pts, cfg.min_note_dur, cfg.median_win,
-                vocal_mode=cfg.vocal_mode, vad_mask=vad_mask)
             bpm = analysis.detect_bpm(y, sr, cfg.bpm_fallback)
             key_name = analysis.estimate_key(y, sr, notes)
-            t_parse = time.time() - t0 + t_vad
+            t_parse = time.time() - t0
 
             jianpu = score.to_jianpu(notes, key_name, bpm)
             total_dur = float(notes[-1]["end"]) if notes else 0.0
@@ -128,16 +148,91 @@ class RecognizeWorker(QThread):
                 "jianpu": jianpu, "bpm": round(float(bpm), 1),
                 "key": {"tonic": key_name[0], "mode": key_name[1]},
                 "note_count": len(notes), "duration_sec": round(total_dur, 2),
-                "backend": det.used_backend, "notes": notes_out,
+                "backend": used_backend, "notes": notes_out,
+                "confidence": round(float(merge_info["confidence"]) if merge_info else self._conf(runs[0]), 2),
+                "robust_runs": n_runs,
+                "robust_kept": merge_info["kept"] if merge_info else len(runs[0]),
                 "perf": {"preprocess_ms": round(t_pre * 1000, 1),
                          "pitch_ms": round(t_pitch * 1000, 1),
                          "parse_ms": round(t_parse * 1000, 1),
-                         "pitch_frames": len(pts)},
+                         "pitch_frames": len(last_pts)},
                 "source": self.source.get("source", ""),
             })
         except Exception as e:
             traceback.print_exc()
             self.error.emit(str(e))
+
+    @staticmethod
+    def _conf(notes):
+        """简单置信度：基于音符平均时长与数量（越长越多越可信）。"""
+        if not notes:
+            return 0.0
+        durs = [n["end"] - n["start"] for n in notes]
+        avg = float(np.mean(durs))
+        # 经验映射：平均时长 0.15s 视为高置信
+        return float(min(1.0, 0.4 + avg / 0.3))
+
+    @staticmethod
+    def _consensus(runs: List[List[Dict]], cfg) -> Tuple[List[Dict], Dict]:
+        """音符级共识合并。
+
+        把多次识别得到的音符按时间重叠聚成簇：同一簇内取「出现次数最多 +
+        时间跨度最长」的 MIDI 作为共识音高；簇的起止取各次并集。
+        仅在 ≥2 次识别中都出现的音符才保留（过滤单次偶发假音高），
+        但单次出现的长音（>2*min_note_dur）也保留以防漏音。
+        """
+        # 收集所有音符，按 start 排序
+        all_notes = []
+        for notes in runs:
+            for n in notes:
+                all_notes.append(n)
+        all_notes.sort(key=lambda n: n["start"])
+
+        clusters = []
+        for n in all_notes:
+            placed = False
+            for c in clusters:
+                # 时间重叠判定：重叠量需超过较短音符的一定比例，才视为同一发声事件。
+                # 仅端点相切（相邻音符首尾相接）不算重叠，避免把真实相邻音符误并为一簇。
+                overlap = False
+                for m in c["members"]:
+                    ov = min(n["end"], m["end"]) - max(n["start"], m["start"])
+                    short = min(n["end"] - n["start"], m["end"] - m["start"])
+                    if ov > 0.6 * short:
+                        overlap = True
+                        break
+                if overlap:
+                    c["members"].append(n)
+                    placed = True
+                    break
+            if not placed:
+                clusters.append({"members": [n]})
+
+        merged = []
+        kept = 0
+        conf_sum = 0.0
+        for c in clusters:
+            members = c["members"]
+            # 统计各 MIDI 出现次数
+            from collections import Counter
+            cnt = Counter(int(round(m["midi"])) for m in members)
+            best_midi, best_cnt = cnt.most_common(1)[0]
+            # 簇起止仅取共识音高(best_midi)成员的时间并集，避免偶发假音的时间污染边界
+            consensus_members = [m for m in members if int(round(m["midi"])) == best_midi]
+            start = min(m["start"] for m in consensus_members)
+            end = max(m["end"] for m in consensus_members)
+            # 保留条件：出现 ≥2 次，或单次但足够长（防漏音）
+            long_single = best_cnt == 1 and (end - start) > 2 * cfg.min_note_dur
+            if best_cnt >= 2 or long_single:
+                merged.append({"midi": best_midi, "start": start, "end": end})
+                # 簇内一致度作为该音符置信
+                conf_sum += best_cnt / len(members)
+                kept += 1
+
+        merged.sort(key=lambda n: n["start"])
+        # 整体置信度：平均簇一致度（共识越高越可信）
+        confidence = (conf_sum / len(merged)) if merged else 0.0
+        return merged, {"kept": len(merged), "confidence": confidence}
 
 
 class StaffView(QWidget):
@@ -346,6 +441,10 @@ class MainWindow(QMainWindow):
         self.cbDenoise = QComboBox()
         self.cbDenoise.addItems(["开启", "关闭（板端省内存）"])
         pv.addWidget(self.cbDenoise)
+        # 稳健重识别：多次识别取共识，抑制单次偶发假音高/漏音
+        self.cbRobust = QCheckBox("稳健重识别（多次取共识，更准但更慢）")
+        self.cbRobust.setChecked(True)
+        pv.addWidget(self.cbRobust)
         pv.addWidget(QLabel("帧移 hop(ms)"))
         self.slHop = QSlider(Qt.Horizontal)
         self.slHop.setRange(5, 30)
@@ -398,9 +497,10 @@ class MainWindow(QMainWindow):
         self.mKey = QLabel("—")
         self.mBpm = QLabel("—")
         self.mNotes = QLabel("—")
+        self.mConf = QLabel("—")
         self.mBackend = QLabel("")
         self.mBackend.setStyleSheet(f"color:{MUTED};font-size:12px;")
-        for w, t in [(self.mKey, "调式"), (self.mBpm, "BPM"), (self.mNotes, "音符数")]:
+        for w, t in [(self.mKey, "调式"), (self.mBpm, "BPM"), (self.mNotes, "音符数"), (self.mConf, "置信度")]:
             box = QGroupBox(t)
             bv = QVBoxLayout(box)
             w.setStyleSheet(f"font-size:20px;font-weight:800;color:{ACCENT};")
@@ -446,6 +546,7 @@ class MainWindow(QMainWindow):
         cfg = Config()
         cfg.model_size = self.cbModel.currentText()
         cfg.enable_denoise = self.cbDenoise.currentIndex() == 0
+        cfg.robust = self.cbRobust.isChecked()
         cfg.hop = self.slHop.value()
         if self.cbVocal.currentIndex() == 0:
             # 人声模式：收窄基频范围、启用 VAD、加强颤音平滑
@@ -609,6 +710,7 @@ class MainWindow(QMainWindow):
         self.mKey.setText(f"{res['key']['tonic']} {'小调' if res['key']['mode']=='minor' else '大调'}")
         self.mBpm.setText(str(res["bpm"]))
         self.mNotes.setText(str(res["note_count"]))
+        self.mConf.setText(f"{res.get('confidence', 0):.0%}")
         self.mBackend.setText(f"后端 {res['backend']} · 预处理 {res['perf']['preprocess_ms']}ms · "
                               f"音高 {res['perf']['pitch_ms']}ms · 解析 {res['perf']['parse_ms']}ms")
         self.jianpu.setPlainText(res["jianpu"] or "（无声）")
@@ -621,7 +723,10 @@ class MainWindow(QMainWindow):
             self.table.setItem(i, 2, QTableWidgetItem(n["name"]))
             self.table.setItem(i, 3, QTableWidgetItem(str(n["start"])))
             self.table.setItem(i, 4, QTableWidgetItem(str(n["dur"])))
-        self.status.setText(f"完成 · {res['note_count']} 个音符 · 来源 {res.get('source','')}")
+        robust_info = ""
+        if res.get("robust_runs", 1) > 1:
+            robust_info = f" · 重识别{res['robust_runs']}次→共识保留 {res['robust_kept']} 音 · 置信度 {res.get('confidence',0):.0%}"
+        self.status.setText(f"完成 · {res['note_count']} 个音符 · 来源 {res.get('source','')}{robust_info}")
 
     def on_err(self, msg: str):
         self.progress.setVisible(False)

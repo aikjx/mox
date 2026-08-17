@@ -3,6 +3,8 @@
 /target
 target/
 
+melody2score/build
+
 # Node / frontend build artifacts
 node_modules/
 frontend/dist/

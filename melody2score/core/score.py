@@ -46,11 +46,24 @@ def to_jianpu(notes: List[Dict], key_name: Tuple[str, str], bpm: float = 120.0) 
         d = m - tonic_midi
         oct_shift = d // 12
         rel = d % 12
-        deg = str(scale.index(rel) + 1) if rel in scale else "#"  # 离调音近似标 #
+        if rel in scale:
+            deg = str(scale.index(rel) + 1)
+        else:
+            # 离调音：回退到最近的调内音级，并用升降记号标出偏离，避免直接显示 '#'
+            best, best_d = 0, 99
+            for s in scale:
+                dd = rel - s
+                dd = min(dd, 12 - dd) if dd > 6 else dd
+                if dd < best_d:
+                    best_d, best = dd, s
+            acc = "#" if (rel - best) % 12 in (1, 3, 6, 8, 10) else "b"
+            deg = acc + str(scale.index(best) + 1)
         if oct_shift > 0:
             deg = "." * oct_shift + deg
         elif oct_shift < 0:
             deg = deg + "_" * (-oct_shift)
-        ext = max(0, int(round((nt["end"] - nt["start"]) / (60.0 / bpm) / 0.25)) - 1)
+        # BPM 不可靠（哼唱常检测为 0）时退化为按固定 0.25s/拍量化，避免除零崩溃
+        beat_dur = 60.0 / bpm if bpm and bpm > 0 else 0.25
+        ext = max(0, int(round((nt["end"] - nt["start"]) / beat_dur / 0.25)) - 1)
         out.append(deg + "-" * ext)
     return " ".join(out)
