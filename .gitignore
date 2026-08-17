@@ -37,3 +37,7 @@ Thumbs.db
 graph.json
 graph.enterprise.json
 guantu.req.json.tmp
+
+
+ci_target
+target_verify

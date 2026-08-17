@@ -1,15 +1,15 @@
-//! Step 7：后台优化推送 + 算法否决拦截接线。
+﻿//! Step 7：后台优化推送 + 算法否决拦截接线。
 //!
 //! 设计：ToolRequestMiddleware 同步累积流程图后，由本模块在**异步后台**把会话流程图快照
-//! 推给 `expert-alliance::alliance_optimize` 做最优求解 + 七专家裁决 + 算法验证网关；
+//! 推给 `xuanji-expert::xuanji_optimize` 做最优求解 + 七专家裁决 + 算法验证网关；
 //! 结果写入 `GateState`（veto 共享标志）供 `ToolExecutionMiddleware` 同步读。
 //!
-//! 真实集成时，可改为 HTTP 请求 `expert-alliance` 独立服务（`POST /api/optimize` /
+//! 真实集成时，可改为 HTTP 请求 `xuanji-expert` 独立服务（`POST /api/optimize` /
 //! `POST /api/verify`）；此处直接复用已验证的库函数，保证 crate 独立可编译、可单测。
 
 use crate::state::GateState;
 use crate::recorder::Recorder;
-use expert_alliance::{alliance_optimize, context::GovernContext};
+use xuanji_expert::{xuanji_optimize, context::GovernContext};
 use flow_ai::model::FlowGraph;
 use std::sync::Arc;
 use std::thread;
@@ -18,19 +18,19 @@ use std::time::Duration;
 /// 用默认租户/主体构造治理上下文（真实环境从 Hermes 会话身份注入）。
 fn default_ctx() -> GovernContext {
     GovernContext::new(
-        expert_alliance::context::Tenant::new("hermes", "default"),
-        expert_alliance::context::Principal::new("hermes-agent"),
+        xuanji_expert::context::Tenant::new("hermes", "default"),
+        xuanji_expert::context::Principal::new("hermes-agent"),
     )
 }
 
 /// 对单张流程图做优化 + 验证，返回是否触发算法否决。
 pub fn optimize_session(graph: &FlowGraph, gate: &GateState) {
     let ctx = default_ctx();
-    let rep = alliance_optimize(graph, &ctx);
+    let rep = xuanji_optimize(graph, &ctx);
     // ⛨ 最高权限：算法验证否决 → 置位否决标志，强制拦截后续工具执行
     if rep.algo.vetoed {
         gate.set_vetoed(true);
-        // 审计链已记录 algorithm_veto（见 expert-alliance govern/audit）
+        // 审计链已记录 algorithm_veto（见 xuanji-expert govern/audit）
     } else {
         gate.set_vetoed(false);
     }

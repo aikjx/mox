@@ -1,4 +1,4 @@
-//! Step 4：复用模板路由（本地缓存版最短路径点亮）。
+﻿//! Step 4：复用模板路由（本地缓存版最短路径点亮）。
 //!
 //! 设计：把历史「工具序列模板」存为键，新调用若匹配则标记 `source="flow-template:<id>"`，
 //! Hermes 上游读到该注解即可走轻量执行、跳过完整 ReAct（由 Hermes 侧读取注解实现；
@@ -26,7 +26,7 @@ impl Router {
         Self::default()
     }
 
-    /// 注册一个可复用模板（来自 expert-alliance 关系网的最短路径挖掘结果）。
+    /// 注册一个可复用模板（来自 xuanji-expert 关系网的最短路径挖掘结果）。
     pub fn register(&self, tpl: FlowTemplate) {
         let key = tpl.tool_seq.join("|");
         let mut idx = self.index.lock().unwrap();

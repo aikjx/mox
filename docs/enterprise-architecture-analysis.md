@@ -1,8 +1,8 @@
-# 算子统一系统（OUS）企业级架构分析 · 全维度
+﻿# 算子统一系统（OUS）企业级架构分析 · 全维度
 
 > 本文档是 `architecture.md`(v7.0) 的**分析补充与演进追踪**，聚焦：
 > 1. 基于现网 `crates/` 代码事实的架构对齐校验（代码 vs 文档）；
-> 2. 双联盟十四维维度模型（业务七维 + 开发七维）及其在 `expert-alliance` 的落点；
+> 2. 双璇玑十四维维度模型（业务七维 + 开发七维）及其在 `xuanji-expert` 的落点；
 > 3. 全维度能力覆盖矩阵（所有功能明确化）；
 > 4. 持续优化项（P0/P1/P2/P3 已落地清单 + 后续优化建议）。
 >
@@ -12,7 +12,7 @@
 
 ## 0. 架构全景（一句话）
 
-OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Rust 插件化运行时（Everything is an Operator Plugin）** 为中轴、以 **WASM 沙箱** 为隔离边界、以 **专家联盟全维治理（双联盟十四维 + 璇玑最高权限校验）** 为决策内核、前端（Vue）提供可视化设计器的**企业级一体化算子平台**。
+OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Rust 插件化运行时（Everything is an Operator Plugin）** 为中轴、以 **WASM 沙箱** 为隔离边界、以 **璇玑全维治理（双璇玑十四维 + 璇玑最高权限校验）** 为决策内核、前端（Vue）提供可视化设计器的**企业级一体化算子平台**。
 
 ---
 
@@ -23,7 +23,7 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 | crate | 角色 | 关键模块 |
 |-------|------|----------|
 | `ai-agent` | AI 主控：需求编译 + 会话编排 | `requirement_compiler.rs`（自然需求→`CodeIR`/规格）、`lib.rs` |
-| `expert-alliance` | **决策内核**：双联盟十四维专家 + 治理闸门 + 审计 | `experts/{algorithm,business,data,observability,permission,resource,security}.rs`、`govern.rs`、`context.rs`、`ir.rs`、`sensitivity.rs`、`reconcile.rs`、`pipeline.rs`、`harness.rs` |
+| `xuanji-expert` | **决策内核**：双璇玑十四维专家 + 治理闸门 + 审计 | `experts/{algorithm,business,data,observability,permission,resource,security}.rs`、`govern.rs`、`context.rs`、`ir.rs`、`sensitivity.rs`、`reconcile.rs`、`pipeline.rs`、`harness.rs` |
 | `flow-ai` | 最优求解：拓扑/调度/优化 | `pipeline::optimize`、`schedule::ModelRouting` |
 | `operator-core` | 算子本原：组合律/守恒律 | `lib.rs` |
 | `operator-graph` | 算子图（范畴态射图） | — |
@@ -39,7 +39,7 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 
 ### 1.2 决策内核校验（最关键）
 
-`expert-alliance::experts::mod::all_experts()` 实测返回的专家（业务联盟）：
+`xuanji-expert::experts::mod::all_experts()` 实测返回的专家（业务璇玑）：
 
 | # | 专家 | 维度枚举值 | 文件 |
 |---|------|-----------|------|
@@ -55,11 +55,11 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 
 **新增 `sensitivity.rs`**：`Sensitive` 维度的敏感判定逻辑（SSOT 常量 `SENSITIVE_FIELDS` / `SENSITIVE_PATTERNS` / `SENSITIVE_KW`），与 `security.rs` 的 STRIDE 形成"通用安全 + 数据敏感"双保险。
 
-**结论**：`architecture.md` 第 19 章"七位专家"描述仍正确，但需补充说明"十四维维度模型 + `CodeIR` 双联盟"——本文第 2 节补全。
+**结论**：`architecture.md` 第 19 章"七位专家"描述仍正确，但需补充说明"十四维维度模型 + `CodeIR` 双璇玑"——本文第 2 节补全。
 
 ### 1.3 治理闸门与最高权限校验
 
-`govern.rs`：`apply_rules` / `govern` / `GateResult` / `AuditChain`；`verify.rs`：`verify` / `AlgoVerification`（**璇玑，最高权限，不可被治理覆盖**）。`pipeline.rs::alliance_optimize` 输出 `GovernanceReport{expert_scores, optimization, algo, gate, audit, adopted_suggestions}`。
+`govern.rs`：`apply_rules` / `govern` / `GateResult` / `AuditChain`；`verify.rs`：`verify` / `AlgoVerification`（**璇玑，最高权限，不可被治理覆盖**）。`pipeline.rs::xuanji_optimize` 输出 `GovernanceReport{expert_scores, optimization, algo, gate, audit, adopted_suggestions}`。
 
 **结论**：与 `architecture.md` 第 10.3、19 章一致；`adopted_suggestions` 已在 P1 中显式对外暴露（此前专家建议停留在 `ExpertOpinion` 不被消费，现已修复）。
 
@@ -71,7 +71,7 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 
 ---
 
-## 2. 双联盟十四维维度模型（代码对齐补全）
+## 2. 双璇玑十四维维度模型（代码对齐补全）
 
 ### 2.1 维度枚举（来自 `context.rs` / `ir.rs`）
 
@@ -95,7 +95,7 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
   Sensitive 数据敏感（Security×Dev，见 sensitivity.rs）
 ```
 
-### 2.2 双联盟协作机制
+### 2.2 双璇玑协作机制
 
 ```
                 需求/流程原始图 FlowGraph
@@ -103,7 +103,7 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
               auto_dimension() 维度着色
                           │
         ┌─────────────────┴──────────────────┐
-   业务联盟（7 专家，常驻）            开发联盟（7 维度，CodeIR 驱动）
+   业务璇玑（7 专家，常驻）            开发璇玑（7 维度，CodeIR 驱动）
    normalize→派发→裁决→flow-ai 求解    CodeIR 注入后自动并入 GovernContext
         └─────────────────┬──────────────────┘
                    reconcile() 归一化裁决
@@ -119,7 +119,7 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 
 ### 2.3 与 `ai-agent` 的衔接
 
-`ai-agent::requirement_compiler` 把自然语言需求编译为结构化规格，并产出/填充 `CodeIR`；该 `CodeIR` 经 `GovernContext.code_ir` 注入专家联盟，触发开发七维分析。这补齐了"需求 → 维度治理 → 出码"的闭环，是 P2 已落地能力。
+`ai-agent::requirement_compiler` 把自然语言需求编译为结构化规格，并产出/填充 `CodeIR`；该 `CodeIR` 经 `GovernContext.code_ir` 注入璇玑，触发开发七维分析。这补齐了"需求 → 维度治理 → 出码"的闭环，是 P2 已落地能力。
 
 ---
 
@@ -131,7 +131,7 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 | 插件内核 | Profile/Bundle/Seam/事件域/瀑布扩展点 | `harness.rs`/`derive` | ✅ |
 | 运行时 | Turn/Agent/Step、会话日志溯源（SoT） | `runtime` | ✅ |
 | 隔离 | WASM 沙箱 + 能力令牌 | `operator-wasm` | ✅ |
-| 决策 | 双联盟十四维 + 裁决 + 优化 | `expert-alliance`/`flow-ai` | ✅ |
+| 决策 | 双璇玑十四维 + 裁决 + 优化 | `xuanji-expert`/`flow-ai` | ✅ |
 | 最高权限 | 璇玑算法校验 | `verify.rs` | ✅ |
 | 治理 | 闸门 + 审计链 + 策略谓词 | `govern.rs`/`context.rs` | ✅ |
 | 敏感 | SSOT 敏感字段/模式判定 | `sensitivity.rs` | ✅（新增） |
@@ -160,15 +160,15 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 
 - **P0** `sensitivity.rs`：新增 `Sensitive` 维度与 SSOT 敏感判定，消除"敏感逻辑散落多文件"风险。
 - **P0** `context.rs` / `permission.rs`：`check_access` RBAC 单入口，权限判断收敛到一处。
-- **P1** `ir.rs`：`CodeIR` + 十四维 `Dimension`，开发联盟可借 `CodeIR` 并入治理。
+- **P1** `ir.rs`：`CodeIR` + 十四维 `Dimension`，开发璇玑可借 `CodeIR` 并入治理。
 - **P1** `pipeline.rs`：`adopted_suggestions` 显式对外暴露，专家建议不再"产出即丢弃"。
 - **P1** `govern.rs` / `context.rs`：`audit`/`flow_loader`/`rbac` 治理切面收敛。
 - **P2** `ai-agent::requirement_compiler` + `template-market`：需求编译与模板市场打通"需求→治理→落地"闭环。
 
 ### 4.2 后续优化建议（建议排入路线图）
 
-1. ~~**维度治理可视化**：前端设计器应展示十四维健康分雷达图（直接消费 `GovernanceReport.expert_scores`）~~ → **已完成（2026-08-16）**：`runtime` 暴露 `/api/alliance/health`、`/api/alliance/optimize`，`MonitorView.vue` 以 ECharts 雷达展示双联盟十四维健康分 + 采纳建议列表 + 蓝图载入治理。
-2. **开发七维常驻化**：当前开发专家需 `CodeIR` 才并入；建议对"存量代码仓库治理"提供批量 `CodeIR` 提取器（AST 扫描），使开发联盟可独立运行。
+1. ~~**维度治理可视化**：前端设计器应展示十四维健康分雷达图（直接消费 `GovernanceReport.expert_scores`）~~ → **已完成（2026-08-16）**：`runtime` 暴露 `/api/xuanji/health`、`/api/xuanji/optimize`，`MonitorView.vue` 以 ECharts 雷达展示双璇玑十四维健康分 + 采纳建议列表 + 蓝图载入治理。
+2. **开发七维常驻化**：当前开发专家需 `CodeIR` 才并入；建议对"存量代码仓库治理"提供批量 `CodeIR` 提取器（AST 扫描），使开发璇玑可独立运行。
 3. **敏感判定误报治理**：`SENSITIVE_PATTERNS` 为静态正则，建议叠加语义识别（上下文相关字段）并支持租户自定义词表，避免脱敏过严/过松。
 4. **璇玑校验可解释**：`AlgoVerification` 应产出可读的"为何通过/拦截"报告，供审计与合规导出（对接 `architecture.md` §24 Eval）。
 5. **灾备与治理联动**：`govern` 审计链应可重放（WAL），当前 `AuditChain` 为内存结构，需对接 `architecture.md` §16 持久化。
@@ -182,13 +182,13 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 
 | 项 | 改动 | 文件 | 验证 |
 |----|------|------|------|
-| 双联盟十四维接入主服务 | 新增 `/api/alliance/health`、`/api/alliance/optimize`，调用 `alliance_optimize` | `crates/runtime/src/main.rs` | 编译通过 |
+| 双璇玑十四维接入主服务 | 新增 `/api/xuanji/health`、`/api/xuanji/optimize`，调用 `xuanji_optimize` | `crates/runtime/src/main.rs` | 编译通过 |
 | 前端可视化治理（十四维雷达） | MonitorView 消费治理报告，ECharts 雷达 + 采纳建议列表 + 蓝图载入 | `frontend/src/views/MonitorView.vue`、`frontend/src/api/index.js` | `npm run build` 通过 |
-| 双联盟十四维契约测试 | 断言 expert_scores 恰为 14 维、分数∈[0,1]、璇玑/闸门明确、审计链非空 | `crates/expert-alliance/src/pipeline.rs` | 86 passed |
-| 敏感写安全护栏测试 | 公民敏感库越权写（无 authz/脱敏 Guard）必须被闸门拦截 | `crates/expert-alliance/src/pipeline.rs` | passed |
+| 双璇玑十四维契约测试 | 断言 expert_scores 恰为 14 维、分数∈[0,1]、璇玑/闸门明确、审计链非空 | `crates/xuanji-expert/src/pipeline.rs` | 86 passed |
+| 敏感写安全护栏测试 | 公民敏感库越权写（无 authz/脱敏 Guard）必须被闸门拦截 | `crates/xuanji-expert/src/pipeline.rs` | passed |
 | 条件求值 fail-closed | 未定义变量返回 `Ok(false)`（不 panic），语法错误仍报错 | `crates/ai-agent/src/workflow_engine.rs` | passed |
 | 修复缺失枚举 `SessionEntry` | 定义 `TurnStart/StepStart/TurnComplete` 三变体，修复 runtime lib 编译阻断 | `crates/runtime/src/cordis/context.rs` | runtime build/test 通过 |
-| 统一自动化脚本 | `scripts/ci.ps1`：build+test+前端构建+启服+端到端健康检查（联盟 API） | `scripts/ci.ps1` | 一键执行 |
+| 统一自动化脚本 | `scripts/ci.ps1`：build+test+前端构建+启服+端到端健康检查（璇玑 API） | `scripts/ci.ps1` | 一键执行 |
 
 ### 5.2 自动化测试结论（2026-08-16）
 
@@ -196,7 +196,7 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 cargo test --workspace  →  EXITCODE=0
   ai-agent        62 passed
   runtime          8 passed | 5 ignored（需服务器，CI 脚本覆盖）
-  expert-alliance 86 passed（含双联盟契约 + 敏感拦截）
+  xuanji-expert 86 passed（含双璇玑契约 + 敏感拦截）
   template-market  7 passed
   doc-tests        2 passed
 npm run build (frontend) → built in 22.79s
@@ -211,9 +211,9 @@ npm run build (frontend) → built in 22.79s
 
 ## 6. 结论
 
-OUS 已实现**全维度企业级闭环**：数学内核稳固、双联盟十四维治理接入主服务与前端可视化、璇玑最高权限校验、WASM 沙箱隔离、统一自动化脚本一键 build+test+serve+e2e。所有单元/集成测试全绿，前端可构建。后续重点是把 📋 设计态能力（多模态/记忆/Eval/FinOps/灾备）落到代码，并强化开发七维常驻与敏感语义识别。
+OUS 已实现**全维度企业级闭环**：数学内核稳固、双璇玑十四维治理接入主服务与前端可视化、璇玑最高权限校验、WASM 沙箱隔离、统一自动化脚本一键 build+test+serve+e2e。所有单元/集成测试全绿，前端可构建。后续重点是把 📋 设计态能力（多模态/记忆/Eval/FinOps/灾备）落到代码，并强化开发七维常驻与敏感语义识别。
 
-> 配套文档：`architecture.md`(总架构)、`mathematical-foundation.md`(数学内核)、`expert-alliance-normalization.md`(归一化)、`expert-alliance-product.md`(产品化)、`algorithm-verification.md`(璇玑校验)、`business-process-flows.md`(企业级业务处理流程)。
+> 配套文档：`architecture.md`(总架构)、`mathematical-foundation.md`(数学内核)、`xuanji-expert-normalization.md`(归一化)、`xuanji-expert-product.md`(产品化)、`algorithm-verification.md`(璇玑校验)、`business-process-flows.md`(企业级业务处理流程)。
 
 ---
 

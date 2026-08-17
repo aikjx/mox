@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -53,7 +53,7 @@
   <div class="card">
     <div class="page-title">PrimiFlow 全维分析 · 需求业务处理流程图（企业级归一化）</div>
     <div class="page-sub">
-      事实源：docs《PrimiFlow 全维分析 · 核心功能补全（2026-08-16）》及 primiflow / primiflow-fusion / expert-alliance 源码梳理。<br>
+      事实源：docs《PrimiFlow 全维分析 · 核心功能补全（2026-08-16）》及 primiflow / primiflow-fusion / xuanji-expert 源码梳理。<br>
       归一化约定：节点统一「动作 + 关键组件」命名；闸门分「硬阻断」与「非阻断报告」两级；异常出口红/黄统一标色；六维绑定时序显式标注；知识回灌以虚线闭环表达复用命中路径。
     </div>
   </div>
@@ -101,7 +101,7 @@ flowchart TD
       N14{"全局闸门<br/>R07+A4+GR-STD"}
     end
 
-    subgraph S6["阶段6 · 专家联盟全维治理"]
+    subgraph S6["阶段6 · 璇玑全维治理"]
       N15["14 维着色"]
       N16["14 专家并行分析"]
       N17["冲突仲裁调和"]
@@ -116,7 +116,7 @@ flowchart TD
     end
 
     subgraph S8["阶段8 · 资产冻结与知识回灌"]
-      N23["拓扑冻结为复用资产"]
+      N23["闸门确认后冻结资产"]
       N24["引擎回灌 · 注册表落盘"]
     end
 
@@ -151,7 +151,7 @@ flowchart TD
     class N1,N2,N4,N5,N6,N7,N8,N9,N11,N12,N13,N15,N16,N17,N18,N19,N21,N22 normalNode;
     class N23,N24 settleNode;
     </pre>
-    <div class="note">说明：阶段5 全局闸门为「非阻断报告」级，未通过仅记录 passed=false 并将被拒需求坐标置零，不破坏整图守恒；阶段4 冒烟校验与阶段6 治理闸门为「硬阻断」级，直接终止流程。阶段8 完成后的资产经阶段2 语义召回形成复用闭环，提升 κ 复用率。</div>
+    <div class="note">说明：主链路采用「延迟冻结」策略——冒烟通过后资产暂缓冻结（CompletedPendingGate），阶段5 全局闸门通过才由 confirm_gate 补冻结并回灌知识；闸门未通过则拓扑标记 Rejected、永不冻结。阶段5 闸门对绑定登记为「非阻断报告」级（坐标置零不破坏整图守恒），但对资产冻结为「硬消费」级；阶段4 冒烟校验与阶段6 治理闸门为「硬阻断」级，直接终止流程。阶段8 完成后的资产经阶段2 语义召回形成复用闭环，提升 κ 复用率。</div>
   </div>
 
   <div class="card" id="sixdim-chain" data-chart="true">
@@ -184,7 +184,7 @@ flowchart LR
           <tr><td>R07 守恒残差闸门</td><td>阶段5 · full_gate</td><td><span class="tag tag-yellow">非阻断报告</span></td><td>逐节点残差 ε≤1e-3 校验；未通过置 passed=false，需求坐标置零</td></tr>
           <tr><td>A4 六维零孤儿</td><td>阶段5 · full_gate</td><td><span class="tag tag-yellow">非阻断报告</span></td><td>六维逐级 Bind 边可达性校验；未通过置 passed=false</td></tr>
           <tr><td>GR-STD 8 闸门</td><td>阶段5 · full_gate</td><td><span class="tag tag-yellow">非阻断报告</span></td><td>悬空边 / 缺 evidence / 核心孤儿 / 孤岛文档；孤岛项纳入 P5 CI 渐进消减</td></tr>
-          <tr><td>治理闸门 govern</td><td>阶段6 · 专家联盟</td><td><span class="tag tag-red">硬阻断</span></td><td>专家否决或冲突升级 → algo.vetoed=true → Blocked，执行器拒绝运行</td></tr>
+          <tr><td>治理闸门 govern</td><td>阶段6 · 璇玑</td><td><span class="tag tag-red">硬阻断</span></td><td>专家否决或冲突升级 → algo.vetoed=true → Blocked，执行器拒绝运行</td></tr>
         </tbody>
       </table>
     </div>

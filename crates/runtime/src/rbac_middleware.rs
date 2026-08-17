@@ -1,4 +1,4 @@
-//! Runtime RBAC + Audit 中间件
+﻿//! Runtime RBAC + Audit 中间件
 //! 
 //! 企业级权限控制：
 //! - Bearer Token 鉴权
@@ -309,10 +309,10 @@ pub fn is_public_route(path: &str) -> bool {
         | "/favicon.ico"
         | "/" 
         | "/index.html"
-        // 双联盟十四维治理自检端点：只读、不改状态，供 CI 与前端治理台直接调用
-        | "/api/alliance/health"
-        | "/api/alliance/optimize"
-    ) || path.starts_with("/static/") || path.starts_with("/api/alliance/")
+        // 双璇玑十四维治理自检端点：只读、不改状态，供 CI 与前端治理台直接调用
+        | "/api/xuanji/health"
+        | "/api/xuanji/optimize"
+    ) || path.starts_with("/static/") || path.starts_with("/api/xuanji/")
 }
 
 /// 从 Token 提取角色（简化版，实际应用应从 JWT 解析）

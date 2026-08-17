@@ -1,4 +1,4 @@
-//! hermes-flow-bridge：零侵入插件，把 flow-ai + expert-alliance 流程图/关系网优化内核
+﻿//! hermes-flow-bridge：零侵入插件，把 flow-ai + xuanji-expert 流程图/关系网优化内核
 //! 注入 Hermes Agent Ultra。
 //!
 //! 模块：

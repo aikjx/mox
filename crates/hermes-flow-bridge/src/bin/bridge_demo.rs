@@ -1,6 +1,6 @@
-//! bridge-demo —— 模拟「真实 Hermes 多轮会话」走完整 bridge 闭环并出报告。
+﻿//! bridge-demo —— 模拟「真实 Hermes 多轮会话」走完整 bridge 闭环并出报告。
 //!
-//! 闭环：Hermes 工具调用 → bridge 录制 FlowGraph → 后台 alliance_optimize
+//! 闭环：Hermes 工具调用 → bridge 录制 FlowGraph → 后台 xuanji_optimize
 //!       → 算法验证网关 → 否决时 ToolExecutionMiddleware 强制拦截。
 //!
 //! 运行：cargo run -p hermes-flow-bridge --bin bridge-demo
@@ -16,7 +16,7 @@ fn main() {
 
     let st = BridgeState::new();
 
-    // 注册一张「政务 PII 归集」复用模板（来自 expert-alliance 关系网最短路径挖掘）
+    // 注册一张「政务 PII 归集」复用模板（来自 xuanji-expert 关系网最短路径挖掘）
     st.router.register(FlowTemplate {
         id: "gov-pii".into(),
         tool_seq: vec![
@@ -39,17 +39,17 @@ fn main() {
         println!("    复用路由命中：{} —— {}", d.source.unwrap_or_default(), d.reason.unwrap_or_default());
     }
 
-    // ---- 阶段 2：后台把会话图推给联盟引擎（alliance_optimize）----
-    println!("\n[2] 后台 alliance_optimize（七专家 + 治理 + 算法验证网关）：");
+    // ---- 阶段 2：后台把会话图推给璇玑引擎（xuanji_optimize）----
+    println!("\n[2] 后台 xuanji_optimize（七专家 + 治理 + 算法验证网关）：");
     optimize_session(&g, &st.gate);
     println!("    算法否决 = {}", st.gate.is_vetoed());
 
-    // ---- 阶段 3：用录制出的图直接调 expert-alliance，打印详细报告 ----
-    let ctx = expert_alliance::context::GovernContext::new(
-        expert_alliance::context::Tenant::new("hermes", "default"),
-        expert_alliance::context::Principal::new("hermes-agent"),
+    // ---- 阶段 3：用录制出的图直接调 xuanji-expert，打印详细报告 ----
+    let ctx = xuanji_expert::context::GovernContext::new(
+        xuanji_expert::context::Tenant::new("hermes", "default"),
+        xuanji_expert::context::Principal::new("hermes-agent"),
     );
-    let rep = expert_alliance::pipeline::alliance_optimize(&g, &ctx);
+    let rep = xuanji_expert::pipeline::xuanji_optimize(&g, &ctx);
     println!("\n[3] 治理闸门：{:?}  批准 = {}", rep.gate.status, rep.gate.approved);
     println!("    优化收益：{}", rep.optimization.summary().replace('\n', " | "));
     println!("    算法验证：{}", rep.algo.summary);

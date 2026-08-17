@@ -14,7 +14,7 @@ use crate::gen::c5::{DocContext, DocGenerator};
 use crate::gen::c6::{SmokeReport, SmokeTester};
 use crate::gen::c7::CanvasState;
 use crate::gen::c8::AsrClient;
-use crate::gen::schema::{Artifact, Project, Topology, TopologyStatus, TraceLink};
+use crate::gen::schema::{Artifact, Asset, Project, Topology, TopologyStatus, TraceLink};
 
 /// 主链路输入：文本需求或音频路径
 #[derive(Debug, Clone)]
@@ -32,6 +32,10 @@ pub enum OrchestrationStatus {
     RejectedDomain,
     /// 冒烟校验未通过（幻觉/矛盾），回写对话重生成
     SmokeFailed,
+    /// 主链路跑通但资产**暂缓冻结**（`FreezePolicy::deferred`）：
+    /// 等待外部治理闸门（如 primiflow-fusion 的 full_gate）确认后再补冻结。
+    /// 这是「闸门消费约束」的底层支撑：冻结不再先于闸门发生。
+    CompletedPendingGate,
 }
 
 /// 一次编排的完整产出（用于画布渲染 + DocViewer + 资产库）
@@ -69,8 +73,27 @@ impl OrchestrationResult {
             }
             OrchestrationStatus::RejectedDomain => "⛔ 需求超出业务软件域白名单，已拒绝".into(),
             OrchestrationStatus::SmokeFailed => "⚠️ 冒烟校验未通过，已回写对话重生成".into(),
+            OrchestrationStatus::CompletedPendingGate => {
+                let nodes = self.graph.as_ref().map(|g| g.nodes.len()).unwrap_or(0);
+                let docs = self.artifacts.len();
+                format!(
+                    "⏸ 主链路完成（待闸门确认）：拓扑 {} 节点 / {} 文档 / 资产暂缓冻结",
+                    nodes, docs
+                )
+            }
         }
     }
+}
+
+/// 资产冻结时机策略（验证系统「闸门消费约束」的开关）
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum FreezePolicy {
+    /// 冒烟通过即冻结（历史行为，兼容直连调用方）
+    #[default]
+    Immediate,
+    /// 冒烟通过后暂缓冻结，等外部治理闸门确认（`confirm_gate`）再真正落库；
+    /// 闸门未通过则永久不冻结、知识不回灌。
+    Deferred,
 }
 
 /// 编排器：状态机把八个模块串成主链路闭环
@@ -86,6 +109,8 @@ pub struct Orchestrator {
     engine: flow_ai::primitive::PrimiEngine,
     /// 预算基准 C
     c_base: f64,
+    /// 冻结时机策略（默认 Immediate，融合平台应设为 Deferred）
+    freeze_policy: FreezePolicy,
 }
 
 impl Default for Orchestrator {
@@ -111,7 +136,13 @@ impl Orchestrator {
                 ResourceBudget { total_ms: 1_000_000, per_pool: Default::default() },
             ),
             c_base,
+            freeze_policy: FreezePolicy::default(),
         }
+    }
+
+    /// 设置冻结时机策略（`Deferred` 表示等外部治理闸门确认后再冻结）
+    pub fn set_freeze_policy(&mut self, policy: FreezePolicy) {
+        self.freeze_policy = policy;
     }
 
     /// 主链路：解析需求 → 涌现拓扑 → ℛ̂ → 资产复用 → 冒烟 → 文档 → 六维溯源 → 资产冻结
@@ -230,15 +261,75 @@ impl Orchestrator {
         };
         let artifacts = self.doc_gen.generate_docs(&ctx);
 
-        // 11) 资产冻结 Q（第二次同类需求可复用）
+        // 11) 资产冻结 Q + 12) 知识回灌：时机由冻结策略决定
+        //     Immediate：冒烟通过即冻结（历史行为）
+        //     Deferred ：先返回 CompletedPendingGate，冻结延迟到外部治理闸门
+        //                确认（confirm_gate）之后 —— 闸门未通过则永不冻结。
+        if self.freeze_policy == FreezePolicy::Deferred {
+            let mut topo_rec = topo_rec;
+            topo_rec.set_status(TopologyStatus::Regularized);
+            result.topology_record = Some(topo_rec);
+            result.artifacts = artifacts;
+            result.status = OrchestrationStatus::CompletedPendingGate;
+            return result;
+        }
+        let (frozen_rec, asset) =
+            self.freeze_and_accept(topo_rec, structured.name.clone(), &reg, &state);
+        result.topology_record = Some(frozen_rec);
+        result.artifacts = artifacts;
+        result.frozen_asset_id = Some(asset.id);
+        result
+    }
+
+    /// 延迟冻结确认（「闸门消费约束」的对外接口）：
+    /// 仅当外部治理闸门通过时才真正冻结资产 + 回灌 κ‑τ 引擎；
+    /// 闸门未通过则把拓扑标记为 Rejected，**永不冻结、不回灌**，
+    /// 防止未通过全局闸门的拓扑污染复用资产库。
+    ///
+    /// 返回 `true` 表示资产已冻结；`false` 表示被闸门拦截（或结果非待闸门状态）。
+    pub fn confirm_gate(&mut self, result: &mut OrchestrationResult, gate_passed: bool) -> bool {
+        if result.status != OrchestrationStatus::CompletedPendingGate {
+            return result.frozen_asset_id.is_some();
+        }
+        if !gate_passed {
+            if let Some(rec) = result.topology_record.as_mut() {
+                rec.set_status(TopologyStatus::Rejected);
+            }
+            return false;
+        }
+        let (Some(reg), Some(topo), Some(state)) = (
+            result.regularize.clone(),
+            result.topology_record.take(),
+            result.state.clone(),
+        ) else {
+            return false;
+        };
+        let name = result
+            .requirement
+            .as_ref()
+            .map(|r| r.name.clone())
+            .unwrap_or_else(|| "未命名拓扑".into());
+        let (frozen_rec, asset) = self.freeze_and_accept(topo, name, &reg, &state);
+        result.topology_record = Some(frozen_rec);
+        result.frozen_asset_id = Some(asset.id);
+        result.status = OrchestrationStatus::Completed;
+        true
+    }
+
+    /// 冻结资产 Q + 回灌 κ‑τ 引擎（Immediate / Deferred 共用的两件套）
+    fn freeze_and_accept(
+        &mut self,
+        topo_rec: Topology,
+        name: String,
+        reg: &RegularizeOutput,
+        state: &PrimitiveState,
+    ) -> (Topology, Asset) {
         let (asset, _charge) = self.assets.freeze_asset(
             topo_rec.id,
-            structured.name.clone(),
+            name,
             Domain::BusinessSoftware,
             &reg.graph,
         );
-
-        // 12) 把本次成功回灌 κ‑τ 引擎（巩固复用，知识越用越厚）
         let emer = flow_ai::primitive::EmergenceResult {
             topology: flow_ai::primitive::CandidateTopology {
                 graph: reg.graph.clone(),
@@ -256,11 +347,7 @@ impl Orchestrator {
 
         let mut topo_rec = topo_rec;
         topo_rec.set_status(TopologyStatus::Frozen);
-
-        result.topology_record = Some(topo_rec);
-        result.artifacts = artifacts;
-        result.frozen_asset_id = Some(asset.id);
-        result
+        (topo_rec, asset)
     }
 
     /// 六维溯源绑定：R → F → B → A → T → C
@@ -331,6 +418,46 @@ mod tests {
         let r2 = orch.run(&project, &Input::Text("我想做一份电商经营分析报告，需要销售数据抓取和图表生成。".into()), 0.1);
         assert_eq!(r2.status, OrchestrationStatus::Completed);
         assert!(!r2.reuse_hits.is_empty(), "第二次同类需求应命中历史资产 Q");
+    }
+
+    #[test]
+    fn deferred_freeze_waits_for_gate_confirmation() {
+        let project = Project::new("延迟冻结验证", Some("t1".into()), 0.7, 0.3, 1.0);
+        let mut orch = Orchestrator::new();
+        orch.set_freeze_policy(FreezePolicy::Deferred);
+        let mut r = orch.run(&project, &Input::Text("请抓取销售数据。清洗对账。生成图表报告。".into()), 0.2);
+        assert_eq!(r.status, OrchestrationStatus::CompletedPendingGate, "Deferred 策略应暂缓冻结");
+        assert!(r.frozen_asset_id.is_none(), "闸门确认前不得冻结资产");
+        assert_eq!(r.artifacts.len(), 8, "文档照常生成");
+
+        // 闸门通过 → 补冻结
+        assert!(orch.confirm_gate(&mut r, true), "闸门通过应成功冻结");
+        assert_eq!(r.status, OrchestrationStatus::Completed);
+        assert!(r.frozen_asset_id.is_some(), "闸门通过后资产应冻结");
+    }
+
+    #[test]
+    fn confirm_gate_blocks_freeze_when_gate_failed() {
+        let project = Project::new("闸门拦截验证", Some("t1".into()), 0.7, 0.3, 1.0);
+        let mut orch = Orchestrator::new();
+        orch.set_freeze_policy(FreezePolicy::Deferred);
+        let mut r = orch.run(&project, &Input::Text("请抓取销售数据。清洗对账。生成图表报告。".into()), 0.2);
+        assert_eq!(r.status, OrchestrationStatus::CompletedPendingGate);
+
+        // 闸门未通过 → 永不冻结，拓扑标记 Rejected
+        assert!(!orch.confirm_gate(&mut r, false), "闸门未通过不得冻结");
+        assert!(r.frozen_asset_id.is_none(), "闸门未通过资产必须保持未冻结");
+        let rec = r.topology_record.as_ref().unwrap();
+        assert_eq!(rec.status, TopologyStatus::Rejected.as_str(), "拓扑应标记为 Rejected");
+    }
+
+    #[test]
+    fn immediate_policy_keeps_legacy_behavior() {
+        let project = Project::new("立即冻结回归", Some("t1".into()), 0.7, 0.3, 1.0);
+        let mut orch = Orchestrator::new();
+        let r = orch.run(&project, &Input::Text("请抓取销售数据。清洗对账。生成图表报告。".into()), 0.2);
+        assert_eq!(r.status, OrchestrationStatus::Completed, "默认策略应保持即冻结行为");
+        assert!(r.frozen_asset_id.is_some());
     }
 
     #[test]

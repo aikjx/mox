@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="portal">
     <!-- 顶部导航 -->
     <header class="nav">
@@ -19,7 +19,7 @@
     <section class="hero">
       <div class="hero-text">
         <h1>用统一算子引擎，<br />驱动企业全部业务流程</h1>
-        <p>六大公理内核 · 专家联盟全维处理 · 一次编排、处处运行（云/本地、云/本地 LLM、浏览器/桌面）</p>
+        <p>六大公理内核 · 璇玑全维处理 · 一次编排、处处运行（云/本地、云/本地 LLM、浏览器/桌面）</p>
         <div class="hero-actions">
           <el-button type="primary" size="large" round @click="go('/hall')">进入业务大厅</el-button>
           <el-button size="large" round @click="go('/workbench')">打开智能工作台</el-button>
@@ -93,7 +93,7 @@ const features = [
   { t: '业务大厅', d: '调用 / 执行业务流程与算子', icon: 'Files', to: '/hall' },
   { t: '流程编排', d: '拖拽式 DAG + 实时类型校验', icon: 'Share', to: '/workbench' },
   { t: '知识图谱', d: 'PageRank / 社群发现可视化', icon: 'Connection', to: '/workbench' },
-  { t: '专家联盟', d: '最高权限全维处理模式', icon: 'UserFilled', to: '/workbench' },
+  { t: '璇玑', d: '最高权限全维处理模式', icon: 'UserFilled', to: '/workbench' },
   { t: '全形态', d: '云/本地 · 浏览器/桌面', icon: 'Monitor', to: '/' },
 ]
 

@@ -1,0 +1,182 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>璇玑 · 全维分析需求 TraceMatrix（六维绑定追溯）</title>
+<style>
+  :root{
+    --bg:#f7f9fc; --panel:#ffffff; --ink:#1f2933; --muted:#6b7785;
+    --line:#e3e8ef; --brand:#1a56db; --brand2:#0e7490;
+    --req:#7c3aed; --fun:#1a56db; --biz:#0e7490; --alg:#b45309; --tsk:#15803d; --cod:#be123c;
+    --gate:#e65100; --veto:#b71c1c; --ok:#1b5e20;
+    --shadow:0 1px 3px rgba(16,24,40,.08),0 1px 2px rgba(16,24,40,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 24px 60px}
+  header{border-left:5px solid var(--brand);padding:6px 0 6px 16px;margin-bottom:22px}
+  header h1{font-size:23px;margin:0 0 4px}
+  header .sub{color:var(--muted);font-size:13px}
+  .tag{display:inline-block;background:#eef2ff;color:var(--brand);border:1px solid #dbe4ff;
+    border-radius:6px;padding:2px 9px;font-size:12px;margin-right:6px;font-weight:600}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:18px;box-shadow:var(--shadow)}
+  section h2{font-size:17px;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+  section h2 .n{background:var(--brand);color:#fff;border-radius:6px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:13px}
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#f1f5f9;color:#334155;font-weight:600}
+  td code{background:#f1f5f9;border-radius:4px;padding:1px 5px;font-size:12px;color:#0f172a}
+  .note{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;font-size:13px;color:#92400e;margin:10px 0}
+  .note b{color:#b45309}
+  .six{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+  .six .dim{flex:1 1 150px;border:1px solid var(--line);border-radius:9px;padding:10px 12px;background:#fbfdff}
+  .six .dim .k{font-weight:700;font-size:14px}
+  .six .dim .d{color:var(--muted);font-size:12px;margin-top:3px}
+  .six .dim.req .k{color:var(--req)} .six .dim.fun .k{color:var(--fun)}
+  .six .dim.biz .k{color:var(--biz)} .six .dim.alg .k{color:var(--alg)}
+  .six .dim.tsk .k{color:var(--tsk)} .six .dim.cod .k{color:var(--cod)}
+  svg{width:100%;height:auto;display:block}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:12px;color:var(--muted)}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>璇玑 · 全维分析需求 TraceMatrix（六维绑定追溯 · 企业级）</h1>
+    <div class="sub"><span class="tag">AA-TRACE-V1.0</span> 承载 AA-STD-V1.0 + GR-STD-V1.0 + guantu.req.json(D04) ｜ 闭环 AA-STD §3「导出 TraceMatrix」</div>
+  </header>
+
+  <section>
+    <h2><span class="n">0</span>双编号归一化映射（核心整理点）</h2>
+    <table>
+      <thead><tr><th>归一阶段</th><th>编码层 ①-⑩</th><th>规范层 S1-S8</th><th>闸门 / 护栏</th><th>真实代码节点</th></tr></thead>
+      <tbody>
+        <tr><td>C1 接入·归一</td><td>① normalize + ② 建模</td><td>S1+S2</td><td>G0 / G-A</td><td><code>programming.rs:108</code> / <code>ir.rs:185</code></td></tr>
+        <tr><td>C2 并行诊断</td><td>③ 七专家并行</td><td>S3</td><td>—</td><td><code>harness.rs:361</code> run_experts</td></tr>
+        <tr><td>C3 归一裁决</td><td>④ reconcile</td><td>S4</td><td>G1</td><td><code>reconcile.rs:98</code></td></tr>
+        <tr><td>C4 最优求解</td><td>⑤ optimize+草稿</td><td>S5</td><td>—</td><td><code>pipeline.rs:41</code> → flow-ai</td></tr>
+        <tr><td>C5 ⛨璇玑</td><td>⑥ verify</td><td>S6</td><td>G2 最高否决</td><td><code>verify.rs:43</code></td></tr>
+        <tr><td>C6 治理闸门</td><td>⑨ govern</td><td>S7</td><td>G3</td><td><code>govern.rs:126</code></td></tr>
+        <tr><td>C7 出码·双向</td><td>⑦ emit + ⑧ 双向</td><td>S8</td><td>G-C 三证</td><td><code>programming.rs</code> emit/codegen</td></tr>
+        <tr><td>C8 审计闭环</td><td>⑩ 审计</td><td>并入 S7/S8</td><td>G-D 署名</td><td><code>audit/integration.rs:116</code></td></tr>
+      </tbody>
+    </table>
+    <div class="note"><b>关键归一发现：</b>编码层 ①-⑩ 中 ⑦ <code>emit</code> 排在 ⑨ 治理闸门之前，而 AA-STD 为「闸门(S7)先于出码(S8)」。本章采用 <b>AA-STD 时序为唯一基准</b>——出码仅生成草稿，须经 ⑨ 治理闸门 <code>approved</code> 方可交付（与 G-C 三证一致）。两套编号分歧已收口。</div>
+  </section>
+
+  <section>
+    <h2><span class="n">1</span>六维绑定链（REQ → FUN → BIZ → ALG → TSK → COD）</h2>
+    <div class="note" style="background:#f5f3ff;border-color:#ddd6fe;color:#5b21b6"><b>D04 真实 Bind 边：</b><code>guantu.req.json:6</code> → <code>D04=全维治理/璇玑</code> ｜ <code>:31</code> → <code>D04 --Bind--> CodeFile:crates/xuanji-expert/src/lib.rs</code></div>
+    <div class="six">
+      <div class="dim req"><div class="k">REQ 需求根</div><div class="d">Requirement:D04 全维治理/璇玑</div></div>
+      <div class="dim fun"><div class="k">FUN 功能</div><div class="d">xuanji-expert/src/lib.rs 入口函数</div></div>
+      <div class="dim biz"><div class="k">BIZ 业务</div><div class="d">业务七维专家并行分析流程图</div></div>
+      <div class="dim alg"><div class="k">ALG 算法</div><div class="d">flow-ai 求解 + reconcile 物化 + verify 守恒</div></div>
+      <div class="dim tsk"><div class="k">TSK 任务</div><div class="d">双璇玑14维并行 + Checkpoint 回退</div></div>
+      <div class="dim cod"><div class="k">COD 代码</div><div class="d">emit/codegen 产物 + AuditChain 落库</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">2</span>TraceMatrix 主表（阶段 × 六维 × 真实节点）</h2>
+    <table>
+      <thead><tr><th>阶段</th><th>REQ</th><th>FUN</th><th>BIZ</th><th>ALG</th><th>TSK</th><th>COD</th></tr></thead>
+      <tbody>
+        <tr><td>C1 接入·归一</td><td>D04</td><td><code>normalize_requirement</code><br><code>auto_dimension</code></td><td>business/permission/data</td><td>DAG 拓扑着色(G0)</td><td>—</td><td>FlowGraph(base)</td></tr>
+        <tr><td>C2 并行诊断</td><td>D04</td><td><code>run_experts</code></td><td>全 14 维 Opinion</td><td>Expert 引擎并行</td><td>14 任务并行</td><td>ExpertOpinion[]</td></tr>
+        <tr><td>C3 归一裁决</td><td>D04</td><td><code>reconcile</code></td><td>permission/security(硬优先)</td><td>约束物化(CPM前置)</td><td>—</td><td>ReconciledPlan</td></tr>
+        <tr><td>C4 最优求解</td><td>D04</td><td><code>xuanji_optimize</code></td><td>algorithm/resource</td><td>CPM+RCPSP+Dijkstra</td><td>—</td><td>Report+草稿码</td></tr>
+        <tr><td>C5 ⛨璇玑</td><td>D04</td><td><code>verify</code></td><td>(数学层,超专家)</td><td>topology/data_dep/conflict(阻断)</td><td>—</td><td>AlgoVerification(veto)</td></tr>
+        <tr><td>C6 治理闸门</td><td>D04</td><td><code>govern</code></td><td>(治理层,超专家)</td><td>SLA/预算判定</td><td>Checkpoint:Governed</td><td>GateResult+报告</td></tr>
+        <tr><td>C7 出码·双向</td><td>D04</td><td><code>emit/codegen</code></td><td>—</td><td>代码⇄图 roundtrip</td><td>—</td><td>代码+拓扑+指标</td></tr>
+        <tr><td>C8 审计闭环</td><td>D04</td><td><code>verify_chain</code></td><td>observability/audit</td><td>哈希链防篡改</td><td>—</td><td>审计链落库</td></tr>
+      </tbody>
+    </table>
+    <div class="note" style="background:#f0fdf4;border-color:#bbf7d0;color:#166534"><b>GR-E6 偏离治理：</b>任一核心节点须可达 REQ:D04。本流程 8 阶段全部绑定，流程内覆盖率 100%。D04 <code>status=partial</code> 指其子能力（治理台 R01 等），非本处理流程缺口。</div>
+  </section>
+
+  <section>
+    <h2><span class="n">3</span>关系图（D04 → 六维 → 流程 → CI 门禁）</h2>
+    <svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Microsoft YaHei, sans-serif">
+      <defs>
+        <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+          <path d="M0,0 L9,4.5 L0,9 z" fill="#475569"/>
+        </marker>
+        <marker id="ar2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+          <path d="M0,0 L9,4.5 L0,9 z" fill="#0e7490"/>
+        </marker>
+      </defs>
+      <!-- D04 -->
+      <rect x="14" y="150" width="120" height="56" rx="10" fill="#f5f3ff" stroke="#7c3aed" stroke-width="2"/>
+      <text x="74" y="173" text-anchor="middle" fill="#5b21b6" font-size="13" font-weight="700">REQ:D04</text>
+      <text x="74" y="191" text-anchor="middle" fill="#7c3aed" font-size="11">全维治理/璇玑</text>
+      <!-- FUN lib -->
+      <rect x="158" y="150" width="130" height="56" rx="10" fill="#eff6ff" stroke="#1a56db" stroke-width="2"/>
+      <text x="223" y="173" text-anchor="middle" fill="#1a56db" font-size="12" font-weight="700">FUN: lib.rs</text>
+      <text x="223" y="191" text-anchor="middle" fill="#1a56db" font-size="10">xuanji-expert</text>
+      <!-- stages column -->
+      <g font-size="11" fill="#0f172a">
+        <rect x="312" y="14"  width="148" height="38" rx="8" fill="#fff" stroke="#cbd5e1"/><text x="386" y="37" text-anchor="middle">C1 归一化</text>
+        <rect x="312" y="58"  width="148" height="38" rx="8" fill="#fff" stroke="#cbd5e1"/><text x="386" y="81" text-anchor="middle">C2 双璇玑14维</text>
+        <rect x="312" y="102" width="148" height="38" rx="8" fill="#fff" stroke="#cbd5e1"/><text x="386" y="125" text-anchor="middle">C3 归一裁决</text>
+        <rect x="312" y="146" width="148" height="38" rx="8" fill="#fff" stroke="#cbd5e1"/><text x="386" y="169" text-anchor="middle">C4 flow-ai求解</text>
+        <rect x="312" y="190" width="148" height="38" rx="8" fill="#fde7e9" stroke="#b71c1c" stroke-width="2"/><text x="386" y="213" text-anchor="middle" fill="#b71c1c" font-weight="700">C5 ⛨璇玑</text>
+        <rect x="312" y="234" width="148" height="38" rx="8" fill="#fff3e0" stroke="#e65100" stroke-width="2"/><text x="386" y="257" text-anchor="middle" fill="#e65100" font-weight="700">C6 治理闸门</text>
+        <rect x="312" y="278" width="148" height="38" rx="8" fill="#fff" stroke="#cbd5e1"/><text x="386" y="301" text-anchor="middle">C7 出码/双向</text>
+        <rect x="312" y="322" width="148" height="34" rx="8" fill="#e8f5e9" stroke="#1b5e20" stroke-width="2"/><text x="386" y="343" text-anchor="middle" fill="#1b5e20" font-weight="700">C8 审计闭环</text>
+      </g>
+      <!-- CI -->
+      <rect x="496" y="300" width="150" height="56" rx="10" fill="#f0fdf4" stroke="#15803d" stroke-width="2"/>
+      <text x="571" y="323" text-anchor="middle" fill="#166534" font-size="12" font-weight="700">guantu_gate</text>
+      <text x="571" y="341" text-anchor="middle" fill="#15803d" font-size="10">CI 漂移门禁</text>
+      <!-- arrows -->
+      <line x1="134" y1="178" x2="156" y2="178" stroke="#475569" stroke-width="1.6" marker-end="url(#ar)"/>
+      <line x1="288" y1="178" x2="310" y2="178" stroke="#475569" stroke-width="1.6" marker-end="url(#ar)"/>
+      <line x1="386" y1="52"  x2="386" y2="56"  stroke="#94a3b8" stroke-width="1.4" marker-end="url(#ar)"/>
+      <line x1="386" y1="96"  x2="386" y2="100" stroke="#94a3b8" stroke-width="1.4" marker-end="url(#ar)"/>
+      <line x1="386" y1="140" x2="386" y2="144" stroke="#94a3b8" stroke-width="1.4" marker-end="url(#ar)"/>
+      <line x1="386" y1="184" x2="386" y2="188" stroke="#94a3b8" stroke-width="1.4" marker-end="url(#ar)"/>
+      <line x1="386" y1="228" x2="386" y2="232" stroke="#94a3b8" stroke-width="1.4" marker-end="url(#ar)"/>
+      <line x1="386" y1="272" x2="386" y2="276" stroke="#94a3b8" stroke-width="1.4" marker-end="url(#ar)"/>
+      <line x1="386" y1="316" x2="386" y2="320" stroke="#94a3b8" stroke-width="1.4" marker-end="url(#ar)"/>
+      <line x1="460" y1="339" x2="494" y2="328" stroke="#15803d" stroke-width="1.6" marker-end="url(#ar)"/>
+      <!-- overlays -->
+      <rect x="640" y="58" width="110" height="44" rx="9" fill="#ecfeff" stroke="#0e7490" stroke-width="1.6"/>
+      <text x="695" y="80" text-anchor="middle" fill="#0e7490" font-size="11" font-weight="700">业务璇玑</text>
+      <text x="695" y="96" text-anchor="middle" fill="#155e75" font-size="10">业务七维</text>
+      <rect x="640" y="112" width="110" height="44" rx="9" fill="#fef3c7" stroke="#b45309" stroke-width="1.6"/>
+      <text x="695" y="134" text-anchor="middle" fill="#b45309" font-size="11" font-weight="700">开发璇玑</text>
+      <text x="695" y="150" text-anchor="middle" fill="#92400e" font-size="10">开发七维</text>
+      <rect x="640" y="166" width="110" height="44" rx="9" fill="#fde7e9" stroke="#b71c1c" stroke-width="1.6"/>
+      <text x="695" y="188" text-anchor="middle" fill="#b71c1c" font-size="11" font-weight="700">守恒残差</text>
+      <text x="695" y="204" text-anchor="middle" fill="#7f1d1d" font-size="10">full_gate</text>
+      <line x1="460" y1="77"  x2="638" y2="80"  stroke="#0e7490" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#ar2)"/>
+      <line x1="460" y1="120" x2="638" y2="134" stroke="#b45309" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#ar2)"/>
+      <line x1="460" y1="209" x2="638" y2="188" stroke="#b71c1c" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#ar2)"/>
+    </svg>
+    <div class="legend">
+      <span><i style="background:#7c3aed"></i>REQ 需求根</span>
+      <span><i style="background:#1a56db"></i>FUN 功能</span>
+      <span><i style="background:#b71c1c"></i>C5 ⛨璇玑最高否决</span>
+      <span><i style="background:#e65100"></i>C6 治理闸门</span>
+      <span><i style="background:#1b5e20"></i>C8 审计闭环</span>
+      <span><i style="background:#15803d"></i>CI 漂移门禁</span>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">4</span>企业级治理收口</h2>
+    <table>
+      <thead><tr><th>属性</th><th>落点</th><th>判定</th></tr></thead>
+      <tbody>
+        <tr><td>可追溯</td><td>COD → FUN → REQ:D04 反查链</td><td>全程署名（G-D）</td></tr>
+        <tr><td>可治理</td><td>C5 ⛨璇玑 + C6 治理闸门</td><td><code>approved = !algo_veto ∧ can_emit ∧ blocking==0 ∧ sla_ok ∧ budget_ok</code></td></tr>
+        <tr><td>可阻断</td><td>随 AA-STD 纳入 guantu_gate.py</td><td>新增未绑定节点即 exit 1；COVERAGE_FLOOR=90.0</td></tr>
+      </tbody>
+    </table>
+  </section>
+</div>
+</body>
+</html>

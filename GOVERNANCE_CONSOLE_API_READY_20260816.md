@@ -1,4 +1,4 @@
-# OUS 治理台前端 API 实现就绪文档
+﻿# OUS 治理台前端 API 实现就绪文档
 
 > 生成时间：2026-08-16  
 > 状态：**✅ 已实现**  
@@ -61,7 +61,7 @@ GET /api/governance/dashboard
 GET /api/governance/experts/status
 ```
 
-返回双联盟十四维专家状态（业务7维 + 开发7维），含各维度健康分、否决次数。
+返回双璇玑十四维专家状态（业务7维 + 开发7维），含各维度健康分、否决次数。
 
 ### 否决事件列表
 
@@ -113,7 +113,7 @@ POST /api/governance/assess
 Body: { "flow_id": "...", "flow_name": "...", "flow": FlowGraph }
 ```
 
-触发双联盟十四维治理评估，写入否决事件 + 审计链 + 广播 WebSocket。
+触发双璇玑十四维治理评估，写入否决事件 + 审计链 + 广播 WebSocket。
 
 ---
 
@@ -139,13 +139,13 @@ pub struct GovernanceState {
 - **版本化配置**：RBAC 和专家配置变更均递增 `version`，记录到 AuditChain
 - **WebSocket 广播**：否决事件和专家状态变化实时推送给前端
 
-### 双联盟十四维
+### 双璇玑十四维
 
 ```
-业务联盟（Business League）：
+业务璇玑（Business League）：
   Business | Algorithm | Permission | Resource | Security | Data | Observability
 
-开发联盟（Dev League）：
+开发璇玑（Dev League）：
   ApiCompat | Performance | Maintainability | Testing | Style | Cost | Sensitive
 ```
 
@@ -189,7 +189,7 @@ pub struct GovernanceState {
 | 测试 | 描述 |
 |------|------|
 | `dashboard_empty_state` | 空态仪表盘（14维专家初始化） |
-| `experts_status_14_dimensions` | 验证双联盟十四维状态 |
+| `experts_status_14_dimensions` | 验证双璇玑十四维状态 |
 | `veto_events_pagination` | 分页 + 按 expert_id 过滤 |
 | `audit_logs_chain_integrity` | 哈希链防篡改验证 + 过滤 |
 | `rbac_config_versioning` | RBAC 版本递增 + 审计链追加 |

@@ -72,25 +72,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "alliance-system"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum",
- "chrono",
- "futures",
- "rusqlite",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "tokio",
- "tower-http 0.5.2",
- "tracing",
- "tracing-subscriber",
- "uuid",
-]
-
-[[package]]
 name = "android_system_properties"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -283,9 +264,9 @@ checksum = "72f5acc6cb2ba439de613abc23857ec3d78374d8ed5ac84e9d11336e87da8649"
 name = "business-catalog"
 version = "0.1.0"
 dependencies = [
- "expert-alliance",
  "flow-ai",
  "serde",
+ "xuanji-expert",
 ]
 
 [[package]]
@@ -819,27 +800,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "expert-alliance"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum",
- "chrono",
- "flow-ai",
- "hostname",
- "http 1.5.0",
- "serde",
- "serde_json",
- "serde_yaml",
- "sha2",
- "thiserror 1.0.69",
- "tokio",
- "tower-http 0.5.2",
- "tracing",
- "uuid",
-]
-
-[[package]]
 name = "fallible-iterator"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1157,12 +1117,12 @@ dependencies = [
 name = "hermes-flow-bridge"
 version = "0.1.0"
 dependencies = [
- "expert-alliance",
  "flow-ai",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
  "tokio",
+ "xuanji-expert",
 ]
 
 [[package]]
@@ -2570,7 +2530,6 @@ dependencies = [
  "base64 0.22.1",
  "business-catalog",
  "chrono",
- "expert-alliance",
  "flow-ai",
  "futures-util",
  "hex",
@@ -2593,6 +2552,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
+ "xuanji-expert",
 ]
 
 [[package]]
@@ -4204,6 +4164,46 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05f360fc0b24296329c78fda852a1e9ae82de9cf7b27dae4b7f62f118f77b9ed"
 dependencies = [
  "tap",
+]
+
+[[package]]
+name = "xuanji-expert"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "chrono",
+ "flow-ai",
+ "hostname",
+ "http 1.5.0",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2",
+ "thiserror 1.0.69",
+ "tokio",
+ "tower-http 0.5.2",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "xuanji-system"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "chrono",
+ "futures",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tower-http 0.5.2",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
 ]
 
 [[package]]

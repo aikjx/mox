@@ -8,7 +8,7 @@ use crate::envelope::PTEnvelope;
 use crate::registry::fuse_all;
 use crate::sixdim::{now_ms, SixDimBinding, SixDimRegistry};
 use crate::unified::{PlatformGate, PrimitiveCoords, UnifiedGraph};
-use primiflow::gen::c1::{Input, OrchestrationResult, OrchestrationStatus, Orchestrator};
+use primiflow::gen::c1::{FreezePolicy, Input, OrchestrationResult, OrchestrationStatus, Orchestrator};
 use primiflow::gen::schema::Project;
 
 /// 一体化平台：六维绑定注册表（事实源）+ 融合统一图 + 主链路编排器
@@ -36,11 +36,16 @@ pub struct PlatformReport {
 
 impl PrimiPlatform {
     /// 启动平台：融合全部 crate 能力 + 初始化主链路编排器 + 空注册表
+    ///
+    /// 编排器采用 `FreezePolicy::Deferred`：资产冻结延迟到全局闸门通过之后
+    /// （闸门消费约束——闸门未通过的需求永不冻结、不回灌）。
     pub fn new() -> Self {
+        let mut orchestrator = Orchestrator::new();
+        orchestrator.set_freeze_policy(FreezePolicy::Deferred);
         Self {
             registry: SixDimRegistry::new(),
             graph: fuse_all(),
-            orchestrator: Orchestrator::new(),
+            orchestrator,
             registry_path: None,
         }
     }
@@ -55,11 +60,15 @@ impl PrimiPlatform {
         p
     }
 
-    /// 一体化合成：跑主链路 → 登记进六维注册表 → 重算统一图 → 跑全局闸门
+    /// 一体化合成：跑主链路 → 登记进六维注册表 → 重算统一图 → 跑全局闸门 → 闸门消费
+    ///
+    /// **闸门消费约束**：编排器以 `FreezePolicy::Deferred` 运行，`run` 返回时资产
+    /// 尚未冻结；只有 `full_gate()` 通过才调用 `confirm_gate` 补冻结。闸门未通过
+    /// 的需求：不冻结、不回灌、拓扑标记 Rejected —— 未达标产出永不进入复用资产库。
     pub fn synthesize(&mut self, requirement: &str, slider_s: f64) -> PlatformReport {
         let proj_name = truncate(&format!("proj:{requirement}"), 48);
         let project = Project::new(&proj_name, Some("t1".into()), 0.7, 0.3, 1.0);
-        let result = self
+        let mut result = self
             .orchestrator
             .run(&project, &Input::Text(requirement.into()), slider_s);
 
@@ -74,6 +83,27 @@ impl PrimiPlatform {
 
         self.rebuild_graph();
         let gate = self.graph.full_gate();
+
+        // 闸门消费：仅通过时冻结资产 + 回灌知识；未通过则拓扑 Rejected、永不冻结。
+        let frozen = self.orchestrator.confirm_gate(&mut result, gate.passed);
+
+        // 归一化绑定终态：`CompletedPendingGate` 是中间态，不得留在注册表。
+        // 闸门通过 → Completed；未通过 → GateRejected 且坐标清零（与 RejectedDomain
+        // 同构，防止未达标守恒量破坏整图闭合、导致后续闸门持续报红）。
+        let req_id = format!("REQ:{}", project.id);
+        if let Some(b) = self.registry.by_requirement(&req_id) {
+            if b.status == "CompletedPendingGate" {
+                let mut b = b.clone();
+                if frozen {
+                    b.status = "Completed".into();
+                } else {
+                    b.status = "GateRejected".into();
+                    b.coords = PrimitiveCoords::zero();
+                }
+                self.registry.register(b);
+                self.persist_registry();
+            }
+        }
 
         PlatformReport {
             orchestration: result,
@@ -256,6 +286,65 @@ mod tests {
 
         let _ = std::fs::remove_dir_all(&dir);
         let _ = std::fs::remove_file(&reg_path);
+    }
+
+    /// 闸门消费约束：闸门未通过 → 资产永不冻结、不回灌、绑定终态 GateRejected。
+    /// 构造方式：先向注册表注入一条守恒违规的绑定（C=9 但 κ=1,τ=0），使整图
+    /// R07 守恒闸门必失败；此后任何 synthesize 都不得冻结资产。
+    #[test]
+    fn gate_rejection_blocks_asset_freeze() {
+        use crate::unified::PrimitiveCoords;
+
+        let mut p = PrimiPlatform::new();
+        // 投毒：一条节点自报守恒量不闭合的绑定（C=9, κ=1, τ=0 → ε≫1e-3）
+        p.registry.register(SixDimBinding {
+            req_id: "REQ:poison".into(),
+            req_text: "守恒违规投毒绑定".into(),
+            project_id: "poison".into(),
+            status: "Completed".into(),
+            coords: PrimitiveCoords { kappa: 1.0, tau: 0.0, c: 9.0, q: 1.0 },
+            requirement: "REQ:poison".into(),
+            feature: "FUN:poison".into(),
+            business: "BIZ:poison".into(),
+            algorithm: "ALG:poison".into(),
+            task: "TSK:poison".into(),
+            code: "COD:poison".into(),
+            topo_nodes: 3,
+            timestamp_ms: now_ms(),
+        });
+
+        let rep = p.synthesize("请抓取销售数据。清洗对账。生成图表报告。", 0.2);
+        assert!(!rep.gate.passed, "投毒后全局闸门应失败：{:?}", rep.gate);
+        // 闸门消费约束的核心断言：未通过闸门不得冻结资产
+        assert!(
+            rep.orchestration.frozen_asset_id.is_none(),
+            "闸门未通过时资产必须保持未冻结"
+        );
+        assert_eq!(
+            rep.orchestration.status,
+            OrchestrationStatus::CompletedPendingGate,
+            "闸门未通过应保持待闸门态（未回灌）"
+        );
+        let rec = rep.orchestration.topology_record.as_ref().unwrap();
+        assert_eq!(rec.status, "rejected", "未通过闸门的拓扑应标记 Rejected");
+        // 绑定终态归一化：GateRejected 且坐标清零（不破坏整图守恒）
+        let b = p.registry.bindings.last().unwrap();
+        assert_eq!(b.status, "GateRejected");
+        assert_eq!(b.coords.c, 0.0, "被拒绑定坐标应清零");
+    }
+
+    /// 闸门消费约束正向：整图干净时闸门通过 → 资产正常冻结。
+    #[test]
+    fn gate_passed_allows_asset_freeze() {
+        let mut p = PrimiPlatform::new();
+        let rep = p.synthesize("请抓取销售数据。清洗对账。生成图表报告。", 0.2);
+        assert!(rep.gate.passed);
+        assert!(
+            rep.orchestration.frozen_asset_id.is_some(),
+            "闸门通过后资产应冻结"
+        );
+        assert_eq!(rep.orchestration.status, OrchestrationStatus::Completed);
+        assert_eq!(p.registry.bindings.last().unwrap().status, "Completed");
     }
 
     /// P3 出口闸认证（骨架 §6）：六维零孤儿 + 连通 REQ。

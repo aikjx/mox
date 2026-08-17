@@ -1,11 +1,11 @@
-//! 智能驱动信息闭环引擎（八段闭环）。
+﻿//! 智能驱动信息闭环引擎（八段闭环）。
 //!
 //! ```text
 //! ① 感知 Sense    → 从企业各知识库拉取变更
 //! ② 归一 Normalize→ 本体映射 + URN 身份归一
 //! ③ 关联 Link     → 建边、跨库实体合并
 //! ④ 推理 Reason   → 影响面、热点、需求溯源
-//! ⑤ 决策 Decide   → 依据推理结论判定动作（专家联盟裁决入口）
+//! ⑤ 决策 Decide   → 依据推理结论判定动作（璇玑裁决入口）
 //! ⑥ 执行 Act      → 触发自动化动作
 //! ⑦ 校验 Verify   → 三重闸门 + 偏离检测
 //! ⑧ 沉淀 Persist  → 回写图与快照，进入下一轮感知
@@ -94,7 +94,7 @@ pub struct StageTrace {
 pub enum Decision {
     /// 放行沉淀
     Accept,
-    /// 需人工/专家联盟复核（有偏离但未越硬闸门）
+    /// 需人工/璇玑复核（有偏离但未越硬闸门）
     Review,
     /// 拦停（闸门失败）
     Reject,
@@ -104,7 +104,7 @@ impl Decision {
     pub fn zh(&self) -> &'static str {
         match self {
             Decision::Accept => "放行",
-            Decision::Review => "转专家联盟复核",
+            Decision::Review => "转璇玑复核",
             Decision::Reject => "拦停",
         }
     }
@@ -242,7 +242,7 @@ pub fn run(connectors: &[&dyn Connector], cfg: &LoopConfig) -> LoopReport {
     let act_detail = match decision {
         Decision::Accept => "无需干预，进入沉淀".to_string(),
         Decision::Review => format!(
-            "派发专家联盟复核：{} 项偏离待裁决",
+            "派发璇玑复核：{} 项偏离待裁决",
             governance.deviation.deviations.len()
         ),
         Decision::Reject => format!("拦停并告警：闸门错误 {} 项", governance.gate.error_count),
@@ -304,7 +304,7 @@ pub fn run(connectors: &[&dyn Connector], cfg: &LoopConfig) -> LoopReport {
 /// 1. **结构性错误** → `Reject`：图本身不可信（空图 / 悬空边 / 缺证据 / 守恒不自洽），
 ///    此类图若沉淀会污染事实源，必须拦停。
 /// 2. **内容债务 / 偏离 / 悬挂** → `Review`：图结构有效，存在待治理项，
-///    仍可沉淀但需专家联盟复核——存量债务不应阻断知识接入。
+///    仍可沉淀但需璇玑复核——存量债务不应阻断知识接入。
 /// 3. 全绿 → `Accept`。
 fn decide(g: &GovernanceSummary, dangling: usize) -> (Decision, String) {
     if !g.gate.structural_passed {

@@ -1,6 +1,6 @@
-//! 端到端会话级集成测试：模拟 Hermes 多轮工具调用，走完整 bridge 链路。
+﻿//! 端到端会话级集成测试：模拟 Hermes 多轮工具调用，走完整 bridge 链路。
 //!
-//! 覆盖：录制→复用路由→后台优化(alliance_optimize)→算法网关；以及否决拦截接线。
+//! 覆盖：录制→复用路由→后台优化(xuanji_optimize)→算法网关；以及否决拦截接线。
 //! 这是「真实 Hermes 会话」的投影，不依赖 Hermes 源码编译（hook 只认最小投影）。
 
 use hermes_flow_bridge::bridge::optimize_session;
@@ -67,7 +67,7 @@ fn optimize_runs_real_engine_and_passes_verification() {
     let st = BridgeState::new();
     simulate_session(&st, "s3");
     let g = st.recorder.snapshot("s3").expect("graph");
-    // 调真实 expert-alliance 引擎（非桩）：优化 + 七专家 + 算法验证网关
+    // 调真实 xuanji-expert 引擎（非桩）：优化 + 七专家 + 算法验证网关
     optimize_session(&g, &st.gate);
     // 合法政务图应通过的：算法验证不否决
     assert!(!st.gate.is_vetoed(), "合法流程图不应被算法否决");
@@ -95,7 +95,7 @@ fn full_chain_session_then_optimize_then_route_free() {
     on_tool_request(&st, "s4", "web1.submit", &json!({}), 2);
     on_tool_request(&st, "s4", "merge.report", &json!({}), 2);
 
-    // 2) 后台把会话图推给联盟引擎做最优求解 + 算法验证网关
+    // 2) 后台把会话图推给璇玑引擎做最优求解 + 算法验证网关
     let g = st.recorder.snapshot("s4").unwrap();
     optimize_session(&g, &st.gate);
     assert!(!st.gate.is_vetoed());

@@ -1,4 +1,4 @@
-//! # 治理台 API 集成测试
+﻿//! # 治理台 API 集成测试
 //!
 //! 测试 OUS 前端治理台 REST API + WebSocket 的核心路径：
 //!
@@ -21,12 +21,12 @@ use std::sync::Arc;
 // 测试夹具：构建最小治理台 AppState（不含真实 HTTP 服务器）
 // ---------------------------------------------------------------------------
 
-/// 从 expert-alliance 引入核心类型
-use expert_alliance::{
+/// 从 xuanji-expert 引入核心类型
+use xuanji_expert::{
     audit::AuditContext,
     context::{GovernContext, Principal, Tenant},
     govern::{AuditChain, FlowStatus, GateResult, GovernanceReport as EaGovernanceReport},
-    pipeline::alliance_optimize,
+    pipeline::xuanji_optimize,
 };
 use flow_ai::model::{FlowEdge, FlowGraph, FlowNode, NodeKind, ToolKind};
 use runtime::handlers::governance::{
@@ -97,7 +97,7 @@ async fn dashboard_empty_state() {
     assert!(result.audit_chain_verified);
     // 14 维专家状态
     assert_eq!(result.expert_states.len(), 14);
-    // 双联盟健康分应存在
+    // 双璇玑健康分应存在
     assert!(result.business_league_health >= 0.0 && result.business_league_health <= 1.0);
     assert!(result.dev_league_health >= 0.0 && result.dev_league_health <= 1.0);
     tracing::info!("dashboard empty state: {:?}", result);
@@ -126,8 +126,8 @@ async fn experts_status_14_dimensions() {
         "testing", "style", "cost", "sensitive",
     ];
 
-    let alliance = result.get("alliance").and_then(|v| v.as_str()).unwrap();
-    assert_eq!(alliance, "double-league-14-dim");
+    let xuanji = result.get("xuanji").and_then(|v| v.as_str()).unwrap();
+    assert_eq!(xuanji, "double-league-14-dim");
 
     let business_league = result.get("business_league").expect("business_league missing");
     let dims = business_league.get("dimensions").expect("dimensions missing");
@@ -442,14 +442,14 @@ async fn governance_assess_full_pipeline() {
     // 璇玑验证结论
     assert!(result.xuanji_passed || !result.xuanji_passed, "xuanji_passed must be bool");
 
-    // 审计链已追加 alliance_optimize 事件
+    // 审计链已追加 xuanji_optimize 事件
     let chain = gs.audit_chain.lock().await;
     let assess_events: Vec<_> = chain
         .events
         .iter()
-        .filter(|e| e.action == "alliance_optimize")
+        .filter(|e| e.action == "xuanji_optimize")
         .collect();
-    assert!(!assess_events.is_empty(), "audit chain must have alliance_optimize entry");
+    assert!(!assess_events.is_empty(), "audit chain must have xuanji_optimize entry");
     drop(chain);
 
     // 否决事件（若有低分专家）

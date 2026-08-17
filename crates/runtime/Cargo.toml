@@ -1,4 +1,4 @@
-[package]
+﻿[package]
 name = "runtime"
 version.workspace = true
 edition.workspace = true
@@ -21,7 +21,7 @@ operator-wasm = { path = "../operator-wasm" }
 optimizer = { path = "../optimizer" }
 ai-agent = { path = "../ai-agent" }
 business-catalog = { path = "../business-catalog" }
-expert-alliance = { path = "../expert-alliance" }
+xuanji-expert = { path = "../xuanji-expert" }
 flow-ai = { path = "../flow-ai" }
 tokio = { workspace = true }
 axum = { workspace = true, features = ["ws"] }

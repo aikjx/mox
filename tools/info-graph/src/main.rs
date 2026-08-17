@@ -185,13 +185,20 @@ impl InfoGraph {
             return;
         }
         self.edge_set.insert(key.clone());
+        // 截断超长 evidence：防止含内嵌 JSON 的超长代码行被整体复制进图（自引用膨胀的最后一层防线）
+        let ev: String = if evidence.chars().count() > EVIDENCE_CAP {
+            let t: String = evidence.chars().take(EVIDENCE_CAP).collect();
+            format!("{}...(截断,原长{}字)", t, evidence.chars().count())
+        } else {
+            evidence.to_string()
+        };
         self.edges.push(RelationEdge {
             id: key,
             from: from.to_string(),
             to: to.to_string(),
             kind,
             label: label.to_string(),
-            evidence: evidence.to_string(),
+            evidence: ev,
             external,
         });
     }
@@ -288,6 +295,18 @@ fn extract_ids(text: &str) -> HashSet<String> {
 // ===================== 扫描器 =====================
 
 const SKIP_DIRS: &[&str] = &["target", "node_modules", ".git", "vendor", ".workbuddy", "dist", "build"];
+
+/// CI 生成物文件名：不参与扫描（防止把上一次的输出当输入，形成 evidence 自引用指数爆炸）
+const SKIP_ARTIFACT_NAMES: &[&str] = &[
+    "graph.json",
+    "graph.enterprise.json",
+    "graph.mmd",
+    "guantu.req.json.tmp",
+    "ids.txt",
+];
+
+/// evidence 截断上限：防止超长行（如 JSON 数据行）被整体复制进证据导致图膨胀
+const EVIDENCE_CAP: usize = 300;
 
 fn classify_ext(ext: &str) -> Option<InfoKind> {
     match ext {
@@ -410,6 +429,11 @@ fn scan(root: &Path) -> InfoGraph {
                 }
                 stack.push(p);
             } else {
+                let fname = p.file_name().unwrap_or_default().to_string_lossy().to_string();
+                // 跳过 CI 生成物：防止把上一次输出的 graph 当输入再次扫描（evidence 自引用膨胀根因）
+                if SKIP_ARTIFACT_NAMES.contains(&fname.as_str()) {
+                    continue;
+                }
                 let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
                 if is_binary_ext(&ext) {
                     continue;

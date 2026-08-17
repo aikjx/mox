@@ -18,6 +18,10 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+/// 六维覆盖率下限（企业级验收铁律 07 §1.1）：完成链路占比须 ≥ 90%。
+/// 低于此值视为全维分析需求未开发完成，阻断发布。
+pub const COVERAGE_FLOOR: f64 = 90.0;
+
 /// 一条六维绑定记录（一次需求驱动实体的完整六维链路登记）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SixDimBinding {
@@ -127,6 +131,22 @@ impl SixDimRegistry {
     /// 仅取成功链路
     pub fn completed(&self) -> Vec<&SixDimBinding> {
         self.bindings.iter().filter(|b| b.is_completed()).collect()
+    }
+
+    /// 六维覆盖率（完成链路 / 总链路 × 100），对齐企业级验收铁律 07 §1.1 下限要求。
+    /// 全维分析需求"开发完成"的量化判据：覆盖率须 ≥ [`COVERAGE_FLOOR`]。
+    pub fn coverage(&self) -> f64 {
+        let total = self.bindings.len();
+        if total == 0 {
+            return 0.0;
+        }
+        let completed = self.completed().len();
+        completed as f64 / total as f64 * 100.0
+    }
+
+    /// 覆盖率是否达到企业级下限（COVERAGE_FLOOR）
+    pub fn coverage_passed(&self) -> bool {
+        self.coverage() >= COVERAGE_FLOOR
     }
 
     /// 注册表统计（Σκ/Στ/ΣC/ΣQ 用于平台级守恒与资源准入）
@@ -403,5 +423,41 @@ mod tests {
         assert_eq!(s.completed, 1);
         assert_eq!(s.rejected, 1);
         assert!((s.sum_c - (0.7_f64 * 0.7 + 0.3 * 0.3).sqrt()).abs() < 1e-9);
+    }
+
+    #[test]
+    fn coverage_meets_enterprise_floor() {
+        let mut reg = SixDimRegistry::new();
+        // 9 完成 + 1 被拒 = 90% 覆盖率，刚好达企业级下限
+        for i in 0..9 {
+            reg.register(sample(true, i as f64, 0.3));
+        }
+        reg.register(sample(false, 99.0, 0.0));
+        let cov = reg.coverage();
+        assert!((cov - 90.0).abs() < 1e-9, "覆盖率应为 90%，实际 {}", cov);
+        assert!(reg.coverage_passed(), "90% 应达 COVERAGE_FLOOR 下限");
+        assert_eq!(reg.stats().total, 10);
+    }
+
+    #[test]
+    fn coverage_below_floor_fails() {
+        let mut reg = SixDimRegistry::new();
+        reg.register(sample(true, 1.0, 0.3)); // 1 完成
+        reg.register(sample(false, 2.0, 0.0)); // 1 被拒 → 50%
+        assert!((reg.coverage() - 50.0).abs() < 1e-9, "覆盖率应为 50%");
+        assert!(
+            !reg.coverage_passed(),
+            "50% 应低于 COVERAGE_FLOOR=90（未开发完成）"
+        );
+    }
+
+    #[test]
+    fn empty_registry_coverage_zero() {
+        let reg = SixDimRegistry::new();
+        assert_eq!(reg.coverage(), 0.0);
+        assert!(
+            !reg.coverage_passed(),
+            "空注册表覆盖率 0，全维分析需求未开发完成"
+        );
     }
 }

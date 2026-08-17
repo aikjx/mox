@@ -1,4 +1,4 @@
-import axios from 'axios'
+﻿import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
 // 后端运行时地址：开发期走 Vite 代理 /api -> http://localhost:3000
@@ -173,12 +173,12 @@ export const automationRun = (id, payload) => http.post(`/automation/${encodeURI
 export const automationPermissions = (id) => http.get(`/automation/${encodeURIComponent(id)}/permissions`)
 export const automationUpdate = (id, payload) => http.put(`/automation/${encodeURIComponent(id)}`, payload)
 
-// ===== 专家联盟全维治理 (双联盟十四维) =====
-// 维度清单与联盟健康度
-export const allianceHealth = () => http.get('/alliance/health')
+// ===== 璇玑全维治理 (双璇玑十四维) =====
+// 维度清单与璇玑健康度
+export const xuanjiHealth = () => http.get('/xuanji/health')
 // 传入流程蓝图（FlowGraph）做全维治理，返回 GovernanceReport（专家评分/闸门/璇玑/采纳建议）
-export const allianceOptimize = (flow) => http.post('/alliance/optimize', { flow })
+export const xuanjiOptimize = (flow) => http.post('/xuanji/optimize', { flow })
 // 全维融合发布：归一化 -> 取优化图 -> 一键落盘上传算子市场（插件/应用平台）
-export const alliancePublish = (payload) => http.post('/alliance/publish', payload)
+export const xuanjiPublish = (payload) => http.post('/xuanji/publish', payload)
 
 export default http

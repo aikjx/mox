@@ -1,4 +1,4 @@
-# OUS CI/CD 企业级流水线配置
+﻿# OUS CI/CD 企业级流水线配置
 
 name: OUS Enterprise CI/CD
 
@@ -184,8 +184,8 @@ jobs:
           name: benchmark-results
           path: target/criterion/
 
-  # ── 专家联盟端到端测试 ──
-  expert-alliance-e2e:
+  # ── 璇玑端到端测试 ──
+  xuanji-expert-e2e:
     runs-on: ubuntu-latest
     needs: [test-unit]
     steps:
@@ -194,13 +194,13 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Run expert alliance tests
-        run: cargo test -p expert-alliance --lib -- --nocapture
+      - name: Run expert xuanji tests
+        run: cargo test -p xuanji-expert --lib -- --nocapture
 
       - name: Verify no vetoed flows
         run: |
-          cargo test -p expert-alliance verify::tests::veto_when_blocking_conflict_remains -- --nocapture
-          cargo test -p expert-alliance verify::tests::veto_when_data_dependency_broken -- --nocapture
+          cargo test -p xuanji-expert verify::tests::veto_when_blocking_conflict_remains -- --nocapture
+          cargo test -p xuanji-expert verify::tests::veto_when_data_dependency_broken -- --nocapture
 
   # ── 构建发布包 ──
   build-release:

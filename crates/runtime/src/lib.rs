@@ -1,4 +1,4 @@
-//! Runtime 库模块
+﻿//! Runtime 库模块
 //
 //! 提供可测试的中间件、工具函数和 OUS-Cordis 插件化运行时内核
 
@@ -15,7 +15,7 @@ pub mod market_migration;
 pub mod market_dsl;
 
 // OUS 前端治理台 API（handlers::governance / routes::governance，对应 /api/governance/*）
-// 治理台状态自包含于 GovernanceState 并适配 expert-alliance 当前 API（pipeline::GovernanceReport /
+// 治理台状态自包含于 GovernanceState 并适配 xuanji-expert 当前 API（pipeline::GovernanceReport /
 // govern::GateResult），随 governance feature（默认启用）编译并挂载。
 pub mod handlers;
 pub mod routes;

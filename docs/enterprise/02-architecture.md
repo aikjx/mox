@@ -1,19 +1,19 @@
-# 专家联盟系统 · 企业级架构文档（多视图）
+﻿# 璇玑系统 · 企业级架构文档（多视图）
 
 > **文档类型**：企业架构（Enterprise Architecture，多视图 / TOGAF 风格切面）
 > **文档版本**：v1.0 (ENT) · 最后更新 2026-08-16
 > **配套**：`01-requirements.md`（需求）、`03-design.md`（设计）、`04-business-processing.md`（业务处理）、`docs/architecture.md`（OUS 总架构）
 >
-> 本文以「专家联盟系统」为切面，沿 **业务 / 信息 / 应用 / 技术 / 安全 / 集成 / 部署** 七视图展开，
+> 本文以「璇玑系统」为切面，沿 **业务 / 信息 / 应用 / 技术 / 安全 / 集成 / 部署** 七视图展开，
 > 并附 **架构决策记录（ADR）** 与 **跨视图 NFR 落地表**。
 
 ---
 
 ## 0. 架构一句话
 
-专家联盟系统是 OUS 的**协作治理子系统**：以「数学内核 + 插件运行时」为底座，在**多租户联盟**边界内，
+璇玑系统是 OUS 的**协作治理子系统**：以「数学内核 + 插件运行时」为底座，在**多租户璇玑**边界内，
 通过 **RBAC 统一鉴权闸门 + 领域事件总线 + 反应器** 将「成员/任务/权限/通信」四类能力解耦协同，
-并把组织决策（谁来做、做什么、是否通过）交给 `alliance-system`，把技术决策（怎么做得更快、是否可信）交给 `expert-alliance` 的璇玑治理。
+并把组织决策（谁来做、做什么、是否通过）交给 `xuanji-system`，把技术决策（怎么做得更快、是否可信）交给 `xuanji-expert` 的璇玑治理。
 
 ---
 
@@ -22,30 +22,30 @@
 ### 1.1 业务能力地图
 
 ```
-                专家联盟系统（协作治理）
+                璇玑系统（协作治理）
    ┌──────────────┬──────────────┬──────────────┬──────────────┐
    │ 成员管理      │ 任务协作      │ 权限分配      │ 通信机制      │
    │ Member Mgmt  │ Task Collab  │ Permission   │ Communication │
    └──────┬───────┴──────┬───────┴──────┬───────┴──────┬───────┘
           │              │              │              │
           ▼              ▼              ▼              ▼
-   [入盟/激活/停权]  [立项/派发/推进]  [RBAC/作用域]  [频道/消息/通知]
+   [入璇玑/激活/停权]  [立项/派发/推进]  [RBAC/作用域]  [频道/消息/通知]
           └──────────────┬──────────────┘
                          ▼
                   [审计留痕 / 事件溯源]
                          │
                          ▼
-                  [联盟融合（璇玑治理）] → 算子市场上架
+                  [璇玑融合（璇玑治理）] → 算子市场上架
 ```
 
 ### 1.2 价值流
 
-`组建联盟 → 邀请专家 → 立项任务 → 分派协同 → 推进验收 → 融合优化 → 上架复用`。
+`组建璇玑 → 邀请专家 → 立项任务 → 分派协同 → 推进验收 → 融合优化 → 上架复用`。
 全程横切**审计留痕**与**事件驱动的实时通信**。
 
 ### 1.3 组织角色（与 RBAC 对齐）
 
-`AllianceAdmin / Coordinator / Expert / Member / Auditor`（详见 `01-requirements` §2、`03-design` §RBAC）。
+`XuanjiAdmin / Coordinator / Expert / Member / Auditor`（详见 `01-requirements` §2、`03-design` §RBAC）。
 
 ---
 
@@ -55,11 +55,11 @@
 
 | 实体 | 关键属性 | 生命周期 |
 |------|----------|----------|
-| Alliance（联盟） | id, name, created_by, channels[] | 创建后常驻 |
-| Member（成员） | id, alliance_id, name, email, status, tier, expertise[] | Invited→Active→{Suspended\|Left} |
-| Task（任务） | id, alliance_id, title, status, assignees[], deps[], subtasks[], comments[] | Draft→…→Done/Cancelled |
+| Xuanji（璇玑） | id, name, created_by, channels[] | 创建后常驻 |
+| Member（成员） | id, xuanji_id, name, email, status, tier, expertise[] | Invited→Active→{Suspended\|Left} |
+| Task（任务） | id, xuanji_id, title, status, assignees[], deps[], subtasks[], comments[] | Draft→…→Done/Cancelled |
 | RoleBinding（角色绑定） | member_id, role, scope | 随成员/治理变更 |
-| Channel（频道） | id, kind(Alliance/Task/Direct), members[] | 惰性创建 |
+| Channel（频道） | id, kind(Xuanji/Task/Direct), members[] | 惰性创建 |
 | Message（消息） | id, channel_id, sender, body, kind | 追加不可变 |
 | Notification（通知） | id, member_id, body, read | 推送+留存 |
 | AuditRecord（审计） | id, member_id, action, permission, scope, reason, ts | 仅追加 |
@@ -97,7 +97,7 @@ DomainEvent ──▶ EventBus(broadcast)
 ├─────────────────────────────────────────────────────────────┤
 │ 运行时 Runtime   令牌↔成员解析 · RBAC 鉴权闸门(middleware)     │
 ├─────────────────────────────────────────────────────────────┤
-│ 编排层 Orchestration  AllianceSystem 门面                     │
+│ 编排层 Orchestration  XuanjiSystem 门面                     │
 │                  ├─ require() 统一鉴权                        │
 │                  └─ Reactor 事件→通信 反应器                  │
 ├─────────────────────────────────────────────────────────────┤
@@ -108,17 +108,17 @@ DomainEvent ──▶ EventBus(broadcast)
 └─────────────────────────────────────────────────────────────┘
         ▲ 融合治理旁路
         │
-   expert-alliance（双联盟十四维 · 璇玑）
+   xuanji-expert（双璇玑十四维 · 璇玑）
 ```
 
 ### 3.2 模块依赖
 
 ```
-server.rs ──▶ orchestrator.rs(AllianceSystem) ──▶ services.rs(Member/Task/Permission/Comm)
+server.rs ──▶ orchestrator.rs(XuanjiSystem) ──▶ services.rs(Member/Task/Permission/Comm)
                                                     │
                                                     ▼
                                               store.rs + event.rs(EventBus)
-alliance-system ◀── POST /api/alliance/* ── expert-alliance(pipeline)
+xuanji-system ◀── POST /api/xuanji/* ── xuanji-expert(pipeline)
 ```
 
 ### 3.3 服务职责（单一职责）
@@ -156,27 +156,27 @@ alliance-system ◀── POST /api/alliance/* ── expert-alliance(pipeline)
 
 ## 5. 安全架构视图（Security）
 
-### 5.1 威胁模型（STRIDE 对齐 expert-alliance `security.rs`）
+### 5.1 威胁模型（STRIDE 对齐 xuanji-expert `security.rs`）
 
 | 威胁 | 缓解 |
 |------|------|
 | **S**poofing 伪造身份 | 令牌鉴权；bootstrap 唯一无鉴权入口 |
 | **T**ampering 篡改 | 写操作统一 `require()`；事件不可变追加 |
 | **R**epudiation 抵赖 | 领域事件 + 审计记录 + 鉴权拒绝留痕 |
-| **I**nfo 泄露（跨租户） | 查询按 alliance_id 过滤；分派三重校验（GAP-2） |
+| **I**nfo 泄露（跨租户） | 查询按 xuanji_id 过滤；分派三重校验（GAP-2） |
 | **D**oS | 配额/限流（NFR-09，路线图中） |
 | **E**levation 提权 | 最小权限 + 作用域 + `*Own` 所有权 + 试探式鉴权不落审计防探测 |
 
 ### 5.2 RBAC 模型
 
-- **角色**：AllianceAdmin / Coordinator / Expert / Member / Auditor，继承链 `Coordinator→Expert→Member`。
-- **权限**：14 原子（task:create/assign/edit:all/edit:own/view:all/view:assigned/comment/transition:all/transition:own、member:invite/manage、comm:send:alliance/send:task/send:direct、audit:view）。
-- **作用域**：Global（仅 bootstrap 管理员）/ Alliance（受邀默认）/ Task（临时授权）。
+- **角色**：XuanjiAdmin / Coordinator / Expert / Member / Auditor，继承链 `Coordinator→Expert→Member`。
+- **权限**：14 原子（task:create/assign/edit:all/edit:own/view:all/view:assigned/comment/transition:all/transition:own、member:invite/manage、comm:send:xuanji/send:task/send:direct、audit:view）。
+- **作用域**：Global（仅 bootstrap 管理员）/ Xuanji（受邀默认）/ Task（临时授权）。
 - **所有权**：`*Own` 类权限额外要求调用者在 `task.assignees` 中（前提：assignees 可信，见 GAP-2 修复）。
 
 ### 5.3 安全护栏（关键）
 
-- **跨租户提权路径已闭环**：修复前 `assign()` 对 assignees 零校验 → 可写入他联盟成员 ID 获得 own 权限；修复后 `validate_assignees` 三重校验（不存在/跨联盟/非Active 均拒）。
+- **跨租户提权路径已闭环**：修复前 `assign()` 对 assignees 零校验 → 可写入他璇玑成员 ID 获得 own 权限；修复后 `validate_assignees` 三重校验（不存在/跨璇玑/非Active 均拒）。
 - **审计不可被噪声淹没**：两段式鉴权，仅终局裁决失败留痕（见 `01-requirements` FR-PERM-06 / `br18`）。
 - **AuthzDenied 事件不回推当事人**：避免实时通道成为权限探测反馈信道。
 
@@ -189,12 +189,12 @@ alliance-system ◀── POST /api/alliance/* ── expert-alliance(pipeline)
 | 类别 | 端点 | 说明 |
 |------|------|------|
 | 健康检查 | `GET /api/health` | 探针 |
-| 身份 | `POST /api/bootstrap`、`GET /api/me` | 建盟/令牌解析 |
+| 身份 | `POST /api/bootstrap`、`GET /api/me` | 建璇玑/令牌解析 |
 | 成员 | `POST/GET /api/members` 等 | 邀请/列表/状态 |
 | 任务 | `POST/GET /api/tasks`、`POST /api/tasks/:id/transition` 等 | 全生命周期 |
 | 通信 | `GET /api/channels`、`POST /api/channels/:id/messages` | 频道消息 |
 | 实时 | `WS /api/ws?token=` | 通知推送 |
-| 融合 | `POST /api/alliance/optimize`、`/publish` | 璇玑治理→上架 |
+| 融合 | `POST /api/xuanji/optimize`、`/publish` | 璇玑治理→上架 |
 
 ### 6.2 事件契约
 
@@ -202,8 +202,8 @@ alliance-system ◀── POST /api/alliance/* ── expert-alliance(pipeline)
 
 ### 6.3 与外部系统
 
-- `expert-alliance`：归一化/治理/优化（旁路集成）。
-- 算子市场：`/api/alliance/publish` 上架优化产物（见 `business-process-flowcharts.md` §8）。
+- `xuanji-expert`：归一化/治理/优化（旁路集成）。
+- 算子市场：`/api/xuanji/publish` 上架优化产物（见 `business-process-flowcharts.md` §8）。
 - LLM（可选）：企业流程 AiTask 真实执行，未配置 fail-closed。
 
 ---
@@ -212,7 +212,7 @@ alliance-system ◀── POST /api/alliance/* ── expert-alliance(pipeline)
 
 ### 7.1 运行形态
 
-- 单体进程：`cargo run -p alliance-system` → `:3000`（REST+WS）；`--demo` 端到端演示。
+- 单体进程：`cargo run -p xuanji-system` → `:3000`（REST+WS）；`--demo` 端到端演示。
 - 作为 OUS 子系统：由 `runtime` 主服务聚合各 crate 端点。
 
 ### 7.2 可观测性（设计态 → 路线图）
@@ -247,7 +247,7 @@ alliance-system ◀── POST /api/alliance/* ── expert-alliance(pipeline)
 
 | NFR | 业务视图 | 应用视图 | 技术视图 | 安全视图 |
 |-----|----------|----------|----------|----------|
-| NFR-01 多租户 | 联盟边界 | 查询过滤 | Store 隔离 | 分派校验 |
+| NFR-01 多租户 | 璇玑边界 | 查询过滤 | Store 隔离 | 分派校验 |
 | NFR-04 解耦 | 事件闭环 | Reactor | broadcast | 审计独立 |
 | NFR-08 可观测 | 指标定义 | 指标埋点 | tracing | — |
 | NFR-11 一致性 | 幂等 | Reactor 幂等 | broadcast | 事件不可变 |
@@ -256,9 +256,9 @@ alliance-system ◀── POST /api/alliance/* ── expert-alliance(pipeline)
 
 ## 10. 与父系统 OUS 的关系
 
-- 本文是 `docs/architecture.md`（v7.0，79KB 总架构）的**联盟子系统切面**。
-- 能力对齐见 `docs/enterprise-architecture-analysis.md`（双联盟十四维、能力覆盖矩阵）。
-- 融合链路见 `docs/expert-alliance-alliance-fusion-flows.md`。
+- 本文是 `docs/architecture.md`（v7.0，79KB 总架构）的**璇玑子系统切面**。
+- 能力对齐见 `docs/enterprise-architecture-analysis.md`（双璇玑十四维、能力覆盖矩阵）。
+- 融合链路见 `docs/xuanji-expert-xuanji-fusion-flows.md`。
 
 ---
 

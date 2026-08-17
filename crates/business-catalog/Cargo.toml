@@ -1,4 +1,4 @@
-[package]
+﻿[package]
 name = "business-catalog"
 version = "0.1.0"
 edition = "2021"
@@ -6,5 +6,5 @@ description = "用璇玑架构把全部业务建模为流程图 + 六维关系�
 
 [dependencies]
 flow-ai = { path = "../flow-ai" }
-expert-alliance = { path = "../expert-alliance" }
+xuanji-expert = { path = "../xuanji-expert" }
 serde = { version = "1", features = ["derive"] }

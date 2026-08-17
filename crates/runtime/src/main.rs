@@ -1,4 +1,4 @@
-//! # 算子统一系统运行时 v3.0 - AI驱动全维突破平台
+﻿//! # 算子统一系统运行时 v3.0 - AI驱动全维突破平台
 //!
 //! 集成五大核心能力：
 //! 1. AI智能对话 - 自然语言交互、意图识别、算子推荐
@@ -25,9 +25,9 @@ use operator_graph::{
     KnowledgeNode, NodeRecommendation, PathResult,
 };
 use operator_wasm::WasmPluginManager;
-// 专家联盟全维治理内核：双联盟十四维 → 治理报告
-use expert_alliance::pipeline::alliance_optimize;
-use expert_alliance::context::GovernContext;
+// 璇玑全维治理内核：双璇玑十四维 → 治理报告
+use xuanji_expert::pipeline::xuanji_optimize;
+use xuanji_expert::context::GovernContext;
 // OUS 前端治理台状态
 use crate::handlers::governance::GovernanceState;
 use flow_ai::model::FlowGraph;
@@ -491,13 +491,13 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/logs", get(get_logs))
         .route("/api/status", get(get_status))
         .route("/api/status/full", get(get_full_status))
-        // ========== 专家联盟全维治理 API ==========
-        .route("/api/alliance/health", get(alliance_health))
-        .route("/api/alliance/optimize", post(alliance_optimize_handler))
-        .route("/api/alliance/publish", post(alliance_publish_handler))
+        // ========== 璇玑全维治理 API ==========
+        .route("/api/xuanji/health", get(xuanji_health))
+        .route("/api/xuanji/optimize", post(xuanji_optimize_handler))
+        .route("/api/xuanji/publish", post(xuanji_publish_handler))
         // ========== OUS 前端治理台 API（/api/governance/*）==========
         // 全维治理：Dashboard / 专家状态 / 否决事件 / 审计日志 / RBAC 配置 / 专家配置 / WS 实时推送 / 治理评估。
-        // 状态自包含于 GovernanceState（handlers/governance.rs），已适配 expert-alliance 当前 API。
+        // 状态自包含于 GovernanceState（handlers/governance.rs），已适配 xuanji-expert 当前 API。
         .nest("/api/governance", {
             let gov_state = state.governance.clone();
             crate::routes::governance::governance_routes().with_state(gov_state)
@@ -727,14 +727,14 @@ async fn health() -> &'static str {
     "OK - AI Operator System v3.0 Running - Full-Dimensional Breakthrough"
 }
 
-// ========== 专家联盟全维治理 API ==========
-// 把后端双联盟十四维决策内核暴露给前端设计器：传入流程蓝图即可拿到
+// ========== 璇玑全维治理 API ==========
+// 把后端双璇玑十四维决策内核暴露给前端设计器：传入流程蓝图即可拿到
 // 各维度健康分、治理闸门、璇玑校验、采纳建议，驱动"可视化治理闭环"。
 
-/// 请求体：任意流程蓝图（FlowGraph）。可选传 code_ir 触发开发七维分析。
+/// 请求体：前端友好的任意流程蓝图（支持 {nodes,edges} 宽松结构，handler 内归一化为 FlowGraph）。
 #[derive(Debug, Clone, Deserialize)]
-struct AllianceOptimizeRequest {
-    flow: FlowGraph,
+struct XuanjiOptimizeRequest {
+    flow: serde_json::Value,
 }
 
 /// 全维治理：返回 GovernanceReport（专家评分 + 优化 + 璇玑验证 + 闸门 + 审计 + 采纳建议）
@@ -778,26 +778,56 @@ fn normalize_flow_to_graph(v: &serde_json::Value) -> flow_ai::model::FlowGraph {
     }
     g
 }
-async fn alliance_optimize_handler(
-    Json(req): Json<AllianceOptimizeRequest>,
+async fn xuanji_optimize_handler(
+    Json(req): Json<XuanjiOptimizeRequest>,
 ) -> Json<serde_json::Value> {
     let ctx = GovernContext::new(
-        expert_alliance::context::Tenant::new("default", "default"),
-        expert_alliance::context::Principal::new("designer").with_roles(vec!["editor".into()]),
+        xuanji_expert::context::Tenant::new("default", "default"),
+        xuanji_expert::context::Principal::new("designer").with_roles(vec!["editor".into()]),
     );
-    let report = alliance_optimize(&req.flow, &ctx);
-    Json(serde_json::to_value(&report).unwrap_or(json!({"error": "serialize"})))
+    let report = xuanji_optimize(&normalize_flow_to_graph(&req.flow), &ctx);
+    // 契约适配层：在原 GovernanceReport 基础上注入前端友好字段
+    // （governance.score/gate、optimization.metric/algorithm），不改动治理内核。
+    let score: f64 = if report.expert_scores.is_empty() {
+        0.0
+    } else {
+        report.expert_scores.iter().map(|(_, s)| s).sum::<f64>() / report.expert_scores.len() as f64
+    };
+    let mut v = serde_json::to_value(&report).unwrap_or(json!({"error": "serialize"}));
+    if let Some(obj) = v.as_object_mut() {
+        obj.insert(
+            "governance".to_string(),
+            json!({
+                "score": score,
+                "gate": format!("{:?}", report.gate.status),
+            }),
+        );
+        if let Some(opt) = obj.get_mut("optimization").and_then(|o| o.as_object_mut()) {
+            let g = &report.optimization.gains;
+            opt.insert(
+                "metric".to_string(),
+                json!({
+                    "critical_path_ms": g.critical_path_ms,
+                    "speedup": g.speedup,
+                    "time_saved_pct": g.time_saved_pct,
+                    "compute_saved_pct": g.compute_saved_pct,
+                }),
+            );
+            opt.insert("algorithm".to_string(), json!(report.algo.summary));
+        }
+    }
+    Json(v)
 }
 
-async fn alliance_publish_handler(
-    Json(req): Json<AlliancePublishRequest>,
+async fn xuanji_publish_handler(
+    Json(req): Json<XuanjiPublishRequest>,
 ) -> Json<serde_json::Value> {
-    use expert_alliance::context::{GovernContext, Tenant, Principal};
+    use xuanji_expert::context::{GovernContext, Tenant, Principal};
     let ctx = GovernContext::new(
         Tenant::new("default", "default"),
         Principal::new("designer").with_roles(vec!["editor".into()]),
     );
-    let report = alliance_optimize(&normalize_flow_to_graph(&req.flow), &ctx);
+    let report = xuanji_optimize(&normalize_flow_to_graph(&req.flow), &ctx);
     let optimized = &report.optimization.optimized_graph;
     let score: f64 = if report.expert_scores.is_empty() {
         0.0
@@ -806,11 +836,11 @@ async fn alliance_publish_handler(
     };
     let name = req.name.clone().unwrap_or_else(|| "全维融合算子".into());
     let description = req.description.clone().unwrap_or_else(|| {
-        format!("由专家联盟双联盟十四维归一化生成（治理评分 {:.2}）", score)
+        format!("由璇玑双璇玑十四维归一化生成（治理评分 {:.2}）", score)
     });
     let requirement = req.requirement.clone().unwrap_or_default();
     let tags = req.tags.clone().unwrap_or_else(|| {
-        vec!["全维融合".into(), "专家联盟".into(), "业务流程图".into()]
+        vec!["全维融合".into(), "璇玑".into(), "业务流程图".into()]
     });
     match crate::market::publish_unified(
         name,
@@ -830,9 +860,9 @@ async fn alliance_publish_handler(
     }
 }
 
-/// 治理内核健康度：列出双联盟十四维与各专家状态（供前端雷达图坐标）
+/// 治理内核健康度：列出双璇玑十四维与各专家状态（供前端雷达图坐标）
 #[derive(Debug, Clone, Deserialize)]
-struct AlliancePublishRequest {
+struct XuanjiPublishRequest {
     /// 业务蓝图（支持前端友好的 {type,params} 风格，handler 内归一化为 FlowGraph）
     flow: serde_json::Value,
     name: Option<String>,
@@ -841,18 +871,21 @@ struct AlliancePublishRequest {
     tags: Option<Vec<String>>,
 }
 
-async fn alliance_health() -> Json<serde_json::Value> {
+async fn xuanji_health() -> Json<serde_json::Value> {
     let dims: Vec<&str> = vec![
         "Business", "Algorithm", "Permission", "Resource", "Security", "Data", "Observability",
         "ApiCompat", "Perf", "Maintain", "Test", "Style", "Cost", "Sensitive",
     ];
     Json(json!({
-        "alliance": "double-league-14-dim",
+        "xuanji": "double-league-14-dim",
+        "verification": "algo-verification-supreme",
         "business_league": ["Business","Algorithm","Permission","Resource","Security","Data","Observability"],
         "dev_league": ["ApiCompat","Perf","Maintain","Test","Style","Cost","Sensitive"],
         "dimensions": dims,
-        "experts": ["algorithm","business","data","observability","permission","resource","security"],
-        "xuanji": "algo-verification-supreme"
+        "experts": [
+            "business","algorithm","permission","resource","security","data","observability",
+            "api_compat","perf","maintain","test","style","cost","sensitive"
+        ],
     }))
 }
 

@@ -10,7 +10,7 @@
 | **合规(PT-Primi)** | R07 守恒残差闸门✅、A4 六维零孤儿✅、R06 六维绑定 Registry✅(本次)、R08 PT-DOC 自生成✅(本次)；跨层 PTEnvelope✅。 | PT-Primi 四大规范缺口(R06/R07/R08 + A4) 全部闭环。 |
 | **合规(GR-STD)** | 8 闸门中 悬空边/evidence/核心孤儿/孤岛文档 已实现；信息孤岛 G7 仍有少量文档/配置未链（待 P5 CI 门禁持续消减）。 | 主体合规，孤岛为渐进优化项。 |
 | **测试** | `primiflow-fusion` 14→**24** 测试（新增 sixdim/ptdoc/platform 共 10 项）；workspace 整体 P1 绿（510 passed）。 | 核心功能均有单测+集成测覆盖。 |
-| **性能/溯源** | 无 benches 基线（P4 待办）；六维绑定支持按 code/req/project/dim_id 反查（溯源 API 化）。 | 溯源已"可查询"，性能基线待建。 |
+| **性能/溯源** | benches 基线已建（`benches/development_experts.rs`：fuse_all / synthesize / full_gate / 注册表登记查询 4 项）；六维绑定支持按 code/req/project/dim_id 反查（溯源 API 化）。 | 溯源已"可查询"，性能基线可供 CI 回归。 |
 
 ## 二、本轮完成的核心功能
 
