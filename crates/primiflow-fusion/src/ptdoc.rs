@@ -1,4 +1,4 @@
-//! PT-Primi 标准文档自生成（规范缺口 R08）
+﻿//! PT-Primi 标准文档自生成（规范缺口 R08）
 //!
 //! 把平台运行累积的事实源（六维绑定注册表 + 融合统一图 + 全局闸门）自动生成
 //! PT-Primi 标准文档集（PT-DOC 01..10），实现「平台自文档化」——任何一次
@@ -366,13 +366,13 @@ fn crate_layer(name: &str) -> (&'static str, &'static str) {
         "operator-graph" => ("L6 资产沉淀", "知识图谱存储 / 查询"),
         "optimizer" => ("L3 拓扑涌现", "流程图优化"),
         "flow-ai" => ("L2 原语映射", "κ-τ 拓扑原语引擎 / 自涌现调度"),
-        "expert-alliance" => ("L7 治理合规", "全维治理校验"),
+        "xuanji-expert" => ("L7 治理合规", "全维治理校验"),
         "hermes-flow-bridge" => ("L5 执行运行时", "外部流系统桥接"),
         "business-catalog" => ("L1 需求语义", "业务全景目录"),
         "ai-agent" => ("L5 执行运行时", "AI 智能体闭环"),
         "template-market" => ("L6 资产沉淀", "模板市场"),
         "runtime" => ("L4 调度编排", "AI 自动化中枢 / 算子商城"),
-        "alliance-system" => ("L7 治理合规", "专家联盟系统"),
+        "xuanji-system" => ("L7 治理合规", "璇玑系统"),
         "primiflow" => ("L1/L4/L7", "全域原语编排 / 融合归一化 / 可视化画布"),
         _ => ("L5 执行运行时", ""),
     }
@@ -435,6 +435,7 @@ mod tests {
                 warnings: vec![],
                 passed: true,
             },
+            sync: crate::unified::SyncReport::none(),
             passed: true,
             error_count: 0,
         };
@@ -466,6 +467,7 @@ mod tests {
                 warnings: vec![],
                 passed: true,
             },
+            sync: crate::unified::SyncReport::none(),
             passed: true,
             error_count: 0,
         };

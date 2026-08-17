@@ -1,4 +1,4 @@
-//! # 算子商城 (Operator Market)
+﻿//! # 算子商城 (Operator Market)
 //!
 //! 把"需求 + 业务流程图（结构化、可编辑）"作为算子包(OperatorPackage)上传到商城，
 //! 他人可随机浏览、拉取并克隆后继续编辑。
@@ -884,9 +884,9 @@ async fn ensure_seed(state: &MarketState) {
     state.index.lock().await.insert(seed.id.clone(), seed.meta());
 }
 
-/// 全维融合落盘：接收专家联盟归一化产出的优化流程图（flow_ai::FlowNode/FlowEdge）+
+/// 全维融合落盘：接收璇玑归一化产出的优化流程图（flow_ai::FlowNode/FlowEdge）+
 /// 元信息，转换为算子商城节点模型并组装为算子包，上传到市场（插件/应用平台）。
-/// 这是"专家联盟 -> 业务流程图 -> 上传系统平台"融合总线的最终落点。
+/// 这是"璇玑 -> 业务流程图 -> 上传系统平台"融合总线的最终落点。
 pub fn publish_unified(
     name: String,
     description: String,
@@ -925,7 +925,7 @@ pub fn publish_unified(
         id: id.clone(),
         name,
         category: "unified".into(),
-        author: "expert-alliance".into(),
+        author: "xuanji-expert".into(),
         version: default_version(),
         summary: description,
         requirement,
@@ -939,7 +939,7 @@ pub fn publish_unified(
         forked_from: None,
         tenant: default_tenant(),
         tenant_id: default_tenant(),
-        created_by: "expert-alliance".into(),
+        created_by: "xuanji-expert".into(),
         permissions: vec![],
     };
     save_package(&pkg)?;

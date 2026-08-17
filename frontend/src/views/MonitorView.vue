@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="mv">
     <div class="head">
       <div>
@@ -35,12 +35,12 @@
     </div>
 
     <div class="panel card-pad">
-      <div class="alliance-head">
+      <div class="xuanji-head">
         <div>
-          <h3 class="section-title">专家联盟 · 双联盟十四维治理</h3>
+          <h3 class="section-title">璇玑 · 双璇玑十四维治理</h3>
           <p class="page-subtitle">业务七维 + 开发七维全维健康分；粘贴流程蓝图实时治理评分（璇玑最高权限校验）</p>
         </div>
-        <div class="alliance-actions">
+        <div class="xuanji-actions">
           <el-upload
             action="#"
             :auto-upload="false"
@@ -56,7 +56,7 @@
         </div>
       </div>
 
-      <div class="grid grid-2 alliance-body">
+      <div class="grid grid-2 xuanji-body">
         <div>
           <div ref="radarEl" class="chart"></div>
           <el-input
@@ -107,13 +107,13 @@
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
-import { getStatus, getFullStatus, getLogs, getPlugins, allianceHealth, allianceOptimize } from '@/api'
+import { getStatus, getFullStatus, getLogs, getPlugins, xuanjiHealth, xuanjiOptimize } from '@/api'
 
 const loading = ref(false)
 const loadEl = ref(null)
 let chart = null
 
-// ===== 专家联盟双联盟十四维 =====
+// ===== 璇玑双璇玑十四维 =====
 const radarEl = ref(null)
 let radarChart = null
 const flowJson = ref('')
@@ -208,9 +208,9 @@ function resize() {
 }
 window.addEventListener('resize', resize)
 
-// ===== 专家联盟治理逻辑 =====
-async function loadAllianceHealth() {
-  const h = await allianceHealth().catch(() => null)
+// ===== 璇玑治理逻辑 =====
+async function loadXuanjiHealth() {
+  const h = await xuanjiHealth().catch(() => null)
   if (!h) return
   dimList.value = h.dimensions || []
   bizLeague.value = h.business_league || []
@@ -262,7 +262,7 @@ async function runGovernance() {
   }
   governing.value = true
   try {
-    const report = await allianceOptimize(flow)
+    const report = await xuanjiOptimize(flow)
     governed.value = true
     gateApproved.value = !!(report.gate && report.gate.approved)
     xuanji.value = report.algo && report.algo.passed ? '通过' : '未通过'
@@ -281,7 +281,7 @@ async function runGovernance() {
 onMounted(async () => {
   await nextTick()
   loadAll()
-  loadAllianceHealth()
+  loadXuanjiHealth()
 })
 onBeforeUnmount(() => {
   window.removeEventListener('resize', resize)
@@ -364,8 +364,8 @@ onBeforeUnmount(() => {
   color: var(--text-3);
 }
 
-/* ===== 专家联盟治理面板 ===== */
-.alliance-head {
+/* ===== 璇玑治理面板 ===== */
+.xuanji-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -373,11 +373,11 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   margin-bottom: 12px;
 }
-.alliance-actions {
+.xuanji-actions {
   display: flex;
   gap: 8px;
 }
-.alliance-body {
+.xuanji-body {
   align-items: start;
 }
 .flow-input {

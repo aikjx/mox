@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 算子统一系统（OUS）一键全自动化：构建 + 测试 + 前端构建 + 启动 + 端到端健康检查
@@ -151,7 +151,7 @@ def http_get_with_headers(url, headers, timeout=5):
 
 
 def serve_and_health(port):
-    step("端到端健康检查 /api/alliance/*")
+    step("端到端健康检查 /api/xuanji/*")
     kill_server()
     log_out = os.path.join(ROOT, "ci_server.out")
     log_err = os.path.join(ROOT, "ci_server.err")
@@ -179,8 +179,8 @@ def serve_and_health(port):
             return False
         print("health: 200 OK")
 
-        status, body = http_get_with_headers(base + "/api/alliance/health", auth_header)
-        print("alliance health status=%s" % status)
+        status, body = http_get_with_headers(base + "/api/xuanji/health", auth_header)
+        print("xuanji health status=%s" % status)
         print(body[:500])
 
         import json
@@ -194,7 +194,7 @@ def serve_and_health(port):
         }).encode("utf-8")
         try:
             req_h = urllib.request.Request(
-                base + "/api/alliance/optimize",
+                base + "/api/xuanji/optimize",
                 data=req,
                 headers={"Content-Type": "application/json", "Authorization": "Bearer ci-token-2026"},
                 method="POST",
@@ -206,10 +206,10 @@ def serve_and_health(port):
             print("governance expert_scores count=%d | gate approved=%s"
                   % (len(scores), gate.get("approved")))
             if len(scores) < 14:
-                print("WARN: expert_scores < 14, 双联盟十四维未完全生效")
+                print("WARN: expert_scores < 14, 双璇玑十四维未完全生效")
             print("端到端全维度治理验证通过")
         except Exception as e:
-            print("alliance optimize call failed: %s" % e)
+            print("xuanji optimize call failed: %s" % e)
             return False
         return True
     finally:

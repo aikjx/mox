@@ -1,4 +1,4 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
+﻿import { createRouter, createWebHashHistory } from 'vue-router'
 
 const routes = [
   { path: '/', redirect: '/dashboard' },
@@ -39,9 +39,9 @@ const routes = [
     meta: { title: '知识图谱' }
   },
   {
-    path: '/alliance-fusion',
-    name: 'AllianceFusion',
-    component: () => import('@/views/AllianceFusionView.vue'),
+    path: '/xuanji-fusion',
+    name: 'XuanjiFusion',
+    component: () => import('@/views/XuanjiFusionView.vue'),
     meta: { title: '全维融合' }
   },
   {

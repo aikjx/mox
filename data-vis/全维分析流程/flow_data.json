@@ -1,7 +1,7 @@
-{
+﻿{
   "meta": {
     "title": "PrimiFlow 全维分析 · 需求业务处理流程（企业级归一化）",
-    "source": "docs/PrimiFlow-全维分析-核心功能补全-20260816.md；crates/primiflow、primiflow-fusion、expert-alliance 源码梳理",
+    "source": "docs/PrimiFlow-全维分析-核心功能补全-20260816.md；crates/primiflow、primiflow-fusion、xuanji-expert 源码梳理",
     "date": "2026-08-16",
     "normalization_rules": [
       "节点命名统一为：动作 + 关键函数/组件",
@@ -54,9 +54,9 @@
     },
     {
       "id": 6,
-      "name": "专家联盟全维治理（alliance_optimize）",
+      "name": "璇玑全维治理（xuanji_optimize）",
       "actions": ["14 维着色 auto_dimension", "14 位专家（业务7+开发7）并行分析", "reconcile 按优先级仲裁冲突", "flow-ai 最优调度求解", "璇玑验证网关 verify", "治理闸门 govern（尊重算法否决）", "SHA-256 审计链 AuditChain"],
-      "modules": ["pipeline::alliance_optimize", "ir::auto_dimension", "reconcile", "verify", "executor"],
+      "modules": ["pipeline::xuanji_optimize", "ir::auto_dimension", "reconcile", "verify", "executor"],
       "outputs": ["GovernanceReport（expert_scores + optimization + gate + audit）"],
       "gate": {"name": "治理闸门", "nature": "硬阻断", "on_fail": "专家否决或冲突升级 → algo.vetoed → Blocked，执行器拒绝运行"}
     },

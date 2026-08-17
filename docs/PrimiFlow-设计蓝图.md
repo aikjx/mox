@@ -1,4 +1,4 @@
-# PrimiFlow 全域原语智能自动化平台 —— 完整设计蓝图
+﻿# PrimiFlow 全域原语智能自动化平台 —— 完整设计蓝图
 
 > 演进定位：`Prompt → Context → Harness → Loop → Graph → PrimiFlow（κ‑τ 拓扑原语引擎）`
 >
@@ -17,7 +17,7 @@ PrimiFlow 构建在 **operator-unified-system（OUS v3.0.0-ai-powered）** 之�
 | `crates/flow-ai` | `topology.rs` 六维实体关系拓扑网（Dijkstra 最短路径、权重衰减、级联影响 `impact_of`）；`critpath.rs`/`dataflow.rs`/`schedule.rs`/`pipeline.rs` 提供 DAG/关键路径/调度/流水线 |
 | `crates/operator-graph` | 有向加权图数据结构与基础图算法 |
 | `crates/optimizer` | 资源约束优化、关键路径优化 |
-| `crates/expert-alliance` | LLM 需求编译（`rbac` 鉴权、`audit` 哈希链审计、多专家协同求解） |
+| `crates/xuanji-expert` | LLM 需求编译（`rbac` 鉴权、`audit` 哈希链审计、多专家协同求解） |
 | `crates/ai-agent` | 通用大模型调用、浏览器自动化、对话知识图谱整理 |
 | `crates/business-catalog` | 业务目录、螺旋模型（`spiral.rs`）沉淀业务资产 |
 | `crates/runtime` | Axum REST/WebSocket 服务、治理台 handlers |
@@ -50,7 +50,7 @@ C² = κ² + τ²
 
 | # | 算法 | 作用 | 现有落地 |
 |---|---|---|---|
-| 1 | 需求语义拆解 | 意图拆分算法 + 层次化需求树生成（大模型结构化输出 + 语义相似度聚类） | `expert-alliance` 需求编译 |
+| 1 | 需求语义拆解 | 意图拆分算法 + 层次化需求树生成（大模型结构化输出 + 语义相似度聚类） | `xuanji-expert` 需求编译 |
 | 2 | 实体关系抽取 | 业务实体、角色、单据、事件、约束条件抽取 | `ai-agent` 对话知识图谱 |
 | 3 | RAG 向量检索 | 全域知识库召回历史需求、业务流程、已有功能模块、现成代码片段 | 待接向量库 |
 | 4 | 依赖拓扑排序 | DAG 有向无环图校验，保证业务流程先后顺序合法、消除环依赖 | `flow-ai` DAG/`critpath` |
@@ -96,7 +96,7 @@ C² = κ² + τ²
   1. 提取：业务目标、角色、输入输出、规则、限制条件、定时任务、外部系统对接要求；
   2. 自动拆分为一级需求、二级子需求；建立需求编号**唯一 ID**，作为全系统唯一溯源主键。
 
-> 所有后续一切（功能、流程、代码、文档）全部绑定这个需求 ID，实现一一对应。现有 `expert-alliance` 的「LLM 需求编译」已具备结构化输出能力，本层为其封装 + 分配全局唯一 `REQ-{uuid}`。
+> 所有后续一切（功能、流程、代码、文档）全部绑定这个需求 ID，实现一一对应。现有 `xuanji-expert` 的「LLM 需求编译」已具备结构化输出能力，本层为其封装 + 分配全局唯一 `REQ-{uuid}`。
 
 ### 层3：κ‑τ 拓扑原语引擎【系统大脑】
 
@@ -179,7 +179,7 @@ C² = κ² + τ²
 7. **自动修剪无效分支**
    - 以上校验产生的「未覆盖需求补全后仍无效 / 矛盾不可解 / 超限不可降」的分支，由 R̂ 置为 `pruned` 并保留原因标签，不参与后续编排，但留在审计轨迹中可追溯。
 
-> `R̂` 输出：`G_valid` + `prune_report`（每条修剪对应的需求 ID、原因、原始 κ/τ），全部写入审计哈希链（`expert-alliance/audit`）。
+> `R̂` 输出：`G_valid` + `prune_report`（每条修剪对应的需求 ID、原因、原始 κ/τ），全部写入审计哈希链（`xuanji-expert/audit`）。
 
 #### 3.3 拓扑荷 Q 打标与沉淀
 
@@ -209,7 +209,7 @@ C² = κ² + τ²
 
 - 用 `flow-ai/pipeline.rs` 把算法组件按 DAG 串联；
 - 用 `flow-ai/schedule.rs` 生成 Cron / 异步 / 事件触发规则与依赖链；
-- 用 `expert-alliance` 多专家协同执行（算法专家 / 业务专家 / 数据专家 / 资源专家）；
+- 用 `xuanji-expert` 多专家协同执行（算法专家 / 业务专家 / 数据专家 / 资源专家）；
 - κ 高的分支 → 直接调用已验证带 Q 拓扑或成熟模块；τ 高的分支 → 启动子 Agent 新建求解。
 
 ### 层5：代码生成层
@@ -223,7 +223,7 @@ C² = κ² + τ²
 
 - **全域拓扑知识库**：存储带 Q 的成熟拓扑、历史需求树、业务模块、现成代码片段（供 RAG 检索）；
 - **五向绑定存储**：以需求 ID 为主键的关系表，持久化 `需求↔功能↔算法↔业务流↔代码↔定时任务` 全部边；
-- 存储介质：SQLite（`operator_dialogue.db` 同款底座）+ 向量库（RAG 相似度）。所有写操作进 `expert-alliance` 审计哈希链，满足可审计、可复现。
+- 存储介质：SQLite（`operator_dialogue.db` 同款底座）+ 向量库（RAG 相似度）。所有写操作进 `xuanji-expert` 审计哈希链，满足可审计、可复现。
 
 ### 层7：可视化与文档自生成层
 
@@ -276,8 +276,8 @@ C² = κ² + τ²
 | 检索 | 向量库（RAG） | 历史拓扑、代码、业务相似度召回 |
 | AI | 通用大模型 API（reqwest） | 需求解析、代码生成、文档撰写；支持真实 LLM（`hermes-flow-bridge`） |
 | 文档渲染 | Markdown 模板 + PDF 导出 | 四套说明书 |
-| 审计 | 哈希链（AuditChain） | 所有写操作可审计（`expert-alliance/audit`） |
-| 鉴权 | RBAC | 多角色权限（`expert-alliance/rbac`） |
+| 审计 | 哈希链（AuditChain） | 所有写操作可审计（`xuanji-expert/audit`） |
+| 鉴权 | RBAC | 多角色权限（`xuanji-expert/rbac`） |
 
 ---
 
@@ -289,7 +289,7 @@ C² = κ² + τ²
 | 守恒约束 `C²=κ²+τ²` | 顶层 | 拓扑切片 | 残差/是否守恒 | `operator-core/conservation.rs` |
 | R̂ 正则化算子 | 顶层 | `G_raw` | `G_valid` + prune_report | 新建 `primiflow-engine/regularize.rs` |
 | Q 拓扑荷沉淀 | 顶层 | 验证通过拓扑 | 带 Q 知识库条目 | `business-catalog/spiral.rs` 扩展 |
-| 需求语义拆解 | 中层 | 自然语言 | 层次化需求树 | `expert-alliance` 需求编译 |
+| 需求语义拆解 | 中层 | 自然语言 | 层次化需求树 | `xuanji-expert` 需求编译 |
 | 实体关系抽取 | 中层 | 文本 | 实体/角色/单据/约束 | `ai-agent` 知识图谱 |
 | RAG 检索 | 中层 | 查询向量 | 历史拓扑/代码/模块 | 接向量库 |
 | 依赖拓扑排序 | 中层 | 流程图 | 合法 DAG | `flow-ai/critpath.rs` |
@@ -339,9 +339,9 @@ Requirement(REQ) → Function(FUN) → Algorithm(ALG) → FlowNode(FN) → Code(
 | P1 知识沉淀 | Q 拓扑荷 + RAG 检索 | 全域拓扑知识库、相似度复用 | `business-catalog`、向量库 |
 | P2 文档自生成 | 四套说明书自动产出 | 模板引擎 + 一键导出 | `runtime`、前端渲染 |
 | P3 画布闭环 | 观测/微调双模式 | 前端需求辐射图 + 节点详情 | `frontend` |
-| P4 生产化 | 审计/鉴权/CI 完整闭环 | RBAC、哈希链、冒烟流水线 | `expert-alliance`、`ci_run*.sh` |
+| P4 生产化 | 审计/鉴权/CI 完整闭环 | RBAC、哈希链、冒烟流水线 | `xuanji-expert`、`ci_run*.sh` |
 
-> 演进连续性：现有 git 历史已走过 `workflow-engine → expert-alliance(LLM需求编译/RBAC) → ai-agent(对话知识图谱/算子商城) → governance-console`，PrimiFlow 是这条线的自然下一站。
+> 演进连续性：现有 git 历史已走过 `workflow-engine → xuanji-expert(LLM需求编译/RBAC) → ai-agent(对话知识图谱/算子商城) → governance-console`，PrimiFlow 是这条线的自然下一站。
 
 ---
 

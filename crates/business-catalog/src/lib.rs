@@ -1,5 +1,5 @@
-//! 业务全景目录：把"系统所有业务"建模成流程图 + 六维关系网，
-//! 并用璇玑（expert-alliance）在运行中不断优化架构。
+﻿//! 业务全景目录：把"系统所有业务"建模成流程图 + 六维关系网，
+//! 并用璇玑（xuanji-expert）在运行中不断优化架构。
 //!
 //! 核心思想（与 Hermes / 璇玑架构一致）：
 //! - **流程图是唯一需求源与开发产物**：每个业务 = 一张 `flow_ai::FlowGraph`，
@@ -9,11 +9,11 @@
 //! - **使用中不断优化**：`record_hit`/`decay` 做动态权重学习；`impact_of` 做改一节点全链路
 //!   同步；`route`/`shortest_path` 做跨业务复用最短路径（命中历史 Skill → 跳过完整 ReAct）。
 //!
-//! 本 crate 不重新发明并行化/冲突/验证算法，全部复用已验证的 flow-ai + expert-alliance 引擎。
+//! 本 crate 不重新发明并行化/冲突/验证算法，全部复用已验证的 flow-ai + xuanji-expert 引擎。
 
-use expert_alliance::context::{GovernContext, Principal, Tenant};
-use expert_alliance::ir::auto_dimension;
-use expert_alliance::pipeline::alliance_optimize;
+use xuanji_expert::context::{GovernContext, Principal, Tenant};
+use xuanji_expert::ir::auto_dimension;
+use xuanji_expert::pipeline::xuanji_optimize;
 use flow_ai::model::{
     Access, ExpertRule, FlowEdge, FlowGraph, FlowNode, NodeKind, Severity, ToolKind,
 };
@@ -66,7 +66,7 @@ pub struct Business {
 
 impl Business {
     /// 七维着色后交给璇玑优化
-    pub fn optimize(&self) -> expert_alliance::pipeline::GovernanceReport {
+    pub fn optimize(&self) -> xuanji_expert::pipeline::GovernanceReport {
         let raw = (self.build)();
         // 七维着色：把 tags 中的 dim:* 映射到业务/算法/权限/资源/安全/数据/可观测
         let _df = auto_dimension(&raw);
@@ -76,12 +76,12 @@ impl Business {
         let principal = Principal::new("architect").with_roles(vec!["admin".to_string()]);
         let mut ctx = GovernContext::new(tenant, principal);
         // 真实租户配额：政务/金融等强合规场景允许更高算力预算与 SLA（产品按租户配置）
-        ctx.quota = expert_alliance::context::ResourceQuota {
+        ctx.quota = xuanji_expert::context::ResourceQuota {
             max_parallel: 8,
             max_cost_budget: 100.0,
             sla_ms: 50_000,
         };
-        alliance_optimize(&raw, &ctx)
+        xuanji_optimize(&raw, &ctx)
     }
 }
 

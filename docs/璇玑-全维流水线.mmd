@@ -1,0 +1,61 @@
+﻿%% 璇玑 · 全维需求业务处理流水线（归一化企业级 · AA-STD-V1.0）
+%% 单一机读源：可喂给 info-graph / Mermaid 渲染器 / 任意文档画布
+%% 8 阶段 + 4 道闸门；任意闸门拒绝即阻断出码，无降级旁路
+
+flowchart TD
+    %% ===== 主链路 =====
+    S1["S1 需求接入\n关图 REQ 根 (D01~D13 / R01~R08)\nBind 六维骨架 + 租户/RBAC 上下文"]
+    S1 --> G0{"G0 归一化闸门\nIR 可拓扑排序 · 维度着色完整\n孤儿/悬空边=0 (GR-E1/E2)"}
+    G0 -->|拒| X1["拒绝进入诊断"]
+    G0 -->|通过| S2["S2 归一化\nauto_dimension 维度着色\n租户配额→ResourcePool 上限\n唯一 FlowGraph(base)"]
+    S2 --> S3["S3 双璇玑并行诊断\nrun_experts 派发 14 位专家\n各出 ExpertOpinion(约束/风险/建议/评分)"]
+    S3 --> S4["S4 归一化裁决\nreconcile 按优先级合并\nReconciledPlan(Guard/Mutex 边 + ExpertRule + 冲突日志)"]
+    S4 --> G1{"G1 裁决闸门\n硬约束优先落地\n冲突平手升级 Blocking 交人工"}
+    G1 -->|硬约束落地| S5["S5 flow-ai 最优求解\nCPM 关键路径 + RCPSP 调度\n伪依赖剪除 + 冲突修复 + CodeGen + LLM 路由"]
+    S5 --> S6["S6 ⛨璇玑验证网关\nverify(before, opt) 5 项阻断检查"]
+    S6 --> G2{"G2 璇玑否决 · 最高权限\nvetoed = 阻断级失败 ∨ expert_veto ∨ escalated_conflict"}
+    G2 -->|vetoed| B(["强制 Blocked\nalgorithm_veto=true"])
+    G2 -->|通过| S7["S7 治理闸门 Govern\naudit 哈希链 + 版本状态机\nSLA + 成本预算 + RBAC 审批"]
+    S7 --> G3{"G3 治理闸门\napproved = !veto ∧ can_emit\n∧ blocking==0 ∧ sla_ok ∧ budget_ok"}
+    G3 -->|任一不满足| B
+    G3 -->|满足| S8["S8 出码 / 出图\nemit: 代码 + 拓扑快路径\n可视化 + 指标"]
+
+    %% ===== S6 五检查子图 =====
+    subgraph S6CHK["⛨璇玑 5 项检查（并行 · 归一化合并）"]
+        direction TB
+        C1["① topology (阻断)\n节点全保留 + 真数据依赖可达性守恒"]
+        C2["② data_dep (阻断)\n真依赖仍可达 + 并行层无 RAW 冒险"]
+        C3["③ conflict (阻断)\n0 阻塞冲突 + 异常边落点有效"]
+        C4["④ gains (软)\nspeedup≥1 且并行不慢于串行"]
+        C5["⑤ code_rt (软)\n代码⇄流程图往返一致"]
+        EV["并入否决源\nexpert_veto (S3) / escalated_conflict (S4)"]
+    end
+    S6 -. 并发执行 .-> S6CHK
+    C1 & C2 & C3 & C4 & C5 & EV --> G2
+
+    %% ===== 外部能力归一化（第一类公民）=====
+    subgraph EXT["外部能力归一化 IR 第一类公民"]
+        direction LR
+        M["MCP 工具\nFlowNode(Task)+tags"]
+        SK["Skill\n↔ 拓扑网快路径"]
+        LP["Loop\nLoopStart/End + 回边"]
+        LL["LLM\nModelTier 路由"]
+    end
+    EXT -. 参与全维约束与求解 .-> S3
+
+    %% ===== 关图承载 =====
+    subgraph GUAN["关图六维绑定 (REQ→COD)"]
+        direction LR
+        R["REQ"] --> F["FUN"] --> BZ["BIZ"] --> AL["ALG"] --> TK["TSK"] --> CD["COD"]
+    end
+    R -. TraceMatrix 可追溯 .-> S1
+
+    %% ===== 样式 =====
+    classDef gate fill:#fef2f2,stroke:#dc2626,color:#991b1b,stroke-width:2px;
+    classDef veto fill:#fecaca,stroke:#991b1b,color:#7f1d1d,stroke-width:3px;
+    classDef stage fill:#fff,stroke:#1f3a5f,color:#1f3a5f;
+    classDef chk fill:#fcfdff,stroke:#d8dee9,color:#475467;
+    class G0,G1,G2,G3 gate;
+    class B veto;
+    class S1,S2,S3,S4,S5,S6,S7,S8 stage;
+    class C1,C2,C3,C4,C5,EV,M,SK,LP,LL,R,F,BZ,AL,TK,CD chk;

@@ -1,4 +1,4 @@
-# P4 覆盖率门禁配置（骨架 §6：tarpaulin ≥70%）
+﻿# P4 覆盖率门禁配置（骨架 §6：tarpaulin ≥70%）
 #
 # 仅对「可本地单测」的核心 crate 做行覆盖率统计；排除：
 #  - 基准(benches)/集成测试(tests)/示例(examples)：避免外部服务依赖导致门禁误伤；
@@ -27,6 +27,6 @@ packages = [
     "template-market",
     "ai-agent",
     "hermes-flow-bridge",
-    "alliance-system",
+    "xuanji-system",
     "operator-wasm",
 ]

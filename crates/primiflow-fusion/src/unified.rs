@@ -305,6 +305,9 @@ pub struct UnifiedNode {
 pub struct UnifiedGraph {
     pub nodes: HashMap<String, UnifiedNode>,
     pub edges: Vec<UnifiedEdge>,
+    /// 重复节点 id 集合：add_node 插入已存在的 id 时记录（G3 重复 id 检测源）。
+    /// 因 nodes 为 HashMap 会静默覆盖，必须单列记录才能被治理闸门识别。
+    pub node_dups: HashSet<String>,
 }
 
 impl UnifiedGraph {
@@ -313,6 +316,9 @@ impl UnifiedGraph {
     }
 
     pub fn add_node(&mut self, n: UnifiedNode) {
+        if self.nodes.contains_key(&n.id) {
+            self.node_dups.insert(n.id.clone());
+        }
         self.nodes.insert(n.id.clone(), n);
     }
 
@@ -395,6 +401,9 @@ impl UnifiedGraph {
     }
 
     // —— R07：守恒残差全局闸门（PT-Primi §3.1 A1/A3，规范缺口 R07）——
+    // 【大白话】"账平不平"检查：每个节点都自己报了一个守恒量 C，以及它的两个分量 κ、τ。
+    // 法律规定它们必须满足 C² = κ² + τ²。这道闸门就验算"你报的 C 和 κ/τ 算出来的是否对得上"。
+    // 注意：C 是节点自报的，所以这只查"内部自洽"，查不出"整个图凭空编造了一套管账"。
     pub fn conservation_report(&self) -> ConservationReport {
         let mut per_node_violations = Vec::new();
         let mut sum_k = 0.0;
@@ -476,6 +485,10 @@ impl UnifiedGraph {
     }
 
     // —— A4：六维绑定零孤儿（REQ→FUN→BIZ→ALG→TSK→COD 逐级非空）——
+    // 【大白话】"不能只有一个环节、前面的环节断链"检查：一条需求(REQ)应该有功能(FUN)、
+    // 功能对应业务(BIZ)、业务对应算法(ALG)、算法拆成任务(TSK)、任务落到代码(COD)。
+    // 如果某个环节填了绑定 ID，却找不到上游环节，就成了"孤儿"——闸门会拦下。
+    // 没填绑定 ID 的能力/资产节点算基础设施，不查（可被借机绕过，属已知薄弱点）。
     pub fn binding_report(&self) -> BindingReport {
         let bind_kinds = [RelKind::Bind];
         let upstream_of = |id: &str, want: EntityKind| -> bool {
@@ -519,16 +532,20 @@ impl UnifiedGraph {
         }
     }
 
-    // —— GR-STD §9 治理 8 闸门 ——
+    // —— GR-STD §9.4 强制合规清单（CI 门禁 8 项）——
+    // 【大白话】"这图是不是一张合法、能交差的图"的基础体检：图非空、无悬空边、无重复
+    // id、边带证据、核心无孤儿、无隐性依赖、文档引用有效、sync 漂移=0。
+    // 其中 G8（sync 漂移）属跨快照比对，由 `full_gate_with_baseline` 注入 GovernanceReport；
+    // 本函数负责 G1–G7 七项图内检查。
     pub fn governance_report(&self) -> GovernanceReport {
         let mut errors = Vec::new();
         let mut warnings = Vec::new();
 
-        // 1) 图非空
+        // G1：图非空（纳入版本管理 / 已生成）
         if self.nodes.is_empty() {
-            errors.push("G1 图为空".into());
+            errors.push("G1 图为空（未纳入版本管理或未生成）".into());
         }
-        // 2) 无悬空边（GR-E2）
+        // G2：无悬空边（GR-E2）
         let dangling: Vec<_> = self
             .edges
             .iter()
@@ -536,18 +553,46 @@ impl UnifiedGraph {
             .map(|e| e.id.clone())
             .collect();
         if !dangling.is_empty() {
-            errors.push(format!("G2 悬空边 {} 条", dangling.len()));
+            errors.push(format!("G2 悬空边 {} 条（GR-E2）", dangling.len()));
         }
-        // 4) 所有边带 evidence（GR-E3）
+        // G3：无重复 id（GR-E4）——同 id 多定义属致命
+        let mut node_seen: HashMap<&str, usize> = HashMap::new();
+        for id in self.nodes.keys() {
+            *node_seen.entry(id.as_str()).or_insert(0) += 1;
+        }
+        let dup_nodes: Vec<String> = node_seen
+            .into_iter()
+            .filter(|(_, c)| *c > 1)
+            .map(|(id, _)| id.to_string())
+            .collect();
+        let mut edge_seen: HashMap<&str, usize> = HashMap::new();
+        for e in &self.edges {
+            *edge_seen.entry(e.id.as_str()).or_insert(0) += 1;
+        }
+        let dup_edges: Vec<String> = edge_seen
+            .into_iter()
+            .filter(|(_, c)| *c > 1)
+            .map(|(id, _)| id.to_string())
+            .collect();
+        if !dup_nodes.is_empty() || !self.node_dups.is_empty() || !dup_edges.is_empty() {
+            let dup_node_count = dup_nodes.len() + self.node_dups.len();
+            errors.push(format!(
+                "G3 重复 id {} 个（节点 {} / 边 {}）（GR-E4）",
+                dup_node_count + dup_edges.len(),
+                dup_node_count,
+                dup_edges.len()
+            ));
+        }
+        // G4：所有边带 evidence（GR-E3）
         let no_ev: usize = self
             .edges
             .iter()
             .filter(|e| e.evidence.trim().is_empty())
             .count();
         if no_ev > 0 {
-            errors.push(format!("G4 缺 evidence 边 {} 条", no_ev));
+            errors.push(format!("G4 缺 evidence 边 {} 条（GR-E3）", no_ev));
         }
-        // 5) 核心节点无孤儿（GR-E1）
+        // G5：核心节点无孤儿（GR-E1）
         let orphan_core: Vec<_> = self
             .nodes
             .values()
@@ -556,18 +601,56 @@ impl UnifiedGraph {
             .map(|n| n.id.clone())
             .collect();
         if !orphan_core.is_empty() {
-            errors.push(format!("G5 核心孤儿节点 {} 个", orphan_core.len()));
+            errors.push(format!("G5 核心孤儿节点 {} 个（GR-E1）", orphan_core.len()));
         }
-        // 7) 文档引用有效（GR-E7：Doc 至少一条边）
-        let isolated_doc: Vec<_> = self
+        // G6：无未建模的隐性依赖（GR-E6）——外部依赖必须归类为 ThirdParty / Dependency
+        let implicit: Vec<_> = self
             .nodes
             .values()
-            .filter(|n| n.kind == EntityKind::Doc)
-            .filter(|n| !self.edges.iter().any(|e| e.from == n.id || e.to == n.id))
+            .filter(|n| {
+                n.external && !matches!(n.kind, EntityKind::ThirdParty | EntityKind::Dependency)
+            })
             .map(|n| n.id.clone())
             .collect();
-        if !isolated_doc.is_empty() {
-            warnings.push(format!("G7 孤岛文档 {} 篇", isolated_doc.len()));
+        if !implicit.is_empty() {
+            errors.push(format!(
+                "G6 未建模隐性依赖 {} 个（需归类 ThirdParty/Dependency）（GR-E6）",
+                implicit.len()
+            ));
+        }
+        // G7：文档引用全部有效（GR-E7）
+        let mut doc_broken: Vec<String> = Vec::new();
+        let mut doc_isolated: Vec<String> = Vec::new();
+        for n in self.nodes.values().filter(|n| n.kind == EntityKind::Doc) {
+            let refs: Vec<&UnifiedEdge> = self
+                .edges
+                .iter()
+                .filter(|e| {
+                    e.from == n.id
+                        && matches!(
+                            e.kind,
+                            RelKind::Reference | RelKind::ConfigRef | RelKind::ReadWrite
+                        )
+                })
+                .collect();
+            if refs.is_empty() {
+                doc_isolated.push(n.id.clone());
+            } else {
+                for e in refs {
+                    if !self.nodes.contains_key(&e.to) {
+                        doc_broken.push(format!("{}→{}", n.id, e.to));
+                    }
+                }
+            }
+        }
+        if !doc_broken.is_empty() {
+            errors.push(format!("G7 文档失效引用 {} 处（GR-E7）", doc_broken.len()));
+        }
+        if !doc_isolated.is_empty() {
+            warnings.push(format!(
+                "G7 文档孤岛 {} 篇（疑似未关联接口/数据）",
+                doc_isolated.len()
+            ));
         }
 
         let passed = errors.is_empty();
@@ -578,21 +661,94 @@ impl UnifiedGraph {
         }
     }
 
-    /// 一次性聚合：守恒 + 绑定 + 治理（平台级发布闸门）
+    /// 一次性聚合：守恒 + 绑定 + 治理（平台级发布闸门，无基线时不评估 sync）
+    /// 【大白话】CI 里跑的"总闸门"：把上面几道检查(账平不平 / 环节断不断链 / 图合不合法)
+    /// 一起跑，任何一道不通过，整张图就不准发布。等价于发布前的"多证合一"体检。
     pub fn full_gate(&self) -> PlatformGate {
         let conservation = self.conservation_report();
         let binding = self.binding_report();
         let governance = self.governance_report();
+        let sync = SyncReport::none();
         let mut all_errors = conservation.errors.clone();
         all_errors.extend(binding.orphans.iter().cloned());
         all_errors.extend(governance.errors.clone());
-        let passed = conservation.passed && binding.passed && governance.passed;
+        let passed = conservation.passed && binding.passed && governance.passed && sync.passed;
         PlatformGate {
             conservation,
             binding,
             governance,
+            sync,
             passed,
             error_count: all_errors.len(),
+        }
+    }
+
+    /// 带基线的平台级发布闸门（GR-E8 sync 漂移门禁生效）。
+    /// 任何未授权删除（节点/边）都会令 G8 失败并阻断发布。
+    pub fn full_gate_with_baseline(&self, baseline: &UnifiedGraph) -> PlatformGate {
+        let conservation = self.conservation_report();
+        let binding = self.binding_report();
+        let mut governance = self.governance_report();
+        let sync = self.sync_report(baseline);
+        if !sync.passed {
+            governance.errors.push(format!(
+                "G8 sync 漂移 {} 处未授权删除（节点 {} / 边 {}）（GR-E8）",
+                sync.drift,
+                sync.removed_nodes.len(),
+                sync.removed_edges.len()
+            ));
+            governance.passed = false;
+        }
+        let mut all_errors = conservation.errors.clone();
+        all_errors.extend(binding.orphans.iter().cloned());
+        all_errors.extend(governance.errors.clone());
+        let passed = conservation.passed && binding.passed && governance.passed && sync.passed;
+        PlatformGate {
+            conservation,
+            binding,
+            governance,
+            sync,
+            passed,
+            error_count: all_errors.len(),
+        }
+    }
+
+    /// GR-E8 同步漂移比对：baseline 中存在但 self 中缺失的节点/边视为未授权删除。
+    /// 漂移量 = 删除节点数 + 删除边数；正式发布门禁要求 drift == 0。
+    pub fn sync_report(&self, baseline: &UnifiedGraph) -> SyncReport {
+        let removed_nodes: Vec<String> = baseline
+            .nodes
+            .keys()
+            .filter(|id| !self.nodes.contains_key(*id))
+            .cloned()
+            .collect();
+        let removed_edges: Vec<String> = baseline
+            .edges
+            .iter()
+            .filter(|e| !self.edges.iter().any(|x| x.id == e.id))
+            .map(|e| e.id.clone())
+            .collect();
+        let added_nodes = self
+            .nodes
+            .keys()
+            .filter(|id| !baseline.nodes.contains_key(*id))
+            .count();
+        let added_edges = self
+            .edges
+            .iter()
+            .filter(|e| !baseline.edges.iter().any(|x| x.id == e.id))
+            .count();
+        let drift = removed_nodes.len() + removed_edges.len();
+        SyncReport {
+            baseline_nodes: baseline.nodes.len(),
+            baseline_edges: baseline.edges.len(),
+            added_nodes,
+            added_edges,
+            removed_nodes,
+            removed_edges,
+            drift,
+            evaluated: true,
+            passed: drift == 0,
         }
     }
 
@@ -696,11 +852,46 @@ pub struct GovernanceReport {
     pub passed: bool,
 }
 
+/// GR-E8 同步漂移报告：比对 baseline/new 两张快照，未声明的删除即漂移。
+#[derive(Debug, Clone)]
+pub struct SyncReport {
+    pub baseline_nodes: usize,
+    pub baseline_edges: usize,
+    pub added_nodes: usize,
+    pub added_edges: usize,
+    pub removed_nodes: Vec<String>,
+    pub removed_edges: Vec<String>,
+    /// 漂移量 = 未授权删除总数（节点 + 边），GR-E8 要求 = 0
+    pub drift: usize,
+    /// 是否提供了基线快照；未提供视为未评估，不阻断发布
+    pub evaluated: bool,
+    pub passed: bool,
+}
+
+impl SyncReport {
+    /// 未提供基线时的占位（不评估、不阻断）
+    pub fn none() -> Self {
+        Self {
+            baseline_nodes: 0,
+            baseline_edges: 0,
+            added_nodes: 0,
+            added_edges: 0,
+            removed_nodes: Vec::new(),
+            removed_edges: Vec::new(),
+            drift: 0,
+            evaluated: false,
+            passed: true,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct PlatformGate {
     pub conservation: ConservationReport,
     pub binding: BindingReport,
     pub governance: GovernanceReport,
+    /// GR-E8 同步漂移报告（仅带基线比对时评估）
+    pub sync: SyncReport,
     pub passed: bool,
     pub error_count: usize,
 }
@@ -924,5 +1115,213 @@ mod tests {
         }
         let chain = g.trace_binding("COD1");
         assert_eq!(chain, vec!["REQ1", "FUN1", "BIZ1", "ALG1", "COD1"]);
+    }
+
+    #[test]
+    fn governance_g3_detects_duplicate_id() {
+        // 重复节点 id
+        let mut g = UnifiedGraph::new();
+        g.add_node(n(
+            "DUP",
+            EntityKind::Code,
+            Layer::ExecutionRuntime,
+            0.0,
+            0.0,
+            0.0,
+        ));
+        g.add_node(n(
+            "DUP",
+            EntityKind::Code,
+            Layer::ExecutionRuntime,
+            0.0,
+            0.0,
+            0.0,
+        ));
+        let rep = g.governance_report();
+        assert!(!rep.passed, "重复节点 id 应触发 G3");
+        assert!(rep.errors.iter().any(|e| e.contains("G3")));
+
+        // 重复边 id
+        let mut g2 = UnifiedGraph::new();
+        g2.add_node(n(
+            "A",
+            EntityKind::Code,
+            Layer::ExecutionRuntime,
+            0.0,
+            0.0,
+            0.0,
+        ));
+        for _ in 0..2 {
+            g2.add_edge(UnifiedEdge {
+                id: "e1".into(),
+                from: "A".into(),
+                to: "A".into(),
+                kind: RelKind::Call,
+                label: "call".into(),
+                evidence: "test".into(),
+            });
+        }
+        let rep2 = g2.governance_report();
+        assert!(!rep2.passed, "重复边 id 应触发 G3");
+        assert!(rep2.errors.iter().any(|e| e.contains("G3")));
+    }
+
+    #[test]
+    fn governance_g6_detects_implicit_dependency() {
+        // external=true 但归类为普通 Code（未按 ThirdParty/Dependency 建模）→ 隐性依赖
+        let mut g = UnifiedGraph::new();
+        g.add_node(UnifiedNode {
+            id: "EXT1".into(),
+            kind: EntityKind::Code,
+            layer: Layer::ExecutionRuntime,
+            name: "外部库".into(),
+            path: String::new(),
+            summary: String::new(),
+            evidence: "external".into(),
+            primitive: PrimitiveCoords::zero(),
+            bind_id: None,
+            external: true,
+        });
+        let rep = g.governance_report();
+        assert!(!rep.passed, "未建模隐性依赖应触发 G6");
+        assert!(rep.errors.iter().any(|e| e.contains("G6")));
+
+        // 正确归类为 ThirdParty → 合规通过
+        let mut g2 = UnifiedGraph::new();
+        g2.add_node(UnifiedNode {
+            id: "TP1".into(),
+            kind: EntityKind::ThirdParty,
+            layer: Layer::ExecutionRuntime,
+            name: "第三方服务".into(),
+            path: String::new(),
+            summary: String::new(),
+            evidence: "external".into(),
+            primitive: PrimitiveCoords::zero(),
+            bind_id: None,
+            external: true,
+        });
+        assert!(
+            g2.governance_report().passed,
+            "ThirdParty 外部依赖应合规通过"
+        );
+    }
+
+    #[test]
+    fn governance_g7_detects_broken_doc_reference() {
+        let mut g = UnifiedGraph::new();
+        g.add_node(UnifiedNode {
+            id: "DOC1".into(),
+            kind: EntityKind::Doc,
+            layer: Layer::Governance,
+            name: "设计文档".into(),
+            path: String::new(),
+            summary: String::new(),
+            evidence: "doc".into(),
+            primitive: PrimitiveCoords::zero(),
+            bind_id: None,
+            external: false,
+        });
+        // 文档引用到不存在的接口 → GR-E7 失效引用
+        g.add_edge(UnifiedEdge {
+            id: "doc-ref-1".into(),
+            from: "DOC1".into(),
+            to: "IFACE_MISSING".into(),
+            kind: RelKind::Reference,
+            label: "引用".into(),
+            evidence: "test".into(),
+        });
+        let rep = g.governance_report();
+        assert!(!rep.passed, "文档失效引用应触发 G7");
+        assert!(rep.errors.iter().any(|e| e.contains("G7")));
+    }
+
+    #[test]
+    fn sync_drift_blocks_publish() {
+        // baseline：A→B→C 且 A→C（三条边，均带 evidence）
+        let mut baseline = UnifiedGraph::new();
+        baseline.add_node(n(
+            "A",
+            EntityKind::Code,
+            Layer::ExecutionRuntime,
+            0.0,
+            0.0,
+            0.0,
+        ));
+        baseline.add_node(n(
+            "B",
+            EntityKind::Interface,
+            Layer::ExecutionRuntime,
+            0.0,
+            0.0,
+            0.0,
+        ));
+        baseline.add_node(n(
+            "C",
+            EntityKind::Data,
+            Layer::ExecutionRuntime,
+            0.0,
+            0.0,
+            0.0,
+        ));
+        for (id, a, b) in [("e1", "A", "B"), ("e2", "B", "C"), ("e3", "A", "C")] {
+            baseline.add_edge(UnifiedEdge {
+                id: id.into(),
+                from: a.into(),
+                to: b.into(),
+                kind: RelKind::Call,
+                label: "call".into(),
+                evidence: "test".into(),
+            });
+        }
+        // new：合法图，但删除了 e3（未授权删除 → 漂移）
+        let mut new_g = UnifiedGraph::new();
+        new_g.add_node(n(
+            "A",
+            EntityKind::Code,
+            Layer::ExecutionRuntime,
+            0.0,
+            0.0,
+            0.0,
+        ));
+        new_g.add_node(n(
+            "B",
+            EntityKind::Interface,
+            Layer::ExecutionRuntime,
+            0.0,
+            0.0,
+            0.0,
+        ));
+        new_g.add_node(n(
+            "C",
+            EntityKind::Data,
+            Layer::ExecutionRuntime,
+            0.0,
+            0.0,
+            0.0,
+        ));
+        for (id, a, b) in [("e1", "A", "B"), ("e2", "B", "C")] {
+            new_g.add_edge(UnifiedEdge {
+                id: id.into(),
+                from: a.into(),
+                to: b.into(),
+                kind: RelKind::Call,
+                label: "call".into(),
+                evidence: "test".into(),
+            });
+        }
+
+        assert!(
+            new_g.full_gate().passed,
+            "无基线时 new_g 自身应合法通过"
+        );
+
+        let gate = new_g.full_gate_with_baseline(&baseline);
+        assert!(!gate.passed, "sync 漂移应阻断发布（G8）");
+        assert!(!gate.sync.passed);
+        assert_eq!(gate.sync.drift, 1, "应检测到 1 处未授权删除（边 e3）");
+        assert!(
+            gate.governance.errors.iter().any(|e| e.contains("G8")),
+            "应报告 G8 sync 漂移"
+        );
     }
 }

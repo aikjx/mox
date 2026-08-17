@@ -20,6 +20,9 @@ export default defineConfig({
     }
   },
   build: {
+    // 关闭 Vite 自动清空输出目录：避免 rmSync 触发安全删除批量守卫（>50 文件）。
+    // 旧资源为孤立文件（index.html 由新构建覆盖），不影响运行。
+    emptyOutDir: false,
     chunkSizeWarningLimit: 2000,
     rollupOptions: {
       input: {

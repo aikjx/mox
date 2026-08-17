@@ -1,14 +1,14 @@
-[package]
+﻿[package]
 name = "hermes-flow-bridge"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-description = "零侵入插件：将 flow-ai + expert-alliance 流程图/关系网优化内核注入 Hermes Agent Ultra"
+description = "零侵入插件：将 flow-ai + xuanji-expert 流程图/关系网优化内核注入 Hermes Agent Ultra"
 
 [dependencies]
 # 已验证的优化内核
 flow-ai = { path = "../flow-ai" }
-expert-alliance = { path = "../expert-alliance" }
+xuanji-expert = { path = "../xuanji-expert" }
 
 # 序列化 / 异步
 serde = { version = "1", features = ["derive"] }
@@ -25,7 +25,7 @@ reqwest = { version = "0.12", features = ["json"], optional = true }
 # 真实 Hermes 接入：打开后用 hermes_agent::plugins 替换 hermes_mirror（见 integration/hermes_shim.rs）
 default = []
 hermes = []
-# 实时联动：把会话流程图推送到 expert-alliance 服务做实时高亮
+# 实时联动：把会话流程图推送到 xuanji-expert 服务做实时高亮
 live = ["dep:reqwest"]
 
 [dev-dependencies]

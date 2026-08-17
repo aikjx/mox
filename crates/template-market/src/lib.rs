@@ -1,9 +1,9 @@
-//! # 草莓多平台 · 系统模板市场（Template Market）
+﻿//! # 草莓多平台 · 系统模板市场（Template Market）
 //!
 //! 这是"对话驱动全栈生成式开发平台"的**资产中枢**：
 //!
 //! 1. **模板 = 一个完整可复用系统的蓝图**：包含
-//!    - `graph`：由对话/专家联盟生成的 FlowGraph（业务功能 + 关联关系 + 流程图）
+//!    - `graph`：由对话/璇玑生成的 FlowGraph（业务功能 + 关联关系 + 流程图）
 //!    - `artifacts`：由 codegen 生成的代码包（后端/DB/前端），可留空待生成
 //!    - `tags`：业务域标签（商城 / 小说 / 论文 / 产品设计 / 影视 …），支持通用模块归类
 //!    - `derived_from`：引用链（"引用下载"他人模板后二开）
@@ -70,7 +70,7 @@ pub struct SystemTemplate {
     pub name: String,
     pub description: String,
     pub domains: Vec<Domain>,
-    /// 由对话/专家联盟生成的流程图（业务功能 + 关联关系）
+    /// 由对话/璇玑生成的流程图（业务功能 + 关联关系）
     pub graph_json: serde_json::Value,
     /// 由 codegen 生成的代码包（后端/DB/前端）；可留空待后续生成
     pub artifacts: BTreeMap<String, String>,

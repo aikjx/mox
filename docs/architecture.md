@@ -1,4 +1,4 @@
-# 算子统一系统（OUS）企业级架构设计文档 v7.0
+﻿# 算子统一系统（OUS）企业级架构设计文档 v7.0
 
 > 参考范式：[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) —— "Everything is a Plugin"（一切皆插件）
 > 设计目标：在保留 OUS 范畴论/希尔伯特空间数学内核与 WASM 沙箱能力的基础上，引入**插件化运行时内核**、**会话日志溯源（Session Log as Source of Truth）**、**能力接缝（Seam）可替换架构**与**Turn/Agent 生命周期**，实现可组合、可审计、可热插拔的企业级一体化平台。
@@ -14,7 +14,7 @@
 | 3. 插件内核设计 | Profile / Bundle / Seam / 事件域 |
 | 4. 数学内核 | 6 大公理在架构中的落点 |
 | 5. 运行时与生命周期 | Turn/Agent/Step、Waterfall 事件、会话日志 |
-| 6. 编排与优化层 | FlowAI、Optimizer、专家联盟 |
+| 6. 编排与优化层 | FlowAI、Optimizer、璇玑 |
 | 7. 接入层 | API 网关、鉴权、实时流 |
 | 8. 数据层 | 状态向量、知识图谱、持久化 |
 | 9. 明确业务处理流程 | 13 条流程卡(端点/阶段/SLA/异常) + 状态机 + 跨流程编排 |
@@ -27,7 +27,7 @@
 | 16. 灾备 | WAL 重放 + 快照 + 混沌工程 + RTO/RPO |
 | 17. 成本模型 | 四形态 FinOps 对比 |
 | 18. 开放生态 | 算子市场 + 跨形态同步 + 网络效应 |
-| 19. 专家联盟全维处理内核 | 最高权限 · 璇玑 · 双联盟十四维全维编排 |
+| 19. 璇玑全维处理内核 | 最高权限 · 璇玑 · 双璇玑十四维全维编排 |
 | — 企业级架构分析 | 代码对齐·十四维维度模型·全维度能力矩阵·优化项（见 `enterprise-architecture-analysis.md`） |
 | 20. 融合对标与产品定位 | 与 harness/Claude Code 的差异与优势 |
 | 21. 沙箱安全纵深 | WASM 沙箱 + 能力令牌 + 纵深防御 |
@@ -95,7 +95,7 @@ DeepSeek Harness 的核心主张是"**一切皆插件**"——没有任何特权
 │  flow-ai: 拓扑/数据流/关键路径/冲突消解/调度/代码生成                             │
 │  optimizer: DAG 调度 & 资源约束 & 关键路径优化 (ctx.scheduler)                    │
 │  ai-agent: 工作流引擎/对话/浏览器自动化/插件总线 (ctx.workflow, ctx.browser)       │
-│  expert-alliance: 多专家协同/IR/治理/验证 (ctx.experts, ctx.govern)               │
+│  xuanji-expert: 多专家协同/IR/治理/验证 (ctx.experts, ctx.govern)               │
 │  hermes-flow-bridge: 外部流系统对接/录制/回放 (ctx.bridge)                        │
 └───────────────┬───────────────────────┬───────────────────────┬──────────────┘
                 │                        │                       │
@@ -126,7 +126,7 @@ DeepSeek Harness 的核心主张是"**一切皆插件**"——没有任何特权
 | `flow-ai` | `orchestration/flow` | `ctx.flow` |
 | `optimizer` | `orchestration/scheduler` | `ctx.scheduler` |
 | `ai-agent` | `core/agent` + `core/agent-loop` + `agent/browser` | `ctx.agents` |
-| `expert-alliance` | `core/experts` + `govern` | `ctx.experts` |
+| `xuanji-expert` | `core/experts` + `govern` | `ctx.experts` |
 | `business-catalog` | 算子注册表持久化实现（而非核心） | `ctx.catalog` |
 | `hermes-flow-bridge` | 外部流系统 Seam 适配 | `ctx.bridge` |
 
@@ -309,9 +309,9 @@ turn/start
 - `flow_engine`：可视化流程定义/校验/执行（对接前端 Three.js 流程图）。
 - `algorithm`：算法复杂度分析（`AlgorithmAnalyzer`）。
 
-### 6.4 Expert-Alliance（多专家协同 / IR / 治理 / 验证）
+### 6.4 Expert-Xuanji（多专家协同 / IR / 治理 / 验证）
 
-- 多专家联盟求解、信息检索管线、治理策略（`govern`）、结果验证。
+- 多璇玑求解、信息检索管线、治理策略（`govern`）、结果验证。
 - 关键场景：专家间结论冲突时，由 `flow-ai::conflict` 消解 + `conservation` 校验收敛。
 
 ### 6.5 Hermes-Flow-Bridge（外部流系统对接）
@@ -472,7 +472,7 @@ Pending ──▶ Running ──┬─▶ Completed
 
 #### P-10 专家协同流程
 - **触发**：多专家结论汇聚
-- **阶段**：① `expert-alliance` 聚合 → ② `conflict` 消解 → ③ `conservation` 收敛校验 → ④ 加权边沉淀(§23)
+- **阶段**：① `xuanji-expert` 聚合 → ② `conflict` 消解 → ③ `conservation` 收敛校验 → ④ 加权边沉淀(§23)
 - **输出**：共识结论 + 图谱强化
 - **SLA**：<1s
 - **异常**：分歧超阈→`SUPER_EXPERT` 仲裁(§19)
@@ -493,7 +493,7 @@ Pending ──▶ Running ──┬─▶ Completed
 
 #### P-13 SUPER_EXPERT 全维处理流程
 - **触发**：用户以 `SUPER_EXPERT` 模式发起
-- **阶段**：① 收口→状态向量投影 → ② 专家联盟分诊 → ③ 璇玑产出 DAG → ④ All-Domain Bus 跨子系统执行 → ⑤ 守恒收敛 → ⑥ 治理复核(`govern`) → ⑦ 沉淀图谱 + 自进化提案
+- **阶段**：① 收口→状态向量投影 → ② 璇玑分诊 → ③ 璇玑产出 DAG → ④ All-Domain Bus 跨子系统执行 → ⑤ 守恒收敛 → ⑥ 治理复核(`govern`) → ⑦ 沉淀图谱 + 自进化提案
 - **输出**：跨域求解结果 + 算子市场提案
 - **SLA**：依复杂度，流式反馈
 - **异常**：任一子系统越权→`approval/*` 拦截；守恒失败→全量回滚
@@ -539,7 +539,7 @@ Pending ──▶ Running ──┬─▶ Completed
 - `telemetry/*` Seam 统一导出；每 Turn 自动埋点 Waterfall 事件耗时。
 
 ### 10.2 治理与权限
-- `expert-alliance::govern`：算子/插件白名单、租户配额、敏感算子审批。
+- `xuanji-expert::govern`：算子/插件白名单、租户配额、敏感算子审批。
 - 多租户：`agent.ctx` 作用域隔离 + 租户级 `cordis.patch.yml`。
 
 ### 10.3 安全
@@ -842,20 +842,20 @@ seam = "operator/*"
 
 ---
 
-## 19. 专家联盟全维处理内核（Expert Alliance — 最高权限全维模式）
+## 19. 璇玑全维处理内核（Expert Xuanji — 最高权限全维模式）
 
-> **设计定位**：这是 OUS 的"超级大脑"层——当用户以 `SUPER_EXPERT` 模式发起请求时，系统调度**专家联盟 + 璇玑**，以**最高权限**跨全部子系统（算子内核 / 图谱 / 优化 / 编排 / 数据 / 外系统）进行全维处理，并受守恒律与治理接缝约束。对标 harness 的 `self-modification/`（agent 可改自身运行时）但更强：联盟不仅能改运行时，还能改算子、改图谱、改调度策略。
+> **设计定位**：这是 OUS 的"超级大脑"层——当用户以 `SUPER_EXPERT` 模式发起请求时，系统调度**璇玑 + 璇玑**，以**最高权限**跨全部子系统（算子内核 / 图谱 / 优化 / 编排 / 数据 / 外系统）进行全维处理，并受守恒律与治理接缝约束。对标 harness 的 `self-modification/`（agent 可改自身运行时）但更强：璇玑不仅能改运行时，还能改算子、改图谱、改调度策略。
 
-### 19.1 两层联盟结构
+### 19.1 两层璇玑结构
 
 ```
                         ┌─────────────────────────────────┐
                         │   SUPER_EXPERT 调度中枢 (最高权限)  │
-                        │   ctx.alliance.super            │
+                        │   ctx.xuanji.super            │
                         └───────────┬───────────┬─────────┘
                                     │           │
                   ┌─────────────────▼──┐   ┌─────▼──────────────────┐
-                  │  专家联盟 ExpertPool │   │  璇玑 AlgoPool      │
+                  │  璇玑 ExpertPool │   │  璇玑 AlgoPool      │
                   │  ctx.experts        │   │  ctx.algo              │
                   ├─ 架构专家            │   ├─ 优化算法 (DAG/关键路径)│
                   ├─ 领域专家(业务)     │   ├─ 图算法 (PageRank/社群) │
@@ -869,7 +869,7 @@ seam = "operator/*"
               └─────────────────────────────────────────────┘
 ```
 
-> **实现对照（v7.1 起）**：代码层 `expert-alliance` 已将该"超级大脑"落为**双联盟十四维**模型（见 `enterprise-architecture-analysis.md` §2）。`experts::all_experts()` 常驻业务七维专家（Business/Algorithm/Permission/Resource/Security/Data/Observability）；`context::Dimension` 另含开发七维（ApiCompat/Perf/Maintain/Test/Style/Cost/Sensitive），当 `GovernContext.code_ir: Option<CodeIR>` 非空时由 `ai-agent::requirement_compiler` 注入、`sensitivity.rs` 提供 `Sensitive` 维度 SSOT 敏感判定，开发联盟自动并入治理。最高权限校验由 `verify::AlgoVerification`（璇玑）把关，不被 `govern` 覆盖。
+> **实现对照（v7.1 起）**：代码层 `xuanji-expert` 已将该"超级大脑"落为**双璇玑十四维**模型（见 `enterprise-architecture-analysis.md` §2）。`experts::all_experts()` 常驻业务七维专家（Business/Algorithm/Permission/Resource/Security/Data/Observability）；`context::Dimension` 另含开发七维（ApiCompat/Perf/Maintain/Test/Style/Cost/Sensitive），当 `GovernContext.code_ir: Option<CodeIR>` 非空时由 `ai-agent::requirement_compiler` 注入、`sensitivity.rs` 提供 `Sensitive` 维度 SSOT 敏感判定，开发璇玑自动并入治理。最高权限校验由 `verify::AlgoVerification`（璇玑）把关，不被 `govern` 覆盖。
 
 ### 19.2 最高权限的边界与约束（不失控）
 
@@ -890,7 +890,7 @@ seam = "operator/*"
 
 ```
 1. 收口：归一化用户意图 → 状态向量投影（公理 2）
-2. 分诊：专家联盟并行评估 → 领取各自子目标（并发组）
+2. 分诊：璇玑并行评估 → 领取各自子目标（并发组）
 3. 冲突消解：flow-ai::conflict::detect + auto_repair（§6.3）
 4. 算法编排：璇玑产出 DAG 调度计划（optimizer）
 5. 全维执行：All-Domain Bus 并行调用各子系统算子
@@ -924,12 +924,12 @@ seam = "operator/*"
 ```
 Claude Code ──(hook 桥接)──▶ deepseek-harness ──(范式吸收)──▶ OUS
   单体 coding                 插件运行时内核        算子智能体 OS
-  agent 产品                   (一切皆插件)          (数学内核+全形态+联盟)
+  agent 产品                   (一切皆插件)          (数学内核+全形态+璇玑)
 ```
 
 - **吸收 harness 的**：无特权核心、Seam 可替换、会话日志溯源、自我修改元能力。
 - **吸收 Claude Code 的**：开箱即用的 coding 体验（通过挂载 `shell/`、`fs/`、`lsp/` 等价 Seam 实现，OUS 已有 `ai-agent::browser_automation` 与 WASM 执行基础）。
-- **OUS 独有超越**：范畴论/希尔伯特数学内核、守恒律回滚、专家联盟最高权限全维模式、四形态全运行（云/本地 × 云/本地 LLM × 浏览器/桌面）、算子市场网络效应。
+- **OUS 独有超越**：范畴论/希尔伯特数学内核、守恒律回滚、璇玑最高权限全维模式、四形态全运行（云/本地 × 云/本地 LLM × 浏览器/桌面）、算子市场网络效应。
 
 ### 20.2 为什么 OUS 是"最最好的 AI 产品"
 
@@ -938,7 +938,7 @@ Claude Code ──(hook 桥接)──▶ deepseek-harness ──(范式吸收)�
 | 数学严谨 | 6 公理 + 守恒律，结果可证明收敛、可回滚 |
 | 全形态 | 一次编排、处处运行（云/本地、云/本地 LLM、浏览器/桌面） |
 | 可进化 | 插件化 + 算子市场 + 自我修改，越用越强 |
-| 最高权限处理 | 专家联盟+璇玑跨域全维求解，受控不失控 |
+| 最高权限处理 | 璇玑+璇玑跨域全维求解，受控不失控 |
 | 隐私/成本 | 本地+本地近零成本、零数据出网 |
 | 企业级 | STRIDE 安全、多租户、灾备、FinOps、CI 公理门禁 |
 
@@ -993,8 +993,8 @@ Claude Code ──(hook 桥接)──▶ deepseek-harness ──(范式吸收)�
 | 程序性(技能) | 算子/工作流 | `business-catalog` + `flow-ai` | 版本化 |
 | 元记忆(自省) | 专家结论边 | `operator-graph` 加权边（§19.5） | 知识复利 |
 
-- **检索增强（RAG）**：`expert-alliance::ir` 管线从长期记忆检索相关状态向量/图谱子图，注入 `systemPrompt`（对标 harness `context-engineering/`）。
-- **遗忘与演进**：低频记忆经 PageRank 衰减降权；专家联盟结论持续强化为加权边 → 系统越用越聪明。
+- **检索增强（RAG）**：`xuanji-expert::ir` 管线从长期记忆检索相关状态向量/图谱子图，注入 `systemPrompt`（对标 harness `context-engineering/`）。
+- **遗忘与演进**：低频记忆经 PageRank 衰减降权；璇玑结论持续强化为加权边 → 系统越用越聪明。
 
 ## 24. 评测与回归（Eval & Regression）
 
@@ -1150,7 +1150,7 @@ operator-server \
 | 变换 | Transform / Script | 数据转换/自定义脚本 | P-09 |
 | 业务 | Workflow | 子流程(`BusinessWorkflow` 复用) | P-04 |
 | 算法 | Algorithm | `AlgorithmFlow`(复杂度分析+优化建议) | P-09/P-10 |
-| 专家 | Expert | `expert-alliance` 节点(§19) | P-13 |
+| 专家 | Expert | `xuanji-expert` 节点(§19) | P-13 |
 
 > 每个节点声明 `in/out TypePair`（公理 4），连边时实时校验类型可组合；不兼容连线在画布红框提示（§28.4）。
 
@@ -1222,7 +1222,7 @@ operator-server \
 
 ### 28.7 SUPER_EXPERT 自动流程生成（§19 联动）
 
-- 用户以自然语言描述目标 → `SUPER_EXPERT` 调度专家联盟(§19) → 生成候选 `FlowDefinition` DSL。
+- 用户以自然语言描述目标 → `SUPER_EXPERT` 调度璇玑(§19) → 生成候选 `FlowDefinition` DSL。
 - 经 §28.4 校验矩阵自动校验，不通过则璇玑(§19)自修复（对标 `flow-ai::conflict::auto_repair`）。
 - 用户确认后一键发布为模板（§28.5）→ 沉淀算子市场（§18）→ 知识复利（§23）。
 
@@ -1261,4 +1261,4 @@ python3 verify_axioms.py
 
 ---
 
-*本文档融合 DeepSeek Harness 的"一切皆插件"范式与 Claude Code 的开箱 coding 体验，叠加 OUS 自有的范畴论/希尔伯特数学内核、守恒律回滚、专家联盟最高权限全维处理模式，以及沙箱纵深安全、多模态感知、记忆知识、Eval 评测、i18n/无障碍、版本治理、**代码路径与工作路径严格隔离**、**业务流程设计模块（可视化设计-校验-执行-优化飞轮）** 等企业级能力，将 OUS 设计为"可组合、可审计、可热插拔、全形态运行、可自我进化"的企业级算子智能体 OS——一次编排、处处运行（云/本地、云/本地 LLM、浏览器/桌面），以专家联盟+璇玑实现最高权限全维求解，以算子市场形成开放生态网络效应。*
+*本文档融合 DeepSeek Harness 的"一切皆插件"范式与 Claude Code 的开箱 coding 体验，叠加 OUS 自有的范畴论/希尔伯特数学内核、守恒律回滚、璇玑最高权限全维处理模式，以及沙箱纵深安全、多模态感知、记忆知识、Eval 评测、i18n/无障碍、版本治理、**代码路径与工作路径严格隔离**、**业务流程设计模块（可视化设计-校验-执行-优化飞轮）** 等企业级能力，将 OUS 设计为"可组合、可审计、可热插拔、全形态运行、可自我进化"的企业级算子智能体 OS——一次编排、处处运行（云/本地、云/本地 LLM、浏览器/桌面），以璇玑+璇玑实现最高权限全维求解，以算子市场形成开放生态网络效应。*

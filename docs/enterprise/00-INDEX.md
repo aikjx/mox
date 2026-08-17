@@ -1,19 +1,37 @@
-# 专家联盟系统 · 企业级文档总目录（Documentation Master Index）
+﻿# 璇玑系统 · 企业级文档总目录（Documentation Master Index）
 
-> **文档定位**：本目录是「专家联盟系统（Expert Alliance System）」企业级文档的**唯一入口与治理中心**。
+> **文档定位**：本目录是「璇玑系统（Expert Xuanji System）」企业级文档的**唯一入口与治理中心**。
 > 它将散落在 `docs/` 各处的需求、架构、设计、业务处理文档统一收敛为一套**可迭代、可追踪、可追溯**的标准化文档集，
 > 并定义文档本身的版本管理、角色职责（RACI）与评审节奏，使「文档即产品」成为工程纪律。
 >
 > **适用系统**：
-> - `crates/alliance-system`（协作治理域：成员 / 任务 / 权限 / 通信）
-> - `crates/expert-alliance`（璇玑融合引擎域：双联盟十四维治理 / 归一化 / 裁决）
-> - `frontend/`（融合工作台 AllianceFusionView、监控台 MonitorView）
+> - `crates/xuanji-system`（协作治理域：成员 / 任务 / 权限 / 通信）
+> - `crates/xuanji-expert`（璇玑融合引擎域：双璇玑十四维治理 / 归一化 / 裁决）
+> - `frontend/`（融合工作台 XuanjiFusionView、监控台 MonitorView）
 >
 > 最后更新：**2026-08-16** · 版本：**v1.0 (ENT)**
 
 ---
 
-## 1. 文档集总览（四文档 + 治理 + 路线图）
+## 0. 文档集总览（一句话 + 版本基线）
+
+> **这套文档集是什么**：把"璇玑系统"从**需求 → 架构 → 设计 → 业务 → 路线图 → 需求-架构映射 → 全维需求明确 → 全维自动化处理 → 全维度完成归档**九份文档串成一套**可迭代、可追踪、可追溯**的企业级标准文档集。任何功能都须先过"全维需求明确书（07）"的铁律（双收口、无旁路、不做无用扩展），再由"全维自动化处理明确书（08）"的流水线自动验证收口。
+>
+> **版本基线（v1.0 ENT，2026-08-16）**
+> | 项 | 值 |
+> |----|----|
+> | 文档份数 | 9 份（`00`~`09`）+ 本文索引 |
+> | 系统状态 | **企业级全维度开发完成**（里程碑见 `09`，测试事实支撑） |
+> | 核心铁律 | 全维双收口（流程图归一化 + 开发璇玑全维分析验证），见 `07` §3 |
+> | 自动化入口 | `XuanjiFusionView.vue` → `POST /api/optimize` → `xuanji_optimize` 8 步闭环 |
+> | 权威需求基准 | AA-STD-V1.0（融合域）/ BR-01…BR-21（协作域），见下方配套区 |
+> | 测试基线 | workspace 全绿：xuanji-expert 86 passed、primiflow-fusion 24 passed、全维分析需求 142 passed/0 failed |
+>
+> **阅读顺序（推荐）**：`00`(本索引) → `07`(全维需求+铁律) → `08`(自动化处理) → `01`(需求) → `06`(需求-架构映射) → `02`(架构) → `03`(设计) → `04`(业务) → `05`(路线图) → `09`(完成归档)。
+
+---
+
+## 1. 文档集总览（九文档 + 治理 + 路线图）
 
 | 编号 | 文档 | 类型 | 说明 | 状态 |
 |------|------|------|------|------|
@@ -22,22 +40,34 @@
 | `02-architecture.md` | 企业级架构（多视图） | **架构文档** | 业务/信息/应用/技术/安全/集成/部署七视图 + ADR | ✅ v1.0 |
 | `03-design.md` | 详细设计 | **设计文档** | 四大子系统模块设计、领域模型、FSM、API 契约 | ✅ v1.0 |
 | `04-business-processing.md` | 业务处理 | **业务处理文档** | 8 大业务流程、生命周期状态机、BR 规则目录 | ✅ v1.0 |
-| `05-iteration-roadmap.md` | 迭代与优化路线图 | **治理/路线图** | 持续改进机制、优先级待办、企业级 DoD、KPI、风险 | ✅ v1.0 |
+| `05-iteration-roadmap.md` | 迭代与优化路线图 | **治理/路线图** | 持续改进机制、优先级待办、企业级 DoD、KPI、风险 | ✅ v1.1 |
+| `06-requirements-architecture-map.md` | 需求—架构全景映射 | **可追溯映射** | 两大域需求逐条映射到架构视图/模块/代码；四闸门闭环 | ✅ v1.0 |
+| `07-全维需求明确书.md` | 全维需求明确（验收铁律） | **验收基准** | 大白话全维需求 + 四闸门说死 + 「全维分析验证+归一化双收口」铁律；禁止模糊/无用扩展 | ✅ v1.0 |
+| `08-全维自动化处理明确书.md` | 全维自动化处理（流水线） | **自动化基准** | `07` 铁律的自动化执行体：`xuanji_optimize` 8 步闭环、无旁路、与映射§4对齐 | ✅ v1.0 |
+| `09-企业级全维度完成归档.md` | 全维度完成里程碑归档 | **里程碑归档** | 双璇玑十四维+四闸门+归一化+自动化全部落地、测试事实支撑的企业级完成声明 | ✅ v1.0 |
+| `10-企业级交付清单.md` | 对外交付清单 | **交付清单** | 文档/能力/质量证据/边界/签署 对照表，供客户与审计验收 | ✅ v1.0 |
 
 **配套参考文档（既有，纳入本索引统一管理，不重复造轮子）**：
 
-| 文档 | 归属视图 | 与本文关系 |
-|------|----------|------------|
-| `docs/architecture.md`（v7.0） | 总体技术架构 | 父系统 OUS 总架构，本文是其「联盟子系统」切面 |
-| `docs/enterprise-architecture-analysis.md` | 架构/能力矩阵 | 双联盟十四维、能力覆盖矩阵、持续优化清单 |
-| `docs/expert-alliance-business-requirements.md` | 需求/业务规则 | 联盟融合业务规则（BR-01…BR-21、GAP 清单），是 `01/04` 的权威来源 |
-| `docs/business-process-flows.md` | 业务处理（执行引擎） | WorkflowEngine / 6 企业模板落地 |
-| `docs/business-process-flowcharts.md` | 业务处理（可视化） | Mermaid 流程图 / 时序图全集 |
-| `docs/expert-alliance-alliance-fusion-flows.md` | 业务处理（融合） | BP-6 联盟融合优化链路 |
-| `docs/expert-alliance-normalization.md` | 设计（融合引擎） | 归一化 IR 设计 |
-| `docs/expert-alliance-product.md` | 产品/架构 | 产品化视角 |
-| `crates/expert-alliance/DESIGN.md` / `DESIGN_STAGE2.md` | 设计（融合引擎） | 璇玑引擎实现设计 |
-| `docs/alliance-system-business-architecture.html` | 架构（可视化） | 全维度分层架构交互图 |
+> ⚠️ **根目录 `docs/` 散落文档的权威等级说明**（避免歧义）：
+> - 🟢 **权威基准（以它们为准）**：`璇玑-全维需求业务处理流程图-归一化企业级.md`（AA-STD-V1.0，融合域唯一需求事实基准）、`xuanji-expert-business-requirements.md`（BR-01…BR-21，协作域需求来源）、`architecture.md`（OUS 父总架构）、`enterprise-architecture-analysis.md`（双璇玑十四维能力矩阵）。
+> - 🟡 **过程稿 / 验证记录（仅供追溯，非权威）**：所有带 `-20260816` 后缀的文档（`PrimiFlow-*`、`xuanji-expert-验证总结-*` 等）为当日开发与验证的过程快照，结论已沉淀进本 `enterprise/` 文档集与代码，查阅以本目录为准。
+> - 🟡 **可视化产物**：`*.html` / `*.mmd` 为对应 `.md` 的渲染版本，内容以 `.md` 为源。
+
+| 文档 | 归属视图 | 与本文关系 | 等级 |
+|------|----------|------------|------|
+| `docs/璇玑-全维需求业务处理流程图-归一化企业级.md`（AA-STD-V1.0） | 融合域需求基准 | **融合治理全维需求唯一事实基准**；映射到 `06` §2 | 🟢 权威 |
+| `docs/xuanji-expert-business-requirements.md` | 需求/业务规则 | 璇玑融合业务规则（BR-01…BR-21、GAP 清单），是 `01/04` 的权威来源 | 🟢 权威 |
+| `docs/architecture.md`（v7.0） | 总体技术架构 | 父系统 OUS 总架构，本文是其「璇玑子系统」切面 | 🟢 权威 |
+| `docs/enterprise-architecture-analysis.md` | 架构/能力矩阵 | 双璇玑十四维、能力覆盖矩阵、持续优化清单 | 🟢 权威 |
+| `docs/business-process-flows.md` | 业务处理（执行引擎） | WorkflowEngine / 6 企业模板落地 | 🟡 参考 |
+| `docs/business-process-flowcharts.md` | 业务处理（可视化） | Mermaid 流程图 / 时序图全集 | 🟡 参考 |
+| `docs/xuanji-expert-xuanji-fusion-flows.md` | 业务处理（融合） | BP-6 璇玑融合优化链路 | 🟡 参考 |
+| `docs/xuanji-expert-normalization.md` | 设计（融合引擎） | 归一化 IR 设计 | 🟡 参考 |
+| `docs/xuanji-expert-product.md` | 产品/架构 | 产品化视角 | 🟡 参考 |
+| `crates/xuanji-expert/DESIGN.md` / `DESIGN_STAGE2.md` | 设计（融合引擎） | 璇玑引擎实现设计 | 🟡 参考 |
+| `docs/xuanji-system-business-architecture.html` | 架构（可视化） | 全维度分层架构交互图（源为 `.md`） | 🟡 可视化 |
+| `docs/*-20260816*.md`（PrimiFlow-/xuanji-expert-验证总结- 等） | 过程稿 | 当日开发验证快照，结论已沉淀入本目录 | 🟡 过程稿 |
 
 ---
 
@@ -47,7 +77,7 @@
 
 - **文档版本**：采用 `主版本.次版本` + 阶段标签（`DRAFT` / `REVIEW` / `ENT` 企业级发布 / `SUP`  superseded）。
 - **需求编号**：功能需求 `FR-<域>-<n>`（如 `FR-MEM-01`）；非功能 `NFR-<n>`；业务规则 `BR-<n>`；架构决策 `ADR-<n>`。
-- **变更驱动**：任何代码合并（尤其是 `crates/alliance-system`、`crates/expert-alliance`）若影响行为/接口/权限，必须在合并前同步更新对应文档章节与「变更记录」。
+- **变更驱动**：任何代码合并（尤其是 `crates/xuanji-system`、`crates/xuanji-expert`）若影响行为/接口/权限，必须在合并前同步更新对应文档章节与「变更记录」。
 
 ### 2.2 角色职责（RACI）
 
@@ -90,10 +120,11 @@
 
 ## 4. 阅读路径建议
 
-- **新成员 onboarding**：`00-INDEX` → `01-requirements` → `04-business-processing` → `03-design`。
-- **架构师评审**：`02-architecture`（七视图 + ADR）→ `05-iteration-roadmap`。
-- **安全合规审计**：`01-requirements`（NFR/安全）→ `03-design`（RBAC/审计）→ `04-business-processing`（BR 规则）。
-- **开发新功能**：对应 `03-design` 模块 → 改代码 → 同步 `01/04` 追踪矩阵 → 提 PR。
+- **新成员 onboarding**：`00-INDEX` → `07-全维需求明确书`（先读人话版+验收铁律）→ `08-全维自动化处理明确书`（看铁律怎么自动跑）→ `01-requirements` → `06-requirements-architecture-map`（再看需求怎么落到架构）→ `04-business-processing` → `03-design`。
+- **对外交付/审计**：`00-INDEX`(§0 总览+基线) → `10-企业级交付清单`（逐条核对交付物与质量证据）→ `09-企业级全维度完成归档`（里程碑与测试事实）。
+- **架构师评审**：`02-architecture`（七视图 + ADR）→ `06`（需求—架构映射核对）→ `05-iteration-roadmap`。
+- **安全合规审计**：`01-requirements`（NFR/安全）→ `03-design`（RBAC/审计）→ `04-business-processing`（BR 规则）→ `06` §2.2（四闸门治理闭环）。
+- **开发新功能**：`06` 找到对应需求映射 → 对应 `03-design` 模块 → 改代码 → 同步 `01/04` 追踪矩阵 → 提 PR。
 
 ---
 

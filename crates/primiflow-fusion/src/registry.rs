@@ -1,4 +1,4 @@
-//! 能力融合 Registry（规范缺口 R06 六维绑定 Registry + R08 文档/数据挂接）
+﻿//! 能力融合 Registry（规范缺口 R06 六维绑定 Registry + R08 文档/数据挂接）
 //!
 //! 把全工程 13 个 crate 的能力、关图 12 类实体、PT-Primi 六维绑定，**融合**进一张
 //! [`UnifiedGraph`]。同时把 `ddl.sql` 里悬空的 6 张表挂接到 primiflow 代码节点，
@@ -15,13 +15,13 @@ pub const CRATE_NAMES: &[&str] = &[
     "operator-graph",
     "optimizer",
     "flow-ai",
-    "expert-alliance",
+    "xuanji-expert",
     "hermes-flow-bridge",
     "business-catalog",
     "ai-agent",
     "template-market",
     "runtime",
-    "alliance-system",
+    "xuanji-system",
     "primiflow",
 ];
 
@@ -299,7 +299,7 @@ fn crate_caps(name: &str) -> (Layer, Vec<Cap>) {
                 ),
             ],
         ),
-        "expert-alliance" => (
+        "xuanji-expert" => (
             Layer::Governance,
             vec![cap(
                 "cap:ea-govern",
@@ -361,11 +361,11 @@ fn crate_caps(name: &str) -> (Layer, Vec<Cap>) {
                 ),
             ],
         ),
-        "alliance-system" => (
+        "xuanji-system" => (
             Layer::Governance,
             vec![cap(
-                "cap:alliance-sys",
-                "专家联盟系统",
+                "cap:xuanji-sys",
+                "璇玑系统",
                 EntityKind::Function,
                 Layer::Governance,
             )],

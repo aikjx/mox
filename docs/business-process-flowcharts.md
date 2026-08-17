@@ -1,4 +1,4 @@
-# 企业级业务处理流程图（Business Process Flowcharts）
+﻿# 企业级业务处理流程图（Business Process Flowcharts）
 
 > 配套文档：`architecture.md`（§9 业务处理流程卡、§28 业务流程设计模块）、`business-process-flows.md`（企业级流程执行引擎）。
 > 本文用 **Mermaid 流程图/时序图** 把"企业级处理业务流程"可视化，便于评审、与代码对齐、以及对客演示。
@@ -13,7 +13,7 @@
 | `([开始])` / `([结束])` | 流程起止 |
 | `[处理节点]` | 算子执行 / AI 审查 / 算子调用 |
 | `{条件分支}` | `Condition` 节点，按 `${var}` 求值路由 |
-| `{{专家/治理}}` | 专家联盟 / 璇玑 / 治理复核 |
+| `{{专家/治理}}` | 璇玑 / 璇玑 / 治理复核 |
 | `>人工任务]` | `UserTask` 挂起待审批 |
 | `[[状态向量/图谱]]` | 守恒校验 / 知识沉淀 |
 | `---` / `===` | 成功路径 / 异常/回滚路径 |
@@ -166,14 +166,14 @@ sequenceDiagram
 
 ---
 
-## 4. SUPER_EXPERT 全维处理工作流（专家联盟 + 璇玑）
+## 4. SUPER_EXPERT 全维处理工作流（璇玑 + 璇玑）
 
 对应 `architecture.md` §19：最高权限、受控、不失控。
 
 ```mermaid
 flowchart TD
     S([用户 SUPER_EXPERT 模式]) --> R[收口: 意图归一化\n→ 状态向量投影(公理2)]
-    R --> T{{专家联盟 ExpertPool\n业务七维 + 开发七维(GovernContext.code_ir 非空时并入)}}
+    R --> T{{璇玑 ExpertPool\n业务七维 + 开发七维(GovernContext.code_ir 非空时并入)}}
     T --> D{{璇玑 AlgoPool\n优化/图/数值/ML 算法}}
     T --> X{冲突消解\nflow-ai::conflict::detect + auto_repair}
     D --> P[璇玑产出 DAG 调度计划\noptimizer::schedule]
@@ -240,7 +240,7 @@ flowchart TB
         FLOW[flow-ai 拓扑/冲突/调度]
         OPT[optimizer DAG/关键路径]
         AGENT[ai-agent 工作流/对话/浏览器]
-        EXP[expert-alliance 双联盟十四维]
+        EXP[xuanji-expert 双璇玑十四维]
         HER[hermes-flow-bridge 外部流]
     end
     subgraph CORE[算子内核]
@@ -284,33 +284,33 @@ flowchart TB
 | `POST /api/ai/browser/natural` | P-06 浏览器 | browser_automation | — |
 | `POST /api/graph/node` `/edge` | P-07 图谱 | operator-graph | — |
 | `POST /api/ai/llm/config` / `test` | 模型路由 | llm/* Seam | — |
-| `POST /api/alliance/optimize` | P-13 全维 | expert-alliance | — |
-| `POST /api/alliance/publish` | 全维融合发布 | expert-alliance → market | 归一化→优化图→上传算子市场 |
+| `POST /api/xuanji/optimize` | P-13 全维 | xuanji-expert | — |
+| `POST /api/xuanji/publish` | 全维融合发布 | xuanji-expert → market | 归一化→优化图→上传算子市场 |
 
 ---
 
 ## 8. 全维融合总线（归一化 · 融合 · 打通 · 上传平台）
 
-> 本系统是"专家联盟 + 业务流程图"为主轴的融合总线落地实现。所有功能（算子 / 工作流 / 对话 / 浏览器 / 图谱 / 插件 / 应用）经归一化后，可一键上传到系统平台（算子市场 = 插件平台 / 应用平台）。
+> 本系统是"璇玑 + 业务流程图"为主轴的融合总线落地实现。所有功能（算子 / 工作流 / 对话 / 浏览器 / 图谱 / 插件 / 应用）经归一化后，可一键上传到系统平台（算子市场 = 插件平台 / 应用平台）。
 
 ```mermaid
 flowchart LR
-    A[前端全维融合视图\nAllianceFusionView] -->|POST /api/alliance/publish\n{flow,name,requirement}| B[运行时融合端点]
+    A[前端全维融合视图\nXuanjiFusionView] -->|POST /api/xuanji/publish\n{flow,name,requirement}| B[运行时融合端点]
     B --> C[归一化: normalize_flow_to_graph\n前端 {type,params} → FlowGraph]
-    C --> D[专家联盟双联盟十四维\n+ 璇玑 全维治理]
+    C --> D[璇玑双璇玑十四维\n+ 璇玑 全维治理]
     D --> E[优化流程图 FlowGraph\noptimized_graph]
     E --> F[market::publish_unified\nflow_ai 模型 → 商城模型]
     F --> G[(算子市场 $OUS_HOME/market\n插件/应用平台资产)]
 ```
 
 **端点契约**
-- 请求：`POST /api/alliance/publish` `Authorization: Bearer <OUS_API_TOKEN>`
+- 请求：`POST /api/xuanji/publish` `Authorization: Bearer <OUS_API_TOKEN>`
   - `flow`: 业务蓝图（前端友好 `{nodes:[{id,name,type,params}], edges:[{from,to}]}`，后端归一化）
   - `name` / `description` / `requirement` / `tags`（可选）
 - 响应：`{ published, package:{id,name,category,nodes,edges}, governance:{score,gate}, optimization:{critical_path_ms,conflicts_found} }`
 - 落盘：`$OUS_HOME/market/packages/<id>.json`（算子包，可在算子商城（插件平台/应用平台）检索、克隆、复用）
 
-**前端入口**：导航栏「全维融合」→ `/alliance-fusion`，提供：① 编辑业务蓝图 → ② 全维归一化（治理评分/闸门/优化指标）→ ③ 一键上传算子市场。
+**前端入口**：导航栏「全维融合」→ `/xuanji-fusion`，提供：① 编辑业务蓝图 → ② 全维归一化（治理评分/闸门/优化指标）→ ③ 一键上传算子市场。
 
 ---
 

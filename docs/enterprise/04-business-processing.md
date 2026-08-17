@@ -1,9 +1,9 @@
-# 专家联盟系统 · 业务处理文档（Business Processing）
+﻿# 璇玑系统 · 业务处理文档（Business Processing）
 
 > **文档类型**：业务处理 / 流程 / 规则（BPMN 风格 + 状态机 + 规则目录）
 > **文档版本**：v1.0 (ENT) · 最后更新 2026-08-16
 > **配套**：`01-requirements.md`、`02-architecture.md`、`03-design.md`
-> **权威来源**：`docs/expert-alliance-business-requirements.md`（BR-01…BR-21、GAP 清单）
+> **权威来源**：`docs/xuanji-expert-business-requirements.md`（BR-01…BR-21、GAP 清单）
 
 ---
 
@@ -23,8 +23,8 @@
 ## 2. 端到端业务流程总览
 
 ```
-BP-1 联盟组建 → BP-2 专家入盟 → BP-3 任务立项 → BP-4 任务派发
-   → BP-5 协同推进 → BP-6 联盟融合优化 → BP-7 交付验收与上架
+BP-1 璇玑组建 → BP-2 专家入璇玑 → BP-3 任务立项 → BP-4 任务派发
+   → BP-5 协同推进 → BP-6 璇玑融合优化 → BP-7 交付验收与上架
                                    ↑__________________↓
                   BP-8 审计留痕（横切 BP-2~BP-7 全程）
 ```
@@ -33,30 +33,30 @@ BP-1 联盟组建 → BP-2 专家入盟 → BP-3 任务立项 → BP-4 任务派
 
 ## 3. 八大业务流程（BP）
 
-### BP-1 联盟组建
+### BP-1 璇玑组建
 | 步骤 | 动作 | 规则 |
 |------|------|------|
-| 1.1 | 创建联盟实体（多租户隔离单位） | BR-01 联盟须先于成员/任务存在 |
+| 1.1 | 创建璇玑实体（多租户隔离单位） | BR-01 璇玑须先于成员/任务存在 |
 | 1.2 | 创建首位管理员（状态 Active） | 无需邀请自环 |
-| 1.3 | 授 AllianceAdmin@Global | bootstrap 唯一无鉴权入口 |
-| 1.4 | 惰性创建「联盟大厅」频道 | — |
+| 1.3 | 授 XuanjiAdmin@Global | bootstrap 唯一无鉴权入口 |
+| 1.4 | 惰性创建「璇玑大厅」频道 | — |
 | 1.5 | 签发访问令牌 | — |
 
-### BP-2 专家入盟
+### BP-2 专家入璇玑
 | 步骤 | 动作 | 规则 |
 |------|------|------|
-| 2.1 | 鉴权 `member:invite@联盟` | BR-02 写操作先鉴权 |
+| 2.1 | 鉴权 `member:invite@璇玑` | BR-02 写操作先鉴权 |
 | 2.2 | 创建成员（Invited） | — |
-| 2.3 | 授 Expert@Alliance（最小权限） | **BR-03** 不得 Global |
+| 2.3 | 授 Expert@Xuanji（最小权限） | **BR-03** 不得 Global |
 | 2.4 | 发 MemberInvited 事件 → 通知+大厅播报 | — |
 | 2.5 | 激活 Invited→Active | BR-05 仅 Active 可承接任务 |
 
-> **BR-04**（已修复）：同联盟同 email 邀请幂等 → Conflict。
+> **BR-04**（已修复）：同璇玑同 email 邀请幂等 → Conflict。
 
 ### BP-3 任务立项
 | 步骤 | 动作 | 规则 |
 |------|------|------|
-| 3.1 | 鉴权 `task:create@联盟` | — |
+| 3.1 | 鉴权 `task:create@璇玑` | — |
 | 3.2 | 建任务（Draft，assignees=[]） | **BR-06** 不得自带分派 |
 | 3.3 | 发 TaskCreated → 大厅播报 | — |
 
@@ -69,7 +69,7 @@ BP-1 联盟组建 → BP-2 专家入盟 → BP-3 任务立项 → BP-4 任务派
 | 4.4 | 被分派者加入任务频道 | — |
 | 4.5 | 发 TaskAssigned → 通知+系统消息 | — |
 
-> **BR-07（GAP-2，安全 P0）**：被分派者须逐一校验 ①存在 ②同联盟 ③Active。修复前可写入他联盟 ID 构成跨租户提权。
+> **BR-07（GAP-2，安全 P0）**：被分派者须逐一校验 ①存在 ②同璇玑 ③Active。修复前可写入他璇玑 ID 构成跨租户提权。
 > **BR-08**：分派为全量覆盖语义。
 
 ### BP-5 协同推进
@@ -82,21 +82,21 @@ BP-1 联盟组建 → BP-2 专家入盟 → BP-3 任务立项 → BP-4 任务派
 | 5.5 | 评论 → 频道+双事件 | — |
 
 > **BR-10（GAP-3，P0）**：进 Done 需 DoD 门禁（子任务全完成 ∧ 依赖全 Done）。
-> **BR-11（GAP-4，P1）**：依赖图须 DAG（拒自依赖/成环/跨联盟）。
+> **BR-11（GAP-4，P1）**：依赖图须 DAG（拒自依赖/成环/跨璇玑）。
 > **BR-12**：终态不可迁出。
 
-### BP-6 联盟融合优化
+### BP-6 璇玑融合优化
 ```
-AllianceFusionView → POST /api/alliance/optimize
-  → expert_alliance::pipeline::alliance_optimize()
+XuanjiFusionView → POST /api/xuanji/optimize
+  → xuanji_expert::pipeline::xuanji_optimize()
      归一化 IR → 七维会诊 → 冲突消解 → 治理裁决 → 不变式验证
-  → POST /api/alliance/publish → 算子市场
+  → POST /api/xuanji/publish → 算子市场
 ```
 > **BR-13** 治理一票否决；**BR-14** 不变式验证；**BR-15** 结果可解释（加速比 2.32×、省时 50%、算力压缩 52.9%）。
 
 ### BP-7 交付验收与上架
 > **BR-16** 上架前置：任务 Done（组织验收）∧ 融合验证通过（技术验收），AND 关系。
-> **BR-17** 产物携来源追溯（联盟/任务 ID、优化前后指标）。
+> **BR-17** 产物携来源追溯（璇玑/任务 ID、优化前后指标）。
 
 ### BP-8 审计留痕（横切）
 > **BR-18（GAP-5，P1）**：鉴权失败留痕（member_id/permission/scope/reason）。
@@ -141,9 +141,9 @@ Left → [*]: 终态不可复活 [BR-21]
 
 | 编号 | 类别 | 严重度 | 规则 | 状态 |
 |------|------|:--:|------|:--:|
-| BR-01 | 完整性 | P1 | 联盟须先于成员/任务存在 | ✅ |
+| BR-01 | 完整性 | P1 | 璇玑须先于成员/任务存在 | ✅ |
 | BR-02 | 安全 | P0 | 写操作统一鉴权 | ✅ |
-| BR-03 | 安全 | P0 | 受邀成员最小权限 Expert@Alliance | ✅ |
+| BR-03 | 安全 | P0 | 受邀成员最小权限 Expert@Xuanji | ✅ |
 | BR-04 | 一致性 | P1 | 邀请幂等（同 email） | ✅ |
 | BR-05 | 完整性 | P0 | 仅 Active 可承接任务 | ✅ |
 | BR-06 | 职责分离 | P1 | 立项不得自带分派 | ✅ |
@@ -194,7 +194,7 @@ Left → [*]: 终态不可复活 [BR-21]
 
 - 本文聚焦**协作治理域**业务处理（成员/任务/权限/通信）。
 - **企业级流程执行**（WorkflowEngine + 6 模板）见 `docs/business-process-flows.md`；可视化见 `docs/business-process-flowcharts.md`。
-- **融合优化链路**见 `docs/expert-alliance-alliance-fusion-flows.md`。
+- **融合优化链路**见 `docs/xuanji-expert-xuanji-fusion-flows.md`。
 
 ---
 

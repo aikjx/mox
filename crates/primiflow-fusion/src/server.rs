@@ -209,6 +209,8 @@ async fn synthesize(
         OrchestrationStatus::Completed => "Completed",
         OrchestrationStatus::RejectedDomain => "RejectedDomain",
         OrchestrationStatus::SmokeFailed => "SmokeFailed",
+        // 闸门消费约束下：闸门未通过时保持待闸门态（未冻结、未回灌）
+        OrchestrationStatus::CompletedPendingGate => "GateRejected",
     };
     let (k, t, q) = rep
         .orchestration

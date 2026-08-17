@@ -1,4 +1,4 @@
-//! # 治理台核心 Handlers
+﻿//! # 治理台核心 Handlers
 //!
 //! 提供 OUS 前端治理台的所有 REST API 处理器：
 //!
@@ -15,15 +15,15 @@ use axum::{
     response::IntoResponse,
     Json,
 };
-use expert_alliance::audit::{
+use xuanji_expert::audit::{
     AuditActor, AuditAction, AuditContext, AuditOutcome, AuditResource, AuditSeverity,
     ExtAuditEvent,
 };
-use expert_alliance::context::{GovernContext, Principal, Tenant};
-use expert_alliance::govern::{AuditChain, AuditEvent, FlowStatus, GateResult};
-use expert_alliance::pipeline::GovernanceReport;
+use xuanji_expert::context::{GovernContext, Principal, Tenant};
+use xuanji_expert::govern::{AuditChain, AuditEvent, FlowStatus, GateResult};
+use xuanji_expert::pipeline::GovernanceReport;
 use futures_util::SinkExt;
-use expert_alliance::experts;
+use xuanji_expert::experts;
 use flow_ai::model::FlowGraph;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -418,7 +418,7 @@ pub struct GovernanceReportSummary {
 /// - 专家十四维健康分
 /// - 最近否决事件（最近10条）
 /// - 审计链验证状态
-/// - 业务联盟 / 开发联盟平均健康分
+/// - 业务璇玑 / 开发璇玑平均健康分
 pub async fn dashboard_handler(
     State(gs): State<Arc<GovernanceState>>,
 ) -> ApiResult<Json<DashboardData>> {
@@ -516,7 +516,7 @@ pub async fn experts_status_handler(
 
     Ok(Json(serde_json::json!({
         "timestamp": unix_ts(),
-        "alliance": "double-league-14-dim",
+        "xuanji": "double-league-14-dim",
         "business_league": {
             "dimensions": business_league,
             "experts": business,
@@ -904,8 +904,8 @@ pub async fn trigger_governance(
         Principal::new("governance-api").with_roles(vec!["editor".into()]),
     );
 
-    // 调用专家联盟 pipeline
-    let report = expert_alliance::pipeline::alliance_optimize(flow, &ctx);
+    // 调用璇玑 pipeline
+    let report = xuanji_expert::pipeline::xuanji_optimize(flow, &ctx);
 
     // 提取 GateResult
     let gate = &report.gate;
@@ -960,10 +960,10 @@ pub async fn trigger_governance(
     } else {
         "blocked"
     };
-    let audit_ev = gs.append_audit("governance-api", flow_id, "alliance_optimize", decision).await;
+    let audit_ev = gs.append_audit("governance-api", flow_id, "xuanji_optimize", decision).await;
     let _ = audit_ev;
 
-    // 构造摘要：将双联盟专家健康分映射到摘要
+    // 构造摘要：将双璇玑专家健康分映射到摘要
     let business_dims = [
         "business", "algorithm", "permission", "resource", "security", "data", "observability",
     ];
@@ -1013,7 +1013,7 @@ pub async fn trigger_governance(
 
 /// POST /api/governance/assess
 ///
-/// 对指定流程图触发一次完整的双联盟十四维治理评估。
+/// 对指定流程图触发一次完整的双璇玑十四维治理评估。
 /// 写入否决事件历史、审计链，并实时广播。
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]

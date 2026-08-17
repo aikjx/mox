@@ -1,17 +1,17 @@
-[workspace]
+﻿[workspace]
 members = [
     "crates/operator-core",
     "crates/operator-wasm",
     "crates/operator-graph",
     "crates/optimizer",
     "crates/flow-ai",
-    "crates/expert-alliance",
+    "crates/xuanji-expert",
     "crates/hermes-flow-bridge",
     "crates/business-catalog",
     "crates/ai-agent",
     "crates/template-market",
     "crates/runtime",
-    "crates/alliance-system",
+    "crates/xuanji-system",
     "crates/primiflow",
     "crates/primiflow-fusion",
     "crates/kg-hub",
@@ -22,7 +22,7 @@ resolver = "2"
 version = "3.0.0-ai-powered"
 edition = "2021"
 license = "MIT"
-authors = ["Algorithm Alliance - 最高权限璇玑"]
+authors = ["Xuanji - 最高权限璇玑"]
 description = "Unified Operator System - AI-Driven Full-Dimensional Breakthrough Platform"
 
 [workspace.dependencies]

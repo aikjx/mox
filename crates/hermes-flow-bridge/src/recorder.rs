@@ -1,7 +1,7 @@
-//! Step 3：跨回合累积「会话执行流程图」。
+﻿//! Step 3：跨回合累积「会话执行流程图」。
 //!
 //! 设计：每个 Hermes 会话维护一张 FlowGraph，工具调用按发生顺序累积成节点+边。
-//! 后台任务周期性把图推给 expert-alliance 服务做 optimize + verify（异步，不阻塞中间件）。
+//! 后台任务周期性把图推给 xuanji-expert 服务做 optimize + verify（异步，不阻塞中间件）。
 
 use crate::normalize::{dependency_edges, to_flow_node, ToolCall};
 use flow_ai::model::{FlowEdge, FlowGraph, FlowNode};
