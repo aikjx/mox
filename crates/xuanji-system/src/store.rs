@@ -10,15 +10,15 @@
 //! - 无 SQLite 时为纯内存模式（`Store::new`），用于测试与演示，接口完全一致。
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
-use rusqlite::{Connection, params};
 use tokio::sync::RwLock;
 
 use crate::crypto::sha256_hex;
 use crate::error::AppError;
 use crate::model::*;
 use crate::rbac::RoleBinding;
+use crate::repo::Repository;
 
 #[derive(Default)]
 pub struct State {
@@ -36,8 +36,8 @@ pub struct State {
 
 pub struct Store {
     pub state: RwLock<State>,
-    /// SQLite 后台（系统记录）。`None` = 纯内存模式。
-    sql: Option<Mutex<Connection>>,
+    /// 持久化仓库（系统记录）。`None` = 纯内存模式。
+    repo: Option<Box<dyn Repository>>,
     /// 审计记录计数器（与 Metrics.audit_records 共享同一原子）
     pub audit_counter: Arc<AtomicU64>,
 }
@@ -53,27 +53,41 @@ impl Store {
     pub fn new() -> Self {
         Self {
             state: RwLock::new(State::default()),
-            sql: None,
+            repo: None,
             audit_counter: Arc::new(AtomicU64::new(0)),
         }
     }
 
-    /// 持久化模式：打开（或创建）SQLite 库，建表并**重放**现有数据到内存
-    pub fn open(path: &str) -> Result<Store, AppError> {
-        if let Some(parent) = std::path::Path::new(path).parent() {
-            if !parent.as_os_str().is_empty() {
-                std::fs::create_dir_all(parent).map_err(|e| {
-                    AppError::Internal(format!("无法创建数据目录 {:?}: {}", parent, e))
-                })?;
+    /// 持久化模式：按后端类型打开对应仓库，建表并**重放**现有数据到内存
+    pub async fn open(backend: crate::config::Backend, url: &str) -> Result<Store, AppError> {
+        use crate::config::Backend;
+        use crate::repo::Repository;
+        let repo: Box<dyn Repository> = match backend {
+            Backend::Sqlite => {
+                let r = crate::repo::sqlite::SqliteRepository::open(url)
+                    .map_err(|e| AppError::Internal(e))?;
+                Box::new(r)
             }
-        }
-        let conn = Connection::open(path)
-            .map_err(|e| AppError::Internal(format!("SQLite 打开失败: {}", e)))?;
-        create_tables(&conn)
+            Backend::Postgres => {
+                let r = crate::repo::postgres::PostgresRepository::open(url)
+                    .await
+                    .map_err(|e| AppError::Internal(e))?;
+                Box::new(r)
+            }
+            Backend::MySql => {
+                let r = crate::repo::mysql::MySqlRepository::open(url)
+                    .await
+                    .map_err(|e| AppError::Internal(e))?;
+                Box::new(r)
+            }
+        };
+        repo.migrate()
+            .await
             .map_err(|e| AppError::Internal(format!("建表失败: {}", e)))?;
-        let state = load_state(&conn);
+        let state = repo.load_all().await;
         tracing::info!(
-            "Store::open 重放完成: 璇玑={} 成员={} 任务={} 审计={}",
+            "Store::open 重放完成({:?}): 璇玑={} 成员={} 任务={} 审计={}",
+            backend,
             state.xuanjis.len(),
             state.members.len(),
             state.tasks.len(),
@@ -82,114 +96,71 @@ impl Store {
         let audit_len = state.audit.len() as u64;
         Ok(Self {
             state: RwLock::new(state),
-            sql: Some(Mutex::new(conn)),
+            repo: Some(repo),
             audit_counter: Arc::new(AtomicU64::new(audit_len)),
         })
     }
 
     /// 是否持久化模式
     pub fn is_persistent(&self) -> bool {
-        self.sql.is_some()
+        self.repo.is_some()
     }
 
     pub async fn xuanji_count(&self) -> usize {
         self.state.read().await.xuanjis.len()
     }
 
-    // 内部：执行一条写穿 SQL（仅持久化模式生效）
-    fn exec<P: rusqlite::Params>(&self, sql: &str, p: P) {
-        if let Some(lock) = &self.sql {
-            if let Ok(conn) = lock.lock() {
-                if let Err(e) = conn.execute(sql, p) {
-                    tracing::error!("sqlite 写穿失败 [{}]: {}", sql, e);
-                }
-            }
+    // 内部：写穿到仓库（仅持久化模式生效）
+    async fn p_xuanji(&self, a: &Xuanji) {
+        if let Some(repo) = &self.repo {
+            repo.persist_xuanji(a).await;
         }
     }
-
-    fn p_xuanji(&self, a: &Xuanji) {
-        self.exec(
-            "INSERT OR REPLACE INTO xuanjis (id, data) VALUES (?1, ?2)",
-            params![a.id, serde_json::to_string(a).unwrap_or_default()],
-        );
+    async fn p_member(&self, m: &Member) {
+        if let Some(repo) = &self.repo {
+            repo.persist_member(m).await;
+        }
     }
-    fn p_member(&self, m: &Member) {
-        self.exec(
-            "INSERT OR REPLACE INTO members (id, xuanji_id, data) VALUES (?1, ?2, ?3)",
-            params![
-                m.id,
-                m.xuanji_id,
-                serde_json::to_string(m).unwrap_or_default()
-            ],
-        );
+    async fn p_task(&self, t: &Task) {
+        if let Some(repo) = &self.repo {
+            repo.persist_task(t).await;
+        }
     }
-    fn p_task(&self, t: &Task) {
-        self.exec(
-            "INSERT OR REPLACE INTO tasks (id, xuanji_id, data) VALUES (?1, ?2, ?3)",
-            params![
-                t.id,
-                t.xuanji_id,
-                serde_json::to_string(t).unwrap_or_default()
-            ],
-        );
+    async fn p_channel(&self, c: &Channel) {
+        if let Some(repo) = &self.repo {
+            repo.persist_channel(c).await;
+        }
     }
-    fn p_channel(&self, c: &Channel) {
-        self.exec(
-            "INSERT OR REPLACE INTO channels (id, xuanji_id, data) VALUES (?1, ?2, ?3)",
-            params![
-                c.id,
-                c.xuanji_id,
-                serde_json::to_string(c).unwrap_or_default()
-            ],
-        );
+    async fn p_message(&self, m: &Message) {
+        if let Some(repo) = &self.repo {
+            repo.persist_message(m).await;
+        }
     }
-    fn p_message(&self, m: &Message) {
-        self.exec(
-            "INSERT OR REPLACE INTO messages (id, channel_id, data) VALUES (?1, ?2, ?3)",
-            params![
-                m.id,
-                m.channel_id,
-                serde_json::to_string(m).unwrap_or_default()
-            ],
-        );
+    async fn p_notification(&self, n: &Notification) {
+        if let Some(repo) = &self.repo {
+            repo.persist_notification(n).await;
+        }
     }
-    fn p_notification(&self, n: &Notification) {
-        self.exec(
-            "INSERT OR REPLACE INTO notifications (id, member_id, data) VALUES (?1, ?2, ?3)",
-            params![
-                n.id,
-                n.member_id,
-                serde_json::to_string(n).unwrap_or_default()
-            ],
-        );
+    async fn p_bindings(&self, member_id: &str, bindings: &[RoleBinding]) {
+        if let Some(repo) = &self.repo {
+            repo.persist_bindings(member_id, bindings).await;
+        }
     }
-    fn p_bindings(&self, member_id: &str, bindings: &[RoleBinding]) {
-        self.exec(
-            "INSERT OR REPLACE INTO bindings (member_id, data) VALUES (?1, ?2)",
-            params![member_id, serde_json::to_string(bindings).unwrap_or_default()],
-        );
+    async fn p_token(&self, hash: &str, member_id: &str) {
+        if let Some(repo) = &self.repo {
+            repo.persist_token(hash, member_id).await;
+        }
     }
-    fn p_token(&self, hash: &str, member_id: &str) {
-        self.exec(
-            "INSERT OR REPLACE INTO tokens (hash, member_id) VALUES (?1, ?2)",
-            params![hash, member_id],
-        );
-    }
-    fn p_audit(&self, r: &AuditRecord) {
-        self.exec(
-            "INSERT INTO audit (id, data, at) VALUES (?1, ?2, ?3)",
-            params![
-                r.id,
-                serde_json::to_string(r).unwrap_or_default(),
-                r.at.timestamp()
-            ],
-        );
+    async fn p_audit(&self, r: &AuditRecord) {
+        if let Some(repo) = &self.repo {
+            repo.persist_audit(r).await;
+        }
     }
 
     // ---------- 璇玑 ----------
     pub async fn create_xuanji(&self, a: Xuanji) {
         self.state.write().await.xuanjis.insert(a.id.clone(), a.clone());
-        self.p_xuanji(&a);
+        self.p_xuanji(&a).await;
     }
     pub async fn get_xuanji(&self, id: &str) -> Option<Xuanji> {
         self.state.read().await.xuanjis.get(id).cloned()
@@ -198,7 +169,7 @@ impl Store {
     // ---------- 成员 ----------
     pub async fn create_member(&self, m: Member) {
         self.state.write().await.members.insert(m.id.clone(), m.clone());
-        self.p_member(&m);
+        self.p_member(&m).await;
     }
     pub async fn get_member(&self, id: &str) -> Option<Member> {
         self.state.read().await.members.get(id).cloned()
@@ -225,7 +196,7 @@ impl Store {
             }
         };
         if let Some(ref m) = updated {
-            self.p_member(m);
+            self.p_member(m).await;
         }
         updated
     }
@@ -236,7 +207,7 @@ impl Store {
             .await
             .tokens
             .insert(hash.clone(), member_id.to_string());
-        self.p_token(&hash, member_id);
+        self.p_token(&hash, member_id).await;
     }
     pub async fn member_by_token(&self, token: &str) -> Option<String> {
         let hash = sha256_hex(token.as_bytes());
@@ -250,7 +221,7 @@ impl Store {
             .await
             .bindings
             .insert(member_id.to_string(), bindings.clone());
-        self.p_bindings(member_id, &bindings);
+        self.p_bindings(member_id, &bindings).await;
     }
     pub async fn get_bindings(&self, member_id: &str) -> Vec<RoleBinding> {
         self.state
@@ -265,7 +236,7 @@ impl Store {
     // ---------- 任务 ----------
     pub async fn create_task(&self, t: Task) {
         self.state.write().await.tasks.insert(t.id.clone(), t.clone());
-        self.p_task(&t);
+        self.p_task(&t).await;
     }
     pub async fn get_task(&self, id: &str) -> Option<Task> {
         self.state.read().await.tasks.get(id).cloned()
@@ -283,7 +254,7 @@ impl Store {
             }
         };
         if let Some(ref t) = updated {
-            self.p_task(t);
+            self.p_task(t).await;
         }
         updated
     }
@@ -301,7 +272,7 @@ impl Store {
     // ---------- 频道 ----------
     pub async fn create_channel(&self, c: Channel) {
         self.state.write().await.channels.insert(c.id.clone(), c.clone());
-        self.p_channel(&c);
+        self.p_channel(&c).await;
     }
     pub async fn get_channel(&self, id: &str) -> Option<Channel> {
         self.state.read().await.channels.get(id).cloned()
@@ -374,14 +345,14 @@ impl Store {
             }
         };
         if let Some(c) = changed {
-            self.p_channel(&c);
+            self.p_channel(&c).await;
         }
     }
 
     // ---------- 消息 ----------
     pub async fn add_message(&self, m: Message) {
         self.state.write().await.messages.insert(m.id.clone(), m.clone());
-        self.p_message(&m);
+        self.p_message(&m).await;
     }
     pub async fn list_messages(&self, channel_id: &str) -> Vec<Message> {
         self.state
@@ -401,7 +372,7 @@ impl Store {
             .await
             .notifications
             .insert(n.id.clone(), n.clone());
-        self.p_notification(&n);
+        self.p_notification(&n).await;
     }
     pub async fn list_notifications(&self, member_id: &str) -> Vec<Notification> {
         let mut v: Vec<Notification> = self
@@ -429,7 +400,7 @@ impl Store {
         };
         match updated {
             Some(n) => {
-                self.p_notification(&n);
+                self.p_notification(&n).await;
                 true
             }
             None => false,
@@ -440,7 +411,7 @@ impl Store {
     pub async fn append_audit(&self, r: AuditRecord) {
         self.audit_counter.fetch_add(1, Ordering::Relaxed);
         self.state.write().await.audit.push(r.clone());
-        self.p_audit(&r);
+        self.p_audit(&r).await;
     }
     pub async fn list_audit(&self) -> Vec<AuditRecord> {
         self.state.read().await.audit.clone()
@@ -457,94 +428,9 @@ impl Store {
     }
 }
 
-// ---------------- SQLite 辅助 ----------------
-fn create_tables(conn: &Connection) -> rusqlite::Result<()> {
-    conn.execute_batch(
-        "CREATE TABLE IF NOT EXISTS xuanjis (id TEXT PRIMARY KEY, data TEXT NOT NULL);
-         CREATE TABLE IF NOT EXISTS members (id TEXT PRIMARY KEY, xuanji_id TEXT NOT NULL, data TEXT NOT NULL);
-         CREATE TABLE IF NOT EXISTS tasks (id TEXT PRIMARY KEY, xuanji_id TEXT NOT NULL, data TEXT NOT NULL);
-         CREATE TABLE IF NOT EXISTS channels (id TEXT PRIMARY KEY, xuanji_id TEXT NOT NULL, data TEXT NOT NULL);
-         CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, channel_id TEXT NOT NULL, data TEXT NOT NULL);
-         CREATE TABLE IF NOT EXISTS notifications (id TEXT PRIMARY KEY, member_id TEXT NOT NULL, data TEXT NOT NULL);
-         CREATE TABLE IF NOT EXISTS bindings (member_id TEXT PRIMARY KEY, data TEXT NOT NULL);
-         CREATE TABLE IF NOT EXISTS tokens (hash TEXT PRIMARY KEY, member_id TEXT NOT NULL);
-         CREATE TABLE IF NOT EXISTS audit (seq INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT NOT NULL, data TEXT NOT NULL, at INTEGER NOT NULL);",
-    )
-}
-
-/// 从 SQLite 全量加载并重建内存状态（WAL 重放语义）
-fn load_state(conn: &Connection) -> State {
-    let mut st = State::default();
-
-    if let Ok(mut stmt) = conn.prepare("SELECT data FROM xuanjis") {
-        if let Ok(rows) = stmt.query_map([], |r| r.get::<_, String>(0)) {
-            for r in rows.flatten() {
-                if let Ok(v) = serde_json::from_str::<Xuanji>(&r) {
-                    st.xuanjis.insert(v.id.clone(), v);
-                }
-            }
-        }
-    }
-    load_into(&mut st.members, conn, "SELECT data FROM members");
-    load_into(&mut st.tasks, conn, "SELECT data FROM tasks");
-    load_into(&mut st.channels, conn, "SELECT data FROM channels");
-    load_into(&mut st.messages, conn, "SELECT data FROM messages");
-    load_into(&mut st.notifications, conn, "SELECT data FROM notifications");
-
-    // 角色绑定：member_id -> Vec<RoleBinding>
-    if let Ok(mut stmt) = conn.prepare("SELECT member_id, data FROM bindings") {
-        if let Ok(rows) = stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))
-        {
-            for r in rows.flatten() {
-                if let Ok(binds) = serde_json::from_str::<Vec<RoleBinding>>(&r.1) {
-                    st.bindings.insert(r.0, binds);
-                }
-            }
-        }
-    }
-    // 令牌：hash -> member_id
-    if let Ok(mut stmt) = conn.prepare("SELECT hash, member_id FROM tokens") {
-        if let Ok(rows) = stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))
-        {
-            for r in rows.flatten() {
-                st.tokens.insert(r.0, r.1);
-            }
-        }
-    }
-    // 审计：保持追加顺序
-    if let Ok(mut stmt) = conn.prepare("SELECT data FROM audit ORDER BY seq") {
-        if let Ok(rows) = stmt.query_map([], |r| r.get::<_, String>(0)) {
-            for r in rows.flatten() {
-                if let Ok(v) = serde_json::from_str::<AuditRecord>(&r) {
-                    st.audit.push(v);
-                }
-            }
-        }
-    }
-    st
-}
-
-fn load_into<T: serde::de::DeserializeOwned + serde::Serialize + Clone>(
-    map: &mut HashMap<String, T>,
-    conn: &Connection,
-    sql: &str,
-) {
-    if let Ok(mut stmt) = conn.prepare(sql) {
-        if let Ok(rows) = stmt.query_map([], |r| r.get::<_, String>(0)) {
-            for r in rows.flatten() {
-                if let Ok(v) = serde_json::from_str::<T>(&r) {
-                    // 用 id 字段作为键：实体均含 `id`
-                    if let Some(key) = id_of::<T>(&v) {
-                        map.insert(key, v);
-                    }
-                }
-            }
-        }
-    }
-}
-
 /// 从含 `id` 字段的实体提取主键（通过序列化再读取，避免为每个类型特化）
-fn id_of<T: serde::Serialize>(v: &T) -> Option<String> {
+/// 被 `repo::sqlite` 复用，故导出为 `pub(crate)`。
+pub(crate) fn id_of<T: serde::Serialize>(v: &T) -> Option<String> {
     let val = serde_json::to_value(v).ok()?;
     val.get("id").and_then(|x| x.as_str()).map(|s| s.to_string())
 }

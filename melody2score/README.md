@@ -34,6 +34,11 @@ melody2score/
 │   ├── build_melody_graph.py     # 构建旋律领域 info-graph 子图
 │   └── melody_infograph.json     # 生成的子图（info-graph 同构 schema）
 ├── tests/                  # 离线自测
+├── app/                    # 企业级可视化界面（FastAPI 后端 + 零构建前端）
+│   ├── webui.py            # 后端 API：/api/recognize|recognize-sample|recognize-record|save-md
+│   ├── frontend/index.html # 企业级单页：选择/录音→实时简谱+五线谱→一键保存 MD
+│   ├── exports/            # 导出的 Markdown 报告（自动落盘）
+│   └── start.ps1           # 启动脚本
 ├── requirements.txt
 ├── board_run.sh
 └── README.md
@@ -57,6 +62,64 @@ python melody2score_demo.py -r 5
 # 可选调参
 python melody2score_demo.py song.wav --model small --no-denoise --threads 2
 ```
+
+---
+
+## 二之续、企业级可视化界面（app/）
+
+提供两种形态，复用同一套 `core/` 流水线：
+
+### A. 桌面 GUI（推荐，打开即用，PyQt5）
+独立窗口应用：选择音频 / 内置样例 → 后台线程识别 → 直接显示简谱 + 五线谱 + 音高轮廓 + 音符明细，一键保存 Markdown。
+
+```bash
+cd melody2score
+python -m pip install pyqt5 soundfile          # 核心依赖已具备（PyQt5 5.15）
+python app/gui.py                              # 或：powershell -File app/start.ps1
+```
+
+功能：
+- 输入：文件选择、内置经典旋律样例一键识别、**麦克风实时录音**（点「🎙️ 录音」选 3/5/10 秒，对着麦克风唱即可）。
+- 场景模式：**人声模式（唱歌/哼唱，默认）** vs 器乐/通用模式。人声模式自动收窄基频范围（80–1000Hz）、启用 VAD 人声活动检测、加强颤音平滑。
+- 参数：模型 tiny/small/full、谱减降噪开关、帧移 hop（板端省内存可调小）。
+- 输出（实时、后台线程不卡 UI）：
+  - 概要指标（调式 / BPM / 音符数 / 各层耗时）；
+  - 简谱数字串（高八度 `.`、低八度 `_`、延音 `-`）；
+  - Qt 原生绘制的五线谱（音符头+符干+时值块）；
+  - 量化音高轮廓图（音符级阶梯）；
+  - 音符明细表（MIDI / 音名 / 起始 / 时长）。
+- 导出：`保存 Markdown` 一键生成含「识别概要 + 简谱 + 音符明细 + 算法说明」的标准报告，落到 `app/exports/`。
+
+### B. Web 界面（FastAPI + 原生 HTML/Canvas）
+浏览器形态，支持 WebRTC 录音。
+
+```bash
+cd melody2score
+python -m pip install fastapi uvicorn
+python app/webui.py                           # 或：powershell -File app/start.ps1 -Mode web
+# 浏览器打开 http://127.0.0.1:8012
+```
+
+### 核心算法与优化（精确高效）
+
+流水线分五层（见 `core/`）：采集 → 预处理 → 音高检测 → 音乐解析 → 歌谱生成。
+本可视化版本对解析层做了两处企业级优化（已合入 `core/analysis.py`）：
+
+1. **调式识别（estimate_key）提速 + 提准**
+   - 旧：对整段音频做 `chroma_cqt`（全曲计算，长曲需 20s+）。
+   - 新：优先基于**音符 MIDI 轮廓**（按时长加权统计 12 音级，O(音符数)），仅无音符时回退到 4kHz 降采样信号的 `chroma_stft`（比 cqt 快一个数量级）。
+   - 叠加**旋律学先验**：起始音、终止音加倍权重（主音强倾向），纠正「属音被 K-S 误判为主音」的常见错误（如小星星原误判 G 大调，现正确为 C 大调）。
+   - 实测：解析耗时从 ~21.5s 降至 ~3s。
+
+2. **简谱八度标记（to_jianpu）修正**
+   - 旧：`d = midi - tonic_pc(%12)` 后 `oct_shift = d//12`，把绝对八度误计入，导致中央 C 出现 `.....1` 多点异常。
+   - 新：`tonic_midi = note_to_midi(key+"4")`（含八度），`oct_shift = (midi - tonic_midi)//12`、`rel = (midi - tonic_midi)%12`，八度点与音级严格符合记谱习惯。
+
+### 精度要点
+- 颤音/滑音：midi 轮廓中值滤波(win=5，人声模式 win=7) + 半音量化 + 短段(<min_note_dur)就近合并，过滤帧抖动毛刺。
+- 无声帧：**人声模式额外启用 VAD 人声活动检测**（`core/vad.py`）：以短时帧的「能量门限 + 谱质心范围 + 谱平坦度」三条件判定有声段，再按 `min_voiced_ms` 去毛刺。仅在有声帧上产出音符，彻底排除呼吸、停顿、气声、环境噪声造成的假音高。实测人声模式下基频范围收窄 + VAD 预过滤还能把整段识别耗时降低约 6 倍（后端只需处理有声帧）。
+- 置信度门限(0.3)过滤低置信帧。
+- 板端部署：tiny + 关降噪 + 限核；PC 高精度用 small/full（torchcrepe/crepe_onnx 后端更快）。
 
 输出示例：
 ```

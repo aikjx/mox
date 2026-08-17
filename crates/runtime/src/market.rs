@@ -158,6 +158,40 @@ pub struct OperatorPackage {
     /// 权限标记列表（如 ["read", "write", "deploy"]，空 = 公开可读）
     #[serde(default)]
     pub permissions: Vec<String>,
+    /// ===== 产物来源追溯 (I-07) =====
+    /// 来源璇玑流程 ID（归一化出码的资产可追溯回哪条需求流程图）
+    #[serde(default)]
+    pub source_flow_id: Option<String>,
+    /// 来源任务 ID（双璇玑任务闭环：需求 -> 开发 -> 归一治理）
+    #[serde(default)]
+    pub source_task_id: Option<String>,
+    /// 双验收结论快照（任务 Done ∧ 融合验证通过）
+    #[serde(default)]
+    pub dual_acceptance: bool,
+    /// 优化前后指标：关键路径长度、加速比、冲突数（供审计/复用证据）
+    #[serde(default)]
+    pub provenance: Option<ProvenanceMetrics>,
+}
+
+/// 产物来源追溯指标（I-07）
+/// 【大白话】"上架的算子从哪来、优化前什么样、优化后什么样"——把璇玑归一化的
+/// 核心收益固化进算子包，下游复用/审计时可一键看出这条资产值不值、靠不靠谱。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProvenanceMetrics {
+    /// 来源璇玑/融合验证是否通过（最高权限的算法验证）
+    pub algo_verified: bool,
+    /// 治理 8 闸门是否全过
+    pub gates_passed: bool,
+    /// 优化前关键路径节点数
+    pub critical_path_before: usize,
+    /// 优化后关键路径节点数（并行化压缩后）
+    pub critical_path_after: usize,
+    /// 加速比（并行/关键路径）
+    pub speedup: f64,
+    /// 冲突数（含阻断级）
+    pub conflicts: usize,
+    /// 专家平均健康分（0~100）
+    pub expert_score: f64,
 }
 
 fn default_version() -> String {
@@ -894,6 +928,10 @@ pub fn publish_unified(
     nodes: Vec<flow_ai::model::FlowNode>,
     edges: Vec<flow_ai::model::FlowEdge>,
     tags: Vec<String>,
+    /// 来源璇玑全维治理报告（I-07 产物来源追溯）
+    report: Option<&xuanji_expert::pipeline::GovernanceReport>,
+    /// 来源任务 ID（双璇玑任务闭环）
+    task_id: Option<String>,
 ) -> std::io::Result<OperatorPackage> {
     let id = gen_id();
     let ts = now_rfc3339();
@@ -921,6 +959,40 @@ pub fn publish_unified(
         })
         .collect();
 
+    // I-07 产物来源追溯：从治理报告固化"优化前/后"证据
+    let (source_flow_id, dual_acceptance, provenance) = match report {
+        Some(r) => {
+            let critical_before = r.optimization.graph.nodes.len();
+            let critical_after = r.optimization.gains.critical_path.len().max(1);
+            let speedup = if critical_after > 0 {
+                critical_before as f64 / critical_after as f64
+            } else {
+                1.0
+            };
+            let conflicts = r.optimization.conflicts.all().len();
+            let expert_score = if r.expert_scores.is_empty() {
+                100.0
+            } else {
+                r.expert_scores.iter().map(|(_, s)| s).sum::<f64>() / r.expert_scores.len() as f64
+            };
+            let dual_ok = r.algo.vetoed == false && r.gate.approved;
+            (
+                Some(r.flow_id.clone()),
+                dual_ok,
+                Some(ProvenanceMetrics {
+                    algo_verified: !r.algo.vetoed,
+                    gates_passed: r.gate.approved,
+                    critical_path_before: critical_before,
+                    critical_path_after,
+                    speedup,
+                    conflicts,
+                    expert_score,
+                }),
+            )
+        }
+        None => (None, false, None),
+    };
+
     let pkg = OperatorPackage {
         id: id.clone(),
         name,
@@ -941,6 +1013,10 @@ pub fn publish_unified(
         tenant_id: default_tenant(),
         created_by: "xuanji-expert".into(),
         permissions: vec![],
+        source_flow_id,
+        source_task_id: task_id,
+        dual_acceptance,
+        provenance,
     };
     save_package(&pkg)?;
     Ok(pkg)

@@ -72,6 +72,9 @@ mod automation;
 /// OUS 前端治理台 API：Dashboard / Audit / Config / WebSocket
 mod handlers;
 mod routes;
+/// 子服务聚合（Phase 1 收敛）：xuanji-expert / xuanji-system / primiflow / primiflow-fusion
+/// 以库方式挂载，由 runtime 唯一对外暴露
+mod subservers;
 
 /// 应用状态 - AI全维系统核心
 #[derive(Clone)]
@@ -504,15 +507,30 @@ async fn main() -> anyhow::Result<()> {
         })
         // ========== 静态前端
         .nest_service("/", ServeDir::new("./frontend/dist"))
-        // 响应标准化中间件（最内层，紧邻 handler）：将 HTTP 200 + {success:false}
-        // 的伪成功响应改写为正确的 4xx 状态码 + RFC 9457 Problem+JSON。
+        // 先固化状态为 Router<()>（axum nest 要求内外 state 一致），再挂载子服务
+        .with_state(state);
+
+    // ========== 子服务聚合（Phase 1 收敛）==========
+    // 四套并行 server（xuanji-expert / xuanji-system / primiflow / primiflow-fusion）
+    // 收敛为库，统一由 operator-server 对外暴露；可用 OUS_ENABLE_* 分别关闭。
+    let subs = subservers::build().await;
+    for note in &subs.notes {
+        tracing::info!("{note}");
+    }
+    let mut app = app;
+    for (prefix, router) in subs.routers {
+        app = app.nest(prefix, router);
+    }
+
+    // 响应标准化中间件（最内层，紧邻 handler）：将 HTTP 200 + {success:false}
+    // 的伪成功响应改写为正确的 4xx 状态码 + RFC 9457 Problem+JSON。
+    let app = app
         .layer(middleware::from_fn(api_standard::standardize_response))
         .layer(middleware::from_fn_with_state(
             api_token.clone(),
             auth_middleware,
         ))
-        .layer(build_cors()?)
-        .with_state(state);
+        .layer(build_cors()?);
 
     // 解析命令行参数：支持 `--port <NUM>`（默认 3000）
     let mut port: u16 = 3000;
@@ -580,10 +598,20 @@ async fn auth_middleware(
     next: Next,
 ) -> Result<Response, api_standard::ProblemDetail> {
     let path = req.uri().path().to_string();
-    // 公开端点：健康检查、前端静态资源、AI对话（无需token）
-    if path == "/api/health" || path == "/healthz" || !path.starts_with("/api/")
+    // 子服务聚合边界（见 subservers.rs）：
+    // - /xuanji-system/* 由子服务自带成员令牌 RBAC 鉴权 → 网关透传
+    // - /xuanji-viz /primiflow /fusion 无自带鉴权 → 网关 OUS_API_TOKEN 统一保护
+    let is_passthrough = subservers::PASSTHROUGH_PREFIXES
+        .iter()
+        .any(|p| path.starts_with(p));
+    let is_gateway = subservers::GATEWAY_PREFIXES
+        .iter()
+        .any(|p| path.starts_with(p));
+    // 公开端点：健康检查、前端静态资源、AI对话、子服务透传前缀（无需网关token）
+    if !is_gateway && (path == "/api/health" || path == "/healthz" || !path.starts_with("/api/")
         || path == "/api/ai/chat" || path.starts_with("/api/ai/chat/history")
-        || (path.starts_with("/api/market") && req.method() == axum::http::Method::GET) {
+        || is_passthrough
+        || (path.starts_with("/api/market") && req.method() == axum::http::Method::GET)) {
         return Ok(next.run(req).await);
     }
     match expected {
@@ -800,6 +828,8 @@ async fn xuanji_optimize_handler(
             json!({
                 "score": score,
                 "gate": format!("{:?}", report.gate.status),
+                // 完整治理闸门对象（含 8 闸门明细），供前端审计链/双验收展示
+                "gate_detail": serde_json::to_value(&report.gate).unwrap_or(json!({})),
             }),
         );
         if let Some(opt) = obj.get_mut("optimization").and_then(|o| o.as_object_mut()) {
@@ -842,6 +872,33 @@ async fn xuanji_publish_handler(
     let tags = req.tags.clone().unwrap_or_else(|| {
         vec!["全维融合".into(), "璇玑".into(), "业务流程图".into()]
     });
+
+    // ===== I-05 双验收联动门禁 =====
+    // 需求侧任务 Done（req.task_done=true） ∧ 融合侧璇玑验证通过（algo 未否决且 gate 放行）
+    // 二者同时满足才允许上架；任一方不达成则强制 blocked，原因写回前端审计链。
+    let task_done = req.task_done.unwrap_or(false);
+    let dual_acceptance = xuanji_expert::tenant_policy::dual_acceptance(task_done, &report);
+    if !dual_acceptance {
+        let mut reasons: Vec<String> = Vec::new();
+        if !task_done {
+            reasons.push("需求侧任务未标记 Done（task_done=false）".into());
+        }
+        if report.algo.vetoed {
+            reasons.push("融合侧璇玑验证否决（⛨ 最高权限）".into());
+        }
+        if !report.gate.approved {
+            reasons.push(format!("治理门禁未通过：{}", report.gate.reason));
+        }
+        return Json(json!({
+            "published": false,
+            "blocked": true,
+            "dual_acceptance": false,
+            "reason": reasons.join("；"),
+            "governance": { "score": score, "gate": format!("{:?}", report.gate.status), "algo_veto": report.algo.vetoed },
+            "gates": report.gate.gates.iter().map(|g| json!({ "id": g.id.code(), "name": g.id.name(), "passed": g.passed, "reason": g.reason })).collect::<Vec<_>>(),
+        }));
+    }
+
     match crate::market::publish_unified(
         name,
         description,
@@ -849,10 +906,14 @@ async fn xuanji_publish_handler(
         optimized.nodes.clone(),
         optimized.edges.clone(),
         tags,
+        Some(&report),
+        req.task_id.clone(),
     ) {
         Ok(pkg) => Json(json!({
             "package": { "id": pkg.id, "name": pkg.name, "category": pkg.category, "nodes": pkg.nodes.len(), "edges": pkg.edges.len() },
             "published": true,
+            "dual_acceptance": true,
+            "provenance": pkg.provenance,
             "governance": { "score": score, "gate": format!("{:?}", report.gate.status) },
             "optimization": { "critical_path_ms": report.optimization.gains.critical_path_ms, "conflicts_found": report.optimization.gains.conflicts_found },
         })),
@@ -869,6 +930,12 @@ struct XuanjiPublishRequest {
     description: Option<String>,
     requirement: Option<String>,
     tags: Option<Vec<String>>,
+    /// I-05 双验收联动：需求侧任务是否 Done（与融合侧璇玑验证共同决定可否上架）
+    #[serde(default)]
+    task_done: Option<bool>,
+    /// 来源任务 ID（双璇玑任务闭环，I-07 追溯）
+    #[serde(default)]
+    task_id: Option<String>,
 }
 
 async fn xuanji_health() -> Json<serde_json::Value> {

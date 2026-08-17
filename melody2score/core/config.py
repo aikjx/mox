@@ -15,6 +15,17 @@ class Config:
     intra_op_threads: int = 0       # onnxruntime 单算子线程数（0=默认）
     bpm_fallback: float = 120.0     # BPM 检测失败时的兜底速度
 
+    # ---- 人声模式（识别人唱歌/哼唱，默认开启） ----
+    vocal_mode: bool = True         # 人声模式：收窄基频、启用 VAD、加强颤音平滑
+    fmin: float = 50.0              # 基频下界（Hz）
+    fmax: float = 1100.0            # 基频上界（Hz）
+    enable_vad: bool = True         # 人声活动检测，过滤呼吸/停顿/气声假音高
+    vad_energy_thresh: float = 0.012    # VAD 能量门限（相对峰值）
+    vad_centroid_min: float = 200.0     # VAD 谱质心下界
+    vad_centroid_max: float = 3500.0    # VAD 谱质心上界
+    vad_flatness_max: float = 0.25      # VAD 谱平坦度上界（人声低）
+    min_voiced_ms: int = 80         # VAD 最小有声段（短于该值的孤立段视为毛刺）
+
     @classmethod
     def pc(cls) -> "Config":
         return cls()
@@ -23,3 +34,9 @@ class Config:
     def board(cls) -> "Config":
         """开发板调优：关降噪、限 2 核、略放宽最短音符。"""
         return cls(enable_denoise=False, intra_op_threads=2, min_note_dur=0.12)
+
+    @classmethod
+    def vocal(cls) -> "Config":
+        """人声/哼唱模式调优：把基频范围收紧到人声典型音域，加大颤音平滑。"""
+        return cls(vocal_mode=True, fmin=80.0, fmax=1000.0,
+                   median_win=7, enable_vad=True, min_note_dur=0.12)

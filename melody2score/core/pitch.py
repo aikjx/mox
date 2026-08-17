@@ -19,13 +19,16 @@ class PitchDetector:
 
     def __init__(self, model_size: str = "tiny", conf_thresh: float = 0.3,
                  hop: int = 10, intra_op_threads: int = 0,
-                 backend: str = "auto", sr: int = 16000):
+                 backend: str = "auto", sr: int = 16000,
+                 fmin: float = 50.0, fmax: float = 1100.0):
         self.model_size = model_size
         self.conf_thresh = conf_thresh
         self.hop = hop
         self.intra_op_threads = intra_op_threads
         self.backend = backend
         self.sr = sr
+        self.fmin = fmin
+        self.fmax = fmax
         self._used: Optional[str] = None
 
     @property
@@ -42,7 +45,7 @@ class PitchDetector:
             y, sr, model_size=self.model_size, step_size=self.hop, verbose=0)
         return [{"t": float(t), "freq": float(f), "conf": float(c)}
                 for t, f, c in zip(time_arr, freq_arr, conf_arr)
-                if c >= self.conf_thresh and f > 20]
+                if c >= self.conf_thresh and self.fmin <= f <= self.fmax]
 
     def _detect_torchcrepe(self, y: np.ndarray, sr: int) -> List[Dict]:
         import torch
@@ -51,21 +54,21 @@ class PitchDetector:
         hop_length = max(1, int(round(sr * self.hop / 1000.0)))  # 样本数
         out = torchcrepe.predict(
             audio, sr, model=self.model_size, hop_length=hop_length,
-            fmin=50.0, fmax=1100.0, device="cpu", return_periodicity=True)
+            fmin=self.fmin, fmax=self.fmax, device="cpu", return_periodicity=True)
         pitch, periodicity = out
         f0 = np.asarray(pitch.squeeze().detach().cpu().float().numpy())
         conf = np.asarray(periodicity.squeeze().detach().cpu().float().numpy())
         times = np.arange(len(f0)) * hop_length / sr
         res = []
         for t, f, c in zip(times, f0, conf):
-            if np.isnan(f) or f <= 20 or c < self.conf_thresh:
+            if np.isnan(f) or f <= 20 or c < self.conf_thresh or f < self.fmin or f > self.fmax:
                 continue
             res.append({"t": float(t), "freq": float(f), "conf": float(c)})
         return res
 
     def _detect_pyin(self, y: np.ndarray, sr: int) -> List[Dict]:
         import librosa
-        fmin, fmax = 50.0, 1100.0
+        fmin, fmax = self.fmin, self.fmax
         frame = 2048
         hop_len = max(1, int(round(sr * self.hop / 1000.0)))
         f0, voiced_flag, voiced_prob = librosa.pyin(

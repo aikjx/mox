@@ -2,4 +2,4 @@
 
 | 需求 | 状态 | 需求(REQ) | 功能(FUN) | 业务(BIZ) | 算法(ALG) | 任务(TSK) | 代码(COD) | κ | τ | C | Q |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 抓取销售数据生成月度经营分析报告 | Completed | REQ:0933b1de-a817-4da8-9dbb-fa5f397909e6 | FUN:0933b1de-a817-4da8-9dbb-fa5f397909e6 | BIZ:0933b1de-a817-4da8-9dbb-fa5f397909e6 | ALG:0933b1de-a817-4da8-9dbb-fa5f397909e6 | TSK:0933b1de-a817-4da8-9dbb-fa5f397909e6 | COD:0933b1de-a817-4da8-9dbb-fa5f397909e6 | 7.071 | 7.071 | 10.000 | 0.0 |
+| 把客服对话整理成工单并派发 | RejectedDomain | REQ:7569fe03-d483-4368-8e2a-21f3fc523d1d | FUN:7569fe03-d483-4368-8e2a-21f3fc523d1d | BIZ:7569fe03-d483-4368-8e2a-21f3fc523d1d | ALG:7569fe03-d483-4368-8e2a-21f3fc523d1d | TSK:7569fe03-d483-4368-8e2a-21f3fc523d1d | COD:7569fe03-d483-4368-8e2a-21f3fc523d1d | 0.000 | 0.000 | 0.000 | 0.0 |

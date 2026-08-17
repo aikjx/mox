@@ -459,6 +459,18 @@ pub struct AppState {
     pub current_exec: Arc<Mutex<Option<Arc<ExecState>>>>,
 }
 
+impl AppState {
+    /// 空状态构造：供宿主进程（operator-server 聚合）以库方式挂载，
+    /// 各 handler 按需惰性初始化闭环节点。
+    pub fn new_state() -> Self {
+        Self {
+            topo: Arc::new(Mutex::new(None)),
+            live: Arc::new(Mutex::new(None)),
+            current_exec: Arc::new(Mutex::new(None)),
+        }
+    }
+}
+
 /// 一键闭环演示返回：可视化 DTO + LLM 调用对比（用户原方案核心收益量化）
 #[derive(Debug, Clone, Serialize)]
 pub struct ClosedLoopBundle {

@@ -256,7 +256,7 @@
         <li><span class="pill p-warn">B3</span> 无实时通信，优化/审批结论靠轮询，协作低效。</li>
         <li><span class="pill p-warn">B4</span> 事件与通知割裂，参与者对进展无感知。</li>
         <li><span class="pill p-warn">B5</span> 重流程（7 专家 + flow-ai）无任务级增量，小改动成本高。</li>
-        <li><span class="pill p-info">B6</span> 内存态存储，无持久化与多实例扩展。</li>
+        <li><span class="pill p-info">B6</span> 内存态存储，无持久化与多实例扩展。<em>（持久化部分已解决：SQLite/PostgreSQL/MySQL 多后端已落地，见 <code>docs/enterprise/02-architecture.md</code> §7.4；多实例扩展仍待 I-14）</em></li>
       </ul>
     </div>
     <div>

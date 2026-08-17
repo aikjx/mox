@@ -26,6 +26,13 @@
               <el-descriptions-item label="优化指标">{{ report.optimization?.metric ?? '—' }}</el-descriptions-item>
               <el-descriptions-item label="优化算法">{{ report.optimization?.algorithm ?? '—' }}</el-descriptions-item>
             </el-descriptions>
+            <el-divider>治理 8 闸门（全量门禁）</el-divider>
+            <div v-for="g in report.governance?.gate_detail?.gates || []" :key="g.id.code" class="gate-row">
+              <el-tag :type="g.passed ? 'success' : 'danger'" size="small">
+                {{ g.id.code }}·{{ g.id.name }}
+              </el-tag>
+              <span class="gate-reason" :class="{ fail: !g.passed }">{{ g.passed ? '通过' : g.reason }}</span>
+            </div>
             <el-divider>优化后流程图节点</el-divider>
             <el-tag v-for="n in optimizedNodes" :key="n.id" class="node-tag" type="success">
               {{ n.name || n.id }} · {{ n.type }}
@@ -49,10 +56,25 @@
             <el-form-item label="自然语言需求">
               <el-input v-model="pkgReq" type="textarea" :rows="3" placeholder="该流程解决的业务问题" />
             </el-form-item>
+            <el-form-item label="来源任务ID">
+              <el-input v-model="taskId" placeholder="双璇玑任务闭环 ID（I-07 追溯）" />
+            </el-form-item>
+            <el-form-item label="双验收联动">
+              <el-switch v-model="taskDone" active-text="需求侧任务 Done" />
+              <span class="hint">（I-05：任务 Done ∧ 融合验证通过才可上架）</span>
+            </el-form-item>
           </el-form>
+          <el-alert
+            v-if="report && !dualAcceptable"
+            class="mt"
+            type="warning"
+            :title="'双验收未达成：' + dualReason"
+            :closable="false"
+            show-icon
+          />
           <el-button
             type="success"
-            :disabled="!report"
+            :disabled="!report || !dualAcceptable"
             :loading="loadingPublish"
             @click="publish"
           >
@@ -61,12 +83,23 @@
           <el-alert
             v-if="publishResult"
             class="mt"
-            type="success"
-            :title="`已上传：包 ${publishResult.package?.id}`"
-            :description="`节点 ${publishResult.package?.nodes} / 边 ${publishResult.package?.edges}；治理评分 ${publishResult.governance?.score}`"
+            :type="publishResult.published ? 'success' : 'error'"
+            :title="publishResult.published ? `已上传：包 ${publishResult.package?.id}` : '上架被管制门禁拦截'"
+            :description="publishResult.published
+              ? `节点 ${publishResult.package?.nodes} / 边 ${publishResult.package?.edges}；治理评分 ${publishResult.governance?.score}`
+              : (publishResult.reason || '上架被管制门禁拦截')"
             show-icon
             :closable="false"
           />
+          <el-divider v-if="publishResult?.published && publishResult.provenance">产物来源追溯</el-divider>
+          <el-descriptions v-if="publishResult?.published && publishResult.provenance" :column="1" border size="small">
+            <el-descriptions-item label="璇玑验证">{{ publishResult.provenance.algo_verified ? '通过' : '否决' }}</el-descriptions-item>
+            <el-descriptions-item label="8 闸门">{{ publishResult.provenance.gates_passed ? '全过' : '未全过' }}</el-descriptions-item>
+            <el-descriptions-item label="关键路径(前/后)">{{ publishResult.provenance.critical_path_before }} → {{ publishResult.provenance.critical_path_after }}</el-descriptions-item>
+            <el-descriptions-item label="加速比">{{ publishResult.provenance.speedup.toFixed(2) }}×</el-descriptions-item>
+            <el-descriptions-item label="冲突数">{{ publishResult.provenance.conflicts }}</el-descriptions-item>
+            <el-descriptions-item label="专家均分">{{ publishResult.provenance.expert_score.toFixed(1) }}</el-descriptions-item>
+          </el-descriptions>
         </el-card>
       </el-col>
     </el-row>
@@ -98,10 +131,30 @@ const loadingPublish = ref(false)
 const pkgName = ref('')
 const pkgReq = ref('')
 const publishResult = ref(null)
+const taskId = ref('')
+const taskDone = ref(false)
 
 const optimizedGraph = computed(() => report.value?.optimization?.optimized_graph || report.value?.optimization || null)
 const optimizedNodes = computed(() => optimizedGraph.value?.nodes || [])
 const optimizedEdges = computed(() => optimizedGraph.value?.edges || [])
+
+// I-05 双验收联动：需求侧任务 Done ∧ 融合侧璇玑验证（8 闸门全过且未否决）
+const dualAcceptable = computed(() => {
+  if (!report.value) return false
+  const gd = report.value.governance?.gate_detail
+  const algoOk = !gd?.algorithm_veto
+  const gateOk = gd?.approved
+  return taskDone.value && algoOk && gateOk
+})
+const dualReason = computed(() => {
+  if (!report.value) return '尚未归一化'
+  const gd = report.value.governance?.gate_detail
+  const parts = []
+  if (!taskDone.value) parts.push('需求侧任务未标记 Done')
+  if (gd?.algorithm_veto) parts.push('融合侧璇玑验证否决')
+  if (gd && !gd.approved) parts.push('治理门禁未通过：' + (gd.reason || ''))
+  return parts.join('；') || '双验收达成，可上架'
+})
 
 async function normalize() {
   let flow
@@ -133,13 +186,15 @@ async function publish() {
       name: pkgName.value || undefined,
       description: undefined,
       requirement: pkgReq.value || undefined,
-      tags: undefined
+      tags: undefined,
+      task_done: taskDone.value,
+      task_id: taskId.value || undefined
     })
     if (r.published) {
       publishResult.value = r
       ElMessage.success('已上传到算子市场（插件/应用平台），包 ID：' + r.package.id)
     } else {
-      ElMessage.error('上传失败：' + (r.error || '未知错误'))
+      ElMessage.error('上架被管制门禁拦截：' + (r.reason || r.error || '未知错误'))
     }
   } catch (e) {
     ElMessage.error('上传失败：' + e.message)
@@ -155,4 +210,8 @@ async function publish() {
 .mt { margin-top: 10px; }
 .node-tag { margin: 0 6px 6px 0; }
 .edge-line { font-size: 12px; color: #909399; line-height: 1.6; }
+.gate-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.gate-reason { font-size: 12px; color: #67C23A; }
+.gate-reason.fail { color: #F56C6C; }
+.hint { font-size: 11px; color: #909399; margin-left: 6px; }
 </style>

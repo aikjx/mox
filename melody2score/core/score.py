@@ -27,8 +27,14 @@ def to_musicxml(notes: List[Dict], bpm: float, key_name: Tuple[str, str], fp=Non
 
 
 def to_jianpu(notes: List[Dict], key_name: Tuple[str, str], bpm: float = 120.0) -> str:
-    """转简谱：数字 1–7 表音级；高八度前加 '.'，低八度后加 '_'；'-' 表延音。"""
-    tonic_pc = librosa.note_to_midi(key_name[0] + "4") % 12
+    """转简谱：数字 1–7 表音级；高八度前加 '.'，低八度后加 '_'；'-' 表延音。
+
+    以 tonic 的 4 八度音（如 C→C4=60）为简谱「1」的基准八度：
+      oct_shift = (midi - tonic_midi) // 12  → 相对基准的八度偏移；
+      rel = (midi - tonic_midi) % 12         → 在调内音级索引。
+    这样既保证调内音级正确，又保证八度点标记符合记谱习惯。
+    """
+    tonic_midi = int(librosa.note_to_midi(key_name[0] + "4"))  # 含八度，如 C4=60
     if key_name[1] == "minor":
         scale = [0, 2, 3, 5, 7, 8, 10]
     else:
@@ -37,7 +43,7 @@ def to_jianpu(notes: List[Dict], key_name: Tuple[str, str], bpm: float = 120.0) 
     out = []
     for nt in notes:
         m = int(nt["midi"])
-        d = m - tonic_pc
+        d = m - tonic_midi
         oct_shift = d // 12
         rel = d % 12
         deg = str(scale.index(rel) + 1) if rel in scale else "#"  # 离调音近似标 #

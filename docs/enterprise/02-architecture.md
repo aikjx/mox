@@ -81,9 +81,10 @@ DomainEvent ──▶ EventBus(broadcast)
 
 ### 2.3 数据驻留与保留
 
-- 当前：`Store`（内存 `RwLock<State>`），重启失忆（见 NFR-03 / 路线图持久化）。
-- 设计：接口稳定，可替换为 SQLite（单租户）或分布式 KV（多租户分片）。
-- 审计数据：建议 WAL 持久化 + 不可变追加，支持重放（路线图 `05`）。
+- **持久化态（I-01/I-02 已落地）**：`Store` 通过 `trait Repository` 抽象，写透 + 启动重放，重启不丢且幂等。
+- **多后端可移植（NFR-03）**：支持 `SQLite`（默认，单租户/单节点）/ `PostgreSQL` / `MySQL` 三种后端，由环境变量选择，业务层对后端无感知。方言差异统一在 `repo/schema.rs` 由 `sea-query` 按方言生成，详见 §7.4。
+- **内存态**：`XUANJI_PERSIST=false` 时为纯内存 `RwLock<State>`（重启失忆），仅用于测试/演示，接口与持久化态完全一致。
+- 审计数据：`AuditChain` 已落盘且不可变追加，支持重放（I-02）。
 
 ---
 
@@ -223,10 +224,42 @@ xuanji-system ◀── POST /api/xuanji/* ── xuanji-expert(pipeline)
 | 指标 | 未采集 | 鉴权拒绝率/状态迁移分布/优化耗时（Prometheus） |
 | 追踪 | trace_id 注入 | 跨 crate 链路 |
 
-### 7.3 灾备（路线图 `05`）
+### 7.3 灾备
 
-- 当前：进程内存态，无持久化。
-- 目标：Store 持久化 + 审计链 WAL 重放 + 快照（对齐 `docs/architecture.md` §16）。
+- **已落地**：Store 持久化写透 + 启动重放、审计链落盘重放（I-01/I-02）。SQLite 单文件可冷备；PostgreSQL / MySQL 可复用其原生主从与 PITR 备份体系。
+- **待办**：WAL 快照与混沌演练（I-12，见 `05` 路线图）。对齐 `docs/architecture.md` §16。
+
+### 7.4 持久化后端选型与配置矩阵（唯一权威落点）
+
+> 本节是璇玑系统持久化配置的**唯一事实基准**。根 `README.md` 与其他文档仅可指向本节，不得重复定义，避免配置口径漂移。
+
+**设计原则**：12-Factor 配置注入，零代码切换；默认 `SQLite` 保证开箱即用、无外部依赖。
+
+| 环境变量 | 取值 | 默认 | 说明 |
+|----------|------|------|------|
+| `XUANJI_PERSIST` | `true`/`1` \| `false`/`0` | `false` | 是否落盘。`false` 为纯内存态（重启失忆，仅测试/演示） |
+| `XUANJI_STRICT_PERSIST` | `true`/`1` \| `false`/`0` | `false` | **生产级 fail-fast**：打开后若连库或建表失败，**启动直接中止**，杜绝"连不上库却照常起服务、数据只进内存、重启即丢"的静默故障 |
+| `XUANJI_BACKEND` | `sqlite` \| `postgres` \| `mysql` | `sqlite` | 后端方言。无法识别时安全回退 `sqlite` |
+| `XUANJI_DB_URL` | 连接串 | `./data/xuanji.db` | SQLite 为文件路径；PG/MySQL 为标准 URL |
+
+**推荐组合矩阵**：
+
+| 场景 | `PERSIST` | `STRICT_PERSIST` | `BACKEND` | `DB_URL` |
+|------|-----------|------------------|-----------|----------|
+| 本地开发 / 单节点（默认） | `false` | `false` | `sqlite` | 默认 |
+| SQLite 持久化 | `true` | `false` | `sqlite` | `./data/xuanji.db` |
+| **PostgreSQL 生产** | `true` | **`true`** | `postgres` | `postgres://user:pass@host:5432/db` |
+| **MySQL 生产** | `true` | **`true`** | `mysql` | `mysql://user:pass@host:3306/db` |
+
+**方言归一化实现**：upsert 语义按后端生成——SQLite `INSERT OR REPLACE` + `?N`；PostgreSQL `ON CONFLICT DO UPDATE` + `$N`；MySQL `ON DUPLICATE KEY UPDATE` + `?`。落点 `crates/xuanji-system/src/repo/`（`schema.rs` 方言层 + `sqlite.rs`/`postgres.rs`/`mysql.rs` 驱动层）。
+
+**启动可观测性**：启动日志如实回显后端与严格模式，便于运维核对实际生效配置：
+
+```
+持久化模式: 开启 (后端=Postgres, 严格模式=开(连库失败即中止))
+```
+
+**fail-fast 错误路径**：`Store::open` 内 `migrate()` 失败已 `?` 成 `Err`，故 `XUANJI_STRICT_PERSIST` **同时覆盖「连接失败」与「建表失败」**两条路径；错误经 `with_config` 上浮至 `main` 以规整致命信息 + 非零退出码终止（非 panic backtrace），契合容器编排重启探针语义。
 
 ---
 
@@ -236,7 +269,8 @@ xuanji-system ◀── POST /api/xuanji/* ── xuanji-expert(pipeline)
 |-----|------|------|------|
 | ADR-01 | RBAC 作为统一鉴权闸门，所有写操作经 `require()` | 避免散落权限判断 | 单一入口易审计；需防绕过 |
 | ADR-02 | 领域事件 + 反应器解耦通信 | 写逻辑与推送解耦 | 可加指标/审计消费者；需保证幂等 |
-| ADR-03 | 内存 Store + 稳定接口，暂不实持久化 | 首版降复杂度 | NFR-03 可替换；重启失忆 |
+| ADR-03 | ~~内存 Store + 稳定接口，暂不实持久化~~（**已被 ADR-07 取代**） | 首版降复杂度 | 🟡 SUP：稳定接口设计使后续替换零成本 |
+| ADR-07 | `trait Repository` 多后端持久化：SQLite（默认）/ PostgreSQL / MySQL，12-Factor 选择 + `STRICT_PERSIST` fail-fast | 兑现 NFR-03 可移植性；生产需外部库与主从备份，开发需零依赖 | 重启不丢；方言差异集中于 `repo/schema.rs`；严格模式下连库失败即中止启动（见 §7.4） |
 | ADR-04 | `*Own` 所有权权限依赖可信 `assignees` | 精细授权 | 分派必须校验（GAP-2 修复） |
 | ADR-05 | 两段式鉴权（试探不落审计） | 防审计噪声/权限探测 | 实现稍复杂；测试双向断言 |
 | ADR-06 | 融合治理与协作治理分离为两域 | 关注点分离 | 双验收联动待补（FR-FUSE-05） |

@@ -133,7 +133,22 @@ operator-unified-system/
 ├── frontend/                 # Vue3 前端界面 (需 npm install && build 生成 dist/)
 ├── plugins/                  # WASM 插件目录
 ├── data/market/              # 算子商城资产（运行态，默认 CWD；生产应置于 $OUS_HOME/market，见 docs/architecture.md §27）
-├── docs/                     # 企业级文档：architecture.md / enterprise-architecture-analysis.md / market-module.md / math-design.md / business-process-flows.md / business-process-flowcharts.md
+├── docs/                     # 企业级文档（按专题分区；权威治理中心 = docs/enterprise/00-INDEX.md）
+│   ├── enterprise/           # 🟢 企业级文档唯一治理入口（文档集 00~10：需求/架构/设计/业务/路线图/映射/全维明确/自动化/归档/交付）
+│   ├── README.md             # 关图/全维专题快捷导航（非治理入口，权威以 enterprise/00-INDEX 为准）
+│   ├── specs/                # 🟢 企业级规范：PT-STD（Primi 架构）/ GR-STD（关图规范）/ OUS 业务规划
+│   ├── full-dimensional/     # 🟡 全维分析（璇玑）专题：AA-STD 流程基准 / 关图骨架 / 治理台 API / 原始文档归档
+│   ├── graph/                # 关图机读产物：graph.json / graph.enterprise.json / guantu.req.json
+│   ├── ai-architecture/      # AI 架构专题
+│   ├── architecture.md / enterprise-architecture-analysis.md / mathematical-foundation.md  # 架构/能力矩阵/数学内核
+│   ├── *-验证总结-20260816.md / *-normalization.md / *-business-requirements.md            # 🟡 过程稿/验证快照（结论已沉淀 enterprise/）
+│   └── *.html / *.mmd        # 🟡 可视化产物（以同名 .md 为源）
+│   ├── graph/                # 关图机读产物：graph.json / graph.enterprise.json / guantu.req.json
+│   ├── architecture.md       # 系统架构
+│   ├── enterprise-architecture-analysis.md
+│   ├── mathematical-foundation.md
+│   ├── market-module.md / business-process-flows.md / business-process-flowcharts.md
+│   └── *-验证总结-20260816.md / *-normalization.md / *-business-requirements.md（验证/归一化/需求事实）
 ├── benches/                  # 性能基准
 ├── tests/                    # 集成测试
 ├── verify_axioms.py          # 6 大公理数学自洽性验证脚本
@@ -249,6 +264,24 @@ int operator_apply(double* input, double* output, int n);
 - **插件沙箱隔离**：WASM 安全执行第三方算子
 - **记忆一致性**：知识图谱 + 业务目录统一建模
 - **算子商城（资产复用）**：将"需求 + 可编辑业务流程图 + 功能点"作为算子包沉淀，支持随机浏览、克隆后继续编辑，形成"需求驱动 → 流程可快速改"的知识复利闭环（见 `docs/market-module.md`）
+- **多数据库后端（12-Factor 配置）**：璇玑系统可在 `SQLite / PostgreSQL / MySQL` 三种后端间**零代码切换**，默认 `SQLite`（开箱即用、零外部依赖）。方言差异（`INSERT OR REPLACE` / `ON CONFLICT DO UPDATE` / `ON DUPLICATE KEY UPDATE` 等）统一在 `repo/schema.rs` 按 `sea-query` 方言生成，业务层对后端无感知。
+- **生产级 fail-fast**：`XUANJI_STRICT_PERSIST=1` 下，若连不上配置的数据库（连接失败 **或** 建表失败）则**启动时直接中止**，杜绝"连不上库却照常起服务、数据只写进内存、进程一重启就丢"的静默故障。默认关闭、保持与演示/测试的兼容。
+
+### 数据库后端切换（璇玑系统 `xuanji-system`）
+
+```powershell
+# 默认：SQLite，零配置开箱即用
+cargo run -p xuanji-system
+
+# PostgreSQL 生产（连不上库直接中止启动，而非带病运行）
+$env:XUANJI_PERSIST="true"; $env:XUANJI_STRICT_PERSIST="true"
+$env:XUANJI_BACKEND="postgres"
+$env:XUANJI_DB_URL="postgres://admin:***@db.internal:5432/xuanji"
+cargo run -p xuanji-system
+```
+
+> 📖 **完整配置矩阵与语义（唯一权威基准）**：见 [`docs/enterprise/02-architecture.md` §7.4](docs/enterprise/02-architecture.md)。
+> 环境变量全集、推荐组合、方言归一化实现、fail-fast 错误路径均以该节为准，本处仅作快速上手示例。
 
 ---
 

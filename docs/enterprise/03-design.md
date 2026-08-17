@@ -17,16 +17,26 @@ crates/xuanji-system/src/
 ├── error.rs        AppError + IntoResponse（HTTP 映射）
 ├── rbac.rs         角色/权限/作用域/继承/所有权判定
 ├── event.rs        DomainEvent 枚举 + EventBus(broadcast)
-├── store.rs        Store 接口 + 内存实现（RwLock<State>）
+├── store.rs        Store 门面：内存态（RwLock<State>）+ 持久化写透/启动重放
+├── repo/           持久化仓库层（多后端，见 02 §7.4 / ADR-07）
+│   ├── mod.rs      trait Repository（migrate / load_all / persist_*）
+│   ├── schema.rs   sea-query 方言层：DDL + upsert（三方言归一化）
+│   ├── sqlite.rs   SQLite 驱动（默认，rusqlite）
+│   ├── postgres.rs PostgreSQL 驱动（sqlx）
+│   └── mysql.rs    MySQL 驱动（sqlx）
+├── config.rs       12-Factor 配置：backend / db_url / persist / strict_persist / 配额 / 限流 / CORS
+├── crypto.rs       令牌 SHA-256 哈希（仅存哈希，不存明文）
+├── metrics.rs      Prometheus 文本指标（I-04）
+├── ratelimit.rs    固定窗口限流（I-04）
 ├── services.rs     MemberService / TaskService / PermissionService / CommService
 ├── orchestrator.rs XuanjiSystem 门面：require() 鉴权 + Reactor 事件反应器
-└── server.rs       Axum REST + WebSocket + 鉴权中间件
+└── server.rs       Axum REST + WebSocket + 鉴权中间件 + CORS + /metrics + /health
 tests/
-├── integration.rs  端到端（越权拦截/事件→通知/角色继承）
+├── integration.rs  端到端（越权拦截/事件→通知/角色继承/持久化/令牌哈希/配额）
 └── business_rules.rs BR-01…BR-21 规则固化
 ```
 
-**依赖方向**：`server → orchestrator → services → store/event`；`event` 被 `orchestrator.Reactor` 订阅。
+**依赖方向**：`server → orchestrator → services → store/event`；`store → repo/*`（按 `config.backend` 选择实现）；`event` 被 `orchestrator.Reactor` 订阅。持久化仓库层对上游完全透明——`services` 及以上不感知后端方言。
 
 ---
 
@@ -311,8 +321,8 @@ server ──▶ sys.assign_task(actor, id, list)
 
 | 决策 | 收益 | 代价 / 后续 |
 |------|------|-------------|
-| 内存 Store | 首版简单、快 | 重启失忆 → NFR-03 持久化（路线图） |
-| broadcast 单总线 | 解耦、易扩展消费者 | 无持久化 → 审计 WAL（路线图） |
+| `trait Repository` 多后端 Store（SQLite 默认 / PG / MySQL） | 兑现 NFR-03 可移植；开发零依赖、生产可用外部库 | 方言差异需集中维护于 `repo/schema.rs`（已收口，见 `02` §7.4 / ADR-07） |
+| broadcast 单总线 | 解耦、易扩展消费者 | 审计链已落盘重放（I-02）；WAL 快照待 I-12 |
 | 两段式鉴权 | 审计可用、防探测 | 实现复杂度；测试双向断言固化 |
 | 分派全量覆盖 | 语义明确 | 调用方需传完整名单 |
 

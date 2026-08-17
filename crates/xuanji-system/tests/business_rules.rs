@@ -350,7 +350,7 @@ async fn setup_with(
     quotas: Quotas,
 ) -> (XuanjiSystem, String, String) {
     let cfg = AppConfig { quotas, ..AppConfig::default() };
-    let sys = XuanjiSystem::with_config(cfg).unwrap();
+    let sys = XuanjiSystem::with_config(cfg).await.unwrap();
     let (aln, admin, _tok) = sys.bootstrap(name, "管理员", email).await.unwrap();
     (sys, aln.id, admin.id)
 }

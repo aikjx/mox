@@ -363,9 +363,14 @@ class MainWindow(QMainWindow):
         sv = QVBoxLayout(g_s)
         self.sampleCombo = QComboBox()
         sv.addWidget(self.sampleCombo)
+        row_s = QHBoxLayout()
         self.btnSample = QPushButton("识别选中样例")
         self.btnSample.clicked.connect(self.run_sample)
-        sv.addWidget(self.btnSample)
+        self.btnPlaySample = QPushButton("▶ 播放原曲")
+        self.btnPlaySample.clicked.connect(self.play_sample)
+        row_s.addWidget(self.btnSample)
+        row_s.addWidget(self.btnPlaySample)
+        sv.addLayout(row_s)
         lv.addWidget(g_s)
 
         lv.addStretch(1)
@@ -553,8 +558,46 @@ class MainWindow(QMainWindow):
         if not self.sampleCombo.isEnabled():
             return
         name = self.sampleCombo.currentData()
+        # 选中即缓存原曲波形，使左侧「试听原曲」可复听
+        idx = self.sampleCombo.currentIndex()
+        item = self.manifest[idx] if hasattr(self, "manifest") else None
+        if item:
+            path = os.path.join(ROOT, item["file"])
+            if os.path.exists(path):
+                with open(path, "rb") as f:
+                    try:
+                        y, sr = load_audio_bytes(f.read(), 22050)
+                        self._raw_y, self._raw_sr = y, sr
+                        self.btnPreview.setEnabled(True)
+                    except Exception:
+                        pass
         self._start({"kind": "sample", "name": name, "cfg": self._cfg(),
                      "source": name})
+
+    def play_sample(self):
+        """播放当前选中样例的原曲音频（读取 audio/<id>.wav 并回放）。"""
+        if not self.sampleCombo.isEnabled():
+            return
+        idx = self.sampleCombo.currentIndex()
+        item = self.manifest[idx] if hasattr(self, "manifest") else None
+        if not item:
+            return
+        path = os.path.join(ROOT, item["file"])
+        if not os.path.exists(path):
+            QMessageBox.information(self, "播放原曲",
+                                    f"未找到样例音频：{item['file']}\n请先运行 gen_classic_melodies.py 生成。")
+            return
+        with open(path, "rb") as f:
+            try:
+                y, sr = load_audio_bytes(f.read(), 22050)
+            except Exception as e:
+                QMessageBox.critical(self, "播放失败", f"解码样例音频出错：{e}")
+                return
+        self._raw_y, self._raw_sr = y, sr
+        self.btnPreview.setEnabled(True)
+        self.status.setText(f"▶ 试听原曲：{item['title_zh']} · {item['timbre']}")
+        from app.audio_play import play_raw
+        play_raw(y, sr)
 
     def on_done(self, res: Dict):
         self.current = res

@@ -1,6 +1,6 @@
 ﻿//! 端到端集成测试：成员管理 / 任务协作 / 权限分配 / 通信机制
 //! + 企业级能力：SQLite 持久化重放、令牌哈希、配额强制、限流
-use xuanji_system::config::AppConfig;
+use xuanji_system::config::{AppConfig, Backend};
 use xuanji_system::event::DomainEvent;
 use xuanji_system::model::{InviteInput, Priority, TaskStatus, Tier};
 use xuanji_system::orchestrator::{XuanjiSystem, Reactor};
@@ -216,7 +216,7 @@ async fn role_inheritance_and_scope() {
 async fn store_persists_and_hashes_tokens() {
     let db = temp_db();
     {
-        let s = Store::open(&db).unwrap();
+        let s = Store::open(Backend::Sqlite, &db).await.unwrap();
         // 令牌以 SHA-256 哈希落盘，明文不存储
         s.set_token("secret-token-123", "mem_1").await;
         assert_eq!(s.member_by_token("secret-token-123").await, Some("mem_1".to_string()));
@@ -224,7 +224,7 @@ async fn store_persists_and_hashes_tokens() {
     }
     // 模拟进程重启：重放 SQLite，令牌仍可用
     {
-        let s2 = Store::open(&db).unwrap();
+        let s2 = Store::open(Backend::Sqlite, &db).await.unwrap();
         assert_eq!(
             s2.member_by_token("secret-token-123").await,
             Some("mem_1".to_string()),
@@ -251,7 +251,7 @@ async fn persistence_survives_restart() {
     let task_id;
     let member_id;
     {
-        let sys = Arc::new(XuanjiSystem::with_config(cfg.clone()).unwrap());
+        let sys = Arc::new(XuanjiSystem::with_config(cfg.clone()).await.unwrap());
         let (aln, admin, tok) = sys
             .bootstrap("持久化璇玑", "管理员", "admin@p.io")
             .await
@@ -287,7 +287,7 @@ async fn persistence_survives_restart() {
     }
 
     // 重启：从 SQLite 重放
-    let sys2 = Arc::new(XuanjiSystem::with_config(cfg).unwrap());
+    let sys2 = Arc::new(XuanjiSystem::with_config(cfg).await.unwrap());
     assert!(
         sys2.store.get_task(&task_id).await.is_some(),
         "重启后任务应仍存在"
@@ -314,7 +314,7 @@ async fn quota_enforcement() {
     // 成员配额：admin 已占 1 个名额，max_members=1 时不能再邀请
     let mut cfg = AppConfig::default();
     cfg.quotas.max_members = 1;
-    let sys = XuanjiSystem::with_config(cfg).unwrap();
+    let sys = XuanjiSystem::with_config(cfg).await.unwrap();
     let (aln, admin, _t) = sys.bootstrap("配额璇玑", "A", "a@q.io").await.unwrap();
     let r = sys
         .invite_member(
@@ -334,7 +334,7 @@ async fn quota_enforcement() {
     // 任务配额：max_tasks=1 时第二个任务应被拒绝
     let mut cfg2 = AppConfig::default();
     cfg2.quotas.max_tasks = 1;
-    let sys2 = XuanjiSystem::with_config(cfg2).unwrap();
+    let sys2 = XuanjiSystem::with_config(cfg2).await.unwrap();
     let (aln2, admin2, _t2) = sys2.bootstrap("配额璇玑2", "A", "a@q2.io").await.unwrap();
     sys2
         .create_task(&admin2.id, &aln2.id, "任务1", "d", Priority::Low)
@@ -344,4 +344,84 @@ async fn quota_enforcement() {
         .create_task(&admin2.id, &aln2.id, "任务2", "d", Priority::Low)
         .await;
     assert!(r2.is_err(), "超过任务上限应被拒绝");
+}
+
+// ---------------- PostgreSQL 端到端（可选） ----------------
+// 需设置环境变量 XUANJI_TEST_PG_URL（如 postgres://postgres:pass@127.0.0.1:35432/xuanji_test），
+// 未设置时测试自动跳过（便于无 PG 环境的 CI）。
+
+fn pg_test_url() -> Option<String> {
+    std::env::var("XUANJI_TEST_PG_URL").ok()
+}
+
+#[tokio::test]
+async fn postgres_store_persists_and_replays() {
+    let Some(url) = pg_test_url() else {
+        eprintln!("SKIP postgres_store_persists_and_replays: 未设置 XUANJI_TEST_PG_URL");
+        return;
+    };
+    let ts = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis();
+    let token = format!("pg_token_{}_{}", std::process::id(), ts);
+    let member = format!("pg_member_{}_{}", std::process::id(), ts);
+    {
+        let s = Store::open(Backend::Postgres, &url).await.unwrap();
+        s.set_token(&token, &member).await;
+        assert_eq!(s.member_by_token(&token).await, Some(member.clone()));
+    }
+    // 模拟重启：重放 PG，令牌仍可用
+    {
+        let s2 = Store::open(Backend::Postgres, &url).await.unwrap();
+        assert_eq!(
+            s2.member_by_token(&token).await,
+            Some(member.clone()),
+            "重启后令牌应仍可用（PG 持久化）"
+        );
+    }
+}
+
+#[tokio::test]
+async fn postgres_system_survives_restart() {
+    let Some(url) = pg_test_url() else {
+        eprintln!("SKIP postgres_system_survives_restart: 未设置 XUANJI_TEST_PG_URL");
+        return;
+    };
+    let cfg = AppConfig {
+        persist: true,
+        backend: Backend::Postgres,
+        db_url: url,
+        ..Default::default()
+    };
+    let token;
+    let task_id;
+    {
+        let sys = Arc::new(XuanjiSystem::with_config(cfg.clone()).await.unwrap());
+        let (aln, admin, tok) = sys
+            .bootstrap("PG璇玑", "管理员", "pg@p.io")
+            .await
+            .unwrap();
+        token = tok;
+        let t = sys
+            .create_task(&admin.id, &aln.id, "PG任务", "desc", Priority::High)
+            .await
+            .unwrap();
+        let t = sys
+            .assign_task(&admin.id, &t.id, vec![admin.id.clone()])
+            .await
+            .unwrap();
+        task_id = t.id.clone();
+        drop(sys);
+    }
+    // 重启：从 PG 重放
+    let sys2 = Arc::new(XuanjiSystem::with_config(cfg).await.unwrap());
+    assert!(
+        sys2.store.get_task(&task_id).await.is_some(),
+        "重启后任务应仍存在（PG 持久化）"
+    );
+    assert!(
+        sys2.store.member_by_token(&token).await.is_some(),
+        "重启后管理员令牌应可认证（PG 持久化）"
+    );
 }

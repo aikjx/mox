@@ -1,4 +1,4 @@
-﻿# PT-DOC-05 能力融合清单 (GR-STD × PT-Primi)
+# PT-DOC-05 能力融合清单 (GR-STD × PT-Primi)
 
 融合 crate 数：**13**
 

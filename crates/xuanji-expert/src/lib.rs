@@ -27,6 +27,8 @@ pub mod rbac;
 pub mod flow_loader;
 /// 插件化运行时：参考 DeepSeek Harness "Everything is a Plugin" 范式的共享上下文与瀑布扩展点
 pub mod harness;
+/// 租户策略分层 + 治理 8 闸门全量门禁（I-06 / G3·G6·G8 补全）
+pub mod tenant_policy;
 
 pub use context::{CompatibilityRegistry, GovernContext, LoopGuard, LoopPolicy, McpTool, Principal, ResourceQuota, SkillRef, Tenant};
 pub use expert::{dispatch, Constraint, Expert, ExpertOpinion, Risk, Suggestion};
