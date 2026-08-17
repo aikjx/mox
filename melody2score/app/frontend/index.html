@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Melody2Score · 哼唱旋律转谱（企业级）</title>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#161d2e; --panel2:#1d2740; --line:#2a3654;
+    --text:#e6ecf5; --muted:#8a98b5; --accent:#4f9dff; --accent2:#36d399;
+    --warn:#ffb454; --danger:#ff6b6b; --radius:14px; --shadow:0 8px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:linear-gradient(160deg,#0c1018,#121a2c);color:var(--text);min-height:100vh}
+  header{display:flex;align-items:center;gap:14px;padding:16px 26px;border-bottom:1px solid var(--line);
+    background:rgba(20,27,44,.7);backdrop-filter:blur(8px);position:sticky;top:0;z-index:10}
+  header .logo{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));font-weight:800;color:#06101f}
+  header h1{font-size:18px;margin:0;font-weight:700}
+  header .sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .wrap{display:grid;grid-template-columns:340px 1fr;gap:18px;padding:18px 26px;max-width:1400px;margin:0 auto}
+  @media(max-width:980px){.wrap{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+  .panel h2{font-size:14px;margin:0 0 14px;color:var(--muted);font-weight:600;letter-spacing:.4px;text-transform:uppercase}
+  .drop{position:relative}
+  .dropzone{border:1.5px dashed var(--line);border-radius:12px;padding:26px 14px;text-align:center;cursor:pointer;
+    transition:.2s;background:var(--panel2)}
+  .dropzone:hover{border-color:var(--accent);background:#1a2238}
+  .dropzone.drag{border-color:var(--accent2);background:#172a23}
+  .dropzone p{margin:6px 0;color:var(--muted);font-size:13px}
+  .dropzone .big{color:var(--text);font-weight:600;font-size:14px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  button{font-family:inherit;cursor:pointer;border:none;border-radius:10px;padding:10px 14px;font-size:13px;
+    font-weight:600;transition:.15s;color:#06101f}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),#3b82f6)}
+  .btn-accent{background:linear-gradient(135deg,var(--accent2),#1fae7a);color:#04231a}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+  .btn-ghost:hover{border-color:var(--accent)}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .rec-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--danger);margin-right:6px;
+    animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+  label.field{display:block;margin:12px 0;font-size:12.5px;color:var(--muted)}
+  label.field span{display:block;margin-bottom:5px}
+  select,input[type=range]{width:100%}
+  select{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px}
+  .samples{margin-top:12px;max-height:230px;overflow:auto;border-top:1px solid var(--line);padding-top:10px}
+  .samples .s{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13px}
+  .samples .s:hover{background:var(--panel2)}
+  .samples .s small{color:var(--muted)}
+  .status{font-size:12.5px;color:var(--muted);margin-top:8px;min-height:18px}
+  .status.err{color:var(--danger)}
+  .status.ok{color:var(--accent2)}
+  .metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px}
+  .metric .v{font-size:20px;font-weight:800;color:var(--accent)}
+  .metric .k{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .jianpu{background:#0b1020;border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:14px;
+    font-family:"Cascadia Code",Consolas,monospace;font-size:18px;line-height:1.9;word-break:break-word;color:#dfe9ff}
+  .chartbox{margin-top:14px}
+  canvas{width:100%;background:#0b1020;border:1px solid var(--line);border-radius:10px;display:block}
+  .note-table{max-height:300px;overflow:auto;margin-top:12px;border:1px solid var(--line);border-radius:10px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);position:sticky;top:0;background:var(--panel2)}
+  tr:hover td{background:var(--panel2)}
+  .empty{color:var(--muted);text-align:center;padding:50px 10px;font-size:14px}
+  .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;background:var(--panel2);
+    border:1px solid var(--line);color:var(--muted);margin-left:6px}
+  .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+  .section-title{display:flex;align-items:center;gap:10px;margin:0 0 8px}
+  .section-title h2{margin:0}
+  .save-row{margin-top:10px;display:flex;gap:10px}
+  .save-row input{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    border-radius:8px;padding:9px 12px;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">M♪</div>
+  <div>
+    <h1>Melody2Score · 哼唱旋律转谱</h1>
+    <div class="sub">企业级可视化 · 音频/录音 → 实时歌谱（简谱+五线谱）→ 一键导出 Markdown</div>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- 左侧：输入与参数 -->
+  <div class="panel drop">
+    <h2>输入源</h2>
+    <div class="dropzone" id="dropzone">
+      <p class="big">点击或拖拽音频到此处</p>
+      <p>支持 mp3 / wav / flac（自动重采样 16k 单声道）</p>
+      <input type="file" id="fileInput" accept="audio/*" hidden>
+    </div>
+    <div class="row">
+      <button class="btn-ghost" id="recBtn">🎙️ 录音 5s</button>
+      <button class="btn-primary" id="recogBtn" disabled>识别转谱</button>
+    </div>
+    <div class="status" id="status">请选择音频或录音。</div>
+
+    <h2 style="margin-top:18px">参数</h2>
+    <label class="field"><span>音高模型</span>
+      <select id="model">
+        <option value="tiny" selected>tiny（快·板端）</option>
+        <option value="small">small（均衡）</option>
+        <option value="full">full（高精度·PC）</option>
+      </select>
+    </label>
+    <label class="field"><span>降噪（谱减）</span>
+      <select id="denoise"><option value="1" selected>开启</option><option value="0">关闭（板端省内存）</option></select>
+    </label>
+    <label class="field"><span>帧移 hop(ms) · <i id="hopVal">10</i></span>
+      <input type="range" id="hop" min="5" max="30" step="5" value="10">
+    </label>
+
+    <h2 style="margin-top:18px">内置经典样例</h2>
+    <div class="samples" id="samples"><div class="empty">加载中…</div></div>
+  </div>
+
+  <!-- 右侧：结果 -->
+  <div>
+    <div class="panel">
+      <div class="toolbar">
+        <div class="section-title"><h2>识别结果</h2></div>
+        <span class="pill" id="backendPill" style="display:none"></span>
+        <div style="flex:1"></div>
+        <button class="btn-accent" id="saveBtn" disabled>💾 保存 Markdown</button>
+      </div>
+
+      <div id="resultEmpty" class="empty">尚无结果。选择音频 / 录音 / 点击左侧样例，开始转谱。</div>
+
+      <div id="resultBody" style="display:none">
+        <div class="metric-grid">
+          <div class="metric"><div class="v" id="mKey">—</div><div class="k">调式</div></div>
+          <div class="metric"><div class="v" id="mBpm">—</div><div class="k">速度 BPM</div></div>
+          <div class="metric"><div class="v" id="mNotes">—</div><div class="k">音符数</div></div>
+        </div>
+
+        <h2 class="section-title" style="margin-top:16px"><h2>简谱</h2></h2>
+        <div class="jianpu" id="jianpu">—</div>
+
+        <h2 class="section-title" style="margin-top:16px"><h2>五线谱（实时渲染）</h2></h2>
+        <div class="chartbox"><canvas id="staff" height="220"></canvas></div>
+
+        <h2 class="section-title" style="margin-top:16px"><h2>音高轮廓 + 量化音符</h2></h2>
+        <div class="chartbox"><canvas id="pitch" height="200"></canvas></div>
+
+        <h2 class="section-title" style="margin-top:16px"><h2>音符明细</h2></h2>
+        <div class="note-table"><table id="noteTab">
+          <thead><tr><th>#</th><th>MIDI</th><th>音名</th><th>起始(s)</th><th>时长(s)</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+
+        <div class="save-row">
+          <input id="titleInput" placeholder="报告标题（用于 MD 文件名）" value="未命名旋律">
+          <span class="pill" id="perfPill"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+let currentResult = null;      // 后端返回的结构
+let pendingFile = null;         // 待识别的 File 对象
+let mediaRecorder = null, recChunks = [];
+
+/* ---------- 输入处理 ---------- */
+const dz = $('#dropzone');
+dz.onclick = () => $('#fileInput').click();
+$('#fileInput').onchange = e => { if(e.target.files[0]) setFile(e.target.files[0]); };
+['dragover','dragenter'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag')}));
+['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag')}));
+dz.addEventListener('drop', e=>{ const f=e.dataTransfer.files[0]; if(f) setFile(f); });
+
+function setFile(f){
+  pendingFile = f;
+  $('#status').textContent = `已选择：${f.name}（${(f.size/1024).toFixed(0)} KB）`;
+  $('#status').className='status ok';
+  $('#recogBtn').disabled = false;
+}
+
+/* ---------- 录音 ---------- */
+$('#recBtn').onclick = async () => {
+  if(mediaRecorder && mediaRecorder.state==='recording'){
+    mediaRecorder.stop(); return;
+  }
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({audio:{sampleRate:16000}});
+    mediaRecorder = new MediaRecorder(stream);
+    recChunks = [];
+    mediaRecorder.ondataavailable = e => recChunks.push(e.data);
+    mediaRecorder.onstop = async () => {
+      $('#recBtn').innerHTML = '🎙️ 录音 5s';
+      const blob = new Blob(recChunks,{type:'audio/webm'});
+      const buf = await blob.arrayBuffer();
+      const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+      $('#status').textContent='录音完成，识别中…'; $('#status').className='status ok';
+      recognizeRecord(b64);
+      stream.getTracks().forEach(t=>t.stop());
+    };
+    mediaRecorder.start();
+    $('#recBtn').innerHTML = '<span class="rec-dot"></span>停止录音';
+  }catch(err){ $('#status').textContent='无法访问麦克风：'+err.message; $('#status').className='status err'; }
+};
+
+/* ---------- 参数 ---------- */
+$('#hop').oninput = e => $('#hopVal').textContent = e.target.value;
+
+/* ---------- 识别（文件） ---------- */
+$('#recogBtn').onclick = () => {
+  if(!pendingFile) return;
+  const fd = new FormData();
+  fd.append('file', pendingFile);
+  fd.append('model_size', $('#model').value);
+  fd.append('denoise', $('#denoise').value==='1');
+  fd.append('hop', $('#hop').value);
+  postRecognize('/api/recognize', fd, 'multipart/form-data');
+};
+
+function recognizeRecord(b64){
+  const fd = new FormData();
+  fd.append('audio_b64', b64);
+  fd.append('model_size', $('#model').value);
+  fd.append('denoise', $('#denoise').value==='1');
+  fd.append('hop', $('#hop').value);
+  postRecognize('/api/recognize-record', fd, 'multipart/form-data');
+}
+
+async function postRecognize(url, fd, _ct){
+  $('#status').textContent='识别中…'; $('#status').className='status ok';
+  try{
+    const r = await fetch(url,{method:'POST',body:fd});
+    const j = await r.json();
+    if(!r.ok){ throw new Error(j.detail||'识别失败'); }
+    currentResult = j;
+    render(j);
+    $('#status').textContent = `完成 · 后端=${j.backend} · ${j.note_count} 个音符`;
+    $('#status').className='status ok';
+    $('#saveBtn').disabled = false;
+  }catch(err){
+    $('#status').textContent = '错误：'+err.message; $('#status').className='status err';
+  }
+}
+
+/* ---------- 样例列表 ---------- */
+fetch('/api/samples').then(r=>r.json()).then(list=>{
+  const box = $('#samples');
+  if(!list.length){ box.innerHTML='<div class="empty">无样例（先运行 gen_classic_melodies.py）</div>'; return; }
+  box.innerHTML='';
+  const seen = new Set();
+  list.forEach(it=>{
+    if(seen.has(it.title_zh)) return; seen.add(it.title_zh);
+    const div = document.createElement('div'); div.className='s';
+    div.innerHTML = `<span>${it.title_zh} <small>${it.title_en}</small></span><small>${it.timbre}</small>`;
+    div.onclick = () => {
+      $('#status').textContent = `识别样例：${it.title_zh}…`; $('#status').className='status ok';
+      const fd = new FormData();
+      fd.append('name', it.file.split('/').pop());
+      fd.append('model_size', $('#model').value);
+      fd.append('denoise', $('#denoise').value==='1');
+      fd.append('hop', $('#hop').value);
+      postRecognize('/api/recognize-sample', fd, 'multipart/form-data');
+    };
+    box.appendChild(div);
+  });
+});
+
+/* ---------- 渲染结果 ---------- */
+function render(j){
+  $('#resultEmpty').style.display='none';
+  $('#resultBody').style.display='block';
+  $('#mKey').textContent = j.key.tonic + ' ' + (j.key.mode==='minor'?'小调':'大调');
+  $('#mBpm').textContent = j.bpm;
+  $('#mNotes').textContent = j.note_count;
+  $('#jianpu').textContent = j.jianpu || '（无声）';
+  $('#backendPill').style.display='inline-block';
+  $('#backendPill').textContent = '后端: '+j.backend;
+  $('#perfPill').textContent = `预处理 ${j.perf.preprocess_ms}ms · 音高 ${j.perf.pitch_ms}ms · 解析 ${j.perf.parse_ms}ms · 帧 ${j.perf.pitch_frames}`;
+  drawStaff(j.notes, j.key);
+  drawPitch(j.notes);
+  const tb = $('#noteTab tbody'); tb.innerHTML='';
+  j.notes.forEach((n,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${i+1}</td><td>${n.midi}</td><td>${n.name}</td><td>${n.start}</td><td>${n.dur}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+/* ---------- 五线谱 Canvas 渲染 ---------- */
+function drawStaff(notes, key){
+  const cv = $('#staff'); const ctx = cv.getContext('2d');
+  const W = cv.clientWidth, H = 220; cv.width = W; cv.height = H;
+  ctx.clearRect(0,0,W,H);
+  const padL=40, padR=20, lineGap=11;
+  const topY = 35, staffH = lineGap*4;
+  // 五线
+  ctx.strokeStyle='#2a3654'; ctx.lineWidth=1;
+  for(let i=0;i<5;i++){ const y=topY+i*lineGap; ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(W-padR,y); ctx.stroke(); }
+  // 谱号区
+  ctx.fillStyle='#4f9dff'; ctx.font='22px serif';
+  ctx.fillText('𝄞', 12, topY+staffH-4);
+
+  if(!notes.length){ ctx.fillStyle='#8a98b5'; ctx.font='13px sans-serif'; ctx.fillText('（无可视音符）',padL,topY+staffH/2); return; }
+
+  // 计算音高范围与映射：以 MIDI 映射到线与间（每半音 = lineGap/2，参考 G4=55 on staff）
+  const minM = Math.min(...notes.map(n=>n.midi))-2;
+  const maxM = Math.max(...notes.map(n=>n.midi))+2;
+  const span = Math.max(1, maxM-minM);
+  const yOf = m => topY + staffH - ((m - minM)/span)*(staffH-2) - 1;
+
+  const totalDur = notes[notes.length-1].end || 1;
+  const xOf = t => padL + (t/totalDur)*(W-padL-padR);
+  const spacing = (W-padL-padR)/Math.max(notes.length,1);
+
+  ctx.fillStyle='#36d399';
+  notes.forEach((n,i)=>{
+    const x = xOf(n.start==null?i*0.1:n.start);
+    const y = yOf(n.midi);
+    const r = 7;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+    if((n.midi%12)===1 || (n.midi%12)===3 || (n.midi%12)===6 || (n.midi%12)===8 || (n.midi%12)===10 || (n.midi%12)===0){
+      // 升号提示（落在间/附加线时画短横线）
+    }
+    // 符干
+    ctx.strokeStyle='#36d399'; ctx.beginPath(); ctx.moveTo(x+r*0.7,y); ctx.lineTo(x+r*0.7,y-22); ctx.stroke();
+    // 时长条
+    const w = Math.max(spacing*0.6, xOf(Math.min(n.end,n.end))*0 + 2);
+    if(n.dur > (totalDur/notes.length)*1.5){
+      ctx.fillStyle='#1fae7a'; ctx.fillRect(x+r*0.7, y-22, Math.min(n.dur/totalDur*(W-padL-padR),spacing*3), 2);
+    }
+  });
+  ctx.fillStyle='#8a98b5'; ctx.font='11px sans-serif';
+  ctx.fillText('低',12,topY+staffH+12); ctx.fillText('高',12,topY-8);
+}
+
+/* ---------- 音高轮廓（用音符起止模拟，真实帧后端未回传，这里量化展示） ---------- */
+function drawPitch(notes){
+  const cv = $('#pitch'); const ctx = cv.getContext('2d');
+  const W = cv.clientWidth, H = 200; cv.width=W; cv.height=H;
+  ctx.clearRect(0,0,W,H);
+  if(!notes.length) return;
+  const minM = Math.min(...notes.map(n=>n.midi))-2;
+  const maxM = Math.max(...notes.map(n=>n.midi))+2;
+  const span = Math.max(1,maxM-minM);
+  const padT=14, padB=14;
+  const yOf = m => padT + (1-(m-minM)/span)*(H-padT-padB);
+  const total = notes[notes.length-1].end || 1;
+  const xOf = t => (t/total)*(W-10)+5;
+
+  // 网格
+  ctx.strokeStyle='#1d2740'; ctx.lineWidth=1;
+  for(let g=0;g<=4;g++){ const y=padT+g*(H-padT-padB)/4; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+  // 量化阶梯（每个音符持续期间音高恒定）
+  ctx.strokeStyle='#4f9dff'; ctx.lineWidth=2; ctx.beginPath();
+  let first=true;
+  notes.forEach(n=>{
+    const x1=xOf(n.start), x2=xOf(n.end), y=yOf(n.midi);
+    if(first){ ctx.moveTo(x1,y); first=false; }
+    ctx.lineTo(x1,y); ctx.lineTo(x2,y);
+  });
+  ctx.stroke();
+  // 节点
+  ctx.fillStyle='#4f9dff';
+  notes.forEach(n=>{ const x=xOf((n.start+n.end)/2), y=yOf(n.midi); ctx.beginPath(); ctx.arc(x,y,2.5,0,7); ctx.fill(); });
+}
+
+/* ---------- 保存 MD ---------- */
+$('#saveBtn').onclick = async () => {
+  const title = $('#titleInput').value || '未命名旋律';
+  const body = { title, result: currentResult, source: pendingFile?pendingFile.name:'浏览器录音/样例' };
+  $('#status').textContent='保存中…';
+  try{
+    const r = await fetch('/api/save-md',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const j = await r.json();
+    if(!r.ok) throw new Error(j.detail||'保存失败');
+    $('#status').textContent='已保存：'+j.file; $('#status').className='status ok';
+    window.open('/api/download/'+encodeURIComponent(j.file),'_blank');
+  }catch(err){ $('#status').textContent='保存错误：'+err.message; $('#status').className='status err'; }
+};
+</script>
+</body>
+</html>
