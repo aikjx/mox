@@ -49,8 +49,33 @@ def main():
         cfg.intra_op_threads = args.threads
 
     m = Melody2Score(cfg)
+
+    # 实时进度反馈（长音频下避免「卡死」观感）：优先 tqdm，缺失则降级为分段打印
+    try:
+        from tqdm import tqdm
+        pbar = tqdm(total=100, desc="识别中", unit="%", ncols=60)
+
+        def progress_cb(stage, msg, fraction):
+            pbar.n = int(fraction * 100)
+            pbar.set_description(msg)
+            pbar.refresh()
+
+        def _done():
+            pbar.n = 100
+            pbar.refresh()
+            pbar.close()
+    except Exception:
+        pbar = None
+
+        def progress_cb(stage, msg, fraction):
+            print(f"  [{int(fraction*100):3d}%] {msg}")
+
+        def _done():
+            pass
+
     res = m.run(audio_path=args.input, record_seconds=args.record,
-                out_xml=args.out, ms_score=args.mscore)
+                out_xml=args.out, ms_score=args.mscore, progress_cb=progress_cb)
+    _done()
     m.print_summary(res)
 
 

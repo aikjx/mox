@@ -51,6 +51,9 @@ def _load_source(source: Dict, cfg: Config) -> Tuple[np.ndarray, int]:
     if kind == "sample":
         y = capture.load_audio(os.path.join(ROOT, source["name"]), cfg.sr)
         return np.asarray(y, dtype=np.float32), cfg.sr
+    if kind == "array":
+        # 已解码的 (y, sr)：直接复用，避免 WebUI 重复 wav 编解码往返（性能/延迟）
+        return np.asarray(source["y"], dtype=np.float32), int(source["sr"])
     raise ValueError(f"未知音源类型: {kind}")
 
 
@@ -141,12 +144,20 @@ class Melody2Score:
     def __init__(self, cfg: Optional[Config] = None):
         self.cfg = cfg or Config()
 
-    def recognize(self, source: Dict) -> Dict:
-        """source: {kind:'file'|'sample'|'record', data/bytes/name, cfg?, source?}"""
+    def recognize(self, source: Dict, progress_cb=None) -> Dict:
+        """source: {kind:'file'|'sample'|'record', data/bytes/name, cfg?, source?}
+
+        progress_cb(stage:str, msg:str, fraction:float) 可选，用于 CLI/WebUI
+        实时进度反馈，避免长音频下「假死」观感。fraction 取值 0~1。
+        """
         cfg = self.cfg
         try:
+            if progress_cb:
+                progress_cb("load", "载入音频…", 0.02)
             y, sr = _load_source(source, cfg)
 
+            if progress_cb:
+                progress_cb("preprocess", "预处理/降噪…", 0.12)
             t0 = time.time()
             y = preprocess.preprocess(y, sr, cfg.enable_denoise)
             t_pre = time.time() - t0
@@ -157,14 +168,19 @@ class Melody2Score:
             used_backend = "auto"
             last_pts: List[Dict] = []
 
+            # 复用同一个 PitchDetector 实例跨多次 run，避免 robust 模式反复
+            # 加载 ONNX/torch 模型（单次加载即数百 ms~数 s，是卡顿主因之一）
+            det = pitch.PitchDetector(
+                model_size=cfg.model_size, conf_thresh=cfg.conf_thresh,
+                hop=cfg.hop, intra_op_threads=cfg.intra_op_threads,
+                backend="auto", sr=sr,
+                fmin=getattr(cfg, "fmin", 50.0), fmax=getattr(cfg, "fmax", 1100.0),
+                preferred_backend=cfg.preferred_backend,
+                inference_timeout=cfg.inference_timeout)
             for k in range(n_runs):
-                det = pitch.PitchDetector(
-                    model_size=cfg.model_size, conf_thresh=cfg.conf_thresh,
-                    hop=cfg.hop, intra_op_threads=cfg.intra_op_threads,
-                    backend="auto", sr=sr,
-                    fmin=getattr(cfg, "fmin", 50.0), fmax=getattr(cfg, "fmax", 1100.0),
-                    preferred_backend=cfg.preferred_backend,
-                    inference_timeout=cfg.inference_timeout)
+                if progress_cb:
+                    progress_cb("pitch", f"音高检测 ({k+1}/{n_runs})…",
+                                0.12 + 0.72 * (k + 1) / n_runs)
                 t0 = time.time()
                 notes, pts = _segment_once(y, sr, cfg, k, det)
                 t_pitch_total += time.time() - t0
@@ -181,6 +197,8 @@ class Melody2Score:
                 merge_info = None
 
             t0 = time.time()
+            if progress_cb:
+                progress_cb("parse", "节拍/调式/音符解析…", 0.92)
             bpm = analysis.detect_bpm(y, sr, cfg.bpm_fallback)
             key_name = analysis.estimate_key(y, sr, notes)
             t_parse = time.time() - t0
@@ -215,10 +233,12 @@ class Melody2Score:
 
     # ---------- 便捷入口（面向 CLI / demo） ----------
     def run(self, audio_path: Optional[str] = None, record_seconds: int = 0,
-            out_xml: Optional[str] = None, ms_score: Optional[str] = None) -> Dict:
+            out_xml: Optional[str] = None, ms_score: Optional[str] = None,
+            progress_cb=None) -> Dict:
         """一键识别：文件 / 现场录音二选一，可选导出 musicxml。
 
-        返回与 recognize 一致的结构化结果。"""
+        返回与 recognize 一致的结构化结果。progress_cb 可选，用于实时进度。
+        """
         if record_seconds and record_seconds > 0:
             import sounddevice as sd  # 延迟导入，避免无音频设备环境报错
             y = capture.record(seconds=record_seconds, sr=self.cfg.sr)
@@ -232,7 +252,7 @@ class Melody2Score:
         else:
             raise ValueError("需提供 audio_path 或 record_seconds")
 
-        res = self.recognize(source)
+        res = self.recognize(source, progress_cb=progress_cb)
 
         if out_xml:
             self._export_xml(res, out_xml, ms_score)
