@@ -159,3 +159,19 @@ tools/info-graph/target/release/info-graph export  --graph graph.enterprise.json
 自动豁免（派生代码不强制溯源）：路径含 `target/`、`node_modules/`、`frontend/dist/`、`.workbuddy/`、`examples/out/`；诚实保留白名单 `ALLOWED_DEVIATIONS`（如 `snake.py` 游戏 demo）。
 
 > 当前基线（实测）：8 项已知问题 + 覆盖率 **96.6%**（含 melody2score/core 两处孤儿、DATA_R1S~R4S 四张数据表未挂接需求根，均为已知债务，仅阻断「新增」）。本地复跑：`python3 tools/guantu_gate.py`。
+
+
+## 术语表 (Glossary)
+
+> 本文术语以 [docs/GLOSSARY.md](../GLOSSARY.md) 为**唯一基准（Single Source of Truth）**；完整术语见该规范表，以下为高频术语速查。
+
+| 术语 | 含义 |
+|------|------|
+| **璇玑 (Xuánjī)** | 归一化 IR 驱动的元调度诊断系统（`xuanji-expert` crate） |
+| **关图 / GR-STD** | 信息关联关系图开发规范 V1.0，「一切皆是信息」 |
+| **AA-STD** | 璇玑-全维需求业务处理流程图-归一化企业级，融合域需求事实基准 |
+| **PT-Primi / PrimiFlow** | 全域拓扑原语架构（κ-τ 调度，守恒律 `C² = κ² + τ²`） |
+| **OUS** | operator-unified-system，算子统一系统 |
+| **双璇玑十四维** | 业务 7 维 + 开发 7 维并行诊断 |
+| **TraceMatrix / 六维绑定** | `REQ→FUN→BIZ→ALG→TSK→COD` 五向绑定可追溯 |
+| **⛨ 璇玑验证网关** | 最高权限验证网关，闭环出码/出图前最终裁决 |
