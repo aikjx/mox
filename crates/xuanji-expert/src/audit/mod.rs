@@ -1,7 +1,7 @@
 ﻿//! 外部审计 Sink 模块
 //!
 //! AuditChain（内存哈希链）是内部自验工具，不是合规证据。
-//! 本模块提供外部持久化审计接口，对接 Syslog / S3(WORM) / NATS / RabbitMQ，
+//! 本模块提供外部持久化审计接口，对接 Syslog / S3(WORM)，
 //! 满足 SOC2 Type II / GDPR / ISO27001 / HIPAA 合规要求。
 //!
 //! 核心类型：
@@ -9,13 +9,15 @@
 //! - AuditSink trait：任意存储后端实现此 trait 即可
 //! - AuditContext：内部链 + 外部 sink 双写，统一入口
 //!
-//! 四个后端对比：
+//! 后端对比（均为真实可用实现）：
 //! | 后端 | 部署依赖 | 持久化 | 适用场景 |
 //! |------|---------|--------|---------|
 //! | SyslogSink | syslog 服务器（如 rsyslog → ELK/SIEM） | 否（轮询） | 实时告警 |
 //! | S3Sink | S3 兼容存储（MinIO/COS/OBS） | WORM | 合规存档 |
-//! | NatsSink | NATS 单二进制（JetStream） | JetStream | 高吞吐事件流 |
-//! | RabbitMqSink | RabbitMQ（AMQP 0-9-1） | durable queue | 企业消息中间件（已有RabbitMQ时复用） |
+//!
+//! > 说明：NATS / RabbitMQ 后端曾为占位伪代码（无依赖、publish 恒报错），
+//! > 已按"禁伪代码"原则删除；如确有消息队列审计需求，可基于
+//! > [`AuditSink`] trait 在部署侧接入（trait 契约稳定，实现即插即用）。
 //!
 //! 使用示例：
 //! ```rust
@@ -25,7 +27,7 @@
 //!     AuditActor, AuditAction, AuditOutcome, AuditSeverity, AuditResource,
 //! };
 //!
-//! // 组合多个 sink（示例用 NoopSink，真实场景替换为 SyslogSink/S3Sink/NatsSink/RabbitMqSink）
+//! // 组合多个 sink（示例用 NoopSink，真实场景替换为 SyslogSink/S3Sink）
 //! let multi = MultiSink::new()
 //!     .with_sink(Box::new(NoopSink));
 //!
@@ -47,8 +49,6 @@ mod sink;
 mod event;
 mod syslog;
 mod s3;
-mod nats;
-mod rabbitmq;
 pub mod error;
 pub mod integration;
 
@@ -61,5 +61,3 @@ pub use event::{
 pub use integration::AuditContext;
 pub use syslog::SyslogSink;
 pub use s3::S3Sink;
-pub use nats::NatsSink;
-pub use rabbitmq::RabbitMqSink;

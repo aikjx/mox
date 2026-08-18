@@ -41,7 +41,7 @@ pub use audit::{
     AuditContext, AuditSink, AuditError,
     ExtAuditEvent, AuditAction, AuditOutcome,
     AuditSeverity, AuditActor, AuditResource,
-    SyslogSink, S3Sink, NatsSink, RabbitMqSink, NoopSink, MultiSink, FlushPolicy,
+    SyslogSink, S3Sink, NoopSink, MultiSink, FlushPolicy,
 };
 pub use rbac::{
     check, check_with_audit, PermissionCheck, PermissionResult,

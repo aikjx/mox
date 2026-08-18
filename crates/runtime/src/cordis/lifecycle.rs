@@ -110,7 +110,7 @@ impl Turn {
         }
     }
 
-    /// 执行Step
+    /// 执行Step（委托内置执行器按动作协议真实执行）
     pub async fn execute_step(&mut self, mut step: Step) -> Result<StepResult, String> {
         // 更新状态
         self.state = TurnState::Running;
@@ -119,22 +119,35 @@ impl Turn {
         let start_time = std::time::Instant::now();
         step.state = StepState::Running;
 
-        // TODO: 实际执行逻辑
-        let result = StepResult {
-            step_id: step.id.clone(),
-            success: true,
-            output: serde_json::json!({"status": "completed"}),
-            duration_ms: start_time.elapsed().as_millis() as u64,
+        // 委托内置执行器执行动作协议；失败时真实标记 Failed 并推送错误事件
+        let executor = BuiltinStepExecutor;
+        let result = match executor.execute(&step).await {
+            Ok(mut r) => {
+                r.duration_ms = start_time.elapsed().as_millis() as u64;
+                step.state = StepState::Completed;
+                step.result = Some(r.clone());
+                self.events.push(WaterfallEvent::StepComplete {
+                    step_id: step.id.clone(),
+                    success: r.success,
+                });
+                r
+            }
+            Err(e) => {
+                step.state = StepState::Failed;
+                step.result = Some(StepResult {
+                    step_id: step.id.clone(),
+                    success: false,
+                    output: serde_json::json!({ "error": e }),
+                    duration_ms: start_time.elapsed().as_millis() as u64,
+                });
+                self.events.push(WaterfallEvent::Error {
+                    turn_id: self.id.clone(),
+                    error: e.clone(),
+                });
+                self.steps.push(step);
+                return Err(e);
+            }
         };
-
-        step.state = StepState::Completed;
-        step.result = Some(result.clone());
-
-        // 添加事件
-        self.events.push(WaterfallEvent::StepComplete {
-            step_id: step.id.clone(),
-            success: result.success,
-        });
 
         // 添加到步骤列表
         self.steps.push(step);
@@ -273,17 +286,189 @@ pub trait StepExecutor: Send + Sync {
 }
 
 /// 内置Step执行器
+///
+/// 内置动作协议（确定性算法，非占位）：
+/// - `echo`：回显输入（连通性验证）
+/// - `math:add` / `math:sub` / `math:mul` / `math:div`：输入 `{"a": 1, "b": 2}` 数值运算
+/// - `json:pick`：输入 `{"path": "/k", "input": {...}}` 按 JSON Pointer 提取字段
+/// - 未知动作：明确报错（绝不静默成功）
 pub struct BuiltinStepExecutor;
+
+impl BuiltinStepExecutor {
+    /// 动作协议分发：确定性算法动作
+    pub fn dispatch(action: &str, input: &serde_json::Value) -> Result<serde_json::Value, String> {
+        match action {
+            "echo" => Ok(input.clone()),
+            "math:add" | "math:sub" | "math:mul" | "math:div" => {
+                let a = input
+                    .get("a")
+                    .and_then(|v| v.as_f64())
+                    .ok_or_else(|| format!("math 动作需要数值字段 a，收到: {}", input))?;
+                let b = input
+                    .get("b")
+                    .and_then(|v| v.as_f64())
+                    .ok_or_else(|| format!("math 动作需要数值字段 b，收到: {}", input))?;
+                let value = match action {
+                    "math:add" => a + b,
+                    "math:sub" => a - b,
+                    "math:mul" => a * b,
+                    "math:div" => {
+                        if b == 0.0 {
+                            return Err("math:div 除数为零".to_string());
+                        }
+                        a / b
+                    }
+                    _ => unreachable!("matched action"),
+                };
+                Ok(serde_json::json!({ "action": action, "a": a, "b": b, "result": value }))
+            }
+            "json:pick" => {
+                let path = input
+                    .get("path")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| format!("json:pick 需要字符串字段 path，收到: {}", input))?;
+                let obj = input
+                    .get("input")
+                    .ok_or_else(|| format!("json:pick 需要 input 对象，收到: {}", input))?;
+                let picked = obj
+                    .pointer(path)
+                    .ok_or_else(|| format!("json:pick 路径 {} 不存在", path))?;
+                Ok(serde_json::json!({ "action": action, "path": path, "value": picked }))
+            }
+            other => Err(format!("未知内置动作: {}", other)),
+        }
+    }
+}
 
 #[async_trait]
 impl StepExecutor for BuiltinStepExecutor {
     async fn execute(&self, step: &Step) -> Result<StepResult, String> {
-        // TODO: 实现内置执行逻辑
+        let start_time = std::time::Instant::now();
+        let output = Self::dispatch(&step.action, &step.input)?;
         Ok(StepResult {
             step_id: step.id.clone(),
             success: true,
-            output: serde_json::json!({"action": step.action}),
-            duration_ms: 0,
+            output,
+            duration_ms: start_time.elapsed().as_millis() as u64,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_dispatch_echo() {
+        let out = BuiltinStepExecutor::dispatch("echo", &serde_json::json!({"k": "v"}))
+            .expect("echo ok");
+        assert_eq!(out, serde_json::json!({"k": "v"}));
+    }
+
+    #[test]
+    fn test_dispatch_math() {
+        let out = BuiltinStepExecutor::dispatch(
+            "math:add",
+            &serde_json::json!({"a": 2.0, "b": 3.0}),
+        )
+        .expect("add ok");
+        assert_eq!(out["result"], 5.0);
+
+        let out = BuiltinStepExecutor::dispatch(
+            "math:mul",
+            &serde_json::json!({"a": 4.0, "b": 0.5}),
+        )
+        .expect("mul ok");
+        assert_eq!(out["result"], 2.0);
+
+        // 除零真实报错
+        let err = BuiltinStepExecutor::dispatch(
+            "math:div",
+            &serde_json::json!({"a": 1.0, "b": 0.0}),
+        )
+        .expect_err("div by zero rejected");
+        assert!(err.contains("除数为零"));
+    }
+
+    #[test]
+    fn test_dispatch_math_missing_field() {
+        let err = BuiltinStepExecutor::dispatch("math:add", &serde_json::json!({"a": 1.0}))
+            .expect_err("missing b rejected");
+        assert!(err.contains("字段 b"));
+    }
+
+    #[test]
+    fn test_dispatch_json_pick() {
+        let out = BuiltinStepExecutor::dispatch(
+            "json:pick",
+            &serde_json::json!({"path": "/user/name", "input": {"user": {"name": "alice"}}}),
+        )
+        .expect("pick ok");
+        assert_eq!(out["value"], "alice");
+
+        let err = BuiltinStepExecutor::dispatch(
+            "json:pick",
+            &serde_json::json!({"path": "/nope", "input": {"user": {"name": "alice"}}}),
+        )
+        .expect_err("missing path rejected");
+        assert!(err.contains("不存在"));
+    }
+
+    #[test]
+    fn test_dispatch_unknown_action() {
+        let err = BuiltinStepExecutor::dispatch("no:such", &serde_json::json!({}))
+            .expect_err("unknown action rejected");
+        assert!(err.contains("未知内置动作"));
+    }
+
+    #[tokio::test]
+    async fn test_turn_execute_step_success() {
+        let mut turn = Turn::new("t1".to_string(), "agent-a".to_string());
+        let step = Step::new(
+            "math:add".to_string(),
+            serde_json::json!({"a": 10.0, "b": 5.0}),
+        );
+
+        let result = turn.execute_step(step).await.expect("step ok");
+        assert!(result.success);
+        assert_eq!(result.output["result"], 15.0);
+        assert_eq!(turn.steps.len(), 1);
+        assert_eq!(turn.steps[0].state, StepState::Completed);
+    }
+
+    #[tokio::test]
+    async fn test_turn_execute_step_failure_marks_failed() {
+        let mut turn = Turn::new("t2".to_string(), "agent-a".to_string());
+        let step = Step::new(
+            "math:div".to_string(),
+            serde_json::json!({"a": 1.0, "b": 0.0}),
+        );
+
+        let err = turn.execute_step(step).await.expect_err("should fail");
+        assert!(err.contains("除数为零"));
+        assert_eq!(turn.steps.len(), 1);
+        assert_eq!(turn.steps[0].state, StepState::Failed);
+        // 失败事件已入瀑布流
+        let has_error = turn
+            .events
+            .events()
+            .iter()
+            .any(|e| matches!(e, WaterfallEvent::Error { .. }));
+        assert!(has_error);
+    }
+
+    #[tokio::test]
+    async fn test_lifecycle_manager_roundtrip() {
+        let mgr = LifecycleManager::new();
+        let turn_id = mgr.create_turn("agent-x").await.expect("turn created");
+
+        let step = Step::new("echo".to_string(), serde_json::json!({"ping": true}));
+        let result = mgr.execute_step(&turn_id, step).await.expect("step ok");
+        assert!(result.success);
+        assert_eq!(result.output["ping"], true);
+
+        let summary = mgr.complete_turn(&turn_id).await.expect("turn completed");
+        assert!(summary.success);
+        assert_eq!(summary.steps, 1);
     }
 }
