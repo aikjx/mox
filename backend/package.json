@@ -2,12 +2,11 @@
   "name": "ous-backend",
   "version": "1.0.0",
   "private": true,
-  "description": "算子统一系统 (OUS) 后端信息服务：零依赖 Node.js 实现，承载双璇玑十四维治理、知识图谱、算子商城与 MCP 兼容层。",
+  "description": "算子统一系统 (OUS) 边缘入口：零依赖 Node.js，托管 frontend/dist 并将 /api 反向代理到 Rust operator-server（单一系统真相）。",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "node src/server.js",
-    "seed": "node src/seed.js",
     "test": "node tests/run.js"
   },
   "engines": {

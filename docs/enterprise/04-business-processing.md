@@ -194,7 +194,7 @@ Left → [*]: 终态不可复活 [BR-21]
 
 - 本文聚焦**协作治理域**业务处理（成员/任务/权限/通信）。
 - **企业级流程执行**（WorkflowEngine + 6 模板）见 `docs/modules/business-process-flows.md`；可视化见 `docs/modules/business-process-flowcharts.md`。
-- **融合优化链路**见 `docs/xuanji-expert-xuanji-fusion-flows.md`。
+- **融合优化链路**见 `docs/modules/xuanji-expert-alliance-fusion-flows.md`。
 
 ---
 

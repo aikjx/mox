@@ -9,7 +9,7 @@
 技术栈：
 - 后端：Rust edition 2021，Axum（HTTP）、Tokio（异步）、Serde、Anyhow/Thiserror；`cargo` 工作区（15 个 crate）。
 - 前端：Vue 3.4 + Vite 5 + Element Plus 2.4 + vue-router 4.3 + Axios 1.6 + ECharts 5.4 + three / 3d-force-graph；包管理 npm。
-- 部署：后端 `runtime` crate 聚合为单一 `operator-server` 二进制（默认 `:3000`）；前端经 Vite 代理 `/api` → `http://localhost:3000`，生产构建产物 `dist/` 由后端 `ServeDir` 托管。
+- 部署：后端 `runtime` crate 聚合为单一 `operator-server` 二进制（默认 `:3001`，可由 `--port` 覆盖）；`backend/`（零依赖 Node）作为边缘入口占 `:3000`，托管 `frontend/dist` 并将 `/api` 反向代理到 Rust；前端 Vite 代理 `/api` → `http://localhost:3000`（即 Node 边缘入口）。Node 不再实现任何领域逻辑，出码统一经 Rust ⛨验证网关 + 治理 8 闸门。
 
 ## 目录结构与模块职责
 
@@ -89,7 +89,7 @@
 ## 常用命令
 
 ### 开发
-- `cargo run -p runtime`：启动聚合后端（默认 `:3000`，含四套子服务）
+- `cargo run -p runtime`：启动聚合后端（默认 `:3001`，含四套子服务；边缘入口 `backend/` 占 `:3000` 并反代 `/api` 至此）
 - `cd frontend && npm run dev`：前端开发（Vite，`/api` 代理到 `:3000`）
 - `cd frontend && npm run build`：前端生产构建 → `dist/`
 

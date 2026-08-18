@@ -292,7 +292,7 @@ xuanji-system ◀── POST /api/xuanji/* ── xuanji-expert(pipeline)
 
 - 本文是 `docs/architecture.md`（v7.0，79KB 总架构）的**璇玑子系统切面**。
 - 能力对齐见 `docs/enterprise-architecture-analysis.md`（双璇玑十四维、能力覆盖矩阵）。
-- 融合链路见 `docs/xuanji-expert-xuanji-fusion-flows.md`。
+- 融合链路见 `docs/modules/xuanji-expert-alliance-fusion-flows.md`。
 
 ---
 

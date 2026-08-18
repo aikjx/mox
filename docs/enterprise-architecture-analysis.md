@@ -213,7 +213,7 @@ npm run build (frontend) → built in 22.79s
 
 OUS 已实现**全维度企业级闭环**：数学内核稳固、双璇玑十四维治理接入主服务与前端可视化、璇玑最高权限校验、WASM 沙箱隔离、统一自动化脚本一键 build+test+serve+e2e。所有单元/集成测试全绿，前端可构建。后续重点是把 📋 设计态能力（多模态/记忆/Eval/FinOps/灾备）落到代码，并强化开发七维常驻与敏感语义识别。
 
-> 配套文档：`docs/architecture.md`(总架构)、`docs/modules/mathematical-foundation.md`(数学内核)、`docs/modules/xuanji-expert-normalization.md`(归一化)、`docs/modules/xuanji-expert-product.md`(产品化)、`algorithm-verification.md`(璇玑校验)、`docs/modules/business-process-flows.md`(企业级业务处理流程)。
+> 配套文档：`docs/architecture.md`(总架构)、`docs/modules/mathematical-foundation.md`(数学内核)、`docs/modules/xuanji-expert-normalization.md`(归一化)、`docs/modules/xuanji-expert-product.md`(产品化)、`docs/modules/algorithm-verification.md`(璇玑校验)、`docs/modules/business-process-flows.md`(企业级业务处理流程)。
 
 ---
 

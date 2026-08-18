@@ -2,7 +2,7 @@
 
 > 文档类型：业务处理流程需求规格（BRD + 领域规则 + 需求追踪矩阵）
 > 适用系统：`crates/xuanji-system`（协作治理域）、`crates/xuanji-expert`（璇玑融合引擎域）、`frontend/src/views/XuanjiFusionView.vue`（融合工作台）
-> 配套流程图：[`xuanji-expert-xuanji-fusion-flows.md`](./xuanji-expert-xuanji-fusion-flows.md)
+> 配套流程图：[`xuanji-expert-alliance-fusion-flows.md`](./xuanji-expert-alliance-fusion-flows.md)
 > 编写原则：**每条需求必须可验证**——要么映射到真实代码位置，要么标记为 `GAP` 并给出验收断言。
 
 ---
@@ -231,7 +231,7 @@ stateDiagram-v2
 
 **业务目标**：把专家提交的业务流程交给璇玑引擎做归一化 + 七维会诊 + 治理裁决，产出优化算子。
 
-流程细节与真实端点映射见配套流程图文档 [`xuanji-expert-xuanji-fusion-flows.md`](./xuanji-expert-xuanji-fusion-flows.md)。核心链路：
+流程细节与真实端点映射见配套流程图文档 [`xuanji-expert-alliance-fusion-flows.md`](./xuanji-expert-alliance-fusion-flows.md)。核心链路：
 
 ```
 XuanjiFusionView.vue
