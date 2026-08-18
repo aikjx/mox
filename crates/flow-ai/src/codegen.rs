@@ -178,8 +178,8 @@ fn gen_tasks(graph: &FlowGraph) -> String {
         if n.kind == NodeKind::Guard {
             let _ = writeln!(
                 s,
-                "    # 前置拦截：校验不过直接抛错，避免无效工具调用与 LLM 消耗\n    ok = True  # TODO: 实现 {} 校验逻辑\n    if not ok:\n        raise GuardFailed(\"{}\")\n    return ctx",
-                n.tags.join("/"),
+                "    # 前置拦截：reads 声明的键必须存在于 ctx，缺失即拦截，避免无效工具调用与 LLM 消耗\n    _missing = [k for k in [{}] if k not in ctx]\n    if _missing:\n        raise GuardFailed(f\"{} 缺少输入: {{_missing}}\")\n    return ctx",
+                reads.join(", "),
                 n.name
             );
         } else if let Some(t) = n.tool {
@@ -464,8 +464,10 @@ pub fn gen_frontend(graph: &FlowGraph) -> String {
     let _ = writeln!(s, "}})");
     let _ = writeln!(s, "const result = ref(null)");
     let _ = writeln!(s, "async function submit() {{");
-    let _ = writeln!(s, "  // TODO: 调用后端 API（对应流程图「{}」的入口）", graph.name);
-    let _ = writeln!(s, "  result.value = JSON.stringify(form, null, 2)");
+    let _ = writeln!(s, "  // 真实提交：调用流程图「{}」对应后端入口", graph.name);
+    let name_json = serde_json::to_string(&graph.name).unwrap_or_else(|_| "\"flow\"".to_string());
+    let _ = writeln!(s, "  const res = await fetch(`/api/flow/${{encodeURIComponent({})}}`, {{ method: 'POST', headers: {{ 'Content-Type': 'application/json' }}, body: JSON.stringify(form) }})", name_json);
+    let _ = writeln!(s, "  result.value = await res.json()");
     let _ = writeln!(s, "}}");
     let _ = writeln!(s, "</script>\n");
 
@@ -920,9 +922,10 @@ def run():
         let b = bundle_of(&g);
         let tasks = &b.file("generated/tasks.py").unwrap().content;
         let back = reverse_from_python(tasks, "roundtrip");
-        // 反解析应至少恢复出可执行节点
+        // 反解析应至少恢复出可执行节点，且图保持有效拓扑序
         assert!(back.graph.nodes.len() > 2);
-        assert!(back.graph.topo_order().is_ok() || true);
+        let topo = back.graph.topo_order();
+        assert!(topo.is_ok(), "roundtrip 反解析图应满足拓扑序，实际: {:?}", topo.err());
     }
 
     // ============ 草莓多平台：全栈生成扩展测试 ============

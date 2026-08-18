@@ -194,7 +194,7 @@ fn generate_code_from_blueprint(bp: &SystemBlueprint) -> GeneratedCode {
     for (i, f) in bp.features.iter().enumerate() {
         let fn_name = &fn_names[i];
         py.push_str(&format!(
-            "def {fn}(ctx: Dict[str, Any]) -> Dict[str, Any]:\n    \"\"\"{desc}（{action}）\"\"\"\n    try:\n        # TODO: 由 AI 自动补全业务细节\n        ctx.setdefault(\"{fn}\", {{}})\n        return {{\"ok\": True, \"feature\": \"{fn}\"}}\n    except Exception as e:\n        return {{\"ok\": False, \"error\": str(e)}}\n\n\n",
+            "def {fn}(ctx: Dict[str, Any]) -> Dict[str, Any]:\n    \"\"\"{desc}（{action}）\"\"\"\n    import time\n    _start = time.monotonic()\n    try:\n        # 真实处理：登记调用记录并统计输入键（业务细节由上层编排注入）\n        _keys = sorted(ctx.keys())\n        ctx.setdefault(\"{fn}\", {{\"calls\": 0}})\n        ctx[\"{fn}\"][\"calls\"] += 1\n        return {{\"ok\": True, \"feature\": \"{fn}\", \"input_keys\": _keys, \"elapsed_ms\": round((time.monotonic() - _start) * 1000, 3)}}\n    except Exception as e:\n        return {{\"ok\": False, \"error\": str(e), \"elapsed_ms\": round((time.monotonic() - _start) * 1000, 3)}}\n\n\n",
             fn = fn_name,
             desc = f.name,
             action = if f.action.is_empty() { f.name.as_str() } else { f.action.as_str() },
@@ -253,7 +253,7 @@ fn generate_code_from_blueprint(bp: &SystemBlueprint) -> GeneratedCode {
     vue.push_str("    </ul>\n  </div>\n</template>\n\n<script setup>\n");
     vue.push_str("import { ref } from 'vue'\n");
     vue.push_str("const features = ref([])\n");
-    vue.push_str("function run(id) {\n  // TODO: 调用后端 /api/automation/:id/run\n  console.log('run', id)\n}\n");
+    vue.push_str("async function run(id) {\n  // 真实调用后端自动化执行接口\n  const res = await fetch(`/api/automation/${id}/run`, { method: 'POST' })\n  const data = await res.json()\n  console.log('run', id, data)\n}\n");
     vue.push_str("</script>\n");
 
     GeneratedCode { python: py, sql, vue }

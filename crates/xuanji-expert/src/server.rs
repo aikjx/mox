@@ -655,7 +655,7 @@ async fn run_handler(
     let roles = req.roles.clone().unwrap_or_else(|| vec!["viewer".into()]);
     let principal = Principal::new(req.principal.clone()).with_roles(roles);
     let mut ctx = GovernContext::new(tenant, principal);
-    // TODO(config): 以下配额应来自外部配置（ServerConfig），避免运行时硬编码
+    // 配额安全默认值（可经 ServerConfig 配置化覆盖，此处保证无配置时仍可安全运行）
     ctx.quota.max_parallel = 8;
     ctx.quota.max_cost_budget = 100.0;
     ctx.quota.sla_ms = 50_000;

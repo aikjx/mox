@@ -66,6 +66,7 @@
 - 不要修改 CI / infra / secrets 相关文件，必须先询问确认。
 - 不要在日志输出 PII / 敏感信息（`audit/` 已脱敏，新增汇同样处理）。
 - 不要新增 `todo!()` / `unimplemented!()` 到生产代码路径。
+- 禁止用 `// TODO: 实现…` 注释占位替代真实逻辑（如空函数体、硬编码成功返回）。未接线的预留 API 必须显式 `#![allow(dead_code)]` + 说明注释（见 `docs/enterprise/11` §6ter 审计口径）。
 - 不要在 Controller/route 层直接写业务 SQL 或仓储逻辑（越层）。
 - 不要绕过 ⛨验证网关与治理 8 闸门直接出码/发布。
 

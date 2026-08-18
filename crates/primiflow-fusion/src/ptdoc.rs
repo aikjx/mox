@@ -276,7 +276,7 @@ impl PtdocSet {
         ));
         body.push_str(&format!(
             "| R06 六维绑定 Registry | {}（{} 条累积）|\n",
-            mark(!reg.is_empty() || true),
+            mark(!reg.is_empty()),
             reg.len()
         ));
         body.push_str(&format!(

@@ -161,7 +161,7 @@ impl CompatibilityRegistry {
 }
 
 /// 全量治理上下文（喂给流水线）
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct GovernContext {
     pub tenant: Tenant,
     pub principal: Principal,
@@ -172,6 +172,26 @@ pub struct GovernContext {
     pub code_ir: Option<CodeIR>,
     /// 期望的大模型路由（LLM 兼容性）
     pub llm_tier: Option<flow_ai::schedule::ModelTier>,
+    /// 外部审计上下文（内部哈希链 + 外部 sink 双写）。
+    /// 序列化时跳过：运行时由 `with_audit` 注入，默认 NoopSink（开发/单测环境）。
+    #[serde(skip, default)]
+    pub audit: Option<std::sync::Arc<crate::audit::AuditContext>>,
+}
+
+impl std::fmt::Debug for GovernContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // audit 字段含 `Arc<dyn AuditSink>`（不可 Debug），以占位文本呈现
+        f.debug_struct("GovernContext")
+            .field("tenant", &self.tenant)
+            .field("principal", &self.principal)
+            .field("policies", &self.policies)
+            .field("quota", &self.quota)
+            .field("registry", &self.registry)
+            .field("code_ir", &self.code_ir)
+            .field("llm_tier", &self.llm_tier)
+            .field("audit", &"<AuditContext>")
+            .finish()
+    }
 }
 
 impl GovernContext {
@@ -184,7 +204,16 @@ impl GovernContext {
             registry: CompatibilityRegistry::new(),
             code_ir: None,
             llm_tier: None,
+            audit: None,
         }
+    }
+
+    /// 注入外部审计上下文（Syslog/S3/自定义 sink，经 `MultiSink` 组合）。
+    /// 未注入时 RBAC 越权等审计事件写入内部哈希链（`AuditChain`），
+    /// 注入后双写：内部链自验 + 外部持久化（SOC2/GDPR 合规证据）。
+    pub fn with_audit(mut self, audit: std::sync::Arc<crate::audit::AuditContext>) -> Self {
+        self.audit = Some(audit);
+        self
     }
 }
 
@@ -198,6 +227,8 @@ pub struct ExpertContext<'a> {
     pub registry: &'a CompatibilityRegistry,
     /// 开发璇玑的分析对象（借用于 GovernContext，避免克隆）
     pub code_ir: &'a Option<CodeIR>,
+    /// 外部审计上下文（借用于 GovernContext；`can()` 越权判定时双写审计）
+    pub audit: Option<&'a std::sync::Arc<crate::audit::AuditContext>>,
 }
 
 impl<'a> ExpertContext<'a> {
@@ -213,6 +244,7 @@ impl<'a> ExpertContext<'a> {
             quota: &gctx.quota,
             registry: &gctx.registry,
             code_ir: &gctx.code_ir,
+            audit: gctx.audit.as_ref(),
         }
     }
 
@@ -220,12 +252,13 @@ impl<'a> ExpertContext<'a> {
         self.policies.iter().filter(|p| p.dimension == dim).collect()
     }
 
-    /// 鉴权单入口：所有能力判定统一委托 RBAC 引擎（`rbac::check`）。
+    /// 鉴权单入口：所有能力判定统一委托 RBAC 引擎（`rbac::check_with_audit`）。
     ///
     /// 此前 `can()` 是硬编码的角色字符串匹配（`EditFlow => "editor"`），
     /// 与 `rbac/policy.rs` 完全脱节——任何对 RBAC 策略的修改都不会反映到专家鉴权。
     /// 现在 `Capability` 被映射为 `(action, resource)` 资源级权限，统一走 `rbac::check`，
     /// 让内置角色矩阵、继承链、通配符与跨租户隔离对专家鉴权真正生效。
+    /// 越权（denied）时若配置了外部审计上下文，则同步写入 RBACDenied 审计事件。
     pub fn can(&self, cap: Capability) -> bool {
         let (action, resource) = match cap {
             // 审计查看：resource 级 read:audit:*
@@ -243,7 +276,7 @@ impl<'a> ExpertContext<'a> {
             action,
             crate::rbac::check::Resource::with_tenant(resource, &self.tenant.id),
         );
-        crate::rbac::check(&check_ctx).is_granted()
+        crate::rbac::check_with_audit(&check_ctx, self.audit).is_granted()
     }
 }
 
