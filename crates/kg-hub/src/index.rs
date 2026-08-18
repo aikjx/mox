@@ -132,7 +132,7 @@ impl HybridIndex {
         }
     }
 
-    /// 注入节点语义向量（来自外部 embedding 服务或 operator-graph 的 embedding 字段）
+    /// 注入节点语义向量（来自外部 embedding 服务或 graph-algorithms 的 embedding 字段）
     pub fn put_vector(&mut self, id: &str, v: Vec<f64>) {
         self.vectors.insert(id.to_string(), v);
     }

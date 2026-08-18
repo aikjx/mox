@@ -2,7 +2,7 @@
 members = [
     "crates/operator-core",
     "crates/operator-wasm",
-    "crates/operator-graph",
+    "crates/graph-algorithms",
     "crates/optimizer",
     "crates/flow-ai",
     "crates/xuanji-expert",
@@ -12,7 +12,7 @@ members = [
     "crates/template-market",
     "crates/runtime",
     "crates/xuanji-system",
-    "crates/primiflow",
+    "crates/primiflow-core",
     "crates/primiflow-fusion",
     "crates/kg-hub",
 ]

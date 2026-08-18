@@ -6,7 +6,7 @@
 |---|---|---|---|
 | 1 | `operator-core` | L5 执行运行时 | （见融合统一图 crate:operator-core 节点）|
 | 2 | `operator-wasm` | L5 执行运行时 | （见融合统一图 crate:operator-wasm 节点）|
-| 3 | `operator-graph` | L6 资产沉淀 | （见融合统一图 crate:operator-graph 节点）|
+| 3 | `graph-algorithms` | L6 资产沉淀 | （见融合统一图 crate:graph-algorithms 节点）|
 | 4 | `optimizer` | L3 拓扑涌现 | （见融合统一图 crate:optimizer 节点）|
 | 5 | `flow-ai` | L2 原语映射 | （见融合统一图 crate:flow-ai 节点）|
 | 6 | `xuanji-expert` | L7 治理合规 | （见融合统一图 crate:xuanji-expert 节点）|

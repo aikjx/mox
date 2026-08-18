@@ -20,7 +20,7 @@ use operator_core::category::Workflow;
 use operator_core::operator::{FunctionOperator, IdentityOperator, LinearOperator, Operator};
 use operator_core::state::StateVector;
 use operator_core::ExecutionContext;
-use operator_graph::{
+use graph_algorithms::{
     CentralityMetrics, Community, GraphStats, KnowledgeEdge, KnowledgeGraph, KnowledgeGraphBuilder,
     KnowledgeNode, NodeRecommendation, PathResult,
 };

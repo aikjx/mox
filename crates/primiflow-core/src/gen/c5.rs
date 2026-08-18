@@ -1,4 +1,4 @@
-//! 代码骨架 · 由关联图谱自动生成（primiflow::assoc::primiflow_seed）
+//! 代码骨架 · 由关联图谱自动生成（primiflow_core::assoc::primiflow_seed）
 //! 溯源链路: R4 → F1 → B5 → A4 → T6 → C5
 //! 数据设计: S5(Artifact)
 //! 说明: 八份标准化说明书 + 代码骨架 + 导出（SPEC §8）。

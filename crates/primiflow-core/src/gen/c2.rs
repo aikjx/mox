@@ -1,4 +1,4 @@
-//! 代码骨架 · 由关联图谱自动生成（primiflow::assoc::primiflow_seed）
+//! 代码骨架 · 由关联图谱自动生成（primiflow_core::assoc::primiflow_seed）
 //! 溯源链路: R1 → F4 → B1 → A1 → T3 → C2
 //! 数据设计: S3(Topology)
 //! 说明: κ/τ 预算 + ℛ̂ 裁剪（封装 flow_ai κ‑τ 引擎 validate/regularize）。

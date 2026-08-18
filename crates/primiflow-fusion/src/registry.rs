@@ -12,7 +12,7 @@ use crate::unified::{
 pub const CRATE_NAMES: &[&str] = &[
     "operator-core",
     "operator-wasm",
-    "operator-graph",
+    "graph-algorithms",
     "optimizer",
     "flow-ai",
     "xuanji-expert",
@@ -22,7 +22,7 @@ pub const CRATE_NAMES: &[&str] = &[
     "template-market",
     "runtime",
     "xuanji-system",
-    "primiflow",
+    "primiflow-core",
 ];
 
 /// 单条能力登记项
@@ -92,10 +92,10 @@ pub fn fuse_all() -> UnifiedGraph {
         id: schema_code.into(),
         kind: EntityKind::Code,
         layer: Layer::AssetPrecipitation,
-        name: "primiflow::schema".into(),
-        path: "crates/primiflow/src/gen/schema.rs".into(),
+        name: "primiflow_core::schema".into(),
+        path: "crates/primiflow-core/src/gen/schema.rs".into(),
         summary: "六维数据载体（Project/Conversation/Topology/Asset/Artifact/TraceLink）".into(),
-        evidence: "primiflow/src/gen/schema.rs".into(),
+        evidence: "primiflow-core/src/gen/schema.rs".into(),
         primitive: PrimitiveCoords::zero(),
         bind_id: Some("REQ-1".into()),
         external: false,
@@ -109,7 +109,7 @@ pub fn fuse_all() -> UnifiedGraph {
             name: table.into(),
             path: format!("ddl.sql::{table}"),
             summary: format!("数据表 {table} ↔ Rust 结构 {struct_name}"),
-            evidence: "primiflow/src/gen/ddl.sql".into(),
+            evidence: "primiflow-core/src/gen/ddl.sql".into(),
             primitive: PrimitiveCoords::zero(),
             bind_id: None,
             external: false,
@@ -120,7 +120,7 @@ pub fn fuse_all() -> UnifiedGraph {
             to: tid.clone(),
             kind: RelKind::ReadWrite,
             label: "读写".into(),
-            evidence: format!("primiflow/src/gen/schema.rs 结构 {struct_name} → ddl.sql {table}"),
+            evidence: format!("primiflow-core/src/gen/schema.rs 结构 {struct_name} → ddl.sql {table}"),
         });
         g.add_edge(UnifiedEdge {
             id: format!("{tid}<=deploy"),
@@ -255,7 +255,7 @@ fn crate_caps(name: &str) -> (Layer, Vec<Cap>) {
                 Layer::ExecutionRuntime,
             )],
         ),
-        "operator-graph" => (
+        "graph-algorithms" => (
             Layer::AssetPrecipitation,
             vec![
                 cap(
@@ -370,7 +370,7 @@ fn crate_caps(name: &str) -> (Layer, Vec<Cap>) {
                 Layer::Governance,
             )],
         ),
-        "primiflow" => (
+        "primiflow-core" => (
             Layer::RequirementSemantic,
             vec![
                 cap(

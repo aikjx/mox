@@ -22,7 +22,7 @@
 
 | 术语 | 定义 | 说明 |
 |------|------|------|
-| **TraceMatrix / 六维绑定** | `REQ→FUN→BIZ→ALG→TSK→COD` 的逐层可追溯绑定矩阵，保证零孤儿节点。 | 承载于 AA-STD §3 + `crates/primiflow/trace_matrix.md` |
+| **TraceMatrix / 六维绑定** | `REQ→FUN→BIZ→ALG→TSK→COD` 的逐层可追溯绑定矩阵，保证零孤儿节点。 | 承载于 AA-STD §3 + `crates/primiflow-core/trace_matrix.md` |
 | **五向绑定** | requirement→function→algorithm→flow→code 的端到端可追溯链。 | 见 glossary §1 "AA-STD" |
 | **κ-τ 拓扑原语调度** | PrimiFlow 原生调度算法：κ（曲率/结构复杂度）与 τ（扭转/时序约束）守恒。 | 守恒律 `C² = κ² + τ²` |
 | **⛨ 璇玑验证网关** | 闭环出码/出图前的**最高权限验证网关**，对诊断结论做最终裁决与放行。 | 治理闸门上游 |

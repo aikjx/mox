@@ -104,12 +104,12 @@ pub async fn build() -> SubServers {
         let out_dir = std::env::var("OUS_PRIMIFLOW_OUT")
             .map(PathBuf::from)
             .unwrap_or_else(|_| PathBuf::from("./primiflow_runtime"));
-        let state = primiflow::server::new_state(
+        let state = primiflow_core::server::new_state(
             out_dir,
-            primiflow::persistence::Persistence::memory(),
+            primiflow_core::persistence::Persistence::memory(),
         );
         out.routers
-            .push((PREFIX_PRIMIFLOW, primiflow::server::build_router(state)));
+            .push((PREFIX_PRIMIFLOW, primiflow_core::server::build_router(state)));
         out.notes.push(format!(
             "  [聚合] primiflow → {PREFIX_PRIMIFLOW}（六维溯源拓扑引擎）"
         ));

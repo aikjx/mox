@@ -1,4 +1,4 @@
-//! 代码骨架 · 由关联图谱自动生成（primiflow::assoc::primiflow_seed）
+//! 代码骨架 · 由关联图谱自动生成（primiflow_core::assoc::primiflow_seed）
 //! 溯源链路: R1 → F4 → B1 → A1 → T1 → C1
 //! 数据设计: S1(Project), S6(TraceLink)
 //! 说明: 状态机编排：需求→拓扑→文档，并写六维溯源。

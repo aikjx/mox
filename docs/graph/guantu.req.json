@@ -37,7 +37,7 @@
     {"req": "D09", "to": "CodeFile:crates/hermes-flow-bridge/src/lib.rs", "label": "主责crate"},
     {"req": "D10", "to": "CodeFile:crates/xuanji-system/src/lib.rs", "label": "主责crate"},
     {"req": "D11", "to": "CodeFile:crates/template-market/src/lib.rs", "label": "主责crate"},
-    {"req": "D12", "to": "CodeFile:crates/primiflow/src/lib.rs", "label": "前端规格crate"},
+    {"req": "D12", "to": "CodeFile:crates/primiflow-core/src/lib.rs", "label": "前端规格crate"},
 
     {"req": "R01", "to": "CodeFile:crates/xuanji-expert/src/lib.rs", "label": "已挂载治理台"},
     {"req": "R02", "to": "CodeFile:crates/runtime/src/lib.rs", "label": "已挂载商城扩展路由"},
@@ -48,7 +48,7 @@
     {"req": "R07", "to": "CodeFile:crates/operator-core/src/lib.rs", "label": "待接全局闸门"},
     {"req": "R08", "to": "CodeFile:crates/flow-ai/src/lib.rs", "label": "待接PT-DOC模板"},
 
-    {"req": "D12", "to": "Script:crates/primiflow/src/gen/ddl.sql", "label": "DB schema"},
+    {"req": "D12", "to": "Script:crates/primiflow-core/src/gen/ddl.sql", "label": "DB schema"},
     {"req": "D12", "to": "Data:PROJECTS", "label": "表"},
     {"req": "D12", "to": "Data:CONVERSATIONS", "label": "表"},
     {"req": "D12", "to": "Data:TOPOLOGYS", "label": "表"},

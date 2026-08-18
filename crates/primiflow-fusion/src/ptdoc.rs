@@ -363,7 +363,7 @@ fn crate_layer(name: &str) -> (&'static str, &'static str) {
     match name {
         "operator-core" => ("L5 执行运行时", "算子内核执行 / 注册表"),
         "operator-wasm" => ("L5 执行运行时", "WASM 热加载"),
-        "operator-graph" => ("L6 资产沉淀", "知识图谱存储 / 查询"),
+        "graph-algorithms" => ("L6 资产沉淀", "知识图谱存储 / 查询"),
         "optimizer" => ("L3 拓扑涌现", "流程图优化"),
         "flow-ai" => ("L2 原语映射", "κ-τ 拓扑原语引擎 / 自涌现调度"),
         "xuanji-expert" => ("L7 治理合规", "全维治理校验"),

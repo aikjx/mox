@@ -1,4 +1,4 @@
-//! 数据设计 DDL · 由关联图谱自动生成（primiflow::assoc::primiflow_seed）
+//! 数据设计 DDL · 由关联图谱自动生成（primiflow_core::assoc::primiflow_seed）
 //! 对应 primiflow/SPEC.md §4 数据模型（PostgreSQL + pgvector）
 //! 真实部署时在本文件基础上补 `pgvector` 扩展与 embedding 列即可。
 pub const SCHEMA_DDL: &str = include_str!("ddl.sql");

@@ -1,5 +1,5 @@
 [package]
-name = "primiflow"
+name = "primiflow-core"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

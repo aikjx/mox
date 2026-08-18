@@ -13,7 +13,7 @@ COPY crates/flow-ai/Cargo.toml crates/flow-ai/Cargo.toml
 RUN mkdir -p crates/primiflow-fusion/src crates/primiflow/src crates/flow-ai/src \
     && echo "fn main() {}" > crates/primiflow-fusion/src/main.rs \
     && echo "" > crates/primiflow-fusion/src/lib.rs \
-    && echo "" > crates/primiflow/src/lib.rs \
+    && echo "" > crates/primiflow-core/src/lib.rs \
     && echo "" > crates/flow-ai/src/lib.rs \
     && cargo build --release -p primiflow-fusion || true
 

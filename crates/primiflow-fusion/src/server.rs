@@ -38,7 +38,7 @@ use crate::observability;
 use crate::platform::{PlatformReport, PrimiPlatform};
 use crate::sixdim::SixDimBinding;
 use crate::unified::PlatformGate;
-use primiflow::gen::c1::OrchestrationStatus;
+use primiflow_core::gen::c1::OrchestrationStatus;
 
 /// 共享应用状态（跨请求持有平台闭环节点状态与六维注册表）
 pub struct AppState {

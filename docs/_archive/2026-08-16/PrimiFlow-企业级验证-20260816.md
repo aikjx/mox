@@ -8,12 +8,12 @@
 
 | 文件 | 作用 |
 |------|------|
-| `crates/primiflow/src/runner.rs`（新增） | 企业级端到端运行器：需求→原语初始化→κτ自涌现→守恒/因果/资源三道校验→ℛ̂正则化→执行反馈注荷/湮灭→六维溯源绑定→文档自生成→Mermaid 可视化。每步产出 `Step` 验证记录。 |
-| `crates/primiflow/src/lib.rs`（改） | 挂上 `pub mod runner;` 并导出 `enterprise_specs / run_all / run_pipeline / PipelineReport / Spec / Step`。 |
-| `crates/primiflow/examples/enterprise_demo.rs`（新增） | 可运行示例：跑 4 个代表性企业需求（均衡/紧急复用/探索分叉/超预算正则化），打印分步验证报告 + 产物校验，非 0 退出码可用于 CI 门禁。 |
-| `crates/primiflow/tests/enterprise_validation.rs`（新增） | 企业级分步验证套件 L1~L4。 |
-| `crates/primiflow/src/gen/c3.rs`（修） | 修复 embedding 实现缺陷（见下）。 |
-| `crates/primiflow/src/gen/c5.rs`、`src/generate.rs`（修） | 修复编译错误与无用 `format!`。 |
+| `crates/primiflow-core/src/runner.rs`（新增） | 企业级端到端运行器：需求→原语初始化→κτ自涌现→守恒/因果/资源三道校验→ℛ̂正则化→执行反馈注荷/湮灭→六维溯源绑定→文档自生成→Mermaid 可视化。每步产出 `Step` 验证记录。 |
+| `crates/primiflow-core/src/lib.rs`（改） | 挂上 `pub mod runner;` 并导出 `enterprise_specs / run_all / run_pipeline / PipelineReport / Spec / Step`。 |
+| `crates/primiflow-core/examples/enterprise_demo.rs`（新增） | 可运行示例：跑 4 个代表性企业需求（均衡/紧急复用/探索分叉/超预算正则化），打印分步验证报告 + 产物校验，非 0 退出码可用于 CI 门禁。 |
+| `crates/primiflow-core/tests/enterprise_validation.rs`（新增） | 企业级分步验证套件 L1~L4。 |
+| `crates/primiflow-core/src/gen/c3.rs`（修） | 修复 embedding 实现缺陷（见下）。 |
+| `crates/primiflow-core/src/gen/c5.rs`、`src/generate.rs`（修） | 修复编译错误与无用 `format!`。 |
 
 ## 如何运行（端到端可运行证据）
 ```bash
@@ -73,7 +73,7 @@ cargo clippy -p primiflow --all-targets
 ## 已知遗留（非阻断）
 - `gen/c1.rs`(`Orchestrator`)、`gen/c7.rs`(`CanvasState`) 各 1 个 `clippy::new_without_default` 风格告警。
   二者含需参数构造的 `PrimiEngine` 字段，无法简单 `#[derive(Default)]`；属生成骨架文件既有风格提示，不影响编译与运行。
-- 注：`crates/primiflow/src/gen/*` 由 `cargo run --example gen` 生成，且本会话观察到有外部进程在改写这些文件，
+- 注：`crates/primiflow-core/src/gen/*` 由 `cargo run --example gen` 生成，且本会话观察到有外部进程在改写这些文件，
   故对其内部告警以「可编译、可运行」为底线，不做侵入式语义改造。
 
 ## 结论

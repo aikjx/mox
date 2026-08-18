@@ -6,7 +6,7 @@
 //! | 来源 | 能力 | 接入前状态 |
 //! | --- | --- | --- |
 //! | `tools/info-graph` | 静态代码关图（13 类实体 / 8 类关系） | CLI 孤岛，**无任何 crate 引用** |
-//! | `crates/operator-graph` | 运行时 AI 知识图（PageRank/社区/激活/推荐） | 有 HTTP，但与静态关图身份不通 |
+//! | `crates/graph-algorithms` | 运行时 AI 知识图（PageRank/社区/激活/推荐） | 有 HTTP，但与静态关图身份不通 |
 //! | `crates/primiflow-fusion` | 六维统一图（L1-L7 / 20 类 / κτCQ 守恒） | 本体正确，但**仅自引用** |
 //!
 //! KG-Hub 以 [`urn`] 身份规范 + [`ontology`] 本体归一，把三者合并为一张

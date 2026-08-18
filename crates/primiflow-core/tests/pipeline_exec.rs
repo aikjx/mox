@@ -3,8 +3,8 @@
 
 use flow_ai::model::ToolKind;
 use flow_ai::primitive::{DeliveryPolicy, KnowledgeBase, PrimiEngine};
-use primiflow::assoc::AssocGraph;
-use primiflow::runner::{enterprise_specs, run_all, run_pipeline, Spec};
+use primiflow_core::assoc::AssocGraph;
+use primiflow_core::runner::{enterprise_specs, run_all, run_pipeline, Spec};
 
 fn fresh_engine() -> PrimiEngine {
     PrimiEngine::new(1.0, KnowledgeBase::new(), flow_ai::primitive::ResourceBudget::default())

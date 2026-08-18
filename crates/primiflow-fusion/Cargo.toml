@@ -6,7 +6,7 @@ description = "PrimiFlow 多维度融合归一化一体化架构层：把 13 cra
 
 [dependencies]
 flow-ai = { path = "../flow-ai" }
-primiflow = { path = "../primiflow" }
+primiflow-core = { path = "../primiflow-core" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }

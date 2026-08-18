@@ -8,7 +8,7 @@ description = "智能自动化信息知识图谱关联关系平台（关图中�
 
 [dependencies]
 primiflow-fusion = { path = "../primiflow-fusion" }
-operator-graph = { path = "../operator-graph" }
+graph-algorithms = { path = "../graph-algorithms" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
