@@ -1,0 +1,30 @@
+[
+  {
+    "id": "ct_1",
+    "name": "合规审查流程",
+    "prompt": "为 {domain} 业务生成合规审查流程图",
+    "slots": [
+      "domain"
+    ],
+    "created_at": "2026-08-18T03:49:54.462Z"
+  },
+  {
+    "id": "ct_2",
+    "name": "数据流水线",
+    "prompt": "生成从 {source} 到 {sink} 的数据处理流水线",
+    "slots": [
+      "source",
+      "sink"
+    ],
+    "created_at": "2026-08-18T03:49:54.463Z"
+  },
+  {
+    "id": "ct_3",
+    "name": "审批流",
+    "prompt": "生成包含 {roles} 的多级审批流程",
+    "slots": [
+      "roles"
+    ],
+    "created_at": "2026-08-18T03:49:54.464Z"
+  }
+]
