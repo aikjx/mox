@@ -576,7 +576,7 @@ fn sanitize_id(name: &str) -> String {
         .map(|c| if c.is_alphanumeric() || c == '_' || c == ':' { c } else { '_' })
         .collect();
     if cleaned.is_empty() {
-        format!("ent_{}", Uuid::new_v4().to_string()[..8].to_string())
+        format!("ent_{}", &Uuid::new_v4().to_string()[..8])
     } else {
         cleaned
     }

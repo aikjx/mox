@@ -30,7 +30,6 @@ use xuanji_expert::pipeline::xuanji_optimize;
 use xuanji_expert::context::GovernContext;
 // OUS 前端治理台状态
 use crate::handlers::governance::GovernanceState;
-use flow_ai::model::FlowGraph;
 use business_catalog::spiral::{analyze_spiral, SpiralParams};
 use ai_agent::{
     AIAgent, ChatResponse, AlgorithmType,
@@ -47,7 +46,6 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::ServeDir;
-use axum::extract::DefaultBodyLimit;
 use tracing_subscriber::{prelude::*, EnvFilter};
 
 // ========== 标准接口契约模块 ==========
@@ -95,6 +93,8 @@ struct AppState {
     market: market::MarketState,
     // 治理台状态
     governance: Arc<GovernanceState>,
+    // RBAC 访问审计接收器（放行/拒绝双写，供 /api/audit 查询）
+    audit: Arc<rbac_middleware::MemoryAuditSink>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -314,6 +314,40 @@ async fn main() -> anyhow::Result<()> {
         );
     }
 
+    // RBAC 令牌注册表：OUS_API_TOKEN 恒为 Admin（向后兼容）；
+    // OUS_RBAC_TOKENS 格式 `令牌:角色[:租户]` 多组逗号分隔（admin/editor/viewer/operator/safety_approver/auditor）。
+    // 配置了注册表即进入严格模式：仅注册表内令牌可认证，未知令牌一律 401。
+    let (token_registry, rbac_skipped) = rbac_middleware::TokenRegistry::from_env("default");
+    for note in &rbac_skipped {
+        tracing::warn!(target: "auth", "{note}");
+    }
+    if token_registry.strict() {
+        tracing::info!(
+            "RBAC 令牌注册表已加载 {} 个条目（严格模式：仅注册表内令牌可认证）",
+            token_registry.len()
+        );
+    } else {
+        tracing::warn!(
+            "未配置 OUS_RBAC_TOKENS，RBAC 处于兼容模式：OUS_API_TOKEN 恒为 Admin，其余令牌按前缀推断角色（仅建议开发环境使用，生产请显式配置）"
+        );
+    }
+    let auth_ctx = AuthCtx {
+        api_token: api_token.clone(),
+        registry: Arc::new(token_registry),
+    };
+
+    // RBAC 上下文：租户 + 审计签名密钥 + 内存审计接收器（进程内可查）
+    let audit_sink: Arc<rbac_middleware::MemoryAuditSink> =
+        Arc::new(rbac_middleware::MemoryAuditSink::new());
+    let audit_key = std::env::var("OUS_AUDIT_KEY")
+        .map(|k| k.into_bytes())
+        .unwrap_or_else(|_| b"ous-default-audit-key-2026".to_vec());
+    let rbac_ctx = Arc::new(rbac_middleware::RbacContext {
+        tenant_id: "default".to_string(),
+        audit_key,
+        audit_sink: audit_sink.clone(),
+    });
+
     // 初始化WASM插件管理器
     let mut plugin_manager = WasmPluginManager::new("./plugins");
     let _ = plugin_manager.load_all();
@@ -396,6 +430,7 @@ async fn main() -> anyhow::Result<()> {
         saved_workflows: Arc::new(Mutex::new(HashMap::new())),
         market: market::init_market_state().await,
         governance: governance_state,
+        audit: audit_sink,
     });
 
     // 创建路由 - 全维API
@@ -492,6 +527,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/docs", get(openapi::serve_swagger_ui))
         .route("/api/plugins", get(list_plugins))
         .route("/api/logs", get(get_logs))
+        .route("/api/audit", get(get_access_audit))
         .route("/api/status", get(get_status))
         .route("/api/status/full", get(get_full_status))
         // ========== 璇玑全维治理 API ==========
@@ -522,12 +558,19 @@ async fn main() -> anyhow::Result<()> {
         app = app.nest(prefix, router);
     }
 
-    // 响应标准化中间件（最内层，紧邻 handler）：将 HTTP 200 + {success:false}
-    // 的伪成功响应改写为正确的 4xx 状态码 + RFC 9457 Problem+JSON。
+    // 三层安全管线（从外到内）：
+    //   ① CORS 受控来源
+    //   ② auth_middleware：Bearer 令牌认证 → 写入 Principal 到请求扩展
+    //   ③ rbac_audit_middleware：按角色授权 + 放行/拒绝双向审计（签名留痕）
+    // 最内层 standardize_response：将 200+{success:false} 伪成功改写为 RFC 9457 错误。
     let app = app
         .layer(middleware::from_fn(api_standard::standardize_response))
         .layer(middleware::from_fn_with_state(
-            api_token.clone(),
+            rbac_ctx,
+            rbac_middleware::rbac_audit_middleware,
+        ))
+        .layer(middleware::from_fn_with_state(
+            auth_ctx,
             auth_middleware,
         ))
         .layer(build_cors()?);
@@ -571,7 +614,7 @@ fn build_cors() -> anyhow::Result<CorsLayer> {
         .map(str::trim)
         .filter(|s| !s.is_empty())
         .collect();
-    if origins.iter().any(|o| *o == "*") {
+    if origins.contains(&"*") {
         tracing::warn!("OUS_CORS_ORIGINS 包含 '*'，已退化为全开放 CORS（不推荐用于生产）");
         return Ok(CorsLayer::permissive());
     }
@@ -589,18 +632,60 @@ fn build_cors() -> anyhow::Result<CorsLayer> {
         .allow_headers(Any))
 }
 
-/// 鉴权中间件：除公开端点（健康检查、静态资源）外，所有 API 必须携带
-/// `Authorization: Bearer <OUS_API_TOKEN>`。未配置 token 时拒绝一切受保护接口。
+/// 认证上下文：网关主令牌（恒为 Admin）+ RBAC 令牌注册表。
+#[derive(Clone)]
+struct AuthCtx {
+    api_token: Option<String>,
+    registry: Arc<rbac_middleware::TokenRegistry>,
+}
+
+/// 令牌 → 认证主体解析。
+///
+/// 优先级（严格到宽松）：
+/// 1. `OUS_API_TOKEN` 精确匹配 → Admin（向后兼容既有部署与前端调用）；
+/// 2. 已配置 `OUS_RBAC_TOKENS` 注册表（严格模式）→ 仅注册表内令牌可认证；
+/// 3. 兼容模式（未配置注册表）→ 按令牌前缀推断角色（仅建议开发环境）。
+fn resolve_principal(auth: &AuthCtx, token: &str) -> Option<rbac_middleware::Principal> {
+    // 1) 网关主令牌恒为 Admin
+    if auth.api_token.as_deref() == Some(token) {
+        return Some(rbac_middleware::Principal {
+            token_id: token.chars().take(8).collect(),
+            roles: vec![rbac_middleware::Role::Admin],
+            tenant_id: "default".to_string(),
+        });
+    }
+    // 2) 严格模式：已显式配置 OUS_RBAC_TOKENS 时，仅注册表内令牌可认证
+    if auth.registry.strict() {
+        return auth.registry.resolve(token);
+    }
+    // 3) 兼容模式：按前缀推断角色
+    let roles = rbac_middleware::extract_roles_from_token(token);
+    if roles.is_empty() {
+        return None;
+    }
+    Some(rbac_middleware::Principal {
+        token_id: token.chars().take(8).collect(),
+        roles,
+        tenant_id: rbac_middleware::extract_tenant_from_token(token, "default"),
+    })
+}
+
+/// 鉴权中间件：除公开端点（健康检查、静态资源、AI 对话、子服务透传）外，
+/// 所有 API 必须携带 `Authorization: Bearer <令牌>`。
+///
+/// 认证通过后将 [`rbac_middleware::Principal`] 写入请求扩展，供内层
+/// `rbac_audit_middleware` 直接读取，避免两层各自解析令牌导致口径不一致。
+/// 未配置令牌时拒绝一切受保护接口。
 async fn auth_middleware(
-    State(expected): State<Option<String>>,
+    State(auth): State<AuthCtx>,
     headers: HeaderMap,
-    req: Request,
+    mut req: Request,
     next: Next,
 ) -> Result<Response, api_standard::ProblemDetail> {
     let path = req.uri().path().to_string();
     // 子服务聚合边界（见 subservers.rs）：
     // - /xuanji-system/* 由子服务自带成员令牌 RBAC 鉴权 → 网关透传
-    // - /xuanji-viz /primiflow /fusion 无自带鉴权 → 网关 OUS_API_TOKEN 统一保护
+    // - /xuanji-viz /primiflow /fusion 无自带鉴权 → 网关令牌统一保护
     let is_passthrough = subservers::PASSTHROUGH_PREFIXES
         .iter()
         .any(|p| path.starts_with(p));
@@ -614,24 +699,25 @@ async fn auth_middleware(
         || (path.starts_with("/api/market") && req.method() == axum::http::Method::GET)) {
         return Ok(next.run(req).await);
     }
-    match expected {
+    let token = headers
+        .get(axum::http::header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "));
+    match token {
         None => {
-            tracing::warn!(target: "auth", "未配置 OUS_API_TOKEN，拒绝未授权访问: {}", path);
+            tracing::warn!(target: "auth", "缺少 Authorization: Bearer 令牌: {}", path);
             Err(api_standard::ProblemDetail::new(
-                StatusCode::SERVICE_UNAVAILABLE,
-                "服务未配置鉴权令牌 OUS_API_TOKEN，拒绝所有受保护接口",
-                Some("SERVICE_UNAVAILABLE".into()),
+                StatusCode::UNAUTHORIZED,
+                "缺少或无效的 Authorization: Bearer 令牌",
+                Some("UNAUTHORIZED".into()),
             ))
         }
-        Some(token) => {
-            let ok = headers
-                .get(axum::http::header::AUTHORIZATION)
-                .and_then(|v| v.to_str().ok())
-                .map(|v| v == format!("Bearer {}", token))
-                .unwrap_or(false);
-            if ok {
+        Some(t) => match resolve_principal(&auth, t) {
+            Some(principal) => {
+                req.extensions_mut().insert(principal);
                 Ok(next.run(req).await)
-            } else {
+            }
+            None => {
                 tracing::warn!(target: "auth", "未授权访问被拒绝: {}", path);
                 Err(api_standard::ProblemDetail::new(
                     StatusCode::UNAUTHORIZED,
@@ -639,7 +725,7 @@ async fn auth_middleware(
                     Some("UNAUTHORIZED".into()),
                 ))
             }
-        }
+        },
     }
 }
 
@@ -1290,15 +1376,24 @@ async fn list_plugins(State(state): State<Arc<AppState>>) -> Json<Vec<String>> {
     Json(pm.list())
 }
 
-async fn get_logs(State(state): State<Arc<AppState>>) -> Json<Vec<ExecutionLog>> {
+async fn get_logs(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
     let logs = state.execution_logs.lock().await;
-    Json(logs.clone())
+    Json(serde_json::json!({ "logs": *logs }))
+}
+
+/// GET /api/audit — RBAC 访问审计查询（admin / auditor 专属）。
+///
+/// 返回认证+授权两层产生的全部审计事件（放行 allowed / 拒绝 forbidden），
+/// 每条均带 HMAC 签名，可独立验真（见 rbac_middleware::AuditEvent::verify_signature）。
+async fn get_access_audit(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
+    let events = state.audit.events();
+    Json(serde_json::json!({ "audit": events, "total": events.len() }))
 }
 
 // ========== AI智能对话API ==========
 
 async fn ai_chat(State(state): State<Arc<AppState>>, Json(req): Json<ChatRequest>) -> Json<ChatResponse> {
-    let session_id = req.session_id.unwrap_or_else(|| format!("session-{}", uuid::Uuid::new_v4().to_string()[..8].to_string()));
+    let session_id = req.session_id.unwrap_or_else(|| format!("session-{}", &uuid::Uuid::new_v4().to_string()[..8]));
 
     // 调用AI对话
     let response = match state.ai_agent.chat(&session_id, &req.message).await {
@@ -1870,6 +1965,7 @@ struct ExecuteFlowRequest {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)] // 预留：更新流程请求体，待 /api/flow/update 端点落地后启用
 struct UpdateFlowRequest {
     flow: FlowDefinition,
 }
@@ -1975,6 +2071,7 @@ async fn list_flow_node_types() -> Json<serde_json::Value> {
 #[derive(Debug, Deserialize)]
 struct McpRpcReq {
     #[serde(default)]
+    #[allow(dead_code)] // 预留：JSON-RPC 2.0 协议版本字段，当前 MCP 层未读取
     jsonrpc: String,
     #[serde(default)]
     id: serde_json::Value,
@@ -2076,7 +2173,7 @@ async fn handle_mcp_rpc(State(state): State<Arc<AppState>>, Json(req): Json<McpR
                     vec![1.0, 2.0, 3.0]
                 };
                 let params: Option<HashMap<String, f64>> = arguments.get("input")
-                    .and_then(|_| None)
+                    .and(None)
                     .or_else(|| {
                         // 提取顶层数字参数作为算子参数
                         let mut m = HashMap::new();
@@ -2087,7 +2184,7 @@ async fn handle_mcp_rpc(State(state): State<Arc<AppState>>, Json(req): Json<McpR
                     });
                 let exec_req = ExecuteRequest { workflow: vec![real_id], input, parameters: params };
                 let resp = run_workflow_inner(&state, exec_req).await;
-                return if resp.success {
+                if resp.success {
                     mcp_ok(id, serde_json::json!({
                         "content": [ { "type": "text", "text": serde_json::to_string_pretty(&resp).unwrap_or_default() } ],
                         "isError": false
@@ -2097,7 +2194,7 @@ async fn handle_mcp_rpc(State(state): State<Arc<AppState>>, Json(req): Json<McpR
                         "content": [ { "type": "text", "text": format!("执行失败: {}", resp.error.unwrap_or_default()) } ],
                         "isError": true
                     }))
-                };
+                }
             } else if let Some(plg) = name.strip_prefix("plugin_") {
                 let _real_id = plg.replace('_', "-");
                 let message = arguments.get("message").and_then(|v| v.as_str()).unwrap_or("").to_string();

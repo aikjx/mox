@@ -8,22 +8,16 @@
 //! - **VetoEventHandler** — 否决事件列表
 //! - **WebSocketHandler** — 实时推送否决事件与专家状态变化
 
-use crate::api_standard::{ApiError, ApiResult};
+use crate::api_standard::ApiResult;
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Query, State},
     extract::ws::WebSocketUpgrade,
     response::IntoResponse,
     Json,
 };
-use xuanji_expert::audit::{
-    AuditActor, AuditAction, AuditContext, AuditOutcome, AuditResource, AuditSeverity,
-    ExtAuditEvent,
-};
 use xuanji_expert::context::{GovernContext, Principal, Tenant};
 use xuanji_expert::govern::{AuditChain, AuditEvent, FlowStatus, GateResult};
-use xuanji_expert::pipeline::GovernanceReport;
 use futures_util::SinkExt;
-use xuanji_expert::experts;
 use flow_ai::model::FlowGraph;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -31,7 +25,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::{broadcast, Mutex, RwLock};
-use tower_http::cors::CorsLayer;
 
 // ============================================================================
 // 治理台共享状态
@@ -55,6 +48,7 @@ pub struct GovernanceState {
     /// WebSocket 广播通道（专家状态变化）
     pub state_broadcast: broadcast::Sender<ExpertStatusChange>,
     /// 广播接收器容量
+    #[allow(dead_code)] // 预留：广播容量配置，待治理台运行时调优接口接入后启用
     pub broadcast_capacity: usize,
 }
 
@@ -92,6 +86,7 @@ impl GovernanceState {
     }
 
     /// 查询专家状态（读取锁）
+    #[allow(dead_code)] // 预留：专家状态快照查询，待治理台轮询接口接入后启用
     pub async fn get_expert_states(&self) -> HashMap<String, ExpertStatus> {
         self.expert_states.read().await.clone()
     }
@@ -565,17 +560,17 @@ pub async fn veto_events_handler(
     let filtered: Vec<&VetoEvent> = vetoes
         .iter()
         .filter(|e| {
-            query.flow_id.as_ref().map_or(true, |f| &e.flow_id == f)
-                && query.expert_id.as_ref().map_or(true, |id| &e.expert_id == id)
-                && query.dimension.as_ref().map_or(true, |d| &e.dimension == d)
-                && query.blocked.as_ref().map_or(true, |b| e.blocked == *b)
-                && query.from_ts.map_or(true, |t| e.ts >= t)
-                && query.to_ts.map_or(true, |t| e.ts <= t)
+            query.flow_id.as_ref().is_none_or(|f| &e.flow_id == f)
+                && query.expert_id.as_ref().is_none_or(|id| &e.expert_id == id)
+                && query.dimension.as_ref().is_none_or(|d| &e.dimension == d)
+                && query.blocked.as_ref().is_none_or(|b| e.blocked == *b)
+                && query.from_ts.is_none_or(|t| e.ts >= t)
+                && query.to_ts.is_none_or(|t| e.ts <= t)
         })
         .collect();
 
     let total = filtered.len();
-    let total_pages = (total + page_size - 1) / page_size;
+    let total_pages = total.div_ceil(page_size);
     let start = (page - 1) * page_size;
     let page_items: Vec<VetoEvent> = filtered
         .into_iter()
@@ -614,16 +609,16 @@ pub async fn audit_logs_handler(
         .events
         .iter()
         .filter(|e| {
-            query.flow_id.as_ref().map_or(true, |f| &e.flow_id == f)
-                && query.subject.as_ref().map_or(true, |s| &e.subject == s)
-                && query.action.as_ref().map_or(true, |a| &e.action == a)
-                && query.from_ts.map_or(true, |t| e.ts.timestamp() >= t)
-                && query.to_ts.map_or(true, |t| e.ts.timestamp() <= t)
+            query.flow_id.as_ref().is_none_or(|f| &e.flow_id == f)
+                && query.subject.as_ref().is_none_or(|s| &e.subject == s)
+                && query.action.as_ref().is_none_or(|a| &e.action == a)
+                && query.from_ts.is_none_or(|t| e.ts.timestamp() >= t)
+                && query.to_ts.is_none_or(|t| e.ts.timestamp() <= t)
         })
         .collect();
 
     let total = filtered.len();
-    let total_pages = (total + page_size - 1) / page_size;
+    let total_pages = total.div_ceil(page_size);
     let start = (page - 1) * page_size;
 
     let entries: Vec<AuditLogEntry> = filtered
@@ -692,7 +687,7 @@ pub async fn update_rbac_config_handler(
 
     // 记录到审计链
     gs.append_audit(
-        &"config-manager",
+        "config-manager",
         "rbac",
         "update_rbac",
         &format!("version={}", new_version),
@@ -755,7 +750,7 @@ pub async fn update_expert_config_handler(
 
     // 记录到审计链
     gs.append_audit(
-        &"config-manager",
+        "config-manager",
         "expert-config",
         "update_expert_config",
         &format!("version={}", new_version),
@@ -873,7 +868,10 @@ pub async fn governance_ws_handler(
                 let mut ticker = tokio::time::interval(std::time::Duration::from_secs(30));
                 loop {
                     ticker.tick().await;
-                    let _ = w.send(Message::Ping(vec![].into())).await;
+                    // 发送失败说明连接已断开，终止保活任务，避免对死连接无限 ping 并长期占用写锁
+                    if w.send(Message::Ping(vec![])).await.is_err() {
+                        break;
+                    }
                 }
             });
 
@@ -940,7 +938,7 @@ pub async fn trigger_governance(
         if let Some(status) = states.get_mut(dim) {
             status.veto_count += 1;
             status.total_checks += 1;
-            status.health_score = (*score).max(0.0).min(1.0);
+            status.health_score = (*score).clamp(0.0, 1.0);
             status.last_updated = unix_ts();
 
             let change = ExpertStatusChange {

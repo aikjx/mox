@@ -74,7 +74,7 @@ impl WasmOperator {
             .flat_map(|&x| x.to_le_bytes())
             .collect();
         memory
-            .view(&mut store)
+            .view(&store)
             .write(input_offset as u64, &input_bytes)
             .map_err(|e| OperatorError::WasmError(format!("写入输入失败: {}", e)))?;
 
@@ -83,7 +83,7 @@ impl WasmOperator {
             .call(
                 &mut store,
                 &[
-                    Value::I32(input_offset as i32),
+                    Value::I32(input_offset),
                     Value::I32(output_offset as i32),
                     Value::I32(n as i32),
                 ],
@@ -165,7 +165,7 @@ impl WasmPluginManager {
         {
             let entry = entry.map_err(|e| OperatorError::WasmError(format!("读取目录项失败: {}", e)))?;
             let path = entry.path();
-            if path.extension().map_or(false, |ext| ext == "wasm") {
+            if path.extension().is_some_and(|ext| ext == "wasm") {
                 let name = path.file_stem().unwrap().to_string_lossy().to_string();
                 let metadata = OperatorMetadata {
                     id: format!("wasm-{}", name),

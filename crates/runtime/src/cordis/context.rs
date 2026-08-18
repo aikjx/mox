@@ -108,12 +108,12 @@ impl SessionLog {
         match &entry {
             SessionEntry::TurnStart { turn_id, .. } => {
                 index.entry(turn_id.as_str().to_string())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(idx);
             }
             SessionEntry::StepStart { turn_id, .. } => {
                 index.entry(turn_id.as_str().to_string())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(idx);
             }
             _ => {}
@@ -177,6 +177,7 @@ impl SnapshotManager {
         Ok(snapshot_id)
     }
 
+    #[allow(dead_code)] // 会话快照回滚接口，待接入生命周期回滚管线后启用
     fn restore(&self, snapshot_id: &str) -> Option<Vec<SessionEntry>> {
         let snapshots = self.snapshots.read();
         snapshots.get(snapshot_id).cloned()

@@ -33,6 +33,7 @@ def main():
                     help="crepe_onnx 模型大小")
     ap.add_argument("--no-denoise", action="store_true", help="关闭谱减降噪")
     ap.add_argument("--threads", type=int, default=0, help="onnxruntime 单算子线程数")
+    ap.add_argument("--no-robust", action="store_true", help="关闭稳健重识别共识（单次识别）")
     args = ap.parse_args()
 
     if not args.input and not args.record:
@@ -42,6 +43,8 @@ def main():
     cfg = Config()
     cfg.model_size = args.model
     cfg.enable_denoise = not args.no_denoise
+    cfg.preferred_backend = "crepe_onnx"  # 首选首选：crepe_onnx tiny
+    cfg.robust = not args.no_robust
     if args.threads:
         cfg.intra_op_threads = args.threads
 

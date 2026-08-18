@@ -8,6 +8,7 @@
 """
 import io
 import json
+import math
 import os
 import re
 import sys
@@ -17,19 +18,18 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import soundfile as sf
-from PyQt5.QtCore import QThread, pyqtSignal, Qt, QSize
+from PyQt5.QtCore import QThread, pyqtSignal, Qt, QSize, QTimer
 from PyQt5.QtGui import QPainter, QPen, QColor, QFont, QBrush, QPalette
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QLabel, QFileDialog, QComboBox, QSlider, QCheckBox, QTabWidget, QTextEdit,
     QTableWidget, QTableWidgetItem, QHeaderView, QProgressBar, QMessageBox,
-    QGroupBox, QLineEdit, QFrame, QSizePolicy)
+    QGroupBox, QLineEdit, QFrame, QSizePolicy, QDialog)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 from core.config import Config
-from core import capture, preprocess, pitch, analysis, score, vad
 from app.audio_play import play_raw, play_score, stop as audio_stop
 
 ACCENT = "#4f9dff"
@@ -72,92 +72,11 @@ class RecognizeWorker(QThread):
 
     def run(self):
         try:
-            cfg = self.source["cfg"]
-            if self.source["kind"] == "file":
-                y, sr = load_audio_bytes(self.source["data"], cfg.sr)
-            elif self.source["kind"] == "record":
-                y, sr = load_audio_bytes(self.source["data"], cfg.sr)
-            else:  # sample
-                y = capture.load_audio(os.path.join(ROOT, self.source["name"]), cfg.sr)
-                sr = cfg.sr
-
-            t0 = time.time()
-            y = preprocess.preprocess(y, sr, cfg.enable_denoise)
-            t_pre = time.time() - t0
-
-            # 稳健重识别：同一音频跑 N 次（抖动置信阈值 / 帧移），对音符做共识合并，
-            # 抑制单次识别偶发的假音高与漏音，显著提升稳定性。
-            n_runs = 4 if cfg.robust else 1
-            runs = []
-            t_pitch_total = 0.0
-            used_backend = "auto"
-            last_pts: list = []
-            for k in range(n_runs):
-                # 每次稍扰动置信阈值，得到略不同的音高点云（帧移保持与单次识别一致，
-                # 避免 VAD 掩码帧错位）。不同阈值下 CREPE 输出不同，便于共识过滤假音高。
-                eff = Config()
-                eff.conf_thresh = max(0.05, cfg.conf_thresh - 0.06 + 0.04 * k)
-                t0 = time.time()
-                det = pitch.PitchDetector(
-                    model_size=cfg.model_size, conf_thresh=eff.conf_thresh, hop=eff.hop,
-                    intra_op_threads=cfg.intra_op_threads, backend="auto", sr=sr,
-                    fmin=cfg.fmin, fmax=cfg.fmax)
-                pts = det.detect(y, sr)
-                t_pitch_total += time.time() - t0
-                used_backend = det.used_backend
-                last_pts = pts
-
-                vad_mask = None
-                if cfg.vocal_mode and cfg.enable_vad:
-                    vad_mask = vad.voice_activity_mask(
-                        y, sr, energy_thresh=cfg.vad_energy_thresh,
-                        centroid_min=cfg.vad_centroid_min, centroid_max=cfg.vad_centroid_max,
-                        flatness_max=cfg.vad_flatness_max, hop_ms=eff.hop,
-                        min_voiced_ms=cfg.min_voiced_ms)
-
-                notes = analysis.segment_notes(
-                    pts, cfg.min_note_dur, cfg.median_win,
-                    vocal_mode=cfg.vocal_mode, vad_mask=vad_mask)
-                runs.append(notes)
-
-            t_pitch = t_pitch_total
-            t_parse = 0.0
-
-            if n_runs > 1:
-                notes, merge_info = self._consensus(runs, cfg)
-            else:
-                notes = runs[0]
-                merge_info = None
-
-            t0 = time.time()
-            bpm = analysis.detect_bpm(y, sr, cfg.bpm_fallback)
-            key_name = analysis.estimate_key(y, sr, notes)
-            t_parse = time.time() - t0
-
-            jianpu = score.to_jianpu(notes, key_name, bpm)
-            total_dur = float(notes[-1]["end"]) if notes else 0.0
-            notes_out = [{
-                "midi": int(n["midi"]),
-                "start": round(float(n["start"]), 4),
-                "end": round(float(n["end"]), 4),
-                "dur": round(float(n["end"] - n["start"]), 4),
-                "name": midi_name(int(n["midi"])),
-            } for n in notes]
-
-            self.finished.emit({
-                "jianpu": jianpu, "bpm": round(float(bpm), 1),
-                "key": {"tonic": key_name[0], "mode": key_name[1]},
-                "note_count": len(notes), "duration_sec": round(total_dur, 2),
-                "backend": used_backend, "notes": notes_out,
-                "confidence": round(float(merge_info["confidence"]) if merge_info else self._conf(runs[0]), 2),
-                "robust_runs": n_runs,
-                "robust_kept": merge_info["kept"] if merge_info else len(runs[0]),
-                "perf": {"preprocess_ms": round(t_pre * 1000, 1),
-                         "pitch_ms": round(t_pitch * 1000, 1),
-                         "parse_ms": round(t_parse * 1000, 1),
-                         "pitch_frames": len(last_pts)},
-                "source": self.source.get("source", ""),
-            })
+            # 统一委托给企业级编排器（core.pipeline.Melody2Score）：
+            # 内置 crepe_onnx 首选 + 优雅降级 + 超时保护 + 稳健重识别共识 + 完整计时。
+            from core.pipeline import Melody2Score
+            result = Melody2Score(self.source["cfg"]).recognize(self.source)
+            self.finished.emit(result)
         except Exception as e:
             traceback.print_exc()
             self.error.emit(str(e))
@@ -345,12 +264,192 @@ class PitchView(QWidget):
             p.drawEllipse(int(x) - 2, int(y) - 2, 4, 4)
 
 
+class LevelMeter(QWidget):
+    """录音电平表（实时音量条 + 呼吸红点动画）。"""
+    def __init__(self):
+        super().__init__()
+        self.setMinimumHeight(64)
+        self.level = 0.0
+        self.recording = False
+
+    def set_level(self, v: float):
+        self.level = max(0.0, min(1.0, v))
+        self.update()
+
+    def paintEvent(self, ev):
+        p = QPainter(self)
+        p.fillRect(self.rect(), QColor(PANEL2))
+        W, H = self.width(), self.height()
+        # 呼吸红点
+        t = time.time()
+        pulse = 0.5 + 0.5 * abs(math.sin(t * 4.0)) if self.recording else 0.0
+        r = 9
+        cx, cy = 22, H // 2
+        glow = QColor(255, 70, 70, int(60 + 140 * pulse))
+        p.setBrush(QBrush(glow))
+        p.setPen(Qt.NoPen)
+        p.drawEllipse(cx - r - int(8 * pulse), cy - r - int(8 * pulse),
+                      2 * (r + int(8 * pulse)), 2 * (r + int(8 * pulse)))
+        p.setBrush(QColor(255, 70, 70))
+        p.drawEllipse(cx - r, cy - r, 2 * r, 2 * r)
+        # 电平条
+        bx, bw = 48, W - 48 - 12
+        by, bh = 14, H - 28
+        p.setPen(QPen(QColor(LINE)))
+        p.setBrush(QColor(BG))
+        p.drawRect(bx, by, bw, bh)
+        fill = int(bw * self.level)
+        grad = QColor(ACCENT2) if self.level > 0.05 else QColor(MUTED)
+        if self.level > 0.85:
+            grad = QColor("#ffb454")
+        p.setBrush(grad)
+        p.drawRect(bx, by, fill, bh)
+        # 刻度
+        p.setPen(QColor(MUTED))
+        p.setFont(QFont("Sans", 10))
+        p.drawText(bx, by - 2, f"输入电平 {self.level * 100:.0f}%")
+
+
+class RecDialog(QDialog):
+    """录音对话框：3-2-1 准备倒计时 + 实时剩余秒数 + 电平动画。
+
+    录制结束后通过 accept() 释放录制结果（wav 字节），调用方从 .result 读取。
+    """
+    def __init__(self, secs: int, sr: int, parent=None):
+        super().__init__(parent)
+        self.secs = secs
+        self.sr = sr
+        self.result: Optional[Tuple[bytes, "np.ndarray", int]] = None  # (wav_bytes, y, sr)
+        self.err: Optional[Exception] = None
+        self.frames = []  # 各块 ndarray
+        self._stream = None
+        self._countdown = 3  # 准备倒计时
+        self._elapsed = 0.0
+        self.setWindowTitle("🎙️ 录音中…")
+        self.setModal(True)
+        self.setMinimumSize(480, 240)
+        self.setStyleSheet(f"""
+            QDialog{{background:{BG};}}
+            QWidget{{background:{BG};color:{TEXT};font-family:'Segoe UI','PingFang SC','Microsoft YaHei';font-size:15px;}}
+            QLabel{{color:{TEXT};}}
+        """)
+        v = QVBoxLayout(self)
+        v.setSpacing(16)
+        v.setContentsMargins(28, 28, 28, 28)
+        self.lblTitle = QLabel("准备录音…")
+        self.lblTitle.setStyleSheet(f"font-size:20px;font-weight:800;color:{ACCENT};")
+        v.addWidget(self.lblTitle)
+        self.lblCount = QLabel("")
+        self.lblCount.setStyleSheet(f"font-size:54px;font-weight:900;color:{ACCENT2};alignment:AlignCenter;")
+        self.lblCount.setAlignment(Qt.AlignCenter)
+        v.addWidget(self.lblCount)
+        self.lblRemain = QLabel("")
+        self.lblRemain.setStyleSheet(f"color:{MUTED};font-size:14px;")
+        self.lblRemain.setAlignment(Qt.AlignCenter)
+        v.addWidget(self.lblRemain)
+        self.meter = LevelMeter()
+        v.addWidget(self.meter)
+        self.lblTip = QLabel("请对着麦克风清唱 / 哼鸣，保持音量平稳。录音将自动开始与结束。")
+        self.lblTip.setStyleSheet(f"color:{MUTED};font-size:12px;")
+        self.lblTip.setAlignment(Qt.AlignCenter)
+        v.addWidget(self.lblTip)
+        self.btnCancel = QPushButton("取消")
+        self.btnCancel.setStyleSheet("background:#33405f;color:#e6ecf5;padding:10px 16px;border-radius:9px;")
+        self.btnCancel.clicked.connect(self.reject)
+        v.addWidget(self.btnCancel)
+
+        # 准备倒计时定时器（每 1s）
+        self._timer = QTimer(self)
+        self._timer.timeout.connect(self._tick)
+        self._timer.start(1000)
+        self._tick()  # 立即显示首帧
+
+    def _tick(self):
+        if self._countdown > 0:
+            self.lblCount.setText(str(self._countdown))
+            self.lblTitle.setText("准备录音…")
+            self.lblRemain.setText(f"即将开始 {self.secs}s 录音")
+            self.meter.recording = False
+            self._countdown -= 1
+            return
+        # 倒计时结束，开始正式录音
+        if self._stream is None:
+            self._start_recording()
+        self._elapsed += 1.0
+        left = max(0, self.secs - int(self._elapsed))
+        self.lblCount.setText(f"{left}")
+        self.lblTitle.setText("🎙️ 录音中…")
+        self.lblRemain.setText(f"剩余 {left}s / 共 {self.secs}s")
+        if left <= 0:
+            self._timer.stop()
+            self._finish()
+
+    def _start_recording(self):
+        try:
+            import sounddevice as sd
+            import soundfile as sf
+        except Exception as e:  # pragma: no cover
+            self.err = e
+            self._timer.stop()
+            self.reject()
+            return
+        self._sf = sf
+        self.meter.recording = True
+
+        def cb(indata, frames, t, status):
+            if status:
+                pass
+            chunk = np.asarray(indata, dtype=np.float32).reshape(-1).copy()
+            self.frames.append(chunk)
+            # 实时电平（RMS）
+            rms = float(np.sqrt(np.mean(chunk.astype(np.float32) ** 2) + 1e-12))
+            lvl = min(1.0, rms * 8.0)  # 放大便于观察
+            # 用单次计时器回到主线程刷新（避免子线程直接 paint）
+            QTimer.singleShot(0, lambda: self.meter.set_level(lvl))
+
+        try:
+            self._stream = sd.InputStream(samplerate=self.sr, channels=1,
+                                          dtype="float32", blocksize=2048, callback=cb)
+            self._stream.start()
+        except Exception as e:  # pragma: no cover
+            self.err = e
+            self._timer.stop()
+            self.reject()
+
+    def _finish(self):
+        try:
+            if self._stream is not None:
+                self._stream.stop()
+                self._stream.close()
+            if self.frames:
+                y = np.concatenate(self.frames, axis=0).astype(np.float32)
+            else:
+                y = np.zeros(int(self.sr * 0.2), dtype=np.float32)
+            buf = io.BytesIO()
+            self._sf.write(buf, y, self.sr, format="WAV")
+            self.result = (buf.getvalue(), y, self.sr)
+        except Exception as e:
+            self.err = e
+            self.reject()
+            return
+        self.accept()
+
+    def closeEvent(self, ev):
+        if self._stream is not None:
+            try:
+                self._stream.stop()
+                self._stream.close()
+            except Exception:
+                pass
+        super().closeEvent(ev)
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Melody2Score · 哼唱旋律转谱（企业级桌面版）")
-        self.setMinimumSize(1360, 900)
-        self.resize(1440, 920)
+        self.setMinimumSize(1680, 1050)
+        self.resize(1760, 1080)
         self.current = None
         self.pending_file = None
         self._raw_y = None
@@ -362,39 +461,40 @@ class MainWindow(QMainWindow):
     def _apply_style(self):
         self.setStyleSheet(f"""
             QMainWindow{{background:{BG};}}
-            QWidget{{background:{BG};color:{TEXT};font-family:'Segoe UI','PingFang SC','Microsoft YaHei';}}
-            QGroupBox{{border:1px solid {LINE};border-radius:10px;margin-top:10px;padding:10px;}}
-            QGroupBox::title{{color:{MUTED};subcontrol-position:top left;padding:0 6px;}}
-            QPushButton{{background:{ACCENT};color:#06101f;border:none;border-radius:9px;
-                padding:9px 14px;font-weight:700;font-size:13px;}}
+            QWidget{{background:{BG};color:{TEXT};font-family:'Segoe UI','PingFang SC','Microsoft YaHei';font-size:15px;}}
+            QGroupBox{{border:1px solid {LINE};border-radius:12px;margin-top:14px;padding:14px;font-size:15px;}}
+            QGroupBox::title{{color:{MUTED};subcontrol-position:top left;padding:0 8px;font-size:14px;}}
+            QPushButton{{background:{ACCENT};color:#06101f;border:none;border-radius:10px;
+                padding:12px 18px;font-weight:800;font-size:15px;}}
             QPushButton:hover{{background:#6fb0ff;}}
             QPushButton:disabled{{background:{PANEL2};color:{MUTED};}}
-            QComboBox,QLineEdit{{background:{PANEL2};border:1px solid {LINE};border-radius:8px;
-                padding:7px;color:{TEXT};}}
-            QLabel{{color:{TEXT};}}
-            QTableWidget{{background:{PANEL2};gridline-color:{LINE};border:1px solid {LINE};}}
-            QHeaderView::section{{background:{PANEL};color:{MUTED};border:none;padding:6px;}}
-            QTextEdit{{background:#0b1020;border:1px solid {LINE};border-radius:10px;
-                color:#dfe9ff;font-family:Consolas,monospace;font-size:14px;}}
-            QTabBar::tab{{background:{PANEL2};color:{MUTED};padding:8px 16px;border-radius:8px;margin:2px;}}
+            QComboBox,QLineEdit{{background:{PANEL2};border:1px solid {LINE};border-radius:9px;
+                padding:9px;color:{TEXT};font-size:15px;min-height:18px;}}
+            QLabel{{color:{TEXT};font-size:15px;}}
+            QTableWidget{{background:{PANEL2};gridline-color:{LINE};border:1px solid {LINE};font-size:14px;}}
+            QHeaderView::section{{background:{PANEL};color:{MUTED};border:none;padding:8px;font-size:14px;}}
+            QTextEdit{{background:#0b1020;border:1px solid {LINE};border-radius:12px;
+                color:#dfe9ff;font-family:Consolas,monospace;font-size:16px;}}
+            QTabBar::tab{{background:{PANEL2};color:{MUTED};padding:12px 22px;border-radius:9px;margin:3px;font-size:15px;font-weight:700;}}
             QTabBar::tab:selected{{background:{ACCENT};color:#06101f;}}
-            QProgressBar{{background:{PANEL2};border:1px solid {LINE};border-radius:6px;text-align:center;}}
-            QProgressBar::chunk{{background:{ACCENT2};border-radius:6px;}}
+            QProgressBar{{background:{PANEL2};border:1px solid {LINE};border-radius:7px;text-align:center;font-size:13px;}}
+            QProgressBar::chunk{{background:{ACCENT2};border-radius:7px;}}
             QFrame#sep{{background:{LINE};max-height:1px;}}
+            QCheckBox{{font-size:15px;spacing:6px;}}
         """)
 
     def _build(self):
         root = QWidget()
         self.setCentralWidget(root)
         h = QHBoxLayout(root)
-        h.setSpacing(14)
-        h.setContentsMargins(16, 16, 16, 16)
+        h.setSpacing(22)
+        h.setContentsMargins(24, 24, 24, 24)
 
         # 左侧控制
         left = QFrame()
-        left.setFixedWidth(360)
+        left.setFixedWidth(430)
         lv = QVBoxLayout(left)
-        lv.setSpacing(10)
+        lv.setSpacing(16)
 
         # 输入
         g_in = QGroupBox("输入源")
@@ -405,8 +505,9 @@ class MainWindow(QMainWindow):
         self.btnRec = QPushButton("🎙️ 录音并识别")
         self.btnRec.clicked.connect(self.record)
         self.cbRecSec = QComboBox()
-        self.cbRecSec.addItems(["3 秒", "5 秒", "10 秒"])
-        self.cbRecSec.setFixedWidth(70)
+        self.cbRecSec.addItems(["30 秒", "60 秒", "10 秒", "3 秒"])
+        self.cbRecSec.setCurrentIndex(0)
+        self.cbRecSec.setFixedWidth(80)
         rec_row.addWidget(self.btnRec)
         rec_row.addWidget(self.cbRecSec)
         self.lblFile = QLabel("未选择文件")
@@ -534,6 +635,21 @@ class MainWindow(QMainWindow):
         self.table.setHorizontalHeaderLabels(["#", "MIDI", "音名", "起始(s)", "时长(s)"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         tabs.addTab(self.table, "音符明细")
+        # 识别歌曲
+        self.songBox = QFrame()
+        self.songBox.setMinimumHeight(360)
+        svb = QVBoxLayout(self.songBox)
+        svb.setSpacing(14)
+        svb.setContentsMargins(18, 18, 18, 18)
+        self.songHead = QLabel("🎯 旋律识别歌曲（离线曲库匹配）")
+        self.songHead.setStyleSheet(f"color:{ACCENT};font-size:17px;font-weight:800;")
+        svb.addWidget(self.songHead)
+        self.songResult = QTextEdit()
+        self.songResult.setReadOnly(True)
+        self.songResult.setPlainText("识别完成后，这里会显示「你唱的可能是哪首歌」及匹配度。\n"
+                                      "曲库为 15 首公版经典旋律，采用音程 DTW 匹配，对跑调/移调鲁棒。")
+        svb.addWidget(self.songResult, 1)
+        tabs.addTab(self.songBox, "识别歌曲")
         rv.addWidget(tabs, 1)
 
         self.titleEdit = QLineEdit("未命名旋律")
@@ -599,42 +715,39 @@ class MainWindow(QMainWindow):
                 self.status.setText(f"已选择（试听加载失败：{e}）")
 
     def record(self):
-        """用 sounddevice 实时录音（默认 16kHz 单声道），录音结束后自动识别人声。"""
+        """打开录音对话框（含 3-2-1 准备倒计时 + 实时剩余秒数 + 电平动画），
+        录音结束后自动识别人声。"""
         worker = getattr(self, "worker", None)
         if worker is not None and worker.isRunning():
             return  # 识别中，忽略重复点击
         try:
-            import sounddevice as sd
+            import sounddevice  # noqa: F401
         except Exception as e:
             QMessageBox.critical(self, "录音不可用", f"未安装 sounddevice：{e}")
             return
-        secs = [3, 5, 10][self.cbRecSec.currentIndex()]
+        secs = [30, 60, 10, 3][self.cbRecSec.currentIndex()]
         sr = self._cfg().sr
         self.btnRec.setEnabled(False)
-        self.btnRec.setText(f"🎙️ 录音中 {secs}s…")
-        self.status.setText(f"🎙️ 录音中… 请对着麦克风唱（{secs}s）")
-        try:
-            data = sd.rec(int(secs * sr), samplerate=sr, channels=1, dtype="float32")
-            sd.wait()
-        except Exception as e:
-            QMessageBox.critical(self, "录音失败", f"麦克风录音出错：{e}")
-            self.status.setText("录音失败。")
-            self.btnRec.setEnabled(True)
-            self.btnRec.setText("🎙️ 录音并识别")
+        self.btnRec.setText("🎙️ 录音中…")
+        self.status.setText(f"🎙️ 打开录音… 请稍候（{secs}s）")
+        dlg = RecDialog(secs, sr, self)
+        dlg.finished.connect(lambda code, d=dlg, secs=secs: self._on_record_done(code, d, secs))
+        dlg.open()  # 非模态，主线程不卡
+
+    def _on_record_done(self, code, dlg: "RecDialog", secs: int):
+        self.btnRec.setEnabled(True)
+        self.btnRec.setText("🎙️ 录音并识别")
+        if code != QDialog.Accepted or dlg.result is None:
+            err = getattr(dlg, "err", None)
+            self.status.setText(f"已取消录音。" + (f"（错误：{err}）" if err else ""))
             return
-        y_rec = np.asarray(data, dtype=np.float32).reshape(-1)
-        # 编码为 wav 字节，复用 load_audio_bytes 解码路径
-        import io
-        import soundfile as sf
-        buf = io.BytesIO()
-        sf.write(buf, y_rec, sr, format="WAV")
+        wav_bytes, y_rec, sr = dlg.result
         self.pending_file = None
         self._raw_y, self._raw_sr = y_rec, sr
         self.btnPreview.setEnabled(True)
-        self.btnRec.setEnabled(True)
-        self.btnRec.setText("🎙️ 录音并识别")
         self.status.setText(f"录音完成（{secs}s），开始识别人声…")
-        self._start({"kind": "record", "data": buf.getvalue(), "cfg": self._cfg(),
+        import io as _io
+        self._start({"kind": "record", "data": wav_bytes, "cfg": self._cfg(),
                      "source": f"麦克风录音 {secs}s"})
 
     def _start(self, source: Dict):
@@ -727,6 +840,26 @@ class MainWindow(QMainWindow):
         if res.get("robust_runs", 1) > 1:
             robust_info = f" · 重识别{res['robust_runs']}次→共识保留 {res['robust_kept']} 音 · 置信度 {res.get('confidence',0):.0%}"
         self.status.setText(f"完成 · {res['note_count']} 个音符 · 来源 {res.get('source','')}{robust_info}")
+
+        # 旋律识别歌曲（离线曲库 DTW 音程匹配）
+        try:
+            from core.song_match import match_song
+            mr = match_song(res.get("notes", []), top_k=5)
+            lines = []
+            if mr["matched"]:
+                lines.append(f"✅ 匹配成功！最佳候选：{mr['candidates'][0]['title_zh']} "
+                             f"({mr['candidates'][0]['title_en']})  匹配度 {mr['best_score']:.0f}%\n")
+            else:
+                lines.append(f"🔍 未在曲库中命中（最佳 {mr.get('best_score',0):.0f}%，阈值 55%）。"
+                             f"可能是曲库外的歌，或片段过短。\n")
+            lines.append(f"查询音符数：{mr['query_len']}　┄┄　Top 候选：\n")
+            for i, c in enumerate(mr["candidates"], 1):
+                bar = "█" * int(round(c["score"] / 5))
+                lines.append(f"  {i}. {c['title_zh']:<6} {c['title_en']:<26} "
+                             f"{c['score']:.0f}% {bar}")
+            self.songResult.setPlainText("\n".join(lines))
+        except Exception as e:
+            self.songResult.setPlainText(f"（识别歌曲模块出错：{e}）")
 
     def on_err(self, msg: str):
         self.progress.setVisible(False)

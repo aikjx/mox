@@ -312,7 +312,7 @@ impl LlmRouter {
             };
             chain
                 .iter()
-                .filter_map(|name| registry.get(name).map(|p| p.clone()))
+                .filter_map(|name| registry.get(name))
                 .collect()
         };
 
@@ -342,7 +342,7 @@ impl LlmRouter {
                 Some(r) => r,
                 None => return Err(anyhow::anyhow!("router registry lock poisoned")),
             };
-            registry.get(name).map(|p| p.clone())
+            registry.get(name)
         };
         match provider {
             Some(provider) => {

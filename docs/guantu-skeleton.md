@@ -148,7 +148,7 @@ tools/info-graph/target/release/info-graph export  --graph graph.enterprise.json
 | --- | --- | --- |
 | P1 | 编译测试全绿；清理 R02 死代码、挂载 R01 治理台 | `cargo build/test --workspace` 0 错 0 败 |
 | P2 | 注入 Runtime 节点；真接 R03/R04/R05；清理前端/后端孤立 | 偏离清单中前端/后端项清零 |
-| P3 | 六维绑定 Registry（R06）+ TraceMatrix；数据表挂接 crate（R07/R08） | 六维零孤儿、连通 REQ ✅（primiflow-fusion 24 测 + 全 workspace 510 测 0 错 0 败 0 panic；`platform::p3_exit_gate_zero_orphan_connected_to_req` 编码出口闸） |
+| P3 | 六维绑定 Registry（R06）+ TraceMatrix；数据表挂接 crate（R07/R08） | 六维零孤儿、连通 REQ ✅（primiflow-fusion 44 测 + 全 workspace 644 测 0 错 0 败；`platform::p3_exit_gate_zero_orphan_connected_to_req` 编码出口闸） |
 | P4 | benches 基线 + 覆盖率门禁（tarpaulin.toml + enterprise-ci coverage job） | tarpaulin ≥70% ✅（核心 12 crate lib 行覆盖率 **70.30%**；benches 基线 fuse_all 43.5µs / synthesize 57ms / full_gate 122µs / registry 236µs） |
 | P5 | CI 关图校验常态化（孤儿/偏离自动告警） | 每次合并零漂移 |
 

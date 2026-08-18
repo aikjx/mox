@@ -23,6 +23,8 @@
 //! }
 //! ```
 
+// 预留公开 API / 未接入管线的能力面（如插件总线、算子目录、优化器 DAG、RBAC 之外的合规结构）：显式允许 dead_code 而非删除，避免破坏能力面；后续接入时自然消除。
+#![allow(dead_code)]
 use axum::body::to_bytes;
 use axum::extract::Request;
 use axum::http::{header::CONTENT_TYPE, HeaderMap, HeaderValue, StatusCode};
@@ -155,7 +157,7 @@ pub type ApiResult<T> = Result<T, ApiError>;
 ///
 /// 修复现网缺陷：后端业务错误以 `HTTP 200 + {success:false}` 返回，导致前端
 /// 把每次失败当成功处理。本中间件拦截此类伪成功响应，改写为正确的 4xx 状态码
-/// + RFC 9457 Problem+JSON，同时保留 `error` / `message` / `code` / `instance`
+/// 以及 RFC 9457 Problem+JSON，同时保留 `error` / `message` / `code` / `instance`
 /// 等字段语义。非失败响应原样透传，不影响任何正常逻辑。
 pub async fn standardize_response(req: Request, next: Next) -> Response {
     let response = next.run(req).await;
@@ -184,7 +186,7 @@ pub async fn standardize_response(req: Request, next: Next) -> Response {
     let is_failure = val
         .get("success")
         .and_then(|v| v.as_bool())
-        .map(|b| b == false)
+        .map(|b| !b)
         .unwrap_or(false);
     if !is_failure {
         return rebuild_ok(val);
@@ -239,9 +241,34 @@ fn derive_status_from_failure(val: &Value) -> Option<StatusCode> {
             }
         }
     }
+    // 语义推断：资源不存在类错误 → 404（而非一律 400），
+    // 使 `流程不存在`、`未找到记录` 等业务失败具备正确的 HTTP 语义。
+    let detail = val
+        .get("error")
+        .and_then(|v| v.as_str())
+        .or_else(|| val.get("message").and_then(|v| v.as_str()))
+        .unwrap_or("");
+    let lower = detail.to_lowercase();
+    if detail.contains("不存在")
+        || detail.contains("未找到")
+        || lower.contains("not found")
+        || lower.contains("not_found")
+        || lower.contains("no such")
+    {
+        return Some(StatusCode::NOT_FOUND);
+    }
     None
 }
 
-fn derive_code_from_failure(_val: &Value) -> Option<String> {
+fn derive_code_from_failure(val: &Value) -> Option<String> {
+    let detail = val
+        .get("error")
+        .and_then(|v| v.as_str())
+        .or_else(|| val.get("message").and_then(|v| v.as_str()))
+        .unwrap_or("");
+    let lower = detail.to_lowercase();
+    if detail.contains("不存在") || detail.contains("未找到") || lower.contains("not found") {
+        return Some("NOT_FOUND".to_string());
+    }
     Some("BUSINESS_ERROR".to_string())
 }

@@ -4,4 +4,3 @@
 //! - `governance` — Dashboard / Audit / Config / Veto / WebSocket handlers
 
 pub mod governance;
-pub use governance::*;

@@ -10,6 +10,8 @@
 //! - 插件调用
 //! - 算子执行集成
 
+// 预留公开 API / 未接入管线的能力面（如插件总线、算子目录、优化器 DAG、RBAC 之外的合规结构）：显式允许 dead_code 而非删除，避免破坏能力面；后续接入时自然消除。
+#![allow(dead_code)]
 use super::types::*;
 use super::llm_client::LLMClient;
 use operator_core::{Result, OperatorError};
@@ -34,6 +36,7 @@ pub struct WorkflowEngine {
 
 impl WorkflowEngine {
     /// 无 LLM 句柄的降级构造（AI 节点标记为 simulated）
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self::new_with_llm(None)
     }
@@ -1134,7 +1137,7 @@ mod tests {
 
         assert_eq!(result.instance.status, WorkflowStatus::Completed);
         assert!(
-            result.instance.variables.get("ai_task_completed").is_some(),
+            result.instance.variables.contains_key("ai_task_completed"),
             "AiTask 降级输出应合并到变量"
         );
         assert_eq!(
@@ -1178,8 +1181,8 @@ mod tests {
         ];
         for tid in enterprise_ids {
             let mut engine = WorkflowEngine::new();
-            let wf_id = engine.create_from_template(tid).expect(&format!("模板应存在: {}", tid));
-            let result = engine.execute(&wf_id).await.expect(&format!("{} 应能执行完成", tid));
+            let wf_id = engine.create_from_template(tid).unwrap_or_else(|_| panic!("模板应存在: {}", tid));
+            let result = engine.execute(&wf_id).await.unwrap_or_else(|_| panic!("{} 应能执行完成", tid));
             assert_eq!(result.instance.status, WorkflowStatus::Completed, "{} 应 Completed", tid);
             assert!(
                 result.instance.node_executions.iter().any(|ne| ne.status == WorkflowStatus::Completed),
@@ -1197,13 +1200,13 @@ mod tests {
 
         assert!(eval_condition("${verify_pass} == true", &vars).expect("变量已定义应可求值"));
         assert!(eval_condition("${loss} < 0.001", &vars).expect("数值比较应可求值"));
-        assert!(eval_condition("${loss} >= 0.001", &vars).expect("应可求值") == false);
+        assert!(!eval_condition("${loss} >= 0.001", &vars).expect("应可求值"));
 
         // 未定义变量：fail-closed——resolve_value 返回 Null 哨兵，
         // 等值比较为 false，排序比较也一律 false（不会退化为字符串比较）
-        assert_eq!(eval_condition("${missing} == true", &vars).expect("fail-closed false"), false);
-        assert_eq!(eval_condition("${missing} < 0.001", &vars).expect("fail-closed false"), false);
-        assert_eq!(eval_condition("${missing} > 5", &vars).expect("fail-closed false"), false);
+        assert!(!eval_condition("${missing} == true", &vars).expect("fail-closed false"));
+        assert!(!eval_condition("${missing} < 0.001", &vars).expect("fail-closed false"));
+        assert!(!eval_condition("${missing} > 5", &vars).expect("fail-closed false"));
         // 语法错误（无比较符）：仍报错，避免掩盖配置错误
         assert!(eval_condition("needs_parallel", &vars).is_err());
     }

@@ -1,15 +1,27 @@
-# PC / 开发板 通用依赖
-# 注意：PyPI 上没有名为 crepe-onnx 的包；真实 CREPE tiny 用 torchcrepe（PyTorch/ONNXRuntime）。
-# 若仅做端到端验证且不想装 torch，可去掉 torchcrepe/torch，代码会自动降级到 librosa.pyin。
-librosa>=0.10
-torchcrepe>=0.0.24
-torch>=2.0
-onnxruntime>=1.16
-music21>=9.1
-numpy>=1.23
-soundfile>=0.12
-pyaudio>=0.2.13
-numba>=0.57
+# melody2score 依赖清单（企业级：版本锁定，可复现）
+# 音高检测首选：crepe_onnx（ONNX 版 CREPE tiny，CPU 友好、稳定可复现）
 
-# 测试（可选）
-pytest>=7.0
+# ---- 音高检测后端 ----
+crepe_onnx>=0.1.0          # 首选：CREPE ONNX，CPU 高效
+onnxruntime>=1.16.0        # crepe_onnx 推理引擎（建议锁定小版本以保一致）
+numpy>=1.23,<2.0           # 注意：torchcrepe 对 numpy>=2 兼容需新版，故封顶 <2.0
+librosa>=0.10.0            # pyin 兜底后端 + 重采样 + BPM/调式（Krumhansl-Schmuckler）
+soundfile>=0.12.1          # wav 读写
+# torchcrepe>=0.4.0        # 可选兜底后端（部分 Windows 环境 onnxruntime 段错误时启用；需 PyTorch）
+
+# ---- 音频采集/播放 ----
+sounddevice>=0.4.6         # 现场录音
+# pyaudio>=0.2.13          # 备选录音方案
+
+# ---- 谱生成 ----
+music21>=9.1.0             # musicxml 量化生成（可选，导出乐谱用）
+
+# ---- CLI / 服务 / 可视化 ----
+fastapi>=0.110.0           # WebUI 后端
+uvicorn>=0.29.0            # ASGI 服务
+pydantic>=2.0
+PyQt5>=5.15.0              # GUI（可选，仅桌面端）
+
+# ---- 测试 / 验证 ----
+pytest>=7.4.0              # 单元与端到端验证
+tqdm>=4.65.0

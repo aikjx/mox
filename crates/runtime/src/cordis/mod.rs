@@ -42,6 +42,7 @@ impl Default for TurnId {
 }
 
 /// OUS-Cordis 核心运行时
+#[allow(dead_code)] // 预留运行时能力面：profile_loader/bundle_manager/seam_registry 待接入管线后启用
 pub struct OUSCordis {
     /// 插件上下文树
     ctx: Arc<PluginContext>,

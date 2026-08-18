@@ -12,6 +12,8 @@
 //! - 螺距概念：方程真实螺距为 `2πh`，原报告把 `h` 称为「一周步长」是正确的，
 //!   但在动力学方程里混用 `h` 与 `2πh` 会造成量纲破裂。
 
+// 预留公开 API / 未接入管线的能力面（如插件总线、算子目录、优化器 DAG、RBAC 之外的合规结构）：显式允许 dead_code 而非删除，避免破坏能力面；后续接入时自然消除。
+#![allow(dead_code)]
 use serde::{Deserialize, Serialize};
 
 // ---------------------------------------------------------------------------
@@ -458,7 +460,7 @@ pub fn numerical_checks(k: &PhysicalConstants) -> Vec<NumericalCoincidence> {
     });
 
     // 质量-频率：取 f = m_e c² / h（电子康普顿频率）反推质量，验证公式方向
-    let m_e = 9.109_383_7015e-31;
+    let m_e = 9.1093837015e-31;
     let f_compton = m_e * k.c * k.c / k.h;
     let m_back = (k.h / (2.0 * std::f64::consts::PI * k.c * k.c)) * f_compton;
     let rel3 = (m_back - m_e).abs() / m_e;

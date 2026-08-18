@@ -1,4 +1,6 @@
-﻿//! # 算子商城 (Operator Market)
+// 预留公开 API / 未接入管线的能力面（如插件总线、算子目录、优化器 DAG、RBAC 之外的合规结构）：显式允许 dead_code 而非删除，避免破坏能力面；后续接入时自然消除。
+#![allow(dead_code)]
+//! # 算子商城 (Operator Market)
 //!
 //! 把"需求 + 业务流程图（结构化、可编辑）"作为算子包(OperatorPackage)上传到商城，
 //! 他人可随机浏览、拉取并克隆后继续编辑。
@@ -453,7 +455,7 @@ pub fn list_packages_filtered(
             .values()
             .filter(|m| {
                 if let Some(c) = category {
-                    if !c.is_empty() && &m.category != c {
+                    if !c.is_empty() && m.category != c {
                         return false;
                     }
                 }
@@ -471,12 +473,12 @@ pub fn list_packages_filtered(
                     }
                 }
                 if let Some(t) = tenant_id {
-                    if !t.is_empty() && &m.tenant_id != t {
+                    if !t.is_empty() && m.tenant_id != t {
                         return false;
                     }
                 }
                 if let Some(c) = created_by {
-                    if !c.is_empty() && &m.created_by != c {
+                    if !c.is_empty() && m.created_by != c {
                         return false;
                     }
                 }
@@ -924,6 +926,7 @@ async fn ensure_seed(state: &MarketState) {
 /// 全维融合落盘：接收璇玑归一化产出的优化流程图（flow_ai::FlowNode/FlowEdge）+
 /// 元信息，转换为算子商城节点模型并组装为算子包，上传到市场（插件/应用平台）。
 /// 这是"璇玑 -> 业务流程图 -> 上传系统平台"融合总线的最终落点。
+#[allow(clippy::too_many_arguments)]
 pub fn publish_unified(
     name: String,
     description: String,

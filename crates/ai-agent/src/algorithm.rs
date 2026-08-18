@@ -3,6 +3,8 @@
 //! 实现最强开发算法的识别、分析、流程图生成与归一化处理
 //! 将任意算法转化为标准算子工作流
 
+// 预留公开 API / 未接入管线的能力面（如插件总线、算子目录、优化器 DAG、RBAC 之外的合规结构）：显式允许 dead_code 而非删除，避免破坏能力面；后续接入时自然消除。
+#![allow(dead_code)]
 use super::types::*;
 use operator_core::Result;
 use std::collections::HashMap;
@@ -270,7 +272,7 @@ impl AlgorithmAnalyzer {
         let normalized_workflow = self.generate_normalized_workflow(&operator_mapping, &nodes);
 
         let flow = AlgorithmFlow {
-            id: format!("flow-{}", Uuid::new_v4().to_string()[..8].to_string()),
+            id: format!("flow-{}", &Uuid::new_v4().to_string()[..8]),
             name: matched_pattern.as_ref().map(|p| p.name.clone()).unwrap_or_else(|| "自定义算法流程".to_string()),
             description: self.generate_description(algo_code, &matched_pattern, confidence),
             algorithm_type: algo_type,
@@ -423,11 +425,10 @@ impl AlgorithmAnalyzer {
         // 填充outputs
         let node_ids: Vec<String> = nodes.iter().map(|n| n.id.clone()).collect();
         for i in 0..nodes.len() {
-            if i + 1 < nodes.len() {
-                if !nodes[i].outputs.contains(&node_ids[i+1]) {
+            if i + 1 < nodes.len()
+                && !nodes[i].outputs.contains(&node_ids[i+1]) {
                     nodes[i].outputs.push(node_ids[i+1].clone());
                 }
-            }
         }
 
         nodes

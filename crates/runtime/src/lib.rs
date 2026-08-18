@@ -5,6 +5,9 @@
 pub mod rbac_middleware;
 pub mod api_standard;
 pub mod openapi;
+/// 子服务聚合（xuanji-expert / xuanji-system / primiflow / primiflow-fusion）：
+/// 挂载前缀常量与聚合构建，供 main 与 rbac_middleware 共用鉴权边界定义。
+pub mod subservers;
 
 /// 算子商城：需求 + 可编辑业务流程图的资产市场
 /// 含路径迁移（market_migration）、版本化（market_version）、

@@ -65,19 +65,19 @@ impl Store {
         let repo: Box<dyn Repository> = match backend {
             Backend::Sqlite => {
                 let r = crate::repo::sqlite::SqliteRepository::open(url)
-                    .map_err(|e| AppError::Internal(e))?;
+                    .map_err(AppError::Internal)?;
                 Box::new(r)
             }
             Backend::Postgres => {
                 let r = crate::repo::postgres::PostgresRepository::open(url)
                     .await
-                    .map_err(|e| AppError::Internal(e))?;
+                    .map_err(AppError::Internal)?;
                 Box::new(r)
             }
             Backend::MySql => {
                 let r = crate::repo::mysql::MySqlRepository::open(url)
                     .await
-                    .map_err(|e| AppError::Internal(e))?;
+                    .map_err(AppError::Internal)?;
                 Box::new(r)
             }
         };

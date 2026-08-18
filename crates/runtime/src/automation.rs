@@ -13,6 +13,8 @@
 //!
 //! 资产模型与持久化在 [`crate::automation_asset`]（独立模块，避免循环依赖）。
 
+// 预留公开 API / 未接入管线的能力面（如插件总线、算子目录、优化器 DAG、RBAC 之外的合规结构）：显式允许 dead_code 而非删除，避免破坏能力面；后续接入时自然消除。
+#![allow(dead_code)]
 use crate::AppState;
 use crate::automation_asset::{
     AutomationAsset, GeneratedCode, RunRecord,
@@ -326,13 +328,13 @@ fn make_ident(raw: &str, used: &mut std::collections::HashSet<String>) -> String
         }
     };
     let mut candidate = if base.is_empty() || base.chars().next().unwrap().is_ascii_digit() {
-        format!("_{}", &base)
+        format!("_{}", base)
     } else {
         base.clone()
     };
     let mut n = 2;
     while used.contains(&candidate) {
-        candidate = format!("{}_{}", &base, n);
+        candidate = format!("{}_{}", base, n);
         n += 1;
     }
     used.insert(candidate.clone());

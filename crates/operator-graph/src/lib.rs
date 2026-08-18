@@ -431,7 +431,7 @@ impl KnowledgeGraph {
         for (&idx, &label) in &labels {
             communities_map
                 .entry(label)
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(self.graph[idx].id.clone());
         }
 
@@ -468,7 +468,7 @@ impl KnowledgeGraph {
     /// 激活传播 - AI神经网络风格传播
     pub fn propagate_activation(&mut self, start_nodes: &[String], iterations: usize) -> HashMap<String, f64> {
         // 重置激活值
-        for (_, idx) in &self.node_map {
+        for idx in self.node_map.values() {
             self.graph[*idx].activation = 0.0;
         }
 
@@ -518,7 +518,7 @@ impl KnowledgeGraph {
         let centrality = self.degree_centrality();
         
         // 初始分数：PageRank + 中心性
-        for (id, _idx) in &self.node_map {
+        for id in self.node_map.keys() {
             if !context_nodes.contains(id) {
                 let pr = pagerank.get(id).copied().unwrap_or(0.0);
                 let dc = centrality.get(id).copied().unwrap_or(0.0);
@@ -580,7 +580,7 @@ impl KnowledgeGraph {
 
         // 简单聚类系数计算
         let mut clustering_sum = 0.0;
-        for (_, idx) in &self.node_map {
+        for idx in self.node_map.values() {
             let neighbors: Vec<NodeIndex> = self
                 .graph
                 .neighbors(*idx)
@@ -836,7 +836,7 @@ mod tests {
 
         let pr = graph.pagerank(100);
         assert!(pr.len() == 3);
-        for (_, score) in &pr {
+        for score in pr.values() {
             assert!(*score > 0.0);
         }
     }

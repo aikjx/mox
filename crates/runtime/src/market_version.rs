@@ -60,13 +60,6 @@ impl SemVer {
         Some(SemVer { major, minor, patch, pre })
     }
 
-    pub fn to_string(&self) -> String {
-        match &self.pre {
-            Some(p) => format!("{}.{}.{}-{}", self.major, self.minor, self.patch, p),
-            None => format!("{}.{}.{}", self.major, self.minor, self.patch),
-        }
-    }
-
     #[allow(dead_code)]
     pub fn bump_major(&self) -> SemVer {
         SemVer { major: self.major + 1, minor: 0, patch: 0, pre: None }
@@ -98,6 +91,16 @@ impl SemVer {
             (None, Some(_)) => Ordering::Greater, // 正式版 > 预发布
             (Some(_), None) => Ordering::Less,
             (Some(a), Some(b)) => compare_pre(a, b),
+        }
+    }
+}
+
+/// `SemVer` 展示：实现 `Display`，自动获得 `ToString`
+impl std::fmt::Display for SemVer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.pre {
+            Some(p) => write!(f, "{}.{}.{}-{}", self.major, self.minor, self.patch, p),
+            None => write!(f, "{}.{}.{}", self.major, self.minor, self.patch),
         }
     }
 }

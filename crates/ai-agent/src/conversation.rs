@@ -2,6 +2,8 @@
 //!
 //! 实现自然语言理解、意图识别、算子推荐和多轮对话管理
 
+// 预留公开 API / 未接入管线的能力面（如插件总线、算子目录、优化器 DAG、RBAC 之外的合规结构）：显式允许 dead_code 而非删除，避免破坏能力面；后续接入时自然消除。
+#![allow(dead_code)]
 use super::types::*;
 use operator_core::Result;
 use std::collections::HashMap;

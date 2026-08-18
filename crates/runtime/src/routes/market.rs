@@ -31,20 +31,17 @@ use crate::market_version::{actor_from_headers, append_changelog, snapshot_packa
 /// 冲突处理策略
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum ConflictStrategy {
     /// 覆盖：先快照旧版本再写入
     Overwrite,
     /// 跳过：保留现有，报告 skipped
+    #[default]
     Skip,
     /// 重命名：以新 id 导入（名称加后缀）
     Rename,
 }
 
-impl Default for ConflictStrategy {
-    fn default() -> Self {
-        ConflictStrategy::Skip
-    }
-}
 
 /// 导入请求体（JSON / YAML 均可）
 #[derive(Debug, Deserialize)]
@@ -126,8 +123,8 @@ pub fn import_one(
 ) -> ImportItemResult {
     let (doc, pkg_value) = normalize_import(value);
     // 1) 签名校验
-    if verify {
-        if !verify_doc(&doc) {
+    if verify
+        && !verify_doc(&doc) {
             audit("import", actor, "签名校验失败（已拒绝）");
             return ImportItemResult {
                 id: pkg_value.get("id").and_then(|v| v.as_str()).unwrap_or("?").to_string(),
@@ -137,7 +134,6 @@ pub fn import_one(
                 reason: Some("签名校验失败（导出物被篡改或密钥不匹配；如需信任来源可传 verify=false）".to_string()),
             };
         }
-    }
     // 2) 反序列化为包
     let mut pkg: OperatorPackage = match serde_json::from_value(pkg_value) {
         Ok(p) => p,

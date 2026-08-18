@@ -184,7 +184,7 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 |----|------|------|------|
 | 双璇玑十四维接入主服务 | 新增 `/api/xuanji/health`、`/api/xuanji/optimize`，调用 `xuanji_optimize` | `crates/runtime/src/main.rs` | 编译通过 |
 | 前端可视化治理（十四维雷达） | MonitorView 消费治理报告，ECharts 雷达 + 采纳建议列表 + 蓝图载入 | `frontend/src/views/MonitorView.vue`、`frontend/src/api/index.js` | `npm run build` 通过 |
-| 双璇玑十四维契约测试 | 断言 expert_scores 恰为 14 维、分数∈[0,1]、璇玑/闸门明确、审计链非空 | `crates/xuanji-expert/src/pipeline.rs` | 86 passed |
+| 双璇玑十四维契约测试 | 断言 expert_scores 恰为 14 维、分数∈[0,1]、璇玑/闸门明确、审计链非空 | `crates/xuanji-expert/src/pipeline.rs` | 146 passed（2026-08-18 复测） |
 | 敏感写安全护栏测试 | 公民敏感库越权写（无 authz/脱敏 Guard）必须被闸门拦截 | `crates/xuanji-expert/src/pipeline.rs` | passed |
 | 条件求值 fail-closed | 未定义变量返回 `Ok(false)`（不 panic），语法错误仍报错 | `crates/ai-agent/src/workflow_engine.rs` | passed |
 | 修复缺失枚举 `SessionEntry` | 定义 `TurnStart/StepStart/TurnComplete` 三变体，修复 runtime lib 编译阻断 | `crates/runtime/src/cordis/context.rs` | runtime build/test 通过 |
@@ -196,7 +196,7 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 cargo test --workspace  →  EXITCODE=0
   ai-agent        62 passed
   runtime          8 passed | 5 ignored（需服务器，CI 脚本覆盖）
-  xuanji-expert 86 passed（含双璇玑契约 + 敏感拦截）
+  xuanji-expert 146 passed（2026-08-18 复测，含双璇玑契约 + 敏感拦截）
   template-market  7 passed
   doc-tests        2 passed
 npm run build (frontend) → built in 22.79s

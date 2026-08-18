@@ -7,6 +7,8 @@
 //! - 5种预置任务模板
 //! - 元素交互（点击、输入）模拟（提示需要Headless Chrome）
 
+// 预留公开 API / 未接入管线的能力面（如插件总线、算子目录、优化器 DAG、RBAC 之外的合规结构）：显式允许 dead_code 而非删除，避免破坏能力面；后续接入时自然消除。
+#![allow(dead_code)]
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::Duration;
@@ -766,9 +768,8 @@ fn html_to_text(html: &str) -> String {
                 let tag_name = tag_lower.split_whitespace().next().unwrap_or("").trim_start_matches('/');
                 if tag_name == "script" { in_script = !tag_lower.starts_with('/'); }
                 else if tag_name == "style" { in_style = !tag_lower.starts_with('/'); }
-                else if tag_name.starts_with("br") || tag_name.starts_with("/p") || tag_name.starts_with("/div") || tag_name.starts_with("/tr") || tag_name.starts_with("/li") || tag_name.starts_with("/h1") || tag_name.starts_with("/h2") || tag_name.starts_with("/h3") || tag_name.starts_with("/h4") {
-                    if !last_was_space { text.push('\n'); last_was_space = true; }
-                }
+                else if (tag_name.starts_with("br") || tag_name.starts_with("/p") || tag_name.starts_with("/div") || tag_name.starts_with("/tr") || tag_name.starts_with("/li") || tag_name.starts_with("/h1") || tag_name.starts_with("/h2") || tag_name.starts_with("/h3") || tag_name.starts_with("/h4"))
+                    && !last_was_space { text.push('\n'); last_was_space = true; }
                 i += 1;
                 continue;
             } else {
@@ -877,7 +878,7 @@ fn extract_url(text: &str) -> Option<String> {
                 let url = format!("{}{}", prefix, domain_part);
                 // 简单验证：必须包含. 且不以.结尾
                 if domain_part.contains('.') && !domain_part.ends_with('.') {
-                    let cleaned = url.trim_end_matches(|c: char| c == '.' || c == ',' || c == '!' || c == '?' || c == ';' || c == ':');
+                    let cleaned = url.trim_end_matches(['.', ',', '!', '?', ';', ':']);
                     return Some(cleaned.to_string());
                 }
             }

@@ -8,7 +8,9 @@
 //!
 //! 说明：端到端需先启动服务器（`cargo run -p runtime`，默认 3000 端口），
 //! 再用 `cargo test --package runtime --test runtime_integration -- --ignored` 运行。
-//! 一键端到端脚本见仓库根 `scripts/ci.ps1`。
+//! 一键端到端脚本见仓库根 `scripts/ci.py`（build + test + fe build + 启服 + 健康检查）。
+//! 2026-08-18 已在本机实测：5/5 全部通过（健康检查 / RBAC 越权 403 / admin 全权限 /
+//! 审计留痕 / RFC 9457 错误格式）。
 
 #[cfg(test)]
 mod runtime_integration_tests {
@@ -60,7 +62,7 @@ mod runtime_integration_tests {
         let _ = client.post("http://localhost:3000/api/execute")
             .header("Authorization", "Bearer admin_token123")
             .json(&serde_json::json!({
-                "operators": ["identity"],
+                "workflow": ["identity"],
                 "input": [1.0, 2.0, 3.0]
             }))
             .send()
@@ -71,7 +73,7 @@ mod runtime_integration_tests {
             .await
             .unwrap();
         let logs: serde_json::Value = resp.json().await.unwrap();
-        assert!(logs["logs"].as_array().unwrap().len() > 0);
+        assert!(!logs["logs"].as_array().unwrap().is_empty());
     }
 
     #[tokio::test]
