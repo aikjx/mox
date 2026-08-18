@@ -3,7 +3,7 @@
 > **文档类型**：业务处理 / 流程 / 规则（BPMN 风格 + 状态机 + 规则目录）
 > **文档版本**：v1.0 (ENT) · 最后更新 2026-08-16
 > **配套**：`01-requirements.md`、`02-architecture.md`、`03-design.md`
-> **权威来源**：`docs/xuanji-expert-business-requirements.md`（BR-01…BR-21、GAP 清单）
+> **权威来源**：`docs/modules/xuanji-expert-business-requirements.md`（BR-01…BR-21、GAP 清单）
 
 ---
 
@@ -193,7 +193,7 @@ Left → [*]: 终态不可复活 [BR-21]
 ## 7. 与执行引擎的关系
 
 - 本文聚焦**协作治理域**业务处理（成员/任务/权限/通信）。
-- **企业级流程执行**（WorkflowEngine + 6 模板）见 `docs/business-process-flows.md`；可视化见 `docs/business-process-flowcharts.md`。
+- **企业级流程执行**（WorkflowEngine + 6 模板）见 `docs/modules/business-process-flows.md`；可视化见 `docs/modules/business-process-flowcharts.md`。
 - **融合优化链路**见 `docs/xuanji-expert-xuanji-fusion-flows.md`。
 
 ---

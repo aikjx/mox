@@ -24,7 +24,7 @@
 
 | 维度 | 分析结论 | 交付物 / 证据 |
 |---|---|---|
-| 需求 (SRS) | 21 BR + 9 NFR 全覆盖 | `docs/xuanji-expert-business-requirements.md` 追踪矩阵（全 ✅） |
+| 需求 (SRS) | 21 BR + 9 NFR 全覆盖 | `docs/modules/xuanji-expert-business-requirements.md` 追踪矩阵（全 ✅） |
 | 架构 | 七视图 + ADR，复用 flow-ai DAG/关键路径 | `docs/enterprise/02-architecture.md` |
 | 详细设计 | 领域模型 / RBAC / 双 FSM / 事件反应器 / API 契约 | `docs/enterprise/03-design.md`（对齐 `crates/xuanji-system/src/*`） |
 | 业务处理 | 8 大 BP + 任务/成员 FSM + BR-01..BR-21 | `docs/enterprise/04-business-processing.md` |
@@ -83,5 +83,5 @@
 - **状态**：璇玑已开发完成、分析验证充分、测试全绿、质量门通过。可交付。
 - **可选后续**（非阻塞，按优先级）：
   1. 清理 `runtime` crate 存量 dead_code 告警（53 条，独立子系统）；
-  2. 将璇玑接入 PrimiFlow κ‑τ 引擎作为「多专家协同求解」核心（见 `docs/PrimiFlow-设计蓝图.md`）；
+  2. 将璇玑接入 PrimiFlow κ‑τ 引擎作为「多专家协同求解」核心（见 `docs/modules/PrimiFlow-设计蓝图.md`）；
   3. 文档-代码一致性巡检（现有 `docs/enterprise/*` 与 `crates/*` 已对齐）。

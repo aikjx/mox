@@ -3,7 +3,7 @@
 > **文档类型**：软件需求规格（IEEE 830 风格，企业级）
 > **文档版本**：v1.0 (ENT) · 最后更新 2026-08-16
 > **适用范围**：`crates/xuanji-system`（协作治理域）、`crates/xuanji-expert`（融合引擎域）、`frontend/`
-> **权威来源**：业务规则以 `docs/xuanji-expert-business-requirements.md` 为基线；本文件将其提升为结构化 SRS 并补充可度量 NFR 与验收。
+> **权威来源**：业务规则以 `docs/modules/xuanji-expert-business-requirements.md` 为基线；本文件将其提升为结构化 SRS 并补充可度量 NFR 与验收。
 >
 > **编写原则**：每条需求**必须可验证**——要么映射到代码位置，要么标记 `GAP` 并附验收断言。
 
@@ -186,7 +186,7 @@
 | FR-TASK-06 | `03-design` §DAG | `br11_dependency_graph_is_dag` | 自依赖/环/跨璇玑拒绝 |
 | FR-PERM-06 | `03-design` §审计 | `br18_authz_denial_is_audited` | 越权恰好 1 条记录；正常 0 条 |
 
-> 完整 21 条业务规则追踪见 `docs/xuanji-expert-business-requirements.md` §6。
+> 完整 21 条业务规则追踪见 `docs/modules/xuanji-expert-business-requirements.md` §6。
 
 ---
 
@@ -204,4 +204,4 @@
 
 | 版本 | 说明 |
 |------|------|
-| v1.0 (ENT) | 首版企业级 SRS：结构化 FR/NFR、可度量目标、追踪矩阵、验收标准；与 `xuanji-expert-business-requirements.md` 对齐并提升格式标准。 |
+| v1.0 (ENT) | 首版企业级 SRS：结构化 FR/NFR、可度量目标、追踪矩阵、验收标准；与 `docs/modules/xuanji-expert-business-requirements.md` 对齐并提升格式标准。 |

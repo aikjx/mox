@@ -337,7 +337,7 @@ turn/start
 - **算子**：`/api/operators`、`/api/execute`、`/api/plugins`
 - **图谱**：`/api/graph/*`（node/edge/neighbors/centrality/communities/path/pagerank/activate/recommend）
 - **AI**：`/api/ai/chat`、`/api/ai/flows`、`/api/ai/workflows`、`/api/ai/browser`、`/api/ai/llm`、`/api/analyze/spiral`
-- **算子商城（§18 资产侧）**：`/api/market/`（列表/过滤）、`/api/market/random`（随机）、`/api/market/:id`（详情/更新）、`/api/market/upload`（上传）、`/api/market/:id/clone`（克隆）、`/api/market/:id`（DELETE）。GET 接口免登录白名单，写操作受 §7.1 鉴权。数据契约与前端见 `docs/market-module.md`。
+- **算子商城（§18 资产侧）**：`/api/market/`（列表/过滤）、`/api/market/random`（随机）、`/api/market/:id`（详情/更新）、`/api/market/upload`（上传）、`/api/market/:id/clone`（克隆）、`/api/market/:id`（DELETE）。GET 接口免登录白名单，写操作受 §7.1 鉴权。数据契约与前端见 `docs/modules/market-module.md`。
 - **系统**：`/api/health`、`/api/status`、`/api/logs`
 
 > 重构后：路由由 `runtime` 插件挂载，每个 `ctx.*` 子系统声明自己的路由组，网关统一聚合。
@@ -833,7 +833,7 @@ seam = "operator/*"
 ## 18. 开放生态与算子市场（Network Effects）
 
 - **算子市场（执行层）**：开发者发布 WASM 算子 → 签名上架 → 用户一键安装（`plugins/` + `business-catalog`）。
-- **需求/流程图资产市场（资产层，已落地）**：将"需求描述 + 可编辑业务流程图 + 功能点清单"作为算子包（OperatorPackage）沉淀，供他人随机浏览、克隆后继续编辑。详见 `docs/market-module.md`。该资产层与执行层互补——商城产出的结构化流程图可经 §28 DSL 转为可执行 `BusinessWorkflow`，形成"设计↔市场"飞轮。
+- **需求/流程图资产市场（资产层，已落地）**：将"需求描述 + 可编辑业务流程图 + 功能点清单"作为算子包（OperatorPackage）沉淀，供他人随机浏览、克隆后继续编辑。详见 `docs/modules/market-module.md`。该资产层与执行层互补——商城产出的结构化流程图可经 §28 DSL 转为可执行 `BusinessWorkflow`，形成"设计↔市场"飞轮。
 - **跨形态同步**：登录账号后，本地桌面与云端可同步"我的编排/工作流"（端到端加密，密钥在 `credential/*`）。
 - **可移植性**：同一份工作流定义（DAG + 算子绑定）在四种形态（§13）间无缝迁移——"一次编排、处处运行"的终极体现。
 - **贡献回流**：用户自研优质算子可反哺市场，形成算子网络效应，使 OUS 成为"算子界的插件商店 + 智能体 OS"。

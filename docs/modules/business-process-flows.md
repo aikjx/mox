@@ -2,7 +2,7 @@
 
 > 本文档描述算子统一系统（OUS）中**已落地**的企业级业务处理流程能力，以代码为准（`crates/ai-agent/src/workflow_engine.rs`、`crates/ai-agent/src/flow_engine.rs`、`crates/runtime/src/main.rs`、`frontend/`）。
 >
-> 本文与 `architecture.md` §9「13 条业务处理流程卡」（按端点划分的**设计规范**）互补：§9 是"系统对外提供哪些业务流程端点"，本文是"企业级业务流程如何被编排、执行与复用"。两者不冲突。
+> 本文与 `docs/architecture.md` §9「13 条业务处理流程卡」（按端点划分的**设计规范**）互补：§9 是"系统对外提供哪些业务流程端点"，本文是"企业级业务流程如何被编排、执行与复用"。两者不冲突。
 
 ---
 
@@ -194,15 +194,15 @@ self.templates.register(WorkflowTemplate {
 | ~~`AiTask` 变量回写~~ | **已实现（2026-08）**：LLM 输出 JSON 对象自动展开为 `variables`，驱动 `Condition` 分支（AI→变量→条件分支闭环） | 支持任意深度嵌套 JSON 展开、输出 schema 约束 |
 | `Condition` 分支 | **已实现**：按 `result` 只路由 `true_path`/`false_path` 之一；变量未定义 fail-closed 走拒绝路径；输出含 `matched_branch`+`referenced_variables` 审计字段；比较支持跨类型数值等价 | 多路分支（switch）、分支计数统计 |
 | LLM 真实执行 | 需配置可用 API Key；未配置时降级 `simulated` | 配置注入与失败可观测 |
-| 持久化 | 工作流实例为内存态（`WorkflowInstance` 在 `running_instances`） | 持久化到 `$OUS_HOME/workflows`（见 `architecture.md` §8） |
+| 持久化 | 工作流实例为内存态（`WorkflowInstance` 在 `running_instances`） | 持久化到 `$OUS_HOME/workflows`（见 `docs/architecture.md` §8） |
 | 人工审批 `UserTask` | 挂起占位 | 接入工单/审批中心回调 |
 
 ---
 
 ## 9. 与架构文档的关系
 
-- `architecture.md` §9「13 条业务处理流程卡」：按**端点**划分的系统级业务流程设计规范（算子注册、执行、对话、工作流编排、浏览器自动化等），是"系统对外提供哪些业务流程"。
-- `architecture.md` §28「业务流程设计模块」：设计态模块（Three.js 画布、DSL、校验、版本化、模板市场）。
+- `docs/architecture.md` §9「13 条业务处理流程卡」：按**端点**划分的系统级业务流程设计规范（算子注册、执行、对话、工作流编排、浏览器自动化等），是"系统对外提供哪些业务流程"。
+- `docs/architecture.md` §28「业务流程设计模块」：设计态模块（Three.js 画布、DSL、校验、版本化、模板市场）。
 - 本文：聚焦于**企业级业务处理流程的编排与执行能力**，即 `WorkflowEngine` + 6 个企业模板的真实落地情况。
 
 三者共同构成 OUS 的"业务流程化"能力栈：设计（§28）→ 规范（§9）→ 执行（本文）。

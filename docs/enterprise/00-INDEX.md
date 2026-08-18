@@ -15,12 +15,12 @@
 
 ## 0. 文档集总览（一句话 + 版本基线）
 
-> **这套文档集是什么**：把"璇玑系统"从**需求 → 架构 → 设计 → 业务 → 路线图 → 需求-架构映射 → 全维需求明确 → 全维自动化处理 → 全维度完成归档**九份文档串成一套**可迭代、可追踪、可追溯**的企业级标准文档集。任何功能都须先过"全维需求明确书（07）"的铁律（双收口、无旁路、不做无用扩展），再由"全维自动化处理明确书（08）"的流水线自动验证收口。
+> **这套文档集是什么**：把"璇玑系统"从**需求 → 架构 → 设计 → 业务 → 路线图 → 需求-架构映射 → 全维需求明确 → 全维自动化处理 → 全维度完成归档** 17 份文档（编号 `00`~`16`，含本索引）串成一套**可迭代、可追踪、可追溯**的企业级标准文档集。任何功能都须先过"全维需求明确书（07）"的铁律（双收口、无旁路、不做无用扩展），再由"全维自动化处理明确书（08）"的流水线自动验证收口。
 >
 > **版本基线（v1.0 ENT，2026-08-16）**
 > | 项 | 值 |
 > |----|----|
-> | 文档份数 | 16 份（`00`~`16`，含本索引） |
+> | 文档份数 | 17 份（`00`~`16`，含本索引） |
 > | 系统状态 | **企业级全维度开发完成**（里程碑见 `09`，测试事实支撑） |
 > | 核心铁律 | 全维双收口（流程图归一化 + 开发璇玑全维分析验证），见 `07` §3 |
 > | 自动化入口 | `XuanjiFusionView.vue` → `POST /api/optimize` → `xuanji_optimize` 8 步闭环 |
@@ -31,7 +31,7 @@
 
 ---
 
-## 1. 文档集总览（九文档 + 治理 + 路线图）
+## 1. 文档集总览（17 文档 00~16 + 配套权威文档 + 路线图）
 
 | 编号 | 文档 | 类型 | 说明 | 状态 |
 |------|------|------|------|------|
@@ -55,25 +55,25 @@
 
 **配套参考文档（既有，纳入本索引统一管理，不重复造轮子）**：
 
-> ⚠️ **根目录 `docs/` 散落文档的权威等级说明**（避免歧义）：
-> - 🟢 **权威基准（以它们为准）**：`璇玑-全维需求业务处理流程图-归一化企业级.md`（AA-STD-V1.0，融合域唯一需求事实基准）、`xuanji-expert-business-requirements.md`（BR-01…BR-21，协作域需求来源）、`architecture.md`（OUS 父总架构）、`enterprise-architecture-analysis.md`（双璇玑十四维能力矩阵）。
-> - 🟡 **过程稿 / 验证记录（仅供追溯，非权威）**：所有带 `-20260816` 后缀的文档（`PrimiFlow-*`、`xuanji-expert-验证总结-*` 等）为当日开发与验证的过程快照，结论已沉淀进本 `enterprise/` 文档集与代码，查阅以本目录为准。
-> - 🟡 **可视化产物**：`*.html` / `*.mmd` 为对应 `.md` 的渲染版本，内容以 `.md` 为源。
+> ⚠️ **`docs/` 各分区文档的权威等级说明**（已按归一化布局归位，避免歧义）：
+> - 🟢 **权威基准（以它们为准）**：`docs/璇玑-全维需求业务处理流程图-归一化企业级.md`（AA-STD-V1.0，融合域唯一需求事实基准，位于 `docs/` 根）、`docs/modules/xuanji-expert-business-requirements.md`（BR-01…BR-21，协作域需求来源）、`docs/architecture.md`（OUS 父总架构）、`docs/enterprise-architecture-analysis.md`（双璇玑十四维能力矩阵）。
+> - 🟡 **过程稿 / 验证记录（仅供追溯，非权威）**：统一归档于 `docs/_archive/2026-08-16/`（原 `PrimiFlow-*`、`xuanji-expert-验证总结-*` 等 `-20260816` 后缀文档），为当日开发与验证的过程快照，结论已沉淀进本 `enterprise/` 文档集与代码，查阅以本目录为准。
+> - 🟡 **可视化产物**：`*.html` / `*.mmd` 为对应 `.md` 的渲染版本，内容以 `.md` 为源，已与源 `.md` 同位存放（root / `modules/` / `full-dimensional/` / `enterprise/`）。
 
 | 文档 | 归属视图 | 与本文关系 | 等级 |
 |------|----------|------------|------|
 | `docs/璇玑-全维需求业务处理流程图-归一化企业级.md`（AA-STD-V1.0） | 融合域需求基准 | **融合治理全维需求唯一事实基准**；映射到 `06` §2 | 🟢 权威 |
-| `docs/xuanji-expert-business-requirements.md` | 需求/业务规则 | 璇玑融合业务规则（BR-01…BR-21、GAP 清单），是 `01/04` 的权威来源 | 🟢 权威 |
+| `docs/modules/xuanji-expert-business-requirements.md` | 需求/业务规则 | 璇玑融合业务规则（BR-01…BR-21、GAP 清单），是 `01/04` 的权威来源 | 🟢 权威 |
 | `docs/architecture.md`（v7.0） | 总体技术架构 | 父系统 OUS 总架构，本文是其「璇玑子系统」切面 | 🟢 权威 |
 | `docs/enterprise-architecture-analysis.md` | 架构/能力矩阵 | 双璇玑十四维、能力覆盖矩阵、持续优化清单 | 🟢 权威 |
-| `docs/business-process-flows.md` | 业务处理（执行引擎） | WorkflowEngine / 6 企业模板落地 | 🟡 参考 |
-| `docs/business-process-flowcharts.md` | 业务处理（可视化） | Mermaid 流程图 / 时序图全集 | 🟡 参考 |
-| `docs/xuanji-expert-xuanji-fusion-flows.md` | 业务处理（融合） | BP-6 璇玑融合优化链路 | 🟡 参考 |
-| `docs/xuanji-expert-normalization.md` | 设计（融合引擎） | 归一化 IR 设计 | 🟡 参考 |
-| `docs/xuanji-expert-product.md` | 产品/架构 | 产品化视角 | 🟡 参考 |
+| `docs/modules/business-process-flows.md` | 业务处理（执行引擎） | WorkflowEngine / 6 企业模板落地 | 🟡 参考 |
+| `docs/modules/business-process-flowcharts.md` | 业务处理（可视化） | Mermaid 流程图 / 时序图全集 | 🟡 参考 |
+| `docs/modules/xuanji-expert-alliance-fusion-flows.md` | 业务处理（融合） | BP-6 璇玑融合优化链路 | 🟡 参考 |
+| `docs/modules/xuanji-expert-normalization.md` | 设计（融合引擎） | 归一化 IR 设计 | 🟡 参考 |
+| `docs/modules/xuanji-expert-product.md` | 产品/架构 | 产品化视角 | 🟡 参考 |
 | `crates/xuanji-expert/DESIGN.md` / `DESIGN_STAGE2.md` | 设计（融合引擎） | 璇玑引擎实现设计 | 🟡 参考 |
 | `docs/xuanji-system-business-architecture.html` | 架构（可视化） | 全维度分层架构交互图（源为 `.md`） | 🟡 可视化 |
-| `docs/*-20260816*.md`（PrimiFlow-/xuanji-expert-验证总结- 等） | 过程稿 | 当日开发验证快照，结论已沉淀入本目录 | 🟡 过程稿 |
+| `docs/_archive/2026-08-16/*.md`（PrimiFlow-/xuanji-expert-验证总结- 等） | 过程稿归档 | 当日开发验证快照，结论已沉淀入本目录 | 🟡 过程稿（非权威） |
 | `docs/specs/PT-Primi-架构规范-V1.0-完整版.md` | 规范 | PT-STD-V1.0 全域拓扑原语架构（六维物理底座） | 🟢 权威 |
 | `docs/specs/GR-STD-信息关联关系图开发规范-V1.0.md` | 规范 | GR-STD-V1.0 关图开发规范（信息实体建模） | 🟢 权威 |
 | `docs/specs/OUS-业务功能规划与架构数据关系分析.md` | 规划 | 12 crate 现状盘点 + 能力域规划 | 🟢 权威 |
@@ -83,6 +83,8 @@
 | `docs/full-dimensional/关图骨架定义.md` 等四份原始文档 | 过程稿 | 已归一承载于 AA-STD / guantu-skeleton，见 `full-dimensional/00-README.md` | 🟡 过程稿 |
 | `docs/graph/graph.json` `graph.enterprise.json` `guantu.req.json` | 关图产物 | 机读图谱（代码级 352 节点 / 企业版 372 节点含 REQ/Bind） | 🟡 产物 |
 | `docs/README.md` | 专题导航 | 关图/全维快捷分区索引，本 `00-INDEX` 为唯一治理入口 | 🟢 导航 |
+| `docs/enterprise/璇玑-信息化系统开发验收报告-V1.0.md` / `.html`（ISD-V1.0） | 验收报告 | 信息化系统开发验收报告，对外交付/审计用，已并入 `enterprise/` 分区 | 🟢 权威（交付物） |
+| `docs/DOC-NORMALIZATION-REPORT.md`（DOC-GOV-V1.0） | 治理 / 归一化标准 | `docs/` 全量审计 + 归一化标准 + 逐文件动作表 + 残留 GAP | 🟢 治理（本活文档） |
 
 ---
 

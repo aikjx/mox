@@ -204,7 +204,7 @@ xuanji-system ◀── POST /api/xuanji/* ── xuanji-expert(pipeline)
 ### 6.3 与外部系统
 
 - `xuanji-expert`：归一化/治理/优化（旁路集成）。
-- 算子市场：`/api/xuanji/publish` 上架优化产物（见 `business-process-flowcharts.md` §8）。
+- 算子市场：`/api/xuanji/publish` 上架优化产物（见 `docs/modules/business-process-flowcharts.md` §8）。
 - LLM（可选）：企业流程 AiTask 真实执行，未配置 fail-closed。
 
 ---
