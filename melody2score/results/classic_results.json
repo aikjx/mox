@@ -1,55 +1,55 @@
 {
   "summary": {
-    "backend": "torchcrepe",
+    "backend": "pyin",
     "total": 144,
     "overall": {
-      "mean_pitch_class_acc": 0.7643883689839571,
-      "mean_note_recall": 0.7588298071753955,
-      "mean_note_precision": 0.9051428741847344
+      "mean_pitch_class_acc": 0.7630105052899171,
+      "mean_note_recall": 0.762476317255729,
+      "mean_note_precision": 0.9596598889491046
     },
     "by_category": {
       "instrument": {
         "count": 96,
-        "mean_pitch_class_acc": 0.7245898709134004,
-        "mean_note_recall": 0.7162520282005577,
-        "mean_note_precision": 0.8997353766195678
+        "mean_pitch_class_acc": 0.7727493809295279,
+        "mean_note_recall": 0.7719480988782458,
+        "mean_note_precision": 0.9663394305857542
       },
       "voice": {
         "count": 16,
-        "mean_pitch_class_acc": 0.9398060885193238,
-        "mean_note_recall": 0.9398060885193238,
-        "mean_note_precision": 0.7478736079452024
+        "mean_pitch_class_acc": 0.6536726141505553,
+        "mean_note_recall": 0.6536726141505553,
+        "mean_note_precision": 0.8389024170274171
       },
       "pure": {
         "count": 32,
-        "mean_pitch_class_acc": 0.7960750034279446,
-        "mean_note_recall": 0.7960750034279446,
+        "mean_pitch_class_acc": 0.7884628239407651,
+        "mean_note_recall": 0.7884628239407651,
         "mean_note_precision": 1.0
       }
     },
     "by_timbre": {
       "piano": {
         "count": 16,
-        "mean_pitch_class_acc": 0.6137920290493819,
-        "mean_note_recall": 0.6137920290493819,
-        "mean_note_precision": 0.9069128787878787
+        "mean_pitch_class_acc": 0.7884628239407652,
+        "mean_note_recall": 0.7884628239407652,
+        "mean_note_precision": 1.0
       },
       "guitar": {
         "count": 16,
-        "mean_pitch_class_acc": 0.5829967826291356,
-        "mean_note_recall": 0.5329697263520793,
-        "mean_note_precision": 0.6811150654900655
+        "mean_pitch_class_acc": 0.7755716097627863,
+        "mean_note_recall": 0.7707639174550939,
+        "mean_note_precision": 0.9807692307692308
       },
       "strings": {
         "count": 16,
-        "mean_pitch_class_acc": 0.9817401960784314,
-        "mean_note_recall": 0.9817401960784314,
-        "mean_note_precision": 0.9243047699849171
+        "mean_pitch_class_acc": 0.7070733800513211,
+        "mean_note_recall": 0.7070733800513211,
+        "mean_note_precision": 0.8172673527452938
       },
       "flute": {
         "count": 16,
-        "mean_pitch_class_acc": 0.7932705162484575,
-        "mean_note_recall": 0.7932705162484575,
+        "mean_pitch_class_acc": 0.7884628239407652,
+        "mean_note_recall": 0.7884628239407652,
         "mean_note_precision": 1.0
       },
       "organ": {
@@ -60,20 +60,20 @@
       },
       "bell": {
         "count": 16,
-        "mean_pitch_class_acc": 0.5872768775342305,
-        "mean_note_recall": 0.5872768775342305,
-        "mean_note_precision": 0.8860795454545454
+        "mean_pitch_class_acc": 0.7884628239407652,
+        "mean_note_recall": 0.7884628239407652,
+        "mean_note_precision": 1.0
       },
       "human_voice": {
         "count": 16,
-        "mean_pitch_class_acc": 0.9398060885193238,
-        "mean_note_recall": 0.9398060885193238,
-        "mean_note_precision": 0.7478736079452024
+        "mean_pitch_class_acc": 0.6536726141505553,
+        "mean_note_recall": 0.6536726141505553,
+        "mean_note_precision": 0.8389024170274171
       },
       "pure_sine": {
         "count": 16,
-        "mean_pitch_class_acc": 0.8036871829151241,
-        "mean_note_recall": 0.8036871829151241,
+        "mean_pitch_class_acc": 0.7884628239407652,
+        "mean_note_recall": 0.7884628239407652,
         "mean_note_precision": 1.0
       },
       "pure_triangle": {
@@ -150,21 +150,20 @@
       "recovered_midi": [
         60,
         67,
-        70,
         69,
         67,
         65,
         64,
         62,
-        79
+        60
       ],
       "n_expected": 14,
-      "n_recovered": 9,
-      "matched": 6,
-      "pc_matched": 6,
-      "pitch_class_acc": 0.42857142857142855,
-      "note_recall": 0.42857142857142855,
-      "note_precision": 0.6666666666666666
+      "n_recovered": 8,
+      "matched": 8,
+      "pc_matched": 8,
+      "pitch_class_acc": 0.5714285714285714,
+      "note_recall": 0.5714285714285714,
+      "note_precision": 1.0
     },
     {
       "id": "m00_instrument_strings",
@@ -189,8 +188,7 @@
         60
       ],
       "recovered_midi": [
-        60,
-        60,
+        61,
         67,
         67,
         69,
@@ -199,19 +197,17 @@
         65,
         65,
         64,
-        65,
         64,
         62,
-        62,
-        60
+        62
       ],
       "n_expected": 14,
-      "n_recovered": 15,
-      "matched": 14,
-      "pc_matched": 14,
-      "pitch_class_acc": 1.0,
-      "note_recall": 1.0,
-      "note_precision": 0.9333333333333333
+      "n_recovered": 12,
+      "matched": 11,
+      "pc_matched": 11,
+      "pitch_class_acc": 0.7857142857142857,
+      "note_recall": 0.7857142857142857,
+      "note_precision": 0.9166666666666666
     },
     {
       "id": "m00_instrument_flute",
@@ -356,34 +352,26 @@
         60
       ],
       "recovered_midi": [
-        60,
         61,
-        60,
         67,
         67,
-        68,
         69,
         69,
         67,
-        70,
         65,
         65,
         64,
-        65,
         64,
         62,
-        63,
-        62,
-        60,
         62
       ],
       "n_expected": 14,
-      "n_recovered": 20,
-      "matched": 14,
-      "pc_matched": 14,
-      "pitch_class_acc": 1.0,
-      "note_recall": 1.0,
-      "note_precision": 0.7
+      "n_recovered": 12,
+      "matched": 11,
+      "pc_matched": 11,
+      "pitch_class_acc": 0.7857142857142857,
+      "note_recall": 0.7857142857142857,
+      "note_precision": 0.9166666666666666
     },
     {
       "id": "m00_pure_pure_sine",
@@ -493,6 +481,7 @@
         65,
         67,
         65,
+        64,
         62,
         60,
         62,
@@ -500,11 +489,11 @@
         62
       ],
       "n_expected": 15,
-      "n_recovered": 9,
-      "matched": 9,
-      "pc_matched": 9,
-      "pitch_class_acc": 0.6,
-      "note_recall": 0.6,
+      "n_recovered": 10,
+      "matched": 10,
+      "pc_matched": 10,
+      "pitch_class_acc": 0.6666666666666666,
+      "note_recall": 0.6666666666666666,
       "note_precision": 1.0
     },
     {
@@ -531,21 +520,24 @@
         62
       ],
       "recovered_midi": [
+        64,
         65,
         67,
         65,
+        64,
         62,
         60,
         62,
+        64,
         62
       ],
       "n_expected": 15,
-      "n_recovered": 7,
-      "matched": 6,
-      "pc_matched": 6,
-      "pitch_class_acc": 0.4,
-      "note_recall": 0.4,
-      "note_precision": 0.8571428571428571
+      "n_recovered": 10,
+      "matched": 10,
+      "pc_matched": 10,
+      "pitch_class_acc": 0.6666666666666666,
+      "note_recall": 0.6666666666666666,
+      "note_precision": 1.0
     },
     {
       "id": "m01_instrument_strings",
@@ -571,30 +563,27 @@
         62
       ],
       "recovered_midi": [
-        64,
         65,
-        64,
         65,
         67,
         67,
         65,
-        64,
+        65,
         62,
         60,
         60,
         62,
-        64,
         65,
         64,
         62
       ],
       "n_expected": 15,
-      "n_recovered": 16,
-      "matched": 14,
-      "pc_matched": 14,
-      "pitch_class_acc": 0.9333333333333333,
-      "note_recall": 0.9333333333333333,
-      "note_precision": 0.875
+      "n_recovered": 13,
+      "matched": 9,
+      "pc_matched": 9,
+      "pitch_class_acc": 0.6,
+      "note_recall": 0.6,
+      "note_precision": 0.6923076923076923
     },
     {
       "id": "m01_instrument_flute",
@@ -710,6 +699,7 @@
         65,
         67,
         65,
+        64,
         62,
         60,
         62,
@@ -717,11 +707,11 @@
         62
       ],
       "n_expected": 15,
-      "n_recovered": 9,
-      "matched": 9,
-      "pc_matched": 9,
-      "pitch_class_acc": 0.6,
-      "note_recall": 0.6,
+      "n_recovered": 10,
+      "matched": 10,
+      "pc_matched": 10,
+      "pitch_class_acc": 0.6666666666666666,
+      "note_recall": 0.6666666666666666,
       "note_precision": 1.0
     },
     {
@@ -748,33 +738,25 @@
         62
       ],
       "recovered_midi": [
-        64,
         65,
-        64,
-        65,
+        66,
         67,
         67,
-        68,
-        65,
-        64,
+        66,
+        66,
         62,
         60,
         60,
         62,
-        64,
-        65,
-        64,
-        62,
-        62,
-        61
+        62
       ],
       "n_expected": 15,
-      "n_recovered": 19,
-      "matched": 14,
-      "pc_matched": 14,
-      "pitch_class_acc": 0.9333333333333333,
-      "note_recall": 0.9333333333333333,
-      "note_precision": 0.7368421052631579
+      "n_recovered": 11,
+      "matched": 7,
+      "pc_matched": 7,
+      "pitch_class_acc": 0.4666666666666667,
+      "note_recall": 0.4666666666666667,
+      "note_precision": 0.6363636363636364
     },
     {
       "id": "m01_pure_pure_sine",
@@ -809,15 +791,14 @@
         60,
         62,
         64,
-        62,
         62
       ],
       "n_expected": 15,
-      "n_recovered": 11,
-      "matched": 11,
-      "pc_matched": 11,
-      "pitch_class_acc": 0.7333333333333333,
-      "note_recall": 0.7333333333333333,
+      "n_recovered": 10,
+      "matched": 10,
+      "pc_matched": 10,
+      "pitch_class_acc": 0.6666666666666666,
+      "note_recall": 0.6666666666666666,
       "note_precision": 1.0
     },
     {
@@ -886,19 +867,21 @@
       "recovered_midi": [
         60,
         62,
+        60,
         65,
         64,
         60,
         62,
+        60,
         67,
         65
       ],
       "n_expected": 12,
-      "n_recovered": 8,
-      "matched": 8,
-      "pc_matched": 8,
-      "pitch_class_acc": 0.6666666666666666,
-      "note_recall": 0.6666666666666666,
+      "n_recovered": 10,
+      "matched": 10,
+      "pc_matched": 10,
+      "pitch_class_acc": 0.8333333333333334,
+      "note_recall": 0.8333333333333334,
       "note_precision": 1.0
     },
     {
@@ -907,43 +890,6 @@
       "title_en": "Happy Birthday",
       "category": "instrument",
       "timbre": "guitar",
-      "expected_midi": [
-        60,
-        60,
-        62,
-        60,
-        65,
-        64,
-        60,
-        60,
-        62,
-        60,
-        67,
-        65
-      ],
-      "recovered_midi": [
-        62,
-        60,
-        65,
-        64,
-        62,
-        67,
-        65
-      ],
-      "n_expected": 12,
-      "n_recovered": 7,
-      "matched": 6,
-      "pc_matched": 6,
-      "pitch_class_acc": 0.5,
-      "note_recall": 0.5,
-      "note_precision": 0.8571428571428571
-    },
-    {
-      "id": "m02_instrument_strings",
-      "title_zh": "生日歌",
-      "title_en": "Happy Birthday",
-      "category": "instrument",
-      "timbre": "strings",
       "expected_midi": [
         60,
         60,
@@ -977,6 +923,46 @@
       "pitch_class_acc": 0.8333333333333334,
       "note_recall": 0.8333333333333334,
       "note_precision": 1.0
+    },
+    {
+      "id": "m02_instrument_strings",
+      "title_zh": "生日歌",
+      "title_en": "Happy Birthday",
+      "category": "instrument",
+      "timbre": "strings",
+      "expected_midi": [
+        60,
+        60,
+        62,
+        60,
+        65,
+        64,
+        60,
+        60,
+        62,
+        60,
+        67,
+        65
+      ],
+      "recovered_midi": [
+        59,
+        60,
+        62,
+        65,
+        64,
+        60,
+        60,
+        62,
+        67,
+        65
+      ],
+      "n_expected": 12,
+      "n_recovered": 10,
+      "matched": 9,
+      "pc_matched": 9,
+      "pitch_class_acc": 0.75,
+      "note_recall": 0.75,
+      "note_precision": 0.9
     },
     {
       "id": "m02_instrument_flute",
@@ -1079,20 +1065,24 @@
         65
       ],
       "recovered_midi": [
+        60,
         62,
+        60,
         65,
         64,
+        60,
         62,
+        60,
         67,
         65
       ],
       "n_expected": 12,
-      "n_recovered": 6,
-      "matched": 4,
-      "pc_matched": 4,
-      "pitch_class_acc": 0.3333333333333333,
-      "note_recall": 0.3333333333333333,
-      "note_precision": 0.6666666666666666
+      "n_recovered": 10,
+      "matched": 10,
+      "pc_matched": 10,
+      "pitch_class_acc": 0.8333333333333334,
+      "note_recall": 0.8333333333333334,
+      "note_precision": 1.0
     },
     {
       "id": "m02_voice_human_voice",
@@ -1115,27 +1105,23 @@
         65
       ],
       "recovered_midi": [
+        59,
         60,
         62,
-        60,
         65,
         64,
-        66,
-        61,
         60,
         62,
-        60,
         67,
-        65,
-        67
+        65
       ],
       "n_expected": 12,
-      "n_recovered": 13,
-      "matched": 10,
-      "pc_matched": 10,
-      "pitch_class_acc": 0.8333333333333334,
-      "note_recall": 0.8333333333333334,
-      "note_precision": 0.7692307692307693
+      "n_recovered": 9,
+      "matched": 8,
+      "pc_matched": 8,
+      "pitch_class_acc": 0.6666666666666666,
+      "note_recall": 0.6666666666666666,
+      "note_precision": 0.8888888888888888
     },
     {
       "id": "m02_pure_pure_sine",
@@ -1240,11 +1226,13 @@
         67
       ],
       "recovered_midi": [
+        60,
         62,
         64,
         60,
         62,
         64,
+        60,
         64,
         65,
         67,
@@ -1253,12 +1241,12 @@
         67
       ],
       "n_expected": 14,
-      "n_recovered": 11,
-      "matched": 10,
-      "pc_matched": 10,
-      "pitch_class_acc": 0.7142857142857143,
-      "note_recall": 0.7142857142857143,
-      "note_precision": 0.9090909090909091
+      "n_recovered": 13,
+      "matched": 13,
+      "pc_matched": 13,
+      "pitch_class_acc": 0.9285714285714286,
+      "note_recall": 0.9285714285714286,
+      "note_precision": 1.0
     },
     {
       "id": "m03_instrument_guitar",
@@ -1283,13 +1271,13 @@
         67
       ],
       "recovered_midi": [
-        62,
-        76,
-        72,
+        60,
         62,
         64,
-        76,
-        79,
+        60,
+        62,
+        64,
+        60,
         64,
         65,
         67,
@@ -1299,11 +1287,11 @@
       ],
       "n_expected": 14,
       "n_recovered": 13,
-      "matched": 7,
-      "pc_matched": 9,
-      "pitch_class_acc": 0.6428571428571429,
-      "note_recall": 0.5,
-      "note_precision": 0.5384615384615384
+      "matched": 13,
+      "pc_matched": 13,
+      "pitch_class_acc": 0.9285714285714286,
+      "note_recall": 0.9285714285714286,
+      "note_precision": 1.0
     },
     {
       "id": "m03_instrument_strings",
@@ -1328,14 +1316,12 @@
         67
       ],
       "recovered_midi": [
-        60,
+        61,
         62,
         64,
         60,
-        60,
         62,
         64,
-        60,
         64,
         65,
         67,
@@ -1344,12 +1330,12 @@
         67
       ],
       "n_expected": 14,
-      "n_recovered": 14,
-      "matched": 14,
-      "pc_matched": 14,
-      "pitch_class_acc": 1.0,
-      "note_recall": 1.0,
-      "note_precision": 1.0
+      "n_recovered": 12,
+      "matched": 11,
+      "pc_matched": 11,
+      "pitch_class_acc": 0.7857142857142857,
+      "note_recall": 0.7857142857142857,
+      "note_precision": 0.9166666666666666
     },
     {
       "id": "m03_instrument_flute",
@@ -1464,11 +1450,13 @@
         67
       ],
       "recovered_midi": [
+        60,
         62,
         64,
         60,
         62,
         64,
+        60,
         64,
         65,
         67,
@@ -1477,12 +1465,12 @@
         67
       ],
       "n_expected": 14,
-      "n_recovered": 11,
-      "matched": 10,
-      "pc_matched": 10,
-      "pitch_class_acc": 0.7142857142857143,
-      "note_recall": 0.7142857142857143,
-      "note_precision": 0.9090909090909091
+      "n_recovered": 13,
+      "matched": 13,
+      "pc_matched": 13,
+      "pitch_class_acc": 0.9285714285714286,
+      "note_recall": 0.9285714285714286,
+      "note_precision": 1.0
     },
     {
       "id": "m03_voice_human_voice",
@@ -1507,33 +1495,25 @@
         67
       ],
       "recovered_midi": [
-        60,
-        62,
-        64,
-        60,
         61,
-        60,
         62,
         64,
-        60,
+        62,
+        64,
         64,
         65,
-        66,
         67,
-        70,
         64,
         65,
-        66,
-        67,
-        70
+        67
       ],
       "n_expected": 14,
-      "n_recovered": 19,
-      "matched": 12,
-      "pc_matched": 12,
-      "pitch_class_acc": 0.8571428571428571,
-      "note_recall": 0.8571428571428571,
-      "note_precision": 0.631578947368421
+      "n_recovered": 11,
+      "matched": 10,
+      "pc_matched": 10,
+      "pitch_class_acc": 0.7142857142857143,
+      "note_recall": 0.7142857142857143,
+      "note_precision": 0.9090909090909091
     },
     {
       "id": "m03_pure_pure_sine",
@@ -1654,15 +1634,16 @@
         67,
         69,
         67,
+        64,
         62
       ],
       "n_expected": 12,
-      "n_recovered": 9,
-      "matched": 8,
-      "pc_matched": 8,
-      "pitch_class_acc": 0.6666666666666666,
-      "note_recall": 0.6666666666666666,
-      "note_precision": 0.8888888888888888
+      "n_recovered": 10,
+      "matched": 10,
+      "pc_matched": 10,
+      "pitch_class_acc": 0.8333333333333334,
+      "note_recall": 0.8333333333333334,
+      "note_precision": 1.0
     },
     {
       "id": "m04_instrument_guitar",
@@ -1685,26 +1666,24 @@
         62
       ],
       "recovered_midi": [
+        64,
         67,
-        69,
-        69,
         69,
         72,
         69,
         67,
         69,
-        69,
         67,
-        76,
+        64,
         62
       ],
       "n_expected": 12,
-      "n_recovered": 12,
-      "matched": 7,
-      "pc_matched": 8,
-      "pitch_class_acc": 0.6666666666666666,
-      "note_recall": 0.5833333333333334,
-      "note_precision": 0.5833333333333334
+      "n_recovered": 10,
+      "matched": 10,
+      "pc_matched": 10,
+      "pitch_class_acc": 0.8333333333333334,
+      "note_recall": 0.8333333333333334,
+      "note_precision": 1.0
     },
     {
       "id": "m04_instrument_strings",
@@ -1727,9 +1706,8 @@
         62
       ],
       "recovered_midi": [
-        64,
         65,
-        64,
+        65,
         67,
         69,
         72,
@@ -1738,16 +1716,16 @@
         67,
         69,
         67,
-        64,
+        65,
         62
       ],
       "n_expected": 12,
-      "n_recovered": 13,
-      "matched": 12,
-      "pc_matched": 12,
-      "pitch_class_acc": 1.0,
-      "note_recall": 1.0,
-      "note_precision": 0.9230769230769231
+      "n_recovered": 12,
+      "matched": 9,
+      "pc_matched": 9,
+      "pitch_class_acc": 0.75,
+      "note_recall": 0.75,
+      "note_precision": 0.75
     },
     {
       "id": "m04_instrument_flute",
@@ -1858,15 +1836,16 @@
         67,
         69,
         67,
+        64,
         62
       ],
       "n_expected": 12,
-      "n_recovered": 9,
-      "matched": 8,
-      "pc_matched": 8,
-      "pitch_class_acc": 0.6666666666666666,
-      "note_recall": 0.6666666666666666,
-      "note_precision": 0.8888888888888888
+      "n_recovered": 10,
+      "matched": 10,
+      "pc_matched": 10,
+      "pitch_class_acc": 0.8333333333333334,
+      "note_recall": 0.8333333333333334,
+      "note_precision": 1.0
     },
     {
       "id": "m04_voice_human_voice",
@@ -1889,9 +1868,7 @@
         62
       ],
       "recovered_midi": [
-        64,
         65,
-        64,
         67,
         69,
         72,
@@ -1900,17 +1877,15 @@
         67,
         69,
         67,
-        64,
-        62,
-        61
+        62
       ],
       "n_expected": 12,
-      "n_recovered": 14,
-      "matched": 12,
-      "pc_matched": 12,
-      "pitch_class_acc": 1.0,
-      "note_recall": 1.0,
-      "note_precision": 0.8571428571428571
+      "n_recovered": 10,
+      "matched": 9,
+      "pc_matched": 9,
+      "pitch_class_acc": 0.75,
+      "note_recall": 0.75,
+      "note_precision": 0.9
     },
     {
       "id": "m04_pure_pure_sine",
@@ -2014,8 +1989,11 @@
         71
       ],
       "recovered_midi": [
+        76,
         74,
+        76,
         74,
+        76,
         71,
         74,
         72,
@@ -2026,12 +2004,12 @@
         71
       ],
       "n_expected": 13,
-      "n_recovered": 10,
-      "matched": 9,
-      "pc_matched": 9,
-      "pitch_class_acc": 0.6923076923076923,
-      "note_recall": 0.6923076923076923,
-      "note_precision": 0.9
+      "n_recovered": 13,
+      "matched": 13,
+      "pc_matched": 13,
+      "pitch_class_acc": 1.0,
+      "note_recall": 1.0,
+      "note_precision": 1.0
     },
     {
       "id": "m05_instrument_guitar",
@@ -2055,32 +2033,27 @@
         71
       ],
       "recovered_midi": [
-        66,
+        77,
         74,
+        77,
         74,
-        72,
+        77,
         71,
         74,
         72,
-        70,
-        69,
-        69,
-        69,
+        81,
         60,
         64,
         69,
-        69,
-        71,
-        71,
         71
       ],
       "n_expected": 13,
-      "n_recovered": 18,
-      "matched": 8,
-      "pc_matched": 8,
-      "pitch_class_acc": 0.6153846153846154,
-      "note_recall": 0.6153846153846154,
-      "note_precision": 0.4444444444444444
+      "n_recovered": 13,
+      "matched": 9,
+      "pc_matched": 10,
+      "pitch_class_acc": 0.7692307692307693,
+      "note_recall": 0.6923076923076923,
+      "note_precision": 0.6923076923076923
     },
     {
       "id": "m05_instrument_strings",
@@ -2104,11 +2077,8 @@
         71
       ],
       "recovered_midi": [
-        76,
         74,
-        76,
         74,
-        76,
         71,
         74,
         72,
@@ -2119,11 +2089,11 @@
         71
       ],
       "n_expected": 13,
-      "n_recovered": 13,
-      "matched": 13,
-      "pc_matched": 13,
-      "pitch_class_acc": 1.0,
-      "note_recall": 1.0,
+      "n_recovered": 10,
+      "matched": 10,
+      "pc_matched": 10,
+      "pitch_class_acc": 0.7692307692307693,
+      "note_recall": 0.7692307692307693,
       "note_precision": 1.0
     },
     {
@@ -2236,9 +2206,11 @@
         71
       ],
       "recovered_midi": [
+        76,
         74,
-        75,
+        76,
         74,
+        76,
         71,
         74,
         72,
@@ -2249,12 +2221,12 @@
         71
       ],
       "n_expected": 13,
-      "n_recovered": 11,
-      "matched": 9,
-      "pc_matched": 9,
-      "pitch_class_acc": 0.6923076923076923,
-      "note_recall": 0.6923076923076923,
-      "note_precision": 0.8181818181818182
+      "n_recovered": 13,
+      "matched": 13,
+      "pc_matched": 13,
+      "pitch_class_acc": 1.0,
+      "note_recall": 1.0,
+      "note_precision": 1.0
     },
     {
       "id": "m05_voice_human_voice",
@@ -2278,29 +2250,26 @@
         71
       ],
       "recovered_midi": [
-        76,
+        77,
         74,
-        75,
         74,
-        76,
         71,
         74,
         72,
         69,
-        65,
         60,
         64,
+        65,
         69,
-        71,
-        67
+        71
       ],
       "n_expected": 13,
-      "n_recovered": 15,
-      "matched": 12,
-      "pc_matched": 12,
-      "pitch_class_acc": 0.9230769230769231,
-      "note_recall": 0.9230769230769231,
-      "note_precision": 0.8
+      "n_recovered": 12,
+      "matched": 10,
+      "pc_matched": 10,
+      "pitch_class_acc": 0.7692307692307693,
+      "note_recall": 0.7692307692307693,
+      "note_precision": 0.8333333333333334
     },
     {
       "id": "m05_pure_pure_sine",
@@ -2415,19 +2384,22 @@
         62,
         59,
         61,
+        62,
         64,
+        62,
         64,
         65,
         64,
+        62,
         61
       ],
       "n_expected": 13,
-      "n_recovered": 8,
-      "matched": 7,
-      "pc_matched": 7,
-      "pitch_class_acc": 0.5384615384615384,
-      "note_recall": 0.5384615384615384,
-      "note_precision": 0.875
+      "n_recovered": 11,
+      "matched": 11,
+      "pc_matched": 11,
+      "pitch_class_acc": 0.8461538461538461,
+      "note_recall": 0.8461538461538461,
+      "note_precision": 1.0
     },
     {
       "id": "m06_instrument_guitar",
@@ -2454,23 +2426,22 @@
         62,
         59,
         61,
-        73,
-        81,
+        62,
         64,
-        81,
-        83,
+        62,
+        64,
         65,
         64,
-        61,
-        73
+        62,
+        61
       ],
       "n_expected": 13,
-      "n_recovered": 12,
-      "matched": 7,
-      "pc_matched": 7,
-      "pitch_class_acc": 0.5384615384615384,
-      "note_recall": 0.5384615384615384,
-      "note_precision": 0.5833333333333334
+      "n_recovered": 11,
+      "matched": 11,
+      "pc_matched": 11,
+      "pitch_class_acc": 0.8461538461538461,
+      "note_recall": 0.8461538461538461,
+      "note_precision": 1.0
     },
     {
       "id": "m06_instrument_strings",
@@ -2494,29 +2465,24 @@
         61
       ],
       "recovered_midi": [
-        62,
         63,
-        62,
         59,
         61,
-        62,
+        64,
+        64,
         64,
         65,
         64,
-        62,
-        64,
-        65,
-        64,
-        62,
+        63,
         61
       ],
       "n_expected": 13,
-      "n_recovered": 15,
-      "matched": 13,
-      "pc_matched": 13,
-      "pitch_class_acc": 1.0,
-      "note_recall": 1.0,
-      "note_precision": 0.8666666666666667
+      "n_recovered": 10,
+      "matched": 8,
+      "pc_matched": 8,
+      "pitch_class_acc": 0.6153846153846154,
+      "note_recall": 0.6153846153846154,
+      "note_precision": 0.8
     },
     {
       "id": "m06_instrument_flute",
@@ -2545,7 +2511,6 @@
         61,
         62,
         64,
-        64,
         62,
         64,
         65,
@@ -2554,11 +2519,11 @@
         61
       ],
       "n_expected": 13,
-      "n_recovered": 12,
-      "matched": 12,
-      "pc_matched": 12,
-      "pitch_class_acc": 0.9230769230769231,
-      "note_recall": 0.9230769230769231,
+      "n_recovered": 11,
+      "matched": 11,
+      "pc_matched": 11,
+      "pitch_class_acc": 0.8461538461538461,
+      "note_recall": 0.8461538461538461,
       "note_precision": 1.0
     },
     {
@@ -2628,19 +2593,22 @@
         62,
         59,
         61,
+        62,
         64,
+        62,
         64,
         65,
         64,
+        62,
         61
       ],
       "n_expected": 13,
-      "n_recovered": 8,
-      "matched": 7,
-      "pc_matched": 7,
-      "pitch_class_acc": 0.5384615384615384,
-      "note_recall": 0.5384615384615384,
-      "note_precision": 0.875
+      "n_recovered": 11,
+      "matched": 11,
+      "pc_matched": 11,
+      "pitch_class_acc": 0.8461538461538461,
+      "note_recall": 0.8461538461538461,
+      "note_precision": 1.0
     },
     {
       "id": "m06_voice_human_voice",
@@ -2664,32 +2632,22 @@
         61
       ],
       "recovered_midi": [
-        62,
         63,
-        62,
         59,
-        61,
-        63,
         62,
         64,
-        65,
+        64,
         64,
         65,
-        62,
-        64,
-        65,
-        64,
-        62,
-        61,
-        59
+        64
       ],
       "n_expected": 13,
-      "n_recovered": 18,
-      "matched": 12,
-      "pc_matched": 12,
-      "pitch_class_acc": 0.9230769230769231,
-      "note_recall": 0.9230769230769231,
-      "note_precision": 0.6666666666666666
+      "n_recovered": 8,
+      "matched": 7,
+      "pc_matched": 7,
+      "pitch_class_acc": 0.5384615384615384,
+      "note_recall": 0.5384615384615384,
+      "note_precision": 0.875
     },
     {
       "id": "m06_pure_pure_sine",
@@ -2718,7 +2676,6 @@
         61,
         62,
         64,
-        64,
         62,
         64,
         65,
@@ -2727,11 +2684,11 @@
         61
       ],
       "n_expected": 13,
-      "n_recovered": 12,
-      "matched": 12,
-      "pc_matched": 12,
-      "pitch_class_acc": 0.9230769230769231,
-      "note_recall": 0.9230769230769231,
+      "n_recovered": 11,
+      "matched": 11,
+      "pc_matched": 11,
+      "pitch_class_acc": 0.8461538461538461,
+      "note_recall": 0.8461538461538461,
       "note_precision": 1.0
     },
     {
@@ -2797,6 +2754,7 @@
         65
       ],
       "recovered_midi": [
+        60,
         65,
         69,
         67,
@@ -2808,12 +2766,12 @@
         65
       ],
       "n_expected": 12,
-      "n_recovered": 9,
-      "matched": 8,
-      "pc_matched": 8,
-      "pitch_class_acc": 0.6666666666666666,
-      "note_recall": 0.6666666666666666,
-      "note_precision": 0.8888888888888888
+      "n_recovered": 10,
+      "matched": 10,
+      "pc_matched": 10,
+      "pitch_class_acc": 0.8333333333333334,
+      "note_recall": 0.8333333333333334,
+      "note_precision": 1.0
     },
     {
       "id": "m07_instrument_guitar",
@@ -2836,8 +2794,7 @@
         65
       ],
       "recovered_midi": [
-        65,
-        77,
+        60,
         65,
         69,
         67,
@@ -2845,17 +2802,16 @@
         64,
         65,
         69,
-        69,
         67,
         65
       ],
       "n_expected": 12,
-      "n_recovered": 12,
-      "matched": 9,
+      "n_recovered": 10,
+      "matched": 10,
       "pc_matched": 10,
       "pitch_class_acc": 0.8333333333333334,
-      "note_recall": 0.75,
-      "note_precision": 0.75
+      "note_recall": 0.8333333333333334,
+      "note_precision": 1.0
     },
     {
       "id": "m07_instrument_strings",
@@ -2878,7 +2834,7 @@
         65
       ],
       "recovered_midi": [
-        60,
+        61,
         65,
         65,
         65,
@@ -2893,11 +2849,11 @@
       ],
       "n_expected": 12,
       "n_recovered": 12,
-      "matched": 12,
-      "pc_matched": 12,
-      "pitch_class_acc": 1.0,
-      "note_recall": 1.0,
-      "note_precision": 1.0
+      "matched": 11,
+      "pc_matched": 11,
+      "pitch_class_acc": 0.9166666666666666,
+      "note_recall": 0.9166666666666666,
+      "note_precision": 0.9166666666666666
     },
     {
       "id": "m07_instrument_flute",
@@ -3000,6 +2956,7 @@
         65
       ],
       "recovered_midi": [
+        60,
         65,
         69,
         67,
@@ -3011,12 +2968,12 @@
         65
       ],
       "n_expected": 12,
-      "n_recovered": 9,
-      "matched": 8,
-      "pc_matched": 8,
-      "pitch_class_acc": 0.6666666666666666,
-      "note_recall": 0.6666666666666666,
-      "note_precision": 0.8888888888888888
+      "n_recovered": 10,
+      "matched": 10,
+      "pc_matched": 10,
+      "pitch_class_acc": 0.8333333333333334,
+      "note_recall": 0.8333333333333334,
+      "note_precision": 1.0
     },
     {
       "id": "m07_voice_human_voice",
@@ -3039,7 +2996,7 @@
         65
       ],
       "recovered_midi": [
-        60,
+        61,
         65,
         65,
         65,
@@ -3050,16 +3007,15 @@
         65,
         69,
         67,
-        65,
-        67
+        65
       ],
       "n_expected": 12,
-      "n_recovered": 13,
+      "n_recovered": 12,
       "matched": 11,
       "pc_matched": 11,
       "pitch_class_acc": 0.9166666666666666,
       "note_recall": 0.9166666666666666,
-      "note_precision": 0.8461538461538461
+      "note_precision": 0.9166666666666666
     },
     {
       "id": "m07_pure_pure_sine",
@@ -3160,7 +3116,9 @@
         65
       ],
       "recovered_midi": [
+        67,
         69,
+        67,
         65,
         64,
         65,
@@ -3170,12 +3128,12 @@
         65
       ],
       "n_expected": 10,
-      "n_recovered": 8,
-      "matched": 7,
-      "pc_matched": 7,
-      "pitch_class_acc": 0.7,
-      "note_recall": 0.7,
-      "note_precision": 0.875
+      "n_recovered": 10,
+      "matched": 10,
+      "pc_matched": 10,
+      "pitch_class_acc": 1.0,
+      "note_recall": 1.0,
+      "note_precision": 1.0
     },
     {
       "id": "m08_instrument_guitar",
@@ -3183,43 +3141,6 @@
       "title_en": "London Bridge",
       "category": "instrument",
       "timbre": "guitar",
-      "expected_midi": [
-        67,
-        69,
-        67,
-        65,
-        64,
-        65,
-        67,
-        62,
-        64,
-        65
-      ],
-      "recovered_midi": [
-        69,
-        65,
-        76,
-        77,
-        74,
-        74,
-        64,
-        65,
-        77
-      ],
-      "n_expected": 10,
-      "n_recovered": 9,
-      "matched": 3,
-      "pc_matched": 5,
-      "pitch_class_acc": 0.5,
-      "note_recall": 0.3,
-      "note_precision": 0.3333333333333333
-    },
-    {
-      "id": "m08_instrument_strings",
-      "title_zh": "伦敦大桥",
-      "title_en": "London Bridge",
-      "category": "instrument",
-      "timbre": "strings",
       "expected_midi": [
         67,
         69,
@@ -3251,6 +3172,43 @@
       "pitch_class_acc": 1.0,
       "note_recall": 1.0,
       "note_precision": 1.0
+    },
+    {
+      "id": "m08_instrument_strings",
+      "title_zh": "伦敦大桥",
+      "title_en": "London Bridge",
+      "category": "instrument",
+      "timbre": "strings",
+      "expected_midi": [
+        67,
+        69,
+        67,
+        65,
+        64,
+        65,
+        67,
+        62,
+        64,
+        65
+      ],
+      "recovered_midi": [
+        68,
+        69,
+        68,
+        65,
+        64,
+        65,
+        62,
+        64,
+        65
+      ],
+      "n_expected": 10,
+      "n_recovered": 9,
+      "matched": 7,
+      "pc_matched": 7,
+      "pitch_class_acc": 0.7,
+      "note_recall": 0.7,
+      "note_precision": 0.7777777777777778
     },
     {
       "id": "m08_instrument_flute",
@@ -3347,7 +3305,9 @@
         65
       ],
       "recovered_midi": [
+        67,
         69,
+        67,
         65,
         64,
         65,
@@ -3357,12 +3317,12 @@
         65
       ],
       "n_expected": 10,
-      "n_recovered": 8,
-      "matched": 7,
-      "pc_matched": 7,
-      "pitch_class_acc": 0.7,
-      "note_recall": 0.7,
-      "note_precision": 0.875
+      "n_recovered": 10,
+      "matched": 10,
+      "pc_matched": 10,
+      "pitch_class_acc": 1.0,
+      "note_recall": 1.0,
+      "note_precision": 1.0
     },
     {
       "id": "m08_voice_human_voice",
@@ -3383,26 +3343,22 @@
         65
       ],
       "recovered_midi": [
-        67,
+        68,
         69,
-        67,
         65,
         64,
         65,
-        67,
-        64,
         62,
         64,
-        65,
-        62
+        65
       ],
       "n_expected": 10,
-      "n_recovered": 12,
-      "matched": 10,
-      "pc_matched": 10,
-      "pitch_class_acc": 1.0,
-      "note_recall": 1.0,
-      "note_precision": 0.8333333333333334
+      "n_recovered": 8,
+      "matched": 7,
+      "pc_matched": 7,
+      "pitch_class_acc": 0.7,
+      "note_recall": 0.7,
+      "note_precision": 0.875
     },
     {
       "id": "m08_pure_pure_sine",
@@ -3499,6 +3455,7 @@
         62
       ],
       "recovered_midi": [
+        64,
         62,
         60,
         62,
@@ -3506,12 +3463,12 @@
         62
       ],
       "n_expected": 10,
-      "n_recovered": 5,
-      "matched": 4,
-      "pc_matched": 4,
-      "pitch_class_acc": 0.4,
-      "note_recall": 0.4,
-      "note_precision": 0.8
+      "n_recovered": 6,
+      "matched": 6,
+      "pc_matched": 6,
+      "pitch_class_acc": 0.6,
+      "note_recall": 0.6,
+      "note_precision": 1.0
     },
     {
       "id": "m09_instrument_guitar",
@@ -3532,6 +3489,7 @@
         62
       ],
       "recovered_midi": [
+        64,
         62,
         60,
         62,
@@ -3539,11 +3497,11 @@
         62
       ],
       "n_expected": 10,
-      "n_recovered": 5,
-      "matched": 5,
-      "pc_matched": 5,
-      "pitch_class_acc": 0.5,
-      "note_recall": 0.5,
+      "n_recovered": 6,
+      "matched": 6,
+      "pc_matched": 6,
+      "pitch_class_acc": 0.6,
+      "note_recall": 0.6,
       "note_precision": 1.0
     },
     {
@@ -3565,13 +3523,11 @@
         62
       ],
       "recovered_midi": [
-        64,
+        65,
         62,
         60,
         62,
-        64,
         65,
-        64,
         65,
         64,
         62,
@@ -3579,12 +3535,12 @@
         62
       ],
       "n_expected": 10,
-      "n_recovered": 12,
-      "matched": 10,
-      "pc_matched": 10,
-      "pitch_class_acc": 1.0,
-      "note_recall": 1.0,
-      "note_precision": 0.8333333333333334
+      "n_recovered": 10,
+      "matched": 7,
+      "pc_matched": 7,
+      "pitch_class_acc": 0.7,
+      "note_recall": 0.7,
+      "note_precision": 0.7
     },
     {
       "id": "m09_instrument_flute",
@@ -3673,6 +3629,7 @@
         62
       ],
       "recovered_midi": [
+        64,
         62,
         60,
         62,
@@ -3680,12 +3637,12 @@
         62
       ],
       "n_expected": 10,
-      "n_recovered": 5,
-      "matched": 4,
-      "pc_matched": 4,
-      "pitch_class_acc": 0.4,
-      "note_recall": 0.4,
-      "note_precision": 0.8
+      "n_recovered": 6,
+      "matched": 6,
+      "pc_matched": 6,
+      "pitch_class_acc": 0.6,
+      "note_recall": 0.6,
+      "note_precision": 1.0
     },
     {
       "id": "m09_voice_human_voice",
@@ -3706,27 +3663,19 @@
         62
       ],
       "recovered_midi": [
-        64,
         62,
         60,
         62,
-        64,
         65,
-        64,
-        65,
-        61,
-        62,
-        62,
-        62,
-        61
+        62
       ],
       "n_expected": 10,
-      "n_recovered": 13,
-      "matched": 9,
-      "pc_matched": 9,
-      "pitch_class_acc": 0.9,
-      "note_recall": 0.9,
-      "note_precision": 0.6923076923076923
+      "n_recovered": 5,
+      "matched": 4,
+      "pc_matched": 4,
+      "pitch_class_acc": 0.4,
+      "note_recall": 0.4,
+      "note_precision": 0.8
     },
     {
       "id": "m09_pure_pure_sine",
@@ -3752,15 +3701,14 @@
         60,
         62,
         64,
-        62,
         62
       ],
       "n_expected": 10,
-      "n_recovered": 7,
-      "matched": 7,
-      "pc_matched": 7,
-      "pitch_class_acc": 0.7,
-      "note_recall": 0.7,
+      "n_recovered": 6,
+      "matched": 6,
+      "pc_matched": 6,
+      "pitch_class_acc": 0.6,
+      "note_recall": 0.6,
       "note_precision": 1.0
     },
     {
@@ -3851,19 +3799,19 @@
         64
       ],
       "recovered_midi": [
-        76,
+        64,
         67,
         60,
         62,
-        74
+        64
       ],
       "n_expected": 11,
       "n_recovered": 5,
-      "matched": 3,
-      "pc_matched": 4,
-      "pitch_class_acc": 0.36363636363636365,
-      "note_recall": 0.2727272727272727,
-      "note_precision": 0.6
+      "matched": 5,
+      "pc_matched": 5,
+      "pitch_class_acc": 0.45454545454545453,
+      "note_recall": 0.45454545454545453,
+      "note_precision": 1.0
     },
     {
       "id": "m10_instrument_strings",
@@ -3885,31 +3833,25 @@
         64
       ],
       "recovered_midi": [
-        64,
+        65,
         65,
         64,
         65,
-        64,
         65,
         64,
         65,
-        64,
-        65,
-        64,
-        65,
-        64,
         67,
         60,
         62,
         64
       ],
       "n_expected": 11,
-      "n_recovered": 17,
-      "matched": 11,
-      "pc_matched": 11,
-      "pitch_class_acc": 1.0,
-      "note_recall": 1.0,
-      "note_precision": 0.6470588235294118
+      "n_recovered": 11,
+      "matched": 6,
+      "pc_matched": 6,
+      "pitch_class_acc": 0.5454545454545454,
+      "note_recall": 0.5454545454545454,
+      "note_precision": 0.5454545454545454
     },
     {
       "id": "m10_instrument_flute",
@@ -4002,14 +3944,15 @@
         64,
         67,
         60,
-        62
+        62,
+        64
       ],
       "n_expected": 11,
-      "n_recovered": 4,
-      "matched": 4,
-      "pc_matched": 4,
-      "pitch_class_acc": 0.36363636363636365,
-      "note_recall": 0.36363636363636365,
+      "n_recovered": 5,
+      "matched": 5,
+      "pc_matched": 5,
+      "pitch_class_acc": 0.45454545454545453,
+      "note_recall": 0.45454545454545453,
       "note_precision": 1.0
     },
     {
@@ -4032,31 +3975,21 @@
         64
       ],
       "recovered_midi": [
-        64,
         65,
         65,
-        64,
-        66,
-        64,
         65,
-        64,
         65,
-        64,
-        66,
-        64,
         67,
         60,
-        62,
-        64,
-        61
+        62
       ],
       "n_expected": 11,
-      "n_recovered": 17,
-      "matched": 10,
-      "pc_matched": 10,
-      "pitch_class_acc": 0.9090909090909091,
-      "note_recall": 0.9090909090909091,
-      "note_precision": 0.5882352941176471
+      "n_recovered": 7,
+      "matched": 3,
+      "pc_matched": 3,
+      "pitch_class_acc": 0.2727272727272727,
+      "note_recall": 0.2727272727272727,
+      "note_precision": 0.42857142857142855
     },
     {
       "id": "m10_pure_pure_sine",
@@ -4188,20 +4121,18 @@
         62,
         64,
         62,
-        72,
         71,
         71,
-        69,
         69,
         67
       ],
       "n_expected": 12,
-      "n_recovered": 10,
-      "matched": 6,
-      "pc_matched": 6,
-      "pitch_class_acc": 0.5,
-      "note_recall": 0.5,
-      "note_precision": 0.6
+      "n_recovered": 8,
+      "matched": 8,
+      "pc_matched": 8,
+      "pitch_class_acc": 0.6666666666666666,
+      "note_recall": 0.6666666666666666,
+      "note_precision": 1.0
     },
     {
       "id": "m11_instrument_strings",
@@ -4224,9 +4155,7 @@
         67
       ],
       "recovered_midi": [
-        67,
-        67,
-        67,
+        68,
         62,
         64,
         64,
@@ -4234,16 +4163,15 @@
         71,
         71,
         69,
-        69,
-        67
+        69
       ],
       "n_expected": 12,
-      "n_recovered": 12,
-      "matched": 12,
-      "pc_matched": 12,
-      "pitch_class_acc": 1.0,
-      "note_recall": 1.0,
-      "note_precision": 1.0
+      "n_recovered": 9,
+      "matched": 8,
+      "pc_matched": 8,
+      "pitch_class_acc": 0.6666666666666666,
+      "note_recall": 0.6666666666666666,
+      "note_precision": 0.8888888888888888
     },
     {
       "id": "m11_instrument_flute",
@@ -4377,29 +4305,24 @@
         67
       ],
       "recovered_midi": [
-        67,
-        67,
         68,
         67,
         62,
         64,
         64,
         62,
-        64,
         71,
         71,
         69,
-        69,
-        67,
         69
       ],
       "n_expected": 12,
-      "n_recovered": 15,
-      "matched": 12,
-      "pc_matched": 12,
-      "pitch_class_acc": 1.0,
-      "note_recall": 1.0,
-      "note_precision": 0.8
+      "n_recovered": 10,
+      "matched": 9,
+      "pc_matched": 9,
+      "pitch_class_acc": 0.75,
+      "note_recall": 0.75,
+      "note_precision": 0.9
     },
     {
       "id": "m11_pure_pure_sine",
@@ -4529,21 +4452,21 @@
         67
       ],
       "recovered_midi": [
-        72,
+        60,
         62,
         64,
         62,
         64,
-        77,
+        65,
         67
       ],
       "n_expected": 10,
       "n_recovered": 7,
-      "matched": 5,
+      "matched": 7,
       "pc_matched": 7,
       "pitch_class_acc": 0.7,
-      "note_recall": 0.5,
-      "note_precision": 0.7142857142857143
+      "note_recall": 0.7,
+      "note_precision": 1.0
     },
     {
       "id": "m12_instrument_strings",
@@ -4564,27 +4487,22 @@
         67
       ],
       "recovered_midi": [
-        60,
-        60,
-        60,
+        61,
         62,
-        64,
-        65,
         64,
         62,
         64,
         65,
         67,
-        69,
-        69
+        68
       ],
       "n_expected": 10,
-      "n_recovered": 13,
-      "matched": 10,
-      "pc_matched": 10,
-      "pitch_class_acc": 1.0,
-      "note_recall": 1.0,
-      "note_precision": 0.7692307692307693
+      "n_recovered": 8,
+      "matched": 6,
+      "pc_matched": 6,
+      "pitch_class_acc": 0.6,
+      "note_recall": 0.6,
+      "note_precision": 0.75
     },
     {
       "id": "m12_instrument_flute",
@@ -4710,32 +4628,21 @@
         67
       ],
       "recovered_midi": [
-        60,
         61,
-        60,
-        61,
-        60,
         62,
         64,
-        66,
-        65,
-        64,
-        65,
         62,
         64,
         65,
-        66,
-        67,
-        70,
-        69
+        67
       ],
       "n_expected": 10,
-      "n_recovered": 18,
-      "matched": 9,
-      "pc_matched": 9,
-      "pitch_class_acc": 0.9,
-      "note_recall": 0.9,
-      "note_precision": 0.5
+      "n_recovered": 7,
+      "matched": 6,
+      "pc_matched": 6,
+      "pitch_class_acc": 0.6,
+      "note_recall": 0.6,
+      "note_precision": 0.8571428571428571
     },
     {
       "id": "m12_pure_pure_sine",
@@ -4833,9 +4740,13 @@
         60
       ],
       "recovered_midi": [
+        67,
         69,
+        67,
         64,
+        67,
         69,
+        67,
         64,
         60,
         62,
@@ -4844,12 +4755,12 @@
         60
       ],
       "n_expected": 17,
-      "n_recovered": 9,
-      "matched": 7,
-      "pc_matched": 7,
-      "pitch_class_acc": 0.4117647058823529,
-      "note_recall": 0.4117647058823529,
-      "note_precision": 0.7777777777777778
+      "n_recovered": 13,
+      "matched": 13,
+      "pc_matched": 13,
+      "pitch_class_acc": 0.7647058823529411,
+      "note_recall": 0.7647058823529411,
+      "note_precision": 1.0
     },
     {
       "id": "m13_instrument_guitar",
@@ -4877,10 +4788,11 @@
         60
       ],
       "recovered_midi": [
+        67,
         69,
+        67,
         64,
-        69,
-        70,
+        67,
         69,
         64,
         60,
@@ -4890,12 +4802,12 @@
         60
       ],
       "n_expected": 17,
-      "n_recovered": 11,
-      "matched": 7,
-      "pc_matched": 7,
-      "pitch_class_acc": 0.4117647058823529,
-      "note_recall": 0.4117647058823529,
-      "note_precision": 0.6363636363636364
+      "n_recovered": 12,
+      "matched": 12,
+      "pc_matched": 12,
+      "pitch_class_acc": 0.7058823529411765,
+      "note_recall": 0.7058823529411765,
+      "note_precision": 1.0
     },
     {
       "id": "m13_instrument_strings",
@@ -4923,13 +4835,13 @@
         60
       ],
       "recovered_midi": [
-        67,
+        68,
         69,
-        67,
+        68,
         64,
-        67,
+        68,
         69,
-        67,
+        68,
         64,
         60,
         60,
@@ -4943,11 +4855,11 @@
       ],
       "n_expected": 17,
       "n_recovered": 17,
-      "matched": 16,
-      "pc_matched": 16,
-      "pitch_class_acc": 0.9411764705882353,
-      "note_recall": 0.9411764705882353,
-      "note_precision": 0.9411764705882353
+      "matched": 13,
+      "pc_matched": 13,
+      "pitch_class_acc": 0.7647058823529411,
+      "note_recall": 0.7647058823529411,
+      "note_precision": 0.7647058823529411
     },
     {
       "id": "m13_instrument_flute",
@@ -5071,9 +4983,13 @@
         60
       ],
       "recovered_midi": [
+        67,
         69,
+        67,
         64,
+        67,
         69,
+        67,
         64,
         60,
         62,
@@ -5082,12 +4998,12 @@
         60
       ],
       "n_expected": 17,
-      "n_recovered": 9,
-      "matched": 7,
-      "pc_matched": 7,
-      "pitch_class_acc": 0.4117647058823529,
-      "note_recall": 0.4117647058823529,
-      "note_precision": 0.7777777777777778
+      "n_recovered": 13,
+      "matched": 13,
+      "pc_matched": 13,
+      "pitch_class_acc": 0.7647058823529411,
+      "note_recall": 0.7647058823529411,
+      "note_precision": 1.0
     },
     {
       "id": "m13_voice_human_voice",
@@ -5115,15 +5031,11 @@
         60
       ],
       "recovered_midi": [
-        67,
+        68,
         69,
-        67,
         64,
-        67,
         69,
-        67,
         64,
-        61,
         60,
         60,
         60,
@@ -5132,16 +5044,15 @@
         62,
         64,
         62,
-        60,
-        61
+        60
       ],
       "n_expected": 17,
-      "n_recovered": 19,
-      "matched": 16,
-      "pc_matched": 16,
-      "pitch_class_acc": 0.9411764705882353,
-      "note_recall": 0.9411764705882353,
-      "note_precision": 0.8421052631578947
+      "n_recovered": 14,
+      "matched": 13,
+      "pc_matched": 13,
+      "pitch_class_acc": 0.7647058823529411,
+      "note_recall": 0.7647058823529411,
+      "note_precision": 0.9285714285714286
     },
     {
       "id": "m13_pure_pure_sine",
@@ -5259,23 +5170,25 @@
         69
       ],
       "recovered_midi": [
+        60,
         64,
         67,
         69,
         67,
         64,
+        60,
         62,
         64,
         67,
         69
       ],
       "n_expected": 11,
-      "n_recovered": 9,
-      "matched": 7,
-      "pc_matched": 7,
-      "pitch_class_acc": 0.6363636363636364,
-      "note_recall": 0.6363636363636364,
-      "note_precision": 0.7777777777777778
+      "n_recovered": 11,
+      "matched": 11,
+      "pc_matched": 11,
+      "pitch_class_acc": 1.0,
+      "note_recall": 1.0,
+      "note_precision": 1.0
     },
     {
       "id": "m14_instrument_guitar",
@@ -5283,47 +5196,6 @@
       "title_en": "Red River Valley",
       "category": "instrument",
       "timbre": "guitar",
-      "expected_midi": [
-        60,
-        64,
-        67,
-        69,
-        67,
-        64,
-        60,
-        62,
-        64,
-        67,
-        69
-      ],
-      "recovered_midi": [
-        64,
-        67,
-        69,
-        69,
-        67,
-        64,
-        60,
-        62,
-        64,
-        67,
-        69,
-        69
-      ],
-      "n_expected": 11,
-      "n_recovered": 12,
-      "matched": 10,
-      "pc_matched": 10,
-      "pitch_class_acc": 0.9090909090909091,
-      "note_recall": 0.9090909090909091,
-      "note_precision": 0.8333333333333334
-    },
-    {
-      "id": "m14_instrument_strings",
-      "title_zh": "红河谷",
-      "title_en": "Red River Valley",
-      "category": "instrument",
-      "timbre": "strings",
       "expected_midi": [
         60,
         64,
@@ -5357,6 +5229,45 @@
       "pitch_class_acc": 1.0,
       "note_recall": 1.0,
       "note_precision": 1.0
+    },
+    {
+      "id": "m14_instrument_strings",
+      "title_zh": "红河谷",
+      "title_en": "Red River Valley",
+      "category": "instrument",
+      "timbre": "strings",
+      "expected_midi": [
+        60,
+        64,
+        67,
+        69,
+        67,
+        64,
+        60,
+        62,
+        64,
+        67,
+        69
+      ],
+      "recovered_midi": [
+        61,
+        64,
+        67,
+        69,
+        67,
+        64,
+        62,
+        64,
+        67,
+        69
+      ],
+      "n_expected": 11,
+      "n_recovered": 10,
+      "matched": 9,
+      "pc_matched": 9,
+      "pitch_class_acc": 0.8181818181818182,
+      "note_recall": 0.8181818181818182,
+      "note_precision": 0.9
     },
     {
       "id": "m14_instrument_flute",
@@ -5458,23 +5369,25 @@
         69
       ],
       "recovered_midi": [
+        60,
         64,
         67,
         69,
         67,
         64,
+        60,
         62,
         64,
         67,
         69
       ],
       "n_expected": 11,
-      "n_recovered": 9,
-      "matched": 7,
-      "pc_matched": 7,
-      "pitch_class_acc": 0.6363636363636364,
-      "note_recall": 0.6363636363636364,
-      "note_precision": 0.7777777777777778
+      "n_recovered": 11,
+      "matched": 11,
+      "pc_matched": 11,
+      "pitch_class_acc": 1.0,
+      "note_recall": 1.0,
+      "note_precision": 1.0
     },
     {
       "id": "m14_voice_human_voice",
@@ -5496,26 +5409,24 @@
         69
       ],
       "recovered_midi": [
-        60,
+        61,
         64,
         67,
         69,
         67,
         64,
-        60,
         62,
         64,
         67,
-        69,
-        66
+        69
       ],
       "n_expected": 11,
-      "n_recovered": 12,
-      "matched": 11,
-      "pc_matched": 11,
-      "pitch_class_acc": 1.0,
-      "note_recall": 1.0,
-      "note_precision": 0.9166666666666666
+      "n_recovered": 10,
+      "matched": 9,
+      "pc_matched": 9,
+      "pitch_class_acc": 0.8181818181818182,
+      "note_recall": 0.8181818181818182,
+      "note_precision": 0.9
     },
     {
       "id": "m14_pure_pure_sine",
@@ -5617,33 +5528,6 @@
         72
       ],
       "recovered_midi": [
-        65,
-        67,
-        72,
-        67,
-        72,
-        65,
-        67,
-        72,
-        71,
-        72,
-        84
-      ],
-      "n_expected": 11,
-      "n_recovered": 11,
-      "matched": 9,
-      "pc_matched": 9,
-      "pitch_class_acc": 0.8181818181818182,
-      "note_recall": 0.8181818181818182,
-      "note_precision": 0.8181818181818182
-    },
-    {
-      "id": "m15_instrument_guitar",
-      "title_zh": "婚礼进行曲",
-      "title_en": "Wedding March",
-      "category": "instrument",
-      "timbre": "guitar",
-      "expected_midi": [
         60,
         65,
         67,
@@ -5656,32 +5540,20 @@
         71,
         72
       ],
-      "recovered_midi": [
-        65,
-        67,
-        72,
-        67,
-        72,
-        65,
-        67,
-        72,
-        71,
-        72
-      ],
       "n_expected": 11,
-      "n_recovered": 10,
-      "matched": 9,
-      "pc_matched": 9,
-      "pitch_class_acc": 0.8181818181818182,
-      "note_recall": 0.8181818181818182,
-      "note_precision": 0.9
+      "n_recovered": 11,
+      "matched": 11,
+      "pc_matched": 11,
+      "pitch_class_acc": 1.0,
+      "note_recall": 1.0,
+      "note_precision": 1.0
     },
     {
-      "id": "m15_instrument_strings",
+      "id": "m15_instrument_guitar",
       "title_zh": "婚礼进行曲",
       "title_en": "Wedding March",
       "category": "instrument",
-      "timbre": "strings",
+      "timbre": "guitar",
       "expected_midi": [
         60,
         65,
@@ -5715,6 +5587,42 @@
       "pitch_class_acc": 1.0,
       "note_recall": 1.0,
       "note_precision": 1.0
+    },
+    {
+      "id": "m15_instrument_strings",
+      "title_zh": "婚礼进行曲",
+      "title_en": "Wedding March",
+      "category": "instrument",
+      "timbre": "strings",
+      "expected_midi": [
+        60,
+        65,
+        67,
+        72,
+        67,
+        72,
+        65,
+        67,
+        72,
+        71,
+        72
+      ],
+      "recovered_midi": [
+        61,
+        65,
+        67,
+        67,
+        65,
+        67,
+        71
+      ],
+      "n_expected": 11,
+      "n_recovered": 7,
+      "matched": 6,
+      "pc_matched": 6,
+      "pitch_class_acc": 0.5454545454545454,
+      "note_recall": 0.5454545454545454,
+      "note_precision": 0.8571428571428571
     },
     {
       "id": "m15_instrument_flute",
@@ -5816,6 +5724,7 @@
         72
       ],
       "recovered_midi": [
+        60,
         65,
         67,
         72,
@@ -5828,12 +5737,12 @@
         72
       ],
       "n_expected": 11,
-      "n_recovered": 10,
-      "matched": 9,
-      "pc_matched": 9,
-      "pitch_class_acc": 0.8181818181818182,
-      "note_recall": 0.8181818181818182,
-      "note_precision": 0.9
+      "n_recovered": 11,
+      "matched": 11,
+      "pc_matched": 11,
+      "pitch_class_acc": 1.0,
+      "note_recall": 1.0,
+      "note_precision": 1.0
     },
     {
       "id": "m15_voice_human_voice",
@@ -5855,28 +5764,21 @@
         72
       ],
       "recovered_midi": [
-        60,
+        61,
         65,
-        66,
         67,
-        72,
         67,
-        72,
         65,
-        66,
         67,
-        72,
-        71,
-        72,
-        70
+        71
       ],
       "n_expected": 11,
-      "n_recovered": 14,
-      "matched": 11,
-      "pc_matched": 11,
-      "pitch_class_acc": 1.0,
-      "note_recall": 1.0,
-      "note_precision": 0.7857142857142857
+      "n_recovered": 7,
+      "matched": 6,
+      "pc_matched": 6,
+      "pitch_class_acc": 0.5454545454545454,
+      "note_recall": 0.5454545454545454,
+      "note_precision": 0.8571428571428571
     },
     {
       "id": "m15_pure_pure_sine",
