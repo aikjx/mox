@@ -1,6 +1,6 @@
 //! 信息关联关系图（关图规范 GR-STD-V1.0）参考实现
 //! 纯 Rust std，零外部依赖，离线可编译。
-//! 子命令：build / validate / export / query / sync / snapshot
+//! 子命令：build / validate / export / query / sync / snapshot / skeleton / deviate / dedup
 
 use std::collections::{HashMap, HashSet};
 use std::env;
@@ -681,6 +681,11 @@ fn connected_component_sizes(g: &InfoGraph) -> HashMap<String, usize> {
 // ===================== REQ 骨架注入 / 偏离检测 =====================
 
 /// 极简 JSON 值（用于解析 guantu.req.json 规格，零依赖）
+///
+/// `Bool`/`Num` 的载荷本工具当前只需"正确跳过"而不需读取（关图规格中
+/// 结构性字段均为 string/array/object）；保留载荷以维持 JSON 值模型完整，
+/// 使解析器可无损处理任意合法 JSON，故此处显式豁免 dead_code。
+#[allow(dead_code)]
 enum Jv {
     Null,
     Bool(bool),
@@ -796,11 +801,16 @@ impl<'a> JParser<'a> {
         }
         Jv::Arr(v)
     }
+    /// 解析 JSON 字符串字面量。
+    ///
+    /// 关键点（中文需求规格必须正确）：按**原始字节**累积后统一按 UTF-8 解码，
+    /// 绝不可 `byte as char`（那会把 UTF-8 多字节序列拆成 Latin-1 码位而乱码）。
+    /// 同时完整支持 `\uXXXX` 及 UTF-16 代理对（emoji / 补充平面字符）。
     fn parse_str(&mut self) -> String {
         if self.i < self.c.len() && self.c[self.i] == b'"' {
             self.i += 1;
         }
-        let mut s = String::new();
+        let mut buf: Vec<u8> = Vec::new();
         while self.i < self.c.len() {
             let ch = self.c[self.i];
             if ch == b'"' {
@@ -811,21 +821,69 @@ impl<'a> JParser<'a> {
                 self.i += 1;
                 let e = self.c[self.i];
                 match e {
-                    b'"' => s.push('"'),
-                    b'\\' => s.push('\\'),
-                    b'n' => s.push('\n'),
-                    b't' => s.push('\t'),
-                    b'r' => s.push('\r'),
-                    b'/' => s.push('/'),
-                    _ => s.push(e as char),
+                    b'"' => buf.push(b'"'),
+                    b'\\' => buf.push(b'\\'),
+                    b'n' => buf.push(b'\n'),
+                    b't' => buf.push(b'\t'),
+                    b'r' => buf.push(b'\r'),
+                    b'/' => buf.push(b'/'),
+                    b'b' => buf.push(0x08),
+                    b'f' => buf.push(0x0c),
+                    b'u' => {
+                        // self.i 指向 'u'，其后 4 位十六进制
+                        if let Some(hi) = self.read_hex4() {
+                            let cp = if (0xD800..0xDC00).contains(&hi) {
+                                // 高位代理：尝试消费紧随的 \uXXXX 低位代理
+                                let save = self.i;
+                                if self.i + 2 < self.c.len()
+                                    && self.c[self.i + 1] == b'\\'
+                                    && self.c[self.i + 2] == b'u'
+                                {
+                                    self.i += 2; // 移到低位代理的 'u'
+                                    match self.read_hex4() {
+                                        Some(lo) if (0xDC00..0xE000).contains(&lo) => {
+                                            0x10000 + ((hi - 0xD800) << 10) + (lo - 0xDC00)
+                                        }
+                                        _ => {
+                                            self.i = save;
+                                            0xFFFD
+                                        }
+                                    }
+                                } else {
+                                    0xFFFD
+                                }
+                            } else if (0xDC00..0xE000).contains(&hi) {
+                                0xFFFD // 孤立低位代理
+                            } else {
+                                hi
+                            };
+                            let c = char::from_u32(cp).unwrap_or('\u{FFFD}');
+                            let mut tmp = [0u8; 4];
+                            buf.extend_from_slice(c.encode_utf8(&mut tmp).as_bytes());
+                        }
+                    }
+                    other => buf.push(other), // 未知转义：保留原字节
                 }
                 self.i += 1;
             } else {
-                s.push(ch as char);
+                buf.push(ch); // 原始字节直通，多字节 UTF-8 序列得以保全
                 self.i += 1;
             }
         }
-        s
+        String::from_utf8_lossy(&buf).into_owned()
+    }
+    /// 读取 `\u` 之后的 4 位十六进制；成功时 self.i 停在最后一位十六进制字符上
+    fn read_hex4(&mut self) -> Option<u32> {
+        if self.i + 4 >= self.c.len() {
+            return None;
+        }
+        let mut v: u32 = 0;
+        for k in 1..=4 {
+            let d = (self.c[self.i + k] as char).to_digit(16)?;
+            v = v * 16 + d;
+        }
+        self.i += 4;
+        Some(v)
     }
     fn parse_bool(&mut self) -> Jv {
         if self.i + 4 <= self.c.len() && &self.c[self.i..self.i + 4] == b"true" {
@@ -851,7 +909,11 @@ impl<'a> JParser<'a> {
     }
 }
 fn json_parse(s: &str) -> Jv {
-    let mut p = JParser { c: s.as_bytes(), i: 0 };
+    // 容忍 UTF-8 BOM(EF BB BF)：Windows 编辑器/PowerShell 重定向常写入 BOM，
+    // 若不剥离会导致解析静默失败（曾致 skeleton 空跑注入 0 个 REQ）。
+    let b = s.as_bytes();
+    let start = if b.len() >= 3 && b[0] == 0xEF && b[1] == 0xBB && b[2] == 0xBF { 3 } else { 0 };
+    let mut p = JParser { c: &b[start..], i: 0 };
     p.parse_value()
 }
 
@@ -897,9 +959,21 @@ fn cmd_skeleton(graph_p: &str, spec_p: &str, out_p: &str) {
             }
         }
     }
+    // 铁律：禁止静默空跑。规格解析失败/为空时必须响亮失败，否则下游
+    // deviate/门禁会误判为"通过"，形成虚假合规。
+    if req_count == 0 {
+        eprintln!("错误: 从 spec 解析到 0 个需求根 —— 规格为空或格式不符（期望顶层 \"requirements\": [...]）");
+        eprintln!("      spec: {}", spec_p);
+        eprintln!("      请检查文件是否为合法 JSON 对象；BOM 已自动容忍，无需手工处理。");
+        process::exit(2);
+    }
     let json = graph_to_json(&g);
     fs::write(out_p, json).expect("写入失败");
     println!("骨架注入完成：需求根 {} 个，绑定边 {} 条 -> {}", req_count, bind_count, out_p);
+    if bind_count == 0 {
+        eprintln!("警告: 绑定边 0 条 —— 通常是关图构建根目录与 bindings 路径不一致");
+        eprintln!("      （bindings 形如 CodeFile:crates/x/src/lib.rs 时，应以仓库根构图：build --root .）");
+    }
 }
 
 /// 偏离检测：REQ 根可达性分析（GR-STD 需求锚定与偏离治理）
@@ -1063,6 +1137,227 @@ fn cmd_sync(old_text: &str, new_text: &str) {
 
 // ===================== CLI =====================
 
+// ===================== 需求判重（P9 先判重后立项） =====================
+//
+// 以关图为「能力指纹库」：给定一条新需求的候选能力节点(capabilities)与候选关系边(edges)，
+// 在现有关图子图匹配，给出三类判定：
+//   reuse(复用)        —— 全部能力节点 + 关系边均已存在 → 直接编排，不写新代码
+//   incremental(增量)  —— 部分能力已存在 → 局部扩展，避免重复造系统
+//   new(未命中)        —— 无任何对应能力 → 需新立项（由 --fail-on-new 强制人工确认，杜绝重复造轮子）
+// 输出结构化 JSON + 人类可读摘要；--fail-on-new 时未命中即 exit 1（CI 阻断）。
+// 纯逻辑在 dedup_requirement（可单测），IO 在 cmd_dedup。
+
+#[derive(Clone, Debug)]
+struct DedupResult {
+    requirement_id: String,
+    requirement_name: String,
+    verdict: &'static str,
+    similarity: f64,
+    total_capabilities: usize,
+    matched_capabilities: usize,
+    missing_capabilities: Vec<String>,
+    total_edges: usize,
+    missing_edges: usize,
+}
+
+/// 纯函数：在关图 g 上匹配候选需求，返回判重结果（可单测）
+fn dedup_requirement(
+    g: &InfoGraph,
+    id: &str,
+    name: &str,
+    caps: &[(String, String)],           // (kind, key)
+    edges: &[(String, String, String)],  // (from_id, to_id, kind_str)
+) -> DedupResult {
+    let mut matched = 0usize;
+    let mut missing_caps = Vec::new();
+    for (kind, key) in caps {
+        let nid = format!("{}:{}", kind, key);
+        if g.node_index.contains_key(&nid) {
+            matched += 1;
+        } else {
+            missing_caps.push(nid);
+        }
+    }
+    let mut missing_edges = 0usize;
+    for (from, to, k) in edges {
+        let ek = format!("{}|{}|{}", from, k, to);
+        if !g.edge_set.contains(&ek) {
+            missing_edges += 1;
+        }
+    }
+    let total = caps.len();
+    let similarity = if total == 0 { 0.0 } else { matched as f64 / total as f64 };
+    let verdict = if total > 0 && missing_caps.is_empty() && missing_edges == 0 {
+        "reuse"
+    } else if matched > 0 {
+        "incremental"
+    } else {
+        "new"
+    };
+    DedupResult {
+        requirement_id: id.to_string(),
+        requirement_name: name.to_string(),
+        verdict,
+        similarity,
+        total_capabilities: total,
+        matched_capabilities: matched,
+        missing_capabilities: missing_caps,
+        total_edges: edges.len(),
+        missing_edges,
+    }
+}
+
+fn cmd_dedup(graph_p: &str, spec_p: &str, fail_on_new: bool) {
+    let g = load_graph(graph_p);
+    let spec_txt = fs::read_to_string(spec_p).unwrap_or_else(|_| panic!("读取 spec 失败: {}", spec_p));
+    let spec = json_parse(&spec_txt);
+    let id = spec.get_str("id").unwrap_or_else(|| "R-unknown");
+    let name = spec.get_str("name").unwrap_or_else(|| id);
+    let mut caps: Vec<(String, String)> = Vec::new();
+    if let Some(arr) = spec.get_arr("capabilities") {
+        for c in arr {
+            let kind = c.get_str("kind").unwrap_or_default();
+            let key = c.get_str("key").unwrap_or_default();
+            if !kind.is_empty() && !key.is_empty() {
+                caps.push((kind.to_string(), key.to_string()));
+            }
+        }
+    }
+    let mut edges: Vec<(String, String, String)> = Vec::new();
+    if let Some(arr) = spec.get_arr("edges") {
+        for e in arr {
+            let from = e.get_str("from").unwrap_or_default();
+            let to = e.get_str("to").unwrap_or_default();
+            let k = e.get_str("kind").unwrap_or_default();
+            if !from.is_empty() && !to.is_empty() && !k.is_empty() {
+                edges.push((from.to_string(), to.to_string(), k.to_string()));
+            }
+        }
+    }
+    let res = dedup_requirement(&g, id, name, &caps, &edges);
+    let mut out = String::new();
+    out.push_str("{\n");
+    out.push_str(&format!("  \"requirement_id\": {},\n", json_escape(&res.requirement_id)));
+    out.push_str(&format!("  \"requirement_name\": {},\n", json_escape(&res.requirement_name)));
+    out.push_str(&format!("  \"verdict\": {},\n", json_escape(res.verdict)));
+    out.push_str(&format!("  \"similarity\": {:.3},\n", res.similarity));
+    out.push_str(&format!("  \"total_capabilities\": {},\n", res.total_capabilities));
+    out.push_str(&format!("  \"matched_capabilities\": {},\n", res.matched_capabilities));
+    out.push_str(&format!("  \"missing_capabilities\": {},\n", res.missing_capabilities.len()));
+    out.push_str(&format!("  \"total_edges\": {},\n", res.total_edges));
+    out.push_str(&format!("  \"missing_edges\": {}\n", res.missing_edges));
+    out.push_str("}\n");
+    println!("{}", out);
+    let action = match res.verdict {
+        "reuse" => "命中复用：需求已被现有能力完全覆盖，直接编排，不写新代码",
+        "incremental" => "近似增量：部分能力已存在，局部扩展即可，避免重复造系统",
+        _ => "未命中：图中无对应能力，需新立项开发（请先确认确有必要时才立项）",
+    };
+    println!("[dedup] 需求 {}『{}』判定：{}", res.requirement_id, res.requirement_name, action);
+    if !res.missing_capabilities.is_empty() {
+        println!("[dedup] 缺失能力节点 {} 个：{:?}", res.missing_capabilities.len(), res.missing_capabilities);
+    }
+    if res.missing_edges > 0 {
+        println!("[dedup] 缺失关系边 {} 条", res.missing_edges);
+    }
+    if fail_on_new && res.verdict == "new" {
+        eprintln!("[dedup] --fail-on-new：未命中即阻断，要求人工确认新立项必要性");
+        process::exit(1);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    fn sample_graph() -> InfoGraph {
+        let mut g = InfoGraph::new();
+        g.ensure_node(InfoKind::Function, "crates/x/s.rs", "f", "", "", false);
+        g.ensure_node(InfoKind::Interface, "crates/x/srv.rs", "srv", "", "", false);
+        g.add_edge("Function:crates/x/s.rs", "Interface:crates/x/srv.rs", RelationKind::Call, "calls", "ev", false);
+        g
+    }
+    #[test]
+    fn reuse_when_all_present() {
+        let g = sample_graph();
+        let caps = vec![
+            ("Function".to_string(), "crates/x/s.rs".to_string()),
+            ("Interface".to_string(), "crates/x/srv.rs".to_string()),
+        ];
+        let edges = vec![("Function:crates/x/s.rs".to_string(), "Interface:crates/x/srv.rs".to_string(), "Call".to_string())];
+        let r = dedup_requirement(&g, "R1", "t", &caps, &edges);
+        assert_eq!(r.verdict, "reuse");
+        assert_eq!(r.similarity, 1.0);
+    }
+    #[test]
+    fn incremental_when_partial() {
+        let g = sample_graph();
+        let caps = vec![
+            ("Function".to_string(), "crates/x/s.rs".to_string()),
+            ("Interface".to_string(), "crates/new.rs".to_string()),
+        ];
+        let r = dedup_requirement(&g, "R2", "t", &caps, &[]);
+        assert_eq!(r.verdict, "incremental");
+        assert_eq!(r.matched_capabilities, 1);
+    }
+    #[test]
+    fn new_when_none() {
+        let g = sample_graph();
+        let caps = vec![("Function".to_string(), "crates/absent.rs".to_string())];
+        let r = dedup_requirement(&g, "R3", "t", &caps, &[]);
+        assert_eq!(r.verdict, "new");
+        assert_eq!(r.similarity, 0.0);
+    }
+    #[test]
+    fn reuse_requires_edges_present() {
+        let g = sample_graph();
+        let caps = vec![
+            ("Function".to_string(), "crates/x/s.rs".to_string()),
+            ("Interface".to_string(), "crates/x/srv.rs".to_string()),
+        ];
+        let edges = vec![("Function:crates/x/s.rs".to_string(), "Interface:crates/x/srv.rs".to_string(), "Deploy".to_string())];
+        let r = dedup_requirement(&g, "R4", "t", &caps, &edges);
+        assert_eq!(r.verdict, "incremental");
+        assert_eq!(r.missing_edges, 1);
+    }
+
+    // ---------- JSON 解析器：中文/转义正确性（回归保护）----------
+    #[test]
+    fn json_parses_chinese_without_mojibake() {
+        let j = json_parse(r#"{"id":"REQ-001","name":"多租户配额限流能力"}"#);
+        assert_eq!(j.get_str("id"), Some("REQ-001"));
+        assert_eq!(j.get_str("name"), Some("多租户配额限流能力"));
+    }
+    #[test]
+    fn json_parses_unicode_escape_and_surrogate_pair() {
+        // \u4e2d\u6587 = 中文；\ud83d\ude80 = 🚀（代理对）
+        let j = json_parse(r#"{"a":"\u4e2d\u6587","b":"\ud83d\ude80","c":"x\/y\nz"}"#);
+        assert_eq!(j.get_str("a"), Some("中文"));
+        assert_eq!(j.get_str("b"), Some("🚀"));
+        assert_eq!(j.get_str("c"), Some("x/y\nz"));
+    }
+    #[test]
+    fn json_tolerates_utf8_bom() {
+        // 真实缺陷回归：docs/graph/guantu.req.json 带 BOM 曾致 skeleton 静默注入 0 个 REQ
+        let with_bom = format!("\u{FEFF}{}", r#"{"requirements":[{"id":"D01","name":"算子内核"}]}"#);
+        let j = json_parse(&with_bom);
+        let arr = j.get_arr("requirements").expect("BOM 后仍应能解析出 requirements");
+        assert_eq!(arr.len(), 1);
+        assert_eq!(arr[0].get_str("id"), Some("D01"));
+        assert_eq!(arr[0].get_str("name"), Some("算子内核"));
+    }
+    #[test]
+    fn json_parses_nested_chinese_capabilities() {
+        let spec = r#"{
+            "id":"REQ-002","name":"配置加载与加密",
+            "capabilities":[{"kind":"CodeFile","key":"璇玑/src/配置.rs"}]
+        }"#;
+        let j = json_parse(spec);
+        let arr = j.get_arr("capabilities").expect("capabilities 应存在");
+        assert_eq!(arr.len(), 1);
+        assert_eq!(arr[0].get_str("key"), Some("璇玑/src/配置.rs"));
+    }
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
@@ -1139,6 +1434,12 @@ fn main() {
             let old_t = fs::read_to_string(&oldp).expect("读取 old 失败");
             let new_t = fs::read_to_string(&newp).expect("读取 new 失败");
             cmd_sync(&old_t, &new_t);
+        }
+        "dedup" => {
+            let gp = get_flag(&args, "--graph").unwrap_or_else(|| "graph.json".to_string());
+            let spec = get_flag(&args, "--spec").expect("需要 --spec");
+            let fail_on_new = args.iter().any(|a| a == "--fail-on-new");
+            cmd_dedup(&gp, &spec, fail_on_new);
         }
         _ => {
             print_help();
@@ -1262,6 +1563,7 @@ fn print_help() {
     println!("  info-graph query   --graph graph.json [--kind CodeFile] [--name foo]");
     println!("  info-graph snapshot --graph graph.json --out ids.txt");
     println!("  info-graph sync    --old a.json --new b.json");
+    println!("  info-graph dedup   --graph graph.json --spec req.json [--fail-on-new]");
     println!("  info-graph skeleton --graph graph.json --spec guantu.req.json --out graph.enterprise.json");
     println!("  info-graph deviate  --graph graph.enterprise.json");
 }

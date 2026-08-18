@@ -13,6 +13,7 @@
     {"id": "D11", "name": "模板市场", "domain": "template-market", "status": "done"},
     {"id": "D12", "name": "可视化拓扑前端", "domain": "frontend/primiflow", "status": "done"},
     {"id": "D13", "name": "哼唱旋律转歌谱应用", "domain": "melody2score", "status": "done"},
+    {"id": "D14", "name": "OUS 统一服务后端(零依赖Node)", "domain": "backend", "status": "done"},
 
     {"id": "R01", "name": "治理台HTTP API(/api/governance/*)", "domain": "xuanji-expert/runtime", "status": "done"},
     {"id": "R02", "name": "商城import/export/tenant/owner路由", "domain": "runtime(market)", "status": "done"},
@@ -65,8 +66,9 @@
     {"req": "D06", "to": "CodeFile:docs/ai-architecture/agentic_loop_minimal.py", "label": "agentic示例"},
     {"req": "D08", "to": "CodeFile:scripts/ci.py", "label": "CI脚本"},
     {"req": "D08", "to": "Script:start.sh", "label": "启动脚本"},
-    {"req": "D08", "to": "Script:verify_tests.sh", "label": "校验脚本"},
-    {"req": "D08", "to": "Script:verify_tests.ps1", "label": "校验脚本"},
+    {"req": "D08", "to": "Script:scripts/verify_tests.sh", "label": "校验脚本"},
+    {"req": "D08", "to": "Script:scripts/verify_tests.ps1", "label": "校验脚本"},
+    {"req": "D08", "to": "CodeFile:scripts/parse_test_report.py", "label": "测试报告解析"},
     {"req": "D08", "to": "CodeFile:tools/guantu_gate.py", "label": "关图CI门禁"},
     {"req": "D08", "to": "Script:melody2score/board_run.sh", "label": "乐谱脚本"},
 
@@ -84,6 +86,23 @@
     {"req": "D13", "to": "CodeFile:melody2score/graph/build_melody_graph.py", "label": "信息图谱构建"},
     {"req": "D13", "to": "CodeFile:melody2score/board/board_config.py", "label": "板端配置"},
     {"req": "D13", "to": "CodeFile:melody2score/board/run_board.py", "label": "板端入口"},
-    {"req": "D13", "to": "Script:melody2score/board_run.sh", "label": "板端脚本"}
+    {"req": "D13", "to": "Script:melody2score/board_run.sh", "label": "板端脚本"},
+    {"req": "D13", "to": "CodeFile:melody2score/core/__init__.py", "label": "核心包入口"},
+    {"req": "D13", "to": "CodeFile:melody2score/app/audio_play.py", "label": "音频回放"},
+    {"req": "D13", "to": "Script:melody2score/app/start.ps1", "label": "应用启动脚本"},
+    {"req": "D13", "to": "Script:melody2score/build_exe.ps1", "label": "打包脚本"},
+    {"req": "D13", "to": "CodeFile:melody2score/tests/gen_test_audio.py", "label": "测试音频生成"},
+
+    {"req": "D14", "to": "CodeFile:backend/src/server.js", "label": "HTTP服务入口"},
+    {"req": "D14", "to": "CodeFile:backend/src/routes.js", "label": "路由分发"},
+    {"req": "D14", "to": "CodeFile:backend/src/store.js", "label": "持久化存储层"},
+    {"req": "D14", "to": "CodeFile:backend/src/graph.js", "label": "关图服务"},
+    {"req": "D14", "to": "CodeFile:backend/src/xuanji.js", "label": "璇玑诊断接入"},
+    {"req": "D14", "to": "CodeFile:backend/src/seed.js", "label": "种子数据"},
+    {"req": "D14", "to": "Config:backend/package.json", "label": "包配置"},
+    {"req": "D14", "to": "CodeFile:backend/tests/run.js", "label": "测试运行器"},
+    {"req": "D14", "to": "CodeFile:backend/tests/_harness.js", "label": "测试夹具"},
+    {"req": "D14", "to": "CodeFile:backend/tests/unit.test.js", "label": "单元测试"},
+    {"req": "D14", "to": "CodeFile:backend/tests/integration.test.js", "label": "集成测试"}
   ]
 }

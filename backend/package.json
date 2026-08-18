@@ -1,0 +1,17 @@
+{
+  "name": "ous-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "算子统一系统 (OUS) 后端信息服务：零依赖 Node.js 实现，承载双璇玑十四维治理、知识图谱、算子商城与 MCP 兼容层。",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js",
+    "seed": "node src/seed.js",
+    "test": "node tests/run.js"
+  },
+  "engines": {
+    "node": ">=14"
+  },
+  "license": "MIT"
+}

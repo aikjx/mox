@@ -1,0 +1,209 @@
+[
+  {
+    "id": "d04",
+    "label": "璇玑融合引擎 D04",
+    "type": "fusion",
+    "node_type": "fusion",
+    "color": "#ffc53d",
+    "size": 16,
+    "created_at": "2026-08-18T03:49:54.387Z"
+  },
+  {
+    "id": "ea",
+    "label": "算法联盟 EA",
+    "type": "league",
+    "node_type": "league",
+    "color": "#13c2c2",
+    "size": 17,
+    "created_at": "2026-08-18T03:49:54.390Z"
+  },
+  {
+    "id": "biz",
+    "label": "业务联盟",
+    "type": "league",
+    "node_type": "league",
+    "color": "#13c2c2",
+    "size": 15,
+    "created_at": "2026-08-18T03:49:54.391Z"
+  },
+  {
+    "id": "col",
+    "label": "协作治理域",
+    "type": "system",
+    "node_type": "system",
+    "color": "#73D13D",
+    "size": 12,
+    "created_at": "2026-08-18T03:49:54.392Z"
+  },
+  {
+    "id": "n_ingest",
+    "label": "需求采集",
+    "type": "operator",
+    "node_type": "operator",
+    "color": "#5B8FF9",
+    "size": 8,
+    "created_at": "2026-08-18T03:49:54.393Z"
+  },
+  {
+    "id": "n_norm",
+    "label": "归一化 IR",
+    "type": "operator",
+    "node_type": "operator",
+    "color": "#5B8FF9",
+    "size": 11,
+    "created_at": "2026-08-18T03:49:54.394Z"
+  },
+  {
+    "id": "n_disp",
+    "label": "双联盟十四维特派",
+    "type": "ai_task",
+    "node_type": "ai_task",
+    "color": "#61DDAA",
+    "size": 10,
+    "created_at": "2026-08-18T03:49:54.394Z"
+  },
+  {
+    "id": "n_rec",
+    "label": "归一化裁决",
+    "type": "ai_task",
+    "node_type": "ai_task",
+    "color": "#61DDAA",
+    "size": 11,
+    "created_at": "2026-08-18T03:49:54.395Z"
+  },
+  {
+    "id": "n_gate",
+    "label": "⛨璇玑验证网关",
+    "type": "monitor",
+    "node_type": "monitor",
+    "color": "#ff7875",
+    "size": 12,
+    "created_at": "2026-08-18T03:49:54.396Z"
+  },
+  {
+    "id": "n_gov",
+    "label": "治理闸门",
+    "type": "condition",
+    "node_type": "condition",
+    "color": "#F6BD16",
+    "size": 11,
+    "created_at": "2026-08-18T03:49:54.396Z"
+  },
+  {
+    "id": "n_opt",
+    "label": "优化出图",
+    "type": "operator",
+    "node_type": "operator",
+    "color": "#5B8FF9",
+    "size": 9,
+    "created_at": "2026-08-18T03:49:54.397Z"
+  },
+  {
+    "id": "n_pub",
+    "label": "融合发布",
+    "type": "market",
+    "node_type": "market",
+    "color": "#FF9D4D",
+    "size": 11,
+    "created_at": "2026-08-18T03:49:54.399Z"
+  },
+  {
+    "id": "n_graph",
+    "label": "知识图谱算子",
+    "type": "operator",
+    "node_type": "operator",
+    "color": "#5B8FF9",
+    "size": 9,
+    "created_at": "2026-08-18T03:49:54.400Z"
+  },
+  {
+    "id": "n_pagerank",
+    "label": "PageRank",
+    "type": "operator",
+    "node_type": "operator",
+    "color": "#5B8FF9",
+    "size": 10,
+    "created_at": "2026-08-18T03:49:54.401Z"
+  },
+  {
+    "id": "n_comm",
+    "label": "社区发现",
+    "type": "operator",
+    "node_type": "operator",
+    "color": "#5B8FF9",
+    "size": 9,
+    "created_at": "2026-08-18T03:49:54.402Z"
+  },
+  {
+    "id": "n_act",
+    "label": "激活传播",
+    "type": "operator",
+    "node_type": "operator",
+    "color": "#5B8FF9",
+    "size": 7,
+    "created_at": "2026-08-18T03:49:54.402Z"
+  },
+  {
+    "id": "n_mcp",
+    "label": "MCP 兼容层",
+    "type": "plugin",
+    "node_type": "plugin",
+    "color": "#FF99C3",
+    "size": 9,
+    "created_at": "2026-08-18T03:49:54.403Z"
+  },
+  {
+    "id": "n_auto",
+    "label": "自动化中枢",
+    "type": "workflow",
+    "node_type": "workflow",
+    "color": "#9270CA",
+    "size": 11,
+    "created_at": "2026-08-18T03:49:54.403Z"
+  },
+  {
+    "id": "n_caomei",
+    "label": "Caomei 编译器",
+    "type": "ai_task",
+    "node_type": "ai_task",
+    "color": "#61DDAA",
+    "size": 10,
+    "created_at": "2026-08-18T03:49:54.404Z"
+  },
+  {
+    "id": "n_market",
+    "label": "算子商城",
+    "type": "market",
+    "node_type": "market",
+    "color": "#FF9D4D",
+    "size": 12,
+    "created_at": "2026-08-18T03:49:54.406Z"
+  },
+  {
+    "id": "n_resource",
+    "label": "资源管理",
+    "type": "resource",
+    "node_type": "resource",
+    "color": "#42b983",
+    "size": 9,
+    "created_at": "2026-08-18T03:49:54.407Z"
+  },
+  {
+    "id": "n_chat",
+    "label": "AI 对话",
+    "type": "ai_task",
+    "node_type": "ai_task",
+    "color": "#61DDAA",
+    "size": 10,
+    "created_at": "2026-08-18T03:49:54.407Z"
+  },
+  {
+    "id": "n_data",
+    "label": "数据资产库",
+    "type": "data",
+    "node_type": "data",
+    "color": "#7262FD",
+    "size": 11,
+    "created_at": "2026-08-18T03:49:54.408Z"
+  }
+]

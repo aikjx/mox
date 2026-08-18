@@ -123,6 +123,12 @@ const routes = [
     meta: { title: '算法实验室' }
   },
   {
+    path: '/botCenter',
+    name: 'BotCenter',
+    component: () => import('@/views/BotCenterView.vue'),
+    meta: { title: '机器人中心' }
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/dashboard'
   }

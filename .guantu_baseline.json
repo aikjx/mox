@@ -1,13 +1,4 @@
 {
-  "signatures": [
-    "GR-E1|CodeFile:melody2score/core/__init__.py",
-    "GR-E1|CodeFile:melody2score/core/preprocess.py",
-    "GR-E6|CodeFile:melody2score/core/__init__.py",
-    "GR-E6|CodeFile:melody2score/core/preprocess.py",
-    "GR-E6|Data:DATA_R1S",
-    "GR-E6|Data:DATA_R2S",
-    "GR-E6|Data:DATA_R3S",
-    "GR-E6|Data:DATA_R4S"
-  ],
-  "coverage": 96.6
+  "signatures": [],
+  "coverage": 98.0
 }

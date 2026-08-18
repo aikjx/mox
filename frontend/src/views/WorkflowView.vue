@@ -32,6 +32,12 @@
                     <el-dropdown-item @click="viewFlowDetail(f)">
                       <el-icon><View /></el-icon> 详情
                     </el-dropdown-item>
+                    <el-dropdown-item divided @click="quickOpen(f, 'video')">
+                      <el-icon><VideoCamera /></el-icon> 查看视频
+                    </el-dropdown-item>
+                    <el-dropdown-item @click="quickOpen(f, 'log')">
+                      <el-icon><Document /></el-icon> 查看日志
+                    </el-dropdown-item>
                     <el-dropdown-item divided @click="delFlow(f)">
                       <el-icon><Delete /></el-icon> 删除
                     </el-dropdown-item>
@@ -151,36 +157,18 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="flowDetailVisible" title="流程图详情" width="640px">
-      <template v-if="flowDetail">
-        <div class="fd-head">
-          <span class="fd-name">{{ flowDetail.name || flowDetail.id }}</span>
-          <span class="badge info">{{ flowDetail.nodes?.length || 0 }} 节点</span>
-          <span class="badge primary">{{ flowDetail.edges?.length || 0 }} 连线</span>
-        </div>
-        <div class="fd-grid">
-          <div>
-            <div class="fd-label">节点</div>
-            <div v-for="n in flowDetail.nodes || []" :key="n.id" class="fd-node">
-              <span class="badge">{{ n.kind || 'task' }}</span> {{ n.name }}
-              <span v-if="n.tool" class="muted mono">{{ n.tool }}</span>
-            </div>
-          </div>
-          <div>
-            <div class="fd-label">连线</div>
-            <div v-for="(e, i) in flowDetail.edges || []" :key="i" class="fd-edge">
-              {{ e.from }} → {{ e.to }}
-            </div>
-          </div>
-        </div>
-      </template>
-    </el-dialog>
+    <FlowDetailDialog
+      v-model="flowDetailOpen"
+      :flow-detail="flowDetail"
+      :initial-panel="detailPanel"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { VideoCamera, Document } from '@element-plus/icons-vue'
 import {
   getFlows,
   createFlow,
@@ -195,6 +183,7 @@ import {
   saveWorkflow,
   executeWorkflowDef
 } from '@/api'
+import FlowDetailDialog from '@/components/FlowDetailDialog.vue'
 
 const tab = ref('flows')
 const flows = ref([])
@@ -203,7 +192,8 @@ const instances = ref([])
 const savedWorkflows = ref([])
 const nodeTypes = ref([])
 const flowDetail = ref(null)
-const flowDetailVisible = ref(false)
+const flowDetailOpen = ref(false)
+const detailPanel = ref('')
 
 const showCreate = ref(false)
 const creating = ref(false)
@@ -234,12 +224,24 @@ async function loadAll() {
 }
 
 async function viewFlowDetail(f) {
+  detailPanel.value = ''
+  await openDetail(f)
+}
+
+/** 快捷入口：直接打开视频/日志面板 */
+async function quickOpen(f, panel) {
+  detailPanel.value = panel
+  await openDetail(f)
+}
+
+async function openDetail(f) {
   try {
     const r = await getFlow(f.id)
     flowDetail.value = r.flow || r || f
-    flowDetailVisible.value = true
+    flowDetailOpen.value = true
   } catch (e) {
-    ElMessage.error('详情加载失败：' + e.message)
+    flowDetail.value = f
+    flowDetailOpen.value = true
   }
 }
 
@@ -481,36 +483,5 @@ onMounted(loadAll)
 .nt-field {
   font-size: 12px;
   color: var(--text-2);
-}
-.fd-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-.fd-name {
-  font-size: 16px;
-  font-weight: 700;
-}
-.fd-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-.fd-label {
-  font-size: 12px;
-  color: var(--text-3);
-  margin-bottom: 8px;
-}
-.fd-node,
-.fd-edge {
-  font-size: 13px;
-  padding: 4px 0;
-}
-.fd-edge {
-  font-family: monospace;
-}
-.mono {
-  font-family: monospace;
 }
 </style>
