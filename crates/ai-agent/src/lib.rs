@@ -45,7 +45,7 @@ pub use flow_engine::*;
 pub use dialogue_graph::*;
 
 use operator_core::{OperatorError, Result};
-use operator_graph::KnowledgeGraph;
+use graph_algorithms::KnowledgeGraph;
 use rusqlite::params;
 use std::collections::HashMap;
 use std::sync::Arc;

@@ -1,7 +1,7 @@
 //! 本体归一：把三套来源图各自的类型词汇映射到唯一本体（`EntityKind`/`RelKind`/`Layer`）。
 //!
 //! - 静态关图 `tools/info-graph`：13 类 `InfoKind` 字符串（`CodeFile`/`Doc`/...）
-//! - 运行时 AI 知识图 `operator-graph`：`node_type` 是**自由字符串**，需模糊归一
+//! - 运行时 AI 知识图 `graph-algorithms`：`node_type` 是**自由字符串**，需模糊归一
 //! - 六维统一图 `primiflow-fusion`：已是本体，直通
 //!
 //! 归一化是有损的映射决策，因此每条规则都显式写死，不做隐式猜测：

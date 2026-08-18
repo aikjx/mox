@@ -3,7 +3,7 @@
 //! 算子统一系统核心库，实现六条数学公理：
 //! 1. 万物皆算子 - Operator trait
 //! 2. 系统状态高维向量 - StateVector
-//! 3. 关联关系加权有向图 - 在operator-graph crate中实现
+//! 3. 关联关系加权有向图 - 在graph-algorithms crate中实现
 //! 4. 插件满足范畴论态射规则 - Category组合子
 //! 5. 资源约束优化 - ResourceConstraints
 //! 6. 扩展性闭包 - 算子代数运算

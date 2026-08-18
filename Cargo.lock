@@ -58,7 +58,7 @@ dependencies = [
  "chrono",
  "flow-ai",
  "operator-core",
- "operator-graph",
+ "graph-algorithms",
  "petgraph",
  "reqwest 0.12.28",
  "rusqlite",
@@ -1733,7 +1733,7 @@ version = "3.0.0-ai-powered"
 dependencies = [
  "anyhow",
  "axum",
- "operator-graph",
+ "graph-algorithms",
  "primiflow-fusion",
  "serde",
  "serde_json",
@@ -2172,7 +2172,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "operator-graph"
+name = "graph-algorithms"
 version = "3.0.0-ai-powered"
 dependencies = [
  "anyhow",
@@ -2375,7 +2375,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "primiflow"
+name = "primiflow-core"
 version = "3.0.0-ai-powered"
 dependencies = [
  "anyhow",
@@ -2398,7 +2398,7 @@ dependencies = [
  "axum",
  "criterion",
  "flow-ai",
- "primiflow",
+ "primiflow-core",
  "serde",
  "serde_json",
  "tokio",
@@ -2868,11 +2868,11 @@ dependencies = [
  "hmac",
  "nalgebra",
  "operator-core",
- "operator-graph",
+ "graph-algorithms",
  "operator-wasm",
  "optimizer",
  "parking_lot",
- "primiflow",
+ "primiflow-core",
  "primiflow-fusion",
  "reqwest 0.12.28",
  "serde",

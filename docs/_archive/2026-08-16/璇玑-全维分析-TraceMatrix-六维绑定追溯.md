@@ -2,7 +2,7 @@
 
 > 编号：**AA-TRACE-V1.0**
 > 承载：AA-STD-V1.0（流程基准）+ GR-STD-V1.0（关图六维）+ `guantu.req.json`（D04 Bind）
-> 落点：`crates/xuanji-expert/src/*` + `crates/primiflow/src/generate.rs`（导出 `trace_matrix.md`）+ `crates/primiflow-fusion/src/ptdoc.rs`（`doc01_trace_matrix`）
+> 落点：`crates/xuanji-expert/src/*` + `crates/primiflow-core/src/generate.rs`（导出 `trace_matrix.md`）+ `crates/primiflow-fusion/src/ptdoc.rs`（`doc01_trace_matrix`）
 > 目的：闭环 AA-STD-V1.0 §3「导出 TraceMatrix」；把「璇玑 = D04」落到真实代码节点；将两套流程编号（①-⑩ / S1-S8）归一为单一基准。
 
 ---

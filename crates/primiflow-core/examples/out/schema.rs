@@ -1,4 +1,4 @@
-//! 数据设计 · 由关联图谱自动生成（primiflow::assoc::primiflow_seed）
+//! 数据设计 · 由关联图谱自动生成（primiflow_core::assoc::primiflow_seed）
 //! 对应 primiflow/SPEC.md §4 数据模型
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;

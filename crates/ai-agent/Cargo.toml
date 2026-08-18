@@ -8,7 +8,7 @@ description = "AI Intelligent Agent with Conversation, Algorithm Normalization, 
 
 [dependencies]
 operator-core = { path = "../operator-core" }
-operator-graph = { path = "../operator-graph" }
+graph-algorithms = { path = "../graph-algorithms" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }

@@ -16,7 +16,7 @@ path = "src/lib.rs"
 
 [dependencies]
 operator-core = { path = "../operator-core" }
-operator-graph = { path = "../operator-graph" }
+graph-algorithms = { path = "../graph-algorithms" }
 operator-wasm = { path = "../operator-wasm" }
 optimizer = { path = "../optimizer" }
 ai-agent = { path = "../ai-agent" }
@@ -26,7 +26,7 @@ flow-ai = { path = "../flow-ai" }
 # 子服务聚合（Phase 1 收敛）：四套并行 server 以库方式挂载，由 runtime 唯一对外暴露。
 # 各自 bin 保留为独立部署选项，生产统一走 operator-server。
 xuanji-system = { path = "../xuanji-system" }
-primiflow = { path = "../primiflow", features = ["server"] }
+primiflow-core = { path = "../primiflow-core", features = ["server"] }
 primiflow-fusion = { path = "../primiflow-fusion" }
 tokio = { workspace = true }
 axum = { workspace = true, features = ["ws"] }

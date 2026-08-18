@@ -5,8 +5,8 @@
 //! 设计目标：每一步验证都可独立定位失败，覆盖「一定要可以运行」的全部质量闸门。
 
 use flow_ai::primitive::{DeliveryPolicy, KnowledgeBase, PrimitiveState, PrimiEngine, ResourceBudget};
-use primiflow::assoc::AssocGraph;
-use primiflow::{enterprise_specs, run_all, run_pipeline};
+use primiflow_core::assoc::AssocGraph;
+use primiflow_core::{enterprise_specs, run_all, run_pipeline};
 use std::collections::HashMap;
 
 /// 归一化容许误差（与引擎内部一致）

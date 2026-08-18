@@ -1,4 +1,4 @@
-//! 代码骨架 · 由关联图谱自动生成（primiflow::assoc::primiflow_seed）
+//! 代码骨架 · 由关联图谱自动生成（primiflow_core::assoc::primiflow_seed）
 //! 溯源链路: R1 → F4 → B1 → A1 → T2 → C4
 //! 数据设计: S3(Topology)
 //! 说明: 需求结构化 + 拓扑涌现（复用 flow_ai κ‑τ 引擎 generate）。

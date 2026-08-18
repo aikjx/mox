@@ -2,7 +2,7 @@
 //!
 //! 本模块解决工程的核心断点——三套图彼此零引用、各自都自称"唯一事实源"：
 //! - `tools/info-graph` 静态关图：CLI 独占，`graph.json` 落盘，**无任何 crate 引用**
-//! - `crates/operator-graph` 运行时 AI 图：有 HTTP，但与静态关图无身份互通
+//! - `crates/graph-algorithms` 运行时 AI 图：有 HTTP，但与静态关图无身份互通
 //! - `crates/primiflow-fusion` 六维统一图：本体正确，但仅自引用
 //!
 //! 归一策略：一切来源经 `Connector` 归一为 `UnifiedNode/UnifiedEdge`，
@@ -305,17 +305,17 @@ impl Connector for InfoGraphConnector {
 
 // ───────────────────── 连接器 2：运行时 AI 知识图 ─────────────────────
 
-/// 接入 `crates/operator-graph` 的运行时 AI 知识图（含 embedding / activation）。
+/// 接入 `crates/graph-algorithms` 的运行时 AI 知识图（含 embedding / activation）。
 ///
 /// AI 图的 `node_type` 是自由字符串，经 `ontology::map_node_type` 模糊归一；
 /// 其 `embedding` 与 `activation` 由中枢索引层单独承载（见 `index.rs`）。
 pub struct KnowledgeGraphConnector<'a> {
-    pub graph: &'a operator_graph::KnowledgeGraph,
+    pub graph: &'a graph_algorithms::KnowledgeGraph,
 }
 
 impl<'a> Connector for KnowledgeGraphConnector<'a> {
     fn name(&self) -> String {
-        "operator-graph".to_string()
+        "graph-algorithms".to_string()
     }
 
     fn ingest(&self, sink: &mut GraphSink) -> anyhow::Result<IngestStat> {
@@ -347,7 +347,7 @@ impl<'a> Connector for KnowledgeGraphConnector<'a> {
                     .and_then(|v| v.as_str())
                     .unwrap_or_default()
                     .to_string(),
-                evidence: format!("operator-graph:{}", kn.id),
+                evidence: format!("graph-algorithms:{}", kn.id),
                 primitive: PrimitiveCoords::zero(),
                 bind_id: None,
                 external: false,
@@ -367,7 +367,7 @@ impl<'a> Connector for KnowledgeGraphConnector<'a> {
                 &ke.target,
                 kind,
                 &ke.relation_type,
-                &format!("operator-graph:w={:.3}", ke.weight),
+                &format!("graph-algorithms:w={:.3}", ke.weight),
             ) {
                 Ok(true) => st.edges_new += 1,
                 Ok(false) => st.edges_dedup += 1,
@@ -643,11 +643,11 @@ mod tests {
             .unwrap();
         let before = sink.graph().nodes.len();
 
-        let kg = operator_graph::KnowledgeGraphBuilder::new()
+        let kg = graph_algorithms::KnowledgeGraphBuilder::new()
             .add_node("n-1", "lib.rs", "code")
             .build();
         // AI 图节点无 metadata.path 时以 id 作 key，故此处显式对齐 path
-        let mut kg2 = operator_graph::KnowledgeGraph::new();
+        let mut kg2 = graph_algorithms::KnowledgeGraph::new();
         let mut node = kg.nodes()[0].clone();
         node.metadata
             .insert("path".into(), "crates/a/src/lib.rs".into());

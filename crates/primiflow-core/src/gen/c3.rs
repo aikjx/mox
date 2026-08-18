@@ -1,4 +1,4 @@
-//! 代码骨架 · 由关联图谱自动生成（primiflow::assoc::primiflow_seed）
+//! 代码骨架 · 由关联图谱自动生成（primiflow_core::assoc::primiflow_seed）
 //! 溯源链路: R5 → F3 → B4 → A3 → T4 → C3
 //! 数据设计: S4(Asset)
 //! 说明: κ 复用检索 / 冻结（本地确定性 embedding 替代 pgvector，契约一致）。

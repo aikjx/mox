@@ -9,7 +9,7 @@
 
 use anyhow::{anyhow, Result};
 use chrono::Utc;
-use operator_graph::{KnowledgeEdge, KnowledgeGraph, KnowledgeNode};
+use graph_algorithms::{KnowledgeEdge, KnowledgeGraph, KnowledgeNode};
 use rusqlite::params;
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
@@ -53,7 +53,7 @@ struct LlmExtract {
 pub struct DialogueGraphSyncer {
     /// SQLite 连接（对话落库）。rusqlite::Connection 非 Sync，用 std Mutex 包裹以跨线程安全共享。
     pub db: Arc<Mutex<Connection>>,
-    /// 共享知识图谱（与 operator-graph 同一实例）
+    /// 共享知识图谱（与 graph-algorithms 同一实例）
     graph: Arc<RwLock<KnowledgeGraph>>,
     /// LLM 客户端（用于智能抽取）
     llm: Arc<RwLock<LLMClient>>,

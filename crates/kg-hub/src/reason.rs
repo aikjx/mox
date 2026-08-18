@@ -1,20 +1,20 @@
 //! 智能推理层：在统一图上做影响面分析、需求溯源与图智能计算。
 //!
 //! 关键设计——`to_knowledge_graph` 桥接器：
-//! `crates/operator-graph` 已实现 PageRank / 社区发现 / 激活传播 / 相似推荐，
+//! `crates/graph-algorithms` 已实现 PageRank / 社区发现 / 激活传播 / 相似推荐，
 //! 但它此前只作用于自己那张孤立的 AI 图。本模块把**归一后的全量企业知识图**
 //! 投影为 `KnowledgeGraph`，从而让这些算法首次作用于企业全域信息，
 //! 而不是重新实现一套算法（避免同能力二次实现造成语义漂移）。
 
 use std::collections::{HashMap, HashSet, VecDeque};
 
-use operator_graph::{KnowledgeEdge, KnowledgeGraph, KnowledgeNode};
+use graph_algorithms::{KnowledgeEdge, KnowledgeGraph, KnowledgeNode};
 use primiflow_fusion::{EntityKind, RelKind, UnifiedGraph};
 use serde::{Deserialize, Serialize};
 
 use crate::ontology;
 
-/// 把统一图投影为 operator-graph 的 `KnowledgeGraph`，解锁其全部图智能算法。
+/// 把统一图投影为 graph-algorithms 的 `KnowledgeGraph`，解锁其全部图智能算法。
 ///
 /// 边权按关系强度赋值：六维绑定 > 调用/数据流 > 一般引用。
 pub fn to_knowledge_graph(graph: &UnifiedGraph) -> KnowledgeGraph {
@@ -205,7 +205,7 @@ pub struct Hotspot {
     pub score: f64,
 }
 
-/// 知识热点识别：PageRank 复用 operator-graph 实现。
+/// 知识热点识别：PageRank 复用 graph-algorithms 实现。
 /// 高分节点即企业知识的"枢纽"，变更风险最高、最值得优先治理。
 pub fn hotspots(graph: &UnifiedGraph, top: usize) -> Vec<Hotspot> {
     let kg = to_knowledge_graph(graph);

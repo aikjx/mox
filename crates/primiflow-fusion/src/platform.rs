@@ -8,8 +8,8 @@ use crate::envelope::PTEnvelope;
 use crate::registry::fuse_all;
 use crate::sixdim::{now_ms, SixDimBinding, SixDimRegistry};
 use crate::unified::{PlatformGate, PrimitiveCoords, UnifiedGraph};
-use primiflow::gen::c1::{FreezePolicy, Input, OrchestrationResult, OrchestrationStatus, Orchestrator};
-use primiflow::gen::schema::Project;
+use primiflow_core::gen::c1::{FreezePolicy, Input, OrchestrationResult, OrchestrationStatus, Orchestrator};
+use primiflow_core::gen::schema::Project;
 
 /// 一体化平台：六维绑定注册表（事实源）+ 融合统一图 + 主链路编排器
 pub struct PrimiPlatform {

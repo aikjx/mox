@@ -1,4 +1,4 @@
-//! 代码骨架 · 由关联图谱自动生成（primiflow::assoc::primiflow_seed）
+//! 代码骨架 · 由关联图谱自动生成（primiflow_core::assoc::primiflow_seed）
 //! 溯源链路: R1 → F4 → B1 → A1 → T0 → C8
 //! 数据设计: S2(Conversation)
 //! 说明: 语音转写客户端（离线 Mock 实现，可替换为真实 ASR 服务）。

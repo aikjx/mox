@@ -1,4 +1,4 @@
-//! 代码骨架 · 由关联图谱自动生成（primiflow::assoc::primiflow_seed）
+//! 代码骨架 · 由关联图谱自动生成（primiflow_core::assoc::primiflow_seed）
 //! 溯源链路: R2 → F2 → B3 → A2 → T9 → C7
 //! 数据设计: S3(Topology)
 //! 说明: 画布状态 + 编辑后重算 ℛ̂（用户改流程图 → 系统跟着变）。

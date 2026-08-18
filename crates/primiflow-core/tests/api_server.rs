@@ -4,8 +4,8 @@
 //! 提交需求 → 查询拓扑 → 冻结资产 → 检索知识库 → 重跑正则化。
 //! 覆盖 `gen/c5.rs` 定义的所有端点。
 
-use primiflow::persistence::Persistence;
-use primiflow::server::{new_state, spawn_serve};
+use primiflow_core::persistence::Persistence;
+use primiflow_core::server::{new_state, spawn_serve};
 use serde_json::Value;
 
 /// 启动服务并返回 (client, base_url)

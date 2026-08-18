@@ -18,8 +18,8 @@
 
 use std::path::PathBuf;
 
-use primiflow::persistence::Persistence;
-use primiflow::server::{new_state, serve, API_CONTRACT};
+use primiflow_core::persistence::Persistence;
+use primiflow_core::server::{new_state, serve, API_CONTRACT};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

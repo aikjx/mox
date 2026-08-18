@@ -145,7 +145,7 @@ fn emit_code_node(graph: &AssocGraph, code_id: &str, dir: &Path) -> String {
 
     let fname = format!("{}.rs", code_id.to_lowercase());
     let content = format!(
-        "//! 代码骨架 · 由关联图谱自动生成（primiflow::assoc::primiflow_seed）\n\
+        "//! 代码骨架 · 由关联图谱自动生成（primiflow_core::assoc::primiflow_seed）\n\
          //! 溯源链路: {chain}\n\
          //! 数据设计: {schemas}\n\
          //! 说明: {doc}\n\
@@ -178,7 +178,7 @@ fn emit_schema(graph: &AssocGraph, dir: &Path) -> (String, String) {
         .collect();
 
     let mut schema_rs = String::from(
-        "//! 数据设计 · 由关联图谱自动生成（primiflow::assoc::primiflow_seed）\n\
+        "//! 数据设计 · 由关联图谱自动生成（primiflow_core::assoc::primiflow_seed）\n\
          //! 对应 primiflow/SPEC.md §4 数据模型\n\
          use serde::{Serialize, Deserialize};\n\
          use uuid::Uuid;\n\
@@ -290,7 +290,7 @@ fn emit_mod_rs(code_files: &[String], schema_file: &str, dir: &Path) {
     fs::write(dir.join("mod.rs"), content).expect("write mod.rs");
 }
 
-/// 一键生成全部落地产物到 `out_dir`（通常为 `crates/primiflow/src/gen`）
+/// 一键生成全部落地产物到 `out_dir`（通常为 `crates/primiflow-core/src/gen`）
 pub fn emit_all(graph: &AssocGraph, out_dir: &Path) -> anyhow::Result<()> {
     fs::create_dir_all(out_dir)?;
     let mut code_files = Vec::new();

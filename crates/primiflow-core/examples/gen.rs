@@ -7,8 +7,8 @@
 //! 2. 强制「一一对应」校验（任一链路断裂即 panic）
 //! 3. 生成 `src/gen/*`（代码骨架 + 数据 schema + DDL + Mermaid + 溯源矩阵）
 
-use primiflow::assoc::primiflow_seed;
-use primiflow::generate::emit_all;
+use primiflow_core::assoc::primiflow_seed;
+use primiflow_core::generate::emit_all;
 use std::path::Path;
 
 fn main() {

@@ -55,7 +55,7 @@ docs/
 | 全维自动化处理流水线（xuanji_optimize 8 步） | `docs/enterprise/08-全维自动化处理明确书.md` |
 | 需求—架构映射 / 交付清单 | `docs/enterprise/06` `10` |
 | 融合域流程基准（S1-S8） | `docs/璇玑-全维需求业务处理流程图-归一化企业级.md`（AA-STD） |
-| 六维绑定（REQ→…→COD） | AA-STD §3 + `crates/primiflow/trace_matrix.md`（PT-STD） |
+| 六维绑定（REQ→…→COD） | AA-STD §3 + `crates/primiflow-core/trace_matrix.md`（PT-STD） |
 | 关图骨架 / REQ 根 / 偏离检测（GR-E6） | `docs/full-dimensional/guantu-skeleton.md` |
 | 关图机读产物 | `docs/graph/` |
 | 新需求判重入口（P9 先判重后立项） | `docs/graph/requests/README.md` |

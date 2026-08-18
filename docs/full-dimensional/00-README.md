@@ -16,7 +16,7 @@
 | `docs/full-dimensional/GOVERNANCE_CONSOLE_API_READY_20260816.md` | 🟢 权威 | 治理台前端 API 就绪（v3.0，RBAC/审计链契约） |
 | `docs/full-dimensional/xuanji-tracematrix.html` | 🟡 可视化 | 六维绑定 TraceMatrix 渲染图（源为 `_archive/2026-08-16/璇玑-全维分析-TraceMatrix-六维绑定追溯.md`） |
 | `docs/_archive/2026-08-16/关图骨架定义.md` | 🟡 过程稿（已归档） | 原始文档，内容已承载于 `docs/full-dimensional/guantu-skeleton.md` |
-| `docs/_archive/2026-08-16/璇玑-全维分析-TraceMatrix-六维绑定追溯.md` | 🟡 过程稿（已归档） | 原始文档，六维绑定已归并于 AA-STD §3 + `crates/primiflow/trace_matrix.md` |
+| `docs/_archive/2026-08-16/璇玑-全维分析-TraceMatrix-六维绑定追溯.md` | 🟡 过程稿（已归档） | 原始文档，六维绑定已归并于 AA-STD §3 + `crates/primiflow-core/trace_matrix.md` |
 | `docs/_archive/2026-08-16/璇玑-全维分析需求-测试分析验证报告.md` | 🟡 过程稿（已归档） | 原始文档，验证事实已沉淀 `docs/_archive/2026-08-16/xuanji-expert-验证总结-20260816.md`（164 项全绿） |
 | `docs/_archive/2026-08-16/璇玑-全维分析需求业务处理流程图.md` | 🟡 过程稿（已归档） | 原始文档，流程已归一于 AA-STD（S1-S8） |
 

@@ -1,4 +1,4 @@
-//! 代码骨架 · 由关联图谱自动生成（primiflow::assoc::primiflow_seed）
+//! 代码骨架 · 由关联图谱自动生成（primiflow_core::assoc::primiflow_seed）
 //! 溯源链路: R_r1 → F_r1 → B_r1 → A_kt_r1 → T_r1_0 → C_r1_0
 //! 数据设计: S_r1(data_r1)
 //! 说明: 由拓扑自动派生的代码骨架（子任务 fetch）

@@ -7,7 +7,7 @@
 //! 退出码非 0 表示存在未通过项（可用于 CI 门禁）。
 
 use flow_ai::primitive::{KnowledgeBase, PrimiEngine, ResourceBudget};
-use primiflow::{enterprise_specs, run_all};
+use primiflow_core::{enterprise_specs, run_all};
 use std::collections::HashMap;
 use std::path::Path;
 

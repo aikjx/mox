@@ -1,4 +1,4 @@
-//! 代码骨架 · 由关联图谱自动生成（primiflow::assoc::primiflow_seed）
+//! 代码骨架 · 由关联图谱自动生成（primiflow_core::assoc::primiflow_seed）
 //! 溯源链路: R2 → F2 → B3 → A2 → T7 → C6
 //! 数据设计: S5(Artifact)
 //! 说明: schema 校验 + 冒烟执行（幻觉兜底，失败回写对话重生成，绝不静默放行）。
