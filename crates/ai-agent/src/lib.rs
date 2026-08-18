@@ -470,6 +470,12 @@ impl AIAgent {
         Ok(engine.delete_flow(id))
     }
 
+    /// 更新流程图（目标须已存在，更新后须通过结构校验）
+    pub async fn update_flow(&self, flow: FlowDefinition) -> Result<FlowDefinition> {
+        let mut engine = self.flow_engine.write().await;
+        engine.update_flow(flow).map_err(|e| OperatorError::Other(anyhow::anyhow!(e.to_string())))
+    }
+
     /// 验证流程图
     pub fn validate_flow(flow: &FlowDefinition) -> Result<()> {
         FlowEngine::validate_flow(flow).map_err(|e| OperatorError::Other(anyhow::anyhow!(e.to_string())))

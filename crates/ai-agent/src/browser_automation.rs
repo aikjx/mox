@@ -7,8 +7,6 @@
 //! - 5种预置任务模板
 //! - 元素交互（点击、输入）模拟（提示需要Headless Chrome）
 
-// 预留公开 API / 未接入管线的能力面（如插件总线、算子目录、优化器 DAG、RBAC 之外的合规结构）：显式允许 dead_code 而非删除，避免破坏能力面；后续接入时自然消除。
-#![allow(dead_code)]
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::Duration;
@@ -291,6 +289,9 @@ impl BrowserAutomationEngine {
             return Err(BrowserError::SessionNotFound(session_id.into()));
         }
 
+        // 动作类型规范化（单一数据源：action_type_name 决定 ActionResult.action_type）
+        let action_type = action_type_name(&action);
+
         // 先收集需要从不可变借用读取的数据
         let cached_page = self.page_cache.get(session_id).cloned();
         let session_url = self.sessions.get(session_id).map(|s| s.current_url.clone()).unwrap_or_default();
@@ -316,7 +317,7 @@ impl BrowserAutomationEngine {
                             s.status = "loaded".into();
                         }
                         ActionResult {
-                            action_type: "navigate".into(),
+                            action_type: action_type.clone(),
                             success: true,
                             data: Some(serde_json::json!({
                                 "url": final_url,
@@ -333,7 +334,7 @@ impl BrowserAutomationEngine {
                             s.status = "error".into();
                         }
                         ActionResult {
-                            action_type: "navigate".into(),
+                            action_type: action_type.clone(),
                             success: false,
                             data: Some(serde_json::json!({"url": normalized_url})),
                             error: Some(e.to_string()),
@@ -346,7 +347,7 @@ impl BrowserAutomationEngine {
                 tracing::info!("[{}] 点击: {} (说明: 需要Headless Chrome)", session_id, selector);
                 if let Some(s) = self.sessions.get_mut(session_id) { s.status = "clicked".into(); }
                 ActionResult {
-                    action_type: "click".into(),
+                    action_type: action_type.clone(),
                     success: true,
                     data: Some(serde_json::json!({"selector": selector, "clicked": true, "note": "已模拟点击。真实DOM交互需集成Headless Chrome，当前版本提供HTTP内容获取"})),
                     error: None,
@@ -356,7 +357,7 @@ impl BrowserAutomationEngine {
             BrowserAction::Type { selector, text, clear_first } => {
                 tracing::info!("[{}] 输入文本 ({}): {} 字符", session_id, selector, text.len());
                 ActionResult {
-                    action_type: "type".into(),
+                    action_type: action_type.clone(),
                     success: true,
                     data: Some(serde_json::json!({"selector": selector, "text_length": text.len(), "cleared": clear_first.unwrap_or(false), "text_preview": &text[..text.len().min(100)]})),
                     error: None,
@@ -375,7 +376,7 @@ impl BrowserAutomationEngine {
                     })
                     .unwrap_or_else(|| "[提示] 页面未加载，请先执行 Navigate 访问URL".into());
                 ActionResult {
-                    action_type: "extract_text".into(),
+                    action_type: action_type.clone(),
                     success: true,
                     data: Some(serde_json::json!({"selector": selector, "text": text, "length": text.len()})),
                     error: None,
@@ -384,7 +385,7 @@ impl BrowserAutomationEngine {
             }
             BrowserAction::ExtractAttribute { selector, attribute } => {
                 ActionResult {
-                    action_type: "extract_attribute".into(),
+                    action_type: action_type.clone(),
                     success: true,
                     data: Some(serde_json::json!({"selector": selector, "attribute": attribute, "note": "属性提取需要HTML选择器解析器"})),
                     error: None,
@@ -400,7 +401,7 @@ impl BrowserAutomationEngine {
                     None => ("[页面未加载]".into(), String::new(), session_url.clone(), false, 0, false),
                 };
                 ActionResult {
-                    action_type: "extract_html".into(),
+                    action_type: action_type.clone(),
                     success: has_page,
                     data: Some(serde_json::json!({"html": html, "title": title, "url": url, "truncated": truncated, "full_length": full_len})),
                     error: if !has_page { Some("请先访问URL".into()) } else { None },
@@ -416,7 +417,7 @@ impl BrowserAutomationEngine {
                     });
                 if let Some(s) = self.sessions.get_mut(session_id) { s.title = title.clone(); }
                 ActionResult {
-                    action_type: "get_title".into(),
+                    action_type: action_type.clone(),
                     success: true,
                     data: Some(serde_json::json!({"title": title})),
                     error: None,
@@ -426,7 +427,7 @@ impl BrowserAutomationEngine {
             BrowserAction::GetUrl => {
                 let url = cached_page.as_ref().map(|p| p.url.clone()).unwrap_or(session_url.clone());
                 ActionResult {
-                    action_type: "get_url".into(),
+                    action_type: action_type.clone(),
                     success: true,
                     data: Some(serde_json::json!({"url": url})),
                     error: None,
@@ -438,7 +439,7 @@ impl BrowserAutomationEngine {
                 tokio::time::sleep(Duration::from_millis(100)).await;
                 let found = cached_page.is_some();
                 ActionResult {
-                    action_type: "wait_for".into(),
+                    action_type: action_type.clone(),
                     success: true,
                     data: Some(serde_json::json!({"selector": selector, "found": found})),
                     error: None,
@@ -448,7 +449,7 @@ impl BrowserAutomationEngine {
             BrowserAction::Wait { ms } => {
                 tokio::time::sleep(Duration::from_millis(*ms)).await;
                 ActionResult {
-                    action_type: "wait".into(),
+                    action_type: action_type.clone(),
                     success: true,
                     data: Some(serde_json::json!({"waited_ms": ms})),
                     error: None,
@@ -457,7 +458,7 @@ impl BrowserAutomationEngine {
             }
             BrowserAction::Scroll { x, y } => {
                 ActionResult {
-                    action_type: "scroll".into(),
+                    action_type: action_type.clone(),
                     success: true,
                     data: Some(serde_json::json!({"x": x, "y": y, "note": "滚动操作需真实浏览器"})),
                     error: None,
@@ -466,7 +467,7 @@ impl BrowserAutomationEngine {
             }
             BrowserAction::ScrollTo { selector } => {
                 ActionResult {
-                    action_type: "scroll_to".into(),
+                    action_type: action_type.clone(),
                     success: true,
                     data: Some(serde_json::json!({"selector": selector, "note": "滚动操作需真实浏览器"})),
                     error: None,
@@ -480,7 +481,7 @@ impl BrowserAutomationEngine {
                 let page_url = cached_page.as_ref().map(|p| p.url.clone()).unwrap_or(session_url);
                 let page_title = cached_page.as_ref().map(|p| p.title.clone()).unwrap_or(session_title);
                 ActionResult {
-                    action_type: "screenshot".into(),
+                    action_type: action_type.clone(),
                     success: true,
                     data: Some(serde_json::json!({"screenshot_id": shot_id, "note": "当前版本通过HTTP获取页面HTML/文本。真实截图功能需集成headless_chrome或chromiumoxide库。", "page_url": page_url, "page_title": page_title})),
                     error: None,
@@ -489,7 +490,7 @@ impl BrowserAutomationEngine {
             }
             BrowserAction::ExecuteScript { script } => {
                 ActionResult {
-                    action_type: "execute_script".into(),
+                    action_type: action_type.clone(),
                     success: true,
                     data: Some(serde_json::json!({"script_length": script.len(), "note": "执行JS需真实浏览器"})),
                     error: None,
@@ -498,7 +499,7 @@ impl BrowserAutomationEngine {
             }
             BrowserAction::SwitchFrame { selector } => {
                 ActionResult {
-                    action_type: "switch_frame".into(),
+                    action_type: action_type.clone(),
                     success: true,
                     data: Some(serde_json::json!({"frame": selector, "note": "Frame切换需真实浏览器"})),
                     error: None,
@@ -514,7 +515,7 @@ impl BrowserAutomationEngine {
                     } else { session_url.clone() }
                 } else { session_url.clone() };
                 ActionResult {
-                    action_type: "go_back".into(),
+                    action_type: action_type.clone(),
                     success: true,
                     data: Some(serde_json::json!({"url": new_url})),
                     error: None,
@@ -523,7 +524,7 @@ impl BrowserAutomationEngine {
             }
             BrowserAction::GoForward => {
                 ActionResult {
-                    action_type: "go_forward".into(),
+                    action_type: action_type.clone(),
                     success: true,
                     data: Some(serde_json::json!({"note": "前进导航需真实浏览器历史"})),
                     error: None,
@@ -538,7 +539,7 @@ impl BrowserAutomationEngine {
                     }
                 }
                 ActionResult {
-                    action_type: "refresh".into(),
+                    action_type: action_type.clone(),
                     success: true,
                     data: Some(serde_json::json!({"url": url, "refreshed": true})),
                     error: None,
@@ -548,7 +549,7 @@ impl BrowserAutomationEngine {
             BrowserAction::Close => {
                 if let Some(s) = self.sessions.get_mut(session_id) { s.status = "closed".into(); }
                 ActionResult {
-                    action_type: "close".into(),
+                    action_type: action_type.clone(),
                     success: true,
                     data: None,
                     error: None,
@@ -611,7 +612,7 @@ impl BrowserAutomationEngine {
                     success = false;
                     error_msg = Some(e.to_string());
                     steps_results.push(ActionResult {
-                        action_type: "error".into(), success: false, data: None,
+                        action_type: "step_failed".into(), success: false, data: None,
                         error: Some(e.to_string()), duration_ms: start_time.elapsed().as_millis() as u64,
                     });
                     break;

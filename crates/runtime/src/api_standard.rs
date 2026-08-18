@@ -23,8 +23,6 @@
 //! }
 //! ```
 
-// 预留公开 API / 未接入管线的能力面（如插件总线、算子目录、优化器 DAG、RBAC 之外的合规结构）：显式允许 dead_code 而非删除，避免破坏能力面；后续接入时自然消除。
-#![allow(dead_code)]
 use axum::body::to_bytes;
 use axum::extract::Request;
 use axum::http::{header::CONTENT_TYPE, HeaderMap, HeaderValue, StatusCode};
@@ -104,14 +102,24 @@ impl IntoResponse for ProblemDetail {
 /// 业务 handler 统一错误类型。
 ///
 /// 直接 `return Err(ApiError::Forbidden(..))` 即可返回标准 Problem+JSON。
+/// 变体是 `ApiResult` 的公开错误契约（库 API）：当前各 handler 主要返回
+/// `Ok` 路径，但完整变体集保证错误语义可被任何 handler 直接引用，
+/// 并由 [`ApiError::into_response`] 统一映射为 RFC 9457 响应。
 #[derive(Debug)]
 pub enum ApiError {
+    #[allow(dead_code)] // 库 API 契约：供 handler 返回错误路径引用
     NotFound(String),
+    #[allow(dead_code)] // 库 API 契约
     BadRequest(String),
+    #[allow(dead_code)] // 库 API 契约
     Unauthorized,
+    #[allow(dead_code)] // 库 API 契约
     Forbidden(String),
+    #[allow(dead_code)] // 库 API 契约
     Conflict(String),
+    #[allow(dead_code)] // 库 API 契约
     Internal(String),
+    #[allow(dead_code)] // 库 API 契约
     ServiceUnavailable(String),
 }
 
@@ -206,10 +214,9 @@ pub async fn standardize_response(req: Request, next: Next) -> Response {
         .or_else(|| derive_code_from_failure(&val));
     let status = derive_status_from_failure(&val).unwrap_or(StatusCode::BAD_REQUEST);
     let mut problem = ProblemDetail::new(status, detail, code);
-    problem.instance = val
-        .get("instance")
-        .and_then(|v| v.as_str())
-        .map(|s| s.to_string());
+    if let Some(instance) = val.get("instance").and_then(|v| v.as_str()) {
+        problem = problem.with_instance(instance);
+    }
     (
         status,
         [(

@@ -13,8 +13,6 @@
 //!
 //! 资产模型与持久化在 [`crate::automation_asset`]（独立模块，避免循环依赖）。
 
-// 预留公开 API / 未接入管线的能力面（如插件总线、算子目录、优化器 DAG、RBAC 之外的合规结构）：显式允许 dead_code 而非删除，避免破坏能力面；后续接入时自然消除。
-#![allow(dead_code)]
 use crate::AppState;
 use crate::automation_asset::{
     AutomationAsset, GeneratedCode, RunRecord,
@@ -523,9 +521,12 @@ pub async fn chat_handler(
         .name
         .clone()
         .unwrap_or_else(|| req.requirement.chars().take(20).collect());
-    let asset = build_asset(&state, &req.requirement, &name, Default::default())
+    let asset = build_asset(&state, &req.requirement, &name, req.tags.clone())
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    if let Some(sid) = &req.session_id {
+        tracing::info!(target: "automation", session_id = %sid, asset_id = %asset.id, "需求对话会话续接");
+    }
 
     let mermaid = flow_definition_to_mermaid(&asset.blueprint.flow);
     let summary = BlueprintSummary {
@@ -583,6 +584,12 @@ pub async fn refine_handler(
     asset.code = code;
     asset.tests = tests;
     asset.rbac = rbac;
+    // 增量会话可追加分类标签（去重合并，保留既有标签）
+    for t in &req.tags {
+        if !asset.tags.contains(t) {
+            asset.tags.push(t.clone());
+        }
+    }
     asset.updated_at = chrono::Utc::now().to_rfc3339();
     crate::automation_asset::save_automation(asset.clone())
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;

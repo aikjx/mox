@@ -11,6 +11,7 @@ import json
 import math
 import os
 import re
+import shutil
 import sys
 import time
 import traceback
@@ -571,6 +572,9 @@ class MainWindow(QMainWindow):
         row_s.addWidget(self.btnSample)
         row_s.addWidget(self.btnPlaySample)
         sv.addLayout(row_s)
+        self.btnAddSample = QPushButton("➕ 添加样例（导入本地音频）")
+        self.btnAddSample.clicked.connect(self.add_sample)
+        sv.addWidget(self.btnAddSample)
         lv.addWidget(g_s)
 
         lv.addStretch(1)
@@ -678,20 +682,62 @@ class MainWindow(QMainWindow):
         return cfg
 
     def _load_samples(self):
+        """从 audio/manifest.json 载入样例清单并填充下拉框。
+
+        经典样例按旋律去重（每首只显示一种音色），用户自加样例（category=user）
+        全部显示。若清单缺失则给出提示，仍允许通过「添加样例」导入首个音频。
+        """
         man = os.path.join(ROOT, "audio", "manifest.json")
+        self.manifest = []
         if not os.path.exists(man):
-            self.sampleCombo.addItem("（无样例，先运行 gen_classic_melodies.py）")
+            self.sampleCombo.clear()
+            self.sampleCombo.addItem("（暂无样例，可点击下方「添加样例」导入）")
             self.sampleCombo.setEnabled(False)
             self.btnSample.setEnabled(False)
             return
-        with open(man, encoding="utf-8") as f:
-            self.manifest = json.load(f)
+        try:
+            with open(man, encoding="utf-8") as f:
+                self.manifest = json.load(f)
+        except Exception as e:
+            self.sampleCombo.clear()
+            self.sampleCombo.addItem(f"（样例清单解析失败：{e}）")
+            self.sampleCombo.setEnabled(False)
+            self.btnSample.setEnabled(False)
+            return
+        self._reload_sample_combo()
+
+    def _reload_sample_combo(self):
+        """按 self.manifest 重新填充样例下拉框。
+
+        经典样例按旋律去重（每首只显示一种音色，减少列表长度）；
+        用户自加样例（category=user）每个都显示。条目 data 存相对文件路径，
+        后续识别/播放均依据该路径反查清单项，避免「下拉索引≠清单索引」错位。
+        """
+        self.sampleCombo.clear()
         seen = {}
         for it in self.manifest:
-            seen.setdefault(it["melody_index"], it)
+            key = ("user", it["id"]) if it.get("category") == "user" \
+                else ("melody", it.get("melody_index"))
+            seen.setdefault(key, it)
+        has_sample = False
         for it in seen.values():
-            self.sampleCombo.addItem(f"{it['title_zh']} · {it['title_en']} · {it['timbre']}",
-                                     it["file"])
+            label = f"{it.get('title_zh', '')} · {it.get('title_en', '')} · {it.get('timbre', '')}"
+            label = label.strip(" · ")
+            self.sampleCombo.addItem(label or it["file"], it["file"])
+            has_sample = True
+        if not has_sample:
+            self.sampleCombo.addItem("（暂无样例，可点击下方「添加样例」导入）")
+        self.sampleCombo.setEnabled(has_sample)
+        self.btnSample.setEnabled(has_sample)
+
+    def _sample_by_file(self, file_rel: str) -> Optional[Dict]:
+        """依据相对文件路径反查清单项（若无清单则返回 None）。"""
+        if not hasattr(self, "manifest") or not self.manifest:
+            return None
+        for it in self.manifest:
+            if it.get("file") == file_rel:
+                return it
+        return None
 
     def pick_file(self):
         path, _ = QFileDialog.getOpenFileName(
@@ -771,10 +817,9 @@ class MainWindow(QMainWindow):
     def run_sample(self):
         if not self.sampleCombo.isEnabled():
             return
-        name = self.sampleCombo.currentData()
+        file_rel = self.sampleCombo.currentData()
         # 选中即缓存原曲波形，使左侧「试听原曲」可复听
-        idx = self.sampleCombo.currentIndex()
-        item = self.manifest[idx] if hasattr(self, "manifest") else None
+        item = self._sample_by_file(file_rel)
         if item:
             path = os.path.join(ROOT, item["file"])
             if os.path.exists(path):
@@ -785,15 +830,15 @@ class MainWindow(QMainWindow):
                         self.btnPreview.setEnabled(True)
                     except Exception:
                         pass
-        self._start({"kind": "sample", "name": name, "cfg": self._cfg(),
-                     "source": name})
+        self._start({"kind": "sample", "name": file_rel, "cfg": self._cfg(),
+                     "source": file_rel})
 
     def play_sample(self):
         """播放当前选中样例的原曲音频（读取 audio/<id>.wav 并回放）。"""
         if not self.sampleCombo.isEnabled():
             return
-        idx = self.sampleCombo.currentIndex()
-        item = self.manifest[idx] if hasattr(self, "manifest") else None
+        file_rel = self.sampleCombo.currentData()
+        item = self._sample_by_file(file_rel)
         if not item:
             return
         path = os.path.join(ROOT, item["file"])
@@ -812,6 +857,64 @@ class MainWindow(QMainWindow):
         self.status.setText(f"▶ 试听原曲：{item['title_zh']} · {item['timbre']}")
         from app.audio_play import play_raw
         play_raw(y, sr)
+
+    def add_sample(self):
+        """添加样例：导入本地音频文件为内置样例。
+
+        把选中的音频拷贝到 audio/ 目录，并追加一条记录到 manifest.json，
+        随后刷新下拉框，新样例即可像经典样例一样被「识别选中样例」和
+        「播放原曲」。重复文件名会追加时间戳避免覆盖。
+        """
+        path, _ = QFileDialog.getOpenFileName(
+            self, "添加样例（导入本地音频）", "",
+            "音频 (*.wav *.mp3 *.flac *.ogg *.m4a)")
+        if not path:
+            return
+        audio_dir = os.path.join(ROOT, "audio")
+        try:
+            os.makedirs(audio_dir, exist_ok=True)
+        except Exception as e:
+            QMessageBox.critical(self, "添加样例", f"无法创建 audio 目录：{e}")
+            return
+        base = os.path.splitext(os.path.basename(path))[0]
+        ext = os.path.splitext(path)[1] or ".wav"
+        ts = time.strftime("%Y%m%d_%H%M%S")
+        new_file = f"audio/user_sample_{ts}{ext}"
+        dst = os.path.join(ROOT, new_file)
+        try:
+            shutil.copy2(path, dst)
+        except Exception as e:
+            QMessageBox.critical(self, "添加样例", f"拷贝音频失败：{e}")
+            return
+        if not hasattr(self, "manifest") or not isinstance(self.manifest, list):
+            self.manifest = []
+        user_count = len([x for x in self.manifest if x.get("category") == "user"])
+        entry = {
+            "id": f"user_{ts}",
+            "melody_index": 9000 + user_count,
+            "title_zh": base,
+            "title_en": "",
+            "category": "user",
+            "timbre": "自定义",
+            "sr": 22050,
+            "file": new_file,
+            "expected_midi": [],
+        }
+        self.manifest.append(entry)
+        try:
+            with open(os.path.join(ROOT, "audio", "manifest.json"), "w", encoding="utf-8") as f:
+                json.dump(self.manifest, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            QMessageBox.warning(self, "添加样例",
+                                f"音频已导入，但清单保存失败：{e}\n{dst}")
+            return
+        self._reload_sample_combo()
+        # 选中刚添加的样例，便于立即识别/播放
+        new_idx = self.sampleCombo.findData(new_file)
+        if new_idx >= 0:
+            self.sampleCombo.setCurrentIndex(new_idx)
+        self.status.setText(f"已添加样例：{base}")
+        self.sampleCombo.setFocus()
 
     def on_done(self, res: Dict):
         self.current = res

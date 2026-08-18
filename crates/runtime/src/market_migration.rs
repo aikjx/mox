@@ -254,7 +254,7 @@ fn timestamp_tag() -> String {
 }
 
 /// 手动触发一次全量备份：`$OUS_HOME/market/backup/manual-<ts>/`
-#[allow(dead_code)]
+/// 由 `POST /api/market/backup` 调用（market.rs backup_market handler）。
 pub fn backup_now(tag: &str) -> Option<PathBuf> {
     let src = packages_dir();
     if !src.is_dir() {

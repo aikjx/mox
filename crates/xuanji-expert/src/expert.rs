@@ -154,9 +154,10 @@ pub trait Expert: Send + Sync {
     fn analyze(&self, ctx: &ExpertContext) -> ExpertOpinion;
 }
 
-/// 并行派发所有专家
+/// 并行派发所有专家（rayon 真并行，利用多核；保持原序保证结果确定性）
 pub fn dispatch(ctx: &ExpertContext, experts: &[Box<dyn Expert>]) -> Vec<ExpertOpinion> {
-    experts.iter().map(|e| e.analyze(ctx)).collect()
+    use rayon::prelude::*;
+    experts.par_iter().map(|e| e.analyze(ctx)).collect()
 }
 
 #[cfg(test)]

@@ -13,7 +13,7 @@ use axum::{
     middleware::{self, Next},
     response::Json,
     response::Response,
-    routing::{get, post, delete},
+    routing::{get, post, put, delete},
     Router,
 };
 use operator_core::category::Workflow;
@@ -95,6 +95,8 @@ struct AppState {
     governance: Arc<GovernanceState>,
     // RBAC 访问审计接收器（放行/拒绝双写，供 /api/audit 查询）
     audit: Arc<rbac_middleware::MemoryAuditSink>,
+    // 审计签名密钥（供 /api/audit 验签查询）
+    audit_key: Vec<u8>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -344,7 +346,7 @@ async fn main() -> anyhow::Result<()> {
         .unwrap_or_else(|_| b"ous-default-audit-key-2026".to_vec());
     let rbac_ctx = Arc::new(rbac_middleware::RbacContext {
         tenant_id: "default".to_string(),
-        audit_key,
+        audit_key: audit_key.clone(),
         audit_sink: audit_sink.clone(),
     });
 
@@ -431,6 +433,7 @@ async fn main() -> anyhow::Result<()> {
         market: market::init_market_state().await,
         governance: governance_state,
         audit: audit_sink,
+        audit_key,
     });
 
     // 创建路由 - 全维API
@@ -500,6 +503,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/ai/flows", get(list_flows))
         .route("/api/ai/flows", post(create_flow))
         .route("/api/ai/flows/:id", get(get_flow))
+        .route("/api/ai/flows/:id", put(update_flow))
         .route("/api/ai/flows/:id", delete(delete_flow))
         .route("/api/ai/flows/validate", post(validate_flow))
         .route("/api/analyze/spiral", post(analyze_spiral_handler))
@@ -1097,9 +1101,111 @@ pub(crate) async fn run_workflow_inner(
     let input_norm = input.norm();
     let params = req.parameters.unwrap_or_default();
 
-    let mut workflow = Workflow::new("ai-workflow");
-    let mut all_logs = Vec::new();
+    // 公理5（资源约束优化）接线：构造算子 DAG 做调度预检。
+    // 每个算子按请求顺序建立串行依赖；预检通过后才进入真实执行。
+    // 配额默认宽松（10^12 cycles / 10^12 B），可通过环境变量收紧：
+    //   OUS_EXEC_MAX_CPU / OUS_EXEC_MAX_MEM（企业部署建议显式配置）。
+    let mut dag_ops: Vec<std::sync::Arc<dyn Operator>> = Vec::new();
+    for op_id in &req.workflow {
+        let arc: std::sync::Arc<dyn Operator> = match op_id.as_str() {
+            "identity" => std::sync::Arc::new(IdentityOperator::new(input.dimension)),
+            "linear" => {
+                let scale = params.get("scale").copied().unwrap_or(2.0);
+                let n = input.dimension;
+                std::sync::Arc::new(LinearOperator::new(
+                    nalgebra::DMatrix::from_diagonal_element(n, n, scale),
+                ))
+            }
+            "normalize" => std::sync::Arc::new(FunctionOperator::new("normalize", |s: &StateVector, _ctx| {
+                let mut s = s.clone(); s.normalize(); Ok(s)
+            })),
+            "normalize_l1" => std::sync::Arc::new(FunctionOperator::new("normalize_l1", |s: &StateVector, _ctx| {
+                let mut s = s.clone(); s.normalize_probability(); Ok(s)
+            })),
+            "relu" => std::sync::Arc::new(FunctionOperator::new("relu", |s: &StateVector, _ctx| {
+                let mut result = s.clone();
+                for i in 0..result.dimension { result[i] = result[i].max(0.0); }
+                Ok(result)
+            })),
+            "sigmoid" => std::sync::Arc::new(FunctionOperator::new("sigmoid", |s: &StateVector, _ctx| {
+                let mut result = s.clone();
+                for i in 0..result.dimension { result[i] = 1.0 / (1.0 + (-result[i]).exp()); }
+                Ok(result)
+            })),
+            "tanh" => std::sync::Arc::new(FunctionOperator::new("tanh", |s: &StateVector, _ctx| {
+                let mut result = s.clone();
+                for i in 0..result.dimension { result[i] = result[i].tanh(); }
+                Ok(result)
+            })),
+            "softmax" => std::sync::Arc::new(FunctionOperator::new("softmax", |s: &StateVector, _ctx| {
+                let mut result = s.clone();
+                let max_val = (0..result.dimension).map(|i| result[i]).fold(f64::NEG_INFINITY, f64::max);
+                let sum_exp: f64 = (0..result.dimension).map(|i| (result[i] - max_val).exp()).sum();
+                for i in 0..result.dimension { result[i] = (result[i] - max_val).exp() / sum_exp; }
+                Ok(result)
+            })),
+            "scale" => {
+                let factor = params.get("factor").copied().unwrap_or(1.0);
+                std::sync::Arc::new(FunctionOperator::new("scale", move |s: &StateVector, _ctx| {
+                    let mut result = s.clone();
+                    for i in 0..result.dimension { result[i] *= factor; }
+                    Ok(result)
+                }))
+            }
+            _ => {
+                return ExecuteResponse {
+                    success: false, output: None,
+                    execution_time_ms: start.elapsed().as_millis() as u64,
+                    logs: vec![], error: Some(format!("未知算子: {}", op_id)), metrics: None,
+                };
+            }
+        };
+        dag_ops.push(arc);
+    }
 
+    // 构建串行 DAG 并执行公理5 资源约束预检（拓扑有效 + 配额内）
+    let mut dag = optimizer::OperatorDag::new();
+    for (i, op) in dag_ops.iter().enumerate() {
+        dag.add_operator(&req.workflow[i], op.clone());
+        if i > 0 {
+            if let Err(e) = dag.add_dependency(&req.workflow[i - 1], &req.workflow[i]) {
+                return ExecuteResponse {
+                    success: false, output: None,
+                    execution_time_ms: start.elapsed().as_millis() as u64,
+                    logs: vec![], error: Some(e), metrics: None,
+                };
+            }
+        }
+    }
+    if let Err(e) = dag.topological_order() {
+        return ExecuteResponse {
+            success: false, output: None,
+            execution_time_ms: start.elapsed().as_millis() as u64,
+            logs: vec![], error: Some(format!("调度预检失败（DAG 含环）: {}", e)), metrics: None,
+        };
+    }
+    let max_cpu = std::env::var("OUS_EXEC_MAX_CPU").ok().and_then(|s| s.parse().ok()).unwrap_or(1_000_000_000_000_u64);
+    let max_mem = std::env::var("OUS_EXEC_MAX_MEM").ok().and_then(|s| s.parse().ok()).unwrap_or(1_000_000_000_000_u64);
+    let scheduler = optimizer::ResourceOptimizer::new(max_cpu, max_mem);
+    if !scheduler.check_resources(&dag_ops) {
+        let cost = dag.estimated_resource_cost();
+        return ExecuteResponse {
+            success: false, output: None,
+            execution_time_ms: start.elapsed().as_millis() as u64,
+            logs: vec![], error: Some(format!(
+                "公理5 资源约束预检失败：估算 CPU={} cycles / MEM={} B 超出配额 CPU={} / MEM={}（可用 OUS_EXEC_MAX_CPU/OUS_EXEC_MAX_MEM 调优）",
+                cost.cpu_cycles, cost.memory_bytes, max_cpu, max_mem
+            )), metrics: None,
+        };
+    }
+    let est_ms = dag.estimated_execution_time();
+    let est_cost = dag.estimated_resource_cost();
+    let mut all_logs = vec![format!(
+        "[scheduler] 公理5 预检通过: 关键路径={:?} 预估执行时间={}ms 资源成本=CPU {} / MEM {} B",
+        dag.critical_path(), est_ms, est_cost.cpu_cycles, est_cost.memory_bytes
+    )];
+
+    let mut workflow = Workflow::new("ai-workflow");
     for op_id in &req.workflow {
         let result = match op_id.as_str() {
             "identity" => workflow.then(IdentityOperator::new(input.dimension)),
@@ -1387,7 +1493,24 @@ async fn get_logs(State(state): State<Arc<AppState>>) -> Json<serde_json::Value>
 /// 每条均带 HMAC 签名，可独立验真（见 rbac_middleware::AuditEvent::verify_signature）。
 async fn get_access_audit(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
     let events = state.audit.events();
-    Json(serde_json::json!({ "audit": events, "total": events.len() }))
+    let total = state.audit.count();
+    // 逐条验签（签名密钥与写入时一致；验真失败标记 tampered，供合规审计确认完整性）
+    let verified: Vec<serde_json::Value> = events
+        .iter()
+        .map(|ev| {
+            let ok = ev.verify_signature(&state.audit_key);
+            let mut v = serde_json::to_value(ev).unwrap_or(serde_json::Value::Null);
+            if let serde_json::Value::Object(ref mut m) = v {
+                m.insert("signature_valid".to_string(), serde_json::Value::Bool(ok));
+            }
+            v
+        })
+        .collect();
+    let tampered = verified
+        .iter()
+        .filter(|v| v.get("signature_valid").and_then(|b| b.as_bool()) == Some(false))
+        .count();
+    Json(serde_json::json!({ "audit": verified, "total": total, "tampered": tampered }))
 }
 
 // ========== AI智能对话API ==========
@@ -1964,10 +2087,21 @@ struct ExecuteFlowRequest {
     input: Option<HashMap<String, serde_json::Value>>,
 }
 
-#[derive(Debug, Deserialize)]
-#[allow(dead_code)] // 预留：更新流程请求体，待 /api/flow/update 端点落地后启用
-struct UpdateFlowRequest {
-    flow: FlowDefinition,
+/// PUT /api/ai/flows/:id — 更新流程图（目标须已存在；校验规则与创建一致）
+async fn update_flow(State(state): State<Arc<AppState>>, Path(id): Path<String>, Json(flow): Json<FlowDefinition>) -> Json<serde_json::Value> {
+    if flow.id != id {
+        return Json(serde_json::json!({
+            "success": false,
+            "error": format!("路径 id（{}）与请求体 flow.id（{}）不一致", id, flow.id),
+        }));
+    }
+    if let Err(e) = AIAgent::validate_flow(&flow) {
+        return Json(serde_json::json!({"success": false, "error": format!("验证失败: {}", e)}));
+    }
+    match state.ai_agent.update_flow(flow).await {
+        Ok(updated) => Json(serde_json::json!({"success": true, "flow": updated})),
+        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()}))
+    }
 }
 
 async fn list_flows(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {

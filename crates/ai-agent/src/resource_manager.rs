@@ -3,8 +3,6 @@
 //! 统一管理CPU、内存、GPU、插件、算子、工作流等所有资源
 //! 实现资源分配、回收、监控、调度和配额管理
 
-// 预留公开 API / 未接入管线的能力面（如插件总线、算子目录、优化器 DAG、RBAC 之外的合规结构）：显式允许 dead_code 而非删除，避免破坏能力面；后续接入时自然消除。
-#![allow(dead_code)]
 use super::types::*;
 use operator_core::{Result, OperatorError};
 use std::collections::HashMap;
@@ -317,6 +315,42 @@ impl ResourceManager {
             } else if utilization > 0.8 {
                 warnings.push(format!("{:?} 资源使用较高: {:.1}%", rt, utilization * 100.0));
             }
+        }
+
+        // 僵尸工作流检测：running 超过 30 分钟的未结束工作流（消费 WorkflowContext 运行态字段）
+        let stale_timeout = chrono::Duration::minutes(30);
+        for (wf_id, ctx) in &self.active_workflows {
+            let _ = wf_id; // key 即 id；字段本身用于状态审计
+            if ctx.status == "running" && Utc::now().signed_duration_since(ctx.started_at) > stale_timeout {
+                warnings.push(format!(
+                    "僵尸工作流: {} 已运行超过 30 分钟（持有 {} 项资源）",
+                    ctx.workflow_id,
+                    ctx.resources_held.len()
+                ));
+            }
+        }
+
+        // 缓存算子老化审计：loaded_at 超过 24h 且近期未使用的算子建议重载
+        // （消费 CachedOperator.loaded_at / last_used 字段）
+        let stale_cache = chrono::Duration::hours(24);
+        for (op_id, cached) in &self.operator_cache {
+            let idle = Utc::now().signed_duration_since(cached.last_used);
+            if Utc::now().signed_duration_since(cached.loaded_at) > stale_cache && idle > stale_cache {
+                tracing::warn!(
+                    "缓存算子 {} 已加载超 24h 且闲置（loaded_at={}, last_used={}），建议重载",
+                    op_id, cached.loaded_at, cached.last_used
+                );
+            }
+        }
+
+        // 缓存算子内存审计：汇总 loaded 算子的 memory_footprint（消费 CachedOperator 字段）
+        let cached_mem_bytes: u64 = self.operator_cache.values().map(|c| c.memory_footprint).sum();
+        if cached_mem_bytes > 256 * 1024 * 1024 {
+            warnings.push(format!(
+                "算子缓存内存占用偏高: {:.1} MB（{} 个缓存算子）",
+                cached_mem_bytes as f64 / 1024.0 / 1024.0,
+                self.operator_cache.len()
+            ));
         }
 
         ResourceHealthReport {
