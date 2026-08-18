@@ -20,7 +20,7 @@
 > **版本基线（v1.0 ENT，2026-08-16）**
 > | 项 | 值 |
 > |----|----|
-> | 文档份数 | 17 份（`00`~`16`，含本索引） |
+> | 文档份数 | 18 份（`00`~`16`，含本索引）+ 配套参考文档（含 `algorithm-verification.md`） |
 > | 系统状态 | **企业级全维度开发完成**（里程碑见 `09`，测试事实支撑） |
 > | 核心铁律 | 全维双收口（流程图归一化 + 开发璇玑全维分析验证），见 `07` §3 |
 > | 自动化入口 | `XuanjiFusionView.vue` → `POST /api/optimize` → `xuanji_optimize` 8 步闭环 |
@@ -71,6 +71,7 @@
 | `docs/modules/xuanji-expert-alliance-fusion-flows.md` | 业务处理（融合） | BP-6 璇玑融合优化链路 | 🟡 参考 |
 | `docs/modules/xuanji-expert-normalization.md` | 设计（融合引擎） | 归一化 IR 设计 | 🟡 参考 |
 | `docs/modules/xuanji-expert-product.md` | 产品/架构 | 产品化视角 | 🟡 参考 |
+| `docs/modules/algorithm-verification.md`（AV-STD-V1.0） | 设计（校验） | 璇玑校验：L1 数学公理自洽 / L2 PT-Primi 合规（ε≤1e-3·六维绑定）/ L3 璇玑治理闸门统一验证矩阵 | 🟢 权威 |
 | `crates/xuanji-expert/DESIGN.md` / `DESIGN_STAGE2.md` | 设计（融合引擎） | 璇玑引擎实现设计 | 🟡 参考 |
 | `docs/xuanji-system-business-architecture.html` | 架构（可视化） | 全维度分层架构交互图（源为 `.md`） | 🟡 可视化 |
 | `docs/_archive/2026-08-16/*.md`（PrimiFlow-/xuanji-expert-验证总结- 等） | 过程稿归档 | 当日开发验证快照，结论已沉淀入本目录 | 🟡 过程稿（非权威） |
@@ -80,7 +81,7 @@
 | `docs/full-dimensional/guantu-skeleton.md` | 关图骨架 | REQ 根（D01-D13/R01-R08）+ 六维绑定 + 偏离检测（GR-E6） | 🟢 权威 |
 | `docs/full-dimensional/xuanji-requirement-baseline.md` | 索引 | 编号归一化收口（①-⑩ / C1-C8 → S1-S8） | 🟢 索引 |
 | `docs/full-dimensional/GOVERNANCE_CONSOLE_API_READY_20260816.md` | 治理台 API | RBAC/审计链契约（v3.0） | 🟢 权威 |
-| `docs/full-dimensional/关图骨架定义.md` 等四份原始文档 | 过程稿 | 已归一承载于 AA-STD / guantu-skeleton，见 `full-dimensional/00-README.md` | 🟡 过程稿 |
+| `docs/full-dimensional/关图骨架定义.md` 等四份原始文档 | 过程稿 | 已归一承载于 AA-STD / guantu-skeleton，见 `docs/full-dimensional/00-README.md` | 🟡 过程稿 |
 | `docs/graph/graph.json` `graph.enterprise.json` `guantu.req.json` | 关图产物 | 机读图谱（代码级 352 节点 / 企业版 372 节点含 REQ/Bind） | 🟡 产物 |
 | `docs/README.md` | 专题导航 | 关图/全维快捷分区索引，本 `00-INDEX` 为唯一治理入口 | 🟢 导航 |
 | `docs/enterprise/璇玑-信息化系统开发验收报告-V1.0.md` / `.html`（ISD-V1.0） | 验收报告 | 信息化系统开发验收报告，对外交付/审计用，已并入 `enterprise/` 分区 | 🟢 权威（交付物） |

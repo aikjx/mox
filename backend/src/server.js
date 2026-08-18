@@ -1,22 +1,22 @@
 'use strict'
 /**
- * OUS 后端信息服务入口（零依赖 Node.js）。
- * - 内置 HTTP 路由（支持 :param）
- * - Bearer 鉴权（dev-secret-token / OUS_API_TOKEN）
- * - 静态托管 frontend/dist（系统统一入口）
- * - 内存存储 + JSON 落盘
+ * OUS 边缘入口（零依赖 Node.js）。
+ *
+ * 职责已收敛为两件，不再实现任何领域逻辑：
+ *   1) 静态托管 frontend/dist（系统统一入口，默认 :3000）
+ *   2) 将 /api/* 反向代理到 Rust operator-server（默认 :3001，可用
+ *      OPERATOR_SERVER_URL 覆盖，例如 http://localhost:3001）
+ *
+ * 所有业务 / 治理 / 验证逻辑均由 Rust(crates/) 承载，Node 仅做边缘转发，
+ * 从而确保出码必经 Rust ⛨验证网关 + 治理 8 闸门（单一系统真相，杜绝旁路）。
  */
 const http = require('http')
 const fs = require('fs')
 const path = require('path')
-const { Store } = require('./store')
-const graph = require('./graph')
-const xuanji = require('./xuanji')
-const { seedAll } = require('./seed')
-const registerRoutes = require('./routes')
 
 const PORT = parseInt(process.env.PORT || '3000', 10)
 const DIST = path.resolve(__dirname, '..', '..', 'frontend', 'dist')
+const UPSTREAM = (process.env.OPERATOR_SERVER_URL || 'http://localhost:3001').replace(/\/+$/, '')
 const LOGS = []
 const startTime = Date.now()
 
@@ -36,84 +36,6 @@ const MIME = {
   '.woff2': 'font/woff2',
   '.ttf': 'font/ttf',
   '.map': 'application/json'
-}
-
-// ---------- 存储与种子 ----------
-const store = new Store()
-;['graph_nodes', 'graph_edges', 'operators', 'market', 'plugins', 'workflows', 'flows', 'resources', 'caomei_templates', 'llm_config', 'automation', 'dialogue_sessions', 'settings'].forEach(
-  (n) => store.load(n)
-)
-const seedInfo = seedAll(store)
-console.log('[seed]', JSON.stringify(seedInfo))
-
-// ---------- 路由表 ----------
-const routes = [] // {method, segs:[], params:[], literal:bool, handler}
-function route(method, pattern, handler) {
-  const segs = pattern.split('/').filter(Boolean)
-  const params = []
-  const literal = !segs.some((s) => s.startsWith(':'))
-  segs.forEach((s) => {
-    if (s.startsWith(':')) params.push(s.slice(1))
-  })
-  routes.push({ method, segs, params, literal, handler })
-}
-
-function matchRoute(method, pathname) {
-  const segs = pathname.split('/').filter(Boolean)
-  // 第一遍：精确字面路由
-  for (const r of routes) {
-    if (r.method !== method) continue
-    if (!r.literal) continue
-    if (r.segs.length === segs.length && r.segs.every((s, i) => s === segs[i])) return { handler: r.handler, params: {} }
-  }
-  // 第二遍：参数路由
-  for (const r of routes) {
-    if (r.method !== method) continue
-    if (r.literal) continue
-    if (r.segs.length !== segs.length) continue
-    const params = {}
-    let ok = true
-    for (let i = 0; i < r.segs.length; i++) {
-      const s = r.segs[i]
-      if (s.startsWith(':')) params[s.slice(1)] = segs[i]
-      else if (s !== segs[i]) {
-        ok = false
-        break
-      }
-    }
-    if (ok) return { handler: r.handler, params }
-  }
-  return null
-}
-
-// ---------- 响应辅助 ----------
-function sendJSON(res, code, obj) {
-  const data = JSON.stringify(obj)
-  res.writeHead(code, {
-    'Content-Type': 'application/json; charset=utf-8',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': '*',
-    'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
-  })
-  res.end(data)
-}
-function sendError(res, code, msg) {
-  sendJSON(res, code, { error: msg, code })
-}
-function sendText(res, code, text) {
-  res.writeHead(code, { 'Content-Type': 'text/plain; charset=utf-8' })
-  res.end(text)
-}
-
-const PUBLIC = new Set(['/api/health', '/api/status', '/api/status/full', '/api/docs'])
-function authOk(req) {
-  const auth = req.headers['authorization'] || ''
-  const m = /^Bearer\s+(.+)$/.exec(auth)
-  if (!m) return false
-  const tok = m[1].trim()
-  if (tok === 'dev-secret-token') return true
-  if (process.env.OUS_API_TOKEN && tok === process.env.OUS_API_TOKEN) return true
-  return false
 }
 
 // ---------- 静态托管 ----------
@@ -137,7 +59,7 @@ function serveStatic(req, res, pathname) {
       fs.readFile(idx, (e, buf) => {
         if (e) {
           res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' })
-          res.end('前端尚未构建。请在 frontend/ 执行 npm run build，或先启动后端提供 API。')
+          res.end('前端尚未构建。请在 frontend/ 执行 npm run build，或由 Rust 服务托管。')
           return
         }
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
@@ -150,78 +72,57 @@ function serveStatic(req, res, pathname) {
   })
 }
 
-// ---------- 请求体解析 ----------
-function readBody(req, cb) {
-  const chunks = []
-  let size = 0
-  req.on('data', (c) => {
-    size += c.length
-    if (size > 5 * 1024 * 1024) {
-      req.destroy()
-      cb(new Error('请求体过大'))
-      return
+// ---------- 反向代理到 Rust operator-server ----------
+function proxy(req, res, pathname, search) {
+  const u = new URL(pathname + search, UPSTREAM)
+  const headers = {}
+  for (const [k, v] of Object.entries(req.headers)) headers[k.toLowerCase()] = v
+  headers.host = u.host
+
+  const upstream = http.request(
+    {
+      method: req.method,
+      hostname: u.hostname,
+      port: u.port,
+      path: u.pathname + u.search,
+      headers
+    },
+    (upRes) => {
+      res.writeHead(upRes.statusCode, upRes.headers)
+      upRes.pipe(res)
     }
-    chunks.push(c)
-  })
-  req.on('end', () => {
-    const raw = Buffer.concat(chunks).toString('utf8')
-    if (!raw) return cb(null, {})
-    try {
-      cb(null, JSON.parse(raw))
-    } catch (e) {
-      cb(null, {})
+  )
+
+  upstream.on('error', (e) => {
+    if (!res.headersSent) {
+      res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' })
+      res.end(JSON.stringify({ error: '上游 Rust 服务不可达: ' + e.message, upstream: UPSTREAM }))
+    } else {
+      res.destroy()
     }
   })
-  req.on('error', (e) => cb(e))
+
+  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+    upstream.end()
+  } else {
+    req.pipe(upstream)
+  }
 }
 
 // ---------- 请求处理器 ----------
 function requestHandler(req, res) {
   const url = new URL(req.url, 'http://localhost')
   const pathname = decodeURIComponent(url.pathname)
-  const query = Object.fromEntries(url.searchParams.entries())
-
-  if (req.method === 'OPTIONS') {
-    res.writeHead(204, {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': '*',
-      'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
-    })
-    return res.end()
-  }
+  const search = url.search
 
   LOGS.push(`[${new Date().toISOString()}] ${req.method} ${pathname}`)
   if (LOGS.length > 500) LOGS.shift()
 
-  // API 路由
-  if (pathname.startsWith('/api/') || pathname === '/api') {
-    const matched = matchRoute(req.method, pathname)
-    if (!matched) {
-      return sendError(res, 404, 'API 不存在: ' + pathname)
-    }
-    if (!PUBLIC.has(pathname) && !authOk(req)) {
-      return sendError(res, 401, '鉴权失败：请提供 Bearer 令牌（开发期可用 dev-secret-token）')
-    }
-    if (req.method === 'GET' || req.method === 'DELETE') {
-      try {
-        matched.handler({ req, res, params: matched.params, query, body: {} })
-      } catch (e) {
-        sendError(res, 500, '内部错误: ' + e.message)
-      }
-      return
-    }
-    readBody(req, (err, body) => {
-      if (err) return sendError(res, 400, err.message)
-      try {
-        matched.handler({ req, res, params: matched.params, query, body })
-      } catch (e) {
-        sendError(res, 500, '内部错误: ' + e.message)
-      }
-    })
-    return
+  // 所有 /api 请求转发到 Rust（含 OPTIONS 预检，由 Rust CORS 层处理）
+  if (pathname === '/api' || pathname.startsWith('/api/')) {
+    return proxy(req, res, pathname, search)
   }
-
-  // 静态资源 / SPA
+  // 其余走静态资源 / SPA
   serveStatic(req, res, pathname)
 }
 
@@ -230,30 +131,21 @@ function createServer() {
   return http.createServer(requestHandler)
 }
 
-// ---------- 注册路由 ----------
-registerRoutes({ store, xuanji, graph, sendJSON, sendError, sendText, route, logs: LOGS, startTime })
-
 const server = createServer()
 
 // 仅当直接运行 `node src/server.js` 时自动监听；被 require 时不占端口（测试隔离）
 if (require.main === module) {
   server.listen(PORT, () => {
-    console.log(`[ous-backend] 监听 http://localhost:${PORT}  (静态=${DIST})`)
+    console.log(`[ous-backend] 边缘入口 http://localhost:${PORT}  →  代理 ${UPSTREAM}  (静态=${DIST})`)
   })
 }
 
-module.exports = { server, store, createServer, requestHandler }
+module.exports = { server, createServer, requestHandler, UPSTREAM }
 
 // ---------- 优雅关闭 ----------
 function shutdown(signal) {
   console.log(`[ous-backend] 收到 ${signal}，正在关闭...`)
-  try {
-    store.persistAll()
-  } catch (e) {
-    console.error('[ous-backend] 落盘失败:', e.message)
-  }
   server.close(() => process.exit(0))
-  // 兜底：5s 内未完成关闭则强制退出，避免挂起
   setTimeout(() => process.exit(0), 5000).unref()
 }
 process.on('SIGINT', () => shutdown('SIGINT'))

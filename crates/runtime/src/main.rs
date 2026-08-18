@@ -579,8 +579,8 @@ async fn main() -> anyhow::Result<()> {
         ))
         .layer(build_cors()?);
 
-    // 解析命令行参数：支持 `--port <NUM>`（默认 3000）
-    let mut port: u16 = 3000;
+    // 解析命令行参数：支持 `--port <NUM>`（默认 3001，Node 边缘入口占 3000）
+    let mut port: u16 = 3001;
     let args: Vec<String> = std::env::args().collect();
     for i in 0..args.len() {
         if args[i] == "--port" && i + 1 < args.len() {
