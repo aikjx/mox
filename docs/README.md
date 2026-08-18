@@ -20,7 +20,7 @@ docs/
 │   ├── xuanji-requirement-baseline.md      # 🟢 编号归一化收口（①-⑩ / C1-C8 → S1-S8）
 │   ├── GOVERNANCE_CONSOLE_API_READY_20260816.md  # 🟢 治理台 API 契约（RBAC/审计链）
 │   ├── xuanji-tracematrix.html             # 🟡 六维绑定可视化（与 full-dimensional 源同位）
-│   └── 关图骨架定义.md 等四份原始文档        # 🟡 过程稿（内容已归一承载于 AA-STD / guantu-skeleton）
+│   └── (原始文档已归一承载于 guantu-skeleton，已迁 `docs/_archive/2026-08-16/`)
 ├── modules/             # 🟡 模块级设计 / 参考文档（market/automation/数学内核/业务流程/xuanji-expert 系列/设计蓝图）
 ├── graph/               # 关图机读产物：graph.json / graph.enterprise.json / guantu.req.json + requests/ 判重入口
 ├── ai-architecture/     # AI 架构专题：ai-unified-intelligent-system-architecture.html（AUS · L4 Agentic 闭环）
@@ -50,6 +50,7 @@ docs/
 | 查什么 | 去哪 |
 | --- | --- |
 | 企业级文档总入口 / 权威等级 / RACI | **`docs/enterprise/00-INDEX.md`** |
+| 规范术语表（唯一事实源） | **`docs/GLOSSARY.md`**（DOC-GLOSSARY-V1.0） |
 | 全维需求验收铁律（四闸门说死） | `docs/enterprise/07-全维需求明确书.md` |
 | 全维自动化处理流水线（xuanji_optimize 8 步） | `docs/enterprise/08-全维自动化处理明确书.md` |
 | 需求—架构映射 / 交付清单 | `docs/enterprise/06` `10` |
@@ -65,4 +66,4 @@ docs/
 | 交付验收报告（ISD-V1.0） | `docs/enterprise/璇玑-信息化系统开发验收报告-V1.0.md` |
 | 过程稿 / 验证快照（仅供追溯） | `docs/_archive/2026-08-16/` |
 
-> `full-dimensional/` 内的四份原始文档（关图骨架定义 / TraceMatrix / 测试验证报告 / 业务处理流程图）为**过程稿归档**，其内容已归一承载于 AA-STD 与 `docs/full-dimensional/guantu-skeleton.md`，查阅以 AA-STD 为准（见 `docs/full-dimensional/00-README.md`）。
+> 四份原始文档（关图骨架定义 / TraceMatrix / 测试验证报告 / 业务处理流程图）已迁至 `docs/_archive/2026-08-16/`，其内容为**过程稿归档**，已归一承载于 AA-STD 与 `docs/full-dimensional/guantu-skeleton.md`，查阅以 AA-STD 为准（见 `docs/full-dimensional/00-README.md`）。

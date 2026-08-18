@@ -10,7 +10,7 @@
 
 | 原始散落文档 | 归一去向（docs 内权威承载） | 处理方式 |
 | --- | --- | --- |
-| 关图骨架定义.md | `docs/full-dimensional/guantu-skeleton.md`（GR-STD-V1.0） | 已建，独立承载 REQ 根 + 六维绑定骨架 + 偏离检测 |
+| 关图骨架定义.md | `docs/_archive/2026-08-16/关图骨架定义.md`（原始稿，已归一承载于 `docs/full-dimensional/guantu-skeleton.md` GR-STD-V1.0） | 已建，独立承载 REQ 根 + 六维绑定骨架 + 偏离检测 |
 | 璇玑-…-TraceMatrix-六维绑定追溯.md | AA-STD §3（六维绑定）+ `crates/primiflow/trace_matrix.md`（PT-STD） | 并入既有，不再单列 |
 | 璇玑-…-测试分析验证报告.md | `xuanji-expert-验证总结-20260816.md`（164 项全绿）+ `PrimiFlow-三层递进开发-验证总结-20260816.md` | 并入既有验证总结 |
 | 璇玑-…-业务处理流程图.md | `璇玑-全维需求业务处理流程图-归一化企业级.md`（AA-STD）+ `docs/modules/xuanji-expert-normalization.md`（归一化规范） | 并入既有基准与规范书 |
@@ -62,3 +62,19 @@
 - **「全维分析流程」** → AA-STD §1（S1-S8）+ `docs/modules/xuanji-expert-normalization.md` §1-§2。
 - **「测试验证通过」** → `xuanji-expert-验证总结-20260816.md`（164 项 0 失败）。
 - **「企业级治理」** → AA-STD §4（G0-G3 + 护栏 G-A~G-E + 审计链）+ `docs/modules/xuanji-expert-normalization.md` §1.4。
+
+
+## 术语表 (Glossary)
+
+> 本文术语以 [docs/GLOSSARY.md](../GLOSSARY.md) 为**唯一基准（Single Source of Truth）**；完整术语见该规范表，以下为高频术语速查。
+
+| 术语 | 含义 |
+|------|------|
+| **璇玑 (Xuánjī)** | 归一化 IR 驱动的元调度诊断系统（`xuanji-expert` crate） |
+| **关图 / GR-STD** | 信息关联关系图开发规范 V1.0，「一切皆是信息」 |
+| **AA-STD** | 璇玑-全维需求业务处理流程图-归一化企业级，融合域需求事实基准 |
+| **PT-Primi / PrimiFlow** | 全域拓扑原语架构（κ-τ 调度，守恒律 `C² = κ² + τ²`） |
+| **OUS** | operator-unified-system，算子统一系统 |
+| **双璇玑十四维** | 业务 7 维 + 开发 7 维并行诊断 |
+| **TraceMatrix / 六维绑定** | `REQ→FUN→BIZ→ALG→TSK→COD` 五向绑定可追溯 |
+| **⛨ 璇玑验证网关** | 最高权限验证网关，闭环出码/出图前最终裁决 |

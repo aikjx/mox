@@ -2,7 +2,7 @@
 
 > 编号：**DOC-GOV-V1.0**
 > 生成时间：2026-08-18
-> 适用范围：`infotopograph` 仓库 `docs/` 全量文档（65 份）
+> 适用范围：`infotopograph` 仓库 `docs/` 全量文档（结构归一化后，53 份 Markdown + 可视化/JSON 产物）
 > 治理入口：`docs/enterprise/00-INDEX.md`（唯一权威等级定义）
 > 配套导航：`docs/README.md`（关图/全维专题索引）
 
@@ -31,6 +31,8 @@
 | F11 | 索引文件名错误 | 🟡 | `00-INDEX` §1.2 写 `docs/xuanji-expert-xuanji-fusion-flows.md`，实际文件为 `xuanji-expert-alliance-fusion-flows.md`（FIX-09 修正） |
 | F12 | 文件名笔误（跨多文档） | 🟠 | `02-architecture.md:295`、`04-business-processing.md:197`、`modules/xuanji-expert-business-requirements.md:5,234`、`graph/graph.mmd:88` 引用 `xuanji-expert-xuanji-fusion-flows.md`，实际文件为 `xuanji-expert-alliance-fusion-flows.md`（FIX-11 全量修正） |
 | F13 | 相对路径缺 `docs/` 前缀 | 🟡 | `00-INDEX.md:83` 写 `full-dimensional/00-README.md`，应为仓根相对 `docs/full-dimensional/00-README.md`（FIX-12 修正） |
+| F14 | **术语表（glossary）缺失** | 🔴 | 53 份 Markdown 仅 `algorithm-verification.md` 1 份含 glossary，与其「企业级 + 完整 glossary」强约定直接冲突；术语无统一事实源，存在漂移风险 | 
+| F15 | 原始过程稿滞留权威目录 | 🟠 | `full-dimensional/` 仍与 🟢 权威文档同置 4 份原始过程稿（关图骨架定义 / TraceMatrix / 测试验证报告 / 业务处理流程图），与 §2.1「full-dimensional/ 仅关图骨架·索引·治理台 API」及「过程稿仅可位于 `_archive/`」规则冲突 |
 
 ---
 
@@ -106,6 +108,15 @@
 ### FIX-13 死链回归验证
 重跑精确文档引用审计（仅判定指向 `.md`/`.html` 文档产物的引用）：**真实断链 0 处**。残余 41 条"未命中"均为噪声——通配符（`*.md`/`*.html`）、源码/仓根文件引用（`crates/...`、`CLAUDE.md`、`README.md`）、报告内目录树代码块、以及本报告描述性"旧路径→新路径"文字，均非文档交叉引用，不计入断链。
 
+### FIX-14 规范术语表（GAP / F14 收口）
+新建**企业级规范术语表 `docs/GLOSSARY.md`（DOC-GLOSSARY-V1.0 · 🟢 权威）**作为全项目**术语唯一事实源（Single Source of Truth）**，覆盖：璇玑/关图(GR-STD)/AA-STD/PT-Primi/OUS/双璇玑十四维/TraceMatrix 六维绑定/⛨璇玑验证网关/治理闸门/归一化/全维/关图骨架；并定义命名与大小写强制约定（璇玑非「旋玑」、PT-Primi 非 PT-PRIMI、引用一律 `docs/<rel>` 等）。
+为避免 52 份文档各自复制术语表导致漂移，采用「**统一规范术语表为唯一基准 + 各权威文档文末附速查段**」：通过脚本向 8 份核心权威文档（`architecture.md`、`enterprise-architecture-analysis.md`、AA-STD、`full-dimensional/guantu-skeleton.md`、`full-dimensional/xuanji-requirement-baseline.md`、`specs/PT-Primi`、`specs/GR-STD`、`specs/OUS`）追加「## 术语表 (Glossary)」速查段（已存在则跳过），均指向 `docs/GLOSSARY.md`。并在 `00-INDEX` §1.2 注册为 🟢 权威、在 `README.md` 导航增列入口。
+
+### FIX-15 原始过程稿归档（F15 收口）
+将 `full-dimensional/` 下 4 份原始过程稿整体 `git mv` 至 `docs/_archive/2026-08-16/`（同目录整体迁移，其内部以同目录裸名互引仍有效）：
+`关图骨架定义.md`、`璇玑-全维分析-TraceMatrix-六维绑定追溯.md`、`璇玑-全维分析需求-测试分析验证报告.md`、`璇玑-全维分析需求业务处理流程图.md`。
+同步 5 处外部描述性引用路径：`enterprise/00-INDEX.md:84`、`full-dimensional/00-README.md:18-21`、`README.md:23,68`、`full-dimensional/xuanji-requirement-baseline.md:13`（其余为内部裸名互引，迁移后无新增断链）。`full-dimensional/` 现仅余 🟢 权威文档，消除「过程稿与权威同目录」冲突。
+
 ---
 
 ## 4. 归一化后目标树（物理真实状态）
@@ -114,16 +125,16 @@
 docs/
 ├── enterprise/        00-INDEX + 01~16 + 璇玑-信息化系统开发验收报告-V1.0.{md,html}
 ├── specs/             PT-Primi / GR-STD / OUS 业务规划
-├── full-dimensional/  guantu-skeleton · xuanji-requirement-baseline · GOVERNANCE_API · xuanji-tracematrix.html · 四份过程稿
+├── full-dimensional/  guantu-skeleton · xuanji-requirement-baseline · GOVERNANCE_API · xuanji-tracematrix.html
 ├── modules/           market/automation/mathematical/business-flow(s/charts)/xuanji-expert-*（含 algorithm-verification）/ PrimiFlow-设计蓝图 + xuanji-flow.html
 ├── graph/             graph.json · graph.enterprise.json · guantu.req.json · requests/
 ├── ai-architecture/   ai-unified-intelligent-system-architecture.html
-├── _archive/2026-08-16/   7 份过程稿（非权威）
+├── _archive/2026-08-16/   11 份过程稿（4 份原始分析稿 + 7 份 -20260816 稿，非权威）
 ├── 璇玑-全维需求业务处理流程图-归一化企业级.{md,html,mmd}   # AA-STD 🟢（根）
 ├── 璇玑-璇玑验证子流程-归一化企业级.html
 ├── 璇玑-全维流水线.mmd
 ├── xuanji-system-business-architecture.html
-├── architecture.md · enterprise-architecture-analysis.md
+├── GLOSSARY.md（术语表 🟢）· architecture.md · enterprise-architecture-analysis.md
 └── README.md · DOC-NORMALIZATION-REPORT.md
 ```
 
@@ -131,11 +142,13 @@ docs/
 
 ## 5. 验证结论
 
-- ✅ 65 份文件全部纳入 git；18 次移动均经 `git mv`，**历史可回溯、可回退**；本轮新增 `docs/modules/algorithm-verification.md`（非移动，新建补全）。
+- ✅ 全量文档纳入 git；18 次移动均经 `git mv`，**历史可回溯、可回退**；本轮新增 `docs/modules/algorithm-verification.md`（FIX-10）与 `docs/GLOSSARY.md`（FIX-14），均新建补全。
 - ✅ 残留引用扫描：**0** 处指向旧根路径（`docs/xuanji-expert-*` 非 modules、`docs/market-module.md` 等）。
-- ✅ 索引声明与物理事实一致：F2/F3/F4/F5/F7/F8/F10/F11/F12/F13 全部闭合。
+- ✅ 索引声明与物理事实一致：F2/F3/F4/F5/F7/F8/F10/F11/F12/F13/F15 全部闭合。
 - ✅ 死链回归（FIX-13）：文档交叉引用**真实断链 0 处**；GAP-1（F9）已通过新建文档收口。
-- ✅ 全文权威分级与锚点/glossary 规范在 AA-STD / GR-STD / PT-STD / 新建 AV-STD 均具备。
+- ✅ **术语表缺口（F14）已收口**：建立 `docs/GLOSSARY.md` 唯一事实源，并向 8 份核心权威文档附速查段；重跑 glossary 覆盖体检由 1/53 升至 9/54（8 追加 + 1 原有），其余文档统一引用规范术语表，不重复维护。
+- ✅ **原始过程稿（F15）已收口**：4 份迁 `_archive/2026-08-16/` 并同步 5 处引用，`full-dimensional/` 现为纯 🟢 权威目录。
+- ✅ 全文权威分级与锚点/glossary 规范在 AA-STD / GR-STD / PT-STD / AV-STD / GLOSSARY 均具备；锚点完整性（跨文档 `#anchor`）体检 **0 断锚**；标题层级（跳过代码围栏）**0 跳级**。
 
 ---
 
@@ -144,8 +157,10 @@ docs/
 | ID | 问题 | 建议动作 | 责任 |
 |----|------|----------|------|
 | GAP-1 | ~~`enterprise-architecture-analysis.md:216` 引用 `algorithm-verification.md`，文件不存在~~ **已解决（FIX-10）**：新建 `docs/modules/algorithm-verification.md`（AV-STD-V1.0），引用同步修正 | —（已闭环） | — |
+| 整合-1 | ~~4 份原始过程稿滞留 `full-dimensional/`（与 🟢 权威同目录）~~ **已解决（FIX-15）**：整体迁 `_archive/2026-08-16/` 并同步 5 处引用 | —（已闭环） | — |
 | GAP-2 | `modules/` 混合 🟢（xuanji-expert-business-requirements 为 BR 权威源）与 🟡 参考 | 在 `00-INDEX` 已显式标注各文件等级；后续若需更严，可将 BR 源单独提至 `specs/` 或 `enterprise/` | 文档维护者 |
 | GAP-3 | AA-STD 物理位于根而非 `full-dimensional/` | 维持现状（与 `00-INDEX` 声明一致），如需统一可后续迁移并在 INDEX 同步 | 文档维护者 |
+| GAP-4（🟡 观察） | `modules/PrimiFlow-设计蓝图.md:65,230` 使用「功能关联图」，与 GR-STD「关图（信息关联关系图）」概念邻近，存在术语重叠风险 | 判定为 PrimiFlow 自有产物命名，未强行改；已在 `GLOSSARY.md §4` 显式标注「功能关联图属 PrimiFlow 产物，与关图概念邻近，不混用」。若后续统一，建议 PrimiFlow 文档增加一句「功能关联图是关图的一个 PrimiFlow 渲染视图」 | 文档维护者 |
 
 > 本报告为活文档，任何 `docs/` 结构变更须在 `00-INDEX` 变更记录留痕。
 
@@ -156,7 +171,7 @@ docs/
 ### 7.1 发现
 跨 `modules/` · `full-dimensional/` · `enterprise/` 的段落级重复扫描（≥120 字符）发现 **1 处真实重叠簇**：
 
-- `docs/full-dimensional/guantu-skeleton.md`（🟢 权威，GR-STD 骨架）与 `docs/full-dimensional/关图骨架定义.md`（🟡 过程稿）共享 **8 段**大段内容（每段 135–518 字符）。
+- `docs/full-dimensional/guantu-skeleton.md`（🟢 权威，GR-STD 骨架）与 `docs/_archive/2026-08-16/关图骨架定义.md`（🟡 过程稿，已归档）共享 **8 段**大段内容（每段 135–518 字符）。
 
 ### 7.2 性质判定（明确，不模糊）
 二者为 **「原始草稿源 → 归一化权威」** 的衍生关系，而非平行冗余：
@@ -164,6 +179,5 @@ docs/
 - 4 份原始文档（`关图骨架定义.md`、`璇玑-全维分析-TraceMatrix-六维绑定追溯.md`、`璇玑-全维分析需求-测试分析验证报告.md`、`璇玑-全维分析需求业务处理流程图.md`）**仅在治理文档中被描述为过程稿**，且彼此以同目录裸名互引——属设计内的追溯稿。
 
 ### 7.3 处置决策（企业级，单一事实源优先）
-- ✅ **保留于 `full-dimensional/` 作为追溯稿**，与现有设计一致；**不强制合并**，以免破坏单一事实源（SSOT）与审计追溯链。
 - ✅ **唯一权威承载**为 `guantu-skeleton.md`（GR-STD 骨架）+ AA-STD（融合域需求基准）；任何引用以二者为准。
-- 🔧 **若需更严归一**：可将 4 份迁至 `docs/_archive/2026-08-16/` 并更新 `full-dimensional/00-README.md`、`enterprise/00-INDEX.md:84`、`docs/README.md:23` 三处引用（其内部互引为同目录裸名，整体迁移后仍可解析，不会新增断链）。此项为可选，未自动执行，避免无谓结构震荡。
+- ✅ **本轮已执行「更严归一」（FIX-15）**：4 份原始过程稿整体迁至 `docs/_archive/2026-08-16/`，并同步 `00-INDEX:84`、`full-dimensional/00-README.md`、`README.md:23,68`、`xuanji-requirement-baseline.md:13` 共 5 处引用（内部互引为同目录裸名，迁移后仍可解析，无新增断链）。`full-dimensional/` 现为纯 🟢 权威目录，消除「过程稿与权威同目录」冲突，同时完整保留追溯链（git 历史 + 归档位置）。
