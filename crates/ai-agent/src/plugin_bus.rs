@@ -7,8 +7,6 @@
 //! - 事件驱动协作
 //! - 消息路由与过滤
 
-// 预留公开 API / 未接入管线的能力面（如插件总线、算子目录、优化器 DAG、RBAC 之外的合规结构）：显式允许 dead_code 而非删除，避免破坏能力面；后续接入时自然消除。
-#![allow(dead_code)]
 use super::types::*;
 use operator_core::{Result, OperatorError};
 use std::collections::HashMap;
@@ -22,10 +20,8 @@ pub struct PluginBus {
     plugins: HashMap<String, PluginInfo>,
     /// 主题订阅: topic -> Vec<Subscription>
     subscriptions: HashMap<String, Vec<SubscriptionEntry>>,
-    /// 等待响应的消息: correlation_id -> oneshot sender
-    pending_responses: HashMap<String, tokio::sync::oneshot::Sender<PluginMessage>>,
-    /// 消息历史
-    message_log: Vec<PluginMessage>,
+    /// 消息历史（环形记录最近 500 条，供可观测性查询）
+    message_log: std::sync::Mutex<Vec<PluginMessage>>,
     /// 内置处理器
     builtin_handlers: HashMap<String, Box<dyn MessageHandler + Send + Sync>>,
 }
@@ -147,8 +143,7 @@ impl PluginBus {
         Self {
             plugins,
             subscriptions: HashMap::new(),
-            pending_responses: HashMap::new(),
-            message_log: Vec::new(),
+            message_log: std::sync::Mutex::new(Vec::new()),
             builtin_handlers,
         }
     }
@@ -199,9 +194,15 @@ impl PluginBus {
     pub async fn route_message(&self, msg: PluginMessage) -> Result<Option<PluginMessage>> {
         tracing::debug!("路由消息: {} -> topic={}, target={:?}", msg.source_plugin, msg.topic, msg.target_plugin);
 
-        // 记录消息
-        // 注意：这里需要&mut self来修改message_log，但route_message是&self
-        // 在实际实现中应该用Arc<Mutex<>>包装，这里简化处理
+        // 记录消息（环形保留最近 500 条，供可观测性查询）
+        {
+            let mut log = self.message_log.lock().unwrap();
+            log.push(msg.clone());
+            let overflow = log.len().saturating_sub(500);
+            if overflow > 0 {
+                log.drain(0..overflow);
+            }
+        }
 
         // 1. 如果有指定目标插件，直接路由
         if let Some(ref target) = msg.target_plugin {
@@ -310,11 +311,31 @@ impl PluginBus {
         }
     }
 
-    /// 发布事件（广播模式）
-    pub fn publish(&self, source: &str, topic: &str, _payload: serde_json::Value) -> Result<()> {
+    /// 发布事件（广播模式）：记录消息并同步触发内置处理器响应，
+    /// 主题订阅者投递由 `route_message`（异步）消费同一事件。
+    pub fn publish(&self, source: &str, topic: &str, payload: serde_json::Value) -> Result<()> {
         tracing::info!("插件 {} 发布事件: {}", source, topic);
-        // 在完整实现中会spawn异步任务进行广播
+        let msg = PluginMessage::new(source, topic, payload);
+        // 记录消息（环形保留最近 500 条）
+        {
+            let mut log = self.message_log.lock().unwrap();
+            log.push(msg.clone());
+            let overflow = log.len().saturating_sub(500);
+            if overflow > 0 {
+                log.drain(0..overflow);
+            }
+        }
+        // 内置处理器同步响应（request/response 语义由 route_message 承载）
+        if let Some(handler) = self.builtin_handlers.get(&msg.topic) {
+            let _ = handler.handle(&msg)?;
+        }
         Ok(())
+    }
+
+    /// 最近消息历史（可观测性：总线流量审计）
+    pub fn message_history(&self, limit: usize) -> Vec<PluginMessage> {
+        let log = self.message_log.lock().unwrap();
+        log.iter().rev().take(limit).cloned().collect()
     }
 
     /// 调用插件方法

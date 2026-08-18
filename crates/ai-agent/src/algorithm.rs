@@ -3,8 +3,6 @@
 //! 实现最强开发算法的识别、分析、流程图生成与归一化处理
 //! 将任意算法转化为标准算子工作流
 
-// 预留公开 API / 未接入管线的能力面（如插件总线、算子目录、优化器 DAG、RBAC 之外的合规结构）：显式允许 dead_code 而非删除，避免破坏能力面；后续接入时自然消除。
-#![allow(dead_code)]
 use super::types::*;
 use operator_core::Result;
 use std::collections::HashMap;
@@ -454,13 +452,29 @@ impl AlgorithmAnalyzer {
         edges
     }
 
-    /// 映射算子
+    /// 映射算子：优先取节点显式 operator_id；缺失时用算子映射规则
+    /// 对节点描述/标签做关键词模糊匹配，取置信度最高的命中规则
+    /// （消费 `operator_mappings` 能力面：pattern + confidence 均生效）。
     fn map_operators(&self, nodes: &[FlowNode]) -> HashMap<String, String> {
         let mut mapping = HashMap::new();
 
         for node in nodes {
-            if let Some(op_id) = &node.operator_id {
-                mapping.insert(node.id.clone(), op_id.clone());
+            let op_id = node.operator_id.clone().or_else(|| {
+                let haystack = format!("{} {}", node.label, node.description).to_lowercase();
+                self.operator_mappings
+                    .iter()
+                    .filter_map(|rule| {
+                        let matched = rule
+                            .pattern
+                            .split('|')
+                            .any(|kw| haystack.contains(&kw.to_lowercase()));
+                        matched.then_some((rule.operator_id.clone(), rule.confidence))
+                    })
+                    .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
+                    .map(|(op_id, _)| op_id)
+            });
+            if let Some(op_id) = op_id {
+                mapping.insert(node.id.clone(), op_id);
             }
         }
 

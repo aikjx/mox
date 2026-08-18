@@ -369,8 +369,12 @@ pub fn run_experts(
         tracing::warn!(target: "harness", "PreAnalyze 瀑布执行失败: {}", e);
     }
 
-    // 2. 并行派发专家（保持无状态只读、可并行）
-    let opinions: Vec<ExpertOpinion> = experts.iter().map(|e| e.analyze(ectx)).collect();
+    // 2. 并行派发专家（保持无状态只读，rayon 真并行利用多核；
+    //    订单保留原序，保证与串行派发结果确定性一致）
+    let opinions: Vec<ExpertOpinion> = {
+        use rayon::prelude::*;
+        experts.par_iter().map(|e| e.analyze(ectx)).collect()
+    };
     state.opinions = opinions.clone();
 
     // 3. PostAnalyze（插件可改写）

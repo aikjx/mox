@@ -334,24 +334,6 @@ fn is_sensitive_write(a: &flow_ai::model::Access) -> bool {
         || r.contains("idcard")
 }
 
-/// 守恒 / 零孤儿快速诊断：委托 flow_ai 结构校验。
-#[allow(dead_code)]
-fn flow_conservation_checks(
-    opt: &flow_ai::pipeline::OptimizationReport,
-    algo_veto: bool,
-) -> (bool, bool) {
-    let g = &opt.optimized_graph;
-    let orphan_free = g.nodes.iter().all(|n| {
-        n.kind == flow_ai::model::NodeKind::Start
-            || g.edges.iter().any(|e| e.from == n.id || e.to == n.id)
-    });
-    // 守恒：融合引擎保证资源/权限守恒；此处做结构自洽性兜底——
-    // 任一非 Start 节点都须在被引用集合中（与孤儿判定同源），且图非空。
-    // 若算法验证（⛨ 最高权限）已否决，则守恒门禁直接失效，避免绕过。
-    let conserved = !algo_veto && !g.nodes.is_empty() && orphan_free;
-    (conserved, orphan_free)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

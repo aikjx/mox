@@ -3,8 +3,6 @@
 //! 实现公理5：资源约束优化
 //! 基于DAG的算子调度，最小化资源消耗和执行时间
 
-// 预留公开 API / 未接入管线的能力面（如插件总线、算子目录、优化器 DAG、RBAC 之外的合规结构）：显式允许 dead_code 而非删除，避免破坏能力面；后续接入时自然消除。
-#![allow(dead_code)]
 use operator_core::operator::Operator;
 use operator_core::resource::ResourceCost;
 use petgraph::graph::{DiGraph, NodeIndex};
@@ -15,8 +13,6 @@ use std::sync::Arc;
 /// 算子DAG节点
 struct DagNode {
     operator: Arc<dyn Operator>,
-    earliest_start: u64,
-    latest_finish: u64,
 }
 
 /// 算子DAG
@@ -35,11 +31,7 @@ impl OperatorDag {
 
     /// 添加算子节点
     pub fn add_operator(&mut self, id: &str, op: Arc<dyn Operator>) -> NodeIndex {
-        let node = DagNode {
-            operator: op,
-            earliest_start: 0,
-            latest_finish: u64::MAX,
-        };
+        let node = DagNode { operator: op };
         let idx = self.graph.add_node(node);
         self.node_map.insert(id.to_string(), idx);
         idx

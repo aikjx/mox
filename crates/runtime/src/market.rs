@@ -1,5 +1,3 @@
-// 预留公开 API / 未接入管线的能力面（如插件总线、算子目录、优化器 DAG、RBAC 之外的合规结构）：显式允许 dead_code 而非删除，避免破坏能力面；后续接入时自然消除。
-#![allow(dead_code)]
 //! # 算子商城 (Operator Market)
 //!
 //! 把"需求 + 业务流程图（结构化、可编辑）"作为算子包(OperatorPackage)上传到商城，
@@ -410,11 +408,26 @@ pub fn market_routes() -> Router<MarketState> {
         .route("/:id/clone", post(clone_package))
         .route("/upload", post(upload_package))
         .route("/:id/export", get(export_package))
+        .route("/backup", post(backup_market))
         .merge(crate::market_version::version_routes())
         .merge(crate::market_dsl::dsl_routes())
 }
 
 // ========== Handlers ==========
+
+/// 手动全量备份：`$OUS_HOME/market/backup/manual-<ts>/`
+async fn backup_market() -> Json<serde_json::Value> {
+    match crate::market_migration::backup_now("manual") {
+        Some(dir) => Json(serde_json::json!({
+            "success": true,
+            "backup_dir": dir.display().to_string(),
+        })),
+        None => Json(serde_json::json!({
+            "success": false,
+            "error": "备份失败：市场目录不存在或不可写（检查 $OUS_HOME/market）",
+        })),
+    }
+}
 
 /// 列表（支持 ?category= / ?tag= / ?q= / ?tenant_id= / ?created_by= / ?perm= 过滤）
 async fn list_packages(

@@ -2,8 +2,6 @@
 //!
 //! 实现自然语言理解、意图识别、算子推荐和多轮对话管理
 
-// 预留公开 API / 未接入管线的能力面（如插件总线、算子目录、优化器 DAG、RBAC 之外的合规结构）：显式允许 dead_code 而非删除，避免破坏能力面；后续接入时自然消除。
-#![allow(dead_code)]
 use super::types::*;
 use operator_core::Result;
 use std::collections::HashMap;
@@ -220,16 +218,13 @@ impl ConversationEngine {
             }
         }
 
-        // 中文关键词匹配
-        let cn_keywords: HashMap<&str, &str> = [
-            ("恒等", "identity"), ("线性", "linear"), ("归一化", "normalize"),
-            ("激活", "relu"), ("s型", "sigmoid"), ("双曲正切", "tanh"),
-            ("softmax", "softmax"), ("卷积", "conv2d"), ("注意力", "attention"),
-        ].iter().cloned().collect();
-
-        for (cn, en) in &cn_keywords {
-            if message.contains(cn) && !ops.contains(&en.to_string()) {
-                ops.push(en.to_string());
+        // 中文关键词匹配（消费算子知识库：keyword → operator 反向索引）
+        for (op, keywords) in &self.operator_knowledge.keywords {
+            for kw in keywords {
+                if message.contains(kw.as_str()) && !ops.contains(op) {
+                    ops.push(op.clone());
+                    break;
+                }
             }
         }
 
@@ -372,6 +367,23 @@ impl ConversationEngine {
                     recommended = vec!["conv2d".to_string(), "relu".to_string(), "maxpool".to_string(), "normalize".to_string()];
                 } else if msg_lower.contains("注意力") || msg_lower.contains("attention") || msg_lower.contains("transformer") {
                     recommended = vec!["embedding".to_string(), "attention".to_string(), "feedforward".to_string(), "normalize".to_string()];
+                } else {
+                    // 分类关键词兜底：命中算子知识库的分类词汇时给出该分类代表算子
+                    // （消费 OperatorKnowledge.category_keywords：category → 关键词）
+                    for (category, keywords) in &self.operator_knowledge.category_keywords {
+                        if keywords.iter().any(|kw| msg_lower.contains(&kw.to_lowercase())) {
+                            recommended = match category.as_str() {
+                                "core" => vec!["identity".to_string(), "linear".to_string()],
+                                "activation" => vec!["relu".to_string(), "sigmoid".to_string()],
+                                "math" => vec!["matmul".to_string(), "scale".to_string()],
+                                "ai" => vec!["linear".to_string(), "relu".to_string(), "softmax".to_string()],
+                                "signal" => vec!["conv2d".to_string(), "maxpool".to_string()],
+                                "optimizer" => vec!["adam".to_string(), "sgd".to_string()],
+                                _ => vec![],
+                            };
+                            break;
+                        }
+                    }
                 }
             }
         }

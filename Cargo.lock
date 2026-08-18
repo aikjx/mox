@@ -4838,6 +4838,7 @@ dependencies = [
  "hmac",
  "hostname",
  "http 1.5.0",
+ "rayon",
  "reqwest 0.12.28",
  "serde",
  "serde_json",

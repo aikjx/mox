@@ -6,10 +6,6 @@
 //! - 审计事件写入
 //! - 跨租户隔离
 
-// 预留能力面（verify_signature / RbacContext.tenant_id / MemoryAuditSink::count / LogAuditSink）：
-// 供导出验签、租户上下文审计与后续审计汇扩展使用，显式允许 dead_code 而非删除（保留合规能力面）。
-#![allow(dead_code)]
-
 // 本模块已挂载到 operator-server 请求管线：
 // - 认证：main.rs 的 auth_middleware 用 TokenRegistry 解析 Bearer 令牌，写入 Principal 到请求扩展
 // - 授权：本模块 rbac_audit_middleware 读取 Principal，做租户隔离 + 角色权限判定，并写签名审计事件
@@ -218,10 +214,6 @@ impl TokenRegistry {
         Self { entries: HashMap::new(), strict_mode: false }
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.entries.is_empty()
-    }
-
     pub fn len(&self) -> usize {
         self.entries.len()
     }
@@ -404,6 +396,8 @@ pub trait AuditSink: Send + Sync {
 /// 异步锁无法在其中获取，原实现因此直接丢弃了全部事件。
 pub struct MemoryAuditSink {
     events: std::sync::Mutex<Vec<AuditEvent>>,
+    /// 日志镜像开关：`OUS_AUDIT_SINK=log` 时写入即同步输出到 tracing（[`LogAuditSink`]）
+    log_mirror: bool,
 }
 
 impl Default for MemoryAuditSink {
@@ -416,6 +410,7 @@ impl MemoryAuditSink {
     pub fn new() -> Self {
         Self {
             events: std::sync::Mutex::new(Vec::new()),
+            log_mirror: std::env::var("OUS_AUDIT_SINK").as_deref() == Ok("log"),
         }
     }
 
@@ -438,7 +433,11 @@ impl AuditSink for MemoryAuditSink {
         self.events
             .lock()
             .map_err(|e| format!("审计事件写入失败，锁已中毒: {e}"))?
-            .push(event);
+            .push(event.clone());
+        // 日志镜像：进程内查询 + 标准日志审计双通道（合规要求日志可检索）
+        if self.log_mirror {
+            LogAuditSink.write(event)?;
+        }
         Ok(())
     }
 }
@@ -550,6 +549,33 @@ pub async fn rbac_audit_middleware(
     let Some(principal) = req.extensions().get::<Principal>().cloned() else {
         return Err(StatusCode::UNAUTHORIZED);
     };
+
+    // 2.5 跨租户隔离：主体租户必须与 RBAC 上下文租户一致（Admin 豁免）。
+    //     tenant_id 字段由 RbacContext 持有，实现多租户硬隔离：
+    //     非 Admin 主体的请求若声明了不同租户，直接 403，防止跨租户越权访问。
+    if principal.tenant_id != ctx.tenant_id && !principal.roles.contains(&Role::Admin) {
+        let mut event = AuditEvent::new(
+            principal.token_id.clone(),
+            format!("{} {}", method, path),
+            path.clone(),
+            "forbidden".into(),
+            uuid::Uuid::new_v4().to_string(),
+            req.headers()
+                .get("X-Forwarded-For")
+                .and_then(|v| v.to_str().ok())
+                .unwrap_or("unknown")
+                .to_string(),
+            principal.tenant_id.clone(),
+            principal
+                .roles
+                .iter()
+                .map(|r| format!("{:?}", r).to_lowercase())
+                .collect(),
+        );
+        event.sign(&ctx.audit_key);
+        let _ = ctx.audit_sink.write(event);
+        return Err(StatusCode::FORBIDDEN);
+    }
 
     // 3. 路由 → 所需权限（全覆盖兜底，无未映射空洞）
     let permission = required_permission(&path, &method);

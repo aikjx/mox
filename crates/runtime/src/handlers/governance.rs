@@ -47,9 +47,6 @@ pub struct GovernanceState {
     pub veto_broadcast: broadcast::Sender<VetoEvent>,
     /// WebSocket 广播通道（专家状态变化）
     pub state_broadcast: broadcast::Sender<ExpertStatusChange>,
-    /// 广播接收器容量
-    #[allow(dead_code)] // 预留：广播容量配置，待治理台运行时调优接口接入后启用
-    pub broadcast_capacity: usize,
 }
 
 impl Default for GovernanceState {
@@ -64,7 +61,6 @@ impl Default for GovernanceState {
             expert_config: Arc::new(RwLock::new(ExpertConfig::default())),
             veto_broadcast: veto_tx,
             state_broadcast: state_tx,
-            broadcast_capacity: 100,
         }
     }
 }
@@ -83,12 +79,6 @@ impl GovernanceState {
         let mut states = self.expert_states.write().await;
         states.insert(change.expert_id.clone(), change.new_status.clone());
         let _ = self.state_broadcast.send(change);
-    }
-
-    /// 查询专家状态（读取锁）
-    #[allow(dead_code)] // 预留：专家状态快照查询，待治理台轮询接口接入后启用
-    pub async fn get_expert_states(&self) -> HashMap<String, ExpertStatus> {
-        self.expert_states.read().await.clone()
     }
 
     /// 追加审计事件到内存链
@@ -822,7 +812,6 @@ pub async fn governance_ws_handler(
             let w_veto = write.clone();
             let veto_handle = tokio::spawn(async move {
                 let mut rx = veto_rx;
-                let mut w = w_veto.lock().await;
                 loop {
                     match rx.recv().await {
                         Ok(event) => {
@@ -830,7 +819,10 @@ pub async fn governance_ws_handler(
                                 "type": "veto_event",
                                 "data": event,
                             }).to_string());
+                            // 每次发送前短时持锁（避免跨 await 长期占用写半部，阻塞其他发送者）
+                            let mut w = w_veto.lock().await;
                             let _ = w.send(msg).await;
+                            drop(w);
                         }
                         Err(broadcast::error::RecvError::Lagged(n)) => {
                             tracing::warn!("WebSocket veto broadcast lagged {} messages", n);
@@ -843,7 +835,6 @@ pub async fn governance_ws_handler(
             let w_state = write.clone();
             let state_handle = tokio::spawn(async move {
                 let mut rx = state_rx;
-                let mut w = w_state.lock().await;
                 loop {
                     match rx.recv().await {
                         Ok(change) => {
@@ -851,7 +842,9 @@ pub async fn governance_ws_handler(
                                 "type": "expert_status_change",
                                 "data": change,
                             }).to_string());
+                            let mut w = w_state.lock().await;
                             let _ = w.send(msg).await;
+                            drop(w);
                         }
                         Err(broadcast::error::RecvError::Lagged(n)) => {
                             tracing::warn!("WebSocket state broadcast lagged {} messages", n);
@@ -864,14 +857,15 @@ pub async fn governance_ws_handler(
             // 监听客户端 ping（保活）
             let w_ping = write.clone();
             tokio::spawn(async move {
-                let mut w = w_ping.lock().await;
                 let mut ticker = tokio::time::interval(std::time::Duration::from_secs(30));
                 loop {
                     ticker.tick().await;
+                    let mut w = w_ping.lock().await;
                     // 发送失败说明连接已断开，终止保活任务，避免对死连接无限 ping 并长期占用写锁
                     if w.send(Message::Ping(vec![])).await.is_err() {
                         break;
                     }
+                    drop(w);
                 }
             });
 

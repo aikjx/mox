@@ -8,8 +8,6 @@
 //! 归一策略：一切来源经 `Connector` 归一为 `UnifiedNode/UnifiedEdge`，
 //! 以 URN 为主键做**幂等合并**（同 URN 多次接入不产生重复，且信息更全者胜出）。
 
-// 预留公开 API / 未接入管线的能力面（如插件总线、算子目录、优化器 DAG、RBAC 之外的合规结构）：显式允许 dead_code 而非删除，避免破坏能力面；后续接入时自然消除。
-#![allow(dead_code)]
 use std::collections::{HashMap, HashSet};
 
 use primiflow_fusion::{

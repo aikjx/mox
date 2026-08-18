@@ -12,8 +12,6 @@
 //! - DataInput/DataOutput: 输入输出
 //! - Parallel: 并行执行
 
-// 预留公开 API / 未接入管线的能力面（如插件总线、算子目录、优化器 DAG、RBAC 之外的合规结构）：显式允许 dead_code 而非删除，避免破坏能力面；后续接入时自然消除。
-#![allow(dead_code)]
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::Instant;
@@ -147,6 +145,22 @@ impl FlowEngine {
 
     pub fn delete_flow(&mut self, id: &str) -> bool {
         self.flows.remove(id).is_some()
+    }
+
+    /// 更新流程图：目标必须已存在，且更新后仍通过结构校验（Start/End/无环/边引用有效）。
+    pub fn update_flow(&mut self, flow: FlowDefinition) -> Result<FlowDefinition, FlowError> {
+        if !self.flows.contains_key(&flow.id) {
+            return Err(FlowError::InvalidConfig(format!(
+                "流程图不存在: {}（更新目标必须已创建）",
+                flow.id
+            )));
+        }
+        Self::validate_flow(&flow)?;
+        let now = chrono::Utc::now();
+        let mut updated = flow;
+        updated.updated_at = now;
+        self.flows.insert(updated.id.clone(), updated.clone());
+        Ok(updated)
     }
 
     pub fn validate_flow(flow: &FlowDefinition) -> Result<(), FlowError> {
@@ -856,6 +870,40 @@ mod tests {
             vec![FlowNode { id: "e".into(), node_type: NodeType::End, name: "E".into(), config: serde_json::json!({}), position: None }],
             vec![], HashMap::new());
         assert!(engine.create_flow(no_start).is_err());
+    }
+
+    #[test]
+    fn test_update_flow_requires_existing_and_validates() {
+        let mut engine = FlowEngine::new();
+        let def = def_with(
+            vec![
+                FlowNode { id: "s".into(), node_type: NodeType::Start, name: "S".into(), config: serde_json::json!({}), position: None },
+                FlowNode { id: "e".into(), node_type: NodeType::End, name: "E".into(), config: serde_json::json!({}), position: None },
+            ],
+            vec![FlowEdge { id: "se".into(), source: "s".into(), target: "e".into(), condition: None }],
+            HashMap::new());
+        let created = engine.create_flow(def.clone()).unwrap();
+        let id = created.id.clone();
+
+        // 更新不存在的 id → 报错
+        let mut ghost = def.clone();
+        ghost.id = "ghost".into();
+        assert!(engine.update_flow(ghost).is_err());
+
+        // 有效更新 → 成功且 updated_at 刷新
+        let mut updated = def;
+        updated.id = id;
+        updated.name = "改名后".into();
+        let before = created.updated_at;
+        let res = engine.update_flow(updated).unwrap();
+        assert_eq!(res.name, "改名后");
+        assert!(res.updated_at >= before);
+
+        // 更新后破坏校验（去 Start）→ 报错且原数据保持
+        let mut broken = engine.get_flow(&created.id).unwrap().clone();
+        broken.nodes.retain(|n| n.node_type != NodeType::Start);
+        assert!(engine.update_flow(broken).is_err());
+        assert_eq!(engine.get_flow(&created.id).unwrap().name, "改名后");
     }
 
     #[test]

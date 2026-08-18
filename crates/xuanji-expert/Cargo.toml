@@ -15,6 +15,8 @@ anyhow = "1"
 uuid = { version = "1", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde"] }
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "sync"] }
+# 双璇玑十四维专家并行派发（run_experts 真并行，消除串行假并行）
+rayon = "1.8"
 axum = "0.7"
 tower-http = { version = "0.5", features = ["cors", "fs"] }
 sha2 = "0.10"
