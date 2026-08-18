@@ -1,7 +1,11 @@
+target_regress
+
 *.err
 # Rust build artifacts
 /target
-target/
+**target**
+
+build
 
 melody2score/build
 

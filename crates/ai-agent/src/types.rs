@@ -624,7 +624,7 @@ mod tests {
         assert!(!u.id.is_empty() && !a.id.is_empty() && !s.id.is_empty());
         // 内容保留
         assert_eq!(u.content, "hello");
-        assert_eq!(a.referenced_operators.is_empty(), true);
+        assert!(a.referenced_operators.is_empty());
     }
 
     #[test]
@@ -636,7 +636,7 @@ mod tests {
         assert_eq!(msg.source_plugin, "src");
         assert_eq!(msg.target_plugin.as_deref(), Some("dst"));
         assert_eq!(msg.correlation_id.as_deref(), Some("corr-1"));
-        assert_eq!(msg.response_required, true);
+        assert!(msg.response_required);
         assert_eq!(msg.topic, "topic.a");
     }
 

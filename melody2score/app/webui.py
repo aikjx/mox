@@ -21,6 +21,7 @@ import time
 import traceback
 from typing import Dict, List, Optional
 
+import numpy as np
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -30,7 +31,7 @@ ROOT = os.path.dirname(HERE)
 os.sys.path.insert(0, ROOT)
 
 from core.config import Config                       # noqa: E402
-from core import capture, preprocess, pitch, analysis, score  # noqa: E402
+from core import capture                             # noqa: E402
 
 app = FastAPI(title="Melody2Score 企业级可视化转谱", version="1.0.0")
 # 关闭 pydantic 对 model_ 前缀的命名空间保护警告（我们使用 model_size 参数名）
@@ -47,63 +48,39 @@ os.makedirs(SAVE_DIR, exist_ok=True)
 MANIFEST_PATH = os.path.join(ROOT, "audio", "manifest.json")
 
 
-def _build_config(model_size: str, denoise: bool, threads: int, hop: int) -> Config:
+def _build_config(model_size: str, denoise: bool, threads: int, hop: int,
+                  robust: bool = True) -> Config:
     cfg = Config()
     cfg.model_size = model_size or cfg.model_size
     cfg.enable_denoise = denoise
+    cfg.robust = robust
     if threads and threads > 0:
         cfg.intra_op_threads = threads
     if hop and hop > 0:
         cfg.hop = hop
+    # 首选 crepe_onnx tiny（企业级默认，稳定可复现）
+    cfg.preferred_backend = "crepe_onnx"
     return cfg
 
 
 def _recognize_array(y, sr, cfg: Config) -> Dict:
-    """核心识别：返回结构化歌谱结果。所有计时用于精确的性能/精度审计。"""
-    t0 = time.time()
-    y = preprocess.preprocess(y, sr, cfg.enable_denoise)
-    t_pre = time.time() - t0
+    """核心识别：委托企业级编排器 Melody2Score，返回结构化歌谱结果。
 
-    t0 = time.time()
-    det = pitch.PitchDetector(
-        model_size=cfg.model_size, conf_thresh=cfg.conf_thresh, hop=cfg.hop,
-        intra_op_threads=cfg.intra_op_threads, backend="auto", sr=sr)
-    pts = det.detect(y, sr)
-    t_pitch = time.time() - t0
+    相比原手写拼装：统一接入稳健重识别共识、VAD、超时保护与完整计时，
+    修复此前 WebUI「单次识别、无共识、无超时」的稳定性缺口。
+    """
+    from core.pipeline import Melody2Score, load_audio_bytes
+    # WebUI 已自行解码为 (y, sr)，包成 record 源让编排器复用后续稳定逻辑。
+    return Melody2Score(cfg).recognize({"kind": "record", "data": _dump_wav(y, sr), "cfg": cfg})
 
-    t0 = time.time()
-    notes = analysis.segment_notes(pts, cfg.min_note_dur, cfg.median_win)
-    bpm = analysis.detect_bpm(y, sr, cfg.bpm_fallback)
-    key_name = analysis.estimate_key(y, sr, notes)
-    t_parse = time.time() - t0
 
-    jianpu = score.to_jianpu(notes, key_name, bpm)
+def _dump_wav(y, sr) -> bytes:
+    """把已解码的 (y, sr) 重新打包为 wav 字节，供编排器统一加载。"""
+    import soundfile as sf
+    buf = io.BytesIO()
+    sf.write(buf, np.asarray(y, dtype=np.float32), sr, format="WAV")
+    return buf.getvalue()
 
-    total_dur = float(notes[-1]["end"]) if notes else 0.0
-
-    notes_out = [{
-        "midi": int(n["midi"]),
-        "start": round(float(n["start"]), 4),
-        "end": round(float(n["end"]), 4),
-        "dur": round(float(n["end"] - n["start"]), 4),
-        "name": _midi_name(int(n["midi"])),
-    } for n in notes]
-
-    return {
-        "jianpu": jianpu,
-        "bpm": round(float(bpm), 1),
-        "key": {"tonic": key_name[0], "mode": key_name[1]},
-        "note_count": len(notes),
-        "duration_sec": round(total_dur, 2),
-        "backend": det.used_backend,
-        "notes": notes_out,
-        "perf": {
-            "preprocess_ms": round(t_pre * 1000, 1),
-            "pitch_ms": round(t_pitch * 1000, 1),
-            "parse_ms": round(t_parse * 1000, 1),
-            "pitch_frames": len(pts),
-        },
-    }
 
 
 def _midi_name(m: int) -> str:
@@ -132,8 +109,9 @@ async def recognize(file: UploadFile = File(...),
                     model_size: str = Form("tiny"),
                     denoise: bool = Form(True),
                     threads: int = Form(0),
-                    hop: int = Form(0)):
-    cfg = _build_config(model_size, denoise, threads, hop)
+                    hop: int = Form(0),
+                    robust: bool = Form(True)):
+    cfg = _build_config(model_size, denoise, threads, hop, robust)
     data = await file.read()
     try:
         y, sr = _load_bytes_fallback(data, cfg.sr)
@@ -160,8 +138,9 @@ def recognize_sample(name: str = Form(...),
                       model_size: str = Form("tiny"),
                       denoise: bool = Form(True),
                       threads: int = Form(0),
-                      hop: int = Form(0)):
-    cfg = _build_config(model_size, denoise, threads, hop)
+                      hop: int = Form(0),
+                      robust: bool = Form(True)):
+    cfg = _build_config(model_size, denoise, threads, hop, robust)
     if not os.path.exists(MANIFEST_PATH):
         raise HTTPException(404, "未找到 audio/manifest.json")
     with open(MANIFEST_PATH, encoding="utf-8") as f:
@@ -184,8 +163,9 @@ async def recognize_record(audio_b64: str = Form(...),
                             model_size: str = Form("tiny"),
                             denoise: bool = Form(True),
                             threads: int = Form(0),
-                            hop: int = Form(0)):
-    cfg = _build_config(model_size, denoise, threads, hop)
+                            hop: int = Form(0),
+                            robust: bool = Form(True)):
+    cfg = _build_config(model_size, denoise, threads, hop, robust)
     try:
         raw = base64.b64decode(audio_b64)
         y, sr = _load_bytes_fallback(raw, cfg.sr)

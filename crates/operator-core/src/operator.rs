@@ -34,7 +34,7 @@ pub trait Operator: Send + Sync + TypeCheck {
     /// 执行算子并返回完整结果（包含监控信息）
     fn execute(&self, input: &StateVector, ctx: &mut ExecutionContext) -> Result<ExecutionResult> {
         let start = Instant::now();
-        let initial_resources = ctx.resources.clone();
+        let initial_resources = ctx.resources;
 
         // 类型检查
         if ctx.config.enable_type_check {
@@ -52,7 +52,7 @@ pub trait Operator: Send + Sync + TypeCheck {
                     success: false,
                     output_state: None,
                     residual: f64::INFINITY,
-                    resources_used: ctx.resources.clone() - initial_resources,
+                    resources_used: ctx.resources - initial_resources,
                     execution_time_ms: start.elapsed().as_millis() as u64,
                     logs,
                     error: Some(e.to_string()),
@@ -66,7 +66,7 @@ pub trait Operator: Send + Sync + TypeCheck {
         // 守恒律检查在conservation模块中完成
 
         let execution_time = start.elapsed().as_millis() as u64;
-        let resources_used = ctx.resources.clone() - initial_resources;
+        let resources_used = ctx.resources - initial_resources;
 
         logs.push(format!(
             "算子 {} 执行完成，耗时 {}ms",

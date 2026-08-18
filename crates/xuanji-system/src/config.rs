@@ -36,17 +36,14 @@ impl Default for Quotas {
 
 /// 持久化后端类型（对应 Spring Boot 的多数据源抽象）
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
+#[derive(Default)]
 pub enum Backend {
+    #[default]
     Sqlite,
     Postgres,
     MySql,
 }
 
-impl Default for Backend {
-    fn default() -> Self {
-        Backend::Sqlite
-    }
-}
 
 impl Backend {
     pub fn parse(s: &str) -> Self {

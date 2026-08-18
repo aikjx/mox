@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 
 /// 事件总线
 pub struct EventBus {
-    /// 订阅映射：domain -> (event_type -> handlers)
-    subscriptions: RwLock<HashMap<String, HashMap<String, Vec<EventHandlerFn>>>>,
+    /// 订阅映射：domain -> (event_type -> [(subscription_id, handler)])
+    subscriptions: RwLock<HashMap<String, HashMap<String, Vec<(String, EventHandlerFn)>>>>,
 }
 
 impl EventBus {
@@ -18,38 +18,55 @@ impl EventBus {
         }
     }
 
-    /// 订阅事件
+    /// 订阅事件，返回带唯一 ID 的订阅凭证（用于精确取消订阅）
     pub async fn subscribe(
         &self,
         domain: String,
         event_type: String,
         handler: EventHandlerFn,
-    ) {
+    ) -> Subscription {
+        let id = uuid::Uuid::new_v4().to_string();
         let mut subs = self.subscriptions.write();
 
         subs.entry(domain.clone())
-            .or_insert_with(HashMap::new)
+            .or_default()
             .entry(event_type.clone())
-            .or_insert_with(Vec::new)
-            .push(handler);
+            .or_default()
+            .push((id.clone(), handler));
+
+        Subscription {
+            id,
+            domain,
+            event_type,
+        }
     }
 
-    /// 发送事件
+    /// 发送事件（按订阅注册顺序同步分发）
     pub async fn emit(&self, event: Event) {
         let subs = self.subscriptions.read();
 
         if let Some(domain_subs) = subs.get(&event.domain()) {
             if let Some(handlers) = domain_subs.get(&event.event_type()) {
-                for handler in handlers {
+                for (_id, handler) in handlers {
                     handler(event.payload());
                 }
             }
         }
     }
 
-    /// 取消订阅
-    pub async fn unsubscribe(&self, _subscription_id: &str) {
-        // TODO: 实现取消订阅逻辑
+    /// 取消订阅：按订阅 ID 精确移除，返回是否实际移除了订阅
+    pub async fn unsubscribe(&self, subscription_id: &str) -> bool {
+        let mut subs = self.subscriptions.write();
+        for domain_subs in subs.values_mut() {
+            for handlers in domain_subs.values_mut() {
+                let before = handlers.len();
+                handlers.retain(|(id, _)| id != subscription_id);
+                if handlers.len() != before {
+                    return true;
+                }
+            }
+        }
+        false
     }
 }
 
@@ -160,7 +177,7 @@ mod tests {
             })
         };
 
-        bus.subscribe("turn".to_string(), "started".to_string(), handler).await;
+        let sub = bus.subscribe("turn".to_string(), "started".to_string(), handler).await;
 
         bus.emit(Event::TurnStarted {
             turn_id: "test-turn".to_string(),
@@ -168,5 +185,53 @@ mod tests {
         }).await;
 
         assert!(called.load(std::sync::atomic::Ordering::SeqCst));
+
+        // 取消订阅后不再收到事件
+        assert!(bus.unsubscribe(&sub.id).await);
+        called.store(false, std::sync::atomic::Ordering::SeqCst);
+        bus.emit(Event::TurnStarted {
+            turn_id: "test-turn-2".to_string(),
+            agent_id: "test-agent".to_string(),
+        }).await;
+        assert!(!called.load(std::sync::atomic::Ordering::SeqCst));
+
+        // 重复取消返回 false
+        assert!(!bus.unsubscribe(&sub.id).await);
+    }
+
+    #[tokio::test]
+    async fn test_event_bus_isolated_handlers() {
+        let bus = EventBus::new();
+        let hits = Arc::new(std::sync::atomic::AtomicU32::new(0));
+
+        let mk = |hits: Arc<std::sync::atomic::AtomicU32>| {
+            Arc::new(move |_p: serde_json::Value| {
+                hits.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            })
+        };
+
+        let a = bus.subscribe("turn".to_string(), "started".to_string(), mk(hits.clone())).await;
+        let b = bus.subscribe("turn".to_string(), "started".to_string(), mk(hits.clone())).await;
+
+        bus.emit(Event::TurnStarted {
+            turn_id: "t".to_string(),
+            agent_id: "a".to_string(),
+        }).await;
+        assert_eq!(hits.load(std::sync::atomic::Ordering::SeqCst), 2);
+
+        // 只取消 a，b 仍接收
+        assert!(bus.unsubscribe(&a.id).await);
+        bus.emit(Event::TurnStarted {
+            turn_id: "t2".to_string(),
+            agent_id: "a".to_string(),
+        }).await;
+        assert_eq!(hits.load(std::sync::atomic::Ordering::SeqCst), 3);
+
+        assert!(bus.unsubscribe(&b.id).await);
+        bus.emit(Event::TurnStarted {
+            turn_id: "t3".to_string(),
+            agent_id: "a".to_string(),
+        }).await;
+        assert_eq!(hits.load(std::sync::atomic::Ordering::SeqCst), 3);
     }
 }

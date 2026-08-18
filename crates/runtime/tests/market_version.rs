@@ -409,6 +409,7 @@ fn dsl_conversion_chain() {
 static ASYNC_LOCK: OnceLock<TokioMutex<()>> = OnceLock::new();
 
 #[tokio::test]
+#[allow(clippy::await_holding_lock)] // 故意：TokioMutex guard 为 Send，跨 await 持有以串行化各异步测试对 OUS_HOME 的初始化
 async fn init_state_creates_seed_and_index() {
     // 与所有同步 env 测试共用 ENV_LOCK：保证 OUS_HOME 在本异步 init 期间不被并发改写/清理。
     let _env = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());

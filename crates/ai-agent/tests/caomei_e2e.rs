@@ -48,7 +48,7 @@ fn blueprint_to_flowgraph(bp: &SystemBlueprint) -> FlowGraph {
                 for item in items {
                     if let Some(s) = item.as_str() {
                         let table = s.to_lowercase();
-                        node = node.with_access(Access::write(&format!("db:{}.id", table)));
+                        node = node.with_access(Access::write(format!("db:{}.id", table)));
                     }
                 }
             }

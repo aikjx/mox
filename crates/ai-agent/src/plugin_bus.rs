@@ -7,6 +7,8 @@
 //! - 事件驱动协作
 //! - 消息路由与过滤
 
+// 预留公开 API / 未接入管线的能力面（如插件总线、算子目录、优化器 DAG、RBAC 之外的合规结构）：显式允许 dead_code 而非删除，避免破坏能力面；后续接入时自然消除。
+#![allow(dead_code)]
 use super::types::*;
 use operator_core::{Result, OperatorError};
 use std::collections::HashMap;
@@ -35,9 +37,9 @@ struct SubscriptionEntry {
     filter: Option<MessageFilter>,
 }
 
-/// 消息过滤器
+/// 消息过滤器（公开 API：`PluginBus::subscribe` 以 `Option<MessageFilter>` 暴露，故需 `pub`）
 #[derive(Clone)]
-enum MessageFilter {
+pub enum MessageFilter {
     /// 仅接收来自特定插件的消息
     FromPlugin(String),
     /// 自定义谓词
@@ -178,7 +180,7 @@ impl PluginBus {
     pub fn subscribe(&mut self, plugin_id: &str, topic: &str, filter: Option<MessageFilter>) {
         self.subscriptions
             .entry(topic.to_string())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(SubscriptionEntry {
                 plugin_id: plugin_id.to_string(),
                 filter,
@@ -454,8 +456,8 @@ mod tests {
         let mut bus = PluginBus::new();
         // bus 预置若干内置插件，注册后应 >= 2
         let before = bus.list_plugins().len();
-        bus.register(sample_plugin("p1", PluginStatus::Active, PluginType::Builtin));
-        bus.register(sample_plugin("p2", PluginStatus::Active, PluginType::Wasm));
+        bus.register(sample_plugin("p1", PluginStatus::Active, PluginType::Builtin)).unwrap();
+        bus.register(sample_plugin("p2", PluginStatus::Active, PluginType::Wasm)).unwrap();
 
         let plugins = bus.list_plugins();
         assert_eq!(plugins.len(), before + 2);
@@ -466,7 +468,7 @@ mod tests {
     #[tokio::test]
     async fn test_route_to_target_plugin_returns_ack() {
         let mut bus = PluginBus::new();
-        bus.register(sample_plugin("dst", PluginStatus::Active, PluginType::Wasm));
+        bus.register(sample_plugin("dst", PluginStatus::Active, PluginType::Wasm)).unwrap();
 
         let msg = PluginMessage::new("src", "test.topic", serde_json::json!({"x": 1}))
             .to_target("dst")
@@ -481,7 +483,7 @@ mod tests {
     #[tokio::test]
     async fn test_route_to_paused_plugin_returns_none() {
         let mut bus = PluginBus::new();
-        bus.register(sample_plugin("dst", PluginStatus::Paused, PluginType::Wasm));
+        bus.register(sample_plugin("dst", PluginStatus::Paused, PluginType::Wasm)).unwrap();
 
         let msg = PluginMessage::new("src", "test.topic", serde_json::json!({"x": 1}))
             .to_target("dst")
@@ -503,7 +505,7 @@ mod tests {
     #[test]
     fn test_unregister_removes_plugin() {
         let mut bus = PluginBus::new();
-        bus.register(sample_plugin("p1", PluginStatus::Active, PluginType::Builtin));
+        bus.register(sample_plugin("p1", PluginStatus::Active, PluginType::Builtin)).unwrap();
         assert!(bus.get_plugin("p1").is_some());
         assert!(bus.unregister("p1"));
         assert!(bus.get_plugin("p1").is_none());
@@ -513,7 +515,7 @@ mod tests {
     #[test]
     fn test_set_plugin_status() {
         let mut bus = PluginBus::new();
-        bus.register(sample_plugin("p1", PluginStatus::Active, PluginType::Builtin));
+        bus.register(sample_plugin("p1", PluginStatus::Active, PluginType::Builtin)).unwrap();
         bus.set_plugin_status("p1", PluginStatus::Paused).unwrap();
         assert_eq!(bus.get_plugin("p1").unwrap().status, PluginStatus::Paused);
         assert!(bus.set_plugin_status("ghost", PluginStatus::Active).is_err());
@@ -522,7 +524,7 @@ mod tests {
     #[test]
     fn test_get_topology_lists_plugins_and_topics() {
         let mut bus = PluginBus::new();
-        bus.register(sample_plugin("p1", PluginStatus::Active, PluginType::Builtin));
+        bus.register(sample_plugin("p1", PluginStatus::Active, PluginType::Builtin)).unwrap();
         let topo = bus.get_topology();
         assert!(topo.plugins.iter().any(|p| p.id == "p1"));
     }
@@ -546,7 +548,7 @@ mod tests {
     #[tokio::test]
     async fn test_request_response_success() {
         let mut bus = PluginBus::new();
-        bus.register(sample_plugin("svc", PluginStatus::Active, PluginType::Wasm));
+        bus.register(sample_plugin("svc", PluginStatus::Active, PluginType::Wasm)).unwrap();
         let resp = bus.request_response("svc", "svc.ping", serde_json::json!({"a":1}), 1000).await.unwrap();
         assert_eq!(resp.topic, "ack");
     }
@@ -554,8 +556,8 @@ mod tests {
     #[tokio::test]
     async fn test_subscribe_and_route_broadcast() {
         let mut bus = PluginBus::new();
-        bus.register(sample_plugin("a", PluginStatus::Active, PluginType::Builtin));
-        bus.register(sample_plugin("b", PluginStatus::Active, PluginType::Wasm));
+        bus.register(sample_plugin("a", PluginStatus::Active, PluginType::Builtin)).unwrap();
+        bus.register(sample_plugin("b", PluginStatus::Active, PluginType::Wasm)).unwrap();
         // a 订阅 ai.converse
         bus.subscribe("a", "ai.converse", None);
         let msg = PluginMessage::new("user", "ai.converse", serde_json::json!({"c":"hi"}));

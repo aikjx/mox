@@ -43,13 +43,16 @@ impl LifecycleManager {
         turn_id: &str,
         step: Step,
     ) -> Result<StepResult, String> {
-        let mut active_turns = self.active_turns.write();
-
-        if let Some(turn) = active_turns.get_mut(turn_id) {
-            turn.execute_step(step).await
-        } else {
-            Err(format!("Turn not found: {}", turn_id))
-        }
+        // 先取出 turn 并立即释放写锁，避免持同步锁跨 await（死锁风险）
+        let mut turn = self
+            .active_turns
+            .write()
+            .remove(turn_id)
+            .ok_or_else(|| format!("Turn not found: {}", turn_id))?;
+        let result = turn.execute_step(step).await;
+        // 执行完毕写回活动表（execute_step 未完成 turn，需保留）
+        self.active_turns.write().insert(turn_id.to_string(), turn);
+        result
     }
 
     /// 完成Turn

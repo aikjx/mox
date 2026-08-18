@@ -149,7 +149,7 @@ pub struct OperatorMetadata {
 
 /// 生成唯一算子ID
 pub fn generate_operator_id() -> String {
-    format!("op-{}", uuid::Uuid::new_v4().to_string()[..8].to_string())
+    format!("op-{}", &uuid::Uuid::new_v4().to_string()[..8])
 }
 
 /// 初始化日志

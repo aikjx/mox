@@ -12,6 +12,8 @@
 //! - DataInput/DataOutput: 输入输出
 //! - Parallel: 并行执行
 
+// 预留公开 API / 未接入管线的能力面（如插件总线、算子目录、优化器 DAG、RBAC 之外的合规结构）：显式允许 dead_code 而非删除，避免破坏能力面；后续接入时自然消除。
+#![allow(dead_code)]
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::Instant;
@@ -235,7 +237,7 @@ impl FlowEngine {
             // 更新变量
             if let Some(ref out) = output_data {
                 variables.insert(format!("node_{}", node_id_for_log), out.clone());
-                variables.insert(format!("last_output"), out.clone());
+                variables.insert("last_output".to_string(), out.clone());
             }
 
             // End节点
@@ -506,11 +508,10 @@ fn detect_cycle(adj: &HashMap<String, Vec<String>>) -> bool {
     let mut stack = std::collections::HashSet::new();
     
     for node in adj.keys() {
-        if !visited.contains(node) {
-            if dfs_cycle(node, adj, &mut visited, &mut stack) {
+        if !visited.contains(node)
+            && dfs_cycle(node, adj, &mut visited, &mut stack) {
                 return true;
             }
-        }
     }
     false
 }
@@ -529,11 +530,10 @@ fn dfs_cycle(
             if stack.contains(neighbor) {
                 return true;
             }
-            if !visited.contains(neighbor) {
-                if dfs_cycle(neighbor, adj, visited, stack) {
+            if !visited.contains(neighbor)
+                && dfs_cycle(neighbor, adj, visited, stack) {
                     return true;
                 }
-            }
         }
     }
     stack.remove(node);
@@ -587,7 +587,7 @@ pub fn evaluate_condition(condition: &str, variables: &HashMap<String, serde_jso
     } else {
         // 检查是否是存在性检查
         if resolved.contains("{{") { return true; } // 还有未解析变量，默认true
-        resolved.is_empty() == false
+        !resolved.is_empty()
     }
 }
 
@@ -698,7 +698,7 @@ fn simple_math(expr: &str) -> Option<f64> {
                 "+" => a + b,
                 "-" => a - b,
                 "*" => a * b,
-                "/" => if b != 0.0 { a / b } else { return None },
+                "/" if b != 0.0 => a / b,
                 _ => return None,
             });
         }

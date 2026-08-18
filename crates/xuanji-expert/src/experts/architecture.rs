@@ -132,11 +132,10 @@ fn has_circular_dependency(units: &[CodeUnit]) -> bool {
     let dep_map = build_dep_map(units);
     let mut color: HashMap<String, u8> = HashMap::new(); // 0=白 1=灰 2=黑
     for id in dep_map.keys() {
-        if color.get(id).copied().unwrap_or(0) == 0 {
-            if dfs_has_cycle(id, &dep_map, &mut color) {
+        if color.get(id).copied().unwrap_or(0) == 0
+            && dfs_has_cycle(id, &dep_map, &mut color) {
                 return true;
             }
-        }
     }
     false
 }
@@ -150,11 +149,10 @@ fn dfs_has_cycle(
     for next in dep_map.get(id).cloned().unwrap_or_default() {
         match color.get(&next).copied().unwrap_or(0) {
             1 => return true,            // 灰节点 => 环
-            0 => {
-                if dfs_has_cycle(&next, dep_map, color) {
+            0
+                if dfs_has_cycle(&next, dep_map, color) => {
                     return true;
                 }
-            }
             _ => {}
         }
     }

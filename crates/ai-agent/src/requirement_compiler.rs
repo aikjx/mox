@@ -126,7 +126,7 @@ impl RuleExtractor {
         let mut phrases = Vec::new();
         // 中文常见分隔：逗号、顿号、分号、句号、以及"有/包括/包含"之后的列举
         let parts: Vec<&str> = text
-            .split(|c| matches!(c, '，' | ',' | '、' | '；' | ';' | '。' | '.' | '\n'))
+            .split(['，', ',', '、', '；', ';', '。', '.', '\n'])
             .map(|s| s.trim())
             .filter(|s| !s.is_empty())
             .collect();
@@ -449,7 +449,7 @@ impl RequirementCompiler {
             position: Some(Position { x: 100.0, y: 120.0 + features.len() as f64 * 90.0 }),
         });
         edges.push(FlowEdge {
-            id: format!("e_end"),
+            id: "e_end".to_string(),
             source: prev,
             target: "end".into(),
             condition: None,

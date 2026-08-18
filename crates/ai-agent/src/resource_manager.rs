@@ -3,6 +3,8 @@
 //! 统一管理CPU、内存、GPU、插件、算子、工作流等所有资源
 //! 实现资源分配、回收、监控、调度和配额管理
 
+// 预留公开 API / 未接入管线的能力面（如插件总线、算子目录、优化器 DAG、RBAC 之外的合规结构）：显式允许 dead_code 而非删除，避免破坏能力面；后续接入时自然消除。
+#![allow(dead_code)]
 use super::types::*;
 use operator_core::{Result, OperatorError};
 use std::collections::HashMap;
@@ -47,9 +49,10 @@ struct WorkflowContext {
     status: String,
 }
 
-/// 资源使用快照
+/// 资源使用快照（公开 API：`ResourceManager::get_usage_history` 以 `Vec<ResourceUsageSnapshot>` 返回，故需 `pub`）
 #[derive(Debug, Clone)]
-struct ResourceUsageSnapshot {
+#[allow(dead_code)] // 公开快照结构：字段由外部消费方读取，库内仅构造
+pub struct ResourceUsageSnapshot {
     timestamp: chrono::DateTime<Utc>,
     usage: HashMap<ResourceType, f64>,
 }

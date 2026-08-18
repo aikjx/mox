@@ -23,10 +23,10 @@ pub fn tool_kind_of(name: &str) -> ToolKind {
         ToolKind::Browser
     } else if n.contains("db") || n.contains("sql") || n.contains("database") {
         ToolKind::Database
-    } else if n.contains("file") || n.contains("read") || n.contains("write") || n.contains("fs") {
-        ToolKind::File
-    } else if n.contains("excel") || n.contains("sheet") || n.contains("csv") {
-        ToolKind::File // Excel/CSV 归入 File
+    } else if n.contains("file") || n.contains("read") || n.contains("write") || n.contains("fs")
+        || n.contains("excel") || n.contains("sheet") || n.contains("csv")
+    {
+        ToolKind::File // Excel/CSV 也归入 File
     } else if n.contains("compute") || n.contains("math") || n.contains("transform") {
         ToolKind::Compute
     } else {

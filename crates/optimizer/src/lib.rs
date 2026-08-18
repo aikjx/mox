@@ -3,6 +3,8 @@
 //! 实现公理5：资源约束优化
 //! 基于DAG的算子调度，最小化资源消耗和执行时间
 
+// 预留公开 API / 未接入管线的能力面（如插件总线、算子目录、优化器 DAG、RBAC 之外的合规结构）：显式允许 dead_code 而非删除，避免破坏能力面；后续接入时自然消除。
+#![allow(dead_code)]
 use operator_core::operator::Operator;
 use operator_core::resource::ResourceCost;
 use petgraph::graph::{DiGraph, NodeIndex};

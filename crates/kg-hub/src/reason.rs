@@ -106,7 +106,7 @@ pub fn impact(graph: &UnifiedGraph, origin: &str, hops: usize) -> ImpactReport {
                 if !seen.insert(nb) {
                     continue;
                 }
-                if let Some(n) = graph.node(*nb) {
+                if let Some(n) = graph.node(nb) {
                     *by_kind.entry(n.kind.zh().to_string()).or_insert(0) += 1;
                     affected.push(ImpactNode {
                         id: (*nb).to_string(),

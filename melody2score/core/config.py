@@ -5,7 +5,9 @@ from dataclasses import dataclass
 
 @dataclass
 class Config:
+    # ---- 音高检测（架构首选：crepe_onnx tiny，稳定可复现） ----
     sr: int = 16000                 # 采样率（Crepe 输入即 16k，不必再降）
+    preferred_backend: str = "crepe_onnx"  # 首选后端（auto 时以此为第一优先）
     conf_thresh: float = 0.3        # 音高置信度阈值，低于则判为无声/噪声
     model_size: str = "tiny"        # crepe_onnx 模型：tiny/small/full
     hop: int = 10                   # 音高帧移（毫秒），越大越快、精度略降
@@ -13,6 +15,7 @@ class Config:
     median_win: int = 5             # midi 轮廓中值滤波窗，去颤音/抖动
     enable_denoise: bool = True     # 是否做谱减降噪（开发板可关以省内存）
     intra_op_threads: int = 0       # onnxruntime 单算子线程数（0=默认）
+    inference_timeout: float = 60.0 # 单次音高推理超时（秒），超时强制降级，防 UI 卡死
     bpm_fallback: float = 120.0     # BPM 检测失败时的兜底速度
 
     # ---- 人声模式（识别人唱歌/哼唱，默认开启） ----

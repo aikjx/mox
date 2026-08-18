@@ -58,6 +58,22 @@ components:
           type: string
           description: 业务错误码（扩展字段）
       required: [title, detail]
+    AuditEvent:
+      type: object
+      description: RBAC 访问审计事件（HMAC 签名防篡改）
+      properties:
+        id: { type: string }
+        timestamp: { type: integer }
+        actor: { type: string, description: 令牌脱敏标识（前 8 字符） }
+        action: { type: string, description: '如: POST /api/execute' }
+        resource: { type: string }
+        outcome: { type: string, enum: [allowed, forbidden] }
+        session_id: { type: string }
+        client_ip: { type: string }
+        tenant_id: { type: string }
+        roles: { type: array, items: { type: string } }
+        content_hash: { type: string }
+        signature: { type: string, nullable: true }
     OperatorInfo:
       type: object
       properties:
@@ -156,9 +172,41 @@ paths:
   /api/logs:
     get:
       tags: [system]
-      summary: 执行日志
+      summary: 执行日志（信封格式 {logs: [...]}）
+      security: [{ bearerAuth: [] }]
       responses:
-        '200': { description: 日志列表 }
+        '200':
+          description: 执行日志
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logs:
+                    type: array
+                    description: 算子执行记录
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/audit:
+    get:
+      tags: [system]
+      summary: RBAC 访问审计（放行/拒绝双向留痕，HMAC 签名）
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: 访问审计事件
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  audit:
+                    type: array
+                    items: { $ref: '#/components/schemas/AuditEvent' }
+                  total:
+                    type: integer
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /api/operators:
     get:
       tags: [operators]

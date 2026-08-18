@@ -158,7 +158,7 @@ impl Operator for Workflow {
 
     fn execute(&self, input: &StateVector, ctx: &mut ExecutionContext) -> Result<ExecutionResult> {
         let start = std::time::Instant::now();
-        let initial_resources = ctx.resources.clone();
+        let initial_resources = ctx.resources;
         let mut all_logs = Vec::new();
         let mut current = input.clone();
 
@@ -170,7 +170,7 @@ impl Operator for Workflow {
                     success: false,
                     output_state: None,
                     residual: result.residual,
-                    resources_used: ctx.resources.clone() - initial_resources,
+                    resources_used: ctx.resources - initial_resources,
                     execution_time_ms: start.elapsed().as_millis() as u64,
                     logs: all_logs,
                     error: result.error,
@@ -184,7 +184,7 @@ impl Operator for Workflow {
             success: true,
             output_state: Some(current),
             residual: 0.0,
-            resources_used: ctx.resources.clone() - initial_resources,
+            resources_used: ctx.resources - initial_resources,
             execution_time_ms: start.elapsed().as_millis() as u64,
             logs: all_logs,
             error: None,

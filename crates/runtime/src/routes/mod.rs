@@ -9,4 +9,3 @@
 pub mod market;
 
 pub mod governance;
-pub use governance::governance_routes;
