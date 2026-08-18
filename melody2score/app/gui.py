@@ -453,6 +453,8 @@ class MainWindow(QMainWindow):
         self.resize(1760, 1080)
         self.current = None
         self.pending_file = None
+        self._pending_bytes = None
+        self._pending_sample_path = None
         self._raw_y = None
         self._raw_sr = 22050
         self._apply_style()
@@ -742,23 +744,24 @@ class MainWindow(QMainWindow):
     def pick_file(self):
         path, _ = QFileDialog.getOpenFileName(
             self, "选择音频", "", "音频 (*.wav *.mp3 *.flac *.ogg *.m4a)")
-        if path:
-            self.pending_file = path
-            self.lblFile.setText(os.path.basename(path))
-            self.btnPreview.setEnabled(True)
-            self.status.setText(f"已选择：{os.path.basename(path)}，开始识别…")
-            try:
-                self._raw_y, self._raw_sr = load_audio_bytes(open(path, "rb").read(), 22050)
-            except Exception as e:
-                self._raw_y = None
-                self.status.setText(f"已选择（试听加载失败：{e}）")
-            self.run_file()
-            # 缓存原始波形用于试听
-            try:
-                self._raw_y, self._raw_sr = load_audio_bytes(open(path, "rb").read(), 22050)
-            except Exception as e:
-                self._raw_y = None
-                self.status.setText(f"已选择（试听加载失败：{e}）")
+        if not path:
+            return
+        self.pending_file = path
+        self.lblFile.setText(os.path.basename(path))
+        self.btnPreview.setEnabled(True)
+        # 只读取一次文件字节，识别与试听共用，避免 UI 线程重复 I/O 解码造成卡顿
+        try:
+            with open(path, "rb") as f:
+                self._pending_bytes = f.read()
+        except Exception as e:
+            self._pending_bytes = None
+            self.status.setText(f"文件读取失败：{e}")
+            return
+        # 试听波形延迟到真正点击「试听原曲」时再解码，避免选文件即阻塞主线程
+        self._raw_y = None
+        self._raw_sr = None
+        self.status.setText(f"已选择：{os.path.basename(path)}，开始识别…")
+        self.run_file()
 
     def record(self):
         """打开录音对话框（含 3-2-1 准备倒计时 + 实时剩余秒数 + 电平动画），
@@ -809,8 +812,16 @@ class MainWindow(QMainWindow):
     def run_file(self):
         if not self.pending_file:
             return
-        with open(self.pending_file, "rb") as f:
-            data = f.read()
+        # 优先复用 pick_file 已读取的字节，避免重复磁盘 I/O
+        if getattr(self, "_pending_bytes", None):
+            data = self._pending_bytes
+        else:
+            try:
+                with open(self.pending_file, "rb") as f:
+                    data = f.read()
+            except Exception as e:
+                self.status.setText(f"文件读取失败：{e}")
+                return
         self._start({"kind": "file", "data": data, "cfg": self._cfg(),
                      "source": os.path.basename(self.pending_file)})
 
@@ -818,18 +829,15 @@ class MainWindow(QMainWindow):
         if not self.sampleCombo.isEnabled():
             return
         file_rel = self.sampleCombo.currentData()
-        # 选中即缓存原曲波形，使左侧「试听原曲」可复听
+        # 延迟解码：仅缓存样例路径，切换下拉不再同步解码（避免卡顿）；
+        # 真正试听时由 preview_original 解码一次并复用
         item = self._sample_by_file(file_rel)
+        self._pending_sample_path = None
         if item:
             path = os.path.join(ROOT, item["file"])
             if os.path.exists(path):
-                with open(path, "rb") as f:
-                    try:
-                        y, sr = load_audio_bytes(f.read(), 22050)
-                        self._raw_y, self._raw_sr = y, sr
-                        self.btnPreview.setEnabled(True)
-                    except Exception:
-                        pass
+                self._pending_sample_path = path
+                self.btnPreview.setEnabled(True)
         self._start({"kind": "sample", "name": file_rel, "cfg": self._cfg(),
                      "source": file_rel})
 
@@ -971,13 +979,32 @@ class MainWindow(QMainWindow):
         QMessageBox.critical(self, "识别失败", msg)
 
     def preview_original(self):
-        """试听已选择的原曲（mp3/wav 等）。"""
-        if getattr(self, "_raw_y", None) is None:
-            QMessageBox.information(self, "试听", "尚未载入可播放的音频。")
-            return
-        raw = self._raw_y
+        """试听已选择的原曲（mp3/wav 等）。
+
+        延迟解码：若选文件时未解码（为不卡 UI 线程），这里首次试听时
+        用缓存字节即时解码一次并复用，避免二次磁盘读取。
+        """
+        raw = getattr(self, "_raw_y", None)
         if raw is None:
-            return
+            pending = getattr(self, "_pending_bytes", None)
+            if pending:
+                try:
+                    self._raw_y, self._raw_sr = load_audio_bytes(pending, 22050)
+                    raw = self._raw_y
+                except Exception as e:
+                    QMessageBox.critical(self, "试听失败", f"解码原曲出错：{e}")
+                    return
+            elif getattr(self, "_pending_sample_path", None):
+                try:
+                    with open(self._pending_sample_path, "rb") as f:
+                        self._raw_y, self._raw_sr = load_audio_bytes(f.read(), 22050)
+                    raw = self._raw_y
+                except Exception as e:
+                    QMessageBox.critical(self, "试听失败", f"解码原曲出错：{e}")
+                    return
+            if raw is None:
+                QMessageBox.information(self, "试听", "尚未载入可播放的音频。")
+                return
         try:
             self.status.setText("正在播放原曲…")
             play_raw(raw, self._raw_sr)

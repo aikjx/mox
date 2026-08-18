@@ -68,14 +68,14 @@ def _recognize_array(y, sr, cfg: Config) -> Dict:
 
     相比原手写拼装：统一接入稳健重识别共识、VAD、超时保护与完整计时，
     修复此前 WebUI「单次识别、无共识、无超时」的稳定性缺口。
+    已解码的 (y, sr) 直接以 "array" 源传入，避免无谓的 wav 编解码往返。
     """
-    from core.pipeline import Melody2Score, load_audio_bytes
-    # WebUI 已自行解码为 (y, sr)，包成 record 源让编排器复用后续稳定逻辑。
-    return Melody2Score(cfg).recognize({"kind": "record", "data": _dump_wav(y, sr), "cfg": cfg})
+    from core.pipeline import Melody2Score
+    return Melody2Score(cfg).recognize({"kind": "array", "y": y, "sr": sr, "cfg": cfg})
 
 
 def _dump_wav(y, sr) -> bytes:
-    """把已解码的 (y, sr) 重新打包为 wav 字节，供编排器统一加载。"""
+    """把已解码的 (y, sr) 重新打包为 wav 字节，供需要字节源的路径使用。"""
     import soundfile as sf
     buf = io.BytesIO()
     sf.write(buf, np.asarray(y, dtype=np.float32), sr, format="WAV")
@@ -111,6 +111,7 @@ async def recognize(file: UploadFile = File(...),
                     threads: int = Form(0),
                     hop: int = Form(0),
                     robust: bool = Form(True)):
+    import anyio
     cfg = _build_config(model_size, denoise, threads, hop, robust)
     data = await file.read()
     try:
@@ -118,7 +119,9 @@ async def recognize(file: UploadFile = File(...),
     except Exception as e:
         raise HTTPException(400, f"音频解码失败: {e}")
     try:
-        res = _recognize_array(y, sr, cfg)
+        # 识别是 CPU 密集且耗时（长音频可达数秒），放到线程池执行，
+        # 避免阻塞 FastAPI 事件循环导致其它请求卡顿（并发稳定性）。
+        res = await anyio.to_thread.run_sync(_recognize_array, y, sr, cfg)
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(500, f"识别失败: {e}")
@@ -134,12 +137,13 @@ def _load_bytes_fallback(data: bytes, sr: int):
 
 
 @app.post("/api/recognize-sample")
-def recognize_sample(name: str = Form(...),
-                      model_size: str = Form("tiny"),
-                      denoise: bool = Form(True),
-                      threads: int = Form(0),
-                      hop: int = Form(0),
-                      robust: bool = Form(True)):
+async def recognize_sample(name: str = Form(...),
+                            model_size: str = Form("tiny"),
+                            denoise: bool = Form(True),
+                            threads: int = Form(0),
+                            hop: int = Form(0),
+                            robust: bool = Form(True)):
+    import anyio
     cfg = _build_config(model_size, denoise, threads, hop, robust)
     if not os.path.exists(MANIFEST_PATH):
         raise HTTPException(404, "未找到 audio/manifest.json")
@@ -150,7 +154,7 @@ def recognize_sample(name: str = Form(...),
         raise HTTPException(404, f"样例不存在: {name}")
     y = capture.load_audio(os.path.join(ROOT, item["file"]), cfg.sr)
     try:
-        res = _recognize_array(y, cfg.sr, cfg)
+        res = await anyio.to_thread.run_sync(_recognize_array, y, cfg.sr, cfg)
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(500, f"识别失败: {e}")
@@ -165,6 +169,7 @@ async def recognize_record(audio_b64: str = Form(...),
                             threads: int = Form(0),
                             hop: int = Form(0),
                             robust: bool = Form(True)):
+    import anyio
     cfg = _build_config(model_size, denoise, threads, hop, robust)
     try:
         raw = base64.b64decode(audio_b64)
@@ -172,7 +177,7 @@ async def recognize_record(audio_b64: str = Form(...),
     except Exception as e:
         raise HTTPException(400, f"录音解码失败: {e}")
     try:
-        res = _recognize_array(y, cfg.sr, cfg)
+        res = await anyio.to_thread.run_sync(_recognize_array, y, cfg.sr, cfg)
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(500, f"识别失败: {e}")
