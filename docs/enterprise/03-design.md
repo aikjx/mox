@@ -298,7 +298,7 @@ server ──▶ sys.assign_task(actor, id, list)
 | GET | `/api/ws?token=` | 已登录 | WebSocket 通知 |
 | GET | `/api/audit` | AuditView | 审计查询 |
 
-> 完整契约与请求/响应 schema 见 `crates/xuanji-system/src/server.rs`；融合端点见 `docs/business-process-flowcharts.md` §8。
+> 完整契约与请求/响应 schema 见 `crates/xuanji-system/src/server.rs`；融合端点见 `docs/modules/business-process-flowcharts.md` §8。
 
 ---
 

@@ -1,6 +1,6 @@
 ﻿# 算子统一系统（OUS）企业级架构分析 · 全维度
 
-> 本文档是 `architecture.md`(v7.0) 的**分析补充与演进追踪**，聚焦：
+> 本文档是 `docs/architecture.md`(v7.0) 的**分析补充与演进追踪**，聚焦：
 > 1. 基于现网 `crates/` 代码事实的架构对齐校验（代码 vs 文档）；
 > 2. 双璇玑十四维维度模型（业务七维 + 开发七维）及其在 `xuanji-expert` 的落点；
 > 3. 全维度能力覆盖矩阵（所有功能明确化）；
@@ -35,7 +35,7 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 | `derive` | 过程宏（Seam/插件派生） | — |
 | `hermes-flow-bridge` | 外部流引擎桥接（含 yaml 契约） | `*.yaml` |
 
-**结论**：`architecture.md` 第 2、6、12、28 章的分层与 crate 映射**一致**。
+**结论**：`docs/architecture.md` 第 2、6、12、28 章的分层与 crate 映射**一致**。
 
 ### 1.2 决策内核校验（最关键）
 
@@ -55,19 +55,19 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 
 **新增 `sensitivity.rs`**：`Sensitive` 维度的敏感判定逻辑（SSOT 常量 `SENSITIVE_FIELDS` / `SENSITIVE_PATTERNS` / `SENSITIVE_KW`），与 `security.rs` 的 STRIDE 形成"通用安全 + 数据敏感"双保险。
 
-**结论**：`architecture.md` 第 19 章"七位专家"描述仍正确，但需补充说明"十四维维度模型 + `CodeIR` 双璇玑"——本文第 2 节补全。
+**结论**：`docs/architecture.md` 第 19 章"七位专家"描述仍正确，但需补充说明"十四维维度模型 + `CodeIR` 双璇玑"——本文第 2 节补全。
 
 ### 1.3 治理闸门与最高权限校验
 
 `govern.rs`：`apply_rules` / `govern` / `GateResult` / `AuditChain`；`verify.rs`：`verify` / `AlgoVerification`（**璇玑，最高权限，不可被治理覆盖**）。`pipeline.rs::xuanji_optimize` 输出 `GovernanceReport{expert_scores, optimization, algo, gate, audit, adopted_suggestions}`。
 
-**结论**：与 `architecture.md` 第 10.3、19 章一致；`adopted_suggestions` 已在 P1 中显式对外暴露（此前专家建议停留在 `ExpertOpinion` 不被消费，现已修复）。
+**结论**：与 `docs/architecture.md` 第 10.3、19 章一致；`adopted_suggestions` 已在 P1 中显式对外暴露（此前专家建议停留在 `ExpertOpinion` 不被消费，现已修复）。
 
 ### 1.4 插件化运行时
 
 `harness.rs`：`HarnessCtx` / `HarnessProfile` / `ExpertPlugin` / `WaterfallEvent`（`PreGate`/`PostGate` 等扩展点）/ `ModelAdapterConfig`。`pipeline.rs` 以插件方式装载 7 业务专家 + PostGate 审计钩子。
 
-**结论**：与 `architecture.md` 第 3 章（Profile/Bundle/Seam/事件域）一致。
+**结论**：与 `docs/architecture.md` 第 3 章（Profile/Bundle/Seam/事件域）一致。
 
 ---
 
@@ -141,14 +141,14 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 | 数据 | 血缘/脱敏/合规 | `experts/data.rs` | ✅ |
 | 可观测 | 埋点/SLA/追踪 | `experts/observability.rs` | ✅ |
 | 需求 | 自然语言→规格→CodeIR | `ai-agent::requirement_compiler` | ✅（新增） |
-| 设计器 | 可视化流程设计/DSL/校验/版本 | `frontend/` + `architecture.md` §28 | ✅ |
+| 设计器 | 可视化流程设计/DSL/校验/版本 | `frontend/` + `docs/architecture.md` §28 | ✅ |
 | 模板市场 | 设计器产物分发/复用 | `template-market` | ✅ |
 | 桥接 | 外部流引擎契约 | `hermes-flow-bridge` | ✅ |
-| 多模态 | 文/图/音/视频/结构化统一算子 | `architecture.md` §22 | 📋 设计就绪 |
-| 记忆 | 短/长/程序性记忆 | `architecture.md` §23 | 📋 设计就绪 |
-| 评测 | 公理门禁 + 行为回归 | `architecture.md` §24 | 📋 设计就绪 |
-| FinOps | 四形态成本模型 | `architecture.md` §17 | 📋 设计就绪 |
-| 灾备 | WAL 重放 + 快照 + 混沌 | `architecture.md` §16 | 📋 设计就绪 |
+| 多模态 | 文/图/音/视频/结构化统一算子 | `docs/architecture.md` §22 | 📋 设计就绪 |
+| 记忆 | 短/长/程序性记忆 | `docs/architecture.md` §23 | 📋 设计就绪 |
+| 评测 | 公理门禁 + 行为回归 | `docs/architecture.md` §24 | 📋 设计就绪 |
+| FinOps | 四形态成本模型 | `docs/architecture.md` §17 | 📋 设计就绪 |
+| 灾备 | WAL 重放 + 快照 + 混沌 | `docs/architecture.md` §16 | 📋 设计就绪 |
 
 > ✅ = 代码已落地；📋 = 架构文档已设计、待代码充实。
 
@@ -170,8 +170,8 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 1. ~~**维度治理可视化**：前端设计器应展示十四维健康分雷达图（直接消费 `GovernanceReport.expert_scores`）~~ → **已完成（2026-08-16）**：`runtime` 暴露 `/api/xuanji/health`、`/api/xuanji/optimize`，`MonitorView.vue` 以 ECharts 雷达展示双璇玑十四维健康分 + 采纳建议列表 + 蓝图载入治理。
 2. **开发七维常驻化**：当前开发专家需 `CodeIR` 才并入；建议对"存量代码仓库治理"提供批量 `CodeIR` 提取器（AST 扫描），使开发璇玑可独立运行。
 3. **敏感判定误报治理**：`SENSITIVE_PATTERNS` 为静态正则，建议叠加语义识别（上下文相关字段）并支持租户自定义词表，避免脱敏过严/过松。
-4. **璇玑校验可解释**：`AlgoVerification` 应产出可读的"为何通过/拦截"报告，供审计与合规导出（对接 `architecture.md` §24 Eval）。
-5. **灾备与治理联动**：`govern` 审计链应可重放（WAL），当前 `AuditChain` 为内存结构，需对接 `architecture.md` §16 持久化。
+4. **璇玑校验可解释**：`AlgoVerification` 应产出可读的"为何通过/拦截"报告，供审计与合规导出（对接 `docs/architecture.md` §24 Eval）。
+5. **灾备与治理联动**：`govern` 审计链应可重放（WAL），当前 `AuditChain` 为内存结构，需对接 `docs/architecture.md` §16 持久化。
 6. **多租户维度隔离**：`GovernContext.tenant` 已就位，但十四维策略未按租户分层下发，需补"租户维度策略覆盖"机制。
 
 ---
@@ -213,13 +213,13 @@ npm run build (frontend) → built in 22.79s
 
 OUS 已实现**全维度企业级闭环**：数学内核稳固、双璇玑十四维治理接入主服务与前端可视化、璇玑最高权限校验、WASM 沙箱隔离、统一自动化脚本一键 build+test+serve+e2e。所有单元/集成测试全绿，前端可构建。后续重点是把 📋 设计态能力（多模态/记忆/Eval/FinOps/灾备）落到代码，并强化开发七维常驻与敏感语义识别。
 
-> 配套文档：`architecture.md`(总架构)、`mathematical-foundation.md`(数学内核)、`xuanji-expert-normalization.md`(归一化)、`xuanji-expert-product.md`(产品化)、`algorithm-verification.md`(璇玑校验)、`business-process-flows.md`(企业级业务处理流程)。
+> 配套文档：`docs/architecture.md`(总架构)、`docs/modules/mathematical-foundation.md`(数学内核)、`docs/modules/xuanji-expert-normalization.md`(归一化)、`docs/modules/xuanji-expert-product.md`(产品化)、`algorithm-verification.md`(璇玑校验)、`docs/modules/business-process-flows.md`(企业级业务处理流程)。
 
 ---
 
 ## 16. 企业级业务处理流程（落地专章）
 
-> 详见 **`business-process-flows.md`**。本节给出与本文结论对齐的落地口径。
+> 详见 **`docs/modules/business-process-flows.md`**。本节给出与本文结论对齐的落地口径。
 
 企业级业务处理流程由 `WorkflowEngine`（业务流程引擎）承载，与 `FlowEngine`（可视化流程图引擎）互补：
 

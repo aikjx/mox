@@ -4,7 +4,7 @@
 > **文档版本**：v1.0 (ENT) · 最后更新 2026-08-16
 > **配套**：`00-INDEX`（治理）、`01-requirements`（需求）、`02-architecture`（架构）、`03-design`（设计）、`04-business-processing`（业务）
 > **权威需求基准**：
-> - 协作治理域需求 → `xuanji-expert-business-requirements.md`（BR-01…BR-21，本文 01 的提升版）
+> - 协作治理域需求 → `docs/modules/xuanji-expert-business-requirements.md`（BR-01…BR-21，本文 01 的提升版）
 > - 融合治理域全维需求 → `璇玑-全维需求业务处理流程图-归一化企业级.md`（**AA-STD-V1.0**，唯一归一化事实基准）
 >
 > **本文目的**：把散落在两套需求基准里的"企业级需求"，逐条映射到**架构视图 / 模块 / 代码落点**，
@@ -18,7 +18,7 @@
 
 | 域 | 业务语义 | 需求基准 | 架构承载 | 关键文档 |
 |----|----------|----------|----------|----------|
-| **协作治理域** | 谁来做、做什么、是否通过（组织决策） | `xuanji-expert-business-requirements.md`（BR-01…BR-21） | `xuanji-system`（02-architecture 七视图） | 01/03/04 |
+| **协作治理域** | 谁来做、做什么、是否通过（组织决策） | `docs/modules/xuanji-expert-business-requirements.md`（BR-01…BR-21） | `xuanji-system`（02-architecture 七视图） | 01/03/04 |
 | **融合治理域** | 怎么做得更快、是否可信（技术决策） | `璇玑-全维需求业务处理流程图-归一化企业级.md`（AA-STD-V1.0，8 阶段 / 4 闸门 / 双璇玑十四维） | `xuanji-expert` + `primiflow-fusion`（治理闸门） | 本文 §2 |
 
 > **为什么分两套基准**：协作治理是"人—组织"的权限/状态/审计问题，用 BR 规则集描述；

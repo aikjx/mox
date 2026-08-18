@@ -10,6 +10,13 @@
 - **璇玑 = 璇玑 (Xuánjī) 系统** = `xuanji-expert` crate：归一化 IR 驱动、双璇玑十四维（业务7+开发7）并行诊断 → 裁决 → flow-ai 求解 → ⛨璇玑验证网关(最高权限) → 治理闸门 → 出码/出图。承载于关图 GR-STD（`REQ→FUN→BIZ→ALG→TSK→COD` 六维绑定）。
 - 交付物统一放 `docs/`，编号体系：AA-STD-V1.0(流程图) / ISD-AA-V1.0(验收报告) / 机读 `璇玑-全维流水线.mmd`。
 
+## 文档治理约定（docs/ 归一化 · 2026-08-18 确立）
+- **唯一治理入口**：`docs/enterprise/00-INDEX.md`（文档集 00~16 + 配套权威文档，定义权威分级 🟢/🟡 与 RACI）。关图/全维专题导航在 `docs/README.md`。
+- **目录职责**：`enterprise/`(治理+ISD验收) · `specs/`(PT-STD/GR-STD/OUS) · `full-dimensional/`(guantu-skeleton + baseline + 治理台API + 过程稿) · `modules/`(模块级设计/参考) · `graph/`(机读产物+requests判重) · `ai-architecture/` · `_archive/YYYY-MM-DD/`(过程稿)。
+- **根目录 `docs/` 仅留 🟢 顶层权威**：`architecture.md`、`enterprise-architecture-analysis.md`、AA-STD(`璇玑-全维需求业务处理流程图-归一化企业级.md`) 及其同位 viz。
+- **引用铁律**：文档间一律 `docs/<rel>` 仓根相对形式；viz `*.html/*.mmd` 与源 `.md` 同位；禁止根目录新增松散 `.md`、禁止同文件跨目录复制（单一事实源）。
+- 归一化审计与标准见 `docs/DOC-NORMALIZATION-REPORT.md`（DOC-GOV-V1.0）。
+
 ## 已知架构缺口（已修复，留痕）
 - `xuanji-system/tests/integration.rs` 的 `temp_db()` 曾仅用 pid 致并行串扰（已改 AtomicU64+pid 唯一目录）。
 - `primiflow-fusion/src/unified.rs` 的 `add_node` 用 HashMap 覆盖同 id 节点致 G3 重复 id 检测失效（已加 `node_dups` 字段修复）。
