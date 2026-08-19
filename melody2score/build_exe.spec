@@ -1,7 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
 # Melody2Score 桌面 GUI 一键打包配置（Windows / PyQt5 + torch CPU）
-# 目录结构保持 melody2score/{app,audio,core,...}，exe 落在 app/gui.exe，
-# 使 gui.py 中的 ROOT = dirname(dirname(__file__)) 仍能正确指向分发根目录。
+# 目录结构：app / audio / core 等数据经 datas 打入 _internal/（PyInstaller 6 onedir），
+# exe 落在发行版根目录 Melody2Score.exe。运行期路径统一由 core/paths.py 的
+# resource_path() 解析（打包时基于 sys._MEIPASS），保证「内置经典样例」开箱即用。
 import os
 
 ROOT = os.path.abspath(SPECPATH)
@@ -56,7 +57,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name=os.path.join("app", "Melody2Score"),
+    name="Melody2Score",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

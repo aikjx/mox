@@ -1,0 +1,125 @@
+    Checking ai-agent v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\crates\ai-agent)
+warning: items after a test module
+   --> crates\xuanji-system\src\rbac.rs:252:1
+    |
+252 | mod tests {
+    | ^^^^^^^^^
+...
+381 | impl Permission {
+    | ^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#items_after_test_module
+    = note: `#[warn(clippy::items_after_test_module)]` on by default
+    = help: move the items to before the test module was defined
+
+warning: useless use of `vec!`
+   --> crates\xuanji-system\src\crypto.rs:139:32
+    |
+139 |         assert_ne!(out, sha256(&vec![b'a'; 56]));
+    |                                ^^^^^^^^^^^^^^^ help: you can use a slice directly: `&[b'a'; 56]`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#useless_vec
+    = note: `#[warn(clippy::useless_vec)]` on by default
+
+warning: useless use of `vec!`
+   --> crates\xuanji-system\src\crypto.rs:149:32
+    |
+149 |         assert_ne!(out, sha256(&vec![b'b'; 55]));
+    |                                ^^^^^^^^^^^^^^^ help: you can use a slice directly: `&[b'b'; 55]`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#useless_vec
+
+warning: useless use of `vec!`
+   --> crates\xuanji-system\src\crypto.rs:159:32
+    |
+159 |         assert_ne!(out, sha256(&vec![b'c'; 120]));
+    |                                ^^^^^^^^^^^^^^^^ help: you can use a slice directly: `&[b'c'; 120]`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#useless_vec
+
+warning: `xuanji-system` (lib test) generated 4 warnings (run `cargo clippy --fix --lib -p xuanji-system --tests -- ` to apply 4 suggestions)
+warning: empty line after doc comment
+   --> crates\xuanji-expert\src\programming.rs:398:1
+    |
+398 | / /// 不再需要编排层补丁。原 `_deprecated_check_protected_writes` 空函数已删除。
+399 | |
+    | |_^
+400 |   #[cfg(test)]
+401 |   mod tests {
+    |   --------- the comment documents this module
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#empty_line_after_doc_comments
+    = note: `#[warn(clippy::empty_line_after_doc_comments)]` on by default
+    = help: if the empty line is unintentional, remove it
+
+warning: `xuanji-expert` (lib test) generated 1 warning
+warning: deref which would be done by auto-deref
+   --> crates\ai-agent\src\dialogue_graph.rs:156:22
+    |
+156 |         apply_layout(&mut *graph);
+    |                      ^^^^^^^^^^^ help: try: `&mut graph`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#explicit_auto_deref
+    = note: `#[warn(clippy::explicit_auto_deref)]` on by default
+
+warning: manual implementation of `.is_multiple_of()`
+   --> crates\ai-agent\src\dialogue_graph.rs:273:19
+    |
+273 |         } else if count % interval == 0 {
+    |                   ^^^^^^^^^^^^^^^^^^^^^ help: replace with: `count.is_multiple_of(interval)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_is_multiple_of
+    = note: `#[warn(clippy::manual_is_multiple_of)]` on by default
+
+warning: deref which would be done by auto-deref
+   --> crates\ai-agent\src\dialogue_graph.rs:274:26
+    |
+274 |             apply_layout(&mut *graph);
+    |                          ^^^^^^^^^^^ help: try: `&mut graph`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#explicit_auto_deref
+
+warning: deref which would be done by auto-deref
+   --> crates\ai-agent\src\dialogue_graph.rs:457:22
+    |
+457 |         apply_layout(&mut *graph);
+    |                      ^^^^^^^^^^^ help: try: `&mut graph`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#explicit_auto_deref
+
+warning: length comparison to one
+   --> crates\ai-agent\src\dialogue_graph.rs:732:17
+    |
+732 |         assert!(g.nodes().len() >= 1, "应至少抽取到一个实体节点");
+    |                 ^^^^^^^^^^^^^^^^^^^^ help: using `!is_empty` is clearer and more explicit: `!g.nodes().is_empty()`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#len_zero
+    = note: `#[warn(clippy::len_zero)]` on by default
+
+warning: `ai-agent` (lib) generated 4 warnings (run `cargo clippy --fix --lib -p ai-agent -- ` to apply 4 suggestions)
+    Checking runtime v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\crates\runtime)
+warning: `ai-agent` (lib test) generated 5 warnings (4 duplicates) (run `cargo clippy --fix --lib -p ai-agent --tests -- ` to apply 1 suggestion)
+warning: struct `TokenRegistry` has a public `len` method, but no `is_empty` method
+   --> crates\runtime\src\rbac_middleware.rs:217:5
+    |
+217 |     pub fn len(&self) -> usize {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#len_without_is_empty
+    = note: `#[warn(clippy::len_without_is_empty)]` on by default
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+  --> crates\runtime\src\cordis\event_bus.rs:11:20
+   |
+11 |     subscriptions: RwLock<HashMap<String, HashMap<String, Vec<(String, EventHandlerFn)>>>>,
+   |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#type_complexity
+   = note: `#[warn(clippy::type_complexity)]` on by default
+
+warning: `runtime` (lib) generated 2 warnings
+warning: `runtime` (lib test) generated 2 warnings (2 duplicates)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 42.10s
+warning: the following packages contain code that will be rejected by a future version of Rust: sqlx-postgres v0.8.0
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+CLIPPY_EXIT=0

@@ -1,0 +1,5 @@
+    Checking runtime v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\crates\runtime)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 54.09s
+warning: the following packages contain code that will be rejected by a future version of Rust: sqlx-postgres v0.8.0
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+CLIPPY_EXIT=0

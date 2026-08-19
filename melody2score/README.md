@@ -83,6 +83,11 @@ python -m pip install pyqt5 soundfile          # 核心依赖已具备（PyQt5 5
 python app/gui.py                              # 或：powershell -File app/start.ps1
 ```
 
+> 内置样例即开即用：`audio/` 下的 144 个样例音频与 `manifest.json` 已随包分发。
+> 打包（`python build_exe.py`）后，运行期路径由 `core/paths.py` 的
+> `resource_path()` 统一解析（打包时基于 `sys._MEIPASS`），无需再手动运行
+> `gen_classic_melodies.py` 即可「识别选中样例 / 播放原曲」。
+
 功能：
 - 输入：文件选择、内置经典旋律样例一键识别、**麦克风实时录音**（点「🎙️ 录音」选 3/5/10 秒，对着麦克风唱即可）。
 - 场景模式：**人声模式（唱歌/哼唱，默认）** vs 器乐/通用模式。人声模式自动收窄基频范围（80–1000Hz）、启用 VAD 人声活动检测、加强颤音平滑。

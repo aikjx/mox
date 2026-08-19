@@ -134,6 +134,7 @@ class _ScorePlayer:
         self._prod_thread: Optional[threading.Thread] = None
         self._lock = threading.Lock()
         self._underruns = 0        # 提前初始化，避免回调先于 play() 触发时 AttributeError
+        self._underrun_lock = threading.Lock()  # 回调线程与主线程共享计数器，须加锁
 
     # ---- 生产者：合成循环，结果写入环形缓冲 ----
     def _produce(self, samples_gen, synth_chunk_bytes: int, on_done=None):
@@ -165,7 +166,8 @@ class _ScorePlayer:
             outdata[:len(data)] = data
             outdata[len(data):] = b"\x00" * (nbytes - len(data))
             if not self._finished_ev.is_set():
-                self._underruns += 1
+                with self._underrun_lock:
+                    self._underruns += 1
         else:
             outdata[:] = data
         if self._stop_ev.is_set():
@@ -178,7 +180,8 @@ class _ScorePlayer:
             self.ring.clear()
             self._stop_ev.clear()
             self._finished_ev.clear()
-            self._underruns = 0
+            with self._underrun_lock:
+                self._underruns = 0
 
             try:
                 self._stream = sd.RawOutputStream(
@@ -218,7 +221,8 @@ class _ScorePlayer:
             return self._stream is not None and self._stream.active
 
     def underruns(self) -> int:
-        return getattr(self, "_underruns", 0)
+        with self._underrun_lock:
+            return self._underruns
 
 
 _player = _ScorePlayer()

@@ -3,8 +3,10 @@
 //! 实现自然语言理解、意图识别、算子推荐和多轮对话管理
 
 use super::types::*;
-use operator_core::Result;
+use operator_core::{OperatorError, Result};
+use rusqlite::{params, Connection};
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 use tracing;
 use uuid::Uuid;
 
@@ -13,6 +15,8 @@ pub struct ConversationEngine {
     sessions: HashMap<String, ChatSession>,
     system_prompt: String,
     operator_knowledge: OperatorKnowledge,
+    /// 可选持久化后端：会话与消息落盘 SQLite，支持跨重启复用（None=纯内存）
+    db: Option<Arc<Mutex<Connection>>>,
 }
 
 /// 算子知识库 - 用于智能推荐
@@ -27,7 +31,28 @@ impl ConversationEngine {
             sessions: HashMap::new(),
             system_prompt: Self::build_system_prompt(),
             operator_knowledge: Self::build_operator_knowledge(),
+            db: None,
         }
+    }
+
+    /// 带持久化后端的引擎：会话与消息落盘 SQLite，支持跨重启复用。
+    /// `new()` 仍保持纯内存（向后兼容，不创建任何文件）。
+    pub fn with_storage(db_path: &str) -> Result<Self> {
+        let conn = Connection::open(db_path).map_err(|e| {
+            OperatorError::Other(anyhow::anyhow!("会话库打开失败: {}", e))
+        })?;
+        conn.execute_batch(
+            "CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, context_json TEXT NOT NULL);
+             CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, session_id TEXT NOT NULL, role TEXT NOT NULL, content TEXT NOT NULL, timestamp TEXT NOT NULL, metadata_json TEXT NOT NULL, referenced_operators_json TEXT NOT NULL);
+             CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id, timestamp);",
+        )
+        .map_err(|e| OperatorError::Other(anyhow::anyhow!("会话库初始化失败: {}", e)))?;
+        Ok(Self {
+            sessions: HashMap::new(),
+            system_prompt: Self::build_system_prompt(),
+            operator_knowledge: Self::build_operator_knowledge(),
+            db: Some(Arc::new(Mutex::new(conn))),
+        })
     }
 
     fn build_system_prompt() -> String {
@@ -46,26 +71,14 @@ impl ConversationEngine {
         let mut keywords = HashMap::new();
         let mut category_keywords = HashMap::new();
 
-        // 核心算子关键词映射
-        keywords.insert("identity".to_string(), vec!["恒等".to_string(), "直接".to_string(), "不变".to_string(), "passthrough".to_string()]);
-        keywords.insert("linear".to_string(), vec!["线性".to_string(), "变换".to_string(), "缩放".to_string(), "矩阵".to_string(), "乘法".to_string()]);
-        keywords.insert("normalize".to_string(), vec!["归一化".to_string(), "标准化".to_string(), "norm".to_string(), "单位向量".to_string()]);
-        keywords.insert("relu".to_string(), vec!["relu".to_string(), "激活".to_string(), "整流".to_string(), "非线性".to_string()]);
-        keywords.insert("sigmoid".to_string(), vec!["sigmoid".to_string(), "S型".to_string(), "概率".to_string(), "0到1".to_string()]);
-        keywords.insert("tanh".to_string(), vec!["tanh".to_string(), "双曲正切".to_string(), "-1到1".to_string()]);
-        keywords.insert("softmax".to_string(), vec!["softmax".to_string(), "指数归一化".to_string(), "分类".to_string(), "概率分布".to_string()]);
-        keywords.insert("matmul".to_string(), vec!["矩阵乘法".to_string(), "matmul".to_string(), "线性变换".to_string()]);
-        keywords.insert("conv2d".to_string(), vec!["卷积".to_string(), "conv".to_string(), "CNN".to_string(), "特征提取".to_string()]);
-        keywords.insert("attention".to_string(), vec!["注意力".to_string(), "attention".to_string(), "transformer".to_string(), "自注意力".to_string()]);
-        keywords.insert("adam".to_string(), vec!["adam".to_string(), "优化器".to_string(), "训练".to_string(), "梯度下降".to_string()]);
-
-        // 分类关键词
-        category_keywords.insert("core".to_string(), vec!["基础".to_string(), "核心".to_string()]);
-        category_keywords.insert("activation".to_string(), vec!["激活".to_string(), "非线性".to_string()]);
-        category_keywords.insert("math".to_string(), vec!["数学".to_string(), "计算".to_string()]);
-        category_keywords.insert("ai".to_string(), vec!["AI".to_string(), "机器学习".to_string(), "深度学习".to_string(), "神经网络".to_string()]);
-        category_keywords.insert("signal".to_string(), vec!["信号".to_string(), "图像处理".to_string()]);
-        category_keywords.insert("optimizer".to_string(), vec!["优化".to_string(), "训练".to_string()]);
+        // 算子推荐关键词（单一事实源：crate::knowledge::OPERATOR_KEYWORDS）
+        for (op, kws) in crate::knowledge::OPERATOR_KEYWORDS {
+            keywords.insert(op.to_string(), kws.iter().map(|s| s.to_string()).collect());
+        }
+        // 分类兜底关键词（单一事实源：crate::knowledge::OPERATOR_CATEGORY_KEYWORDS）
+        for (cat, kws) in crate::knowledge::OPERATOR_CATEGORY_KEYWORDS {
+            category_keywords.insert(cat.to_string(), kws.iter().map(|s| s.to_string()).collect());
+        }
 
         OperatorKnowledge {
             keywords,
@@ -114,17 +127,26 @@ impl ConversationEngine {
         })
     }
 
-    /// 获取或创建会话
+    /// 获取或创建会话（优先内存缓存，回退持久化库，再回退新建并落盘）
     pub fn get_or_create_session(&mut self, session_id: &str) -> &mut ChatSession {
-        self.sessions.entry(session_id.to_string()).or_insert_with(|| {
-            ChatSession {
+        if !self.sessions.contains_key(session_id) {
+            if let Some(loaded) = self.load_session_from_db(session_id) {
+                self.sessions.insert(session_id.to_string(), loaded);
+            }
+        }
+        if !self.sessions.contains_key(session_id) {
+            let session = ChatSession {
                 id: session_id.to_string(),
                 messages: vec![ChatMessage::system(&self.system_prompt)],
                 created_at: chrono::Utc::now(),
                 updated_at: chrono::Utc::now(),
                 context: SessionContext::default(),
-            }
-        })
+            };
+            self.persist_session_meta(&session);
+            self.persist_message(session_id, &session.messages[0]);
+            self.sessions.insert(session_id.to_string(), session);
+        }
+        self.sessions.get_mut(session_id).unwrap()
     }
 
     /// 获取会话历史消息（用于LLM调用）
@@ -136,19 +158,27 @@ impl ConversationEngine {
     /// 添加用户消息并返回
     pub fn add_user_message(&mut self, session_id: &str, content: &str) -> ChatMessage {
         let msg = ChatMessage::user(content);
-        let session = self.get_or_create_session(session_id);
-        session.messages.push(msg.clone());
-        session.updated_at = chrono::Utc::now();
+        {
+            let session = self.get_or_create_session(session_id);
+            session.messages.push(msg.clone());
+            session.updated_at = chrono::Utc::now();
+        }
+        self.persist_message(session_id, &msg);
+        self.touch_session(session_id);
         msg
     }
 
     /// 添加助手消息并构建ChatResponse
     pub fn add_assistant_message(&mut self, session_id: &str, content: &str) -> ChatResponse {
         let msg = ChatMessage::assistant(content);
-        let session = self.get_or_create_session(session_id);
-        session.messages.push(msg.clone());
-        session.updated_at = chrono::Utc::now();
-        
+        {
+            let session = self.get_or_create_session(session_id);
+            session.messages.push(msg.clone());
+            session.updated_at = chrono::Utc::now();
+        }
+        self.persist_message(session_id, &msg);
+        self.touch_session(session_id);
+
         ChatResponse {
             message: msg,
             suggestions: vec![
@@ -206,13 +236,9 @@ impl ConversationEngine {
     /// 提取消息中提到的算子
     fn extract_referenced_operators(&self, message: &str) -> Vec<String> {
         let mut ops = Vec::new();
-        let all_ops = [
-            "identity", "linear", "normalize", "normalize_l1", "relu", "sigmoid", "tanh",
-            "softmax", "scale", "add_bias", "matmul", "conv2d", "maxpool", "attention",
-            "self_attention", "cross_attention", "feedforward", "embedding", "adam", "sgd"
-        ];
 
-        for op in &all_ops {
+        // 全部已知算子（单一事实源：crate::knowledge::ALL_OPERATORS）
+        for op in crate::knowledge::ALL_OPERATORS {
             if message.to_lowercase().contains(op) {
                 ops.push(op.to_string());
             }
@@ -462,6 +488,126 @@ impl ConversationEngine {
             _ => None,
         }
     }
+
+    /// 列出全部会话 id（持久化优先；无存储后端时返回内存缓存）
+    pub fn list_sessions(&self) -> Vec<String> {
+        if let Some(db) = &self.db {
+            if let Ok(conn) = db.lock() {
+                if let Ok(mut stmt) = conn.prepare("SELECT id FROM sessions ORDER BY updated_at DESC") {
+                    if let Ok(rows) = stmt.query_map([], |r| r.get::<_, String>(0)) {
+                        return rows.flatten().collect();
+                    }
+                }
+            }
+        }
+        self.sessions.keys().cloned().collect()
+    }
+
+    /// upsert 会话元数据行
+    fn persist_session_meta(&self, session: &ChatSession) {
+        let Some(db) = &self.db else { return; };
+        let conn = match db.lock() {
+            Ok(c) => c,
+            Err(_) => return,
+        };
+        let ctx = serde_json::to_string(&session.context).unwrap_or_else(|_| " {}".to_string());
+        if let Err(e) = conn.execute(
+            "INSERT OR REPLACE INTO sessions (id, created_at, updated_at, context_json) VALUES (?1, ?2, ?3, ?4)",
+            params![session.id, session.created_at.to_rfc3339(), session.updated_at.to_rfc3339(), ctx],
+        ) {
+            tracing::warn!("会话元数据落盘失败: {e}");
+        }
+    }
+
+    /// upsert 单条消息行（幂等）
+    fn persist_message(&self, session_id: &str, msg: &ChatMessage) {
+        let Some(db) = &self.db else { return; };
+        let conn = match db.lock() {
+            Ok(c) => c,
+            Err(_) => return,
+        };
+        let role = serde_json::to_string(&msg.role).unwrap_or_else(|_| "\"user\"".to_string());
+        let meta = serde_json::to_string(&msg.metadata).unwrap_or_else(|_| " {}".to_string());
+        let refs = serde_json::to_string(&msg.referenced_operators).unwrap_or_else(|_| "[]".to_string());
+        if let Err(e) = conn.execute(
+            "INSERT OR REPLACE INTO messages (id, session_id, role, content, timestamp, metadata_json, referenced_operators_json) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![msg.id, session_id, role, msg.content, msg.timestamp.to_rfc3339(), meta, refs],
+        ) {
+            tracing::warn!("消息落盘失败: {e}");
+        }
+    }
+
+    /// 更新会话 updated_at（消息写入后）
+    fn touch_session(&self, session_id: &str) {
+        let Some(db) = &self.db else { return; };
+        let conn = match db.lock() {
+            Ok(c) => c,
+            Err(_) => return,
+        };
+        let _ = conn.execute(
+            "UPDATE sessions SET updated_at = ?1 WHERE id = ?2",
+            params![chrono::Utc::now().to_rfc3339(), session_id],
+        );
+    }
+
+    /// 从持久化库加载会话（含消息，按时间升序）
+    fn load_session_from_db(&self, session_id: &str) -> Option<ChatSession> {
+        let db = self.db.as_ref()?;
+        let conn = db.lock().ok()?;
+        let meta = conn
+            .query_row(
+                "SELECT created_at, updated_at, context_json FROM sessions WHERE id = ?1",
+                params![session_id],
+                |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?)),
+            )
+            .ok()?;
+        let created_at = chrono::DateTime::parse_from_rfc3339(&meta.0).ok()?.with_timezone(&chrono::Utc);
+        let updated_at = chrono::DateTime::parse_from_rfc3339(&meta.1).ok()?.with_timezone(&chrono::Utc);
+        let context: SessionContext = serde_json::from_str(&meta.2).unwrap_or_default();
+        let mut messages = Vec::new();
+        if let Ok(mut stmt) = conn.prepare(
+            "SELECT id, role, content, timestamp, metadata_json, referenced_operators_json \
+             FROM messages WHERE session_id = ?1 ORDER BY timestamp ASC",
+        ) {
+            if let Ok(rows) = stmt.query_map(params![session_id], |r| {
+                Ok((
+                    r.get::<_, String>(0)?,
+                    r.get::<_, String>(1)?,
+                    r.get::<_, String>(2)?,
+                    r.get::<_, String>(3)?,
+                    r.get::<_, String>(4)?,
+                    r.get::<_, String>(5)?,
+                ))
+            }) {
+                for row in rows.flatten() {
+                    let role: MessageRole = serde_json::from_str(&row.1).unwrap_or(MessageRole::User);
+                    let timestamp = chrono::DateTime::parse_from_rfc3339(&row.3)
+                        .ok()
+                        .map(|t| t.with_timezone(&chrono::Utc))
+                        .unwrap_or_else(chrono::Utc::now);
+                    let metadata: HashMap<String, serde_json::Value> =
+                        serde_json::from_str(&row.4).unwrap_or_default();
+                    let referenced_operators: Vec<String> =
+                        serde_json::from_str(&row.5).unwrap_or_default();
+                    messages.push(ChatMessage {
+                        id: row.0,
+                        role,
+                        content: row.2,
+                        timestamp,
+                        metadata,
+                        referenced_operators,
+                    });
+                }
+            }
+        }
+        Some(ChatSession {
+            id: session_id.to_string(),
+            messages,
+            created_at,
+            updated_at,
+            context,
+        })
+    }
 }
 
 impl Default for ConversationEngine {
@@ -537,5 +683,61 @@ mod tests {
         let resp = engine.process_message("sess-4", "处理图像卷积任务").await.unwrap();
         // recommend_operators 应基于中文关键词「卷积」提取 conv2d
         assert!(resp.recommended_operators.contains(&"conv2d".to_string()));
+    }
+
+    #[test]
+    fn session_persists_across_engine_instances() {
+        let path = std::env::temp_dir()
+            .join(format!("conv_persist_{}.db", uuid::Uuid::new_v4()))
+            .to_str()
+            .unwrap()
+            .to_string();
+        let mut engine = ConversationEngine::with_storage(&path).unwrap();
+        engine.add_user_message("s1", "你好");
+        engine.add_assistant_message("s1", "世界");
+        drop(engine);
+        // 模拟重启：新实例读同一库
+        let mut engine2 = ConversationEngine::with_storage(&path).unwrap();
+        let history = engine2.get_session_history("s1");
+        // system + user + assistant = 3
+        assert_eq!(history.len(), 3);
+        assert!(history.iter().any(|m| m.role == MessageRole::User && m.content == "你好"));
+        assert!(history.iter().any(|m| m.role == MessageRole::Assistant && m.content == "世界"));
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn list_sessions_reflects_persisted() {
+        let path = std::env::temp_dir()
+            .join(format!("conv_list_{}.db", uuid::Uuid::new_v4()))
+            .to_str()
+            .unwrap()
+            .to_string();
+        let mut engine = ConversationEngine::with_storage(&path).unwrap();
+        engine.add_user_message("a", "hi");
+        engine.add_user_message("b", "yo");
+        assert_eq!(engine.list_sessions().len(), 2);
+        drop(engine);
+        let engine2 = ConversationEngine::with_storage(&path).unwrap();
+        assert_eq!(engine2.list_sessions().len(), 2);
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[tokio::test]
+    async fn process_message_persists_reply() {
+        let path = std::env::temp_dir()
+            .join(format!("conv_proc_{}.db", uuid::Uuid::new_v4()))
+            .to_str()
+            .unwrap()
+            .to_string();
+        let mut engine = ConversationEngine::with_storage(&path).unwrap();
+        let _ = engine.process_message("sess-p", "列出所有算子").await.unwrap();
+        drop(engine);
+        let mut engine2 = ConversationEngine::with_storage(&path).unwrap();
+        let history = engine2.get_session_history("sess-p");
+        // system + assistant
+        assert_eq!(history.len(), 2);
+        assert!(history.iter().any(|m| m.role == MessageRole::Assistant));
+        let _ = std::fs::remove_file(&path);
     }
 }

@@ -218,6 +218,12 @@ impl TokenRegistry {
         self.entries.len()
     }
 
+    /// 注册表是否为空（与 `len` 配对，构成完整容量 API 面；当前未接线但保留）
+    #[allow(dead_code)]
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+
     /// 是否处于严格模式：仅注册表内令牌可认证（由 `OUS_RBAC_TOKENS` 显式启用）
     pub fn strict(&self) -> bool {
         self.strict_mode
