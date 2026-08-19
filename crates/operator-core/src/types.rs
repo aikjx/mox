@@ -152,6 +152,16 @@ pub mod builtin {
     pub fn any_type() -> TypeIdentifier {
         TypeIdentifier::of::<Any>()
     }
+
+    /// 状态向量类型ID（算子系统最常用的类型）
+    pub fn state_vector_type() -> TypeIdentifier {
+        TypeIdentifier::new("StateVector")
+    }
+
+    /// 张量积类型ID
+    pub fn tensor_product_type() -> TypeIdentifier {
+        TypeIdentifier::new("TensorProduct")
+    }
 }
 
 /// 类型检查trait

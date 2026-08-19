@@ -21,11 +21,13 @@ hiddenimports = [
 datas = [
     ("app", "app"),
     ("core", "core"),
-    ("audio", "audio"),
     ("requirements.txt", "."),
 ]
-# 把 audio 下所有 .wav / manifest 一并打包（Tree 会递归收集）
-from PyInstaller.utils.hooks import collect_data_files  # noqa: E402
+# 用 Tree 递归收集 audio/ 下全部样例（144 个 .wav + manifest.json），
+# 确保「内置经典样例」一定随包打入 _internal/audio/，开箱即用。
+from PyInstaller.building.build_main import Tree  # noqa: E402
+
+datas += [Tree(os.path.join(ROOT, "audio"), prefix="audio")]
 
 a = Analysis(
     [os.path.join(ROOT, "app", "gui.py")],

@@ -94,7 +94,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted, watch } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import MessageBubble from '@/components/MessageBubble.vue'
 import SessionSidebar from '@/components/SessionSidebar.vue'
@@ -111,6 +111,8 @@ import {
 const sessions = ref([])
 const currentSession = ref(null)
 const messages = ref([])
+// 所有会话的消息映射（单一事实源）：切换会话不再丢失历史
+const messagesMap = ref({})
 const draft = ref('')
 const thinking = ref(false)
 const online = ref(false)
@@ -118,6 +120,8 @@ const scrollEl = ref(null)
 // 对话自动→知识图谱 全自动同步开关（默认开）
 const autoSync = ref(true)
 const importInput = ref(null)
+// 流式打字定时器句柄：组件卸载时必须清理，避免泄漏
+let streamTimer = null
 
 // 后端会话历史（跨设备恢复）
 const historyOpen = ref(false)
@@ -147,7 +151,7 @@ async function restoreFromBackend(s) {
       return
     }
     // 后端 ChatMessage 转为前端 MessageBubble 格式
-    messages.value = list.map((m) => ({
+    setMessages(list.map((m) => ({
       role: String(m.role || '').toLowerCase() === 'user' ? 'user' : 'assistant',
       content: m.content || '',
       timestamp: m.timestamp || Date.now(),
@@ -155,7 +159,7 @@ async function restoreFromBackend(s) {
       confidence: m.metadata && m.metadata.confidence != null
         ? m.metadata.confidence
         : undefined,
-    }))
+    })))
     // 同步到本地会话列表，保证可切换
     if (!sessions.value.find((x) => x.id === s.id)) {
       sessions.value.unshift({
@@ -194,19 +198,27 @@ function loadStore() {
       const cur = data.current
       if (cur && sessions.value.find((s) => s.id === cur)) {
         currentSession.value = cur
-        messages.value = data.messages?.[cur] || []
+        messagesMap.value = data.messages || {}
+        messages.value = messagesMap.value[cur] || []
       }
     }
   } catch (e) { /* ignore */ }
 }
+// 同时写入当前会话消息与映射，保证两者引用一致
+function setMessages(arr) {
+  messages.value = arr
+  messagesMap.value = { ...messagesMap.value, [currentSession.value]: arr }
+}
 function persist() {
   try {
+    const msgs = {}
+    for (const s of sessions.value) msgs[s.id] = messagesMap.value[s.id] || []
     localStorage.setItem(
       STORE_KEY,
       JSON.stringify({
         sessions: sessions.value,
         current: currentSession.value,
-        messages: { [currentSession.value]: messages.value }
+        messages: msgs
       })
     )
   } catch (e) { /* ignore */ }
@@ -217,13 +229,12 @@ function newSession() {
   const s = { id, title: '新会话', time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) }
   sessions.value.unshift(s)
   currentSession.value = id
-  messages.value = []
+  setMessages([])
   persist()
 }
 function selectSession(id) {
   currentSession.value = id
-  const s = sessions.value.find((x) => x.id === id)
-  messages.value = s.messages || []
+  setMessages(messagesMap.value[id] || [])
   persist()
 }
 async function sendQuick(q) {
@@ -253,7 +264,7 @@ async function send() {
     online.value = true
     // 流式打字效果
     let i = 0
-    const timer = setInterval(() => {
+    streamTimer = setInterval(() => {
       i += Math.max(2, Math.ceil(full.length / 40))
       placeholder.content = full.slice(0, i)
       scroll()
@@ -275,17 +286,8 @@ async function send() {
 }
 
 function clearChat() {
-  messages.value = []
+  setMessages([])
   persist()
-}
-function exportChat() {
-  const text = messages.value.map((m) => `[${m.role}] ${m.content}`).join('\n\n')
-  const blob = new Blob([text], { type: 'text/plain' })
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob)
-  a.download = 'chat-' + currentSession.value + '.txt'
-  a.click()
-  URL.revokeObjectURL(a.href)
 }
 async function scroll() {
   await nextTick()
@@ -299,7 +301,7 @@ onMounted(() => {
   if (!sessions.value.length) newSession()
   // 拉取后端全自动同步开关状态
   getAutoSyncStatus()
-    .then((r) => { if (r) autoSync.value = !!(r.auto_sync ?? r.data?.auto_sync) })
+    .then((r) => { if (r) autoSync.value = !!(r.enabled ?? r.auto_sync ?? r.data?.auto_sync) })
     .catch(() => {})
 })
 
@@ -350,6 +352,7 @@ async function onImportFile(e) {
     e.target.value = ''
   }
 }
+onUnmounted(() => { if (streamTimer) clearInterval(streamTimer) })
 </script>
 
 <style scoped>

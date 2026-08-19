@@ -136,12 +136,12 @@ impl Operator for Workflow {
                 .operators
                 .first()
                 .map(|op| op.metadata().input_type)
-                .unwrap_or_else(|| "Any".to_string()),
+                .unwrap_or_else(|| crate::types::builtin::any_type()),
             output_type: self
                 .operators
                 .last()
                 .map(|op| op.metadata().output_type)
-                .unwrap_or_else(|| "Any".to_string()),
+                .unwrap_or_else(|| crate::types::builtin::any_type()),
             resource_cost: total_cost,
             author: "User".to_string(),
             tags: vec!["workflow".to_string()],
@@ -197,14 +197,14 @@ impl TypeCheck for Workflow {
         self.operators
             .first()
             .map(|op| op.input_type())
-            .unwrap_or_else(|| TypeIdentifier::new("Any"))
+            .unwrap_or_else(|| crate::types::builtin::any_type())
     }
 
     fn output_type(&self) -> TypeIdentifier {
         self.operators
             .last()
             .map(|op| op.output_type())
-            .unwrap_or_else(|| TypeIdentifier::new("Any"))
+            .unwrap_or_else(|| crate::types::builtin::any_type())
     }
 }
 
@@ -229,8 +229,8 @@ impl Operator for TensorProductOperator {
             name: format!("{}⊗{}", m1.name, m2.name),
             version: "1.0.0".to_string(),
             description: "张量积算子，并行执行两个算子".to_string(),
-            input_type: format!("{}×{}", m1.input_type, m2.input_type),
-            output_type: format!("{}×{}", m1.output_type, m2.output_type),
+            input_type: crate::types::builtin::tensor_product_type(),
+            output_type: crate::types::builtin::tensor_product_type(),
             resource_cost: m1.resource_cost + m2.resource_cost,
             author: "System".to_string(),
             tags: vec!["tensor".to_string(), "parallel".to_string()],
@@ -265,11 +265,11 @@ impl Operator for TensorProductOperator {
 
 impl TypeCheck for TensorProductOperator {
     fn input_type(&self) -> TypeIdentifier {
-        TypeIdentifier::new("TensorProduct")
+        crate::types::builtin::tensor_product_type()
     }
 
     fn output_type(&self) -> TypeIdentifier {
-        TypeIdentifier::new("TensorProduct")
+        crate::types::builtin::tensor_product_type()
     }
 }
 
