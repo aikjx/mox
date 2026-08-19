@@ -103,7 +103,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import * as echarts from 'echarts'
+import * as echarts from '@/echarts'
 import { APP_VERSION, NAV_MODULES } from '@/types'
 import { getStatus, getLogs, getHealth } from '@/api'
 

@@ -93,8 +93,9 @@ impl Role {
         use Permission::*;
         match self {
             Role::XuanjiAdmin => &[
-                TaskCreate, TaskAssign, TaskEditAll, TaskViewAll, TaskComment, TaskTransitionAll,
-                MemberInvite, MemberManage, CommSendXuanji, CommSendTask, CommSendDirect, AuditView,
+                TaskCreate, TaskAssign, TaskEditAll, TaskEditOwn, TaskViewAll, TaskViewAssigned,
+                TaskComment, TaskTransitionAll, TaskTransitionOwn, MemberInvite, MemberManage,
+                CommSendXuanji, CommSendTask, CommSendDirect, AuditView,
             ],
             Role::Coordinator => &[
                 TaskCreate, TaskAssign, TaskEditAll, TaskViewAll, TaskComment, TaskTransitionAll,
@@ -244,5 +245,142 @@ fn scope_label(ctx: &ResourceCtx) -> String {
         format!("task={}", t.id)
     } else {
         format!("xuanji={}", ctx.xuanji_id)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn ctx(xuanji_id: &str, task: Option<TaskResource>) -> ResourceCtx {
+        ResourceCtx {
+            xuanji_id: xuanji_id.to_string(),
+            task,
+        }
+    }
+
+    #[test]
+    fn role_inheritance_expands_permissions() {
+        // Expert 直接拥有 TaskViewAssigned 等，通过继承还应获得 Member 的权限
+        let expert = Role::Expert.effective_permissions();
+        assert!(expert.contains(&Permission::TaskViewAssigned));
+        // 继承自 Member：TaskViewAssigned / TaskComment / CommSendTask / CommSendDirect 均在 Expert 中直接拥有
+        // Coordinator 应继承 Expert 与 Member 的全部权限
+        let coord = Role::Coordinator.effective_permissions();
+        assert!(coord.contains(&Permission::TaskCreate));
+        assert!(coord.contains(&Permission::TaskComment));
+        assert!(coord.contains(&Permission::CommSendDirect));
+        // XuanjiAdmin 拥有全部权限
+        let admin = Role::XuanjiAdmin.effective_permissions();
+        assert_eq!(admin.len(), Permission::all_count());
+    }
+
+    #[test]
+    fn admin_always_allowed_globally() {
+        let bindings = vec![RoleBinding::global(Role::XuanjiAdmin, "u1")];
+        let r = authorize("u1", &bindings, Permission::MemberManage, &ctx("x1", None));
+        assert_eq!(r, Authz::Allowed);
+    }
+
+    #[test]
+    fn unknown_member_denied() {
+        let bindings = vec![RoleBinding::global(Role::XuanjiAdmin, "u1")];
+        let r = authorize("u2", &bindings, Permission::TaskViewAll, &ctx("x1", None));
+        assert!(matches!(r, Authz::Denied(_)));
+    }
+
+    #[test]
+    fn scope_xuanji_restricts_binding() {
+        let bindings = vec![RoleBinding::xuanji(Role::Coordinator, "u1", "x1")];
+        // 在 x1 内允许创建任务
+        assert_eq!(
+            authorize("u1", &bindings, Permission::TaskCreate, &ctx("x1", None)),
+            Authz::Allowed
+        );
+        // 在 x2 内被作用域拒绝
+        assert!(matches!(
+            authorize("u1", &bindings, Permission::TaskCreate, &ctx("x2", None)),
+            Authz::Denied(_)
+        ));
+    }
+
+    #[test]
+    fn scope_task_restricts_binding() {
+        let bindings = vec![RoleBinding::task(Role::Coordinator, "u1", "t1")];
+        let task = TaskResource {
+            id: "t1".into(),
+            xuanji_id: "x1".into(),
+            assignees: vec!["u1".into()],
+        };
+        assert_eq!(
+            authorize("u1", &bindings, Permission::TaskViewAll, &ctx("x1", Some(task))),
+            Authz::Allowed
+        );
+        let other = TaskResource {
+            id: "t2".into(),
+            xuanji_id: "x1".into(),
+            assignees: vec!["u1".into()],
+        };
+        assert!(matches!(
+            authorize("u1", &bindings, Permission::TaskViewAll, &ctx("x1", Some(other))),
+            Authz::Denied(_)
+        ));
+    }
+
+    #[test]
+    fn ownership_required_blocks_non_owner() {
+        // Expert 拥有 TaskEditOwn，但要求调用者是任务被分派者
+        let bindings = vec![RoleBinding::global(Role::Expert, "u1")];
+        let task = TaskResource {
+            id: "t1".into(),
+            xuanji_id: "x1".into(),
+            assignees: vec!["u2".into()], // u1 不是 owner
+        };
+        assert!(matches!(
+            authorize("u1", &bindings, Permission::TaskEditOwn, &ctx("x1", Some(task.clone()))),
+            Authz::Denied(_)
+        ));
+        // 换成 owner 后允许
+        let owned = TaskResource {
+            id: "t1".into(),
+            xuanji_id: "x1".into(),
+            assignees: vec!["u1".into()],
+        };
+        assert_eq!(
+            authorize("u1", &bindings, Permission::TaskEditOwn, &ctx("x1", Some(owned))),
+            Authz::Allowed
+        );
+    }
+
+    #[test]
+    fn permission_as_str_roundtrip_unique() {
+        // 确保没有任何两个权限映射到相同字符串（防止越权）
+        let all = [
+            Permission::TaskCreate, Permission::TaskAssign, Permission::TaskEditAll,
+            Permission::TaskEditOwn, Permission::TaskViewAll, Permission::TaskViewAssigned,
+            Permission::TaskComment, Permission::TaskTransitionAll, Permission::TaskTransitionOwn,
+            Permission::MemberInvite, Permission::MemberManage, Permission::CommSendXuanji,
+            Permission::CommSendTask, Permission::CommSendDirect, Permission::AuditView,
+        ];
+        let mut seen = std::collections::HashSet::new();
+        for p in all {
+            assert!(seen.insert(p.as_str()), "重复权限字符串: {}", p.as_str());
+        }
+    }
+
+    #[test]
+    fn member_role_cannot_manage_members() {
+        let bindings = vec![RoleBinding::global(Role::Member, "u1")];
+        assert!(matches!(
+            authorize("u1", &bindings, Permission::MemberManage, &ctx("x1", None)),
+            Authz::Denied(_)
+        ));
+    }
+}
+
+impl Permission {
+    /// 权限总数（用于断言角色展开是否覆盖全集）
+    pub fn all_count() -> usize {
+        15
     }
 }

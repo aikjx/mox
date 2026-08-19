@@ -27,6 +27,8 @@ def main():
     ap = argparse.ArgumentParser(description="哼唱旋律转歌谱 Demo（支持 mp3 直接输入）")
     ap.add_argument("input", nargs="?", help="mp3/wav 音频文件路径")
     ap.add_argument("-o", "--out", help="输出 musicxml 路径")
+    ap.add_argument("-s", "--out-sheet", help="输出标准歌谱图片路径（默认自动生成 PNG）")
+    ap.add_argument("--no-sheet", action="store_true", help="不自动生成标准歌谱图片")
     ap.add_argument("-r", "--record", type=int, default=0, help="现场录音秒数（替代 input）")
     ap.add_argument("--mscore", help="MuseScore 可执行路径，导出 png 用")
     ap.add_argument("--model", default="tiny", choices=["tiny", "small", "full"],
@@ -74,9 +76,13 @@ def main():
             pass
 
     res = m.run(audio_path=args.input, record_seconds=args.record,
-                out_xml=args.out, ms_score=args.mscore, progress_cb=progress_cb)
+                out_xml=args.out, ms_score=args.mscore,
+                out_sheet=False if args.no_sheet else args.out_sheet,
+                progress_cb=progress_cb)
     _done()
     m.print_summary(res)
+    if res.get("score_image_path"):
+        print(f"  标准歌谱图片 : {res['score_image_path']}")
 
 
 if __name__ == "__main__":

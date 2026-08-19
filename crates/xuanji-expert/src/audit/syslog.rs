@@ -130,22 +130,63 @@ impl AuditSink for SyslogSink {
         match self.flush_policy {
             FlushPolicy::Immediate => self.write_frame(&frame),
             FlushPolicy::Batch { max_events } => {
-                self.buffer.write().unwrap().push(frame);
-                if self.buffer.read().unwrap().len() >= max_events {
-                    let buf: Vec<String> = self.buffer.read().unwrap().clone();
-                    for f in &buf { self.write_frame(f)?; }
-                    self.buffer.write().unwrap().clear();
-                    *self.last_flush_ms.write().unwrap() = now_ms();
+                // 注意：必须先在独立作用域内释放写锁，再获取读锁，
+                // 否则同一线程先持写锁再取读锁会触发 RwLock 死锁/panic。
+                let should_flush = {
+                    let mut buf = self
+                        .buffer
+                        .write()
+                        .expect("审计缓冲写锁已 poison，无法继续追加");
+                    buf.push(frame);
+                    buf.len() >= max_events
+                };
+                if should_flush {
+                    let buf: Vec<String> = self
+                        .buffer
+                        .read()
+                        .expect("审计缓冲读锁已 poison，无法继续追加")
+                        .clone();
+                    for f in &buf {
+                        self.write_frame(f)?;
+                    }
+                    self.buffer
+                        .write()
+                        .expect("审计缓冲写锁已 poison，无法清空")
+                        .clear();
+                    *self
+                        .last_flush_ms
+                        .write()
+                        .expect("刷新时间戳写锁已 poison") = now_ms();
                 }
                 Ok(())
             }
             FlushPolicy::Periodic { interval_ms } => {
-                self.buffer.write().unwrap().push(frame);
-                if now_ms() - *self.last_flush_ms.read().unwrap() >= interval_ms {
-                    let buf: Vec<String> = self.buffer.read().unwrap().clone();
-                    for f in &buf { self.write_frame(f)?; }
-                    self.buffer.write().unwrap().clear();
-                    *self.last_flush_ms.write().unwrap() = now_ms();
+                let should_flush = {
+                    let mut buf = self
+                        .buffer
+                        .write()
+                        .expect("审计缓冲写锁已 poison，无法继续追加");
+                    buf.push(frame);
+                    now_ms() - *self.last_flush_ms.read().expect("刷新时间戳读锁已 poison")
+                        >= interval_ms
+                };
+                if should_flush {
+                    let buf: Vec<String> = self
+                        .buffer
+                        .read()
+                        .expect("审计缓冲读锁已 poison，无法继续追加")
+                        .clone();
+                    for f in &buf {
+                        self.write_frame(f)?;
+                    }
+                    self.buffer
+                        .write()
+                        .expect("审计缓冲写锁已 poison，无法清空")
+                        .clear();
+                    *self
+                        .last_flush_ms
+                        .write()
+                        .expect("刷新时间戳写锁已 poison") = now_ms();
                 }
                 Ok(())
             }
@@ -153,23 +194,39 @@ impl AuditSink for SyslogSink {
     }
 
     fn flush(&self) -> Result<(), AuditError> {
-        let buf: Vec<String> = self.buffer.read().unwrap().clone();
-        for f in &buf { self.write_frame(f)?; }
-        self.buffer.write().unwrap().clear();
-        *self.last_flush_ms.write().unwrap() = now_ms();
+        let buf: Vec<String> = self
+            .buffer
+            .read()
+            .expect("审计缓冲读锁已 poison，无法刷新")
+            .clone();
+        for f in &buf {
+            self.write_frame(f)?;
+        }
+        self.buffer
+            .write()
+            .expect("审计缓冲写锁已 poison，无法清空")
+            .clear();
+        *self
+            .last_flush_ms
+            .write()
+            .expect("刷新时间戳写锁已 poison") = now_ms();
         Ok(())
     }
 
     fn health_check(&self) -> Result<(), AuditError> {
         if matches!(self.protocol, SyslogProtocol::Tcp) {
-            let _ = self.connect_tcp().map_err(|e| AuditError::Connection(e.to_string()))?;
+            self.connect_tcp()
+                .map_err(|e| AuditError::Connection(e.to_string()))?;
         }
         Ok(())
     }
 }
 
 fn now_ms() -> u64 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
 }
 
 #[cfg(test)]
@@ -184,5 +241,31 @@ mod tests {
         assert!(frame.contains("test-app"));
         assert!(frame.contains("flow.created"));
         assert!(frame.contains("test-tenant"));
+    }
+
+    #[test]
+    fn batch_policy_no_deadlock_under_concurrency() {
+        use std::sync::Arc;
+        use std::thread;
+        // 修复回归：append_sync 中先持写锁再取读锁曾在同线程死锁。
+        // 用 Batch 策略在多线程下高频追加，验证不再死锁/panic。
+        let sink = Arc::new(
+            SyslogSink::new("localhost:514", "udp")
+                .with_flush_policy(FlushPolicy::Batch { max_events: 4 }),
+        );
+        let mut handles = Vec::new();
+        for _ in 0..4 {
+            let s = Arc::clone(&sink);
+            handles.push(thread::spawn(move || {
+                for _ in 0..50 {
+                    let _ = s.append_sync(&super::super::event::test_event());
+                }
+            }));
+        }
+        for h in handles {
+            h.join().expect("审计线程应正常结束（无死锁）");
+        }
+        // 最终 flush 不应死锁
+        sink.flush().ok();
     }
 }

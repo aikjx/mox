@@ -256,7 +256,6 @@ if __name__ == "__main__":
     test_segment_score_shapes()
     test_synth_cache_hit()
     test_synth_cache_distinct_keys()
-    test_concurrent_synth_cache_no_crash()
-    test_concurrent_ringbuffer_no_crash()
+    test_concurrent_play_stop_no_crash()
     test_play_stop_is_idempotent()
     print("[test_audio_play] 全部通过 OK")

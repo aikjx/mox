@@ -1,0 +1,53 @@
+   Compiling xuanji-system v0.1.0 (D:\a10\aikjx\gitcode\infotopograph\crates\xuanji-system)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 9.61s
+warning: the following packages contain code that will be rejected by a future version of Rust: sqlx-postgres v0.8.0
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running unittests src\lib.rs (target\debug\deps\xuanji_system-49d4cd9a20b46430.exe)
+
+running 29 tests
+test crypto::tests::avalanche ... ok
+test crypto::tests::boundary_119_bytes ... ok
+test crypto::tests::boundary_55_bytes ... ok
+test model::tests::member_status_allowed_transitions ... ok
+test crypto::tests::boundary_56_bytes ... ok
+test model::tests::member_status_forbidden_transitions ... ok
+test crypto::tests::known_vector_empty ... ok
+test crypto::tests::known_vector_long ... ok
+test model::tests::audit_action_str_roundtrip ... ok
+test model::tests::channel_kind_equality ... ok
+test crypto::tests::deterministic ... ok
+test model::tests::member_status_labels ... ok
+test model::tests::member_status_terminal_and_take_task ... ok
+test model::tests::task_status_allowed_transitions ... ok
+test ratelimit::tests::allows_up_to_limit_then_blocks ... ok
+test model::tests::task_status_forbidden_transitions ... ok
+test ratelimit::tests::independent_keys ... ok
+test model::tests::new_id_has_prefix_and_unique ... ok
+test model::tests::task_status_terminal ... ok
+test crypto::tests::known_vector_abc ... ok
+test rbac::tests::admin_always_allowed_globally ... ok
+test rbac::tests::member_role_cannot_manage_members ... ok
+test ratelimit::tests::window_expiry_resets_counter ... FAILED
+test rbac::tests::permission_as_str_roundtrip_unique ... ok
+test rbac::tests::ownership_required_blocks_non_owner ... ok
+test rbac::tests::role_inheritance_expands_permissions ... ok
+test rbac::tests::scope_task_restricts_binding ... ok
+test rbac::tests::scope_xuanji_restricts_binding ... ok
+test rbac::tests::unknown_member_denied ... ok
+
+failures:
+
+---- ratelimit::tests::window_expiry_resets_counter stdout ----
+
+thread 'ratelimit::tests::window_expiry_resets_counter' (4728) panicked at crates\xuanji-system\src\ratelimit.rs:83:9:
+窗口内应被拦截
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    ratelimit::tests::window_expiry_resets_counter
+
+test result: FAILED. 28 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p xuanji-system --lib`
+EXIT=101

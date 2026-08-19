@@ -1,0 +1,86 @@
+   Compiling xuanji-system v0.1.0 (D:\a10\aikjx\gitcode\infotopograph\crates\xuanji-system)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.57s
+warning: the following packages contain code that will be rejected by a future version of Rust: sqlx-postgres v0.8.0
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running unittests src\lib.rs (target\debug\deps\xuanji_system-49d4cd9a20b46430.exe)
+
+running 30 tests
+test crypto::tests::boundary_56_bytes ... ok
+test crypto::tests::avalanche ... ok
+test crypto::tests::boundary_55_bytes ... ok
+test model::tests::member_status_allowed_transitions ... ok
+test model::tests::member_status_labels ... ok
+test crypto::tests::boundary_119_bytes ... ok
+test model::tests::new_id_has_prefix_and_unique ... ok
+test crypto::tests::known_vector_long ... ok
+test model::tests::audit_action_str_roundtrip ... ok
+test crypto::tests::deterministic ... ok
+test model::tests::member_status_forbidden_transitions ... ok
+test crypto::tests::known_vector_abc ... ok
+test model::tests::member_status_terminal_and_take_task ... ok
+test crypto::tests::known_vector_empty ... ok
+test model::tests::task_status_allowed_transitions ... ok
+test model::tests::channel_kind_equality ... ok
+test model::tests::task_status_forbidden_transitions ... ok
+test model::tests::task_status_terminal ... ok
+test ratelimit::tests::allows_up_to_limit_then_blocks ... ok
+test ratelimit::tests::independent_keys ... ok
+test rbac::tests::admin_always_allowed_globally ... ok
+test rbac::tests::member_role_cannot_manage_members ... ok
+test rbac::tests::ownership_required_blocks_non_owner ... ok
+test rbac::tests::permission_as_str_roundtrip_unique ... ok
+test rbac::tests::role_inheritance_expands_permissions ... ok
+test rbac::tests::scope_task_restricts_binding ... ok
+test rbac::tests::scope_xuanji_restricts_binding ... ok
+test rbac::tests::unknown_member_denied ... ok
+test ratelimit::tests::zero_window_never_resets ... ok
+test ratelimit::tests::window_expiry_resets_counter ... ok
+
+test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.10s
+
+     Running unittests src\main.rs (target\debug\deps\xuanji_system-ed2a1f48e5b6829c.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\business_rules.rs (target\debug\deps\business_rules-43bd3371f37ac068.exe)
+
+running 13 tests
+test br12_terminal_task_status_cannot_transition_out ... ok
+test nfr09_max_subtasks_enforced ... ok
+test nfr09_max_dependency_depth_enforced ... ok
+test nfr09_max_tasks_enforced ... ok
+test br04_invite_is_idempotent_per_email ... ok
+test nfr09_max_assignees_enforced ... ok
+test br21_member_status_machine_enforced ... ok
+test nfr09_max_members_enforced ... ok
+test nfr09_max_watchers_enforced ... ok
+test br18_authz_denial_is_audited ... ok
+test br11_dependency_graph_is_dag ... ok
+test br10_done_gate_blocks_incomplete_work ... ok
+test br07_assign_validates_assignee_identity ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\integration.rs (target\debug\deps\integration-f6fa1a269f87c041.exe)
+
+running 8 tests
+test postgres_system_survives_restart ... ok
+test postgres_store_persists_and_replays ... ok
+test role_inheritance_and_scope ... ok
+test event_reactor_produces_notifications ... ok
+test quota_enforcement ... ok
+test full_lifecycle_and_rbac ... ok
+test store_persists_and_hashes_tokens ... ok
+test persistence_survives_restart ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.18s
+
+   Doc-tests xuanji_system
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+EXIT=0

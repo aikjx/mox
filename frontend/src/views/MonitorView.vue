@@ -105,7 +105,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import * as echarts from 'echarts'
+import * as echarts from '@/echarts'
 import { ElMessage } from 'element-plus'
 import { getStatus, getFullStatus, getLogs, getPlugins, xuanjiHealth, xuanjiOptimize } from '@/api'
 

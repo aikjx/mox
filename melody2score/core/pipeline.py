@@ -22,7 +22,7 @@ import numpy as np
 import soundfile as sf
 
 from core.config import Config
-from core import capture, preprocess, pitch, analysis, score, vad
+from core import capture, preprocess, pitch, analysis, score, vad, score_sheet
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -234,10 +234,12 @@ class Melody2Score:
     # ---------- 便捷入口（面向 CLI / demo） ----------
     def run(self, audio_path: Optional[str] = None, record_seconds: int = 0,
             out_xml: Optional[str] = None, ms_score: Optional[str] = None,
+            out_sheet: Optional[str] = None,
             progress_cb=None) -> Dict:
-        """一键识别：文件 / 现场录音二选一，可选导出 musicxml。
+        """一键识别：文件 / 现场录音二选一，可选导出 musicxml / 标准歌谱图片。
 
-        返回与 recognize 一致的结构化结果。progress_cb 可选，用于实时进度。
+        返回与 recognize 一致的结构化结果，并默认附带 score_image_path（如可用）。
+        progress_cb 可选，用于实时进度。
         """
         if record_seconds and record_seconds > 0:
             import sounddevice as sd  # 延迟导入，避免无音频设备环境报错
@@ -256,11 +258,40 @@ class Melody2Score:
 
         if out_xml:
             self._export_xml(res, out_xml, ms_score)
+
+        # 默认生成规范歌谱图片（PNG），置于 exports/ 目录
+        sheet_path = out_sheet or self._default_sheet_path(audio_path or "record")
+        try:
+            generated = score_sheet.export_score(
+                notes=res["notes"],
+                key=res["key"],
+                bpm=res["bpm"],
+                output_path=sheet_path,
+                title=os.path.splitext(os.path.basename(audio_path or "未命名旋律"))[0],
+            )
+            res["score_image_path"] = generated
+        except Exception as e:
+            # 图片生成失败不应阻断主流程（如服务器无字体）
+            res["score_image_path"] = None
+            res["score_image_error"] = str(e)
+
         return res
+
+    def _default_sheet_path(self, audio_path: str) -> str:
+        base = os.path.splitext(os.path.basename(audio_path or "record"))[0] or "未命名旋律"
+        exports_dir = os.path.join(ROOT, "app", "exports")
+        os.makedirs(exports_dir, exist_ok=True)
+        ts = time.strftime("%Y%m%d_%H%M%S")
+        return os.path.join(exports_dir, f"{base}_标准歌谱_{ts}.png")
 
     def _export_xml(self, res: Dict, out_xml: str, ms_score: Optional[str]):
         try:
-            score.to_musicxml(res["notes"], out_xml, ms_score=ms_score)
+            score.to_musicxml(
+                res["notes"],
+                float(res["bpm"]),
+                (res["key"]["tonic"], res["key"]["mode"]),
+                fp=out_xml,
+            )
         except Exception as e:
             print(f"[warn] musicxml 导出失败: {e}")
 

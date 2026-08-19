@@ -20,17 +20,18 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import soundfile as sf
 from PyQt5.QtCore import QThread, pyqtSignal, Qt, QSize, QTimer
-from PyQt5.QtGui import QPainter, QPen, QColor, QFont, QBrush, QPalette
+from PyQt5.QtGui import QPainter, QPen, QColor, QFont, QBrush, QPalette, QPixmap
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QLabel, QFileDialog, QComboBox, QSlider, QCheckBox, QTabWidget, QTextEdit,
     QTableWidget, QTableWidgetItem, QHeaderView, QProgressBar, QMessageBox,
-    QGroupBox, QLineEdit, QFrame, QSizePolicy, QDialog)
+    QGroupBox, QLineEdit, QFrame, QSizePolicy, QDialog, QScrollArea)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 from core.config import Config
+from core import score_sheet
 from app.audio_play import play_raw, play_score, stop as audio_stop
 
 ACCENT = "#4f9dff"
@@ -455,6 +456,7 @@ class MainWindow(QMainWindow):
         self.pending_file = None
         self._pending_bytes = None
         self._pending_sample_path = None
+        self._auto_sheet_path = None
         self._raw_y = None
         self._raw_sr = 22050
         self._apply_style()
@@ -584,6 +586,21 @@ class MainWindow(QMainWindow):
         self.btnSave.setEnabled(False)
         self.btnSave.clicked.connect(self.save_md)
         lv.addWidget(self.btnSave)
+        # 导出标准歌谱图片
+        self.btnExportPng = QPushButton("🖼️ 标准歌谱 PNG")
+        self.btnExportPng.setEnabled(False)
+        self.btnExportPng.clicked.connect(lambda: self.export_sheet("png"))
+        lv.addWidget(self.btnExportPng)
+        row_sheet = QHBoxLayout()
+        self.btnExportPdf = QPushButton("📄 PDF")
+        self.btnExportPdf.setEnabled(False)
+        self.btnExportPdf.clicked.connect(lambda: self.export_sheet("pdf"))
+        self.btnExportSvg = QPushButton("✏️ SVG")
+        self.btnExportSvg.setEnabled(False)
+        self.btnExportSvg.clicked.connect(lambda: self.export_sheet("svg"))
+        row_sheet.addWidget(self.btnExportPdf)
+        row_sheet.addWidget(self.btnExportSvg)
+        lv.addLayout(row_sheet)
         # 播放识别后的钢琴曲
         row_play = QHBoxLayout()
         self.btnPlayScore = QPushButton("🎹 播放钢琴曲")
@@ -630,6 +647,14 @@ class MainWindow(QMainWindow):
         self.jianpu = QTextEdit()
         self.jianpu.setReadOnly(True)
         tabs.addTab(self.jianpu, "简谱")
+        # 标准歌谱（图片预览）
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        self.sheetLabel = QLabel("识别完成后自动生成标准歌谱。")
+        self.sheetLabel.setAlignment(Qt.AlignCenter)
+        self.sheetLabel.setStyleSheet(f"color:{MUTED};background:{PANEL2};")
+        scroll.setWidget(self.sheetLabel)
+        tabs.addTab(scroll, "标准歌谱")
         # 五线谱
         self.staff = StaffView()
         tabs.addTab(self.staff, "五线谱")
@@ -930,6 +955,9 @@ class MainWindow(QMainWindow):
         self.btnSample.setEnabled(self.sampleCombo.isEnabled())
         self.btnSave.setEnabled(True)
         self.btnPlayScore.setEnabled(True)
+        self.btnExportPng.setEnabled(True)
+        self.btnExportPdf.setEnabled(True)
+        self.btnExportSvg.setEnabled(True)
 
         self.mKey.setText(f"{res['key']['tonic']} {'小调' if res['key']['mode']=='minor' else '大调'}")
         self.mBpm.setText(str(res["bpm"]))
@@ -950,6 +978,16 @@ class MainWindow(QMainWindow):
         robust_info = ""
         if res.get("robust_runs", 1) > 1:
             robust_info = f" · 重识别{res['robust_runs']}次→共识保留 {res['robust_kept']} 音 · 置信度 {res.get('confidence',0):.0%}"
+
+        # 自动生成标准歌谱并预览
+        self._auto_sheet_path = self._generate_sheet(res, "png")
+        if self._auto_sheet_path:
+            self.sheetLabel.setText("")
+            self.sheetLabel.setPixmap(QPixmap(self._auto_sheet_path).scaledToWidth(
+                self.sheetLabel.width() - 20, Qt.SmoothTransformation))
+        else:
+            self.sheetLabel.setText("标准歌谱生成失败（可能缺少 matplotlib 或中文字体）。")
+
         self.status.setText(f"完成 · {res['note_count']} 个音符 · 来源 {res.get('source','')}{robust_info}")
 
         # 旋律识别歌曲（离线曲库 DTW 音程匹配）
@@ -1022,6 +1060,41 @@ class MainWindow(QMainWindow):
         except Exception as e:
             self.status.setText(f"钢琴播放失败：{e}")
 
+    def _generate_sheet(self, res: Dict, fmt: str) -> Optional[str]:
+        """用 core.score_sheet 生成标准歌谱并返回路径。"""
+        try:
+            title = self.titleEdit.text() or "未命名旋律"
+            export_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "exports")
+            os.makedirs(export_dir, exist_ok=True)
+            safe = re.sub(r"[^\w一-鿿-]", "_", title)[:40]
+            ts = time.strftime("%Y%m%d_%H%M%S")
+            fname = f"{safe or 'melody'}_标准歌谱_{ts}.{fmt}"
+            fpath = os.path.join(export_dir, fname)
+            score_sheet.export_score(
+                notes=res.get("notes", []),
+                key=res.get("key", {"tonic": "C", "mode": "major"}),
+                bpm=float(res.get("bpm", 120)),
+                output_path=fpath,
+                title=title,
+            )
+            return fpath
+        except Exception as e:
+            traceback.print_exc()
+            return None
+
+    def export_sheet(self, fmt: str):
+        if not self.current:
+            return
+        path = self._generate_sheet(self.current, fmt)
+        if path:
+            if fmt == "png":
+                self.sheetLabel.setPixmap(QPixmap(path).scaledToWidth(
+                    self.sheetLabel.width() - 20, Qt.SmoothTransformation))
+            QMessageBox.information(self, "已导出", f"标准歌谱已导出：\n{path}")
+            self.status.setText(f"已导出 {fmt.upper()}：{os.path.basename(path)}")
+        else:
+            QMessageBox.warning(self, "导出失败", "标准歌谱导出失败，请检查日志。")
+
     def save_md(self):
         if not self.current:
             return
@@ -1065,7 +1138,8 @@ class MainWindow(QMainWindow):
             "4. 音乐解析层：midi 轮廓中值滤波(win=5) 消除颤音抖动；半音量化后按相同音高分段；"
             "短段就近合并到音高最近的相邻音符；BPM 用 beat_track；调式用 Krumhansl-Schmuckler 模板"
             "（基于音符轮廓，起始/终止音加权）。\n"
-            "5. 歌谱生成层：music21 量化生成 musicxml；简谱数字串（高八度 '.'，低八度 '_'，延音 '-'）。\n\n"
+            "5. 歌谱生成层：music21 量化生成 musicxml；简谱数字串（高八度 '.'，低八度 '_'，延音 '-'）；"
+            "matplotlib 渲染标准歌谱图片（PNG/PDF/SVG）。\n\n"
             "优化：调式识别用音符轮廓替代整曲 CQT（提速 ~7x）；简谱以 tonic 的 4 八度音为基准计算八度偏移，"
             "标记符合记谱习惯。")
         with open(fpath, "w", encoding="utf-8") as f:

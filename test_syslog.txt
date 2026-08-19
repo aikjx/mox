@@ -1,0 +1,115 @@
+   Compiling serde_core v1.0.229
+   Compiling log v0.4.33
+   Compiling smallvec v1.15.2
+   Compiling windows-sys v0.61.2
+   Compiling tracing-core v0.1.36
+   Compiling futures-io v0.3.34
+   Compiling serde v1.0.229
+   Compiling num-traits v0.2.19
+   Compiling bitflags v2.13.1
+   Compiling digest v0.10.7
+   Compiling either v1.17.0
+   Compiling uuid v1.24.0
+   Compiling futures-util v0.3.33
+   Compiling icu_normalizer v2.2.0
+   Compiling rayon v1.12.0
+   Compiling sha2 v0.10.9
+   Compiling hmac v0.12.1
+   Compiling tracing v0.1.44
+   Compiling idna_adapter v1.2.2
+   Compiling idna v1.1.0
+   Compiling url v2.5.8
+   Compiling axum-core v0.4.5
+   Compiling serde_json v1.0.151
+   Compiling serde_path_to_error v0.1.20
+   Compiling serde_urlencoded v0.7.1
+   Compiling chrono v0.4.45
+   Compiling serde_yaml v0.9.34+deprecated
+   Compiling flow-ai v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\crates\flow-ai)
+   Compiling socket2 v0.6.5
+   Compiling mio v1.2.2
+   Compiling schannel v0.1.29
+   Compiling native-tls v0.2.18
+   Compiling tokio v1.53.1
+   Compiling tokio-util v0.7.19
+   Compiling tower v0.5.3
+   Compiling tokio-native-tls v0.3.1
+   Compiling tower-http v0.6.11
+   Compiling h2 v0.4.14
+   Compiling tower-http v0.5.2
+   Compiling hyper v1.11.0
+   Compiling hyper-util v0.1.20
+   Compiling hyper-tls v0.6.0
+   Compiling axum v0.7.9
+   Compiling reqwest v0.12.28
+   Compiling xuanji-expert v0.1.0 (D:\a10\aikjx\gitcode\infotopograph\crates\xuanji-expert)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 41.00s
+     Running unittests src\lib.rs (target\debug\deps\xuanji_expert-5db2bab8be5eec81.exe)
+
+running 2 tests
+test audit::syslog::tests::serialize_rfc5424 ... ok
+test audit::syslog::tests::batch_policy_no_deadlock_under_concurrency ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 82 filtered out; finished in 0.01s
+
+     Running unittests src\bin\xuanji.rs (target\debug\deps\xuanji-70af5e309bffc561.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\debug_opt.rs (target\debug\deps\debug_opt-9008b9116b06102d.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\end_to_end.rs (target\debug\deps\end_to_end-bf74843cc7bf124a.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.00s
+
+     Running tests\enterprise_algorithm.rs (target\debug\deps\enterprise_algorithm-64e54c14da5d08e8.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.00s
+
+     Running tests\expert_unit_tests.rs (target\debug\deps\expert_unit_tests-cc5ffdaa7011d848.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 8 filtered out; finished in 0.00s
+
+     Running tests\gap_p1_audit_chain_continuity.rs (target\debug\deps\gap_p1_audit_chain_continuity-3bbe6878121473a3.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.00s
+
+     Running tests\gap_p1_auto_repair_idempotency.rs (target\debug\deps\gap_p1_auto_repair_idempotency-46ae6d4f05fc5848.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+     Running tests\gap_p1_multi_e1_permission_security_veto.rs (target\debug\deps\gap_p1_multi_e1_permission_security_veto-f1611c2d869c4b5a.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.00s
+
+     Running tests\gap_p1_topology_route.rs (target\debug\deps\gap_p1_topology_route-075c5fc8d035ad09.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.00s
+
+     Running tests\gap_p2_perf_boundaries.rs (target\debug\deps\gap_p2_perf_boundaries-bfc394f60a00f566.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s
+
+EXIT=0

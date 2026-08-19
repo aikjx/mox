@@ -16,6 +16,6 @@
 | 10 | `template-market` | L6 资产沉淀 | （见融合统一图 crate:template-market 节点）|
 | 11 | `runtime` | L4 调度编排 | （见融合统一图 crate:runtime 节点）|
 | 12 | `xuanji-system` | L7 治理合规 | （见融合统一图 crate:xuanji-system 节点）|
-| 13 | `primiflow` | L1/L4/L7 | （见融合统一图 crate:primiflow 节点）|
+| 13 | `primiflow-core` | L5 执行运行时 | （见融合统一图 crate:primiflow-core 节点）|
 
 > 12 类关图节点 + 7 类边 + PT-Primi 六维 + L1-L7 七层已归一为一张统一图。

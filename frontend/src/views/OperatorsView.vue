@@ -160,7 +160,7 @@
 
 <script setup>
 import { ref, computed, onMounted, nextTick, onBeforeUnmount } from 'vue'
-import * as echarts from 'echarts'
+import * as echarts from '@/echarts'
 import { ElMessage } from 'element-plus'
 import { Search, Coordinate, InfoFilled, Plus } from '@element-plus/icons-vue'
 import { OPERATOR_CATEGORIES } from '@/types'
