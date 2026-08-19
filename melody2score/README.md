@@ -20,7 +20,8 @@ melody2score/
 │   ├── preprocess.py        # 预处理层：去直流偏移 + 归一化 + 谱减降噪(可关)
 │   ├── pitch.py             # 音高检测层（可插拔后端：crepe_onnx / torchcrepe / pyin）
 │   ├── analysis.py          # 音乐解析层：BPM + 调式 + 音符分割(含颤音/滑音滤波)
-│   ├── score.py             # 歌谱生成层：music21 musicxml + 简谱数字串
+│   ├── score.py             # 歌谱生成层：music21 musicxml + 简谱数字串 + 标准歌谱图片
+│   ├── score_sheet.py       # 标准歌谱图片渲染：PNG / PDF / SVG 规范简谱
 │   └── pipeline.py          # 编排层：串联各层
 ├── board/
 │   ├── board_config.py      # 开发板调优配置（限核/关降噪/tiny）
@@ -35,8 +36,8 @@ melody2score/
 │   └── melody_infograph.json     # 生成的子图（info-graph 同构 schema）
 ├── tests/                  # 离线自测
 ├── app/                    # 企业级可视化界面（FastAPI 后端 + 零构建前端）
-│   ├── webui.py            # 后端 API：/api/recognize|recognize-sample|recognize-record|save-md
-│   ├── frontend/index.html # 企业级单页：选择/录音→实时简谱+五线谱→一键保存 MD
+│   ├── webui.py            # 后端 API：识别 + 保存 MD + 导出标准歌谱图片
+│   ├── frontend/index.html # 企业级单页：选择/录音→实时简谱+五线谱+标准歌谱→一键导出 PNG/PDF/SVG
 │   ├── exports/            # 导出的 Markdown 报告（自动落盘）
 │   └── start.ps1           # 启动脚本
 ├── requirements.txt
@@ -52,15 +53,19 @@ melody2score/
 cd melody2score
 python -m pip install -r requirements.txt
 
-# 直接识别 mp3 / wav
+# 直接识别 mp3 / wav（默认同时生成标准歌谱 PNG）
 python melody2score_demo.py your_song.mp3
 python melody2score_demo.py your_song.mp3 -o out.xml
+python melody2score_demo.py your_song.mp3 -s my_song_sheet.pdf
 
 # 现场录音
 python melody2score_demo.py -r 5
 
 # 可选调参
 python melody2score_demo.py song.wav --model small --no-denoise --threads 2
+
+# 不生成图片
+python melody2score_demo.py song.wav --no-sheet
 ```
 
 ---

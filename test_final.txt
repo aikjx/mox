@@ -1,0 +1,1039 @@
+   Compiling xuanji-expert v0.1.0 (D:\a10\aikjx\gitcode\infotopograph\crates\xuanji-expert)
+   Compiling business-catalog v0.1.0 (D:\a10\aikjx\gitcode\infotopograph\crates\business-catalog)
+   Compiling hermes-flow-bridge v0.1.0 (D:\a10\aikjx\gitcode\infotopograph\crates\hermes-flow-bridge)
+   Compiling runtime v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\crates\runtime)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 27.02s
+warning: the following packages contain code that will be rejected by a future version of Rust: sqlx-postgres v0.8.0
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running unittests src\lib.rs (target\debug\deps\ai_agent-eaef7eecf0fc68e5.exe)
+
+running 65 tests
+test browser_automation::tests::test_extract_url_none ... ok
+test browser_automation::tests::test_extract_title_from_og_tag ... ok
+test browser_automation::tests::test_extract_title_from_tag ... ok
+test browser_automation::tests::test_extract_title_missing_returns_empty ... ok
+test browser_automation::tests::test_extract_url_full_http ... ok
+test browser_automation::tests::test_extract_url_www_domain ... ok
+test browser_automation::tests::test_html_unescape_decodes_entities ... ok
+test browser_automation::tests::test_html_to_text_strips_tags_and_scripts ... ok
+test browser_automation::tests::test_normalize_url_adds_https ... ok
+test algorithm::tests::test_analyze_pagerank_recognized_as_graph ... ok
+test algorithm::tests::test_analyze_custom_falls_back_to_generic ... ok
+test browser_automation::tests::test_parse_natural_language_search_intent ... ok
+test browser_automation::tests::test_parse_natural_language_url_intent ... ok
+test algorithm::tests::test_analyze_generated_flow_has_valid_edges ... ok
+test browser_automation::tests::test_list_task_templates_non_empty ... ok
+test algorithm::tests::test_analyze_quicksort_recognized_as_sorting ... ok
+test browser_automation::tests::test_replace_vars_substitution ... ok
+test browser_automation::tests::test_session_lifecycle ... ok
+test browser_automation::tests::test_urlencode_ascii_and_unicode ... ok
+test conversation::tests::test_add_user_and_assistant_messages ... ok
+test conversation::tests::test_get_or_create_session_creates_and_persists ... ok
+test conversation::tests::test_process_message_analyze_algorithm_intent ... ok
+test flow_engine::tests::test_create_default_templates_non_empty_and_valid ... ok
+test conversation::tests::test_process_message_execute_intent_with_operators ... ok
+test conversation::tests::test_process_message_list_operators_intent ... ok
+test conversation::tests::test_process_message_vision_recommends_conv2d ... ok
+test flow_engine::tests::test_apply_template_substitutes_variables ... ok
+test flow_engine::tests::test_execute_flow_script_node_succeeds ... ok
+test flow_engine::tests::test_create_flow_rejects_empty_and_missing_start ... ok
+test flow_engine::tests::test_create_flow_sets_timestamps_and_stores ... ok
+test flow_engine::tests::test_evaluate_condition_comparisons ... ok
+test flow_engine::tests::test_execute_flow_missing_id_errors ... ok
+test flow_engine::tests::test_execute_flow_data_transform_condition_output ... ok
+test flow_engine::tests::test_evaluate_condition_boolean_literals ... ok
+test flow_engine::tests::test_update_flow_requires_existing_and_validates ... ok
+test plugin_bus::tests::test_create_helper_messages ... ok
+test browser_automation::tests::test_execute_action_without_session_errors ... ok
+test flow_engine::tests::test_validate_flow_ok_and_errors ... ok
+test plugin_bus::tests::test_get_topology_lists_plugins_and_topics ... ok
+test browser_automation::tests::test_execute_action_click_and_type_are_ok ... ok
+test plugin_bus::tests::test_register_and_list_plugins ... ok
+test plugin_bus::tests::test_request_response_success ... ok
+test plugin_bus::tests::test_set_plugin_status ... ok
+test plugin_bus::tests::test_route_to_missing_plugin_errors ... ok
+test plugin_bus::tests::test_route_to_paused_plugin_returns_none ... ok
+test plugin_bus::tests::test_route_to_target_plugin_returns_ack ... ok
+test plugin_bus::tests::test_unregister_removes_plugin ... ok
+test plugin_bus::tests::test_subscribe_and_route_broadcast ... ok
+test requirement_compiler::tests::builds_valid_flow_definition ... ok
+test requirement_compiler::tests::classifies_guard_and_llm_nodes ... ok
+test requirement_compiler::tests::compile_with_llm_degrades_without_llm ... ok
+test types::tests::test_chat_message_factories_set_role ... ok
+test requirement_compiler::tests::compiles_mall_requirement_into_features_and_flow ... ok
+test types::tests::test_plugin_message_builder_chain ... ok
+test requirement_compiler::tests::compile_with_llm_merges_llm_features ... ok
+test requirement_compiler::tests::refine_appends_new_feature_and_rebuilds_flow ... ok
+test types::tests::test_resource_type_snake_case_serialization ... ok
+test types::tests::test_user_intent_serialization ... ok
+test types::tests::test_workflow_template_create_workflow_converts_connections_to_edges ... ok
+test workflow_engine::tests::test_compare_values_cross_type ... ok
+test workflow_engine::tests::test_condition_routes_true_branch_when_var_set ... ok
+test workflow_engine::tests::test_extract_var_names ... ok
+test workflow_engine::tests::test_eval_condition_semantics ... ok
+test workflow_engine::tests::test_enterprise_templates_execute_to_completion_without_network ... ok
+test workflow_engine::tests::test_finance_template_ai_degrades_and_condition_routes_false_branch ... ok
+
+test result: ok. 65 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\caomei_e2e.rs (target\debug\deps\caomei_e2e-0160929714f91d6b.exe)
+
+running 1 test
+test e2e_dialogue_to_fullstack_code_and_market_template ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+
+     Running unittests src\lib.rs (target\debug\deps\business_catalog-10ce6eaa39a637ee.exe)
+
+running 9 tests
+test spiral::tests::test_kinematics_relationships ... ok
+test spiral::tests::test_dimension_is_scalar_and_symbol ... ok
+test spiral::tests::test_dimension_mul_div_pow ... ok
+test spiral::tests::test_analyze_spiral_full_pipeline ... ok
+test spiral::tests::test_diagnose_dimensions_finds_break ... ok
+test spiral::tests::test_numerical_checks_non_empty ... ok
+test spiral::tests::test_physical_constants_default_fine_structure ... ok
+test tests::catalog_builds_all_businesses ... ok
+test tests::topology_has_six_dimension_entities ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\catalog.rs (target\debug\deps\catalog-4fd29fa44bd3799c.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\deps\flow_ai-0937819c3a916892.exe)
+
+running 83 tests
+test automation::tests::test_analyze_success_returns_none ... ok
+test automation::tests::test_error_category_classification ... ok
+test automation::tests::test_autotest_gen_has_main ... ok
+test automation::tests::test_patch_flow_with_fix ... ok
+test automation::tests::test_rule_based_import_fix ... ok
+test automation::tests::test_rbac_derive_roles_and_perms ... ok
+test codegen::tests::rejects_on_blocking_conflict ... ok
+test automation::tests::test_rule_based_keyerror_fix ... ok
+test codegen::tests::frontend_marks_guard_fields_required ... ok
+test codegen::tests::reverse_reports_missing_exception_handling ... ok
+test codegen::tests::db_schema_is_idempotent_ddl ... ok
+test codegen::tests::exception_handler_excluded_from_normal_layers ... ok
+test codegen::tests::reverse_parses_control_structures ... ok
+test codegen::tests::generated_identifiers_avoid_name_mangling ... ok
+test codegen::tests::generates_vue_frontend_skeleton ... ok
+test conflict::tests::auto_repair_inserts_guard_and_clears_conflict ... ok
+test conflict::tests::decision_without_else_warns ... ok
+test codegen::tests::generates_db_schema_from_db_access ... ok
+test codegen::tests::generates_layered_project ... ok
+test conflict::tests::detects_browser_contention ... ok
+test conflict::tests::detects_cycle_as_blocking ... ok
+test conflict::tests::detects_file_lock ... ok
+test codegen::tests::roundtrip_flow_to_code_to_flow ... ok
+test codegen::tests::scheduler_encodes_parallel_layers ... ok
+test conflict::tests::detects_missing_desensitize_guard ... ok
+test codegen::tests::tools_layer_has_semaphore_capacity ... ok
+test critpath::tests::critical_path_is_longest ... ok
+test critpath::tests::float_identifies_slack ... ok
+test critpath::tests::optimization_target_is_biggest_critical_node ... ok
+test dataflow::tests::detects_false_dependencies ... ok
+test dataflow::tests::keeps_raw_dependency ... ok
+test dataflow::tests::gateways_inserted ... ok
+test dataflow::tests::parallel_faster_than_sequential ... ok
+test dataflow::tests::side_effect_shell_disjoint_resources_parallelize ... ok
+test dataflow::tests::side_effect_shell_shared_resource_stays_ordered ... ok
+test dataflow::tests::waw_disjoint_writes_parallelize ... ok
+test dataflow::tests::waw_is_preserved ... ok
+test dataflow::tests::waw_same_write_stays_ordered ... ok
+test model::tests::cycle_detected ... ok
+test model::tests::reachability_transitive ... ok
+test model::tests::topo_is_linear ... ok
+test primitive::tests::balanced_is_equal_kappa_tau ... ok
+test pipeline::tests::browser_capacity_respected_in_schedule ... ok
+test pipeline::tests::no_repair_keeps_blocking_and_rejects_code ... ok
+test primitive::tests::closed_loop_consolidates_after_success ... ok
+test pipeline::tests::desensitize_guard_injected ... ok
+test pipeline::tests::auto_repair_clears_blocking_and_emits_code ... ok
+test pipeline::tests::optimized_graph_is_valid_dag ... ok
+test primitive::tests::closed_loop_eventually_passes_under_tight_budget ... ok
+test pipeline::tests::end_to_end_optimization_gains ... ok
+test pipeline::tests::summary_is_human_readable ... ok
+test pipeline::tests::topology_route_marks_fast_path ... ok
+test primitive::tests::conservation_holds_for_all_policies ... ok
+test primitive::tests::conservation_violation_is_reported ... ok
+test primitive::tests::closed_loop_explores_more_after_failure ... ok
+test primitive::tests::exploratory_favors_explore ... ok
+test primitive::tests::exploratory_generates_parallel_forks ... ok
+test primitive::tests::kb_pressure_nudges_kappa_up ... ok
+test primitive::tests::generated_topology_is_acyclic ... ok
+test primitive::tests::rescale_recovers_conservation ... ok
+test primitive::tests::repeated_success_accumulates_charge ... ok
+test primitive::tests::urgent_favors_reuse ... ok
+test primitive::tests::rich_kb_triggers_reuse_subflow ... ok
+test primitive::tests::success_commits_charge_and_stores_template ... ok
+test primitive::tests::regularize_fixes_resource_overrun ... ok
+test primitive::tests::end_to_end_builds_knowledge_across_runs ... ok
+test primitive::tests::validate_fails_resource_quota ... ok
+test schedule::tests::browser_capacity_one_serializes ... ok
+test primitive::tests::validate_passes_for_reasonable_budget ... ok
+test schedule::tests::model_routing_splits_tiers ... ok
+test schedule::tests::priority_prefers_critical_chain ... ok
+test schedule::tests::raising_capacity_enables_parallel ... ok
+test schedule::tests::respects_dependencies ... ok
+test tests::mermaid_has_shapes_and_arrows ... ok
+test topology::tests::decay_archives_cold_entities ... ok
+test tests::json_roundtrip ... ok
+test topology::tests::impact_propagates_both_directions ... ok
+test tests::optimize_reexport_works ... ok
+test topology::tests::ingest_flow_builds_bindings ... ok
+test topology::tests::route_falls_back_when_no_match ... ok
+test topology::tests::route_takes_fast_path_on_strong_hit ... ok
+test topology::tests::search_finds_skill ... ok
+test topology::tests::shortest_path_reaches_flow_tail ... ok
+
+test result: ok. 83 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running unittests src\bin\flowopt.rs (target\debug\deps\flowopt-130138edd7d5b4b3.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\deps\graph_algorithms-8a7b915918bf10a7.exe)
+
+running 6 tests
+test tests::test_stats ... ok
+test tests::test_adjacency_matrix ... ok
+test tests::test_laplacian ... ok
+test tests::test_graph_creation ... ok
+test tests::test_communities ... ok
+test tests::test_pagerank ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src\lib.rs (target\debug\deps\hermes_flow_bridge-ed48100121a28576.exe)
+
+running 17 tests
+test hooks::tests::execution_hook_blocks_on_veto ... ok
+test mini_hermes::tests::baseline_calls_llm_per_step ... ok
+test mini_hermes::tests::bridge_skips_llm_when_template_known ... ok
+test mini_hermes::tests::bridge_calls_llm_only_for_unknown_tail ... ok
+test hooks::tests::request_hook_records_and_routes ... ok
+test normalize::tests::maps_browser_tool ... ok
+test normalize::tests::no_edge_for_concurrent_same_turn ... ok
+test normalize::tests::maps_unknown_tool_to_external ... ok
+test plugin::tests::execution_middleware_blocks_when_vetoed ... ok
+test plugin::tests::plugin_registers_two_middlewares ... ok
+test plugin::tests::request_middleware_returns_route_source ... ok
+test recorder::tests::accumulates_nodes_into_session_graph ... ok
+test recorder::tests::separate_sessions_are_isolated ... ok
+test router::tests::no_match_for_unknown_seq ... ok
+test normalize::tests::infers_desensitize_tag ... ok
+test router::tests::registers_and_matches_template ... ok
+test bridge::tests::optimize_marks_non_veto_for_simple_graph ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\bridge_demo.rs (target\debug\deps\bridge_demo-d0d3baa0d33b95fd.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\session_e2e.rs (target\debug\deps\session_e2e-400affe20d4c459d.exe)
+
+running 6 tests
+test execution_middleware_blocks_when_algorithm_vetoes ... ok
+test unknown_session_has_no_graph ... ok
+test session_recording_accumulates_graph_nodes ... ok
+test router_short_circuits_repeated_sequence ... ok
+test optimize_runs_real_engine_and_passes_verification ... ok
+test full_chain_session_then_optimize_then_route_free ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\deps\kg_hub-7fd7ef25cfb33d02.exe)
+
+running 73 tests
+test govern::tests::fully_aligned_graph_has_full_coverage ... ok
+test govern::tests::dangling_requirement_reported_as_e7 ... ok
+test govern::tests::docs_and_external_deps_are_exempt_from_e6 ... ok
+test api::tests::malformed_json_returns_400_not_500 ... ok
+test govern::tests::empty_graph_does_not_divide_by_zero ... ok
+test api::tests::ingest_handler_rejects_empty_payload ... ok
+test govern::tests::missing_evidence_reported_as_e3_but_not_blocking_coverage ... ok
+test api::tests::trace_handler_grounds_code_to_requirement ... ok
+test api::tests::kb_ingest_handler_works ... ok
+test api::tests::overview_handler_returns_counts ... ok
+test govern::tests::deviation_output_is_deterministic ... ok
+test govern::tests::summary_aggregates_gate_and_deviation ... ok
+test api::tests::quick_search_handler_finds_node ... ok
+test api::tests::ingest_handler_accepts_inline_json ... ok
+test govern::tests::ungrounded_core_node_reported_as_e6 ... ok
+test api::tests::governance_and_loop_handlers_agree_on_pass ... ok
+test index::tests::bind_edge_weighs_more_than_reference ... ok
+test api::tests::routes_build_without_panic ... ok
+test index::tests::cjk_semantic_query_hits_by_bigram ... ok
+test index::tests::empty_query_returns_nothing ... ok
+test index::tests::keyword_search_finds_exact_name ... ok
+test index::tests::graph_expansion_brings_related_neighbors ... ok
+test index::tests::single_cjk_char_still_indexed ... ok
+test index::tests::kind_filter_excludes_other_types ... ok
+test index::tests::tokenize_handles_mixed_cjk_and_ascii ... ok
+test index::tests::vector_recall_works_and_dims_mismatch_is_tolerated ... ok
+test index::tests::results_are_deterministic ... ok
+test ingest::tests::cross_source_same_entity_merges_into_one_urn ... ok
+test ingest::tests::info_graph_ingest_maps_kinds_and_reports_dangling ... ok
+test ingest::tests::knowledge_base_forward_refs_resolve ... ok
+test ingest::tests::summarize_truncates_by_chars_not_bytes ... ok
+test ingest::tests::repeated_ingest_is_idempotent ... ok
+test loop_engine::tests::empty_run_is_rejected_not_panicking ... ok
+test loop_engine::tests::malformed_source_marks_normalize_failed_without_panic ... ok
+test loop_engine::tests::aligned_source_is_accepted_and_persisted ... ok
+test loop_engine::tests::eight_stages_all_execute_in_order ... ok
+test loop_engine::tests::dead_code_is_debt_not_structural_rejection ... ok
+test loop_engine::tests::deviated_source_goes_to_expert_review ... ok
+test loop_engine::tests::stage_codes_are_unique_s1_to_s8 ... ok
+test loop_engine::tests::mermaid_renders_all_stages_and_loops_back ... ok
+test loop_engine::tests::missing_edge_evidence_is_structural_rejection ... ok
+test loop_engine::tests::multi_source_ingest_merges_and_all_stats_recorded ... ok
+test loop_engine::tests::sense_stage_lists_all_sources ... ok
+test ontology::tests::docs_and_config_are_not_core_impl ... ok
+test ontology::tests::info_kind_thirteen_classes_all_mapped ... ok
+test loop_engine::tests::verify_graph_shortcut_matches_full_loop ... ok
+test ontology::tests::node_type_is_case_and_alias_tolerant ... ok
+test ontology::tests::relation_alias_maps_to_bind ... ok
+test ontology::tests::six_dim_layers_are_monotonic_by_design ... ok
+test reason::tests::bind_weight_is_strongest ... ok
+test reason::tests::bridge_preserves_node_and_edge_counts ... ok
+test reason::tests::impact_follows_edge_direction_only ... ok
+test reason::tests::hotspots_rank_hub_node_first ... ok
+test reason::tests::impact_on_unknown_node_is_empty_not_panic ... ok
+test reason::tests::impact_respects_hop_limit ... ok
+test reason::tests::isolated_finds_only_unlinked ... ok
+test reason::tests::layers_projected_into_knowledge_graph_properties ... ok
+test reason::tests::six_dim_coverage_counts_all_six_keys ... ok
+test reason::tests::trace_reaches_requirement_root ... ok
+test reason::tests::ungrounded_node_is_detected_as_deviation ... ok
+test tests::ingest_all_isolates_failures ... ok
+test tests::governance_is_clean_for_aligned_graph ... ok
+test tests::hotspots_and_mermaid_are_available ... ok
+test tests::ingest_builds_graph_and_index_together ... ok
+test urn::tests::all_seven_layers_roundtrip ... ok
+test tests::overview_reports_distribution ... ok
+test urn::tests::all_twenty_kind_codes_roundtrip ... ok
+test urn::tests::build_then_parse_roundtrip ... ok
+test tests::vector_search_via_index_mut ... ok
+test tests::trace_and_impact_work_end_to_end ... ok
+test tests::reingest_is_idempotent_at_hub_level ... ok
+test urn::tests::illegal_urn_rejected ... ok
+test urn::tests::windows_path_and_colon_are_normalized ... ok
+
+test result: ok. 73 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src\lib.rs (target\debug\deps\operator_core-bfd9ceb832f489c5.exe)
+
+running 29 tests
+test category::tests::test_workflow ... ok
+test category::tests::test_category_laws ... ok
+test conservation::tests::test_conservation_checker ... ok
+test category::tests::test_composed_operator ... ok
+test conservation::tests::test_l1_conservation ... ok
+test conservation::tests::test_l2_conservation ... ok
+test engine::tests::empty_pipeline_passthrough ... ok
+test monad::tests::test_op_monad_left_identity ... ok
+test monad::tests::test_state_monad ... ok
+test conservation::tests::test_residual_monitor ... ok
+test engine::tests::pipeline_chains_and_scales ... ok
+test engine::tests::pipeline_respects_probability_conservation ... ok
+test monad::tests::test_op_monad_right_identity ... ok
+test engine::tests::non_strict_reports_residual_without_failing ... ok
+test monad::tests::test_op_monad_associativity ... ok
+test engine::tests::strict_gating_blocks_conservation_violation ... ok
+test operator::tests::test_identity_operator ... ok
+test operator::tests::test_linear_operator ... ok
+test resource::tests::test_resource_cost_add ... ok
+test resource::tests::test_resource_usage_within_limits ... ok
+test state::tests::test_state_vector_creation ... ok
+test state::tests::test_state_vector_dot ... ok
+test state::tests::test_state_vector_from_vec ... ok
+test state::tests::test_state_vector_norm ... ok
+test state::tests::test_state_vector_normalize ... ok
+test state::tests::test_state_vector_residual ... ok
+test types::tests::test_type_id ... ok
+test types::tests::test_type_pair_composition ... ok
+test types::tests::test_type_pair_composition_mismatch ... ok
+
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\pipeline.rs (target\debug\deps\pipeline-d247483d09865aa9.exe)
+
+running 5 tests
+test pipeline_probability_conservation_ok_on_unit_vector ... ok
+test pipeline_non_strict_records_residual_without_failing ... ok
+test pipeline_chains_operators_and_tracks_resources ... ok
+test pipeline_propagates_operator_failure ... ok
+test pipeline_strict_gating_blocks_violation ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\deps\operator_wasm-e9e7bddc4254a95c.exe)
+
+running 1 test
+test tests::test_wasm_manager_creation ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\deps\optimizer-85e99445f97b7767.exe)
+
+running 8 tests
+test tests::test_add_dependency_unknown_operator_errors ... ok
+test tests::test_critical_path ... ok
+test tests::test_multiple_dags_topological_order_with_diamond ... ok
+test tests::test_cycle_detection_self_loop_fails_toposort ... ok
+test tests::test_cycle_detection_back_edge_fails_toposort ... ok
+test tests::test_resource_cost_aggregation_and_within_limits ... ok
+test tests::test_operator_resource_cost_aggregation ... ok
+test tests::test_dag_topological_sort ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\deps\primiflow_core-a4d754f917c55cbc.exe)
+
+running 53 tests
+test executor::tests::empty_chain_scores_zero ... ok
+test executor::tests::compute_scales_rows_deterministically ... ok
+test executor::tests::execute_chain_threads_outputs_and_scores ... ok
+test executor::tests::dispatch_each_toolkind_produces_rows ... ok
+test assoc::tests::code_node_has_full_trace_chain ... ok
+test gen::c2::tests::regularize_fixes_overrun ... ok
+test assoc::tests::mermaid_export_is_nonempty ... ok
+test gen::c2::tests::budget_factor_scales_c ... ok
+test gen::c2::tests::regularize_passes_reasonable_budget ... ok
+test gen::c2::tests::slider_extremes_map_correctly ... ok
+test gen::c3::tests::embedding_is_deterministic ... ok
+test gen::c1::tests::out_of_domain_is_rejected ... ok
+test gen::c3::tests::freeze_then_search_hits_same_domain ... ok
+test gen::c3::tests::domain_hard_filter_blocks_other_domain ... ok
+test gen::c3::tests::related_query_outranks_unrelated ... ok
+test gen::c4::tests::domain_whitelist ... ok
+test gen::c4::tests::empty_requirement_gets_fallback ... ok
+test assoc::tests::seed_is_fully_correspondent ... ok
+test gen::c4::tests::structures_into_subtasks ... ok
+test gen::c4::tests::emerge_produces_acyclic_topology ... ok
+test gen::c5::tests::export_includes_code_and_ddl ... ok
+test gen::c5::tests::generates_all_eight_docs ... ok
+test gen::c6::tests::clean_graph_passes_smoke ... ok
+test gen::c6::tests::cycle_fails_and_no_execution ... ok
+test gen::c6::tests::missing_tool_fails ... ok
+test gen::c6::tests::dangling_edge_fails ... ok
+test gen::c1::tests::confirm_gate_blocks_freeze_when_gate_failed ... ok
+test gen::c7::tests::cycle_is_detected ... ok
+test gen::c7::tests::edit_adds_node_and_history ... ok
+test gen::c7::tests::recompute_refreshes_state ... ok
+test gen::c7::tests::remove_node_clears_its_edges ... ok
+test gen::c1::tests::audio_input_is_transcribed ... ok
+test gen::c8::tests::normalize_collapses_whitespace ... ok
+test gen::c1::tests::deferred_freeze_waits_for_gate_confirmation ... ok
+test gen::c8::tests::rejects_unsupported_format ... ok
+test gen::c8::tests::transcribes_unknown_with_fallback ... ok
+test gen::c1::tests::end_to_end_text_requirement_completes ... ok
+test gen::c1::tests::immediate_policy_keeps_legacy_behavior ... ok
+test gen::c8::tests::transcribes_vocabulary_hit ... ok
+test gen::ddl::tests::ddl_has_six_tables ... ok
+test gen::schema::tests::artifact_kind_all_present ... ok
+test gen::schema::tests::project_pref_roundtrip ... ok
+test gen::schema::tests::trace_link_completeness ... ok
+test parse::tests::empty_falls_back_to_minimal_loop ... ok
+test parse::tests::exploratory_policy_detected ... ok
+test parse::tests::parses_chinese_business_description ... ok
+test gen::c1::tests::second_similar_requirement_reuses_asset ... ok
+test parse::tests::to_spec_feeds_pipeline ... ok
+test parse::tests::urgent_policy_detected ... ok
+test persistence::tests::memory_store_is_functional ... ok
+test persistence::tests::sqlite_memory_roundtrip ... ok
+test persistence::tests::file_persistence_survives_reopen ... ok
+test persistence::tests::sqlite_roundtrip_kb_and_graph ... ok
+
+test result: ok. 53 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.25s
+
+     Running tests\api_server.rs (target\debug\deps\api_server-e43a59247958dd0d.exe)
+
+running 11 tests
+test l5_options_preflight_returns_204 ... ok
+test l5_cors_headers_present_on_get ... ok
+test l5_health_returns_status_ok ... ok
+test l5_create_project_runs_full_loop ... ok
+test l5_get_topology_returns_mermaid ... ok
+test l5_freeze_increments_kb_assets ... ok
+test l5_get_project_detail ... ok
+test l5_list_projects_after_create ... ok
+test l5_regularize_reruns ... ok
+test l5_assets_search_filters ... ok
+test l5_replay_across_restart_continues_q ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests\enterprise_validation.rs (target\debug\deps\enterprise_validation-84c97e3d711479a1.exe)
+
+running 8 tests
+test l1_conservation_holds_for_all_policies ... ok
+test l1_policy_bias_direction ... ok
+test l1_reuse_pressure_raises_kappa ... ok
+test l2_balanced_pipeline_all_green ... ok
+test l2_overbudget_triggers_regularize ... ok
+test l2_assets_accumulate_across_requests ... ok
+test l3_e2e_runs_and_generates_artifacts ... ok
+test l4_doc_content_quality ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests\pipeline_exec.rs (target\debug\deps\pipeline_exec-6b8a67fabdd390df.exe)
+
+running 2 tests
+test pipeline_executes_real_operators_and_charges_q ... ok
+test run_all_persists_exec_records_per_requirement ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running unittests src\lib.rs (target\debug\deps\primiflow_fusion-5dedf13f87908c5c.exe)
+
+running 37 tests
+test config::tests::default_config_is_valid ... ok
+test config::tests::invalid_log_level_rejected ... ok
+test config::tests::env_overrides_apply ... ok
+test envelope::tests::envelope_bind_grows_chain ... ok
+test platform::tests::platform_envelope_is_conserved ... ok
+test envelope::tests::envelope_forwards_and_keeps_trace ... ok
+test registry::tests::data_tables_no_longer_isolated ... ok
+test sixdim::tests::coverage_below_floor_fails ... ok
+test ptdoc::tests::generates_ten_docs ... ok
+test sixdim::tests::coverage_meets_enterprise_floor ... ok
+test registry::tests::six_dim_sample_chain_present ... ok
+test sixdim::tests::duplicate_req_id_overwrites ... ok
+test registry::tests::fuses_all_thirteen_crates ... ok
+test sixdim::tests::empty_registry_coverage_zero ... ok
+test sixdim::tests::register_then_query_by_code ... ok
+test sixdim::tests::derived_graph_passes_full_gate ... ok
+test registry::tests::fused_graph_passes_full_gate ... ok
+test sixdim::tests::rejected_binding_does_not_break_gate ... ok
+test sixdim::tests::stats_accumulate ... ok
+test platform::tests::platform_reports_out_of_domain ... ok
+test unified::tests::binding_detects_orphan_feature ... ok
+test unified::tests::binding_zero_orphan_ok ... ok
+test unified::tests::conservation_gate_catches_residual ... ok
+test unified::tests::governance_g3_detects_duplicate_id ... ok
+test unified::tests::governance_g6_detects_implicit_dependency ... ok
+test unified::tests::governance_g7_detects_broken_doc_reference ... ok
+test unified::tests::governance_gates_dangling_and_evidence ... ok
+test platform::tests::gate_rejection_blocks_asset_freeze ... ok
+test unified::tests::sync_drift_blocks_publish ... ok
+test unified::tests::trace_binding_follows_bind_chain ... ok
+test platform::tests::gate_passed_allows_asset_freeze ... ok
+test platform::tests::platform_synthesize_completes_and_passes_gate ... ok
+test platform::tests::platform_accumulates_bindings_and_keeps_gate_green ... ok
+test platform::tests::p3_exit_gate_zero_orphan_connected_to_req ... ok
+test ptdoc::tests::export_writes_files ... ok
+test sixdim::tests::save_and_load_roundtrip ... ok
+test platform::tests::platform_emits_ptdoc_and_persists ... ok
+
+test result: ok. 37 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running unittests src\main.rs (target\debug\deps\primiflow_fusion-2fe1fb188ee1263a.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\server_test.rs (target\debug\deps\server_test-b1a2bc565918da5d.exe)
+
+running 7 tests
+test version_is_ok ... ok
+test health_is_ok ... ok
+test gate_endpoint_returns_report ... ok
+test auth_enforced_when_token_set ... ok
+test registry_query_after_synthesize ... ok
+test synthesize_runs_full_pipeline ... ok
+test docs_list_and_get ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running unittests src\lib.rs (target\debug\deps\runtime-46ac286e7903db49.exe)
+
+running 29 tests
+test cordis::bundle::tests::test_declarative_operator_type_check_fails ... ok
+test cordis::bundle::tests::test_declarative_operator_identity ... ok
+test cordis::lifecycle::tests::test_dispatch_echo ... ok
+test cordis::lifecycle::tests::test_dispatch_json_pick ... ok
+test cordis::lifecycle::tests::test_dispatch_math ... ok
+test cordis::lifecycle::tests::test_dispatch_unknown_action ... ok
+test cordis::lifecycle::tests::test_dispatch_math_missing_field ... ok
+test cordis::event_bus::tests::test_event_bus ... ok
+test cordis::event_bus::tests::test_event_bus_isolated_handlers ... ok
+test cordis::seam::tests::test_seam_registry ... ok
+test cordis::lifecycle::tests::test_turn_execute_step_success ... ok
+test cordis::lifecycle::tests::test_lifecycle_manager_roundtrip ... ok
+test market_migration::tests::crc32_known_vector ... ok
+test market_dsl::tests::convert_chain_preserves_semantics ... ok
+test market_migration::tests::zip_rejects_corrupt ... ok
+test cordis::lifecycle::tests::test_turn_execute_step_failure_marks_failed ... ok
+test cordis::profile::tests::test_load_profile ... ok
+test market_migration::tests::zip_roundtrip_stored ... ok
+test market_migration::tests::sign_verify_roundtrip ... ok
+test market_version::tests::semver_parse_and_precedence ... ok
+test market_version::tests::snapshot_name_parsing ... ok
+test rbac_middleware::tests::test_all_55_routes_have_permission ... ok
+test rbac_middleware::tests::test_audit_event_hash ... ok
+test rbac_middleware::tests::test_extract_roles ... ok
+test rbac_middleware::tests::test_audit_event_signature ... ok
+test rbac_middleware::tests::test_permission_check ... ok
+test rbac_middleware::tests::test_permission_from_route ... ok
+test rbac_middleware::tests::test_public_route ... ok
+test rbac_middleware::tests::test_role_inheritance ... ok
+
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\main.rs (target\debug\deps\operator_server-d806fa57196e3df8.exe)
+
+running 15 tests
+test market_migration::tests::zip_rejects_corrupt ... ok
+test market_migration::tests::crc32_known_vector ... ok
+test market_migration::tests::zip_roundtrip_stored ... ok
+test market_version::tests::semver_parse_and_precedence ... ok
+test market_version::tests::snapshot_name_parsing ... ok
+test market_dsl::tests::convert_chain_preserves_semantics ... ok
+test rbac_middleware::tests::test_all_55_routes_have_permission ... ok
+test market_migration::tests::sign_verify_roundtrip ... ok
+test rbac_middleware::tests::test_extract_roles ... ok
+test rbac_middleware::tests::test_audit_event_signature ... ok
+test rbac_middleware::tests::test_permission_check ... ok
+test rbac_middleware::tests::test_role_inheritance ... ok
+test rbac_middleware::tests::test_permission_from_route ... ok
+test rbac_middleware::tests::test_audit_event_hash ... ok
+test rbac_middleware::tests::test_public_route ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\market_version.rs (target\debug\deps\market_version-4f176d5303f93f1e.exe)
+
+running 10 tests
+test semver_parse_compare_and_bump ... ok
+test dsl_conversion_chain ... ok
+test zip_and_signature_roundtrip ... ok
+test prune_keeps_configured_limit ... ok
+test snapshot_rollback_and_changelog ... ok
+test import_conflict_strategies ... ok
+test read_falls_back_to_legacy_and_auto_migrates ... ok
+test migrate_legacy_dir_with_backup_and_audit ... ok
+test tenant_owner_permission_filters ... ok
+test init_state_creates_seed_and_index ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.29s
+
+     Running tests\runtime_integration.rs (target\debug\deps\runtime_integration-70b242cd22d0f2fa.exe)
+
+running 5 tests
+test runtime_integration_tests::test_audit_event_recorded ... ignored, 需要启动服务器
+test runtime_integration_tests::test_error_format_rfc9457 ... ignored, 需要启动服务器
+test runtime_integration_tests::test_health_endpoint ... ignored, 需要启动服务器
+test runtime_integration_tests::test_rbac_admin_has_all_permissions ... ignored, 需要启动服务器
+test runtime_integration_tests::test_rbac_viewer_denied_write ... ignored, 需要启动服务器
+
+test result: ok. 0 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\xuanji_e2e.rs (target\debug\deps\xuanji_e2e-019085b1c1718dab.exe)
+
+running 2 tests
+test e2e_regulated_tenant_blocks_raw_sensitive_write ... ok
+test e2e_governance_eight_gates_pipeline_publish_provenance ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\deps\template_market-5f74070d513c86ea.exe)
+
+running 7 tests
+test tests::remove_works ... ok
+test tests::publish_then_load_roundtrip ... ok
+test tests::fork_keeps_parent_link_and_artifacts ... ok
+test tests::ensure_seeded_is_idempotent ... ok
+test tests::seed_mall_templates_produces_reusable_mall_seeds ... ok
+test tests::list_filter_by_domain_and_keyword ... ok
+test tests::ranking_reflects_reuse_and_rating ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running unittests src\lib.rs (target\debug\deps\xuanji_expert-ce81fd1cfc30a934.exe)
+
+running 84 tests
+test audit::s3::tests::hour_key_format ... ok
+test audit::s3::tests::disabled_when_empty_bucket ... ok
+test audit::s3::tests::buffering_then_flush_empty_is_ok ... ok
+test audit::sink::tests::multi_empty_disabled ... ok
+test audit::sink::tests::multi_noop_is_usable ... ok
+test audit::syslog::tests::serialize_rfc5424 ... ok
+test audit::sink::tests::noop_append_ok ... ok
+test context::tests::mcp_tools_register_pools ... ok
+test context::tests::rbac_viewer_cannot_edit_flow ... ok
+test context::tests::rbac_viewer_denied_run ... ok
+test context::tests::rbac_admin_passes_all ... ok
+test context::tests::rbac_editor_can_edit_flow ... ok
+test expert::tests::blocking_risk_lowers_score ... ok
+test expert::tests::suggestion_offload_carry_tier ... ok
+test executor::tests::blocked_graph_not_executed ... ok
+test flow_loader::tests::loader_default_path ... ok
+test flow_loader::tests::missing_file_is_not_found ... ok
+test flow_loader::validate::tests::no_start_fails ... ok
+test flow_loader::validate::tests::good_flow_passes ... ok
+test flow_loader::validate::tests::guard_without_tags_fails ... ok
+test flow_loader::validate::tests::no_end_fails ... ok
+test flow_loader::tests::list_empty_dir ... ok
+test flow_loader::validate::tests::missing_edge_node_fails ... ok
+test flow_loader::validate::tests::orphan_node_fails ... ok
+test govern::tests::audit_chain_tamper_detected ... ok
+test govern::tests::govern_passes_when_approved_clean ... ok
+test govern::tests::govern_blocks_on_unapproved ... ok
+test govern::tests::status_gate ... ok
+test harness::tests::ctx_event_bus_works ... ok
+test harness::tests::effects_unwind_in_reverse ... ok
+test harness::tests::expert_plugin_bundle_runs ... ok
+test harness::tests::service_registry_roundtrip ... ok
+test harness::tests::waterfall_chains_and_delegates ... ok
+test ir::tests::auto_dimension_explicit_tag ... ok
+test ir::tests::auto_dimension_tags_llm_as_algo ... ok
+test ir::tests::priority_ordering ... ok
+test executor::tests::deterministic_execution_completes ... ok
+test flow_loader::yaml::tests::parse_roundtrip ... ok
+test programming::tests::from_llm_extract_is_draft_by_default ... ok
+test programming::tests::node_level_roundtrip_catches_missing_def ... ok
+test rbac::check::tests::admin_can_do_anything ... ok
+test rbac::check::tests::cross_tenant_denied ... ok
+test programming::tests::g_a_guard_blocks_ai_draft ... ok
+test rbac::check::tests::safety_approver_prod_write ... ok
+test rbac::check::tests::wildcard_everything ... ok
+test rbac::check::tests::viewer_cannot_write_prod ... ok
+test rbac::policy::tests::role_inheritance ... ok
+test pipeline::tests::sensitive_write_is_blocked ... ok
+test rbac::policy::tests::wildcard_match_exact ... ok
+test rbac::policy::tests::safety_approver_prod_write ... ok
+test programming::tests::confirmed_requirement_flows_to_emit ... ok
+test pipeline::tests::xuanji_double_league_fourteen_dimensions ... ok
+test pipeline::tests::xuanji_end_to_end_runs ... ok
+test rbac::check::tests::empty_roles_denied ... ok
+test rbac::policy::tests::wildcard_match_prefix ... ok
+test reconcile::tests::non_conflicting_suggestions_adopted ... ok
+test reconcile::tests::parallelize_not_adopted_when_serialize_conflict ... ok
+test rbac::check::tests::editor_can_write_test ... ok
+test reconcile::tests::complementary_constraints_not_escalated ... ok
+test reconcile::tests::permission_guard_injected ... ok
+test reconcile::tests::no_false_conflict_for_distinct_nodes ... ok
+test reconcile::tests::mutex_is_hard_not_pruned ... ok
+test reconcile::tests::resource_cap_applied ... ok
+test audit::syslog::tests::batch_policy_no_deadlock_under_concurrency ... ok
+test reconcile::tests::scores_recorded ... ok
+test reconcile::tests::same_priority_conflict_escalates ... ok
+test reconcile::tests::serialize_vs_parallelize_recorded ... ok
+test sensitivity::tests::desensitized_not_flagged_as_leak ... ok
+test sensitivity::tests::production_env_detection ... ok
+test bench::tests::benchmarks_run_and_are_positive ... ok
+test sensitivity::tests::production_or_sensitive_write ... ok
+test sensitivity::tests::raw_sensitive_flagged_as_leak ... ok
+test server::tests::demo_topology_has_skill_and_rule ... ok
+test tenant_policy::tests::all_eight_gates_present ... ok
+test tenant_policy::tests::regulated_tenant_stricter_policy ... ok
+test tenant_policy::tests::regulated_tenant_blocks_raw_sensitive_write ... ok
+test verify::tests::code_roundtrip_passes_for_generated_code ... ok
+test verify::tests::normal_optimization_passes_verification ... ok
+test verify::tests::veto_when_blocking_conflict_remains ... ok
+test tenant_policy::tests::dual_acceptance_requires_both_sides ... ok
+test verify::tests::veto_when_data_dependency_broken ... ok
+test bench::tests::table_and_csv_render ... ok
+test server::tests::viz_dto_builds_with_highlights ... ok
+test audit::s3::tests::sigv4_canonical_request_shape ... ok
+
+test result: ok. 84 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.37s
+
+     Running unittests src\bin\xuanji.rs (target\debug\deps\xuanji-5bd1934a1cd38320.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\debug_opt.rs (target\debug\deps\debug_opt-b17441d2af570fd1.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\end_to_end.rs (target\debug\deps\end_to_end-50789be8c67878a0.exe)
+
+running 5 tests
+test audit_chain_tamper_proof ... ok
+test browser_mutex_injected_from_resource_conflict ... ok
+test missing_desensitize_blocked_by_gate ... ok
+test xuanji_optimize_passes_and_audit_clean ... ok
+test rbac_denied_experts_skipped_not_panicked ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\enterprise_algorithm.rs (target\debug\deps\enterprise_algorithm-c3af7efe2aceec13.exe)
+
+running 9 tests
+test b2_dangerous_unbounded_should_be_blocked ... ok
+test g_a_blocks_vague_enterprise_intent ... ok
+test b3_protected_write_should_be_blocked ... ok
+test b4_exception_to_end_should_emit_ok ... ok
+test b5_subflow_node_level_roundtrip_ok ... ok
+test b6_bounded_loop_max_iter_in_code ... ok
+test a1_bounded_loop_emit_ok ... ok
+test b1_enterprise_parallel_emit_ok ... ok
+test debug_b1_veto_detail ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\expert_unit_tests.rs (target\debug\deps\expert_unit_tests-1df30e701a03ea70.exe)
+
+running 8 tests
+test expert_unit_tests::test_algorithm_suggests_model_routing ... ok
+test expert_unit_tests::test_business_detects_missing_error_handler ... ok
+test expert_unit_tests::test_business_detects_missing_else_branch ... ok
+test expert_unit_tests::test_permission_vetoes_prod_write_without_authz ... ok
+test expert_unit_tests::test_permission_detects_missing_desensitize_guard ... ok
+test expert_unit_tests::test_security_detects_external_call ... ok
+test expert_unit_tests::test_orthogonal_veto_chain ... ok
+test expert_unit_tests::test_security_detects_pii_leak_for_regulated_tenant ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\gap_p1_audit_chain_continuity.rs (target\debug\deps\gap_p1_audit_chain_continuity-d02e8cebb5ee595c.exe)
+
+running 6 tests
+test cross_version_hash_chain_continuous_across_versions ... ok
+test cross_version_chain_consistent_after_each_append ... ok
+test cross_version_tamper_earliest_version_detected ... ok
+test cross_version_tamper_middle_version_detected ... ok
+test empty_chain_has_no_latest_hash_and_genesis_anchor ... ok
+test tampered_hash_field_breaks_later_continuity ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\gap_p1_auto_repair_idempotency.rs (target\debug\deps\gap_p1_auto_repair_idempotency-ce6a605632c2f652.exe)
+
+running 3 tests
+test repair_remedy_shape_is_serializable_for_guard ... ok
+test serialize_mutex_is_idempotent_across_repeats ... ok
+test insert_guard_is_idempotent_across_repeats ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\gap_p1_multi_e1_permission_security_veto.rs (target\debug\deps\gap_p1_multi_e1_permission_security_veto-3edf5518c5428d32.exe)
+
+running 5 tests
+test graph_constructs_expected_access_modes ... ok
+test both_experts_skipped_without_edit_flow_capability ... ok
+test permission_only_veto_blocks_even_without_security ... ok
+test security_only_blocking_is_recorded_but_not_hard_veto ... ok
+test dual_violation_both_experts_object_and_flow_blocked ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\gap_p1_topology_route.rs (target\debug\deps\gap_p1_topology_route-912a460938598622.exe)
+
+running 9 tests
+test dijkstra_prefers_cheaper_multi_hop_path ... ok
+test route_falls_back_when_no_match ... ok
+test shortest_path_none_when_target_unreachable ... ok
+test route_falls_back_when_threshold_too_high ... ok
+test route_models_assigns_tiers_by_semantics ... ok
+test route_takes_fast_path_on_strong_hit ... ok
+test shortest_path_avoids_archived_entity ... ok
+test search_ranks_best_skill_first ... ok
+test ingest_flow_builds_node_tool_bindings ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\gap_p2_perf_boundaries.rs (target\debug\deps\gap_p2_perf_boundaries-c196dfe42a0e75a3.exe)
+
+running 10 tests
+test boundary_single_node_no_panic ... ok
+test boundary_single_task_graph_minimal ... ok
+test boundary_empty_graph_no_panic ... ok
+test concurrent_120_flow_executions_all_complete ... ok
+test cpm_deep_chain_preserves_real_data_dependency ... ok
+test boundary_ultra_large_fanout ... ok
+test boundary_ultra_deep_chain_with_data_deps ... ok
+test xuanji_optimize_1000_nodes_scales ... ok
+test cpm_1000_node_independent_tasks_parallelize ... ok
+test cpm_1000_node_fanout_is_fast_and_parallel ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.09s
+
+     Running unittests src\lib.rs (target\debug\deps\xuanji_system-faebffb9457d0e7e.exe)
+
+running 30 tests
+test crypto::tests::avalanche ... ok
+test crypto::tests::boundary_55_bytes ... ok
+test crypto::tests::deterministic ... ok
+test crypto::tests::boundary_56_bytes ... ok
+test crypto::tests::boundary_119_bytes ... ok
+test crypto::tests::known_vector_abc ... ok
+test crypto::tests::known_vector_empty ... ok
+test model::tests::audit_action_str_roundtrip ... ok
+test model::tests::channel_kind_equality ... ok
+test model::tests::member_status_allowed_transitions ... ok
+test model::tests::member_status_forbidden_transitions ... ok
+test model::tests::member_status_terminal_and_take_task ... ok
+test model::tests::new_id_has_prefix_and_unique ... ok
+test model::tests::task_status_allowed_transitions ... ok
+test crypto::tests::known_vector_long ... ok
+test model::tests::member_status_labels ... ok
+test model::tests::task_status_forbidden_transitions ... ok
+test model::tests::task_status_terminal ... ok
+test ratelimit::tests::independent_keys ... ok
+test ratelimit::tests::allows_up_to_limit_then_blocks ... ok
+test rbac::tests::admin_always_allowed_globally ... ok
+test rbac::tests::member_role_cannot_manage_members ... ok
+test rbac::tests::ownership_required_blocks_non_owner ... ok
+test rbac::tests::permission_as_str_roundtrip_unique ... ok
+test rbac::tests::role_inheritance_expands_permissions ... ok
+test rbac::tests::scope_task_restricts_binding ... ok
+test rbac::tests::scope_xuanji_restricts_binding ... ok
+test rbac::tests::unknown_member_denied ... ok
+test ratelimit::tests::zero_window_never_resets ... ok
+test ratelimit::tests::window_expiry_resets_counter ... ok
+
+test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.10s
+
+     Running unittests src\main.rs (target\debug\deps\xuanji_system-63de9af3200762be.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\business_rules.rs (target\debug\deps\business_rules-c52f943e19bd8825.exe)
+
+running 13 tests
+test nfr09_max_tasks_enforced ... ok
+test br21_member_status_machine_enforced ... ok
+test nfr09_max_members_enforced ... ok
+test nfr09_max_watchers_enforced ... ok
+test nfr09_max_subtasks_enforced ... ok
+test br04_invite_is_idempotent_per_email ... ok
+test br12_terminal_task_status_cannot_transition_out ... ok
+test nfr09_max_dependency_depth_enforced ... ok
+test nfr09_max_assignees_enforced ... ok
+test br18_authz_denial_is_audited ... ok
+test br10_done_gate_blocks_incomplete_work ... ok
+test br07_assign_validates_assignee_identity ... ok
+test br11_dependency_graph_is_dag ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\integration.rs (target\debug\deps\integration-8e45492c799be5fd.exe)
+
+running 8 tests
+test postgres_store_persists_and_replays ... ok
+test postgres_system_survives_restart ... ok
+test role_inheritance_and_scope ... ok
+test event_reactor_produces_notifications ... ok
+test quota_enforcement ... ok
+test full_lifecycle_and_rbac ... ok
+test store_persists_and_hashes_tokens ... ok
+test persistence_survives_restart ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+
+   Doc-tests ai_agent
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests business_catalog
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests flow_ai
+
+running 1 test
+test crates\flow-ai\src\lib.rs - (line 18) ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.83s
+
+   Doc-tests graph_algorithms
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests hermes_flow_bridge
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests kg_hub
+
+running 2 tests
+test crates\kg-hub\src\api.rs - api (line 4) ... ignored
+test crates\kg-hub\src\lib.rs - (line 23) ... ok
+
+test result: ok. 1 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 1.63s
+
+   Doc-tests operator_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests operator_wasm
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests optimizer
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests primiflow_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests primiflow_fusion
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests runtime
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests template_market
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests xuanji_expert
+
+running 1 test
+test crates\xuanji-expert\src\lib.rs - audit (line 45) ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.46s
+
+   Doc-tests xuanji_system
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+EXIT=0

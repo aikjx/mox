@@ -31,9 +31,9 @@ ROOT = os.path.dirname(HERE)
 os.sys.path.insert(0, ROOT)
 
 from core.config import Config                       # noqa: E402
-from core import capture                             # noqa: E402
+from core import capture, score_sheet                # noqa: E402
 
-app = FastAPI(title="Melody2Score 企业级可视化转谱", version="1.0.0")
+app = FastAPI(title="Melody2Score 企业级可视化转谱", version="1.1.0")
 # 关闭 pydantic 对 model_ 前缀的命名空间保护警告（我们使用 model_size 参数名）
 try:
     from pydantic import BaseModel
@@ -253,6 +253,48 @@ def download(fname: str):
     if not os.path.exists(fpath):
         raise HTTPException(404)
     return FileResponse(fpath, filename=fname, media_type="text/markdown")
+
+
+@app.post("/api/export-sheet")
+async def export_sheet(payload: dict):
+    """把识别结果导出为标准歌谱图片（PNG/PDF/SVG）。"""
+    try:
+        res = payload.get("result", {})
+        title = payload.get("title", "未命名旋律") or "未命名旋律"
+        fmt = (payload.get("format", "png") or "png").lower()
+        if fmt not in ("png", "pdf", "svg"):
+            raise HTTPException(400, "format 仅支持 png/pdf/svg")
+
+        safe = re.sub(r"[^\w一-鿿-]", "_", title)[:40]
+        ts = time.strftime("%Y%m%d_%H%M%S")
+        fname = f"{safe or 'melody'}_标准歌谱_{ts}.{fmt}"
+        fpath = os.path.join(SAVE_DIR, fname)
+
+        score_sheet.export_score(
+            notes=res.get("notes", []),
+            key=res.get("key", {"tonic": "C", "mode": "major"}),
+            bpm=float(res.get("bpm", 120)),
+            output_path=fpath,
+            title=title,
+            bars_per_row=int(payload.get("bars_per_row", 4)),
+            width_px=int(payload.get("width_px", 1200)),
+        )
+        return JSONResponse({"file": fname, "path": fpath})
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(500, f"导出歌谱失败: {e}")
+
+
+@app.get("/api/download-sheet/{fname}")
+def download_sheet(fname: str):
+    fpath = os.path.join(SAVE_DIR, fname)
+    if not os.path.exists(fpath):
+        raise HTTPException(404)
+    ext = os.path.splitext(fname)[1].lower()
+    mt = {"png": "image/png", "pdf": "application/pdf", "svg": "image/svg+xml"}.get(ext, "application/octet-stream")
+    return FileResponse(fpath, filename=fname, media_type=mt)
 
 
 def _algorithm_doc() -> str:

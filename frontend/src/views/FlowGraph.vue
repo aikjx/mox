@@ -50,7 +50,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
-import * as echarts from 'echarts'
+import * as echarts from '@/echarts'
 import { Share, Refresh, Connection } from '@element-plus/icons-vue'
 import { getGraph } from '@/api'
 import { NODE_TYPE_COLORS } from '@/types'

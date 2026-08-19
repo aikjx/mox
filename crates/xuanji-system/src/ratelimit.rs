@@ -34,7 +34,9 @@ impl RateLimiter {
         let now = Instant::now();
         match map.get_mut(key) {
             Some(b) => {
-                if now.duration_since(b.start) >= self.window {
+                let expired = self.window > Duration::ZERO
+                    && now.duration_since(b.start) >= self.window;
+                if expired {
                     b.count = 1;
                     b.start = now;
                     true
@@ -72,5 +74,37 @@ mod tests {
         assert!(!rl.check("k"), "超过上限应被拦截");
         // 不同键互不影响
         assert!(rl.check("other"));
+    }
+
+    #[test]
+    fn window_expiry_resets_counter() {
+        // 非零窗口：窗口过期后计数应重置
+        let rl = RateLimiter::new(2, 1);
+        assert!(rl.check("k"));
+        assert!(rl.check("k"));
+        assert!(!rl.check("k"), "窗口内应被拦截");
+        // 等待窗口过期，下一次 check 应视为新窗口放行
+        std::thread::sleep(std::time::Duration::from_millis(1100));
+        assert!(rl.check("k"), "窗口过期后计数应重置并放行");
+    }
+
+    #[test]
+    fn zero_window_never_resets() {
+        // window=0 视为一次性配额：达到上限后永不再放行（无时间基准可重置）
+        let rl = RateLimiter::new(2, 0);
+        assert!(rl.check("z"));
+        assert!(rl.check("z"));
+        assert!(!rl.check("z"), "0 窗口达上限后必须持续拦截");
+        std::thread::sleep(std::time::Duration::from_millis(5));
+        assert!(!rl.check("z"), "0 窗口不应因时差重置");
+    }
+
+    #[test]
+    fn independent_keys() {
+        let rl = RateLimiter::new(1, 60);
+        assert!(rl.check("a"));
+        assert!(!rl.check("a"));
+        assert!(rl.check("b"));
+        assert!(!rl.check("b"));
     }
 }

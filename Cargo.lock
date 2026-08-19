@@ -57,8 +57,8 @@ dependencies = [
  "base64 0.22.1",
  "chrono",
  "flow-ai",
- "operator-core",
  "graph-algorithms",
+ "operator-core",
  "petgraph",
  "reqwest 0.12.28",
  "rusqlite",
@@ -1175,6 +1175,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e629b9b98ef3dd8afe6ca2bd0f89306cec16d43d907889945bc5d6687f2f13c7"
 
 [[package]]
+name = "graph-algorithms"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "approx",
+ "nalgebra",
+ "operator-core",
+ "petgraph",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "h2"
 version = "0.3.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2172,19 +2185,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "graph-algorithms"
-version = "3.0.0-ai-powered"
-dependencies = [
- "anyhow",
- "approx",
- "nalgebra",
- "operator-core",
- "petgraph",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "operator-wasm"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -2864,11 +2864,11 @@ dependencies = [
  "chrono",
  "flow-ai",
  "futures-util",
+ "graph-algorithms",
  "hex",
  "hmac",
  "nalgebra",
  "operator-core",
- "graph-algorithms",
  "operator-wasm",
  "optimizer",
  "parking_lot",

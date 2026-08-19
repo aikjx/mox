@@ -264,3 +264,112 @@ pub struct Notification {
     pub related_task: Option<String>,
     pub created_at: DateTime<Utc>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ===== MemberStatus FSM（BR-21：不可绕过、终态不可复活）=====
+    #[test]
+    fn member_status_allowed_transitions() {
+        assert!(MemberStatus::Invited.can_transition(MemberStatus::Active));
+        assert!(MemberStatus::Invited.can_transition(MemberStatus::Left));
+        assert!(MemberStatus::Active.can_transition(MemberStatus::Suspended));
+        assert!(MemberStatus::Active.can_transition(MemberStatus::Left));
+        assert!(MemberStatus::Suspended.can_transition(MemberStatus::Active));
+        assert!(MemberStatus::Suspended.can_transition(MemberStatus::Left));
+    }
+
+    #[test]
+    fn member_status_forbidden_transitions() {
+        // 不得跳级 Invited -> Suspended
+        assert!(!MemberStatus::Invited.can_transition(MemberStatus::Suspended));
+        // 终态 Left 不可逆
+        assert!(!MemberStatus::Left.can_transition(MemberStatus::Active));
+        assert!(!MemberStatus::Left.can_transition(MemberStatus::Invited));
+        // Active 不能直接到 Done 等非法态
+        assert!(!MemberStatus::Active.can_transition(MemberStatus::Invited));
+    }
+
+    #[test]
+    fn member_status_terminal_and_take_task() {
+        assert!(MemberStatus::Left.is_terminal());
+        assert!(!MemberStatus::Active.is_terminal());
+        assert!(MemberStatus::Active.can_take_task());
+        assert!(!MemberStatus::Invited.can_take_task());
+        assert!(!MemberStatus::Suspended.can_take_task());
+        assert!(!MemberStatus::Left.can_take_task());
+    }
+
+    #[test]
+    fn member_status_labels() {
+        assert_eq!(MemberStatus::Invited.label(), "已邀请");
+        assert_eq!(MemberStatus::Active.label(), "活跃");
+        assert_eq!(MemberStatus::Suspended.label(), "已暂停");
+        assert_eq!(MemberStatus::Left.label(), "已退出");
+    }
+
+    // ===== TaskStatus FSM =====
+    #[test]
+    fn task_status_allowed_transitions() {
+        assert!(TaskStatus::Draft.can_transition(TaskStatus::Assigned));
+        assert!(TaskStatus::Draft.can_transition(TaskStatus::Cancelled));
+        assert!(TaskStatus::Assigned.can_transition(TaskStatus::InProgress));
+        assert!(TaskStatus::InProgress.can_transition(TaskStatus::InReview));
+        assert!(TaskStatus::InReview.can_transition(TaskStatus::Done));
+        assert!(TaskStatus::InReview.can_transition(TaskStatus::InProgress)); // 评审打回
+    }
+
+    #[test]
+    fn task_status_forbidden_transitions() {
+        // Done 是终态，不可再迁出
+        assert!(!TaskStatus::Done.can_transition(TaskStatus::InReview));
+        assert!(!TaskStatus::Done.can_transition(TaskStatus::Cancelled));
+        // 不可跳级
+        assert!(!TaskStatus::Draft.can_transition(TaskStatus::InProgress));
+        assert!(!TaskStatus::Assigned.can_transition(TaskStatus::Done));
+    }
+
+    #[test]
+    fn task_status_terminal() {
+        assert!(TaskStatus::Done.is_terminal());
+        assert!(TaskStatus::Cancelled.is_terminal());
+        assert!(!TaskStatus::InProgress.is_terminal());
+    }
+
+    #[test]
+    fn new_id_has_prefix_and_unique() {
+        let a = new_id("task");
+        let b = new_id("task");
+        assert!(a.starts_with("task_"));
+        assert!(b.starts_with("task_"));
+        assert_ne!(a, b, "UUID 应保证唯一");
+    }
+
+    #[test]
+    fn audit_action_str_roundtrip() {
+        let actions = [
+            AuditAction::AuthzDenied,
+            AuditAction::MemberStatusChange,
+            AuditAction::TaskStatusChange,
+            AuditAction::TaskAssign,
+        ];
+        let mut seen = std::collections::HashSet::new();
+        for a in actions {
+            assert!(seen.insert(a.as_str()), "重复审计动作字符串: {}", a.as_str());
+        }
+    }
+
+    #[test]
+    fn channel_kind_equality() {
+        assert_eq!(ChannelKind::Xuanji, ChannelKind::Xuanji);
+        assert_eq!(
+            ChannelKind::Task("t1".into()),
+            ChannelKind::Task("t1".into())
+        );
+        assert_ne!(
+            ChannelKind::Task("t1".into()),
+            ChannelKind::Task("t2".into())
+        );
+    }
+}

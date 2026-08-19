@@ -115,4 +115,62 @@ mod tests {
             "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
         );
     }
+
+    /// NIST 官方双块向量（长输入，覆盖跨 64 字节分块路径）
+    #[test]
+    fn known_vector_long() {
+        let input = b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
+        assert_eq!(
+            sha256_hex(input),
+            "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1"
+        );
+    }
+
+    /// 边界长度：填充使消息长度恰好贴近分块边界，验证 padding/长度追加逻辑
+    /// 55 字节 -> 单块（55 + 1 pad + 8 len = 64），不跨块
+    #[test]
+    fn boundary_55_bytes() {
+        let input = vec![b'a'; 55];
+        let out = sha256(&input);
+        assert_eq!(out.len(), 32);
+        // 与相同输入的二次计算结果一致
+        assert_eq!(out, sha256(&input));
+        // 不应与 56 字节输入碰撞
+        assert_ne!(out, sha256(&vec![b'a'; 56]));
+    }
+
+    /// 56 字节 -> 触发第二块（56 + 1 + 8 = 65 > 64）
+    #[test]
+    fn boundary_56_bytes() {
+        let input = vec![b'b'; 56];
+        let out = sha256(&input);
+        assert_eq!(out.len(), 32);
+        assert_eq!(out, sha256(&input));
+        assert_ne!(out, sha256(&vec![b'b'; 55]));
+    }
+
+    /// 119 字节 -> 双块边界附近（119 + 1 + 8 = 128 = 2 块）
+    #[test]
+    fn boundary_119_bytes() {
+        let input = vec![b'c'; 119];
+        let out = sha256(&input);
+        assert_eq!(out.len(), 32);
+        assert_eq!(out, sha256(&input));
+        assert_ne!(out, sha256(&vec![b'c'; 120]));
+    }
+
+    /// 确定性：相同输入产生相同输出
+    #[test]
+    fn deterministic() {
+        let input = b"xuanji-system-rbac-token";
+        assert_eq!(sha256_hex(input), sha256_hex(input));
+    }
+
+    /// 雪崩：单比特变化应显著改变输出
+    #[test]
+    fn avalanche() {
+        let a = sha256_hex(b"hello");
+        let b = sha256_hex(b"hellp");
+        assert_ne!(a, b);
+    }
 }

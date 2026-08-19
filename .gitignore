@@ -1,3 +1,5 @@
+*.mp4
+
 target_regress
 
 *.err
@@ -26,6 +28,9 @@ venv/
 *.log
 *.out
 logs/
+# 临时分析/构建日志（一次性产物，不入库）
+/*_log.txt
+/build_fe*.log
 
 # 运行时数据库（不入库）
 *.db

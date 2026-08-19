@@ -59,7 +59,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import * as echarts from 'echarts'
+import * as echarts from '@/echarts'
 import { getResources, getResourceHealth } from '@/api'
 
 const gaugeEl = ref(null)

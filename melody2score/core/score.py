@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
-"""歌谱生成层：music21 生成 musicxml + 简谱数字串。"""
+"""歌谱生成层：music21 生成 musicxml + 简谱数字串 + 标准歌谱图片。"""
 from typing import Dict, List, Tuple
 
 import numpy as np
 import librosa
 from music21 import note as m21note
 from music21 import stream, key as m21key, tempo as m21tempo
+
+from core import score_sheet
+
+# 公开标准歌谱导出函数，方便从 core.score 一处入口调用
+export_score_sheet = score_sheet.export_score
 
 
 def to_musicxml(notes: List[Dict], bpm: float, key_name: Tuple[str, str], fp=None):
