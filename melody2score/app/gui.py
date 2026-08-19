@@ -208,7 +208,11 @@ def _clef_bottom(lo, hi):
 
 
 class StaffView(QWidget):
-    """标准五线谱：5 线 + 谱号 + 调号 + 拍号 + 按真实音高落在线/间 + 时值 + 小节线。"""
+    """标准五线谱：5 线 + 谱号 + 调号 + 拍号 + 按真实音高落在线/间 + 时值 + 小节线。
+
+    性能：整张谱面离屏渲染到 QPixmap 缓存，只在数据变化或尺寸变化时重绘；
+    常规 paintEvent 仅把缓存 blit 到屏幕，避免每次 resize/滚动都重算全部音符绘制。
+    """
     def __init__(self):
         super().__init__()
         self.notes = []
@@ -216,12 +220,16 @@ class StaffView(QWidget):
         self.bpm = 120.0
         self.beats_per_bar = 4
         self.setMinimumHeight(260)
+        self._cache = QPixmap()
+        self._cache_w = 0
+        self._cache_h = 0
 
     def setData(self, notes, key, bpm=120.0, beats_per_bar=4):
         self.notes = notes or []
         self.key = key or {"tonic": "C", "mode": "major"}
         self.bpm = bpm
         self.beats_per_bar = beats_per_bar
+        self._cache = QPixmap()   # 数据变化，强制下次重绘缓存
         self.update()
 
     def _key_sig(self):
@@ -230,11 +238,12 @@ class StaffView(QWidget):
         v = (_MINOR_SHARPS if mode == "minor" else _MAJOR_SHARPS).get(tonic, 0)
         return (v, 0) if v > 0 else (0, -v)
 
-    def paintEvent(self, ev):
-        p = QPainter(self)
+    def _render_to(self, pix: QPixmap):
+        """把整张谱面绘制到离屏 pixmap（仅数据/尺寸变化时调用）。"""
+        pix.fill(QColor(BG))
+        p = QPainter(pix)
         p.setRenderHint(QPainter.Antialiasing)
-        p.fillRect(self.rect(), QColor(BG))
-        W, H = self.width(), self.height()
+        W, H = pix.width(), pix.height()
 
         if not self.notes:
             p.setPen(QColor(MUTED))
@@ -247,7 +256,6 @@ class StaffView(QWidget):
         lo, hi = min(midi_all), max(midi_all)
         clef_bot = _clef_bottom(lo, hi)
         gap = 11
-        # 使谱表垂直居中
         y0 = H // 2 + 2 * gap     # 底线 y
 
         # ---- 五条线 ----
@@ -284,8 +292,7 @@ class StaffView(QWidget):
         p.drawText(padL - 8, int(y0 - 3 * gap - 2), str(self.beats_per_bar))
         p.drawText(padL - 8, int(y0 + 14), "4")
 
-        def step_xy(step, x):
-            return x, y0 - (step // 2) * gap
+        step_xy = lambda step, x: (x, y0 - (step // 2) * gap)
 
         def draw_ledgers(step, nx):
             p.setPen(QPen(QColor(LINE), 1))
@@ -296,7 +303,7 @@ class StaffView(QWidget):
             if step < 0:                       # 底线之下
                 for k in range(1, (-step) // 2 + 1):
                     ly = y0 + k * gap
-                    p.drawLine(int(nx - 9), int(ly), int(nx + 9), int(ly))
+                    p.drawLine(int(nx - .0), int(ly), int(nx + 9), int(ly))
 
         beat_dur = 60.0 / max(self.bpm, 1.0)
         start_t = self.notes[0]["start"]
@@ -305,7 +312,6 @@ class StaffView(QWidget):
         xOf = lambda t: padL + 30 + (t - start_t) / total * (W - padR - padL - 40)
 
         note_color = QColor(ACCENT2)
-        p.setBrush(QBrush(note_color))
         beat_acc = 0.0
         for n in self.notes:
             m = int(round(n["midi"]))
@@ -316,24 +322,20 @@ class StaffView(QWidget):
             r = 5
             is_whole = beats >= 3.5
             is_half = 1.5 <= beats < 3.5
-            # 符头（全/二分空心，其余实心）
             p.setPen(QPen(note_color, 1.5))
             if is_whole or is_half:
                 p.setBrush(Qt.NoBrush)
             else:
                 p.setBrush(QBrush(note_color))
             p.drawEllipse(int(nx - r), int(ny - int(r * 0.7)), int(r * 2), int(r * 1.4))
-            # 符干（全音符无干）
             if not is_whole:
                 stem_top = ny - 26
                 p.drawLine(int(nx + r), int(ny - 1), int(nx + r), int(stem_top))
-                if beats < 0.75:               # 八分音符尾
+                if beats < 0.75:
                     p.drawLine(int(nx + r), int(stem_top), int(nx + r + 9), int(stem_top + 9))
-            # 附点（二分/四分带附点）
             if (is_half or (0.75 <= beats < 1.5)) and abs(beats - round(beats) - 0.5) < 0.12:
                 p.setBrush(QBrush(note_color))
                 p.drawEllipse(int(nx + r + 4), int(ny - 2), 3, 3)
-            # 小节线
             beat_acc += beats
             if beat_acc >= self.beats_per_bar - 1e-6:
                 p.setPen(QPen(QColor(LINE), 1))
@@ -343,6 +345,17 @@ class StaffView(QWidget):
         # 终止线
         p.setPen(QPen(QColor(LINE), 2))
         p.drawLine(W - padR, int(y0), W - padR, int(y0 - 4 * gap))
+        p.end()
+
+    def paintEvent(self, ev):
+        W, H = self.width(), self.height()
+        # 缓存失效（无缓存 / 尺寸变化）→ 重建离屏谱面
+        if self._cache.isNull() or self._cache_w != W or self._cache_h != H:
+            self._cache = QPixmap(W, H)
+            self._cache_w, self._cache_h = W, H
+            self._render_to(self._cache)
+        p = QPainter(self)
+        p.drawPixmap(0, 0, self._cache)
 
 class PitchView(QWidget):
     """量化音高轮廓（音符级阶梯）。"""
@@ -676,7 +689,7 @@ class MainWindow(QMainWindow):
         pv.addWidget(self.cbDenoise)
         # 稳健重识别：多次识别取共识，抑制单次偶发假音高/漏音
         self.cbRobust = QCheckBox("稳健重识别（多次取共识，更准但更慢）")
-        self.cbRobust.setChecked(True)
+        self.cbRobust.setChecked(False)   # 默认关闭：识别只跑 1 遍，大幅提速；需更准时再勾选
         pv.addWidget(self.cbRobust)
         pv.addWidget(QLabel("帧移 hop(ms)"))
         self.slHop = QSlider(Qt.Horizontal)
@@ -844,11 +857,17 @@ class MainWindow(QMainWindow):
         man = resource_path("audio", "manifest.json")
         self.manifest = []
         if not os.path.exists(man):
-            # 打包模式下若 _MEIPASS 下无样例，回退到 exe 旁目录（兼容旧布局）
+            # 打包（onedir）模式下若 _MEIPASS 解析失败，回退到 exe 旁的
+            # _internal/audio/（PyInstaller 实际放置位置）
             if is_frozen():
-                alt = os.path.join(os.path.dirname(sys.executable), "audio", "manifest.json")
-                if os.path.exists(alt):
-                    man = alt
+                base = os.path.dirname(sys.executable)
+                for cand in (
+                    os.path.join(base, "_internal", "audio", "manifest.json"),
+                    os.path.join(base, "audio", "manifest.json"),
+                ):
+                    if os.path.exists(cand):
+                        man = cand
+                        break
         if not os.path.exists(man):
             self.sampleCombo.clear()
             self.sampleCombo.addItem("（暂无样例，可点击下方「添加样例」导入）")

@@ -50,6 +50,9 @@ SPEC_DEFAULT = HERE / "build_exe.spec"
 LOG_FILE = HERE / "build_exe.log"
 
 # 发行版需要随包分发的数据目录 / 文件（相对 HERE）
+# 注：真正打入 exe 的是 build_exe.spec 里的 datas（audio 用 Tree 递归收集，
+# 保证 144 个 .wav + manifest.json 全部随包）。此处 BUNDLE_DATA 仅作为
+# 打包后校验的基准（目录非空检查 + 样例 wav 数量比对）。
 BUNDLE_DATA = [
     ("app", "app"),
     ("core", "core"),
@@ -271,6 +274,26 @@ def main(argv=None) -> int:
                 missing.append(rel)
     if missing:
         log.warn(f"以下数据目录未正确打入: {missing}（请检查 spec 的 datas 配置）")
+
+    # 关键：校验「内置经典样例」音频确实随包打入，不达标直接报错
+    audio_src = HERE / "audio"
+    audio_dst = internal / "audio"
+    src_wavs = sorted(audio_src.glob("*.wav")) if audio_src.exists() else []
+    src_manifest = audio_src / "manifest.json"
+    bundled_wavs = sorted(audio_dst.glob("*.wav")) if audio_dst.exists() else []
+    if not src_wavs:
+        log.warn("源码 audio/ 下未找到任何 .wav 样例，将打包一个无样例的发行版。")
+    elif len(bundled_wavs) < len(src_wavs):
+        log.error(
+            f"内置样例打包不完整：源码 {len(src_wavs)} 个 .wav，"
+            f"发行版仅 {len(bundled_wavs)} 个。请检查 spec 中 audio 的 Tree/ datas 配置。"
+        )
+        return 4
+    elif not (audio_dst / "manifest.json").exists() and src_manifest.exists():
+        log.error("内置样例 manifest.json 未打入发行版，样例清单将加载失败。")
+        return 4
+    else:
+        log.info(f"内置经典样例校验通过：{len(bundled_wavs)} 个 .wav + manifest.json 已随包打入。")
 
     write_launcher_and_readme(dist)
 

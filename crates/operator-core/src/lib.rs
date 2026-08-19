@@ -134,17 +134,68 @@ pub struct ExecutionResult {
 }
 
 /// 算子元数据
+///
+/// `input_type` / `output_type` 使用 `TypeIdentifier` 而非原始字符串，
+/// 使得算子类型可以参与编译期检查（通过 `TypeCheck` trait），
+/// 同时保留 `name` 字段供人类可读的描述。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OperatorMetadata {
     pub id: String,
     pub name: String,
     pub version: String,
     pub description: String,
-    pub input_type: String,
-    pub output_type: String,
+    pub input_type: TypeIdentifier,
+    pub output_type: TypeIdentifier,
     pub resource_cost: ResourceCost,
     pub author: String,
     pub tags: Vec<String>,
+}
+
+impl OperatorMetadata {
+    /// 从实现了 `TypeCheck` 的算子构造元数据，自动填充类型标识
+    pub fn from_operator<O: crate::types::TypeCheck>(op: &O, id: String, name: String) -> Self {
+        Self {
+            id,
+            name,
+            version: "1.0.0".to_string(),
+            description: String::new(),
+            input_type: op.input_type(),
+            output_type: op.output_type(),
+            resource_cost: ResourceCost::default(),
+            author: "System".to_string(),
+            tags: Vec::new(),
+        }
+    }
+
+    /// 构造后链式设置描述
+    pub fn with_description(mut self, desc: impl Into<String>) -> Self {
+        self.description = desc.into();
+        self
+    }
+
+    /// 构造后链式设置版本
+    pub fn with_version(mut self, version: impl Into<String>) -> Self {
+        self.version = version.into();
+        self
+    }
+
+    /// 构造后链式设置作者
+    pub fn with_author(mut self, author: impl Into<String>) -> Self {
+        self.author = author.into();
+        self
+    }
+
+    /// 构造后链式设置标签
+    pub fn with_tags(mut self, tags: Vec<String>) -> Self {
+        self.tags = tags;
+        self
+    }
+
+    /// 构造后链式设置资源消耗
+    pub fn with_resource_cost(mut self, cost: ResourceCost) -> Self {
+        self.resource_cost = cost;
+        self
+    }
 }
 
 /// 生成唯一算子ID
