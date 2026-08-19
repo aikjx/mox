@@ -13,6 +13,7 @@ use graph_algorithms::{KnowledgeEdge, KnowledgeGraph, KnowledgeNode};
 use rusqlite::params;
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use tokio::sync::RwLock;
 use uuid::Uuid;
@@ -42,6 +43,31 @@ fn default_weight() -> f64 {
     1.0
 }
 
+/// SQLite 表结构（会话 + 消息 + 索引），幂等创建
+const DB_SCHEMA: &str = r#"
+    CREATE TABLE IF NOT EXISTS dialogue_sessions (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS dialogue_messages (
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL,
+        role TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_msg_session ON dialogue_messages(session_id);
+    CREATE INDEX IF NOT EXISTS idx_msg_content ON dialogue_messages(content);
+    "#;
+
+/// 初始化 SQLite 表结构（文件库与内存库共用）
+fn init_schema(conn: &Connection) -> Result<()> {
+    conn.execute_batch(DB_SCHEMA)?;
+    Ok(())
+}
+
 /// LLM 返回的抽取结构
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 struct LlmExtract {
@@ -59,6 +85,12 @@ pub struct DialogueGraphSyncer {
     llm: Arc<RwLock<LLMClient>>,
     /// 是否全自动同步（默认 true）
     auto_sync: Arc<RwLock<bool>>,
+    /// 布局是否需要重算（企业级：异步/后台触发布局优化）
+    layout_dirty: Arc<AtomicBool>,
+    /// 布局重算间隔（0=关闭自动，仅显式触发；n>0=每 n 条用户消息重算；默认 1=每条都算）
+    layout_interval: Arc<AtomicUsize>,
+    /// 已同步消息计数（用于间隔触发）
+    msg_count: Arc<AtomicUsize>,
 }
 
 impl DialogueGraphSyncer {
@@ -68,31 +100,16 @@ impl DialogueGraphSyncer {
         llm: Arc<RwLock<LLMClient>>,
     ) -> Result<Self> {
         let conn = Connection::open(db_path)?;
-        conn.execute_batch(
-            r#"
-            CREATE TABLE IF NOT EXISTS dialogue_sessions (
-                id TEXT PRIMARY KEY,
-                title TEXT NOT NULL,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS dialogue_messages (
-                id TEXT PRIMARY KEY,
-                session_id TEXT NOT NULL,
-                role TEXT NOT NULL,
-                content TEXT NOT NULL,
-                created_at TEXT NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS idx_msg_session ON dialogue_messages(session_id);
-            CREATE INDEX IF NOT EXISTS idx_msg_content ON dialogue_messages(content);
-            "#,
-        )?;
+        init_schema(&conn)?;
 
         Ok(Self {
             db: Arc::new(Mutex::new(conn)),
             graph,
             llm,
             auto_sync: Arc::new(RwLock::new(true)),
+            layout_dirty: Arc::new(AtomicBool::new(false)),
+            layout_interval: Arc::new(AtomicUsize::new(1)),
+            msg_count: Arc::new(AtomicUsize::new(0)),
         })
     }
 
@@ -101,11 +118,16 @@ impl DialogueGraphSyncer {
         graph: Arc<RwLock<KnowledgeGraph>>,
         llm: Arc<RwLock<LLMClient>>,
     ) -> Self {
+        let conn = Connection::open_in_memory().unwrap();
+        init_schema(&conn).unwrap();
         Self {
-            db: Arc::new(Mutex::new(Connection::open_in_memory().unwrap())),
+            db: Arc::new(Mutex::new(conn)),
             graph,
             llm,
             auto_sync: Arc::new(RwLock::new(true)),
+            layout_dirty: Arc::new(AtomicBool::new(false)),
+            layout_interval: Arc::new(AtomicUsize::new(1)),
+            msg_count: Arc::new(AtomicUsize::new(0)),
         }
     }
 
@@ -115,6 +137,24 @@ impl DialogueGraphSyncer {
 
     pub async fn is_auto_sync(&self) -> bool {
         *self.auto_sync.read().await
+    }
+
+    /// 设置布局重算间隔（企业级性能调优）：
+    /// - `0` = 关闭自动布局，仅由 `recompute_layout()` 显式/后台触发（配合 debounce）
+    /// - `n>0` = 每 `n` 条用户消息重算一次（默认 `1`，即每条都算，等价于旧行为）
+    pub fn set_layout_interval(&self, n: usize) {
+        self.layout_interval.store(n, Ordering::SeqCst);
+    }
+
+    /// 显式重算布局（PageRank + 社区发现），仅当存在未重算增量（脏标记）时执行。
+    /// 配合 `set_layout_interval(0)` 使用，可由 debounce / 后台任务周期性调用，避免每条消息全图重算。
+    pub async fn recompute_layout(&self) {
+        if !self.layout_dirty.load(Ordering::SeqCst) {
+            return;
+        }
+        let mut graph = self.graph.write().await;
+        apply_layout(&mut graph);
+        self.layout_dirty.store(false, Ordering::SeqCst);
     }
 
     /// 新建会话
@@ -160,72 +200,81 @@ impl DialogueGraphSyncer {
 
     /// 用 LLM 从一段对话内容中抽取实体/关系并写入图谱（含布局优化）
     pub async fn sync_message_to_graph(&self, session_id: &str, content: &str) -> Result<usize> {
-        let extracted = self.extract_with_llm(content).await?;
+        let raw = self.extract_with_llm(content).await?;
+        let (extracted, dropped) = sanitize_extracted(raw);
+        if dropped > 0 {
+            tracing::warn!("对话抽取结果含 {dropped} 个越界实体/关系(疑似提示注入), 已丢弃");
+        }
         if extracted.entities.is_empty() {
             return Ok(0);
         }
 
         let mut graph = self.graph.write().await;
         let session_node = format!("dialogue:{}", session_id);
-        // 每个会话一个对话节点，作为被抽取概念的归属锚点
-        graph.add_node(KnowledgeNode {
-            id: session_node.clone(),
-            label: format!("对话#{}", &session_id[..8.min(session_id.len())]),
-            node_type: "dialogue".to_string(),
-            properties: serde_json::json!({ "session_id": session_id }),
-            embedding: None,
-            activation: 0.0,
-            metadata: HashMap::new(),
-        });
-
-        for ent in &extracted.entities {
-            let node_id = sanitize_id(&ent.name);
+        // 每个会话一个对话锚点节点（幂等：已存在则复用，避免每条消息重复创建）
+        if graph.get_node(&session_node).is_none() {
             graph.add_node(KnowledgeNode {
-                id: node_id.clone(),
-                label: ent.name.clone(),
-                node_type: ent.entity_type.clone(),
-                properties: serde_json::json!({}),
+                id: session_node.clone(),
+                label: format!("对话#{}", &session_id[..8.min(session_id.len())]),
+                node_type: "dialogue".to_string(),
+                properties: serde_json::json!({ "session_id": session_id }),
                 embedding: None,
                 activation: 0.0,
                 metadata: HashMap::new(),
             });
+        }
+
+        for ent in &extracted.entities {
+            let node_id = sanitize_id(&ent.name);
+            // 幂等：相同概念节点只创建一次（避免跨消息重复入图）
+            if graph.get_node(&node_id).is_none() {
+                graph.add_node(KnowledgeNode {
+                    id: node_id.clone(),
+                    label: ent.name.clone(),
+                    node_type: ent.entity_type.clone(),
+                    properties: serde_json::json!({}),
+                    embedding: None,
+                    activation: 0.0,
+                    metadata: HashMap::new(),
+                });
+            }
             // 概念 -> 对话 锚点，权重体现归属强度
-            let _ = graph.add_edge(KnowledgeEdge {
+            if let Err(e) = graph.add_edge(KnowledgeEdge {
                 source: node_id,
                 target: session_node.clone(),
                 weight: ent.weight.max(0.5),
                 relation_type: "mentioned_in".to_string(),
                 properties: serde_json::json!({}),
-            });
+            }) {
+                tracing::warn!("图谱边(mentioned_in)写入失败(已跳过): {e}");
+            }
         }
 
         for rel in &extracted.relations {
             let src = sanitize_id(&rel.source);
             let tgt = sanitize_id(&rel.target);
-            let _ = graph.add_edge(KnowledgeEdge {
+            if let Err(e) = graph.add_edge(KnowledgeEdge {
                 source: src,
                 target: tgt,
                 weight: rel.weight,
                 relation_type: rel.relation.clone(),
                 properties: serde_json::json!({}),
-            });
+            }) {
+                tracing::warn!("图谱关系边({})写入失败(已跳过): {}", rel.relation, e);
+            }
         }
 
-        // 自动布局优化：重算中心性 + 社区发现，结果回写 metadata 供前端布局
-        let pr = graph.centrality_metrics();
-        for (id, score) in pr.pagerank {
-            if let Some(node) = graph.get_node_mut(&id) {
-                node.metadata.insert("pagerank".to_string(), format!("{score:.4}"));
-            }
-        }
-        let communities = graph.detect_communities(8);
-        for (ci, comm) in communities.iter().enumerate() {
-            for nid in &comm.nodes {
-                if let Some(node) = graph.get_node_mut(nid) {
-                    node.metadata
-                        .insert("community".to_string(), ci.to_string());
-                }
-            }
+        // 自动布局优化（企业级：按 layout_interval 节流，避免每条消息全图重算）
+        let count = self.msg_count.fetch_add(1, Ordering::SeqCst) + 1;
+        let interval = self.layout_interval.load(Ordering::SeqCst);
+        if interval == 0 {
+            // 关闭自动布局：仅标记脏，由 recompute_layout() 显式/后台触发
+            self.layout_dirty.store(true, Ordering::SeqCst);
+        } else if count.is_multiple_of(interval) {
+            apply_layout(&mut graph);
+            self.layout_dirty.store(false, Ordering::SeqCst);
+        } else {
+            self.layout_dirty.store(true, Ordering::SeqCst);
         }
         Ok(extracted.entities.len())
     }
@@ -388,23 +437,24 @@ impl DialogueGraphSyncer {
         let mut graph = self.graph.write().await;
         let mut node_n = 0usize;
         for n in bundle.graph_nodes {
-            graph.add_node(n);
-            node_n += 1;
+            // 幂等：已存在的节点复用，避免重复入图（导入导出迁移需可重放）
+            if graph.get_node(&n.id).is_none() {
+                graph.add_node(n);
+                node_n += 1;
+            }
         }
         let mut edge_n = 0usize;
         for e in bundle.graph_edges {
             if graph.get_node(&e.source).is_some() && graph.get_node(&e.target).is_some() {
-                let _ = graph.add_edge(e);
+                if let Err(err) = graph.add_edge(e) {
+                    tracing::warn!("导入边写入失败(已跳过): {err}");
+                    continue;
+                }
                 edge_n += 1;
             }
         }
         // 重新布局优化
-        let pr = graph.centrality_metrics();
-        for (id, score) in pr.pagerank {
-            if let Some(node) = graph.get_node_mut(&id) {
-                node.metadata.insert("pagerank".to_string(), format!("{score:.4}"));
-            }
-        }
+        apply_layout(&mut graph);
         Ok(ImportReport {
             sessions: bundle.sessions.len(),
             messages: bundle.sessions.iter().map(|s| s.messages.len()).sum(),
@@ -526,33 +576,16 @@ fn build_extract_prompt(content: &str) -> String {
 
 /// 容错解析 LLM 返回的 JSON（允许包裹在 markdown 代码块中）
 fn parse_llm_json<T: serde::de::DeserializeOwned>(text: &str) -> Result<T> {
-    let trimmed = text.trim();
-    let json_str = if let Some(start) = trimmed.find('{') {
-        let end = trimmed.rfind('}').unwrap_or(trimmed.len() - 1);
-        &trimmed[start..=end]
-    } else {
-        return Err(anyhow!("无 JSON 内容"));
-    };
-    Ok(serde_json::from_str(json_str)?)
+    match crate::util::extract_json_object(text) {
+        Some(json) => Ok(serde_json::from_str(json)?),
+        None => Err(anyhow!("无 JSON 内容")),
+    }
 }
 
 /// LLM 不可用时的降级：从内容中匹配已知算子/算法关键词
 fn rule_based_extract(content: &str) -> LlmExtract {
-    let known: &[(&str, &str)] = &[
-        ("线性变换", "operator"),
-        ("激活函数", "operator"),
-        ("归一化", "operator"),
-        ("卷积", "operator"),
-        ("注意力", "operator"),
-        ("注意力机制", "algorithm"),
-        ("PageRank", "algorithm"),
-        ("最短路径", "algorithm"),
-        ("社区发现", "algorithm"),
-        ("工作流", "workflow"),
-        ("插件", "capability"),
-        ("资源管理", "capability"),
-        ("浏览器自动化", "capability"),
-    ];
+    // 已知关键词 → 实体类型（单一事实源：crate::knowledge::DIALOGUE_KNOWN_ENTITIES）
+    let known: &[(&str, &str)] = crate::knowledge::DIALOGUE_KNOWN_ENTITIES;
     let mut entities = Vec::new();
     let mut seen = std::collections::HashSet::new();
     for (kw, ty) in known {
@@ -594,5 +627,193 @@ fn truncate(s: &str, max: usize) -> String {
             end = i;
         }
         format!("{}…", &s[..end])
+    }
+}
+
+// ---------- 企业级：抽取安全校验与布局节流 ----------
+
+/// 允许的实体类型白名单（与 build_extract_prompt 契约一致）
+pub const ALLOWED_ENTITY_TYPES: &[&str] =
+    &["operator", "algorithm", "concept", "capability", "workflow"];
+/// 允许的关系类型白名单（含内部 mentioned_in）
+pub const ALLOWED_RELATIONS: &[&str] =
+    &["依赖", "包含", "实现", "属于", "mentioned_in"];
+
+fn is_allowed_entity_type(t: &str) -> bool {
+    ALLOWED_ENTITY_TYPES.contains(&t)
+}
+
+fn is_allowed_relation(r: &str) -> bool {
+    ALLOWED_RELATIONS.contains(&r)
+}
+
+/// 抽取结果安全过滤：丢弃白名单外的 `entity_type` / `relation`，
+/// 防御 LLM 提示注入导致的图谱类型污染。返回 (过滤后结果, 丢弃数量)。
+fn sanitize_extracted(mut ext: LlmExtract) -> (LlmExtract, usize) {
+    let before = ext.entities.len() + ext.relations.len();
+    ext.entities.retain(|e| is_allowed_entity_type(&e.entity_type));
+    ext.relations.retain(|r| is_allowed_relation(&r.relation));
+    let dropped = before - (ext.entities.len() + ext.relations.len());
+    (ext, dropped)
+}
+
+/// 布局优化：重算 PageRank 中心性 + 社区发现，结果回写节点 metadata 供前端力导向布局。
+/// 抽离为独立函数，供 per-message 节流与 import 复用。
+fn apply_layout(graph: &mut KnowledgeGraph) {
+    let pr = graph.centrality_metrics();
+    for (id, score) in pr.pagerank {
+        if let Some(node) = graph.get_node_mut(&id) {
+            node.metadata
+                .insert("pagerank".to_string(), format!("{score:.4}"));
+        }
+    }
+    let communities = graph.detect_communities(8);
+    for (ci, comm) in communities.iter().enumerate() {
+        for nid in &comm.nodes {
+            if let Some(node) = graph.get_node_mut(nid) {
+                node.metadata
+                    .insert("community".to_string(), ci.to_string());
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::llm_client::LLMConfig;
+    use graph_algorithms::KnowledgeGraph;
+    use std::sync::Arc;
+    use tokio::sync::RwLock as TokioRwLock;
+
+    fn test_syncer() -> DialogueGraphSyncer {
+        let graph = Arc::new(TokioRwLock::new(KnowledgeGraph::new()));
+        let llm = Arc::new(TokioRwLock::new(LLMClient::new(LLMConfig::default())));
+        DialogueGraphSyncer::new_in_memory(graph, llm)
+    }
+
+    #[tokio::test]
+    async fn auto_sync_off_skips_graph() {
+        let s = test_syncer();
+        s.set_auto_sync(false).await;
+        let sid = s.create_session("t").await.unwrap();
+        s.append_message(&sid, "user", "使用线性变换和注意力机制")
+            .await
+            .unwrap();
+        let g = s.graph.read().await;
+        assert_eq!(g.nodes().len(), 0, "auto_sync 关闭不应入图");
+    }
+
+    #[tokio::test]
+    async fn rule_extract_only_allowed_types() {
+        let s = test_syncer();
+        let sid = s.create_session("t").await.unwrap();
+        s.append_message(
+            &sid,
+            "user",
+            "使用线性变换、激活函数、归一化、注意力机制、PageRank、社区发现、工作流",
+        )
+        .await
+        .unwrap();
+        let g = s.graph.read().await;
+        assert!(!g.nodes().is_empty(), "应至少抽取到一个实体节点");
+        for n in g.nodes() {
+            if n.node_type == "dialogue" {
+                continue; // 会话锚点节点，类型本就为 dialogue，不参与白名单校验
+            }
+            assert!(
+                ALLOWED_ENTITY_TYPES.contains(&n.node_type.as_str()),
+                "越界 node_type: {}",
+                n.node_type
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn entity_type_injection_is_blocked() {
+        let (ext, dropped) = sanitize_extracted(LlmExtract {
+            entities: vec![
+                ExtractedEntity {
+                    name: "正常算子".into(),
+                    entity_type: "operator".into(),
+                    weight: 1.0,
+                },
+                ExtractedEntity {
+                    name: "恶意".into(),
+                    entity_type: "../../etc/passwd".into(),
+                    weight: 1.0,
+                },
+                ExtractedEntity {
+                    name: "脚本".into(),
+                    entity_type: "javascript:alert(1)".into(),
+                    weight: 1.0,
+                },
+            ],
+            relations: vec![
+                ExtractedRelation {
+                    source: "A".into(),
+                    target: "B".into(),
+                    relation: "依赖".into(),
+                    weight: 1.0,
+                },
+                ExtractedRelation {
+                    source: "A".into(),
+                    target: "B".into(),
+                    relation: "DROP".into(),
+                    weight: 1.0,
+                },
+            ],
+        });
+        assert_eq!(ext.entities.len(), 1, "应仅保留 operator");
+        assert_eq!(ext.relations.len(), 1, "应仅保留允许的 relation");
+        assert_eq!(dropped, 3);
+    }
+
+    #[tokio::test]
+    async fn search_finds_dialogue_and_graph() {
+        let s = test_syncer();
+        let sid = s.create_session("测试会话").await.unwrap();
+        s.append_message(&sid, "user", "使用注意力机制做特征提取")
+            .await
+            .unwrap();
+        let r = s.search("注意力", 10).await.unwrap();
+        assert!(!r.graph_nodes.is_empty(), "应搜到图谱节点");
+        let r2 = s.search("测试会话", 10).await.unwrap();
+        assert!(!r2.dialogues.is_empty(), "应搜到对话");
+    }
+
+    #[tokio::test]
+    async fn export_import_idempotent() {
+        let s = test_syncer();
+        let sid = s.create_session("t").await.unwrap();
+        s.append_message(&sid, "user", "线性变换和卷积")
+            .await
+            .unwrap();
+        let b1 = s.export_bundle().await.unwrap();
+        let _ = s.import_bundle(b1.clone()).await.unwrap();
+        let b2 = s.export_bundle().await.unwrap();
+        assert_eq!(
+            b1.graph_nodes.len(),
+            b2.graph_nodes.len(),
+            "导入导出应幂等(节点数不变)"
+        );
+    }
+
+    #[tokio::test]
+    async fn layout_interval_zero_defers_recompute() {
+        let s = test_syncer();
+        s.set_layout_interval(0);
+        let sid = s.create_session("t").await.unwrap();
+        s.append_message(&sid, "user", "线性变换").await.unwrap();
+        let g = s.graph.read().await;
+        let has_pr = g.nodes().iter().any(|n| n.metadata.contains_key("pagerank"));
+        assert!(!has_pr, "interval=0 时不应自动重算布局");
+        drop(g);
+        s.recompute_layout().await;
+        let g2 = s.graph.read().await;
+        assert!(
+            g2.nodes().iter().any(|n| n.metadata.contains_key("pagerank")),
+            "显式 recompute 应补算布局"
+        );
     }
 }

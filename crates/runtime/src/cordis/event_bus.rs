@@ -5,10 +5,13 @@ use std::sync::Arc;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 
+/// 订阅映射类型别名：domain -> (event_type -> [(subscription_id, handler)])
+type SubscriptionMap = HashMap<String, HashMap<String, Vec<(String, EventHandlerFn)>>>;
+
 /// 事件总线
 pub struct EventBus {
     /// 订阅映射：domain -> (event_type -> [(subscription_id, handler)])
-    subscriptions: RwLock<HashMap<String, HashMap<String, Vec<(String, EventHandlerFn)>>>>,
+    subscriptions: RwLock<SubscriptionMap>,
 }
 
 impl EventBus {

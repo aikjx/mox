@@ -1,0 +1,58 @@
+%% 对话开发系统 · 端到端流水线（开发专家联盟全维视角 · DEV-AA-STD-V1.0）
+%% 单一机读源：可喂给 info-graph / Mermaid 渲染器 / 任意文档画布
+%% 12 阶段；任意闸门/G-A/⛨否决拒绝即阻断出码
+
+flowchart TD
+    %% ===== 对话接入层 =====
+    U["用户说话 / 提需求"] --> S1["S1 会话生命周期\ncreate_session / list_sessions / get_or_create"]
+    S1 --> S2["S2 多轮对话+意图识别\nprocess_message → recognize_intent\n(17 规则优先级)"]
+    S2 --> S3["S3 算子智能推荐\nrecommend_operators / suggest_workflow / actions"]
+
+    %% ===== 自动入图 =====
+    S2 --> G0{"G0 自动同步开关\nauto_sync 且 role==user?"}
+    G0 -->|关| NOSYNC["仅对话落库"]
+    G0 -->|开| S4["S4 对话自动入图\nsync_message_to_graph"]
+    S4 --> LLM{"LLM 可用?"}
+    LLM -->|是| EX1["LLM 抽取实体/关系"]
+    LLM -->|否| EX2["降级 rule_based_extract\n(已知词表)"]
+    EX1 --> WB["写图谱: 对话锚点+实体+关系边"]
+    EX2 --> WB
+    WB --> LAY["布局优化:\nPageRank + 社区发现(⚠P0异步化)"]
+    LAY --> GR["operator-graph 知识图谱"]
+
+    %% ===== 需求编译 =====
+    U --> S5["S5 需求编译\ncompile / compile_with_llm\n(NL→功能点→实体→FlowDefinition)"]
+    S5 --> S6["S6 增量迭代 refine\n(再加一个X → 重建 flow)"]
+    S6 --> S7["S7 蓝图导出/复用\nexport_json → template-market\n(随机/克隆继续编辑)"]
+
+    %% ===== 编程全维流水线（开发七维）=====
+    S7 --> S8["S8 需求归一化\nnormalize_requirement\n(默认 Draft·未确认)"]
+    S8 --> GA{"G-A 护栏\nis_confirmed?"}
+    GA -->|否| STOP1(["止于 Normalized\n不出码"])
+    GA -->|是| LP{"循环护栏\ncheck_loops"}
+    LP -->|无界缺审批| STOP2(["回退 Modeled\nveto"])
+    LP -->|有界/人在环| S9["S9 双璇玑并行诊断\nrun_experts 派发 14 专家\n(开发七维审代码IR)"]
+    S9 --> S10["S10 reconcile+flow-ai 最优求解\nCPM+RCPSP+CodeGen+LLM路由"]
+    S10 --> G2{"⛨ G2 璇玑验证网关\nalgo.vetoed?"}
+    G2 -->|vetoed| STOP3(["强制 Blocked\nalgorithm_veto=true"])
+    G2 -->|通过| G3{"G3 治理闸门\napproved?"}
+    G3 -->|否| STOP4(["回退 Governed\n禁止出码"])
+    G3 -->|是| S11["S11 Emit 代码生成\ngenerate()"]
+    S11 --> S12{"S12 双向校验\nverify_code_roundtrip"}
+    S12 -->|不一致| STOP5(["回退 Emitted\nrejected"])
+    S12 -->|一致| DONE["出码/出图交付\nAuditChain 哈希链闭环"]
+
+    %% ===== 横切能力 =====
+    SCH["统一搜索\n对话+图谱 (FR-05)"] -. 旁路 .-> GR
+    MIG["导入导出迁移\n幂等合并 (FR-12)"] -. 旁路 .-> GR
+    AUD["审计链 + 版本状态机\nRBAC 四权分离"] -. 承载 .-> DONE
+
+    %% ===== 样式 =====
+    classDef gate fill:#fef2f2,stroke:#dc2626,color:#991b1b,stroke-width:2px;
+    classDef veto fill:#fecaca,stroke:#991b1b,color:#7f1d1d,stroke-width:3px;
+    classDef stage fill:#fff,stroke:#1f3a5f,color:#1f3a5f;
+    classDef chk fill:#fcfdff,stroke:#d8dee9,color:#475467;
+    class G0,G2,G3 gate;
+    class STOP1,STOP2,STOP3,STOP4,STOP5 veto;
+    class S1,S2,S3,S4,S5,S6,S7,S8,S9,S10,S11,S12,GR,DONE stage;
+    class LLM,EX1,EX2,WB,LAY,LP,GA,SCH,MIG,AUD chk;

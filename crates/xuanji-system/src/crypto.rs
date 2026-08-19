@@ -136,7 +136,7 @@ mod tests {
         // 与相同输入的二次计算结果一致
         assert_eq!(out, sha256(&input));
         // 不应与 56 字节输入碰撞
-        assert_ne!(out, sha256(&vec![b'a'; 56]));
+        assert_ne!(out, sha256(&[b'a'; 56]));
     }
 
     /// 56 字节 -> 触发第二块（56 + 1 + 8 = 65 > 64）
@@ -146,7 +146,7 @@ mod tests {
         let out = sha256(&input);
         assert_eq!(out.len(), 32);
         assert_eq!(out, sha256(&input));
-        assert_ne!(out, sha256(&vec![b'b'; 55]));
+        assert_ne!(out, sha256(&[b'b'; 55]));
     }
 
     /// 119 字节 -> 双块边界附近（119 + 1 + 8 = 128 = 2 块）
@@ -156,7 +156,7 @@ mod tests {
         let out = sha256(&input);
         assert_eq!(out.len(), 32);
         assert_eq!(out, sha256(&input));
-        assert_ne!(out, sha256(&vec![b'c'; 120]));
+        assert_ne!(out, sha256(&[b'c'; 120]));
     }
 
     /// 确定性：相同输入产生相同输出

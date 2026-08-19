@@ -31,6 +31,7 @@ ROOT = os.path.dirname(HERE)
 os.sys.path.insert(0, ROOT)
 
 from core.config import Config                       # noqa: E402
+from core.paths import resource_path                 # noqa: E402
 from core import capture, score_sheet                # noqa: E402
 
 app = FastAPI(title="Melody2Score 企业级可视化转谱", version="1.1.0")
@@ -45,7 +46,7 @@ SAVE_DIR = os.path.join(HERE, "exports")
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 # 内置样例（合成音频 manifest 中的 id）
-MANIFEST_PATH = os.path.join(ROOT, "audio", "manifest.json")
+MANIFEST_PATH = resource_path("audio", "manifest.json")
 
 
 def _build_config(model_size: str, denoise: bool, threads: int, hop: int,
@@ -152,7 +153,7 @@ async def recognize_sample(name: str = Form(...),
     item = next((it for it in manifest if it["file"].endswith(name) or it["title_zh"] == name), None)
     if not item:
         raise HTTPException(404, f"样例不存在: {name}")
-    y = capture.load_audio(os.path.join(ROOT, item["file"]), cfg.sr)
+    y = capture.load_audio(resource_path(item["file"]), cfg.sr)
     try:
         res = await anyio.to_thread.run_sync(_recognize_array, y, cfg.sr, cfg)
     except Exception as e:

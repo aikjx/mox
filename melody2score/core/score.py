@@ -16,9 +16,11 @@ export_score_sheet = score_sheet.export_score
 def to_musicxml(notes: List[Dict], bpm: float, key_name: Tuple[str, str], fp=None):
     s = stream.Stream()
     s.append(m21key.Key(key_name[0], key_name[1]))
-    s.append(m21tempo.MetronomeMark(number=int(round(bpm))))
+    # 防御 BPM=0：musicxml 元数据与量化都退化为 BPM=120
+    eff_bpm = bpm if (bpm and 30.0 <= bpm <= 300.0) else 120.0
+    s.append(m21tempo.MetronomeMark(number=int(round(eff_bpm))))
 
-    ql_per_sec = bpm / 60.0
+    ql_per_sec = eff_bpm / 60.0
     for nt in notes:
         ql = nt["end"] - nt["start"]
         ql = max(0.25, round(ql * ql_per_sec / 0.25) * 0.25)  # 量化到 1/4 拍

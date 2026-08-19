@@ -168,7 +168,16 @@ def make_score_sheet(
 
     beats_per_bar = time_sig[0]
     beat_unit = time_sig[1]
-    beat_dur = 60.0 / max(bpm, 1.0)
+    # 稳健 beat_dur：
+    #   1) bpm 可信(30-300) → 用 bpm；
+    #   2) 否则用音符中位时长自洽推导（一拍 ≈ 一个中位时长音符）；
+    #   3) 还不行（无 notes）→ 退到 0.5s/拍。
+    if bpm and 30.0 <= float(bpm) <= 300.0:
+        beat_dur = 60.0 / float(bpm)
+    else:
+        durs = [float(n.get("dur", 0.0)) for n in notes]
+        durs = [d for d in durs if 0.05 < d < 4.0]
+        beat_dur = float(np.median(durs)) if durs else 0.5
 
     render_notes: List[RenderNote] = []
     for n in notes:
@@ -189,7 +198,7 @@ def make_score_sheet(
         octave_dot = octave  # >0 高音点，<0 低音点
 
         start_beat = start / beat_dur
-        dur_beats = dur / beat_dur
+        dur_beats = max(0.05, dur / beat_dur)  # 下限保护，避免零长度黑块
         bar_idx = int(start_beat // beats_per_bar)
 
         render_notes.append(RenderNote(
@@ -216,7 +225,7 @@ def make_score_sheet(
 
 
 def _group_by_bar(notes: List[RenderNote]) -> List[List[RenderNote]]:
-    """按小节索引分组并排序。"""
+    """按小节索引分组并排序。空小节不绘制（避免首行密集后续空行）。"""
     if not notes:
         return []
     max_bar = max(n.bar_idx for n in notes)
@@ -225,7 +234,9 @@ def _group_by_bar(notes: List[RenderNote]) -> List[List[RenderNote]]:
         bars[n.bar_idx].append(n)
     for b in bars:
         b.sort(key=lambda x: x.start_beat)
-    return bars
+    # 过滤空小节，但保留相对位置用于节拍标号稳定（用 None 占位）
+    non_empty: List[List[RenderNote]] = [b for b in bars if b]
+    return non_empty
 
 
 def _layout_bars(bars: List[List[RenderNote]], bars_per_row: int = 4) -> List[List[List[RenderNote]]]:

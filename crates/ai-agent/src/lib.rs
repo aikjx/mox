@@ -19,9 +19,11 @@ pub mod types;
 pub mod llm_client;
 pub mod browser_automation;
 pub mod flow_engine;
+pub mod knowledge;
 pub mod requirement_compiler;
 pub mod dialogue_graph;
 pub mod provider;
+mod util;
 
 pub use conversation::*;
 pub use requirement_compiler::*;

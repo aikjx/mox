@@ -396,7 +396,6 @@ fn check_loops(graph: &FlowGraph, ctx: &GovernContext) -> Option<String> {
 /// 生产环境写保护说明：
 /// 越权写生产/敏感库现由 permission 专家 `push_veto` 正交触发 algo.vetoed，
 /// 不再需要编排层补丁。原 `_deprecated_check_protected_writes` 空函数已删除。
-
 #[cfg(test)]
 mod tests {
     use super::*;

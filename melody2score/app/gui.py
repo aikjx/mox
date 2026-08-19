@@ -30,6 +30,7 @@ from PyQt5.QtWidgets import (
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
+from core.paths import resource_path, is_frozen
 from core.config import Config
 from core import score_sheet
 from app.audio_play import play_raw, play_score, stop as audio_stop
@@ -156,66 +157,192 @@ class RecognizeWorker(QThread):
         return merged, {"kept": len(merged), "confidence": confidence}
 
 
+class SheetWorker(QThread):
+    """后台生成标准歌谱 PNG（matplotlib 重活移出主线程，避免界面卡顿）。"""
+    done = pyqtSignal(str)      # 成功：文件路径
+    failed = pyqtSignal()
+
+    def __init__(self, res: Dict, title: str):
+        super().__init__()
+        self.res = res
+        self.title = title
+
+    def run(self):
+        try:
+            import re as _re, time as _time, os as _os
+            export_dir = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "exports")
+            _os.makedirs(export_dir, exist_ok=True)
+            safe = _re.sub(r"[^\w一-鿿-]", "_", self.title or "melody")[:40]
+            ts = _time.strftime("%Y%m%d_%H%M%S")
+            fpath = _os.path.join(export_dir, f"{safe or 'melody'}_标准歌谱_{ts}.png")
+            score_sheet.export_score(
+                notes=self.res.get("notes", []),
+                key=self.res.get("key", {"tonic": "C", "mode": "major"}),
+                bpm=float(self.res.get("bpm", 120)),
+                output_path=fpath,
+                title=self.title or "未命名旋律",
+            )
+            self.done.emit(fpath)
+        except Exception:
+            traceback.print_exc()
+            self.failed.emit()
+
+
+# 五线谱：每半音一级；以「底线(第1线)」为基准 midi，向上逐级 +1。
+# 高音谱号底线 = E4 (midi 64)；低音谱号底线 = G2 (midi 43)。
+_TREBLE_SHARP_STEPS = [10, 5, 12, 7, 14, 9, 16]   # 高音谱号 # 位置(相对底线级数)
+_TREBLE_FLAT_STEPS  = [7, 12, 5, 10, 3, 8, 1]
+_BASS_SHARP_STEPS   = [3, 8, 1, 6, 11, 4, 9]
+_BASS_FLAT_STEPS    = [10, 5, 12, 7, 14, 9, 16]
+
+_MAJOR_SHARPS = {'C':0,'G':1,'D':2,'A':3,'E':4,'B':5,'F#':6,'C#':7,
+                 'F':-1,'Bb':-2,'Eb':-3,'Ab':-4,'Db':-5,'Gb':-6,'Cb':-7}
+_MINOR_SHARPS = {'A':0,'E':1,'B':2,'F#':3,'C#':4,'G#':5,'D#':6,'A#':7,
+                 'D':-1,'G':-2,'C':-3,'F':-4,'Bb':-5,'Eb':-6,'Ab':-7}
+
+
+def _clef_bottom(lo, hi):
+    if hi <= 55:
+        return 43          # 低音谱号
+    return 64              # 高音谱号（默认）
+
+
 class StaffView(QWidget):
-    """五线谱 Canvas（Qt 原生绘制）。"""
+    """标准五线谱：5 线 + 谱号 + 调号 + 拍号 + 按真实音高落在线/间 + 时值 + 小节线。"""
     def __init__(self):
         super().__init__()
         self.notes = []
         self.key = {"tonic": "C", "mode": "major"}
+        self.bpm = 120.0
+        self.beats_per_bar = 4
         self.setMinimumHeight(260)
 
-    def setData(self, notes, key):
-        self.notes = notes
-        self.key = key
+    def setData(self, notes, key, bpm=120.0, beats_per_bar=4):
+        self.notes = notes or []
+        self.key = key or {"tonic": "C", "mode": "major"}
+        self.bpm = bpm
+        self.beats_per_bar = beats_per_bar
         self.update()
+
+    def _key_sig(self):
+        tonic = self.key.get("tonic", "C")
+        mode = self.key.get("mode", "major")
+        v = (_MINOR_SHARPS if mode == "minor" else _MAJOR_SHARPS).get(tonic, 0)
+        return (v, 0) if v > 0 else (0, -v)
 
     def paintEvent(self, ev):
         p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
         p.fillRect(self.rect(), QColor(BG))
         W, H = self.width(), self.height()
-        padL, padR = 40, 20
-        lineGap = 11
-        topY = 30
-        staffH = lineGap * 4
-        pen = QPen(QColor(LINE))
-        pen.setWidth(1)
-        p.setPen(pen)
-        for i in range(5):
-            y = topY + i * lineGap
-            p.drawLine(padL, y, W - padR, y)
-        p.setPen(QColor(ACCENT))
-        p.setFont(QFont("Serif", 22))
-        p.drawText(8, topY + staffH - 4, "𝄞")
 
         if not self.notes:
             p.setPen(QColor(MUTED))
             p.setFont(QFont("Sans", 12))
-            p.drawText(padL, topY + staffH / 2, "（无可视音符）")
+            p.drawText(40, H // 2, "（识别后在此显示标准五线谱）")
             return
 
-        minM = min(n["midi"] for n in self.notes) - 2
-        maxM = max(n["midi"] for n in self.notes) + 2
-        span = max(1, maxM - minM)
-        yOf = lambda m: topY + staffH - ((m - minM) / span) * (staffH - 2) - 1
-        total = self.notes[-1]["end"] or 1
-        xOf = lambda t: padL + (t / total) * (W - padL - padR)
-        spacing = (W - padL - padR) / max(len(self.notes), 1)
+        padL, padR = 96, 24
+        midi_all = [int(round(n["midi"])) for n in self.notes]
+        lo, hi = min(midi_all), max(midi_all)
+        clef_bot = _clef_bottom(lo, hi)
+        gap = 11
+        # 使谱表垂直居中
+        y0 = H // 2 + 2 * gap     # 底线 y
 
-        p.setBrush(QBrush(QColor(ACCENT2)))
-        p.setPen(QColor(ACCENT2))
+        # ---- 五条线 ----
+        p.setPen(QPen(QColor(LINE), 1))
+        for i in range(5):
+            p.drawLine(padL, int(y0 - i * gap), W - padR, int(y0 - i * gap))
+
+        # ---- 谱号 ----
+        p.setPen(QColor("#cdd6e8"))
+        p.setFont(QFont("Serif", 34, QFont.Bold))
+        p.drawText(padL - 86, int(y0 + gap * 1.4), "𝄞" if clef_bot == 64 else "𝄢")
+
+        # ---- 调号 ----
+        sharps, flats = self._key_sig()
+        if clef_bot == 64:
+            spos, fpos = _TREBLE_SHARP_STEPS, _TREBLE_FLAT_STEPS
+        else:
+            spos, fpos = _BASS_SHARP_STEPS, _BASS_FLAT_STEPS
+        p.setFont(QFont("Serif", 20, QFont.Bold))
+        sx = padL - 44
+        if sharps:
+            for k in range(sharps):
+                step = spos[k]
+                ly = y0 - (step // 2) * gap
+                p.drawText(int(sx + k * 11), int(ly + 7), "#")
+        elif flats:
+            for k in range(flats):
+                step = fpos[k]
+                ly = y0 - (step // 2) * gap
+                p.drawText(int(sx + k * 11), int(ly + 7), "♭")
+
+        # ---- 拍号 ----
+        p.setFont(QFont("Sans", 18, QFont.Bold))
+        p.drawText(padL - 8, int(y0 - 3 * gap - 2), str(self.beats_per_bar))
+        p.drawText(padL - 8, int(y0 + 14), "4")
+
+        def step_xy(step, x):
+            return x, y0 - (step // 2) * gap
+
+        def draw_ledgers(step, nx):
+            p.setPen(QPen(QColor(LINE), 1))
+            if step > 8:                       # 第5线之上
+                for k in range(1, (step - 8) // 2 + 1):
+                    ly = y0 - (4 + k) * gap
+                    p.drawLine(int(nx - 9), int(ly), int(nx + 9), int(ly))
+            if step < 0:                       # 底线之下
+                for k in range(1, (-step) // 2 + 1):
+                    ly = y0 + k * gap
+                    p.drawLine(int(nx - 9), int(ly), int(nx + 9), int(ly))
+
+        beat_dur = 60.0 / max(self.bpm, 1.0)
+        start_t = self.notes[0]["start"]
+        end_t = self.notes[-1]["end"] or (start_t + 1)
+        total = max(1e-3, end_t - start_t)
+        xOf = lambda t: padL + 30 + (t - start_t) / total * (W - padR - padL - 40)
+
+        note_color = QColor(ACCENT2)
+        p.setBrush(QBrush(note_color))
+        beat_acc = 0.0
         for n in self.notes:
-            x = xOf(n["start"])
-            y = yOf(n["midi"])
-            p.drawEllipse(int(x) - 7, int(y) - 5, 14, 10)
-            p.drawLine(int(x + 5), int(y), int(x + 5), int(y - 22))
-            if n["dur"] > (total / len(self.notes)) * 1.5:
-                p.fillRect(int(x + 5), int(y - 22),
-                           int(min(n["dur"] / total * (W - padL - padR), spacing * 3)), 2)
-        p.setPen(QColor(MUTED))
-        p.setFont(QFont("Sans", 10))
-        p.drawText(10, topY - 8, "高")
-        p.drawText(10, topY + staffH + 12, "低")
-
+            m = int(round(n["midi"]))
+            step = m - clef_bot
+            nx, ny = step_xy(step, int(xOf(n["start"])))
+            draw_ledgers(step, nx)
+            beats = n["dur"] / beat_dur if beat_dur > 0 else 1.0
+            r = 5
+            is_whole = beats >= 3.5
+            is_half = 1.5 <= beats < 3.5
+            # 符头（全/二分空心，其余实心）
+            p.setPen(QPen(note_color, 1.5))
+            if is_whole or is_half:
+                p.setBrush(Qt.NoBrush)
+            else:
+                p.setBrush(QBrush(note_color))
+            p.drawEllipse(int(nx - r), int(ny - int(r * 0.7)), int(r * 2), int(r * 1.4))
+            # 符干（全音符无干）
+            if not is_whole:
+                stem_top = ny - 26
+                p.drawLine(int(nx + r), int(ny - 1), int(nx + r), int(stem_top))
+                if beats < 0.75:               # 八分音符尾
+                    p.drawLine(int(nx + r), int(stem_top), int(nx + r + 9), int(stem_top + 9))
+            # 附点（二分/四分带附点）
+            if (is_half or (0.75 <= beats < 1.5)) and abs(beats - round(beats) - 0.5) < 0.12:
+                p.setBrush(QBrush(note_color))
+                p.drawEllipse(int(nx + r + 4), int(ny - 2), 3, 3)
+            # 小节线
+            beat_acc += beats
+            if beat_acc >= self.beats_per_bar - 1e-6:
+                p.setPen(QPen(QColor(LINE), 1))
+                bx = int(xOf(n["end"]) if "end" in n else nx) + 8
+                p.drawLine(bx, int(y0), bx, int(y0 - 4 * gap))
+                beat_acc = 0.0
+        # 终止线
+        p.setPen(QPen(QColor(LINE), 2))
+        p.drawLine(W - padR, int(y0), W - padR, int(y0 - 4 * gap))
 
 class PitchView(QWidget):
     """量化音高轮廓（音符级阶梯）。"""
@@ -714,8 +841,14 @@ class MainWindow(QMainWindow):
         经典样例按旋律去重（每首只显示一种音色），用户自加样例（category=user）
         全部显示。若清单缺失则给出提示，仍允许通过「添加样例」导入首个音频。
         """
-        man = os.path.join(ROOT, "audio", "manifest.json")
+        man = resource_path("audio", "manifest.json")
         self.manifest = []
+        if not os.path.exists(man):
+            # 打包模式下若 _MEIPASS 下无样例，回退到 exe 旁目录（兼容旧布局）
+            if is_frozen():
+                alt = os.path.join(os.path.dirname(sys.executable), "audio", "manifest.json")
+                if os.path.exists(alt):
+                    man = alt
         if not os.path.exists(man):
             self.sampleCombo.clear()
             self.sampleCombo.addItem("（暂无样例，可点击下方「添加样例」导入）")
@@ -859,12 +992,16 @@ class MainWindow(QMainWindow):
         item = self._sample_by_file(file_rel)
         self._pending_sample_path = None
         if item:
-            path = os.path.join(ROOT, item["file"])
+            path = self._sample_abs_path(item)
             if os.path.exists(path):
                 self._pending_sample_path = path
                 self.btnPreview.setEnabled(True)
         self._start({"kind": "sample", "name": file_rel, "cfg": self._cfg(),
                      "source": file_rel})
+
+    def _sample_abs_path(self, item: Dict) -> str:
+        """把清单项的相对文件路径解析为绝对路径（兼容打包后的 _MEIPASS 布局）。"""
+        return resource_path(item["file"])
 
     def play_sample(self):
         """播放当前选中样例的原曲音频（读取 audio/<id>.wav 并回放）。"""
@@ -874,7 +1011,7 @@ class MainWindow(QMainWindow):
         item = self._sample_by_file(file_rel)
         if not item:
             return
-        path = os.path.join(ROOT, item["file"])
+        path = self._sample_abs_path(item)
         if not os.path.exists(path):
             QMessageBox.information(self, "播放原曲",
                                     f"未找到样例音频：{item['file']}\n请先运行 gen_classic_melodies.py 生成。")
@@ -903,7 +1040,7 @@ class MainWindow(QMainWindow):
             "音频 (*.wav *.mp3 *.flac *.ogg *.m4a)")
         if not path:
             return
-        audio_dir = os.path.join(ROOT, "audio")
+        audio_dir = resource_path("audio")
         try:
             os.makedirs(audio_dir, exist_ok=True)
         except Exception as e:
@@ -913,7 +1050,7 @@ class MainWindow(QMainWindow):
         ext = os.path.splitext(path)[1] or ".wav"
         ts = time.strftime("%Y%m%d_%H%M%S")
         new_file = f"audio/user_sample_{ts}{ext}"
-        dst = os.path.join(ROOT, new_file)
+        dst = resource_path(new_file)
         try:
             shutil.copy2(path, dst)
         except Exception as e:
@@ -935,7 +1072,7 @@ class MainWindow(QMainWindow):
         }
         self.manifest.append(entry)
         try:
-            with open(os.path.join(ROOT, "audio", "manifest.json"), "w", encoding="utf-8") as f:
+            with open(resource_path("audio", "manifest.json"), "w", encoding="utf-8") as f:
                 json.dump(self.manifest, f, ensure_ascii=False, indent=2)
         except Exception as e:
             QMessageBox.warning(self, "添加样例",
@@ -966,7 +1103,7 @@ class MainWindow(QMainWindow):
         self.mBackend.setText(f"后端 {res['backend']} · 预处理 {res['perf']['preprocess_ms']}ms · "
                               f"音高 {res['perf']['pitch_ms']}ms · 解析 {res['perf']['parse_ms']}ms")
         self.jianpu.setPlainText(res["jianpu"] or "（无声）")
-        self.staff.setData(res["notes"], res["key"])
+        self.staff.setData(res["notes"], res["key"], bpm=res.get("bpm", 120.0))
         self.pitch.setData(res["notes"])
         self.table.setRowCount(len(res["notes"]))
         for i, n in enumerate(res["notes"]):
@@ -979,14 +1116,15 @@ class MainWindow(QMainWindow):
         if res.get("robust_runs", 1) > 1:
             robust_info = f" · 重识别{res['robust_runs']}次→共识保留 {res['robust_kept']} 音 · 置信度 {res.get('confidence',0):.0%}"
 
-        # 自动生成标准歌谱并预览
-        self._auto_sheet_path = self._generate_sheet(res, "png")
-        if self._auto_sheet_path:
-            self.sheetLabel.setText("")
-            self.sheetLabel.setPixmap(QPixmap(self._auto_sheet_path).scaledToWidth(
-                self.sheetLabel.width() - 20, Qt.SmoothTransformation))
-        else:
-            self.sheetLabel.setText("标准歌谱生成失败（可能缺少 matplotlib 或中文字体）。")
+        # 自动生成标准歌谱（后台线程，避免 matplotlib 阻塞主线程造成卡顿）
+        self.sheetLabel.setText("正在生成标准歌谱…")
+        if getattr(self, "_sheet_worker", None) and self._sheet_worker.isRunning():
+            self._sheet_worker.quit()
+        self._sheet_worker = SheetWorker(res, self.titleEdit.text())
+        self._sheet_worker.done.connect(self._on_sheet_done)
+        self._sheet_worker.failed.connect(lambda: self.sheetLabel.setText(
+            "标准歌谱生成失败（可能缺少 matplotlib 或中文字体）。"))
+        self._sheet_worker.start()
 
         self.status.setText(f"完成 · {res['note_count']} 个音符 · 来源 {res.get('source','')}{robust_info}")
 
@@ -1059,6 +1197,15 @@ class MainWindow(QMainWindow):
             play_score(self.current["notes"], sr=22050)
         except Exception as e:
             self.status.setText(f"钢琴播放失败：{e}")
+
+    def _on_sheet_done(self, fpath: str):
+        self._auto_sheet_path = fpath
+        if fpath and os.path.exists(fpath):
+            self.sheetLabel.setText("")
+            self.sheetLabel.setPixmap(QPixmap(fpath).scaledToWidth(
+                self.sheetLabel.width() - 20, Qt.SmoothTransformation))
+        else:
+            self.sheetLabel.setText("标准歌谱生成失败（可能缺少 matplotlib 或中文字体）。")
 
     def _generate_sheet(self, res: Dict, fmt: str) -> Optional[str]:
         """用 core.score_sheet 生成标准歌谱并返回路径。"""

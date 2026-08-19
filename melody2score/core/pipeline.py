@@ -22,9 +22,8 @@ import numpy as np
 import soundfile as sf
 
 from core.config import Config
+from core.paths import resource_path
 from core import capture, preprocess, pitch, analysis, score, vad, score_sheet
-
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 _MIDI_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 
@@ -49,7 +48,7 @@ def _load_source(source: Dict, cfg: Config) -> Tuple[np.ndarray, int]:
     if kind in ("file", "record"):
         return load_audio_bytes(source["data"], cfg.sr)
     if kind == "sample":
-        y = capture.load_audio(os.path.join(ROOT, source["name"]), cfg.sr)
+        y = capture.load_audio(resource_path(source["name"]), cfg.sr)
         return np.asarray(y, dtype=np.float32), cfg.sr
     if kind == "array":
         # 已解码的 (y, sr)：直接复用，避免 WebUI 重复 wav 编解码往返（性能/延迟）
@@ -162,17 +161,20 @@ class Melody2Score:
             y = preprocess.preprocess(y, sr, cfg.enable_denoise)
             t_pre = time.time() - t0
 
-            n_runs = 4 if cfg.robust else 1
+            n_runs = 3 if cfg.robust else 1
             runs: List[List[Dict]] = []
             t_pitch_total = 0.0
             used_backend = "auto"
             last_pts: List[Dict] = []
 
+            # 稳健模式放宽 hop（10→18ms）可约减半音高检测耗时，对共识质量影响极小
+            det_hop = int(cfg.hop * 1.8) if cfg.robust else cfg.hop
+
             # 复用同一个 PitchDetector 实例跨多次 run，避免 robust 模式反复
             # 加载 ONNX/torch 模型（单次加载即数百 ms~数 s，是卡顿主因之一）
             det = pitch.PitchDetector(
                 model_size=cfg.model_size, conf_thresh=cfg.conf_thresh,
-                hop=cfg.hop, intra_op_threads=cfg.intra_op_threads,
+                hop=det_hop, intra_op_threads=cfg.intra_op_threads,
                 backend="auto", sr=sr,
                 fmin=getattr(cfg, "fmin", 50.0), fmax=getattr(cfg, "fmax", 1100.0),
                 preferred_backend=cfg.preferred_backend,
@@ -199,7 +201,7 @@ class Melody2Score:
             t0 = time.time()
             if progress_cb:
                 progress_cb("parse", "节拍/调式/音符解析…", 0.92)
-            bpm = analysis.detect_bpm(y, sr, cfg.bpm_fallback)
+            bpm = analysis.detect_bpm(y, sr, cfg.bpm_fallback, notes=notes)
             key_name = analysis.estimate_key(y, sr, notes)
             t_parse = time.time() - t0
 
@@ -279,7 +281,8 @@ class Melody2Score:
 
     def _default_sheet_path(self, audio_path: str) -> str:
         base = os.path.splitext(os.path.basename(audio_path or "record"))[0] or "未命名旋律"
-        exports_dir = os.path.join(ROOT, "app", "exports")
+        # 导出目录放到随包资源下（源码=app/exports；打包= _internal/app/exports）
+        exports_dir = resource_path("app", "exports")
         os.makedirs(exports_dir, exist_ok=True)
         ts = time.strftime("%Y%m%d_%H%M%S")
         return os.path.join(exports_dir, f"{base}_标准歌谱_{ts}.png")

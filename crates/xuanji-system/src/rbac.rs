@@ -248,6 +248,13 @@ fn scope_label(ctx: &ResourceCtx) -> String {
     }
 }
 
+impl Permission {
+    /// 权限总数（用于断言角色展开是否覆盖全集）
+    pub fn all_count() -> usize {
+        15
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -375,12 +382,5 @@ mod tests {
             authorize("u1", &bindings, Permission::MemberManage, &ctx("x1", None)),
             Authz::Denied(_)
         ));
-    }
-}
-
-impl Permission {
-    /// 权限总数（用于断言角色展开是否覆盖全集）
-    pub fn all_count() -> usize {
-        15
     }
 }

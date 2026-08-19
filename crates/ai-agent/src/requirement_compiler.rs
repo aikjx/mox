@@ -17,11 +17,12 @@
 
 use crate::flow_engine::{FlowDefinition, FlowEdge, FlowNode, NodeType, Position};
 use operator_core::OperatorError;
+use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 use std::future::Future;
 use std::pin::Pin;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 /// 喂给 LLM 的消息（与 llm_client::LLMChatMessage 同构，避免跨模块类型泄漏）
 #[derive(Debug, Clone)]
@@ -58,37 +59,14 @@ struct LlmPlan {
 /// 从一句话里识别的"动作动词" → 流程节点类型
 /// 注：ai-agent 的 FlowNode.NodeType 变体为
 /// Start/End/LLM/Browser/HttpRequest/Operator/Condition/Transform/Script/DataInput/DataOutput/Parallel
-const ACTION_VERBS: &[(&str, NodeType)] = &[
-    ("支付", NodeType::Operator),
-    ("下单", NodeType::Operator),
-    ("购买", NodeType::Operator),
-    ("登录", NodeType::Operator),
-    ("注册", NodeType::Operator),
-    ("上传", NodeType::Operator),
-    ("发布", NodeType::Operator),
-    ("审核", NodeType::Operator),
-    ("生成", NodeType::LLM),
-    ("推荐", NodeType::LLM),
-    ("校验", NodeType::Transform),
-    ("判断", NodeType::Condition),
-    ("检查", NodeType::Transform),
-    ("通知", NodeType::DataOutput),
-];
+/// 动作动词 → 节点类型（单一事实源：crate::knowledge::REQUIREMENT_ACTION_VERBS）
+const ACTION_VERBS: &[(&str, NodeType)] = crate::knowledge::REQUIREMENT_ACTION_VERBS;
 
-/// 从一句话里识别的"实体名词" → 数据表候选
-const ENTITY_NOUNS: &[&str] = &[
-    "商品", "用户", "订单", "购物车", "支付", "评论", "文章", "小说",
-    "论文", "图书", "视频", "产品", "库存", "会员", "日志",
-];
+/// 从一句话里识别的"实体名词" → 数据表候选（单一事实源：crate::knowledge::REQUIREMENT_ENTITY_NOUNS）
+const ENTITY_NOUNS: &[&str] = crate::knowledge::REQUIREMENT_ENTITY_NOUNS;
 
-/// 动作动词 → 实体别名（"下单"语义指向"订单"实体）
-const VERB_TO_ENTITY: &[(&str, &str)] = &[
-    ("下单", "订单"),
-    ("购买", "商品"),
-    ("支付", "订单"),
-    ("加购", "购物车"),
-    ("收藏", "商品"),
-];
+/// 动作动词 → 实体别名（单一事实源：crate::knowledge::REQUIREMENT_VERB_TO_ENTITY）
+const VERB_TO_ENTITY: &[(&str, &str)] = crate::knowledge::REQUIREMENT_VERB_TO_ENTITY;
 
 /// 单个功能点（需求的结构化单元）
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -219,6 +197,8 @@ fn singular(name: &str) -> String {
 pub struct RequirementCompiler {
     /// 历史蓝图缓存（会话内持续迭代）
     cache: HashMap<String, SystemBlueprint>,
+    /// 可选持久化后端：蓝图落盘 SQLite，支持跨会话/重启复用（None=纯内存）
+    db: Option<Arc<Mutex<Connection>>>,
 }
 
 impl Default for RequirementCompiler {
@@ -229,7 +209,26 @@ impl Default for RequirementCompiler {
 
 impl RequirementCompiler {
     pub fn new() -> Self {
-        Self { cache: HashMap::new() }
+        Self {
+            cache: HashMap::new(),
+            db: None,
+        }
+    }
+
+    /// 带持久化后端的编译器：蓝图落盘 SQLite，支持跨会话/重启复用。
+    /// `new()` 仍保持纯内存（向后兼容，不创建任何文件）。
+    pub fn with_storage(db_path: &str) -> Result<Self, OperatorError> {
+        let conn = Connection::open(db_path).map_err(|e| {
+            OperatorError::Other(anyhow::anyhow!("蓝图库打开失败: {}", e))
+        })?;
+        conn.execute_batch(
+            "CREATE TABLE IF NOT EXISTS blueprints (id TEXT PRIMARY KEY, name TEXT NOT NULL, tags TEXT NOT NULL, json TEXT NOT NULL, updated_at TEXT NOT NULL)",
+        )
+        .map_err(|e| OperatorError::Other(anyhow::anyhow!("蓝图库初始化失败: {}", e)))?;
+        Ok(Self {
+            cache: HashMap::new(),
+            db: Some(Arc::new(Mutex::new(conn))),
+        })
     }
 
     /// 主入口：把一句话需求编译为系统蓝图
@@ -279,6 +278,7 @@ impl RequirementCompiler {
             generated_from: requirement.to_string(),
         };
         self.cache.insert(blueprint.id.clone(), blueprint.clone());
+        self.persist(&blueprint);
         Ok(blueprint)
     }
 
@@ -339,6 +339,7 @@ impl RequirementCompiler {
         }
 
         self.cache.insert(blueprint.id.clone(), blueprint.clone());
+        self.persist(&blueprint);
         Ok(blueprint)
     }
 
@@ -357,9 +358,8 @@ impl RequirementCompiler {
             LlmMsg { role: "user".to_string(), content: prompt },
         ];
         let resp = llm(messages).await?;
-        let json_start = resp.find('{').unwrap_or(0);
-        let json_end = resp.rfind('}').map(|i| i + 1).unwrap_or(resp.len());
-        let clean = &resp[json_start..json_end];
+        let clean = crate::util::extract_json_object(&resp)
+            .ok_or_else(|| anyhow::anyhow!("LLM 返回无 JSON 内容"))?;
         let plan: LlmPlan = serde_json::from_str(clean)
             .map_err(|e| anyhow::anyhow!("LLM 返回无法解析: {}", e))?;
         Ok(plan.features)
@@ -375,6 +375,7 @@ impl RequirementCompiler {
             .cache
             .get(blueprint_id)
             .cloned()
+            .or_else(|| self.load_blueprint(blueprint_id))
             .ok_or_else(|| OperatorError::Other(anyhow::anyhow!("蓝图不存在，需先 compile")))?;
 
         let phrases = RuleExtractor::extract_phrases(addition);
@@ -400,6 +401,7 @@ impl RequirementCompiler {
         bp.flow = self.build_flow(&bp.name, &bp.features);
         bp.description = format!("{} | +{}", bp.description, addition);
         self.cache.insert(bp.id.clone(), bp.clone());
+        self.persist(&bp);
         Ok(bp)
     }
 
@@ -470,6 +472,69 @@ impl RequirementCompiler {
     /// 导出为可落盘 JSON（供 template-market / codegen 消费）
     pub fn export_json(&self, blueprint: &SystemBlueprint) -> serde_json::Value {
         serde_json::to_value(blueprint).unwrap_or(serde_json::Value::Null)
+    }
+
+    /// 加载蓝图：优先从持久化库读取（跨会话/重启可用），回退到内存缓存。
+    pub fn load_blueprint(&self, id: &str) -> Option<SystemBlueprint> {
+        if let Some(db) = &self.db {
+            if let Ok(conn) = db.lock() {
+                if let Ok(row) = conn.query_row(
+                    "SELECT json FROM blueprints WHERE id = ?1",
+                    params![id],
+                    |r| r.get::<_, String>(0),
+                ) {
+                    if let Ok(bp) = serde_json::from_str::<SystemBlueprint>(&row) {
+                        return Some(bp);
+                    }
+                }
+            }
+        }
+        self.cache.get(id).cloned()
+    }
+
+    /// 列出全部蓝图：持久化优先；无存储后端时返回内存缓存。
+    pub fn list_blueprints(&self) -> Vec<SystemBlueprint> {
+        if let Some(db) = &self.db {
+            if let Ok(conn) = db.lock() {
+                if let Ok(mut stmt) =
+                    conn.prepare("SELECT json FROM blueprints ORDER BY updated_at DESC")
+                {
+                    if let Ok(rows) = stmt.query_map([], |r| r.get::<_, String>(0)) {
+                        let mut out = Vec::new();
+                        for s in rows.flatten() {
+                            if let Ok(bp) = serde_json::from_str::<SystemBlueprint>(&s) {
+                                out.push(bp);
+                            }
+                        }
+                        return out;
+                    }
+                }
+            }
+        }
+        self.cache.values().cloned().collect()
+    }
+
+    /// 可选持久化：若配置了存储后端，将蓝图 upsert 进 SQLite（非致命，失败仅告警）
+    fn persist(&self, bp: &SystemBlueprint) {
+        let Some(db) = &self.db else { return; };
+        let conn = match db.lock() {
+            Ok(c) => c,
+            Err(_) => return,
+        };
+        let tags = serde_json::to_string(&bp.tags).unwrap_or_else(|_| "[]".to_string());
+        let json = match serde_json::to_string(bp) {
+            Ok(j) => j,
+            Err(e) => {
+                tracing::warn!("蓝图序列化失败: {e}");
+                return;
+            }
+        };
+        if let Err(e) = conn.execute(
+            "INSERT OR REPLACE INTO blueprints (id, name, tags, json, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![bp.id, bp.name, tags, json, chrono::Utc::now().to_rfc3339()],
+        ) {
+            tracing::warn!("蓝图落盘失败: {e}");
+        }
     }
 }
 
@@ -544,6 +609,47 @@ mod tests {
             .unwrap();
         assert!(bp.features.len() >= 4);
         assert!(bp.entities.contains_key("订单"));
+    }
+
+    #[test]
+    fn blueprint_persists_across_compiler_instances() {
+        let path = std::env::temp_dir()
+            .join(format!("bp_persist_{}.db", uuid::Uuid::new_v4()))
+            .to_str()
+            .unwrap()
+            .to_string();
+        let mut rc = RequirementCompiler::with_storage(&path).unwrap();
+        let bp = rc
+            .compile("商城：商品，下单，支付", "商城", vec!["mall".into()])
+            .unwrap();
+        let id = bp.id.clone();
+        assert_eq!(bp.features.len(), 3);
+        drop(rc);
+        // 模拟重启：新实例读同一库
+        let rc2 = RequirementCompiler::with_storage(&path).unwrap();
+        let loaded = rc2.load_blueprint(&id).expect("应从库加载蓝图");
+        assert_eq!(loaded.name, "商城");
+        assert_eq!(loaded.features.len(), 3);
+        assert_eq!(rc2.list_blueprints().len(), 1);
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn refine_persists_to_storage() {
+        let path = std::env::temp_dir()
+            .join(format!("bp_refine_{}.db", uuid::Uuid::new_v4()))
+            .to_str()
+            .unwrap()
+            .to_string();
+        let mut rc = RequirementCompiler::with_storage(&path).unwrap();
+        let bp = rc.compile("商城：商品", "商城", vec![]).unwrap();
+        let id = bp.id.clone();
+        let _ = rc.refine(&id, "再加一个退货功能").unwrap();
+        drop(rc);
+        let rc2 = RequirementCompiler::with_storage(&path).unwrap();
+        let loaded = rc2.load_blueprint(&id).unwrap();
+        assert_eq!(loaded.features.len(), 2, "refine 结果应已落盘");
+        let _ = std::fs::remove_file(&path);
     }
 
     #[tokio::test]

@@ -254,8 +254,8 @@ def main(argv=None) -> int:
     # 5) 产物校验与收尾
     log.info("[4/4] 校验产物并生成启动器 ...")
     dist = HERE / "dist" / "Melody2Score"
-    # spec 将 exe 置于 app/ 下（app/Melody2Score.exe），启动器须与此一致
-    exe = dist / "app" / "Melody2Score.exe"
+    # spec 将 exe 置于发行版根目录（Melody2Score.exe），启动器须与此一致
+    exe = dist / "Melody2Score.exe"
     if not exe.exists():
         log.error(f"未找到主程序: {exe}")
         return 3
