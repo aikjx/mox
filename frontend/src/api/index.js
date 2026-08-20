@@ -1,16 +1,25 @@
-﻿import axios from 'axios'
+import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
-// 后端运行时地址：开发期走 Vite 代理 /api -> http://localhost:3000
+// 后端运行时地址：直连 API 服务器
 const http = axios.create({
-  baseURL: '/api',
+  baseURL: 'http://localhost:3002',
   timeout: 30000,
   headers: { 'Content-Type': 'application/json' }
 })
 
-// 统一响应处理：剥离 axios 包裹，直接返回 data
+// 统一响应处理：剥离 axios 包裹，自动解包 {success, data} 格式
 http.interceptors.response.use(
-  (resp) => resp.data,
+  (resp) => {
+    const body = resp.data
+    if (body && typeof body === 'object' && 'success' in body && 'data' in body) {
+      if (!body.success) {
+        return Promise.reject(new Error(body.error || body.message || '请求失败'))
+      }
+      return body.data
+    }
+    return body
+  },
   (err) => {
     const status = err.response && err.response.status
     const data = err.response && err.response.data
@@ -28,7 +37,7 @@ http.interceptors.response.use(
       msg = '请求超时：后端处理较慢，请稍后重试'
       ElMessage.warning(msg)
     } else if (!err.response) {
-      msg = '无法连接后端：请确认服务已启动（http://localhost:3000）'
+      msg = '无法连接后端：请确认服务已启动（http://localhost:3002）'
       ElMessage.error(msg)
     }
     return Promise.reject(new Error(msg))
@@ -73,8 +82,8 @@ export const recommendNodes = (payload) => http.post('/graph/recommend', payload
 export const addGraphNode = (payload) => http.post('/graph/node', payload)
 export const addGraphEdge = (payload) => http.post('/graph/edge', payload)
 // 激活传播：从种子节点沿边扩散激活能量，返回各节点激活值
-export const propagateActivation = (startNodes, iterations = 10) =>
-  http.post('/graph/activate', { start_nodes: startNodes, iterations })
+export const propagateActivation = (seedNodes, iterations = 10) =>
+  http.post('/graph/activate', { seed: seedNodes, iterations })
 
 // ===== 对话自动→知识图谱 自动整理 =====
 // 统一搜索：对话内容 + 知识图谱节点
@@ -182,5 +191,40 @@ export const xuanjiOptimize = (flow, tenant = 'default') =>
   http.post('/xuanji/optimize', { flow, tenant })
 // 全维融合发布：归一化 -> 取优化图 -> 一键落盘上传算子市场（插件/应用平台）
 export const xuanjiPublish = (payload) => http.post('/xuanji/publish', payload)
+
+// ===== LLM 网关 =====
+export const getLlmProviders = () => http.get('/llm/providers')
+export const setActiveProvider = (providerId) => http.post('/llm/providers/active', { provider_id: providerId })
+export const addLlmProvider = (payload) => http.post('/llm/providers', payload)
+export const removeLlmProvider = (id) => http.delete(`/llm/providers/${encodeURIComponent(id)}`)
+
+// ===== 专家联盟 =====
+export const getExperts = (params) => http.get('/experts', { params })
+export const getExpert = (id) => http.get(`/experts/${encodeURIComponent(id)}`)
+export const registerExpert = (payload) => http.post('/experts', payload)
+export const updateExpert = (id, payload) => http.put(`/experts/${encodeURIComponent(id)}`, payload)
+export const removeExpert = (id) => http.delete(`/experts/${encodeURIComponent(id)}`)
+export const consultExpert = (id, payload) => http.post(`/experts/${encodeURIComponent(id)}/consult`, payload)
+export const multiExpertConsult = (payload) => http.post('/experts/multi-consult', payload)
+export const expertDebate = (payload) => http.post('/experts/debate', payload)
+export const getExpertCapabilities = () => http.get('/experts/capabilities')
+
+// ===== 16模块 AI 增强端点 =====
+export const getWorkbenchAiOverview = () => http.get('/workbench/ai-overview')
+export const aiRecommendOperators = (payload) => http.post('/operators/ai-recommend', payload)
+export const aiGraphInsights = (payload) => http.post('/graph/ai-insights', payload)
+export const aiExpertChat = (payload) => http.post('/ai/expert-chat', payload)
+export const aiResourceAnalysis = (payload) => http.post('/resources/ai-analysis', payload)
+export const aiGenerateWorkflow = (payload) => http.post('/workflow/ai-generate', payload)
+export const aiPluginRoute = (payload) => http.post('/plugins/ai-route', payload)
+export const aiBrowserInstruct = (payload) => http.post('/browser/ai-instruct', payload)
+export const aiMonitorDiagnose = (payload) => http.post('/monitor/ai-diagnose', payload)
+export const aiDocsExplain = (payload) => http.post('/docs/ai-explain', payload)
+export const aiMarketSearch = (payload) => http.post('/market/ai-search', payload)
+export const aiMcpMap = (payload) => http.post('/mcp/ai-map', payload)
+export const aiAutomationExecute = (payload) => http.post('/automation/ai-execute', payload)
+export const aiCaomeiParse = (payload) => http.post('/caomei/ai-parse', payload)
+export const aiAlgoLabAnalyze = (payload) => http.post('/algolab/ai-analyze', payload)
+export const aiFusionGovern = (payload) => http.post('/fusion/ai-govern', payload)
 
 export default http

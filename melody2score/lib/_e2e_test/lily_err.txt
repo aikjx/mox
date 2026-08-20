@@ -1,0 +1,63 @@
+Changing working directory to: `lib/_e2e_test'
+Processing `lib/_e2e_test/test.ly'
+Parsing...
+D:/a10/aikjx/gitcode/infotopograph/melody2score/lib/_e2e_test/test.ly:286:30: warning: deprecated: missing `.' in property path Score.BarNumber.break-visibility
+<< \override Score.BarNumber 
+                             #'break-visibility = #center-visible
+D:/a10/aikjx/gitcode/infotopograph/melody2score/lib/_e2e_test/test.ly:287:27: warning: deprecated: missing `.' in property path Score.BarNumber.Y-offset
+\override Score.BarNumber 
+                          #'Y-offset = -1
+D:/a10/aikjx/gitcode/infotopograph/melody2score/lib/_e2e_test/test.ly:296:27: warning: deprecated: missing `.' in property path StaffSymbol.line-count
+    \override StaffSymbol 
+                          #'line-count = #0 % tested in 2.15.40, 2.16.2, 2.18.0, 2.18.2, 2.20.0 and 2.22.2
+D:/a10/aikjx/gitcode/infotopograph/melody2score/lib/_e2e_test/test.ly:297:23: warning: deprecated: missing `.' in property path BarLine.bar-extent
+    \override BarLine 
+                      #'bar-extent = #'(-2 . 2) % LilyPond 2.18: please make barlines as high as the time signature even though we're on a RhythmicStaff (2.16 and 2.15 don't need this although its presence doesn't hurt; Issue 3685 seems to indicate they'll fix it post-2.18)
+D:/a10/aikjx/gitcode/infotopograph/melody2score/lib/_e2e_test/test.ly:308:20: warning: deprecated: missing `.' in property path Beam.transparent
+    \override Beam 
+                   #'transparent = ##f
+D:/a10/aikjx/gitcode/infotopograph/melody2score/lib/_e2e_test/test.ly:309:20: warning: deprecated: missing `.' in property path Stem.direction
+    \override Stem 
+                   #'direction = #DOWN
+D:/a10/aikjx/gitcode/infotopograph/melody2score/lib/_e2e_test/test.ly:310:19: warning: deprecated: missing `.' in property path Tie.staff-position
+    \override Tie 
+                  #'staff-position = #2.5
+D:/a10/aikjx/gitcode/infotopograph/melody2score/lib/_e2e_test/test.ly:313:20: warning: deprecated: missing `.' in property path Stem.length-fraction
+    \override Stem 
+                   #'length-fraction = #0
+D:/a10/aikjx/gitcode/infotopograph/melody2score/lib/_e2e_test/test.ly:314:20: warning: deprecated: missing `.' in property path Beam.beam-thickness
+    \override Beam 
+                   #'beam-thickness = #0.1
+D:/a10/aikjx/gitcode/infotopograph/melody2score/lib/_e2e_test/test.ly:315:20: warning: deprecated: missing `.' in property path Beam.length-fraction
+    \override Beam 
+                   #'length-fraction = #0.5
+D:/a10/aikjx/gitcode/infotopograph/melody2score/lib/_e2e_test/test.ly:317:26: warning: deprecated: missing `.' in property path Voice.Rest.style
+    \override Voice.Rest 
+                         #'style = #'neomensural % this size tends to line up better (we'll override the appearance anyway)
+D:/a10/aikjx/gitcode/infotopograph/melody2score/lib/_e2e_test/test.ly:318:26: warning: deprecated: missing `.' in property path Accidental.font-size
+    \override Accidental 
+                         #'font-size = #-4
+D:/a10/aikjx/gitcode/infotopograph/melody2score/lib/_e2e_test/test.ly:319:29: warning: deprecated: missing `.' in property path TupletBracket.bracket-visibility
+    \override TupletBracket 
+                            #'bracket-visibility = ##t
+D:/a10/aikjx/gitcode/infotopograph/melody2score/lib/_e2e_test/test.ly:321:35: warning: deprecated: missing `.' in property path Staff.TimeSignature.style
+    \override Staff.TimeSignature 
+                                  #'style = #'numbered
+D:/a10/aikjx/gitcode/infotopograph/melody2score/lib/_e2e_test/test.ly:322:26: warning: deprecated: missing `.' in property path Staff.Stem.transparent
+    \override Staff.Stem 
+                         #'transparent = ##t
+D:/a10/aikjx/gitcode/infotopograph/melody2score/lib/_e2e_test/test.ly:329:40: warning: deprecated: missing `.' in property path Tie.transparent
+ \note-mod "2" d'4 \once \override Tie 
+                                       #'transparent = ##t \once \override Tie #'staff-position = #0  \note-mod "1" c'4
+D:/a10/aikjx/gitcode/infotopograph/melody2score/lib/_e2e_test/test.ly:329:80: warning: deprecated: missing `.' in property path Tie.staff-position
+ \note-mod "2" d'4 \once \override Tie #'transparent = ##t \once \override Tie 
+                                                                               #'staff-position = #0  \note-mod "1" c'4
+Interpreting music...
+Preprocessing graphical objects...
+Interpreting music...
+MIDI output to `test.mid'...
+Finding the ideal number of pages...
+Fitting music on 1 page...
+Drawing systems...
+Converting to PNG...
+Success: compilation successfully completed

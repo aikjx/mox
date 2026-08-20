@@ -108,7 +108,7 @@
                 v-model="execForm.definition"
                 type="textarea"
                 :rows="6"
-                placeholder='JSON 定义，例如 {"nodes":[...],"edges":[...]}'
+                placeholder='JSON 定义，例如 {"nodes":[{"id":"n1","node_type":"Start","name":"开始","config":{}}],"edges":[],"variables":{}}'
               />
             </el-form-item>
             <div class="exec-btns">
@@ -309,28 +309,55 @@ function saveFromTpl(t) {
 }
 
 async function saveWorkflowDef() {
+  const wf = buildWorkflowPayload(execForm.value)
+  if (!wf) return
   try {
-    await saveWorkflow({
-      name: execForm.value.name,
-      definition: safeParse(execForm.value.definition)
-    })
+    await saveWorkflow(wf)
     ElMessage.success('已保存')
+    await loadAll()
   } catch (e) {
     ElMessage.error(e.message)
   }
 }
 async function execWorkflowDef() {
+  const wf = buildWorkflowPayload(execForm.value)
+  if (!wf) return
   execing.value = true
   try {
-    execResult.value = await executeWorkflowDef({
-      name: execForm.value.name,
-      definition: safeParse(execForm.value.definition)
-    })
+    execResult.value = await executeWorkflowDef({ workflow: wf })
     ElMessage.success('执行已触发')
   } catch (e) {
     ElMessage.error(e.message)
   } finally {
     execing.value = false
+  }
+}
+/**
+ * 将「名称 + JSON 定义」规范化为后端 BusinessWorkflow 契约：
+ * { id, name, description, nodes, edges, variables, start_node_id, created_at }
+ * 定义可包含 nodes/edges/variables/start_node_id，缺失字段自动补默认值。
+ */
+function buildWorkflowPayload(form) {
+  if (!form.name) {
+    ElMessage.warning('请填写工作流名称')
+    return null
+  }
+  const def = safeParse(form.definition)
+  const nodes = Array.isArray(def.nodes) ? def.nodes : []
+  if (!nodes.length) {
+    ElMessage.warning('节点定义中缺少 nodes 数组（示例：{"nodes":[...],"edges":[...]}）')
+    return null
+  }
+  const now = new Date().toISOString()
+  return {
+    id: def.id || 'wf_' + Date.now(),
+    name: form.name,
+    description: def.description || '手动定义工作流',
+    nodes,
+    edges: Array.isArray(def.edges) ? def.edges : [],
+    variables: def.variables || {},
+    start_node_id: def.start_node_id || nodes[0].id || '',
+    created_at: def.created_at || now
   }
 }
 function safeParse(s) {

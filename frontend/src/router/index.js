@@ -1,4 +1,4 @@
-﻿import { createRouter, createWebHashHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 
 const routes = [
   { path: '/', redirect: '/dashboard' },
@@ -7,6 +7,12 @@ const routes = [
     name: 'Dashboard',
     component: () => import('@/views/Dashboard.vue'),
     meta: { title: '工作台' }
+  },
+  {
+    path: '/expert-center',
+    name: 'ExpertCenter',
+    component: () => import('@/views/ExpertCenterView.vue'),
+    meta: { title: '专家联盟' }
   },
   {
     path: '/portal',

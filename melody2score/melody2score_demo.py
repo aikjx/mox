@@ -82,7 +82,9 @@ def main():
     _done()
     m.print_summary(res)
     if res.get("score_image_path"):
-        print(f"  标准歌谱图片 : {res['score_image_path']}")
+        print(f"  简谱图片     : {res['score_image_path']}")
+    if res.get("staff_image_path"):
+        print(f"  五线谱图片   : {res['staff_image_path']}")
 
 
 if __name__ == "__main__":

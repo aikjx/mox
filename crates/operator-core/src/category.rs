@@ -136,12 +136,12 @@ impl Operator for Workflow {
                 .operators
                 .first()
                 .map(|op| op.metadata().input_type)
-                .unwrap_or_else(|| crate::types::builtin::any_type()),
+                .unwrap_or_else(crate::types::builtin::any_type),
             output_type: self
                 .operators
                 .last()
                 .map(|op| op.metadata().output_type)
-                .unwrap_or_else(|| crate::types::builtin::any_type()),
+                .unwrap_or_else(crate::types::builtin::any_type),
             resource_cost: total_cost,
             author: "User".to_string(),
             tags: vec!["workflow".to_string()],
@@ -197,14 +197,14 @@ impl TypeCheck for Workflow {
         self.operators
             .first()
             .map(|op| op.input_type())
-            .unwrap_or_else(|| crate::types::builtin::any_type())
+            .unwrap_or_else(crate::types::builtin::any_type)
     }
 
     fn output_type(&self) -> TypeIdentifier {
         self.operators
             .last()
             .map(|op| op.output_type())
-            .unwrap_or_else(|| crate::types::builtin::any_type())
+            .unwrap_or_else(crate::types::builtin::any_type)
     }
 }
 

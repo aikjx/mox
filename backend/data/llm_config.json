@@ -1,12 +1,74 @@
 [
   {
     "id": "llm_default",
+    "name": "本地智能引擎",
     "provider": "local",
     "base_url": "",
-    "model": "ous-internal",
+    "model": "ous-internal-v3",
+    "api_key": "",
+    "enabled": true,
+    "description": "内置智能引擎，无需外部API，支持意图识别、专家分析、算子推荐",
+    "updated_at": "2026-08-20T00:00:00.000Z",
+    "created_at": "2026-08-20T00:00:00.000Z"
+  },
+  {
+    "id": "llm_deepseek",
+    "name": "DeepSeek",
+    "provider": "deepseek",
+    "base_url": "https://api.deepseek.com/v1",
+    "model": "deepseek-chat",
     "api_key": "",
     "enabled": false,
-    "updated_at": "2026-08-18T03:49:54.464Z",
-    "created_at": "2026-08-18T03:49:54.465Z"
+    "description": "DeepSeek 大模型，支持中文对话和代码生成",
+    "updated_at": "2026-08-20T00:00:00.000Z",
+    "created_at": "2026-08-20T00:00:00.000Z"
+  },
+  {
+    "id": "llm_volcengine",
+    "name": "火山引擎",
+    "provider": "volcengine",
+    "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+    "model": "doubao-pro-32k",
+    "api_key": "",
+    "enabled": false,
+    "description": "字节跳动豆包大模型，支持中文业务场景",
+    "updated_at": "2026-08-20T00:00:00.000Z",
+    "created_at": "2026-08-20T00:00:00.000Z"
+  },
+  {
+    "id": "llm_qwen",
+    "name": "阿里云千问",
+    "provider": "qwen",
+    "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "model": "qwen-max",
+    "api_key": "",
+    "enabled": false,
+    "description": "阿里云千问大模型，支持多模态和长上下文",
+    "updated_at": "2026-08-20T00:00:00.000Z",
+    "created_at": "2026-08-20T00:00:00.000Z"
+  },
+  {
+    "id": "llm_zhipu",
+    "name": "智谱AI",
+    "provider": "zhipu",
+    "base_url": "https://open.bigmodel.cn/api/paas/v4",
+    "model": "glm-4",
+    "api_key": "",
+    "enabled": false,
+    "description": "智谱AI大模型，支持长文本和复杂推理",
+    "updated_at": "2026-08-20T00:00:00.000Z",
+    "created_at": "2026-08-20T00:00:00.000Z"
+  },
+  {
+    "id": "llm_openai",
+    "name": "OpenAI",
+    "provider": "openai",
+    "base_url": "https://api.openai.com/v1",
+    "model": "gpt-4o",
+    "api_key": "",
+    "enabled": false,
+    "description": "OpenAI 最新模型，支持多模态和高级推理",
+    "updated_at": "2026-08-20T00:00:00.000Z",
+    "created_at": "2026-08-20T00:00:00.000Z"
   }
 ]

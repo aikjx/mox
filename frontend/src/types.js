@@ -1,4 +1,4 @@
-﻿// 算子统一系统 - 全局类型与常量定义
+// 算子统一系统 - 全局类型与常量定义
 
 export const APP_NAME = '算子统一系统'
 export const APP_VERSION = '3.0.0'
@@ -60,6 +60,7 @@ export const AI_CAPABILITIES = [
 // 顶部菜单模块（企业级中后台导航）
 export const NAV_MODULES = [
   { key: 'dashboard', label: '工作台', icon: 'Odometer', path: '/dashboard', color: '#4f46e5', bg: '#eef2ff' },
+  { key: 'expert-center', label: '专家联盟', icon: 'User', path: '/expert-center', color: '#7c3aed', bg: '#ede9fe' },
   { key: 'operators', label: '算子中心', icon: 'Cpu', path: '/operators', color: '#6366f1', bg: '#eef2ff' },
   { key: 'graph', label: '知识图谱', icon: 'Share', path: '/graph', color: '#06b6d4', bg: '#ecfeff' },
   { key: 'ai', label: 'AI 助手', icon: 'ChatDotRound', path: '/ai', color: '#ec4899', bg: '#fce7f3' },
@@ -75,4 +76,35 @@ export const NAV_MODULES = [
   { key: 'caomei', label: '需求编译', icon: 'Tickets', path: '/caomei', color: '#16a34a', bg: '#dcfce7' },
   { key: 'algolab', label: '算法实验室', icon: 'TrendCharts', path: '/algolab', color: '#d97706', bg: '#fef3c7' },
   { key: 'xuanji-fusion', label: '全维融合', icon: 'Aim', path: '/xuanji-fusion', color: '#7c3aed', bg: '#ede9fe' }
+]
+
+// 专家类型映射
+export const EXPERT_TYPES = {
+  algorithm: '算法专家',
+  architecture: '架构专家',
+  data: '数据专家',
+  ai: 'AI专家',
+  workflow: '工作流专家',
+  operator: '算子系统专家',
+  graph: '知识图谱专家',
+  security: '安全专家',
+  performance: '性能优化专家',
+  monitor: '可观测性专家',
+  market: '商业智能专家',
+  mcp: 'MCP协议专家',
+  automation: '自动化专家',
+  requirement: '需求工程专家',
+  fusion: '融合专家'
+}
+
+// AI 对话专家预设
+export const AI_EXPERT_PRESETS = [
+  { key: 'general', label: '通用助手', type: null, icon: 'ChatDotRound' },
+  { key: 'algorithm', label: '算法专家', type: 'algorithm', icon: 'TrendCharts' },
+  { key: 'architecture', label: '架构专家', type: 'architecture', icon: 'Grid' },
+  { key: 'operator', label: '算子专家', type: 'operator', icon: 'Cpu' },
+  { key: 'graph', label: '图谱专家', type: 'graph', icon: 'Share' },
+  { key: 'workflow', label: '工作流专家', type: 'workflow', icon: 'Operation' },
+  { key: 'automation', label: '自动化专家', type: 'automation', icon: 'MagicStick' },
+  { key: 'fusion', label: '融合专家', type: 'fusion', icon: 'Aim' }
 ]

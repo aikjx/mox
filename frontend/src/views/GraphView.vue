@@ -126,7 +126,7 @@
               <div v-if="centrality.length" class="nb-list">
                 <div v-for="(c, i) in centrality.slice(0, 15)" :key="i" class="nb">
                   <span class="rank">#{{ i + 1 }}</span>
-                  {{ c.id }} <span class="muted">{{ c.value.toFixed(4) }}</span>
+                  {{ c.id }} <span class="muted">{{ (c.value ?? 0).toFixed(4) }}</span>
                 </div>
               </div>
             </el-tab-pane>
@@ -138,7 +138,7 @@
               <div v-if="communities.length" class="nb-list">
                 <div v-for="(c, i) in communities" :key="i" class="nb comm">
                   <span class="comm-tag">社区{{ c.id }}</span>
-                  <span class="muted">{{ c.nodes.length }} 节点 · 密度 {{ c.density.toFixed(3) }}</span>
+                  <span class="muted">{{ c.nodes.length }} 节点</span>
                   <div class="comm-nodes">{{ c.nodes.slice(0, 8).join('、') }}{{ c.nodes.length > 8 ? '…' : '' }}</div>
                 </div>
               </div>
@@ -158,7 +158,7 @@
               <div v-if="activation.length" class="nb-list">
                 <div v-for="(a, i) in activation.slice(0, 20)" :key="i" class="nb">
                   <span class="rank">#{{ i + 1 }}</span>
-                  {{ a.id }} <span class="muted">激活值 {{ a.value.toFixed(4) }}</span>
+                  {{ a.id }} <span class="muted">激活值 {{ (a.value ?? 0).toFixed(4) }}</span>
                 </div>
               </div>
             </el-tab-pane>
@@ -233,16 +233,18 @@ async function loadCentrality() {
   try {
     if (centType.value === 'pagerank') {
       const map = await getPagerank()
-      centrality.value = Object.entries(map)
-        .map(([id, value]) => ({ id, value }))
+      centrality.value = Object.entries(map.pagerank || {})
+        .map(([id, value]) => ({ id, value: Number(value) || 0 }))
+        .sort((a, b) => b.value - a.value)
+    } else if (centType.value === 'degree') {
+      const metrics = await getCentrality()
+      centrality.value = Object.entries(metrics.degree || {})
+        .map(([id, info]) => ({ id, value: Number(info?.normalized) || Number(info?.degree) || 0 }))
         .sort((a, b) => b.value - a.value)
     } else {
       const metrics = await getCentrality()
-      const src = centType.value === 'degree'
-        ? metrics.degree_centrality
-        : metrics.betweenness_centrality
-      centrality.value = Object.entries(src || {})
-        .map(([id, value]) => ({ id, value }))
+      centrality.value = Object.entries(metrics.betweenness || {})
+        .map(([id, value]) => ({ id, value: Number(value) || 0 }))
         .sort((a, b) => b.value - a.value)
     }
   } catch (e) {
@@ -258,7 +260,12 @@ const loadingComm = ref(false)
 async function loadCommunities() {
   loadingComm.value = true
   try {
-    communities.value = await getCommunities()
+    const map = await getCommunities()
+    communities.value = (map.communities || []).map(c => ({
+      id: c.id,
+      nodes: Array.isArray(c.members) ? c.members : (c.members || '').split(/\s+/).filter(Boolean),
+      size: c.size || 0
+    }))
   } catch (e) {
     ElMessage.error('社区检测失败：' + e.message)
   } finally {
@@ -279,8 +286,9 @@ async function doPropagate() {
   loadingAct.value = true
   try {
     const map = await propagateActivation(actSeeds.value, actIter.value)
-    activation.value = Object.entries(map)
-      .map(([id, value]) => ({ id, value }))
+    activation.value = Object.entries(map.energy || {})
+      .map(([id, value]) => ({ id, value: Number(value) || 0 }))
+      .filter(a => a.value > 0)
       .sort((a, b) => b.value - a.value)
   } catch (e) {
     ElMessage.error('激活传播失败：' + e.message)

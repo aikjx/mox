@@ -22,6 +22,7 @@ pub mod resource;
 pub mod conservation;
 pub mod monad;
 pub mod engine;
+pub mod registry;
 
 pub use types::*;
 pub use state::*;
@@ -30,6 +31,7 @@ pub use category::*;
 pub use resource::*;
 pub use conservation::*;
 pub use monad::*;
+pub use registry::*;
 
 /// 系统核心错误类型
 #[derive(Debug, Error)]

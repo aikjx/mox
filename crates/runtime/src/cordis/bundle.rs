@@ -238,8 +238,8 @@ impl Operator for DeclarativeOperator {
                 "声明式 Bundle 算子 {}: {} -> {}",
                 self.meta.name, self.meta.input_type, self.meta.output_type
             ),
-            input_type: self.meta.input_type.clone(),
-            output_type: self.meta.output_type.clone(),
+            input_type: TypeIdentifier::new(&self.meta.input_type),
+            output_type: TypeIdentifier::new(&self.meta.output_type),
             resource_cost: ResourceCost::new(100, 1024),
             author: "cordis".to_string(),
             tags: vec!["bundle".to_string(), "declarative".to_string()],
