@@ -1930,6 +1930,137 @@ ${seedNodes.length ? '已有种子节点：' + seedNodes.map(n => n.id + '(' + n
     });
   });
 
+  reg('post', '/experts/route', async (req, res) => {
+    const body = await readBody(req);
+    try {
+      const routing = await alliance.routeExperts(body.question || body.message || '', {
+        maxExperts: body.maxExperts || 3,
+        strategy: body.strategy
+      });
+      ok(res, routing);
+    } catch (e) {
+      fail(res, 500, e.message);
+    }
+  });
+
+  reg('post', '/experts/intelligent-consult', async (req, res) => {
+    const body = await readBody(req);
+    try {
+      const result = await alliance.intelligentConsult(body.question || body.message || '', {
+        mode: body.mode,
+        maxExperts: body.maxExperts,
+        temperature: body.temperature,
+        problemContext: body.problemContext,
+        businessConstraints: body.businessConstraints
+      });
+      appendLog({ type: 'expert', msg: 'intelligent-consult', mode: result.mode });
+      ok(res, result);
+    } catch (e) {
+      fail(res, 500, e.message);
+    }
+  });
+
+  reg('post', '/experts/algorithm-analysis', async (req, res) => {
+    const body = await readBody(req);
+    try {
+      const result = await alliance.analyzeWithAlgorithm(
+        body.question || '',
+        body.graphData || body.graph || null,
+        body.options || {}
+      );
+      appendLog({ type: 'expert', msg: 'algorithm-analysis' });
+      ok(res, result);
+    } catch (e) {
+      fail(res, 500, e.message);
+    }
+  });
+
+  reg('get', '/experts/metrics', (req, res) => {
+    ok(res, { metrics: alliance.getAllMetrics() });
+  });
+
+  reg('get', '/experts/overview', (req, res) => {
+    ok(res, alliance.getSystemOverview());
+  });
+
+  reg('get', '/experts/:id/metrics', (req, res, params) => {
+    const metrics = alliance.getExpertMetrics(params.id);
+    if (metrics) {
+      ok(res, metrics);
+    } else {
+      fail(res, 404, 'Expert not found');
+    }
+  });
+
+  reg('post', '/expert-sessions', (req, res) => {
+    const body = readBody.sync ? readBody.sync(req) : null;
+    try {
+      const session = alliance.createSession(body || {});
+      ok(res, session);
+    } catch (e) {
+      fail(res, 500, e.message);
+    }
+  });
+
+  reg('get', '/expert-sessions', (req, res) => {
+    ok(res, alliance.listSessions());
+  });
+
+  reg('get', '/expert-sessions/:id', (req, res, params) => {
+    const session = alliance.getSession(params.id);
+    if (session) {
+      ok(res, session);
+    } else {
+      fail(res, 404, 'Session not found');
+    }
+  });
+
+  reg('post', '/expert-sessions/:id/message', async (req, res, params) => {
+    const body = await readBody(req);
+    try {
+      const result = await alliance.processSessionMessage(
+        params.id,
+        body.message || body.content || '',
+        body.options || {}
+      );
+      ok(res, result);
+    } catch (e) {
+      fail(res, 500, e.message);
+    }
+  });
+
+  reg('post', '/expert-chains', (req, res) => {
+    const body = readBody.sync ? readBody.sync(req) : null;
+    try {
+      const chain = alliance.createSessionChain(
+        body?.name || 'Expert Chain',
+        body?.expert_ids || [],
+        body?.options || {}
+      );
+      ok(res, chain);
+    } catch (e) {
+      fail(res, 500, e.message);
+    }
+  });
+
+  reg('get', '/expert-chains', (req, res) => {
+    ok(res, alliance.listSessionChains());
+  });
+
+  reg('post', '/expert-chains/:id/execute', async (req, res, params) => {
+    const body = await readBody(req);
+    try {
+      const result = await alliance.executeChain(
+        params.id,
+        body.question || '',
+        body.options || {}
+      );
+      ok(res, result);
+    } catch (e) {
+      fail(res, 500, e.message);
+    }
+  });
+
   // ===== 16模块 AI 增强端点 =====
   // 工作台 AI 概览
   reg('get', '/workbench/ai-overview', async (req, res) => {
