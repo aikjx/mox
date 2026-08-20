@@ -93,5 +93,109 @@
     "tags": [],
     "id": "operators_msy4u79e76hew",
     "created_at": "2026-08-18T03:58:13.058Z"
+  },
+  {
+    "id": "operators_tsn2t9agqn",
+    "type": "algorithm",
+    "category": "test",
+    "desc": "",
+    "version": "1.0.0",
+    "status": "active",
+    "tags": [],
+    "created_at": "2026-08-19T15:04:50.406Z",
+    "name": "测试算子X"
+  },
+  {
+    "id": "test_op",
+    "type": "algorithm",
+    "category": "general",
+    "desc": "",
+    "version": "1.0.0",
+    "status": "active",
+    "tags": [],
+    "created_at": "2026-08-19T15:56:49.238Z",
+    "name": "Test",
+    "operator_type": "function"
+  },
+  {
+    "id": "test_op_v2",
+    "type": "algorithm",
+    "category": "general",
+    "desc": "",
+    "version": "1.0.0",
+    "status": "active",
+    "tags": [],
+    "created_at": "2026-08-19T15:58:28.821Z",
+    "name": "Test Op v2",
+    "operator_type": "function"
+  },
+  {
+    "id": "unit-test-1787196469464",
+    "type": "transform",
+    "category": "general",
+    "desc": "",
+    "version": "1.0.0",
+    "status": "active",
+    "tags": [],
+    "created_at": "2026-08-20T03:27:49.467Z",
+    "name": "test-op",
+    "description": "测试算子"
+  },
+  {
+    "id": "unit-test-1787196529570",
+    "type": "transform",
+    "category": "general",
+    "desc": "",
+    "version": "1.0.0",
+    "status": "active",
+    "tags": [],
+    "created_at": "2026-08-20T03:28:49.572Z",
+    "name": "test-op",
+    "description": "测试算子"
+  },
+  {
+    "id": "unit-test-1787196559674",
+    "type": "transform",
+    "category": "general",
+    "desc": "",
+    "version": "1.0.0",
+    "status": "active",
+    "tags": [],
+    "created_at": "2026-08-20T03:29:19.676Z",
+    "name": "test-op",
+    "description": "测试算子"
+  },
+  {
+    "id": "operators_ewbgz2lnol",
+    "type": "function",
+    "category": "test",
+    "desc": "API测试算子",
+    "version": "1.0.0",
+    "status": "active",
+    "tags": [],
+    "created_at": "2026-08-20T03:34:38.037Z",
+    "name": "测试算子_1787196878036"
+  },
+  {
+    "id": "operators_wmszq1h3j9",
+    "type": "function",
+    "category": "test",
+    "desc": "API测试算子",
+    "version": "1.0.0",
+    "status": "active",
+    "tags": [],
+    "created_at": "2026-08-20T03:35:17.236Z",
+    "name": "测试算子_1787196917235"
+  },
+  {
+    "id": "operators_g8udmpffcw",
+    "type": "function",
+    "category": "test",
+    "desc": "API测试算子",
+    "version": "1.0.0",
+    "status": "active",
+    "tags": [],
+    "created_at": "2026-08-20T03:41:51.157Z",
+    "name": "测试算子_1787197311155"
   }
 ]

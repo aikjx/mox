@@ -64,5 +64,109 @@
     "updated_at": "2026-08-18T03:49:58.299Z",
     "created_at": "2026-08-18T03:49:54.465Z",
     "last_report": "G3-通过"
+  },
+  {
+    "id": "auto_wsi2yshh30",
+    "status": "draft",
+    "runs": 0,
+    "permissions": {
+      "read": true,
+      "write": false,
+      "execute": true
+    },
+    "created_at": "2026-08-19T15:58:29.097Z",
+    "name": "test_auto",
+    "message": "测试"
+  },
+  {
+    "id": "auto_43oqkf4cj3",
+    "status": "draft",
+    "runs": 0,
+    "permissions": {
+      "read": true,
+      "write": false,
+      "execute": true
+    },
+    "created_at": "2026-08-20T03:28:49.631Z",
+    "name": "test-automation-1787196529629",
+    "description": "测试自动化任务"
+  },
+  {
+    "id": "auto_jdd7wu7z9k",
+    "status": "draft",
+    "runs": 0,
+    "permissions": {
+      "read": true,
+      "write": false,
+      "execute": true
+    },
+    "created_at": "2026-08-20T03:29:19.748Z",
+    "name": "test-automation-1787196559747",
+    "description": "测试自动化任务"
+  },
+  {
+    "id": "auto_yxfy3h7ncu",
+    "status": "draft",
+    "runs": 0,
+    "permissions": {
+      "read": true,
+      "write": false,
+      "execute": true
+    },
+    "created_at": "2026-08-20T03:30:32.652Z",
+    "name": "测试自动化",
+    "description": "API测试"
+  },
+  {
+    "id": "auto_521bkg2mr5",
+    "status": "draft",
+    "runs": 0,
+    "permissions": {
+      "read": true,
+      "write": false,
+      "execute": true
+    },
+    "created_at": "2026-08-20T03:33:15.315Z",
+    "name": "测试自动化",
+    "description": "API测试"
+  },
+  {
+    "id": "auto_naiiqfcaoe",
+    "status": "draft",
+    "runs": 0,
+    "permissions": {
+      "read": true,
+      "write": false,
+      "execute": true
+    },
+    "created_at": "2026-08-20T03:34:38.063Z",
+    "name": "测试自动化",
+    "description": "API测试"
+  },
+  {
+    "id": "auto_68xrvxcyzy",
+    "status": "draft",
+    "runs": 0,
+    "permissions": {
+      "read": true,
+      "write": false,
+      "execute": true
+    },
+    "created_at": "2026-08-20T03:35:17.262Z",
+    "name": "测试自动化",
+    "description": "API测试"
+  },
+  {
+    "id": "auto_1su2gmrszc",
+    "status": "draft",
+    "runs": 0,
+    "permissions": {
+      "read": true,
+      "write": false,
+      "execute": true
+    },
+    "created_at": "2026-08-20T03:41:51.196Z",
+    "name": "测试自动化",
+    "description": "API测试"
   }
 ]

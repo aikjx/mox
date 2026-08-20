@@ -16,6 +16,17 @@
           <span class="badge info">意图识别 · 算子推荐 · 算法分析</span>
         </div>
         <div class="chat-tools">
+          <div class="expert-selector">
+            <span class="muted">专家模式:</span>
+            <el-select v-model="selectedExpert" size="small" placeholder="选择专家">
+              <el-option
+                v-for="preset in AI_EXPERT_PRESETS"
+                :key="preset.key"
+                :label="preset.label"
+                :value="preset"
+              />
+            </el-select>
+          </div>
           <el-tooltip content="对话内容自动整理进知识图谱（全自动）" placement="bottom">
             <el-switch
               v-model="autoSync"
@@ -98,8 +109,10 @@ import { ref, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import MessageBubble from '@/components/MessageBubble.vue'
 import SessionSidebar from '@/components/SessionSidebar.vue'
+import { AI_EXPERT_PRESETS } from '@/types'
 import {
   aiChat,
+  aiExpertChat,
   getAutoSyncStatus,
   toggleAutoSync,
   graphExport,
@@ -120,6 +133,8 @@ const scrollEl = ref(null)
 // 对话自动→知识图谱 全自动同步开关（默认开）
 const autoSync = ref(true)
 const importInput = ref(null)
+// 专家模式
+const selectedExpert = ref(AI_EXPERT_PRESETS[0])
 // 流式打字定时器句柄：组件卸载时必须清理，避免泄漏
 let streamTimer = null
 
@@ -254,33 +269,46 @@ async function send() {
   thinking.value = true
   await scroll()
 
-  const placeholder = { role: 'assistant', content: '', timestamp: Date.now() }
+  const placeholder = { role: 'assistant', content: '思考中...', timestamp: Date.now() }
   messages.value.push(placeholder)
   await scroll()
 
   try {
-    const res = await aiChat({ session_id: currentSession.value, message: text })
-    const full = res.response || res.message || '（无回复）'
+    let res
+    const expertType = selectedExpert?.value?.type
+    if (expertType) {
+      res = await aiExpertChat({
+        messages: messages.value
+          .filter(m => m.content)
+          .map(m => ({ role: m.role, content: m.content })),
+        expert_type: expertType,
+        session_id: currentSession.value
+      })
+    } else {
+      res = await aiChat({ session_id: currentSession.value, message: text })
+    }
+    if (!res) throw new Error('服务器无响应')
+    const full = (res.reply || res.response || res.message || '（无回复）').toString()
     online.value = true
-    // 流式打字效果
     let i = 0
     streamTimer = setInterval(() => {
       i += Math.max(2, Math.ceil(full.length / 40))
       placeholder.content = full.slice(0, i)
       scroll()
       if (i >= full.length) {
-        clearInterval(timer)
+        clearInterval(streamTimer)
+        streamTimer = null
         thinking.value = false
-        if (res.referenced_operators) placeholder.referenced_operators = res.referenced_operators
-        if (res.confidence != null) placeholder.confidence = res.confidence
+        if (res.metadata?.related_operators) placeholder.referenced_operators = res.metadata.related_operators
+        if (res.metadata?.confidence != null) placeholder.confidence = res.metadata.confidence
         persist()
       }
     }, 28)
   } catch (e) {
-    placeholder.content = '⚠️ ' + e.message
+    placeholder.content = '⚠️ ' + (e.message || '请求失败')
     online.value = false
     thinking.value = false
-    ElMessage.error(e.message)
+    ElMessage.error(e.message || '请求失败')
     persist()
   }
 }
@@ -371,6 +399,16 @@ onUnmounted(() => { if (streamTimer) clearInterval(streamTimer) })
 }
 .chat-title { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; }
 .chat-tools { display: flex; align-items: center; gap: 4px; }
+.expert-selector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 8px;
+}
+.expert-selector .muted {
+  font-size: 12px;
+  color: var(--text-3);
+}
 .chat-body { flex: 1; overflow-y: auto; padding: 20px; background: #f8fafc; }
 .empty { text-align: center; color: var(--text-3); margin-top: 50px; }
 .empty-orb {

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="portal">
     <!-- 顶部导航 -->
     <header class="nav">
@@ -118,10 +118,11 @@ async function send() {
   cpBody.value?.scrollTo({ top: 1e9 })
   try {
     const resp = await aiChat({ message: text })
-    const out = resp?.reply || resp?.response || JSON.stringify(resp)
+    if (!resp) throw new Error('服务器无响应')
+    const out = (resp.reply || resp.response || resp.message || '（无回复）').toString()
     chat.value.push({ k: ++k, role: 'ai', text: out })
   } catch (e) {
-    chat.value.push({ k: ++k, role: 'ai', text: '（助手暂不可用：' + e.message + '）' })
+    chat.value.push({ k: ++k, role: 'ai', text: '（助手暂不可用：' + (e.message || '请求失败') + '）' })
   } finally {
     chatLoading.value = false
     await nextTick()

@@ -187,6 +187,14 @@ impl StateVector {
             metadata: self.metadata.clone(),
         })
     }
+
+    /// 合并两个状态向量（拼接），用于图谱边的守恒检查
+    pub fn combine(&self, other: &Self) -> Result<Self, OperatorError> {
+        let mut combined_data = Vec::with_capacity(self.dimension + other.dimension);
+        combined_data.extend_from_slice(self.data.as_slice());
+        combined_data.extend_from_slice(other.data.as_slice());
+        Ok(Self::from_vec(combined_data))
+    }
 }
 
 impl std::ops::Index<usize> for StateVector {

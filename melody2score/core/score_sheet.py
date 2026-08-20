@@ -21,16 +21,32 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 
-# matplotlib 通过 librosa 已隐性依赖，但这里显式 import 以便生成图片
-try:
-    import matplotlib
-    matplotlib.use("Agg")
-    from matplotlib import font_manager as fm
-    from matplotlib.backends.backend_pdf import FigureCanvasPdf
-    from matplotlib.figure import Figure
-    HAS_MPL = True
-except Exception:  # pragma: no cover - 允许无 GUI/无字体环境降级
-    HAS_MPL = False
+# matplotlib 懒加载：仅当真正导出歌谱图片（export_score）时才 import。
+# 原因：matplotlib 顶层 import 会触发 font_manager 全量扫描系统字体，
+# 在导入 core.score_sheet 时（gui 启动即触发）可造成数秒阻塞，是启动卡顿主因。
+HAS_MPL = False          # 首次调用 _load_mpl() 后置 True
+_fm = None               # matplotlib.font_manager
+_Figure = None           # matplotlib.figure.Figure
+_FigureCanvasPdf = None  # matplotlib.backends.backend_pdf.FigureCanvasPdf
+
+
+def _load_mpl() -> bool:
+    """懒加载 matplotlib（幂等）。返回是否可用。"""
+    global HAS_MPL, _fm, _Figure, _FigureCanvasPdf
+    if HAS_MPL:
+        return True
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        from matplotlib import font_manager as _fm_mod
+        from matplotlib.backends.backend_pdf import FigureCanvasPdf as _FCP
+        from matplotlib.figure import Figure as _Fig
+        _fm, _Figure, _FigureCanvasPdf = _fm_mod, _Fig, _FCP
+        HAS_MPL = True
+        return True
+    except Exception:  # pragma: no cover - 允许无 GUI/无字体环境降级
+        HAS_MPL = False
+        return False
 
 
 @dataclass
@@ -78,7 +94,7 @@ def _ensure_font() -> Optional[str]:
     for p in candidates:
         if os.path.exists(p):
             try:
-                prop = fm.FontProperties(fname=p)
+                prop = _fm.FontProperties(fname=p)
                 return prop
             except Exception:
                 continue
@@ -291,7 +307,7 @@ def draw_score_sheet(
     Returns:
         保存后的文件路径。
     """
-    if not HAS_MPL:
+    if not _load_mpl():
         raise RuntimeError("绘制歌谱需要 matplotlib，请执行：pip install matplotlib")
 
     ext = os.path.splitext(output_path)[1].lower()
@@ -305,7 +321,7 @@ def draw_score_sheet(
     header_height_in = 1.3
     height_in = header_height_in + len(rows) * row_height_in + 0.6
 
-    fig = Figure(figsize=(width_in, height_in), dpi=dpi)
+    fig = _Figure(figsize=(width_in, height_in), dpi=dpi)
     fig.patch.set_facecolor("white")
     ax = fig.add_axes([0, 0, 1, 1])
     ax.set_xlim(0, width_px)
@@ -314,17 +330,17 @@ def draw_score_sheet(
     ax.axis("off")
 
     font_prop = _ensure_font()
-    title_font = fm.FontProperties(family="sans-serif", size=26, weight="bold")
+    title_font = _fm.FontProperties(family="sans-serif", size=26, weight="bold")
     if font_prop:
-        title_font = fm.FontProperties(fname=font_prop.get_file(), size=26, weight="bold")
+        title_font = _fm.FontProperties(fname=font_prop.get_file(), size=26, weight="bold")
 
-    info_font = fm.FontProperties(family="sans-serif", size=12)
+    info_font = _fm.FontProperties(family="sans-serif", size=12)
     if font_prop:
-        info_font = fm.FontProperties(fname=font_prop.get_file(), size=12)
+        info_font = _fm.FontProperties(fname=font_prop.get_file(), size=12)
 
-    note_font = fm.FontProperties(family="monospace", size=20)
+    note_font = _fm.FontProperties(family="monospace", size=20)
     if font_prop:
-        note_font = fm.FontProperties(fname=font_prop.get_file(), size=20)
+        note_font = _fm.FontProperties(fname=font_prop.get_file(), size=20)
 
     # 1. 标题
     y_cursor = 50
@@ -414,7 +430,7 @@ def draw_score_sheet(
 
     if is_pdf:
         # PDF 使用矢量后端，保持 figsize 英寸
-        canvas = FigureCanvasPdf(fig)
+        canvas = _FigureCanvasPdf(fig)
         canvas.print_figure(output_path, dpi=dpi)
     elif ext == ".svg":
         fig.savefig(output_path, format="svg", dpi=dpi, facecolor="white")
@@ -437,7 +453,11 @@ def export_score(
     width_px: int = 1200,
     dpi: int = 150,
 ) -> str:
-    """一站式导出：直接接受 pipeline notes 字典，生成标准歌谱图片。"""
+    """一站式导出：直接接受 pipeline notes 字典，生成标准歌谱图片。
+
+    渲染后端优先使用现成第三方库（jianpu-ly + LilyPond），
+    仅在第三方依赖缺失或失败时降级到内置的 matplotlib 手绘。
+    """
     sheet = make_score_sheet(
         notes=notes,
         key=key,
@@ -447,10 +467,22 @@ def export_score(
         composer=composer,
         tuning=tuning,
     )
-    return draw_score_sheet(
-        sheet=sheet,
-        output_path=output_path,
-        bars_per_row=bars_per_row,
-        width_px=width_px,
-        dpi=dpi,
-    )
+    try:
+        from . import jianpu_render
+        return jianpu_render.render_score_sheet(
+            sheet=sheet,
+            output_path=output_path,
+            dpi=dpi,
+        )
+    except Exception as exc:  # pragma: no cover - 第三方依赖缺失时的兜底
+        # 记录原因后回退到 matplotlib 手绘，保证可用性
+        import sys
+        print(f"[score_sheet] 第三方简谱渲染不可用，降级 matplotlib：{exc}",
+              file=sys.stderr)
+        return draw_score_sheet(
+            sheet=sheet,
+            output_path=output_path,
+            bars_per_row=bars_per_row,
+            width_px=width_px,
+            dpi=dpi,
+        )

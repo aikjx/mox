@@ -12,10 +12,14 @@
 
 输出 dict 与现有 GUI/WebUI 契约一致，便于零改动接入。
 """
+import hashlib
 import io
 import os
+import shutil
+import subprocess
 import time
 import traceback
+from collections import OrderedDict
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
@@ -25,11 +29,116 @@ from core.config import Config
 from core.paths import resource_path
 from core import capture, preprocess, pitch, analysis, score, vad, score_sheet
 
+
+class _LRUCache:
+    """进程级线程安全 LRU。用于识别结果缓存：同源+同配置重复识别秒回。"""
+
+    def __init__(self, capacity: int = 64):
+        self._cap = capacity
+        self._d: "OrderedDict[str, Dict]" = OrderedDict()
+        self._lock = __import__("threading").Lock()
+
+    def get(self, key: str) -> Optional[Dict]:
+        with self._lock:
+            v = self._d.pop(key, None)
+            if v is not None:
+                self._d[key] = v  # 最近使用置尾
+            return v
+
+    def put(self, key: str, value: Dict) -> None:
+        with self._lock:
+            self._d[key] = value
+            self._d.move_to_end(key)
+            while len(self._d) > self._cap:
+                self._d.popitem(last=False)
+
+
+_RESULT_CACHE = _LRUCache(capacity=64)
+
 _MIDI_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 
 
 def midi_name(m: int) -> str:
     return f"{_MIDI_NAMES[m % 12]}{m // 12 - 1}"
+
+
+# ---- MuseScore 命令行五线谱渲染（可选增强，找不到则优雅降级） ----
+
+_MSCODE_RASTER_EXT = {".png", ".pdf", ".svg"}
+
+# 常见安装路径（含 Windows / Linux / macOS / snap）
+_MSCODE_PATHS = [
+    r"C:\Program Files\MuseScore 4\bin\MuseScore4.exe",
+    r"C:\Program Files\MuseScore 3\bin\MuseScore3.exe",
+    r"C:\Program Files (x86)\MuseScore 3\bin\MuseScore3.exe",
+    "/usr/bin/musescore",
+    "/usr/local/bin/musescore",
+    "/snap/bin/musescore",
+    "/Applications/MuseScore 4.app/Contents/MacOS/mscore",
+]
+
+
+def find_musescore(exe: Optional[str] = None) -> Optional[str]:
+    """定位 MuseScore 可执行文件。
+
+    优先级：显式传入参数 > 环境变量 MUSESCORE / MSCORE > PATH > 常见安装路径。
+    找不到返回 None（调用方优雅降级到 matplotlib / 仅 musicxml）。
+    """
+    cands: List[str] = []
+    if exe:
+        cands.append(exe)
+    env = os.environ.get("MUSESCORE") or os.environ.get("MSCORE")
+    if env:
+        cands.append(env)
+    for name in ("musescore", "mscore", "MuseScore4.exe", "mscore4.exe",
+                 "MuseScore3.exe", "musescore.exe"):
+        found = shutil.which(name)
+        if found:
+            cands.append(found)
+    cands.extend(_MSCODE_PATHS)
+    for c in cands:
+        if c and os.path.exists(c):
+            return c
+    return None
+
+
+def render_with_musescore(
+    xml_path: str,
+    out_path: str,
+    exe: Optional[str] = None,
+    timeout: float = 60.0,
+) -> Optional[str]:
+    """用 MuseScore 把 musicxml 渲染成专业排版五线谱图片（PNG/PDF/SVG）。
+
+    - 找不到 MuseScore / 渲染失败 / 无有效输出 → 返回 None（调用方优雅降级）。
+    - 无头环境（服务器 / 板端 / CI）自动切 offscreen，规避 Qt 显示依赖。
+    - 同时兼容 MuseScore 4（`-o out.png -T png in.xml`）与 MuseScore 3
+      （`-o out.png in.xml`）两种命令行语法。
+    """
+    mscore = find_musescore(exe)
+    if not mscore:
+        return None
+    ext = os.path.splitext(out_path)[1].lower()
+    if ext not in _MSCODE_RASTER_EXT:
+        return None
+
+    env = dict(os.environ)
+    env.setdefault("QT_QPA_PLATFORM", "offscreen")
+    fmt = ext.lstrip(".")
+    # 候选命令：MuseScore 4（带 -T 显式类型）→ MuseScore 3（仅 -o）
+    candidates = [
+        [mscore, "-o", out_path, "-T", fmt, xml_path],
+        [mscore, "-o", out_path, xml_path],
+    ]
+    for cmd in candidates:
+        try:
+            subprocess.run(cmd, timeout=timeout, env=env,
+                           capture_output=True, text=True)
+        except Exception:
+            continue
+        if os.path.exists(out_path) and os.path.getsize(out_path) > 0:
+            return out_path
+    return None
 
 
 def load_audio_bytes(data: bytes, sr: int):
@@ -150,6 +259,28 @@ class Melody2Score:
         实时进度反馈，避免长音频下「假死」观感。fraction 取值 0~1。
         """
         cfg = self.cfg
+        # 识别结果缓存：同源+同关键配置重复识别直接命中，避免重复跑昂贵音高检测。
+        # 仅对「字节可哈希」源（file/record 的 data、array 的 y 已缓存为内容指纹）。
+        cache_key = None
+        try:
+            raw = source.get("data")
+            if raw is not None and isinstance(raw, (bytes, bytearray)):
+                raw = bytes(raw)
+                cfg_tag = (cfg.robust, cfg.enable_denoise, cfg.model_size, cfg.hop,
+                           cfg.vocal_mode, cfg.fmin, cfg.fmax, cfg.conf_thresh)
+                cache_key = "v1:" + hashlib.sha256(raw).hexdigest() + ":" + repr(cfg_tag)
+            elif source.get("kind") == "sample":
+                cfg_tag = (cfg.robust, cfg.enable_denoise, cfg.model_size, cfg.hop,
+                           cfg.vocal_mode, cfg.fmin, cfg.fmax, cfg.conf_thresh)
+                cache_key = "v1:sample:" + str(source.get("name")) + ":" + repr(cfg_tag)
+            if cache_key:
+                cached = _RESULT_CACHE.get(cache_key)
+                if cached is not None:
+                    cached = dict(cached)  # 返回副本，防调用方误改污染缓存
+                    return cached
+        except Exception:
+            cache_key = None  # 键构造失败则不缓存，不影响正常识别
+
         try:
             if progress_cb:
                 progress_cb("load", "载入音频…", 0.02)
@@ -215,7 +346,7 @@ class Melody2Score:
                 "name": midi_name(int(n["midi"])),
             } for n in notes]
 
-            return {
+            result = {
                 "jianpu": jianpu, "bpm": round(float(bpm), 1),
                 "key": {"tonic": key_name[0], "mode": key_name[1]},
                 "note_count": len(notes), "duration_sec": round(total_dur, 2),
@@ -229,6 +360,9 @@ class Melody2Score:
                          "pitch_frames": len(last_pts)},
                 "source": source.get("source", ""),
             }
+            if cache_key:
+                _RESULT_CACHE.put(cache_key, result)
+            return result
         except Exception as e:
             traceback.print_exc()
             raise
@@ -259,7 +393,9 @@ class Melody2Score:
         res = self.recognize(source, progress_cb=progress_cb)
 
         if out_xml:
-            self._export_xml(res, out_xml, ms_score)
+            staff_img = self._export_xml(res, out_xml, ms_score)
+            if staff_img:
+                res["staff_image_path"] = staff_img
 
         # 默认生成规范歌谱图片（PNG），置于 exports/ 目录
         sheet_path = out_sheet or self._default_sheet_path(audio_path or "record")
@@ -287,7 +423,11 @@ class Melody2Score:
         ts = time.strftime("%Y%m%d_%H%M%S")
         return os.path.join(exports_dir, f"{base}_标准歌谱_{ts}.png")
 
-    def _export_xml(self, res: Dict, out_xml: str, ms_score: Optional[str]):
+    def _export_xml(self, res: Dict, out_xml: str, ms_score: Optional[str]) -> Optional[str]:
+        """写 musicxml；若提供 MuseScore 可执行路径，再把该 xml 渲染成五线谱 PNG。
+
+        返回渲染出的五线谱图片路径（未渲染或失败返回 None）。
+        """
         try:
             score.to_musicxml(
                 res["notes"],
@@ -297,6 +437,16 @@ class Melody2Score:
             )
         except Exception as e:
             print(f"[warn] musicxml 导出失败: {e}")
+            return None
+        # 用 MuseScore 把 musicxml 渲染为专业五线谱图片（五线谱 + 简谱并存）
+        try:
+            img = os.path.splitext(out_xml)[0] + "_五线谱.png"
+            rendered = render_with_musescore(out_xml, img, exe=ms_score)
+            if rendered:
+                return rendered
+        except Exception as e:
+            print(f"[warn] MuseScore 五线谱渲染失败（可忽略，简谱图片不受影响）: {e}")
+        return None
 
     @staticmethod
     def print_summary(res: Dict) -> None:

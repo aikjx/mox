@@ -146,13 +146,24 @@ def _merge_short(notes: List[Dict], min_note_dur: float) -> List[Dict]:
 
 def detect_bpm(y: np.ndarray, sr: int = 16000, fallback: float = 120.0,
                 notes: Optional[list] = None) -> float:
-    """稳健 BPM 检测：
-      1) 先试 librosa.beat.beat_track；
-      2) 若返回 0 / 负 / NaN / 超出合理范围(30-300)，或检测异常：
-         a) 若提供了 notes，用音符平均时长反推 BPM；
-         b) 否则回落到 fallback。
+    """稳健 BPM 检测。
+
+    性能：librosa.beat.beat_track 内部做 STFT + 动态规划节拍追踪，对短音频
+    也常耗时数秒（实测 7.6s 音频 ~4.3s），且对哼唱/合成音轨返回的 tempo 往往
+    不可信。因此**优先用音符时长反推 BPM**（O(音符数)、瞬间完成），仅当无
+    可用音符时才回退到 beat_track，进一步失败再落 fallback。
+
     修复「哼唱/合成音轨 BPM=0 导致五线谱退化」的根因。
     """
+    # 首选：从音符平均时长反推（音符序列已包含实际节拍信息，快且准）
+    if notes:
+        durs = [max(0.05, float(n["end"] - n["start"])) for n in notes if "end" in n and "start" in n]
+        if durs:
+            med = float(np.median(durs))
+            if 0.05 < med < 4.0:
+                return float(60.0 / med)  # 一拍 ≈ 一音符 → BPM
+
+    # 兜底：仅当没有可用音符时才跑昂贵的 beat_track
     raw = None
     try:
         tempo, _ = librosa.beat.beat_track(y=y, sr=sr, hop_length=512)
@@ -163,13 +174,6 @@ def detect_bpm(y: np.ndarray, sr: int = 16000, fallback: float = 120.0,
     if raw is not None and np.isfinite(raw) and 30.0 <= raw <= 300.0:
         return raw
 
-    # BPM 不可信：从音符平均时长反推（音符序列已包含实际节拍信息）
-    if notes:
-        durs = [max(0.05, float(n["end"] - n["start"])) for n in notes if "end" in n and "start" in n]
-        if durs:
-            med = float(np.median(durs))
-            if 0.05 < med < 4.0:
-                return float(60.0 / med)  # 一拍 ≈ 一音符 → BPM
     return float(fallback)
 
 

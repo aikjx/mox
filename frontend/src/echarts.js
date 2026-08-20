@@ -1,7 +1,4 @@
-// 按需引入 ECharts（大幅减小打包体积，避免全量 ~1MB 打入每个图表视图）
-//
-// 仅注册实际使用的图表类型与组件。新增图表类型时，在此处补充对应 import 与 use()。
-import * as echarts from 'echarts/core'
+import * as echartsCore from 'echarts/core'
 
 import {
   BarChart,
@@ -16,11 +13,13 @@ import {
   LegendComponent,
   GridComponent,
   TitleComponent,
+  GraphicComponent,
 } from 'echarts/components'
 
 import { CanvasRenderer } from 'echarts/renderers'
+import { graphic as echartsGraphic } from 'echarts'
 
-echarts.use([
+echartsCore.use([
   BarChart,
   LineChart,
   RadarChart,
@@ -30,7 +29,10 @@ echarts.use([
   LegendComponent,
   GridComponent,
   TitleComponent,
+  GraphicComponent,
   CanvasRenderer,
 ])
 
-export default echarts
+export const init = echartsCore.init
+export const graphic = echartsGraphic
+export default echartsCore

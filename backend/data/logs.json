@@ -1,0 +1,504 @@
+[
+  {
+    "id": "log_jzvnsaznp7",
+    "ts": "2026-08-20T03:41:51.198Z",
+    "type": "automation",
+    "msg": "create 测试自动化"
+  },
+  {
+    "id": "log_mtqck5nxce",
+    "ts": "2026-08-20T03:41:51.183Z",
+    "type": "caomei",
+    "msg": "compile",
+    "requirement": "创建一个用户登录流程"
+  },
+  {
+    "id": "log_zqjhzkrdhb",
+    "ts": "2026-08-20T03:41:51.175Z",
+    "type": "workflow",
+    "msg": "create 测试工作流"
+  },
+  {
+    "id": "operators_g8udmpffcw",
+    "ts": "2026-08-20T03:41:51.159Z",
+    "type": "operator",
+    "msg": "register 测试算子_1787197311155"
+  },
+  {
+    "id": "log_3f1xl0iiie",
+    "ts": "2026-08-20T03:35:17.264Z",
+    "type": "automation",
+    "msg": "create 测试自动化"
+  },
+  {
+    "id": "log_erye72novs",
+    "ts": "2026-08-20T03:35:17.255Z",
+    "type": "caomei",
+    "msg": "compile",
+    "requirement": "创建一个用户登录流程"
+  },
+  {
+    "id": "log_tbjx6nr6kt",
+    "ts": "2026-08-20T03:35:17.250Z",
+    "type": "workflow",
+    "msg": "create 测试工作流"
+  },
+  {
+    "id": "operators_wmszq1h3j9",
+    "ts": "2026-08-20T03:35:17.238Z",
+    "type": "operator",
+    "msg": "register 测试算子_1787196917235"
+  },
+  {
+    "id": "log_5hwqk1jf77",
+    "ts": "2026-08-20T03:34:47.528Z",
+    "type": "caomei",
+    "msg": "compile",
+    "requirement": "test"
+  },
+  {
+    "id": "log_gtab3o78kb",
+    "ts": "2026-08-20T03:34:38.064Z",
+    "type": "automation",
+    "msg": "create 测试自动化"
+  },
+  {
+    "id": "log_0khf6pit98",
+    "ts": "2026-08-20T03:34:38.054Z",
+    "type": "caomei",
+    "msg": "compile",
+    "requirement": "创建一个用户登录流程"
+  },
+  {
+    "id": "log_aboncs71lb",
+    "ts": "2026-08-20T03:34:38.049Z",
+    "type": "workflow",
+    "msg": "create 测试工作流"
+  },
+  {
+    "id": "operators_ewbgz2lnol",
+    "ts": "2026-08-20T03:34:38.039Z",
+    "type": "operator",
+    "msg": "register 测试算子_1787196878036"
+  },
+  {
+    "id": "log_890bjmuo45",
+    "ts": "2026-08-20T03:33:15.317Z",
+    "type": "automation",
+    "msg": "create 测试自动化"
+  },
+  {
+    "id": "log_j43yxcp88g",
+    "ts": "2026-08-20T03:33:15.303Z",
+    "type": "caomei",
+    "msg": "compile",
+    "requirement": "创建一个用户登录流程"
+  },
+  {
+    "id": "log_84ob0w0y3g",
+    "ts": "2026-08-20T03:33:15.297Z",
+    "type": "workflow",
+    "msg": "create 测试工作流"
+  },
+  {
+    "id": "log_jde4a6jbz9",
+    "ts": "2026-08-20T03:30:32.654Z",
+    "type": "automation",
+    "msg": "create 测试自动化"
+  },
+  {
+    "id": "log_r1re9dwt7p",
+    "ts": "2026-08-20T03:30:32.637Z",
+    "type": "caomei",
+    "msg": "compile",
+    "requirement": "创建一个用户登录流程"
+  },
+  {
+    "id": "log_664530err9",
+    "ts": "2026-08-20T03:29:19.773Z",
+    "type": "expert",
+    "msg": "debate",
+    "rounds": 2
+  },
+  {
+    "id": "log_9lu7vdovo1",
+    "ts": "2026-08-20T03:29:19.770Z",
+    "type": "expert",
+    "msg": "multi-consult",
+    "experts": 2
+  },
+  {
+    "id": "log_dkyixlw3r3",
+    "ts": "2026-08-20T03:29:19.766Z",
+    "type": "expert",
+    "msg": "consult alg-expert",
+    "tokens": 1
+  },
+  {
+    "id": "log_1fvgqmp5j6",
+    "ts": "2026-08-20T03:29:19.754Z",
+    "type": "caomei",
+    "msg": "compile",
+    "requirement": "系统需要支持用户登录"
+  },
+  {
+    "id": "log_nae5plj1xl",
+    "ts": "2026-08-20T03:29:19.750Z",
+    "type": "automation",
+    "msg": "create test-automation-1787196559747"
+  },
+  {
+    "id": "log_9jhgbxsbn4",
+    "ts": "2026-08-20T03:29:19.721Z",
+    "type": "workflow",
+    "msg": "save test-workflow"
+  },
+  {
+    "id": "log_meqrg44d1a",
+    "ts": "2026-08-20T03:29:19.681Z",
+    "type": "execute",
+    "msg": "workflow executed",
+    "steps": 0
+  },
+  {
+    "id": "unit-test-1787196559674",
+    "ts": "2026-08-20T03:29:19.678Z",
+    "type": "operator",
+    "msg": "register test-op"
+  },
+  {
+    "id": "log_62ivyw825a",
+    "ts": "2026-08-20T03:28:49.649Z",
+    "type": "expert",
+    "msg": "debate",
+    "rounds": 2
+  },
+  {
+    "id": "log_8kt9es8ayq",
+    "ts": "2026-08-20T03:28:49.646Z",
+    "type": "expert",
+    "msg": "multi-consult",
+    "experts": 2
+  },
+  {
+    "id": "log_o93w30mga6",
+    "ts": "2026-08-20T03:28:49.644Z",
+    "type": "expert",
+    "msg": "consult alg-expert",
+    "tokens": 1
+  },
+  {
+    "id": "log_79g3ieee30",
+    "ts": "2026-08-20T03:28:49.636Z",
+    "type": "caomei",
+    "msg": "compile",
+    "requirement": "系统需要支持用户登录"
+  },
+  {
+    "id": "log_rh7m6xj89k",
+    "ts": "2026-08-20T03:28:49.633Z",
+    "type": "automation",
+    "msg": "create test-automation-1787196529629"
+  },
+  {
+    "id": "log_zgr4afqifn",
+    "ts": "2026-08-20T03:28:49.609Z",
+    "type": "workflow",
+    "msg": "save test-workflow"
+  },
+  {
+    "id": "log_lqu69ly7fn",
+    "ts": "2026-08-20T03:28:49.576Z",
+    "type": "execute",
+    "msg": "workflow executed",
+    "steps": 0
+  },
+  {
+    "id": "unit-test-1787196529570",
+    "ts": "2026-08-20T03:28:49.574Z",
+    "type": "operator",
+    "msg": "register test-op"
+  },
+  {
+    "id": "log_igod9cv2fd",
+    "ts": "2026-08-20T03:27:49.551Z",
+    "type": "expert",
+    "msg": "debate",
+    "rounds": 2
+  },
+  {
+    "id": "log_84v1uamdtp",
+    "ts": "2026-08-20T03:27:49.547Z",
+    "type": "expert",
+    "msg": "multi-consult",
+    "experts": 2
+  },
+  {
+    "id": "log_tc028b4n4r",
+    "ts": "2026-08-20T03:27:49.544Z",
+    "type": "expert",
+    "msg": "consult alg-expert",
+    "tokens": 1
+  },
+  {
+    "id": "log_7h46hfxrli",
+    "ts": "2026-08-20T03:27:49.533Z",
+    "type": "caomei",
+    "msg": "compile",
+    "requirement": "系统需要支持用户登录"
+  },
+  {
+    "id": "log_6xg2m61o20",
+    "ts": "2026-08-20T03:27:49.511Z",
+    "type": "workflow",
+    "msg": "save test-workflow"
+  },
+  {
+    "id": "log_praac90qg9",
+    "ts": "2026-08-20T03:27:49.473Z",
+    "type": "execute",
+    "msg": "workflow executed",
+    "steps": 0
+  },
+  {
+    "id": "unit-test-1787196469464",
+    "ts": "2026-08-20T03:27:49.469Z",
+    "type": "operator",
+    "msg": "register test-op"
+  },
+  {
+    "id": "log_6h5otpg5p1",
+    "ts": "2026-08-20T03:14:04.071Z",
+    "type": "expert",
+    "msg": "debate",
+    "rounds": 2
+  },
+  {
+    "id": "log_o7kwud321h",
+    "ts": "2026-08-20T03:14:04.064Z",
+    "type": "expert",
+    "msg": "multi-consult",
+    "experts": 3
+  },
+  {
+    "id": "log_jrkqo9gofv",
+    "ts": "2026-08-20T03:14:04.057Z",
+    "type": "expert",
+    "msg": "consult alg-expert",
+    "tokens": 1
+  },
+  {
+    "id": "test-expert",
+    "ts": "2026-08-20T03:04:25.080Z",
+    "type": "expert",
+    "msg": "register 测试专家"
+  },
+  {
+    "id": "log_5q5zeezqna",
+    "ts": "2026-08-20T03:04:25.075Z",
+    "type": "expert",
+    "msg": "debate",
+    "rounds": 2
+  },
+  {
+    "id": "log_epud14l0al",
+    "ts": "2026-08-20T03:04:25.072Z",
+    "type": "expert",
+    "msg": "multi-consult",
+    "experts": 2
+  },
+  {
+    "id": "log_ggdcj6mkgo",
+    "ts": "2026-08-20T03:04:25.068Z",
+    "type": "expert",
+    "msg": "consult alg-expert",
+    "tokens": 1
+  },
+  {
+    "id": "log_a9bj4ah3au",
+    "ts": "2026-08-20T03:03:56.546Z",
+    "type": "expert",
+    "msg": "debate",
+    "rounds": 2
+  },
+  {
+    "id": "log_zjgrvb3smh",
+    "ts": "2026-08-20T03:03:56.541Z",
+    "type": "expert",
+    "msg": "multi-consult",
+    "experts": 2
+  },
+  {
+    "id": "log_wwl5r7c2z5",
+    "ts": "2026-08-20T03:03:56.537Z",
+    "type": "expert",
+    "msg": "consult alg-expert",
+    "tokens": 1
+  },
+  {
+    "id": "log_0mhttlj39l",
+    "ts": "2026-08-20T03:00:48.351Z",
+    "type": "expert",
+    "msg": "multi-consult",
+    "experts": 2
+  },
+  {
+    "id": "log_mhhdwutt13",
+    "ts": "2026-08-20T03:00:32.984Z",
+    "type": "expert",
+    "msg": "consult alg-expert",
+    "tokens": 1
+  },
+  {
+    "id": "log_5mtlljf36h",
+    "ts": "2026-08-20T03:00:11.884Z",
+    "type": "expert",
+    "msg": "consult alg-expert",
+    "tokens": 1
+  },
+  {
+    "id": "log_vk4ozrnpod",
+    "ts": "2026-08-20T02:59:16.773Z",
+    "type": "expert",
+    "msg": "consult alg-expert",
+    "tokens": 1
+  },
+  {
+    "id": "log_xmnu55qc8n",
+    "ts": "2026-08-20T02:58:38.493Z",
+    "type": "expert",
+    "msg": "multi-consult",
+    "experts": 0
+  },
+  {
+    "id": "log_l9pej1hghe",
+    "ts": "2026-08-20T02:58:28.953Z",
+    "type": "expert",
+    "msg": "multi-consult",
+    "experts": 0
+  },
+  {
+    "id": "log_2t4p2i41kk",
+    "ts": "2026-08-20T02:58:19.603Z",
+    "type": "expert",
+    "msg": "consult alg-expert",
+    "tokens": 1
+  },
+  {
+    "id": "log_7p8e4xz0hj",
+    "ts": "2026-08-19T15:58:29.098Z",
+    "type": "automation",
+    "msg": "create test_auto"
+  },
+  {
+    "id": "log_qm511whxj2",
+    "ts": "2026-08-19T15:58:28.962Z",
+    "type": "caomei",
+    "msg": "compile",
+    "requirement": "用户登录功能"
+  },
+  {
+    "id": "test_op_v2",
+    "ts": "2026-08-19T15:58:28.823Z",
+    "type": "operator",
+    "msg": "register Test Op v2"
+  },
+  {
+    "id": "log_frjl4fn42g",
+    "ts": "2026-08-19T15:58:28.756Z",
+    "type": "execute",
+    "msg": "workflow executed",
+    "steps": 1
+  },
+  {
+    "id": "log_vfudr81x3f",
+    "ts": "2026-08-19T15:58:28.584Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 23,
+    "edges": 29
+  },
+  {
+    "id": "log_q768xbcjmk",
+    "ts": "2026-08-19T15:58:25.573Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 23,
+    "edges": 29
+  },
+  {
+    "id": "log_rhcr9nonzr",
+    "ts": "2026-08-19T15:58:22.571Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 23,
+    "edges": 29
+  },
+  {
+    "id": "log_7lnrq9cdjg",
+    "ts": "2026-08-19T15:58:19.565Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 23,
+    "edges": 29
+  },
+  {
+    "id": "log_gcnhc54bzw",
+    "ts": "2026-08-19T15:58:16.585Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 23,
+    "edges": 29
+  },
+  {
+    "id": "log_sx9fsn2thr",
+    "ts": "2026-08-19T15:58:13.553Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 23,
+    "edges": 29
+  },
+  {
+    "id": "log_43at6ow8u7",
+    "ts": "2026-08-19T15:56:58.212Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 23,
+    "edges": 29
+  },
+  {
+    "id": "log_vffn63hxyr",
+    "ts": "2026-08-19T15:56:55.198Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 23,
+    "edges": 29
+  },
+  {
+    "id": "log_meoj5x2wfr",
+    "ts": "2026-08-19T15:56:52.185Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 23,
+    "edges": 29
+  },
+  {
+    "id": "log_xnve8ke8ov",
+    "ts": "2026-08-19T15:56:49.374Z",
+    "type": "caomei",
+    "msg": "compile",
+    "requirement": "用户登录功能"
+  },
+  {
+    "id": "test_op",
+    "ts": "2026-08-19T15:56:49.240Z",
+    "type": "operator",
+    "msg": "register Test"
+  },
+  {
+    "id": "operators_tsn2t9agqn",
+    "ts": "2026-08-19T15:04:50.408Z",
+    "type": "operator",
+    "msg": "register 测试算子X"
+  }
+]

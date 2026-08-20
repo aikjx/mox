@@ -158,14 +158,15 @@ class RecognizeWorker(QThread):
 
 
 class SheetWorker(QThread):
-    """后台生成标准歌谱 PNG（matplotlib 重活移出主线程，避免界面卡顿）。"""
+    """后台生成标准歌谱（png/pdf/svg）（matplotlib 重活移出主线程，避免界面卡顿）。"""
     done = pyqtSignal(str)      # 成功：文件路径
     failed = pyqtSignal()
 
-    def __init__(self, res: Dict, title: str):
+    def __init__(self, res: Dict, title: str, fmt: str = "png"):
         super().__init__()
         self.res = res
         self.title = title
+        self.fmt = fmt
 
     def run(self):
         try:
@@ -174,7 +175,7 @@ class SheetWorker(QThread):
             _os.makedirs(export_dir, exist_ok=True)
             safe = _re.sub(r"[^\w一-鿿-]", "_", self.title or "melody")[:40]
             ts = _time.strftime("%Y%m%d_%H%M%S")
-            fpath = _os.path.join(export_dir, f"{safe or 'melody'}_标准歌谱_{ts}.png")
+            fpath = _os.path.join(export_dir, f"{safe or 'melody'}_标准歌谱_{ts}.{self.fmt}")
             score_sheet.export_score(
                 notes=self.res.get("notes", []),
                 key=self.res.get("key", {"tonic": "C", "mode": "major"}),
@@ -303,7 +304,7 @@ class StaffView(QWidget):
             if step < 0:                       # 底线之下
                 for k in range(1, (-step) // 2 + 1):
                     ly = y0 + k * gap
-                    p.drawLine(int(nx - .0), int(ly), int(nx + 9), int(ly))
+                    p.drawLine(int(nx - 9), int(ly), int(nx + 9), int(ly))
 
         beat_dur = 60.0 / max(self.bpm, 1.0)
         start_t = self.notes[0]["start"]
@@ -1226,40 +1227,28 @@ class MainWindow(QMainWindow):
         else:
             self.sheetLabel.setText("标准歌谱生成失败（可能缺少 matplotlib 或中文字体）。")
 
-    def _generate_sheet(self, res: Dict, fmt: str) -> Optional[str]:
-        """用 core.score_sheet 生成标准歌谱并返回路径。"""
-        try:
-            title = self.titleEdit.text() or "未命名旋律"
-            export_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "exports")
-            os.makedirs(export_dir, exist_ok=True)
-            safe = re.sub(r"[^\w一-鿿-]", "_", title)[:40]
-            ts = time.strftime("%Y%m%d_%H%M%S")
-            fname = f"{safe or 'melody'}_标准歌谱_{ts}.{fmt}"
-            fpath = os.path.join(export_dir, fname)
-            score_sheet.export_score(
-                notes=res.get("notes", []),
-                key=res.get("key", {"tonic": "C", "mode": "major"}),
-                bpm=float(res.get("bpm", 120)),
-                output_path=fpath,
-                title=title,
-            )
-            return fpath
-        except Exception as e:
-            traceback.print_exc()
-            return None
-
     def export_sheet(self, fmt: str):
+        """导出标准歌谱。走后台 SheetWorker，避免 matplotlib 生成 PDF/SVG 时阻塞主线程。"""
         if not self.current:
             return
-        path = self._generate_sheet(self.current, fmt)
-        if path:
+        self.status.setText(f"⏳ 正在后台生成 {fmt.upper()}…")
+        w = SheetWorker(self.current, self.titleEdit.text() or "未命名旋律", fmt)
+        self._sheet_worker = w  # 保引用防 GC
+
+        def _ok(path: str):
             if fmt == "png":
                 self.sheetLabel.setPixmap(QPixmap(path).scaledToWidth(
                     self.sheetLabel.width() - 20, Qt.SmoothTransformation))
             QMessageBox.information(self, "已导出", f"标准歌谱已导出：\n{path}")
             self.status.setText(f"已导出 {fmt.upper()}：{os.path.basename(path)}")
-        else:
+
+        def _fail():
+            self.status.setText("导出失败")
             QMessageBox.warning(self, "导出失败", "标准歌谱导出失败，请检查日志。")
+
+        w.done.connect(_ok)
+        w.failed.connect(_fail)
+        w.start()
 
     def save_md(self):
         if not self.current:

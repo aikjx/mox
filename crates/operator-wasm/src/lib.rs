@@ -6,7 +6,7 @@
 use operator_core::operator::Operator;
 use operator_core::resource::ResourceCost;
 use operator_core::state::StateVector;
-use operator_core::types::{TypeCheck, TypeIdentifier};
+use operator_core::types::{builtin, TypeCheck, TypeIdentifier};
 use operator_core::{
     ExecutionContext, OperatorError, OperatorMetadata, Result,
 };
@@ -130,11 +130,11 @@ impl Operator for WasmOperator {
 
 impl TypeCheck for WasmOperator {
     fn input_type(&self) -> TypeIdentifier {
-        TypeIdentifier::new(&self.metadata.input_type)
+        self.metadata.input_type.clone()
     }
 
     fn output_type(&self) -> TypeIdentifier {
-        TypeIdentifier::new(&self.metadata.output_type)
+        self.metadata.output_type.clone()
     }
 }
 
@@ -172,8 +172,8 @@ impl WasmPluginManager {
                     name: name.clone(),
                     version: "1.0.0".to_string(),
                     description: format!("WASM插件: {}", name),
-                    input_type: "StateVector".to_string(),
-                    output_type: "StateVector".to_string(),
+                    input_type: builtin::state_vector_type(),
+                    output_type: builtin::state_vector_type(),
                     resource_cost: ResourceCost::default(),
                     author: "WASM Plugin".to_string(),
                     tags: vec!["wasm".to_string(), "plugin".to_string()],

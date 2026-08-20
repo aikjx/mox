@@ -15,7 +15,12 @@ sounddevice>=0.4.6         # 现场录音
 
 # ---- 谱生成 ----
 music21>=9.1.0             # musicxml 量化生成（可选，导出乐谱用）
-matplotlib>=3.7.0          # 标准简谱/歌谱图片渲染（PNG/PDF/SVG）
+# 简谱图片渲染（现成第三方库，非自绘）：
+#   - LilyPond（外部引擎，需独立安装：Windows `winget install LilyPond.LilyPond`，
+#     macOS `brew install lilypond`，Linux `apt install lilypond`）
+#   - lib/jianpu-ly.py（随仓库附带，Apache-2.0，Silas S. Brown 的简谱排版预处理器）
+# core/jianpu_render.py 把 ScoreSheet 适配为 jianpu-ly 文本，再调二者输出 PNG/PDF/SVG。
+matplotlib>=3.7.0          # 仅作第三方依赖缺失时的降级回退（非默认渲染路径）
 
 # ---- CLI / 服务 / 可视化 ----
 fastapi>=0.110.0           # WebUI 后端
