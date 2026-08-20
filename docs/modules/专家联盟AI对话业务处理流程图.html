@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>专家联盟 AI 对话系统 - 全维度业务处理流程图</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+  .container { max-width: 1400px; margin: 0 auto; }
+  
+  .header {
+    text-align: center;
+    margin-bottom: 50px;
+    padding: 40px;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(59, 130, 246, 0.15));
+    border-radius: 24px;
+    border: 1px solid rgba(124, 58, 237, 0.3);
+  }
+  .header h1 {
+    font-size: 2.5rem;
+    background: linear-gradient(135deg, #a78bfa, #60a5fa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 12px;
+  }
+  .header .subtitle {
+    color: #94a3b8;
+    font-size: 1.1rem;
+  }
+  .header .meta {
+    margin-top: 16px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .header .meta-item {
+    padding: 6px 16px;
+    background: rgba(124, 58, 237, 0.2);
+    border-radius: 20px;
+    font-size: 0.9rem;
+  }
+
+  .section {
+    margin-bottom: 40px;
+  }
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-title .icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #7c3aed, #3b82f6);
+    border-radius: 12px;
+    font-size: 1.2rem;
+  }
+
+  .flow-card {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 20px;
+    padding: 30px;
+    backdrop-filter: blur(10px);
+  }
+
+  /* 主流程图 */
+  .main-flow {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+  .flow-node {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(59, 130, 246, 0.2));
+    border: 2px solid rgba(124, 58, 237, 0.4);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  .flow-node:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(124, 58, 237, 0.3);
+  }
+  .flow-node .step-num {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    line-height: 32px;
+    background: linear-gradient(135deg, #7c3aed, #3b82f6);
+    border-radius: 50%;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .flow-node .step-title {
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #e2e8f0;
+  }
+  .flow-node .step-desc {
+    font-size: 0.85rem;
+    color: #94a3b8;
+  }
+
+  .flow-arrow {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    color: #7c3aed;
+  }
+
+  /* 详细流程图 */
+  .detailed-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .flow-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .flow-block {
+    flex: 1;
+    min-width: 180px;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.8));
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 14px;
+    padding: 18px;
+  }
+  .flow-block .block-title {
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .flow-block .block-content {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    line-height: 1.6;
+  }
+  .flow-block.input { border-left: 4px solid #3b82f6; }
+  .flow-block.process { border-left: 4px solid #7c3aed; }
+  .flow-block.output { border-left: 4px solid #10b981; }
+  .flow-block.algorithm { border-left: 4px solid #f59e0b; }
+
+  /* 专家图谱 */
+  .expert-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  .expert-card {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.6));
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 16px;
+    padding: 20px;
+    transition: transform 0.3s;
+  }
+  .expert-card:hover { transform: translateY(-2px); }
+  .expert-card .expert-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 12px;
+  }
+  .expert-card .expert-name {
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .expert-card .expert-type {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-bottom: 10px;
+  }
+  .expert-card .expert-caps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .expert-card .cap-tag {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    background: rgba(124, 58, 237, 0.2);
+    border-radius: 10px;
+    color: #a78bfa;
+  }
+
+  /* 算法流程 */
+  .algo-flow {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+  }
+  .algo-card {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(239, 68, 68, 0.1));
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 16px;
+    padding: 24px;
+  }
+  .algo-card .algo-name {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .algo-card .algo-info {
+    font-size: 0.85rem;
+    line-height: 1.8;
+  }
+  .algo-card .algo-info .label {
+    color: #f59e0b;
+    font-weight: 600;
+  }
+
+  /* 状态机 */
+  .state-diagram {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    padding: 30px;
+  }
+  .state-node {
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .state-draft { background: rgba(100, 116, 139, 0.3); color: #94a3b8; }
+  .state-analyzing { background: rgba(59, 130, 246, 0.3); color: #60a5fa; }
+  .state-responding { background: rgba(124, 58, 237, 0.3); color: #a78bfa; }
+  .state-active { background: rgba(16, 185, 129, 0.3); color: #34d399; }
+  .state-archived { background: rgba(71, 85, 105, 0.3); color: #64748b; }
+  .state-arrow { color: #475569; font-size: 1.2rem; }
+
+  /* 数据模型 */
+  .data-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  .data-card {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .data-card-header {
+    padding: 16px 20px;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.3), rgba(59, 130, 246, 0.2));
+    font-weight: 700;
+  }
+  .data-card-body {
+    padding: 20px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.8rem;
+    color: #94a3b8;
+    line-height: 1.8;
+  }
+  .data-card-body .key { color: #a78bfa; }
+  .data-card-body .value { color: #60a5fa; }
+  .data-card-body .string { color: #34d399; }
+
+  /* 指标看板 */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+  }
+  .metric-card {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(59, 130, 246, 0.1));
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+  }
+  .metric-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #a78bfa, #60a5fa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .metric-label {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin-top: 8px;
+  }
+  .metric-target {
+    color: #64748b;
+    font-size: 0.8rem;
+    margin-top: 4px;
+  }
+
+  /* 图例 */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 20px;
+    padding: 16px;
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: 12px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: #94a3b8;
+  }
+  .legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .pulse { animation: pulse 2s infinite; }
+
+  @media (max-width: 768px) {
+    .main-flow { grid-template-columns: 1fr; }
+    .flow-row { flex-direction: column; }
+    .flow-block { min-width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>专家联盟 AI 对话系统</h1>
+    <div class="subtitle">全维度业务处理流程图 · V1.0 企业级</div>
+    <div class="meta">
+      <span class="meta-item">📊 15+ 专家类型</span>
+      <span class="meta-item">🤖 智能路由</span>
+      <span class="meta-item">⚡ 算法联盟</span>
+      <span class="meta-item">🔄 多轮辩论</span>
+      <span class="meta-item">📈 全维分析</span>
+    </div>
+  </div>
+
+  <!-- 核心指标 -->
+  <div class="section">
+    <div class="section-title"><span class="icon">📊</span> 核心性能指标</div>
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-value">≤3s</div>
+        <div class="metric-label">对话响应时间 P95</div>
+        <div class="metric-target">目标 ≤ 3秒</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">85%+</div>
+        <div class="metric-label">专家路由准确率</div>
+        <div class="metric-target">智能匹配算法</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">100+</div>
+        <div class="metric-label">并发会话数</div>
+        <div class="metric-target">支持水平扩展</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">99.9%</div>
+        <div class="metric-label">系统可用率</div>
+        <div class="metric-target">双机热备保障</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主业务流程 -->
+  <div class="section">
+    <div class="section-title"><span class="icon">🔄</span> 主业务处理流程</div>
+    <div class="flow-card">
+      <div class="main-flow">
+        <div class="flow-node">
+          <div class="step-num">1</div>
+          <div class="step-title">用户请求</div>
+          <div class="step-desc">自然语言输入<br>多模态支持</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">
+          <div class="step-num">2</div>
+          <div class="step-title">意图识别</div>
+          <div class="step-desc">NLP 语义理解<br>问题分类</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">
+          <div class="step-num">3</div>
+          <div class="step-title">专家路由</div>
+          <div class="step-desc">智能匹配<br>能力评估</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">
+          <div class="step-num">4</div>
+          <div class="step-title">对话执行</div>
+          <div class="step-desc">单专家/多专家<br>辩论/链式</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">
+          <div class="step-num">5</div>
+          <div class="step-title">结果聚合</div>
+          <div class="step-desc">多结果融合<br>置信度评估</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">
+          <div class="step-num">6</div>
+          <div class="step-title">分析生成</div>
+          <div class="step-desc">报告/文档<br>流程图/图谱</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">
+          <div class="step-num">7</div>
+          <div class="step-title">输出持久化</div>
+          <div class="step-desc">会话保存<br>知识沉淀</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 详细处理流程 -->
+  <div class="section">
+    <div class="section-title"><span class="icon">🔍</span> 详细处理流程拆解</div>
+    <div class="flow-card">
+      <div class="detailed-flow">
+        
+        <!-- 阶段1: 输入层 -->
+        <div class="flow-row">
+          <div class="flow-block input">
+            <div class="block-title">📥 输入层</div>
+            <div class="block-content">
+              • 用户自然语言输入<br>
+              • 问题选择（预设/自定义）<br>
+              • 历史会话恢复<br>
+              • 多模态输入支持
+            </div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-block process">
+            <div class="block-title">🧠 意图识别引擎</div>
+            <div class="block-content">
+              • 关键词提取与分类<br>
+              • 意图匹配（算法/架构/数据...）<br>
+              • 上下文理解<br>
+              • 情感分析
+            </div>
+          </div>
+        </div>
+
+        <!-- 阶段2: 调度层 -->
+        <div class="flow-row">
+          <div class="flow-block process">
+            <div class="block-title">🎯 专家调度引擎</div>
+            <div class="block-content">
+              • 候选专家筛选<br>
+              • 能力相关性评分<br>
+              • 在线状态检查<br>
+              • 执行模式选择
+            </div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-block algorithm">
+            <div class="block-title">⚙️ 算法联盟</div>
+            <div class="block-content">
+              • PageRank 节点重要性<br>
+              • 社区结构发现<br>
+              • 中心性指标计算<br>
+              • 最短路径分析<br>
+              • 复杂度评估
+            </div>
+          </div>
+        </div>
+
+        <!-- 阶段3: 执行层 -->
+        <div class="flow-row">
+          <div class="flow-block process">
+            <div class="block-title">💬 对话执行层</div>
+            <div class="block-content">
+              • 单专家咨询：深度对话<br>
+              • 多专家协同：并行分析<br>
+              • 专家辩论：多轮综合<br>
+              • 链式执行：流水线处理
+            </div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-block process">
+            <div class="block-title">🔄 上下文管理</div>
+            <div class="block-content">
+              • 多轮对话历史维护<br>
+              • 专家知识注入<br>
+              • 会话状态追踪<br>
+              • 信息增量处理
+            </div>
+          </div>
+        </div>
+
+        <!-- 阶段4: 生成层 -->
+        <div class="flow-row">
+          <div class="flow-block output">
+            <div class="block-title">📝 分析生成</div>
+            <div class="block-content">
+              • 全维分析报告<br>
+              • 需求文档生成<br>
+              • 业务流程图绘制<br>
+              • 代码框架输出
+            </div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-block output">
+            <div class="block-title">📊 知识图谱构建</div>
+            <div class="block-content">
+              • 实体关系抽取<br>
+              • 图谱动态构建<br>
+              • 语义索引建立<br>
+              • 可视化渲染
+            </div>
+          </div>
+        </div>
+
+        <!-- 阶段5: 持久层 -->
+        <div class="flow-row">
+          <div class="flow-block output">
+            <div class="block-title">💾 持久化存储</div>
+            <div class="block-content">
+              • 会话历史持久化<br>
+              • 专家经验积累<br>
+              • 知识图谱存储<br>
+              • 审计日志记录
+            </div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-block output">
+            <div class="block-title">🔔 输出交付</div>
+            <div class="block-content">
+              • 结构化响应<br>
+              • 流式打字输出<br>
+              • 可视化结果展示<br>
+              • 通知与推送
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 专家类型体系 -->
+  <div class="section">
+    <div class="section-title"><span class="icon">👥</span> 专家类型体系（15+ 专家）</div>
+    <div class="flow-card">
+      <div class="expert-grid">
+        <div class="expert-card">
+          <div class="expert-icon" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">📈</div>
+          <div class="expert-name">算法专家</div>
+          <div class="expert-type">algorithm</div>
+          <div class="expert-caps">
+            <span class="cap-tag">复杂度分析</span>
+            <span class="cap-tag">算法设计</span>
+          </div>
+        </div>
+        <div class="expert-card">
+          <div class="expert-icon" style="background:linear-gradient(135deg,#0891b2,#06b6d4)">🏗️</div>
+          <div class="expert-name">架构专家</div>
+          <div class="expert-type">architecture</div>
+          <div class="expert-caps">
+            <span class="cap-tag">系统设计</span>
+            <span class="cap-tag">微服务</span>
+          </div>
+        </div>
+        <div class="expert-card">
+          <div class="expert-icon" style="background:linear-gradient(135deg,#10b981,#059669)">📊</div>
+          <div class="expert-name">数据专家</div>
+          <div class="expert-type">data</div>
+          <div class="expert-caps">
+            <span class="cap-tag">数据建模</span>
+            <span class="cap-tag">ETL</span>
+          </div>
+        </div>
+        <div class="expert-card">
+          <div class="expert-icon" style="background:linear-gradient(135deg,#ec4899,#f43f5e)">🤖</div>
+          <div class="expert-name">AI 专家</div>
+          <div class="expert-type">ai</div>
+          <div class="expert-caps">
+            <span class="cap-tag">机器学习</span>
+            <span class="cap-tag">大模型</span>
+          </div>
+        </div>
+        <div class="expert-card">
+          <div class="expert-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706)">🔄</div>
+          <div class="expert-name">工作流专家</div>
+          <div class="expert-type">workflow</div>
+          <div class="expert-caps">
+            <span class="cap-tag">BPMN</span>
+            <span class="cap-tag">流程编排</span>
+          </div>
+        </div>
+        <div class="expert-card">
+          <div class="expert-icon" style="background:linear-gradient(135deg,#8b5cf6,#a855f7)">⚡</div>
+          <div class="expert-name">算子系统专家</div>
+          <div class="expert-type">operator</div>
+          <div class="expert-caps">
+            <span class="cap-tag">算子抽象</span>
+            <span class="cap-tag">组合算子</span>
+          </div>
+        </div>
+        <div class="expert-card">
+          <div class="expert-icon" style="background:linear-gradient(135deg,#06b6d4,#0891b2)">🕸️</div>
+          <div class="expert-name">知识图谱专家</div>
+          <div class="expert-type">graph</div>
+          <div class="expert-caps">
+            <span class="cap-tag">图算法</span>
+            <span class="cap-tag">实体关系</span>
+          </div>
+        </div>
+        <div class="expert-card">
+          <div class="expert-icon" style="background:linear-gradient(135deg,#ef4444,#dc2626)">🔒</div>
+          <div class="expert-name">安全专家</div>
+          <div class="expert-type">security</div>
+          <div class="expert-caps">
+            <span class="cap-tag">应用安全</span>
+            <span class="cap-tag">合规审计</span>
+          </div>
+        </div>
+        <div class="expert-card">
+          <div class="expert-icon" style="background:linear-gradient(135deg,#14b8a6,#0d9488)">🚀</div>
+          <div class="expert-name">性能优化专家</div>
+          <div class="expert-type">performance</div>
+          <div class="expert-caps">
+            <span class="cap-tag">性能分析</span>
+            <span class="cap-tag">瓶颈定位</span>
+          </div>
+        </div>
+        <div class="expert-card">
+          <div class="expert-icon" style="background:linear-gradient(135deg,#f97316,#ea580c)">📡</div>
+          <div class="expert-name">可观测性专家</div>
+          <div class="expert-type">monitor</div>
+          <div class="expert-caps">
+            <span class="cap-tag">监控体系</span>
+            <span class="cap-tag">链路追踪</span>
+          </div>
+        </div>
+        <div class="expert-card">
+          <div class="expert-icon" style="background:linear-gradient(135deg,#f43f5e,#e11d48)">💼</div>
+          <div class="expert-name">商业智能专家</div>
+          <div class="expert-type">market</div>
+          <div class="expert-caps">
+            <span class="cap-tag">市场分析</span>
+            <span class="cap-tag">推荐系统</span>
+          </div>
+        </div>
+        <div class="expert-card">
+          <div class="expert-icon" style="background:linear-gradient(135deg,#a855f7,#9333ea)">🔗</div>
+          <div class="expert-name">MCP 协议专家</div>
+          <div class="expert-type">mcp</div>
+          <div class="expert-caps">
+            <span class="cap-tag">MCP 协议</span>
+            <span class="cap-tag">工具集成</span>
+          </div>
+        </div>
+        <div class="expert-card">
+          <div class="expert-icon" style="background:linear-gradient(135deg,#0ea5e9,#0284c7)">🤖</div>
+          <div class="expert-name">自动化专家</div>
+          <div class="expert-type">automation</div>
+          <div class="expert-caps">
+            <span class="cap-tag">RPA</span>
+            <span class="cap-tag">智能体</span>
+          </div>
+        </div>
+        <div class="expert-card">
+          <div class="expert-icon" style="background:linear-gradient(135deg,#16a34a,#15803d)">📋</div>
+          <div class="expert-name">需求工程专家</div>
+          <div class="expert-type">requirement</div>
+          <div class="expert-caps">
+            <span class="cap-tag">需求分析</span>
+            <span class="cap-tag">需求追踪</span>
+          </div>
+        </div>
+        <div class="expert-card">
+          <div class="expert-icon" style="background:linear-gradient(135deg,#7c3aed,#6d28d9)">🎯</div>
+          <div class="expert-name">融合专家</div>
+          <div class="expert-type">fusion</div>
+          <div class="expert-caps">
+            <span class="cap-tag">全维融合</span>
+            <span class="cap-tag">治理</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 算法联盟体系 -->
+  <div class="section">
+    <div class="section-title"><span class="icon">⚙️</span> 算法联盟处理流程</div>
+    <div class="flow-card">
+      <div class="algo-flow">
+        <div class="algo-card">
+          <div class="algo-name">📊 图谱结构分析</div>
+          <div class="algo-info">
+            <span class="label">核心算法：</span><br>
+            • PageRank 节点重要性<br>
+            • 度中心性计算<br>
+            • 介数中心性<br>
+            • 接近中心性<br>
+            <br>
+            <span class="label">应用场景：</span><br>
+            • 关键节点识别<br>
+            • 影响范围评估<br>
+            • 信息传播路径
+          </div>
+        </div>
+        <div class="algo-card">
+          <div class="algo-name">🔍 社区发现</div>
+          <div class="algo-info">
+            <span class="label">核心算法：</span><br>
+            • 标签传播 (Label Propagation)<br>
+            • Louvain 算法<br>
+            • K-均值聚类<br>
+            <br>
+            <span class="label">应用场景：</span><br>
+            • 子群结构发现<br>
+            • 组织结构分析<br>
+            • 话题聚类
+          </div>
+        </div>
+        <div class="algo-card">
+          <div class="algo-name">🛤️ 路径分析</div>
+          <div class="algo-info">
+            <span class="label">核心算法：</span><br>
+            • Dijkstra 最短路径<br>
+            • Floyd-Warshall<br>
+            • A* 启发式搜索<br>
+            • 可达性分析<br>
+            <br>
+            <span class="label">应用场景：</span><br>
+            • 关系链发现<br>
+            • 传播路径优化<br>
+            • 影响传导分析
+          </div>
+        </div>
+        <div class="algo-card">
+          <div class="algo-name">📈 复杂度评估</div>
+          <div class="algo-info">
+            <span class="label">核心分析：</span><br>
+            • 时间复杂度 (O(n), O(n²)...)<br>
+            • 空间复杂度<br>
+            • 实际性能估算<br>
+            • 复杂度对比<br>
+            <br>
+            <span class="label">应用场景：</span><br>
+            • 算法选型决策<br>
+            • 性能瓶颈定位<br>
+            • 容量规划
+          </div>
+        </div>
+        <div class="algo-card">
+          <div class="algo-name">⚡ 激活传播</div>
+          <div class="algo-info">
+            <span class="label">核心机制：</span><br>
+            • 种子节点能量注入<br>
+            • 沿边扩散激活值<br>
+            • 衰减因子控制<br>
+            • 迭代收敛<br>
+            <br>
+            <span class="label">应用场景：</span><br>
+            • 影响力传播模拟<br>
+            • 舆情扩散预测<br>
+            • 推荐激活
+          </div>
+        </div>
+        <div class="algo-card">
+          <div class="algo-name">🎯 图谱统计</div>
+          <div class="algo-info">
+            <span class="label">核心指标：</span><br>
+            • 节点数 / 边数<br>
+            • 图密度<br>
+            • 平均度<br>
+            • 孤立节点<br>
+            • 聚类系数<br>
+            <br>
+            <span class="label">应用场景：</span><br>
+            • 图谱质量评估<br>
+            • 结构特征分析<br>
+            • 异常检测
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 会话状态机 -->
+  <div class="section">
+    <div class="section-title"><span class="icon">🔄</span> 会话生命周期状态机</div>
+    <div class="flow-card">
+      <div class="state-diagram">
+        <div class="state-node state-draft">draft 草稿</div>
+        <div class="state-arrow">→</div>
+        <div class="state-node state-analyzing">analyzing 分析中</div>
+        <div class="state-arrow">→</div>
+        <div class="state-node state-responding">responding 生成回复</div>
+        <div class="state-arrow">→</div>
+        <div class="state-node state-active">active 活跃</div>
+        <div class="state-arrow">→</div>
+        <div class="state-node state-archived">archived 已归档</div>
+      </div>
+      <div style="text-align:center; color:#64748b; margin-top:16px; font-size:0.85rem;">
+        任意状态 → error: 错误处理 → 回退到 analyzing | 超时/归档 → archived | 支持正向推进和回退
+      </div>
+    </div>
+  </div>
+
+  <!-- 数据模型 -->
+  <div class="section">
+    <div class="section-title"><span class="icon">💾</span> 核心数据模型</div>
+    <div class="data-grid">
+      <div class="data-card">
+        <div class="data-card-header">专家模型 (Expert)</div>
+        <div class="data-card-body">
+{<br>
+  <span class="key">"id"</span>: <span class="string">"alg-expert"</span>,<br>
+  <span class="key">"name"</span>: <span class="string">"算法专家"</span>,<br>
+  <span class="key">"type"</span>: <span class="string">"algorithm"</span>,<br>
+  <span class="key">"capabilities"</span>: [<br>
+    &nbsp;&nbsp;<span class="string">"复杂度分析"</span>,<br>
+    &nbsp;&nbsp;<span class="string">"算法设计"</span><br>
+  ],<br>
+  <span class="key">"systemPrompt"</span>: <span class="string">"你是..."</span>,<br>
+  <span class="key">"status"</span>: <span class="string">"active"</span>,<br>
+  <span class="key">"metrics"</span>: {<br>
+    &nbsp;&nbsp;<span class="key">"total_consults"</span>: <span class="value">0</span>,<br>
+    &nbsp;&nbsp;<span class="key">"success_rate"</span>: <span class="value">0.0</span><br>
+  }<br>
+}
+        </div>
+      </div>
+      <div class="data-card">
+        <div class="data-card-header">会话模型 (Session)</div>
+        <div class="data-card-body">
+{<br>
+  <span class="key">"id"</span>: <span class="string">"session_xxx"</span>,<br>
+  <span class="key">"title"</span>: <span class="string">"会话标题"</span>,<br>
+  <span class="key">"messages"</span>: [...],<br>
+  <span class="key">"current_expert"</span>: <span class="string">"alg-expert"</span>,<br>
+  <span class="key">"mode"</span>: <span class="string">"single"</span>,<br>
+  <span class="key">"metadata"</span>: {<br>
+    &nbsp;&nbsp;<span class="key">"total_rounds"</span>: <span class="value">5</span>,<br>
+    &nbsp;&nbsp;<span class="key">"expert_chain"</span>: [...]<br>
+  }<br>
+}
+        </div>
+      </div>
+      <div class="data-card">
+        <div class="data-card-header">辩论请求 (Debate)</div>
+        <div class="data-card-body">
+{<br>
+  <span class="key">"question"</span>: <span class="string">"辩论主题"</span>,<br>
+  <span class="key">"expert_ids"</span>: [<br>
+    &nbsp;&nbsp;<span class="string">"alg-expert"</span>,<br>
+    &nbsp;&nbsp;<span class="string">"arch-expert"</span><br>
+  ],<br>
+  <span class="key">"rounds"</span>: <span class="value">2</span>,<br>
+  <span class="key">"options"</span>: {<br>
+    &nbsp;&nbsp;<span class="key">"temperature"</span>: <span class="value">0.7</span>,<br>
+    &nbsp;&nbsp;<span class="key">"round_timeout"</span>: <span class="value">30000</span><br>
+  }<br>
+}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 图例 -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-color" style="background:#3b82f6"></div>输入层</div>
+    <div class="legend-item"><div class="legend-color" style="background:#7c3aed"></div>处理/调度层</div>
+    <div class="legend-item"><div class="legend-color" style="background:#f59e0b"></div>算法层</div>
+    <div class="legend-item"><div class="legend-color" style="background:#10b981"></div>输出/生成层</div>
+    <div class="legend-item"><div class="legend-color" style="background:#64748b"></div>状态流转</div>
+  </div>
+
+  <!-- Footer -->
+  <div style="text-align:center; margin-top:40px; padding:30px; color:#475569; font-size:0.85rem;">
+    <p>专家联盟 AI 对话系统 · 全维度业务处理流程图</p>
+    <p>版本：V1.0 企业级 | 生成时间：2026-08-21</p>
+  </div>
+
+</div>
+</body>
+</html>
