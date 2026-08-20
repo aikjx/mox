@@ -5,7 +5,7 @@
       <div class="brand">
         <span class="logo">🧠</span>
         <span class="name">智算企业门户</span>
-        <span class="sub">Powered by 算子统一系统 (OUS)</span>
+        <span class="sub">Powered by 璇玑信息知识图谱关联关系系统</span>
       </div>
       <nav class="menu">
         <a @click="go('/')">首页</a>
@@ -75,7 +75,7 @@
     </transition>
 
     <footer class="foot">
-      算子统一系统 (OUS) · 企业级 AI 门户演示 · 当前形态：{{ runMode }}
+      璇玑信息知识图谱关联关系系统 · 企业级 AI 门户演示 · 当前形态：{{ runMode }}
     </footer>
   </div>
 </template>

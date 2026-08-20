@@ -1,9 +1,10 @@
-// 算子统一系统 - 全局类型与常量定义
+// 璇玑信息知识图谱关联关系系统 - 全局类型与常量定义
 
-export const APP_NAME = '算子统一系统'
+export const APP_NAME = '璇玑信息知识图谱关联关系系统'
+export const APP_SHORT = '璇玑系统'
 export const APP_VERSION = '3.0.0'
 
-// 算子类型（用于分类筛选与配色）
+// 算子是系统的一部分，用于图谱分析和业务处理
 export const OPERATOR_CATEGORIES = [
   { key: 'all', label: '全部' },
   { key: 'core', label: '核心算子' },
@@ -44,6 +45,8 @@ export const NODE_TYPE_COLORS = {
 }
 
 export const AI_CAPABILITIES = [
+  { key: 'graph_analysis', label: '知识图谱关联分析' },
+  { key: 'graph_reasoning', label: '图谱推理与发现' },
   { key: 'ai_chat', label: 'AI 智能对话' },
   { key: 'intent_recognition', label: '意图识别' },
   { key: 'operator_recommendation', label: '算子推荐' },
@@ -57,13 +60,14 @@ export const AI_CAPABILITIES = [
   { key: 'bpmn_engine', label: 'BPMN 引擎' }
 ]
 
-// 顶部菜单模块（企业级中后台导航）
+// 顶部菜单模块（以知识图谱为核心，算子为辅助工具）
 export const NAV_MODULES = [
-  { key: 'dashboard', label: '工作台', icon: 'Odometer', path: '/dashboard', color: '#4f46e5', bg: '#eef2ff' },
+  { key: 'dashboard', label: '璇玑门户', icon: 'Odometer', path: '/dashboard', color: '#4f46e5', bg: '#eef2ff' },
+  { key: 'graph', label: '璇玑图谱', icon: 'Share', path: '/graph', color: '#06b6d4', bg: '#ecfeff' },
+  { key: 'operators', label: '算子引擎', icon: 'Cpu', path: '/operators', color: '#6366f1', bg: '#eef2ff' },
   { key: 'expert-center', label: '专家联盟', icon: 'User', path: '/expert-center', color: '#7c3aed', bg: '#ede9fe' },
-  { key: 'operators', label: '算子中心', icon: 'Cpu', path: '/operators', color: '#6366f1', bg: '#eef2ff' },
-  { key: 'graph', label: '知识图谱', icon: 'Share', path: '/graph', color: '#06b6d4', bg: '#ecfeff' },
   { key: 'ai', label: 'AI 助手', icon: 'ChatDotRound', path: '/ai', color: '#ec4899', bg: '#fce7f3' },
+  { key: 'tasks', label: '任务管理', icon: 'List', path: '/tasks', color: '#0ea5e9', bg: '#e0f2fe' },
   { key: 'resources', label: '资源管理', icon: 'Coin', path: '/resources', color: '#10b981', bg: '#ecfdf5' },
   { key: 'workflow', label: '工作流编排', icon: 'Operation', path: '/workflow', color: '#f59e0b', bg: '#fffbeb' },
   { key: 'plugins', label: 'AI 插件', icon: 'Connection', path: '/plugins', color: '#8b5cf6', bg: '#f3e8ff' },
@@ -75,7 +79,9 @@ export const NAV_MODULES = [
   { key: 'automation', label: 'AI 自动化', icon: 'MagicStick', path: '/automation', color: '#f97316', bg: '#ffedd5' },
   { key: 'caomei', label: '需求编译', icon: 'Tickets', path: '/caomei', color: '#16a34a', bg: '#dcfce7' },
   { key: 'algolab', label: '算法实验室', icon: 'TrendCharts', path: '/algolab', color: '#d97706', bg: '#fef3c7' },
-  { key: 'xuanji-fusion', label: '全维融合', icon: 'Aim', path: '/xuanji-fusion', color: '#7c3aed', bg: '#ede9fe' }
+  { key: 'xuanji-fusion', label: '全维融合', icon: 'Aim', path: '/xuanji-fusion', color: '#7c3aed', bg: '#ede9fe' },
+  { key: 'knowledge-base', label: '云盘知识库', icon: 'Collection', path: '/knowledge-base', color: '#0d9488', bg: '#ccfbf1' },
+  { key: 'llm-config', label: '大模型配置', icon: 'Setting', path: '/llm-config', color: '#6366f1', bg: '#eef2ff' }
 ]
 
 // 专家类型映射

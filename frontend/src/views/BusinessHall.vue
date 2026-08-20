@@ -12,7 +12,7 @@
 
     <section class="head">
       <h1>业务大厅</h1>
-      <p>调用算子统一系统已注册的能力，一键发起业务流程办理（数据来自 /api/operators 与 /api/ai/flows）</p>
+      <p>调用璇玑系统已注册的图谱分析与算子能力，一键发起业务流程办理（数据来自 /api/operators 与 /api/ai/flows）</p>
     </section>
 
     <section class="grid">

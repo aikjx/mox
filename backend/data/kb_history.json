@@ -1,0 +1,346 @@
+[
+  {
+    "id": "kb_hist_h03af919jb",
+    "documentId": "kb_doc_sp18f07qrn",
+    "action": "delete",
+    "detail": "删除文档: 需求编译系统设计",
+    "user": "user",
+    "ts": "2026-08-20T13:52:26.372Z"
+  },
+  {
+    "id": "kb_hist_fq8s6ckaf7",
+    "documentId": "batch",
+    "action": "analyze",
+    "detail": "批量分析 1 个文档",
+    "user": "user",
+    "ts": "2026-08-20T13:52:26.340Z"
+  },
+  {
+    "id": "kb_hist_dx3jme5ctp",
+    "documentId": "kb_doc_sp18f07qrn",
+    "action": "create",
+    "detail": "创建文档: 需求编译系统设计",
+    "user": "user",
+    "ts": "2026-08-20T13:52:26.305Z"
+  },
+  {
+    "id": "kb_hist_mpkoszjpbf",
+    "documentId": "kb_doc_9eg1k60gfq",
+    "action": "delete",
+    "detail": "删除文档: 算子统一系统架构文档",
+    "user": "user",
+    "ts": "2026-08-20T13:52:26.242Z"
+  },
+  {
+    "id": "kb_hist_aemxrfxorq",
+    "documentId": "kb_doc_9eg1k60gfq",
+    "action": "revert",
+    "detail": "回退到版本 v2",
+    "user": "user",
+    "ts": "2026-08-20T13:52:26.209Z"
+  },
+  {
+    "id": "kb_hist_lnahhqt798",
+    "documentId": "kb_doc_9eg1k60gfq",
+    "action": "update",
+    "detail": "关联图谱节点: Rust, PageRank",
+    "user": "user",
+    "ts": "2026-08-20T13:52:26.167Z"
+  },
+  {
+    "id": "kb_hist_wub9c4h9ef",
+    "documentId": "batch",
+    "action": "analyze",
+    "detail": "批量分析 1 个文档",
+    "user": "user",
+    "ts": "2026-08-20T13:52:26.143Z"
+  },
+  {
+    "id": "kb_hist_v2lgib0g9c",
+    "documentId": "kb_doc_9eg1k60gfq",
+    "action": "version",
+    "detail": "创建版本 v3",
+    "user": "user",
+    "ts": "2026-08-20T13:52:25.978Z"
+  },
+  {
+    "id": "kb_hist_sxphs3oo0c",
+    "documentId": "kb_doc_9eg1k60gfq",
+    "action": "update",
+    "detail": "更新文档: 算子统一系统架构文档 V2",
+    "user": "user",
+    "ts": "2026-08-20T13:52:25.934Z"
+  },
+  {
+    "id": "kb_hist_wq9om3zmvp",
+    "documentId": "kb_doc_9eg1k60gfq",
+    "action": "analyze",
+    "detail": "AI 分析文档完成",
+    "user": "user",
+    "ts": "2026-08-20T13:52:25.907Z"
+  },
+  {
+    "id": "kb_hist_pg9ambwtyz",
+    "documentId": "kb_doc_9eg1k60gfq",
+    "action": "create",
+    "detail": "创建文档: 算子统一系统架构文档",
+    "user": "user",
+    "ts": "2026-08-20T13:52:25.840Z"
+  },
+  {
+    "id": "kb_hist_04rn3p8yg0",
+    "documentId": "kb_doc_mi8e3gp5ks",
+    "action": "delete",
+    "detail": "删除文档: 需求编译系统设计",
+    "user": "user",
+    "ts": "2026-08-20T13:38:45.733Z"
+  },
+  {
+    "id": "kb_hist_6zi1qk1v0g",
+    "documentId": "batch",
+    "action": "analyze",
+    "detail": "批量分析 1 个文档",
+    "user": "user",
+    "ts": "2026-08-20T13:38:45.709Z"
+  },
+  {
+    "id": "kb_hist_b4yfc1vuon",
+    "documentId": "kb_doc_mi8e3gp5ks",
+    "action": "create",
+    "detail": "创建文档: 需求编译系统设计",
+    "user": "user",
+    "ts": "2026-08-20T13:38:45.677Z"
+  },
+  {
+    "id": "kb_hist_zg7i4mdfhl",
+    "documentId": "kb_doc_txkuapt3z9",
+    "action": "delete",
+    "detail": "删除文档: 算子统一系统架构文档",
+    "user": "user",
+    "ts": "2026-08-20T13:38:45.648Z"
+  },
+  {
+    "id": "kb_hist_y1jl8e2i22",
+    "documentId": "kb_doc_txkuapt3z9",
+    "action": "revert",
+    "detail": "回退到版本 v2",
+    "user": "user",
+    "ts": "2026-08-20T13:38:45.638Z"
+  },
+  {
+    "id": "kb_hist_2d1rwdulrw",
+    "documentId": "kb_doc_txkuapt3z9",
+    "action": "update",
+    "detail": "关联图谱节点: Rust, PageRank",
+    "user": "user",
+    "ts": "2026-08-20T13:38:45.625Z"
+  },
+  {
+    "id": "kb_hist_914ecpus2k",
+    "documentId": "batch",
+    "action": "analyze",
+    "detail": "批量分析 1 个文档",
+    "user": "user",
+    "ts": "2026-08-20T13:38:45.614Z"
+  },
+  {
+    "id": "kb_hist_ibg4bp1nlo",
+    "documentId": "kb_doc_txkuapt3z9",
+    "action": "version",
+    "detail": "创建版本 v3",
+    "user": "user",
+    "ts": "2026-08-20T13:38:45.554Z"
+  },
+  {
+    "id": "kb_hist_xkg8setfdb",
+    "documentId": "kb_doc_txkuapt3z9",
+    "action": "update",
+    "detail": "更新文档: 算子统一系统架构文档 V2",
+    "user": "user",
+    "ts": "2026-08-20T13:38:45.536Z"
+  },
+  {
+    "id": "kb_hist_8perbo9r3t",
+    "documentId": "kb_doc_txkuapt3z9",
+    "action": "analyze",
+    "detail": "AI 分析文档完成",
+    "user": "user",
+    "ts": "2026-08-20T13:38:45.521Z"
+  },
+  {
+    "id": "kb_hist_p7tivkjliw",
+    "documentId": "kb_doc_txkuapt3z9",
+    "action": "create",
+    "detail": "创建文档: 算子统一系统架构文档",
+    "user": "user",
+    "ts": "2026-08-20T13:38:45.494Z"
+  },
+  {
+    "id": "kb_hist_x1g5qkdmzd",
+    "documentId": "kb_doc_8ko7s2gecb",
+    "action": "delete",
+    "detail": "删除文档: 需求编译系统设计",
+    "user": "user",
+    "ts": "2026-08-20T13:35:19.906Z"
+  },
+  {
+    "id": "kb_hist_o8t89iilwf",
+    "documentId": "batch",
+    "action": "analyze",
+    "detail": "批量分析 1 个文档",
+    "user": "user",
+    "ts": "2026-08-20T13:35:19.897Z"
+  },
+  {
+    "id": "kb_hist_lkewq5apz3",
+    "documentId": "kb_doc_8ko7s2gecb",
+    "action": "create",
+    "detail": "创建文档: 需求编译系统设计",
+    "user": "user",
+    "ts": "2026-08-20T13:35:19.889Z"
+  },
+  {
+    "id": "kb_hist_f6oiss9uww",
+    "documentId": "kb_doc_9bjw7t9v4c",
+    "action": "delete",
+    "detail": "删除文档: 算子统一系统架构文档 V2",
+    "user": "user",
+    "ts": "2026-08-20T13:35:19.883Z"
+  },
+  {
+    "id": "kb_hist_gxvaulir2u",
+    "documentId": "kb_doc_9bjw7t9v4c",
+    "action": "update",
+    "detail": "关联图谱节点: Rust, PageRank",
+    "user": "user",
+    "ts": "2026-08-20T13:35:19.876Z"
+  },
+  {
+    "id": "kb_hist_duysu0snhy",
+    "documentId": "batch",
+    "action": "analyze",
+    "detail": "批量分析 1 个文档",
+    "user": "user",
+    "ts": "2026-08-20T13:35:19.871Z"
+  },
+  {
+    "id": "kb_hist_why2lz9w1c",
+    "documentId": "kb_doc_9bjw7t9v4c",
+    "action": "version",
+    "detail": "创建版本 v2",
+    "user": "user",
+    "ts": "2026-08-20T13:35:19.852Z"
+  },
+  {
+    "id": "kb_hist_r7p5ueaqch",
+    "documentId": "kb_doc_9bjw7t9v4c",
+    "action": "update",
+    "detail": "更新文档: 算子统一系统架构文档 V2",
+    "user": "user",
+    "ts": "2026-08-20T13:35:19.845Z"
+  },
+  {
+    "id": "kb_hist_xrngs5xr5c",
+    "documentId": "kb_doc_9bjw7t9v4c",
+    "action": "analyze",
+    "detail": "AI 分析文档完成",
+    "user": "user",
+    "ts": "2026-08-20T13:35:19.838Z"
+  },
+  {
+    "id": "kb_hist_htaujaj97b",
+    "documentId": "kb_doc_9bjw7t9v4c",
+    "action": "create",
+    "detail": "创建文档: 算子统一系统架构文档",
+    "user": "user",
+    "ts": "2026-08-20T13:35:19.825Z"
+  },
+  {
+    "id": "kb_hist_ahfs435fgy",
+    "documentId": "kb_doc_9gimt5fc08",
+    "action": "analyze",
+    "detail": "AI 分析文档完成",
+    "user": "user",
+    "ts": "2026-08-20T13:33:53.791Z"
+  },
+  {
+    "id": "kb_hist_0rge5kc0js",
+    "documentId": "kb_doc_qhedykeeqj",
+    "action": "delete",
+    "detail": "删除文档: 算子统一系统架构文档 V2",
+    "user": "user",
+    "ts": "2026-08-20T13:33:28.435Z"
+  },
+  {
+    "id": "kb_hist_9w5gsl35tf",
+    "documentId": "kb_doc_qhedykeeqj",
+    "action": "revert",
+    "detail": "回退到版本 v2",
+    "user": "user",
+    "ts": "2026-08-20T13:33:28.415Z"
+  },
+  {
+    "id": "kb_hist_1v9m0xoene",
+    "documentId": "kb_doc_qhedykeeqj",
+    "action": "update",
+    "detail": "关联图谱节点: Rust, PageRank",
+    "user": "user",
+    "ts": "2026-08-20T13:33:28.399Z"
+  },
+  {
+    "id": "kb_hist_izdnoc0zss",
+    "documentId": "batch",
+    "action": "analyze",
+    "detail": "批量分析 1 个文档",
+    "user": "user",
+    "ts": "2026-08-20T13:33:28.366Z"
+  },
+  {
+    "id": "kb_hist_1xz8uv4pve",
+    "documentId": "kb_doc_qhedykeeqj",
+    "action": "version",
+    "detail": "创建版本 v2",
+    "user": "user",
+    "ts": "2026-08-20T13:33:28.291Z"
+  },
+  {
+    "id": "kb_hist_6vt0rx5zbk",
+    "documentId": "kb_doc_qhedykeeqj",
+    "action": "update",
+    "detail": "更新文档: 算子统一系统架构文档 V2",
+    "user": "user",
+    "ts": "2026-08-20T13:33:28.137Z"
+  },
+  {
+    "id": "kb_hist_1oemb5i5hq",
+    "documentId": "kb_doc_qhedykeeqj",
+    "action": "analyze",
+    "detail": "AI 分析文档完成",
+    "user": "user",
+    "ts": "2026-08-20T13:33:28.108Z"
+  },
+  {
+    "id": "kb_hist_5ogsyukw8b",
+    "documentId": "kb_doc_qhedykeeqj",
+    "action": "create",
+    "detail": "创建文档: 算子统一系统架构文档",
+    "user": "user",
+    "ts": "2026-08-20T13:33:28.054Z"
+  },
+  {
+    "id": "kb_hist_vr7vb3pys3",
+    "documentId": "kb_doc_9gimt5fc08",
+    "action": "create",
+    "detail": "创建文档: 未命名文档",
+    "user": "user",
+    "ts": "2026-08-20T13:32:36.818Z"
+  },
+  {
+    "id": "kb_hist_lgybl21cnm",
+    "documentId": "kb_doc_1x9djgk4mz",
+    "action": "create",
+    "detail": "创建文档: 未命名文档",
+    "user": "user",
+    "ts": "2026-08-20T13:32:26.262Z"
+  }
+]

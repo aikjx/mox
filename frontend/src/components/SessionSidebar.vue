@@ -3,8 +3,8 @@
     <div class="brand">
       <div class="logo">🧠</div>
       <div class="brand-text">
-        <div class="b-title">算子统一系统</div>
-        <div class="b-sub">Operator Unified System</div>
+        <div class="b-title">璇玑系统</div>
+        <div class="b-sub">Xuanji Graph System</div>
       </div>
     </div>
 

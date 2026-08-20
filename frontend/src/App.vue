@@ -4,11 +4,11 @@
       <!-- 侧边栏 -->
       <aside class="sidebar">
         <div class="logo" @click="goHome">
-          <div class="logo-mark">算</div>
+          <div class="logo-mark">玄</div>
           <transition name="fade">
             <div v-show="!collapsed" class="logo-text">
-              <div class="logo-title">算子统一系统</div>
-              <div class="logo-sub">Operator Unified System</div>
+              <div class="logo-title">璇玑系统</div>
+              <div class="logo-sub">Xuanji Graph System</div>
             </div>
           </transition>
         </div>

@@ -56,6 +56,7 @@ LOG_FILE = HERE / "build_exe.log"
 BUNDLE_DATA = [
     ("app", "app"),
     ("core", "core"),
+    ("lib", "lib"),
     ("audio", "audio"),
     ("requirements.txt", "."),
 ]
@@ -183,6 +184,17 @@ README_TXT = """============================================================
 - 首次启动稍慢（torch 在磁盘上解压载入），属正常现象；
 - 不要拆分移动文件夹，_internal\\ 需保持完整；
 - 本程序不含任何网络上传行为，可离线使用。
+
+【关于"标准歌谱图片"】
+- 简谱图片由第三方引擎 LilyPond（+ jianpu-ly 预处理器）渲染，
+  质量优于手绘。jianpu-ly 脚本已随包内置（_internal\\lib\\jianpu-ly.py）。
+- 若导出 PNG/PDF/SVG 时提示"缺少 LilyPond"，请在本机安装 LilyPond：
+    * Windows：  winget install LilyPond.LilyPond
+    * macOS：    brew install lilypond
+    * Linux：    sudo apt install lilypond
+  安装后请确保 lilypond 在系统 PATH 中，再重新导出即可。
+- 若目标电脑暂未安装 LilyPond，程序会自动回退到内置的简谱图片生成，
+  功能不受影响（仅排版样式不同）。
 """
 
 
@@ -274,6 +286,15 @@ def main(argv=None) -> int:
                 missing.append(rel)
     if missing:
         log.warn(f"以下数据目录未正确打入: {missing}（请检查 spec 的 datas 配置）")
+
+    # 关键：校验简谱渲染脚本 lib/jianpu-ly.py 已随包打入（第三方渲染后端依赖）
+    jianpu_src = HERE / "lib" / "jianpu-ly.py"
+    jianpu_dst = internal / "lib" / "jianpu-ly.py"
+    if jianpu_src.exists() and not jianpu_dst.exists():
+        log.error("lib/jianpu-ly.py 未打入发行版，简谱图片将无法用第三方引擎渲染。")
+        return 4
+    else:
+        log.info("简谱渲染脚本 jianpu-ly.py 校验通过。")
 
     # 关键：校验「内置经典样例」音频确实随包打入，不达标直接报错
     audio_src = HERE / "audio"

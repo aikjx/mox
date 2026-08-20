@@ -79,3 +79,60 @@ def test_export_score_empty(tmp_path):
         title="Empty",
     )
     assert os.path.exists(path)
+
+
+def test_jianpu_render_backend(tmp_path):
+    """验证简谱图片由第三方库 jianpu-ly + LilyPond 渲染（而非 matplotlib）。"""
+    from core import jianpu_render
+
+    notes = [
+        {"name": "C4", "midi": 60, "start": 0.0, "dur": 0.5, "lyric": "你"},
+        {"name": "D4", "midi": 62, "start": 0.5, "dur": 0.5, "lyric": "好"},
+        {"name": "E4", "midi": 64, "start": 1.0, "dur": 1.0, "lyric": "呀"},
+    ]
+    sheet = score_sheet.make_score_sheet(
+        notes=notes, key={"tonic": "C", "mode": "major"},
+        bpm=120.0, title="Test", time_sig=(4, 4),
+    )
+    lilypond = jianpu_render.find_lilypond()
+    if lilypond is None or not os.path.exists(jianpu_render.JIANPU_LY):
+        import pytest
+        pytest.skip("LilyPond / jianpu-ly 未安装，跳过第三方渲染后端验证")
+
+    out = tmp_path / "jianpu.png"
+    p = jianpu_render.render_score_sheet(sheet, str(out), dpi=150)
+    assert os.path.exists(p)
+    assert os.path.getsize(p) > 0
+    # PNG 应由 lilypond 生成（尺寸与 matplotlib 默认不同，仅做存在性+非空断言）
+
+
+def test_jianpu_ly_location_packaged():
+    """验证 jianpu-ly 脚本可被正确定位（源码 / 打包双模式）。"""
+    from core import jianpu_render
+    # 源码运行：JIANPU_LY 应指向仓库 lib/jianpu-ly.py
+    assert jianpu_render.JIANPU_LY.endswith(
+        os.path.join("lib", "jianpu-ly.py")
+    )
+    # 打包后（sys._MEIPASS）也应位于 _internal/lib/jianpu-ly.py
+    if getattr(sys, "frozen", False):
+        assert "lib" in jianpu_render.JIANPU_LY.replace("\\", "/")
+
+
+def test_export_score_fallback_when_no_lilypond(monkeypatch, tmp_path):
+    """LilyPond 缺失时，export_score 应降级到 matplotlib 仍可产出图片。"""
+    from core import jianpu_render
+
+    monkeypatch.setattr(
+        jianpu_render, "find_lilypond", lambda: None
+    )
+    notes = [
+        {"name": "C4", "midi": 60, "start": 0.0, "dur": 0.5},
+        {"name": "E4", "midi": 64, "start": 0.5, "dur": 0.5},
+    ]
+    out = tmp_path / "fallback.png"
+    p = score_sheet.export_score(
+        notes=notes, key={"tonic": "C", "mode": "major"},
+        bpm=120.0, output_path=str(out), title="Fallback",
+    )
+    assert os.path.exists(p)
+    assert os.path.getsize(p) > 0

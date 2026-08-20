@@ -17,9 +17,10 @@ use crate::AppState;
 use crate::automation_asset::{
     AutomationAsset, GeneratedCode, RunRecord,
 };
+use crate::rbac_middleware::{check_permission, Permission, Principal};
 use ai_agent::requirement_compiler::SystemBlueprint;
 use axum::{
-    extract::{Path, State},
+    extract::{Extension, Path, State},
     http::StatusCode,
     routing::{get, post, put},
     Json, Router,
@@ -513,10 +514,25 @@ pub fn flow_definition_to_mermaid(flow: &ai_agent::flow_engine::FlowDefinition) 
 // ============================================================================
 
 /// 需求对话：生成并落盘
+///
+/// RBAC 闸门：需 [`Permission::EditFlow`]（Editor/Admin）方可提交需求编译。
+/// 访客（Viewer/无 token）→ 403。
 pub async fn chat_handler(
     State(state): State<Arc<AppState>>,
+    Extension(principal): Extension<Principal>,
     Json(req): Json<AutomationChatRequest>,
 ) -> Result<Json<AutomationChatResponse>, (StatusCode, String)> {
+    // ── RBAC 闸门：Editor+ 方可提交需求编译 ──
+    if !check_permission(&principal.roles, &Permission::EditFlow) {
+        tracing::warn!(
+            target: "automation",
+            token_id = %principal.token_id,
+            roles = ?principal.roles,
+            "RBAC denied: EditFlow required for compile"
+        );
+        return Err((StatusCode::FORBIDDEN, "权限不足：需 Editor 角色以上才可提交需求编译".into()));
+    }
+
     let name = req
         .name
         .clone()
@@ -560,11 +576,26 @@ pub async fn chat_handler(
 }
 
 /// 继续对话迭代：在已有资产上增量补功能
+///
+/// RBAC 闸门：需 [`Permission::EditFlow`]（Editor/Admin）方可追加功能。
+/// 访客（Viewer/无 token）→ 403。
 pub async fn refine_handler(
     State(state): State<Arc<AppState>>,
+    Extension(principal): Extension<Principal>,
     Path(id): Path<String>,
     Json(req): Json<AutomationChatRequest>,
 ) -> Result<Json<AutomationChatResponse>, (StatusCode, String)> {
+    // ── RBAC 闸门：Editor+ 方可追加功能 ──
+    if !check_permission(&principal.roles, &Permission::EditFlow) {
+        tracing::warn!(
+            target: "automation",
+            token_id = %principal.token_id,
+            roles = ?principal.roles,
+            "RBAC denied: EditFlow required for refine"
+        );
+        return Err((StatusCode::FORBIDDEN, "权限不足：需 Editor 角色以上才可追加功能".into()));
+    }
+
     let mut asset = crate::automation_asset::get_automation(&id)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?
         .ok_or((StatusCode::NOT_FOUND, "自动化资产不存在".into()))?;

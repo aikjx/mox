@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>API测试</title></head>
+<body>
+<h1>AI对话API测试</h1>
+<button onclick="test()">发送测试消息</button>
+<div id="result"></div>
+<script>
+async function test() {
+  const res = await fetch("http://localhost:3002/ai/chat", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({message: "生成一个企业官网的需求知识图谱"})
+  });
+  const data = await res.json();
+  document.getElementById("result").innerText = JSON.stringify(data, null, 2);
+}
+test();
+</script>
+</body></html>

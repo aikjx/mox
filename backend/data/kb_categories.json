@@ -1,0 +1,80 @@
+[
+  {
+    "id": "general",
+    "name": "通用",
+    "parent": null,
+    "count": 0
+  },
+  {
+    "id": "tech",
+    "name": "技术文档",
+    "parent": null,
+    "count": 0
+  },
+  {
+    "id": "tech.code",
+    "name": "代码",
+    "parent": "tech",
+    "count": 0
+  },
+  {
+    "id": "tech.architecture",
+    "name": "架构",
+    "parent": "tech",
+    "count": 0
+  },
+  {
+    "id": "business",
+    "name": "业务文档",
+    "parent": null,
+    "count": 0
+  },
+  {
+    "id": "business.requirement",
+    "name": "需求",
+    "parent": "business",
+    "count": 0
+  },
+  {
+    "id": "business.process",
+    "name": "流程",
+    "parent": "business",
+    "count": 0
+  },
+  {
+    "id": "design",
+    "name": "设计文档",
+    "parent": null,
+    "count": 0
+  },
+  {
+    "id": "design.ui",
+    "name": "UI设计",
+    "parent": "design",
+    "count": 0
+  },
+  {
+    "id": "design.spec",
+    "name": "规范",
+    "parent": "design",
+    "count": 0
+  },
+  {
+    "id": "research",
+    "name": "研究文档",
+    "parent": null,
+    "count": 0
+  },
+  {
+    "id": "meeting",
+    "name": "会议纪要",
+    "parent": null,
+    "count": 0
+  },
+  {
+    "id": "policy",
+    "name": "政策制度",
+    "parent": null,
+    "count": 0
+  }
+]

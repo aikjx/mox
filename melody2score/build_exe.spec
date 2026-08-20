@@ -21,13 +21,17 @@ hiddenimports = [
 datas = [
     ("app", "app"),
     ("core", "core"),
+    ("lib", "lib"),                # jianpu-ly 简谱渲染脚本（LilyPond 预处理器）
     ("requirements.txt", "."),
 ]
 # 用 Tree 递归收集 audio/ 下全部样例（144 个 .wav + manifest.json），
 # 确保「内置经典样例」一定随包打入 _internal/audio/，开箱即用。
 from PyInstaller.building.build_main import Tree  # noqa: E402
 
-datas += [Tree(os.path.join(ROOT, "audio"), prefix="audio")]
+audio_tree = Tree(os.path.join(ROOT, "audio"), prefix="audio")
+# Tree 元素为 (dest, src[, typecode])；datas 要求 (src, dest_dir)，
+# 故逆序取前两项（PyInstaller 6.22 起元素含 typecode 第三项）
+datas += [(src, dest) for dest, src, *_ in audio_tree]
 
 a = Analysis(
     [os.path.join(ROOT, "app", "gui.py")],
