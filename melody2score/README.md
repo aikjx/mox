@@ -21,7 +21,9 @@ melody2score/
 │   ├── pitch.py             # 音高检测层（可插拔后端：crepe_onnx / torchcrepe / pyin）
 │   ├── analysis.py          # 音乐解析层：BPM + 调式 + 音符分割(含颤音/滑音滤波)
 │   ├── score.py             # 歌谱生成层：music21 musicxml + 简谱数字串 + 标准歌谱图片
-│   ├── score_sheet.py       # 标准歌谱图片渲染：PNG / PDF / SVG 规范简谱
+│   ├── score_sheet.py       # 标准歌谱图片导出（优先用 LilyPond + jianpu-ly 渲染，缺依赖时回退 matplotlib）
+│   ├── jianpu_render.py     # 简谱图片渲染后端：把 ScoreSheet 适配为 jianpu-ly 文本 → LilyPond 出 PNG/PDF/SVG
+│   ├── paths.py             # 资源路径解析（源码运行 / PyInstaller 打包双模式兼容）
 │   └── pipeline.py          # 编排层：串联各层
 ├── board/
 │   ├── board_config.py      # 开发板调优配置（限核/关降噪/tiny）
@@ -223,7 +225,7 @@ tools/info-graph/target/release/info-graph query    --graph graph/melody_infogra
 | 音高检测 | `pitch.PitchDetector` | 可插拔后端：**crepe_onnx tiny**（板端）/ **torchcrepe**（真实 CREPE tiny）/ **pyin**(librosa，兜底) |
 | 音乐解析 | `analysis.segment_notes` / `detect_bpm` / `estimate_key` | 状态机切音符 + 中值滤波去颤音 + 短段就近合并(滑音/颤音毛刺) + BPM + Krumhansl 调式识别 |
 | 歌谱生成 | `score.to_musicxml` / `score.to_jianpu` | music21 生成 musicxml（调号/速度/量化音符）+ 简谱数字串 |
-| 输出层 | `pipeline.run` | 打印简谱 / 存 xml / 可选 MuseScore 出图 |
+| 输出层 | `pipeline.run` / `score_sheet.export_score` | 打印简谱 / 存 xml / 标准歌谱图片（LilyPond + jianpu-ly 渲染，缺依赖回退 matplotlib） |
 
 ### 颤音/滑音毛刺过滤
 `analysis.segment_notes` 三步处理：

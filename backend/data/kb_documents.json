@@ -1,0 +1,376 @@
+[
+  {
+    "id": "kb_doc_sp18f07qrn",
+    "title": "需求编译系统设计",
+    "content": "需求编译器(Caomei)将自然语言需求编译为流程蓝图。\n\n## 功能\n- 自然语言解析\n- 意图识别\n- 任务编排\n- 验证闸门\n\n## 应用场景\n- 自动化业务处理\n- AI驱动工作流生成",
+    "type": "markdown",
+    "category": "business.requirement",
+    "tags": [
+      "需求",
+      "编译",
+      "Caomei",
+      "自动化"
+    ],
+    "description": "Caomei需求编译器设计文档",
+    "status": "deleted",
+    "version": 1,
+    "currentVersionId": "kb_ver_f7tyjidr9c",
+    "aiAnalysis": {
+      "keywords": [],
+      "entities": [],
+      "summary": "需求编译器(Caomei)将自然语言需求编译为流程蓝图。\n\n## 功能\n- 自然语言解析\n- 意图识别\n- 任务编排\n- 验证闸门\n\n## 应用场景\n- 自动化业务处理\n- AI驱动工作流生成",
+      "suggestedCategory": "business.requirement",
+      "suggestedTags": [],
+      "wordCount": 17,
+      "readingTime": 1,
+      "confidence": 0.5,
+      "analyzedAt": "2026-08-20T13:52:26.336Z"
+    },
+    "entities": [],
+    "graphLinks": [],
+    "metadata": {},
+    "created_by": "user",
+    "created_at": "2026-08-20T13:52:26.285Z",
+    "updated_at": "2026-08-20T13:52:26.369Z"
+  },
+  {
+    "id": "kb_doc_9eg1k60gfq",
+    "title": "算子统一系统架构文档",
+    "content": "本文档描述了算子统一系统(OUS)的核心架构。\n\n## 核心特性\n- PageRank 影响力排序算法\n- 标签传播社区发现\n- 激活传播能量扩散\n- 度中心性与中介中心性\n\n## 技术栈\n- Rust 核心引擎\n- Node.js API网关\n- Vue3 前端界面\n- 知识图谱集成",
+    "type": "markdown",
+    "category": "tech",
+    "tags": [
+      "架构",
+      "算法",
+      "Rust",
+      "图谱",
+      "OUS",
+      "AI",
+      "向量"
+    ],
+    "description": "系统核心架构说明文档，涵盖图算法与技术栈",
+    "status": "deleted",
+    "version": 4,
+    "currentVersionId": "kb_ver_7gmzqh7nhd",
+    "aiAnalysis": {
+      "keywords": [
+        "api"
+      ],
+      "entities": [
+        {
+          "type": "technical",
+          "value": "api",
+          "confidence": 0.8965503493690863
+        }
+      ],
+      "summary": "本文档描述了算子统一系统(OUS)的核心架构。\n\n## 核心特性\n- PageRank 影响力排序算法\n- 标签传播社区发现\n- 激活传播能量扩散\n- 度中心性与中介中心性\n- 知识图谱自动构建\n- AI智能分类与分析\n\n## 技术栈\n- Rust 核心引擎\n- Node.js API网关\n- Vue3 前端界面\n- 知识图谱集成\n- 向量检索引擎",
+      "suggestedCategory": "tech",
+      "suggestedTags": [
+        "api"
+      ],
+      "wordCount": 31,
+      "readingTime": 1,
+      "confidence": 0.55,
+      "analyzedAt": "2026-08-20T13:52:26.139Z"
+    },
+    "entities": [
+      {
+        "type": "technical",
+        "value": "api",
+        "confidence": 0.8965503493690863
+      }
+    ],
+    "graphLinks": [
+      "Rust",
+      "PageRank"
+    ],
+    "metadata": {},
+    "created_by": "user",
+    "created_at": "2026-08-20T13:52:25.824Z",
+    "updated_at": "2026-08-20T13:52:26.234Z"
+  },
+  {
+    "id": "kb_doc_mi8e3gp5ks",
+    "title": "需求编译系统设计",
+    "content": "需求编译器(Caomei)将自然语言需求编译为流程蓝图。\n\n## 功能\n- 自然语言解析\n- 意图识别\n- 任务编排\n- 验证闸门\n\n## 应用场景\n- 自动化业务处理\n- AI驱动工作流生成",
+    "type": "markdown",
+    "category": "business.requirement",
+    "tags": [
+      "需求",
+      "编译",
+      "Caomei",
+      "自动化"
+    ],
+    "description": "Caomei需求编译器设计文档",
+    "status": "deleted",
+    "version": 1,
+    "currentVersionId": "kb_ver_u03ezp1qp",
+    "aiAnalysis": {
+      "keywords": [],
+      "entities": [],
+      "summary": "需求编译器(Caomei)将自然语言需求编译为流程蓝图。\n\n## 功能\n- 自然语言解析\n- 意图识别\n- 任务编排\n- 验证闸门\n\n## 应用场景\n- 自动化业务处理\n- AI驱动工作流生成",
+      "suggestedCategory": "business.requirement",
+      "suggestedTags": [],
+      "wordCount": 17,
+      "readingTime": 1,
+      "confidence": 0.5,
+      "analyzedAt": "2026-08-20T13:38:45.706Z"
+    },
+    "entities": [],
+    "graphLinks": [],
+    "metadata": {},
+    "created_by": "user",
+    "created_at": "2026-08-20T13:38:45.668Z",
+    "updated_at": "2026-08-20T13:38:45.731Z"
+  },
+  {
+    "id": "kb_doc_txkuapt3z9",
+    "title": "算子统一系统架构文档",
+    "content": "本文档描述了算子统一系统(OUS)的核心架构。\n\n## 核心特性\n- PageRank 影响力排序算法\n- 标签传播社区发现\n- 激活传播能量扩散\n- 度中心性与中介中心性\n\n## 技术栈\n- Rust 核心引擎\n- Node.js API网关\n- Vue3 前端界面\n- 知识图谱集成",
+    "type": "markdown",
+    "category": "tech",
+    "tags": [
+      "架构",
+      "算法",
+      "Rust",
+      "图谱",
+      "OUS",
+      "AI",
+      "向量"
+    ],
+    "description": "系统核心架构说明文档，涵盖图算法与技术栈",
+    "status": "deleted",
+    "version": 4,
+    "currentVersionId": "kb_ver_aae38ey199",
+    "aiAnalysis": {
+      "keywords": [
+        "api"
+      ],
+      "entities": [
+        {
+          "type": "technical",
+          "value": "api",
+          "confidence": 0.9308608323731813
+        }
+      ],
+      "summary": "本文档描述了算子统一系统(OUS)的核心架构。\n\n## 核心特性\n- PageRank 影响力排序算法\n- 标签传播社区发现\n- 激活传播能量扩散\n- 度中心性与中介中心性\n- 知识图谱自动构建\n- AI智能分类与分析\n\n## 技术栈\n- Rust 核心引擎\n- Node.js API网关\n- Vue3 前端界面\n- 知识图谱集成\n- 向量检索引擎",
+      "suggestedCategory": "tech",
+      "suggestedTags": [
+        "api"
+      ],
+      "wordCount": 31,
+      "readingTime": 1,
+      "confidence": 0.55,
+      "analyzedAt": "2026-08-20T13:38:45.611Z"
+    },
+    "entities": [
+      {
+        "type": "technical",
+        "value": "api",
+        "confidence": 0.9308608323731813
+      }
+    ],
+    "graphLinks": [
+      "Rust",
+      "PageRank"
+    ],
+    "metadata": {},
+    "created_by": "user",
+    "created_at": "2026-08-20T13:38:45.490Z",
+    "updated_at": "2026-08-20T13:38:45.647Z"
+  },
+  {
+    "id": "kb_doc_8ko7s2gecb",
+    "title": "需求编译系统设计",
+    "content": "需求编译器(Caomei)将自然语言需求编译为流程蓝图。\n\n## 功能\n- 自然语言解析\n- 意图识别\n- 任务编排\n- 验证闸门\n\n## 应用场景\n- 自动化业务处理\n- AI驱动工作流生成",
+    "type": "markdown",
+    "category": "business.requirement",
+    "tags": [
+      "需求",
+      "编译",
+      "Caomei",
+      "自动化"
+    ],
+    "description": "Caomei需求编译器设计文档",
+    "status": "deleted",
+    "version": 1,
+    "currentVersionId": null,
+    "aiAnalysis": {
+      "keywords": [],
+      "entities": [],
+      "summary": "需求编译器(Caomei)将自然语言需求编译为流程蓝图。\n\n## 功能\n- 自然语言解析\n- 意图识别\n- 任务编排\n- 验证闸门\n\n## 应用场景\n- 自动化业务处理\n- AI驱动工作流生成",
+      "suggestedCategory": "business.requirement",
+      "suggestedTags": [],
+      "wordCount": 17,
+      "readingTime": 1,
+      "confidence": 0.5,
+      "analyzedAt": "2026-08-20T13:35:19.896Z"
+    },
+    "entities": [],
+    "graphLinks": [],
+    "metadata": {},
+    "created_by": "user",
+    "created_at": "2026-08-20T13:35:19.888Z",
+    "updated_at": "2026-08-20T13:35:19.904Z"
+  },
+  {
+    "id": "kb_doc_9bjw7t9v4c",
+    "title": "算子统一系统架构文档 V2",
+    "content": "本文档描述了算子统一系统(OUS)的核心架构。\n\n## 核心特性\n- PageRank 影响力排序算法\n- 标签传播社区发现\n- 激活传播能量扩散\n- 度中心性与中介中心性\n- 知识图谱自动构建\n- AI智能分类与分析\n\n## 技术栈\n- Rust 核心引擎\n- Node.js API网关\n- Vue3 前端界面\n- 知识图谱集成\n- 向量检索引擎",
+    "type": "markdown",
+    "category": "tech",
+    "tags": [
+      "架构",
+      "算法",
+      "Rust",
+      "图谱",
+      "OUS",
+      "AI",
+      "向量"
+    ],
+    "description": "系统核心架构说明文档，涵盖图算法与技术栈",
+    "status": "deleted",
+    "version": 2,
+    "currentVersionId": "kb_ver_52zfrhw3dx",
+    "aiAnalysis": {
+      "keywords": [
+        "api"
+      ],
+      "entities": [
+        {
+          "type": "technical",
+          "value": "api",
+          "confidence": 0.9082394637642276
+        }
+      ],
+      "summary": "本文档描述了算子统一系统(OUS)的核心架构。\n\n## 核心特性\n- PageRank 影响力排序算法\n- 标签传播社区发现\n- 激活传播能量扩散\n- 度中心性与中介中心性\n- 知识图谱自动构建\n- AI智能分类与分析\n\n## 技术栈\n- Rust 核心引擎\n- Node.js API网关\n- Vue3 前端界面\n- 知识图谱集成\n- 向量检索引擎",
+      "suggestedCategory": "tech",
+      "suggestedTags": [
+        "api"
+      ],
+      "wordCount": 31,
+      "readingTime": 1,
+      "confidence": 0.55,
+      "analyzedAt": "2026-08-20T13:35:19.870Z"
+    },
+    "entities": [
+      {
+        "type": "technical",
+        "value": "api",
+        "confidence": 0.9082394637642276
+      }
+    ],
+    "graphLinks": [
+      "Rust",
+      "PageRank"
+    ],
+    "metadata": {},
+    "created_by": "user",
+    "created_at": "2026-08-20T13:35:19.824Z",
+    "updated_at": "2026-08-20T13:35:19.881Z"
+  },
+  {
+    "id": "kb_doc_qhedykeeqj",
+    "title": "算子统一系统架构文档 V2",
+    "content": "本文档描述了算子统一系统(OUS)的核心架构。\n\n## 核心特性\n- PageRank 影响力排序算法\n- 标签传播社区发现\n- 激活传播能量扩散\n- 度中心性与中介中心性\n- 知识图谱自动构建\n- AI智能分类与分析\n\n## 技术栈\n- Rust 核心引擎\n- Node.js API网关\n- Vue3 前端界面\n- 知识图谱集成\n- 向量检索引擎",
+    "type": "markdown",
+    "category": "tech",
+    "tags": [
+      "架构",
+      "算法",
+      "Rust",
+      "图谱",
+      "OUS",
+      "AI",
+      "向量"
+    ],
+    "description": "系统核心架构说明文档，涵盖图算法与技术栈",
+    "status": "deleted",
+    "version": 3,
+    "currentVersionId": "kb_ver_pcmazeva04",
+    "aiAnalysis": {
+      "keywords": [
+        "api"
+      ],
+      "entities": [
+        {
+          "type": "technical",
+          "value": "api",
+          "confidence": 0.899085920046591
+        }
+      ],
+      "summary": "本文档描述了算子统一系统(OUS)的核心架构。\n\n## 核心特性\n- PageRank 影响力排序算法\n- 标签传播社区发现\n- 激活传播能量扩散\n- 度中心性与中介中心性\n- 知识图谱自动构建\n- AI智能分类与分析\n\n## 技术栈\n- Rust 核心引擎\n- Node.js API网关\n- Vue3 前端界面\n- 知识图谱集成\n- 向量检索引擎",
+      "suggestedCategory": "tech",
+      "suggestedTags": [
+        "api"
+      ],
+      "wordCount": 31,
+      "readingTime": 1,
+      "confidence": 0.55,
+      "analyzedAt": "2026-08-20T13:33:28.357Z"
+    },
+    "entities": [
+      {
+        "type": "technical",
+        "value": "api",
+        "confidence": 0.899085920046591
+      }
+    ],
+    "graphLinks": [
+      "Rust",
+      "PageRank"
+    ],
+    "metadata": {},
+    "created_by": "user",
+    "created_at": "2026-08-20T13:33:28.049Z",
+    "updated_at": "2026-08-20T13:33:28.433Z"
+  },
+  {
+    "id": "kb_doc_9gimt5fc08",
+    "title": "未命名文档",
+    "content": "",
+    "type": "markdown",
+    "category": "general",
+    "tags": [],
+    "description": "",
+    "status": "active",
+    "version": 1,
+    "currentVersionId": null,
+    "aiAnalysis": {
+      "keywords": [],
+      "entities": [],
+      "summary": "",
+      "suggestedCategory": "general",
+      "suggestedTags": [],
+      "wordCount": 0,
+      "readingTime": 0,
+      "confidence": 0.5,
+      "analyzedAt": "2026-08-20T13:33:53.789Z"
+    },
+    "entities": [],
+    "graphLinks": [],
+    "metadata": {},
+    "created_by": "user",
+    "created_at": "2026-08-20T13:32:36.816Z",
+    "updated_at": "2026-08-20T13:32:36.816Z"
+  },
+  {
+    "id": "kb_doc_1x9djgk4mz",
+    "title": "未命名文档",
+    "content": "",
+    "type": "markdown",
+    "category": "general",
+    "tags": [],
+    "description": "",
+    "status": "active",
+    "version": 1,
+    "currentVersionId": null,
+    "aiAnalysis": null,
+    "entities": [],
+    "graphLinks": [],
+    "metadata": {},
+    "created_by": "user",
+    "created_at": "2026-08-20T13:32:26.259Z",
+    "updated_at": "2026-08-20T13:32:26.259Z"
+  }
+]

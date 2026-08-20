@@ -35,7 +35,7 @@
             v-model="task"
             type="textarea"
             :rows="3"
-            placeholder="例如：打开百度，搜索算子统一系统，并截图"
+            placeholder="例如：打开百度，搜索璇玑系统，并截图"
           />
           <div class="examples">
             <el-tag v-for="e in examples" :key="e" class="ex" @click="task = e">{{ e }}</el-tag>
@@ -104,7 +104,7 @@ const running = ref(false)
 const naturalResult = ref(null)
 
 const examples = [
-  '打开百度并搜索算子统一系统',
+  '打开百度并搜索璇玑系统',
   '访问 github.com 并登录',
   '打开电商网站加入购物车并结算',
   '截图当前页面并保存'

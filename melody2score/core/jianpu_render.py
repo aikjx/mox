@@ -22,9 +22,17 @@ import tempfile
 from typing import List, Optional, Tuple
 
 from .score_sheet import ScoreSheet, RenderNote
+try:
+    from .paths import resource_path
+except Exception:  # 兜底：源码直接运行场景
+    def resource_path(*parts: str) -> str:
+        return os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), *parts
+        )
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-JIANPU_LY = os.path.join(ROOT, "lib", "jianpu-ly.py")
+# jianpu-ly 脚本（随仓库附带于 lib/，打包后位于 _internal/lib/）。
+# 用 resource_path 兼容「源码运行」与「PyInstaller 打包」两种模式。
+JIANPU_LY = resource_path("lib", "jianpu-ly.py")
 
 
 def find_lilypond() -> Optional[str]:

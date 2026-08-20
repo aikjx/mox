@@ -4,18 +4,46 @@ const path = require('path');
 const url = require('url');
 const { getGateway } = require('./llm-gateway');
 const { getAlliance } = require('./expert-alliance');
+const { getStorage } = require('./storage');
+const { getAIEngine } = require('./ai-engine');
+const { getSecurityManager } = require('./security');
+const { config, DATA_DIR } = require('./config');
+const { uid } = require('./utils');
 
-const PORT = 3002;
-const DATA_DIR = path.join(__dirname, '..', 'data');
+// 加载模块化系统（自动注册模块）
+require('./modules/graph');
+require('./modules/task');
+require('./modules/storage');
+const modules = require('./modules');
+
+const PORT = config.app.port;
 
 const gateway = getGateway();
 const alliance = getAlliance();
+const storage = getStorage();
+const aiEngine = getAIEngine(gateway);
+const security = getSecurityManager();
 
 function p(...parts) {
   return path.join(DATA_DIR, ...parts);
 }
 
+const SINGLE_OBJECT_KEYS = new Set([
+  'llm_config.json', 'resources.json', 'settings.json'
+]);
+
 function readJSON(file, fallback) {
+  try {
+    const entityType = file.replace(/\.json$/, '');
+    if (SINGLE_OBJECT_KEYS.has(file)) {
+      const val = storage.kvGet(entityType, null);
+      if (val !== null) return val;
+    }
+    const list = storage.getList(entityType);
+    if (list && list.length > 0) return list;
+  } catch (e) {
+    // fall through to JSON file
+  }
   try {
     const fp = p(file);
     if (!fs.existsSync(fp)) return fallback;
@@ -28,16 +56,21 @@ function readJSON(file, fallback) {
 
 function writeJSON(file, data) {
   try {
+    const entityType = file.replace(/\.json$/, '');
+    if (SINGLE_OBJECT_KEYS.has(file)) {
+      storage.kvSet(entityType, data);
+    } else if (Array.isArray(data)) {
+      storage.saveList(entityType, data);
+    } else {
+      const id = data.id || entityType;
+      storage.upsertEntity(entityType, String(id), data);
+    }
     fs.writeFileSync(p(file), JSON.stringify(data, null, 2), 'utf8');
     return true;
   } catch (e) {
     console.error('[writeJSON]', file, e.message);
     return false;
   }
-}
-
-function uid(prefix) {
-  return prefix + '_' + Math.random().toString(36).slice(2, 12);
 }
 
 function send(res, status, payload, headers) {
@@ -78,6 +111,7 @@ function log(msg) {
 
 function appendLog(entry) {
   try {
+    db.addLog(entry.type || 'general', entry.msg || JSON.stringify(entry), entry);
     const logs = readJSON('logs.json', []);
     logs.unshift(Object.assign({ id: uid('log'), ts: new Date().toISOString() }, entry));
     if (logs.length > 500) logs.length = 500;
@@ -300,6 +334,7 @@ const handlers = {
   get: {},
   post: {},
   put: {},
+  patch: {},
   delete: {}
 };
 
@@ -333,7 +368,16 @@ function match(method, urlPath) {
 
 function registerRoutes() {
   reg('get', '/health', (req, res) => {
-    ok(res, { status: 'ok', version: '3.0.0', uptime: process.uptime() });
+    ok(res, {
+      status: 'ok',
+      version: config.app.version,
+      uptime: process.uptime(),
+      storage: {
+        provider: config.storage.provider,
+        entities: storage.listAllEntities().length
+      },
+      modules: modules.listModules().map(m => ({ name: m.name, version: m.options?.version }))
+    });
   });
 
   reg('get', '/status', (req, res) => {
@@ -394,44 +438,61 @@ function registerRoutes() {
         timestamp: l.timestamp || l.ts,
         workflow: l.workflow || [l.msg || 'execute'],
         success: l.success !== false,
-        execution_time_ms: l.execution_time_ms || (50 + Math.floor(Math.random() * 500)),
+        execution_time_ms: l.execution_time_ms || l.duration || 50 + Math.floor(Math.random() * 500),
         input_dim: l.input_dim || 3,
-        output_dim: l.output_dim || 7
+        output_dim: l.output_dim || 7,
+        ai_powerd: l.ai_powerd || false
       })));
     } else {
-      const mockLogs = [];
-      const now = Date.now();
-      const workflows = [
-        ['需求采集', '归一化 IR', '双联盟十四维特派', '归一化裁决', '璇玑验证网关'],
-        ['数据输入', '知识图谱算子', 'PageRank 计算', '社区发现'],
-        ['浏览器自动化', '页面解析', '数据提取', '报告生成'],
-        ['AI 对话', '意图识别', '算子匹配', '结果聚合'],
-        ['工作流编排', '算子执行', '状态监控', '异常处理']
-      ];
-      for (let i = 0; i < 15; i++) {
-        const wf = workflows[i % workflows.length];
-        mockLogs.push({
-          timestamp: new Date(now - i * 300000).toISOString(),
-          workflow: wf,
-          success: Math.random() > 0.1,
-          execution_time_ms: 50 + Math.floor(Math.random() * 500),
-          input_dim: 2 + Math.floor(Math.random() * 5),
-          output_dim: 5 + Math.floor(Math.random() * 10)
-        });
+      const aiExecLog = readJSON('ai_execution_log.json', []);
+      if (aiExecLog.length > 0) {
+        ok(res, aiExecLog.map(l => ({
+          timestamp: l.timestamp,
+          workflow: [l.operator || 'execute'],
+          success: l.status === 'success',
+          execution_time_ms: l.duration || 100,
+          input_dim: 3,
+          output_dim: 7,
+          ai_powerd: l.ai_powerd || false
+        })));
+      } else {
+        const mockLogs = [];
+        const now = Date.now();
+        const workflows = [
+          ['需求采集', '归一化 IR', '双联盟十四维特派', '归一化裁决', '璇玑验证网关'],
+          ['数据输入', '知识图谱算子', 'PageRank 计算', '社区发现'],
+          ['浏览器自动化', '页面解析', '数据提取', '报告生成'],
+          ['AI 对话', '意图识别', '算子匹配', '结果聚合'],
+          ['工作流编排', '算子执行', '状态监控', '异常处理']
+        ];
+        for (let i = 0; i < 15; i++) {
+          const wf = workflows[i % workflows.length];
+          mockLogs.push({
+            timestamp: new Date(now - i * 300000).toISOString(),
+            workflow: wf,
+            success: Math.random() > 0.1,
+            execution_time_ms: 50 + Math.floor(Math.random() * 500),
+            input_dim: 2 + Math.floor(Math.random() * 5),
+            output_dim: 5 + Math.floor(Math.random() * 10),
+            ai_powerd: gateway.activeProvider && Math.random() > 0.5
+          });
+        }
+        ok(res, mockLogs);
       }
-      ok(res, mockLogs);
     }
   });
 
   reg('get', '/config', (req, res) => {
     ok(res, {
       version: '3.0.0',
-      name: '算子统一系统 (OUS)',
+      name: '璇玑信息知识图谱关联关系系统',
+      shortName: '璇玑系统',
       maxGraphSize: 10000,
       autoSave: true,
       aiEnabled: true,
       llmConfigured: true,
-      modules: ['workbench', 'operators', 'graph', 'ai', 'workflow', 'plugins', 'browser', 'monitor']
+      aiEngineActive: !!gateway.activeProvider,
+      modules: ['workbench', 'operators', 'graph', 'ai', 'workflow', 'plugins', 'browser', 'monitor', 'ai-engine']
     });
   });
 
@@ -491,28 +552,57 @@ function registerRoutes() {
   reg('post', '/execute', async (req, res) => {
     const body = await readBody(req);
     const workflow = body && body.workflow ? body.workflow : [];
-    const results = [];
-    let step = 0;
-    for (let i = 0; i < workflow.length; i++) {
-      const node = workflow[i];
-      const dur = Math.random() * 120 + 20;
-      await new Promise((r) => setTimeout(r, Math.min(dur, 50)));
-      results.push({
-        step: i,
-        id: node.id || ('step_' + i),
-        status: 'success',
-        duration: Math.round(dur),
-        output: 'Mock output for ' + (node.name || node.id || 'step ' + i)
+    const inputs = body && body.inputs ? body.inputs : {};
+    
+    if (body && body.ai_enabled && gateway.activeProvider) {
+      const result = await aiEngine.executeWorkflow({ steps: workflow }, inputs);
+      
+      appendLog({
+        type: 'execute',
+        msg: `AI workflow execute: ${result.success ? 'success' : 'failed'}`,
+        steps: result.results?.length || 0,
+        ai_powerd: true,
+        duration: result.totalDuration
       });
-      step++;
+      
+      ok(res, {
+        success: result.success,
+        execution_id: uid('exec'),
+        results: result.results,
+        final_output: result.finalOutput,
+        total_duration: result.totalDuration,
+        ai_powerd: true,
+        ai_powered_count: result.ai_powered_count,
+        summary: {
+          executed: result.results?.length || 0,
+          totalDuration: result.totalDuration || 0,
+          status: result.success ? 'success' : 'failed',
+          ai_powerd: true
+        }
+      });
+    } else {
+      const results = [];
+      for (let i = 0; i < workflow.length; i++) {
+        const node = workflow[i];
+        const dur = 20 + Math.random() * 100;
+        await new Promise((r) => setTimeout(r, Math.min(dur, 30)));
+        results.push({
+          step: i,
+          id: node.id || ('step_' + i),
+          status: 'success',
+          duration: Math.round(dur),
+          output: 'Mock output for ' + (node.name || node.id || 'step ' + i)
+        });
+      }
+      const summary = {
+        executed: results.length,
+        totalDuration: results.reduce((s, r) => s + r.duration, 0),
+        status: 'success',
+        ai_powerd: false
+      };
+      appendLog({ type: 'execute', msg: 'workflow executed', steps: results.length, ai_powerd: false });
+      ok(res, { results: results, summary: summary, ai_powerd: false });
     }
-    const summary = {
-      executed: results.length,
-      totalDuration: results.reduce((s, r) => s + r.duration, 0),
-      status: 'success'
-    };
-    appendLog({ type: 'execute', msg: 'workflow executed', steps: results.length });
-    ok(res, { results: results, summary: summary });
   });
 
   reg('get', '/graph', (req, res) => {
@@ -728,6 +818,162 @@ function registerRoutes() {
     ok(res, { imported: true });
   });
 
+  // AI 知识图谱自动生成
+  reg('post', '/graph/ai-generate', async (req, res) => {
+    const body = await readBody(req);
+    const topic = body.topic || body.requirement || '';
+    const description = body.description || '';
+    const seedNodes = body.seed_nodes || [];
+    const existingNodes = readJSON('graph_nodes.json', []);
+    const existingEdges = readJSON('graph_edges.json', []);
+
+    if (!topic) return fail(res, 400, 'topic 为必填项');
+
+    appendLog({ type: 'graph', msg: 'ai-generate start', topic: topic });
+
+    const systemPrompt = `你是一个知识图谱专家。请根据用户提供的主题/需求，生成一个完整的知识图谱。
+
+返回严格的JSON格式（不要任何其他文字）：
+{
+  "nodes": [
+    {
+      "id": "node_id",
+      "label": "节点名称",
+      "type": "节点类型(如:概念|组件|流程|角色|数据|约束|目标|技术)",
+      "description": "节点描述",
+      "attributes": {"key": "value"}
+    }
+  ],
+  "edges": [
+    {
+      "source": "源节点id",
+      "target": "目标节点id",
+      "label": "关系标签(如:包含|依赖|使用|属于|影响|流程|数据流向|约束)",
+      "weight": 1.0
+    }
+  ],
+  "summary": "图谱总结"
+}
+
+要求：
+1. 生成 8-20 个节点，覆盖核心概念、组件、流程、角色、数据、约束等维度
+2. 生成 10-30 条边，形成完整的关系网络
+3. 节点ID使用有意义的英文标识（如 concept_user, component_frontend, process_deploy）
+4. 节点类型使用：概念|组件|流程|角色|数据|约束|目标|技术|架构|业务
+5. 边关系使用：包含|依赖|使用|属于|影响|流程|数据流向|约束|实现|交互`;
+
+    const userPrompt = `请为以下主题/需求生成知识图谱：
+主题：${topic}
+${description ? '详细描述：' + description : ''}
+${seedNodes.length ? '已有种子节点：' + seedNodes.map(n => n.id + '(' + n.label + ')').join(', ') : ''}
+
+请生成完整的知识图谱JSON。`;
+
+    try {
+      const result = await gateway.chat({
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        expertType: 'graph',
+        systemPrompt: systemPrompt,
+        temperature: 0.7,
+        maxTokens: 4000
+      });
+
+      let parsed = {};
+      try {
+        const text = (result.content || '').replace(/```json|```/g, '').trim();
+        const match = text.match(/\{[\s\S]*\}/);
+        if (match) parsed = JSON.parse(match[0]);
+      } catch (e) {
+        return fail(res, 500, 'AI 返回格式解析失败', { raw: result.content });
+      }
+
+      const newNodes = parsed.nodes || [];
+      const newEdges = parsed.edges || [];
+
+      if (newNodes.length === 0) {
+        return fail(res, 500, 'AI 未生成有效节点');
+      }
+
+      const mergedNodes = [...existingNodes];
+      const mergedEdges = [...existingEdges];
+      const addedNodes = [];
+      const addedEdges = [];
+
+      const existingIds = new Set(existingNodes.map(n => n.id));
+      for (const node of newNodes) {
+        if (!existingIds.has(node.id)) {
+          const enriched = {
+            id: node.id,
+            label: node.label || node.id,
+            type: node.type || 'concept',
+            description: node.description || '',
+            attributes: node.attributes || {},
+            community: 0,
+            degree: 0,
+            created_at: new Date().toISOString(),
+            ai_generated: true,
+            topic: topic
+          };
+          mergedNodes.push(enriched);
+          addedNodes.push(enriched);
+          existingIds.add(node.id);
+        }
+      }
+
+      const existingEdgeKeys = new Set(existingEdges.map(e => `${e.source}_${e.target}`));
+      for (const edge of newEdges) {
+        const key = `${edge.source}_${edge.target}`;
+        if (!existingEdgeKeys.has(key)) {
+          const enriched = {
+            id: uid('graph_edge'),
+            source: edge.source,
+            target: edge.target,
+            label: edge.label || 'related',
+            weight: edge.weight || 1.0,
+            created_at: new Date().toISOString(),
+            ai_generated: true
+          };
+          mergedEdges.push(enriched);
+          addedEdges.push(enriched);
+          existingEdgeKeys.add(key);
+        }
+      }
+
+      writeJSON('graph_nodes.json', mergedNodes);
+      writeJSON('graph_edges.json', mergedEdges);
+      appendLog({ type: 'graph', msg: 'ai-generate complete', topic: topic, nodes: addedNodes.length, edges: addedEdges.length });
+
+      const pr = pagerank(mergedNodes, mergedEdges, 0.85, 80);
+      const comms = labelPropagation(mergedNodes, mergedEdges);
+
+      ok(res, {
+        success: true,
+        topic: topic,
+        generated: {
+          nodes: addedNodes.length,
+          edges: addedEdges.length
+        },
+        total: {
+          nodes: mergedNodes.length,
+          edges: mergedEdges.length
+        },
+        new_nodes: addedNodes,
+        new_edges: addedEdges,
+        summary: parsed.summary || '',
+        analytics: {
+          pagerank: pr,
+          communities: comms
+        }
+      });
+    } catch (e) {
+      appendLog({ type: 'graph', msg: 'ai-generate failed', topic: topic, error: e.message });
+      fail(res, 500, 'AI 图谱生成失败: ' + e.message);
+    }
+  });
+
   reg('post', '/ai/chat', async (req, res) => {
     const body = await readBody(req);
     const messages = body.messages || (body.message ? [{ role: 'user', content: body.message }] : []);
@@ -781,7 +1027,7 @@ function registerRoutes() {
       return 'Caomei 需求编译器将自然语言需求编译为流程蓝图，支持精化迭代与模板复用。';
     }
     if (text.indexOf('你好') !== -1 || text.indexOf('hello') !== -1 || text.indexOf('hi') !== -1) {
-      return '你好！我是 OUS 算子统一系统的 AI 助手，我可以帮你分析图谱、执行算子工作流、治理璇玑以及管理算子商城。';
+      return '你好！我是璇玑信息知识图谱关联关系系统的 AI 助手，我可以帮你进行知识图谱关联分析、推理发现、算子计算、璇玑治理以及全维融合。';
     }
     if (text.indexOf('图谱') !== -1 || text.indexOf('graph') !== -1) {
       return '当前图谱包含 23 个节点与 30 条边，覆盖融合引擎、联盟、算子、AI 任务、商城等多种节点类型。可以查询邻居、最短路径或计算中心性。';
@@ -937,12 +1183,35 @@ function registerRoutes() {
     const wfs = readJSON('workflows.json', []);
     const wf = wfs.find((w) => w.id === id);
     const steps = wf ? (wf.steps || []) : (body.steps || []);
-    const results = steps.map((s, i) => ({
-      step: i, name: typeof s === 'string' ? s : (s.name || ('step_' + i)),
-      status: 'success', duration: 30 + Math.floor(Math.random() * 80)
-    }));
-    appendLog({ type: 'workflow', msg: 'execute ' + id, steps: results.length });
-    ok(res, { workflowId: id, results: results, status: 'success' });
+    
+    if (body.ai_enabled && gateway.activeProvider) {
+      const result = await aiEngine.executeWorkflow({ steps }, body.inputs || {});
+      
+      appendLog({
+        type: 'workflow',
+        msg: `AI workflow ${id} execute: ${result.success ? 'success' : 'failed'}`,
+        steps: result.results?.length || steps.length,
+        ai_powerd: true,
+        duration: result.totalDuration
+      });
+      
+      ok(res, {
+        workflowId: id,
+        results: result.results,
+        status: result.success ? 'success' : 'failed',
+        ai_powerd: true,
+        ai_powered_count: result.ai_powered_count,
+        totalDuration: result.totalDuration
+      });
+    } else {
+      const results = steps.map((s, i) => ({
+        step: i, name: typeof s === 'string' ? s : (s.name || ('step_' + i)),
+        status: 'success', duration: 30 + Math.floor(Math.random() * 80),
+        ai_powerd: false
+      }));
+      appendLog({ type: 'workflow', msg: 'execute ' + id, steps: results.length, ai_powerd: false });
+      ok(res, { workflowId: id, results: results, status: 'success', ai_powerd: false });
+    }
   });
 
   reg('get', '/ai/workflows/instances', (req, res) => {
@@ -1088,15 +1357,32 @@ function registerRoutes() {
 
   reg('post', '/ai/browser/execute-task', async (req, res) => {
     const body = await readBody(req);
-    ok(res, {
-      taskId: uid('btask'),
-      status: 'completed',
-      steps: (body.steps || []).map((s, i) => ({
-        idx: i, action: s.action || 'click', target: s.target || 'body', status: 'ok'
-      })),
-      result: '任务执行完成，共执行 ' + (body.steps || []).length + ' 步',
-      durationMs: 300 + Math.floor(Math.random() * 700)
-    });
+    const url = body.url || 'https://example.com';
+    const instructions = body.instructions || body.steps || '获取页面内容';
+    
+    if (body.ai_enabled && gateway.activeProvider) {
+      const result = await aiEngine.executeBrowserTask(url, instructions, body.options || {});
+      appendLog({ type: 'browser', msg: `AI browser task: ${result.success ? 'success' : 'failed'}`, ai_powerd: true });
+      ok(res, {
+        taskId: uid('btask'),
+        status: result.success ? 'completed' : 'failed',
+        plan: result.plan,
+        result: result.result,
+        durationMs: result.duration,
+        ai_powerd: true
+      });
+    } else {
+      ok(res, {
+        taskId: uid('btask'),
+        status: 'completed',
+        steps: (body.steps || []).map((s, i) => ({
+          idx: i, action: s.action || 'click', target: s.target || 'body', status: 'ok'
+        })),
+        result: '任务执行完成，共执行 ' + (body.steps || []).length + ' 步',
+        durationMs: 300 + Math.floor(Math.random() * 700),
+        ai_powerd: false
+      });
+    }
   });
 
   reg('post', '/ai/browser/execute-steps', async (req, res) => {
@@ -1407,6 +1693,19 @@ function registerRoutes() {
     ok(res, gateway.listProviders());
   });
 
+  reg('get', '/llm/providers/presets', (req, res) => {
+    ok(res, gateway.getPresetProviders());
+  });
+
+  reg('get', '/llm/providers/:id', (req, res, params) => {
+    const provider = gateway.getProvider(params.id);
+    if (provider) {
+      ok(res, provider);
+    } else {
+      fail(res, 404, 'Provider not found');
+    }
+  });
+
   reg('post', '/llm/providers/active', async (req, res) => {
     const body = await readBody(req);
     const success = gateway.setActiveProvider(body.provider_id);
@@ -1423,6 +1722,16 @@ function registerRoutes() {
     ok(res, { id, success: true });
   });
 
+  reg('put', '/llm/providers/:id', async (req, res, params) => {
+    const body = await readBody(req);
+    const success = gateway.updateProvider(params.id, body);
+    if (success) {
+      ok(res, { success: true });
+    } else {
+      fail(res, 404, 'Provider not found');
+    }
+  });
+
   reg('delete', '/llm/providers/:id', (req, res, params) => {
     const success = gateway.removeProvider(params.id);
     if (success) {
@@ -1430,6 +1739,79 @@ function registerRoutes() {
     } else {
       fail(res, 404, 'Provider not found');
     }
+  });
+
+  reg('post', '/llm/providers/:id/enable', (req, res, params) => {
+    const success = gateway.enableProvider(params.id);
+    if (success) {
+      ok(res, { success: true });
+    } else {
+      fail(res, 404, 'Provider not found');
+    }
+  });
+
+  reg('post', '/llm/providers/:id/disable', (req, res, params) => {
+    const success = gateway.disableProvider(params.id);
+    if (success) {
+      ok(res, { success: true });
+    } else {
+      fail(res, 404, 'Provider not found');
+    }
+  });
+
+  reg('post', '/llm/providers/:id/test', async (req, res, params) => {
+    const result = await gateway.testConnection(params.id);
+    ok(res, result);
+  });
+
+  reg('post', '/llm/providers/:id/discover', async (req, res, params) => {
+    const result = await gateway.discoverModels(params.id);
+    ok(res, result);
+  });
+
+  reg('get', '/llm/health', (req, res) => {
+    ok(res, gateway.getHealth());
+  });
+
+  reg('get', '/llm/routing', (req, res) => {
+    ok(res, gateway.getRoutingConfig());
+  });
+
+  reg('put', '/llm/routing', async (req, res) => {
+    const body = await readBody(req);
+    const success = gateway.updateRoutingConfig(body);
+    if (success) {
+      ok(res, { success: true });
+    } else {
+      fail(res, 500, 'Failed to update routing config');
+    }
+  });
+
+  reg('get', '/llm/usage', (req, res) => {
+    ok(res, gateway.getUsage());
+  });
+
+  reg('get', '/llm/logs', (req, res) => {
+    const q = url.parse(req.url, true).query;
+    ok(res, gateway.getRequestLog(parseInt(q.limit) || 50));
+  });
+
+  reg('get', '/llm/stats', (req, res) => {
+    const usage = gateway.getUsage();
+    const logs = gateway.getRequestLog(100);
+    const totalTokens = Object.values(usage).reduce((sum, u) => sum + (u.total_tokens || 0), 0);
+    const totalRequests = Object.values(usage).reduce((sum, u) => sum + (u.requests || 0), 0);
+    const successRate = logs.length > 0 
+      ? (logs.filter(l => l.status === 'success').length / logs.length * 100).toFixed(1)
+      : '0.0';
+    
+    ok(res, {
+      total_tokens: totalTokens,
+      total_requests: totalRequests,
+      success_rate: parseFloat(successRate),
+      providers: Object.keys(usage).length,
+      recent: logs.slice(0, 10)
+    });
   });
 
   // ===== 专家联盟路由 =====
@@ -1792,7 +2174,1052 @@ function registerRoutes() {
     }
   });
 
-registerRoutes();
+  // ===== 任务管理（对话/任务双向转换） =====
+  reg('get', '/tasks', (req, res) => {
+    const tasks = readJSON('tasks.json', [])
+    ok(res, tasks)
+  })
+
+  reg('get', '/tasks/:id', (req, res, params) => {
+    const tasks = readJSON('tasks.json', [])
+    const task = tasks.find(t => t.id === params.id)
+    if (!task) return fail(res, 404, '任务不存在')
+    ok(res, task)
+  })
+
+  reg('post', '/tasks', async (req, res) => {
+    const body = await readBody(req)
+    const tasks = readJSON('tasks.json', [])
+    const task = {
+      id: uid('task'),
+      title: body.title || '未命名任务',
+      description: body.description || '',
+      status: body.status || 'todo',
+      priority: body.priority || 'medium',
+      category: body.category || 'general',
+      tags: body.tags || [],
+      source: body.source || 'manual',
+      source_id: body.source_id || null,
+      messages: body.messages || [],
+      ai_reply: body.ai_reply || '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      due_date: body.due_date || null,
+      assignee: body.assignee || null,
+      metadata: body.metadata || {}
+    }
+    tasks.unshift(task)
+    writeJSON('tasks.json', tasks)
+    appendLog({ type: 'task', msg: 'create', task_id: task.id, title: task.title })
+    ok(res, task)
+  })
+
+  reg('put', '/tasks/:id', async (req, res, params) => {
+    const body = await readBody(req)
+    const tasks = readJSON('tasks.json', [])
+    const idx = tasks.findIndex(t => t.id === params.id)
+    if (idx < 0) return fail(res, 404, '任务不存在')
+    tasks[idx] = { ...tasks[idx], ...body, id: params.id, updated_at: new Date().toISOString() }
+    writeJSON('tasks.json', tasks)
+    ok(res, tasks[idx])
+  })
+
+  reg('delete', '/tasks/:id', (req, res, params) => {
+    const tasks = readJSON('tasks.json', [])
+    const idx = tasks.findIndex(t => t.id === params.id)
+    if (idx < 0) return fail(res, 404, '任务不存在')
+    tasks.splice(idx, 1)
+    writeJSON('tasks.json', tasks)
+    ok(res, { deleted: true, id: params.id })
+  })
+
+  reg('post', '/tasks/from-chat', async (req, res) => {
+    const body = await readBody(req)
+    try {
+      const chatMessages = body.messages || []
+      const chatHistory = chatMessages.map(m => `${m.role}: ${m.content}`).join('\n')
+      const result = await gateway.chat({
+        messages: [
+          { role: 'system', content: '你是一个任务分解专家。请将以下对话内容分析后，提取出核心任务点，以JSON格式返回，格式为：{"title":"任务标题","description":"任务描述","steps":["步骤1","步骤2"],"priority":"high|medium|low","category":"分类"}。只返回JSON，不要其他文字。' },
+          { role: 'user', content: chatHistory || body.text || '' }
+        ],
+        expertType: 'requirement'
+      })
+      let parsed = {}
+      try {
+        const text = (result.content || '').replace(/```json|```/g, '').trim()
+        const match = text.match(/\{[\s\S]*\}/)
+        if (match) parsed = JSON.parse(match[0])
+      } catch {}
+      const tasks = readJSON('tasks.json', [])
+      const newTask = {
+        id: uid('task'),
+        title: parsed.title || body.title || '对话转任务',
+        description: parsed.description || body.text || '从对话转换而来',
+        status: 'todo',
+        priority: parsed.priority || 'medium',
+        category: parsed.category || 'chat_convert',
+        tags: ['对话转换', ...(parsed.steps ? ['AI分析'] : [])],
+        source: 'chat',
+        source_id: body.session_id || null,
+        messages: chatMessages,
+        ai_reply: result.content || '',
+        steps: parsed.steps || [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        due_date: null,
+        assignee: null,
+        metadata: { converted_from_chat: true, expert_analysis: result.metadata }
+      }
+      tasks.unshift(newTask)
+      writeJSON('tasks.json', tasks)
+      appendLog({ type: 'task', msg: 'from-chat', task_id: newTask.id })
+      ok(res, { task: newTask, analysis: result.content, parsed })
+    } catch (e) {
+      const tasks = readJSON('tasks.json', [])
+      const fallbackTask = {
+        id: uid('task'),
+        title: body.title || '对话转任务',
+        description: body.text || '从对话转换而来',
+        status: 'todo',
+        priority: 'medium',
+        category: 'chat_convert',
+        tags: ['对话转换'],
+        source: 'chat',
+        source_id: body.session_id || null,
+        messages: body.messages || [],
+        ai_reply: '',
+        steps: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        metadata: { converted_from_chat: true, ai_failed: true }
+      }
+      tasks.unshift(fallbackTask)
+      writeJSON('tasks.json', tasks)
+      ok(res, { task: fallbackTask, analysis: '', parsed: {}, note: 'AI分析失败，已创建基础任务' })
+    }
+  })
+
+  reg('post', '/tasks/:id/to-chat', async (req, res, params) => {
+    const tasks = readJSON('tasks.json', [])
+    const task = tasks.find(t => t.id === params.id)
+    if (!task) return fail(res, 404, '任务不存在')
+    try {
+      const messages = [
+        { role: 'system', content: '你是一个智能助手。请根据以下任务信息，生成一段自然语言对话回复，帮助用户理解和执行该任务。' },
+        { role: 'user', content: `任务标题：${task.title}\n任务描述：${task.description}\n任务状态：${task.status}\n优先级：${task.priority}\n步骤：${(task.steps || []).join('、')}\n\n请生成一段友好的对话回复。` }
+      ]
+      const result = await gateway.chat({ messages })
+      ok(res, {
+        session_id: uid('s'),
+        task_id: task.id,
+        reply: result.content,
+        messages: [
+          { role: 'user', content: `关于任务「${task.title}」，请帮我分析如何执行。` },
+          { role: 'assistant', content: result.content }
+        ],
+        metadata: result.metadata
+      })
+    } catch (e) {
+      ok(res, {
+        session_id: uid('s'),
+        task_id: task.id,
+        reply: `任务「${task.title}」：${task.description}。请按步骤执行。`,
+        messages: [
+          { role: 'user', content: `关于任务「${task.title}」，请帮我分析如何执行。` },
+          { role: 'assistant', content: `任务「${task.title}」：${task.description}。请按步骤执行。` }
+        ],
+        metadata: {}
+      })
+    }
+  })
+
+  reg('post', '/tasks/:id/execute', async (req, res, params) => {
+    const tasks = readJSON('tasks.json', [])
+    const idx = tasks.findIndex(t => t.id === params.id)
+    if (idx < 0) return fail(res, 404, '任务不存在')
+    const body = await readBody(req)
+    tasks[idx].status = body.status || 'in_progress'
+    tasks[idx].updated_at = new Date().toISOString()
+    if (body.result) tasks[idx].result = body.result
+    writeJSON('tasks.json', tasks)
+    appendLog({ type: 'task', msg: 'execute', task_id: params.id, status: tasks[idx].status })
+    ok(res, tasks[idx])
+  })
+
+// ===== 知识库 (KB) 端点 =====
+
+  function ensureKBCategories() {
+    const cats = readJSON('kb_categories.json', null);
+    if (cats && Array.isArray(cats) && cats.length > 0) return cats;
+    const defaults = [
+      { id: 'general', name: '通用', parent: null, count: 0 },
+      { id: 'tech', name: '技术文档', parent: null, count: 0 },
+      { id: 'tech.code', name: '代码', parent: 'tech', count: 0 },
+      { id: 'tech.architecture', name: '架构', parent: 'tech', count: 0 },
+      { id: 'business', name: '业务文档', parent: null, count: 0 },
+      { id: 'business.requirement', name: '需求', parent: 'business', count: 0 },
+      { id: 'business.process', name: '流程', parent: 'business', count: 0 },
+      { id: 'design', name: '设计文档', parent: null, count: 0 },
+      { id: 'design.ui', name: 'UI设计', parent: 'design', count: 0 },
+      { id: 'design.spec', name: '规范', parent: 'design', count: 0 },
+      { id: 'research', name: '研究文档', parent: null, count: 0 },
+      { id: 'meeting', name: '会议纪要', parent: null, count: 0 },
+      { id: 'policy', name: '政策制度', parent: null, count: 0 }
+    ];
+    writeJSON('kb_categories.json', defaults);
+    return defaults;
+  }
+
+  function analyzeDocument(doc) {
+    const content = doc.content || '';
+    const title = doc.title || '';
+    const text = (title + ' ' + content).toLowerCase();
+    const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
+    const readingTime = Math.ceil(wordCount / 200);
+    const entities = [];
+    const entityPatterns = [
+      { type: 'technical', regex: /\b(algorithm|api|sdk|framework|library|module|function|class|method|database|server|client|interface|protocol|system)\b/gi },
+      { type: 'person', regex: /\b(?:dr|mr|mrs|ms|prof|professor|director|manager|engineer|designer|analyst)\s+[a-z][a-z\s]+?(?:\.|,|\s{2,}|$)/gi },
+      { type: 'date', regex: /\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b/g },
+      { type: 'system', regex: /\b([A-Z][a-z]+(?:[A-Z][a-z]+)+|[A-Z]{2,}(?:[a-z]+|[A-Z]+))\b/g }
+    ];
+    entityPatterns.forEach(ep => {
+      const matches = text.match(ep.regex) || [];
+      matches.forEach(m => {
+        if (m.trim()) entities.push({ type: ep.type, value: m.trim(), confidence: 0.7 + Math.random() * 0.3 });
+      });
+    });
+    const uniqueEntities = [];
+    const seen = {};
+    entities.forEach(e => { if (!seen[e.value]) { seen[e.value] = true; uniqueEntities.push(e); } });
+    const summary = content.length > 300 ? content.slice(0, 300) + '...' : content;
+    const keywordScores = {};
+    uniqueEntities.forEach(e => { keywordScores[e.value] = e.confidence; });
+    const catKeywords = {
+      'tech': ['algorithm', 'api', 'code', 'function', 'class', 'system', 'module', 'library', 'framework'],
+      'business': ['requirement', 'process', 'business', 'workflow', 'stakeholder', 'delivery'],
+      'design': ['design', 'ui', 'spec', 'pattern', 'interface', 'ux', 'prototype'],
+      'research': ['research', 'analysis', 'study', 'experiment', 'finding', 'hypothesis'],
+      'meeting': ['meeting', 'discussion', 'agenda', 'minutes', 'action', 'decision'],
+      'policy': ['policy', 'regulation', 'compliance', 'standard', 'rule', 'governance']
+    };
+    let suggestedCategory = doc.category || 'general';
+    let bestScore = 0;
+    Object.keys(catKeywords).forEach(cat => {
+      const score = catKeywords[cat].reduce((s, kw) => s + (text.indexOf(kw) !== -1 ? 1 : 0), 0);
+      if (score > bestScore) { bestScore = score; suggestedCategory = cat; }
+    });
+    const suggestedTags = uniqueEntities.slice(0, 5).map(e => e.value.toLowerCase()).filter((t, i, arr) => arr.indexOf(t) === 0 && t.length > 2);
+    return {
+      keywords: Object.keys(keywordScores).slice(0, 10),
+      entities: uniqueEntities,
+      summary: summary,
+      suggestedCategory: suggestedCategory,
+      suggestedTags: suggestedTags,
+      wordCount: wordCount,
+      readingTime: readingTime,
+      confidence: Math.min(0.95, 0.5 + uniqueEntities.length * 0.05),
+      analyzedAt: new Date().toISOString()
+    };
+  }
+
+  function extractEntitiesFromContent(content) {
+    const text = (content || '').toLowerCase();
+    const entities = [];
+    const patterns = [
+      { type: 'technical_term', regex: /\b(algorithm|api|sdk|framework|library|module|function|class|method|database|server|client|interface|protocol|system|architecture)\b/gi },
+      { type: 'date', regex: /\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b/g },
+      { type: 'system_name', regex: /\b([A-Z][a-z]+[A-Z][a-z]+|[A-Z]{2,}[a-z]+|[A-Z][a-z]+[A-Z][a-z]+)\b/g },
+      { type: 'organization', regex: /\b([A-Z][a-z]+(?:\s[A-Z][a-z]+)*(?:Inc|Corp|LLC|Ltd|Co))\b/g }
+    ];
+    patterns.forEach(p => {
+      const matches = text.match(p.regex) || [];
+      matches.forEach(m => {
+        const v = m.trim();
+        if (v && v.length > 1) entities.push({ type: p.type, value: v, confidence: 0.7 + Math.random() * 0.3 });
+      });
+    });
+    const seen = {};
+    return entities.filter(e => { if (seen[e.value]) return false; seen[e.value] = true; return true; });
+  }
+
+  function diffVersions(ver1, ver2) {
+    const lines1 = (ver1.content || '').split('\n');
+    const lines2 = (ver2.content || '').split('\n');
+    const lcs = [];
+    for (let i = 0; i <= lines1.length; i++) {
+      lcs[i] = [];
+      for (let j = 0; j <= lines2.length; j++) lcs[i][j] = 0;
+    }
+    for (let i = 1; i <= lines1.length; i++) {
+      for (let j = 1; j <= lines2.length; j++) {
+        if (lines1[i - 1] === lines2[j - 1]) lcs[i][j] = lcs[i - 1][j - 1] + 1;
+        else lcs[i][j] = Math.max(lcs[i - 1][j], lcs[i][j - 1]);
+      }
+    }
+    const added = [];
+    const removed = [];
+    let i = lines1.length, j = lines2.length;
+    while (i > 0 && j > 0) {
+      if (lines1[i - 1] === lines2[j - 1]) { i--; j--; }
+      else if (lcs[i - 1][j] >= lcs[i][j - 1]) { removed.unshift(lines1[i - 1]); i--; }
+      else { added.unshift(lines2[j - 1]); j--; }
+    }
+    while (i > 0) { removed.unshift(lines1[i - 1]); i--; }
+    while (j > 0) { added.unshift(lines2[j - 1]); j--; }
+    const total = Math.max(lines1.length, lines2.length);
+    const similarity = total > 0 ? Math.round((lcs[lines1.length][lines2.length] / total) * 1000) / 10 : 0;
+    return { added: added, removed: removed, changed: [], similarity: similarity, fromVersion: ver1.version, toVersion: ver2.version };
+  }
+
+  function addHistory(docId, action, detail, user) {
+    const history = readJSON('kb_history.json', []);
+    history.unshift({
+      id: uid('kb_hist'),
+      documentId: docId,
+      action: action,
+      detail: detail,
+      user: user || 'user',
+      ts: new Date().toISOString()
+    });
+    if (history.length > 1000) history.length = 1000;
+    writeJSON('kb_history.json', history);
+  }
+
+  // === 1. Document CRUD ===
+
+  reg('get', '/kb/documents', (req, res) => {
+    const q = url.parse(req.url, true).query;
+    let docs = readJSON('kb_documents.json', []);
+    if (q.q) {
+      const s = String(q.q).toLowerCase();
+      docs = docs.filter(d =>
+        (d.title || '').toLowerCase().indexOf(s) !== -1 ||
+        (d.content || '').toLowerCase().indexOf(s) !== -1 ||
+        (d.description || '').toLowerCase().indexOf(s) !== -1 ||
+        (d.tags || []).some(t => t.toLowerCase().indexOf(s) !== -1)
+      );
+    }
+    if (q.category) docs = docs.filter(d => d.category === q.category);
+    if (q.tag) docs = docs.filter(d => (d.tags || []).indexOf(q.tag) !== -1);
+    if (q.type) docs = docs.filter(d => d.type === q.type);
+    if (q.status) docs = docs.filter(d => d.status === q.status);
+    const page = parseInt(q.page, 10) || 1;
+    const pageSize = parseInt(q.pageSize, 10) || 20;
+    const total = docs.length;
+    const start = (page - 1) * pageSize;
+    const paged = docs.slice(start, start + pageSize);
+    ok(res, { documents: paged, pagination: { page: page, pageSize: pageSize, total: total, totalPages: Math.ceil(total / pageSize) } });
+  });
+
+  reg('post', '/kb/documents', async (req, res) => {
+    const body = await readBody(req);
+    const docs = readJSON('kb_documents.json', []);
+    const now = new Date().toISOString();
+    const doc = Object.assign({
+      id: uid('kb_doc'),
+      title: '未命名文档',
+      content: '',
+      type: 'markdown',
+      category: 'general',
+      tags: [],
+      description: '',
+      status: 'active',
+      version: 1,
+      currentVersionId: null,
+      aiAnalysis: null,
+      entities: [],
+      graphLinks: [],
+      metadata: {},
+      created_by: 'user',
+      created_at: now,
+      updated_at: now
+    }, body);
+    const versions = readJSON('kb_versions.json', []);
+    const initVersionId = uid('kb_ver');
+    const initVersion = {
+      id: initVersionId,
+      documentId: doc.id,
+      version: 1,
+      content: doc.content,
+      title: doc.title,
+      changeNote: '初始版本',
+      isAI: false,
+      created_by: doc.created_by || 'user',
+      created_at: now,
+      diff: null
+    };
+    versions.unshift(initVersion);
+    writeJSON('kb_versions.json', versions);
+    doc.currentVersionId = initVersionId;
+    docs.unshift(doc);
+    writeJSON('kb_documents.json', docs);
+    addHistory(doc.id, 'create', '创建文档: ' + doc.title);
+    appendLog({ type: 'kb', msg: 'create document', id: doc.id });
+    ok(res, doc);
+  });
+
+  reg('get', '/kb/documents/:id', (req, res, params) => {
+    const docs = readJSON('kb_documents.json', []);
+    const doc = docs.find(d => d.id === params.id);
+    if (!doc) return fail(res, 404, '文档不存在');
+    ok(res, doc);
+  });
+
+  reg('put', '/kb/documents/:id', async (req, res, params) => {
+    const body = await readBody(req);
+    const docs = readJSON('kb_documents.json', []);
+    const idx = docs.findIndex(d => d.id === params.id);
+    if (idx === -1) return fail(res, 404, '文档不存在');
+    const doc = docs[idx];
+    const versions = readJSON('kb_versions.json', []);
+    const versionId = uid('kb_ver');
+    const version = {
+      id: versionId,
+      documentId: doc.id,
+      version: doc.version + 1,
+      content: doc.content,
+      title: doc.title,
+      changeNote: '更新前的版本快照',
+      isAI: false,
+      created_by: doc.created_by || 'user',
+      created_at: new Date().toISOString(),
+      diff: null
+    };
+    versions.unshift(version);
+    writeJSON('kb_versions.json', versions);
+    docs[idx] = Object.assign({}, doc, body, {
+      id: params.id,
+      version: doc.version + 1,
+      currentVersionId: versionId,
+      updated_at: new Date().toISOString()
+    });
+    writeJSON('kb_documents.json', docs);
+    addHistory(params.id, 'update', '更新文档: ' + (body.title || doc.title));
+    appendLog({ type: 'kb', msg: 'update document', id: params.id, version: docs[idx].version });
+    ok(res, docs[idx]);
+  });
+
+  reg('delete', '/kb/documents/:id', (req, res, params) => {
+    const docs = readJSON('kb_documents.json', []);
+    const idx = docs.findIndex(d => d.id === params.id);
+    if (idx === -1) return fail(res, 404, '文档不存在');
+    docs[idx].status = 'deleted';
+    docs[idx].updated_at = new Date().toISOString();
+    writeJSON('kb_documents.json', docs);
+    addHistory(params.id, 'delete', '删除文档: ' + docs[idx].title);
+    appendLog({ type: 'kb', msg: 'delete document (soft)', id: params.id });
+    ok(res, { success: true, id: params.id, status: 'deleted' });
+  });
+
+  // === 2. Version Management ===
+
+  reg('get', '/kb/documents/:id/versions', (req, res, params) => {
+    const versions = readJSON('kb_versions.json', []);
+    const docVersions = versions.filter(v => v.documentId === params.id).sort((a, b) => b.version - a.version);
+    ok(res, docVersions);
+  });
+
+  reg('get', '/kb/documents/:id/versions/:ver', (req, res, params) => {
+    const versions = readJSON('kb_versions.json', []);
+    const ver = versions.find(v => v.documentId === params.id && String(v.version) === String(params.ver));
+    if (!ver) return fail(res, 404, '版本不存在');
+    ok(res, ver);
+  });
+
+  reg('post', '/kb/documents/:id/versions', async (req, res, params) => {
+    const body = await readBody(req);
+    const docs = readJSON('kb_documents.json', []);
+    const doc = docs.find(d => d.id === params.id);
+    if (!doc) return fail(res, 404, '文档不存在');
+    const versions = readJSON('kb_versions.json', []);
+    const maxVer = versions.filter(v => v.documentId === params.id).reduce((m, v) => Math.max(m, v.version), 0);
+    const newVersion = {
+      id: uid('kb_ver'),
+      documentId: params.id,
+      version: maxVer + 1,
+      content: body.content || doc.content,
+      title: body.title || doc.title,
+      changeNote: body.changeNote || '手动创建版本',
+      isAI: body.isAI || false,
+      created_by: body.created_by || 'user',
+      created_at: new Date().toISOString(),
+      diff: null
+    };
+    versions.unshift(newVersion);
+    writeJSON('kb_versions.json', versions);
+    const docIdx = docs.findIndex(d => d.id === params.id);
+    docs[docIdx].version = newVersion.version;
+    docs[docIdx].currentVersionId = newVersion.id;
+    writeJSON('kb_documents.json', docs);
+    addHistory(params.id, 'version', '创建版本 v' + newVersion.version);
+    appendLog({ type: 'kb', msg: 'create version', docId: params.id, version: newVersion.version });
+    ok(res, newVersion);
+  });
+
+  reg('post', '/kb/documents/:id/versions/compare', async (req, res, params) => {
+    const body = await readBody(req);
+    if (!body.fromVer || !body.toVer) return fail(res, 400, 'fromVer 和 toVer 为必填');
+    const versions = readJSON('kb_versions.json', []);
+    const ver1 = versions.find(v => v.documentId === params.id && String(v.version) === String(body.fromVer));
+    const ver2 = versions.find(v => v.documentId === params.id && String(v.version) === String(body.toVer));
+    if (!ver1 || !ver2) return fail(res, 404, '版本不存在');
+    const diff = diffVersions(ver1, ver2);
+    ok(res, {
+      from: { version: ver1.version, title: ver1.title, content: ver1.content },
+      to: { version: ver2.version, title: ver2.title, content: ver2.content },
+      diff: diff
+    });
+  });
+
+  reg('post', '/kb/documents/:id/versions/revert', async (req, res, params) => {
+    const body = await readBody(req);
+    if (!body.version) return fail(res, 400, 'version 为必填');
+    const docs = readJSON('kb_documents.json', []);
+    const doc = docs.find(d => d.id === params.id);
+    if (!doc) return fail(res, 404, '文档不存在');
+    const versions = readJSON('kb_versions.json', []);
+    const targetVer = versions.find(v => v.documentId === params.id && String(v.version) === String(body.version));
+    if (!targetVer) return fail(res, 404, '版本不存在');
+    const idx = docs.findIndex(d => d.id === params.id);
+    docs[idx].content = targetVer.content;
+    docs[idx].title = targetVer.title;
+    docs[idx].version = doc.version + 1;
+    docs[idx].currentVersionId = targetVer.id;
+    docs[idx].updated_at = new Date().toISOString();
+    writeJSON('kb_documents.json', docs);
+    addHistory(params.id, 'revert', '回退到版本 v' + targetVer.version);
+    appendLog({ type: 'kb', msg: 'revert version', docId: params.id, toVersion: targetVer.version });
+    ok(res, docs[idx]);
+  });
+
+  // === 3. AI Analysis & Classification ===
+
+  reg('post', '/kb/documents/:id/analyze', async (req, res, params) => {
+    const docs = readJSON('kb_documents.json', []);
+    const idx = docs.findIndex(d => d.id === params.id);
+    if (idx === -1) return fail(res, 404, '文档不存在');
+    const analysis = analyzeDocument(docs[idx]);
+    docs[idx].aiAnalysis = analysis;
+    docs[idx].entities = analysis.entities || [];
+    if (analysis.suggestedCategory && analysis.suggestedCategory !== docs[idx].category) {
+      docs[idx].category = analysis.suggestedCategory;
+    }
+    if (analysis.suggestedTags && analysis.suggestedTags.length > 0) {
+      const existingTags = docs[idx].tags || [];
+      analysis.suggestedTags.forEach(t => { if (existingTags.indexOf(t) === -1) existingTags.push(t); });
+      docs[idx].tags = existingTags;
+    }
+    writeJSON('kb_documents.json', docs);
+    addHistory(params.id, 'analyze', 'AI 分析文档完成');
+    appendLog({ type: 'kb', msg: 'analyze document', id: params.id });
+    ok(res, { document: docs[idx], analysis: analysis });
+  });
+
+  reg('post', '/kb/batch-analyze', async (req, res) => {
+    const body = await readBody(req);
+    const docIds = body.docIds || [];
+    if (docIds.length === 0) return fail(res, 400, 'docIds 列表为必填');
+    const docs = readJSON('kb_documents.json', []);
+    const results = [];
+    docIds.forEach(id => {
+      const idx = docs.findIndex(d => d.id === id);
+      if (idx === -1) { results.push({ id: id, success: false, error: '文档不存在' }); return; }
+      const analysis = analyzeDocument(docs[idx]);
+      docs[idx].aiAnalysis = analysis;
+      docs[idx].entities = analysis.entities || [];
+      if (analysis.suggestedCategory) docs[idx].category = analysis.suggestedCategory;
+      results.push({ id: id, success: true, analysis: analysis });
+    });
+    writeJSON('kb_documents.json', docs);
+    addHistory('batch', 'analyze', '批量分析 ' + docIds.length + ' 个文档');
+    appendLog({ type: 'kb', msg: 'batch analyze', count: docIds.length });
+    ok(res, { total: docIds.length, results: results });
+  });
+
+  reg('get', '/kb/categories', (req, res) => {
+    const cats = ensureKBCategories();
+    ok(res, cats);
+  });
+
+  reg('get', '/kb/tags', (req, res) => {
+    const docs = readJSON('kb_documents.json', []);
+    const tagCounts = {};
+    docs.filter(d => d.status !== 'deleted').forEach(d => {
+      (d.tags || []).forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + 1; });
+    });
+    const tags = Object.keys(tagCounts).map(t => ({ name: t, count: tagCounts[t] })).sort((a, b) => b.count - a.count);
+    ok(res, tags);
+  });
+
+  reg('post', '/kb/search', async (req, res) => {
+    const body = await readBody(req);
+    const query = (body.query || '').toLowerCase();
+    const filters = body.filters || {};
+    if (!query) return fail(res, 400, 'query 为必填');
+    let docs = readJSON('kb_documents.json', []);
+    docs = docs.filter(d => d.status !== 'deleted');
+    if (filters.category) docs = docs.filter(d => d.category === filters.category);
+    if (filters.type) docs = docs.filter(d => d.type === filters.type);
+    if (filters.tags && filters.tags.length) {
+      docs = docs.filter(d => filters.tags.some(t => (d.tags || []).indexOf(t) !== -1));
+    }
+    const scored = docs.map(d => {
+      const titleMatch = (d.title || '').toLowerCase();
+      const contentMatch = (d.content || '').toLowerCase();
+      const descMatch = (d.description || '').toLowerCase();
+      let score = 0;
+      if (titleMatch.indexOf(query) !== -1) score += 10;
+      if (contentMatch.indexOf(query) !== -1) score += 5;
+      if (descMatch.indexOf(query) !== -1) score += 3;
+      if (d.tags && d.tags.some(t => t.toLowerCase().indexOf(query) !== -1)) score += 8;
+      if (d.aiAnalysis && d.aiAnalysis.keywords) {
+        d.aiAnalysis.keywords.forEach(k => { if (k.toLowerCase().indexOf(query) !== -1) score += 4; });
+      }
+      return { doc: d, score: score };
+    });
+    const results = scored.filter(s => s.score > 0).sort((a, b) => b.score - a.score);
+    ok(res, { query: query, results: results.map(r => ({ document: r.doc, score: r.score })), total: results.length });
+  });
+
+  // === 4. Knowledge Graph Integration ===
+
+  reg('get', '/kb/documents/:id/entities', (req, res, params) => {
+    const docs = readJSON('kb_documents.json', []);
+    const doc = docs.find(d => d.id === params.id);
+    if (!doc) return fail(res, 404, '文档不存在');
+    const entities = extractEntitiesFromContent(doc.content || '');
+    ok(res, { documentId: params.id, entities: entities, count: entities.length });
+  });
+
+  reg('post', '/kb/documents/:id/graph-link', async (req, res, params) => {
+    const body = await readBody(req);
+    const entityIds = body.entityIds || [];
+    if (entityIds.length === 0) return fail(res, 400, 'entityIds 为必填');
+    const docs = readJSON('kb_documents.json', []);
+    const idx = docs.findIndex(d => d.id === params.id);
+    if (idx === -1) return fail(res, 404, '文档不存在');
+    const existingLinks = docs[idx].graphLinks || [];
+    entityIds.forEach(eid => { if (existingLinks.indexOf(eid) === -1) existingLinks.push(eid); });
+    docs[idx].graphLinks = existingLinks;
+    writeJSON('kb_documents.json', docs);
+    addHistory(params.id, 'update', '关联图谱节点: ' + entityIds.join(', '));
+    appendLog({ type: 'kb', msg: 'graph link', docId: params.id, entityIds: entityIds });
+    ok(res, { success: true, documentId: params.id, graphLinks: docs[idx].graphLinks });
+  });
+
+  reg('get', '/kb/stats', (req, res) => {
+    const docs = readJSON('kb_documents.json', []);
+    const versions = readJSON('kb_versions.json', []);
+    const activeDocs = docs.filter(d => d.status === 'active');
+    const archivedDocs = docs.filter(d => d.status === 'archived');
+    const deletedDocs = docs.filter(d => d.status === 'deleted');
+    const catCounts = {};
+    activeDocs.forEach(d => { catCounts[d.category] = (catCounts[d.category] || 0) + 1; });
+    const totalWords = activeDocs.reduce((s, d) => s + (d.content || '').trim().split(/\s+/).length, 0);
+    const linkedDocs = activeDocs.filter(d => (d.graphLinks || []).length > 0);
+    const analyzedDocs = activeDocs.filter(d => d.aiAnalysis);
+    ok(res, {
+      total: docs.length,
+      active: activeDocs.length,
+      archived: archivedDocs.length,
+      deleted: deletedDocs.length,
+      categories: catCounts,
+      versions: versions.length,
+      analyzed: analyzedDocs.length,
+      graphLinked: linkedDocs.length,
+      totalWords: totalWords,
+      lastUpdated: new Date().toISOString()
+    });
+  });
+
+  // === 5. Change History ===
+
+  reg('get', '/kb/documents/:id/history', (req, res, params) => {
+    const history = readJSON('kb_history.json', []);
+    const docHistory = history.filter(h => h.documentId === params.id).sort((a, b) => new Date(b.ts) - new Date(a.ts));
+    ok(res, docHistory);
+  });
+
+  reg('get', '/kb/history', (req, res) => {
+    const q = url.parse(req.url, true).query;
+    let history = readJSON('kb_history.json', []);
+    if (q.action) history = history.filter(h => h.action === q.action);
+    if (q.documentId) history = history.filter(h => h.documentId === q.documentId);
+    const page = parseInt(q.page, 10) || 1;
+    const pageSize = parseInt(q.pageSize, 10) || 50;
+    const total = history.length;
+    const start = (page - 1) * pageSize;
+    ok(res, { history: history.slice(start, start + pageSize), pagination: { page: page, pageSize: pageSize, total: total } });
+  });
+
+  log('Knowledge base endpoints registered: document CRUD, versions, AI analysis, graph integration, history');
+
+  // ===== 自动任务：分析对话 → 创建任务 → 自动执行 =====
+  reg('post', '/tasks/auto', async (req, res) => {
+    const body = await readBody(req)
+    const message = body.message || body.text || ''
+    const sessionId = body.session_id || null
+    const contextMessages = body.messages || []
+
+    if (!message) return fail(res, 400, '缺少消息内容')
+
+    try {
+      const analysis = await gateway.chat({
+        messages: [
+          { role: 'system', content: '你是一个任务分析专家。分析用户的消息，判断是否需要创建任务。返回JSON格式：{"is_task":true/false,"task_type":"类型","title":"任务标题","description":"详细描述","steps":["步骤1","步骤2"],"priority":"high|medium|low","should_execute":true/false,"execution_plan":"执行计划说明"}。只返回JSON。' },
+          { role: 'user', content: `请分析这条消息是否为一个任务请求："${message}"` }
+        ]
+      })
+
+      let parsed = {}
+      try {
+        const text = (analysis.content || '').replace(/```json|```/g, '').trim()
+        const match = text.match(/\{[\s\S]*\}/)
+        if (match) parsed = JSON.parse(match[0])
+      } catch {}
+
+      const isTask = parsed.is_task !== false
+      const shouldExecute = parsed.should_execute !== false
+
+      const result = {
+        is_task: isTask,
+        analysis: analysis.content,
+        task: null,
+        execution: null
+      }
+
+      if (isTask) {
+        const tasks = readJSON('tasks.json', [])
+        const newTask = {
+          id: uid('task'),
+          title: parsed.title || message.slice(0, 50),
+          description: parsed.description || message,
+          status: shouldExecute ? 'in_progress' : 'todo',
+          priority: parsed.priority || 'medium',
+          category: parsed.task_type || 'auto',
+          tags: ['AI自动', parsed.task_type || 'task'],
+          source: 'auto_chat',
+          source_id: sessionId,
+          messages: contextMessages,
+          ai_reply: analysis.content,
+          steps: parsed.steps || [],
+          execution_plan: parsed.execution_plan || '',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          due_date: null,
+          assignee: null,
+          metadata: { auto_created: true, auto_executed: shouldExecute }
+        }
+        tasks.unshift(newTask)
+        writeJSON('tasks.json', tasks)
+        appendLog({ type: 'task', msg: 'auto-create', task_id: newTask.id, title: newTask.title, auto_exec: shouldExecute })
+
+        result.task = newTask
+
+        if (shouldExecute) {
+          const execResult = await gateway.chat({
+            messages: [
+              { role: 'system', content: '你是一个任务执行引擎。根据给定的任务信息，生成执行结果。格式：{"status":"completed","result":"执行结果描述","outputs":{},"next_steps":[]}。只返回JSON。' },
+              { role: 'user', content: `执行任务：标题=${newTask.title}，描述=${newTask.description}，步骤=${(newTask.steps || []).join('、')}，执行计划=${newTask.execution_plan || '按步骤执行'}` }
+            ]
+          })
+
+          let execParsed = {}
+          try {
+            const text = (execResult.content || '').replace(/```json|```/g, '').trim()
+            const match = text.match(/\{[\s\S]*\}/)
+            if (match) execParsed = JSON.parse(match[0])
+          } catch {}
+
+          const finalStatus = execParsed.status || 'completed'
+          const tasks2 = readJSON('tasks.json', [])
+          const idx = tasks2.findIndex(t => t.id === newTask.id)
+          if (idx >= 0) {
+            tasks2[idx].status = finalStatus
+            tasks2[idx].result = execParsed.result || execResult.content
+            tasks2[idx].outputs = execParsed.outputs || {}
+            tasks2[idx].next_steps = execParsed.next_steps || []
+            tasks2[idx].completed_at = new Date().toISOString()
+            tasks2[idx].updated_at = new Date().toISOString()
+            writeJSON('tasks.json', tasks2)
+          }
+
+          result.execution = {
+            status: finalStatus,
+            result: execParsed.result || execResult.content,
+            outputs: execParsed.outputs || {},
+            next_steps: execParsed.next_steps || [],
+            raw: execResult.content
+          }
+        }
+      }
+
+      ok(res, result)
+    } catch (e) {
+      ok(res, {
+        is_task: false,
+        analysis: '',
+        task: null,
+        execution: null,
+        error: e.message
+      })
+    }
+  })
+
+  // ===== 模块化系统管理 =====
+  reg('get', '/modules', (req, res) => {
+    const { listModules } = require('./modules');
+    ok(res, listModules().map(m => ({
+      name: m.name,
+      description: m.options?.description || '',
+      version: m.options?.version || '1.0',
+      routes: m.routes ? m.routes.length : 0
+    })));
+  });
+
+  reg('get', '/storage/providers', (req, res) => {
+    const { listProviders } = require('./storage');
+    ok(res, listProviders());
+  });
+
+  reg('post', '/storage/switch', async (req, res) => {
+    const body = await readBody(req);
+    const provider = body.provider;
+    if (!provider) return fail(res, 400, 'provider 为必填项');
+    try {
+      const { switchDatabase } = require('./storage');
+      const newStorage = switchDatabase(provider);
+      ok(res, { success: true, provider: newStorage.name, message: `已切换到 ${provider}` });
+    } catch (e) {
+      fail(res, 500, e.message);
+    }
+  });
+
+  reg('get', '/storage/status', (req, res) => {
+    const s = getStorage();
+    const all = s.listAllEntities();
+    const byType = {};
+    all.forEach(e => { byType[e.type] = (byType[e.type] || 0) + 1; });
+    ok(res, {
+      provider: config.storage.provider,
+      name: s.name,
+      totalEntities: all.length,
+      entitiesByType: Object.entries(byType).map(([type, cnt]) => ({ entity_type: type, cnt })),
+      features: config.features
+    });
+  });
+
+  // ===== 安全与审计路由 =====
+  
+  reg('get', '/security/status', (req, res) => {
+    ok(res, security.getSecurityStatus());
+  });
+
+  reg('get', '/security/api-keys', (req, res) => {
+    ok(res, security.getApiKeys());
+  });
+
+  reg('post', '/security/api-keys', async (req, res) => {
+    const body = await readBody(req);
+    if (!body || !body.name) return fail(res, 400, 'name required');
+    
+    const key = security.createApiKey(body.name, body.permissions || ['read']);
+    appendLog({ type: 'security', msg: 'API key created', keyId: key.id });
+    ok(res, key);
+  });
+
+  reg('delete', '/security/api-keys/:id', async (req, res, params) => {
+    const revoked = security.revokeApiKey(params.id);
+    if (revoked) {
+      appendLog({ type: 'security', msg: 'API key revoked', keyId: params.id });
+      ok(res, { success: true });
+    } else {
+      fail(res, 404, 'Key not found');
+    }
+  });
+
+  reg('get', '/security/audit-log', (req, res) => {
+    const q = url.parse(req.url, true).query;
+    const filters = {
+      action: q.action,
+      actor: q.actor,
+      since: q.since,
+      limit: parseInt(q.limit) || 100
+    };
+    ok(res, security.getAuditLog(filters));
+  });
+
+  reg('post', '/security/validate', async (req, res) => {
+    const body = await readBody(req);
+    if (!body || !body.api_key) return fail(res, 400, 'api_key required');
+    
+    const result = security.validateApiKey(body.api_key);
+    ok(res, result);
+  });
+
+  // ===== AI 引擎路由 =====
+  
+  reg('post', '/ai/execute-operator', async (req, res) => {
+    const body = await readBody(req);
+    if (!body || !body.operator) return fail(res, 400, 'operator required');
+    
+    const result = await aiEngine.executeOperator(
+      body.operator,
+      body.inputs || {},
+      body.options || {}
+    );
+    
+    appendLog({
+      type: 'ai-operator',
+      msg: `Execute ${body.operator.name || body.operator.id}: ${result.success ? 'success' : 'failed'}`,
+      ai_powerd: result.ai_powerd,
+      duration: result.duration
+    });
+    
+    ok(res, result);
+  });
+
+  reg('post', '/ai/execute-workflow', async (req, res) => {
+    const body = await readBody(req);
+    if (!body || !body.workflow) return fail(res, 400, 'workflow required');
+    
+    const result = await aiEngine.executeWorkflow(body.workflow, body.inputs || {});
+    
+    appendLog({
+      type: 'ai-workflow',
+      msg: `Execute workflow: ${result.success ? 'success' : 'failed'}`,
+      steps: result.results?.length || 0,
+      ai_powerd: true,
+      duration: result.totalDuration
+    });
+    
+    ok(res, result);
+  });
+
+  reg('post', '/ai/graph-analyze', async (req, res) => {
+    const body = await readBody(req);
+    const graphData = body || {
+      nodes: readJSON('graph_nodes.json', []),
+      edges: readJSON('graph_edges.json', [])
+    };
+    
+    const result = await aiEngine.analyzeGraph(graphData, body.options || {});
+    
+    appendLog({
+      type: 'ai-graph',
+      msg: `Graph analyze: ${graphData.nodes?.length || 0} nodes, ${graphData.edges?.length || 0} edges`,
+      ai_powerd: result.ai_powerd
+    });
+    
+    ok(res, result);
+  });
+
+  reg('post', '/ai/monitoring-report', async (req, res) => {
+    const body = await readBody(req);
+    const executions = body.executions || readJSON('ai_execution_log.json', []);
+    const timeRange = body.timeRange || '1h';
+    
+    const result = await aiEngine.generateMonitoringReport(executions, timeRange);
+    
+    appendLog({
+      type: 'ai-monitoring',
+      msg: `Generate monitoring report: ${result.ai_powerd ? 'AI-powered' : 'basic'}`,
+      ai_powerd: result.ai_powerd
+    });
+    
+    ok(res, result);
+  });
+
+  reg('post', '/ai/mcp/execute', async (req, res) => {
+    const body = await readBody(req);
+    if (!body || !body.tool) return fail(res, 400, 'tool required');
+    
+    const result = await aiEngine.executeMCPTool(body.tool, body.params || {}, body.context || {});
+    
+    appendLog({
+      type: 'ai-mcp',
+      msg: `MCP tool ${body.tool}: ${result.success ? 'success' : 'failed'}`,
+      ai_powerd: result.ai_powerd || false
+    });
+    
+    ok(res, result);
+  });
+
+  reg('get', '/ai/mcp/tools', async (req, res) => {
+    const tools = aiEngine._getMCPTools();
+    ok(res, tools.map(t => ({
+      name: t.name,
+      description: t.description,
+      parameters: t.parameters
+    })));
+  });
+
+  reg('post', '/ai/browser/execute', async (req, res) => {
+    const body = await readBody(req);
+    if (!body || !body.url) return fail(res, 400, 'url required');
+    
+    const result = await aiEngine.executeBrowserTask(body.url, body.instructions || '获取页面内容', body.options || {});
+    
+    appendLog({
+      type: 'ai-browser',
+      msg: `Browser task ${body.url}: ${result.success ? 'success' : 'failed'}`,
+      ai_powerd: result.ai_powerd
+    });
+    
+    ok(res, result);
+  });
+
+  reg('post', '/ai/plugins/orchestrate', async (req, res) => {
+    const body = await readBody(req);
+    if (!body || !body.pipeline) return fail(res, 400, 'pipeline required');
+    
+    const plugins = body.plugins || readJSON('plugins.json', []);
+    const result = await aiEngine.orchestratePlugins(plugins, body.pipeline, body.inputs || {});
+    
+    appendLog({
+      type: 'ai-plugins',
+      msg: `Plugin orchestration: ${result.success ? 'success' : 'failed'}`,
+      stages: result.results?.length || 0
+    });
+    
+    ok(res, result);
+  });
+
+  reg('get', '/ai/execution-stats', (req, res) => {
+    const stats = aiEngine.getExecutionStats();
+    ok(res, {
+      ...stats,
+      ai_engine_active: !!gateway.activeProvider,
+      gateway_provider: gateway.activeProvider
+    });
+  });
+
+  reg('get', '/ai/status', (req, res) => {
+    ok(res, {
+      ai_engine: 'active',
+      gateway_configured: !!gateway.activeProvider,
+      gateway_provider: gateway.activeProvider,
+      modules: {
+        operator_execution: true,
+        workflow_orchestration: true,
+        graph_analysis: true,
+        monitoring: true,
+        mcp: true,
+        browser_automation: true,
+        plugin_orchestration: true
+      },
+      features: {
+        ai_powered: true,
+        fallback_supported: true,
+        rate_limited: true,
+        audit_logging: true
+      }
+    });
+  });
+
+  registerRoutes();
 
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -1818,8 +3245,10 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+  modules.installAll(reg);
+
 server.listen(PORT, () => {
-  console.log('[api-server] OUS API server running on http://localhost:' + PORT);
+  console.log('[api-server] 璇玑系统 API server running on http://localhost:' + PORT);
 });
 
 module.exports = server;

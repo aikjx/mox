@@ -1,9 +1,9 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
-// 后端运行时地址：直连 API 服务器
+// 后端运行时地址：开发环境走 Vite 代理，生产环境直连
 const http = axios.create({
-  baseURL: 'http://localhost:3002',
+  baseURL: '/api',
   timeout: 30000,
   headers: { 'Content-Type': 'application/json' }
 })
@@ -194,9 +194,22 @@ export const xuanjiPublish = (payload) => http.post('/xuanji/publish', payload)
 
 // ===== LLM 网关 =====
 export const getLlmProviders = () => http.get('/llm/providers')
+export const getLlmProviderPresets = () => http.get('/llm/providers/presets')
+export const getLlmProvider = (id) => http.get(`/llm/providers/${encodeURIComponent(id)}`)
 export const setActiveProvider = (providerId) => http.post('/llm/providers/active', { provider_id: providerId })
 export const addLlmProvider = (payload) => http.post('/llm/providers', payload)
+export const updateLlmProvider = (id, payload) => http.put(`/llm/providers/${encodeURIComponent(id)}`, payload)
 export const removeLlmProvider = (id) => http.delete(`/llm/providers/${encodeURIComponent(id)}`)
+export const enableLlmProvider = (id) => http.post(`/llm/providers/${encodeURIComponent(id)}/enable`)
+export const disableLlmProvider = (id) => http.post(`/llm/providers/${encodeURIComponent(id)}/disable`)
+export const testLlmProvider = (id) => http.post(`/llm/providers/${encodeURIComponent(id)}/test`)
+export const discoverLlmModels = (id) => http.post(`/llm/providers/${encodeURIComponent(id)}/discover`)
+export const getLlmHealth = () => http.get('/llm/health')
+export const getLlmRouting = () => http.get('/llm/routing')
+export const updateLlmRouting = (payload) => http.put('/llm/routing', payload)
+export const getLlmUsage = () => http.get('/llm/usage')
+export const getLlmLogs = (limit = 50) => http.get('/llm/logs', { params: { limit } })
+export const getLlmStats = () => http.get('/llm/stats')
 
 // ===== 专家联盟 =====
 export const getExperts = (params) => http.get('/experts', { params })
@@ -208,6 +221,17 @@ export const consultExpert = (id, payload) => http.post(`/experts/${encodeURICom
 export const multiExpertConsult = (payload) => http.post('/experts/multi-consult', payload)
 export const expertDebate = (payload) => http.post('/experts/debate', payload)
 export const getExpertCapabilities = () => http.get('/experts/capabilities')
+
+// ===== 任务管理（对话/任务双向转换） =====
+export const getTasks = () => http.get('/tasks')
+export const getTask = (id) => http.get(`/tasks/${encodeURIComponent(id)}`)
+export const createTask = (payload) => http.post('/tasks', payload)
+export const updateTask = (id, payload) => http.put(`/tasks/${encodeURIComponent(id)}`, payload)
+export const deleteTask = (id) => http.delete(`/tasks/${encodeURIComponent(id)}`)
+export const convertChatToTask = (payload) => http.post('/tasks/from-chat', payload)
+export const convertTaskToChat = (id) => http.post(`/tasks/${encodeURIComponent(id)}/to-chat`)
+export const executeTask = (id, payload) => http.post(`/tasks/${encodeURIComponent(id)}/execute`, payload)
+export const autoCreateTask = (payload) => http.post('/tasks/auto', payload)
 
 // ===== 16模块 AI 增强端点 =====
 export const getWorkbenchAiOverview = () => http.get('/workbench/ai-overview')
@@ -226,5 +250,27 @@ export const aiAutomationExecute = (payload) => http.post('/automation/ai-execut
 export const aiCaomeiParse = (payload) => http.post('/caomei/ai-parse', payload)
 export const aiAlgoLabAnalyze = (payload) => http.post('/algolab/ai-analyze', payload)
 export const aiFusionGovern = (payload) => http.post('/fusion/ai-govern', payload)
+
+// ===== 云盘知识库 =====
+export const kbListDocuments = (params) => http.get('/kb/documents', { params })
+export const kbGetDocument = (id) => http.get(`/kb/documents/${encodeURIComponent(id)}`)
+export const kbCreateDocument = (payload) => http.post('/kb/documents', payload)
+export const kbUpdateDocument = (id, payload) => http.put(`/kb/documents/${encodeURIComponent(id)}`, payload)
+export const kbDeleteDocument = (id) => http.delete(`/kb/documents/${encodeURIComponent(id)}`)
+export const kbAnalyzeDocument = (id) => http.post(`/kb/documents/${encodeURIComponent(id)}/analyze`)
+export const kbBatchAnalyze = (payload) => http.post('/kb/batch-analyze', payload)
+export const kbGetCategories = () => http.get('/kb/categories')
+export const kbGetTags = () => http.get('/kb/tags')
+export const kbSearch = (payload) => http.post('/kb/search', payload)
+export const kbGetVersions = (id) => http.get(`/kb/documents/${encodeURIComponent(id)}/versions`)
+export const kbGetVersion = (id, ver) => http.get(`/kb/documents/${encodeURIComponent(id)}/versions/${encodeURIComponent(ver)}`)
+export const kbCreateVersion = (id, payload) => http.post(`/kb/documents/${encodeURIComponent(id)}/versions`, payload)
+export const kbCompareVersions = (id, payload) => http.post(`/kb/documents/${encodeURIComponent(id)}/versions/compare`, payload)
+export const kbRevertVersion = (id, payload) => http.post(`/kb/documents/${encodeURIComponent(id)}/versions/revert`, payload)
+export const kbGetEntities = (id) => http.get(`/kb/documents/${encodeURIComponent(id)}/entities`)
+export const kbGraphLink = (id, payload) => http.post(`/kb/documents/${encodeURIComponent(id)}/graph-link`, payload)
+export const kbGetStats = () => http.get('/kb/stats')
+export const kbGetDocHistory = (id) => http.get(`/kb/documents/${encodeURIComponent(id)}/history`)
+export const kbGetHistory = (params) => http.get('/kb/history', { params })
 
 export default http

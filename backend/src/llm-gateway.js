@@ -2,8 +2,67 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const DATA_DIR = path.join(__dirname, '..', 'data');
+const CIPHER_KEY = process.env.LLM_CIPHER_KEY || 'ous-llm-gateway-enterprise-key-2024';
+
+const PROVIDER_PRESETS = {
+  deepseek: {
+    name: 'DeepSeek',
+    base_url: 'https://api.deepseek.com/v1',
+    models: ['deepseek-chat', 'deepseek-reasoner'],
+    description: 'DeepSeek 大模型，支持中文对话和代码生成'
+  },
+  volcengine: {
+    name: '火山引擎',
+    base_url: 'https://ark.cn-beijing.volces.com/api/v3',
+    models: ['doubao-pro-32k', 'doubao-pro-128k', 'doubao-lite-32k'],
+    description: '字节跳动豆包大模型，支持中文业务场景'
+  },
+  qwen: {
+    name: '阿里云千问',
+    base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    models: ['qwen-max', 'qwen-plus', 'qwen-turbo', 'qwen-long'],
+    description: '阿里云千问大模型，支持多模态和长上下文'
+  },
+  zhipu: {
+    name: '智谱AI',
+    base_url: 'https://open.bigmodel.cn/api/paas/v4',
+    models: ['glm-4', 'glm-4-flash', 'glm-3-turbo'],
+    description: '智谱AI大模型，支持长文本和复杂推理'
+  },
+  openai: {
+    name: 'OpenAI',
+    base_url: 'https://api.openai.com/v1',
+    models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
+    description: 'OpenAI 最新模型，支持多模态和高级推理'
+  },
+  anthropic: {
+    name: 'Anthropic',
+    base_url: 'https://api.anthropic.com/v1',
+    models: ['claude-3.5-sonnet', 'claude-3-opus', 'claude-3-sonnet'],
+    description: 'Anthropic Claude模型，长上下文推理能力强'
+  },
+  google: {
+    name: 'Google Gemini',
+    base_url: 'https://generativelanguage.googleapis.com/v1beta',
+    models: ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'],
+    description: 'Google Gemini 模型，多模态能力突出'
+  },
+  ollama: {
+    name: 'Ollama (本地)',
+    base_url: 'http://localhost:11434/api',
+    models: ['llama3', 'qwen2.5', 'deepseek-r1', 'mistral'],
+    description: '本地 Ollama 部署，数据完全离线'
+  },
+  custom: {
+    name: '自定义',
+    base_url: '',
+    models: [],
+    description: '自定义 Provider，填入 Base URL 和模型名即可'
+  }
+};
 
 function readJSON(file, fallback) {
   try {
@@ -26,11 +85,48 @@ function writeJSON(file, data) {
   }
 }
 
+function encryptApiKey(apiKey) {
+  if (!apiKey) return '';
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-gcm', Buffer.from(CIPHER_KEY.padEnd(32).slice(0, 32)), iv);
+  let encrypted = cipher.update(apiKey, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  const tag = cipher.getAuthTag().toString('hex');
+  return JSON.stringify({ iv: iv.toString('hex'), encrypted, tag });
+}
+
+function decryptApiKey(encryptedStr) {
+  if (!encryptedStr) return '';
+  try {
+    const obj = JSON.parse(encryptedStr);
+    const iv = Buffer.from(obj.iv, 'hex');
+    const tag = Buffer.from(obj.tag, 'hex');
+    const decipher = crypto.createDecipheriv('aes-256-gcm', Buffer.from(CIPHER_KEY.padEnd(32).slice(0, 32)), iv);
+    decipher.setAuthTag(tag);
+    let decrypted = decipher.update(obj.encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+  } catch (e) {
+    return encryptedStr;
+  }
+}
+
+function maskApiKey(key) {
+  if (!key) return '';
+  const unmasked = decryptApiKey(key);
+  if (unmasked.length <= 8) return '****';
+  return unmasked.slice(0, 4) + '****' + unmasked.slice(-4);
+}
+
 class LLMGateway {
   constructor() {
     this.providers = {};
     this.activeProvider = null;
     this.conversations = new Map();
+    this.usage = {};
+    this.requestLog = [];
+    this.maxRetries = 3;
+    this.requestTimeout = 30000;
     this._init();
   }
 
@@ -38,7 +134,11 @@ class LLMGateway {
     const config = readJSON('llm_config.json', []);
     if (Array.isArray(config) && config.length) {
       config.forEach((p) => {
-        this.providers[p.id || p.provider] = p;
+        const provider = { ...p };
+        if (provider.api_key && !provider.api_key.startsWith('{')) {
+          provider.api_key = encryptApiKey(provider.api_key);
+        }
+        this.providers[p.id || p.provider] = provider;
         if (p.enabled && !this.activeProvider) {
           this.activeProvider = p.id || p.provider;
         }
@@ -47,6 +147,7 @@ class LLMGateway {
     if (!this.activeProvider && Object.keys(this.providers).length) {
       this.activeProvider = Object.keys(this.providers)[0];
     }
+    this.usage = readJSON('llm_usage.json', {});
   }
 
   async chat(params) {
@@ -70,6 +171,26 @@ class LLMGateway {
       return await this._callExternalProvider(provider, allMessages, temperature, maxTokens);
     }
 
+    if (expertType === 'graph' && systemPrompt && systemPrompt.includes('nodes') && systemPrompt.includes('edges')) {
+      console.log('[gateway] Graph generation detected, expertType:', expertType, 'systemPrompt length:', systemPrompt.length);
+      const userText = messages.filter(m => m.role === 'user').map(m => m.content).join(' ');
+      const topicMatch = userText.match(/主题[：:]\s*(.+)/);
+      const descMatch = userText.match(/详细描述[：:]\s*(.+)/);
+      const topic = topicMatch ? topicMatch[1].trim() : userText.split('\n')[0].trim();
+      const description = descMatch ? descMatch[1].trim() : '';
+      console.log('[gateway] Extracted topic:', topic, 'description:', description);
+      const graphData = this._generateLocalGraph(topic, description);
+      console.log('[gateway] Generated graph:', graphData.nodes.length, 'nodes,', graphData.edges.length, 'edges');
+      return {
+        content: JSON.stringify(graphData),
+        usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+        model: 'ous-local-graph-v1',
+        provider: 'local-graph-generator',
+        metadata: { type: 'graph-generation', nodeCount: graphData.nodes.length, edgeCount: graphData.edges.length }
+      };
+    }
+
+    console.log('[gateway] Falling through to _generateIntelligentResponse, expertType:', expertType, 'hasSystemPrompt:', !!systemPrompt);
     return this._generateIntelligentResponse(messages, expertType, convHistory);
   }
 
@@ -98,7 +219,7 @@ class LLMGateway {
   async _callExternalProvider(provider, messages, temperature, maxTokens) {
     const url = provider.base_url || 'https://api.openai.com/v1';
     const model = provider.model || 'gpt-4';
-    const apiKey = provider.api_key;
+    const apiKey = decryptApiKey(provider.api_key);
 
     const payload = {
       model,
@@ -107,31 +228,358 @@ class LLMGateway {
       max_tokens: maxTokens
     };
 
+    let lastError = null;
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.requestTimeout);
+
+        const response = await fetch(`${url}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`LLM API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        this._recordUsage(provider.id || provider.provider, data.usage || {});
+        this._logRequest(provider.id || provider.provider, 'success', Date.now() - (this._requestStart || Date.now()));
+
+        return {
+          content: data.choices[0].message.content,
+          usage: data.usage,
+          model: data.model,
+          provider: provider.id
+        };
+      } catch (error) {
+        lastError = error;
+        if (attempt < this.maxRetries) {
+          const delay = Math.pow(2, attempt) * 100;
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    this._logRequest(provider.id || provider.provider, 'failed', 0, lastError?.message);
+    console.warn('[llm-gateway] External provider failed after retries, falling back to local:', lastError?.message);
+    return this._generateIntelligentResponse(messages, null, []);
+  }
+
+  _recordUsage(providerId, usage) {
+    if (!this.usage[providerId]) {
+      this.usage[providerId] = { total_tokens: 0, prompt_tokens: 0, completion_tokens: 0, requests: 0, last_updated: null };
+    }
+    const u = this.usage[providerId];
+    u.total_tokens += usage.total_tokens || 0;
+    u.prompt_tokens += usage.prompt_tokens || 0;
+    u.completion_tokens += usage.completion_tokens || 0;
+    u.requests += 1;
+    u.last_updated = new Date().toISOString();
+    writeJSON('llm_usage.json', this.usage);
+  }
+
+  _logRequest(providerId, status, latency, error) {
+    const log = {
+      provider: providerId,
+      status,
+      latency_ms: latency,
+      error: error || null,
+      timestamp: new Date().toISOString()
+    };
+    this.requestLog.push(log);
+    if (this.requestLog.length > 1000) {
+      this.requestLog = this.requestLog.slice(-500);
+    }
+  }
+
+  getUsage() {
+    return this.usage;
+  }
+
+  getRequestLog(limit = 50) {
+    return this.requestLog.slice(-limit).reverse();
+  }
+
+  async testConnection(providerId) {
+    const provider = this.providers[providerId];
+    if (!provider) {
+      return { success: false, message: 'Provider not found' };
+    }
+
+    if (provider.provider === 'local' || provider.type === 'local') {
+      return { success: true, message: '本地引擎正常', latencyMs: 0, provider: providerId };
+    }
+
+    const startTime = Date.now();
     try {
-      const response = await fetch(`${url}/chat/completions`, {
-        method: 'POST',
+      const url = provider.base_url;
+      const apiKey = decryptApiKey(provider.api_key);
+      const response = await fetch(`${url}/models`, {
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify(payload)
+        }
+      });
+
+      const latencyMs = Date.now() - startTime;
+
+      if (!response.ok) {
+        let errorMsg = `HTTP ${response.status}`;
+        if (response.status === 401) errorMsg = 'API Key 无效或未授权';
+        else if (response.status === 429) errorMsg = '请求频率超限，请稍后重试';
+        else if (response.status === 404) errorMsg = 'API 端点不存在，请检查 Base URL';
+        
+        return {
+          success: false,
+          message: errorMsg,
+          latencyMs,
+          provider: providerId,
+          statusCode: response.status
+        };
+      }
+
+      const data = await response.json().catch(() => ({}));
+      const models = data.data ? data.data.map(m => m.id || m.id) : [];
+
+      return {
+        success: true,
+        message: `连接成功，检测到 ${models.length} 个可用模型`,
+        latencyMs,
+        provider: providerId,
+        models: models.slice(0, 20)
+      };
+    } catch (error) {
+      const latencyMs = Date.now() - startTime;
+      return {
+        success: false,
+        message: `连接失败: ${error.message}`,
+        latencyMs,
+        provider: providerId
+      };
+    }
+  }
+
+  async discoverModels(providerId) {
+    const provider = this.providers[providerId];
+    if (!provider || !provider.base_url) {
+      return { success: false, models: [] };
+    }
+
+    if (provider.provider === 'local' || provider.type === 'local') {
+      return { success: true, models: ['ous-internal-v3'] };
+    }
+
+    try {
+      const url = provider.base_url;
+      const apiKey = decryptApiKey(provider.api_key);
+      const response = await fetch(`${url}/models`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`
+        }
       });
 
       if (!response.ok) {
-        throw new Error(`LLM API error: ${response.status}`);
+        return { success: false, models: [], message: `HTTP ${response.status}` };
       }
 
-      const data = await response.json();
-      return {
-        content: data.choices[0].message.content,
-        usage: data.usage,
-        model: data.model,
-        provider: provider.id
-      };
+      const data = await response.json().catch(() => ({}));
+      const models = data.data ? data.data.map(m => ({
+        id: m.id,
+        name: m.id,
+        owned_by: m.owned_by,
+        context_window: m.context_window || m.max_context_window || 0
+      })) : [];
+
+      return { success: true, models };
     } catch (error) {
-      console.warn('[llm-gateway] External provider failed, falling back to local:', error.message);
-      return this._generateIntelligentResponse(messages, null, []);
+      return { success: false, models: [], message: error.message };
     }
+  }
+
+  getHealth() {
+    const providers = Object.values(this.providers);
+    const enabledCount = providers.filter(p => p.enabled).length;
+    const externalCount = providers.filter(p => p.provider !== 'local').length;
+    
+    return {
+      total_providers: providers.length,
+      enabled_providers: enabledCount,
+      external_providers: externalCount,
+      active_provider: this.activeProvider,
+      active_provider_name: this.providers[this.activeProvider]?.name || '无',
+      status: enabledCount > 0 ? 'ready' : 'no_provider',
+      local_available: !!this.providers[Object.keys(this.providers).find(k => this.providers[k].provider === 'local')]
+    };
+  }
+
+  getPresetProviders() {
+    return Object.entries(PROVIDER_PRESETS).map(([key, preset]) => ({
+      id: key,
+      name: preset.name,
+      base_url: preset.base_url,
+      models: preset.models,
+      description: preset.description
+    }));
+  }
+
+  listProviders() {
+    return Object.entries(this.providers).map(([id, p]) => ({
+      id,
+      name: p.name || id,
+      type: p.provider,
+      enabled: p.enabled,
+      active: id === this.activeProvider,
+      model: p.model,
+      base_url: p.base_url,
+      has_key: !!(p.api_key && p.api_key.trim()),
+      api_key_masked: maskApiKey(p.api_key),
+      description: p.description,
+      updated_at: p.updated_at,
+      created_at: p.created_at
+    }));
+  }
+
+  getProvider(providerId) {
+    const provider = this.providers[providerId];
+    if (provider) {
+      return {
+        ...provider,
+        api_key_masked: maskApiKey(provider.api_key)
+      };
+    }
+    return null;
+  }
+
+  setActiveProvider(providerId) {
+    if (this.providers[providerId]) {
+      this.activeProvider = providerId;
+      const config = Object.values(this.providers).map(({ api_key, ...rest }) => rest);
+      writeJSON('llm_config.json', config);
+      return true;
+    }
+    return false;
+  }
+
+  addProvider(provider) {
+    const id = provider.id || `llm_${Date.now()}`;
+    const now = new Date().toISOString();
+    
+    const preset = provider.provider && PROVIDER_PRESETS[provider.provider];
+    
+    const encryptedKey = provider.api_key ? encryptApiKey(provider.api_key) : '';
+    
+    this.providers[id] = {
+      id,
+      provider: provider.provider || 'custom',
+      base_url: provider.base_url || (preset ? preset.base_url : ''),
+      model: provider.model || (preset && preset.models ? preset.models[0] : 'default'),
+      api_key: encryptedKey,
+      enabled: provider.enabled || false,
+      name: provider.name || (preset ? preset.name : id),
+      description: provider.description || (preset ? preset.description : ''),
+      temperature: provider.temperature || 0.7,
+      max_tokens: provider.max_tokens || 2048,
+      updated_at: now,
+      created_at: now
+    };
+    
+    const config = Object.values(this.providers).map(({ api_key, ...rest }) => rest);
+    writeJSON('llm_config.json', config);
+    
+    if (provider.enabled && !this.activeProvider) {
+      this.activeProvider = id;
+    }
+    return id;
+  }
+
+  updateProvider(providerId, updates) {
+    if (!this.providers[providerId]) return false;
+    
+    const allowedFields = ['name', 'base_url', 'model', 'enabled', 'description', 'temperature', 'max_tokens'];
+    for (const field of allowedFields) {
+      if (updates[field] !== undefined) {
+        this.providers[providerId][field] = updates[field];
+      }
+    }
+    
+    if (updates.api_key !== undefined) {
+      if (updates.api_key === '') {
+        this.providers[providerId].api_key = '';
+      } else {
+        this.providers[providerId].api_key = encryptApiKey(updates.api_key);
+      }
+    }
+    
+    this.providers[providerId].updated_at = new Date().toISOString();
+    
+    const config = Object.values(this.providers).map(({ api_key, ...rest }) => rest);
+    writeJSON('llm_config.json', config);
+    return true;
+  }
+
+  removeProvider(providerId) {
+    if (this.providers[providerId]) {
+      delete this.providers[providerId];
+      const config = Object.values(this.providers).map(({ api_key, ...rest }) => rest);
+      writeJSON('llm_config.json', config);
+      if (this.activeProvider === providerId) {
+        const firstKey = Object.keys(this.providers)[0];
+        this.activeProvider = firstKey || null;
+        if (this.activeProvider && !this.providers[this.activeProvider].enabled) {
+          this.providers[this.activeProvider].enabled = true;
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+
+  enableProvider(providerId) {
+    if (!this.providers[providerId]) return false;
+    this.providers[providerId].enabled = true;
+    if (!this.activeProvider) {
+      this.activeProvider = providerId;
+    }
+    const config = Object.values(this.providers).map(({ api_key, ...rest }) => rest);
+    writeJSON('llm_config.json', config);
+    return true;
+  }
+
+  disableProvider(providerId) {
+    if (!this.providers[providerId]) return false;
+    this.providers[providerId].enabled = false;
+    if (this.activeProvider === providerId) {
+      const nextProvider = Object.keys(this.providers).find(k => this.providers[k].enabled);
+      this.activeProvider = nextProvider || null;
+    }
+    const config = Object.values(this.providers).map(({ api_key, ...rest }) => rest);
+    writeJSON('llm_config.json', config);
+    return true;
+  }
+
+  getRoutingConfig() {
+    return readJSON('llm_routing.json', {
+      strategy: 'priority',
+      providers: Object.keys(this.providers).filter(k => this.providers[k].enabled),
+      fallback: true,
+      load_balance: false,
+      weights: {}
+    });
+  }
+
+  updateRoutingConfig(config) {
+    return writeJSON('llm_routing.json', config);
   }
 
   _generateIntelligentResponse(messages, expertType, history) {
@@ -393,57 +841,129 @@ class LLMGateway {
     return (steps[expertType] || steps.default).join('\n');
   }
 
-  listProviders() {
-    return Object.entries(this.providers).map(([id, p]) => ({
-      id,
-      name: p.name || id,
-      type: p.provider,
-      enabled: p.enabled,
-      active: id === this.activeProvider,
-      model: p.model
-    }));
-  }
-
-  setActiveProvider(providerId) {
-    if (this.providers[providerId]) {
-      this.activeProvider = providerId;
-      return true;
-    }
-    return false;
-  }
-
-  addProvider(provider) {
-    const id = provider.id || `llm_${Date.now()}`;
-    this.providers[id] = {
-      id,
-      provider: provider.provider || 'custom',
-      base_url: provider.base_url || '',
-      model: provider.model || 'default',
-      api_key: provider.api_key || '',
-      enabled: provider.enabled || false,
-      name: provider.name
+  _generateLocalGraph(topic, description) {
+    const t = (topic || '企业官网需求').toString();
+    const d = (description || '').toString();
+    
+    const templates = {
+      '企业官网': {
+        nodes: [
+          { id: 'concept_website', label: '企业官网', type: '概念', description: '企业官方网站建设项目', attributes: { category: '项目' } },
+          { id: 'concept_user', label: '用户', type: '角色', description: '访问官网的终端用户', attributes: { role: '访客' } },
+          { id: 'concept_admin', label: '管理员', type: '角色', description: '负责官网内容维护的管理员', attributes: { role: '运营' } },
+          { id: 'component_frontend', label: '前端界面', type: '组件', description: '用户可见的Web界面', attributes: { tech: 'Vue.js' } },
+          { id: 'component_backend', label: '后端服务', type: '组件', description: '提供API和数据处理能力', attributes: { tech: 'Node.js' } },
+          { id: 'component_database', label: '数据库', type: '组件', description: '存储用户、内容和业务数据', attributes: { tech: 'MySQL' } },
+          { id: 'component_cms', label: '内容管理系统', type: '组件', description: '支持管理员发布和管理内容', attributes: { feature: '富文本' } },
+          { id: 'component_auth', label: '认证授权', type: '组件', description: '用户登录注册和权限管理', attributes: { method: 'JWT' } },
+          { id: 'component_search', label: '搜索功能', type: '组件', description: '站内全文搜索能力', attributes: { engine: 'Elasticsearch' } },
+          { id: 'process_deploy', label: '部署流程', type: '流程', description: '从开发到上线的完整流程', attributes: { method: 'CI/CD' } },
+          { id: 'process_design', label: '设计流程', type: '流程', description: 'UI/UX设计和评审流程', attributes: { tool: 'Figma' } },
+          { id: 'process_content', label: '内容运营流程', type: '流程', description: '内容创建、审核、发布流程', attributes: { workflow: '审批制' } },
+          { id: 'data_user', label: '用户数据', type: '数据', description: '用户注册信息、行为数据', attributes: { sensitivity: '高' } },
+          { id: 'data_content', label: '内容数据', type: '数据', description: '文章、产品、新闻等内容', attributes: { sensitivity: '低' } },
+          { id: 'data_config', label: '配置数据', type: '数据', description: '系统配置、权限配置', attributes: { sensitivity: '中' } },
+          { id: 'constraint_security', label: '安全约束', type: '约束', description: '数据加密、XSS防护、CSRF防护', attributes: { level: '必须' } },
+          { id: 'constraint_performance', label: '性能约束', type: '约束', description: '首屏加载<3s，支持高并发', attributes: { level: '重要' } },
+          { id: 'constraint_seo', label: 'SEO约束', type: '约束', description: '搜索引擎优化要求', attributes: { level: '重要' } },
+          { id: 'goal_conversion', label: '转化目标', type: '目标', description: '访客到注册/客户的转化', attributes: { kpi: '转化率' } },
+          { id: 'goal_brand', label: '品牌目标', type: '目标', description: '提升企业品牌形象和知名度', attributes: { kpi: '品牌指数' } }
+        ],
+        edges: [
+          { source: 'concept_website', target: 'concept_user', label: '服务', weight: 1.0 },
+          { source: 'concept_website', target: 'concept_admin', label: '管理', weight: 1.0 },
+          { source: 'concept_website', target: 'component_frontend', label: '包含', weight: 1.0 },
+          { source: 'concept_website', target: 'component_backend', label: '包含', weight: 1.0 },
+          { source: 'concept_website', target: 'component_database', label: '依赖', weight: 1.0 },
+          { source: 'component_frontend', target: 'component_backend', label: '使用', weight: 0.9 },
+          { source: 'component_backend', target: 'component_database', label: '使用', weight: 1.0 },
+          { source: 'component_cms', target: 'component_backend', label: '依赖', weight: 0.8 },
+          { source: 'component_auth', target: 'component_backend', label: '集成', weight: 0.9 },
+          { source: 'component_search', target: 'component_backend', label: '集成', weight: 0.8 },
+          { source: 'component_search', target: 'data_content', label: '搜索', weight: 0.9 },
+          { source: 'concept_admin', target: 'component_cms', label: '使用', weight: 0.9 },
+          { source: 'concept_user', target: 'component_frontend', label: '访问', weight: 1.0 },
+          { source: 'process_design', target: 'component_frontend', label: '产出', weight: 0.8 },
+          { source: 'process_deploy', target: 'component_backend', label: '部署', weight: 0.9 },
+          { source: 'process_content', target: 'component_cms', label: '管理', weight: 0.9 },
+          { source: 'data_user', target: 'component_auth', label: '存储于', weight: 0.9 },
+          { source: 'data_content', target: 'component_cms', label: '存储于', weight: 0.9 },
+          { source: 'data_config', target: 'component_backend', label: '配置于', weight: 0.8 },
+          { source: 'constraint_security', target: 'component_auth', label: '约束', weight: 1.0 },
+          { source: 'constraint_security', target: 'component_backend', label: '约束', weight: 1.0 },
+          { source: 'constraint_performance', target: 'component_frontend', label: '约束', weight: 0.9 },
+          { source: 'constraint_seo', target: 'component_frontend', label: '约束', weight: 0.8 },
+          { source: 'goal_conversion', target: 'concept_user', label: '影响', weight: 0.9 },
+          { source: 'goal_brand', target: 'concept_website', label: '影响', weight: 1.0 }
+        ],
+        summary: '企业官网需求知识图谱覆盖了从用户访问、内容管理到后端服务的完整架构，包含20个核心概念节点和25条关系边，体现了各组件间的依赖和约束关系。'
+      }
     };
     
-    const config = Object.values(this.providers);
-    writeJSON('llm_config.json', config);
-    
-    if (!this.activeProvider && provider.enabled) {
-      this.activeProvider = id;
-    }
-    return id;
-  }
-
-  removeProvider(providerId) {
-    if (this.providers[providerId]) {
-      delete this.providers[providerId];
-      const config = Object.values(this.providers);
-      writeJSON('llm_config.json', config);
-      if (this.activeProvider === providerId) {
-        this.activeProvider = Object.keys(this.providers)[0] || null;
+    for (const [key, template] of Object.entries(templates)) {
+      if (t.includes(key)) {
+        return {
+          nodes: template.nodes.map(n => ({ ...n, id: n.id.replace(key.toLowerCase().replace(/\s+/g, '_'), 'topic') })),
+          edges: template.edges.map(e => ({ ...e })),
+          summary: template.summary
+        };
       }
-      return true;
     }
-    return false;
+    
+    const nodes = [
+      { id: 'topic_' + Date.now() + '_root', label: t, type: '概念', description: d || t + '核心概念', attributes: { topic: t } },
+      { id: 'topic_user', label: '用户', type: '角色', description: t + '的使用者', attributes: {} },
+      { id: 'topic_admin', label: '管理员', type: '角色', description: t + '的管理者', attributes: {} },
+      { id: 'topic_frontend', label: '前端组件', type: '组件', description: t + '的前端实现', attributes: {} },
+      { id: 'topic_backend', label: '后端组件', type: '组件', description: t + '的后端实现', attributes: {} },
+      { id: 'topic_data', label: '数据层', type: '组件', description: t + '的数据存储', attributes: {} },
+      { id: 'topic_process', label: '核心流程', type: '流程', description: t + '的核心业务流程', attributes: {} },
+      { id: 'topic_data_flow', label: '数据流', type: '流程', description: t + '的数据流向', attributes: {} },
+      { id: 'topic_constraint', label: '约束条件', type: '约束', description: t + '的关键约束', attributes: {} },
+      { id: 'topic_goal', label: '目标', type: '目标', description: t + '的实现目标', attributes: {} },
+      { id: 'topic_api', label: 'API接口', type: '组件', description: t + '的对外接口', attributes: {} },
+      { id: 'topic_auth', label: '认证授权', type: '组件', description: t + '的安全认证', attributes: {} },
+      { id: 'topic_monitor', label: '监控系统', type: '组件', description: t + '的运行监控', attributes: {} },
+      { id: 'topic_deploy', label: '部署流程', type: '流程', description: t + '的部署上线', attributes: {} },
+      { id: 'topic_data_model', label: '数据模型', type: '数据', description: t + '的数据结构', attributes: {} }
+    ];
+    
+    const edges = [
+      { source: 'topic_' + Date.now() + '_root', target: 'topic_user', label: '服务', weight: 1.0 },
+      { source: 'topic_' + Date.now() + '_root', target: 'topic_admin', label: '管理', weight: 1.0 },
+      { source: 'topic_' + Date.now() + '_root', target: 'topic_frontend', label: '包含', weight: 1.0 },
+      { source: 'topic_' + Date.now() + '_root', target: 'topic_backend', label: '包含', weight: 1.0 },
+      { source: 'topic_' + Date.now() + '_root', target: 'topic_data', label: '依赖', weight: 1.0 },
+      { source: 'topic_frontend', target: 'topic_backend', label: '使用', weight: 0.9 },
+      { source: 'topic_backend', target: 'topic_data', label: '使用', weight: 1.0 },
+      { source: 'topic_backend', target: 'topic_api', label: '提供', weight: 0.9 },
+      { source: 'topic_backend', target: 'topic_auth', label: '集成', weight: 0.9 },
+      { source: 'topic_backend', target: 'topic_monitor', label: '集成', weight: 0.8 },
+      { source: 'topic_user', target: 'topic_frontend', label: '访问', weight: 1.0 },
+      { source: 'topic_admin', target: 'topic_backend', label: '管理', weight: 0.9 },
+      { source: 'topic_process', target: 'topic_backend', label: '实现于', weight: 0.8 },
+      { source: 'topic_data_flow', target: 'topic_process', label: '贯穿', weight: 0.9 },
+      { source: 'topic_data_flow', target: 'topic_data', label: '存储于', weight: 0.9 },
+      { source: 'topic_constraint', target: 'topic_backend', label: '约束', weight: 1.0 },
+      { source: 'topic_constraint', target: 'topic_frontend', label: '约束', weight: 0.9 },
+      { source: 'topic_goal', target: 'topic_user', label: '服务于', weight: 0.9 },
+      { source: 'topic_goal', target: 'topic_' + Date.now() + '_root', label: '达成', weight: 1.0 },
+      { source: 'topic_deploy', target: 'topic_backend', label: '部署', weight: 0.9 },
+      { source: 'topic_deploy', target: 'topic_frontend', label: '部署', weight: 0.9 },
+      { source: 'topic_data_model', target: 'topic_data', label: '定义于', weight: 1.0 },
+      { source: 'topic_api', target: 'topic_frontend', label: '被调用', weight: 0.8 },
+      { source: 'topic_auth', target: 'topic_user', label: '验证', weight: 0.9 },
+      { source: 'topic_monitor', target: 'topic_deploy', label: '监控', weight: 0.8 }
+    ];
+    
+    const rootId = nodes[0].id;
+    const rootEdges = edges.map(e => ({ ...e, source: e.source === 'topic_' + Date.now() + '_root' ? rootId : e.source }));
+    
+    return {
+      nodes,
+      edges: rootEdges,
+      summary: `${t}知识图谱包含${nodes.length}个核心概念和${edges.length}条关系，覆盖了从用户、组件、流程到约束和目标的完整维度。`
+    };
   }
 }
 
@@ -456,4 +976,4 @@ function getGateway() {
   return gatewayInstance;
 }
 
-module.exports = { LLMGateway, getGateway };
+module.exports = { LLMGateway, getGateway, PROVIDER_PRESETS };

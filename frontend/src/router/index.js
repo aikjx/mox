@@ -1,7 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 
 const routes = [
-  { path: '/', redirect: '/dashboard' },
+  { path: '/', redirect: '/ai' },
   {
     path: '/dashboard',
     name: 'Dashboard',
@@ -55,6 +55,12 @@ const routes = [
     name: 'AI',
     component: () => import('@/views/ChatView.vue'),
     meta: { title: 'AI 助手' }
+  },
+  {
+    path: '/tasks',
+    name: 'Tasks',
+    component: () => import('@/views/TaskView.vue'),
+    meta: { title: '任务管理' }
   },
   {
     path: '/resources',
@@ -135,8 +141,20 @@ const routes = [
     meta: { title: '机器人中心' }
   },
   {
+    path: '/knowledge-base',
+    name: 'KnowledgeBase',
+    component: () => import('@/views/KnowledgeBaseView.vue'),
+    meta: { title: '云盘知识库' }
+  },
+  {
+    path: '/llm-config',
+    name: 'LlmConfig',
+    component: () => import('@/views/LlmConfigView.vue'),
+    meta: { title: '大模型配置' }
+  },
+  {
     path: '/:pathMatch(.*)*',
-    redirect: '/dashboard'
+    redirect: '/ai'
   }
 ]
 

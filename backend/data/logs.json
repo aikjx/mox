@@ -1,504 +1,3996 @@
 [
   {
-    "id": "log_jzvnsaznp7",
-    "ts": "2026-08-20T03:41:51.198Z",
-    "type": "automation",
-    "msg": "create 测试自动化"
+    "id": "log_usxjdwfrcy",
+    "ts": "2026-08-20T14:25:26.410Z",
+    "type": "task",
+    "msg": "auto-create",
+    "task_id": "task_kbzkkqqo29",
+    "title": "ji",
+    "auto_exec": true
   },
   {
-    "id": "log_mtqck5nxce",
-    "ts": "2026-08-20T03:41:51.183Z",
-    "type": "caomei",
-    "msg": "compile",
-    "requirement": "创建一个用户登录流程"
+    "id": "log_fle9vjpolj",
+    "ts": "2026-08-20T14:24:18.808Z",
+    "type": "task",
+    "msg": "create",
+    "task_id": "task_yessxhvnrn",
+    "title": "数据库持久化测试"
   },
   {
-    "id": "log_zqjhzkrdhb",
-    "ts": "2026-08-20T03:41:51.175Z",
-    "type": "workflow",
-    "msg": "create 测试工作流"
+    "id": "log_uxv2r2g0n5",
+    "ts": "2026-08-20T14:21:18.493Z",
+    "type": "task",
+    "msg": "create",
+    "task_id": "task_9m3n1xnlhw",
+    "title": "数据库测试任务"
   },
   {
-    "id": "operators_g8udmpffcw",
-    "ts": "2026-08-20T03:41:51.159Z",
-    "type": "operator",
-    "msg": "register 测试算子_1787197311155"
-  },
-  {
-    "id": "log_3f1xl0iiie",
-    "ts": "2026-08-20T03:35:17.264Z",
-    "type": "automation",
-    "msg": "create 测试自动化"
-  },
-  {
-    "id": "log_erye72novs",
-    "ts": "2026-08-20T03:35:17.255Z",
-    "type": "caomei",
-    "msg": "compile",
-    "requirement": "创建一个用户登录流程"
-  },
-  {
-    "id": "log_tbjx6nr6kt",
-    "ts": "2026-08-20T03:35:17.250Z",
-    "type": "workflow",
-    "msg": "create 测试工作流"
-  },
-  {
-    "id": "operators_wmszq1h3j9",
-    "ts": "2026-08-20T03:35:17.238Z",
-    "type": "operator",
-    "msg": "register 测试算子_1787196917235"
-  },
-  {
-    "id": "log_5hwqk1jf77",
-    "ts": "2026-08-20T03:34:47.528Z",
-    "type": "caomei",
-    "msg": "compile",
-    "requirement": "test"
-  },
-  {
-    "id": "log_gtab3o78kb",
-    "ts": "2026-08-20T03:34:38.064Z",
-    "type": "automation",
-    "msg": "create 测试自动化"
-  },
-  {
-    "id": "log_0khf6pit98",
-    "ts": "2026-08-20T03:34:38.054Z",
-    "type": "caomei",
-    "msg": "compile",
-    "requirement": "创建一个用户登录流程"
-  },
-  {
-    "id": "log_aboncs71lb",
-    "ts": "2026-08-20T03:34:38.049Z",
-    "type": "workflow",
-    "msg": "create 测试工作流"
-  },
-  {
-    "id": "operators_ewbgz2lnol",
-    "ts": "2026-08-20T03:34:38.039Z",
-    "type": "operator",
-    "msg": "register 测试算子_1787196878036"
-  },
-  {
-    "id": "log_890bjmuo45",
-    "ts": "2026-08-20T03:33:15.317Z",
-    "type": "automation",
-    "msg": "create 测试自动化"
-  },
-  {
-    "id": "log_j43yxcp88g",
-    "ts": "2026-08-20T03:33:15.303Z",
-    "type": "caomei",
-    "msg": "compile",
-    "requirement": "创建一个用户登录流程"
-  },
-  {
-    "id": "log_84ob0w0y3g",
-    "ts": "2026-08-20T03:33:15.297Z",
-    "type": "workflow",
-    "msg": "create 测试工作流"
-  },
-  {
-    "id": "log_jde4a6jbz9",
-    "ts": "2026-08-20T03:30:32.654Z",
-    "type": "automation",
-    "msg": "create 测试自动化"
-  },
-  {
-    "id": "log_r1re9dwt7p",
-    "ts": "2026-08-20T03:30:32.637Z",
-    "type": "caomei",
-    "msg": "compile",
-    "requirement": "创建一个用户登录流程"
-  },
-  {
-    "id": "log_664530err9",
-    "ts": "2026-08-20T03:29:19.773Z",
-    "type": "expert",
-    "msg": "debate",
-    "rounds": 2
-  },
-  {
-    "id": "log_9lu7vdovo1",
-    "ts": "2026-08-20T03:29:19.770Z",
-    "type": "expert",
-    "msg": "multi-consult",
-    "experts": 2
-  },
-  {
-    "id": "log_dkyixlw3r3",
-    "ts": "2026-08-20T03:29:19.766Z",
-    "type": "expert",
-    "msg": "consult alg-expert",
-    "tokens": 1
-  },
-  {
-    "id": "log_1fvgqmp5j6",
-    "ts": "2026-08-20T03:29:19.754Z",
-    "type": "caomei",
-    "msg": "compile",
-    "requirement": "系统需要支持用户登录"
-  },
-  {
-    "id": "log_nae5plj1xl",
-    "ts": "2026-08-20T03:29:19.750Z",
-    "type": "automation",
-    "msg": "create test-automation-1787196559747"
-  },
-  {
-    "id": "log_9jhgbxsbn4",
-    "ts": "2026-08-20T03:29:19.721Z",
-    "type": "workflow",
-    "msg": "save test-workflow"
-  },
-  {
-    "id": "log_meqrg44d1a",
-    "ts": "2026-08-20T03:29:19.681Z",
-    "type": "execute",
-    "msg": "workflow executed",
-    "steps": 0
-  },
-  {
-    "id": "unit-test-1787196559674",
-    "ts": "2026-08-20T03:29:19.678Z",
-    "type": "operator",
-    "msg": "register test-op"
-  },
-  {
-    "id": "log_62ivyw825a",
-    "ts": "2026-08-20T03:28:49.649Z",
-    "type": "expert",
-    "msg": "debate",
-    "rounds": 2
-  },
-  {
-    "id": "log_8kt9es8ayq",
-    "ts": "2026-08-20T03:28:49.646Z",
-    "type": "expert",
-    "msg": "multi-consult",
-    "experts": 2
-  },
-  {
-    "id": "log_o93w30mga6",
-    "ts": "2026-08-20T03:28:49.644Z",
-    "type": "expert",
-    "msg": "consult alg-expert",
-    "tokens": 1
-  },
-  {
-    "id": "log_79g3ieee30",
-    "ts": "2026-08-20T03:28:49.636Z",
-    "type": "caomei",
-    "msg": "compile",
-    "requirement": "系统需要支持用户登录"
-  },
-  {
-    "id": "log_rh7m6xj89k",
-    "ts": "2026-08-20T03:28:49.633Z",
-    "type": "automation",
-    "msg": "create test-automation-1787196529629"
-  },
-  {
-    "id": "log_zgr4afqifn",
-    "ts": "2026-08-20T03:28:49.609Z",
-    "type": "workflow",
-    "msg": "save test-workflow"
-  },
-  {
-    "id": "log_lqu69ly7fn",
-    "ts": "2026-08-20T03:28:49.576Z",
-    "type": "execute",
-    "msg": "workflow executed",
-    "steps": 0
-  },
-  {
-    "id": "unit-test-1787196529570",
-    "ts": "2026-08-20T03:28:49.574Z",
-    "type": "operator",
-    "msg": "register test-op"
-  },
-  {
-    "id": "log_igod9cv2fd",
-    "ts": "2026-08-20T03:27:49.551Z",
-    "type": "expert",
-    "msg": "debate",
-    "rounds": 2
-  },
-  {
-    "id": "log_84v1uamdtp",
-    "ts": "2026-08-20T03:27:49.547Z",
-    "type": "expert",
-    "msg": "multi-consult",
-    "experts": 2
-  },
-  {
-    "id": "log_tc028b4n4r",
-    "ts": "2026-08-20T03:27:49.544Z",
-    "type": "expert",
-    "msg": "consult alg-expert",
-    "tokens": 1
-  },
-  {
-    "id": "log_7h46hfxrli",
-    "ts": "2026-08-20T03:27:49.533Z",
-    "type": "caomei",
-    "msg": "compile",
-    "requirement": "系统需要支持用户登录"
-  },
-  {
-    "id": "log_6xg2m61o20",
-    "ts": "2026-08-20T03:27:49.511Z",
-    "type": "workflow",
-    "msg": "save test-workflow"
-  },
-  {
-    "id": "log_praac90qg9",
-    "ts": "2026-08-20T03:27:49.473Z",
-    "type": "execute",
-    "msg": "workflow executed",
-    "steps": 0
-  },
-  {
-    "id": "unit-test-1787196469464",
-    "ts": "2026-08-20T03:27:49.469Z",
-    "type": "operator",
-    "msg": "register test-op"
-  },
-  {
-    "id": "log_6h5otpg5p1",
-    "ts": "2026-08-20T03:14:04.071Z",
-    "type": "expert",
-    "msg": "debate",
-    "rounds": 2
-  },
-  {
-    "id": "log_o7kwud321h",
-    "ts": "2026-08-20T03:14:04.064Z",
-    "type": "expert",
-    "msg": "multi-consult",
-    "experts": 3
-  },
-  {
-    "id": "log_jrkqo9gofv",
-    "ts": "2026-08-20T03:14:04.057Z",
-    "type": "expert",
-    "msg": "consult alg-expert",
-    "tokens": 1
-  },
-  {
-    "id": "test-expert",
-    "ts": "2026-08-20T03:04:25.080Z",
-    "type": "expert",
-    "msg": "register 测试专家"
-  },
-  {
-    "id": "log_5q5zeezqna",
-    "ts": "2026-08-20T03:04:25.075Z",
-    "type": "expert",
-    "msg": "debate",
-    "rounds": 2
-  },
-  {
-    "id": "log_epud14l0al",
-    "ts": "2026-08-20T03:04:25.072Z",
-    "type": "expert",
-    "msg": "multi-consult",
-    "experts": 2
-  },
-  {
-    "id": "log_ggdcj6mkgo",
-    "ts": "2026-08-20T03:04:25.068Z",
-    "type": "expert",
-    "msg": "consult alg-expert",
-    "tokens": 1
-  },
-  {
-    "id": "log_a9bj4ah3au",
-    "ts": "2026-08-20T03:03:56.546Z",
-    "type": "expert",
-    "msg": "debate",
-    "rounds": 2
-  },
-  {
-    "id": "log_zjgrvb3smh",
-    "ts": "2026-08-20T03:03:56.541Z",
-    "type": "expert",
-    "msg": "multi-consult",
-    "experts": 2
-  },
-  {
-    "id": "log_wwl5r7c2z5",
-    "ts": "2026-08-20T03:03:56.537Z",
-    "type": "expert",
-    "msg": "consult alg-expert",
-    "tokens": 1
-  },
-  {
-    "id": "log_0mhttlj39l",
-    "ts": "2026-08-20T03:00:48.351Z",
-    "type": "expert",
-    "msg": "multi-consult",
-    "experts": 2
-  },
-  {
-    "id": "log_mhhdwutt13",
-    "ts": "2026-08-20T03:00:32.984Z",
-    "type": "expert",
-    "msg": "consult alg-expert",
-    "tokens": 1
-  },
-  {
-    "id": "log_5mtlljf36h",
-    "ts": "2026-08-20T03:00:11.884Z",
-    "type": "expert",
-    "msg": "consult alg-expert",
-    "tokens": 1
-  },
-  {
-    "id": "log_vk4ozrnpod",
-    "ts": "2026-08-20T02:59:16.773Z",
-    "type": "expert",
-    "msg": "consult alg-expert",
-    "tokens": 1
-  },
-  {
-    "id": "log_xmnu55qc8n",
-    "ts": "2026-08-20T02:58:38.493Z",
-    "type": "expert",
-    "msg": "multi-consult",
-    "experts": 0
-  },
-  {
-    "id": "log_l9pej1hghe",
-    "ts": "2026-08-20T02:58:28.953Z",
-    "type": "expert",
-    "msg": "multi-consult",
-    "experts": 0
-  },
-  {
-    "id": "log_2t4p2i41kk",
-    "ts": "2026-08-20T02:58:19.603Z",
-    "type": "expert",
-    "msg": "consult alg-expert",
-    "tokens": 1
-  },
-  {
-    "id": "log_7p8e4xz0hj",
-    "ts": "2026-08-19T15:58:29.098Z",
-    "type": "automation",
-    "msg": "create test_auto"
-  },
-  {
-    "id": "log_qm511whxj2",
-    "ts": "2026-08-19T15:58:28.962Z",
-    "type": "caomei",
-    "msg": "compile",
-    "requirement": "用户登录功能"
-  },
-  {
-    "id": "test_op_v2",
-    "ts": "2026-08-19T15:58:28.823Z",
-    "type": "operator",
-    "msg": "register Test Op v2"
-  },
-  {
-    "id": "log_frjl4fn42g",
-    "ts": "2026-08-19T15:58:28.756Z",
-    "type": "execute",
-    "msg": "workflow executed",
-    "steps": 1
-  },
-  {
-    "id": "log_vfudr81x3f",
-    "ts": "2026-08-19T15:58:28.584Z",
+    "id": "log_owk6ath18q",
+    "ts": "2026-08-20T14:17:47.760Z",
     "type": "auto-sync",
     "msg": "auto sync tick",
-    "nodes": 23,
+    "nodes": 24,
     "edges": 29
   },
   {
-    "id": "log_q768xbcjmk",
-    "ts": "2026-08-19T15:58:25.573Z",
+    "id": "log_a770a558u2",
+    "ts": "2026-08-20T14:17:44.756Z",
     "type": "auto-sync",
     "msg": "auto sync tick",
-    "nodes": 23,
+    "nodes": 24,
     "edges": 29
   },
   {
-    "id": "log_rhcr9nonzr",
-    "ts": "2026-08-19T15:58:22.571Z",
+    "id": "log_55e97629a",
+    "ts": "2026-08-20T14:17:41.751Z",
     "type": "auto-sync",
     "msg": "auto sync tick",
-    "nodes": 23,
+    "nodes": 24,
     "edges": 29
   },
   {
-    "id": "log_7lnrq9cdjg",
-    "ts": "2026-08-19T15:58:19.565Z",
+    "id": "log_usfppikhd7",
+    "ts": "2026-08-20T14:17:38.741Z",
     "type": "auto-sync",
     "msg": "auto sync tick",
-    "nodes": 23,
+    "nodes": 24,
     "edges": 29
   },
   {
-    "id": "log_gcnhc54bzw",
-    "ts": "2026-08-19T15:58:16.585Z",
+    "id": "log_zu9ve51w8c",
+    "ts": "2026-08-20T14:17:35.737Z",
     "type": "auto-sync",
     "msg": "auto sync tick",
-    "nodes": 23,
+    "nodes": 24,
     "edges": 29
   },
   {
-    "id": "log_sx9fsn2thr",
-    "ts": "2026-08-19T15:58:13.553Z",
+    "id": "log_9p41kj8fbm",
+    "ts": "2026-08-20T14:17:32.727Z",
     "type": "auto-sync",
     "msg": "auto sync tick",
-    "nodes": 23,
+    "nodes": 24,
     "edges": 29
   },
   {
-    "id": "log_43at6ow8u7",
-    "ts": "2026-08-19T15:56:58.212Z",
+    "id": "log_gl1ejiiba0",
+    "ts": "2026-08-20T14:17:29.725Z",
     "type": "auto-sync",
     "msg": "auto sync tick",
-    "nodes": 23,
+    "nodes": 24,
     "edges": 29
   },
   {
-    "id": "log_vffn63hxyr",
-    "ts": "2026-08-19T15:56:55.198Z",
+    "id": "log_dqtzk1n6iw",
+    "ts": "2026-08-20T14:17:26.713Z",
     "type": "auto-sync",
     "msg": "auto sync tick",
-    "nodes": 23,
+    "nodes": 24,
     "edges": 29
   },
   {
-    "id": "log_meoj5x2wfr",
-    "ts": "2026-08-19T15:56:52.185Z",
+    "id": "log_8qsdf4wzml",
+    "ts": "2026-08-20T14:17:23.703Z",
     "type": "auto-sync",
     "msg": "auto sync tick",
-    "nodes": 23,
+    "nodes": 24,
     "edges": 29
   },
   {
-    "id": "log_xnve8ke8ov",
-    "ts": "2026-08-19T15:56:49.374Z",
-    "type": "caomei",
-    "msg": "compile",
-    "requirement": "用户登录功能"
+    "id": "log_ea1fdwm2uu",
+    "ts": "2026-08-20T14:17:20.692Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
   },
   {
-    "id": "test_op",
-    "ts": "2026-08-19T15:56:49.240Z",
-    "type": "operator",
-    "msg": "register Test"
+    "id": "log_7lr8xm3n35",
+    "ts": "2026-08-20T14:17:17.677Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
   },
   {
-    "id": "operators_tsn2t9agqn",
-    "ts": "2026-08-19T15:04:50.408Z",
-    "type": "operator",
-    "msg": "register 测试算子X"
+    "id": "log_o97gastzqw",
+    "ts": "2026-08-20T14:17:14.667Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_h9oqmbnuba",
+    "ts": "2026-08-20T14:17:11.665Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_czk50g091p",
+    "ts": "2026-08-20T14:17:08.655Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_b89tyhb81k",
+    "ts": "2026-08-20T14:17:05.654Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_rtnbe88iu3",
+    "ts": "2026-08-20T14:17:02.653Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_kt8bv5xxl3",
+    "ts": "2026-08-20T14:16:59.636Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_40rhlyaqwg",
+    "ts": "2026-08-20T14:16:56.630Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_z395muq4g4",
+    "ts": "2026-08-20T14:16:53.627Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_vxa0s86a2v",
+    "ts": "2026-08-20T14:16:50.617Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_lqob4frpoz",
+    "ts": "2026-08-20T14:16:47.612Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_7vobl1cbfr",
+    "ts": "2026-08-20T14:16:44.607Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_xrvq0k4yc7",
+    "ts": "2026-08-20T14:16:41.607Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_f362kb3nnk",
+    "ts": "2026-08-20T14:16:38.597Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_7wxdkotvnb",
+    "ts": "2026-08-20T14:16:35.596Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_og2gp0s20e",
+    "ts": "2026-08-20T14:16:32.587Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_w70axois45",
+    "ts": "2026-08-20T14:16:29.577Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_3bglnv86ur",
+    "ts": "2026-08-20T14:16:26.572Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_2yvplulq80",
+    "ts": "2026-08-20T14:16:23.566Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_7kissfj4yr",
+    "ts": "2026-08-20T14:16:20.554Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_r8uj99m026",
+    "ts": "2026-08-20T14:16:17.549Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_uo6n0bxgk1",
+    "ts": "2026-08-20T14:16:14.540Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_itaiwjs7fl",
+    "ts": "2026-08-20T14:16:11.537Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_o0o2ppi08m",
+    "ts": "2026-08-20T14:16:08.521Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_8enxdd2fxq",
+    "ts": "2026-08-20T14:16:05.511Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_k4v3meqssn",
+    "ts": "2026-08-20T14:16:02.511Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_hm0rl31x8j",
+    "ts": "2026-08-20T14:15:59.497Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_s56wkhltwm",
+    "ts": "2026-08-20T14:15:56.485Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_xrqrneuesr",
+    "ts": "2026-08-20T14:15:53.485Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ko9hzpwckt",
+    "ts": "2026-08-20T14:15:50.477Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_4x9e6hsefm",
+    "ts": "2026-08-20T14:15:47.465Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_u8zud4sc0x",
+    "ts": "2026-08-20T14:15:44.452Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_nthtwbkew4",
+    "ts": "2026-08-20T14:15:41.442Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_r4aw5vq4kr",
+    "ts": "2026-08-20T14:15:38.437Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_7hzg7z4ymn",
+    "ts": "2026-08-20T14:15:35.435Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_o3shgiejca",
+    "ts": "2026-08-20T14:15:32.427Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_hkgyk8ues3",
+    "ts": "2026-08-20T14:15:29.420Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_8mve85tdj5",
+    "ts": "2026-08-20T14:15:26.414Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_249ifahg0g",
+    "ts": "2026-08-20T14:15:23.411Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_5gl2hryc1k",
+    "ts": "2026-08-20T14:15:20.407Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_l1ijgxk4s2",
+    "ts": "2026-08-20T14:15:17.400Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_09s5o32xee",
+    "ts": "2026-08-20T14:15:14.388Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ee8964cbnz",
+    "ts": "2026-08-20T14:15:11.384Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_z7n29eu8r6",
+    "ts": "2026-08-20T14:15:08.383Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_45biftw2u6",
+    "ts": "2026-08-20T14:15:05.377Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_gdoamyt9v5",
+    "ts": "2026-08-20T14:15:02.368Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_pozcsoxodj",
+    "ts": "2026-08-20T14:14:59.362Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_u78vdpvxos",
+    "ts": "2026-08-20T14:14:56.355Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_vktnppz9yy",
+    "ts": "2026-08-20T14:14:53.342Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_nwqnilwh7k",
+    "ts": "2026-08-20T14:14:50.337Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_nafufl7j0a",
+    "ts": "2026-08-20T14:14:47.322Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_p2yrqe9rys",
+    "ts": "2026-08-20T14:14:44.319Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_clxjjbfetf",
+    "ts": "2026-08-20T14:14:41.310Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_v6ivn3gvx4",
+    "ts": "2026-08-20T14:14:38.309Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_jj3u3p17mq",
+    "ts": "2026-08-20T14:14:35.307Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_9hgqiroju8",
+    "ts": "2026-08-20T14:14:32.290Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_1nklgt37gb",
+    "ts": "2026-08-20T14:14:29.288Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_qun1f6dj1v",
+    "ts": "2026-08-20T14:14:26.286Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_9ln17e8b76",
+    "ts": "2026-08-20T14:14:23.279Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_p65u0sw3so",
+    "ts": "2026-08-20T14:14:20.268Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_5nd9nsa2xn",
+    "ts": "2026-08-20T14:14:17.257Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_u85ocozvfu",
+    "ts": "2026-08-20T14:14:14.253Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_1g0zk5uszp",
+    "ts": "2026-08-20T14:14:11.238Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_2kqqbiv9o9",
+    "ts": "2026-08-20T14:14:08.235Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ky97d1ny5j",
+    "ts": "2026-08-20T14:14:05.234Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_9a3toh1tuh",
+    "ts": "2026-08-20T14:14:02.233Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_xmvhtxyq7b",
+    "ts": "2026-08-20T14:13:59.227Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_5kgiz6nafc",
+    "ts": "2026-08-20T14:13:56.215Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_iwd7geyklo",
+    "ts": "2026-08-20T14:13:53.207Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_f8tpnqq1np",
+    "ts": "2026-08-20T14:13:50.203Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_bn99z0vjc2",
+    "ts": "2026-08-20T14:13:47.197Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_4fsjw9nm23",
+    "ts": "2026-08-20T14:13:44.185Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_wb1hex4iic",
+    "ts": "2026-08-20T14:13:41.182Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_edu41bejwv",
+    "ts": "2026-08-20T14:13:38.176Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_bitmzuk6p9",
+    "ts": "2026-08-20T14:13:35.167Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_pup9czd70g",
+    "ts": "2026-08-20T14:13:32.158Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_sappqa6iea",
+    "ts": "2026-08-20T14:13:29.156Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_v621sdhlz4",
+    "ts": "2026-08-20T14:13:26.151Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_6qi4d1encw",
+    "ts": "2026-08-20T14:13:23.144Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_s5ppxtxwfq",
+    "ts": "2026-08-20T14:13:20.142Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_l8n4erx6go",
+    "ts": "2026-08-20T14:13:17.129Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_jwrxql3yk4",
+    "ts": "2026-08-20T14:13:14.127Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_kwqgyf5r3z",
+    "ts": "2026-08-20T14:13:11.118Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_2ftw125ic5",
+    "ts": "2026-08-20T14:13:08.110Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_skgh5yd0ky",
+    "ts": "2026-08-20T14:13:05.100Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_vjpfoa0ytr",
+    "ts": "2026-08-20T14:13:02.094Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_3mys3dqwvr",
+    "ts": "2026-08-20T14:12:59.085Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_4h164fdzg2",
+    "ts": "2026-08-20T14:12:56.077Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_b4b7t5gxyq",
+    "ts": "2026-08-20T14:12:53.066Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_zw9o1juudt",
+    "ts": "2026-08-20T14:12:50.057Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_vm17x12wou",
+    "ts": "2026-08-20T14:12:47.053Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_dym83t34sk",
+    "ts": "2026-08-20T14:12:44.039Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_lksp8koyan",
+    "ts": "2026-08-20T14:12:41.035Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_xhign9erme",
+    "ts": "2026-08-20T14:12:38.034Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_obk55tfjuv",
+    "ts": "2026-08-20T14:12:35.023Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_tqmcmke0c0",
+    "ts": "2026-08-20T14:12:32.019Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ubub7x8ekr",
+    "ts": "2026-08-20T14:12:29.016Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_d4f51d552p",
+    "ts": "2026-08-20T14:12:26.010Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_qliacxb9gy",
+    "ts": "2026-08-20T14:12:23.006Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_k7b5wdit1g",
+    "ts": "2026-08-20T14:12:19.998Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_io43i93er2",
+    "ts": "2026-08-20T14:12:16.992Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_tr7f3ayrsk",
+    "ts": "2026-08-20T14:12:13.982Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_426n13tadx",
+    "ts": "2026-08-20T14:12:10.969Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_o0u85xu2aq",
+    "ts": "2026-08-20T14:12:07.965Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_16a6qiodfh",
+    "ts": "2026-08-20T14:12:04.952Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ni1twthf6g",
+    "ts": "2026-08-20T14:12:01.941Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_1d0llg1mmv",
+    "ts": "2026-08-20T14:11:58.939Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_qptx8lky7p",
+    "ts": "2026-08-20T14:11:55.925Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_28j9m6gcrb",
+    "ts": "2026-08-20T14:11:52.915Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_6z9gc6z5v0",
+    "ts": "2026-08-20T14:11:49.903Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_9mln83e20z",
+    "ts": "2026-08-20T14:11:46.897Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ktpn6r05od",
+    "ts": "2026-08-20T14:11:43.880Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_tv7tgievgs",
+    "ts": "2026-08-20T14:11:40.875Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_t1hcg8xjw4",
+    "ts": "2026-08-20T14:11:37.865Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_xu05yttdlu",
+    "ts": "2026-08-20T14:11:34.862Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_1gdjh3su2f",
+    "ts": "2026-08-20T14:11:31.858Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_3pixsuodtq",
+    "ts": "2026-08-20T14:11:28.844Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ik14x4wmzv",
+    "ts": "2026-08-20T14:11:25.828Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_irrykwr32b",
+    "ts": "2026-08-20T14:11:22.826Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_7cw4meopak",
+    "ts": "2026-08-20T14:11:19.823Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_c2q02lclx0",
+    "ts": "2026-08-20T14:11:16.818Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_h6ajg6y63j",
+    "ts": "2026-08-20T14:11:13.804Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_21okdhrij8",
+    "ts": "2026-08-20T14:11:10.792Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_61mxbk6q56",
+    "ts": "2026-08-20T14:11:07.778Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_hx336a661z",
+    "ts": "2026-08-20T14:11:04.774Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_o8bo8wr7l1",
+    "ts": "2026-08-20T14:11:01.772Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_yzhasdnab6",
+    "ts": "2026-08-20T14:10:58.764Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_xq5kp6wev5",
+    "ts": "2026-08-20T14:10:55.756Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_t1d13ydazh",
+    "ts": "2026-08-20T14:10:52.747Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_jven1ldsh5",
+    "ts": "2026-08-20T14:10:49.742Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_3zj52gb41g",
+    "ts": "2026-08-20T14:10:46.728Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_04zg13rnih",
+    "ts": "2026-08-20T14:10:43.716Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_au3hf78z3m",
+    "ts": "2026-08-20T14:10:40.705Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_yg6gftmgqc",
+    "ts": "2026-08-20T14:10:37.692Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_oy7ov4w7ik",
+    "ts": "2026-08-20T14:10:34.685Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_fhkl4n7zsa",
+    "ts": "2026-08-20T14:10:31.673Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_9pjxl7q223",
+    "ts": "2026-08-20T14:10:28.663Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_netsbqgtkc",
+    "ts": "2026-08-20T14:10:25.657Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_sr1jjklomm",
+    "ts": "2026-08-20T14:10:22.644Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_vby0zp6aey",
+    "ts": "2026-08-20T14:10:19.632Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_wizawaysgq",
+    "ts": "2026-08-20T14:10:16.630Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_1qsakqk7vg",
+    "ts": "2026-08-20T14:10:13.629Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_v9eb9bh1n5",
+    "ts": "2026-08-20T14:10:10.624Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_tkcultozb5",
+    "ts": "2026-08-20T14:10:07.609Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_5gt9t3nhe7",
+    "ts": "2026-08-20T14:10:04.597Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_yakw9pt1xq",
+    "ts": "2026-08-20T14:10:01.587Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_b82kn9888u",
+    "ts": "2026-08-20T14:09:58.581Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ib8jnrxx19",
+    "ts": "2026-08-20T14:09:55.571Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_sdn0wi0f56",
+    "ts": "2026-08-20T14:09:52.568Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_elz4hctrp4",
+    "ts": "2026-08-20T14:09:49.562Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_3khjyvq9wb",
+    "ts": "2026-08-20T14:09:46.551Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_932axs7cpa",
+    "ts": "2026-08-20T14:09:43.551Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_mgh7qk13ti",
+    "ts": "2026-08-20T14:09:40.549Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_kpivgdkafp",
+    "ts": "2026-08-20T14:09:37.546Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_rhnoq65t4v",
+    "ts": "2026-08-20T14:09:34.535Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_teh3x8m0b8",
+    "ts": "2026-08-20T14:09:31.533Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_iv6l4drkix",
+    "ts": "2026-08-20T14:09:28.527Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_t276b5pjzp",
+    "ts": "2026-08-20T14:09:25.516Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_zitq04m3nv",
+    "ts": "2026-08-20T14:09:22.502Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_g5enbavk3v",
+    "ts": "2026-08-20T14:09:19.487Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_0lqt5e57yx",
+    "ts": "2026-08-20T14:09:16.474Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_6vyt7ao5nu",
+    "ts": "2026-08-20T14:09:13.462Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_wkvv5uk9qg",
+    "ts": "2026-08-20T14:09:10.445Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_dpcogrwem",
+    "ts": "2026-08-20T14:09:07.442Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_3vcjj83sim",
+    "ts": "2026-08-20T14:09:04.432Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_vvgt0rreox",
+    "ts": "2026-08-20T14:09:01.430Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_r9bnbn81y7",
+    "ts": "2026-08-20T14:08:58.417Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_jxcor9n2r1",
+    "ts": "2026-08-20T14:08:55.415Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_7l5oyv6pxx",
+    "ts": "2026-08-20T14:08:52.412Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_bja2jdxkr7",
+    "ts": "2026-08-20T14:08:49.409Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_1hpfbqgrjw",
+    "ts": "2026-08-20T14:08:46.405Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ua1gf6jxg2",
+    "ts": "2026-08-20T14:08:43.402Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_r9r49c7wmv",
+    "ts": "2026-08-20T14:08:40.391Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_g1l4w3iaxb",
+    "ts": "2026-08-20T14:08:37.384Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_otcg4tcz0c",
+    "ts": "2026-08-20T14:08:34.375Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_cth2jzbtsg",
+    "ts": "2026-08-20T14:08:31.369Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ddknhbfc9o",
+    "ts": "2026-08-20T14:08:28.363Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_0cybhsg10y",
+    "ts": "2026-08-20T14:08:25.352Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_m269npr0dy",
+    "ts": "2026-08-20T14:08:22.351Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_bnrf96qvag",
+    "ts": "2026-08-20T14:08:19.338Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_8dmz77kecj",
+    "ts": "2026-08-20T14:08:16.338Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_1g3dfqvijk",
+    "ts": "2026-08-20T14:08:13.329Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_dbdm0ktvp5",
+    "ts": "2026-08-20T14:08:10.316Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_5hsazb2q93",
+    "ts": "2026-08-20T14:08:07.310Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_0i9n8r39do",
+    "ts": "2026-08-20T14:08:04.304Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_hrlxnig226",
+    "ts": "2026-08-20T14:08:01.296Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_t0x0vljo5x",
+    "ts": "2026-08-20T14:07:58.282Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_5i9iobldk0",
+    "ts": "2026-08-20T14:07:55.281Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_md87uj8d9w",
+    "ts": "2026-08-20T14:07:52.276Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_xfgq6rs2cz",
+    "ts": "2026-08-20T14:07:49.262Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_fms1nm3xqc",
+    "ts": "2026-08-20T14:07:46.252Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_qlfams8hm9",
+    "ts": "2026-08-20T14:07:43.251Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_y7c06yk07m",
+    "ts": "2026-08-20T14:07:40.245Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_zsbsuqiur5",
+    "ts": "2026-08-20T14:07:37.245Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_lo1r2uji7x",
+    "ts": "2026-08-20T14:07:34.242Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_7azhtcwxvk",
+    "ts": "2026-08-20T14:07:31.232Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_w9lqeaij52",
+    "ts": "2026-08-20T14:07:28.233Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_uaatkm5nbe",
+    "ts": "2026-08-20T14:07:25.228Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_25yp33vmax",
+    "ts": "2026-08-20T14:07:22.227Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_wi72iml0xj",
+    "ts": "2026-08-20T14:07:19.222Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_z14rsed3qj",
+    "ts": "2026-08-20T14:07:16.210Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_so1j8b11mp",
+    "ts": "2026-08-20T14:07:13.195Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_yky9jp9151",
+    "ts": "2026-08-20T14:07:10.187Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_fbdywthroz",
+    "ts": "2026-08-20T14:07:07.187Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_av9f0tx02b",
+    "ts": "2026-08-20T14:07:04.173Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_j7x0yinz0x",
+    "ts": "2026-08-20T14:07:01.167Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_9ielt70lls",
+    "ts": "2026-08-20T14:06:58.165Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_3pi0kqv34z",
+    "ts": "2026-08-20T14:06:55.150Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_tfjo8760me",
+    "ts": "2026-08-20T14:06:52.146Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_wl5x0y25yn",
+    "ts": "2026-08-20T14:06:49.144Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_hfxg3fsrf6",
+    "ts": "2026-08-20T14:06:46.140Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_hvqt3fxhwi",
+    "ts": "2026-08-20T14:06:43.140Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_5mvo0ly21h",
+    "ts": "2026-08-20T14:06:40.131Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_rfi8y9wyaa",
+    "ts": "2026-08-20T14:06:37.124Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_1gecxhfxeg",
+    "ts": "2026-08-20T14:06:35.710Z",
+    "type": "task",
+    "msg": "auto-create",
+    "task_id": "task_k78p5fqh1r",
+    "title": "帮我设计一个企业官网的技术架构",
+    "auto_exec": true
+  },
+  {
+    "id": "log_5yg6zc91r6",
+    "ts": "2026-08-20T14:06:34.115Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_8tl21wlgi3",
+    "ts": "2026-08-20T14:06:31.110Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ixmpaotxd9",
+    "ts": "2026-08-20T14:06:28.106Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ma1iyh7g27",
+    "ts": "2026-08-20T14:06:25.099Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_nmnxji6qf2",
+    "ts": "2026-08-20T14:06:22.095Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ro5z7p5eme",
+    "ts": "2026-08-20T14:06:19.080Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_xgnob26a37",
+    "ts": "2026-08-20T14:06:16.079Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_cvdl7mf5v1",
+    "ts": "2026-08-20T14:06:13.079Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_nugjf0reyh",
+    "ts": "2026-08-20T14:06:10.065Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_s7ni17w5e2",
+    "ts": "2026-08-20T14:06:07.053Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_v0ot3aou6l",
+    "ts": "2026-08-20T14:06:04.038Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_7d62buboda",
+    "ts": "2026-08-20T14:06:01.026Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_2nug7v2x83",
+    "ts": "2026-08-20T14:05:58.021Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_q11n331ea5",
+    "ts": "2026-08-20T14:05:55.015Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_8lixnqs7mc",
+    "ts": "2026-08-20T14:05:52.001Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_drtnri0d0z",
+    "ts": "2026-08-20T14:05:48.997Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ac6ch70axe",
+    "ts": "2026-08-20T14:05:45.983Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_6dou5d47q1",
+    "ts": "2026-08-20T14:05:42.976Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_67tqgyjivi",
+    "ts": "2026-08-20T14:05:39.974Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_11d3uc06fd",
+    "ts": "2026-08-20T14:05:36.966Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_c5zfzciezj",
+    "ts": "2026-08-20T14:05:33.954Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_fr1xtl9atv",
+    "ts": "2026-08-20T14:05:30.938Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_xv00qsla47",
+    "ts": "2026-08-20T14:05:27.930Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_7t3usmvc0u",
+    "ts": "2026-08-20T14:05:24.915Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_qjmhozgiwy",
+    "ts": "2026-08-20T14:05:21.910Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_zfxp4piung",
+    "ts": "2026-08-20T14:05:18.910Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ee27qcqqvb",
+    "ts": "2026-08-20T14:05:15.900Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_tebhnwe4so",
+    "ts": "2026-08-20T14:05:12.900Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_vwjhf74vbh",
+    "ts": "2026-08-20T14:05:09.892Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_9bqkz59prl",
+    "ts": "2026-08-20T14:05:06.885Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ggw7kds16k",
+    "ts": "2026-08-20T14:05:03.879Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_4qt1sjgmpb",
+    "ts": "2026-08-20T14:05:00.871Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_s4gkqldj6h",
+    "ts": "2026-08-20T14:04:57.865Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ht2yx2tbs9",
+    "ts": "2026-08-20T14:04:54.853Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_9e8w08qyfe",
+    "ts": "2026-08-20T14:04:51.847Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_3qwgpj4blc",
+    "ts": "2026-08-20T14:04:48.844Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_oray0s19vk",
+    "ts": "2026-08-20T14:04:45.841Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_73ft78nsrn",
+    "ts": "2026-08-20T14:04:42.841Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_dl7qkc8lnp",
+    "ts": "2026-08-20T14:04:39.840Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_9r43w7vlak",
+    "ts": "2026-08-20T14:04:36.837Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_g0znuov91b",
+    "ts": "2026-08-20T14:04:33.833Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_h60w5w7opx",
+    "ts": "2026-08-20T14:04:30.819Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_7hra2cccl0",
+    "ts": "2026-08-20T14:04:27.807Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_o0yd9ptldm",
+    "ts": "2026-08-20T14:04:24.799Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_d0z91jyabi",
+    "ts": "2026-08-20T14:04:21.793Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_9enl4fylp3",
+    "ts": "2026-08-20T14:04:18.793Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ifxa6ynb0g",
+    "ts": "2026-08-20T14:04:15.789Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_9104om47iv",
+    "ts": "2026-08-20T14:04:12.775Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_cbgpwbllx0",
+    "ts": "2026-08-20T14:04:09.766Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_0e6bv0uidc",
+    "ts": "2026-08-20T14:04:06.755Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_174uqr71c0",
+    "ts": "2026-08-20T14:04:03.746Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_q3tfm0qmo9",
+    "ts": "2026-08-20T14:04:00.738Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_rm49vqo33m",
+    "ts": "2026-08-20T14:03:57.727Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_82ju6wcoxs",
+    "ts": "2026-08-20T14:03:54.715Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_8laslrauhd",
+    "ts": "2026-08-20T14:03:51.711Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_eqxfbp57ue",
+    "ts": "2026-08-20T14:03:48.708Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_4i8k7wsi20",
+    "ts": "2026-08-20T14:03:45.703Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_1jmnwjptml",
+    "ts": "2026-08-20T14:03:42.694Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_gp3viqi1mk",
+    "ts": "2026-08-20T14:03:39.689Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_jygpyawic8",
+    "ts": "2026-08-20T14:03:36.682Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_nrmici10gz",
+    "ts": "2026-08-20T14:03:33.678Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_wiasgk7rnw",
+    "ts": "2026-08-20T14:03:30.671Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_1a7gzkx2n6",
+    "ts": "2026-08-20T14:03:27.667Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_2gy89puejo",
+    "ts": "2026-08-20T14:03:24.659Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_4usakve33i",
+    "ts": "2026-08-20T14:03:21.658Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_21akzjxpiw",
+    "ts": "2026-08-20T14:03:18.651Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_dfoo3mzi65",
+    "ts": "2026-08-20T14:03:15.638Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_2s3krvbnlw",
+    "ts": "2026-08-20T14:03:12.639Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_4i7555wsd4",
+    "ts": "2026-08-20T14:03:09.638Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_gbcfddyi3t",
+    "ts": "2026-08-20T14:03:06.623Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_2b76h0tcff",
+    "ts": "2026-08-20T14:03:03.609Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_awm63jz2lb",
+    "ts": "2026-08-20T14:03:00.608Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_3d71yynhe4",
+    "ts": "2026-08-20T14:02:57.602Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_dany2g3bj1",
+    "ts": "2026-08-20T14:02:54.592Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_hrwwxgngne",
+    "ts": "2026-08-20T14:02:51.588Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_tl61d9tfuh",
+    "ts": "2026-08-20T14:02:48.575Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_2kab8cfe29",
+    "ts": "2026-08-20T14:02:45.561Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_5uw6oco7eo",
+    "ts": "2026-08-20T14:02:42.555Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ka30dtbyyc",
+    "ts": "2026-08-20T14:02:39.550Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_p0hyolc81h",
+    "ts": "2026-08-20T14:02:36.549Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_v9ujz8a6nv",
+    "ts": "2026-08-20T14:02:33.534Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_kk4n7qo9ow",
+    "ts": "2026-08-20T14:02:30.521Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_8f8mxecocn",
+    "ts": "2026-08-20T14:02:27.508Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_30bmsfdkov",
+    "ts": "2026-08-20T14:02:24.504Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_g8415gpsgt",
+    "ts": "2026-08-20T14:02:21.503Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_5gejk6zm6z",
+    "ts": "2026-08-20T14:02:18.487Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_w34wnkfprr",
+    "ts": "2026-08-20T14:02:15.477Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_lkciudz5ay",
+    "ts": "2026-08-20T14:02:12.472Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_pprheu33nw",
+    "ts": "2026-08-20T14:02:09.469Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_0hsxvdxghf",
+    "ts": "2026-08-20T14:02:06.461Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_aeec2njwdm",
+    "ts": "2026-08-20T14:02:03.460Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_gpk59f6vhq",
+    "ts": "2026-08-20T14:02:00.427Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_83gng15lm8",
+    "ts": "2026-08-20T14:01:57.422Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ypc5u67b5t",
+    "ts": "2026-08-20T14:01:54.416Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_s1agbdbwif",
+    "ts": "2026-08-20T14:01:51.404Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_1nvbtg5g86",
+    "ts": "2026-08-20T14:01:48.396Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_rpednsckam",
+    "ts": "2026-08-20T14:01:45.393Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ann61774go",
+    "ts": "2026-08-20T14:01:42.386Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_5c056p2px9",
+    "ts": "2026-08-20T14:01:39.379Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_6lwkfsozgi",
+    "ts": "2026-08-20T14:01:36.373Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_omv3pdylr2",
+    "ts": "2026-08-20T14:01:33.363Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_xkyld4yojh",
+    "ts": "2026-08-20T14:01:30.362Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_i4dxieci4y",
+    "ts": "2026-08-20T14:01:27.359Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_lfe9uoe7sx",
+    "ts": "2026-08-20T14:01:24.348Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_efg2jdvecs",
+    "ts": "2026-08-20T14:01:21.344Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_lgqnawbbfn",
+    "ts": "2026-08-20T14:01:18.334Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_r3b0da562b",
+    "ts": "2026-08-20T14:01:15.324Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_jtytmskupg",
+    "ts": "2026-08-20T14:01:12.322Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_vyyo44j4qu",
+    "ts": "2026-08-20T14:01:09.317Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ef9hii2ak0",
+    "ts": "2026-08-20T14:01:06.308Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_44i72lnwev",
+    "ts": "2026-08-20T14:01:03.302Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_223e6gyhnf",
+    "ts": "2026-08-20T14:01:00.290Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_xlz4hmvwrp",
+    "ts": "2026-08-20T14:00:57.286Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_qwxcx90fgr",
+    "ts": "2026-08-20T14:00:54.272Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_hfor5gv2uk",
+    "ts": "2026-08-20T14:00:51.265Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_t9mp86pq1n",
+    "ts": "2026-08-20T14:00:48.256Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_m1ny4kpt3j",
+    "ts": "2026-08-20T14:00:45.247Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_smp776hhlv",
+    "ts": "2026-08-20T14:00:42.242Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_bjotv3f15m",
+    "ts": "2026-08-20T14:00:39.241Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_dyyxwqdy6s",
+    "ts": "2026-08-20T14:00:36.230Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_01b6e43fyx",
+    "ts": "2026-08-20T14:00:33.227Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_vknxrt07dx",
+    "ts": "2026-08-20T14:00:30.227Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_i5tyeuewnq",
+    "ts": "2026-08-20T14:00:27.226Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_0jlo1chxzv",
+    "ts": "2026-08-20T14:00:24.217Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_xcl1rgix8w",
+    "ts": "2026-08-20T14:00:21.205Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_0cdfu2z6it",
+    "ts": "2026-08-20T14:00:18.199Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ronubn89gi",
+    "ts": "2026-08-20T14:00:15.192Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_gxan55wiq2",
+    "ts": "2026-08-20T14:00:12.188Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_vsmyuvuwga",
+    "ts": "2026-08-20T14:00:09.185Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_1xawufqjbj",
+    "ts": "2026-08-20T14:00:06.178Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ebrevn5wlo",
+    "ts": "2026-08-20T14:00:03.171Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_veyr37v2fr",
+    "ts": "2026-08-20T14:00:00.155Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_cvcjwzyovh",
+    "ts": "2026-08-20T13:59:57.156Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_55p20a7i7x",
+    "ts": "2026-08-20T13:59:54.140Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_d2tq54qygy",
+    "ts": "2026-08-20T13:59:51.126Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_myd34iij07",
+    "ts": "2026-08-20T13:59:48.114Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_dzsdw8czjs",
+    "ts": "2026-08-20T13:59:45.107Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_nqwsh0jngp",
+    "ts": "2026-08-20T13:59:42.097Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_iwrkxgnd3e",
+    "ts": "2026-08-20T13:59:39.087Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_21rciapdj0",
+    "ts": "2026-08-20T13:59:36.076Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_mx7nvcug3d",
+    "ts": "2026-08-20T13:59:33.072Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_uhhvpeujd4",
+    "ts": "2026-08-20T13:59:30.066Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_bcs3g0cwaa",
+    "ts": "2026-08-20T13:59:27.060Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_umdwspg7h7",
+    "ts": "2026-08-20T13:59:24.056Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_2gk1qxg9xw",
+    "ts": "2026-08-20T13:59:21.055Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_rdff5gerbb",
+    "ts": "2026-08-20T13:59:18.041Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_bhng00haty",
+    "ts": "2026-08-20T13:59:15.029Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_20fom2imex",
+    "ts": "2026-08-20T13:59:12.023Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_lo0fxgmb3t",
+    "ts": "2026-08-20T13:59:09.022Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_8khnfjorib",
+    "ts": "2026-08-20T13:59:06.015Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_guxc6evks0",
+    "ts": "2026-08-20T13:59:03.006Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_s7cogskxxq",
+    "ts": "2026-08-20T13:59:00.006Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_o01aize75o",
+    "ts": "2026-08-20T13:58:56.999Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_4b4ewkqvup",
+    "ts": "2026-08-20T13:58:53.995Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_05iaycxdbl",
+    "ts": "2026-08-20T13:58:50.984Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_u4nfte7ze9",
+    "ts": "2026-08-20T13:58:47.978Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_btkl5hh930",
+    "ts": "2026-08-20T13:58:44.978Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_9j18cps1ik",
+    "ts": "2026-08-20T13:58:41.972Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_hvi49kgaf0",
+    "ts": "2026-08-20T13:58:39.001Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_lno2km4b8f",
+    "ts": "2026-08-20T13:58:35.956Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_tvwmv3eqpg",
+    "ts": "2026-08-20T13:58:32.953Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_rtcuwmz5no",
+    "ts": "2026-08-20T13:58:29.947Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ynsy5i697a",
+    "ts": "2026-08-20T13:58:26.934Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_slojyl8i1v",
+    "ts": "2026-08-20T13:58:23.926Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_8z5i4g36bm",
+    "ts": "2026-08-20T13:58:20.922Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_t2dzq20tcr",
+    "ts": "2026-08-20T13:58:17.911Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_8sby935ygz",
+    "ts": "2026-08-20T13:58:14.906Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_02kpre1opx",
+    "ts": "2026-08-20T13:58:11.906Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_fvpev0rvef",
+    "ts": "2026-08-20T13:58:08.895Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_jlhr181p25",
+    "ts": "2026-08-20T13:58:05.880Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_2h5bic4qgk",
+    "ts": "2026-08-20T13:58:02.869Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_e25ydswrvy",
+    "ts": "2026-08-20T13:57:59.865Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_jttgt3werf",
+    "ts": "2026-08-20T13:57:56.860Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_emg797jbj5",
+    "ts": "2026-08-20T13:57:53.849Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_2zuih2y40y",
+    "ts": "2026-08-20T13:57:50.835Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_u554g3ro8m",
+    "ts": "2026-08-20T13:57:47.831Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_w3f8eatm12",
+    "ts": "2026-08-20T13:57:44.830Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_dzz33ap08h",
+    "ts": "2026-08-20T13:57:41.815Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_xkunv03xxj",
+    "ts": "2026-08-20T13:57:38.801Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_lwiunglrwv",
+    "ts": "2026-08-20T13:57:35.796Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_a8c9ttu22i",
+    "ts": "2026-08-20T13:57:32.794Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_x57ttrf2m4",
+    "ts": "2026-08-20T13:57:29.792Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_oxvw2nrcx0",
+    "ts": "2026-08-20T13:57:26.780Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_26ac50214a",
+    "ts": "2026-08-20T13:57:23.776Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ph2c8gtigo",
+    "ts": "2026-08-20T13:57:20.773Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_8z0ni4anfx",
+    "ts": "2026-08-20T13:57:17.772Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_5le8yavdwb",
+    "ts": "2026-08-20T13:57:14.765Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_nt8o84xkws",
+    "ts": "2026-08-20T13:57:11.757Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_cst595keqc",
+    "ts": "2026-08-20T13:57:08.748Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_6k8ebtk0od",
+    "ts": "2026-08-20T13:57:05.737Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_2wl1ilod3s",
+    "ts": "2026-08-20T13:57:02.736Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_4wtk388i9z",
+    "ts": "2026-08-20T13:56:59.728Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_03xp672o1k",
+    "ts": "2026-08-20T13:56:56.714Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_0bf9iwyso2",
+    "ts": "2026-08-20T13:56:53.706Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_307ekvhb25",
+    "ts": "2026-08-20T13:56:50.701Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_7gjf3e1e1s",
+    "ts": "2026-08-20T13:56:47.695Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_6sqe4id73o",
+    "ts": "2026-08-20T13:56:44.687Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_shylu1utpc",
+    "ts": "2026-08-20T13:56:41.679Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_25m5gaym0r",
+    "ts": "2026-08-20T13:56:38.678Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_27oxr3qs49",
+    "ts": "2026-08-20T13:56:35.675Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_03047r24ly",
+    "ts": "2026-08-20T13:56:32.674Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_62zij19qul",
+    "ts": "2026-08-20T13:56:29.666Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_zoj7eu6ecq",
+    "ts": "2026-08-20T13:56:26.652Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_xuczg521ky",
+    "ts": "2026-08-20T13:56:23.652Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_tc0wkk3p13",
+    "ts": "2026-08-20T13:56:20.650Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_jxwjxe9lcc",
+    "ts": "2026-08-20T13:56:17.638Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_w0y4hnaonc",
+    "ts": "2026-08-20T13:56:14.625Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_u2px4q255e",
+    "ts": "2026-08-20T13:56:11.618Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_r953hskfo9",
+    "ts": "2026-08-20T13:56:08.611Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_e9ahfs6cr4",
+    "ts": "2026-08-20T13:56:05.613Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_1p1a7ox55o",
+    "ts": "2026-08-20T13:56:02.601Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_tqv7jmgd4y",
+    "ts": "2026-08-20T13:55:59.588Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_552j63sh28",
+    "ts": "2026-08-20T13:55:56.586Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_tqgazrifyf",
+    "ts": "2026-08-20T13:55:53.575Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_snt4ngsibw",
+    "ts": "2026-08-20T13:55:50.567Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_fssvamieuo",
+    "ts": "2026-08-20T13:55:47.565Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ljs71kjvjz",
+    "ts": "2026-08-20T13:55:44.563Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_nimdjert14",
+    "ts": "2026-08-20T13:55:41.551Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_eqlslvphfq",
+    "ts": "2026-08-20T13:55:38.534Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_ansmyzzlta",
+    "ts": "2026-08-20T13:55:35.532Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_65b6v9ho26",
+    "ts": "2026-08-20T13:55:26.120Z",
+    "type": "task",
+    "msg": "auto-create",
+    "task_id": "task_pmh74gaxar",
+    "title": "生成一个企业官网的需求知识图谱",
+    "auto_exec": true
+  },
+  {
+    "id": "kb_doc_sp18f07qrn",
+    "ts": "2026-08-20T13:52:26.315Z",
+    "type": "kb",
+    "msg": "create document"
+  },
+  {
+    "id": "log_lgaut4x91i",
+    "ts": "2026-08-20T13:52:26.349Z",
+    "type": "kb",
+    "msg": "batch analyze",
+    "count": 1
+  },
+  {
+    "id": "kb_doc_9eg1k60gfq",
+    "ts": "2026-08-20T13:52:25.844Z",
+    "type": "kb",
+    "msg": "create document"
+  },
+  {
+    "id": "log_95zxn56upx",
+    "ts": "2026-08-20T13:52:26.212Z",
+    "type": "kb",
+    "msg": "revert version",
+    "docId": "kb_doc_9eg1k60gfq",
+    "toVersion": 2
+  },
+  {
+    "id": "log_f2369jp396",
+    "ts": "2026-08-20T13:52:26.172Z",
+    "type": "kb",
+    "msg": "graph link",
+    "docId": "kb_doc_9eg1k60gfq",
+    "entityIds": [
+      "Rust",
+      "PageRank"
+    ]
+  },
+  {
+    "id": "log_l9jjsa2tz7",
+    "ts": "2026-08-20T13:52:26.150Z",
+    "type": "kb",
+    "msg": "batch analyze",
+    "count": 1
+  },
+  {
+    "id": "log_dl1vrqa3sf",
+    "ts": "2026-08-20T13:52:25.982Z",
+    "type": "kb",
+    "msg": "create version",
+    "docId": "kb_doc_9eg1k60gfq",
+    "version": 3
+  },
+  {
+    "id": "log_kw0tqz1gqc",
+    "ts": "2026-08-20T13:51:26.984Z",
+    "type": "task",
+    "msg": "auto-create",
+    "task_id": "task_xnbsb3rgwg",
+    "title": "生成一个企业官网的需求知识图谱",
+    "auto_exec": true
+  },
+  {
+    "id": "log_o4j421marv",
+    "ts": "2026-08-20T13:44:59.963Z",
+    "type": "task",
+    "msg": "execute",
+    "task_id": "task_l1wnhtob5p",
+    "status": "in_progress"
+  },
+  {
+    "id": "log_oiwtjdbzb6",
+    "ts": "2026-08-20T13:40:17.156Z",
+    "type": "task",
+    "msg": "from-chat",
+    "task_id": "task_iqlxqt3dz4"
+  },
+  {
+    "id": "kb_doc_mi8e3gp5ks",
+    "ts": "2026-08-20T13:38:45.681Z",
+    "type": "kb",
+    "msg": "create document"
+  },
+  {
+    "id": "log_lw4avy9wcy",
+    "ts": "2026-08-20T13:38:45.715Z",
+    "type": "kb",
+    "msg": "batch analyze",
+    "count": 1
+  },
+  {
+    "id": "kb_doc_txkuapt3z9",
+    "ts": "2026-08-20T13:38:45.497Z",
+    "type": "kb",
+    "msg": "create document"
+  },
+  {
+    "id": "log_9n6ly6aqoa",
+    "ts": "2026-08-20T13:38:45.640Z",
+    "type": "kb",
+    "msg": "revert version",
+    "docId": "kb_doc_txkuapt3z9",
+    "toVersion": 2
+  },
+  {
+    "id": "log_yzj9dfdsze",
+    "ts": "2026-08-20T13:38:45.627Z",
+    "type": "kb",
+    "msg": "graph link",
+    "docId": "kb_doc_txkuapt3z9",
+    "entityIds": [
+      "Rust",
+      "PageRank"
+    ]
+  },
+  {
+    "id": "log_pusglp7x0n",
+    "ts": "2026-08-20T13:38:45.618Z",
+    "type": "kb",
+    "msg": "batch analyze",
+    "count": 1
+  },
+  {
+    "id": "log_2diibgtx1e",
+    "ts": "2026-08-20T13:38:45.558Z",
+    "type": "kb",
+    "msg": "create version",
+    "docId": "kb_doc_txkuapt3z9",
+    "version": 3
+  },
+  {
+    "id": "log_m0sqewh8va",
+    "ts": "2026-08-20T14:19:14.939Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_vmrv5okovf",
+    "ts": "2026-08-20T14:19:11.937Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_pprgfhkbr3",
+    "ts": "2026-08-20T14:19:08.929Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_pawmz0g5ki",
+    "ts": "2026-08-20T14:19:05.924Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_2bfo2nvnvz",
+    "ts": "2026-08-20T14:19:02.922Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_zjpmu2vwkx",
+    "ts": "2026-08-20T14:18:59.921Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_hubm6hn7jg",
+    "ts": "2026-08-20T14:18:56.911Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_q7f4xuw66d",
+    "ts": "2026-08-20T14:18:53.907Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_mqdcon5gvo",
+    "ts": "2026-08-20T14:18:50.900Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_k6l86c1y4n",
+    "ts": "2026-08-20T14:18:47.898Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_292vi6s6ib",
+    "ts": "2026-08-20T14:18:44.897Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_vkt85dl4ct",
+    "ts": "2026-08-20T14:18:41.893Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_095yv635si",
+    "ts": "2026-08-20T14:18:38.878Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_tqgm3thx8s",
+    "ts": "2026-08-20T14:18:35.878Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_iluwoss489",
+    "ts": "2026-08-20T14:18:32.863Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_qr3sdrtz7u",
+    "ts": "2026-08-20T14:18:29.857Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_jg645uc9qm",
+    "ts": "2026-08-20T14:18:26.850Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_vg25woi5oa",
+    "ts": "2026-08-20T14:18:23.847Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_tbvyxe1l42",
+    "ts": "2026-08-20T14:18:20.846Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_py73i9r3pa",
+    "ts": "2026-08-20T14:18:17.835Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_xohs0fnzei",
+    "ts": "2026-08-20T14:18:14.824Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_il9vh5ztw7",
+    "ts": "2026-08-20T14:18:11.818Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_1kveg3fwmv",
+    "ts": "2026-08-20T14:18:08.804Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_f12u4wsh6v",
+    "ts": "2026-08-20T14:18:05.791Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_y2nufs8euf",
+    "ts": "2026-08-20T14:18:02.782Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_q4t3qvicla",
+    "ts": "2026-08-20T14:17:59.780Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_qwsrf2artz",
+    "ts": "2026-08-20T14:17:56.778Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_pkfiwrdinc",
+    "ts": "2026-08-20T14:17:53.775Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "log_gn4jvepz46",
+    "ts": "2026-08-20T14:17:50.762Z",
+    "type": "auto-sync",
+    "msg": "auto sync tick",
+    "nodes": 24,
+    "edges": 29
+  },
+  {
+    "id": "kb_doc_8ko7s2gecb",
+    "ts": "2026-08-20T13:35:19.890Z",
+    "type": "kb",
+    "msg": "create document"
+  },
+  {
+    "id": "log_5uk7yzrl55",
+    "ts": "2026-08-20T13:35:19.898Z",
+    "type": "kb",
+    "msg": "batch analyze",
+    "count": 1
+  },
+  {
+    "id": "kb_doc_9bjw7t9v4c",
+    "ts": "2026-08-20T13:35:19.827Z",
+    "type": "kb",
+    "msg": "create document"
+  },
+  {
+    "id": "log_ks73op5vuh",
+    "ts": "2026-08-20T13:35:19.877Z",
+    "type": "kb",
+    "msg": "graph link",
+    "docId": "kb_doc_9bjw7t9v4c",
+    "entityIds": [
+      "Rust",
+      "PageRank"
+    ]
+  },
+  {
+    "id": "log_ydg41jofgl",
+    "ts": "2026-08-20T13:35:19.872Z",
+    "type": "kb",
+    "msg": "batch analyze",
+    "count": 1
   }
 ]
