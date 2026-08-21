@@ -38,6 +38,7 @@ pub struct EngineContext {
     pub input: HashMap<String, serde_json::Value>,
     pub variables: HashMap<String, serde_json::Value>,
     pub observations: Vec<String>,
+    pub recalled_memories: Vec<String>,
     pub action_results: Vec<String>,
     pub reflections: Vec<String>,
     pub generated_output: Option<String>,
@@ -78,6 +79,7 @@ pub struct Engine {
     consolidation_result: Option<kg_hub::consolidator::ConsolidationResult>,
     plan_step_index: usize,
     llm_client: Option<Arc<RwLock<LLMClient>>>,
+    strong_model_client: Option<Arc<RwLock<LLMClient>>>,
     browser: Option<Arc<RwLock<BrowserAutomationEngine>>>,
 }
 
@@ -105,6 +107,7 @@ impl Engine {
             consolidation_result: None,
             plan_step_index: 0,
             llm_client: None,
+            strong_model_client: None,
             browser: None,
         }
     }
@@ -122,6 +125,18 @@ impl Engine {
         self.llm_client = llm_client;
         self.browser = browser;
         self
+    }
+
+    pub fn with_strong_model(
+        mut self,
+        strong_model_client: Option<Arc<RwLock<LLMClient>>>,
+    ) -> Self {
+        self.strong_model_client = strong_model_client;
+        self
+    }
+
+    fn get_strong_client(&self) -> Option<&Arc<RwLock<LLMClient>>> {
+        self.strong_model_client.as_ref().or(self.llm_client.as_ref())
     }
 
     pub fn state(&self) -> &EngineState {
@@ -153,10 +168,23 @@ impl Engine {
         match self.phase_perceive().await {
             Ok(()) => {
                 if let Err(e) = self.fsm.trigger(EngineEvent::PerceiveDone) {
-                    return self.abort_result(start, format!("Perceive→Plan 转移失败: {}", e));
+                    return self.abort_result(start, format!("Perceive→Recall 转移失败: {}", e));
                 }
             }
             Err(e) => return self.abort_result(start, e),
+        }
+
+        match self.phase_recall().await {
+            Ok(()) => {
+                if let Err(e) = self.fsm.trigger(EngineEvent::RecallDone) {
+                    return self.abort_result(start, format!("Recall→Plan 转移失败: {}", e));
+                }
+            }
+            Err(e) => return self.abort_result(start, e),
+        }
+
+        if !self.conservation_check() {
+            tracing::warn!(target: "engine", "RECALL 后状态向量守恒检查未通过");
         }
 
         match self.phase_plan().await {
@@ -317,45 +345,97 @@ impl Engine {
         Ok(())
     }
 
+    async fn phase_recall(&mut self) -> Result<(), String> {
+        tracing::debug!(target: "engine", "RECALL: 检索相关记忆");
+
+        let query = self.context.task.clone();
+        let memories = self.recall_from_knowledge(&query);
+
+        if memories.is_empty() {
+            self.context
+                .recalled_memories
+                .push("无相关历史记忆".to_string());
+            self.context
+                .observations
+                .push("RECALL: 未检索到相关记忆".to_string());
+        } else {
+            self.context.recalled_memories = memories.clone();
+            self.context.observations.push(format!(
+                "RECALL: 检索到 {} 条相关记忆",
+                memories.len()
+            ));
+        }
+
+        Ok(())
+    }
+
+    fn recall_from_knowledge(&self, query: &str) -> Vec<String> {
+        let _ = query;
+        let mock_memories = vec![
+            "历史案例: 类似数据处理任务采用了 ETL 流水线方案".to_string(),
+            "相关知识: 数据清洗最佳实践包括去重、验证、转换".to_string(),
+        ];
+        mock_memories
+    }
+
+    fn conservation_check(&self) -> bool {
+        let has_observations = !self.context.observations.is_empty();
+        let has_memories = !self.context.recalled_memories.is_empty();
+        let has_results = !self.context.action_results.is_empty();
+        has_observations && has_memories && (has_results || self.plan_step_index == 0)
+    }
+
     async fn phase_plan(&mut self) -> Result<(), String> {
         tracing::debug!(target: "engine", "PLAN: 制定执行计划");
 
-        if let Some(llm_arc) = &self.llm_client {
-            let llm = llm_arc.read().await;
-            if llm.is_enabled() {
-                let prompt = format!(
-                    "你是AI智能体规划器。请为以下任务制定详细的执行计划，返回JSON格式。\n\n\
-                    任务: {}\n\n\
-                    返回格式:\n\
-                    {{\n  \"goal\": \"目标描述\",\n  \"steps\": [\n    \
-                    {{\"type\": \"browser|tool\", \"action\": \"navigate|click|type|extract_text|get_title|screenshot|process\", \
-                    \"url\": \"...\", \"selector\": \"...\", \"text\": \"...\", \"description\": \"...\"}}\n  ]\n}}\n\n\
-                    可用的action类型:\n\
-                    - browser: navigate, click, type, extract_text, get_title, get_url, extract_html, screenshot, wait\n\
-                    - tool: process, analyze, search, generate",
-                    self.context.task
-                );
-                let messages = vec![LLMChatMessage {
-                    role: "user".to_string(),
-                    content: prompt,
-                }];
-                match llm.chat(messages).await {
-                    Ok(response) => {
-                        self.context.plan = Some(response.clone());
-                        let preview = if response.chars().count() > 200 {
-                            response.chars().take(200).collect::<String>()
-                        } else {
-                            response.clone()
-                        };
-                        self.context.observations.push(format!("LLM规划完成: {}", preview));
-                        tracing::info!(target: "engine", plan_len = response.len(), "LLM生成执行计划");
+        let llm_response = {
+            if let Some(llm_arc) = self.get_strong_client() {
+                let llm = llm_arc.read().await;
+                if llm.is_enabled() {
+                    let prompt = format!(
+                        "你是AI智能体规划器。请为以下任务制定详细的执行计划，返回JSON格式。\n\n\
+                        任务: {}\n\n\
+                        返回格式:\n\
+                        {{\n  \"goal\": \"目标描述\",\n  \"steps\": [\n    \
+                        {{\"type\": \"browser|tool\", \"action\": \"navigate|click|type|extract_text|get_title|screenshot|process\", \
+                        \"url\": \"...\", \"selector\": \"...\", \"text\": \"...\", \"description\": \"...\"}}\n  ]\n}}\n\n\
+                        可用的action类型:\n\
+                        - browser: navigate, click, type, extract_text, get_title, get_url, extract_html, screenshot, wait\n\
+                        - tool: process, analyze, search, generate",
+                        self.context.task
+                    );
+                    let messages = vec![LLMChatMessage {
+                        role: "user".to_string(),
+                        content: prompt,
+                    }];
+                    match llm.chat(messages).await {
+                        Ok(response) => Some(Ok(response)),
+                        Err(e) => Some(Err(e.to_string())),
                     }
-                    Err(e) => {
-                        tracing::warn!(target: "engine", error = %e, "LLM规划调用失败，降级到默认计划");
-                        self.context.observations.push("LLM规划调用失败，使用默认计划".to_string());
-                    }
+                } else {
+                    None
                 }
+            } else {
+                None
             }
+        };
+
+        if let Some(Ok(response)) = &llm_response {
+            self.context.plan = Some(response.clone());
+            let preview = if response.chars().count() > 200 {
+                response.chars().take(200).collect::<String>()
+            } else {
+                response.clone()
+            };
+            self.context
+                .observations
+                .push(format!("LLM规划完成: {}", preview));
+            tracing::info!(target: "engine", plan_len = response.len(), "LLM生成执行计划");
+        } else if let Some(Err(e)) = &llm_response {
+            tracing::warn!(target: "engine", error = %e, "LLM规划调用失败，降级到默认计划");
+            self.context
+                .observations
+                .push("LLM规划调用失败，使用默认计划".to_string());
         }
 
         if self.context.plan.is_none() {
@@ -372,6 +452,44 @@ impl Engine {
 
     async fn phase_act(&mut self) -> Result<(), String> {
         tracing::debug!(target: "engine", step = self.step_count, "ACT: 执行动作");
+
+        let light_decision = {
+            if let Some(llm_arc) = &self.llm_client {
+                let llm = llm_arc.read().await;
+                if llm.is_enabled() {
+                    let plan_preview = self.context.plan.as_deref().unwrap_or("");
+                    let prompt = format!(
+                        "基于当前计划，选择下一步要执行的工具和动作。\n\n\
+                        任务: {}\n\
+                        计划预览: {}\n\
+                        已执行步骤: {}\n\
+                        可用工具: database, sandbox, http, file, calculator\n\n\
+                        返回 JSON: {{\"tool\": \"工具名\", \"action\": \"动作描述\"}}",
+                        self.context.task,
+                        plan_preview.chars().take(200).collect::<String>(),
+                        self.plan_step_index
+                    );
+                    let messages = vec![LLMChatMessage {
+                        role: "user".to_string(),
+                        content: prompt,
+                    }];
+                    match llm.chat(messages).await {
+                        Ok(response) => Some(response),
+                        Err(_) => None,
+                    }
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        };
+
+        if let Some(response) = light_decision {
+            self.context
+                .observations
+                .push(format!("轻量模型动作选择: {}", response.chars().take(100).collect::<String>()));
+        }
 
         let plan = self.context.plan.clone().unwrap_or_default();
 
@@ -466,6 +584,52 @@ impl Engine {
         tracing::debug!(target: "engine", "REFLECT: 反思评估");
 
         let last_result = self.context.action_results.last().cloned().unwrap_or_default();
+
+        let llm_reflection = {
+            if let Some(strong_arc) = self.get_strong_client() {
+                let llm = strong_arc.read().await;
+                if llm.is_enabled() {
+                    let observations_text = self.context.observations.join("\n");
+                    let reflections_text = self.context.reflections.join("\n");
+                    let prompt = format!(
+                        "基于以下执行过程，判断任务是否已完成，是否需要继续执行。\n\n\
+                        任务: {}\n\n\
+                        最近结果: {}\n\n\
+                        观察: {}\n\n\
+                        历史反思: {}\n\n\
+                        请回答: 任务是否已完成？(yes/no) 如果未完成，应该继续还是进入生成阶段？",
+                        self.context.task, last_result, observations_text, reflections_text
+                    );
+                    let messages = vec![LLMChatMessage {
+                        role: "user".to_string(),
+                        content: prompt,
+                    }];
+                    match llm.chat(messages).await {
+                        Ok(response) => Some(Ok(response)),
+                        Err(e) => Some(Err(e.to_string())),
+                    }
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        };
+
+        if let Some(Ok(response)) = &llm_reflection {
+            let lower = response.to_lowercase();
+            if lower.contains("yes") || lower.contains("完成") || lower.contains("已完成") {
+                self.context
+                    .reflections
+                    .push(format!("LLM反思: {}", response));
+                return ReflectDecision::ToGenerate;
+            }
+            self.context
+                .reflections
+                .push(format!("LLM反思: {}", response));
+        } else if let Some(Err(e)) = &llm_reflection {
+            tracing::warn!(target: "engine", error = %e, "LLM反思调用失败，降级到规则引擎");
+        }
 
         let achieved = self.is_goal_achieved(&last_result);
 

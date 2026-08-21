@@ -1,0 +1,63 @@
+{
+  "version": "2.0",
+  "project_name": "璇玑系统",
+  "dashboard_port": 9999,
+  "admin": {
+    "username": "admin",
+    "password": "admin123"
+  },
+  "services": {
+    "api": {
+      "name": "API 后端服务",
+      "description": "璇玑系统核心 API 服务",
+      "port": 3002,
+      "health_check": "/health",
+      "cwd": "platform/backend-node",
+      "command": "node src/api-server.js",
+      "npm_deps": true,
+      "is_admin_only": true,
+      "auto_start": true,
+      "restart_delay": 3,
+      "wait_time": 5,
+      "tags": [
+        "API",
+        "后端",
+        "核心"
+      ]
+    },
+    "frontend": {
+      "name": "用户前端界面",
+      "description": "面向终端用户的操作界面",
+      "port": 5173,
+      "health_check": "/",
+      "cwd": "frontend-ui",
+      "command": "npm run dev",
+      "npm_deps": true,
+      "is_admin_only": false,
+      "auto_start": true,
+      "wait_time": 8,
+      "tags": [
+        "前端",
+        "用户界面",
+        "Vite"
+      ]
+    },
+    "admin": {
+      "name": "企业管理界面",
+      "description": "企业级后台管理系统",
+      "port": 5175,
+      "health_check": "/",
+      "cwd": "frontend-admin-ui",
+      "command": "npm run dev",
+      "npm_deps": true,
+      "is_admin_only": true,
+      "auto_start": true,
+      "wait_time": 8,
+      "tags": [
+        "前端",
+        "管理后台",
+        "企业级"
+      ]
+    }
+  }
+}
