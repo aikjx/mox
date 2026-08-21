@@ -119,6 +119,17 @@ const routes = [
     name: 'SystemAbout',
     component: () => import('@/views/system/SystemAbout.vue'),
     meta: { title: '系统信息' }
+  },
+  {
+    path: '/hitl',
+    redirect: '/hitl/center',
+    meta: { title: 'HITL 审批' }
+  },
+  {
+    path: '/hitl/center',
+    name: 'HitlCenter',
+    component: () => import('@/views/hitl/HitlCenter.vue'),
+    meta: { title: 'HITL 审批中心' }
   }
 ]
 

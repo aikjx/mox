@@ -47,7 +47,7 @@ pub use browser_automation::*;
 pub use flow_engine::*;
 pub use dialogue_graph::*;
 
-use crate::engine::{Engine, EngineContext, EngineConfig};
+use crate::engine::{AgentRole, Engine, EngineContext, EngineConfig, MultiAgentOrchestrator};
 use operator_core::{OperatorError, Result};
 use graph_algorithms::KnowledgeGraph;
 use rusqlite::params;
@@ -81,6 +81,8 @@ pub struct AIAgent {
     router: Arc<provider::LlmRouter>,
     /// AI Agent 引擎：PERCEIVE→PLAN→ACT→OBSERVE→REFLECT→GENERATE→CONSOLIDATE
     engine: Arc<RwLock<engine::Engine>>,
+    /// 多 Agent 编排器：支持子 Agent 创建、通信与并行/顺序执行
+    multi_agent_orchestrator: Arc<RwLock<MultiAgentOrchestrator>>,
 }
 
 impl AIAgent {
@@ -127,6 +129,7 @@ impl AIAgent {
             dialogue_graph,
             router,
             engine: Arc::new(RwLock::new(Engine::with_config(EngineConfig::default()))),
+            multi_agent_orchestrator: Arc::new(RwLock::new(MultiAgentOrchestrator::new())),
         }
     }
 
@@ -826,6 +829,59 @@ impl AIAgent {
             .with_context(ctx)
             .with_executors(Some(self.llm_client.clone()), Some(self.browser.clone()));
         Ok(engine.run().await)
+    }
+
+    // ============ 多 Agent 编排 API ============
+
+    /// 生成子 Agent
+    pub async fn spawn_agent(&self, role: AgentRole) -> String {
+        let mut orchestrator = self.multi_agent_orchestrator.write().await;
+        orchestrator.spawn_agent(role)
+    }
+
+    /// 运行多 Agent 任务
+    pub async fn run_multi_agent_task(
+        &self,
+        tasks: Vec<(String, AgentRole, String)>,
+        parallel: bool,
+    ) -> Result<HashMap<String, engine::EngineResult>> {
+        let mut orchestrator = self.multi_agent_orchestrator.write().await;
+        let mut agent_ids = Vec::new();
+
+        for (agent_id, role, task) in tasks {
+            let id = if agent_id.is_empty() {
+                orchestrator.spawn_agent(role)
+            } else {
+                orchestrator.spawn_agent_with_id(agent_id.clone(), role)
+            };
+            orchestrator.send_message("coordinator", &id, AgentRole::Coordinator, task);
+            agent_ids.push(id);
+        }
+
+        let results = if parallel {
+            orchestrator.run_parallel(&agent_ids).await
+        } else {
+            orchestrator.run_sequential(&agent_ids).await
+        };
+
+        Ok(results)
+    }
+
+    /// Agent 间通信：发送消息给指定 Agent
+    pub async fn agent_communicate(
+        &self,
+        from: &str,
+        to: &str,
+        role: AgentRole,
+        content: impl Into<String>,
+    ) {
+        let mut orchestrator = self.multi_agent_orchestrator.write().await;
+        orchestrator.send_message(from, to, role, content);
+    }
+
+    /// 获取多 Agent 编排器引用
+    pub fn multi_agent_orchestrator(&self) -> Arc<RwLock<MultiAgentOrchestrator>> {
+        self.multi_agent_orchestrator.clone()
     }
 }
 
