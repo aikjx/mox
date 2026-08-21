@@ -118,21 +118,44 @@ def test_jianpu_ly_location_packaged():
         assert "lib" in jianpu_render.JIANPU_LY.replace("\\", "/")
 
 
-def test_export_score_fallback_when_no_lilypond(monkeypatch, tmp_path):
-    """LilyPond 缺失时，export_score 应降级到 matplotlib 仍可产出图片。"""
+def test_export_score_requires_lilypond(monkeypatch, tmp_path):
+    """LilyPond 缺失时，export_score 应明确报错（不自写渲染兜底）。"""
     from core import jianpu_render
 
-    monkeypatch.setattr(
-        jianpu_render, "find_lilypond", lambda: None
-    )
+    monkeypatch.setattr(jianpu_render, "find_lilypond", lambda: None)
     notes = [
         {"name": "C4", "midi": 60, "start": 0.0, "dur": 0.5},
         {"name": "E4", "midi": 64, "start": 0.5, "dur": 0.5},
     ]
-    out = tmp_path / "fallback.png"
-    p = score_sheet.export_score(
-        notes=notes, key={"tonic": "C", "mode": "major"},
-        bpm=120.0, output_path=str(out), title="Fallback",
-    )
-    assert os.path.exists(p)
-    assert os.path.getsize(p) > 0
+    out = tmp_path / "sheet.png"
+    with pytest.raises(RuntimeError):
+        score_sheet.export_score(
+            notes=notes, key={"tonic": "C", "mode": "major"},
+            bpm=120.0, output_path=str(out), title="NeedLily",
+        )
+
+
+def test_safe_beats_no_downgrade():
+    """量化拍数应原样保留，不把附点八分/十六分并入八分。"""
+    from core import jianpu_render
+    # 附点八分 0.75 -> 0.75（不变 0.5）
+    assert abs(score_sheet._quantize_duration(0.75)[0] - 0.75) < 1e-6
+    # 十六分 0.25 -> 0.25（不变 0.5）
+    assert abs(score_sheet._quantize_duration(0.25)[0] - 0.25) < 1e-6
+    assert abs(jianpu_render._safe_beats(0.75) - 0.75) < 1e-6
+    assert abs(jianpu_render._safe_beats(0.25) - 0.25) < 1e-6
+    assert abs(jianpu_render._safe_beats(0.5) - 0.5) < 1e-6
+
+
+def test_dur_token_for_canonical_durations():
+    """规范时值应映射到 jianpu-ly 原生记号（含附点八分/十六分）。"""
+    from core import jianpu_render
+    # 附点八分 -> q1. ；十六分 -> s1 ；八分 -> q1 ；四分 -> 1
+    assert jianpu_render._dur_token_for(1, "", 0.75) == "q1."
+    assert jianpu_render._dur_token_for(1, "", 0.25) == "s1"
+    assert jianpu_render._dur_token_for(1, "", 0.5) == "q1"
+    assert jianpu_render._dur_token_for(1, "", 1.0) == "1"
+    assert jianpu_render._dur_token_for(1, "", 1.5) == "1."
+    assert jianpu_render._dur_token_for(0, "", 0.5) == "q0"
+    # 三十二分
+    assert jianpu_render._dur_token_for(1, "", 0.125) == "d1"

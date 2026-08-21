@@ -155,13 +155,36 @@ def detect_bpm(y: np.ndarray, sr: int = 16000, fallback: float = 120.0,
 
     修复「哼唱/合成音轨 BPM=0 导致五线谱退化」的根因。
     """
-    # 首选：从音符平均时长反推（音符序列已包含实际节拍信息，快且准）
+    # 首选：从音符时长反推 BPM。
+    # 关键修正：音乐里长音/二分/全音符/附点的时长会远大于一拍，"一拍 ≈ 一音符"
+    # 的中位假设会把它们误判成极慢 BPM（如整拍长音 → 60/2=30）。规范要求按
+    # "最常见拍类音符"（四分/八分等单拍级）反推：统计每个音符时长落在哪个
+    # 拍类（1拍/半拍/2拍…），取众数拍类的时长作为"一拍"基准。
     if notes:
-        durs = [max(0.05, float(n["end"] - n["start"])) for n in notes if "end" in n and "start" in n]
+        durs = [max(0.05, float(n["end"] - n["start"])) for n in notes
+                if "end" in n and "start" in n]
+        durs = [d for d in durs if 0.05 < d < 4.0]
         if durs:
-            med = float(np.median(durs))
-            if 0.05 < med < 4.0:
-                return float(60.0 / med)  # 一拍 ≈ 一音符 → BPM
+            # 候选拍类时长（秒）：四分/八分/二分/附点四分/十六分/附点八分/全音符
+            candidate_beats = [4.0, 2.0, 1.5, 1.0, 0.75, 0.5, 0.25, 0.125]
+            # 把每个音符时长映射到"最贴近的整数拍"，得到候选一拍时长
+            beat_candidates = []
+            for d in durs:
+                # 找使 d/beat 最接近 {1,2,3,4,...} 整数拍的 beat 候选
+                best_beat, best_err = 1.0, 1e9
+                for beat in candidate_beats:
+                    for mult in (1, 2, 3, 4):
+                        err = abs(d / beat - mult)
+                        if err < best_err:
+                            best_err, best_beat = err, beat
+                beat_candidates.append(best_beat)
+            # 取众数拍类对应的时长作为"一拍"基准（最稳健、抗长音污染）
+            vals, counts = np.unique(np.round(beat_candidates, 4), return_counts=True)
+            one_beat = float(vals[int(np.argmax(counts))])
+            if 0.05 < one_beat < 4.0:
+                bpm = float(60.0 / one_beat)
+                if 30.0 <= bpm <= 300.0:
+                    return bpm
 
     # 兜底：仅当没有可用音符时才跑昂贵的 beat_track
     raw = None

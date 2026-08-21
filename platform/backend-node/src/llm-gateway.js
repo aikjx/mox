@@ -118,6 +118,20 @@ function maskApiKey(key) {
   return unmasked.slice(0, 4) + '****' + unmasked.slice(-4);
 }
 
+// 各 Provider 的能力评分（用于"自动优选最好的 AI 引擎"）
+// 综合中文理解、代码、推理、长上下文等维度，分数越高越优先被自动选中。
+const PROVIDER_CAPABILITY_SCORE = {
+  deepseek: 95, // 中文 + 代码 + 推理强
+  volcengine: 90, // 豆包，长上下文友好
+  openai: 92, // 综合最强推理/多模态
+  qwen: 85, // 阿里云千问，多模态 + 长上下文
+  zhipu: 82, // 智谱 GLM，长文本 + 复杂推理
+  anthropic: 88, // Claude，长上下文推理
+  google: 87, // Gemini，多模态
+  local: 0, // 内置假引擎，不算真实 AI
+  _default: 60 // 未知 provider 给中性分
+};
+
 class LLMGateway {
   constructor() {
     this.providers = {};
@@ -139,15 +153,42 @@ class LLMGateway {
           provider.api_key = encryptApiKey(provider.api_key);
         }
         this.providers[p.id || p.provider] = provider;
-        if (p.enabled && !this.activeProvider) {
-          this.activeProvider = p.id || p.provider;
-        }
       });
     }
-    if (!this.activeProvider && Object.keys(this.providers).length) {
-      this.activeProvider = Object.keys(this.providers)[0];
+
+    // 环境变量自动注入：若系统环境变量中存在 DeepSeek API Key，
+    // 则自动补全并启用 DeepSeek Provider，无需在前端手动填写。
+    const envDeepSeekKey = process.env.DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY_ENV;
+    if (envDeepSeekKey && String(envDeepSeekKey).trim().length > 0) {
+      const dsId = 'llm_deepseek';
+      const ds = this.providers[dsId] || { id: dsId, name: 'DeepSeek', provider: 'deepseek', base_url: 'https://api.deepseek.com/v1', model: 'deepseek-chat', description: 'DeepSeek 大模型（环境变量自动注入）' };
+      ds.api_key = encryptApiKey(String(envDeepSeekKey).trim());
+      ds.enabled = true;
+      ds.provider = 'deepseek';
+      this.providers[dsId] = ds;
+      console.log('[LLM] 已从环境变量 DEEPSEEK_API_KEY 自动启用 DeepSeek 引擎');
+    }
+    // 选择激活 Provider 的规则：
+    //  - 默认不应选 local（内置假引擎），否则对话永远走不到真实 LLM
+    //  - 仅在"真实 Provider 已启用且配置了 api_key"时自动激活（按能力评分优选最好的引擎）
+    //  - 没有任何真实 AI 时，才退回 local 作为兜底（此时标记为无 AI）
+    const realCandidates = Object.values(this.providers).filter(
+      (p) => p.provider && p.provider !== 'local' && p.enabled && p.api_key && String(p.api_key).trim().length > 0
+    );
+    realCandidates.sort((a, b) => (PROVIDER_CAPABILITY_SCORE[b.provider] || PROVIDER_CAPABILITY_SCORE._default) - (PROVIDER_CAPABILITY_SCORE[a.provider] || PROVIDER_CAPABILITY_SCORE._default));
+    if (realCandidates.length) {
+      this.activeProvider = realCandidates[0].id || realCandidates[0].provider;
+    } else {
+      // 无真实 AI，退回 local 兜底（保持向后兼容）
+      const local = Object.values(this.providers).find((p) => p.provider === 'local');
+      this.activeProvider = local ? (local.id || local.provider) : (Object.keys(this.providers)[0] || null);
     }
     this.usage = readJSON('llm_usage.json', {});
+  }
+  // 当前是否配置了「真实 AI 引擎」（已启用 + 非 local + 已填 api_key）
+  isRealAI() {
+    const provider = this.activeProvider ? this.providers[this.activeProvider] : null;
+    return !!(provider && provider.provider && provider.provider !== 'local' && provider.api_key && String(provider.api_key).trim().length > 0);
   }
 
   async chat(params) {

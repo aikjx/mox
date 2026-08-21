@@ -1125,8 +1125,11 @@ ${seedNodes.length ? '已有种子节点：' + seedNodes.map(n => n.id + '(' + n
       }
     }
 
-    // 2. 尝试 LLM 网关（有激活的 Provider 时）
-    if (!aiPowered && gateway.activeProvider) {
+    // 2. 尝试 LLM 网关（有激活的「真实 AI」 Provider 时）
+    //    注意：只有 gateway.isRealAI() 为真（即已配置并启用外部大模型）才走真实调用，
+    //    否则不应让本地关键词假回复伪装成 AI 回答。
+    const hasRealAI = typeof gateway.isRealAI === 'function' ? gateway.isRealAI() : !!gateway.activeProvider;
+    if (!aiPowered && hasRealAI) {
       try {
         const result = await gateway.chat({
           messages,
@@ -1137,6 +1140,7 @@ ${seedNodes.length ? '已有种子节点：' + seedNodes.map(n => n.id + '(' + n
           maxTokens: body.maxTokens
         });
         reply = result.content;
+        aiPowered = true;
         aiMetadata = {
           ...(result.metadata || {}),
           usage: result.usage,
@@ -1144,13 +1148,12 @@ ${seedNodes.length ? '已有种子节点：' + seedNodes.map(n => n.id + '(' + n
           provider: result.provider,
           ai_powered: true
         };
-        aiPowered = true;
       } catch (e) {
         console.warn('[ai/chat] LLM gateway failed, falling back to local:', e.message);
       }
     }
 
-    // 3. 降级到本地智能回复
+    // 3. 降级到本地兜底（仅在完全未配置任何真实 AI 引擎时）
     if (!aiPowered) {
       reply = buildAIReply(last);
       aiMetadata = { ai_powered: false, fallback: true };
@@ -1188,7 +1191,7 @@ ${seedNodes.length ? '已有种子节点：' + seedNodes.map(n => n.id + '(' + n
       return 'Caomei 需求编译器将自然语言需求编译为流程蓝图，支持精化迭代与模板复用。';
     }
     if (text.indexOf('你好') !== -1 || text.indexOf('hello') !== -1 || text.indexOf('hi') !== -1) {
-      return '你好！我是算子统一系统的 AI 助手，我可以帮你进行知识图谱分析、算子执行、AI 对话、浏览器自动化、MCP 兼容等能力。请告诉我你的具体需求。';
+      return '你好！当前系统未配置外部 AI 引擎（LLM），所以我还无法进行真正的智能对话。请在「LLM 配置」页面启用并填写 API Key（推荐豆包 doubao-pro / DeepSeek / OpenAI 之一），即可获得真实的 AI 对话能力。本系统支持知识图谱分析、算子执行、浏览器自动化、MCP 兼容等能力。';
     }
     if (text.indexOf('图谱') !== -1 || text.indexOf('graph') !== -1) {
       return '当前图谱包含 23 个节点与 30 条边，覆盖融合引擎、联盟、算子、AI 任务、商城等多种节点类型。可以查询邻居、最短路径或计算中心性。';
