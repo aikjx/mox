@@ -1,4 +1,4 @@
-﻿# 算子统一系统 (Operator Unified System)
+# 算子统一系统 (Operator Unified System)
 
 > 基于 6 大数学公理构建的通用计算框架，实现「万物皆算子」的范畴论统一抽象。
 > 一个面向企业级生产环境的 **算子编排 / 流程优化 / 知识图谱 / AI 智能体** 一体化平台。
@@ -119,45 +119,48 @@
 
 ```
 operator-unified-system/
-├── crates/
-│   ├── operator-core/        # 核心内核：算子 trait、高维向量、范畴论、单子、守恒律
-│   ├── operator-graph/       # 知识图谱：加权有向图、PageRank、拉普拉斯矩阵
-│   ├── operator-wasm/        # WASM 插件系统：沙箱执行、热加载
-│   ├── optimizer/            # 优化器：DAG 调度、关键路径分析、资源约束
-│   ├── flow-ai/              # 流程 AI：拓扑/数据流/冲突消解/调度/代码生成
-│   ├── ai-agent/             # AI 智能体：对话、浏览器自动化、工作流、插件总线
-│   ├── xuanji-expert/      # 璇玑：多专家协同、IR、管线、治理、验证
-│   ├── hermes-flow-bridge/   # 外部流系统桥接：对接、录制、回放、状态
-│   ├── business-catalog/     # 业务算子目录
-│   └── runtime/              # 运行时：Web 服务器与 API 接口（含算子商城模块 market.rs）
-├── frontend/                 # Vue3 前端界面 (需 npm install && build 生成 dist/)
-├── plugins/                  # WASM 插件目录
-├── data/market/              # 算子商城资产（运行态，默认 CWD；生产应置于 $OUS_HOME/market，见 docs/architecture.md §27）
-├── docs/                     # 企业级文档（按专题分区；权威治理中心 = docs/enterprise/00-INDEX.md）
-│   ├── enterprise/           # 🟢 企业级文档唯一治理入口（文档集 00~10：需求/架构/设计/业务/路线图/映射/全维明确/自动化/归档/交付）
-│   ├── README.md             # 关图/全维专题快捷导航（非治理入口，权威以 enterprise/00-INDEX 为准）
-│   ├── specs/                # 🟢 企业级规范：PT-STD（Primi 架构）/ GR-STD（关图规范）/ OUS 业务规划
-│   ├── full-dimensional/     # 🟡 全维分析（璇玑）专题：AA-STD 流程基准 / 关图骨架 / 治理台 API / 原始文档归档
-│   ├── graph/                # 关图机读产物：graph.json / graph.enterprise.json / guantu.req.json
-│   ├── ai-architecture/      # AI 架构专题
+├── platform/                     # 🟢 平台服务层（后端核心）
+│   ├── gateway/                  #   API 网关层
+│   │   └── runtime/              #     运行时：Web 服务器与 API 接口（含算子商城、RBAC 等）
+│   ├── services/                 #   业务服务集群（微服务架构）
+│   │   ├── operator-core/        #     核心内核：算子 trait、高维向量、范畴论、单子、守恒律
+│   │   ├── operator-wasm/        #     WASM 插件系统：沙箱执行、热加载
+│   │   ├── graph-algorithms/     #     图算法：PageRank、拉普拉斯矩阵、聚类
+│   │   ├── optimizer/            #     优化器：DAG 调度、关键路径分析、资源约束
+│   │   ├── flow-ai/              #     流程 AI：拓扑/数据流/冲突消解/调度/代码生成
+│   │   ├── ai-agent/             #     AI 智能体：对话、浏览器自动化、工作流、插件总线
+│   │   ├── xuanji-expert/        #     璇玑专家：多专家协同、IR、管线、治理、验证
+│   │   ├── xuanji-system/        #     璇玑系统：协作治理域（成员/任务/权限/通信/审计）
+│   │   ├── hermes-flow-bridge/   #     外部流系统桥接：对接、录制、回放、状态
+│   │   ├── business-catalog/     #     业务算子目录
+│   │   ├── template-market/      #     算子商城：资产复用、模板市场
+│   │   ├── primiflow-core/       #     PrimiFlow 核心：流程引擎、执行器、持久化
+│   │   ├── primiflow-fusion/     #     PrimiFlow 融合：治理闸门、守恒、零孤儿
+│   │   └── kg-hub/               #     知识图谱枢纽：摄入、推理、本体、治理
+│   └── backend-node/             #   Node.js 兼容层：传统后端模块（逐步迁移至 Rust）
+├── frontend-ui/                  # 🟢 用户端：Vue3 前端界面（面向终端用户）
+├── frontend-admin-ui/               # 🟢 企业级后台管理：用户权限/大模型/知识库/云盘配置
+├── shared/                       # 🟢 跨端共享资源：常量、Schema、配置
+├── plugins/                      # WASM 插件目录
+├── data/market/                  # 算子商城资产（运行态，默认 CWD；生产应置于 $OUS_HOME/market，见 docs/architecture.md §27）
+├── docs/                         # 企业级文档（按专题分区；权威治理中心 = docs/enterprise/00-INDEX.md）
+│   ├── enterprise/               # 🟢 企业级文档唯一治理入口（文档集 00~10：需求/架构/设计/业务/路线图/映射/全维明确/自动化/归档/交付）
+│   ├── README.md                 # 关图/全维专题快捷导航（非治理入口，权威以 enterprise/00-INDEX 为准）
+│   ├── specs/                    # 🟢 企业级规范：PT-STD（Primi 架构）/ GR-STD（关图规范）/ OUS 业务规划
+│   ├── full-dimensional/         # 🟡 全维分析（璇玑）专题：AA-STD 流程基准 / 关图骨架 / 治理台 API / 原始文档归档
+│   ├── graph/                    # 关图机读产物：graph.json / graph.enterprise.json / guantu.req.json
+│   ├── ai-architecture/          # AI 架构专题
 │   ├── architecture.md / enterprise-architecture-analysis.md / mathematical-foundation.md  # 架构/能力矩阵/数学内核
-│   ├── *-验证总结-20260816.md / *-normalization.md / *-business-requirements.md            # 🟡 过程稿/验证快照（结论已沉淀 enterprise/）
-│   └── *.html / *.mmd        # 🟡 可视化产物（以同名 .md 为源）
-│   ├── graph/                # 关图机读产物：graph.json / graph.enterprise.json / guantu.req.json
-│   ├── architecture.md       # 系统架构
-│   ├── enterprise-architecture-analysis.md
-│   ├── mathematical-foundation.md
-│   ├── market-module.md / business-process-flows.md / business-process-flowcharts.md
-│   └── *-验证总结-20260816.md / *-normalization.md / *-business-requirements.md（验证/归一化/需求事实）
-├── benches/                  # 性能基准
-├── tests/                    # 集成测试
-├── verify_axioms.py          # 6 大公理数学自洽性验证脚本
-├── start.sh                  # 一键启动脚本
-├── snake.py                  # 辅助脚本
+│   └── *.html / *.mmd            # 🟡 可视化产物（以同名 .md 为源）
+├── benches/                      # 性能基准
+├── tests/                        # 集成测试
+├── verify_axioms.py              # 6 大公理数学自洽性验证脚本
+├── start.sh                      # 一键启动脚本
+├── snake.py                      # 辅助脚本
 └── README.md
 ```
 
-> 注：`target/`（Rust 构建产物）、`frontend/dist/`、`node_modules/` 等**不纳入版本库**，请从源码构建。
+> 注：`target/`（Rust 构建产物）、`frontend-ui/dist/`、`node_modules/` 等**不纳入版本库**，请从源码构建。
 
 ---
 
@@ -176,22 +179,34 @@ cargo build --release
 ./target/release/operator-server
 ```
 
-### 2. 前端（Vue3 / Node）
+### 2. 用户端前端（Vue3 / Node）
 
 ```bash
-cd frontend
+cd frontend-ui
 npm install
-npm run build      # 产物输出到 frontend/dist/（已 gitignore）
+npm run build      # 产物输出到 frontend-ui/dist/（已 gitignore）
 # 或 npm run dev 本地开发
 ```
 
-### 3. 一键启动
+### 3. 企业级后台管理
+
+```bash
+cd frontend-admin-ui
+npm install
+npm run dev        # 开发模式访问 http://localhost:5175
+npm run build      # 构建生产版本
+```
+
+### 4. 一键启动
 
 ```bash
 ./start.sh
 ```
 
-启动后访问：**http://localhost:3000**
+启动后访问：
+- 用户端：**http://localhost:5174**
+- 管理端：**http://localhost:5175**
+- API 网关：**http://localhost:3000**
 
 ---
 
