@@ -1,20 +1,20 @@
-﻿[workspace]
+[workspace]
 members = [
-    "crates/operator-core",
-    "crates/operator-wasm",
-    "crates/graph-algorithms",
-    "crates/optimizer",
-    "crates/flow-ai",
-    "crates/xuanji-expert",
-    "crates/hermes-flow-bridge",
-    "crates/business-catalog",
-    "crates/ai-agent",
-    "crates/template-market",
-    "crates/runtime",
-    "crates/xuanji-system",
-    "crates/primiflow-core",
-    "crates/primiflow-fusion",
-    "crates/kg-hub",
+    "platform/services/operator-core",
+    "platform/services/operator-wasm",
+    "platform/services/graph-algorithms",
+    "platform/services/optimizer",
+    "platform/services/flow-ai",
+    "platform/services/xuanji-expert",
+    "platform/services/hermes-flow-bridge",
+    "platform/services/business-catalog",
+    "platform/services/ai-agent",
+    "platform/services/template-market",
+    "platform/gateway/runtime",
+    "platform/services/xuanji-system",
+    "platform/services/primiflow-core",
+    "platform/services/primiflow-fusion",
+    "platform/services/kg-hub",
 ]
 resolver = "2"
 

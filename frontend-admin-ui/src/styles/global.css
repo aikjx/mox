@@ -1,0 +1,61 @@
+:root {
+  --admin-primary: #409eff;
+  --admin-bg: #f5f7fa;
+  --admin-sidebar-bg: #1a1a2e;
+  --admin-header-bg: #ffffff;
+  --admin-text: #303133;
+  --admin-text-secondary: #909399;
+  --admin-border: #e4e7ed;
+  --admin-card-bg: #ffffff;
+  --admin-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  color: var(--admin-text);
+  background: var(--admin-bg);
+}
+
+#app { width: 100%; }
+
+.admin-card {
+  background: var(--admin-card-bg);
+  border-radius: 8px;
+  box-shadow: var(--admin-shadow);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.admin-page-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 16px;
+}
+
+.admin-table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.admin-stat-card {
+  background: linear-gradient(135deg, var(--admin-primary), #66b1ff);
+  color: white;
+  border-radius: 12px;
+  padding: 20px;
+  min-height: 100px;
+}
+
+.admin-stat-card .stat-value {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.admin-stat-card .stat-label {
+  font-size: 13px;
+  opacity: 0.9;
+}

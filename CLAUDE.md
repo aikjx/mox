@@ -9,34 +9,45 @@
 技术栈：
 - 后端：Rust edition 2021，Axum（HTTP）、Tokio（异步）、Serde、Anyhow/Thiserror；`cargo` 工作区（15 个 crate）。
 - 前端：Vue 3.4 + Vite 5 + Element Plus 2.4 + vue-router 4.3 + Axios 1.6 + ECharts 5.4 + three / 3d-force-graph；包管理 npm。
-- 部署：后端 `runtime` crate 聚合为单一 `operator-server` 二进制（默认 `:3001`，可由 `--port` 覆盖）；`backend/`（零依赖 Node）作为边缘入口占 `:3000`，托管 `frontend/dist` 并将 `/api` 反向代理到 Rust；前端 Vite 代理 `/api` → `http://localhost:3000`（即 Node 边缘入口）。Node 不再实现任何领域逻辑，出码统一经 Rust ⛨验证网关 + 治理 8 闸门。
+- 部署：后端 `runtime` crate 聚合为单一 `operator-server` 二进制（默认 `:3001`，可由 `--port` 覆盖）；`platform/backend-node/`（零依赖 Node）作为边缘入口占 `:3000`，托管 `frontend-ui/dist` 并将 `/api` 反向代理到 Rust；前端 Vite 代理 `/api` → `http://localhost:3000`（即 Node 边缘入口）。Node 不再实现任何领域逻辑，出码统一经 Rust ⛨验证网关 + 治理 8 闸门。
 
 ## 目录结构与模块职责
 
 > 写职责，不贴完整文件树。后端按「分层」理解，前端按「功能切片」理解。
 
-### 后端（`crates/`，Spring-Boot 风格分层）
+### 后端（`platform/`，Spring-Boot 风格分层 + 微服务）
 
-- `runtime/`：**控制层（Controller）**。Axum `Router` 聚合四套子服务；`routes/`（路由表）、`handlers/`（处理器）、`api_standard.rs`（统一 REST 错误体）、`rbac_middleware.rs`（鉴权中间件）、`openapi.rs`（OpenAPI/Swagger）、`subservers.rs`（服务聚合边界）。**这是唯一允许直接碰 HTTP 的层**。
-- `xuanji-system/`：**服务层 + 仓储层**。业务编排（`services.rs`/`orchestrator.rs`）、领域错误（`error.rs`/加密 `crypto.rs`/事件 `event.rs`/限流 `ratelimit.rs`/指标 `metrics.rs`）、RBAC（`rbac.rs`）；持久化在 `repo/`（mysql/postgres/sqlite/schema）与 `store.rs`。
-- `xuanji-expert/`：**璇玑治理与验证引擎**。`verify/`（⛨验证网关 S6/G2 五项数学/语义检查）、`rbac/`（策略与判定）、`audit/`（nats/rabbitmq/s3/syslog 多汇，已脱敏）、`sensitivity.rs`（敏感拦截）、`tenant_policy.rs`（租户分层：default / gov）、`govern.rs`/`reconcile.rs`。
-- `primiflow-fusion/`：**治理 8 闸门融合层（GR-STD）**。`unified.rs::full_gate` 实现 G1–G8、`sixdim.rs`（六维）、`ptdoc.rs`（归一化文档）、`platform.rs`（注册/落库）、`server.rs`（对外 REST，离线可 `oneshot` 驱动）。
-- `primiflow/`：六维溯源拓扑引擎——`executor.rs`/`runner.rs`/`server.rs`/`persistence.rs`（固化）。
-- `flow-ai/`：需求→代码自动生成——`codegen.rs`/`pipeline.rs`/`topology.rs`/`schedule.rs`/`conflict.rs`。
-- `ai-agent/`：对话/工作流/LLM 编排——`conversation.rs`/`workflow_engine.rs`/`llm_client.rs`/`dialogue_graph.rs`/`requirement_compiler.rs`。
-- `kg-hub/`：知识图谱中枢——`ingest.rs`/`ontology.rs`/`reason.rs`/`loop_engine.rs`/`govern.rs`（含 `api.rs`）。
-- `operator-core/`：算子引擎内核——`engine.rs`/`conservation.rs`（守恒）/`monad.rs`/`resource.rs`/`state.rs`。
-- `hermes-flow-bridge/`：外部流程集成桥——`bridge.rs`/`router.rs`/`integration/`（外部适配）。
+- `gateway/runtime/`：**控制层（Controller）**。Axum `Router` 聚合四套子服务；`routes/`（路由表）、`handlers/`（处理器）、`api_standard.rs`（统一 REST 错误体）、`rbac_middleware.rs`（鉴权中间件）、`openapi.rs`（OpenAPI/Swagger）、`subservers.rs`（服务聚合边界）。**这是唯一允许直接碰 HTTP 的层**。
+- `services/xuanji-system/`：**服务层 + 仓储层**。业务编排（`services.rs`/`orchestrator.rs`）、领域错误（`error.rs`/加密 `crypto.rs`/事件 `event.rs`/限流 `ratelimit.rs`/指标 `metrics.rs`）、RBAC（`rbac.rs`）；持久化在 `repo/`（mysql/postgres/sqlite/schema）与 `store.rs`。
+- `services/xuanji-expert/`：**璇玑治理与验证引擎**。`verify/`（⛨验证网关 S6/G2 五项数学/语义检查）、`rbac/`（策略与判定）、`audit/`（nats/rabbitmq/s3/syslog 多汇，已脱敏）、`sensitivity.rs`（敏感拦截）、`tenant_policy.rs`（租户分层：default / gov）、`govern.rs`/`reconcile.rs`。
+- `services/primiflow-fusion/`：**治理 8 闸门融合层（GR-STD）**。`unified.rs::full_gate` 实现 G1–G8、`sixdim.rs`（六维）、`ptdoc.rs`（归一化文档）、`platform.rs`（注册/落库）、`server.rs`（对外 REST，离线可 `oneshot` 驱动）。
+- `services/primiflow-core/`：六维溯源拓扑引擎——`executor.rs`/`runner.rs`/`server.rs`/`persistence.rs`（固化）。
+- `services/flow-ai/`：需求→代码自动生成——`codegen.rs`/`pipeline.rs`/`topology.rs`/`schedule.rs`/`conflict.rs`。
+- `services/ai-agent/`：对话/工作流/LLM 编排——`conversation.rs`/`workflow_engine.rs`/`llm_client.rs`/`dialogue_graph.rs`/`requirement_compiler.rs`。
+- `services/kg-hub/`：知识图谱中枢——`ingest.rs`/`ontology.rs`/`reason.rs`/`loop_engine.rs`/`govern.rs`（含 `api.rs`）。
+- `services/operator-core/`：算子引擎内核——`engine.rs`/`conservation.rs`（守恒）/`monad.rs`/`resource.rs`/`state.rs`。
+- `services/hermes-flow-bridge/`：外部流程集成桥——`bridge.rs`/`router.rs`/`integration/`（外部适配）。
+- `services/backend-node/`：Node.js 兼容层，逐步迁移至 Rust。
 - 其余：`business-catalog`（螺旋业务目录）、`template-market`（模板市场）、`optimizer`（优化器）、`operator-graph`/`operator-wasm`（算子图 / WASM 适配）。
 
-### 前端（`frontend/src/`）
+### 前端（`frontend-ui/src/` 用户端 + `frontend-admin-ui/` 管理端）
 
+**用户端 (`frontend-ui/`)：**
 - `api/`：统一 fetcher（`index.js`，Axios 实例 + 请求/响应拦截器：注入 Bearer 令牌、剥离响应包裹、全局错误提示）。**组件禁止直接 `fetch`/`axios`**。
 - `views/`：业务页面（按业务域组织，等价 feature-sliced 的 feature）。
 - `components/`：通用 UI 组件，无业务逻辑，纯展示/交互。
 - `router/`：vue-router 路由表。
 - `styles/`：设计 token / 全局样式（禁止硬编码颜色尺寸）。
 - `types.js`：前后端契约类型（FlowGraph / GovernanceReport / 算子 / 插件 等）。
+
+**管理端 (`frontend-admin-ui/`)：**
+- `views/users/`：用户管理、角色权限、审计日志
+- `views/llm/`：大模型供应商配置、智能路由、用量统计
+- `views/storage/`：云盘存储路径配置、访问权限
+- `views/knowledge/`：知识库列表、分类管理、权限配置
+- `views/system/`：系统通用配置、安全设置、关于
+- `api/index.js`：管理端专用 API 调用层（前缀 `/api/admin`）
+- `stores/`：状态管理（用户信息、系统配置）
 
 ## 编码规范
 
@@ -89,9 +100,11 @@
 ## 常用命令
 
 ### 开发
-- `cargo run -p runtime`：启动聚合后端（默认 `:3001`，含四套子服务；边缘入口 `backend/` 占 `:3000` 并反代 `/api` 至此）
-- `cd frontend && npm run dev`：前端开发（Vite，`/api` 代理到 `:3000`）
-- `cd frontend && npm run build`：前端生产构建 → `dist/`
+- `cargo run -p runtime`：启动聚合后端（默认 `:3001`，含四套子服务；边缘入口 `platform/backend-node/` 占 `:3000` 并反代 `/api` 至此）
+- `cd frontend-ui && npm run dev`：用户端前端开发（Vite，`/api` 代理到 `:3000`）
+- `cd frontend-admin-ui && npm run dev`：管理端前端开发（默认 `:5175`）
+- `cd frontend-ui && npm run build`：用户端生产构建 → `dist/`
+- `cd frontend-admin-ui && npm run build`：管理端生产构建 → `dist/`
 
 ### 构建 / 校验
 - `cargo build --workspace`：全量构建（沙箱须 `run_in_background`）

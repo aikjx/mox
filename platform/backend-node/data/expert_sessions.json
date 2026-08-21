@@ -1,0 +1,55 @@
+[
+  {
+    "id": "sess_8bce9640-b542-49dc-bd99-84065ab54906",
+    "title": "测试会话",
+    "mode": "smart",
+    "current_expert": null,
+    "expert_chain": [],
+    "messages": [
+      {
+        "role": "user",
+        "content": "如何优化算法性能?",
+        "id": "msg_b7cde3e1-8b13-45e2-87db-ad2bb32056a6",
+        "timestamp": "2026-08-20T21:22:07.815Z"
+      },
+      {
+        "role": "assistant",
+        "content": "建议使用动态规划优化...",
+        "id": "msg_772e8fcc-58ec-47bd-b2b3-c69284d9a71a",
+        "timestamp": "2026-08-20T21:22:07.818Z"
+      }
+    ],
+    "metadata": {
+      "created_by": "user",
+      "total_rounds": 1,
+      "tags": [],
+      "problem_context": null,
+      "business_constraints": null
+    },
+    "status": "active",
+    "created_at": "2026-08-20T21:22:07.813Z",
+    "updated_at": "2026-08-20T21:22:07.818Z",
+    "last_activity_at": "2026-08-20T21:22:07.818Z"
+  },
+  {
+    "id": "sess_ce345ce3-b367-4ea8-aec0-9299e0bf081c",
+    "title": "企业级测试会话",
+    "mode": "smart",
+    "current_expert": null,
+    "expert_chain": [],
+    "messages": [],
+    "metadata": {
+      "created_by": "user",
+      "total_rounds": 0,
+      "tags": [
+        "测试"
+      ],
+      "problem_context": null,
+      "business_constraints": null
+    },
+    "status": "active",
+    "created_at": "2026-08-20T21:24:33.939Z",
+    "updated_at": "2026-08-20T21:24:33.939Z",
+    "last_activity_at": "2026-08-20T21:24:33.939Z"
+  }
+]

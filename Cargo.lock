@@ -58,6 +58,7 @@ dependencies = [
  "chrono",
  "flow-ai",
  "graph-algorithms",
+ "kg-hub",
  "operator-core",
  "petgraph",
  "reqwest 0.12.28",
