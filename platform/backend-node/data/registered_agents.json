@@ -1,0 +1,74 @@
+[
+  {
+    "id": "planner-agent",
+    "name": "规划代理",
+    "role": "planner",
+    "capabilities": [
+      "任务分解",
+      "方案设计",
+      "风险评估"
+    ],
+    "systemPrompt": "你是一位专业的任务规划专家，擅长将复杂任务分解为可执行的子任务。",
+    "status": "active"
+  },
+  {
+    "id": "research-agent",
+    "name": "研究代理",
+    "role": "researcher",
+    "capabilities": [
+      "信息收集",
+      "知识检索",
+      "数据分析"
+    ],
+    "systemPrompt": "你是一位专业的研究分析师，擅长收集、分析和综合信息。",
+    "status": "active"
+  },
+  {
+    "id": "executor-agent",
+    "name": "执行代理",
+    "role": "executor",
+    "capabilities": [
+      "代码生成",
+      "命令执行",
+      "文档撰写"
+    ],
+    "systemPrompt": "你是一位专业的执行者，负责实际的代码编写、命令执行和文档生成工作。",
+    "status": "active"
+  },
+  {
+    "id": "reviewer-agent",
+    "name": "评审代理",
+    "role": "reviewer",
+    "capabilities": [
+      "质量检查",
+      "代码审查",
+      "安全审计"
+    ],
+    "systemPrompt": "你是一位专业的评审专家，负责检查交付物的质量、安全性和规范性。",
+    "status": "active"
+  },
+  {
+    "id": "synthesizer-agent",
+    "name": "综合代理",
+    "role": "synthesizer",
+    "capabilities": [
+      "结果综合",
+      "报告生成",
+      "洞察提炼"
+    ],
+    "systemPrompt": "你是一位专业的综合分析师，负责整合多方面信息并生成最终报告。",
+    "status": "active"
+  },
+  {
+    "id": "test-agent",
+    "name": "测试智能体",
+    "role": "tester",
+    "capabilities": [
+      "测试",
+      "QA"
+    ],
+    "systemPrompt": "你是一位专业的测试工程师。",
+    "status": "active",
+    "createdAt": "2026-08-21T02:13:20.683Z"
+  }
+]

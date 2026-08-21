@@ -9,6 +9,7 @@
 
 use super::guards::{BudgetGuard, CompositeGuard, GuardContext, GuardResult, ProgressGuard, RiskGuard};
 use super::state_machine::{EngineEvent, EngineFSM, EngineState};
+use super::tools::{ToolRegistry, tool_type_to_name};
 use crate::browser_automation::{BrowserAction, BrowserAutomationEngine};
 use crate::llm_client::{LLMChatMessage, LLMClient};
 use kg_hub::consolidator::{EngineTrace, TraceConsolidator};
@@ -69,6 +70,7 @@ impl Default for EngineConfig {
 pub struct Engine {
     fsm: EngineFSM,
     guards: CompositeGuard,
+    tools: ToolRegistry,
     context: EngineContext,
     config: EngineConfig,
     step_count: u64,
@@ -90,9 +92,12 @@ impl Engine {
         guards.add(Box::new(ProgressGuard::new(config.max_stagnant)));
         guards.add(Box::new(RiskGuard::default()));
 
+        let tools = ToolRegistry::with_builtin_tools();
+
         Self {
             fsm: EngineFSM::new(),
             guards,
+            tools,
             context: EngineContext::default(),
             config,
             step_count: 0,
@@ -388,6 +393,36 @@ impl Engine {
                             );
                             self.context.action_results.push(desc.clone());
                             self.context.observations.push(desc);
+                        }
+                        "database" | "sandbox" | "http" | "file" | "calculator" => {
+                            if let Some(tool_name) = tool_type_to_name(step_type) {
+                                let tool_params = step.get("params").cloned().unwrap_or_else(|| step.clone());
+                                let tool_result = self.tools.execute(tool_name, &tool_params);
+                                let desc = format!(
+                                    "工具步骤 #{} [{}]: {} {}",
+                                    self.plan_step_index,
+                                    tool_name,
+                                    if tool_result.success { "成功" } else { "失败" },
+                                    tool_result.error.as_deref().unwrap_or("")
+                                );
+                                self.context.action_results.push(desc.clone());
+                                self.context.observations.push(desc);
+                                if let Some(data) = &tool_result.data {
+                                    let data_str = format!("{:?}", data);
+                                    let preview = if data_str.chars().count() > 200 {
+                                        data_str.chars().take(200).collect::<String>()
+                                    } else {
+                                        data_str
+                                    };
+                                    self.context.observations.push(format!("{} 输出: {}", tool_name, preview));
+                                }
+                                self.budget_used += 2.0;
+                            } else {
+                                let desc = format!("工具步骤 #{} [{}]: {} (无映射)", self.plan_step_index, action_name, description);
+                                self.context.action_results.push(desc.clone());
+                                self.context.observations.push(desc);
+                                self.budget_used += 1.0;
+                            }
                         }
                         _ => {
                             let desc = format!("工具步骤 #{} [{}]: {}", self.plan_step_index, action_name, description);
@@ -728,12 +763,13 @@ mod tests {
         let r = rt();
         let config = EngineConfig {
             max_steps: 100,
-            max_budget: 2.0,
+            max_budget: 1.0,
             ..Default::default()
         };
         r.block_on(async {
             let mut engine = Engine::with_config(config).with_context(EngineContext {
                 task: "预算测试".to_string(),
+                plan: Some("{\"steps\": [{\"type\": \"tool\", \"action\": \"process\", \"description\": \"步骤1\"}, {\"type\": \"tool\", \"action\": \"process\", \"description\": \"步骤2\"}, {\"type\": \"tool\", \"action\": \"process\", \"description\": \"步骤3\"}]}".to_string()),
                 ..Default::default()
             });
             let result = engine.run().await;

@@ -54,6 +54,13 @@
           <el-menu-item index="/system/security">安全策略</el-menu-item>
           <el-menu-item index="/system/about">系统信息</el-menu-item>
         </el-sub-menu>
+        <el-sub-menu index="/hitl">
+          <template #title>
+            <el-icon><User /></el-icon>
+            <span>HITL 审批</span>
+          </template>
+          <el-menu-item index="/hitl/center">审批中心</el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </el-aside>
     <el-container>

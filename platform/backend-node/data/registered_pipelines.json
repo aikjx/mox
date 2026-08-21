@@ -1,0 +1,23 @@
+[
+  {
+    "id": "pipeline_996e1226-2989-4d1d-9f02-ea70cef3fbf7",
+    "name": "测试流水线",
+    "description": "一个简单的测试流水线",
+    "stages": [
+      {
+        "id": "stage1",
+        "name": "分析阶段",
+        "agentId": "research-agent",
+        "critical": true
+      },
+      {
+        "id": "stage2",
+        "name": "执行阶段",
+        "agentId": "executor-agent",
+        "critical": false
+      }
+    ],
+    "status": "active",
+    "createdAt": "2026-08-21T02:08:00.229Z"
+  }
+]

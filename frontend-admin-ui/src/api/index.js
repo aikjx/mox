@@ -62,7 +62,11 @@ export const adminApi = {
 
   getSystemInfo: () => api.get('/admin/system/info'),
   getSystemSecurity: () => api.get('/admin/system/security'),
-  updateSystemSecurity: (data) => api.put('/admin/system/security', data)
+  updateSystemSecurity: (data) => api.put('/admin/system/security', data),
+
+  getHitlPending: () => Promise.resolve({ data: [] }),
+  submitHitlAction: (eventId, action, modifiedPayload) =>
+    api.post('/admin/hitl/actions', { eventId, action, modifiedPayload })
 }
 
 export default api
