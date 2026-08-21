@@ -64,6 +64,16 @@ SERVICES = {
         'tags': ['前端', '用户界面', 'Vite'],
         'is_admin_only': False,
     },
+    'frontend2': {
+        'name': '用户前端 (5174)',
+        'description': '备用用户前端实例，运行于端口 5174，功能与 5173 保持一致',
+        'port': 5174,
+        'path': '/',
+        'icon': '🎨',
+        'color': '#1abc9c',
+        'tags': ['前端', '备用实例', 'Vite'],
+        'is_admin_only': False,
+    },
     'admin': {
         'name': '企业管理界面',
         'description': '企业级后台管理系统，用于用户管理、权限配置、知识库管理等',
@@ -596,7 +606,7 @@ MAIN_HTML = '''<!DOCTYPE html>
         
         <div class="stats">
             <div class="stat-card">
-                <div class="stat-value total" id="stat-total">3</div>
+                <div class="stat-value total" id="stat-total">0</div>
                 <div class="stat-label">总服务数</div>
             </div>
             <div class="stat-card">
@@ -726,6 +736,7 @@ MAIN_HTML = '''<!DOCTYPE html>
                 grid.appendChild(createServiceCard(service, isAdmin));
             });
             
+            document.getElementById('stat-total').textContent = services.length;
             document.getElementById('stat-running').textContent = runningCount;
             document.getElementById('stat-stopped').textContent = stoppedCount;
         }

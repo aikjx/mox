@@ -13,6 +13,8 @@ pub enum EngineState {
     Idle,
     /// 感知阶段：收集环境信息、解析用户输入
     Perceive,
+    /// 召回阶段：从知识图谱/向量库检索相关记忆
+    Recall,
     /// 规划阶段：制定执行计划、分解子任务
     Plan,
     /// 执行阶段：调用工具/API/算子完成任务
@@ -41,6 +43,8 @@ pub enum EngineEvent {
     Start,
     /// 感知完成
     PerceiveDone,
+    /// 召回完成
+    RecallDone,
     /// 规划完成
     PlanDone,
     /// 执行完成
@@ -113,8 +117,9 @@ impl EngineFSM {
             // ── 启动链路 ──
             (EngineState::Idle, EngineEvent::Start) => Ok(EngineState::Perceive),
 
-            // ── 主循环: Perceive → Plan → Act → Observe → Reflect ──
-            (EngineState::Perceive, EngineEvent::PerceiveDone) => Ok(EngineState::Plan),
+            // ── 主循环: Perceive → Recall → Plan → Act → Observe → Reflect ──
+            (EngineState::Perceive, EngineEvent::PerceiveDone) => Ok(EngineState::Recall),
+            (EngineState::Recall, EngineEvent::RecallDone) => Ok(EngineState::Plan),
             (EngineState::Plan, EngineEvent::PlanDone) => Ok(EngineState::Act),
             (EngineState::Act, EngineEvent::ActDone) => Ok(EngineState::Observe),
             (EngineState::Act, EngineEvent::ActFailed) => Ok(EngineState::Reflect),
@@ -159,7 +164,8 @@ impl Default for EngineFSM {
 pub fn transition_table() -> Vec<(EngineState, EngineEvent, EngineState)> {
     vec![
         (EngineState::Idle, EngineEvent::Start, EngineState::Perceive),
-        (EngineState::Perceive, EngineEvent::PerceiveDone, EngineState::Plan),
+        (EngineState::Perceive, EngineEvent::PerceiveDone, EngineState::Recall),
+        (EngineState::Recall, EngineEvent::RecallDone, EngineState::Plan),
         (EngineState::Plan, EngineEvent::PlanDone, EngineState::Act),
         (EngineState::Act, EngineEvent::ActDone, EngineState::Observe),
         (EngineState::Act, EngineEvent::ActFailed, EngineState::Reflect),
@@ -193,6 +199,8 @@ mod tests {
         let mut fsm = EngineFSM::new();
         fsm.trigger(EngineEvent::Start).unwrap();
         fsm.trigger(EngineEvent::PerceiveDone).unwrap();
+        assert_eq!(*fsm.current_state(), EngineState::Recall);
+        fsm.trigger(EngineEvent::RecallDone).unwrap();
         fsm.trigger(EngineEvent::PlanDone).unwrap();
         fsm.trigger(EngineEvent::ActDone).unwrap();
         fsm.trigger(EngineEvent::ObserveDone).unwrap();
@@ -200,7 +208,7 @@ mod tests {
         fsm.trigger(EngineEvent::GenerateDone).unwrap();
         fsm.trigger(EngineEvent::ConsolidateDone).unwrap();
         assert_eq!(*fsm.current_state(), EngineState::Done);
-        assert_eq!(fsm.transition_count(), 8);
+        assert_eq!(fsm.transition_count(), 9);
     }
 
     #[test]
@@ -208,6 +216,7 @@ mod tests {
         let mut fsm = EngineFSM::new();
         fsm.trigger(EngineEvent::Start).unwrap();
         fsm.trigger(EngineEvent::PerceiveDone).unwrap();
+        fsm.trigger(EngineEvent::RecallDone).unwrap();
         fsm.trigger(EngineEvent::PlanDone).unwrap();
         fsm.trigger(EngineEvent::ActFailed).unwrap();
         fsm.trigger(EngineEvent::NeedHumanInput).unwrap();

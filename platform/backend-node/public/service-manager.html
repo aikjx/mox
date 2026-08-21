@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>璇玑系统 - 服务管理控制台</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    min-height: 100vh;
+    color: #e6e6f0;
+    padding: 24px;
+  }
+  .container { max-width: 1280px; margin: 0 auto; }
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 32px; padding-bottom: 20px;
+    border-bottom: 1px solid rgba(120, 140, 255, 0.3);
+  }
+  .header h1 {
+    font-size: 28px; font-weight: 600;
+    background: linear-gradient(90deg, #64b5f6, #ab47bc, #ec407a);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .header .subtitle { font-size: 13px; color: #8892b0; margin-top: 6px; }
+  .status-bar {
+    display: flex; gap: 16px; align-items: center;
+    background: rgba(255,255,255,0.05); padding: 12px 24px;
+    border-radius: 10px; border: 1px solid rgba(120, 140, 255, 0.2);
+  }
+  .status-bar .stat { text-align: center; }
+  .status-bar .stat .value { font-size: 24px; font-weight: 700; }
+  .status-bar .stat .label { font-size: 11px; color: #8892b0; text-transform: uppercase; letter-spacing: 1px; }
+  .stat.running .value { color: #4ade80; }
+  .stat.stopped .value { color: #f87171; }
+  .stat.total .value { color: #60a5fa; }
+
+  .control-panel {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(120, 140, 255, 0.2);
+    border-radius: 12px; padding: 20px; margin-bottom: 24px;
+  }
+  .control-panel h2 { font-size: 16px; margin-bottom: 16px; color: #e0e0e8; }
+  .batch-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn {
+    padding: 10px 20px; border: none; border-radius: 8px;
+    font-size: 14px; font-weight: 500; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: all 0.2s ease;
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn-primary { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
+  .btn-success { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+  .btn-warning { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+  .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+  .btn-info { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-icon { padding: 6px 10px; }
+
+  .services-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+  }
+  .service-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(120, 140, 255, 0.2);
+    border-radius: 12px; padding: 20px;
+    transition: all 0.3s ease;
+    position: relative; overflow: hidden;
+  }
+  .service-card:hover {
+    border-color: rgba(120, 140, 255, 0.5);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  }
+  .service-card.running { border-left: 4px solid #4ade80; }
+  .service-card.stopped { border-left: 4px solid #f87171; }
+  .service-card.starting { border-left: 4px solid #fbbf24; }
+  .service-card.stopping { border-left: 4px solid #f87171; }
+
+  .service-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .service-info h3 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .service-info p { font-size: 12px; color: #8892b0; line-height: 1.5; }
+  .service-status {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 500;
+  }
+  .status-indicator {
+    width: 8px; height: 8px; border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  .running .service-status { background: rgba(74,222,128,0.15); color: #4ade80; }
+  .running .status-indicator { background: #4ade80; box-shadow: 0 0 8px #4ade80; }
+  .stopped .service-status { background: rgba(248,113,113,0.15); color: #f87171; }
+  .stopped .status-indicator { background: #f87171; }
+  .starting .service-status, .stopping .service-status { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .starting .status-indicator, .stopping .status-indicator { background: #fbbf24; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .service-details {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    margin-bottom: 16px; font-size: 12px;
+  }
+  .detail-item { display: flex; justify-content: space-between; }
+  .detail-item .label { color: #8892b0; }
+  .detail-item .value { color: #e6e6f0; font-family: monospace; }
+
+  .service-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .toggle-check {
+    position: absolute; top: 16px; right: 16px;
+    width: 44px; height: 22px;
+  }
+  .toggle-check input { display: none; }
+  .toggle-check label {
+    position: relative; display: block; width: 44px; height: 22px;
+    background: rgba(255,255,255,0.1); border-radius: 11px;
+    cursor: pointer; transition: 0.3s;
+  }
+  .toggle-check label::after {
+    content: ''; position: absolute;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: white; top: 2px; left: 2px;
+    transition: 0.3s;
+  }
+  .toggle-check input:checked + label {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+  }
+  .toggle-check input:checked + label::after { left: 24px; }
+
+  .logs-panel {
+    background: rgba(0,0,0,0.4); border: 1px solid rgba(120, 140, 255, 0.2);
+    border-radius: 12px; padding: 16px; margin-top: 20px;
+  }
+  .logs-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .logs-panel-header h3 { font-size: 14px; }
+  .logs-content {
+    background: rgba(0,0,0,0.5); border-radius: 8px; padding: 12px;
+    max-height: 300px; overflow-y: auto;
+    font-family: 'Consolas', 'Monaco', monospace; font-size: 11px; line-height: 1.6;
+  }
+  .log-line { color: #a5b4fc; padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .log-line:last-child { border-bottom: none; }
+
+  .toast {
+    position: fixed; top: 20px; right: 20px;
+    padding: 12px 20px; border-radius: 8px;
+    font-size: 14px; z-index: 1000;
+    transform: translateX(120%); transition: transform 0.3s;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .toast.show { transform: translateX(0); }
+  .toast.success { background: rgba(16,185,129,0.95); color: white; }
+  .toast.error { background: rgba(239,68,68,0.95); color: white; }
+  .toast.info { background: rgba(59,130,246,0.95); color: white; }
+  .toast.warning { background: rgba(245,158,11,0.95); color: white; }
+
+  .progress-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 999;
+  }
+  .progress-overlay.hidden { display: none; }
+  .progress-box {
+    background: #1e1e3a; padding: 32px 40px; border-radius: 12px;
+    border: 1px solid rgba(120, 140, 255, 0.3); text-align: center;
+    min-width: 300px;
+  }
+  .progress-box h3 { margin-bottom: 16px; }
+  .progress-bar {
+    height: 4px; background: rgba(255,255,255,0.1);
+    border-radius: 2px; overflow: hidden; margin-bottom: 12px;
+  }
+  .progress-bar-fill {
+    height: 100%; background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    border-radius: 2px; transition: width 0.3s;
+  }
+  .progress-text { font-size: 13px; color: #8892b0; }
+
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 900;
+  }
+  .modal-overlay.hidden { display: none; }
+  .modal {
+    background: #1e1e3a; padding: 28px 32px; border-radius: 12px;
+    border: 1px solid rgba(120, 140, 255, 0.3);
+    max-width: 500px; width: 90%;
+  }
+  .modal h2 { font-size: 18px; margin-bottom: 12px; }
+  .modal p { font-size: 14px; color: #a5b4fc; margin-bottom: 20px; line-height: 1.6; }
+  .modal-actions { display: flex; gap: 12px; justify-content: flex-end; }
+
+  .empty-state {
+    text-align: center; padding: 60px 20px;
+    color: #8892b0;
+  }
+
+  .batch-select-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px; background: rgba(255,255,255,0.03);
+    border-radius: 8px; margin-bottom: 16px;
+    border: 1px solid rgba(120, 140, 255, 0.15);
+  }
+  .batch-select-bar .select-all-label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .batch-select-bar .selected-count { color: #a5b4fc; font-size: 12px; }
+
+  @media (max-width: 768px) {
+    .services-grid { grid-template-columns: 1fr; }
+    .header { flex-direction: column; gap: 12px; text-align: center; }
+    .status-bar { flex-wrap: wrap; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div>
+      <h1>璇玑系统 · 服务管理控制台</h1>
+      <div class="subtitle">AI 引擎整合架构 · 全服务生命周期管控</div>
+    </div>
+    <div class="status-bar">
+      <div class="stat total"><div class="value" id="statTotal">0</div><div class="label">总服务</div></div>
+      <div class="stat running"><div class="value" id="statRunning">0</div><div class="label">运行中</div></div>
+      <div class="stat stopped"><div class="value" id="statStopped">0</div><div class="label">已停止</div></div>
+    </div>
+  </div>
+
+  <div class="control-panel">
+    <h2>⚡ 批量操作</h2>
+    <div class="batch-actions">
+      <button class="btn btn-success" onclick="batchAction('start-all')">
+        <span>🚀</span> 一键启动所有
+      </button>
+      <button class="btn btn-danger" onclick="batchAction('stop-all')">
+        <span>🛑</span> 一键停止所有
+      </button>
+      <button class="btn btn-warning" onclick="batchAction('restart-selected')">
+        <span>🔄</span> 重启选中
+      </button>
+      <button class="btn btn-info" onclick="batchAction('start-selected')">
+        <span>▶️</span> 启动选中
+      </button>
+      <button class="btn btn-danger" onclick="batchAction('stop-selected')">
+        <span>⏹️</span> 停止选中
+      </button>
+      <button class="btn btn-primary" onclick="refreshStatus()">
+        <span>🔍</span> 刷新状态
+      </button>
+    </div>
+  </div>
+
+  <div class="batch-select-bar">
+    <label class="select-all-label">
+      <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this.checked)">
+      <span>全选所有服务</span>
+    </label>
+    <span class="selected-count" id="selectedCount">已选择 0 个服务</span>
+  </div>
+
+  <div class="services-grid" id="servicesGrid">
+    <div class="empty-state">加载服务列表中...</div>
+  </div>
+
+  <div class="logs-panel">
+    <div class="logs-panel-header">
+      <h3>📋 实时日志</h3>
+      <div>
+        <select id="logService" style="background: rgba(255,255,255,0.1); color: #e6e6f0; border: 1px solid rgba(120, 140, 255, 0.3); padding: 4px 8px; border-radius: 6px; margin-right: 8px;">
+          <option value="">选择服务...</option>
+        </select>
+        <button class="btn btn-sm btn-primary" onclick="loadLogs()">查看日志</button>
+        <button class="btn btn-sm btn-warning" onclick="clearLogs()">清理日志</button>
+      </div>
+    </div>
+    <div class="logs-content" id="logsContent">点击上方"查看日志"按钮显示服务日志...</div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <span id="toastMsg"></span>
+</div>
+
+<div class="progress-overlay hidden" id="progressOverlay">
+  <div class="progress-box">
+    <h3 id="progressTitle">执行中...</h3>
+    <div class="progress-bar"><div class="progress-bar-fill" id="progressBarFill" style="width: 0%"></div></div>
+    <div class="progress-text" id="progressText">准备就绪</div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal">
+    <h2 id="modalTitle">确认操作</h2>
+    <p id="modalMessage">确定要执行此操作吗？</p>
+    <div class="modal-actions">
+      <button class="btn btn-sm" onclick="closeModal()">取消</button>
+      <button class="btn btn-sm btn-danger" id="modalConfirm">确认</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = '/api';
+let services = [];
+let selectedServices = new Set();
+let logInterval = null;
+
+async function apiCall(endpoint, options = {}) {
+  const url = API_BASE + endpoint;
+  const res = await fetch(url, {
+    headers: { 'Content-Type': 'application/json' },
+    ...options
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || '请求失败');
+  return data.data;
+}
+
+async function refreshStatus() {
+  showToast('刷新服务状态...', 'info');
+  try {
+    const data = await apiCall('/services');
+    services = data.services || [];
+    renderServices();
+    updateStats(data);
+    updateLogServiceSelector();
+    showToast('状态已刷新', 'success');
+  } catch (e) {
+    showToast('获取服务列表失败: ' + e.message, 'error');
+    services = [];
+    renderServices();
+  }
+}
+
+function updateStats(data) {
+  document.getElementById('statTotal').textContent = data.total || services.length;
+  document.getElementById('statRunning').textContent = data.running || 0;
+  document.getElementById('statStopped').textContent = data.stopped || 0;
+}
+
+function renderServices() {
+  const grid = document.getElementById('servicesGrid');
+  if (!services.length) {
+    grid.innerHTML = '<div class="empty-state">暂无服务</div>';
+    return;
+  }
+
+  grid.innerHTML = services.map(svc => {
+    const selected = selectedServices.has(svc.id);
+    return `
+      <div class="service-card ${svc.running ? 'running' : 'stopped'}" data-id="${svc.id}">
+        <div class="service-header">
+          <div class="service-info">
+            <h3>${escapeHtml(svc.name)}</h3>
+            <p>${escapeHtml(svc.description || '')}</p>
+          </div>
+          <div class="service-status">
+            <span class="status-indicator"></span>
+            ${svc.running ? '运行中' : '已停止'}
+          </div>
+        </div>
+        <div class="service-details">
+          <div class="detail-item"><span class="label">端口</span><span class="value">${svc.port}</span></div>
+          <div class="detail-item"><span class="label">PID</span><span class="value">${svc.pid || '-'}</span></div>
+          <div class="detail-item"><span class="label">优先级</span><span class="value">${svc.priority || '-'}</span></div>
+          <div class="detail-item"><span class="label">自动启动</span><span class="value">${svc.autoStart ? '是' : '否'}</span></div>
+        </div>
+        <div class="service-actions">
+          ${svc.running
+            ? `<button class="btn btn-sm btn-danger" onclick="serviceAction('${svc.id}', 'stop')">🛑 停止</button>
+               <button class="btn btn-sm btn-warning" onclick="serviceAction('${svc.id}', 'restart')">🔄 重启</button>`
+            : `<button class="btn btn-sm btn-success" onclick="serviceAction('${svc.id}', 'start')">▶️ 启动</button>
+               <button class="btn btn-sm btn-info" onclick="serviceAction('${svc.id}', 'restart')">🔄 重启</button>`
+          }
+          <button class="btn btn-sm btn-primary" onclick="showServiceLogs('${svc.id}')">📋 日志</button>
+        </div>
+        <div class="toggle-check">
+          <input type="checkbox" id="check-${svc.id}" ${selected ? 'checked' : ''} onchange="toggleServiceSelection('${svc.id}', this.checked)">
+          <label for="check-${svc.id}"></label>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function toggleServiceSelection(id, checked) {
+  if (checked) selectedServices.add(id);
+  else selectedServices.delete(id);
+  updateSelectedCount();
+}
+
+function toggleSelectAll(checked) {
+  if (checked) services.forEach(s => selectedServices.add(s.id));
+  else selectedServices.clear();
+  updateSelectedCount();
+  renderServices();
+}
+
+function updateSelectedCount() {
+  document.getElementById('selectedCount').textContent = `已选择 ${selectedServices.size} 个服务`;
+  const allCheckbox = document.getElementById('selectAll');
+  if (allCheckbox) allCheckbox.checked = selectedServices.size === services.length && services.length > 0;
+}
+
+async function serviceAction(id, action) {
+  const svc = services.find(s => s.id === id);
+  if (!svc) return;
+
+  const actionLabels = { start: '启动', stop: '停止', restart: '重启' };
+  const label = actionLabels[action] + svc.name;
+
+  if (action === 'stop' || action === 'restart') {
+    const confirmed = await confirmAction(`确定要${label}吗？`);
+    if (!confirmed) return;
+  }
+
+  showProgress(actionLabels[action] + ' ' + svc.name);
+
+  try {
+    const data = await apiCall(`/services/${id}/${action}`, { method: 'POST' });
+    hideProgress();
+    showToast(data.message || `${label}成功`, data.success ? 'success' : 'error');
+    await refreshStatus();
+  } catch (e) {
+    hideProgress();
+    showToast(`${label}失败: ${e.message}`, 'error');
+  }
+}
+
+async function batchAction(action) {
+  let ids = [];
+  let url = '';
+  let label = '';
+
+  switch (action) {
+    case 'start-all':
+      url = '/services/start-all';
+      label = '启动所有服务';
+      break;
+    case 'stop-all':
+      const confirmedAll = await confirmAction('确定要停止所有服务吗？此操作将终止所有正在运行的服务。');
+      if (!confirmedAll) return;
+      url = '/services/stop-all';
+      label = '停止所有服务';
+      break;
+    case 'start-selected':
+      ids = Array.from(selectedServices);
+      if (!ids.length) { showToast('请先选择服务', 'warning'); return; }
+      url = '/services/batch/start';
+      label = `批量启动 ${ids.length} 个服务`;
+      break;
+    case 'stop-selected':
+      ids = Array.from(selectedServices);
+      if (!ids.length) { showToast('请先选择服务', 'warning'); return; }
+      const confirmedStop = await confirmAction(`确定要停止 ${ids.length} 个选中的服务吗？`);
+      if (!confirmedStop) return;
+      url = '/services/batch/stop';
+      label = `批量停止 ${ids.length} 个服务`;
+      break;
+    case 'restart-selected':
+      ids = Array.from(selectedServices);
+      if (!ids.length) { showToast('请先选择服务', 'warning'); return; }
+      url = '/services/batch/restart';
+      label = `批量重启 ${ids.length} 个服务`;
+      break;
+  }
+
+  showProgress(label);
+
+  try {
+    const body = ids.length ? JSON.stringify({ services: ids }) : '{}';
+    const data = await apiCall(url, { method: 'POST', body });
+    hideProgress();
+    const successCount = data.results ? data.results.filter(r => r.success).length : 0;
+    showToast(`${label}完成 - 成功 ${successCount}/${data.total}`, successCount > 0 ? 'success' : 'error');
+    await refreshStatus();
+  } catch (e) {
+    hideProgress();
+    showToast(`${label}失败: ${e.message}`, 'error');
+  }
+}
+
+function showProgress(title) {
+  document.getElementById('progressTitle').textContent = title;
+  document.getElementById('progressOverlay').classList.remove('hidden');
+}
+function hideProgress() {
+  document.getElementById('progressOverlay').classList.add('hidden');
+}
+
+function showToast(msg, type = 'info') {
+  const toast = document.getElementById('toast');
+  const msgEl = document.getElementById('toastMsg');
+  msgEl.textContent = msg;
+  toast.className = 'toast show ' + type;
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function confirmAction(message) {
+  return new Promise(resolve => {
+    document.getElementById('modalMessage').textContent = message;
+    document.getElementById('modalOverlay').classList.remove('hidden');
+    document.getElementById('modalConfirm').onclick = () => {
+      closeModal();
+      resolve(true);
+    };
+  });
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.add('hidden');
+}
+
+function updateLogServiceSelector() {
+  const sel = document.getElementById('logService');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">选择服务...</option>' +
+    services.map(s => `<option value="${s.id}" ${s.id === current ? 'selected' : ''}>${s.name} (端口:${s.port})</option>`).join('');
+}
+
+async function showServiceLogs(serviceId) {
+  document.getElementById('logService').value = serviceId;
+  await loadLogs();
+}
+
+async function loadLogs() {
+  const sel = document.getElementById('logService');
+  const serviceId = sel.value;
+  if (!serviceId) { showToast('请选择服务', 'warning'); return; }
+
+  try {
+    const data = await apiCall(`/services/${serviceId}/logs?lines=100`);
+    const container = document.getElementById('logsContent');
+    if (!data.logs || !data.logs.length) {
+      container.innerHTML = '<div class="log-line">暂无日志记录</div>';
+    } else {
+      container.innerHTML = data.logs.map(l => `<div class="log-line">${escapeHtml(l.line)}</div>`).join('');
+      container.scrollTop = container.scrollHeight;
+    }
+  } catch (e) {
+    showToast('加载日志失败: ' + e.message, 'error');
+  }
+}
+
+async function clearLogs() {
+  const sel = document.getElementById('logService');
+  const serviceId = sel.value;
+  if (!serviceId) { showToast('请选择服务', 'warning'); return; }
+
+  try {
+    const data = await apiCall(`/services/${serviceId}/logs/clear`, { method: 'POST' });
+    showToast('日志已清理', 'success');
+    document.getElementById('logsContent').innerHTML = '<div class="log-line">日志已清理</div>';
+  } catch (e) {
+    showToast('清理日志失败: ' + e.message, 'error');
+  }
+}
+
+setInterval(async () => {
+  try {
+    const data = await apiCall('/services');
+    services = data.services || [];
+    renderServices();
+    updateStats(data);
+  } catch (e) {}
+}, 15000);
+
+refreshStatus();
+</script>
+</body>
+</html>

@@ -167,11 +167,11 @@ class LLMGateway {
     const convHistory = sessionId ? this.conversations.get(sessionId) || [] : [];
     const allMessages = [...enhancedMessages, ...convHistory, ...messages];
 
-    if (provider && provider.enabled && provider.provider !== 'local') {
-      return await this._callExternalProvider(provider, allMessages, temperature, maxTokens);
-    }
+    let result;
 
-    if (expertType === 'graph' && systemPrompt && systemPrompt.includes('nodes') && systemPrompt.includes('edges')) {
+    if (provider && provider.enabled && provider.provider !== 'local') {
+      result = await this._callExternalProvider(provider, allMessages, temperature, maxTokens);
+    } else if (expertType === 'graph' && systemPrompt && systemPrompt.includes('nodes') && systemPrompt.includes('edges')) {
       console.log('[gateway] Graph generation detected, expertType:', expertType, 'systemPrompt length:', systemPrompt.length);
       const userText = messages.filter(m => m.role === 'user').map(m => m.content).join(' ');
       const topicMatch = userText.match(/主题[：:]\s*(.+)/);
@@ -181,17 +181,31 @@ class LLMGateway {
       console.log('[gateway] Extracted topic:', topic, 'description:', description);
       const graphData = this._generateLocalGraph(topic, description);
       console.log('[gateway] Generated graph:', graphData.nodes.length, 'nodes,', graphData.edges.length, 'edges');
-      return {
+      result = {
         content: JSON.stringify(graphData),
         usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
         model: 'ous-local-graph-v1',
         provider: 'local-graph-generator',
         metadata: { type: 'graph-generation', nodeCount: graphData.nodes.length, edgeCount: graphData.edges.length }
       };
+    } else {
+      console.log('[gateway] Falling through to _generateIntelligentResponse, expertType:', expertType, 'hasSystemPrompt:', !!systemPrompt);
+      result = this._generateIntelligentResponse(messages, expertType, convHistory);
     }
 
-    console.log('[gateway] Falling through to _generateIntelligentResponse, expertType:', expertType, 'hasSystemPrompt:', !!systemPrompt);
-    return this._generateIntelligentResponse(messages, expertType, convHistory);
+    if (sessionId) {
+      const updatedHistory = [...convHistory, ...messages];
+      if (result && result.content) {
+        updatedHistory.push({ role: 'assistant', content: result.content });
+      }
+      this.conversations.set(sessionId, updatedHistory);
+      if (this.conversations.size > 1000) {
+        const oldestKey = this.conversations.keys().next().value;
+        this.conversations.delete(oldestKey);
+      }
+    }
+
+    return result;
   }
 
   _getExpertSystemPrompt(expertType) {

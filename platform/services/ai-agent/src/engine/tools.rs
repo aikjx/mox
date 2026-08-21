@@ -7,6 +7,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::Arc;
 
 /// 工具统一返回结果
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -93,26 +94,35 @@ impl ToolRegistry {
 // ── DatabaseTool ──────────────────────────────────────────
 
 /// SQLite 操作工具：query / insert / update / delete
+#[allow(dead_code)]
 pub struct DatabaseTool {
     db_path: String,
+    conn: Arc<std::sync::Mutex<rusqlite::Connection>>,
 }
 
 impl DatabaseTool {
     pub fn new() -> Self {
-        Self {
-            db_path: "operator_data.db".to_string(),
-        }
+        let db_path = "operator_data.db".to_string();
+        let conn = Arc::new(std::sync::Mutex::new(
+            rusqlite::Connection::open(&db_path).unwrap_or_else(|_| {
+                rusqlite::Connection::open(":memory:").expect("in-memory fallback must work")
+            })
+        ));
+        Self { db_path, conn }
     }
 
     pub fn with_path(path: impl Into<String>) -> Self {
-        Self {
-            db_path: path.into(),
-        }
+        let db_path = path.into();
+        let conn = Arc::new(std::sync::Mutex::new(
+            rusqlite::Connection::open(&db_path).unwrap_or_else(|_| {
+                rusqlite::Connection::open(":memory:").expect("in-memory fallback must work")
+            })
+        ));
+        Self { db_path, conn }
     }
 
-    fn connect(&self) -> Result<rusqlite::Connection, String> {
-        rusqlite::Connection::open(&self.db_path)
-            .map_err(|e| format!("数据库连接失败: {}", e))
+    fn connect(&self) -> std::sync::MutexGuard<'_, rusqlite::Connection> {
+        self.conn.lock().unwrap()
     }
 
     fn json_to_sql_value(v: &serde_json::Value) -> Box<dyn rusqlite::ToSql> {
@@ -154,10 +164,7 @@ impl DatabaseTool {
     }
 
     fn execute_query(&self, sql: &str, params: Option<&serde_json::Value>) -> ToolResult {
-        let conn = match self.connect() {
-            Ok(c) => c,
-            Err(e) => return ToolResult::err(e),
-        };
+        let conn = self.connect();
 
         let param_values = Self::params_to_refs(params);
         let param_refs: Vec<&dyn rusqlite::ToSql> =
@@ -204,10 +211,7 @@ impl DatabaseTool {
     }
 
     fn execute_write(&self, sql: &str, params: Option<&serde_json::Value>) -> ToolResult {
-        let conn = match self.connect() {
-            Ok(c) => c,
-            Err(e) => return ToolResult::err(e),
-        };
+        let conn = self.connect();
 
         let param_values = Self::params_to_refs(params);
         let param_refs: Vec<&dyn rusqlite::ToSql> =

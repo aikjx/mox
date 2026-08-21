@@ -10,6 +10,8 @@ const { getExpertGraph } = require('./expert-graph');
 const { getStorage } = require('./storage');
 const { getAIEngine } = require('./ai-engine');
 const { getAIIntegrationEngine } = require('./ai-integration-engine');
+const { getUltimateEngine } = require('./ultimate-ai-engine');
+const { getServiceManager } = require('./service-manager');
 const { getSecurityManager } = require('./security');
 const { config, DATA_DIR } = require('./config');
 const { uid } = require('./utils');
@@ -30,6 +32,8 @@ const expertGraph = getExpertGraph(alliance);
 const storage = getStorage();
 const aiEngine = getAIEngine(gateway);
 const aiIntegration = getAIIntegrationEngine();
+const ultimateEngine = getUltimateEngine();
+const serviceManager = getServiceManager();
 const security = getSecurityManager();
 
 function p(...parts) {
@@ -377,6 +381,23 @@ function match(method, urlPath) {
 }
 
 function registerRoutes() {
+  reg('get', '/service-manager', (req, res) => {
+    const htmlPath = path.join(__dirname, '..', 'public', 'service-manager.html');
+    try {
+      if (fs.existsSync(htmlPath)) {
+        const content = fs.readFileSync(htmlPath, 'utf8');
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(content);
+      } else {
+        res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('服务管理页面未找到');
+      }
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('加载服务管理页面失败: ' + e.message);
+    }
+  });
+
   reg('get', '/', (req, res) => {
     const entityCount = storage.listAllEntities().length;
     ok(res, {
@@ -433,7 +454,33 @@ function registerRoutes() {
         integrated_pipe_reg:   { method: 'POST', path: '/ai/integrated/pipeline-register', desc: '注册流水线' },
         integrated_pipes:      { method: 'GET',  path: '/ai/integrated/pipelines',        desc: '流水线列表' },
         integrated_oneshot:    { method: 'POST', path: '/ai/integrated/one-shot',       desc: '一键全维集成处理（图+专家+AI+记忆）' },
-        integrated_health:     { method: 'GET',  path: '/ai/integrated/health',          desc: '集成引擎健康检查' }
+        integrated_health:     { method: 'GET',  path: '/ai/integrated/health',          desc: '集成引擎健康检查' },
+        ultimate_process:      { method: 'POST', path: '/ai/ultimate/process',          desc: '终极AI引擎深度处理' },
+        ultimate_analysis:     { method: 'POST', path: '/ai/ultimate/full-analysis',     desc: '终极全维分析' },
+        ultimate_stats:        { method: 'GET',  path: '/ai/ultimate/stats',             desc: '终极引擎统计' },
+        ultimate_health:       { method: 'GET',  path: '/ai/ultimate/health',            desc: '终极引擎健康检查' },
+        ultimate_reasoning:    { method: 'POST', path: '/ai/ultimate/reasoning',         desc: '深度推理+自我反思' },
+        ultimate_analogical:   { method: 'POST', path: '/ai/ultimate/analogical',        desc: '跨域类比推理' },
+        ultimate_store:        { method: 'POST', path: '/ai/ultimate/store',             desc: '向量知识存储' },
+        ultimate_search:       { method: 'POST', path: '/ai/ultimate/search',            desc: '向量知识检索' },
+        ultimate_optimize:     { method: 'POST', path: '/ai/ultimate/optimize-prompt',   desc: 'Prompt优化' },
+        ultimate_performance:  { method: 'GET',  path: '/ai/ultimate/performance',       desc: '性能报告' },
+        ultimate_circuit:      { method: 'GET',  path: '/ai/ultimate/circuit-breaker', desc: '熔断器状态' },
+        ultimate_rules_add:    { method: 'POST', path: '/ai/ultimate/reasoning-rules',   desc: '添加推理规则' },
+        ultimate_rules_list:   { method: 'GET',  path: '/ai/ultimate/reasoning-rules',   desc: '推理规则列表' },
+        svc_page:             { method: 'GET',  path: '/service-manager',               desc: '服务管理控制台页面' },
+        svc_list:             { method: 'GET',  path: '/services',                     desc: '获取所有服务状态' },
+        svc_status:           { method: 'GET',  path: '/services/:id',                 desc: '获取单个服务状态' },
+        svc_start:            { method: 'POST', path: '/services/:id/start',           desc: '启动指定服务' },
+        svc_stop:             { method: 'POST', path: '/services/:id/stop',            desc: '停止指定服务' },
+        svc_restart:          { method: 'POST', path: '/services/:id/restart',         desc: '重启指定服务' },
+        svc_logs:             { method: 'GET',  path: '/services/:id/logs',            desc: '获取服务日志' },
+        svc_logs_clear:       { method: 'POST', path: '/services/:id/logs/clear',      desc: '清理服务日志' },
+        svc_batch_start:      { method: 'POST', path: '/services/batch/start',         desc: '批量启动服务' },
+        svc_batch_stop:       { method: 'POST', path: '/services/batch/stop',          desc: '批量停止服务' },
+        svc_batch_restart:    { method: 'POST', path: '/services/batch/restart',       desc: '批量重启服务' },
+        svc_start_all:        { method: 'POST', path: '/services/start-all',           desc: '一键启动所有服务' },
+        svc_stop_all:         { method: 'POST', path: '/services/stop-all',            desc: '一键停止所有服务' }
       },
       info: '璇玑系统 API Gateway — 所有接口返回 { success, data/error } 统一格式',
       docs: '使用 /health 或 /status/full 获取实时状态',
@@ -1053,22 +1100,13 @@ ${seedNodes.length ? '已有种子节点：' + seedNodes.map(n => n.id + '(' + n
     const body = await readBody(req);
     const messages = body.messages || (body.message ? [{ role: 'user', content: body.message }] : []);
     const last = messages.length ? messages[messages.length - 1].content : '';
-    const reply = buildAIReply(last);
     const sessionId = body.sessionId || body.session_id || uid('sess');
-    const sessions = readJSON('dialogue_sessions.json', []);
-    let sess = sessions.find((s) => s.id === sessionId);
-    if (!sess) {
-      sess = { id: sessionId, title: last.slice(0, 20) || '新会话', messages: [], updatedAt: new Date().toISOString() };
-      sessions.push(sess);
-    }
-    sess.messages = sess.messages.concat([
-      { role: 'user', content: last, ts: new Date().toISOString() },
-      { role: 'assistant', content: reply, ts: new Date().toISOString() }
-    ]);
-    sess.updatedAt = new Date().toISOString();
-    writeJSON('dialogue_sessions.json', sessions);
-    
-    // If expert type is specified, route through expert alliance
+
+    let reply = null;
+    let aiMetadata = null;
+    let aiPowered = false;
+
+    // 1. 优先尝试专家联盟（指定专家类型时）
     if (body.expertType || body.expert_id) {
       try {
         const expertId = body.expert_id || `${body.expertType}-expert`;
@@ -1077,14 +1115,62 @@ ${seedNodes.length ? '已有种子节点：' + seedNodes.map(n => n.id + '(' + n
           temperature: body.temperature,
           maxTokens: body.maxTokens
         });
-        ok(res, { reply: expertResult.response, sessionId, expert: expertResult.expert, metadata: expertResult.metadata });
+        reply = expertResult.response;
+        aiMetadata = { ...(expertResult.metadata || {}), expert: expertResult.expert, ai_powered: true };
+        aiPowered = true;
+        ok(res, { reply, sessionId, expert: expertResult.expert, metadata: aiMetadata });
         return;
       } catch (e) {
-        // Fall back to normal reply
+        // Fall through to gateway
       }
     }
-    
-    ok(res, { reply: reply, sessionId: sessionId });
+
+    // 2. 尝试 LLM 网关（有激活的 Provider 时）
+    if (!aiPowered && gateway.activeProvider) {
+      try {
+        const result = await gateway.chat({
+          messages,
+          sessionId,
+          expertType: body.expert_type || body.expertType,
+          systemPrompt: body.system_prompt || body.systemPrompt,
+          temperature: body.temperature,
+          maxTokens: body.maxTokens
+        });
+        reply = result.content;
+        aiMetadata = {
+          ...(result.metadata || {}),
+          usage: result.usage,
+          model: result.model,
+          provider: result.provider,
+          ai_powered: true
+        };
+        aiPowered = true;
+      } catch (e) {
+        console.warn('[ai/chat] LLM gateway failed, falling back to local:', e.message);
+      }
+    }
+
+    // 3. 降级到本地智能回复
+    if (!aiPowered) {
+      reply = buildAIReply(last);
+      aiMetadata = { ai_powered: false, fallback: true };
+    }
+
+    // 持久化会话
+    const sessions = readJSON('dialogue_sessions.json', []);
+    let sess = sessions.find((s) => s.id === sessionId);
+    if (!sess) {
+      sess = { id: sessionId, title: last.slice(0, 20) || '新会话', messages: [], updatedAt: new Date().toISOString() };
+      sessions.push(sess);
+    }
+    sess.messages = sess.messages.concat([
+      { role: 'user', content: last, ts: new Date().toISOString() },
+      { role: 'assistant', content: reply, ts: new Date().toISOString(), ai_powered: aiPowered }
+    ]);
+    sess.updatedAt = new Date().toISOString();
+    writeJSON('dialogue_sessions.json', sessions);
+
+    ok(res, { reply, sessionId, metadata: aiMetadata });
   });
 
   function buildAIReply(input) {
@@ -1102,12 +1188,48 @@ ${seedNodes.length ? '已有种子节点：' + seedNodes.map(n => n.id + '(' + n
       return 'Caomei 需求编译器将自然语言需求编译为流程蓝图，支持精化迭代与模板复用。';
     }
     if (text.indexOf('你好') !== -1 || text.indexOf('hello') !== -1 || text.indexOf('hi') !== -1) {
-      return '你好！我是璇玑信息知识图谱关联关系系统的 AI 助手，我可以帮你进行知识图谱关联分析、推理发现、算子计算、璇玑治理以及全维融合。';
+      return '你好！我是算子统一系统的 AI 助手，我可以帮你进行知识图谱分析、算子执行、AI 对话、浏览器自动化、MCP 兼容等能力。请告诉我你的具体需求。';
     }
     if (text.indexOf('图谱') !== -1 || text.indexOf('graph') !== -1) {
       return '当前图谱包含 23 个节点与 30 条边，覆盖融合引擎、联盟、算子、AI 任务、商城等多种节点类型。可以查询邻居、最短路径或计算中心性。';
     }
-    return '已收到你的请求："' + (input || '') + '"。本系统支持图谱分析、算子执行、AI 对话、浏览器自动化、MCP 兼容等能力。请告诉我具体需求。';
+    if (text.indexOf('豆包') !== -1 || text.indexOf('doubao') !== -1) {
+      return '豆包（Doubao）是字节跳动推出的大语言模型系列，基于豆包大模型底座。在本系统中可通过「算子智能体」的 LLM 网关配置火山引擎 Provider 来调用豆包模型（支持 doubao-pro-32k、doubao-pro-128k、doubao-lite-32k 等）。前往「LLM 配置」页面添加火山引擎 Provider 后即可使用。';
+    }
+    if (text.indexOf('deepseek') !== -1 || text.indexOf('千问') !== -1 || text.indexOf('qwen') !== -1 || text.indexOf('智谱') !== -1 || text.indexOf('zhipu') !== -1) {
+      return '本系统支持多种主流大模型：DeepSeek（深度求索）、千问（阿里云）、智谱AI、豆包（火山引擎）、OpenAI 等。可前往「LLM 配置」页面添加对应 Provider 后使用。所有 API Key 均采用 AES-256-GCM 加密存储。';
+    }
+    if (text.indexOf('llm') !== -1 || text.indexOf('大模型') !== -1 || text.indexOf('模型') !== -1) {
+      return '本系统内置 LLM 网关，支持配置多种大模型 Provider（DeepSeek、火山引擎、阿里云千问、智谱AI、OpenAI 等）。前往「LLM 配置」页面可添加、启用、切换 Provider，并查看用量统计和请求日志。';
+    }
+    if (text.indexOf('算法') !== -1 || text.indexOf('algorithm') !== -1) {
+      return '本系统内置多种图算法实现：PageRank（节点影响力）、Label Propagation（社区发现）、BFS（最短路径）、度中心性、激活传播等。可通过 API 直接调用，也可在 AI 对话中请求算法分析。';
+    }
+    if (text.indexOf('算子') !== -1 || text.indexOf('operator') !== -1) {
+      return '算子（Operator）是本系统的核心抽象，支持函数算子、线性算子、聚合算子等类型。可通过「算子中心」注册和管理算子，在 AI 对话中推荐算子，也可在工作流中编排执行。';
+    }
+    if (text.indexOf('浏览器') !== -1 || text.indexOf('browser') !== -1) {
+      return '本系统支持浏览器自动化能力，可通过 AI 指令自动执行网页操作（导航、点击、提取、截图等）。前往「浏览器自动化」页面创建会话，或在对话中请求浏览器任务。';
+    }
+    if (text.indexOf('mcp') !== -1) {
+      return '本系统兼容 MCP（Model Context Protocol）协议，支持以标准 MCP 工具的形式暴露系统能力（算子、图谱分析、浏览器自动化等）。可通过 /mcp 端点进行工具列表查询和调用。';
+    }
+    if (text.indexOf('知识') !== -1 || text.indexOf('知识库') !== -1 || text.indexOf('kb') !== -1) {
+      return '本系统集成云盘知识库功能，支持文档上传、分类管理、实体抽取、版本对比、语义搜索等能力。可在「知识库」页面管理文档，对话中也可自动将对话内容整理进知识图谱。';
+    }
+    return `已收到你的请求："${input || ''}"。
+
+本系统是算子统一智能平台，支持以下核心能力：
+- 📊 知识图谱分析（PageRank、社区发现、中心性计算）
+- 🔌 算子执行与编排（算法算子、数据流算子、工作流算子）
+- 🤖 AI 对话（本地智能引擎 + 外部 LLM 网关）
+- 🌐 浏览器自动化（网页操作、数据提取）
+- 🔗 MCP 协议兼容（标准工具接入）
+- 📝 需求编译（Caomei 自然语言 → 流程蓝图）
+- 🛒 算子商城（算子市场、模板复用）
+- 📚 知识库管理（文档、实体、版本）
+
+请告诉我具体需求，我会为你提供针对性的帮助。`;
   }
 
   reg('get', '/ai/chat/history/:session', (req, res, params) => {
@@ -4337,6 +4459,325 @@ ${document}
     } catch (e) {
       console.error('[ai-integrated-health]', e);
       fail(res, 500, '获取健康状态失败: ' + e.message);
+    }
+  });
+
+  // ===== 终极AI引擎路由 =====
+  reg('post', '/ai/ultimate/process', async (req, res) => {
+    const body = await readBody(req);
+    const question = body.question || body.text || '';
+    const options = body.options || {};
+    try {
+      const result = await ultimateEngine.processWithDeepIntelligence(question, options);
+      ok(res, result);
+    } catch (e) {
+      console.error('[ultimate-process]', e);
+      fail(res, 500, '终极处理失败: ' + e.message);
+    }
+  });
+
+  reg('post', '/ai/ultimate/full-analysis', async (req, res) => {
+    const body = await readBody(req);
+    const question = body.question || body.text || '';
+    const options = body.options || {};
+    try {
+      const result = await ultimateEngine.performFullUltimateAnalysis(question, options);
+      ok(res, result);
+    } catch (e) {
+      console.error('[ultimate-full-analysis]', e);
+      fail(res, 500, '终极分析失败: ' + e.message);
+    }
+  });
+
+  reg('get', '/ai/ultimate/stats', (req, res) => {
+    try {
+      const stats = ultimateEngine.getUltimateStats();
+      ok(res, stats);
+    } catch (e) {
+      console.error('[ultimate-stats]', e);
+      fail(res, 500, '获取终极统计失败: ' + e.message);
+    }
+  });
+
+  reg('get', '/ai/ultimate/health', (req, res) => {
+    try {
+      const stats = ultimateEngine.getUltimateStats();
+      const healthScore = Math.min(100,
+        (stats.vectorStore.totalVectors > 0 ? 20 : 10) +
+        (stats.processingHistory.total > 0 ? 25 : 5) +
+        (stats.vectorStore.dimensions >= 128 ? 15 : 5) +
+        (stats.performance.successRate > 0.8 ? 25 : stats.performance.successRate * 30) +
+        (stats.graphReasoner.rulesCount >= 5 ? 15 : 5)
+      );
+      ok(res, {
+        status: 'ultimate',
+        healthScore: Math.round(healthScore),
+        version: '2.0.0',
+        engine: stats.engine,
+        components: stats.integrations,
+        performance: stats.performance,
+        vectorStore: {
+          vectors: stats.vectorStore.totalVectors,
+          dimensions: stats.vectorStore.dimensions
+        },
+        processingHistory: stats.processingHistory.total,
+        uptime: process.uptime()
+      });
+    } catch (e) {
+      console.error('[ultimate-health]', e);
+      fail(res, 500, '获取终极健康状态失败: ' + e.message);
+    }
+  });
+
+  reg('post', '/ai/ultimate/reasoning', async (req, res) => {
+    const body = await readBody(req);
+    const question = body.question || body.text || '';
+    const options = body.options || {};
+    try {
+      const reasoning = await ultimateEngine.reasoningEngine.multiStepReasoning(question, options);
+      if (options.self_reflect !== false) {
+        const reflected = await ultimateEngine.reasoningEngine.selfReflect(reasoning, question, options);
+        ok(res, reflected);
+      } else {
+        ok(res, reasoning);
+      }
+    } catch (e) {
+      console.error('[ultimate-reasoning]', e);
+      fail(res, 500, '深度推理失败: ' + e.message);
+    }
+  });
+
+  reg('post', '/ai/ultimate/analogical', async (req, res) => {
+    const body = await readBody(req);
+    const sourceDomain = body.source_domain || body.source || '';
+    const targetDomain = body.target_domain || body.target || '';
+    const question = body.question || '';
+    try {
+      const result = await ultimateEngine.reasonByAnalogy(sourceDomain, targetDomain, question);
+      ok(res, result);
+    } catch (e) {
+      console.error('[ultimate-analogical]', e);
+      fail(res, 500, '类比推理失败: ' + e.message);
+    }
+  });
+
+  reg('post', '/ai/ultimate/store', async (req, res) => {
+    const body = await readBody(req);
+    const id = body.id || `kv_${Date.now()}`;
+    const content = body.content || body.text || '';
+    const metadata = body.metadata || {};
+    try {
+      const result = await ultimateEngine.storeKnowledge(id, content, metadata);
+      ok(res, result);
+    } catch (e) {
+      console.error('[ultimate-store]', e);
+      fail(res, 500, '存储知识失败: ' + e.message);
+    }
+  });
+
+  reg('post', '/ai/ultimate/search', async (req, res) => {
+    const body = await readBody(req);
+    const query = body.query || body.question || '';
+    const options = body.options || {};
+    try {
+      const results = await ultimateEngine.searchKnowledge(query, options);
+      ok(res, { query, results, totalMatches: results.length });
+    } catch (e) {
+      console.error('[ultimate-search]', e);
+      fail(res, 500, '搜索知识失败: ' + e.message);
+    }
+  });
+
+  reg('post', '/ai/ultimate/optimize-prompt', async (req, res) => {
+    const body = await readBody(req);
+    const prompt = body.prompt || '';
+    const target = body.target || 'concise';
+    try {
+      const optimized = ultimateEngine.optimizer.optimizePrompt(prompt, target);
+      ok(res, { original: prompt, optimized, target });
+    } catch (e) {
+      console.error('[ultimate-optimize]', e);
+      fail(res, 500, '优化Prompt失败: ' + e.message);
+    }
+  });
+
+  reg('get', '/ai/ultimate/performance', (req, res) => {
+    try {
+      const report = ultimateEngine.optimizer.getPerformanceReport();
+      ok(res, report);
+    } catch (e) {
+      console.error('[ultimate-performance]', e);
+      fail(res, 500, '获取性能报告失败: ' + e.message);
+    }
+  });
+
+  reg('get', '/ai/ultimate/circuit-breaker', (req, res) => {
+    try {
+      const status = ultimateEngine.optimizer.getCircuitStatus();
+      ok(res, status);
+    } catch (e) {
+      console.error('[ultimate-circuit]', e);
+      fail(res, 500, '获取熔断器状态失败: ' + e.message);
+    }
+  });
+
+  reg('post', '/ai/ultimate/reasoning-rules', async (req, res) => {
+    const body = await readBody(req);
+    const rule = body.rule || body.config || {};
+    try {
+      ultimateEngine.addReasoningRule(rule);
+      ok(res, { success: true, rule });
+    } catch (e) {
+      console.error('[ultimate-rule]', e);
+      fail(res, 500, '添加推理规则失败: ' + e.message);
+    }
+  });
+
+  reg('get', '/ai/ultimate/reasoning-rules', (req, res) => {
+    try {
+      const stats = ultimateEngine.getUltimateStats();
+      ok(res, {
+        rulesCount: stats.graphReasoner.rulesCount,
+        engine: 'KnowledgeGraphReasoner'
+      });
+    } catch (e) {
+      console.error('[ultimate-rules-list]', e);
+      fail(res, 500, '获取规则列表失败: ' + e.message);
+    }
+  });
+
+  // ===== 服务管理路由 =====
+  reg('get', '/services', async (req, res) => {
+    try {
+      const status = await serviceManager.getAllStatus();
+      ok(res, status);
+    } catch (e) {
+      console.error('[services-list]', e);
+      fail(res, 500, '获取服务列表失败: ' + e.message);
+    }
+  });
+
+  reg('get', '/services/:id', async (req, res, params) => {
+    const serviceId = params.id;
+    try {
+      const status = await serviceManager.getServiceStatus(serviceId);
+      ok(res, status);
+    } catch (e) {
+      console.error('[service-status]', e);
+      fail(res, 500, '获取服务状态失败: ' + e.message);
+    }
+  });
+
+  reg('post', '/services/:id/start', async (req, res, params) => {
+    const serviceId = params.id;
+    const body = await readBody(req);
+    try {
+      const result = await serviceManager.startService(serviceId, body.options || {});
+      ok(res, result);
+    } catch (e) {
+      console.error('[service-start]', e);
+      fail(res, 500, '启动服务失败: ' + e.message);
+    }
+  });
+
+  reg('post', '/services/:id/stop', async (req, res, params) => {
+    const serviceId = params.id;
+    try {
+      const result = await serviceManager.stopService(serviceId);
+      ok(res, result);
+    } catch (e) {
+      console.error('[service-stop]', e);
+      fail(res, 500, '停止服务失败: ' + e.message);
+    }
+  });
+
+  reg('post', '/services/:id/restart', async (req, res, params) => {
+    const serviceId = params.id;
+    try {
+      const result = await serviceManager.restartService(serviceId);
+      ok(res, result);
+    } catch (e) {
+      console.error('[service-restart]', e);
+      fail(res, 500, '重启服务失败: ' + e.message);
+    }
+  });
+
+  reg('get', '/services/:id/logs', async (req, res, params) => {
+    const serviceId = params.id;
+    const lines = parseInt(req.query?.lines || '50', 10);
+    try {
+      const logs = serviceManager.getServiceLog(serviceId, lines);
+      ok(res, { serviceId, lines, logs });
+    } catch (e) {
+      console.error('[service-logs]', e);
+      fail(res, 500, '获取服务日志失败: ' + e.message);
+    }
+  });
+
+  reg('post', '/services/:id/logs/clear', (req, res, params) => {
+    const serviceId = params.id;
+    try {
+      const result = serviceManager.clearServiceLog(serviceId);
+      ok(res, { success: result, serviceId });
+    } catch (e) {
+      console.error('[service-logs-clear]', e);
+      fail(res, 500, '清理服务日志失败: ' + e.message);
+    }
+  });
+
+  reg('post', '/services/batch/start', async (req, res) => {
+    const body = await readBody(req);
+    const ids = body.services || [];
+    try {
+      const result = await serviceManager.batchStart(ids.length > 0 ? ids : null);
+      ok(res, result);
+    } catch (e) {
+      console.error('[batch-start]', e);
+      fail(res, 500, '批量启动失败: ' + e.message);
+    }
+  });
+
+  reg('post', '/services/batch/stop', async (req, res) => {
+    const body = await readBody(req);
+    const ids = body.services || [];
+    try {
+      const result = await serviceManager.batchStop(ids.length > 0 ? ids : null);
+      ok(res, result);
+    } catch (e) {
+      console.error('[batch-stop]', e);
+      fail(res, 500, '批量停止失败: ' + e.message);
+    }
+  });
+
+  reg('post', '/services/batch/restart', async (req, res) => {
+    const body = await readBody(req);
+    const ids = body.services || [];
+    try {
+      const result = await serviceManager.batchRestart(ids.length > 0 ? ids : null);
+      ok(res, result);
+    } catch (e) {
+      console.error('[batch-restart]', e);
+      fail(res, 500, '批量重启失败: ' + e.message);
+    }
+  });
+
+  reg('post', '/services/start-all', async (req, res) => {
+    try {
+      const result = await serviceManager.batchStart();
+      ok(res, result);
+    } catch (e) {
+      console.error('[start-all]', e);
+      fail(res, 500, '一键启动所有服务失败: ' + e.message);
+    }
+  });
+
+  reg('post', '/services/stop-all', async (req, res) => {
+    try {
+      const result = await serviceManager.batchStop();
+      ok(res, result);
+    } catch (e) {
+      console.error('[stop-all]', e);
+      fail(res, 500, '一键停止所有服务失败: ' + e.message);
     }
   });
 

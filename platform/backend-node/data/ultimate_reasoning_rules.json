@@ -1,0 +1,65 @@
+[
+  {
+    "id": "rule_1",
+    "name": "传递性推理",
+    "pattern": {
+      "relation": "depends_on"
+    },
+    "action": "if A depends_on B and B depends_on C then A depends_on C",
+    "confidence": 0.9
+  },
+  {
+    "id": "rule_2",
+    "name": "组成关系推理",
+    "pattern": {
+      "relation": "part_of"
+    },
+    "action": "if A is part_of B then B contains A",
+    "confidence": 0.95
+  },
+  {
+    "id": "rule_3",
+    "name": "因果推理",
+    "pattern": {
+      "relation": "causes"
+    },
+    "action": "if A causes B and B causes C then A causes C",
+    "confidence": 0.8
+  },
+  {
+    "id": "rule_4",
+    "name": "实例推理",
+    "pattern": {
+      "relation": "instance_of"
+    },
+    "action": "if A is instance_of B then A has all properties of B",
+    "confidence": 0.9
+  },
+  {
+    "id": "rule_5",
+    "name": "同层推理",
+    "pattern": {
+      "relation": "similar_to"
+    },
+    "action": "if A similar_to B then share properties with similar confidence",
+    "confidence": 0.7
+  },
+  {
+    "id": "rule_6",
+    "name": "自定义传递规则",
+    "pattern": {
+      "relation": "implements"
+    },
+    "action": "if A implements B then A has all behaviors of B",
+    "confidence": 0.85
+  },
+  {
+    "id": "rule_7",
+    "name": "自定义传递规则",
+    "pattern": {
+      "relation": "implements"
+    },
+    "action": "if A implements B then A has all behaviors of B",
+    "confidence": 0.85
+  }
+]
