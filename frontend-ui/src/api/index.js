@@ -309,6 +309,24 @@ export const convertTaskToChat = (id) => http.post(`/tasks/${encodeURIComponent(
 export const executeTask = (id, payload) => http.post(`/tasks/${encodeURIComponent(id)}/execute`, payload)
 export const autoCreateTask = (payload) => http.post('/tasks/auto', payload)
 
+// ===== 项目中心（全维项目化归类） =====
+export const getProjects = () => http.get('/projects')
+export const getProjectTypes = () => http.get('/projects/types')
+export const getProjectCatalog = () => http.get('/projects/catalog')
+export const getProjectStats = () => http.get('/projects/stats')
+export const getProject = (id) => http.get(`/projects/${encodeURIComponent(id)}`)
+export const createProject = (payload) => http.post('/projects', payload)
+export const updateProject = (id, payload) => http.put(`/projects/${encodeURIComponent(id)}`, payload)
+export const deleteProject = (id) => http.delete(`/projects/${encodeURIComponent(id)}`)
+export const bindProjectResources = (id, payload) =>
+  http.post(`/projects/${encodeURIComponent(id)}/resources`, payload)
+export const unbindProjectResource = (id, rid) =>
+  http.delete(`/projects/${encodeURIComponent(id)}/resources/${encodeURIComponent(rid)}`)
+export const updateProjectResourceNote = (id, rid, payload) =>
+  http.put(`/projects/${encodeURIComponent(id)}/resources/${encodeURIComponent(rid)}`, payload)
+export const getProjectsByResource = (type, resourceId) =>
+  http.get('/projects/by-resource', { params: { type, id: resourceId } })
+
 // ===== 16模块 AI 增强端点 =====
 export const getWorkbenchAiOverview = () => http.get('/workbench/ai-overview')
 export const aiRecommendOperators = (payload) => http.post('/operators/ai-recommend', payload)

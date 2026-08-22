@@ -59,6 +59,8 @@ function appendTrace(trace) {
 // 意图识别模式（A16 单一真相源 · AINA A3）：直接引用专家联盟域包 domain 层定义，
 // 不经过编排层（expert-alliance.js），保持 application → domain 的最短依赖路径。
 const { INTENT_PATTERNS } = require('./expert-alliance/domain/intent-patterns');
+const { detectIntent: domainDetectIntent, keywordMatches } = require('./expert-alliance/domain/intent-classifier');
+const { keywordsOf } = require('./expert-alliance/domain/debate-synthesis');
 // 学习技能沉淀（G1 闭环：流程声明 writes 与实现一致）
 const { synthesizeSkills, rankSkills } = require('./expert-alliance/domain/skill-synthesis');
 const { SkillStore } = require('./expert-alliance/infrastructure/skill-store');
@@ -96,33 +98,23 @@ class ExpertAllianceEngine {
 
   // ===================== 阶段一：意图识别 =====================
   classifyIntent(question) {
-    const q = String(question || '').toLowerCase();
-    const scores = INTENT_PATTERNS.map(p => {
-      let score = 0;
-      for (const kw of p.keywords) {
-        if (q.includes(kw.toLowerCase())) score += 1;
-      }
-      return { intent: p.intent, score };
-    }).filter(s => s.score > 0)
+    // 复用 domain 层单一真相源的 detectIntent（含中英文双语支持 + 多词短语匹配）
+    const domainResult = domainDetectIntent(question);
+
+    // 转换为引擎内部格式（保持向后兼容）
+    const candidates = Object.entries(domainResult.allScores || {})
+      .map(([intent, score]) => ({ intent, score, confidence: score > 0 ? score / (Object.values(domainResult.allScores).reduce((s, v) => s + v, 0) || 1) : 0 }))
       .sort((a, b) => b.score - a.score);
 
-    const total = scores.reduce((s, x) => s + x.score, 0) || 1;
-    const ranked = scores.map(s => ({
-      intent: s.intent,
-      score: s.score,
-      confidence: Math.round((s.score / total) * 100) / 100
-    }));
-
-    // 主意图置信度归一：若多个意图并列则整体置信度下降（多义性）
-    const top = ranked[0] || { intent: 'general', score: 0, confidence: 0 };
-    const multiModal = ranked.length > 1 && ranked[1].score === top.score;
+    const multiModal = candidates.length > 1 && candidates[0].score === candidates[1].score;
 
     return {
-      primary: top.intent,
-      confidence: multiModal ? Math.round(top.confidence * 0.7 * 100) / 100 : top.confidence,
-      candidates: ranked.slice(0, 3),
-      ambiguous: multiModal,
-      coverage: Math.min(1, total / 3)
+      primary: domainResult.primary,
+      confidence: multiModal ? Math.round(domainResult.confidence * 0.7 * 100) / 100 : domainResult.confidence,
+      candidates: candidates.slice(0, 3),
+      ambiguous: multiModal || domainResult.primary === 'general',
+      coverage: Math.min(1, (domainResult.matchedKeywords?.length || 0) / 3),
+      matchedKeywords: domainResult.matchedKeywords
     };
   }
 
@@ -262,6 +254,8 @@ class ExpertAllianceEngine {
       { role: 'user', content: question }
     ];
     let degraded = null;
+    // 预计算intent用于自适应共识阈值
+    const intent = this.classifyIntent(question);
 
     // 1) 首轮并行咨询
     let consultResults = await this._parallelConsult(team, messages, context);
@@ -286,12 +280,13 @@ class ExpertAllianceEngine {
     //    G6 降级链：辩论轮全部失败（辩论引擎不可用）→ 回退初始轮直答形态，
     //    回归主流（共识计算 → 综合合成的输出契约保持一致）
     if (this.config.enableDebate && (options.enableDebate !== false)) {
-      const initialConsensus = this._consensus(consultResults);
+      const initialConsensus = this._consensus(consultResults, question, intent);
+      const adaptiveThreshold = initialConsensus.threshold || this.config.consensusThreshold;
       const converged = this.config.adaptiveDebate
-        && initialConsensus.agreement >= this.config.consensusThreshold;
+        && initialConsensus.agreement >= adaptiveThreshold;
 
       if (converged) {
-        rounds.push({ round: 1, type: 'debate-skipped', reason: `初始共识度 ${initialConsensus.agreement} 已达阈值，跳过辩论轮` });
+        rounds.push({ round: 1, type: 'debate-skipped', reason: `初始共识度 ${initialConsensus.agreement} 已达自适应阈值 ${adaptiveThreshold}，跳过辩论轮` });
       } else {
         for (let r = 1; r <= this.config.debateRounds; r++) {
           const othersDigest = consultResults.map(c => ({
@@ -319,16 +314,17 @@ class ExpertAllianceEngine {
           finalResults = roundResults;
 
           // 逐轮收敛检测：本轮辩论后共识已达阈值则提前终止（省后续辩论轮）
-          const roundConsensus = this._consensus(roundResults);
-          if (roundConsensus.agreement >= this.config.consensusThreshold && r < this.config.debateRounds) {
-            rounds.push({ round: r + 1, type: 'debate-converged', reason: `第 ${r} 轮辩论后共识度 ${roundConsensus.agreement} 已达阈值，提前收敛` });
+          const roundConsensus = this._consensus(roundResults, question, intent);
+          const roundThreshold = roundConsensus.threshold || this.config.consensusThreshold;
+          if (roundConsensus.agreement >= roundThreshold && r < this.config.debateRounds) {
+            rounds.push({ round: r + 1, type: 'debate-converged', reason: `第 ${r} 轮辩论后共识度 ${roundConsensus.agreement} 已达自适应阈值 ${roundThreshold}，提前收敛` });
             break;
           }
         }
       }
     }
 
-    const consensus = this._consensus(finalResults);
+    const consensus = this._consensus(finalResults, question, intent);
 
     return {
       rounds: rounds.length,
@@ -380,15 +376,46 @@ class ExpertAllianceEngine {
   }
 
   /**
+   * 自适应共识阈值：根据问题类型动态调整
+   * - 事实性/安全/算法问题：0.6（严格收敛，避免错误）
+   * - 开放性/架构/设计问题：0.4（允许不同视角，保留多样性）
+   * - 单专家模式：直接通过
+   */
+  _adaptiveThreshold(question, intent) {
+    const text = String(question || '').toLowerCase();
+    const intentType = intent?.primary || 'general';
+
+    // 事实性/精确性问题（需要高共识）
+    const strictIntents = new Set(['security', 'algorithm', 'data', 'performance']);
+    const strictKeywords = ['怎么', '如何', '为什么', '原因', '是否', '对错', '正确', '错误', 'bug', 'fix', 'error', 'sql injection', 'xss', 'csrf', 'password', 'encrypt', 'hash'];
+
+    // 开放性/创意性问题（允许低共识）
+    const openIntents = new Set(['architecture', 'market', 'fusion', 'workflow', 'requirement']);
+    const openKeywords = ['设计', '架构', '方案', '建议', '规划', '优化', '比较', '区别', '选型', 'design', 'architecture', 'proposal', 'suggest', 'compare', 'recommend'];
+
+    const hasStrictKw = strictKeywords.some(kw => keywordMatches(text, kw));
+    const hasOpenKw = openKeywords.some(kw => keywordMatches(text, kw));
+
+    if (strictIntents.has(intentType) || hasStrictKw) {
+      return 0.6; // 严格阈值
+    }
+    if (openIntents.has(intentType) || hasOpenKw) {
+      return 0.4; // 开放阈值
+    }
+    return 0.5; // 默认阈值
+  }
+
+  /**
    * 共识度计算：
    *   - 有效意见数 / 总数
    *   - 立场一致率：基于关键词重叠的启发式（网关深度聚敛在 synthesize 阶段完成）
-   * 返回 { agreement, validCount, conflict, summary }
+   * 返回 { agreement, validCount, conflict, summary, threshold }
    */
-  _consensus(results) {
+  _consensus(results, question, intent) {
     const valid = results.filter(r => r.response && !r.error);
     const validCount = valid.length;
     const total = results.length || 1;
+    const threshold = this._adaptiveThreshold(question, intent);
 
     let agreement = 0;
     let conflict = [];
@@ -403,13 +430,14 @@ class ExpertAllianceEngine {
         const union = new Set([...baseWords, ...w]).size || 1;
         overlapSum += inter / union;
       }
-      agreement = validCount === 1 ? 0.5 : Math.round((overlapSum / (validCount - 1)) * 100) / 100;
+      // 单专家时共识度提升到0.7（不再是0.5），避免单专家也误判为未收敛
+      agreement = validCount === 1 ? 0.7 : Math.round((overlapSum / (validCount - 1)) * 100) / 100;
     }
 
     if (valid.length >= 2) {
       const first = valid[0].response.slice(0, 80);
       const last = valid[valid.length - 1].response.slice(0, 80);
-      if (first !== last && agreement < this.config.consensusThreshold) {
+      if (first !== last && agreement < threshold) {
         conflict.push({ between: [valid[0].expertName, valid[valid.length - 1].expertName], note: '立场存在分歧，已保留少数派意见' });
       }
     }
@@ -418,31 +446,16 @@ class ExpertAllianceEngine {
       validCount,
       total: results.length,
       agreement,
+      threshold,
       score: agreement, // 契约统一别名：外部（API/MCP）一律读 consensus.score，修复历史 undefined
       conflict,
-      consensusReached: agreement >= this.config.consensusThreshold || validCount <= 1
+      consensusReached: agreement >= threshold || validCount <= 1
     };
   }
 
   _keywords(text) {
-    // 中文 2~3 字滑窗 n-gram（与 expert-alliance._keywordsOf 一致）：
-    // 原机械 [一-龥]{2,4} 匹配会把 "微服务架构" 切成 "微服务架"，共识启发式失效。
-    const stop = new Set(['的', '了', '和', '与', '是', '在', '我们', '可以', '需要', '建议', '应该', '一种', '通过', '进行', '以及', '或者', 'the', 'a', 'to', 'of', 'and', 'is', '系统', '方案', '问题', '分析', '采用', '引入', '保证', '优先', '解决']);
-    const out = new Set();
-    const segments = String(text || '').match(/[一-龥]+|[a-zA-Z]{3,}/g) || [];
-    for (const seg of segments) {
-      if (/[a-zA-Z]/.test(seg)) {
-        if (!stop.has(seg.toLowerCase())) out.add(seg.toLowerCase());
-        continue;
-      }
-      for (let size = 2; size <= 3; size++) {
-        for (let i = 0; i + size <= seg.length; i++) {
-          const w = seg.slice(i, i + size);
-          if (!stop.has(w)) out.add(w);
-        }
-      }
-    }
-    return out;
+    // 直接复用 domain 层的 keywordsOf（单一真相源，避免重复实现漂移）
+    return keywordsOf(text);
   }
 
   // ===================== 阶段四：综合合成 =====================
@@ -554,6 +567,7 @@ ${opinions.map(o => `[${o.expert}｜${o.type}｜置信度${o.confidence}] ${o.op
     const conf = synthesis.confidence || 0;
     const agreement = deliberation.consensus ? deliberation.consensus.agreement : 0.5;
     const validCount = deliberation.consensus ? deliberation.consensus.validCount : 0;
+    const threshold = deliberation.consensus?.threshold || this.config.consensusThreshold;
 
     if (conf < this.config.confidenceThreshold) {
       reasons.push(`综合置信度 ${conf} 低于门禁 ${this.config.confidenceThreshold}`);
@@ -562,13 +576,15 @@ ${opinions.map(o => `[${o.expert}｜${o.type}｜置信度${o.confidence}] ${o.op
       reasons.push('无有效专家意见');
     }
     if (deliberation.consensus && !deliberation.consensus.consensusReached) {
-      reasons.push(`专家共识度 ${agreement} 未达 ${this.config.consensusThreshold}，存在分歧`);
+      reasons.push(`专家共识度 ${agreement} 未达自适应阈值 ${threshold}，存在分歧`);
     }
 
     let level = 'D';
     let passed = false;
+    // A/B级阈值也自适应：A级要求共识度 ≥ threshold + 0.2（高质量收敛）
+    const aGradeThreshold = Math.min(0.8, threshold + 0.2);
     if (reasons.length === 0) {
-      level = conf >= 0.8 && agreement >= 0.7 ? 'A' : 'B';
+      level = conf >= 0.8 && agreement >= aGradeThreshold ? 'A' : 'B';
       passed = true;
     } else if (conf >= this.config.confidenceThreshold * 0.8 && validCount >= 1) {
       level = 'C';
@@ -580,6 +596,7 @@ ${opinions.map(o => `[${o.expert}｜${o.type}｜置信度${o.confidence}] ${o.op
       level,
       confidence: conf,
       agreement,
+      threshold,
       valid_count: validCount,
       reasons,
       retry_suggested: level === 'C' || level === 'D'

@@ -51,6 +51,23 @@
       ],
       "auto": true,
       "autoRegisteredAt": "2026-08-22T08:51:41.105Z"
+    },
+    {
+      "id": "projects",
+      "name": "项目中心",
+      "codePath": "src/routes/projects.js",
+      "keyFeatures": [
+        "自动发现并登记（图谱自管理 self-sync）",
+        "路由域 projects 由扫描器发现，零人工登记",
+        "待业务 owner 补充关键功能描述后可覆盖此条目"
+      ],
+      "engines": [
+        "project-atlas"
+      ],
+      "dataAssets": [],
+      "docs": [],
+      "auto": true,
+      "autoRegisteredAt": "2026-08-22T15:36:31.727Z"
     }
   ],
   "dataAssets": [],

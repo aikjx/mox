@@ -9,6 +9,12 @@ const routes = [
     meta: { title: '工作台' }
   },
   {
+    path: '/projects',
+    name: 'Projects',
+    component: () => import('@/views/ProjectsView.vue'),
+    meta: { title: '项目中心' }
+  },
+  {
     path: '/expert-center',
     name: 'ExpertCenter',
     component: () => import('@/views/ExpertCenterView.vue'),
