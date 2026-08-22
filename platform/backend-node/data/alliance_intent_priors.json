@@ -3,7 +3,32 @@
     "hits": {
       "e_arch": 8,
       "e_algo": 8,
-      "e_ai": 8
+      "e_ai": 8,
+      "perf-expert": 1,
+      "atlas-expert": 1,
+      "arch-expert": 1
+    }
+  },
+  "general": {
+    "hits": {
+      "atlas-expert": 1,
+      "alg-expert": 9,
+      "perf-expert": 9,
+      "mon-expert": 8
+    }
+  },
+  "data": {
+    "hits": {
+      "perf-expert": 6,
+      "data-expert": 6,
+      "alg-expert": 6
+    }
+  },
+  "security": {
+    "hits": {
+      "sec-expert": 5,
+      "data-expert": 5,
+      "fus-expert": 5
     }
   }
 }
