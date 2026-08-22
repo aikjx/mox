@@ -34,6 +34,7 @@ const { SessionChainStore } = require('../infrastructure/session-chain-store');
 const algorithmAnalysis = require('./algorithm-analysis-service');
 const sessionService = require('./session-service');
 const orchestrationProxy = require('./orchestration-proxy');
+const atlasConsult = require('./atlas-consult-service');
 
 class ExpertAlliance {
   constructor() {
@@ -382,7 +383,7 @@ class ExpertAlliance {
 }
 
 // mixin 用例族装配（对外契约不变：方法直接挂到原型）
-Object.assign(ExpertAlliance.prototype, algorithmAnalysis, sessionService, orchestrationProxy);
+Object.assign(ExpertAlliance.prototype, algorithmAnalysis, sessionService, orchestrationProxy, atlasConsult);
 
 // 历史私有方法契约（A16/A18/A20 测试与消费方直调）：委托 domain 单源实现
 Object.assign(ExpertAlliance.prototype, {
