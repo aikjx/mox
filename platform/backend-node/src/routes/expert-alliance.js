@@ -171,9 +171,11 @@ module.exports = function registerExpertAllianceRoutes(ctx) {
   // ===== 企业级专家联盟处理引擎 =====
   reg('post', '/experts/alliance/process', async (req, res) => {
     const body = await readBody(req);
+    const question = String(body.question || body.message || '').trim();
+    if (!question) return fail(res, 400, 'question 为必填（question 或 message），不能为空');
     try {
       const engine = getAllianceEngine();
-      const result = await engine.process(body.question || body.message || '', {
+      const result = await engine.process(question, {
         teamSize: body.teamSize,
         enableDebate: body.enableDebate,
         context: { background: body.background, constraints: body.constraints },

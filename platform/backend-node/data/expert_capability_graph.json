@@ -194,6 +194,26 @@
       ],
       "status": "active",
       "metrics": {}
+    },
+    {
+      "id": "atlas-expert",
+      "label": "项目总架构师",
+      "type": "architecture",
+      "capabilities": [
+        "项目全息图谱",
+        "引擎宇宙",
+        "架构规范",
+        "全链路验证",
+        "模块化设计",
+        "影响面分析"
+      ],
+      "status": "active",
+      "metrics": {
+        "total_consults": 0,
+        "avg_confidence": 0.7,
+        "success_rate": 1,
+        "avg_duration": 0
+      }
     }
   ],
   "edges": [
@@ -270,12 +290,33 @@
       "relation": "semantic_adjacent"
     },
     {
+      "source": "alg-expert",
+      "target": "atlas-expert",
+      "weight": 2,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "分析",
+        "设计"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
       "source": "arch-expert",
       "target": "mkt-expert",
       "weight": 1,
       "shared_capabilities": [],
       "shared_grams": [
         "系统"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
+      "source": "arch-expert",
+      "target": "atlas-expert",
+      "weight": 2,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "设计"
       ],
       "relation": "semantic_adjacent"
     },
@@ -405,6 +446,69 @@
       "shared_capabilities": [],
       "shared_grams": [
         "体系"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
+      "source": "atlas-expert",
+      "target": "wf-expert",
+      "weight": 3,
+      "shared_capabilities": [
+        "引擎宇宙"
+      ],
+      "shared_grams": [
+        "引擎"
+      ],
+      "relation": "capability_overlap"
+    },
+    {
+      "source": "atlas-expert",
+      "target": "graph-expert",
+      "weight": 1,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "图谱"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
+      "source": "atlas-expert",
+      "target": "perf-expert",
+      "weight": 1,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "分析"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
+      "source": "atlas-expert",
+      "target": "mon-expert",
+      "weight": 2,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "链路",
+        "分析"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
+      "source": "atlas-expert",
+      "target": "mkt-expert",
+      "weight": 1,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "分析"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
+      "source": "atlas-expert",
+      "target": "req-expert",
+      "weight": 1,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "分析"
       ],
       "relation": "semantic_adjacent"
     }

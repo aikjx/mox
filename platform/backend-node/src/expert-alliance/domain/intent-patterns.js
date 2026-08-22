@@ -17,7 +17,7 @@ const INTENT_PATTERNS = [
   { intent: 'workflow', keywords: ['BPMN', '工作流', '流程编排', '流程引擎', 'Activity', '网关', '服务任务', '用户任务', '定时器', '事件'] },
   { intent: 'operator', keywords: ['算子', '运算', '状态向量', '守恒律', '代数', '群论', '幺正', '组合算子', '算子代数'] },
   { intent: 'graph', keywords: ['图', '图谱', '节点', '边', '实体关系', '知识图谱', 'PageRank', '中心性', '社区发现', '最短路径', '图算法'] },
-  { intent: 'security', keywords: ['安全', '加密', '认证', '授权', 'RBAC', 'OA', '审计', '合规', '渗透', '漏洞', '威胁', '等保'] },
+  { intent: 'security', keywords: ['安全', '加密', '认证', '授权', 'RBAC', 'OA', '审计', '合规', '渗透', '漏洞', '威胁', '等保', '注入', 'XSS', 'CSRF', '攻击', '防护', '越权', '防火墙', 'WAF', '脱敏', '密钥泄露', '防重放', '风控'] },
   { intent: 'performance', keywords: ['性能', '优化', '瓶颈', '调优', '缓存', '索引', '并发', '吞吐量', '延迟', 'QPS', 'TPS'] },
   { intent: 'monitor', keywords: ['监控', '告警', '日志', '追踪', 'Metrics', 'Prometheus', 'Grafana', '链路', '可观测', 'SLA'] },
   { intent: 'market', keywords: ['商业', '市场', '用户画像', '推荐', '增长', '变现', '商业模式', '竞品', '用户行为'] },

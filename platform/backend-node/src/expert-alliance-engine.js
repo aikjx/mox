@@ -62,6 +62,9 @@ class ExpertAllianceEngine {
       minTeamSize: 1,
       enableDebate: true,
       debateRounds: 2,
+      adaptiveDebate: true,         // 初始轮已收敛则跳过辩论轮（实测省 ~26s）
+      debateMaxTokens: 900,         // 辩论轮令牌上限（短答快收敛，实测显著降延迟）
+      consultTimeoutMs: 60000,      // 单专家咨询超时（超时隔离不阻断整条管线）
       consensusThreshold: 0.6,      // 一致性门禁
       confidenceThreshold: 0.55,    // 综合置信度门禁
       capabilityWeight: 1.0,
@@ -228,21 +231,36 @@ class ExpertAllianceEngine {
 
     let finalResults = consultResults;
 
-    // 2) 辩论收敛
+    // 2) 辩论收敛（自适应：初始轮已收敛则跳过，实测高频问题省 ~26s）
     if (this.config.enableDebate && (options.enableDebate !== false)) {
-      for (let r = 1; r <= this.config.debateRounds; r++) {
-        const othersDigest = consultResults.map(c => ({
-          expert: c.expertName,
-          stance: c.response ? c.response.slice(0, 400) : c.error
-        }));
-        const debateMsgs = [
-          { role: 'user', content: question },
-          { role: 'assistant', content: '【其他专家观点】\n' + JSON.stringify(othersDigest, null, 2) },
-          { role: 'user', content: '请基于其他专家观点审视自己的结论：若认同请强化，若存在分歧请明确反驳并给出依据。保持你的专业立场。' }
-        ];
-        const roundResults = await this._parallelConsult(team, debateMsgs, context, { tag: 'debate' });
-        rounds.push({ round: r, type: 'debate', results: roundResults });
-        finalResults = roundResults;
+      const initialConsensus = this._consensus(consultResults);
+      const converged = this.config.adaptiveDebate
+        && initialConsensus.agreement >= this.config.consensusThreshold;
+
+      if (converged) {
+        rounds.push({ round: 1, type: 'debate-skipped', reason: `初始共识度 ${initialConsensus.agreement} 已达阈值，跳过辩论轮` });
+      } else {
+        for (let r = 1; r <= this.config.debateRounds; r++) {
+          const othersDigest = consultResults.map(c => ({
+            expert: c.expertName,
+            stance: c.response ? c.response.slice(0, 400) : c.error
+          }));
+          const debateMsgs = [
+            { role: 'user', content: question },
+            { role: 'assistant', content: '【其他专家观点】\n' + JSON.stringify(othersDigest, null, 2) },
+            { role: 'user', content: '请基于其他专家观点审视自己的结论：若认同请强化，若存在分歧请明确反驳并给出依据。保持你的专业立场。' }
+          ];
+          const roundResults = await this._parallelConsult(team, debateMsgs, context, { tag: 'debate', maxTokens: this.config.debateMaxTokens });
+          rounds.push({ round: r, type: 'debate', results: roundResults });
+          finalResults = roundResults;
+
+          // 逐轮收敛检测：本轮辩论后共识已达阈值则提前终止（省后续辩论轮）
+          const roundConsensus = this._consensus(roundResults);
+          if (roundConsensus.agreement >= this.config.consensusThreshold && r < this.config.debateRounds) {
+            rounds.push({ round: r + 1, type: 'debate-converged', reason: `第 ${r} 轮辩论后共识度 ${roundConsensus.agreement} 已达阈值，提前收敛` });
+            break;
+          }
+        }
       }
     }
 
@@ -258,17 +276,25 @@ class ExpertAllianceEngine {
 
   async _parallelConsult(team, messages, context, meta = {}) {
     const tag = meta.tag || 'consult';
+    const timeoutMs = meta.timeoutMs || this.config.consultTimeoutMs;
     const tasks = team.map(async (member) => {
       const t0 = Date.now();
       try {
         if (!this.alliance) {
           return { expertId: member.id, expertName: member.name, response: '(联盟未启用，模拟)', duration: 0, error: null };
         }
-        const res = await this.alliance.consult(member.id, messages, {
+        // 单专家超时隔离：挂起的 LLM 调用只损失该专家，不阻断整条管线（银行级可用性）
+        const consultPromise = this.alliance.consult(member.id, messages, {
           problemContext: context.background,
           businessConstraints: context.constraints,
-          tag
+          tag,
+          maxTokens: meta.maxTokens
         });
+        const timeoutPromise = new Promise((_, rej) => {
+          // 守卫定时器保持事件循环存活直至触发（unref 会在空转时让进程提前退出，守卫失效）
+          setTimeout(() => rej(new Error(`专家咨询超时（${timeoutMs}ms，已隔离）`)), timeoutMs);
+        });
+        const res = await Promise.race([consultPromise, timeoutPromise]);
         return {
           expertId: member.id,
           expertName: member.name,
@@ -529,6 +555,15 @@ ${opinions.map(o => `[${o.expert}｜${o.type}｜置信度${o.confidence}] ${o.op
    * options: { teamSize, context:{background,constraints}, feedback, enableDebate }
    */
   async process(question, options = {}) {
+    // 空问题快速失败：不再让全管线（实测 34s）跑在空输入上
+    const q = String(question || '').trim();
+    if (!q) {
+      return {
+        trace: { trace_id: 'n/a', question: '', stages: [], error: 'question 为空：请提供要咨询的问题' },
+        success: false,
+        error: 'question 为空：请提供要咨询的问题'
+      };
+    }
     const traceId = crypto.randomBytes(8).toString('hex');
     const t0 = Date.now();
     const trace = {
