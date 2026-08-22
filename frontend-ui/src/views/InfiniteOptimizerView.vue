@@ -250,7 +250,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { VideoPlay, Check, DataAnalysis } from '@element-plus/icons-vue'
-import api from '@/api'
+import * as api from '@/api'
 
 const form = ref({ iterations: 6, population: 5, evaluation_mode: 'fast' })
 const autoConverge = ref(true)

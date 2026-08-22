@@ -43,6 +43,13 @@ primiflow_runtime/
 # 合成音频语料（由 gen_classic_melodies.py 生成）
 melody2score/audio/*.wav
 
+# 运行时导出产物（乐谱 PNG/MusicXML，按需在用户侧重新生成）
+melody2score/app/exports/
+
+# 自动开发引擎/验证产生的运行时制品与截图（不入库）
+workspace/artifacts/
+workspace/screenshots/
+
 # OS / editor
 .DS_Store
 Thumbs.db
