@@ -178,6 +178,7 @@ module.exports = function registerExpertAllianceRoutes(ctx) {
       const result = await engine.process(question, {
         teamSize: body.teamSize,
         enableDebate: body.enableDebate,
+        disableRetry: body.disableRetry,
         context: { background: body.background, constraints: body.constraints },
         feedback: body.feedback
       });
@@ -186,6 +187,29 @@ module.exports = function registerExpertAllianceRoutes(ctx) {
     } catch (e) {
       fail(res, 500, e.message);
     }
+  });
+
+  // ===== G2 审计闭环：trace 查询（任何一次咨询可完整回溯） =====
+  reg('get', '/experts/alliance/traces/stats', (req, res) => {
+    ok(res, getAllianceEngine().traceStats());
+  });
+
+  reg('get', '/experts/alliance/traces', (req, res) => {
+    const limit = Math.max(1, Math.min(parseInt(req.url.split('limit=')[1] || '20', 10) || 20, 200));
+    ok(res, { traces: getAllianceEngine().queryTraces(limit) });
+  });
+
+  reg('get', '/experts/alliance/traces/:traceId', (req, res, params) => {
+    const trace = getAllianceEngine().queryTrace(params.traceId);
+    if (!trace) return fail(res, 404, `trace ${params.traceId} 不存在（窗口：最近 200 条）`);
+    ok(res, trace);
+  });
+
+  // ===== G1 学习技能视图（沉淀成果可查） =====
+  reg('get', '/experts/alliance/skills', (req, res) => {
+    const engine = getAllianceEngine();
+    const limit = Math.max(1, Math.min(parseInt(req.url.split('limit=')[1] || '20', 10) || 20, 200));
+    ok(res, { skills: engine.getLearnedSkills(limit), stats: engine.getSkillStats() });
   });
 
   reg('post', '/experts/alliance/intent', async (req, res) => {

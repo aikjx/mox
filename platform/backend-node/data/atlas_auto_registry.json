@@ -1,0 +1,231 @@
+{
+  "domains": [
+    {
+      "id": "atlas-auto",
+      "name": "图谱自管理容器",
+      "codePath": "src/project-atlas/infrastructure/atlas-scanner.js",
+      "keyFeatures": [
+        "自动发现的未归属资产容器（self-sync）",
+        "新 data 文件与新 docs 文档自动挂载",
+        "资产删除后自动清理登记（自愈）"
+      ],
+      "engines": [
+        "project-atlas"
+      ],
+      "dataAssets": [],
+      "docs": [
+        "docs/_archive/2026-08-16/PrimiFlow-API健康探活与CORS-20260816.md",
+        "docs/_archive/2026-08-16/PrimiFlow-API项目注册表与重启复现-20260816.md",
+        "docs/_archive/2026-08-16/PrimiFlow-三层递进开发-验证总结-20260816.md",
+        "docs/_archive/2026-08-16/PrimiFlow-企业级验证-20260816.md",
+        "docs/_archive/2026-08-16/PrimiFlow-全维分析-核心功能补全-20260816.md",
+        "docs/_archive/2026-08-16/PrimiFlow-真实执行层开发-验证-20260816.md",
+        "docs/_archive/2026-08-16/xuanji-expert-验证总结-20260816.md",
+        "docs/_archive/2026-08-16/关图骨架定义.md",
+        "docs/_archive/2026-08-16/璇玑-全维分析-TraceMatrix-六维绑定追溯.md",
+        "docs/_archive/2026-08-16/璇玑-全维分析需求-测试分析验证报告.md",
+        "docs/_archive/2026-08-16/璇玑-全维分析需求业务处理流程图.md",
+        "docs/enterprise-architecture-analysis.md",
+        "docs/enterprise/00-INDEX.md",
+        "docs/enterprise/03-design.md",
+        "docs/enterprise/05-iteration-roadmap.md",
+        "docs/enterprise/06-requirements-architecture-map.md",
+        "docs/enterprise/07-全维需求明确书.md",
+        "docs/enterprise/09-企业级全维度完成归档.md",
+        "docs/enterprise/10-企业级交付清单.md",
+        "docs/enterprise/11-全维测试验证优化修复报告.md",
+        "docs/enterprise/13-禁伪代码真并行零死代码闭环验收报告.md",
+        "docs/enterprise/14-全维愿景核心架构与业务流程总纲.md",
+        "docs/enterprise/15-产品规范标准-人人爱用全自动全维-V1.0.md",
+        "docs/enterprise/16-P9判重闸门落地与关图治理缺陷修复验收报告.md",
+        "docs/enterprise/璇玑-信息化系统开发验收报告-V1.0.md",
+        "docs/full-dimensional/00-README.md",
+        "docs/full-dimensional/GOVERNANCE_CONSOLE_API_READY_20260816.md",
+        "docs/full-dimensional/guantu-skeleton.md",
+        "docs/full-dimensional/xuanji-requirement-baseline.md",
+        "docs/graph/requests/README.md",
+        "docs/modules/xuanji-expert-business-requirements.md",
+        "docs/modules/xuanji-expert-product.md",
+        "docs/modules/专家联盟AI对话需求文档-V1.0.md",
+        "docs/璇玑-全维需求业务处理流程图-归一化企业级.md"
+      ],
+      "auto": true,
+      "autoRegisteredAt": "2026-08-22T08:51:41.105Z"
+    }
+  ],
+  "dataAssets": [],
+  "docs": [
+    {
+      "file": "docs/_archive/2026-08-16/PrimiFlow-API健康探活与CORS-20260816.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/_archive/2026-08-16/PrimiFlow-API项目注册表与重启复现-20260816.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/_archive/2026-08-16/PrimiFlow-三层递进开发-验证总结-20260816.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/_archive/2026-08-16/PrimiFlow-企业级验证-20260816.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/_archive/2026-08-16/PrimiFlow-全维分析-核心功能补全-20260816.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/_archive/2026-08-16/PrimiFlow-真实执行层开发-验证-20260816.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/_archive/2026-08-16/xuanji-expert-验证总结-20260816.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/_archive/2026-08-16/关图骨架定义.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/_archive/2026-08-16/璇玑-全维分析-TraceMatrix-六维绑定追溯.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/_archive/2026-08-16/璇玑-全维分析需求-测试分析验证报告.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/_archive/2026-08-16/璇玑-全维分析需求业务处理流程图.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/enterprise-architecture-analysis.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/enterprise/00-INDEX.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/enterprise/03-design.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/enterprise/05-iteration-roadmap.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/enterprise/06-requirements-architecture-map.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/enterprise/07-全维需求明确书.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/enterprise/09-企业级全维度完成归档.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/enterprise/10-企业级交付清单.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/enterprise/11-全维测试验证优化修复报告.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/enterprise/13-禁伪代码真并行零死代码闭环验收报告.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/enterprise/14-全维愿景核心架构与业务流程总纲.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/enterprise/15-产品规范标准-人人爱用全自动全维-V1.0.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/enterprise/16-P9判重闸门落地与关图治理缺陷修复验收报告.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/enterprise/璇玑-信息化系统开发验收报告-V1.0.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/full-dimensional/00-README.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/full-dimensional/GOVERNANCE_CONSOLE_API_READY_20260816.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/full-dimensional/guantu-skeleton.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/full-dimensional/xuanji-requirement-baseline.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/graph/requests/README.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/modules/xuanji-expert-business-requirements.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/modules/xuanji-expert-product.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/modules/专家联盟AI对话需求文档-V1.0.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/璇玑-全维需求业务处理流程图-归一化企业级.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    }
+  ],
+  "flows": [],
+  "projects": []
+}

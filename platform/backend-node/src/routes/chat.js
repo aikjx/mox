@@ -67,6 +67,69 @@ module.exports = function registerChatRoutes(ctx) {
 请告诉我具体需求，我会为你提供针对性的帮助。`;
   }
 
+  /**
+   * 流式对话（SSE）：/ai/chat/stream
+   * 协议：data: {"event":"start|delta|done|error", ...}\n\n，结束标记 data: [DONE]
+   * 与 /ai/chat 同构入参（messages/sessionId/expertType/temperature/maxTokens），会话记忆互通。
+   */
+  reg('post', '/ai/chat/stream', async (req, res) => {
+    const body = await readBody(req);
+    const messages = body.messages || (body.message ? [{ role: 'user', content: body.message }] : []);
+    const sessionId = body.sessionId || body.session_id || uid('sess');
+
+    // SSE 响应头（X-Accel-Buffering 禁用代理缓冲，保证逐 token 到达）
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no'
+    });
+
+    const send = (event, data) => {
+      if (res.writableEnded) return;
+      res.write(`data: ${JSON.stringify({ event, ...data })}\n\n`);
+    };
+
+    // 客户端断开时中止上游流（避免无谓 token 消耗）
+    const abort = new AbortController();
+    req.on('close', () => abort.abort());
+
+    // 心跳：长生成期间每 15s 发注释行，防中间层超时断连
+    const heartbeat = setInterval(() => {
+      if (!res.writableEnded) res.write(': keep-alive\n\n');
+    }, 15000);
+
+    send('start', { sessionId, messages: messages.length });
+
+    try {
+      const result = await gateway.chatStream({
+        messages,
+        sessionId,
+        expertType: body.expertType,
+        systemPrompt: body.systemPrompt,
+        temperature: body.temperature,
+        maxTokens: body.maxTokens,
+        signal: abort.signal
+      }, (delta) => {
+        send('delta', { content: delta });
+      });
+      send('done', {
+        sessionId,
+        model: result.model,
+        usage: result.usage,
+        ai_powered: result.ai_powered !== false
+      });
+    } catch (e) {
+      if (!res.writableEnded) send('error', { message: e.message });
+    } finally {
+      clearInterval(heartbeat);
+      if (!res.writableEnded) {
+        res.write('data: [DONE]\n\n');
+        res.end();
+      }
+    }
+  });
+
   reg('post', '/ai/chat', async (req, res) => {
     const body = await readBody(req);
     const messages = body.messages || (body.message ? [{ role: 'user', content: body.message }] : []);

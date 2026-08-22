@@ -17,6 +17,7 @@
 const { INTENT_PATTERNS } = require('./domain/intent-patterns');
 const { detectIntent } = require('./domain/intent-classifier');
 const { matchExperts, scoreExperts } = require('./domain/expert-matcher');
+const { buildContextMessages } = require('./domain/message-builder');
 const {
   keywordsOf, extractConsensus, extractDivergences,
   generateFinalRecommendation, synthesizeDebate
@@ -49,6 +50,7 @@ module.exports = {
   detectIntent,
   matchExperts,
   scoreExperts,
+  buildContextMessages,
   keywordsOf,
   extractConsensus,
   extractDivergences,

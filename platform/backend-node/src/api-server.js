@@ -90,7 +90,15 @@ function reg(method, pattern, fn) {
 function match(method, urlPath) {
   const map = handlers[method];
   if (!map) return null;
-  const keys = Object.keys(map).sort((a, b) => b.length - a.length);
+  // 企业级匹配语义：静态路由优先于参数化路由（参数段少者优先），
+  // 同为静态/同参数数时长路径优先（保留前缀精确匹配语义）。
+  // 修复缺陷：纯长度排序会让 /res/:id 抢先 /res/stats 类静态子路径。
+  const dynCount = (k) => (k.match(/\/:/g) || []).length;
+  const keys = Object.keys(map).sort((a, b) => {
+    const da = dynCount(a), db = dynCount(b);
+    if (da !== db) return da - db;
+    return b.length - a.length;
+  });
   for (let i = 0; i < keys.length; i++) {
     const k = keys[i];
     if (k === urlPath) return { fn: map[k], params: {} };

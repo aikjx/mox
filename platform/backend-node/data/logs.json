@@ -1,5 +1,364 @@
 [
   {
+    "id": "log_oxwwn93w9x",
+    "ts": "2026-08-22T12:21:58.688Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_y6ldykqkt8",
+    "ts": "2026-08-22T12:20:48.110Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_xs69bq6hhs",
+    "ts": "2026-08-22T12:19:22.381Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_uc041tpz76",
+    "ts": "2026-08-22T12:18:19.872Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_62gpkxv5se",
+    "ts": "2026-08-22T12:17:00.266Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_stytoxlq6l",
+    "ts": "2026-08-22T12:15:51.693Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_7piibpiosi",
+    "ts": "2026-08-22T11:50:06.808Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_cettph7b4x",
+    "ts": "2026-08-22T11:47:12.025Z",
+    "type": "expert",
+    "msg": "algorithm-analysis"
+  },
+  {
+    "id": "log_hojj1ra5ew",
+    "ts": "2026-08-22T11:46:43.833Z",
+    "type": "expert",
+    "msg": "algorithm-analysis"
+  },
+  {
+    "id": "log_xzpenhb9nq",
+    "ts": "2026-08-22T11:46:17.150Z",
+    "type": "expert",
+    "msg": "algorithm-analysis"
+  },
+  {
+    "id": "log_gtwq1a01hl",
+    "ts": "2026-08-22T11:45:16.041Z",
+    "type": "expert",
+    "msg": "dispatch-consult",
+    "success": true
+  },
+  {
+    "id": "sess_3b5efb91-978b-431e-8f64-2c6d7f728bf2",
+    "ts": "2026-08-22T11:44:49.472Z",
+    "type": "expert",
+    "msg": "session-create"
+  },
+  {
+    "id": "sess_f6baea23-c79e-4b1b-8dd4-c99fc4de125c",
+    "ts": "2026-08-22T11:43:46.209Z",
+    "type": "expert",
+    "msg": "session-create"
+  },
+  {
+    "id": "log_p7hdfdrraz",
+    "ts": "2026-08-22T11:43:16.885Z",
+    "type": "expert",
+    "msg": "debate",
+    "rounds": 1
+  },
+  {
+    "id": "log_yyoeaonnk3",
+    "ts": "2026-08-22T11:42:51.311Z",
+    "type": "expert",
+    "msg": "debate",
+    "rounds": 1
+  },
+  {
+    "id": "log_viydewvwim",
+    "ts": "2026-08-22T11:42:19.608Z",
+    "type": "expert",
+    "msg": "multi-consult",
+    "experts": 1
+  },
+  {
+    "id": "log_cshkkgzisa",
+    "ts": "2026-08-22T11:42:16.265Z",
+    "type": "expert",
+    "msg": "multi-consult",
+    "experts": 2
+  },
+  {
+    "id": "log_1dw1ufesaq",
+    "ts": "2026-08-22T11:41:07.185Z",
+    "type": "expert",
+    "msg": "multi-consult",
+    "experts": 1
+  },
+  {
+    "id": "log_cqwjjtyghy",
+    "ts": "2026-08-22T11:41:00.513Z",
+    "type": "expert",
+    "msg": "multi-consult",
+    "experts": 1
+  },
+  {
+    "id": "log_sjozwfiyae",
+    "ts": "2026-08-22T11:40:52.402Z",
+    "type": "expert",
+    "msg": "multi-consult",
+    "experts": 1
+  },
+  {
+    "id": "log_cv9a8vxsrt",
+    "ts": "2026-08-22T11:40:32.509Z",
+    "type": "expert",
+    "msg": "consult sec-expert",
+    "tokens": 1
+  },
+  {
+    "id": "log_w63o4u6v4n",
+    "ts": "2026-08-22T11:40:11.918Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_w8q87d3sq2",
+    "ts": "2026-08-22T11:37:24.747Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_28n2syo5uu",
+    "ts": "2026-08-22T11:35:31.395Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_dw3zjfnvhk",
+    "ts": "2026-08-22T11:34:34.744Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_m4nov6de0d",
+    "ts": "2026-08-22T11:23:54.809Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_gz3ym4lne5",
+    "ts": "2026-08-22T11:23:21.014Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_73nu04ssfb",
+    "ts": "2026-08-22T11:19:20.943Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_z7lo234giy",
+    "ts": "2026-08-22T11:18:39.756Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_owan3eqho4",
+    "ts": "2026-08-22T11:12:01.864Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_ly13any8p3",
+    "ts": "2026-08-22T11:11:26.058Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_zdiqqmz588",
+    "ts": "2026-08-22T08:36:36.041Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_2jnhi8xfl6",
+    "ts": "2026-08-22T08:36:02.958Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_dsfem74d69",
+    "ts": "2026-08-22T08:34:49.010Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_qhkp395c9i",
+    "ts": "2026-08-22T08:34:16.508Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_g7xs5kuhu6",
+    "ts": "2026-08-22T08:32:56.018Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_uqpfblzplk",
+    "ts": "2026-08-22T08:32:01.703Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_brn3oy7wu1",
+    "ts": "2026-08-22T08:31:31.031Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_mamjl3m5y0",
+    "ts": "2026-08-22T08:30:37.376Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_ygn54xdlci",
+    "ts": "2026-08-22T08:30:04.346Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_5nl1ariz4x",
+    "ts": "2026-08-22T08:29:06.752Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_cwp3hlrela",
+    "ts": "2026-08-22T08:28:31.080Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_vsiioik1ad",
+    "ts": "2026-08-22T08:27:52.857Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_lnohn8lkhz",
+    "ts": "2026-08-22T08:27:19.492Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_yr1gyytcpq",
+    "ts": "2026-08-22T08:26:11.482Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_qyxp8j9kx8",
+    "ts": "2026-08-22T08:25:34.186Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_88gu7oy3q8",
+    "ts": "2026-08-22T08:24:49.410Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_fuiw57syto",
+    "ts": "2026-08-22T08:24:13.522Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_02ryen64uq",
+    "ts": "2026-08-22T08:18:56.182Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_ixzx3qggo",
+    "ts": "2026-08-22T08:18:02.806Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_8dj00n7ilh",
+    "ts": "2026-08-22T08:16:49.314Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "D"
+  },
+  {
+    "id": "log_pu2kqscpzs",
+    "ts": "2026-08-22T08:15:59.030Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
     "id": "log_usxjdwfrcy",
     "ts": "2026-08-20T14:25:26.410Z",
     "type": "task",
@@ -3584,413 +3943,5 @@
     "msg": "auto sync tick",
     "nodes": 24,
     "edges": 29
-  },
-  {
-    "id": "log_65b6v9ho26",
-    "ts": "2026-08-20T13:55:26.120Z",
-    "type": "task",
-    "msg": "auto-create",
-    "task_id": "task_pmh74gaxar",
-    "title": "生成一个企业官网的需求知识图谱",
-    "auto_exec": true
-  },
-  {
-    "id": "kb_doc_sp18f07qrn",
-    "ts": "2026-08-20T13:52:26.315Z",
-    "type": "kb",
-    "msg": "create document"
-  },
-  {
-    "id": "log_lgaut4x91i",
-    "ts": "2026-08-20T13:52:26.349Z",
-    "type": "kb",
-    "msg": "batch analyze",
-    "count": 1
-  },
-  {
-    "id": "kb_doc_9eg1k60gfq",
-    "ts": "2026-08-20T13:52:25.844Z",
-    "type": "kb",
-    "msg": "create document"
-  },
-  {
-    "id": "log_95zxn56upx",
-    "ts": "2026-08-20T13:52:26.212Z",
-    "type": "kb",
-    "msg": "revert version",
-    "docId": "kb_doc_9eg1k60gfq",
-    "toVersion": 2
-  },
-  {
-    "id": "log_f2369jp396",
-    "ts": "2026-08-20T13:52:26.172Z",
-    "type": "kb",
-    "msg": "graph link",
-    "docId": "kb_doc_9eg1k60gfq",
-    "entityIds": [
-      "Rust",
-      "PageRank"
-    ]
-  },
-  {
-    "id": "log_l9jjsa2tz7",
-    "ts": "2026-08-20T13:52:26.150Z",
-    "type": "kb",
-    "msg": "batch analyze",
-    "count": 1
-  },
-  {
-    "id": "log_dl1vrqa3sf",
-    "ts": "2026-08-20T13:52:25.982Z",
-    "type": "kb",
-    "msg": "create version",
-    "docId": "kb_doc_9eg1k60gfq",
-    "version": 3
-  },
-  {
-    "id": "log_kw0tqz1gqc",
-    "ts": "2026-08-20T13:51:26.984Z",
-    "type": "task",
-    "msg": "auto-create",
-    "task_id": "task_xnbsb3rgwg",
-    "title": "生成一个企业官网的需求知识图谱",
-    "auto_exec": true
-  },
-  {
-    "id": "log_o4j421marv",
-    "ts": "2026-08-20T13:44:59.963Z",
-    "type": "task",
-    "msg": "execute",
-    "task_id": "task_l1wnhtob5p",
-    "status": "in_progress"
-  },
-  {
-    "id": "log_oiwtjdbzb6",
-    "ts": "2026-08-20T13:40:17.156Z",
-    "type": "task",
-    "msg": "from-chat",
-    "task_id": "task_iqlxqt3dz4"
-  },
-  {
-    "id": "kb_doc_mi8e3gp5ks",
-    "ts": "2026-08-20T13:38:45.681Z",
-    "type": "kb",
-    "msg": "create document"
-  },
-  {
-    "id": "log_lw4avy9wcy",
-    "ts": "2026-08-20T13:38:45.715Z",
-    "type": "kb",
-    "msg": "batch analyze",
-    "count": 1
-  },
-  {
-    "id": "kb_doc_txkuapt3z9",
-    "ts": "2026-08-20T13:38:45.497Z",
-    "type": "kb",
-    "msg": "create document"
-  },
-  {
-    "id": "log_9n6ly6aqoa",
-    "ts": "2026-08-20T13:38:45.640Z",
-    "type": "kb",
-    "msg": "revert version",
-    "docId": "kb_doc_txkuapt3z9",
-    "toVersion": 2
-  },
-  {
-    "id": "log_yzj9dfdsze",
-    "ts": "2026-08-20T13:38:45.627Z",
-    "type": "kb",
-    "msg": "graph link",
-    "docId": "kb_doc_txkuapt3z9",
-    "entityIds": [
-      "Rust",
-      "PageRank"
-    ]
-  },
-  {
-    "id": "log_pusglp7x0n",
-    "ts": "2026-08-20T13:38:45.618Z",
-    "type": "kb",
-    "msg": "batch analyze",
-    "count": 1
-  },
-  {
-    "id": "log_2diibgtx1e",
-    "ts": "2026-08-20T13:38:45.558Z",
-    "type": "kb",
-    "msg": "create version",
-    "docId": "kb_doc_txkuapt3z9",
-    "version": 3
-  },
-  {
-    "id": "log_m0sqewh8va",
-    "ts": "2026-08-20T14:19:14.939Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_vmrv5okovf",
-    "ts": "2026-08-20T14:19:11.937Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_pprgfhkbr3",
-    "ts": "2026-08-20T14:19:08.929Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_pawmz0g5ki",
-    "ts": "2026-08-20T14:19:05.924Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_2bfo2nvnvz",
-    "ts": "2026-08-20T14:19:02.922Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_zjpmu2vwkx",
-    "ts": "2026-08-20T14:18:59.921Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_hubm6hn7jg",
-    "ts": "2026-08-20T14:18:56.911Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_q7f4xuw66d",
-    "ts": "2026-08-20T14:18:53.907Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_mqdcon5gvo",
-    "ts": "2026-08-20T14:18:50.900Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_k6l86c1y4n",
-    "ts": "2026-08-20T14:18:47.898Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_292vi6s6ib",
-    "ts": "2026-08-20T14:18:44.897Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_vkt85dl4ct",
-    "ts": "2026-08-20T14:18:41.893Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_095yv635si",
-    "ts": "2026-08-20T14:18:38.878Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_tqgm3thx8s",
-    "ts": "2026-08-20T14:18:35.878Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_iluwoss489",
-    "ts": "2026-08-20T14:18:32.863Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_qr3sdrtz7u",
-    "ts": "2026-08-20T14:18:29.857Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_jg645uc9qm",
-    "ts": "2026-08-20T14:18:26.850Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_vg25woi5oa",
-    "ts": "2026-08-20T14:18:23.847Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_tbvyxe1l42",
-    "ts": "2026-08-20T14:18:20.846Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_py73i9r3pa",
-    "ts": "2026-08-20T14:18:17.835Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_xohs0fnzei",
-    "ts": "2026-08-20T14:18:14.824Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_il9vh5ztw7",
-    "ts": "2026-08-20T14:18:11.818Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_1kveg3fwmv",
-    "ts": "2026-08-20T14:18:08.804Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_f12u4wsh6v",
-    "ts": "2026-08-20T14:18:05.791Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_y2nufs8euf",
-    "ts": "2026-08-20T14:18:02.782Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_q4t3qvicla",
-    "ts": "2026-08-20T14:17:59.780Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_qwsrf2artz",
-    "ts": "2026-08-20T14:17:56.778Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_pkfiwrdinc",
-    "ts": "2026-08-20T14:17:53.775Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_gn4jvepz46",
-    "ts": "2026-08-20T14:17:50.762Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "kb_doc_8ko7s2gecb",
-    "ts": "2026-08-20T13:35:19.890Z",
-    "type": "kb",
-    "msg": "create document"
-  },
-  {
-    "id": "log_5uk7yzrl55",
-    "ts": "2026-08-20T13:35:19.898Z",
-    "type": "kb",
-    "msg": "batch analyze",
-    "count": 1
-  },
-  {
-    "id": "kb_doc_9bjw7t9v4c",
-    "ts": "2026-08-20T13:35:19.827Z",
-    "type": "kb",
-    "msg": "create document"
-  },
-  {
-    "id": "log_ks73op5vuh",
-    "ts": "2026-08-20T13:35:19.877Z",
-    "type": "kb",
-    "msg": "graph link",
-    "docId": "kb_doc_9bjw7t9v4c",
-    "entityIds": [
-      "Rust",
-      "PageRank"
-    ]
-  },
-  {
-    "id": "log_ydg41jofgl",
-    "ts": "2026-08-20T13:35:19.872Z",
-    "type": "kb",
-    "msg": "batch analyze",
-    "count": 1
   }
 ]

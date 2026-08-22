@@ -53,8 +53,8 @@ function serveStatic(req, res, pathname) {
       fs.createReadStream(filePath).pipe(res)
       return
     }
-    // SPA 回退：无扩展名路径返回 index.html；否则 404
-    if (!path.extname(rel)) {
+    // SPA 回退：无扩展名路径返回 index.html；根路径（/index.html 缺失）同走 503 提示；否则 404
+    if (!path.extname(rel) || rel === '/index.html') {
       const idx = path.join(DIST, 'index.html')
       fs.readFile(idx, (e, buf) => {
         if (e) {

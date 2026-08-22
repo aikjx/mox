@@ -12,6 +12,7 @@
  */
 const DOMAINS = [
   ['system', '系统与状态', require('./system')],
+  ['studio', '璇玑工作台', require('./studio')],
   ['graph', '知识图谱', require('./graph')],
   ['chat', 'AI 对话', require('./chat')],
   ['web-search', '联网搜索', require('./web-search')],
@@ -22,6 +23,7 @@ const DOMAINS = [
   ['integration', '集成通道', require('./integration')],
   ['expert-alliance', '专家联盟', require('./expert-alliance')],
   ['expert-graph', '专家图谱', require('./expert-graph')],
+  ['mcp', 'MCP 协议服务', require('./mcp')],
   ['orchestration', '编排协作', require('./orchestration')],
   ['ai-enhanced', '16 模块 AI 增强', require('./ai-enhanced')],
   ['tasks', '任务管理', require('./tasks')],

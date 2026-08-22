@@ -17,7 +17,8 @@ function p(...parts) {
 
 const SINGLE_OBJECT_KEYS = new Set([
   'llm_config.json', 'resources.json', 'settings.json',
-  'engine_bindings.json', 'engine_marketplace.json'
+  'engine_bindings.json', 'engine_marketplace.json',
+  'atlas_auto_registry.json'
 ]);
 
 function readJSON(file, fallback) {
