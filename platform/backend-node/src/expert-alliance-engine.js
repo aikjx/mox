@@ -46,9 +46,9 @@ function appendTrace(trace) {
   }
 }
 
-// 意图识别模式（A16 修复：单一真相源——引用 expert-alliance 导出的完整版 INTENT_PATTERNS，
-// 替换本文件曾维护的删减副本，消除两处关键词漂移导致的路由不一致）
-const { INTENT_PATTERNS } = require('./expert-alliance');
+// 意图识别模式（A16 单一真相源 · AINA A3）：直接引用专家联盟域包 domain 层定义，
+// 不经过编排层（expert-alliance.js），保持 application → domain 的最短依赖路径。
+const { INTENT_PATTERNS } = require('./expert-alliance/domain/intent-patterns');
 
 class ExpertAllianceEngine {
   constructor({ alliance, expertGraph, dispatcher, gateway, options = {} } = {}) {

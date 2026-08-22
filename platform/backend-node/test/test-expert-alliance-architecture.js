@@ -67,7 +67,7 @@ console.log('\n[3] A18 PageRank 委托单源（已知答案：星型图中心最
   check('星型图权威节点 c 排名第一', prAlliance[0].id === 'c', JSON.stringify(prAlliance));
   const sum = prAlliance.reduce((s, p) => s + p.pagerank, 0);
   check('ΣPR = 1（质量守恒）', Math.abs(sum - 1) < 1e-6, String(sum));
-  const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'src', 'expert-alliance.js'), 'utf8');
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'src', 'expert-alliance', 'application', 'alliance-orchestrator.js'), 'utf8');
   check('A22: _scoreExperts 死变量 hasLLM 已清除', !src.includes('hasLLM'));
 
   // ---------- ④ A19 CNM 社区检测 ----------
