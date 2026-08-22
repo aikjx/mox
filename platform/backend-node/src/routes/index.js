@@ -39,6 +39,7 @@ const DOMAINS = [
   ['ai-ultimate', '终极 AI 引擎', require('./ai-ultimate')],
   ['auto-dev', '自动开发引擎', require('./auto-dev')],
   ['services', '服务管理', require('./services')],
+  ['projects', '项目中心', require('./projects')],
 ];
 
 function registerAllRoutes(ctx) {

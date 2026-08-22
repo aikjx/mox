@@ -63,6 +63,7 @@ export const AI_CAPABILITIES = [
 // 顶部菜单模块（以知识图谱为核心，算子为辅助工具）
 export const NAV_MODULES = [
   { key: 'dashboard', label: '璇玑门户', icon: 'Odometer', path: '/dashboard', color: '#4f46e5', bg: '#eef2ff' },
+  { key: 'projects', label: '项目中心', icon: 'Folder', path: '/projects', color: '#0d9488', bg: '#ccfbf1' },
   { key: 'graph', label: '璇玑图谱', icon: 'Share', path: '/graph', color: '#06b6d4', bg: '#ecfeff' },
   { key: 'operators', label: '算子引擎', icon: 'Cpu', path: '/operators', color: '#6366f1', bg: '#eef2ff' },
   { key: 'expert-center', label: '专家联盟', icon: 'User', path: '/expert-center', color: '#7c3aed', bg: '#ede9fe' },
