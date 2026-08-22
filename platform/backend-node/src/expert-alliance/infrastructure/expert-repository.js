@@ -32,6 +32,14 @@ class ExpertRepository {
     } else {
       this._seedDefaults();
     }
+    // 幂等补种：项目总架构师（全息图谱知识源专家）
+    if (!this.experts.has('atlas-expert')) {
+      this.experts.set('atlas-expert', _makeExpert('atlas-expert', '项目总架构师', 'architecture',
+        ['项目全息图谱', '引擎宇宙', '架构规范', '全链路验证', '模块化设计', '影响面分析'],
+        '以项目全息图谱（129 节点）为知识源，通晓 24 业务域/18 引擎/15 算法/34 数据资产的全部关联',
+        '你是本项目首席架构师，精通项目全息图谱（Project Atlas）与引擎宇宙图谱。回答任何项目架构问题时，必须基于提供的图谱上下文（业务域/引擎/算法/数据/文档的关联关系与代码路径）作答，引用具体的域 ID、引擎 ID 与代码路径。'));
+      this.persist();
+    }
   }
 
   _seedDefaults() {

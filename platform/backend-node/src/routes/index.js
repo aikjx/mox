@@ -27,6 +27,7 @@ const DOMAINS = [
   ['tasks', '任务管理', require('./tasks')],
   ['kb', '知识库', require('./kb')],
   ['engine-universe', '引擎宇宙图谱', require('./engine-universe')],
+  ['atlas', '项目全息图谱', require('./atlas')],
   ['auto-tasks', '自动任务', require('./auto-tasks')],
   ['modules-admin', '模块与存储管理', require('./modules-admin')],
   ['security', '安全审计', require('./security')],
