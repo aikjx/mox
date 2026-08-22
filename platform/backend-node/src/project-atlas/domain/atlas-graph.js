@@ -3,8 +3,10 @@
 /**
  * 项目全息图谱 · 图构建与查询算法（domain 层 · 纯算法 · 零 IO）
  * ------------------------------------------------------------------
- * 节点类型：domain（业务域）/ module（模块）/ engine（引擎·引用宇宙）/
- *          algorithm（算法）/ data（数据资产）/ doc（文档）
+ * 节点类型：project（项目 · "一切皆是项目"顶层治理单元）/
+ *          domain（业务域）/ module（模块）/ engine（引擎·引用宇宙）/
+ *          algorithm（算法）/ data（数据资产）/ doc（文档）/
+ *          flow_step（业务流程步骤 · 流程图谱化）
  * 边类型：
  *   implements      域实现业务功能（域 → 域自身功能已内聚，用于域↔模块关系）
  *   uses_engine     域使用引擎（domain/module → engine）
@@ -12,9 +14,15 @@
  *   consumes        算法消费引擎（algorithm.consumers 反向声明）
  *   persists_to     域持久化到数据资产（domain/module → data）
  *   documented_by   域被文档记录（domain/module → doc）
+ *   owns_domain     项目拥有业务域（project → domain，项目聚合全部资产）
+ *   flow_of         步骤归属流程域（flow_step → domain）
+ *   next_step       顺序流转（flow_step → flow_step，流程主干）
+ *   degrades_to     降级链（flow_step → flow_step，韧性备用路径）
+ *   delegates_to    步骤委托引擎执行（flow_step → engine）
+ *   reads/writes    步骤数据读写（flow_step → data）
  */
 
-function buildAtlasGraph({ DOMAINS, MODULES, ALGORITHMS, DATA_ASSETS, DOCS, ENGINES, ENGINE_EDGES }) {
+function buildAtlasGraph({ DOMAINS, MODULES, ALGORITHMS, DATA_ASSETS, DOCS, ENGINES, ENGINE_EDGES, FLOWS, PROJECTS }) {
   const nodes = [];
   const edges = [];
   const nodeIds = new Set();
@@ -49,6 +57,13 @@ function buildAtlasGraph({ DOMAINS, MODULES, ALGORITHMS, DATA_ASSETS, DOCS, ENGI
   DOCS.forEach(x => addNode({
     id: `doc:${x.file}`, kind: 'doc', name: x.file.split('/').pop(), path: x.file, desc: x.desc
   }));
+  // 项目节点（"一切皆是项目"顶层治理单元；经 owns_domain 聚合全部资产）
+  (PROJECTS || []).forEach(p => addNode({
+    id: p.id, kind: 'project', name: p.name,
+    vision: p.vision, status: p.status,
+    codePath: 'src/project-atlas/domain/project-registry.js',
+    runtime: p.runtime === true
+  }));
 
   // 域/模块 → 引擎（uses_engine，按节点存在性过滤）
   [...DOMAINS, ...MODULES].forEach(u => {
@@ -68,6 +83,12 @@ function buildAtlasGraph({ DOMAINS, MODULES, ALGORITHMS, DATA_ASSETS, DOCS, ENGI
   });
   // 域 → 文档（documented_by）
   DOCS.forEach(x => addEdge(x.domain, `doc:${x.file}`, 'documented_by'));
+  // 项目 → 域（owns_domain，按节点存在性过滤；引用完整性由 W10 兜底）
+  (PROJECTS || []).forEach(p => {
+    (p.domains || []).forEach(d => {
+      if (nodeIds.has(d)) addEdge(p.id, d, 'owns_domain', p.name);
+    });
+  });
 
   // 引擎间关联边（注入引擎宇宙的 depends_on/delegates_to/degrades_to/data_flows_to）
   // 保证 域→引擎→引擎→算法 跨子图全连通（如 expert-alliance 域 → expert-alliance 引擎 → llm-gateway）
@@ -75,6 +96,34 @@ function buildAtlasGraph({ DOMAINS, MODULES, ALGORITHMS, DATA_ASSETS, DOCS, ENGI
     if (nodeIds.has(e.from) && nodeIds.has(e.to)) {
       addEdge(e.from, e.to, e.type, e.note || '');
     }
+  });
+
+  // ============ 业务流程图谱化（step 节点 + 流程边） ============
+  // 每条流程的步骤建模为 flow_step 节点；三类迁移边 + 委托边 + 数据读写边。
+  // 节点存在性过滤保证引用完整性（域/引擎/数据不存在时边静默跳过，由 W9 验证兜底）。
+  const stepNodeId = (flowId, stepId) => `step:${flowId}/${stepId}`;
+  (FLOWS || []).forEach(flow => {
+    const domainExists = nodeIds.has(flow.domain);
+    flow.steps.forEach(s => {
+      addNode({
+        id: stepNodeId(flow.id, s.id), kind: 'flow_step',
+        name: s.name, flowId: flow.id, flowName: flow.name,
+        detail: s.detail, standard: flow.standard || null
+      });
+      if (domainExists) addEdge(stepNodeId(flow.id, s.id), flow.domain, 'flow_of', flow.name);
+      if (s.engine && nodeIds.has(s.engine)) addEdge(stepNodeId(flow.id, s.id), s.engine, 'delegates_to', s.name);
+      (s.reads || []).forEach(f => { if (nodeIds.has(`data:${f}`)) addEdge(stepNodeId(flow.id, s.id), `data:${f}`, 'reads'); });
+      (s.writes || []).forEach(f => { if (nodeIds.has(`data:${f}`)) addEdge(stepNodeId(flow.id, s.id), `data:${f}`, 'writes'); });
+    });
+    const stepIds = new Set(flow.steps.map(s => s.id));
+    flow.transitions.forEach(t => {
+      if (!stepIds.has(t.from) || !stepIds.has(t.to)) return;
+      addEdge(
+        stepNodeId(flow.id, t.from), stepNodeId(flow.id, t.to),
+        t.type === 'degrade' ? 'degrades_to' : 'next_step',
+        t.note || ''
+      );
+    });
   });
 
   return { nodes, edges };

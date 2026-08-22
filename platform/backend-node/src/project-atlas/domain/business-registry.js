@@ -15,6 +15,11 @@ const DOMAINS = [
     engines: ['knowledge-graph'], dataAssets: ['settings.json', 'logs.json'], docs: ['docs/architecture.md']
   },
   {
+    id: 'studio', name: '璇玑工作台', codePath: 'src/routes/studio.js',
+    keyFeatures: ['豆包式场景卡片与全局搜索（零门槛直通）', 'JS 代码 vm 沙箱在线运行（3s 守卫零 IO）', 'API 游乐场与图谱体检项目看板'],
+    engines: ['project-atlas'], dataAssets: [], docs: ['docs/standards/xuanji-studio.md']
+  },
+  {
     id: 'graph', name: '知识图谱', codePath: 'src/routes/graph.js',
     keyFeatures: ['图谱节点/边 CRUD 与检索', '图算法分析（PageRank/中心性/社区/路径）', '图谱统计与结构洞察'],
     engines: ['knowledge-graph', 'ai-integration-engine'], dataAssets: ['graph_nodes.json', 'graph_edges.json'], docs: ['docs/modules/business-process-flowcharts.md']
@@ -56,8 +61,13 @@ const DOMAINS = [
   },
   {
     id: 'expert-alliance', name: '专家联盟', codePath: 'src/routes/expert-alliance.js',
-    keyFeatures: ['专家全生命周期与咨询编排', '多专家辩论与会话链', '智能路由与指标反馈'],
-    engines: ['expert-alliance', 'expert-alliance-engine', 'expert-dispatcher'], dataAssets: ['experts.json', 'expert_sessions.json', 'expert_chat_history.json', 'alliance_intent_priors.json', 'alliance_traces.jsonl', 'dispatcher_config.json', 'learned_skills.json'], docs: ['docs/modules/专家联盟AI对话需求文档-V2.0-架构优化版.md', 'docs/modules/xuanji-expert-alliance-fusion-flows.md']
+    keyFeatures: ['专家全生命周期与咨询编排', '多专家辩论与会话链', '智能路由与指标反馈', '六阶段流水线（门禁重试/辩论降级/安全强制组队）', 'trace 审计回溯与学习技能沉淀'],
+    engines: ['expert-alliance', 'expert-alliance-engine', 'expert-dispatcher'], dataAssets: ['experts.json', 'expert_sessions.json', 'expert_chat_history.json', 'alliance_intent_priors.json', 'alliance_traces.jsonl', 'dispatcher_config.json', 'alliance_learned_skills.json'], docs: ['docs/modules/专家联盟AI对话需求文档-V2.0-架构优化版.md', 'docs/modules/xuanji-expert-alliance-fusion-flows.md']
+  },
+  {
+    id: 'mcp', name: 'MCP 协议服务', codePath: 'src/routes/mcp.js',
+    keyFeatures: ['JSON-RPC 2.0 标准协议（initialize/tools/list/tools/call/ping）', '专家联盟七大工具标准暴露（供 Claude Code/Cursor 等 MCP 客户端调用）', '批量请求与通知语义合规（202 无响应体）'],
+    engines: ['expert-alliance', 'expert-alliance-engine'], dataAssets: [], docs: ['docs/standards/expert-alliance-flow-standard.md']
   },
   {
     id: 'expert-graph', name: '专家图谱', codePath: 'src/routes/expert-graph.js',
@@ -96,8 +106,8 @@ const DOMAINS = [
   },
   {
     id: 'atlas', name: '项目全息图谱', codePath: 'src/routes/atlas.js',
-    keyFeatures: ['全项目机器图谱化（域/引擎/算法/数据/文档统一关联）', '无破窗验证 145 项（动态比对真实代码库）', 'AI 架构师图谱增强对话'],
-    engines: ['project-atlas', 'expert-alliance', 'engine-universe'], dataAssets: [], docs: ['docs/standards/project-atlas.md']
+    keyFeatures: ['全项目机器图谱化（域/引擎/算法/数据/文档统一关联）', '无破窗验证（动态比对真实代码库，含 self-sync 自动登记层）', 'AI 架构师图谱增强对话', '自管理：self-sync 自发现/自登记/自愈（自己管理自己）'],
+    engines: ['project-atlas', 'expert-alliance', 'engine-universe'], dataAssets: ['atlas_auto_registry.json'], docs: ['docs/standards/project-atlas.md']
   },
   {
     id: 'auto-tasks', name: '自动任务', codePath: 'src/routes/auto-tasks.js',
@@ -122,7 +132,7 @@ const DOMAINS = [
   {
     id: 'ai-integrated', name: '智能集成引擎', codePath: 'src/routes/ai-integrated.js',
     keyFeatures: ['个性化 PageRank 图计算', '符号图 LLM 交互', 'token 预算裁剪'],
-    engines: ['ai-integration-engine'], dataAssets: ['llm_usage.json'], docs: ['docs/modules/mathematical-foundation.md']
+    engines: ['ai-integration-engine'], dataAssets: ['llm_usage.json', 'learned_skills.json'], docs: ['docs/modules/mathematical-foundation.md']
   },
   {
     id: 'ai-ultimate', name: '终极 AI 引擎', codePath: 'src/routes/ai-ultimate.js',

@@ -1233,21 +1233,49 @@ class MainWindow(QMainWindow):
         self.status.setText(f"已保存：{fname}")
 
 
+def _tol_match(got, exp):
+    """容差匹配（与 tests/verify_real_audio.py 同算法）：DP 对齐音高一致率。"""
+    if not exp or not got:
+        return 0.0
+    n, m = len(got), len(exp)
+    dp = [[0] * (m + 1) for _ in range(n + 1)]
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            eq = 1 if got[i - 1] == exp[j - 1] else 0
+            dp[i][j] = max(dp[i - 1][j - 1] + eq, dp[i - 1][j], dp[i][j - 1])
+    return dp[n][m] / len(exp)
+
+
+# 全链路回归代表样例：乐器/人声/纯音三类 × 不同节奏复杂度
+_REGRESS_PAIRS = [
+    ("小星星", "piano"), ("小星星", "human_voice"),
+    ("欢乐颂", "piano"), ("欢乐颂", "flute"),
+    ("茉莉花", "guitar"), ("两只老虎", "strings"),
+    ("致爱丽丝", "pure_sine"), ("生日歌", "human_voice"),
+]
+
+
 def _selftest() -> int:
-    """打包产物自检模式（无头，无 Qt）：Melody2Score.exe --selftest [输出.json]
+    """打包产物自检模式（无头，无 Qt）：
+    Melody2Score.exe --selftest [输出.json]        基础链路冒烟（识别→简谱）
+    Melody2Score.exe --selftest-full [输出.json]   全链路交付验收
 
     企业级发行版验证标准实践：在目标电脑上无需 GUI 交互即可验证
     「frozen 环境下完整识别链路（加载→预处理→音高检测→解析→歌谱）」可用。
-    流程：取 manifest 首个内置样例 → 完整识别 → 结果写入 JSON → 退出码
-    0=通过 / 1=失败。可用于 CI 冒烟或交付验收。
+    --selftest：取 manifest 首个内置样例 → 完整识别 → JSON 报告 → 退出码
+    0=通过 / 1=失败。可用于 CI 冒烟。
+    --selftest-full：另加 MusicXML 导出 / 标准歌谱 PNG / 钢琴合成 / mp3 解码 /
+    离线曲库匹配 / 8 样例真实音频回归（manifest 自带 expected_midi 真值，
+    精确率+容差率+音高类覆盖三项量化指标），全部通过才 exit 0。交付验收用。
     """
     out_path = None
+    full = "--selftest-full" in sys.argv
     args = [a for a in sys.argv[2:] if not a.startswith("--")]
     if args:
         out_path = args[0]
     try:
         import json as _json
-        from core.pipeline import Melody2Score          # 重型依赖链：onnxruntime/librosa
+        from core.pipeline import Melody2Score          # 重型依赖链：librosa/music21
         from core import capture
 
         man_path = resource_path("audio", "manifest.json")
@@ -1266,6 +1294,7 @@ def _selftest() -> int:
         notes = res.get("notes", [])
         report = {
             "selftest": "Melody2Score 打包产物自检",
+            "mode": "full" if full else "basic",
             "frozen": is_frozen(),
             "sample": item["file"],
             "title_zh": item.get("title_zh", ""),
@@ -1276,6 +1305,119 @@ def _selftest() -> int:
             "elapsed_sec": elapsed,
             "pass": bool(notes) and bool(res.get("jianpu")),
         }
+
+        if full:
+            # ---- 全链路功能模块逐项验收（临时目录产出，不污染发行版） ----
+            import tempfile
+
+            checks = {}
+
+            def _run(name, fn):
+                """fn 返回 detail；以 'SKIP' 开头视为可选外部依赖缺失（不算失败）。"""
+                try:
+                    detail = fn()
+                    checks[name] = {"pass": True,
+                                    "skip": str(detail).startswith("SKIP"),
+                                    "detail": str(detail)}
+                except Exception as e:
+                    checks[name] = {"pass": False, "detail": str(e)[:200]}
+
+            def _musicxml():
+                from core import score
+                tmp = os.path.join(tempfile.mkdtemp(prefix="st_mx_"), "out.musicxml")
+                score.to_musicxml(notes, res.get("bpm", 120),
+                                  (res["key"]["tonic"], res["key"]["mode"]), fp=tmp)
+                mx = open(tmp, encoding="utf-8").read()
+                assert "part-list" in mx and "<note" in mx, "musicxml 内容异常"
+                return f"{len(mx)} chars"
+
+            def _score_png():
+                from core import score_sheet, jianpu_render
+                if not jianpu_render.find_lilypond():
+                    return "SKIP：未安装 LilyPond（可选外部工具，安装说明见 README）"
+                tmp = os.path.join(tempfile.mkdtemp(prefix="st_ly_"), "score.png")
+                score_sheet.export_score(
+                    notes=notes, key=res.get("key", {"tonic": "C", "mode": "major"}),
+                    bpm=float(res.get("bpm", 120)), output_path=tmp,
+                    title="全链路自检")
+                sz = os.path.getsize(tmp)
+                assert sz > 5000, f"渲染产物过小: {sz}"
+                return f"png {sz} bytes（jianpu-ly + LilyPond）"
+
+            def _synth():
+                import numpy as np
+                from core.synth import synth_piano
+                y3 = synth_piano(60, 0.2, 16000)
+                assert isinstance(y3, np.ndarray) and len(y3) > 3000, "合成异常"
+                return f"{len(y3)} samples"
+
+            def _mp3():
+                import numpy as np
+                import soundfile as sf
+                tmp = os.path.join(tempfile.mkdtemp(prefix="st_mp3_"), "t.mp3")
+                t = np.arange(16000) / 16000.0
+                sf.write(tmp, 0.5 * np.sin(2 * np.pi * 440.0 * t).astype(np.float32), 16000)
+                y2 = capture.load_audio(tmp, cfg.sr)
+                assert len(y2) > 15000, f"mp3 解码异常: len={len(y2)}"
+                os.remove(tmp)
+                return f"decode {len(y2)} samples（libsndfile 原生）"
+
+            def _song_match():
+                from core.song_match import match_song
+                mr = match_song(notes, top_k=3)
+                assert mr["matched"], f"未命中（best={mr.get('best_score', 0):.0f}%）"
+                return f"命中《{mr['candidates'][0]['title_zh']}》{mr['best_score']:.0f}%"
+
+            _run("MusicXML 导出", _musicxml)
+            _run("标准歌谱 PNG 渲染", _score_png)
+            _run("钢琴合成（试听链路）", _synth)
+            _run("mp3 解码", _mp3)
+            _run("离线曲库匹配（DTW）", _song_match)
+            report["full_chain"] = checks
+
+            # ---- 真实音频回归：manifest expected_midi 真值逐一比对 ----
+            by_key = {(m["title_zh"], m["timbre"]): m for m in manifest}
+            rcfg = Config()
+            rcfg.enable_denoise = True     # 样例含底噪（SNR 42dB）
+            eng = Melody2Score(rcfg)
+            rows, exact_hits, tols, pcs = [], 0, [], []
+            for title, timbre in _REGRESS_PAIRS:
+                it = by_key.get((title, timbre))
+                if not it:
+                    rows.append({"title": title, "timbre": timbre,
+                                 "skip": "样例缺失"})
+                    continue
+                wav2 = resource_path("audio", os.path.basename(it["file"]))
+                y2 = capture.load_audio(wav2, rcfg.sr)
+                r = eng.recognize({"kind": "array", "y": y2,
+                                   "sr": rcfg.sr, "cfg": rcfg})
+                got = [n["midi"] for n in r["notes"]]
+                exp = it["expected_midi"]
+                exact = (got == exp)
+                tol = _tol_match(got, exp)
+                pc = (len(set(x % 12 for x in got) & set(x % 12 for x in exp))
+                      / max(1, len(set(x % 12 for x in exp))))
+                exact_hits += int(exact)
+                tols.append(tol)
+                pcs.append(pc)
+                rows.append({"title": title, "timbre": timbre, "exact": exact,
+                             "tol": round(tol, 3), "pc": round(pc, 3),
+                             "notes": f"{len(got)}/{len(exp)}",
+                             "bpm": round(r.get("bpm") or 0, 1)})
+            n = len(tols)
+            avg_tol = round(sum(tols) / n, 3) if n else 0.0
+            avg_pc = round(sum(pcs) / n, 3) if n else 0.0
+            report["regression"] = {
+                "samples": rows, "n": n, "exact_hits": exact_hits,
+                "avg_tol": avg_tol, "avg_pc": avg_pc,
+                "pass": bool(n > 0 and avg_tol >= 0.85 and exact_hits >= n * 0.5),
+            }
+
+            report["pass"] = bool(
+                report["pass"]
+                and all(c["pass"] for c in checks.values())
+                and report["regression"]["pass"])
+
         print("[SELFTEST] " + _json.dumps(report, ensure_ascii=False))
         if out_path:
             with open(out_path, "w", encoding="utf-8") as f:
@@ -1296,7 +1438,7 @@ def _selftest() -> int:
 
 
 def main():
-    if "--selftest" in sys.argv:
+    if "--selftest" in sys.argv or "--selftest-full" in sys.argv:
         sys.exit(_selftest())
     app = QApplication(sys.argv)
     app.setStyle("Fusion")

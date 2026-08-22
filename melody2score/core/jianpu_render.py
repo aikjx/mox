@@ -18,6 +18,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import threading
 from typing import List, Optional, Tuple
@@ -146,17 +147,36 @@ def _note_token(n: RenderNote) -> Tuple[str, float]:
     return _dur_token_for(n.degree, oct_marks, beats), beats
 
 
+def _decompose_units(units: int) -> List[int]:
+    """把网格单位数贪心拆分为规范时值单位序列（延音线相连，总量分毫不差）。
+
+    单位=0.25 拍（十六分）。16=全音符, 12=附点二分, 8=二分, 6=附点四分,
+    4=四分, 3=附点八分, 2=八分, 1=十六分。任意正整数均可精确拆分。
+    """
+    out: List[int] = []
+    u = int(units)
+    for s in (16, 12, 8, 6, 4, 3, 2, 1):
+        while u >= s:
+            out.append(s)
+            u -= s
+    return out
+
+
 def _build_jianpu_text(sheet: ScoreSheet) -> str:
     """把 ScoreSheet 构造为 jianpu-ly 输入文本（100% 规范简谱记法）。
 
     规范要点（区别于旧「切两截+补休止符」的退化写法）：
-      1) 基于绝对时间轴精确布局：每音符用 {bar_idx*beats_per_bar + 段内相对拍}
-         还原真实起止，小节内有休止间隔时显式写休止符（而非吞掉/错位）；
-      2) 跨小节长音用**延音线 tie**（`1 ~ 1`）连接两段，不再补虚假休止符；
-      3) 首小节若不足拍数按**弱起 anacrusis** 处理（拍号写 `4/4,8` 形），
-         规范且与之匹配的最后小节自动少一拍；
+      1) 统一 0.25 拍网格布局：全部音符起止/间隙先量化到十六分网格（整数
+         单位）再排版——单一时间轴。旧实现「原始时间轴切分 + 量化拍数记账」
+         双轨并行，两者舍入不一致会使小节记号拍数系统性偏少（实测每小节
+         3.5~3.75 拍），累积漂移触发 LilyPond barcheck fail（音符跨小节线）；
+      2) 除末小节外每个小节的记号拍数之和恒等于每小节拍数（按构造保证）：
+         跨小节长音与非规范总长（如 1.75 拍）均拆为规范时值组合，
+         段间以**延音线 tie**（`1 ~ 1`）连接，不补虚假休止符；
+      3) 音符间真实间隔以休止符填充（不足十六分的微间隙吸收），
+         首小节弱起以休止符前缀填充（简谱弱起规范记法之一）；
       4) 调号区分大/小调：大调 `1=C`，小调 `6=C`（简谱首调唱名规范）；
-      5) 曲尾加**终止线** `\bar "|."`；
+      5) 曲尾加**终止线** `\\bar "|."`；
       6) 逐音符带歌词（`1你 2好`），字位严格对齐。
     """
     ts = sheet.time_sig
@@ -179,84 +199,64 @@ def _build_jianpu_text(sheet: ScoreSheet) -> str:
         lines.append(r'\bar "|."')
         return "\n".join(lines) + "\n"
 
-    # 把每音符按绝对拍切成"落在各小节内的片段"，同音跨小节片段间用 tie 连接。
-    # 段： (bar_idx, start_in_bar, dur, degree, oct_marks, lyric, is_tie_start, is_tie_end)
-    segments: List[dict] = []
-    for n in notes:
-        abs_start = float(n.start_beat)
-        abs_end = abs_start + max(0.05, float(n.dur_beats))
-        deg = n.degree
-        oct_marks = _oct_marks(n)
-        lyric = n.lyric or ""
-        cur = abs_start
-        first_seg = True
-        while cur < abs_end - 1e-6:
-            b_idx = int(cur // beats_per_bar)
-            bar_start = b_idx * beats_per_bar
-            seg_end_in_bar = min(abs_end, bar_start + beats_per_bar)
-            seg_dur = seg_end_in_bar - cur
-            if seg_dur <= 1e-6:
-                break
-            in_bar = round(cur - bar_start, 6)
-            last_seg = abs(seg_end_in_bar - abs_end) < 1e-6
-            segments.append({
-                "bar": b_idx, "in_bar": in_bar, "dur": seg_dur,
-                "deg": deg, "oct": oct_marks, "lyric": lyric if first_seg else "",
-                "tie_prev": not first_seg, "tie_next": not last_seg,
-            })
-            cur = seg_end_in_bar
-            first_seg = False
-    segments.sort(key=lambda s: (s["bar"], s["in_bar"]))
+    # ---- 统一 0.25 拍网格布局（整数单位，单一时间轴） ----
+    # 旧实现「原始时间轴切分 + 量化拍数记账」双轨并行：段切分/间隙用原始拍，
+    # token 生成/used 累计用量化拍，两者舍入不一致使小节记号拍数系统性偏少
+    # （实测 3.5~3.75 拍/小节），累积漂移触发 LilyPond barcheck fail。
+    # 现全部量化到十六分网格后再布局：小节拍数按构造精确满额（末小节除外）。
+    bar_units = max(1, int(round(beats_per_bar * 4)))   # 每小节网格单位数
+    grid_notes = sorted(
+        notes, key=lambda n: (float(n.start_beat), float(n.dur_beats)))
 
-    max_bar = max(s["bar"] for s in segments)
-    # 弱起（anacrusis）：仅当整曲第一音不在强拍（首小节起始拍 > 0）才算弱起，
-    # 否则短曲首小节"未满拍"只是曲子短，不应标弱起（避免误判）。jianpu-ly 弱起
-    # 语法 "4/4,N" 中 N = 首小节剩余拍数 = beats_per_bar - 第一音起始拍。
-    first_occ = [s for s in segments if s["bar"] == 0]
-    first_start = min((s["in_bar"] for s in first_occ), default=0.0)
-    is_anacrusis = first_start > 1e-6
-    anacrusis_span = round(beats_per_bar - first_start, 4) if is_anacrusis else beats_per_bar
+    # 事件流：note / rest，(start_u, len_u) 均为整数网格单位
+    events: List[tuple] = []          # (kind, start_u, len_u, note|None)
+    cursor: Optional[int] = None      # 上一事件结束位置
+    for n in grid_notes:
+        start_u = int(round(float(n.start_beat) * 4))
+        len_u = max(1, int(round(float(n.dur_beats) * 4)))
+        if cursor is None:
+            if start_u > 0:           # 弱起：首音前以休止符填充（规范记法）
+                events.append(("rest", 0, start_u, None))
+        elif start_u > cursor:        # 音符间真实间隙 → 休止符事件
+            events.append(("rest", cursor, start_u - cursor, None))
+        # 重叠保护：start_u < cursor 时紧接上一事件（不产生负休止）
+        eff = max(start_u, cursor) if cursor is not None else start_u
+        events.append(("note", eff, len_u, n))
+        cursor = eff + len_u
 
-    # 构建各小节 token 串
+    max_bar = (cursor - 1) // bar_units
+
+    # ---- 按小节生成 token（小节拍数按构造精确满额，末小节除外） ----
     note_parts: List[str] = []
     for b in range(max_bar + 1):
-        segs = [s for s in segments if s["bar"] == b]
-        if not segs:
-            note_parts.append(" ".join(["0"] * beats_per_bar))
-            continue
+        bar_lo, bar_hi = b * bar_units, (b + 1) * bar_units
         tokens: List[str] = []
-        used = 0.0
-        for s in segs:
-            # 段前休止间隔（小节内留白，弱起首小节前也会以休止填充）
-            gap = round(s["in_bar"] - used, 6)
-            if gap > 1e-6:
-                for rt in _rest_fill_tokens(gap):
+        for kind, s, l, n in events:
+            if s >= bar_hi or s + l <= bar_lo:
+                continue
+            seg_lo, seg_hi = max(s, bar_lo), min(s + l, bar_hi)
+            seg = seg_hi - seg_lo
+            if seg <= 0:
+                continue
+            if kind == "rest":
+                for rt in _rest_fill_tokens(seg / 4.0):
                     tokens.append(rt)
-                used += gap
-            elif gap < -1e-6:
-                # 重叠：夹断保护，不写负休止
-                used = s["in_bar"]
-            beats = _safe_beats(s["dur"])
-            tok = _dur_token_for(s["deg"], s["oct"], beats)
-            # 逐音符歌词：规范写法 "1你"（字紧接数字后）
-            if s["lyric"]:
-                tok = f"{tok}{s['lyric']}"
-            # 延音线：段首接上一小节同音 → 前置 '~'；段末续下一小节 → 后置 '~'
-            if s["tie_prev"]:
-                tok = f"~ {tok}"
-            if s["tie_next"]:
-                tok = f"{tok} ~"
-            if tok.strip():
-                tokens.append(tok)
-            used += beats
-        # 末小节前的完整小节：仅当不是弱起的"补偿小节"才补休止
-        # 但 jianpu-ly 要求每小节满拍；弱起时最后一小节会自动少拍，此处末小节不补。
-        if b < max_bar and not (is_anacrusis and b == 0):
-            missing = round(beats_per_bar - used, 4)
-            if missing > 1e-6:
-                for rt in _rest_fill_tokens(missing):
-                    tokens.append(rt)
-        note_parts.append(" ".join(tokens))
+                continue
+            # 音符片段：跨小节 / 非规范总长 → 规范时值 tie 链
+            first_piece = (seg_lo == s)
+            last_piece = (seg_hi == s + l)
+            decomp = _decompose_units(seg)
+            for i, u in enumerate(decomp):
+                tok = _dur_token_for(n.degree, _oct_marks(n), u / 4.0)
+                if i > 0 or not first_piece:
+                    tok = f"~ {tok}"       # 接上一段同音（跨小节或小节内）
+                if i == len(decomp) - 1 and not last_piece:
+                    tok = f"{tok} ~"       # 续下一段同音
+                if first_piece and i == 0 and n.lyric:
+                    tok = f"{tok}{n.lyric}"
+                if tok.strip():
+                    tokens.append(tok)
+        note_parts.append(" ".join(t for t in tokens if t.strip()))
 
     # 拍号行：始终用规范标准 "num/den"。
     # 弱起（首音不在强拍）不依赖 jianpu-ly 的 anacrusis 逗号语法（该语法要求弱起拍
@@ -393,9 +393,28 @@ def render_score_sheet(
         else:  # pdf / 其它 -> eps 后端会产出 .pdf
             cmd = [lilypond, "-dbackend=eps", "-o", out_base, ly_path]
             ext = "pdf"
-        rc = subprocess.run(cmd, stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            encoding="utf-8", errors="replace")
+        # 防御 1：windowed 发行版（console=False）进程的 stdin 是空句柄，
+        #         某些外部工具（LilyPond/Guile 启动期探测 tty）可能因此异常——
+        #         显式接 DEVNULL 隔离。
+        # 防御 2：子进程环境剥离 PyInstaller bootloader 注入到 PATH 头部的
+        #         发行版目录（_internal / dist 根），避免外部工具的 DLL/
+        #         辅助程序搜索撞上发行版自带的同名文件。
+        sub_env = os.environ.copy()
+        dist_dirs = {os.path.normcase(os.path.abspath(d)) for d in (
+            os.path.dirname(sys.executable),
+            os.path.join(os.path.dirname(sys.executable), "_internal"),
+        )}
+        cleaned = [p for p in sub_env.get("PATH", "").split(os.pathsep)
+                   if p and os.path.normcase(os.path.abspath(p)) not in dist_dirs]
+        sub_env["PATH"] = os.pathsep.join(cleaned)
+        try:
+            rc = subprocess.run(cmd, stdin=subprocess.DEVNULL,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                encoding="utf-8", errors="replace",
+                                env=sub_env)
+        except FileNotFoundError:
+            raise RuntimeError(f"LilyPond 可执行文件不存在：{lilypond}")
         produced = f"{out_base}.{ext}"
         if not os.path.exists(produced):
             # eps 后端产出的文件名回退查找（兼容不同后缀）
@@ -404,7 +423,11 @@ def render_score_sheet(
                     produced = os.path.join(tmp, f)
                     break
         if rc.returncode != 0 or not os.path.exists(produced):
-            raise RuntimeError(f"LilyPond 渲染失败：{rc.stderr[:500]}")
+            # 全量诊断信息（企业级可观测性：rc/stdout/stderr/产物清单）
+            raise RuntimeError(
+                "LilyPond 渲染失败 rc=%s：stdout=%r stderr=%r files=%s"
+                % (rc.returncode, (rc.stdout or "")[:200],
+                   (rc.stderr or "")[:300], os.listdir(tmp)))
 
         os.makedirs(os.path.dirname(os.path.abspath(output_path)) or ".",
                     exist_ok=True)

@@ -20,6 +20,7 @@ const { getOrchestrationEngine } = require('../../orchestration-engine');
 
 const { detectIntent } = require('../domain/intent-classifier');
 const { matchExperts, scoreExperts } = require('../domain/expert-matcher');
+const { buildContextMessages } = require('../domain/message-builder');
 const {
   synthesizeDebate,
   extractConsensus,
@@ -123,7 +124,7 @@ class ExpertAlliance {
     const gateway = getGateway();
     const systemPrompt = options.useCustomPrompt ? options.systemPrompt : expert.systemPrompt;
 
-    const contextMessages = this._buildContextMessages(expert, messages, options);
+    const contextMessages = buildContextMessages(expert, messages, options);
 
     const result = await gateway.chat({
       messages: contextMessages,
@@ -143,37 +144,15 @@ class ExpertAlliance {
       response: result.content,
       metadata: {
         ...result.metadata,
+        // gateway.chat 的 model/usage 为顶层字段（非 metadata 内），显式上浮保持可观测性
+        model: result.model,
+        usage: result.usage,
+        ai_powered: result.ai_powered,
         expert_type: expert.type,
         consulted_at: new Date().toISOString(),
         duration_ms: duration
       }
     };
-  }
-
-  _buildContextMessages(expert, messages, options = {}) {
-    const enhancedSystem = options.useCustomPrompt ? options.systemPrompt : expert.systemPrompt;
-
-    const contextParts = [];
-    if (options.problemContext) {
-      contextParts.push(`## 背景上下文\n${options.problemContext}`);
-    }
-    if (options.businessConstraints) {
-      contextParts.push(`## 业务约束\n${options.businessConstraints}`);
-    }
-
-    const enhancedMessages = [{
-      role: 'system',
-      content: contextParts.length > 0
-        ? `${enhancedSystem}\n\n${contextParts.join('\n\n')}`
-        : enhancedSystem
-    }];
-
-    if (options.includeExpertContext !== false) {
-      enhancedMessages[0].content += `\n\n专家能力: ${expert.capabilities.join(', ')}`;
-    }
-
-    enhancedMessages.push(...messages);
-    return enhancedMessages;
   }
 
   async intelligentConsult(question, options = {}) {
@@ -205,11 +184,16 @@ class ExpertAlliance {
 
   async multiExpertConsult(question, expertIds, options = {}) {
     const results = [];
+    const skipped = [];
     const gateway = getGateway();
 
     for (const expertId of expertIds) {
       const expert = this.repo.get(expertId);
-      if (!expert || expert.status !== 'active') continue;
+      if (!expert || expert.status !== 'active') {
+        // 企业级可观测性：跳过必须显式披露（而非静默丢弃），调用方可诊断传参错误
+        skipped.push({ id: expertId, reason: expert ? `status=${expert.status}` : 'expert_not_found' });
+        continue;
+      }
 
       const startTime = Date.now();
       try {
@@ -246,7 +230,9 @@ class ExpertAlliance {
     return {
       question,
       total: results.length,
+      requested: expertIds.length,
       successful: results.filter(r => r.success).length,
+      skipped,
       results,
       synthesized_at: new Date().toISOString()
     };

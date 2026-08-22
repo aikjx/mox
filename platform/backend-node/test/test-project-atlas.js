@@ -28,14 +28,14 @@ console.log('[1] 全项目图谱化（机器图谱承载一切）');
 const a = atlas.getAtlas();
 check('图谱节点数 ≥ 130（域+模块+引擎+算法+数据+文档）', a.stats.nodeCount >= 130, String(a.stats.nodeCount));
 check('图谱边数 ≥ 170（关联关系显式建模）', a.stats.edgeCount >= 170, String(a.stats.edgeCount));
-check('六类节点齐全（domain/module/engine/algorithm/data/doc）',
-  ['domain', 'module', 'engine', 'algorithm', 'data', 'doc'].every(k => a.stats.byKind[k] > 0),
+check('七类节点齐全（domain/module/engine/algorithm/data/doc/flow_step）',
+  ['domain', 'module', 'engine', 'algorithm', 'data', 'doc', 'flow_step'].every(k => a.stats.byKind[k] > 0),
   JSON.stringify(a.stats.byKind));
-check('业务域 26 个（每个大模块 = 一个小项目）', a.stats.byKind.domain === 26, String(a.stats.byKind.domain));
+check('业务域 29 个（27 基线含 studio + atlas-auto 自管理容器域 + mcp 协议服务域）', a.stats.byKind.domain === 29, String(a.stats.byKind.domain));
 check('模块 4 个（可插拔）', a.stats.byKind.module === 4);
 check('引擎 20 个（复用引擎宇宙真相源）', a.stats.byKind.engine === 20, String(a.stats.byKind.engine));
 check('算法 17 个（全部自研单源）', a.stats.byKind.algorithm === 17);
-check('数据资产 38 个（数据库全覆盖）', a.stats.byKind.data === 38, String(a.stats.byKind.data));
+check('数据资产 40 个（数据库全覆盖 + 自管理登记层）', a.stats.byKind.data === 40, String(a.stats.byKind.data));
 check('文档 ≥ 36 个（核心文档全域覆盖）', a.stats.byKind.doc >= 36, String(a.stats.byKind.doc));
 check('全部自研（零框架依赖声明）', a.stats.selfDeveloped === true && a.stats.frameworkDeps.length === 0);
 

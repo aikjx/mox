@@ -37,6 +37,16 @@ function readJSON(file, fallback) {
   }
 }
 
+/** 原子写 JSON（G5 金融级）：tmp + rename，崩溃不产生半写文件 */
+function atomicWriteJSON(fp, data) {
+  try {
+    fs.mkdirSync(path.dirname(fp), { recursive: true });
+    const tmp = fp + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf8');
+    fs.renameSync(tmp, fp);
+  } catch (_e) { /* best-effort：反馈学习落盘失败不阻断主流程 */ }
+}
+
 function appendTrace(trace) {
   try {
     fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -49,6 +59,9 @@ function appendTrace(trace) {
 // 意图识别模式（A16 单一真相源 · AINA A3）：直接引用专家联盟域包 domain 层定义，
 // 不经过编排层（expert-alliance.js），保持 application → domain 的最短依赖路径。
 const { INTENT_PATTERNS } = require('./expert-alliance/domain/intent-patterns');
+// 学习技能沉淀（G1 闭环：流程声明 writes 与实现一致）
+const { synthesizeSkills, rankSkills } = require('./expert-alliance/domain/skill-synthesis');
+const { SkillStore } = require('./expert-alliance/infrastructure/skill-store');
 
 class ExpertAllianceEngine {
   constructor({ alliance, expertGraph, dispatcher, gateway, options = {} } = {}) {
@@ -77,6 +90,8 @@ class ExpertAllianceEngine {
 
     // 运行时反馈：intent -> 高频命中专家，作为组队先验
     this.intentPriors = readJSON('alliance_intent_priors.json', {});
+    // 学习技能库（独立资产 alliance_learned_skills.json，与 ai-integration 的 learned_skills.json 互不覆写）
+    this.skillStore = new SkillStore(options.skillStore || {});
   }
 
   // ===================== 阶段一：意图识别 =====================
@@ -126,8 +141,10 @@ class ExpertAllianceEngine {
       this.config.maxTeamSize,
       Math.max(this.config.minTeamSize, options.teamSize || 3)
     );
+    const exclude = options.excludeIds instanceof Set ? options.excludeIds : new Set(options.excludeIds || []);
     const candidates = (this.alliance ? this.alliance.listExperts() : [])
-      .filter(e => e.status === 'active');
+      .filter(e => e.status === 'active')
+      .filter(e => !exclude.has(e.id)); // G3 重试换血：排除首次团队成员
 
     if (candidates.length === 0) {
       return { team: [], score: 0, reason: 'no_active_experts' };
@@ -199,6 +216,25 @@ class ExpertAllianceEngine {
 
     const totalSynergy = team.reduce((s, e) => s + (teamSynergy[e.id] || 0), 0);
 
+    // 安全类强制保障（G4 · EAF-STD-001 §4 阶段二）：安全意图必须优先安全专家入队。
+    // 常规评分未选入时替换末位成员；无安全专家时显式记录（不静默）。
+    let securityNote = null;
+    if (intent.primary === 'security') {
+      const hasSecurity = team.some(e => (e.type || '').toLowerCase().includes('security'));
+      if (!hasSecurity) {
+        const securityExpert = candidates.find(e =>
+          (e.type || '').toLowerCase().includes('security') && !team.includes(e)
+        );
+        if (securityExpert) {
+          if (team.length > 1) team[team.length - 1] = securityExpert; // 替换末位保规模
+          else team[0] = securityExpert;
+          securityNote = `安全类问题已强制选入安全专家 ${securityExpert.name}`;
+        } else {
+          securityNote = '安全类问题但注册表中无安全专家，已按常规评分组队（建议补充安全专家）';
+        }
+      }
+    }
+
     return {
       team: team.map(e => ({
         id: e.id,
@@ -209,6 +245,7 @@ class ExpertAllianceEngine {
       })),
       team_size: team.length,
       total_synergy: totalSynergy,
+      security_note: securityNote,
       dispatch_strategy: this.dispatcher ? this.dispatcher.strategy : 'unknown'
     };
   }
@@ -224,14 +261,30 @@ class ExpertAllianceEngine {
     const messages = [
       { role: 'user', content: question }
     ];
+    let degraded = null;
 
     // 1) 首轮并行咨询
-    const consultResults = await this._parallelConsult(team, messages, context);
+    let consultResults = await this._parallelConsult(team, messages, context);
     rounds.push({ round: 0, type: 'initial', results: consultResults });
+
+    // G6 降级链（EAF-STD-001 §4 降级路径#1）：咨询引擎不可用（全部专家失败）
+    //   → 单专家直答重试一次（团队首位 + 精简上下文），仍失败则保留失败结果回归主流
+    if (consultResults.length > 0 && consultResults.every(r => r.error)) {
+      const soloResults = await this._parallelConsult([team[0]], messages, context, { tag: 'solo-fallback' });
+      degraded = {
+        from: 'multi-consult',
+        to: 'single-expert-consult',
+        reason: '全部专家咨询失败，已降级为单专家直答重试'
+      };
+      rounds.push({ round: 0.5, type: 'degraded-solo', results: soloResults, reason: degraded.reason });
+      consultResults = soloResults;
+    }
 
     let finalResults = consultResults;
 
     // 2) 辩论收敛（自适应：初始轮已收敛则跳过，实测高频问题省 ~26s）
+    //    G6 降级链：辩论轮全部失败（辩论引擎不可用）→ 回退初始轮直答形态，
+    //    回归主流（共识计算 → 综合合成的输出契约保持一致）
     if (this.config.enableDebate && (options.enableDebate !== false)) {
       const initialConsensus = this._consensus(consultResults);
       const converged = this.config.adaptiveDebate
@@ -252,6 +305,17 @@ class ExpertAllianceEngine {
           ];
           const roundResults = await this._parallelConsult(team, debateMsgs, context, { tag: 'debate', maxTokens: this.config.debateMaxTokens });
           rounds.push({ round: r, type: 'debate', results: roundResults });
+
+          // 辩论轮全部失败：辩论引擎不可用 → 回退初始轮结果（保住有效意见）
+          if (roundResults.length > 0 && roundResults.every(x => x.error)) {
+            degraded = {
+              from: 'debate',
+              to: 'single-round-consult',
+              reason: `第 ${r} 轮辩论全部专家失败（辩论引擎不可用），已回退初始轮直答形态`
+            };
+            rounds.push({ round: r + 0.5, type: 'debate-degraded', reason: degraded.reason });
+            break; // 辩论通道已不可用，继续轮次无意义
+          }
           finalResults = roundResults;
 
           // 逐轮收敛检测：本轮辩论后共识已达阈值则提前终止（省后续辩论轮）
@@ -268,9 +332,11 @@ class ExpertAllianceEngine {
 
     return {
       rounds: rounds.length,
+      rounds_detail: rounds, // 轮次明细（含降级/收敛标记，供 trace 审计）
       initial: consultResults,
       final: finalResults,
-      consensus
+      consensus,
+      degraded
     };
   }
 
@@ -352,6 +418,7 @@ class ExpertAllianceEngine {
       validCount,
       total: results.length,
       agreement,
+      score: agreement, // 契约统一别名：外部（API/MCP）一律读 consensus.score，修复历史 undefined
       conflict,
       consensusReached: agreement >= this.config.consensusThreshold || validCount <= 1
     };
@@ -523,19 +590,26 @@ ${opinions.map(o => `[${o.expert}｜${o.type}｜置信度${o.confidence}] ${o.op
   /**
    * 将本次意图 → 命中专家回写到先验，并更新专家 metrics（置信度/成功率）。
    * 接收外部反馈（用户点赞/采纳）时可传入 feedback { expertId, score }
+   * G1：质量门禁通过的处理沉淀学习技能（alliance_learned_skills.json）
+   * G5：先验落盘改原子写（tmp + rename，崩溃不产生半写文件）
    */
-  learn(question, intent, team, deliberation, synthesis, feedback = null) {
+  learn(question, intent, team, deliberation, synthesis, gate = null, feedback = null) {
     // 1) 意图先验
     const prior = this.intentPriors[intent.primary] || { hits: {} };
     for (const m of team) {
       prior.hits[m.id] = (prior.hits[m.id] || 0) + 1;
     }
     this.intentPriors[intent.primary] = prior;
-    try {
-      fs.writeFileSync(path.join(DATA_DIR, 'alliance_intent_priors.json'), JSON.stringify(this.intentPriors, null, 2), 'utf8');
-    } catch (e) {}
+    atomicWriteJSON(path.join(DATA_DIR, 'alliance_intent_priors.json'), this.intentPriors);
 
-    // 2) 专家 metrics 回写
+    // 2) 学习技能沉淀（domain 纯函数去重强化 → 仓储原子持久化）
+    const { records } = synthesizeSkills(
+      { question, intent, team, deliberation, synthesis, gate },
+      this.skillStore.all()
+    );
+    if (records.length > 0) this.skillStore.save(this.skillStore.all());
+
+    // 3) 专家 metrics 回写
     if (this.alliance && this.alliance.recordConsultMetric) {
       for (const r of deliberation.final) {
         const adopted = feedback && feedback.expertId === r.expertId;
@@ -547,6 +621,15 @@ ${opinions.map(o => `[${o.expert}｜${o.type}｜置信度${o.confidence}] ${o.op
         });
       }
     }
+  }
+
+  /** 学习技能视图（按强化次数排序，供路由/组队先验参考） */
+  getLearnedSkills(limit = 20) {
+    return rankSkills(this.skillStore.all(), limit);
+  }
+
+  getSkillStats() {
+    return this.skillStore.stats();
   }
 
   // ===================== 统一编排入口 =====================
@@ -573,8 +656,12 @@ ${opinions.map(o => `[${o.expert}｜${o.type}｜置信度${o.confidence}] ${o.op
       stages: []
     };
 
+    // 阶段标记：at = 距起点的绝对时间点，duration_ms = 本阶段自身耗时（企业级审计需两者）
+    let lastMark = t0;
     const mark = (name, data) => {
-      trace.stages.push({ stage: name, at: Date.now() - t0, ...data });
+      const now = Date.now();
+      trace.stages.push({ stage: name, at: now - t0, duration_ms: now - lastMark, ...data });
+      lastMark = now;
     };
 
     try {
@@ -595,25 +682,43 @@ ${opinions.map(o => `[${o.expert}｜${o.type}｜置信度${o.confidence}] ${o.op
         return this._wrap(trace, { success: false, error: trace.error });
       }
 
-      // 阶段三
-      const deliberation = await this.deliberate(
-        question, teamPlan.team, options.context || {}, { enableDebate: options.enableDebate }
-      );
-      mark('deliberate', { rounds: deliberation.rounds, valid: deliberation.consensus.validCount });
+      // 阶段三~五（核心管线，mark 在真实阶段边界打点：审计耗时精确到阶段）
+      const core = await this._runCore(question, intent, teamPlan, options, mark);
+      let { teamPlan: finalTeamPlan, deliberation, synthesis, gate } = core;
+
+      // G3 门禁 C 级重试闭环：retry_suggested 首次被真实消费——
+      // 单次重路由组队（换血：排除首次团队）重跑管线，取门禁更优者
+      let retry = null;
+      if (gate.retry_suggested && gate.level === 'C' && options.disableRetry !== true) {
+        const firstTeamIds = new Set(teamPlan.team.map(m => m.id));
+        const retryPlan = this.composeTeam(question, intent, {
+          teamSize: options.teamSize,
+          excludeIds: firstTeamIds
+        });
+        if (retryPlan.team && retryPlan.team.length > 0) {
+          const retryCore = await this._runCore(question, intent, retryPlan, options);
+          retry = {
+            attempted: true,
+            team: retryPlan.team.map(m => m.id),
+            gate_first: gate.level,
+            gate_retry: retryCore.gate.level,
+            adopted: this._gateRank(retryCore.gate) > this._gateRank(gate)
+          };
+          if (retry.adopted) {
+            finalTeamPlan = retryPlan; deliberation = retryCore.deliberation;
+            synthesis = retryCore.synthesis; gate = retryCore.gate;
+          }
+          mark('retry', retry);
+        }
+      }
+      trace.team = finalTeamPlan;
       trace.deliberation = deliberation;
-
-      // 阶段四
-      const synthesis = await this.synthesize(question, deliberation, intent, options.context || {});
-      mark('synthesize', { confidence: synthesis.confidence, ai: synthesis.ai_powered });
       trace.synthesis = synthesis;
-
-      // 阶段五
-      const gate = this.qualityGate(synthesis, deliberation, intent);
-      mark('quality_gate', { level: gate.level, passed: gate.passed });
       trace.gate = gate;
+      trace.retry = retry;
 
       // 阶段六：反馈学习（默认执行，外部反馈可选）
-      this.learn(question, intent, teamPlan.team, deliberation, synthesis, options.feedback || null);
+      this.learn(question, intent, finalTeamPlan.team, deliberation, synthesis, gate, options.feedback || null);
 
       trace.success = true;
       trace.completed_at = new Date().toISOString();
@@ -624,10 +729,11 @@ ${opinions.map(o => `[${o.expert}｜${o.type}｜置信度${o.confidence}] ${o.op
         success: true,
         trace_id: traceId,
         intent,
-        team: teamPlan.team.map(m => ({ id: m.id, name: m.name, type: m.type })),
+        team: finalTeamPlan.team.map(m => ({ id: m.id, name: m.name, type: m.type })),
         consensus: deliberation.consensus,
         synthesis,
         gate,
+        retry,
         total_duration_ms: Date.now() - t0
       });
     } catch (e) {
@@ -640,8 +746,98 @@ ${opinions.map(o => `[${o.expert}｜${o.type}｜置信度${o.confidence}] ${o.op
     }
   }
 
+  /** 阶段三~五核心管线（G3 重试复用同一管线，保证契约一致） */
+  async _runCore(question, intent, teamPlan, options, mark = null) {
+    const deliberation = await this.deliberate(
+      question, teamPlan.team, options.context || {}, { enableDebate: options.enableDebate }
+    );
+    if (mark) mark('deliberate', {
+      rounds: deliberation.rounds,
+      valid: deliberation.consensus.validCount,
+      degraded: deliberation.degraded ? deliberation.degraded.to : undefined
+    });
+    const synthesis = await this.synthesize(question, deliberation, intent, options.context || {});
+    if (mark) mark('synthesize', { confidence: synthesis.confidence, ai: synthesis.ai_powered });
+    const gate = this.qualityGate(synthesis, deliberation, intent);
+    if (mark) mark('quality_gate', { level: gate.level, passed: gate.passed });
+    return { teamPlan, deliberation, synthesis, gate };
+  }
+
+  /** 门禁级别序：A(3) > B(2) > C(1) > D(0)——重试采纳判定 */
+  _gateRank(gate) {
+    return { A: 3, B: 2, C: 1, D: 0 }[gate.level] || 0;
+  }
+
   _wrap(trace, payload) {
     return Object.assign({ trace }, payload);
+  }
+
+  // ===================== Trace 审计查询（G2 审计闭环） =====================
+  /**
+   * 读取最近 trace（JSONL 尾部窗口）：limit 条倒序。
+   * 窗口约束：最多读 TAIL_MAX_BYTES 字节（防大文件全量加载），
+   * 首行可能被截断为半行，解析失败自动跳过。
+   */
+  queryTraces(limit = 20) {
+    const traces = this._readTraceTail();
+    return traces.slice(0, Math.max(1, Math.min(limit, 200)));
+  }
+
+  /** 按 trace_id 精确回查（企业级：任何一次咨询可完整回溯） */
+  queryTrace(traceId) {
+    if (!traceId) return null;
+    return this._readTraceTail().find(t => t.trace_id === traceId) || null;
+  }
+
+  /** trace 聚合统计（可观测性：成功率/耗时/门禁级别/意图分布） */
+  traceStats() {
+    const traces = this._readTraceTail(500);
+    if (traces.length === 0) {
+      return { total_in_window: 0, note: '暂无轨迹（首次咨询后产生）' };
+    }
+    const ok = traces.filter(t => t.success);
+    const durations = ok.map(t => t.total_duration_ms || 0).filter(d => d > 0);
+    const levels = {}, intents = {};
+    for (const t of traces) {
+      const lv = t.gate ? t.gate.level : (t.success ? 'N/A' : 'ERR');
+      levels[lv] = (levels[lv] || 0) + 1;
+      const it = t.intent ? t.intent.primary : 'unknown';
+      intents[it] = (intents[it] || 0) + 1;
+    }
+    return {
+      total_in_window: traces.length,
+      success_rate: Math.round((ok.length / traces.length) * 100) / 100,
+      avg_duration_ms: durations.length ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0,
+      p95_duration_ms: durations.length ? durations.sort((a, b) => a - b)[Math.floor(durations.length * 0.95)] || 0 : 0,
+      gate_levels: levels,
+      intent_distribution: intents,
+      window: `最近 ${traces.length} 条`
+    };
+  }
+
+  /** JSONL 尾部窗口读取（内部） */
+  _readTraceTail(maxLines = 200) {
+    try {
+      const fp = path.join(DATA_DIR, TRACE_FILE);
+      if (!fs.existsSync(fp)) return [];
+      const TAIL_MAX_BYTES = 2 * 1024 * 1024; // 2MB 窗口上限
+      const size = fs.statSync(fp).size;
+      const readLen = Math.min(size, TAIL_MAX_BYTES);
+      const fd = fs.openSync(fp, 'r');
+      const buf = Buffer.alloc(readLen);
+      fs.readSync(fd, buf, 0, readLen, size - readLen);
+      fs.closeSync(fd);
+      const lines = buf.toString('utf8').split('\n').filter(Boolean);
+      // 首行可能为半行（窗口起点截断）：验证失败即丢弃
+      const out = [];
+      for (const line of lines) {
+        try { out.push(JSON.parse(line)); } catch (_e) { /* 半行跳过 */ }
+      }
+      // 若发生截断且首行解析成功也可能是巧合完整行——窗口语义只保证"最近"
+      return out.slice(-maxLines).reverse(); // 倒序：最新在前
+    } catch (_e) {
+      return [];
+    }
   }
 
   _extractJSON(text) {

@@ -153,6 +153,7 @@ class SessionStore {
     if (!session) return null;
 
     const msg = {
+      role: 'user', // 企业级默认：未显式指定角色时按用户消息处理（否则轮次统计与历史入库静默失效）
       ...message,
       id: `msg_${crypto.randomUUID ? crypto.randomUUID() : Date.now()}`,
       timestamp: new Date().toISOString()
@@ -172,7 +173,7 @@ class SessionStore {
       this._addToHistory(session.id, msg.content, session.current_expert || 'unknown');
     }
 
-    return session;
+    return msg;
   }
 
   _addToHistory(sessionId, question, expertId) {

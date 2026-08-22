@@ -22,8 +22,8 @@ function ok(res, data, extra, opts) {
   send(res, 200, Object.assign({ success: true, data: data }, extra || {}), null, opts);
 }
 
-function fail(res, status, message) {
-  send(res, status, { success: false, error: message });
+function fail(res, status, message, extra) {
+  send(res, status, Object.assign({ success: false, error: message }, extra || {}));
 }
 
 function readBody(req) {

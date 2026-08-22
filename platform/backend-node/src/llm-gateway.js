@@ -264,11 +264,9 @@ class LLMGateway {
     ].join('\n');
   }
 
-  async chat(params) {
-    const { messages, sessionId, expertType, systemPrompt, webSearchContext, temperature = 0.7, maxTokens = 2048 } = params;
-
-    const provider = this.activeProvider ? this.providers[this.activeProvider] : null;
-
+  // 构建增强消息（时间上下文 + 联网上下文 + 专家系统提示 + 会话历史）：chat 与 chatStream 共用
+  _buildEnhancedMessages(params) {
+    const { messages, sessionId, expertType, systemPrompt, webSearchContext } = params;
     const enhancedMessages = [];
 
     // 始终注入实时时间上下文（防止日期幻觉）
@@ -287,7 +285,29 @@ class LLMGateway {
     }
 
     const convHistory = sessionId ? this.conversations.get(sessionId) || [] : [];
-    const allMessages = [...enhancedMessages, ...convHistory, ...messages];
+    return { allMessages: [...enhancedMessages, ...convHistory, ...messages], convHistory };
+  }
+
+  // 会话记忆更新（chat 与 chatStream 共用）：LRU 1000 会话
+  _updateConversation(sessionId, convHistory, messages, content) {
+    if (!sessionId) return;
+    const updatedHistory = [...convHistory, ...messages];
+    if (content) {
+      updatedHistory.push({ role: 'assistant', content });
+    }
+    this.conversations.set(sessionId, updatedHistory);
+    if (this.conversations.size > 1000) {
+      const oldestKey = this.conversations.keys().next().value;
+      this.conversations.delete(oldestKey);
+    }
+  }
+
+  async chat(params) {
+    const { messages, sessionId, expertType, systemPrompt, temperature = 0.7, maxTokens = 2048 } = params;
+
+    const provider = this.activeProvider ? this.providers[this.activeProvider] : null;
+
+    const { allMessages, convHistory } = this._buildEnhancedMessages(params);
 
     let result;
 
@@ -315,19 +335,105 @@ class LLMGateway {
       result = this._generateIntelligentResponse(messages, expertType, convHistory);
     }
 
-    if (sessionId) {
-      const updatedHistory = [...convHistory, ...messages];
-      if (result && result.content) {
-        updatedHistory.push({ role: 'assistant', content: result.content });
-      }
-      this.conversations.set(sessionId, updatedHistory);
-      if (this.conversations.size > 1000) {
-        const oldestKey = this.conversations.keys().next().value;
-        this.conversations.delete(oldestKey);
-      }
-    }
+    this._updateConversation(sessionId, convHistory, messages, result && result.content);
 
     return result;
+  }
+
+  /**
+   * 流式对话（SSE）：真实 Provider 逐 token 推送，onChunk(delta, fullContent) 回调。
+   * 无真实 AI 时一次性降级推送本地结果（不伪装流式，ai_powered 标记为 false）。
+   * 协议：OpenAI 兼容 stream:true + stream_options.include_usage（DeepSeek/vLLM 等均支持）。
+   */
+  async chatStream(params, onChunk) {
+    const { messages, sessionId, temperature = 0.7, maxTokens = 2048 } = params;
+    const provider = this.activeProvider ? this.providers[this.activeProvider] : null;
+    const { allMessages, convHistory } = this._buildEnhancedMessages(params);
+
+    // 无真实 AI：降级一次性返回（显式标记非 AI，不伪装）
+    if (!provider || !provider.enabled || provider.provider === 'local') {
+      const local = this._generateIntelligentResponse(messages, null, convHistory);
+      if (onChunk && local.content) onChunk(local.content, local.content);
+      this._updateConversation(sessionId, convHistory, messages, local.content);
+      return { ...local, ai_powered: false };
+    }
+
+    const url = provider.base_url || 'https://api.openai.com/v1';
+    const model = provider.model || 'gpt-4';
+    const apiKey = decryptApiKey(provider.api_key);
+    const start = Date.now();
+
+    const payload = {
+      model,
+      messages: allMessages,
+      temperature,
+      max_tokens: maxTokens,
+      stream: true,
+      stream_options: { include_usage: true }
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.requestTimeout);
+    // 客户端断开（SSE 连接关闭）→ 中止上游流，避免无谓 token 消耗
+    if (params.signal) {
+      params.signal.addEventListener('abort', () => controller.abort(), { once: true });
+    }
+    try {
+      const response = await fetch(`${url}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      if (!response.ok) throw new Error(`LLM API error: ${response.status}`);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+      let content = '';
+      let usage = null;
+      let respModel = model;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // 尾行可能不完整，留待下个 chunk
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith('data:')) continue;
+          const data = trimmed.slice(5).trim();
+          if (data === '[DONE]') continue;
+          try {
+            const json = JSON.parse(data);
+            if (json.usage) usage = json.usage;
+            if (json.model) respModel = json.model;
+            const delta = json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content;
+            if (delta) {
+              content += delta;
+              if (onChunk) onChunk(delta, content);
+            }
+          } catch (_e) { /* 不完整 JSON 行，忽略 */ }
+        }
+      }
+
+      if (usage) this._recordUsage(provider.id || provider.provider, usage);
+      this._logRequest(provider.id || provider.provider, 'success', Date.now() - start);
+
+      this._updateConversation(sessionId, convHistory, messages, content);
+
+      return {
+        content,
+        usage: usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+        model: respModel,
+        provider: provider.id,
+        latency_ms: Date.now() - start,
+        ai_powered: true
+      };
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
   _getExpertSystemPrompt(expertType) {

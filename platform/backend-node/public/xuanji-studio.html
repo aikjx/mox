@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>璇玑工作台 · Xuanji Studio</title>
+<style>
+  /* ============ 设计系统：低饱和度深空 · 黄金比例 · 极简克制 ============ */
+  :root {
+    --bg-deep: #0a0e18;
+    --bg-raise: #111726;
+    --bg-card: #151d30;
+    --bg-input: #0d1322;
+    --line: rgba(140, 160, 210, 0.10);
+    --line-strong: rgba(140, 160, 210, 0.18);
+    --ink-1: #e6ebf5;
+    --ink-2: #98a4bd;
+    --ink-3: #5d6880;
+    --accent: #6b8cff;
+    --accent-2: #9d7bff;
+    --ok: #4ade80;
+    --warn: #fbbf24;
+    --bad: #f87171;
+    --grad: linear-gradient(135deg, #6b8cff 0%, #9d7bff 100%);
+    --radius: 14px;
+    --radius-sm: 9px;
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    --mono: 'Cascadia Code', 'JetBrains Mono', Consolas, monospace;
+    --sans: 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(107, 140, 255, 0.06), transparent), var(--bg-deep);
+    color: var(--ink-1); font-family: var(--sans);
+    font-size: 14px; overflow: hidden;
+  }
+
+  /* ============ 顶部栏：品牌 + 全局搜索（/ 聚焦） ============ */
+  header {
+    display: flex; align-items: center; gap: 20px;
+    padding: 0 28px; height: 62px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(10, 14, 24, 0.85); backdrop-filter: blur(12px);
+  }
+  .brand { display: flex; align-items: center; gap: 11px; flex-shrink: 0; }
+  .brand-mark {
+    width: 34px; height: 34px; border-radius: 10px; background: var(--grad);
+    display: grid; place-items: center; font-weight: 700; font-size: 15px; color: #fff;
+    box-shadow: 0 4px 14px rgba(107, 140, 255, 0.3);
+  }
+  .brand-text b { font-size: 15px; font-weight: 600; letter-spacing: 0.5px; }
+  .brand-text span { display: block; font-size: 11px; color: var(--ink-3); margin-top: 1px; }
+
+  .search-wrap { position: relative; flex: 1; max-width: 560px; }
+  .search-wrap .icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--ink-3); font-size: 14px; pointer-events: none; }
+  #globalSearch {
+    width: 100%; height: 40px; padding: 0 88px 0 40px;
+    background: var(--bg-input); border: 1px solid var(--line); border-radius: 10px;
+    color: var(--ink-1); font-size: 13.5px; outline: none; transition: border .2s, box-shadow .2s;
+  }
+  #globalSearch:focus { border-color: rgba(107, 140, 255, 0.5); box-shadow: 0 0 0 3px rgba(107, 140, 255, 0.12); }
+  .search-wrap kbd {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+    border: 1px solid var(--line-strong); border-radius: 5px; padding: 2px 7px;
+  }
+  .search-panel {
+    position: absolute; top: 48px; left: 0; right: 0; z-index: 50;
+    background: var(--bg-card); border: 1px solid var(--line-strong); border-radius: var(--radius);
+    box-shadow: var(--shadow); max-height: 380px; overflow-y: auto; display: none;
+  }
+  .search-panel.show { display: block; }
+  .search-hit { display: flex; align-items: center; gap: 12px; padding: 11px 16px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .search-hit:hover { background: rgba(107, 140, 255, 0.06); }
+  .search-hit .kind {
+    font-size: 10.5px; padding: 2px 8px; border-radius: 5px; flex-shrink: 0;
+    background: rgba(107, 140, 255, 0.12); color: var(--accent);
+  }
+  .search-hit .name { font-size: 13px; }
+  .search-hit .name small { color: var(--ink-2); margin-left: 8px; }
+  .search-empty { padding: 22px; text-align: center; color: var(--ink-3); font-size: 13px; }
+
+  .header-status { display: flex; align-items: center; gap: 18px; margin-left: auto; flex-shrink: 0; }
+  .status-pill { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-2); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .dot.ok { background: var(--ok); box-shadow: 0 0 8px rgba(74, 222, 128, 0.5); }
+  .dot.bad { background: var(--bad); box-shadow: 0 0 8px rgba(248, 113, 113, 0.5); }
+  .dot.pend { background: var(--ink-3); }
+
+  /* ============ 主体：tabs + 内容区 ============ */
+  main { display: flex; flex-direction: column; height: calc(100% - 62px - 40px); }
+  nav.tabs {
+    display: flex; gap: 4px; padding: 10px 28px 0; border-bottom: 1px solid var(--line);
+  }
+  .tab {
+    padding: 10px 18px; font-size: 13.5px; color: var(--ink-2); cursor: pointer;
+    border-bottom: 2px solid transparent; transition: color .15s; user-select: none;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .tab:hover { color: var(--ink-1); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab .key {
+    font-family: var(--mono); font-size: 10px; color: var(--ink-3);
+    border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px;
+  }
+  .tab-body { flex: 1; overflow-y: auto; padding: 24px 28px; }
+  .tab-page { display: none; height: 100%; }
+  .tab-page.active { display: block; }
+  .tab-page.flex-col { display: none; flex-direction: column; gap: 16px; }
+  .tab-page.flex-col.active { display: flex; }
+
+  /* ============ 首页：场景卡片（豆包式快捷入口） ============ */
+  .hero { text-align: center; padding: 26px 0 30px; }
+  .hero h1 { font-size: 22px; font-weight: 600; letter-spacing: 1px; }
+  .hero h1 em { font-style: normal; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero p { color: var(--ink-2); margin-top: 9px; font-size: 13.5px; }
+
+  .scene-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px;
+    max-width: 1060px; margin: 0 auto;
+  }
+  .scene-card {
+    background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 20px; cursor: pointer; transition: transform .18s, border-color .18s, box-shadow .18s;
+    position: relative; overflow: hidden;
+  }
+  .scene-card::before {
+    content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity .2s;
+    background: radial-gradient(circle at 80% -20%, rgba(107, 140, 255, 0.10), transparent 60%);
+  }
+  .scene-card:hover { transform: translateY(-3px); border-color: rgba(107, 140, 255, 0.35); box-shadow: var(--shadow); }
+  .scene-card:hover::before { opacity: 1; }
+  .scene-icon {
+    width: 42px; height: 42px; border-radius: 11px; display: grid; place-items: center;
+    font-size: 20px; margin-bottom: 14px; background: rgba(107, 140, 255, 0.10);
+  }
+  .scene-card h3 { font-size: 14.5px; font-weight: 600; margin-bottom: 6px; }
+  .scene-card p { font-size: 12.5px; color: var(--ink-2); line-height: 1.65; }
+  .scene-card .go {
+    position: absolute; right: 16px; top: 20px; color: var(--ink-3); font-size: 13px; transition: color .15s, transform .15s;
+  }
+  .scene-card:hover .go { color: var(--accent); transform: translateX(3px); }
+
+  /* ============ 代码运行：黄金比例 编辑器:结果 = 1:1.618 ============ */
+  .code-layout { display: flex; gap: 16px; height: 100%; min-height: 420px; }
+  .code-pane { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .result-pane { flex: 1.618; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .pane-head { display: flex; align-items: center; gap: 10px; }
+  .pane-head .title { font-size: 13px; color: var(--ink-2); font-weight: 500; }
+  .pane-head .spacer { flex: 1; }
+  .examples { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    font-size: 11.5px; padding: 4px 11px; border-radius: 20px; cursor: pointer; user-select: none;
+    background: rgba(107, 140, 255, 0.08); color: var(--ink-2); border: 1px solid transparent;
+    transition: all .15s;
+  }
+  .chip:hover { color: var(--accent); border-color: rgba(107, 140, 255, 0.3); }
+  .chip.on { background: rgba(107, 140, 255, 0.15); color: var(--accent); }
+
+  #codeEditor {
+    flex: 1; width: 100%; resize: none; padding: 16px;
+    background: var(--bg-input); border: 1px solid var(--line); border-radius: var(--radius-sm);
+    color: #c9d5f0; font-family: var(--mono); font-size: 13px; line-height: 1.75;
+    outline: none; tab-size: 2; transition: border .2s;
+  }
+  #codeEditor:focus { border-color: rgba(107, 140, 255, 0.4); }
+
+  .run-bar { display: flex; align-items: center; gap: 12px; }
+  .btn {
+    height: 38px; padding: 0 22px; border: none; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 500; cursor: pointer; transition: all .18s; font-family: var(--sans);
+  }
+  .btn-primary { background: var(--grad); color: #fff; box-shadow: 0 4px 16px rgba(107, 140, 255, 0.25); }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(107, 140, 255, 0.35); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn-ghost { background: transparent; color: var(--ink-2); border: 1px solid var(--line-strong); }
+  .btn-ghost:hover { color: var(--ink-1); border-color: var(--ink-3); }
+  .run-meta { font-size: 12px; color: var(--ink-3); font-family: var(--mono); }
+
+  .result-boxes { flex: 1; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+  .result-box {
+    background: var(--bg-input); border: 1px solid var(--line); border-radius: var(--radius-sm);
+    padding: 13px 16px; overflow: auto; font-family: var(--mono); font-size: 12.5px; line-height: 1.7;
+  }
+  .result-box .rb-title {
+    font-family: var(--sans); font-size: 11px; color: var(--ink-3); margin-bottom: 8px;
+    display: flex; align-items: center; gap: 7px; letter-spacing: 1px;
+  }
+  #runLogs { flex: 3; color: var(--ink-2); white-space: pre-wrap; }
+  #runResult { flex: 7; color: #c9d5f0; white-space: pre-wrap; }
+  .log-line.error { color: var(--bad); }
+  .log-line.warn { color: var(--warn); }
+  .log-line.info { color: var(--accent); }
+
+  /* ============ API 游乐场 ============ */
+  .api-layout { display: flex; gap: 16px; height: 100%; min-height: 420px; }
+  .api-catalog { width: 300px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+  .api-group-title { font-size: 11px; color: var(--ink-3); letter-spacing: 1.5px; padding: 8px 4px 2px; }
+  .api-item {
+    padding: 10px 13px; border-radius: var(--radius-sm); cursor: pointer;
+    border: 1px solid transparent; transition: all .15s; background: var(--bg-card);
+  }
+  .api-item:hover { border-color: var(--line-strong); }
+  .api-item.on { border-color: rgba(107, 140, 255, 0.45); background: rgba(107, 140, 255, 0.07); }
+  .api-item .m { font-family: var(--mono); font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-right: 8px; }
+  .m.get { background: rgba(74, 222, 128, 0.13); color: var(--ok); }
+  .m.post { background: rgba(107, 140, 255, 0.13); color: var(--accent); }
+  .api-item .p { font-family: var(--mono); font-size: 12px; color: var(--ink-1); }
+  .api-item .d { font-size: 11px; color: var(--ink-3); margin-top: 4px; padding-left: 34px; }
+  .api-main { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  #apiBody {
+    height: 130px; resize: none; padding: 13px 16px;
+    background: var(--bg-input); border: 1px solid var(--line); border-radius: var(--radius-sm);
+    color: #c9d5f0; font-family: var(--mono); font-size: 12.5px; line-height: 1.7; outline: none;
+  }
+  #apiResult { flex: 1; }
+
+  /* ============ 图谱体检 / 项目看板 ============ */
+  .check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; max-width: 1200px; }
+  .check-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius); padding: 17px 19px; }
+  .check-head { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
+  .check-head .w-name { font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 600; }
+  .check-head .w-title { font-size: 13px; font-weight: 500; }
+  .check-head .cnt { margin-left: auto; font-size: 11.5px; color: var(--ink-3); font-family: var(--mono); }
+  .check-card .fails { margin-top: 9px; display: flex; flex-direction: column; gap: 5px; }
+  .check-card .fail-item { font-size: 11.5px; color: var(--bad); font-family: var(--mono); line-height: 1.5; }
+
+  .proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 16px; max-width: 1200px; }
+  .proj-card {
+    background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 19px; cursor: default; transition: border-color .18s, transform .18s;
+  }
+  .proj-card:hover { border-color: rgba(107, 140, 255, 0.3); transform: translateY(-2px); }
+  .proj-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+  .proj-name { font-size: 15px; font-weight: 600; }
+  .proj-id { font-family: var(--mono); font-size: 11px; color: var(--ink-3); margin-top: 4px; }
+  .score-ring { position: relative; width: 52px; height: 52px; flex-shrink: 0; }
+  .score-ring svg { transform: rotate(-90deg); }
+  .score-ring .val {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    font-size: 13px; font-weight: 600; font-family: var(--mono);
+  }
+  .proj-vision { font-size: 12px; color: var(--ink-2); line-height: 1.7; margin-bottom: 14px; min-height: 40px; }
+  .proj-stats { display: flex; gap: 8px; flex-wrap: wrap; }
+  .stat { font-size: 11px; padding: 4px 10px; border-radius: 6px; background: rgba(140, 160, 210, 0.08); color: var(--ink-2); }
+  .stat b { color: var(--ink-1); font-weight: 600; }
+  .status-tag { font-size: 11px; padding: 3px 10px; border-radius: 12px; }
+  .status-tag.maintaining { background: rgba(74, 222, 128, 0.12); color: var(--ok); }
+  .status-tag.delivered { background: rgba(107, 140, 255, 0.12); color: var(--accent); }
+  .status-tag.building { background: rgba(251, 191, 36, 0.12); color: var(--warn); }
+  .status-tag.planning { background: rgba(140, 160, 210, 0.12); color: var(--ink-2); }
+
+  /* ============ 底部状态栏 ============ */
+  footer {
+    height: 40px; display: flex; align-items: center; gap: 22px; padding: 0 28px;
+    border-top: 1px solid var(--line); font-size: 11.5px; color: var(--ink-3);
+    background: rgba(10, 14, 24, 0.9);
+  }
+  footer .f-item { display: flex; align-items: center; gap: 6px; }
+  footer .f-val { color: var(--ink-2); font-family: var(--mono); }
+  footer .hint { margin-left: auto; }
+  footer kbd { border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; font-family: var(--mono); font-size: 10px; }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: rgba(140, 160, 210, 0.15); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(140, 160, 210, 0.3); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-mark">璇</div>
+    <div class="brand-text"><b>璇玑工作台</b><span>Xuanji Studio · 一切皆是项目</span></div>
+  </div>
+  <div class="search-wrap">
+    <span class="icon">⌕</span>
+    <input id="globalSearch" type="text" placeholder="搜索图谱资产：域 / 引擎 / 算法 / 数据 / 文档 / 项目…" autocomplete="off">
+    <kbd>/</kbd>
+    <div class="search-panel" id="searchPanel"></div>
+  </div>
+  <div class="header-status">
+    <div class="status-pill"><span class="dot pend" id="dotVerify"></span><span id="txtVerify">验证中</span></div>
+    <div class="status-pill"><span class="dot pend" id="dotSvc"></span><span id="txtSvc">服务</span></div>
+  </div>
+</header>
+
+<main>
+  <nav class="tabs">
+    <div class="tab active" data-page="home"><span>首页</span><span class="key">1</span></div>
+    <div class="tab" data-page="code"><span>代码运行</span><span class="key">2</span></div>
+    <div class="tab" data-page="api"><span>API 游乐场</span><span class="key">3</span></div>
+    <div class="tab" data-page="health"><span>图谱体检</span><span class="key">4</span></div>
+    <div class="tab" data-page="projects"><span>项目看板</span><span class="key">5</span></div>
+  </nav>
+
+  <div class="tab-body">
+
+    <!-- ============ 首页：场景卡片 ============ -->
+    <section class="tab-page active" id="page-home">
+      <div class="hero">
+        <h1>打开即用 · <em>零门槛直通</em></h1>
+        <p>项目全息图谱 · 26 业务域 · 18 引擎 · 无破窗验证 —— 全部能力，点击直达</p>
+      </div>
+      <div class="scene-grid">
+        <div class="scene-card" data-goto="code">
+          <span class="go">→</span>
+          <div class="scene-icon">⚡</div>
+          <h3>代码在线运行</h3>
+          <p>页面写 JS，沙箱真实执行。3 秒守卫、零 IO 隔离、末尾表达式自动回显</p>
+        </div>
+        <div class="scene-card" data-goto="api">
+          <span class="go">→</span>
+          <div class="scene-icon">🛝</div>
+          <h3>API 游乐场</h3>
+          <p>预置高频端点目录，选路径、改参数、看真实响应——全链路即时验证</p>
+        </div>
+        <div class="scene-card" data-goto="health">
+          <span class="go">→</span>
+          <div class="scene-icon">🩺</div>
+          <h3>图谱体检</h3>
+          <p>W1-W10 无破窗验证实时体检：路由覆盖、代码路径、连通性、项目治理</p>
+        </div>
+        <div class="scene-card" data-goto="projects">
+          <span class="go">→</span>
+          <div class="scene-icon">🗂</div>
+          <h3>项目看板</h3>
+          <p>一切皆是项目：健康分环形图、生命周期状态、域/引擎/流程资产聚合</p>
+        </div>
+        <div class="scene-card" id="cardConsult">
+          <span class="go">↗</span>
+          <div class="scene-icon">💬</div>
+          <h3>AI 图谱咨询</h3>
+          <p>向架构师专家提问，图谱上下文增强回答——搜图谱不如问图谱</p>
+        </div>
+        <div class="scene-card" id="cardAtlas">
+          <span class="go">↗</span>
+          <div class="scene-icon">🕸</div>
+          <h3>图谱漫游</h3>
+          <p>全息图谱原始数据：节点、边、统计——或前往前端 3D 力导图深度探索</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 代码运行（黄金比例 编辑器:结果） ============ -->
+    <section class="tab-page flex-col" id="page-code">
+      <div class="code-layout">
+        <div class="code-pane">
+          <div class="pane-head">
+            <span class="title">JavaScript 沙箱</span>
+            <span class="spacer"></span>
+            <div class="examples" id="codeExamples"></div>
+          </div>
+          <textarea id="codeEditor" spellcheck="false" placeholder="在这里写代码，Ctrl+Enter 运行…"></textarea>
+          <div class="run-bar">
+            <button class="btn btn-primary" id="btnRun">▶ 运行 <span style="font-size:11px;opacity:.75">Ctrl+↵</span></button>
+            <button class="btn btn-ghost" id="btnPrecheck">语法预检</button>
+            <span class="run-meta" id="runMeta">vm 沙箱 · 3s 超时守卫 · 零 IO</span>
+          </div>
+        </div>
+        <div class="result-pane">
+          <div class="result-boxes">
+            <div class="result-box" id="runLogs"><div class="rb-title">◈ 运行日志 console</div><div id="logsBody" style="color:var(--ink-3)">尚无输出</div></div>
+            <div class="result-box" id="runResult"><div class="rb-title">◈ 返回结果 result</div><div id="resultBody" style="color:var(--ink-3)">点击运行查看</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ API 游乐场 ============ -->
+    <section class="tab-page" id="page-api">
+      <div class="api-layout">
+        <div class="api-catalog" id="apiCatalog"></div>
+        <div class="api-main">
+          <div class="pane-head">
+            <span class="title" id="apiCurrent">选择左侧端点</span>
+            <span class="spacer"></span>
+            <span class="run-meta" id="apiMeta"></span>
+          </div>
+          <textarea id="apiBody" spellcheck="false" placeholder="POST 请求体（JSON）…" style="display:none"></textarea>
+          <div class="run-bar">
+            <button class="btn btn-primary" id="btnApiRun">▶ 发送请求 <span style="font-size:11px;opacity:.75">Ctrl+↵</span></button>
+          </div>
+          <div class="result-box" id="apiResult"><div class="rb-title">◈ 响应</div><div id="apiResultBody" style="color:var(--ink-3)">等待请求</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 图谱体检 ============ -->
+    <section class="tab-page" id="page-health">
+      <div class="pane-head" style="margin-bottom:16px">
+        <span class="title" style="font-size:14px;color:var(--ink-1)">无破窗验证 · W1-W10 检查族</span>
+        <span class="spacer"></span>
+        <button class="btn btn-ghost" id="btnRecheck" style="height:32px;font-size:12px">↻ 重新体检</button>
+      </div>
+      <div class="check-grid" id="checkGrid"></div>
+    </section>
+
+    <!-- ============ 项目看板 ============ -->
+    <section class="tab-page" id="page-projects">
+      <div class="pane-head" style="margin-bottom:16px">
+        <span class="title" style="font-size:14px;color:var(--ink-1)" id="projSummary">项目清单</span>
+      </div>
+      <div class="proj-grid" id="projGrid"></div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="f-item">服务 <span class="f-val" id="fSvc">--</span></div>
+  <div class="f-item">验证 <span class="f-val" id="fVerify">--</span></div>
+  <div class="f-item">项目 <span class="f-val" id="fProj">--</span></div>
+  <div class="f-item">健康分 <span class="f-val" id="fScore">--</span></div>
+  <div class="hint"><kbd>/</kbd> 搜索 · <kbd>1-5</kbd> 切页 · <kbd>Ctrl+↵</kbd> 运行</div>
+</footer>
+
+<script>
+'use strict';
+/* ============ 璇玑工作台 · 豆包式交互（零门槛/超短链路/偏好记忆） ============ */
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => document.querySelectorAll(s);
+
+/* ---------- Tab 切换（含偏好记忆：记住用户最后停留页） ---------- */
+function switchTab(page) {
+  $$('.tab').forEach(t => t.classList.toggle('active', t.dataset.page === page));
+  $$('.tab-page').forEach(p => p.classList.toggle('active', p.id === 'page-' + page));
+  localStorage.setItem('studio.lastTab', page);
+  if (page === 'health') loadChecks();
+  if (page === 'projects') loadProjects();
+}
+$$('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.page)));
+$$('.scene-card[data-goto]').forEach(c => {
+  c.addEventListener('click', () => switchTab(c.dataset.goto));
+  c.addEventListener('dblclick', () => switchTab(c.dataset.goto));
+});
+
+/* ---------- 全局搜索：/ 聚焦 · 回车检索图谱 · Esc 关闭 ---------- */
+const searchInput = $('#globalSearch'), searchPanel = $('#searchPanel');
+document.addEventListener('keydown', (e) => {
+  if (e.key === '/' && document.activeElement !== searchInput && !isTyping()) { e.preventDefault(); searchInput.focus(); }
+  if (e.key === 'Escape') { searchPanel.classList.remove('show'); searchInput.blur(); }
+  if (!e.ctrlKey && !e.altKey && /^[1-5]$/.test(e.key) && !isTyping()) switchTab(['home','code','api','health','projects'][+e.key - 1]);
+});
+function isTyping() {
+  const t = document.activeElement;
+  return t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT');
+}
+let searchTimer = null;
+searchInput.addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  const q = searchInput.value.trim();
+  if (!q) { searchPanel.classList.remove('show'); return; }
+  searchTimer = setTimeout(() => doSearch(q), 260); // 超短链路：输入即搜（防抖 260ms）
+});
+async function doSearch(q) {
+  try {
+    const r = await fetch(`/atlas/search?q=${encodeURIComponent(q)}`).then(r => r.json());
+    const hits = (r.data && r.data.nodes) || [];
+    searchPanel.innerHTML = hits.length
+      ? hits.slice(0, 12).map(h => `
+        <div class="search-hit">
+          <span class="kind">${h.kind}</span>
+          <span class="name">${h.name || h.id}<small>${h.id}</small></span>
+        </div>`).join('')
+      : `<div class="search-empty">未命中「${q}」—— 试试：图谱 / 引擎 / 项目 / PageRank</div>`;
+    searchPanel.classList.add('show');
+  } catch (e) {
+    searchPanel.innerHTML = `<div class="search-empty">检索失败: ${e.message}</div>`;
+    searchPanel.classList.add('show');
+  }
+}
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.search-wrap')) searchPanel.classList.remove('show');
+});
+
+/* ---------- 代码运行：示例预设 + Ctrl+Enter + 沙箱端点 ---------- */
+const EXAMPLES = [
+  { name: '图谱统计', code: `// 拉取项目全息图谱统计（沙箱内置同源 fetch）
+const atlas = await fetch('/atlas').then(r => r.json());
+const { nodes, edges } = atlas.data;
+console.log('节点数:', nodes.length, '边数:', edges.length);
+const byKind = {};
+nodes.forEach(n => byKind[n.kind] = (byKind[n.kind] || 0) + 1);
+return { 节点总数: nodes.length, 边总数: edges.length, 分类: byKind };` },
+  { name: '黄金比例', code: `// 黄金比例验证：斐波那契相邻项比值收敛
+const fib = [1, 1];
+for (let i = 0; i < 30; i++) fib.push(fib.at(-1) + fib.at(-2));
+const ratios = fib.slice(2).map((v, i) => v / fib[i + 1]).slice(-3);
+console.log('收敛于 1.6180339887…');
+return { 最后三项比值: ratios, 黄金比例: (1 + Math.sqrt(5)) / 2 };` },
+  { name: '项目健康', code: `// 项目健康分排行
+const r = await fetch('/atlas/projects').then(r => r.json());
+const { projects, stats } = r.data;
+console.log('项目总数:', stats.total, '平均健康分:', stats.avgScore);
+return projects
+  .sort((a, b) => b.score - a.score)
+  .slice(0, 5)
+  .map(p => ({ 项目: p.name, 健康分: p.score, 状态: p.status, 域数: p.domainCount }));` },
+  { name: '算法演示', code: `// PageRank 简易演示：三节点环形图
+const edges = [['A','B'],['B','C'],['C','A'],['A','C']];
+const G = { A: [], B: [], C: [] };
+edges.forEach(([f, t]) => G[f].push(t));
+let pr = { A: 1, B: 1, C: 1 }, d = 0.85;
+for (let it = 0; it < 20; it++) {
+  const next = {};
+  for (const n of Object.keys(G)) {
+    next[n] = (1 - d) / 3 + d * Object.keys(G)
+      .filter(src => G[src].includes(n))
+      .reduce((s, src) => s + pr[src] / G[src].length, 0);
+  }
+  pr = next;
+}
+return { 权重: pr, 总和: Object.values(pr).reduce((a, b) => a + b, 0).toFixed(6) };` }
+];
+const codeEditor = $('#codeEditor');
+const exWrap = $('#codeExamples');
+EXAMPLES.forEach((ex, i) => {
+  const chip = document.createElement('span');
+  chip.className = 'chip' + (i === 0 ? ' on' : '');
+  chip.textContent = ex.name;
+  chip.dataset.ex = i;
+  chip.tabIndex = 0;
+  chip.setAttribute('role', 'button');
+  exWrap.appendChild(chip);
+});
+// 事件委托：绑定静态父容器（与 API 目录同模式，健壮于逐元素绑定）
+function selectExample(hit) {
+  const ex = EXAMPLES[+hit.dataset.ex];
+  if (!ex) return;
+  codeEditor.value = ex.code;
+  $$('#codeExamples .chip').forEach(c => c.classList.remove('on'));
+  hit.classList.add('on');
+  localStorage.setItem('studio.example', ex.name);
+}
+exWrap.addEventListener('click', (e) => {
+  const hit = e.target.closest('.chip');
+  if (hit) selectExample(hit);
+});
+exWrap.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const hit = e.target.closest('.chip');
+  if (hit) { e.preventDefault(); selectExample(hit); }
+});
+// 偏好记忆：恢复上次示例
+const lastExample = localStorage.getItem('studio.example');
+const restored = EXAMPLES.find(e => e.name === lastExample);
+codeEditor.value = restored ? restored.code : EXAMPLES[0].code;
+
+async function runCode() {
+  const code = codeEditor.value.trim();
+  if (!code) return;
+  const btn = $('#btnRun');
+  btn.disabled = true; btn.textContent = '运行中…';
+  $('#runMeta').textContent = '执行中…';
+  $('#logsBody').innerHTML = '<span style="color:var(--ink-3)">…</span>';
+  $('#resultBody').innerHTML = '<span style="color:var(--ink-3)">…</span>';
+  try {
+    const r = await fetch('/studio/run-code', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    }).then(r => r.json());
+    const d = r.data || r;
+    // 日志区
+    $('#logsBody').innerHTML = (d.logs && d.logs.length)
+      ? d.logs.map(l => `<div class="log-line ${l.level}">${esc(String(l.text))}</div>`).join('')
+      : '<span style="color:var(--ink-3)">（无 console 输出）</span>';
+    // 结果区
+    if (d.success) {
+      const result = d.result === undefined ? 'undefined' : (typeof d.result === 'string' ? d.result : JSON.stringify(d.result, null, 2));
+      $('#resultBody').innerHTML = `<span style="color:var(--ok)">✓ 成功</span> · ${d.duration}ms\n\n${esc(result)}`;
+    } else {
+      $('#resultBody').innerHTML = `<span style="color:var(--bad)">✗ 失败</span> · ${d.duration}ms\n\n${esc(d.error || '未知错误')}`;
+    }
+    $('#runMeta').textContent = `${d.duration}ms · 超时守卫 ${d.timeoutMs}ms`;
+  } catch (e) {
+    $('#resultBody').textContent = '请求失败: ' + e.message;
+    $('#runMeta').textContent = '失败';
+  } finally {
+    btn.disabled = false; btn.innerHTML = '▶ 运行 <span style="font-size:11px;opacity:.75">Ctrl+↵</span>';
+  }
+}
+$('#btnRun').addEventListener('click', runCode);
+$('#btnPrecheck').addEventListener('click', async () => {
+  const r = await fetch('/studio/run-code/precheck', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: codeEditor.value })
+  }).then(r => r.json());
+  const d = r.data || r;
+  $('#runMeta').textContent = d.valid ? `语法 ✓ (${d.length} 字节)` : `语法 ✗ ${d.error}`;
+});
+
+/* ---------- API 游乐场：端点目录 ---------- */
+const API_CATALOG = [
+  { group: '图谱', items: [
+    { m: 'GET', p: '/atlas', d: '全息图谱（节点/边/统计）' },
+    { m: 'GET', p: '/atlas/verify', d: 'W1-W10 无破窗验证' },
+    { m: 'GET', p: '/atlas/impact/:id', d: '影响面分析（如 atlas）', demo: '/atlas/impact/atlas' },
+    { m: 'GET', p: '/atlas/search?q=图谱', d: '图谱资产检索' },
+  ]},
+  { group: '项目治理', items: [
+    { m: 'GET', p: '/atlas/projects', d: '项目清单与健康分' },
+    { m: 'GET', p: '/atlas/projects/:id', d: '项目全景（域展开）', demo: '/atlas/projects/proj-knowledge' },
+    { m: 'GET', p: '/atlas/projects-lifecycle', d: '生命周期状态机' },
+  ]},
+  { group: '业务流程', items: [
+    { m: 'GET', p: '/atlas/flows', d: '全系统流程清单' },
+    { m: 'GET', p: '/atlas/flows/:id', d: '单流程全景', demo: '/atlas/flows/flow-ea-consult' },
+  ]},
+  { group: '引擎', items: [
+    { m: 'GET', p: '/engine-kernel/slots', d: '引擎内核槽位' },
+    { m: 'GET', p: '/engine-kernel/marketplace', d: '三层插件商城' },
+  ]},
+  { group: '系统', items: [
+    { m: 'GET', p: '/', d: '服务元信息自描述' },
+    { m: 'GET', p: '/operators', d: '算子注册表' },
+  ]},
+];
+const catalogEl = $('#apiCatalog');
+let currentApi = null;
+const apiItems = []; // 端点实例索引（事件委托按 data-idx 定位）
+API_CATALOG.forEach(g => {
+  const t = document.createElement('div');
+  t.className = 'api-group-title'; t.textContent = g.group;
+  catalogEl.appendChild(t);
+  g.items.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'api-item';
+    el.dataset.idx = apiItems.length;
+    const realPath = item.demo || item.p;
+    el.innerHTML = `<span class="m ${item.m.toLowerCase()}">${item.m}</span><span class="p">${item.p}</span><div class="d">${item.d}</div>`;
+    apiItems.push({ el, item, realPath });
+    catalogEl.appendChild(el);
+  });
+});
+// 事件委托：绑定静态父容器，子元素任意位置点击必然冒泡触发（健壮于逐元素绑定）
+catalogEl.addEventListener('click', (e) => {
+  const hit = e.target.closest('.api-item');
+  if (!hit) return;
+  const entry = apiItems[+hit.dataset.idx];
+  if (!entry) return;
+  const { item, realPath, el } = entry;
+  $$('.api-item').forEach(x => x.classList.remove('on'));
+  el.classList.add('on');
+  currentApi = { ...item, realPath };
+  $('#apiCurrent').textContent = `${item.m} ${realPath}`;
+  $('#apiBody').style.display = item.m === 'POST' ? 'block' : 'none';
+  $('#apiResultBody').innerHTML = '<span style="color:var(--ink-3)">等待请求</span>';
+  $('#apiMeta').textContent = '';
+  localStorage.setItem('studio.api', realPath);
+});
+async function runApi() {
+  if (!currentApi) {
+    $('#apiResultBody').innerHTML = '<span style="color:var(--warn)">请先在左侧选择一个 API 端点</span>';
+    return;
+  }
+  const btn = $('#btnApiRun');
+  btn.disabled = true; btn.textContent = '请求中…';
+  $('#apiMeta').textContent = '→';
+  const t0 = Date.now();
+  try {
+    const opts = { method: currentApi.m, headers: { 'Content-Type': 'application/json' } };
+    if (currentApi.m === 'POST' && $('#apiBody').value.trim()) {
+      opts.body = $('#apiBody').value;
+    }
+    const r = await fetch(currentApi.realPath, opts);
+    const j = await r.json().catch(() => ({ raw: '非 JSON 响应' }));
+    const ms = Date.now() - t0;
+    $('#apiMeta').textContent = `HTTP ${r.status} · ${ms}ms`;
+    $('#apiResultBody').innerHTML =
+      `<span style="color:${r.ok ? 'var(--ok)' : 'var(--bad)'}">${r.status} ${r.statusText}</span> · ${ms}ms\n\n` +
+      esc(JSON.stringify(j, null, 2));
+  } catch (e) {
+    $('#apiMeta').textContent = '失败';
+    $('#apiResultBody').textContent = '请求失败: ' + e.message;
+  } finally {
+    btn.disabled = false; btn.innerHTML = '▶ 发送请求 <span style="font-size:11px;opacity:.75">Ctrl+↵</span>';
+  }
+}
+$('#btnApiRun').addEventListener('click', runApi);
+
+/* ---------- Ctrl+Enter：当前页运行 ---------- */
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key === 'Enter') {
+    e.preventDefault();
+    const active = document.querySelector('.tab-page.active');
+    if (active && active.id === 'page-code') runCode();
+    else if (active && active.id === 'page-api') runApi();
+  }
+});
+
+/* ---------- 图谱体检：W1-W10 分组 ---------- */
+async function loadChecks() {
+  const grid = $('#checkGrid');
+  grid.innerHTML = '<div style="color:var(--ink-3)">体检中…</div>';
+  try {
+    const r = await fetch('/atlas/verify').then(r => r.json());
+    const d = r.data;
+    const groups = {};
+    d.checks.forEach(c => {
+      const m = c.name.match(/^(W\d+)/);
+      const w = m ? m[1] : '其他';
+      (groups[w] = groups[w] || { total: 0, fail: 0, fails: [], title: c.name.replace(/^(W\d+)\s*/, '').split('（')[0] }).total++;
+      if (!c.ok) { groups[w].fail++; groups[w].fails.push(c.name + (c.detail ? ` — ${c.detail}` : '')); }
+    });
+    grid.innerHTML = Object.entries(groups).sort((a, b) => a[0].localeCompare(b[0])).map(([w, g]) => `
+      <div class="check-card">
+        <div class="check-head">
+          <span class="dot ${g.fail === 0 ? 'ok' : 'bad'}"></span>
+          <span class="w-name">${w}</span>
+          <span class="w-title">${esc(g.title)}</span>
+          <span class="cnt">${g.total - g.fail}/${g.total}</span>
+        </div>
+        ${g.fails.length ? `<div class="fails">${g.fails.map(f => `<div class="fail-item">${esc(f)}</div>`).join('')}</div>` : ''}
+      </div>`).join('');
+  } catch (e) {
+    grid.innerHTML = `<div style="color:var(--bad)">体检失败: ${esc(e.message)}</div>`;
+  }
+}
+$('#btnRecheck').addEventListener('click', loadChecks);
+
+/* ---------- 项目看板：健康分环形卡 ---------- */
+async function loadProjects() {
+  const grid = $('#projGrid');
+  grid.innerHTML = '<div style="color:var(--ink-3)">加载中…</div>';
+  try {
+    const r = await fetch('/atlas/projects').then(r => r.json());
+    const { projects, stats } = r.data;
+    $('#projSummary').textContent = `项目清单 · 共 ${stats.total} 个 · 平均健康分 ${stats.avgScore} · ${stats.totalDomains} 个治理单元`;
+    grid.innerHTML = projects.map(p => {
+      const pct = p.score / 100, C = 2 * Math.PI * 22;
+      const color = p.score >= 90 ? 'var(--ok)' : p.score >= 70 ? 'var(--accent)' : 'var(--warn)';
+      return `
+      <div class="proj-card">
+        <div class="proj-top">
+          <div>
+            <div class="proj-name">${esc(p.name)}</div>
+            <div class="proj-id">${p.id}${p.runtime ? ' · runtime' : ''}</div>
+          </div>
+          <div class="score-ring">
+            <svg width="52" height="52">
+              <circle cx="26" cy="26" r="22" fill="none" stroke="rgba(140,160,210,0.12)" stroke-width="4"/>
+              <circle cx="26" cy="26" r="22" fill="none" stroke="${color}" stroke-width="4"
+                stroke-linecap="round" stroke-dasharray="${(C * pct).toFixed(1)} ${C.toFixed(1)}"/>
+            </svg>
+            <span class="val" style="color:${color}">${p.score}</span>
+          </div>
+        </div>
+        <div class="proj-vision">${esc(p.vision || '—')}</div>
+        <div class="proj-stats">
+          <span class="status-tag ${p.status}">${p.status}</span>
+          <span class="stat">域 <b>${p.domainCount}</b></span>
+          <span class="stat">引擎 <b>${p.engineCount}</b></span>
+          <span class="stat">数据 <b>${p.dataCount}</b></span>
+          <span class="stat">文档 <b>${p.docCount}</b></span>
+          <span class="stat">流程 <b>${p.flowCount}</b></span>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    grid.innerHTML = `<div style="color:var(--bad)">加载失败: ${esc(e.message)}</div>`;
+  }
+}
+
+/* ---------- 首页附加卡片动作 ---------- */
+$('#cardConsult').addEventListener('click', () => {
+  // 超短链路：直接切换到 API 游乐场并预选 consult 相关端点说明
+  switchTab('api');
+  $('#apiCurrent').textContent = 'POST /atlas/consult（在 API 游乐场发送，body: {"question":"..."}）';
+  currentApi = null;
+  $('#apiBody').style.display = 'block';
+  $('#apiBody').value = JSON.stringify({ question: '这个系统的项目治理是如何保证无破窗的？' }, null, 2);
+});
+$('#cardAtlas').addEventListener('click', () => {
+  switchTab('api');
+  const first = $$('.api-item')[0];
+  if (first) first.click();
+});
+
+/* ---------- 底部状态栏：实时服务与验证状态 ---------- */
+async function refreshStatus() {
+  try {
+    const v = await fetch('/atlas/verify').then(r => r.json());
+    const d = v.data;
+    const ok = d.ok;
+    $('#dotVerify').className = 'dot ' + (ok ? 'ok' : 'bad');
+    $('#txtVerify').textContent = ok ? `W族全绿 ${d.summary.total}` : `失败 ${d.summary.failed}`;
+    $('#fVerify').textContent = `${d.summary.total - d.summary.failed}/${d.summary.total}`;
+    const p = await fetch('/atlas/projects').then(r => r.json());
+    $('#fProj').textContent = p.data.stats.total;
+    $('#fScore').textContent = p.data.stats.avgScore;
+    $('#dotSvc').className = 'dot ok'; $('#txtSvc').textContent = '在线';
+    $('#fSvc').textContent = '在线';
+  } catch (e) {
+    $('#dotSvc').className = 'dot bad'; $('#txtSvc').textContent = '离线';
+    $('#dotVerify').className = 'dot bad'; $('#txtVerify').textContent = '不可达';
+  }
+}
+refreshStatus();
+setInterval(refreshStatus, 30000); // 30s 心跳
+
+/* ---------- 恢复上次停留页（偏好记忆） ---------- */
+const lastTab = localStorage.getItem('studio.lastTab');
+if (lastTab && document.getElementById('page-' + lastTab)) switchTab(lastTab);
+
+/* ---------- 工具 ---------- */
+function esc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+</script>
+</body>
+</html>

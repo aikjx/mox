@@ -51,5 +51,62 @@
     "created_at": "2026-08-20T21:24:33.939Z",
     "updated_at": "2026-08-20T21:24:33.939Z",
     "last_activity_at": "2026-08-20T21:24:33.939Z"
+  },
+  {
+    "id": "sess_f6baea23-c79e-4b1b-8dd4-c99fc4de125c",
+    "title": "企业级验证会话",
+    "mode": "consult",
+    "current_expert": null,
+    "expert_chain": [],
+    "messages": [
+      {
+        "content": "一句话：最小权限原则",
+        "id": "msg_10f5fd7a-f522-4807-9ee6-21598cc96c45",
+        "timestamp": "2026-08-22T11:43:46.235Z"
+      }
+    ],
+    "metadata": {
+      "created_by": "user",
+      "total_rounds": 0,
+      "tags": [],
+      "problem_context": null,
+      "business_constraints": null
+    },
+    "status": "archived",
+    "created_at": "2026-08-22T11:43:46.206Z",
+    "updated_at": "2026-08-22T11:43:46.255Z",
+    "last_activity_at": "2026-08-22T11:43:46.235Z"
+  },
+  {
+    "id": "sess_3b5efb91-978b-431e-8f64-2c6d7f728bf2",
+    "title": "修复验证会话",
+    "mode": "consult",
+    "current_expert": null,
+    "expert_chain": [],
+    "messages": [
+      {
+        "role": "user",
+        "content": "一句话：最小权限原则",
+        "id": "msg_47bfba65-67a4-4e95-a793-b886210003e2",
+        "timestamp": "2026-08-22T11:44:49.496Z"
+      },
+      {
+        "role": "assistant",
+        "content": "最小权限原则：任何主体仅持有完成其职责所必需的最小访问权限集合",
+        "id": "msg_fde716a8-7ebd-446c-87de-31e48d0457ea",
+        "timestamp": "2026-08-22T11:44:49.506Z"
+      }
+    ],
+    "metadata": {
+      "created_by": "user",
+      "total_rounds": 1,
+      "tags": [],
+      "problem_context": null,
+      "business_constraints": null
+    },
+    "status": "active",
+    "created_at": "2026-08-22T11:44:49.436Z",
+    "updated_at": "2026-08-22T11:44:49.507Z",
+    "last_activity_at": "2026-08-22T11:44:49.507Z"
   }
 ]

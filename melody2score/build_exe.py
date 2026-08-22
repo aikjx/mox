@@ -32,6 +32,7 @@ Melody2Score 企业级一键打包脚本（纯 Python，跨 Windows 平台）
   1  环境/依赖错误
   2  PyInstaller 打包失败
   3  产物校验失败
+  5  精简预检失败（spec excludes 误排了运行必需依赖）
 """
 
 import argparse
@@ -185,6 +186,11 @@ README_TXT = """============================================================
 - 不要拆分移动文件夹，_internal\\ 需保持完整；
 - 本程序不含任何网络上传行为，可离线使用。
 
+【交付验收（可选）】
+- 在命令行运行：Melody2Score.exe --selftest-full 验收报告.json
+  （无头全链路自检 + 8 样例真实音频回归，退出码 0 = 全部通过；
+   报告含识别精确率/容差率/音高类覆盖率等量化指标）
+
 【关于"标准歌谱图片"】
 - 简谱图片由第三方引擎 LilyPond（+ jianpu-ly 预处理器）渲染，
   质量优于手绘。jianpu-ly 脚本已随包内置（_internal\\lib\\jianpu-ly.py）。
@@ -236,28 +242,40 @@ def main(argv=None) -> int:
 
     ensure_runtime_dirs()
 
-    # 2) 依赖（构建依赖 + 运行依赖）
+    # 2) 精简预检（构建门禁）：模拟 excludes 缺失环境跑完整识别链路，
+    #    防止误排运行必需依赖（librosa→msgpack/joblib、music21→requests/PIL
+    #    等隐蔽硬依赖，误排后需 6 分钟构建才能暴露）。清单由 spec 单一事实源
+    #    提供，两处永不漂移。
+    log.info("[2/6] 精简预检：模拟 excludes 缺失环境验证完整链路 ...")
+    preflight = HERE / "tests" / "verify_slim_excludes.py"
+    rc = run([sys.executable, str(preflight)])
+    if rc != 0:
+        log.error("精简预检失败：spec excludes 误排了运行必需依赖，"
+                  "请根据上方 [FAIL] 项调整 excludes 后重试。")
+        return 5
+
+    # 3) 依赖（构建依赖 + 运行依赖）
     if not args.no_deps:
-        log.info("[1/4] 安装构建/运行依赖 ...")
+        log.info("[3/6] 安装构建/运行依赖 ...")
         if pip_install(["-U", "pyinstaller"]) != 0:
             log.error("安装 pyinstaller 失败。")
             return 1
         if pip_install(["-r", str(HERE / "requirements.txt"), "pyqt5"]) != 0:
             log.warn("部分运行依赖安装失败，尝试继续（若已安装则无碍）。")
     else:
-        log.info("[1/4] 跳过依赖安装（--no-deps）。")
+        log.info("[3/6] 跳过依赖安装（--no-deps）。")
 
     # 3) 清理
     if args.clean:
-        log.info("[2/4] 清空旧构建 ...")
+        log.info("[4/6] 清空旧构建 ...")
         for d in (HERE / "build", HERE / "dist"):
             if d.exists():
                 shutil.rmtree(d, ignore_errors=True)
     else:
-        log.info("[2/4] 保留旧构建缓存以加速（如需全新构建请加 --clean）。")
+        log.info("[4/6] 保留旧构建缓存以加速（如需全新构建请加 --clean）。")
 
     # 4) PyInstaller
-    log.info("[3/4] 运行 PyInstaller（torch 较大，请耐心等待 5-15 分钟）...")
+    log.info("[5/6] 运行 PyInstaller（精简版已排除 torch/tensorflow 等大件，预计 3-8 分钟）...")
     cmd = [sys.executable, "-m", "PyInstaller", str(spec), "--noconfirm"]
     if args.clean:
         cmd.append("--clean")
@@ -267,7 +285,7 @@ def main(argv=None) -> int:
         return 2
 
     # 5) 产物校验与收尾
-    log.info("[4/4] 校验产物并生成启动器 ...")
+    log.info("[6/6] 校验产物并生成启动器 ...")
     dist = HERE / "dist" / "Melody2Score"
     # spec 将 exe 置于发行版根目录（Melody2Score.exe），启动器须与此一致
     exe = dist / "Melody2Score.exe"
