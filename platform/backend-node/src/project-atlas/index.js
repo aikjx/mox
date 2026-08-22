@@ -36,6 +36,9 @@ const ENGINE_NODES = [...ENGINES, {
   id: 'engine-universe', name: '引擎宇宙图谱', codePath: 'src/engine-universe/index.js',
   keyFunctions: ['17 引擎节点化与关联边查询', '需求归一化链服务映射', '全链路 113 项机器验证']
 }, {
+  id: 'engine-kernel', name: '引擎内核', codePath: 'src/engine-kernel/index.js',
+  keyFunctions: ['槽位契约（一切皆可插件化，切换引擎零代码改动）', '瞬间切换与探活回滚', '三层插件商城（system/cloud/local）', 'AI 自动配置引擎组合']
+}, {
   id: 'project-atlas', name: '项目全息图谱引擎', codePath: 'src/project-atlas/index.js',
   keyFunctions: ['全项目资产图谱化（域/模块/引擎/算法/数据/文档）', '无破窗验证（动态比对路由域/数据目录/代码路径）', '影响面分析与图谱检索']
 }];

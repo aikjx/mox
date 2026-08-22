@@ -78,7 +78,7 @@ class RecognitionResult:
 
 def _build_config(model_size: str = "tiny", denoise: bool = True,
                   threads: int = 0, hop: int = 0, robust: bool = True,
-                  vocal_mode: bool = True) -> Config:
+                  vocal_mode: bool = True, backend: str = "auto") -> Config:
     cfg = Config()
     cfg.model_size = model_size or cfg.model_size
     cfg.enable_denoise = denoise
@@ -88,7 +88,8 @@ def _build_config(model_size: str = "tiny", denoise: bool = True,
         cfg.intra_op_threads = threads
     if hop and hop > 0:
         cfg.hop = hop
-    cfg.preferred_backend = "crepe_onnx"
+    # 引擎内核槽位绑定：backend=auto 保持服务端自动降级链，否则强制指定
+    cfg.preferred_backend = backend if backend and backend != "auto" else "crepe_onnx"
     return cfg
 
 
@@ -255,11 +256,12 @@ async def recognize(
     denoise: bool = Form(True),
     robust: bool = Form(True),
     vocal_mode: bool = Form(True),
-    hop: int = Form(0)
+    hop: int = Form(0),
+    backend: str = Query("auto")
 ):
     """上传音频文件 → 识别为结构化歌谱 JSON。"""
     import anyio
-    cfg = _build_config(model_size, denoise, 0, hop, robust, vocal_mode)
+    cfg = _build_config(model_size, denoise, 0, hop, robust, vocal_mode, backend)
     data = await file.read()
     try:
         y, sr = _load_bytes_fallback(data, cfg.sr)
@@ -281,11 +283,12 @@ async def recognize_sample(
     model_size: str = Form("tiny"),
     denoise: bool = Form(True),
     robust: bool = Form(True),
-    vocal_mode: bool = Form(True)
+    vocal_mode: bool = Form(True),
+    backend: str = Query("auto")
 ):
     """识别内置样例音频。"""
     import anyio
-    cfg = _build_config(model_size, denoise, 0, 0, robust, vocal_mode)
+    cfg = _build_config(model_size, denoise, 0, 0, robust, vocal_mode, backend)
     if not os.path.exists(MANIFEST_PATH):
         raise HTTPException(404, "未找到 audio/manifest.json")
     with open(MANIFEST_PATH, encoding="utf-8") as f:
@@ -315,11 +318,12 @@ async def recognize_record(
     model_size: str = Form("tiny"),
     denoise: bool = Form(True),
     robust: bool = Form(True),
-    vocal_mode: bool = Form(True)
+    vocal_mode: bool = Form(True),
+    backend: str = Query("auto")
 ):
     """浏览器录音(base64 wav) → 歌谱 JSON。"""
     import anyio
-    cfg = _build_config(model_size, denoise, 0, 0, robust, vocal_mode)
+    cfg = _build_config(model_size, denoise, 0, 0, robust, vocal_mode, backend)
     try:
         raw = base64.b64decode(audio_b64)
         y, sr = _load_bytes_fallback(raw, cfg.sr)

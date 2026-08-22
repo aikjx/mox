@@ -31,12 +31,12 @@ check('图谱边数 ≥ 170（关联关系显式建模）', a.stats.edgeCount >=
 check('六类节点齐全（domain/module/engine/algorithm/data/doc）',
   ['domain', 'module', 'engine', 'algorithm', 'data', 'doc'].every(k => a.stats.byKind[k] > 0),
   JSON.stringify(a.stats.byKind));
-check('业务域 25 个（每个大模块 = 一个小项目）', a.stats.byKind.domain === 25, String(a.stats.byKind.domain));
+check('业务域 26 个（每个大模块 = 一个小项目）', a.stats.byKind.domain === 26, String(a.stats.byKind.domain));
 check('模块 4 个（可插拔）', a.stats.byKind.module === 4);
-check('引擎 19 个（复用引擎宇宙真相源）', a.stats.byKind.engine === 19, String(a.stats.byKind.engine));
-check('算法 15 个（全部自研单源）', a.stats.byKind.algorithm === 15);
-check('数据资产 34 个（数据库全覆盖）', a.stats.byKind.data === 34, String(a.stats.byKind.data));
-check('文档 ≥ 34 个（核心文档全域覆盖）', a.stats.byKind.doc >= 34, String(a.stats.byKind.doc));
+check('引擎 20 个（复用引擎宇宙真相源）', a.stats.byKind.engine === 20, String(a.stats.byKind.engine));
+check('算法 17 个（全部自研单源）', a.stats.byKind.algorithm === 17);
+check('数据资产 38 个（数据库全覆盖）', a.stats.byKind.data === 38, String(a.stats.byKind.data));
+check('文档 ≥ 36 个（核心文档全域覆盖）', a.stats.byKind.doc >= 36, String(a.stats.byKind.doc));
 check('全部自研（零框架依赖声明）', a.stats.selfDeveloped === true && a.stats.frameworkDeps.length === 0);
 
 // ---------- ② 机器图谱关联本地代码 ----------

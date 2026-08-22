@@ -48,21 +48,21 @@ const routes = [
     _proxyStream(req, res, 'GET', `/sample-audio?file=${encodeURIComponent(file)}`);
   }},
 
-  // 识别上传的音频文件
+  // 识别上传的音频文件（引擎内核槽位绑定：backend 查询参数注入）
   { method: 'post', path: '/melody2score/recognize', handler: (req, res) => {
-    _proxyFormData(req, res, '/recognize');
+    _proxyFormData(req, res, `/recognize?backend=${encodeURIComponent(_currentBackend())}`);
   }},
 
-  // 识别内置样例
+  // 识别内置样例（引擎内核槽位绑定）
   { method: 'post', path: '/melody2score/recognize-sample', handler: (req, res) => {
-    _proxyFormData(req, res, '/recognize-sample');
+    _proxyFormData(req, res, `/recognize-sample?backend=${encodeURIComponent(_currentBackend())}`);
   }},
 
-  // 识别录音（base64 wav）
+  // 识别录音（base64 wav，引擎内核槽位绑定）
   { method: 'post', path: '/melody2score/recognize-record', handler: async (req, res) => {
     try {
       const body = await BaseModule.readBody(req);
-      const data = await _proxy('POST', '/recognize-record', body);
+      const data = await _proxy('POST', `/recognize-record?backend=${encodeURIComponent(_currentBackend())}`, body);
       BaseModule.ok(res, data);
     } catch (e) {
       BaseModule.fail(res, 502, '识别失败: ' + e.message);
@@ -111,6 +111,16 @@ const PYTHON_HOST = process.env.MELODY2SCORE_HOST || '127.0.0.1';
 const PYTHON_PORT = parseInt(process.env.MELODY2SCORE_PORT || '3008', 10);
 
 const http = require('http');
+
+/** 引擎内核槽位当前绑定（pitch-detection 槽位；延迟 require 防环） */
+function _currentBackend() {
+  try {
+    const { getBinding } = require('../engine-kernel/infrastructure/plugin-repository');
+    return getBinding('pitch-detection') || 'auto';
+  } catch (e) {
+    return 'auto';
+  }
+}
 
 function _proxy(method, path, body) {
   return new Promise((resolve, reject) => {
