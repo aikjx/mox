@@ -252,99 +252,137 @@ class AIEngine {
   }
 
   _detectCommunities(nodes, edges, maxCommunities = 5) {
-    // 标签传播算法（LPA）：节点迭代采纳邻居中出现最多的标签，收敛后按标签划分社区。
-    // 修复原种子 BFS 实现的缺陷：每个种子的 BFS 遍历整个连通分量，导致所有社区成员完全重叠。
+    // 模块度贪心凝聚（CNM/Clauset-Newman-Moore 简化版）：
+    //   初始每节点一社区，反复合并使模块度增益 ΔQ 最大的相邻社区对，直到无正增益。
+    //   ΔQ(A,B) = e_cross(A,B)/m − d_A·d_B/(2m²)
+    // 演进史：
+    //   v1 种子 BFS —— 每社区含全连通分量（D6，已废）
+    //   v2 LPA —— 平局取最小标签导致"标签吞并"：双团+桥图坍缩为 1 社区（公式测试 T3 实测发现，已废）
+    //   v3 CNM 贪心凝聚 —— 确定性、无平局歧义、模块度单调递增保证终止（当前）
     const nodeIds = nodes.map(n => n.id);
     const idToIdx = new Map(nodeIds.map((id, i) => [id, i]));
     const n = nodeIds.length;
 
     if (n === 0) return [];
 
-    // 无向邻接表（社区结构按无向处理）
-    const neighbors = Array.from({ length: n }, () => new Set());
+    // 无向邻接（社区结构按无向处理；RAW 边即可，内部双向展开）
+    const edgeSet = new Set(); // "i<j" 规范化键，去重
+    const adj = Array.from({ length: n }, () => new Set());
     edges.forEach(e => {
-      const src = idToIdx.get(e.source);
-      const tgt = idToIdx.get(e.target);
-      if (src !== undefined && tgt !== undefined && src !== tgt) {
-        neighbors[src].add(tgt);
-        neighbors[tgt].add(src);
-      }
+      const s = idToIdx.get(e.source);
+      const t = idToIdx.get(e.target);
+      if (s === undefined || t === undefined || s === t) return;
+      adj[s].add(t);
+      adj[t].add(s);
+      edgeSet.add(s < t ? `${s}-${t}` : `${t}-${s}`);
     });
-
-    // 初始标签：每个节点自身
-    const labels = nodeIds.map((_, i) => i);
-    let changed = true;
-    let rounds = 0;
-    const MAX_ROUNDS = 20;
-
-    while (changed && rounds < MAX_ROUNDS) {
-      changed = false;
-      rounds++;
-      for (let i = 0; i < n; i++) {
-        if (neighbors[i].size === 0) continue; // 孤立节点保持自身社区
-        const counts = new Map();
-        neighbors[i].forEach(j => counts.set(labels[j], (counts.get(labels[j]) || 0) + 1));
-        // 平局取最小标签，保证结果稳定可复现
-        let bestLabel = labels[i];
-        let bestCount = 0;
-        [...counts.entries()].sort((a, b) => a[0] - b[0]).forEach(([label, cnt]) => {
-          if (cnt > bestCount) { bestCount = cnt; bestLabel = label; }
-        });
-        if (bestLabel !== labels[i]) {
-          labels[i] = bestLabel;
-          changed = true;
-        }
-      }
+    const m = edgeSet.size;
+    if (m === 0) {
+      // 无边：每个节点自成社区
+      return nodeIds.slice(0, maxCommunities).map((id, i) => ({
+        id: i, size: 1, members: [id], assignment: { [id]: i }
+      }));
     }
 
-    // 按标签聚合社区，按规模降序，最多保留 maxCommunities 个
-    const commMap = new Map();
-    labels.forEach((label, i) => {
-      if (!commMap.has(label)) commMap.set(label, []);
-      commMap.get(label).push(nodeIds[i]);
+    // 社区状态：成员列表 + 度数和 + 社区间连接边数
+    const members = nodeIds.map((_, i) => new Set([i]));
+    const degree = new Array(n).fill(0);
+    edges.forEach(e => {
+      const s = idToIdx.get(e.source);
+      const t = idToIdx.get(e.target);
+      if (s === undefined || t === undefined || s === t) return;
+      degree[s] += 1;
+      degree[t] += 1;
+    });
+    const commId = nodeIds.map((_, i) => i); // 节点 → 社区 id（初始自身）
+    const commDegree = degree.slice(); // 社区度数和
+    const commMembers = members; // 社区 id → 成员 Set
+    // 社区间跨边计数：Map<"a|b" (a<b), count>
+    const crossEdges = new Map();
+    edges.forEach(e => {
+      const s = idToIdx.get(e.source);
+      const t = idToIdx.get(e.target);
+      if (s === undefined || t === undefined || s === t) return;
+      if (commId[s] === commId[t]) return;
+      const key = commId[s] < commId[t] ? `${commId[s]}|${commId[t]}` : `${commId[t]}|${commId[s]}`;
+      crossEdges.set(key, (crossEdges.get(key) || 0) + 1);
     });
 
-    const communities = [...commMap.values()]
+    // 贪心合并循环
+    for (;;) {
+      // 找 ΔQ 最大的相邻社区对
+      let bestPair = null;
+      let bestGain = 0;
+      for (const [key, cnt] of crossEdges) {
+        if (cnt <= 0) continue;
+        const [a, b] = key.split('|').map(Number);
+        if (!commMembers[a] || !commMembers[b]) continue;
+        const gain = cnt / m - (commDegree[a] * commDegree[b]) / (2 * m * m);
+        if (gain > bestGain) {
+          bestGain = gain;
+          bestPair = [a, b, cnt];
+        }
+      }
+      if (!bestPair) break; // 无正增益 → 收敛
+
+      // 合并 b 入 a（保小 id）
+      const [a, b] = bestPair;
+      commMembers[b].forEach(i => { commId[i] = a; commMembers[a].add(i); });
+      commDegree[a] += commDegree[b];
+      commMembers[b] = null;
+
+      // 更新跨边：b 的所有跨边转入 a
+      for (const [key, cnt] of [...crossEdges]) {
+        const [x, y] = key.split('|').map(Number);
+        if (x !== b && y !== b) continue;
+        const other = x === b ? y : x;
+        crossEdges.delete(key);
+        if (commMembers[other] && other !== a) {
+          const nk = Math.min(a, other) + '|' + Math.max(a, other);
+          crossEdges.set(nk, (crossEdges.get(nk) || 0) + cnt);
+        }
+      }
+      // a-b 之间的跨边已随 commMembers[b]=null 失效，但键可能仍在 map —— 显式清理
+      crossEdges.delete(Math.min(a, b) + '|' + Math.max(a, b));
+    }
+
+    // 聚合输出：按规模降序，最多 maxCommunities 个
+    const groups = new Map();
+    nodeIds.forEach((id, i) => {
+      const c = commId[i];
+      if (!groups.has(c)) groups.set(c, []);
+      groups.get(c).push(id);
+    });
+
+    const communities = [...groups.values()]
       .sort((a, b) => b.length - a.length)
       .slice(0, maxCommunities);
 
-    return communities.map((members, i) => ({
+    return communities.map((mem, i) => ({
       id: i,
-      size: members.length,
-      members: members.slice(0, 10),
-      assignment: members.reduce((acc, id) => { acc[id] = i; return acc; }, {})
+      size: mem.length,
+      members: mem.slice(0, 10),
+      assignment: mem.reduce((acc, id) => { acc[id] = i; return acc; }, {})
     }));
   }
 
   _computeCentrality(nodes, edges) {
-    const nodeIds = nodes.map(n => n.id);
-    const idToIdx = new Map(nodeIds.map((id, i) => [id, i]));
-    const n = nodeIds.length;
+    // 归一化收口：委托 ai-flow-graph 公式库单源实现（修复 D8——介数/紧密中心性此前为占位符恒 0）
+    const { GraphFormulas } = require('./ai-flow-graph');
 
-    const degreeCentrality = {};
-    const betweennessCentrality = {};
-    const closenessCentrality = {};
-
-    nodeIds.forEach(id => {
-      degreeCentrality[id] = 0;
-      betweennessCentrality[id] = 0;
-      closenessCentrality[id] = 0;
-    });
-
-    edges.forEach(e => {
-      if (degreeCentrality[e.source] !== undefined) degreeCentrality[e.source]++;
-      if (degreeCentrality[e.target] !== undefined) degreeCentrality[e.target]++;
-    });
-
-    const maxPossible = n > 1 ? n - 1 : 1;
-    Object.keys(degreeCentrality).forEach(id => {
-      degreeCentrality[id] = degreeCentrality[id] / maxPossible;
-    });
+    const degreeCentrality = GraphFormulas.degreeCentrality(nodes, edges);
+    const betweennessCentrality = GraphFormulas.betweennessCentrality(nodes, edges, { directed: true });
+    const closenessCentrality = GraphFormulas.closenessCentrality(nodes, edges, { directed: true });
 
     return {
       degree: degreeCentrality,
       betweenness: betweennessCentrality,
       closeness: closenessCentrality,
+      formulas: {
+        degree: 'C_D(v) = deg(v)/(N-1)',
+        betweenness: 'C_B(v) = Σ_{s≠v≠t} σ_st(v)/σ_st, 归一化 ÷ (N-1)(N-2)（有向, Brandes）',
+        closeness: 'C_C(v) = (Σ_{u≠v} 1/d(v,u))/(N-1)（harmonic, 不可达贡献 0）'
+      },
       topNodes: Object.entries(degreeCentrality)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 10)

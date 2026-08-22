@@ -288,33 +288,36 @@ def main(argv=None) -> int:
         log.warn(f"以下数据目录未正确打入: {missing}（请检查 spec 的 datas 配置）")
 
     # 关键：校验简谱渲染脚本 lib/jianpu-ly.py 已随包打入（第三方渲染后端依赖）
+    # is_file() 防目录假阳性（同 audio 校验）
     jianpu_src = HERE / "lib" / "jianpu-ly.py"
     jianpu_dst = internal / "lib" / "jianpu-ly.py"
-    if jianpu_src.exists() and not jianpu_dst.exists():
+    if jianpu_src.is_file() and not jianpu_dst.is_file():
         log.error("lib/jianpu-ly.py 未打入发行版，简谱图片将无法用第三方引擎渲染。")
         return 4
     else:
         log.info("简谱渲染脚本 jianpu-ly.py 校验通过。")
 
     # 关键：校验「内置经典样例」音频确实随包打入，不达标直接报错
+    # 注意必须用 is_file() 过滤：曾因 glob 匹配到与 wav 同名的【目录】而
+    # 产生假阳性（spec 旧版 Tree 解包错误把目标文件路径当目录用）。
     audio_src = HERE / "audio"
     audio_dst = internal / "audio"
-    src_wavs = sorted(audio_src.glob("*.wav")) if audio_src.exists() else []
+    src_wavs = sorted(p for p in audio_src.glob("*.wav") if p.is_file()) if audio_src.exists() else []
     src_manifest = audio_src / "manifest.json"
-    bundled_wavs = sorted(audio_dst.glob("*.wav")) if audio_dst.exists() else []
+    bundled_wavs = sorted(p for p in audio_dst.glob("*.wav") if p.is_file()) if audio_dst.exists() else []
     if not src_wavs:
         log.warn("源码 audio/ 下未找到任何 .wav 样例，将打包一个无样例的发行版。")
     elif len(bundled_wavs) < len(src_wavs):
         log.error(
-            f"内置样例打包不完整：源码 {len(src_wavs)} 个 .wav，"
+            f"内置样例打包不完整：源码 {len(src_wavs)} 个 .wav 文件，"
             f"发行版仅 {len(bundled_wavs)} 个。请检查 spec 中 audio 的 Tree/ datas 配置。"
         )
         return 4
-    elif not (audio_dst / "manifest.json").exists() and src_manifest.exists():
-        log.error("内置样例 manifest.json 未打入发行版，样例清单将加载失败。")
+    elif src_manifest.is_file() and not (audio_dst / "manifest.json").is_file():
+        log.error("内置样例 manifest.json 未打入发行版（或被打成目录），样例清单将加载失败。")
         return 4
     else:
-        log.info(f"内置经典样例校验通过：{len(bundled_wavs)} 个 .wav + manifest.json 已随包打入。")
+        log.info(f"内置经典样例校验通过：{len(bundled_wavs)} 个 .wav 文件 + manifest.json 已随包打入。")
 
     write_launcher_and_readme(dist)
 

@@ -19,6 +19,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+import threading
 from typing import List, Optional, Tuple
 
 from .score_sheet import ScoreSheet, RenderNote
@@ -296,6 +297,46 @@ def _rest_fill_tokens(beats: float) -> List[str]:
     return out
 
 
+# 进程内执行 jianpu-ly 的串行锁：sys.argv / sys.stdout 是进程全局状态，
+# 多线程并发渲染（GUI SheetWorker 与 API 导出同时触发）必须串行化。
+_JIANPU_LOCK = threading.Lock()
+
+
+def _run_jianpu_ly(txt_path: str, ly_path: str) -> None:
+    """进程内执行 jianpu-ly.py（txt → LilyPond 源码写入 ly_path）。
+
+    为什么不再用 subprocess ["python", script]：
+      1) PyInstaller frozen（绿色发行版）目标电脑**无需安装 Python**——
+         PATH 上没有 python 命令，旧调用在发行版里必然 FileNotFoundError，
+         简谱图片导出全挂（README 却承诺开箱即用）；
+      2) 源码环境下裸 "python" 可能解析到 Microsoft Store 的 stub 或
+         版本不一致的解释器。
+    进程内 runpy 执行让源码/打包两种模式统一，还省一次解释器冷启动。
+
+    jianpu-ly 输出契约（见其 write_output）：stdout 非 tty 时把 LilyPond
+    源码写到 stdout —— 故把 sys.stdout 临时重定向为 ly_path 文件；
+    --noStaff 等选项经 sys.argv 传入。警告路径（Incomplete bar 等）
+    会 sys.exit 非 0，与旧 subprocess 行为一致：以"是否产出有效 .ly"
+    为成败判据（调用方检查文件大小）。
+    """
+    import runpy
+    import sys as _sys
+    with _JIANPU_LOCK:
+        argv_backup = _sys.argv
+        stdout_backup = _sys.stdout
+        try:
+            _sys.argv = [JIANPU_LY, "--noStaff", txt_path]
+            with open(ly_path, "w", encoding="utf-8") as fout:
+                _sys.stdout = fout
+                try:
+                    runpy.run_path(JIANPU_LY, run_name="__main__")
+                except SystemExit:
+                    pass
+        finally:
+            _sys.argv = argv_backup
+            _sys.stdout = stdout_backup
+
+
 def render_score_sheet(
     sheet: ScoreSheet,
     output_path: str,
@@ -326,24 +367,17 @@ def render_score_sheet(
         with open(txt_path, "w", encoding="utf-8") as f:
             f.write(text)
 
-        # 1) jianpu-ly: 文本 -> LilyPond 源码
+        # 1) jianpu-ly: 文本 -> LilyPond 源码（进程内执行，兼容打包发行版）
         #    说明：jianpu-ly 遇到"不完整小节"等会向 stderr 打印警告并以
         #    非 0 退出，但依然能产出可用的 .ly。这里只以"是否产出有效 .ly"
         #    作为成败判据，容忍非致命警告（如 Incomplete bar）。
         #    设置 j2ly_sloppy_bars=1 放宽"末小节必须补足弱起拍"的强制，
         #    使弱起/短曲也能正常出图（对普通谱无副作用）。
-        env = dict(os.environ)
-        env["j2ly_sloppy_bars"] = "1"
-        with open(ly_path, "w", encoding="utf-8") as fout, \
-             open(txt_path, "r", encoding="utf-8") as fin:
-            rc = subprocess.run(
-                ["python", JIANPU_LY, "--noStaff", txt_path],
-                stdin=fin, stdout=fout,
-                stderr=subprocess.PIPE, encoding="utf-8", errors="replace",
-                env=env,
-            )
+        os.environ.setdefault("j2ly_sloppy_bars", "1")
+        _run_jianpu_ly(txt_path, ly_path)
         if not os.path.exists(ly_path) or os.path.getsize(ly_path) < 200:
-            raise RuntimeError(f"jianpu-ly 转换失败：{rc.stderr[:500]}")
+            raise RuntimeError("jianpu-ly 转换失败：未产出有效 LilyPond 源码"
+                               "（可能是不完整小节等输入问题，详见 stderr 警告）")
 
         # 2) LilyPond: 源码 -> 图片
         #    说明：LilyPond 2.24 在 Windows 上的 `-dbackend=pdf` 因缺少 Ghostscript

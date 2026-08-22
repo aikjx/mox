@@ -201,5 +201,383 @@
     "weight": 1,
     "id": "graph_edges_msy4jiioy7s5l",
     "created_at": "2026-08-18T03:49:54.432Z"
+  },
+  {
+    "id": "sd_edge_1787375041645_lz9ije",
+    "source": "sd:corp-site:site",
+    "target": "sd:corp-site:page:home",
+    "label": "包含",
+    "weight": 1,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_f27sks",
+    "source": "sd:corp-site:page:home",
+    "target": "sd:corp-site:section:home:0",
+    "label": "包含",
+    "weight": 0.8,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_nb3csh",
+    "source": "sd:corp-site:page:home",
+    "target": "sd:corp-site:section:home:1",
+    "label": "包含",
+    "weight": 0.8,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_8cyib8",
+    "source": "sd:corp-site:page:home",
+    "target": "sd:corp-site:section:home:2",
+    "label": "包含",
+    "weight": 0.8,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_1xphlx",
+    "source": "sd:corp-site:site",
+    "target": "sd:corp-site:page:about",
+    "label": "包含",
+    "weight": 1,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_1l06dg",
+    "source": "sd:corp-site:page:about",
+    "target": "sd:corp-site:section:about:0",
+    "label": "包含",
+    "weight": 0.8,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_3uz765",
+    "source": "sd:corp-site:page:about",
+    "target": "sd:corp-site:section:about:1",
+    "label": "包含",
+    "weight": 0.8,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_3d3q85",
+    "source": "sd:corp-site:page:about",
+    "target": "sd:corp-site:section:about:2",
+    "label": "包含",
+    "weight": 0.8,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_zvieff",
+    "source": "sd:corp-site:site",
+    "target": "sd:corp-site:page:services",
+    "label": "包含",
+    "weight": 1,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_9b7wqe",
+    "source": "sd:corp-site:page:services",
+    "target": "sd:corp-site:section:services:0",
+    "label": "包含",
+    "weight": 0.8,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_9dp2tj",
+    "source": "sd:corp-site:page:services",
+    "target": "sd:corp-site:section:services:1",
+    "label": "包含",
+    "weight": 0.8,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_539ybu",
+    "source": "sd:corp-site:page:services",
+    "target": "sd:corp-site:section:services:2",
+    "label": "包含",
+    "weight": 0.8,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_quy96u",
+    "source": "sd:corp-site:site",
+    "target": "sd:corp-site:page:contact",
+    "label": "包含",
+    "weight": 1,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_lzcic9",
+    "source": "sd:corp-site:page:contact",
+    "target": "sd:corp-site:section:contact:0",
+    "label": "包含",
+    "weight": 0.8,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_dn8032",
+    "source": "sd:corp-site:page:contact",
+    "target": "sd:corp-site:section:contact:1",
+    "label": "包含",
+    "weight": 0.8,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_42n8qd",
+    "source": "sd:corp-site:page:contact",
+    "target": "sd:corp-site:section:contact:2",
+    "label": "包含",
+    "weight": 0.8,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_3wn9gs",
+    "source": "sd:corp-site:page:home",
+    "target": "sd:corp-site:page:about",
+    "label": "导航",
+    "weight": 1,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_5ae1xc",
+    "source": "sd:corp-site:page:home",
+    "target": "sd:corp-site:page:services",
+    "label": "导航",
+    "weight": 1,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_b7nlx9",
+    "source": "sd:corp-site:page:home",
+    "target": "sd:corp-site:page:contact",
+    "label": "导航",
+    "weight": 1,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_sxiur7",
+    "source": "sd:corp-site:page:about",
+    "target": "sd:corp-site:page:home",
+    "label": "导航",
+    "weight": 1,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_5gpggl",
+    "source": "sd:corp-site:page:about",
+    "target": "sd:corp-site:page:services",
+    "label": "导航",
+    "weight": 1,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_bva5pw",
+    "source": "sd:corp-site:page:about",
+    "target": "sd:corp-site:page:contact",
+    "label": "导航",
+    "weight": 1,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_z5naje",
+    "source": "sd:corp-site:page:services",
+    "target": "sd:corp-site:page:home",
+    "label": "导航",
+    "weight": 1,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_va7vww",
+    "source": "sd:corp-site:page:services",
+    "target": "sd:corp-site:page:about",
+    "label": "导航",
+    "weight": 1,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_0jgyox",
+    "source": "sd:corp-site:page:services",
+    "target": "sd:corp-site:page:contact",
+    "label": "导航",
+    "weight": 1,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_1o5ew2",
+    "source": "sd:corp-site:page:contact",
+    "target": "sd:corp-site:page:home",
+    "label": "导航",
+    "weight": 1,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_o3gfb9",
+    "source": "sd:corp-site:page:contact",
+    "target": "sd:corp-site:page:about",
+    "label": "导航",
+    "weight": 1,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_txzx8b",
+    "source": "sd:corp-site:page:contact",
+    "target": "sd:corp-site:page:services",
+    "label": "导航",
+    "weight": 1,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_ntq9j9",
+    "source": "sd:corp-site:page:home",
+    "target": "sd:corp-site:entity:产品",
+    "label": "使用",
+    "weight": 0.6,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_24nc4m",
+    "source": "sd:corp-site:page:home",
+    "target": "sd:corp-site:entity:客户",
+    "label": "使用",
+    "weight": 0.6,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375041645_ac8ew3",
+    "source": "sd:corp-site:page:home",
+    "target": "sd:corp-site:entity:服务",
+    "label": "使用",
+    "weight": 0.6,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375118390_uw3n93",
+    "source": "sd:corp-site:page:home",
+    "target": "sd:corp-site:entity:客户企业",
+    "label": "使用",
+    "weight": 0.6,
+    "created_at": "2026-08-22T05:05:18.390Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375118390_m1e76d",
+    "source": "sd:corp-site:page:home",
+    "target": "sd:corp-site:entity:解决方案",
+    "label": "使用",
+    "weight": 0.6,
+    "created_at": "2026-08-22T05:05:18.390Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375118390_1a0bih",
+    "source": "sd:corp-site:page:home",
+    "target": "sd:corp-site:entity:技术团队",
+    "label": "使用",
+    "weight": 0.6,
+    "created_at": "2026-08-22T05:05:18.390Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375276643_tvtuyx",
+    "source": "sd:corp-site:page:home",
+    "target": "sd:corp-site:section:home:3",
+    "label": "包含",
+    "weight": 0.8,
+    "created_at": "2026-08-22T05:07:56.643Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375276643_2zoftk",
+    "source": "sd:corp-site:page:about",
+    "target": "sd:corp-site:section:about:3",
+    "label": "包含",
+    "weight": 0.8,
+    "created_at": "2026-08-22T05:07:56.643Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375276644_uxxa2t",
+    "source": "sd:corp-site:page:services",
+    "target": "sd:corp-site:section:services:3",
+    "label": "包含",
+    "weight": 0.8,
+    "created_at": "2026-08-22T05:07:56.643Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375276644_761x00",
+    "source": "sd:corp-site:page:contact",
+    "target": "sd:corp-site:section:contact:3",
+    "label": "包含",
+    "weight": 0.8,
+    "created_at": "2026-08-22T05:07:56.643Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375276644_rbqw7e",
+    "source": "sd:corp-site:page:home",
+    "target": "sd:corp-site:entity:项目",
+    "label": "使用",
+    "weight": 0.6,
+    "created_at": "2026-08-22T05:07:56.643Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375276644_tsltvx",
+    "source": "sd:corp-site:page:home",
+    "target": "sd:corp-site:entity:合作伙伴",
+    "label": "使用",
+    "weight": 0.6,
+    "created_at": "2026-08-22T05:07:56.643Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375331011_uqneqy",
+    "source": "sd:corp-site:page:home",
+    "target": "sd:corp-site:entity:技术平台",
+    "label": "使用",
+    "weight": 0.6,
+    "created_at": "2026-08-22T05:08:51.011Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787375331011_2l6azu",
+    "source": "sd:corp-site:page:home",
+    "target": "sd:corp-site:entity:专家团队",
+    "label": "使用",
+    "weight": 0.6,
+    "created_at": "2026-08-22T05:08:51.011Z",
+    "ai_generated": true
   }
 ]

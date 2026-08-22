@@ -23,6 +23,7 @@ const { getGateway } = require('./llm-gateway');
 const { getAIEngine } = require('./ai-engine');
 const { getUltimateEngine } = require('./ultimate-ai-engine');
 const { getAllianceEngine } = require('./expert-alliance-engine');
+const { getAIFlowGraph } = require('./ai-flow-graph');
 
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const METRICS_FILE = 'engine_core_metrics.json';
@@ -87,11 +88,17 @@ class AIEngineCore {
     this.aiEngine = getAIEngine(this.gateway);
     this.ultimateEngine = getUltimateEngine();
     this.allianceEngine = getAllianceEngine();
+    // 流程图谱：注入能力矩阵（业务流程+算法流程统一承载于图谱引擎）
+    this.flowGraph = getAIFlowGraph({ INTENT_KEYWORDS, CAPABILITY_META });
     this.metrics = readMetrics();
     this.recentCalls = []; // 最近 50 次调用明细（内存环形）
   }
 
-  // ==================== ① 意图识别（关键词加权打分，可解释） ====================
+  // ==================== ① 意图识别（图谱激活扩散，可解释） ====================
+  /**
+   * 图谱化意图识别：委托流程图谱的激活扩散（F8）。
+   * 保留同步关键词打分作为降级路径（图谱引擎异常时兜底），不变式②的延伸。
+   */
   detectIntent(question) {
     const text = String(question || '');
     const scores = {};
@@ -116,7 +123,18 @@ class AIEngineCore {
         bestScore = score;
       }
     }
-    return { intent: best, score: bestScore, scores, matched_keywords: hits[best] || [] };
+    return { intent: best, score: bestScore, scores, matched_keywords: hits[best] || [], method: 'keyword-scoring' };
+  }
+
+  // 异步图谱版意图识别（激活扩散）：process 主路径
+  async detectIntentByGraph(question) {
+    try {
+      return await this.flowGraph.detectIntentBySpread(question);
+    } catch (e) {
+      // 图谱引擎异常 → 降级关键词打分（绝不让意图识别失败）
+      const fallback = this.detectIntent(question);
+      return { ...fallback, activation: { method: 'keyword-scoring', degraded: true, error: e.message } };
+    }
   }
 
   // ==================== 能力矩阵自描述 ====================
@@ -140,10 +158,10 @@ class AIEngineCore {
     const question = String((request && request.question) || '').trim();
     if (!question) throw new Error('缺少 question 参数');
 
-    // ① 意图识别（显式 capability 覆盖 → 不变式④）
+    // ① 意图识别（图谱激活扩散；显式 capability 覆盖 → 不变式④）
     const intent = request.capability
       ? { intent: request.capability, score: -1, scores: {}, matched_keywords: [], explicit: true }
-      : this.detectIntent(question);
+      : await this.detectIntentByGraph(question);
 
     // ②③ 能力路由 + 引擎执行
     return this._execute(intent.intent, question, request.options || {}, intent);
@@ -203,6 +221,7 @@ class AIEngineCore {
       requested_capability: record.capability,
       intent: record.intent,
       matched_keywords: intentInfo.matched_keywords || [],
+      activation: intentInfo.activation || null, // 图谱激活扩散明细（F8）
       engine: record.degraded_to ? CAPABILITY_META[record.degraded_to].engine : record.engine,
       degraded: !!record.degraded_to,
       result,

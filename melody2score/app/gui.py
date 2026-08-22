@@ -77,84 +77,14 @@ class RecognizeWorker(QThread):
         try:
             # 统一委托给企业级编排器（core.pipeline.Melody2Score）：
             # 内置 crepe_onnx 首选 + 优雅降级 + 超时保护 + 稳健重识别共识 + 完整计时。
+            # （旧版此处的 _conf/_consensus 副本已删除——与 pipeline 内实现
+            #  重复且缺少每 run 簇隔离等修复，留着只会误导维护。）
             from core.pipeline import Melody2Score
             result = Melody2Score(self.source["cfg"]).recognize(self.source)
             self.finished.emit(result)
         except Exception as e:
             traceback.print_exc()
             self.error.emit(str(e))
-
-    @staticmethod
-    def _conf(notes):
-        """简单置信度：基于音符平均时长与数量（越长越多越可信）。"""
-        if not notes:
-            return 0.0
-        durs = [n["end"] - n["start"] for n in notes]
-        avg = float(np.mean(durs))
-        # 经验映射：平均时长 0.15s 视为高置信
-        return float(min(1.0, 0.4 + avg / 0.3))
-
-    @staticmethod
-    def _consensus(runs: List[List[Dict]], cfg) -> Tuple[List[Dict], Dict]:
-        """音符级共识合并。
-
-        把多次识别得到的音符按时间重叠聚成簇：同一簇内取「出现次数最多 +
-        时间跨度最长」的 MIDI 作为共识音高；簇的起止取各次并集。
-        仅在 ≥2 次识别中都出现的音符才保留（过滤单次偶发假音高），
-        但单次出现的长音（>2*min_note_dur）也保留以防漏音。
-        """
-        # 收集所有音符，按 start 排序
-        all_notes = []
-        for notes in runs:
-            for n in notes:
-                all_notes.append(n)
-        all_notes.sort(key=lambda n: n["start"])
-
-        clusters = []
-        for n in all_notes:
-            placed = False
-            for c in clusters:
-                # 时间重叠判定：重叠量需超过较短音符的一定比例，才视为同一发声事件。
-                # 仅端点相切（相邻音符首尾相接）不算重叠，避免把真实相邻音符误并为一簇。
-                overlap = False
-                for m in c["members"]:
-                    ov = min(n["end"], m["end"]) - max(n["start"], m["start"])
-                    short = min(n["end"] - n["start"], m["end"] - m["start"])
-                    if ov > 0.6 * short:
-                        overlap = True
-                        break
-                if overlap:
-                    c["members"].append(n)
-                    placed = True
-                    break
-            if not placed:
-                clusters.append({"members": [n]})
-
-        merged = []
-        kept = 0
-        conf_sum = 0.0
-        for c in clusters:
-            members = c["members"]
-            # 统计各 MIDI 出现次数
-            from collections import Counter
-            cnt = Counter(int(round(m["midi"])) for m in members)
-            best_midi, best_cnt = cnt.most_common(1)[0]
-            # 簇起止仅取共识音高(best_midi)成员的时间并集，避免偶发假音的时间污染边界
-            consensus_members = [m for m in members if int(round(m["midi"])) == best_midi]
-            start = min(m["start"] for m in consensus_members)
-            end = max(m["end"] for m in consensus_members)
-            # 保留条件：出现 ≥2 次，或单次但足够长（防漏音）
-            long_single = best_cnt == 1 and (end - start) > 2 * cfg.min_note_dur
-            if best_cnt >= 2 or long_single:
-                merged.append({"midi": best_midi, "start": start, "end": end})
-                # 簇内一致度作为该音符置信
-                conf_sum += best_cnt / len(members)
-                kept += 1
-
-        merged.sort(key=lambda n: n["start"])
-        # 整体置信度：平均簇一致度（共识越高越可信）
-        confidence = (conf_sum / len(merged)) if merged else 0.0
-        return merged, {"kept": len(merged), "confidence": confidence}
 
 
 class SheetWorker(QThread):
@@ -1303,7 +1233,71 @@ class MainWindow(QMainWindow):
         self.status.setText(f"已保存：{fname}")
 
 
+def _selftest() -> int:
+    """打包产物自检模式（无头，无 Qt）：Melody2Score.exe --selftest [输出.json]
+
+    企业级发行版验证标准实践：在目标电脑上无需 GUI 交互即可验证
+    「frozen 环境下完整识别链路（加载→预处理→音高检测→解析→歌谱）」可用。
+    流程：取 manifest 首个内置样例 → 完整识别 → 结果写入 JSON → 退出码
+    0=通过 / 1=失败。可用于 CI 冒烟或交付验收。
+    """
+    out_path = None
+    args = [a for a in sys.argv[2:] if not a.startswith("--")]
+    if args:
+        out_path = args[0]
+    try:
+        import json as _json
+        from core.pipeline import Melody2Score          # 重型依赖链：onnxruntime/librosa
+        from core import capture
+
+        man_path = resource_path("audio", "manifest.json")
+        with open(man_path, encoding="utf-8") as f:
+            manifest = _json.load(f)
+        item = manifest[0]
+        wav = resource_path("audio", os.path.basename(item["file"]))
+
+        cfg = Config()
+        t0 = time.time()
+        y = capture.load_audio(wav, cfg.sr)
+        res = Melody2Score(cfg).recognize({"kind": "array", "y": y,
+                                           "sr": cfg.sr, "cfg": cfg})
+        elapsed = round(time.time() - t0, 2)
+
+        notes = res.get("notes", [])
+        report = {
+            "selftest": "Melody2Score 打包产物自检",
+            "frozen": is_frozen(),
+            "sample": item["file"],
+            "title_zh": item.get("title_zh", ""),
+            "note_count": len(notes),
+            "bpm": res.get("bpm"),
+            "backend": res.get("backend"),
+            "jianpu_head": (res.get("jianpu") or "")[:60],
+            "elapsed_sec": elapsed,
+            "pass": bool(notes) and bool(res.get("jianpu")),
+        }
+        print("[SELFTEST] " + _json.dumps(report, ensure_ascii=False))
+        if out_path:
+            with open(out_path, "w", encoding="utf-8") as f:
+                _json.dump(report, f, ensure_ascii=False, indent=2)
+        return 0 if report["pass"] else 1
+    except Exception:
+        tb = traceback.format_exc()
+        traceback.print_exc()
+        if out_path:
+            try:
+                import json as _json2
+                with open(out_path, "w", encoding="utf-8") as f:
+                    _json2.dump({"pass": False, "error": tb[-4000:]}, f,
+                                ensure_ascii=False, indent=2)
+            except OSError:
+                pass
+        return 1
+
+
 def main():
+    if "--selftest" in sys.argv:
+        sys.exit(_selftest())
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
     win = MainWindow()

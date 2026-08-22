@@ -294,7 +294,10 @@ class Melody2Score:
             if cache_key:
                 cached = _RESULT_CACHE.get(cache_key)
                 if cached is not None:
-                    cached = dict(cached)  # 返回副本，防调用方误改污染缓存
+                    # 深拷贝 notes：旧版 dict(cached) 是浅拷贝，调用方改
+                    # notes[i]["midi"] 会直接污染缓存，同源二次识别返回脏数据
+                    cached = dict(cached)
+                    cached["notes"] = [dict(n) for n in cached.get("notes", [])]
                     return cached
         except Exception:
             cache_key = None  # 键构造失败则不缓存，不影响正常识别
@@ -405,7 +408,8 @@ class Melody2Score:
         progress_cb 可选，用于实时进度。
         """
         if record_seconds and record_seconds > 0:
-            import sounddevice as sd  # 延迟导入，避免无音频设备环境报错
+            # 录音走 capture 层（pyaudio/arecord 自适应）；旧版此处 import
+            # sounddevice 是死代码（导入即可能 ImportError，且从未被使用）
             y = capture.record(seconds=record_seconds, sr=self.cfg.sr)
             source = {"kind": "record", "data": _dump_wav(y, self.cfg.sr),
                       "cfg": self.cfg, "source": f"现场录音{record_seconds}s"}

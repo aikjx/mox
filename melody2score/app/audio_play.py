@@ -146,9 +146,18 @@ class _ScorePlayer:
                     continue
                 arr = np.asarray(chunk, dtype=np.float32)
                 pcm = (np.clip(arr, -1.0, 1.0) * 32767.0).astype(np.int16)
-                self.ring.write(pcm.tobytes())
+                # 短超时写入：旧版默认阻塞 5s，stop() 时若 ring 满且无人读，
+                # 生产者要在 wait 里挂满 5s —— join(2s) 等不到它退出，残留
+                # 线程随后把旧数据写进新一次 play 的 ring（串音）。改为
+                # 0.25s 超时 + stop 检查，stop 后最多 1 块周期即退出。
+                data = pcm.tobytes()
+                w = self.ring.write(data, timeout=0.25)
+                if w < len(data) and self._stop_ev.is_set():
+                    break
             # 尾部补 0.1s 静音，确保末尾干净淡出、不截断
-            self.ring.write(b"\x00" * (self.sr * self._itemsize // 10))
+            if not self._stop_ev.is_set():
+                self.ring.write(b"\x00" * (self.sr * self._itemsize // 10),
+                                timeout=0.25)
         finally:
             self._finished_ev.set()
             if on_done:

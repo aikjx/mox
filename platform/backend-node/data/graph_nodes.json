@@ -214,5 +214,439 @@
     "created_at": "2026-08-20T09:37:13.650Z",
     "id": "node_test_1787218633316",
     "label": "测试节点"
+  },
+  {
+    "id": "sd:corp-site:site",
+    "label": "智联云创科技",
+    "type": "site",
+    "description": "驱动企业数字化转型的智能引擎",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:page:home",
+    "label": "首页",
+    "type": "page",
+    "description": "页面文件 index.html（3 区块）",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:section:home:0",
+    "label": "首页·主视觉",
+    "type": "section",
+    "description": "赋能企业，智创未来",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:section:home:1",
+    "label": "首页·能力矩阵",
+    "type": "section",
+    "description": "核心优势",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:section:home:2",
+    "label": "首页·行动号召",
+    "type": "section",
+    "description": "准备好开启数字化转型之旅了吗？",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:page:about",
+    "label": "关于我们",
+    "type": "page",
+    "description": "页面文件 about.html（3 区块）",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:section:about:0",
+    "label": "关于我们·关于",
+    "type": "section",
+    "description": "关于智联云创",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:section:about:1",
+    "label": "关于我们·能力矩阵",
+    "type": "section",
+    "description": "发展历程",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:section:about:2",
+    "label": "关于我们·正文",
+    "type": "section",
+    "description": "企业文化",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:page:services",
+    "label": "服务项目",
+    "type": "page",
+    "description": "页面文件 services.html（3 区块）",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:section:services:0",
+    "label": "服务项目·能力矩阵",
+    "type": "section",
+    "description": "核心服务",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:section:services:1",
+    "label": "服务项目·正文",
+    "type": "section",
+    "description": "服务流程",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:section:services:2",
+    "label": "服务项目·行动号召",
+    "type": "section",
+    "description": "需要定制化解决方案？",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:page:contact",
+    "label": "联系我们",
+    "type": "page",
+    "description": "页面文件 contact.html（3 区块）",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:section:contact:0",
+    "label": "联系我们·联系方式",
+    "type": "section",
+    "description": "联系方式",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:section:contact:1",
+    "label": "联系我们·正文",
+    "type": "section",
+    "description": "工作时间",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:section:contact:2",
+    "label": "联系我们·行动号召",
+    "type": "section",
+    "description": "期待与您的合作",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:entity:产品",
+    "label": "产品",
+    "type": "entity",
+    "description": "企业级数字化解决方案，包括官网建设、业务系统、移动应用、数据可视化、云服务及AI应用。",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:entity:客户",
+    "label": "客户",
+    "type": "entity",
+    "description": "覆盖制造、金融、零售、教育等行业的200余家企业客户。",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:entity:服务",
+    "label": "服务",
+    "type": "entity",
+    "description": "从需求调研到持续运维的全生命周期技术服务。",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:04:01.645Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:entity:客户企业",
+    "label": "客户企业",
+    "type": "entity",
+    "description": "使用星辰科技服务的各类企业，涵盖制造、金融、零售等行业。",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:05:18.390Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:entity:解决方案",
+    "label": "解决方案",
+    "type": "entity",
+    "description": "针对企业需求定制的技术方案，包括网站、应用、云服务等。",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:05:18.390Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:entity:技术团队",
+    "label": "技术团队",
+    "type": "entity",
+    "description": "由资深工程师、设计师和顾问组成的专业团队，负责项目交付与支持。",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:05:18.390Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:section:home:3",
+    "label": "首页·行动号召",
+    "type": "section",
+    "description": "准备好开启数字化转型了吗？",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:07:56.643Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:section:about:3",
+    "label": "关于我们·能力矩阵",
+    "type": "section",
+    "description": "我们的价值观",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:07:56.643Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:section:services:3",
+    "label": "服务项目·行动号召",
+    "type": "section",
+    "description": "需要定制化解决方案？",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:07:56.643Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:section:contact:3",
+    "label": "联系我们·行动号召",
+    "type": "section",
+    "description": "期待您的来访",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:07:56.643Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:entity:项目",
+    "label": "项目",
+    "type": "entity",
+    "description": "从需求调研到交付运维的完整服务过程，是公司运营的基本单元。",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:07:56.643Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:entity:合作伙伴",
+    "label": "合作伙伴",
+    "type": "entity",
+    "description": "与星云科技在技术、市场等方面合作的外部机构，共同拓展业务。",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:07:56.643Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:entity:技术平台",
+    "label": "技术平台",
+    "type": "entity",
+    "description": "支撑解决方案落地的云基础设施、数据平台、AI引擎与安全体系。",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:08:51.011Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:entity:专家团队",
+    "label": "专家团队",
+    "type": "entity",
+    "description": "具备行业知识与技术能力的架构师、工程师与顾问团队。",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T05:08:51.011Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
   }
 ]

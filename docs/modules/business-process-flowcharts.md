@@ -1,4 +1,4 @@
-﻿# 企业级业务处理流程图（Business Process Flowcharts）
+# 企业级业务处理流程图（Business Process Flowcharts）
 
 > 配套文档：`docs/architecture.md`（§9 业务处理流程卡、§28 业务流程设计模块）、`docs/modules/business-process-flows.md`（企业级流程执行引擎）。
 > 本文用 **Mermaid 流程图/时序图** 把"企业级处理业务流程"可视化，便于评审、与代码对齐、以及对客演示。
@@ -314,4 +314,83 @@ flowchart LR
 
 ---
 
-*本文以 Mermaid 图形式补全 `docs/architecture.md` §9 / §28 与 `docs/modules/business-process-flows.md` 的文字流程规范，使"企业级处理业务流程"可在一页内被可视化评审、对齐代码、对客演示。所有图节点均可追溯到 `crates/runtime/src/main.rs` 与 `crates/ai-agent/src/*_engine.rs` 的真实实现。*
+## 9. Node 平台层业务功能与流程图谱总览（platform/backend-node · 2026-08-22 收口）
+
+> 第 1~8 章描述 Rust 层（crates）业务流程引擎；本章统一整理 **Node 平台层**（`platform/backend-node`，端口 3002）的业务功能全景、流程图拆分/整合机制与前端可视化入口，消除"两层各说各话"的混乱。
+
+### 9.1 双平台分工（一句话定位）
+
+| 平台 | 代码位置 | 端口 | 定位 |
+|------|----------|------|------|
+| Rust 运行时 | `crates/*` | 3998 | BPMN 业务工作流 + 可视化 DAG 流程图执行（第 1~8 章） |
+| Node 平台层 | `platform/backend-node/src` | 3002 | AI 引擎统一编排 + 专家联盟协作 + 知识图谱 + 流程图谱（本章） |
+
+### 9.2 Node 层业务功能全景（按模块）
+
+| 模块 | 核心业务功能 | 关键端点 |
+|------|--------------|----------|
+| 系统管理 | 健康检查、状态、配置、日志 | `/health` `/status` `/logs` `/config` |
+| 知识图谱 | 节点/边 CRUD、中心性、社区、PageRank、AI 生成图谱 | `/graph` `/graph/centrality` `/graph/communities` `/graph/ai-generate` |
+| AI 引擎统一编排 | 意图识别→能力路由→执行→校验→反馈 五步流水线 | `/ai/engine/process` `/ai/engine/analyze` `/ai/engine/capabilities` `/ai/engine/metrics` |
+| **AI 流程图谱** | 业务流程+算法流程统一建模为图谱 | `/ai/engine/flow-graph`（51 节点/51 边） |
+| AI 对话 | 专家联盟优先→LLM 网关→本地兜底，联网搜索 | `/ai/chat` |
+| **专家联盟** | 专家 CRUD、意图路由、单/多专家咨询、辩论 | `/experts` `/experts/:id/consult` `/experts/multi-consult` `/experts/debate` |
+| 专家会话 | 会话持久化、相似搜索、语义搜索、导出归档 | `/experts/sessions/*` |
+| 专家调度 | 5 种调度策略、熔断器、负载指标 | `/experts/dispatcher/*` |
+| 专家能力图谱 | 分级建边（包含式+2-gram）、CNM 社区、最优团队 | `/expert-graph/*` |
+| V2 编排引擎 | 插件化编排、计划生成/执行、编排历史 | `/experts/orchestrate` `/experts/plan/*` |
+| 工作流/流程图 IR | 工作流模板、FlowGraph DSL CRUD/校验/执行 | `/ai/workflows/*` `/ai/flows/*` |
+| 自动开发引擎 | 需求→业务架构图谱→确定性代码渲染→安全落盘 | `/auto-dev/*` |
+| 无穷维度优化 | CEM 交叉熵多引擎寻优、收敛曲线 | `/infinite-optimizer/*` |
+| 旋律转谱 | 音频→乐谱（pitch 检测→MusicXML→简谱） | `/melody2score/*` |
+| 市场模块 | 算子包导出/发布 | `/market/*` |
+| 任务/存储/自动化 | 任务管理、SQLite 存储迁移、RPA 自动化 | `/task/*` `/storage/*` `/automation/*` |
+
+### 9.3 流程图体系的「拆分」机制（三层）
+
+```mermaid
+flowchart TB
+    subgraph L3["L3 AI 流程图谱（ai-flow-graph.js · Node）"]
+        S1[step 节点 ×5<br/>五步流水线骨架] -->|flows_to| S2[意图→路由→执行→校验→反馈]
+        K[keyword 节点 ×36<br/>意图关键词] -->|triggers 带权| C[capability 节点 ×6<br/>AI 能力]
+        C -->|delegates_to| E[engine 节点 ×4<br/>委托引擎]
+        C -->|degrades_to| C2[cap:chat<br/>失败降级]
+    end
+    subgraph L1["L1 BPMN 业务工作流（workflow_engine.rs · Rust）"]
+        W[Start→AiTask→Condition→End<br/>11 个内置模板]
+    end
+    subgraph L2["L2 可视化 DAG（flow_engine.rs · Rust）"]
+        F[LLM/Browser/HTTP 技术节点<br/>Three.js 画布]
+    end
+```
+
+**拆分原则**：
+- **业务流程拆分**：一个业务流程拆为 `step` 节点链（`flows_to` 边），每步只描述"做什么"
+- **意图空间拆分**：每个意图关键词独立为 `keyword` 节点，`triggers` 边权重=词权重
+- **能力/引擎拆分**：能力与执行引擎解耦（`delegates_to`），失败单向降级到 chat（`degrades_to`）
+
+### 9.4 流程图体系的「整合」机制（四条整合链）
+
+| 整合链 | 机制 | 实现位置 |
+|--------|------|----------|
+| **意图整合** | 激活扩散（个性化 PageRank，d=0.85）：命中关键词→归一化个性化向量→图谱扩散→能力排序 | `ai-flow-graph.detectIntentBySpread` → `ai-integration-engine.computePersonalizedPageRank` |
+| **执行整合** | 能力沿 `delegates_to` 委托唯一引擎；失败沿 `degrades_to` 单向降级到 chat | `AIFlowGraph._build` 边建模 |
+| **协作整合** | 专家联盟六阶段流水线（意图→组队→辩论→综合→门禁→学习）整合多专家意见 | `expert-alliance-engine.process()` |
+| **反馈整合** | 意图先验 + 专家 metrics 回写 → 影响下一轮组队（学习闭环） | `expert-alliance-engine.learn()` |
+
+**两条流水线的关系**（易混淆点澄清）：
+- AI 引擎五步流水线（`step:intent→route→execute→verify→feedback`）：**单请求**的处理管道
+- 专家联盟六阶段流水线（`classifyIntent→composeTeam→deliberate→synthesize→qualityGate→learn`）：**多专家协作**的编排管道，其"意图识别"阶段复用同一套意图模式表（INTENT_PATTERNS 单一真相源）
+
+### 9.5 前端可视化入口统一表
+
+| 视图 | 路由 | 渲染内容 | 数据源 |
+|------|------|----------|--------|
+| 业务流程图·知识图谱 | `/flow-graph`（FlowGraph.vue） | 力导向知识图谱 + 实时处理轨迹 | `GET /graph` |
+| **专家联盟·流程编排** | `/expert-enterprise` 流程编排 tab | AI 流程图谱（4 类节点/4 类边/聚焦视图）+ 六阶段流水线 + 激活扩散公式 | `GET /ai/engine/flow-graph` |
+| 专家联盟·能力图谱 | `/expert-enterprise` 能力图谱 tab | 专家协作网络 + 社群 + 最优团队 | `GET /expert-graph` |
+| 专家联盟·仪表盘 | `/expert-enterprise` 仪表盘 tab | KPI + 社群划分 + 调度引擎 + 熔断器 | `/expert-graph/stats` `/experts/dispatcher/status` |
+
+---
+
+*本文以 Mermaid 图形式补全 `docs/architecture.md` §9 / §28 与 `docs/modules/business-process-flows.md` 的文字流程规范，使"企业级处理业务流程"可在一页内被可视化评审、对齐代码、对客演示。所有图节点均可追溯到 `crates/runtime/src/main.rs` 与 `crates/ai-agent/src/*_engine.rs` 的真实实现。第 9 章追加 Node 平台层总览（2026-08-22），追溯 `platform/backend-node/src/*` 真实实现。*

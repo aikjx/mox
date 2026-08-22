@@ -231,6 +231,80 @@ class LocalArtifactService {
     }
   }
 
+  /**
+   * 直写文件（供编排引擎调用）：复用全部安全闸门，跳过 LLM 规划/生成。
+   * 用于自动开发管线等"文件清单与内容由上游确定"的场景（不变式：闸门不因跳过 LLM 而放松）。
+   * @returns {Promise<{ok: boolean, record?: object, reason?: string}>}
+   */
+  async writeFileDirect(filename, content, { mode = 'code', purpose = '', overwrite = false, session_id = null } = {}) {
+    try {
+      const name = String(filename || '').trim();
+      const body = String(content || '');
+      if (!name) return { ok: false, reason: '文件名为空' };
+      if (!body) return { ok: false, reason: '文件内容为空' };
+      if (!MODE_META[mode]) return { ok: false, reason: `未知模式 ${mode}` };
+
+      // 安全闸门①：扩展名白名单
+      if (!extAllowed(name, mode)) {
+        return { ok: false, reason: `扩展名不在${MODE_META[mode].label}白名单内` };
+      }
+      // 安全闸门②：路径逃逸校验
+      const absPath = safeJoin(name);
+      if (!absPath) return { ok: false, reason: '路径不合法（禁止逃逸制品根目录）' };
+      // 安全闸门③：覆盖须显式授权
+      const exists = fs.existsSync(absPath);
+      if (exists && !overwrite) {
+        return { ok: false, reason: '文件已存在（需显式 overwrite 才覆盖）' };
+      }
+
+      // 落盘
+      fs.mkdirSync(path.dirname(absPath), { recursive: true });
+      fs.writeFileSync(absPath, body, 'utf8');
+
+      // 登记（sha256 + 时间 + 来源标记）
+      const record = {
+        id: `art_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        filename: name,
+        rel_path: path.relative(REPO_ROOT, absPath).replace(/\\/g, '/'),
+        abs_path: absPath,
+        mode,
+        size: Buffer.byteLength(body, 'utf8'),
+        sha256: sha256(body),
+        session_id: session_id,
+        purpose: String(purpose || ''),
+        source: 'auto-dev-engine',
+        overwritten: exists,
+        created_at: new Date().toISOString()
+      };
+      const reg = readRegistry();
+      reg.artifacts.push(record);
+      writeRegistry(reg);
+      return { ok: true, record };
+    } catch (e) {
+      return { ok: false, reason: '写盘失败: ' + e.message };
+    }
+  }
+
+  /**
+   * 安全读取制品文件（供预览路由调用）：路径校验 + 扩展名白名单（.html/.css/.js/.json）。
+   * @returns {{ok: boolean, content?: string, content_type?: string, reason?: string}}
+   */
+  readFileSafe(filename) {
+    try {
+      const name = String(filename || '').trim();
+      const SERVE_EXTENSIONS = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'application/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8' };
+      const ext = path.extname(name).toLowerCase();
+      if (!SERVE_EXTENSIONS[ext]) return { ok: false, reason: '文件类型不允许预览' };
+      const absPath = safeJoin(name);
+      if (!absPath) return { ok: false, reason: '路径不合法' };
+      if (!fs.existsSync(absPath) || !fs.statSync(absPath).isFile()) return { ok: false, reason: '文件不存在' };
+      const content = fs.readFileSync(absPath, 'utf8');
+      return { ok: true, content, content_type: SERVE_EXTENSIONS[ext] };
+    } catch (e) {
+      return { ok: false, reason: '读取失败: ' + e.message };
+    }
+  }
+
   async _generateContent(mode, userMessage, item) {
     let prompt;
     if (mode === 'document') {

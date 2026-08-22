@@ -253,6 +253,89 @@
         </el-row>
       </el-tab-pane>
 
+      <!-- 流程编排（业务流程+算法流程统一图谱） -->
+      <el-tab-pane label="流程编排" name="flow">
+        <el-row :gutter="16">
+          <el-col :span="16">
+            <div class="panel card-pad">
+              <div class="panel-head">
+                <h3>AI 流程图谱</h3>
+                <div class="flow-head-actions">
+                  <el-select v-model="flowFocus" size="small" style="width: 150px" placeholder="聚焦视图" clearable @change="renderFlowGraph">
+                    <el-option label="全部节点" value="all" />
+                    <el-option label="仅流水线骨架" value="pipeline" />
+                    <el-option label="能力与引擎" value="capability" />
+                  </el-select>
+                  <el-button size="small" @click="loadFlowGraph" :loading="flowLoading">
+                    <el-icon><Refresh /></el-icon> 刷新
+                  </el-button>
+                </div>
+              </div>
+              <div v-if="flowGraphData" class="flow-stats-row">
+                <div class="flow-stat">
+                  <span class="stat-val">{{ flowGraphData.stats?.node_count }}</span>
+                  <span class="stat-lbl">节点</span>
+                </div>
+                <div class="flow-stat">
+                  <span class="stat-val">{{ flowGraphData.stats?.edge_count }}</span>
+                  <span class="stat-lbl">连线</span>
+                </div>
+                <div class="flow-stat">
+                  <span class="stat-val">{{ flowGraphData.stats?.by_type?.step || 0 }}</span>
+                  <span class="stat-lbl">流水线步骤</span>
+                </div>
+                <div class="flow-stat">
+                  <span class="stat-val">{{ flowGraphData.stats?.by_type?.capability || 0 }}</span>
+                  <span class="stat-lbl">AI 能力</span>
+                </div>
+                <div class="flow-stat">
+                  <span class="stat-val">{{ flowGraphData.stats?.by_type?.engine || 0 }}</span>
+                  <span class="stat-lbl">委托引擎</span>
+                </div>
+              </div>
+              <div v-if="flowGraphData" class="flow-legend">
+                <span class="legend-item" v-for="(meta, type) in flowNodeTypes" :key="type">
+                  <span class="legend-dot" :style="{ background: meta.color }"></span>
+                  {{ meta.label }}
+                </span>
+                <span class="legend-edge">
+                  <i class="edge-line flows"></i>流转
+                  <i class="edge-line triggers"></i>触发
+                  <i class="edge-line delegates"></i>委托
+                  <i class="edge-line degrades"></i>降级
+                </span>
+              </div>
+              <div v-show="flowGraphData" ref="flowChart" class="flow-chart"></div>
+              <el-empty v-if="!flowGraphData && !flowLoading" description="点击刷新加载流程图谱" :image-size="80" />
+            </div>
+          </el-col>
+          <el-col :span="8">
+            <div class="panel card-pad flow-side">
+              <div class="panel-head"><h3>专家联盟六阶段流水线</h3></div>
+              <div class="pipeline-steps">
+                <div v-for="(stage, idx) in pipelineStages" :key="stage.key" class="pipeline-stage">
+                  <div class="stage-dot" :class="{ active: activeStage === stage.key }" @click="activeStage = stage.key">
+                    {{ idx + 1 }}
+                  </div>
+                  <div class="stage-body" v-show="true">
+                    <div class="stage-title">{{ stage.title }}</div>
+                    <div class="stage-desc">{{ stage.desc }}</div>
+                    <div v-if="activeStage === stage.key" class="stage-detail">
+                      <div class="stage-api">{{ stage.api }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="flow-formula" v-if="flowGraphData?.formulas">
+                <h4>激活扩散公式</h4>
+                <div class="formula-code">{{ flowGraphData.formulas.activation_spread }}</div>
+                <div class="formula-note">{{ flowGraphData.formulas.note }}</div>
+              </div>
+            </div>
+          </el-col>
+        </el-row>
+      </el-tab-pane>
+
       <!-- 企业协作 -->
       <el-tab-pane label="企业协作" name="enterprise">
         <el-row :gutter="16">
@@ -345,7 +428,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, markRaw } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, markRaw } from 'vue'
+import * as echarts from '@/echarts'
 import {
   DataAnalysis, Refresh, Plus, Search, User, Connection, ChatDotRound
 } from '@element-plus/icons-vue'
@@ -369,6 +453,37 @@ const selectedCollaborators = ref([])
 const enterpriseForm = ref({ question: '', mode: 'smart', strategy: 'content_aware', tags: [] })
 const enterpriseResult = ref(null)
 const enterpriseLoading = ref(false)
+
+// ===== 流程编排 tab 状态 =====
+const flowGraphData = ref(null)
+const flowLoading = ref(false)
+const flowFocus = ref('all')
+const flowChart = ref(null)
+const activeStage = ref('intent')
+let flowInst = null
+
+const flowNodeTypes = {
+  step: { label: '流水线步骤', color: '#6366f1', size: 46 },
+  keyword: { label: '意图关键词', color: '#94a3b8', size: 14 },
+  capability: { label: 'AI 能力', color: '#06b6d4', size: 36 },
+  engine: { label: '委托引擎', color: '#ec4899', size: 30 }
+}
+
+const flowEdgeStyles = {
+  flows_to: { color: '#6366f1', width: 3, type: 'solid' },
+  triggers: { color: '#94a3b8', width: 1, type: 'solid' },
+  delegates_to: { color: '#06b6d4', width: 2, type: 'dashed' },
+  degrades_to: { color: '#ef4444', width: 1.5, type: 'dashed' }
+}
+
+const pipelineStages = [
+  { key: 'intent', title: '意图识别', desc: '激活扩散：命中关键词→能力激活（个性化 PageRank）', api: 'classifyIntent · INTENT_PATTERNS 15 意图域' },
+  { key: 'team', title: '最优组队', desc: '能力匹配 + 图谱协同增益 + 负载均衡多目标选择', api: 'composeTeam · ExpertGraph 边权' },
+  { key: 'deliberate', title: '并行辩论', desc: '并行咨询 + 2 轮交叉评审收敛（加权表决）', api: 'deliberate · Jaccard 共识度' },
+  { key: 'synthesize', title: '综合合成', desc: '置信度加权 → 网关生成结构化 JSON 报告', api: 'synthesize · 首席分析师 Prompt' },
+  { key: 'gate', title: '质量门禁', desc: '置信度阈值 + 共识度校验，A/B/C/D 分级', api: 'qualityGate · 可降级重试' },
+  { key: 'learn', title: '反馈学习', desc: '意图先验回写 + 专家 metrics 更新', api: 'learn · alliance_intent_priors' }
+]
 
 const strategyOptions = [
   { value: 'round_robin', label: '轮询策略' },
@@ -651,8 +766,139 @@ async function submitEnterpriseConsult() {
   }
 }
 
+// ===== 流程编排 tab：加载与渲染 =====
+async function loadFlowGraph() {
+  flowLoading.value = true
+  try {
+    const res = await api.getEngineFlowGraph()
+    flowGraphData.value = res
+    await nextTick()
+    renderFlowGraph()
+  } catch (e) {
+    ElMessage.error('流程图谱加载失败: ' + (e.message || e))
+  } finally {
+    flowLoading.value = false
+  }
+}
+
+function buildFlowOption() {
+  const data = flowGraphData.value
+  if (!data) return null
+
+  // 聚焦视图过滤：pipeline 仅 step+flows_to；capability 仅 cap/eng+委托/降级边
+  let nodes = data.nodes || []
+  let edges = data.edges || []
+  if (flowFocus.value === 'pipeline') {
+    nodes = nodes.filter(n => n.type === 'step')
+    edges = edges.filter(e => e.type === 'flows_to')
+  } else if (flowFocus.value === 'capability') {
+    nodes = nodes.filter(n => n.type === 'capability' || n.type === 'engine')
+    edges = edges.filter(e => e.type === 'delegates_to' || e.type === 'degrades_to')
+  }
+
+  const chartNodes = nodes.map(n => {
+    const meta = flowNodeTypes[n.type] || { color: '#64748b', size: 16 }
+    return {
+      id: n.id,
+      name: n.label,
+      symbolSize: meta.size,
+      category: n.type,
+      itemStyle: { color: meta.color },
+      label: { show: n.type !== 'keyword' },
+      _desc: n.desc || '',
+      _type: n.type
+    }
+  })
+
+  const chartEdges = edges.map(e => {
+    const style = flowEdgeStyles[e.type] || { color: '#94a3b8', width: 1, type: 'solid' }
+    return {
+      source: e.source,
+      target: e.target,
+      value: e.weight,
+      lineStyle: {
+        color: style.color,
+        width: style.width,
+        type: style.type,
+        opacity: e.type === 'triggers' ? 0.3 : 0.7,
+        curveness: 0.1
+      }
+    }
+  })
+
+  return {
+    backgroundColor: 'transparent',
+    tooltip: {
+      backgroundColor: '#0a0f1e',
+      borderColor: '#243049',
+      textStyle: { color: '#e6ecf5' },
+      formatter: (p) => {
+        if (p.dataType === 'node') {
+          const t = flowNodeTypes[p.data._type]?.label || p.data._type
+          return `<b>${p.data.name}</b><br/>类型：${t}${p.data._desc ? '<br/>' + p.data._desc : ''}`
+        }
+        return `${p.data.source} → ${p.data.target}`
+      }
+    },
+    legend: { show: false },
+    animationDuration: 600,
+    series: [{
+      type: 'graph',
+      layout: 'force',
+      roam: true,
+      draggable: true,
+      categories: Object.keys(flowNodeTypes).map(t => ({ name: flowNodeTypes[t].label })),
+      data: chartNodes,
+      links: chartEdges,
+      label: { color: '#334155', fontSize: 11 },
+      emphasis: {
+        focus: 'adjacency',
+        lineStyle: { width: 4, opacity: 0.9 }
+      },
+      force: {
+        repulsion: 200,
+        edgeLength: [50, 140],
+        gravity: 0.08,
+        friction: 0.18
+      },
+      lineStyle: { curveness: 0.1 }
+    }]
+  }
+}
+
+function renderFlowGraph() {
+  const option = buildFlowOption()
+  if (!option) return
+  if (!flowInst && flowChart.value) {
+    flowInst = echarts.init(flowChart.value, null, { renderer: 'canvas' })
+  }
+  flowInst && flowInst.setOption(option, true)
+}
+
+function resizeFlowChart() {
+  flowInst && flowInst.resize()
+}
+
+watch(activeTab, async (tab) => {
+  if (tab === 'flow') {
+    if (!flowGraphData.value) {
+      await loadFlowGraph()
+    } else {
+      await nextTick()
+      resizeFlowChart()
+    }
+  }
+})
+
 onMounted(() => {
   loadAll()
+  window.addEventListener('resize', resizeFlowChart)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', resizeFlowChart)
+  flowInst && flowInst.dispose()
+  flowInst = null
 })
 </script>
 
@@ -803,4 +1049,47 @@ onMounted(() => {
 .team-member { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: #fff; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 12px; }
 .team-score { color: #6366f1; font-weight: 500; margin-left: auto; }
 .context-info { display: flex; gap: 8px; align-items: center; font-size: 13px; color: #64748b; }
+/* ===== 流程编排 tab ===== */
+.flow-head-actions { display: flex; gap: 8px; align-items: center; }
+.flow-stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 14px; }
+.flow-stat { text-align: center; padding: 10px; background: #f8fafc; border-radius: 8px; }
+.flow-legend {
+  display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+  padding: 10px 12px; background: #f8fafc; border-radius: 8px; margin-bottom: 12px;
+  font-size: 11px; color: #475569;
+}
+.legend-edge { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; color: #64748b; }
+.edge-line { display: inline-block; width: 18px; height: 0; border-top: 2px solid #94a3b8; margin: 0 2px 0 6px; }
+.edge-line.flows { border-top: 3px solid #6366f1; }
+.edge-line.triggers { border-top: 1px solid #94a3b8; }
+.edge-line.delegates { border-top: 2px dashed #06b6d4; }
+.edge-line.degrades { border-top: 2px dashed #ef4444; }
+.flow-chart { height: 420px; width: 100%; }
+.flow-side { display: flex; flex-direction: column; }
+.pipeline-steps { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.pipeline-stage { display: flex; gap: 12px; padding: 8px 4px; border-radius: 8px; transition: background 0.2s; cursor: default; }
+.pipeline-stage:hover { background: #f8fafc; }
+.stage-dot {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #e2e8f0; color: #64748b; font-size: 12px; font-weight: 600;
+  transition: all 0.2s; cursor: pointer; margin-top: 2px;
+}
+.stage-dot.active { background: #6366f1; color: #fff; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15); }
+.stage-body { flex: 1; min-width: 0; }
+.stage-title { font-size: 13px; font-weight: 600; color: #1e293b; }
+.stage-desc { font-size: 11px; color: #64748b; line-height: 1.5; margin-top: 2px; }
+.stage-detail { margin-top: 6px; }
+.stage-api {
+  font-size: 11px; color: #4338ca; background: #eef2ff;
+  padding: 4px 8px; border-radius: 6px; display: inline-block;
+}
+.flow-formula { margin-top: 16px; padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
+.flow-formula h4 { font-size: 13px; margin: 0 0 8px; color: #334155; }
+.formula-code {
+  font-family: 'JetBrains Mono', Consolas, monospace; font-size: 11px;
+  color: #4338ca; background: #eef2ff; padding: 8px; border-radius: 6px;
+  overflow-x: auto; white-space: nowrap;
+}
+.formula-note { font-size: 11px; color: #94a3b8; margin-top: 6px; line-height: 1.5; }
 </style>

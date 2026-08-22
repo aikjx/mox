@@ -196,5 +196,217 @@
       "metrics": {}
     }
   ],
-  "edges": []
+  "edges": [
+    {
+      "source": "alg-expert",
+      "target": "arch-expert",
+      "weight": 1,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "设计"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
+      "source": "alg-expert",
+      "target": "graph-expert",
+      "weight": 1,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "算法"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
+      "source": "alg-expert",
+      "target": "perf-expert",
+      "weight": 3,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "分析",
+        "优化",
+        "性能"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
+      "source": "alg-expert",
+      "target": "mon-expert",
+      "weight": 1,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "分析"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
+      "source": "alg-expert",
+      "target": "mkt-expert",
+      "weight": 1,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "分析"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
+      "source": "alg-expert",
+      "target": "auto-expert",
+      "weight": 1,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "代码"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
+      "source": "alg-expert",
+      "target": "req-expert",
+      "weight": 1,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "分析"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
+      "source": "arch-expert",
+      "target": "mkt-expert",
+      "weight": 1,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "系统"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
+      "source": "data-expert",
+      "target": "sec-expert",
+      "weight": 2,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "数据",
+        "建模"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
+      "source": "data-expert",
+      "target": "req-expert",
+      "weight": 1,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "建模"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
+      "source": "data-expert",
+      "target": "fus-expert",
+      "weight": 3,
+      "shared_capabilities": [
+        "数据治理"
+      ],
+      "shared_grams": [
+        "治理"
+      ],
+      "relation": "capability_overlap"
+    },
+    {
+      "source": "perf-expert",
+      "target": "req-expert",
+      "weight": 1,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "分析"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
+      "source": "mon-expert",
+      "target": "perf-expert",
+      "weight": 2,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "策略",
+        "分析"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
+      "source": "mon-expert",
+      "target": "req-expert",
+      "weight": 2,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "分析",
+        "追踪"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
+      "source": "mkt-expert",
+      "target": "perf-expert",
+      "weight": 1,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "分析"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
+      "source": "mkt-expert",
+      "target": "mon-expert",
+      "weight": 1,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "分析"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
+      "source": "mkt-expert",
+      "target": "req-expert",
+      "weight": 1,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "分析"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
+      "source": "auto-expert",
+      "target": "wf-expert",
+      "weight": 5,
+      "shared_capabilities": [
+        "流程自动化"
+      ],
+      "shared_grams": [
+        "流程",
+        "自动",
+        "动化"
+      ],
+      "relation": "capability_overlap"
+    },
+    {
+      "source": "req-expert",
+      "target": "sec-expert",
+      "weight": 1,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "建模"
+      ],
+      "relation": "semantic_adjacent"
+    },
+    {
+      "source": "fus-expert",
+      "target": "mon-expert",
+      "weight": 1,
+      "shared_capabilities": [],
+      "shared_grams": [
+        "体系"
+      ],
+      "relation": "semantic_adjacent"
+    }
+  ]
 }
