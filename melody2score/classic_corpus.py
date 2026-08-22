@@ -166,6 +166,21 @@ def _add_harmonics(freq, t, amps):
     return out
 
 
+def _vibrato_harmonics(freq, t, depth, vib_rate, amps):
+    """带恒定深度颤音的谐波叠加（各谐波共享同一相对频率调制）。
+
+    瞬时频率 f(t) = freq·(1 + depth·sin(2π·vib_rate·t))，积分得基频相位：
+      φ(t) = 2π·freq·t + (freq·depth/vib_rate)·(1 - cos(2π·vib_rate·t))
+    第 k 次谐波相位为 k·φ(t)。深度恒定（真实颤音 semantics）。
+    """
+    phase = (2 * np.pi * freq * t
+             + (freq * depth / vib_rate) * (1 - np.cos(2 * np.pi * vib_rate * t)))
+    out = np.zeros_like(t)
+    for k, a in enumerate(amps, start=1):
+        out += a * np.sin(k * phase)
+    return out
+
+
 def render_note(freq: float, n_samples: int, sr: int, timbre: str) -> np.ndarray:
     t = np.arange(n_samples) / sr
     dur = n_samples / sr
@@ -201,9 +216,11 @@ def render_note(freq: float, n_samples: int, sr: int, timbre: str) -> np.ndarray
         sig *= _adsr(n_samples, sr, 0.003, 0.03)
 
     elif timbre == "strings":
-        vibrato = 1 + 0.006 * np.sin(2 * np.pi * 5.5 * t)  # ±半音内颤音
-        amps = [1.0 / k for k in range(1, 22)]
-        sig = _add_harmonics(freq, t * vibrato, amps)
+        # 颤音：±0.6%（±0.1 半音）。正确实现为"瞬时频率调制后积分相位"——
+        # 旧版 t*vibrato 是相位缩放，调制深度随 t 线性放大（1 拍音符末端
+        # 摆幅 ±2 半音），音频实际不含标注音高，识别必然失真。
+        sig = _vibrato_harmonics(freq, t, depth=0.006, vib_rate=5.5,
+                                 amps=[1.0 / k for k in range(1, 22)])
         sig *= _adsr(n_samples, sr, 0.06, 0.05)
 
     elif timbre == "flute":
@@ -231,9 +248,10 @@ def render_note(freq: float, n_samples: int, sr: int, timbre: str) -> np.ndarray
         sig *= _adsr(n_samples, sr, 0.002, 0.05)
 
     elif timbre == "human_voice":
-        # 元音 /a/：锯齿声源(含强基频，保证音高可追踪) + 共振峰着色
-        vibrato = 1 + 0.008 * np.sin(2 * np.pi * 5.5 * t)
-        src = _add_harmonics(freq, t * vibrato, [1.0 / k for k in range(1, 18)])
+        # 元音 /a/：锯齿声源(含强基频，保证音高可追踪) + 共振峰着色。
+        # 颤音 ±0.8%（±0.14 半音）：瞬时频率调制后积分相位（同 strings 修正）。
+        src = _vibrato_harmonics(freq, t, depth=0.008, vib_rate=5.5,
+                                 amps=[1.0 / k for k in range(1, 18)])
         voiced = src.copy()
         for ff, amp in [(800, 0.25), (1150, 0.18), (2900, 0.08)]:
             voiced = voiced + amp * np.sin(2 * np.pi * ff * t)
@@ -296,8 +314,13 @@ def build_manifest(sr: int = 16000) -> List[Dict]:
 
 
 def generate_all(out_dir: str, sr: int = 16000) -> List[Dict]:
-    """合成全部音频并写出 manifest.json。返回 manifest。"""
+    """合成全部音频并写出 manifest.json。返回 manifest。
+
+    固定随机种子：吉他 Karplus-Strong 初值 / 长笛气声 / 底噪均可复现，
+    同一代码同一输出（企业级回归测试前提）。
+    """
     import soundfile as sf
+    np.random.seed(20260822)
     audio_dir = os.path.join(out_dir, "audio")
     os.makedirs(audio_dir, exist_ok=True)
     manifest = build_manifest(sr)

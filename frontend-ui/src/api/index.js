@@ -114,6 +114,21 @@ export const updateWebSearchConfig = (payload) => http.post('/web-search/config'
 export const testWebSearch = () => http.post('/web-search/test', {})
 export const webSearch = (query) => http.post('/web-search', { query })
 
+// ===== 无穷维度优化引擎 =====
+export const getInfiniteBenchmarks = () => http.get('/ai/infinite-optimize/benchmarks')
+export const startInfiniteOptimize = (payload) => http.post('/ai/infinite-optimize/start', payload)
+export const stopInfiniteOptimize = () => http.post('/ai/infinite-optimize/stop', {})
+export const getInfiniteOptimizeStatus = () => http.get('/ai/infinite-optimize/status')
+export const getInfiniteOptimizeResults = () => http.get('/ai/infinite-optimize/results')
+export const runProviderComparison = () => http.post('/ai/infinite-optimize/compare', {})
+export const getProviderComparison = () => http.get('/ai/infinite-optimize/comparison')
+export const applyBestConfig = (runId) => http.post('/ai/infinite-optimize/apply', { run_id: runId })
+
+// ===== 本地制品引擎（文档/代码自动创建） =====
+export const getArtifactConfig = () => http.get('/ai/artifact/config')
+export const listArtifacts = () => http.get('/ai/artifact/list')
+export const createArtifact = (payload) => http.post('/ai/artifact/create', payload)
+
 // ===== 资源 =====
 export const getResources = () => http.get('/ai/resources')
 export const getResourceHealth = () => http.get('/ai/resources/health')

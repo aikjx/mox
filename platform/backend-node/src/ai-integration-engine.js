@@ -94,19 +94,23 @@ class GraphIntelligenceEngine {
     for (let iter = 0; iter < maxIterations; iter++) {
       const newRank = new Array(n).fill(0);
 
+      // 推模型传播：节点 i 的权重按出边比例推给目标节点（而非加回自身）
+      let danglingMass = 0;
       for (let i = 0; i < n; i++) {
-        let contribution = 0;
         const outWeight = outDegree[i];
-
         if (outWeight > 0) {
           for (const { target, weight } of adjList[i]) {
-            contribution += (rank[i] * weight) / outWeight;
+            newRank[target] += damping * (rank[i] * weight) / outWeight;
           }
         } else {
-          contribution = rank[i];
+          danglingMass += rank[i]; // 悬挂节点质量，均匀回传全图
         }
+      }
 
-        newRank[i] = (1 - damping) * personalizationVec[i] + damping * contribution;
+      // 悬挂质量回传 + 传送项（个性化向量）
+      const danglingShare = damping * danglingMass / n;
+      for (let i = 0; i < n; i++) {
+        newRank[i] += danglingShare + (1 - damping) * personalizationVec[i];
       }
 
       const total = newRank.reduce((a, b) => a + b, 0) || 1;

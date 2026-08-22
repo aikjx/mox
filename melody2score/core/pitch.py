@@ -67,7 +67,9 @@ class PitchDetector:
         return ok
 
     # ---- 各后端实现 ----
-    def _detect_crepe_onnx(self, y: np.ndarray, sr: int) -> List[Dict]:
+    def _detect_crepe_onnx(self, y: np.ndarray, sr: int,
+                           conf_thresh: Optional[float] = None) -> List[Dict]:
+        thr = self.conf_thresh if conf_thresh is None else conf_thresh
         if self.intra_op_threads and self.intra_op_threads > 0:
             import os
             os.environ.setdefault("OMP_NUM_THREADS", str(self.intra_op_threads))
@@ -76,9 +78,11 @@ class PitchDetector:
             y, sr, model_size=self.model_size, step_size=self.hop, verbose=0)
         return [{"t": float(t), "freq": float(f), "conf": float(c)}
                 for t, f, c in zip(time_arr, freq_arr, conf_arr)
-                if c >= self.conf_thresh and self.fmin <= f <= self.fmax]
+                if c >= thr and self.fmin <= f <= self.fmax]
 
-    def _detect_torchcrepe(self, y: np.ndarray, sr: int) -> List[Dict]:
+    def _detect_torchcrepe(self, y: np.ndarray, sr: int,
+                           conf_thresh: Optional[float] = None) -> List[Dict]:
+        thr = self.conf_thresh if conf_thresh is None else conf_thresh
         import torch
         import torchcrepe
         audio = torch.tensor(y, dtype=torch.float32).unsqueeze(0)  # [1, T]
@@ -92,17 +96,22 @@ class PitchDetector:
         times = np.arange(len(f0)) * hop_length / sr
         res = []
         for t, f, c in zip(times, f0, conf):
-            if np.isnan(f) or f <= 20 or c < self.conf_thresh or f < self.fmin or f > self.fmax:
+            if np.isnan(f) or f <= 20 or c < thr or f < self.fmin or f > self.fmax:
                 continue
             res.append({"t": float(t), "freq": float(f), "conf": float(c)})
         return res
 
-    def _detect_pyin(self, y: np.ndarray, sr: int) -> List[Dict]:
+    def _detect_pyin(self, y: np.ndarray, sr: int,
+                     conf_thresh: Optional[float] = None) -> List[Dict]:
+        thr = self.conf_thresh if conf_thresh is None else conf_thresh
         import librosa
         fmin, fmax = self.fmin, self.fmax
-        # pyin 为逐帧概率基频追踪，耗时与帧数近似线性。用 3 倍 hop（10→30ms）
-        # 把帧数减为 1/3，7.5s 音频实测 3.4s→~1.1s，对音符分割精度影响可忽略。
-        eff_hop = max(10, int(self.hop * 3))
+        # pyin 为逐帧概率基频追踪，耗时与帧数近似线性。用 2 倍 hop（10→20ms）
+        # 平衡速度与短音符精度：3 倍 hop（robust 下 54ms）会让 0.25 拍短音
+        # （~105ms）只落 1~2 帧、边界帧再被 VAD 切除后仅剩单帧 → 时长 0
+        # 被并入邻音（实测生日歌弱起 C 被吞、音符数 12→10）。2 倍 hop
+        # 短音可得 3+ 帧，耗时约 1.5×，精度收益远大于速度代价。
+        eff_hop = max(10, int(self.hop * 2))
         frame = 1024                       # 满足 frame_length >= 2*hop_length
         hop_len = max(1, int(round(sr * eff_hop / 1000.0)))
         f0, voiced_flag, voiced_prob = librosa.pyin(
@@ -110,7 +119,7 @@ class PitchDetector:
         times = librosa.times_like(f0, sr=sr, hop_length=hop_len, n_fft=frame)
         res = []
         for t, f, v, p in zip(times, f0, voiced_flag, voiced_prob):
-            if f is None or not v or p < self.conf_thresh or f <= 20:
+            if f is None or not v or p < thr or f <= 20:
                 continue
             res.append({"t": float(t), "freq": float(f), "conf": float(p)})
         return res
@@ -123,9 +132,12 @@ class PitchDetector:
             ]
         return list(self.FALLBACK_ORDER)
 
-    def detect(self, y: np.ndarray, sr: int) -> List[Dict]:
+    def detect(self, y: np.ndarray, sr: int,
+               conf_thresh: Optional[float] = None) -> List[Dict]:
         """检测音高轮廓，自动首选 + 优雅降级。
 
+        conf_thresh 可按次调用覆盖（稳健模式多次 run 的扰动阈值）；
+        缺省用构造时的 self.conf_thresh。
         返回 [{t, freq, conf}]；若所有后端均不可用抛 RuntimeError。
         """
         last_err: Optional[BaseException] = None
@@ -134,11 +146,14 @@ class PitchDetector:
                 continue  # 跳过已知不可用后端，不重复探测
             try:
                 if kind == "crepe_onnx":
-                    out = self._run_with_timeout(self._detect_crepe_onnx, y, sr)
+                    out = self._run_with_timeout(self._detect_crepe_onnx, y, sr,
+                                                 conf_thresh=conf_thresh)
                 elif kind == "torchcrepe":
-                    out = self._run_with_timeout(self._detect_torchcrepe, y, sr)
+                    out = self._run_with_timeout(self._detect_torchcrepe, y, sr,
+                                                 conf_thresh=conf_thresh)
                 else:
-                    out = self._run_with_timeout(self._detect_pyin, y, sr)
+                    out = self._run_with_timeout(self._detect_pyin, y, sr,
+                                                 conf_thresh=conf_thresh)
                 self._used = kind
                 return out
             except Exception as e:
@@ -148,7 +163,7 @@ class PitchDetector:
                 continue
         raise RuntimeError(f"所有音高后端均不可用（首选={self.preferred_backend}）: {last_err}")
 
-    def _run_with_timeout(self, fn, y, sr) -> List[Dict]:
+    def _run_with_timeout(self, fn, y, sr, **kw) -> List[Dict]:
         """超时保护：用子线程包装推理，超时则抛出异常触发降级。"""
         import threading
         import queue
@@ -158,7 +173,7 @@ class PitchDetector:
 
         def _worker():
             try:
-                q.put(("ok", fn(y, sr)))
+                q.put(("ok", fn(y, sr, **kw)))
             except BaseException as e:  # 捕获一切，含段错误前的异常
                 exc.append(e)
                 q.put(("err", e))

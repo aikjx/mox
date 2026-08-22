@@ -1,0 +1,30 @@
+{
+  "artifacts": [
+    {
+      "id": "art_1787368169530_b7f3y3",
+      "filename": "AI对话系统接口设计文档.md",
+      "rel_path": "workspace/artifacts/AI对话系统接口设计文档.md",
+      "abs_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\workspace\\artifacts\\AI对话系统接口设计文档.md",
+      "mode": "document",
+      "size": 9050,
+      "sha256": "05140acd0f2bb759270e0bd6b92473360affe85790e5df23d4e677be5c4a92e9",
+      "session_id": "artifact-e2e-doc",
+      "purpose": "包含认证、消息、会话管理三部分的接口设计文档",
+      "overwritten": false,
+      "created_at": "2026-08-22T03:09:29.531Z"
+    },
+    {
+      "id": "art_1787368176213_b1448l",
+      "filename": "debounce.js",
+      "rel_path": "workspace/artifacts/debounce.js",
+      "abs_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\workspace\\artifacts\\debounce.js",
+      "mode": "code",
+      "size": 2947,
+      "sha256": "b667b225a3f6f6658ff71d037a36ae7962868c5f0e4edd1876f6973511f4d85e",
+      "session_id": "artifact-e2e-code",
+      "purpose": "实现防抖函数，延迟执行并取消前次定时器",
+      "overwritten": false,
+      "created_at": "2026-08-22T03:09:36.213Z"
+    }
+  ]
+}

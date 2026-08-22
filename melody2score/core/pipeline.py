@@ -238,28 +238,29 @@ def _consensus(runs: List[List[Dict]], cfg: Config) -> Tuple[List[Dict], Dict]:
     return merged, {"kept": kept, "confidence": conf_sum / max(1, len(merged))}
 
 
-def _segment_once(y, sr, cfg, k: int, det: "pitch.PitchDetector"):
-    """单次识别：扰动置信阈值 → 检测 → 可选 VAD → 分割音符。"""
-    eff = Config()
-    eff.conf_thresh = max(0.05, cfg.conf_thresh - 0.06 + 0.04 * k)
-    eff.hop = cfg.hop
-    eff.min_note_dur = cfg.min_note_dur
-    eff.median_win = cfg.median_win
-    eff.vocal_mode = cfg.vocal_mode
+def _segment_once(y, sr, cfg, k: int, det: "pitch.PitchDetector",
+                  vad_mask=None):
+    """单次识别：扰动置信阈值 → 检测 → 可选 VAD → 分割音符。
 
-    pts = det.detect(y, sr)
+    修复：eff（扰动配置）此前构造后从未传入 detect —— 三次 run 完全相同，
+    共识退化为 1 票，robust 模式形同虚设。现在把扰动阈值真正传进检测器。
+    vad_mask 由调用方算好传入（robust 多次 run 复用同一掩码，免重复 STFT）。
+    """
+    eff_conf = max(0.05, cfg.conf_thresh - 0.06 + 0.04 * k)
 
-    vad_mask = None
-    if cfg.vocal_mode and cfg.enable_vad:
+    pts = det.detect(y, sr, conf_thresh=eff_conf)
+
+    if cfg.vocal_mode and cfg.enable_vad and vad_mask is None:
         vad_mask = vad.voice_activity_mask(
             y, sr, energy_thresh=cfg.vad_energy_thresh,
             centroid_min=cfg.vad_centroid_min, centroid_max=cfg.vad_centroid_max,
-            flatness_max=cfg.vad_flatness_max, hop_ms=eff.hop,
+            flatness_max=cfg.vad_flatness_max, hop_ms=cfg.hop,
             min_voiced_ms=cfg.min_voiced_ms)
 
     notes = analysis.segment_notes(
         pts, cfg.min_note_dur, cfg.median_win,
-        vocal_mode=cfg.vocal_mode, vad_mask=vad_mask)
+        vocal_mode=cfg.vocal_mode, vad_mask=vad_mask,
+        vad_hop_ms=cfg.hop)
     return notes, pts
 
 
@@ -327,12 +328,21 @@ class Melody2Score:
                 fmin=getattr(cfg, "fmin", 50.0), fmax=getattr(cfg, "fmax", 1100.0),
                 preferred_backend=cfg.preferred_backend,
                 inference_timeout=cfg.inference_timeout)
+            # VAD 掩码与置信阈值扰动无关（同一音频同一能量/谱特征），
+            # 算一次跨 run 复用，robust 模式省 2 次重复 STFT
+            vad_mask = None
+            if cfg.vocal_mode and cfg.enable_vad:
+                vad_mask = vad.voice_activity_mask(
+                    y, sr, energy_thresh=cfg.vad_energy_thresh,
+                    centroid_min=cfg.vad_centroid_min, centroid_max=cfg.vad_centroid_max,
+                    flatness_max=cfg.vad_flatness_max, hop_ms=cfg.hop,
+                    min_voiced_ms=cfg.min_voiced_ms)
             for k in range(n_runs):
                 if progress_cb:
                     progress_cb("pitch", f"音高检测 ({k+1}/{n_runs})…",
                                 0.12 + 0.72 * (k + 1) / n_runs)
                 t0 = time.time()
-                notes, pts = _segment_once(y, sr, cfg, k, det)
+                notes, pts = _segment_once(y, sr, cfg, k, det, vad_mask)
                 t_pitch_total += time.time() - t0
                 used_backend = det.used_backend
                 last_pts = pts

@@ -4,6 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
+const { getAIIntegrationEngine } = require('./ai-integration-engine');
+
 const DATA_DIR = path.join(__dirname, '..', 'data');
 
 class AIEngine {
@@ -189,7 +191,7 @@ class AIEngine {
     const edges = graphData.edges || [];
 
     const stats = this._computeGraphStats(nodes, edges);
-    const pagerank = this._computePageRank(nodes, edges);
+    const pagerank = await this._computePageRank(nodes, edges);
     const communities = this._detectCommunities(nodes, edges);
     const centrality = this._computeCentrality(nodes, edges);
 
@@ -234,121 +236,84 @@ class AIEngine {
     };
   }
 
-  _computePageRank(nodes, edges, damping = 0.85, iterations = 50) {
-    const n = nodes.length;
-    if (n === 0) return [];
-
-    const nodeIds = nodes.map(n => n.id);
-    const idToIdx = new Map(nodeIds.map((id, i) => [id, i]));
-    const adjList = new Array(n).fill(0).map(() => []);
-
-    edges.forEach(e => {
-      const src = idToIdx.get(e.source);
-      const tgt = idToIdx.get(e.target);
-      if (src !== undefined && tgt !== undefined) {
-        adjList[src].push(tgt);
-      }
-    });
-
-    const outDegree = adjList.map(adj => adj.length);
-    let rank = new Array(n).fill(1 / n);
-
-    for (let iter = 0; iter < iterations; iter++) {
-      const newRank = new Array(n).fill((1 - damping) / n);
-      for (let i = 0; i < n; i++) {
-        if (outDegree[i] === 0) {
-          for (let j = 0; j < n; j++) {
-            newRank[j] += damping * rank[i] / n;
-          }
-        } else {
-          for (const j of adjList[i]) {
-            newRank[j] += damping * rank[i] / outDegree[i];
-          }
-        }
-      }
-      rank = newRank;
-    }
-
-    const total = rank.reduce((a, b) => a + b, 0);
-    return nodeIds.map((id, i) => ({
-      id,
-      pagerank: total > 0 ? rank[i] / total : 0
-    })).sort((a, b) => b.pagerank - a.pagerank);
+  async _computePageRank(nodes, edges, damping = 0.85, iterations = 50) {
+    // 归一化收口：委托 AI 集成引擎的统一 PageRank 实现
+    // （含边权重/收敛容差/个性化向量/悬挂节点处理），消除两处重复算法。
+    // 返回格式保持 [{id, pagerank}]（已归一化、降序）向后兼容。
+    const integration = getAIIntegrationEngine();
+    const result = await integration.graphEngine.computePersonalizedPageRank(
+      { nodes, edges },
+      { damping, maxIterations: iterations, topK: nodes.length }
+    );
+    const total = (result.scores || []).reduce((s, r) => s + r.score, 0) || 1;
+    return (result.scores || [])
+      .map((r) => ({ id: r.id, pagerank: +(r.score / total).toFixed(8) }))
+      .sort((a, b) => b.pagerank - a.pagerank);
   }
 
   _detectCommunities(nodes, edges, maxCommunities = 5) {
+    // 标签传播算法（LPA）：节点迭代采纳邻居中出现最多的标签，收敛后按标签划分社区。
+    // 修复原种子 BFS 实现的缺陷：每个种子的 BFS 遍历整个连通分量，导致所有社区成员完全重叠。
     const nodeIds = nodes.map(n => n.id);
     const idToIdx = new Map(nodeIds.map((id, i) => [id, i]));
     const n = nodeIds.length;
 
     if (n === 0) return [];
 
-    const adjMatrix = new Array(n).fill(0).map(() => new Array(n).fill(0));
+    // 无向邻接表（社区结构按无向处理）
+    const neighbors = Array.from({ length: n }, () => new Set());
     edges.forEach(e => {
       const src = idToIdx.get(e.source);
       const tgt = idToIdx.get(e.target);
-      if (src !== undefined && tgt !== undefined) {
-        adjMatrix[src][tgt] = 1;
-        adjMatrix[tgt][src] = 1;
+      if (src !== undefined && tgt !== undefined && src !== tgt) {
+        neighbors[src].add(tgt);
+        neighbors[tgt].add(src);
       }
     });
 
-    const communities = Array.from({ length: maxCommunities }, () => []);
-    const nodeCommunity = new Array(n).fill(0);
-    const seeds = this._selectSeeds(n, edges, maxCommunities);
+    // 初始标签：每个节点自身
+    const labels = nodeIds.map((_, i) => i);
+    let changed = true;
+    let rounds = 0;
+    const MAX_ROUNDS = 20;
 
-    seeds.forEach((seedIdx, commIdx) => {
-      const queue = [seedIdx];
-      const visited = new Set([seedIdx]);
-
-      while (queue.length > 0) {
-        const current = queue.shift();
-        communities[commIdx].push(nodeIds[current]);
-        nodeCommunity[current] = commIdx;
-
-        for (let neighbor = 0; neighbor < n; neighbor++) {
-          if (adjMatrix[current][neighbor] === 1 && !visited.has(neighbor)) {
-            visited.add(neighbor);
-            queue.push(neighbor);
-          }
+    while (changed && rounds < MAX_ROUNDS) {
+      changed = false;
+      rounds++;
+      for (let i = 0; i < n; i++) {
+        if (neighbors[i].size === 0) continue; // 孤立节点保持自身社区
+        const counts = new Map();
+        neighbors[i].forEach(j => counts.set(labels[j], (counts.get(labels[j]) || 0) + 1));
+        // 平局取最小标签，保证结果稳定可复现
+        let bestLabel = labels[i];
+        let bestCount = 0;
+        [...counts.entries()].sort((a, b) => a[0] - b[0]).forEach(([label, cnt]) => {
+          if (cnt > bestCount) { bestCount = cnt; bestLabel = label; }
+        });
+        if (bestLabel !== labels[i]) {
+          labels[i] = bestLabel;
+          changed = true;
         }
       }
+    }
+
+    // 按标签聚合社区，按规模降序，最多保留 maxCommunities 个
+    const commMap = new Map();
+    labels.forEach((label, i) => {
+      if (!commMap.has(label)) commMap.set(label, []);
+      commMap.get(label).push(nodeIds[i]);
     });
 
-    const activeCommunities = communities.filter(c => c.length > 0);
-    const assignment = {};
-    nodeIds.forEach((id, i) => {
-      assignment[id] = nodeCommunity[i];
-    });
+    const communities = [...commMap.values()]
+      .sort((a, b) => b.length - a.length)
+      .slice(0, maxCommunities);
 
-    return activeCommunities.map((members, i) => ({
+    return communities.map((members, i) => ({
       id: i,
       size: members.length,
       members: members.slice(0, 10),
       assignment: members.reduce((acc, id) => { acc[id] = i; return acc; }, {})
     }));
-  }
-
-  _selectSeeds(n, edges, k) {
-    const degree = new Array(n).fill(0);
-    edges.forEach(e => {
-      degree[parseInt(e.source)] = (degree[parseInt(e.source)] || 0) + 1;
-      degree[parseInt(e.target)] = (degree[parseInt(e.target)] || 0) + 1;
-    });
-
-    const sorted = degree.map((d, i) => ({ d, i })).sort((a, b) => b.d - a.d);
-    const seeds = [];
-    const used = new Set();
-
-    for (const { i } of sorted) {
-      if (seeds.length >= k) break;
-      if (!used.has(i)) {
-        seeds.push(i);
-        used.add(i);
-      }
-    }
-
-    return seeds;
   }
 
   _computeCentrality(nodes, edges) {
