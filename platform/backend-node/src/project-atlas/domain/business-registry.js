@@ -27,7 +27,7 @@ const DOMAINS = [
   {
     id: 'web-search', name: '联网搜索', codePath: 'src/routes/web-search.js',
     keyFeatures: ['多搜索引擎配置管理', '统一搜索入口与引用结构化', '搜索连通性测试'],
-    engines: ['web-search-service'], dataAssets: ['settings.json'], docs: ['docs/AI-UNIFIED-OPTIMIZATION-PLAN.md']
+    engines: ['web-search-service'], dataAssets: ['settings.json', 'web_search_config.json'], docs: ['docs/AI-UNIFIED-OPTIMIZATION-PLAN.md']
   },
   {
     id: 'artifacts', name: '本地制品', codePath: 'src/routes/artifacts.js',
@@ -88,6 +88,11 @@ const DOMAINS = [
     id: 'engine-universe', name: '引擎宇宙图谱', codePath: 'src/routes/engine-universe.js',
     keyFeatures: ['17 引擎节点化与关联边查询', '需求归一化链服务映射', '全链路 113 项机器验证'],
     engines: ['engine-universe'], dataAssets: [], docs: ['docs/standards/engine-universe.md']
+  },
+  {
+    id: 'engine-kernel', name: '引擎内核', codePath: 'src/routes/engine-kernel.js',
+    keyFeatures: ['槽位契约架构（一切皆可插件化，切换引擎零代码改动）', '瞬间切换与失败自动回滚（探活保障银行级不宕机）', '三层插件商城（系统内置/云端目录/本地清单）', 'AI 自动配置引擎组合（自然语言需求→绑定方案）'],
+    engines: ['engine-kernel', 'llm-gateway', 'web-search-service'], dataAssets: ['engine_bindings.json', 'engine_plugins.json', 'engine_marketplace.json'], docs: ['docs/standards/engine-kernel.md']
   },
   {
     id: 'atlas', name: '项目全息图谱', codePath: 'src/routes/atlas.js',

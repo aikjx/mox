@@ -82,6 +82,16 @@ const ALGORITHMS = [
     id: 'algo-median', name: '中值滤波音高平滑', codePath: 'melody2score/core/pipeline.py',
     principle: 'NaN 隔离 + 跨音符窗口保护 + 下中值消除半音伪影（8/8 样本全对）',
     singleSource: true, category: '信号算法', consumers: ['mod-melody2score']
+  },
+  {
+    id: 'algo-slot-contract', name: '槽位契约路由', codePath: 'src/engine-kernel/domain/contract-registry.js',
+    principle: '能力槽位化 + 方法签名/输入输出契约文档化，调用方只依赖契约不依赖具体引擎',
+    singleSource: true, category: '架构算法', consumers: ['engine-kernel']
+  },
+  {
+    id: 'algo-switch-rollback', name: '切换探活回滚', codePath: 'src/engine-kernel/application/switch-service.js',
+    principle: '校验→切换→契约探活→失败自动回滚原绑定（银行级不宕机切换）',
+    singleSource: true, category: '架构算法', consumers: ['engine-kernel']
   }
 ];
 
@@ -103,6 +113,7 @@ const DATA_ASSETS = [
   { file: 'registered_pipelines.json', domain: 'browser-market', desc: '注册流水线' },
   { file: 'plugins.json', domain: 'orchestration', desc: '编排插件' },
   { file: 'llm_config.json', domain: 'integration', desc: 'LLM 提供商配置（密钥加密）' },
+  { file: 'web_search_config.json', domain: 'web-search', desc: '联网搜索引擎配置（槽位切换落点）' },
   { file: 'llm_routing.json', domain: 'integration', desc: 'LLM 路由权重' },
   { file: 'llm_usage.json', domain: 'integration', desc: 'LLM 用量统计' },
   { file: 'experts.json', domain: 'expert-alliance', desc: '专家注册表（15+1 专家）' },
@@ -113,6 +124,9 @@ const DATA_ASSETS = [
   { file: 'dispatcher_config.json', domain: 'expert-alliance', desc: '调度策略配置' },
   { file: 'learned_skills.json', domain: 'expert-alliance', desc: '学习技能' },
   { file: 'expert_capability_graph.json', domain: 'expert-graph', desc: '专家能力图' },
+  { file: 'engine_bindings.json', domain: 'engine-kernel', desc: '引擎槽位绑定（切换引擎零代码改动）' },
+  { file: 'engine_plugins.json', domain: 'engine-kernel', desc: '本地安装插件清单' },
+  { file: 'engine_marketplace.json', domain: 'engine-kernel', desc: '云端商城注册表配置' },
   { file: 'caomei_templates.json', domain: 'ai-enhanced', desc: '内容模板' },
   { file: 'tasks.json', domain: 'tasks', desc: '任务数据' },
   { file: 'kb_documents.json', domain: 'kb', desc: '知识库文档' },
@@ -128,6 +142,7 @@ const DOCS = [
   { file: 'docs/standards/ai-native-architecture-standard.md', domain: 'engine-universe', desc: 'AINA-STD-001 架构规范（五公理+门禁）' },
   { file: 'docs/standards/engine-universe.md', domain: 'engine-universe', desc: '引擎宇宙图谱（17 引擎关联）' },
   { file: 'docs/standards/project-atlas.md', domain: 'atlas', desc: '项目全息图谱（无破窗验证 W1-W8）' },
+  { file: 'docs/standards/engine-kernel.md', domain: 'engine-kernel', desc: '引擎内核（槽位契约+瞬间切换+三层商城+AI配置）' },
   { file: 'docs/architecture.md', domain: 'system', desc: '系统总体架构' },
   { file: 'docs/README.md', domain: 'system', desc: '文档索引' },
   { file: 'docs/GLOSSARY.md', domain: 'system', desc: '术语表' },
