@@ -45,6 +45,24 @@ class ExpertGraph {
     }
   }
 
+  /**
+   * 能力 2-gram 提取：纯中文标签切 2 字滑窗，英文标签整体小写化。
+   * 用于跨专家的"语义邻接"判定（如 '性能调优' ↔ '性能分析' 共享 gram「性能」）。
+   */
+  _capabilityGrams(capabilities) {
+    const grams = new Set();
+    for (const cap of capabilities || []) {
+      const c = String(cap);
+      if (/[a-zA-Z]/.test(c)) {
+        const en = c.toLowerCase().match(/[a-z][a-z0-9-]{2,}/g) || [];
+        en.forEach(w => grams.add(w));
+      } else {
+        for (let i = 0; i + 2 <= c.length; i++) grams.add(c.slice(i, i + 2));
+      }
+    }
+    return grams;
+  }
+
   _buildFromAlliance() {
     const experts = this.alliance ? this.alliance.listExperts() : [];
     const nodes = experts.map(e => ({
@@ -58,28 +76,12 @@ class ExpertGraph {
 
     const edges = [];
     const typeGroups = {};
-
-    const typeKeywords = {
-      algorithm: ['复杂度', '算法', '数据结构'],
-      architecture: ['架构', '设计模式', '系统设计'],
-      data: ['数据', '数据库', '存储', '缓存'],
-      ai: ['AI', '模型', '训练', '推理', 'LLM'],
-      workflow: ['工作流', '流程', '编排'],
-      operator: ['算子', '节点', '计算'],
-      graph: ['图谱', '图算法', '关系'],
-      security: ['安全', '加密', '认证', '权限'],
-      performance: ['性能', '优化', '速度', '瓶颈'],
-      monitor: ['监控', '日志', '指标', '告警'],
-      market: ['市场', '商业', '产品'],
-      mcp: ['MCP', '协议', '工具'],
-      automation: ['自动化', '自动', '脚本'],
-      requirement: ['需求', '分析', '业务'],
-      fusion: ['融合', '集成', '综合']
-    };
+    const gramCache = new Map();
 
     for (const expert of experts) {
       if (!typeGroups[expert.type]) typeGroups[expert.type] = [];
       typeGroups[expert.type].push(expert.id);
+      gramCache.set(expert.id, this._capabilityGrams(expert.capabilities));
     }
 
     for (const expert of experts) {
@@ -87,10 +89,27 @@ class ExpertGraph {
         if (expert.id >= other.id) continue;
 
         let weight = 0;
-        const sharedCapabilities = expert.capabilities.filter(c =>
-          other.capabilities.some(oc => oc === c)
+        let relation = null;
+        let sharedCapabilities = [];
+
+        // A19 配套修复：能力匹配由"精确相等"放宽为"包含式重叠"
+        // （如 '算法设计' ↔ '图算法'：'图算法' 含子串 '算法'）。
+        // 原精确匹配下 15 位专家两两零共享 → 能力图 0 边，图谱与社区检测全部失效。
+        sharedCapabilities = expert.capabilities.filter(c =>
+          other.capabilities.some(oc => oc === c || oc.includes(c) || c.includes(oc))
         );
         weight += sharedCapabilities.length * 2;
+
+        // A24 增强：2-gram 语义邻接建边。包含式匹配仅能覆盖字面重叠
+        // （实测 15 专家仅 2 边，CNM 凝聚出 13 个近孤立社区，协同增益失效）；
+        // 语义邻接捕捉"性能调优↔性能分析"这类概念级关联，权重按共享 gram
+        // 数分层（封顶 3），保持强弱可辨。实测 15 专家 20 边，密度 0.19。
+        const gramsA = gramCache.get(expert.id);
+        const gramsB = gramCache.get(other.id);
+        const sharedGrams = gramsA
+          ? Array.from(gramsA).filter(g => gramsB.has(g))
+          : [];
+        weight += Math.min(3, sharedGrams.length);
 
         const groupA = typeGroups[expert.type] || [];
         const groupB = typeGroups[other.type] || [];
@@ -99,13 +118,22 @@ class ExpertGraph {
           if (sharedTypes) weight += 1;
         }
 
+        if (sharedCapabilities.length > 0) {
+          relation = 'capability_overlap';
+        } else if (sharedGrams.length > 0) {
+          relation = 'semantic_adjacent';
+        } else if (weight > 0) {
+          relation = 'type_related';
+        }
+
         if (weight > 0) {
           edges.push({
             source: expert.id,
             target: other.id,
             weight,
             shared_capabilities: sharedCapabilities,
-            relation: sharedCapabilities.length > 0 ? 'capability_overlap' : 'type_related'
+            shared_grams: sharedGrams,
+            relation
           });
         }
       }
@@ -181,49 +209,22 @@ class ExpertGraph {
   }
 
   detectCommunities() {
-    const nodeIds = this.nodes.map(n => n.id);
-    const adjacency = {};
+    // A19 修复：委托 ai-engine 的 CNM 模块度贪心凝聚单源实现。
+    // 原实现为 BFS 连通分量——专家能力图近乎全连通，恒返回 1 个社区，无分析价值；
+    // 且违反项目硬约束「社区检测必须使用模块度贪心凝聚（CNM）而非连通分量/LPA」。
+    // 延迟 require 与 ai-engine._computeCentrality 的惯例一致（防御循环依赖）。
+    const { getAIEngine } = require('./ai-engine');
+    const { getGateway } = require('./llm-gateway');
+    const engine = getAIEngine(getGateway());
 
-    for (const id of nodeIds) {
-      adjacency[id] = new Set();
-    }
-    for (const edge of this.edges) {
-      adjacency[edge.source].add(edge.target);
-      adjacency[edge.target].add(edge.source);
-    }
+    const cnm = engine._detectCommunities(this.nodes, this.edges, this.nodes.length || 1);
+    if (!cnm.length) return [];
 
-    const communities = [];
-    const visited = new Set();
-
-    for (const id of nodeIds) {
-      if (visited.has(id)) continue;
-      const community = [];
-      const queue = [id];
-
-      while (queue.length > 0) {
-        const current = queue.shift();
-        if (visited.has(current)) continue;
-        visited.add(current);
-        community.push(current);
-
-        const neighbors = adjacency[current] || new Set();
-        for (const neighbor of neighbors) {
-          if (!visited.has(neighbor)) {
-            queue.push(neighbor);
-          }
-        }
-      }
-
-      if (community.length > 0) {
-        communities.push(community);
-      }
-    }
-
-    return communities.map((members, idx) => ({
+    return cnm.map((c, idx) => ({
       id: `community_${idx}`,
-      size: members.length,
-      members: members.map(m => this.getNode(m)).filter(Boolean),
-      dominant_type: this._getDominantType(members)
+      size: c.size,
+      members: c.members.map(m => this.getNode(m)).filter(Boolean),
+      dominant_type: this._getDominantType(c.members)
     }));
   }
 

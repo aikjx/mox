@@ -283,6 +283,9 @@ export const getExpertGraphCommunities = () => http.get('/expert-graph/communiti
 export const findOptimalTeam = (payload) => http.post('/expert-graph/optimal-team', payload)
 export const rebuildExpertGraph = () => http.post('/expert-graph/rebuild')
 
+// ===== AI 流程图谱（业务流程+算法流程统一承载于图谱引擎） =====
+export const getEngineFlowGraph = () => http.get('/ai/engine/flow-graph')
+
 // ===== 企业级协作端点 =====
 export const enterpriseConsult = (payload) => http.post('/experts/enterprise/consult', payload)
 export const enterpriseAnalyze = (payload) => http.post('/experts/enterprise/analyze', payload)

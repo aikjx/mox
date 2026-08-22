@@ -14,6 +14,10 @@ use std::f64::consts::E;
 
 pub use operator_core::Result;
 
+/// AI 流程图谱引擎：业务流程 + 算法流程统一承载于图谱（与 Node 层 ai-flow-graph.js 跨语言对齐）
+pub mod flow_graph;
+pub use flow_graph::{AIFlowGraph, CapabilityMeta, FlowGraphStats, IntentResult, IntentRule};
+
 /// 知识图谱节点
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KnowledgeNode {
@@ -263,6 +267,9 @@ impl KnowledgeGraph {
     }
 
     /// PageRank算法
+    ///
+    /// 修复 R-D2：悬挂节点（出度为 0）的质量此前直接丢失，导致 ΣPR < 1（不守恒）。
+    /// 现将悬挂质量均匀回传全图，并加收敛提前终止（容差 1e-6）。
     pub fn pagerank(&self, iterations: usize) -> HashMap<String, f64> {
         let n = self.node_count();
         if n == 0 {
@@ -271,20 +278,118 @@ impl KnowledgeGraph {
 
         let alpha = self.damping_factor;
         let adj = self.adjacency_matrix();
+
+        // 出度归一化矩阵 + 悬挂节点标记
         let mut deg = DMatrix::zeros(n, n);
+        let mut dangling = vec![false; n];
         for i in 0..n {
             let row_sum: f64 = (0..n).map(|j| adj[(i, j)]).sum();
             if row_sum > 1e-15 {
                 deg[(i, i)] = 1.0 / row_sum;
+            } else {
+                dangling[i] = true;
             }
         }
 
         let transition = &deg * &adj;
         let mut rank = DMatrix::from_element(n, 1, 1.0 / n as f64);
+        let teleport = 1.0 / n as f64;
 
         for _ in 0..iterations {
-            rank = &transition * alpha * &rank
-                + DMatrix::from_element(n, 1, (1.0 - alpha) / n as f64);
+            // 悬挂质量：均匀回传全图（质量守恒）
+            let dangling_mass: f64 = (0..n)
+                .filter(|&i| dangling[i])
+                .map(|i| rank[(i, 0)])
+                .sum();
+
+            // 修复 R-D6：transition[i][j] = W(i,j)/out(i) 是"i 给 j 的份额"，
+            // 传播须取转置（推模型）：rank_new[j] = Σ_i transition[i][j]·rank[i]
+            let propagated = transition.transpose() * &rank;
+            let mut new_rank = propagated * alpha;
+            for i in 0..n {
+                new_rank[(i, 0)] += alpha * dangling_mass / n as f64 + (1.0 - alpha) * teleport;
+            }
+
+            // 收敛判断
+            let max_diff: f64 = (0..n).map(|i| (new_rank[(i, 0)] - rank[(i, 0)]).abs()).fold(0.0, f64::max);
+            rank = new_rank;
+            if max_diff < 1e-6 {
+                break;
+            }
+        }
+
+        let mut result = HashMap::new();
+        for (id, idx) in &self.node_map {
+            result.insert(id.clone(), rank[(idx.index(), 0)]);
+        }
+        result
+    }
+
+    /// 个性化 PageRank（激活扩散意图识别的算法基础）
+    ///
+    /// a_i = (1-d)·p_i + d·(Σ_{j→i} a_j·W(j,i)/outW(j) + dangling_mass/n)
+    /// p 为个性化向量（命中关键词按权重归一），和为 1。
+    pub fn pagerank_personalized(
+        &self,
+        personalization: &HashMap<String, f64>,
+        iterations: usize,
+    ) -> HashMap<String, f64> {
+        let n = self.node_count();
+        if n == 0 {
+            return HashMap::new();
+        }
+
+        let alpha = self.damping_factor;
+        let adj = self.adjacency_matrix();
+
+        let mut deg = DMatrix::zeros(n, n);
+        let mut dangling = vec![false; n];
+        for i in 0..n {
+            let row_sum: f64 = (0..n).map(|j| adj[(i, j)]).sum();
+            if row_sum > 1e-15 {
+                deg[(i, i)] = 1.0 / row_sum;
+            } else {
+                dangling[i] = true;
+            }
+        }
+
+        // 个性化向量：命中的节点带权重，其余为 0（和为 1）
+        let mut p = vec![0.0f64; n];
+        let total: f64 = personalization.values().sum();
+        if total > 1e-15 {
+            for (id, w) in personalization {
+                if let Some(&idx) = self.node_map.get(id) {
+                    p[idx.index()] = w / total;
+                }
+            }
+        } else {
+            // 空个性化 → 均匀分布（退化为标准 PageRank）
+            for v in p.iter_mut() {
+                *v = 1.0 / n as f64;
+            }
+        }
+
+        let transition = &deg * &adj;
+        let mut rank: DMatrix<f64> = DMatrix::from_column_slice(n, 1, &p);
+
+        for _ in 0..iterations {
+            let dangling_mass: f64 = (0..n)
+                .filter(|&i| dangling[i])
+                .map(|i| rank[(i, 0)])
+                .sum();
+
+            // 修复 R-D6：推模型取转置（与 pagerank() 一致）
+            let propagated = transition.transpose() * &rank;
+            let mut new_rank = propagated * alpha;
+            for i in 0..n {
+                new_rank[(i, 0)] += alpha * dangling_mass / n as f64 + (1.0 - alpha) * p[i];
+            }
+
+            let max_diff: f64 = (0..n).map(|i| (new_rank[(i, 0)] - rank[(i, 0)]).abs()).fold(0.0, f64::max);
+            rank = new_rank;
+            if max_diff < 1e-6 {
+                break;
+            }
         }
 
         let mut result = HashMap::new();
@@ -295,15 +400,18 @@ impl KnowledgeGraph {
     }
 
     /// 度中心性
+    ///
+    /// 修复 R-D4：此前除以 2(n-1)（把无向图当双向计算），与 Node 层 F2 语义不一致。
+    /// 统一为 C_D(v) = deg(v)/(N-1)，deg = 入度+出度（无向度语义，与 Node 层一致）。
     pub fn degree_centrality(&self) -> HashMap<String, f64> {
         let n = self.node_count() as f64;
         let mut result = HashMap::new();
-        
+
         for (id, idx) in &self.node_map {
             let in_degree = self.graph.edges_directed(*idx, petgraph::Direction::Incoming).count() as f64;
             let out_degree = self.graph.edges_directed(*idx, petgraph::Direction::Outgoing).count() as f64;
             if n > 1.0 {
-                result.insert(id.clone(), (in_degree + out_degree) / (2.0 * (n - 1.0)));
+                result.insert(id.clone(), (in_degree + out_degree) / (n - 1.0));
             } else {
                 result.insert(id.clone(), 0.0);
             }
@@ -311,19 +419,97 @@ impl KnowledgeGraph {
         result
     }
 
-    /// 接近中心性
-    pub fn closeness_centrality(&self) -> HashMap<String, f64> {
-        let mut result = HashMap::new();
-        let n = self.node_count() as f64;
-        
-        for (id, idx) in &self.node_map {
-            let distances = dijkstra(&self.graph, *idx, None, |e| *e.weight());
-            let total_distance: f64 = distances.values().sum();
-            if total_distance > 1e-15 && n > 1.0 {
-                result.insert(id.clone(), (n - 1.0) / total_distance);
-            } else {
+    /// 介数中心性（Brandes 2001，有向图版）
+    ///
+    /// 修复 R-D1：此前 centrality_metrics() 中该指标为空占位符（HashMap::new()）。
+    /// C_B(v) = Σ_{s≠v≠t} σ_st(v)/σ_st，BFS 最短路计数 + 反向依赖累积，
+    /// 归一化除以 (N-1)(N-2)（有向）。
+    pub fn betweenness_centrality(&self) -> HashMap<String, f64> {
+        let n = self.node_count();
+        let mut cb = vec![0.0f64; n];
+        if n < 3 {
+            let mut result = HashMap::new();
+            for id in self.node_map.keys() {
                 result.insert(id.clone(), 0.0);
             }
+            return result;
+        }
+
+        // 邻接表（有向）
+        let mut adj: Vec<Vec<usize>> = vec![Vec::new(); n];
+        for edge in self.graph.edge_references() {
+            adj[edge.source().index()].push(edge.target().index());
+        }
+
+        for s in 0..n {
+            // BFS 最短路计数
+            let mut dist = vec![-1i64; n];
+            let mut sigma = vec![0.0f64; n];
+            let mut preds: Vec<Vec<usize>> = vec![Vec::new(); n];
+            let mut order: Vec<usize> = Vec::with_capacity(n);
+            let mut queue = std::collections::VecDeque::new();
+
+            dist[s] = 0;
+            sigma[s] = 1.0;
+            queue.push_back(s);
+
+            while let Some(v) = queue.pop_front() {
+                order.push(v);
+                for &w in &adj[v] {
+                    if dist[w] < 0 {
+                        dist[w] = dist[v] + 1;
+                        queue.push_back(w);
+                    }
+                    if dist[w] == dist[v] + 1 {
+                        sigma[w] += sigma[v];
+                        preds[w].push(v);
+                    }
+                }
+            }
+
+            // 反向累积依赖（δ）
+            let mut delta = vec![0.0f64; n];
+            for &w in order.iter().rev() {
+                for &v in &preds[w] {
+                    delta[v] += (sigma[v] / sigma[w]) * (1.0 + delta[w]);
+                }
+                if w != s {
+                    cb[w] += delta[w];
+                }
+            }
+        }
+
+        // 归一化：(N-1)(N-2)
+        let norm = ((n - 1) * (n - 2)) as f64;
+        let mut result = HashMap::new();
+        for (id, idx) in &self.node_map {
+            result.insert(id.clone(), cb[idx.index()] / norm);
+        }
+        result
+    }
+
+    /// 紧密中心性（harmonic 版本，对不可达节点稳健）
+    ///
+    /// 修复 R-D5：此前用经典公式 (n-1)/Σd，存在不可达节点时结果偏大（分母漏掉 ∞ 项）。
+    /// 统一为 harmonic：C_C(v) = (Σ_{u≠v} 1/d(v,u))/(N-1)，不可达贡献 0（与 Node 层 F5 一致）。
+    pub fn closeness_centrality(&self) -> HashMap<String, f64> {
+        let mut result = HashMap::new();
+        let n = self.node_count();
+
+        for (id, idx) in &self.node_map {
+            let distances = dijkstra(&self.graph, *idx, None, |e| *e.weight());
+            let mut harmonic = 0.0f64;
+            for (other, &d) in &distances {
+                if *other != *idx && d > 0.0 {
+                    harmonic += 1.0 / d;
+                }
+            }
+            let value = if n > 1 {
+                harmonic / (n as f64 - 1.0)
+            } else {
+                0.0
+            };
+            result.insert(id.clone(), value);
         }
         result
     }
@@ -332,7 +518,7 @@ impl KnowledgeGraph {
     pub fn centrality_metrics(&self) -> CentralityMetrics {
         CentralityMetrics {
             degree_centrality: self.degree_centrality(),
-            betweenness_centrality: HashMap::new(),
+            betweenness_centrality: self.betweenness_centrality(),
             pagerank: self.pagerank(20),
             closeness_centrality: self.closeness_centrality(),
         }
@@ -388,61 +574,155 @@ impl KnowledgeGraph {
         }
     }
 
-    /// 标签传播社区发现算法
+    /// 社区发现：模块度贪心凝聚（CNM / Clauset-Newman-Moore 简化版）
+    ///
+    /// 修复 R-D3：此前用标签传播（LPA）存在两类缺陷：
+    ///   1. 平局时 HashMap 迭代顺序随机 → 结果不可复现；
+    ///   2. 标签吞并：双团+桥图坍缩为 1 社区（与 Node 层 D6/D9 同源缺陷）。
+    /// CNM：初始每节点一社区，反复合并 ΔQ 最大的相邻社区对，直到无正增益。
+    ///   ΔQ(A,B) = e_cross(A,B)/m − d_A·d_B/(2m²)
+    /// 确定性：平局取 (社区A, 社区B) 字典序最小的对。
+    /// iterations 参数保留以兼容旧 API（仅作迭代上限保护，实际由增益收敛决定）。
     pub fn detect_communities(&self, iterations: usize) -> Vec<Community> {
         let n = self.node_count();
         if n == 0 {
             return Vec::new();
         }
 
-        let mut labels: HashMap<NodeIndex, usize> = HashMap::new();
-        let indices: Vec<NodeIndex> = self.node_map.values().copied().collect();
-        
-        for (i, &idx) in indices.iter().enumerate() {
-            labels.insert(idx, i);
+        // 无向边集（合并方向、去重、跳过自环）
+        let mut edge_set: HashSet<(usize, usize)> = HashSet::new();
+        for edge in self.graph.edge_references() {
+            let s = edge.source().index();
+            let t = edge.target().index();
+            if s != t {
+                edge_set.insert((s.min(t), s.max(t)));
+            }
+        }
+        let m = edge_set.len();
+        if m == 0 {
+            // 无边：每个节点自成社区
+            let mut communities = Vec::new();
+            for (i, id) in self.node_map.keys().enumerate() {
+                communities.push(Community {
+                    id: i,
+                    nodes: vec![id.clone()],
+                    density: 0.0,
+                    label: format!("社区 {}", i),
+                });
+            }
+            return communities;
         }
 
-        for _ in 0..iterations {
-            let mut new_labels = labels.clone();
-            
-            for &idx in &indices {
-                let mut label_counts: HashMap<usize, f64> = HashMap::new();
-                
-                for edge in self.graph.edges_directed(idx, petgraph::Direction::Incoming) {
-                    let neighbor = edge.source();
-                    let weight = *edge.weight();
-                    *label_counts.entry(*labels.get(&neighbor).unwrap_or(&0)).or_insert(0.0) += weight;
+        // 度数（无向语义：每条 RAW 边对两端各贡献 1）
+        let mut degree = vec![0usize; n];
+        for &(s, t) in &edge_set {
+            degree[s] += 1;
+            degree[t] += 1;
+        }
+
+        // 社区状态
+        let mut comm_of: Vec<usize> = (0..n).collect(); // 节点 → 社区 id（初始自身）
+        let mut comm_members: Vec<Option<Vec<usize>>> = (0..n).map(|i| Some(vec![i])).collect();
+        let mut comm_degree = degree.clone();
+        let mut comm_alive: Vec<bool> = (0..n).map(|_| true).collect();
+
+        // 社区间跨边计数：key (a<b)
+        let mut cross: HashMap<(usize, usize), usize> = HashMap::new();
+        for &(s, t) in &edge_set {
+            // 初始每节点一社区，s≠t 必跨社区
+            *cross.entry((s.min(t), s.max(t))).or_insert(0) += 1;
+        }
+
+        // 贪心合并循环（上限保护：n 次合并足够收敛）
+        let max_merges = if iterations == 0 { n } else { iterations.min(n * n) };
+        let mut merges = 0;
+        loop {
+            if merges >= max_merges {
+                break;
+            }
+            // 找 ΔQ 最大的相邻社区对（确定性：平局取字典序最小）
+            let mut candidates: Vec<((usize, usize), f64)> = Vec::new();
+            for (&(a, b), &cnt) in &cross {
+                if cnt == 0 || !comm_alive[a] || !comm_alive[b] {
+                    continue;
                 }
-                for edge in self.graph.edges_directed(idx, petgraph::Direction::Outgoing) {
-                    let neighbor = edge.target();
-                    let weight = *edge.weight();
-                    *label_counts.entry(*labels.get(&neighbor).unwrap_or(&0)).or_insert(0.0) += weight;
-                }
-                
-                if let Some((&best_label, _)) = label_counts.iter().max_by(|a, b| a.1.partial_cmp(b.1).unwrap()) {
-                    new_labels.insert(idx, best_label);
+                let gain = cnt as f64 / m as f64
+                    - (comm_degree[a] as f64 * comm_degree[b] as f64) / (2.0 * m as f64 * m as f64);
+                candidates.push(((a, b), gain));
+            }
+            if candidates.is_empty() {
+                break;
+            }
+            candidates.sort_by(|x, y| {
+                y.1.partial_cmp(&x.1).unwrap().then(x.0.cmp(&y.0))
+            });
+            let ((a, b), gain) = candidates[0];
+            if gain <= 1e-12 {
+                break; // 无正增益 → 收敛
+            }
+
+            // 合并 b 入 a（保小 id）
+            let members_b = comm_members[b].clone().unwrap_or_default();
+            for &node in &members_b {
+                comm_of[node] = a;
+                if let Some(members) = &mut comm_members[a] {
+                    members.push(node);
                 }
             }
-            
-            labels = new_labels;
+            comm_degree[a] += comm_degree[b];
+            comm_members[b] = None;
+            comm_alive[b] = false;
+            merges += 1;
+
+            // 更新跨边：b 的所有跨边转入 a
+            let keys: Vec<(usize, usize)> = cross.keys().copied().collect();
+            for key in keys {
+                let (x, y) = key;
+                if x != b && y != b {
+                    continue;
+                }
+                let cnt = cross.remove(&key).unwrap_or(0);
+                if cnt == 0 {
+                    continue;
+                }
+                let other = if x == b { y } else { x };
+                if other == a || !comm_alive[other] {
+                    continue; // a-b 间跨边随合并消失
+                }
+                let nk = (a.min(other), a.max(other));
+                *cross.entry(nk).or_insert(0) += cnt;
+            }
         }
 
-        let mut communities_map: HashMap<usize, Vec<String>> = HashMap::new();
-        for (&idx, &label) in &labels {
-            communities_map
-                .entry(label)
-                .or_default()
-                .push(self.graph[idx].id.clone());
+        // 聚合输出：按规模降序
+        let mut groups: Vec<(usize, Vec<String>)> = Vec::new();
+        for i in 0..n {
+            if !comm_alive[i] {
+                continue;
+            }
+            if let Some(Some(members)) = comm_members.get(i).map(|m| m.as_ref()) {
+                let ids: Vec<String> = members
+                    .iter()
+                    .map(|&node| self.graph[NodeIndex::new(node)].id.clone())
+                    .collect();
+                groups.push((i, ids));
+            }
         }
+        groups.sort_by(|x, y| y.1.len().cmp(&x.1.len()).then(x.0.cmp(&y.0)));
 
         let mut communities = Vec::new();
-        for (i, (_, nodes)) in communities_map.into_iter().enumerate() {
+        for (i, (_, nodes)) in groups.into_iter().enumerate() {
+            // 社区密度：内部边 / 最大可能边
             let density = if nodes.len() > 1 {
                 let mut internal_edges = 0;
                 for (j, n1) in nodes.iter().enumerate() {
                     for n2 in nodes.iter().skip(j + 1) {
-                        if let (Some(idx1), Some(idx2)) = (self.node_map.get(n1.as_str()), self.node_map.get(n2.as_str())) {
-                            if self.graph.find_edge(*idx1, *idx2).is_some() || self.graph.find_edge(*idx2, *idx1).is_some() {
+                        if let (Some(idx1), Some(idx2)) =
+                            (self.node_map.get(n1.as_str()), self.node_map.get(n2.as_str()))
+                        {
+                            if self.graph.find_edge(*idx1, *idx2).is_some()
+                                || self.graph.find_edge(*idx2, *idx1).is_some()
+                            {
                                 internal_edges += 1;
                             }
                         }

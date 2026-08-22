@@ -16,7 +16,6 @@ import io
 import json
 import os
 import re
-import tempfile
 import time
 import traceback
 from typing import Dict, List, Optional
@@ -130,11 +129,14 @@ async def recognize(file: UploadFile = File(...),
 
 
 def _load_bytes_fallback(data: bytes, sr: int):
-    import soundfile as sf
-    import numpy as np
-    buf = io.BytesIO(data)
-    y, _ = sf.read(buf, sr=sr, dtype="float32", always_2d=False)
-    return np.asarray(y, dtype=np.float32), sr
+    """字节 → (y, sr)。复用 pipeline 的加载逻辑：librosa 优先（支持
+    wav/mp3/flac/ogg/m4a 等多格式），失败回退 soundfile（仅 wav/flac）。
+
+    修复：旧实现 sf.read(buf, sr=sr) —— soundfile.read 无 sr 参数，
+    任何上传都会 TypeError → 400/500，且 mp3/m4a 无法解码。
+    """
+    from core.pipeline import load_audio_bytes
+    return load_audio_bytes(data, sr)
 
 
 @app.post("/api/recognize-sample")
@@ -185,9 +187,12 @@ async def recognize_record(audio_b64: str = Form(...),
     return JSONResponse(res)
 
 
-def _jinpu_to_lily(notes: List[Dict], key: Dict, bpm: float) -> str:
-    """把音符序列渲染为可嵌入 Markdown 的简易五线谱（ASCII 近似）与简谱表。"""
-    return ""
+def _safe_path(base_dir: str, fname: str) -> str:
+    """下载端点防路径穿越：拼接后必须仍位于 base_dir 内。"""
+    fpath = os.path.realpath(os.path.join(base_dir, fname))
+    if not fpath.startswith(os.path.realpath(base_dir) + os.sep):
+        raise HTTPException(400, "非法文件名")
+    return fpath
 
 
 @app.post("/api/save-md")
@@ -250,7 +255,7 @@ async def save_md(payload: dict):
 
 @app.get("/api/download/{fname}")
 def download(fname: str):
-    fpath = os.path.join(SAVE_DIR, fname)
+    fpath = _safe_path(SAVE_DIR, fname)
     if not os.path.exists(fpath):
         raise HTTPException(404)
     return FileResponse(fpath, filename=fname, media_type="text/markdown")
@@ -271,14 +276,14 @@ async def export_sheet(payload: dict):
         fname = f"{safe or 'melody'}_标准歌谱_{ts}.{fmt}"
         fpath = os.path.join(SAVE_DIR, fname)
 
+        # 修复：旧版传入 export_score 不存在的 bars_per_row/width_px 参数，
+        # 任何导出请求都会 TypeError → 500。导出参数已由渲染层默认值接管。
         score_sheet.export_score(
             notes=res.get("notes", []),
             key=res.get("key", {"tonic": "C", "mode": "major"}),
             bpm=float(res.get("bpm", 120)),
             output_path=fpath,
             title=title,
-            bars_per_row=int(payload.get("bars_per_row", 4)),
-            width_px=int(payload.get("width_px", 1200)),
         )
         return JSONResponse({"file": fname, "path": fpath})
     except HTTPException:
@@ -290,7 +295,7 @@ async def export_sheet(payload: dict):
 
 @app.get("/api/download-sheet/{fname}")
 def download_sheet(fname: str):
-    fpath = os.path.join(SAVE_DIR, fname)
+    fpath = _safe_path(SAVE_DIR, fname)
     if not os.path.exists(fpath):
         raise HTTPException(404)
     ext = os.path.splitext(fname)[1].lower()

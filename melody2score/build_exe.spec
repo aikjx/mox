@@ -29,9 +29,15 @@ datas = [
 from PyInstaller.building.build_main import Tree  # noqa: E402
 
 audio_tree = Tree(os.path.join(ROOT, "audio"), prefix="audio")
-# Tree 元素为 (dest, src[, typecode])；datas 要求 (src, dest_dir)，
-# 故逆序取前两项（PyInstaller 6.22 起元素含 typecode 第三项）
-datas += [(src, dest) for dest, src, *_ in audio_tree]
+# Tree 元素为 (dest, src, typecode)：
+#   dest = 包内相对路径（如 "audio/m00_xxx.wav"）
+#   src  = 源文件绝对路径
+# datas 元素为 (src, dest_dir)：把 src 文件拷入 dest_dir 目录（保留文件名）。
+# 旧版误写 (src, dest)——把目标文件路径当目标目录，COLLECT 为每个 wav
+# 创建了同名【目录】再往里塞文件 → 发行版样例全部不可用（P0 缺陷）。
+# 正确转换：目标目录 = dest 去掉文件名（对嵌套子目录同样成立）。
+datas += [(src, os.path.dirname(dest) or ".")
+          for dest, src, *_ in audio_tree]
 
 a = Analysis(
     [os.path.join(ROOT, "app", "gui.py")],

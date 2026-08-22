@@ -31,6 +31,8 @@ function writeJSON(file, data) {
   }
 }
 
+// 意图识别模式（A16 修复：单一真相源——expert-alliance-engine.classifyIntent 亦引用此表，
+// 此前两处各维护一份且已发生关键词漂移，现统一由本模块导出）
 const INTENT_PATTERNS = [
   { intent: 'algorithm', keywords: ['算法', '复杂度', '排序', '搜索', '动态规划', '贪心', '回溯', '分治', '递归', '时间复杂度', '空间复杂度', 'O(n)', 'O(log n)', '优化算法'] },
   { intent: 'architecture', keywords: ['架构', '系统设计', '微服务', '分布式', '高可用', '负载均衡', '服务治理', 'SOA', 'DDD', '分层架构', '组件图'] },
@@ -327,9 +329,6 @@ class ExpertAlliance {
   }
 
   _scoreExperts(candidates, question, options = {}) {
-    const gateway = getGateway();
-    const hasLLM = gateway && gateway.activeProvider;
-
     return candidates
       .map(({ expert, matchScore, matchReasons }) => {
         const stats = this.expertStats.get(expert.id) || {};
@@ -521,7 +520,7 @@ class ExpertAlliance {
     history.forEach(round => {
       round.results.forEach(r => {
         if (r.success) {
-          allResponses.push({ expert: r.expert.name, response: r.response });
+          allResponses.push({ expert: r.expert.name, response: r.response, confidence: r.confidence || 0.6 });
         }
       });
     });
@@ -543,25 +542,78 @@ ${this._generateFinalRecommendation(allResponses)}
 ${allResponses.map(r => `- **${r.expert}**: 提供了专业分析`).join('\n')}`;
   }
 
+  // 辩论共识提取（A20 修复）：基于各专家实际响应文本的关键词频率提取共性主题，
+  // 替换原硬编码模板（"算子系统公理"等静态话术与实际辩论内容无关）。
+  _keywordsOf(text) {
+    // 中文分词：连续汉字段提取 2~3 字滑窗 n-gram（与 expert-alliance-engine._keywords 一致）。
+    // 原机械 [一-龥]{2,4} 匹配会把 "微服务架构" 切成 "微服务架"，导致共识词永不命中。
+    const stop = new Set(['的', '了', '和', '与', '是', '在', '我们', '可以', '需要', '建议', '应该', '一种', '通过', '进行', '以及', '或者', 'the', 'a', 'to', 'of', 'and', 'is', '系统', '方案', '问题', '分析', '采用', '引入', '保证', '优先', '解决']);
+    const out = new Set();
+    const segments = String(text || '').match(/[一-龥]+|[a-zA-Z]{3,}/g) || [];
+    for (const seg of segments) {
+      if (/[a-zA-Z]/.test(seg)) {
+        if (!stop.has(seg.toLowerCase())) out.add(seg.toLowerCase());
+        continue;
+      }
+      for (let size = 2; size <= 3; size++) {
+        for (let i = 0; i + size <= seg.length; i++) {
+          const w = seg.slice(i, i + size);
+          if (!stop.has(w)) out.add(w);
+        }
+      }
+    }
+    return out;
+  }
+
   _extractConsensus(responses) {
     if (!responses.length) return '暂无足够数据形成共识。';
-    const commonPoints = [];
-    commonPoints.push('系统需要遵循算子系统的六条数学公理');
-    commonPoints.push('架构设计应采用分层解耦原则');
-    commonPoints.push('数据安全和系统稳定性是首要考量');
-    commonPoints.push('建议采用渐进式实施策略，分阶段验证和推广');
-    return commonPoints.map((p, i) => `${i + 1}. ${p}`).join('\n');
+    // 统计跨专家出现 ≥ 半数的共性关键词，作为真实共识主题
+    const wordSets = responses.map(r => this._keywordsOf(r.response));
+    const freq = new Map();
+    wordSets.forEach(ws => ws.forEach(w => freq.set(w, (freq.get(w) || 0) + 1)));
+    const threshold = Math.max(2, Math.ceil(responses.length / 2));
+    const topics = [...freq.entries()]
+      .filter(([, c]) => c >= threshold)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([w]) => w);
+    if (!topics.length) {
+      return `各专家表述侧重不同，未提取到跨多数（≥${threshold} 位）的显式共性关键词，建议以置信度最高专家意见为主参考。`;
+    }
+    return topics.map((t, i) => `${i + 1}. 多数专家（≥${threshold} 位）共同关注：${t}`).join('\n');
   }
 
   _extractDivergences(responses) {
-    return '不同专家可能在技术选型、优先级排序、实施路径等方面存在差异。建议根据具体场景综合权衡，可参考各专家的详细分析。';
+    if (responses.length < 2) return '参与专家不足两位，无分歧可析。';
+    // 计算两两关键词 Jaccard 相似度，最低的一对即主要分歧
+    const wordSets = responses.map(r => this._keywordsOf(r.response));
+    let minSim = 1;
+    let minPair = [0, 1];
+    for (let i = 0; i < responses.length; i++) {
+      for (let j = i + 1; j < responses.length; j++) {
+        const a = wordSets[i], b = wordSets[j];
+        const inter = [...a].filter(w => b.has(w)).length;
+        const union = new Set([...a, ...b]).size || 1;
+        const sim = inter / union;
+        if (sim < minSim) { minSim = sim; minPair = [i, j]; }
+      }
+    }
+    const [x, y] = minPair;
+    const onlyX = [...wordSets[x]].filter(w => !wordSets[y].has(w)).slice(0, 3);
+    const onlyY = [...wordSets[y]].filter(w => !wordSets[x].has(w)).slice(0, 3);
+    const parts = [`${responses[x].expert} 与 ${responses[y].expert} 观点重合度最低（Jaccard=${Math.round(minSim * 100)}/100）`];
+    if (onlyX.length) parts.push(`${responses[x].expert} 独有关键词：${onlyX.join('、')}`);
+    if (onlyY.length) parts.push(`${responses[y].expert} 独有关键词：${onlyY.join('、')}`);
+    return parts.join('；');
   }
 
   _generateFinalRecommendation(responses) {
-    return `1. **立即行动**：在单一模块进行概念验证（PoC），验证方案可行性
-2. **治理评估**：通过璇玑全维治理框架进行多维度评估
-3. **逐步推广**：验证通过后，逐步推广到更多模块
-4. **持续优化**：建立监控和反馈机制，持续迭代优化`;
+    if (!responses.length) return '暂无可参考的专家意见。';
+    const topConf = responses.reduce((a, b) => ((b.confidence || 0.6) >= (a.confidence || 0.6) ? b : a));
+    return `1. **优先采纳**：置信度最高的 ${topConf.expert}（${topConf.confidence || 0.6}）意见作为主方案
+2. **交叉验证**：以其余 ${responses.length - 1} 位专家意见中的共性主题（见"核心共识"）做交叉印证
+3. **分歧裁决**：对"分歧观点"中列出的独有关键词，结合具体业务场景权衡取舍
+4. **落地节奏**：先在单点验证，再依据 ${responses.length} 位专家共同识别的风险控制点逐步推广`;
   }
 
   // ==================== 算法联盟集成 ====================
@@ -575,7 +627,7 @@ ${allResponses.map(r => `- **${r.expert}**: 提供了专业分析`).join('\n')}`
       if (!expert) continue;
 
       if (expert.type === 'graph' && graphData) {
-        analysisResults.graph = this._performGraphAnalysis(graphData, options);
+        analysisResults.graph = await this._performGraphAnalysis(graphData, options);
       }
 
       if (expert.type === 'algorithm') {
@@ -627,7 +679,7 @@ ${allResponses.map(r => `- **${r.expert}**: 提供了专业分析`).join('\n')}`
     return experts;
   }
 
-  _performGraphAnalysis(graphData, options = {}) {
+  async _performGraphAnalysis(graphData, options = {}) {
     const nodes = graphData?.nodes || [];
     const edges = graphData?.edges || [];
     const n = nodes.length;
@@ -645,7 +697,7 @@ ${allResponses.map(r => `- **${r.expert}**: 提供了专业分析`).join('\n')}`
     const isolatedNodes = degrees.filter(d => d === 0).length;
     const density = n > 1 ? (2 * edges.length) / (n * (n - 1)) : 0;
 
-    const pagerank = this._computePageRank(nodes, edges, options.damping || 0.85, options.iterations || 50);
+    const pagerank = await this._computePageRank(nodes, edges, options.damping || 0.85, options.iterations || 50);
     const topNodes = pagerank.slice(0, 10).map((p, i) => ({
       rank: i + 1,
       id: p.id,
@@ -666,44 +718,15 @@ ${allResponses.map(r => `- **${r.expert}**: 提供了专业分析`).join('\n')}`
     };
   }
 
-  _computePageRank(nodes, edges, damping = 0.85, iterations = 50) {
-    const n = nodes.length;
-    if (n === 0) return [];
-
-    const nodeIds = nodes.map(nd => nd.id);
-    const idToIdx = new Map(nodeIds.map((id, i) => [id, i]));
-    const adjList = new Array(n).fill(null).map(() => []);
-
-    edges.forEach(e => {
-      const src = idToIdx.get(e.source);
-      const tgt = idToIdx.get(e.target);
-      if (src !== undefined && tgt !== undefined) {
-        adjList[src].push(tgt);
-      }
-    });
-
-    const outDegree = adjList.map(adj => adj.length);
-    let rank = new Array(n).fill(1 / n);
-
-    for (let iter = 0; iter < iterations; iter++) {
-      const newRank = new Array(n).fill((1 - damping) / n);
-      for (let i = 0; i < n; i++) {
-        if (outDegree[i] === 0) {
-          for (let j = 0; j < n; j++) {
-            newRank[j] += damping * rank[i] / n;
-          }
-        } else {
-          for (const j of adjList[i]) {
-            newRank[j] += damping * rank[i] / outDegree[i];
-          }
-        }
-      }
-      rank = newRank;
-    }
-
-    const total = rank.reduce((a, b) => a + b, 0);
-    return nodeIds.map((id, i) => ({ id, pagerank: total > 0 ? rank[i] / total : 0 }))
-      .sort((a, b) => b.pagerank - a.pagerank);
+  async _computePageRank(nodes, edges, damping = 0.85, iterations = 50) {
+    // 归一化收口（A18 修复）：委托 ai-engine 单源 PageRank
+    // （其内部再委托 ai-integration-engine 统一实现：边权重/收敛容差/悬挂节点处理），
+    // 消除联盟层 40 行无收敛检测的重复实现。
+    // 延迟 require：ai-integration-engine 顶层依赖本模块，顶层互相 require 会形成循环。
+    const { getAIEngine } = require('./ai-engine');
+    const { getGateway } = require('./llm-gateway');
+    const engine = getAIEngine(getGateway());
+    return engine._computePageRank(nodes, edges, damping, iterations);
   }
 
   _performAlgorithmAnalysis(question, options = {}) {
@@ -1225,4 +1248,4 @@ function getAlliance() {
   return allianceInstance;
 }
 
-module.exports = { ExpertAlliance, getAlliance };
+module.exports = { ExpertAlliance, getAlliance, INTENT_PATTERNS };

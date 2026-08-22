@@ -17,6 +17,7 @@ const { getWebSearchService } = require('./web-search-service');
 const { getInfiniteOptimizer } = require('./infinite-dimension-optimizer');
 const { getLocalArtifactService } = require('./local-artifact-service');
 const { getAIEngineCore } = require('./ai-engine-core');
+const { getAutoDevEngine } = require('./auto-dev-engine');
 const { getSecurityManager } = require('./security');
 const { config, DATA_DIR } = require('./config');
 const { uid } = require('./utils');
@@ -4896,7 +4897,7 @@ ${document}
   });
 
   // ===== AI引擎统一编排核心路由（归一化入口） =====
-  // POST /ai/engine/process —— 统一入口：意图识别 → 能力路由 → 执行 → 校验 → 反馈
+  // POST /ai/engine/process —— 统一入口：意图识别（图谱激活扩散） → 能力路由 → 执行 → 校验 → 反馈
   reg('post', '/ai/engine/process', async (req, res) => {
     const body = await readBody(req);
     try {
@@ -4906,6 +4907,63 @@ ${document}
       console.error('[engine-core-process]', e);
       fail(res, 400, e.message);
     }
+  });
+
+  // GET /ai/engine/flow-graph —— AI 流程图谱（业务流程+算法流程统一建模于图谱引擎）
+  reg('get', '/ai/engine/flow-graph', (req, res) => {
+    try {
+      ok(res, engineCore.flowGraph.toVisFormat());
+    } catch (e) {
+      console.error('[engine-flow-graph]', e);
+      fail(res, 500, '获取流程图谱失败: ' + e.message);
+    }
+  });
+
+  // ===== 自动开发引擎路由（需求 → 业务架构图谱 → 代码 → 预览） =====
+  const autoDevEngine = getAutoDevEngine();
+
+  // POST /ai/engine/auto-dev —— 一句话需求全自动开发（架构图谱→代码渲染→落盘）
+  reg('post', '/ai/engine/auto-dev', async (req, res) => {
+    const body = await readBody(req);
+    if (!body.requirement) {
+      fail(res, 400, '缺少 requirement 参数（例如：开发一个企业官网）');
+      return;
+    }
+    try {
+      const result = await autoDevEngine.develop(body);
+      appendLog({ type: 'auto-dev', msg: 'develop complete', project: result.project, files: result.files.length });
+      ok(res, result);
+    } catch (e) {
+      console.error('[auto-dev]', e);
+      appendLog({ type: 'auto-dev', msg: 'develop failed', error: e.message });
+      fail(res, 500, '自动开发失败: ' + e.message);
+    }
+  });
+
+  // GET /ai/engine/auto-dev/projects —— 已生成项目列表
+  reg('get', '/ai/engine/auto-dev/projects', (req, res) => {
+    try {
+      ok(res, autoDevEngine.listProjects());
+    } catch (e) {
+      fail(res, 500, '获取项目列表失败: ' + e.message);
+    }
+  });
+
+  // GET /ai/engine/auto-dev/preview/:project/:file —— 生成站点在线预览（安全静态服务）
+  reg('get', '/ai/engine/auto-dev/preview/:project/:file', async (req, res, params) => {
+    const rel = `${params.project}/${params.file}`;
+    const result = artifactService.readFileSafe(rel);
+    if (!result.ok) {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Not Found: ' + result.reason);
+      return;
+    }
+    res.writeHead(200, {
+      'Content-Type': result.content_type,
+      'Cache-Control': 'no-store',
+      'X-Content-Type-Options': 'nosniff'
+    });
+    res.end(result.content);
   });
 
   // POST /ai/engine/analyze —— 显式能力执行（跳过意图识别，可预测）

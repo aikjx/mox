@@ -33,6 +33,13 @@ from core.paths import resource_path
 from core import capture, score_sheet
 
 app = FastAPI(title="Melody2Score 企业级转谱引擎", version="2.0.0")
+# 关闭 pydantic 对 model_ 前缀的命名空间保护警告（与 webui.py 一致：
+# API 使用 model_size 参数名，FastAPI 生成的 Body_ 模型会触发 UserWarning）
+try:
+    from pydantic import BaseModel
+    BaseModel.model_config = {"protected_namespaces": ()}  # type: ignore
+except Exception:
+    pass
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -142,9 +149,10 @@ def _notes_to_vexflow(notes: List[Dict], key: Dict, bpm: float,
         dur = float(n.get("dur", 0.25))
         beats = max(0.125, dur / beat_dur)
 
-        # 时值映射
+        # 时值映射（3.0 拍=附点二分 "hd"——旧版映射为 "h" 丢失附点，
+        # 演示端时值被压短 1/4 拍）
         dur_map = [
-            (4.0, "w"), (3.0, "h"), (2.0, "h"), (1.5, "hd"),
+            (4.0, "w"), (3.0, "hd"), (2.0, "h"), (1.5, "hd"),
             (1.0, "q"), (0.75, "qd"), (0.5, "8"), (0.25, "16"), (0.125, "32")
         ]
         note_dur = "q"
@@ -218,8 +226,22 @@ def list_samples():
 
 @app.get("/api/melody2score/sample-audio")
 def get_sample_audio(file: str = Query(...)):
-    """获取内置样例音频文件。"""
-    fpath = resource_path("audio", file)
+    """获取内置样例音频文件。
+
+    契约：file 直接接受 /samples 返回的 manifest 原始值（形如
+    "audio/m00_instrument_piano.wav"，旧版直接拼接产生 audio/audio/ 双重
+    前缀 → 必然 404）。此处先剥离已知 "audio/" 前缀再拼接。
+
+    安全校验：剥离的是固定字面量前缀，随后 realpath 包含性校验照常生效
+    （禁止 ../ 或 ..\\ 路径穿越读取任意文件）。
+    """
+    audio_root = os.path.realpath(resource_path("audio"))
+    rel = file.replace("\\", "/")
+    if rel.startswith("audio/"):
+        rel = rel[len("audio/"):]
+    fpath = os.path.realpath(os.path.join(audio_root, rel))
+    if not fpath.startswith(audio_root + os.sep):
+        raise HTTPException(400, "非法样例路径")
     if not os.path.exists(fpath):
         raise HTTPException(404, f"样例音频不存在: {file}")
     return FileResponse(fpath, media_type="audio/wav",
@@ -407,7 +429,11 @@ async def save_report(payload: dict):
 
 @app.get("/api/melody2score/download/{fname:path}")
 def download(fname: str):
-    fpath = os.path.join(SAVE_DIR, fname)
+    """下载导出产物。安全校验：解析后路径必须位于 SAVE_DIR 内（防路径穿越）。"""
+    save_root = os.path.realpath(SAVE_DIR)
+    fpath = os.path.realpath(os.path.join(save_root, fname))
+    if not fpath.startswith(save_root + os.sep):
+        raise HTTPException(400, "非法文件名")
     if not os.path.exists(fpath):
         raise HTTPException(404)
     ext = os.path.splitext(fname)[1].lower()

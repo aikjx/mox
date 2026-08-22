@@ -46,24 +46,9 @@ function appendTrace(trace) {
   }
 }
 
-// 意图识别模式（与 expert-alliance 的 INTENT_PATTERNS 同源，集中于此避免散落）
-const INTENT_PATTERNS = [
-  { intent: 'algorithm', keywords: ['算法', '复杂度', '排序', '搜索', '动态规划', '贪心', '回溯', '分治', '递归', '优化算法'] },
-  { intent: 'architecture', keywords: ['架构', '系统设计', '微服务', '分布式', '高可用', '负载均衡', 'DDD'] },
-  { intent: 'data', keywords: ['数据建模', '数据库', 'ETL', '数据仓库', '数据治理', '主数据'] },
-  { intent: 'ai', keywords: ['机器学习', '深度学习', '大模型', 'LLM', 'RAG', 'Prompt', '微调'] },
-  { intent: 'workflow', keywords: ['BPMN', '工作流', '流程编排', '流程引擎', '活动'] },
-  { intent: 'operator', keywords: ['算子', '状态向量', '守恒律', '代数', '群论', '幺正'] },
-  { intent: 'graph', keywords: ['图', '图谱', '节点', '边', '知识图谱', 'PageRank', '中心性', '社区'] },
-  { intent: 'security', keywords: ['安全', '加密', '认证', '授权', 'RBAC', '审计', '合规', '等保'] },
-  { intent: 'performance', keywords: ['性能', '优化', '瓶颈', '调优', '缓存', '索引', '并发', 'QPS'] },
-  { intent: 'monitor', keywords: ['监控', '告警', '日志', '追踪', 'Metrics', '可观测', 'SLA'] },
-  { intent: 'market', keywords: ['商业', '市场', '用户画像', '推荐', '增长', '变现', '竞品'] },
-  { intent: 'mcp', keywords: ['MCP', '协议', '工具调用', 'Model Context'] },
-  { intent: 'automation', keywords: ['自动化', 'RPA', '智能体', 'Agent', '低代码', '机器人流程'] },
-  { intent: 'requirement', keywords: ['需求', '用例', '用户故事', '需求分析', '验收标准'] },
-  { intent: 'fusion', keywords: ['融合', '璇玑', '治理', '全维', '双十四维', '归一化', '统一'] }
-];
+// 意图识别模式（A16 修复：单一真相源——引用 expert-alliance 导出的完整版 INTENT_PATTERNS，
+// 替换本文件曾维护的删减副本，消除两处关键词漂移导致的路由不一致）
+const { INTENT_PATTERNS } = require('./expert-alliance');
 
 class ExpertAllianceEngine {
   constructor({ alliance, expertGraph, dispatcher, gateway, options = {} } = {}) {
@@ -305,7 +290,7 @@ class ExpertAllianceEngine {
   /**
    * 共识度计算：
    *   - 有效意见数 / 总数
-   *   - 立场一致率：用网关做一次快速聚类，或在无网关时退化为基于长度/关键词重叠的启发式
+   *   - 立场一致率：基于关键词重叠的启发式（网关深度聚敛在 synthesize 阶段完成）
    * 返回 { agreement, validCount, conflict, summary }
    */
   _consensus(results) {
@@ -315,11 +300,6 @@ class ExpertAllianceEngine {
 
     let agreement = 0;
     let conflict = [];
-
-    if (this.gateway && this.gateway.activeProvider) {
-      // 让网关评估各意见一致性（轻量调用）
-      // 为避免额外延迟，这里仅基于关键词重叠做启发式，网关深度聚敛在 synthesize 阶段完成
-    }
 
     // 启发式一致率：以首条有效意见为基准，统计其他意见与其关键词重合度
     if (validCount > 0) {
@@ -352,9 +332,24 @@ class ExpertAllianceEngine {
   }
 
   _keywords(text) {
-    const stop = new Set(['的', '了', '和', '与', '是', '在', '我们', '可以', '需要', '建议', '应该', '一种', '通过', '进行', '以及', '或', 'the', 'a', 'to', 'of', 'and', 'is']);
-    const words = String(text || '').match(/[一-龥]{2,4}|[a-zA-Z]{3,}/g) || [];
-    return new Set(words.filter(w => !stop.has(w)));
+    // 中文 2~3 字滑窗 n-gram（与 expert-alliance._keywordsOf 一致）：
+    // 原机械 [一-龥]{2,4} 匹配会把 "微服务架构" 切成 "微服务架"，共识启发式失效。
+    const stop = new Set(['的', '了', '和', '与', '是', '在', '我们', '可以', '需要', '建议', '应该', '一种', '通过', '进行', '以及', '或者', 'the', 'a', 'to', 'of', 'and', 'is', '系统', '方案', '问题', '分析', '采用', '引入', '保证', '优先', '解决']);
+    const out = new Set();
+    const segments = String(text || '').match(/[一-龥]+|[a-zA-Z]{3,}/g) || [];
+    for (const seg of segments) {
+      if (/[a-zA-Z]/.test(seg)) {
+        if (!stop.has(seg.toLowerCase())) out.add(seg.toLowerCase());
+        continue;
+      }
+      for (let size = 2; size <= 3; size++) {
+        for (let i = 0; i + size <= seg.length; i++) {
+          const w = seg.slice(i, i + size);
+          if (!stop.has(w)) out.add(w);
+        }
+      }
+    }
+    return out;
   }
 
   // ===================== 阶段四：综合合成 =====================
@@ -644,4 +639,4 @@ function getAllianceEngine(deps = {}) {
   return instance;
 }
 
-module.exports = { ExpertAllianceEngine, getAllianceEngine, INTENT_PATTERNS };
+module.exports = { ExpertAllianceEngine, getAllianceEngine };
