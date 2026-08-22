@@ -370,6 +370,7 @@ class ExpertAlliance {
       sessionId: options.sessionId || `sess_${Date.now()}`,
       expertType: expert.type,
       systemPrompt,
+      webSearchContext: options.webSearchContext || null,
       temperature: options.temperature || 0.7,
       maxTokens: options.maxTokens || 2048
     });

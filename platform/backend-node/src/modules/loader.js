@@ -3,6 +3,7 @@
 require('./graph');
 require('./task');
 require('./storage');
+require('./melody2score');
 
 const { listModules, installAll } = require('./index');
 

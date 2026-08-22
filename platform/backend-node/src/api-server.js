@@ -11,7 +11,9 @@ const { getStorage } = require('./storage');
 const { getAIEngine } = require('./ai-engine');
 const { getAIIntegrationEngine } = require('./ai-integration-engine');
 const { getUltimateEngine } = require('./ultimate-ai-engine');
+const { getAllianceEngine } = require('./expert-alliance-engine');
 const { getServiceManager } = require('./service-manager');
+const { getWebSearchService } = require('./web-search-service');
 const { getSecurityManager } = require('./security');
 const { config, DATA_DIR } = require('./config');
 const { uid } = require('./utils');
@@ -20,6 +22,7 @@ const { uid } = require('./utils');
 require('./modules/graph');
 require('./modules/task');
 require('./modules/storage');
+require('./modules/melody2score');
 const modules = require('./modules');
 
 const PORT = config.app.port;
@@ -34,6 +37,7 @@ const aiEngine = getAIEngine(gateway);
 const aiIntegration = getAIIntegrationEngine();
 const ultimateEngine = getUltimateEngine();
 const serviceManager = getServiceManager();
+const webSearchService = getWebSearchService();
 const security = getSecurityManager();
 
 function p(...parts) {
@@ -1106,6 +1110,31 @@ ${seedNodes.length ? '已有种子节点：' + seedNodes.map(n => n.id + '(' + n
     let aiMetadata = null;
     let aiPowered = false;
 
+    // 0. 联网搜索（body.web_search 为真时）：先检索实时信息，再注入 LLM 上下文
+    let webSearchContext = null;
+    let webSearchInfo = null;
+    const wantWebSearch = !!(body.web_search || body.webSearch);
+    if (wantWebSearch && last) {
+      if (webSearchService.isReady()) {
+        try {
+          const searchResult = await webSearchService.search(last);
+          webSearchContext = webSearchService.buildSearchContext(last, searchResult);
+          webSearchInfo = {
+            enabled: true,
+            engine: searchResult.engine_name,
+            query: last,
+            duration_ms: searchResult.duration_ms,
+            sources: searchResult.results.map((r) => ({ title: r.title, url: r.url }))
+          };
+        } catch (e) {
+          console.warn('[ai/chat] web search failed, continuing without it:', e.message);
+          webSearchInfo = { enabled: false, error: e.message };
+        }
+      } else {
+        webSearchInfo = { enabled: false, error: '联网搜索未启用或未完成配置（可在 LLM 配置页设置）' };
+      }
+    }
+
     // 1. 优先尝试专家联盟（指定专家类型时）
     if (body.expertType || body.expert_id) {
       try {
@@ -1113,10 +1142,12 @@ ${seedNodes.length ? '已有种子节点：' + seedNodes.map(n => n.id + '(' + n
         const expertResult = await alliance.consult(expertId, messages, {
           sessionId,
           temperature: body.temperature,
-          maxTokens: body.maxTokens
+          maxTokens: body.maxTokens,
+          webSearchContext
         });
         reply = expertResult.response;
         aiMetadata = { ...(expertResult.metadata || {}), expert: expertResult.expert, ai_powered: true };
+        if (webSearchInfo) aiMetadata.web_search = webSearchInfo;
         aiPowered = true;
         ok(res, { reply, sessionId, expert: expertResult.expert, metadata: aiMetadata });
         return;
@@ -1136,6 +1167,7 @@ ${seedNodes.length ? '已有种子节点：' + seedNodes.map(n => n.id + '(' + n
           sessionId,
           expertType: body.expert_type || body.expertType,
           systemPrompt: body.system_prompt || body.systemPrompt,
+          webSearchContext,
           temperature: body.temperature,
           maxTokens: body.maxTokens
         });
@@ -1148,6 +1180,7 @@ ${seedNodes.length ? '已有种子节点：' + seedNodes.map(n => n.id + '(' + n
           provider: result.provider,
           ai_powered: true
         };
+        if (webSearchInfo) aiMetadata.web_search = webSearchInfo;
       } catch (e) {
         console.warn('[ai/chat] LLM gateway failed, falling back to local:', e.message);
       }
@@ -1174,6 +1207,46 @@ ${seedNodes.length ? '已有种子节点：' + seedNodes.map(n => n.id + '(' + n
     writeJSON('dialogue_sessions.json', sessions);
 
     ok(res, { reply, sessionId, metadata: aiMetadata });
+  });
+
+  // ==================== 联网搜索配置 ====================
+  reg('get', '/web-search/config', async (req, res) => {
+    ok(res, {
+      config: webSearchService.getConfig(),
+      engines: webSearchService.getEngines(),
+      ready: webSearchService.isReady()
+    });
+  });
+
+  reg('post', '/web-search/config', async (req, res) => {
+    const body = await readBody(req);
+    try {
+      const config = webSearchService.updateConfig(body);
+      ok(res, { config, ready: webSearchService.isReady() });
+    } catch (e) {
+      appendLog({ type: 'web-search', msg: 'config update failed', error: e.message });
+      fail(res, 400, '联网搜索配置保存失败: ' + e.message);
+    }
+  });
+
+  reg('post', '/web-search/test', async (req, res) => {
+    const result = await webSearchService.test();
+    appendLog({ type: 'web-search', msg: 'test', success: result.success, message: result.message });
+    ok(res, result);
+  });
+
+  reg('post', '/web-search', async (req, res) => {
+    const body = await readBody(req);
+    if (!body.query || !String(body.query).trim()) {
+      fail(res, 400, '缺少 query 参数');
+      return;
+    }
+    try {
+      const result = await webSearchService.search(body.query);
+      ok(res, result);
+    } catch (e) {
+      fail(res, 500, '搜索失败: ' + e.message);
+    }
   });
 
   function buildAIReply(input) {
@@ -2170,6 +2243,45 @@ ${seedNodes.length ? '已有种子节点：' + seedNodes.map(n => n.id + '(' + n
       );
       appendLog({ type: 'expert', msg: 'algorithm-analysis' });
       ok(res, result);
+    } catch (e) {
+      fail(res, 500, e.message);
+    }
+  });
+
+  // ===== 企业级专家联盟处理引擎 =====
+  reg('post', '/experts/alliance/process', async (req, res) => {
+    const body = await readBody(req);
+    try {
+      const engine = getAllianceEngine();
+      const result = await engine.process(body.question || body.message || '', {
+        teamSize: body.teamSize,
+        enableDebate: body.enableDebate,
+        context: { background: body.background, constraints: body.constraints },
+        feedback: body.feedback
+      });
+      appendLog({ type: 'alliance', msg: 'process', level: result.gate ? result.gate.level : '?' });
+      ok(res, result);
+    } catch (e) {
+      fail(res, 500, e.message);
+    }
+  });
+
+  reg('post', '/experts/alliance/intent', async (req, res) => {
+    const body = await readBody(req);
+    try {
+      const engine = getAllianceEngine();
+      ok(res, engine.classifyIntent(body.question || body.message || ''));
+    } catch (e) {
+      fail(res, 500, e.message);
+    }
+  });
+
+  reg('post', '/experts/alliance/compose', async (req, res) => {
+    const body = await readBody(req);
+    try {
+      const engine = getAllianceEngine();
+      const intent = engine.classifyIntent(body.question || '');
+      ok(res, engine.composeTeam(body.question || '', intent, { teamSize: body.teamSize }));
     } catch (e) {
       fail(res, 500, e.message);
     }
