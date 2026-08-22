@@ -74,6 +74,89 @@ class Graph:
             })
         return out
 
+    # ------------------------------------------------------------------
+    # 导出层：复用 GR-STD-V1.0 规范（与 tools/info-graph 同构），
+    # 用最好的开源工具架构产出「可看 / 可交互」的图谱：
+    #   - Mermaid   : 文档/画布级静态图谱（info-graph export 同构，可被 CI 校验）
+    #   - Cytoscape.js : 交互式网络图（网络图领域事实标准，零后端依赖单 HTML）
+    # ------------------------------------------------------------------
+    # 节点类型 -> 配色（与 tools/info-graph 的 InfoKind::color 保持一致）
+    KIND_COLORS = {
+        "Requirement": "#ffd54f",
+        "Business": "#ffe0b2",
+        "Data": "#b2dfdb",
+        "CodeFile": "#cfd8dc",
+        "Script": "#dcedc8",
+        "Dependency": "#bbdefb",
+        "Function": "#c5cae9",
+        "Interface": "#f8bbd0",
+        "ScheduleTask": "#fff9c4",
+        "Config": "#e1bee7",
+        "ThirdParty": "#ffccbc",
+        "Doc": "#d7ccc8",
+        "Runtime": "#b2ebf2",
+    }
+
+    @staticmethod
+    def _mermaid_id(nid: str) -> str:
+        """Mermaid 节点 id 必须是不含特殊字符的合法标识符。"""
+        import re
+        s = re.sub(r"[^0-9A-Za-z_]", "_", nid)
+        return f"n_{s}" if not s[:1].isalpha() and s[:1] != "_" else s
+
+    def to_mermaid(self) -> str:
+        """导出 Mermaid（graph LR），与 info-graph export --format mermaid 同构。"""
+        lines = ["graph LR"]
+        # classDef（按类型上色）
+        for kind, color in self.KIND_COLORS.items():
+            lines.append(f"    classDef {kind} fill:{color},stroke:#555,stroke-width:1px;")
+        # 节点
+        id_map = {}
+        for nid, n in self.nodes.items():
+            mid = self._mermaid_id(nid)
+            id_map[nid] = mid
+            label = n["name"].replace('"', "'")
+            lines.append(f'    {mid}["{label}"]:::{n["kind"]}')
+        # 边
+        for e in self.edges.values():
+            f = id_map.get(e["from"], self._mermaid_id(e["from"]))
+            t = id_map.get(e["to"], self._mermaid_id(e["to"]))
+            lines.append(f'    {f} -->|{e["kind"]}| {t}')
+        return "\n".join(lines) + "\n"
+
+    def to_cytoscape_html(self, title: str = "旋律转谱领域信息关联图谱") -> str:
+        """导出 Cytoscape.js 交互式网络图（CDN 引入，零后端依赖单 HTML）。"""
+        import json as _json
+        elements = []
+        for n in self.nodes.values():
+            elements.append({
+                "data": {
+                    "id": n["id"],
+                    "label": n["name"],
+                    "kind": n["kind"],
+                    "path": n["path"],
+                    "summary": n["summary"],
+                    "external": n["external"],
+                }
+            })
+        for e in self.edges.values():
+            elements.append({
+                "data": {
+                    "id": e["id"],
+                    "source": e["from"],
+                    "target": e["to"],
+                    "kind": e["kind"],
+                    "label": e["label"],
+                    "evidence": e["evidence"],
+                }
+            })
+        color_map = {k: v for k, v in self.KIND_COLORS.items()}
+        payload = _json.dumps(
+            {"elements": elements, "colors": color_map, "title": title},
+            ensure_ascii=False,
+        )
+        return _CYTOSCAPE_HTML_TEMPLATE.replace("__PAYLOAD__", payload).replace("__TITLE__", title)
+
 
 # ---------------- 扫描 melody2score 代码文件 ----------------
 def scan_code(g: Graph):
@@ -204,16 +287,139 @@ def main():
         g.edge("CodeFile:melody2score/core/pitch.py", "Dependency:librosa",
                "Dependency", "使用pyin", "pitch.PitchDetector 后端 pyin(librosa)", True)
 
-    # 6) 写出
+    # 6) 写出（多格式导出，遵循 GR-STD-V1.0，用最好的开源工具架构）
     out_dir = HERE
-    out_path = os.path.join(out_dir, "melody_infograph.json")
     data = g.to_json()
-    with open(out_path, "w", encoding="utf-8") as f:
+
+    # 6.1) 规范 JSON（可被 tools/info-graph 直接加载 / validate / 合并）
+    out_json = os.path.join(out_dir, "melody_infograph.json")
+    with open(out_json, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-    print(f"已生成旋律领域子图：{out_path}")
-    print(f"  节点 {len(data['nodes'])} 个 / 边 {len(data['edges'])} 条")
+    # 6.2) Mermaid（文档/画布级静态图谱）
+    out_mmd = os.path.join(out_dir, "melody_infograph.mmd")
+    with open(out_mmd, "w", encoding="utf-8") as f:
+        f.write(g.to_mermaid())
+
+    # 6.3) Cytoscape.js 交互式网络图（零后端依赖单 HTML）
+    out_html = os.path.join(out_dir, "melody_infograph.html")
+    with open(out_html, "w", encoding="utf-8") as f:
+        f.write(g.to_cytoscape_html("旋律转谱领域信息关联图谱"))
+
+    print(f"已生成旋律领域子图（多格式导出）：")
+    print(f"  JSON  : {out_json}  （{len(data['nodes'])} 节点 / {len(data['edges'])} 边，符合 GR-STD-V1.0）")
+    print(f"  Mermaid: {out_mmd}")
+    print(f"  HTML  : {out_html}  （Cytoscape.js 交互式，浏览器直接打开）")
     print(f"  识别后端：{backend}  样本数：{len(manifest)}")
+
+
+# ===================== Cytoscape.js 交互式 HTML 模板 =====================
+# 采用网络图领域事实标准 Cytoscape.js（CDN 引入，无需本地依赖/后端），
+# 支持拖拽、缩放、滚轮平移、点击查看节点 summary / 边 evidence。
+_CYTOSCAPE_HTML_TEMPLATE = r"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>__TITLE__</title>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape@3.30.2/dist/cytoscape.min.js"></script>
+<style>
+  html,body{margin:0;height:100%;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#fafafa}
+  #cy{position:absolute;inset:0;left:260px}
+  #panel{position:absolute;top:0;left:0;bottom:0;width:260px;background:#fff;border-right:1px solid #e0e0e0;overflow:auto;padding:12px;box-sizing:border-box}
+  #panel h1{font-size:15px;margin:0 0 8px}
+  #panel .meta{font-size:12px;color:#666;margin-bottom:10px}
+  #panel .legend{font-size:12px;line-height:1.9}
+  #panel .legend i{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:6px;vertical-align:middle}
+  #detail{position:absolute;right:0;bottom:0;max-width:360px;background:#fff;border:1px solid #e0e0e0;border-radius:8px;
+          padding:10px 12px;font-size:12px;color:#333;display:none;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+  #detail h3{margin:0 0 6px;font-size:13px}
+  #detail .k{color:#888}
+</style>
+</head>
+<body>
+<div id="panel">
+  <h1>__TITLE__</h1>
+  <div class="meta" id="meta"></div>
+  <div class="legend" id="legend"></div>
+</div>
+<div id="cy"></div>
+<div id="detail"></div>
+<script>
+const PAYLOAD = __PAYLOAD__;
+const colors = PAYLOAD.colors || {};
+document.getElementById('meta').textContent =
+  PAYLOAD.elements.filter(e=>e.data.source===undefined).length + ' 节点 / ' +
+  PAYLOAD.elements.filter(e=>e.data.source!==undefined).length + ' 边';
+const legend = document.getElementById('legend');
+Object.keys(colors).forEach(k=>{
+  const d=document.createElement('div');
+  d.innerHTML='<i style="background:'+colors[k]+'"></i>'+k;
+  legend.appendChild(d);
+});
+const cy = cytoscape({
+  container: document.getElementById('cy'),
+  elements: PAYLOAD.elements,
+  style: [
+    { selector: 'node',
+      style: {
+        'background-color': ele => colors[ele.data('kind')] || '#cfd8dc',
+        'label': 'data(label)',
+        'color': '#222',
+        'font-size': 9,
+        'text-valign': 'center',
+        'text-halign': 'center',
+        'text-wrap': 'wrap',
+        'text-max-width': 90,
+        'width': 22, 'height': 22,
+        'border-width': 1, 'border-color': '#888'
+      }
+    },
+    { selector: 'edge',
+      style: {
+        'width': 1.2,
+        'line-color': '#bbb',
+        'target-arrow-color': '#bbb',
+        'target-arrow-shape': 'triangle',
+        'curve-style': 'bezier',
+        'label': 'data(kind)',
+        'font-size': 7,
+        'color': '#999',
+        'text-rotation': 'autorotate'
+      }
+    },
+    { selector: 'node:selected', style: { 'border-width': 3, 'border-color': '#e65100' } },
+    { selector: 'edge:selected', style: { 'line-color': '#e65100', 'target-arrow-color': '#e65100', 'width': 2.5 } }
+  ],
+  layout: { name: 'cose', animate: true, animationDuration: 600, padding: 30, nodeRepulsion: 8000, idealEdgeLength: 90 },
+  wheelSensitivity: 0.2
+});
+const detail = document.getElementById('detail');
+function show(el, data){
+  let html = '';
+  if (data.source === undefined){
+    html += '<h3>'+data.label+'</h3>';
+    html += '<div class="k">类型</div>'+data.kind+'<br/>';
+    html += '<div class="k">ID</div>'+data.id+'<br/>';
+    if (data.path) html += '<div class="k">路径</div>'+data.path+'<br/>';
+    if (data.summary) html += '<div class="k">摘要</div>'+data.summary;
+  } else {
+    html += '<h3>'+data.kind+'</h3>';
+    html += '<div class="k">From</div>'+data.source+'<br/>';
+    html += '<div class="k">To</div>'+data.target+'<br/>';
+    if (data.label) html += '<div class="k">标签</div>'+data.label+'<br/>';
+    if (data.evidence) html += '<div class="k">证据</div>'+data.evidence;
+  }
+  detail.innerHTML = html;
+  detail.style.display = 'block';
+}
+cy.on('tap', 'node', (e)=> show(e.target, e.target.data()));
+cy.on('tap', 'edge', (e)=> show(e.target, e.target.data()));
+cy.on('tap', (e)=> { if (e.target===cy) detail.style.display='none'; });
+</script>
+</body>
+</html>
+"""
 
 
 if __name__ == "__main__":

@@ -159,3 +159,79 @@ def test_dur_token_for_canonical_durations():
     assert jianpu_render._dur_token_for(0, "", 0.5) == "q0"
     # 三十二分
     assert jianpu_render._dur_token_for(1, "", 0.125) == "d1"
+
+
+def test_jianpu_text_cross_bar_tie():
+    """跨小节长音必须用延音线 tie 连接，不得切两截或补虚假休止符。"""
+    from core import jianpu_render
+
+    # C4 从拍3起2拍 → [3,5) 跨 4/4 的 bar0/bar1，应生成 tie
+    notes = [
+        {"name": "C4", "midi": 60, "start": 0.0, "dur": 1.0, "lyric": "前"},
+        {"name": "C4", "midi": 60, "start": 3.0, "dur": 2.0, "lyric": "跨"},
+        {"name": "E4", "midi": 64, "start": 5.0, "dur": 1.0, "lyric": "后"},
+    ]
+    sheet = score_sheet.make_score_sheet(
+        notes=notes, key={"tonic": "C", "mode": "major"},
+        bpm=120.0, title="Tie", time_sig=(4, 4),
+    )
+    text = jianpu_render._build_jianpu_text(sheet)
+    # 必须含 tie 记号
+    assert "~" in text
+    # 不得出现跨小节被切成两个独立音的退化（bar0 内该长音不应拆成两段独立音）
+    assert "1 - ~ | ~ 1 -" in text or "~ 1 -" in text
+    # 结尾必须有终止线
+    assert r'\bar "|."' in text
+
+
+def test_jianpu_text_minor_key_signature():
+    """小调必须使用简谱首调唱名记谱 6=调式主音。"""
+    from core import jianpu_render
+
+    notes = [
+        {"name": "A3", "midi": 57, "start": 0.0, "dur": 1.0, "lyric": "小"},
+        {"name": "C4", "midi": 60, "start": 1.0, "dur": 1.0, "lyric": "调"},
+    ]
+    sheet = score_sheet.make_score_sheet(
+        notes=notes, key={"tonic": "A", "mode": "minor"},
+        bpm=120.0, title="Minor", time_sig=(4, 4),
+    )
+    text = jianpu_render._build_jianpu_text(sheet)
+    assert text.splitlines()[1] == "6=A"
+    assert r'\bar "|."' in text
+
+
+def test_jianpu_text_final_barline():
+    """规范乐曲结尾应有终止线 \\bar \"|.\"。"""
+    from core import jianpu_render
+
+    notes = [
+        {"name": "C4", "midi": 60, "start": 0.0, "dur": 0.5},
+        {"name": "E4", "midi": 64, "start": 0.5, "dur": 0.5},
+    ]
+    sheet = score_sheet.make_score_sheet(
+        notes=notes, key={"tonic": "C", "mode": "major"},
+        bpm=120.0, title="End", time_sig=(4, 4),
+    )
+    text = jianpu_render._build_jianpu_text(sheet)
+    assert text.rstrip().endswith(r'\bar "|."')
+
+
+def test_detect_bpm_robust_to_long_notes():
+    """BPM 反推应按最常见拍类音符，不受长音/二分音符污染。"""
+    from core import analysis
+
+    # 两个四分(0.5s=120BPM) + 一个二分长音(2s)
+    notes_long = [
+        {"start": 0.0, "end": 0.5}, {"start": 0.5, "end": 1.0},
+        {"start": 1.0, "end": 3.0}, {"start": 3.0, "end": 3.5},
+    ]
+    assert analysis.detect_bpm(y=None, notes=notes_long, fallback=120) == 120.0
+
+    # 纯八分音符 (0.25s) → 240 BPM
+    eighths = [{"start": i * 0.25, "end": i * 0.25 + 0.25} for i in range(8)]
+    assert analysis.detect_bpm(y=None, notes=eighths, fallback=120) == 240.0
+
+    # 纯附点四分 (0.75s) → 80 BPM
+    dotted = [{"start": i * 0.75, "end": i * 0.75 + 0.75} for i in range(4)]
+    assert analysis.detect_bpm(y=None, notes=dotted, fallback=120) == 80.0

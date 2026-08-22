@@ -148,6 +148,71 @@
       </div>
     </div>
 
+    <div class="panel card-pad web-search-panel">
+      <div class="section-head">
+        <h3 class="section-title">联网搜索配置</h3>
+        <div class="section-head-right">
+          <el-tag :type="webSearchReady ? 'success' : 'info'" size="small">
+            {{ webSearchReady ? '● 可用' : '○ 未就绪' }}
+          </el-tag>
+          <el-switch v-model="webSearchConfig.enabled" active-text="启用联网" />
+        </div>
+      </div>
+      <p class="ws-panel-desc">
+        开启后，AI 对话页的「联网」开关即生效：回答前自动检索实时网页信息并注入上下文，
+        解决模型知识截止导致的日期错误、时效信息缺失等问题。
+      </p>
+      <el-form :model="webSearchConfig" label-width="120px" label-position="right" class="ws-form">
+        <div class="ws-form-row">
+          <el-form-item label="搜索引擎">
+            <el-select v-model="webSearchConfig.engine" style="width: 100%" placeholder="选择搜索引擎">
+              <el-option
+                v-for="e in webEngines"
+                :key="e.id"
+                :label="e.name + (e.needKey ? '（需 API Key）' : '（免费）')"
+                :value="e.id"
+              />
+            </el-select>
+            <div class="ws-engine-desc">{{ currentEngineDesc }}</div>
+          </el-form-item>
+          <el-form-item label="最大结果数">
+            <el-input-number v-model="webSearchConfig.max_results" :min="1" :max="10" style="width: 100%" />
+          </el-form-item>
+        </div>
+        <div class="ws-form-row">
+          <el-form-item v-if="currentEngineNeedKey" label="API Key">
+            <el-input
+              v-model="webSearchConfig.api_key"
+              type="password"
+              show-password
+              :placeholder="webSearchConfig.api_key_masked ? '已配置（' + webSearchConfig.api_key_masked + '），留空则不修改' : '请输入 API Key'"
+            />
+          </el-form-item>
+          <el-form-item v-if="webSearchConfig.engine === 'searxng'" label="Base URL">
+            <el-input v-model="webSearchConfig.base_url" placeholder="http://localhost:8888" />
+          </el-form-item>
+          <el-form-item label="超时(ms)">
+            <el-input-number v-model="webSearchConfig.timeout_ms" :min="2000" :max="30000" :step="1000" style="width: 100%" />
+          </el-form-item>
+        </div>
+      </el-form>
+      <div class="ws-actions">
+        <el-button :loading="savingWebSearch" type="primary" @click="saveWebSearchConfig">
+          <el-icon><Check /></el-icon> 保存配置
+        </el-button>
+        <el-button :loading="testingWebSearch" @click="runWebSearchTest">
+          <el-icon><Search /></el-icon> 搜索测试
+        </el-button>
+      </div>
+      <el-alert
+        v-if="webSearchTestResult"
+        :title="webSearchTestResult.message"
+        :type="webSearchTestResult.success ? 'success' : 'error'"
+        :closable="true"
+        style="margin-top: 12px"
+      />
+    </div>
+
     <div class="panel card-pad preset-panel">
       <div class="section-head">
         <h3 class="section-title">快速添加预设渠道</h3>
@@ -407,6 +472,84 @@ const routingConfig = reactive({
 
 const routingProviders = computed(() => providers.value.map(p => p.id))
 const routingPresets = computed(() => presets.value.map(p => p.id))
+
+// ===== 联网搜索配置 =====
+const webSearchConfig = reactive({
+  enabled: false,
+  engine: 'duckduckgo',
+  api_key: '',
+  api_key_masked: '',
+  base_url: '',
+  max_results: 5,
+  timeout_ms: 10000
+})
+const webEngines = ref([])
+const webSearchReady = ref(false)
+const savingWebSearch = ref(false)
+const testingWebSearch = ref(false)
+const webSearchTestResult = ref(null)
+
+const currentEngine = computed(() => webEngines.value.find(e => e.id === webSearchConfig.engine))
+const currentEngineDesc = computed(() => currentEngine.value?.description || '')
+const currentEngineNeedKey = computed(() => !!currentEngine.value?.needKey)
+
+async function loadWebSearchConfig() {
+  try {
+    const res = await api.getWebSearchConfig()
+    if (res) {
+      Object.assign(webSearchConfig, {
+        enabled: !!res.config?.enabled,
+        engine: res.config?.engine || 'duckduckgo',
+        api_key: '',
+        api_key_masked: res.config?.api_key_masked || '',
+        base_url: res.config?.base_url || '',
+        max_results: res.config?.max_results || 5,
+        timeout_ms: res.config?.timeout_ms || 10000
+      })
+      webEngines.value = res.engines || []
+      webSearchReady.value = !!res.ready
+    }
+  } catch (e) { /* 静默降级：后端未就绪时不阻塞页面 */ }
+}
+
+async function saveWebSearchConfig() {
+  savingWebSearch.value = true
+  try {
+    const payload = {
+      enabled: webSearchConfig.enabled,
+      engine: webSearchConfig.engine,
+      base_url: webSearchConfig.base_url,
+      max_results: webSearchConfig.max_results,
+      timeout_ms: webSearchConfig.timeout_ms
+    }
+    if (webSearchConfig.api_key) payload.api_key = webSearchConfig.api_key
+    const res = await api.updateWebSearchConfig(payload)
+    if (res?.config) {
+      webSearchConfig.api_key = ''
+      webSearchConfig.api_key_masked = res.config.api_key_masked || ''
+      webSearchReady.value = !!res.ready
+    }
+    ElMessage.success('联网搜索配置已保存')
+  } catch (e) {
+    ElMessage.error('保存失败: ' + e.message)
+  } finally {
+    savingWebSearch.value = false
+  }
+}
+
+async function runWebSearchTest() {
+  testingWebSearch.value = true
+  webSearchTestResult.value = null
+  try {
+    const res = await api.testWebSearch()
+    webSearchTestResult.value = res || { success: false, message: '无响应' }
+    if (res?.success) webSearchReady.value = true
+  } catch (e) {
+    webSearchTestResult.value = { success: false, message: e.message }
+  } finally {
+    testingWebSearch.value = false
+  }
+}
 
 const availableModels = computed(() => {
   const preset = presets.value.find(p => p.id === form.provider)
@@ -693,7 +836,10 @@ async function saveRouting() {
   }
 }
 
-onMounted(loadAll)
+onMounted(() => {
+  loadAll()
+  loadWebSearchConfig()
+})
 </script>
 
 <style scoped>
@@ -746,6 +892,20 @@ onMounted(loadAll)
   align-items: center;
   margin-bottom: 16px;
 }
+
+/* ===== 联网搜索配置 ===== */
+.web-search-panel { margin-top: 18px; }
+.section-head-right { display: flex; align-items: center; gap: 14px; }
+.ws-panel-desc {
+  font-size: 13px; color: #64748b; line-height: 1.7;
+  margin: -4px 0 16px; padding: 10px 14px;
+  background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px;
+}
+.ws-form :deep(.el-form-item) { margin-bottom: 14px; }
+.ws-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
+.ws-engine-desc { font-size: 12px; color: #94a3b8; line-height: 1.6; margin-top: 2px; }
+.ws-actions { display: flex; gap: 10px; margin-top: 4px; }
+@media (max-width: 900px) { .ws-form-row { grid-template-columns: 1fr; } }
 
 .section-title {
   font-size: 16px;

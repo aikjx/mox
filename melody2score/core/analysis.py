@@ -13,13 +13,24 @@ def freq2midi(freq: float):
 
 
 def _median_filter(x: np.ndarray, win: int) -> np.ndarray:
+    """中值滤波去颤音；NaN（静音空洞）不参与中值、也不传染邻域。
+
+    修复：np.median 对含 NaN 的窗返回 NaN，导致每个静音空洞把前后
+    win//2 个有效帧全部传染为 NaN——音符被"砍头去尾"只剩 2~3 帧
+    （实测 0.5s 音符被切成 0.11s 碎片，时值/ BPM 全线失真）。
+    正确语义：仅对窗内有效值取中值；全 NaN 窗保持 NaN（静音空洞本身）。
+    """
     out = x.copy()
+    half = win // 2
     for i in range(len(x)):
-        lo = max(0, i - win // 2)
-        hi = min(len(x), i + win // 2 + 1)
+        if np.isnan(out[i]):
+            continue  # 静音空洞保持 NaN（分段切分点）
+        lo = max(0, i - half)
+        hi = min(len(x), i + half + 1)
         seg = x[lo:hi]
-        if len(seg):
-            out[i] = np.median(seg)
+        valid = seg[~np.isnan(seg)]
+        if len(valid):
+            out[i] = float(np.median(valid))
     return out
 
 
@@ -84,11 +95,35 @@ def segment_notes(pitch_points: List[Dict], min_note_dur: float = 0.1,
     if cur is not None:
         raw.append(cur)
 
+    # VAD 切边回补（须在过滤之前）：VAD 以能量门限判有声，attack 爬升段
+    # 与指数衰减尾系统性低于门限，且 pyin 帧中心落在静音区的边缘帧会被
+    # 整帧判杀 → 音符边界两端被切（实测 0.42s → 0.27~0.32s，BPM 反推
+    # 随之落到错误拍类）。回补量取 30ms：足以找回边缘帧并让 0.25 拍
+    # 短音符存活，又不至于把边界毛刺养到超过过滤线；无 VAD 不回补。
+    if vad_mask is not None and len(vad_mask) > 0:
+        raw = _pad_note_boundaries(raw, 0.03)
+    # 边界伪音清除：短音符夹在两个相同音高之间（A|B|A 且 B 短），
+    # B 是帧窗口横跨 A|gap|A 解出的中间伪音高，截断两侧 A 的边界即可。
+    raw = _drop_boundary_artifacts(raw, min_note_dur)
     # 合并短段到音高最近的邻居（处理滑音/颤音毛刺）
     raw = _merge_short(raw, min_note_dur)
     # 过滤过短音符
     notes = [n for n in raw if (n["end"] - n["start"]) > min_note_dur]
     return notes
+
+
+def _pad_note_boundaries(notes: List[Dict], pad: float) -> List[Dict]:
+    """音符边界对称回补，相邻重叠取中点切分（不改变音高/顺序）。"""
+    if not notes or pad <= 0:
+        return notes
+    out = [{"midi": n["midi"], "start": n["start"] - pad, "end": n["end"] + pad}
+           for n in notes]
+    for i in range(1, len(out)):
+        if out[i]["start"] < out[i - 1]["end"]:
+            mid = (out[i - 1]["end"] + out[i]["start"]) / 2.0
+            out[i - 1]["end"] = mid
+            out[i]["start"] = mid
+    return out
 
 
 def _merge_short(notes: List[Dict], min_note_dur: float) -> List[Dict]:
@@ -186,11 +221,15 @@ def detect_bpm(y: np.ndarray, sr: int = 16000, fallback: float = 120.0,
                 if 30.0 <= bpm <= 300.0:
                     return bpm
 
-    # 兜底：仅当没有可用音符时才跑昂贵的 beat_track
+    # 兜底：仅当没有可用音符时才跑昂贵的 beat_track。
+    # 限长 30s：beat_track 耗时与音频长度近似线性（实测 9s≈2.7s），
+    # 长音频全量计算会拖垮 API 延迟；节拍周期统计取前 30s 已足够。
     raw = None
     try:
-        tempo, _ = librosa.beat.beat_track(y=y, sr=sr, hop_length=512)
-        raw = float(np.atleast_1d(tempo)[0])
+        y_bt = y[: int(sr * 30)] if len(y) > sr * 30 else y
+        if len(y_bt) >= sr:  # 短于 1s 无节拍可言
+            tempo, _ = librosa.beat.beat_track(y=y_bt, sr=sr, hop_length=512)
+            raw = float(np.atleast_1d(tempo)[0])
     except Exception:
         raw = None
 

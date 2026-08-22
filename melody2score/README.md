@@ -34,8 +34,11 @@ melody2score/
 ├── audio/                  # 合成音频 + manifest.json（ground truth）
 ├── results/                # classic_results.json（真实识别结果）
 ├── graph/
-│   ├── build_melody_graph.py     # 构建旋律领域 info-graph 子图
-│   └── melody_infograph.json     # 生成的子图（info-graph 同构 schema）
+│   ├── build_melody_graph.py     # 构建旋律领域 info-graph 子图（含 Mermaid/Cytoscape 导出）
+│   ├── export_melody_graph.py    # 一键导出三件套 + 可选 info-graph 规范校验
+│   ├── melody_infograph.json     # 生成的子图（info-graph 同构 schema）
+│   ├── melody_infograph.mmd      # Mermaid 静态图谱（按类型着色）
+│   └── melody_infograph.html     # Cytoscape.js 交互式网络图（浏览器直接打开）
 ├── tests/                  # 离线自测
 ├── app/                    # 企业级可视化界面（FastAPI 后端 + 零构建前端）
 │   ├── webui.py            # 后端 API：识别 + 保存 MD + 导出标准歌谱图片
@@ -192,13 +195,32 @@ MELODY_BACKEND=pyin python run_recognition.py
    `melody2score/` 各代码/脚本节点（见《关图骨架定义.md》§2.1）。
 2. **`graph/melody_infograph.json`** 是旋律领域的完整子图，严格遵循关图规范
    `节点(id,kind,name,path,summary,external)` / `边(id,from,to,kind,label,evidence,external)`
-   schema，可直接被 `tools/info-graph` 加载：
+   schema，可直接被 `tools/info-graph` 加载。
+
+### 导出图谱（采用最好的开源工具架构）
+
+`graph/build_melody_graph.py` 在写出规范 JSON 的同时，直接用业界最优的开源方案
+导出**可看 / 可交互**的图谱三件套：
+
+| 产物 | 工具架构 | 用途 |
+|------|----------|------|
+| `melody_infograph.json` | `tools/info-graph` 同构 schema（GR-STD-V1.0） | 规范数据，可被 info-graph 校验/合并/查询 |
+| `melody_infograph.mmd` | **Mermaid**（`graph LR`，按节点类型着色） | 文档/画布级静态图谱，与 `info-graph export --format mermaid` 同构 |
+| `melody_infograph.html` | **Cytoscape.js**（网络图领域事实标准，CDN 零依赖单文件） | 交互式网络图：拖拽/缩放/点击查看节点 summary 与边 evidence |
+
+> 为什么是这两个开源工具：**Mermaid** 是文档型图谱（Markdown 内联、CI 可渲染）的
+> 事实标准；**Cytoscape.js** 是交互式网络关系图的事实标准（拖拽布局、力导向、
+> 点选高亮），且纯前端 CDN 引入、无需任何后端/本地依赖，浏览器直接打开即用。
 
 ```bash
-# 构建子图（依赖 results/classic_results.json）
-python graph/build_melody_graph.py
+# 一键导出三件套（JSON + Mermaid + Cytoscape.html）
+python graph/export_melody_graph.py
 
-# 用真实关图工具校验 / 导出 / 查询
+# 仅重导出交互式 HTML（复用已有 JSON）
+python graph/export_melody_graph.py --html-only
+
+# 导出后额外用真实关图工具校验规范（需先 cargo build --release）
+python graph/export_melody_graph.py --validate
 tools/info-graph/target/release/info-graph validate --graph graph/melody_infograph.json
 tools/info-graph/target/release/info-graph export   --graph graph/melody_infograph.json --format mermaid
 tools/info-graph/target/release/info-graph query    --graph graph/melody_infograph.json --kind Data

@@ -191,13 +191,39 @@ class LLMGateway {
     return !!(provider && provider.provider && provider.provider !== 'local' && provider.api_key && String(provider.api_key).trim().length > 0);
   }
 
+  // 构建实时时间上下文：LLM 训练数据存在截止时间，不注入当前时间会导致
+  // "今天是？"这类问题被模型凭训练记忆编造日期（幻觉）。
+  _buildTimeContext() {
+    const now = new Date();
+    const days = ['日', '一', '二', '三', '四', '五', '六'];
+    const pad = (n) => String(n).padStart(2, '0');
+    const tzOffsetMin = -now.getTimezoneOffset();
+    const tzSign = tzOffsetMin >= 0 ? '+' : '-';
+    const tzHours = Math.floor(Math.abs(tzOffsetMin) / 60);
+    const tzMins = Math.abs(tzOffsetMin) % 60;
+    const tz = `UTC${tzSign}${tzHours}${tzMins ? ':' + pad(tzMins) : ''}`;
+    return [
+      '【实时环境】',
+      `当前真实日期时间：${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日（星期${days[now.getDay()]}）${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}，时区 ${tz}。`,
+      '规则：凡涉及"今天/现在/当前日期"等时间问题，必须以上述时间为唯一事实依据，严禁凭训练记忆猜测或编造日期。'
+    ].join('\n');
+  }
+
   async chat(params) {
-    const { messages, sessionId, expertType, systemPrompt, temperature = 0.7, maxTokens = 2048 } = params;
+    const { messages, sessionId, expertType, systemPrompt, webSearchContext, temperature = 0.7, maxTokens = 2048 } = params;
 
     const provider = this.activeProvider ? this.providers[this.activeProvider] : null;
-    
+
     const enhancedMessages = [];
-    
+
+    // 始终注入实时时间上下文（防止日期幻觉）
+    enhancedMessages.push({ role: 'system', content: this._buildTimeContext() });
+
+    // 联网搜索上下文：由调用方（/ai/chat）在开启联网时注入
+    if (webSearchContext) {
+      enhancedMessages.push({ role: 'system', content: webSearchContext });
+    }
+
     if (systemPrompt) {
       enhancedMessages.push({ role: 'system', content: systemPrompt });
     } else if (expertType) {

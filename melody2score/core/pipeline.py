@@ -175,16 +175,28 @@ def _conf(notes) -> float:
 
 
 def _consensus(runs: List[List[Dict]], cfg: Config) -> Tuple[List[Dict], Dict]:
-    """音符级共识合并（时间重叠聚簇，多数/长音保留）。"""
-    all_notes: List[Dict] = []
-    for notes in runs:
-        all_notes.extend(notes)
-    all_notes.sort(key=lambda n: n["start"])
+    """音符级共识合并（时间重叠聚簇，多数/长音保留）。
+
+    修复簇污染（连续同音吞并）：任一 run 识别出的"跨音符长音"（如把
+    62-62 吞成一条 1.1s 长音）会与两条正确音符都时间重叠，旧贪心策略
+    把三者吸进同一簇 → 输出一条长音、丢失一个音符。两道防线：
+      1) 每簇每 run 至多一个音符——同一 run 的相邻音符不能进同簇，
+         长音只能与各 run 的"其中一条"聚类，另一条自立新簇；
+      2) 簇边界取中位数（而非 min/max）——单次识别的时长异常
+         （吞并/切碎）不再拉长/缩短共识边界，抗离群。
+    """
+    tagged: List[Tuple[int, Dict]] = []
+    for ri, notes in enumerate(runs):
+        for n in notes:
+            tagged.append((ri, n))
+    tagged.sort(key=lambda rn: rn[1]["start"])
 
     clusters: List[Dict] = []
-    for n in all_notes:
+    for ri, n in tagged:
         placed = False
         for c in clusters:
+            if ri in c["runs"]:
+                continue  # 同 run 相邻音符禁止同簇（防长音吞并）
             overlap = False
             for m in c["members"]:
                 ov = min(n["end"], m["end"]) - max(n["start"], m["start"])
@@ -194,10 +206,11 @@ def _consensus(runs: List[List[Dict]], cfg: Config) -> Tuple[List[Dict], Dict]:
                     break
             if overlap:
                 c["members"].append(n)
+                c["runs"].add(ri)
                 placed = True
                 break
         if not placed:
-            clusters.append({"members": [n]})
+            clusters.append({"members": [n], "runs": {ri}})
 
     merged: List[Dict] = []
     kept = 0
@@ -207,10 +220,14 @@ def _consensus(runs: List[List[Dict]], cfg: Config) -> Tuple[List[Dict], Dict]:
         counts: Dict[int, int] = {}
         for m in members:
             counts[m["midi"]] = counts.get(m["midi"], 0) + 1
-        best_midi = max(counts.items(), key=lambda kv: (kv[1], -kv[1]))[0]
-        longest = max(members, key=lambda m: m["end"] - m["start"])
-        start = min(m["start"] for m in members)
-        end = max(m["end"] for m in members)
+        best_midi = max(counts.items(), key=lambda kv: kv[1])[0]
+        # 中位数边界：抗单次识别的时长离群（吞并长音/切碎毛刺）
+        starts = sorted(m["start"] for m in members)
+        ends = sorted(m["end"] for m in members)
+        start = starts[len(starts) // 2]
+        end = ends[len(ends) // 2]
+        if end <= start:  # 奇异簇兜底：退回极值
+            start, end = starts[0], ends[-1]
         # 仅在 ≥2 次识别都出现，或单次但长音，才保留
         if counts[best_midi] >= 2 or (end - start) > 2 * cfg.min_note_dur:
             merged.append({"midi": best_midi, "start": start, "end": end})

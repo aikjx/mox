@@ -165,6 +165,12 @@ const routes = [
     meta: { title: '大模型配置' }
   },
   {
+    path: '/melody2score',
+    name: 'Melody2Score',
+    component: () => import('@/views/Melody2ScoreView.vue'),
+    meta: { title: '旋律转谱' }
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/ai'
   }

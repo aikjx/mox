@@ -2,10 +2,7 @@
 """歌谱生成层：music21 生成 musicxml + 简谱数字串 + 标准歌谱图片。"""
 from typing import Dict, List, Tuple
 
-import numpy as np
 import librosa
-from music21 import note as m21note
-from music21 import stream, key as m21key, tempo as m21tempo
 
 from core import score_sheet
 
@@ -14,6 +11,11 @@ export_score_sheet = score_sheet.export_score
 
 
 def to_musicxml(notes: List[Dict], bpm: float, key_name: Tuple[str, str], fp=None):
+    # music21 懒加载：其顶层导入耗时 1~2s，仅导出 musicxml 时才需要，
+    # 不应拖慢 to_jianpu / API / GUI 的常规识别路径。
+    from music21 import note as m21note
+    from music21 import stream, key as m21key, tempo as m21tempo
+
     s = stream.Stream()
     s.append(m21key.Key(key_name[0], key_name[1]))
     # 防御 BPM=0：musicxml 元数据与量化都退化为 BPM=120
@@ -71,6 +73,9 @@ def to_jianpu(notes: List[Dict], key_name: Tuple[str, str], bpm: float = 120.0) 
             deg = deg + "_" * (-oct_shift)
         # BPM 不可靠（哼唱常检测为 0）时退化为按固定 0.25s/拍量化，避免除零崩溃
         beat_dur = 60.0 / bpm if bpm and bpm > 0 else 0.25
-        ext = max(0, int(round((nt["end"] - nt["start"]) / beat_dur / 0.25)) - 1)
-        out.append(deg + "-" * ext)
+        # 时值量化：按拍数四舍五入到最近整数拍（文本简谱的 "-" 只能表达整数拍，
+        # 精确时值由 LilyPond 专业渲染负责）。旧公式 round(dur/beat/0.25)-1
+        # 会把 0.86 拍量化成 3 拍（"1--"），严重失真。
+        beats = max(1, int(round((nt["end"] - nt["start"]) / beat_dur)))
+        out.append(deg + "-" * (beats - 1))
     return " ".join(out)

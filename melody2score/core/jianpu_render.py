@@ -226,7 +226,7 @@ def _build_jianpu_text(sheet: ScoreSheet) -> str:
         tokens: List[str] = []
         used = 0.0
         for s in segs:
-            # 段前休止间隔（小节内留白）
+            # 段前休止间隔（小节内留白，弱起首小节前也会以休止填充）
             gap = round(s["in_bar"] - used, 6)
             if gap > 1e-6:
                 for rt in _rest_fill_tokens(gap):
@@ -257,11 +257,12 @@ def _build_jianpu_text(sheet: ScoreSheet) -> str:
                     tokens.append(rt)
         note_parts.append(" ".join(tokens))
 
-    # 拍号行：弱起用 "num/den,首小节剩余拍数" 语法
-    if is_anacrusis:
-        ts_line = f"{ts[0]}/{ts[1]},{anacrusis_span}"
-    else:
-        ts_line = f"{ts[0]}/{ts[1]}"
+    # 拍号行：始终用规范标准 "num/den"。
+    # 弱起（首音不在强拍）不依赖 jianpu-ly 的 anacrusis 逗号语法（该语法要求弱起拍
+    # 必须严格为 1/denom 整数倍，真实音乐里常不满足而易崩溃）；改用更通用且规范的
+    # 写法：首小节弱起音之前以休止符填充（简谱弱起的标准记法之一），配合
+    # j2ly_sloppy_bars=1 放宽末小节补足约束。
+    ts_line = f"{ts[0]}/{ts[1]}"
 
     body = " | ".join(note_parts)
     # 终止线：规范乐曲结尾用双细线 "|."，而非普通单竖线
@@ -329,12 +330,17 @@ def render_score_sheet(
         #    说明：jianpu-ly 遇到"不完整小节"等会向 stderr 打印警告并以
         #    非 0 退出，但依然能产出可用的 .ly。这里只以"是否产出有效 .ly"
         #    作为成败判据，容忍非致命警告（如 Incomplete bar）。
+        #    设置 j2ly_sloppy_bars=1 放宽"末小节必须补足弱起拍"的强制，
+        #    使弱起/短曲也能正常出图（对普通谱无副作用）。
+        env = dict(os.environ)
+        env["j2ly_sloppy_bars"] = "1"
         with open(ly_path, "w", encoding="utf-8") as fout, \
              open(txt_path, "r", encoding="utf-8") as fin:
             rc = subprocess.run(
                 ["python", JIANPU_LY, "--noStaff", txt_path],
                 stdin=fin, stdout=fout,
                 stderr=subprocess.PIPE, encoding="utf-8", errors="replace",
+                env=env,
             )
         if not os.path.exists(ly_path) or os.path.getsize(ly_path) < 200:
             raise RuntimeError(f"jianpu-ly 转换失败：{rc.stderr[:500]}")

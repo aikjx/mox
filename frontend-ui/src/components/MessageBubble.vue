@@ -24,6 +24,19 @@
         <span class="ops-label">引用算子：</span>
         <span v-for="op in msg.referenced_operators" :key="op" class="tag">{{ op }}</span>
       </div>
+      <div v-if="webSources.length" class="web-sources">
+        <div class="ws-head">
+          <el-icon><Link /></el-icon>
+          <span>联网检索（{{ msg.web_search.engine }} · {{ msg.web_search.duration_ms }}ms）</span>
+        </div>
+        <a v-for="(s, i) in webSources" :key="i" class="ws-item" :href="s.url" target="_blank" rel="noopener">
+          <span class="ws-idx">[{{ i + 1 }}]</span>
+          <span class="ws-title">{{ s.title || s.url }}</span>
+        </a>
+      </div>
+      <div v-else-if="msg.web_search && msg.web_search.error" class="web-sources ws-error">
+        <span>联网检索失败：{{ msg.web_search.error }}</span>
+      </div>
       <div v-if="msg.confidence != null" class="conf">
         <span class="conf-label">置信度</span>
         <el-progress :percentage="Math.round(msg.confidence * 100)" :stroke-width="6" :show-text="false" style="width:90px" />
@@ -35,7 +48,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { User, Cpu } from '@element-plus/icons-vue'
+import { User, Cpu, Link } from '@element-plus/icons-vue'
 
 const props = defineProps({
   msg: { type: Object, required: true },
@@ -44,6 +57,12 @@ const props = defineProps({
 defineEmits(['goto-task'])
 
 const role = computed(() => props.msg.role)
+
+const webSources = computed(() => {
+  const ws = props.msg.web_search
+  if (!ws || !ws.enabled || !Array.isArray(ws.sources)) return []
+  return ws.sources.slice(0, 6)
+})
 
 const fmtTime = computed(() => {
   const t = props.msg.timestamp
@@ -283,6 +302,27 @@ const rendered = computed(() => {
   margin: 10px 0; border-radius: 8px; overflow: hidden;
 }
 .ops { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.web-sources {
+  margin-top: 10px; padding: 8px 10px;
+  border-top: 1px dashed var(--border, #e2e8f0);
+  display: flex; flex-direction: column; gap: 5px;
+}
+.ws-head {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 12px; color: #0891b2; font-weight: 600;
+}
+.ws-item {
+  display: flex; gap: 6px; align-items: baseline;
+  font-size: 12.5px; color: #475569; text-decoration: none;
+  line-height: 1.5; overflow: hidden;
+}
+.ws-item:hover .ws-title { color: #0891b2; text-decoration: underline; }
+.ws-idx { color: #0891b2; font-weight: 600; flex-shrink: 0; }
+.ws-title {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 100%; transition: color 0.15s;
+}
+.ws-error { font-size: 12px; color: #b45309; }
 .ops-label { font-size: 12px; color: var(--text-dim); }
 .tag {
   font-size: 12px; background: var(--brand-soft); color: var(--brand-dark);

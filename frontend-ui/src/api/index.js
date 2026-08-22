@@ -108,6 +108,12 @@ export const analyzeAlgorithm = (payload) => http.post('/ai/analyze-algorithm', 
 export const getAlgorithmTypes = () => http.get('/ai/algorithm-types')
 export const analyzeSpiral = (payload) => http.post('/analyze/spiral', payload)
 
+// ===== 联网搜索 =====
+export const getWebSearchConfig = () => http.get('/web-search/config')
+export const updateWebSearchConfig = (payload) => http.post('/web-search/config', payload)
+export const testWebSearch = () => http.post('/web-search/test', {})
+export const webSearch = (query) => http.post('/web-search', { query })
+
 // ===== 资源 =====
 export const getResources = () => http.get('/ai/resources')
 export const getResourceHealth = () => http.get('/ai/resources/health')
@@ -332,5 +338,21 @@ export const aiGenerateFlowDiagram = (payload) => http.post('/ai/generate-flow-d
 export const aiDevTestFix = (payload) => http.post('/ai/dev-test-fix', payload)
 export const aiFullComplete = (payload) => http.post('/ai/full-complete', payload)
 export const aiOptimizeDoc = (payload) => http.post('/ai/optimize-doc', payload)
+
+// ===== Melody2Score 企业级旋律转谱 =====
+export const melodyHealth = () => http.get('/melody2score/health')
+export const melodyStatus = () => http.get('/melody2score/status')
+export const melodySamples = () => http.get('/melody2score/samples')
+export const melodyRecognize = (formData) => http.post('/melody2score/recognize', formData, {
+  headers: { 'Content-Type': 'multipart/form-data' },
+  timeout: 120000
+})
+export const melodyRecognizeSample = (formData) => http.post('/melody2score/recognize-sample', formData, {
+  headers: { 'Content-Type': 'multipart/form-data' },
+  timeout: 120000
+})
+export const melodyRecognizeRecord = (payload) => http.post('/melody2score/recognize-record', payload, { timeout: 120000 })
+export const melodyExportSheet = (payload) => http.post('/melody2score/export-sheet', payload, { timeout: 60000 })
+export const melodySaveReport = (payload) => http.post('/melody2score/save-report', payload, { timeout: 30000 })
 
 export default http

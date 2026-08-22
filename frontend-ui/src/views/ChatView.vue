@@ -293,9 +293,17 @@
           placeholder="输入消息，Enter 发送 / Shift+Enter 换行"
           @keydown.enter.exact.prevent="send"
         />
-        <el-button type="primary" :loading="thinking" @click="send">
-          <el-icon><Promotion /></el-icon> 发送
-        </el-button>
+        <div class="input-actions">
+          <el-tooltip :content="webSearchEnabled ? '联网已开启：回答前先检索实时信息' : '联网已关闭：仅使用模型知识回答'" placement="top">
+            <div class="web-toggle" :class="{ on: webSearchEnabled }" @click="webSearchEnabled = !webSearchEnabled">
+              <el-icon><Link /></el-icon>
+              <span>联网</span>
+            </div>
+          </el-tooltip>
+          <el-button type="primary" :loading="thinking" @click="send">
+            <el-icon><Promotion /></el-icon> 发送
+          </el-button>
+        </div>
       </div>
     </div>
 
@@ -351,7 +359,7 @@
 import { ref, nextTick, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { List, Loading, ArrowDown } from '@element-plus/icons-vue'
+import { List, Loading, ArrowDown, Link } from '@element-plus/icons-vue'
 import MessageBubble from '@/components/MessageBubble.vue'
 import SessionSidebar from '@/components/SessionSidebar.vue'
 import ToolDock from '@/components/ToolDock.vue'
@@ -388,6 +396,11 @@ const draft = ref('')
 const thinking = ref(false)
 const online = ref(false)
 const scrollEl = ref(null)
+// 联网搜索开关：开启后每轮对话先检索实时信息再回答（持久化记忆）
+const webSearchEnabled = ref(localStorage.getItem('ous_web_search') === '1')
+watch(webSearchEnabled, (v) => {
+  localStorage.setItem('ous_web_search', v ? '1' : '0')
+})
 // 对话自动→知识图谱 全自动同步开关（默认开）
 const autoSync = ref(true)
 const importInput = ref(null)
@@ -1104,10 +1117,11 @@ async function send() {
           .filter(m => m.content)
           .map(m => ({ role: m.role, content: m.content })),
         expert_type: expertType,
-        session_id: currentSession.value
+        session_id: currentSession.value,
+        web_search: webSearchEnabled.value
       })
     } else {
-      res = await aiChat({ session_id: currentSession.value, message: text })
+      res = await aiChat({ session_id: currentSession.value, message: text, web_search: webSearchEnabled.value })
     }
 
     if (!res || (!res.reply && !res.response && !res.message)) {
@@ -1117,12 +1131,15 @@ async function send() {
     const fullText = (res.reply || res.response || res.message || '（无回复）').toString()
     online.value = true
 
+    const wsMeta = res.metadata?.web_search
+
     messages.value.push({
       role: 'assistant',
       content: fullText,
       timestamp: Date.now(),
       referenced_operators: res.metadata?.related_operators || [],
-      confidence: res.metadata?.confidence ?? null
+      confidence: res.metadata?.confidence ?? null,
+      web_search: wsMeta || null
     })
 
     // 需求流程模式：AI回复后检查是否需要推进阶段
@@ -1347,6 +1364,28 @@ onUnmounted(() => { if (streamTimer) clearInterval(streamTimer) })
 
 .chat-input { display: flex; gap: 10px; padding: 14px 18px; border-top: 1px solid var(--border); align-items: flex-end; }
 .chat-input :deep(.el-textarea) { flex: 1; }
+.input-actions { display: flex; gap: 10px; align-items: flex-end; }
+.web-toggle {
+  display: flex; align-items: center; gap: 5px;
+  height: 32px; padding: 0 12px; border-radius: 8px;
+  cursor: pointer; user-select: none;
+  font-size: 13px; color: var(--text-dim, #64748b);
+  border: 1px solid var(--border, #e2e8f0);
+  background: var(--bg-panel-2, #fff);
+  transition: all 0.18s ease;
+}
+.web-toggle:hover { border-color: rgba(6, 182, 212, 0.5); color: #0891b2; }
+.web-toggle.on {
+  color: #0891b2;
+  border-color: rgba(6, 182, 212, 0.55);
+  background: rgba(6, 182, 212, 0.1);
+  box-shadow: 0 0 0 1px rgba(6, 182, 212, 0.15) inset;
+}
+.web-toggle.on .el-icon { animation: web-pulse 2.4s ease-in-out infinite; }
+@keyframes web-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
 .hist-tip {
   font-size: 12px; color: var(--text-3); margin-bottom: 12px; line-height: 1.6;
 }
