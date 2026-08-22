@@ -162,13 +162,22 @@ AI 引擎消费的是注册表、图谱边、阶段表这类**可枚举结构**�
 
 执行：`node scripts/architecture-guard.js` → 输出逐项 PASS/FAIL 与违规文件行号。
 
-## 8. 落地记录
+## 8. 引擎宇宙图谱（§9）
+
+全部 17 个引擎节点化于 `src/engine-universe/` 域包（domain 注册表 + 图查询算法），
+需求归一化链（n_ingest→n_norm→n_disp→n_rec→n_gate）与引擎/代码路径的关联显式建模为 6 类边，
+**技术图谱管理所有链接**：`GET /engine-universe/trace` 链路追踪、
+`GET /engine-universe/verify` 113 项全链路机器检查（代码路径/边完整性/需求链连通/降级链收敛/全域无孤岛）。
+详见 `docs/standards/engine-universe.md`（含 Mermaid 引擎关联总览图与各引擎关键功能描述）。
+
+## 9. 落地记录
 
 | 日期 | 事件 | 验证 |
 |------|------|------|
 | 2026-08-22 | 专家联盟域包化（§2 结构）+ PageRank 唯一化 + 意图真相源迁域 | 门禁 G1-G5 全绿；冒烟 26/26；公式 35/35；架构 21/21 |
 | 2026-08-22 | alliance-orchestrator 收敛为 mixin 组合根（802→395 行：算法分析/会话/V2 编排三个用例族）+ 补 `_detectIntent` 等历史契约委托 | 门禁全绿；架构 21/21 |
 | 2026-08-22 | kb 域包化：routes/kb.js 517→371 行，纯算法（文档分析/LCS diff）下沉 domain，JSON 存储下沉 infrastructure | 门禁全绿；冒烟 26/26（含 /kb/stats） |
+| 2026-08-22 | §9 引擎宇宙图谱域包：17 引擎节点化 + 需求归一化链 5 环 + 42 关联边（6 类边型），全链路验证 113 项机器检查 | 引擎宇宙测试 40/40；运行时 verify 全过；门禁 G1-G5 全绿（3 域包）；冒烟 26/26 |
 
 ---
 
