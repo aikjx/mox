@@ -147,6 +147,12 @@ const routes = [
     meta: { title: '算法实验室' }
   },
   {
+    path: '/infinite-optimizer',
+    name: 'InfiniteOptimizer',
+    component: () => import('@/views/InfiniteOptimizerView.vue'),
+    meta: { title: '无穷维度优化' }
+  },
+  {
     path: '/botCenter',
     name: 'BotCenter',
     component: () => import('@/views/BotCenterView.vue'),

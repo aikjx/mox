@@ -14,6 +14,9 @@ const { getUltimateEngine } = require('./ultimate-ai-engine');
 const { getAllianceEngine } = require('./expert-alliance-engine');
 const { getServiceManager } = require('./service-manager');
 const { getWebSearchService } = require('./web-search-service');
+const { getInfiniteOptimizer } = require('./infinite-dimension-optimizer');
+const { getLocalArtifactService } = require('./local-artifact-service');
+const { getAIEngineCore } = require('./ai-engine-core');
 const { getSecurityManager } = require('./security');
 const { config, DATA_DIR } = require('./config');
 const { uid } = require('./utils');
@@ -36,8 +39,11 @@ const storage = getStorage();
 const aiEngine = getAIEngine(gateway);
 const aiIntegration = getAIIntegrationEngine();
 const ultimateEngine = getUltimateEngine();
+const engineCore = getAIEngineCore();
 const serviceManager = getServiceManager();
 const webSearchService = getWebSearchService();
+const infiniteOptimizer = getInfiniteOptimizer();
+const artifactService = getLocalArtifactService();
 const security = getSecurityManager();
 
 function p(...parts) {
@@ -1113,6 +1119,8 @@ ${seedNodes.length ? '已有种子节点：' + seedNodes.map(n => n.id + '(' + n
     // 0. 联网搜索（body.web_search 为真时）：先检索实时信息，再注入 LLM 上下文
     let webSearchContext = null;
     let webSearchInfo = null;
+    // 本地制品模式（document / code）：AI 对话中自动在本机创建文档/代码文件
+    const artifactMode = body.artifact_mode === 'document' || body.artifact_mode === 'code' ? body.artifact_mode : null;
     const wantWebSearch = !!(body.web_search || body.webSearch);
     if (wantWebSearch && last) {
       if (webSearchService.isReady()) {
@@ -1192,6 +1200,35 @@ ${seedNodes.length ? '已有种子节点：' + seedNodes.map(n => n.id + '(' + n
       aiMetadata = { ai_powered: false, fallback: true };
     }
 
+    // 4. 本地制品模式（文档/代码）：五步流水线落盘 + 回执（失败不伤主链路）
+    let artifactResult = null;
+    if (artifactMode) {
+      artifactResult = await artifactService.process({
+        mode: artifactMode,
+        message: last,
+        session_id: sessionId,
+        overwrite: !!body.overwrite
+      });
+      if (artifactResult.created.length) {
+        reply += artifactService.buildReplySuffix(artifactResult);
+        aiMetadata = aiMetadata || {};
+        aiMetadata.artifacts = {
+          mode: artifactMode,
+          created: artifactResult.created.map((c) => ({
+            filename: c.filename,
+            rel_path: c.rel_path,
+            size: c.size,
+            sha256: c.sha256.slice(0, 12),
+            overwritten: c.overwritten
+          })),
+          skipped: artifactResult.skipped
+        };
+      } else if (artifactResult.skipped.length) {
+        aiMetadata = aiMetadata || {};
+        aiMetadata.artifacts = { mode: artifactMode, created: [], skipped: artifactResult.skipped };
+      }
+    }
+
     // 持久化会话
     const sessions = readJSON('dialogue_sessions.json', []);
     let sess = sessions.find((s) => s.id === sessionId);
@@ -1246,6 +1283,103 @@ ${seedNodes.length ? '已有种子节点：' + seedNodes.map(n => n.id + '(' + n
       ok(res, result);
     } catch (e) {
       fail(res, 500, '搜索失败: ' + e.message);
+    }
+  });
+
+  // ==================== 本地制品引擎（文档/代码自动创建） ====================
+  reg('get', '/ai/artifact/config', async (req, res) => {
+    ok(res, artifactService.getConfig());
+  });
+
+  reg('get', '/ai/artifact/list', async (req, res) => {
+    ok(res, artifactService.listArtifacts());
+  });
+
+  reg('post', '/ai/artifact/create', async (req, res) => {
+    const body = await readBody(req);
+    if (!body.message || !String(body.message).trim()) {
+      fail(res, 400, '缺少 message 参数');
+      return;
+    }
+    if (body.artifact_mode !== 'document' && body.artifact_mode !== 'code') {
+      fail(res, 400, 'artifact_mode 必须为 document 或 code');
+      return;
+    }
+    try {
+      const result = await artifactService.process({
+        mode: body.artifact_mode,
+        message: body.message,
+        session_id: body.session_id || body.sessionId || null,
+        overwrite: !!body.overwrite
+      });
+      appendLog({
+        type: 'artifact',
+        msg: 'create',
+        mode: body.artifact_mode,
+        created: result.created.length,
+        skipped: result.skipped.length
+      });
+      ok(res, result);
+    } catch (e) {
+      fail(res, 500, '制品创建失败: ' + e.message);
+    }
+  });
+
+  // ==================== 无穷维度优化引擎 ====================
+  reg('get', '/ai/infinite-optimize/benchmarks', async (req, res) => {
+    ok(res, { benchmarks: infiniteOptimizer.getBenchmarks(), objective_weights: require('./infinite-dimension-optimizer').OBJECTIVE_WEIGHTS });
+  });
+
+  reg('post', '/ai/infinite-optimize/start', async (req, res) => {
+    const body = await readBody(req);
+    try {
+      const result = infiniteOptimizer.start(body || {});
+      appendLog({ type: 'infinite-optimize', msg: 'started', run_id: result.run_id, dimensions: result.dimensions });
+      ok(res, result);
+    } catch (e) {
+      fail(res, 400, e.message);
+    }
+  });
+
+  reg('post', '/ai/infinite-optimize/stop', async (req, res) => {
+    ok(res, infiniteOptimizer.stop());
+  });
+
+  reg('get', '/ai/infinite-optimize/status', async (req, res) => {
+    ok(res, infiniteOptimizer.getStatus());
+  });
+
+  reg('get', '/ai/infinite-optimize/results', async (req, res) => {
+    ok(res, infiniteOptimizer.getResults());
+  });
+
+  reg('post', '/ai/infinite-optimize/compare', async (req, res) => {
+    try {
+      const result = await infiniteOptimizer.runComparison();
+      appendLog({ type: 'infinite-optimize', msg: 'comparison done', engines: result.rows.filter((r) => r.configured).length });
+      ok(res, result);
+    } catch (e) {
+      fail(res, 500, '引擎对比失败: ' + e.message);
+    }
+  });
+
+  reg('get', '/ai/infinite-optimize/comparison', async (req, res) => {
+    const result = infiniteOptimizer.getComparison();
+    if (!result) {
+      ok(res, { at: null, rows: [], note: '尚未运行对比，请先调用 POST /ai/infinite-optimize/compare' });
+      return;
+    }
+    ok(res, result);
+  });
+
+  reg('post', '/ai/infinite-optimize/apply', async (req, res) => {
+    const body = await readBody(req);
+    try {
+      const result = infiniteOptimizer.applyBest(body && body.run_id);
+      appendLog({ type: 'infinite-optimize', msg: 'applied best config', run_id: result.run_id, applied: result.applied });
+      ok(res, result);
+    } catch (e) {
+      fail(res, 400, e.message);
     }
   });
 
@@ -4758,6 +4892,55 @@ ${document}
     } catch (e) {
       console.error('[ultimate-rules-list]', e);
       fail(res, 500, '获取规则列表失败: ' + e.message);
+    }
+  });
+
+  // ===== AI引擎统一编排核心路由（归一化入口） =====
+  // POST /ai/engine/process —— 统一入口：意图识别 → 能力路由 → 执行 → 校验 → 反馈
+  reg('post', '/ai/engine/process', async (req, res) => {
+    const body = await readBody(req);
+    try {
+      const result = await engineCore.process(body);
+      ok(res, result);
+    } catch (e) {
+      console.error('[engine-core-process]', e);
+      fail(res, 400, e.message);
+    }
+  });
+
+  // POST /ai/engine/analyze —— 显式能力执行（跳过意图识别，可预测）
+  reg('post', '/ai/engine/analyze', async (req, res) => {
+    const body = await readBody(req);
+    if (!body.capability) {
+      fail(res, 400, '缺少 capability 参数');
+      return;
+    }
+    try {
+      const result = await engineCore.executeCapability(body.capability, body.question, body.options);
+      ok(res, result);
+    } catch (e) {
+      console.error('[engine-core-analyze]', e);
+      fail(res, 400, e.message);
+    }
+  });
+
+  // GET /ai/engine/capabilities —— 能力矩阵自描述
+  reg('get', '/ai/engine/capabilities', (req, res) => {
+    try {
+      ok(res, engineCore.getCapabilities());
+    } catch (e) {
+      console.error('[engine-core-capabilities]', e);
+      fail(res, 500, '获取能力矩阵失败: ' + e.message);
+    }
+  });
+
+  // GET /ai/engine/metrics —— 性能指标（成功率/降级率/平均延迟）
+  reg('get', '/ai/engine/metrics', (req, res) => {
+    try {
+      ok(res, engineCore.getMetrics());
+    } catch (e) {
+      console.error('[engine-core-metrics]', e);
+      fail(res, 500, '获取引擎指标失败: ' + e.message);
     }
   });
 

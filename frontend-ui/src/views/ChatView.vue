@@ -300,6 +300,12 @@
               <span>联网</span>
             </div>
           </el-tooltip>
+          <el-tooltip :content="artifactTooltip" placement="top">
+            <div class="web-toggle art-toggle" :class="{ 'doc-on': artifactMode === 'document', 'code-on': artifactMode === 'code' }" @click="cycleArtifactMode">
+              <el-icon><Document /></el-icon>
+              <span>{{ artifactLabel }}</span>
+            </div>
+          </el-tooltip>
           <el-button type="primary" :loading="thinking" @click="send">
             <el-icon><Promotion /></el-icon> 发送
           </el-button>
@@ -359,7 +365,7 @@
 import { ref, nextTick, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { List, Loading, ArrowDown, Link } from '@element-plus/icons-vue'
+import { List, Loading, ArrowDown, Link, Document } from '@element-plus/icons-vue'
 import MessageBubble from '@/components/MessageBubble.vue'
 import SessionSidebar from '@/components/SessionSidebar.vue'
 import ToolDock from '@/components/ToolDock.vue'
@@ -401,6 +407,22 @@ const webSearchEnabled = ref(localStorage.getItem('ous_web_search') === '1')
 watch(webSearchEnabled, (v) => {
   localStorage.setItem('ous_web_search', v ? '1' : '0')
 })
+// 本地制品模式：off / document / code（开启后 AI 自动在本机创建文档/代码文件，持久化记忆）
+const artifactMode = ref(localStorage.getItem('ous_artifact_mode') || 'off')
+watch(artifactMode, (v) => {
+  localStorage.setItem('ous_artifact_mode', v)
+})
+const artifactLabel = computed(() =>
+  artifactMode.value === 'document' ? '文档' : artifactMode.value === 'code' ? '代码' : '本地'
+)
+const artifactTooltip = computed(() => {
+  if (artifactMode.value === 'document') return '文档模式已开启：AI 自动在本机 workspace/artifacts/ 创建 Markdown 文档'
+  if (artifactMode.value === 'code') return '代码模式已开启：AI 自动在本机 workspace/artifacts/ 创建源码文件'
+  return '本地制品已关闭：点击切换 文档模式 → 代码模式 → 关闭'
+})
+function cycleArtifactMode() {
+  artifactMode.value = artifactMode.value === 'off' ? 'document' : artifactMode.value === 'document' ? 'code' : 'off'
+}
 // 对话自动→知识图谱 全自动同步开关（默认开）
 const autoSync = ref(true)
 const importInput = ref(null)
@@ -1110,6 +1132,7 @@ async function send() {
 
   try {
     const expertType = selectedExpert?.value?.type
+    const artifactPayload = artifactMode.value !== 'off' ? { artifact_mode: artifactMode.value } : {}
     let res
     if (expertType) {
       res = await aiExpertChat({
@@ -1118,10 +1141,11 @@ async function send() {
           .map(m => ({ role: m.role, content: m.content })),
         expert_type: expertType,
         session_id: currentSession.value,
-        web_search: webSearchEnabled.value
+        web_search: webSearchEnabled.value,
+        ...artifactPayload
       })
     } else {
-      res = await aiChat({ session_id: currentSession.value, message: text, web_search: webSearchEnabled.value })
+      res = await aiChat({ session_id: currentSession.value, message: text, web_search: webSearchEnabled.value, ...artifactPayload })
     }
 
     if (!res || (!res.reply && !res.response && !res.message)) {
@@ -1132,6 +1156,7 @@ async function send() {
     online.value = true
 
     const wsMeta = res.metadata?.web_search
+    const artMeta = res.metadata?.artifacts || null
 
     messages.value.push({
       role: 'assistant',
@@ -1139,7 +1164,8 @@ async function send() {
       timestamp: Date.now(),
       referenced_operators: res.metadata?.related_operators || [],
       confidence: res.metadata?.confidence ?? null,
-      web_search: wsMeta || null
+      web_search: wsMeta || null,
+      artifacts: artMeta
     })
 
     // 需求流程模式：AI回复后检查是否需要推进阶段
@@ -1386,6 +1412,21 @@ onUnmounted(() => { if (streamTimer) clearInterval(streamTimer) })
   0%, 100% { opacity: 1; }
   50% { opacity: 0.55; }
 }
+/* 本地制品模式开关（文档/代码两态高亮） */
+.web-toggle.doc-on {
+  color: #16a34a;
+  border-color: rgba(22, 163, 74, 0.55);
+  background: rgba(22, 163, 74, 0.1);
+  box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.15) inset;
+}
+.web-toggle.doc-on .el-icon { animation: web-pulse 2.4s ease-in-out infinite; }
+.web-toggle.code-on {
+  color: #7c3aed;
+  border-color: rgba(124, 58, 237, 0.55);
+  background: rgba(124, 58, 237, 0.1);
+  box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.15) inset;
+}
+.web-toggle.code-on .el-icon { animation: web-pulse 2.4s ease-in-out infinite; }
 .hist-tip {
   font-size: 12px; color: var(--text-3); margin-bottom: 12px; line-height: 1.6;
 }

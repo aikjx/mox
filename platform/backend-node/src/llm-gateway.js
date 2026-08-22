@@ -26,6 +26,12 @@ const PROVIDER_PRESETS = {
     models: ['qwen-max', 'qwen-plus', 'qwen-turbo', 'qwen-long'],
     description: '阿里云千问大模型，支持多模态和长上下文'
   },
+  kimi: {
+    name: 'Kimi (月之暗面)',
+    base_url: 'https://api.moonshot.cn/v1',
+    models: ['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k', 'kimi-latest'],
+    description: '月之暗面 Kimi 大模型，长上下文与中文理解能力强'
+  },
   zhipu: {
     name: '智谱AI',
     base_url: 'https://open.bigmodel.cn/api/paas/v4',
@@ -125,6 +131,7 @@ const PROVIDER_CAPABILITY_SCORE = {
   volcengine: 90, // 豆包，长上下文友好
   openai: 92, // 综合最强推理/多模态
   qwen: 85, // 阿里云千问，多模态 + 长上下文
+  kimi: 86, // Kimi，长上下文 + 中文理解
   zhipu: 82, // 智谱 GLM，长文本 + 复杂推理
   anthropic: 88, // Claude，长上下文推理
   google: 87, // Gemini，多模态
@@ -189,6 +196,54 @@ class LLMGateway {
   isRealAI() {
     const provider = this.activeProvider ? this.providers[this.activeProvider] : null;
     return !!(provider && provider.provider && provider.provider !== 'local' && provider.api_key && String(provider.api_key).trim().length > 0);
+  }
+
+  // 当前可用（已启用 + 已配置 Key + 非 local）的 Provider 列表，供优化引擎枚举
+  listAvailableProviders() {
+    return Object.values(this.providers)
+      .filter((p) => p.provider && p.provider !== 'local' && p.enabled && p.api_key && String(p.api_key).trim().length > 0)
+      .map((p) => ({ id: p.id, name: p.name || p.id, provider: p.provider, model: p.model }));
+  }
+
+  // 评测专用：指定 Provider 的严格单次调用（不重试、不本地降级），
+  // 失败即抛错，保证优化评分不被假回复污染。
+  async chatWithProvider(providerId, params) {
+    const provider = this.providers[providerId];
+    if (!provider || !provider.enabled || provider.provider === 'local' || !provider.api_key) {
+      throw new Error(`Provider 不可用或未配置: ${providerId}`);
+    }
+    const { messages, temperature = 0.3, maxTokens = 512, systemPrompt } = params;
+    const all = systemPrompt
+      ? [{ role: 'system', content: this._buildTimeContext() }, { role: 'system', content: systemPrompt }, ...messages]
+      : [{ role: 'system', content: this._buildTimeContext() }, ...messages];
+
+    const url = provider.base_url || 'https://api.openai.com/v1';
+    const model = provider.model || 'gpt-4';
+    const apiKey = decryptApiKey(provider.api_key);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.requestTimeout);
+    const start = Date.now();
+    try {
+      const response = await fetch(`${url}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        body: JSON.stringify({ model, messages: all, temperature, max_tokens: maxTokens }),
+        signal: controller.signal
+      });
+      if (!response.ok) throw new Error(`LLM API error: ${response.status}`);
+      const data = await response.json();
+      this._recordUsage(provider.id || provider.provider, data.usage || {});
+      return {
+        content: data.choices[0].message.content,
+        usage: data.usage || { total_tokens: 0 },
+        model: data.model,
+        provider: provider.id,
+        latency_ms: Date.now() - start
+      };
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
   // 构建实时时间上下文：LLM 训练数据存在截止时间，不注入当前时间会导致

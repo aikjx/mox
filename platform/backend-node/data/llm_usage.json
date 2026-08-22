@@ -1,9 +1,9 @@
 {
   "llm_deepseek": {
-    "total_tokens": 2223,
-    "prompt_tokens": 1337,
-    "completion_tokens": 886,
-    "requests": 7,
-    "last_updated": "2026-08-22T02:39:58.553Z"
+    "total_tokens": 34712,
+    "prompt_tokens": 16901,
+    "completion_tokens": 17811,
+    "requests": 77,
+    "last_updated": "2026-08-22T03:28:21.871Z"
   }
 }

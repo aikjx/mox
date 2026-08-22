@@ -1196,9 +1196,31 @@
         "role": "assistant",
         "content": "已收到你的请求：\"豆包是什么？\"。本系统支持图谱分析、算子执行、AI 对话、浏览器自动化、MCP 兼容等能力。请告诉我具体需求。",
         "ts": "2026-08-21T03:19:36.167Z"
+      },
+      {
+        "role": "user",
+        "content": "豆包是什么？",
+        "ts": "2026-08-22T02:56:19.450Z"
+      },
+      {
+        "role": "assistant",
+        "content": "豆包是一款由字节跳动公司开发的AI对话助手，主要功能包括回答问题、提供建议、辅助写作等。它基于深度学习技术，能够理解和生成自然语言，帮助用户解决日常问题或完成特定任务。豆包通常以手机应用或网页形式提供，界面简洁，适合普通用户使用。如果你有具体的使用场景或功能需求，可以进一步说明，我可以提供更针对性的信息。",
+        "ts": "2026-08-22T02:56:19.450Z",
+        "ai_powered": true
+      },
+      {
+        "role": "user",
+        "content": "你是？",
+        "ts": "2026-08-22T02:56:34.451Z"
+      },
+      {
+        "role": "assistant",
+        "content": "我是豆包，一个由字节跳动开发的AI助手。我可以帮你回答问题、提供建议、处理文字任务等。无论是日常闲聊、知识查询，还是写作辅助，你都可以随时问我。有什么需要帮助的吗？",
+        "ts": "2026-08-22T02:56:34.451Z",
+        "ai_powered": true
       }
     ],
-    "updatedAt": "2026-08-21T03:19:36.167Z"
+    "updatedAt": "2026-08-22T02:56:34.451Z"
   },
   {
     "id": "sess_e4bzpar300",
@@ -1307,5 +1329,121 @@
       }
     ],
     "updatedAt": "2026-08-22T02:37:22.645Z"
+  },
+  {
+    "id": "s-isy0gbs",
+    "title": "你是？",
+    "messages": [
+      {
+        "role": "user",
+        "content": "你是？",
+        "ts": "2026-08-22T02:56:44.760Z"
+      },
+      {
+        "role": "assistant",
+        "content": "你好！我是DeepSeek，由深度求索公司创造的AI助手。😊\n\n我可以帮你解答问题、提供信息、进行创作、分析数据等等。无论是学习、工作还是日常生活中的疑问，都可以随时问我！\n\n有什么我可以帮你的吗？",
+        "ts": "2026-08-22T02:56:44.760Z",
+        "ai_powered": true
+      },
+      {
+        "role": "user",
+        "content": "开发一个没有人开发过的小游戏。",
+        "ts": "2026-08-22T02:57:21.007Z"
+      },
+      {
+        "role": "assistant",
+        "content": "好的，我们来头脑风暴一个**全新且没人做过**的小游戏！关键在于“机制创新”，而不是换皮。\n\n我构思了一个结合**“时间倒流”**与**“空间拓扑”**的极简益智游戏，名叫：\n\n---\n\n### 🎮 《莫比乌斯推箱》 (Möbius Sokoban)\n\n**核心创意：** 这不是普通的推箱子。你推的不是箱子，而是**“房间”本身**。\n\n---\n\n#### 📖 游戏设定\n- 你扮演一个“空间管理员”，在一个**莫比乌斯环**（只有一个面的扭曲环带）上移动。\n- 环带上散布着一些“能量节点”（类似箱子），你需要将它们推到指定的“稳定区”。\n- **关键机制**：当你沿着环带走完一整圈回到原点时，你会发现**世界左右颠倒**了（因为莫比乌斯环的拓扑性质）。之前推过的箱子，现在会以镜像位置存在。\n\n#### 🕹️ 核心玩法机制\n1. **双面视界**：屏幕被分为上下两部分，上半是环带的“正面”，下半是“背面”（但实际上是同一个面，只是视角不同）。\n2. **时间回溯不重置**：你可以按“回溯键”，让时间倒退3秒。但**回溯不会重置箱子位置**，箱子会留在“未来”的位置，而你和环境回到过去。这导致你可以在“过去”和“未来”的箱子之间创造新的交互（例如，利用未来的箱子垫脚，去推过去的箱子）。\n3. **拓扑移动**：当你走到屏幕边缘，不是掉下去，而是从另一侧反向出现，同时**所有物体的左右方向自动反转**（模拟莫比乌斯环的扭曲）。\n\n---\n\n#### 🧠 为什么“没人开发过”？\n- **传统推箱子**是欧几里得平面，而这里是非欧几里得空间（单面环）。\n- **传统时间回溯**是“全重置”，而这里是“部分重置”（环境回退，物体保留），制造出“因果悖论”解谜。\n\n---\n\n#### 🎨 美术风格\n- 极简黑白线条，加上柔和霓虹光效（类似《纪念碑谷》的视觉风格）。\n- 背景音乐使用循环但逐渐变调的电子音（模拟莫比乌斯环的无限感）。\n\n---\n\n#### 🕹️ 操作方式\n- 方向键/虚拟摇杆：移动\n- 空格键：推箱子（面向箱子时）\n- R键：时间回溯3秒\n\n---\n\n#### 🎯 关卡示例（第一关）\n- 环带上有一个箱子，一个目标点。\n- 你推着箱子走了一圈，回到原点，发现目标点也“翻转”到了你身后。\n- 你需要利用“回溯”机制：先推箱子到某位置，回溯，让箱子留在未来，然后自己回到过去，再利用未来的箱子挡住去路，改变自己的移动路径，最终将箱子推入目标。\n\n---\n\n**这个游戏的核心乐趣**在于：玩家需要同时理解**拓扑空间**和**时间悖论**，每次通关都会有一种“我居然能这么想”的惊喜感。\n\n你觉得这个创意如何？如果你想要更简单的版本（比如纯文字、纯网页），或者想换一个方向（比如物理模拟、社交互动），我也可以继续调整！要不要我帮你写一个简单的HTML原型代码？",
+        "ts": "2026-08-22T02:57:21.007Z",
+        "ai_powered": true
+      },
+      {
+        "role": "user",
+        "content": "html企业级开发流程。最好玩的游戏",
+        "ts": "2026-08-22T02:58:27.531Z"
+      },
+      {
+        "role": "assistant",
+        "content": "既然你提到 **“HTML企业级开发流程”** 和 **“最好玩的游戏”**，我理解为：你想用**企业级的工程化标准**（模块化、测试、构建、性能优化、可维护性）来开发一个**极具娱乐性**的HTML5小游戏。\n\n我们来做一个**既符合企业级规范，又极其好玩**的游戏。我选定一个方向：\n\n---\n\n## 🎮 游戏：《节奏陨星》 (Rhythm Meteor)\n\n**类型**：音乐节奏 + 躲避 + 连击策略（类似《几何冲刺》+《节奏地牢》的轻量结合）\n\n---\n\n### 🌟 为什么“最好玩”？\n1. **即时爽感**：音乐节拍驱动，每次完美闪避/击中都会触发屏幕震动和粒子爆炸。\n2. **心流设计**：难度曲线由AI动态调整，永远“差一点就死”，刺激多巴胺分泌。\n3. **社交竞技**：全球排行榜（基于WebSocket），可观看幽灵回放。\n4. **物理反馈**：陨石碎裂时有碎片飞溅，且碎片会阻挡视线（增加策略性）。\n\n---\n\n### 🏭 企业级HTML开发流程（全流程拆解）\n\n我将从**零到部署**的完整流程给你梳理，并附上关键代码示例。\n\n---\n\n#### 一、项目架构（模块化与工程化）\n\n```text\nrhythm-meteor/\n├── src/\n│   ├── core/           # 游戏循环、事件总线\n│   │   ├── GameLoop.js\n│   │   └── EventBus.js\n│   ├── entities/       # 游戏实体（玩家、陨石、粒子）\n│   │   ├── Player.js\n│   │   ├── Meteor.js\n│   │   └── ParticleSystem.js\n│   ├── systems/        # 子系统（音频、碰撞、得分）\n│   │   ├── AudioManager.js\n│   │   ├── CollisionSystem.js\n│   │   └── ScoreSystem.js\n│   ├── ui/             # UI组件（HUD、菜单、排行榜）\n│   │   ├── HUD.js\n│   │   └── Leaderboard.js\n│   ├── utils/          # 工具函数\n│   │   ├── math.js\n│   │   └── storage.js\n│   ├── styles/         # SCSS样式\n│   │   ├── main.scss\n│   │   └── components/\n│   ├── assets/         # 音频、图片、字体\n│   └── main.js         # 入口文件\n├── tests/              # 单元测试\n├── .eslintrc.json      # 代码规范\n├── .prettierrc         # 格式化\n├── package.json\n├── webpack.config.js   # 构建配置\n└── README.md\n```\n\n---\n\n#### 二、技术栈选型（企业级标准）\n\n| 层面 | 技术 | 理由 |\n|------|------|------|\n| 语言 | **TypeScript** | 类型安全，适合大型项目 |\n| 构建 | **Vite + Webpack** | 快速HMR，生产优化 |\n| 测试 | **Jest + Playwright** | 单元测试 + E2E |\n| 代码规范 | **ESLint + Prettier + Husky** | 自动检查，提交前拦截 |\n| CI/CD | **GitHub Actions** | 自动构建、测试、部署 |\n| 性能 | **Canvas 2D + Web Audio API** | 60FPS保证 |\n| 状态管理 | **Zustand**（轻量） | 比Redux简单，适合游戏状态 |\n\n---\n\n#### 三、核心代码示例（关键部分）\n\n##### 1. 游戏循环（固定时间步长，避免帧率波动）\n\n```typescript\n// src/core/GameLoop.ts\nexport class GameLoop {\n  private lastTime = 0;\n  private accumulator = 0;\n  private readonly step = 1000 / 60; // 60 FPS固定步长\n\n  constructor(\n    private update: (delta: number) => void,\n    private render: () => void\n  ) {}\n\n  start() {\n    this.lastTime = performance.now();\n    requestAnimationFrame(this.tick.bind(this));\n  }\n\n  private tick(currentTime: number) {\n    const delta = currentTime - this.lastTime;\n    this.lastTime = currentTime;\n    this.accumulator += delta;\n\n    while (this.accumulator >= this.step) {\n      this.update(this.step / 1000);\n      this.accumulator -= this.step;\n    }\n    this.render();\n    requestAnimationFrame(this.tick.bind(this));\n  }\n}\n```\n\n##### 2. 音频节拍同步（Web Audio API）\n\n```typescript\n// src/systems/AudioManager.ts\nexport class AudioManager {\n  private audioContext: AudioContext;\n  private beatInterval = 500; // 每0.5秒一个节拍（120BPM）\n\n  constructor() {\n    this.audioContext = new AudioContext();\n  }\n\n  // 生成节拍脉冲\n  scheduleBeat() {\n    const osc = this.audioContext.createOscillator();\n    const gain = this.audioContext.createGain();\n    osc.connect(gain);\n    gain.connect(this.audioContext.destination);\n    osc.frequency.value = 880; // A5音\n    gain.gain.setValueAtTime(0.8, this.audioContext.currentTime);\n    gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.1);\n    osc.start();\n    osc.stop(this.audioContext.currentTime + 0.1);\n  }\n\n  // 动态检测节拍（简化版，实际可用音频分析）\n  getBeatPhase() {\n    return (performance.now() % this.beatInterval) / this.beatInterval;\n  }\n}\n```\n\n##### 3. 碰撞检测（空间哈希优化）\n\n```typescript\n// src/systems/CollisionSystem.ts\nexport class CollisionSystem {\n  private grid: Map<string, Entity[]> = new Map();\n  private cellSize = 50;\n\n  // 空间哈希，减少碰撞检测复杂度\n  update(entities: Entity[]) {\n    this.grid.clear();\n    for (const entity of entities) {\n      const key = this.getCellKey(entity.x, entity.y);\n      if (!this.grid.has(key)) this.grid.set(key, []);\n      this.grid.get(key)!.push(entity);\n    }\n  }\n\n  checkCollisions(player: Player, meteors: Meteor[]): Meteor[] {\n    const nearby = this.getNearbyEntities(player);\n    return nearby.filter(m => m.intersects(player));\n  }\n\n  private getCellKey(x: number, y: number) {\n    return `${Math.floor(x / this.cellSize)},${Math.floor(y / this.cellSize)}`;\n  }\n\n  private getNearbyEntities(entity: Entity): Entity[] {\n    const result: Entity[] = [];\n    for (let dx = -1; dx <= 1; dx++) {\n      for (let dy = -1; dy <= 1; dy++) {\n        const key = this.getCellKey(entity.x + dx * this.cellSize, entity.y + dy * this.cellSize);\n        if (this.grid.has(key)) result.push(...this.grid.get(key)!);\n      }\n    }\n    return result;\n  }\n}\n```\n\n---\n\n#### 四、测试策略（企业级要求）\n\n```typescript\n// tests/ScoreSystem.test.ts\ndescribe('ScoreSystem', () => {\n  it('连续完美闪避获得连击加成', () => {\n    const score = new ScoreSystem();\n    score.perfectDodge();\n    score.perfectDodge();\n    score.perfectDodge();\n    expect(score.getComboMultiplier()).toBe(3);\n  });\n\n  it('被击中后连击重置', () => {\n    const score = new ScoreSystem();\n    score.perfectDodge();\n    score.hit();\n    expect(score.getComboMultiplier()).toBe(0);\n  });\n});\n```\n\n---\n\n#### 五、性能优化（企业级）\n\n- **对象池**：陨石和粒子使用对象池，避免频繁GC。\n- **离屏Canvas**：背景预渲染，减少每帧绘制。\n- **Web Worker**：将音频分析放到Worker线程，避免阻塞主线程。\n- **Lazy Loading**：音效文件按需加载。\n\n---\n\n#### 六、部署流程\n\n```yaml\n# .github/workflows/deploy.yml\nname: Deploy\non:\n  push:\n    branches: [main]\njobs:\n  build-and-deploy:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v3\n      - uses: actions/setup-node@v3\n        with:\n          node-version: '20'\n      - run: npm ci\n      - run: npm run test\n      - run: npm run build\n      - uses: peaceiris/actions-gh-pages@v3\n        with:\n          github_token: ${{ secrets.GITHUB_TOKEN }}\n          publish_dir: ./dist\n```\n\n---\n\n### 🎯 总结\n\n这个游戏**好玩**在于：\n- 音乐与操作的完美同步（类似《节奏光剑》的快感）\n- 动态难度让玩家始终处于“心流”状态\n- 碎片飞溅的视觉冲击 + 连击数字的即时奖励",
+        "ts": "2026-08-22T02:58:27.531Z",
+        "ai_powered": true
+      },
+      {
+        "role": "user",
+        "content": "html企业级开发流程。最好玩的游戏",
+        "ts": "2026-08-22T02:58:39.184Z"
+      },
+      {
+        "role": "assistant",
+        "content": "好的，我理解你希望看到**企业级HTML游戏开发流程**，同时追求**最好玩的游戏体验**。我来给你一套完整的专业方案，并且直接给你一个**可以玩**的Demo！\n\n---\n\n## 🏢 企业级HTML游戏开发流程\n\n### 一、项目架构设计\n\n```\nmobius-game/\n├── src/\n│   ├── core/           # 核心引擎\n│   │   ├── GameLoop.js     # 游戏循环（requestAnimationFrame）\n│   │   ├── EventBus.js     # 事件总线（发布-订阅）\n│   │   ├── StateManager.js # 状态管理（类似Redux）\n│   │   └── AssetLoader.js  # 资源预加载\n│   ├── entities/       # 游戏实体\n│   │   ├── Player.js\n│   │   ├── Box.js\n│   │   └── Target.js\n│   ├── systems/        # 游戏系统\n│   │   ├── PhysicsSystem.js    # 物理碰撞\n│   │   ├── RenderSystem.js     # Canvas渲染\n│   │   ├── InputSystem.js      # 键盘/触摸输入\n│   │   └── AudioSystem.js      # Web Audio音效\n│   ├── levels/         # 关卡数据\n│   │   └── level1.json\n│   └── ui/             # 用户界面\n│       ├── HUD.js\n│       └── Menu.js\n├── assets/             # 美术资源\n├── tests/              # 单元测试\n├── webpack.config.js   # 构建配置\n└── index.html\n```\n\n### 二、开发流程\n\n1. **需求分析** → 2. **原型设计** → 3. **架构搭建** → 4. **核心玩法** → 5. **美术打磨** → 6. **性能优化** → 7. **测试发布**\n\n---\n\n## 🎮 最好玩的游戏：我直接给你一个“时间回溯推箱”的精简版！\n\n我把它做成一个**单HTML文件**，可以直接在浏览器运行，包含企业级最佳实践（模块化、事件驱动、状态管理、渲染优化）。\n\n```html\n<!DOCTYPE html>\n<html lang=\"zh-CN\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>时间回溯推箱 - 企业级Demo</title>\n    <style>\n        * { margin: 0; padding: 0; box-sizing: border-box; }\n        body {\n            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);\n            font-family: 'Arial', sans-serif;\n            display: flex;\n            justify-content: center;\n            align-items: center;\n            min-height: 100vh;\n            overflow: hidden;\n        }\n        #gameContainer {\n            position: relative;\n            border-radius: 12px;\n            box-shadow: 0 20px 60px rgba(0,0,0,0.5);\n            overflow: hidden;\n        }\n        #gameCanvas {\n            display: block;\n            background: #1a1a2e;\n            cursor: pointer;\n        }\n        #hud {\n            position: absolute;\n            top: 10px;\n            left: 10px;\n            color: #fff;\n            background: rgba(0,0,0,0.7);\n            padding: 10px 15px;\n            border-radius: 8px;\n            font-size: 14px;\n            z-index: 10;\n            backdrop-filter: blur(5px);\n        }\n        #controls {\n            position: absolute;\n            bottom: 10px;\n            left: 50%;\n            transform: translateX(-50%);\n            color: #fff;\n            background: rgba(0,0,0,0.7);\n            padding: 8px 15px;\n            border-radius: 8px;\n            font-size: 12px;\n            z-index: 10;\n            white-space: nowrap;\n            backdrop-filter: blur(5px);\n        }\n        #winScreen {\n            position: absolute;\n            top: 0; left: 0; right: 0; bottom: 0;\n            background: rgba(0,0,0,0.8);\n            display: none;\n            justify-content: center;\n            align-items: center;\n            flex-direction: column;\n            z-index: 20;\n            backdrop-filter: blur(10px);\n        }\n        #winScreen h1 {\n            color: #00ff88;\n            font-size: 36px;\n            margin-bottom: 20px;\n            text-shadow: 0 0 20px #00ff88;\n        }\n        #winScreen button {\n            padding: 12px 30px;\n            font-size: 16px;\n            background: #00ff88;\n            border: none;\n            border-radius: 8px;\n            cursor: pointer;\n            color: #000;\n            font-weight: bold;\n            transition: all 0.3s;\n        }\n        #winScreen button:hover {\n            transform: scale(1.05);\n            box-shadow: 0 0 20px #00ff88;\n        }\n        .particle {\n            position: absolute;\n            pointer-events: none;\n            animation: float 1s ease-out forwards;\n        }\n        @keyframes float {\n            to { transform: translateY(-30px); opacity: 0; }\n        }\n    </style>\n</head>\n<body>\n\n<div id=\"gameContainer\">\n    <canvas id=\"gameCanvas\"></canvas>\n    <div id=\"hud\">\n        <div>步数: <span id=\"steps\">0</span></div>\n        <div>回溯次数: <span id=\"rewinds\">0</span></div>\n    </div>\n    <div id=\"controls\">⬆⬇⬅➡ 移动 | 空格: 推 | R: 回溯3秒 | 点击屏幕: 交互</div>\n    <div id=\"winScreen\">\n        <h1>🎉 通关！</h1>\n        <button onclick=\"restartGame()\">再来一次</button>\n    </div>\n</div>\n\n<script>\n// ============================================\n// 企业级架构：模块化 + 事件驱动 + 状态管理\n// ============================================\n\n// ---------- 1. 事件总线（发布-订阅模式）----------\nclass EventBus {\n    constructor() {\n        this.events = {};\n    }\n    on(eventName, callback) {\n        if (!this.events[eventName]) this.events[eventName] = [];\n        this.events[eventName].push(callback);\n    }\n    emit(eventName, data) {\n        if (this.events[eventName]) {\n            this.events[eventName].forEach(cb => cb(data));\n        }\n    }\n}\n\n// ---------- 2. 状态管理器 ----------\nclass StateManager {\n    constructor() {\n        this.state = {\n            player: { x: 0, y: 0 },\n            boxes: [],\n            targets: [],\n            steps: 0,\n            rewinds: 0,\n            won: false,\n            history: []  // 用于回溯\n        };\n        this.listeners = [];\n    }\n    setState(newState) {\n        Object.assign(this.state, newState);\n        this.listeners.forEach(l => l(this.state));\n    }\n    subscribe(listener) {\n        this.listeners.push(listener);\n    }\n    // 记录历史（用于时间回溯）\n    snapshot() {\n        return JSON.stringify(this.state);\n    }\n    restore(snapshot) {\n        const data = JSON.parse(snapshot);\n        this.state = data;\n        this.listeners.forEach(l => l(this.state));\n    }\n}\n\n// ---------- 3. 游戏主类 ----------\nclass Game {\n    constructor(canvasId) {\n        this.canvas = document.getElementById(canvasId);\n        this.ctx = this.canvas.getContext('2d');\n        this.eventBus = new EventBus();\n        this.stateManager = new StateManager();\n        \n        // 游戏配置\n        this.TILE_SIZE = 60;\n        this.COLS = 8;\n        this.ROWS = 6;\n        this.canvas.width = this.COLS * this.TILE_SIZE;\n        this.canvas.height = this.ROWS * this.TILE_SIZE;\n        \n        // 输入状态\n        this.keys = {};\n        this.touchX = 0;\n        this.touchY = 0;\n        \n        // 粒子效果\n        this.particles = [];\n        \n        // 初始化\n        this.init();\n        this.setupEvents();\n        this.gameLoop();\n    }\n    \n    init() {\n        // 加载关卡（企业级：从JSON加载）\n        this.currentLevel = 1;\n        this.loadLevel(1);\n        \n        // 订阅状态变化，更新UI\n        this.stateManager.subscribe(state => {\n            document.getElementById('steps').textContent = state.steps;\n            document.getElementById('rewinds').textContent = state.rewinds;\n            if (state.won) {\n                document.getElementById('winScreen').style.display = 'flex';\n                this.spawnParticles();\n            }\n        });\n    }\n    \n    loadLevel(levelNum) {\n        // 关卡数据（企业级：从JSON文件加载）\n        const levels = {\n            1: {\n                player:",
+        "ts": "2026-08-22T02:58:39.184Z",
+        "ai_powered": true
+      },
+      {
+        "role": "user",
+        "content": "继续",
+        "ts": "2026-08-22T03:01:51.664Z"
+      },
+      {
+        "role": "assistant",
+        "content": "好的，我在这里。想聊点什么？或者有什么需要我帮忙的吗？",
+        "ts": "2026-08-22T03:01:51.664Z",
+        "ai_powered": true
+      }
+    ],
+    "updatedAt": "2026-08-22T03:01:51.664Z"
+  },
+  {
+    "id": "regression-check",
+    "title": "今天是几月几号？",
+    "messages": [
+      {
+        "role": "user",
+        "content": "今天是几月几号？",
+        "ts": "2026-08-22T03:01:01.610Z"
+      },
+      {
+        "role": "assistant",
+        "content": "今天是2026年8月22日，星期六。",
+        "ts": "2026-08-22T03:01:01.610Z",
+        "ai_powered": true
+      }
+    ],
+    "updatedAt": "2026-08-22T03:01:01.610Z"
+  },
+  {
+    "id": "artifact-e2e-doc",
+    "title": "帮我写一份《AI 对话系统接口设计文档》",
+    "messages": [
+      {
+        "role": "user",
+        "content": "帮我写一份《AI 对话系统接口设计文档》并保存为文件，内容包括：认证、消息、会话管理三部分的接口设计。",
+        "ts": "2026-08-22T03:09:29.532Z"
+      },
+      {
+        "role": "assistant",
+        "content": "好的，我将为您生成一份《AI 对话系统接口设计文档》，包含认证、消息、会话管理三部分，并保存为 Markdown 文件。\n\n文件已创建：`AI对话系统接口设计文档.md`\n```markdown\n# AI 对话系统接口设计文档\n\n**版本**：v1.0  \n**日期**：2026年8月22日  \n**状态**：草稿  \n\n---\n\n## 1. 引言\n\n本文档定义 AI 对话系统的核心 RESTful API 接口规范，涵盖认证、消息、会话管理三部分。所有接口均采用 JSON 格式进行数据交换，字符编码统一为 UTF-8。\n\n---\n\n## 2. 通用约定\n\n- **Base URL**：`https://api.example.com/v1`\n- **认证方式**：`Bearer Token`（通过认证接口获取）\n- **请求头**：\n  - `Content-Type: application/json`\n  - `Authorization: Bearer <access_token>`\n- **响应格式**：\n  ```json\n  {\n    \"code\": 0,\n    \"message\": \"success\",\n    \"data\": { }\n  }\n  ```\n  - `code`：业务状态码（0 成功，非 0 失败）\n  - `message`：状态描述\n  - `data`：具体数据对象\n\n---\n\n## 3. 认证接口\n\n### 3.1 获取访问令牌\n\n- **URL**：`/auth/token`\n- **方法**：`POST`\n- **描述**：使用 API Key 获取短期访问令牌。\n\n**请求参数**\n\n| 参数名       | 类型   | 必填 | 说明                     |\n| ------------ | ------ | ---- | ------------------------ |\n| api_key      | string | 是   | 开发者 API Key           |\n| api_secret   | string | 是   | 开发者 API Secret        |\n| grant_type   | string | 是   | 固定值 `client_credentials` |\n\n**请求示例**\n\n```json\n{\n  \"api_key\": \"your_api_key\",\n  \"api_secret\": \"your_api_secret\",\n  \"grant_type\": \"client_credentials\"\n}\n```\n\n**响应示例**\n\n```json\n{\n  \"code\": 0,\n  \"message\": \"success\",\n  \"data\": {\n    \"access_token\": \"eyJhbGciOiJIUzI1NiIs...\",\n    \"expires_in\": 3600,\n    \"token_type\": \"Bearer\"\n  }\n}\n```\n\n---\n\n### 3.2 刷新访问令牌\n\n- **URL**：`/auth/refresh`\n- **方法**：`POST`\n- **描述**：使用 Refresh Token 刷新过期的访问令牌。\n\n**请求参数**\n\n| 参数名        | 类型   | 必填 | 说明             |\n| ------------- | ------ | ---- | ---------------- |\n| refresh_token | string | 是   | 刷新令牌         |\n\n**请求示例**\n\n```json\n{\n  \"refresh_token\": \"your_refresh_token\"\n}\n```\n\n**响应示例**\n\n```json\n{\n  \"code\": 0,\n  \"message\": \"success\",\n  \"data\": {\n    \"access_token\": \"new_access_token\",\n    \"expires_in\": 3600,\n    \"token_type\": \"Bearer\"\n  }\n}\n```\n\n---\n\n### 3.3 撤销令牌\n\n- **URL**：`/auth/revoke`\n- **方法**：`POST`\n- **描述**：撤销当前访问令牌，使其立即失效。\n\n**请求参数**\n\n| 参数名       | 类型   | 必填 | 说明           |\n| ------------ | ------ | ---- | -------------- |\n| access_token | string | 是   | 要撤销的令牌   |\n\n**响应示例**\n\n```json\n{\n  \"code\": 0,\n  \"message\": \"token revoked successfully\",\n  \"data\": null\n}\n```\n\n---\n\n## 4. 会话管理接口\n\n### 4.1 创建会话\n\n- **URL**：`/conversations`\n- **方法**：`POST`\n- **描述**：创建新的对话会话。\n\n**请求参数**\n\n| 参数名         | 类型   | 必填 | 说明                         |\n| -------------- | ------ | ---- | ---------------------------- |\n| title          | string | 否   | 会话标题（默认自动生成）     |\n| system_prompt  | string | 否   | 系统提示词（可选）           |\n| metadata       | object | 否   | 自定义元数据（如用户ID等）   |\n\n**请求示例**\n\n```json\n{\n  \"title\": \"产品咨询\",\n  \"system_prompt\": \"你是一位专业的产品顾问。\",\n  \"metadata\": {\n    \"user_id\": \"u_12345\",\n    \"source\": \"web\"\n  }\n}\n```\n\n**响应示例**\n\n```json\n{\n  \"code\": 0,\n  \"message\": \"success\",\n  \"data\": {\n    \"conversation_id\": \"conv_9f8e7d6c\",\n    \"title\": \"产品咨询\",\n    \"created_at\": \"2026-08-22T10:30:00Z\",\n    \"status\": \"active\"\n  }\n}\n```\n\n---\n\n### 4.2 获取会话列表\n\n- **URL**：`/conversations`\n- **方法**：`GET`\n- **描述**：分页获取当前用户的会话列表。\n\n**查询参数**\n\n| 参数名   | 类型   | 必填 | 说明                     |\n| -------- | ------ | ---- | ------------------------ |\n| page     | int    | 否   | 页码，默认 1             |\n| page_size| int    | 否   | 每页数量，默认 20，最大 100 |\n| status   | string | 否   | 过滤状态：active/archived |\n\n**响应示例**\n\n```json\n{\n  \"code\": 0,\n  \"message\": \"success\",\n  \"data\": {\n    \"total\": 5,\n    \"page\": 1,\n    \"page_size\": 20,\n    \"items\": [\n      {\n        \"conversation_id\": \"conv_9f8e7d6c\",\n        \"title\": \"产品咨询\",\n        \"created_at\": \"2026-08-22T10:30:00Z\",\n        \"updated_at\": \"2026-08-22T11:00:00Z\",\n        \"status\": \"active\"\n      }\n    ]\n  }\n}\n```\n\n---\n\n### 4.3 获取会话详情\n\n- **URL**：`/conversations/{conversation_id}`\n- **方法**：`GET`\n- **描述**：获取指定会话的详细信息。\n\n**路径参数**\n\n| 参数名          | 类型   | 必填 | 说明         |\n| --------------- | ------ | ---- | ------------ |\n| conversation_id | string | 是   | 会话 ID      |\n\n**响应示例**\n\n```json\n{\n  \"code\": 0,\n  \"message\": \"success\",\n  \"data\": {\n    \"conversation_id\": \"conv_9f8e7d6c\",\n    \"title\": \"产品咨询\",\n    \"system_prompt\": \"你是一位专业的产品顾问。\",\n    \"status\": \"active\",\n    \"created_at\": \"2026-08-22T10:30:00Z\",\n    \"updated_at\": \"2026-08-22T11:00:00Z\",\n    \"metadata\": {\n      \"user_id\": \"u_12345\",\n      \"source\": \"web\"\n    },\n    \"message_count\": 12\n  }\n}\n```\n\n---\n\n### 4.4 更新会话信息\n\n- **URL**：`/conversations/{conversation_id}`\n- **方法**：`PATCH`\n- **描述**：更新会话标题、状态等属性。\n\n**请求参数**\n\n| 参数名   | 类型   | 必填 | 说明                     |\n| -------- | ------ | ---- | ------------------------ |\n| title    | string | 否   | 新标题                   |\n| status   | string | 否   | 状态：active/archived    |\n| metadata | object | 否   | 合并更新的元数据         |\n\n**请求示例**\n\n```json\n{\n  \"title\": \"产品咨询-更新版\",\n  \"status\": \"archived\"\n}\n```\n\n**响应示例**\n\n```json\n{\n  \"code\": 0,\n  \"message\": \"success\",\n  \"data\": {\n    \"conversation_id\": \"conv_9f8e7d6c\",\n    \"title\": \"产品咨询-更新版\",\n    \"status\": \"archived\",\n    \"updated_at\": \"2026-08-22T11:05:00Z\"\n  }\n}\n```\n\n---\n\n### 4.5 删除会话\n\n- **URL**：`/conversations/{conversation_id}`\n- **方法**：`DELETE`\n- **描述**：软删除指定会话（可恢复）。\n\n**响应示例**\n\n```json\n{\n  \"code\": 0,\n  \"message\": \"conversation deleted\",\n  \"data\": null\n}\n```\n\n---\n\n## 5. 消息接口\n\n### 5.1 发送消息（同步）\n\n- **URL**：`/messages`\n- **方法**：`POST`\n- **描述**：向指定会话发送消息并同步获取 AI 回复（适合简单场景）。\n\n**请求参数**\n\n| 参数名           | 类型   | 必填 |\n\n---\n📦 **文档模式** 已创建 1 个文件：\n- `workspace/artifacts/AI对话系统接口设计文档.md`（8.8KB）",
+        "ts": "2026-08-22T03:09:29.532Z",
+        "ai_powered": true
+      }
+    ],
+    "updatedAt": "2026-08-22T03:09:29.532Z"
+  },
+  {
+    "id": "artifact-e2e-regression",
+    "title": "一句话介绍什么是防抖",
+    "messages": [
+      {
+        "role": "user",
+        "content": "一句话介绍什么是防抖",
+        "ts": "2026-08-22T03:09:37.504Z"
+      },
+      {
+        "role": "assistant",
+        "content": "防抖（Debounce）是一种编程技巧，用于在事件连续触发时，只执行最后一次操作，避免频繁调用函数，从而提升性能，比如输入框搜索或窗口缩放。",
+        "ts": "2026-08-22T03:09:37.504Z",
+        "ai_powered": true
+      }
+    ],
+    "updatedAt": "2026-08-22T03:09:37.504Z"
   }
 ]

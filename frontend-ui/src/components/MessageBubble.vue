@@ -37,6 +37,21 @@
       <div v-else-if="msg.web_search && msg.web_search.error" class="web-sources ws-error">
         <span>联网检索失败：{{ msg.web_search.error }}</span>
       </div>
+      <div v-if="artifactCreated.length" class="web-sources artifact-box">
+        <div class="ws-head art-head">
+          <el-icon><FolderChecked /></el-icon>
+          <span>{{ msg.artifacts.mode === 'code' ? '代码文件' : '文档文件' }}已创建（{{ artifactCreated.length }}）</span>
+        </div>
+        <div v-for="(a, i) in artifactCreated" :key="i" class="art-item">
+          <span class="art-icon">{{ fileEmoji(a.filename) }}</span>
+          <span class="art-name">{{ a.filename }}</span>
+          <span class="art-size">{{ fmtSize(a.size) }}</span>
+          <span v-if="a.overwritten" class="art-over">覆盖</span>
+        </div>
+      </div>
+      <div v-else-if="msg.artifacts && msg.artifacts.skipped && msg.artifacts.skipped.length" class="web-sources ws-error">
+        <span>本地制品跳过：{{ msg.artifacts.skipped.map(s => (s.filename || '未命名') + '（' + s.reason + '）').join('；') }}</span>
+      </div>
       <div v-if="msg.confidence != null" class="conf">
         <span class="conf-label">置信度</span>
         <el-progress :percentage="Math.round(msg.confidence * 100)" :stroke-width="6" :show-text="false" style="width:90px" />
@@ -48,7 +63,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { User, Cpu, Link } from '@element-plus/icons-vue'
+import { User, Cpu, Link, FolderChecked } from '@element-plus/icons-vue'
 
 const props = defineProps({
   msg: { type: Object, required: true },
@@ -63,6 +78,28 @@ const webSources = computed(() => {
   if (!ws || !ws.enabled || !Array.isArray(ws.sources)) return []
   return ws.sources.slice(0, 6)
 })
+
+const artifactCreated = computed(() => {
+  const a = props.msg.artifacts
+  if (!a || !Array.isArray(a.created)) return []
+  return a.created.slice(0, 8)
+})
+
+function fileEmoji(filename) {
+  const ext = String(filename || '').split('.').pop().toLowerCase()
+  if (['md', 'txt'].includes(ext)) return '📄'
+  if (['js', 'ts', 'vue', 'html', 'css', 'json'].includes(ext)) return '🟨'
+  if (['py'].includes(ext)) return '🐍'
+  if (['rs'].includes(ext)) return '🦀'
+  if (['sql'].includes(ext)) return '🗄️'
+  return '📁'
+}
+
+function fmtSize(bytes) {
+  if (!bytes) return '0B'
+  if (bytes < 1024) return bytes + 'B'
+  return (bytes / 1024).toFixed(1) + 'KB'
+}
 
 const fmtTime = computed(() => {
   const t = props.msg.timestamp
@@ -323,6 +360,28 @@ const rendered = computed(() => {
   max-width: 100%; transition: color 0.15s;
 }
 .ws-error { font-size: 12px; color: #b45309; }
+/* 本地制品卡片 */
+.artifact-box {
+  border-top: 1px dashed rgba(22, 163, 74, 0.4);
+  background: rgba(22, 163, 74, 0.04);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.art-head { color: #16a34a; }
+.art-item {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12.5px; color: #334155; padding: 2px 0;
+}
+.art-icon { flex-shrink: 0; }
+.art-name {
+  font-weight: 600; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.art-size { color: #94a3b8; font-size: 11.5px; margin-left: auto; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.art-over {
+  flex-shrink: 0; font-size: 10.5px; color: #b45309;
+  border: 1px solid rgba(180, 83, 9, 0.35); border-radius: 4px; padding: 0 4px;
+}
 .ops-label { font-size: 12px; color: var(--text-dim); }
 .tag {
   font-size: 12px; background: var(--brand-soft); color: var(--brand-dark);
