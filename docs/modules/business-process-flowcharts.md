@@ -391,6 +391,68 @@ flowchart TB
 | 专家联盟·能力图谱 | `/expert-enterprise` 能力图谱 tab | 专家协作网络 + 社群 + 最优团队 | `GET /expert-graph` |
 | 专家联盟·仪表盘 | `/expert-enterprise` 仪表盘 tab | KPI + 社群划分 + 调度引擎 + 熔断器 | `/expert-graph/stats` `/experts/dispatcher/status` |
 
+### 9.6 Node 层代码结构重组（api-server.js 域驱动拆分 · 2026-08-22 收口）
+
+> 原单文件 `api-server.js`（5175 行）拆分为**组合根 + 23 个业务域路由 + 4 个跨域共享库**，文件规模缩减 97%，业务处理流程（鉴权 → match 路由 → 域 handler → ok/fail 统一响应）保持不变式。
+
+**分层架构**：
+
+```mermaid
+flowchart TB
+    subgraph CR["组合根 api-server.js（170 行）"]
+        DI[ctx 依赖注入装配<br/>引擎单例 + 基础设施]
+        RT[自研路由器 reg/match<br/>参数化匹配 :param]
+        HS[HTTP 服务器 + CORS + 统一错误响应]
+    end
+    subgraph LIB["src/lib/ 跨域共享库（4 个）"]
+        L1[http.js 响应原语]
+        L2[json-store.js JSON 存储]
+        L3[logger.js 日志]
+        L4[graph-algos.js 图算法<br/>PageRank/介数/社区/激活扩散]
+    end
+    subgraph RO["src/routes/ 业务域（23 个）"]
+        R1[系统/图谱/对话/搜索]
+        R2[专家联盟/图谱/编排]
+        R3[AI 引擎×5 域]
+        R4[KB/任务/自动开发/安全]
+    end
+    subgraph MO["src/modules/ 可插拔模块（4 个 ×30 路由）"]
+        M1[graph/task/storage/melody2score]
+    end
+    DI --> RO
+    DI --> LIB
+    DI --> MO
+```
+
+**23 个业务域装配清单**（`src/routes/index.js` 配置前置，新增域三步接入：建文件 → 登记 → 重启）：
+
+| 域 | 职责 | 域 | 职责 |
+|----|------|----|------|
+| system | 系统与状态 | kb | 知识库 |
+| graph | 知识图谱 | auto-tasks | 自动任务 |
+| chat | AI 对话 | modules-admin | 模块与存储管理 |
+| web-search | 联网搜索 | security | 安全审计 |
+| artifacts | 本地制品 | ai-engine | AI 引擎核心（统一编排） |
+| optimizer | 无穷维度优化 | ai-integrated | 智能集成引擎 |
+| ai-platform | AI 平台资源 | ai-ultimate | 终极 AI 引擎 |
+| browser-market | 浏览器与市场 | auto-dev | 自动开发引擎 |
+| integration | 集成通道 | services | 服务管理 |
+| expert-alliance | 专家联盟 | ai-enhanced | 16 模块 AI 增强 |
+| expert-graph | 专家图谱 | orchestration | 编排协作 |
+| tasks | 任务管理 | — | — |
+
+**重组验证（全部通过）**：
+
+| 验证项 | 结果 |
+|--------|------|
+| 语法检查（28 文件 `node --check`） | 28/28 |
+| 冒烟测试（26 关键端点，`scripts/smoke-routes.cjs`） | 26/26 |
+| 图谱公式回归（`test/test-graph-formulas.js`） | 35/35 |
+| 专家联盟架构回归（`test/test-expert-alliance-architecture.js`） | 21/21 |
+| 前端流程编排 tab 浏览器实测（51 节点/51 边 ECharts 渲染） | 通过 |
+
+**同轮修复的前端缺陷**：`ExpertEnterpriseView.vue` 与 `InfiniteOptimizerView.vue` 误用 `import api from '@/api'`（默认导出为 axios 实例而非 API 函数集），统一改为 `import * as api from '@/api'` 命名空间导入，流程编排 tab 图谱恢复渲染。
+
 ---
 
 *本文以 Mermaid 图形式补全 `docs/architecture.md` §9 / §28 与 `docs/modules/business-process-flows.md` 的文字流程规范，使"企业级处理业务流程"可在一页内被可视化评审、对齐代码、对客演示。所有图节点均可追溯到 `crates/runtime/src/main.rs` 与 `crates/ai-agent/src/*_engine.rs` 的真实实现。第 9 章追加 Node 平台层总览（2026-08-22），追溯 `platform/backend-node/src/*` 真实实现。*

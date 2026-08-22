@@ -434,7 +434,7 @@ import {
   DataAnalysis, Refresh, Plus, Search, User, Connection, ChatDotRound
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import api from '../api'
+import * as api from '../api'
 
 const activeTab = ref('overview')
 const loading = ref(false)
