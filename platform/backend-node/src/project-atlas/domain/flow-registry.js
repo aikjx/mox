@@ -459,6 +459,54 @@ const FLOWS = [
     ]
   },
 
+  // ==================== HITL 人机协同审批流程（管理区承载 · 网关 WebSocket 全链路） ====================
+  {
+    id: 'flow-hitl-approval',
+    name: 'HITL 人机协同审批流程（高风险拦截→人工决议→执行恢复）',
+    domain: 'security',
+    steps: [
+      {
+        id: 'hitl-trigger', name: '高风险介入判定（Reflect→HitlPause）',
+        detail: 'RiskGuard 高风险动作检测 / 反思 NeedHitl → 引擎状态机进入 HITL_PAUSE（ai-agent engine_loop.rs + state_machine.rs，enable_hitl 开关）'
+      },
+      {
+        id: 'hitl-submit', name: '待审事项登记与广播',
+        engine: 'gateway-runtime',
+        detail: 'HitlState.submit_event：pending 登记 + event_broadcast 广播（gateway handlers/hitl.rs）'
+      },
+      {
+        id: 'hitl-review', name: '管理区待审呈现',
+        detail: 'AdminHitl 面板订阅 hitl_event 实时接收 + list_pending 待审清单（frontend-ui hitl-ws.js 自动重连/指数退避）'
+      },
+      {
+        id: 'hitl-decide', name: '人工审批决议（三态）',
+        detail: 'APPROVE 放行 / DENY 驳回 / MODIFY_APPROVE 修改后批准（modified_payload 浅合并原 payload）'
+      },
+      {
+        id: 'hitl-return', name: '决议回传与历史留痕',
+        engine: 'gateway-runtime',
+        detail: 'handle_action：pending 出队 → decision 历史落录 → decision_broadcast 广播 action_result（内存态留痕）'
+      },
+      {
+        id: 'hitl-resume', name: '执行流恢复（HitlPause→Act）',
+        detail: 'HumanApproved 事件驱动状态机恢复执行循环；DENY 则中止并留痕（engine_loop.rs）'
+      },
+      {
+        id: 'hitl-bypass', name: '降级路径：HITL 禁用直通',
+        detail: 'enable_hitl=false 时跳过人工介入直接进入生成（Reflect→Generate，engine_loop.rs 显式分支）'
+      }
+    ],
+    transitions: [
+      { from: 'hitl-trigger', to: 'hitl-submit', type: 'next' },
+      { from: 'hitl-submit', to: 'hitl-review', type: 'next' },
+      { from: 'hitl-review', to: 'hitl-decide', type: 'next' },
+      { from: 'hitl-decide', to: 'hitl-return', type: 'next' },
+      { from: 'hitl-return', to: 'hitl-resume', type: 'next' },
+      { from: 'hitl-trigger', to: 'hitl-bypass', type: 'degrade', note: 'enable_hitl=false 降级直通' },
+      { from: 'hitl-bypass', to: 'hitl-resume', type: 'next', note: '跳过人工介入直接生成' }
+    ]
+  },
+
   // ==================== 代码图谱联动流程（全维归一化 · 本地代码工程维度） ====================
   {
     id: 'flow-code-bridge',

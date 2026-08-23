@@ -33,7 +33,8 @@ check('七类节点齐全（domain/module/engine/algorithm/data/doc/flow_step）
   JSON.stringify(a.stats.byKind));
 check('业务域 30 个（29 基线含 studio/projects/mcp + atlas-auto 自管理容器域）', a.stats.byKind.domain === 30, String(a.stats.byKind.domain));
 check('模块 4 个（可插拔）', a.stats.byKind.module === 4);
-check('引擎 20 个（复用引擎宇宙真相源）', a.stats.byKind.engine === 20, String(a.stats.byKind.engine));
+check('引擎 21 个（复用引擎宇宙真相源 17 + 平台级运行时节点：engine-universe/engine-kernel/project-atlas/gateway-runtime）',
+  a.stats.byKind.engine === 21, String(a.stats.byKind.engine));
 check('算法 20 个（全部自研单源：含实体抽取/归一化流水线/代码抽取）', a.stats.byKind.algorithm === 20, String(a.stats.byKind.algorithm));
 check('数据资产 44 个（数据库全覆盖 + 自管理登记层 + 归一化三维度）', a.stats.byKind.data === 44, String(a.stats.byKind.data));
 check('文档 ≥ 36 个（核心文档全域覆盖）', a.stats.byKind.doc >= 36, String(a.stats.byKind.doc));

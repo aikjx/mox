@@ -286,11 +286,11 @@ class Melody2Score:
                 raw = bytes(raw)
                 cfg_tag = (cfg.robust, cfg.enable_denoise, cfg.model_size, cfg.hop,
                            cfg.vocal_mode, cfg.fmin, cfg.fmax, cfg.conf_thresh)
-                cache_key = "v1:" + hashlib.sha256(raw).hexdigest() + ":" + repr(cfg_tag)
+                cache_key = "v2:" + hashlib.sha256(raw).hexdigest() + ":" + repr(cfg_tag)
             elif source.get("kind") == "sample":
                 cfg_tag = (cfg.robust, cfg.enable_denoise, cfg.model_size, cfg.hop,
                            cfg.vocal_mode, cfg.fmin, cfg.fmax, cfg.conf_thresh)
-                cache_key = "v1:sample:" + str(source.get("name")) + ":" + repr(cfg_tag)
+                cache_key = "v2:sample:" + str(source.get("name")) + ":" + repr(cfg_tag)
             if cache_key:
                 cached = _RESULT_CACHE.get(cache_key)
                 if cached is not None:
@@ -362,6 +362,11 @@ class Melody2Score:
             t0 = time.time()
             if progress_cb:
                 progress_cb("parse", "节拍/调式/音符解析…", 0.92)
+            # 八度归一化（halving 修复）：检测器半频锁定使音符 midi 偏低
+            # 1-2 八度 → 简谱满屏低音点 + 钢琴播放成超低音轰鸣。归一到
+            # 人声中心区（简谱记相对音级，绝对八度不承载乐义），后续
+            # BPM/调式/简谱/播放全部使用归一化后 notes。
+            notes, octave_shift = analysis.octave_normalize(notes)
             bpm = analysis.detect_bpm(y, sr, cfg.bpm_fallback, notes=notes)
             key_name = analysis.estimate_key(y, sr, notes)
             t_parse = time.time() - t0
@@ -382,6 +387,7 @@ class Melody2Score:
                 "note_count": len(notes), "duration_sec": round(total_dur, 2),
                 "backend": used_backend, "notes": notes_out,
                 "confidence": round(float(merge_info["confidence"]) if merge_info else _conf(runs[0]), 2),
+                "octave_shift": int(octave_shift),
                 "robust_runs": n_runs,
                 "robust_kept": merge_info["kept"] if merge_info else len(runs[0]),
                 "perf": {"preprocess_ms": round(t_pre * 1000, 1),

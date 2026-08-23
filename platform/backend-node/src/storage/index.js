@@ -221,6 +221,9 @@ class SQLiteProvider extends StorageProvider {
           if (!raw.trim()) continue;
           const data = JSON.parse(raw);
           const entityType = file.replace(/\.json$/, '');
+          // 迁移幂等护栏：表已有数据说明已迁移/由存储层管理，跳过该类型，
+          // 防止每次进程启动把 JSON 镜像整份追加进 SQLite 造成行膨胀
+          if (this.countByType(entityType) > 0) continue;
           if (Array.isArray(data)) {
             for (const item of data) {
               const id = item.id || `${entityType}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -340,6 +343,8 @@ class MemoryProvider extends StorageProvider {
         if (!raw.trim()) continue;
         const data = JSON.parse(raw);
         const entityType = file.replace(/\.json$/, '');
+        // 迁移幂等护栏：非空类型跳过（与 SQLiteProvider 一致，防重复追加）
+        if (this.countByType(entityType) > 0) continue;
         if (Array.isArray(data)) {
           for (const item of data) {
             const id = item.id || `${entityType}_${Date.now()}`;

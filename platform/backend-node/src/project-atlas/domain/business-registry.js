@@ -116,12 +116,12 @@ const DOMAINS = [
   },
   {
     id: 'modules-admin', name: '模块与存储管理', codePath: 'src/routes/modules-admin.js',
-    keyFeatures: ['可插拔模块管理', '存储提供方切换', '数据迁移'],
+    keyFeatures: ['可插拔模块管理', '存储提供方切换', '数据迁移', '系统管理区存储与模块面板承载（providers/switch/status 实时可视）'],
     engines: ['knowledge-graph'], dataAssets: ['settings.json'], docs: ['docs/specs/PT-Primi-架构规范-V1.0-完整版.md']
   },
   {
     id: 'security', name: '安全审计', codePath: 'src/routes/security.js',
-    keyFeatures: ['操作审计日志', '安全状态检查', '密钥加密管理'],
+    keyFeatures: ['操作审计日志', '安全状态检查', '密钥加密管理', 'API Key 凭证生命周期（创建一次性明文/吊销/校验）', '系统管理区承载（凭证/审计/HITL 审批面板，frontend-ui /admin 统一入口）'],
     engines: ['llm-gateway'], dataAssets: ['logs.json'], docs: ['docs/enterprise/12-RBAC审计全链路闭环验收报告.md']
   },
   {

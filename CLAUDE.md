@@ -30,7 +30,7 @@
 - `services/backend-node/`：Node.js 兼容层，逐步迁移至 Rust。
 - 其余：`business-catalog`（螺旋业务目录）、`template-market`（模板市场）、`optimizer`（优化器）、`operator-graph`/`operator-wasm`（算子图 / WASM 适配）。
 
-### 前端（`frontend-ui/src/` 用户端 + `frontend-admin-ui/` 管理端）
+### 前端（`frontend-ui/src/`，用户端 + 系统管理区）
 
 **用户端 (`frontend-ui/`)：**
 - `api/`：统一 fetcher（`index.js`，Axios 实例 + 请求/响应拦截器：注入 Bearer 令牌、剥离响应包裹、全局错误提示）。**组件禁止直接 `fetch`/`axios`**。
@@ -40,14 +40,13 @@
 - `styles/`：设计 token / 全局样式（禁止硬编码颜色尺寸）。
 - `types.js`：前后端契约类型（FlowGraph / GovernanceReport / 算子 / 插件 等）。
 
-**管理端 (`frontend-admin-ui/`)：**
-- `views/users/`：用户管理、角色权限、审计日志
-- `views/llm/`：大模型供应商配置、智能路由、用量统计
-- `views/storage/`：云盘存储路径配置、访问权限
-- `views/knowledge/`：知识库列表、分类管理、权限配置
-- `views/system/`：系统通用配置、安全设置、关于
-- `api/index.js`：管理端专用 API 调用层（前缀 `/api/admin`）
-- `stores/`：状态管理（用户信息、系统配置）
+**系统管理区（`frontend-ui/src/views/admin/`，路由 `/admin?tab=`，原 frontend-admin-ui 已裁撤并入）：**
+- `panels/AdminOverview.vue`：管理总览（安全状态/存储/模块/LLM 网关概况，真实端点 /security/status、/storage/status、/modules）
+- `panels/AdminAccess.vue`：访问凭证管理（API Key 创建/吊销/校验，真实端点 /security/api-keys、/security/validate）
+- `panels/AdminAudit.vue`：审计日志（真实端点 /security/audit-log）
+- `panels/AdminStorage.vue`：存储提供方切换与模块清单（真实端点 /storage/*、/modules）
+- `panels/AdminHitl.vue`：HITL 人机协同审批（WebSocket `/ws/hitl`，经 Vite `/ws` 代理至 Rust 网关，协议见 `utils/hitl-ws.js`）
+- 大模型配置与知识库管理复用既有视图：`/llm-config`、`/knowledge-base`
 
 ## 编码规范
 
@@ -101,10 +100,8 @@
 
 ### 开发
 - `cargo run -p runtime`：启动聚合后端（默认 `:3001`，含四套子服务；边缘入口 `platform/backend-node/` 占 `:3000` 并反代 `/api` 至此）
-- `cd frontend-ui && npm run dev`：用户端前端开发（Vite，`/api` 代理到 `:3000`）
-- `cd frontend-admin-ui && npm run dev`：管理端前端开发（默认 `:3030`）
+- `cd frontend-ui && npm run dev`：用户端前端开发（Vite，`/api` 代理到 `:3000`；系统管理区 `/admin`，HITL `/ws` 代理至 Rust 网关 `:3001`）
 - `cd frontend-ui && npm run build`：用户端生产构建 → `dist/`
-- `cd frontend-admin-ui && npm run build`：管理端生产构建 → `dist/`
 
 ### 构建 / 校验
 - `cargo build --workspace`：全量构建（沙箱须 `run_in_background`）

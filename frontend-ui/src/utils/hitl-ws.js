@@ -1,6 +1,13 @@
+// HITL 人机协同审批 WebSocket 客户端
+// 对接 Rust 网关 /ws/hitl 真实协议（platform/gateway/runtime/src/handlers/hitl.rs）：
+//   客户端 → 服务端：{type:'subscribe', filters} / {type:'list_pending', flow_id} /
+//                   {type:'action', event_id, action, actor, comment, modified_payload}
+//   服务端 → 客户端：{type:'connected'|'subscribed'|'hitl_event'|'action_result'|'pending_list'|'error'}
+// 事件字段为 camelCase：{id, flowId, flowName, kind, description, payload, requester, ts}
+
 const HITL_WS_PATH = '/ws/hitl'
 
-const ACTIONS = {
+export const HITL_ACTIONS = {
   APPROVE: 'APPROVE',
   DENY: 'DENY',
   MODIFY_APPROVE: 'MODIFY_APPROVE'
@@ -38,13 +45,13 @@ class HitlWebSocketClient {
 
     this.ws.onopen = () => {
       this.reconnectAttempts = 0
-      console.log('[HITL WS] Connected')
+      // 连接建立即订阅全量事件并拉取当前待审批列表
+      this.sendRequest({ type: 'subscribe', filters: null })
+      this.sendRequest({ type: 'list_pending', flow_id: null })
       this._emit('connection', { status: 'connected' })
     }
 
-    this.ws.onmessage = (event) => {
-      this._handleMessage(event.data)
-    }
+    this.ws.onmessage = (event) => this._handleMessage(event.data)
 
     this.ws.onerror = (err) => {
       console.error('[HITL WS] Error:', err)
@@ -52,7 +59,6 @@ class HitlWebSocketClient {
     }
 
     this.ws.onclose = () => {
-      console.warn('[HITL WS] Disconnected')
       this._emit('connection', { status: 'disconnected' })
       if (!this.manualClose) {
         this._scheduleReconnect()
@@ -88,6 +94,31 @@ class HitlWebSocketClient {
     }, delay)
   }
 
+  sendRequest(req) {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.warn('[HITL WS] Cannot send, socket not connected')
+      return false
+    }
+    this.ws.send(JSON.stringify(req))
+    return true
+  }
+
+  // 审批动作：event_id + APPROVE/DENY/MODIFY_APPROVE（MODIFY_APPROVE 需 modifiedPayload）
+  sendAction(eventId, action, { comment = null, modifiedPayload = null, actor = 'admin' } = {}) {
+    if (!Object.values(HITL_ACTIONS).includes(action)) {
+      console.warn('[HITL WS] Invalid action:', action)
+      return false
+    }
+    return this.sendRequest({
+      type: 'action',
+      event_id: eventId,
+      action,
+      actor,
+      comment,
+      modified_payload: modifiedPayload
+    })
+  }
+
   _handleMessage(raw) {
     let payload
     try {
@@ -96,7 +127,6 @@ class HitlWebSocketClient {
       console.warn('[HITL WS] Invalid message format:', raw)
       return
     }
-
     const eventType = payload?.type || 'message'
     this._emit(eventType, payload)
     this._emit('message', payload)
@@ -104,7 +134,7 @@ class HitlWebSocketClient {
 
   _emit(eventType, payload) {
     const handlers = this.listeners.get(eventType) || []
-    handlers.forEach(fn => {
+    handlers.forEach((fn) => {
       try {
         fn(payload)
       } catch (err) {
@@ -113,15 +143,15 @@ class HitlWebSocketClient {
     })
   }
 
-  subscribe(eventType, handler) {
+  on(eventType, handler) {
     if (typeof handler !== 'function') return () => {}
     const handlers = this.listeners.get(eventType) || []
     handlers.push(handler)
     this.listeners.set(eventType, handlers)
-    return () => this.unsubscribe(eventType, handler)
+    return () => this.off(eventType, handler)
   }
 
-  unsubscribe(eventType, handler) {
+  off(eventType, handler) {
     if (!handler) {
       this.listeners.delete(eventType)
       return
@@ -133,28 +163,6 @@ class HitlWebSocketClient {
     if (handlers.length === 0) this.listeners.delete(eventType)
   }
 
-  send(action, payload) {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      console.warn('[HITL WS] Cannot send, socket not connected')
-      return false
-    }
-    const message = { action, ...payload }
-    this.ws.send(JSON.stringify(message))
-    return true
-  }
-
-  sendAction(eventId, action, modifiedPayload = null) {
-    if (!Object.values(ACTIONS).includes(action)) {
-      console.warn('[HITL WS] Invalid action:', action)
-      return false
-    }
-    const payload = { eventId, action }
-    if (modifiedPayload !== null && modifiedPayload !== undefined) {
-      payload.modifiedPayload = modifiedPayload
-    }
-    return this.send('hitl_action', payload)
-  }
-
   isConnected() {
     return !!(this.ws && this.ws.readyState === WebSocket.OPEN)
   }
@@ -162,18 +170,24 @@ class HitlWebSocketClient {
 
 export const hitlClient = new HitlWebSocketClient()
 
-export const hitlActions = ACTIONS
-
 export function onHitlEvent(handler) {
-  return hitlClient.subscribe('hitl_event', handler)
+  return hitlClient.on('hitl_event', handler)
 }
 
-export function onHitlStatus(handler) {
-  return hitlClient.subscribe('hitl_status', handler)
+export function onHitlActionResult(handler) {
+  return hitlClient.on('action_result', handler)
+}
+
+export function onHitlPendingList(handler) {
+  return hitlClient.on('pending_list', handler)
 }
 
 export function onHitlConnection(handler) {
-  return hitlClient.subscribe('connection', handler)
+  return hitlClient.on('connection', handler)
+}
+
+export function onHitlError(handler) {
+  return hitlClient.on('error', handler)
 }
 
 export default hitlClient

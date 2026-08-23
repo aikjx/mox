@@ -6,8 +6,7 @@
 功能：一键启动/关闭/重启所有服务
 服务列表：
   1. API 后端服务 (port 3010) - platform/backend-node/src/api-server.js
-  2. 用户前端界面 (port 3020) - frontend-ui
-  3. 企业管理界面 (port 3030) - frontend-admin-ui
+  2. 用户前端界面 (port 3020) - frontend-ui（含系统管理区 /admin）
 
 使用方法：
   python service_manager.py start      # 启动所有服务
@@ -55,15 +54,6 @@ SERVICES = {
         'command': ['npm', 'run', 'dev'],
         'pid_file': PID_DIR / 'frontend.pid',
         'log_file': LOG_DIR / 'frontend.log',
-        'wait_time': 8,
-    },
-    'admin': {
-        'name': '企业管理界面',
-        'port': 3030,
-        'cwd': str(PROJECT_ROOT / 'frontend-admin-ui'),
-        'command': ['npm', 'run', 'dev'],
-        'pid_file': PID_DIR / 'admin.pid',
-        'log_file': LOG_DIR / 'admin.log',
         'wait_time': 8,
     },
 }
@@ -191,7 +181,7 @@ def start_service(service_key):
                 return False
     
     # 检查 Node.js 依赖是否已安装
-    if service_key in ['api', 'frontend', 'admin']:
+    if service_key in ['api', 'frontend']:
         node_modules = Path(service['cwd']) / 'node_modules'
         if not node_modules.exists():
             print(f"    ⚠ 检测到 node_modules 不存在，正在安装依赖...")
@@ -285,7 +275,7 @@ def start_all():
     print("正在启动所有服务...\n")
     
     results = {}
-    for key in ['api', 'frontend', 'admin']:
+    for key in ['api', 'frontend']:
         results[key] = start_service(key)
         time.sleep(1)  # 服务间启动间隔
     
@@ -358,7 +348,7 @@ def stop_all(force=False):
     print("正在关闭所有服务...\n")
     
     # 按依赖关系关闭：前端先关，后端后关
-    stop_order = ['admin', 'frontend', 'api']
+    stop_order = ['frontend', 'api']
     
     results = {}
     for key in stop_order:
@@ -368,7 +358,7 @@ def stop_all(force=False):
     print("\n" + "-" * 60)
     print("关闭结果汇总:")
     print("-" * 60)
-    for key in ['api', 'frontend', 'admin']:
+    for key in ['api', 'frontend']:
         print_status_bar(key, 'stopped')
     
     return all(results.values())
@@ -406,11 +396,10 @@ def show_status():
     health_endpoints = {
         'api': '/health',          # API 服务健康检查端点
         'frontend': '/',           # 前端 Vite 根路径
-        'admin': '/',              # 管理前端 Vite 根路径
-    }
+            }
     
     all_running = True
-    for key in ['api', 'frontend', 'admin']:
+    for key in ['api', 'frontend']:
         status = get_service_status(key)
         pid = get_pid(key)
         service = SERVICES[key]
@@ -448,7 +437,7 @@ def show_status():
     # 显示访问地址
     print("\n  访问地址:")
     print(f"    用户界面: http://localhost:3020")
-    print(f"    管理界面: http://localhost:3030")
+    print(f"    系统管理区: http://localhost:3020/#/admin")
     print(f"    API 服务: http://localhost:3010")
     print()
     
@@ -635,7 +624,7 @@ def main():
     elif action == 'logs':
         if target == 'all':
             print_header()
-            for key in ['api', 'frontend', 'admin']:
+            for key in ['api', 'frontend']:
                 show_log(key)
                 print()
         elif target in SERVICES:

@@ -125,7 +125,7 @@
       <!-- 右侧：结果区 -->
       <div class="m2s-right">
         <el-card v-if="!result" shadow="never" class="m2s-card m2s-empty">
-          <el-empty description="上传音频或选择样例，点击"开始识别"" />
+          <el-empty description="上传音频或选择样例，点击「开始识别」" />
         </el-card>
 
         <template v-if="result">
@@ -874,4 +874,4 @@ export default {
     grid-template-columns: repeat(2, 1fr);
   }
 }
-</styl
+</style>

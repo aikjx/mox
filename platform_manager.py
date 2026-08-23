@@ -82,7 +82,7 @@ DEFAULT_CONFIG = {
         },
         "frontend": {
             "name": "用户前端界面",
-            "description": "面向终端用户的操作界面",
+            "description": "面向终端用户的操作界面（含系统管理区 /admin）",
             "port": 3020,
             "health_check": "/",
             "cwd": "frontend-ui",
@@ -92,19 +92,6 @@ DEFAULT_CONFIG = {
             "auto_start": True,
             "wait_time": 8,
             "tags": ["前端", "用户界面", "Vite"]
-        },
-        "admin": {
-            "name": "企业管理界面",
-            "description": "企业级后台管理系统",
-            "port": 3030,
-            "health_check": "/",
-            "cwd": "frontend-admin-ui",
-            "command": "npm run dev",
-            "npm_deps": True,
-            "is_admin_only": True,
-            "auto_start": True,
-            "wait_time": 8,
-            "tags": ["前端", "管理后台", "企业级"]
         }
     }
 }
@@ -951,8 +938,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 
 <script>
 let session=null,services=[],timer=null;
-const COLORS={api:'#3498db',frontend:'#2ecc71',admin:'#9b59b6'};
-const ICONS={api:'🔧',frontend:'🎨',admin:'⚙️'};
+const COLORS={api:'#3498db',frontend:'#2ecc71'};
+const ICONS={api:'🔧',frontend:'🎨'};
 const ADMIN_OPS=['start','stop','restart','logs'];
 
 // ============ Init ============

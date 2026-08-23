@@ -38,16 +38,22 @@ def to_musicxml(notes: List[Dict], bpm: float, key_name: Tuple[str, str], fp=Non
 def to_jianpu(notes: List[Dict], key_name: Tuple[str, str], bpm: float = 120.0) -> str:
     """转简谱：数字 1–7 表音级；高八度前加 '.'，低八度后加 '_'；'-' 表延音。
 
-    以 tonic 的 4 八度音（如 C→C4=60）为简谱「1」的基准八度：
-      oct_shift = (midi - tonic_midi) // 12  → 相对基准的八度偏移；
-      rel = (midi - tonic_midi) % 12         → 在调内音级索引。
-    这样既保证调内音级正确，又保证八度点标记符合记谱习惯。
+    八度基准自适应（修复哼唱/半频锁定满屏低音点）：
+      旧版固定以主音 4 八度（C→C4=60）为「1」——哼唱或检测器 halving 使
+      音域偏低时，简谱输出 1_ 6__ 4___ 等满屏低音点。简谱记录相对音级，
+      现以 adaptive_tonic_midi（中位音符所在八度的主音）为基准，八度点
+      分布居中；与 make_score_sheet 图片渲染共用同一基准。
+
+    离调音（修复就近映射 bug）：
+      旧版 dd=rel-s 带符号比较，负值恒小于正值 → 一律偏向 scale 末位
+      （F#/G# 全被记成 b7，音高差 4 半音）。现按绝对距离就近（等距取
+      下方），偏差记 '#'/b'，与 score_sheet._degree_accidental 一致。
     """
-    tonic_midi = int(librosa.note_to_midi(key_name[0] + "4"))  # 含八度，如 C4=60
-    if key_name[1] == "minor":
-        scale = [0, 2, 3, 5, 7, 8, 10]
-    else:
-        scale = [0, 2, 4, 5, 7, 9, 11]
+    from core.score_sheet import adaptive_tonic_midi, _name_to_pitch_class, _scale_for
+
+    tonic_pc = _name_to_pitch_class(key_name[0])
+    tonic_midi = adaptive_tonic_midi(notes, tonic_pc)
+    scale = list(_scale_for(key_name[1]))
 
     out = []
     for nt in notes:
@@ -58,14 +64,14 @@ def to_jianpu(notes: List[Dict], key_name: Tuple[str, str], bpm: float = 120.0) 
         if rel in scale:
             deg = str(scale.index(rel) + 1)
         else:
-            # 离调音：回退到最近的调内音级，并用升降记号标出偏离，避免直接显示 '#'
-            best, best_d = 0, 99
+            # 离调音：绝对距离就近映射（等距取下方音级，升下方音是记谱惯例）
+            best, best_dist, best_dev = scale[0], 99, 0
             for s in scale:
-                dd = rel - s
-                dd = min(dd, 12 - dd) if dd > 6 else dd
-                if dd < best_d:
-                    best_d, best = dd, s
-            acc = "#" if (rel - best) % 12 in (1, 3, 6, 8, 10) else "b"
+                dev = (rel - s) % 12
+                dist = min(dev, 12 - dev)
+                if dist < best_dist:
+                    best_dist, best, best_dev = dist, s, dev
+            acc = "#" if best_dev <= 2 else "b"
             deg = acc + str(scale.index(best) + 1)
         if oct_shift > 0:
             deg = "." * oct_shift + deg

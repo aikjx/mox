@@ -27,7 +27,7 @@
     },
     "frontend": {
       "name": "用户前端界面",
-      "description": "面向终端用户的操作界面",
+      "description": "面向终端用户的操作界面（含系统管理区 /admin）",
       "port": 3020,
       "health_check": "/",
       "cwd": "frontend-ui",
@@ -40,23 +40,6 @@
         "前端",
         "用户界面",
         "Vite"
-      ]
-    },
-    "admin": {
-      "name": "企业管理界面",
-      "description": "企业级后台管理系统",
-      "port": 3030,
-      "health_check": "/",
-      "cwd": "frontend-admin-ui",
-      "command": "npm run dev",
-      "npm_deps": true,
-      "is_admin_only": true,
-      "auto_start": true,
-      "wait_time": 8,
-      "tags": [
-        "前端",
-        "管理后台",
-        "企业级"
       ]
     }
   }
