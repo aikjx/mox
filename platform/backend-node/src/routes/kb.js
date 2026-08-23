@@ -307,6 +307,42 @@ module.exports = function registerKbRoutes(ctx) {
     ok(res, { documentId: params.id, entities: entities, count: entities.length });
   });
 
+  // ===== 4.5 文档→图谱自动化管道（全维归一化 · 云端文档资源维度）=====
+
+  // 单文档自动图谱化：抽取→建点→连边→域映射→绑定落盘（幂等）
+  reg('post', '/kb/documents/:id/auto-graph', async (req, res, params) => {
+    try {
+      const result = kb.getDocGraphPipeline().autoSyncDocument(params.id);
+      if (!result.ok) return fail(res, 404, result.error);
+      appendLog({ type: 'kb', msg: 'auto graph sync', docId: params.id, entities: result.entities });
+      ok(res, result);
+    } catch (e) {
+      fail(res, 500, `自动图谱化失败: ${e.message}`);
+    }
+  });
+
+  // 全量自动图谱化：所有活跃文档依次过管道（无人值守全维治理入口）
+  reg('post', '/kb/graph-auto-sync', async (req, res) => {
+    try {
+      const result = kb.getDocGraphPipeline().autoSyncAll();
+      appendLog({ type: 'kb', msg: 'auto graph sync all', docs: result.total, failed: result.failed });
+      ok(res, result);
+    } catch (e) {
+      fail(res, 500, `全量图谱化失败: ${e.message}`);
+    }
+  });
+
+  // 绑定记录查询：全量或单文档（?docId= 过滤）
+  reg('get', '/kb/doc-graph/links', (req, res) => {
+    const q = url.parse(req.url, true).query;
+    ok(res, { links: kb.getDocGraphPipeline().getBindings(q.docId || null) });
+  });
+
+  // 覆盖率统计：已绑定/未绑定文档、实体类型分布、域映射数
+  reg('get', '/kb/doc-graph/coverage', (req, res) => {
+    ok(res, kb.getDocGraphPipeline().getCoverage());
+  });
+
   reg('post', '/kb/documents/:id/graph-link', async (req, res, params) => {
     const body = await readBody(req);
     const entityIds = body.entityIds || [];
@@ -365,6 +401,6 @@ module.exports = function registerKbRoutes(ctx) {
     ok(res, { history: history.slice(start, start + pageSize), pagination: { page: page, pageSize: pageSize, total: total } });
   });
 
-  log('Knowledge base endpoints registered: document CRUD, versions, AI analysis, graph integration, history');
+  log('Knowledge base endpoints registered: document CRUD, versions, AI analysis, graph integration, doc-graph auto pipeline, history');
 
 };

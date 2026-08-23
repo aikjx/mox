@@ -302,7 +302,7 @@ def _rest_fill_tokens(beats: float) -> List[str]:
 _JIANPU_LOCK = threading.Lock()
 
 
-def _run_jianpu_ly(txt_path: str, ly_path: str) -> None:
+def _run_jianpu_ly(txt_path: str, ly_path: str) -> str:
     """进程内执行 jianpu-ly.py（txt → LilyPond 源码写入 ly_path）。
 
     为什么不再用 subprocess ["python", script]：
@@ -318,16 +318,32 @@ def _run_jianpu_ly(txt_path: str, ly_path: str) -> None:
     --noStaff 等选项经 sys.argv 传入。警告路径（Incomplete bar 等）
     会 sys.exit 非 0，与旧 subprocess 行为一致：以"是否产出有效 .ly"
     为成败判据（调用方检查文件大小）。
+
+    stderr 兜底（关键，打包后歌谱生成失败的真根因）：
+      PyInstaller windowed（console=False）发行版里 sys.stderr 是 None。
+      jianpu-ly 有 30+ 处 sys.stderr.write（j2ly_sloppy_bars 末小节警告、
+      老版本 tie 警告、errExit 错误路径等），任一触发即
+      AttributeError: 'NoneType' object has no attribute 'write'
+      → 简谱渲染必败。双击运行 exe（无控制台）100% 复现；从控制台
+      启动 exe 时 stderr 句柄有效，故控制台自检发现不了。
+      现统一把 stderr 重定向为内存捕获缓冲：不炸、警告文本可回传
+      诊断（企业级可观测性）。
+
+    返回：捕获到的 stderr 警告全文（无警告为空串）。
     """
+    import io
     import runpy
     import sys as _sys
+    captured = io.StringIO()
     with _JIANPU_LOCK:
         argv_backup = _sys.argv
         stdout_backup = _sys.stdout
+        stderr_backup = _sys.stderr
         try:
             _sys.argv = [JIANPU_LY, "--noStaff", txt_path]
             with open(ly_path, "w", encoding="utf-8") as fout:
                 _sys.stdout = fout
+                _sys.stderr = captured
                 try:
                     runpy.run_path(JIANPU_LY, run_name="__main__")
                 except SystemExit:
@@ -335,6 +351,8 @@ def _run_jianpu_ly(txt_path: str, ly_path: str) -> None:
         finally:
             _sys.argv = argv_backup
             _sys.stdout = stdout_backup
+            _sys.stderr = stderr_backup
+    return captured.getvalue()
 
 
 def render_score_sheet(
@@ -374,10 +392,12 @@ def render_score_sheet(
         #    设置 j2ly_sloppy_bars=1 放宽"末小节必须补足弱起拍"的强制，
         #    使弱起/短曲也能正常出图（对普通谱无副作用）。
         os.environ.setdefault("j2ly_sloppy_bars", "1")
-        _run_jianpu_ly(txt_path, ly_path)
+        jianpu_warnings = _run_jianpu_ly(txt_path, ly_path)
         if not os.path.exists(ly_path) or os.path.getsize(ly_path) < 200:
-            raise RuntimeError("jianpu-ly 转换失败：未产出有效 LilyPond 源码"
-                               "（可能是不完整小节等输入问题，详见 stderr 警告）")
+            raise RuntimeError(
+                "jianpu-ly 转换失败：未产出有效 LilyPond 源码"
+                "（可能是不完整小节等输入问题）"
+                + (f"；jianpu-ly 警告：{jianpu_warnings[:300]}" if jianpu_warnings else ""))
 
         # 2) LilyPond: 源码 -> 图片
         #    说明：LilyPond 2.24 在 Windows 上的 `-dbackend=pdf` 因缺少 Ghostscript
@@ -423,11 +443,13 @@ def render_score_sheet(
                     produced = os.path.join(tmp, f)
                     break
         if rc.returncode != 0 or not os.path.exists(produced):
-            # 全量诊断信息（企业级可观测性：rc/stdout/stderr/产物清单）
+            # 全量诊断信息（企业级可观测性：rc/stdout/stderr/产物清单/预处理警告）
             raise RuntimeError(
-                "LilyPond 渲染失败 rc=%s：stdout=%r stderr=%r files=%s"
+                "LilyPond 渲染失败 rc=%s：stdout=%r stderr=%r files=%s%s"
                 % (rc.returncode, (rc.stdout or "")[:200],
-                   (rc.stderr or "")[:300], os.listdir(tmp)))
+                   (rc.stderr or "")[:300], os.listdir(tmp),
+                   ("；jianpu-ly 警告：" + jianpu_warnings[:200])
+                   if jianpu_warnings else ""))
 
         os.makedirs(os.path.dirname(os.path.abspath(output_path)) or ".",
                     exist_ok=True)

@@ -648,5 +648,299 @@
     "created_at": "2026-08-22T05:08:51.011Z",
     "ai_generated": true,
     "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "concept_website",
+    "label": "企业官网",
+    "type": "概念",
+    "description": "企业官方网站建设项目",
+    "attributes": {
+      "category": "项目"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true,
+    "topic": "企业官网需求"
+  },
+  {
+    "id": "concept_user",
+    "label": "用户",
+    "type": "角色",
+    "description": "访问官网的终端用户",
+    "attributes": {
+      "role": "访客"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true,
+    "topic": "企业官网需求"
+  },
+  {
+    "id": "concept_admin",
+    "label": "管理员",
+    "type": "角色",
+    "description": "负责官网内容维护的管理员",
+    "attributes": {
+      "role": "运营"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true,
+    "topic": "企业官网需求"
+  },
+  {
+    "id": "component_frontend",
+    "label": "前端界面",
+    "type": "组件",
+    "description": "用户可见的Web界面",
+    "attributes": {
+      "tech": "Vue.js"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true,
+    "topic": "企业官网需求"
+  },
+  {
+    "id": "component_backend",
+    "label": "后端服务",
+    "type": "组件",
+    "description": "提供API和数据处理能力",
+    "attributes": {
+      "tech": "Node.js"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true,
+    "topic": "企业官网需求"
+  },
+  {
+    "id": "component_database",
+    "label": "数据库",
+    "type": "组件",
+    "description": "存储用户、内容和业务数据",
+    "attributes": {
+      "tech": "MySQL"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true,
+    "topic": "企业官网需求"
+  },
+  {
+    "id": "component_cms",
+    "label": "内容管理系统",
+    "type": "组件",
+    "description": "支持管理员发布和管理内容",
+    "attributes": {
+      "feature": "富文本"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true,
+    "topic": "企业官网需求"
+  },
+  {
+    "id": "component_auth",
+    "label": "认证授权",
+    "type": "组件",
+    "description": "用户登录注册和权限管理",
+    "attributes": {
+      "method": "JWT"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true,
+    "topic": "企业官网需求"
+  },
+  {
+    "id": "component_search",
+    "label": "搜索功能",
+    "type": "组件",
+    "description": "站内全文搜索能力",
+    "attributes": {
+      "engine": "Elasticsearch"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true,
+    "topic": "企业官网需求"
+  },
+  {
+    "id": "process_deploy",
+    "label": "部署流程",
+    "type": "流程",
+    "description": "从开发到上线的完整流程",
+    "attributes": {
+      "method": "CI/CD"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true,
+    "topic": "企业官网需求"
+  },
+  {
+    "id": "process_design",
+    "label": "设计流程",
+    "type": "流程",
+    "description": "UI/UX设计和评审流程",
+    "attributes": {
+      "tool": "Figma"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true,
+    "topic": "企业官网需求"
+  },
+  {
+    "id": "process_content",
+    "label": "内容运营流程",
+    "type": "流程",
+    "description": "内容创建、审核、发布流程",
+    "attributes": {
+      "workflow": "审批制"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true,
+    "topic": "企业官网需求"
+  },
+  {
+    "id": "data_user",
+    "label": "用户数据",
+    "type": "数据",
+    "description": "用户注册信息、行为数据",
+    "attributes": {
+      "sensitivity": "高"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true,
+    "topic": "企业官网需求"
+  },
+  {
+    "id": "data_content",
+    "label": "内容数据",
+    "type": "数据",
+    "description": "文章、产品、新闻等内容",
+    "attributes": {
+      "sensitivity": "低"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true,
+    "topic": "企业官网需求"
+  },
+  {
+    "id": "data_config",
+    "label": "配置数据",
+    "type": "数据",
+    "description": "系统配置、权限配置",
+    "attributes": {
+      "sensitivity": "中"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true,
+    "topic": "企业官网需求"
+  },
+  {
+    "id": "constraint_security",
+    "label": "安全约束",
+    "type": "约束",
+    "description": "数据加密、XSS防护、CSRF防护",
+    "attributes": {
+      "level": "必须"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true,
+    "topic": "企业官网需求"
+  },
+  {
+    "id": "constraint_performance",
+    "label": "性能约束",
+    "type": "约束",
+    "description": "首屏加载<3s，支持高并发",
+    "attributes": {
+      "level": "重要"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true,
+    "topic": "企业官网需求"
+  },
+  {
+    "id": "constraint_seo",
+    "label": "SEO约束",
+    "type": "约束",
+    "description": "搜索引擎优化要求",
+    "attributes": {
+      "level": "重要"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true,
+    "topic": "企业官网需求"
+  },
+  {
+    "id": "goal_conversion",
+    "label": "转化目标",
+    "type": "目标",
+    "description": "访客到注册/客户的转化",
+    "attributes": {
+      "kpi": "转化率"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true,
+    "topic": "企业官网需求"
+  },
+  {
+    "id": "goal_brand",
+    "label": "品牌目标",
+    "type": "目标",
+    "description": "提升企业品牌形象和知名度",
+    "attributes": {
+      "kpi": "品牌指数"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true,
+    "topic": "企业官网需求"
+  },
+  {
+    "id": "sd:corp-site:entity:服务团队",
+    "label": "服务团队",
+    "type": "entity",
+    "description": "由资深架构师、数据科学家和工程师组成的专业团队，提供从咨询到运维的全生命周期服务。",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-22T17:07:29.676Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
   }
 ]

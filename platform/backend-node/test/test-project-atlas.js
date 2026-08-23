@@ -31,19 +31,20 @@ check('图谱边数 ≥ 170（关联关系显式建模）', a.stats.edgeCount >=
 check('七类节点齐全（domain/module/engine/algorithm/data/doc/flow_step）',
   ['domain', 'module', 'engine', 'algorithm', 'data', 'doc', 'flow_step'].every(k => a.stats.byKind[k] > 0),
   JSON.stringify(a.stats.byKind));
-check('业务域 29 个（27 基线含 studio + atlas-auto 自管理容器域 + mcp 协议服务域）', a.stats.byKind.domain === 29, String(a.stats.byKind.domain));
+check('业务域 30 个（29 基线含 studio/projects/mcp + atlas-auto 自管理容器域）', a.stats.byKind.domain === 30, String(a.stats.byKind.domain));
 check('模块 4 个（可插拔）', a.stats.byKind.module === 4);
 check('引擎 20 个（复用引擎宇宙真相源）', a.stats.byKind.engine === 20, String(a.stats.byKind.engine));
-check('算法 17 个（全部自研单源）', a.stats.byKind.algorithm === 17);
-check('数据资产 40 个（数据库全覆盖 + 自管理登记层）', a.stats.byKind.data === 40, String(a.stats.byKind.data));
+check('算法 20 个（全部自研单源：含实体抽取/归一化流水线/代码抽取）', a.stats.byKind.algorithm === 20, String(a.stats.byKind.algorithm));
+check('数据资产 44 个（数据库全覆盖 + 自管理登记层 + 归一化三维度）', a.stats.byKind.data === 44, String(a.stats.byKind.data));
 check('文档 ≥ 36 个（核心文档全域覆盖）', a.stats.byKind.doc >= 36, String(a.stats.byKind.doc));
+check('项目实体 8 个（"一切皆是项目"基线）', a.stats.byKind.project === 8, String(a.stats.byKind.project));
 check('全部自研（零框架依赖声明）', a.stats.selfDeveloped === true && a.stats.frameworkDeps.length === 0);
 
 // ---------- ② 机器图谱关联本地代码 ----------
 console.log('\n[2] 机器图谱关联本地代码');
 const ROOT = path.join(__dirname, '..');
 const domainWithCode = atlas.DOMAINS.every(d => fs.existsSync(path.join(ROOT, d.codePath)));
-check('全部 25 业务域 codePath 真实存在', domainWithCode);
+check('全部 29 业务域 codePath 真实存在', domainWithCode);
 const moduleWithCode = atlas.MODULES.every(m => fs.existsSync(path.join(ROOT, m.codePath)));
 check('全部 4 模块 codePath 真实存在', moduleWithCode);
 const algoSrc = atlas.ALGORITHMS.filter(x => x.codePath.startsWith('src/'));
@@ -51,17 +52,17 @@ check(`src 内算法 ${algoSrc.length} 个代码路径存在`, algoSrc.every(x =
 check('跨语言算法（melody2score Python 子项目）路径存在',
   fs.existsSync(path.join(ROOT, '..', '..', 'melody2score', 'core', 'pipeline.py')));
 const docExist = atlas.DOCS.every(d => fs.existsSync(path.join(ROOT, '..', '..', d.file)));
-check('全部 34 文档真实存在', docExist);
+check('全部 40 文档真实存在', docExist);
 
 // ---------- ③ 无破窗验证（动态比对） ----------
 console.log('\n[3] 无破窗验证（归一化：注册表 ↔ 真实代码库一致）');
 const v = atlas.verifyAtlas();
-check('无破窗验证整体通过（145 项）', v.ok, `failed: ${v.summary.failed}`);
-check('验证项总数 ≥ 145', v.summary.total >= 145, String(v.summary.total));
+check('无破窗验证整体通过（W1-W13 全规则）', v.ok, `failed: ${v.summary.failed}`);
+check('验证项总数 ≥ 290', v.summary.total >= 290, String(v.summary.total));
 const w1 = v.checks.find(c => c.name.includes('W1'));
-check('W1 路由域动态比对一致（25 域全图谱化）', w1?.ok === true, w1?.detail);
+check('W1 路由域动态比对一致（29 域全图谱化）', w1?.ok === true, w1?.detail);
 const w2 = v.checks.find(c => c.name.includes('W2'));
-check('W2 数据资产动态比对一致（34 文件全登记）', w2?.ok === true, w2?.detail);
+check('W2 数据资产动态比对一致（44 文件全登记）', w2?.ok === true, w2?.detail);
 const w8 = v.checks.find(c => c.name.includes('W8'));
 check('W8 图谱连通无孤岛（单一连通分量）', w8?.ok === true, w8?.detail);
 check('W7 全部算法单源自研', v.checks.find(c => c.name.includes('W7'))?.ok === true);

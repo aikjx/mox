@@ -210,20 +210,28 @@ class ExpertAllianceEngine {
 
     // 安全类强制保障（G4 · EAF-STD-001 §4 阶段二）：安全意图必须优先安全专家入队。
     // 常规评分未选入时替换末位成员；无安全专家时显式记录（不静默）。
+    // 主意图领衔（G4 补充语义）：安全专家在队时排首位——历史先验与能力匹配
+    // 可能造成评分接近（如 SQL 类问题数据专家同分），主意图专家领衔保证确定性。
     let securityNote = null;
     if (intent.primary === 'security') {
-      const hasSecurity = team.some(e => (e.type || '').toLowerCase().includes('security'));
-      if (!hasSecurity) {
+      let secIdx = team.findIndex(e => (e.type || '').toLowerCase().includes('security'));
+      if (secIdx === -1) {
         const securityExpert = candidates.find(e =>
           (e.type || '').toLowerCase().includes('security') && !team.includes(e)
         );
         if (securityExpert) {
           if (team.length > 1) team[team.length - 1] = securityExpert; // 替换末位保规模
           else team[0] = securityExpert;
+          secIdx = team.length - 1;
           securityNote = `安全类问题已强制选入安全专家 ${securityExpert.name}`;
         } else {
           securityNote = '安全类问题但注册表中无安全专家，已按常规评分组队（建议补充安全专家）';
         }
+      }
+      if (secIdx > 0) {
+        const [lead] = team.splice(secIdx, 1);
+        team.unshift(lead); // 安全专家领衔（主意图专家排首位）
+        securityNote = securityNote || `安全类问题由安全专家 ${lead.name} 领衔`;
       }
     }
 

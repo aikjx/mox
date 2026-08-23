@@ -169,5 +169,6 @@ console.log('\n[2] 瞬间切换（换绑定零代码改动 + 银行级回滚）'
   // ---------- 汇总 ----------
   console.log('\n===== 引擎内核 · 一切皆可插件化 测试汇总 =====');
   console.log(`通过: ${passed} 项，失败: ${failed} 项`);
-  if (failed > 0) process.exit(1);
+  // 失败标记退出码但不强退：强退会在 keep-alive/存储句柄关闭途中触发 libuv 断言崩溃
+  if (failed > 0) process.exitCode = 1;
 })();

@@ -88,21 +88,25 @@ class RecognizeWorker(QThread):
 
 
 class SheetWorker(QThread):
-    """后台生成标准歌谱（png/pdf/svg）（matplotlib 重活移出主线程，避免界面卡顿）。"""
+    """后台生成标准歌谱（png/pdf/svg）（渲染重活移出主线程，避免界面卡顿）。"""
     done = pyqtSignal(str)      # 成功：文件路径
-    failed = pyqtSignal()
+    failed = pyqtSignal(str)    # 失败：完整 traceback（企业级可观测性——
+                                # windowed 发行版 stderr 是 NullWriter，
+                                # print_exc 会静默丢失，必须随信号带出）
 
     def __init__(self, res: Dict, title: str, fmt: str = "png"):
         super().__init__()
         self.res = res
         self.title = title
         self.fmt = fmt
+        self.outcome = None    # ("ok", path) / ("fail", traceback)——
+                                # 直读属性，供诊断模式绕过信号投递时序
 
     def run(self):
         try:
             import re as _re, time as _time, os as _os
-            export_dir = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "exports")
-            _os.makedirs(export_dir, exist_ok=True)
+            from core.paths import exports_dir
+            export_dir = exports_dir()
             safe = _re.sub(r"[^\w一-鿿-]", "_", self.title or "melody")[:40]
             ts = _time.strftime("%Y%m%d_%H%M%S")
             fpath = _os.path.join(export_dir, f"{safe or 'melody'}_标准歌谱_{ts}.{self.fmt}")
@@ -113,10 +117,18 @@ class SheetWorker(QThread):
                 output_path=fpath,
                 title=self.title or "未命名旋律",
             )
+            self.outcome = ("ok", fpath)
             self.done.emit(fpath)
         except Exception:
-            traceback.print_exc()
-            self.failed.emit()
+            tb = traceback.format_exc()[-2000:]
+            self.outcome = ("fail", tb)
+            self.failed.emit(tb)
+        except BaseException:
+            # SystemExit 等非 Exception 逃逸时也必须留痕（否则线程静默消失）
+            tb = traceback.format_exc()[-2000:]
+            self.outcome = ("fail", tb)
+            self.failed.emit(tb)
+            raise
 
 
 # 五线谱：每半音一级；以「底线(第1线)」为基准 midi，向上逐级 +1。
@@ -1066,14 +1078,13 @@ class MainWindow(QMainWindow):
         if res.get("robust_runs", 1) > 1:
             robust_info = f" · 重识别{res['robust_runs']}次→共识保留 {res['robust_kept']} 音 · 置信度 {res.get('confidence',0):.0%}"
 
-        # 自动生成标准歌谱（后台线程，避免 matplotlib 阻塞主线程造成卡顿）
+        # 自动生成标准歌谱（后台线程，避免 LilyPond 渲染阻塞主线程造成卡顿）
         self.sheetLabel.setText("正在生成标准歌谱…")
         if getattr(self, "_sheet_worker", None) and self._sheet_worker.isRunning():
             self._sheet_worker.quit()
         self._sheet_worker = SheetWorker(res, self.titleEdit.text())
         self._sheet_worker.done.connect(self._on_sheet_done)
-        self._sheet_worker.failed.connect(lambda: self.sheetLabel.setText(
-            "标准歌谱生成失败（可能缺少 matplotlib 或中文字体）。"))
+        self._sheet_worker.failed.connect(self._on_sheet_failed)
         self._sheet_worker.start()
 
         self.status.setText(f"完成 · {res['note_count']} 个音符 · 来源 {res.get('source','')}{robust_info}")
@@ -1155,10 +1166,27 @@ class MainWindow(QMainWindow):
             self.sheetLabel.setPixmap(QPixmap(fpath).scaledToWidth(
                 self.sheetLabel.width() - 20, Qt.SmoothTransformation))
         else:
-            self.sheetLabel.setText("标准歌谱生成失败（可能缺少 matplotlib 或中文字体）。")
+            self._on_sheet_failed("输出文件不存在：" + str(fpath))
+
+    @staticmethod
+    def _sheet_fail_summary(tb: str) -> str:
+        """从 traceback 提取人读失败摘要（最后一行异常 + 关键 RuntimeError 文案）。"""
+        last = ""
+        for line in tb.strip().splitlines():
+            line = line.strip()
+            if line and not line.startswith("File "):
+                last = line
+        return last[:300] or tb[-300:]
+
+    def _on_sheet_failed(self, tb: str):
+        """歌谱生成失败：展示真实原因（企业级可观测性，替代旧版静态误导文案）。"""
+        summary = self._sheet_fail_summary(tb)
+        self._auto_sheet_path = None
+        self.sheetLabel.setText(f"标准歌谱生成失败：\n{summary}")
+        self.status.setText("标准歌谱生成失败（详见标签区域）")
 
     def export_sheet(self, fmt: str):
-        """导出标准歌谱。走后台 SheetWorker，避免 matplotlib 生成 PDF/SVG 时阻塞主线程。"""
+        """导出标准歌谱。走后台 SheetWorker，避免渲染生成 PDF/SVG 时阻塞主线程。"""
         if not self.current:
             return
         self.status.setText(f"⏳ 正在后台生成 {fmt.upper()}…")
@@ -1172,9 +1200,10 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "已导出", f"标准歌谱已导出：\n{path}")
             self.status.setText(f"已导出 {fmt.upper()}：{os.path.basename(path)}")
 
-        def _fail():
+        def _fail(tb: str):
             self.status.setText("导出失败")
-            QMessageBox.warning(self, "导出失败", "标准歌谱导出失败，请检查日志。")
+            QMessageBox.warning(self, "导出失败",
+                                f"标准歌谱导出失败：\n{self._sheet_fail_summary(tb)}")
 
         w.done.connect(_ok)
         w.failed.connect(_fail)
@@ -1183,11 +1212,11 @@ class MainWindow(QMainWindow):
     def save_md(self):
         if not self.current:
             return
+        from core.paths import exports_dir
         title = self.titleEdit.text() or "未命名旋律"
         ts = time.strftime("%Y%m%d_%H%M%S")
         safe = re.sub(r"[^\w一-鿿-]", "_", title)[:40]
-        export_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "exports")
-        os.makedirs(export_dir, exist_ok=True)
+        export_dir = exports_dir()
         fname = f"{safe or 'melody'}_{ts}.md"
         fpath = os.path.join(export_dir, fname)
         lines = []
@@ -1224,7 +1253,7 @@ class MainWindow(QMainWindow):
             "短段就近合并到音高最近的相邻音符；BPM 用 beat_track；调式用 Krumhansl-Schmuckler 模板"
             "（基于音符轮廓，起始/终止音加权）。\n"
             "5. 歌谱生成层：music21 量化生成 musicxml；简谱数字串（高八度 '.'，低八度 '_'，延音 '-'）；"
-            "matplotlib 渲染标准歌谱图片（PNG/PDF/SVG）。\n\n"
+            "jianpu-ly + LilyPond 渲染标准歌谱图片（PNG/PDF/SVG）。\n\n"
             "优化：调式识别用音符轮廓替代整曲 CQT（提速 ~7x）；简谱以 tonic 的 4 八度音为基准计算八度偏移，"
             "标记符合记谱习惯。")
         with open(fpath, "w", encoding="utf-8") as f:
@@ -1437,9 +1466,98 @@ def _selftest() -> int:
         return 1
 
 
+def _sheet_repro() -> int:
+    """GUI 环境歌谱生成复现模式（打包产物故障诊断专用）：
+
+    Melody2Score.exe --sheet-repro [输出.json]
+
+    与 --selftest（主线程、无 Qt）不同，本模式 100% 复刻真实 GUI 的执行
+    时序：QApplication 先行创建 → 识别（QThread）→ 歌谱生成（SheetWorker
+    QThread）。用于暴露「仅 Qt 多线程环境」才会出现的异常；windowed 发行版
+    stderr 为 NullWriter，traceback 全量落 JSON 报告，不静默丢失。
+    """
+    out_path = None
+    args = [a for a in sys.argv[2:] if not a.startswith("--")]
+    if args:
+        out_path = args[0]
+    report = {"mode": "sheet-repro", "frozen": is_frozen(),
+              "python": sys.version.split()[0]}
+    try:
+        from core.pipeline import Melody2Score
+        from core import capture
+
+        app = QApplication(sys.argv)     # 与真实 GUI 一致：Qt 运行时先就位
+        man_path = resource_path("audio", "manifest.json")
+        with open(man_path, encoding="utf-8") as f:
+            manifest = json.load(f)
+        item = manifest[0]
+        wav = resource_path("audio", os.path.basename(item["file"]))
+        cfg = Config()
+        y = capture.load_audio(wav, cfg.sr)
+        res = Melody2Score(cfg).recognize(
+            {"kind": "array", "y": y, "sr": cfg.sr, "cfg": cfg})
+        report["recognize"] = {
+            "notes": len(res.get("notes", [])),
+            "backend": res.get("backend"),
+            "bpm": res.get("bpm"),
+        }
+
+        # 与真实 GUI 完全一致：SheetWorker 在 QThread 中生成歌谱。
+        # 以 worker.outcome 直读属性为判据（信号经队列投递需事件循环驱动，
+        # processEvents 仅用于维持 Qt 运行时活性，不作为结果通道）。
+        w = SheetWorker(res, "复现测试")
+        w.start()
+        deadline = time.time() + 180
+        while not w.isFinished() and time.time() < deadline:
+            app.processEvents()
+            time.sleep(0.05)
+        w.wait(5000)
+        if w.outcome is None:
+            report["sheet"] = {"pass": False,
+                               "traceback": "worker 未在 180s 内产出结果（线程疑似死锁）"}
+        elif w.outcome[0] == "ok":
+            report["sheet"] = {"pass": True, "path": w.outcome[1],
+                               "size": os.path.getsize(w.outcome[1])}
+        else:
+            report["sheet"] = {"pass": False, "traceback": w.outcome[1]}
+    except Exception:
+        report["fatal"] = traceback.format_exc()[-4000:]
+    report["pass"] = bool(report.get("sheet", {}).get("pass"))
+    if out_path:
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(report, f, ensure_ascii=False, indent=2)
+    print("[SHEET-REPRO] pass=%s" % report["pass"])
+    return 0 if report["pass"] else 1
+
+
+def _ensure_windowed_streams() -> None:
+    """windowed 发行版 std 流兜底（PyInstaller console=False 全局根因修复）。
+
+    windowed 模式下 sys.stdout / sys.stderr 均为 None，任何第三方库的
+    print / sys.stderr.write 都会 AttributeError：
+      - jianpu-ly：30+ 处警告路径（已由 jianpu_render._run_jianpu_ly
+        局部捕获兜底，含警告文本回传诊断）；
+      - music21：MusicXML 导出时写环境警告 → selftest 实测必炸；
+      - 其它库的零星 print。
+    入口处一次性替换为丢弃式 writer（异常链路已有各自的错误回传
+    机制——信号 / selftest JSON / RuntimeError，不依赖 stderr）。
+    """
+    class _NullWriter:
+        def write(self, *_a): return 0
+        def flush(self): pass
+        def isatty(self): return False
+    if sys.stdout is None:
+        sys.stdout = _NullWriter()
+    if sys.stderr is None:
+        sys.stderr = _NullWriter()
+
+
 def main():
+    _ensure_windowed_streams()   # 必须先于一切第三方库调用（含 selftest）
     if "--selftest" in sys.argv or "--selftest-full" in sys.argv:
         sys.exit(_selftest())
+    if "--sheet-repro" in sys.argv:
+        sys.exit(_sheet_repro())
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
     win = MainWindow()

@@ -3,7 +3,7 @@
 /**
  * 项目全息图谱 · 业务资产注册表（domain 层 · 静态值对象 · 零 IO）
  * ------------------------------------------------------------------
- * 24 个业务域 + 4 个可插拔模块的唯一权威定义。
+ * 29 个业务域 + 4 个可插拔模块的唯一权威定义。
  * 每条登记：身份 / 核心功能 / 代码路径 / 依赖引擎 / 数据资产 / 关联文档。
  * 全部功能自研（可借鉴业界架构思想，实现零外部框架依赖）。
  */
@@ -91,8 +91,8 @@ const DOMAINS = [
   },
   {
     id: 'kb', name: '知识库', codePath: 'src/routes/kb.js',
-    keyFeatures: ['文档全生命周期与版本快照', 'AI 文档分析（实体/关键词/分类）', '文档实体与图谱互链'],
-    engines: ['kb'], dataAssets: ['kb_documents.json', 'kb_categories.json', 'kb_versions.json', 'kb_history.json'], docs: ['docs/DOC-NORMALIZATION-REPORT.md']
+    keyFeatures: ['文档全生命周期与版本快照', 'AI 文档分析（实体/关键词/分类）', '文档实体与图谱互链', '全维实体抽取与图谱自动化管道（doc→实体→域 三层绑定）'],
+    engines: ['kb'], dataAssets: ['kb_documents.json', 'kb_categories.json', 'kb_versions.json', 'kb_history.json', 'doc_graph_links.json'], docs: ['docs/DOC-NORMALIZATION-REPORT.md']
   },
   {
     id: 'engine-universe', name: '引擎宇宙图谱', codePath: 'src/routes/engine-universe.js',
@@ -106,8 +106,8 @@ const DOMAINS = [
   },
   {
     id: 'atlas', name: '项目全息图谱', codePath: 'src/routes/atlas.js',
-    keyFeatures: ['全项目机器图谱化（域/引擎/算法/数据/文档统一关联）', '无破窗验证（动态比对真实代码库，含 self-sync 自动登记层）', 'AI 架构师图谱增强对话', '自管理：self-sync 自发现/自登记/自愈（自己管理自己）'],
-    engines: ['project-atlas', 'expert-alliance', 'engine-universe'], dataAssets: ['atlas_auto_registry.json'], docs: ['docs/standards/project-atlas.md']
+    keyFeatures: ['全项目机器图谱化（域/引擎/算法/数据/文档统一关联）', '无破窗验证（动态比对真实代码库，含 self-sync 自动登记层）', 'AI 架构师图谱增强对话', '自管理：self-sync 自发现/自登记/自愈（自己管理自己）', '全维归一化：需求归一化流水线 + 代码图谱桥接 + 全域治理看板'],
+    engines: ['project-atlas', 'expert-alliance', 'engine-universe'], dataAssets: ['atlas_auto_registry.json', 'normalization_runs.json', 'code_graph_bindings.json'], docs: ['docs/standards/project-atlas.md']
   },
   {
     id: 'auto-tasks', name: '自动任务', codePath: 'src/routes/auto-tasks.js',
@@ -148,6 +148,11 @@ const DOMAINS = [
     id: 'services', name: '服务管理', codePath: 'src/routes/services.js',
     keyFeatures: ['外部服务注册与探活', '服务依赖管理', '优雅启停'],
     engines: ['llm-gateway'], dataAssets: ['settings.json'], docs: ['docs/enterprise/02-architecture.md']
+  },
+  {
+    id: 'projects', name: '项目中心', codePath: 'src/routes/projects.js',
+    keyFeatures: ['项目 CRUD 与项目化统计总览', '全维类型注册表（11 项目类别 + 18 资源类型，单一真相源）', '全维资源目录实时聚合（模块/MCP/插件/智能体/技能/任务/算子/知识库跨域采集）', '项目-资源绑定管理（"一切皆是项目"运行时归类入口）'],
+    engines: ['project-atlas'], dataAssets: ['projects.json'], docs: ['docs/standards/project-atlas.md']
   }
 ];
 

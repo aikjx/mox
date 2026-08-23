@@ -253,8 +253,8 @@ const listFinal = D.getProjects();
 check('最终项目清单恢复基线（8 项目）',
   listFinal.stats.total === 8 && listFinal.stats.runtimeRegistered === 0,
   `total=${listFinal.stats.total} runtime=${listFinal.stats.runtimeRegistered}`);
-check('全部业务域与模块归属项目（32 治理单元：28 域含 studio 与 mcp + 4 模块）',
-  listFinal.stats.totalDomains === 32, String(listFinal.stats.totalDomains));
+check('全部业务域与模块归属项目（33 治理单元：29 域含 studio/mcp/projects + 4 模块）',
+  listFinal.stats.totalDomains === 33, String(listFinal.stats.totalDomains));
 const domCheck = D.getDomainDetail('expert-alliance');
 check('域详情回查所属项目', domCheck.ownedBy.length === 1 && domCheck.ownedBy[0].id === 'proj-expert-alliance');
 const modCheck = D.getProjectDetail('proj-ai-platform');

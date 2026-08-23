@@ -126,18 +126,32 @@ const pitchDetectionAdapter = {
     setBinding('pitch-detection', engineId);
     return true;
   },
-  async health() {
+  async health(engineId) {
+    // 绑定层契约探活：本槽位引擎由 Node 代理在转发期注入 backend 表单字段，
+    // 切换绑定不依赖 Python 服务在线（服务端另有 auto 自动降级兜底）。
+    // 因此探活语义 = 绑定合法性（候选清单校验）；服务可达性仅作信息回报，不触发回滚。
+    if (engineId && !this.CANDIDATES.some(c => c.id === engineId)) {
+      return { ok: false, error: `引擎 ${engineId} 不在候选清单（可用: ${this.CANDIDATES.map(c => c.id).join(',')}）` };
+    }
     const http = require('http');
     const host = process.env.MELODY2SCORE_HOST || '127.0.0.1';
     const port = parseInt(process.env.MELODY2SCORE_PORT || '3008', 10);
-    return await new Promise((resolve) => {
+    const probe = await new Promise((resolve) => {
       const req = http.get({ hostname: host, port, path: '/api/melody2score/health', timeout: 3000 }, (res) => {
-        resolve({ ok: res.statusCode === 200, latency_ms: 0 });
+        resolve({ online: res.statusCode === 200, statusCode: res.statusCode });
         res.resume();
       });
-      req.on('error', () => resolve({ ok: false, latency_ms: -1 }));
-      req.on('timeout', () => { req.destroy(); resolve({ ok: false, latency_ms: -1 }); });
+      req.on('error', () => resolve({ online: false }));
+      req.on('timeout', () => { req.destroy(); resolve({ online: false }); });
     });
+    return {
+      ok: true,
+      serviceOnline: probe.online,
+      latency_ms: probe.online ? 0 : -1,
+      note: probe.online
+        ? 'Python 服务在线（backend 参数转发期注入）'
+        : 'Python 服务离线（绑定层探活通过；转发时注入 backend 参数，服务端 auto 降级兜底）'
+    };
   }
 };
 

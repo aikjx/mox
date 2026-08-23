@@ -579,5 +579,239 @@
     "weight": 0.6,
     "created_at": "2026-08-22T05:08:51.011Z",
     "ai_generated": true
+  },
+  {
+    "id": "graph_edge_oojxrfbb2k",
+    "source": "concept_website",
+    "target": "concept_user",
+    "label": "服务",
+    "weight": 1,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_j9kfg9a1lk",
+    "source": "concept_website",
+    "target": "concept_admin",
+    "label": "管理",
+    "weight": 1,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_8tz50hpdlt",
+    "source": "concept_website",
+    "target": "component_frontend",
+    "label": "包含",
+    "weight": 1,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_x1z9aroq43",
+    "source": "concept_website",
+    "target": "component_backend",
+    "label": "包含",
+    "weight": 1,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_0xw83zgn1u",
+    "source": "concept_website",
+    "target": "component_database",
+    "label": "依赖",
+    "weight": 1,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_gqsj8myezs",
+    "source": "component_frontend",
+    "target": "component_backend",
+    "label": "使用",
+    "weight": 0.9,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_huadv2yur5",
+    "source": "component_backend",
+    "target": "component_database",
+    "label": "使用",
+    "weight": 1,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_7ek6vyajf4",
+    "source": "component_cms",
+    "target": "component_backend",
+    "label": "依赖",
+    "weight": 0.8,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_gh9gmzlf2w",
+    "source": "component_auth",
+    "target": "component_backend",
+    "label": "集成",
+    "weight": 0.9,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_uxkjghzy6q",
+    "source": "component_search",
+    "target": "component_backend",
+    "label": "集成",
+    "weight": 0.8,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_wwyw5ngpgv",
+    "source": "component_search",
+    "target": "data_content",
+    "label": "搜索",
+    "weight": 0.9,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_8yj1nsqzim",
+    "source": "concept_admin",
+    "target": "component_cms",
+    "label": "使用",
+    "weight": 0.9,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_z733kmte4p",
+    "source": "concept_user",
+    "target": "component_frontend",
+    "label": "访问",
+    "weight": 1,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_ducerx3tof",
+    "source": "process_design",
+    "target": "component_frontend",
+    "label": "产出",
+    "weight": 0.8,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_ll3rim8f5g",
+    "source": "process_deploy",
+    "target": "component_backend",
+    "label": "部署",
+    "weight": 0.9,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_bnhobb06gk",
+    "source": "process_content",
+    "target": "component_cms",
+    "label": "管理",
+    "weight": 0.9,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_tekgykmx27",
+    "source": "data_user",
+    "target": "component_auth",
+    "label": "存储于",
+    "weight": 0.9,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_tuvwnrpsmg",
+    "source": "data_content",
+    "target": "component_cms",
+    "label": "存储于",
+    "weight": 0.9,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_xitk10mcug",
+    "source": "data_config",
+    "target": "component_backend",
+    "label": "配置于",
+    "weight": 0.8,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_ux0h3kxnc2",
+    "source": "constraint_security",
+    "target": "component_auth",
+    "label": "约束",
+    "weight": 1,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_c3jlq4iicy",
+    "source": "constraint_security",
+    "target": "component_backend",
+    "label": "约束",
+    "weight": 1,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_jvta4idb76",
+    "source": "constraint_performance",
+    "target": "component_frontend",
+    "label": "约束",
+    "weight": 0.9,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_0ti5au2q0s",
+    "source": "constraint_seo",
+    "target": "component_frontend",
+    "label": "约束",
+    "weight": 0.8,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_fjy6vh2696",
+    "source": "goal_conversion",
+    "target": "concept_user",
+    "label": "影响",
+    "weight": 0.9,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "graph_edge_jag1gu4dxa",
+    "source": "goal_brand",
+    "target": "concept_website",
+    "label": "影响",
+    "weight": 1,
+    "created_at": "2026-08-20T16:47:51.871Z",
+    "ai_generated": true
+  },
+  {
+    "id": "sd_edge_1787418449676_rw31kb",
+    "source": "sd:corp-site:page:home",
+    "target": "sd:corp-site:entity:服务团队",
+    "label": "使用",
+    "weight": 0.6,
+    "created_at": "2026-08-22T17:07:29.676Z",
+    "ai_generated": true
   }
 ]

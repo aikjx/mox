@@ -92,10 +92,25 @@ const ALGORITHMS = [
     id: 'algo-switch-rollback', name: '切换探活回滚', codePath: 'src/engine-kernel/application/switch-service.js',
     principle: '校验→切换→契约探活→失败自动回滚原绑定（银行级不宕机切换）',
     singleSource: true, category: '架构算法', consumers: ['engine-kernel']
+  },
+  {
+    id: 'algo-entity-extract', name: '全维实体抽取', codePath: 'src/kb/domain/entity-extractor.js',
+    principle: '多格式需求/规则/架构/模块抽取 + 同节共现关系挖掘 + 评分制域映射',
+    singleSource: true, category: '文档算法', consumers: ['kb']
+  },
+  {
+    id: 'algo-normalize', name: '需求归一化流水线', codePath: 'src/project-atlas/domain/normalization-rules.js',
+    principle: 'IR 归一化→语句拆解→域映射→模块拆分→算法关联→变更传播（N1-N7 规则集）',
+    singleSource: true, category: '架构算法', consumers: ['project-atlas']
+  },
+  {
+    id: 'algo-code-extract', name: '代码实体抽取', codePath: 'src/project-atlas/infrastructure/code-entity-extractor.js',
+    principle: '零依赖正则状态机：JS/Py 函数/类/导出/路由/依赖抽取，行号定位',
+    singleSource: true, category: '架构算法', consumers: ['project-atlas']
   }
 ];
 
-// ============ 数据资产（data/ 目录 34 个 JSON/JSONL，全域覆盖） ============
+// ============ 数据资产（data/ 目录 44 个 JSON/JSONL，全域覆盖） ============
 const DATA_ASSETS = [
   { file: 'settings.json', domain: 'system', desc: '系统全局配置' },
   { file: 'logs.json', domain: 'system', desc: '操作与审计日志' },
@@ -126,6 +141,8 @@ const DATA_ASSETS = [
   { file: 'learned_skills.json', domain: 'ai-integrated', desc: '智能集成引擎学习技能（轨迹提炼）' },
   { file: 'expert_capability_graph.json', domain: 'expert-graph', desc: '专家能力图' },
   { file: 'atlas_auto_registry.json', domain: 'atlas', desc: '图谱自管理自动登记层（self-sync 运行时覆盖）' },
+  { file: 'normalization_runs.json', domain: 'atlas', desc: '需求归一化运行记录（N1-N7 流水线溯源）' },
+  { file: 'code_graph_bindings.json', domain: 'atlas', desc: '代码实体图谱绑定（图谱↔本地代码双向映射）' },
   { file: 'engine_bindings.json', domain: 'engine-kernel', desc: '引擎槽位绑定（切换引擎零代码改动）' },
   { file: 'engine_plugins.json', domain: 'engine-kernel', desc: '本地安装插件清单' },
   { file: 'engine_marketplace.json', domain: 'engine-kernel', desc: '云端商城注册表配置' },
@@ -135,15 +152,18 @@ const DATA_ASSETS = [
   { file: 'kb_categories.json', domain: 'kb', desc: '知识库分类' },
   { file: 'kb_versions.json', domain: 'kb', desc: '文档版本快照' },
   { file: 'kb_history.json', domain: 'kb', desc: '文档变更历史' },
+  { file: 'doc_graph_links.json', domain: 'kb', desc: '文档实体图谱绑定记录（doc→实体→域 三层绑定）' },
   { file: 'automation.json', domain: 'auto-tasks', desc: '自动化任务' },
-  { file: 'ultimate_reasoning_rules.json', domain: 'ai-ultimate', desc: '推理规则' }
+  { file: 'ultimate_reasoning_rules.json', domain: 'ai-ultimate', desc: '推理规则' },
+  { file: 'projects.json', domain: 'projects', desc: '项目中心（全维项目化归类与项目-资源绑定）' }
 ];
 
 // ============ 核心文档（项目智慧沉淀，关联业务域） ============
 const DOCS = [
   { file: 'docs/standards/ai-native-architecture-standard.md', domain: 'engine-universe', desc: 'AINA-STD-001 架构规范（五公理+门禁）' },
   { file: 'docs/standards/engine-universe.md', domain: 'engine-universe', desc: '引擎宇宙图谱（17 引擎关联）' },
-  { file: 'docs/standards/project-atlas.md', domain: 'atlas', desc: '项目全息图谱（无破窗验证 W1-W9）' },
+  { file: 'docs/standards/project-atlas.md', domain: 'atlas', desc: '项目全息图谱（无破窗验证 W1-W13）' },
+  { file: 'docs/standards/project-atlas.md', domain: 'projects', desc: 'W10 项目治理（"一切皆是项目"：项目中心为运行时项目化归类入口）' },
   { file: 'docs/standards/xuanji-studio.md', domain: 'studio', desc: '璇玑工作台（豆包式低门槛交互 + JS 沙箱在线运行）' },
   { file: 'docs/standards/engine-kernel.md', domain: 'engine-kernel', desc: '引擎内核（槽位契约+瞬间切换+三层商城+AI配置）' },
   { file: 'docs/standards/expert-alliance-flow-standard.md', domain: 'expert-alliance', desc: 'EAF-STD-001 专家联盟业务处理流程行业规范标准（六阶段+韧性+降级链）' },

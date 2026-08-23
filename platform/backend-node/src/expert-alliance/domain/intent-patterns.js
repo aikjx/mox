@@ -99,6 +99,8 @@ const INTENT_PATTERNS = [
       '安全', '加密', '认证', '授权', 'RBAC', 'OA', '审计', '合规', '渗透', '漏洞',
       '威胁', '等保', '注入', 'XSS', 'CSRF', '攻击', '防护', '越权', '防火墙',
       'WAF', '脱敏', '密钥泄露', '防重放', '风控', '密码', '加盐', '哈希', '签名',
+      // 中文复合词（与英文复合词对称，防止 SQL注入/XSS攻击 等被单字误平局判为 data/ai 意图）
+      'SQL注入', 'XSS攻击', 'CSRF攻击', '注入攻击', '暴力破解', '重放攻击',
       // 英文
       'security', 'encryption', 'authentication', 'authorization', 'rbac', 'audit',
       'compliance', 'penetration', 'vulnerability', 'threat', 'injection', 'xss', 'csrf',
