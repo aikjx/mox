@@ -1,26 +1,30 @@
 //! # 守恒律检查与残差监控
 //!
-//! 实现守恒律验证和残差计算，保证系统数学自洽性
+//! 实现守恒律验证和残差计算，保证系统数学自洽性。
+//!
+//! 纯数学内核（ConservationLaw、L1/L2/Sum 守恒律、ConservationChecker、ResidualMonitor）
+//! 已移至 `kernel.rs` 并基于 `VectorOps` trait 抽象（DIP：依赖倒置），
+//! 本模块：
+//! 1. 重导出 kernel 的纯类型；
+//! 2. 提供 `verify` / 返回 `OperatorError` 的扩展方法；
+//! 3. 保留原 `GraphNode`、`GuardedGraph`、`ConservationReport` 等依赖 `StateVector` 的高层 API。
 
+use crate::kernel::VectorOps;
 use crate::state::StateVector;
 use crate::OperatorError;
 
-/// 守恒律trait
-pub trait ConservationLaw {
-    /// 守恒律名称
-    fn name(&self) -> &str;
+// ===== 重导出 L6 纯内核守恒律系统 =====
+pub use crate::kernel::{
+    ConservationChecker, ConservationLaw, L1Conservation, L2Conservation, ResidualMonitor,
+    SumConservation,
+};
 
-    /// 检查状态是否满足守恒律，返回残差
-    fn check(&self, state: &StateVector) -> f64;
+// ===== 扩展：为 kernel::ConservationLaw 补充返回 OperatorError 的 verify（非纯） =====
 
-    /// 检查是否在阈值内
-    fn is_satisfied(&self, state: &StateVector, threshold: f64) -> bool {
-        self.check(state).abs() < threshold
-    }
-
-    /// 验证并在违反时返回错误
+/// 为任何 `ConservationLaw` 实现者增加高级方法（需依赖 OperatorError，因此放入上层）。
+pub trait ConservationLawExt: ConservationLaw {
     fn verify(&self, state: &StateVector, threshold: f64) -> Result<(), OperatorError> {
-        let residual = self.check(state);
+        let residual = self.check(state as &dyn VectorOps);
         if residual.abs() >= threshold {
             Err(OperatorError::ConservationViolation {
                 law: self.name().to_string(),
@@ -32,157 +36,37 @@ pub trait ConservationLaw {
         }
     }
 }
+impl<L: ConservationLaw + ?Sized> ConservationLawExt for L {}
 
-/// L1范数守恒（概率守恒）
-pub struct L1Conservation {
-    expected_sum: f64,
+// ===== 扩展：让 ConservationChecker 返回 OperatorError =====
+
+/// 高层包装：把 `check_all` 的错误从 `KernelError` 转换为 `OperatorError`。
+pub trait ConservationCheckerExt {
+    fn check_all_ops(&self, state: &StateVector) -> Result<(), OperatorError>;
+    fn check_all_residuals_ops(&self, state: &StateVector) -> Vec<(&str, f64)>;
 }
 
-impl L1Conservation {
-    pub fn new(expected_sum: f64) -> Self {
-        Self { expected_sum }
-    }
-
-    pub fn probability() -> Self {
-        Self::new(1.0)
-    }
-}
-
-impl ConservationLaw for L1Conservation {
-    fn name(&self) -> &str {
-        "L1范数守恒（概率守恒）"
-    }
-
-    fn check(&self, state: &StateVector) -> f64 {
-        (state.norm_l1() - self.expected_sum).abs()
-    }
-}
-
-/// L2范数守恒（能量守恒）
-pub struct L2Conservation {
-    expected_norm: f64,
-}
-
-impl L2Conservation {
-    pub fn new(expected_norm: f64) -> Self {
-        Self { expected_norm }
-    }
-
-    pub fn unit_energy() -> Self {
-        Self::new(1.0)
-    }
-}
-
-impl ConservationLaw for L2Conservation {
-    fn name(&self) -> &str {
-        "L2范数守恒（能量守恒）"
-    }
-
-    fn check(&self, state: &StateVector) -> f64 {
-        (state.norm() - self.expected_norm).abs()
-    }
-}
-
-/// 总和守恒
-pub struct SumConservation {
-    expected_sum: f64,
-}
-
-impl SumConservation {
-    pub fn new(expected_sum: f64) -> Self {
-        Self { expected_sum }
-    }
-}
-
-impl ConservationLaw for SumConservation {
-    fn name(&self) -> &str {
-        "元素总和守恒"
-    }
-
-    fn check(&self, state: &StateVector) -> f64 {
-        let sum: f64 = state.data.iter().sum();
-        (sum - self.expected_sum).abs()
-    }
-}
-
-/// 守恒律检查器
-pub struct ConservationChecker {
-    laws: Vec<Box<dyn ConservationLaw>>,
-    threshold: f64,
-}
-
-impl ConservationChecker {
-    pub fn new(threshold: f64) -> Self {
-        Self {
-            laws: Vec::new(),
-            threshold,
-        }
-    }
-
-    pub fn with_default_laws(threshold: f64) -> Self {
-        let mut checker = Self::new(threshold);
-        checker.add_law(L1Conservation::probability());
-        checker.add_law(L2Conservation::unit_energy());
-        checker
-    }
-
-    pub fn add_law<L: ConservationLaw + 'static>(&mut self, law: L) {
-        self.laws.push(Box::new(law));
-    }
-
-    pub fn check_all(&self, state: &StateVector) -> Result<(), OperatorError> {
-        for law in &self.laws {
-            law.verify(state, self.threshold)?;
+impl ConservationCheckerExt for ConservationChecker {
+    fn check_all_ops(&self, state: &StateVector) -> Result<(), OperatorError> {
+        let residuals = self.check_all_residuals(state as &dyn VectorOps);
+        for (law, residual) in &residuals {
+            if residual.abs() >= self.threshold() {
+                return Err(OperatorError::ConservationViolation {
+                    law: (*law).to_string(),
+                    residual: *residual,
+                    threshold: self.threshold(),
+                });
+            }
         }
         Ok(())
     }
 
-    pub fn check_all_residuals(&self, state: &StateVector) -> Vec<(&str, f64)> {
-        self.laws
-            .iter()
-            .map(|law| (law.name(), law.check(state)))
-            .collect()
+    fn check_all_residuals_ops(&self, state: &StateVector) -> Vec<(&str, f64)> {
+        self.check_all_residuals(state as &dyn VectorOps)
     }
 }
 
-/// 残差监控器
-pub struct ResidualMonitor {
-    history: Vec<f64>,
-    threshold: f64,
-}
-
-impl ResidualMonitor {
-    pub fn new(threshold: f64) -> Self {
-        Self {
-            history: Vec::new(),
-            threshold,
-        }
-    }
-
-    pub fn record(&mut self, residual: f64) {
-        self.history.push(residual);
-    }
-
-    pub fn is_converged(&self, window: usize) -> bool {
-        if self.history.len() < window {
-            return false;
-        }
-        let recent = &self.history[self.history.len() - window..];
-        let max_residual = recent.iter().fold(0.0f64, |a, &b| a.max(b));
-        max_residual < self.threshold
-    }
-
-    pub fn max_residual(&self) -> f64 {
-        self.history.iter().fold(0.0f64, |a, &b| a.max(b))
-    }
-
-    pub fn mean_residual(&self) -> f64 {
-        if self.history.is_empty() {
-            return 0.0;
-        }
-        self.history.iter().sum::<f64>() / self.history.len() as f64
-    }
-}
+// ===== GraphNode trait（绑定具体 StateVector，保留原公共 API） =====
 
 /// 图谱节点状态向量提供者
 ///
@@ -225,8 +109,8 @@ impl GuardedGraph {
     }
 
     /// 检查节点状态是否满足守恒律
-    pub fn check_node<N: GraphNode>(&self, node: &N) -> Result<(), crate::OperatorError> {
-        self.checker.check_all(node.state_vector())
+    pub fn check_node<N: GraphNode>(&self, node: &N) -> Result<(), OperatorError> {
+        self.checker.check_all_ops(node.state_vector())
     }
 
     /// 预检查两个节点合并后的守恒状态
@@ -234,18 +118,18 @@ impl GuardedGraph {
         &self,
         source: &N,
         target: &N,
-    ) -> Result<(), crate::OperatorError> {
+    ) -> Result<(), OperatorError> {
         let source_state = source.state_vector();
         let target_state = target.state_vector();
         let combined = source_state.combine(target_state)?;
-        self.checker.check_all(&combined)
+        self.checker.check_all_ops(&combined)
     }
 
     /// 获取图谱级守恒残差全景
     pub fn check_all_residuals<N: GraphNode>(&self, nodes: &[N]) -> Vec<(String, f64)> {
         let mut all_residuals = Vec::new();
         for node in nodes {
-            let residuals = self.checker.check_all_residuals(node.state_vector());
+            let residuals = self.checker.check_all_residuals_ops(node.state_vector());
             for (law, r) in residuals {
                 all_residuals.push((law.to_string(), r));
             }
@@ -297,8 +181,11 @@ impl GuardedGraph {
         let mut passed = 0;
 
         for (id, node) in nodes {
-            let residuals = self.checker.check_all_residuals(node.state_vector());
-            let node_max = residuals.iter().map(|(_, r)| r.abs()).fold(0.0f64, f64::max);
+            let residuals = self.checker.check_all_residuals_ops(node.state_vector());
+            let node_max = residuals
+                .iter()
+                .map(|(_, r)| r.abs())
+                .fold(0.0f64, f64::max);
 
             if node_max > max_res {
                 max_res = node_max;
@@ -306,12 +193,12 @@ impl GuardedGraph {
 
             let mut node_ok = true;
             for (law, r) in &residuals {
-                if r.abs() > self.checker.threshold {
+                if r.abs() > self.checker.threshold() {
                     violations.push(ConservationViolation {
                         node_id: id.clone(),
-                        law: law.to_string(),
+                        law: (*law).to_string(),
                         residual: *r,
-                        threshold: self.checker.threshold,
+                        threshold: self.checker.threshold(),
                     });
                     node_ok = false;
                 }
@@ -336,30 +223,33 @@ impl GuardedGraph {
     }
 }
 
+// ===== 原 conservation 单元测试 =====
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
+    use crate::state::StateVector;
 
     #[test]
     fn test_l1_conservation() {
         let law = L1Conservation::probability();
         let state = StateVector::from_vec(vec![0.25, 0.25, 0.25, 0.25]);
-        assert!(law.is_satisfied(&state, 1e-10));
+        assert!(law.is_satisfied(&state as &dyn VectorOps, 1e-10));
 
         let modified = StateVector::from_vec(vec![0.5, 0.25, 0.25, 0.25]);
-        assert!(!law.is_satisfied(&modified, 1e-10));
-        assert_relative_eq!(law.check(&modified), 0.25);
+        assert!(!law.is_satisfied(&modified as &dyn VectorOps, 1e-10));
+        assert_relative_eq!(law.check(&modified as &dyn VectorOps), 0.25);
     }
 
     #[test]
     fn test_l2_conservation() {
         let law = L2Conservation::unit_energy();
         let state = StateVector::from_vec(vec![1.0, 0.0, 0.0]);
-        assert!(law.is_satisfied(&state, 1e-10));
+        assert!(law.is_satisfied(&state as &dyn VectorOps, 1e-10));
 
         let modified = StateVector::from_vec(vec![2.0, 0.0, 0.0]);
-        assert!(!law.is_satisfied(&modified, 1e-10));
+        assert!(!law.is_satisfied(&modified as &dyn VectorOps, 1e-10));
     }
 
     #[test]
@@ -369,7 +259,7 @@ mod tests {
         checker.add_law(L2Conservation::unit_energy());
         let mut state = StateVector::from_vec(vec![0.5, 0.5]);
         state.normalize();
-        assert!(checker.check_all(&state).is_ok());
+        assert!(checker.check_all_ops(&state).is_ok());
     }
 
     #[test]
@@ -385,8 +275,6 @@ mod tests {
 
     #[test]
     fn test_guarded_graph_node_check() {
-        use crate::state::StateVector;
-
         struct TestNode {
             state: StateVector,
         }
@@ -409,8 +297,6 @@ mod tests {
 
     #[test]
     fn test_guarded_graph_edge_check() {
-        use crate::state::StateVector;
-
         struct TestNode {
             state: StateVector,
         }
@@ -443,8 +329,6 @@ mod tests {
 
     #[test]
     fn test_guarded_graph_report() {
-        use crate::state::StateVector;
-
         struct TestNode {
             state: StateVector,
         }
@@ -476,5 +360,22 @@ mod tests {
         let report = graph.generate_report(&nodes);
         assert_eq!(report.total_nodes, 2);
         assert!(report.pass_rate >= 0.0);
+    }
+
+    // 验证 verify 返回 OperatorError
+    #[test]
+    fn test_conservation_law_ext_verify_returns_error() {
+        let law = L1Conservation::probability();
+        let bad = StateVector::from_vec(vec![2.0, 0.0, 0.0]);
+        let result = law.verify(&bad, 1e-10);
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            OperatorError::ConservationViolation { law: l, residual, threshold } => {
+                assert!(l.contains("L1"));
+                assert!(residual > 0.5);
+                assert_eq!(threshold, 1e-10);
+            }
+            other => panic!("预期 ConservationViolation，得到 {:?}", other),
+        }
     }
 }

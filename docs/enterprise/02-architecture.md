@@ -1,4 +1,4 @@
-﻿# 璇玑系统 · 企业级架构文档（多视图）
+# 璇玑系统 · 企业级架构文档（多视图）
 
 > **文档类型**：企业架构（Enterprise Architecture，多视图 / TOGAF 风格切面）
 > **文档版本**：v1.0 (ENT) · 最后更新 2026-08-16
@@ -112,7 +112,29 @@ DomainEvent ──▶ EventBus(broadcast)
    xuanji-expert（双璇玑十四维 · 璇玑）
 ```
 
-### 3.2 模块依赖
+### §3.2 Rust Workspace 16 Crate · AIS 分层全表（三方对账基准）
+
+本表同步自 16 个 crate 的 `pub const CRATE_ID` / `pub const CRATE_META` 常量（与 project-atlas 注册表 Rust 条目三方对账一致）。每行 = 1 个璇玑独立子项目。
+
+| 序号 | Crate ID (kebab) | 路径 | AIS 分层 | 核心职责（1句） | 顶层入口 codePath | 引擎节点 id (engine-rust-*) | Owner 项目 (owner_project) |
+|------|-------------------|------|---------|----------------|-------------------|---------------------------|---------------------------|
+| 1 | operator-core crate | platform/services/operator-core | L4-Core, L6-Kernel | 算子代数/守恒律/类型核心 | src/lib.rs + types.rs | engine-rust-operator-core | proj-graph-infra |
+| 2 | operator-wasm crate | platform/services/operator-wasm | L5-Infra | WASM 字节码算子沙箱 | src/lib.rs | module-rust-operator-wasm | proj-auto-dev |
+| 3 | graph-algorithms crate | platform/services/graph-algorithms | L4-Core | 8 图算法:PR/CNM/介数/harmonic/Hebbian/推荐/密度/模块度 | src/lib.rs | engine-rust-graph-algorithms | proj-ai-engine |
+| 4 | optimizer crate | platform/services/optimizer | L4-Core | DAG/CPM 关键路径 + RCPSP 贪心调度 | src/lib.rs | engine-rust-optimizer | proj-graph-infra |
+| 5 | flow-ai crate | platform/services/flow-ai | L4-Core, L3-Service, L7-Tool | 9 模块:数据冒险/CPM/冲突/调度/拓扑/代码gen/流水线/原语/可视化 | src/lib.rs (+ bin/flowopt.rs) | engine-rust-flow-ai | proj-graph-infra |
+| 6 | xuanji-expert crate | platform/services/xuanji-expert | L3-Service, L2-Gateway, L1-Ingress, L5-Infra | 14 专家并行+裁决+4验证+审计S3/Kafka+RBAC+流程加载器 | src/lib.rs (+ bin/xuanji.rs) | engine-rust-xuanji-expert | proj-expert-alliance |
+| 7 | hermes-flow-bridge crate | platform/services/hermes-flow-bridge | L2-Gateway, L3-Service, L7-Tool | Hermes Agent 桥接：normalize/recorder/router/拦截注入 | src/lib.rs (+ bin/bridge_demo.rs) | module-rust-hermes-flow-bridge | proj-auto-dev |
+| 8 | business-catalog crate | platform/services/business-catalog | L3-Service, L7-Tool | 7 预置 FlowGraph + TopologyGraph (政务/法院/财务/客服/ETL/MCP/螺旋) | src/lib.rs (+ bin/catalog.rs) | module-rust-business-catalog | proj-auto-dev |
+| 9 | ai-agent crate | platform/services/ai-agent | L3-Service, L4-Core, L6-Kernel | 多阶段 Engine/LLMClient 路由/浏览器自动化/需求编译器/BPMN Workflow/MultiAgent/ProviderRegistry | src/lib.rs (+ tests/caomei_e2e.rs) | engine-rust-ai-agent | proj-ai-dialogue |
+| 10 | template-market crate | platform/services/template-market | L3-Service | 模板市场发布/列表/加载/评分/排序/Fork/2商城种子 | src/lib.rs | module-rust-template-market | proj-auto-dev |
+| 11 | xuanji-system crate | platform/services/xuanji-system | L1-Ingress, L2-Gateway, L3-Domain, L5-Infra, L6-Kernel | 成员/任务/权限/通信核心业务+RBAC/限流/事件编排/多后端 SQLite+PG+MySQL repo | src/lib.rs (server.rs, orchestrator.rs, repo/) | engine-rust-xuanji-system | proj-xuanji-core |
+| 12 | primiflow-core crate | platform/services/primiflow-core | L4-Core, L5-Infra, L1-Ingress | PrimiFlow 解析/代码生成/8 类骨架模板/执行/持久化 | src/lib.rs (parse.rs, generate.rs, persistence.rs) | engine-rust-primiflow-core | proj-xuanji-core |
+| 13 | primiflow-fusion crate | platform/services/primiflow-fusion | L2-Gateway, L3-Service, L1-Ingress, L6-Kernel | 六维融合/守恒闸门/Registry/平台编排/12Factor+可观测 | src/lib.rs (registry.rs, sixdim.rs, platform.rs) | engine-rust-primiflow-fusion | proj-xuanji-core |
+| 14 | kg-hub crate | platform/services/kg-hub | L3-Service, L6-Kernel, L1-Ingress | HybridIndex+URN+本体/摄入/推理/治理/影响/热点/闭环8段/5连接器 | src/lib.rs (index.rs, ingest.rs, reason.rs, loop_engine.rs) | engine-rust-kg-hub | proj-knowledge |
+| 15 | runtime (gateway) crate | platform/gateway/runtime | L1-Ingress, L2-Gateway | 16 crate 聚合网关:routes/handlers/Cordis5子模块/RBAC中间件/market DSL/迁移/治理/OpenAPI/operator-server | src/lib.rs (routes/, handlers/, cordis/, main.rs) | engine-rust-runtime | proj-xuanji-platform |
+
+### 3.3 模块依赖
 
 ```
 server.rs ──▶ orchestrator.rs(XuanjiSystem) ──▶ services.rs(Member/Task/Permission/Comm)
@@ -122,7 +144,7 @@ server.rs ──▶ orchestrator.rs(XuanjiSystem) ──▶ services.rs(Member/T
 xuanji-system ◀── POST /api/xuanji/* ── xuanji-expert(pipeline)
 ```
 
-### 3.3 服务职责（单一职责）
+### 3.4 服务职责（单一职责）
 
 | 服务 | 职责 | 不负责 |
 |------|------|--------|
@@ -211,10 +233,24 @@ xuanji-system ◀── POST /api/xuanji/* ── xuanji-expert(pipeline)
 
 ## 7. 部署/运维视图（Deployment & Ops）
 
-### 7.1 运行形态
+### 7.1 部署视图（运行形态）
 
 - 单体进程：`cargo run -p xuanji-system` → `:3000`（REST+WS）；`--demo` 端到端演示。
 - 作为 OUS 子系统：由 `runtime` 主服务聚合各 crate 端点。
+
+#### 7.1.1 runtime crate 聚合内部架构（L1+L2 细项）
+
+**L1 Ingress（路由+处理器薄层）：**
+- `src/routes/mod.rs` 路由总入口：agent.rs (AI 智能体端点) + governance.rs（治理台 HITL/审批/指标） + market.rs（算子市场 DSL/版本化/迁移）
+- `src/handlers/mod.rs` HTTP 处理器薄层：agent.rs / governance.rs / hitl.rs（纯 request→response 适配，不含业务算法）
+- `main.rs` 二进制入口 `operator-server`（axum server 启动 + 生命周期 + 优雅停机）
+
+**L2 Gateway（编排/中间件/聚合）：**
+- `src/cordis/mod.rs`（OUS-Cordis 插件内核 5 子模块）：profile + bundle + seam(SeamRegistry fs 注册) + event_bus(事件瀑布) + lifecycle(Start/Stop/Pause)
+- `src/rbac_middleware.rs`：RBAC 鉴权闸门（X-Auth-Token TokenRegistry → member_id + 角色校验）
+- `src/subservers.rs`：聚合 16 crate 的子服务（ai-agent/xuanji-expert 等）挂载编排
+- Feature gates: `market`（算子市场）/ `governance`（治理台）/ `openapi`（OpenAPI 生成） — 默认开启
+- `src/automation.rs` + `api_standard.rs` + `openapi.rs`：API 标准化响应 / OpenAPI schema 生成
 
 ### 7.2 可观测性（设计态 → 路线图）
 

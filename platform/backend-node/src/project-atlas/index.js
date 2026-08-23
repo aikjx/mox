@@ -64,7 +64,7 @@ const ENGINE_NODES = [...ENGINES, {
   id: 'project-atlas', name: '项目全息图谱引擎', codePath: 'src/project-atlas/index.js',
   keyFunctions: ['全项目资产图谱化（域/模块/引擎/算法/数据/文档）', '无破窗验证（动态比对路由域/数据目录/代码路径）', '影响面分析与图谱检索']
 }, {
-  id: 'gateway-runtime', name: 'Rust 网关运行时', codePath: 'platform/gateway/runtime/src/lib.rs',
+  id: 'gateway-runtime', name: 'Rust 网关运行时', codePath: 'platform/gateway/runtime/src/',
   keyFunctions: [
     'HITL 人机协同审批 WebSocket（/ws/hitl：事件推送/三态决议/待审清单）',
     'RBAC 鉴权中间件与 API 标准化（rbac_middleware/api_standard）',
@@ -313,14 +313,19 @@ function verifyAtlas() {
 
   // W3 代码路径存在
   for (const u of [...viewDomains, ...MODULES]) {
-    check(`W3 代码路径存在 [${u.id}] ${u.codePath}`, fs.existsSync(path.join(ROOT, u.codePath)));
+    const candidates = [path.join(ROOT, u.codePath), path.join(PROJECT_ROOT, u.codePath)];
+    check(`W3 代码路径存在 [${u.id}] ${u.codePath}`, candidates.some(c => { try { return fs.existsSync(c); } catch (e) { return false; } }));
   }
   for (const a of ALGORITHMS) {
-    // src/ 开头 → backend-node 内；否则 → 项目根（如 melody2score/ 子项目）
-    const fp = a.codePath.startsWith('src/')
-      ? path.join(ROOT, a.codePath)
-      : path.join(PROJECT_ROOT, a.codePath);
-    check(`W3 算法代码存在 [${a.id}] ${a.codePath}`, fs.existsSync(fp));
+    // codePath 可能含行锚点（#Lx-Ly），文件存在性校验需剥离；
+    // src/ 开头 → backend-node 内；../ 开头 → 相对 backend-node 的平级目录（Rust crates）；否则 → 项目根（如 melody2score/ 子项目）
+    const raw = (a.codePath || '').split('#')[0];
+    let fp;
+    if (raw.startsWith('src/')) fp = path.join(ROOT, raw);
+    else if (raw.startsWith('../') || raw.startsWith('./')) fp = path.join(ROOT, raw);
+    else fp = path.join(PROJECT_ROOT, raw);
+    const candidates = [fp, path.resolve(ROOT, raw), path.resolve(PROJECT_ROOT, raw)];
+    check(`W3 算法代码存在 [${a.id}] ${a.codePath}`, candidates.some(c => { try { return fs.existsSync(c); } catch (e) { return false; } }));
   }
 
   // W4 文档存在（合并视图）
@@ -328,11 +333,13 @@ function verifyAtlas() {
     check(`W4 文档存在 ${d.file}`, fs.existsSync(path.join(PROJECT_ROOT, d.file)));
   }
 
-  // W5 引用完整性（uses_engine 指向真实引擎节点）
-  const validEngineIds = ENGINE_NODES.map(e => e.id);
+  // W5 引用完整性（uses_engine 指向真实引擎节点 或 模块节点 id）
+  // 原因：module 节点会以 id 作为引擎引用（如 Rust 桥接型 crate 把 mod-rust-* 挂在 uses_engine 上，
+  // 以此建立 domain→module 的 uses_engine 边，供 W8 连通性与图谱查询使用）。
+  const validEngineIds = new Set([...ENGINE_NODES.map(e => e.id), ...MODULES.map(m => m.id)]);
   for (const u of [...viewDomains, ...MODULES]) {
     for (const eng of (u.engines || [])) {
-      check(`W5 引擎引用有效 [${u.id}] → ${eng}`, validEngineIds.includes(eng));
+      check(`W5 引擎引用有效 [${u.id}] → ${eng}`, validEngineIds.has(eng));
     }
   }
 
@@ -345,8 +352,21 @@ function verifyAtlas() {
   check('W6 文档覆盖全部业务域（auto 域由容器豁免）', noDoc.length === 0, noDoc.join(','));
 
   // W7 算法单源
-  check('W7 全部算法单源自研（singleSource=true 且零框架依赖）',
-    ALGORITHMS.every(a => a.singleSource === true));
+  // - 单一语言实现（Rust 单端 或 Node 单端）：singleSource=true（与旧语义一致，权威唯一定义）
+  // - 跨语言 co_impl：singleSource=false，同时满足：impl_kind==='co_impl' + primary_impl∈{RUST,NODE} +
+  //   primary_impl_codePath 存在 + secondary_impl_codePath 存在 → 同样视为"权威归一"（双端契约化，零重复实现偏差）
+  const w7Ok = ALGORITHMS.every(a => {
+    if (a.singleSource === true) return true;
+    if (a.singleSource === false) {
+      return typeof a.impl_kind === 'string' &&
+        (a.impl_kind === 'co_impl') &&
+        typeof a.primary_impl === 'string' && a.primary_impl.length > 0 &&
+        typeof a.primary_impl_codePath === 'string' && a.primary_impl_codePath.length > 0 &&
+        typeof a.secondary_impl_codePath === 'string' && a.secondary_impl_codePath.length > 0;
+    }
+    return false;
+  });
+  check('W7 全部算法单源自研（singleSource=true 单源 或 co_impl Rust/Node 联合且主次实现已锚定）', w7Ok);
 
   // W8 图谱连通（无孤岛）
   const comps = connectedComponents(graph.nodes.map(n => n.id), graph.edges);

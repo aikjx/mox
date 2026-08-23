@@ -92,6 +92,7 @@ impl ParallelPlan {
 /// - 双方都声明了访问且**资源集合不相交**（读写写均无交集）→ 可安全并行；
 /// - 否则（共享资源）→ 保序（真实 RAW/WAR/WAW 已由 hazard() 单独捕获，
 ///   这里覆盖 hazard 未覆盖的「同资源非读写集可推导」的副作用冲突）。
+#[allow(dead_code)]
 fn side_effect_ordered(a: &FlowNode, b: &FlowNode) -> bool {
     let risky = |n: &FlowNode| match n.tool {
         Some(ToolKind::Shell) | Some(ToolKind::Human) => true,
@@ -113,6 +114,7 @@ fn side_effect_ordered(a: &FlowNode, b: &FlowNode) -> bool {
 }
 
 /// 节点的全部访问资源（读 + 写）集合
+#[allow(dead_code)]
 fn node_resources(n: &FlowNode) -> BTreeSet<String> {
     n.accesses
         .iter()
@@ -121,6 +123,7 @@ fn node_resources(n: &FlowNode) -> BTreeSet<String> {
 }
 
 /// 计算两节点间的资源冒险类型
+#[allow(dead_code)]
 fn hazard(a: &FlowNode, b: &FlowNode) -> Option<(DepKind, String)> {
     let (aw, ar) = (a.write_set(), a.read_set());
     let (bw, br) = (b.write_set(), b.read_set());
@@ -138,6 +141,7 @@ fn hazard(a: &FlowNode, b: &FlowNode) -> Option<(DepKind, String)> {
     None
 }
 
+#[allow(dead_code)]
 fn intersect_first(a: &BTreeSet<&str>, b: &BTreeSet<&str>) -> Option<String> {
     a.intersection(b).next().map(|s| s.to_string())
 }
@@ -157,63 +161,134 @@ pub fn analyze(graph: &FlowGraph) -> ParallelPlan {
     let n = graph.nodes.len();
     let reach = graph.reachability();
 
+    // ===== 一次性索引 + 节点资源集预计算，避免 O(n²) 内层重建 =====
+    let mut id_index: HashMap<&str, usize> = HashMap::with_capacity(n);
+    for (i, nd) in graph.nodes.iter().enumerate() {
+        id_index.insert(nd.id.as_str(), i);
+    }
+    struct NodeSets<'a> {
+        reads: Vec<&'a str>,
+        writes: Vec<&'a str>,
+        write_set: BTreeSet<&'a str>,
+        risky: bool,
+        has_access: bool,
+    }
+    let sets: Vec<NodeSets<'_>> = graph
+        .nodes
+        .iter()
+        .map(|nd| {
+            let mut reads = Vec::new();
+            let mut writes = Vec::new();
+            let mut write_set = BTreeSet::new();
+            for a in &nd.accesses {
+                if a.mode.reads() {
+                    reads.push(a.resource.as_str());
+                }
+                if a.mode.writes() {
+                    writes.push(a.resource.as_str());
+                    write_set.insert(a.resource.as_str());
+                }
+            }
+            let risky = matches!(nd.tool, Some(ToolKind::Shell) | Some(ToolKind::Human))
+                || matches!(nd.tool, Some(ToolKind::Browser) | Some(ToolKind::Http) if !nd.idempotent);
+            NodeSets { reads, writes, write_set, risky, has_access: !nd.accesses.is_empty() }
+        })
+        .collect();
+
     // 1) 收集必须保留的依赖
     let mut keep: HashMap<(usize, usize), (DepKind, Option<String>)> = HashMap::new();
 
     // 1a) 结构性 / 异常 / 条件 / 互斥边一律保留
     for e in &graph.edges {
-        let (Some(u), Some(v)) = (graph.index_of(&e.from), graph.index_of(&e.to)) else {
+        let (Some(&u), Some(&v)) = (id_index.get(e.from.as_str()), id_index.get(e.to.as_str())) else {
             continue;
         };
         if e.kind == EdgeKind::Mutex {
-            // 互斥边是修复器注入的硬约束，优先级最高，不得被剪除或降级
             keep.insert((u, v), (DepKind::Mutex, None));
             continue;
         }
-        let structural = is_structural(&graph.nodes[u], &graph.nodes[v])
-            || e.kind.is_hard();
+        let structural = is_structural(&graph.nodes[u], &graph.nodes[v]) || e.kind.is_hard();
         if structural {
             keep.insert((u, v), (DepKind::Control, None));
         }
     }
 
     // 1b) 对所有「原图中已存在先后关系」的节点对做冒险分析
-    //     只在 u 可达 v 时判定，避免给本来无序的节点凭空加边
-    for u in 0..n {
-        for v in 0..n {
+    //     预计算读写集后，使用 Vec 线性相交（每节点 1~2 个访问时远快于 BTreeSet）
+    for (u, su) in sets.iter().enumerate().take(n) {
+        if su.reads.is_empty() && su.writes.is_empty() && !su.risky {
+            continue;
+        }
+        for (v, sv) in sets.iter().enumerate().take(n) {
             if u == v || !reach.reaches(u, v) {
                 continue;
             }
-            let (a, b) = (&graph.nodes[u], &graph.nodes[v]);
-            if let Some((k, res)) = hazard(a, b) {
-                // WAW 且两节点写集合不相交 → 寄存器重命名安全：
-                // 最终值落在不同变量上，谁先谁后都不影响结果，可并行（伪依赖）。
-                // 仅当双方都声明了写集合时才可判定；任一未声明则保守保序。
+            let mut found: Option<(DepKind, String)> = None;
+            if found.is_none() && !su.writes.is_empty() && !sv.reads.is_empty() {
+                for w in &su.writes {
+                    if sv.reads.contains(w) {
+                        found = Some((DepKind::Raw, (*w).to_string()));
+                        break;
+                    }
+                }
+            }
+            if found.is_none() && !su.writes.is_empty() && !sv.writes.is_empty() {
+                for w in &su.writes {
+                    if sv.writes.contains(w) {
+                        found = Some((DepKind::Waw, (*w).to_string()));
+                        break;
+                    }
+                }
+            }
+            if found.is_none() && !su.reads.is_empty() && !sv.writes.is_empty() {
+                for r in &su.reads {
+                    if sv.writes.contains(r) {
+                        found = Some((DepKind::War, (*r).to_string()));
+                        break;
+                    }
+                }
+            }
+            if let Some((k, res)) = found {
                 if k == DepKind::Waw
-                    && !a.write_set().is_empty()
-                    && !b.write_set().is_empty()
-                    && a.write_set().is_disjoint(&b.write_set())
+                    && !su.write_set.is_empty()
+                    && !sv.write_set.is_empty()
+                    && su.write_set.is_disjoint(&sv.write_set)
                 {
-                    // 跳过 keep → 该顺序边被识别为可剪除的伪依赖
+                    // WAW 但写集互不相交 → 寄存器重命名安全，伪依赖
                 } else {
                     keep.entry((u, v)).or_insert((k, Some(res)));
+                    continue;
                 }
-            } else if side_effect_ordered(a, b) {
-                keep.entry((u, v)).or_insert((DepKind::SideEffect, None));
+            }
+            // 副作用序：双方都是 risky 工具且无法证明独立 → 保序
+            if su.risky && sv.risky {
+                let ordered = if su.has_access && sv.has_access {
+                    let mut shared = false;
+                    for a in su.reads.iter().chain(su.writes.iter()) {
+                        if sv.reads.contains(a) || sv.writes.contains(a) {
+                            shared = true;
+                            break;
+                        }
+                    }
+                    shared
+                } else {
+                    true
+                };
+                if ordered {
+                    keep.entry((u, v)).or_insert((DepKind::SideEffect, None));
+                }
             }
         }
     }
 
-    // 2) 传递归约：若 u→w→v 已保证顺序，则 u→v 冗余
+    // 2) 传递归约：位并行传递闭包（约 64× 加速）
     let dep_adj = build_adj(n, keep.keys().copied());
-    let dep_reach = transitive_closure(n, &dep_adj);
+    let dep_reach = transitive_closure_bitmap(n, &dep_adj);
     let mut dependencies = Vec::new();
     for (&(u, v), (kind, res)) in keep.iter() {
-        // 互斥硬约束永不参与传递归约，避免修复结果被“优化掉”
+        // 互斥硬约束永不参与传递归约，避免修复结果被"优化掉"
         let redundant = *kind != DepKind::Mutex
-            && dep_adj[u]
-                .iter()
-                .any(|&w| w != v && dep_reach[w * n + v]);
+            && dep_adj[u].iter().any(|&w| w != v && dep_reach.reaches(w, v));
         if redundant {
             continue;
         }
@@ -226,10 +301,10 @@ pub fn analyze(graph: &FlowGraph) -> ParallelPlan {
     }
     dependencies.sort_by(|a, b| (a.from.as_str(), a.to.as_str()).cmp(&(b.from.as_str(), b.to.as_str())));
 
-    // 3) 找出被剪掉的伪依赖边
+    // 3) 找出被剪掉的伪依赖边（复用 id_index 避免 2×O(n) 线性扫描/边）
     let mut removed_edges = Vec::new();
     for e in &graph.edges {
-        let (Some(u), Some(v)) = (graph.index_of(&e.from), graph.index_of(&e.to)) else {
+        let (Some(&u), Some(&v)) = (id_index.get(e.from.as_str()), id_index.get(e.to.as_str())) else {
             continue;
         };
         if !keep.contains_key(&(u, v)) {
@@ -239,12 +314,12 @@ pub fn analyze(graph: &FlowGraph) -> ParallelPlan {
     removed_edges.sort();
     removed_edges.dedup();
 
-    // 4) 按真依赖分层（ASAP）
-    let layers = layer_by_deps(graph, &dependencies);
+    // 4) 按真依赖分层（ASAP）—— 传入 id_index 避免 2×O(n)/依赖 线性扫描
+    let layers = layer_by_deps_fast(graph, &dependencies, &id_index);
 
     // 5) 耗时估算
     let sequential_ms: u64 = graph.nodes.iter().map(|x| x.duration_ms).sum();
-    let parallel_ms = longest_path_ms(graph, &dependencies);
+    let parallel_ms = longest_path_ms_fast(graph, &dependencies, &id_index);
 
     ParallelPlan { dependencies, removed_edges, layers, sequential_ms, parallel_ms }
 }
@@ -257,47 +332,82 @@ fn build_adj(n: usize, edges: impl Iterator<Item = (usize, usize)>) -> Vec<Vec<u
     adj
 }
 
-/// Floyd 风格传递闭包（节点规模有限，O(n^3/64) 足够）
-fn transitive_closure(n: usize, adj: &[Vec<usize>]) -> Vec<bool> {
-    let mut m = vec![false; n * n];
+/// 位并行传递闭包：64 位打包，每次或运算一次性推进 64 个节点。
+/// 相比 Vec<bool> 版本，对于 n=500 约 ~8 words → 60~70× 内存带宽 + 分支节省。
+struct BitmapReach {
+    words: usize,
+    bits: Vec<u64>,
+    #[allow(dead_code)]
+    n: usize,
+}
+impl BitmapReach {
+    fn reaches(&self, u: usize, v: usize) -> bool {
+        self.bits[u * self.words + v / 64] & (1u64 << (v % 64)) != 0
+    }
+}
+fn transitive_closure_bitmap(n: usize, adj: &[Vec<usize>]) -> BitmapReach {
+    use std::cmp::max;
+    let words = max(n.div_ceil(64), 1);
+    let mut bits = vec![0u64; n * words];
     for (u, vs) in adj.iter().enumerate() {
+        let row = &mut bits[u * words..(u + 1) * words];
         for &v in vs {
-            m[u * n + v] = true;
+            row[v / 64] |= 1u64 << (v % 64);
         }
     }
+    // 按拓扑序反序更高效，但这里保证通用：逐节点松弛（Floyd 位并行变体）
     for k in 0..n {
+        let k_word = k / 64;
+        let k_mask = 1u64 << (k % 64);
+        // 暂存 k 行，避免 i==k 时可变/不可变借用冲突
+        let k_row_copy: Vec<u64> = bits[k * words..(k + 1) * words].to_vec();
         for i in 0..n {
-            if m[i * n + k] {
-                for j in 0..n {
-                    if m[k * n + j] {
-                        m[i * n + j] = true;
-                    }
-                }
+            if i == k {
+                continue;
+            }
+            if (bits[i * words + k_word] & k_mask) == 0 {
+                continue;
+            }
+            let dst = &mut bits[i * words..(i + 1) * words];
+            for w in 0..words {
+                dst[w] |= k_row_copy[w];
             }
         }
     }
-    m
+    BitmapReach { words, bits, n }
 }
 
-/// 按依赖做 ASAP 分层，同层节点互不依赖 → 可并行下发
+/// 按依赖做 ASAP 分层，同层节点互不依赖 → 可并行下发。
 ///
 /// 关键细节：零耗时的**控制节点不占据独立层**。否则 Start 这类节点会把其
 /// 后继任务挤到下一层，导致本可并行的两个任务被拆到不同层，并行度白白丢失。
 /// 因此先按依赖计算每个节点的**可执行深度**（只有可执行节点才 +1），
 /// 再按深度聚合成层。
 pub fn layer_by_deps(graph: &FlowGraph, deps: &[Dependency]) -> Vec<Vec<String>> {
+    let mut id_index: HashMap<&str, usize> = HashMap::with_capacity(graph.nodes.len());
+    for (i, nd) in graph.nodes.iter().enumerate() {
+        id_index.insert(nd.id.as_str(), i);
+    }
+    layer_by_deps_fast(graph, deps, &id_index)
+}
+
+fn layer_by_deps_fast(
+    graph: &FlowGraph,
+    deps: &[Dependency],
+    id_index: &HashMap<&str, usize>,
+) -> Vec<Vec<String>> {
     let n = graph.nodes.len();
     let mut indeg = vec![0usize; n];
     let mut succ = vec![Vec::new(); n];
     for d in deps {
-        let (Some(u), Some(v)) = (graph.index_of(&d.from), graph.index_of(&d.to)) else {
+        let (Some(&u), Some(&v)) = (id_index.get(d.from.as_str()), id_index.get(d.to.as_str())) else {
             continue;
         };
         succ[u].push(v);
         indeg[v] += 1;
     }
 
-    // 拓扑序下计算可执行深度
+    // Kahn 拓扑计算深度（O(n)）
     let mut depth = vec![0usize; n];
     let mut queue: Vec<usize> = (0..n).filter(|&i| indeg[i] == 0).collect();
     queue.sort_unstable();
@@ -308,7 +418,6 @@ pub fn layer_by_deps(graph: &FlowGraph, deps: &[Dependency]) -> Vec<Vec<String>>
         let u = queue[head];
         head += 1;
         order.push(u);
-        // 可执行节点占一层，控制节点透传深度
         let step = if graph.nodes[u].kind.is_executable() { 1 } else { 0 };
         for &v in &succ[u] {
             depth[v] = depth[v].max(depth[u] + step);
@@ -332,12 +441,24 @@ pub fn layer_by_deps(graph: &FlowGraph, deps: &[Dependency]) -> Vec<Vec<String>>
 }
 
 /// 依赖图上的最长路径（= 无限并发下的完成时间）
+#[allow(dead_code)]
 fn longest_path_ms(graph: &FlowGraph, deps: &[Dependency]) -> u64 {
+    let mut id_index: HashMap<&str, usize> = HashMap::with_capacity(graph.nodes.len());
+    for (i, nd) in graph.nodes.iter().enumerate() {
+        id_index.insert(nd.id.as_str(), i);
+    }
+    longest_path_ms_fast(graph, deps, &id_index)
+}
+fn longest_path_ms_fast(
+    graph: &FlowGraph,
+    deps: &[Dependency],
+    id_index: &HashMap<&str, usize>,
+) -> u64 {
     let n = graph.nodes.len();
     let mut succ = vec![Vec::new(); n];
     let mut indeg = vec![0usize; n];
     for d in deps {
-        let (Some(u), Some(v)) = (graph.index_of(&d.from), graph.index_of(&d.to)) else {
+        let (Some(&u), Some(&v)) = (id_index.get(d.from.as_str()), id_index.get(d.to.as_str())) else {
             continue;
         };
         succ[u].push(v);

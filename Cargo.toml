@@ -29,6 +29,7 @@ description = "Unified Operator System - AI-Driven Full-Dimensional Breakthrough
 # Core dependencies
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+serde_yaml = "0.9"
 tokio = { version = "1.0", features = ["full"] }
 anyhow = "1.0"
 thiserror = "1.0"
@@ -36,6 +37,9 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde", "clock"] }
+rayon = "1.8"
+http = "1"
+hostname = "0.3"
 
 # Math dependencies
 nalgebra = "0.32"
@@ -43,8 +47,8 @@ ndarray = "0.15"
 num-traits = "0.2"
 approx = "0.5"
 
-# Benchmarks (P4 性能基线)
-criterion = "0.5"
+# Benchmarks (P4 性能基线) - uniform default-features=false so operator-core & primiflow-fusion both inherit cleanly
+criterion = { version = "0.5", default-features = false }
 
 # WASM dependencies
 wasmer = "4.2"
@@ -56,8 +60,27 @@ petgraph = "0.6"
 # Web server
 axum = "0.7"
 tower-http = { version = "0.5", features = ["cors", "fs", "limit"] }
+tower = "0.4"
 
 # HTTP client for AI APIs and browser automation
 reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
 base64 = "0.22"
 rusqlite = { version = "0.31", features = ["bundled"] }
+
+# Cryptography (audit SigV4, HMAC signatures)
+sha2 = "0.10"
+hmac = "0.12"
+hex = "0.4"
+
+# Concurrency utilities
+parking_lot = "0.12"
+async-trait = "0.1"
+
+# Async / WebSocket
+tokio-tungstenite = "0.21"
+futures = "0.3"
+futures-util = "0.3"
+
+# Persistence: query builder & SQL drivers (xuanji-system uses backends at compile-time)
+sea-query = "0.32"
+sqlx = "0.8"

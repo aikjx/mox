@@ -5,6 +5,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { getGateway } = require('./llm-gateway');
 const { getAlliance } = require('./expert-alliance');
+const { GraphFormulas } = require('./graph/graph-formulas');
 
 const DATA_DIR = path.join(__dirname, '..', 'data');
 
@@ -254,7 +255,8 @@ class GraphIntelligenceEngine {
 
   async detectCommunitiesAdvanced(graphData, options = {}) {
     const {
-      algorithm = 'louvain',
+      // algorithm 默认已被 CNM 替代（项目记忆强制）；传 algorithm='louvain'/'lpa' 会降级到 CNM 并记录 warning
+      algorithm = 'cnm',
       maxCommunities = 10,
       minCommunitySize = 2,
       resolution = 1.0
@@ -265,98 +267,35 @@ class GraphIntelligenceEngine {
     const n = nodes.length;
 
     if (n < minCommunitySize) {
-      return { communities: [], modularity: 0, algorithm, note: '图太小，无法检测社区' };
+      return { communities: [], totalCommunities: 0, algorithm: 'CNM', passes: 0, resolution, minCommunitySize, modularity: 0, note: '图太小，无法检测社区', detectedAt: new Date().toISOString() };
     }
 
-    const adjMatrix = new Map();
-    nodes.forEach(n => adjMatrix.set(n.id, new Map()));
-    edges.forEach(e => {
-      if (adjMatrix.has(e.source) && adjMatrix.has(e.target)) {
-        const weight = e.weight || 1;
-        adjMatrix.get(e.source).set(e.target, (adjMatrix.get(e.source).get(e.target) || 0) + weight);
-        adjMatrix.get(e.target).set(e.source, (adjMatrix.get(e.target).get(e.source) || 0) + weight);
-      }
-    });
-
-    const community = new Map();
-    nodes.forEach(n => community.set(n.id, n.id));
-
-    const nodeCommunity = new Map();
-    nodes.forEach(n => nodeCommunity.set(n.id, n.id));
-
-    let totalWeight = 0;
-    edges.forEach(e => { totalWeight += (e.weight || 1) * 2; });
-
-    let moved = true;
-    let passes = 0;
-
-    while (moved && passes < 20) {
-      moved = false;
-      passes++;
-
-      for (const node of nodes) {
-        const currentComm = nodeCommunity.get(node.id);
-        let bestComm = currentComm;
-        let bestGain = 0;
-
-        for (const neighborId of adjMatrix.get(node.id).keys()) {
-          const neighborComm = nodeCommunity.get(neighborId);
-          if (neighborComm !== currentComm) {
-            const k_i = Array.from(adjMatrix.get(node.id).values()).reduce((a, b) => a + b, 0);
-            let sumIn = 0;
-            let sumTot = 0;
-
-            for (const [nid, weight] of adjMatrix) {
-              if (nodeCommunity.get(nid) === neighborComm) {
-                sumTot += Array.from(adjMatrix.get(nid).values()).reduce((a, b) => a + b, 0);
-              }
-            }
-
-            for (const [neid, weight] of adjMatrix.get(node.id)) {
-              if (nodeCommunity.get(neid) === neighborComm) {
-                sumIn += weight;
-              }
-            }
-
-            const gain = sumIn - resolution * sumTot * k_i / (totalWeight || 1);
-            if (gain > bestGain) {
-              bestGain = gain;
-              bestComm = neighborComm;
-            }
-          }
-        }
-
-        if (bestComm !== currentComm) {
-          nodeCommunity.set(node.id, bestComm);
-          moved = true;
-        }
-      }
-    }
-
+    const cnm = GraphFormulas.communityDetectionCNM(nodes, edges, { resolution });
+    const communityMap = cnm.nodeCommunity || {};
     const communities = new Map();
-    nodeCommunity.forEach((commId, nodeId) => {
-      if (!communities.has(commId)) {
-        communities.set(commId, []);
-      }
-      communities.get(commId).push(nodeId);
+    Object.entries(communityMap).forEach(([nid, cid]) => {
+      if (!communities.has(cid)) communities.set(cid, []);
+      communities.get(cid).push(nid);
     });
-
     const resultCommunities = [];
     communities.forEach((members, id) => {
       if (members.length >= minCommunitySize) {
-        resultCommunities.push({ id, members, size: members.length });
+        resultCommunities.push({ id: `c_${id}`, members, size: members.length });
       }
     });
-
+    resultCommunities.sort((a, b) => b.size - a.size);
     const limited = resultCommunities.slice(0, maxCommunities);
-
+    const warnings = [];
+    if (algorithm && algorithm.toLowerCase() !== 'cnm') warnings.push(`algorithm='${algorithm}' 已被忽略；社区检测强制使用 CNM。`);
     return {
       communities: limited,
       totalCommunities: resultCommunities.length,
-      algorithm,
-      passes,
+      algorithm: 'CNM',
+      passes: cnm.merges || 0,
       resolution,
       minCommunitySize,
+      modularity: cnm.modularity,
+      warnings: warnings.length ? warnings : undefined,
       detectedAt: new Date().toISOString()
     };
   }

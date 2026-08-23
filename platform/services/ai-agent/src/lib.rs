@@ -10,6 +10,39 @@
 //! 7. 浏览器自动化引擎 - AI驱动网页操作自动化
 //! 8. 流程图引擎 - 可视化AI流程编排与执行
 
+/// 璇玑系统 Crate 注册常量（图谱自同步契约：Rust 端显式声明 crate 身份）。
+pub const CRATE_ID: &str = "ai-agent";
+
+/// 璇玑系统 Crate 结构化元数据。
+#[derive(Debug, Clone, Copy)]
+pub struct CrateMeta {
+    pub uuid: &'static str,
+    pub ais_layers: &'static [&'static str],
+    pub owner_project: &'static str,
+    pub capabilities: &'static [&'static str],
+    pub data_tables_read: &'static [&'static str],
+    pub data_tables_write: &'static [&'static str],
+}
+
+pub const CRATE_META: CrateMeta = CrateMeta {
+    uuid: "29f5e1a0-63cf-42d3-7e9f-a0b1c2d3e4f5",
+    ais_layers: &["L3-Service", "L4-Core", "L6-Kernel"],
+    owner_project: "proj-ai-dialogue",
+    capabilities: &[
+        "AI 智能对话 (LLM 真实客户端对接)",
+        "算法分析归一化 (流程图生成)",
+        "全资源管理统一调度",
+        "插件互通总线 (跨插件消息路由)",
+        "BPMN 式工作流引擎",
+        "浏览器自动化",
+        "流程图可视化执行引擎",
+        "需求编译器 (对话→系统蓝图)",
+        "对话图谱自动整理同步",
+    ],
+    data_tables_read: &["dialogue_sessions.json", "agent_plugins.json", "templates.json"],
+    data_tables_write: &["dialogue_sessions.json"],
+};
+
 pub mod conversation;
 pub mod algorithm;
 pub mod resource_manager;
@@ -50,10 +83,10 @@ pub use dialogue_graph::*;
 use crate::engine::{AgentRole, Engine, EngineContext, EngineConfig, MultiAgentOrchestrator};
 use operator_core::{OperatorError, Result};
 use graph_algorithms::KnowledgeGraph;
-use rusqlite::params;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use xuanji_system::persistence_provider::SqlValue;
 
 /// AI智能体主结构 - 统一系统大脑
 pub struct AIAgent {
@@ -172,16 +205,16 @@ impl AIAgent {
     /// 确保会话在对话库中存在（不存在则按 id 建立会话记录）
     async fn ensure_session(&self, session_id: &str) -> Result<()> {
         // 若会话不存在则创建（标题取截断 id，便于后续检索）
-        let exists = {
-            let db = self.dialogue_graph.db.lock().unwrap();
-            db.query_row(
+        let exists = self
+            .dialogue_graph
+            .db
+            .query_one(
                 "SELECT 1 FROM dialogue_sessions WHERE id = ?1",
-                params![session_id],
-                |_| Ok(true),
+                &[SqlValue::Text(session_id.to_string())],
             )
             .ok()
-            .is_some()
-        };
+            .flatten()
+            .is_some();
         if !exists {
             self.dialogue_graph
                 .create_session(&format!("会话 {}", &session_id[..8.min(session_id.len())]))

@@ -473,10 +473,7 @@ impl Engine {
                         role: "user".to_string(),
                         content: prompt,
                     }];
-                    match llm.chat(messages).await {
-                        Ok(response) => Some(response),
-                        Err(_) => None,
-                    }
+                    llm.chat(messages).await.ok()
                 } else {
                     None
                 }
@@ -768,20 +765,20 @@ impl Engine {
                                 self.context.observations.push(format!("页面标题: {}", title));
                             }
                         }
-                        return result.success;
+                        result.success
                     }
                     Err(e) => {
                         self.context.observations.push(format!("浏览器错误: {}", e));
-                        return false;
+                        false
                     }
                 }
             } else {
                 self.context.observations.push("无法解析浏览器动作".to_string());
-                return false;
+                false
             }
         } else {
             self.context.observations.push("浏览器引擎不可用".to_string());
-            return false;
+            false
         }
     }
 

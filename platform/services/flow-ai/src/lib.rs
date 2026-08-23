@@ -34,6 +34,38 @@
 //! assert!(report.gains.speedup > 1.0);
 //! ```
 
+/// 璇玑系统 Crate 注册常量（图谱自同步契约：Rust 端显式声明 crate 身份）。
+pub const CRATE_ID: &str = "flow-ai";
+
+/// 璇玑系统 Crate 结构化元数据。
+#[derive(Debug, Clone, Copy)]
+pub struct CrateMeta {
+    pub uuid: &'static str,
+    pub ais_layers: &'static [&'static str],
+    pub owner_project: &'static str,
+    pub capabilities: &'static [&'static str],
+    pub data_tables_read: &'static [&'static str],
+    pub data_tables_write: &'static [&'static str],
+}
+
+pub const CRATE_META: CrateMeta = CrateMeta {
+    uuid: "e5b1a7c6-2f8b-4e9c-3a5b-6c7d8e9fa0b1",
+    ais_layers: &["L4-Core", "L3-Service", "L7-Tool"],
+    owner_project: "proj-graph-infra",
+    capabilities: &[
+        "数据流 RAW/WAR/WAW 冒险检测",
+        "传递归约位并行自动并行化",
+        "CPM 关键路径与浮动时间",
+        "并发资源冲突检测与自动修复",
+        "RCPSP 资源约束列表调度",
+        "六维拓扑图权重衰减与最短路径",
+        "流程<->代码双向生成与反解析",
+        "六阶段优化流水线编排",
+    ],
+    data_tables_read: &["flows.json"],
+    data_tables_write: &[],
+};
+
 pub mod automation;
 pub mod codegen;
 pub mod conflict;

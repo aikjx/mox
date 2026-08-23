@@ -40,28 +40,30 @@ const LIFECYCLE = {
 const PROJECTS = [
   {
     id: 'proj-xuanji-core', name: '璇玑核心平台', status: 'maintaining',
-    vision: '系统底座：运行状态、服务管理、安全审计、模块装载与存储基础设施',
-    domains: ['system', 'services', 'security', 'modules-admin', 'mod-storage', 'studio']
+    vision: '系统底座：运行状态、服务管理、安全审计、模块装载与存储基础设施 + Rust 璇玑系统 / PrimiFlow 双核心',
+    domains: ['system', 'services', 'internal', 'security', 'modules-admin', 'mod-storage', 'studio',
+      'domain-rust-xuanji-system', 'domain-rust-primiflow-core', 'domain-rust-primiflow-fusion']
   },
   {
     id: 'proj-knowledge', name: '知识图谱与知识库', status: 'maintaining',
-    vision: '图谱节点/边/算法分析与结构化知识管理，知识资产单源承载',
-    domains: ['graph', 'mod-graph', 'kb']
+    vision: '图谱节点/边/算法分析与结构化知识管理，知识资产单源承载（含 Rust KG Hub）',
+    domains: ['graph', 'mod-graph', 'kb', 'domain-rust-kg-hub']
   },
   {
     id: 'proj-ai-dialogue', name: 'AI 对话协作', status: 'delivered',
-    vision: '多会话对话、联网搜索增强与多引擎编排协作',
-    domains: ['chat', 'web-search', 'orchestration']
+    vision: '多会话对话、联网搜索增强与多引擎编排协作（含 Rust AI Agent）',
+    domains: ['chat', 'web-search', 'orchestration', 'domain-rust-ai-agent']
   },
   {
     id: 'proj-expert-alliance', name: '专家联盟', status: 'maintaining',
-    vision: '多专家协同咨询：意图识别、最优组队、辩论综合、质量门禁全链路（EAF-STD-001），MCP 协议标准对外暴露',
-    domains: ['expert-alliance', 'expert-graph', 'mcp']
+    vision: '多专家协同咨询：意图识别、最优组队、辩论综合、质量门禁全链路（EAF-STD-001），MCP 协议标准对外暴露 + Rust 璇玑专家',
+    domains: ['expert-alliance', 'expert-graph', 'mcp', 'domain-rust-xuanji-expert']
   },
   {
     id: 'proj-ai-engine', name: 'AI 引擎编排', status: 'maintaining',
-    vision: 'AI 引擎统一编排核心：意图路由、能力矩阵、多引擎集成与终极推理',
-    domains: ['ai-engine', 'ai-integrated', 'ai-ultimate', 'ai-enhanced', 'integration']
+    vision: 'AI 引擎统一编排核心：意图路由、能力矩阵、多引擎集成与终极推理 + Rust 图算法',
+    domains: ['ai-engine', 'ai-integrated', 'ai-ultimate', 'ai-enhanced', 'integration',
+      'domain-rust-graph-algorithms']
   },
   {
     id: 'proj-ai-platform', name: 'AI 平台生态', status: 'delivered',
@@ -69,14 +71,22 @@ const PROJECTS = [
     domains: ['ai-platform', 'browser-market', 'tasks', 'auto-tasks', 'mod-task']
   },
   {
+    id: 'proj-xuanji-platform', name: '璇玑平台运行时', status: 'maintaining',
+    vision: '璇玑平台网关运行时（Cordis 插件内核 + HITL 审批 + 路由治理）——Rust 单项目承载',
+    domains: ['atlas', 'domain-rust-runtime']
+  },
+  {
     id: 'proj-auto-dev', name: '自动开发引擎', status: 'building',
-    vision: '自开发闭环：LLM 生成架构图谱、确定性渲染、无穷维度寻优与制品管理',
-    domains: ['auto-dev', 'artifacts', 'optimizer', 'mod-melody2score']
+    vision: '自开发闭环：LLM 生成架构图谱、确定性渲染、无穷维度寻优与制品管理 + Rust 4 模块桥接',
+    domains: ['auto-dev', 'artifacts', 'optimizer', 'mod-melody2score',
+      'domain-rust-hermes-flow-bridge', 'domain-rust-business-catalog', 'domain-rust-template-market', 'domain-rust-operator-wasm',
+      'mod-rust-hermes-flow-bridge', 'mod-rust-business-catalog', 'mod-rust-template-market', 'mod-rust-operator-wasm']
   },
   {
     id: 'proj-graph-infra', name: '图谱基础设施', status: 'building',
-    vision: '全机器图谱化底座：项目全息图谱、引擎宇宙、引擎内核插槽位体系、项目中心全维归类',
-    domains: ['atlas', 'engine-universe', 'engine-kernel', 'projects']
+    vision: '全机器图谱化底座：引擎宇宙、引擎内核插槽位体系 + Rust 算子核心/优化器/FlowAI 三件套（项目中心/全息图谱属平台运行时）',
+    domains: ['engine-universe', 'engine-kernel', 'projects',
+      'domain-rust-operator-core', 'domain-rust-optimizer', 'domain-rust-flow-ai']
   }
 ];
 

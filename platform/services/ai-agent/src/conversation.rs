@@ -4,19 +4,19 @@
 
 use super::types::*;
 use operator_core::{OperatorError, Result};
-use rusqlite::{params, Connection};
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use tracing;
 use uuid::Uuid;
+use xuanji_system::persistence_provider::{PersistenceProvider, SqlValue};
 
 /// 对话引擎 - 智能交互核心
 pub struct ConversationEngine {
     sessions: HashMap<String, ChatSession>,
     system_prompt: String,
     operator_knowledge: OperatorKnowledge,
-    /// 可选持久化后端：会话与消息落盘 SQLite，支持跨重启复用（None=纯内存）
-    db: Option<Arc<Mutex<Connection>>>,
+    /// 可选持久化后端：会话与消息落盘，支持跨重启复用（None=纯内存）
+    db: Option<Arc<dyn PersistenceProvider>>,
 }
 
 /// 算子知识库 - 用于智能推荐
@@ -38,10 +38,10 @@ impl ConversationEngine {
     /// 带持久化后端的引擎：会话与消息落盘 SQLite，支持跨重启复用。
     /// `new()` 仍保持纯内存（向后兼容，不创建任何文件）。
     pub fn with_storage(db_path: &str) -> Result<Self> {
-        let conn = Connection::open(db_path).map_err(|e| {
-            OperatorError::Other(anyhow::anyhow!("会话库打开失败: {}", e))
-        })?;
-        conn.execute_batch(
+        use xuanji_system::sqlite_provider::SqlitePersistence;
+        let pvd = SqlitePersistence::file(db_path)
+            .map_err(|e| OperatorError::Other(anyhow::anyhow!("会话库打开失败: {}", e)))?;
+        pvd.exec_batch(
             "CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, context_json TEXT NOT NULL);
              CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, session_id TEXT NOT NULL, role TEXT NOT NULL, content TEXT NOT NULL, timestamp TEXT NOT NULL, metadata_json TEXT NOT NULL, referenced_operators_json TEXT NOT NULL);
              CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id, timestamp);",
@@ -51,7 +51,7 @@ impl ConversationEngine {
             sessions: HashMap::new(),
             system_prompt: Self::build_system_prompt(),
             operator_knowledge: Self::build_operator_knowledge(),
-            db: Some(Arc::new(Mutex::new(conn))),
+            db: Some(Arc::new(pvd)),
         })
     }
 
@@ -492,12 +492,14 @@ impl ConversationEngine {
     /// 列出全部会话 id（持久化优先；无存储后端时返回内存缓存）
     pub fn list_sessions(&self) -> Vec<String> {
         if let Some(db) = &self.db {
-            if let Ok(conn) = db.lock() {
-                if let Ok(mut stmt) = conn.prepare("SELECT id FROM sessions ORDER BY updated_at DESC") {
-                    if let Ok(rows) = stmt.query_map([], |r| r.get::<_, String>(0)) {
-                        return rows.flatten().collect();
-                    }
-                }
+            if let Ok(rows) = db.query("SELECT id FROM sessions ORDER BY updated_at DESC", &[]) {
+                return rows
+                    .into_iter()
+                    .filter_map(|r| match r.get("id") {
+                        Some(SqlValue::Text(s)) => Some(s.clone()),
+                        _ => None,
+                    })
+                    .collect();
             }
         }
         self.sessions.keys().cloned().collect()
@@ -506,14 +508,15 @@ impl ConversationEngine {
     /// upsert 会话元数据行
     fn persist_session_meta(&self, session: &ChatSession) {
         let Some(db) = &self.db else { return; };
-        let conn = match db.lock() {
-            Ok(c) => c,
-            Err(_) => return,
-        };
         let ctx = serde_json::to_string(&session.context).unwrap_or_else(|_| " {}".to_string());
-        if let Err(e) = conn.execute(
+        if let Err(e) = db.exec(
             "INSERT OR REPLACE INTO sessions (id, created_at, updated_at, context_json) VALUES (?1, ?2, ?3, ?4)",
-            params![session.id, session.created_at.to_rfc3339(), session.updated_at.to_rfc3339(), ctx],
+            &[
+                SqlValue::Text(session.id.clone()),
+                SqlValue::Text(session.created_at.to_rfc3339()),
+                SqlValue::Text(session.updated_at.to_rfc3339()),
+                SqlValue::Text(ctx),
+            ],
         ) {
             tracing::warn!("会话元数据落盘失败: {e}");
         }
@@ -522,16 +525,20 @@ impl ConversationEngine {
     /// upsert 单条消息行（幂等）
     fn persist_message(&self, session_id: &str, msg: &ChatMessage) {
         let Some(db) = &self.db else { return; };
-        let conn = match db.lock() {
-            Ok(c) => c,
-            Err(_) => return,
-        };
         let role = serde_json::to_string(&msg.role).unwrap_or_else(|_| "\"user\"".to_string());
         let meta = serde_json::to_string(&msg.metadata).unwrap_or_else(|_| " {}".to_string());
         let refs = serde_json::to_string(&msg.referenced_operators).unwrap_or_else(|_| "[]".to_string());
-        if let Err(e) = conn.execute(
+        if let Err(e) = db.exec(
             "INSERT OR REPLACE INTO messages (id, session_id, role, content, timestamp, metadata_json, referenced_operators_json) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![msg.id, session_id, role, msg.content, msg.timestamp.to_rfc3339(), meta, refs],
+            &[
+                SqlValue::Text(msg.id.clone()),
+                SqlValue::Text(session_id.to_string()),
+                SqlValue::Text(role),
+                SqlValue::Text(msg.content.clone()),
+                SqlValue::Text(msg.timestamp.to_rfc3339()),
+                SqlValue::Text(meta),
+                SqlValue::Text(refs),
+            ],
         ) {
             tracing::warn!("消息落盘失败: {e}");
         }
@@ -540,64 +547,78 @@ impl ConversationEngine {
     /// 更新会话 updated_at（消息写入后）
     fn touch_session(&self, session_id: &str) {
         let Some(db) = &self.db else { return; };
-        let conn = match db.lock() {
-            Ok(c) => c,
-            Err(_) => return,
-        };
-        let _ = conn.execute(
+        let _ = db.exec(
             "UPDATE sessions SET updated_at = ?1 WHERE id = ?2",
-            params![chrono::Utc::now().to_rfc3339(), session_id],
+            &[
+                SqlValue::Text(chrono::Utc::now().to_rfc3339()),
+                SqlValue::Text(session_id.to_string()),
+            ],
         );
     }
 
     /// 从持久化库加载会话（含消息，按时间升序）
     fn load_session_from_db(&self, session_id: &str) -> Option<ChatSession> {
         let db = self.db.as_ref()?;
-        let conn = db.lock().ok()?;
-        let meta = conn
-            .query_row(
+        let meta_row = db
+            .query_one(
                 "SELECT created_at, updated_at, context_json FROM sessions WHERE id = ?1",
-                params![session_id],
-                |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?)),
+                &[SqlValue::Text(session_id.to_string())],
             )
-            .ok()?;
-        let created_at = chrono::DateTime::parse_from_rfc3339(&meta.0).ok()?.with_timezone(&chrono::Utc);
-        let updated_at = chrono::DateTime::parse_from_rfc3339(&meta.1).ok()?.with_timezone(&chrono::Utc);
-        let context: SessionContext = serde_json::from_str(&meta.2).unwrap_or_default();
+            .ok()
+            .flatten()?;
+        let created_at_str = match meta_row.get("created_at") {
+            Some(SqlValue::Text(s)) => s.clone(),
+            _ => return None,
+        };
+        let updated_at_str = match meta_row.get("updated_at") {
+            Some(SqlValue::Text(s)) => s.clone(),
+            _ => return None,
+        };
+        let ctx_str = match meta_row.get("context_json") {
+            Some(SqlValue::Text(s)) => s.clone(),
+            _ => return None,
+        };
+        let created_at = chrono::DateTime::parse_from_rfc3339(&created_at_str).ok()?.with_timezone(&chrono::Utc);
+        let updated_at = chrono::DateTime::parse_from_rfc3339(&updated_at_str).ok()?.with_timezone(&chrono::Utc);
+        let context: SessionContext = serde_json::from_str(&ctx_str).unwrap_or_default();
+
         let mut messages = Vec::new();
-        if let Ok(mut stmt) = conn.prepare(
+        if let Ok(msg_rows) = db.query(
             "SELECT id, role, content, timestamp, metadata_json, referenced_operators_json \
              FROM messages WHERE session_id = ?1 ORDER BY timestamp ASC",
+            &[SqlValue::Text(session_id.to_string())],
         ) {
-            if let Ok(rows) = stmt.query_map(params![session_id], |r| {
-                Ok((
-                    r.get::<_, String>(0)?,
-                    r.get::<_, String>(1)?,
-                    r.get::<_, String>(2)?,
-                    r.get::<_, String>(3)?,
-                    r.get::<_, String>(4)?,
-                    r.get::<_, String>(5)?,
-                ))
-            }) {
-                for row in rows.flatten() {
-                    let role: MessageRole = serde_json::from_str(&row.1).unwrap_or(MessageRole::User);
-                    let timestamp = chrono::DateTime::parse_from_rfc3339(&row.3)
-                        .ok()
-                        .map(|t| t.with_timezone(&chrono::Utc))
-                        .unwrap_or_else(chrono::Utc::now);
-                    let metadata: HashMap<String, serde_json::Value> =
-                        serde_json::from_str(&row.4).unwrap_or_default();
-                    let referenced_operators: Vec<String> =
-                        serde_json::from_str(&row.5).unwrap_or_default();
-                    messages.push(ChatMessage {
-                        id: row.0,
-                        role,
-                        content: row.2,
-                        timestamp,
-                        metadata,
-                        referenced_operators,
-                    });
-                }
+            for row in msg_rows {
+                let get_text = |k: &str| -> Option<String> {
+                    match row.get(k) {
+                        Some(SqlValue::Text(s)) => Some(s.clone()),
+                        _ => None,
+                    }
+                };
+                let id = get_text("id")?;
+                let role_str = get_text("role")?;
+                let content = get_text("content")?;
+                let ts_str = get_text("timestamp")?;
+                let meta_str = get_text("metadata_json").unwrap_or_default();
+                let refs_str = get_text("referenced_operators_json").unwrap_or_default();
+
+                let role: MessageRole = serde_json::from_str(&role_str).unwrap_or(MessageRole::User);
+                let timestamp = chrono::DateTime::parse_from_rfc3339(&ts_str)
+                    .ok()
+                    .map(|t| t.with_timezone(&chrono::Utc))
+                    .unwrap_or_else(chrono::Utc::now);
+                let metadata: HashMap<String, serde_json::Value> =
+                    serde_json::from_str(&meta_str).unwrap_or_default();
+                let referenced_operators: Vec<String> =
+                    serde_json::from_str(&refs_str).unwrap_or_default();
+                messages.push(ChatMessage {
+                    id,
+                    role,
+                    content,
+                    timestamp,
+                    metadata,
+                    referenced_operators,
+                });
             }
         }
         Some(ChatSession {

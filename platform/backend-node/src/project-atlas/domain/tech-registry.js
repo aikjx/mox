@@ -6,37 +6,70 @@
  * 核心算法（自研实现 + 单源标注）+ 数据资产 + 核心文档。
  */
 
-// ============ 核心算法（全部自研实现，singleSource 标注唯一权威定义处） ============
+// ============ 核心算法（自研 + 双端 co_impl 归一；singleSource=false 表示 Rust+Node 联合实现） ============
 const ALGORITHMS = [
   {
-    id: 'algo-pagerank', name: 'PageRank 质量传播', codePath: 'src/ai-integration-engine.js',
-    principle: '标准推模型：节点质量沿出边传播给目标，转置图处理保证方向正确',
-    singleSource: true, category: '图算法', consumers: ['ai-engine', 'expert-graph', 'ai-flow-graph']
+    id: 'algo-pagerank', name: 'PageRank 质量传播（Node 实现：ai-integration-engine）',
+    codePath: 'src/ai-integration-engine.js',
+    principle: '标准推模型：节点质量沿出边传播给目标，转置图处理保证方向正确；Rust primary + Node secondary（co_impl）',
+    singleSource: false, impl_kind: 'co_impl', primary_impl: 'RUST',
+    primary_impl_codePath: 'platform/services/graph-algorithms/src/lib.rs#L302-L359',
+    secondary_impl_codePath: 'src/ai-integration-engine.js',
+    category: '图算法', consumers: ['ai-engine', 'expert-graph', 'ai-flow-graph']
   },
   {
-    id: 'algo-cnm', name: 'CNM 模块度贪心社区检测', codePath: 'src/ai-flow-graph.js',
-    principle: '模块度贪心凝聚：每轮合并使 ΔQ 最大的社区对，避免 LPA 标签吞并',
-    singleSource: true, category: '图算法', consumers: ['ai-engine', 'expert-graph']
+    id: 'algo-cnm', name: 'CNM 模块度贪心社区检测（Node 实现：ai-flow-graph）',
+    codePath: 'src/ai-flow-graph.js',
+    principle: '模块度贪心凝聚：每轮合并使 ΔQ 最大的社区对；Rust primary + Node secondary（co_impl）',
+    singleSource: false, impl_kind: 'co_impl', primary_impl: 'RUST',
+    primary_impl_codePath: 'platform/services/graph-algorithms/src/lib.rs#L615-L779',
+    secondary_impl_codePath: 'src/ai-flow-graph.js',
+    category: '图算法', consumers: ['ai-engine', 'expert-graph']
   },
   {
-    id: 'algo-brandes', name: 'Brandes 介数中心性', codePath: 'src/ai-flow-graph.js',
-    principle: '单源最短路 DAG 累加，O(VE) 计算 all-pairs 介数',
-    singleSource: true, category: '图算法', consumers: ['ai-engine', 'graph']
+    id: 'algo-brandes', name: 'Brandes 介数中心性（Node 实现：ai-flow-graph）',
+    codePath: 'src/ai-flow-graph.js',
+    principle: '单源最短路 DAG 累加，O(VE) 计算 all-pairs 介数；Rust primary + Node secondary（co_impl）',
+    singleSource: false, impl_kind: 'co_impl', primary_impl: 'RUST',
+    primary_impl_codePath: 'platform/services/graph-algorithms/src/lib.rs#L460-L522',
+    secondary_impl_codePath: 'src/ai-flow-graph.js',
+    category: '图算法', consumers: ['ai-engine', 'graph']
   },
   {
-    id: 'algo-harmonic', name: 'Harmonic 紧密中心性', codePath: 'src/ai-flow-graph.js',
-    principle: '调和平均处理不可达节点：Σ(1/d(v,u)) 归一化',
-    singleSource: true, category: '图算法', consumers: ['ai-engine', 'graph']
+    id: 'algo-harmonic', name: 'Harmonic 紧密中心性（Node 实现：ai-flow-graph）',
+    codePath: 'src/ai-flow-graph.js',
+    principle: '调和平均处理不可达节点：Σ(1/d(v,u)) 归一；Rust primary + Node secondary（co_impl）',
+    singleSource: false, impl_kind: 'co_impl', primary_impl: 'RUST',
+    primary_impl_codePath: 'platform/services/graph-algorithms/src/lib.rs#L524-L548',
+    secondary_impl_codePath: 'src/ai-flow-graph.js',
+    category: '图算法', consumers: ['ai-engine', 'graph']
   },
   {
-    id: 'algo-degree', name: '度中心性（RAW 边展开）', codePath: 'src/ai-flow-graph.js',
-    principle: '无向边统一 RAW 输入库内展开，度 = 出度 + 入度',
-    singleSource: true, category: '图算法', consumers: ['ai-engine', 'graph']
+    id: 'algo-degree', name: '度中心性（RAW 边展开，Node 实现：ai-flow-graph）',
+    codePath: 'src/ai-flow-graph.js',
+    principle: '无向边统一 RAW 输入库内展开，度 = 出度 + 入度；Rust primary + Node secondary（co_impl）',
+    singleSource: false, impl_kind: 'co_impl', primary_impl: 'RUST',
+    primary_impl_codePath: 'platform/services/graph-algorithms/src/lib.rs#L439-L458',
+    secondary_impl_codePath: 'src/ai-flow-graph.js',
+    category: '图算法', consumers: ['ai-engine', 'graph']
   },
   {
-    id: 'algo-density', name: '图密度', codePath: 'src/ai-flow-graph.js',
-    principle: 'm / (n(n-1)) 有向归一，附人读解读（高度稠密/中等/稀疏）',
-    singleSource: true, category: '图算法', consumers: ['ai-engine', 'graph']
+    id: 'algo-density', name: '图密度（Node 实现：ai-flow-graph）',
+    codePath: 'src/ai-flow-graph.js',
+    principle: 'm / (n(n-1)) 有向归一，附人读解读（高度稠密/中等/稀疏）；Rust primary + Node secondary（co_impl）',
+    singleSource: false, impl_kind: 'co_impl', primary_impl: 'RUST',
+    primary_impl_codePath: 'platform/services/graph-algorithms/src/lib.rs#L877-L934',
+    secondary_impl_codePath: 'src/ai-flow-graph.js',
+    category: '图算法', consumers: ['ai-engine', 'graph']
+  },
+  {
+    id: 'algo-modularity', name: '模块度 Q（Node 实现：ai-flow-graph）',
+    codePath: 'src/ai-flow-graph.js',
+    principle: 'Q = Σ_c[(Σ_in/2m) − (Σ_tot/2m)²]；Rust primary + Node secondary（co_impl）',
+    singleSource: false, impl_kind: 'co_impl', primary_impl: 'RUST',
+    primary_impl_codePath: 'platform/services/graph-algorithms/src/bin/export_formula.rs#L173-L220',
+    secondary_impl_codePath: 'src/ai-flow-graph.js',
+    category: '图算法', consumers: ['ai-engine', 'graph']
   },
   {
     id: 'algo-spread', name: '激活扩散意图识别', codePath: 'src/ai-flow-graph.js',
@@ -107,6 +140,86 @@ const ALGORITHMS = [
     id: 'algo-code-extract', name: '代码实体抽取', codePath: 'src/project-atlas/infrastructure/code-entity-extractor.js',
     principle: '零依赖正则状态机：JS/Py 函数/类/导出/路由/依赖抽取，行号定位',
     singleSource: true, category: '架构算法', consumers: ['project-atlas']
+  },
+  // ===== Rust 实现算法（璇玑图谱 · 跨语言 co_impl：Rust 为 primary，保留与 Node 端协同 consumers） =====
+  {
+    id: 'algo-rust-pagerank', name: 'PageRank 推模型（转置图，Rust primary）',
+    codePath: '../services/graph-algorithms/src/lib.rs',
+    principle: '标准推模型：节点质量沿出边传播给目标，转置图处理保证方向正确；Rust primary + Node ai-integration-engine secondary（co_impl）',
+    singleSource: false, category: '图算法', impl_kind: 'co_impl',
+    primary_impl: 'RUST',
+    primary_impl_codePath: 'platform/services/graph-algorithms/src/lib.rs#L302-L359',
+    secondary_impl_codePath: 'src/ai-integration-engine.js',
+    consumers: ['engine-rust-graph-algorithms', 'ai-engine', 'expert-graph']
+  },
+  {
+    id: 'algo-rust-cnm', name: 'CNM 模块度贪心凝聚（Rust primary）',
+    codePath: '../services/graph-algorithms/src/lib.rs',
+    principle: '模块度贪心凝聚：每轮合并使 ΔQ 最大的社区对；Rust primary + ai-flow-graph secondary（co_impl）',
+    singleSource: false, category: '图算法', impl_kind: 'co_impl',
+    primary_impl: 'RUST',
+    primary_impl_codePath: 'platform/services/graph-algorithms/src/lib.rs#L615-L779',
+    secondary_impl_codePath: 'src/ai-flow-graph.js',
+    consumers: ['engine-rust-graph-algorithms', 'ai-engine', 'expert-graph']
+  },
+  {
+    id: 'algo-rust-brandes', name: 'Brandes 介数中心性（Rust primary）',
+    codePath: '../services/graph-algorithms/src/lib.rs',
+    principle: '单源最短路 DAG 累加，O(VE) 计算 all-pairs 介数；Rust primary',
+    singleSource: false, category: '图算法', impl_kind: 'co_impl',
+    primary_impl: 'RUST',
+    primary_impl_codePath: 'platform/services/graph-algorithms/src/lib.rs#L460-L522',
+    secondary_impl_codePath: 'src/ai-flow-graph.js',
+    consumers: ['engine-rust-graph-algorithms', 'ai-engine', 'graph']
+  },
+  {
+    id: 'algo-rust-harmonic', name: 'Harmonic 紧密中心性（Rust primary）',
+    codePath: '../services/graph-algorithms/src/lib.rs',
+    principle: '调和平均处理不可达节点：Σ(1/d(v,u)) 归一；Rust primary',
+    singleSource: false, category: '图算法', impl_kind: 'co_impl',
+    primary_impl: 'RUST',
+    primary_impl_codePath: 'platform/services/graph-algorithms/src/lib.rs#L524-L548',
+    secondary_impl_codePath: 'src/ai-flow-graph.js',
+    consumers: ['engine-rust-graph-algorithms', 'ai-engine', 'graph']
+  },
+  {
+    id: 'algo-rust-degree', name: '度中心性（Rust RAW 展开）',
+    codePath: '../services/graph-algorithms/src/lib.rs',
+    principle: '无向边统一 RAW 输入库内展开，度 = 出度 + 入度；Rust primary',
+    singleSource: false, category: '图算法', impl_kind: 'co_impl',
+    primary_impl: 'RUST',
+    primary_impl_codePath: 'platform/services/graph-algorithms/src/lib.rs#L439-L458',
+    secondary_impl_codePath: 'src/ai-flow-graph.js',
+    consumers: ['engine-rust-graph-algorithms', 'ai-engine', 'graph']
+  },
+  {
+    id: 'algo-rust-modularity', name: '模块度（Rust 实现）',
+    codePath: '../services/graph-algorithms/src/lib.rs',
+    principle: 'Q = Σ_c[(Σ_in / 2m) − (Σ_tot / 2m)²] 社区 c 贡献求和；Rust primary',
+    singleSource: false, category: '图算法', impl_kind: 'co_impl',
+    primary_impl: 'RUST',
+    primary_impl_codePath: 'platform/services/graph-algorithms/src/bin/export_formula.rs#L173-L220',
+    secondary_impl_codePath: 'src/ai-flow-graph.js',
+    consumers: ['engine-rust-graph-algorithms', 'ai-engine', 'graph']
+  },
+  {
+    id: 'algo-rust-density', name: '图密度（Rust 实现）',
+    codePath: '../services/graph-algorithms/src/lib.rs',
+    principle: 'm / (n(n−1)) 有向归一，附人读解读（高度稠密/中等/稀疏）；Rust primary',
+    singleSource: false, category: '图算法', impl_kind: 'co_impl',
+    primary_impl: 'RUST',
+    primary_impl_codePath: 'platform/services/graph-algorithms/src/lib.rs#L877-L934',
+    secondary_impl_codePath: 'src/ai-flow-graph.js',
+    consumers: ['engine-rust-graph-algorithms', 'ai-engine', 'graph']
+  },
+  {
+    id: 'algo-rust-conservation', name: '守恒律校验引擎（OperatorCore）',
+    codePath: '../services/operator-core/src/conservation.rs',
+    principle: '算子输入-输出-泄漏 三维度守恒校验：质量/能量/状态三通道；singleSource=true（仅 operator-core）',
+    singleSource: true, category: '核心算法', impl_kind: 'primary_impl',
+    primary_impl: 'RUST',
+    primary_impl_codePath: '../services/operator-core/src/conservation.rs',
+    consumers: ['engine-rust-operator-core', 'optimizer']
   }
 ];
 
@@ -199,7 +312,8 @@ const DOCS = [
   { file: 'docs/enterprise/17-算子系统全维分析与归一化设计.md', domain: 'ai-platform', desc: '算子系统归一化设计' },
   { file: 'docs/specs/GR-STD-信息关联关系图开发规范-V1.0.md', domain: 'engine-universe', desc: '关联关系图开发规范' },
   { file: 'docs/specs/OUS-业务功能规划与架构数据关系分析.md', domain: 'modules-admin', desc: '架构数据关系分析' },
-  { file: 'docs/specs/PT-Primi-架构规范-V1.0-完整版.md', domain: 'modules-admin', desc: 'Primi 架构规范' }
+  { file: 'docs/specs/PT-Primi-架构规范-V1.0-完整版.md', domain: 'modules-admin', desc: 'Primi 架构规范' },
+  { file: 'docs/architecture.md', domain: 'internal', desc: '内部端点部署与安全网关说明：仅 sidecar 调用，公网边界拦截 /internal/*' }
 ];
 
 module.exports = { ALGORITHMS, DATA_ASSETS, DOCS };

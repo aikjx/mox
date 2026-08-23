@@ -3,6 +3,37 @@
 //! 实现WASM格式算子插件的加载和执行
 //! 支持热加载、类型检查、资源隔离
 
+/// 璇玑系统 Crate 注册常量（图谱自同步契约：Rust 端显式声明 crate 身份）。
+/// AIS 自动发现 / project-atlas self-sync / 图谱 CRATE_ID ↔ node.id 双向绑定基准。
+pub const CRATE_ID: &str = "operator-wasm";
+
+/// 璇玑系统 Crate 结构化元数据。
+/// AIS 分层声明、owner 项目、能力清单、数据读写表契约。
+#[derive(Debug, Clone, Copy)]
+pub struct CrateMeta {
+    /// 稳定唯一标识（v4 UUID，生成一次后永不变更，跨生命周期用于 atlas 关联）。
+    pub uuid: &'static str,
+    /// AIS 架构分层：L1接入/L2网关/L3域服务/L4核心算法/L5持久化/L6纯核心/L7工具。
+    pub ais_layers: &'static [&'static str],
+    /// 归属项目 id（与 project-registry.js PROJECTS.id 常量严格匹配）。
+    pub owner_project: &'static str,
+    /// 对外暴露能力列表（human-readable，用于图谱能力矩阵自描述）。
+    pub capabilities: &'static [&'static str],
+    /// 读取的持久化表名或 JSON data 文件名。
+    pub data_tables_read: &'static [&'static str],
+    /// 写入的持久化表名（L3/L4 应多为 empty，仅 L5 拥有写入）。
+    pub data_tables_write: &'static [&'static str],
+}
+
+pub const CRATE_META: CrateMeta = CrateMeta {
+    uuid: "b2e8d4f3-9c5e-4b6f-0d2e-3f4a5b6c7d8e",
+    ais_layers: &["L5-Infra"],
+    owner_project: "proj-auto-dev",
+    capabilities: &[],
+    data_tables_read: &["plugins/*/*.wasm"],
+    data_tables_write: &[],
+};
+
 use operator_core::operator::Operator;
 use operator_core::resource::ResourceCost;
 use operator_core::state::StateVector;

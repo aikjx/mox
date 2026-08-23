@@ -4,6 +4,39 @@
 //! 基于petgraph实现加权有向图，支持邻接矩阵、关联度计算、图拉普拉斯、
 //! 中心性分析、社区发现、最短路径、智能推荐等AI驱动功能
 
+/// 璇玑系统 Crate 注册常量（图谱自同步契约：Rust 端显式声明 crate 身份）。
+/// AIS 自动发现 / project-atlas self-sync / 图谱 CRATE_ID ↔ node.id 双向绑定基准。
+pub const CRATE_ID: &str = "graph-algorithms";
+
+/// 璇玑系统 Crate 结构化元数据。
+#[derive(Debug, Clone, Copy)]
+pub struct CrateMeta {
+    pub uuid: &'static str,
+    pub ais_layers: &'static [&'static str],
+    pub owner_project: &'static str,
+    pub capabilities: &'static [&'static str],
+    pub data_tables_read: &'static [&'static str],
+    pub data_tables_write: &'static [&'static str],
+}
+
+pub const CRATE_META: CrateMeta = CrateMeta {
+    uuid: "c3f9e5a4-0d6f-4c7a-1e3f-4a5b6c7d8e9f",
+    ais_layers: &["L4-Core"],
+    owner_project: "proj-ai-engine",
+    capabilities: &[
+        "CNM 社区发现",
+        "PageRank 个性化推荐模型",
+        "Brandes 介数中心性",
+        "Harmonic 紧密中心性",
+        "Hebbian 激活传播学习",
+        "Dijkstra 最短路径",
+        "图拉普拉斯矩阵谱分析",
+        "AI 流程图谱引擎 (AIFlowGraph)",
+    ],
+    data_tables_read: &["graph_nodes.json", "graph_edges.json"],
+    data_tables_write: &[],
+};
+
 use nalgebra::DMatrix;
 use petgraph::algo::dijkstra;
 use petgraph::graph::{DiGraph, NodeIndex};
@@ -579,10 +612,12 @@ impl KnowledgeGraph {
     /// 修复 R-D3：此前用标签传播（LPA）存在两类缺陷：
     ///   1. 平局时 HashMap 迭代顺序随机 → 结果不可复现；
     ///   2. 标签吞并：双团+桥图坍缩为 1 社区（与 Node 层 D6/D9 同源缺陷）。
-    /// CNM：初始每节点一社区，反复合并 ΔQ 最大的相邻社区对，直到无正增益。
+    ///
+    /// 细节：
+    /// - CNM：初始每节点一社区，反复合并 ΔQ 最大的相邻社区对，直到无正增益。
     ///   ΔQ(A,B) = e_cross(A,B)/m − d_A·d_B/(2m²)
-    /// 确定性：平局取 (社区A, 社区B) 字典序最小的对。
-    /// iterations 参数保留以兼容旧 API（仅作迭代上限保护，实际由增益收敛决定）。
+    /// - 确定性：平局取 (社区A, 社区B) 字典序最小的对。
+    /// - iterations 参数保留以兼容旧 API（仅作迭代上限保护，实际由增益收敛决定）。
     pub fn detect_communities(&self, iterations: usize) -> Vec<Community> {
         let n = self.node_count();
         if n == 0 {
@@ -696,8 +731,8 @@ impl KnowledgeGraph {
 
         // 聚合输出：按规模降序
         let mut groups: Vec<(usize, Vec<String>)> = Vec::new();
-        for i in 0..n {
-            if !comm_alive[i] {
+        for (i, alive) in comm_alive.iter().enumerate().take(n) {
+            if !alive {
                 continue;
             }
             if let Some(Some(members)) = comm_members.get(i).map(|m| m.as_ref()) {

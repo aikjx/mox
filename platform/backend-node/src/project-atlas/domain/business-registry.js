@@ -150,9 +150,142 @@ const DOMAINS = [
     engines: ['llm-gateway'], dataAssets: ['settings.json'], docs: ['docs/enterprise/02-architecture.md']
   },
   {
+    id: 'internal', name: '内部端点（sidecar 调用 · 禁止公网暴露）', codePath: 'src/routes/internal.js',
+    keyFeatures: [
+      'Node 侧 sidecar 内部接口（127.0.0.1 仅监听，意图分类、图算法等运维专用）',
+      '与 Rust runtime 的 NodeSidecarClient 形成双向契约：`/internal/intent`、`/internal/graph/algo`',
+      '安全：Nginx/网关必须在边界拦截 /internal/*，仅内部 sidecar 调用。'
+    ],
+    engines: ['knowledge-graph'], dataAssets: [], docs: []
+  },
+  {
     id: 'projects', name: '项目中心', codePath: 'src/routes/projects.js',
     keyFeatures: ['项目 CRUD 与项目化统计总览', '全维类型注册表（11 项目类别 + 18 资源类型，单一真相源）', '全维资源目录实时聚合（模块/MCP/插件/智能体/技能/任务/算子/知识库跨域采集）', '项目-资源绑定管理（"一切皆是项目"运行时归类入口）'],
     engines: ['project-atlas'], dataAssets: ['projects.json'], docs: ['docs/standards/project-atlas.md']
+  },
+  // ===== Rust crate 静态登记（璇玑图谱 · 三注册表联动 · 跨语言承载） =====
+  // 标记 auto=true：
+  //   - 豁免 W1 路由比对（Rust 域为原生后端内部服务，无 Node routes/ 入口）
+  //   - 豁免 W6 文档全域覆盖（Rust 内聚文档由 Cargo 项目 README / DESIGN.md 承载，不强制放入 DOCS 注册表）
+  {
+    id: 'domain-rust-operator-core', name: 'Rust/OperatorCore',
+    codePath: '../services/operator-core/src',
+    keyFeatures: ['算子 Monad 与资源容器（operator-core monad.rs/resource.rs）', '守恒律校验引擎（conservation.rs · 算子输入输出质量守恒）', '算子注册表（registry.rs）+ 类别体系（category.rs）'],
+    engines: ['engine-rust-operator-core'], kind: 'rust-crate', scope: 'platform/services/operator-core',
+    module_ids: [], domain_owner: 'Rust 子项目', auto: true,
+    dataAssets: [], docs: []
+  },
+  {
+    id: 'domain-rust-operator-wasm', name: 'Rust/OperatorWasm',
+    codePath: '../services/operator-wasm/src',
+    keyFeatures: ['算子 WASM 沙箱（Wasmer + Cranelift AOT）', '算子二进制沙箱加载与内存限制', 'WASM 算子导出接口（mod-rust-operator-wasm 模块复用）'],
+    engines: ['mod-rust-operator-wasm'], kind: 'rust-crate', scope: 'platform/services/operator-wasm',
+    module_ids: ['mod-rust-operator-wasm'], domain_owner: 'Rust 子项目', auto: true,
+    dataAssets: [], docs: []
+  },
+  {
+    id: 'domain-rust-graph-algorithms', name: 'Rust/GraphAlgorithms',
+    codePath: '../services/graph-algorithms/src',
+    keyFeatures: ['PageRank 推模型（转置图，Rust primary · 与 ai-integration-engine co_impl）', 'CNM 模块度贪心凝聚、Brandes 介数 / Harmonic 紧密 / 度中心性', '模块度 / 密度 图结构指标 全量实现'],
+    engines: ['engine-rust-graph-algorithms'], kind: 'rust-crate', scope: 'platform/services/graph-algorithms',
+    module_ids: [], domain_owner: 'Rust 子项目', auto: true,
+    dataAssets: [], docs: []
+  },
+  {
+    id: 'domain-rust-optimizer', name: 'Rust/Optimizer',
+    codePath: '../services/optimizer/src',
+    keyFeatures: ['算子图优化 Pass（融合 / 重排 / 公共子表达式消除）', 'Cost-based 优化器（cost.rs 启发式 + 数据驱动搜索）', '优化计划序列化与热路径应用'],
+    engines: ['engine-rust-optimizer'], kind: 'rust-crate', scope: 'platform/services/optimizer',
+    module_ids: [], domain_owner: 'Rust 子项目', auto: true,
+    dataAssets: [], docs: []
+  },
+  {
+    id: 'domain-rust-flow-ai', name: 'Rust/FlowAI',
+    codePath: '../services/flow-ai/src',
+    keyFeatures: ['数据流与控制流建模（dataflow.rs / topology.rs）', '关键路径分析（critpath.rs）与调度（schedule.rs）', '代码生成（codegen.rs）与冲突检测（conflict.rs）'],
+    engines: ['engine-rust-flow-ai'], kind: 'rust-crate', scope: 'platform/services/flow-ai',
+    module_ids: [], domain_owner: 'Rust 子项目', auto: true,
+    dataAssets: [], docs: []
+  },
+  {
+    id: 'domain-rust-xuanji-expert', name: 'Rust/XuanjiExpert',
+    codePath: '../services/xuanji-expert/src',
+    keyFeatures: ['15 专家能力画像 + RBAC/审计（experts/ + audit/）', '六阶段流水线验证器（verify/ topology/conflict/data_dep）', '执行器与治理（executor.rs/govern.rs）+ 多租户策略'],
+    engines: ['engine-rust-xuanji-expert'], kind: 'rust-crate', scope: 'platform/services/xuanji-expert',
+    module_ids: [], domain_owner: 'Rust 子项目', auto: true,
+    dataAssets: [], docs: []
+  },
+  {
+    id: 'domain-rust-hermes-flow-bridge', name: 'Rust/HermesFlowBridge',
+    codePath: '../services/hermes-flow-bridge/src',
+    keyFeatures: ['Hermes 协议桥接（bridge/router/state）', '会话录制与回放（recorder.rs + session_e2e 测试）', 'mini Hermes 兼容层 + 插件容器（plugin/hooks）'],
+    engines: ['mod-rust-hermes-flow-bridge'], kind: 'rust-crate', scope: 'platform/services/hermes-flow-bridge',
+    module_ids: ['mod-rust-hermes-flow-bridge'], domain_owner: 'Rust 子项目', auto: true,
+    dataAssets: [], docs: []
+  },
+  {
+    id: 'domain-rust-business-catalog', name: 'Rust/BusinessCatalog',
+    codePath: '../services/business-catalog/src',
+    keyFeatures: ['业务螺旋目录（spiral.rs · 分面分类与索引）', 'catalog 可执行二进制 + REST/CLI 发布', '领域目录 JSON Schema 校验与版本化'],
+    engines: ['mod-rust-business-catalog'], kind: 'rust-crate', scope: 'platform/services/business-catalog',
+    module_ids: ['mod-rust-business-catalog'], domain_owner: 'Rust 子项目', auto: true,
+    dataAssets: [], docs: []
+  },
+  {
+    id: 'domain-rust-ai-agent', name: 'Rust/AIAgent',
+    codePath: '../services/ai-agent/src',
+    keyFeatures: ['对话图 + 工作流 + 工具总线（dialogue_graph/workflow_engine/plugin_bus）', '需求编译器与多智能体协作（requirement_compiler / multi_agent）', '浏览器自动化 + 资源管理器（browser_automation / resource_manager）'],
+    engines: ['engine-rust-ai-agent'], kind: 'rust-crate', scope: 'platform/services/ai-agent',
+    module_ids: [], domain_owner: 'Rust 子项目', auto: true,
+    dataAssets: [], docs: []
+  },
+  {
+    id: 'domain-rust-template-market', name: 'Rust/TemplateMarket',
+    codePath: '../services/template-market/src',
+    keyFeatures: ['模板市场核心数据结构与交易合约', '模板版本管理 + 元数据索引', '与浏览器市场模块的桥接（mod-rust-template-market 导出）'],
+    engines: ['mod-rust-template-market'], kind: 'rust-crate', scope: 'platform/services/template-market',
+    module_ids: ['mod-rust-template-market'], domain_owner: 'Rust 子项目', auto: true,
+    dataAssets: [], docs: []
+  },
+  {
+    id: 'domain-rust-runtime', name: 'Rust/Runtime (Gateway)',
+    codePath: '../gateway/runtime/src',
+    keyFeatures: ['HITL 人机协同审批 WebSocket + RBAC 中间件（handlers/hitl + rbac_middleware）', 'Cordis 插件内核（bundle/lifecycle/event_bus/seam）', '治理台、市场、Agent 路由与 OpenAPI 标准（routes/* + openapi.rs）'],
+    engines: ['engine-rust-runtime'], kind: 'rust-crate', scope: 'platform/gateway/runtime',
+    module_ids: [], domain_owner: 'Rust 子项目', auto: true,
+    dataAssets: [], docs: []
+  },
+  {
+    id: 'domain-rust-xuanji-system', name: 'Rust/XuanjiSystem',
+    codePath: '../services/xuanji-system/src',
+    keyFeatures: ['服务编排器（orchestrator.rs）+ 多后端存储（repo/*：sqlite/mysql/postgres）', 'RBAC + 加密 + 限流（rbac/crypto/ratelimit）', '配置/错误/指标/事件 全栈底座（config/error/metrics/event）'],
+    engines: ['engine-rust-xuanji-system'], kind: 'rust-crate', scope: 'platform/services/xuanji-system',
+    module_ids: [], domain_owner: 'Rust 子项目', auto: true,
+    dataAssets: [], docs: []
+  },
+  {
+    id: 'domain-rust-primiflow-core', name: 'Rust/PrimiFlowCore',
+    codePath: '../services/primiflow-core/src',
+    keyFeatures: ['DSL 解析与代码生成（parse.rs + generate.rs + gen/*）', '执行器与持久化（executor/persistence/server）', 'Trace Matrix 与 Schema 生成（trace_matrix/schema）'],
+    engines: ['engine-rust-primiflow-core'], kind: 'rust-crate', scope: 'platform/services/primiflow-core',
+    module_ids: [], domain_owner: 'Rust 子项目', auto: true,
+    dataAssets: [], docs: []
+  },
+  {
+    id: 'domain-rust-primiflow-fusion', name: 'Rust/PrimiFlowFusion',
+    codePath: '../services/primiflow-fusion/src',
+    keyFeatures: ['六维融合体系（sixdim.rs）与统一包络（envelope/unified）', '平台服务注册（registry.rs）+ PTDoc 产线（ptdoc.rs）', '可观测性（observability.rs）+ 服务端入口（server/main）'],
+    engines: ['engine-rust-primiflow-fusion'], kind: 'rust-crate', scope: 'platform/services/primiflow-fusion',
+    module_ids: [], domain_owner: 'Rust 子项目', auto: true,
+    dataAssets: [], docs: []
+  },
+  {
+    id: 'domain-rust-kg-hub', name: 'Rust/KGHub',
+    codePath: '../services/kg-hub/src',
+    keyFeatures: ['知识图谱接入与摄入（ingest.rs/index.rs）', '本体管理与推理（ontology/reason + urn.rs）', '合并器（consolidator.rs）与治理（govern.rs）+ 循环引擎（loop_engine.rs）'],
+    engines: ['engine-rust-kg-hub'], kind: 'rust-crate', scope: 'platform/services/kg-hub',
+    module_ids: [], domain_owner: 'Rust 子项目', auto: true,
+    dataAssets: [], docs: []
   }
 ];
 
@@ -176,6 +309,31 @@ const MODULES = [
     id: 'mod-melody2score', name: '旋律转谱模块', codePath: 'src/modules/melody2score.js',
     keyFeatures: ['旋律→乐谱工业级转换（8/8 样本全对）', '多音高检测后端自动降级', 'MusicXML/简谱双输出'],
     engines: ['llm-gateway'], dataAssets: [], docs: ['docs/modules/algorithm-verification.md']
+  },
+  // ===== Rust 可插拔模块（4 个桥接型 crate） =====
+  {
+    id: 'mod-rust-operator-wasm', name: 'Rust/WASM 算子沙箱模块',
+    codePath: '../services/operator-wasm/src',
+    keyFeatures: ['Wasmer 引擎装载 + 沙箱内存限额', '算子 ABI 导入导出（lib.rs 绑定）', '跨语言算子合约（operator-core → WASM 二进制互通）'],
+    engines: ['engine-rust-operator-core'], dataAssets: [], docs: []
+  },
+  {
+    id: 'mod-rust-hermes-flow-bridge', name: 'Rust/Hermes 流程桥接模块',
+    codePath: '../services/hermes-flow-bridge/src',
+    keyFeatures: ['Hermes Shim 集成（integration/hermes_shim.rs）', '会话录制与事件分发（recorder/live）', '插件总线 YAML 流程装载（plugin.yaml + hooks）'],
+    engines: ['orchestration-engine'], dataAssets: [], docs: []
+  },
+  {
+    id: 'mod-rust-business-catalog', name: 'Rust/业务目录模块',
+    codePath: '../services/business-catalog/src',
+    keyFeatures: ['业务分面螺旋索引（spiral.rs）', 'catalog 可执行二进制导出（bin/catalog.rs）', '业务域 ↔ 数据/流程映射查询 API'],
+    engines: ['project-atlas'], dataAssets: [], docs: []
+  },
+  {
+    id: 'mod-rust-template-market', name: 'Rust/模板市场模块',
+    codePath: '../services/template-market/src',
+    keyFeatures: ['模板登记与版本化目录（lib.rs 注册表）', '模板市场 JSON 协议适配（与 data/market.json 兼容）', '交易签名校验模板完整性'],
+    engines: ['llm-gateway'], dataAssets: ['market.json'], docs: []
   }
 ];
 

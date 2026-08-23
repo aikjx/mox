@@ -39,7 +39,7 @@ impl AgentRole {
         }
     }
 
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn parse(s: &str) -> Option<Self> {
         match s {
             "researcher" => Some(AgentRole::Researcher),
             "analyst" => Some(AgentRole::Analyst),
@@ -233,7 +233,7 @@ impl MessageBus {
     }
 
     pub fn receive(&mut self, agent_id: &str) -> Vec<AgentMessage> {
-        self.subscribers.remove(agent_id).unwrap_or_else(Vec::new)
+        self.subscribers.remove(agent_id).unwrap_or_default()
     }
 
     pub fn broadcast(&mut self, msg: AgentMessage) {
@@ -412,12 +412,12 @@ mod tests {
 
     #[test]
     fn test_agent_role_from_str() {
-        assert_eq!(AgentRole::from_str("researcher"), Some(AgentRole::Researcher));
-        assert_eq!(AgentRole::from_str("analyst"), Some(AgentRole::Analyst));
-        assert_eq!(AgentRole::from_str("writer"), Some(AgentRole::Writer));
-        assert_eq!(AgentRole::from_str("coordinator"), Some(AgentRole::Coordinator));
-        assert_eq!(AgentRole::from_str("executor"), Some(AgentRole::Executor));
-        assert_eq!(AgentRole::from_str("unknown"), None);
+        assert_eq!(AgentRole::parse("researcher"), Some(AgentRole::Researcher));
+        assert_eq!(AgentRole::parse("analyst"), Some(AgentRole::Analyst));
+        assert_eq!(AgentRole::parse("writer"), Some(AgentRole::Writer));
+        assert_eq!(AgentRole::parse("coordinator"), Some(AgentRole::Coordinator));
+        assert_eq!(AgentRole::parse("executor"), Some(AgentRole::Executor));
+        assert_eq!(AgentRole::parse("unknown"), None);
     }
 
     #[test]

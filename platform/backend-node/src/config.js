@@ -6,6 +6,14 @@ const fs = require('fs');
 const DATA_DIR = path.join(__dirname, '..', 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
+const _parseBool = (v, fallback) => {
+  if (v === undefined || v === null || v === '') return fallback;
+  const s = String(v).toLowerCase();
+  if (s === '1' || s === 'true' || s === 'yes' || s === 'on') return true;
+  if (s === '0' || s === 'false' || s === 'no' || s === 'off') return false;
+  return fallback;
+};
+
 const config = {
   app: {
     name: '璇玑信息知识图谱关联关系系统',
@@ -16,6 +24,10 @@ const config = {
   },
   storage: {
     provider: process.env.DB_PROVIDER || 'sqlite',
+    // dual-write 过渡期：写 primary + secondary（目前 secondary 固定为 sqlite），
+    // readPref 取值：'auto'（优先 provider；空读回源 sqlite） / 'primary'（只读 primary） / 'secondary'（只读 sqlite）
+    dualWrite: _parseBool(process.env.DB_DUAL_WRITE, false),
+    readPref: (process.env.DB_READ_PREF || 'auto').toLowerCase(),
     providers: {
       sqlite: {
         driver: 'better-sqlite3',
@@ -57,25 +69,34 @@ const config = {
   storageDir: DATA_DIR
 };
 
+// 存储提供商别名：对外允许 postgres / postgresql 等价
+const _PROVIDER_ALIASES = { postgres: 'postgresql' };
+function _canonicalProvider(name) {
+  if (!name) return name;
+  return _PROVIDER_ALIASES[name] || name;
+}
+
 function getStorageConfig() {
-  return config.storage.providers[config.storage.provider];
+  return config.storage.providers[_canonicalProvider(config.storage.provider)];
 }
 
 function switchProvider(providerName) {
-  if (!config.storage.providers[providerName]) {
-    throw new Error(`未知的数据库提供商: ${providerName}，可选: ${Object.keys(config.storage.providers).join(', ')}`);
+  const canonical = _canonicalProvider(providerName);
+  if (!config.storage.providers[canonical]) {
+    throw new Error(`未知的数据库提供商: ${providerName}，可选: ${Object.keys(config.storage.providers).join(', ')}（别名 postgres=>postgresql 已内建）`);
   }
   const old = config.storage.provider;
-  config.storage.provider = providerName;
-  console.log(`[config] 数据库提供商切换: ${old} → ${providerName}`);
-  return { old, new: providerName };
+  const normalizedOld = _canonicalProvider(old);
+  config.storage.provider = canonical;
+  console.log(`[config] 数据库提供商切换: ${normalizedOld} → ${canonical}`);
+  return { old, new: canonical };
 }
 
 function listProviders() {
   return Object.entries(config.storage.providers).map(([name, cfg]) => ({
     name,
     driver: cfg.driver,
-    current: name === config.storage.provider
+    current: name === _canonicalProvider(config.storage.provider)
   }));
 }
 

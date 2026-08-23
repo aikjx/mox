@@ -6,5 +6,6 @@
 //! - `agent` — AI Agent 引擎任务执行端点
 
 pub mod agent;
+pub mod ai_engine;
 pub mod governance;
 pub mod hitl;

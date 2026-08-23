@@ -229,6 +229,150 @@ const ENGINES = [
       '技术图谱管理所有链接：引擎宇宙、需求归一化链、业务/数据/算法流程图的统一承载底座'
     ],
     capabilities: ['graph.crud', 'graph.algos']
+  },
+  // ===== Rust crate 引擎节点（璇玑图谱 · 三注册表联动；11 个引擎型 crate） =====
+  {
+    id: 'engine-rust-ai-agent',
+    name: 'Rust AI Agent 引擎',
+    category: 'intelligence',
+    layer: '智能层（Rust）',
+    codePath: '../services/ai-agent/src',
+    keyFunctions: [
+      '对话图 + 工作流 + 工具总线（dialogue_graph/workflow_engine/plugin_bus）',
+      '多智能体协作引擎（multi_agent.rs · 角色分工 + 消息总线）',
+      '浏览器自动化与资源管理（browser_automation / resource_manager）'
+    ],
+    capabilities: ['agent.dialogue', 'agent.tool_use', 'agent.multi_agent']
+  },
+  {
+    id: 'engine-rust-xuanji-expert',
+    name: 'Rust 璇玑专家引擎',
+    category: 'collaboration',
+    layer: '协作层（Rust）',
+    codePath: '../services/xuanji-expert/src',
+    keyFunctions: [
+      '15 专家画像 + 15× 验证管线（experts/* + verify/*）',
+      '六阶段流水线：RBAC 门禁 → 管线装载 → 执行器 → 拓扑/冲突/数据依赖/增益 验证',
+      '审计与多租户（audit/ + tenant_policy.rs）'
+    ],
+    capabilities: ['expert.audit', 'expert.pipeline', 'expert.validate']
+  },
+  {
+    id: 'engine-rust-xuanji-system',
+    name: 'Rust 璇玑系统底座',
+    category: 'infrastructure',
+    layer: '基础设施（Rust）',
+    codePath: '../services/xuanji-system/src',
+    keyFunctions: [
+      '服务编排器 + 多后端存储（orchestrator.rs + repo/*）',
+      'RBAC / 加密 / 限流（rbac/crypto/ratelimit）',
+      '配置/错误/指标/事件 全栈底座（config/error/metrics/event）'
+    ],
+    capabilities: ['system.orchestration', 'system.storage', 'system.rbac']
+  },
+  {
+    id: 'engine-rust-runtime',
+    name: 'Rust 网关运行时（Cordis）',
+    category: 'infrastructure',
+    layer: '基础设施（Rust）',
+    codePath: '../gateway/runtime/src',
+    keyFunctions: [
+      'Cordis 插件运行时：bundle/lifecycle/event_bus/seam/profile',
+      'HITL 人机协同 WebSocket + RBAC 中间件（handlers/hitl + rbac_middleware）',
+      '治理 / 市场 / Agent 路由 + OpenAPI 标准（routes/* + openapi.rs）'
+    ],
+    capabilities: ['runtime.plugin', 'runtime.hitl', 'runtime.routes']
+  },
+  {
+    id: 'engine-rust-graph-algorithms',
+    name: 'Rust 图算法引擎',
+    category: 'intelligence',
+    layer: '智能层（Rust）',
+    codePath: '../services/graph-algorithms/src',
+    keyFunctions: [
+      'PageRank 推模型（转置图，Rust primary；与 ai-integration-engine co_impl）',
+      'CNM 模块度贪心凝聚 + Brandes 介数 / Harmonic 紧密 / 度中心性',
+      '模块度、密度 图结构指标（flow_graph.rs 稀疏图表示）'
+    ],
+    capabilities: ['graph.pagerank', 'graph.community', 'graph.centrality']
+  },
+  {
+    id: 'engine-rust-flow-ai',
+    name: 'Rust FlowAI 流程智能引擎',
+    category: 'orchestration',
+    layer: '编排层（Rust）',
+    codePath: '../services/flow-ai/src',
+    keyFunctions: [
+      '数据流/控制流建模（dataflow.rs + topology.rs）',
+      '关键路径分析与调度（critpath.rs / schedule.rs）',
+      '代码生成与冲突检测（codegen.rs / conflict.rs）'
+    ],
+    capabilities: ['flow.schedule', 'flow.critpath', 'flow.codegen']
+  },
+  {
+    id: 'engine-rust-optimizer',
+    name: 'Rust 算子优化器引擎',
+    category: 'optimization',
+    layer: '优化层（Rust）',
+    codePath: '../services/optimizer/src',
+    keyFunctions: [
+      '算子图融合 / 重排 / CSE（公共子表达式消除）Pass',
+      'Cost-based 搜索（cost 启发式 + 基于运行 trace 的学习）',
+      '优化计划序列化与热路径应用'
+    ],
+    capabilities: ['optimize.graph', 'optimize.cost_based']
+  },
+  {
+    id: 'engine-rust-operator-core',
+    name: 'Rust 算子核心引擎',
+    category: 'orchestration',
+    layer: '编排层（Rust）',
+    codePath: '../services/operator-core/src',
+    keyFunctions: [
+      '算子 Monad + 资源容器（operator.rs + monad.rs + resource.rs）',
+      '守恒律校验引擎（conservation.rs · 算子输入输出质量守恒单源）',
+      '算子注册表、类别体系与执行引擎（registry.rs + engine.rs + category.rs）'
+    ],
+    capabilities: ['operator.exec', 'operator.conservation', 'operator.registry']
+  },
+  {
+    id: 'engine-rust-primiflow-core',
+    name: 'Rust PrimiFlow 核心引擎',
+    category: 'automation',
+    layer: '自动化层（Rust）',
+    codePath: '../services/primiflow-core/src',
+    keyFunctions: [
+      'DSL 解析与代码生成（parse.rs + generate.rs + gen/* 多目标）',
+      '执行器与持久化（executor.rs + persistence.rs + server.rs）',
+      'Trace Matrix 与 Schema 生成（trace_matrix/schema）'
+    ],
+    capabilities: ['primiflow.gen', 'primiflow.exec', 'primiflow.persistence']
+  },
+  {
+    id: 'engine-rust-primiflow-fusion',
+    name: 'Rust PrimiFlow 六维融合引擎',
+    category: 'automation',
+    layer: '自动化层（Rust）',
+    codePath: '../services/primiflow-fusion/src',
+    keyFunctions: [
+      '六维融合体系（sixdim.rs）+ 统一包络（envelope/unified）',
+      '平台服务注册（registry.rs）+ PTDoc 产线（ptdoc.rs）',
+      '可观测性与服务端（observability.rs + server.rs）'
+    ],
+    capabilities: ['fusion.sixdim', 'fusion.registry', 'fusion.observability']
+  },
+  {
+    id: 'engine-rust-kg-hub',
+    name: 'Rust 知识图谱中枢',
+    category: 'knowledge',
+    layer: '知识层（Rust）',
+    codePath: '../services/kg-hub/src',
+    keyFunctions: [
+      'KG 接入与摄入（ingest.rs + index.rs）',
+      '本体 + 推理（ontology/reason）+ URN（urn.rs）',
+      '合并器（consolidator.rs）+ 治理 + 循环引擎（loop_engine.rs）'
+    ],
+    capabilities: ['kg.ingest', 'kg.reason', 'kg.governance']
   }
 ];
 

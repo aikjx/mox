@@ -97,6 +97,27 @@ class RecognizeWorker(QThread):
             self.error.emit(str(e))
 
 
+class DecodeWorker(QThread):
+    """后台解码 + 重采样原曲（避免 librosa.load 在主线程阻塞导致界面卡死）。"""
+    done = pyqtSignal(object, int, str)   # y, sr, status_msg
+    failed = pyqtSignal(str)
+
+    def __init__(self, data: bytes, sr: int, status_msg: str):
+        super().__init__()
+        self.data = data
+        self.sr = sr
+        self.status_msg = status_msg
+
+    def run(self):
+        try:
+            y, sr = load_audio_bytes(self.data, self.sr)
+            self.done.emit(y, sr, self.status_msg)
+        except Exception as e:
+            traceback.print_exc()
+            self.failed.emit(str(e))
+
+
+
 class SheetWorker(QThread):
     """后台生成标准歌谱（png/pdf/svg）（渲染重活移出主线程，避免界面卡顿）。"""
     done = pyqtSignal(str)      # 成功：文件路径
@@ -932,6 +953,12 @@ class MainWindow(QMainWindow):
                      "source": f"麦克风录音 {secs}s"})
 
     def _start(self, source: Dict):
+        # 防重入：识别线程仍在跑时忽略重复触发（双击按钮 /
+        # 选样例信号重复 / 试听与识别并发等路径都汇聚到此），
+        # 避免同一首歌被识别两次。
+        worker = getattr(self, "worker", None)
+        if worker is not None and worker.isRunning():
+            return
         self.btnSample.setEnabled(False)
         self.progress.setVisible(True)
         self.progress.setRange(0, 0)
@@ -978,7 +1005,11 @@ class MainWindow(QMainWindow):
         return resource_path(item["file"])
 
     def play_sample(self):
-        """播放当前选中样例的原曲音频（读取 audio/<id>.wav 并回放）。"""
+        """播放当前选中样例的原曲音频（读取 audio/<id>.wav 并回放）。
+
+        解码 + 重采样（librosa.load）CPU 密集，放到后台 DecodeWorker，
+        避免在主线程阻塞导致界面卡死（点播放后长时间无响应）。
+        """
         if not self.sampleCombo.isEnabled():
             return
         file_rel = self.sampleCombo.currentData()
@@ -990,17 +1021,37 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "播放原曲",
                                     f"未找到样例音频：{item['file']}\n请先运行 gen_classic_melodies.py 生成。")
             return
-        with open(path, "rb") as f:
-            try:
-                y, sr = load_audio_bytes(f.read(), 22050)
-            except Exception as e:
-                QMessageBox.critical(self, "播放失败", f"解码样例音频出错：{e}")
-                return
-        self._raw_y, self._raw_sr = y, sr
-        self.btnPreview.setEnabled(True)
-        self.status.setText(f"▶ 试听原曲：{item['title_zh']} · {item['timbre']}")
-        from app.audio_play import play_raw
-        play_raw(y, sr)
+        try:
+            with open(path, "rb") as f:
+                data = f.read()
+        except Exception as e:
+            QMessageBox.critical(self, "播放失败", f"读取样例音频出错：{e}")
+            return
+        status_msg = f"▶ 试听原曲：{item['title_zh']} · {item['timbre']}"
+        # 解码中禁用按钮防连点，并提示进度
+        self.btnPlaySample.setEnabled(False)
+        self.btnPlaySample.setText("解码中…")
+        self.status.setText(f"⏳ 正在解码原曲：{item['title_zh']}")
+        w = DecodeWorker(data, 22050, status_msg)
+
+        def _ok(y, sr, msg):
+            self.btnPlaySample.setEnabled(True)
+            self.btnPlaySample.setText("▶ 播放原曲")
+            self._raw_y, self._raw_sr = y, sr
+            self.btnPreview.setEnabled(True)
+            self.status.setText(msg)
+            from app.audio_play import play_raw
+            play_raw(y, sr)
+
+        def _err(e):
+            self.btnPlaySample.setEnabled(True)
+            self.btnPlaySample.setText("▶ 播放原曲")
+            QMessageBox.critical(self, "播放失败", f"解码样例音频出错：{e}")
+
+        w.done.connect(_ok)
+        w.failed.connect(_err)
+        w.start()
+        self._decode_worker = w  # 保引用防 GC
 
     def add_sample(self):
         """添加样例：导入本地音频文件为内置样例。
@@ -1092,8 +1143,17 @@ class MainWindow(QMainWindow):
 
         # 自动生成标准歌谱（后台线程，避免 LilyPond 渲染阻塞主线程造成卡顿）
         self.sheetLabel.setText("正在生成标准歌谱…")
-        if getattr(self, "_sheet_worker", None) and self._sheet_worker.isRunning():
-            self._sheet_worker.quit()
+        # 断开并停止旧的 sheet worker，避免其迟到信号串到新结果上
+        old = getattr(self, "_sheet_worker", None)
+        if old is not None:
+            try:
+                old.done.disconnect(self._on_sheet_done)
+                old.failed.disconnect(self._on_sheet_failed)
+            except TypeError:
+                pass
+            if old.isRunning():
+                old.quit()
+                old.wait(1000)
         self._sheet_worker = SheetWorker(res, self.titleEdit.text())
         self._sheet_worker.done.connect(self._on_sheet_done)
         self._sheet_worker.failed.connect(self._on_sheet_failed)
@@ -1217,6 +1277,29 @@ class MainWindow(QMainWindow):
         if not self.current:
             return
         self.status.setText(f"⏳ 正在后台生成 {fmt.upper()}…")
+        # 停掉仍在跑的旧 sheet worker，避免后台堆积 / 迟到弹窗
+        old = getattr(self, "_sheet_worker", None)
+        if old is not None and old.isRunning():
+            old.quit()
+            old.wait(1000)
+        locator = self  # 闭包里引用最新 worker
+
+        def _ok(path: str):
+            if getattr(locator, "_sheet_worker", None) is not w:
+                return  # 已被新导出取代，丢弃迟到结果
+            if fmt == "png":
+                self.sheetLabel.setPixmap(QPixmap(path).scaledToWidth(
+                    self.sheetLabel.width() - 20, Qt.SmoothTransformation))
+            QMessageBox.information(self, "已导出", f"标准歌谱已导出：\n{path}")
+            self.status.setText(f"已导出 {fmt.upper()}：{os.path.basename(path)}")
+
+        def _fail(tb: str):
+            if getattr(locator, "_sheet_worker", None) is not w:
+                return
+            self.status.setText("导出失败")
+            QMessageBox.warning(self, "导出失败",
+                                f"标准歌谱导出失败：\n{self._sheet_fail_summary(tb)}")
+
         w = SheetWorker(self.current, self.titleEdit.text() or "未命名旋律", fmt)
         self._sheet_worker = w  # 保引用防 GC
 

@@ -3,6 +3,34 @@
 //! 实现公理5：资源约束优化
 //! 基于DAG的算子调度，最小化资源消耗和执行时间
 
+/// 璇玑系统 Crate 注册常量（图谱自同步契约：Rust 端显式声明 crate 身份）。
+pub const CRATE_ID: &str = "optimizer";
+
+/// 璇玑系统 Crate 结构化元数据。
+#[derive(Debug, Clone, Copy)]
+pub struct CrateMeta {
+    pub uuid: &'static str,
+    pub ais_layers: &'static [&'static str],
+    pub owner_project: &'static str,
+    pub capabilities: &'static [&'static str],
+    pub data_tables_read: &'static [&'static str],
+    pub data_tables_write: &'static [&'static str],
+}
+
+pub const CRATE_META: CrateMeta = CrateMeta {
+    uuid: "d4a0f6b5-1e7a-4d8b-2f4a-5b6c7d8e9fa0",
+    ais_layers: &["L4-Core"],
+    owner_project: "proj-graph-infra",
+    capabilities: &[
+        "DAG 拓扑排序 (Kahn)",
+        "资源约束算子调度",
+        "关键路径工期估算",
+        "算子依赖图构建与查询",
+    ],
+    data_tables_read: &[],
+    data_tables_write: &[],
+};
+
 use operator_core::operator::Operator;
 use operator_core::resource::ResourceCost;
 use petgraph::graph::{DiGraph, NodeIndex};

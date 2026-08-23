@@ -221,10 +221,10 @@ class _ScorePlayer:
             session = _PlaySession(sr, self._itemsize)
             try:
                 session.stream = sd.RawOutputStream(
-                    samplerate=sr, blocksize=2048,
+                    samplerate=sr, blocksize=4096,
                     dtype=self.dtype, channels=1,
                     callback=_make_consumer(session, self._itemsize),
-                    latency="low")
+                    latency="high")
                 session.stream.start()
             except Exception:
                 # 声卡启动失败（无设备/被占用）：置位停止事件（生产者线程
@@ -302,29 +302,56 @@ _cache_lock = threading.Lock()
 
 
 def _cache_key(notes: List[Dict], bpm: float, sr: int = 16000) -> str:
-    """缓存指纹。必须含 sr：旧版缺失导致 16000/22050 波形互串（变调）。"""
-    sig = ",".join(f"{int(n['midi'])}:{round(float(n.get('dur') or 0),3)}"
-                   for n in notes)
+    """缓存指纹。必须含 sr：旧版缺失导致 16000/22050 波形互串（变调）。
+    含 start：同一 midi/dur 但时间轴不同（对齐静音间隔）须区分。"""
+    sig = ",".join(
+        f"{int(n['midi'])}:{round(float(n.get('dur') or 0),3)}"
+        f"@{round(float(n.get('start') or 0),3)}"
+        for n in notes)
     return f"{sig}|{round(bpm,1)}|{int(sr)}"
 
 
 def _synth_score_cached(notes: List[Dict], bpm: float, sr: int = 16000
                         ) -> np.ndarray:
-    """预合成整段（带缓存）。返回 float32 [-1,1]。"""
-    key = _cache_key(notes, bpm)
+    """预合成整段（带缓存）。返回 float32 [-1,1]。
+
+    若音符带 'start' 时间轴，则严格按 start 铺排（音符间保留静音间隔），
+    使合成曲总时长 = 原曲时长，听感速度与原曲一致（避免背靠背拼接导致
+    整体变短、听起来『太快』）。无 start 时退回背靠背拼接（原行为）。
+    """
+    key = _cache_key(notes, bpm, sr)
     with _cache_lock:
         if key in _SYNTH_CACHE:
             _SYNTH_CACHE.move_to_end(key)
             return _SYNTH_CACHE[key]
-    # 合成（CPU 密集）：在调用线程执行，但调用方（生产者线程）已与播放解耦
-    blocks = segment_score(notes, bpm, sr)
-    segs = []
-    for wav, d in blocks:
-        n = int(sr * d)
-        wav = wav[:n] if len(wav) >= n else np.pad(wav, (0, n - len(wav)))
-        segs.append(wav)
-    full = np.concatenate(segs).astype(np.float32) if segs else np.zeros(1, np.float32)
-    full = full / (np.max(np.abs(full)) + 1e-9) * 0.85  # 统一归一化，防削波
+    has_start = any("start" in n for n in notes)
+    if has_start:
+        # 按绝对时间轴铺排：总时长 = 最后一个音符的起始 + 时长
+        total = 0.0
+        waves = []
+        for n in notes:
+            s = float(n.get("start", 0.0))
+            d = max(0.05, float(n.get("dur") or (60.0 / bpm)))
+            wav = make_note_waveform(int(n["midi"]), d, sr) * np.float32(0.85)
+            waves.append((s, wav))
+            total = max(total, s + d)
+        n_total = int(sr * total) + 1
+        full = np.zeros(n_total, dtype=np.float32)
+        for s, wav in waves:
+            pos = int(sr * s)
+            if pos + len(wav) <= n_total:
+                full[pos:pos + len(wav)] += wav
+            else:
+                full[pos:] += wav[:n_total - pos]
+    else:
+        blocks = segment_score(notes, bpm, sr)
+        segs = []
+        for wav, d in blocks:
+            nn = int(sr * d)
+            wav = wav[:nn] if len(wav) >= nn else np.pad(wav, (0, nn - len(wav)))
+            segs.append(wav)
+        full = np.concatenate(segs).astype(np.float32) if segs else np.zeros(1, np.float32)
+        full = full / (np.max(np.abs(full)) + 1e-9) * 0.85
     with _cache_lock:
         _SYNTH_CACHE[key] = full
         while len(_SYNTH_CACHE) > _SYNTH_CACHE_MAX:
@@ -336,13 +363,11 @@ def _score_samples_gen(notes: List[Dict], bpm: float, sr: int = 16000,
                        chunk: int = 8192):
     """生成器：分块产出合成波形（生产者侧）。
 
-    流式合成（P2 首声延迟优化）：旧版首次迭代一次性合成整曲，长曲按下
-    播放后数秒无声（貌似卡住）。现：
-      - 缓存命中 → 整段分块产出（瞬时）；
-      - 未命中   → 逐音符合成即时产出（首声延迟 ≈ 首音符合成 ~10ms），
-                   同时累积整段写入缓存（下次命中走整段路径）。
-    逐音符峰值归一（synth_piano 单音符已归一到 [-1,1]，串行拼接无叠加）
-    与旧版整段归一数值等价，缓存内容保持确定性一致。
+    无论缓存命中与否，均先整段合成完毕再分块高速 yield，使生产者
+    在极短时间内灌满 1.5s 环形缓冲，随后声卡稳定消费——彻底消除
+    逐音符流式喂给声卡带来的欠载爆音/卡顿（「一卡卡的」根因）。
+    synth_piano 为轻量 numpy 向量化，整首合成仅数毫秒，首延迟可忽略；
+    单音符峰值 *0.85 缩放保持与原实现数值一致。
     """
     key = _cache_key(notes, bpm, sr)
     with _cache_lock:
@@ -350,27 +375,26 @@ def _score_samples_gen(notes: List[Dict], bpm: float, sr: int = 16000,
         if cached is not None:
             _SYNTH_CACHE.move_to_end(key)
     if cached is not None:
-        for i in range(0, len(cached), chunk):
-            yield cached[i:i + chunk].astype(np.float32, copy=False)
-        return
-
-    segs = []
-    for n in notes:
-        m = int(n["midi"])
-        d = max(0.05, float(n.get("dur") or (60.0 / bpm)))
-        wav = make_note_waveform(m, d, sr) * np.float32(0.85)
-        cnt = int(sr * d)
-        wav = wav[:cnt] if len(wav) >= cnt else np.pad(wav, (0, cnt - len(wav)))
-        segs.append(wav)
-        yield wav
-    if not segs:                      # 空音序：0.1s 静音，保证回调有数据
-        yield np.zeros(int(sr * 0.1), dtype=np.float32)
-        return
-    full = np.concatenate(segs).astype(np.float32)
-    with _cache_lock:
-        _SYNTH_CACHE[key] = full
-        while len(_SYNTH_CACHE) > _SYNTH_CACHE_MAX:
-            _SYNTH_CACHE.popitem(last=False)
+        full = cached
+    else:
+        segs = []
+        for n in notes:
+            m = int(n["midi"])
+            d = max(0.05, float(n.get("dur") or (60.0 / bpm)))
+            wav = make_note_waveform(m, d, sr) * np.float32(0.85)
+            cnt = int(sr * d)
+            wav = wav[:cnt] if len(wav) >= cnt else np.pad(wav, (0, cnt - len(wav)))
+            segs.append(wav)
+        if not segs:                      # 空音序：0.1s 静音，保证回调有数据
+            yield np.zeros(int(sr * 0.1), dtype=np.float32)
+            return
+        full = np.concatenate(segs).astype(np.float32)
+        with _cache_lock:
+            _SYNTH_CACHE[key] = full
+            while len(_SYNTH_CACHE) > _SYNTH_CACHE_MAX:
+                _SYNTH_CACHE.popitem(last=False)
+    for i in range(0, len(full), chunk):
+        yield full[i:i + chunk].astype(np.float32, copy=False)
 
 
 # ---------------------------------------------------------------------------

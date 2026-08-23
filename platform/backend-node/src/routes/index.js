@@ -40,6 +40,7 @@ const DOMAINS = [
   ['auto-dev', '自动开发引擎', require('./auto-dev')],
   ['services', '服务管理', require('./services')],
   ['projects', '项目中心', require('./projects')],
+  ['internal', '内部端点（sidecar 调用）', require('./internal')],
 ];
 
 function registerAllRoutes(ctx) {
