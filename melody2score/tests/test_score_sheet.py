@@ -235,3 +235,71 @@ def test_detect_bpm_robust_to_long_notes():
     # 纯附点四分 (0.75s) → 80 BPM
     dotted = [{"start": i * 0.75, "end": i * 0.75 + 0.75} for i in range(4)]
     assert analysis.detect_bpm(y=None, notes=dotted, fallback=120) == 80.0
+
+
+# ---------------------------------------------------------------------------
+# 回归：打包后歌谱生成失败（sys.stderr=None 必炸）——见 jianpu_render.py
+# _run_jianpu_ly 的 stderr 兜底说明。双击运行 windowed 发行版（console=False）
+# 时 sys.stderr 为 None，jianpu-ly 任一警告/错误路径的 sys.stderr.write 都会
+# AttributeError。以下测试在源码环境模拟该环境，防止回归。
+# ---------------------------------------------------------------------------
+
+def _notes_triggering_sloppy_bars():
+    """构造触发 j2ly_sloppy_bars 末小节警告的旋律（末小节仅 2/4 拍）。"""
+    notes = [
+        {"name": "C4", "midi": 60, "start": 0.0, "dur": 1.0},
+        {"name": "E4", "midi": 64, "start": 1.0, "dur": 1.0},
+        {"name": "G4", "midi": 67, "start": 2.0, "dur": 1.0},
+        {"name": "C5", "midi": 72, "start": 3.0, "dur": 1.0},
+        # 第二小节只有 2 拍（弱收尾）→ Wrong bar length at end of score
+        {"name": "D4", "midi": 62, "start": 4.0, "dur": 1.0},
+        {"name": "E4", "midi": 64, "start": 5.0, "dur": 1.0},
+    ]
+    return notes
+
+
+def test_run_jianpu_ly_none_stderr(monkeypatch, tmp_path):
+    """sys.stderr=None（windowed 发行版）下 _run_jianpu_ly 不得 AttributeError。"""
+    from core import jianpu_render
+
+    if not os.path.exists(jianpu_render.JIANPU_LY):
+        pytest.skip("lib/jianpu-ly.py 缺失")
+
+    monkeypatch.setenv("j2ly_sloppy_bars", "1")
+    monkeypatch.setattr(sys, "stderr", None)
+    monkeypatch.setattr(sys, "stdout", None)   # windowed 下同为 None，一并模拟
+
+    txt = tmp_path / "score.txt"
+    ly = tmp_path / "score.ly"
+    txt.write_text(
+        "4/4\n1=C\n4=120\n1 3 5 1' | 2 3 \\bar \"|.\"", encoding="utf-8")
+    # 不再因 NoneType.write 崩溃，且能产出 LilyPond 源码
+    warnings_text = jianpu_render._run_jianpu_ly(str(txt), str(ly))
+    assert isinstance(warnings_text, str)
+    assert ly.exists() and ly.stat().st_size > 200
+    # 全局 std 流必须被完整还原（不泄漏 None/缓冲到调用方）
+    assert sys.stderr is None and sys.stdout is None
+
+
+def test_export_score_none_stderr_end_to_end(monkeypatch, tmp_path):
+    """端到端：sys.stderr=None 环境下 export_score 正常出图（双击 exe 场景）。"""
+    from core import jianpu_render
+
+    lilypond = jianpu_render.find_lilypond()
+    if lilypond is None or not os.path.exists(jianpu_render.JIANPU_LY):
+        pytest.skip("LilyPond / jianpu-ly 未安装，跳过端到端验证")
+
+    monkeypatch.setattr(sys, "stderr", None)
+    monkeypatch.setattr(sys, "stdout", None)
+
+    out = tmp_path / "windowed.png"
+    path = score_sheet.export_score(
+        notes=_notes_triggering_sloppy_bars(),
+        key={"tonic": "C", "mode": "major"},
+        bpm=120.0,
+        output_path=str(out),
+        title="NoneStderr",
+    )
+    assert os.path.exists(path)
+    assert os.path.getsize(path) > 0
+    assert sys.stderr is None and sys.stdout is None

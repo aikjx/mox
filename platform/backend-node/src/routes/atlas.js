@@ -183,6 +183,119 @@ module.exports = function registerAtlasRoutes(ctx) {
     }
   });
 
+  // ===== 全维归一化体系（三大维度 + 全域治理） =====
+
+  // ---- ② 需求归一化流水线（业务流程与架构模块维度）----
+
+  // 需求归一化运行：IR→拆解→域映射→模块拆分→算法关联→落盘
+  reg('post', '/atlas/normalize', async (req, res) => {
+    const body = await readBody(req);
+    if (!body.content) return fail(res, 400, 'content 为必填（需求正文）');
+    try {
+      const result = atlas.runNormalization({
+        title: body.title, content: body.content,
+        category: body.category, source: body.source
+      });
+      if (!result.ok) return fail(res, 400, result.error, { errors: result.errors });
+      ok(res, result.run);
+    } catch (e) {
+      fail(res, 500, `需求归一化失败: ${e.message}`);
+    }
+  });
+
+  // 变更传播运行：图谱节点变更 → 影响面 → 传播计划
+  reg('post', '/atlas/normalize/propagate', async (req, res) => {
+    const body = await readBody(req);
+    if (!body.nodeId) return fail(res, 400, 'nodeId 为必填（变更图谱节点）');
+    try {
+      const result = atlas.runPropagation({
+        nodeId: body.nodeId, changeType: body.changeType, note: body.note
+      });
+      if (!result.ok) return fail(res, 404, result.error);
+      ok(res, result.run);
+    } catch (e) {
+      fail(res, 500, `变更传播失败: ${e.message}`);
+    }
+  });
+
+  // 归一化运行清单（?type= requirement|propagation 过滤）
+  reg('get', '/atlas/normalize/runs', (req, res) => {
+    const q = Object.fromEntries(new URL(req.url, 'http://x').searchParams.entries());
+    ok(res, { runs: atlas.getNormalizationRuns(q.type || null), stats: atlas.getNormalizationStats() });
+  });
+
+  // 单次运行详情
+  reg('get', '/atlas/normalize/runs/:id', (req, res, params) => {
+    const run = atlas.getNormalizationRun(params.id);
+    if (!run) return fail(res, 404, `归一化运行不存在: ${params.id}`);
+    ok(res, run);
+  });
+
+  // ---- ③ 代码图谱桥接（本地代码工程维度）----
+
+  // 全量扫描绑定：图谱单元 codePath → 代码实体 → 绑定落盘（幂等）
+  reg('post', '/atlas/code-bridge/scan', async (req, res) => {
+    try {
+      ok(res, atlas.scanCodeBindings());
+    } catch (e) {
+      fail(res, 500, `代码扫描绑定失败: ${e.message}`);
+    }
+  });
+
+  // 绑定查询（?unitId= / ?kind= 过滤）
+  reg('get', '/atlas/code-bridge/bindings', (req, res) => {
+    const q = Object.fromEntries(new URL(req.url, 'http://x').searchParams.entries());
+    ok(res, { bindings: atlas.getCodeBindings({ unitId: q.unitId, kind: q.kind }), stats: atlas.getCodeBridgeStats() });
+  });
+
+  // 一致性校验：绑定 ↔ 磁盘 ↔ 图谱三方对账
+  reg('get', '/atlas/code-bridge/verify', (req, res) => {
+    try {
+      ok(res, atlas.verifyCodeConsistency());
+    } catch (e) {
+      fail(res, 500, `一致性校验失败: ${e.message}`);
+    }
+  });
+
+  // 图谱节点 → 代码实体溯源（file:line 定位）
+  reg('get', '/atlas/code-bridge/trace/:id', (req, res, params) => {
+    const trace = atlas.traceCode(params.id);
+    if (!trace) return fail(res, 404, `代码绑定不存在: ${params.id}（先执行 /atlas/code-bridge/scan）`);
+    ok(res, trace);
+  });
+
+  // 图谱变更 → 代码变更建议（影响面 × 代码实体交叉）
+  reg('get', '/atlas/code-bridge/suggest/:id', (req, res, params) => {
+    try {
+      ok(res, atlas.suggestCodeChanges(params.id));
+    } catch (e) {
+      fail(res, 500, `变更建议生成失败: ${e.message}`);
+    }
+  });
+
+  // ---- ④ 全域统一治理（三维聚合看板 + 跨维溯源链）----
+
+  // 全域治理看板：三维覆盖率 + 图谱规模 + W1-W13 验证 + 综合健康分
+  reg('get', '/atlas/governance/dashboard', (req, res) => {
+    try {
+      ok(res, atlas.getGovernanceDashboard());
+    } catch (e) {
+      fail(res, 500, `治理看板生成失败: ${e.message}`);
+    }
+  });
+
+  // 三维联动状态总览（导航卡）
+  reg('get', '/atlas/governance/dimensions', (req, res) => {
+    ok(res, atlas.getDimensionStatus());
+  });
+
+  // 跨维全链路溯源：任意图谱节点 → 上游项目/文档实体 → 下游引擎/算法/数据/流程/代码
+  reg('get', '/atlas/governance/trace/:id', (req, res, params) => {
+    const result = atlas.traceChain(params.id);
+    if (!result.ok) return fail(res, 404, result.error);
+    ok(res, result);
+  });
+
   // ===== 图谱自管理（自己管理自己）=====
 
   // 自管理预览：发现待登记/待清理资产（不落盘）
@@ -221,5 +334,5 @@ module.exports = function registerAtlasRoutes(ctx) {
     log(`Atlas self-sync (boot) failed: ${e.message}`);
   }
 
-  log('Project atlas endpoints registered: graph, verify, domain detail, impact, search, AI consult, self-sync, self-heal');
+  log('Project atlas endpoints registered: graph, verify, impact, search, flows, projects, normalization pipeline, code bridge, governance, self-sync, self-heal');
 };

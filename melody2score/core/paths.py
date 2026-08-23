@@ -48,3 +48,44 @@ def resource_path(*parts: str) -> str:
 def is_frozen() -> bool:
     """是否运行在打包后的可执行文件中。"""
     return _frozen()
+
+
+def exports_dir() -> str:
+    """统一导出目录（歌谱 PNG/PDF/SVG 与 Markdown 报告共用）。
+
+    打包模式（frozen）下的目录语义修正：
+      旧实现（gui.py 内）用 `dirname(abspath(__file__))` 推导——frozen 下
+      `__file__` = `<_internal>/gui.py`（PyInstaller 把主脚本名打平到
+      _MEIPASS 根），导出被写进发行版内部的 `_internal/exports/`，
+      用户不可见且升级即丢；源码模式则写 `app/exports/`，两态不一致。
+
+    现统一为：
+      - frozen：发行版根目录（exe 旁）的 `exports/`（用户可见可备份）；
+        若该位置不可写（如装进 Program Files），回退
+        `~/Documents/Melody2Score/exports/`，保证任何机器都能导出。
+      - 源码：工程 `app/exports/`（与历史行为兼容）。
+    返回前已完成创建与可写探测，调用方直接拼文件名即可。
+    """
+    if _frozen():
+        candidates = [
+            os.path.join(os.path.dirname(sys.executable), "exports"),
+            os.path.join(os.path.expanduser("~"), "Documents",
+                         "Melody2Score", "exports"),
+        ]
+    else:
+        candidates = [
+            os.path.join(resource_root(), "app", "exports"),
+        ]
+    last_err = None
+    for d in candidates:
+        try:
+            os.makedirs(d, exist_ok=True)
+            probe = os.path.join(d, ".write_probe")
+            with open(probe, "w") as f:
+                f.write("")
+            os.remove(probe)
+            return d
+        except OSError as e:
+            last_err = e
+            continue
+    raise RuntimeError("导出目录不可写：%s（%s）" % (candidates, last_err))

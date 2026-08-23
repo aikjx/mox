@@ -75,8 +75,8 @@ const PROJECTS = [
   },
   {
     id: 'proj-graph-infra', name: '图谱基础设施', status: 'building',
-    vision: '全机器图谱化底座：项目全息图谱、引擎宇宙、引擎内核插槽位体系',
-    domains: ['atlas', 'engine-universe', 'engine-kernel']
+    vision: '全机器图谱化底座：项目全息图谱、引擎宇宙、引擎内核插槽位体系、项目中心全维归类',
+    domains: ['atlas', 'engine-universe', 'engine-kernel', 'projects']
   }
 ];
 

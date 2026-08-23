@@ -44,9 +44,13 @@ function detectIntent(question) {
 
   for (const pattern of INTENT_PATTERNS) {
     let score = 0;
+    const seen = new Set(); // 大小写不敏感去重：中英文区重复登记的同一关键词只计一次分
     const matchedKeywords = [];
     for (const kw of pattern.keywords) {
+      const kwLower = kw.toLowerCase().trim();
+      if (seen.has(kwLower)) continue;
       if (keywordMatches(text, kw)) {
+        seen.add(kwLower);
         // 多词短语权重更高（更精确）
         const weight = kw.includes(' ') ? 2 : 1;
         score += weight;

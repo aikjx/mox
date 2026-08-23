@@ -1,5 +1,111 @@
 [
   {
+    "id": "log_vp0nozbxm8",
+    "ts": "2026-08-22T17:30:19.073Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_6xjhno65a7",
+    "ts": "2026-08-22T17:29:14.511Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_zjp7nslyqz",
+    "ts": "2026-08-22T17:27:56.898Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_pqwpk7c3ur",
+    "ts": "2026-08-22T17:26:59.138Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_yecv9sbo73",
+    "ts": "2026-08-22T17:22:44.223Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_jqqtxh85mh",
+    "ts": "2026-08-22T17:21:38.307Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_v3kl0897n3",
+    "ts": "2026-08-22T17:20:17.879Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_91q42h283i",
+    "ts": "2026-08-22T17:19:09.149Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_so38z28u8k",
+    "ts": "2026-08-22T17:15:29.933Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_9wth70hlkn",
+    "ts": "2026-08-22T17:14:15.164Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_8j3k1ei591",
+    "ts": "2026-08-22T17:10:17.430Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_ed0dtsbl2x",
+    "ts": "2026-08-22T17:09:04.135Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_b202jza7x2",
+    "ts": "2026-08-22T17:07:29.679Z",
+    "type": "auto-dev",
+    "msg": "develop complete",
+    "project": "site-corp-site",
+    "files": 6
+  },
+  {
+    "id": "log_i8cr05kqwg",
+    "ts": "2026-08-22T17:07:17.778Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_3h29b5pktw",
+    "ts": "2026-08-22T17:06:08.699Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
     "id": "log_fq3xjvxfmc",
     "ts": "2026-08-22T15:44:11.451Z",
     "type": "project",
@@ -3819,126 +3925,6 @@
   {
     "id": "log_27oxr3qs49",
     "ts": "2026-08-20T13:56:35.675Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_03047r24ly",
-    "ts": "2026-08-20T13:56:32.674Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_62zij19qul",
-    "ts": "2026-08-20T13:56:29.666Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_zoj7eu6ecq",
-    "ts": "2026-08-20T13:56:26.652Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_xuczg521ky",
-    "ts": "2026-08-20T13:56:23.652Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_tc0wkk3p13",
-    "ts": "2026-08-20T13:56:20.650Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_jxwjxe9lcc",
-    "ts": "2026-08-20T13:56:17.638Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_w0y4hnaonc",
-    "ts": "2026-08-20T13:56:14.625Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_u2px4q255e",
-    "ts": "2026-08-20T13:56:11.618Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_r953hskfo9",
-    "ts": "2026-08-20T13:56:08.611Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_e9ahfs6cr4",
-    "ts": "2026-08-20T13:56:05.613Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_1p1a7ox55o",
-    "ts": "2026-08-20T13:56:02.601Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_tqv7jmgd4y",
-    "ts": "2026-08-20T13:55:59.588Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_552j63sh28",
-    "ts": "2026-08-20T13:55:56.586Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_tqgazrifyf",
-    "ts": "2026-08-20T13:55:53.575Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_snt4ngsibw",
-    "ts": "2026-08-20T13:55:50.567Z",
     "type": "auto-sync",
     "msg": "auto sync tick",
     "nodes": 24,

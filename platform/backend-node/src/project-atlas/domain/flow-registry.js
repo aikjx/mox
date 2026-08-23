@@ -402,6 +402,105 @@ const FLOWS = [
       { from: 'opt-converge', to: 'opt-persist', type: 'next' },
       { from: 'opt-converge', to: 'opt-cem', type: 'next', note: '未收敛继续迭代' }
     ]
+  },
+
+  // ==================== 需求归一化流水线（全维归一化 · 业务流程与架构模块维度） ====================
+  {
+    id: 'flow-atlas-normalization',
+    name: '需求归一化流水线（需求→架构→模块→算法→传播）',
+    domain: 'atlas',
+    steps: [
+      {
+        id: 'nr-ingest', name: '需求归一化 IR 构建',
+        engine: 'project-atlas',
+        detail: '原始需求 → 结构化 IR（类别推断 + 关键词提取，N1）'
+      },
+      {
+        id: 'nr-decompose', name: '需求拆解',
+        engine: 'project-atlas',
+        detail: 'IR → 语句级子需求（N2），优先级推断'
+      },
+      {
+        id: 'nr-map', name: '架构域映射',
+        engine: 'project-atlas',
+        reads: ['atlas_auto_registry.json'],
+        detail: '子需求 → 业务域评分映射 top-3（N3），无匹配标记待建域'
+      },
+      {
+        id: 'nr-split', name: '模块拆分计划',
+        engine: 'project-atlas',
+        detail: '映射分组 → 引擎承接方案 / 新模块建议（N4）'
+      },
+      {
+        id: 'nr-bind', name: '算法关联',
+        engine: 'engine-universe',
+        detail: '承接引擎 → 实现算法反推绑定（N5）'
+      },
+      {
+        id: 'nr-persist', name: '运行记录落盘',
+        engine: 'project-atlas',
+        writes: ['normalization_runs.json'],
+        detail: 'N7 校验后落盘，全程可溯源'
+      },
+      {
+        id: 'nr-propagate', name: '变更传播',
+        engine: 'project-atlas',
+        writes: ['normalization_runs.json'],
+        detail: '影响面分析 → 结构化传播计划（N6，高/中/低优先动作）'
+      }
+    ],
+    transitions: [
+      { from: 'nr-ingest', to: 'nr-decompose', type: 'next' },
+      { from: 'nr-decompose', to: 'nr-map', type: 'next' },
+      { from: 'nr-map', to: 'nr-split', type: 'next' },
+      { from: 'nr-split', to: 'nr-bind', type: 'next' },
+      { from: 'nr-bind', to: 'nr-persist', type: 'next' },
+      { from: 'nr-persist', to: 'nr-propagate', type: 'next', note: '需求变更触发传播' }
+    ]
+  },
+
+  // ==================== 代码图谱联动流程（全维归一化 · 本地代码工程维度） ====================
+  {
+    id: 'flow-code-bridge',
+    name: '代码图谱联动流程（图谱↔本地代码双向映射）',
+    domain: 'atlas',
+    steps: [
+      {
+        id: 'cb-scan', name: '代码实体扫描',
+        engine: 'project-atlas',
+        detail: '图谱单元 codePath → 零依赖实体抽取（函数/类/导出/路由/依赖）'
+      },
+      {
+        id: 'cb-bind', name: '绑定落盘',
+        engine: 'project-atlas',
+        writes: ['code_graph_bindings.json'],
+        detail: 'unitId 幂等绑定，代码实体 file:line 定位'
+      },
+      {
+        id: 'cb-verify', name: '一致性校验',
+        engine: 'project-atlas',
+        reads: ['code_graph_bindings.json'],
+        detail: '三方对账：绑定 ↔ 磁盘 ↔ 图谱（幽灵绑定/实体漂移检测）'
+      },
+      {
+        id: 'cb-suggest', name: '变更建议',
+        engine: 'project-atlas',
+        detail: '图谱变更 → 影响面 × 代码实体 → 代码变更建议清单'
+      },
+      {
+        id: 'cb-heal', name: '失配自愈',
+        engine: 'project-atlas',
+        writes: ['code_graph_bindings.json'],
+        detail: '复扫重建绑定（幂等），漂移自动归一'
+      }
+    ],
+    transitions: [
+      { from: 'cb-scan', to: 'cb-bind', type: 'next' },
+      { from: 'cb-bind', to: 'cb-verify', type: 'next' },
+      { from: 'cb-verify', to: 'cb-suggest', type: 'next' },
+      { from: 'cb-verify', to: 'cb-heal', type: 'degrade', note: '校验失配 → 复扫自愈' },
+      { from: 'cb-heal', to: 'cb-verify', type: 'next', note: '自愈后复验' }
+    ]
   }
 ];
 

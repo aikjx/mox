@@ -3,8 +3,8 @@
 /**
  * 项目全息图谱（Project Atlas）域门面
  * ------------------------------------------------------------------
- * 把整个项目机器图谱化：24 业务域 + 4 模块 + 17 引擎 + 15 算法 +
- * 34 数据资产 + 31 核心文档，全部关联本地代码路径，归一化承载。
+ * 把整个项目机器图谱化：29 业务域 + 4 模块 + 20 引擎 + 20 算法 +
+ * 44 数据资产 + 40 核心文档，全部关联本地代码路径，归一化承载。
  *
  * 无破窗验证（每次调用 verifyAtlas 动态比对真实代码库）：
  *   W1 路由域全覆盖：routes/index.js DOMAINS 动态比对（新增域漏登记即 FAIL）
@@ -15,6 +15,15 @@
  *   W6 域功能内聚：每个域至少 3 条关键功能 + 至少 1 个引擎 + 有文档
  *   W7 算法单源：全部算法 singleSource=true（无重复实现）
  *   W8 图谱连通：无孤岛（业务域↔引擎↔算法↔数据↔文档全链路连通）
+ *   W11 文档图谱绑定完整：doc_graph_links 三方引用真实（doc/实体/域）
+ *   W12 归一化运行引用完整：normalization_runs 域映射真实且记录合法
+ *   W13 代码绑定一致：code_graph_bindings 单元真实 + 代码路径存在
+ *
+ * 全维归一化三大维度服务（W11-W13 的数据源）：
+ *   ① 文档→图谱自动化管道（kb 域注入，云端文档资源维度）
+ *   ② 需求归一化流水线（业务流程与架构模块维度）
+ *   ③ 代码图谱桥接（本地代码工程维度）
+ *   ④ 全域统一治理服务（三维聚合看板 + 跨维溯源链）
  */
 
 const fs = require('fs');
@@ -31,6 +40,11 @@ const { readJSON, writeJSON } = require('../lib/json-store');
 const { createSelfSyncService } = require('./application/self-sync-service');
 const { createFlowRegistrationService } = require('./application/flow-registration-service');
 const { createProjectService } = require('./application/project-service');
+const { createNormalizationPipeline } = require('./application/normalization-pipeline');
+const { createCodeGraphBridge } = require('./application/code-graph-bridge');
+const { createUnifiedGovernanceService } = require('./application/unified-governance-service');
+// kb 域门面（文档→图谱自动化管道；kb 装配期零 atlas 依赖，此处只读注入无环）
+const kbFacade = require('../kb');
 
 const ROOT = path.join(__dirname, '..', '..');
 const DATA_DIR = path.join(ROOT, 'data');
@@ -390,6 +404,53 @@ function verifyAtlas() {
   check('W10 auto 层自动发现域亦归属项目（容器域豁免）',
     autoOrphan.filter(d => d !== 'atlas-auto').length === 0, autoOrphan.join(','));
 
+  // W11 文档图谱绑定完整（全维归一化 · 云端文档资源维度）
+  // 三方对账：绑定记录 ↔ kb 文档 ↔ 知识图谱节点 ↔ atlas 业务域
+  const docLinks = readJSON('doc_graph_links.json', []);
+  const kgNodeIds = new Set(readJSON('graph_nodes.json', []).map(n => n.id));
+  const kbDocIds = new Set(readJSON('kb_documents.json', []).map(d => d.id));
+  const w11Issues = [];
+  docLinks.forEach(l => {
+    if (!kbDocIds.has(l.docId)) w11Issues.push(`幽灵文档: ${l.docId}`);
+    (l.entityIds || []).forEach(eid => { if (!kgNodeIds.has(eid)) w11Issues.push(`幽灵实体: ${eid}`); });
+    (l.domainBindings || []).forEach(b => { if (!viewDomainIds.has(b.domainId)) w11Issues.push(`幽灵域: ${b.domainId}`); });
+  });
+  check('W11 文档图谱绑定完整（doc→实体→域 三方引用真实）',
+    w11Issues.length === 0,
+    w11Issues.length ? w11Issues.slice(0, 5).join(',') : `${docLinks.length} 份绑定记录全部真实`);
+
+  // W12 归一化运行引用完整（全维归一化 · 业务流程与架构模块维度）
+  const normRuns = readJSON('normalization_runs.json', []);
+  const w12Issues = [];
+  const runIdSeen = new Set();
+  normRuns.forEach(r => {
+    if (!r.id || runIdSeen.has(r.id)) { w12Issues.push(`运行 id 重复/缺失: ${r.id}`); return; }
+    runIdSeen.add(r.id);
+    if (r.type === 'requirement') {
+      if (!r.statements || r.statements.length === 0) w12Issues.push(`空语句运行: ${r.id}`);
+      (r.mappings || []).forEach(m => (m.matches || []).forEach(x => {
+        if (!viewDomainIds.has(x.domainId)) w12Issues.push(`幽灵域映射: ${x.domainId}(${r.id})`);
+      }));
+    }
+    if (r.type === 'propagation' && (!r.plan || !r.plan.actions)) w12Issues.push(`传播计划缺失: ${r.id}`);
+  });
+  check('W12 归一化运行引用完整（域映射真实 + 记录结构合法）',
+    w12Issues.length === 0,
+    w12Issues.length ? w12Issues.slice(0, 5).join(',') : `${normRuns.length} 次运行全部合法`);
+
+  // W13 代码绑定一致（全维归一化 · 本地代码工程维度）
+  // 三方对账：绑定记录 ↔ 图谱节点 ↔ 磁盘代码路径
+  const codeBindings = readJSON('code_graph_bindings.json', []);
+  const atlasNodeIds = new Set(graph.nodes.map(n => n.id));
+  const w13Issues = [];
+  codeBindings.forEach(b => {
+    if (!atlasNodeIds.has(b.unitId)) w13Issues.push(`幽灵单元绑定: ${b.unitId}`);
+    else if (!resolveCodePath(b.codePath)) w13Issues.push(`代码路径不存在: ${b.codePath}`);
+  });
+  check('W13 代码绑定一致（单元真实 + 代码路径存在）',
+    w13Issues.length === 0,
+    w13Issues.length ? w13Issues.slice(0, 5).join(',') : `${codeBindings.length} 份代码绑定全部一致`);
+
   return { ok: failed === 0, summary: { total: checks.length, passed, failed }, checks };
 }
 
@@ -445,6 +506,101 @@ const projectService = createProjectService({
   verify: verifyAtlas
 });
 
+// ============ 需求归一化流水线装配（业务流程与架构模块维度） ============
+// 需求输入 → IR 归一化 → 拆解 → 域映射 → 模块拆分 → 算法关联 → 变更传播
+
+const normalizationRunsIO = {
+  read: () => readJSON('normalization_runs.json', []),
+  write: (data) => writeJSON('normalization_runs.json', data)
+};
+
+const normalizationPipeline = createNormalizationPipeline({
+  getView: () => ({
+    domains: getViewDomains(),
+    engines: ENGINE_NODES,
+    algorithms: ALGORITHMS,
+    nodes: graph.nodes
+  }),
+  runsIO: normalizationRunsIO,
+  impact: (nodeId) => {
+    const r = impact(nodeId);
+    return r ? { seed: r.seed, reachableNodes: r.impacted.map(i => i.id) } : { seed: nodeId, reachableNodes: [] };
+  }
+});
+
+// ============ 代码图谱桥接装配（本地代码工程维度） ============
+// 图谱节点 codePath → 代码实体扫描 → 双向绑定 → 一致性校验 → 变更建议
+
+/** 代码路径解析：src/ 前缀 → backend-node 内；其余 → 项目根（如 melody2score/ 子项目） */
+function resolveCodePath(codePath) {
+  const candidates = [
+    path.join(ROOT, codePath),
+    path.join(PROJECT_ROOT, codePath)
+  ];
+  for (const c of candidates) {
+    try { if (fs.existsSync(c)) return c; } catch (e) { /* 继续尝试下一候选 */ }
+  }
+  return null;
+}
+
+const codeBindingsIO = {
+  read: () => readJSON('code_graph_bindings.json', []),
+  write: (data) => writeJSON('code_graph_bindings.json', data)
+};
+
+const codeBridge = createCodeGraphBridge({
+  extractor: require('./infrastructure/code-entity-extractor'),
+  bindingsIO: codeBindingsIO,
+  getUnits: () => graph.nodes
+    .filter(n => n.codePath && ['domain', 'module', 'engine', 'algorithm', 'project'].includes(n.kind))
+    .map(n => ({ id: n.id, kind: n.kind, name: n.name, codePath: n.codePath })),
+  resolvePath: resolveCodePath,
+  impact: (nodeId) => {
+    const r = impact(nodeId);
+    return r ? { seed: r.seed, reachableNodes: r.impacted.map(i => i.id) } : { seed: nodeId, reachableNodes: [] };
+  }
+});
+
+// ============ 全域统一治理服务装配（三维聚合 · 跨维溯源） ============
+
+const governanceService = createUnifiedGovernanceService({
+  getAtlasView: () => ({
+    nodes: graph.nodes,
+    edges: graph.edges,
+    flows: getViewFlows(),
+    verify: verifyAtlas
+  }),
+  getDocGraphCoverage: () => kbFacade.getDocGraphPipeline().getCoverage(),
+  getNormalizationStats: () => normalizationPipeline.getStats(),
+  getCodeBridgeStats: () => codeBridge.getStats(),
+  getTraceSources: () => ({
+    // ③ 云端文档资源维度反向链：映射到该域的 KB 实体
+    kbEntitiesByDomain: (domainId) => {
+      const links = kbFacade.graphStore.readLinks();
+      const out = [];
+      links.forEach(l => (l.domainBindings || []).forEach(b => {
+        if (b.domainId === domainId) {
+          out.push({ entityId: b.entityId, label: b.entityLabel, docId: l.docId, docTitle: l.docTitle, score: b.score });
+        }
+      }));
+      return out.slice(0, 30);
+    },
+    // ④ 归一化维度：需求运行中映射到该域的语句
+    requirementsByDomain: (domainId) => {
+      const runs = normalizationRunsIO.read().filter(r => r.type === 'requirement');
+      const out = [];
+      runs.forEach(r => (r.mappings || []).forEach(m => (m.matches || []).forEach(x => {
+        if (x.domainId === domainId) {
+          out.push({ runId: r.id, runTitle: r.title, statementId: m.statementId, text: m.text, score: x.score });
+        }
+      })));
+      return out.slice(0, 20);
+    },
+    // ⑤ 代码维度：绑定详情
+    codeBinding: (unitId) => codeBindingsIO.read().find(b => b.unitId === unitId) || null
+  })
+});
+
 module.exports = {
   getAtlas, getDomainDetail, impact, searchAtlas, verifyAtlas,
   getFlows, getFlowDetail,
@@ -466,5 +622,27 @@ module.exports = {
   transitionProject: projectService.transitionProject,
   assignDomain: projectService.assignDomain,
   removeProject: projectService.removeProject,
-  precheckProject: projectService.precheckProject
+  precheckProject: projectService.precheckProject,
+  // ===== 全维归一化体系（三大维度 + 全域治理） =====
+  // 域清单只读视图（kb 文档→图谱管道的域匹配注入源）
+  getAtlasDomains: () => getViewDomains().map(d => ({
+    id: d.id, name: d.name, keyFeatures: d.keyFeatures || [], codePath: d.codePath
+  })),
+  // ② 需求归一化流水线（业务流程与架构模块维度）
+  runNormalization: normalizationPipeline.runRequirement,
+  runPropagation: normalizationPipeline.runPropagation,
+  getNormalizationRuns: normalizationPipeline.getRuns,
+  getNormalizationRun: normalizationPipeline.getRun,
+  getNormalizationStats: normalizationPipeline.getStats,
+  // ③ 代码图谱桥接（本地代码工程维度）
+  scanCodeBindings: codeBridge.scanAndBind,
+  getCodeBindings: codeBridge.getBindings,
+  traceCode: codeBridge.traceCode,
+  verifyCodeConsistency: codeBridge.verifyConsistency,
+  suggestCodeChanges: codeBridge.suggestChanges,
+  getCodeBridgeStats: codeBridge.getStats,
+  // ④ 全域统一治理（三维聚合看板 + 跨维溯源链）
+  getGovernanceDashboard: governanceService.getDashboard,
+  traceChain: governanceService.traceChain,
+  getDimensionStatus: governanceService.getDimensionStatus
 };
