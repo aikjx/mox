@@ -6,7 +6,7 @@
 一个 Web 服务，用于展示所有服务状态和访问入口
 - 管理员需要登录后才能查看完整信息
 - 普通用户只能查看公开信息
-启动后访问: http://localhost:9999
+启动后访问: http://localhost:3040
 
 默认管理员账户: admin / admin123
 可通过环境变量 MONITOR_ADMIN_USER 和 MONITOR_ADMIN_PASS 修改
@@ -29,7 +29,7 @@ from urllib.parse import parse_qs, urlparse
 # ============ 配置 ============
 PROJECT_ROOT = Path(__file__).parent.resolve()
 PID_DIR = PROJECT_ROOT / '.runtime'
-MONITOR_PORT = 9999
+MONITOR_PORT = 3040
 
 # 管理员配置（可通过环境变量覆盖）
 ADMIN_USERNAME = os.environ.get('MONITOR_ADMIN_USER', 'admin')
@@ -47,7 +47,7 @@ SERVICES = {
     'api': {
         'name': 'API 后端服务',
         'description': '璇玑系统核心 API 服务，提供图谱分析、AI 对话、专家联盟等能力',
-        'port': 3002,
+        'port': 3010,
         'path': '/health',
         'icon': '🔧',
         'color': '#3498db',
@@ -57,7 +57,7 @@ SERVICES = {
     'frontend': {
         'name': '用户前端界面',
         'description': '面向终端用户的操作界面，包含图谱可视化、AI 对话、专家咨询等功能',
-        'port': 5173,
+        'port': 3020,
         'path': '/',
         'icon': '🎨',
         'color': '#2ecc71',
@@ -65,9 +65,9 @@ SERVICES = {
         'is_admin_only': False,
     },
     'frontend2': {
-        'name': '用户前端 (5174)',
-        'description': '备用用户前端实例，运行于端口 5174，功能与 5173 保持一致',
-        'port': 5174,
+        'name': '用户前端 (3021)',
+        'description': '备用用户前端实例，运行于端口 3021，功能与 3020 保持一致',
+        'port': 3021,
         'path': '/',
         'icon': '🎨',
         'color': '#1abc9c',
@@ -77,7 +77,7 @@ SERVICES = {
     'admin': {
         'name': '企业管理界面',
         'description': '企业级后台管理系统，用于用户管理、权限配置、知识库管理等',
-        'port': 5175,
+        'port': 3030,
         'path': '/',
         'icon': '⚙️',
         'color': '#9b59b6',

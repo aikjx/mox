@@ -3,7 +3,7 @@
 
 /** SSE 流式 ↔ 非流式会话记忆互通验证：stream 轮写入的记忆，chat 轮可读 */
 
-const BASE = 'http://127.0.0.1:3002';
+const BASE = 'http://127.0.0.1:3010';
 
 async function streamTurn(messages) {
   const res = await fetch(`${BASE}/ai/chat/stream`, {

@@ -14,11 +14,11 @@ const SERVICE_DEFINITIONS = {
   api: {
     id: 'api',
     name: 'API 网关服务',
-    description: '主 API 网关，端口 3002',
+    description: '主 API 网关，端口 3010',
     command: 'node',
     args: ['src/api-server.js'],
     workingDir: path.join(__dirname, '..'),
-    port: 3002,
+    port: 3010,
     pidFile: path.join(RUNTIME_DIR, 'api.pid'),
     logFile: path.join(RUNTIME_DIR, 'api.log'),
     healthCheck: '/health',

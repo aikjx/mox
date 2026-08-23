@@ -43,7 +43,7 @@ export const LLM_PROVIDER_TEMPLATES = [
   {
     id: 'local-engine',
     name: '本地智能引擎',
-    endpoint: 'http://localhost:3002/api/local',
+    endpoint: 'http://localhost:3010/api/local',
     defaultModel: 'local-default',
     models: ['local-default'],
     features: ['chat', 'offline'],

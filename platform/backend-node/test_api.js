@@ -2,7 +2,7 @@ const http = require('http');
 
 function makeRequest(path, method, data) {
   return new Promise((resolve, reject) => {
-    const opts = { hostname: 'localhost', port: 3002, path: path, method: method, headers: data ? {'Content-Type': 'application/json'} : {} };
+    const opts = { hostname: 'localhost', port: 3010, path: path, method: method, headers: data ? {'Content-Type': 'application/json'} : {} };
     const req = http.request(opts, (res) => {
       let chunks = '';
       res.on('data', (c) => chunks += c);

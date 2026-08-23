@@ -22,7 +22,7 @@ const { ExpertAllianceEngine } = require('../src/expert-alliance-engine');
 const { getAlliance } = require('../src/expert-alliance');
 const { getAllianceEngine } = require('../src/expert-alliance-engine');
 
-const BASE = process.env.ALLIANCE_TEST_BASE || 'http://localhost:3002';
+const BASE = process.env.ALLIANCE_TEST_BASE || 'http://localhost:3010';
 
 let passed = 0, failed = 0;
 function check(name, cond, detail) {

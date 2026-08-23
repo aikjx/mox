@@ -9,7 +9,7 @@
 
 const http = require('http');
 
-const BASE = { host: '127.0.0.1', port: 3002 };
+const BASE = { host: '127.0.0.1', port: 3010 };
 
 function request(method, path, body) {
   return new Promise((resolve, reject) => {

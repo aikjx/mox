@@ -115,7 +115,7 @@ module.exports = function registerProjectsRoutes(ctx) {
     try {
       const running = new Set((serviceManager && serviceManager.processes && serviceManager.processes.keys()) || []);
       const defs = [
-        { id: 'api', name: 'API 网关服务', desc: '主 API 网关，端口 3002' },
+        { id: 'api', name: 'API 网关服务', desc: '主 API 网关，端口 3010' },
         { id: 'frontend', name: '前端静态服务', desc: '前端静态托管，端口 3000' }
       ];
       for (const s of defs) {

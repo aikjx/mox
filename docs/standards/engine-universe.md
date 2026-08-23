@@ -218,7 +218,7 @@ graph LR
 
 ```bash
 node test/test-engine-universe.js      # 40 项测试
-curl http://localhost:3002/engine-universe/verify   # 113 项运行时检查
+curl http://localhost:3010/engine-universe/verify   # 113 项运行时检查
 ```
 
 ## 6. API 一览

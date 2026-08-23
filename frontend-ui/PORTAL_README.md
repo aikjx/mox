@@ -20,7 +20,7 @@ cargo run -p runtime            # 监听 3000，提供 /api
 # 2. 前端
 cd frontend
 npm install                      # 已加入 vue-router@4 依赖
-npm run dev                      # http://localhost:5173
+npm run dev                      # http://localhost:3020
 
 # 3. 生产构建（相对路径，适配桌面/子路径，见 §13.5）
 VITE_BASE=./ npm run build       # 产物 frontend/dist

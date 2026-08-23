@@ -254,7 +254,7 @@ POST /ai/engine/auto-dev { requirement: "开发一个企业官网" }
 | 安全闸门 | 路径逃逸 `../../` 与编码逃逸 `..%2F` 均被 404 拒绝 |
 | 图谱入图 | 29 节点/40 边，层级完整 |
 
-预览地址：`http://localhost:3002/ai/engine/auto-dev/preview/site-corp-site/index.html`
+预览地址：`http://localhost:3010/ai/engine/auto-dev/preview/site-corp-site/index.html`
 
 ### 11.5 本轮实测发现并修复的缺陷
 

@@ -6,7 +6,7 @@
  * 用法：node test/test-sse-stream.js
  */
 
-const BASE = 'http://127.0.0.1:3002';
+const BASE = 'http://127.0.0.1:3010';
 
 async function main() {
   const t0 = Date.now();

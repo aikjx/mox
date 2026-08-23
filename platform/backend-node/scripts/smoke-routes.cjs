@@ -36,7 +36,7 @@ const CASES = [
 function call(method, path) {
   return new Promise((resolve) => {
     const req = http.request({
-      host: 'localhost', port: 3002, method, path,
+      host: 'localhost', port: 3010, method, path,
       headers: { Authorization: 'Bearer dev-secret-token' }
     }, (res) => {
       let body = '';
