@@ -226,6 +226,103 @@ def test_play_stop_is_idempotent():
 
 
 # ---------------------------------------------------------------------------
+# 6) 回归：play() 主线程死锁（P0 根因）—— mock 声卡，不依赖真实设备
+# ---------------------------------------------------------------------------
+class _FakeStream:
+    """RawOutputStream 替身：模拟声卡流生命周期，无任何真实设备依赖。"""
+
+    def __init__(self, **kwargs):
+        self.samplerate = kwargs.get("samplerate")
+        self.active = False
+
+    def start(self):
+        self.active = True
+
+    def stop(self):
+        self.active = False
+
+    def close(self):
+        self.active = False
+
+
+def test_play_no_deadlock_regression(monkeypatch):
+    """play() 不得死锁：旧版持锁调 stop() 二次获取同一把不可重入锁，
+    GUI 主线程点「播放」即永久冻结（100% 必现）。mock 流后 play 必须在
+    2 秒内返回；播放中再次 play（切歌）同样不得死锁/阻塞。"""
+    from app import audio_play
+    monkeypatch.setattr(audio_play.sd, "RawOutputStream", _FakeStream)
+
+    notes = [{"midi": 60 + i, "dur": 0.1} for i in range(6)]
+    t0 = time.time()
+    audio_play.play_score(notes, bpm=120, sr=SR)   # 旧版在此永久死锁
+    dt_play = time.time() - t0
+    assert dt_play < 2.0, f"play() 阻塞 {dt_play:.2f}s（疑似死锁回归）"
+
+    t0 = time.time()
+    audio_play.play_score(notes, bpm=90, sr=SR)    # 播放中切歌：快速接管
+    dt_switch = time.time() - t0
+    assert dt_switch < 2.0, f"播放中切歌阻塞 {dt_switch:.2f}s"
+
+    audio_play.stop()
+    assert not audio_play.is_playing()
+
+
+def test_play_session_isolation_no_crosstalk(monkeypatch):
+    """快速接管零串音：切歌后旧会话生产者只写旧 ring，新会话缓冲
+    不含旧数据（旧版不 join 残留线程会把旧波形写进新 ring）。"""
+    from app import audio_play
+    from app.audio_play import _ScorePlayer
+    monkeypatch.setattr(audio_play.sd, "RawOutputStream", _FakeStream)
+
+    player = _ScorePlayer()
+    gen1 = iter([np.ones(1600, dtype=np.float32) * 0.5])
+    player.play(gen1, sr=SR)
+    old_session = player._session
+    assert old_session is not None
+    # 立即切歌（旧生产者可能仍在写 old ring）
+    player.play(iter([]), sr=SR)
+    new_session = player._session
+    assert new_session is not old_session
+    assert new_session.ring is not old_session.ring
+    # 旧会话被停（stop_ev 置位、流关闭）
+    assert old_session.stop_ev.is_set()
+    player.stop()
+
+
+def test_cache_key_includes_sr():
+    """缓存指纹必须含采样率：否则 16000/22050 波形互串（变调）。"""
+    notes = [{"midi": 60, "dur": 0.25}]
+    assert _cache_key(notes, 120.0, 16000) != _cache_key(notes, 120.0, 22050)
+
+
+def test_streaming_first_chunk_latency():
+    """流式合成：首个样本块应在首音符合成内产出（不等待整曲）。"""
+    from app.audio_play import _score_samples_gen
+    notes = [{"midi": 60 + i, "dur": 0.5} for i in range(20)]  # 10 秒长曲
+    t0 = time.time()
+    first = next(iter(_score_samples_gen(notes, bpm=120, sr=SR)))
+    dt = time.time() - t0
+    assert first is not None and len(first) > 0
+    assert dt < 0.5, f"首块延迟 {dt:.3f}s（旧版需整曲合成完毕才出声）"
+
+
+def test_real_play_smoke_sr_passthrough(monkeypatch):
+    """play(gen, sr) 必须以传入采样率建流（修复固定 16000Hz 变调）。"""
+    from app import audio_play
+    created = []
+
+    class _RecStream(_FakeStream):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            created.append(kwargs.get("samplerate"))
+
+    monkeypatch.setattr(audio_play.sd, "RawOutputStream", _RecStream)
+    audio_play.play_audio(np.zeros(320, dtype=np.float32), sr=22050)
+    audio_play.stop()
+    assert created and created[0] == 22050, f"流采样率错误: {created}"
+
+
+# ---------------------------------------------------------------------------
 # 5) 真实播放冒烟测试（默认跳过；需显式 M2S_REAL_AUDIO=1 且有设备才跑）
 # ---------------------------------------------------------------------------
 def test_real_play_smoke():

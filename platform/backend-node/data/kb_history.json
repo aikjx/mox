@@ -1,5 +1,21 @@
 [
   {
+    "id": "kb_hist_xj0t0cd26q",
+    "documentId": "kb_doc_1x9djgk4mz",
+    "action": "auto-graph-sync",
+    "detail": "自动图谱化：0 实体 / 0 关系 / 0 域映射",
+    "user": "user",
+    "ts": "2026-08-23T00:55:51.646Z"
+  },
+  {
+    "id": "kb_hist_djxwprluzd",
+    "documentId": "kb_doc_9gimt5fc08",
+    "action": "auto-graph-sync",
+    "detail": "自动图谱化：0 实体 / 0 关系 / 0 域映射",
+    "user": "user",
+    "ts": "2026-08-23T00:55:51.596Z"
+  },
+  {
     "id": "kb_hist_h03af919jb",
     "documentId": "kb_doc_sp18f07qrn",
     "action": "delete",

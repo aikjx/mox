@@ -19,7 +19,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import soundfile as sf
-from PyQt5.QtCore import QThread, pyqtSignal, Qt, QSize, QTimer
+from PyQt5.QtCore import QThread, pyqtSignal, Qt, QSize, QTimer, QObject
 from PyQt5.QtGui import QPainter, QPen, QColor, QFont, QBrush, QPalette, QPixmap
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
@@ -33,7 +33,8 @@ if ROOT not in sys.path:
 from core.paths import resource_path, is_frozen
 from core.config import Config
 from core import score_sheet
-from app.audio_play import play_raw, play_score, stop as audio_stop
+from app.audio_play import (play_raw, play_score, is_playing,
+                            stop as audio_stop)
 
 ACCENT = "#4f9dff"
 ACCENT2 = "#36d399"
@@ -63,6 +64,15 @@ def load_audio_bytes(data: bytes, sr: int):
     except Exception:
         y, _ = sf.read(io.BytesIO(data), samplerate=sr, dtype="float32", always_2d=False)
         return np.asarray(y, dtype=np.float32), sr
+
+
+class _PlayBridge(QObject):
+    """播放完成信号桥：on_done 在生产者线程触发，经 Qt 信号跨线程
+    自动排队投递到主线程更新 UI（生产者线程直接操作控件不安全）。"""
+    finished = pyqtSignal()
+
+
+_PLAY_BRIDGE = _PlayBridge()
 
 
 class RecognizeWorker(QThread):
@@ -689,6 +699,7 @@ class MainWindow(QMainWindow):
         self.btnPlayScore = QPushButton("🎹 播放钢琴曲")
         self.btnPlayScore.setEnabled(False)
         self.btnPlayScore.clicked.connect(self.play_score_audio)
+        _PLAY_BRIDGE.finished.connect(self._on_score_play_done)
         row_play.addWidget(self.btnPlayScore)
         row_play.addWidget(self.btnStop)
         lv.addLayout(row_play)
@@ -1144,20 +1155,35 @@ class MainWindow(QMainWindow):
                 return
         try:
             self.status.setText("正在播放原曲…")
+            self._score_playing = False          # 单播放器：原曲接管钢琴曲
+            self.btnPlayScore.setText("🎹 播放钢琴曲")
             play_raw(raw, self._raw_sr)
         except Exception as e:
             self.status.setText(f"播放失败：{e}")
 
     def play_score_audio(self):
-        """按识别出的音符序列合成钢琴曲播放。"""
+        """按识别出的音符序列合成钢琴曲播放（播放中再点 = 停止）。"""
         if not self.current or not self.current.get("notes"):
             QMessageBox.information(self, "播放", "尚无可播放的识别结果。")
             return
+        if getattr(self, "_score_playing", False) and is_playing():
+            audio_stop()                          # teardown 会触发 on_done → 恢复按钮
+            return
         try:
-            self.status.setText("合成并播放钢琴曲中…（后台进行，界面不卡）")
-            play_score(self.current["notes"], sr=22050)
+            self._score_playing = True
+            self.btnPlayScore.setText("⏹ 停止播放")
+            self.status.setText("🎹 合成并播放钢琴曲中…（流式合成，即点即响）")
+            play_score(self.current["notes"], sr=22050,
+                       on_done=_PLAY_BRIDGE.finished.emit)
         except Exception as e:
+            self._score_playing = False
+            self.btnPlayScore.setText("🎹 播放钢琴曲")
             self.status.setText(f"钢琴播放失败：{e}")
+
+    def _on_score_play_done(self):
+        """播放结束/停止后恢复按钮（主线程执行，由 _PlayBridge 投递）。"""
+        self._score_playing = False
+        self.btnPlayScore.setText("🎹 播放钢琴曲")
 
     def _on_sheet_done(self, fpath: str):
         self._auto_sheet_path = fpath
@@ -1397,9 +1423,29 @@ def _selftest() -> int:
                 assert mr["matched"], f"未命中（best={mr.get('best_score', 0):.0f}%）"
                 return f"命中《{mr['candidates'][0]['title_zh']}》{mr['best_score']:.0f}%"
 
+            def _play_smoke():
+                """播放死锁回归（frozen 交付验收）：旧版 play() 持锁调
+                stop() 二次获取不可重入锁，点「播放钢琴曲」GUI 永久冻结。
+                无声卡环境（PortAudio 无设备）降级跳过，不算失败。"""
+                from app.audio_play import play_score, stop
+                pn = [{"midi": 60 + i, "dur": 0.1} for i in range(4)]
+                try:
+                    t0 = time.time()
+                    play_score(pn, bpm=120, sr=22050)
+                    dt = time.time() - t0
+                    stop()
+                except Exception as e:                      # 无声卡/被占用
+                    import sounddevice as _sd
+                    if isinstance(e, _sd.PortAudioError):
+                        return "跳过（无音频设备）"
+                    raise
+                assert dt < 2.0, f"play() 阻塞 {dt:.2f}s（死锁回归！）"
+                return f"play 返回耗时 {dt*1000:.0f}ms，无死锁"
+
             _run("MusicXML 导出", _musicxml)
             _run("标准歌谱 PNG 渲染", _score_png)
             _run("钢琴合成（试听链路）", _synth)
+            _run("钢琴播放冒烟（死锁回归）", _play_smoke)
             _run("mp3 解码", _mp3)
             _run("离线曲库匹配（DTW）", _song_match)
             report["full_chain"] = checks
