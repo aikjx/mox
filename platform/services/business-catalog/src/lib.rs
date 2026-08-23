@@ -17,33 +17,14 @@
 //!
 //! 从而实现依赖方向反转：`business-catalog → trait ← xuanji concrete`。
 
-/// 璇玑系统 Crate 注册常量（图谱自同步契约：Rust 端显式声明 crate 身份）。
-pub const CRATE_ID: &str = "business-catalog";
-
-/// 璇玑系统 Crate 结构化元数据。
-#[derive(Debug, Clone, Copy)]
-pub struct CrateMeta {
-    pub uuid: &'static str,
-    pub ais_layers: &'static [&'static str],
-    pub owner_project: &'static str,
-    pub capabilities: &'static [&'static str],
-    pub data_tables_read: &'static [&'static str],
-    pub data_tables_write: &'static [&'static str],
-}
-
-pub const CRATE_META: CrateMeta = CrateMeta {
-    uuid: "18e4d0f9-52be-41c2-6d8e-9fa0b1c2d3e4",
-    ais_layers: &["L3-Service", "L7-Tool"],
-    owner_project: "proj-auto-dev",
-    capabilities: &[
-        "业务全景建模 (流程 + 六维关系网)",
-        "动态权重学习 (record_hit / decay)",
-        "跨业务复用最短路径路由",
-        "改一节点全链路 impact 同步",
-        "空间光速螺旋分析算子",
-    ],
-    data_tables_read: &["business_catalog.json"],
-    data_tables_write: &[],
+pub const CRATE_ID: &str = "62b2cca1-d98f-5e41-b26e-8d2a43966117";
+pub const ENGINE_NAME: &str = "xuanji::business_catalog";
+pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+    id: CRATE_ID,
+    name: env!("CARGO_PKG_NAME"),
+    version: env!("CARGO_PKG_VERSION"),
+    layer: xuanji_common_meta::AisLayer::L4Services,
+    owner: "xuanji-core",
 };
 
 // ============================================================================

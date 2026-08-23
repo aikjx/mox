@@ -1,142 +1,71 @@
-# PrimiFlow-Fusion · 企业级融合归一化一体化平台
+# primiflow-fusion · 六维融合 & 算子市场平台
 
-> 把 **GR-STD 关图规范** 与 **PT-Primi 架构规范** 熔铸为**一张守恒统一图**，并提供
-> 企业级 REST 服务、六维溯源注册表（R06）、PT-DOC 标准文档自生成（R08）与全局治理闸门
-> （守恒 R07 / 六维零孤儿 A4 / GR-STD 8 闸门）。
+## §1 · 概述
+璇玑 L4Services 级融合/市场/平台聚合 crate：提供六维度量（SixDim）、守恒闸门、服务注册中心（Registry）、平台编排（Platform）、PT 文档（10 文档索引）、可观测、统一接口、server & CLI、配置加载；是 PrimiFlow 六维融合 + 算子市场上架的聚合层。
 
-本 crate 是 OUS（算子统一系统）的「归一化事实源」层：所有能力、数据、文档都从统一图派生，
-保证 需求↔功能↔业务↔算法↔任务↔代码 全链路可溯源、可审计、可治理。
+## §2 · CRATE_ID / ENGINE_NAME / AIS 层级
+归属 **AIS Layer = L4Services**（能力≥5，engine）。
 
----
+```rust
+pub const CRATE_ID: &str = "75238345-b48b-534b-818b-8d9abe083a41";
+pub const ENGINE_NAME: &str = "xuanji::primiflow_fusion";
+pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+    id: CRATE_ID,
+    name: env!("CARGO_PKG_NAME"),
+    version: env!("CARGO_PKG_VERSION"),
+    layer: xuanji_common_meta::AisLayer::L4Services,
+    owner: "xuanji-core",
+};
+```
 
-## 架构分层
+## §3 · 模块结构 src/* 说明
+| 文件/目录 | 职责 |
+|-----------|------|
+| `src/lib.rs` | 三常量 + 8 大模块 re-export 对外 API 面 |
+| `src/config.rs` | 配置加载：TOML / ENV 双源合并 + schema 校验 |
+| `src/registry.rs` | `trait FusionRegistry`：服务注册/查询/列表；crate Plugin Manager |
+| `src/sixdim.rs` | 六维度量 SixDim：`完备性 / 正确性 / 可维护性 / 性能 / 安全 / 可观测性` 六家族 + fuse() 融合打分 |
+| `src/envelope.rs` | `trait Envelope`：请求/响应/事件 密封信封 + HMAC 签名（crypto 复用 xuanji-system） |
+| `src/platform.rs` + `src/unified.rs` | `trait Platform` + 统一接口层（Platform→Registry→SixDim→Envelope 串联调度） |
+| `src/ptdoc.rs` | 10 PT 文档索引 + `data/fusion_docs/` 10 份文档（INDEX + 10 内容）加载器 |
+| `src/observability.rs` | tracing + metrics + log 三通道；OpenTelemetry 兼容 |
+| `src/server.rs` + `src/main.rs` | fusion-server HTTP/WS Server 二进制 + CLI 命令分发 |
+| `benches/development_experts.rs` | 专家调用 30 轮并发 fusion 性能 bench（Criterion P4） |
+| `examples/fuse.rs` + `examples/registry_demo.rs` | 六维融合 + Registry 插件注册使用示例 |
+| `tests/server_test.rs` | server 端到端测试：9 端点（/registry / /fusion / /sixdim / /health …） |
+| `data/fusion_docs/` | 10+ 融合配套文档（INDEX.json + PT-DOC-01~10.md） |
+| `.dockerignore` + `Dockerfile` | 容器化部署：fusion-server 单容器镜像 + 多阶段构建 40MB 产物 |
 
-| 层 | 模块 | 职责 |
-|----|------|------|
-| L1 需求语义 | `unified` | 归一化节点/边/原语坐标 (κ,τ,C,Q) |
-| L2 六维映射 | `sixdim` | R06 六维绑定注册表（累积/查询/持久化） |
-| L3 API 服务 | `server` | 企业级 REST（Bearer 鉴权 / CORS / 溯源查询 / PT-DOC） |
-| L4 平台编排 | `platform` | 主链路八模块 + 统一图 + 全局闸门闭环 |
-| L5 文档自生成 | `ptdoc` | R08 PT-DOC 标准文档集（10 份） |
-| L6 能力融合 | `registry` | 13 crate 能力 + 6 数据表融合 |
-| L7 治理 | `unified::full_gate` | 守恒残差 + 零孤儿 + GR-STD 8 闸门 |
+## §4 · 关键 Trait & Impl
+- **`pub trait Platform`**：`fn start(&self) -> Result<()>` / `fn register_service(&self, spec)` / `fn run_fusion(spec) -> Result<SixDimReport>`。
+- **`pub trait Envelope`**：`fn seal(&self, payload) -> Result<Sealed>` / `fn unseal(sealed) -> Result<Payload>`；含 HMAC 校验。
+- **`pub trait FusionRegistry`**（registry.rs）：register / query / list / by_capability。
+- **`struct Sixdim`**：6 维度量结构体 + `impl Sixdim::score() -> f64` 加权融合（权重来自 config，默认均匀）。
+- **`struct Registry / Server / Config / PTDoc / Observability`**：六大结构体 + Platform 串联 impl。
 
----
-
-## 构建与测试
-
+## §5 · 跑单测指引
 ```bash
-# 构建（lib + 二进制）
-cargo build -p primiflow-fusion
-
-# 全部测试（单元 + 集成 + 基准）
-cargo test -p primiflow-fusion --all-targets
-
-# 性能基线（P4 · benches）
-cargo bench -p primiflow-fusion --bench development_experts
-
-# 代码质量门禁（CI 同款）
-cargo fmt -p primiflow-fusion -- --check
-cargo clippy -p primiflow-fusion --all-targets -- -D warnings
+cargo test -p primiflow-fusion
+cargo test -p primiflow-fusion server_test     # fusion-server HTTP 9 端点
+cargo bench -p primiflow-fusion                 # P4 基准：fusion 六维 30 轮 <500ms/p99
+cargo run -p primiflow-fusion                   # 默认 fusion-server :8788
+cargo run -p primiflow-fusion --example fuse     # 融合示例
 ```
+断言覆盖：SixDim 六维 ∈ [0,1]00 且 score = Σ w·dim（浮点误差 ≤1e-9）；Registry 两次 register 同 id 返回 Err（AlreadyExists）；Envelope seal→unseal 往返且篡改 HMAC 失败；server `/health` 返回 ok；Dockerfile 构建产物 <60MB（build size 断言）。
 
----
+## §6 · 二次开发 / DIP 反转指引
+- **新增 Fusion 插件**：实现 `trait FusionPlugin`（通过 registry.rs 的 PluginManager 注入）→ 不用改 `platform.rs::run_fusion`。
+- **切换 SixDim 权重**：在 config.toml 修改 `[sixdim.weights]`，不改代码。如需新度量维度 → 在 `SixDim` 追加字段 + `score()` 的 `match` 追加 arm（thin wrapper）。
+- **新增 Observability 后端**：实现 `trait MetricsSink` → `Observability::with_metrics(Box::new(X))` 注入。
 
-## 运行
+## §7 · TDD RED→GREEN 工作流 + 精度护栏
+**流程**：① RED：新增失败 fusion 场景（某 Plugin 维度为 110 → 应 clamp 到 100）；② GREEN：sixdim.rs 修正；③ 回归 bench 上限。
+**精度护栏**：SixDim 权重和必须 = 1.0（sum(w)==1.0±1e-12），否则启动 fail-fast panic（不允许权重配置不平衡）；Envelope 签名时间戳窗口 30s，超过则拒收（防重放）。
 
-二进制提供两个子命令：
-
-```bash
-# 启动 REST 服务（默认 0.0.0.0:8080）
-primiflow-fusion serve [--config config.json] [--addr 0.0.0.0:9090]
-
-# 仅跑全局治理闸门（供 CI 门禁；通过退出 0，否则 1）
-primiflow-fusion verify
+## §8 · 图谱绑定（三注册 key + self_sync 规则）
 ```
-
-### 配置（12-factor）
-
-配置优先级：**默认值 < 配置文件(JSON) < 环境变量**（`OUS_FUSION_*`）。
-
-| 字段 | 环境变量 | 默认 | 说明 |
-|------|----------|------|------|
-| `bind_addr` | `OUS_FUSION_BIND_ADDR` | `0.0.0.0:8080` | HTTP 监听地址 |
-| `persistence_path` | `OUS_FUSION_PERSISTENCE_PATH` | 无（仅内存） | 六维注册表 JSON 落盘路径（跨重启复用） |
-| `docs_dir` | `OUS_FUSION_DOCS_DIR` | `data/fusion_docs` | PT-DOC 导出目录 |
-| `log_level` | `OUS_FUSION_LOG_LEVEL` | `info` | trace/debug/info/warn/error |
-| `auth_token` | `OUS_FUSION_AUTH_TOKEN` | 无（关闭鉴权） | Bearer 令牌（**仅建议环境变量注入**） |
-| `access_log` | `OUS_FUSION_ACCESS_LOG` | `true` | 请求访问日志 |
-| `json_log` | `OUS_FUSION_JSON_LOG` | `false` | 结构化(JSON)日志（对接 Loki/ELK） |
-
-示例 `config.json`：
-```json
-{
-  "bind_addr": "0.0.0.0:8080",
-  "persistence_path": "/data/fusion_registry.json",
-  "docs_dir": "/data/fusion_docs",
-  "log_level": "info",
-  "access_log": true,
-  "json_log": false
-}
+domain id      : domain-rust-primiflow-fusion
+engine id      : engine-rust-primiflow-fusion
+code_graph unit: primiflow-fusion
 ```
-
-> 生产环境务必设置 `OUS_FUSION_AUTH_TOKEN`，否则 `/api/v1/*` 端点将无鉴权暴露。
-
----
-
-## REST API
-
-除 `/api/health` 与 `/api/version` 外，所有 `/api/v1/*` 端点需 `Authorization: Bearer <token>`。
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/health` | 探活：注册表统计 + 全局闸门状态 |
-| GET | `/api/version` | 服务版本 |
-| POST | `/api/v1/synthesize` | 提交需求，跑一体化合成并导出 PT-DOC |
-| GET | `/api/v1/registry/by-code?code=` | code→需求 溯源反查 |
-| GET | `/api/v1/registry/by-requirement?req=` | 按需求 id 查询绑定 |
-| GET | `/api/v1/registry/stats` | 注册表统计 |
-| POST | `/api/v1/persist` | 落盘注册表（JSON） |
-| GET | `/api/v1/gate` | 跑全局治理闸门 |
-| GET | `/api/v1/docs` | 列出已导出 PT-DOC |
-| GET | `/api/v1/docs/:id` | 读取某 PT-DOC 内容 |
-
-`POST /api/v1/synthesize` 请求体：
-```json
-{ "requirement": "抓取销售数据生成月度经营分析报告", "slider_s": 0.5 }
-```
-
----
-
-## 容器化部署
-
-```bash
-# 构建镜像
-docker build -f crates/primiflow-fusion/Dockerfile -t primiflow-fusion .
-
-# 运行（持久化挂载到 /data）
-docker run -d -p 8080:8080 \
-  -e OUS_FUSION_AUTH_TOKEN=change-me \
-  -v $(pwd)/data:/data \
-  primiflow-fusion serve
-```
-
----
-
-## 治理与合规
-
-> **【大白话】** 这一段讲的"门禁"就是发布前的三道体检：账平不平、环节断没断链、图合不合法。
-> 体检不过，`primiflow-fusion verify` 会以非零退出码拦下合并，相当于 CI 里的"红牌"。
-
-- **R06 六维绑定注册表**：跨需求累积 `REQ→FUN→BIZ→ALG→TSK→COD`，支持按 code/需求/工程/实体反查溯源。
-  - *大白话*：建一张"从一句话需求一路追到哪行代码"的台账，出事能秒查是谁的锅。
-- **R07 守恒闸门**：统一图全局守恒残差 `|C² - (κ²+τ²)| < 1e-3`。
-  - *大白话*：每个节点报的"守恒量 C"必须和它的两个分量 κ、τ 算出来的对得上（账要对平）。注意 C 是节点自报的，所以只查"内部自洽"，查不出"整张图凭空编了一套账"。
-- **A4 六维零孤儿**：每个绑定六维实体齐全、Bind 边闭合，无悬空节点。
-  - *大白话*：需求→功能→业务→算法→任务→代码，这一条龙不能断环。哪个环节填了绑定 ID 却找不到上游，就成了"孤儿"被拦下。
-- **R08 PT-DOC 自生成**：合成后自动产出 10 份 PT-Primi 标准文档（六维溯源矩阵 / 守恒合规 / 零孤儿 / 关图治理 / 能力融合 / 注册表统计 / 拓扑涌现 / PT-Primi 合规 / κ 复用 / 术语表）。
-  - *大白话*：图一合成，自动吐出 10 份标准交付文档，不用人工补材料。
-- **GR-STD 8 闸门**：信息分类、命名、关联、演进、治理、可观测、安全、合规 八项校验。
-  - *大白话*：图的"基础体检"——图不能空、边不能连空气、每条关系得有出处证据、核心节点不能孤零零、无重复 id、无未建模隐性依赖、文档引用有效、且相对基线无未授权删除（G8）。**代码事实（`unified.rs::full_gate` 覆盖 G1–G7，`full_gate_with_baseline` 覆盖 G8）八项（G1 非空 / G2 悬空边 / G3 重复 id / G4 evidence / G5 核心孤儿 / G6 隐性依赖 / G7 文档有效 / G8 sync 漂移）全部落地**，任一未过即 `passed=false`，与 `docs/enterprise/10-企业级交付清单.md` §4 一致。
-
-`primiflow-fusion verify` 可在 CI 中以非零退出码阻断不合规的合并。
+self_sync：改 `src/lib.rs` 三常量 / Registry / SixDim 字段 → `self_sync_rust.js` 刷新三注册。

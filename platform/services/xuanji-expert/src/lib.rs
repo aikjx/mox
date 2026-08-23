@@ -4,36 +4,14 @@
 //! flow-ai 引擎做已验证的最优求解 → 治理层把关后出码。
 //! 兼容 MCP / Skills / Loops / 大模型。
 
-/// 璇玑系统 Crate 注册常量（图谱自同步契约：Rust 端显式声明 crate 身份）。
-pub const CRATE_ID: &str = "xuanji-expert";
-
-/// 璇玑系统 Crate 结构化元数据。
-#[derive(Debug, Clone, Copy)]
-pub struct CrateMeta {
-    pub uuid: &'static str,
-    pub ais_layers: &'static [&'static str],
-    pub owner_project: &'static str,
-    pub capabilities: &'static [&'static str],
-    pub data_tables_read: &'static [&'static str],
-    pub data_tables_write: &'static [&'static str],
-}
-
-pub const CRATE_META: CrateMeta = CrateMeta {
-    uuid: "f6c2b8d7-309c-4fa0-4b6c-7d8e9fa0b1c2",
-    ais_layers: &["L3-Service", "L2-Gateway", "L1-Ingress", "L5-Infra"],
-    owner_project: "proj-expert-alliance",
-    capabilities: &[
-        "十四维专家并行诊断",
-        "权限/安全优先归一化裁决器",
-        "六维实体关系网拓扑路由",
-        "架构/代码质量/性能/安全/合规/文档/数据/可维护性",
-        "RBAC 多租户资源级权限控制",
-        "外部审计 Sink (Syslog/S3/Kafka) WORM",
-        "P1 三缺陷修复 (连续性/幂等/安全否决)",
-        "Bench 真实引擎量化收益",
-    ],
-    data_tables_read: &["audit/logs", "rbac_policies.json", "experts.json"],
-    data_tables_write: &["audit/logs"],
+pub const CRATE_ID: &str = "50bb6200-04c5-5e4c-8354-4c6e1b230024";
+pub const ENGINE_NAME: &str = "xuanji::xuanji_expert";
+pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+    id: CRATE_ID,
+    name: env!("CARGO_PKG_NAME"),
+    version: env!("CARGO_PKG_VERSION"),
+    layer: xuanji_common_meta::AisLayer::L4Services,
+    owner: "xuanji-core",
 };
 
 pub mod context;
@@ -61,6 +39,10 @@ pub mod flow_loader;
 pub mod harness;
 /// 租户策略分层 + 治理 8 闸门全量门禁（I-06 / G3·G6·G8 补全）
 pub mod tenant_policy;
+
+/// L3 对外领域抽象：GovernExpert / GovernContext trait + MinimalGovernContext / MockGovernExpert
+/// （Govern* 从 concrete context/govern 模块解耦到 domain trait，实现 DIP）。
+pub mod domain;
 
 // ============================================================================
 // L3 领域层对外抽象（DIP 反转：下游只依赖 expert_traits::* 与 types::* ，

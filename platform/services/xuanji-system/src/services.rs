@@ -819,8 +819,17 @@ impl MemberServiceTrait for MemberService {
     async fn invite(&self, by: &str, input: &InviteInput) -> Result<Member> {
         MemberService::invite(self, by, input).await
     }
-    async fn list(&self, xuanji_id: &str) -> Result<Vec<Member>> {
-        Ok(MemberService::list(self, xuanji_id).await)
+    async fn list(&self, xuanji_id: &str) -> Vec<Member> {
+        MemberService::list(self, xuanji_id).await
+    }
+    async fn get(&self, id: &str) -> Result<Member> {
+        MemberService::get(self, id).await
+    }
+    async fn activate(&self, member_id: &str, by: &str) -> Result<Member> {
+        MemberService::activate(self, member_id, by).await
+    }
+    async fn set_status(&self, member_id: &str, status: MemberStatus) -> Result<Member> {
+        MemberService::set_status(self, member_id, status).await
     }
 }
 
@@ -832,10 +841,32 @@ impl PermissionServiceTrait for PermissionService {
     async fn assign_role(&self, binding: RoleBinding) {
         let _ = PermissionService::assign_role(self, binding).await;
     }
+    async fn bindings_of(&self, member_id: &str) -> Vec<RoleBinding> {
+        PermissionService::bindings_of(self, member_id).await
+    }
+    async fn effective_permissions(&self, member_id: &str) -> Vec<Permission> {
+        PermissionService::effective_permissions(self, member_id).await
+    }
 }
 
 #[async_trait::async_trait]
 impl TaskServiceTrait for TaskService {
+    async fn create(
+        &self,
+        xuanji_id: &str,
+        actor: &str,
+        title: &str,
+        description: &str,
+        priority: Priority,
+    ) -> Result<Task> {
+        TaskService::create(self, xuanji_id, actor, title, description, priority).await
+    }
+    async fn list(&self, xuanji_id: &str) -> Vec<Task> {
+        TaskService::list(self, xuanji_id).await
+    }
+    async fn get(&self, id: &str) -> Result<Task> {
+        TaskService::get(self, id).await
+    }
     async fn assign(&self, task_id: &str, actor: &str, assignees: Vec<String>) -> Result<Task> {
         TaskService::assign(self, task_id, actor, assignees).await
     }
@@ -848,10 +879,28 @@ impl TaskServiceTrait for TaskService {
     async fn watch(&self, task_id: &str, actor: &str) -> Result<Task> {
         TaskService::watch(self, task_id, actor).await
     }
+    async fn add_subtask(&self, task_id: &str, title: &str) -> Result<Task> {
+        TaskService::add_subtask(self, task_id, title).await
+    }
+    async fn add_dependency(&self, task_id: &str, dep_id: &str) -> Result<Task> {
+        TaskService::add_dependency(self, task_id, dep_id).await
+    }
+    async fn toggle_subtask(&self, task_id: &str, sub_id: &str) -> Result<Task> {
+        TaskService::toggle_subtask(self, task_id, sub_id).await
+    }
 }
 
 #[async_trait::async_trait]
 impl CommServiceTrait for CommService {
+    async fn create_channel(
+        &self,
+        xuanji_id: &str,
+        kind: ChannelKind,
+        name: &str,
+        members: Vec<String>,
+    ) -> Channel {
+        CommService::create_channel(self, xuanji_id, kind, name, members).await
+    }
     async fn send_message(
         &self,
         channel_id: &str,
@@ -860,5 +909,23 @@ impl CommServiceTrait for CommService {
         kind: MessageKind,
     ) -> Result<Message> {
         CommService::send_message(self, channel_id, actor, body, kind).await
+    }
+    async fn list_messages(&self, channel_id: &str) -> Vec<Message> {
+        CommService::list_messages(self, channel_id).await
+    }
+    async fn notify(
+        &self,
+        member_id: &str,
+        title: &str,
+        body: &str,
+        related_task: Option<&str>,
+    ) {
+        CommService::notify(self, member_id, title, body, related_task).await
+    }
+    async fn list_notifications(&self, member_id: &str) -> Vec<Notification> {
+        CommService::list_notifications(self, member_id).await
+    }
+    async fn mark_read(&self, id: &str, member_id: &str) -> Result<()> {
+        CommService::mark_read(self, id, member_id).await
     }
 }

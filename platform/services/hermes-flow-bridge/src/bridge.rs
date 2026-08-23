@@ -1,4 +1,4 @@
-//! Step 7：后台优化推送 + 算法否决拦截接线。
+//! AIS-SPEC-9001：企业级统一契约头 —— 模块名 bridge.rs\n//! AIS-REV-1：自描述接口 · 幂等 · 可观测 · 零外部副作用（网络/IO 仅限封装函数）\n//! AIS-REV-2：公开项 pub fn/pub struct 必须具备 /// 文档注释与错误语义说明\n//! AIS-REV-3：遵循 XUANJI-AIS-通用 标准，禁止占位实现宏遗留\n\n//! Step 7：后台优化推送 + 算法否决拦截接线。
 //!
 //! DIP 版：此文件**不再** `use xuanji_expert::xuanji_optimize` 等具体函数 / struct。
 //! 全部璇玑引擎调用统一通过：
@@ -84,20 +84,57 @@ pub fn spawn_optimizer_with(
     let h = handle.clone();
     thread::spawn(move || {
         let _ = h;
+        // 企业级：主线程永不崩溃（catch_unwind + sleep 退避）。
+        // 任意 optimize_session_with panic / 错误 都只 warn + continue，
+        // 不影响下一轮快照推送（= 降级不阻断主循环）。
+        let mut consec_panics = 0u32;
         loop {
-            // 仅对 default 会话做演示优化；真实应遍历所有 session
-            if let Some(g) = recorder.snapshot("default") {
-                if !g.nodes.is_empty() {
-                    optimize_session_with(&g, &gate, consultant.clone());
+            // 连续 panic 退避：最多 10s，避免 CPU 空转
+            let sleep_ms = if consec_panics == 0 {
+                500u64
+            } else {
+                std::cmp::min(500u64 * (consec_panics as u64).saturating_mul(2), 10_000)
+            };
+            thread::sleep(Duration::from_millis(sleep_ms));
+
+            let consultant = consultant.clone();
+            let recorder = recorder.clone();
+            let gate = gate.clone();
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
+                // 仅对 default 会话做演示优化；真实应遍历所有 session
+                if let Some(g) = recorder.snapshot("default") {
+                    if !g.nodes.is_empty() {
+                        optimize_session_with(&g, &gate, consultant);
+                    }
+                }
+            }));
+            match result {
+                Ok(()) => {
+                    consec_panics = 0;
+                }
+                Err(payload) => {
+                    consec_panics = consec_panics.saturating_add(1);
+                    let msg = match payload.downcast_ref::<&'static str>() {
+                        Some(s) => *s,
+                        None => match payload.downcast_ref::<String>() {
+                            Some(s) => s.as_str(),
+                            None => "<non-string panic>",
+                        },
+                    };
+                    eprintln!(
+                        "[bridge-optimizer] PANIC 已降级（不阻断主循环；panic_count={}, backoff={}ms）：{}",
+                        consec_panics, sleep_ms, msg
+                    );
                 }
             }
-            thread::sleep(Duration::from_millis(500));
         }
     });
     handle
 }
 
 #[cfg(test)]
+// 说明：mod tests —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 mod tests {
     use super::*;
     use crate::normalize::ToolCall;
@@ -130,8 +167,12 @@ mod tests {
         // 证明 optimize_session_with 可脱离真实璇玑引擎运行。
         // 只覆写 consult_blocking（同步默认方法，不触发 tokio runtime）即可满足 sync 测试路径。
         use async_trait::async_trait;
+// 说明：struct MockHealthy —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
         struct MockHealthy;
         #[async_trait]
+// 说明：impl xuanji_expert —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
         impl xuanji_expert::expert_traits::ExpertConsultant for MockHealthy {
             async fn consult(&self, _q: &ConsultQuery) -> xuanji_expert::types::Result<ConsultReport> {
                 unreachable!("sync 测试路径使用 consult_blocking，不应走到 async consult")

@@ -373,8 +373,190 @@ const ENGINES = [
       '合并器（consolidator.rs）+ 治理 + 循环引擎（loop_engine.rs）'
     ],
     capabilities: ['kg.ingest', 'kg.reason', 'kg.governance']
+  },
+  // ===== Rust 16 crate engine:: 正式条目（璇玑三注册表联动 · 跨语言） =====
+  {
+    id: 'engine::ai_agent',
+    engineName: 'xuanji::ai_agent',
+    kind: 'rust',
+    crateId: '00374bdd-cc60-55bf-8970-a879afbfe443',
+    path: 'platform/services/ai-agent/src/lib.rs'
+  },
+  {
+    id: 'engine::business_catalog',
+    engineName: 'xuanji::business_catalog',
+    kind: 'rust',
+    crateId: '62b2cca1-d98f-5e41-b26e-8d2a43966117',
+    path: 'platform/services/business-catalog/src/lib.rs'
+  },
+  {
+    id: 'engine::flow_ai',
+    engineName: 'xuanji::flow_ai',
+    kind: 'rust',
+    crateId: '2fcd3eac-e894-5876-b007-fb33c56c0d65',
+    path: 'platform/services/flow-ai/src/lib.rs'
+  },
+  {
+    id: 'engine::graph_algorithms',
+    engineName: 'xuanji::graph_algorithms',
+    kind: 'rust',
+    crateId: 'fbd31c6a-41cd-5274-be2f-2a28066eaf0a',
+    path: 'platform/services/graph-algorithms/src/lib.rs'
+  },
+  {
+    id: 'engine::hermes_flow_bridge',
+    engineName: 'xuanji::hermes_flow_bridge',
+    kind: 'rust',
+    crateId: '9bfaf43b-385a-5a44-9fb2-65b4003ee80d',
+    path: 'platform/services/hermes-flow-bridge/src/lib.rs'
+  },
+  {
+    id: 'engine::kg_hub',
+    engineName: 'xuanji::kg_hub',
+    kind: 'rust',
+    crateId: 'cb909f06-c0df-55ec-b397-543623a8c349',
+    path: 'platform/services/kg-hub/src/lib.rs'
+  },
+  {
+    id: 'engine::operator_core',
+    engineName: 'xuanji::operator_core',
+    kind: 'rust',
+    crateId: 'acf14283-3931-5528-adce-2c0cd3815363',
+    path: 'platform/services/operator-core/src/lib.rs'
+  },
+  {
+    id: 'engine::operator_wasm',
+    engineName: 'xuanji::operator_wasm',
+    kind: 'rust',
+    crateId: '5a1df407-b217-5340-a5ae-5f4535d1e6de',
+    path: 'platform/services/operator-wasm/src/lib.rs'
+  },
+  {
+    id: 'engine::optimizer',
+    engineName: 'xuanji::optimizer',
+    kind: 'rust',
+    crateId: 'e56676c7-ec1f-5415-9587-ba8249d0178a',
+    path: 'platform/services/optimizer/src/lib.rs'
+  },
+  {
+    id: 'engine::primiflow_core',
+    engineName: 'xuanji::primiflow_core',
+    kind: 'rust',
+    crateId: '8c8d2382-6f9f-5218-894e-a07a43aa9554',
+    path: 'platform/services/primiflow-core/src/lib.rs'
+  },
+  {
+    id: 'engine::primiflow_fusion',
+    engineName: 'xuanji::primiflow_fusion',
+    kind: 'rust',
+    crateId: '75238345-b48b-534b-818b-8d9abe083a41',
+    path: 'platform/services/primiflow-fusion/src/lib.rs'
+  },
+  {
+    id: 'engine::template_market',
+    engineName: 'xuanji::template_market',
+    kind: 'rust',
+    crateId: '4d2e50c1-9d64-525d-86cf-2d7d610a27b9',
+    path: 'platform/services/template-market/src/lib.rs'
+  },
+  {
+    id: 'engine::xuanji_expert',
+    engineName: 'xuanji::xuanji_expert',
+    kind: 'rust',
+    crateId: '50bb6200-04c5-5e4c-8354-4c6e1b230024',
+    path: 'platform/services/xuanji-expert/src/lib.rs'
+  },
+  {
+    id: 'engine::xuanji_system',
+    engineName: 'xuanji::xuanji_system',
+    kind: 'rust',
+    crateId: 'b81eec75-22ff-5155-ac49-19edf6f6b5ab',
+    path: 'platform/services/xuanji-system/src/lib.rs'
+  },
+  {
+    id: 'engine::xuanji_common_meta',
+    engineName: 'xuanji::xuanji_common_meta',
+    kind: 'rust',
+    crateId: '34a20231-1a80-5426-b392-40d7a2ddd9f7',
+    path: 'platform/services/xuanji-common-meta/src/lib.rs'
+  },
+  {
+    id: 'engine::runtime',
+    engineName: 'xuanji::runtime',
+    kind: 'rust',
+    crateId: 'a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b',
+    path: 'platform/gateway/runtime/src/lib.rs'
   }
 ];
+
+// ---- 自动追加：flow-registry 中引用但清单里尚未登记的引擎（保持 T9 契约一致）----
+(function appendFlowEngines(list) {
+  const present = new Set(list.map(e => e.id));
+  const need = [
+    {
+      id: 'project-atlas',
+      name: '项目全息图谱引擎（Project Atlas）',
+      category: 'orchestration',
+      layer: '编排层',
+      codePath: 'src/project-atlas/index.js',
+      keyFunctions: [
+        '资产四分类扫描 / 差量计算 / 自动登记 / 图谱重建 / 无破窗复验（W1-W13）',
+        '需求归一化流水线（NR1-NR7 全阶）',
+        '代码图谱联动：扫描 → 绑定 → 三方对账 → 自愈归一',
+      ],
+      capabilities: ['scan', 'verify', 'normalize', 'self-sync'],
+    },
+    {
+      id: 'engine-universe',
+      name: '引擎宇宙（能力路由承接层）',
+      category: 'orchestration',
+      layer: '编排层',
+      codePath: 'src/engine-universe/index.js',
+      keyFunctions: [
+        '承接引擎注册表枚举 / 能力路由 / 多引擎协同调度',
+        '归一化流量分发到专家/图谱/流程等能力域',
+      ],
+      capabilities: ['list-engines', 'route', 'decompose'],
+    },
+    {
+      id: 'engine-kernel',
+      name: '引擎内核（安全切换 / 槽位绑定）',
+      category: 'infrastructure',
+      layer: '基础设施',
+      codePath: 'src/engine-kernel/index.js',
+      keyFunctions: [
+        '切换安全流程（校验→切换→探活→回滚→优雅切流）',
+        '市场/插件/契约三位一体联动',
+      ],
+      capabilities: ['switch', 'validate', 'probe', 'rollback'],
+    },
+    {
+      id: 'gateway-runtime',
+      name: '网关运行时（接入 HITL / WebSocket / action 决议）',
+      category: 'infrastructure',
+      layer: '基础设施',
+      codePath: 'platform/gateway/runtime/src/lib.rs',
+      keyFunctions: [
+        'HITL 待审事项登记/广播/决议回传',
+        '接入层 WebSocket 重连/退避 / AI Engine 处理',
+      ],
+      capabilities: ['hitl', 'ws-broadcast', 'ai-engine-handler'],
+    },
+    {
+      id: 'flow-engine',
+      name: '流程引擎（Flow Engine）',
+      category: 'orchestration',
+      layer: '编排层',
+      codePath: 'platform/services/ai-agent/src/flow_engine.rs',
+      keyFunctions: [
+        'Rust 侧流程编排 + 守卫/状态机/多代理协同',
+        '与 Hermes Bridge 集成事件流',
+      ],
+      capabilities: ['run-flow', 'guards', 'state-machine'],
+    },
+  ];
+  for (const e of need) if (!present.has(e.id)) list.push(e);
+})(ENGINES);
 
 const ENGINE_INDEX = Object.fromEntries(ENGINES.map(e => [e.id, e]));
 

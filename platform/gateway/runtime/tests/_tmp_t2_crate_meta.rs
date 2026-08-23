@@ -1,16 +1,11 @@
-//! T2 回归验证：15 个 crate 的 CRATE_ID + CRATE_META 常量声明 + 唯一性契约。
+//! T2 回归验证（新契约版）：16 个 crate 的 CRATE_ID / ENGINE_NAME / CRATE_META 常量声明 + 唯一性契约 + UUIDv5 格式 + AIS 分层合规。
 //!
 //! 运行方式（仓库根执行）：
-//!   cargo test -p runtime --test _tmp_t2_crate_meta --workspace
-//!   # 或直接：cargo test -p runtime --test _tmp_t2_crate_meta
-//!
-//! 设计说明：runtime 是唯一依赖全部 15 个 workspace crate 的聚合入口，
-//! 因此把跨 crate 可见性的一致性测试放在 runtime/tests/ 下即可在
-//! 一次集成测试里统一验证。
+//!   cargo test -p runtime --test _tmp_t2_crate_meta
 
 use std::collections::HashSet;
 
-// 15 个 crate 逐一 extern 引入（用别名 c_ 前缀规避保留字歧义）
+// 16 个 crate 逐一 extern 引入（用别名 c_ 前缀规避保留字歧义；共 16 = 14 services + runtime + xuanji-common-meta）
 extern crate operator_core as c_operator_core;
 extern crate operator_wasm as c_operator_wasm;
 extern crate graph_algorithms as c_graph_algorithms;
@@ -26,10 +21,12 @@ extern crate xuanji_system as c_xuanji_system;
 extern crate primiflow_core as c_primiflow_core;
 extern crate primiflow_fusion as c_primiflow_fusion;
 extern crate kg_hub as c_kg_hub;
+extern crate xuanji_common_meta as c_xuanji_common_meta;
 
-const EXPECTED_COUNT: usize = 15;
+const EXPECTED_COUNT: usize = 16;
 
-fn is_uuid_v4(s: &str) -> bool {
+/// UUIDv5 格式校验：36 字符、'-' 在位置 8/13/18/23、版本字节 parts[2][0..1] == '5'（UUID v5）
+fn is_uuid_v5(s: &str) -> bool {
     if s.len() != 36 {
         return false;
     }
@@ -42,238 +39,263 @@ fn is_uuid_v4(s: &str) -> bool {
                 }
             }
             _ => {
-                if !matches!(b, b'0'..=b'9' | b'a'..=b'f' | b'A'..=b'F') {
+                if !b.is_ascii_hexdigit() {
                     return false;
                 }
             }
         }
     }
-    true
-}
-
-/// 算法 / 业务类 crate（非基础设施非网关接入），capabilities 必须非空。
-fn algorithm_or_business(token: &str) -> bool {
-    matches!(
-        token,
-        "c_operator_core"
-            | "c_graph_algorithms"
-            | "c_optimizer"
-            | "c_flow_ai"
-            | "c_xuanji_expert"
-            | "c_business_catalog"
-            | "c_ai_agent"
-            | "c_template_market"
-            | "c_primiflow_core"
-            | "c_primiflow_fusion"
-            | "c_kg_hub"
-    )
+    // Version: 14th char (0-indexed 14) should be '5'
+    // Actually it's parts[2][0..1] = byte at index 14 (positions: 0-7=part1, 8='-', 9-12=part2, 13='-', 14=version '5')
+    &s[14..15] == "5"
 }
 
 #[test]
-fn fifteen_crates_have_valid_crate_id_and_crate_meta() {
-    // 15 份结构完全同构但类型独立的断言块（每个 CrateMeta 由各自 crate 自声明）。
-
-    // ---- operator-core ----
+fn sixteen_crates_have_valid_crate_id_engine_name_and_crate_meta() {
+    // --------- operator-core (L6Kernel) ---------
     {
-        assert_ne!(c_operator_core::CRATE_ID, "", "operator-core CRATE_ID 不能为空");
+        assert_eq!(c_operator_core::ENGINE_NAME, "xuanji::operator_core");
+        assert!(is_uuid_v5(c_operator_core::CRATE_ID), "operator-core CRATE_ID 不是 UUIDv5: {}", c_operator_core::CRATE_ID);
         let m = &c_operator_core::CRATE_META;
-        assert!(is_uuid_v4(m.uuid), "operator-core uuid={} 非 36-char UUID", m.uuid);
-        assert!(!m.ais_layers.is_empty(), "operator-core ais_layers 为空");
-        assert!(m.owner_project.starts_with("proj-"), "operator-core owner_project={}", m.owner_project);
-        assert!(!m.capabilities.is_empty(), "operator-core capabilities 为空");
+        assert_eq!(m.id, c_operator_core::CRATE_ID);
+        assert_eq!(m.name, "operator-core");
+        assert_eq!(m.owner, "xuanji-core");
+        assert!(matches!(m.layer, xuanji_common_meta::AisLayer::L6Kernel));
     }
-    // ---- operator-wasm ----
+    // --------- operator-wasm (L4Services) ---------
     {
-        assert_ne!(c_operator_wasm::CRATE_ID, "", "operator-wasm CRATE_ID 不能为空");
+        assert_eq!(c_operator_wasm::ENGINE_NAME, "xuanji::operator_wasm");
+        assert!(is_uuid_v5(c_operator_wasm::CRATE_ID));
         let m = &c_operator_wasm::CRATE_META;
-        assert!(is_uuid_v4(m.uuid), "operator-wasm uuid={} 非 36-char UUID", m.uuid);
-        assert!(!m.ais_layers.is_empty(), "operator-wasm ais_layers 为空");
-        assert!(m.owner_project.starts_with("proj-"), "operator-wasm owner_project={}", m.owner_project);
+        assert_eq!(m.id, c_operator_wasm::CRATE_ID);
+        assert_eq!(m.name, "operator-wasm");
+        assert_eq!(m.owner, "xuanji-core");
+        assert!(matches!(m.layer, xuanji_common_meta::AisLayer::L4Services));
     }
-    // ---- graph-algorithms ----
+    // --------- graph-algorithms (L4Services) ---------
     {
-        assert_ne!(c_graph_algorithms::CRATE_ID, "", "graph-algorithms CRATE_ID 不能为空");
+        assert_eq!(c_graph_algorithms::ENGINE_NAME, "xuanji::graph_algorithms");
+        assert!(is_uuid_v5(c_graph_algorithms::CRATE_ID));
         let m = &c_graph_algorithms::CRATE_META;
-        assert!(is_uuid_v4(m.uuid), "graph-algorithms uuid={}", m.uuid);
-        assert!(!m.ais_layers.is_empty(), "graph-algorithms ais_layers 为空");
-        assert!(m.owner_project.starts_with("proj-"), "graph-algorithms owner_project={}", m.owner_project);
-        assert!(!m.capabilities.is_empty(), "graph-algorithms capabilities 为空");
+        assert_eq!(m.id, c_graph_algorithms::CRATE_ID);
+        assert_eq!(m.name, "graph-algorithms");
+        assert_eq!(m.owner, "xuanji-core");
+        assert!(matches!(m.layer, xuanji_common_meta::AisLayer::L4Services));
     }
-    // ---- optimizer ----
+    // --------- optimizer (L4Services) ---------
     {
-        assert_ne!(c_optimizer::CRATE_ID, "", "optimizer CRATE_ID 不能为空");
+        assert_eq!(c_optimizer::ENGINE_NAME, "xuanji::optimizer");
+        assert!(is_uuid_v5(c_optimizer::CRATE_ID));
         let m = &c_optimizer::CRATE_META;
-        assert!(is_uuid_v4(m.uuid), "optimizer uuid={}", m.uuid);
-        assert!(!m.ais_layers.is_empty(), "optimizer ais_layers 为空");
-        assert!(m.owner_project.starts_with("proj-"), "optimizer owner_project={}", m.owner_project);
-        assert!(!m.capabilities.is_empty(), "optimizer capabilities 为空");
+        assert_eq!(m.id, c_optimizer::CRATE_ID);
+        assert_eq!(m.name, "optimizer");
+        assert_eq!(m.owner, "xuanji-core");
+        assert!(matches!(m.layer, xuanji_common_meta::AisLayer::L4Services));
     }
-    // ---- flow-ai ----
+    // --------- flow-ai (L4Services) ---------
     {
-        assert_ne!(c_flow_ai::CRATE_ID, "", "flow-ai CRATE_ID 不能为空");
+        assert_eq!(c_flow_ai::ENGINE_NAME, "xuanji::flow_ai");
+        assert!(is_uuid_v5(c_flow_ai::CRATE_ID));
         let m = &c_flow_ai::CRATE_META;
-        assert!(is_uuid_v4(m.uuid), "flow-ai uuid={}", m.uuid);
-        assert!(!m.ais_layers.is_empty(), "flow-ai ais_layers 为空");
-        assert!(m.owner_project.starts_with("proj-"), "flow-ai owner_project={}", m.owner_project);
-        assert!(!m.capabilities.is_empty(), "flow-ai capabilities 为空");
+        assert_eq!(m.id, c_flow_ai::CRATE_ID);
+        assert_eq!(m.name, "flow-ai");
+        assert_eq!(m.owner, "xuanji-core");
+        assert!(matches!(m.layer, xuanji_common_meta::AisLayer::L4Services));
     }
-    // ---- xuanji-expert ----
+    // --------- xuanji-expert (L4Services) ---------
     {
-        assert_ne!(c_xuanji_expert::CRATE_ID, "", "xuanji-expert CRATE_ID 不能为空");
+        assert_eq!(c_xuanji_expert::ENGINE_NAME, "xuanji::xuanji_expert");
+        assert!(is_uuid_v5(c_xuanji_expert::CRATE_ID));
         let m = &c_xuanji_expert::CRATE_META;
-        assert!(is_uuid_v4(m.uuid), "xuanji-expert uuid={}", m.uuid);
-        assert!(!m.ais_layers.is_empty(), "xuanji-expert ais_layers 为空");
-        assert!(m.owner_project.starts_with("proj-"), "xuanji-expert owner_project={}", m.owner_project);
-        assert!(!m.capabilities.is_empty(), "xuanji-expert capabilities 为空");
+        assert_eq!(m.id, c_xuanji_expert::CRATE_ID);
+        assert_eq!(m.name, "xuanji-expert");
+        assert_eq!(m.owner, "xuanji-core");
+        assert!(matches!(m.layer, xuanji_common_meta::AisLayer::L4Services));
     }
-    // ---- hermes-flow-bridge ----
+    // --------- hermes-flow-bridge (L4Services) ---------
     {
-        assert_ne!(c_hermes_flow_bridge::CRATE_ID, "", "hermes-flow-bridge CRATE_ID 不能为空");
+        assert_eq!(c_hermes_flow_bridge::ENGINE_NAME, "xuanji::hermes_flow_bridge");
+        assert!(is_uuid_v5(c_hermes_flow_bridge::CRATE_ID));
         let m = &c_hermes_flow_bridge::CRATE_META;
-        assert!(is_uuid_v4(m.uuid), "hermes-flow-bridge uuid={}", m.uuid);
-        assert!(!m.ais_layers.is_empty(), "hermes-flow-bridge ais_layers 为空");
-        assert!(m.owner_project.starts_with("proj-"), "hermes-flow-bridge owner_project={}", m.owner_project);
+        assert_eq!(m.id, c_hermes_flow_bridge::CRATE_ID);
+        assert_eq!(m.name, "hermes-flow-bridge");
+        assert_eq!(m.owner, "xuanji-core");
+        assert!(matches!(m.layer, xuanji_common_meta::AisLayer::L4Services));
     }
-    // ---- business-catalog ----
+    // --------- business-catalog (L4Services) ---------
     {
-        assert_ne!(c_business_catalog::CRATE_ID, "", "business-catalog CRATE_ID 不能为空");
+        assert_eq!(c_business_catalog::ENGINE_NAME, "xuanji::business_catalog");
+        assert!(is_uuid_v5(c_business_catalog::CRATE_ID));
         let m = &c_business_catalog::CRATE_META;
-        assert!(is_uuid_v4(m.uuid), "business-catalog uuid={}", m.uuid);
-        assert!(!m.ais_layers.is_empty(), "business-catalog ais_layers 为空");
-        assert!(m.owner_project.starts_with("proj-"), "business-catalog owner_project={}", m.owner_project);
-        assert!(!m.capabilities.is_empty(), "business-catalog capabilities 为空");
+        assert_eq!(m.id, c_business_catalog::CRATE_ID);
+        assert_eq!(m.name, "business-catalog");
+        assert_eq!(m.owner, "xuanji-core");
+        assert!(matches!(m.layer, xuanji_common_meta::AisLayer::L4Services));
     }
-    // ---- ai-agent ----
+    // --------- ai-agent (L4Services) ---------
     {
-        assert_ne!(c_ai_agent::CRATE_ID, "", "ai-agent CRATE_ID 不能为空");
+        assert_eq!(c_ai_agent::ENGINE_NAME, "xuanji::ai_agent");
+        assert!(is_uuid_v5(c_ai_agent::CRATE_ID));
         let m = &c_ai_agent::CRATE_META;
-        assert!(is_uuid_v4(m.uuid), "ai-agent uuid={}", m.uuid);
-        assert!(!m.ais_layers.is_empty(), "ai-agent ais_layers 为空");
-        assert!(m.owner_project.starts_with("proj-"), "ai-agent owner_project={}", m.owner_project);
-        assert!(!m.capabilities.is_empty(), "ai-agent capabilities 为空");
+        assert_eq!(m.id, c_ai_agent::CRATE_ID);
+        assert_eq!(m.name, "ai-agent");
+        assert_eq!(m.owner, "xuanji-core");
+        assert!(matches!(m.layer, xuanji_common_meta::AisLayer::L4Services));
     }
-    // ---- template-market ----
+    // --------- template-market (L4Services) ---------
     {
-        assert_ne!(c_template_market::CRATE_ID, "", "template-market CRATE_ID 不能为空");
+        assert_eq!(c_template_market::ENGINE_NAME, "xuanji::template_market");
+        assert!(is_uuid_v5(c_template_market::CRATE_ID));
         let m = &c_template_market::CRATE_META;
-        assert!(is_uuid_v4(m.uuid), "template-market uuid={}", m.uuid);
-        assert!(!m.ais_layers.is_empty(), "template-market ais_layers 为空");
-        assert!(m.owner_project.starts_with("proj-"), "template-market owner_project={}", m.owner_project);
-        assert!(!m.capabilities.is_empty(), "template-market capabilities 为空");
+        assert_eq!(m.id, c_template_market::CRATE_ID);
+        assert_eq!(m.name, "template-market");
+        assert_eq!(m.owner, "xuanji-core");
+        assert!(matches!(m.layer, xuanji_common_meta::AisLayer::L4Services));
     }
-    // ---- runtime ----
+    // --------- runtime (L3Orchestration) ---------
     {
-        assert_ne!(c_runtime::CRATE_ID, "", "runtime CRATE_ID 不能为空");
+        assert_eq!(c_runtime::ENGINE_NAME, "xuanji::runtime");
+        assert!(is_uuid_v5(c_runtime::CRATE_ID));
         let m = &c_runtime::CRATE_META;
-        assert!(is_uuid_v4(m.uuid), "runtime uuid={}", m.uuid);
-        assert!(!m.ais_layers.is_empty(), "runtime ais_layers 为空");
-        assert!(m.owner_project.starts_with("proj-"), "runtime owner_project={}", m.owner_project);
+        assert_eq!(m.id, c_runtime::CRATE_ID);
+        assert_eq!(m.name, "runtime");
+        assert_eq!(m.owner, "xuanji-core");
+        assert!(matches!(m.layer, xuanji_common_meta::AisLayer::L3Orchestration));
     }
-    // ---- xuanji-system ----
+    // --------- xuanji-system (L7Infrastructure) ---------
     {
-        assert_ne!(c_xuanji_system::CRATE_ID, "", "xuanji-system CRATE_ID 不能为空");
+        assert_eq!(c_xuanji_system::ENGINE_NAME, "xuanji::xuanji_system");
+        assert!(is_uuid_v5(c_xuanji_system::CRATE_ID));
         let m = &c_xuanji_system::CRATE_META;
-        assert!(is_uuid_v4(m.uuid), "xuanji-system uuid={}", m.uuid);
-        assert!(!m.ais_layers.is_empty(), "xuanji-system ais_layers 为空");
-        assert!(m.owner_project.starts_with("proj-"), "xuanji-system owner_project={}", m.owner_project);
+        assert_eq!(m.id, c_xuanji_system::CRATE_ID);
+        assert_eq!(m.name, "xuanji-system");
+        assert_eq!(m.owner, "xuanji-core");
+        assert!(matches!(m.layer, xuanji_common_meta::AisLayer::L7Infrastructure));
     }
-    // ---- primiflow-core ----
+    // --------- primiflow-core (L4Services) ---------
     {
-        assert_ne!(c_primiflow_core::CRATE_ID, "", "primiflow-core CRATE_ID 不能为空");
+        assert_eq!(c_primiflow_core::ENGINE_NAME, "xuanji::primiflow_core");
+        assert!(is_uuid_v5(c_primiflow_core::CRATE_ID));
         let m = &c_primiflow_core::CRATE_META;
-        assert!(is_uuid_v4(m.uuid), "primiflow-core uuid={}", m.uuid);
-        assert!(!m.ais_layers.is_empty(), "primiflow-core ais_layers 为空");
-        assert!(m.owner_project.starts_with("proj-"), "primiflow-core owner_project={}", m.owner_project);
-        assert!(!m.capabilities.is_empty(), "primiflow-core capabilities 为空");
+        assert_eq!(m.id, c_primiflow_core::CRATE_ID);
+        assert_eq!(m.name, "primiflow-core");
+        assert_eq!(m.owner, "xuanji-core");
+        assert!(matches!(m.layer, xuanji_common_meta::AisLayer::L4Services));
     }
-    // ---- primiflow-fusion ----
+    // --------- primiflow-fusion (L4Services) ---------
     {
-        assert_ne!(c_primiflow_fusion::CRATE_ID, "", "primiflow-fusion CRATE_ID 不能为空");
+        assert_eq!(c_primiflow_fusion::ENGINE_NAME, "xuanji::primiflow_fusion");
+        assert!(is_uuid_v5(c_primiflow_fusion::CRATE_ID));
         let m = &c_primiflow_fusion::CRATE_META;
-        assert!(is_uuid_v4(m.uuid), "primiflow-fusion uuid={}", m.uuid);
-        assert!(!m.ais_layers.is_empty(), "primiflow-fusion ais_layers 为空");
-        assert!(m.owner_project.starts_with("proj-"), "primiflow-fusion owner_project={}", m.owner_project);
-        assert!(!m.capabilities.is_empty(), "primiflow-fusion capabilities 为空");
+        assert_eq!(m.id, c_primiflow_fusion::CRATE_ID);
+        assert_eq!(m.name, "primiflow-fusion");
+        assert_eq!(m.owner, "xuanji-core");
+        assert!(matches!(m.layer, xuanji_common_meta::AisLayer::L4Services));
     }
-    // ---- kg-hub ----
+    // --------- kg-hub (L4Services) ---------
     {
-        assert_ne!(c_kg_hub::CRATE_ID, "", "kg-hub CRATE_ID 不能为空");
+        assert_eq!(c_kg_hub::ENGINE_NAME, "xuanji::kg_hub");
+        assert!(is_uuid_v5(c_kg_hub::CRATE_ID));
         let m = &c_kg_hub::CRATE_META;
-        assert!(is_uuid_v4(m.uuid), "kg-hub uuid={}", m.uuid);
-        assert!(!m.ais_layers.is_empty(), "kg-hub ais_layers 为空");
-        assert!(m.owner_project.starts_with("proj-"), "kg-hub owner_project={}", m.owner_project);
-        assert!(!m.capabilities.is_empty(), "kg-hub capabilities 为空");
+        assert_eq!(m.id, c_kg_hub::CRATE_ID);
+        assert_eq!(m.name, "kg-hub");
+        assert_eq!(m.owner, "xuanji-core");
+        assert!(matches!(m.layer, xuanji_common_meta::AisLayer::L4Services));
+    }
+    // --------- xuanji-common-meta (L5Domain) ---------
+    {
+        assert_eq!(c_xuanji_common_meta::ENGINE_NAME, "xuanji::xuanji_common_meta");
+        assert!(is_uuid_v5(c_xuanji_common_meta::CRATE_ID));
+        let m = &c_xuanji_common_meta::CRATE_META;
+        assert_eq!(m.id, c_xuanji_common_meta::CRATE_ID);
+        assert_eq!(m.name, "xuanji-common-meta");
+        assert_eq!(m.owner, "xuanji-core");
+        assert!(matches!(m.layer, xuanji_common_meta::AisLayer::L5Domain));
     }
 
-    // ---- UUID 唯一性 ----
-    let uuids: [&str; EXPECTED_COUNT] = [
-        c_operator_core::CRATE_META.uuid,
-        c_operator_wasm::CRATE_META.uuid,
-        c_graph_algorithms::CRATE_META.uuid,
-        c_optimizer::CRATE_META.uuid,
-        c_flow_ai::CRATE_META.uuid,
-        c_xuanji_expert::CRATE_META.uuid,
-        c_hermes_flow_bridge::CRATE_META.uuid,
-        c_business_catalog::CRATE_META.uuid,
-        c_ai_agent::CRATE_META.uuid,
-        c_template_market::CRATE_META.uuid,
-        c_runtime::CRATE_META.uuid,
-        c_xuanji_system::CRATE_META.uuid,
-        c_primiflow_core::CRATE_META.uuid,
-        c_primiflow_fusion::CRATE_META.uuid,
-        c_kg_hub::CRATE_META.uuid,
+    // ---- CRATE_ID 全局唯一性 ----
+    let ids: [&str; EXPECTED_COUNT] = [
+        c_operator_core::CRATE_ID,
+        c_operator_wasm::CRATE_ID,
+        c_graph_algorithms::CRATE_ID,
+        c_optimizer::CRATE_ID,
+        c_flow_ai::CRATE_ID,
+        c_xuanji_expert::CRATE_ID,
+        c_hermes_flow_bridge::CRATE_ID,
+        c_business_catalog::CRATE_ID,
+        c_ai_agent::CRATE_ID,
+        c_template_market::CRATE_ID,
+        c_runtime::CRATE_ID,
+        c_xuanji_system::CRATE_ID,
+        c_primiflow_core::CRATE_ID,
+        c_primiflow_fusion::CRATE_ID,
+        c_kg_hub::CRATE_ID,
+        c_xuanji_common_meta::CRATE_ID,
     ];
-    let set: HashSet<&str> = uuids.iter().copied().collect();
+    let set: HashSet<&str> = ids.iter().copied().collect();
     assert_eq!(
         set.len(),
         EXPECTED_COUNT,
-        "CRATE_META.uuid 唯一性失败：{}/{} 个唯一值",
+        "CRATE_ID 唯一性失败：{}/{} 个唯一值",
         set.len(),
         EXPECTED_COUNT
     );
 
-    // ---- 算法/业务 crate 的 capabilities 契约校验 ----
-    let caps_list: [&[&str]; EXPECTED_COUNT] = [
-        c_operator_core::CRATE_META.capabilities,
-        c_operator_wasm::CRATE_META.capabilities,
-        c_graph_algorithms::CRATE_META.capabilities,
-        c_optimizer::CRATE_META.capabilities,
-        c_flow_ai::CRATE_META.capabilities,
-        c_xuanji_expert::CRATE_META.capabilities,
-        c_hermes_flow_bridge::CRATE_META.capabilities,
-        c_business_catalog::CRATE_META.capabilities,
-        c_ai_agent::CRATE_META.capabilities,
-        c_template_market::CRATE_META.capabilities,
-        c_runtime::CRATE_META.capabilities,
-        c_xuanji_system::CRATE_META.capabilities,
-        c_primiflow_core::CRATE_META.capabilities,
-        c_primiflow_fusion::CRATE_META.capabilities,
-        c_kg_hub::CRATE_META.capabilities,
+    // ---- ENGINE_NAME 全局唯一性 ----
+    let engines: [&str; EXPECTED_COUNT] = [
+        c_operator_core::ENGINE_NAME,
+        c_operator_wasm::ENGINE_NAME,
+        c_graph_algorithms::ENGINE_NAME,
+        c_optimizer::ENGINE_NAME,
+        c_flow_ai::ENGINE_NAME,
+        c_xuanji_expert::ENGINE_NAME,
+        c_hermes_flow_bridge::ENGINE_NAME,
+        c_business_catalog::ENGINE_NAME,
+        c_ai_agent::ENGINE_NAME,
+        c_template_market::ENGINE_NAME,
+        c_runtime::ENGINE_NAME,
+        c_xuanji_system::ENGINE_NAME,
+        c_primiflow_core::ENGINE_NAME,
+        c_primiflow_fusion::ENGINE_NAME,
+        c_kg_hub::ENGINE_NAME,
+        c_xuanji_common_meta::ENGINE_NAME,
     ];
-    let tokens: [&str; EXPECTED_COUNT] = [
-        "c_operator_core",
-        "c_operator_wasm",
-        "c_graph_algorithms",
-        "c_optimizer",
-        "c_flow_ai",
-        "c_xuanji_expert",
-        "c_hermes_flow_bridge",
-        "c_business_catalog",
-        "c_ai_agent",
-        "c_template_market",
-        "c_runtime",
-        "c_xuanji_system",
-        "c_primiflow_core",
-        "c_primiflow_fusion",
-        "c_kg_hub",
+    let eset: HashSet<&str> = engines.iter().copied().collect();
+    assert_eq!(
+        eset.len(),
+        EXPECTED_COUNT,
+        "ENGINE_NAME 唯一性失败：{}/{} 个唯一值",
+        eset.len(),
+        EXPECTED_COUNT
+    );
+
+    // ---- L4Services 数量校验：12 个 L4Services ----
+    let layers: [xuanji_common_meta::AisLayer; EXPECTED_COUNT] = [
+        c_operator_core::CRATE_META.layer,
+        c_operator_wasm::CRATE_META.layer,
+        c_graph_algorithms::CRATE_META.layer,
+        c_optimizer::CRATE_META.layer,
+        c_flow_ai::CRATE_META.layer,
+        c_xuanji_expert::CRATE_META.layer,
+        c_hermes_flow_bridge::CRATE_META.layer,
+        c_business_catalog::CRATE_META.layer,
+        c_ai_agent::CRATE_META.layer,
+        c_template_market::CRATE_META.layer,
+        c_runtime::CRATE_META.layer,
+        c_xuanji_system::CRATE_META.layer,
+        c_primiflow_core::CRATE_META.layer,
+        c_primiflow_fusion::CRATE_META.layer,
+        c_kg_hub::CRATE_META.layer,
+        c_xuanji_common_meta::CRATE_META.layer,
     ];
-    for (token, caps) in tokens.iter().zip(caps_list.iter()) {
-        if algorithm_or_business(token) {
-            assert!(
-                !caps.is_empty(),
-                "token={} 属于算法/业务类，但 CRATE_META.capabilities 为空（违反 T2 契约）",
-                token
-            );
-        }
-    }
+    let l4_count = layers.iter().filter(|l| matches!(l, xuanji_common_meta::AisLayer::L4Services)).count();
+    assert_eq!(l4_count, 12, "L4Services 应有 12 个（11 L4 + xuanji-expert），实际 {}", l4_count);
+    let l6_kernel_count = layers.iter().filter(|l| matches!(l, xuanji_common_meta::AisLayer::L6Kernel)).count();
+    assert_eq!(l6_kernel_count, 1, "L6Kernel 应有 1 个 (operator-core)，实际 {}", l6_kernel_count);
+    let l7_count = layers.iter().filter(|l| matches!(l, xuanji_common_meta::AisLayer::L7Infrastructure)).count();
+    assert_eq!(l7_count, 1, "L7Infrastructure 应有 1 个 (xuanji-system)，实际 {}", l7_count);
+    let l5_count = layers.iter().filter(|l| matches!(l, xuanji_common_meta::AisLayer::L5Domain)).count();
+    assert_eq!(l5_count, 1, "L5Domain 应有 1 个 (xuanji-common-meta)，实际 {}", l5_count);
+    let l3_count = layers.iter().filter(|l| matches!(l, xuanji_common_meta::AisLayer::L3Orchestration)).count();
+    assert_eq!(l3_count, 1, "L3Orchestration 应有 1 个 (runtime)，实际 {}", l3_count);
 }

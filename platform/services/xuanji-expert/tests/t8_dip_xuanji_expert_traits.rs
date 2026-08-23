@@ -1,24 +1,36 @@
 //! T8 · DIP 反转验证（xuanji-expert 对外抽象 trait + 下游只依赖 trait）
 //!
-//! 四个测试：
+//! 10 个 TR：
 //! - tr_08_01_hermes_only_use_traits：静态扫描 hermes-flow-bridge/src 所有 .rs，
-//!   凡 `use xuanji_expert::X` 形式只允许 X ∈ {expert_traits, types}。
+//!   凡 `use xuanji_expert::X` 形式只允许 X ∈ {expert_traits, types, domain}。
 //! - tr_08_02_catalog_only_use_traits：同上对 business-catalog/src。
-//! - tr_08_03_mock_consultant：最小 MockExpert impl ExpertConsultant trait，
-//!   脱离 xuanji-expert concrete 引擎运行，给出 DIP 证据。
-//! - tr_08_04_build_and_unit_test：调用 cargo 在三个 crate 上跑 `--lib` 单元测试，
-//!   必须全部 exit 0，证明 DIP 改造不破坏既有行为。
+//! - tr_08_03_mock_consultant：最小 MockExpert impl ExpertConsultant trait。
+//! - tr_08_04_build_and_unit_test：3 crate `cargo test --lib` exit 0。
+//! - tr_08_05_mock_govern_expert_pass：MockGovernExpert 走 GovernExpert trait 返回 Pass。
+//! - tr_08_06_mock_govern_expert_block：forced_level=Block → GovernVerdict.level=Block（DIP 可替换性）。
+//! - tr_08_07_minimal_context_impl_govern_context：MinimalGovernContext 实现 GovernContext
+//!   trait（不依赖 concrete context.rs 结构）。
+//! - tr_08_08_govern_trait_object_boxable：Arc<dyn GovernExpert> + &dyn GovernContext 组合调用。
+//! - tr_08_09_alliance_orchestrator_trait_is_object_safe：default_orchestrator 返回
+//!   Arc<dyn AllianceOrchestrator> 可调用 route()（trait object 安全 + 可构造）。
+//! - tr_08_10_registry_trait_object_safe_operations：default_registry() 可 list / find
+//!   （Arc<dyn ExpertRegistry> 路径，不出现 concrete RegistryImpl）。
 
 use async_trait::async_trait;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::Arc;
-use xuanji_expert::expert_traits::ExpertConsultant;
-use xuanji_expert::types::{ConsultQuery, ConsultReport};
+use xuanji_expert::domain::{
+    GovernContext, GovernExpert, GovernLevel, GovernVerdict, MinimalGovernContext, MockGovernExpert,
+};
+use xuanji_expert::expert_traits::{
+    AllianceOrchestrator, ExpertConsultant, ExpertRegistry,
+};
+use xuanji_expert::types::{ConsultQuery, ConsultReport, TaskSpec};
 
 // ============================================================================
-// 工具：递归枚举 .rs 文件（纯 std，不依赖 walkdir）
+// 工具：递归枚举 .rs 文件 + 定位工作区根 + use 违规扫描
 // ============================================================================
 
 fn list_rs_files(dir: &Path) -> Vec<PathBuf> {
@@ -39,10 +51,8 @@ fn list_rs_files(dir: &Path) -> Vec<PathBuf> {
     out
 }
 
-/// 以 `CARGO_MANIFEST_DIR` 为锚，定位工作区根目录（platform/services/xuanji-expert → ../../..）。
 fn workspace_root() -> PathBuf {
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    // manifest = .../infotopograph/platform/services/xuanji-expert
     manifest
         .parent().unwrap()   // services
         .parent().unwrap()   // platform
@@ -50,37 +60,33 @@ fn workspace_root() -> PathBuf {
         .to_path_buf()
 }
 
-/// 检查一个 Rust 源文件中的所有 `use xuanji_expert::X`，仅允许 X ∈ {expert_traits, types}。
-/// 返回违规列表（(path, 违规use片段)）。
 fn scan_xuanji_use_violations(file: &Path) -> Vec<String> {
     let content = match std::fs::read_to_string(file) {
         Ok(s) => s,
         Err(e) => return vec![format!("无法读取文件 {}: {}", file.display(), e)],
     };
     let mut violations = Vec::new();
-    // 逐行扫描（我们的 use 语句都是单行）
+    let allowed = ["expert_traits", "types", "domain"];
     for (idx, line) in content.lines().enumerate() {
         let trimmed = line.trim_start();
-        // 允许的前缀： use / pub(crate) use / pub use
-        if !(trimmed.starts_with("use ") || trimmed.starts_with("pub use ") || trimmed.starts_with("pub(crate) use ")) {
+        if !(trimmed.starts_with("use ")
+            || trimmed.starts_with("pub use ")
+            || trimmed.starts_with("pub(crate) use "))
+        {
             continue;
         }
-        // 寻找 "xuanji_expert::" 在 use 行内的出现
-        // use 形式： use xuanji_expert::expert_traits::X; / use xuanji_expert::types::{A, B};
-        // 不合法：use xuanji_expert::pipeline::xuanji_optimize; / use xuanji_expert::context::GovernContext;
         let rest_after_keyword = match trimmed.find("xuanji_expert::") {
             Some(p) => &trimmed[p..],
             None => continue,
         };
-        // 取 "xuanji_expert::" 之后的首个 identifier（到下一个 :: 或 { 或 空格 或 ;）
         let after = &rest_after_keyword["xuanji_expert::".len()..];
         let end = after
             .find(|c: char| !(c.is_alphanumeric() || c == '_'))
             .unwrap_or(after.len());
         let mod_name = &after[..end];
-        if mod_name != "expert_traits" && mod_name != "types" {
+        if !allowed.contains(&mod_name) {
             violations.push(format!(
-                "{}:{} 非白名单模块 use xuanji_expert::{} (期望 expert_traits 或 types) —— 行内容：{}",
+                "{}:{} 非白名单模块 use xuanji_expert::{} (期望 expert_traits/types/domain) —— 行内容：{}",
                 file.display(),
                 idx + 1,
                 mod_name,
@@ -92,14 +98,14 @@ fn scan_xuanji_use_violations(file: &Path) -> Vec<String> {
 }
 
 // ============================================================================
-// tr_08_01 / tr_08_02：静态扫描
+// tr_08_01 / tr_08_02：静态扫描（允许 domain 模块）
 // ============================================================================
 
 #[test]
 fn tr_08_01_hermes_only_use_traits() {
     let ws = workspace_root();
     let dir = ws.join("platform/services/hermes-flow-bridge/src");
-    assert!(dir.is_dir(), "找不到 hermes-flow-bridge src: {}", dir.display());
+    assert!(dir.is_dir(), "找不到 hermes src: {}", dir.display());
     let files = list_rs_files(&dir);
     assert!(!files.is_empty(), "hermes src 目录至少应有一个 .rs 文件");
 
@@ -109,7 +115,7 @@ fn tr_08_01_hermes_only_use_traits() {
     }
     assert!(
         all_violations.is_empty(),
-        "hermes-flow-bridge 存在 DIP 违规 use 语句（禁止直接引入 xuanji_expert concrete struct/模块）：\n{}",
+        "hermes-flow-bridge 存在 DIP 违规 use 语句：\n{}",
         all_violations.join("\n")
     );
 }
@@ -120,7 +126,7 @@ fn tr_08_02_catalog_only_use_traits() {
     let dir = ws.join("platform/services/business-catalog/src");
     assert!(dir.is_dir(), "找不到 business-catalog src: {}", dir.display());
     let files = list_rs_files(&dir);
-    assert!(!files.is_empty(), "catalog src 目录至少应有一个 .rs 文件");
+    assert!(!files.is_empty(), "catalog src 至少应有一个 .rs 文件");
 
     let mut all_violations: Vec<String> = Vec::new();
     for f in &files {
@@ -128,25 +134,21 @@ fn tr_08_02_catalog_only_use_traits() {
     }
     assert!(
         all_violations.is_empty(),
-        "business-catalog 存在 DIP 违规 use 语句（禁止直接引入 xuanji_expert concrete struct/模块）：\n{}",
+        "business-catalog 存在 DIP 违规 use 语句：\n{}",
         all_violations.join("\n")
     );
 }
 
 // ============================================================================
-// tr_08_03：MockExpert 证明 DIP（trait 可脱离 concrete 运行）
+// tr_08_03：MockExpert DIP 证据
 // ============================================================================
 
-/// 最小 Mock 实现 ExpertConsultant，不依赖 xuanji-expert 任何 concrete 引擎结构，
-/// 仅基于 trait 默认实现提供 consult_blocking 同步路径（用于测试/演示）。
 struct MockExpertEmpty;
-
 #[async_trait]
 impl ExpertConsultant for MockExpertEmpty {
     async fn consult(&self, _q: &ConsultQuery) -> xuanji_expert::types::Result<ConsultReport> {
-        unreachable!("sync-only mock，不应进入 async consult 路径")
+        unreachable!("sync-only mock")
     }
-
     fn consult_blocking(&self, q: &ConsultQuery) -> xuanji_expert::types::Result<ConsultReport> {
         Ok(ConsultReport {
             report_id: q.id.clone(),
@@ -160,16 +162,13 @@ impl ExpertConsultant for MockExpertEmpty {
 
 #[test]
 fn tr_08_03_mock_consultant() {
-    // 构造：把 Mock 挂到 Arc<dyn ExpertConsultant>
     let consultant: Arc<dyn ExpertConsultant> = Arc::new(MockExpertEmpty);
     let query = ConsultQuery {
         id: "mock-q".into(),
-        query: "Hello, 这是一个不涉及 concrete 引擎的测试".into(),
+        query: "Hello".into(),
         ctx: HashMap::new(),
     };
-    // 用 trait object 调用（consult_blocking 是 sync 默认实现，不触发 tokio）
     let rep = consultant.consult_blocking(&query).expect("mock consult 必成功");
-    // 断言返回"空报告"特征，证明运行未走到 xuanji-expert concrete 引擎
     assert_eq!(rep.report_id, "mock-q");
     assert!((rep.score - 1.0).abs() < 1e-9);
     assert!(!rep.vetoed);
@@ -177,7 +176,6 @@ fn tr_08_03_mock_consultant() {
     assert!(rep.steps[0].contains("DIP 证据"));
     assert!(rep.reason.is_none());
 
-    // 同时构造通过 Arc 传参给下游的典型模式（供下游容器注入）
     fn downstream_api(consultant: Arc<dyn ExpertConsultant>) -> ConsultReport {
         let q = ConsultQuery { id: "d".into(), query: String::new(), ctx: HashMap::new() };
         consultant.consult_blocking(&q).unwrap()
@@ -188,15 +186,133 @@ fn tr_08_03_mock_consultant() {
 }
 
 // ============================================================================
-// tr_08_04：cargo test 全量单元测试（三个 crate --lib）
+// tr_08_05 / tr_08_06：GovernExpert Mock DIP（Pass / Block）
+// ============================================================================
+
+fn simple_graph_ctx_pair() -> (flow_ai::model::FlowGraph, MinimalGovernContext) {
+    let g = flow_ai::model::FlowGraph::new("test", "test");
+    let ctx = MinimalGovernContext::default();
+    (g, ctx)
+}
+
+#[test]
+fn tr_08_05_mock_govern_expert_pass_via_trait() {
+    let expert = MockGovernExpert::default(); // forced_level=Pass
+    let (g, ctx) = simple_graph_ctx_pair();
+    // 通过 trait object（同步路径，不走 tokio）
+    let v: GovernVerdict = GovernExpert::govern_blocking(&expert, &g, &ctx);
+    assert_eq!(v.level, GovernLevel::Pass);
+    assert!((v.score - 1.0).abs() < 1e-9);
+    assert_eq!(v.gate_id, "mock-gate-sync");
+    assert!(v.reasons.iter().any(|r| r.contains("DIP 证据")));
+}
+
+#[test]
+fn tr_08_06_mock_govern_expert_block_swap_proves_replacement() {
+    // 同一 GovernExpert trait 位置：替换为 Block 行为 → 返回 Block
+    let expert = MockGovernExpert {
+        forced_level: GovernLevel::Block,
+        fixed_score: 0.0,
+    };
+    let (g, ctx) = simple_graph_ctx_pair();
+    let v = GovernExpert::govern_blocking(&expert, &g, &ctx);
+    assert_eq!(v.level, GovernLevel::Block);
+    assert!((v.score - 0.0).abs() < 1e-9);
+}
+
+// ============================================================================
+// tr_08_07：MinimalGovernContext 实现 GovernContext trait（字段独立自洽）
+// ============================================================================
+
+#[test]
+fn tr_08_07_minimal_context_impl_trait_getters() {
+    let ctx = MinimalGovernContext {
+        tenant: "t1".into(),
+        namespace: "ns1".into(),
+        principal: "alice".into(),
+        roles: vec!["admin".into(), "approver".into()],
+        regulated: true,
+        max_parallel: 16,
+        cost_budget: 500.0,
+        sla_ms: 30_000,
+    };
+    let d: &dyn GovernContext = &ctx;
+    assert_eq!(d.tenant(), "t1");
+    assert_eq!(d.namespace(), "ns1");
+    assert_eq!(d.principal(), "alice");
+    assert_eq!(d.roles(), &["admin".to_string(), "approver".to_string()]);
+    assert!(d.is_regulated());
+    assert_eq!(d.max_parallel(), 16);
+    assert!((d.cost_budget() - 500.0).abs() < 1e-9);
+    assert_eq!(d.sla_ms(), 30_000);
+}
+
+// ============================================================================
+// tr_08_08：GovernExpert + GovernContext trait object 组合可调用
+// ============================================================================
+
+#[test]
+fn tr_08_08_govern_trait_object_boxable_and_callable() {
+    // Arc<dyn GovernExpert> 可接收任意 GovernExpert impl
+    let e: Arc<dyn GovernExpert> = Arc::new(MockGovernExpert {
+        forced_level: GovernLevel::Warn,
+        fixed_score: 0.5,
+    });
+    let ctx = MinimalGovernContext::default();
+    let dyn_ctx: &dyn GovernContext = &ctx;
+    let g = flow_ai::model::FlowGraph::new("g", "g");
+    // 通过 Arc<dyn GovernExpert> 调用 trait 方法 → 对象安全 + 可运行
+    let v = e.govern_blocking(&g, dyn_ctx);
+    assert_eq!(v.level, GovernLevel::Warn);
+    assert!((v.score - 0.5).abs() < 1e-9);
+}
+
+// ============================================================================
+// tr_08_09：AllianceOrchestrator trait object safe（工厂可直接构造）
+// ============================================================================
+
+#[tokio::test]
+async fn tr_08_09_alliance_orchestrator_trait_object_safe() {
+    // 默认注册表 + 默认编排器 → trait object
+    let reg: Arc<dyn ExpertRegistry> = xuanji_expert::expert_traits::default_registry();
+    let router: Arc<dyn AllianceOrchestrator> =
+        xuanji_expert::expert_traits::default_orchestrator(reg);
+    // 空 task，验证 trait object 可调 route（无需 concrete 名）
+    let spec = TaskSpec {
+        task_id: "s".into(),
+        scenario: "default".into(),
+        constraints: HashMap::new(),
+    };
+    // route 可能缺专家返回 Err，但只要不出现 concrete 类型名即合规
+    let _ = router.route(&spec).await;
+}
+
+// ============================================================================
+// tr_08_10：ExpertRegistry trait object 操作
+// ============================================================================
+
+#[tokio::test]
+async fn tr_08_10_registry_trait_object_safe_operations() {
+    let reg: Arc<dyn ExpertRegistry> = xuanji_expert::expert_traits::default_registry();
+    // list(None) 通过 trait object
+    let all = reg.list(None).await;
+    assert!(all.is_ok(), "应能列出默认注册表（至少内置几个）");
+    let all = all.unwrap();
+    if !all.is_empty() {
+        let first_id = all[0].id.clone();
+        let found = reg.find(&first_id).await.unwrap();
+        assert!(found.is_some(), "应能通过 trait find 找到刚 list 到的 id");
+        assert_eq!(found.unwrap().id, first_id);
+    }
+}
+
+// ============================================================================
+// tr_08_04：3 crate --lib 单元测试 exit 0
 // ============================================================================
 
 #[test]
 fn tr_08_04_build_and_unit_test() {
     let ws = workspace_root();
-    // 为了让 CI/本地 环境都一致，显式在工作区根目录执行 cargo。
-    // 同时显式 CARGO_TARGET_DIR 避免与已有 target 冲突（可选，让 cargo 自动处理即可）。
-    // 本测试若本地已经开着 cargo check 会锁，因此设置环境 CARGO_NET_OFFLINE 等都不强制。
     let mut cmd = Command::new("cargo");
     cmd.current_dir(&ws)
         .arg("test")
@@ -207,19 +323,16 @@ fn tr_08_04_build_and_unit_test() {
         .arg("-p")
         .arg("business-catalog")
         .arg("--lib")
-        // 降低噪声：只显示一条 pass/fail；也可去掉以便调试
         .arg("--quiet");
 
-    // 允许较长执行时间：cargo 可能首次需要构建
     let status = cmd
         .status()
-        .expect("无法启动 cargo 子进程（cargo 必须在 PATH 中）");
+        .expect("无法启动 cargo 子进程");
 
     assert!(
         status.success(),
         "DIP 改造破坏了现有单元测试：cargo test -p xuanji-expert -p hermes-flow-bridge -p business-catalog --lib 返回 {:?}\n\
-         工作目录：{}\n\
-         请用此命令手动重跑以查看失败输出。",
+         工作目录：{}",
         status.code(),
         ws.display()
     );

@@ -7,6 +7,7 @@ authors.workspace = true
 description = "PrimiFlow 全域原语智能平台 · 关联图谱驱动的需求→代码/数据骨架生成层"
 
 [dependencies]
+xuanji-common-meta = { path = "../xuanji-common-meta" }
 flow-ai = { path = "../flow-ai" }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -31,6 +32,10 @@ name = "gen"
 path = "examples/gen.rs"
 
 [[example]]
+name = "generate"
+path = "examples/generate.rs"
+
+[[example]]
 name = "enterprise_demo"
 path = "examples/enterprise_demo.rs"
 
@@ -38,6 +43,66 @@ path = "examples/enterprise_demo.rs"
 name = "server_demo"
 path = "examples/server_demo.rs"
 required-features = ["server"]
+
+[[example]]
+name = "c_r10001"
+path = "examples/c_r10001.rs"
+
+[[example]]
+name = "c_r10002"
+path = "examples/c_r10002.rs"
+
+[[example]]
+name = "c_r10003"
+path = "examples/c_r10003.rs"
+
+[[example]]
+name = "c_r10004"
+path = "examples/c_r10004.rs"
+
+[[example]]
+name = "c_r10005"
+path = "examples/c_r10005.rs"
+
+[[example]]
+name = "c_r10006"
+path = "examples/c_r10006.rs"
+
+[[example]]
+name = "c_r10007"
+path = "examples/c_r10007.rs"
+
+[[example]]
+name = "c_r10008"
+path = "examples/c_r10008.rs"
+
+[[example]]
+name = "c_r10009"
+path = "examples/c_r10009.rs"
+
+[[example]]
+name = "c_r10010"
+path = "examples/c_r10010.rs"
+
+[[example]]
+name = "c_r10011"
+path = "examples/c_r10011.rs"
+
+[[example]]
+name = "c_r10012"
+path = "examples/c_r10012.rs"
+
+[[example]]
+name = "c_r10013"
+path = "examples/c_r10013.rs"
+
+[[example]]
+name = "c_r10014"
+path = "examples/c_r10014.rs"
+
+[[example]]
+name = "c_r10015"
+path = "examples/c_r10015.rs"
 
 [[test]]
 name = "api_server"

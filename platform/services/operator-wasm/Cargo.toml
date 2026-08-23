@@ -6,7 +6,13 @@ license.workspace = true
 authors.workspace = true
 description.workspace = true
 
+[features]
+# wasmer_fuel_backport：如果 wasmer 后续暴露 Store::set_fuel / fuel_remaining，启用本 feature 可接入真实 fuel metering。
+# 当前保持 off（O3 memory_pages 硬上限 100% 工作，fuel 部分 best-effort）。
+wasmer_fuel_backport = []
+
 [dependencies]
+xuanji-common-meta = { path = "../xuanji-common-meta" }
 operator-core = { path = "../operator-core" }
 wasmer = { workspace = true }
 wasmer-compiler-cranelift = { workspace = true }

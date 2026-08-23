@@ -7,10 +7,12 @@
       "perf-expert": 1,
       "atlas-expert": 2,
       "arch-expert": 2,
-      "e-arch": 4,
-      "e-sec": 4,
-      "e-algo": 4,
-      "alg-expert": 1
+      "e-arch": 7,
+      "e-sec": 7,
+      "e-algo": 7,
+      "alg-expert": 1,
+      "a": 2,
+      "b": 2
     }
   },
   "general": {
@@ -18,7 +20,9 @@
       "atlas-expert": 1,
       "alg-expert": 10,
       "perf-expert": 10,
-      "mon-expert": 9
+      "mon-expert": 9,
+      "fast": 1,
+      "hung": 1
     }
   },
   "data": {
@@ -37,10 +41,10 @@
   },
   "algorithm": {
     "hits": {
-      "e-algo": 4,
-      "e-sec": 4,
-      "e-sec2": 4,
-      "e-arch": 4,
+      "e-algo": 7,
+      "e-sec": 7,
+      "e-sec2": 7,
+      "e-arch": 7,
       "alg-expert": 1,
       "wf-expert": 1,
       "atlas-expert": 1
@@ -50,7 +54,9 @@
     "hits": {
       "data-expert": 1,
       "perf-expert": 1,
-      "alg-expert": 1
+      "alg-expert": 1,
+      "a": 1,
+      "b": 1
     }
   }
 }

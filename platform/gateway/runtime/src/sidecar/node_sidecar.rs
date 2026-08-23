@@ -168,6 +168,51 @@ impl NodeSidecarClient {
         }
         Ok(text)
     }
+
+    /// 通用 POST passthrough：把任意 JSON body 透传到 sidecar 指定相对 path，原样返回 JSON Value。
+    /// 用于 workflow/execute 等 Node 侧业务端点（在 Rust 只做薄代理）。
+    pub async fn post_passthrough(&self, rel_path: &str, body: serde_json::Value) -> Result<serde_json::Value, SidecarError> {
+        self.metrics.calls.fetch_add(1, Ordering::Relaxed);
+        let base = self.base_url.trim_end_matches('/');
+        let p = rel_path.trim_start_matches('/');
+        let url = format!("{base}/{p}");
+        match self._post_json(&url, &body).await {
+            Ok(text) => {
+                let parsed: serde_json::Value = serde_json::from_str(&text)
+                    .map_err(|e| SidecarError::Serde(e.to_string()))?;
+                self.metrics.success.fetch_add(1, Ordering::Relaxed);
+                Ok(parsed)
+            }
+            Err(e) => {
+                self.metrics.fail.fetch_add(1, Ordering::Relaxed);
+                Err(e)
+            }
+        }
+    }
+
+    /// 通用 GET passthrough：用于只读端点透传（verify/health）。
+    pub async fn get_passthrough(&self, rel_path: &str) -> Result<serde_json::Value, SidecarError> {
+        self.metrics.calls.fetch_add(1, Ordering::Relaxed);
+        let base = self.base_url.trim_end_matches('/');
+        let p = rel_path.trim_start_matches('/');
+        let url = format!("{base}/{p}");
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_millis(self.timeout_ms))
+            .build()
+            .map_err(|e| SidecarError::Unavailable { base: self.base_url.clone(), msg: format!("client build: {e}") })?;
+        let resp = client.get(&url).send().await
+            .map_err(|e| SidecarError::Unavailable { base: self.base_url.clone(), msg: e.to_string() })?;
+        let status = resp.status().as_u16();
+        let text = resp.text().await.unwrap_or_default();
+        if !(200..=299).contains(&status) {
+            self.metrics.fail.fetch_add(1, Ordering::Relaxed);
+            return Err(SidecarError::Http { status, body: text });
+        }
+        let parsed: serde_json::Value = serde_json::from_str(&text)
+            .map_err(|e| SidecarError::Serde(e.to_string()))?;
+        self.metrics.success.fetch_add(1, Ordering::Relaxed);
+        Ok(parsed)
+    }
 }
 
 fn fallback_intent(req: &IntentReq) -> IntentResp {

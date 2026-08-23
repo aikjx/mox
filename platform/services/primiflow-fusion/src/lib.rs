@@ -10,36 +10,14 @@
 //! - [`observability`]：结构化日志与请求追踪（对接 Loki/ELK）。
 //! - [`server`]：企业级 REST 服务层（Bearer 鉴权 / CORS / 六维溯源查询 / PT-DOC 自生成）。
 
-/// 璇玑系统 Crate 注册常量（图谱自同步契约：Rust 端显式声明 crate 身份）。
-pub const CRATE_ID: &str = "primiflow-fusion";
-
-/// 璇玑系统 Crate 结构化元数据。
-#[derive(Debug, Clone, Copy)]
-pub struct CrateMeta {
-    pub uuid: &'static str,
-    pub ais_layers: &'static [&'static str],
-    pub owner_project: &'static str,
-    pub capabilities: &'static [&'static str],
-    pub data_tables_read: &'static [&'static str],
-    pub data_tables_write: &'static [&'static str],
-}
-
-pub const CRATE_META: CrateMeta = CrateMeta {
-    uuid: "7e4ad6f5-b814-47c8-c3e4-f5a6b7c8d9e0",
-    ais_layers: &["L2-Gateway", "L3-Service", "L1-Ingress", "L6-Kernel"],
-    owner_project: "proj-xuanji-core",
-    capabilities: &[
-        "GR-STD ∪ PT-Primi 统一图模型 (UnifiedGraph)",
-        "三重治理闸门 (R07/A4/GR-STD 8 闸门)",
-        "PTEnvelope 跨层归一化消息",
-        "13 crate × 6 table 融合 Registry",
-        "PrimiPlatform 一体化编排闭环",
-        "12-factor 企业级运行时配置",
-        "Loki/ELK 结构化日志与追踪",
-        "PT-DOC 平台文档自生成",
-    ],
-    data_tables_read: &["registry.bin", "unified_graph.bin", "config.env"],
-    data_tables_write: &["registry.bin"],
+pub const CRATE_ID: &str = "75238345-b48b-534b-818b-8d9abe083a41";
+pub const ENGINE_NAME: &str = "xuanji::primiflow_fusion";
+pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+    id: CRATE_ID,
+    name: env!("CARGO_PKG_NAME"),
+    version: env!("CARGO_PKG_VERSION"),
+    layer: xuanji_common_meta::AisLayer::L4Services,
+    owner: "xuanji-core",
 };
 
 pub mod config;

@@ -71,6 +71,15 @@ function buildAtlasGraph({ DOMAINS, MODULES, ALGORITHMS, DATA_ASSETS, DOCS, ENGI
       if (nodeIds.has(eng)) addEdge(u.id, eng, 'uses_engine');
     });
   });
+  // Rust crate 域（id 形如 rust::<kebab-crate>）→ engine::<snake_case_crate>（璇玑三注册表联动桥）
+  // 规则：rust::ai-agent → engine::ai_agent；rust::xuanji-common-meta → engine::xuanji_common_meta；engine::runtime → engine::runtime
+  DOMAINS.forEach(d => {
+    if (typeof d.id !== 'string' || !d.id.startsWith('rust::')) return;
+    const crateKebab = d.id.slice('rust::'.length);
+    const crateSnake = crateKebab.replace(/-/g, '_');
+    const engineId = `engine::${crateSnake}`;
+    if (nodeIds.has(engineId)) addEdge(d.id, engineId, 'uses_engine', 'Rust crate → 正式引擎条目（三注册表联动）');
+  });
   // 引擎/模块 → 算法（implements_algo，由算法 consumers 反推）
   ALGORITHMS.forEach(a => {
     (a.consumers || []).forEach(c => {

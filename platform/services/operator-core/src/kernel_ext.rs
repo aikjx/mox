@@ -1,4 +1,4 @@
-//! # Operator Core - L5 Extension Layer (kernel_ext)
+//! AIS-SPEC-9001：企业级统一契约头 —— 模块名 kernel_ext.rs\n//! AIS-REV-1：自描述接口 · 幂等 · 可观测 · 零外部副作用（网络/IO 仅限封装函数）\n//! AIS-REV-2：公开项 pub fn/pub struct 必须具备 /// 文档注释与错误语义说明\n//! AIS-REV-3：遵循 XUANJI-AIS-通用 标准，禁止占位实现宏遗留\n\n//! # Operator Core - L5 Extension Layer (kernel_ext)
 //!
 //! 扩展层：负责将纯内核（kernel.rs）与外部依赖能力（serde / nalgebra / serde_json）连接。
 //! 通过「依赖倒置（DIP）」：为外部 crate 的类型（如 `nalgebra::DVector<f64>`）
@@ -24,6 +24,8 @@ use crate::kernel::{
 
 // ---------- TypeIdentifier ----------
 
+// 说明：impl Serialize —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl Serialize for TypeIdentifier {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let mut s = serializer.serialize_struct("TypeIdentifier", 2)?;
@@ -35,6 +37,8 @@ impl Serialize for TypeIdentifier {
 
 impl<'de> Deserialize<'de> for TypeIdentifier {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+// 说明：enum Field —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
         enum Field {
             Name,
             Id,
@@ -42,8 +46,12 @@ impl<'de> Deserialize<'de> for TypeIdentifier {
 
         impl<'de> Deserialize<'de> for Field {
             fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Field, D::Error> {
+// 说明：struct FieldVisitor —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
                 struct FieldVisitor;
                 impl<'de> Visitor<'de> for FieldVisitor {
+// 说明：type Value —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
                     type Value = Field;
                     fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
                         f.write_str("`name` or `id`")
@@ -60,8 +68,12 @@ impl<'de> Deserialize<'de> for TypeIdentifier {
             }
         }
 
+// 说明：struct TiVisitor —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
         struct TiVisitor;
         impl<'de> Visitor<'de> for TiVisitor {
+// 说明：type Value —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
             type Value = TypeIdentifier;
             fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
                 f.write_str("struct TypeIdentifier")
@@ -106,6 +118,8 @@ impl<'de> Deserialize<'de> for TypeIdentifier {
 
 // ---------- TypePair ----------
 
+// 说明：impl Serialize —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl Serialize for TypePair {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         let mut st = s.serialize_struct("TypePair", 2)?;
@@ -117,14 +131,20 @@ impl Serialize for TypePair {
 
 impl<'de> Deserialize<'de> for TypePair {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+// 说明：enum F —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
         enum F {
             Input,
             Output,
         }
         impl<'de> Deserialize<'de> for F {
             fn deserialize<D: Deserializer<'de>>(d: D) -> Result<F, D::Error> {
+// 说明：struct V —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
                 struct V;
                 impl<'de> Visitor<'de> for V {
+// 说明：type Value —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
                     type Value = F;
                     fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
                         f.write_str("`input` or `output`")
@@ -140,8 +160,12 @@ impl<'de> Deserialize<'de> for TypePair {
                 d.deserialize_identifier(V)
             }
         }
+// 说明：struct TPVisitor —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
         struct TPVisitor;
         impl<'de> Visitor<'de> for TPVisitor {
+// 说明：type Value —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
             type Value = TypePair;
             fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
                 f.write_str("struct TypePair")
@@ -178,6 +202,8 @@ impl<'de> Deserialize<'de> for TypePair {
 
 // ---------- builtin::Unit ----------
 
+// 说明：impl Serialize —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl Serialize for builtin::Unit {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         s.serialize_unit_struct("Unit")
@@ -186,8 +212,12 @@ impl Serialize for builtin::Unit {
 
 impl<'de> Deserialize<'de> for builtin::Unit {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+// 说明：struct V —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
         struct V;
         impl<'de> Visitor<'de> for V {
+// 说明：type Value —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
             type Value = builtin::Unit;
             fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
                 f.write_str("unit struct Unit")
@@ -202,6 +232,8 @@ impl<'de> Deserialize<'de> for builtin::Unit {
 
 // ---------- builtin::Any ----------
 
+// 说明：impl Serialize —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl Serialize for builtin::Any {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         s.serialize_unit_struct("Any")
@@ -210,8 +242,12 @@ impl Serialize for builtin::Any {
 
 impl<'de> Deserialize<'de> for builtin::Any {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+// 说明：struct V —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
         struct V;
         impl<'de> Visitor<'de> for V {
+// 说明：type Value —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
             type Value = builtin::Any;
             fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
                 f.write_str("unit struct Any")
@@ -226,6 +262,8 @@ impl<'de> Deserialize<'de> for builtin::Any {
 
 // ---------- ResourceCost ----------
 
+// 说明：impl Serialize —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl Serialize for ResourceCost {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         let mut st = s.serialize_struct("ResourceCost", 4)?;
@@ -239,6 +277,8 @@ impl Serialize for ResourceCost {
 
 impl<'de> Deserialize<'de> for ResourceCost {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+// 说明：enum F —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
         enum F {
             CpuCycles,
             MemoryBytes,
@@ -247,8 +287,12 @@ impl<'de> Deserialize<'de> for ResourceCost {
         }
         impl<'de> Deserialize<'de> for F {
             fn deserialize<D: Deserializer<'de>>(d: D) -> Result<F, D::Error> {
+// 说明：struct V —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
                 struct V;
                 impl<'de> Visitor<'de> for V {
+// 说明：type Value —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
                     type Value = F;
                     fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
                         f.write_str("field of ResourceCost")
@@ -269,8 +313,12 @@ impl<'de> Deserialize<'de> for ResourceCost {
                 d.deserialize_identifier(V)
             }
         }
+// 说明：struct RCVisitor —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
         struct RCVisitor;
         impl<'de> Visitor<'de> for RCVisitor {
+// 说明：type Value —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
             type Value = ResourceCost;
             fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
                 f.write_str("struct ResourceCost")
@@ -308,6 +356,8 @@ impl<'de> Deserialize<'de> for ResourceCost {
 
 // ---------- ResourceUsage ----------
 
+// 说明：impl Serialize —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl Serialize for ResourceUsage {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         let mut st = s.serialize_struct("ResourceUsage", 4)?;
@@ -321,6 +371,8 @@ impl Serialize for ResourceUsage {
 
 impl<'de> Deserialize<'de> for ResourceUsage {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+// 说明：enum F —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
         enum F {
             CpuTimeMs,
             MemoryPeakBytes,
@@ -329,8 +381,12 @@ impl<'de> Deserialize<'de> for ResourceUsage {
         }
         impl<'de> Deserialize<'de> for F {
             fn deserialize<D: Deserializer<'de>>(d: D) -> Result<F, D::Error> {
+// 说明：struct V —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
                 struct V;
                 impl<'de> Visitor<'de> for V {
+// 说明：type Value —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
                     type Value = F;
                     fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
                         f.write_str("field of ResourceUsage")
@@ -351,8 +407,12 @@ impl<'de> Deserialize<'de> for ResourceUsage {
                 d.deserialize_identifier(V)
             }
         }
+// 说明：struct RUVisitor —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
         struct RUVisitor;
         impl<'de> Visitor<'de> for RUVisitor {
+// 说明：type Value —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
             type Value = ResourceUsage;
             fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
                 f.write_str("struct ResourceUsage")
@@ -390,6 +450,8 @@ impl<'de> Deserialize<'de> for ResourceUsage {
 
 // ---------- ResourceLimits ----------
 
+// 说明：impl Serialize —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl Serialize for ResourceLimits {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         let mut st = s.serialize_struct("ResourceLimits", 4)?;
@@ -404,6 +466,8 @@ impl Serialize for ResourceLimits {
 impl<'de> Deserialize<'de> for ResourceLimits {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         #[allow(clippy::enum_variant_names)]
+// 说明：enum F —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
         enum F {
             MaxCpuTimeMs,
             MaxMemoryBytes,
@@ -412,8 +476,12 @@ impl<'de> Deserialize<'de> for ResourceLimits {
         }
         impl<'de> Deserialize<'de> for F {
             fn deserialize<D: Deserializer<'de>>(d: D) -> Result<F, D::Error> {
+// 说明：struct V —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
                 struct V;
                 impl<'de> Visitor<'de> for V {
+// 说明：type Value —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
                     type Value = F;
                     fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
                         f.write_str("field of ResourceLimits")
@@ -434,8 +502,12 @@ impl<'de> Deserialize<'de> for ResourceLimits {
                 d.deserialize_identifier(V)
             }
         }
+// 说明：struct RLVisitor —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
         struct RLVisitor;
         impl<'de> Visitor<'de> for RLVisitor {
+// 说明：type Value —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
             type Value = ResourceLimits;
             fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
                 f.write_str("struct ResourceLimits")
@@ -473,6 +545,8 @@ impl<'de> Deserialize<'de> for ResourceLimits {
 
 // ---------- KernelStateVector (极简序列化: [f64] + timestamp) ----------
 
+// 说明：impl Serialize —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl Serialize for KernelStateVector {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         use serde::ser::SerializeTupleStruct;
@@ -485,8 +559,12 @@ impl Serialize for KernelStateVector {
 
 impl<'de> Deserialize<'de> for KernelStateVector {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+// 说明：struct KSVVisitor —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
         struct KSVVisitor;
         impl<'de> Visitor<'de> for KSVVisitor {
+// 说明：type Value —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
             type Value = KernelStateVector;
             fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
                 f.write_str("tuple struct KernelStateVector(data, timestamp)")
@@ -507,6 +585,8 @@ impl<'de> Deserialize<'de> for KernelStateVector {
 // §2 DIP：为外部类型（nalgebra::DVector<f64>）实现 VectorOps
 // ============================================================
 
+// 说明：impl VectorOps —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl VectorOps for DVector<f64> {
     #[inline]
     fn dimension(&self) -> usize {
@@ -526,24 +606,32 @@ impl VectorOps for DVector<f64> {
 // §3 KernelStateVector 与 nalgebra::DVector 互转
 // ============================================================
 
+// 说明：impl From —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl From<&KernelStateVector> for DVector<f64> {
     fn from(k: &KernelStateVector) -> Self {
         DVector::from_vec(k.data.clone())
     }
 }
 
+// 说明：impl From —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl From<KernelStateVector> for DVector<f64> {
     fn from(k: KernelStateVector) -> Self {
         DVector::from_vec(k.data)
     }
 }
 
+// 说明：impl From —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl From<&DVector<f64>> for KernelStateVector {
     fn from(dv: &DVector<f64>) -> Self {
         KernelStateVector::from_vec(dv.iter().copied().collect())
     }
 }
 
+// 说明：impl From —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl From<DVector<f64>> for KernelStateVector {
     fn from(dv: DVector<f64>) -> Self {
         KernelStateVector::from_vec(dv.iter().copied().collect())
@@ -571,8 +659,11 @@ pub use crate::kernel::{ConservationLaw, ResidualMonitor};
 // ============================================================
 
 #[cfg(test)]
+// 说明：mod tests —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 mod tests {
     use super::*;
+    use crate::{ConservationChecker, L2Conservation};
 
     #[test]
     fn ext_serde_typeidentifier_roundtrip() {

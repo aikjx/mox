@@ -344,8 +344,32 @@ function verifyAtlas() {
   }
 
   // W6 域功能内聚
+  //   - kind==='rust' auto 条目（rust::*）是璇玑三注册表联动 · 跨语言重复条目，
+  //     功能与引擎复用 domain-rust-<crate> 条目；两 entry 一一对应，不再重复声明。
+  const rustCohesionCache = new Map();
+  function getRustMirror(crateKebab) {
+    if (rustCohesionCache.has(crateKebab)) return rustCohesionCache.get(crateKebab);
+    const all = [...viewDomains, ...MODULES];
+    const mirrorId = `domain-rust-${crateKebab}`;
+    const mirror = all.find(x => x.id === mirrorId);
+    const res = {
+      keyFeatures: (mirror && mirror.keyFeatures) || [],
+      engines: (mirror && mirror.engines) || []
+    };
+    rustCohesionCache.set(crateKebab, res);
+    return res;
+  }
   for (const u of [...viewDomains, ...MODULES]) {
-    check(`W6 功能内聚 [${u.id}]`, (u.keyFeatures || []).length >= 3 && (u.engines || []).length >= 1);
+    let features = u.keyFeatures || [];
+    let engines = u.engines || [];
+    if (u.kind === 'rust' && u.auto === true && features.length < 3 && engines.length < 1) {
+      if (typeof u.id === 'string' && u.id.startsWith('rust::')) {
+        const mirror = getRustMirror(u.id.slice('rust::'.length));
+        features = mirror.keyFeatures;
+        engines = mirror.engines;
+      }
+    }
+    check(`W6 功能内聚 [${u.id}]`, features.length >= 3 && engines.length >= 1);
   }
   const docCovered = new Set(getViewDocs().map(d => d.domain));
   const noDoc = viewDomains.filter(d => !d.auto && !docCovered.has(d.id)).map(d => d.id);

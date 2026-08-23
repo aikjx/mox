@@ -10,37 +10,14 @@
 //! 7. 浏览器自动化引擎 - AI驱动网页操作自动化
 //! 8. 流程图引擎 - 可视化AI流程编排与执行
 
-/// 璇玑系统 Crate 注册常量（图谱自同步契约：Rust 端显式声明 crate 身份）。
-pub const CRATE_ID: &str = "ai-agent";
-
-/// 璇玑系统 Crate 结构化元数据。
-#[derive(Debug, Clone, Copy)]
-pub struct CrateMeta {
-    pub uuid: &'static str,
-    pub ais_layers: &'static [&'static str],
-    pub owner_project: &'static str,
-    pub capabilities: &'static [&'static str],
-    pub data_tables_read: &'static [&'static str],
-    pub data_tables_write: &'static [&'static str],
-}
-
-pub const CRATE_META: CrateMeta = CrateMeta {
-    uuid: "29f5e1a0-63cf-42d3-7e9f-a0b1c2d3e4f5",
-    ais_layers: &["L3-Service", "L4-Core", "L6-Kernel"],
-    owner_project: "proj-ai-dialogue",
-    capabilities: &[
-        "AI 智能对话 (LLM 真实客户端对接)",
-        "算法分析归一化 (流程图生成)",
-        "全资源管理统一调度",
-        "插件互通总线 (跨插件消息路由)",
-        "BPMN 式工作流引擎",
-        "浏览器自动化",
-        "流程图可视化执行引擎",
-        "需求编译器 (对话→系统蓝图)",
-        "对话图谱自动整理同步",
-    ],
-    data_tables_read: &["dialogue_sessions.json", "agent_plugins.json", "templates.json"],
-    data_tables_write: &["dialogue_sessions.json"],
+pub const CRATE_ID: &str = "00374bdd-cc60-55bf-8970-a879afbfe443";
+pub const ENGINE_NAME: &str = "xuanji::ai_agent";
+pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+    id: CRATE_ID,
+    name: env!("CARGO_PKG_NAME"),
+    version: env!("CARGO_PKG_VERSION"),
+    layer: xuanji_common_meta::AisLayer::L4Services,
+    owner: "xuanji-core",
 };
 
 pub mod conversation;

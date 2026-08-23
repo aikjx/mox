@@ -4,37 +4,14 @@
 //! 基于petgraph实现加权有向图，支持邻接矩阵、关联度计算、图拉普拉斯、
 //! 中心性分析、社区发现、最短路径、智能推荐等AI驱动功能
 
-/// 璇玑系统 Crate 注册常量（图谱自同步契约：Rust 端显式声明 crate 身份）。
-/// AIS 自动发现 / project-atlas self-sync / 图谱 CRATE_ID ↔ node.id 双向绑定基准。
-pub const CRATE_ID: &str = "graph-algorithms";
-
-/// 璇玑系统 Crate 结构化元数据。
-#[derive(Debug, Clone, Copy)]
-pub struct CrateMeta {
-    pub uuid: &'static str,
-    pub ais_layers: &'static [&'static str],
-    pub owner_project: &'static str,
-    pub capabilities: &'static [&'static str],
-    pub data_tables_read: &'static [&'static str],
-    pub data_tables_write: &'static [&'static str],
-}
-
-pub const CRATE_META: CrateMeta = CrateMeta {
-    uuid: "c3f9e5a4-0d6f-4c7a-1e3f-4a5b6c7d8e9f",
-    ais_layers: &["L4-Core"],
-    owner_project: "proj-ai-engine",
-    capabilities: &[
-        "CNM 社区发现",
-        "PageRank 个性化推荐模型",
-        "Brandes 介数中心性",
-        "Harmonic 紧密中心性",
-        "Hebbian 激活传播学习",
-        "Dijkstra 最短路径",
-        "图拉普拉斯矩阵谱分析",
-        "AI 流程图谱引擎 (AIFlowGraph)",
-    ],
-    data_tables_read: &["graph_nodes.json", "graph_edges.json"],
-    data_tables_write: &[],
+pub const CRATE_ID: &str = "fbd31c6a-41cd-5274-be2f-2a28066eaf0a";
+pub const ENGINE_NAME: &str = "xuanji::graph_algorithms";
+pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+    id: CRATE_ID,
+    name: env!("CARGO_PKG_NAME"),
+    version: env!("CARGO_PKG_VERSION"),
+    layer: xuanji_common_meta::AisLayer::L4Services,
+    owner: "xuanji-core",
 };
 
 use nalgebra::DMatrix;
@@ -46,6 +23,14 @@ use std::collections::{HashMap, HashSet};
 use std::f64::consts::E;
 
 pub use operator_core::Result;
+
+// ============================================================================
+// T3 单源真相参数：锁死 7 算法的精度护栏（严禁修改）
+// ============================================================================
+/// personalizedPageRank / 激活扩散 阻尼因子（与 Node 项目记忆硬性一致：d=0.85）
+pub const PPR_D: f64 = 0.85;
+/// personalizedPageRank / 激活扩散 最大迭代轮数（与 Node 项目记忆硬性一致：30 轮）
+pub const PPR_MAX_ITER: usize = 30;
 
 /// AI 流程图谱引擎：业务流程 + 算法流程统一承载于图谱（与 Node 层 ai-flow-graph.js 跨语言对齐）
 pub mod flow_graph;
@@ -415,7 +400,9 @@ impl KnowledgeGraph {
             let propagated = transition.transpose() * &rank;
             let mut new_rank = propagated * alpha;
             for i in 0..n {
-                new_rank[(i, 0)] += alpha * dangling_mass / n as f64 + (1.0 - alpha) * p[i];
+                // 悬挂节点质量：按个性化向量 p 分配（而非均匀 1/n），
+                // 保证 seed=a 的 PPR 在 a 处最高、并沿 seed 方向衰减（项目记忆 TR-5.2）。
+                new_rank[(i, 0)] += alpha * dangling_mass * p[i] + (1.0 - alpha) * p[i];
             }
 
             let max_diff: f64 = (0..n).map(|i| (new_rank[(i, 0)] - rank[(i, 0)]).abs()).fold(0.0, f64::max);
@@ -681,8 +668,13 @@ impl KnowledgeGraph {
                 if cnt == 0 || !comm_alive[a] || !comm_alive[b] {
                     continue;
                 }
-                let gain = cnt as f64 / m as f64
-                    - (comm_degree[a] as f64 * comm_degree[b] as f64) / (2.0 * m as f64 * m as f64);
+                // CNM 标准 ΔQ = 2 · [ e_ab/m − (Σ_a·Σ_b) / (2m)^2 ]
+                // （×2 是 Newman 文献中常见的"边双向模块化度"写法；统一按此避免低估增益导致合并停止过早）
+                let e_ab_over_m = cnt as f64 / m as f64;
+                let two_m_sq = (2.0 * m as f64) * (2.0 * m as f64);
+                let degree_term =
+                    (comm_degree[a] as f64 * comm_degree[b] as f64) / two_m_sq;
+                let gain = 2.0 * (e_ab_over_m - degree_term);
                 candidates.push(((a, b), gain));
             }
             if candidates.is_empty() {
@@ -1080,6 +1072,53 @@ impl Default for KnowledgeGraphBuilder {
     fn default() -> Self {
         Self::new()
     }
+}
+
+// ============================================================================
+// 7 核心算法·第 7 条：RAW 边双向展开（对齐 Node _expandRawEdges）
+// ============================================================================
+/// RAW 边双向展开：每条 `{u,v,w}` 展开为 `[(u→v,w), (v→u,w)]`，
+/// 用于无向语义算法（度/介数/紧密/社区）在 DiGraph 上的统一实现，
+/// 使入度出度对称，对齐 Node 端 `_expandRawEdges(edges, {directed:false})` 行为。
+///
+/// - 跳过 source/target 为空的边
+/// - 自环：只保留一份（u→u，不重复）
+/// - 保留原 weight（默认 1.0）
+pub fn raw_bidirectional_expand(edges: &[KnowledgeEdge]) -> Vec<KnowledgeEdge> {
+    let mut out = Vec::with_capacity(edges.len() * 2);
+    for e in edges {
+        let s = &e.source;
+        let t = &e.target;
+        if s.is_empty() || t.is_empty() {
+            continue;
+        }
+        let w = if e.weight == 0.0 { 1.0 } else { e.weight };
+        let rt = if e.relation_type.is_empty() {
+            "related".to_string()
+        } else {
+            e.relation_type.clone()
+        };
+        let props = e.properties.clone();
+        // u -> v
+        out.push(KnowledgeEdge {
+            source: s.clone(),
+            target: t.clone(),
+            weight: w,
+            relation_type: rt.clone(),
+            properties: props.clone(),
+        });
+        if s != t {
+            // v -> u（自环不重复）
+            out.push(KnowledgeEdge {
+                source: t.clone(),
+                target: s.clone(),
+                weight: w,
+                relation_type: rt,
+                properties: props,
+            });
+        }
+    }
+    out
 }
 
 #[cfg(test)]

@@ -1,11 +1,13 @@
 [package]
 name = "hermes-flow-bridge"
-version = "0.1.0"
-edition = "2021"
-license = "MIT"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
 description = "零侵入插件：将 flow-ai + xuanji-expert 流程图/关系网优化内核注入 Hermes Agent Ultra"
 
 [dependencies]
+xuanji-common-meta = { path = "../xuanji-common-meta" }
 # 已验证的优化内核
 flow-ai = { path = "../flow-ai" }
 xuanji-expert = { path = "../xuanji-expert" }

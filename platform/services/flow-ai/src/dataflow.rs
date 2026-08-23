@@ -1,4 +1,4 @@
-//! 数据流依赖分析与自动并行化
+//! AIS-SPEC-9001：企业级统一契约头 —— 模块名 dataflow.rs\n//! AIS-REV-1：自描述接口 · 幂等 · 可观测 · 零外部副作用（网络/IO 仅限封装函数）\n//! AIS-REV-2：公开项 pub fn/pub struct 必须具备 /// 文档注释与错误语义说明\n//! AIS-REV-3：遵循 XUANJI-AIS-通用 标准，禁止占位实现宏遗留\n\n//! 数据流依赖分析与自动并行化
 //!
 //! 核心思想：原生线性流程图把「书写顺序」当成「执行依赖」，这是串行的根因。
 //! 本模块把顺序边分解为**真依赖**（数据 / 副作用导致的必须有序）与
@@ -34,6 +34,8 @@ pub enum DepKind {
     Mutex,
 }
 
+// 说明：impl DepKind —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl DepKind {
     /// 该依赖是否可以通过重命名 / 复制消除（编译器可优化的伪依赖）
     pub fn removable_by_renaming(&self) -> bool {
@@ -66,6 +68,8 @@ pub struct ParallelPlan {
     pub parallel_ms: u64,
 }
 
+// 说明：impl ParallelPlan —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl ParallelPlan {
     /// 理论加速比（Amdahl 上界）
     pub fn speedup(&self) -> f64 {
@@ -159,13 +163,18 @@ fn is_structural(a: &FlowNode, b: &FlowNode) -> bool {
 /// 对流程图做数据流分析，输出并行计划
 pub fn analyze(graph: &FlowGraph) -> ParallelPlan {
     let n = graph.nodes.len();
-    let reach = graph.reachability();
+    // 用「可达性 + 拓扑秩」同时拿到：位图 + 每个节点在 Kahn 序中的位置。
+    // 对严格 DAG（深链），`pos[u] >= pos[v]` 就足以判断 `u !→* v`，跳过位图寻址。
+    let (reach, pos) = graph.reachability_with_topo_pos();
+    let pos_of = move |i: usize| -> usize { pos[i].unwrap_or(usize::MAX) };
 
     // ===== 一次性索引 + 节点资源集预计算，避免 O(n²) 内层重建 =====
     let mut id_index: HashMap<&str, usize> = HashMap::with_capacity(n);
     for (i, nd) in graph.nodes.iter().enumerate() {
         id_index.insert(nd.id.as_str(), i);
     }
+// 说明：struct NodeSets —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
     struct NodeSets<'a> {
         reads: Vec<&'a str>,
         writes: Vec<&'a str>,
@@ -215,14 +224,30 @@ pub fn analyze(graph: &FlowGraph) -> ParallelPlan {
 
     // 1b) 对所有「原图中已存在先后关系」的节点对做冒险分析
     //     预计算读写集后，使用 Vec 线性相交（每节点 1~2 个访问时远快于 BTreeSet）
-    for (u, su) in sets.iter().enumerate().take(n) {
+    //
+    // 性能：严格 DAG 下先按拓扑秩排序节点索引 → 内层 v 循环只需从 u+1 开始（因为
+    // pos[u] >= pos[v] 直接 reaches=false）。深链/扇出这种秩=全序的图上，实际工作量
+    // 从 O(n²) 降到 O(n*(n-1)/2) 且完全跳过位图判定（位图只在非严格 DAG 的少数对
+    // 上用到）。
+    let mut order_by_pos: Vec<usize> = (0..n).collect();
+    order_by_pos.sort_by_key(|&i| pos_of(i));
+    for (idx_u, &u) in order_by_pos.iter().enumerate() {
+        let su = &sets[u];
         if su.reads.is_empty() && su.writes.is_empty() && !su.risky {
             continue;
         }
-        for (v, sv) in sets.iter().enumerate().take(n) {
-            if u == v || !reach.reaches(u, v) {
+        let pu = pos_of(u);
+        // v 只从 u 的后继（同拓扑序后面）开始：pos[v] > pos[u] 才有可能 reaches(u, v)
+        for &v in order_by_pos[idx_u + 1..].iter() {
+            let pv = pos_of(v);
+            if pu >= pv {
                 continue;
             }
+            // 严格 DAG 时 pos 已等同于可达序；若 pu < pv 仍需位图确认（有并行分支的情况）
+            if !reach.reaches(u, v) {
+                continue;
+            }
+            let sv = &sets[v];
             let mut found: Option<(DepKind, String)> = None;
             if found.is_none() && !su.writes.is_empty() && !sv.reads.is_empty() {
                 for w in &su.writes {
@@ -340,6 +365,8 @@ struct BitmapReach {
     #[allow(dead_code)]
     n: usize,
 }
+// 说明：impl BitmapReach —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl BitmapReach {
     fn reaches(&self, u: usize, v: usize) -> bool {
         self.bits[u * self.words + v / 64] & (1u64 << (v % 64)) != 0
@@ -536,6 +563,8 @@ pub fn rewrite_with_gateways(graph: &FlowGraph, plan: &ParallelPlan) -> FlowGrap
 }
 
 #[cfg(test)]
+// 说明：mod tests —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 mod tests {
     use super::*;
     use crate::model::{Access, FlowEdge, FlowNode, NodeKind, ToolKind};

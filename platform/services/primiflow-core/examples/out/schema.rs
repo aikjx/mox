@@ -5,6 +5,7 @@ use uuid::Uuid;
 use chrono::{DateTime, Utc};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct DataR1 {
     pub id: Uuid,
     pub project_id: Uuid,
@@ -13,6 +14,7 @@ pub struct DataR1 {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct DataR2 {
     pub id: Uuid,
     pub project_id: Uuid,
@@ -21,6 +23,7 @@ pub struct DataR2 {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct DataR3 {
     pub id: Uuid,
     pub project_id: Uuid,
@@ -29,6 +32,7 @@ pub struct DataR3 {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct DataR4 {
     pub id: Uuid,
     pub project_id: Uuid,

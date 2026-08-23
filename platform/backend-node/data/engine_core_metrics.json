@@ -1,0 +1,23 @@
+{
+  "total": 30,
+  "by_capability": {
+    "reasoning": {
+      "calls": 10,
+      "success": 10,
+      "degraded": 0,
+      "total_latency_ms": 307629,
+      "errors": 0,
+      "last_error": null,
+      "last_called_at": "2026-08-23T13:47:11.221Z"
+    },
+    "chat": {
+      "calls": 20,
+      "success": 20,
+      "degraded": 0,
+      "total_latency_ms": 14600,
+      "errors": 0,
+      "last_error": null,
+      "last_called_at": "2026-08-23T13:47:23.559Z"
+    }
+  }
+}

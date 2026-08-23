@@ -1,0 +1,119 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:xuanji:schema:module-card-v1",
+  "title": "璇玑 RelGraph · 模块标准卡（全资源模块化 SoT Schema）",
+  "description": "与 24 号企业文档 §2.0 严格一致；Rust xuanji_derive::ModuleCard 过程宏 / Node sidecar self_sync_all.js / kg-hub ModuleCardConnector 三者全用这个 Schema。任何改动必须走 22 号归一化总控卡 8 步裁决流程。",
+  "type": "object",
+  "required": ["moduleId", "name", "aisLayer", "raci", "upstreamDownstream", "acceptanceGate"],
+  "additionalProperties": false,
+  "properties": {
+    "moduleId": {
+      "type": "string",
+      "pattern": "^urn:xuanji:(crate|nmod|feview|doc|bp|algofam|apikey|clibin):[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "description": "kg-hub URN 唯一 ID，图谱节点 1:1 对应。类型：crate=Rust Crate / nmod=Node 功能域 / feview=Frontend 视图 / doc=企业文档 / bp=业务流程 / algofam=算法家族 / apikey=对外 API / clibin=CLI 二进制",
+      "examples": [
+        "urn:xuanji:crate:50bb6200-04c5-5e4c-8354-4c6e1b230024",
+        "urn:xuanji:nmod:00000000-0000-0000-0000-000000000001",
+        "urn:xuanji:feview:00000000-0000-0000-0000-000000000001",
+        "urn:xuanji:doc:00000000-0000-0000-0000-000000000000"
+      ]
+    },
+    "name": {
+      "type": "string",
+      "minLength": 3,
+      "description": "人读名称，与 22 号总控卡表 1 命名双名并行严格一致。禁止用缩写 / 自创术语，非 GLOSSARY 注册的术语视为越权。"
+    },
+    "aisLayer": {
+      "type": "string",
+      "enum": ["L6_ProductApp", "L5_BusinessFlow", "L4_GraphCore", "L3_AlgorithmReasoning", "L2_RustBase", "L1_DeployOps", "L0_SoT"],
+      "description": "18 号 TOP-MASTER §二 六层金字塔对应层级。L0_SoT = 真源（xuanji-common-meta / kg-hub URN / 本 Schema）。"
+    },
+    "raci": {
+      "type": "object",
+      "required": ["R", "A", "C", "I"],
+      "additionalProperties": false,
+      "properties": {
+        "R": {
+          "type": "string",
+          "enum": ["开发联盟", "算法联盟", "产品联盟"],
+          "description": "Responsible · 谁实际执行该模块的代码/内容交付"
+        },
+        "A": {
+          "type": "string",
+          "enum": ["开发联盟", "算法联盟", "产品联盟"],
+          "description": "Accountable · 最终问责，该模块 All-04 主责 = 他签"
+        },
+        "C": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["开发联盟", "算法联盟", "产品联盟"]
+          },
+          "minItems": 0,
+          "uniqueItems": true,
+          "description": "Consulted · 被咨询的联盟，需在修改 24 §2/§3/§4 任何一个字段时被征求意见"
+        },
+        "I": {
+          "const": "总设计师",
+          "description": "Informed · 固定为总设计师，任何模块改动必须走 22 号卡裁决"
+        }
+      }
+    },
+    "upstreamDownstream": {
+      "type": "object",
+      "required": ["upstream", "downstream"],
+      "additionalProperties": false,
+      "properties": {
+        "upstream": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^urn:xuanji:(crate|nmod|feview|doc|bp|algofam|apikey|clibin):[0-9a-f-]{36}$"
+          },
+          "uniqueItems": true,
+          "description": "我依赖谁 → 图谱边 depends_on，叶子模块（最底层基础库）可空数组"
+        },
+        "downstream": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^urn:xuanji:(crate|nmod|feview|doc|bp|algofam|apikey|clibin):[0-9a-f-]{36}$"
+          },
+          "uniqueItems": true,
+          "description": "谁调用我 → 图谱边 calls（与 depends_on 成对存在，禁止只记单向，因为关图路径查询要双向）"
+        }
+      }
+    },
+    "acceptanceGate": {
+      "type": "object",
+      "required": ["unitTestPath", "reconcileCmd", "governGate", "auditFields"],
+      "additionalProperties": false,
+      "properties": {
+        "unitTestPath": {
+          "type": "string",
+          "minLength": 3,
+          "description": "真实可执行的单测命令或路径，Rust = 'cargo test -p <crate>' + 可选 '--test x'；Node = 'node platform/backend-node/test/xxx.js'；FE = 'cd frontend-ui && npm run test:unit views/xxx.spec.js'；Doc = 'grep -n 权威链冲突 docs/enterprise/xxx.md = 0 命中'。禁止写 N/A，写 N/A = 该模块未测 = 禁止合入。"
+        },
+        "reconcileCmd": {
+          "type": "string",
+          "minLength": 3,
+          "description": "对账命令，算法类模块必须写具体 Δ≤1e-6 断言命令（如 'node reconcile_7x8.js'），非算法类写 '08 自动化 8 步第 X 步闭环'；禁止 N/A。"
+        },
+        "governGate": {
+          "type": "boolean",
+          "description": "是否通过治理闸门 8 条（至少 4 条核心：守恒/孤儿/RBAC/审计），true = 该模块可上架 / 可合入；false = 该模块当前锁定禁止修改（写 false 必须附说明）。"
+        },
+        "auditFields": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["actor", "action", "entity_ids", "before_hash", "after_hash", "ts", "signature"]
+          },
+          "minItems": 5,
+          "uniqueItems": true,
+          "description": "All-04 审计链 7 字段选 ≥ 5。写操作模块（对外 POST/PUT/DELETE、前端保存按钮）必须包含 before_hash + after_hash + signature（7 全选）。只读模块可以只含 actor + action + entity_ids + ts + signature（5 项）。少于 5 = 该模块审计链不合格 = 越权。"
+        }
+      }
+    }
+  }
+}

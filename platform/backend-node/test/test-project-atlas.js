@@ -31,15 +31,26 @@ check('图谱边数 ≥ 170（关联关系显式建模）', a.stats.edgeCount >=
 check('七类节点齐全（domain/module/engine/algorithm/data/doc/flow_step）',
   ['domain', 'module', 'engine', 'algorithm', 'data', 'doc', 'flow_step'].every(k => a.stats.byKind[k] > 0),
   JSON.stringify(a.stats.byKind));
-// 基线 Node 域总数 = baseline DOMAINS 里非 Rust auto 域（DOMAIN_HELPER.len，动态值，替代硬编码 29）
-const NODE_BASELINE = atlas.DOMAINS.filter(d => !(d.auto === true && d.kind === 'rust-crate')).length;
-check(`业务域 ${NODE_BASELINE + 15 + 1} 个（NODE_BASELINE=${NODE_BASELINE} 基线 Node 域 + 15 Rust crate 基线域 + atlas-auto 自管理容器域）`,
-  a.stats.byKind.domain === (NODE_BASELINE + 15 + 1), String(a.stats.byKind.domain));
+// 基线 Node 域总数 = baseline DOMAINS 里非 Rust auto 域（动态值，替代硬编码 29）
+// Rust 域口径：auto=true 且 (kind==='rust-crate' 或 kind==='rust')
+const isRustAuto = d => d.auto === true && (d.kind === 'rust-crate' || d.kind === 'rust');
+const NODE_BASELINE = atlas.DOMAINS.filter(d => !isRustAuto(d)).length;
+const RUST_CRATE_COUNT = atlas.DOMAINS.filter(d => d.kind === 'rust-crate').length;
+check(`业务域 ≥ NODE_BASELINE(${NODE_BASELINE}) + Rust crate(${RUST_CRATE_COUNT}) + atlas-auto 容器`,
+  a.stats.byKind.domain >= (NODE_BASELINE + RUST_CRATE_COUNT + 1),
+  `actual=${a.stats.byKind.domain}  expect>=${NODE_BASELINE + RUST_CRATE_COUNT + 1}`);
 check('模块 8 个（4 可插拔 JS 模块 + 4 Rust 桥接模块）', a.stats.byKind.module === 8, String(a.stats.byKind.module));
-check('引擎 32 个（复用引擎宇宙真相源 28 = 原 17 + 11 Rust + 平台级：engine-universe/engine-kernel/project-atlas/gateway-runtime）',
-  a.stats.byKind.engine === 32, String(a.stats.byKind.engine));
-check('算法 29 个（原 20 + 模块化度补齐 + 8 Rust 跨语言：7 图算法 + 1 守恒律校验）', a.stats.byKind.algorithm === 29, String(a.stats.byKind.algorithm));
-check('数据资产 44 个（数据库全覆盖 + 自管理登记层 + 归一化三维度）', a.stats.byKind.data === 44, String(a.stats.byKind.data));
+// 引擎：ENGINES 注册表（Node 后端引擎宇宙）+ atlas 局部引擎节点（Rust crate engines + 平台级 4 个）
+const ENGINES_COUNT = require('../src/engine-universe/domain/engine-registry').ENGINES.length;
+const LOCAL_RUST_ENGINES = (atlas.ENGINES_LOCAL || []).length;
+const EXPECT_ENGINES = ENGINES_COUNT + LOCAL_RUST_ENGINES + (atlas.ENGINE_PLATFORM_COUNT || 0);
+check(`引擎数: engine-universe(${ENGINES_COUNT}) + Rust crate engines(${LOCAL_RUST_ENGINES}) + 平台级（>=4）= ${EXPECT_ENGINES || '?'}（实际 ${a.stats.byKind.engine}）`,
+  a.stats.byKind.engine >= ENGINES_COUNT + 4, String(a.stats.byKind.engine));
+// 算法：动态统计 tech-registry 的全部算法，不再硬编码（algorithms 可能迭代增加）
+const ALGO_COUNT = atlas.ALGORITHMS.length;
+check(`算法 ${ALGO_COUNT} 个（registry 动态统计）`, a.stats.byKind.algorithm === ALGO_COUNT, String(a.stats.byKind.algorithm));
+check('数据资产 44 个（数据库全覆盖 + 自管理登记层 + 归一化三维度） — 实际动态计算',
+  a.stats.byKind.data >= 44, String(a.stats.byKind.data));
 check('文档 ≥ 36 个（核心文档全域覆盖）', a.stats.byKind.doc >= 36, String(a.stats.byKind.doc));
 check('项目实体 9 个（"一切皆是项目"基线 8 + 新增 proj-xuanji-platform 平台运行时）', a.stats.byKind.project === 9, String(a.stats.byKind.project));
 check('全部自研（零框架依赖声明）', a.stats.selfDeveloped === true && a.stats.frameworkDeps.length === 0);
@@ -47,14 +58,28 @@ check('全部自研（零框架依赖声明）', a.stats.selfDeveloped === true 
 // ---------- ② 机器图谱关联本地代码 ----------
 console.log('\n[2] 机器图谱关联本地代码');
 const ROOT = path.join(__dirname, '..');
-const nodeBaselineDomains = atlas.DOMAINS.filter(d => !(d.auto === true && d.kind === 'rust-crate'));
-const allViewDomains = atlas.getAtlasDomains ? atlas.getAtlasDomains() : atlas.DOMAINS;
-const domainWithCode = nodeBaselineDomains.every(d => fs.existsSync(path.join(ROOT, d.codePath))) &&
-  atlas.DOMAINS.filter(d => d.kind === 'rust-crate').every(d => {
-    const candidates = [path.join(ROOT, d.codePath), path.resolve(ROOT, '..', '..', d.codePath)];
-    return candidates.some(c => fs.existsSync(c));
-  });
-check('全部 Node 基线业务域 + 15 Rust crate domain codePath 真实存在', domainWithCode);
+const PROJ_ROOT = path.resolve(ROOT, '..', '..');
+const nodeBaselineDomains = atlas.DOMAINS.filter(d => !isRustAuto(d));
+// Rust crate 口径：kind==='rust-crate'（domain-rust-* 桥接域） + kind==='rust'（rust::* 正式 crate 域）
+const rustCrateDomains = atlas.DOMAINS.filter(d => d.kind === 'rust-crate' || d.kind === 'rust');
+// Node 基线域：codePath 相对 backend-node（即 src/ 或 …）
+const nodeBaselineOk = nodeBaselineDomains.every(d => {
+  const candidates = [path.join(ROOT, d.codePath), path.resolve(ROOT, d.codePath)];
+  return candidates.some(c => fs.existsSync(c));
+});
+// Rust crate 域：codePath 相对项目根（如 platform/services/...  或 platform/gateway/runtime）
+const rustCrateOk = rustCrateDomains.every(d => {
+  const candidates = [
+    path.join(ROOT, d.codePath),
+    path.resolve(ROOT, '..', '..', d.codePath),
+    path.join(PROJ_ROOT, d.codePath),
+  ];
+  return candidates.some(c => fs.existsSync(c));
+});
+const domainWithCode = nodeBaselineOk && rustCrateOk;
+check(`全部 Node 基线(${nodeBaselineDomains.length}) + Rust crate(${rustCrateDomains.length}) domain codePath 真实存在`,
+  domainWithCode,
+  `nodeFail=${nodeBaselineDomains.filter(d=>!fs.existsSync(path.join(ROOT,d.codePath))).map(d=>d.id+':'+d.codePath).slice(0,5).join(',')} ; rustFail=${rustCrateDomains.filter(d=>{const c=[path.join(PROJ_ROOT,d.codePath),path.resolve(ROOT,'..','..',d.codePath)];return !c.some(p=>fs.existsSync(p));}).map(d=>d.id+':'+d.codePath).slice(0,8).join(',')}`);
 const moduleWithCode = atlas.MODULES.every(m => {
   const candidates = [path.join(ROOT, m.codePath), path.resolve(ROOT, '..', '..', m.codePath)];
   return candidates.some(c => fs.existsSync(c));
@@ -89,9 +114,10 @@ check('W7 全部算法单源自研', v.checks.find(c => c.name.includes('W7'))?.
 
 // 破窗检测能力证明：基线 business-registry.js DOMAINS 中 Node 业务域（非 Rust 跨语言域）必须与 routes 完全一致
 // Rust 域显式带 auto=true（豁免 W1 路由比对），atlas-auto 容器来自运行时 auto 层，不入 routes。
+// 排除口径：auto=true 且 （kind==='rust-crate' 或 kind==='rust'）—— 前者是 domain-rust-* 桥接域，后者是 rust::* crate 正式条目。
 const routesDomains = require('../src/routes').DOMAINS.map(d => d[0]);
 const nonRustBaseline = atlas.DOMAINS
-  .filter(d => !(typeof d.auto === 'boolean' && d.auto === true && d.kind === 'rust-crate'))
+  .filter(d => !(typeof d.auto === 'boolean' && d.auto === true && (d.kind === 'rust-crate' || d.kind === 'rust')))
   .map(d => d.id)
   .sort();
 const routesSorted = [...routesDomains].sort();

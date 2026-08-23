@@ -24,6 +24,7 @@ use approx::assert_relative_eq;
 // 辅助类型：实现 GraphNode 的简单节点
 // ──────────────────────────────────────────────────────────────────
 
+#[allow(dead_code)]
 struct SimpleGraphNode {
     id: String,
     state: StateVector,

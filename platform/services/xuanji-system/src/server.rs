@@ -1,4 +1,4 @@
-﻿//! HTTP / WebSocket 运行时（接入层 + 鉴权中间件 + 实时通信 + 企业级加固）
+//! HTTP / WebSocket 运行时（接入层 + 鉴权中间件 + 实时通信 + 企业级加固）
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;

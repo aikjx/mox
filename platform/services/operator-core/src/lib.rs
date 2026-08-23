@@ -8,43 +8,14 @@
 //! 5. 资源约束优化 - ResourceConstraints
 //! 6. 扩展性闭包 - 算子代数运算
 
-/// 璇玑系统 Crate 注册常量（图谱自同步契约：Rust 端显式声明 crate 身份）。
-/// AIS 自动发现 / project-atlas self-sync / 图谱 CRATE_ID ↔ node.id 双向绑定基准。
-pub const CRATE_ID: &str = "operator-core";
-
-/// 璇玑系统 Crate 结构化元数据。
-/// AIS 分层声明、owner 项目、能力清单、数据读写表契约。
-#[derive(Debug, Clone, Copy)]
-pub struct CrateMeta {
-    /// 稳定唯一标识（v4 UUID，生成一次后永不变更，跨生命周期用于 atlas 关联）。
-    pub uuid: &'static str,
-    /// AIS 架构分层：L1接入/L2网关/L3域服务/L4核心算法/L5持久化/L6纯核心/L7工具。
-    pub ais_layers: &'static [&'static str],
-    /// 归属项目 id（与 project-registry.js PROJECTS.id 常量严格匹配）。
-    pub owner_project: &'static str,
-    /// 对外暴露能力列表（human-readable，用于图谱能力矩阵自描述）。
-    pub capabilities: &'static [&'static str],
-    /// 读取的持久化表名或 JSON data 文件名。
-    pub data_tables_read: &'static [&'static str],
-    /// 写入的持久化表名（L3/L4 应多为 empty，仅 L5 拥有写入）。
-    pub data_tables_write: &'static [&'static str],
-}
-
-pub const CRATE_META: CrateMeta = CrateMeta {
-    uuid: "a1f7c3e2-8b4d-4a5e-9c1d-2e3f4a5b6c7d",
-    ais_layers: &["L4-Core", "L6-Kernel"],
-    owner_project: "proj-graph-infra",
-    capabilities: &[
-        "Operator trait 统一算子抽象",
-        "StateVector 高维状态向量",
-        "Category 范畴论态射组合子",
-        "ResourceConstraints 资源约束建模",
-        "Monad 算子代数闭包",
-        "Registry 算子注册表",
-        "Conservation 守恒律引擎",
-    ],
-    data_tables_read: &["operators.json"],
-    data_tables_write: &[],
+pub const CRATE_ID: &str = "acf14283-3931-5528-adce-2c0cd3815363";
+pub const ENGINE_NAME: &str = "xuanji::operator_core";
+pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+    id: CRATE_ID,
+    name: env!("CARGO_PKG_NAME"),
+    version: env!("CARGO_PKG_VERSION"),
+    layer: xuanji_common_meta::AisLayer::L6Kernel,
+    owner: "xuanji-core",
 };
 
 use std::any::TypeId;
@@ -76,6 +47,8 @@ pub use resource::*;
 pub use conservation::*;
 pub use monad::*;
 pub use registry::*;
+// kernel 核心守恒与校验类型对外暴露（供下游与内部 #[cfg(test)] 一致性复用）
+pub use kernel::{ConservationChecker, L2Conservation};
 
 /// 系统核心错误类型
 #[derive(Debug, Error)]

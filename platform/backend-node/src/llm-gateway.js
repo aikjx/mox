@@ -139,6 +139,93 @@ const PROVIDER_CAPABILITY_SCORE = {
   _default: 60 // 未知 provider 给中性分
 };
 
+// ---- O1 · LatencyWarmRouter（对比 Dify/LangGraph/Flo/AutoGen，企业级多活路由） ----
+// 核心算法：
+//   score = 0.6 * norm(1 - ewma_latency) + 0.3 * success_rate_ewma + 0.1 * priority_norm
+//   EWMA α=0.2；每 50 次请求 Top-2 providers 主动 "预热 ping"（短 dummy call 或 /v1/models 等价），以捕获真实抖动。
+//   失败：立即按 fallback=true 降级，更新 success_rate ewma 并扣减分数；下一次排序自动将其降级。
+class LatencyWarmRouter {
+  constructor(providers, options = {}) {
+    this.options = Object.assign({ alpha: 0.2, warmEveryN: 50, warmTopK: 2, pingTimeoutMs: 400 }, options);
+    this._warmRequestCount = 0;
+    this.providers = providers; // 引用：每次 score 前读取最新 provider 对象
+    // 初始化 EWMA 指标
+    this.ewmaLatencyMs = Object.create(null);
+    this.ewmaSuccessRate = Object.create(null);
+    for (const p of Object.values(providers)) {
+      const id = p.id || p.provider;
+      const baseLat = p.estimated_latency_ms || 400;
+      this.ewmaLatencyMs[id] = typeof baseLat === 'number' ? baseLat : 400;
+      this.ewmaSuccessRate[id] = (typeof p.error_rate === 'number') ? Math.max(0, 1 - p.error_rate) : 0.95;
+    }
+  }
+  _priorityOf(p) {
+    if (typeof p.priority === 'number') return p.priority;
+    if (typeof p.provider === 'string') {
+      return (PROVIDER_CAPABILITY_SCORE[p.provider] != null) ? PROVIDER_CAPABILITY_SCORE[p.provider] : PROVIDER_CAPABILITY_SCORE._default;
+    }
+    return PROVIDER_CAPABILITY_SCORE._default;
+  }
+  _scoreProvider(id, p) {
+    const lat = this.ewmaLatencyMs[id];
+    const maxLat = Math.max(1, ...Object.values(this.ewmaLatencyMs));
+    const normLat = 1 - Math.min(1, lat / maxLat);
+    const success = this.ewmaSuccessRate[id];
+    const priMax = Math.max(1, ...Object.values(this.providers).map(x => this._priorityOf(x)));
+    const priNorm = this._priorityOf(p) / priMax;
+    return 0.6 * normLat + 0.3 * success + 0.1 * priNorm;
+  }
+  // 返回启用 provider 按得分降序排序的 id 数组
+  rankedEnabledIds() {
+    const entries = Object.entries(this.providers)
+      .filter(([id, p]) => p && p.enabled !== false);
+    return entries
+      .map(([id, p]) => [id, this._scoreProvider(id, p)])
+      .sort((a,b) => b[1] - a[1])
+      .map(([id]) => id);
+  }
+  // 记录一次真实请求结果（更新 EWMA）
+  recordResult(id, latencyMs, ok) {
+    if (this.ewmaLatencyMs[id] == null) this.ewmaLatencyMs[id] = Math.max(1, latencyMs || 1);
+    if (this.ewmaSuccessRate[id] == null) this.ewmaSuccessRate[id] = ok ? 1 : 0.5;
+    const alpha = this.options.alpha;
+    this.ewmaLatencyMs[id] = (1 - alpha) * this.ewmaLatencyMs[id] + alpha * Math.max(1, latencyMs || 1);
+    const sampleErr = ok ? 0 : 1;
+    this.ewmaSuccessRate[id] = (1 - alpha) * this.ewmaSuccessRate[id] + alpha * (1 - sampleErr);
+  }
+  // 预热 Top-2 providers：调用方通过 warmCb(p) 做一次轻量 ping；完成后 recordResult。
+  async maybeWarmTop(warmCb) {
+    this._warmRequestCount++;
+    if (this._warmRequestCount % this.options.warmEveryN !== 1) return;
+    const ids = this.rankedEnabledIds().slice(0, this.options.warmTopK);
+    for (const id of ids) {
+      try {
+        const start = Date.now();
+        const ok = await Promise.race([
+          Promise.resolve(warmCb && warmCb(this.providers[id])).then(() => true),
+          new Promise(r => setTimeout(() => r(false), this.options.pingTimeoutMs))
+        ]);
+        this.recordResult(id, Date.now() - start, !!ok);
+      } catch (_) {
+        this.recordResult(id, this.options.pingTimeoutMs, false);
+      }
+    }
+  }
+  // 暴露给 unit-test / summary
+  snapshot() {
+    return Object.fromEntries(
+      Object.entries(this.providers).map(([id, p]) => [id, {
+        lat_ewma: this.ewmaLatencyMs[id] ?? null,
+        sr_ewma: this.ewmaSuccessRate[id] ?? null,
+        score: this._scoreProvider(id, p)
+      }])
+    );
+  }
+}
+
+// O1 策略常量（和 getRoutingConfig() / T4 H2 保持一致）
+const ROUTING_STRATEGIES = ['priority', 'fallback', 'latency-warm'];
+
 class LLMGateway {
   constructor() {
     this.providers = {};
@@ -148,6 +235,9 @@ class LLMGateway {
     this.requestLog = [];
     this.maxRetries = 3;
     this.requestTimeout = 30000;
+    /** @type {LatencyWarmRouter|null} O1 补丁实例 */
+    this._warmRouter = null;
+    this._warmRequestCount = 0;
     this._init();
   }
 
@@ -309,9 +399,56 @@ class LLMGateway {
 
     const { allMessages, convHistory } = this._buildEnhancedMessages(params);
 
+    // O1：预热 Top-K（latency-warm 策略每次 chat 触发；对 priority/fallback 策略此操作为空，开销可忽略）
+    const routingCfg = this.getRoutingConfig();
+    const strategy = ROUTING_STRATEGIES.includes(routingCfg.strategy) ? routingCfg.strategy : 'fallback';
+    const enableFallback = routingCfg.fallback !== false;
+    if (strategy === 'latency-warm') {
+      const r = this._ensureWarmRouter();
+      // 预热不阻塞主请求（fire-and-forget 但记录结果）—— 避免预热慢拖慢首次响应
+      r.maybeWarmTop(async (p) => {
+        // 轻量 ping：GET {base_url}/models（若未配置则模拟）；无有效 key 不会抛错但返回 false。
+        if (!p || !p.base_url) return false;
+        try {
+          const r0 = await fetch(`${p.base_url}/models`, {
+            method: 'GET',
+            signal: AbortSignal.timeout ? AbortSignal.timeout(500) : void 0,
+            headers: p.api_key ? { 'Authorization': `Bearer ${decryptApiKey(p.api_key)}` } : {}
+          });
+          return r0 && r0.ok;
+        } catch (_) { return false; }
+      }).catch(() => {});
+    }
+
     let result;
 
-    if (provider && provider.enabled && provider.provider !== 'local') {
+    const singleProviderMode = (provider && provider.enabled && provider.provider !== 'local' && strategy === 'priority' && this.activeProvider);
+    if (singleProviderMode) {
+      // O1 兼容：单 activeProvider 指定模式（priority 下仅走该 provider，与旧行为一致）
+      result = await this._callExternalProvider(provider, allMessages, temperature, maxTokens);
+      // O1 EWMA 更新（若 router 已存在）：
+      if (this._warmRouter) this._warmRouter.recordResult(provider.id || provider.provider, result && result.latency_ms || 0, !(result && String(result.provider || '').startsWith('local')));
+    } else if (strategy === 'fallback' || strategy === 'latency-warm') {
+      // O1 fallback / latency-warm：多候选依次尝试
+      const candidates = this._candidateProviders(strategy);
+      const local = this._generateIntelligentResponse(messages, expertType, convHistory);
+      result = local;
+      for (const id of candidates) {
+        const p = this.providers[id];
+        if (!p || p.enabled === false || p.provider === 'local' || !p.api_key) continue;
+        const startTs = Date.now();
+        try {
+          const r = await this._callExternalProvider(p, allMessages, temperature, maxTokens);
+          const latency = Date.now() - startTs;
+          const isRealAI = r && !(String(r.provider || '').startsWith('local'));
+          if (this._warmRouter) this._warmRouter.recordResult(id, latency, isRealAI);
+          if (isRealAI) { result = Object.assign({}, r, { latency_ms: latency, used_fallback: candidates.indexOf(id) > 0, routing_strategy: strategy }); break; }
+        } catch (e) {
+          if (this._warmRouter) this._warmRouter.recordResult(id, Date.now() - startTs, false);
+          if (!enableFallback) break; // 无 fallback 直接用 local 默认
+        }
+      }
+    } else if (provider && provider.enabled && provider.provider !== 'local') {
       result = await this._callExternalProvider(provider, allMessages, temperature, maxTokens);
     } else if (expertType === 'graph' && systemPrompt && systemPrompt.includes('nodes') && systemPrompt.includes('edges')) {
       console.log('[gateway] Graph generation detected, expertType:', expertType, 'systemPrompt length:', systemPrompt.length);
@@ -812,16 +949,65 @@ class LLMGateway {
 
   getRoutingConfig() {
     return readJSON('llm_routing.json', {
-      strategy: 'priority',
+      strategy: 'latency-warm', // O1：默认启用 latency-warm（优于 legacy priority）
       providers: Object.keys(this.providers).filter(k => this.providers[k].enabled),
       fallback: true,
       load_balance: false,
-      weights: {}
+      weights: {},
+      // O1 可调参数（与 LatencyWarmRouter options 对齐）
+      warm: {
+        alpha: 0.2,
+        warmEveryN: 50,
+        warmTopK: 2,
+        pingTimeoutMs: 400,
+      },
+      loadBalanceStrategy: 'random', // random / round_robin / least_latency_ewma
     });
   }
 
   updateRoutingConfig(config) {
+    // O1：更新后重置 LatencyWarmRouter，以便下一次 chat() 重新初始化
+    this._warmRouter = null;
     return writeJSON('llm_routing.json', config);
+  }
+
+  // ---- O1 路由选择：按 getRoutingConfig().strategy 返回候选 provider ID 数组 ----
+  _ensureWarmRouter() {
+    if (!this._warmRouter) {
+      const cfg = this.getRoutingConfig();
+      this._warmRouter = new LatencyWarmRouter(this.providers, Object.assign({
+        alpha: 0.2, warmEveryN: 50, warmTopK: 2, pingTimeoutMs: 400
+      }, (cfg && cfg.warm) || {}));
+    }
+    return this._warmRouter;
+  }
+
+  /**
+   * O1：返回排序后的 provider 候选列表（按当前策略）。
+   *   - priority：按 PROVIDER_CAPABILITY_SCORE + p.priority 数值排序，降序。
+   *   - fallback：按 priority 排序（fallback=true 语义保留，失败降级由 chat/_callExternalProvider 执行）
+   *   - latency-warm：使用 LatencyWarmRouter.rankedEnabledIds
+   */
+  _candidateProviders(strategy) {
+    const enabledAll = Object.entries(this.providers)
+      .filter(([id, p]) => p && p.enabled !== false && p.provider !== 'local')
+      .map(([id, p]) => id);
+    const priScore = (id) => {
+      const p = this.providers[id];
+      if (typeof p.priority === 'number') return p.priority;
+      return PROVIDER_CAPABILITY_SCORE[p.provider] ?? PROVIDER_CAPABILITY_SCORE._default;
+    };
+    switch (strategy) {
+      case 'latency-warm': {
+        const r = this._ensureWarmRouter();
+        const ranked = r.rankedEnabledIds().filter(id => enabledAll.includes(id));
+        return ranked.length ? ranked : enabledAll.sort((a,b) => priScore(b)-priScore(a));
+      }
+      case 'priority':
+      case 'fallback':
+      default:
+        return enabledAll.sort((a,b) => priScore(b)-priScore(a));
+    }
   }
 
   _generateIntelligentResponse(messages, expertType, history) {
@@ -1218,4 +1404,4 @@ function getGateway() {
   return gatewayInstance;
 }
 
-module.exports = { LLMGateway, getGateway, PROVIDER_PRESETS };
+module.exports = { LLMGateway, getGateway, PROVIDER_PRESETS, LatencyWarmRouter, ROUTING_STRATEGIES };

@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>数独 Sudoku</title>
+<style>
+  body { font-family: system-ui, sans-serif; background:#0b1020; color:#e5e7eb; margin:0; display:flex; flex-direction:column; align-items:center; }
+  h1 { margin: 12px 0 4px; font-size: 20px; }
+  .hud { display:flex; gap:14px; margin:8px 0 10px; font-size:14px; }
+  .hud b { color:#a7f3d0; }
+  .board { display:grid; grid-template-columns: repeat(9, 40px); grid-template-rows: repeat(9, 40px); border:2px solid #9ca3af; background:#111827; }
+  .cell { width:40px; height:40px; border:1px solid #374151; display:flex; align-items:center; justify-content:center; cursor:pointer; user-select:none; }
+  .cell.fixed { color:#93c5fd; font-weight:700; background:#1f2937; }
+  .cell.selected { outline: 2px solid #f59e0b; }
+  .cell.wrong { color:#ef4444; }
+  .cell.r3 { border-right:2px solid #9ca3af; }
+  .cell.b3 { border-bottom:2px solid #9ca3af; }
+  .numpad { display:grid; grid-template-columns: repeat(5, 44px); gap:4px; margin-top:12px; }
+  .numpad button { height:36px; background:#1f2937; color:#e5e7eb; border:1px solid #374151; border-radius:4px; cursor:pointer; }
+  .numpad button:active { background:#374151; }
+  .row { display:flex; gap:10px; margin-top:10px; }
+  .row button { padding:6px 12px; background:#334155; color:#e5e7eb; border:1px solid #475569; border-radius:4px; cursor:pointer; }
+</style>
+</head>
+<body>
+  <h1>数独 · Sudoku</h1>
+  <div class="hud">
+    <span>得分 score: <b id="score">0</b></span>
+    <span>难度 level: <b id="level">easy</b> / <span id="levels">easy,medium,hard</span></span>
+    <span>错误次数 mistakes: <b id="mistakes">0</b></span>
+  </div>
+  <div class="board" id="board"></div>
+  <div class="numpad" id="numpad"></div>
+  <div class="row">
+    <button id="btn-check">校验 check</button>
+    <button id="btn-solve">显示答案 solve</button>
+    <button id="btn-restart">重开 restart</button>
+  </div>
+<script>
+"use strict";
+/* Sudoku — no eval, no unsafe innerHTML writes */
+(function () {
+  const boardEl = document.getElementById('board');
+  const padEl = document.getElementById('numpad');
+  const scoreEl = document.getElementById('score');
+  const levelEl = document.getElementById('level');
+  const mistakesEl = document.getElementById('mistakes');
+  const MAX_WRONG = 5;
+  let score = 0, mistakes = 0, level = 'easy';
+  let solution = [];
+  let puzzle = [];
+  let fixed = [];
+  let selected = -1;
+
+  function shuffle(a) {
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+  function emptyGrid() { return Array.from({length:9}, () => new Array(9).fill(0)); }
+
+  function isValid(g, r, c, v) {
+    for (let i = 0; i < 9; i++) if (g[r][i] === v || g[i][c] === v) return false;
+    const br = Math.floor(r / 3) * 3, bc = Math.floor(c / 3) * 3;
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) if (g[br+i][bc+j] === v) return false;
+    return true;
+  }
+  function fillGrid(g) {
+    for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+      if (g[r][c] === 0) {
+        const opts = shuffle([1,2,3,4,5,6,7,8,9]);
+        for (const v of opts) if (isValid(g, r, c, v)) {
+          g[r][c] = v;
+          if (fillGrid(g)) return true;
+          g[r][c] = 0;
+        }
+        return false;
+      }
+    }
+    return true;
+  }
+  function copy(g) { return g.map(row => row.slice()); }
+  function makePuzzle(lv) {
+    level = lv;
+    levelEl.textContent = lv;
+    const holes = lv === 'easy' ? 32 : lv === 'medium' ? 45 : 55;
+    const sol = emptyGrid();
+    fillGrid(sol);
+    const puz = copy(sol);
+    let removed = 0;
+    const cells = shuffle([...Array(81).keys()]);
+    for (const idx of cells) {
+      if (removed >= holes) break;
+      const r = Math.floor(idx / 9), c = idx % 9;
+      if (puz[r][c] === 0) continue;
+      puz[r][c] = 0;
+      removed++;
+    }
+    solution = sol; puzzle = puz;
+    fixed = copy(puz).map(row => row.map(v => v !== 0));
+  }
+
+  function updateHud() {
+    scoreEl.textContent = String(score);
+    mistakesEl.textContent = String(mistakes);
+  }
+
+  function render() {
+    // Clear nodes via replaceChildren (no innerHTML)
+    while (boardEl.firstChild) boardEl.removeChild(boardEl.firstChild);
+    for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+      const d = document.createElement('div');
+      d.className = 'cell';
+      if ((c + 1) % 3 === 0 && c !== 8) d.classList.add('r3');
+      if ((r + 1) % 3 === 0 && r !== 8) d.classList.add('b3');
+      const idx = r * 9 + c;
+      const val = puzzle[r][c];
+      if (fixed[r][c]) d.classList.add('fixed');
+      if (idx === selected) d.classList.add('selected');
+      if (val !== 0 && !fixed[r][c] && val !== solution[r][c]) d.classList.add('wrong');
+      const t = document.createTextNode(val === 0 ? '' : String(val));
+      d.appendChild(t);
+      d.addEventListener('click', () => { selected = idx; render(); });
+      boardEl.appendChild(d);
+    }
+  }
+  function buildPad() {
+    while (padEl.firstChild) padEl.removeChild(padEl.firstChild);
+    const keys = ['1','2','3','4','5','6','7','8','9','⌫'];
+    for (const k of keys) {
+      const b = document.createElement('button');
+      b.appendChild(document.createTextNode(k));
+      b.addEventListener('click', () => handleInput(k));
+      padEl.appendChild(b);
+    }
+  }
+
+  function handleInput(k) {
+    if (selected < 0) return;
+    const r = Math.floor(selected / 9), c = selected % 9;
+    if (fixed[r][c]) return;
+    if (k === '⌫') { puzzle[r][c] = 0; render(); return; }
+    const v = parseInt(k, 10);
+    puzzle[r][c] = v;
+    if (v === solution[r][c]) { score += 10; updateHud(); }
+    else { mistakes++; updateHud(); }
+    if (mistakes >= MAX_WRONG) checkWinner('lose');
+    if (isBoardFilled()) checkWinner(checkCorrect() ? 'win' : 'lose');
+    render();
+  }
+  function isBoardFilled() { for (let r=0;r<9;r++) for (let c=0;c<9;c++) if (puzzle[r][c]===0) return false; return true; }
+  function checkCorrect() { for (let r=0;r<9;r++) for (let c=0;c<9;c++) if (puzzle[r][c] !== solution[r][c]) return false; return true; }
+  function showAnswer() {
+    puzzle = copy(solution);
+    fixed = fixed.map(row => row.map(() => true));
+    score = Math.max(0, score - 200); updateHud();
+    render();
+  }
+
+  function winLose(kind) {
+    if (kind === 'win') {
+      score += 1000;
+      updateHud();
+      alert('恭喜完成 YOU WIN! 最终得分 ' + score);
+    } else {
+      alert('GAME OVER 次数耗尽！最终得分 ' + score);
+    }
+  }
+  function checkWinner(kind) { return winLose(kind); }
+
+  function startGame(lv) {
+    score = 0; mistakes = 0;
+    makePuzzle(lv || 'easy');
+    selected = -1;
+    buildPad();
+    updateHud();
+    render();
+    document.getElementById('btn-check').onclick = () => {
+      if (checkCorrect()) winLose('win'); else alert('还有错误 There are mistakes — 得分: ' + score);
+    };
+    document.getElementById('btn-solve').onclick = showAnswer;
+    document.getElementById('btn-restart').onclick = () => startGame(level);
+  }
+  window.startGame = startGame;
+  document.addEventListener('DOMContentLoaded', () => startGame('easy'));
+})();
+</script>
+</body>
+</html>

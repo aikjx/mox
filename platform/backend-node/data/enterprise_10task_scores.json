@@ -1,0 +1,281 @@
+{
+  "meta": {
+    "schemaVersion": 1,
+    "specPath": "..\\..\\.trae\\specs\\20260823-enterprise-10task-scoring-checklist",
+    "definitionsSha256": "e69b255d0efc721496a1111c19a0964f9e42325a6c0d3caad5f692f63fddc22e",
+    "generatedAt": "2026-08-23T22:34:50.4630398+08:00",
+    "thresholds": {
+      "totalScoreMin": 90,
+      "perTaskMin": 8,
+      "ruleMax": 5,
+      "rubricMax": 5
+    }
+  },
+  "byTask": {
+    "t1": {
+      "name": "传媒（内容媒介）增删改查 CRUD",
+      "acIds": [
+        "AC-T1",
+        "AC-T1-Quality"
+      ],
+      "rule": {
+        "score": 0,
+        "max": 5,
+        "pass": false,
+        "evidence": null,
+        "message": null
+      },
+      "rubric": {
+        "score": 0,
+        "max": 5,
+        "pass": false,
+        "dimension": "CRUD 韧性 · 错误隔离 · 异常分支正确性",
+        "evidence": null,
+        "message": null
+      },
+      "total": 0,
+      "pass": false,
+      "anomalies": []
+    },
+    "t2": {
+      "name": "算法性能与稳定性（7 核心图算法+守恒律）",
+      "acIds": [
+        "AC-T2",
+        "AC-T2-Stability"
+      ],
+      "rule": {
+        "score": 0,
+        "max": 5,
+        "pass": false,
+        "evidence": null,
+        "message": null
+      },
+      "rubric": {
+        "score": 0,
+        "max": 5,
+        "pass": false,
+        "dimension": "算法 数值一致性 / 无波动 / 鲁棒性",
+        "evidence": null,
+        "message": null
+      },
+      "total": 0,
+      "pass": false,
+      "anomalies": []
+    },
+    "t3": {
+      "name": "代码生成性能（AIS 分层 & 产出速度 & 代码质量）",
+      "acIds": [
+        "AC-T3",
+        "AC-T3-Quality"
+      ],
+      "rule": {
+        "score": 0,
+        "max": 5,
+        "pass": false,
+        "evidence": null,
+        "message": null
+      },
+      "rubric": {
+        "score": 0,
+        "max": 5,
+        "pass": false,
+        "dimension": "代码可维护性 · AIS 分层合规 · 注释覆盖率",
+        "evidence": null,
+        "message": null
+      },
+      "total": 0,
+      "pass": false,
+      "anomalies": []
+    },
+    "t4": {
+      "name": "论文/报告精确度（专家联盟 辩论综合 证据引用）",
+      "acIds": [
+        "AC-T4",
+        "AC-T4-Evidence"
+      ],
+      "rule": {
+        "score": 0,
+        "max": 5,
+        "pass": false,
+        "evidence": null,
+        "message": null
+      },
+      "rubric": {
+        "score": 0,
+        "max": 5,
+        "pass": false,
+        "dimension": "报告 引用真实率 · 溯源深度 · 术语正确性",
+        "evidence": null,
+        "message": null
+      },
+      "total": 0,
+      "pass": false,
+      "anomalies": []
+    },
+    "t5": {
+      "name": "写游戏（3 类可运行 HTML 游戏 生成 & 安全）",
+      "acIds": [
+        "AC-T5",
+        "AC-T5-Playability"
+      ],
+      "rule": {
+        "score": 0,
+        "max": 5,
+        "pass": false,
+        "evidence": null,
+        "message": null
+      },
+      "rubric": {
+        "score": 0,
+        "max": 5,
+        "pass": false,
+        "dimension": "可玩性 · 无危险 API · 渲染与循环结构合理",
+        "evidence": null,
+        "message": null
+      },
+      "total": 0,
+      "pass": false,
+      "anomalies": []
+    },
+    "t6": {
+      "name": "写网站（官网/登录仪表盘/API 文档落地页）",
+      "acIds": [
+        "AC-T6",
+        "AC-T6-SecUX"
+      ],
+      "rule": {
+        "score": 0,
+        "max": 5,
+        "pass": false,
+        "evidence": null,
+        "message": null
+      },
+      "rubric": {
+        "score": 0,
+        "max": 5,
+        "pass": false,
+        "dimension": "UX 可访问性 · 安全基线（inline 危险脚本/XSS 入口）",
+        "evidence": null,
+        "message": null
+      },
+      "total": 0,
+      "pass": false,
+      "anomalies": []
+    },
+    "t7": {
+      "name": "写数据库（Schema/迁移/CRUD/事务/并发/索引）",
+      "acIds": [
+        "AC-T7",
+        "AC-T7-Index"
+      ],
+      "rule": {
+        "score": 0,
+        "max": 5,
+        "pass": false,
+        "evidence": null,
+        "message": null
+      },
+      "rubric": {
+        "score": 0,
+        "max": 5,
+        "pass": false,
+        "dimension": "索引覆盖 · 事务原子性 · 并发写一致性",
+        "evidence": null,
+        "message": null
+      },
+      "total": 0,
+      "pass": false,
+      "anomalies": []
+    },
+    "t8": {
+      "name": "写知识图谱（W1-W13 全绿 + 连通 1 分量 + 治理）",
+      "acIds": [
+        "AC-T8",
+        "AC-T8-Governance"
+      ],
+      "rule": {
+        "score": 0,
+        "max": 5,
+        "pass": false,
+        "evidence": null,
+        "message": null
+      },
+      "rubric": {
+        "score": 0,
+        "max": 5,
+        "pass": false,
+        "dimension": "图谱治理成熟度 · 自同步自愈 · 资产覆盖率",
+        "evidence": null,
+        "message": null
+      },
+      "total": 0,
+      "pass": false,
+      "anomalies": []
+    },
+    "t9": {
+      "name": "写业务流程图（Flow Registry 完整/连通/核心域/锚点/可执行）",
+      "acIds": [
+        "AC-T9",
+        "AC-T9-Executable"
+      ],
+      "rule": {
+        "score": 0,
+        "max": 5,
+        "pass": false,
+        "evidence": null,
+        "message": null
+      },
+      "rubric": {
+        "score": 0,
+        "max": 5,
+        "pass": false,
+        "dimension": "流程 可执行性 · degrades_to 降级链 · 委托引擎真实",
+        "evidence": null,
+        "message": null
+      },
+      "total": 0,
+      "pass": false,
+      "anomalies": []
+    },
+    "t10": {
+      "name": "写云盘（文件上传下载版本权限 & 可靠性）",
+      "acIds": [
+        "AC-T10",
+        "AC-T10-Reliability"
+      ],
+      "rule": {
+        "score": 0,
+        "max": 5,
+        "pass": false,
+        "evidence": null,
+        "message": null
+      },
+      "rubric": {
+        "score": 0,
+        "max": 5,
+        "pass": false,
+        "dimension": "可靠性 · 配额/限速 · 大文件分片/断点续传结构",
+        "evidence": null,
+        "message": null
+      },
+      "total": 0,
+      "pass": false,
+      "anomalies": []
+    }
+  },
+  "summary": {
+    "total": 0,
+    "totalMax": 100,
+    "avg": 0,
+    "minPerTask": 0,
+    "maxPerTask": 0,
+    "cheatCount": null,
+    "overallPass": false
+  },
+  "audit": {
+    "commit": "81fefdf",
+    "runner": "mo",
+    "scoreSnapshotSha256": null,
+    "platform": "Microsoft Windows NT 10.0.26200.0"
+  }
+}

@@ -1,4 +1,4 @@
-﻿//! PT-Primi 标准文档自生成（规范缺口 R08）
+//! PT-Primi 标准文档自生成（规范缺口 R08）
 //!
 //! 把平台运行累积的事实源（六维绑定注册表 + 融合统一图 + 全局闸门）自动生成
 //! PT-Primi 标准文档集（PT-DOC 01..10），实现「平台自文档化」——任何一次
@@ -473,7 +473,15 @@ mod tests {
         };
         let g = reg.to_unified_graph();
         let set = PtdocSet::generate(&reg, &gate, &g);
-        let dir = std::env::temp_dir().join("primiflow_fusion_test_ptdoc");
+        // 使用带非零线程标识 & 随机后缀的独立目录，避免多测试共享/竞争
+        let tid = format!("{:?}", std::thread::current().id()).replace(['(', ')', ' '], "");
+        let ns = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0);
+        let suffix = format!("ptdoc_{tid}_{ns}");
+        let dir = std::env::temp_dir().join(format!("primiflow_fusion_test_{suffix}"));
+        let _ = std::fs::remove_dir_all(&dir);
         set.export(&dir).unwrap();
         assert!(dir.join("INDEX.md").exists());
         assert!(dir.join("index.json").exists());

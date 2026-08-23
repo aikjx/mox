@@ -1,120 +1,64 @@
-# flow-ai —— 业务流程图优化 AI 核心算法库（Rust）
+# flow-ai · 流程 & 调度 AI 引擎
 
-面向「流程图 + 关系网」双载体 Agent 内核，把原生线性 ReAct 架构升级为
-**「图谱优先 → 流程约束 → 推理兜底」** 三层架构。
+## §1 · 概述
+璇玑 L4Services 级流程 AI 引擎：面向 PrimiFlow/FlowGraph 的 DAG 自动化调度，包含 CPM 关键路径、冲突检测（资源/数据冒险）、拓扑传播、代码生成、流水线、原语库、调度器 9 大模块，是 PrimiFlow/全维分析的自动排程真源。
 
-纯 Rust 实现，零重型依赖（仅 serde / serde_json / anyhow），可嵌入 runtime、
-编译进 WASM，或作为 CLI 独立使用。
-
-## 一、模块与算法
-
-| 模块 | 解决的问题 | 核心算法 |
-|------|-----------|---------|
-| `model` | 流程图统一 IR | Kahn 拓扑排序、位图压缩传递闭包 |
-| `dataflow` | 串行流程自动并行化 | RAW/WAR/WAW 冒险分析 + 传递归约 |
-| `critpath` | 找瓶颈、算工期 | CPM 双向遍历 + 总浮动时间 |
-| `conflict` | 异常/合规前置拦截 | 并发资源冲突检测 + 自动修复 |
-| `schedule` | 真实资源下的排程 | RCPSP 列表调度（upward rank 优先级） |
-| `topology` | 六维实体关系网 | Dijkstra 加权最短路 + 权重衰减归档 |
-| `codegen` | 流程 ⇄ 代码双向映射 | 分层代码生成 + 缩进敏感结构反解析 |
-| `pipeline` | 端到端编排 | 六阶段流水线 |
-
-### 1. 自动并行化（核心价值）
-
-原生流程图把**书写顺序**当成**执行依赖**，这是串行的根因。
-本库用编译器的三类冒险分析，把顺序边分解为真依赖与伪依赖：
-
-- **RAW**（A 写 x，B 读 x）→ 必须保序，真数据依赖
-- **WAR / WAW** → 保序以保证确定性
-- **无共享资源** → 判定为伪依赖，**剪掉并自动插入并行网关**
-
-叠加**副作用序**保护：`Shell`/`Human`/非幂等 `Browser|Http` 之间保持原始
-相对顺序，避免「优化出正确性事故」。
-
-### 2. 冲突检测与自动修复
-
-覆盖数据库事务、浏览器多实例抢占、文件读写锁、政务合规脱敏，以及环、
-不可达、悬垂节点、分支不完整、缺失异常路径等结构缺陷。
-
-命中 `Blocking` 级冲突时**拒绝出码** —— 这就是「异常分支前置拦截」。
-`auto_repair` 可自动注入脱敏 Guard、互斥边、异常边。
-
-> 关键设计：修复注入的是 `EdgeKind::Mutex` **硬约束**边。若用普通顺序边，
-> 下一轮数据流分析会正确地把它当成伪依赖剪掉，导致冲突「死灰复燃」。
-> 同理，`Guard` 节点强制支配其后继，否则校验会与被保护节点并发执行而失效。
-
-### 3. 资源受限调度
-
-关键路径是**无限资源**下的理论下界；真实场景浏览器只有 1 个实例。
-列表调度以「剩余关键路径长度」为优先级，在资源约束下求近似最优排程，
-输出每个节点的 start/finish、各池峰值与利用率。
-
-## 二、CLI 用法
-
-```bash
-cargo run -p flow-ai --bin flowopt -- demo                    # 内置政务场景演示
-cargo run -p flow-ai --bin flowopt -- optimize flow.json --out ./proj
-cargo run -p flow-ai --bin flowopt -- reverse legacy.py --out flow.json
-cargo run -p flow-ai --bin flowopt -- mermaid flow.json
-```
-
-## 三、库用法
+## §2 · CRATE_ID / ENGINE_NAME / AIS 层级
+归属 **AIS Layer = L4Services**。
 
 ```rust
-use flow_ai::prelude::*;
-
-let mut g = FlowGraph::new("demo", "示例");
-g.add_node(FlowNode::task("a", "读文件", ToolKind::File, 300)
-    .with_access(Access::write("var:x")));
-g.add_node(FlowNode::task("b", "查库", ToolKind::Database, 400)
-    .with_access(Access::write("var:y")));
-g.add_node(FlowNode::task("c", "汇总", ToolKind::Compute, 100)
-    .with_access(Access::read("var:x"))
-    .with_access(Access::read("var:y")));
-g.add_edge(FlowEdge::seq("a", "b"));   // 人为串联
-g.add_edge(FlowEdge::seq("b", "c"));
-
-let rep = optimize(&g, &OptimizeConfig::default());
-println!("{}", rep.summary());   // a、b 自动并行
+pub const CRATE_ID: &str = "2fcd3eac-e894-5876-b007-fb33c56c0d65";
+pub const ENGINE_NAME: &str = "xuanji::flow_ai";
+pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+    id: CRATE_ID,
+    name: env!("CARGO_PKG_NAME"),
+    version: env!("CARGO_PKG_VERSION"),
+    layer: xuanji_common_meta::AisLayer::L4Services,
+    owner: "xuanji-core",
+};
 ```
 
-## 四、实测结果（内置政务演示）
+## §3 · 模块结构 src/* 说明
+| 文件 | 职责 |
+|------|------|
+| `src/lib.rs` | 三常量 + 9 大模块 pub 再导出总入口 |
+| `src/model.rs` | 流程/节点/边/槽 核心模型 AST 枚举 |
+| `src/dataflow.rs` | 数据流分析：RAWar/WAW/WAR 三类冒险检测 + 静态单赋值 |
+| `src/conflict.rs` | `Conflict` / `ConflictReport`：资源冲突 + 依赖冲突结构化报告 |
+| `src/critpath.rs` | CPM 关键路径：Kelley-Walker 双 BFS 前推+回推 |
+| `src/topology.rs` | 拓扑图：`Entity / Relation / Match / RoutePlan / ImpactSet`；影响面分析 |
+| `src/schedule.rs` | RCPSP 风格调度：`Slot / PoolUsage / Schedule`；资源池约束贪心 |
+| `src/pipeline.rs` + `src/primitive.rs` | 流水线组合器 + 原语库（30+ 常用算子 thin wrapper 转发到 operator-core Registry） |
+| `src/codegen.rs` | 代码生成：`GeneratedFile + CodeBundle`，支持 Rust/TS/SQL 3 输出 |
+| `src/bin/flowopt.rs` + `bin/flowopt.rs.artifact.md` | CLI `flowopt`：DAG 输入 → CPM/调度/冲突报告 → 代码生成产物 |
 
-```
-串行耗时      : 1825 ms
-关键路径下界  : 1020 ms
-资源受限排程  : 1020 ms
-实际加速比    : 1.79x (节省 44.1%)
-剪除伪依赖    : 3 条
-并行层 / 峰值 : 4 层 / 3 并发
-冲突          : 0 项（阻断 0，自动修复 5）
-代码生成      : 6 个文件 / 300 行
-优先优化节点  : web1 > web2 > merge
-```
+## §4 · 关键 Trait & Impl
+- **`pub trait Primitive`**（primitive.rs）：`fn apply(inputs) -> Result<Outputs>`；30+ 内置原语各自 impl。
+- **`pub trait Scheduler`**（schedule.rs）：`fn schedule(dag, pool) -> Result<Schedule>`；默认 `GreedyRcpspScheduler` impl。
+- **`struct Pipeline`**；`impl Pipeline { build, validate, execute, schedule, detect_conflicts, codegen }` 6 大能力。
+- **`struct ConflictReport` + `struct CodeBundle` + `struct TopologyGraph`** 关键结构体。
+- **`struct RoutePlan`**：拓扑路由（多路径规划 + 影响面集合）。
 
-排程验证浏览器容量=1 被严格遵守（web1 `0-500`，web2 `500-900`，零重叠），
-脱敏 Guard 在 `0-5ms` 支配数据库节点（db 从 `5ms` 起跑）。
-
-## 五、生成代码的分层结构
-
-```
-generated/
-├── tools.py      工具层：各工具适配器 + Semaphore 资源池（与 pools 配置一一对应）
-├── tasks.py      业务层：每节点一函数，docstring 标注读写集
-├── errors.py     异常层：异常类型 + EXCEPTION_ROUTES 路由表
-├── scheduler.py  调度层：LAYERS 并行层 + ThreadPoolExecutor 下发
-└── main.py       入口
-```
-
-生成代码已实测可执行：并发调度生效（1.32x 实测加速），异常触发时正确路由到
-处理器并执行一次，且流程不中断。
-
-## 六、测试
-
+## §5 · 跑单测指引
 ```bash
-cargo test -p flow-ai        # 50 单元测试 + 1 文档测试，全绿
+cargo test -p flow-ai
+cargo run -p flow-ai --bin flowopt -- --dag examples/sample.pf   # 跑 DAG 优化
 ```
+断言覆盖：CPM 钻石图关键路径与预期一致、`detect_conflicts` 对 RAW/WAW/WAR 至少各识别 1 例、`schedule` 对同资源两任务不重叠、代码生成 Rust/TS/SQL 文件数正确、拓扑 graph `ImpactSet` 变更触达节点数 = 期望值。
 
-覆盖：伪依赖识别、RAW/WAW 保留、副作用保序、CPM 浮动时间、四类冲突检测、
-自动修复幂等性、资源容量约束、图谱最短路/衰减/级联影响、代码生成与反解析
-round-trip、异常处理器不得进入正常执行层、Python 标识符名称修饰规避。
+## §6 · 二次开发 / DIP 反转指引
+- **新增 Scheduler**：实现 `trait Scheduler` → 在 `pipeline.rs` 的 `with_scheduler(Box::new(X))` 注入。不改 execute 主循环。
+- **新增代码生成后端**：在 `codegen.rs` 的 `Language` enum 追加变体 → 对应 gen_lang 函数（thin wrapper ≤ 5 行分发到各语言）。
+- **新增 Primitive**：实现 trait → 在 `primitive.rs` 注册表 push，避免 `match` 分派改写。
+
+## §7 · TDD RED→GREEN 工作流 + 精度护栏
+**流程**：① RED：加 DAG 反例（自环/负权重/不连通）→ 期望 Err 或 Fallback 路径；② GREEN：对应 impl；③ 回归 flowopt CLI 端到端。
+**精度护栏**：CPM `Duration` 一律用 i64（整数纳秒）相加，全程无浮点；最终 CPM 输出 duration.to_f64 只用于展示；冲突报告按 (node_a_id, node_b_id, type) 三元组排序稳定输出，方便快照对比。
+
+## §8 · 图谱绑定（三注册 key + self_sync 规则）
+```
+domain id      : domain-rust-flow-ai
+engine id      : engine-rust-flow-ai
+code_graph unit: flow-ai
+```
+self_sync：改 `src/lib.rs` 三常量 / 新增 Primitive 或 Schedule → `self_sync_rust.js` 刷新三注册。

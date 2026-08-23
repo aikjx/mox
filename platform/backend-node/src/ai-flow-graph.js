@@ -15,6 +15,7 @@
  */
 
 const { getAIIntegrationEngine } = require('./ai-integration-engine');
+const { GraphFormulas: SrcGF } = require('./graph/graph-formulas');
 
 // ==================== 公式库（单源实现，人读公式 + 解读文案） ====================
 
@@ -36,88 +37,17 @@ const GraphFormulas = {
   },
 
   /**
-   * F2 度中心性：C_D(v) = deg(v) / (N-1)（无向度）
+   * F2 度中心性：[C3 SINGLE-SOURCE] 转发 graph-formulas.js（公开真源）
    */
   degreeCentrality(nodes, edges) {
-    const n = nodes.length;
-    if (n === 0) return {};
-    const deg = new Map(nodes.map(nd => [nd.id, 0]));
-    edges.forEach(e => {
-      if (deg.has(e.source)) deg.set(e.source, deg.get(e.source) + 1);
-      if (deg.has(e.target)) deg.set(e.target, deg.get(e.target) + 1);
-    });
-    const out = {};
-    for (const [id, d] of deg) {
-      out[id] = d / (n - 1 || 1);
-    }
-    return out;
+    return SrcGF.degreeCentrality(nodes, edges, { expandRaw: true });
   },
 
   /**
-   * F4 介数中心性（Brandes 2001 算法，BFS 最短路计数）
-   *   C_B(v) = Σ_{s≠v≠t} σ_st(v)/σ_st
-   *   归一化：无向除以 (N-1)(N-2)/2，有向除以 (N-1)(N-2)
-   * 修复 D8：此前 ai-engine 中该指标为占位符恒 0。
+   * F4 介数中心性：[C3 SINGLE-SOURCE] 转发 graph-formulas.js（Brandes 算法真源）
    */
   betweennessCentrality(nodes, edges, { directed = false } = {}) {
-    const n = nodes.length;
-    const ids = nodes.map(nd => nd.id);
-    const idx = new Map(ids.map((id, i) => [id, i]));
-    const adj = Array.from({ length: n }, () => []);
-    edges.forEach(e => {
-      const s = idx.get(e.source);
-      const t = idx.get(e.target);
-      if (s === undefined || t === undefined || s === t) return;
-      adj[s].push(t);
-      if (!directed) adj[t].push(s);
-    });
-
-    const cb = new Array(n).fill(0);
-
-    // Brandes：对每个源点 s 做 BFS，反向累积依赖
-    for (let s = 0; s < n; s++) {
-      const stack = [];
-      const queue = [s];
-      const dist = new Array(n).fill(-1);
-      const sigma = new Array(n).fill(0);
-      const preds = Array.from({ length: n }, () => []);
-      dist[s] = 0;
-      sigma[s] = 1;
-
-      while (queue.length) {
-        const v = queue.shift();
-        stack.push(v);
-        for (const w of adj[v]) {
-          if (dist[w] < 0) { // w 首次被发现
-            dist[w] = dist[v] + 1;
-            queue.push(w);
-          }
-          if (dist[w] === dist[v] + 1) { // v 是 w 的最短路前驱
-            sigma[w] += sigma[v];
-            preds[w].push(v);
-          }
-        }
-      }
-
-      // 反向累积依赖（δ）
-      const delta = new Array(n).fill(0);
-      while (stack.length) {
-        const w = stack.pop();
-        for (const v of preds[w]) {
-          delta[v] += (sigma[v] / sigma[w]) * (1 + delta[w]);
-        }
-        if (w !== s) cb[w] += delta[w];
-      }
-    }
-
-    // 归一化 + 无向图 Brandes 累积了两次方向，除 2（保留全精度，展示层再格式化）
-    const norm = (n > 2) ? (directed ? (n - 1) * (n - 2) : ((n - 1) * (n - 2)) / 2) : 1;
-    const scale = directed ? 1 : 0.5;
-    const out = {};
-    ids.forEach((id, i) => {
-      out[id] = norm > 0 ? (cb[i] * scale) / norm : 0;
-    });
-    return out;
+    return SrcGF.betweennessCentrality(nodes, edges, { directed });
   },
 
   /**
@@ -184,8 +114,20 @@ const GraphFormulas = {
       q += eIn[c] / m - Math.pow(dSum[c] / (2 * m), 2);
     }
     return q;
-  }
+  },
+
+  /**
+   * PageRank：[C3 SINGLE-SOURCE] 转发 graph-formulas.js（公开真源，dangling 分发 + 1e-6 收敛）
+   */
+  pagerank(nodes, edges, opts) {
+    return SrcGF.pagerank(nodes, edges, opts || {});
+  },
 };
+
+// 企业级归一化（C3 单一真源）：degreeCentrality / betweennessCentrality / PageRank
+// 三个方法在此模块内已改为 thin wrapper 直接 forward SrcGF（graph/graph-formulas.js）。
+// 模块内不允许独立实现（防重复开发看门狗校验 wrapper 体 ≤4 行）。
+// 其他非清单方法（density/closeness/communityDetectionCNM 等）仍保留为 AI 流水线专用，不与 C3 清单冲突。
 
 // ==================== AI 流程图谱 ====================
 

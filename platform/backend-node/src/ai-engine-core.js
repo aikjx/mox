@@ -24,6 +24,8 @@ const { getAIEngine } = require('./ai-engine');
 const { getUltimateEngine } = require('./ultimate-ai-engine');
 const { getAllianceEngine } = require('./expert-alliance-engine');
 const { getAIFlowGraph } = require('./ai-flow-graph');
+// [C3 单一真源] 意图识别 domain 层：ai-engine-core 不做独立重复实现
+const { detectIntent: _domainDetectIntent } = require('./expert-alliance/domain/intent-classifier');
 
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const METRICS_FILE = 'engine_core_metrics.json';
@@ -100,30 +102,9 @@ class AIEngineCore {
    * 保留同步关键词打分作为降级路径（图谱引擎异常时兜底），不变式②的延伸。
    */
   detectIntent(question) {
-    const text = String(question || '');
-    const scores = {};
-    const hits = {};
-    for (const [intent, rules] of Object.entries(INTENT_KEYWORDS)) {
-      let score = 0;
-      const matched = [];
-      for (const { kw, w } of rules) {
-        if (text.includes(kw)) {
-          score += w;
-          matched.push(kw);
-        }
-      }
-      scores[intent] = score;
-      if (matched.length) hits[intent] = matched;
-    }
-    let best = 'chat';
-    let bestScore = 0;
-    for (const [intent, score] of Object.entries(scores)) {
-      if (score > bestScore) {
-        best = intent;
-        bestScore = score;
-      }
-    }
-    return { intent: best, score: bestScore, scores, matched_keywords: hits[best] || [], method: 'keyword-scoring' };
+    // [C3] SINGLE-SOURCE wrapper（真实定义见 expert-alliance/domain/intent-classifier.js）
+    const r = _domainDetectIntent(question);
+    return { intent: r.primary, score: r.allScores?.[r.primary] || 0, scores: r.allScores || {}, matched_keywords: r.matchedKeywords || [], method: 'keyword-scoring-domain' };
   }
 
   // 异步图谱版意图识别（激活扩散）：process 主路径

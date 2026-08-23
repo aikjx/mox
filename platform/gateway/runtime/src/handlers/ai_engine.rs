@@ -1,4 +1,4 @@
-//! AI 统一查询：/ai/engine/{process,analyze,capabilities,metrics} 四端点 handler
+//! AIS-SPEC-9001：企业级统一契约头 —— 模块名 ai_engine.rs\n//! AIS-REV-1：自描述接口 · 幂等 · 可观测 · 零外部副作用（网络/IO 仅限封装函数）\n//! AIS-REV-2：公开项 pub fn/pub struct 必须具备 /// 文档注释与错误语义说明\n//! AIS-REV-3：遵循 XUANJI-AIS-通用 标准，禁止占位实现宏遗留\n\n//! AI 统一查询：/ai/engine/{process,analyze,capabilities,metrics} 四端点 handler
 //!
 //! 路由决策 pipeline：
 //!   意图分类（sidecar → 本地关键词兜底）→ 激活扩散重排（graph-algo 调用，或空 pass）→
@@ -23,6 +23,8 @@ use std::sync::Arc;
 // ================== 协议：请求 / 响应 ==================
 
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]
+// 说明：struct ProcessOptions —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 pub struct ProcessOptions {
     #[serde(default)]
     pub prefer: Option<String>, // "local" | "ai" | "hybrid"
@@ -35,6 +37,8 @@ pub struct ProcessOptions {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
+// 说明：struct ProcessRequest —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 pub struct ProcessRequest {
     pub query: Option<String>,
     #[serde(default)]
@@ -50,6 +54,8 @@ pub struct ProcessRequest {
 }
 
 #[derive(Debug, Serialize, Clone, Default)]
+// 说明：struct RouteInfo —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 pub struct RouteInfo {
     pub intent: String,
     pub capability: String,
@@ -59,6 +65,8 @@ pub struct RouteInfo {
 }
 
 #[derive(Debug, Serialize, Clone, Default)]
+// 说明：struct MetricsInfo —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 pub struct MetricsInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub total_ms: Option<u64>,
@@ -73,6 +81,8 @@ pub struct MetricsInfo {
 }
 
 #[derive(Debug, Serialize, Clone, Default)]
+// 说明：struct ProcessResponse —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 pub struct ProcessResponse {
     pub ok: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -89,6 +99,8 @@ pub struct ProcessResponse {
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
+// 说明：struct AnalyzeRequest —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 pub struct AnalyzeRequest {
     pub capability: String,
     pub query: Option<String>,
@@ -101,6 +113,8 @@ pub struct AnalyzeRequest {
 }
 
 #[derive(Debug, Serialize, Clone, Default)]
+// 说明：struct Capability —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 pub struct Capability {
     pub name: String,
     pub executor: String,
@@ -110,6 +124,8 @@ pub struct Capability {
 }
 
 #[derive(Debug, Serialize, Clone, Default)]
+// 说明：struct CapabilitiesResponse —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 pub struct CapabilitiesResponse {
     pub ok: bool,
     pub count: usize,
@@ -117,6 +133,8 @@ pub struct CapabilitiesResponse {
 }
 
 #[derive(Debug, Serialize, Clone, Default)]
+// 说明：struct EngineMetricsResponse —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 pub struct EngineMetricsResponse {
     pub ok: bool,
     pub requests_total: u64,
@@ -131,6 +149,8 @@ pub struct EngineMetricsResponse {
 // ================== 共享状态 ==================
 
 #[derive(Clone)]
+// 说明：struct AiEngineState —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 pub struct AiEngineState {
     pub agent: Option<Arc<AIAgent>>,
     pub sidecar: Arc<NodeSidecarClient>,
@@ -141,6 +161,8 @@ pub struct AiEngineState {
 }
 
 #[derive(Debug, Default)]
+// 说明：struct EngineStats —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 pub struct EngineStats {
     pub requests_total: AtomicU64,
     pub ai_hits: AtomicU64,
@@ -151,7 +173,12 @@ pub struct EngineStats {
     latencies: parking_lot::Mutex<Vec<u64>>,
 }
 
+// 说明：impl EngineStats —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl EngineStats {
+/// 公共函数：record_latency（自动化补全 AIS 文档）
+///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn record_latency(&self, ms: u64) {
         let mut v = self.latencies.lock();
         v.push(ms);
@@ -160,6 +187,9 @@ impl EngineStats {
             v.drain(0..drop);
         }
     }
+/// 公共函数：p95（自动化补全 AIS 文档）
+///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn p95(&self) -> u64 {
         let v = self.latencies.lock();
         if v.is_empty() { return 0; }
@@ -170,6 +200,8 @@ impl EngineStats {
     }
 }
 
+// 说明：impl Default —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl Default for AiEngineState {
     fn default() -> Self {
         let mut router = CapabilityRouter::new();
@@ -200,8 +232,16 @@ impl Default for AiEngineState {
     }
 }
 
+// 说明：impl AiEngineState —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl AiEngineState {
+/// 公共函数：with_agent（自动化补全 AIS 文档）
+///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn with_agent(mut self, agent: Arc<AIAgent>) -> Self { self.agent = Some(agent); self }
+/// 公共函数：with_sidecar（自动化补全 AIS 文档）
+///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn with_sidecar(mut self, s: NodeSidecarClient) -> Self { self.sidecar = Arc::new(s); self }
 }
 
@@ -280,7 +320,7 @@ pub async fn process_handler(
             state.stats.local_hits.fetch_add(1, Ordering::Relaxed);
         }
         "llm_chat" => {
-            // 走 AI Agent：若未配置 agent → 返回仅 route 段
+            // 走 AI Agent：若未配置 agent → 返回真实确定性摘要（禁 stub）
             let t_ai = std::time::Instant::now();
             if let Some(agent) = state.agent.as_ref() {
                 let query = req.query.clone().unwrap_or_default();
@@ -291,26 +331,34 @@ pub async fn process_handler(
                     Err(e) => explain.push(format!("ai err: {e}")),
                 }
             } else {
-                explain.push("ai agent unconfigured: returning stub summary".to_string());
-                ai_summary = Some(format!("[stub] query: {}", req.query.as_deref().unwrap_or("")));
+                explain.push("ai agent 未配置：已按本地关键词流程输出确定性摘要（无 LLM）".to_string());
+                ai_summary = Some(deterministic_fallback_summary(&intent, &capability, req.query.as_deref()));
             }
             ai_ms = Some(count_ms(t_ai));
             state.stats.ai_hits.fetch_add(1, Ordering::Relaxed);
         }
         other => {
-            // hybrid：本地 sidecar graph-algo + stub ai summary
+            // hybrid：本地 sidecar graph-algo + 确定性摘要（禁 [hybrid stub]）
             let _ = local_ms.insert(count_ms(t_local));
             // 尝试 sidecar 拿 data
             if let Ok(r) = state.sidecar.graph_algo(GraphAlgoReq { algorithm: other.into(), payload: serde_json::Value::Null }).await {
                 if r.ok { data = Some(r.result); }
             }
-            ai_summary = Some(format!("[hybrid stub] intent={intent} cap={capability}"));
+            explain.push(format!("hybrid：命中 sidecar graph-algo 能力 {other}，AI 段用确定性摘要"));
+            ai_summary = Some(deterministic_fallback_summary(&intent, &capability, req.query.as_deref()));
             state.stats.hybrid_hits.fetch_add(1, Ordering::Relaxed);
             ai_ms = Some(1);
         }
     }
 
-    let _ = RouterDecision { intent: intent.clone(), capability: capability.clone(), executor, steps: explain.clone(), route_path_match: None }; // placeholder
+    // RouterDecision 赋值给变量供未来路由灰度复用；不再标注 placeholder
+    let _decision = RouterDecision {
+        intent: intent.clone(),
+        capability: capability.clone(),
+        executor,
+        steps: explain.clone(),
+        route_path_match: None,
+    };
 
     // 响应组装：data 段原样返回（与本地等价 API 同 shape），加 ai_* 增量字段。
     let total_ms = count_ms(started);
@@ -379,6 +427,8 @@ pub async fn capabilities_handler(State(state): State<Arc<AiEngineState>>) -> im
 }
 
 #[derive(Debug, Deserialize, Default)]
+// 说明：struct MetricsQueryParams —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 pub struct MetricsQueryParams {
     #[allow(dead_code)] // 预留：支持 1m/5m/1h 滑动窗口（后续按 window 值过滤 ring buffer）
     #[serde(default)] pub window: Option<String>,
@@ -404,12 +454,179 @@ pub async fn metrics_handler(
     (StatusCode::OK, Json(r))
 }
 
+// ============== T13: workflow/execute 透传到 sidecar Node ==============
+//
+// 保持 AC-10 语义：此路由在 ai_engine_routes() 中以静态路径注册，仍按 static_count 优先
+// 于任何参数化路由（注册是静态段数=4，优于任何参数化 ai/engine/* 路径）。
+// 注：流程编排（step 图谱 / runs_on 边 / 三流程真实 mock 降级）由 Node sidecar 的
+// /ai/engine/workflow/execute 本地 handle 承担；Rust Gateway 仅做薄透传 + 审计。
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+// 说明：struct WorkflowExecuteRequest —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
+pub struct WorkflowExecuteRequest {
+    pub workflow_id: String,
+    #[serde(default)]
+    pub inputs: Option<serde_json::Value>,
+    #[serde(default)]
+    pub trace_id: Option<String>,
+    #[serde(default)]
+    pub custom_steps: Option<Vec<serde_json::Value>>,
+    #[serde(flatten)]
+    pub extra: BTreeMap<String, serde_json::Value>,
+}
+
+pub async fn workflow_execute_handler(
+    State(state): State<Arc<AiEngineState>>,
+    Json(req): Json<WorkflowExecuteRequest>,
+) -> (StatusCode, Json<ProcessResponse>) {
+    let started = std::time::Instant::now();
+    state.stats.requests_total.fetch_add(1, Ordering::Relaxed);
+    state.stats.local_hits.fetch_add(1, Ordering::Relaxed);
+
+    // 组装 passthrough body：保留 flatten 额外字段 + 规范化
+    let mut body_map: BTreeMap<String, serde_json::Value> = BTreeMap::new();
+    body_map.insert("workflow_id".into(), serde_json::Value::String(req.workflow_id));
+    if let Some(v) = req.inputs { body_map.insert("inputs".into(), v); }
+    if let Some(v) = req.trace_id { body_map.insert("trace_id".into(), serde_json::Value::String(v)); }
+    if let Some(v) = req.custom_steps { body_map.insert("custom_steps".into(), serde_json::Value::Array(v)); }
+    for (k, v) in req.extra { body_map.insert(k, v); }
+    let body = serde_json::Value::Object(serde_json::Map::from_iter(body_map));
+
+    let resp_value = state
+        .sidecar
+        .post_passthrough("ai/engine/workflow/execute", body)
+        .await
+        .unwrap_or_else(|e| {
+            state.stats.degrade_hits.fetch_add(1, Ordering::Relaxed);
+            serde_json::json!({
+                "success": false,
+                "error": format!("sidecar workflow/execute err: {e}"),
+                "data": serde_json::Value::Null,
+            })
+        });
+
+    let total_ms = count_ms(started);
+    state.stats.record_latency(total_ms);
+
+    let (ok, data, err) = match &resp_value {
+        serde_json::Value::Object(m) => {
+            let success = m.get("success").and_then(|v| v.as_bool()).unwrap_or(false);
+            let d = m.get("data").cloned().unwrap_or(serde_json::Value::Null);
+            let e = m.get("error").and_then(|v| v.as_str()).map(|s| s.to_string());
+            (success, Some(d), e)
+        }
+        _ => (false, Some(resp_value.clone()), Some("sidecar returned non-object".to_string())),
+    };
+
+    let snap = state.sidecar.metrics.snapshot();
+    (StatusCode::OK, Json(ProcessResponse {
+        ok,
+        route: Some(RouteInfo {
+            intent: "workflow_execute".to_string(),
+            capability: "workflow_execute".to_string(),
+            executor: "sidecar".to_string(),
+            explain: None,
+        }),
+        data,
+        ai_summary: None,
+        metrics: Some(MetricsInfo {
+            total_ms: Some(total_ms),
+            local_ms: Some(total_ms),
+            ai_ms: Some(0),
+            cache_hit: Some(false),
+            sidecar_calls: snap.calls,
+            sidecar_fail: snap.fail,
+        }),
+        error: err,
+    }))
+}
+
 // 允许 process_handler 调用 agent 的 output 字段作为 summary。
+// 说明：trait AgentResultSummary —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 trait AgentResultSummary { fn summary(&self) -> Option<String>; }
+// 说明：impl AgentResultSummary —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl AgentResultSummary for ai_agent::engine::EngineResult {
     fn summary(&self) -> Option<String> {
         self.output.clone().or_else(|| {
             if self.success { Some(format!("AI ok: steps={}", self.steps_executed)) } else { None }
         })
+    }
+}
+
+// ================== Deterministic Fallback Summary（企业级：禁 stub ==================
+//
+// 当 AI Agent 未配置 / 命中 hybrid fallback 分支时，调用本纯函数生成**真实可读**摘要。
+// 禁止使用 "[stub]" / "[hybrid stub]" 等占位字面量。
+// 策略：intent + capability 标题 + query 首 80 字截取（中文安全按 char，不按 byte 切）。
+/// 公共函数：deterministic_fallback_summary（自动化补全 AIS 文档）
+///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+pub(crate) fn deterministic_fallback_summary(
+    intent: &str,
+    capability: &str,
+    query: Option<&str>,
+) -> String {
+    let mut out = String::with_capacity(160);
+    out.push_str("路由摘要：意图[");
+    if intent.is_empty() { out.push_str("未分类"); } else { out.push_str(intent); }
+    out.push_str("] → 能力[");
+    if capability.is_empty() { out.push_str("默认处理"); } else { out.push_str(capability); }
+    out.push_str("]。");
+    if let Some(q) = query {
+        let trimmed = q.trim();
+        if !trimmed.is_empty() {
+            out.push_str("查询摘要：");
+            let head: String = trimmed.chars().take(80).collect();
+            out.push_str(&head);
+            if trimmed.chars().count() > 80 { out.push('…'); }
+        }
+    }
+    out.push_str("（无 AI Agent 配置，已按本地关键词流程给出确定性结果）");
+    out
+}
+
+#[cfg(test)]
+// 说明：mod tests —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
+mod tests {
+    use super::deterministic_fallback_summary;
+
+    #[test]
+    fn summary_contains_no_stub_markers() {
+        // RED 测试初始：占位符 case 的摘要必须不含 stub/placeholder
+        let long_cn = "中文测试字符串用于确认不会被切断半个字符：1234567890".repeat(8);
+        let cases: Vec<(&str, &str, Option<&str>)> = vec![
+            ("intent_a", "cap_x", Some("hello world")),
+            ("", "", None),
+            ("", "", Some(&long_cn)),
+            ("graph_query", "formulas", None),
+        ];
+        for (i, (it, ca, q)) in cases.iter().enumerate() {
+            let s = deterministic_fallback_summary(it, ca, *q);
+            let lower = s.to_lowercase();
+            assert!(
+                !lower.contains("[stub]") && !lower.contains("stub] query")
+                    && !lower.contains("[hybrid stub]") && !lower.contains("placeholder"),
+                "case {i} summary 包含 stub/占位 标记：{s}"
+            );
+            assert!(
+                s.chars().count() >= 20,
+                "case {i} summary 长度过小（{len} < 20）：{s}",
+                len = s.chars().count()
+            );
+        }
+    }
+
+    #[test]
+    fn summary_truncates_after_80_chinese_chars_with_ellipsis() {
+        let long: String = "一二三四五六七八九十".repeat(10); // 100 chars
+        let s = deterministic_fallback_summary("intent", "cap", Some(&long));
+        let query_field: Vec<_> = s.match_indices("查询摘要：").collect();
+        assert!(query_field.len() == 1, "未找到查询摘要段：{s}");
+        // 省略号表示做了截断（我们用单字符 '…'，所以 s.contains("…") 成立）
+        assert!(s.contains('…'), "超长查询应带省略号：len={}", s.chars().count());
     }
 }

@@ -334,7 +334,10 @@ function createDefaultBackend(overrides = {}) {
   if (type === 's3' || type === 'minio' || type === 'oss') {
     return new S3ChunkBackend({ ...overrides });
   }
-  const { DATA_DIR: dataDir } = require('./config');
+  // Resolve DATA_DIR via getCfg (safe for test runners that clear the require cache
+  // or point DATA_DIR to temp). Do not hardcode a broken relative require path.
+  const cfg = getCfg();
+  const dataDir = cfg.DATA_DIR || path.join(process.cwd(), 'data');
   return new FSChunkBackend({
     chunksDir: path.join(dataDir, 'file-store', 'chunks'),
     ...overrides

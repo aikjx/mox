@@ -107,7 +107,7 @@ const DOMAINS = [
   {
     id: 'atlas', name: '项目全息图谱', codePath: 'src/routes/atlas.js',
     keyFeatures: ['全项目机器图谱化（域/引擎/算法/数据/文档统一关联）', '无破窗验证（动态比对真实代码库，含 self-sync 自动登记层）', 'AI 架构师图谱增强对话', '自管理：self-sync 自发现/自登记/自愈（自己管理自己）', '全维归一化：需求归一化流水线 + 代码图谱桥接 + 全域治理看板'],
-    engines: ['project-atlas', 'expert-alliance', 'engine-universe'], dataAssets: ['atlas_auto_registry.json', 'normalization_runs.json', 'code_graph_bindings.json'], docs: ['docs/standards/project-atlas.md']
+    engines: ['project-atlas', 'expert-alliance', 'engine-universe'], dataAssets: ['atlas_auto_registry.json', 'atlas_auto_registry_rust.json', 'normalization_runs.json', 'code_graph_bindings.json'], docs: ['docs/standards/project-atlas.md']
   },
   {
     id: 'auto-tasks', name: '自动任务', codePath: 'src/routes/auto-tasks.js',
@@ -156,7 +156,8 @@ const DOMAINS = [
       '与 Rust runtime 的 NodeSidecarClient 形成双向契约：`/internal/intent`、`/internal/graph/algo`',
       '安全：Nginx/网关必须在边界拦截 /internal/*，仅内部 sidecar 调用。'
     ],
-    engines: ['knowledge-graph'], dataAssets: [], docs: []
+    engines: ['knowledge-graph'], dataAssets: ['settings.json', 'logs.json'],
+    docs: ['docs/enterprise/03-top-master-l0-governance.md', 'docs/enterprise/02-architecture.md']
   },
   {
     id: 'projects', name: '项目中心', codePath: 'src/routes/projects.js',
@@ -286,6 +287,139 @@ const DOMAINS = [
     engines: ['engine-rust-kg-hub'], kind: 'rust-crate', scope: 'platform/services/kg-hub',
     module_ids: [], domain_owner: 'Rust 子项目', auto: true,
     dataAssets: [], docs: []
+  },
+  // ===== Rust 16 crate 正式条目（璇玑三注册表联动 · 跨语言） =====
+  //   auto: true → 不入 W1 路由比对（Rust 后端 crate 不暴露 Node 端路由入口）
+  //   注：auto=true 的 Rust 域须在 PROJECTS 中显式归属（对应 proj-* domains 列表），否则 W10 孤儿拦截。
+  {
+    id: 'rust::ai-agent', kind: 'rust', auto: true,
+    codePath: 'platform/services/ai-agent',
+    owns_domain: ['ai-agent', '对话图', '工作流', '工具总线'],
+    version: '3.0.0-ai-powered',
+    tags: ['rust', 'ais::L4Services'],
+    crateId: '00374bdd-cc60-55bf-8970-a879afbfe443'
+  },
+  {
+    id: 'rust::business-catalog', kind: 'rust', auto: true,
+    codePath: 'platform/services/business-catalog',
+    owns_domain: ['business-catalog', '业务螺旋目录', '分面索引'],
+    version: '3.0.0-ai-powered',
+    tags: ['rust', 'ais::L4Services'],
+    crateId: '62b2cca1-d98f-5e41-b26e-8d2a43966117'
+  },
+  {
+    id: 'rust::flow-ai', kind: 'rust', auto: true,
+    codePath: 'platform/services/flow-ai',
+    owns_domain: ['flow-ai', '数据流', '控制流', '关键路径', '代码生成'],
+    version: '3.0.0-ai-powered',
+    tags: ['rust', 'ais::L4Services'],
+    crateId: '2fcd3eac-e894-5876-b007-fb33c56c0d65'
+  },
+  {
+    id: 'rust::graph-algorithms', kind: 'rust', auto: true,
+    codePath: 'platform/services/graph-algorithms',
+    owns_domain: ['graph-algorithms', 'PageRank', 'CNM', 'Brandes', 'Harmonic', '度中心性', '图密度', 'RAW_EXPAND'],
+    version: '3.0.0-ai-powered',
+    tags: ['rust', 'ais::L4Services'],
+    crateId: 'fbd31c6a-41cd-5274-be2f-2a28066eaf0a'
+  },
+  {
+    id: 'rust::hermes-flow-bridge', kind: 'rust', auto: true,
+    codePath: 'platform/services/hermes-flow-bridge',
+    owns_domain: ['hermes-flow-bridge', 'Hermes 协议', '会话录制', '插件总线'],
+    version: '3.0.0-ai-powered',
+    tags: ['rust', 'ais::L4Services'],
+    crateId: '9bfaf43b-385a-5a44-9fb2-65b4003ee80d'
+  },
+  {
+    id: 'rust::kg-hub', kind: 'rust', auto: true,
+    codePath: 'platform/services/kg-hub',
+    owns_domain: ['kg-hub', 'KG 接入', '本体', '推理', '合并器', '治理'],
+    version: '3.0.0-ai-powered',
+    tags: ['rust', 'ais::L4Services'],
+    crateId: 'cb909f06-c0df-55ec-b397-543623a8c349'
+  },
+  {
+    id: 'rust::operator-core', kind: 'rust', auto: true,
+    codePath: 'platform/services/operator-core',
+    owns_domain: ['operator-core', '算子 Monad', '守恒律', '算子注册表', '算子内核'],
+    version: '3.0.0-ai-powered',
+    tags: ['rust', 'ais::L6Kernel'],
+    crateId: 'acf14283-3931-5528-adce-2c0cd3815363'
+  },
+  {
+    id: 'rust::operator-wasm', kind: 'rust', auto: true,
+    codePath: 'platform/services/operator-wasm',
+    owns_domain: ['operator-wasm', 'WASM 算子沙箱', 'Wasmer ABI'],
+    version: '3.0.0-ai-powered',
+    tags: ['rust', 'ais::L4Services'],
+    crateId: '5a1df407-b217-5340-a5ae-5f4535d1e6de'
+  },
+  {
+    id: 'rust::optimizer', kind: 'rust', auto: true,
+    codePath: 'platform/services/optimizer',
+    owns_domain: ['optimizer', '算子图优化', 'Cost-based 搜索', '热路径'],
+    version: '3.0.0-ai-powered',
+    tags: ['rust', 'ais::L4Services'],
+    crateId: 'e56676c7-ec1f-5415-9587-ba8249d0178a'
+  },
+  {
+    id: 'rust::primiflow-core', kind: 'rust', auto: true,
+    codePath: 'platform/services/primiflow-core',
+    owns_domain: ['primiflow-core', 'DSL 解析', '代码生成', '执行器', '持久化', 'Trace Matrix'],
+    version: '3.0.0-ai-powered',
+    tags: ['rust', 'ais::L4Services'],
+    crateId: '8c8d2382-6f9f-5218-894e-a07a43aa9554'
+  },
+  {
+    id: 'rust::primiflow-fusion', kind: 'rust', auto: true,
+    codePath: 'platform/services/primiflow-fusion',
+    owns_domain: ['primiflow-fusion', '六维融合', '统一包络', 'PTDoc 产线', '可观测性'],
+    version: '3.0.0-ai-powered',
+    tags: ['rust', 'ais::L4Services'],
+    crateId: '75238345-b48b-534b-818b-8d9abe083a41'
+  },
+  {
+    id: 'rust::template-market', kind: 'rust', auto: true,
+    codePath: 'platform/services/template-market',
+    owns_domain: ['template-market', '模板版本化', '市场合约', '交易签名'],
+    version: '3.0.0-ai-powered',
+    tags: ['rust', 'ais::L4Services'],
+    crateId: '4d2e50c1-9d64-525d-86cf-2d7d610a27b9'
+  },
+  {
+    id: 'rust::xuanji-expert', kind: 'rust', auto: true,
+    codePath: 'platform/services/xuanji-expert',
+    owns_domain: ['xuanji-expert', '15 专家画像', 'RBAC', '审计', '六阶段管线'],
+    version: '3.0.0-ai-powered',
+    tags: ['rust', 'ais::L4Services'],
+    crateId: '50bb6200-04c5-5e4c-8354-4c6e1b230024'
+  },
+  {
+    id: 'rust::xuanji-system', kind: 'rust', auto: true,
+    codePath: 'platform/services/xuanji-system',
+    owns_domain: ['xuanji-system', '服务编排', '多后端存储', 'RBAC', '加密', '限流', '持久化 Provider'],
+    version: '3.0.0-ai-powered',
+    tags: ['rust', 'ais::L7Infrastructure'],
+    crateId: 'b81eec75-22ff-5155-ac49-19edf6f6b5ab'
+  },
+  {
+    id: 'rust::xuanji-common-meta', kind: 'rust', auto: true,
+    codePath: 'platform/services/xuanji-common-meta',
+    owns_domain: ['xuanji-common-meta', 'CrateMeta', 'AIS 分层', 'CrateId 注册表'],
+    keyFeatures: ['CrateMeta 元数据建模（crate_meta.rs 与分层标签）', '16 crate 全局注册表与 CrateId 校验（id_registry.rs）', 'AIS 架构分层 tag 统一（L3/L4/L5/L6/L7）'],
+    engines: ['engine::xuanji_common_meta'],
+    version: '3.0.0-ai-powered',
+    tags: ['rust', 'ais::L5Domain'],
+    crateId: '34a20231-1a80-5426-b392-40d7a2ddd9f7'
+  },
+  {
+    id: 'rust::runtime', kind: 'rust', auto: true,
+    codePath: 'platform/gateway/runtime',
+    owns_domain: ['runtime', 'Cordis 插件运行时', 'HITL', '治理路由', '市场路由', 'Agent 路由', 'OpenAPI 标准'],
+    version: '3.0.0-ai-powered',
+    tags: ['rust', 'ais::L3Orchestration'],
+    crateId: 'a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b'
   }
 ];
 
