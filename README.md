@@ -1,25 +1,68 @@
-# 算子统一系统 (Operator Unified System)
+# 璇玑 RelGraph · 全域归一化知识图谱协同平台（父系统 OUS = 算子统一系统）
 
-> 基于 6 大数学公理构建的通用计算框架，实现「万物皆算子」的范畴论统一抽象。
-> 一个面向企业级生产环境的 **算子编排 / 流程优化 / 知识图谱 / AI 智能体** 一体化平台。
+> **对外产品名**：**璇玑 RelGraph**（唯一产品标识 · ADR-DOC-011）｜底层父系统代号：**OUS（Operator Unified System）**｜内部图谱别名：**关图**
+> **版本与权威**：v3.1.0-ai-powered（M0 全域归一化阶段）· **🟢 第一级权威（L0 TOP-MASTER）** → [`docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md`](docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md)（三联盟共同签署 · 12 章统摄全局）
+> **治理组织**：**三联盟模式（产品联盟 / 算法联盟 / 开发联盟）** — 铁律：产品开口 · 算法量尺 · 开发出手（All-01 三联盟铁规）
+>
+> 基于 6 大数学公理构建的通用计算框架，实现「万物皆算子 + 一切皆是图 = 归一化唯一事实基准」的范畴论统一抽象。
+> 一个面向企业级生产环境的 **算子编排 / 流程优化 / 知识图谱 / AI 智能体 + 三联盟协同治理** 一体化平台：
+> - 通过**一张八层图谱（L0~L7）× 14 节点族 × 19 边族**作为唯一事实基准（ADR-DOC-004），实现一改全链联动、零重复造轮子；
+> - 通过**十大标准业务流程（BP-1~10）· 四归三连铁律**，使需求↔架构↔业务↔文档四方同步不漂移；
+> - 通过**八大算法家族（A1~A8）· 九级里程碑（M0~M8）· 三级验收门槛**，保证架构/算法/工程每步都最优、每步可验证；
+> - 通过**统一 AI 入口 Rust Gateway 四端点** + **激活扩散 A5 意图路由** + **CEM A7 交叉熵持续优化**，使 AI 查询如本地查询般丝滑。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Rust](https://img.shields.io/badge/lang-Rust-orange.svg)](https://www.rust-lang.org/)
-[![Vue3](https://img.shields.io/badge/frontend-Vue3%20%2B%20Three.js-green.svg)](https://vuejs.org/)
+[![Rust](https://img.shields.io/badge/lang-Rust%202021-orange.svg)](https://www.rust-lang.org/)
+[![Vue3](https://img.shields.io/badge/frontend-Vue3%20%2B%20Three.js%20%2B%20ECharts-green.svg)](https://vuejs.org/)
+[![三联盟](https://img.shields.io/badge/Governance-产品联盟%20%2F%20算法联盟%20%2F%20开发联盟-purple.svg)](#三联盟治理--四归三连铁律---)
+[![里程碑 M0](https://img.shields.io/badge/Roadmap-M0~M8-brightgreen.svg)](#9-里程碑规划--对齐-docsenterprise05-iteration-roadmapmd)
+[![算法 A1~A8](https://img.shields.io/badge/%E5%85%AB%E5%A4%A7%E7%AE%97%E6%B3%95-CNM%20Brandes%20Harmonic%20PageRank%20Spread%20RRF%20CEM%20CPM%E3%83%BBRCPSP-8A2BE2)](#-八大算法家族-a1a8--docsenterprise02-architecturemd-02---对齐-docsenterprise18-v)
+[![TOP-MASTER](https://img.shields.io/badge/%F0%9F%9F%A2%20L0%20%E6%9C%80%E9%AB%98%E6%9D%83%E5%A8%81-18%20TOP--MASTER-00b894)](docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md)
 
 ---
 
 ## 🌟 项目定位
 
-算子统一系统（OUS）是一套 **企业级通用计算与编排底座**：
+算子统一系统（OUS）是一套 **企业级通用计算与编排底座**（技术父系统代号），其上承载的对外产品「璇玑 RelGraph」实现：
 
 - 以范畴论（Category Theory）、希尔伯特空间（Hilbert Space）、单子（Monad）为数学内核；
-- 将任意业务操作抽象为「算子（Operator / Morphism）」，通过有向加权图描述关联关系；
+- 将任意业务操作抽象为「算子（Operator / Morphism）」，通过「八层图谱（L0~L7）× 14 节点族 × 19 边族」描述全链路关联关系；
 - 提供 DAG 调度、关键路径分析、资源约束优化的执行引擎；
 - 支持 WASM 插件沙箱，安全扩展第三方算子；
-- 内置 AI 智能体（LLM 编排、浏览器自动化、工作流推理）与璇玑（多专家协同求解）。
+- 内置 AI 智能体（LLM 编排、浏览器自动化、工作流推理）与 ⛨璇玑（多专家协同求解 · 最高权限验证网关）。
+- 通过「三联盟治理」+「四归三连铁律」+「P9 先判重后立项」从组织层根治重复造轮子。
 
-适用于：流程自动化、RPA、数据/算法编排、企业知识图谱、低代码算子平台等场景。
+适用于：流程自动化、RPA、数据/算法编排、企业知识图谱、低代码算子平台等企业级场景。
+
+---
+
+## 🤝 三联盟治理 & 四归三连铁律（All-01~04 · 对齐 docs/enterprise/07 §三联盟四条铁规）
+
+| 三联盟 | 负责（铁律 All-01） | 自证自验（铁律 All-04） | 主要入口（docs/enterprise/*） |
+|--------|-------------------|----------------------|:--:|
+| **🎯 产品联盟**（Product Alliance） | 需求「要不要做」一票决定；交付项口径定义 & 客户沟通 | 每条需求必须带**验收断言**（可测）；没有就退回产品联盟自己补 | 07 全维需求明确书 / 15 产品规范标准 / 10 交付清单 / BP-1 3 9 |
+| **🔬 算法联盟**（Algorithm Alliance） | 「做不做得对」一票否决：复杂度、Δ 对账、图建模合规 | 算法选型必须带**Δ≤1e-6 对账报告**（8 大算法家族 × 7 数据集）；不达标就迭代算法，不准开发调参 | 02 §0.2 八大算法家族 / 18 TOP-MASTER §五 / BP-6 9 |
+| **⚙️ 开发联盟**（Development Alliance） | 「做不做得稳」工程落地：代码、部署、稳定性、安全、可观测 | 代码必须 **clippy 0 告警 + 相关 crate 单测全绿**；否则不准甩锅「需求不清楚」 | 08 自动化 8 步责任 / 14 §3.3 模块表 / BP-2 4 5 8 10 |
+
+**铁律 All-02（先判重 · 再立项）**：任何新模块 / 新算子 / 新需求 / 新璇玑立项 → 先跑 BP-9 `tools/info-graph dedup` → Match Score ≥ 0.85 必须复用 → 零匹配才允许写新 REQ 根。
+**铁律 All-03（四归三连全程不脱钩）**：每次改动必须同步：**四归**=需求↔架构↔业务↔文档四方更新；**三连**=联盟责任（06 §5 明确）· 流程（04 BP-xx）· 代码（路径真实）。缺一方 PR 阻断。
+
+详见：[docs/enterprise/07-全维需求明确书.md §三联盟四条铁规 All-01~04](docs/enterprise/07-全维需求明确书.md#三联盟四条铁规alliance--4--三联盟协同闭环的硬约束v11-新增) ·
+[docs/enterprise/06-requirements-architecture-map.md §5 三联盟 RACI 矩阵](docs/enterprise/06-requirements-architecture-map.md#5--三联盟责任映射矩阵raci--对齐-adr-doc-002-四归三连)
+
+---
+
+## 🎯 统一 AI 网关四端点（Rust Gateway · ADR-DOC-009 · 对齐 docs/enterprise/02 §6 集成视图）
+
+> 所有 AI 能力统一路由至 `platform/gateway/runtime/`（Axum），路由语义遵循 **AC-10（静态路由优先于参数化路由）**，避免路径匹配歧义。
+> 意图识别使用 **A5 激活扩散（个性化 PageRank，d=0.85，30 轮收敛）** 在关图上做个性化排序。
+
+| 方法 | 端点 | 三联盟角色 | 说明 |
+|------|------|:--:|------|
+| `POST` | `/ai/engine/process` | 开发联盟 R + 算法联盟（A5 路由） | **自动意图识别 → 能力路由**：请求 `{intent, context, principal}` → A5 激活扩散在能力图谱上打分 → 返回最优 capability.route + 执行结果 + route_trace |
+| `POST` | `/ai/engine/analyze` | 开发联盟 R + 调用方指定 | **显式能力执行**：请求 `{capability_id, params}` → 直接执行指定能力。绕过意图识别，适合确定性任务。 |
+| `GET`  | `/ai/engine/capabilities` | 产品联盟 C + 开发联盟 | **能力矩阵自描述**：返回所有 capability {id, in/out_schema, sla_latency_ms, required_permissions, owners{PA/AA/DA}} 的 JSON 矩阵。前端据此动态渲染能力面板。 |
+| `GET`  | `/ai/engine/metrics` | 开发联盟 · 运维 R | **指标端点**：返回三联盟 SLO 指标——`success_rate`（总成功率）、`degrade_rate`（降级率）、`latency_p50/p95/p99_ms`、`capability_breakdown[]`。监控台 MonitorView 对接。 |
 
 ---
 
@@ -115,51 +158,80 @@
 
 ---
 
-## 📁 项目结构
+## 📁 项目结构（路径零老化 · 对齐 ADR-DOC-005 / GLOSSARY §5 · 三联盟责任标注）
 
 ```
-operator-unified-system/
-├── platform/                     # 🟢 平台服务层（后端核心）
-│   ├── gateway/                  #   API 网关层
-│   │   └── runtime/              #     运行时：Web 服务器与 API 接口（含算子商城、RBAC 等）
-│   ├── services/                 #   业务服务集群（微服务架构）
-│   │   ├── operator-core/        #     核心内核：算子 trait、高维向量、范畴论、单子、守恒律
-│   │   ├── operator-wasm/        #     WASM 插件系统：沙箱执行、热加载
-│   │   ├── graph-algorithms/     #     图算法：PageRank、拉普拉斯矩阵、聚类
-│   │   ├── optimizer/            #     优化器：DAG 调度、关键路径分析、资源约束
-│   │   ├── flow-ai/              #     流程 AI：拓扑/数据流/冲突消解/调度/代码生成
-│   │   ├── ai-agent/             #     AI 智能体：对话、浏览器自动化、工作流、插件总线
-│   │   ├── xuanji-expert/        #     璇玑专家：多专家协同、IR、管线、治理、验证
-│   │   ├── xuanji-system/        #     璇玑系统：协作治理域（成员/任务/权限/通信/审计）
-│   │   ├── hermes-flow-bridge/   #     外部流系统桥接：对接、录制、回放、状态
-│   │   ├── business-catalog/     #     业务算子目录
-│   │   ├── template-market/      #     算子商城：资产复用、模板市场
-│   │   ├── primiflow-core/       #     PrimiFlow 核心：流程引擎、执行器、持久化
-│   │   ├── primiflow-fusion/     #     PrimiFlow 融合：治理闸门、守恒、零孤儿
-│   │   └── kg-hub/               #     知识图谱枢纽：摄入、推理、本体、治理
-│   └── backend-node/             #   Node.js 兼容层：传统后端模块（逐步迁移至 Rust）
-├── frontend-ui/                  # 🟢 用户端：Vue3 前端界面（面向终端用户；含系统管理区 /admin：凭证/审计/存储/HITL）
-├── shared/                       # 🟢 跨端共享资源：常量、Schema、配置
+infotopograph/  （= 璇玑 RelGraph 项目仓；根历史遗留 operator-unified-system 名仅作为底层父系统 OUS 代号，对外产品名统一为璇玑 RelGraph）
+├── platform/                     # 🟢 平台服务层（后端核心 · Rust 15 crate + Gateway，开发联盟主责）
+│   ├── gateway/                  #   API 网关层（L2↔L6 聚合，ADR-DOC-009 统一 AI 入口四端点）
+│   │   └── runtime/              #     Rust 聚合网关：Web 服务器 / REST / WebSocket / 算子市场 / RBAC 中间件 / Cordis5 子模块 / 迁移 / 治理 / OpenAPI / operator-server
+│   │                            #     🎯 统一 AI 四端点（对齐 enterprise/02 §集成视图 §6）：
+│   │                            #       POST /ai/engine/process   自动意图识别→能力路由（A5 激活扩散）
+│   │                            #       POST /ai/engine/analyze   显式能力执行
+│   │                            #       GET  /ai/engine/capabilities  能力矩阵自描述
+│   │                            #       GET  /ai/engine/metrics       成功率 / 降级率 / 延迟指标
+│   ├── services/                 #   业务服务集群（15 独立子项目，对齐 enterprise/14 §3.3 模块表）
+│   │   ├── operator-core/        #     算子代数/守恒律/类型核心（L2 Rust 自研底座）
+│   │   ├── operator-wasm/        #     WASM 算子沙箱执行 / 热加载插件
+│   │   ├── graph-algorithms/     #     🔬 八大算法家族 A1~A8（算法联盟主责 · CNM Brandes Harmonic PageRank Spread RRF CPM/RCPSP）
+│   │   ├── optimizer/            #     CPM 关键路径分析 + RCPSP 资源约束调度（A8）
+│   │   ├── flow-ai/              #     流程 AI（9 模块：冒险/CPM/冲突/调度/拓扑/代码gen/流水线/原语/可视化）
+│   │   ├── ai-agent/             #     AI 智能体：对话/浏览器自动化/BPMN/MultiAgent/ProviderRegistry + A7 CEM 优化
+│   │   ├── xuanji-expert/        #     ⛨璇玑引擎：双璇玑十四维治理/归一化 IR/裁决/验证/审计三汇/RBAC（算法+开发联盟）
+│   │   ├── xuanji-system/        #     璇玑协作治理域：成员/任务/权限/通信/审计/RBAC/多后端 SQLite+PG+MySQL（开发联盟）
+│   │   ├── hermes-flow-bridge/   #     Hermes Agent 桥接：normalize/recorder/router/拦截注入
+│   │   ├── business-catalog/     #     7 预置 FlowGraph + TopologyGraph（政务/法院/财务/客服/ETL/MCP/螺旋）
+│   │   ├── template-market/      #     模板市场：发布/加载/评分/排序/Fork/2 种子
+│   │   ├── primiflow-core/       #     PrimiFlow 解析/代码生成/8 类骨架模板/执行/持久化
+│   │   ├── primiflow-fusion/     #     PrimiFlow 六维融合/守恒闸门/Registry/平台编排/12Factor+可观测（对齐 GR-STD 8 闸门）
+│   │   └── kg-hub/               #     知识图谱枢纽：混合索引+URN+摄入/推理/治理/影响/热点/闭环 8 段 5 连接器（算法联盟图建模 R）
+│   └── backend-node/             #   Node.js 边缘兼容层（M0 规划更名为 edge-node 并瘦身至 4 文件；当前兼容模式）
+├── frontend-ui/                  # 🟢 用户端：Vue3 + Three.js + ECharts 前端单应用（28 视图 + /admin 5 面板，产品联盟主责）
+│   │                            #   管理区 5 面板：凭证 / 审计 / HITL（人机回环）/ 存储 / 总览
+│   │                            #   🔴 旧 frontend-admin-ui 目录已裁撤（ADR-DOC-005 M0）；管理入口：/admin?tab=<tab>
+├── tools/
+│   ├── info-graph/               #     关图工具（含 P9 判重 dedup 子命令；对齐 BP-9 + enterprise/16 验收）
+│   └── guantu_gate.py            #     P9 CI 门禁脚本（阻断未判重立项；对齐 All-02 铁规）
+├── melody2score/                 # 旋律自动简谱/五线谱专题能力
+├── shared/                       # 跨端共享资源：常量、Schema、配置
 ├── plugins/                      # WASM 插件目录
-├── data/market/                  # 算子商城资产（运行态，默认 CWD；生产应置于 $OUS_HOME/market，见 docs/architecture.md §27）
-├── docs/                         # 企业级文档（按专题分区；权威治理中心 = docs/enterprise/00-INDEX.md）
-│   ├── enterprise/               # 🟢 企业级文档唯一治理入口（文档集 00~10：需求/架构/设计/业务/路线图/映射/全维明确/自动化/归档/交付）
-│   ├── README.md                 # 关图/全维专题快捷导航（非治理入口，权威以 enterprise/00-INDEX 为准）
-│   ├── specs/                    # 🟢 企业级规范：PT-STD（Primi 架构）/ GR-STD（关图规范）/ OUS 业务规划
-│   ├── full-dimensional/         # 🟡 全维分析（璇玑）专题：AA-STD 流程基准 / 关图骨架 / 治理台 API / 原始文档归档
-│   ├── graph/                    # 关图机读产物：graph.json / graph.enterprise.json / guantu.req.json
-│   ├── ai-architecture/          # AI 架构专题
-│   ├── architecture.md / enterprise-architecture-analysis.md / mathematical-foundation.md  # 架构/能力矩阵/数学内核
-│   └── *.html / *.mmd            # 🟡 可视化产物（以同名 .md 为源）
+├── data/market/                  # 算子商城资产（运行态；生产应置于 $OUS_HOME/market，见 docs/architecture.md §27）
+├── docs/                         # 🔶 企业级文档（专题分区；治理中心 = docs/enterprise/00-INDEX.md · 三联盟必读首件 = enterprise/18 TOP-MASTER）
+│   ├── enterprise/               # 🟢 企业级文档 00~18（共 19 份 · 分级权威 L0~L4）
+│   │   ├── 18-全域顶层总设计-三联盟模式-V1.0.md  # 🟢🟢 L0 第一级权威（TOP-MASTER，三联盟签署）
+│   │   ├── 00-INDEX.md                        # L1 治理索引 + RACI + 三联盟阅读路径
+│   │   ├── 01-requirements.md  # 需求规格 SRS + §9 ADR-DOC-001~012 决策注册
+│   │   ├── 02-architecture.md  # 七视图架构 + 六层金字塔锚点 + 八大算法家族 + 15 模块对账
+│   │   ├── 04-business-processing.md  # 10 大标准 BP-1~10（6 字段齐）
+│   │   ├── 05-iteration-roadmap.md  # M0~M8 9 里程碑 + L0/L1/L2 三级验收
+│   │   ├── 06-requirements-architecture-map.md  # 五向追溯 + §5 三联盟 RACI 矩阵
+│   │   ├── 07-全维需求明确书.md  # 四闸门 + 双收口 + All-01~04 三联盟四条铁规
+│   │   ├── 08-全维自动化处理明确书.md  # xuanji_optimize 8 步 + 每步主责联盟列
+│   │   ├── 10-企业级交付清单.md  # 对外签署（三联盟 + 客户 + 审计五签）
+│   │   ├── 14-愿景总纲.md        # 北极星方法论总纲
+│   │   ├── 15-产品规范标准.md    # P1~P10 人人爱用十大原则
+│   │   ├── 16-P9判重闸门验收.md  # P9 落地 + 关图治理 D1~D4 修复
+│   │   └── 其他 03设计/09归档/11~13 验收报告
+│   ├── README.md                 # 关图/全维专题快捷导航（三联盟差异化入口 · docs/README）
+│   ├── GLOSSARY.md               # 🟢 唯一术语事实源（DOC-GLOSSARY-V1.1 · 7 新术语）
+│   ├── specs/                    # 🟢 企业级规范：PT-STD / GR-STD / OUS 业务规划
+│   ├── full-dimensional/         # 🟡 全维分析专题：AA-STD / 关图骨架 / 治理台 API / 文档归档
+│   ├── graph/                    # 关图机读产物（graph.json / graph.enterprise.json / guantu.req.json + requests/ 判重入口）
+│   ├── ai-architecture/          # AI 架构专题（AUS · L4 Agentic 闭环）
+│   ├── 璇玑-全维需求业务处理流程图-归一化企业级.md/.html/.mmd  # 🟢 AA-STD 融合域唯一事实基准
+│   ├── architecture.md           # 🟢 OUS 父系统总架构（v7.0 · L2 Rust 自研底座视角）
+│   ├── enterprise-architecture-analysis.md  # 🟢 双璇玑十四维能力矩阵
+│   ├── modules/mathematical-foundation.md  # 六大数学公理 & 算法联盟对账基准
+│   └── *.html / *.mmd            # 🟡 可视化产物（以同名 .md 为源；同位存放）
 ├── benches/                      # 性能基准
 ├── tests/                        # 集成测试
-├── verify_axioms.py              # 6 大公理数学自洽性验证脚本
+├── verify_axioms.py              # 六大公理数学自洽性验证脚本（Python；算法联盟对账用）
 ├── start.sh                      # 一键启动脚本
-├── snake.py                      # 辅助脚本
 └── README.md
 ```
 
 > 注：`target/`（Rust 构建产物）、`frontend-ui/dist/`、`node_modules/` 等**不纳入版本库**，请从源码构建。
+> **路径铁律（ADR-DOC-005 M0）**：`crates/` → 统一为 `platform/services/`；`frontend/` / `frontend-admin-ui/` → 统一为 `frontend-ui/`（单应用 + /admin 5 面板）；Node 边缘入口 `backend-node/` → M0 后更名为 `edge-node/`（瘦身 4 文件）。
 
 ---
 
@@ -259,7 +331,12 @@ int operator_apply(double* input, double* output, int n);
 | `/api/market/:id` | POST | 更新算子包核心字段 |
 | `/api/market/:id/clone` | POST | 克隆（fork）算子包 |
 | `/api/market/:id` | DELETE | 删除算子包 |
+| **🎯 /ai/engine/process** | POST | **自动意图识别 → 能力路由**（A5 激活扩散 d=0.85，30 轮收敛） |
+| **🎯 /ai/engine/analyze** | POST | **显式能力执行**（capability_id → 直接执行） |
+| **🎯 /ai/engine/capabilities** | GET | **能力矩阵自描述**（前端动态渲染能力面板用） |
+| **🎯 /ai/engine/metrics** | GET | **三联盟 SLO 指标**（成功率/降级率/p95 延迟等） |
 
+> 标 **🎯** 的 4 个端点 = 璇玑 RelGraph 统一 AI 编排入口（ADR-DOC-009），是 AI 查询 & AI 能力对外的推荐通道。
 > 算子商城（需求/流程图资产市场）的完整数据模型、API 契约与前端编辑器说明见 [`docs/market-module.md`](docs/market-module.md)。
 
 ---

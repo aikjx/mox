@@ -929,18 +929,12 @@ impl WorkflowTemplateLibrary {
 
 // ===================== 业务流程辅助函数（模块级自由函数）=====================
 
-/// 简易变量模板替换：将 input 中的 ${var} 用 variables 中的值替换。
+/// 简易变量模板替换（C3 单一真源归一化）：
+///   workflow_engine 历史占位语法 `${k}` → 先桥接为单源 flow_engine 的 `{{k}}`，
+///   再 forward → `crate::flow_engine::apply_template`（禁止此处独立重复实现变量替换算法）。
 fn apply_template(input: &str, variables: &HashMap<String, serde_json::Value>) -> String {
-    let mut out = input.to_string();
-    for (k, v) in variables {
-        let placeholder = format!("${{{}}}", k);
-        let val = match v {
-            serde_json::Value::String(s) => s.clone(),
-            other => other.to_string(),
-        };
-        out = out.replace(&placeholder, &val);
-    }
-    out
+    let bridged = input.replace("${", "{{").replace('}', "}}");
+    crate::flow_engine::apply_template(&bridged, variables)
 }
 
 /// 简易条件表达式求值：支持 ${var} 引用、==/!=/>/</>=/<=、&&/|| 与顶层括号。
@@ -1236,5 +1230,87 @@ mod tests {
         assert_eq!(names, vec!["a".to_string(), "b".to_string()]);
         let names2 = extract_var_names("no vars here");
         assert!(names2.is_empty());
+    }
+
+    // ========== C3·Task 4 TDD：模板渲染单一真源（workflow_engine.apply_template → flow_engine）==========
+    // RED: 当前 workflow_engine::apply_template 与 flow_engine::apply_template 重复开发两处，
+    //   且占位符语法分别是 ${k} vs {{k}}。归一化目标：
+    //   (1) 单一真源 → crate::flow_engine::apply_template；
+    //   (2) workflow_engine 对外语法仍兼容 ${k}（先把 ${k} 正则预处理 → {{k}}，再 forward）；
+    //   (3) 输出等价（相同变量 → 相同最终字符串）。
+    //
+    // TR-4.1：${k} 语法在 workflow_engine 层仍可用（向后兼容）
+    // TR-4.2：同一组变量经两条路径 输出字符级一致（经语法桥接后）
+    // TR-4.3：缺失变量不崩、保留原始占位
+    // TR-4.4：Boolean/Number/Null/Array JSON 类型值字符化后完全一致
+    use crate::flow_engine::apply_template as src_apply_template;
+
+    fn bridge_to_curly(s: &str) -> String {
+        // 将 workflow_engine 历史占位语法 ${k} → 单源 {{k}}
+        s.replace("${", "{{").replace("}", "}}")
+    }
+
+    #[test]
+    fn test_apply_template_single_source_basic_types() {
+        // 覆盖 string / number / bool / null / array 五类
+        let mut vars: HashMap<String, serde_json::Value> = HashMap::new();
+        vars.insert("name".into(), serde_json::json!("Alice"));
+        vars.insert("age".into(), serde_json::json!(30));
+        vars.insert("flag".into(), serde_json::json!(true));
+        vars.insert("x".into(), serde_json::Value::Null);
+        vars.insert("list".into(), serde_json::json!([1, 2, 3]));
+
+        // workflow: ${k} 模板语法
+        let wf_tpl = "name=${name} age=${age} flag=${flag} null=${x} list=${list}";
+        let flow_tpl = bridge_to_curly(wf_tpl); // "name={{name}} age={{age}} ..."
+
+        // RED: 先断言 workflow_engine 私用 apply_template 能跑（存在于 crate::workflow_engine tests，对外 pub(crate) 调用 super*）
+        let wf_out = apply_template(wf_tpl, &vars);
+        // GREEN 后：两输出必须字符级一致（workflow 预处理 ${→{{ 再 forward → flow_engine 单源实现）
+        let flow_out = src_apply_template(&flow_tpl, &vars);
+        assert_eq!(
+            wf_out, flow_out,
+            "workflow_engine 与 flow_engine 模板渲染必须字符级一致（C3 单源归一）\nWF={wf_out}\nFE={flow_out}"
+        );
+
+        // TR-4.1 基本内容存在性（兼容旧占位语义）
+        assert!(wf_out.contains("Alice"), "字符串变量替换应生效：{wf_out}");
+        assert!(wf_out.contains("30"), "数字变量替换应生效：{wf_out}");
+        assert!(wf_out.contains("true"), "布尔变量替换应生效：{wf_out}");
+    }
+
+    #[test]
+    fn test_apply_template_single_source_missing_placeholder_preserved() {
+        // TR-4.3：缺失变量保留占位（${missing} 未注册 → 原样保留，禁崩溃）
+        let vars: HashMap<String, serde_json::Value> = HashMap::new();
+        let wf_out = apply_template("prefix_${missing}_suffix", &vars);
+        let fe = src_apply_template(&bridge_to_curly("prefix_${missing}_suffix"), &vars);
+        assert_eq!(wf_out, fe, "缺失变量时两实现字符级一致：WF={wf_out} / FE={fe}");
+        assert!(wf_out.contains("missing"), "缺失变量占位不得被吞：{wf_out}");
+    }
+
+    #[test]
+    fn test_apply_template_workflow_engine_public_caller_uses_single_source() {
+        // TR-4.4：workflow_engine 内部 apply_template 函数体（独立重复实现）应替换为 ≤3 行 thin wrapper
+        //   思路：不依赖 regex crate（不新增 deps），直接用字符串切分取函数体
+        let src = include_str!("workflow_engine.rs");
+        let head = "fn apply_template(input: &str, variables: &HashMap<String, serde_json::Value>) -> String {";
+        let h_start = src.find(head).expect("apply_template 签名必须存在于 workflow_engine.rs (单源归一化 wrapper)") + head.len();
+        // 简单大括号计数（{=1, }=0；不处理字符串/注释，本函数内不含嵌套字符串{/}）
+        let rest = &src[h_start..];
+        let mut depth: i32 = 1;
+        let mut end: usize = 0;
+        for (i, c) in rest.char_indices() {
+            if c == '{' { depth += 1; }
+            else if c == '}' { depth -= 1; if depth == 0 { end = i; break; } }
+        }
+        assert!(end > 0, "未找到 apply_template 匹配闭合 }}");
+        let body = &rest[..end];
+        let non_empty_lines: Vec<&str> = body.lines().map(|l| l.trim()).filter(|l| !l.is_empty() && !l.starts_with("//")).collect();
+        assert!(
+            non_empty_lines.len() <= 3,
+            "归一化后 wrapper 体应 ≤3 行（bridge + 转发 src_apply_template），实际 {} 行：\n{body}",
+            non_empty_lines.len()
+        );
     }
 }

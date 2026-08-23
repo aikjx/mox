@@ -7,7 +7,9 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node src/server.js",
-    "test": "node tests/run.js"
+    "test": "node tests/run.js",
+    "mocha": "mocha test --timeout 25000 --reporter min",
+    "mocha:full": "mocha test tests --timeout 25000 --reporter spec"
   },
   "engines": {
     "node": ">=14"
@@ -15,5 +17,8 @@
   "license": "MIT",
   "dependencies": {
     "better-sqlite3": "^13.0.3"
+  },
+  "devDependencies": {
+    "mocha": "^11.8.0"
   }
 }

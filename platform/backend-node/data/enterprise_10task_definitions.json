@@ -1,0 +1,225 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-08-23",
+  "enterpriseThresholds": {
+    "totalScoreMin": 90,
+    "perTaskMin": 8,
+    "ruleMax": 5,
+    "rubricMax": 5
+  },
+  "tasks": [
+    {
+      "id": "t1",
+      "name": "传媒（内容媒介）增删改查 CRUD",
+      "acIds": ["AC-T1", "AC-T1-Quality"],
+      "testFile": "test/test-enterprise-10task-t1-crud.js",
+      "rule": {
+        "passScore": 5,
+        "failScore": 0,
+        "tr": "TR-1.1 & TR-1.2：16 条 CRUD（4 实体 ×4 步） + 8 条异常用例，mocha exit=0"
+      },
+      "rubric": {
+        "dimension": "CRUD 韧性 · 错误隔离 · 异常分支正确性",
+        "scale": [0, 1, 2, 3, 4, 5],
+        "anchors": {
+          "1": "仅 happy path，任何异常直接抛",
+          "3": "主要异常被捕获并返回结构化错误，每类实体 ≥1 条异常用例",
+          "5": "每类实体 ≥2 条异常用例，并发写 50 次无脏写，读写一致性经 100 次"
+        },
+        "passThreshold": 4,
+        "tr": "TR-1.3：并发 50 写无脏写 & 幂等"
+      }
+    },
+    {
+      "id": "t2",
+      "name": "算法性能与稳定性（7 核心图算法+守恒律）",
+      "acIds": ["AC-T2", "AC-T2-Stability"],
+      "testFile": "test/test-enterprise-10task-t2-algorithm.js",
+      "rule": {
+        "passScore": 5,
+        "passFn": "(met/7)*5 线性，不满舍入",
+        "tr": "TR-2.1：度30/介数1500/Harmonic1000/CNM800/PR400/RAW200/守恒60 ms；P95 不超预算；同输入数值误差≤1e-4"
+      },
+      "rubric": {
+        "dimension": "算法 数值一致性 / 无波动 / 鲁棒性",
+        "scale": [0,1,2,3,4,5],
+        "anchors": {
+          "1": "10 次抖动明显",
+          "3": "数值稳定，但空/自环/重边/1w 节点有边界报错",
+          "5": "边界（空/自环/重边/1w节点）均不抛，10次同输入 Σ|Δ| ≤1e-6"
+        },
+        "passThreshold": 4,
+        "tr": "TR-2.3"
+      }
+    },
+    {
+      "id": "t3",
+      "name": "代码生成性能（AIS 分层 & 产出速度 & 代码质量）",
+      "acIds": ["AC-T3", "AC-T3-Quality"],
+      "testFile": "test/test-enterprise-10task-t3-codegen.js",
+      "rule": {
+        "passScore": 5,
+        "passFn": "0.5×(build pass rate) + 0.5×(单测绿率) ×5，其中 build/clippy ≥90% 且 单测≥80% 时方给 5",
+        "tr": "TR-3.1：10 个模块 9/10 build+clippy 绿，8/10 单测绿；TR-3.2 cheat_scan=0"
+      },
+      "rubric": {
+        "dimension": "代码可维护性 · AIS 分层合规 · 注释覆盖率",
+        "scale": [0,1,2,3,4,5],
+        "anchors": {
+          "1": "无 AIS tag，注释<5%",
+          "3": "有分层 tag，注释 10%",
+          "5": "分层齐全，注释≥15%，公共函数 100% doc comment"
+        },
+        "passThreshold": 4,
+        "tr": "TR-3.3"
+      }
+    },
+    {
+      "id": "t4",
+      "name": "论文/报告精确度（专家联盟 辩论综合 证据引用）",
+      "acIds": ["AC-T4", "AC-T4-Evidence"],
+      "testFile": "test/test-expert-alliance-enterprise.js",
+      "rule": {
+        "passScore": 5,
+        "tr": "TR-4.1 & 4.2：3/3 报告 8 节以上 ≥1500 字，每节≥1 条真实引用；self-check 3轮 矛盾=0；幻觉率≤2%"
+      },
+      "rubric": {
+        "dimension": "报告 引用真实率 · 溯源深度 · 术语正确性",
+        "scale": [0,1,2,3,4,5],
+        "anchors": {
+          "1": "大部分断言无引用",
+          "3": "关键断言有引用，路径真实",
+          "5": "数字/结论/架构断言 ≥1 条图谱或文档引用；术语错用率≤1‰"
+        },
+        "passThreshold": 4,
+        "tr": "TR-4.3"
+      }
+    },
+    {
+      "id": "t5",
+      "name": "写游戏（3 类可运行 HTML 游戏 生成 & 安全）",
+      "acIds": ["AC-T5", "AC-T5-Playability"],
+      "testFile": "test/test-enterprise-10task-t5-game.js",
+      "rule": {
+        "passScore": 5,
+        "tr": "TR-5.1：3/3 产物存在，node -c 无语法错误，startGame() 存在，胜负判定分支存在；TR-5.2 0 处 eval/无净化 innerHTML"
+      },
+      "rubric": {
+        "dimension": "可玩性 · 无危险 API · 渲染与循环结构合理",
+        "scale": [0,1,2,3,4,5],
+        "anchors": {
+          "1": "eval 或 无限循环",
+          "3": "无危险 API，有胜负判定但无计分/关卡",
+          "5": "计分+关卡+安全净化齐备，循环结构无死循环风险"
+        },
+        "passThreshold": 4,
+        "tr": "TR-5.3"
+      }
+    },
+    {
+      "id": "t6",
+      "name": "写网站（官网/登录仪表盘/API 文档落地页）",
+      "acIds": ["AC-T6", "AC-T6-SecUX"],
+      "testFile": "test/test-enterprise-10task-t6-website.js",
+      "rule": {
+        "passScore": 5,
+        "tr": "TR-6.1：3/3 HTML 结构合法，≥3 断点类，仪表盘 4 件套齐全；TR-6.2 label+alt 覆盖率≥80%"
+      },
+      "rubric": {
+        "dimension": "UX 可访问性 · 安全基线（inline 危险脚本/XSS 入口）",
+        "scale": [0,1,2,3,4,5],
+        "anchors": {
+          "1": "无 alt/label，inline ≥10 处",
+          "3": "a11y 基础具备，少量 inline",
+          "5": "Lighthouse a11y ≥90 等价，无危险 inline，登录表单带 CSRF token 字段"
+        },
+        "passThreshold": 4,
+        "tr": "TR-6.3"
+      }
+    },
+    {
+      "id": "t7",
+      "name": "写数据库（Schema/迁移/CRUD/事务/并发/索引）",
+      "acIds": ["AC-T7", "AC-T7-Index"],
+      "testFile": "test/test-enterprise-10task-t7-database.js",
+      "rule": {
+        "passScore": 5,
+        "tr": "TR-7.1：Rust t5_2 12/12 + Node 8/8 = 20 条 CRUD；TR-7.2 schema_version ≥1，迁移 ID 唯一，rollback 原子性"
+      },
+      "rubric": {
+        "dimension": "索引覆盖 · 事务原子性 · 并发写一致性",
+        "scale": [0,1,2,3,4,5],
+        "anchors": {
+          "1": "无索引/无事务",
+          "3": "主键索引，单线程无脏写",
+          "5": "外键索引齐全；并发 50 写 100% 成功，死锁=0，rollback 语义正确"
+        },
+        "passThreshold": 4,
+        "tr": "TR-7.3"
+      }
+    },
+    {
+      "id": "t8",
+      "name": "写知识图谱（W1-W13 全绿 + 连通 1 分量 + 治理）",
+      "acIds": ["AC-T8", "AC-T8-Governance"],
+      "testFile": "test/test-project-atlas.js",
+      "rule": {
+        "passScore": 5,
+        "tr": "TR-8.1 W1-W13 0 FAIL & 连通分量=1；TR-8.2 节点≥300 & 边≥500 & NODE TYPES=7"
+      },
+      "rubric": {
+        "dimension": "图谱治理成熟度 · 自同步自愈 · 资产覆盖率",
+        "scale": [0,1,2,3,4,5],
+        "anchors": {
+          "1": "域/引擎引用大量悬空",
+          "3": "引用基本无悬空，self-sync 发现 50% 新增域",
+          "5": "引用 100% 真实；self-sync 100% 回填；域/资产/文档三方一致率≥99%"
+        },
+        "passThreshold": 4,
+        "tr": "TR-8.3"
+      }
+    },
+    {
+      "id": "t9",
+      "name": "写业务流程图（Flow Registry 完整/连通/核心域/锚点/可执行）",
+      "acIds": ["AC-T9", "AC-T9-Executable"],
+      "testFile": "test/test-enterprise-10task-t9-flow.js",
+      "rule": {
+        "passScore": 5,
+        "tr": "TR-9.1 W9 0 FAIL；核心域 3/3；标准锚点≥2；TR-9.2 流程≥3 条，首末 step 齐全，边连通 1 分量/流程"
+      },
+      "rubric": {
+        "dimension": "流程 可执行性 · degrades_to 降级链 · 委托引擎真实",
+        "scale": [0,1,2,3,4,5],
+        "anchors": {
+          "1": "仅静态声明，无委托/降级",
+          "3": "主链路有 delegates_to 真实引擎；至少 1 条 degrades_to",
+          "5": "每步≥1 真实引擎委托；每关键步 degrades_to 回退 + reads/writes 清单可解析"
+        },
+        "passThreshold": 4,
+        "tr": "TR-9.3"
+      }
+    },
+    {
+      "id": "t10",
+      "name": "写云盘（文件上传下载版本权限 & 可靠性）",
+      "acIds": ["AC-T10", "AC-T10-Reliability"],
+      "testFile": "test/test-enterprise-10task-t10-cloud.js",
+      "rule": {
+        "passScore": 5,
+        "tr": "TR-10.1：6/6 核心通过（上传/下载/SHA1一致/版本/权限两向），无权限 403 不泄露哈希/正文；TR-10.2 版本 v1→v2 可回退，历史可列"
+      },
+      "rubric": {
+        "dimension": "可靠性 · 配额/限速 · 大文件分片/断点续传结构",
+        "scale": [0,1,2,3,4,5],
+        "anchors": {
+          "1": "无限速配额，写 10GB 直接崩",
+          "3": "基础配额存在，小文件可靠",
+          "5": "配额超限严格拒绝；1000 文件 0 丢失；≥10MB 分片/断点接口存在"
+        },
+        "passThreshold": 4,
+        "tr": "TR-10.3"
+      }
+    }
+  ]
+}

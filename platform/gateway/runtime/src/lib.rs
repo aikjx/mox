@@ -2,27 +2,14 @@
 //
 //! 提供可测试的中间件、工具函数和 OUS-Cordis 插件化运行时内核
 
-/// 璇玑系统 Crate 注册常量（图谱自同步契约：Rust 端显式声明 crate 身份）。
-pub const CRATE_ID: &str = "runtime";
-
-/// 璇玑系统 Crate 结构化元数据。
-#[derive(Debug, Clone, Copy)]
-pub struct CrateMeta {
-    pub uuid: &'static str,
-    pub ais_layers: &'static [&'static str],
-    pub owner_project: &'static str,
-    pub capabilities: &'static [&'static str],
-    pub data_tables_read: &'static [&'static str],
-    pub data_tables_write: &'static [&'static str],
-}
-
-pub const CRATE_META: CrateMeta = CrateMeta {
-    uuid: "4b17a3c2-85e1-44f5-90b1-c2d3e4f5a6b7",
-    ais_layers: &["L1-Ingress", "L2-Gateway"],
-    owner_project: "proj-xuanji-platform",
-    capabilities: &[],
-    data_tables_read: &["settings.json", "rbac_rules.json"],
-    data_tables_write: &["settings.json", "audit.log"],
+pub const CRATE_ID: &str = "a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b";
+pub const ENGINE_NAME: &str = "xuanji::runtime";
+pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+    id: CRATE_ID,
+    name: env!("CARGO_PKG_NAME"),
+    version: env!("CARGO_PKG_VERSION"),
+    layer: xuanji_common_meta::AisLayer::L3Orchestration,
+    owner: "xuanji-core",
 };
 
 pub mod rbac_middleware;

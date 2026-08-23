@@ -15,6 +15,7 @@ members = [
     "platform/services/primiflow-core",
     "platform/services/primiflow-fusion",
     "platform/services/kg-hub",
+    "platform/services/xuanji-common-meta",
 ]
 resolver = "2"
 
@@ -84,3 +85,6 @@ futures-util = "0.3"
 # Persistence: query builder & SQL drivers (xuanji-system uses backends at compile-time)
 sea-query = "0.32"
 sqlx = "0.8"
+
+# Internal crates
+xuanji-common-meta = { path = "platform/services/xuanji-common-meta" }

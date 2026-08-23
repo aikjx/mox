@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>猜单词 WordGuess</title>
+<style>
+  body { font-family: system-ui, sans-serif; background:#0f172a; color:#e2e8f0; margin:0; display:flex; flex-direction:column; align-items:center; }
+  h1 { margin: 12px 0 4px; font-size:20px; }
+  .hud { display:flex; gap:14px; margin:8px 0 12px; font-size:14px; }
+  .hud b { color:#fcd34d; }
+  .levels { display:flex; gap:8px; margin-bottom:8px; }
+  .levels button { padding:4px 10px; background:#1e293b; color:#cbd5e1; border:1px solid #334155; border-radius:4px; cursor:pointer; }
+  .levels button.active { background:#2563eb; color:#fff; border-color:#60a5fa; }
+  .word { display:flex; gap:6px; margin:12px 0; }
+  .letter { width:38px; height:44px; border:1px solid #475569; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:20px; background:#1e293b; text-transform:uppercase; }
+  .letter.revealed { background:#065f46; color:#d1fae5; border-color:#10b981; }
+  .letter.wrong { background:#7f1d1d; color:#fecaca; }
+  .hangman { font-family: ui-monospace, monospace; white-space:pre; color:#cbd5e1; margin:8px 0; }
+  .input { display:flex; gap:6px; }
+  .input input { width:44px; height:36px; text-align:center; font-size:18px; text-transform:uppercase; background:#1e293b; color:#e2e8f0; border:1px solid #475569; border-radius:4px; }
+  .input button { padding:0 14px; background:#2563eb; color:#fff; border:none; border-radius:4px; cursor:pointer; }
+  .tip { margin-top:8px; color:#94a3b8; font-size:12px; }
+</style>
+</head>
+<body>
+  <h1>猜单词 · WordGuess</h1>
+  <div class="hud">
+    <span>得分 score: <b id="score">0</b></span>
+    <span>关卡 level: <b id="level">1</b> / <span id="levels">10</span></span>
+    <span>剩余 attempts: <b id="attempts">6</b></span>
+  </div>
+  <div class="levels" id="levelsBar"></div>
+  <div class="hangman" id="hangman">_____
+|     |
+|
+|
+|
+|_____</div>
+  <div class="word" id="word"></div>
+  <div class="input">
+    <input id="guess" maxlength="1" autocomplete="off" />
+    <button id="go">猜 Guess</button>
+  </div>
+  <div class="tip">提示 hint: <span id="hint"></span></div>
+<script>
+"use strict";
+/* WordGuess (hangman style) — no eval, no unsafe innerHTML writes */
+(function () {
+  const scoreEl = document.getElementById('score');
+  const levelEl = document.getElementById('level');
+  const levelsEl = document.getElementById('levels');
+  const attemptsEl = document.getElementById('attempts');
+  const hangmanEl = document.getElementById('hangman');
+  const wordEl = document.getElementById('word');
+  const guessEl = document.getElementById('guess');
+  const goBtn = document.getElementById('go');
+  const hintEl = document.getElementById('hint');
+  const levelsBar = document.getElementById('levelsBar');
+
+  const WORDS = [
+    { w: 'graph',   h: 'nodes + edges 的结构' },
+    { w: 'kernel',  h: '引擎核心层' },
+    { w: 'module',  h: '可插拔 JS / Rust 单元' },
+    { w: 'pagerank',h: '网页排名图算法' },
+    { w: 'alliance',h: '专家团队协作' },
+    { w: 'workflow',h: '步骤流水线' },
+    { w: 'atlas',   h: '项目全息图谱' },
+    { w: 'consensus', h: '多方观点一致' },
+    { w: 'harmonic', h: '中心性的一种' },
+    { w: 'modularity', h: '社区检测质量指标' },
+  ];
+  const TOTAL_LEVELS = WORDS.length;
+  levelsEl.textContent = String(TOTAL_LEVELS);
+
+  let score = 0;
+  let level = 1;
+  let attempts = 6;
+  let word = '';
+  let hint = '';
+  let guessed = new Set();
+  let revealed = [];
+  const MAX_WRONG = 6;
+
+  const STAGES = [
+    ['_____','|     |','|','|','|','_____'].join('\n'),
+    ['_____','|     |','|     O','|','|','_____'].join('\n'),
+    ['_____','|     |','|     O','|     |','|','_____'].join('\n'),
+    ['_____','|     |','|     O','|    /|','|','_____'].join('\n'),
+    ['_____','|     |','|     O','|    /|\\','|','_____'].join('\n'),
+    ['_____','|     |','|     O','|    /|\\','|    /','_____'].join('\n'),
+    ['_____','|     |','|     O','|    /|\\','|    / \\','_____'].join('\n'),
+  ];
+
+  function buildLevelsBar() {
+    while (levelsBar.firstChild) levelsBar.removeChild(levelsBar.firstChild);
+    for (let i = 1; i <= TOTAL_LEVELS; i++) {
+      const b = document.createElement('button');
+      b.appendChild(document.createTextNode('L' + i));
+      if (i === level) b.classList.add('active');
+      b.addEventListener('click', () => startGame(i));
+      levelsBar.appendChild(b);
+    }
+  }
+  function updateHud() {
+    scoreEl.textContent = String(score);
+    levelEl.textContent = String(level);
+    attemptsEl.textContent = String(attempts);
+    hintEl.textContent = hint || '—';
+    hangmanEl.textContent = STAGES[Math.min(STAGES.length - 1, MAX_WRONG - attempts)];
+  }
+
+  function renderWord() {
+    while (wordEl.firstChild) wordEl.removeChild(wordEl.firstChild);
+    for (let i = 0; i < word.length; i++) {
+      const d = document.createElement('div');
+      d.className = 'letter';
+      if (revealed[i]) { d.classList.add('revealed'); d.appendChild(document.createTextNode(word[i])); }
+      else d.appendChild(document.createTextNode(''));
+      wordEl.appendChild(d);
+    }
+  }
+
+  function checkWinner(kind) {
+    if (kind === 'win') {
+      score += 500 + attempts * 20;
+      updateHud();
+      if (level >= TOTAL_LEVELS) {
+        alert('全部通关 YOU WIN! 最终得分: ' + score);
+      } else {
+        alert('本关胜利 得分: ' + score + ' 即将进入 L' + (level + 1));
+        startGame(level + 1);
+      }
+    } else if (kind === 'lose') {
+      alert('GAME OVER 答案是 "' + word + '". 得分: ' + score);
+      score = Math.max(0, score - 300);
+      updateHud();
+    }
+  }
+  function winLose(kind) { return checkWinner(kind); }
+
+  function isWon() { return revealed.every(Boolean); }
+  function isLost() { return attempts <= 0; }
+
+  function handleGuess(ch) {
+    ch = (ch || '').toLowerCase();
+    if (!/^[a-z]$/.test(ch)) return;
+    if (guessed.has(ch)) return;
+    guessed.add(ch);
+    let hit = false;
+    for (let i = 0; i < word.length; i++) if (word[i] === ch && !revealed[i]) {
+      revealed[i] = true; hit = true; score += 10;
+    }
+    if (!hit) attempts--;
+    updateHud(); renderWord();
+    if (isWon()) return winLose('win');
+    if (isLost()) return winLose('lose');
+  }
+
+  function startGame(lv) {
+    const index = Math.max(1, Math.min(TOTAL_LEVELS, Number(lv) || 1)) - 1;
+    level = index + 1;
+    word = WORDS[index].w;
+    hint = WORDS[index].h;
+    attempts = 6;
+    guessed = new Set();
+    revealed = new Array(word.length).fill(false);
+    buildLevelsBar();
+    updateHud();
+    renderWord();
+    guessEl.value = '';
+    guessEl.focus();
+  }
+  goBtn.addEventListener('click', () => { handleGuess(guessEl.value); guessEl.value = ''; guessEl.focus(); });
+  guessEl.addEventListener('keydown', e => { if (e.key === 'Enter') { handleGuess(guessEl.value); guessEl.value = ''; } });
+  window.startGame = startGame;
+  document.addEventListener('DOMContentLoaded', () => startGame(1));
+})();
+</script>
+</body>
+</html>

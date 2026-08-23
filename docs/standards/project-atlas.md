@@ -109,7 +109,9 @@
    - 缺 owns_domain 边 → 按 owner_project 与 PROJECTS.id 自动关联
 4. 三方对账校验：文档 §3.2 Rust 分层表行 ↔ CRATE_META.ais_layers ↔ registry 节点属性。三者不一致即告警。
 
-## 6. AI 图谱对话（专家联盟集成）
+## 6. AI 图谱对话与通用流程（双基础设施）
+
+### 6.1 AI 图谱对话（专家联盟集成）
 
 `POST /atlas/consult` 的处理流程：
 
@@ -126,7 +128,7 @@ graph LR
 回答任何项目架构问题时基于机器检索的真实图谱数据，
 引用具体域 ID、引擎 ID 与代码路径（可溯源、无幻觉）。
 
-## 6. 通用流程注册（EAF-STD-001 接入）
+### 6.2 通用流程注册（EAF-STD-001 接入）
 
 任何模块可按 **EAF-STD-001 行业规范**向图谱动态注册业务流程，
 成为通用 AI 知识图谱的流程基础设施：
@@ -151,7 +153,139 @@ graph LR
 **移除语义**：仅运行时注册流程可移除，代码基线流程返回 404（保护基线）。
 **注册后契约**：注册即触发 W9 全量复验，注册不得引入破窗。
 
-## 7. 项目实体层（"一切皆是项目"）
+---
+
+## 7. Rust 绑定契约标准操作流程（30 min SOP · 新增 Rust crate 的七步铁律）
+
+> **适用范围**：任何新增 Rust crate（workspace member）必须严格遵循本 SOP；漏任一步都会触发 `GET /atlas/verify` 破窗或 `test-t10-arch-fourway-diff.js` exit 1。
+> **目标耗时**：熟练后 ≤30 分钟完成一个新 crate（16→n 的标准化增长）。
+> **配套测试**：`cargo test -p runtime --test _tmp_t2_crate_meta`（T2 回归） + `node test/test-t10-arch-fourway-diff.js`（四方对账 AC-22） + `node test/test-tr-11-readme-count.js`（README 齐全度）。
+
+### Step 1 · 新建 crate 目录（≈2 min）
+
+在 `platform/services/<crate-kebab-name>/` 或聚合层 `platform/gateway/<name>/` 创建目录，必须满足：
+- **名称规范**：kebab-case，与后续 `package.name`、`CRATE_META.name`、workspace `members` 完全一致（禁止混用 kebab / snake）。
+- **最小骨架**：必须创建 `Cargo.toml` + `src/lib.rs` + `tests/`（可为空占位，避免无测试目录）。
+- **二进制可选**：如需 CLI，再建 `src/bin/<name>.rs`，但 `lib.rs` 必须**始终存在**（三常量 + pub 对外 API 的唯一稳定暴露点）。
+
+### Step 2 · src/lib.rs 三常量声明（≈3 min）
+
+`src/lib.rs` 顶部**必须**顺序声明 3 个契约常量 + 1 个 meta 实例（顺序固定，图谱自同步脚本依赖 AST 顺序）：
+
+```rust
+// ① CRATE_ID：UUID v5 生成（命名空间 = xuanji::DNS；名称 = crate 包名；脚本：uuid v5 或 reuse 已存在）
+pub const CRATE_ID: &str = "xxxxxxxx-xxxx-5xxx-xxxx-xxxxxxxxxxxx";
+// ② ENGINE_NAME：固定 "xuanji::" + 包名的 snake_case 形式
+pub const ENGINE_NAME: &str = "xuanji::<snake_name>";
+// ③ CRATE_META：结构化元数据（字段顺序必须与 CrateMeta 定义一致）
+pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+    id: CRATE_ID,
+    name: env!("CARGO_PKG_NAME"),   // 依赖 Cargo.toml package.name，禁止手写
+    version: env!("CARGO_PKG_VERSION"),
+    layer: xuanji_common_meta::AisLayer::L4Services, // 按 AIS 分层选一个枚举值
+    owner: "xuanji-core",
+};
+```
+
+**UUID v5 生成提示**：
+```bash
+# 任选其一；推荐 namespace=ns:DNS (6ba7b810-9dad-11d1-80b4-00c04fd430c8) + name=<package.name>
+python3 -c "import uuid;print(uuid.uuid5(uuid.NAMESPACE_DNS, 'your-crate-name'))"
+```
+
+**AIS Layer 选型速查**（优先选最窄的一层）：
+| 枚举 | 典型场景 |
+|------|----------|
+| L6Kernel | 算子内核/守恒律/纯数学内核（零业务依赖，如 operator-core） |
+| L5Domain | 元数据/枚举/纯领域模型（无网络 I/O，如 xuanji-common-meta） |
+| L4Services | 领域能力服务（**默认 12/16 归属此类**） |
+| L3Orchestration | 多 crate 聚合编排/路由（如 runtime） |
+| L2Gateway | 接入网关薄层（对外 HTTP/WebSocket 入口） |
+| L7Infrastructure | 持久化/数据库/多后端 Repository（如 xuanji-system） |
+
+### Step 3 · Cargo.toml workspace 注册 + xuanji-common-meta 依赖（≈3 min）
+
+3a. 根 `Cargo.toml` `[workspace]` members 追加一行：`"platform/services/<crate-name>"`（顺序：与 16 行矩阵保持 AIS 分层序即可，后续不强制）。
+
+3b. 新 crate 的 `Cargo.toml` **必须**以 workspace 继承风格声明：
+```toml
+[package]
+name = "<crate-kebab-name>"          # 必须与 CRATE_META.name 字面一致（T2唯一性断言依赖）
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description.workspace = true
+
+[dependencies]
+xuanji-common-meta = { workspace = true }   # 强制依赖（三常量类型来源）
+# 按需要再加其他 workspace 继承依赖（不要引入重型脚手架：axum/tracing/serde 允许）
+```
+
+3c. 在 `xuanji-common-meta/src/lib.rs` **`all_crate_metas()` 函数** 中，按第 17 条位置追加一条 `CrateMeta { id, name, version, layer, owner }`（⚠️ 漏这步 = T2 16≠17 红）。同步 `extern crate` + 唯一性数组到 `platform/gateway/runtime/tests/_tmp_t2_crate_meta.rs`。
+
+### Step 4 · 三注册登记（≈5 min）
+
+图谱三注册缺一不可（domain / engine / code_graph）。运行 `scripts/self_sync_rust.js`（见 Step6）可半自动化，但若首次/特殊情况需手动填 3 处：
+
+| 注册表 | 文件 | 新增条目要点 |
+|--------|------|-------------|
+| **① 域注册 (Domain Bind)** | `platform/backend-node/data/atlas_auto_registry.json` → `domains[]` | `id=domain-rust-<name>`; `scope=rust-crate/<name>`; `kind=rust-crate`; `type=domain`; `keyFeatures≥3` 条核心能力; `engines=["engine-rust-<name>"]` 或 `module-rust-<name>`（<5 能力/偏 Catalog 用 module）；`codePath=../services/<name>/src`；`auto=true` |
+| **② 引擎绑定 (Engine Bind)** | 同上 `atlas_auto_registry.json` 或 `engine_universe.js` | 若新增能力≥5，登记 `engine-rust-<name>` 引擎节点：capabilities 数组 ≥3 项，primary_impl="RUST"，codePath 指向 `src/lib.rs`，与 domain 边 uses_engine 关联 |
+| **③ 代码图谱绑定 (Code Graph Bind)** | `platform/backend-node/data/code_graph_bindings.json` | 新增 `unitId="<crate-name>"`，`kind="crate"`，`name="Rust/<Name>"`，`codePath="../services/<name>/src/lib.rs"`，扫描该 crate 所有 pub fn/pub struct 导出并写入 topEntities[]（至少 3 条代表性实体） |
+
+**三键命名规范**（禁止自由发挥）：
+```
+domain id  = "domain-rust-" + <package.name kebab>
+engine id  = "engine-rust-" + <package.name kebab>   （能力≥5）或 "module-rust-..."（<5）
+unitId     = <package.name kebab>                     （code_graph_bindings 顶层 key）
+```
+
+### Step 5 · README.md 8 节标准（≈10 min）
+
+在 crate 目录根下创建 `README.md`，必须包含以下 8 节标题（顺序/名称允许轻微变体但模式不可缺）：
+
+| 节 | 标题 | 最低内容要求 |
+|----|------|-------------|
+| §1 | **概述** | 1 句话定义 crate 职责 + 上下游位置（"X 层 / Y 服务，负责 Z"）。 |
+| §2 | **CRATE_ID / ENGINE_NAME / AIS 层级** | 从 `src/lib.rs` 原样粘贴三常量 + CRATE_META 字面量（代码围栏包裹），并显式写出归属 AIS Layer 枚举名。 |
+| §3 | **模块结构 src/* 说明** | 对每个 `src/*.rs` + 子模块目录 1-2 句话说明职责；如含 `bin/*.rs` 也列出。 |
+| §4 | **关键 Trait & Impl** | 列出 ≥2 个（若无则说明「纯数据型，无对外 Trait」）核心 pub trait 和 struct，指明文件路径与 1 句用途。 |
+| §5 | **跑单测指引** | `cargo test -p <name>` 命令 + 测试覆盖的关键断言点/集成路径（1-2 句）。 |
+| §6 | **二次开发 / DIP 反转指引** | 扩展点如何注入（实现哪些 trait → 在何处注册）；禁止直接改 Service 内部，应通过 DIP 依赖倒置注入。 |
+| §7 | **TDD RED→GREEN 工作流 + 精度护栏** | 开发新特性流程：① 写测试 RED ② 最小实现 GREEN ③ 回归；再点名 1 条精度护栏（如 PageRank 禁 toFixed、CNM 必须 2004 贪心凝聚、时间复杂度边界）。 |
+| §8 | **图谱绑定（三注册 key + self_sync 规则）** | 明确本 crate 的三键全名（domain id / engine id / code_graph unitId）+ self_sync_rust.js 自动同步的触发条件（改 lib.rs 三常量即自动刷新注册表）。 |
+
+### Step 6 · self_sync_rust.js 自动同步（≈3 min，可选但推荐）
+
+首次完成 Step2-5 后，执行：
+```bash
+cd platform/backend-node && node scripts/self_sync_rust.js
+```
+该脚本做 4 件自动化：
+1. `cargo metadata` 扫描 workspace → 对比 `all_crate_metas()` 返回集 → 报告差集。
+2. 解析每个 `src/lib.rs` 顶部三常量 → 生成 `atlas_auto_registry.json` 缺省 domain/engine 骨架（人补齐 keyFeatures）。
+3. AST grep pub fn/pub struct → 写入 `code_graph_bindings.json` topEntities。
+4. 自动在 `docs/enterprise/02-architecture.md` §3.2 表末追加占位行（人补 Traits/Impl/版本列）。
+
+**同步后验证契约**：self_sync 脚本 exit 0 ≠ 校验通过（只是同步器）；必须再跑 Step7 最终机器验证。
+
+### Step 7 · /atlas/verify 绿灯终验（≈4 min）
+
+启动 backend-node 服务，顺序执行 3 个终验门禁，**全部 exit 0 或 HTTP 200 + 无 FAIL 才算 SOP 闭环**：
+
+| 门禁 | 命令/端点 | 通过条件 | 对应 W 系列破窗 |
+|------|-----------|----------|----------------|
+| T2 唯一性 & 格式 | `cargo test -p runtime --test _tmp_t2_crate_meta` | test ok, 16→n | W 遗漏 CRATE_ID / ENGINE_NAME 冲突 |
+| AC-22 四方对账 | `node test/test-t10-arch-fourway-diff.js` | `AC-22 四方对账得分: 2/2` + exit 0 | 文档 / T2 / 三注册 / lib 常量不一致 |
+| README 齐全度 | `node test/test-tr-11-readme-count.js` | `16→n / n README` + 8节命中 ≥7/8 | TR 11.1 / TR 11.2 抽样缺失 |
+| W 系列综合 | `GET /atlas/verify` | W1-W10 全部 🟢 | 新增 crate 破窗未登记/路径幽灵/文档漏挂 |
+
+> **闭环成功出口标**：四个门禁全绿 + `project-atlas` 图谱新 crate 域节点可达（`GET /atlas/domains/domain-rust-<name>` 返回 200 + owns_domain 边连到归属项目节点）。
+
+---
+
+## 8. 项目实体层（"一切皆是项目"）
 
 项目 = 聚合业务域的**顶层治理单元**。每个项目是一个独立小项目，
 经 `owns_domain` 边持有业务域，从而聚合该域全部引擎/算法/数据/文档/流程资产。

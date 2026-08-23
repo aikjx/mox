@@ -18,6 +18,12 @@ pub struct GateState {
     vetoed: AtomicBool,
 }
 
+impl Clone for GateState {
+    fn clone(&self) -> Self {
+        Self { vetoed: AtomicBool::new(self.vetoed.load(Ordering::SeqCst)) }
+    }
+}
+
 impl Default for GateState {
     fn default() -> Self {
         Self::new()

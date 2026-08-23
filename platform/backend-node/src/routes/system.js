@@ -3,9 +3,32 @@
 /**
  * 路由域：系统与状态
  * 服务管理页 / 健康检查 / 状态全景 / 日志 / 配置 / 插件 / 算子注册与执行
+ *
+ * O4 补丁：暴露 GET /system/slo 结构化四窗口 SLO（对比 Dify/LangGraph 仅 prom）
+ *   - 懒加载 SloTracker（进程级单例）
+ *   - 兼容无 aiEngine / llm-gateway 场景：只基于 logs.json 事件回放 + 当前会话内 record
  */
 module.exports = function registerSystemRoutes(ctx) {
   const { fs, path, gateway, storage, aiEngine, security, modules, config, uid, readJSON, writeJSON, ok, fail, readBody, appendLog, reg } = ctx;
+
+  // -------- O4 SLO tracker（进程级单例，供 /system/slo 读取和内部 record）--------
+  const { SloTracker } = require('../slo-tracker');
+  const slo = new SloTracker({ maxRingSize: 50000 });
+  ctx.sloTracker = slo; // 给其他域（如 llm-gateway、workflow）共用
+
+  // 启动时回放一批历史 logs.json（若存在），让第一次 SLO 就有 baseline 数据
+  try {
+    const seedLogs = readJSON('logs.json', []) || [];
+    for (const l of seedLogs) {
+      if (!l || typeof l !== 'object') continue;
+      const dur = Number(l.execution_time_ms ?? l.duration ?? 0) || 0;
+      const ok = l.success !== false;
+      const key = Array.isArray(l.workflow) && l.workflow.length > 0
+        ? (String(l.workflow[0]).slice(0, 48) || 'workflow')
+        : (l.type || 'workflow');
+      slo.record(key, dur, ok);
+    }
+  } catch { /* ignore: 纯 seed，不得影响路由注册 */ }
 
   reg('get', '/service-manager', (req, res) => {
     const htmlPath = path.join(__dirname, '..', '..', 'public', 'service-manager.html');
@@ -350,6 +373,48 @@ module.exports = function registerSystemRoutes(ctx) {
       };
       appendLog({ type: 'execute', msg: 'workflow executed', steps: results.length, ai_powerd: false });
       ok(res, { results: results, summary: summary, ai_powerd: false });
+    }
+  });
+
+  // ------------------------------------------------------------------
+  // O4 补丁：企业级 SLO 结构化 JSON 端点（对照 Dify/LangGraph 仅 Prom）
+  //   GET /system/slo                     → 全局快照
+  //   GET /system/slo?domains=chat,llm    → 只聚合指定域名
+  //   GET /system/slo?tenant=T-001        → 只聚合指定租户
+  //   GET /system/slo?objectiveP99Ms=500&objectiveSuccess=0.995
+  //                                        → 自定义目标
+  // 契约：schema_version=system-slo-v1，见 slo-tracker.js snapshot()
+  // ------------------------------------------------------------------
+  reg('get', '/system/slo', (req, res) => {
+    try {
+      const url = new URL(req.url, 'http://localhost');
+      const params = url.searchParams;
+      const domainsRaw = params.get('domains');
+      const tenant = params.get('tenant') || undefined;
+      const objectiveP99Ms = params.has('objectiveP99Ms') ? Number(params.get('objectiveP99Ms')) : undefined;
+      const objectiveSuccess = params.has('objectiveSuccess') ? Number(params.get('objectiveSuccess')) : undefined;
+
+      const snap = slo.snapshot({
+        domains: domainsRaw ? domainsRaw.split(',').map(s => s.trim()).filter(Boolean) : undefined,
+        tenant,
+        objectiveP99Ms,
+        objectiveSuccess,
+      });
+      ok(res, snap);
+    } catch (e) {
+      fail(res, 500, `SLO 快照生成失败: ${e.message}`);
+    }
+  });
+
+  // 方便测试：POST /system/slo/record 手工塞样本（生产环境应通过 sloTracker.record）
+  reg('post', '/system/slo/record', async (req, res) => {
+    try {
+      const body = await readBody(req);
+      if (!body || !body.key) { fail(res, 400, '缺少字段: key'); return; }
+      slo.record(body.key, Number(body.latency_ms) || 0, body.ok !== false, body.tenant);
+      ok(res, { recorded: true, key: body.key, domains_now: slo.listDomains() });
+    } catch (e) {
+      fail(res, 500, `SLO record 失败: ${e.message}`);
     }
   });
 

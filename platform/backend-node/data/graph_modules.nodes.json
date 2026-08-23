@@ -1,0 +1,2514 @@
+{
+  "generatedAt": "2026-08-23T13:31:58.960Z",
+  "count": 76,
+  "entities": [
+    {
+      "urn": "urn:xuanji:crate:34a20231-1a80-5426-b392-40d7a2ddd9f7",
+      "kind": "Module_crate",
+      "label": "Rust Crate · xuanji-common-meta",
+      "props": {
+        "moduleId": "urn:xuanji:crate:34a20231-1a80-5426-b392-40d7a2ddd9f7",
+        "name": "Rust Crate · xuanji-common-meta",
+        "aisLayer": "L0_SoT",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "cargo test -p xuanji-common-meta",
+          "reconcileCmd": "TODO(Day1-Rust): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:crate:00374bdd-cc60-55bf-8970-a879afbfe443",
+      "kind": "Module_crate",
+      "label": "Rust Crate · ai-agent",
+      "props": {
+        "moduleId": "urn:xuanji:crate:00374bdd-cc60-55bf-8970-a879afbfe443",
+        "name": "Rust Crate · ai-agent",
+        "aisLayer": "L3_AlgorithmReasoning",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "cargo test -p ai-agent",
+          "reconcileCmd": "TODO(Day1-Rust): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:crate:62b2cca1-d98f-5e41-b26e-8d2a43966117",
+      "kind": "Module_crate",
+      "label": "Rust Crate · business-catalog",
+      "props": {
+        "moduleId": "urn:xuanji:crate:62b2cca1-d98f-5e41-b26e-8d2a43966117",
+        "name": "Rust Crate · business-catalog",
+        "aisLayer": "L5_BusinessFlow",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "cargo test -p business-catalog",
+          "reconcileCmd": "TODO(Day1-Rust): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:crate:2fcd3eac-e894-5876-b007-fb33c56c0d65",
+      "kind": "Module_crate",
+      "label": "Rust Crate · flow-ai",
+      "props": {
+        "moduleId": "urn:xuanji:crate:2fcd3eac-e894-5876-b007-fb33c56c0d65",
+        "name": "Rust Crate · flow-ai",
+        "aisLayer": "L3_AlgorithmReasoning",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "cargo test -p flow-ai",
+          "reconcileCmd": "TODO(Day1-Rust): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:crate:fbd31c6a-41cd-5274-be2f-2a28066eaf0a",
+      "kind": "Module_crate",
+      "label": "Rust Crate · graph-algorithms",
+      "props": {
+        "moduleId": "urn:xuanji:crate:fbd31c6a-41cd-5274-be2f-2a28066eaf0a",
+        "name": "Rust Crate · graph-algorithms",
+        "aisLayer": "L4_GraphCore",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "cargo test -p graph-algorithms",
+          "reconcileCmd": "TODO(Day1-Rust): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:crate:9bfaf43b-385a-5a44-9fb2-65b4003ee80d",
+      "kind": "Module_crate",
+      "label": "Rust Crate · hermes-flow-bridge",
+      "props": {
+        "moduleId": "urn:xuanji:crate:9bfaf43b-385a-5a44-9fb2-65b4003ee80d",
+        "name": "Rust Crate · hermes-flow-bridge",
+        "aisLayer": "L5_BusinessFlow",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "cargo test -p hermes-flow-bridge",
+          "reconcileCmd": "TODO(Day1-Rust): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:crate:cb909f06-c0df-55ec-b397-543623a8c349",
+      "kind": "Module_crate",
+      "label": "Rust Crate · kg-hub",
+      "props": {
+        "moduleId": "urn:xuanji:crate:cb909f06-c0df-55ec-b397-543623a8c349",
+        "name": "Rust Crate · kg-hub",
+        "aisLayer": "L4_GraphCore",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "cargo test -p kg-hub",
+          "reconcileCmd": "TODO(Day1-Rust): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:crate:acf14283-3931-5528-adce-2c0cd3815363",
+      "kind": "Module_crate",
+      "label": "Rust Crate · operator-core",
+      "props": {
+        "moduleId": "urn:xuanji:crate:acf14283-3931-5528-adce-2c0cd3815363",
+        "name": "Rust Crate · operator-core",
+        "aisLayer": "L2_RustBase",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "cargo test -p operator-core",
+          "reconcileCmd": "TODO(Day1-Rust): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:crate:5a1df407-b217-5340-a5ae-5f4535d1e6de",
+      "kind": "Module_crate",
+      "label": "Rust Crate · operator-wasm",
+      "props": {
+        "moduleId": "urn:xuanji:crate:5a1df407-b217-5340-a5ae-5f4535d1e6de",
+        "name": "Rust Crate · operator-wasm",
+        "aisLayer": "L2_RustBase",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "cargo test -p operator-wasm",
+          "reconcileCmd": "TODO(Day1-Rust): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:crate:e56676c7-ec1f-5415-9587-ba8249d0178a",
+      "kind": "Module_crate",
+      "label": "Rust Crate · optimizer",
+      "props": {
+        "moduleId": "urn:xuanji:crate:e56676c7-ec1f-5415-9587-ba8249d0178a",
+        "name": "Rust Crate · optimizer",
+        "aisLayer": "L3_AlgorithmReasoning",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "cargo test -p optimizer",
+          "reconcileCmd": "TODO(Day1-Rust): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:crate:8c8d2382-6f9f-5218-894e-a07a43aa9554",
+      "kind": "Module_crate",
+      "label": "Rust Crate · primiflow-core",
+      "props": {
+        "moduleId": "urn:xuanji:crate:8c8d2382-6f9f-5218-894e-a07a43aa9554",
+        "name": "Rust Crate · primiflow-core",
+        "aisLayer": "L5_BusinessFlow",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "cargo test -p primiflow-core",
+          "reconcileCmd": "TODO(Day1-Rust): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "kind": "Module_crate",
+      "label": "Rust Crate · primiflow-fusion",
+      "props": {
+        "moduleId": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+        "name": "Rust Crate · primiflow-fusion",
+        "aisLayer": "L4_GraphCore",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "cargo test -p primiflow-fusion",
+          "reconcileCmd": "TODO(Day1-Rust): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:crate:4d2e50c1-9d64-525d-86cf-2d7d610a27b9",
+      "kind": "Module_crate",
+      "label": "Rust Crate · template-market",
+      "props": {
+        "moduleId": "urn:xuanji:crate:4d2e50c1-9d64-525d-86cf-2d7d610a27b9",
+        "name": "Rust Crate · template-market",
+        "aisLayer": "L5_BusinessFlow",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "cargo test -p template-market",
+          "reconcileCmd": "TODO(Day1-Rust): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:crate:50bb6200-04c5-5e4c-8354-4c6e1b230024",
+      "kind": "Module_crate",
+      "label": "Rust Crate · xuanji-expert",
+      "props": {
+        "moduleId": "urn:xuanji:crate:50bb6200-04c5-5e4c-8354-4c6e1b230024",
+        "name": "Rust Crate · xuanji-expert",
+        "aisLayer": "L4_GraphCore",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "cargo test -p xuanji-expert",
+          "reconcileCmd": "TODO(Day1-Rust): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:crate:b81eec75-22ff-5155-ac49-19edf6f6b5ab",
+      "kind": "Module_crate",
+      "label": "Rust Crate · xuanji-system",
+      "props": {
+        "moduleId": "urn:xuanji:crate:b81eec75-22ff-5155-ac49-19edf6f6b5ab",
+        "name": "Rust Crate · xuanji-system",
+        "aisLayer": "L4_GraphCore",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "cargo test -p xuanji-system",
+          "reconcileCmd": "TODO(Day1-Rust): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:crate:a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b",
+      "kind": "Module_crate",
+      "label": "Rust Crate · runtime",
+      "props": {
+        "moduleId": "urn:xuanji:crate:a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b",
+        "name": "Rust Crate · runtime",
+        "aisLayer": "L6_ProductApp",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "cargo test -p runtime",
+          "reconcileCmd": "TODO(Day1-Rust): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000001",
+      "kind": "Module_nmod",
+      "label": "Node 域 · Graph 图谱域（算法+存储）",
+      "props": {
+        "moduleId": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000001",
+        "name": "Node 域 · Graph 图谱域（算法+存储）",
+        "aisLayer": "L4_GraphCore",
+        "raci": {
+          "R": "算法联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-Node): Graph 图谱域（算法+存储） 单测路径",
+          "reconcileCmd": "TODO(Day2-Node): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000002",
+      "kind": "Module_nmod",
+      "label": "Node 域 · KB 知识库域（RAG+文档抽取）",
+      "props": {
+        "moduleId": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000002",
+        "name": "Node 域 · KB 知识库域（RAG+文档抽取）",
+        "aisLayer": "L5_BusinessFlow",
+        "raci": {
+          "R": "产品联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-Node): KB 知识库域（RAG+文档抽取） 单测路径",
+          "reconcileCmd": "TODO(Day2-Node): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000003",
+      "kind": "Module_nmod",
+      "label": "Node 域 · Expert Alliance 专家联盟",
+      "props": {
+        "moduleId": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000003",
+        "name": "Node 域 · Expert Alliance 专家联盟",
+        "aisLayer": "L4_GraphCore",
+        "raci": {
+          "R": "算法联盟",
+          "A": "产品联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-Node): Expert Alliance 专家联盟 单测路径",
+          "reconcileCmd": "TODO(Day2-Node): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000004",
+      "kind": "Module_nmod",
+      "label": "Node 域 · Project Atlas 项目图谱（自同步）",
+      "props": {
+        "moduleId": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000004",
+        "name": "Node 域 · Project Atlas 项目图谱（自同步）",
+        "aisLayer": "L5_BusinessFlow",
+        "raci": {
+          "R": "开发联盟",
+          "A": "产品联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-Node): Project Atlas 项目图谱（自同步） 单测路径",
+          "reconcileCmd": "TODO(Day2-Node): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000005",
+      "kind": "Module_nmod",
+      "label": "Node 域 · AI Engine 4 端点统一",
+      "props": {
+        "moduleId": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000005",
+        "name": "Node 域 · AI Engine 4 端点统一",
+        "aisLayer": "L6_ProductApp",
+        "raci": {
+          "R": "开发联盟",
+          "A": "算法联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-Node): AI Engine 4 端点统一 单测路径",
+          "reconcileCmd": "TODO(Day2-Node): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000006",
+      "kind": "Module_nmod",
+      "label": "Node 域 · MCP 协议域",
+      "props": {
+        "moduleId": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000006",
+        "name": "Node 域 · MCP 协议域",
+        "aisLayer": "L6_ProductApp",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-Node): MCP 协议域 单测路径",
+          "reconcileCmd": "TODO(Day2-Node): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000007",
+      "kind": "Module_nmod",
+      "label": "Node 域 · Security（RBAC + 审计 hash_chain）",
+      "props": {
+        "moduleId": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000007",
+        "name": "Node 域 · Security（RBAC + 审计 hash_chain）",
+        "aisLayer": "L4_GraphCore",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-Node): Security（RBAC + 审计 hash_chain） 单测路径",
+          "reconcileCmd": "TODO(Day2-Node): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000008",
+      "kind": "Module_nmod",
+      "label": "Node 域 · Engine Universe 图查询",
+      "props": {
+        "moduleId": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000008",
+        "name": "Node 域 · Engine Universe 图查询",
+        "aisLayer": "L4_GraphCore",
+        "raci": {
+          "R": "算法联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-Node): Engine Universe 图查询 单测路径",
+          "reconcileCmd": "TODO(Day2-Node): 补真实对账命令",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000001",
+      "kind": "Module_feview",
+      "label": "Frontend · fusion-1",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000001",
+        "name": "Frontend · fusion-1",
+        "aisLayer": "L6_ProductApp",
+        "raci": {
+          "R": "产品联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/fusion-1.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000002",
+      "kind": "Module_feview",
+      "label": "Frontend · fusion-2",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000002",
+        "name": "Frontend · fusion-2",
+        "aisLayer": "L6_ProductApp",
+        "raci": {
+          "R": "产品联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/fusion-2.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000003",
+      "kind": "Module_feview",
+      "label": "Frontend · fusion-3",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000003",
+        "name": "Frontend · fusion-3",
+        "aisLayer": "L6_ProductApp",
+        "raci": {
+          "R": "产品联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/fusion-3.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000004",
+      "kind": "Module_feview",
+      "label": "Frontend · fusion-4",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000004",
+        "name": "Frontend · fusion-4",
+        "aisLayer": "L6_ProductApp",
+        "raci": {
+          "R": "产品联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/fusion-4.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000005",
+      "kind": "Module_feview",
+      "label": "Frontend · fusion-5",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000005",
+        "name": "Frontend · fusion-5",
+        "aisLayer": "L6_ProductApp",
+        "raci": {
+          "R": "产品联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/fusion-5.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000006",
+      "kind": "Module_feview",
+      "label": "Frontend · fusion-6",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000006",
+        "name": "Frontend · fusion-6",
+        "aisLayer": "L6_ProductApp",
+        "raci": {
+          "R": "产品联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/fusion-6.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000007",
+      "kind": "Module_feview",
+      "label": "Frontend · fusion-7",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000007",
+        "name": "Frontend · fusion-7",
+        "aisLayer": "L6_ProductApp",
+        "raci": {
+          "R": "产品联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/fusion-7.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000008",
+      "kind": "Module_feview",
+      "label": "Frontend · monitor-1",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000008",
+        "name": "Frontend · monitor-1",
+        "aisLayer": "L6_ProductApp",
+        "raci": {
+          "R": "算法联盟",
+          "A": "产品联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/monitor-1.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000009",
+      "kind": "Module_feview",
+      "label": "Frontend · monitor-2",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000009",
+        "name": "Frontend · monitor-2",
+        "aisLayer": "L6_ProductApp",
+        "raci": {
+          "R": "算法联盟",
+          "A": "产品联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/monitor-2.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000010",
+      "kind": "Module_feview",
+      "label": "Frontend · monitor-3",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000010",
+        "name": "Frontend · monitor-3",
+        "aisLayer": "L6_ProductApp",
+        "raci": {
+          "R": "算法联盟",
+          "A": "产品联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/monitor-3.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000011",
+      "kind": "Module_feview",
+      "label": "Frontend · monitor-4",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000011",
+        "name": "Frontend · monitor-4",
+        "aisLayer": "L6_ProductApp",
+        "raci": {
+          "R": "算法联盟",
+          "A": "产品联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/monitor-4.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000012",
+      "kind": "Module_feview",
+      "label": "Frontend · monitor-5",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000012",
+        "name": "Frontend · monitor-5",
+        "aisLayer": "L6_ProductApp",
+        "raci": {
+          "R": "算法联盟",
+          "A": "产品联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/monitor-5.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000013",
+      "kind": "Module_feview",
+      "label": "Frontend · admin-1",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000013",
+        "name": "Frontend · admin-1",
+        "aisLayer": "L6_ProductApp",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/admin-1.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000014",
+      "kind": "Module_feview",
+      "label": "Frontend · admin-2",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000014",
+        "name": "Frontend · admin-2",
+        "aisLayer": "L6_ProductApp",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/admin-2.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000015",
+      "kind": "Module_feview",
+      "label": "Frontend · admin-3",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000015",
+        "name": "Frontend · admin-3",
+        "aisLayer": "L6_ProductApp",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/admin-3.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000016",
+      "kind": "Module_feview",
+      "label": "Frontend · admin-4",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000016",
+        "name": "Frontend · admin-4",
+        "aisLayer": "L6_ProductApp",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/admin-4.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000017",
+      "kind": "Module_feview",
+      "label": "Frontend · admin-5",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000017",
+        "name": "Frontend · admin-5",
+        "aisLayer": "L6_ProductApp",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/admin-5.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000018",
+      "kind": "Module_feview",
+      "label": "Frontend · market-1",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000018",
+        "name": "Frontend · market-1",
+        "aisLayer": "L5_BusinessFlow",
+        "raci": {
+          "R": "产品联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/market-1.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000019",
+      "kind": "Module_feview",
+      "label": "Frontend · market-2",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000019",
+        "name": "Frontend · market-2",
+        "aisLayer": "L5_BusinessFlow",
+        "raci": {
+          "R": "产品联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/market-2.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000020",
+      "kind": "Module_feview",
+      "label": "Frontend · market-3",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000020",
+        "name": "Frontend · market-3",
+        "aisLayer": "L5_BusinessFlow",
+        "raci": {
+          "R": "产品联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/market-3.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000021",
+      "kind": "Module_feview",
+      "label": "Frontend · kb-1",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000021",
+        "name": "Frontend · kb-1",
+        "aisLayer": "L5_BusinessFlow",
+        "raci": {
+          "R": "产品联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/kb-1.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000022",
+      "kind": "Module_feview",
+      "label": "Frontend · kb-2",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000022",
+        "name": "Frontend · kb-2",
+        "aisLayer": "L5_BusinessFlow",
+        "raci": {
+          "R": "产品联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/kb-2.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000023",
+      "kind": "Module_feview",
+      "label": "Frontend · kb-3",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000023",
+        "name": "Frontend · kb-3",
+        "aisLayer": "L5_BusinessFlow",
+        "raci": {
+          "R": "产品联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/kb-3.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000024",
+      "kind": "Module_feview",
+      "label": "Frontend · expert-1",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000024",
+        "name": "Frontend · expert-1",
+        "aisLayer": "L4_GraphCore",
+        "raci": {
+          "R": "算法联盟",
+          "A": "产品联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/expert-1.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000025",
+      "kind": "Module_feview",
+      "label": "Frontend · expert-2",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000025",
+        "name": "Frontend · expert-2",
+        "aisLayer": "L4_GraphCore",
+        "raci": {
+          "R": "算法联盟",
+          "A": "产品联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/expert-2.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000026",
+      "kind": "Module_feview",
+      "label": "Frontend · expert-3",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000026",
+        "name": "Frontend · expert-3",
+        "aisLayer": "L4_GraphCore",
+        "raci": {
+          "R": "算法联盟",
+          "A": "产品联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/expert-3.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000027",
+      "kind": "Module_feview",
+      "label": "Frontend · expert-4",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000027",
+        "name": "Frontend · expert-4",
+        "aisLayer": "L4_GraphCore",
+        "raci": {
+          "R": "算法联盟",
+          "A": "产品联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/expert-4.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:feview:00000000-0000-0000-0000-000000000028",
+      "kind": "Module_feview",
+      "label": "Frontend · settings-1",
+      "props": {
+        "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000028",
+        "name": "Frontend · settings-1",
+        "aisLayer": "L6_ProductApp",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "TODO(Day2-FE): views/_cards/settings-1.spec.js",
+          "reconcileCmd": "TODO(Day2-FE): E2E 3 步冒烟脚本",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000000000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 00",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000000000",
+        "name": "企业文档 · 00",
+        "aisLayer": "L1_DeployOps",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000010000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 01",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000010000",
+        "name": "企业文档 · 01",
+        "aisLayer": "L2_RustBase",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000020000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 02",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000020000",
+        "name": "企业文档 · 02",
+        "aisLayer": "L2_RustBase",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000030000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 03",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000030000",
+        "name": "企业文档 · 03",
+        "aisLayer": "L2_RustBase",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000040000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 04",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000040000",
+        "name": "企业文档 · 04",
+        "aisLayer": "L2_RustBase",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000050000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 05",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000050000",
+        "name": "企业文档 · 05",
+        "aisLayer": "L2_RustBase",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000060000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 06",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000060000",
+        "name": "企业文档 · 06",
+        "aisLayer": "L2_RustBase",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000070000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 07",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000070000",
+        "name": "企业文档 · 07",
+        "aisLayer": "L3_AlgorithmReasoning",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000080000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 08",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000080000",
+        "name": "企业文档 · 08",
+        "aisLayer": "L3_AlgorithmReasoning",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000090000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 09",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000090000",
+        "name": "企业文档 · 09",
+        "aisLayer": "L3_AlgorithmReasoning",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000100000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 10",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000100000",
+        "name": "企业文档 · 10",
+        "aisLayer": "L3_AlgorithmReasoning",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000110000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 11",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000110000",
+        "name": "企业文档 · 11",
+        "aisLayer": "L4_GraphCore",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000120000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 12",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000120000",
+        "name": "企业文档 · 12",
+        "aisLayer": "L4_GraphCore",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000130000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 13",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000130000",
+        "name": "企业文档 · 13",
+        "aisLayer": "L4_GraphCore",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000140000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 14",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000140000",
+        "name": "企业文档 · 14",
+        "aisLayer": "L1_DeployOps",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000150000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 15",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000150000",
+        "name": "企业文档 · 15",
+        "aisLayer": "L1_DeployOps",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000160000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 16",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000160000",
+        "name": "企业文档 · 16",
+        "aisLayer": "L4_GraphCore",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000170000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 17",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000170000",
+        "name": "企业文档 · 17",
+        "aisLayer": "L2_RustBase",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000180000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 18",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000180000",
+        "name": "企业文档 · 18",
+        "aisLayer": "L0_SoT",
+        "raci": {
+          "R": "产品联盟",
+          "A": "产品联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000190000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 19",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000190000",
+        "name": "企业文档 · 19",
+        "aisLayer": "L1_DeployOps",
+        "raci": {
+          "R": "开发联盟",
+          "A": "算法联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000200000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 20",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000200000",
+        "name": "企业文档 · 20",
+        "aisLayer": "L1_DeployOps",
+        "raci": {
+          "R": "开发联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000210000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 21",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000210000",
+        "name": "企业文档 · 21",
+        "aisLayer": "L2_RustBase",
+        "raci": {
+          "R": "产品联盟",
+          "A": "开发联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000220000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 22",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000220000",
+        "name": "企业文档 · 22",
+        "aisLayer": "L1_DeployOps",
+        "raci": {
+          "R": "开发联盟",
+          "A": "产品联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    },
+    {
+      "urn": "urn:xuanji:doc:00000000-0000-0000-0000-000000230000",
+      "kind": "Module_doc",
+      "label": "企业文档 · 23",
+      "props": {
+        "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000230000",
+        "name": "企业文档 · 23",
+        "aisLayer": "L1_DeployOps",
+        "raci": {
+          "R": "产品联盟",
+          "A": "产品联盟",
+          "C": [],
+          "I": "总设计师"
+        },
+        "upstreamDownstream": {
+          "upstream": [],
+          "downstream": []
+        },
+        "acceptanceGate": {
+          "unitTestPath": "grep -n \"权威链冲突\" docs/enterprise/*.md | wc -l = 0",
+          "reconcileCmd": "22号归一化表9 该文档锚点行数",
+          "governGate": true,
+          "auditFields": [
+            "actor",
+            "action",
+            "entity_ids",
+            "ts",
+            "signature"
+          ]
+        }
+      },
+      "source": "self_sync_all.js@24-Modularization"
+    }
+  ]
+}

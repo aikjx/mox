@@ -6,6 +6,8 @@ const crypto = require('crypto');
 const { getGateway } = require('./llm-gateway');
 const { getAlliance } = require('./expert-alliance');
 const { GraphFormulas } = require('./graph/graph-formulas');
+// [C3 单一真源] 意图识别 domain 层（归一化）：AIIE 不独立重复实现意图分类算法
+const { detectIntent: _domainDetectIntent } = require('./expert-alliance/domain/intent-classifier');
 
 const DATA_DIR = path.join(__dirname, '..', 'data');
 
@@ -1382,32 +1384,9 @@ class AIIntegrationEngine {
   }
 
   async _detectIntention(question) {
-    const text = (question || '').toLowerCase();
-    const intents = {
-      analysis: ['分析', '评估', '对比', '理解', '解释'],
-      creation: ['创建', '生成', '编写', '设计', '开发'],
-      optimization: ['优化', '改进', '增强', '提升', '优化'],
-      debugging: ['错误', '异常', 'bug', '问题', '修复'],
-      planning: ['计划', '方案', '步骤', '策略', '路线'],
-      learning: ['学习', '理解', '教程', '示例', '案例']
-    };
-
-    const scores = {};
-    Object.entries(intents).forEach(([intent, keywords]) => {
-      scores[intent] = keywords.filter(kw => text.includes(kw)).length;
-    });
-
-    const detectedIntent = Object.entries(scores)
-      .sort((a, b) => b[1] - a[1])
-      .filter(([, score]) => score > 0)
-      .map(([intent]) => intent)[0] || 'general';
-
-    return {
-      primary: detectedIntent,
-      scores,
-      confidence: Math.max(...Object.values(scores)) / 5 || 0.2,
-      suggestedMode: detectedIntent === 'planning' ? 'plan_act' : 'auto'
-    };
+    // [C3] SINGLE-SOURCE wrapper（真实定义见 expert-alliance/domain/intent-classifier.js）
+    const r = _domainDetectIntent(question);
+    return { primary: r.primary, scores: r.allScores || {}, confidence: r.confidence, suggestedMode: (r.primary === 'planning' || r.primary === 'requirement' || r.primary === 'workflow') ? 'plan_act' : 'auto' };
   }
 
   async _analyzeGraph(graphData, question) {

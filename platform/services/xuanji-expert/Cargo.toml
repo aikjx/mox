@@ -1,11 +1,13 @@
 [package]
 name = "xuanji-expert"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
 description = "璇玑 · 全维处理工具流程图：七位专家并行诊断 + 归一化裁决 + 企业治理，复用 flow-ai 引擎做最优求解"
-license = "MIT"
 
 [dependencies]
+xuanji-common-meta = { path = "../xuanji-common-meta" }
 flow-ai = { path = "../flow-ai" }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -28,3 +30,11 @@ tracing = { workspace = true }
 # S3 审计后端：真实 HTTP(S) 上传（SigV4 签名手写，见 audit/s3.rs）
 reqwest = { workspace = true, features = ["blocking"] }
 async-trait = { workspace = true }
+
+[[example]]
+name = "profile_deep_chain"
+path = "examples/profile_deep_chain.rs"
+
+[[example]]
+name = "cem_probe"
+path = "examples/cem_probe.rs"

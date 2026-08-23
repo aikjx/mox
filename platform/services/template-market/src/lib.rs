@@ -16,34 +16,14 @@
 //!
 //! 所有模板以 JSON 持久化到 `templates/` 目录，幂等、可版本化、可走 Git 协作。
 
-/// 璇玑系统 Crate 注册常量（图谱自同步契约：Rust 端显式声明 crate 身份）。
-pub const CRATE_ID: &str = "template-market";
-
-/// 璇玑系统 Crate 结构化元数据。
-#[derive(Debug, Clone, Copy)]
-pub struct CrateMeta {
-    pub uuid: &'static str,
-    pub ais_layers: &'static [&'static str],
-    pub owner_project: &'static str,
-    pub capabilities: &'static [&'static str],
-    pub data_tables_read: &'static [&'static str],
-    pub data_tables_write: &'static [&'static str],
-}
-
-pub const CRATE_META: CrateMeta = CrateMeta {
-    uuid: "3a06f2b1-74d0-43e4-8fa0-b1c2d3e4f5a6",
-    ais_layers: &["L3-Service"],
-    owner_project: "proj-auto-dev",
-    capabilities: &[
-        "模板发布 publish (FlowGraph + artifacts + tags)",
-        "模板列表 list (标签/关键词检索)",
-        "模板加载 load (落盘本地工程)",
-        "模板派生 fork (引用链)",
-        "持续学习反馈沉淀 record_feedback",
-        "模板版本化 + Git 协作",
-    ],
-    data_tables_read: &["templates/*.json"],
-    data_tables_write: &["templates/*.json"],
+pub const CRATE_ID: &str = "4d2e50c1-9d64-525d-86cf-2d7d610a27b9";
+pub const ENGINE_NAME: &str = "xuanji::template_market";
+pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+    id: CRATE_ID,
+    name: env!("CARGO_PKG_NAME"),
+    version: env!("CARGO_PKG_VERSION"),
+    layer: xuanji_common_meta::AisLayer::L4Services,
+    owner: "xuanji-core",
 };
 
 use anyhow::{Context, Result};

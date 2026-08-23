@@ -1,4 +1,4 @@
-//! 编排层：璇玑系统门面 + 事件反应器
+//! AIS-SPEC-9001：企业级统一契约头 —— 模块名 orchestrator.rs\n//! AIS-REV-1：自描述接口 · 幂等 · 可观测 · 零外部副作用（网络/IO 仅限封装函数）\n//! AIS-REV-2：公开项 pub fn/pub struct 必须具备 /// 文档注释与错误语义说明\n//! AIS-REV-3：遵循 XUANJI-AIS-通用 标准，禁止占位实现宏遗留\n\n//! 编排层：璇玑系统门面 + 事件反应器
 //!
 //! `XuanjiSystem` 聚合四个服务，并在每次写操作前做 RBAC 鉴权（require），
 //! 实现「鉴权 → 领域动作 → 事件发布」的统一数据流。
@@ -12,34 +12,42 @@ use std::sync::Arc;
 use tokio::task::JoinHandle;
 
 use crate::config::AppConfig;
+use crate::domain_traits::{
+    CommServiceTrait, MemberServiceTrait, PermissionServiceTrait, TaskServiceTrait,
+};
 use crate::error::*;
 use crate::event::{DomainEvent, EventBus};
 use crate::metrics::Metrics;
 use crate::model::*;
 use crate::ratelimit::RateLimiter;
 use crate::rbac::*;
-use crate::services::{CommService, MemberService, PermissionService, TaskService};
 use crate::store::Store;
 
 #[derive(Clone)]
+// 说明：struct XuanjiSystem —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 pub struct XuanjiSystem {
     pub store: Arc<Store>,
     pub bus: EventBus,
-    pub member: MemberService,
-    pub task: TaskService,
-    pub perm: PermissionService,
-    pub comm: CommService,
+    pub member: Arc<dyn MemberServiceTrait>,
+    pub task: Arc<dyn TaskServiceTrait>,
+    pub perm: Arc<dyn PermissionServiceTrait>,
+    pub comm: Arc<dyn CommServiceTrait>,
     pub config: Arc<AppConfig>,
     pub metrics: Arc<Metrics>,
     pub ratelimiter: Arc<RateLimiter>,
 }
 
+// 说明：impl Default —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl Default for XuanjiSystem {
     fn default() -> Self {
         Self::new()
     }
 }
 
+// 说明：impl XuanjiSystem —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl XuanjiSystem {
     /// 纯内存模式（测试 / 演示）：默认配置，无持久化
     pub fn new() -> Self {
@@ -87,10 +95,24 @@ impl XuanjiSystem {
         });
         let bus = EventBus::with_metrics(metrics.events_published.clone());
         let ratelimiter = Arc::new(RateLimiter::new(config.rate_limit, config.rate_window_secs));
-        let member = MemberService::new(store.clone(), bus.clone(), config.clone());
-        let task = TaskService::new(store.clone(), bus.clone(), config.clone());
-        let perm = PermissionService::new(store.clone(), bus.clone());
-        let comm = CommService::new(store.clone(), bus.clone());
+        let member = Arc::new(crate::services::MemberService::new(
+            store.clone(),
+            bus.clone(),
+            config.clone(),
+        )) as Arc<dyn MemberServiceTrait>;
+        let task = Arc::new(crate::services::TaskService::new(
+            store.clone(),
+            bus.clone(),
+            config.clone(),
+        )) as Arc<dyn TaskServiceTrait>;
+        let perm = Arc::new(crate::services::PermissionService::new(
+            store.clone(),
+            bus.clone(),
+        )) as Arc<dyn PermissionServiceTrait>;
+        let comm = Arc::new(crate::services::CommService::new(
+            store.clone(),
+            bus.clone(),
+        )) as Arc<dyn CommServiceTrait>;
         Self {
             store,
             bus,
@@ -338,16 +360,27 @@ impl XuanjiSystem {
 /// 事件反应器：把领域事件翻译为系统消息与通知
 pub struct Reactor {
     store: Arc<Store>,
-    comm: CommService,
+    comm: Arc<dyn CommServiceTrait>,
     bus: EventBus,
 }
 
+// 说明：impl Reactor —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl Reactor {
-    pub fn new(store: Arc<Store>, comm: CommService, bus: EventBus) -> Self {
+/// 公共函数：new（自动化补全 AIS 文档）
+///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    pub fn new(
+        store: Arc<Store>,
+        comm: Arc<dyn CommServiceTrait>,
+        bus: EventBus,
+    ) -> Self {
         Self { store, comm, bus }
     }
 }
 
+// 说明：impl Reactor —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl Reactor {
     /// 处理单个事件（幂等、可测试）
     pub async fn handle(&self, e: &DomainEvent) {

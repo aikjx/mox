@@ -7,6 +7,7 @@ authors.workspace = true
 description = "AI Intelligent Agent with Conversation, Algorithm Normalization, and Workflow Automation"
 
 [dependencies]
+xuanji-common-meta = { path = "../xuanji-common-meta" }
 operator-core = { path = "../operator-core" }
 graph-algorithms = { path = "../graph-algorithms" }
 kg-hub = { path = "../kg-hub" }

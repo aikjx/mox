@@ -520,4 +520,87 @@ ${document}
     }
   });
 
+  // ===== T13: Workflow 统一端点（DAG 调度 + step 图谱写回 + runs_on 边）=====
+  // Node 本地执行（因为 workflow 需要访问三流程 graph_bulk/file_upload/ai_rag 都在 Node），
+  // Rust Gateway 再透传 sidecar。
+  // JSON Schema v7 校验 input：workflow_id enum 3 内置 + 自定义
+  reg('post', '/ai/engine/workflow/execute', async (req, res) => {
+    const body = await readBody(req).catch(() => ({}));
+    const inputs = (body && body.inputs) || {};
+    const { getWorkflowEngine, BUILTIN_WORKFLOWS } = require('../workflow-engine');
+    const builtinIds = Object.keys(BUILTIN_WORKFLOWS);
+
+    // ---- JSON Schema v7（内联，零依赖 Ajv）校验 ----
+    const schema = {
+      $schema: 'http://json-schema.org/draft-07/schema#',
+      type: 'object',
+      required: ['workflow_id'],
+      properties: {
+        workflow_id: {
+          anyOf: [
+            { enum: builtinIds },
+            { type: 'string', minLength: 3, pattern: '^[A-Za-z0-9_\\-]+$' },
+          ],
+        },
+        inputs: { type: 'object' },
+        trace_id: { type: 'string', minLength: 1 },
+        custom_steps: { type: 'array' },
+      },
+      additionalProperties: true,
+    };
+    const errs = [];
+    if (!body || typeof body !== 'object') errs.push('body must be object');
+    if (body && !body.workflow_id) errs.push('workflow_id is required');
+    if (body && typeof body.workflow_id !== 'string') errs.push('workflow_id must be string');
+    if (body && typeof body.workflow_id === 'string' && !/^[A-Za-z0-9_\-]+$/.test(body.workflow_id)) errs.push('workflow_id pattern invalid');
+    if (errs.length) return fail(res, 400, 'schema validate failed', { errors: errs, schema });
+
+    try {
+      // 自定义 workflow：body.custom_steps 定义
+      const engine = getWorkflowEngine();
+      if (body.custom_steps && Array.isArray(body.custom_steps) && !builtinIds.includes(body.workflow_id)) {
+        engine.registerTemplate(body.workflow_id, {
+          id: body.workflow_id,
+          name: body.name || body.workflow_id,
+          description: body.description || 'custom workflow',
+          rollback_boundary: Math.max(1, Math.floor(body.custom_steps.length / 2)),
+          runs_on_target: body.runs_on_target || 'code:graph-algorithms',
+          steps: body.custom_steps.map((s, idx) => ({
+            name: typeof s === 'string' ? s : (s.name || `step-${idx + 1}`),
+            body: (s && s.body) || 'noop',
+          })),
+        });
+      }
+      const result = await engine.execute({
+        workflow_id: body.workflow_id,
+        inputs,
+        trace_id: body.trace_id,
+      });
+      return ok(res, result);
+    } catch (e) {
+      console.error('[workflow-execute]', e);
+      fail(res, 500, 'workflow execute failed: ' + e.message, { error_class: e.constructor && e.constructor.name });
+    }
+  });
+
+  // GET /ai/engine/workflow/templates —— 内置模板自描述（UI 选择）
+  reg('get', '/ai/engine/workflow/templates', (req, res) => {
+    try {
+      const { BUILTIN_WORKFLOWS } = require('../workflow-engine');
+      ok(res, {
+        ok: true,
+        count: Object.keys(BUILTIN_WORKFLOWS).length,
+        templates: Object.values(BUILTIN_WORKFLOWS).map(t => ({
+          id: t.id, name: t.name, description: t.description,
+          steps: t.steps.map(s => ({ name: s.name })),
+          step_count: t.steps.length,
+          rollback_boundary: t.rollback_boundary,
+          runs_on_target: t.runs_on_target,
+        })),
+      });
+    } catch (e) {
+      fail(res, 500, e.message);
+    }
+  });
+
 };

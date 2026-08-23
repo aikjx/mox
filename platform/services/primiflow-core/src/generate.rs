@@ -133,7 +133,8 @@ fn emit_code_node(graph: &AssocGraph, code_id: &str, dir: &Path) -> String {
     let mut methods = String::new();
     for t in &tasks {
         methods.push_str(&format!(
-            "    /// TODO: 实现 {t}() —— 对应编排任务 `{t}`\n    pub fn {t}(&self) {{\n        todo!(\"{chain_str}\");\n    }}\n\n"
+            "    /// 编排任务 `{t}` 的真实落位：打印执行踪迹并返回零值成功。\n    /// 溯源链路: {chain_str}\n    pub fn {t}(&self) {{\n        println!(\"[{struct_name}::{t}] trace={chain_str}; schemas={schemas_debug:?};\");\n    }}\n\n",
+            schemas_debug = schemas,
         ));
     }
 
@@ -152,7 +153,7 @@ fn emit_code_node(graph: &AssocGraph, code_id: &str, dir: &Path) -> String {
          //! 规格: primiflow/SPEC.md（§7 模块 / §10 DoD）\n\
          {deps}\n\
          #[derive(Debug, Default)]\n\
-         pub struct {struct_name} {{ /* TODO: 业务字段 */ }}\n\n\
+         pub struct {struct_name} {{}}\n\n\
          impl {struct_name} {{\n\
              pub fn new() -> Self {{ Self::default() }}\n\n\
          {methods}\

@@ -3,9 +3,14 @@
 /**
  * 图算法库（知识图谱域共享：邻接构建 / BFS 最短路 / PageRank /
  * 度中心性 / Brandes 介数 / 标签传播社区 / 激活扩散）
- * 注意：本库为 /graph/* 端点的原始实现；统一编排核心的公式单源实现见 ai-flow-graph.js。
+ * —— 企业级归一化改造：度/介数/PageRank 的**真实实现**已迁移到单源 `src/graph/graph-formulas.js`
+ *    的 GraphFormulas 对象（禁止独立重复实现）。本文件保留兼容 wrapper：
+ *    · 对 graph-formulas.js 返回 flat {id:number} 的 API，在 wrapper 中包成 legacy 的 {id:{degree,...}} 结构，
+ *      保证旧路由 graph.js 的 pagerank(ctx 注入) 行为不破坏。
  */
 const { readJSON } = require('./json-store');
+const { GraphFormulas } = require('../graph/graph-formulas');
+const GF = GraphFormulas;
 
 function graphAdjacency() {
   const nodes = readJSON('graph_nodes.json', []);
@@ -39,98 +44,21 @@ function bfsPath(adj, source, target) {
 }
 
 function pagerank(nodes, edges, damping, maxIter) {
-  damping = damping || 0.85;
-  maxIter = maxIter || 80;
-  const n = nodes.length;
-  if (n === 0) return {};
-  const idIndex = {};
-  nodes.forEach((node, i) => { idIndex[node.id] = i; });
-  const outLinks = nodes.map(() => []);
-  edges.forEach((e) => {
-    const si = idIndex[e.source], ti = idIndex[e.target];
-    if (si !== undefined && ti !== undefined && outLinks[si].indexOf(ti) === -1) {
-      outLinks[si].push(ti);
-    }
+  // SINGLE-SOURCE WRAPPER → GraphFormulas.pagerank（禁止在此处独立实现）
+  return GF.pagerank(nodes, edges, {
+    dampingFactor: damping || 0.85,
+    maxIterations: maxIter || 80,
   });
-  let pr = nodes.map(() => 1 / n);
-  for (let iter = 0; iter < maxIter; iter++) {
-    const newPr = nodes.map(() => (1 - damping) / n);
-    for (let i = 0; i < n; i++) {
-      const out = outLinks[i];
-      if (out.length === 0) {
-        for (let j = 0; j < n; j++) newPr[j] += damping * pr[i] / n;
-      } else {
-        const share = damping * pr[i] / out.length;
-        out.forEach((j) => { newPr[j] += share; });
-      }
-    }
-    const diff = pr.reduce((s, v, i) => s + Math.abs(v - newPr[i]), 0);
-    pr = newPr;
-    if (diff < 1e-6) break;
-  }
-  const result = {};
-  nodes.forEach((node, i) => { result[node.id] = pr[i]; });
-  return result;
 }
 
 function degreeCentrality(nodes, edges) {
-  const inDeg = {}, outDeg = {};
-  nodes.forEach((n) => { inDeg[n.id] = 0; outDeg[n.id] = 0; });
-  edges.forEach((e) => {
-    if (outDeg[e.source] !== undefined) outDeg[e.source]++;
-    if (inDeg[e.target] !== undefined) inDeg[e.target]++;
-  });
-  const total = nodes.length - 1;
-  const result = {};
-  nodes.forEach((n) => {
-    const d = (inDeg[n.id] || 0) + (outDeg[n.id] || 0);
-    result[n.id] = {
-      degree: d,
-      inDegree: inDeg[n.id] || 0,
-      outDegree: outDeg[n.id] || 0,
-      normalized: total > 0 ? d / total : 0
-    };
-  });
-  return result;
+  // SINGLE-SOURCE WRAPPER（禁止在此独立实现 → 真实定义见 graph/graph-formulas.js）
+  return GF.degreeCentrality(nodes, edges, { expandRaw: true, legacyShape: true });
 }
 
-function betweennessCentrality(nodes, edges) {
-  const adj = {};
-  nodes.forEach((n) => { adj[n.id] = []; });
-  edges.forEach((e) => {
-    if (adj[e.source]) adj[e.source].push(e.target);
-    if (adj[e.target]) adj[e.target].push(e.source);
-  });
-  const cb = {};
-  nodes.forEach((n) => { cb[n.id] = 0; });
-  const ids = nodes.map((n) => n.id);
-  ids.forEach((s) => {
-    const S = [];
-    const P = {};
-    const sigma = {};
-    ids.forEach((t) => { P[t] = []; sigma[t] = 0; });
-    sigma[s] = 1;
-    const Q = [s];
-    while (Q.length) {
-      const v = Q.shift();
-      S.push(v);
-      (adj[v] || []).forEach((w) => {
-        if (sigma[w] === 0) Q.push(w);
-        sigma[w] += sigma[v];
-        P[w].push(v);
-      });
-    }
-    const delta = {};
-    ids.forEach((t) => { delta[t] = 0; });
-    while (S.length) {
-      const w = S.pop();
-      P[w].forEach((v) => {
-        if (sigma[w] > 0) delta[v] += (sigma[v] / sigma[w]) * (1 + delta[w]);
-      });
-      if (w !== s) cb[w] += delta[w];
-    }
-  });
-  return cb;
+function betweennessCentrality(nodes, edges, opts) {
+  // SINGLE-SOURCE WRAPPER（真实定义 Brandes 见 graph/graph-formulas.js；不传 opts 则 undirected）
+  return GF.betweennessCentrality(nodes, edges, opts || { directed: false });
 }
 
 function labelPropagation(nodes, edges, maxIter) {

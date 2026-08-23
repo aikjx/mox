@@ -1,19 +1,51 @@
-# 璇玑系统 · 企业级架构文档（多视图）
+# 璇玑 RelGraph · 企业级架构文档（多视图 · 对齐六层金字塔）
 
-> **文档类型**：企业架构（Enterprise Architecture，多视图 / TOGAF 风格切面）
-> **文档版本**：v1.0 (ENT) · 最后更新 2026-08-16
-> **配套**：`01-requirements.md`（需求）、`03-design.md`（设计）、`04-business-processing.md`（业务处理）、`docs/architecture.md`（OUS 总架构）
+> **文档类型**：企业架构（Enterprise Architecture，多视图 / TOGAF 风格切面 · 显式 L 层级标注）
+> **文档版本**：v1.1 (ENT) · 最后更新 2026-08-23
+> **权威链**：🟢 L0 第一级 → [`18-全域顶层总设计-三联盟模式-V1.0.md`](18-全域顶层总设计-三联盟模式-V1.0.md)（TOP-MASTER §二：六层金字塔 · §三：八层知识图谱建模）。本文为 L2 第三级（架构层），所有声明不得与 18 冲突。
+> **主责联盟**：算法联盟（图算法/图谱） + 开发联盟（分层/工程落地） · 联合签署：产品联盟（需求一致性）
+> **配套**：`01-requirements.md`（需求）、`03-design.md`（设计）、`04-business-processing.md`（业务处理）、`docs/architecture.md`（OUS 父总架构 · L2 Rust 自研底座视角）
 >
-> 本文以「璇玑系统」为切面，沿 **业务 / 信息 / 应用 / 技术 / 安全 / 集成 / 部署** 七视图展开，
-> 并附 **架构决策记录（ADR）** 与 **跨视图 NFR 落地表**。
+> 本文以「璇玑 RelGraph」为切面，沿 **业务 / 信息 / 应用 / 技术 / 安全 / 集成 / 部署** 七视图展开，并附
+> **架构锚点（与 18 TOP-MASTER 六层金字塔的 L 层级对应表）**、**架构决策记录（ADR）** 与 **跨视图 NFR 落地表**。
 
 ---
 
-## 0. 架构一句话
+## 0. 架构一句话 + 六层金字塔锚点（对齐 18 TOP-MASTER §二）
 
-璇玑系统是 OUS 的**协作治理子系统**：以「数学内核 + 插件运行时」为底座，在**多租户璇玑**边界内，
-通过 **RBAC 统一鉴权闸门 + 领域事件总线 + 反应器** 将「成员/任务/权限/通信」四类能力解耦协同，
-并把组织决策（谁来做、做什么、是否通过）交给 `xuanji-system`，把技术决策（怎么做得更快、是否可信）交给 `xuanji-expert` 的璇玑治理。
+璇玑 RelGraph 是 OUS（算子统一系统）之上的**全域归一化知识图谱协同子系统**：以「知识图谱内核 + 八大算法家族核 + Rust 全自研」为底座，
+在**多租户璇玑**边界内，通过**统一 AI 入口（/ai/engine/{process,analyze,...}） + 三联盟协同闭环 + 四归三连铁律**，
+把「产品联盟收口需求、算法联盟落核算法、开发联盟交付代码」三路组织决策，
+归一收敛到「八层图谱 × 14 节点族 × 19 边族」的唯一事实基准上。
+
+### §0.1 七视图 ↔ 六层金字塔 双向锚点表（强制对齐）
+
+> 18 TOP-MASTER §二「六层金字塔」架构是跨文档、跨联盟的唯一锚点。本表把 TOGAF 七视图显式映射到六个 L 层级，任何七视图新增段落须在右侧标注其所属层级。
+
+| TOGAF 七视图 | 对应 L 层级（六层金字塔） | 核心承载模块（路径零老化） | 三联盟责任 |
+|--------------|--------------------------|----------------------------|:--:|
+| ① 业务 Business | **L5 业务流程层**（协作/融合/判重/文档治理 10 BP） | `platform/services/xuanji-system` + `frontend-ui` 28 视图 | 产品联盟 R，开发/算法 C |
+| ② 信息 Information | **L4 知识图谱核心层**（八层图谱 L0~L7 · 14 节点族 · 19 边族） | `platform/services/kg-hub` · `docs/graph/graph.enterprise.json`（372 节点 / 751 边） | 算法联盟 R，开发 C |
+| ③ 应用 Application | **L3 算法推理层** + **L6 产品应用层**（前端视图） | L3: graph-algorithms / optimizer / flow-ai / xuanji-expert；L6: frontend-ui（28 views） | 算法联盟 + 产品联盟 |
+| ④ 技术 Technology | **L2 Rust 自研工程底座**（15 crate · workspace 统一治理 · 零重型脚手架依赖） | `platform/services/*`（15） + `platform/gateway/runtime/`（聚合网关） | 开发联盟 R，算法 C |
+| ⑤ 安全 Security | 横切 **L1 部署运维层** · L2 · L3 · L5 | `auth_middleware` + `rbac_audit_middleware` + ⛨璇玑验证网关（G2） | 开发联盟 · 安全组 R |
+| ⑥ 集成 Integration | 横切 **L6 ↔ L2 ↔ 外部**（Rust Gateway AC-10 路由语义） | `platform/gateway/runtime/` 四端点 `/ai/engine/{process,analyze,capabilities,metrics}` | 开发联盟 R，算法 C |
+| ⑦ 部署 Deployment | **L1 部署运维层**（9 里程碑 M0~M8 · 三级验收 L0/L1/L2） | 部署目录规划 + CI 模板（见 18 §八） | 开发联盟 · 运维 R |
+
+### §0.2 八大算法家族（对齐 18 TOP-MASTER §五 · 全部禁止自研等价实现）
+
+| # | 算法家族 | 关键论文/方法 | 代码落点（L3 算法推理层） | 适用业务场景 |
+|---|----------|---------------|--------------------------|--------------|
+| A1 | **CNM 社区检测**（模块度贪心凝聚） | Clauset-Newman-Moore 2004 | `graph-algorithms::community::cnm` | 社区归属、模块化拆分、业务聚类 |
+| A2 | **Brandes 2001 介数中心性** | Brandes 2001（含向图双 BFS 版本） | `graph-algorithms::centrality::brandes_betweenness` | 关键节点识别、瓶颈分析、故障根因 |
+| A3 | **Harmonic 紧密中心性** | Rochat 2009（调和平均，解不可达） | `graph-algorithms::centrality::harmonic_closeness` | 传播能力、信息可达性 |
+| A4 | **PageRank（含转置图处理）** | Page 1999；质量沿出边方向正确传播（入边权重→转置图保证） | `graph-algorithms::centrality::pagerank` | 节点重要性、SEO 排序、图谱热度 |
+| A5 | **激活扩散（Activation Spread · 个性化 PageRank）** | Haveliwala 2002；个性化 PageRank 特例，d=0.85，30 轮收敛 | `graph-algorithms::spread::activation_spread` | **意图识别**（统一 AI 路由）、影响面分析、推荐召回 |
+| A6 | **RRF 结果融合（Reciprocal Rank Fusion）** | Cormack et al. 2009；k=60 | `kg-hub::fusion::rrf_rank_fuse` | 多路搜索融合、检索混合、跨域召回 |
+| A7 | **CEM 交叉熵优化（Cross-Entropy Method）** | Rubinstein 1999；AI Engine 高维配置优化 | `ai-agent::optimizer::cem` · `xuanji-expert::pipeline` | AI 引擎参数、架构配置、多目标优化 |
+| A8 | **CPM 关键路径 + RCPSP 资源约束调度** | Kelley-Walker CPM；RCPSP 贪心 | `optimizer::cpm` · `flow-ai::scheduling` | 任务排程、项目计划、并行调度 |
+
+> 硬约束（来自 project_memory）：A1 社区检测禁止标签传播 LPA；A2 介数必须 Brandes 算法；A3 紧密中心性须 Harmonic；A4 PageRank 必须包含转置图处理；A5 激活扩散须用个性化 PR d=0.85 30 轮；公式库保留全精度禁止 toFixed；密度指标必须附带人读解读文案；RAW 边输入在库内展开（非用户传双份）以避免度中心性错误。
 
 ---
 
@@ -112,27 +144,36 @@ DomainEvent ──▶ EventBus(broadcast)
    xuanji-expert（双璇玑十四维 · 璇玑）
 ```
 
-### §3.2 Rust Workspace 16 Crate · AIS 分层全表（三方对账基准）
+### §3.2 Rust 分层矩阵 · 16 Crate × 12 列（T2 真源 ↔ 三注册表 ↔ 文档 ↔ lib.rs 常量 四方对账 AC-22 基准）
 
-本表同步自 16 个 crate 的 `pub const CRATE_ID` / `pub const CRATE_META` 常量（与 project-atlas 注册表 Rust 条目三方对账一致）。每行 = 1 个璇玑独立子项目。
+> **权威等级**：L2 架构文档（第三级），与 TOP-MASTER `18-全域顶层总设计` §二六层金字塔严格对齐。
+> **真源链**：`xuanji-common-meta::all_crate_metas()` (T2 表) → 各 crate `src/lib.rs` `pub const CRATE_ID/ENGINE_NAME` → 三注册表 `atlas_auto_registry.json` `domain-rust-*` → 本节表格 → `docs/standards/project-atlas.md` §7 SOP。五者不一致即触发 `GET /atlas/verify` W 系列破窗告警。
+> **列顺序契约（12 列，测试 test-t10-arch-fourway-diff.js 依赖）**：`Crate 目录 · package.name · CRATE_ID · ENGINE_NAME · AIS Layer · Owner · 关键 Traits · 关键 Impl · 三注册 bind · README 链接 · 版本 · CI Status`。
+> **行序契约（16 行）**：严格按 `xuanji_common_meta::all_crate_metas()` 返回顺序（T2 向量序），禁止擅自调整顺序（测试按名称集合比对，但人读顺序需与 T2 一致）。
 
-| 序号 | Crate ID (kebab) | 路径 | AIS 分层 | 核心职责（1句） | 顶层入口 codePath | 引擎节点 id (engine-rust-*) | Owner 项目 (owner_project) |
-|------|-------------------|------|---------|----------------|-------------------|---------------------------|---------------------------|
-| 1 | operator-core crate | platform/services/operator-core | L4-Core, L6-Kernel | 算子代数/守恒律/类型核心 | src/lib.rs + types.rs | engine-rust-operator-core | proj-graph-infra |
-| 2 | operator-wasm crate | platform/services/operator-wasm | L5-Infra | WASM 字节码算子沙箱 | src/lib.rs | module-rust-operator-wasm | proj-auto-dev |
-| 3 | graph-algorithms crate | platform/services/graph-algorithms | L4-Core | 8 图算法:PR/CNM/介数/harmonic/Hebbian/推荐/密度/模块度 | src/lib.rs | engine-rust-graph-algorithms | proj-ai-engine |
-| 4 | optimizer crate | platform/services/optimizer | L4-Core | DAG/CPM 关键路径 + RCPSP 贪心调度 | src/lib.rs | engine-rust-optimizer | proj-graph-infra |
-| 5 | flow-ai crate | platform/services/flow-ai | L4-Core, L3-Service, L7-Tool | 9 模块:数据冒险/CPM/冲突/调度/拓扑/代码gen/流水线/原语/可视化 | src/lib.rs (+ bin/flowopt.rs) | engine-rust-flow-ai | proj-graph-infra |
-| 6 | xuanji-expert crate | platform/services/xuanji-expert | L3-Service, L2-Gateway, L1-Ingress, L5-Infra | 14 专家并行+裁决+4验证+审计S3/Kafka+RBAC+流程加载器 | src/lib.rs (+ bin/xuanji.rs) | engine-rust-xuanji-expert | proj-expert-alliance |
-| 7 | hermes-flow-bridge crate | platform/services/hermes-flow-bridge | L2-Gateway, L3-Service, L7-Tool | Hermes Agent 桥接：normalize/recorder/router/拦截注入 | src/lib.rs (+ bin/bridge_demo.rs) | module-rust-hermes-flow-bridge | proj-auto-dev |
-| 8 | business-catalog crate | platform/services/business-catalog | L3-Service, L7-Tool | 7 预置 FlowGraph + TopologyGraph (政务/法院/财务/客服/ETL/MCP/螺旋) | src/lib.rs (+ bin/catalog.rs) | module-rust-business-catalog | proj-auto-dev |
-| 9 | ai-agent crate | platform/services/ai-agent | L3-Service, L4-Core, L6-Kernel | 多阶段 Engine/LLMClient 路由/浏览器自动化/需求编译器/BPMN Workflow/MultiAgent/ProviderRegistry | src/lib.rs (+ tests/caomei_e2e.rs) | engine-rust-ai-agent | proj-ai-dialogue |
-| 10 | template-market crate | platform/services/template-market | L3-Service | 模板市场发布/列表/加载/评分/排序/Fork/2商城种子 | src/lib.rs | module-rust-template-market | proj-auto-dev |
-| 11 | xuanji-system crate | platform/services/xuanji-system | L1-Ingress, L2-Gateway, L3-Domain, L5-Infra, L6-Kernel | 成员/任务/权限/通信核心业务+RBAC/限流/事件编排/多后端 SQLite+PG+MySQL repo | src/lib.rs (server.rs, orchestrator.rs, repo/) | engine-rust-xuanji-system | proj-xuanji-core |
-| 12 | primiflow-core crate | platform/services/primiflow-core | L4-Core, L5-Infra, L1-Ingress | PrimiFlow 解析/代码生成/8 类骨架模板/执行/持久化 | src/lib.rs (parse.rs, generate.rs, persistence.rs) | engine-rust-primiflow-core | proj-xuanji-core |
-| 13 | primiflow-fusion crate | platform/services/primiflow-fusion | L2-Gateway, L3-Service, L1-Ingress, L6-Kernel | 六维融合/守恒闸门/Registry/平台编排/12Factor+可观测 | src/lib.rs (registry.rs, sixdim.rs, platform.rs) | engine-rust-primiflow-fusion | proj-xuanji-core |
-| 14 | kg-hub crate | platform/services/kg-hub | L3-Service, L6-Kernel, L1-Ingress | HybridIndex+URN+本体/摄入/推理/治理/影响/热点/闭环8段/5连接器 | src/lib.rs (index.rs, ingest.rs, reason.rs, loop_engine.rs) | engine-rust-kg-hub | proj-knowledge |
-| 15 | runtime (gateway) crate | platform/gateway/runtime | L1-Ingress, L2-Gateway | 16 crate 聚合网关:routes/handlers/Cordis5子模块/RBAC中间件/market DSL/迁移/治理/OpenAPI/operator-server | src/lib.rs (routes/, handlers/, cordis/, main.rs) | engine-rust-runtime | proj-xuanji-platform |
+| # | Crate 目录 | package.name | CRATE_ID (UUIDv5) | ENGINE_NAME | AIS Layer | Owner | 关键 Traits | 关键 Impl | 三注册 bind (domain;engine;code_graph) | README 链接 | 版本 | CI Status |
+|---|-----------|--------------|-------------------|-------------|-----------|-------|-------------|-----------|---------------------------------------|-------------|------|-----------|
+| 1 | platform/services/ai-agent | ai-agent | `00374bdd-cc60-55bf-8970-a879afbfe443` | `xuanji::ai_agent` | **L4Services** | xuanji-core | `trait LLMProvider`; `trait HttpProvider`; `trait Guard` (engine/guards.rs); `trait AgentTool` (engine/tools.rs) | `struct AIAgent`; `impl AIAgent { chat, configure_llm, compile_requirement, create_flow, run_engine_task, spawn_agent }`; `ConversationEngine`; `BrowserAutomationEngine`; `WorkflowEngine`; `FlowEngine`; `RequirementCompiler`; `MultiAgent`; `PluginBus` | `domain=domain-rust-ai-agent`;`engine=engine-rust-ai-agent`;`code_graph_unit=ai-agent` | [ai-agent/README.md](../../platform/services/ai-agent/README.md) | 3.0.0-ai-powered | 🟢 enterprise-ci |
+| 2 | platform/services/business-catalog | business-catalog | `62b2cca1-d98f-5e41-b26e-8d2a43966117` | `xuanji::business_catalog` | **L4Services** | xuanji-core | `trait CatalogProvider` | `struct Business`; `struct SpiralParams`; `struct SpiralKinematics`; `struct SpiralAnalysisReport`; `impl Catalog { list_topologies, list_flowgraphs, spiral_analysis }`; bin `catalog.rs` CLI | `domain=domain-rust-business-catalog`;`engine=module-rust-business-catalog`;`code_graph_unit=business-catalog` | [business-catalog/README.md](../../platform/services/business-catalog/README.md) | 0.1.0 | 🟢 enterprise-ci |
+| 3 | platform/services/flow-ai | flow-ai | `2fcd3eac-e894-5876-b007-fb33c56c0d65` | `xuanji::flow_ai` | **L4Services** | xuanji-core | `trait Primitive`; `trait Scheduler` | `struct ConflictReport`; `struct CodeBundle`; `struct TopologyGraph`; `struct Schedule`; `struct Pipeline`; `impl Pipeline { build, validate, execute, schedule, detect_conflicts }`; bin `flowopt.rs` | `domain=domain-rust-flow-ai`;`engine=engine-rust-flow-ai`;`code_graph_unit=flow-ai` | [flow-ai/README.md](../../platform/services/flow-ai/README.md) | 3.0.0-ai-powered | 🟢 enterprise-ci |
+| 4 | platform/services/graph-algorithms | graph-algorithms | `fbd31c6a-41cd-5274-be2f-2a28066eaf0a` | `xuanji::graph_algorithms` | **L4Services** | xuanji-core | `trait GraphAlgorithm` | `struct KnowledgeGraph`; `struct KnowledgeNode`; `struct CentralityMetrics`; `struct Community`; `struct KnowledgeGraphBuilder`; `impl { pagerank, cnm_community, brandes_betweenness, harmonic_closeness, activation_spread, density, modularity, rrf_rank_fuse }` | `domain=domain-rust-graph-algorithms`;`engine=engine-rust-graph-algorithms`;`code_graph_unit=graph-algorithms` | [graph-algorithms/README.md](../../platform/services/graph-algorithms/README.md) | 3.0.0-ai-powered | 🟢 enterprise-ci |
+| 5 | platform/services/hermes-flow-bridge | hermes-flow-bridge | `9bfaf43b-385a-5a44-9fb2-65b4003ee80d` | `xuanji::hermes_flow_bridge` | **L4Services** | xuanji-core | `trait BridgePlugin`; `trait Hook`; `trait SessionRecorder` | `struct HermesBridge`; `struct Router`; `struct MiniHermes`; `struct Normalizer`; `struct PluginRegistry`; `impl Bridge { route, apply_plugins, record_session, normalize_input }`; bin `bridge_demo.rs` | `domain=domain-rust-hermes-flow-bridge`;`engine=module-rust-hermes-flow-bridge`;`code_graph_unit=hermes-flow-bridge` | [hermes-flow-bridge/README.md](../../platform/services/hermes-flow-bridge/README.md) | 0.1.0 | 🟢 enterprise-ci |
+| 6 | platform/services/kg-hub | kg-hub | `cb909f06-c0df-55ec-b397-543623a8c349` | `xuanji::kg_hub` | **L4Services** | xuanji-core | `trait Connector`; `trait IngestPipeline`; `trait Reasoner` | `struct HybridIndex`; `struct Consolidator`; `struct URN`; `struct Ontology`; `struct LoopEngine`; `struct GovPolicy`; `impl { ingest, reason, govern, impact, hotspots, consolidate, loop_stage }`; 5 Connectors (SQLite/JSON/HTTP/CSV/API) | `domain=domain-rust-kg-hub`;`engine=engine-rust-kg-hub`;`code_graph_unit=kg-hub` | [kg-hub/README.md](../../platform/services/kg-hub/README.md) | 3.0.0-ai-powered | 🟢 enterprise-ci |
+| 7 | platform/services/operator-core | operator-core | `acf14283-3931-5528-adce-2c0cd3815363` | `xuanji::operator_core` | **L6Kernel** | xuanji-core | `trait Operator` (operator.rs); `trait Kernel` (kernel.rs); `trait ResourceContainer`; `trait ConservationLaw` (conservation.rs); `trait KernelExt` (kernel_ext.rs) | `struct OperatorError`; `struct State`; `struct Category`; `struct Registry`; `struct Resource`; `impl Monad for Result<T, OperatorError>`; `impl conservation::validate()`; `Registry::register/query/list()`; 4+ conservation 守恒律闸门 | `domain=domain-rust-operator-core`;`engine=engine-rust-operator-core`;`code_graph_unit=operator-core` | [operator-core/README.md](../../platform/services/operator-core/README.md) | 3.0.0-ai-powered | 🟢 enterprise-ci |
+| 8 | platform/services/operator-wasm | operator-wasm | `5a1df407-b217-5340-a5ae-5f4535d1e6de` | `xuanji::operator_wasm` | **L4Services** | xuanji-core | `trait WasmHost` | `struct WasmOperator`; `struct WasmModule`; `struct Instance`; `impl WasmOperator::call(wasmer::Instance) -> Result<Value>`; WASM Sandbox (wasmer + cranelift compiler) | `domain=domain-rust-operator-wasm`;`engine=module-rust-operator-wasm`;`code_graph_unit=operator-wasm` | [operator-wasm/README.md](../../platform/services/operator-wasm/README.md) | 3.0.0-ai-powered | 🟢 enterprise-ci |
+| 9 | platform/services/optimizer | optimizer | `e56676c7-ec1f-5415-9587-ba8249d0178a` | `xuanji::optimizer` | **L4Services** | xuanji-core | `trait Objective`; `trait Schedule` | `impl cpm_critical_path()`; `impl rcpsp_greedy()`; `impl multi_objective_eval_cem()`（CEM 交叉熵优化器，配置调参/多目标权重） | `domain=domain-rust-optimizer`;`engine=engine-rust-optimizer`;`code_graph_unit=optimizer` | [optimizer/README.md](../../platform/services/optimizer/README.md) | 3.0.0-ai-powered | 🟢 enterprise-ci |
+| 10 | platform/services/primiflow-core | primiflow-core | `8c8d2382-6f9f-5218-894e-a07a43aa9554` | `xuanji::primiflow_core` | **L4Services** | xuanji-core | `trait Executor`; `trait Store`; `trait Generator` | `struct Parse`; `struct Persistence`; `struct Runner`; `struct Server`; `mod gen { c1..c8 DDL 骨架模板 }`; `impl execute / persist / generate_code / parse_ddl` | `domain=domain-rust-primiflow-core`;`engine=engine-rust-primiflow-core`;`code_graph_unit=primiflow-core` | [primiflow-core/README.md](../../platform/services/primiflow-core/README.md) | 3.0.0-ai-powered | 🟢 enterprise-ci |
+| 11 | platform/services/primiflow-fusion | primiflow-fusion | `75238345-b48b-534b-818b-8d9abe083a41` | `xuanji::primiflow_fusion` | **L4Services** | xuanji-core | `trait Platform`; `trait Envelope`; `trait FusionRegistry` | `struct Sixdim` (六维度量); `struct Observability`; `struct PTDoc`; `struct Config`; `struct Server`; `struct Registry`; `impl fuse / register_service / sixdim_score / conservation_gate / version_migrate` | `domain=domain-rust-primiflow-fusion`;`engine=engine-rust-primiflow-fusion`;`code_graph_unit=primiflow-fusion` | [primiflow-fusion/README.md](../../platform/services/primiflow-fusion/README.md) | 0.1.0 | 🟢 enterprise-ci |
+| 12 | platform/services/template-market | template-market | `4d2e50c1-9d64-525d-86cf-2d7d610a27b9` | `xuanji::template_market` | **L4Services** | xuanji-core | `trait MarketProvider` | `struct Template`; `struct MarketSeed`; `struct Rating`; `impl { list, publish, load, fork, sort_by_score }`; 2 商城种子（政务流程模板 + ETL 模板） | `domain=domain-rust-template-market`;`engine=module-rust-template-market`;`code_graph_unit=template-market` | [template-market/README.md](../../platform/services/template-market/README.md) | 3.0.0-ai-powered | 🟢 enterprise-ci |
+| 13 | platform/services/xuanji-expert | xuanji-expert | `50bb6200-04c5-5e4c-8354-4c6e1b230024` | `xuanji::xuanji_expert` | **L4Services** | xuanji-core | `trait Expert` (expert_traits.rs); `trait Verify` (verify/mod.rs); `trait AuditSink` (audit/sink.rs); `trait DomainRule` (domain/mod.rs); `trait ExpertHarness` (harness.rs) | 14 专家 `struct {Algorithm,Architecture,Business,CodeQuality,Data,Documentation,Maintainability,Observability,Performance,Permission,Resource,Security,SecurityCode,Testing}Expert`; `impl Expert::evaluate()`; `impl Audit::emit_to_s3_kafka_syslog()`; `Verify::{cem,topology,data_dep,conflict,gains,code_rt}`; RBAC `policy / check`; bin `xuanji.rs` | `domain=domain-rust-xuanji-expert`;`engine=engine-rust-xuanji-expert`;`code_graph_unit=xuanji-expert` | [xuanji-expert/README.md](../../platform/services/xuanji-expert/README.md) | 0.1.0 | 🟢 enterprise-ci |
+| 14 | platform/services/xuanji-system | xuanji-system | `b81eec75-22ff-5155-ac49-19edf6f6b5ab` | `xuanji::xuanji_system` | **L7Infrastructure** | xuanji-core | `trait Repository` (repo/mod.rs); `trait PersistenceProvider` (persistence_provider.rs); `trait DomainService` (domain_traits.rs) | `struct Orchestrator`; 4 Services `{Member,Task,Permission,Comm}Service`; `struct Store`; `struct RBAC`; `struct Metrics`; `struct RateLimiter`; `struct Crypto`; `impl Repository for SqliteRepo + PostgresRepo + MysqlRepo`; `impl orchestrator.require()` 鉴权闸门 + 反应器编排 | `domain=domain-rust-xuanji-system`;`engine=engine-rust-xuanji-system`;`code_graph_unit=xuanji-system` | [xuanji-system/README.md](../../platform/services/xuanji-system/README.md) | 0.1.0 | 🟢 enterprise-ci |
+| 15 | platform/gateway/runtime | runtime | `a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b` | `xuanji::runtime` | **L3Orchestration** | xuanji-core | `trait Lifecycle` (cordis/lifecycle.rs); `trait CordisBundle` (cordis/bundle.rs); `trait AiRouter` (ai_router.rs); `trait RbacPolicy` (rbac_middleware.rs) | `struct RouterTable`; `struct CapabilityRouter`; `struct MarketDSL`; `struct MigrationEngine`; `struct Governance`; `struct Sidecar`; `impl axum routes/{agent,ai_engine,governance,market}`; Cordis5 生命周期 {startup/shutdown/before_handle/after_handle/profile}; OpenAPI spec; operator-server 二进制入口 | `domain=domain-rust-runtime`;`engine=engine-rust-runtime`;`code_graph_unit=runtime` | [runtime/README.md](../../platform/gateway/runtime/README.md) | 3.0.0-ai-powered | 🟢 enterprise-ci |
+| 16 | platform/services/xuanji-common-meta | xuanji-common-meta | `34a20231-1a80-5426-b392-40d7a2ddd9f7` | `xuanji::xuanji_common_meta` | **L5Domain** | xuanji-core | (纯数据元 crate，无对外 trait) | `pub enum AisLayer { L2Gateway, L3Orchestration, L4Services, L5Domain, L6Kernel, L6KernelExt, L7Infrastructure }`; `pub struct CrateMeta { id,name,version,layer,owner }`; `impl CrateMeta::engine_name()`; `pub fn all_crate_metas() -> Vec<CrateMeta>` (16 行硬编码真源); `pub fn lookup_meta_by_engine(name) -> Option<CrateMeta>` | `domain=domain-rust-xuanji-common-meta`;`engine=module-rust-xuanji-common-meta`;`code_graph_unit=xuanji-common-meta` | [xuanji-common-meta/README.md](../../platform/services/xuanji-common-meta/README.md) | 3.0.0-ai-powered | 🟢 enterprise-ci |
+
+**行数量校验**：16/16（12 L4Services + 1 L3Orchestration runtime + 1 L6Kernel operator-core + 1 L7Infrastructure xuanji-system + 1 L5Domain xuanji-common-meta）。
+
+> 🔍 **AC-22 四方对账自动化**：`node platform/backend-node/test/test-t10-arch-fourway-diff.js` 每次改动本表后必须运行；任何不一致都会 exit 1。
+> 📌 **路径零老化约定**：所有 Crate 目录列均为相对仓库根的真实存在路径（`platform/services/*` 15 个 + `platform/gateway/runtime` 1 个）；不得再使用旧别名 `crates/`。
 
 ### 3.3 模块依赖
 

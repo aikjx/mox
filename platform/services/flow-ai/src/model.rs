@@ -445,6 +445,11 @@ impl FlowGraph {
 
     /// 传递闭包（可达性矩阵），位图压缩。用于「是否已存在顺序约束」判定。
     pub fn reachability(&self) -> Reachability {
+        self.reachability_owned()
+    }
+
+    /// 与 [`Self::reachability`] 完全等价；显式命名「owned」以表明返回值可缓存复用。
+    pub fn reachability_owned(&self) -> Reachability {
         let n = self.nodes.len();
         let words = n.div_ceil(64).max(1);
         let mut bits = vec![0u64; n * words];
@@ -464,26 +469,66 @@ impl FlowGraph {
                 }
             }
         }
-        Reachability { words, bits }
+        Reachability { words, bits, n }
+    }
+
+    /// 传递闭包的近似「严格 DAG 拓扑位置」版本：若本图已经是合法 DAG，
+    /// 则两节点的 Kahn 拓扑序 pos[u] < pos[v] 是「u 可能到达 v」的必要条件。
+    /// 深链下可达性 = 纯序关系，因此调用方可以用 `pos_hint[u] >= pos_hint[v]`
+    /// 直接判定 `reaches(u, v) = false`，跳过昂贵的位图取址。
+    ///
+    /// 返回值 `(reachability, topo_pos)`：topo_pos[i] 是节点 i 的拓扑秩，未入序为 None。
+    pub fn reachability_with_topo_pos(&self) -> (Reachability, Vec<Option<usize>>) {
+        let n = self.nodes.len();
+        let order = match self.topo_order() {
+            Ok(o) => o,
+            Err(_) => (0..n).collect(),
+        };
+        let mut pos = vec![None; n];
+        for (rank, &u) in order.iter().enumerate() {
+            pos[u] = Some(rank);
+        }
+        let words = n.div_ceil(64).max(1);
+        let mut bits = vec![0u64; n * words];
+        let succ = self.successors();
+        for &u in order.iter().rev() {
+            for &v in &succ[u] {
+                bits[u * words + v / 64] |= 1u64 << (v % 64);
+                for w in 0..words {
+                    bits[u * words + w] |= bits[v * words + w];
+                }
+            }
+        }
+        (Reachability { words, bits, n }, pos)
     }
 }
 
 /// 可达性位图
 #[derive(Debug, Clone)]
 pub struct Reachability {
-    words: usize,
-    bits: Vec<u64>,
+    pub(crate) words: usize,
+    pub(crate) bits: Vec<u64>,
+    pub(crate) n: usize,
 }
 
 impl Reachability {
     /// u 能否沿有向边到达 v
+    #[inline]
     pub fn reaches(&self, u: usize, v: usize) -> bool {
+        if u >= self.n || v >= self.n {
+            return false;
+        }
         self.bits[u * self.words + v / 64] & (1u64 << (v % 64)) != 0
     }
 
     /// 两节点是否「无序」（可并行的必要条件）
     pub fn concurrent(&self, u: usize, v: usize) -> bool {
         u != v && !self.reaches(u, v) && !self.reaches(v, u)
+    }
+
+    /// 位图字节数（用于容量感知）
+    pub fn size_bytes(&self) -> usize {
+        self.bits.len() * std::mem::size_of::<u64>()
     }
 }
 

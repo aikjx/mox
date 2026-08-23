@@ -1,11 +1,13 @@
 [package]
 name = "xuanji-system"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
 description = "璇玑系统核心：成员管理 / 任务协作 / 权限分配 / 通信机制，符合 OUS 分层业务架构"
-license = "MIT"
 
 [dependencies]
+xuanji-common-meta = { path = "../xuanji-common-meta" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 uuid = { workspace = true }

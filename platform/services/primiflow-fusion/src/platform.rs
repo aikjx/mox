@@ -269,9 +269,17 @@ mod tests {
 
     #[test]
     fn platform_emits_ptdoc_and_persists() {
-        let dir = std::env::temp_dir().join("primiflow_fusion_test_platform_doc");
-        let reg_path = std::env::temp_dir().join("primiflow_fusion_test_platform_reg.json");
+        // 使用唯一后缀（ThreadId Debug 形式 + 系统时间 ns）避免多测试共享路径
+        let tid = format!("{:?}", std::thread::current().id()).replace(['(', ')', ' '], "");
+        let ns = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0);
+        let suffix = format!("platformdoc_{tid}_{ns}");
+        let dir = std::env::temp_dir().join(format!("primiflow_fusion_test_{suffix}"));
+        let reg_path = std::env::temp_dir().join(format!("primiflow_fusion_test_{suffix}.json"));
         let _ = std::fs::remove_file(&reg_path);
+        let _ = std::fs::remove_dir_all(&dir);
 
         let mut p = PrimiPlatform::with_persistence(reg_path.clone());
         let rep = p.synthesize_and_emit_docs("请抓取销售数据。清洗对账。生成图表报告。", 0.2, &dir);

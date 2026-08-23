@@ -15,6 +15,7 @@ name = "runtime"
 path = "src/lib.rs"
 
 [dependencies]
+xuanji-common-meta = { path = "../../services/xuanji-common-meta" }
 operator-core = { path = "../../services/operator-core" }
 graph-algorithms = { path = "../../services/graph-algorithms" }
 operator-wasm = { path = "../../services/operator-wasm" }

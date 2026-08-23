@@ -1,5 +1,9 @@
 *.mp4
 
+**/tmp
+**/tem
+**/temp
+
 target_regress
 
 *.err

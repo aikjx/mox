@@ -1,10 +1,13 @@
 [package]
 name = "business-catalog"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
 description = "用璇玑架构把全部业务建模为流程图 + 六维关系网，并在使用中不断优化"
 
 [dependencies]
+xuanji-common-meta = { path = "../xuanji-common-meta" }
 flow-ai = { path = "../flow-ai" }
 xuanji-expert = { path = "../xuanji-expert" }
 serde = { workspace = true }

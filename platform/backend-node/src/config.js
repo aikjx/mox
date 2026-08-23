@@ -3,7 +3,9 @@
 const path = require('path');
 const fs = require('fs');
 
-const DATA_DIR = path.join(__dirname, '..', 'data');
+const DATA_DIR = process.env.DATA_DIR
+  ? path.resolve(process.env.DATA_DIR)
+  : path.join(__dirname, '..', 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const _parseBool = (v, fallback) => {
@@ -14,6 +16,12 @@ const _parseBool = (v, fallback) => {
   return fallback;
 };
 
+const _tier = (() => {
+  const raw = (process.env.INFOTIER || process.env.TIER || 'oss').toLowerCase().trim();
+  if (raw === 'enterprise' || raw === 'ent' || raw === 'pro') return 'enterprise';
+  return 'oss';
+})();
+
 const config = {
   app: {
     name: '璇玑信息知识图谱关联关系系统',
@@ -22,6 +30,8 @@ const config = {
     port: parseInt(process.env.PORT || '3010', 10),
     mode: process.env.NODE_ENV || 'development'
   },
+  // 开源 / 企业 版分级：企业版审计追加 hash_chain，开源版仅 JSON 条目
+  tier: _tier,
   storage: {
     provider: process.env.DB_PROVIDER || 'sqlite',
     // dual-write 过渡期：写 primary + secondary（目前 secondary 固定为 sqlite），

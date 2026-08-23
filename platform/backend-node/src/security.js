@@ -6,18 +6,88 @@ const crypto = require('crypto');
 
 const DATA_DIR = path.join(__dirname, '..', 'data');
 
+// ---- O2 · TokenBucket 限流（对比 Dify/LangGraph/Flowise/AutoGen 的原生多租户治理能力）----
+//   * capacity：突发允许的最大令牌数（burst）
+//   * tokensPerSec：每秒补充令牌数（长期 QPS 上限）
+//   * resetMs：超限后建议客户端等待时间（由令牌数反推）
+class TokenBucket {
+  constructor(capacity, tokensPerSec) {
+    this.capacity = Math.max(1, capacity);
+    this.tokensPerSec = Math.max(0.0001, tokensPerSec);
+    this.tokens = this.capacity;
+    this.lastRefillMs = Date.now();
+  }
+  _refill() {
+    const now = Date.now();
+    const dt = Math.max(0, (now - this.lastRefillMs) / 1000);
+    if (dt > 0) {
+      this.tokens = Math.min(this.capacity, this.tokens + dt * this.tokensPerSec);
+      this.lastRefillMs = now;
+    }
+  }
+  // 尝试取 n 个令牌，返回 { allowed, remaining, resetMs, tokensPerSec, capacity }
+  tryAcquire(n = 1) {
+    this._refill();
+    if (this.tokens >= n) {
+      this.tokens -= n;
+      return {
+        allowed: true,
+        remaining: Math.floor(this.tokens),
+        resetMs: 0,
+        tokensPerSec: this.tokensPerSec,
+        capacity: this.capacity,
+      };
+    }
+    // 计算需要多少秒才能补充 n 个令牌
+    const deficit = n - this.tokens;
+    const secondsNeeded = deficit / this.tokensPerSec;
+    return {
+      allowed: false,
+      remaining: Math.floor(this.tokens),
+      resetMs: Math.ceil(secondsNeeded * 1000),
+      tokensPerSec: this.tokensPerSec,
+      capacity: this.capacity,
+    };
+  }
+  state() { this._refill(); return { tokens: this.tokens, capacity: this.capacity, tps: this.tokensPerSec }; }
+}
+
+// O2 · 租户级别配额（按 Tier + 单 Key 双维）—— 对照 Dify 的 workspace rate limit
+const DEFAULT_TENANT_QUOTAS = {
+  VIP:       { qps: 200, burst: 400 },   // 企业白金
+  NORMAL:    { qps: 20,  burst: 60 },    // 标准用户
+  TRIAL:     { qps: 5,   burst: 10 },
+  ANONYMOUS: { qps: 2,   burst: 4 },     // 匿名兜底
+  _default:  { qps: 10,  burst: 20 },
+};
+
 class SecurityManager {
-  constructor() {
+  constructor(config = {}) {
     this.apiKeys = new Map();
-    this.rateLimiters = new Map();
+    this.rateLimiters = new Map();      // legacy 滑动窗口
+    // O2 TokenBucket 实例：per-key → TokenBucket
+    this._tokenBuckets = new Map();
+    // O2 租户级（group）：tenantId → TokenBucket
+    this._tenantBuckets = new Map();
     this.auditLog = [];
     this.inputSanitizers = new Map();
-    this.config = {
+    this.config = Object.assign({
       rateLimitWindow: 60000,
       rateLimitMaxRequests: 1000,
       apiKeyExpiry: 24 * 60 * 60 * 1000,
-      auditLogMaxEntries: 10000
-    };
+      auditLogMaxEntries: 10000,
+      // O2 开关：当 SEC_ENABLE_TOKEN_BUCKET=1 或配置 forceTokenBucket=true 时启用 TokenBucket；
+      // 否则回落到既有滑动窗口（向后兼容）。
+      forceTokenBucket: false,
+      tenantQuotas: Object.assign({}, DEFAULT_TENANT_QUOTAS, config.tenantQuotas || {}),
+      // O2 单 key 默认 qps / burst（可被 apiKey 覆盖）
+      defaultKeyQps: 20,
+      defaultKeyBurst: 50,
+      // O2 GC：bucket 闲置超过此值即删除（防止内存无限增长）
+      bucketIdleCleanupMs: 10 * 60 * 1000,
+      bucketIdleCleanupEveryMs: 60 * 1000,
+    }, config || {});
+    this._lastCleanup = Date.now();
     this._init();
   }
 
@@ -201,34 +271,115 @@ class SecurityManager {
     }));
   }
 
-  checkRateLimit(key) {
+  _enableTokenBucket() {
+    return !!this.config.forceTokenBucket || process.env.SEC_ENABLE_TOKEN_BUCKET === '1';
+  }
+
+  _quotaForTier(tier) {
+    if (!tier) return this.config.tenantQuotas._default;
+    const t = String(tier).toUpperCase();
+    return this.config.tenantQuotas[t] || this.config.tenantQuotas._default || DEFAULT_TENANT_QUOTAS._default;
+  }
+
+  _ensureBucket(map, key, qps, burst) {
+    let b = map.get(key);
+    if (!b) {
+      b = new TokenBucket(burst, qps);
+      b._lastUsedMs = Date.now();
+      map.set(key, b);
+    }
+    return b;
+  }
+
+  _maybeCleanupIdleBuckets() {
     const now = Date.now();
-    let limiter = this.rateLimiters.get(key);
-    
-    if (!limiter || now > limiter.resetTime) {
-      limiter = {
-        count: 0,
-        resetTime: now + this.config.rateLimitWindow,
-        blocked: false
-      };
-      this.rateLimiters.set(key, limiter);
-    }
-    
-    limiter.count++;
-    
-    if (limiter.count > this.config.rateLimitMaxRequests) {
-      if (!limiter.blocked) {
-        this._logAudit('rate_limit_exceeded', { key, count: limiter.count });
+    if (now - this._lastCleanup < this.config.bucketIdleCleanupEveryMs) return;
+    this._lastCleanup = now;
+    const ttl = this.config.bucketIdleCleanupMs;
+    for (const [k, b] of this._tokenBuckets) if (now - (b._lastUsedMs||0) > ttl) this._tokenBuckets.delete(k);
+    for (const [k, b] of this._tenantBuckets) if (now - (b._lastUsedMs||0) > ttl) this._tenantBuckets.delete(k);
+  }
+
+  /**
+   * O2 · checkRateLimit 多签名兼容：
+   *   (key) → legacy
+   *   (key, { tier, tenantId, cost }) → O2 token bucket 双维（per-key + per-tenantId）
+   * 返回：
+   *   { allowed, remaining, resetMs, mode: 'sliding_window'|'token_bucket',
+   *     bucketKeyState?: {...}, bucketTenantState?: {...} }
+   */
+  checkRateLimit(key, opts) {
+    this._maybeCleanupIdleBuckets();
+
+    const tier = opts && opts.tier;
+    const tenantId = opts && opts.tenantId;
+    const cost = Math.max(1, parseInt((opts && opts.cost) || 1, 10));
+
+    if (!this._enableTokenBucket()) {
+      // ====== 原 sliding window（向后兼容）======
+      const now = Date.now();
+      let limiter = this.rateLimiters.get(key);
+      if (!limiter || now > limiter.resetTime) {
+        limiter = { count: 0, resetTime: now + this.config.rateLimitWindow, blocked: false };
+        this.rateLimiters.set(key, limiter);
       }
-      limiter.blocked = true;
-      return { allowed: false, resetMs: limiter.resetTime - now };
+      limiter.count++;
+      if (limiter.count > this.config.rateLimitMaxRequests) {
+        if (!limiter.blocked) this._logAudit('rate_limit_exceeded', { key, count: limiter.count, mode: 'sliding_window' });
+        limiter.blocked = true;
+        return { allowed: false, resetMs: limiter.resetTime - now, mode: 'sliding_window' };
+      }
+      if (limiter.blocked && limiter.count <= this.config.rateLimitMaxRequests / 2) limiter.blocked = false;
+      return { allowed: true, remaining: this.config.rateLimitMaxRequests - limiter.count, mode: 'sliding_window' };
     }
-    
-    if (limiter.blocked && limiter.count <= this.config.rateLimitMaxRequests / 2) {
-      limiter.blocked = false;
+
+    // ====== O2 TokenBucket（per-key + per-tenant 两级）======
+    //   1. per-key：按 key 自身 qps / burst（若 apiKey 中设置了，则覆盖默认值）
+    const keyMeta = this.apiKeys.get(key);
+    const keyQps = (keyMeta && typeof keyMeta.qps === 'number') ? keyMeta.qps : this.config.defaultKeyQps;
+    const keyBurst = (keyMeta && typeof keyMeta.burst === 'number') ? keyMeta.burst : this.config.defaultKeyBurst;
+    const keyBucket = this._ensureBucket(this._tokenBuckets, key, keyQps, keyBurst);
+    keyBucket._lastUsedMs = Date.now();
+    const keyRes = keyBucket.tryAcquire(cost);
+
+    if (!keyRes.allowed) {
+      this._logAudit('rate_limit_exceeded', { key, cause: 'key_bucket', tier, tenantId, cost });
+      return Object.assign({}, keyRes, {
+        allowed: false,
+        mode: 'token_bucket',
+        bucketKeyState: keyBucket.state(),
+      });
     }
-    
-    return { allowed: true, remaining: this.config.rateLimitMaxRequests - limiter.count };
+
+    //   2. per-tenantId：按 tier 配额（tenantId 为空时用 tier 作为聚合 key）
+    let tenantBucket = null;
+    if (tenantId || tier) {
+      const tkey = tenantId || `tier:${String(tier||'UNKNOWN').toUpperCase()}`;
+      const q = this._quotaForTier(tier);
+      tenantBucket = this._ensureBucket(this._tenantBuckets, tkey, q.qps, q.burst);
+      tenantBucket._lastUsedMs = Date.now();
+      const tRes = tenantBucket.tryAcquire(cost);
+      if (!tRes.allowed) {
+        this._logAudit('rate_limit_exceeded', { key, cause: 'tenant_bucket', tier, tenantId, cost });
+        // 回滚 keyBucket 本次 acquire（避免两级不对称扣减）
+        keyBucket.tokens = Math.min(keyBucket.capacity, keyBucket.tokens + cost);
+        return Object.assign({}, tRes, {
+          allowed: false,
+          mode: 'token_bucket',
+          bucketKeyState: keyBucket.state(),
+          bucketTenantState: tenantBucket.state(),
+        });
+      }
+    }
+
+    return {
+      allowed: true,
+      remaining: keyRes.remaining,
+      resetMs: 0,
+      mode: 'token_bucket',
+      bucketKeyState: keyBucket.state(),
+      bucketTenantState: tenantBucket ? tenantBucket.state() : null,
+    };
   }
 
   sanitizeInput(value, type = 'string') {
@@ -371,4 +522,4 @@ function getSecurityManager() {
   return instance;
 }
 
-module.exports = { SecurityManager, getSecurityManager };
+module.exports = { SecurityManager, getSecurityManager, TokenBucket, DEFAULT_TENANT_QUOTAS };
