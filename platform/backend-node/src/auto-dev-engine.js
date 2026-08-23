@@ -162,7 +162,7 @@ class AutoDevEngine {
       skipped,
       graph_store: graphMerge,
       preview_url: `/ai/engine/auto-dev/preview/site-${project}/index.html`,
-      preview_url_abs: `http://localhost:3002/ai/engine/auto-dev/preview/site-${project}/index.html`,
+      preview_url_abs: `http://localhost:3010/ai/engine/auto-dev/preview/site-${project}/index.html`,
       duration_ms: Date.now() - startedAt
     };
   }

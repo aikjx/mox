@@ -2,13 +2,13 @@
 
 const http = require('http');
 
-const BASE = 'http://localhost:3002';
+const BASE = 'http://localhost:3010';
 let passed = 0, failed = 0, errors = [];
 
 function req(method, path, data) {
   return new Promise((resolve) => {
     const opts = {
-      hostname: 'localhost', port: 3002,
+      hostname: 'localhost', port: 3010,
       path, method,
       headers: data ? { 'Content-Type': 'application/json' } : {}
     };

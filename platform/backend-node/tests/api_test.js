@@ -1,7 +1,7 @@
 // 全量 API 端点功能测试
 const http = require('http');
 
-const BASE = 'http://localhost:3002';
+const BASE = 'http://localhost:3010';
 let passed = 0, failed = 0;
 const results = [];
 

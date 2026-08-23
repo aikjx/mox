@@ -63,13 +63,13 @@ ADMIN_PASSWORD_HASH = hash_password(ADMIN_PASSWORD)
 DEFAULT_CONFIG = {
     "version": "2.0",
     "project_name": "璇玑系统",
-    "dashboard_port": 9999,
+    "dashboard_port": 3040,
     "admin": {"username": "admin", "password": "admin123"},
     "services": {
         "api": {
             "name": "API 后端服务",
             "description": "璇玑系统核心 API 服务",
-            "port": 3002,
+            "port": 3010,
             "health_check": "/health",
             "cwd": "platform/backend-node",
             "command": "node src/api-server.js",
@@ -83,7 +83,7 @@ DEFAULT_CONFIG = {
         "frontend": {
             "name": "用户前端界面",
             "description": "面向终端用户的操作界面",
-            "port": 5173,
+            "port": 3020,
             "health_check": "/",
             "cwd": "frontend-ui",
             "command": "npm run dev",
@@ -96,7 +96,7 @@ DEFAULT_CONFIG = {
         "admin": {
             "name": "企业管理界面",
             "description": "企业级后台管理系统",
-            "port": 5175,
+            "port": 3030,
             "health_check": "/",
             "cwd": "frontend-admin-ui",
             "command": "npm run dev",
@@ -151,7 +151,7 @@ class ConfigManager:
         return self.config['services']
     
     def get_dashboard_port(self):
-        return self.config.get('dashboard_port', 9999)
+        return self.config.get('dashboard_port', 3040)
     
     def update_service(self, key, updates):
         if key in self.config['services']:

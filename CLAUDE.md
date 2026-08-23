@@ -102,7 +102,7 @@
 ### 开发
 - `cargo run -p runtime`：启动聚合后端（默认 `:3001`，含四套子服务；边缘入口 `platform/backend-node/` 占 `:3000` 并反代 `/api` 至此）
 - `cd frontend-ui && npm run dev`：用户端前端开发（Vite，`/api` 代理到 `:3000`）
-- `cd frontend-admin-ui && npm run dev`：管理端前端开发（默认 `:5175`）
+- `cd frontend-admin-ui && npm run dev`：管理端前端开发（默认 `:3030`）
 - `cd frontend-ui && npm run build`：用户端生产构建 → `dist/`
 - `cd frontend-admin-ui && npm run build`：管理端生产构建 → `dist/`
 

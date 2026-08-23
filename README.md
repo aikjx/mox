@@ -193,7 +193,7 @@ npm run build      # 产物输出到 frontend-ui/dist/（已 gitignore）
 ```bash
 cd frontend-admin-ui
 npm install
-npm run dev        # 开发模式访问 http://localhost:5175
+npm run dev        # 开发模式访问 http://localhost:3030
 npm run build      # 构建生产版本
 ```
 
@@ -204,8 +204,8 @@ npm run build      # 构建生产版本
 ```
 
 启动后访问：
-- 用户端：**http://localhost:5174**
-- 管理端：**http://localhost:5175**
+- 用户端：**http://localhost:3021**
+- 管理端：**http://localhost:3030**
 - API 网关：**http://localhost:3000**
 
 ---

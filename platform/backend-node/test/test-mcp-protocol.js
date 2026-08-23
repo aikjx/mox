@@ -7,7 +7,7 @@
  * → 批量请求 → 协议错误语义（parse error / method not found / 通知无响应）
  */
 
-const BASE = 'http://127.0.0.1:3002';
+const BASE = 'http://127.0.0.1:3010';
 let pass = 0, total = 0;
 
 function check(name, ok, detail = '') {

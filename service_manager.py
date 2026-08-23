@@ -5,9 +5,9 @@
 ==============================
 功能：一键启动/关闭/重启所有服务
 服务列表：
-  1. API 后端服务 (port 3002) - platform/backend-node/src/api-server.js
-  2. 用户前端界面 (port 5173) - frontend-ui
-  3. 企业管理界面 (port 5175) - frontend-admin-ui
+  1. API 后端服务 (port 3010) - platform/backend-node/src/api-server.js
+  2. 用户前端界面 (port 3020) - frontend-ui
+  3. 企业管理界面 (port 3030) - frontend-admin-ui
 
 使用方法：
   python service_manager.py start      # 启动所有服务
@@ -41,7 +41,7 @@ LOG_DIR.mkdir(exist_ok=True)
 SERVICES = {
     'api': {
         'name': 'API 后端服务',
-        'port': 3002,
+        'port': 3010,
         'cwd': str(PROJECT_ROOT / 'platform' / 'backend-node'),
         'command': ['node', 'src/api-server.js'],
         'pid_file': PID_DIR / 'api.pid',
@@ -50,7 +50,7 @@ SERVICES = {
     },
     'frontend': {
         'name': '用户前端界面',
-        'port': 5173,
+        'port': 3020,
         'cwd': str(PROJECT_ROOT / 'frontend-ui'),
         'command': ['npm', 'run', 'dev'],
         'pid_file': PID_DIR / 'frontend.pid',
@@ -59,7 +59,7 @@ SERVICES = {
     },
     'admin': {
         'name': '企业管理界面',
-        'port': 5175,
+        'port': 3030,
         'cwd': str(PROJECT_ROOT / 'frontend-admin-ui'),
         'command': ['npm', 'run', 'dev'],
         'pid_file': PID_DIR / 'admin.pid',
@@ -447,9 +447,9 @@ def show_status():
     
     # 显示访问地址
     print("\n  访问地址:")
-    print(f"    用户界面: http://localhost:5173")
-    print(f"    管理界面: http://localhost:5175")
-    print(f"    API 服务: http://localhost:3002")
+    print(f"    用户界面: http://localhost:3020")
+    print(f"    管理界面: http://localhost:3030")
+    print(f"    API 服务: http://localhost:3010")
     print()
     
     return all_running
@@ -600,7 +600,7 @@ def show_help():
     print()
     print("管理面板:")
     print("  启动管理面板后可在浏览器访问所有服务状态和入口")
-    print("  默认地址: http://localhost:9999")
+    print("  默认地址: http://localhost:3040")
     print()
     print("选项:")
     print("  start all    启动所有服务（默认）")
@@ -688,7 +688,7 @@ def main():
                     creationflags=0x00000008 if sys.platform == 'win32' else 0
                 )
                 time.sleep(1)
-                print(f"  ✓ 管理面板已启动: http://localhost:9999")
+                print(f"  ✓ 管理面板已启动: http://localhost:3040")
             except Exception as e:
                 print(f"  ✗ 启动失败: {e}")
         else:

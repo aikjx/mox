@@ -37,7 +37,7 @@ http.interceptors.response.use(
       msg = '请求超时：后端处理较慢，请稍后重试'
       ElMessage.warning(msg)
     } else if (!err.response) {
-      msg = '无法连接后端：请确认服务已启动（http://localhost:3002）'
+      msg = '无法连接后端：请确认服务已启动（http://localhost:3010）'
       ElMessage.error(msg)
     }
     return Promise.reject(new Error(msg))

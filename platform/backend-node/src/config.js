@@ -11,7 +11,7 @@ const config = {
     name: '璇玑信息知识图谱关联关系系统',
     shortName: '璇玑系统',
     version: '4.0.0',
-    port: parseInt(process.env.PORT || '3002', 10),
+    port: parseInt(process.env.PORT || '3010', 10),
     mode: process.env.NODE_ENV || 'development'
   },
   storage: {

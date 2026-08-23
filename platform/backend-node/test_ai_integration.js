@@ -1,6 +1,6 @@
 const http = require('http');
 
-const PORT = 3002;
+const PORT = 3010;
 
 function makeRequest(path, method, data) {
   return new Promise((resolve, reject) => {
