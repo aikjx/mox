@@ -17,12 +17,12 @@
 
 use crate::flow_engine::{FlowDefinition, FlowEdge, FlowNode, NodeType, Position};
 use operator_core::OperatorError;
-use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 use std::future::Future;
 use std::pin::Pin;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use xuanji_system::persistence_provider::{PersistenceProvider, SqlValue};
 
 /// 喂给 LLM 的消息（与 llm_client::LLMChatMessage 同构，避免跨模块类型泄漏）
 #[derive(Debug, Clone)]
@@ -197,8 +197,8 @@ fn singular(name: &str) -> String {
 pub struct RequirementCompiler {
     /// 历史蓝图缓存（会话内持续迭代）
     cache: HashMap<String, SystemBlueprint>,
-    /// 可选持久化后端：蓝图落盘 SQLite，支持跨会话/重启复用（None=纯内存）
-    db: Option<Arc<Mutex<Connection>>>,
+    /// 可选持久化后端：蓝图落盘，支持跨会话/重启复用（None=纯内存）
+    db: Option<Arc<dyn PersistenceProvider>>,
 }
 
 impl Default for RequirementCompiler {
@@ -218,16 +218,17 @@ impl RequirementCompiler {
     /// 带持久化后端的编译器：蓝图落盘 SQLite，支持跨会话/重启复用。
     /// `new()` 仍保持纯内存（向后兼容，不创建任何文件）。
     pub fn with_storage(db_path: &str) -> Result<Self, OperatorError> {
-        let conn = Connection::open(db_path).map_err(|e| {
+        use xuanji_system::sqlite_provider::SqlitePersistence;
+        let pvd = SqlitePersistence::file(db_path).map_err(|e| {
             OperatorError::Other(anyhow::anyhow!("蓝图库打开失败: {}", e))
         })?;
-        conn.execute_batch(
+        pvd.exec_batch(
             "CREATE TABLE IF NOT EXISTS blueprints (id TEXT PRIMARY KEY, name TEXT NOT NULL, tags TEXT NOT NULL, json TEXT NOT NULL, updated_at TEXT NOT NULL)",
         )
         .map_err(|e| OperatorError::Other(anyhow::anyhow!("蓝图库初始化失败: {}", e)))?;
         Ok(Self {
             cache: HashMap::new(),
-            db: Some(Arc::new(Mutex::new(conn))),
+            db: Some(Arc::new(pvd)),
         })
     }
 
@@ -477,16 +478,19 @@ impl RequirementCompiler {
     /// 加载蓝图：优先从持久化库读取（跨会话/重启可用），回退到内存缓存。
     pub fn load_blueprint(&self, id: &str) -> Option<SystemBlueprint> {
         if let Some(db) = &self.db {
-            if let Ok(conn) = db.lock() {
-                if let Ok(row) = conn.query_row(
+            let opt = db
+                .query_one(
                     "SELECT json FROM blueprints WHERE id = ?1",
-                    params![id],
-                    |r| r.get::<_, String>(0),
-                ) {
-                    if let Ok(bp) = serde_json::from_str::<SystemBlueprint>(&row) {
-                        return Some(bp);
-                    }
-                }
+                    &[SqlValue::Text(id.to_string())],
+                )
+                .ok()
+                .flatten()
+                .and_then(|row| match row.get("json") {
+                    Some(SqlValue::Text(s)) => serde_json::from_str::<SystemBlueprint>(s).ok(),
+                    _ => None,
+                });
+            if let Some(bp) = opt {
+                return Some(bp);
             }
         }
         self.cache.get(id).cloned()
@@ -495,20 +499,16 @@ impl RequirementCompiler {
     /// 列出全部蓝图：持久化优先；无存储后端时返回内存缓存。
     pub fn list_blueprints(&self) -> Vec<SystemBlueprint> {
         if let Some(db) = &self.db {
-            if let Ok(conn) = db.lock() {
-                if let Ok(mut stmt) =
-                    conn.prepare("SELECT json FROM blueprints ORDER BY updated_at DESC")
-                {
-                    if let Ok(rows) = stmt.query_map([], |r| r.get::<_, String>(0)) {
-                        let mut out = Vec::new();
-                        for s in rows.flatten() {
-                            if let Ok(bp) = serde_json::from_str::<SystemBlueprint>(&s) {
-                                out.push(bp);
-                            }
+            if let Ok(rows) = db.query("SELECT json FROM blueprints ORDER BY updated_at DESC", &[]) {
+                let mut out = Vec::new();
+                for r in rows {
+                    if let Some(SqlValue::Text(s)) = r.get("json") {
+                        if let Ok(bp) = serde_json::from_str::<SystemBlueprint>(s) {
+                            out.push(bp);
                         }
-                        return out;
                     }
                 }
+                return out;
             }
         }
         self.cache.values().cloned().collect()
@@ -517,10 +517,6 @@ impl RequirementCompiler {
     /// 可选持久化：若配置了存储后端，将蓝图 upsert 进 SQLite（非致命，失败仅告警）
     fn persist(&self, bp: &SystemBlueprint) {
         let Some(db) = &self.db else { return; };
-        let conn = match db.lock() {
-            Ok(c) => c,
-            Err(_) => return,
-        };
         let tags = serde_json::to_string(&bp.tags).unwrap_or_else(|_| "[]".to_string());
         let json = match serde_json::to_string(bp) {
             Ok(j) => j,
@@ -529,9 +525,15 @@ impl RequirementCompiler {
                 return;
             }
         };
-        if let Err(e) = conn.execute(
+        if let Err(e) = db.exec(
             "INSERT OR REPLACE INTO blueprints (id, name, tags, json, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)",
-            params![bp.id, bp.name, tags, json, chrono::Utc::now().to_rfc3339()],
+            &[
+                SqlValue::Text(bp.id.clone()),
+                SqlValue::Text(bp.name.clone()),
+                SqlValue::Text(tags),
+                SqlValue::Text(json),
+                SqlValue::Text(chrono::Utc::now().to_rfc3339()),
+            ],
         ) {
             tracing::warn!("蓝图落盘失败: {e}");
         }

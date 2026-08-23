@@ -54,40 +54,8 @@ module.exports = function registerAutoDevRoutes(ctx) {
     res.end(result.content);
   });
 
-  // POST /ai/engine/analyze —— 显式能力执行（跳过意图识别，可预测）
-  reg('post', '/ai/engine/analyze', async (req, res) => {
-    const body = await readBody(req);
-    if (!body.capability) {
-      fail(res, 400, '缺少 capability 参数');
-      return;
-    }
-    try {
-      const result = await engineCore.executeCapability(body.capability, body.question, body.options);
-      ok(res, result);
-    } catch (e) {
-      console.error('[engine-core-analyze]', e);
-      fail(res, 400, e.message);
-    }
-  });
-
-  // GET /ai/engine/capabilities —— 能力矩阵自描述
-  reg('get', '/ai/engine/capabilities', (req, res) => {
-    try {
-      ok(res, engineCore.getCapabilities());
-    } catch (e) {
-      console.error('[engine-core-capabilities]', e);
-      fail(res, 500, '获取能力矩阵失败: ' + e.message);
-    }
-  });
-
-  // GET /ai/engine/metrics —— 性能指标（成功率/降级率/平均延迟）
-  reg('get', '/ai/engine/metrics', (req, res) => {
-    try {
-      ok(res, engineCore.getMetrics());
-    } catch (e) {
-      console.error('[engine-core-metrics]', e);
-      fail(res, 500, '获取引擎指标失败: ' + e.message);
-    }
-  });
+  // G4 修复：AI 引擎四端点（process/analyze/capabilities/metrics）已统一收敛到 ai-engine.js 域
+  //   本域（auto-dev）不再跨域注册 engine 核心端点，避免域注册顺序导致的后注册覆盖语义风险。
+  //   注：endpoint 路径仍是 /ai/engine/*，由 routes/index.js 中先注册的 ai-engine 域（序37）承载。
 
 };

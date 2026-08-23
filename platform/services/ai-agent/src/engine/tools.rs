@@ -97,66 +97,39 @@ impl ToolRegistry {
 #[allow(dead_code)]
 pub struct DatabaseTool {
     db_path: String,
-    conn: Arc<std::sync::Mutex<rusqlite::Connection>>,
+    provider: Arc<dyn xuanji_system::persistence_provider::PersistenceProvider>,
 }
 
 impl DatabaseTool {
     pub fn new() -> Self {
         let db_path = "operator_data.db".to_string();
-        let conn = Arc::new(std::sync::Mutex::new(
-            rusqlite::Connection::open(&db_path).unwrap_or_else(|_| {
-                rusqlite::Connection::open(":memory:").expect("in-memory fallback must work")
-            })
-        ));
-        Self { db_path, conn }
+        use xuanji_system::sqlite_provider::SqlitePersistence;
+        let pvd = SqlitePersistence::file(&db_path).unwrap_or_else(|_| {
+            SqlitePersistence::memory().expect("in-memory fallback must work")
+        });
+        Self { db_path, provider: Arc::new(pvd) }
     }
 
     pub fn with_path(path: impl Into<String>) -> Self {
         let db_path = path.into();
-        let conn = Arc::new(std::sync::Mutex::new(
-            rusqlite::Connection::open(&db_path).unwrap_or_else(|_| {
-                rusqlite::Connection::open(":memory:").expect("in-memory fallback must work")
-            })
-        ));
-        Self { db_path, conn }
-    }
-
-    fn connect(&self) -> std::sync::MutexGuard<'_, rusqlite::Connection> {
-        self.conn.lock().unwrap()
-    }
-
-    fn json_to_sql_value(v: &serde_json::Value) -> Box<dyn rusqlite::ToSql> {
-        match v {
-            serde_json::Value::Null => Box::new(Option::<String>::None),
-            serde_json::Value::Bool(b) => Box::new(*b),
-            serde_json::Value::Number(n) => {
-                if let Some(i) = n.as_i64() {
-                    Box::new(i)
-                } else if let Some(f) = n.as_f64() {
-                    Box::new(f)
-                } else {
-                    Box::new(n.to_string())
-                }
-            }
-            serde_json::Value::String(s) => Box::new(s.clone()),
-            other => Box::new(other.to_string()),
-        }
+        use xuanji_system::sqlite_provider::SqlitePersistence;
+        let pvd = SqlitePersistence::file(&db_path).unwrap_or_else(|_| {
+            SqlitePersistence::memory().expect("in-memory fallback must work")
+        });
+        Self { db_path, provider: Arc::new(pvd) }
     }
 
     fn params_to_refs(
         params: Option<&serde_json::Value>,
-    ) -> Vec<Box<dyn rusqlite::ToSql>> {
+    ) -> Vec<xuanji_system::persistence_provider::SqlValue> {
+        use xuanji_system::sqlite_provider::json_to_sql_value;
         if let Some(p) = params {
             if let Some(arr) = p.as_array() {
-                arr.iter()
-                    .map(|v| Self::json_to_sql_value(v))
-                    .collect()
+                arr.iter().map(json_to_sql_value).collect()
             } else if let Some(map) = p.as_object() {
-                let vals: Vec<Box<dyn rusqlite::ToSql>> =
-                    map.values().map(|v| Self::json_to_sql_value(v)).collect();
-                vals
+                map.values().map(json_to_sql_value).collect()
             } else {
-                vec![Self::json_to_sql_value(p)]
+                vec![json_to_sql_value(p)]
             }
         } else {
             vec![]
@@ -164,64 +137,47 @@ impl DatabaseTool {
     }
 
     fn execute_query(&self, sql: &str, params: Option<&serde_json::Value>) -> ToolResult {
-        let conn = self.connect();
+        use xuanji_system::persistence_provider::SqlValue;
+        let vals = Self::params_to_refs(params);
 
-        let param_values = Self::params_to_refs(params);
-        let param_refs: Vec<&dyn rusqlite::ToSql> =
-            param_values.iter().map(|p| p.as_ref()).collect();
-
-        let mut stmt = match conn.prepare(sql) {
-            Ok(s) => s,
-            Err(e) => return ToolResult::err(format!("SQL 准备失败: {}", e)),
-        };
-
-        let column_names: Vec<String> = stmt.column_names().iter().map(|s| s.to_string()).collect();
-
-        let rows = match stmt.query_map(param_refs.as_slice(), |row| {
-            let mut map = serde_json::Map::new();
-            for (i, col_name) in column_names.iter().enumerate() {
-                let val: serde_json::Value = if let Ok(s) = row.get::<_, String>(i) {
-                    serde_json::Value::String(s)
-                } else if let Ok(v) = row.get::<_, i64>(i) {
-                    serde_json::json!(v)
-                } else if let Ok(v) = row.get::<_, f64>(i) {
-                    serde_json::json!(v)
-                } else if let Ok(v) = row.get::<_, bool>(i) {
-                    serde_json::json!(v)
-                } else {
-                    serde_json::Value::Null
-                };
-                map.insert(col_name.clone(), val);
-            }
-            Ok(serde_json::Value::Object(map))
-        }) {
-            Ok(rows) => rows,
+        let rows = match self.provider.query(sql, &vals) {
+            Ok(r) => r,
             Err(e) => return ToolResult::err(format!("查询执行失败: {}", e)),
         };
 
         let mut results = Vec::new();
         for row in rows {
-            match row {
-                Ok(r) => results.push(r),
-                Err(e) => return ToolResult::err(format!("行读取失败: {}", e)),
+            let mut map = serde_json::Map::new();
+            for (col_name, val) in row {
+                let json_val = match val {
+                    SqlValue::Null => serde_json::Value::Null,
+                    SqlValue::Int(i) => serde_json::json!(i),
+                    SqlValue::Real(f) => serde_json::json!(f),
+                    SqlValue::Text(s) => serde_json::Value::String(s),
+                    SqlValue::Blob(b) => serde_json::Value::String(base64_encode(&b)),
+                    SqlValue::Bool(b) => serde_json::json!(b),
+                };
+                map.insert(col_name, json_val);
             }
+            results.push(serde_json::Value::Object(map));
         }
 
         ToolResult::ok(serde_json::Value::Array(results))
     }
 
     fn execute_write(&self, sql: &str, params: Option<&serde_json::Value>) -> ToolResult {
-        let conn = self.connect();
+        let vals = Self::params_to_refs(params);
 
-        let param_values = Self::params_to_refs(params);
-        let param_refs: Vec<&dyn rusqlite::ToSql> =
-            param_values.iter().map(|p| p.as_ref()).collect();
-
-        match conn.execute(sql, param_refs.as_slice()) {
+        match self.provider.exec(sql, &vals) {
             Ok(count) => ToolResult::ok(serde_json::json!({"affected": count})),
             Err(e) => ToolResult::err(format!("写入操作失败: {}", e)),
         }
     }
+}
+
+fn base64_encode(data: &[u8]) -> String {
+    use base64::{Engine as _, engine::general_purpose::STANDARD};
+    STANDARD.encode(data)
 }
 
 impl Default for DatabaseTool {

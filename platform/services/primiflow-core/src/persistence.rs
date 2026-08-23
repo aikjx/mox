@@ -5,20 +5,51 @@
 //!
 //! 存储后端二选一（统一 `Persistence` 接口）：
 //! - `Memory`：进程内存储，零外部依赖，适合测试与嵌入式；
-//! - `Sqlite`：基于 `rusqlite`（bundled 编译内置 SQLite），落盘到文件，生产可用。
+//! - `Sqlite`：基于 `xuanji-system::PersistenceProvider`（底层通过 `SqlitePersistence` 落盘到文件），生产可用。
 //!
 //! `TopologyGraph` 与 `AssocGraph` 均 `derive(Serialize/Deserialize)`，因此可**精确**序列化 /
 //! 反序列化，重放后引擎状态与落库前逐字节一致。
+
+use std::sync::Arc;
 
 use anyhow::Result;
 use chrono::Utc;
 use flow_ai::primitive::{KnowledgeBase, PrimiEngine, StoredTopology};
 use flow_ai::topology::TopologyGraph;
-use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
+use xuanji_system::persistence_provider::{PersistenceProvider, SqlRow, SqlValue};
+use xuanji_system::sqlite_provider::SqlitePersistence;
 
 use crate::assoc::AssocGraph;
 use crate::runner::PipelineReport;
+
+/// 从 [`SqlRow`] 中提取指定列的文本值（缺失或不匹配 → 默认空字符串）
+fn take_text(row: &SqlRow, col: &str) -> String {
+    match row.get(col) {
+        Some(SqlValue::Text(s)) => s.clone(),
+        _ => String::new(),
+    }
+}
+
+/// 从 [`SqlRow`] 中提取指定列的浮点值（缺失或不匹配 → 0.0）
+fn take_real(row: &SqlRow, col: &str) -> f64 {
+    match row.get(col) {
+        Some(SqlValue::Real(f)) => *f,
+        Some(SqlValue::Int(i)) => *i as f64,
+        _ => 0.0,
+    }
+}
+
+/// 从 [`SqlRow`] 中提取指定列的整数值（缺失或不匹配 → 0）
+fn take_int(row: &SqlRow, col: &str) -> i64 {
+    match row.get(col) {
+        Some(SqlValue::Int(i)) => *i,
+        Some(SqlValue::Real(f)) => *f as i64,
+        Some(SqlValue::Bool(true)) => 1,
+        Some(SqlValue::Bool(false)) => 0,
+        _ => 0,
+    }
+}
 
 /// 项目运行记录（落库后可审计、可复现）
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -37,26 +68,6 @@ pub struct ProjectRecord {
     pub bound_nodes: usize,
     pub bound_edges: usize,
     pub created_at: String,
-}
-
-/// 把一行 `projects` 表映射为 [`ProjectRecord`]（供 `list_projects` / `get_project` 复用）
-fn row_to_record(r: &rusqlite::Row) -> rusqlite::Result<ProjectRecord> {
-    Ok(ProjectRecord {
-        id: r.get(0)?,
-        name: r.get(1)?,
-        policy: r.get(2)?,
-        kappa: r.get(3)?,
-        tau: r.get(4)?,
-        conserved: r.get::<usize, i64>(5)? != 0,
-        acyclic: r.get::<usize, i64>(6)? != 0,
-        reused: r.get::<usize, i64>(7)? as usize,
-        regularized: r.get::<usize, i64>(8)? != 0,
-        q_before: r.get(9)?,
-        q_after: r.get(10)?,
-        bound_nodes: r.get::<usize, i64>(11)? as usize,
-        bound_edges: r.get::<usize, i64>(12)? as usize,
-        created_at: r.get(13)?,
-    })
 }
 
 impl ProjectRecord {
@@ -90,9 +101,24 @@ pub enum Persistence {
         trace_graph_json: Option<String>,
         projects: Vec<ProjectRecord>,
     },
-    /// 落盘 SQLite（bundled，无需外部数据库）
-    Sqlite { conn: Connection },
+    /// 落盘 SQLite（通过 xuanji-system 的 PersistenceProvider trait，解耦 rusqlite driver）
+    Sqlite {
+        provider: Arc<dyn PersistenceProvider>,
+        path: Option<String>,
+    },
 }
+
+const SCHEMA_SQL: &str = "CREATE TABLE IF NOT EXISTS kb_assets(
+    id TEXT, signature TEXT, charge REAL, reuse_count INTEGER);
+ CREATE TABLE IF NOT EXISTS kb_graph(
+    single INTEGER PRIMARY KEY, graph_json TEXT);
+ CREATE TABLE IF NOT EXISTS trace(
+    single INTEGER PRIMARY KEY, graph_json TEXT);
+ CREATE TABLE IF NOT EXISTS projects(
+    id TEXT PRIMARY KEY, name TEXT, policy TEXT, kappa REAL, tau REAL,
+    conserved INTEGER, acyclic INTEGER, reused INTEGER, regularized INTEGER,
+    q_before REAL, q_after REAL, bound_nodes INTEGER, bound_edges INTEGER,
+    created_at TEXT);";
 
 impl Persistence {
     /// 内存后端（测试/嵌入式）
@@ -107,26 +133,22 @@ impl Persistence {
 
     /// 打开（或创建）SQLite 文件后端
     pub fn sqlite(path: &str) -> Result<Self> {
-        let conn = Connection::open(path)?;
-        conn.execute_batch(
-            "CREATE TABLE IF NOT EXISTS kb_assets(
-                id TEXT, signature TEXT, charge REAL, reuse_count INTEGER);
-             CREATE TABLE IF NOT EXISTS kb_graph(
-                single INTEGER PRIMARY KEY, graph_json TEXT);
-             CREATE TABLE IF NOT EXISTS trace(
-                single INTEGER PRIMARY KEY, graph_json TEXT);
-             CREATE TABLE IF NOT EXISTS projects(
-                id TEXT PRIMARY KEY, name TEXT, policy TEXT, kappa REAL, tau REAL,
-                conserved INTEGER, acyclic INTEGER, reused INTEGER, regularized INTEGER,
-                q_before REAL, q_after REAL, bound_nodes INTEGER, bound_edges INTEGER,
-                created_at TEXT);",
-        )?;
-        Ok(Persistence::Sqlite { conn })
+        let pvd = SqlitePersistence::file(path)?;
+        pvd.exec_batch(SCHEMA_SQL)?;
+        Ok(Persistence::Sqlite {
+            provider: Arc::new(pvd),
+            path: Some(path.to_string()),
+        })
     }
 
     /// 内存后端也可用 `:memory:` 语义的 SQLite（便于统一测试）
     pub fn sqlite_memory() -> Result<Self> {
-        Self::sqlite(":memory:")
+        let pvd = SqlitePersistence::memory()?;
+        pvd.exec_batch(SCHEMA_SQL)?;
+        Ok(Persistence::Sqlite {
+            provider: Arc::new(pvd),
+            path: None,
+        })
     }
 
     /// 保存知识库（拓扑荷 Q 资产 + 六维关系网）
@@ -141,19 +163,24 @@ impl Persistence {
                 *kb_graph_json = Some(serde_json::to_string(&kb.graph)?);
                 Ok(())
             }
-            Persistence::Sqlite { conn } => {
-                conn.execute("DELETE FROM kb_assets", [])?;
+            Persistence::Sqlite { provider, .. } => {
+                provider.exec("DELETE FROM kb_assets", &[])?;
                 for a in &kb.stored {
-                    conn.execute(
+                    provider.exec(
                         "INSERT INTO kb_assets(id, signature, charge, reuse_count) VALUES(?1,?2,?3,?4)",
-                        (a.id.clone(), a.signature.clone(), a.charge, a.reuse_count as i64),
+                        &[
+                            SqlValue::Text(a.id.clone()),
+                            SqlValue::Text(a.signature.clone()),
+                            SqlValue::Real(a.charge),
+                            SqlValue::Int(a.reuse_count as i64),
+                        ],
                     )?;
                 }
                 let g = serde_json::to_string(&kb.graph)?;
-                conn.execute(
+                provider.exec(
                     "INSERT INTO kb_graph(single, graph_json) VALUES(1,?1) \
                      ON CONFLICT(single) DO UPDATE SET graph_json=excluded.graph_json",
-                    (g,),
+                    &[SqlValue::Text(g)],
                 )?;
                 Ok(())
             }
@@ -177,27 +204,27 @@ impl Persistence {
                     stored: assets.clone(),
                 })
             }
-            Persistence::Sqlite { conn } => {
+            Persistence::Sqlite { provider, .. } => {
                 let mut graph: TopologyGraph = Default::default();
-                if let Ok(mut stmt) = conn.prepare("SELECT graph_json FROM kb_graph WHERE single=1") {
-                    if let Ok(mut rows) = stmt.query_map([], |r| r.get::<usize, String>(0)) {
-                        if let Some(Ok(g)) = rows.next() {
-                            graph = serde_json::from_str(&g)?;
-                        }
+                if let Some(row) =
+                    provider.query_one("SELECT graph_json FROM kb_graph WHERE single=1", &[])?
+                {
+                    if let Some(SqlValue::Text(g)) = row.get("graph_json") {
+                        graph = serde_json::from_str(g)?;
                     }
                 }
-                let mut stored = Vec::new();
-                let mut stmt = conn.prepare("SELECT id, signature, charge, reuse_count FROM kb_assets")?;
-                let rows = stmt.query_map([], |r| {
-                    Ok(StoredTopology {
-                        id: r.get(0)?,
-                        signature: r.get(1)?,
-                        charge: r.get(2)?,
-                        reuse_count: r.get::<usize, i64>(3)? as u64,
-                    })
-                })?;
-                for r in rows {
-                    stored.push(r?);
+                let rows = provider.query(
+                    "SELECT id, signature, charge, reuse_count FROM kb_assets",
+                    &[],
+                )?;
+                let mut stored = Vec::with_capacity(rows.len());
+                for row in rows {
+                    stored.push(StoredTopology {
+                        id: take_text(&row, "id"),
+                        signature: take_text(&row, "signature"),
+                        charge: take_real(&row, "charge"),
+                        reuse_count: take_int(&row, "reuse_count") as u64,
+                    });
                 }
                 Ok(KnowledgeBase { graph, stored })
             }
@@ -212,11 +239,11 @@ impl Persistence {
                 *trace_graph_json = Some(json);
                 Ok(())
             }
-            Persistence::Sqlite { conn } => {
-                conn.execute(
+            Persistence::Sqlite { provider, .. } => {
+                provider.exec(
                     "INSERT INTO trace(single, graph_json) VALUES(1,?1) \
                      ON CONFLICT(single) DO UPDATE SET graph_json=excluded.graph_json",
-                    (json,),
+                    &[SqlValue::Text(json)],
                 )?;
                 Ok(())
             }
@@ -227,13 +254,13 @@ impl Persistence {
     pub fn load_graph(&self) -> Result<AssocGraph> {
         let json = match self {
             Persistence::Memory { trace_graph_json, .. } => trace_graph_json.clone(),
-            Persistence::Sqlite { conn } => {
+            Persistence::Sqlite { provider, .. } => {
                 let mut out = None;
-                if let Ok(mut stmt) = conn.prepare("SELECT graph_json FROM trace WHERE single=1") {
-                    if let Ok(mut rows) = stmt.query_map([], |r| r.get::<usize, String>(0)) {
-                        if let Some(Ok(g)) = rows.next() {
-                            out = Some(g);
-                        }
+                if let Some(row) =
+                    provider.query_one("SELECT graph_json FROM trace WHERE single=1", &[])?
+                {
+                    if let Some(SqlValue::Text(g)) = row.get("graph_json") {
+                        out = Some(g.clone());
                     }
                 }
                 out
@@ -253,8 +280,8 @@ impl Persistence {
                 projects.push(rec.clone());
                 Ok(())
             }
-            Persistence::Sqlite { conn } => {
-                conn.execute(
+            Persistence::Sqlite { provider, .. } => {
+                provider.exec(
                     "INSERT INTO projects(id,name,policy,kappa,tau,conserved,acyclic,reused,regularized,q_before,q_after,bound_nodes,bound_edges,created_at)\
                      VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14)\
                      ON CONFLICT(id) DO UPDATE SET \
@@ -262,11 +289,22 @@ impl Persistence {
                        conserved=excluded.conserved, acyclic=excluded.acyclic, reused=excluded.reused,\
                        regularized=excluded.regularized, q_before=excluded.q_before, q_after=excluded.q_after,\
                        bound_nodes=excluded.bound_nodes, bound_edges=excluded.bound_edges, created_at=excluded.created_at",
-                    (
-                        rec.id.clone(), rec.name.clone(), rec.policy.clone(), rec.kappa, rec.tau,
-                        rec.conserved as i64, rec.acyclic as i64, rec.reused as i64, rec.regularized as i64,
-                        rec.q_before, rec.q_after, rec.bound_nodes as i64, rec.bound_edges as i64, rec.created_at.clone(),
-                    ),
+                    &[
+                        SqlValue::Text(rec.id.clone()),
+                        SqlValue::Text(rec.name.clone()),
+                        SqlValue::Text(rec.policy.clone()),
+                        SqlValue::Real(rec.kappa),
+                        SqlValue::Real(rec.tau),
+                        SqlValue::Int(rec.conserved as i64),
+                        SqlValue::Int(rec.acyclic as i64),
+                        SqlValue::Int(rec.reused as i64),
+                        SqlValue::Int(rec.regularized as i64),
+                        SqlValue::Real(rec.q_before),
+                        SqlValue::Real(rec.q_after),
+                        SqlValue::Int(rec.bound_nodes as i64),
+                        SqlValue::Int(rec.bound_edges as i64),
+                        SqlValue::Text(rec.created_at.clone()),
+                    ],
                 )?;
                 Ok(())
             }
@@ -277,16 +315,31 @@ impl Persistence {
     pub fn list_projects(&self) -> Result<Vec<ProjectRecord>> {
         match self {
             Persistence::Memory { projects, .. } => Ok(projects.clone()),
-            Persistence::Sqlite { conn } => {
-                let mut stmt = conn.prepare(
+            Persistence::Sqlite { provider, .. } => {
+                let rows = provider.query(
                     "SELECT id,name,policy,kappa,tau,conserved,acyclic,reused,regularized,\
                             q_before,q_after,bound_nodes,bound_edges,created_at FROM projects \
                      ORDER BY created_at DESC",
+                    &[],
                 )?;
-                let rows = stmt.query_map([], row_to_record)?;
-                let mut out = Vec::new();
-                for r in rows {
-                    out.push(r?);
+                let mut out = Vec::with_capacity(rows.len());
+                for row in rows {
+                    out.push(ProjectRecord {
+                        id: take_text(&row, "id"),
+                        name: take_text(&row, "name"),
+                        policy: take_text(&row, "policy"),
+                        kappa: take_real(&row, "kappa"),
+                        tau: take_real(&row, "tau"),
+                        conserved: take_int(&row, "conserved") != 0,
+                        acyclic: take_int(&row, "acyclic") != 0,
+                        reused: take_int(&row, "reused") as usize,
+                        regularized: take_int(&row, "regularized") != 0,
+                        q_before: take_real(&row, "q_before"),
+                        q_after: take_real(&row, "q_after"),
+                        bound_nodes: take_int(&row, "bound_nodes") as usize,
+                        bound_edges: take_int(&row, "bound_edges") as usize,
+                        created_at: take_text(&row, "created_at"),
+                    });
                 }
                 Ok(out)
             }
@@ -299,14 +352,29 @@ impl Persistence {
             Persistence::Memory { projects, .. } => {
                 Ok(projects.iter().find(|p| p.id == id).cloned())
             }
-            Persistence::Sqlite { conn } => {
-                let mut stmt = conn.prepare(
+            Persistence::Sqlite { provider, .. } => {
+                let row = provider.query_one(
                     "SELECT id,name,policy,kappa,tau,conserved,acyclic,reused,regularized,\
                             q_before,q_after,bound_nodes,bound_edges,created_at FROM projects \
                      WHERE id=?1",
+                    &[SqlValue::Text(id.to_string())],
                 )?;
-                let mut rows = stmt.query_map((id,), row_to_record)?;
-                Ok(rows.next().transpose()?)
+                Ok(row.map(|row| ProjectRecord {
+                    id: take_text(&row, "id"),
+                    name: take_text(&row, "name"),
+                    policy: take_text(&row, "policy"),
+                    kappa: take_real(&row, "kappa"),
+                    tau: take_real(&row, "tau"),
+                    conserved: take_int(&row, "conserved") != 0,
+                    acyclic: take_int(&row, "acyclic") != 0,
+                    reused: take_int(&row, "reused") as usize,
+                    regularized: take_int(&row, "regularized") != 0,
+                    q_before: take_real(&row, "q_before"),
+                    q_after: take_real(&row, "q_after"),
+                    bound_nodes: take_int(&row, "bound_nodes") as usize,
+                    bound_edges: take_int(&row, "bound_edges") as usize,
+                    created_at: take_text(&row, "created_at"),
+                }))
             }
         }
     }
@@ -442,7 +510,11 @@ mod tests {
 
         // 第二次连接：重新打开同一文件，重放恢复
         {
-            let store = Persistence::sqlite(&path).unwrap();
+            let pvd = SqlitePersistence::file(&path).unwrap();
+            let store = Persistence::Sqlite {
+                provider: Arc::new(pvd),
+                path: Some(path.clone()),
+            };
             let mut engine2 = memory_engine();
             let mut master2 = AssocGraph::new();
             store.replay_into(&mut engine2, &mut master2).unwrap();

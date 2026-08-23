@@ -65,19 +65,14 @@ pub struct GuardContext {
 }
 
 /// 风险等级
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum RiskLevel {
     Low,
+    #[default]
     Medium,
     High,
     Critical,
-}
-
-impl Default for RiskLevel {
-    fn default() -> Self {
-        RiskLevel::Medium
-    }
 }
 
 // ── BudgetGuard ──────────────────────────────────────────────

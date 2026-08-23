@@ -1,4 +1,4 @@
-﻿//! 编排层：璇玑系统门面 + 事件反应器
+//! 编排层：璇玑系统门面 + 事件反应器
 //!
 //! `XuanjiSystem` 聚合四个服务，并在每次写操作前做 RBAC 鉴权（require），
 //! 实现「鉴权 → 领域动作 → 事件发布」的统一数据流。
@@ -18,7 +18,7 @@ use crate::metrics::Metrics;
 use crate::model::*;
 use crate::ratelimit::RateLimiter;
 use crate::rbac::*;
-use crate::services::*;
+use crate::services::{CommService, MemberService, PermissionService, TaskService};
 use crate::store::Store;
 
 #[derive(Clone)]

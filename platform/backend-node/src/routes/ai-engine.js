@@ -481,4 +481,43 @@ ${document}
     }
   });
 
+  // ===== G4 修复：统一编排核心四端点集中在 AI 引擎域（同域注册避免跨域后注册覆盖语义风险）
+  //   硬约束：AI engine 统一编排核心需提供统一入口路由：
+  //     process / analyze / capabilities / metrics 四端点必须在同一业务域注册
+  // POST /ai/engine/analyze —— 显式能力执行（跳过意图识别，可预测）
+  reg('post', '/ai/engine/analyze', async (req, res) => {
+    const body = await readBody(req);
+    if (!body.capability) {
+      fail(res, 400, '缺少 capability 参数');
+      return;
+    }
+    try {
+      const result = await engineCore.executeCapability(body.capability, body.question, body.options);
+      ok(res, result);
+    } catch (e) {
+      console.error('[engine-core-analyze]', e);
+      fail(res, 400, e.message);
+    }
+  });
+
+  // GET /ai/engine/capabilities —— 能力矩阵自描述
+  reg('get', '/ai/engine/capabilities', (req, res) => {
+    try {
+      ok(res, engineCore.getCapabilities());
+    } catch (e) {
+      console.error('[engine-core-capabilities]', e);
+      fail(res, 500, '获取能力矩阵失败: ' + e.message);
+    }
+  });
+
+  // GET /ai/engine/metrics —— 性能指标（成功率/降级率/平均延迟）
+  reg('get', '/ai/engine/metrics', (req, res) => {
+    try {
+      ok(res, engineCore.getMetrics());
+    } catch (e) {
+      console.error('[engine-core-metrics]', e);
+      fail(res, 500, '获取引擎指标失败: ' + e.message);
+    }
+  });
+
 };

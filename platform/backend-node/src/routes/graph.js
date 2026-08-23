@@ -5,7 +5,34 @@
  * /graph/* 图查询、PageRank、社区发现、中心性、导入导出与 AI 生成
  */
 module.exports = function registerGraphRoutes(ctx) {
-  const { path, url, gateway, uid, p, readJSON, writeJSON, ok, fail, readBody, appendLog, reg, graphAdjacency, bfsPath, pagerank, degreeCentrality, betweennessCentrality, labelPropagation, activateSpread } = ctx;
+  const { path, url, gateway, uid, p, readJSON, writeJSON, ok, fail, readBody, appendLog, reg, graphAdjacency, bfsPath, pagerank, degreeCentrality, betweennessCentrality, labelPropagation, activateSpread, aiEngine, aiIntegration } = ctx;
+
+  // 数值归一化工具（最小-最大，零常数输入退化为 0，避免 NaN）
+  function _normalize(vals) {
+    if (!vals || vals.length === 0) return [];
+    let min = +Infinity, max = -Infinity;
+    for (const v of vals) { if (v < min) min = v; if (v > max) max = v; }
+    if (!isFinite(min) || !isFinite(max) || max === min) return vals.map(() => 0);
+    return vals.map(v => (v - min) / (max - min));
+  }
+  function _normalizeObj(obj) {
+    const keys = Object.keys(obj || {});
+    const vals = keys.map(k => obj[k]);
+    const n = _normalize(vals);
+    const out = {};
+    keys.forEach((k, i) => { out[k] = n[i]; });
+    return out;
+  }
+
+  // 单源图公式（含人读公式 + 解读文案）—— GraphFormulas 与 aiEngine 保持一致
+  let _GraphFormulas = null;
+  function graphFormulas() {
+    if (!_GraphFormulas) {
+      // 延迟 require：避免循环依赖；与 ai-engine._computeCentrality 委托同一真相源
+      _GraphFormulas = require('../ai-flow-graph').GraphFormulas;
+    }
+    return _GraphFormulas;
+  }
 
 
   // ===== 域局部状态：图谱自动同步定时器 =====
@@ -36,7 +63,9 @@ module.exports = function registerGraphRoutes(ctx) {
     const { nodes, edges } = graphAdjacency();
     const n = nodes.length;
     const m = edges.length;
-    const density = n > 1 ? m / (n * (n - 1)) : 0;
+    // G3 修复：无向图密度 D = 2E/(N(N-1))（RAW 边：每边贡献度数 2 给分子，故乘 2）
+    // 委托 GraphFormulas 单源实现，附人读公式与解读文案
+    const densityInfo = graphFormulas().density(n, m);
     const typeCounts = {};
     nodes.forEach((nd) => { typeCounts[nd.type] = (typeCounts[nd.type] || 0) + 1; });
     const degreeDist = {};
@@ -54,7 +83,9 @@ module.exports = function registerGraphRoutes(ctx) {
     ok(res, {
       nodes: n,
       edges: m,
-      density: density,
+      density: densityInfo.value,
+      density_formula: densityInfo.formula,
+      density_interpretation: densityInfo.interpretation,
       avgDegree: avgDegree,
       types: typeCounts,
       degreeDistribution: degreeDist
@@ -63,28 +94,67 @@ module.exports = function registerGraphRoutes(ctx) {
 
   reg('get', '/graph/centrality', (req, res) => {
     const { nodes, edges } = graphAdjacency();
+    // G2 修复：新增 harmonic 紧密中心性（harmonic 算法，不可达稳健）
+    // 委托 GraphFormulas 单源实现，附人读公式
+    const GF = graphFormulas();
+    const degree = GF.degreeCentrality(nodes, edges);
+    const betweenness = GF.betweennessCentrality(nodes, edges, { directed: false });
+    const closeness = GF.closenessCentrality(nodes, edges, { directed: false });
     ok(res, {
-      degree: degreeCentrality(nodes, edges),
-      betweenness: betweennessCentrality(nodes, edges)
+      degree,
+      betweenness,
+      closeness,
+      formulas: {
+        degree: 'C_D(v) = deg(v) / (N-1)（无向，RAW 边双向展开计度）',
+        betweenness: 'C_B(v) = Σ_{s≠v≠t} σ_st(v)/σ_st  ÷ ((N-1)(N-2)/2)（Brandes 2001 算法）',
+        closeness: 'C_C(v) = (Σ_{u≠v} 1/d(v,u)) / (N-1)（harmonic 版本，不可达贡献 0）'
+      }
     });
   });
 
+  // G1 修复：社区检测从 LPA 切换为 CNM（模块度贪心凝聚算法）
+  //   硬约束：禁止使用 LPA（标签传播存在平局歧义与标签吞并问题）
   reg('get', '/graph/communities', (req, res) => {
     const { nodes, edges } = graphAdjacency();
-    const communities = labelPropagation(nodes, edges);
-    const arr = Object.keys(communities).map((k, i) => ({
+    const communities = aiEngine._detectCommunities(nodes, edges, nodes.length || 1);
+    const arr = communities.map((c, i) => ({
       id: 'c' + i,
-      members: communities[k],
-      size: communities[k].length
+      members: c.members,
+      size: c.members.length,
+      assignment: c.assignment
     }));
-    ok(res, { communities: arr, count: arr.length });
+    const modularity = graphFormulas().modularity(
+      nodes, edges, arr.map(a => ({ members: a.members }))
+    );
+    ok(res, {
+      communities: arr,
+      count: arr.length,
+      algorithm: 'CNM (Clauset-Newman-Moore 模块度贪心凝聚)',
+      algorithm_formula: 'Q = Σ_c [ e_c/m − (d_c/(2m))² ]，每轮合并 ΔQ 最大社区对',
+      modularity
+    });
   });
 
-  reg('get', '/graph/pagerank', (req, res) => {
+  // G7 修复：PageRank 从 graph-algos.js 本地实现迁移到 aiIntegration 统一单源实现
+  //   硬约束：PageRank 实现必须包含转置图处理，确保质量沿出边方向正确传播
+  reg('get', '/graph/pagerank', async (req, res) => {
     const { nodes, edges } = graphAdjacency();
-    const pr = pagerank(nodes, edges, 0.85, 80);
-    const sorted = Object.keys(pr).map((id) => ({ id: id, score: pr[id] })).sort((a, b) => b.score - a.score);
-    ok(res, { pagerank: pr, sorted: sorted, top10: sorted.slice(0, 10) });
+    const result = await aiIntegration.graphEngine.computePersonalizedPageRank(
+      { nodes, edges },
+      { damping: 0.85, maxIterations: 30, topK: nodes.length }
+    );
+    const pr = {};
+    (result.scores || []).forEach(r => { pr[r.id] = r.score; });
+    const sorted = (result.scores || []).map(r => ({ id: r.id, score: r.score }));
+    ok(res, {
+      pagerank: pr,
+      sorted,
+      top10: sorted.slice(0, 10),
+      algorithm: '个性化 PageRank 推模型（转置图处理，悬挂节点质量回传）',
+      algorithm_formula: 'PR(i) = (1-d)·p_i + d·(Σ_{j→i} PR(j)/outDeg(j) + danglingMass/N)',
+      convergence: result.convergence,
+      iterations: result.iterations
+    });
   });
 
   reg('get', '/graph/neighbors/:id', (req, res, params) => {
@@ -106,39 +176,43 @@ module.exports = function registerGraphRoutes(ctx) {
     ok(res, { source: source, target: target, path: p, length: p.length - 1 });
   });
 
+  // G6 修复：推荐从 BFS 跳距倒数升级为个性化 PageRank（多种子向量，d=0.85）
+  //   硬约束：激活扩散 = 个性化 PageRank 特例（method=spread, d=0.85, 30 轮收敛）
   reg('post', '/graph/recommend', async (req, res) => {
     const body = await readBody(req);
     const seedIds = body.seeds || [];
-    const { nodes, edges, adj } = graphAdjacency();
-    const scores = {};
-    seedIds.forEach((sid) => {
-      if (!adj[sid]) return;
-      const visited = {};
-      const q = [{ id: sid, d: 0 }];
-      visited[sid] = 0;
-      while (q.length) {
-        const cur = q.shift();
-        if (cur.d > 3) continue;
-        (adj[cur.id] ? adj[cur.id].out : []).forEach((nb) => {
-          if (visited[nb] === undefined) {
-            visited[nb] = cur.d + 1;
-            q.push({ id: nb, d: cur.d + 1 });
-          }
-        });
-      }
-      Object.keys(visited).forEach((id) => {
-        if (seedIds.indexOf(id) === -1) {
-          const score = 1 / (visited[id] + 1);
-          scores[id] = (scores[id] || 0) + score;
-        }
-      });
-    });
-    const recs = Object.keys(scores)
-      .map((id) => ({ id: id, score: scores[id], node: nodes.find((n) => n.id === id) }))
-      .filter((r) => r.node)
-      .sort((a, b) => b.score - a.score)
+    const { nodes, edges } = graphAdjacency();
+
+    if (!seedIds.length) {
+      ok(res, { seeds: [], recommendations: [], note: '未提供 seeds，无法推荐' });
+      return;
+    }
+    const existingSeeds = seedIds.filter(sid => nodes.find(n => n.id === sid));
+    if (!existingSeeds.length) {
+      ok(res, { seeds: seedIds, recommendations: [], note: 'seeds 均不在图谱中' });
+      return;
+    }
+    // 构造多种子个性化向量（等权 1/n）
+    const personalization = {};
+    existingSeeds.forEach(sid => { personalization[sid] = 1; });
+    const result = await aiIntegration.graphEngine.computePersonalizedPageRank(
+      { nodes, edges },
+      { damping: 0.85, maxIterations: 30, personalization, topK: nodes.length }
+    );
+    const seedSet = new Set(existingSeeds);
+    const recs = (result.scores || [])
+      .filter(r => !seedSet.has(r.id))
+      .map(r => ({ id: r.id, score: r.score, node: nodes.find(n => n.id === r.id) }))
+      .filter(r => r.node)
       .slice(0, body.topK || 10);
-    ok(res, { seeds: seedIds, recommendations: recs });
+    ok(res, {
+      seeds: seedIds,
+      valid_seeds: existingSeeds,
+      algorithm: '个性化 PageRank（多种子向量，d=0.85 传模型，30 轮收敛）',
+      iterations: result.iterations,
+      convergence: result.convergence,
+      recommendations: recs
+    });
   });
 
   reg('post', '/graph/node', async (req, res) => {
@@ -172,34 +246,130 @@ module.exports = function registerGraphRoutes(ctx) {
     ok(res, edge);
   });
 
+  // G6 修复：图谱激活扩散从 BFS 能量衰减升级为个性化 PageRank
+  //   硬约束：method=spread 必须作为个性化 PageRank 特例，d=0.85，30 轮收敛
   reg('post', '/graph/activate', async (req, res) => {
     const body = await readBody(req);
     const seed = body.seed || body.seedId;
     if (!seed) return fail(res, 400, 'seed required');
     const { nodes, edges } = graphAdjacency();
-    const energy = activateSpread(nodes, edges, seed, body.decay || 0.7);
-    const rank = Object.keys(energy).map((id) => ({ id: id, energy: energy[id] }))
-      .sort((a, b) => b.energy - a.energy).slice(0, 20);
-    ok(res, { seed: seed, energy: energy, rank: rank });
+    if (!nodes.find(n => n.id === seed)) {
+      return fail(res, 404, 'seed node not found in graph');
+    }
+    // decay 参数兼容（旧 API 曾允许传入 body.decay）：若在 (0,1) 范围则覆盖默认 0.85
+    const userDecay = parseFloat(body.decay);
+    const damping = (userDecay && userDecay > 0 && userDecay < 1) ? userDecay : 0.85;
+    const personalization = { [seed]: 1.0 };
+    const result = await aiIntegration.graphEngine.computePersonalizedPageRank(
+      { nodes, edges },
+      { damping, maxIterations: 30, personalization, topK: Math.min(nodes.length, 50) }
+    );
+    const energy = {};
+    (result.scores || []).forEach(r => { energy[r.id] = r.score; });
+    const rank = (result.topK || result.scores || []).slice(0, 20).map(r => ({
+      id: r.id, energy: r.score
+    }));
+    ok(res, {
+      seed,
+      energy,
+      rank,
+      activation: {
+        method: 'spread',
+        damping,
+        max_iterations: 30,
+        iterations: result.iterations,
+        converged: result.converged,
+        note: '个性化 PageRank 特例（method=spread, d=0.85, 30 轮收敛），单种子个性化向量'
+      }
+    });
   });
 
   reg('get', '/graph/search', (req, res) => {
     const q = url.parse(req.url, true).query;
     const query = (q.q || '').toLowerCase();
     const limit = parseInt(q.limit, 10) || 20;
+    const rerankWeight = q.spread_weight === undefined ? 0.7 : Math.max(0, Math.min(1, parseFloat(q.spread_weight) || 0));
     const nodes = readJSON('graph_nodes.json', []);
     const edges = readJSON('graph_edges.json', []);
     if (!query) return ok(res, { nodes: [], edges: [] });
     const matchedNodes = nodes.filter((n) =>
       (n.label || '').toLowerCase().indexOf(query) !== -1 ||
       (n.id || '').toLowerCase().indexOf(query) !== -1 ||
-      (n.type || '').toLowerCase().indexOf(query) !== -1
-    ).slice(0, limit);
+      (n.name || '').toLowerCase().indexOf(query) !== -1 ||
+      (n.type || '').toLowerCase().indexOf(query) !== -1 ||
+      (n.kind || '').toLowerCase().indexOf(query) !== -1 ||
+      JSON.stringify(n.properties || {}).toLowerCase().indexOf(query) !== -1
+    );
     const matchedEdges = edges.filter((e) =>
       (e.source || '').toLowerCase().indexOf(query) !== -1 ||
       (e.target || '').toLowerCase().indexOf(query) !== -1
     ).slice(0, limit);
-    ok(res, { nodes: matchedNodes, edges: matchedEdges, query: query });
+
+    // AC-9 第 TR-7.2：激活扩散重排（默认权重 0.7）
+    // 做法：
+    //   a. 基础分 bm25-like：命中字段数 + 关键词位置接近前缀加分；
+    //   b. 激活扩散种子 = matchedNodes 集合（每个 id → 1），做个性化 PageRank（d=0.85, 30 轮）；
+    //   c. 融合：final = (1-w)*norm(baseScore) + w*norm(prScore)
+    //   d. 对未命中但激活扩散得分靠前的 nodes，扩展召回（最多 25% limit），作为"新命中"。
+    const { GraphFormulas } = require('../graph/graph-formulas');
+    const nodeList = nodes.map(n => ({ id: n.id }));
+    const edgeList = edges.map(e => ({ source: e.from || e.source, target: e.to || e.target, weight: e.weight || 1 }));
+    const seedMap = {};
+    matchedNodes.forEach(n => (seedMap[n.id] = 1));
+    const pr = Object.keys(seedMap).length > 0 && nodeList.length > 0
+      ? GraphFormulas.personalizedPageRank(nodeList, edgeList, seedMap, { d: 0.85, maxIter: 30 })
+      : {};
+
+    // baseScore
+    const scores = {};
+    const haystacks = (n) => [n.id, n.label, n.name, n.type, n.kind, JSON.stringify(n.properties || {})].map(s => String(s || '').toLowerCase());
+    nodes.forEach(n => {
+      let b = 0;
+      for (const h of haystacks(n)) {
+        const idx = h.indexOf(query);
+        if (idx !== -1) {
+          b += 1 + Math.max(0, 1 - idx / Math.max(1, h.length));
+        }
+      }
+      scores[n.id] = b;
+    });
+    const baseVals = Object.values(scores);
+    const baseNorm = _normalize(baseVals);
+    const prVals = Object.values(pr);
+    const prNormObj = _normalizeObj(pr);
+    const baseNormObj = _normalizeObj(scores);
+    const finalScores = {};
+    nodes.forEach(n => {
+      const bs = baseNormObj[n.id] || 0;
+      const ps = prNormObj[n.id] || 0;
+      finalScores[n.id] = (1 - rerankWeight) * bs + rerankWeight * ps;
+    });
+
+    // 召回集合：matchedNodes ∪ Top-k (未 matchedNodes 且 finalScore > 0)
+    const matchedIds = new Set(matchedNodes.map(n => n.id));
+    const extraCandidates = nodes
+      .filter(n => !matchedIds.has(n.id) && (finalScores[n.id] || 0) > 0)
+      .sort((a, b) => (finalScores[b.id] || 0) - (finalScores[a.id] || 0))
+      .slice(0, Math.max(1, Math.floor(limit * 0.25)));
+    const reranked = [...matchedNodes, ...extraCandidates]
+      .map(n => ({ node: n, score: finalScores[n.id] || 0 }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .map(x => x.node);
+
+    return ok(res, {
+      nodes: reranked,
+      edges: matchedEdges,
+      query,
+      spread_weight: rerankWeight,
+      stats: {
+        matched_count: matchedNodes.length,
+        extra_from_spread: extraCandidates.length,
+        base_max: baseVals.length ? Math.max(...baseVals) : 0,
+        spread_max: prVals.length ? Math.max(...prVals) : 0
+      },
+      // 兼容老字段 shape：保持 nodes/edges/query 三数组（老客户端零改）
+    });
   });
 
   reg('post', '/graph/auto-sync/toggle', toggleAutoSync);

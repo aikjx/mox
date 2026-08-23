@@ -28,11 +28,11 @@ const GraphFormulas = {
     const E = edgeCount;
     if (N < 2) return { value: 0, formula: 'D = 2E/(N(N-1))', interpretation: '节点数不足 2，密度无定义，按 0 处理' };
     const value = (2 * E) / (N * (N - 1));
-    return {
-      value: +value.toFixed(8),
-      formula: 'D = 2E/(N(N-1))',
-      interpretation: value >= 0.8 ? '高度稠密图，接近完全图' : value >= 0.3 ? '中等密度，连接适中' : '稀疏图，存在大量未连接节点对'
-    };
+    // 项目记忆硬性：禁用 toFixed 截断，保留全精度
+    let interpretation = '稀疏图，存在大量未连接节点对';
+    if (value >= 0.8) interpretation = '高度稠密图，接近完全图';
+    else if (value >= 0.3) interpretation = '中等密度，连接适中';
+    return { value, formula: 'D = 2E/(N(N-1))', interpretation };
   },
 
   /**
@@ -317,17 +317,19 @@ class AIFlowGraph {
     hits.forEach(nd => { personalization[nd.id] = (nd.weight || 1) / totalW; });
 
     // ③ 激活扩散：委托统一 PageRank 单源（算法流程放在图谱引擎上）
+    // G5 修复：maxIterations 从 50 改为 30，与 flow-registry 声明"30 轮收敛"一致
+    //   硬约束：激活扩散（method=spread, d=0.85, 30 轮收敛）作为个性化 PageRank 特例
     const integration = getAIIntegrationEngine();
     const spread = await integration.graphEngine.computePersonalizedPageRank(
       { nodes: g.nodes, edges: g.edges },
-      { damping, personalization, maxIterations: 50, topK: g.nodes.length }
+      { damping, personalization, maxIterations: 30, topK: g.nodes.length }
     );
 
     // ④ 能力排序
     const scoreMap = {};
     (spread.scores || []).forEach(r => { scoreMap[r.id] = r.score; });
     const capScores = {};
-    capNodes.forEach(nd => { capScores[nd.label] = +(scoreMap[nd.id] || 0).toFixed(8); });
+    capNodes.forEach(nd => { capScores[nd.label] = Number(scoreMap[nd.id] || 0); });
 
     let best = 'chat';
     let bestScore = 0;

@@ -1,10 +1,28 @@
 //! 业务全景目录 CLI：把系统所有业务建模为流程图 + 六维关系网，并演示"使用中不断优化"。
 //!
+//! DIP 版：本文件内不再直接引用 xuanji_expert 的 GovernanceReport/algo/gate 等 concrete 字段。
+//! 统一通过 business_catalog 对外的 ConsultReport（投影）类型展示结果。
+//!
 //! 用法：
 //!   cargo run -p business-catalog --bin catalog
 //!   cargo run -p business-catalog --bin catalog -- --simulate    # 模拟多轮使用后的权重衰减/复用
 
 use business_catalog::{all_businesses, build_topology};
+use xuanji_expert::types::ConsultReport;
+
+fn summarize(rep: &ConsultReport) -> (String, bool, f64) {
+    // 从 steps/score/vetoed 提取摘要（旧版 GovernanceReport 的 algo/gate/optimization 已投影到 steps 文本）
+    let summary = rep.reason.clone().unwrap_or_else(|| {
+        if !rep.steps.is_empty() {
+            rep.steps.join(" | ")
+        } else if rep.vetoed {
+            "治理闸门驳回".into()
+        } else {
+            "璇玑已优化".into()
+        }
+    });
+    (summary, rep.vetoed, rep.score)
+}
 
 fn main() {
     let simulate = std::env::args().any(|a| a == "--simulate");
@@ -12,50 +30,30 @@ fn main() {
     println!("║   璇玑 · 业务全景目录  (流程图 + 六维关系网 + 使用中优化)      ║");
     println!("╚══════════════════════════════════════════════════════════════╝\n");
 
-    // ── 1. 把每个业务建模成流程图，交给璇玑优化 ──
+    // ── 1. 把每个业务建模成流程图，交给璇玑优化（DIP：通过 ExpertConsultant trait，不再暴露内部字段） ──
     println!("【一】用璇玑优化全部业务（流程图 IR → 并行/冲突/验证/治理）");
     let biz = all_businesses();
     let mut topo = build_topology();
     let mut report_lines: Vec<String> = Vec::new();
     for b in &biz {
-        let rep = b.optimize();
-        let opt = &rep.optimization;
-        let g = &rep.gate;
-        let sp = opt.gains.speedup;
-        if rep.algo.vetoed {
-            // 真实否定：算法验证网关抓到语义破坏/阻断冲突，治理强制 BLOCK
-            report_lines.push(format!("       └ ⛨ 算法否决: {}", rep.algo.summary));
-            for cf in &rep.optimization.conflicts.conflicts {
-                if cf.severity == flow_ai::model::Severity::Blocking {
-                    report_lines.push(format!(
-                        "          └ 阻断冲突: {:?} nodes={:?} {}",
-                        cf.kind, cf.nodes, cf.message
-                    ));
-                }
-            }
-            for c in &rep.algo.checks {
-                if !c.passed {
-                    report_lines.push(format!(
-                        "          └ 检查 {} 未过(blocking={}): {}",
-                        c.name, c.blocking, c.detail
-                    ));
-                }
-            }
+        let flow = (b.build)();
+        let nodes_count = flow.nodes.len();
+        let rep: ConsultReport = b.optimize();
+        let (summary, vetoed, score) = summarize(&rep);
+
+        if vetoed {
+            report_lines.push(format!("       └ ⛨ 否决（score={:.2}）: {}", score, summary));
         }
-        topo.ingest_flow(&(b.build)()); // 把该业务汇入共享六维关系网
+        topo.ingest_flow(&flow); // 把该业务汇入共享六维关系网
         report_lines.push(format!(
-            "  {:<10} 节点{:>3}  加速{:>5.2}×  省时{:>5.1}%  算力压{:>5.1}%  闸门:{}  算法否决:{}",
+            "  {:<10} 节点{:>3}  健康分{:>5.2}  步骤数{:>3}  闸门:{}  算法否决:{}",
             b.name,
-            opt.optimized_graph.nodes.len(),
-            sp,
-            opt.gains.time_saved_pct,
-            opt.gains.compute_saved_pct,
-            if g.approved { "Approved" } else { "Blocked" },
-            rep.algo.vetoed,
+            nodes_count,
+            score,
+            rep.steps.len(),
+            if vetoed { "Blocked" } else { "Approved" },
+            vetoed,
         ));
-        if !g.approved {
-            report_lines.push(format!("       └ 原因: {}", g.reason));
-        }
     }
     for l in &report_lines {
         println!("{}", l);

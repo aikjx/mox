@@ -7,15 +7,17 @@
  * 全自研轻量 AST 替代（正则状态机，零外部依赖，行号定位）：
  *   .js/.mjs/.cjs  函数声明/箭头函数/类/类方法/导出/require 依赖/HTTP 路由注册
  *   .py            def/class/async def/import 依赖
- * 目录扫描：递归遍历，跳过 node_modules/.git/dist/build/data/.runtime。
+ *   .rs            fn/struct/enum/trait/axum 路由/use 依赖（Rust 平台层）
+ * 目录扫描：递归遍历，跳过 node_modules/.git/dist/build/data/.runtime/target。
  */
 
 const fs = require('fs');
 const path = require('path');
 
-const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', 'data', '.runtime', 'coverage', '__pycache__']);
+const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', 'data', '.runtime', 'coverage', '__pycache__', 'target']);
 const JS_EXT = new Set(['.js', '.mjs', '.cjs']);
 const PY_EXT = new Set(['.py']);
+const RS_EXT = new Set(['.rs']);
 const MAX_FILE_BYTES = 2 * 1024 * 1024; // 护栏：跳过超大文件
 
 // ============ JS 实体抽取（正则状态机，带行号） ============
@@ -121,6 +123,45 @@ function extractPyEntities(source) {
   return out;
 }
 
+// ============ Rust 实体抽取 ============
+
+/**
+ * Rust 单文件实体抽取（Rust 平台层：网关运行时 / ai-agent 服务）：
+ *   函数（fn / pub fn / pub async fn，impl 内缩进方法区分 kind）
+ *   类型（struct / enum / trait → classes 桶）
+ *   路由（axum 风格 .route("/path", get/post/...)）
+ *   依赖（use 声明 → requires 桶）
+ */
+function extractRsEntities(source) {
+  const src = String(source || '');
+  const out = { functions: [], classes: [], exports: [], routes: [], requires: [] };
+  const seenFn = new Set();
+  let m;
+
+  const fnDecl = /(?:^|\n)([ \t]*)(?:pub(?:\([^)]*\))?\s+)?(?:const\s+)?(?:async\s+)?(?:unsafe\s+)?(?:extern\s+"[^"]*"\s+)?fn\s+([A-Za-z_][\w]*)\s*[<(]/g;
+  while ((m = fnDecl.exec(src)) !== null) {
+    if (seenFn.has(m[2])) continue;
+    seenFn.add(m[2]);
+    out.functions.push({ name: m[2], line: lineOf(src, m.index + m[1].length), kind: m[1].length === 0 ? 'declaration' : 'method' });
+  }
+
+  const typeDecl = /(?:^|\n)[ \t]*(?:pub(?:\([^)]*\))?\s+)?(?:struct|enum|trait)\s+([A-Za-z_][\w]*)/g;
+  while ((m = typeDecl.exec(src)) !== null) {
+    out.classes.push({ name: m[1], line: lineOf(src, m.index) });
+  }
+
+  const routeDecl = /\.route\(\s*"([^"]+)"\s*,\s*(get|post|put|delete|patch)/g;
+  while ((m = routeDecl.exec(src)) !== null) {
+    out.routes.push({ method: m[2].toUpperCase(), path: m[1], line: lineOf(src, m.index) });
+  }
+
+  const useDecl = /(?:^|\n)[ \t]*(?:pub\s+)?use\s+([\w:]+)/g;
+  while ((m = useDecl.exec(src)) !== null) {
+    out.requires.push({ module: m[1], line: lineOf(src, m.index) });
+  }
+  return out;
+}
+
 // ============ 语言分发与文件/目录扫描 ============
 
 /** 单文件实体抽取（按扩展名分发） */
@@ -129,6 +170,7 @@ function scanFile(absPath) {
   let language = null, entities = null;
   if (JS_EXT.has(ext)) { language = 'javascript'; entities = extractJsEntities(readSafe(absPath)); }
   else if (PY_EXT.has(ext)) { language = 'python'; entities = extractPyEntities(readSafe(absPath)); }
+  else if (RS_EXT.has(ext)) { language = 'rust'; entities = extractRsEntities(readSafe(absPath)); }
   else return null;
   const stat = fs.existsSync(absPath) ? fs.statSync(absPath) : null;
   return {
@@ -160,7 +202,7 @@ function scanDirectory(absDir, acc = { files: [], depth: 0 }) {
     const full = path.join(absDir, entry.name);
     if (entry.isDirectory()) {
       scanDirectory(full, { ...acc, depth: acc.depth + 1 });
-    } else if (JS_EXT.has(path.extname(entry.name).toLowerCase()) || PY_EXT.has(path.extname(entry.name).toLowerCase())) {
+    } else if (JS_EXT.has(path.extname(entry.name).toLowerCase()) || PY_EXT.has(path.extname(entry.name).toLowerCase()) || RS_EXT.has(path.extname(entry.name).toLowerCase())) {
       const scanned = scanFile(full);
       if (scanned) acc.files.push(scanned);
     }

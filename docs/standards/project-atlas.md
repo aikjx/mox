@@ -75,7 +75,41 @@
 | `POST /atlas/projects/:id/domains` | **域归属移交**：运行时项目间域移交（保持 P2 唯一归属） |
 | `DELETE /atlas/projects/:id` | **项目移除**：仅运行时可移除；孤儿域防护；`reassignTo` 级联移交 |
 
-## 5. AI 图谱对话（专家联盟集成）
+## §5 Rust 端绑定契约（璇玑图谱 ↔ Rust crate ←→ 自动发现）
+
+本契约保证 16 个 Rust crate 可被 `project-atlas` 自同步服务自动发现、登记、关联，形成**代码 → 图谱 → 代码**双向绑定闭环。
+
+### 5.1 常量契约（每个 crate `src/lib.rs` 顶部 pub 暴露）
+
+| 常量 | 类型 | 说明 | 示例 |
+|------|------|------|------|
+| `pub const CRATE_ID: &str` | kebab-case 串 | crate 稳定 id，与 `workspace.members` 一致，永不变更 | `"operator-core"` |
+| `pub const CRATE_META: CrateMeta` | struct 字面量 | 结构化元数据，见下表字段 | — |
+
+### 5.2 CrateMeta 字段契约
+
+| 字段 | Rust 类型 | 语义 | 图谱映射 |
+|------|-----------|------|----------|
+| `uuid` | `&'static str` (36-char UUID v4) | crate 全局唯一标识，跨版本不变 | `node.uuid` 属性 |
+| `ais_layers` | `&'static [&'static str]` | AIS 分层归属：`L1-Ingress` / `L2-Gateway` / `L3-Service` / `L4-Core` / `L5-Infra` / `L6-Kernel` / `L7-Tool` 任意组合 | `node.meta.ais_layers` 列表属性 |
+| `owner_project` | `&'static str` | 归属项目 id（project-registry.js PROJECTS.id 常量严格一致） | `owns_domain` 边起点 project → 本 crate 域节点 |
+| `capabilities` | `&'static [&'static str]` | 暴露能力 human-readable 清单（用于璇玑能力矩阵） | engine node 的 `capabilities` 数组属性 |
+| `data_tables_read` | `&'static [&'static str]` | 读取的持久化表名或 JSON 文件名（仅 L5 非空） | `persists_to` 边（反向） |
+| `data_tables_write` | `&'static [&'static str]` | 写入的持久化表名（L3/L4 应多为 empty，仅 L5 拥有写入） | `persists_to` 边 |
+
+### 5.3 自同步规则（`GET /atlas/self-sync`）
+
+自同步服务按以下流程扫描 Rust 端：
+1. `cargo metadata --format-version=1` 解析 workspace packages，获取每个 crate 的绝对 manifest 路径。
+2. 编译时扫描或 AST grep：`src/lib.rs` 中 `pub const CRATE_ID` 与 `pub const CRATE_META`（或通过 `cargo test --workspace` 运行 CRATE_META 导出测试）。
+3. 自动补充图谱节点：
+   - 缺 domain node → 自动新增 kind="rust-crate"
+   - 缺 engine/module node → 按 capabilities 自动分类 (≥5 能力项 → engine；<5 且偏 catalog/plugin 类型 → module)
+   - 缺 algorithm node → 按 capability 关键词匹配（"PageRank"/"CNM"/"介数"/"harmonic"/"守恒"等）
+   - 缺 owns_domain 边 → 按 owner_project 与 PROJECTS.id 自动关联
+4. 三方对账校验：文档 §3.2 Rust 分层表行 ↔ CRATE_META.ais_layers ↔ registry 节点属性。三者不一致即告警。
+
+## 6. AI 图谱对话（专家联盟集成）
 
 `POST /atlas/consult` 的处理流程：
 
@@ -183,7 +217,7 @@ src/project-atlas/
 
 依赖方向：project-atlas → engine-universe（共享引擎注册表真相源）→ routes（动态比对）。
 
-## 9. 落地记录
+## 10. 落地记录
 
 | 日期 | 事件 | 验证 |
 |------|------|------|

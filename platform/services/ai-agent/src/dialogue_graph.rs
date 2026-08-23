@@ -10,13 +10,13 @@
 use anyhow::{anyhow, Result};
 use chrono::Utc;
 use graph_algorithms::{KnowledgeEdge, KnowledgeGraph, KnowledgeNode};
-use rusqlite::params;
-use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
+use xuanji_system::persistence_provider::{PersistenceProvider, SqlValue};
+use xuanji_system::sqlite_provider::SqlitePersistence;
 
 use crate::llm_client::LLMClient;
 
@@ -62,12 +62,6 @@ const DB_SCHEMA: &str = r#"
     CREATE INDEX IF NOT EXISTS idx_msg_content ON dialogue_messages(content);
     "#;
 
-/// 初始化 SQLite 表结构（文件库与内存库共用）
-fn init_schema(conn: &Connection) -> Result<()> {
-    conn.execute_batch(DB_SCHEMA)?;
-    Ok(())
-}
-
 /// LLM 返回的抽取结构
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 struct LlmExtract {
@@ -77,8 +71,8 @@ struct LlmExtract {
 
 /// 对话持久化 + 图谱同步器
 pub struct DialogueGraphSyncer {
-    /// SQLite 连接（对话落库）。rusqlite::Connection 非 Sync，用 std Mutex 包裹以跨线程安全共享。
-    pub db: Arc<Mutex<Connection>>,
+    /// 持久化 Provider（对话落库）。通过 trait 对象包装，与 rusqlite 解耦。
+    pub db: Arc<dyn PersistenceProvider>,
     /// 共享知识图谱（与 graph-algorithms 同一实例）
     graph: Arc<RwLock<KnowledgeGraph>>,
     /// LLM 客户端（用于智能抽取）
@@ -99,11 +93,11 @@ impl DialogueGraphSyncer {
         graph: Arc<RwLock<KnowledgeGraph>>,
         llm: Arc<RwLock<LLMClient>>,
     ) -> Result<Self> {
-        let conn = Connection::open(db_path)?;
-        init_schema(&conn)?;
+        let pvd = SqlitePersistence::file(db_path)?;
+        pvd.exec_batch(DB_SCHEMA)?;
 
         Ok(Self {
-            db: Arc::new(Mutex::new(conn)),
+            db: Arc::new(pvd),
             graph,
             llm,
             auto_sync: Arc::new(RwLock::new(true)),
@@ -118,10 +112,10 @@ impl DialogueGraphSyncer {
         graph: Arc<RwLock<KnowledgeGraph>>,
         llm: Arc<RwLock<LLMClient>>,
     ) -> Self {
-        let conn = Connection::open_in_memory().unwrap();
-        init_schema(&conn).unwrap();
+        let pvd = SqlitePersistence::memory().unwrap();
+        pvd.exec_batch(DB_SCHEMA).unwrap();
         Self {
-            db: Arc::new(Mutex::new(conn)),
+            db: Arc::new(pvd),
             graph,
             llm,
             auto_sync: Arc::new(RwLock::new(true)),
@@ -161,9 +155,14 @@ impl DialogueGraphSyncer {
     pub async fn create_session(&self, title: &str) -> Result<String> {
         let id = Uuid::new_v4().to_string();
         let now = Utc::now().to_rfc3339();
-        self.db.lock().unwrap().execute(
+        self.db.exec(
             "INSERT INTO dialogue_sessions (id, title, created_at, updated_at) VALUES (?1, ?2, ?3, ?4)",
-            params![id, title, now, now],
+            &[
+                SqlValue::Text(id.clone()),
+                SqlValue::Text(title.to_string()),
+                SqlValue::Text(now.clone()),
+                SqlValue::Text(now),
+            ],
         )?;
         Ok(id)
     }
@@ -177,17 +176,23 @@ impl DialogueGraphSyncer {
     ) -> Result<String> {
         let msg_id = Uuid::new_v4().to_string();
         let now = Utc::now().to_rfc3339();
-        {
-            let db = self.db.lock().unwrap();
-            db.execute(
-                "INSERT INTO dialogue_messages (id, session_id, role, content, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
-                params![msg_id, session_id, role, content, now],
-            )?;
-            db.execute(
-                "UPDATE dialogue_sessions SET updated_at = ?1 WHERE id = ?2",
-                params![now, session_id],
-            )?;
-        }
+        self.db.exec(
+            "INSERT INTO dialogue_messages (id, session_id, role, content, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+            &[
+                SqlValue::Text(msg_id.clone()),
+                SqlValue::Text(session_id.to_string()),
+                SqlValue::Text(role.to_string()),
+                SqlValue::Text(content.to_string()),
+                SqlValue::Text(now.clone()),
+            ],
+        )?;
+        self.db.exec(
+            "UPDATE dialogue_sessions SET updated_at = ?1 WHERE id = ?2",
+            &[
+                SqlValue::Text(now),
+                SqlValue::Text(session_id.to_string()),
+            ],
+        )?;
 
         // 全自动：仅对 user 消息做图谱抽取（避免 bot 回声污染）
         if *self.auto_sync.read().await && role == "user" {
@@ -308,24 +313,28 @@ impl DialogueGraphSyncer {
         let q = format!("%{}%", query);
         let mut dialogues = Vec::new();
         {
-            let db = self.db.lock().unwrap();
-            let mut stmt = db.prepare(
+            let rows = self.db.query(
                 "SELECT s.id, s.title, m.content, m.role, m.created_at \
                  FROM dialogue_messages m JOIN dialogue_sessions s ON s.id = m.session_id \
                  WHERE m.content LIKE ?1 OR s.title LIKE ?1 \
                  ORDER BY m.created_at DESC LIMIT ?2",
+                &[
+                    SqlValue::Text(q),
+                    SqlValue::Int(limit as i64),
+                ],
             )?;
-            let rows = stmt.query_map(params![q, limit as i64], |row| {
-                Ok((
-                    row.get::<_, String>(0)?,
-                    row.get::<_, String>(1)?,
-                    row.get::<_, String>(2)?,
-                    row.get::<_, String>(3)?,
-                    row.get::<_, String>(4)?,
-                ))
-            })?;
-            for r in rows {
-                let (sid, title, content, role, ts) = r?;
+            for row in rows {
+                let get_text = |k: &str| -> Option<String> {
+                    match row.get(k) {
+                        Some(SqlValue::Text(s)) => Some(s.clone()),
+                        _ => None,
+                    }
+                };
+                let sid = get_text("id").unwrap_or_default();
+                let title = get_text("title").unwrap_or_default();
+                let content = get_text("content").unwrap_or_default();
+                let role = get_text("role").unwrap_or_default();
+                let ts = get_text("created_at").unwrap_or_default();
                 dialogues.push(SearchHit {
                     kind: "dialogue".to_string(),
                     id: sid,
@@ -367,32 +376,35 @@ impl DialogueGraphSyncer {
     pub async fn export_bundle(&self) -> Result<ExportBundle> {
         let mut sessions = Vec::new();
         {
-            let db = self.db.lock().unwrap();
-            let mut sstmt = db.prepare("SELECT id, title, created_at, updated_at FROM dialogue_sessions")?;
-            let srows = sstmt.query_map([], |row| {
-                Ok((
-                    row.get::<_, String>(0)?,
-                    row.get::<_, String>(1)?,
-                    row.get::<_, String>(2)?,
-                    row.get::<_, String>(3)?,
-                ))
-            })?;
+            let srows = self.db.query("SELECT id, title, created_at, updated_at FROM dialogue_sessions", &[])?;
             for s in srows {
-                let (id, title, ca, ua) = s?;
-                let mut mstmt = db.prepare(
+                let get_text = |k: &str| -> Option<String> {
+                    match s.get(k) {
+                        Some(SqlValue::Text(v)) => Some(v.clone()),
+                        _ => None,
+                    }
+                };
+                let id = get_text("id").unwrap_or_default();
+                let title = get_text("title").unwrap_or_default();
+                let ca = get_text("created_at").unwrap_or_default();
+                let ua = get_text("updated_at").unwrap_or_default();
+
+                let mrows = self.db.query(
                     "SELECT id, role, content, created_at FROM dialogue_messages WHERE session_id = ?1 ORDER BY created_at ASC",
+                    &[SqlValue::Text(id.clone())],
                 )?;
-                let mrows = mstmt.query_map(params![id], |row| {
-                    Ok((
-                        row.get::<_, String>(0)?,
-                        row.get::<_, String>(1)?,
-                        row.get::<_, String>(2)?,
-                        row.get::<_, String>(3)?,
-                    ))
-                })?;
                 let mut messages = Vec::new();
                 for m in mrows {
-                    let (mid, role, content, ts) = m?;
+                    let get_text_m = |k: &str| -> Option<String> {
+                        match m.get(k) {
+                            Some(SqlValue::Text(v)) => Some(v.clone()),
+                            _ => None,
+                        }
+                    };
+                    let mid = get_text_m("id").unwrap_or_default();
+                    let role = get_text_m("role").unwrap_or_default();
+                    let content = get_text_m("content").unwrap_or_default();
+                    let ts = get_text_m("created_at").unwrap_or_default();
                     messages.push(ExportMessage { id: mid, role, content, created_at: ts });
                 }
                 sessions.push(ExportSession {
@@ -418,19 +430,27 @@ impl DialogueGraphSyncer {
 
     /// 导入：校验后合并进当前对话库与图谱（幂等：相同 id 覆盖）
     pub async fn import_bundle(&self, bundle: ExportBundle) -> Result<ImportReport> {
-        {
-            let db = self.db.lock().unwrap();
-            for s in &bundle.sessions {
-                db.execute(
-                    "INSERT OR REPLACE INTO dialogue_sessions (id, title, created_at, updated_at) VALUES (?1, ?2, ?3, ?4)",
-                    params![s.id, s.title, s.created_at, s.updated_at],
+        for s in &bundle.sessions {
+            self.db.exec(
+                "INSERT OR REPLACE INTO dialogue_sessions (id, title, created_at, updated_at) VALUES (?1, ?2, ?3, ?4)",
+                &[
+                    SqlValue::Text(s.id.clone()),
+                    SqlValue::Text(s.title.clone()),
+                    SqlValue::Text(s.created_at.clone()),
+                    SqlValue::Text(s.updated_at.clone()),
+                ],
+            )?;
+            for m in &s.messages {
+                self.db.exec(
+                    "INSERT OR REPLACE INTO dialogue_messages (id, session_id, role, content, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+                    &[
+                        SqlValue::Text(m.id.clone()),
+                        SqlValue::Text(s.id.clone()),
+                        SqlValue::Text(m.role.clone()),
+                        SqlValue::Text(m.content.clone()),
+                        SqlValue::Text(m.created_at.clone()),
+                    ],
                 )?;
-                for m in &s.messages {
-                    db.execute(
-                        "INSERT OR REPLACE INTO dialogue_messages (id, session_id, role, content, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
-                        params![m.id, s.id, m.role, m.content, m.created_at],
-                    )?;
-                }
             }
         }
 
@@ -465,21 +485,22 @@ impl DialogueGraphSyncer {
 
     /// 列出会话
     pub async fn list_sessions(&self) -> Result<Vec<SessionSummary>> {
-        let db = self.db.lock().unwrap();
-        let mut stmt = db.prepare(
+        let rows = self.db.query(
             "SELECT id, title, created_at, updated_at FROM dialogue_sessions ORDER BY updated_at DESC",
+            &[],
         )?;
-        let rows = stmt.query_map([], |row| {
-            Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, String>(2)?,
-                row.get::<_, String>(3)?,
-            ))
-        })?;
         let mut out = Vec::new();
         for r in rows {
-            let (id, title, ca, ua) = r?;
+            let get_text = |k: &str| -> Option<String> {
+                match r.get(k) {
+                    Some(SqlValue::Text(v)) => Some(v.clone()),
+                    _ => None,
+                }
+            };
+            let id = get_text("id").unwrap_or_default();
+            let title = get_text("title").unwrap_or_default();
+            let ca = get_text("created_at").unwrap_or_default();
+            let ua = get_text("updated_at").unwrap_or_default();
             out.push(SessionSummary {
                 id,
                 title,

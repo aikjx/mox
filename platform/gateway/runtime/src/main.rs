@@ -72,6 +72,9 @@ mod automation;
 /// OUS 前端治理台 API：Dashboard / Audit / Config / WebSocket
 mod handlers;
 mod routes;
+/// 统一 AI 查询：路由语义（静态→少参数→长路径优先）+ Node sidecar 客户端
+mod ai_router;
+mod sidecar;
 /// 子服务聚合（Phase 1 收敛）：xuanji-expert / xuanji-system / primiflow / primiflow-fusion
 /// 以库方式挂载，由 runtime 唯一对外暴露
 mod subservers;
@@ -534,6 +537,21 @@ async fn main() -> anyhow::Result<()> {
         // ========== AI Agent 引擎任务 API ==========
         // AI Agent 引擎任务执行端点，共享 AppState（含 ai_agent）。
         .nest("/api/agent", crate::routes::agent::agent_routes().with_state(state.ai_agent.clone()))
+        // ========== 统一 AI 查询：/ai/engine/* 四端点（T6）==========
+        // 四端点：POST process / POST analyze / GET capabilities / GET metrics。
+        // 统一语义网关：本地等价直调 sidecar → backend-node；AI 混合编排；返回 data 段 shape 与本地同。
+        .nest("/ai/engine", {
+            use crate::handlers::ai_engine::AiEngineState;
+            use crate::sidecar::node_sidecar::NodeSidecarClient;
+            let ai_state = AiEngineState::default()
+                .with_agent(state.ai_agent.clone())
+                .with_sidecar(NodeSidecarClient::new(
+                    std::env::var("BACKEND_NODE_INTERNAL_BASE")
+                        .unwrap_or_else(|_| "http://127.0.0.1:3010".to_string()),
+                ));
+            let r: Router = crate::routes::ai_engine::ai_engine_routes(std::sync::Arc::new(ai_state));
+            r.with_state(())
+        })
         // ========== MCP 兼容层（Model Context Protocol）==========
         // 把内置算子与 AI 插件统一暴露为标准 MCP tools，兼容任意开源 MCP 客户端
         .route("/api/mcp", post(handle_mcp_rpc))

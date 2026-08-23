@@ -16,6 +16,6 @@
 //! 治理台路由已适配 xuanji-expert 当前 API（pipeline::GovernanceReport / govern::GateResult），
 //! 随 `governance` feature（默认启用）一同编译并挂载，不再需要 feature 门控。
 pub mod agent;
-pub mod market;
-
+pub mod ai_engine;
 pub mod governance;
+pub mod market;

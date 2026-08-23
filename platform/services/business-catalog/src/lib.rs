@@ -1,4 +1,4 @@
-﻿//! 业务全景目录：把"系统所有业务"建模成流程图 + 六维关系网，
+//! 业务全景目录：把"系统所有业务"建模成流程图 + 六维关系网，
 //! 并用璇玑（xuanji-expert）在运行中不断优化架构。
 //!
 //! 核心思想（与 Hermes / 璇玑架构一致）：
@@ -9,11 +9,52 @@
 //! - **使用中不断优化**：`record_hit`/`decay` 做动态权重学习；`impact_of` 做改一节点全链路
 //!   同步；`route`/`shortest_path` 做跨业务复用最短路径（命中历史 Skill → 跳过完整 ReAct）。
 //!
-//! 本 crate 不重新发明并行化/冲突/验证算法，全部复用已验证的 flow-ai + xuanji-expert 引擎。
+//! 【DIP 改造】本 crate 生产代码路径不再直接 `use xuanji_expert::pipeline`
+//! （或 context/ir/... 等内部模块）。对外统一依赖：
+//! - `xuanji_expert::expert_traits::{ExpertConsultant, ExpertRegistry, AllianceOrchestrator, ...}` 抽象 trait
+//! - `xuanji_expert::types::{ConsultQuery, ConsultReport, ExpertMeta, ...}` 投影数据类型
+//! - 需要「查询专家清单 / 注册专家」处统一用 `Arc<dyn ExpertRegistry>`。
+//!
+//! 从而实现依赖方向反转：`business-catalog → trait ← xuanji concrete`。
 
-use xuanji_expert::context::{GovernContext, Principal, Tenant};
-use xuanji_expert::ir::auto_dimension;
-use xuanji_expert::pipeline::xuanji_optimize;
+/// 璇玑系统 Crate 注册常量（图谱自同步契约：Rust 端显式声明 crate 身份）。
+pub const CRATE_ID: &str = "business-catalog";
+
+/// 璇玑系统 Crate 结构化元数据。
+#[derive(Debug, Clone, Copy)]
+pub struct CrateMeta {
+    pub uuid: &'static str,
+    pub ais_layers: &'static [&'static str],
+    pub owner_project: &'static str,
+    pub capabilities: &'static [&'static str],
+    pub data_tables_read: &'static [&'static str],
+    pub data_tables_write: &'static [&'static str],
+}
+
+pub const CRATE_META: CrateMeta = CrateMeta {
+    uuid: "18e4d0f9-52be-41c2-6d8e-9fa0b1c2d3e4",
+    ais_layers: &["L3-Service", "L7-Tool"],
+    owner_project: "proj-auto-dev",
+    capabilities: &[
+        "业务全景建模 (流程 + 六维关系网)",
+        "动态权重学习 (record_hit / decay)",
+        "跨业务复用最短路径路由",
+        "改一节点全链路 impact 同步",
+        "空间光速螺旋分析算子",
+    ],
+    data_tables_read: &["business_catalog.json"],
+    data_tables_write: &[],
+};
+
+// ============================================================================
+// DIP 依赖：仅引入 trait 与投影类型，不引入 xuanji_expert 内部 concrete struct。
+// ============================================================================
+
+use std::collections::HashMap;
+use std::sync::Arc;
+use xuanji_expert::expert_traits::{ExpertConsultant, ExpertRegistry};
+use xuanji_expert::types::{ConsultQuery, ConsultReport, ExpertMeta};
+
 use flow_ai::model::{
     Access, ExpertRule, FlowEdge, FlowGraph, FlowNode, NodeKind, Severity, ToolKind,
 };
@@ -21,6 +62,29 @@ use flow_ai::topology::{Entity, EntityKind, Relation, RelationKind, TopologyGrap
 
 /// 空间光速螺旋模型分析算子（Frenet 螺旋运动学 + 量纲/数值诊断）
 pub mod spiral;
+
+/// 把业务配置（domain / regulated）编码成 ConsultQuery.ctx，供 ExpertServiceImpl 解析。
+///
+/// ctx 键与 `xuanji_expert::services::ExpertServiceImpl::consult_sync` 约定一致。
+fn build_query(biz: &Business) -> ConsultQuery {
+    let raw = (biz.build)();
+    let mut ctx: HashMap<String, String> = HashMap::new();
+    ctx.insert("flow_json".into(), serde_json::to_string(&raw).unwrap_or_default());
+    ctx.insert("tenant".into(), biz.domain.into());
+    ctx.insert("namespace".into(), "ns".into());
+    ctx.insert("principal".into(), "architect".into());
+    ctx.insert("roles".into(), "admin".into());
+    ctx.insert("pool_browser".into(), "1".into());
+    ctx.insert("regulated".into(), if biz.regulated { "true".into() } else { "false".into() });
+    ctx.insert("max_parallel".into(), "8".into());
+    ctx.insert("max_cost_budget".into(), "100".into());
+    ctx.insert("sla_ms".into(), "50000".into());
+    ConsultQuery { id: biz.id.into(), query: biz.name.into(), ctx }
+}
+
+// ---------------------------------------------------------------------------
+// 构造辅助
+// ---------------------------------------------------------------------------
 
 /// Guard 节点（校验/脱敏/审计，无外部工具）
 fn guard(id: &str, name: &str, ms: u64) -> FlowNode {
@@ -55,7 +119,14 @@ fn rule(id: &str, desc: &str, prefixes: &[&str]) -> ExpertRule {
     }
 }
 
+// ---------------------------------------------------------------------------
+// 业务实体
+// ---------------------------------------------------------------------------
+
 /// 一条业务 = (id, 名称, 域, 受监管?, 流程图构造器)
+///
+/// DIP：优化入口 `optimize` / `optimize_with` 不再直接依赖 `xuanji_expert::pipeline::xuanji_optimize`，
+/// 而是走 `Arc<dyn ExpertConsultant>` trait；默认实现通过 `default_consultant()` 工厂注入。
 pub struct Business {
     pub id: &'static str,
     pub name: &'static str,
@@ -65,24 +136,54 @@ pub struct Business {
 }
 
 impl Business {
-    /// 七维着色后交给璇玑优化
-    pub fn optimize(&self) -> xuanji_expert::pipeline::GovernanceReport {
-        let raw = (self.build)();
-        // 七维着色：把 tags 中的 dim:* 映射到业务/算法/权限/资源/安全/数据/可观测
-        let _df = auto_dimension(&raw);
-        let tenant = Tenant::new(self.domain, "ns")
-            .regulated(self.regulated)
-            .with_pool("browser", 1);
-        let principal = Principal::new("architect").with_roles(vec!["admin".to_string()]);
-        let mut ctx = GovernContext::new(tenant, principal);
-        // 真实租户配额：政务/金融等强合规场景允许更高算力预算与 SLA（产品按租户配置）
-        ctx.quota = xuanji_expert::context::ResourceQuota {
-            max_parallel: 8,
-            max_cost_budget: 100.0,
-            sla_ms: 50_000,
-        };
-        xuanji_optimize(&raw, &ctx)
+    /// 七维着色后交给璇玑优化（DIP 版：通过 ExpertConsultant trait，不出现 concrete struct）。
+    ///
+    /// 返回 `ConsultReport`（归一化投影报告：steps / score / vetoed），
+    /// 替代此前直接暴露 `xuanji_expert::pipeline::GovernanceReport` 这一内部 concrete 类型。
+    pub fn optimize(&self) -> ConsultReport {
+        self.optimize_with(xuanji_expert::expert_traits::default_consultant())
     }
+    /// 指定 consultant（DIP 证据：测试可替换 Mock 实现，无需真实璇玑引擎）。
+    pub fn optimize_with(&self, consultant: Arc<dyn ExpertConsultant>) -> ConsultReport {
+        let q = build_query(self);
+        consultant
+            .consult_blocking(&q)
+            .unwrap_or_else(|e| ConsultReport {
+                report_id: q.id.clone(),
+                steps: vec![format!("[business-catalog] optimize 失败: {}", e)],
+                score: 0.0,
+                vetoed: true,
+                reason: Some(format!("error: {}", e)),
+            })
+    }
+}
+
+/// 基于 Arc<dyn ExpertRegistry>（DIP）为每条业务注册其对应领域专家元信息，
+/// 证明业务目录"注册专家 / 查询专家清单"的生产路径也走 trait 抽象。
+pub async fn register_business_experts(registry: Arc<dyn ExpertRegistry>) -> xuanji_expert::types::Result<()> {
+    for b in all_businesses() {
+        // 政务 → 权限+安全专家；财务 → 数据+资源；等等：对应 capabilities 匹配注册表
+        let (exp_id, exp_name, caps): (&str, &str, &[&str]) = match b.id {
+            "gov-pii" => ("biz-gov-pii", "政务数据归集·领域专家", &["security", "pii", "permission", "authz", "data"]),
+            "court"   => ("biz-court",   "法院文书·领域专家",   &["security", "permission", "dual-review", "留痕", "data"]),
+            "finance" => ("biz-finance", "财务对账·领域专家",   &["data", "resource", "审计", "对账", "compliance"]),
+            "bot"     => ("biz-bot",     "智能客服·领域专家",   &["data", "knowledge", "意图", "路由", "observability"]),
+            "etl"     => ("biz-etl",     "ETL·领域专家",        &["data", "etl", "mapping", "compliance"]),
+            "mcp"     => ("biz-mcp",     "MCP编排·领域专家",    &["resource", "mcp", "plugin", "permission", "鉴权"]),
+            "spiral"  => ("biz-spiral",  "空间螺旋·领域专家",   &["algorithm", "量纲", "科学计算", "compliance"]),
+            _         => ("biz-default", "通用业务专家",        &["business"]),
+        };
+        let meta = ExpertMeta {
+            id: exp_id.into(),
+            name: exp_name.into(),
+            domain: b.domain.into(),
+            capabilities: caps.iter().map(|s| s.to_string()).collect(),
+            description: format!("业务目录自动注册 · 业务={}/{}", b.id, b.name),
+            dimension: Some("Business".into()),
+        };
+        registry.register(&meta).await?;
+    }
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------
@@ -322,29 +423,24 @@ fn mcp_orchestration() -> FlowGraph {
 fn spiral_analysis() -> FlowGraph {
     let mut g = FlowGraph::new("spiral", "空间光速螺旋模型分析");
     g.add_node(start("s"));
-    // 1. 输入参数 / 校验
     g.add_node(
         FlowNode::task("input", "参数校验", ToolKind::Compute, 80)
             .with_tag("dim:algo")
             .with_access(Access::read("var:spiral_params")),
     );
-    // 2. Frenet 螺旋运动学（数学内核，干净）
     g.add_node(
         FlowNode::task("kinematics", "螺旋运动学计算", ToolKind::Compute, 200)
             .with_tag("dim:algo"),
     );
-    // 3. 量纲诊断（修正原报告错误）
     g.add_node(
         FlowNode::task("dimcheck", "量纲自洽诊断", ToolKind::Compute, 150)
             .with_tag("dim:algo")
             .with_tag("compliance"),
     );
-    // 4. 数值巧合标注
     g.add_node(
         FlowNode::task("numcheck", "数值巧合标注", ToolKind::Compute, 120)
             .with_tag("dim:algo"),
     );
-    // 5. 生成报告
     g.add_node(
         FlowNode::task("report", "生成诊断报告", ToolKind::Compute, 100)
             .with_tag("dim:obs")
@@ -378,39 +474,29 @@ pub fn all_businesses() -> Vec<Business> {
 /// 跨业务共享的六维关系网：注入 Skill / Rule / Memory / Model 实体与关系
 pub fn build_topology() -> TopologyGraph {
     let mut topo = TopologyGraph::new();
-    // —— 模型实体（算力分级路由）——
     topo.add_entity(Entity::new("model:hermes3", EntityKind::Model, "Hermes3 重模型").with_cost(800).with_keywords(["流程图", "代码", "重推理"]));
     topo.add_entity(Entity::new("model:light", EntityKind::Model, "轻量模型").with_cost(120).with_keywords(["分类", "意图", "摘要"]));
-    // —— 工具实体（流程节点经 ingest_flow 自动 Binds）——
     for t in ["database", "browser", "file", "http", "shell", "llm", "compute", "guard"] {
         topo.add_entity(Entity::new(format!("tool:{}", t), EntityKind::Tool, t.to_string()).with_keywords([t]));
     }
-    // —— Skill 实体（可复用模板，跨业务命中即跳过 ReAct）——
     topo.add_entity(Entity::new("skill:desensitize", EntityKind::Skill, "脱敏模板").with_keywords(["脱敏", "pii", "政务"]).with_cost(50));
     topo.add_entity(Entity::new("skill:intent-route", EntityKind::Skill, "意图路由模板").with_keywords(["意图", "分类", "路由", "客服"]).with_cost(120));
     topo.add_entity(Entity::new("skill:etl-map", EntityKind::Skill, "ETL字段映射模板").with_keywords(["etl", "映射", "抽取"]).with_cost(250));
     topo.add_entity(Entity::new("skill:db-pull", EntityKind::Skill, "数据库拉取模板").with_keywords(["数据库", "拉取", "对账"]).with_cost(300));
-    // —— Memory 实体（语义检索块）——
     topo.add_entity(Entity::new("mem:kb_vec", EntityKind::Memory, "知识库向量").with_keywords(["知识", "检索", "客服"]));
     topo.add_entity(Entity::new("mem:case_vec", EntityKind::Memory, "卷宗向量").with_keywords(["卷宗", "法院", "检索"]));
-    // —— Rule 实体（合规约束，ingest_flow 自动 Constrains 命中节点）——
     topo.add_entity(Entity::new("rule:pii", EntityKind::Rule, "PII 必须脱敏").with_keywords(["pii", "脱敏", "政务"]));
     topo.add_entity(Entity::new("rule:dual-review", EntityKind::Rule, "文书双人复核").with_keywords(["复核", "法院", "留痕"]));
-    // —— FlowNode 实体（流程节点维度，与 Tool/Skill 形成六维关系网）——
     topo.add_entity(Entity::new("flownode:start", EntityKind::FlowNode, "开始节点").with_keywords(["流程", "节点", "start"]));
     topo.add_entity(Entity::new("flownode:end", EntityKind::FlowNode, "结束节点").with_keywords(["流程", "节点", "end"]));
-    // —— 关系：模型服务任务类型 ——
     topo.add_relation(Relation::new("model:hermes3", "flow:gov-pii:ic", RelationKind::Serves, 0.9));
     topo.add_relation(Relation::new("model:light", "flow:bot:ic", RelationKind::Serves, 0.95));
-    // —— 关系：Skill 实现(Implements)具体流程节点，构成最短路径终点 ——
     topo.add_relation(Relation::new("skill:desensitize", "flow:gov-pii:guard", RelationKind::Implements, 1.0));
     topo.add_relation(Relation::new("skill:intent-route", "flow:bot:ic", RelationKind::Implements, 1.0));
     topo.add_relation(Relation::new("skill:etl-map", "flow:etl:map", RelationKind::Implements, 1.0));
     topo.add_relation(Relation::new("skill:db-pull", "flow:finance:pull_a", RelationKind::Implements, 1.0));
-    // —— 关系：Skill 召回记忆 ——
     topo.add_relation(Relation::new("skill:intent-route", "mem:kb_vec", RelationKind::Recalls, 0.8));
     topo.add_relation(Relation::new("skill:etl-map", "mem:case_vec", RelationKind::Recalls, 0.6));
-    // —— 关系：规则约束流程分支 ——
     topo.add_relation(Relation::new("rule:pii", "flow:gov-pii:db", RelationKind::Constrains, 1.0));
     topo.add_relation(Relation::new("rule:dual-review", "flow:court:review", RelationKind::Constrains, 1.0));
     topo
@@ -439,5 +525,43 @@ mod tests {
         for k in ["Model", "Tool", "Skill", "Memory", "Rule", "FlowNode"] {
             assert!(kinds.iter().any(|x| x == k), "关系网应含 {} 维", k);
         }
+    }
+
+    // —— DIP 证据：业务 optimize() 可换 MockExpert 运行（不依赖 xuanji-expert concrete）——
+    #[test]
+    fn business_optimize_uses_mock_consultant_via_trait() {
+        use async_trait::async_trait;
+        struct MockAlwaysApproved;
+        #[async_trait]
+        impl xuanji_expert::expert_traits::ExpertConsultant for MockAlwaysApproved {
+            async fn consult(&self, _q: &ConsultQuery) -> xuanji_expert::types::Result<ConsultReport> {
+                unreachable!("sync 路径不进入 async consult")
+            }
+            fn consult_blocking(&self, q: &ConsultQuery) -> xuanji_expert::types::Result<ConsultReport> {
+                Ok(ConsultReport {
+                    report_id: q.id.clone(),
+                    steps: vec!["[Mock] 已批准（无璇玑引擎）".into()],
+                    score: 0.85,
+                    vetoed: false,
+                    reason: None,
+                })
+            }
+        }
+        let biz = &all_businesses()[0]; // gov-pii
+        let rep = biz.optimize_with(Arc::new(MockAlwaysApproved));
+        assert_eq!(rep.report_id, biz.id);
+        assert!((rep.score - 0.85).abs() < 1e-9);
+        assert!(!rep.vetoed);
+    }
+
+    #[tokio::test]
+    async fn register_business_experts_runs_via_registry_trait() {
+        // DIP 证据：生产路径 register_business_experts 只依赖 Arc<dyn ExpertRegistry>，
+        // 使用默认注册表工厂（default_registry），不出现任何 concrete struct 名字。
+        let reg = xuanji_expert::expert_traits::default_registry();
+        register_business_experts(reg.clone()).await.unwrap();
+        let all = reg.list(Some("gov")).await.unwrap();
+        assert!(!all.is_empty(), "应注册 gov 领域专家");
+        assert!(reg.find("biz-gov-pii").await.unwrap().is_some(), "应注册 gov-pii 的领域专家");
     }
 }

@@ -5,7 +5,7 @@
 //! 都以本模块的 `FlowGraph` 作为唯一输入 / 输出，保证「一处修改，全链路联动」。
 
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 /// 流程节点语义类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -377,9 +377,15 @@ impl FlowGraph {
 
     /// 邻接表（后继）
     pub fn successors(&self) -> Vec<Vec<usize>> {
-        let mut adj = vec![Vec::new(); self.nodes.len()];
+        let n = self.nodes.len();
+        let mut adj = vec![Vec::new(); n];
+        // 一次 O(n) 构建索引，避免每条边 2×O(n) 的 position 扫描
+        let mut idx: HashMap<&str, usize> = HashMap::with_capacity(n);
+        for (i, nd) in self.nodes.iter().enumerate() {
+            idx.insert(nd.id.as_str(), i);
+        }
         for e in &self.edges {
-            if let (Some(a), Some(b)) = (self.index_of(&e.from), self.index_of(&e.to)) {
+            if let (Some(&a), Some(&b)) = (idx.get(e.from.as_str()), idx.get(e.to.as_str())) {
                 adj[a].push(b);
             }
         }
@@ -388,9 +394,14 @@ impl FlowGraph {
 
     /// 邻接表（前驱）
     pub fn predecessors(&self) -> Vec<Vec<usize>> {
-        let mut adj = vec![Vec::new(); self.nodes.len()];
+        let n = self.nodes.len();
+        let mut adj = vec![Vec::new(); n];
+        let mut idx: HashMap<&str, usize> = HashMap::with_capacity(n);
+        for (i, nd) in self.nodes.iter().enumerate() {
+            idx.insert(nd.id.as_str(), i);
+        }
         for e in &self.edges {
-            if let (Some(a), Some(b)) = (self.index_of(&e.from), self.index_of(&e.to)) {
+            if let (Some(&a), Some(&b)) = (idx.get(e.from.as_str()), idx.get(e.to.as_str())) {
                 adj[b].push(a);
             }
         }

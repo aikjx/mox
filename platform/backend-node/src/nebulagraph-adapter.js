@@ -2,24 +2,103 @@
 
 const http = require('http');
 const url = require('url');
+const { EventEmitter } = require('events');
 const { getStorage } = require('./storage');
 const { uid } = require('./utils');
 const { config } = require('./config');
+const { createDriverFromEnv, MockRemoteGraphDriver } = require('./graph/remote-graph-driver');
+const { GraphFormulas, expandRawEdges } = require('./graph/graph-formulas');
 
 const NEBUGRAPH_HOST = process.env.NEBULAGRAPH_HOST || 'localhost';
 const NEBUGRAPH_PORT = parseInt(process.env.NEBULAGRAPH_PORT || '9669', 10);
 const NEBUGRAPH_GRAPH = process.env.NEBULAGRAPH_GRAPH || 'infotopograph';
 const USE_NEBULAGRAPH = process.env.USE_NEBULAGRAPH === 'true';
 
-class NebulaGraphAdapter {
+// 企业级 CDC 事件总线：内存事件 + 可选 Redis Stream 适配器（配置化）。
+class CdcEventBus extends EventEmitter {
   constructor() {
-    this.storage = getStorage();
-    this.remote = null;
-    this._initLocalGraph();
-    if (USE_NEBULAGRAPH) {
-      this._connectRemote();
+    super();
+    this.setMaxListeners(100);
+    this._seq = 0;
+    this._dlq = [];
+  }
+  emitEvent(topic, payload) {
+    const evt = { topic, seq: ++this._seq, payload, ts: Date.now() };
+    try { this.emit(topic, evt); }
+    catch (e) { this._dlq.push({ evt, err: e.message }); }
+    try { this.emit('*', evt); }
+    catch (e) { this._dlq.push({ evt, err: e.message }); }
+    return evt;
+  }
+  get dlq() { return this._dlq.slice(); }
+  clearDlq() { this._dlq.length = 0; }
+}
+
+/**
+ * LRU-ttl 缓存：O(1) get/set；用于图节点远程读端 L1。
+ */
+class LruCache {
+  constructor({ max = 10000, ttlMs = 300 * 1000 } = {}) {
+    this.max = max; this.ttl = ttlMs;
+    this.map = new Map();
+  }
+  get(key) {
+    const v = this.map.get(key);
+    if (!v) return undefined;
+    if (this.ttl > 0 && Date.now() - v.ts > this.ttl) { this.map.delete(key); return undefined; }
+    this.map.delete(key); this.map.set(key, v);
+    return v.value;
+  }
+  set(key, value) {
+    if (this.map.has(key)) this.map.delete(key);
+    this.map.set(key, { value, ts: Date.now() });
+    while (this.map.size > this.max) {
+      const firstKey = this.map.keys().next().value;
+      this.map.delete(firstKey);
     }
   }
+  del(key) { this.map.delete(key); }
+  clear() { this.map.clear(); }
+  get size() { return this.map.size; }
+}
+
+class NebulaGraphAdapter {
+  constructor({ driver, storage, cdcBus, l1Cache } = {}) {
+    this.storage = storage || getStorage();
+    this._initLocalGraph();
+
+    // 远程驱动：优先注入，否则按环境变量决定用 Gremlin/Mock
+    this.driver = driver || createDriverFromEnv();
+    this.driver.connect().catch(() => { /* 不可用仍可用 local */ });
+    this.remote = {
+      host: NEBUGRAPH_HOST,
+      port: NEBUGRAPH_PORT,
+      graph: NEBUGRAPH_GRAPH,
+      connected: (this.driver && !(this.driver instanceof MockRemoteGraphDriver)) || USE_NEBULAGRAPH
+    };
+
+    // CDC + L1
+    this.cdc = cdcBus || new CdcEventBus();
+    this.l1 = l1Cache || new LruCache({ max: 20000, ttlMs: 300 * 1000 });
+
+    // CDC 消费端：1) 失效 L1；2) 触发索引钩子（预留）
+    this.cdc.on('graph:node_updated', (evt) => this.l1.del(`node:${evt.payload.id}`));
+    this.cdc.on('graph:edge_updated', (evt) => {
+      this.l1.del(`neighbors:${evt.payload.source}`);
+      this.l1.del(`neighbors:${evt.payload.target}`);
+      this.l1.del('listNodes');
+    });
+    this.cdc.on('graph:bulk_complete', () => this.l1.clear());
+    this._indexHooks = [];
+    this.cdc.on('*', (evt) => {
+      for (const h of this._indexHooks) {
+        try { h(evt).catch(() => {}); } catch {}
+      }
+    });
+  }
+
+  /** 注册索引更新钩子（例如 pgvector embedding 更新） */
+  onIndexUpdated(fn) { if (typeof fn === 'function') this._indexHooks.push(fn); }
 
   _initLocalGraph() {
     let graph = this.storage.getEntityData('knowledge_graph', 'main');
@@ -145,16 +224,59 @@ class NebulaGraphAdapter {
     this._updateNodeDegrees(id);
     this._persist();
 
-    if (this.remote?.connected) {
-      const props = Object.entries(node.properties || {}).map(([k, v]) => `.property('${k}', '${v}')`).join('');
-      this._execRemote(`g.V().addV('${node.kind}')${props}.property('id', '${id}').property('name', '${node.name}')`);
+    if (this.driver && typeof this.driver.upsertNode === 'function') {
+      try {
+        // 对 Mock 同步；对真实 driver 异步不阻塞写
+        const r = this.driver.upsertNode({
+          id, kind: node.kind, project_domain: node.properties?.project_domain,
+          layer: node.layer, attributes: { ...node.properties, name: node.name, description: node.description, tags: node.tags, labels: node.labels }
+        });
+        if (r && typeof r.then === 'function') r.catch(() => {});
+      } catch {}
     }
+    this.cdc.emitEvent('graph:node_updated', { id, kind: node.kind, source: 'createNode' });
 
     return node;
   }
 
   getNode(id) {
-    return this.localGraph.nodes[id] || null;
+    // 读策略：远程优先 → L1 → 本地；为兼容同步 API，对 MockRemoteGraphDriver 用同步桥接；
+    // 对真实 GremlinHttpDriver 仍保留 Promise 执行但同步返回 L1/本地（异步结果会在后续刷新 L1，保证下一次拿到最新）。
+    const cacheKey = 'node:' + id;
+    const cached = this.l1.get(cacheKey);
+    if (cached !== undefined) return cached.node;
+
+    let remoteResult = null;
+    if (this.driver && typeof this.driver.getNode === 'function') {
+      if (this.driver instanceof MockRemoteGraphDriver) {
+        // Mock：同步桥接，保留 callCounts
+        try {
+          this.driver._tick('getNode');
+          remoteResult = this.driver._nodes.get(id) || null;
+        } catch { remoteResult = null; }
+      } else {
+        // 真实异步：发请求，后续 Promise 中更新 L1；当前同步调用返回本地数据
+        Promise.resolve(this.driver.getNode(id)).then(n => {
+          if (n) this.l1.set(cacheKey, { node: n, source: 'remote-async' });
+        }).catch(() => {});
+      }
+    }
+
+    if (remoteResult) {
+      this.l1.set(cacheKey, { node: remoteResult, source: 'remote' });
+      return remoteResult;
+    }
+
+    const local = this.localGraph.nodes[id] ? this._toPublicNode(this.localGraph.nodes[id]) : null;
+    if (local) this.l1.set(cacheKey, { node: local, source: 'local' });
+    return local;
+  }
+
+  _toPublicNode(localNode) {
+    // 把本地图结构（createNode 写入的 {id, kind, layer, name, description, properties, ...}）
+    // 规范化为同形状，保持兼容；对外 getNode 返回的即是此对象。
+    if (!localNode) return null;
+    return localNode;
   }
 
   updateNode(id, updates) {
@@ -164,6 +286,16 @@ class NebulaGraphAdapter {
     this.localGraph.nodes[id] = node;
     this._updateNodeDegrees(id);
     this._persist();
+    if (this.driver && typeof this.driver.upsertNode === 'function') {
+      try {
+        const r = this.driver.upsertNode({
+          id, kind: node.kind, project_domain: node.properties?.project_domain,
+          layer: node.layer, attributes: { ...node.properties, name: node.name, description: node.description }
+        });
+        if (r && typeof r.then === 'function') r.catch(() => {});
+      } catch {}
+    }
+    this.cdc.emitEvent('graph:node_updated', { id, kind: node.kind, source: 'updateNode' });
     return node;
   }
 
@@ -218,6 +350,14 @@ class NebulaGraphAdapter {
     this._updateNodeDegrees(fromId);
     this._updateNodeDegrees(toId);
     this._persist();
+
+    if (this.driver && typeof this.driver.upsertEdge === 'function') {
+      try {
+        const r = this.driver.upsertEdge({ source: fromId, target: toId, type: edge.kind, weight: edge.weight, attributes: properties });
+        if (r && typeof r.then === 'function') r.catch(() => {});
+      } catch {}
+    }
+    this.cdc.emitEvent('graph:edge_updated', { id, source: fromId, target: toId, kind: edge.kind });
 
     return edge;
   }
@@ -442,61 +582,14 @@ class NebulaGraphAdapter {
   }
 
   detectCommunities() {
-    const nodeIds = Object.keys(this.localGraph.nodes);
-    const communities = {};
-    nodeIds.forEach(id => { communities[id] = { id, neighbors: new Set() }; });
-
-    Object.values(this.localGraph.edges).forEach(e => {
-      if (communities[e.from]) communities[e.from].neighbors.add(e.to);
-      if (communities[e.to]) communities[e.to].neighbors.add(e.from);
-    });
-
-    const labels = {};
-    nodeIds.forEach(id => { labels[id] = id; });
-
-    for (let iter = 0; iter < 20; iter++) {
-      let changed = false;
-      const order = nodeIds.sort(() => Math.random() - 0.5);
-
-      order.forEach(id => {
-        const labelCounts = {};
-        communities[id].neighbors.forEach(nb => {
-          const lbl = labels[nb];
-          labelCounts[lbl] = (labelCounts[lbl] || 0) + 1;
-        });
-
-        let maxLabel = labels[id];
-        let maxCount = 0;
-        Object.entries(labelCounts).forEach(([lbl, count]) => {
-          if (count > maxCount || (count === maxCount && lbl < maxLabel)) {
-            maxLabel = lbl;
-            maxCount = count;
-          }
-        });
-
-        if (maxLabel !== labels[id]) {
-          labels[id] = maxLabel;
-          changed = true;
-        }
-      });
-
-      if (!changed) break;
-    }
-
+    // 项目记忆硬性：CNM 模块度贪心凝聚；shape 与原返回保持兼容：
+    //   { communities: {[id]: members[]}, nodeCommunity: {id: index}, count }
+    const nodeArr = Object.values(this.localGraph.nodes);
+    const edgeArr = Object.values(this.localGraph.edges).map(e => ({ source: e.from, target: e.to, weight: e.weight || 1 }));
+    const cnm = GraphFormulas.communityDetectionCNM(nodeArr, edgeArr);
     const communityMap = {};
-    Object.entries(labels).forEach(([nodeId, label]) => {
-      if (!communityMap[label]) communityMap[label] = [];
-      communityMap[label].push(nodeId);
-    });
-
-    const nodeCommunity = {};
-    let commIndex = 0;
-    Object.values(communityMap).forEach(members => {
-      members.forEach(m => { nodeCommunity[m] = commIndex; });
-      commIndex++;
-    });
-
-    return { communities: communityMap, nodeCommunity, count: Object.keys(communityMap).length };
+    (cnm.communities || []).forEach((members, i) => { communityMap[i] = members; });
+    return { communities: communityMap, nodeCommunity: cnm.nodeCommunity || {}, count: (cnm.communities || []).length, modularity: cnm.modularity, algorithm: cnm.algorithm };
   }
 
   // ==================== 统计 ====================
@@ -581,4 +674,13 @@ function getNebulaGraphAdapter() {
   return _instance;
 }
 
-module.exports = { NebulaGraphAdapter, getNebulaGraphAdapter };
+// 测试友好：重置单例
+function resetNebulaGraphAdapter() { _instance = null; return true; }
+
+module.exports = {
+  NebulaGraphAdapter,
+  getNebulaGraphAdapter,
+  resetNebulaGraphAdapter,
+  CdcEventBus,
+  LruCache
+};

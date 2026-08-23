@@ -134,6 +134,11 @@ function betweennessCentrality(nodes, edges) {
 }
 
 function labelPropagation(nodes, edges, maxIter) {
+  // 项目记忆硬性：LPA 公开 API 必须抛 DeprecationError。
+  // 内部仍保留实现（通过 require('./graph-algos')._internalLabelPropagation 访问），仅供基线对照测试。
+  throw new DeprecationError('lib/graph-algos.labelPropagation() 公共出口已禁用。社区检测请使用 GraphFormulas.communityDetectionCNM()（CNM 模块度贪心凝聚）。');
+}
+function _internalLabelPropagation(nodes, edges, maxIter) {
   maxIter = maxIter || 30;
   const adj = {};
   nodes.forEach((n) => { adj[n.id] = []; });
@@ -176,8 +181,14 @@ function labelPropagation(nodes, edges, maxIter) {
   return communities;
 }
 
-function activateSpread(nodes, edges, seedId, decay) {
-  decay = decay || 0.7;
+class DeprecationError extends Error {
+  constructor(msg) { super(msg); this.name = 'DeprecationError'; }
+}
+
+function activateSpread(nodes, edges, seedId, decay, maxDepth) {
+  // 项目记忆硬性：method=spread 默认 decay=0.85，maxDepth=30（T5/TR-5.2 参数锁死）
+  if (decay === undefined) decay = 0.85;
+  if (maxDepth === undefined) maxDepth = 30;
   const adj = {};
   nodes.forEach((n) => { adj[n.id] = []; });
   edges.forEach((e) => {
@@ -193,7 +204,7 @@ function activateSpread(nodes, edges, seedId, decay) {
     if (visited[cur.id] && visited[cur.id] >= cur.e) continue;
     visited[cur.id] = cur.e;
     if (cur.e > energy[cur.id]) energy[cur.id] = cur.e;
-    if (cur.depth < 6 && cur.e > 0.01) {
+    if (cur.depth < maxDepth && cur.e > 0.0001) {
       (adj[cur.id] || []).forEach((nb) => {
         q.push({ id: nb, e: cur.e * decay, depth: cur.depth + 1 });
       });
@@ -202,4 +213,4 @@ function activateSpread(nodes, edges, seedId, decay) {
   return energy;
 }
 
-module.exports = { graphAdjacency, bfsPath, pagerank, degreeCentrality, betweennessCentrality, labelPropagation, activateSpread };
+module.exports = { graphAdjacency, bfsPath, pagerank, degreeCentrality, betweennessCentrality, labelPropagation, _internalLabelPropagation, DeprecationError, activateSpread };

@@ -31,25 +31,44 @@ check('图谱边数 ≥ 170（关联关系显式建模）', a.stats.edgeCount >=
 check('七类节点齐全（domain/module/engine/algorithm/data/doc/flow_step）',
   ['domain', 'module', 'engine', 'algorithm', 'data', 'doc', 'flow_step'].every(k => a.stats.byKind[k] > 0),
   JSON.stringify(a.stats.byKind));
-check('业务域 30 个（29 基线含 studio/projects/mcp + atlas-auto 自管理容器域）', a.stats.byKind.domain === 30, String(a.stats.byKind.domain));
-check('模块 4 个（可插拔）', a.stats.byKind.module === 4);
-check('引擎 21 个（复用引擎宇宙真相源 17 + 平台级运行时节点：engine-universe/engine-kernel/project-atlas/gateway-runtime）',
-  a.stats.byKind.engine === 21, String(a.stats.byKind.engine));
-check('算法 20 个（全部自研单源：含实体抽取/归一化流水线/代码抽取）', a.stats.byKind.algorithm === 20, String(a.stats.byKind.algorithm));
+// 基线 Node 域总数 = baseline DOMAINS 里非 Rust auto 域（DOMAIN_HELPER.len，动态值，替代硬编码 29）
+const NODE_BASELINE = atlas.DOMAINS.filter(d => !(d.auto === true && d.kind === 'rust-crate')).length;
+check(`业务域 ${NODE_BASELINE + 15 + 1} 个（NODE_BASELINE=${NODE_BASELINE} 基线 Node 域 + 15 Rust crate 基线域 + atlas-auto 自管理容器域）`,
+  a.stats.byKind.domain === (NODE_BASELINE + 15 + 1), String(a.stats.byKind.domain));
+check('模块 8 个（4 可插拔 JS 模块 + 4 Rust 桥接模块）', a.stats.byKind.module === 8, String(a.stats.byKind.module));
+check('引擎 32 个（复用引擎宇宙真相源 28 = 原 17 + 11 Rust + 平台级：engine-universe/engine-kernel/project-atlas/gateway-runtime）',
+  a.stats.byKind.engine === 32, String(a.stats.byKind.engine));
+check('算法 29 个（原 20 + 模块化度补齐 + 8 Rust 跨语言：7 图算法 + 1 守恒律校验）', a.stats.byKind.algorithm === 29, String(a.stats.byKind.algorithm));
 check('数据资产 44 个（数据库全覆盖 + 自管理登记层 + 归一化三维度）', a.stats.byKind.data === 44, String(a.stats.byKind.data));
 check('文档 ≥ 36 个（核心文档全域覆盖）', a.stats.byKind.doc >= 36, String(a.stats.byKind.doc));
-check('项目实体 8 个（"一切皆是项目"基线）', a.stats.byKind.project === 8, String(a.stats.byKind.project));
+check('项目实体 9 个（"一切皆是项目"基线 8 + 新增 proj-xuanji-platform 平台运行时）', a.stats.byKind.project === 9, String(a.stats.byKind.project));
 check('全部自研（零框架依赖声明）', a.stats.selfDeveloped === true && a.stats.frameworkDeps.length === 0);
 
 // ---------- ② 机器图谱关联本地代码 ----------
 console.log('\n[2] 机器图谱关联本地代码');
 const ROOT = path.join(__dirname, '..');
-const domainWithCode = atlas.DOMAINS.every(d => fs.existsSync(path.join(ROOT, d.codePath)));
-check('全部 29 业务域 codePath 真实存在', domainWithCode);
-const moduleWithCode = atlas.MODULES.every(m => fs.existsSync(path.join(ROOT, m.codePath)));
-check('全部 4 模块 codePath 真实存在', moduleWithCode);
+const nodeBaselineDomains = atlas.DOMAINS.filter(d => !(d.auto === true && d.kind === 'rust-crate'));
+const allViewDomains = atlas.getAtlasDomains ? atlas.getAtlasDomains() : atlas.DOMAINS;
+const domainWithCode = nodeBaselineDomains.every(d => fs.existsSync(path.join(ROOT, d.codePath))) &&
+  atlas.DOMAINS.filter(d => d.kind === 'rust-crate').every(d => {
+    const candidates = [path.join(ROOT, d.codePath), path.resolve(ROOT, '..', '..', d.codePath)];
+    return candidates.some(c => fs.existsSync(c));
+  });
+check('全部 Node 基线业务域 + 15 Rust crate domain codePath 真实存在', domainWithCode);
+const moduleWithCode = atlas.MODULES.every(m => {
+  const candidates = [path.join(ROOT, m.codePath), path.resolve(ROOT, '..', '..', m.codePath)];
+  return candidates.some(c => fs.existsSync(c));
+});
+check(`全部 ${atlas.MODULES.length} 模块（4 JS + 4 Rust）codePath 真实存在`, moduleWithCode, `${atlas.MODULES.length} modules`);
 const algoSrc = atlas.ALGORITHMS.filter(x => x.codePath.startsWith('src/'));
 check(`src 内算法 ${algoSrc.length} 个代码路径存在`, algoSrc.every(x => fs.existsSync(path.join(ROOT, x.codePath))));
+const algoRust = atlas.ALGORITHMS.filter(x => x.id.startsWith('algo-rust-'));
+check(`Rust 算法 ${algoRust.length} 个代码路径存在（含跨语言 & 行号锚点）`,
+  algoRust.every(x => {
+    const raw = x.codePath.split('#')[0];
+    const candidates = [path.join(ROOT, raw), path.resolve(ROOT, '..', '..', raw)];
+    return candidates.some(c => fs.existsSync(c));
+  }), `${algoRust.length} Rust algos`);
 check('跨语言算法（melody2score Python 子项目）路径存在',
   fs.existsSync(path.join(ROOT, '..', '..', 'melody2score', 'core', 'pipeline.py')));
 const docExist = atlas.DOCS.every(d => fs.existsSync(path.join(ROOT, '..', '..', d.file)));
@@ -68,12 +87,17 @@ const w8 = v.checks.find(c => c.name.includes('W8'));
 check('W8 图谱连通无孤岛（单一连通分量）', w8?.ok === true, w8?.detail);
 check('W7 全部算法单源自研', v.checks.find(c => c.name.includes('W7'))?.ok === true);
 
-// 破窗检测能力证明：伪造未登记域，验证会抓住
+// 破窗检测能力证明：基线 business-registry.js DOMAINS 中 Node 业务域（非 Rust 跨语言域）必须与 routes 完全一致
+// Rust 域显式带 auto=true（豁免 W1 路由比对），atlas-auto 容器来自运行时 auto 层，不入 routes。
 const routesDomains = require('../src/routes').DOMAINS.map(d => d[0]);
-const atlasDomains = atlas.DOMAINS.map(d => d.id);
-check('破窗检测：路由域与图谱注册表完全一致（无遗漏无幽灵）',
-  routesDomains.length === atlasDomains.length && routesDomains.every(d => atlasDomains.includes(d)),
-  `routes: ${routesDomains.length}, atlas: ${atlasDomains.length}`);
+const nonRustBaseline = atlas.DOMAINS
+  .filter(d => !(typeof d.auto === 'boolean' && d.auto === true && d.kind === 'rust-crate'))
+  .map(d => d.id)
+  .sort();
+const routesSorted = [...routesDomains].sort();
+check('破窗检测：基线 Node 业务域（不含 Rust/auto 容器）与 routes DOMAINS 完全一致（无遗漏无幽灵）',
+  routesSorted.length === nonRustBaseline.length && routesSorted.every((d, i) => d === nonRustBaseline[i]),
+  `routes(${routesSorted.length}) vs baselineNode(${nonRustBaseline.length})  diffOnlyInRoutes=[${routesSorted.filter(x => !nonRustBaseline.includes(x)).join(',')}] diffOnlyInBaseline=[${nonRustBaseline.filter(x => !routesSorted.includes(x)).join(',')}]`);
 
 // ---------- ④ 单域全景与影响面 ----------
 console.log('\n[4] 单域全景与影响面分析');

@@ -1,24 +1,45 @@
 //! # 高维状态向量
 //!
 //! 实现公理2：系统状态高维向量
-//! 基于希尔伯特空间的状态表示，支持守恒律检查
+//! 基于希尔伯特空间的状态表示，支持守恒律检查。
+//! （`kernel.rs` 提供了纯 Vec 版 `KernelStateVector` 及 `VectorOps` trait，
+//! 本模块为 nalgebra/DVector 版本，保留所有原公共 API，并为其实现 `VectorOps`
+//! 以便复用 kernel 的守恒律系统。）
 
-use nalgebra::DVector;
+use nalgebra::{DMatrix, DVector};
 use serde::{Deserialize, Serialize};
 
+use crate::kernel::VectorOps;
 use crate::OperatorError;
 
-/// 高维状态向量
+/// 高维状态向量（nalgebra-backed 版本，保留原公共 API）。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StateVector {
-    /// 向量数据
+    /// 向量数据（nalgebra::DVector，高效运算）
     pub data: DVector<f64>,
     /// 维度
     pub dimension: usize,
     /// 时间戳
     pub timestamp: u64,
-    /// 元数据
+    /// 元数据（任意 JSON）
     pub metadata: serde_json::Value,
+}
+
+// ===== DIP：为 StateVector 实现 kernel::VectorOps，使其可直接喂给 kernel 的守恒律系统 =====
+
+impl VectorOps for StateVector {
+    #[inline]
+    fn dimension(&self) -> usize {
+        self.data.len()
+    }
+    #[inline]
+    fn as_slice(&self) -> &[f64] {
+        self.data.as_slice()
+    }
+    #[inline]
+    fn norm_l2(&self) -> f64 {
+        self.data.norm()
+    }
 }
 
 impl StateVector {
@@ -35,7 +56,7 @@ impl StateVector {
         }
     }
 
-    /// 从向量创建
+    /// 从 Vec 创建
     pub fn from_vec(data: Vec<f64>) -> Self {
         let dimension = data.len();
         Self {
@@ -169,7 +190,7 @@ impl StateVector {
     }
 
     /// 线性变换：y = Mx
-    pub fn apply_matrix(&self, matrix: &nalgebra::DMatrix<f64>) -> Result<Self, OperatorError> {
+    pub fn apply_matrix(&self, matrix: &DMatrix<f64>) -> Result<Self, OperatorError> {
         if matrix.ncols() != self.dimension {
             return Err(OperatorError::ExecutionError(format!(
                 "矩阵列数 {} 与向量维度 {} 不匹配",
@@ -211,10 +232,34 @@ impl std::ops::IndexMut<usize> for StateVector {
     }
 }
 
+// ===== KernelStateVector <-> StateVector 互转（DIP 层转换） =====
+
+impl From<crate::kernel::KernelStateVector> for StateVector {
+    fn from(ksv: crate::kernel::KernelStateVector) -> Self {
+        let dimension = ksv.data.len();
+        StateVector {
+            data: DVector::from_vec(ksv.data),
+            dimension,
+            timestamp: ksv.timestamp,
+            metadata: serde_json::json!({}),
+        }
+    }
+}
+
+impl From<StateVector> for crate::kernel::KernelStateVector {
+    fn from(sv: StateVector) -> Self {
+        crate::kernel::KernelStateVector {
+            data: sv.data.iter().copied().collect(),
+            timestamp: sv.timestamp,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
+    use crate::kernel::{ConservationChecker, ConservationLaw, L2Conservation};
 
     #[test]
     fn test_state_vector_creation() {
@@ -258,5 +303,33 @@ mod tests {
         let v1 = StateVector::from_vec(vec![1.0, 2.0, 3.0]);
         let v2 = StateVector::from_vec(vec![1.0, 2.0, 3.0]);
         assert_relative_eq!(v1.residual(&v2).unwrap(), 0.0);
+    }
+
+    // 新增：验证 DIP — 通过 VectorOps trait 让 kernel 的守恒律直接工作在 StateVector
+    #[test]
+    fn test_statevector_impl_vectorops_for_kernel_conservation() {
+        let law = L2Conservation::unit_energy();
+        let sv = StateVector::from_vec(vec![1.0, 0.0, 0.0]);
+        // 直接把 &StateVector 传给 law.check，它接受 &dyn VectorOps
+        let residual = law.check(&sv);
+        assert!(residual.abs() < 1e-10, "residual={}", residual);
+
+        let mut checker = ConservationChecker::new(1e-10);
+        checker.add_law(L2Conservation::unit_energy());
+        let mut sv2 = StateVector::from_vec(vec![0.5, 0.5]);
+        sv2.normalize();
+        assert!(checker.check_all(&sv2).is_ok());
+    }
+
+    // KernelStateVector <-> StateVector 互转验证
+    #[test]
+    fn test_kernelstatevector_statevector_roundtrip() {
+        let sv = StateVector::from_vec(vec![1.5, 2.5, 3.5]);
+        let ksv: crate::kernel::KernelStateVector = sv.clone().into();
+        let sv2: StateVector = ksv.into();
+        assert_eq!(sv.dimension, sv2.dimension);
+        for i in 0..sv.dimension {
+            assert_relative_eq!(sv[i], sv2[i]);
+        }
     }
 }

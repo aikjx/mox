@@ -33,26 +33,31 @@ axum = { workspace = true, features = ["ws"] }
 tower-http = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-serde_yaml = "0.9"
+serde_yaml = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
-nalgebra = { version = "0.32", features = ["serde-serialize"] }
-sha2 = "0.10"
-hmac = "0.12"
-hex = "0.4"
+nalgebra = { workspace = true, features = ["serde-serialize"] }
+sha2 = { workspace = true }
+hmac = { workspace = true }
+hex = { workspace = true }
 base64 = { workspace = true }
-parking_lot = "0.12"
-async-trait = "0.1"
-tokio-tungstenite = "0.21"
-futures-util = "0.3"
+parking_lot = { workspace = true }
+async-trait = { workspace = true }
+tokio-tungstenite = { workspace = true }
+futures-util = { workspace = true }
+reqwest = { workspace = true }
 
 [dev-dependencies]
-tokio = { version = "1.0", features = ["full"] }
-reqwest = { version = "0.12", features = ["json"] }
+tokio = { workspace = true }
+reqwest = { workspace = true }
+# T2 跨 crate 常量一致性测试：runtime 的集成测试需要能 extern crate 全部 15 个 workspace 成员。
+hermes-flow-bridge = { path = "../../services/hermes-flow-bridge" }
+template-market = { path = "../../services/template-market" }
+kg-hub = { path = "../../services/kg-hub" }
 
 [features]
 # 治理台 API（/api/governance/*）：挂载 OUS 前端治理台的全部 REST + WebSocket 端点。

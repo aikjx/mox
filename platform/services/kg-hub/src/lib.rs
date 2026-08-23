@@ -37,6 +37,37 @@
 //! assert!(hub.trace("urn:kg:default:L5:cod:a.rs").grounded);
 //! ```
 
+/// 璇玑系统 Crate 注册常量（图谱自同步契约：Rust 端显式声明 crate 身份）。
+pub const CRATE_ID: &str = "kg-hub";
+
+/// 璇玑系统 Crate 结构化元数据。
+#[derive(Debug, Clone, Copy)]
+pub struct CrateMeta {
+    pub uuid: &'static str,
+    pub ais_layers: &'static [&'static str],
+    pub owner_project: &'static str,
+    pub capabilities: &'static [&'static str],
+    pub data_tables_read: &'static [&'static str],
+    pub data_tables_write: &'static [&'static str],
+}
+
+pub const CRATE_META: CrateMeta = CrateMeta {
+    uuid: "8f5b17a6-c925-48d9-d4f5-a6b7c8d9e0f1",
+    ais_layers: &["L3-Service", "L6-Kernel", "L1-Ingress"],
+    owner_project: "proj-knowledge",
+    capabilities: &[
+        "URN 规范统一身份 (code/static/runtime)",
+        "Ontology 本体归一 (静态/运行/六维 三图合一)",
+        "HybridIndex 混合检索 (关键词 + 向量 + 图谱关联)",
+        "8 段智能闭环 (感知→归一→关联→推理→决策→执行→校验→沉淀)",
+        "R07/A4/GR-STD 偏差/闸门/治理汇总",
+        "LoopEngine 自动化驱动循环",
+        "Reasoning 影响分析与代码溯源",
+    ],
+    data_tables_read: &["kb_documents.json", "code_graph_bindings.json", "graph_nodes.json", "graph_edges.json"],
+    data_tables_write: &["kb_documents.json", "graph_nodes.json"],
+};
+
 pub mod api;
 pub mod consolidator;
 pub mod govern;

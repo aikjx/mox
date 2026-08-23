@@ -1,18 +1,23 @@
-﻿//! bridge-demo —— 模拟「真实 Hermes 多轮会话」走完整 bridge 闭环并出报告。
+//! bridge-demo —— 模拟「真实 Hermes 多轮会话」走完整 bridge 闭环并出报告。
 //!
-//! 闭环：Hermes 工具调用 → bridge 录制 FlowGraph → 后台 xuanji_optimize
-//!       → 算法验证网关 → 否决时 ToolExecutionMiddleware 强制拦截。
+//! 闭环：Hermes 工具调用 → bridge 录制 FlowGraph → 后台 ExpertConsultant trait 调用（璇玑引擎）
+//!       → 算法验证否决位 → 否决时 ToolExecutionMiddleware 强制拦截。
+//!
+//! DIP 版：不再直接引用 xuanji_expert::pipeline / context / GovernanceReport 等 concrete 结构。
+//! 所有引擎调用统一通过 `ExpertConsultant` trait 抽象，展示 `ConsultReport`（投影类型）。
 //!
 //! 运行：cargo run -p hermes-flow-bridge --bin bridge-demo
 
-use hermes_flow_bridge::bridge::optimize_session;
+use hermes_flow_bridge::bridge::{optimize_session, optimize_session_with};
 use hermes_flow_bridge::hooks::{on_tool_execution, on_tool_request};
 use hermes_flow_bridge::router::FlowTemplate;
 use hermes_flow_bridge::state::BridgeState;
 use serde_json::json;
+use std::collections::HashMap;
+use xuanji_expert::types::{ConsultQuery, ConsultReport};
 
 fn main() {
-    println!("=== hermes-flow-bridge 闭环演示（零侵入插件注入）===\n");
+    println!("=== hermes-flow-bridge 闭环演示（零侵入插件注入 · DIP 版）===\n");
 
     let st = BridgeState::new();
 
@@ -39,24 +44,39 @@ fn main() {
         println!("    复用路由命中：{} —— {}", d.source.unwrap_or_default(), d.reason.unwrap_or_default());
     }
 
-    // ---- 阶段 2：后台把会话图推给璇玑引擎（xuanji_optimize）----
-    println!("\n[2] 后台 xuanji_optimize（七专家 + 治理 + 算法验证网关）：");
+    // ---- 阶段 2：后台把会话图推给璇玑引擎（通过 ExpertConsultant trait）----
+    println!("\n[2] 后台咨询（通过 ExpertConsultant trait，不出现 concrete struct）：");
     optimize_session(&g, &st.gate);
     println!("    算法否决 = {}", st.gate.is_vetoed());
 
-    // ---- 阶段 3：用录制出的图直接调 xuanji-expert，打印详细报告 ----
-    let ctx = xuanji_expert::context::GovernContext::new(
-        xuanji_expert::context::Tenant::new("hermes", "default"),
-        xuanji_expert::context::Principal::new("hermes-agent"),
-    );
-    let rep = xuanji_expert::pipeline::xuanji_optimize(&g, &ctx);
-    println!("\n[3] 治理闸门：{:?}  批准 = {}", rep.gate.status, rep.gate.approved);
-    println!("    优化收益：{}", rep.optimization.summary().replace('\n', " | "));
-    println!("    算法验证：{}", rep.algo.summary);
-    println!("    七专家评分：");
-    for (e, s) in &rep.expert_scores {
-        println!("      {:>12} : {:.2}", e, s);
+    // ---- 阶段 3：通过 trait 调 ExpertConsultant.consult_blocking 获取投影报告 ConsultReport ----
+    println!("\n[3] 投影 ConsultReport（DIP 归一化类型）：");
+    let consultant = st.consultant.clone();
+    let mut ctx = HashMap::new();
+    ctx.insert("flow_json".into(), serde_json::to_string(&g).unwrap_or_default());
+    ctx.insert("tenant".into(), "hermes".into());
+    ctx.insert("namespace".into(), "default".into());
+    ctx.insert("principal".into(), "hermes-agent".into());
+    ctx.insert("max_parallel".into(), "8".into());
+    ctx.insert("max_cost_budget".into(), "100".into());
+    ctx.insert("sla_ms".into(), "50000".into());
+    let q = ConsultQuery { id: "bridge-demo".into(), query: String::new(), ctx };
+    let rep: ConsultReport = consultant
+        .consult_blocking(&q)
+        .expect("ExpertConsultant.consult_blocking 不应失败");
+    println!("    report_id   = {}", rep.report_id);
+    println!("    综合健康分  = {:.2}", rep.score);
+    println!("    治理闸门状态 = {}", if rep.vetoed { "⛨ Blocked / 否决" } else { "✅ Approved" });
+    if let Some(r) = &rep.reason {
+        println!("    原因        : {}", r);
     }
+    println!("    执行步骤（归一化文本）：");
+    for (i, step) in rep.steps.iter().enumerate() {
+        println!("      [{}/{}] {}", i + 1, rep.steps.len(), step);
+    }
+    // 直接调 optimize_session_with（演示传入自定义 consultant 能力）
+    let rep2 = optimize_session_with(&g, &st.gate, consultant.clone());
+    assert_eq!(rep2.vetoed, st.gate.is_vetoed(), "veto 位必须与 gate 保持一致");
 
     // ---- 阶段 4：算法否决拦截接线（演示否决位如何阻断工具执行）----
     println!("\n[4] ToolExecutionMiddleware 拦截接线：");

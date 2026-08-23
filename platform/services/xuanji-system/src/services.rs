@@ -1,4 +1,4 @@
-﻿//! 业务服务层
+//! 业务服务层
 //!
 //! 每个服务封装一类领域能力与对应的写后事件发布。
 //! 鉴权（RBAC）由 `PermissionService` 统一提供，服务方法本身只负责领域逻辑，
@@ -801,5 +801,64 @@ impl CommService {
         } else {
             Err(AppError::NotFound(format!("通知 {id}")))
         }
+    }
+}
+
+// ---------- DIP Trait 实现：把 L3 具体服务绑定到 L2 依赖的抽象（AIS DIP）----------
+// 注意：`use async_trait` 为了在 trait 内使用 async fn；具体 impl 保留对 crate 内部
+// 结构的自由读写，而对外暴露抽象接口。编排层 orchestrator 只依赖 trait，
+// 不再 `use crate::services::*`。
+
+#[allow(unused_imports)]
+use crate::domain_traits::{
+    CommServiceTrait, MemberServiceTrait, PermissionServiceTrait, TaskServiceTrait,
+};
+
+#[async_trait::async_trait]
+impl MemberServiceTrait for MemberService {
+    async fn invite(&self, by: &str, input: &InviteInput) -> Result<Member> {
+        MemberService::invite(self, by, input).await
+    }
+    async fn list(&self, xuanji_id: &str) -> Result<Vec<Member>> {
+        Ok(MemberService::list(self, xuanji_id).await)
+    }
+}
+
+#[async_trait::async_trait]
+impl PermissionServiceTrait for PermissionService {
+    async fn authorize(&self, member_id: &str, perm: Permission, ctx: &ResourceCtx) -> Result<()> {
+        PermissionService::authorize(self, member_id, perm, ctx).await
+    }
+    async fn assign_role(&self, binding: RoleBinding) {
+        let _ = PermissionService::assign_role(self, binding).await;
+    }
+}
+
+#[async_trait::async_trait]
+impl TaskServiceTrait for TaskService {
+    async fn assign(&self, task_id: &str, actor: &str, assignees: Vec<String>) -> Result<Task> {
+        TaskService::assign(self, task_id, actor, assignees).await
+    }
+    async fn transition(&self, task_id: &str, by: &str, to: TaskStatus) -> Result<Task> {
+        TaskService::transition(self, task_id, by, to).await
+    }
+    async fn comment(&self, task_id: &str, by: &str, body: &str) -> Result<Message> {
+        TaskService::comment(self, task_id, by, body).await
+    }
+    async fn watch(&self, task_id: &str, actor: &str) -> Result<Task> {
+        TaskService::watch(self, task_id, actor).await
+    }
+}
+
+#[async_trait::async_trait]
+impl CommServiceTrait for CommService {
+    async fn send_message(
+        &self,
+        channel_id: &str,
+        actor: &str,
+        body: &str,
+        kind: MessageKind,
+    ) -> Result<Message> {
+        CommService::send_message(self, channel_id, actor, body, kind).await
     }
 }
