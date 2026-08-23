@@ -179,7 +179,8 @@ README_TXT = """============================================================
 - 选择音频文件（wav / mp3 / flac / ogg / m4a）实时转简谱 + 五线谱 + 音高轮廓；
 - 内置 144 个经典旋律样例，一键识别；
 - 麦克风实时录音识别（需目标电脑有麦克风及声卡驱动）；
-- 一键保存 Markdown 报告到 _internal\\app\\exports\\。
+- Markdown 报告与歌谱图片统一导出到发行版目录的 exports\\（exe 旁，
+  用户可见可备份；若该位置不可写自动回退到 文档\\Melody2Score\\exports）。
 
 【说明】
 - 首次启动稍慢（torch 在磁盘上解压载入），属正常现象；
@@ -194,13 +195,13 @@ README_TXT = """============================================================
 【关于"标准歌谱图片"】
 - 简谱图片由第三方引擎 LilyPond（+ jianpu-ly 预处理器）渲染，
   质量优于手绘。jianpu-ly 脚本已随包内置（_internal\\lib\\jianpu-ly.py）。
-- 若导出 PNG/PDF/SVG 时提示"缺少 LilyPond"，请在本机安装 LilyPond：
+- 渲染不依赖 matplotlib。若未安装 LilyPond，导出图片时会明确报错并
+  提示安装命令（无回退渲染）；文字简谱 / 五线谱 / MusicXML 等其它
+  功能不受影响。安装方法：
     * Windows：  winget install LilyPond.LilyPond
     * macOS：    brew install lilypond
     * Linux：    sudo apt install lilypond
   安装后请确保 lilypond 在系统 PATH 中，再重新导出即可。
-- 若目标电脑暂未安装 LilyPond，程序会自动回退到内置的简谱图片生成，
-  功能不受影响（仅排版样式不同）。
 """
 
 

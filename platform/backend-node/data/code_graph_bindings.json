@@ -1,1 +1,3467 @@
-[]
+[
+  {
+    "unitId": "system",
+    "kind": "domain",
+    "name": "系统与状态",
+    "codePath": "src/routes/system.js",
+    "files": 1,
+    "entityCount": 14,
+    "functions": 0,
+    "classes": 0,
+    "exports": 1,
+    "routes": 13,
+    "topEntities": [
+      {
+        "name": "GET /service-manager",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\system.js:10"
+      },
+      {
+        "name": "GET /",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\system.js:27"
+      },
+      {
+        "name": "GET /health",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\system.js:118"
+      },
+      {
+        "name": "GET /status",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\system.js:131"
+      },
+      {
+        "name": "GET /status/full",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\system.js:155"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.541Z"
+  },
+  {
+    "unitId": "studio",
+    "kind": "domain",
+    "name": "璇玑工作台",
+    "codePath": "src/routes/studio.js",
+    "files": 1,
+    "entityCount": 10,
+    "functions": 6,
+    "classes": 0,
+    "exports": 1,
+    "routes": 3,
+    "topEntities": [
+      {
+        "name": "sandboxFetch",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\studio.js:128"
+      },
+      {
+        "name": "rejectAfter",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\studio.js:144"
+      },
+      {
+        "name": "pushLog",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\studio.js:149"
+      },
+      {
+        "name": "wrapCode",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\studio.js:155"
+      },
+      {
+        "name": "wrapExpr",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\studio.js:160"
+      },
+      {
+        "name": "safeSerialize",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\studio.js:165"
+      },
+      {
+        "name": "GET /studio",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\studio.js:27"
+      },
+      {
+        "name": "POST /studio/run-code/precheck",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\studio.js:44"
+      },
+      {
+        "name": "POST /studio/run-code",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\studio.js:58"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.543Z"
+  },
+  {
+    "unitId": "graph",
+    "kind": "domain",
+    "name": "知识图谱",
+    "codePath": "src/routes/graph.js",
+    "files": 1,
+    "entityCount": 21,
+    "functions": 1,
+    "classes": 0,
+    "exports": 1,
+    "routes": 19,
+    "topEntities": [
+      {
+        "name": "toggleAutoSync",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\graph.js:12"
+      },
+      {
+        "name": "GET /graph",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\graph.js:28"
+      },
+      {
+        "name": "GET /graph/stats",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\graph.js:35"
+      },
+      {
+        "name": "GET /graph/centrality",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\graph.js:64"
+      },
+      {
+        "name": "GET /graph/communities",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\graph.js:72"
+      },
+      {
+        "name": "GET /graph/pagerank",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\graph.js:83"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.547Z"
+  },
+  {
+    "unitId": "chat",
+    "kind": "domain",
+    "name": "AI 对话",
+    "codePath": "src/routes/chat.js",
+    "files": 1,
+    "entityCount": 5,
+    "functions": 2,
+    "classes": 0,
+    "exports": 1,
+    "routes": 2,
+    "topEntities": [
+      {
+        "name": "buildAIReply",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\chat.js:10"
+      },
+      {
+        "name": "send",
+        "kind": "expression",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\chat.js:87"
+      },
+      {
+        "name": "POST /ai/chat/stream",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\chat.js:75"
+      },
+      {
+        "name": "POST /ai/chat",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\chat.js:133"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.549Z"
+  },
+  {
+    "unitId": "web-search",
+    "kind": "domain",
+    "name": "联网搜索",
+    "codePath": "src/routes/web-search.js",
+    "files": 1,
+    "entityCount": 5,
+    "functions": 0,
+    "classes": 0,
+    "exports": 1,
+    "routes": 4,
+    "topEntities": [
+      {
+        "name": "GET /web-search/config",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\web-search.js:11"
+      },
+      {
+        "name": "POST /web-search/config",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\web-search.js:19"
+      },
+      {
+        "name": "POST /web-search/test",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\web-search.js:30"
+      },
+      {
+        "name": "POST /web-search",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\web-search.js:36"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.550Z"
+  },
+  {
+    "unitId": "artifacts",
+    "kind": "domain",
+    "name": "本地制品",
+    "codePath": "src/routes/artifacts.js",
+    "files": 1,
+    "entityCount": 4,
+    "functions": 0,
+    "classes": 0,
+    "exports": 1,
+    "routes": 3,
+    "topEntities": [
+      {
+        "name": "GET /ai/artifact/config",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\artifacts.js:11"
+      },
+      {
+        "name": "GET /ai/artifact/list",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\artifacts.js:15"
+      },
+      {
+        "name": "POST /ai/artifact/create",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\artifacts.js:19"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.552Z"
+  },
+  {
+    "unitId": "optimizer",
+    "kind": "domain",
+    "name": "无穷维度优化",
+    "codePath": "src/routes/optimizer.js",
+    "files": 1,
+    "entityCount": 9,
+    "functions": 0,
+    "classes": 0,
+    "exports": 1,
+    "routes": 8,
+    "topEntities": [
+      {
+        "name": "GET /ai/infinite-optimize/benchmarks",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\optimizer.js:11"
+      },
+      {
+        "name": "POST /ai/infinite-optimize/start",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\optimizer.js:15"
+      },
+      {
+        "name": "POST /ai/infinite-optimize/stop",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\optimizer.js:26"
+      },
+      {
+        "name": "GET /ai/infinite-optimize/status",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\optimizer.js:30"
+      },
+      {
+        "name": "GET /ai/infinite-optimize/results",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\optimizer.js:34"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.554Z"
+  },
+  {
+    "unitId": "ai-platform",
+    "kind": "domain",
+    "name": "AI 平台资源",
+    "codePath": "src/routes/ai-platform.js",
+    "files": 1,
+    "entityCount": 25,
+    "functions": 0,
+    "classes": 0,
+    "exports": 1,
+    "routes": 24,
+    "topEntities": [
+      {
+        "name": "GET /ai/chat/history/:session",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\ai-platform.js:10"
+      },
+      {
+        "name": "POST /ai/analyze-algorithm",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\ai-platform.js:17"
+      },
+      {
+        "name": "GET /ai/algorithm-types",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\ai-platform.js:29"
+      },
+      {
+        "name": "POST /analyze/spiral",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\ai-platform.js:41"
+      },
+      {
+        "name": "GET /ai/resources",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\ai-platform.js:54"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.556Z"
+  },
+  {
+    "unitId": "browser-market",
+    "kind": "domain",
+    "name": "浏览器与市场",
+    "codePath": "src/routes/browser-market.js",
+    "files": 1,
+    "entityCount": 22,
+    "functions": 0,
+    "classes": 0,
+    "exports": 1,
+    "routes": 21,
+    "topEntities": [
+      {
+        "name": "GET /ai/llm/config",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\browser-market.js:10"
+      },
+      {
+        "name": "POST /ai/llm/config",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\browser-market.js:12"
+      },
+      {
+        "name": "POST /ai/llm/test",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\browser-market.js:20"
+      },
+      {
+        "name": "GET /ai/browser/templates",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\browser-market.js:30"
+      },
+      {
+        "name": "GET /ai/browser/sessions",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\browser-market.js:38"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.559Z"
+  },
+  {
+    "unitId": "integration",
+    "kind": "domain",
+    "name": "集成通道",
+    "codePath": "src/routes/integration.js",
+    "files": 1,
+    "entityCount": 33,
+    "functions": 2,
+    "classes": 0,
+    "exports": 1,
+    "routes": 30,
+    "topEntities": [
+      {
+        "name": "makeDims",
+        "kind": "expression",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\integration.js:146"
+      },
+      {
+        "name": "avg",
+        "kind": "expression",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\integration.js:149"
+      },
+      {
+        "name": "POST /caomei/compile",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\integration.js:10"
+      },
+      {
+        "name": "POST /caomei/refine",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\integration.js:28"
+      },
+      {
+        "name": "GET /caomei/templates",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\integration.js:38"
+      },
+      {
+        "name": "POST /mcp",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\integration.js:42"
+      },
+      {
+        "name": "GET /automation",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\integration.js:78"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.561Z"
+  },
+  {
+    "unitId": "expert-alliance",
+    "kind": "engine",
+    "name": "专家联盟域包",
+    "codePath": "src/expert-alliance/index.js",
+    "files": 1,
+    "entityCount": 13,
+    "functions": 1,
+    "classes": 0,
+    "exports": 12,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "getAlliance",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-alliance\\index.js:35"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.667Z"
+  },
+  {
+    "unitId": "mcp",
+    "kind": "domain",
+    "name": "MCP 协议服务",
+    "codePath": "src/routes/mcp.js",
+    "files": 1,
+    "entityCount": 5,
+    "functions": 2,
+    "classes": 0,
+    "exports": 1,
+    "routes": 2,
+    "topEntities": [
+      {
+        "name": "readRawBody",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\mcp.js:18"
+      },
+      {
+        "name": "rpcResponse",
+        "kind": "expression",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\mcp.js:28"
+      },
+      {
+        "name": "POST /mcp",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\mcp.js:34"
+      },
+      {
+        "name": "GET /mcp/tools",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\mcp.js:68"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.567Z"
+  },
+  {
+    "unitId": "expert-graph",
+    "kind": "engine",
+    "name": "专家能力图谱引擎",
+    "codePath": "src/expert-graph.js",
+    "files": 1,
+    "entityCount": 21,
+    "functions": 18,
+    "classes": 1,
+    "exports": 2,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "readJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-graph.js:8"
+      },
+      {
+        "name": "writeJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-graph.js:19"
+      },
+      {
+        "name": "getExpertGraph",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-graph.js:339"
+      },
+      {
+        "name": "constructor",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-graph.js:31"
+      },
+      {
+        "name": "_init",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-graph.js:38"
+      },
+      {
+        "name": "_capabilityGrams",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-graph.js:52"
+      },
+      {
+        "name": "_buildFromAlliance",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-graph.js:66"
+      },
+      {
+        "name": "_persist",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-graph.js:147"
+      },
+      {
+        "name": "ExpertGraph",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-graph.js:29"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.672Z"
+  },
+  {
+    "unitId": "orchestration",
+    "kind": "domain",
+    "name": "编排协作",
+    "codePath": "src/routes/orchestration.js",
+    "files": 1,
+    "entityCount": 9,
+    "functions": 0,
+    "classes": 0,
+    "exports": 1,
+    "routes": 8,
+    "topEntities": [
+      {
+        "name": "POST /experts/enterprise/consult",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\orchestration.js:11"
+      },
+      {
+        "name": "POST /experts/enterprise/analyze",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\orchestration.js:49"
+      },
+      {
+        "name": "POST /experts/orchestrate",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\orchestration.js:74"
+      },
+      {
+        "name": "POST /experts/plan/generate",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\orchestration.js:91"
+      },
+      {
+        "name": "POST /experts/plan/execute",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\orchestration.js:99"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.571Z"
+  },
+  {
+    "unitId": "ai-enhanced",
+    "kind": "domain",
+    "name": "16 模块 AI 增强",
+    "codePath": "src/routes/ai-enhanced.js",
+    "files": 1,
+    "entityCount": 17,
+    "functions": 0,
+    "classes": 0,
+    "exports": 1,
+    "routes": 16,
+    "topEntities": [
+      {
+        "name": "GET /workbench/ai-overview",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\ai-enhanced.js:12"
+      },
+      {
+        "name": "POST /operators/ai-recommend",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\ai-enhanced.js:33"
+      },
+      {
+        "name": "POST /graph/ai-insights",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\ai-enhanced.js:51"
+      },
+      {
+        "name": "POST /ai/expert-chat",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\ai-enhanced.js:65"
+      },
+      {
+        "name": "POST /resources/ai-analysis",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\ai-enhanced.js:87"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.573Z"
+  },
+  {
+    "unitId": "tasks",
+    "kind": "domain",
+    "name": "任务管理",
+    "codePath": "src/routes/tasks.js",
+    "files": 1,
+    "entityCount": 9,
+    "functions": 0,
+    "classes": 0,
+    "exports": 1,
+    "routes": 8,
+    "topEntities": [
+      {
+        "name": "GET /tasks",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\tasks.js:11"
+      },
+      {
+        "name": "GET /tasks/:id",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\tasks.js:16"
+      },
+      {
+        "name": "POST /tasks",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\tasks.js:23"
+      },
+      {
+        "name": "PUT /tasks/:id",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\tasks.js:50"
+      },
+      {
+        "name": "DELETE /tasks/:id",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\tasks.js:60"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.576Z"
+  },
+  {
+    "unitId": "kb",
+    "kind": "engine",
+    "name": "知识库域包",
+    "codePath": "src/kb/index.js",
+    "files": 1,
+    "entityCount": 15,
+    "functions": 2,
+    "classes": 0,
+    "exports": 13,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "getDocGraphPipeline",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\kb\\index.js:25"
+      },
+      {
+        "name": "getDomains",
+        "kind": "expression",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\kb\\index.js:27"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.751Z"
+  },
+  {
+    "unitId": "engine-universe",
+    "kind": "engine",
+    "name": "引擎宇宙图谱",
+    "codePath": "src/engine-universe/index.js",
+    "files": 1,
+    "entityCount": 17,
+    "functions": 7,
+    "classes": 0,
+    "exports": 10,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "getAdjacency",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\engine-universe\\index.js:49"
+      },
+      {
+        "name": "getUniverse",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\engine-universe\\index.js:56"
+      },
+      {
+        "name": "getEngineDetail",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\engine-universe\\index.js:84"
+      },
+      {
+        "name": "trace",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\engine-universe\\index.js:100"
+      },
+      {
+        "name": "requirementChain",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\engine-universe\\index.js:113"
+      },
+      {
+        "name": "verifyFullChain",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\engine-universe\\index.js:125"
+      },
+      {
+        "name": "check",
+        "kind": "expression",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\engine-universe\\index.js:128"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.762Z"
+  },
+  {
+    "unitId": "engine-kernel",
+    "kind": "engine",
+    "name": "引擎内核",
+    "codePath": "src/engine-kernel/index.js",
+    "files": 1,
+    "entityCount": 10,
+    "functions": 0,
+    "classes": 0,
+    "exports": 10,
+    "routes": 0,
+    "topEntities": [],
+    "scannedAt": "2026-08-23T00:56:00.766Z"
+  },
+  {
+    "unitId": "atlas",
+    "kind": "domain",
+    "name": "项目全息图谱",
+    "codePath": "src/routes/atlas.js",
+    "files": 1,
+    "entityCount": 35,
+    "functions": 0,
+    "classes": 0,
+    "exports": 1,
+    "routes": 34,
+    "topEntities": [
+      {
+        "name": "GET /atlas",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\atlas.js:14"
+      },
+      {
+        "name": "GET /atlas/verify",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\atlas.js:19"
+      },
+      {
+        "name": "GET /atlas/domains/:id",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\atlas.js:24"
+      },
+      {
+        "name": "GET /atlas/impact/:id",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\atlas.js:31"
+      },
+      {
+        "name": "GET /atlas/search",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\atlas.js:38"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.585Z"
+  },
+  {
+    "unitId": "auto-tasks",
+    "kind": "domain",
+    "name": "自动任务",
+    "codePath": "src/routes/auto-tasks.js",
+    "files": 1,
+    "entityCount": 2,
+    "functions": 0,
+    "classes": 0,
+    "exports": 1,
+    "routes": 1,
+    "topEntities": [
+      {
+        "name": "POST /tasks/auto",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\auto-tasks.js:11"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.587Z"
+  },
+  {
+    "unitId": "modules-admin",
+    "kind": "domain",
+    "name": "模块与存储管理",
+    "codePath": "src/routes/modules-admin.js",
+    "files": 1,
+    "entityCount": 5,
+    "functions": 0,
+    "classes": 0,
+    "exports": 1,
+    "routes": 4,
+    "topEntities": [
+      {
+        "name": "GET /modules",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\modules-admin.js:11"
+      },
+      {
+        "name": "GET /storage/providers",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\modules-admin.js:21"
+      },
+      {
+        "name": "POST /storage/switch",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\modules-admin.js:26"
+      },
+      {
+        "name": "GET /storage/status",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\modules-admin.js:39"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.589Z"
+  },
+  {
+    "unitId": "security",
+    "kind": "domain",
+    "name": "安全审计",
+    "codePath": "src/routes/security.js",
+    "files": 1,
+    "entityCount": 7,
+    "functions": 0,
+    "classes": 0,
+    "exports": 1,
+    "routes": 6,
+    "topEntities": [
+      {
+        "name": "GET /security/status",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\security.js:12"
+      },
+      {
+        "name": "GET /security/api-keys",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\security.js:16"
+      },
+      {
+        "name": "POST /security/api-keys",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\security.js:20"
+      },
+      {
+        "name": "DELETE /security/api-keys/:id",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\security.js:29"
+      },
+      {
+        "name": "GET /security/audit-log",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\security.js:39"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.591Z"
+  },
+  {
+    "unitId": "ai-engine",
+    "kind": "engine",
+    "name": "图谱与工作流引擎",
+    "codePath": "src/ai-engine.js",
+    "files": 1,
+    "entityCount": 37,
+    "functions": 34,
+    "classes": 1,
+    "exports": 2,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "getAIEngine",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-engine.js:1188"
+      },
+      {
+        "name": "constructor",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-engine.js:12"
+      },
+      {
+        "name": "executeOperator",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-engine.js:23"
+      },
+      {
+        "name": "_aiExecute",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-engine.js:67"
+      },
+      {
+        "name": "_deterministicExecute",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-engine.js:100"
+      },
+      {
+        "name": "_buildOperatorPrompt",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-engine.js:134"
+      },
+      {
+        "name": "executeWorkflow",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-engine.js:148"
+      },
+      {
+        "name": "analyzeGraph",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-engine.js:189"
+      },
+      {
+        "name": "AIEngine",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-engine.js:10"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.640Z"
+  },
+  {
+    "unitId": "ai-integrated",
+    "kind": "domain",
+    "name": "智能集成引擎",
+    "codePath": "src/routes/ai-integrated.js",
+    "files": 1,
+    "entityCount": 21,
+    "functions": 0,
+    "classes": 0,
+    "exports": 1,
+    "routes": 20,
+    "topEntities": [
+      {
+        "name": "POST /ai/integrated/process",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\ai-integrated.js:11"
+      },
+      {
+        "name": "POST /ai/integrated/full-analysis",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\ai-integrated.js:25"
+      },
+      {
+        "name": "GET /ai/integrated/stats",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\ai-integrated.js:38"
+      },
+      {
+        "name": "POST /ai/integrated/graph-intelligence",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\ai-integrated.js:48"
+      },
+      {
+        "name": "POST /ai/integrated/plan-create",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\ai-integrated.js:68"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.596Z"
+  },
+  {
+    "unitId": "ai-ultimate",
+    "kind": "domain",
+    "name": "终极 AI 引擎",
+    "codePath": "src/routes/ai-ultimate.js",
+    "files": 1,
+    "entityCount": 14,
+    "functions": 0,
+    "classes": 0,
+    "exports": 1,
+    "routes": 13,
+    "topEntities": [
+      {
+        "name": "POST /ai/ultimate/process",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\ai-ultimate.js:11"
+      },
+      {
+        "name": "POST /ai/ultimate/full-analysis",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\ai-ultimate.js:24"
+      },
+      {
+        "name": "GET /ai/ultimate/stats",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\ai-ultimate.js:37"
+      },
+      {
+        "name": "GET /ai/ultimate/health",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\ai-ultimate.js:47"
+      },
+      {
+        "name": "POST /ai/ultimate/reasoning",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\ai-ultimate.js:77"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.600Z"
+  },
+  {
+    "unitId": "auto-dev",
+    "kind": "domain",
+    "name": "自动开发引擎",
+    "codePath": "src/routes/auto-dev.js",
+    "files": 1,
+    "entityCount": 7,
+    "functions": 0,
+    "classes": 0,
+    "exports": 1,
+    "routes": 6,
+    "topEntities": [
+      {
+        "name": "POST /ai/engine/auto-dev",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\auto-dev.js:14"
+      },
+      {
+        "name": "GET /ai/engine/auto-dev/projects",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\auto-dev.js:32"
+      },
+      {
+        "name": "GET /ai/engine/auto-dev/preview/:project/:file",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\auto-dev.js:41"
+      },
+      {
+        "name": "POST /ai/engine/analyze",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\auto-dev.js:58"
+      },
+      {
+        "name": "GET /ai/engine/capabilities",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\auto-dev.js:74"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.602Z"
+  },
+  {
+    "unitId": "services",
+    "kind": "domain",
+    "name": "服务管理",
+    "codePath": "src/routes/services.js",
+    "files": 1,
+    "entityCount": 13,
+    "functions": 0,
+    "classes": 0,
+    "exports": 1,
+    "routes": 12,
+    "topEntities": [
+      {
+        "name": "GET /services",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\services.js:11"
+      },
+      {
+        "name": "GET /services/:id",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\services.js:21"
+      },
+      {
+        "name": "POST /services/:id/start",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\services.js:32"
+      },
+      {
+        "name": "POST /services/:id/stop",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\services.js:44"
+      },
+      {
+        "name": "POST /services/:id/restart",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\services.js:55"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.605Z"
+  },
+  {
+    "unitId": "projects",
+    "kind": "domain",
+    "name": "项目中心",
+    "codePath": "src/routes/projects.js",
+    "files": 1,
+    "entityCount": 15,
+    "functions": 2,
+    "classes": 0,
+    "exports": 1,
+    "routes": 12,
+    "topEntities": [
+      {
+        "name": "buildCatalog",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\projects.js:63"
+      },
+      {
+        "name": "pick",
+        "kind": "expression",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\projects.js:83"
+      },
+      {
+        "name": "GET /projects",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\projects.js:131"
+      },
+      {
+        "name": "GET /projects/types",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\projects.js:141"
+      },
+      {
+        "name": "GET /projects/catalog",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\projects.js:145"
+      },
+      {
+        "name": "GET /projects/stats",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\projects.js:163"
+      },
+      {
+        "name": "POST /projects",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\routes\\projects.js:184"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.608Z"
+  },
+  {
+    "unitId": "atlas-auto",
+    "kind": "domain",
+    "name": "图谱自管理容器",
+    "codePath": "src/project-atlas/infrastructure/atlas-scanner.js",
+    "files": 1,
+    "entityCount": 11,
+    "functions": 6,
+    "classes": 0,
+    "exports": 5,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "_walk",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\infrastructure\\atlas-scanner.js:23"
+      },
+      {
+        "name": "scanRouteDomains",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\infrastructure\\atlas-scanner.js:37"
+      },
+      {
+        "name": "scanDataFiles",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\infrastructure\\atlas-scanner.js:47"
+      },
+      {
+        "name": "scanDocs",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\infrastructure\\atlas-scanner.js:55"
+      },
+      {
+        "name": "scanAutoDevArtifacts",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\infrastructure\\atlas-scanner.js:60"
+      },
+      {
+        "name": "scanAll",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\infrastructure\\atlas-scanner.js:72"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.611Z"
+  },
+  {
+    "unitId": "mod-graph",
+    "kind": "module",
+    "name": "图谱模块",
+    "codePath": "src/modules/graph.js",
+    "files": 1,
+    "entityCount": 0,
+    "functions": 0,
+    "classes": 0,
+    "exports": 0,
+    "routes": 0,
+    "topEntities": [],
+    "scannedAt": "2026-08-23T00:56:00.613Z"
+  },
+  {
+    "unitId": "mod-task",
+    "kind": "module",
+    "name": "任务模块",
+    "codePath": "src/modules/task.js",
+    "files": 1,
+    "entityCount": 0,
+    "functions": 0,
+    "classes": 0,
+    "exports": 0,
+    "routes": 0,
+    "topEntities": [],
+    "scannedAt": "2026-08-23T00:56:00.615Z"
+  },
+  {
+    "unitId": "mod-storage",
+    "kind": "module",
+    "name": "存储模块",
+    "codePath": "src/modules/storage.js",
+    "files": 1,
+    "entityCount": 0,
+    "functions": 0,
+    "classes": 0,
+    "exports": 0,
+    "routes": 0,
+    "topEntities": [],
+    "scannedAt": "2026-08-23T00:56:00.618Z"
+  },
+  {
+    "unitId": "mod-melody2score",
+    "kind": "module",
+    "name": "旋律转谱模块",
+    "codePath": "src/modules/melody2score.js",
+    "files": 1,
+    "entityCount": 4,
+    "functions": 4,
+    "classes": 0,
+    "exports": 0,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "_currentBackend",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\modules\\melody2score.js:115"
+      },
+      {
+        "name": "_proxy",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\modules\\melody2score.js:124"
+      },
+      {
+        "name": "_proxyFormData",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\modules\\melody2score.js:154"
+      },
+      {
+        "name": "_proxyStream",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\modules\\melody2score.js:178"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.620Z"
+  },
+  {
+    "unitId": "llm-gateway",
+    "kind": "engine",
+    "name": "LLM 网关",
+    "codePath": "src/llm-gateway.js",
+    "files": 1,
+    "entityCount": 52,
+    "functions": 48,
+    "classes": 1,
+    "exports": 3,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "readJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\llm-gateway.js:72"
+      },
+      {
+        "name": "writeJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\llm-gateway.js:83"
+      },
+      {
+        "name": "encryptApiKey",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\llm-gateway.js:93"
+      },
+      {
+        "name": "decryptApiKey",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\llm-gateway.js:103"
+      },
+      {
+        "name": "maskApiKey",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\llm-gateway.js:119"
+      },
+      {
+        "name": "getGateway",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\llm-gateway.js:1213"
+      },
+      {
+        "name": "pad",
+        "kind": "expression",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\llm-gateway.js:253"
+      },
+      {
+        "name": "constructor",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\llm-gateway.js:143"
+      },
+      {
+        "name": "LLMGateway",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\llm-gateway.js:141"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.628Z"
+  },
+  {
+    "unitId": "ai-engine-core",
+    "kind": "engine",
+    "name": "AI 引擎统一编排核心",
+    "codePath": "src/ai-engine-core.js",
+    "files": 1,
+    "entityCount": 19,
+    "functions": 14,
+    "classes": 1,
+    "exports": 4,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "readMetrics",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-engine-core.js:64"
+      },
+      {
+        "name": "writeMetrics",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-engine-core.js:75"
+      },
+      {
+        "name": "getAIEngineCore",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-engine-core.js:324"
+      },
+      {
+        "name": "constructor",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-engine-core.js:86"
+      },
+      {
+        "name": "detectIntent",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-engine-core.js:102"
+      },
+      {
+        "name": "detectIntentByGraph",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-engine-core.js:130"
+      },
+      {
+        "name": "getCapabilities",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-engine-core.js:141"
+      },
+      {
+        "name": "process",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-engine-core.js:157"
+      },
+      {
+        "name": "AIEngineCore",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-engine-core.js:84"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.632Z"
+  },
+  {
+    "unitId": "ai-integration-engine",
+    "kind": "engine",
+    "name": "图智能计算引擎",
+    "codePath": "src/ai-integration-engine.js",
+    "files": 1,
+    "entityCount": 60,
+    "functions": 49,
+    "classes": 5,
+    "exports": 6,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "readJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-integration-engine.js:10"
+      },
+      {
+        "name": "writeJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-integration-engine.js:21"
+      },
+      {
+        "name": "getAIIntegrationEngine",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-integration-engine.js:1590"
+      },
+      {
+        "name": "constructor",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-integration-engine.js:33"
+      },
+      {
+        "name": "_init",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-integration-engine.js:40"
+      },
+      {
+        "name": "computePersonalizedPageRank",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-integration-engine.js:45"
+      },
+      {
+        "name": "buildSymbolGraph",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-integration-engine.js:163"
+      },
+      {
+        "name": "computeTokenBudgetPruning",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-integration-engine.js:219"
+      },
+      {
+        "name": "GraphIntelligenceEngine",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-integration-engine.js:31"
+      },
+      {
+        "name": "PlanActOrchestrator",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-integration-engine.js:372"
+      },
+      {
+        "name": "LearningLoopEngine",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-integration-engine.js:726"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.652Z"
+  },
+  {
+    "unitId": "ultimate-ai-engine",
+    "kind": "engine",
+    "name": "记忆与深度推理引擎",
+    "codePath": "src/ultimate-ai-engine.js",
+    "files": 1,
+    "entityCount": 59,
+    "functions": 48,
+    "classes": 5,
+    "exports": 6,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "readJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ultimate-ai-engine.js:11"
+      },
+      {
+        "name": "writeJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ultimate-ai-engine.js:22"
+      },
+      {
+        "name": "getUltimateEngine",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ultimate-ai-engine.js:1040"
+      },
+      {
+        "name": "constructor",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ultimate-ai-engine.js:33"
+      },
+      {
+        "name": "_init",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ultimate-ai-engine.js:41"
+      },
+      {
+        "name": "_save",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ultimate-ai-engine.js:51"
+      },
+      {
+        "name": "_generateEmbedding",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ultimate-ai-engine.js:64"
+      },
+      {
+        "name": "_generateLocalEmbedding",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ultimate-ai-engine.js:82"
+      },
+      {
+        "name": "VectorMemoryStore",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ultimate-ai-engine.js:31"
+      },
+      {
+        "name": "ReasoningEngine",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ultimate-ai-engine.js:178"
+      },
+      {
+        "name": "KnowledgeGraphReasoner",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ultimate-ai-engine.js:432"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.660Z"
+  },
+  {
+    "unitId": "expert-alliance-engine",
+    "kind": "engine",
+    "name": "专家联盟处理引擎",
+    "codePath": "src/expert-alliance-engine.js",
+    "files": 1,
+    "entityCount": 34,
+    "functions": 31,
+    "classes": 1,
+    "exports": 2,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "readJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-alliance-engine.js:28"
+      },
+      {
+        "name": "atomicWriteJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-alliance-engine.js:40"
+      },
+      {
+        "name": "appendTrace",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-alliance-engine.js:49"
+      },
+      {
+        "name": "getAllianceEngine",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-alliance-engine.js:880"
+      },
+      {
+        "name": "capScore",
+        "kind": "expression",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-alliance-engine.js:150"
+      },
+      {
+        "name": "loadScore",
+        "kind": "expression",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-alliance-engine.js:162"
+      },
+      {
+        "name": "mark",
+        "kind": "expression",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-alliance-engine.js:685"
+      },
+      {
+        "name": "constructor",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-alliance-engine.js:69"
+      },
+      {
+        "name": "ExpertAllianceEngine",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-alliance-engine.js:67"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.664Z"
+  },
+  {
+    "unitId": "expert-dispatcher",
+    "kind": "engine",
+    "name": "专家调度引擎",
+    "codePath": "src/expert-dispatcher.js",
+    "files": 1,
+    "entityCount": 36,
+    "functions": 29,
+    "classes": 3,
+    "exports": 4,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "readJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-dispatcher.js:8"
+      },
+      {
+        "name": "writeJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-dispatcher.js:19"
+      },
+      {
+        "name": "getDispatcher",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-dispatcher.js:471"
+      },
+      {
+        "name": "resetDispatcher",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-dispatcher.js:478"
+      },
+      {
+        "name": "constructor",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-dispatcher.js:40"
+      },
+      {
+        "name": "getState",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-dispatcher.js:47"
+      },
+      {
+        "name": "canExecute",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-dispatcher.js:57"
+      },
+      {
+        "name": "recordSuccess",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-dispatcher.js:68"
+      },
+      {
+        "name": "CircuitBreaker",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-dispatcher.js:38"
+      },
+      {
+        "name": "RateLimiter",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-dispatcher.js:101"
+      },
+      {
+        "name": "ExpertDispatcher",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-dispatcher.js:146"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.676Z"
+  },
+  {
+    "unitId": "orchestration-engine",
+    "kind": "engine",
+    "name": "V2 编排引擎",
+    "codePath": "src/orchestration-engine.js",
+    "files": 1,
+    "entityCount": 81,
+    "functions": 62,
+    "classes": 9,
+    "exports": 10,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "readJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\orchestration-engine.js:11"
+      },
+      {
+        "name": "writeJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\orchestration-engine.js:22"
+      },
+      {
+        "name": "getOrchestrationEngine",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\orchestration-engine.js:1035"
+      },
+      {
+        "name": "constructor",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\orchestration-engine.js:34"
+      },
+      {
+        "name": "_loadConfig",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\orchestration-engine.js:44"
+      },
+      {
+        "name": "_initPlugins",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\orchestration-engine.js:57"
+      },
+      {
+        "name": "_loadCustomPlugins",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\orchestration-engine.js:70"
+      },
+      {
+        "name": "registerPlugin",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\orchestration-engine.js:89"
+      },
+      {
+        "name": "OrchestrationEngine",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\orchestration-engine.js:32"
+      },
+      {
+        "name": "EventBus",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\orchestration-engine.js:530"
+      },
+      {
+        "name": "StateManager",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\orchestration-engine.js:606"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.684Z"
+  },
+  {
+    "unitId": "auto-dev-engine",
+    "kind": "engine",
+    "name": "自动开发引擎",
+    "codePath": "src/auto-dev-engine.js",
+    "files": 1,
+    "entityCount": 29,
+    "functions": 25,
+    "classes": 1,
+    "exports": 3,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "readJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\auto-dev-engine.js:33"
+      },
+      {
+        "name": "writeJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\auto-dev-engine.js:44"
+      },
+      {
+        "name": "esc",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\auto-dev-engine.js:56"
+      },
+      {
+        "name": "safeLink",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\auto-dev-engine.js:66"
+      },
+      {
+        "name": "slug",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\auto-dev-engine.js:74"
+      },
+      {
+        "name": "parseJSONLoose",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\auto-dev-engine.js:83"
+      },
+      {
+        "name": "getAutoDevEngine",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\auto-dev-engine.js:597"
+      },
+      {
+        "name": "hex",
+        "kind": "expression",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\auto-dev-engine.js:279"
+      },
+      {
+        "name": "AutoDevEngine",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\auto-dev-engine.js:97"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.690Z"
+  },
+  {
+    "unitId": "infinite-dimension-optimizer",
+    "kind": "engine",
+    "name": "无穷维度优化引擎",
+    "codePath": "src/infinite-dimension-optimizer.js",
+    "files": 1,
+    "entityCount": 34,
+    "functions": 29,
+    "classes": 1,
+    "exports": 4,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "buildBenchmarkTasks",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\infinite-dimension-optimizer.js:35"
+      },
+      {
+        "name": "readJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\infinite-dimension-optimizer.js:106"
+      },
+      {
+        "name": "writeJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\infinite-dimension-optimizer.js:117"
+      },
+      {
+        "name": "mean",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\infinite-dimension-optimizer.js:127"
+      },
+      {
+        "name": "std",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\infinite-dimension-optimizer.js:131"
+      },
+      {
+        "name": "gaussianRandom",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\infinite-dimension-optimizer.js:138"
+      },
+      {
+        "name": "clamp01",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\infinite-dimension-optimizer.js:144"
+      },
+      {
+        "name": "softmax",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\infinite-dimension-optimizer.js:148"
+      },
+      {
+        "name": "InfiniteDimensionOptimizer",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\infinite-dimension-optimizer.js:174"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.693Z"
+  },
+  {
+    "unitId": "web-search-service",
+    "kind": "engine",
+    "name": "联网搜索服务",
+    "codePath": "src/web-search-service.js",
+    "files": 1,
+    "entityCount": 29,
+    "functions": 25,
+    "classes": 1,
+    "exports": 3,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "readJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\web-search-service.js:53"
+      },
+      {
+        "name": "writeJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\web-search-service.js:64"
+      },
+      {
+        "name": "encryptApiKey",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\web-search-service.js:74"
+      },
+      {
+        "name": "decryptApiKey",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\web-search-service.js:85"
+      },
+      {
+        "name": "maskApiKey",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\web-search-service.js:102"
+      },
+      {
+        "name": "fetchWithTimeout",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\web-search-service.js:109"
+      },
+      {
+        "name": "decodeEntities",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\web-search-service.js:119"
+      },
+      {
+        "name": "stripTags",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\web-search-service.js:132"
+      },
+      {
+        "name": "WebSearchService",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\web-search-service.js:136"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.698Z"
+  },
+  {
+    "unitId": "session-store",
+    "kind": "engine",
+    "name": "会话记忆引擎",
+    "codePath": "src/session-store.js",
+    "files": 1,
+    "entityCount": 25,
+    "functions": 22,
+    "classes": 1,
+    "exports": 2,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "readJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\session-store.js:13"
+      },
+      {
+        "name": "writeJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\session-store.js:24"
+      },
+      {
+        "name": "cosineSimilarity",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\session-store.js:34"
+      },
+      {
+        "name": "simpleHashEmbedding",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\session-store.js:48"
+      },
+      {
+        "name": "getSessionStore",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\session-store.js:327"
+      },
+      {
+        "name": "constructor",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\session-store.js:65"
+      },
+      {
+        "name": "_init",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\session-store.js:72"
+      },
+      {
+        "name": "_persistSessions",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\session-store.js:88"
+      },
+      {
+        "name": "SessionStore",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\session-store.js:63"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.702Z"
+  },
+  {
+    "unitId": "ai-flow-graph",
+    "kind": "engine",
+    "name": "流程图谱引擎",
+    "codePath": "src/ai-flow-graph.js",
+    "files": 1,
+    "entityCount": 16,
+    "functions": 11,
+    "classes": 1,
+    "exports": 4,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "getAIFlowGraph",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:360"
+      },
+      {
+        "name": "density",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:26"
+      },
+      {
+        "name": "degreeCentrality",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:41"
+      },
+      {
+        "name": "betweennessCentrality",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:62"
+      },
+      {
+        "name": "closenessCentrality",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:127"
+      },
+      {
+        "name": "modularity",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:166"
+      },
+      {
+        "name": "constructor",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:206"
+      },
+      {
+        "name": "_build",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:214"
+      },
+      {
+        "name": "AIFlowGraph",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:200"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.706Z"
+  },
+  {
+    "unitId": "knowledge-graph",
+    "kind": "engine",
+    "name": "知识图谱引擎",
+    "codePath": "src/lib/graph-algos.js",
+    "files": 1,
+    "entityCount": 14,
+    "functions": 7,
+    "classes": 0,
+    "exports": 7,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "graphAdjacency",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\lib\\graph-algos.js:9"
+      },
+      {
+        "name": "bfsPath",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\lib\\graph-algos.js:21"
+      },
+      {
+        "name": "pagerank",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\lib\\graph-algos.js:40"
+      },
+      {
+        "name": "degreeCentrality",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\lib\\graph-algos.js:75"
+      },
+      {
+        "name": "betweennessCentrality",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\lib\\graph-algos.js:96"
+      },
+      {
+        "name": "labelPropagation",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\lib\\graph-algos.js:135"
+      },
+      {
+        "name": "activateSpread",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\lib\\graph-algos.js:178"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.757Z"
+  },
+  {
+    "unitId": "project-atlas",
+    "kind": "engine",
+    "name": "项目全息图谱引擎",
+    "codePath": "src/project-atlas/index.js",
+    "files": 1,
+    "entityCount": 45,
+    "functions": 16,
+    "classes": 0,
+    "exports": 29,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "loadAutoRegistry",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\index.js:72"
+      },
+      {
+        "name": "getViewDomains",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\index.js:91"
+      },
+      {
+        "name": "getViewDataAssets",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\index.js:92"
+      },
+      {
+        "name": "getViewDocs",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\index.js:93"
+      },
+      {
+        "name": "getViewFlows",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\index.js:95"
+      },
+      {
+        "name": "getViewProjects",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\index.js:97"
+      },
+      {
+        "name": "rebuildGraph",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\index.js:103"
+      },
+      {
+        "name": "getAtlas",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\index.js:118"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.771Z"
+  },
+  {
+    "unitId": "algo-pagerank",
+    "kind": "algorithm",
+    "name": "PageRank 质量传播",
+    "codePath": "src/ai-integration-engine.js",
+    "files": 1,
+    "entityCount": 60,
+    "functions": 49,
+    "classes": 5,
+    "exports": 6,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "readJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-integration-engine.js:10"
+      },
+      {
+        "name": "writeJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-integration-engine.js:21"
+      },
+      {
+        "name": "getAIIntegrationEngine",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-integration-engine.js:1590"
+      },
+      {
+        "name": "constructor",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-integration-engine.js:33"
+      },
+      {
+        "name": "_init",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-integration-engine.js:40"
+      },
+      {
+        "name": "computePersonalizedPageRank",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-integration-engine.js:45"
+      },
+      {
+        "name": "buildSymbolGraph",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-integration-engine.js:163"
+      },
+      {
+        "name": "computeTokenBudgetPruning",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-integration-engine.js:219"
+      },
+      {
+        "name": "GraphIntelligenceEngine",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-integration-engine.js:31"
+      },
+      {
+        "name": "PlanActOrchestrator",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-integration-engine.js:372"
+      },
+      {
+        "name": "LearningLoopEngine",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-integration-engine.js:726"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.778Z"
+  },
+  {
+    "unitId": "algo-cnm",
+    "kind": "algorithm",
+    "name": "CNM 模块度贪心社区检测",
+    "codePath": "src/ai-flow-graph.js",
+    "files": 1,
+    "entityCount": 16,
+    "functions": 11,
+    "classes": 1,
+    "exports": 4,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "getAIFlowGraph",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:360"
+      },
+      {
+        "name": "density",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:26"
+      },
+      {
+        "name": "degreeCentrality",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:41"
+      },
+      {
+        "name": "betweennessCentrality",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:62"
+      },
+      {
+        "name": "closenessCentrality",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:127"
+      },
+      {
+        "name": "modularity",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:166"
+      },
+      {
+        "name": "constructor",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:206"
+      },
+      {
+        "name": "_build",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:214"
+      },
+      {
+        "name": "AIFlowGraph",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:200"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.783Z"
+  },
+  {
+    "unitId": "algo-brandes",
+    "kind": "algorithm",
+    "name": "Brandes 介数中心性",
+    "codePath": "src/ai-flow-graph.js",
+    "files": 1,
+    "entityCount": 16,
+    "functions": 11,
+    "classes": 1,
+    "exports": 4,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "getAIFlowGraph",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:360"
+      },
+      {
+        "name": "density",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:26"
+      },
+      {
+        "name": "degreeCentrality",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:41"
+      },
+      {
+        "name": "betweennessCentrality",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:62"
+      },
+      {
+        "name": "closenessCentrality",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:127"
+      },
+      {
+        "name": "modularity",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:166"
+      },
+      {
+        "name": "constructor",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:206"
+      },
+      {
+        "name": "_build",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:214"
+      },
+      {
+        "name": "AIFlowGraph",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:200"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.787Z"
+  },
+  {
+    "unitId": "algo-harmonic",
+    "kind": "algorithm",
+    "name": "Harmonic 紧密中心性",
+    "codePath": "src/ai-flow-graph.js",
+    "files": 1,
+    "entityCount": 16,
+    "functions": 11,
+    "classes": 1,
+    "exports": 4,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "getAIFlowGraph",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:360"
+      },
+      {
+        "name": "density",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:26"
+      },
+      {
+        "name": "degreeCentrality",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:41"
+      },
+      {
+        "name": "betweennessCentrality",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:62"
+      },
+      {
+        "name": "closenessCentrality",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:127"
+      },
+      {
+        "name": "modularity",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:166"
+      },
+      {
+        "name": "constructor",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:206"
+      },
+      {
+        "name": "_build",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:214"
+      },
+      {
+        "name": "AIFlowGraph",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:200"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.791Z"
+  },
+  {
+    "unitId": "algo-degree",
+    "kind": "algorithm",
+    "name": "度中心性（RAW 边展开）",
+    "codePath": "src/ai-flow-graph.js",
+    "files": 1,
+    "entityCount": 16,
+    "functions": 11,
+    "classes": 1,
+    "exports": 4,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "getAIFlowGraph",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:360"
+      },
+      {
+        "name": "density",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:26"
+      },
+      {
+        "name": "degreeCentrality",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:41"
+      },
+      {
+        "name": "betweennessCentrality",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:62"
+      },
+      {
+        "name": "closenessCentrality",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:127"
+      },
+      {
+        "name": "modularity",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:166"
+      },
+      {
+        "name": "constructor",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:206"
+      },
+      {
+        "name": "_build",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:214"
+      },
+      {
+        "name": "AIFlowGraph",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:200"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.796Z"
+  },
+  {
+    "unitId": "algo-density",
+    "kind": "algorithm",
+    "name": "图密度",
+    "codePath": "src/ai-flow-graph.js",
+    "files": 1,
+    "entityCount": 16,
+    "functions": 11,
+    "classes": 1,
+    "exports": 4,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "getAIFlowGraph",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:360"
+      },
+      {
+        "name": "density",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:26"
+      },
+      {
+        "name": "degreeCentrality",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:41"
+      },
+      {
+        "name": "betweennessCentrality",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:62"
+      },
+      {
+        "name": "closenessCentrality",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:127"
+      },
+      {
+        "name": "modularity",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:166"
+      },
+      {
+        "name": "constructor",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:206"
+      },
+      {
+        "name": "_build",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:214"
+      },
+      {
+        "name": "AIFlowGraph",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:200"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.801Z"
+  },
+  {
+    "unitId": "algo-spread",
+    "kind": "algorithm",
+    "name": "激活扩散意图识别",
+    "codePath": "src/ai-flow-graph.js",
+    "files": 1,
+    "entityCount": 16,
+    "functions": 11,
+    "classes": 1,
+    "exports": 4,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "getAIFlowGraph",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:360"
+      },
+      {
+        "name": "density",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:26"
+      },
+      {
+        "name": "degreeCentrality",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:41"
+      },
+      {
+        "name": "betweennessCentrality",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:62"
+      },
+      {
+        "name": "closenessCentrality",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:127"
+      },
+      {
+        "name": "modularity",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:166"
+      },
+      {
+        "name": "constructor",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:206"
+      },
+      {
+        "name": "_build",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:214"
+      },
+      {
+        "name": "AIFlowGraph",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\ai-flow-graph.js:200"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.806Z"
+  },
+  {
+    "unitId": "algo-intent",
+    "kind": "algorithm",
+    "name": "意图多标签分类",
+    "codePath": "src/expert-alliance/domain/intent-classifier.js",
+    "files": 1,
+    "entityCount": 4,
+    "functions": 2,
+    "classes": 0,
+    "exports": 2,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "keywordMatches",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-alliance\\domain\\intent-classifier.js:22"
+      },
+      {
+        "name": "detectIntent",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-alliance\\domain\\intent-classifier.js:40"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.810Z"
+  },
+  {
+    "unitId": "algo-match",
+    "kind": "algorithm",
+    "name": "专家最优组队",
+    "codePath": "src/expert-alliance/domain/expert-matcher.js",
+    "files": 1,
+    "entityCount": 4,
+    "functions": 2,
+    "classes": 0,
+    "exports": 2,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "matchExperts",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-alliance\\domain\\expert-matcher.js:16"
+      },
+      {
+        "name": "scoreExperts",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-alliance\\domain\\expert-matcher.js:68"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.814Z"
+  },
+  {
+    "unitId": "algo-debate",
+    "kind": "algorithm",
+    "name": "辩论综合合成",
+    "codePath": "src/expert-alliance/domain/debate-synthesis.js",
+    "files": 1,
+    "entityCount": 10,
+    "functions": 5,
+    "classes": 0,
+    "exports": 5,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "keywordsOf",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-alliance\\domain\\debate-synthesis.js:16"
+      },
+      {
+        "name": "extractConsensus",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-alliance\\domain\\debate-synthesis.js:40"
+      },
+      {
+        "name": "extractDivergences",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-alliance\\domain\\debate-synthesis.js:62"
+      },
+      {
+        "name": "generateFinalRecommendation",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-alliance\\domain\\debate-synthesis.js:90"
+      },
+      {
+        "name": "synthesizeDebate",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\expert-alliance\\domain\\debate-synthesis.js:104"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.818Z"
+  },
+  {
+    "unitId": "algo-cem",
+    "kind": "algorithm",
+    "name": "CEM 交叉熵优化",
+    "codePath": "src/infinite-dimension-optimizer.js",
+    "files": 1,
+    "entityCount": 34,
+    "functions": 29,
+    "classes": 1,
+    "exports": 4,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "buildBenchmarkTasks",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\infinite-dimension-optimizer.js:35"
+      },
+      {
+        "name": "readJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\infinite-dimension-optimizer.js:106"
+      },
+      {
+        "name": "writeJSON",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\infinite-dimension-optimizer.js:117"
+      },
+      {
+        "name": "mean",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\infinite-dimension-optimizer.js:127"
+      },
+      {
+        "name": "std",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\infinite-dimension-optimizer.js:131"
+      },
+      {
+        "name": "gaussianRandom",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\infinite-dimension-optimizer.js:138"
+      },
+      {
+        "name": "clamp01",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\infinite-dimension-optimizer.js:144"
+      },
+      {
+        "name": "softmax",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\infinite-dimension-optimizer.js:148"
+      },
+      {
+        "name": "InfiniteDimensionOptimizer",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\infinite-dimension-optimizer.js:174"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.824Z"
+  },
+  {
+    "unitId": "algo-lcs",
+    "kind": "algorithm",
+    "name": "LCS 版本差异",
+    "codePath": "src/kb/domain/version-differ.js",
+    "files": 1,
+    "entityCount": 2,
+    "functions": 1,
+    "classes": 0,
+    "exports": 1,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "diffVersions",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\kb\\domain\\version-differ.js:7"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.827Z"
+  },
+  {
+    "unitId": "algo-docanalyze",
+    "kind": "algorithm",
+    "name": "文档智能分析",
+    "codePath": "src/kb/domain/document-analyzer.js",
+    "files": 1,
+    "entityCount": 8,
+    "functions": 4,
+    "classes": 0,
+    "exports": 4,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "dedupeEntities",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\kb\\domain\\document-analyzer.js:30"
+      },
+      {
+        "name": "extractEntitiesFromContent",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\kb\\domain\\document-analyzer.js:40"
+      },
+      {
+        "name": "suggestCategory",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\kb\\domain\\document-analyzer.js:54"
+      },
+      {
+        "name": "analyzeDocument",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\kb\\domain\\document-analyzer.js:65"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.832Z"
+  },
+  {
+    "unitId": "algo-bfs",
+    "kind": "algorithm",
+    "name": "BFS 最短路径",
+    "codePath": "src/lib/graph-algos.js",
+    "files": 1,
+    "entityCount": 14,
+    "functions": 7,
+    "classes": 0,
+    "exports": 7,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "graphAdjacency",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\lib\\graph-algos.js:9"
+      },
+      {
+        "name": "bfsPath",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\lib\\graph-algos.js:21"
+      },
+      {
+        "name": "pagerank",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\lib\\graph-algos.js:40"
+      },
+      {
+        "name": "degreeCentrality",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\lib\\graph-algos.js:75"
+      },
+      {
+        "name": "betweennessCentrality",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\lib\\graph-algos.js:96"
+      },
+      {
+        "name": "labelPropagation",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\lib\\graph-algos.js:135"
+      },
+      {
+        "name": "activateSpread",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\lib\\graph-algos.js:178"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.837Z"
+  },
+  {
+    "unitId": "algo-median",
+    "kind": "algorithm",
+    "name": "中值滤波音高平滑",
+    "codePath": "melody2score/core/pipeline.py",
+    "files": 1,
+    "entityCount": 20,
+    "functions": 18,
+    "classes": 2,
+    "exports": 0,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "__init__",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\melody2score\\core\\pipeline.py:36"
+      },
+      {
+        "name": "get",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\melody2score\\core\\pipeline.py:41"
+      },
+      {
+        "name": "put",
+        "kind": "method",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\melody2score\\core\\pipeline.py:48"
+      },
+      {
+        "name": "midi_name",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\melody2score\\core\\pipeline.py:60"
+      },
+      {
+        "name": "find_musescore",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\melody2score\\core\\pipeline.py:80"
+      },
+      {
+        "name": "render_with_musescore",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\melody2score\\core\\pipeline.py:104"
+      },
+      {
+        "name": "load_audio_bytes",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\melody2score\\core\\pipeline.py:143"
+      },
+      {
+        "name": "_load_source",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\melody2score\\core\\pipeline.py:154"
+      },
+      {
+        "name": "_LRUCache",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\melody2score\\core\\pipeline.py:32"
+      },
+      {
+        "name": "Melody2Score",
+        "kind": "class",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\melody2score\\core\\pipeline.py:266"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.843Z"
+  },
+  {
+    "unitId": "algo-slot-contract",
+    "kind": "algorithm",
+    "name": "槽位契约路由",
+    "codePath": "src/engine-kernel/domain/contract-registry.js",
+    "files": 1,
+    "entityCount": 3,
+    "functions": 0,
+    "classes": 0,
+    "exports": 3,
+    "routes": 0,
+    "topEntities": [],
+    "scannedAt": "2026-08-23T00:56:00.848Z"
+  },
+  {
+    "unitId": "algo-switch-rollback",
+    "kind": "algorithm",
+    "name": "切换探活回滚",
+    "codePath": "src/engine-kernel/application/switch-service.js",
+    "files": 1,
+    "entityCount": 10,
+    "functions": 5,
+    "classes": 0,
+    "exports": 5,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "getSlots",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\engine-kernel\\application\\switch-service.js:14"
+      },
+      {
+        "name": "getContract",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\engine-kernel\\application\\switch-service.js:37"
+      },
+      {
+        "name": "switchEngine",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\engine-kernel\\application\\switch-service.js:54"
+      },
+      {
+        "name": "getBindingsView",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\engine-kernel\\application\\switch-service.js:103"
+      },
+      {
+        "name": "validateEngine",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\engine-kernel\\application\\switch-service.js:114"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.852Z"
+  },
+  {
+    "unitId": "algo-entity-extract",
+    "kind": "algorithm",
+    "name": "全维实体抽取",
+    "codePath": "src/kb/domain/entity-extractor.js",
+    "files": 1,
+    "entityCount": 23,
+    "functions": 16,
+    "classes": 0,
+    "exports": 7,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "splitSections",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\kb\\domain\\entity-extractor.js:20"
+      },
+      {
+        "name": "slug",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\kb\\domain\\entity-extractor.js:41"
+      },
+      {
+        "name": "extractRequirementItems",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\kb\\domain\\entity-extractor.js:61"
+      },
+      {
+        "name": "inferPriority",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\kb\\domain\\entity-extractor.js:100"
+      },
+      {
+        "name": "extractBusinessRules",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\kb\\domain\\entity-extractor.js:115"
+      },
+      {
+        "name": "inferSeverity",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\kb\\domain\\entity-extractor.js:146"
+      },
+      {
+        "name": "extractArchitectureNodes",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\kb\\domain\\entity-extractor.js:167"
+      },
+      {
+        "name": "detectLayer",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\kb\\domain\\entity-extractor.js:207"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.858Z"
+  },
+  {
+    "unitId": "algo-normalize",
+    "kind": "algorithm",
+    "name": "需求归一化流水线",
+    "codePath": "src/project-atlas/domain/normalization-rules.js",
+    "files": 1,
+    "entityCount": 19,
+    "functions": 11,
+    "classes": 0,
+    "exports": 8,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "buildRequirementIR",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\normalization-rules.js:28"
+      },
+      {
+        "name": "normalizeCategory",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\normalization-rules.js:43"
+      },
+      {
+        "name": "decomposeRequirement",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\normalization-rules.js:61"
+      },
+      {
+        "name": "inferStatementPriority",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\normalization-rules.js:76"
+      },
+      {
+        "name": "matchStatementToDomains",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\normalization-rules.js:91"
+      },
+      {
+        "name": "mapStatementsToDomains",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\normalization-rules.js:114"
+      },
+      {
+        "name": "planModuleSplit",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\normalization-rules.js:128"
+      },
+      {
+        "name": "groupUnmatched",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\normalization-rules.js:163"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.864Z"
+  },
+  {
+    "unitId": "algo-code-extract",
+    "kind": "algorithm",
+    "name": "代码实体抽取",
+    "codePath": "src/project-atlas/infrastructure/code-entity-extractor.js",
+    "files": 1,
+    "entityCount": 13,
+    "functions": 9,
+    "classes": 0,
+    "exports": 3,
+    "routes": 1,
+    "topEntities": [
+      {
+        "name": "lineOf",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\infrastructure\\code-entity-extractor.js:23"
+      },
+      {
+        "name": "extractJsEntities",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\infrastructure\\code-entity-extractor.js:39"
+      },
+      {
+        "name": "extractPyEntities",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\infrastructure\\code-entity-extractor.js:103"
+      },
+      {
+        "name": "scanFile",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\infrastructure\\code-entity-extractor.js:126"
+      },
+      {
+        "name": "readSafe",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\infrastructure\\code-entity-extractor.js:142"
+      },
+      {
+        "name": "scanDirectory",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\infrastructure\\code-entity-extractor.js:153"
+      },
+      {
+        "name": "countEntities",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\infrastructure\\code-entity-extractor.js:171"
+      },
+      {
+        "name": "scanPath",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\infrastructure\\code-entity-extractor.js:180"
+      },
+      {
+        "name": "GET /path",
+        "kind": "route",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\infrastructure\\code-entity-extractor.js:75"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.869Z"
+  },
+  {
+    "unitId": "proj-xuanji-core",
+    "kind": "project",
+    "name": "璇玑核心平台",
+    "codePath": "src/project-atlas/domain/project-registry.js",
+    "files": 1,
+    "entityCount": 13,
+    "functions": 6,
+    "classes": 0,
+    "exports": 7,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "canTransition",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:83"
+      },
+      {
+        "name": "validateProject",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:93"
+      },
+      {
+        "name": "auditDomainOwnership",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:138"
+      },
+      {
+        "name": "projectHealth",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:157"
+      },
+      {
+        "name": "computeScore",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:180"
+      },
+      {
+        "name": "err",
+        "kind": "expression",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:95"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.875Z"
+  },
+  {
+    "unitId": "proj-knowledge",
+    "kind": "project",
+    "name": "知识图谱与知识库",
+    "codePath": "src/project-atlas/domain/project-registry.js",
+    "files": 1,
+    "entityCount": 13,
+    "functions": 6,
+    "classes": 0,
+    "exports": 7,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "canTransition",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:83"
+      },
+      {
+        "name": "validateProject",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:93"
+      },
+      {
+        "name": "auditDomainOwnership",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:138"
+      },
+      {
+        "name": "projectHealth",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:157"
+      },
+      {
+        "name": "computeScore",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:180"
+      },
+      {
+        "name": "err",
+        "kind": "expression",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:95"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.880Z"
+  },
+  {
+    "unitId": "proj-ai-dialogue",
+    "kind": "project",
+    "name": "AI 对话协作",
+    "codePath": "src/project-atlas/domain/project-registry.js",
+    "files": 1,
+    "entityCount": 13,
+    "functions": 6,
+    "classes": 0,
+    "exports": 7,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "canTransition",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:83"
+      },
+      {
+        "name": "validateProject",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:93"
+      },
+      {
+        "name": "auditDomainOwnership",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:138"
+      },
+      {
+        "name": "projectHealth",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:157"
+      },
+      {
+        "name": "computeScore",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:180"
+      },
+      {
+        "name": "err",
+        "kind": "expression",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:95"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.885Z"
+  },
+  {
+    "unitId": "proj-expert-alliance",
+    "kind": "project",
+    "name": "专家联盟",
+    "codePath": "src/project-atlas/domain/project-registry.js",
+    "files": 1,
+    "entityCount": 13,
+    "functions": 6,
+    "classes": 0,
+    "exports": 7,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "canTransition",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:83"
+      },
+      {
+        "name": "validateProject",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:93"
+      },
+      {
+        "name": "auditDomainOwnership",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:138"
+      },
+      {
+        "name": "projectHealth",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:157"
+      },
+      {
+        "name": "computeScore",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:180"
+      },
+      {
+        "name": "err",
+        "kind": "expression",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:95"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.891Z"
+  },
+  {
+    "unitId": "proj-ai-engine",
+    "kind": "project",
+    "name": "AI 引擎编排",
+    "codePath": "src/project-atlas/domain/project-registry.js",
+    "files": 1,
+    "entityCount": 13,
+    "functions": 6,
+    "classes": 0,
+    "exports": 7,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "canTransition",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:83"
+      },
+      {
+        "name": "validateProject",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:93"
+      },
+      {
+        "name": "auditDomainOwnership",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:138"
+      },
+      {
+        "name": "projectHealth",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:157"
+      },
+      {
+        "name": "computeScore",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:180"
+      },
+      {
+        "name": "err",
+        "kind": "expression",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:95"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.935Z"
+  },
+  {
+    "unitId": "proj-ai-platform",
+    "kind": "project",
+    "name": "AI 平台生态",
+    "codePath": "src/project-atlas/domain/project-registry.js",
+    "files": 1,
+    "entityCount": 13,
+    "functions": 6,
+    "classes": 0,
+    "exports": 7,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "canTransition",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:83"
+      },
+      {
+        "name": "validateProject",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:93"
+      },
+      {
+        "name": "auditDomainOwnership",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:138"
+      },
+      {
+        "name": "projectHealth",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:157"
+      },
+      {
+        "name": "computeScore",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:180"
+      },
+      {
+        "name": "err",
+        "kind": "expression",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:95"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.943Z"
+  },
+  {
+    "unitId": "proj-auto-dev",
+    "kind": "project",
+    "name": "自动开发引擎",
+    "codePath": "src/project-atlas/domain/project-registry.js",
+    "files": 1,
+    "entityCount": 13,
+    "functions": 6,
+    "classes": 0,
+    "exports": 7,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "canTransition",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:83"
+      },
+      {
+        "name": "validateProject",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:93"
+      },
+      {
+        "name": "auditDomainOwnership",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:138"
+      },
+      {
+        "name": "projectHealth",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:157"
+      },
+      {
+        "name": "computeScore",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:180"
+      },
+      {
+        "name": "err",
+        "kind": "expression",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:95"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.951Z"
+  },
+  {
+    "unitId": "proj-graph-infra",
+    "kind": "project",
+    "name": "图谱基础设施",
+    "codePath": "src/project-atlas/domain/project-registry.js",
+    "files": 1,
+    "entityCount": 13,
+    "functions": 6,
+    "classes": 0,
+    "exports": 7,
+    "routes": 0,
+    "topEntities": [
+      {
+        "name": "canTransition",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:83"
+      },
+      {
+        "name": "validateProject",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:93"
+      },
+      {
+        "name": "auditDomainOwnership",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:138"
+      },
+      {
+        "name": "projectHealth",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:157"
+      },
+      {
+        "name": "computeScore",
+        "kind": "declaration",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:180"
+      },
+      {
+        "name": "err",
+        "kind": "expression",
+        "location": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\src\\project-atlas\\domain\\project-registry.js:95"
+      }
+    ],
+    "scannedAt": "2026-08-23T00:56:00.958Z"
+  }
+]

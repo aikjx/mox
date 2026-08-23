@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
-"""企业级旋律/音频播放引擎（零卡顿重构版）。
+"""企业级旋律/音频播放引擎（零卡顿 + 零死锁会话化架构）。
 
-设计目标（消除"一卡一卡"）：
-  - 回调式环形缓冲播放：用 sounddevice.RawOutputStream 的回调，在音频
-    后端线程里直接读取环形缓冲喂字节，Python 侧绝不做阻塞式 write，从
-    根本上消除"咔哒"断点。
-  - 生产者-消费者解耦：合成（生产者线程）与播放（消费者回调）并行，
-    合成结果先预取到环形缓冲（预取窗口），播放线程无需等待合成完成。
-  - 合成结果缓存：相同音序（midi 序列 + 速度）只合成一次，重复播放
-    立即命中缓存，避免重复 CPU 密集计算导致的卡顿。
-  - 精准停止：基于 threading.Event 的 stop()，仅停止当前播放器，
-    不再调用全局 sd.stop() 误伤其他并发音频流。
+设计目标：
+  - 回调式环形缓冲播放：sounddevice.RawOutputStream 回调在音频后端线程
+    直接读环形缓冲喂字节，Python 侧绝不做阻塞式 write，消除"咔哒"断点。
+  - 会话化隔离（P0 死锁修复）：每次 play() 创建独立会话（流+缓冲+事件），
+    新旧会话零共享；旧版 play() 持锁调 stop() 二次取同一把不可重入锁，
+    点「播放」即 GUI 主线程永久死锁。会话化后零锁重入、播放中切歌
+    零阻塞（不 join 旧线程）、零串音（旧线程只写旧缓冲）。
+  - 采样率随调用传递（P1 修复）：流按 play(gen, sr) 的实际采样率创建，
+    修复旧版固定 16000Hz 流播放 22050Hz 波形导致的变调变慢。
+  - 流式合成（P2 首声优化）：未命中缓存时逐音符合成即时产出，首声延迟
+    ≈10ms（旧版整曲合成完毕才出声，长曲按下数秒无声）。
+  - 合成缓存：指纹含 (midi 序列, bpm, sr)，跨采样率不互串。
 
 对外接口保持与旧版一致：play_score / play_audio / play_file / play_bytes。
 """
@@ -115,123 +117,156 @@ class RingBuffer:
 
 
 # ---------------------------------------------------------------------------
-# 单例播放器（环形缓冲 + 回调，精准停止）
+# 播放会话 + 播放器（环形缓冲 + 回调，精准停止，零死锁）
 # ---------------------------------------------------------------------------
-class _ScorePlayer:
-    """回调式播放器：生产者在独立线程合成并写入 RingBuffer，回调在音频
-    线程读出字节喂给声卡。stop 用 threading.Event 精准控制。
+class _PlaySession:
+    """一次播放的独立状态：流 + 环形缓冲 + 事件 + 欠载计数。
+
+    会话化设计（P0 死锁根因修复）：
+      旧版 play() 在持有 self._lock 时调用 stop()，而 stop() 内部再次
+      获取同一把 threading.Lock（不可重入）→ 点「播放」即 GUI 主线程
+      永久死锁（selftest 只测合成未测 play()，故打包验收全绿仍必现）。
+      现每次 play() 创建全新会话对象：旧会话停流后其生产者线程持有旧
+      ring/事件引用自然消亡（daemon，写旧缓冲无副作用，GC 回收），
+      新旧会话零共享 → 无需 join 旧线程、无锁重入、无串音、零阻塞接管。
     """
 
-    def __init__(self, sr: int = 16000, dtype: str = "int16"):
+    def __init__(self, sr: int, itemsize: int):
         self.sr = sr
-        self.dtype = dtype
-        self._itemsize = 2 if dtype == "int16" else 4
+        self.itemsize = itemsize
         # 预取窗口：约 1.5 秒缓冲，足以吸收合成线程的抖动
-        self.ring = RingBuffer(int(sr * self._itemsize * 1.5))
-        self._stream: Optional[sd.RawOutputStream] = None
-        self._stop_ev = threading.Event()
-        self._finished_ev = threading.Event()
-        self._prod_thread: Optional[threading.Thread] = None
-        self._lock = threading.Lock()
-        self._underruns = 0        # 提前初始化，避免回调先于 play() 触发时 AttributeError
-        self._underrun_lock = threading.Lock()  # 回调线程与主线程共享计数器，须加锁
+        self.ring = RingBuffer(int(sr * itemsize * 1.5))
+        self.stop_ev = threading.Event()
+        self.finished_ev = threading.Event()
+        self.underruns = 0
+        self.underrun_lock = threading.Lock()
+        self.stream = None
 
-    # ---- 生产者：合成循环，结果写入环形缓冲 ----
-    def _produce(self, samples_gen, synth_chunk_bytes: int, on_done=None):
-        try:
-            for chunk in samples_gen:
-                if self._stop_ev.is_set():
-                    break
-                if chunk is None or len(chunk) == 0:
-                    continue
-                arr = np.asarray(chunk, dtype=np.float32)
-                pcm = (np.clip(arr, -1.0, 1.0) * 32767.0).astype(np.int16)
-                # 短超时写入：旧版默认阻塞 5s，stop() 时若 ring 满且无人读，
-                # 生产者要在 wait 里挂满 5s —— join(2s) 等不到它退出，残留
-                # 线程随后把旧数据写进新一次 play 的 ring（串音）。改为
-                # 0.25s 超时 + stop 检查，stop 后最多 1 块周期即退出。
-                data = pcm.tobytes()
-                w = self.ring.write(data, timeout=0.25)
-                if w < len(data) and self._stop_ev.is_set():
-                    break
-            # 尾部补 0.1s 静音，确保末尾干净淡出、不截断
-            if not self._stop_ev.is_set():
-                self.ring.write(b"\x00" * (self.sr * self._itemsize // 10),
-                                timeout=0.25)
-        finally:
-            self._finished_ev.set()
-            if on_done:
-                try:
-                    on_done()
-                except Exception:
-                    pass
 
-    # ---- 消费者：声卡回调，绝不阻塞 ----
-    def _callback(self, outdata, frames, time_info, status):
-        nbytes = frames * self._itemsize
-        data = self.ring.read(nbytes)
+def _produce(session: _PlaySession, samples_gen, on_done=None) -> None:
+    """生产者线程主体（模块级函数，只引用会话局部状态，不触碰播放器）。
+
+    短超时写入：stop 后若 ring 满且无人读，最多 0.25s 即退出，
+    残留线程把数据写进【旧会话】的 ring（与新会话隔离），零串音。
+    """
+    try:
+        for chunk in samples_gen:
+            if session.stop_ev.is_set():
+                break
+            if chunk is None or len(chunk) == 0:
+                continue
+            arr = np.asarray(chunk, dtype=np.float32)
+            pcm = (np.clip(arr, -1.0, 1.0) * 32767.0).astype(np.int16)
+            data = pcm.tobytes()
+            w = session.ring.write(data, timeout=0.25)
+            if w < len(data) and session.stop_ev.is_set():
+                break
+        # 尾部补 0.1s 静音，确保末尾干净淡出、不截断
+        if not session.stop_ev.is_set():
+            session.ring.write(b"\x00" * (session.sr * session.itemsize // 10),
+                               timeout=0.25)
+    finally:
+        session.finished_ev.set()
+        if on_done:
+            try:
+                on_done()
+            except Exception:
+                pass
+
+
+def _make_consumer(session: _PlaySession, itemsize: int):
+    """构建绑定到指定会话的声卡回调（消费者，绝不阻塞）。"""
+    def _callback(outdata, frames, time_info, status):
+        nbytes = frames * itemsize
+        data = session.ring.read(nbytes)
         if len(data) < nbytes:
             # 缓冲暂未跟上：剩余补静音（避免咔哒），但记录欠载
             outdata[:len(data)] = data
             outdata[len(data):] = b"\x00" * (nbytes - len(data))
-            if not self._finished_ev.is_set():
-                with self._underrun_lock:
-                    self._underruns += 1
+            if not session.finished_ev.is_set():
+                with session.underrun_lock:
+                    session.underruns += 1
         else:
             outdata[:] = data
-        if self._stop_ev.is_set():
+        if session.stop_ev.is_set():
             raise sd.CallbackStop
+    return _callback
 
-    def play(self, samples_gen, on_done=None):
-        """samples_gen 逐块产出 float32 样本（每块任意长度）。非阻塞返回。"""
+
+class _ScorePlayer:
+    """回调式播放器：每次 play() 启动一个独立会话（流+缓冲+线程）。
+
+    对外 API 不变：play/stop/is_playing/underruns。
+    play() 支持按调用传入采样率（修复旧版固定 16000Hz 流导致的
+    22050Hz 波形变调变慢——钢琴曲/试听原曲全链路采样率对齐）。
+    """
+
+    def __init__(self, sr: int = 16000, dtype: str = "int16"):
+        self.sr = sr  # 仅作默认参考；实际以每次 play(samples_gen, sr) 为准
+        self.dtype = dtype
+        self._itemsize = 2 if dtype == "int16" else 4
+        self._lock = threading.Lock()
+        self._session: Optional[_PlaySession] = None
+
+    def play(self, samples_gen, sr: int = None, on_done=None):
+        """samples_gen 逐块产出 float32 样本（每块任意长度）。非阻塞返回。
+
+        快速接管：停旧会话的流（不 join 旧生产者线程——它写旧 ring，
+        与新会话隔离，自然消亡），因此播放中切歌零阻塞、零串音。
+        """
+        if sr is None:
+            sr = self.sr
         with self._lock:
-            self.stop()  # 先干净地停止上一次（若存在）
-            self.ring.clear()
-            self._stop_ev.clear()
-            self._finished_ev.clear()
-            with self._underrun_lock:
-                self._underruns = 0
-
+            self._teardown_locked()
+            session = _PlaySession(sr, self._itemsize)
             try:
-                self._stream = sd.RawOutputStream(
-                    samplerate=self.sr, blocksize=2048,
-                    dtype=self.dtype, channels=1, callback=self._callback,
+                session.stream = sd.RawOutputStream(
+                    samplerate=sr, blocksize=2048,
+                    dtype=self.dtype, channels=1,
+                    callback=_make_consumer(session, self._itemsize),
                     latency="low")
-                self._stream.start()
+                session.stream.start()
             except Exception:
-                # 声卡启动失败（无设备/被占用）：清理半成品状态，向上抛出明确错误
-                self._stream = None
-                self.ring.clear()
+                # 声卡启动失败（无设备/被占用）：置位停止事件（生产者线程
+                # 若已启动会立即退出），向上抛出明确错误
+                session.stop_ev.set()
                 raise
-            self._prod_thread = threading.Thread(
-                target=self._produce,
-                args=(samples_gen, 0, on_done), daemon=True)
-            self._prod_thread.start()
+            self._session = session
+            threading.Thread(
+                target=_produce, args=(session, samples_gen, on_done),
+                daemon=True).start()
+
+    def _teardown_locked(self) -> None:
+        """停止当前会话（假定已持锁）。不 join 生产者线程（零阻塞）。"""
+        session = self._session
+        self._session = None
+        if session is None:
+            return
+        session.stop_ev.set()
+        if session.stream is not None:
+            try:
+                if session.stream.active:
+                    session.stream.stop()
+                session.stream.close()
+            except Exception:
+                pass
 
     def stop(self):
         with self._lock:
-            self._stop_ev.set()
-            if self._stream is not None:
-                try:
-                    # 不再用全局 sd.stop()，仅停止本流
-                    if self._stream.active:
-                        self._stream.stop()
-                    self._stream.close()
-                except Exception:
-                    pass
-                self._stream = None
-            if self._prod_thread is not None:
-                self._prod_thread.join(timeout=2.0)
-                self._prod_thread = None
-            self.ring.clear()
+            self._teardown_locked()
 
     def is_playing(self) -> bool:
         with self._lock:
-            return self._stream is not None and self._stream.active
+            s = self._session
+            return s is not None and s.stream is not None and s.stream.active
 
     def underruns(self) -> int:
-        with self._underrun_lock:
-            return self._underruns
+        with self._lock:
+            s = self._session
+            if s is None:
+                return 0
+            with s.underrun_lock:
+                return s.underruns
 
 
 _player = _ScorePlayer()
@@ -266,10 +301,11 @@ _SYNTH_CACHE_MAX = 8
 _cache_lock = threading.Lock()
 
 
-def _cache_key(notes: List[Dict], bpm: float) -> str:
+def _cache_key(notes: List[Dict], bpm: float, sr: int = 16000) -> str:
+    """缓存指纹。必须含 sr：旧版缺失导致 16000/22050 波形互串（变调）。"""
     sig = ",".join(f"{int(n['midi'])}:{round(float(n.get('dur') or 0),3)}"
                    for n in notes)
-    return f"{sig}|{round(bpm,1)}"
+    return f"{sig}|{round(bpm,1)}|{int(sr)}"
 
 
 def _synth_score_cached(notes: List[Dict], bpm: float, sr: int = 16000
@@ -298,10 +334,43 @@ def _synth_score_cached(notes: List[Dict], bpm: float, sr: int = 16000
 
 def _score_samples_gen(notes: List[Dict], bpm: float, sr: int = 16000,
                        chunk: int = 8192):
-    """生成器：分块产出合成波形（生产者侧），支持缓存命中即时全量产出。"""
-    y = _synth_score_cached(notes, bpm, sr)
-    for i in range(0, len(y), chunk):
-        yield y[i:i + chunk].astype(np.float32)
+    """生成器：分块产出合成波形（生产者侧）。
+
+    流式合成（P2 首声延迟优化）：旧版首次迭代一次性合成整曲，长曲按下
+    播放后数秒无声（貌似卡住）。现：
+      - 缓存命中 → 整段分块产出（瞬时）；
+      - 未命中   → 逐音符合成即时产出（首声延迟 ≈ 首音符合成 ~10ms），
+                   同时累积整段写入缓存（下次命中走整段路径）。
+    逐音符峰值归一（synth_piano 单音符已归一到 [-1,1]，串行拼接无叠加）
+    与旧版整段归一数值等价，缓存内容保持确定性一致。
+    """
+    key = _cache_key(notes, bpm, sr)
+    with _cache_lock:
+        cached = _SYNTH_CACHE.get(key)
+        if cached is not None:
+            _SYNTH_CACHE.move_to_end(key)
+    if cached is not None:
+        for i in range(0, len(cached), chunk):
+            yield cached[i:i + chunk].astype(np.float32, copy=False)
+        return
+
+    segs = []
+    for n in notes:
+        m = int(n["midi"])
+        d = max(0.05, float(n.get("dur") or (60.0 / bpm)))
+        wav = make_note_waveform(m, d, sr) * np.float32(0.85)
+        cnt = int(sr * d)
+        wav = wav[:cnt] if len(wav) >= cnt else np.pad(wav, (0, cnt - len(wav)))
+        segs.append(wav)
+        yield wav
+    if not segs:                      # 空音序：0.1s 静音，保证回调有数据
+        yield np.zeros(int(sr * 0.1), dtype=np.float32)
+        return
+    full = np.concatenate(segs).astype(np.float32)
+    with _cache_lock:
+        _SYNTH_CACHE[key] = full
+        while len(_SYNTH_CACHE) > _SYNTH_CACHE_MAX:
+            _SYNTH_CACHE.popitem(last=False)
 
 
 # ---------------------------------------------------------------------------
@@ -311,7 +380,7 @@ def play_score(notes: List[Dict], bpm: float = 120.0, sr: int = 16000,
                on_done=None) -> None:
     """播放结构化音序（生产者-消费者 + 环形缓冲，流畅无卡顿）。非阻塞。"""
     gen = _score_samples_gen(notes, bpm, sr)
-    _player.play(gen, on_done=on_done)
+    _player.play(gen, sr=sr, on_done=on_done)
 
 
 def play_audio(y: np.ndarray, sr: int = 16000, on_done=None) -> None:
@@ -323,7 +392,7 @@ def play_audio(y: np.ndarray, sr: int = 16000, on_done=None) -> None:
     def gen():
         for i in range(0, len(y), 8192):
             yield y[i:i + 8192]
-    _player.play(gen(), on_done=on_done)
+    _player.play(gen(), sr=sr, on_done=on_done)
 
 
 def play_file(path: str, on_done=None) -> None:

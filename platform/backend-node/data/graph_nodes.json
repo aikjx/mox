@@ -942,5 +942,49 @@
     "created_at": "2026-08-22T17:07:29.676Z",
     "ai_generated": true,
     "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "sd:corp-site:entity:服务项目",
+    "label": "服务项目",
+    "type": "entity",
+    "description": "公司提供的具体服务类别，如咨询、实施、运维等。",
+    "attributes": {
+      "project": "site-corp-site"
+    },
+    "community": 0,
+    "degree": 0,
+    "created_at": "2026-08-23T00:37:31.606Z",
+    "ai_generated": true,
+    "topic": "auto-dev:开发一个企业官网"
+  },
+  {
+    "id": "doc:kb_doc_9gimt5fc08",
+    "label": "未命名文档",
+    "type": "document",
+    "node_type": "document",
+    "color": "#8b5cf6",
+    "size": 14,
+    "description": "未命名文档",
+    "attributes": {
+      "docId": "kb_doc_9gimt5fc08",
+      "sourceType": "kb_document",
+      "category": "general"
+    },
+    "created_at": "2026-08-23T00:55:51.588Z"
+  },
+  {
+    "id": "doc:kb_doc_1x9djgk4mz",
+    "label": "未命名文档",
+    "type": "document",
+    "node_type": "document",
+    "color": "#8b5cf6",
+    "size": 14,
+    "description": "未命名文档",
+    "attributes": {
+      "docId": "kb_doc_1x9djgk4mz",
+      "sourceType": "kb_document",
+      "category": "general"
+    },
+    "created_at": "2026-08-23T00:55:51.599Z"
   }
 ]

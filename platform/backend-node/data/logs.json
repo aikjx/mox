@@ -1,5 +1,63 @@
 [
   {
+    "id": "log_ejv5tlmi1d",
+    "ts": "2026-08-23T00:55:51.649Z",
+    "type": "kb",
+    "msg": "auto graph sync all",
+    "docs": 2,
+    "failed": 0
+  },
+  {
+    "id": "log_t6swpsj50d",
+    "ts": "2026-08-23T00:42:48.797Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_m33b64xof2",
+    "ts": "2026-08-23T00:41:52.741Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_xx85siulfw",
+    "ts": "2026-08-23T00:40:10.078Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_mzcsjys17d",
+    "ts": "2026-08-23T00:39:03.861Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_4qasf8cjt1",
+    "ts": "2026-08-23T00:37:31.609Z",
+    "type": "auto-dev",
+    "msg": "develop complete",
+    "project": "site-corp-site",
+    "files": 6
+  },
+  {
+    "id": "log_e53bf3gf6v",
+    "ts": "2026-08-23T00:37:18.914Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
+    "id": "log_owbxfgl1ht",
+    "ts": "2026-08-23T00:36:02.247Z",
+    "type": "alliance",
+    "msg": "process",
+    "level": "C"
+  },
+  {
     "id": "log_vp0nozbxm8",
     "ts": "2026-08-22T17:30:19.073Z",
     "type": "alliance",
@@ -3861,70 +3919,6 @@
   {
     "id": "log_4wtk388i9z",
     "ts": "2026-08-20T13:56:59.728Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_03xp672o1k",
-    "ts": "2026-08-20T13:56:56.714Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_0bf9iwyso2",
-    "ts": "2026-08-20T13:56:53.706Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_307ekvhb25",
-    "ts": "2026-08-20T13:56:50.701Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_7gjf3e1e1s",
-    "ts": "2026-08-20T13:56:47.695Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_6sqe4id73o",
-    "ts": "2026-08-20T13:56:44.687Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_shylu1utpc",
-    "ts": "2026-08-20T13:56:41.679Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_25m5gaym0r",
-    "ts": "2026-08-20T13:56:38.678Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
-  },
-  {
-    "id": "log_27oxr3qs49",
-    "ts": "2026-08-20T13:56:35.675Z",
     "type": "auto-sync",
     "msg": "auto sync tick",
     "nodes": 24,
