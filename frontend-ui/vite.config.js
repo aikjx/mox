@@ -17,6 +17,12 @@ export default defineConfig({
         target: 'http://localhost:3010',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      // HITL 人机协同审批 WebSocket：由 Rust 网关承载（默认 :3001，可用 GATEWAY_URL 覆盖）
+      '/ws': {
+        target: process.env.GATEWAY_URL || 'http://localhost:3001',
+        ws: true,
+        changeOrigin: true
       }
     }
   },

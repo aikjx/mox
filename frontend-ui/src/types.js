@@ -84,7 +84,8 @@ export const NAV_MODULES = [
   { key: 'xuanji-fusion', label: '全维融合', icon: 'Aim', path: '/xuanji-fusion', color: '#7c3aed', bg: '#ede9fe' },
   { key: 'knowledge-base', label: '云盘知识库', icon: 'Collection', path: '/knowledge-base', color: '#0d9488', bg: '#ccfbf1' },
   { key: 'llm-config', label: '大模型配置', icon: 'Setting', path: '/llm-config', color: '#6366f1', bg: '#eef2ff' },
-  { key: 'expert-orchestrator', label: 'V2编排引擎', icon: 'Promotion', path: '/expert-orchestrator', color: '#ec4899', bg: '#fce7f3' }
+  { key: 'expert-orchestrator', label: 'V2编排引擎', icon: 'Promotion', path: '/expert-orchestrator', color: '#ec4899', bg: '#fce7f3' },
+  { key: 'admin', label: '系统管理', icon: 'Lock', path: '/admin', color: '#475569', bg: '#f1f5f9' }
 ]
 
 // 专家类型映射

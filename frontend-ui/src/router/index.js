@@ -183,6 +183,12 @@ const routes = [
     meta: { title: '旋律转谱' }
   },
   {
+    path: '/admin',
+    name: 'Admin',
+    component: () => import('@/views/admin/AdminView.vue'),
+    meta: { title: '系统管理' }
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/ai'
   }

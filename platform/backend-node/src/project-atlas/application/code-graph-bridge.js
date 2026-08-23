@@ -52,11 +52,12 @@ function createCodeGraphBridge({ extractor, bindingsIO, getUnits, resolvePath, i
     };
   }
 
-  /** 绑定记录 upsert（按 unitId 幂等替换） */
+  /** 绑定记录 upsert（unitId 幂等键：一单元一记录）
+   *  先剔除全部同 unitId 旧记录（含存储层历史重复）再写入，
+   *  既保证契约，又对存量脏数据自愈归一。 */
   function upsertBinding(binding) {
-    const list = bindingsIO.read();
-    const idx = list.findIndex(b => b.unitId === binding.unitId);
-    if (idx >= 0) list[idx] = binding; else list.push(binding);
+    const list = bindingsIO.read().filter(b => b.unitId !== binding.unitId);
+    list.push(binding);
     bindingsIO.write(list);
     return binding;
   }

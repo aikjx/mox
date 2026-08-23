@@ -99,17 +99,20 @@ def _safe_beats(raw: float) -> float:
     return b
 
 
-def _dur_token_for(degree: int, oct_marks: str, beats: float) -> str:
+def _dur_token_for(degree: int, oct_marks: str, beats: float,
+                   accidental: str = "") -> str:
     """生成规范时值集内拍数对应的 jianpu-ly 记号。
 
     beats<=0 返回空串。degree 为 0 时表示休止符（用 '0' 系列）。
     采用 jianpu-ly 原生语法：全=1 - - - / 二分=1 - / 四分=1 /
     附点四分=1. / 附点二分=1 - - / 八分=q1 / 附点八分=q1. /
     十六分=s1 / 三十二分=d1，保证与拍号精确对齐。
+    accidental：离调音升降记号（'#'/'b'），置于数字前（如 #4 / b7）——
+    jianpu-ly 原生支持；旧版丢失该记号导致图片里 F# 被渲染成 F。
     """
     if beats <= 0:
         return ""
-    deg = "0" if degree == 0 else str(degree)
+    deg = "0" if degree == 0 else accidental + str(degree)
     if abs(beats - 4.0) < 1e-6:
         return f"{deg}{oct_marks} - - -"
     if abs(beats - 3.0) < 1e-6:
@@ -144,7 +147,8 @@ def _note_token(n: RenderNote) -> Tuple[str, float]:
     else:
         oct_marks = ""
     beats = _safe_beats(n.dur_beats)
-    return _dur_token_for(n.degree, oct_marks, beats), beats
+    return _dur_token_for(n.degree, oct_marks, beats,
+                          getattr(n, "accidental", "")), beats
 
 
 def _decompose_units(units: int) -> List[int]:

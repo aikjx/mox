@@ -543,8 +543,8 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Melody2Score · 哼唱旋律转谱（企业级桌面版）")
-        self.setMinimumSize(1680, 1050)
-        self.resize(1760, 1080)
+        self.setMinimumSize(1680, 1250)
+        self.resize(1760, 1280)
         self.current = None
         self.pending_file = None
         self._pending_bytes = None
@@ -775,6 +775,7 @@ class MainWindow(QMainWindow):
                                       "曲库为 15 首公版经典旋律，采用音程 DTW 匹配，对跑调/移调鲁棒。")
         svb.addWidget(self.songResult, 1)
         tabs.addTab(self.songBox, "识别歌曲")
+        tabs.setCurrentIndex(1)  # 默认显示「标准歌谱」
         rv.addWidget(tabs, 1)
 
         self.titleEdit = QLineEdit("未命名旋律")
@@ -1426,20 +1427,30 @@ def _selftest() -> int:
             def _play_smoke():
                 """播放死锁回归（frozen 交付验收）：旧版 play() 持锁调
                 stop() 二次获取不可重入锁，点「播放钢琴曲」GUI 永久冻结。
-                无声卡环境（PortAudio 无设备）降级跳过，不算失败。"""
+                无声卡环境（PortAudio 无设备）降级跳过，不算失败。
+
+                计时前热身：frozen 进程首次开流含一次性 PortAudio 冷启动
+                （Pa_Initialize + 设备枚举 + WASAPI 探测），实测可达 2s+
+                （构建后杀软扫描新 exe 时更甚），与死锁无关。热身吸收冷
+                启动后，play() 本体（建流+启线程）远低于阈值；死锁表现为
+                永久阻塞，3s 阈值仍必然命中。"""
                 from app.audio_play import play_score, stop
                 pn = [{"midi": 60 + i, "dur": 0.1} for i in range(4)]
                 try:
+                    import sounddevice as _sd
+                    _sd.query_devices()               # 热身 1：Pa_Initialize
+                    _sd.RawOutputStream(              # 热身 2：首流设备打开
+                        samplerate=16000, blocksize=2048,
+                        dtype="int16", channels=1).close()
                     t0 = time.time()
                     play_score(pn, bpm=120, sr=22050)
                     dt = time.time() - t0
                     stop()
-                except Exception as e:                      # 无声卡/被占用
-                    import sounddevice as _sd
+                except Exception as e:                # 无声卡/被占用
                     if isinstance(e, _sd.PortAudioError):
                         return "跳过（无音频设备）"
                     raise
-                assert dt < 2.0, f"play() 阻塞 {dt:.2f}s（死锁回归！）"
+                assert dt < 3.0, f"play() 阻塞 {dt:.2f}s（死锁回归！）"
                 return f"play 返回耗时 {dt*1000:.0f}ms，无死锁"
 
             _run("MusicXML 导出", _musicxml)

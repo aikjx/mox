@@ -175,7 +175,7 @@ impl EngineGuard {
     *   当 `EngineGuard` 检测到 `HighRiskAction`（如：执行删除、修改核心配置、调用外部付费 API）。
     *   当用户主动请求“人工审核”。
 2.  **机制实现**：
-    *   引擎进入 `HITL_PAUSE` 状态，将当前计划 `Plan` 和上下文 `Context` 序列化，推送给前端管理端 (`frontend-admin-ui`)。
+    *   引擎进入 `HITL_PAUSE` 状态，将当前计划 `Plan` 和上下文 `Context` 序列化，推送给前端系统管理区 (`frontend-ui` `/admin?tab=hitl`)。
     *   前端展示风险详情（例如：“即将删除 1000 条历史知识图谱节点”），等待管理员审批。
     *   管理员可选择：`批准（APPROVE）`、`拒绝（DENY）`、`修改后批准（MODIFY_APPROVE）`。
     *   引擎收到指令后，从 `HITL_PAUSE` 恢复执行（或转入 `ABORT`）。
@@ -225,7 +225,7 @@ impl TraceConsolidator {
 *   **文件**: `platform/gateway/runtime/src/handlers/`
 *   **任务**:
     *   [ ] 创建 `hitl.rs`: WebSocket 接口，向前端推送 HITL 请求。
-    *   [ ] 更新 `frontend-admin-ui`: 增加“HITL 审核中心”视图。
+    *   [x] 更新 `frontend-ui` 系统管理区: 增加“HITL 审核”面板（`/admin?tab=hitl`，原 frontend-admin-ui 已裁撤并入）。
 
 ### Phase 3: 记忆巩固闭环
 *   **文件**: `platform/services/kg-hub/src/consolidator.rs`

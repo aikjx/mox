@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 # Melody2Score 一键打包脚本（Windows）
 # 用法（在 melody2score/ 目录下用 PowerShell 运行）：
 #   powershell -ExecutionPolicy Bypass -File build_exe.ps1
@@ -48,15 +48,19 @@ chcp 65001 >nul
 REM Melody2Score 一键启动（绿色版，无需安装 Python）
 setlocal
 cd /d "%~dp0"
-REM 确保工作目录在分发根（app/Melody2Score.exe 的上级）
-if exist "app\Melody2Score.exe" (
-    start "" "app\Melody2Score.exe"
+REM PyInstaller onedir 产物：Melody2Score.exe 与 _internal\ 同级，位于发行版根
+if exist "Melody2Score.exe" (
+    start "" "Melody2Score.exe"
 ) else (
-    echo 未找到 app\Melody2Score.exe，请确认解压完整。
+    echo 未找到 Melody2Score.exe，请确认解压完整。
     pause
 )
 '@
-Set-Content -Path (Join-Path $dist "启动Melody2Score.bat") -Value $bat -Encoding ASCII
+# bat 含中文 echo 提示：必须 UTF-8 无 BOM 写出（与 chcp 65001 匹配；
+# ASCII 会把中文打成 '?'，PS5.1 的 UTF8 又带 BOM 会破坏首行 @echo off）
+[System.IO.File]::WriteAllText(
+    (Join-Path $dist "启动Melody2Score.bat"), $bat,
+    [System.Text.UTF8Encoding]::new($false))
 
 $readme = @'
 # Melody2Score 绿色版（开箱即用）
@@ -66,7 +70,7 @@ $readme = @'
 ## 在其他电脑运行
 1. 把整个 `Melody2Score` 文件夹拷贝到目标 Windows 电脑（无需安装 Python）。
 2. 双击 `启动Melody2Score.bat` 即可打开「哼唱旋律转谱」桌面程序。
-   - 也可直接双击 `app\Melody2Score.exe`。
+   - 也可直接双击 `Melody2Score.exe`。
 
 ## 功能
 - 选择音频文件（wav/mp3/flac/ogg/m4a）→ 实时转简谱 + 五线谱 + 音高轮廓。
@@ -76,7 +80,7 @@ $readme = @'
 
 ## 说明
 - 首次启动稍慢（torch 在磁盘上解压载入），属正常现象。
-- 文件夹不要拆分移动，`audio\` 与 `app\` 需保持相对结构。
+- 文件夹不要拆分移动，`_internal\` 必须与 `Melody2Score.exe` 保持相对结构（内置样例音频在 `_internal\audio\`）。
 - 若被杀软误报，请加入白名单（本程序不含任何网络/上传行为）。
 '@
 Set-Content -Path (Join-Path $dist "README.txt") -Value $readme -Encoding UTF8

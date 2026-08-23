@@ -138,8 +138,7 @@ operator-unified-system/
 │   │   ├── primiflow-fusion/     #     PrimiFlow 融合：治理闸门、守恒、零孤儿
 │   │   └── kg-hub/               #     知识图谱枢纽：摄入、推理、本体、治理
 │   └── backend-node/             #   Node.js 兼容层：传统后端模块（逐步迁移至 Rust）
-├── frontend-ui/                  # 🟢 用户端：Vue3 前端界面（面向终端用户）
-├── frontend-admin-ui/               # 🟢 企业级后台管理：用户权限/大模型/知识库/云盘配置
+├── frontend-ui/                  # 🟢 用户端：Vue3 前端界面（面向终端用户；含系统管理区 /admin：凭证/审计/存储/HITL）
 ├── shared/                       # 🟢 跨端共享资源：常量、Schema、配置
 ├── plugins/                      # WASM 插件目录
 ├── data/market/                  # 算子商城资产（运行态，默认 CWD；生产应置于 $OUS_HOME/market，见 docs/architecture.md §27）
@@ -190,12 +189,7 @@ npm run build      # 产物输出到 frontend-ui/dist/（已 gitignore）
 
 ### 3. 企业级后台管理
 
-```bash
-cd frontend-admin-ui
-npm install
-npm run dev        # 开发模式访问 http://localhost:3030
-npm run build      # 构建生产版本
-```
+系统管理区已并入用户端（frontend-ui），访问 **http://localhost:3020/#/admin**（管理总览 / 访问凭证 / 审计日志 / 存储与模块 / HITL 审批；大模型与知识库管理复用既有页面）。
 
 ### 4. 一键启动
 
@@ -205,7 +199,7 @@ npm run build      # 构建生产版本
 
 启动后访问：
 - 用户端：**http://localhost:3021**
-- 管理端：**http://localhost:3030**
+- 系统管理区：**http://localhost:3021/#/admin**
 - API 网关：**http://localhost:3000**
 
 ---

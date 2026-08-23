@@ -3,7 +3,7 @@
 /**
  * 项目全息图谱（Project Atlas）域门面
  * ------------------------------------------------------------------
- * 把整个项目机器图谱化：29 业务域 + 4 模块 + 20 引擎 + 20 算法 +
+ * 把整个项目机器图谱化：29 业务域 + 4 模块 + 21 引擎 + 20 算法 +
  * 44 数据资产 + 40 核心文档，全部关联本地代码路径，归一化承载。
  *
  * 无破窗验证（每次调用 verifyAtlas 动态比对真实代码库）：
@@ -52,6 +52,8 @@ const ROUTES_DOMAINS = require('../routes').DOMAINS.map(d => d[0]);
 const ENGINE_IDS = ENGINES.map(e => e.id).concat(['engine-universe']);
 
 // 引擎宇宙自身也节点化（atlas 与 universe 共享同一引擎真相源 + 各自自身）
+// 层级说明：engine-registry 的 17 引擎为 Node 后端引擎宇宙；以下 atlas 局部节点
+// 承载平台级运行时与图谱自引用单元（不入 universe 注册表，避免污染 17 引擎真相源）
 const ENGINE_NODES = [...ENGINES, {
   id: 'engine-universe', name: '引擎宇宙图谱', codePath: 'src/engine-universe/index.js',
   keyFunctions: ['17 引擎节点化与关联边查询', '需求归一化链服务映射', '全链路 113 项机器验证']
@@ -61,6 +63,14 @@ const ENGINE_NODES = [...ENGINES, {
 }, {
   id: 'project-atlas', name: '项目全息图谱引擎', codePath: 'src/project-atlas/index.js',
   keyFunctions: ['全项目资产图谱化（域/模块/引擎/算法/数据/文档）', '无破窗验证（动态比对路由域/数据目录/代码路径）', '影响面分析与图谱检索']
+}, {
+  id: 'gateway-runtime', name: 'Rust 网关运行时', codePath: 'platform/gateway/runtime/src/lib.rs',
+  keyFunctions: [
+    'HITL 人机协同审批 WebSocket（/ws/hitl：事件推送/三态决议/待审清单）',
+    'RBAC 鉴权中间件与 API 标准化（rbac_middleware/api_standard）',
+    '治理台与市场路由（/api/governance、market 版本迁移）',
+    'Cordis 插件运行时内核（bundle/lifecycle/event_bus/seam）'
+  ]
 }];
 
 // ============ 自管理覆盖层（auto registry） ============

@@ -33,6 +33,7 @@ class RenderNote:
     dur_beats: float   # 以拍为单位的时值
     bar_idx: int       # 所属小节序号
     lyric: str = ""
+    accidental: str = ""   # 离调音升降记号 '#'|'b'|''（图片渲染不丢半音）
 
 
 @dataclass
@@ -49,13 +50,58 @@ class ScoreSheet:
     tuning: str = ""
 
 
+# 大/小调音级（半音偏移，相对主音）。degree 就近映射共用此表，
+# 保证文本简谱（score.to_jianpu）与图片渲染（make_score_sheet）一致。
+_MAJOR_SCALE = (0, 2, 4, 5, 7, 9, 11)
+_MINOR_SCALE = (0, 2, 3, 5, 7, 8, 10)
+
+
+def _scale_for(mode: str):
+    return _MINOR_SCALE if str(mode).lower().startswith("min") else _MAJOR_SCALE
+
+
+def _degree_accidental(midi: int, tonic_pc: int, mode: str = "major"):
+    """midi → (唱名 1-7, 升降记号 '#'|'b'|'')。
+
+    调内音：直接音级。离调音：绝对距离最近的调内音级（等距取下方——
+    升下方音是记谱惯例），偏差 ≤2 半音记 '#'、≥10 记 'b'（黑键距
+    调内白键必 ≤1，无中间值）。替代旧版「负距离偏向 scale 末位」的
+    错误映射（F# 曾被记成 b7，音高差 4 半音）。
+    """
+    rel = (int(midi) - tonic_pc) % 12
+    scale = _scale_for(mode)
+    if rel in scale:
+        return scale.index(rel) + 1, ""
+    best, best_dist, best_dev = scale[0], 99, 0
+    for s in scale:
+        dev = (rel - s) % 12
+        dist = min(dev, 12 - dev)
+        if dist < best_dist:          # 严格小于：等距保留先扫到的下方音
+            best_dist, best, best_dev = dist, s, dev
+    acc = "#" if best_dev <= 2 else "b"
+    return scale.index(best) + 1, acc
+
+
 def _midi_to_degree(midi: int, tonic_pc: int) -> int:
-    """以指定主音为 1，把 midi 映射到简谱唱名 1-7。"""
-    pc = midi % 12
-    rel = (pc - tonic_pc) % 12
-    # 十二平均律：1=C, 2=D, 3=E, 4=F, 5=G, 6=A, 7=B（自然大调近似）
-    mapping = {0: 1, 2: 2, 4: 3, 5: 4, 7: 5, 9: 6, 11: 7}
-    return mapping.get(rel, mapping.get(rel - 1, 1))  # 升降号取相邻本位
+    """以指定主音为 1，把 midi 映射到简谱唱名 1-7（大调；兼容旧签名）。"""
+    return _degree_accidental(midi, tonic_pc, "major")[0]
+
+
+def adaptive_tonic_midi(notes: List[dict], tonic_pc: int) -> int:
+    """按旋律实际音域自适应选择 tonic 基准八度（修复哼唱低八度满屏低音点）。
+
+    旧版基准固定为主音 4 八度（C→C4）：哼唱/检测音域偏低时简谱满屏 '_'
+    （低音点），且检测器半频锁定时叠加成 1__ 6___ 等。简谱记录相对音级，
+    绝对八度不承载乐义——以「中位音符所在八度的主音」为基准，中位音符
+    恒落在无点中音区，八度点分布居中，符合人声记谱惯例。
+
+    to_jianpu 与 make_score_sheet 共用此基准，保证文本与图片一致。
+    """
+    if not notes:
+        return 60 + (tonic_pc % 12)
+    mids = sorted(int(round(float(n.get("midi", 60)))) for n in notes)
+    med = mids[len(mids) // 2]
+    return med - ((med - tonic_pc) % 12)
 
 
 def _name_to_pitch_class(name: str) -> int:
@@ -124,22 +170,19 @@ def make_score_sheet(
         beat_dur = float(np.median(durs)) if durs else 0.5
 
     render_notes: List[RenderNote] = []
+    # 自适应 tonic 基准（循环外一次计算）：中位音符所在八度的主音为无点区
+    base_midi = adaptive_tonic_midi(notes, tonic_pc)
     for n in notes:
         start = float(n.get("start", 0.0))
         dur = float(n.get("dur", 0.0))
         midi = int(round(float(n.get("midi", 0))))
         name = n.get("name", "")
-        degree = _midi_to_degree(midi, tonic_pc)
+        degree, accidental = _degree_accidental(midi, tonic_pc, mode)
 
-        # 计算相对于 C4 的八度点：C4 为中音 1
-        ref_midi = 60  # C4
-        octave_steps = midi - ref_midi
-        # 每个八度 12 半音；唱名 1(C) 位于每八度底部
-        octave = octave_steps // 12
-        # 若余数为负，多降一个八度
-        if octave_steps < 0 and (midi % 12) < (ref_midi % 12):
-            octave -= 1
-        octave_dot = octave  # >0 高音点，<0 低音点
+        # 八度点：以「自适应 tonic 基准」（中位音符所在八度的主音）为无点
+        # 中音区——与 to_jianpu 共用 adaptive_tonic_midi，文本与图片一致。
+        # 旧版固定 C4 参考：哼唱/检测音域偏低时图片满屏低音点。
+        octave_dot = (midi - base_midi) // 12  # floor：负数向下，数学正确
 
         start_beat = start / beat_dur
         dur_beats = max(0.05, dur / beat_dur)  # 下限保护，避免零长度黑块
@@ -153,6 +196,7 @@ def make_score_sheet(
             start_beat=start_beat,
             dur_beats=dur_beats,
             bar_idx=bar_idx,
+            accidental=accidental,
         ))
 
     return ScoreSheet(
@@ -194,6 +238,7 @@ def _split_long_notes(bar_notes: List[RenderNote], beats_per_bar: int) -> List[R
                 start_beat=start if cur_bar == n.bar_idx else 0.0,
                 dur_beats=take,
                 bar_idx=cur_bar,
+                accidental=n.accidental,
             ))
             remaining -= take
             cur_bar += 1

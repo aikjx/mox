@@ -20,8 +20,7 @@ export const API_PATHS = {
 export const SERVICE_PORTS = {
   gateway: 3000,
   nodeBackend: 3010,
-  frontendUI: 3021,
-  frontendAdmin: 3030
+  frontendUI: 3021
 }
 
 export const STORAGE_TYPES = {

@@ -1,1 +1,329 @@
-[]
+[
+  {
+    "id": "nrm_fv424c152j",
+    "type": "requirement",
+    "title": "系统管理区归一化（frontend-admin-ui 裁撤并入 frontend-ui）",
+    "category": "architecture",
+    "source": "admin-consolidation-20260823",
+    "ir": {
+      "id": "req-1787453917911",
+      "title": "系统管理区归一化（frontend-admin-ui 裁撤并入 frontend-ui）",
+      "category": "architecture",
+      "keywords": [
+        "frontend",
+        "ui",
+        "admin",
+        "管理总览面板聚合安全状态",
+        "实时接收待审事件并支持",
+        "存储状态与模块清单",
+        "WebSocket",
+        "系统管理区归一化",
+        "访问凭证面板提供",
+        "审计日志面板支持",
+        "一次性明文返回",
+        "APPROVE",
+        "独立前端应用",
+        "管理能力并入",
+        "action",
+        "服务编排清理"
+      ]
+    },
+    "statements": [
+      {
+        "id": "st-1",
+        "text": "裁撤 frontend-admin-ui 独立前端应用，管理能力并入 frontend-ui 系统管理区（/admin 路由）",
+        "keywords": [
+          "frontend",
+          "admin",
+          "ui",
+          "独立前端应用",
+          "管理能力并入",
+          "系统管理区",
+          "裁撤",
+          "路由"
+        ],
+        "priority": "normal"
+      },
+      {
+        "id": "st-2",
+        "text": "管理总览面板聚合安全状态、存储状态与模块清单",
+        "keywords": [
+          "管理总览面板聚合安全状态",
+          "存储状态与模块清单"
+        ],
+        "priority": "normal"
+      },
+      {
+        "id": "st-3",
+        "text": "访问凭证面板提供 API Key 创建（一次性明文返回）、吊销与校验",
+        "keywords": [
+          "访问凭证面板提供",
+          "一次性明文返回",
+          "吊销与校验",
+          "API",
+          "Key",
+          "创建"
+        ],
+        "priority": "normal"
+      },
+      {
+        "id": "st-4",
+        "text": "审计日志面板支持 action/actor/since/limit 过滤查询",
+        "keywords": [
+          "审计日志面板支持",
+          "action",
+          "actor",
+          "since",
+          "limit",
+          "过滤查询"
+        ],
+        "priority": "normal"
+      },
+      {
+        "id": "st-5",
+        "text": "存储与模块面板承载存储提供方切换与模块清单",
+        "keywords": [],
+        "priority": "normal"
+      },
+      {
+        "id": "st-6",
+        "text": "HITL 审批面板经 WebSocket 连接 Rust 网关，实时接收待审事件并支持 APPROVE/DENY/MODIFY_APPROVE 三态决议",
+        "keywords": [
+          "实时接收待审事件并支持",
+          "WebSocket",
+          "APPROVE",
+          "审批面板经",
+          "HITL",
+          "Rust",
+          "DENY",
+          "三态决议"
+        ],
+        "priority": "normal"
+      },
+      {
+        "id": "st-7",
+        "text": "服务编排清理 frontend-admin-ui 全部引用，构建验证通过",
+        "keywords": [
+          "frontend",
+          "服务编排清理",
+          "构建验证通过",
+          "admin",
+          "全部引用",
+          "ui"
+        ],
+        "priority": "normal"
+      }
+    ],
+    "mappings": [
+      {
+        "statementId": "st-1",
+        "text": "裁撤 frontend-admin-ui 独立前端应用，管理能力并入 frontend-ui 系统管理区（/admin 路由）",
+        "best": "security",
+        "matches": [
+          {
+            "domainId": "security",
+            "domainName": "安全审计",
+            "score": 12,
+            "matchedKeywords": [
+              "frontend",
+              "admin",
+              "ui",
+              "系统管理区"
+            ]
+          },
+          {
+            "domainId": "modules-admin",
+            "domainName": "模块与存储管理",
+            "score": 5,
+            "matchedKeywords": [
+              "admin",
+              "系统管理区"
+            ]
+          }
+        ]
+      },
+      {
+        "statementId": "st-2",
+        "text": "管理总览面板聚合安全状态、存储状态与模块清单",
+        "best": "ai-enhanced",
+        "matches": [
+          {
+            "domainId": "ai-enhanced",
+            "domainName": "16 模块 AI 增强",
+            "score": 5,
+            "matchedKeywords": [
+              "存储状态与模块清单"
+            ]
+          }
+        ]
+      },
+      {
+        "statementId": "st-3",
+        "text": "访问凭证面板提供 API Key 创建（一次性明文返回）、吊销与校验",
+        "best": "security",
+        "matches": [
+          {
+            "domainId": "security",
+            "domainName": "安全审计",
+            "score": 9,
+            "matchedKeywords": [
+              "API",
+              "Key",
+              "创建"
+            ]
+          }
+        ]
+      },
+      {
+        "statementId": "st-4",
+        "text": "审计日志面板支持 action/actor/since/limit 过滤查询",
+        "best": null,
+        "matches": []
+      },
+      {
+        "statementId": "st-5",
+        "text": "存储与模块面板承载存储提供方切换与模块清单",
+        "best": null,
+        "matches": []
+      },
+      {
+        "statementId": "st-6",
+        "text": "HITL 审批面板经 WebSocket 连接 Rust 网关，实时接收待审事件并支持 APPROVE/DENY/MODIFY_APPROVE 三态决议",
+        "best": null,
+        "matches": []
+      },
+      {
+        "statementId": "st-7",
+        "text": "服务编排清理 frontend-admin-ui 全部引用，构建验证通过",
+        "best": "security",
+        "matches": [
+          {
+            "domainId": "security",
+            "domainName": "安全审计",
+            "score": 9,
+            "matchedKeywords": [
+              "frontend",
+              "admin",
+              "ui"
+            ]
+          }
+        ]
+      }
+    ],
+    "modulePlan": {
+      "plans": [
+        {
+          "domainId": "security",
+          "domainName": "安全审计",
+          "statementCount": 3,
+          "statements": [
+            {
+              "statementId": "st-1",
+              "text": "裁撤 frontend-admin-ui 独立前端应用，管理能力并入 frontend-ui 系统管理区（/admin 路由）",
+              "score": 12
+            },
+            {
+              "statementId": "st-3",
+              "text": "访问凭证面板提供 API Key 创建（一次性明文返回）、吊销与校验",
+              "score": 9
+            },
+            {
+              "statementId": "st-7",
+              "text": "服务编排清理 frontend-admin-ui 全部引用，构建验证通过",
+              "score": 9
+            }
+          ],
+          "engines": [
+            {
+              "id": "llm-gateway",
+              "name": "LLM 网关",
+              "codePath": "src/llm-gateway.js"
+            }
+          ],
+          "suggestion": "由既有引擎承接：LLM 网关（独立迭代/独立复用/独立部署）",
+          "moduleType": "existing"
+        },
+        {
+          "domainId": "ai-enhanced",
+          "domainName": "16 模块 AI 增强",
+          "statementCount": 1,
+          "statements": [
+            {
+              "statementId": "st-2",
+              "text": "管理总览面板聚合安全状态、存储状态与模块清单",
+              "score": 5
+            }
+          ],
+          "engines": [
+            {
+              "id": "llm-gateway",
+              "name": "LLM 网关",
+              "codePath": "src/llm-gateway.js"
+            }
+          ],
+          "suggestion": "由既有引擎承接：LLM 网关（独立迭代/独立复用/独立部署）",
+          "moduleType": "existing"
+        }
+      ],
+      "newModules": [
+        {
+          "moduleId": "mod-审计日志面板支持",
+          "name": "审计日志面板支持模块（建议新建）",
+          "seedFeature": "审计日志面板支持",
+          "statements": [
+            "st-4"
+          ],
+          "features": [
+            "审计日志面板支持",
+            "action",
+            "actor",
+            "since",
+            "limit",
+            "过滤查询"
+          ],
+          "rationale": "1 条子需求无既有域承接，建议按种子功能\"审计日志面板支持\"拆分新模块"
+        },
+        {
+          "moduleId": "mod-general",
+          "name": "general模块（建议新建）",
+          "seedFeature": "general",
+          "statements": [
+            "st-5"
+          ],
+          "features": [],
+          "rationale": "1 条子需求无既有域承接，建议按种子功能\"general\"拆分新模块"
+        },
+        {
+          "moduleId": "mod-实时接收待审事件并支持",
+          "name": "实时接收待审事件并支持模块（建议新建）",
+          "seedFeature": "实时接收待审事件并支持",
+          "statements": [
+            "st-6"
+          ],
+          "features": [
+            "实时接收待审事件并支持",
+            "WebSocket",
+            "APPROVE",
+            "审批面板经",
+            "HITL",
+            "Rust",
+            "DENY",
+            "三态决议"
+          ],
+          "rationale": "1 条子需求无既有域承接，建议按种子功能\"实时接收待审事件并支持\"拆分新模块"
+        }
+      ]
+    },
+    "algorithmBindings": [],
+    "stats": {
+      "statements": 7,
+      "mappedStatements": 4,
+      "domains": 2,
+      "newModules": 3,
+      "algorithmBindings": 0,
+      "coverage": 0.5714285714285714
+    },
+    "status": "analyzed",
+    "createdAt": "2026-08-23T02:58:37.920Z"
+  }
+]

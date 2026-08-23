@@ -12,6 +12,64 @@ def freq2midi(freq: float):
     return int(round(69 + 12 * np.log2(freq / 440.0)))
 
 
+# 音名（octave_normalize 同步 name 用；pipeline.midi_name 同源）
+_NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+
+
+def _midi_name(m: int) -> str:
+    return f"{_NOTE_NAMES[m % 12]}{m // 12 - 1}"
+
+
+def octave_normalize(notes: List[Dict], target_low: int = 48, target_high: int = 72,
+                     fold_gap: int = 17) -> Tuple[List[Dict], int]:
+    """八度归一化（检测器半频锁定 octave-halving 的企业级修复）。
+
+    症状链路：音高检测器（crepe/pyin）对弱信号/远场哼唱常见半频锁定 →
+    部分或全部音符 midi 偏低 1-2 八度 → 简谱满屏低音点（1__ 6___ …）+
+    钢琴播放变成超低音轰鸣。简谱以相对音级记谱，绝对八度不承载乐义——
+    把越界音域拉回钢琴/人声黄金区（C3–C5）是哼唱转谱的行业标准做法。
+
+    区间语义（宽区间，忠实优先）：
+      已处于 [target_low, target_high]（C3..C5，合成钢琴与人声双黄金区）
+      的旋律原样保留——识别结果须忠实反映实际音高，正常输入不做无谓
+      变调；仅当中位数越出区间时才整体平移 k×12 拉回。
+
+    步骤（确定性，无随机源）：
+      1) 整体平移 k×12：仅当音符 midi 中位数越出 [target_low,
+         target_high] 时，平移至区间内（halving 典型残差 12-24 半音）；
+      2) 孤立离群折叠（始终生效）：|midi - 中位| ≥ fold_gap（17 半音
+         ≈ 1.5 八度）的音符 ±12 折回主体。真实旋律音域极少超 1.5 八度
+         （茉莉花等极端也只 1 个八度跳进）；混合 halving 的散点由此收敛。
+
+    返回 (新 notes 列表, 整体平移半音数)。不修改输入。
+    """
+    if not notes:
+        return [], 0
+
+    mids = sorted(int(round(float(n.get("midi", 60)))) for n in notes)
+    med = float(mids[len(mids) // 2])
+
+    shift = 0
+    while med + shift < target_low:
+        shift += 12
+    while med + shift > target_high:
+        shift -= 12
+
+    out = []
+    for n in notes:
+        m = int(round(float(n.get("midi", 60)))) + shift
+        # 孤立离群折叠（相对平移后的中位）
+        d = m - (med + shift)
+        if abs(d) >= fold_gap:
+            m -= 12 * int(round(d / 12.0))
+        item = dict(n)
+        item["midi"] = int(m)
+        if "name" in item:
+            item["name"] = _midi_name(int(m))
+        out.append(item)
+    return out, shift
+
+
 def _median_filter(x: np.ndarray, win: int, hole_after=None) -> np.ndarray:
     """中值滤波去颤音。四重修正（实测 C 被滤成 C#、边界帧被邻音改判的根因）：
 
@@ -390,6 +448,9 @@ def estimate_key(y: np.ndarray, sr: int = 16000,
         vmin = float(np.dot(shifted, minor / np.linalg.norm(minor)))
         if vmaj > best_v:
             best_v, best = vmaj, (names[i], 'major')
-        if vmin > best_v:
+        # 平局偏大调：短哼唱/单声部旋律的 K-S 大小调得分常贴近（实测
+        # C 大调旋律被误判 A 小调 → 音级全错）。小调须有显著优势
+        # （>0.015）才胜出；简谱记谱惯例 1=X 亦默认大调。
+        if vmin > best_v + 0.015:
             best_v, best = vmin, (names[i], 'minor')
     return best
