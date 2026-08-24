@@ -394,6 +394,41 @@ export const aiDevTestFix = (payload) => http.post('/ai/dev-test-fix', payload)
 export const aiFullComplete = (payload) => http.post('/ai/full-complete', payload)
 export const aiOptimizeDoc = (payload) => http.post('/ai/optimize-doc', payload)
 
+// ===== 项目需求一体化（对话内创建项目 → 图谱 → 云盘文档 → 数据库关联 → 联盟流水线） =====
+/**
+ * 对话 → 项目：基于当前会话上下文创建项目 + 需求全维建模
+ * payload: { name, category, description, requirement, session_id, messages[] }
+ * returns: { project_id, requirement_graph: {nodes, edges}, flow_diagram, doc_kb_id, db_links[], alliance_plan }
+ */
+export const aiProjectFromChat = (payload) => http.post('/ai/project-from-chat', payload)
+
+/**
+ * 项目→需求流程图知识图谱（独立调用，含流程节点、角色、数据对象、决策点）
+ */
+export const aiGenerateProjectGraph = (payload) => http.post('/ai/project-graph', payload)
+
+/**
+ * 需求↔数据库关联建模：提取需求中的业务实体 → 生成表/字段/索引/关系 DDL + ER 图谱
+ */
+export const aiLinkReqToDb = (payload) => http.post('/ai/req-db-link', payload)
+
+/**
+ * 产品专家联盟企业级流水线：
+ *  产品专家→架构专家→开发专家→测试专家→分析专家→验证专家
+ *  六阶段串/并行编排，每阶段输出 deliverable + 闸门评分
+ */
+export const allianceEnterprisePipeline = (payload) => http.post('/ai/alliance-pipeline', payload)
+
+/**
+ * 项目→云盘：将需求文档/流程图/数据库建模产物写入云盘知识库，并与项目建立双向关联
+ */
+export const aiPublishArtifactsToKb = (payload) => http.post('/ai/publish-kb', payload)
+
+/**
+ * 需求↔数据库 ER 图生成（Mermaid ERD + JSON 映射表）
+ */
+export const aiGenerateErd = (payload) => http.post('/ai/generate-erd', payload)
+
 // ===== Melody2Score 企业级旋律转谱 =====
 export const melodyHealth = () => http.get('/melody2score/health')
 export const melodyStatus = () => http.get('/melody2score/status')

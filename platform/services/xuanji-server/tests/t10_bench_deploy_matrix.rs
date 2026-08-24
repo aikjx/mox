@@ -22,24 +22,32 @@ fn run(cli: &Cli, s: &Arc<CliState>) -> Value { cli_run(cli, s).unwrap() }
 
 // Helper: locate repo-root relative path.
 fn repo_root_relative(sub: &str) -> PathBuf {
-    // cwd when running tests: platform/services/xuanji-server.
-    // Repo root is 4 parents up.
+    // cwd when running tests: platform/services/xuanji-server (3 levels below repo root)
+    // Up 3 levels: xuanji-server -> services -> platform -> repo_root (infotopograph)
     let here = std::env::current_dir().unwrap();
-    // Try: ../../../../{sub}
-    let candidate = here.join("../../..").join("../../..").join(sub);
+    let candidate = here.join("../../..").join(sub);
     if candidate.exists() {
         return candidate;
     }
-    // Sometimes cargo test runs from crate root.
-    let alt = here.join("../../../../").join(sub);
-    if alt.exists() { return alt; }
     // Fallback: try relative to CARGO_MANIFEST_DIR
     if let Ok(manifest) = std::env::var("CARGO_MANIFEST_DIR") {
-        let alt2 = PathBuf::from(manifest).join("../../../../").join(sub);
+        let alt2 = PathBuf::from(&manifest).join("../../..").join(sub);
         if alt2.exists() { return alt2; }
+        // Safety: if manifest dir contains 'infotopograph', try walking up.
+        let mut try_root = PathBuf::from(&manifest);
+        while let Some(parent) = try_root.parent() {
+            try_root = parent.to_path_buf();
+            let probe = try_root.join(sub);
+            if probe.exists() { return probe; }
+            if try_root.file_name().map(|n| n == "infotopograph").unwrap_or(false) {
+                let root_probe = try_root.join(sub);
+                if root_probe.exists() { return root_probe; }
+                break;
+            }
+        }
     }
-    // Absolute workspace root, fall back to sub as-is.
-    PathBuf::from(sub)
+    // Last-resort absolute path construction
+    PathBuf::from(r"d:\a10\aikjx\gitcode\infotopograph").join(sub)
 }
 
 // ============================================================
@@ -345,9 +353,9 @@ fn t10_13_deploy_single_node_false() {
 fn t10_14_deploy_crc_mismatch_metric_counter() {
     let s = state();
     s.metrics.crc_mismatch_total.inc();
-    assert_eq!(s.metrics.crc_mismatch_total.get(), 1);
-    s.metrics.crc_mismatch_total.inc_by(5);
-    assert_eq!(s.metrics.crc_mismatch_total.get(), 6);
+    assert_eq!(s.metrics.crc_mismatch_total.get(), 1.0);
+    s.metrics.crc_mismatch_total.inc_by(5.0);
+    assert_eq!(s.metrics.crc_mismatch_total.get(), 6.0);
 }
 
 // T10-15 bench.ec 4+2 size_mb=4 => throughput_mb_s finite & positive

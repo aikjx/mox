@@ -1,0 +1,211 @@
+{
+  "base": "http://127.0.0.1:18080",
+  "ts": "2026-08-24T15:08:14.428Z",
+  "summary": {
+    "passed": 40,
+    "total": 40,
+    "rate": 1
+  },
+  "results": [
+    {
+      "name": "SV2.1 /health returns 200",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "SV2.2 health ok=true",
+      "ok": true,
+      "detail": "{\"audit_chain_len\":2,\"graph\":{\"archived_edges\":0,\"edges\":0,\"objects\":0,\"soft_deleted\":0,\"tags\":0},\"metrics\":true,\"mpu_uploads_active\":0,\"objects_stored\":0,\"ok\":true,\"uptime_ms\":10161}"
+    },
+    {
+      "name": "SV2.3 audit_chain_len >= 1 (seeded)",
+      "ok": true,
+      "detail": "2"
+    },
+    {
+      "name": "SV2.4 /metrics returns 200",
+      "ok": true,
+      "detail": "200 body_len=3970"
+    },
+    {
+      "name": "SV2.5 Content-Type Prometheus text",
+      "ok": true,
+      "detail": "text/plain; version=0.0.4; charset=utf-8"
+    },
+    {
+      "name": "SV3.1 PUT /s3 returns 200",
+      "ok": true,
+      "detail": "200 {\"bucket\":\"demo\",\"crc64_ecma\":\"c3f0c58038a5be9f\",\"etag\":\"c3f0c58038a5be9f-62283f39b7f03ab4\",\"fusion_status\":true,\"graph_wrote_edges\":4,\"key\":\"hello/alpha.bin\",\"miji_level\":1,\"ok\":true,\"ref\":\"s3://demo/hello/alpha.bin\",\"size\":343,\"tags_count\":3}"
+    },
+    {
+      "name": "SV3.2 PUT returns non-empty ETag",
+      "ok": true,
+      "detail": "c3f0c58038a5be9f-62283f39b7f03ab4"
+    },
+    {
+      "name": "SV3.3 PUT returns non-empty CRC64/ECMA",
+      "ok": true,
+      "detail": "c3f0c58038a5be9f"
+    },
+    {
+      "name": "SV3.4 PUT CRC matches client-computed CRC64/ECMA",
+      "ok": true,
+      "detail": "server=c3f0c58038a5be9f client=c3f0c58038a5be9f"
+    },
+    {
+      "name": "SV3.5 PUT ETag matches deterministic client formula",
+      "ok": true,
+      "detail": "server=c3f0c58038a5be9f-62283f39b7f03ab4 client=c3f0c58038a5be9f-62283f39b7f03ab4"
+    },
+    {
+      "name": "SV3.6 PUT fusion_status = true",
+      "ok": true,
+      "detail": "true"
+    },
+    {
+      "name": "SV3.7 PUT tags_count = 3",
+      "ok": true,
+      "detail": "tags_count=3"
+    },
+    {
+      "name": "SV3.8 GET returns 200",
+      "ok": true,
+      "detail": "200 body_len=343"
+    },
+    {
+      "name": "SV3.9 GET body equals original payload",
+      "ok": true,
+      "detail": "orig_len=343 got_len=343"
+    },
+    {
+      "name": "SV3.10 GET x-amz-meta-crc64-ecma header matches PUT CRC",
+      "ok": true,
+      "detail": "put=c3f0c58038a5be9f get_hdr=c3f0c58038a5be9f"
+    },
+    {
+      "name": "SV3.11 GET ETag header matches PUT ETag",
+      "ok": true,
+      "detail": "put=c3f0c58038a5be9f-62283f39b7f03ab4 get_hdr=\"c3f0c58038a5be9f-62283f39b7f03ab4\""
+    },
+    {
+      "name": "SV4.1 /graph/stats returns 200",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "SV4.2 graph.objects >= 1 (from fusion PUT)",
+      "ok": true,
+      "detail": "1"
+    },
+    {
+      "name": "SV4.3 graph.tags >= 3 (project/owner/dataset + defaults?)",
+      "ok": true,
+      "detail": "4"
+    },
+    {
+      "name": "SV4.4 graph.edges >= objCount (obj+tags HAS_TAG)",
+      "ok": true,
+      "detail": "edges=4 objs=1"
+    },
+    {
+      "name": "SV4.5 /graph/query_by_tag returns 200",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "SV4.6 query_by_tag count >= 1",
+      "ok": true,
+      "detail": "count=1"
+    },
+    {
+      "name": "SV4.7 query result ref == s3 ref",
+      "ok": true,
+      "detail": "ref=s3://demo/hello/alpha.bin"
+    },
+    {
+      "name": "SV4.8 query result ETag matches PUT",
+      "ok": true,
+      "detail": "put=c3f0c58038a5be9f-62283f39b7f03ab4 graph=c3f0c58038a5be9f-62283f39b7f03ab4"
+    },
+    {
+      "name": "SV4.9 query result CRC hex matches PUT",
+      "ok": true,
+      "detail": "put=c3f0c58038a5be9f graph=c3f0c58038a5be9f"
+    },
+    {
+      "name": "SV4.10 /audit/chain returns 200",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "SV4.11 audit verified=true (WORM integrity)",
+      "ok": true,
+      "detail": "verified=true len=3 last_block=2"
+    },
+    {
+      "name": "SV4.12 audit len >= 2 (genesis + PUT + seed?)",
+      "ok": true,
+      "detail": "3"
+    },
+    {
+      "name": "SV5.1 /metrics exposes all 10 Xuanji base metrics",
+      "ok": true,
+      "detail": "10/10; missing="
+    },
+    {
+      "name": "SV6.1 MPU create returns UploadId",
+      "ok": true,
+      "detail": "{\"bucket\":\"demo\",\"key\":\"mpu/big.bin\",\"ok\":true,\"owner\":\"api-user\",\"upload_id\":\"e6d0c40b-94a5-4070-a411-12d96455cbaa-9090123b4533\"}"
+    },
+    {
+      "name": "SV6.2 part 1 upload",
+      "ok": true,
+      "detail": "part=1 status=200 etag=cb93bc2daed8e588 crc=cb93bc2daed8e588"
+    },
+    {
+      "name": "SV6.2 part 2 upload",
+      "ok": true,
+      "detail": "part=2 status=200 etag=9cce797ef8944842 crc=9cce797ef8944842"
+    },
+    {
+      "name": "SV6.2 part 3 upload",
+      "ok": true,
+      "detail": "part=3 status=200 etag=e6941fde6d8ae72f crc=e6941fde6d8ae72f"
+    },
+    {
+      "name": "SV6.2 part 4 upload",
+      "ok": true,
+      "detail": "part=4 status=200 etag=d48282f008f26a93 crc=d48282f008f26a93"
+    },
+    {
+      "name": "SV6.2 part 5 upload",
+      "ok": true,
+      "detail": "part=5 status=200 etag=879d0f6d7d454a77 crc=879d0f6d7d454a77"
+    },
+    {
+      "name": "SV6.3 MPU complete returns 200 + n_parts=5",
+      "ok": true,
+      "detail": "status=200 n_parts=5 agg_crc=f6c02f1404721516"
+    },
+    {
+      "name": "SV6.4 MPU aggregate CRC matches client concatenation",
+      "ok": true,
+      "detail": "server=f6c02f1404721516 client=f6c02f1404721516 size=350"
+    },
+    {
+      "name": "SV6.5 GET completed MPU returns 200",
+      "ok": true,
+      "detail": "status=200 len=350 expected=350"
+    },
+    {
+      "name": "SV6.6 GET MPU body length matches aggregate bytes",
+      "ok": true,
+      "detail": "got_len=350 want_len=350"
+    },
+    {
+      "name": "SV6.7 GET MPU x-amz-meta-crc64-ecma matches complete agg CRC",
+      "ok": true,
+      "detail": "complete=f6c02f1404721516 get=f6c02f1404721516"
+    }
+  ]
+}

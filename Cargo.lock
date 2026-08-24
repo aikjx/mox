@@ -5178,6 +5178,7 @@ dependencies = [
  "xuanji-data-plane",
  "xuanji-etl-wasm",
  "xuanji-fusion",
+ "xuanji-standards",
 ]
 
 [[package]]
@@ -5220,6 +5221,28 @@ dependencies = [
  "tracing-subscriber",
  "uuid",
  "xuanji-common-meta",
+]
+
+[[package]]
+name = "xuanji-t21-harness"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "hex",
+ "parking_lot",
+ "rand 0.8.7",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 1.0.69",
+ "xuanji-cloud-drive-volume",
+ "xuanji-compliance",
+ "xuanji-data-plane",
+ "xuanji-etl-wasm",
+ "xuanji-fusion",
+ "xuanji-server",
 ]
 
 [[package]]

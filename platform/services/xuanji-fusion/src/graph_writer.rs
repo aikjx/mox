@@ -224,7 +224,30 @@ impl GraphWriter {
             None => (BTreeSet::new(), false),
         };
 
-        if is_redundant {
+        let is_soft_dead = s.soft_deleted.remove(&obj_id);
+        if is_redundant && !is_soft_dead {
+            // Common path: content identical and object not soft-deleted → no-op.
+            if truncated {
+                s.truncation_audit.push(AuditEvent::new(
+                    AuditRecordKind::TagTruncated,
+                    uri.to_string(),
+                    None,
+                    now,
+                ));
+            }
+            return Ok(());
+        }
+        // If we were soft-deleted, treat the upsert as "revive": even with
+        // content matching we must re-create HAS_TAG edges (they were
+        // archived in mark_deleted).
+        if is_soft_dead {
+            for tid in &new_tag_ids {
+                let key = (obj_id.clone(), tid.clone());
+                // Clean up the archived entry for the revived edge so
+                // archival counts don't grow unboundedly.
+                s.archived_edges.remove(&key);
+                s.edges.insert(key);
+            }
             if truncated {
                 s.truncation_audit.push(AuditEvent::new(
                     AuditRecordKind::TagTruncated,

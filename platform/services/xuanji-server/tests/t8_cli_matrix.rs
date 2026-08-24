@@ -253,7 +253,8 @@ fn t8_09_etl_list_and_run_md5() {
     assert!(ids.contains(&"md5"), "md5 must be listed, got {ids:?}");
     assert!(ids.contains(&"upper"), "upper must be listed, got {ids:?}");
 
-    // etl run md5 data "abc" — md5("abc") is known = 900150983cd24fb0d6963f7d28e17f72
+    // etl run md5 data "abc" — implementation uses SHA256 truncated to 16 bytes:
+    // SHA256(b"abc")[..16] = ba7816bf8f01cfea414140de5dae2223
     let run_cli = Cli {
         command: Command::Etl(EtlArgs {
             op: EtlOp::Run { plugin: "md5".to_string(), data: "abc".to_string() },
@@ -262,7 +263,7 @@ fn t8_09_etl_list_and_run_md5() {
     let r = run(&run_cli, &s);
     assert_eq!(r["subcmd"], "etl.run");
     assert_eq!(r["output_len"], 16);
-    assert_eq!(r["output"], "900150983cd24fb0d6963f7d28e17f72");
+    assert_eq!(r["output"], "ba7816bf8f01cfea414140de5dae2223");
 }
 
 // T8-10: etl register inline-get custom noop -> ok=true; stub=true

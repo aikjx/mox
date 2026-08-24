@@ -80,19 +80,19 @@ fn t9_04_ec_encode_histogram_256_samples() {
 #[test]
 fn t9_05_mpu_parts_counter_additive() {
     let m = XuanjiMetrics::new().unwrap();
-    m.mpu_parts_total.inc_by(17);
-    assert_eq!(m.mpu_parts_total.get(), 17);
+    m.mpu_parts_total.inc_by(17.0);
+    assert_eq!(m.mpu_parts_total.get(), 17.0);
     m.mpu_parts_total.inc();
-    assert_eq!(m.mpu_parts_total.get(), 18);
+    assert_eq!(m.mpu_parts_total.get(), 18.0);
 }
 
 // T9-06: ec_shard_rebuild counter after inc_by(9) + observe_n_samples(5) = 14
 #[test]
 fn t9_06_shard_rebuild_counter_total() {
     let m = XuanjiMetrics::new().unwrap();
-    m.ec_shard_rebuild.inc_by(9);
+    m.ec_shard_rebuild.inc_by(9.0);
     m.observe_n_samples(5); // adds 5 more
-    assert_eq!(m.ec_shard_rebuild.get(), 14);
+    assert_eq!(m.ec_shard_rebuild.get(), 14.0);
 }
 
 // T9-07: mountpath_faulty_total gauge set 3, set 0 round-trips
@@ -123,16 +123,16 @@ fn t9_09_miji_denied_counters() {
     let m = XuanjiMetrics::new().unwrap();
     for _ in 0..3 { m.miji_denied_read_total.inc(); }
     for _ in 0..5 { m.miji_denied_write_total.inc(); }
-    assert_eq!(m.miji_denied_read_total.get(), 3);
-    assert_eq!(m.miji_denied_write_total.get(), 5);
+    assert_eq!(m.miji_denied_read_total.get(), 3.0);
+    assert_eq!(m.miji_denied_write_total.get(), 5.0);
 }
 
 // T9-10: crc_mismatch_total counter inc_by(11) == 11
 #[test]
 fn t9_10_crc_mismatch_counter() {
     let m = XuanjiMetrics::new().unwrap();
-    m.crc_mismatch_total.inc_by(11);
-    assert_eq!(m.crc_mismatch_total.get(), 11);
+    m.crc_mismatch_total.inc_by(11.0);
+    assert_eq!(m.crc_mismatch_total.get(), 11.0);
 }
 
 // T9-11: BenchSamples on deterministic [0..100] p99 within 1% of 99.0

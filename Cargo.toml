@@ -34,6 +34,7 @@ members = [
     "platform/services/xuanji-etl-wasm",
     "platform/services/xuanji-data-plane",
     "platform/services/xuanji-server",
+    "platform/services/xuanji-t21-harness",
 ]
 resolver = "2"
 

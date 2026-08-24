@@ -214,6 +214,12 @@ impl HashChain {
     pub fn is_empty(&self) -> bool {
         self.blocks.lock().is_empty()
     }
+    /// Return the idx field of the last block (genesis idx = 0).
+    /// Returns 0 for empty chains to match genesis semantics.
+    pub fn last_block_index(&self) -> u64 {
+        let b = self.blocks.lock();
+        b.last().map(|x| x.idx).unwrap_or(0)
+    }
 
     /// 全链校验
     pub fn verify(&self) -> ChainVerifyResult {
