@@ -1,9 +1,10 @@
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::error::Error;
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct UserInfo {
     pub user_id: String,
     pub username: String,
@@ -11,7 +12,7 @@ pub struct UserInfo {
     pub enabled: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct PolicyStatement {
     pub sid: String,
     pub effect: String,
@@ -19,14 +20,14 @@ pub struct PolicyStatement {
     pub resources: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct RoleInfo {
     pub role_id: String,
     pub role_name: String,
     pub assume_role_policy: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct StsCredentials {
     pub access_key: String,
     pub secret_key: String,

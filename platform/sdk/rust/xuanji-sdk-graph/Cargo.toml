@@ -4,10 +4,9 @@ version.workspace = true
 edition.workspace = true
 license = "MIT OR Apache-2.0"
 authors.workspace = true
-description = "Xuanji SDK Graph — graph service client stub"
+description = "Xuanji SDK Graph — graph service client (in-memory fake facade)"
 
 [dependencies]
-xuanji-domain-abstractions = { path = "../../../services/xuanji-domain-abstractions" }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
@@ -16,3 +15,6 @@ tokio = { workspace = true }
 
 [lib]
 path = "src/lib.rs"
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }

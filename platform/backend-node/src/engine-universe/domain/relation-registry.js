@@ -72,7 +72,51 @@ const ENGINE_EDGES = [
 
   // W8 兜底：flow-engine（Rust 侧流程引擎）接入主连通分量 → 编排引擎 + ai-engine-core（避免孤岛）
   { from: 'orchestration-engine', to: 'flow-engine', type: 'delegates_to', note: '复杂流程状态机委托 Rust flow-engine（xuanji-system 协同）' },
-  { from: 'flow-engine', to: 'ai-engine-core', type: 'depends_on', note: '流程引擎复用 AI Engine Core 的 LLM/会话侧车' }
+  { from: 'flow-engine', to: 'ai-engine-core', type: 'depends_on', note: '流程引擎复用 AI Engine Core 的 LLM/会话侧车' },
+
+  // ========== [P1-2 V6 孤岛消除] engine-rust-* ↔ engine::* 等价边 16 条（跨语言一对一承接，双注册表联动）==========
+  { from: 'engine-rust-ai-agent',         to: 'engine::ai_agent',           type: 'equivalent_to', note: 'JS 层 Rust AI Agent 承接点 ↔ Rust crate 正式条目' },
+  { from: 'engine-rust-xuanji-expert',    to: 'engine::xuanji_expert',      type: 'equivalent_to', note: 'Rust 璇玑专家平台 JS 视图 ↔ Rust crate' },
+  { from: 'engine-rust-xuanji-system',    to: 'engine::xuanji_system',      type: 'equivalent_to', note: 'Rust 系统底座 ↔ Rust crate 正式条目' },
+  { from: 'engine-rust-runtime',          to: 'engine::runtime',            type: 'equivalent_to', note: 'Rust 网关运行时 Cordis ↔ Rust crate engine::runtime' },
+  { from: 'engine-rust-graph-algorithms', to: 'engine::graph_algorithms',   type: 'equivalent_to', note: 'Rust 图算法引擎 ↔ Rust crate engine::graph_algorithms' },
+  { from: 'engine-rust-flow-ai',          to: 'engine::flow_ai',            type: 'equivalent_to', note: 'Rust FlowAI 流程智能 ↔ Rust crate engine::flow_ai' },
+  { from: 'engine-rust-optimizer',        to: 'engine::optimizer',          type: 'equivalent_to', note: 'Rust 算子优化器 ↔ Rust crate engine::optimizer' },
+  { from: 'engine-rust-operator-core',    to: 'engine::operator_core',      type: 'equivalent_to', note: 'Rust 算子核心 ↔ Rust crate engine::operator_core' },
+  { from: 'engine-rust-primiflow-core',   to: 'engine::primiflow_core',     type: 'equivalent_to', note: 'Rust PrimiFlow 核心 ↔ Rust crate engine::primiflow_core' },
+  { from: 'engine-rust-primiflow-fusion', to: 'engine::primiflow_fusion',   type: 'equivalent_to', note: 'Rust PrimiFlow 六维融合 ↔ Rust crate engine::primiflow_fusion' },
+  { from: 'engine-rust-kg-hub',           to: 'engine::kg_hub',             type: 'equivalent_to', note: 'Rust 知识图谱中枢 ↔ Rust crate engine::kg_hub' },
+  // engine::* 中另外 5 条 engine-rust 条目尚未建（business_catalog / hermes_flow_bridge / operator_wasm / template_market / xuanji_common_meta），这里补接入
+  { from: 'engine-rust-xuanji-system',    to: 'engine::business_catalog',   type: 'delegates_to', note: '业务目录作为 xuanji-system 的子能力（跨源数据统一目录）' },
+  { from: 'engine-rust-flow-ai',          to: 'engine::hermes_flow_bridge', type: 'data_flows_to', note: 'FlowAI 事件流通过 Hermes Bridge 跨进程分发' },
+  { from: 'engine-rust-operator-core',    to: 'engine::operator_wasm',      type: 'depends_on', note: '算子核心依赖 WASM 沙箱执行用户算子' },
+  { from: 'engine-rust-graph-algorithms', to: 'engine::template_market',    type: 'data_flows_to', note: '算法模板发布通过 Template Market 进行分发' },
+  { from: 'engine-rust-xuanji-system',    to: 'engine::xuanji_common_meta', type: 'depends_on', note: '系统底座依赖公共元数据常量与 URN 解析' },
+
+  // ========== [P1-2 V6 孤岛消除] JS 侧 5 个追加节点（appendFlowEngines）接入主链 ==========
+  { from: 'ai-engine-core', to: 'engine-kernel',   type: 'depends_on', note: 'AI Core 装配引擎内核：能力执行安全切换与热替换' },
+  { from: 'gateway-runtime', to: 'engine::runtime', type: 'depends_on', note: 'JS 网关运行时视图装配 Rust Cordis runtime 实现（通过 engine::* 索引）' },
+  { from: 'gateway-runtime', to: 'ai-engine-core',  type: 'data_flows_to', note: 'HITL 审批决议回传到 AI Engine Core 能力执行继续' },
+  { from: 'project-atlas',   to: 'kb',              type: 'data_flows_to', note: '项目资产扫描结果入知识库（文档/版本 diff）' },
+  { from: 'project-atlas',   to: 'knowledge-graph', type: 'data_flows_to', note: '项目资产四分类 / 需求归一化流水线 映射为图谱节点与边' },
+  { from: 'project-atlas',   to: 'ai-engine-core',  type: 'serves', note: 'Project Atlas 为 AI 核心扫描与重建全系统资产依赖图（采集→归一化链上游）' },
+
+  // ========== [P1-2 V6 孤岛消除] FlowAI / Hermes / xuanji_expert 跨层桥（主分量 → Rust 分量）==========
+  { from: 'orchestration-engine',   to: 'engine-rust-flow-ai',       type: 'delegates_to', note: 'V2 编排把关键路径/SAGA 调度委托 Rust FlowAI（性能敏感）' },
+  { from: 'ai-integration-engine',  to: 'engine-rust-graph-algorithms', type: 'delegates_to', note: 'JS PageRank 图计算超时 → 委托 Rust 加速（A18 双实现收口）' },
+  { from: 'expert-alliance-engine', to: 'engine-rust-xuanji-expert', type: 'delegates_to', note: '联盟咨询的验证管线（拓扑/冲突/数据依赖）委托 Rust' },
+  { from: 'infinite-dimension-optimizer', to: 'engine-rust-optimizer', type: 'delegates_to', note: 'CEM 高维寻优在 Rust 算子级 Pass 管线运行（冷启动 warmup）' },
+  { from: 'knowledge-graph',        to: 'engine-rust-kg-hub',        type: 'data_flows_to', note: 'JS 知识图谱向 Rust KG Hub 增量同步做跨源合并' },
+  { from: 'auto-dev-engine',        to: 'engine-rust-primiflow-core', type: 'delegates_to', note: '确定性代码渲染委托 PrimiFlow 多目标代码生成（gen/*）' },
+  { from: 'engine-rust-primiflow-core', to: 'engine-rust-primiflow-fusion', type: 'depends_on', note: 'PrimiFlow 核心执行依赖六维融合做统一包络对外服务' },
+  { from: 'ai-engine-core',          to: 'engine-rust-ai-agent',      type: 'delegates_to', note: '跨工具对话 / 工作流 / 浏览器自动化 委托 Rust AI Agent（性能安全隔离）' },
+  { from: 'engine-kernel',          to: 'engine-rust-operator-core', type: 'depends_on', note: '内核切换槽位的算子执行通过 Rust operator-core（守恒律校验）' },
+  { from: 'engine-kernel',          to: 'engine-rust-xuanji-system', type: 'depends_on', note: '内核 RBAC / 加密 / 限流 依赖 Rust xuanji-system 组件' },
+  { from: 'flow-engine',            to: 'engine::flow_ai',           type: 'equivalent_to', note: 'JS flow-engine 别名 ↔ Rust FlowAI crate（跨语言同一能力）' },
+  { from: 'orchestration-engine',   to: 'engine::hermes_flow_bridge', type: 'data_flows_to', note: 'V2 编排跨进程事件通过 Hermes Bridge（Rust）可靠传递' },
+  { from: 'session-store',          to: 'engine::runtime',           type: 'data_flows_to', note: '会话历史回放通过 Cordis Gateway WS 广播给多端协同' },
+  { from: 'kb',                     to: 'engine::business_catalog',  type: 'data_flows_to', note: 'KB 文档分类 → 业务目录中心统一索引目录树 & 倒排' },
+  { from: 'engine::kg_hub',         to: 'kb',                       type: 'data_flows_to', note: '跨源 KG 合并后，实体与文档通过 KB 的 graphLinks 关联' },
 ];
 
 // ---------- 需求归一化链内部流转 ----------

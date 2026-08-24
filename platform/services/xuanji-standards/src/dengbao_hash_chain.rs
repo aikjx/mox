@@ -178,7 +178,9 @@ impl HashChain {
         let mut blocks = self.blocks.lock();
         let prev = blocks.last().expect("chain non-empty (genesis exists)");
         let idx = prev.idx + 1;
-        let ph = payload_hash.unwrap_or_else(|| sha256_hex(b"").as_str()).to_string();
+        let ph = payload_hash
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| sha256_hex(b""));
         let (block_hash, hmac_signature) = Self::compute_block(
             &self.root_key,
             &prev.block_hash,
@@ -301,7 +303,7 @@ fn verify_blocks(blocks: &[HashChainBlock], root_key: &[u8]) -> ChainVerifyResul
                 blocks: n,
                 integrity: false,
                 broken_at: Some(i as u64),
-                last_ts_ms,
+                last_ts_ms: last_ts,
             };
         }
         last_ts = Some(cur.ts_ms);
@@ -436,11 +438,13 @@ mod tests {
 
     #[test]
     fn t_a5_7_verify_json_file_happy() {
-        let c = HashChain::new(b""); // empty key → default logic path 一致
+        let key = b"verify-json-file-happy-key-0000000";
+        let key_hex = hex::encode(key);
+        let c = HashChain::new(key);
         c.append("x", "y", "z", Outcome::Allow, None);
         let snap = c.snapshot();
         let json = serde_json::to_vec(&snap).unwrap();
-        let r = verify_json_file(&json, "").unwrap();
+        let r = verify_json_file(&json, &key_hex).unwrap();
         assert!(r.integrity);
         assert_eq!(r.blocks, 2);
     }

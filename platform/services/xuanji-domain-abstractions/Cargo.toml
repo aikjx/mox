@@ -9,15 +9,9 @@ description = "Xuanji V5 L5 Domain Abstractions (Cloud Drive 5 + Graph 5 traits)
 [dependencies]
 async-trait = { workspace = true }
 bytes = "1"
-serde = { workspace = true, optional = true }
+serde = { workspace = true, features = ["derive"] }
 sha2 = { workspace = true }
 hmac = { workspace = true }
 hex = { workspace = true }
 parking_lot = { workspace = true }
 
-[features]
-default = []
-serde = ["dep:serde"]
-
-[dev-dependencies]
-tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }

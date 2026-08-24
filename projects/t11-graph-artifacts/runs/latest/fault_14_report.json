@@ -1,0 +1,134 @@
+{
+  "fault_count": 14,
+  "total_runs": 42,
+  "all_pass": true,
+  "matrix": [
+    {
+      "fault": "F1",
+      "desc": "DoubleEmit",
+      "point": "Emit",
+      "runs_per_fault": 3,
+      "triggers": 3,
+      "gate_pass": true,
+      "recovered": true
+    },
+    {
+      "fault": "F2",
+      "desc": "OutOfOrder",
+      "point": "Emit",
+      "runs_per_fault": 3,
+      "triggers": 3,
+      "gate_pass": true,
+      "recovered": true
+    },
+    {
+      "fault": "F3",
+      "desc": "PacketDrop1Pct",
+      "point": "Next",
+      "runs_per_fault": 3,
+      "triggers": 3,
+      "gate_pass": true,
+      "recovered": true
+    },
+    {
+      "fault": "F4",
+      "desc": "Stall200ms",
+      "point": "Next",
+      "runs_per_fault": 3,
+      "triggers": 3,
+      "gate_pass": true,
+      "recovered": true
+    },
+    {
+      "fault": "F5",
+      "desc": "OffsetJump",
+      "point": "Next",
+      "runs_per_fault": 3,
+      "triggers": 3,
+      "gate_pass": true,
+      "recovered": true
+    },
+    {
+      "fault": "F6",
+      "desc": "HalfWriteFail",
+      "point": "Write",
+      "runs_per_fault": 3,
+      "triggers": 3,
+      "gate_pass": true,
+      "recovered": true
+    },
+    {
+      "fault": "F7",
+      "desc": "DiskFull10Pct",
+      "point": "Write",
+      "runs_per_fault": 3,
+      "triggers": 3,
+      "gate_pass": true,
+      "recovered": true
+    },
+    {
+      "fault": "F8",
+      "desc": "OOMDropCircuitBreaker",
+      "point": "Projection",
+      "runs_per_fault": 3,
+      "triggers": 3,
+      "gate_pass": true,
+      "recovered": true
+    },
+    {
+      "fault": "F9",
+      "desc": "Stall100ms",
+      "point": "Projection",
+      "runs_per_fault": 3,
+      "triggers": 3,
+      "gate_pass": true,
+      "recovered": true
+    },
+    {
+      "fault": "F10",
+      "desc": "FalsePositiveSet",
+      "point": "Projection",
+      "runs_per_fault": 3,
+      "triggers": 3,
+      "gate_pass": true,
+      "recovered": true
+    },
+    {
+      "fault": "F11",
+      "desc": "LeaderKill",
+      "point": "Emit",
+      "runs_per_fault": 3,
+      "triggers": 3,
+      "gate_pass": true,
+      "recovered": true
+    },
+    {
+      "fault": "F12",
+      "desc": "TimeoutThenOK",
+      "point": "Write",
+      "runs_per_fault": 3,
+      "triggers": 3,
+      "gate_pass": true,
+      "recovered": true
+    },
+    {
+      "fault": "F13",
+      "desc": "LagSpike",
+      "point": "Next",
+      "runs_per_fault": 3,
+      "triggers": 3,
+      "gate_pass": true,
+      "recovered": true
+    },
+    {
+      "fault": "F14",
+      "desc": "AuditCircuitBreakerOpen",
+      "point": "Audit",
+      "runs_per_fault": 3,
+      "triggers": 3,
+      "gate_pass": true,
+      "recovered": true
+    }
+  ],
+  "quality_gate": "lost==0 AND no_partial_write AND (CB_open => audit_entry)"
+}

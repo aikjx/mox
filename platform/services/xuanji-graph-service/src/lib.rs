@@ -14,20 +14,26 @@
 //!
 //! 本 crate 零引用第三方成品图数据库 crate。
 
+pub mod ac15_faults;
 pub mod algo_bridge;
 pub mod cypher_parser;
 pub mod error;
 pub mod graph_server;
 pub mod ngql_parser;
 pub mod optimizer;
+pub mod projection_20;
 pub mod result_set;
+pub mod trace_8stages;
 
+pub use ac15_faults::{Ac15Fault, FaultInjector, FaultPoint, FaultReport, QualityGate};
+pub use trace_8stages::*;
 pub use algo_bridge::{AlgoBridge, Communities, Graph as AlgoGraph};
 pub use cypher_parser::CypherParser;
 pub use error::{GraphError, GraphResult};
 pub use graph_server::{Direction, EdgeRow, GraphServer, Neighbor, StorageEngine};
 pub use ngql_parser::{NgqlParser, PlanNode};
 pub use optimizer::{Optimizer, PlanOutput};
+pub use projection_20::{projection_20_matrix, PROJECTION_OPERATORS, ProjectionContext, ProjectionOperator, ProjectionResult};
 pub use result_set::{PropValue, ResultSet};
 
 /// LPA helper（公共 API 已弃用）。

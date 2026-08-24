@@ -27,6 +27,12 @@ members = [
     "platform/sdk/rust/xuanji-sdk-graph",
     "platform/services/xuanji-cloud-drive-filer",
     "platform/services/xuanji-graph-service",
+    "platform/services/xuanji-graph-streams",
+    "platform/services/xuanji-graph-spark",
+    "platform/services/xuanji-compliance",
+    "platform/services/xuanji-fusion",
+    "platform/services/xuanji-etl-wasm",
+    "platform/services/xuanji-data-plane",
 ]
 resolver = "2"
 
@@ -79,10 +85,11 @@ reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-feature
 base64 = "0.22"
 rusqlite = { version = "0.31", features = ["bundled"] }
 
-# Cryptography (audit SigV4, HMAC signatures)
+# Cryptography (audit SigV4, HMAC signatures, hex)
 sha2 = "0.10"
 hmac = "0.12"
 hex = "0.4"
+crc64fast = { version = "1", optional = false, default-features = false }
 
 # Concurrency utilities
 parking_lot = "0.12"
@@ -92,6 +99,12 @@ async-trait = "0.1"
 tokio-tungstenite = "0.21"
 futures = "0.3"
 futures-util = "0.3"
+
+# CLI framework for single-binary xuanji server
+clap = { version = "4", features = ["derive", "env", "unicode", "wrap_help"] }
+
+# Observability
+prometheus = { version = "0.13", default-features = false, features = ["process"] }
 
 # Persistence: query builder & SQL drivers (xuanji-system uses backends at compile-time)
 sea-query = "0.32"

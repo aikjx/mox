@@ -1,0 +1,9 @@
+{
+  "N": 10000,
+  "gen_ms": 493,
+  "append_ips": 20284,
+  "verify_ms": 0,
+  "verify_ips": 10000000,
+  "integrity": false,
+  "broken_at": 1
+}

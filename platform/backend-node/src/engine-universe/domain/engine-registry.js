@@ -236,7 +236,7 @@ const ENGINES = [
     name: 'Rust AI Agent 引擎',
     category: 'intelligence',
     layer: '智能层（Rust）',
-    codePath: '../services/ai-agent/src',
+    codePath: '../services/ai-agent/src/lib.rs',
     keyFunctions: [
       '对话图 + 工作流 + 工具总线（dialogue_graph/workflow_engine/plugin_bus）',
       '多智能体协作引擎（multi_agent.rs · 角色分工 + 消息总线）',
@@ -249,7 +249,7 @@ const ENGINES = [
     name: 'Rust 璇玑专家引擎',
     category: 'collaboration',
     layer: '协作层（Rust）',
-    codePath: '../services/xuanji-expert/src',
+    codePath: '../services/xuanji-expert/src/lib.rs',
     keyFunctions: [
       '15 专家画像 + 15× 验证管线（experts/* + verify/*）',
       '六阶段流水线：RBAC 门禁 → 管线装载 → 执行器 → 拓扑/冲突/数据依赖/增益 验证',
@@ -262,7 +262,7 @@ const ENGINES = [
     name: 'Rust 璇玑系统底座',
     category: 'infrastructure',
     layer: '基础设施（Rust）',
-    codePath: '../services/xuanji-system/src',
+    codePath: '../services/xuanji-system/src/lib.rs',
     keyFunctions: [
       '服务编排器 + 多后端存储（orchestrator.rs + repo/*）',
       'RBAC / 加密 / 限流（rbac/crypto/ratelimit）',
@@ -275,7 +275,7 @@ const ENGINES = [
     name: 'Rust 网关运行时（Cordis）',
     category: 'infrastructure',
     layer: '基础设施（Rust）',
-    codePath: '../gateway/runtime/src',
+    codePath: '../gateway/runtime/src/lib.rs',
     keyFunctions: [
       'Cordis 插件运行时：bundle/lifecycle/event_bus/seam/profile',
       'HITL 人机协同 WebSocket + RBAC 中间件（handlers/hitl + rbac_middleware）',
@@ -288,7 +288,7 @@ const ENGINES = [
     name: 'Rust 图算法引擎',
     category: 'intelligence',
     layer: '智能层（Rust）',
-    codePath: '../services/graph-algorithms/src',
+    codePath: '../services/graph-algorithms/src/lib.rs',
     keyFunctions: [
       'PageRank 推模型（转置图，Rust primary；与 ai-integration-engine co_impl）',
       'CNM 模块度贪心凝聚 + Brandes 介数 / Harmonic 紧密 / 度中心性',
@@ -301,7 +301,7 @@ const ENGINES = [
     name: 'Rust FlowAI 流程智能引擎',
     category: 'orchestration',
     layer: '编排层（Rust）',
-    codePath: '../services/flow-ai/src',
+    codePath: '../services/flow-ai/src/lib.rs',
     keyFunctions: [
       '数据流/控制流建模（dataflow.rs + topology.rs）',
       '关键路径分析与调度（critpath.rs / schedule.rs）',
@@ -314,7 +314,7 @@ const ENGINES = [
     name: 'Rust 算子优化器引擎',
     category: 'optimization',
     layer: '优化层（Rust）',
-    codePath: '../services/optimizer/src',
+    codePath: '../services/optimizer/src/lib.rs',
     keyFunctions: [
       '算子图融合 / 重排 / CSE（公共子表达式消除）Pass',
       'Cost-based 搜索（cost 启发式 + 基于运行 trace 的学习）',
@@ -327,7 +327,7 @@ const ENGINES = [
     name: 'Rust 算子核心引擎',
     category: 'orchestration',
     layer: '编排层（Rust）',
-    codePath: '../services/operator-core/src',
+    codePath: '../services/operator-core/src/lib.rs',
     keyFunctions: [
       '算子 Monad + 资源容器（operator.rs + monad.rs + resource.rs）',
       '守恒律校验引擎（conservation.rs · 算子输入输出质量守恒单源）',
@@ -340,7 +340,7 @@ const ENGINES = [
     name: 'Rust PrimiFlow 核心引擎',
     category: 'automation',
     layer: '自动化层（Rust）',
-    codePath: '../services/primiflow-core/src',
+    codePath: '../services/primiflow-core/src/lib.rs',
     keyFunctions: [
       'DSL 解析与代码生成（parse.rs + generate.rs + gen/* 多目标）',
       '执行器与持久化（executor.rs + persistence.rs + server.rs）',
@@ -353,7 +353,7 @@ const ENGINES = [
     name: 'Rust PrimiFlow 六维融合引擎',
     category: 'automation',
     layer: '自动化层（Rust）',
-    codePath: '../services/primiflow-fusion/src',
+    codePath: '../services/primiflow-fusion/src/lib.rs',
     keyFunctions: [
       '六维融合体系（sixdim.rs）+ 统一包络（envelope/unified）',
       '平台服务注册（registry.rs）+ PTDoc 产线（ptdoc.rs）',
@@ -366,7 +366,7 @@ const ENGINES = [
     name: 'Rust 知识图谱中枢',
     category: 'knowledge',
     layer: '知识层（Rust）',
-    codePath: '../services/kg-hub/src',
+    codePath: '../services/kg-hub/src/lib.rs',
     keyFunctions: [
       'KG 接入与摄入（ingest.rs + index.rs）',
       '本体 + 推理（ontology/reason）+ URN（urn.rs）',
@@ -374,118 +374,279 @@ const ENGINES = [
     ],
     capabilities: ['kg.ingest', 'kg.reason', 'kg.governance']
   },
-  // ===== Rust 16 crate engine:: 正式条目（璇玑三注册表联动 · 跨语言） =====
+  // ===== Rust 16 crate engine:: 正式条目（璇玑三注册表联动 · 跨语言 · 全字段补齐 · 三闸门合规） =====
+  // [P1-2] 字段合规模板：{ id, name, category, layer, codePath(相对 platform/ 根，ROOT 校验存在), keyFunctions≥3, capabilities, kind:'rust', engineName, crateId }
   {
     id: 'engine::ai_agent',
+    name: 'Rust 引擎 · AI Agent 对话图谱',
     engineName: 'xuanji::ai_agent',
     kind: 'rust',
+    category: 'intelligence',
+    layer: '智能层（Rust crate）',
     crateId: '00374bdd-cc60-55bf-8970-a879afbfe443',
-    path: 'platform/services/ai-agent/src/lib.rs'
+    codePath: 'services/ai-agent/src/lib.rs',
+    keyFunctions: [
+      '对话图状态机（dialogue_graph）：回合持久化 + 角色分离 + 对话上下文回溯',
+      '工作流引擎（workflow_engine）：DAG 节点化 + 关键守卫 + 失败补偿队列',
+      '插件总线（plugin_bus）：WASM / 原生算子双形态加载 + 版本隔离 + 熔断',
+      '多智能体协作：消息总线 / 角色分工 / 投票收敛（multi_agent.rs）',
+    ],
+    capabilities: ['agent.dialogue', 'agent.workflow', 'agent.plugin_bus', 'agent.multi_agent']
   },
   {
     id: 'engine::business_catalog',
+    name: 'Rust 引擎 · 业务目录中心',
     engineName: 'xuanji::business_catalog',
     kind: 'rust',
+    category: 'knowledge',
+    layer: '知识层（Rust crate）',
     crateId: '62b2cca1-d98f-5e41-b26e-8d2a43966117',
-    path: 'platform/services/business-catalog/src/lib.rs'
+    codePath: 'services/business-catalog/src/lib.rs',
+    keyFunctions: [
+      '业务词条 CRUD + 多版本快照 + 幂等导入（catalog.rs）',
+      '分类标签体系：多对多关联 / 分类树 / 标签推荐算法（taxonomy.rs）',
+      '全文检索：倒排索引 + 前缀命中 + 语义向量双召回（search.rs）',
+      '治理审计：创建/变更/下线 事件追溯 + 审批流钩子（governance.rs）',
+    ],
+    capabilities: ['catalog.crud', 'catalog.taxonomy', 'catalog.search', 'catalog.governance']
   },
   {
     id: 'engine::flow_ai',
+    name: 'Rust 引擎 · FlowAI 流程智能',
     engineName: 'xuanji::flow_ai',
     kind: 'rust',
+    category: 'orchestration',
+    layer: '编排层（Rust crate）',
     crateId: '2fcd3eac-e894-5876-b007-fb33c56c0d65',
-    path: 'platform/services/flow-ai/src/lib.rs'
+    codePath: 'services/flow-ai/src/lib.rs',
+    keyFunctions: [
+      '数据流/控制流双模型（dataflow.rs + controlflow.rs）：令牌驱动 + 回压',
+      '关键路径分析：A* + 启发式，调度器公平队列（critpath.rs + schedule.rs）',
+      '代码生成：冲突检测 + 算子融合 + 目标语言输出（codegen.rs + conflict.rs）',
+      '可视化 DAG：拓扑布局 + 性能条带 + 热路径标注（dag/render.rs）',
+    ],
+    capabilities: ['flow.dataflow', 'flow.schedule', 'flow.critpath', 'flow.codegen']
   },
   {
     id: 'engine::graph_algorithms',
+    name: 'Rust 引擎 · 图算法（生产级）',
     engineName: 'xuanji::graph_algorithms',
     kind: 'rust',
+    category: 'intelligence',
+    layer: '智能层（Rust crate）',
     crateId: 'fbd31c6a-41cd-5274-be2f-2a28066eaf0a',
-    path: 'platform/services/graph-algorithms/src/lib.rs'
+    codePath: 'services/graph-algorithms/src/lib.rs',
+    keyFunctions: [
+      'PageRank 推模型（转置邻接 + 幂迭代 + 悬挂补偿，生产级 Δ≤1e-9）',
+      'CNM 模块度贪心凝聚（社区检测，模块度稳定 ≥ karate 0.35）',
+      'Brandes 介数中心性 + Harmonic 紧密中心性 + 度中心性（CNL 归一化）',
+      'RAW 边展开：无向边双向展开避免度中心性减半（flow_graph.rs）',
+    ],
+    capabilities: ['graph.pagerank', 'graph.community_cnm', 'graph.centrality', 'graph.raw_sparse']
   },
   {
     id: 'engine::hermes_flow_bridge',
+    name: 'Rust 引擎 · Hermes 流程桥',
     engineName: 'xuanji::hermes_flow_bridge',
     kind: 'rust',
+    category: 'orchestration',
+    layer: '编排层（Rust crate）',
     crateId: '9bfaf43b-385a-5a44-9fb2-65b4003ee80d',
-    path: 'platform/services/hermes-flow-bridge/src/lib.rs'
+    codePath: 'services/hermes-flow-bridge/src/lib.rs',
+    keyFunctions: [
+      '事件流桥接：Node.js 侧工作流 ↔ Rust FlowAI 双向事件分发（bridge.rs）',
+      '事务 SAGA：补偿事务 / Outbox 模式 / 幂等去重（saga.rs + outbox.rs）',
+      '可靠性：重试退避 / 死信队列 / 背压协议（reliability.rs）',
+      '追踪 OpenTelemetry：B3/TraceContext 注入，跨进程链路（tracing.rs）',
+    ],
+    capabilities: ['bridge.events', 'bridge.saga', 'bridge.reliability', 'bridge.otel']
   },
   {
     id: 'engine::kg_hub',
+    name: 'Rust 引擎 · 知识图谱中枢',
     engineName: 'xuanji::kg_hub',
     kind: 'rust',
+    category: 'knowledge',
+    layer: '知识层（Rust crate）',
     crateId: 'cb909f06-c0df-55ec-b397-543623a8c349',
-    path: 'platform/services/kg-hub/src/lib.rs'
+    codePath: 'services/kg-hub/src/lib.rs',
+    keyFunctions: [
+      'KG 摄入流水线：ETL + 增量 / 版本快照 + URN 持久化（ingest.rs + index.rs）',
+      '本体与推理：TBox/ABox 分层 + 规则推理（ontology/ + reason/）',
+      '合并治理：跨源实体融合 + 冲突裁决 + 治理门（consolidator.rs + governance.rs）',
+      '循环引擎：持续摄入 → 推理 → 质量评估 → 再摄入闭环（loop_engine.rs）',
+    ],
+    capabilities: ['kg.ingest', 'kg.reason', 'kg.consolidate', 'kg.governance']
   },
   {
     id: 'engine::operator_core',
+    name: 'Rust 引擎 · 算子核心',
     engineName: 'xuanji::operator_core',
     kind: 'rust',
+    category: 'orchestration',
+    layer: '编排层（Rust crate）',
     crateId: 'acf14283-3931-5528-adce-2c0cd3815363',
-    path: 'platform/services/operator-core/src/lib.rs'
+    codePath: 'services/operator-core/src/lib.rs',
+    keyFunctions: [
+      '算子 Monad + 资源容器：纯函数式组合（operator.rs + monad.rs + resource.rs）',
+      '守恒律校验：输入/输出/副作用三变量质量守恒（conservation.rs）',
+      '算子注册表：按类别 / 能力标签索引（registry.rs + category.rs）',
+      '执行引擎：热路径 JIT 调度 / 冷路径解释执行（engine.rs）',
+    ],
+    capabilities: ['operator.monad', 'operator.conservation', 'operator.registry', 'operator.exec']
   },
   {
     id: 'engine::operator_wasm',
+    name: 'Rust 引擎 · 算子 WASM 沙箱',
     engineName: 'xuanji::operator_wasm',
     kind: 'rust',
+    category: 'automation',
+    layer: '自动化层（Rust crate）',
     crateId: '5a1df407-b217-5340-a5ae-5f4535d1e6de',
-    path: 'platform/services/operator-wasm/src/lib.rs'
+    codePath: 'services/operator-wasm/src/lib.rs',
+    keyFunctions: [
+      'WASM 算子装载：wat/wasm 双格式 + 签名校验 + 版本锁定（loader.rs）',
+      '沙箱隔离：线性内存 / 能力限制 / CPU 指令计数限频（sandbox.rs）',
+      'Host 接口回调：I/O / 随机 / 时间 三类白名单（host_api.rs）',
+      '沙箱指标：调用计数 / 峰值内存 / 执行耗时（metrics.rs）',
+    ],
+    capabilities: ['op_wasm.loader', 'op_wasm.sandbox', 'op_wasm.host_api', 'op_wasm.metrics']
   },
   {
     id: 'engine::optimizer',
+    name: 'Rust 引擎 · 算子优化器',
     engineName: 'xuanji::optimizer',
     kind: 'rust',
+    category: 'optimization',
+    layer: '优化层（Rust crate）',
     crateId: 'e56676c7-ec1f-5415-9587-ba8249d0178a',
-    path: 'platform/services/optimizer/src/lib.rs'
+    codePath: 'services/optimizer/src/lib.rs',
+    keyFunctions: [
+      'Pass 管线：图融合 / 重排 / 公共子表达式消除 CSE / 强度削弱（passes/）',
+      'Cost-based 搜索：运行 trace 学习 + 代价模型启发式（cost/ + learn/）',
+      '热路径应用：优化计划序列化 + AOT + 运行时回滚（serial.rs + apply.rs）',
+      '性能画像：基准 + 抖动 + 异常检测（profile.rs）',
+    ],
+    capabilities: ['optimize.passes', 'optimize.cost_based', 'optimize.serial', 'optimize.profile']
   },
   {
     id: 'engine::primiflow_core',
+    name: 'Rust 引擎 · PrimiFlow 核心',
     engineName: 'xuanji::primiflow_core',
     kind: 'rust',
+    category: 'automation',
+    layer: '自动化层（Rust crate）',
     crateId: '8c8d2382-6f9f-5218-894e-a07a43aa9554',
-    path: 'platform/services/primiflow-core/src/lib.rs'
+    codePath: 'services/primiflow-core/src/lib.rs',
+    keyFunctions: [
+      'DSL 解析：PrimiFlow 文法 + 错误恢复 + LSP 式诊断（parse.rs + diagnostic.rs）',
+      '代码生成：多目标 gen/*（TS / Py / SQL / Rust）+ 语义检查（generate.rs）',
+      '执行器与持久化：executor.rs 增量 checkpoint + persistence.rs journal',
+      'Trace Matrix & Schema：执行轨迹 & 合约结构生成（trace_matrix/ + schema/）',
+    ],
+    capabilities: ['primiflow.parse', 'primiflow.generate', 'primiflow.exec', 'primiflow.trace_schema']
   },
   {
     id: 'engine::primiflow_fusion',
+    name: 'Rust 引擎 · PrimiFlow 六维融合',
     engineName: 'xuanji::primiflow_fusion',
     kind: 'rust',
+    category: 'automation',
+    layer: '自动化层（Rust crate）',
     crateId: '75238345-b48b-534b-818b-8d9abe083a41',
-    path: 'platform/services/primiflow-fusion/src/lib.rs'
+    codePath: 'services/primiflow-fusion/src/lib.rs',
+    keyFunctions: [
+      '六维融合体系：结构/时序/上下文/语义/能力/形态（sixdim.rs）',
+      '统一包络：envelope/* 与 unified/* 多协议适配（统一对外 gRPC/REST/SSE）',
+      '平台服务注册：服务发现 + 健康探活 + 版本对齐（registry.rs）',
+      'PTDoc 产线：六维融合自动文档 + 诊断报告（ptdoc.rs + observability.rs）',
+    ],
+    capabilities: ['fusion.sixdim', 'fusion.envelope', 'fusion.registry', 'fusion.ptdoc']
   },
   {
     id: 'engine::template_market',
+    name: 'Rust 引擎 · 模板市场',
     engineName: 'xuanji::template_market',
     kind: 'rust',
+    category: 'knowledge',
+    layer: '知识层（Rust crate）',
     crateId: '4d2e50c1-9d64-525d-86cf-2d7d610a27b9',
-    path: 'platform/services/template-market/src/lib.rs'
+    codePath: 'services/template-market/src/lib.rs',
+    keyFunctions: [
+      '模板注册：签名校验 / 语义标签 / 版本化（template_register.rs）',
+      '分发与部署：一键发布 / 灰度 / 回滚（deploy.rs + release.rs）',
+      '评分与评论：加权评分（质量×新颖度×实用性）+ 反灌水（rating.rs）',
+      '市场索引：倒排 + 推荐 + 热度（search.rs + recommend.rs）',
+    ],
+    capabilities: ['market.register', 'market.deploy', 'market.rating', 'market.search']
   },
   {
     id: 'engine::xuanji_expert',
+    name: 'Rust 引擎 · 璇玑专家平台',
     engineName: 'xuanji::xuanji_expert',
     kind: 'rust',
+    category: 'collaboration',
+    layer: '协作层（Rust crate）',
     crateId: '50bb6200-04c5-5e4c-8354-4c6e1b230024',
-    path: 'platform/services/xuanji-expert/src/lib.rs'
+    codePath: 'services/xuanji-expert/src/lib.rs',
+    keyFunctions: [
+      '15 专家画像 + 15× 验证管线（experts/* + verify/*）',
+      '六阶段流水线：RBAC 门禁 → 管线装载 → 执行器 → 拓扑/冲突/数据依赖/增益 验证',
+      '审计与多租户：操作日志 / 租户策略 / 配额（audit/ + tenant_policy.rs）',
+      '管线指标：成功率 / 平均耗时 / 并发度（metrics.rs）',
+    ],
+    capabilities: ['expert.pipeline', 'expert.audit', 'expert.tenant', 'expert.validate']
   },
   {
     id: 'engine::xuanji_system',
+    name: 'Rust 引擎 · 璇玑系统底座',
     engineName: 'xuanji::xuanji_system',
     kind: 'rust',
+    category: 'infrastructure',
+    layer: '基础设施（Rust crate）',
     crateId: 'b81eec75-22ff-5155-ac49-19edf6f6b5ab',
-    path: 'platform/services/xuanji-system/src/lib.rs'
+    codePath: 'services/xuanji-system/src/lib.rs',
+    keyFunctions: [
+      '服务编排器：多后端存储（Postgres/SQLite/Sled）抽象（orchestrator.rs + repo/*）',
+      'RBAC / 加密 / 限流：角色权限 + AES-256-GCM + 令牌桶（rbac/crypto/ratelimit）',
+      '配置/错误/指标/事件：全栈统一 crate（config/error/metrics/event）',
+      '优雅启停：预关闭钩子 + 健康检查 + 连接池回收（lifecycle.rs）',
+    ],
+    capabilities: ['system.storage', 'system.rbac_crypto', 'system.ratelimit', 'system.lifecycle']
   },
   {
     id: 'engine::xuanji_common_meta',
+    name: 'Rust 引擎 · 璇玑公共元数据',
     engineName: 'xuanji::xuanji_common_meta',
     kind: 'rust',
+    category: 'infrastructure',
+    layer: '基础设施（Rust crate）',
     crateId: '34a20231-1a80-5426-b392-40d7a2ddd9f7',
-    path: 'platform/services/xuanji-common-meta/src/lib.rs'
+    codePath: 'services/xuanji-common-meta/src/lib.rs',
+    keyFunctions: [
+      '共享类型：能力 ID / 能力矩阵 / 意图清单 常量定义（types/*.rs）',
+      '统一格式：URN 解析 / 序列化 / 校验（urn.rs）',
+      '跨版本兼容：语义版本 + 兼容矩阵（semver.rs + compat_matrix.rs）',
+      '语言无关元契约：OpenAPI / AsyncAPI / TraceContext 生成器（contracts.rs）',
+    ],
+    capabilities: ['meta.types', 'meta.urn', 'meta.semver', 'meta.contracts']
   },
   {
     id: 'engine::runtime',
+    name: 'Rust 引擎 · 网关运行时（Cordis）',
     engineName: 'xuanji::runtime',
     kind: 'rust',
+    category: 'infrastructure',
+    layer: '基础设施（Rust crate）',
     crateId: 'a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b',
-    path: 'platform/gateway/runtime/src/lib.rs'
+    codePath: 'gateway/runtime/src/lib.rs',
+    keyFunctions: [
+      'Cordis 插件运行时：bundle 打包 / lifecycle 生命周期 / event_bus / seam 解耦 / profile',
+      'HITL 人机协同 WebSocket + 决议回传 + RBAC 中间件（handlers/hitl + rbac_middleware）',
+      '治理 / 市场 / Agent 三域路由：统一 REST 规范 + 响应 envelope（routes/*）',
+      'OpenAPI 3.0 自动生成 + Schema 校验（openapi.rs + validator.rs）',
+    ],
+    capabilities: ['runtime.plugin', 'runtime.hitl', 'runtime.routes', 'runtime.openapi']
   }
 ];
 
@@ -515,8 +676,10 @@ const ENGINES = [
       keyFunctions: [
         '承接引擎注册表枚举 / 能力路由 / 多引擎协同调度',
         '归一化流量分发到专家/图谱/流程等能力域',
+        '全域节点索引 NODE_INDEX + ALL_NODES 唯一真相，按 ID 毫秒级查询',
+        '边全量校验 + 需求链连通性 + 降级链收敛性 一键验证（verifyFullChain）',
       ],
-      capabilities: ['list-engines', 'route', 'decompose'],
+      capabilities: ['list-engines', 'route', 'decompose', 'verify'],
     },
     {
       id: 'engine-kernel',
@@ -525,8 +688,10 @@ const ENGINES = [
       layer: '基础设施',
       codePath: 'src/engine-kernel/index.js',
       keyFunctions: [
-        '切换安全流程（校验→切换→探活→回滚→优雅切流）',
-        '市场/插件/契约三位一体联动',
+        '切换安全流程：校验→切换→探活→回滚→优雅切流 五段式',
+        '市场/插件/契约三位一体联动：槽位 1..4 版本对齐 + 冲突检测',
+        '热替换钩子：预启动 / afterReady / beforeShutdown 三挂钩',
+        '内核指标：成功率 p99 / 切换耗时 / 回滚次数 / 槽位占用率',
       ],
       capabilities: ['switch', 'validate', 'probe', 'rollback'],
     },
@@ -535,24 +700,28 @@ const ENGINES = [
       name: '网关运行时（接入 HITL / WebSocket / action 决议）',
       category: 'infrastructure',
       layer: '基础设施',
-      codePath: 'platform/gateway/runtime/src/lib.rs',
+      codePath: 'gateway/runtime/src/lib.rs',
       keyFunctions: [
-        'HITL 待审事项登记/广播/决议回传',
-        '接入层 WebSocket 重连/退避 / AI Engine 处理',
+        'HITL 待审事项登记/广播/决议回传（RBAC 按资源+动作维度鉴权）',
+        '接入层 WebSocket 重连/指数退避 / AI Engine 处理握手',
+        '统一 REST/gRPC/SSE 三协议网关：限流熔断 + 路由分域',
+        'OpenAPI 3.0 + AsyncAPI 自动契约 + 网关级请求追踪（X-Request-ID）',
       ],
-      capabilities: ['hitl', 'ws-broadcast', 'ai-engine-handler'],
+      capabilities: ['hitl', 'ws-broadcast', 'ai-engine-handler', 'openapi'],
     },
     {
       id: 'flow-engine',
-      name: '流程引擎（Flow Engine）',
+      name: '流程引擎（Flow Engine · Rust 侧）',
       category: 'orchestration',
       layer: '编排层',
-      codePath: 'platform/services/ai-agent/src/flow_engine.rs',
+      codePath: 'services/ai-agent/src/flow_engine.rs',
       keyFunctions: [
-        'Rust 侧流程编排 + 守卫/状态机/多代理协同',
-        '与 Hermes Bridge 集成事件流',
+        'Rust 侧流程编排：节点化 DAG + 守卫 Guards + 状态机 State Machine',
+        'Hermes Bridge 集成事件流：跨进程异步 StepComplete 信号回传',
+        '执行快照 + 断点续跑 + 失败补偿 SAGA 队列',
+        '流程指标：成功率 p95 / 步均耗时 / 瓶颈节点 Top-N / 补偿队列深度',
       ],
-      capabilities: ['run-flow', 'guards', 'state-machine'],
+      capabilities: ['run-flow', 'guards', 'state-machine', 'saga-compensate'],
     },
   ];
   for (const e of need) if (!present.has(e.id)) list.push(e);

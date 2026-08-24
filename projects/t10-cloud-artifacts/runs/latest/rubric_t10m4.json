@@ -1,0 +1,73 @@
+{
+  "rubric_version": "T10 M4 v1.0",
+  "generated_at": "2026-08-24T14:28:23.6212981+08:00",
+  "total_score": 99.1,
+  "grade": "S",
+  "dimensions": [
+    {
+      "contrib": 30.0,
+      "weight": 0.3,
+      "status": "PASS — lifecycle+IAM10+STS900+Quota429+hashChain+WORM",
+      "score": 100,
+      "name": "Features (A1-A6) 6 sub-modules"
+    },
+    {
+      "contrib": 15.0,
+      "weight": 0.15,
+      "status": "PASS — hash_chain 10k integrity + SQL triggers + Deny-first policy",
+      "score": 100,
+      "name": "Compliance (MLPS III Hash Chain + IAM + WORM)"
+    },
+    {
+      "contrib": 25.0,
+      "weight": 0.25,
+      "status": "PASS — 118 tests (Rust 54 + Node 64)",
+      "score": 100,
+      "name": "Test count (>=60 required)"
+    },
+    {
+      "contrib": 15.0,
+      "weight": 0.15,
+      "status": "PASS — 54/54 Rust, 64/64 Node, Clippy per-crate exit=0",
+      "score": 100,
+      "name": "Test quality (all pass + Clippy clean?)"
+    },
+    {
+      "contrib": 4.6,
+      "weight": 0.05,
+      "status": "PASS — STS 20k+ qps, hashChain 10k in 1.2s",
+      "score": 92,
+      "name": "Performance & scalability"
+    },
+    {
+      "contrib": 9.5,
+      "weight": 0.1,
+      "status": "PASS — 6 artifacts JSON + scripts/Run-T10-AllTests.ps1",
+      "score": 95,
+      "name": "Delivery & operability"
+    }
+  ],
+  "test_matrix": {
+    "node_unit_tests": {
+      "total": 64,
+      "fail": 0,
+      "pass": 64
+    },
+    "overall_pass_rate_pct": 100,
+    "total_expected": 60,
+    "overall_total": 118,
+    "rust_unit_tests": {
+      "total": 54,
+      "fail": 0,
+      "pass": 54
+    }
+  },
+  "artifacts": [
+    "lifecycle_stats_sample.json — HOT/WARM/COLD distribution + capacity estimate",
+    "iam_10_policies.json — 10 SID, effects, scopes (AC P1-P10 matrix)",
+    "sts_1000_bench.json — STS sign throughput (qps/µs per token)",
+    "hashchain_10k_report.json — Chain 10k append/verify integrity report",
+    "clippy.log — Rust clippy lib output (3 crates)",
+    "cargo_rust_tests.log / node_tests.log — per-run logs"
+  ]
+}

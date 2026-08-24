@@ -1,0 +1,9 @@
+{
+  "generated_at": "2026-08-24T06:27:07.028Z",
+  "total": 1000,
+  "distribution": {
+    "HOT": 700,
+    "WARM": 200,
+    "COLD": 100
+  }
+}

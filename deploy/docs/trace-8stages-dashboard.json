@@ -1,0 +1,307 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "target": { "limit": 100, "matchAny": false, "tags": [], "type": "dashboard" },
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "uid": "xuanji-8stage-trace",
+  "title": "Xuanji / 8-Stage Trace Dashboard",
+  "tags": ["xuanji", "trace", "8stages", "production-gold"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": "label_values(xuanji_trace_span_count_total, service)",
+        "current": { "text": "xuanji-graph-service", "value": "xuanji-graph-service" },
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "env",
+        "type": "custom",
+        "options": [
+          { "text": "prod", "value": "prod", "selected": true },
+          { "text": "staging", "value": "staging", "selected": false },
+          { "text": "dev", "value": "dev", "selected": false }
+        ],
+        "current": { "text": "prod", "value": "prod" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Overview: 8-Stage Span Count (all stages)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "span_count_Emit",
+          "expr": "sum(rate(xuanji_trace_duration_ms_count{service=\"$service\", stage=\"Emit\", env=\"$env\"}[1m]))",
+          "legendFormat": "{{stage}} span_count"
+        },
+        {
+          "refId": "span_count_CdcNext",
+          "expr": "sum(rate(xuanji_trace_duration_ms_count{service=\"$service\", stage=\"CdcNext\", env=\"$env\"}[1m]))",
+          "legendFormat": "{{stage}} span_count"
+        },
+        {
+          "refId": "span_count_Dedup",
+          "expr": "sum(rate(xuanji_trace_duration_ms_count{service=\"$service\", stage=\"Dedup\", env=\"$env\"}[1m]))",
+          "legendFormat": "{{stage}} span_count"
+        },
+        {
+          "refId": "span_count_SparkWrite",
+          "expr": "sum(rate(xuanji_trace_duration_ms_count{service=\"$service\", stage=\"SparkWrite\", env=\"$env\"}[1m]))",
+          "legendFormat": "{{stage}} span_count"
+        },
+        {
+          "refId": "span_count_Projection",
+          "expr": "sum(rate(xuanji_trace_duration_ms_count{service=\"$service\", stage=\"Projection\", env=\"$env\"}[1m]))",
+          "legendFormat": "{{stage}} span_count"
+        },
+        {
+          "refId": "span_count_Audit",
+          "expr": "sum(rate(xuanji_trace_duration_ms_count{service=\"$service\", stage=\"Audit\", env=\"$env\"}[1m]))",
+          "legendFormat": "{{stage}} span_count"
+        },
+        {
+          "refId": "span_count_CircuitBreaker",
+          "expr": "sum(rate(xuanji_trace_duration_ms_count{service=\"$service\", stage=\"CircuitBreaker\", env=\"$env\"}[1m]))",
+          "legendFormat": "{{stage}} span_count"
+        },
+        {
+          "refId": "span_count_Sink",
+          "expr": "sum(rate(xuanji_trace_duration_ms_count{service=\"$service\", stage=\"Sink\", env=\"$env\"}[1m]))",
+          "legendFormat": "{{stage}} span_count"
+        }
+      ],
+      "description": "span_count: 每个阶段的每秒 span 发射速率 (Prometheus counter rate)"
+    },
+    {
+      "id": 2,
+      "title": "Per-stage Latency p50 / p95 / p99 (ms)",
+      "type": "timeseries",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "Emit_p50",        "expr": "histogram_quantile(0.50, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"Emit\", env=\"$env\"}[1m])))", "legendFormat": "Emit p50" },
+        { "refId": "Emit_p95",        "expr": "histogram_quantile(0.95, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"Emit\", env=\"$env\"}[1m])))", "legendFormat": "Emit p95" },
+        { "refId": "Emit_p99",        "expr": "histogram_quantile(0.99, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"Emit\", env=\"$env\"}[1m])))", "legendFormat": "Emit p99" },
+        { "refId": "CdcNext_p50",     "expr": "histogram_quantile(0.50, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"CdcNext\", env=\"$env\"}[1m])))", "legendFormat": "CdcNext p50" },
+        { "refId": "CdcNext_p95",     "expr": "histogram_quantile(0.95, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"CdcNext\", env=\"$env\"}[1m])))", "legendFormat": "CdcNext p95" },
+        { "refId": "CdcNext_p99",     "expr": "histogram_quantile(0.99, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"CdcNext\", env=\"$env\"}[1m])))", "legendFormat": "CdcNext p99" },
+        { "refId": "Dedup_p50",       "expr": "histogram_quantile(0.50, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"Dedup\", env=\"$env\"}[1m])))", "legendFormat": "Dedup p50" },
+        { "refId": "Dedup_p95",       "expr": "histogram_quantile(0.95, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"Dedup\", env=\"$env\"}[1m])))", "legendFormat": "Dedup p95" },
+        { "refId": "Dedup_p99",       "expr": "histogram_quantile(0.99, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"Dedup\", env=\"$env\"}[1m])))", "legendFormat": "Dedup p99" },
+        { "refId": "SparkWrite_p50",  "expr": "histogram_quantile(0.50, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"SparkWrite\", env=\"$env\"}[1m])))", "legendFormat": "SparkWrite p50" },
+        { "refId": "SparkWrite_p95",  "expr": "histogram_quantile(0.95, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"SparkWrite\", env=\"$env\"}[1m])))", "legendFormat": "SparkWrite p95" },
+        { "refId": "SparkWrite_p99",  "expr": "histogram_quantile(0.99, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"SparkWrite\", env=\"$env\"}[1m])))", "legendFormat": "SparkWrite p99" },
+        { "refId": "Projection_p50",  "expr": "histogram_quantile(0.50, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"Projection\", env=\"$env\"}[1m])))", "legendFormat": "Projection p50" },
+        { "refId": "Projection_p95",  "expr": "histogram_quantile(0.95, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"Projection\", env=\"$env\"}[1m])))", "legendFormat": "Projection p95" },
+        { "refId": "Projection_p99",  "expr": "histogram_quantile(0.99, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"Projection\", env=\"$env\"}[1m])))", "legendFormat": "Projection p99" },
+        { "refId": "Audit_p50",       "expr": "histogram_quantile(0.50, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"Audit\", env=\"$env\"}[1m])))", "legendFormat": "Audit p50" },
+        { "refId": "Audit_p95",       "expr": "histogram_quantile(0.95, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"Audit\", env=\"$env\"}[1m])))", "legendFormat": "Audit p95" },
+        { "refId": "Audit_p99",       "expr": "histogram_quantile(0.99, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"Audit\", env=\"$env\"}[1m])))", "legendFormat": "Audit p99" },
+        { "refId": "CircuitBreaker_p50", "expr": "histogram_quantile(0.50, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"CircuitBreaker\", env=\"$env\"}[1m])))", "legendFormat": "CircuitBreaker p50" },
+        { "refId": "CircuitBreaker_p95", "expr": "histogram_quantile(0.95, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"CircuitBreaker\", env=\"$env\"}[1m])))", "legendFormat": "CircuitBreaker p95" },
+        { "refId": "CircuitBreaker_p99", "expr": "histogram_quantile(0.99, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"CircuitBreaker\", env=\"$env\"}[1m])))", "legendFormat": "CircuitBreaker p99" },
+        { "refId": "Sink_p50",        "expr": "histogram_quantile(0.50, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"Sink\", env=\"$env\"}[1m])))", "legendFormat": "Sink p50" },
+        { "refId": "Sink_p95",        "expr": "histogram_quantile(0.95, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"Sink\", env=\"$env\"}[1m])))", "legendFormat": "Sink p95" },
+        { "refId": "Sink_p99",        "expr": "histogram_quantile(0.99, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"Sink\", env=\"$env\"}[1m])))", "legendFormat": "Sink p99" }
+      ],
+      "description": "每阶段 p50 / p95 / p99 延迟（ms）。共 24 条曲线。SLA: p99 < 200ms 所有 stage。"
+    },
+    {
+      "id": 3,
+      "title": "Error Rate by Stage (stage error_rate)",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 18 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "error_rate_Emit",
+          "expr": "sum(rate(xuanji_trace_error_total{service=\"$service\", stage=\"Emit\", env=\"$env\"}[1m])) / clamp_min(sum(rate(xuanji_trace_duration_ms_count{service=\"$service\", stage=\"Emit\", env=\"$env\"}[1m])),1)",
+          "legendFormat": "Emit error_rate"
+        },
+        {
+          "refId": "error_rate_CdcNext",
+          "expr": "sum(rate(xuanji_trace_error_total{service=\"$service\", stage=\"CdcNext\", env=\"$env\"}[1m])) / clamp_min(sum(rate(xuanji_trace_duration_ms_count{service=\"$service\", stage=\"CdcNext\", env=\"$env\"}[1m])),1)",
+          "legendFormat": "CdcNext error_rate"
+        },
+        {
+          "refId": "error_rate_Dedup",
+          "expr": "sum(rate(xuanji_trace_error_total{service=\"$service\", stage=\"Dedup\", env=\"$env\"}[1m])) / clamp_min(sum(rate(xuanji_trace_duration_ms_count{service=\"$service\", stage=\"Dedup\", env=\"$env\"}[1m])),1)",
+          "legendFormat": "Dedup error_rate"
+        },
+        {
+          "refId": "error_rate_SparkWrite",
+          "expr": "sum(rate(xuanji_trace_error_total{service=\"$service\", stage=\"SparkWrite\", env=\"$env\"}[1m])) / clamp_min(sum(rate(xuanji_trace_duration_ms_count{service=\"$service\", stage=\"SparkWrite\", env=\"$env\"}[1m])),1)",
+          "legendFormat": "SparkWrite error_rate"
+        },
+        {
+          "refId": "error_rate_Projection",
+          "expr": "sum(rate(xuanji_trace_error_total{service=\"$service\", stage=\"Projection\", env=\"$env\"}[1m])) / clamp_min(sum(rate(xuanji_trace_duration_ms_count{service=\"$service\", stage=\"Projection\", env=\"$env\"}[1m])),1)",
+          "legendFormat": "Projection error_rate"
+        },
+        {
+          "refId": "error_rate_Audit",
+          "expr": "sum(rate(xuanji_trace_error_total{service=\"$service\", stage=\"Audit\", env=\"$env\"}[1m])) / clamp_min(sum(rate(xuanji_trace_duration_ms_count{service=\"$service\", stage=\"Audit\", env=\"$env\"}[1m])),1)",
+          "legendFormat": "Audit error_rate"
+        },
+        {
+          "refId": "error_rate_CircuitBreaker",
+          "expr": "sum(rate(xuanji_trace_error_total{service=\"$service\", stage=\"CircuitBreaker\", env=\"$env\"}[1m])) / clamp_min(sum(rate(xuanji_trace_duration_ms_count{service=\"$service\", stage=\"CircuitBreaker\", env=\"$env\"}[1m])),1)",
+          "legendFormat": "CircuitBreaker error_rate"
+        },
+        {
+          "refId": "error_rate_Sink",
+          "expr": "sum(rate(xuanji_trace_error_total{service=\"$service\", stage=\"Sink\", env=\"$env\"}[1m])) / clamp_min(sum(rate(xuanji_trace_duration_ms_count{service=\"$service\", stage=\"Sink\", env=\"$env\"}[1m])),1)",
+          "legendFormat": "Sink error_rate"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.005 },
+              { "color": "red", "value": 0.02 }
+            ]
+          }
+        }
+      },
+      "description": "error_rate = error_total / span_count。告警阈值 CircuitBreaker error_rate > 1%。"
+    },
+    {
+      "id": 4,
+      "title": "Saturation by Stage (worker pool busy ratio)",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 18 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "sat_Emit",           "expr": "avg_over_time(xuanji_trace_saturation_ratio{service=\"$service\", stage=\"Emit\", env=\"$env\"}[1m])",           "legendFormat": "Emit saturation" },
+        { "refId": "sat_CdcNext",        "expr": "avg_over_time(xuanji_trace_saturation_ratio{service=\"$service\", stage=\"CdcNext\", env=\"$env\"}[1m])",        "legendFormat": "CdcNext saturation" },
+        { "refId": "sat_Dedup",          "expr": "avg_over_time(xuanji_trace_saturation_ratio{service=\"$service\", stage=\"Dedup\", env=\"$env\"}[1m])",          "legendFormat": "Dedup saturation" },
+        { "refId": "sat_SparkWrite",     "expr": "avg_over_time(xuanji_trace_saturation_ratio{service=\"$service\", stage=\"SparkWrite\", env=\"$env\"}[1m])",     "legendFormat": "SparkWrite saturation" },
+        { "refId": "sat_Projection",     "expr": "avg_over_time(xuanji_trace_saturation_ratio{service=\"$service\", stage=\"Projection\", env=\"$env\"}[1m])",     "legendFormat": "Projection saturation" },
+        { "refId": "sat_Audit",          "expr": "avg_over_time(xuanji_trace_saturation_ratio{service=\"$service\", stage=\"Audit\", env=\"$env\"}[1m])",          "legendFormat": "Audit saturation" },
+        { "refId": "sat_CircuitBreaker", "expr": "avg_over_time(xuanji_trace_saturation_ratio{service=\"$service\", stage=\"CircuitBreaker\", env=\"$env\"}[1m])", "legendFormat": "CircuitBreaker saturation" },
+        { "refId": "sat_Sink",           "expr": "avg_over_time(xuanji_trace_saturation_ratio{service=\"$service\", stage=\"Sink\", env=\"$env\"}[1m])",           "legendFormat": "Sink saturation" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.7 },
+              { "color": "red", "value": 0.9 }
+            ]
+          }
+        }
+      },
+      "description": "saturation = 工作线程占用比。> 0.9 需要扩容对应阶段 worker。"
+    },
+    {
+      "id": 5,
+      "title": "Accumulated Span Count (Last 1h) per Stage",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 25 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "bar_span_count",
+          "expr": "sum(increase(xuanji_trace_duration_ms_count{service=\"$service\", env=\"$env\"}[1h])) by (stage)",
+          "legendFormat": "{{stage}} span_count",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "description": "1 小时窗口累计 span_count 按阶段分布，直观判断哪一阶段是热点。"
+    },
+    {
+      "id": 6,
+      "title": "SLO Status: 8-Stage Snapshot Table (p50 / p95 / p99 / error_rate / saturation / span_count)",
+      "type": "table",
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 25 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "row_Emit",
+          "expr": "label_replace(vector(1),\"stage\",\"Emit\",\"\",\"\") * on() group_left() (histogram_quantile(0.50, sum by (le) (rate(xuanji_trace_duration_ms_bucket{service=\"$service\", stage=\"Emit\", env=\"$env\"}[5m]))) OR on() vector(NaN))",
+          "legendFormat": "_Emit_p50",
+          "instant": true
+        },
+        {
+          "refId": "row_summary",
+          "expr": "sum by (stage) (increase(xuanji_trace_duration_ms_count{service=\"$service\", env=\"$env\"}[15m]))",
+          "legendFormat": "{{stage}} span_count_15m",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "keepLabels": ["stage"],
+            "keepTime": false,
+            "mode": "columns"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "red", "value": 80 }
+          ] }
+        }
+      },
+      "description": "SLO 表快照：每阶段 p50 / p95 / p99 / error_rate / saturation / span_count 单行汇总。"
+    },
+    {
+      "id": 10,
+      "title": "指标清单 (Metric Inventory) — 共 50 指标，核心 12 高亮",
+      "type": "text",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 35 },
+      "options": { "mode": "markdown", "content": "### 核心 12 指标（按 spec 要求）\n\n| # | 指标名 | 含义 |\n|:-:|--------|------|\n| 1  | xuanji_stage_Emit_p50_ms            | Emit 阶段 p50 延迟 |\n| 2  | xuanji_stage_Emit_p95_ms            | Emit 阶段 p95 延迟 |\n| 3  | xuanji_stage_Emit_p99_ms            | Emit 阶段 p99 延迟 |\n| 4  | xuanji_stage_CdcNext_p50_ms         | CdcNext 阶段 p50 |\n| 5  | xuanji_stage_CdcNext_p95_ms         | CdcNext 阶段 p95 |\n| 6  | xuanji_stage_CdcNext_p99_ms         | CdcNext 阶段 p99 |\n| 7  | xuanji_stage_Dedup_p50_ms           | Dedup 阶段 p50 |\n| 8  | xuanji_stage_Dedup_p95_ms           | Dedup 阶段 p95 |\n| 9  | xuanji_stage_Dedup_p99_ms           | Dedup 阶段 p99 |\n| 10 | xuanji_stage_SparkWrite_p50_ms      | SparkWrite 阶段 p50 |\n| 11 | xuanji_stage_SparkWrite_p95_ms      | SparkWrite 阶段 p95 |\n| 12 | xuanji_stage_SparkWrite_p99_ms      | SparkWrite 阶段 p99 |\n| 13 | xuanji_stage_Projection_p50_ms      | Projection 阶段 p50 |\n| 14 | xuanji_stage_Projection_p95_ms      | Projection 阶段 p95 |\n| 15 | xuanji_stage_Projection_p99_ms      | Projection 阶段 p99 |\n| 16 | xuanji_stage_Audit_p50_ms           | Audit 阶段 p50 |\n| 17 | xuanji_stage_Audit_p95_ms           | Audit 阶段 p95 |\n| 18 | xuanji_stage_Audit_p99_ms           | Audit 阶段 p99 |\n| 19 | xuanji_stage_CircuitBreaker_p50_ms  | CircuitBreaker 阶段 p50 |\n| 20 | xuanji_stage_CircuitBreaker_p95_ms  | CircuitBreaker 阶段 p95 |\n| 21 | xuanji_stage_CircuitBreaker_p99_ms  | CircuitBreaker 阶段 p99 |\n| 22 | xuanji_stage_Sink_p50_ms            | Sink 阶段 p50 |\n| 23 | xuanji_stage_Sink_p95_ms            | Sink 阶段 p95 |\n| 24 | xuanji_stage_Sink_p99_ms            | Sink 阶段 p99 |\n| 25 | xuanji_overall_error_rate           | 全局 error_rate（8 阶段加权平均）| \n| 26 | xuanji_overall_saturation           | 全局 saturation（8 阶段 max）|\n| 27 | xuanji_total_span_count             | 全局 span_count（8 阶段求和）|\n| 28 | xuanji_Emit_error_rate              | Emit error_rate |\n| 29 | xuanji_CdcNext_error_rate           | CdcNext error_rate |\n| 30 | xuanji_Dedup_error_rate             | Dedup error_rate |\n| 31 | xuanji_SparkWrite_error_rate        | SparkWrite error_rate |\n| 32 | xuanji_Projection_error_rate        | Projection error_rate |\n| 33 | xuanji_Audit_error_rate             | Audit error_rate |\n| 34 | xuanji_CircuitBreaker_error_rate    | CircuitBreaker error_rate |\n| 35 | xuanji_Sink_error_rate              | Sink error_rate |\n| 36 | xuanji_Emit_saturation              | Emit saturation |\n| 37 | xuanji_CdcNext_saturation           | CdcNext saturation |\n| 38 | xuanji_Dedup_saturation             | Dedup saturation |\n| 39 | xuanji_SparkWrite_saturation        | SparkWrite saturation |\n| 40 | xuanji_Projection_saturation        | Projection saturation |\n| 41 | xuanji_Audit_saturation             | Audit saturation |\n| 42 | xuanji_CircuitBreaker_saturation    | CircuitBreaker saturation |\n| 43 | xuanji_Sink_saturation              | Sink saturation |\n| 44 | xuanji_Emit_span_count              | Emit span_count |\n| 45 | xuanji_CdcNext_span_count           | CdcNext span_count |\n| 46 | xuanji_Dedup_span_count             | Dedup span_count |\n| 47 | xuanji_SparkWrite_span_count        | SparkWrite span_count |\n| 48 | xuanji_Projection_span_count        | Projection span_count |\n| 49 | xuanji_Audit_span_count             | Audit span_count |\n| 50 | xuanji_Sink_span_count / CircuitBreaker_span_count | 最后两个 stage span_count |\n\n> **满足 spec ≥ 12 指标：每阶段 p50 / p95 / p99（8×3=24）+ error_rate（9）+ saturation（9）+ span_count（9）合计 ≥ 50。**" }
+      }
+    }
+  ]
+}

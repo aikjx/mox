@@ -164,6 +164,43 @@ fn action_matches(pattern: &str, action: &str) -> bool {
     pattern == action
 }
 
+/// 资源路径 glob 匹配（IAM 语义）：'*' 跨段匹配任意字符（含 '/'）。
+/// 例：
+///   "arn:cloud:::bucket/*" 匹配 "arn:cloud:::bucket/x/a"
+///   "arn:cloud:::bucket/*/public/*" 匹配 "arn:cloud:::bucket/x/public/logo.png"
+///   "arn:cloud:::bucket/*/public/*" 不匹配 "arn:cloud:::bucket/x/private/a.txt"
+fn glob_match(pattern: &str, text: &str) -> bool {
+    let p: Vec<char> = pattern.chars().collect();
+    let t: Vec<char> = text.chars().collect();
+    let (pn, tn) = (p.len(), t.len());
+    let mut pi = 0;
+    let mut ti = 0;
+    let mut star_p: Option<usize> = None;
+    let mut star_t: Option<usize> = None;
+    while ti < tn {
+        if pi < pn && p[pi] == '*' {
+            star_p = Some(pi);
+            pi += 1;
+            star_t = Some(ti);
+        } else if pi < pn && p[pi] == t[ti] {
+            pi += 1;
+            ti += 1;
+        } else if star_p.is_some() {
+            // 有 * 未闭合 → 回溯让 * 再吞一个（含 '/' 跨段，AWS IAM 语义）
+            let sp = star_p.unwrap();
+            pi = sp + 1;
+            star_t = star_t.map(|s| s + 1);
+            ti = star_t.unwrap_or(ti);
+        } else {
+            return false;
+        }
+    }
+    while pi < pn && p[pi] == '*' {
+        pi += 1;
+    }
+    pi == pn
+}
+
 fn resource_matches(pattern: &str, resource: &str, ctx: &EvalContext) -> bool {
     if pattern == "*" {
         return true;
@@ -174,8 +211,8 @@ fn resource_matches(pattern: &str, resource: &str, ctx: &EvalContext) -> bool {
     } else {
         pattern.to_string()
     };
-    if let Some(prefix) = real.strip_suffix('*') {
-        return resource.starts_with(prefix);
+    if real.contains('*') {
+        return glob_match(&real, resource);
     }
     real == resource
 }
@@ -469,7 +506,7 @@ mod tests {
         };
         // 顺序不影响 Deny 优先（evaluate 先跑 Deny？不：我们按顺序遍历，但每条 Deny 命中立即 return false）
         assert!(!evaluate_policies(&[allow.clone(), deny.clone()], &ctx));
-        assert!(!evaluate_policies(&[deny, allow], &ctx));
+        assert!(!evaluate_policies(&[deny, allow.clone()], &ctx));
         // 单独 allow → true
         assert!(evaluate_policies(&[allow], &ctx));
     }

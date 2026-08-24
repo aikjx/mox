@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "xuanji-dr.fullname" . }}-secondary
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "xuanji-dr.labels" . | nindent 4 }}
+    app.kubernetes.io/role: secondary
+    dr.xuanji.io/region: {{ .Values.failoverRegion }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: 10
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      {{- include "xuanji-dr.secondarySelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "xuanji-dr.secondarySelectorLabels" . | nindent 8 }}
+        dr.xuanji.io/role: secondary
+        dr.xuanji.io/region: {{ .Values.failoverRegion }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "xuanji-dr.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/role
+                    operator: In
+                    values:
+                      - secondary
+              topologyKey: "kubernetes.io/hostname"
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: topology.kubernetes.io/region
+                    operator: In
+                    values:
+                      - {{ .Values.failoverRegion }}
+      terminationGracePeriodSeconds: 120
+      containers:
+        - name: xuanji
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: REGION
+              value: secondary
+            - name: XUANJI_REGION
+              value: {{ .Values.failoverRegion }}
+            - name: XUANJI_ROLE
+              value: secondary
+            - name: XUANJI_DR_ENABLED
+              value: {{ .Values.dr.enabled | quote }}
+            - name: XUANJI_PRIMARY_REGION
+              value: {{ .Values.primaryRegion }}
+            - name: XUANJI_REPLICATION_MODE
+              value: {{ .Values.dr.replicationMode }}
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          ports:
+            - name: graph
+              containerPort: 7687
+              protocol: TCP
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: raft
+              containerPort: 8200
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: xuanji-data
+              mountPath: {{ .Values.persistence.mountPath }}
+          {{- end }}
+      {{- if .Values.persistence.enabled }}
+      volumes:
+        - name: xuanji-data
+          persistentVolumeClaim:
+            claimName: {{ include "xuanji-dr.fullname" . }}-secondary
+      {{- end }}
+      {{- with .Values.nodeSelectorRegions.secondary }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

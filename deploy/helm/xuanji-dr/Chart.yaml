@@ -1,0 +1,23 @@
+apiVersion: v2
+name: xuanji-dr
+description: Xuanji Graph Platform Disaster Recovery (DR) Helm Chart
+type: application
+version: 3.0.0
+appVersion: "3.0.0"
+kubeVersion: ">=1.24.0-0"
+home: https://xuanji.infotopograph.io
+sources:
+  - https://gitcode.com/infotopograph/xuanji-dr
+maintainers:
+  - name: Xuanji DR Team
+    email: dr@infotopograph.io
+keywords:
+  - xuanji
+  - disaster-recovery
+  - dr
+  - graph-database
+  - multi-region
+annotations:
+  category: "Database"
+  dr-mode: "active-active"
+  regions: "cn-north-1,cn-south-1"

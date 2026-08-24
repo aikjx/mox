@@ -25,7 +25,39 @@ const {
 } = require('./domain/relation-registry');
 const { buildAdjacency, tracePath, reachableSet, degreeStats, verifyDegradeChains, neighborsOf, connectedComponents } = require('./domain/graph-query');
 
-const ROOT = path.join(__dirname, '..', '..');
+const ROOT_BACKEND_NODE = path.join(__dirname, '..', '..'); // platform/backend-node/
+const ROOT_PLATFORM = path.join(ROOT_BACKEND_NODE, '..');       // platform/（跨语言 Rust crate services/gateway 从这里下探）
+
+/**
+ * [P1-2 codePath 双语义解算器] 历史兼容：
+ *   - JS 引擎 codePath =  'src/xxx' 或  'src/expert-alliance/xxx'（相对 ROOT_BACKEND_NODE）
+ *   - Rust/跨语言 = 'services/xxx' 或 'gateway/xxx' 或 'sdk/xxx'（相对 ROOT_PLATFORM）
+ *   - 旧 engine-rust-* codePath 形如 '../services/xxx/src'（相对 ROOT_BACKEND_NODE 回溯到 platform）也兼容
+ * 返回规范化绝对路径。
+ */
+function resolveCodePath(codePath) {
+  if (!codePath || typeof codePath !== 'string') return null;
+  const cp = String(codePath).trim().replace(/\\/g, '/');
+  // 规范化斜杠后按前缀分流
+  if (/^(src|test|platform_config\.json)\b/.test(cp)) {
+    // JS / 后端 Node 自有
+    return path.join(ROOT_BACKEND_NODE, cp);
+  }
+  if (/^(services|gateway|sdk)\//.test(cp)) {
+    // Rust crate / SDK 从 platform 根下探
+    return path.join(ROOT_PLATFORM, cp);
+  }
+  // 兼容 ../services/ 风格（历史 engine-rust-* 条目）
+  if (cp.startsWith('../')) {
+    return path.join(ROOT_BACKEND_NODE, cp);
+  }
+  // 兜底：先试 backend-node，再试 platform，都不行就返回 backend-node
+  const p1 = path.join(ROOT_BACKEND_NODE, cp);
+  if (fs.existsSync(p1)) return p1;
+  const p2 = path.join(ROOT_PLATFORM, cp);
+  if (fs.existsSync(p2)) return p2;
+  return p1; // 返回最可能，让 existsSync 继续判定 false（错误信息保留原值）
+}
 
 // 引擎宇宙自身也节点化（自举：图谱管理图谱）
 const UNIVERSE_NODE = {
@@ -131,15 +163,21 @@ function verifyFullChain() {
     checks.push({ name, ok, detail: detail || '' });
   };
 
-  // V1 代码路径存在性：每个引擎声明的 codePath 必须真实存在
+  // V1 代码路径存在性：每个引擎声明的 codePath 必须真实存在（支持 JS src/ & Rust services|gateway|sdk/ 双语义 + 历史 ../ 回溯）
   for (const e of [...ENGINES, UNIVERSE_NODE]) {
-    const fp = path.join(ROOT, e.codePath);
-    check(`代码路径存在 [${e.id}] ${e.codePath}`, fs.existsSync(fp));
+    const fp = resolveCodePath(e.codePath);
+    const exists = fp ? fs.existsSync(fp) : false;
+    // 对目录型 codePath（Rust crate 常见为 .../src 目录）也允许视为合法；否则要求文件
+    const isDirOk = exists && fs.statSync(fp).isDirectory();
+    const isFileOk = exists && fs.statSync(fp).isFile();
+    check(`代码路径存在 [${e.id}] ${e.codePath}`, exists && (isFileOk || isDirOk),
+      exists ? '' : `解析路径=${fp || 'null'}`);
   }
-  // V1b 协作文件存在性：CODE_ASSOCIATIONS 声明的每个文件必须存在
+  // V1b 协作文件存在性：CODE_ASSOCIATIONS 声明的每个文件必须存在（同样双语义解算）
   for (const c of CODE_ASSOCIATIONS) {
     for (const f of c.files) {
-      check(`协作文件存在 [${c.engine}] ${f}`, fs.existsSync(path.join(ROOT, f)));
+      const fp = resolveCodePath(f);
+      check(`协作文件存在 [${c.engine}] ${f}`, fp && fs.existsSync(fp));
     }
   }
 

@@ -1,0 +1,9 @@
+{
+  "harness": "cdc_100k_node",
+  "targets": { "expected_total_in": 100000, "expected_lost": 0, "expected_duplicates": 0 },
+  "report": {
+    "total_in": 100000, "total_out": 100000, "duplicates_in_upsert": 0, "lost": 0,
+    "min": 1, "max": 100000, "monotonic_raft": true, "vertices": 70000, "edges": 30000
+  },
+  "ok": true
+}

@@ -1,0 +1,48 @@
+apiVersion: v2
+name: xuanji
+description: Xuanji Graph Platform Umbrella Helm Chart (一键伞图)
+type: application
+version: 3.0.0
+appVersion: "3.0.0"
+kubeVersion: ">=1.24.0-0"
+home: https://xuanji.infotopograph.io
+sources:
+  - https://gitcode.com/infotopograph/xuanji
+maintainers:
+  - name: Xuanji Platform Team
+    email: platform@infotopograph.io
+keywords:
+  - xuanji
+  - graph-platform
+  - umbrella-chart
+  - canary
+  - gray-release
+annotations:
+  category: "Platform"
+  release-strategy: "gray-warmup"
+  deployment: "one-click-umbrella"
+
+dependencies:
+  - name: xuanji-dr
+    version: "3.0.0"
+    repository: "file://../xuanji-dr"
+    condition: xuanji-dr.enabled
+    tags:
+      - dr
+      - multi-region
+  - name: xuanji-core
+    version: "3.0.0"
+    repository: "file://../xuanji-core"
+    alias: xuanji-core-local
+    condition: xuanji-core-local.enabled
+    tags:
+      - core
+      - graph-engine
+  - name: xuanji-observability
+    version: "3.0.0"
+    repository: "file://../xuanji-observability"
+    condition: xuanji-observability.enabled
+    tags:
+      - observability
+      - monitoring
+      - tracing

@@ -4749,6 +4749,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "tempfile",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -4765,6 +4766,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "xuanji-compliance"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "chrono",
+ "hex",
+ "parking_lot",
+ "rand 0.8.7",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "xuanji-data-plane"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "bytes",
+ "chrono",
+ "hex",
+ "parking_lot",
+ "rand 0.8.7",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "xuanji-domain-abstractions"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -4775,7 +4809,23 @@ dependencies = [
  "parking_lot",
  "serde",
  "sha2",
- "tokio",
+]
+
+[[package]]
+name = "xuanji-etl-wasm"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "chrono",
+ "hex",
+ "parking_lot",
+ "rand 0.8.7",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 1.0.69",
+ "wasmer",
+ "wasmer-compiler-cranelift",
 ]
 
 [[package]]
@@ -4803,6 +4853,23 @@ dependencies = [
  "tracing",
  "uuid",
  "xuanji-common-meta",
+]
+
+[[package]]
+name = "xuanji-fusion"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "chrono",
+ "hex",
+ "parking_lot",
+ "percent-encoding",
+ "rand 0.8.7",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 1.0.69",
+ "url",
 ]
 
 [[package]]
@@ -4852,6 +4919,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "xuanji-graph-spark"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "parking_lot",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "xuanji-graph-storage"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -4877,22 +4954,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "xuanji-graph-streams"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "tokio",
+ "xuanji-domain-abstractions",
+ "xuanji-graph-storage",
+]
+
+[[package]]
 name = "xuanji-sdk-cloud"
 version = "3.0.0-ai-powered"
 dependencies = [
  "async-trait",
- "bytes",
- "hex",
- "reqwest",
  "serde",
  "serde_json",
- "sha2",
  "thiserror 1.0.69",
  "tokio",
- "tracing",
- "url",
- "xuanji-domain-abstractions",
- "xuanji-standards",
 ]
 
 [[package]]
@@ -4904,7 +4986,6 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "tokio",
- "xuanji-domain-abstractions",
 ]
 
 [[package]]
@@ -4918,6 +4999,7 @@ dependencies = [
  "hex",
  "hmac",
  "parking_lot",
+ "serde",
  "serde_json",
  "sha2",
  "tokio",
