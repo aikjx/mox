@@ -6343,4 +6343,36 @@
     }
   ],
   "generatedAt": "2026-08-23T14:13:04.431Z"
+,
+  "xuanji_l5_registration": {
+    "crate": "xuanji-domain-abstractions",
+    "version": "3.0.0-ai-powered",
+    "license": "MIT OR Apache-2.0",
+    "layer": "L5",
+    "trait_count": 10,
+    "trait_names": [
+      "ObjectStorageProvider",
+      "MetaStorageProvider",
+      "ChunkManagerProvider",
+      "IamProvider",
+      "QuotaProvider",
+      "GraphQueryProvider",
+      "GraphMetaProvider",
+      "GraphAlgoSingleProvider",
+      "PartitionRouterProvider",
+      "CdcPublisherProvider"
+    ],
+    "mock_impls": [
+      "MockObjectStorageProvider",
+      "MockMetaStorageProvider",
+      "MockChunkManagerProvider",
+      "MockIamProvider",
+      "MockQuotaProvider",
+      "MockGraphQueryProvider",
+      "MockGraphMetaProvider",
+      "MockGraphAlgoSingleProvider",
+      "MockPartitionRouterProvider",
+      "MockCdcPublisherProvider"
+    ]
+  }
 }

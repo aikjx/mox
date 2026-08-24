@@ -1,4 +1,4 @@
-﻿//! 外部审计 Sink 模块
+//! 外部审计 Sink 模块
 //!
 //! AuditChain（内存哈希链）是内部自验工具，不是合规证据。
 //! 本模块提供外部持久化审计接口，对接 Syslog / S3(WORM)，
@@ -45,19 +45,19 @@
 //! ctx.log(event).unwrap();
 //! ```
 
-mod sink;
-mod event;
-mod syslog;
-mod s3;
 pub mod error;
+mod event;
 pub mod integration;
+mod s3;
+mod sink;
+mod syslog;
 
 pub use error::AuditError;
-pub use sink::{AuditSink, FlushPolicy, MultiSink, NoopSink};
 pub use event::{
-    ExtAuditEvent, AuditEvent, AuditActor, AuditAction, AuditOutcome,
-    AuditSeverity, AuditResource, ActorSource,
+    ActorSource, AuditAction, AuditActor, AuditEvent, AuditOutcome, AuditResource, AuditSeverity,
+    ExtAuditEvent,
 };
 pub use integration::AuditContext;
-pub use syslog::SyslogSink;
 pub use s3::S3Sink;
+pub use sink::{AuditSink, FlushPolicy, MultiSink, NoopSink};
+pub use syslog::SyslogSink;

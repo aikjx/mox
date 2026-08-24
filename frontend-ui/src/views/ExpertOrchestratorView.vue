@@ -318,7 +318,9 @@ async function loadPlugins() {
 
 async function loadHistory() {
   try {
-    history.value = await getOrchestrationHistory({ limit: 20 })
+    const r = await getOrchestrationHistory({ limit: 20 })
+    // 契约兼容：后端返回 { history, total } 对象或直出数组；el-table :data 要求数组
+    history.value = Array.isArray(r) ? r : (r?.history || [])
   } catch (e) {
     console.error('Load history error:', e)
   }

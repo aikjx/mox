@@ -10,7 +10,9 @@
 //!  - `Remedy::Serialize`（浏览器/资源并发互斥）
 
 use flow_ai::conflict::{auto_repair, detect, ConflictKind, Remedy};
-use flow_ai::model::{Access, EdgeKind, ExpertRule, FlowEdge, FlowGraph, FlowNode, NodeKind, Severity, ToolKind};
+use flow_ai::model::{
+    Access, EdgeKind, ExpertRule, FlowEdge, FlowGraph, FlowNode, NodeKind, Severity, ToolKind,
+};
 
 /// 缺失 desensitize Guard 的合规冲突图（触发 InsertGuard 修法）
 fn missing_guard_graph() -> FlowGraph {
@@ -65,9 +67,9 @@ fn insert_guard_is_idempotent_across_repeats() {
     assert_eq!(guard_count, 1, "应恰好插入 1 个 desensitize Guard");
     // 修复后 Guard 前置连线到 q
     assert!(
-        g.edges
-            .iter()
-            .any(|e| e.from == "__guard_desensitize_q" && e.to == "q" && e.kind == EdgeKind::Sequence),
+        g.edges.iter().any(|e| e.from == "__guard_desensitize_q"
+            && e.to == "q"
+            && e.kind == EdgeKind::Sequence),
         "Guard 应前置连线到 q"
     );
 
@@ -91,7 +93,10 @@ fn insert_guard_is_idempotent_across_repeats() {
         extra += applied;
         cur = next;
     }
-    assert_eq!(extra, 0, "多次修复同一冲突应完全幂等（除首次外额外修正为 0）");
+    assert_eq!(
+        extra, 0,
+        "多次修复同一冲突应完全幂等（除首次外额外修正为 0）"
+    );
     let final_guard = cur
         .nodes
         .iter()
@@ -146,7 +151,11 @@ fn repair_remedy_shape_is_serializable_for_guard() {
     // 确认冲突携带的 remedy 是 InsertGuard（供外部/前端消费）
     let g = missing_guard_graph();
     let rep = detect(&g, &[]);
-    let c = rep.conflicts.iter().find(|c| c.kind == ConflictKind::Compliance).unwrap();
+    let c = rep
+        .conflicts
+        .iter()
+        .find(|c| c.kind == ConflictKind::Compliance)
+        .unwrap();
     match &c.remedy {
         Some(Remedy::InsertGuard { before, tag, .. }) => {
             assert_eq!(before, "q");

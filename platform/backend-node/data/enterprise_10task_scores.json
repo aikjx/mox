@@ -3,7 +3,7 @@
     "schemaVersion": 1,
     "specPath": "..\\..\\.trae\\specs\\20260823-enterprise-10task-scoring-checklist",
     "definitionsSha256": "e69b255d0efc721496a1111c19a0964f9e42325a6c0d3caad5f692f63fddc22e",
-    "generatedAt": "2026-08-23T22:34:50.4630398+08:00",
+    "generatedAt": "2026-08-23T23:58:31.9588961+08:00",
     "thresholds": {
       "totalScoreMin": 90,
       "perTaskMin": 8,
@@ -273,7 +273,7 @@
     "overallPass": false
   },
   "audit": {
-    "commit": "81fefdf",
+    "commit": "79252a6",
     "runner": "mo",
     "scoreSnapshotSha256": null,
     "platform": "Microsoft Windows NT 10.0.26200.0"

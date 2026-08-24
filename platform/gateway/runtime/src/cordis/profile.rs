@@ -22,7 +22,8 @@ impl ProfileLoader {
         }
 
         // 从文件加载
-        let content = tokio::fs::read_to_string(path).await
+        let content = tokio::fs::read_to_string(path)
+            .await
             .map_err(|e| ProfileError::LoadError(format!("Failed to read {}: {}", path, e)))?;
 
         let profile: Profile = serde_yaml::from_str(&content)

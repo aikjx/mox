@@ -20,9 +20,9 @@ pub struct ToolResult {
 // 说明：impl ToolResult —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
 // 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl ToolResult {
-/// 公共函数：ok（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    /// 公共函数：ok（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn ok(data: serde_json::Value) -> Self {
         Self {
             success: true,
@@ -31,9 +31,9 @@ impl ToolResult {
         }
     }
 
-/// 公共函数：err（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    /// 公共函数：err（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn err(msg: impl Into<String>) -> Self {
         Self {
             success: false,
@@ -61,32 +61,32 @@ pub struct ToolRegistry {
 // 说明：impl ToolRegistry —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
 // 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl ToolRegistry {
-/// 公共函数：new（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    /// 公共函数：new（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn new() -> Self {
         Self {
             tools: HashMap::new(),
         }
     }
 
-/// 公共函数：register（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    /// 公共函数：register（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn register<T: Tool + 'static>(&mut self, tool: T) {
         self.tools.insert(tool.name().to_string(), Box::new(tool));
     }
 
-/// 公共函数：get（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    /// 公共函数：get（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn get(&self, name: &str) -> Option<&dyn Tool> {
         self.tools.get(name).map(|t| t.as_ref())
     }
 
-/// 公共函数：list_tools（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    /// 公共函数：list_tools（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn list_tools(&self) -> Vec<(&str, &str)> {
         self.tools
             .values()
@@ -94,9 +94,9 @@ impl ToolRegistry {
             .collect()
     }
 
-/// 公共函数：execute（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    /// 公共函数：execute（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn execute(&self, name: &str, params: &serde_json::Value) -> ToolResult {
         match self.get(name) {
             Some(tool) => tool.execute(params),
@@ -172,22 +172,30 @@ impl DatabaseTool {
         }
     }
 
-/// 公共函数：new（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    /// 公共函数：new（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn new() -> Self {
         let db_path = "operator_data.db".to_string();
         let (provider, degraded_reason) = Self::build_provider(&db_path);
-        Self { db_path, provider, degraded_reason }
+        Self {
+            db_path,
+            provider,
+            degraded_reason,
+        }
     }
 
-/// 公共函数：with_path（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    /// 公共函数：with_path（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn with_path(path: impl Into<String>) -> Self {
         let db_path = path.into();
         let (provider, degraded_reason) = Self::build_provider(&db_path);
-        Self { db_path, provider, degraded_reason }
+        Self {
+            db_path,
+            provider,
+            degraded_reason,
+        }
     }
 
     /// 当前是否处于降级模式（用于观测 / 健康检查）
@@ -266,7 +274,7 @@ impl DatabaseTool {
 }
 
 fn base64_encode(data: &[u8]) -> String {
-    use base64::{Engine as _, engine::general_purpose::STANDARD};
+    use base64::{engine::general_purpose::STANDARD, Engine as _};
     STANDARD.encode(data)
 }
 
@@ -290,14 +298,8 @@ impl Tool for DatabaseTool {
     }
 
     fn execute(&self, params: &serde_json::Value) -> ToolResult {
-        let action = params
-            .get("action")
-            .and_then(|a| a.as_str())
-            .unwrap_or("");
-        let sql = params
-            .get("sql")
-            .and_then(|s| s.as_str())
-            .unwrap_or("");
+        let action = params.get("action").and_then(|a| a.as_str()).unwrap_or("");
+        let sql = params.get("sql").and_then(|s| s.as_str()).unwrap_or("");
         let data = params.get("params");
 
         if sql.is_empty() {
@@ -323,18 +325,18 @@ pub struct CodeSandboxTool {
 // 说明：impl CodeSandboxTool —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
 // 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl CodeSandboxTool {
-/// 公共函数：new（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    /// 公共函数：new（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn new() -> Self {
         Self {
             max_execution_time_ms: 5000,
         }
     }
 
-/// 公共函数：with_timeout（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    /// 公共函数：with_timeout（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn with_timeout(timeout_ms: u64) -> Self {
         Self {
             max_execution_time_ms: timeout_ms,
@@ -396,10 +398,7 @@ impl Tool for CodeSandboxTool {
             .get("language")
             .and_then(|l| l.as_str())
             .unwrap_or("python");
-        let code = params
-            .get("code")
-            .and_then(|c| c.as_str())
-            .unwrap_or("");
+        let code = params.get("code").and_then(|c| c.as_str()).unwrap_or("");
 
         if code.is_empty() {
             return ToolResult::err("缺少 code 参数");
@@ -425,9 +424,9 @@ pub struct HttpRequestTool;
 // 说明：impl HttpRequestTool —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
 // 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl HttpRequestTool {
-/// 公共函数：new（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    /// 公共函数：new（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn new() -> Self {
         Self
     }
@@ -533,20 +532,18 @@ pub struct FileOperationTool {
 // 说明：impl FileOperationTool —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
 // 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl FileOperationTool {
-/// 公共函数：new（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    /// 公共函数：new（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn new() -> Self {
         Self {
-            base_dir: std::env::temp_dir()
-                .to_string_lossy()
-                .to_string(),
+            base_dir: std::env::temp_dir().to_string_lossy().to_string(),
         }
     }
 
-/// 公共函数：with_base_dir（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    /// 公共函数：with_base_dir（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn with_base_dir(dir: impl Into<String>) -> Self {
         Self {
             base_dir: dir.into(),
@@ -630,14 +627,8 @@ impl Tool for FileOperationTool {
     }
 
     fn execute(&self, params: &serde_json::Value) -> ToolResult {
-        let action = params
-            .get("action")
-            .and_then(|a| a.as_str())
-            .unwrap_or("");
-        let path = params
-            .get("path")
-            .and_then(|p| p.as_str())
-            .unwrap_or("");
+        let action = params.get("action").and_then(|a| a.as_str()).unwrap_or("");
+        let path = params.get("path").and_then(|p| p.as_str()).unwrap_or("");
 
         if path.is_empty() {
             return ToolResult::err("缺少 path 参数");
@@ -646,17 +637,11 @@ impl Tool for FileOperationTool {
         match action {
             "read" => self.read_file(path),
             "write" => {
-                let content = params
-                    .get("content")
-                    .and_then(|c| c.as_str())
-                    .unwrap_or("");
+                let content = params.get("content").and_then(|c| c.as_str()).unwrap_or("");
                 self.write_file(path, content, false)
             }
             "append" => {
-                let content = params
-                    .get("content")
-                    .and_then(|c| c.as_str())
-                    .unwrap_or("");
+                let content = params.get("content").and_then(|c| c.as_str()).unwrap_or("");
                 self.write_file(path, content, true)
             }
             _ => ToolResult::err(format!("不支持的文件操作: {}", action)),
@@ -672,16 +657,16 @@ pub struct CalculatorTool;
 // 说明：impl CalculatorTool —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
 // 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl CalculatorTool {
-/// 公共函数：new（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    /// 公共函数：new（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn new() -> Self {
         Self
     }
 
-/// 公共函数：eval_expression（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    /// 公共函数：eval_expression（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn eval_expression(expr: &str) -> Result<f64, String> {
         let chars: Vec<char> = expr.chars().filter(|c| !c.is_whitespace()).collect();
         if chars.is_empty() {
@@ -690,10 +675,7 @@ impl CalculatorTool {
         let mut pos: usize = 0;
         let result = parse_expr(&chars, &mut pos)?;
         if pos < chars.len() {
-            return Err(format!(
-                "表达式解析完成后仍有剩余字符: '{}'",
-                chars[pos]
-            ));
+            return Err(format!("表达式解析完成后仍有剩余字符: '{}'", chars[pos]));
         }
         Ok(result)
     }
@@ -903,7 +885,10 @@ mod tests {
     #[test]
     fn test_registry_execute_calculator() {
         let registry = ToolRegistry::with_builtin_tools();
-        let r = registry.execute("calculator", &serde_json::json!({"expression": "10 / 2 + 3"}));
+        let r = registry.execute(
+            "calculator",
+            &serde_json::json!({"expression": "10 / 2 + 3"}),
+        );
         assert!(r.success);
     }
 

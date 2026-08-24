@@ -8,8 +8,8 @@
 //! 存储如 MinIO / 腾讯 COS / 华为 OBS / 阿里 OSS 互通）。
 //! 启用 `object_lock` 时附带 Compliance 模式对象锁头（WORM 语义）。
 
-use super::{AuditError, AuditSink};
 use super::event::ExtAuditEvent;
+use super::{AuditError, AuditSink};
 use chrono::{Datelike, Timelike, Utc};
 use hmac::{Hmac, Mac};
 use sha2::{Digest, Sha256};
@@ -103,10 +103,12 @@ impl S3Sink {
         match &self.credentials {
             S3Credentials::AccessKey { key_id, secret } => Ok((key_id.clone(), secret.clone())),
             S3Credentials::FromEnv => {
-                let key_id = std::env::var("AWS_ACCESS_KEY_ID")
-                    .map_err(|_| AuditError::Connection("缺少 AWS_ACCESS_KEY_ID 环境变量".into()))?;
-                let secret = std::env::var("AWS_SECRET_ACCESS_KEY")
-                    .map_err(|_| AuditError::Connection("缺少 AWS_SECRET_ACCESS_KEY 环境变量".into()))?;
+                let key_id = std::env::var("AWS_ACCESS_KEY_ID").map_err(|_| {
+                    AuditError::Connection("缺少 AWS_ACCESS_KEY_ID 环境变量".into())
+                })?;
+                let secret = std::env::var("AWS_SECRET_ACCESS_KEY").map_err(|_| {
+                    AuditError::Connection("缺少 AWS_SECRET_ACCESS_KEY 环境变量".into())
+                })?;
                 Ok((key_id, secret))
             }
         }
@@ -118,7 +120,11 @@ impl S3Sink {
             return Err(AuditError::Disabled);
         }
         let (access_key, secret_key) = self.active_credentials()?;
-        let region = if self.region.is_empty() { "us-east-1".to_string() } else { self.region.clone() };
+        let region = if self.region.is_empty() {
+            "us-east-1".to_string()
+        } else {
+            self.region.clone()
+        };
 
         // 1. 目标 URL：自定义 endpoint（path-style）或 AWS 虚拟主机风格
         let base = match &self.endpoint {
@@ -134,7 +140,11 @@ impl S3Sink {
             .host_str()
             .ok_or_else(|| AuditError::Connection("S3 URL 缺少主机".into()))?
             .to_string();
-        let path = if parsed.path().is_empty() { "/".to_string() } else { parsed.path().to_string() };
+        let path = if parsed.path().is_empty() {
+            "/".to_string()
+        } else {
+            parsed.path().to_string()
+        };
         let query = parsed.query().unwrap_or("").to_string();
 
         // 2. SigV4 时间与作用域
@@ -153,7 +163,9 @@ impl S3Sink {
         );
         let mut signed_headers = "host;x-amz-content-sha256;x-amz-date".to_string();
         if self.object_lock {
-            let retain_until = (now + chrono::Duration::days(365 * 7)).format("%Y%m%dT%H%M%SZ").to_string();
+            let retain_until = (now + chrono::Duration::days(365 * 7))
+                .format("%Y%m%dT%H%M%SZ")
+                .to_string();
             canonical_headers.push_str(&format!(
                 "x-amz-object-lock-mode:COMPLIANCE\nx-amz-object-lock-retain-until-date:{}\n",
                 retain_until
@@ -164,11 +176,7 @@ impl S3Sink {
         // 5. Canonical Request
         let canonical_request = format!(
             "PUT\n{}\n{}\n{}\n{}\n{}",
-            path,
-            query,
-            canonical_headers,
-            signed_headers,
-            payload_hash
+            path, query, canonical_headers, signed_headers, payload_hash
         );
         let hashed_canonical = hex::encode(Sha256::digest(canonical_request.as_bytes()));
 
@@ -208,7 +216,9 @@ impl S3Sink {
             req = req.header(name, value);
         }
         if self.object_lock {
-            let retain_until = (now + chrono::Duration::days(365 * 7)).format("%Y%m%dT%H%M%SZ").to_string();
+            let retain_until = (now + chrono::Duration::days(365 * 7))
+                .format("%Y%m%dT%H%M%SZ")
+                .to_string();
             req = req
                 .header("x-amz-object-lock-mode", "COMPLIANCE")
                 .header("x-amz-object-lock-retain-until-date", retain_until);
@@ -231,7 +241,8 @@ impl S3Sink {
 
 impl AuditSink for S3Sink {
     fn append_sync(&self, event: &ExtAuditEvent) -> Result<(), AuditError> {
-        let line = serde_json::to_string(event).map_err(|e| AuditError::Serialization(e.to_string()))?;
+        let line =
+            serde_json::to_string(event).map_err(|e| AuditError::Serialization(e.to_string()))?;
         let ts = event.timestamp;
         let hour = Self::hour_key(&ts);
 
@@ -273,7 +284,11 @@ impl AuditSink for S3Sink {
             let ts = Utc::now();
             let key = format!(
                 "{}/audit/{:04}/{:02}/{:02}/{:02}/hour_summary.ndjson",
-                self.prefix, ts.year(), ts.month(), ts.day(), ts.hour()
+                self.prefix,
+                ts.year(),
+                ts.month(),
+                ts.day(),
+                ts.hour()
             );
             let body: Vec<u8> = buf.join("\n").into_bytes();
             self.upload(&key, &body)?;

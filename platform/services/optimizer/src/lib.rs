@@ -15,9 +15,9 @@ pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateM
 
 use operator_core::operator::Operator;
 use operator_core::resource::ResourceCost;
+use petgraph::algo::toposort;
 use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::visit::EdgeRef;
-use petgraph::algo::toposort;
 use std::sync::Arc;
 
 /// 算子DAG节点
@@ -49,19 +49,27 @@ impl OperatorDag {
 
     /// 添加依赖边：op2依赖op1完成
     pub fn add_dependency(&mut self, op1: &str, op2: &str) -> Result<(), String> {
-        let idx1 = self.node_map.get(op1).ok_or_else(|| format!("算子不存在: {}", op1))?;
-        let idx2 = self.node_map.get(op2).ok_or_else(|| format!("算子不存在: {}", op2))?;
+        let idx1 = self
+            .node_map
+            .get(op1)
+            .ok_or_else(|| format!("算子不存在: {}", op1))?;
+        let idx2 = self
+            .node_map
+            .get(op2)
+            .ok_or_else(|| format!("算子不存在: {}", op2))?;
         self.graph.add_edge(*idx1, *idx2, ());
         Ok(())
     }
 
     /// 拓扑排序
     pub fn topological_order(&self) -> Result<Vec<String>, String> {
-        let sorted = toposort(&self.graph, None)
-            .map_err(|_| "DAG中存在环")?;
+        let sorted = toposort(&self.graph, None).map_err(|_| "DAG中存在环")?;
         // 反向映射 O(n)，避免对排序结果逐元素反查 node_map 的 O(n²) 开销
-        let idx_to_name: std::collections::HashMap<NodeIndex, &String> =
-            self.node_map.iter().map(|(name, idx)| (*idx, name)).collect();
+        let idx_to_name: std::collections::HashMap<NodeIndex, &String> = self
+            .node_map
+            .iter()
+            .map(|(name, idx)| (*idx, name))
+            .collect();
         Ok(sorted
             .iter()
             .map(|idx| idx_to_name.get(idx).cloned().cloned().unwrap_or_default())
@@ -82,10 +90,13 @@ impl OperatorDag {
         for &node in &sorted {
             let node_data = &self.graph[node];
             let cost = node_data.operator.resource_cost().cpu_cycles;
-            
+
             let mut max_pred_finish = 0;
             let mut max_pred = None;
-            for edge in self.graph.edges_directed(node, petgraph::Direction::Incoming) {
+            for edge in self
+                .graph
+                .edges_directed(node, petgraph::Direction::Incoming)
+            {
                 let pred = edge.source();
                 let pred_finish = *earliest_finish.get(&pred).unwrap_or(&0);
                 if pred_finish > max_pred_finish {
@@ -133,9 +144,12 @@ impl OperatorDag {
         for &node in &sorted {
             let node_data = &self.graph[node];
             let cost = node_data.operator.resource_cost().cpu_cycles;
-            
+
             let mut max_pred_finish = 0;
-            for edge in self.graph.edges_directed(node, petgraph::Direction::Incoming) {
+            for edge in self
+                .graph
+                .edges_directed(node, petgraph::Direction::Incoming)
+            {
                 let pred = edge.source();
                 let pred_finish = *earliest_finish.get(&pred).unwrap_or(&0);
                 if pred_finish > max_pred_finish {
@@ -172,7 +186,10 @@ pub struct ResourceOptimizer {
 
 impl ResourceOptimizer {
     pub fn new(max_cpu: u64, max_memory: u64) -> Self {
-        Self { max_cpu, max_memory }
+        Self {
+            max_cpu,
+            max_memory,
+        }
     }
 
     /// 检查算子序列是否满足资源约束
@@ -320,7 +337,8 @@ mod tests {
     #[test]
     fn test_multiple_dags_topological_order_with_diamond() {
         let mut dag = OperatorDag::new();
-        let ops: Vec<Arc<IdentityOperator>> = (0..4).map(|_| Arc::new(IdentityOperator::new(4))).collect();
+        let ops: Vec<Arc<IdentityOperator>> =
+            (0..4).map(|_| Arc::new(IdentityOperator::new(4))).collect();
         dag.add_operator("top", ops[0].clone());
         dag.add_operator("left", ops[1].clone());
         dag.add_operator("right", ops[2].clone());

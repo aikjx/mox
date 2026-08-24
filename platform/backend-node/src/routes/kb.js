@@ -17,6 +17,22 @@ module.exports = function registerKbRoutes(ctx) {
 
   // === 1. Document CRUD ===
 
+  // 可用性别名：习惯 /kb/list 的用户可直接拿到列表，避免 404 困惑
+  reg('get', '/kb/list', (req, res) => {
+    const docs = readDocuments();
+    const byCategory = new Map();
+    for (const d of docs) {
+      const c = d.category || '未分类';
+      byCategory.set(c, (byCategory.get(c) || 0) + 1);
+    }
+    // 注意：ok(res, data, extra) 会自动包装成 { success:true, data, ...extra }
+    ok(res, docs, {
+      total: docs.length,
+      byCategory: Object.fromEntries(byCategory),
+      updatedAt: new Date().toISOString(),
+    });
+  });
+
   reg('get', '/kb/documents', (req, res) => {
     const q = url.parse(req.url, true).query;
     let docs = readDocuments();

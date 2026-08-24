@@ -8,12 +8,13 @@
 pub struct Report {}
 
 impl Report {
-pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     /// 编排任务 `report` 的真实落位：打印执行踪迹并返回零值成功。
     /// 溯源链路: R_r1 → F_r1 → B_r1 → A_kt_r1 → T_r1_2 → C_r1_2
     pub fn report(&self) {
         println!("[Report::report] trace=R_r1 → F_r1 → B_r1 → A_kt_r1 → T_r1_2 → C_r1_2; schemas=S_r1(data_r1);");
     }
-
 }

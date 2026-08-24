@@ -67,7 +67,10 @@ fn pipeline_strict_gating_blocks_violation() {
 
     assert!(!result.success);
     let err = result.error.expect("严格闸门失败应有错误");
-    assert!(err.contains("守恒残差"), "错误应为守恒残差中断，实际: {err}");
+    assert!(
+        err.contains("守恒残差"),
+        "错误应为守恒残差中断，实际: {err}"
+    );
 }
 
 #[test]
@@ -82,10 +85,7 @@ fn pipeline_non_strict_records_residual_without_failing() {
 
     // 非严格模式：成功，但残差被真实记录
     assert!(result.success);
-    assert!(
-        result.total_residual > 1e-9,
-        "非严格模式应记录非零守恒残差"
-    );
+    assert!(result.total_residual > 1e-9, "非严格模式应记录非零守恒残差");
 }
 
 #[test]

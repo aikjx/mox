@@ -20,7 +20,7 @@ use std::time::Instant;
 use flow_ai::model::{Access, EdgeKind, FlowEdge, FlowGraph, FlowNode, NodeKind, ToolKind};
 use flow_ai::{optimize, OptimizeConfig};
 use xuanji_expert::verify::{
-    cem_deep_chain_with_defaults, ConstraintSpec, CemConfig, ObjectiveSpec,
+    cem_deep_chain_with_defaults, CemConfig, ConstraintSpec, ObjectiveSpec,
 };
 
 /// 500 级真依赖深链 —— 逐行对齐 `boundary_ultra_deep_chain_with_data_deps`
@@ -46,22 +46,50 @@ fn build_deep_chain_500() -> FlowGraph {
 }
 
 fn cpm_config() -> OptimizeConfig {
-    OptimizeConfig { emit_code: false, auto_repair: true, ..Default::default() }
+    OptimizeConfig {
+        emit_code: false,
+        auto_repair: true,
+        ..Default::default()
+    }
 }
 
 fn base_constraints() -> Vec<ConstraintSpec> {
     vec![
-        ConstraintSpec { id: "scheduled_ms".into(), direction: "le".into(), threshold: 6000 },
-        ConstraintSpec { id: "conflicts_blocking".into(), direction: "eq".into(), threshold: 0 },
+        ConstraintSpec {
+            id: "scheduled_ms".into(),
+            direction: "le".into(),
+            threshold: 6000,
+        },
+        ConstraintSpec {
+            id: "conflicts_blocking".into(),
+            direction: "eq".into(),
+            threshold: 0,
+        },
     ]
 }
 
 fn base_objectives() -> Vec<ObjectiveSpec> {
     vec![
-        ObjectiveSpec { id: "sched".into(), weight_e4: 5500, minimize: true },
-        ObjectiveSpec { id: "speedup".into(), weight_e4: 2000, minimize: false },
-        ObjectiveSpec { id: "conflict".into(), weight_e4: 1500, minimize: true },
-        ObjectiveSpec { id: "algo".into(), weight_e4: 1000, minimize: true },
+        ObjectiveSpec {
+            id: "sched".into(),
+            weight_e4: 5500,
+            minimize: true,
+        },
+        ObjectiveSpec {
+            id: "speedup".into(),
+            weight_e4: 2000,
+            minimize: false,
+        },
+        ObjectiveSpec {
+            id: "conflict".into(),
+            weight_e4: 1500,
+            minimize: true,
+        },
+        ObjectiveSpec {
+            id: "algo".into(),
+            weight_e4: 1000,
+            minimize: true,
+        },
     ]
 }
 
@@ -71,14 +99,14 @@ fn base_objectives() -> Vec<ObjectiveSpec> {
 ///     调整不违反 green_config 对 memo/obj_prune/parallel/verify_cache 的单变量控制。
 fn baseline_config() -> CemConfig {
     CemConfig {
-        population: 12,      // T7：每轮 12 个个体
-        max_rounds: 50,      // 兜底 50 轮
+        population: 12, // T7：每轮 12 个个体
+        max_rounds: 50, // 兜底 50 轮
         elite_ratio: 0.3,
-        sigma_stop: 0.001,   // RED：要求极高收敛（σ̄≤0.001）→ 必然跑满多轮 → P99 破 10s
+        sigma_stop: 0.001, // RED：要求极高收敛（σ̄≤0.001）→ 必然跑满多轮 → P99 破 10s
         no_improve_stop: 10, // RED：连续 10 轮无改进才停
-        memo: false,         // RED：关闭 T9 (a) 三元组 memo
-        obj_prune: false,    // RED：关闭 T9 (b) 剪枝
-        parallel: false,     // RED：关闭 T9 (c) 并行评估
+        memo: false,       // RED：关闭 T9 (a) 三元组 memo
+        obj_prune: false,  // RED：关闭 T9 (b) 剪枝
+        parallel: false,   // RED：关闭 T9 (c) 并行评估
         verify_cache: false, // RED：关闭跨 runs verify 缓存（每次新鲜 12× verify）
     }
 }
@@ -94,7 +122,7 @@ fn green_config() -> CemConfig {
         memo: true,
         obj_prune: true,
         parallel: true,
-        verify_cache: true,  // GREEN：跨 runs 共享 verify 结果（内存安全 + 加速）
+        verify_cache: true, // GREEN：跨 runs 共享 verify 结果（内存安全 + 加速）
     }
 }
 
@@ -129,7 +157,11 @@ fn mean_std(arr: &[f64]) -> (f64, f64) {
 }
 
 fn partial_triple(seq_ms: u64, cp_ms: u64, sched_ms: u64, speedup: f64) -> f64 {
-    let q = if seq_ms == 0 { 0.0 } else { cp_ms.min(seq_ms) as f64 / seq_ms as f64 };
+    let q = if seq_ms == 0 {
+        0.0
+    } else {
+        cp_ms.min(seq_ms) as f64 / seq_ms as f64
+    };
     let s_norm = speedup.min(2.0) / 2.0;
     let t_norm = if seq_ms == 0 {
         0.0
@@ -149,11 +181,7 @@ fn partial_triple(seq_ms: u64, cp_ms: u64, sched_ms: u64, speedup: f64) -> f64 {
 ///
 /// 稳定性：每趟迭代都重建一个全新的 FlowGraph，避免同一张图的 reachability 缓存被
 /// 多趟 verify 反复膨胀导致 N 次深链 verify 会话的内存堆积。
-fn run_n_cem(
-    name: &str,
-    cfg: CemConfig,
-    runs: usize,
-) -> (Vec<u64>, Vec<u64>, Vec<f64>) {
+fn run_n_cem(name: &str, cfg: CemConfig, runs: usize) -> (Vec<u64>, Vec<u64>, Vec<f64>) {
     let opt_cfg = cpm_config();
     let constraints = base_constraints();
     let objectives = base_objectives();
@@ -277,7 +305,9 @@ fn t9a_red_baseline_p99_above_budget() {
     const N: usize = 30;
     let (red_durs, _sched, _triples) = run_n_cem("RED baseline", baseline_config(), N);
     let red_p99 = percentile(&red_durs, 0.99);
-    println!("[RED 独立进程 N={N}] P99 = {red_p99} ms (预算 10,000 ms —— 预期 RED 超预算以建立基准)");
+    println!(
+        "[RED 独立进程 N={N}] P99 = {red_p99} ms (预算 10,000 ms —— 预期 RED 超预算以建立基准)"
+    );
     assert!(
         red_p99 > 10_000,
         "RED P99={red_p99}ms 未超预算，不能证明 T9 三条优化有效。\
@@ -290,8 +320,7 @@ fn t9a_red_baseline_p99_above_budget() {
 #[test]
 fn t9b_green_optimized_p99_meets_budget() {
     const N: usize = 100;
-    let (green_durs, green_sched, green_triples) =
-        run_n_cem("GREEN +T9(a,b,c)", green_config(), N);
+    let (green_durs, green_sched, green_triples) = run_n_cem("GREEN +T9(a,b,c)", green_config(), N);
     let green_p99 = percentile(&green_durs, 0.99);
     println!("GREEN P99(N={N}) = {green_p99} ms (预算 10,000 ms)");
 
@@ -322,10 +351,13 @@ fn t9b_green_optimized_p99_meets_budget() {
     let cfg = cpm_config();
     let rep = optimize(&g, &cfg);
     let v = xuanji_expert::verify::verify(&g, &rep);
-    assert!(!v.vetoed, "GREEN 优化后 verify 仍须放行深链: {:?}", v.checks);
     assert!(
-        !rep
-            .optimized_graph
+        !v.vetoed,
+        "GREEN 优化后 verify 仍须放行深链: {:?}",
+        v.checks
+    );
+    assert!(
+        !rep.optimized_graph
             .edges
             .iter()
             .any(|e| matches!(e.kind, EdgeKind::Mutex)),
@@ -377,5 +409,9 @@ fn t9_gap_p2_boundary_ultra_deep_chain_regression() {
         rep.gains.scheduled_ms
     );
     let v = xuanji_expert::verify::verify(&g, &rep);
-    assert!(!v.vetoed, "深链数据依赖应保持一致，不应否决：{:?}", v.checks);
+    assert!(
+        !v.vetoed,
+        "深链数据依赖应保持一致，不应否决：{:?}",
+        v.checks
+    );
 }

@@ -24,9 +24,7 @@ use operator_core::operator::Operator;
 use operator_core::resource::ResourceCost;
 use operator_core::state::StateVector;
 use operator_core::types::{builtin, TypeCheck, TypeIdentifier};
-use operator_core::{
-    ExecutionContext, OperatorError, OperatorMetadata, Result,
-};
+use operator_core::{ExecutionContext, OperatorError, OperatorMetadata, Result};
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -34,7 +32,7 @@ use std::time::Instant;
 use wasmer::{imports, Instance, Module, Pages, Store, Value};
 
 // O3 · 企业级默认沙箱硬上限（对比 Flowise/AutoGen 无原生限制；与 wasmer metering 对齐）
-pub const DEFAULT_FUEL_LIMIT: u64 = 2_000_000;  // 约 2M Wasm 指令
+pub const DEFAULT_FUEL_LIMIT: u64 = 2_000_000; // 约 2M Wasm 指令
 pub const DEFAULT_MEMORY_PAGES_LIMIT: u32 = 64; // 64 × 64KB = 4MB
 const BYTES_PER_PAGE: u64 = 64 * 1024;
 
@@ -63,7 +61,12 @@ impl WasmOperator {
     pub fn from_file(path: impl AsRef<Path>, metadata: OperatorMetadata) -> Result<Self> {
         let module_bytes = std::fs::read(path)
             .map_err(|e| OperatorError::WasmError(format!("读取WASM文件失败: {}", e)))?;
-        Ok(Self::from_bytes_with_limits(module_bytes, metadata, None, None))
+        Ok(Self::from_bytes_with_limits(
+            module_bytes,
+            metadata,
+            None,
+            None,
+        ))
     }
 
     pub fn from_bytes(bytes: Vec<u8>, metadata: OperatorMetadata) -> Self {
@@ -92,12 +95,23 @@ impl WasmOperator {
     }
     pub fn with_memory_pages_limit(mut self, pages: impl Into<Option<u32>>) -> Self {
         let p = pages.into();
-        self.memory_pages_limit = p.map(|x| if x == 0 { DEFAULT_MEMORY_PAGES_LIMIT } else { x });
+        self.memory_pages_limit = p.map(|x| {
+            if x == 0 {
+                DEFAULT_MEMORY_PAGES_LIMIT
+            } else {
+                x
+            }
+        });
         self
     }
 
-    pub fn effective_fuel_limit(&self) -> u64 { self.fuel_limit.unwrap_or(DEFAULT_FUEL_LIMIT) }
-    pub fn effective_memory_pages_limit(&self) -> u32 { self.memory_pages_limit.unwrap_or(DEFAULT_MEMORY_PAGES_LIMIT) }
+    pub fn effective_fuel_limit(&self) -> u64 {
+        self.fuel_limit.unwrap_or(DEFAULT_FUEL_LIMIT)
+    }
+    pub fn effective_memory_pages_limit(&self) -> u32 {
+        self.memory_pages_limit
+            .unwrap_or(DEFAULT_MEMORY_PAGES_LIMIT)
+    }
 
     pub fn last_execution_telemetry(&self) -> Option<Arc<WasmExecutionTelemetry>> {
         self.last_telemetry.lock().ok().and_then(|g| g.clone())
@@ -119,13 +133,25 @@ impl WasmOperator {
         // wasmer 4.4 没有 `Store::set_fuel`。如果将来 backport 或加 feature，这里会自动适配。
         // 目前返回 false，fuel_enabled=false → telemetry.fuel_used=None。
         // 但 O3 的 memory 硬上限仍 100% 工作。
-        #[cfg(feature = "wasmer_fuel_backport")] { store.set_fuel(fuel).is_ok() }
-        #[cfg(not(feature = "wasmer_fuel_backport"))] { false }
+        #[cfg(feature = "wasmer_fuel_backport")]
+        {
+            store.set_fuel(fuel).is_ok()
+        }
+        #[cfg(not(feature = "wasmer_fuel_backport"))]
+        {
+            false
+        }
     }
     #[allow(unused_variables)]
     fn try_fuel_remaining(store: &Store) -> Option<u64> {
-        #[cfg(feature = "wasmer_fuel_backport")] { store.fuel_remaining() }
-        #[cfg(not(feature = "wasmer_fuel_backport"))] { None }
+        #[cfg(feature = "wasmer_fuel_backport")]
+        {
+            store.fuel_remaining()
+        }
+        #[cfg(not(feature = "wasmer_fuel_backport"))]
+        {
+            None
+        }
     }
 
     // ----------------------------------------------------------------
@@ -148,14 +174,17 @@ impl WasmOperator {
             let msg = e.to_string();
             let trap_kind = classify_trap(&msg);
             let tel = WasmExecutionTelemetry {
-                fuel_used: None, fuel_limit,
-                memory_pages_used: 0, memory_pages_limit: mem_pages_limit,
-                elapsed_ns: start_ts.elapsed().as_nanos(), trap_kind: trap_kind.clone(),
+                fuel_used: None,
+                fuel_limit,
+                memory_pages_used: 0,
+                memory_pages_limit: mem_pages_limit,
+                elapsed_ns: start_ts.elapsed().as_nanos(),
+                trap_kind: trap_kind.clone(),
             };
             self.save_telemetry(tel);
             OperatorError::WasmError(match trap_kind {
                 Some(k) => format!("实例化WASM失败(O3 {} trap): {}", k, e),
-                None    => format!("实例化WASM失败: {}", e),
+                None => format!("实例化WASM失败: {}", e),
             })
         })?;
 
@@ -165,16 +194,20 @@ impl WasmOperator {
             .map_err(|e| OperatorError::WasmError(format!("获取内存失败: {}", e)))?;
 
         // O3 Memory (initial): 通过 memory.view(&store).size() 取当前 Pages
-        let initial_pages = memory.view(&store).size().0 as u32;
+        let initial_pages = memory.view(&store).size().0;
         if initial_pages > mem_pages_limit {
             let tel = WasmExecutionTelemetry {
-                fuel_used: None, fuel_limit,
-                memory_pages_used: initial_pages, memory_pages_limit: mem_pages_limit,
-                elapsed_ns: start_ts.elapsed().as_nanos(), trap_kind: Some("memory".to_string()),
+                fuel_used: None,
+                fuel_limit,
+                memory_pages_used: initial_pages,
+                memory_pages_limit: mem_pages_limit,
+                elapsed_ns: start_ts.elapsed().as_nanos(),
+                trap_kind: Some("memory".to_string()),
             };
             self.save_telemetry(tel);
             return Err(OperatorError::WasmError(format!(
-                "O3 Memory Trap: 初始内存 {} pages 超过硬上限 {}", initial_pages, mem_pages_limit
+                "O3 Memory Trap: 初始内存 {} pages 超过硬上限 {}",
+                initial_pages, mem_pages_limit
             )));
         }
 
@@ -189,12 +222,15 @@ impl WasmOperator {
 
         // O3 Memory (layout): 输入[0..n*8) + 输出[output_offset..output_offset + n*8)
         let required_bytes = output_offset + (n as u64) * 8;
-        let required_pages = ((required_bytes + BYTES_PER_PAGE - 1) / BYTES_PER_PAGE) as u32;
+        let required_pages = required_bytes.div_ceil(BYTES_PER_PAGE) as u32;
         if required_pages > mem_pages_limit {
             let tel = WasmExecutionTelemetry {
-                fuel_used: None, fuel_limit,
-                memory_pages_used: required_pages, memory_pages_limit: mem_pages_limit,
-                elapsed_ns: start_ts.elapsed().as_nanos(), trap_kind: Some("memory".to_string()),
+                fuel_used: None,
+                fuel_limit,
+                memory_pages_used: required_pages,
+                memory_pages_limit: mem_pages_limit,
+                elapsed_ns: start_ts.elapsed().as_nanos(),
+                trap_kind: Some("memory".to_string()),
             };
             self.save_telemetry(tel);
             return Err(OperatorError::WasmError(format!(
@@ -203,14 +239,17 @@ impl WasmOperator {
             )));
         }
         // Grow memory 到 required_pages（不超过上限）
-        let cur_pages = memory.view(&store).size().0 as u32;
+        let cur_pages = memory.view(&store).size().0;
         if cur_pages < required_pages {
             let delta = Pages(required_pages - cur_pages);
             memory.grow(&mut store, delta).map_err(|e| {
                 let tel = WasmExecutionTelemetry {
-                    fuel_used: None, fuel_limit,
-                    memory_pages_used: required_pages, memory_pages_limit: mem_pages_limit,
-                    elapsed_ns: start_ts.elapsed().as_nanos(), trap_kind: Some("memory".to_string()),
+                    fuel_used: None,
+                    fuel_limit,
+                    memory_pages_used: required_pages,
+                    memory_pages_limit: mem_pages_limit,
+                    elapsed_ns: start_ts.elapsed().as_nanos(),
+                    trap_kind: Some("memory".to_string()),
                 };
                 self.save_telemetry(tel);
                 OperatorError::WasmError(format!("O3 Memory Trap: grow(+{}) 失败: {}", delta.0, e))
@@ -219,7 +258,9 @@ impl WasmOperator {
 
         // 写入输入
         let input_bytes: Vec<u8> = input.iter().flat_map(|&x| x.to_le_bytes()).collect();
-        memory.view(&store).write(input_offset, &input_bytes)
+        memory
+            .view(&store)
+            .write(input_offset, &input_bytes)
             .map_err(|e| OperatorError::WasmError(format!("写入输入失败: {}", e)))?;
 
         // O3 Fuel: 调用前再次确保预算上限（fuel_enabled=false 时跳过）
@@ -239,43 +280,56 @@ impl WasmOperator {
 
         let fuel_used: Option<u64> = if fuel_enabled {
             Self::try_fuel_remaining(&store).map(|r| fuel_limit.saturating_sub(r))
-        } else { None };
-        let final_pages = memory.view(&store).size().0 as u32;
+        } else {
+            None
+        };
+        let final_pages = memory.view(&store).size().0;
 
         match call_res {
             Err(e) => {
                 let msg = e.to_string();
                 let mut trap = classify_trap(&msg);
-                if final_pages > mem_pages_limit { trap = Some("memory".to_string()); }
+                if final_pages > mem_pages_limit {
+                    trap = Some("memory".to_string());
+                }
                 let tel = WasmExecutionTelemetry {
-                    fuel_used, fuel_limit,
-                    memory_pages_used: final_pages, memory_pages_limit: mem_pages_limit,
-                    elapsed_ns: start_ts.elapsed().as_nanos(), trap_kind: trap.clone(),
+                    fuel_used,
+                    fuel_limit,
+                    memory_pages_used: final_pages,
+                    memory_pages_limit: mem_pages_limit,
+                    elapsed_ns: start_ts.elapsed().as_nanos(),
+                    trap_kind: trap.clone(),
                 };
                 self.save_telemetry(tel);
                 return Err(OperatorError::WasmError(format!(
-                    "O3 Trap({:?}): 执行WASM函数失败: {}", trap, e
+                    "O3 Trap({:?}): 执行WASM函数失败: {}",
+                    trap, e
                 )));
             }
             Ok(results) => {
                 if let Some(Value::I32(ret)) = results.first() {
                     if *ret != 0 {
                         let tel = WasmExecutionTelemetry {
-                            fuel_used, fuel_limit,
-                            memory_pages_used: final_pages, memory_pages_limit: mem_pages_limit,
+                            fuel_used,
+                            fuel_limit,
+                            memory_pages_used: final_pages,
+                            memory_pages_limit: mem_pages_limit,
                             elapsed_ns: start_ts.elapsed().as_nanos(),
                             trap_kind: Some("other".to_string()),
                         };
                         self.save_telemetry(tel);
                         return Err(OperatorError::WasmError(format!(
-                            "WASM算子执行错误，返回码: {}", ret
+                            "WASM算子执行错误，返回码: {}",
+                            ret
                         )));
                     }
                 }
                 if final_pages > mem_pages_limit {
                     let tel = WasmExecutionTelemetry {
-                        fuel_used, fuel_limit,
-                        memory_pages_used: final_pages, memory_pages_limit: mem_pages_limit,
+                        fuel_used,
+                        fuel_limit,
+                        memory_pages_used: final_pages,
+                        memory_pages_limit: mem_pages_limit,
                         elapsed_ns: start_ts.elapsed().as_nanos(),
                         trap_kind: Some("memory".to_string()),
                     };
@@ -287,8 +341,10 @@ impl WasmOperator {
                 }
                 // OK path
                 let tel = WasmExecutionTelemetry {
-                    fuel_used, fuel_limit,
-                    memory_pages_used: final_pages, memory_pages_limit: mem_pages_limit,
+                    fuel_used,
+                    fuel_limit,
+                    memory_pages_used: final_pages,
+                    memory_pages_limit: mem_pages_limit,
                     elapsed_ns: start_ts.elapsed().as_nanos(),
                     trap_kind: None,
                 };
@@ -297,7 +353,9 @@ impl WasmOperator {
         }
 
         let mut output_bytes = vec![0u8; n * 8];
-        memory.view(&store).read(output_offset, &mut output_bytes)
+        memory
+            .view(&store)
+            .read(output_offset, &mut output_bytes)
             .map_err(|e| OperatorError::WasmError(format!("读取输出失败: {}", e)))?;
         let output: Vec<f64> = output_bytes
             .chunks_exact(8)
@@ -309,13 +367,19 @@ impl WasmOperator {
 
 fn classify_trap(msg: &str) -> Option<String> {
     let lower = msg.to_ascii_lowercase();
-    if lower.contains("fuel") { return Some("fuel".into()); }
-    if lower.contains("memory") || lower.contains("grow") || lower.contains("oom") { return Some("memory".into()); }
+    if lower.contains("fuel") {
+        return Some("fuel".into());
+    }
+    if lower.contains("memory") || lower.contains("grow") || lower.contains("oom") {
+        return Some("memory".into());
+    }
     None
 }
 
 impl Operator for WasmOperator {
-    fn metadata(&self) -> OperatorMetadata { self.metadata.clone() }
+    fn metadata(&self) -> OperatorMetadata {
+        self.metadata.clone()
+    }
 
     fn apply(&self, input: &StateVector, _ctx: &mut ExecutionContext) -> Result<StateVector> {
         // 安全方式：堆上构建临时可变副本（module_bytes clone）执行 execute_wasm，再把遥测写回 self。
@@ -344,8 +408,12 @@ impl WasmOperator {
 }
 
 impl TypeCheck for WasmOperator {
-    fn input_type(&self) -> TypeIdentifier { self.metadata.input_type.clone() }
-    fn output_type(&self) -> TypeIdentifier { self.metadata.output_type.clone() }
+    fn input_type(&self) -> TypeIdentifier {
+        self.metadata.input_type.clone()
+    }
+    fn output_type(&self) -> TypeIdentifier {
+        self.metadata.output_type.clone()
+    }
 }
 
 /// WASM插件管理器
@@ -356,7 +424,10 @@ pub struct WasmPluginManager {
 
 impl WasmPluginManager {
     pub fn new(plugin_dir: impl AsRef<Path>) -> Self {
-        Self { plugins: HashMap::new(), plugin_dir: plugin_dir.as_ref().to_path_buf() }
+        Self {
+            plugins: HashMap::new(),
+            plugin_dir: plugin_dir.as_ref().to_path_buf(),
+        }
     }
 
     pub fn load_all(&mut self) -> Result<()> {
@@ -368,7 +439,8 @@ impl WasmPluginManager {
         for entry in std::fs::read_dir(&self.plugin_dir)
             .map_err(|e| OperatorError::WasmError(format!("读取插件目录失败: {}", e)))?
         {
-            let entry = entry.map_err(|e| OperatorError::WasmError(format!("读取目录项失败: {}", e)))?;
+            let entry =
+                entry.map_err(|e| OperatorError::WasmError(format!("读取目录项失败: {}", e)))?;
             let path = entry.path();
             if path.extension().is_some_and(|ext| ext == "wasm") {
                 let name = path.file_stem().unwrap().to_string_lossy().to_string();
@@ -391,9 +463,15 @@ impl WasmPluginManager {
         Ok(())
     }
 
-    pub fn get(&self, name: &str) -> Option<Arc<WasmOperator>> { self.plugins.get(name).cloned() }
-    pub fn list(&self) -> Vec<String> { self.plugins.keys().cloned().collect() }
-    pub fn unload(&mut self, name: &str) -> bool { self.plugins.remove(name).is_some() }
+    pub fn get(&self, name: &str) -> Option<Arc<WasmOperator>> {
+        self.plugins.get(name).cloned()
+    }
+    pub fn list(&self) -> Vec<String> {
+        self.plugins.keys().cloned().collect()
+    }
+    pub fn unload(&mut self, name: &str) -> bool {
+        self.plugins.remove(name).is_some()
+    }
 }
 
 /// 方便测试：用 wasmer 提供的 wat2wasm 从 WAT 文本生成 wasm bytes（wasmer 依赖默认启用）
@@ -468,7 +546,11 @@ mod tests {
         let out = op.execute_wasm(&input).expect("exec ok");
         assert_eq!(out, vec![2.0, 4.0, 6.0, 8.0, 10.0]);
         let tel = op.take_last_execution_telemetry().expect("telemetry saved");
-        assert!(tel.trap_kind.is_none(), "trap_kind 应为 None，实际 {:?}", tel.trap_kind);
+        assert!(
+            tel.trap_kind.is_none(),
+            "trap_kind 应为 None，实际 {:?}",
+            tel.trap_kind
+        );
         assert_eq!(tel.fuel_limit, 1_000_000);
         assert_eq!(tel.memory_pages_limit, 16);
         assert!(tel.memory_pages_used >= 1 && tel.memory_pages_used <= 16);
@@ -488,16 +570,23 @@ mod tests {
     fn o3_low_limits_cause_traps() {
         let bytes = wat_to_wasm(MUL2_WAT).expect("wat compile");
         let mut op = WasmOperator::from_bytes(bytes, meta())
-            .with_fuel_limit(100)          // best-effort，若 future feature 启用则 fuel trap
-            .with_memory_pages_limit(1);   // 强制 1 页上限；布局需要 4 页 → Memory Trap
-        // 输入/输出合计：16384 * 8 * 2 = 262144 bytes = 4 pages (> 1 limit)
+            .with_fuel_limit(100) // best-effort，若 future feature 启用则 fuel trap
+            .with_memory_pages_limit(1); // 强制 1 页上限；布局需要 4 页 → Memory Trap
+                                         // 输入/输出合计：16384 * 8 * 2 = 262144 bytes = 4 pages (> 1 limit)
         let inp: Vec<f64> = (0..16384).map(|i| i as f64).collect();
         let err = op.execute_wasm(&inp).expect_err("should trap");
-        let tel = op.take_last_execution_telemetry().expect("trap telemetry saved");
+        let tel = op
+            .take_last_execution_telemetry()
+            .expect("trap telemetry saved");
         let kind = tel.trap_kind.clone();
         assert!(
-            matches!(kind.as_deref(), Some("fuel") | Some("memory") | Some("other")),
-            "预期出现 trap，实际 kind={:?} err={}", kind, err
+            matches!(
+                kind.as_deref(),
+                Some("fuel") | Some("memory") | Some("other")
+            ),
+            "预期出现 trap，实际 kind={:?} err={}",
+            kind,
+            err
         );
         // 内存上限断言（防止未来把 memory_pages_limit 改大导致测试静默变绿）
         assert_eq!(tel.memory_pages_limit, 1, "上限必须被严格传递到 telemetry");
@@ -505,7 +594,8 @@ mod tests {
 
     #[test]
     fn test_wasm_manager_creation() {
-        let dir = std::env::temp_dir().join(format!("xuanji-operator-wasm-ut-{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("xuanji-operator-wasm-ut-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         let mut manager = WasmPluginManager::new(&dir);
         assert!(manager.load_all().is_ok(), "load_all empty dir ok");

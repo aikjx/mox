@@ -1,5 +1,5 @@
-﻿//! 企业级七专家单元测试套件（简化版）
-//! 
+//! 企业级七专家单元测试套件（简化版）
+//!
 //! 测试策略：
 //! - 每个专家 ≥2 个核心场景测试
 //! - 验证关键检查点
@@ -7,33 +7,40 @@
 
 #[cfg(test)]
 mod expert_unit_tests {
+    use flow_ai::model::{Access, AccessMode, FlowGraph, FlowNode, NodeKind, Severity, ToolKind};
+    use xuanji_expert::experts::algorithm::AlgorithmExpert;
+    use xuanji_expert::experts::business::BusinessExpert;
+    use xuanji_expert::experts::permission::PermissionExpert;
+    use xuanji_expert::experts::security::SecurityExpert;
     use xuanji_expert::{
         context::{GovernContext, Principal, Tenant},
         expert::{Constraint, Expert},
     };
-    use xuanji_expert::experts::business::BusinessExpert;
-    use xuanji_expert::experts::permission::PermissionExpert;
-    use xuanji_expert::experts::security::SecurityExpert;
-    use xuanji_expert::experts::algorithm::AlgorithmExpert;
-    use flow_ai::model::{Access, AccessMode, FlowGraph, FlowNode, NodeKind, Severity, ToolKind};
 
     // ==================== BusinessExpert ====================
 
     #[test]
     fn test_business_detects_missing_else_branch() {
         let mut flow = FlowGraph::new("test_flow", "测试流程");
-        flow.add_node(FlowNode::new("decision_1", "判断用户类型", NodeKind::Decision));
+        flow.add_node(FlowNode::new(
+            "decision_1",
+            "判断用户类型",
+            NodeKind::Decision,
+        ));
         flow.add_node(FlowNode::new("end", "结束", NodeKind::End));
         flow.add_edge(flow_ai::model::FlowEdge::seq("decision_1", "end"));
 
         let govern_ctx = create_govern_context(false);
         let ctx = xuanji_expert::context::ExpertContext::new(&flow, &govern_ctx);
-        
+
         let expert = BusinessExpert;
         let opinion = expert.analyze(&ctx);
 
         assert!(!opinion.risks.is_empty(), "应检测到缺少 else 分支");
-        assert!(opinion.risks.iter().any(|r| r.severity == Severity::Warning));
+        assert!(opinion
+            .risks
+            .iter()
+            .any(|r| r.severity == Severity::Warning));
     }
 
     #[test]
@@ -47,7 +54,7 @@ mod expert_unit_tests {
 
         let govern_ctx = create_govern_context(false);
         let ctx = xuanji_expert::context::ExpertContext::new(&flow, &govern_ctx);
-        
+
         let expert = BusinessExpert;
         let opinion = expert.analyze(&ctx);
 
@@ -68,7 +75,7 @@ mod expert_unit_tests {
 
         let govern_ctx = create_govern_context(false);
         let ctx = xuanji_expert::context::ExpertContext::new(&flow, &govern_ctx);
-        
+
         let expert = PermissionExpert;
         let opinion = expert.analyze(&ctx);
 
@@ -91,7 +98,7 @@ mod expert_unit_tests {
 
         let govern_ctx = create_govern_context(false);
         let ctx = xuanji_expert::context::ExpertContext::new(&flow, &govern_ctx);
-        
+
         let expert = PermissionExpert;
         let opinion = expert.analyze(&ctx);
 
@@ -103,18 +110,26 @@ mod expert_unit_tests {
     #[test]
     fn test_security_detects_external_call() {
         let mut flow = FlowGraph::new("test_flow", "测试流程");
-        flow.add_node(FlowNode::task("http_call", "外部API调用", ToolKind::Http, 100));
+        flow.add_node(FlowNode::task(
+            "http_call",
+            "外部API调用",
+            ToolKind::Http,
+            100,
+        ));
 
         let govern_ctx = create_govern_context(false);
         let ctx = xuanji_expert::context::ExpertContext::new(&flow, &govern_ctx);
-        
+
         let expert = SecurityExpert;
         let opinion = expert.analyze(&ctx);
 
-        assert!(opinion.constraints.iter().any(|c| matches!(
-            c,
-            Constraint::MustIsolate(node_id) if node_id == "http_call"
-        )), "应生成隔离约束");
+        assert!(
+            opinion.constraints.iter().any(|c| matches!(
+                c,
+                Constraint::MustIsolate(node_id) if node_id == "http_call"
+            )),
+            "应生成隔离约束"
+        );
     }
 
     #[test]
@@ -127,15 +142,19 @@ mod expert_unit_tests {
         });
         flow.add_node(node);
 
-        let govern_ctx = create_govern_context(true);  // regulated = true
+        let govern_ctx = create_govern_context(true); // regulated = true
         let ctx = xuanji_expert::context::ExpertContext::new(&flow, &govern_ctx);
-        
+
         let expert = SecurityExpert;
         let opinion = expert.analyze(&ctx);
 
-        assert!(opinion.risks.iter().any(|r| 
-            r.severity == Severity::Blocking && r.message.contains("PII")
-        ), "强合规租户 PII 外发应为 Blocking 级");
+        assert!(
+            opinion
+                .risks
+                .iter()
+                .any(|r| r.severity == Severity::Blocking && r.message.contains("PII")),
+            "强合规租户 PII 外发应为 Blocking 级"
+        );
     }
 
     // ==================== AlgorithmExpert ====================
@@ -147,7 +166,7 @@ mod expert_unit_tests {
 
         let govern_ctx = create_govern_context(false);
         let ctx = xuanji_expert::context::ExpertContext::new(&flow, &govern_ctx);
-        
+
         let expert = AlgorithmExpert;
         let opinion = expert.analyze(&ctx);
 
@@ -168,13 +187,13 @@ mod expert_unit_tests {
 
         let govern_ctx = create_govern_context(false);
         let ctx = xuanji_expert::context::ExpertContext::new(&flow, &govern_ctx);
-        
+
         let perm_expert = PermissionExpert;
         let perm_opinion = perm_expert.analyze(&ctx);
 
         // Permission 专家应否决生产库写
         assert!(perm_opinion.risks.iter().any(|r| r.veto), "权限专家应否决");
-        
+
         // 正交否决链：一旦有 veto，最终结果必须被阻断
         // 这在 pipeline 中由 reconcile() 和 gate 检查实现
     }

@@ -26,7 +26,11 @@ class HitlWebSocketClient {
 
   _buildUrl() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    return `${protocol}//${window.location.host}${HITL_WS_PATH}`
+    // WebSocket 无法携带自定义头，鉴权令牌经查询参数 ?token= 传递（与网关 auth_middleware 约定）。
+    const token = (typeof localStorage !== 'undefined' &&
+      (localStorage.getItem('ous_api_token') || localStorage.getItem('ous_token'))) || ''
+    const qs = token ? `?token=${encodeURIComponent(token)}` : ''
+    return `${protocol}//${window.location.host}${HITL_WS_PATH}${qs}`
   }
 
   connect() {
@@ -103,8 +107,9 @@ class HitlWebSocketClient {
     return true
   }
 
-  // 审批动作：event_id + APPROVE/DENY/MODIFY_APPROVE（MODIFY_APPROVE 需 modifiedPayload）
-  sendAction(eventId, action, { comment = null, modifiedPayload = null, actor = 'admin' } = {}) {
+  // 审批动作：event_id + APPROVE/DENY/MODIFY_APPROVE（MODIFY_APPROVE 需 modifiedPayload）。
+  // 服务端以「经鉴权的主体」作为实际 actor 落痕，不再信任客户端自报的 actor，故此处不再硬编码 'admin'。
+  sendAction(eventId, action, { comment = null, modifiedPayload = null, actor = '' } = {}) {
     if (!Object.values(HITL_ACTIONS).includes(action)) {
       console.warn('[HITL WS] Invalid action:', action)
       return false

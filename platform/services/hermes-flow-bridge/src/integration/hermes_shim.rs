@@ -26,7 +26,10 @@ pub struct HermesFlowBridge {
 
 impl HermesFlowBridge {
     pub fn new(state: Arc<BridgeState>) -> Self {
-        Self { state, session: "default".into() }
+        Self {
+            state,
+            session: "default".into(),
+        }
     }
     pub fn with_session(mut self, session: impl Into<String>) -> Self {
         self.session = session.into();
@@ -39,27 +42,35 @@ impl Plugin for HermesFlowBridge {
         let st = self.state.clone();
         let sess = self.session.clone();
 
-        ctx.on_tool_request(Arc::new(move |c: &ToolRequestMiddlewareContext| {
-            match on_tool_request(&st, &sess, &c.tool_name, &c.args, c.turn) {
+        ctx.on_tool_request(Arc::new(
+            move |c: &ToolRequestMiddlewareContext| match on_tool_request(
+                &st,
+                &sess,
+                &c.tool_name,
+                &c.args,
+                c.turn,
+            ) {
                 Some(d) => Some(ToolRequestMiddlewareUpdate {
                     args: d.args,
                     source: d.source,
                     reason: d.reason,
                 }),
                 None => None,
-            }
-        }));
+            },
+        ));
 
         let st2 = self.state.clone();
-        ctx.on_tool_execution(Arc::new(move |_c: &ToolExecutionMiddlewareContext,
-                                            run: &mut dyn FnMut(Option<Value>) -> ToolResult| {
-            let decision = on_tool_execution(&st2);
-            if decision.blocked {
-                // ⛨ 璇玑验证否决
-                return ToolResult::error(&decision.reason.unwrap_or_default());
-            }
-            run(None)
-        }));
+        ctx.on_tool_execution(Arc::new(
+            move |_c: &ToolExecutionMiddlewareContext,
+                  run: &mut dyn FnMut(Option<Value>) -> ToolResult| {
+                let decision = on_tool_execution(&st2);
+                if decision.blocked {
+                    // ⛨ 璇玑验证否决
+                    return ToolResult::error(&decision.reason.unwrap_or_default());
+                }
+                run(None)
+            },
+        ));
     }
 }
 
@@ -71,7 +82,10 @@ mod tests {
     #[test]
     fn hermes_plugin_registers_middlewares() {
         let st = Arc::new(BridgeState::new());
-        st.router.register(FlowTemplate { id: "x".into(), tool_seq: vec!["a".into()] });
+        st.router.register(FlowTemplate {
+            id: "x".into(),
+            tool_seq: vec!["a".into()],
+        });
         let p = HermesFlowBridge::new(st);
         let mut ctx = PluginContext::new();
         p.register(&mut ctx);

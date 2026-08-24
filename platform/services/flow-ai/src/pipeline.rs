@@ -24,7 +24,11 @@ pub struct OptimizeConfig {
 
 impl Default for OptimizeConfig {
     fn default() -> Self {
-        Self { auto_repair: true, emit_code: true, fast_path_threshold: 0.15 }
+        Self {
+            auto_repair: true,
+            emit_code: true,
+            fast_path_threshold: 0.15,
+        }
     }
 }
 
@@ -76,10 +80,19 @@ impl OptimizationReport {
         s.push_str(&format!("  串行耗时      : {} ms\n", g.sequential_ms));
         s.push_str(&format!("  关键路径下界  : {} ms\n", g.critical_path_ms));
         s.push_str(&format!("  资源受限排程  : {} ms\n", g.scheduled_ms));
-        s.push_str(&format!("  实际加速比    : {:.2}x (节省 {:.1}%)\n", g.speedup, g.time_saved_pct));
-        s.push_str(&format!("  算力压缩率    : {:.1}% (模型分级路由)\n", g.compute_saved_pct));
+        s.push_str(&format!(
+            "  实际加速比    : {:.2}x (节省 {:.1}%)\n",
+            g.speedup, g.time_saved_pct
+        ));
+        s.push_str(&format!(
+            "  算力压缩率    : {:.1}% (模型分级路由)\n",
+            g.compute_saved_pct
+        ));
         s.push_str(&format!("  剪除伪依赖    : {} 条\n", g.removed_false_deps));
-        s.push_str(&format!("  并行层 / 峰值 : {} 层 / {} 并发\n", g.parallel_layers, g.max_concurrency));
+        s.push_str(&format!(
+            "  并行层 / 峰值 : {} 层 / {} 并发\n",
+            g.parallel_layers, g.max_concurrency
+        ));
         s.push_str(&format!(
             "  冲突          : {} 项（阻断 {}，自动修复 {}）\n",
             g.conflicts_found, g.conflicts_blocking, g.conflicts_auto_fixed
@@ -88,7 +101,11 @@ impl OptimizationReport {
             if c.rejected {
                 s.push_str("  代码生成      : 已拒绝（存在阻断级冲突）\n");
             } else {
-                s.push_str(&format!("  代码生成      : {} 个文件 / {} 行\n", c.files.len(), c.total_lines()));
+                s.push_str(&format!(
+                    "  代码生成      : {} 个文件 / {} 行\n",
+                    c.files.len(),
+                    c.total_lines()
+                ));
             }
         }
         if !self.critical_path.optimization_targets.is_empty() {
@@ -186,9 +203,14 @@ fn compute_saving_from_routing(routing: &[ModelRouting]) -> f64 {
         ModelTier::Standard => 0.6,
         ModelTier::Heavy => 1.0,
     };
-    let avg: f64 = routing.iter().map(|r| weight(&r.model_tier)).sum::<f64>() / routing.len() as f64;
+    let avg: f64 =
+        routing.iter().map(|r| weight(&r.model_tier)).sum::<f64>() / routing.len() as f64;
     let v = (1.0 - avg) * 100.0;
-    if v < 0.0 { 0.0 } else { v }
+    if v < 0.0 {
+        0.0
+    } else {
+        v
+    }
 }
 
 /// 带图谱路由的优化：先查拓扑网能否复用历史流程，命中则标记 fast path
@@ -206,12 +228,17 @@ pub fn optimize_with_topology(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::{Access, ExpertRule, FlowEdge, FlowNode, NodeKind, ResourcePool, Severity, ToolKind};
+    use crate::model::{
+        Access, ExpertRule, FlowEdge, FlowNode, NodeKind, ResourcePool, Severity, ToolKind,
+    };
 
     /// 政务场景：3 个可并行的取数任务 + 1 个汇总 + 敏感数据规则
     fn gov_flow() -> FlowGraph {
         let mut g = FlowGraph::new("gov-001", "政务数据归集");
-        g.pools.push(ResourcePool { name: "browser".into(), capacity: 1 });
+        g.pools.push(ResourcePool {
+            name: "browser".into(),
+            capacity: 1,
+        });
         g.add_node(FlowNode::new("start", "开始", NodeKind::Start));
         g.add_node(
             FlowNode::task("excel", "读取台账Excel", ToolKind::File, 300)
@@ -283,7 +310,12 @@ mod tests {
     fn auto_repair_clears_blocking_and_emits_code() {
         let g = gov_flow();
         let rep = optimize(&g, &OptimizeConfig::default());
-        assert_eq!(rep.gains.conflicts_blocking, 0, "自动修复后不应残留阻断冲突: {:#?}", rep.conflicts.blocking());
+        assert_eq!(
+            rep.gains.conflicts_blocking,
+            0,
+            "自动修复后不应残留阻断冲突: {:#?}",
+            rep.conflicts.blocking()
+        );
         let code = rep.code.as_ref().unwrap();
         assert!(!code.rejected, "{:?}", code.reject_reasons);
         assert!(code.files.len() >= 5);
@@ -305,7 +337,10 @@ mod tests {
     #[test]
     fn no_repair_keeps_blocking_and_rejects_code() {
         let g = gov_flow();
-        let cfg = OptimizeConfig { auto_repair: false, ..Default::default() };
+        let cfg = OptimizeConfig {
+            auto_repair: false,
+            ..Default::default()
+        };
         let rep = optimize(&g, &cfg);
         assert!(rep.gains.conflicts_blocking > 0);
         assert!(rep.code.as_ref().unwrap().rejected);
@@ -334,8 +369,12 @@ mod tests {
         let g = gov_flow();
         let mut topo = TopologyGraph::new();
         topo.add_entity(
-            Entity::new("skill:gov", EntityKind::Skill, "政务数据归集")
-                .with_keywords(["政务", "归集", "数据", "政务数据"]),
+            Entity::new("skill:gov", EntityKind::Skill, "政务数据归集").with_keywords([
+                "政务",
+                "归集",
+                "数据",
+                "政务数据",
+            ]),
         );
         topo.ingest_flow(&g);
         topo.add_relation(Relation::new(
@@ -344,7 +383,8 @@ mod tests {
             RelationKind::Implements,
             1.0,
         ));
-        let rep = optimize_with_topology(&g, &topo, "跑一下政务数据归集", &OptimizeConfig::default());
+        let rep =
+            optimize_with_topology(&g, &topo, "跑一下政务数据归集", &OptimizeConfig::default());
         let route = rep.route.unwrap();
         assert!(route.fast_path, "{}", route.rationale);
     }

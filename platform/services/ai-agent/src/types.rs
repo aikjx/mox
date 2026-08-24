@@ -1,9 +1,9 @@
 //! AI智能体通用类型定义
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 // ========== 对话系统类型 ==========
 
@@ -583,18 +583,24 @@ pub struct WorkflowTemplate {
 impl WorkflowTemplate {
     pub fn create_workflow(&self, instance_id: &str) -> BusinessWorkflow {
         // 找到start node
-        let start_node_id = self.nodes.iter()
+        let start_node_id = self
+            .nodes
+            .iter()
             .find(|n| matches!(n.node_type, WorkflowNodeType::Start))
             .map(|n| n.id.clone())
             .unwrap_or_else(|| "start".to_string());
 
         // 转换connections为edges
-        let edges: Vec<WorkflowEdge> = self.connections.iter().map(|c| WorkflowEdge {
-            id: format!("edge-{}-{}", c.from, c.to),
-            source: c.from.clone(),
-            target: c.to.clone(),
-            condition: c.label.clone(),
-        }).collect();
+        let edges: Vec<WorkflowEdge> = self
+            .connections
+            .iter()
+            .map(|c| WorkflowEdge {
+                id: format!("edge-{}-{}", c.from, c.to),
+                source: c.from.clone(),
+                target: c.to.clone(),
+                condition: c.label.clone(),
+            })
+            .collect();
 
         BusinessWorkflow {
             id: format!("wf-{}", instance_id),
@@ -682,7 +688,9 @@ mod tests {
 
     #[test]
     fn test_user_intent_serialization() {
-        let intent = UserIntent::ExecuteWorkflow { operators: vec!["linear".to_string()] };
+        let intent = UserIntent::ExecuteWorkflow {
+            operators: vec!["linear".to_string()],
+        };
         let json = serde_json::to_string(&intent).unwrap();
         let back: UserIntent = serde_json::from_str(&json).unwrap();
         assert_eq!(intent, back);
@@ -693,8 +701,8 @@ mod tests {
         let rt = ResourceType::Cpu;
         assert_eq!(serde_json::to_string(&rt).unwrap(), "\"cpu\"");
         let rt2 = ResourceType::Custom("gpu_cluster".to_string());
-        let back: ResourceType = serde_json::from_str(&serde_json::to_string(&rt2).unwrap()).unwrap();
+        let back: ResourceType =
+            serde_json::from_str(&serde_json::to_string(&rt2).unwrap()).unwrap();
         assert_eq!(rt2, back);
     }
 }
-

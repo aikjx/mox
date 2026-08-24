@@ -1,0 +1,25 @@
+{
+  "date": "2026-08-24",
+  "partA_W1": {
+    "package_json_updated": true,
+    "new_devDeps": ["pinia","vitest","@playwright/test","lighthouse","storybook","zod","@vueuse/core","msw"],
+    "new_scripts": ["test","lint","storybook"],
+    "configs_created": ["vitest.config.js","playwright.config.js","lighthouserc.cjs",".storybook/main.js","main.js pinia注册"],
+    "npm_install_exit_code": 0,
+    "node_modules_pinia_exists": true,
+    "node_modules_vitest_exists": true,
+    "pass": true
+  },
+  "partB_W2": {
+    "ai_cli_params_added": true,
+    "call_wo_params_exit": 2,
+    "call_with_params_dryrun_exit": 0,
+    "message_contains_tielv2": true,
+    "pass": true
+  },
+  "meta_test_mock_fail_proof": {
+    "what_mocked": "node ai-bench 不传参数 / fe lighthouse 缺 dep（W1 未装前）",
+    "actual_fail_count": 2,
+    "proves_not_always_green": true
+  }
+}

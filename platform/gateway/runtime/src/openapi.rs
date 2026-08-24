@@ -362,10 +362,7 @@ paths:
 /// 返回 OpenAPI 3.1 规范（YAML）。
 pub async fn serve_openapi_yaml() -> Response {
     let mut headers = HeaderMap::new();
-    headers.insert(
-        CONTENT_TYPE,
-        HeaderValue::from_static("application/yaml"),
-    );
+    headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/yaml"));
     (StatusCode::OK, headers, OPENAPI_YAML).into_response()
 }
 

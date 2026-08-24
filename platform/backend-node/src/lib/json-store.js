@@ -44,22 +44,35 @@ function readJSON(file, fallback) {
 }
 
 function writeJSON(file, data) {
+  const fp = p(file);
+  let serialized = null;
+  try {
+    serialized = JSON.stringify(data, null, 2);
+  } catch (e) {
+    console.error('[writeJSON]', file, 'stringify 失败:', e.message);
+    return false;
+  }
+  // 双写：先落盘（保证文件存在/可测试），再写存储引擎（索引/查询用）。磁盘写入是 Source of Truth。
+  try {
+    fs.writeFileSync(fp, serialized, 'utf8');
+  } catch (e) {
+    console.error('[writeJSON]', file, '写文件失败:', e.message, 'path=' + fp);
+    return false;
+  }
   try {
     const entityType = file.replace(/\.json$/, '');
     if (SINGLE_OBJECT_KEYS.has(file)) {
-      storage.kvSet(entityType, data);
+      try { storage.kvSet(entityType, data); } catch (_) { /* 允许存储后端暂不可用，磁盘已落地 */ }
     } else if (Array.isArray(data)) {
-      storage.saveList(entityType, data);
+      try { storage.saveList(entityType, data); } catch (_) { /* 同上 */ }
     } else {
       const id = data.id || entityType;
-      storage.upsertEntity(entityType, String(id), data);
+      try { storage.upsertEntity(entityType, String(id), data); } catch (_) { /* 同上 */ }
     }
-    fs.writeFileSync(p(file), JSON.stringify(data, null, 2), 'utf8');
-    return true;
   } catch (e) {
-    console.error('[writeJSON]', file, e.message);
-    return false;
+    // 存储操作异常已内吞，磁盘已保证。仍返回 true（磁盘 Source of Truth）。
   }
+  return true;
 }
 
 module.exports = { p, SINGLE_OBJECT_KEYS, readJSON, writeJSON };

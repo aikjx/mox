@@ -4,8 +4,12 @@ use flow_ai::model::{Access, FlowEdge, FlowNode, ToolKind};
 fn base_flow() -> FlowGraph {
     let mut g = FlowGraph::new("t", "测试");
     g.add_node(FlowNode::task("a", "写x", ToolKind::File, 100).with_access(Access::write("var:x")));
-    g.add_node(FlowNode::task("b", "读x", ToolKind::Compute, 100).with_access(Access::read("var:x")));
-    g.add_node(FlowNode::task("c", "读y", ToolKind::Compute, 100).with_access(Access::read("var:y")));
+    g.add_node(
+        FlowNode::task("b", "读x", ToolKind::Compute, 100).with_access(Access::read("var:x")),
+    );
+    g.add_node(
+        FlowNode::task("c", "读y", ToolKind::Compute, 100).with_access(Access::read("var:y")),
+    );
     g.add_edge(FlowEdge::seq("a", "b")); // 真数据依赖 a→b (x)
     g.add_edge(FlowEdge::seq("a", "c")); // 真数据依赖 a→c (x)
     g
@@ -32,9 +36,7 @@ fn veto_when_data_dependency_broken() {
     let g = base_flow();
     let mut opt = flow_ai::optimize(&g, &flow_ai::OptimizeConfig::default());
     // 人为破坏：移除 b 节点，制造语义丢失
-    opt.optimized_graph
-        .nodes
-        .retain(|n| n.id != "b");
+    opt.optimized_graph.nodes.retain(|n| n.id != "b");
     // 同时让 removed_edges 不含这条（模拟优化器误删真依赖）
     opt.plan.removed_edges.push(("a".into(), "b".into()));
     let v = verify(&g, &opt);
@@ -50,16 +52,16 @@ fn veto_when_blocking_conflict_remains() {
     let g = base_flow();
     let mut opt = flow_ai::optimize(&g, &flow_ai::OptimizeConfig::default());
     // 注入一个阻塞冲突且未修复
-    opt.conflicts.conflicts.push(
-        flow_ai::conflict::Conflict::new(
+    opt.conflicts
+        .conflicts
+        .push(flow_ai::conflict::Conflict::new(
             ConflictKind::DbTransaction,
             Severity::Blocking,
             vec!["x".into()],
             Some("browser".into()),
             "测试阻塞冲突",
             None,
-        ),
-    );
+        ));
     let v = verify(&g, &opt);
     assert!(v.vetoed);
     assert!(!v.check("conflict").unwrap().passed);

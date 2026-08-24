@@ -204,5 +204,9 @@ function computeScore({ owned, engines, dataFiles, docFiles, flows, verifyState 
 
 module.exports = {
   PROJECTS, LIFECYCLE, PROJECT_ID_RE,
-  canTransition, validateProject, auditDomainOwnership, projectHealth
+  canTransition, validateProject, auditDomainOwnership, projectHealth,
+  /** 获取全部项目（用于与 business-registry、routes 三向一致性校验） */
+  getProjects() { return Array.isArray(PROJECTS) ? PROJECTS.slice() : []; },
+  /** 按 id 取项目 */
+  findById(id) { return (PROJECTS || []).find(p => p && p.id === id); },
 };

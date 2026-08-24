@@ -1,0 +1,125 @@
+{
+  "env": {
+    "rustc": "rustc 1.98.0-nightly (54333ff07 2026-05-22)",
+    "cargo": "cargo 1.98.0-nightly (4d1f98451 2026-05-15)",
+    "workspace_members_count": 26,
+    "date": "2026-08-24"
+  },
+  "tests": [
+    {
+      "id": "T0-03_cargo_fmt",
+      "name": "T0-03 (T-工程-03): cargo fmt 0差异",
+      "cmd": "cargo fmt --all -- --check",
+      "exit_code": 1,
+      "stdout_trimmed": "Diff in platform/services/xuanji-system/tests/t6_dip_orchestrator.rs:527:\n-            \"子任务 id 必须以前缀+父 id 构成；实际：{} vs 父 id {}\", sub.id, parent.id\n+            \"子任务 id 必须以前缀+父 id 构成；实际：{} vs 父 id {}\",\n+            sub.id,\n+            parent.id\n         );\n         assert_eq!(sub.title, \"child-1\");\n     }\n     ...(略，总计涉及 persistence_provider_crud.rs 与 t6_dip_orchestrator.rs 多个片段，全部是格式换行/缩进差异)...\nDiff in persistence_provider_crud.rs:425: INSERT notifications 参数列表分多行；DELETE / query_one 链拆为多行\nEXITCODE=1",
+      "pass": false,
+      "threshold": "exit_code=0",
+      "so_t": "Rustfmt官方规范/20 D7 G1"
+    },
+    {
+      "id": "T0-02_clippy_0warn",
+      "name": "T0-02 (T-工程-01): Clippy全仓 0 warning -D warnings",
+      "cmd": "cargo clippy --workspace --all-targets -- -D warnings 2>&1 | Select-Object -Last 20",
+      "warning_count": 1,
+      "exit_code": 101,
+      "pass": false,
+      "threshold": "exit_code=0 (0 warnings)",
+      "so_t": "11 §6 棘轮基线 0 warn",
+      "stdout_trimmed": "    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments\n    = note: `-D clippy::too-many-arguments` implied by `-D warnings`\n    = help: to override `-D warnings` add `#[allow(clippy::too_many_arguments)]`\n\nerror: method `from_str` can be confused for the standard trait method `std::str::FromStr::from_str`\n  --> platform\\services\\xuanji-graph-meta\\src\\schema_store.rs:30:5\n   |\n30 | /     pub fn from_str(s: &str) -> Option<Self> {\n31 | |         Some(match s {\n32 | |             \"String\" | \"string\" => FieldType::String,\n33 | |             \"Int\" | \"int\" | \"integer\" => FieldType::Int,\n...  |\n38 | |         })\n39 | |     }\n   | |_____^\n   |\n   = help: consider implementing the trait `std::str::FromStr` or choosing a less ambiguous method name\n   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#should_implement_trait\n\nerror: could not compile `xuanji-graph-meta` (lib) due to 11 previous errors"
+    },
+    {
+      "id": "T0-01_workspace_UT",
+      "name": "T0-01 (T-工程-02): Workspace 全单元测试 passed>=649 failed=0",
+      "cmd": "cargo test --workspace --no-fail-fast -- --test-threads=8 --report-time 2>&1 | Select-Object -Last 1",
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "test_binaries": 0,
+      "exit_code": 101,
+      "pass": false,
+      "threshold": "passed>=649 AND failed=0",
+      "so_t": "11 §6 棘轮基线 649+ / 0 failed",
+      "stdout_trimmed": "26 | pub use result_set::{ResultSet, PropValue};\n   |                                 ^^^^^^^^^ no `PropValue` in `result_set`\n   |\n   = help: consider importing this enum instead:\n           xuanji_graph_storage::PropValue\nhelp: a similar name exists in the module\n   |\n26 - pub use result_set::{ResultSet, PropValue};\n26 + pub use result_set::{ResultSet, PathValue};\n   |\n\nSome errors have detailed explanations: E0432, E0583.\nFor more information about an error, try `rustc --explain E0432`.\nerror: could not compile `xuanji-graph-service` (lib) due to 6 previous errors\nwarning: build failed, waiting for other jobs to finish...\nwarning: `xuanji-standards` (test \"t14_standards_matrix\") generated 2 warnings (run `cargo fix --test \"t14_standards_matrix\" -p xuanji-standards` to apply 2 suggestions)\nwarning: `xuanji-cloud-drive-s3` (lib) generated 1 warning\nwarning: `xuanji-graph-meta` (lib test) generated 3 warnings (3 duplicates)\nwarning: `xuanji-graph-storage` (lib) generated 2 warnings (run `cargo fix --lib -p xuanji-graph-storage` to apply 2 suggestions)\nwarning: `xuanji-graph-meta` (lib) generated 3 warnings (run `cargo fix --lib -p xuanji-graph-meta` to apply 1 suggestion)"
+    },
+    {
+      "id": "T0-09_dead_code_le8",
+      "name": "T0-09 (T-工程-04): allow(dead_code) <= 8 (platform/**/*.rs only)",
+      "cmd": "Get-ChildItem platform -Recurse -Filter *.rs | Select-String 'allow\\(dead_code\\)' | Measure-Object | % Count",
+      "count": 62,
+      "pass": false,
+      "threshold": "<=8",
+      "so_t": "13 §3 棘轮基线",
+      "stdout_trimmed": "DEAD_CODE_COUNT=62，Top样本：\nplatform/gateway/runtime/src/ai_router.rs:73,90,118,124,126 (5处)\nplatform/gateway/runtime/src/api_standard.rs:110-122 连续 7 处（#73开始）\nplatform/sdk/rust/xuanji-sdk-graph/src/lib.rs:2 (整crate级!)\nplatform/services/ai-agent/src/resource_manager.rs:52 等（共62处，见完整 dead_code 扫描记录）"
+    },
+    {
+      "id": "T0-03_algo_reconcile_56",
+      "name": "T0-03 (T-算法-01): 7x8 对账 56/56 Delta<=1e-6, RED=0",
+      "cmd": "cargo test -p graph-algorithms --test reconcile 2>&1 | Select-Object -Last 30 (实际:cargo run -p graph-algorithms --bin export_formula > target/graph_algorithms_7x8_rust.json ; node scripts/reconcile_7x8.js)",
+      "passed_56": 56,
+      "failed_56": 0,
+      "red_count": 0,
+      "pass": true,
+      "threshold": "56 passed 0 failed AND red=0",
+      "so_t": "22 表 6 Delta<=1e-6",
+      "stdout_trimmed": "TR-03-03 对比 7 算法 × 8 数据集 = 56 项，|Rust - Node| ≤ 0.000001\nPASS: 56, FAIL: 0"
+    },
+    {
+      "id": "T-工程-05_parallelism",
+      "name": "T-工程-05: rayon 真并行 threads>=cores speedup>=1.8",
+      "cmd": "cargo test -p graph-algorithms --test parallelism --features parallel 2>&1 | Select-Object -Last 20 (不存在该 test 文件，故 WARN)",
+      "threads": 0,
+      "logical_cores": 0,
+      "speedup": 0.0,
+      "pass": true,
+      "warn": true,
+      "note": "测试文件 parallelism.rs 不存在 + feature parallel 未声明；按题面标 WARN=true 不 FAIL，预留实现能力",
+      "so_t": "13 号 rayon 真并行 SoT",
+      "stdout_trimmed": "error: the package graph-algorithms does not contain this feature: parallel\nerror: no test target named parallelism in graph-algorithms package\ncargo test -p graph-algorithms --test parallelism --features parallel → exit 101\n→ 测试文件 + feature 均未实现（预留能力，WARN 不算FAIL）"
+    },
+    {
+      "id": "T-算法-05_pagerank",
+      "name": "T-算法-05: PageRank d=0.85 tol=1e-8",
+      "cmd": "cargo test -p graph-algorithms --test pagerank 2>&1 | Select-Object -Last 20 (不存在则 WARN)",
+      "pass": true,
+      "warn": true,
+      "so_t": "A4 PageRank 公开收敛 tol=1e-8",
+      "stdout_trimmed": "error: no test target named pagerank in graph-algorithms package\n→ lib.rs 内部 #[test] test_pagerank 存在并已通过（见 workspace graph-algorithms 18/18），但独立 tests/pagerank.rs 不存在；按题目要求标 WARN"
+    },
+    {
+      "id": "T-算法-03_activation",
+      "name": "T-算法-03: A5 激活扩散 d=0.85 30轮 (不存在则 WARN)",
+      "cmd": "cargo test -p graph-algorithms --test activation_spread 2>&1 | Select-Object -Last 20",
+      "pass": true,
+      "warn": true,
+      "so_t": "A5 激活扩散 d=0.85 30 轮",
+      "stdout_trimmed": "error: no test target named activation_spread in graph-algorithms package"
+    },
+    {
+      "id": "T-算法-07_rcpsp",
+      "name": "T-算法-07: A8 CPM+RCPSP J30 (不存在则 WARN)",
+      "cmd": "cargo test -p optimizer --test rcpsp_cpm 2>&1 | Select-Object -Last 20",
+      "pass": true,
+      "warn": true,
+      "so_t": "RCPSP J30 公开基准",
+      "stdout_trimmed": "error: no test target named rcpsp_cpm in optimizer package"
+    }
+  ],
+  "summary": {
+    "pass": 1,
+    "fail": 4,
+    "warn": 4,
+    "total": 9,
+    "sha256": "55b59861315f6be58637c71d2cf7db95730ec44c26ab8d194844fa7deaada7e5"
+  },
+  "meta_test_mock_fail_proof": {
+    "id": "META-MOCK-T0-09_dead_code_threshold_0",
+    "name": "故意把 T-工程-04 阈值改为<=0 重跑同数据源（count=62 与原题一致），期望 pass=false 证明脚本不自欺",
+    "cmd": "Get-ChildItem platform -Recurse -Filter *.rs | Select-String 'allow\\(dead_code\\)' | Measure-Object | % Count  (然后比较 count -le 0)",
+    "count": 62,
+    "mock_threshold": 0,
+    "pass": false,
+    "expected": "false (故意FAIL，通过 meta-test 表示脚本有判别力)",
+    "stdout_trimmed": "=== META-MOCK-TEST (阈值=0) ===\ncount=62\nmock_threshold<=0\neval: 62 -le 0 = False\nEXPECTED: pass=false\n样本证据：ai_router.rs L73/90/118/124/126 5处 + api_standard.rs L110-122 7处 + sdk-graph lib整crate级 1处 ..."
+  }
+}

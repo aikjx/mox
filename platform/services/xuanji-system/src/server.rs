@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
 
+use axum::extract::ws::{Message as WsMessage, WebSocket, WebSocketUpgrade};
 use axum::{
     extract::{Extension, Path, Query, Request, State},
     http::StatusCode,
@@ -11,7 +12,6 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use axum::extract::ws::{Message as WsMessage, WebSocket, WebSocketUpgrade};
 use futures::{SinkExt, StreamExt};
 use serde::Deserialize;
 use tower_http::cors::CorsLayer;
@@ -19,7 +19,7 @@ use tower_http::cors::CorsLayer;
 use crate::error::*;
 use crate::model::*;
 use crate::orchestrator::XuanjiSystem;
-use crate::rbac::{Permission, RoleBinding, Role, Scope};
+use crate::rbac::{Permission, Role, RoleBinding, Scope};
 
 /// 服务版本（来自 Cargo.toml），用于健康检查与可观测性
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -99,29 +99,17 @@ fn parse_status(s: &str) -> Result<TaskStatus> {
 
 // ---------------- 企业级中间件 ----------------
 /// 限流中间件（安全防护 I-04）：以「令牌 / 匿名」为键，窗口内超额即拒绝（429）
-async fn rate_limit_mw(
-    State(sys): State<Arc<XuanjiSystem>>,
-    req: Request,
-    next: Next,
-) -> Response {
+async fn rate_limit_mw(State(sys): State<Arc<XuanjiSystem>>, req: Request, next: Next) -> Response {
     let key = extract_token_key(&req).unwrap_or_else(|| "anonymous".to_string());
     if sys.ratelimiter.check(&key) {
         next.run(req).await
     } else {
-        (
-            StatusCode::TOO_MANY_REQUESTS,
-            "rate limit exceeded",
-        )
-            .into_response()
+        (StatusCode::TOO_MANY_REQUESTS, "rate limit exceeded").into_response()
     }
 }
 
 /// 可观测性中间件（I-04）：统计请求数、延迟与错误数
-async fn metrics_mw(
-    State(sys): State<Arc<XuanjiSystem>>,
-    req: Request,
-    next: Next,
-) -> Response {
+async fn metrics_mw(State(sys): State<Arc<XuanjiSystem>>, req: Request, next: Next) -> Response {
     let start = Instant::now();
     sys.metrics.inc_requests();
     let resp = next.run(req).await;
@@ -157,11 +145,7 @@ fn extract_token_key(req: &Request) -> Option<String> {
 }
 
 // ---------------- 鉴权中间件 ----------------
-async fn auth_mw(
-    State(sys): State<Arc<XuanjiSystem>>,
-    mut req: Request,
-    next: Next,
-) -> Response {
+async fn auth_mw(State(sys): State<Arc<XuanjiSystem>>, mut req: Request, next: Next) -> Response {
     let token = req
         .headers()
         .get("authorization")
@@ -188,7 +172,10 @@ async fn auth_mw(
 }
 
 // ---------------- 路由处理器 ----------------
-async fn me(Extension(AuthUser(id)): Extension<AuthUser>, State(sys): State<Arc<XuanjiSystem>>) -> Result<Json<Member>> {
+async fn me(
+    Extension(AuthUser(id)): Extension<AuthUser>,
+    State(sys): State<Arc<XuanjiSystem>>,
+) -> Result<Json<Member>> {
     Ok(Json(sys.member.get(&id).await?))
 }
 
@@ -197,8 +184,19 @@ async fn list_members(
     State(sys): State<Arc<XuanjiSystem>>,
     Query(q): Query<HashMap<String, String>>,
 ) -> Result<Json<Vec<Member>>> {
-    let xuanji_id = q.get("xuanji_id").cloned().ok_or_else(|| AppError::BadRequest("缺少 xuanji_id".into()))?;
-    sys.require(&id, Permission::AuditView, &crate::rbac::ResourceCtx { xuanji_id: xuanji_id.clone(), task: None }).await?;
+    let xuanji_id = q
+        .get("xuanji_id")
+        .cloned()
+        .ok_or_else(|| AppError::BadRequest("缺少 xuanji_id".into()))?;
+    sys.require(
+        &id,
+        Permission::AuditView,
+        &crate::rbac::ResourceCtx {
+            xuanji_id: xuanji_id.clone(),
+            task: None,
+        },
+    )
+    .await?;
     Ok(Json(sys.member.list(&xuanji_id).await))
 }
 
@@ -229,7 +227,13 @@ async fn create_task(
     Json(req): Json<CreateTaskReq>,
 ) -> Result<Json<Task>> {
     let t = sys
-        .create_task(&id, &req.xuanji_id, &req.title, &req.description, parse_priority(&req.priority))
+        .create_task(
+            &id,
+            &req.xuanji_id,
+            &req.title,
+            &req.description,
+            parse_priority(&req.priority),
+        )
         .await?;
     Ok(Json(t))
 }
@@ -239,8 +243,19 @@ async fn list_tasks(
     State(sys): State<Arc<XuanjiSystem>>,
     Query(q): Query<HashMap<String, String>>,
 ) -> Result<Json<Vec<Task>>> {
-    let xuanji_id = q.get("xuanji_id").cloned().ok_or_else(|| AppError::BadRequest("缺少 xuanji_id".into()))?;
-    sys.require(&id, Permission::TaskViewAll, &crate::rbac::ResourceCtx { xuanji_id: xuanji_id.clone(), task: None }).await?;
+    let xuanji_id = q
+        .get("xuanji_id")
+        .cloned()
+        .ok_or_else(|| AppError::BadRequest("缺少 xuanji_id".into()))?;
+    sys.require(
+        &id,
+        Permission::TaskViewAll,
+        &crate::rbac::ResourceCtx {
+            xuanji_id: xuanji_id.clone(),
+            task: None,
+        },
+    )
+    .await?;
     Ok(Json(sys.task.list(&xuanji_id).await))
 }
 
@@ -295,8 +310,19 @@ async fn create_channel(
         "direct" | "dm" => ChannelKind::Direct(req.members.clone()),
         _ => return Err(AppError::BadRequest("未知频道类型".into())),
     };
-    sys.require(&id, Permission::CommSendXuanji, &crate::rbac::ResourceCtx { xuanji_id: req.xuanji_id.clone(), task: None }).await?;
-    let ch = sys.comm.create_channel(&req.xuanji_id, kind, &req.name, req.members).await;
+    sys.require(
+        &id,
+        Permission::CommSendXuanji,
+        &crate::rbac::ResourceCtx {
+            xuanji_id: req.xuanji_id.clone(),
+            task: None,
+        },
+    )
+    .await?;
+    let ch = sys
+        .comm
+        .create_channel(&req.xuanji_id, kind, &req.name, req.members)
+        .await;
     Ok(Json(ch))
 }
 
@@ -305,8 +331,19 @@ async fn list_channels(
     State(sys): State<Arc<XuanjiSystem>>,
     Query(q): Query<HashMap<String, String>>,
 ) -> Result<Json<Vec<Channel>>> {
-    let xuanji_id = q.get("xuanji_id").cloned().ok_or_else(|| AppError::BadRequest("缺少 xuanji_id".into()))?;
-    sys.require(&id, Permission::AuditView, &crate::rbac::ResourceCtx { xuanji_id: xuanji_id.clone(), task: None }).await?;
+    let xuanji_id = q
+        .get("xuanji_id")
+        .cloned()
+        .ok_or_else(|| AppError::BadRequest("缺少 xuanji_id".into()))?;
+    sys.require(
+        &id,
+        Permission::AuditView,
+        &crate::rbac::ResourceCtx {
+            xuanji_id: xuanji_id.clone(),
+            task: None,
+        },
+    )
+    .await?;
     Ok(Json(sys.store.list_channels(&xuanji_id).await))
 }
 
@@ -316,7 +353,9 @@ async fn send_msg(
     Path(channel_id): Path<String>,
     Json(req): Json<MsgReq>,
 ) -> Result<Json<Message>> {
-    let m = sys.send_channel_message(&id, &channel_id, &req.body).await?;
+    let m = sys
+        .send_channel_message(&id, &channel_id, &req.body)
+        .await?;
     Ok(Json(m))
 }
 
@@ -326,10 +365,22 @@ async fn list_messages(
     Path(channel_id): Path<String>,
 ) -> Result<Json<Vec<Message>>> {
     // 频道成员或审计员可见
-    let ch = sys.store.get_channel(&channel_id).await.ok_or_else(|| AppError::NotFound("频道不存在".into()))?;
+    let ch = sys
+        .store
+        .get_channel(&channel_id)
+        .await
+        .ok_or_else(|| AppError::NotFound("频道不存在".into()))?;
     let is_member = ch.members.iter().any(|m| m == &id);
     if !is_member {
-        sys.require(&id, Permission::AuditView, &crate::rbac::ResourceCtx { xuanji_id: ch.xuanji_id.clone(), task: None }).await?;
+        sys.require(
+            &id,
+            Permission::AuditView,
+            &crate::rbac::ResourceCtx {
+                xuanji_id: ch.xuanji_id.clone(),
+                task: None,
+            },
+        )
+        .await?;
     }
     Ok(Json(sys.comm.list_messages(&channel_id).await))
 }
@@ -338,7 +389,15 @@ async fn my_notifications(
     Extension(AuthUser(id)): Extension<AuthUser>,
     State(sys): State<Arc<XuanjiSystem>>,
 ) -> Result<Json<Vec<Notification>>> {
-    sys.require(&id, Permission::AuditView, &crate::rbac::ResourceCtx { xuanji_id: String::new(), task: None }).await?;
+    sys.require(
+        &id,
+        Permission::AuditView,
+        &crate::rbac::ResourceCtx {
+            xuanji_id: String::new(),
+            task: None,
+        },
+    )
+    .await?;
     Ok(Json(sys.comm.list_notifications(&id).await))
 }
 
@@ -356,7 +415,15 @@ async fn grant_role(
     State(sys): State<Arc<XuanjiSystem>>,
     Json(req): Json<GrantReq>,
 ) -> Result<Json<Vec<RoleBinding>>> {
-    sys.require(&id, Permission::MemberManage, &crate::rbac::ResourceCtx { xuanji_id: req.xuanji_id.clone(), task: None }).await?;
+    sys.require(
+        &id,
+        Permission::MemberManage,
+        &crate::rbac::ResourceCtx {
+            xuanji_id: req.xuanji_id.clone(),
+            task: None,
+        },
+    )
+    .await?;
     let role = match req.role.as_str() {
         "XuanjiAdmin" => Role::XuanjiAdmin,
         "Coordinator" => Role::Coordinator,
@@ -370,7 +437,13 @@ async fn grant_role(
         Some(s) if s.starts_with("xuanji:") => Scope::Xuanji(s["xuanji:".len()..].to_string()),
         _ => Scope::Global,
     };
-    sys.perm.assign_role(RoleBinding { member_id: req.member_id.clone(), role, scope }).await;
+    sys.perm
+        .assign_role(RoleBinding {
+            member_id: req.member_id.clone(),
+            role,
+            scope,
+        })
+        .await;
     Ok(Json(sys.perm.bindings_of(&req.member_id).await))
 }
 
@@ -417,7 +490,10 @@ async fn metrics_handler(State(sys): State<Arc<XuanjiSystem>>) -> Response {
     // 动态刷新「活跃成员」瞬时量
     let active = {
         let s = sys.store.state.read().await;
-        s.members.values().filter(|m| m.status == MemberStatus::Active).count() as u64
+        s.members
+            .values()
+            .filter(|m| m.status == MemberStatus::Active)
+            .count() as u64
     };
     sys.metrics.set_active_members(active);
     (
@@ -482,11 +558,11 @@ pub fn app(sys: Arc<XuanjiSystem>) -> Router {
             .collect::<Vec<_>>();
         CorsLayer::new()
             .allow_origin(origins)
-            .allow_methods([
-                axum::http::Method::GET,
-                axum::http::Method::POST,
+            .allow_methods([axum::http::Method::GET, axum::http::Method::POST])
+            .allow_headers([
+                axum::http::header::AUTHORIZATION,
+                axum::http::header::CONTENT_TYPE,
             ])
-            .allow_headers([axum::http::header::AUTHORIZATION, axum::http::header::CONTENT_TYPE])
     } else {
         // 未配置允许来源时，默认拒绝一切跨域请求（默认安全）
         CorsLayer::new()
@@ -502,7 +578,10 @@ pub fn app(sys: Arc<XuanjiSystem>) -> Router {
         .route("/api/tasks/:id/comments", post(comment))
         .route("/api/tasks/:id/watch", post(watch))
         .route("/api/channels", get(list_channels).post(create_channel))
-        .route("/api/channels/:id/messages", get(list_messages).post(send_msg))
+        .route(
+            "/api/channels/:id/messages",
+            get(list_messages).post(send_msg),
+        )
         .route("/api/notifications", get(my_notifications))
         .route("/api/notifications/:id/read", post(read_notification))
         .route("/api/roles/grant", post(grant_role))

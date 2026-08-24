@@ -1,6 +1,6 @@
-﻿//! 企业级上下文：租户 / 主体 / 策略 / 配额 / 兼容性注册表
+//! 企业级上下文：租户 / 主体 / 策略 / 配额 / 兼容性注册表
 
-use crate::ir::{Dimension, PolicyId, CodeIR};
+use crate::ir::{CodeIR, Dimension, PolicyId};
 use flow_ai::model::{FlowGraph, ResourcePool};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -44,7 +44,10 @@ pub struct Principal {
 
 impl Principal {
     pub fn new(subject: impl Into<String>) -> Self {
-        Self { subject: subject.into(), roles: vec!["viewer".into()] }
+        Self {
+            subject: subject.into(),
+            roles: vec!["viewer".into()],
+        }
     }
     pub fn with_roles(mut self, roles: Vec<String>) -> Self {
         self.roles = roles;
@@ -84,7 +87,11 @@ pub struct ResourceQuota {
 
 impl Default for ResourceQuota {
     fn default() -> Self {
-        Self { max_parallel: 8, max_cost_budget: 1.0, sla_ms: 5_000 }
+        Self {
+            max_parallel: 8,
+            max_cost_budget: 1.0,
+            sla_ms: 5_000,
+        }
     }
 }
 
@@ -153,7 +160,10 @@ impl CompatibilityRegistry {
         for tools in self.mcp_servers.values() {
             for t in tools {
                 if !pools.iter().any(|p| p.name == t.pool) {
-                    pools.push(ResourcePool { name: t.pool.clone(), capacity: 1 });
+                    pools.push(ResourcePool {
+                        name: t.pool.clone(),
+                        capacity: 1,
+                    });
                 }
             }
         }
@@ -232,10 +242,7 @@ pub struct ExpertContext<'a> {
 }
 
 impl<'a> ExpertContext<'a> {
-    pub fn new(
-        flow: &'a flow_ai::model::FlowGraph,
-        gctx: &'a GovernContext,
-    ) -> Self {
+    pub fn new(flow: &'a flow_ai::model::FlowGraph, gctx: &'a GovernContext) -> Self {
         Self {
             flow,
             tenant: &gctx.tenant,
@@ -249,7 +256,10 @@ impl<'a> ExpertContext<'a> {
     }
 
     pub fn policies_of(&self, dim: Dimension) -> Vec<&Policy> {
-        self.policies.iter().filter(|p| p.dimension == dim).collect()
+        self.policies
+            .iter()
+            .filter(|p| p.dimension == dim)
+            .collect()
     }
 
     /// 鉴权单入口：所有能力判定统一委托 RBAC 引擎（`rbac::check_with_audit`）。
@@ -328,13 +338,19 @@ mod tests {
     #[test]
     fn mcp_tools_register_pools() {
         let mut reg = CompatibilityRegistry::new();
-        reg.register_mcp("fs", vec![McpTool {
-            server: "fs".into(),
-            name: "read".into(),
-            input_schema: "{}".into(),
-            pool: "mcp_fs".into(),
-        }]);
-        let mut pools = vec![ResourcePool { name: "cpu".into(), capacity: 8 }];
+        reg.register_mcp(
+            "fs",
+            vec![McpTool {
+                server: "fs".into(),
+                name: "read".into(),
+                input_schema: "{}".into(),
+                pool: "mcp_fs".into(),
+            }],
+        );
+        let mut pools = vec![ResourcePool {
+            name: "cpu".into(),
+            capacity: 8,
+        }];
         reg.apply_to_pools(&mut pools);
         assert!(pools.iter().any(|p| p.name == "mcp_fs"));
     }

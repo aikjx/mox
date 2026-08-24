@@ -3,23 +3,23 @@
 // 此文件内容过多，已拆分为多个子模块
 // 核心结构保持不变，修复编译错误
 
-use std::sync::Arc;
-use serde::{Deserialize, Serialize};
 use parking_lot::RwLock;
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
-pub mod profile;
 pub mod bundle;
-pub mod seam;
-pub mod event_bus;
 pub mod context;
+pub mod event_bus;
 pub mod lifecycle;
+pub mod profile;
+pub mod seam;
 
-pub use profile::{Profile, ProfileLoader, ProfileError};
-pub use bundle::{Bundle, BundleManager, BundleManifest, PluginMeta, BundleError};
-pub use seam::{SeamRegistry, Seam, SeamCapability, SeamError};
-pub use event_bus::{EventBus, Event, EventDomain, Subscription};
-pub use context::{PluginContext, SessionLog, OperatorRegistry, AgentRegistry, SessionEntry};
-pub use lifecycle::{Turn, Step, TurnState, StepResult, TurnSummary, LifecycleManager};
+pub use bundle::{Bundle, BundleError, BundleManager, BundleManifest, PluginMeta};
+pub use context::{AgentRegistry, OperatorRegistry, PluginContext, SessionEntry, SessionLog};
+pub use event_bus::{Event, EventBus, EventDomain, Subscription};
+pub use lifecycle::{LifecycleManager, Step, StepResult, Turn, TurnState, TurnSummary};
+pub use profile::{Profile, ProfileError, ProfileLoader};
+pub use seam::{Seam, SeamCapability, SeamError, SeamRegistry};
 
 /// Turn标识
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -102,17 +102,22 @@ impl OUSCordis {
         let turn_id = self.lifecycle.create_turn(agent_id).await?;
 
         // 追加到Session Log
-        self.ctx.sessions.append(SessionEntry::TurnStart {
-            turn_id: turn_id.clone(),
-            agent_id: agent_id.to_string(),
-            timestamp: chrono::Utc::now(),
-        }).await?;
+        self.ctx
+            .sessions
+            .append(SessionEntry::TurnStart {
+                turn_id: turn_id.clone(),
+                agent_id: agent_id.to_string(),
+                timestamp: chrono::Utc::now(),
+            })
+            .await?;
 
         // 发送事件
-        self.event_bus.emit(Event::TurnStarted {
-            turn_id: turn_id.clone(),
-            agent_id: agent_id.to_string(),
-        }).await;
+        self.event_bus
+            .emit(Event::TurnStarted {
+                turn_id: turn_id.clone(),
+                agent_id: agent_id.to_string(),
+            })
+            .await;
 
         // 更新统计
         self.state.write().stats.total_turns += 1;
@@ -121,20 +126,19 @@ impl OUSCordis {
     }
 
     /// 执行Step
-    pub async fn execute_step(
-        &self,
-        turn_id: &str,
-        step: Step,
-    ) -> Result<StepResult, String> {
+    pub async fn execute_step(&self, turn_id: &str, step: Step) -> Result<StepResult, String> {
         // 执行步骤
         let result = self.lifecycle.execute_step(turn_id, step.clone()).await?;
 
         // 追加到Session Log
-        self.ctx.sessions.append(SessionEntry::StepStart {
-            step_id: step.id.clone(),
-            turn_id: turn_id.to_string(),
-            action: step.action.clone(),
-        }).await?;
+        self.ctx
+            .sessions
+            .append(SessionEntry::StepStart {
+                step_id: step.id.clone(),
+                turn_id: turn_id.to_string(),
+                action: step.action.clone(),
+            })
+            .await?;
 
         // 更新统计
         self.state.write().stats.total_steps += 1;
@@ -147,16 +151,21 @@ impl OUSCordis {
         let summary = self.lifecycle.complete_turn(turn_id).await?;
 
         // 追加到Session Log
-        self.ctx.sessions.append(SessionEntry::TurnComplete {
-            turn_id: turn_id.to_string(),
-            summary: serde_json::to_string(&summary).unwrap_or_default(),
-        }).await?;
+        self.ctx
+            .sessions
+            .append(SessionEntry::TurnComplete {
+                turn_id: turn_id.to_string(),
+                summary: serde_json::to_string(&summary).unwrap_or_default(),
+            })
+            .await?;
 
         // 发送事件
-        self.event_bus.emit(Event::TurnCompleted {
-            turn_id: turn_id.to_string(),
-            summary: summary.clone(),
-        }).await;
+        self.event_bus
+            .emit(Event::TurnCompleted {
+                turn_id: turn_id.to_string(),
+                summary: summary.clone(),
+            })
+            .await;
 
         Ok(summary)
     }

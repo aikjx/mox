@@ -109,10 +109,7 @@ impl Guard for BudgetGuard {
     fn check(&self, ctx: &GuardContext) -> GuardResult {
         if ctx.step_count > self.max_steps {
             return GuardResult::Triggered {
-                reason: format!(
-                    "步数 {} 超过上限 {}",
-                    ctx.step_count, self.max_steps
-                ),
+                reason: format!("步数 {} 超过上限 {}", ctx.step_count, self.max_steps),
             };
         }
         if ctx.budget_used > self.budget_limit {
@@ -244,7 +241,10 @@ impl Guard for RiskGuard {
         if let Some((level, reason)) = self.assess_risk(action) {
             if level >= self.threshold {
                 return GuardResult::Triggered {
-                    reason: format!("风险等级 {:?} 超过阈值 {:?}，{}", level, self.threshold, reason),
+                    reason: format!(
+                        "风险等级 {:?} 超过阈值 {:?}，{}",
+                        level, self.threshold, reason
+                    ),
                 };
             }
         }
@@ -259,9 +259,7 @@ pub struct CompositeGuard {
 
 impl CompositeGuard {
     pub fn new() -> Self {
-        Self {
-            guards: Vec::new(),
-        }
+        Self { guards: Vec::new() }
     }
 
     pub fn add(&mut self, guard: Box<dyn Guard>) {
@@ -343,11 +341,7 @@ mod tests {
     fn test_progress_guard_detects_stagnation() {
         let g = ProgressGuard::new(3);
         let ctx = GuardContext {
-            recent_outcomes: vec![
-                "same".to_string(),
-                "same".to_string(),
-                "same".to_string(),
-            ],
+            recent_outcomes: vec!["same".to_string(), "same".to_string(), "same".to_string()],
             ..Default::default()
         };
         let r = g.check(&ctx);
@@ -358,11 +352,7 @@ mod tests {
     fn test_progress_guard_passes_with_varied_outcomes() {
         let g = ProgressGuard::new(3);
         let ctx = GuardContext {
-            recent_outcomes: vec![
-                "a".to_string(),
-                "b".to_string(),
-                "c".to_string(),
-            ],
+            recent_outcomes: vec!["a".to_string(), "b".to_string(), "c".to_string()],
             ..Default::default()
         };
         assert!(g.check(&ctx).is_passed());

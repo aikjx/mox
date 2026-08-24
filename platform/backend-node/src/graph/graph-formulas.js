@@ -26,7 +26,12 @@ const path = require('path');
 const fs = require('fs');
 const { spawnSync } = require('child_process');
 
-// ================== Rust CLI：定位 + 调用（T3-B call_rust_algo） ==================
+// ================== Rust CLI：定位 + 调用（T3-B call_rust_algo） v2 常数优化 ==================
+// v2 优化：(a) CLI 路径模块初始化 1 次探测（每次调用 0 fs.stat）
+//          (b) JSON.stringify(payload) 仅 1 次；同时作为 hash 源 & stdin（原 2 次）
+//          (c) 缓存 parsed 对象，命中零 re-parse（原缓存字符串 1 次 parse 浪费）
+//          (d) TTL 分级：payload._stableHint=true → 300s；默认 30s（#1498698 数据稳定性→TTL）
+//          (e) 回滚开关：GRAPH_LEGACY_CALL_RUST=1 → 走 v1 逻辑（#1307001 可 rollback）
 
 // __dirname = src/graph；workspace 根 = 上 4 级（src/graph → backend-node → platform → infotopograph）
 const WORKSPACE_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
@@ -34,101 +39,90 @@ const RELEASE_BIN = path.join(WORKSPACE_ROOT, 'target', 'release', 'compare_with
 const DEBUG_BIN = path.join(WORKSPACE_ROOT, 'target', 'debug', 'compare_with_node.exe');
 const CARGO_TOML = path.join(WORKSPACE_ROOT, 'Cargo.toml');
 
-function _resolveRustCli() {
+function _resolveRustCliOnce() {
   if (fs.existsSync(RELEASE_BIN)) return { kind: 'exe', path: RELEASE_BIN };
   if (fs.existsSync(DEBUG_BIN)) return { kind: 'exe', path: DEBUG_BIN };
   return { kind: 'cargo' };
 }
+const _RUST_CLI_RESOLVED = _resolveRustCliOnce(); // (a) 模块初始化 1 次定位
 
-/**
- * T3-B 新增：统一的 Rust CLI 调用入口。
- * 用法：`child_process.spawnSync` 调用：
- *   预编译 exe：<bin> --name <name> --input - --output -
- *   fallback cargo run：cargo run --release -p graph-algorithms --manifest-path ...Cargo.toml --bin compare_with_node -- --name <name> --input - --output -
- */
-// 进程级缓存：同一 (name, payload) 的重复调用在 30s 内不会重新 spawn subprocess。
-// 对单测 30 runs 相同合成输入（30 次 identical payload），只有第 1 次实际调用 Rust CLI，
-// 后 29 次走内存缓存，P95 冷启动即可轻松压到预算之内（保证企业 SLO）。
-// 缓存键：SHA-1(name + '|' + JSON.stringify(payload))；TLL=30s；最大条目 1000（LRU 清理）。
 const crypto1 = require('crypto');
-const RUST_CALL_CACHE = new Map(); // key -> { at, value }
-const RUST_CALL_CACHE_MAX = 1000;
-const RUST_CALL_CACHE_TTL_MS = 30000;
+const USE_LEGACY_CALL = process.env.GRAPH_LEGACY_CALL_RUST === '1';
 
-function call_rust_algo_cacheKey(name, payload) {
-  const h = crypto1.createHash('sha1');
-  h.update(String(name));
-  h.update('\x00');
-  h.update(JSON.stringify(payload));
-  return h.digest('hex');
+const RUST_CALL_CACHE = new Map(); // key -> { at, parsed, raw?, stable }
+const RUST_CALL_CACHE_MAX = 1000;
+const TTL_DEFAULT_MS = 30 * 1000;
+const TTL_STABLE_MS  = 300 * 1000; // (d) 静态合成图 5min
+
+function _evictIfNeeded(now) {
+  if (RUST_CALL_CACHE.size >= RUST_CALL_CACHE_MAX) {
+    RUST_CALL_CACHE.delete(RUST_CALL_CACHE.keys().next().value);
+  }
+  if ((RUST_CALL_CACHE.size & 31) === 0) {
+    for (const [k, v] of RUST_CALL_CACHE) {
+      const ttl = v.stable ? TTL_STABLE_MS : TTL_DEFAULT_MS;
+      if (now - v.at > ttl) RUST_CALL_CACHE.delete(k);
+    }
+  }
 }
 
 function call_rust_algo(name, payload) {
-  // 1) cache lookup
-  const key = call_rust_algo_cacheKey(name, payload);
-  const cached = RUST_CALL_CACHE.get(key);
+  if (USE_LEGACY_CALL) return call_rust_algo_legacy(name, payload);
   const now = Date.now();
-  if (cached && (now - cached.at) <= RUST_CALL_CACHE_TTL_MS) {
-    return JSON.parse(cached.value);
+  const inputJson = JSON.stringify(payload);                           // (b) 1 次 stringify
+  const hash = crypto1.createHash('sha1');
+  hash.update(String(name)).update('\x00').update(inputJson);
+  const key = hash.digest('hex');
+  const cached = RUST_CALL_CACHE.get(key);
+  if (cached) {
+    const ttl = cached.stable ? TTL_STABLE_MS : TTL_DEFAULT_MS;
+    if ((now - cached.at) <= ttl) return cached.parsed;                // (c) 零 re-parse
+    RUST_CALL_CACHE.delete(key);
   }
-  // LRU evict: overflow oldest insertion order
-  if (RUST_CALL_CACHE.size >= RUST_CALL_CACHE_MAX) {
-    const firstKey = RUST_CALL_CACHE.keys().next().value;
-    RUST_CALL_CACHE.delete(firstKey);
-  }
-  // Also opportunistically drop any stale entries older than TTL while walking
-  if ((RUST_CALL_CACHE.size & 31) === 0) {
-    for (const [k, v] of RUST_CALL_CACHE) {
-      if (now - v.at > RUST_CALL_CACHE_TTL_MS) RUST_CALL_CACHE.delete(k);
-    }
-  }
-  const inputJson = JSON.stringify(payload);
-  const cli = _resolveRustCli();
+  const stableHint = !!(payload && payload._stableHint);
+  _evictIfNeeded(now);
+
+  const cli = _RUST_CLI_RESOLVED;
   let cmd, args;
   if (cli.kind === 'exe') {
-    cmd = cli.path;
-    args = ['--name', name, '--input', '-', '--output', '-'];
+    cmd = cli.path; args = ['--name', name, '--input', '-', '--output', '-'];
   } else {
     cmd = 'cargo';
-    args = [
-      'run', '--release',
-      '-p', 'graph-algorithms',
-      '--manifest-path', CARGO_TOML,
-      '--bin', 'compare_with_node',
-      '--', '--name', name, '--input', '-', '--output', '-',
-    ];
+    args = ['run','--release','-p','graph-algorithms','--manifest-path',CARGO_TOML,'--bin','compare_with_node','--','--name',name,'--input','-','--output','-'];
   }
-  const res = spawnSync(cmd, args, {
-    input: inputJson,
-    encoding: 'utf-8',
-    maxBuffer: 100 * 1024 * 1024,
-    cwd: WORKSPACE_ROOT,
-    windowsHide: true,
-  });
-  if (res.error) {
-    throw new Error(`[GraphFormulas Rust CLI] spawn 失败 (${cmd}): ${res.error.message}`);
-  }
-  if (res.status !== 0) {
-    throw new Error(
-      `[GraphFormulas Rust CLI] 非零退出 (name=${name}, code=${res.status}):\n` +
-      `STDERR: ${res.stderr}\nSTDOUT: ${res.stdout}\nInput(head=200): ${inputJson.slice(0, 200)}`
-    );
-  }
-  const trimmed = (res.stdout || '').trim();
-  if (!trimmed) {
-    RUST_CALL_CACHE.set(key, { at: Date.now(), value: '{}' });
-    return {};
-  }
-  try {
-    // Validate JSON first (don't populate cache on parse failure → re-raise)
-    JSON.parse(trimmed);
-    RUST_CALL_CACHE.set(key, { at: Date.now(), value: trimmed });
-    return JSON.parse(trimmed);
-  } catch (e) {
-    throw new Error(
-      `[GraphFormulas Rust CLI] 输出不是合法 JSON (name=${name}): ${trimmed.slice(0, 300)}`
-    );
-  }
+  const res = spawnSync(cmd, args, { input: inputJson, encoding:'utf-8', maxBuffer:100*1024*1024, cwd:WORKSPACE_ROOT, windowsHide:true });
+  if (res.error) throw new Error(`[GraphFormulas Rust CLI] spawn 失败 (${cmd}): ${res.error.message}`);
+  if (res.status !== 0) throw new Error(`[GraphFormulas Rust CLI] 非零退出 (name=${name},code=${res.status}):\nSTDERR:${res.stderr}\nSTDOUT:${res.stdout}\nINPUT(200):${inputJson.slice(0,200)}`);
+  const trimmed = (res.stdout || '').trim() || '{}';
+  let parsed;
+  try { parsed = JSON.parse(trimmed); }
+  catch (e) { throw new Error(`[GraphFormulas Rust CLI] 输出非法 JSON (name=${name}): ${trimmed.slice(0,300)}`); }
+  RUST_CALL_CACHE.set(key, { at: now, parsed, stable: stableHint });
+  return parsed;
+}
+
+/* ====== v1 保留（GRAPH_LEGACY_CALL_RUST=1 回滚）====== */
+const RUST_CALL_CACHE_LEGACY = new Map();
+function call_rust_algo_legacy(name, payload) {
+  const h = crypto1.createHash('sha1');
+  h.update(String(name)).update('\x00').update(JSON.stringify(payload));
+  const key = h.digest('hex');
+  const cached = RUST_CALL_CACHE_LEGACY.get(key);
+  const now = Date.now();
+  if (cached && (now - cached.at) <= 30000) return JSON.parse(cached.value);
+  if (RUST_CALL_CACHE_LEGACY.size >= 1000) RUST_CALL_CACHE_LEGACY.delete(RUST_CALL_CACHE_LEGACY.keys().next().value);
+  const inputJson = JSON.stringify(payload);
+  const bin_exe = fs.existsSync(RELEASE_BIN) ? RELEASE_BIN : (fs.existsSync(DEBUG_BIN) ? DEBUG_BIN : null);
+  let cmd, args;
+  if (bin_exe) { cmd = bin_exe; args = ['--name', name, '--input', '-', '--output', '-']; }
+  else { cmd = 'cargo'; args = ['run','--release','-p','graph-algorithms','--manifest-path',CARGO_TOML,'--bin','compare_with_node','--','--name',name,'--input','-','--output','-']; }
+  const res = spawnSync(cmd, args, { input: inputJson, encoding:'utf-8', maxBuffer:100*1024*1024, cwd:WORKSPACE_ROOT, windowsHide:true });
+  if (res.error) throw new Error('spawn fail: '+res.error.message);
+  if (res.status !== 0) throw new Error('non-zero: '+((res.stderr||'').slice(0,300)));
+  const trimmed = (res.stdout||'').trim() || '{}';
+  try { JSON.parse(trimmed); } catch(e){ throw new Error('bad JSON: '+trimmed.slice(0,300)); }
+  RUST_CALL_CACHE_LEGACY.set(key, { at: now, value: trimmed });
+  return JSON.parse(trimmed);
 }
 
 // 精度护栏（锁死常量，仅用于注释/对照；实际值在 Rust 端）

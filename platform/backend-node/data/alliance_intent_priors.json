@@ -7,9 +7,9 @@
       "perf-expert": 1,
       "atlas-expert": 2,
       "arch-expert": 2,
-      "e-arch": 7,
-      "e-sec": 7,
-      "e-algo": 7,
+      "e-arch": 11,
+      "e-sec": 11,
+      "e-algo": 11,
       "alg-expert": 1,
       "a": 2,
       "b": 2
@@ -41,10 +41,10 @@
   },
   "algorithm": {
     "hits": {
-      "e-algo": 7,
-      "e-sec": 7,
-      "e-sec2": 7,
-      "e-arch": 7,
+      "e-algo": 11,
+      "e-sec": 11,
+      "e-sec2": 11,
+      "e-arch": 11,
       "alg-expert": 1,
       "wf-expert": 1,
       "atlas-expert": 1

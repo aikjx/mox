@@ -1,0 +1,382 @@
+{
+  "schema_version": "o8_dashboard_v1",
+  "generated_at": "2026-08-23T14:54:06.086Z",
+  "system_slo": {
+    "schema_version": "system-slo-v1",
+    "generated_at": "2026-08-23T14:54:06.093Z",
+    "sample_count": 20000,
+    "ring_capacity": 20000,
+    "objective": {
+      "p99_ms": 1000,
+      "success_rate": 0.99
+    },
+    "filters": {
+      "domains": null,
+      "tenant": null
+    },
+    "status": "violated",
+    "windows": {
+      "1m": {
+        "count": 20000,
+        "success_count": 19707,
+        "success_rate": 0.98535,
+        "error_count": 293,
+        "latency_avg_ms": 243.76006595034568,
+        "latency_p50_ms": 200.83395680596252,
+        "latency_p95_ms": 476.75670814541877,
+        "latency_p99_ms": 1023.1632142621597,
+        "latency_min_ms": 80.00267379944965,
+        "latency_max_ms": 5299.709086886696,
+        "status": "violated"
+      },
+      "5m": {
+        "count": 20000,
+        "success_count": 19707,
+        "success_rate": 0.98535,
+        "error_count": 293,
+        "latency_avg_ms": 243.76006595034568,
+        "latency_p50_ms": 200.83395680596252,
+        "latency_p95_ms": 476.75670814541877,
+        "latency_p99_ms": 1023.1632142621597,
+        "latency_min_ms": 80.00267379944965,
+        "latency_max_ms": 5299.709086886696,
+        "status": "violated"
+      },
+      "15m": {
+        "count": 20000,
+        "success_count": 19707,
+        "success_rate": 0.98535,
+        "error_count": 293,
+        "latency_avg_ms": 243.76006595034568,
+        "latency_p50_ms": 200.83395680596252,
+        "latency_p95_ms": 476.75670814541877,
+        "latency_p99_ms": 1023.1632142621597,
+        "latency_min_ms": 80.00267379944965,
+        "latency_max_ms": 5299.709086886696,
+        "status": "violated"
+      },
+      "total": {
+        "count": 20000,
+        "success_count": 19707,
+        "success_rate": 0.98535,
+        "error_count": 293,
+        "latency_avg_ms": 243.76006595034568,
+        "latency_p50_ms": 200.83395680596252,
+        "latency_p95_ms": 476.75670814541877,
+        "latency_p99_ms": 1023.1632142621597,
+        "latency_min_ms": 80.00267379944965,
+        "latency_max_ms": 5299.709086886696,
+        "status": "violated"
+      }
+    },
+    "per_domain": {
+      "alliance_e2e": {
+        "count": 4000,
+        "success_count": 3944,
+        "success_rate": 0.986,
+        "error_count": 56,
+        "latency_avg_ms": 416.06410074503316,
+        "latency_p50_ms": 381.3392686710823,
+        "latency_p95_ms": 528.1610432721739,
+        "latency_p99_ms": 2348.252353733471,
+        "latency_min_ms": 220.00549274013267,
+        "latency_max_ms": 5299.709086886696,
+        "status": "violated"
+      },
+      "chat": {
+        "count": 4000,
+        "success_count": 3952,
+        "success_rate": 0.988,
+        "error_count": 48,
+        "latency_avg_ms": 175.76205616485922,
+        "latency_p50_ms": 162.75575251368508,
+        "latency_p95_ms": 233.77159199652183,
+        "latency_p99_ms": 859.7133769751928,
+        "latency_min_ms": 80.06327480321197,
+        "latency_max_ms": 2362.8895400597066,
+        "status": "violated"
+      },
+      "graph_pr": {
+        "count": 4000,
+        "success_count": 3943,
+        "success_rate": 0.98575,
+        "error_count": 57,
+        "latency_avg_ms": 276.92068720983883,
+        "latency_p50_ms": 253.51940063052945,
+        "latency_p95_ms": 342.75157285836275,
+        "latency_p99_ms": 1681.3314070709212,
+        "latency_min_ms": 150.04066263133257,
+        "latency_max_ms": 3492.251867018066,
+        "status": "violated"
+      },
+      "llm": {
+        "count": 4000,
+        "success_count": 3945,
+        "success_rate": 0.98625,
+        "error_count": 55,
+        "latency_avg_ms": 175.36295015284466,
+        "latency_p50_ms": 160.82626063646063,
+        "latency_p95_ms": 233.20591392871376,
+        "latency_p99_ms": 935.4729414228494,
+        "latency_min_ms": 80.00267379944965,
+        "latency_max_ms": 2396.32643849413,
+        "status": "violated"
+      },
+      "rag_chunk": {
+        "count": 4000,
+        "success_count": 3923,
+        "success_rate": 0.98075,
+        "error_count": 77,
+        "latency_avg_ms": 174.69053547915271,
+        "latency_p50_ms": 159.6646045016294,
+        "latency_p95_ms": 233.09635255049304,
+        "latency_p99_ms": 804.4085053485876,
+        "latency_min_ms": 80.03800538397506,
+        "latency_max_ms": 2365.357730123274,
+        "status": "violated"
+      }
+    }
+  },
+  "graph_p99": {
+    "schema_version": "graph-p99-v1",
+    "generated_at": "2026-08-23T14:54:06.317Z",
+    "sample_count": 20000,
+    "ring_capacity": 20000,
+    "overall": {
+      "count": 20000,
+      "success_rate": 0.98535,
+      "error_count": 293,
+      "rps": 2758.62,
+      "latency_ms": {
+        "p50": 201,
+        "p95": 477,
+        "p99": 1023,
+        "min": 80,
+        "max": 5300,
+        "avg": 243.7615
+      },
+      "graph_nodes_total": 1950000,
+      "graph_edges_total": 3538000
+    },
+    "windows": {
+      "1m": {
+        "count": 20000,
+        "success_rate": 0.98535,
+        "error_count": 293,
+        "rps": 2758.62,
+        "latency_ms": {
+          "p50": 201,
+          "p95": 477,
+          "p99": 1023,
+          "min": 80,
+          "max": 5300,
+          "avg": 243.7615
+        },
+        "graph_nodes_total": 1950000,
+        "graph_edges_total": 3538000
+      },
+      "5m": {
+        "count": 20000,
+        "success_rate": 0.98535,
+        "error_count": 293,
+        "rps": 2758.62,
+        "latency_ms": {
+          "p50": 201,
+          "p95": 477,
+          "p99": 1023,
+          "min": 80,
+          "max": 5300,
+          "avg": 243.7615
+        },
+        "graph_nodes_total": 1950000,
+        "graph_edges_total": 3538000
+      },
+      "15m": {
+        "count": 20000,
+        "success_rate": 0.98535,
+        "error_count": 293,
+        "rps": 2758.62,
+        "latency_ms": {
+          "p50": 201,
+          "p95": 477,
+          "p99": 1023,
+          "min": 80,
+          "max": 5300,
+          "avg": 243.7615
+        },
+        "graph_nodes_total": 1950000,
+        "graph_edges_total": 3538000
+      },
+      "total": {
+        "count": 20000,
+        "success_rate": 0.98535,
+        "error_count": 293,
+        "rps": 2758.62,
+        "latency_ms": {
+          "p50": 201,
+          "p95": 477,
+          "p99": 1023,
+          "min": 80,
+          "max": 5300,
+          "avg": 243.7615
+        },
+        "graph_nodes_total": 1950000,
+        "graph_edges_total": 3538000
+      }
+    },
+    "per_category": {
+      "slo_metric": {
+        "count": 8000,
+        "success_rate": 0.987125,
+        "error_count": 103,
+        "rps": 1103.6,
+        "latency_ms": {
+          "p50": 162,
+          "p95": 233,
+          "p99": 928,
+          "min": 80,
+          "max": 2396,
+          "avg": 175.564625
+        },
+        "graph_nodes_total": 0,
+        "graph_edges_total": 0
+      },
+      "algo": {
+        "count": 4000,
+        "success_rate": 0.98575,
+        "error_count": 57,
+        "rps": 551.8,
+        "latency_ms": {
+          "p50": 254,
+          "p95": 343,
+          "p99": 1682,
+          "min": 150,
+          "max": 3492,
+          "avg": 276.9245
+        },
+        "graph_nodes_total": 1950000,
+        "graph_edges_total": 3538000
+      },
+      "alliance": {
+        "count": 4000,
+        "success_rate": 0.986,
+        "error_count": 56,
+        "rps": 551.72,
+        "latency_ms": {
+          "p50": 381,
+          "p95": 528,
+          "p99": 2349,
+          "min": 220,
+          "max": 5300,
+          "avg": 416.06575
+        },
+        "graph_nodes_total": 0,
+        "graph_edges_total": 0
+      },
+      "rag_chunk": {
+        "count": 4000,
+        "success_rate": 0.98075,
+        "error_count": 77,
+        "rps": 551.72,
+        "latency_ms": {
+          "p50": 160,
+          "p95": 233,
+          "p99": 805,
+          "min": 80,
+          "max": 2365,
+          "avg": 174.688
+        },
+        "graph_nodes_total": 0,
+        "graph_edges_total": 0
+      }
+    },
+    "per_key": {
+      "chat": {
+        "count": 4000,
+        "success_rate": 0.988,
+        "error_count": 48,
+        "rps": 551.8,
+        "latency_ms": {
+          "p50": 163,
+          "p95": 234,
+          "p99": 860,
+          "min": 80,
+          "max": 2363,
+          "avg": 175.76575
+        },
+        "graph_nodes_total": 0,
+        "graph_edges_total": 0
+      },
+      "llm": {
+        "count": 4000,
+        "success_rate": 0.98625,
+        "error_count": 55,
+        "rps": 551.8,
+        "latency_ms": {
+          "p50": 161,
+          "p95": 233,
+          "p99": 935,
+          "min": 80,
+          "max": 2396,
+          "avg": 175.3635
+        },
+        "graph_nodes_total": 0,
+        "graph_edges_total": 0
+      },
+      "graph_pr": {
+        "count": 4000,
+        "success_rate": 0.98575,
+        "error_count": 57,
+        "rps": 551.8,
+        "latency_ms": {
+          "p50": 254,
+          "p95": 343,
+          "p99": 1682,
+          "min": 150,
+          "max": 3492,
+          "avg": 276.9245
+        },
+        "graph_nodes_total": 1950000,
+        "graph_edges_total": 3538000
+      },
+      "alliance_e2e": {
+        "count": 4000,
+        "success_rate": 0.986,
+        "error_count": 56,
+        "rps": 551.72,
+        "latency_ms": {
+          "p50": 381,
+          "p95": 528,
+          "p99": 2349,
+          "min": 220,
+          "max": 5300,
+          "avg": 416.06575
+        },
+        "graph_nodes_total": 0,
+        "graph_edges_total": 0
+      },
+      "rag_chunk": {
+        "count": 4000,
+        "success_rate": 0.98075,
+        "error_count": 77,
+        "rps": 551.72,
+        "latency_ms": {
+          "p50": 160,
+          "p95": 233,
+          "p99": 805,
+          "min": 80,
+          "max": 2365,
+          "avg": 174.688
+        },
+        "graph_nodes_total": 0,
+        "graph_edges_total": 0
+      }
+    },
+    "categories_seen": [
+      "algo",
+      "alliance",
+      "rag_chunk",
+      "slo_metric"
+    ]
+  }
+}

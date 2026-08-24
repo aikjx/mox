@@ -1,5 +1,5 @@
 //! 真实AI大模型客户端 - 支持OpenAI兼容API
-//! 
+//!
 //! 支持多种API格式：
 //! - OpenAI API (GPT-3.5/4, etc.)
 //! - 本地Ollama
@@ -81,7 +81,7 @@ impl LLMClient {
             .timeout(Duration::from_secs(60))
             .build()
             .unwrap_or_default();
-        
+
         let system_prompt = r#"你是算子统一系统的AI智能助手，集成在v3.0 AI驱动全维突破平台中。
 
 你的核心能力：
@@ -92,9 +92,14 @@ impl LLMClient {
 5. 🎯 流程自动化 - 执行业务工作流（数据管道、算法分析、神经网络训练等）
 6. 🌐 浏览器自动化 - 执行网页操作任务（导航、点击、填表、数据提取）
 
-请用中文回答，简洁专业。当用户需要执行操作时，明确告知你可以调用的能力。"#.to_string();
+请用中文回答，简洁专业。当用户需要执行操作时，明确告知你可以调用的能力。"#
+            .to_string();
 
-        Self { config, client, system_prompt }
+        Self {
+            config,
+            client,
+            system_prompt,
+        }
     }
 
     pub fn update_config(&mut self, config: LLMConfig) {
@@ -129,9 +134,13 @@ impl LLMClient {
             stream: false,
         };
 
-        let url = format!("{}/chat/completions", self.config.api_base.trim_end_matches('/'));
-        
-        let response = self.client
+        let url = format!(
+            "{}/chat/completions",
+            self.config.api_base.trim_end_matches('/')
+        );
+
+        let response = self
+            .client
             .post(&url)
             .header("Authorization", format!("Bearer {}", self.config.api_key))
             .header("Content-Type", "application/json")
@@ -142,11 +151,17 @@ impl LLMClient {
         if !response.status().is_success() {
             let status = response.status();
             let error_text = response.text().await.unwrap_or_default();
-            return Err(anyhow::anyhow!("API request failed ({}): {}", status, error_text));
+            return Err(anyhow::anyhow!(
+                "API request failed ({}): {}",
+                status,
+                error_text
+            ));
         }
 
         let completion: ChatCompletionResponse = response.json().await?;
-        let content = completion.choices.first()
+        let content = completion
+            .choices
+            .first()
             .map(|c| c.message.content.clone())
             .unwrap_or_else(|| "（无响应内容）".to_string());
 

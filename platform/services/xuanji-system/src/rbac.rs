@@ -1,4 +1,4 @@
-﻿//! 权限分配引擎（RBAC）
+//! 权限分配引擎（RBAC）
 //!
 //! 设计原则（与 xuanji-expert 的 RBAC Engine 同源）：
 //! - **资源级粒度**：权限可限定到璇玑 / 具体任务
@@ -18,11 +18,11 @@ pub enum Permission {
     TaskViewAll,       // 查看璇玑内任意任务
     TaskViewAssigned,  // 查看自己被分派的任务
     TaskComment,       // 评论任务
-    TaskTransitionAll,  // 推进任意任务状态（协调员/管理员）
-    TaskTransitionOwn,  // 推进自己被分派任务的状态（专家）
+    TaskTransitionAll, // 推进任意任务状态（协调员/管理员）
+    TaskTransitionOwn, // 推进自己被分派任务的状态（专家）
     MemberInvite,      // 邀请成员
     MemberManage,      // 管理成员（暂停/移除/改级）
-    CommSendXuanji,  // 在璇玑频道发言
+    CommSendXuanji,    // 在璇玑频道发言
     CommSendTask,      // 在任务频道发言
     CommSendDirect,    // 发起私信
     AuditView,         // 查看审计/通知
@@ -62,10 +62,10 @@ impl Permission {
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum Role {
     XuanjiAdmin, // 璇玑管理员：所有权限
-    Coordinator,   // 协调员：任务与成员运营
-    Expert,        // 专家：参与任务协作
-    Member,        // 普通成员：受限参与
-    Auditor,       // 审计员：只读全局
+    Coordinator, // 协调员：任务与成员运营
+    Expert,      // 专家：参与任务协作
+    Member,      // 普通成员：受限参与
+    Auditor,     // 审计员：只读全局
 }
 
 impl Role {
@@ -93,16 +93,41 @@ impl Role {
         use Permission::*;
         match self {
             Role::XuanjiAdmin => &[
-                TaskCreate, TaskAssign, TaskEditAll, TaskEditOwn, TaskViewAll, TaskViewAssigned,
-                TaskComment, TaskTransitionAll, TaskTransitionOwn, MemberInvite, MemberManage,
-                CommSendXuanji, CommSendTask, CommSendDirect, AuditView,
+                TaskCreate,
+                TaskAssign,
+                TaskEditAll,
+                TaskEditOwn,
+                TaskViewAll,
+                TaskViewAssigned,
+                TaskComment,
+                TaskTransitionAll,
+                TaskTransitionOwn,
+                MemberInvite,
+                MemberManage,
+                CommSendXuanji,
+                CommSendTask,
+                CommSendDirect,
+                AuditView,
             ],
             Role::Coordinator => &[
-                TaskCreate, TaskAssign, TaskEditAll, TaskViewAll, TaskComment, TaskTransitionAll,
-                MemberInvite, CommSendXuanji, CommSendTask, CommSendDirect, AuditView,
+                TaskCreate,
+                TaskAssign,
+                TaskEditAll,
+                TaskViewAll,
+                TaskComment,
+                TaskTransitionAll,
+                MemberInvite,
+                CommSendXuanji,
+                CommSendTask,
+                CommSendDirect,
+                AuditView,
             ],
             Role::Expert => &[
-                TaskViewAssigned, TaskEditOwn, TaskComment, TaskTransitionOwn, CommSendTask,
+                TaskViewAssigned,
+                TaskEditOwn,
+                TaskComment,
+                TaskTransitionOwn,
+                CommSendTask,
                 CommSendDirect,
             ],
             Role::Member => &[TaskViewAssigned, TaskComment, CommSendTask, CommSendDirect],
@@ -136,9 +161,9 @@ impl Role {
 /// 权限作用域：限制角色生效的资源边界
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Scope {
-    Global,            // 全局生效
-    Xuanji(String),  // 仅指定璇玑
-    Task(String),      // 仅指定任务
+    Global,         // 全局生效
+    Xuanji(String), // 仅指定璇玑
+    Task(String),   // 仅指定任务
 }
 
 /// 角色绑定：将某角色（带作用域）授予某成员
@@ -215,11 +240,7 @@ pub fn authorize(
         let scope_ok = match &b.scope {
             Scope::Global => true,
             Scope::Xuanji(aid) => ctx.xuanji_id == *aid,
-            Scope::Task(tid) => ctx
-                .task
-                .as_ref()
-                .map(|t| t.id == *tid)
-                .unwrap_or(false),
+            Scope::Task(tid) => ctx.task.as_ref().map(|t| t.id == *tid).unwrap_or(false),
         };
         if !scope_ok {
             continue;
@@ -320,7 +341,12 @@ mod tests {
             assignees: vec!["u1".into()],
         };
         assert_eq!(
-            authorize("u1", &bindings, Permission::TaskViewAll, &ctx("x1", Some(task))),
+            authorize(
+                "u1",
+                &bindings,
+                Permission::TaskViewAll,
+                &ctx("x1", Some(task))
+            ),
             Authz::Allowed
         );
         let other = TaskResource {
@@ -329,7 +355,12 @@ mod tests {
             assignees: vec!["u1".into()],
         };
         assert!(matches!(
-            authorize("u1", &bindings, Permission::TaskViewAll, &ctx("x1", Some(other))),
+            authorize(
+                "u1",
+                &bindings,
+                Permission::TaskViewAll,
+                &ctx("x1", Some(other))
+            ),
             Authz::Denied(_)
         ));
     }
@@ -344,7 +375,12 @@ mod tests {
             assignees: vec!["u2".into()], // u1 不是 owner
         };
         assert!(matches!(
-            authorize("u1", &bindings, Permission::TaskEditOwn, &ctx("x1", Some(task.clone()))),
+            authorize(
+                "u1",
+                &bindings,
+                Permission::TaskEditOwn,
+                &ctx("x1", Some(task.clone()))
+            ),
             Authz::Denied(_)
         ));
         // 换成 owner 后允许
@@ -354,7 +390,12 @@ mod tests {
             assignees: vec!["u1".into()],
         };
         assert_eq!(
-            authorize("u1", &bindings, Permission::TaskEditOwn, &ctx("x1", Some(owned))),
+            authorize(
+                "u1",
+                &bindings,
+                Permission::TaskEditOwn,
+                &ctx("x1", Some(owned))
+            ),
             Authz::Allowed
         );
     }
@@ -363,11 +404,21 @@ mod tests {
     fn permission_as_str_roundtrip_unique() {
         // 确保没有任何两个权限映射到相同字符串（防止越权）
         let all = [
-            Permission::TaskCreate, Permission::TaskAssign, Permission::TaskEditAll,
-            Permission::TaskEditOwn, Permission::TaskViewAll, Permission::TaskViewAssigned,
-            Permission::TaskComment, Permission::TaskTransitionAll, Permission::TaskTransitionOwn,
-            Permission::MemberInvite, Permission::MemberManage, Permission::CommSendXuanji,
-            Permission::CommSendTask, Permission::CommSendDirect, Permission::AuditView,
+            Permission::TaskCreate,
+            Permission::TaskAssign,
+            Permission::TaskEditAll,
+            Permission::TaskEditOwn,
+            Permission::TaskViewAll,
+            Permission::TaskViewAssigned,
+            Permission::TaskComment,
+            Permission::TaskTransitionAll,
+            Permission::TaskTransitionOwn,
+            Permission::MemberInvite,
+            Permission::MemberManage,
+            Permission::CommSendXuanji,
+            Permission::CommSendTask,
+            Permission::CommSendDirect,
+            Permission::AuditView,
         ];
         let mut seen = std::collections::HashSet::new();
         for p in all {

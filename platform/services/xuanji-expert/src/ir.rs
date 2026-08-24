@@ -1,4 +1,4 @@
-﻿//! 归一化 IR 扩展：在 `flow_ai` 的 FlowGraph 之上叠加「维度」着色。
+//! 归一化 IR 扩展：在 `flow_ai` 的 FlowGraph 之上叠加「维度」着色。
 //!
 //! 设计铁律：四种流程图（业务/算法/权限/资源）在内存里是**同一个 FlowGraph**，
 //! 维度只是节点/边上的标签。物理节点唯一，因此「改一处，全维同步」天然成立。
@@ -161,15 +161,24 @@ pub struct DimensionedFlow {
 
 impl DimensionedFlow {
     pub fn from_base(base: FlowGraph) -> Self {
-        Self { base, node_dimensions: HashMap::new() }
+        Self {
+            base,
+            node_dimensions: HashMap::new(),
+        }
     }
 
     pub fn tag(&mut self, node_id: impl Into<String>, tag: DimensionTag) {
-        self.node_dimensions.entry(node_id.into()).or_default().push(tag);
+        self.node_dimensions
+            .entry(node_id.into())
+            .or_default()
+            .push(tag);
     }
 
     pub fn dimensions_of(&self, node_id: &str) -> &[DimensionTag] {
-        self.node_dimensions.get(node_id).map(|v| v.as_slice()).unwrap_or(&[])
+        self.node_dimensions
+            .get(node_id)
+            .map(|v| v.as_slice())
+            .unwrap_or(&[])
     }
 }
 
@@ -186,12 +195,15 @@ pub fn auto_dimension(base: &FlowGraph) -> DimensionedFlow {
     let mut df = DimensionedFlow::from_base(base.clone());
     for n in &base.nodes {
         // 默认所有节点至少属于业务维度
-        df.tag(n.id.clone(), DimensionTag {
-            dimension: Dimension::Business,
-            owner_expert: "business".into(),
-            policy_refs: Vec::new(),
-            weight: 1.0,
-        });
+        df.tag(
+            n.id.clone(),
+            DimensionTag {
+                dimension: Dimension::Business,
+                owner_expert: "business".into(),
+                policy_refs: Vec::new(),
+                weight: 1.0,
+            },
+        );
         for t in &n.tags {
             if let Some(dim) = t.strip_prefix("dim:") {
                 let (dim, expert) = match dim {
@@ -203,41 +215,53 @@ pub fn auto_dimension(base: &FlowGraph) -> DimensionedFlow {
                     "obs" => (Dimension::Observability, "observability"),
                     _ => continue,
                 };
-                df.tag(n.id.clone(), DimensionTag {
-                    dimension: dim,
-                    owner_expert: expert.into(),
-                    policy_refs: Vec::new(),
-                    weight: 1.0,
-                });
+                df.tag(
+                    n.id.clone(),
+                    DimensionTag {
+                        dimension: dim,
+                        owner_expert: expert.into(),
+                        policy_refs: Vec::new(),
+                        weight: 1.0,
+                    },
+                );
             }
         }
         // 工具类自动带资源维度；LLM 带算法维度
         match n.tool {
             Some(ToolKind::Llm) => {
-                df.tag(n.id.clone(), DimensionTag {
-                    dimension: Dimension::Algorithm,
-                    owner_expert: "algorithm".into(),
-                    policy_refs: Vec::new(),
-                    weight: 1.0,
-                });
+                df.tag(
+                    n.id.clone(),
+                    DimensionTag {
+                        dimension: Dimension::Algorithm,
+                        owner_expert: "algorithm".into(),
+                        policy_refs: Vec::new(),
+                        weight: 1.0,
+                    },
+                );
             }
             Some(_) => {
-                df.tag(n.id.clone(), DimensionTag {
-                    dimension: Dimension::Resource,
-                    owner_expert: "resource".into(),
-                    policy_refs: Vec::new(),
-                    weight: 1.0,
-                });
+                df.tag(
+                    n.id.clone(),
+                    DimensionTag {
+                        dimension: Dimension::Resource,
+                        owner_expert: "resource".into(),
+                        policy_refs: Vec::new(),
+                        weight: 1.0,
+                    },
+                );
             }
             None => {}
         }
         if n.kind == NodeKind::Guard {
-            df.tag(n.id.clone(), DimensionTag {
-                dimension: Dimension::Permission,
-                owner_expert: "permission".into(),
-                policy_refs: Vec::new(),
-                weight: 1.0,
-            });
+            df.tag(
+                n.id.clone(),
+                DimensionTag {
+                    dimension: Dimension::Permission,
+                    owner_expert: "permission".into(),
+                    policy_refs: Vec::new(),
+                    weight: 1.0,
+                },
+            );
         }
     }
     df
@@ -273,6 +297,9 @@ mod tests {
         g.add_node(FlowNode::new("s", "开始", NodeKind::Start));
         g.add_edge(FlowEdge::seq("s", "n1"));
         let df = auto_dimension(&g);
-        assert!(df.dimensions_of("n1").iter().any(|t| t.dimension == Dimension::Security));
+        assert!(df
+            .dimensions_of("n1")
+            .iter()
+            .any(|t| t.dimension == Dimension::Security));
     }
 }

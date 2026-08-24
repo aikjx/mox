@@ -69,8 +69,18 @@ impl AuditChain {
         ev.decision.hash(&mut h);
         format!("{:016x}", h.finish())
     }
-    pub fn append(&mut self, subject: &str, flow_id: &str, action: &str, decision: &str) -> AuditEvent {
-        let prev = self.events.last().map(|e| e.hash.clone()).unwrap_or_else(|| "GENESIS".into());
+    pub fn append(
+        &mut self,
+        subject: &str,
+        flow_id: &str,
+        action: &str,
+        decision: &str,
+    ) -> AuditEvent {
+        let prev = self
+            .events
+            .last()
+            .map(|e| e.hash.clone())
+            .unwrap_or_else(|| "GENESIS".into());
         let prev_hash = prev.clone();
         let mut ev = AuditEvent {
             id: uuid::Uuid::new_v4().to_string(),
@@ -157,7 +167,10 @@ pub fn govern(
     } else if blocking > 0 {
         format!("存在 {} 个阻断级冲突", blocking)
     } else if !sla_ok {
-        format!("调度耗时 {}ms 超出 SLA {}ms", opt.gains.scheduled_ms, quota.sla_ms)
+        format!(
+            "调度耗时 {}ms 超出 SLA {}ms",
+            opt.gains.scheduled_ms, quota.sla_ms
+        )
     } else if !budget_ok {
         "超出成本预算".into()
     } else {
@@ -188,12 +201,12 @@ pub fn apply_rules(graph: &mut FlowGraph, plan: &ReconciledPlan) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use flow_ai::pipeline::{Gains, OptimizationReport};
-    use flow_ai::model::FlowGraph;
-    use flow_ai::dataflow::ParallelPlan;
-    use flow_ai::critpath::CriticalPathReport;
-    use flow_ai::schedule::Schedule;
     use flow_ai::conflict::ConflictReport;
+    use flow_ai::critpath::CriticalPathReport;
+    use flow_ai::dataflow::ParallelPlan;
+    use flow_ai::model::FlowGraph;
+    use flow_ai::pipeline::{Gains, OptimizationReport};
+    use flow_ai::schedule::Schedule;
 
     #[test]
     fn audit_chain_tamper_detected() {
@@ -228,9 +241,27 @@ mod tests {
             flow_id: "f".into(),
             flow_name: "f".into(),
             optimized_graph: plan.graph.clone(),
-            plan: ParallelPlan { dependencies: vec![], removed_edges: vec![], layers: vec![], sequential_ms: 10, parallel_ms: 10 },
-            critical_path: CriticalPathReport { timings: vec![], critical_paths: vec![], makespan_ms: 10, optimization_targets: vec![] },
-            schedule: Schedule { slots: vec![], makespan_ms: 10, lower_bound_ms: 10, resource_delay_ms: 0, max_concurrency: 1, pools: vec![] },
+            plan: ParallelPlan {
+                dependencies: vec![],
+                removed_edges: vec![],
+                layers: vec![],
+                sequential_ms: 10,
+                parallel_ms: 10,
+            },
+            critical_path: CriticalPathReport {
+                timings: vec![],
+                critical_paths: vec![],
+                makespan_ms: 10,
+                optimization_targets: vec![],
+            },
+            schedule: Schedule {
+                slots: vec![],
+                makespan_ms: 10,
+                lower_bound_ms: 10,
+                resource_delay_ms: 0,
+                max_concurrency: 1,
+                pools: vec![],
+            },
             conflicts: ConflictReport { conflicts: vec![] },
             model_routing: vec![],
             gains: Gains {
@@ -270,21 +301,51 @@ mod tests {
             flow_id: "f".into(),
             flow_name: "f".into(),
             optimized_graph: plan.graph.clone(),
-            plan: ParallelPlan { dependencies: vec![], removed_edges: vec![], layers: vec![], sequential_ms: 10, parallel_ms: 10 },
-            critical_path: CriticalPathReport { timings: vec![], critical_paths: vec![], makespan_ms: 10, optimization_targets: vec![] },
-            schedule: Schedule { slots: vec![], makespan_ms: 10, lower_bound_ms: 10, resource_delay_ms: 0, max_concurrency: 1, pools: vec![] },
+            plan: ParallelPlan {
+                dependencies: vec![],
+                removed_edges: vec![],
+                layers: vec![],
+                sequential_ms: 10,
+                parallel_ms: 10,
+            },
+            critical_path: CriticalPathReport {
+                timings: vec![],
+                critical_paths: vec![],
+                makespan_ms: 10,
+                optimization_targets: vec![],
+            },
+            schedule: Schedule {
+                slots: vec![],
+                makespan_ms: 10,
+                lower_bound_ms: 10,
+                resource_delay_ms: 0,
+                max_concurrency: 1,
+                pools: vec![],
+            },
             conflicts: ConflictReport { conflicts: vec![] },
             model_routing: vec![],
             gains: Gains {
-                sequential_ms: 10, critical_path_ms: 10, scheduled_ms: 10, speedup: 1.0,
-                time_saved_pct: 0.0, removed_false_deps: 0, parallel_layers: 1, max_concurrency: 1,
-                conflicts_found: 0, conflicts_blocking: 0, conflicts_auto_fixed: 0,
+                sequential_ms: 10,
+                critical_path_ms: 10,
+                scheduled_ms: 10,
+                speedup: 1.0,
+                time_saved_pct: 0.0,
+                removed_false_deps: 0,
+                parallel_layers: 1,
+                max_concurrency: 1,
+                conflicts_found: 0,
+                conflicts_blocking: 0,
+                conflicts_auto_fixed: 0,
                 compute_saved_pct: 0.0,
             },
             code: None,
             route: None,
         };
-        let quota = ResourceQuota { max_parallel: 8, max_cost_budget: 1.0, sla_ms: 5000 };
+        let quota = ResourceQuota {
+            max_parallel: 8,
+            max_cost_budget: 1.0,
+            sla_ms: 5000,
+        };
         let g = govern(&plan, &rep, FlowStatus::Approved, &quota, "u", false);
         assert!(g.approved, "{}", g.reason);
     }

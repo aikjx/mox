@@ -9,6 +9,7 @@
 
 use std::sync::Arc;
 
+use approx::assert_relative_eq;
 use operator_core::conservation::{
     ConservationChecker, ConservationLaw, GraphNode, GuardedGraph, L1Conservation, L2Conservation,
 };
@@ -18,7 +19,6 @@ use operator_core::registry::OperatorRegistry;
 use operator_core::state::StateVector;
 use operator_core::types::{builtin, TypeCheck, TypeIdentifier, TypePair};
 use operator_core::{OperatorMetadata, SystemConfig};
-use approx::assert_relative_eq;
 
 // ──────────────────────────────────────────────────────────────────
 // 辅助类型：实现 GraphNode 的简单节点
@@ -66,8 +66,12 @@ fn registry_pipeline_integration_full() {
     let mut registry = OperatorRegistry::new();
 
     // 注册多个算子
-    registry.register(Arc::new(IdentityOperator::new(3))).unwrap();
-    registry.register(Arc::new(LinearOperator::identity(3))).unwrap();
+    registry
+        .register(Arc::new(IdentityOperator::new(3)))
+        .unwrap();
+    registry
+        .register(Arc::new(LinearOperator::identity(3)))
+        .unwrap();
     registry
         .register(Arc::new(FunctionOperator::new("double", |s, _ctx| {
             Ok(s.scale(2.0))
@@ -100,7 +104,9 @@ fn registry_pipeline_integration_full() {
 #[test]
 fn registry_capability_query() {
     let mut registry = OperatorRegistry::new();
-    registry.register(Arc::new(IdentityOperator::new(4))).unwrap();
+    registry
+        .register(Arc::new(IdentityOperator::new(4)))
+        .unwrap();
     registry
         .register(Arc::new(FunctionOperator::new("sigmoid", |s, _ctx| {
             let result: Vec<f64> = s.data.iter().map(|x| 1.0 / (1.0 + (-x).exp())).collect();
@@ -122,7 +128,9 @@ fn registry_capability_query() {
 #[test]
 fn registry_lifecycle_deprecate() {
     let mut registry = OperatorRegistry::new();
-    registry.register(Arc::new(IdentityOperator::new(2))).unwrap();
+    registry
+        .register(Arc::new(IdentityOperator::new(2)))
+        .unwrap();
 
     // 标记 deprecated
     registry.deprecate("Identity").unwrap();
@@ -140,9 +148,13 @@ fn registry_lifecycle_deprecate() {
 #[test]
 fn registry_lineage_dependency() {
     let mut registry = OperatorRegistry::new();
-    registry.register(Arc::new(IdentityOperator::new(3))).unwrap();
     registry
-        .register(Arc::new(FunctionOperator::new("child", |s, _ctx| Ok(s.clone()))))
+        .register(Arc::new(IdentityOperator::new(3)))
+        .unwrap();
+    registry
+        .register(Arc::new(FunctionOperator::new("child", |s, _ctx| {
+            Ok(s.clone())
+        })))
         .unwrap();
 
     registry
@@ -474,7 +486,9 @@ fn pipeline_conservation_convergence() {
 #[test]
 fn pipeline_error_propagation() {
     let failing = Arc::new(FunctionOperator::new("fail", |_s, _ctx| {
-        Err(operator_core::OperatorError::ExecutionError("test failure".to_string()))
+        Err(operator_core::OperatorError::ExecutionError(
+            "test failure".to_string(),
+        ))
     }));
 
     let pipe = OperatorPipeline::new()
@@ -542,7 +556,9 @@ fn state_vector_residual() {
 fn full_stack_registry_pipeline_conservation_graph() {
     // Step 1: 注册算子
     let mut registry = OperatorRegistry::new();
-    registry.register(Arc::new(IdentityOperator::new(3))).unwrap();
+    registry
+        .register(Arc::new(IdentityOperator::new(3)))
+        .unwrap();
     registry
         .register(Arc::new(FunctionOperator::new("project", |s, _ctx| {
             let mut result = s.clone();
@@ -564,7 +580,7 @@ fn full_stack_registry_pipeline_conservation_graph() {
     let pipe = OperatorPipeline::new()
         .then(id_op)
         .then(project) // 归一化
-        .then(scale)   // 缩放
+        .then(scale) // 缩放
         .with_probability_conservation();
 
     // Step 3: 执行流水线
@@ -598,9 +614,13 @@ fn full_stack_registry_pipeline_conservation_graph() {
 #[test]
 fn registry_export_and_reimport() {
     let mut registry = OperatorRegistry::new();
-    registry.register(Arc::new(IdentityOperator::new(3))).unwrap();
     registry
-        .register(Arc::new(FunctionOperator::new("custom", |s, _ctx| Ok(s.clone()))))
+        .register(Arc::new(IdentityOperator::new(3)))
+        .unwrap();
+    registry
+        .register(Arc::new(FunctionOperator::new("custom", |s, _ctx| {
+            Ok(s.clone())
+        })))
         .unwrap();
 
     let json = registry.export_json();
@@ -625,8 +645,12 @@ fn error_handling_all_paths() {
 
     // 重复注册不应 panic
     let mut registry2 = OperatorRegistry::new();
-    registry2.register(Arc::new(IdentityOperator::new(2))).unwrap();
-    registry2.register(Arc::new(IdentityOperator::new(2))).unwrap();
+    registry2
+        .register(Arc::new(IdentityOperator::new(2)))
+        .unwrap();
+    registry2
+        .register(Arc::new(IdentityOperator::new(2)))
+        .unwrap();
     assert!(registry2.count() >= 1);
 
     // 空流水线成功
@@ -720,13 +744,16 @@ fn pipeline_throughput() {
 fn registry_query_performance() {
     let mut registry = OperatorRegistry::new();
     for i in 0..50 {
-        registry.register(Arc::new(FunctionOperator::new(
-            &format!("op_{}", i),
-            |s, _ctx| Ok(s.clone()),
-        )))
-        .unwrap();
+        registry
+            .register(Arc::new(FunctionOperator::new(
+                &format!("op_{}", i),
+                |s, _ctx| Ok(s.clone()),
+            )))
+            .unwrap();
     }
-    registry.register(Arc::new(IdentityOperator::new(10))).unwrap();
+    registry
+        .register(Arc::new(IdentityOperator::new(10)))
+        .unwrap();
 
     let sv_type = builtin::state_vector_type();
     let start = std::time::Instant::now();

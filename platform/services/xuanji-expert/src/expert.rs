@@ -1,4 +1,4 @@
-﻿//! 专家 trait 与观点类型
+//! 专家 trait 与观点类型
 //!
 //! 每位专家无状态、只读分析，输出 `ExpertOpinion`，由裁决器归一合并。
 //! 专家之间互不调用，保证可并行派发。
@@ -109,14 +109,24 @@ impl ExpertOpinion {
             skip_reason: None,
         }
     }
-    pub fn skipped(expert: impl Into<String>, dimension: Dimension, reason: impl Into<String>) -> Self {
+    pub fn skipped(
+        expert: impl Into<String>,
+        dimension: Dimension,
+        reason: impl Into<String>,
+    ) -> Self {
         let mut o = Self::empty(expert, dimension);
         o.skipped = true;
         o.skip_reason = Some(reason.into());
         o.score = 0.0;
         o
     }
-    pub fn push_risk(&mut self, severity: Severity, nodes: Vec<String>, msg: impl Into<String>, rem: Option<String>) {
+    pub fn push_risk(
+        &mut self,
+        severity: Severity,
+        nodes: Vec<String>,
+        msg: impl Into<String>,
+        rem: Option<String>,
+    ) {
         self.risks.push(Risk {
             severity,
             nodes,
@@ -169,8 +179,12 @@ mod tests {
 
     struct Dummy;
     impl Expert for Dummy {
-        fn id(&self) -> ExpertId { "dummy".into() }
-        fn dimension(&self) -> Dimension { Dimension::Business }
+        fn id(&self) -> ExpertId {
+            "dummy".into()
+        }
+        fn dimension(&self) -> Dimension {
+            Dimension::Business
+        }
         fn analyze(&self, _ctx: &ExpertContext) -> ExpertOpinion {
             let mut o = ExpertOpinion::empty("dummy", Dimension::Business);
             o.push_risk(Severity::Blocking, vec!["a".into()], "test", None);

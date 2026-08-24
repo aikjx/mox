@@ -11,7 +11,7 @@ use crate::state::StateVector;
 use crate::{ExecutionContext, Result};
 
 // ===== 重导出 L6 纯内核单子 =====
-pub use crate::kernel::{IO, Op, StateOp};
+pub use crate::kernel::{Op, StateOp, IO};
 
 // ===== 为 Op 补充依赖上层能力的 impl =====
 impl<T> Op<T> {

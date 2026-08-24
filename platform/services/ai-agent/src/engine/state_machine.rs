@@ -146,10 +146,7 @@ impl EngineFSM {
             (EngineState::Abort, EngineEvent::Reset) => Ok(EngineState::Idle),
 
             // ── 所有非法转移 ──
-            (state, event) => Err(format!(
-                "非法状态转移: {:?} + {:?}",
-                state, event
-            )),
+            (state, event) => Err(format!("非法状态转移: {:?} + {:?}", state, event)),
         }
     }
 }
@@ -164,19 +161,63 @@ impl Default for EngineFSM {
 pub fn transition_table() -> Vec<(EngineState, EngineEvent, EngineState)> {
     vec![
         (EngineState::Idle, EngineEvent::Start, EngineState::Perceive),
-        (EngineState::Perceive, EngineEvent::PerceiveDone, EngineState::Recall),
-        (EngineState::Recall, EngineEvent::RecallDone, EngineState::Plan),
+        (
+            EngineState::Perceive,
+            EngineEvent::PerceiveDone,
+            EngineState::Recall,
+        ),
+        (
+            EngineState::Recall,
+            EngineEvent::RecallDone,
+            EngineState::Plan,
+        ),
         (EngineState::Plan, EngineEvent::PlanDone, EngineState::Act),
         (EngineState::Act, EngineEvent::ActDone, EngineState::Observe),
-        (EngineState::Act, EngineEvent::ActFailed, EngineState::Reflect),
-        (EngineState::Observe, EngineEvent::ObserveDone, EngineState::Reflect),
-        (EngineState::Reflect, EngineEvent::ReflectContinue, EngineState::Act),
-        (EngineState::Reflect, EngineEvent::ReflectToGenerate, EngineState::Generate),
-        (EngineState::Reflect, EngineEvent::NeedHumanInput, EngineState::HitlPause),
-        (EngineState::HitlPause, EngineEvent::HumanApproved, EngineState::Act),
-        (EngineState::HitlPause, EngineEvent::HumanRejected, EngineState::Abort),
-        (EngineState::Generate, EngineEvent::GenerateDone, EngineState::Consolidate),
-        (EngineState::Consolidate, EngineEvent::ConsolidateDone, EngineState::Done),
+        (
+            EngineState::Act,
+            EngineEvent::ActFailed,
+            EngineState::Reflect,
+        ),
+        (
+            EngineState::Observe,
+            EngineEvent::ObserveDone,
+            EngineState::Reflect,
+        ),
+        (
+            EngineState::Reflect,
+            EngineEvent::ReflectContinue,
+            EngineState::Act,
+        ),
+        (
+            EngineState::Reflect,
+            EngineEvent::ReflectToGenerate,
+            EngineState::Generate,
+        ),
+        (
+            EngineState::Reflect,
+            EngineEvent::NeedHumanInput,
+            EngineState::HitlPause,
+        ),
+        (
+            EngineState::HitlPause,
+            EngineEvent::HumanApproved,
+            EngineState::Act,
+        ),
+        (
+            EngineState::HitlPause,
+            EngineEvent::HumanRejected,
+            EngineState::Abort,
+        ),
+        (
+            EngineState::Generate,
+            EngineEvent::GenerateDone,
+            EngineState::Consolidate,
+        ),
+        (
+            EngineState::Consolidate,
+            EngineEvent::ConsolidateDone,
+            EngineState::Done,
+        ),
         (EngineState::Done, EngineEvent::Reset, EngineState::Idle),
         (EngineState::Abort, EngineEvent::Reset, EngineState::Idle),
     ]

@@ -251,16 +251,14 @@ impl XuanjiSystem {
     }
 
     // ---------- 鉴权后的高层操作 ----------
-    pub async fn invite_member(
-        &self,
-        actor: &str,
-        input: &InviteInput,
-    ) -> Result<Member> {
-        self.require(actor, Permission::MemberInvite, &self.ctx_xuanji(&input.xuanji_id))
-            .await?;
-        self.member
-            .invite(actor, input)
-            .await
+    pub async fn invite_member(&self, actor: &str, input: &InviteInput) -> Result<Member> {
+        self.require(
+            actor,
+            Permission::MemberInvite,
+            &self.ctx_xuanji(&input.xuanji_id),
+        )
+        .await?;
+        self.member.invite(actor, input).await
     }
 
     pub async fn create_task(
@@ -284,8 +282,12 @@ impl XuanjiSystem {
         task_id: &str,
         assignees: Vec<String>,
     ) -> Result<Task> {
-        self.require(actor, Permission::TaskAssign, &self.ctx_task(task_id).await?)
-            .await?;
+        self.require(
+            actor,
+            Permission::TaskAssign,
+            &self.ctx_task(task_id).await?,
+        )
+        .await?;
         self.task.assign(task_id, actor, assignees).await
     }
 
@@ -301,16 +303,26 @@ impl XuanjiSystem {
         // 若在此记审计会让每次正常操作都产生一条噪声拒绝记录。
         // 第二次是**终局裁决**（用 require，落审计）：确实无权时才是真正的越权尝试。
         let ctx = self.ctx_task(task_id).await?;
-        if self.perm.authorize(actor, Permission::TaskTransitionAll, &ctx).await.is_ok() {
+        if self
+            .perm
+            .authorize(actor, Permission::TaskTransitionAll, &ctx)
+            .await
+            .is_ok()
+        {
             return self.task.transition(task_id, actor, to).await;
         }
-        self.require(actor, Permission::TaskTransitionOwn, &ctx).await?;
+        self.require(actor, Permission::TaskTransitionOwn, &ctx)
+            .await?;
         self.task.transition(task_id, actor, to).await
     }
 
     pub async fn comment_task(&self, actor: &str, task_id: &str, body: &str) -> Result<Message> {
-        self.require(actor, Permission::TaskComment, &self.ctx_task(task_id).await?)
-            .await?;
+        self.require(
+            actor,
+            Permission::TaskComment,
+            &self.ctx_task(task_id).await?,
+        )
+        .await?;
         self.task.comment(task_id, actor, body).await
     }
 
@@ -319,8 +331,12 @@ impl XuanjiSystem {
     /// 发起者即关注者（watcher）。鉴权作用域复用 `TaskComment`：
     /// 仅能参与本璇玑任务协作（评论级权限）的成员可关注，跨璇玑关注被拒。
     pub async fn watch_task(&self, actor: &str, task_id: &str) -> Result<Task> {
-        self.require(actor, Permission::TaskComment, &self.ctx_task(task_id).await?)
-            .await?;
+        self.require(
+            actor,
+            Permission::TaskComment,
+            &self.ctx_task(task_id).await?,
+        )
+        .await?;
         self.task.watch(task_id, actor).await
     }
 
@@ -353,7 +369,9 @@ impl XuanjiSystem {
             },
         };
         self.require(actor, perm, &ctx).await?;
-        self.comm.send_message(channel_id, actor, body, MessageKind::Chat).await
+        self.comm
+            .send_message(channel_id, actor, body, MessageKind::Chat)
+            .await
     }
 }
 
@@ -367,14 +385,10 @@ pub struct Reactor {
 // 说明：impl Reactor —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
 // 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl Reactor {
-/// 公共函数：new（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
-    pub fn new(
-        store: Arc<Store>,
-        comm: Arc<dyn CommServiceTrait>,
-        bus: EventBus,
-    ) -> Self {
+    /// 公共函数：new（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    pub fn new(store: Arc<Store>, comm: Arc<dyn CommServiceTrait>, bus: EventBus) -> Self {
         Self { store, comm, bus }
     }
 }
@@ -404,12 +418,22 @@ impl Reactor {
             }
             DomainEvent::MemberActivated { member_id } => {
                 self.comm
-                    .notify(member_id, "账号已激活", "你的璇玑账号已激活，可以开始协作", None)
+                    .notify(
+                        member_id,
+                        "账号已激活",
+                        "你的璇玑账号已激活，可以开始协作",
+                        None,
+                    )
                     .await;
             }
             DomainEvent::MemberStatusChanged { member_id, status } => {
                 self.comm
-                    .notify(member_id, "账号状态变更", &format!("你的账号状态已变更为 {status}"), None)
+                    .notify(
+                        member_id,
+                        "账号状态变更",
+                        &format!("你的账号状态已变更为 {status}"),
+                        None,
+                    )
                     .await;
             }
             DomainEvent::TaskCreated {
@@ -468,7 +492,12 @@ impl Reactor {
                         .send_message(
                             &ch.id,
                             "system",
-                            &format!("任务状态：{} → {}（操作人：{}）", from.label(), to.label(), name),
+                            &format!(
+                                "任务状态：{} → {}（操作人：{}）",
+                                from.label(),
+                                to.label(),
+                                name
+                            ),
                             MessageKind::System,
                         )
                         .await

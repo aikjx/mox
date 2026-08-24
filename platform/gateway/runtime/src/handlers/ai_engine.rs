@@ -5,10 +5,10 @@
 //!   语义缓存探测（简化：Node 端内部实现，Gateway 侧先按意图直接过 capability router）→
 //!   能力路由（CapRouter）→ 执行（本地等价直调 sidecar / AI 直调 AIAgent / 混合）→ 回填
 
-use crate::ai_router::{CapabilityEntry, CapabilityRouter, ExecutorKind, RouterDecision, RouterTable};
-use crate::sidecar::node_sidecar::{
-    GraphAlgoReq, IntentReq, IntentResp, NodeSidecarClient,
+use crate::ai_router::{
+    CapabilityEntry, CapabilityRouter, ExecutorKind, RouterDecision, RouterTable,
 };
+use crate::sidecar::node_sidecar::{GraphAlgoReq, IntentReq, IntentResp, NodeSidecarClient};
 use ai_agent::AIAgent;
 use axum::{
     extract::{Query, State},
@@ -176,9 +176,9 @@ pub struct EngineStats {
 // 说明：impl EngineStats —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
 // 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl EngineStats {
-/// 公共函数：record_latency（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    /// 公共函数：record_latency（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn record_latency(&self, ms: u64) {
         let mut v = self.latencies.lock();
         v.push(ms);
@@ -187,12 +187,14 @@ impl EngineStats {
             v.drain(0..drop);
         }
     }
-/// 公共函数：p95（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    /// 公共函数：p95（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn p95(&self) -> u64 {
         let v = self.latencies.lock();
-        if v.is_empty() { return 0; }
+        if v.is_empty() {
+            return 0;
+        }
         let mut sorted: Vec<u64> = v.clone();
         sorted.sort_unstable();
         let idx = ((sorted.len() as f64) * 0.95).ceil() as usize - 1;
@@ -208,10 +210,20 @@ impl Default for AiEngineState {
         router.register("chat", "llm_chat", ExecutorKind::Ai, None);
         router.register("graph_query", "graph_query", ExecutorKind::Hybrid, None);
         router.register("graph_list", "graph_list", ExecutorKind::Local, None);
-        router.register("file_search", "file_graph_search", ExecutorKind::Hybrid, None);
+        router.register(
+            "file_search",
+            "file_graph_search",
+            ExecutorKind::Hybrid,
+            None,
+        );
         router.register("file_list", "file_list", ExecutorKind::Local, None);
         router.register("kb_search", "kb_search", ExecutorKind::Hybrid, None);
-        router.register("graph_bulk_write", "graph_bulk_write", ExecutorKind::Local, None);
+        router.register(
+            "graph_bulk_write",
+            "graph_bulk_write",
+            ExecutorKind::Local,
+            None,
+        );
         router.register("atlas_trace", "atlas_trace", ExecutorKind::Hybrid, None);
 
         let mut paths = RouterTable::new();
@@ -235,19 +247,27 @@ impl Default for AiEngineState {
 // 说明：impl AiEngineState —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
 // 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl AiEngineState {
-/// 公共函数：with_agent（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
-    pub fn with_agent(mut self, agent: Arc<AIAgent>) -> Self { self.agent = Some(agent); self }
-/// 公共函数：with_sidecar（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
-    pub fn with_sidecar(mut self, s: NodeSidecarClient) -> Self { self.sidecar = Arc::new(s); self }
+    /// 公共函数：with_agent（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    pub fn with_agent(mut self, agent: Arc<AIAgent>) -> Self {
+        self.agent = Some(agent);
+        self
+    }
+    /// 公共函数：with_sidecar（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    pub fn with_sidecar(mut self, s: NodeSidecarClient) -> Self {
+        self.sidecar = Arc::new(s);
+        self
+    }
 }
 
 // ================== 端点实现 ==================
 
-fn count_ms(s: std::time::Instant) -> u64 { s.elapsed().as_millis() as u64 }
+fn count_ms(s: std::time::Instant) -> u64 {
+    s.elapsed().as_millis() as u64
+}
 
 pub async fn process_handler(
     State(state): State<Arc<AiEngineState>>,
@@ -255,14 +275,24 @@ pub async fn process_handler(
 ) -> (StatusCode, Json<ProcessResponse>) {
     let started = std::time::Instant::now();
     state.stats.requests_total.fetch_add(1, Ordering::Relaxed);
-    if req.options.compat.is_none() { req.options.compat = Some(true); }
+    if req.options.compat.is_none() {
+        req.options.compat = Some(true);
+    }
 
     let mut explain: Vec<String> = Vec::new();
 
     // ① 意图识别：优先用 sidecar /internal/intent
-    let IntentResp { intent, capability: maybe_cap, explain: mut intent_explain, .. } = state
+    let IntentResp {
+        intent,
+        capability: maybe_cap,
+        explain: mut intent_explain,
+        ..
+    } = state
         .sidecar
-        .intent(IntentReq { query: req.query.clone().unwrap_or_default(), context: req.context.clone() })
+        .intent(IntentReq {
+            query: req.query.clone().unwrap_or_default(),
+            context: req.context.clone(),
+        })
         .await
         .unwrap_or(IntentResp {
             ok: true,
@@ -274,16 +304,23 @@ pub async fn process_handler(
     explain.append(&mut intent_explain);
 
     // ② 能力路由
-    let (capability, entry): (String, Option<CapabilityEntry>) = match req.capability.clone().or(maybe_cap) {
-        Some(c) => (c.clone(), None),
-        None => {
-            let e = state.capability_router.resolve(&intent).cloned();
-            let cap = e.as_ref().map(|e| e.capability.clone()).unwrap_or_else(|| "llm_chat".to_string());
-            (cap, e)
-        }
-    };
+    let (capability, entry): (String, Option<CapabilityEntry>) =
+        match req.capability.clone().or(maybe_cap) {
+            Some(c) => (c.clone(), None),
+            None => {
+                let e = state.capability_router.resolve(&intent).cloned();
+                let cap = e
+                    .as_ref()
+                    .map(|e| e.capability.clone())
+                    .unwrap_or_else(|| "llm_chat".to_string());
+                (cap, e)
+            }
+        };
     let e = entry.or_else(|| state.capability_router.resolve(&intent).cloned());
-    let executor = e.as_ref().map(|x| x.executor).unwrap_or(ExecutorKind::Hybrid);
+    let executor = e
+        .as_ref()
+        .map(|x| x.executor)
+        .unwrap_or(ExecutorKind::Hybrid);
 
     // ③ 执行：对 graph_list / file_list 等本地等价能力 → 走 sidecar 的原生 internal 接口
     let mut data: Option<serde_json::Value> = None;
@@ -295,20 +332,34 @@ pub async fn process_handler(
         ExecutorKind::Local => "local",
         ExecutorKind::Ai => "ai",
         ExecutorKind::Hybrid => "hybrid",
-    }.to_string();
+    }
+    .to_string();
 
     // 路径路由：capability → 请求 sidecar 对应 /internal/* path
     let t_local = std::time::Instant::now();
     match capability.as_str() {
         "graph_list" => {
-            let algo = state.sidecar.graph_algo(GraphAlgoReq {
-                algorithm: "list_nodes".into(),
-                payload: serde_json::to_value(&req.context).unwrap_or(serde_json::Value::Null),
-            }).await;
+            let algo = state
+                .sidecar
+                .graph_algo(GraphAlgoReq {
+                    algorithm: "list_nodes".into(),
+                    payload: serde_json::to_value(&req.context).unwrap_or(serde_json::Value::Null),
+                })
+                .await;
             match algo {
                 Ok(r) if r.ok => data = Some(r.result),
-                Ok(r) => data = Some(r.result),
-                Err(_) => { state.stats.degrade_hits.fetch_add(1, Ordering::Relaxed); },
+                Ok(r) => {
+                    // sidecar 返回失败结果：记录降级而非伪造成功（避免 ok:true + data:None 的假成功）
+                    state.stats.degrade_hits.fetch_add(1, Ordering::Relaxed);
+                    explain.push(format!(
+                        "sidecar graph_list 返回失败 (algorithm={})",
+                        r.algorithm
+                    ));
+                }
+                Err(e) => {
+                    state.stats.degrade_hits.fetch_add(1, Ordering::Relaxed);
+                    explain.push(format!("sidecar graph_list 错误: {e}"));
+                }
             }
             local_ms = Some(count_ms(t_local));
             state.stats.local_hits.fetch_add(1, Ordering::Relaxed);
@@ -331,8 +382,14 @@ pub async fn process_handler(
                     Err(e) => explain.push(format!("ai err: {e}")),
                 }
             } else {
-                explain.push("ai agent 未配置：已按本地关键词流程输出确定性摘要（无 LLM）".to_string());
-                ai_summary = Some(deterministic_fallback_summary(&intent, &capability, req.query.as_deref()));
+                explain.push(
+                    "ai agent 未配置：已按本地关键词流程输出确定性摘要（无 LLM）".to_string(),
+                );
+                ai_summary = Some(deterministic_fallback_summary(
+                    &intent,
+                    &capability,
+                    req.query.as_deref(),
+                ));
             }
             ai_ms = Some(count_ms(t_ai));
             state.stats.ai_hits.fetch_add(1, Ordering::Relaxed);
@@ -341,11 +398,26 @@ pub async fn process_handler(
             // hybrid：本地 sidecar graph-algo + 确定性摘要（禁 [hybrid stub]）
             let _ = local_ms.insert(count_ms(t_local));
             // 尝试 sidecar 拿 data
-            if let Ok(r) = state.sidecar.graph_algo(GraphAlgoReq { algorithm: other.into(), payload: serde_json::Value::Null }).await {
-                if r.ok { data = Some(r.result); }
+            if let Ok(r) = state
+                .sidecar
+                .graph_algo(GraphAlgoReq {
+                    algorithm: other.into(),
+                    payload: serde_json::Value::Null,
+                })
+                .await
+            {
+                if r.ok {
+                    data = Some(r.result);
+                }
             }
-            explain.push(format!("hybrid：命中 sidecar graph-algo 能力 {other}，AI 段用确定性摘要"));
-            ai_summary = Some(deterministic_fallback_summary(&intent, &capability, req.query.as_deref()));
+            explain.push(format!(
+                "hybrid：命中 sidecar graph-algo 能力 {other}，AI 段用确定性摘要"
+            ));
+            ai_summary = Some(deterministic_fallback_summary(
+                &intent,
+                &capability,
+                req.query.as_deref(),
+            ));
             state.stats.hybrid_hits.fetch_add(1, Ordering::Relaxed);
             ai_ms = Some(1);
         }
@@ -412,18 +484,27 @@ pub async fn capabilities_handler(State(state): State<Arc<AiEngineState>>) -> im
                 ExecutorKind::Local => "local",
                 ExecutorKind::Ai => "ai",
                 ExecutorKind::Hybrid => "hybrid",
-            }.to_string(),
+            }
+            .to_string(),
             category: match e.capability.as_str() {
                 s if s.starts_with("graph") => "graph",
-                s if s.starts_with("file")  => "file",
-                s if s.starts_with("kb")    => "kb",
+                s if s.starts_with("file") => "file",
+                s if s.starts_with("kb") => "kb",
                 _ => "ai",
-            }.to_string(),
+            }
+            .to_string(),
             p95_latency_ms: e.p95_latency_ms,
             description: Some(format!("capability registry entry for {}", e.capability)),
         })
         .collect();
-    (StatusCode::OK, Json(CapabilitiesResponse { ok: true, count: items.len(), items }))
+    (
+        StatusCode::OK,
+        Json(CapabilitiesResponse {
+            ok: true,
+            count: items.len(),
+            items,
+        }),
+    )
 }
 
 #[derive(Debug, Deserialize, Default)]
@@ -431,7 +512,8 @@ pub async fn capabilities_handler(State(state): State<Arc<AiEngineState>>) -> im
 // 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 pub struct MetricsQueryParams {
     #[allow(dead_code)] // 预留：支持 1m/5m/1h 滑动窗口（后续按 window 值过滤 ring buffer）
-    #[serde(default)] pub window: Option<String>,
+    #[serde(default)]
+    pub window: Option<String>,
 }
 
 pub async fn metrics_handler(
@@ -486,11 +568,22 @@ pub async fn workflow_execute_handler(
 
     // 组装 passthrough body：保留 flatten 额外字段 + 规范化
     let mut body_map: BTreeMap<String, serde_json::Value> = BTreeMap::new();
-    body_map.insert("workflow_id".into(), serde_json::Value::String(req.workflow_id));
-    if let Some(v) = req.inputs { body_map.insert("inputs".into(), v); }
-    if let Some(v) = req.trace_id { body_map.insert("trace_id".into(), serde_json::Value::String(v)); }
-    if let Some(v) = req.custom_steps { body_map.insert("custom_steps".into(), serde_json::Value::Array(v)); }
-    for (k, v) in req.extra { body_map.insert(k, v); }
+    body_map.insert(
+        "workflow_id".into(),
+        serde_json::Value::String(req.workflow_id),
+    );
+    if let Some(v) = req.inputs {
+        body_map.insert("inputs".into(), v);
+    }
+    if let Some(v) = req.trace_id {
+        body_map.insert("trace_id".into(), serde_json::Value::String(v));
+    }
+    if let Some(v) = req.custom_steps {
+        body_map.insert("custom_steps".into(), serde_json::Value::Array(v));
+    }
+    for (k, v) in req.extra {
+        body_map.insert(k, v);
+    }
     let body = serde_json::Value::Object(serde_json::Map::from_iter(body_map));
 
     let resp_value = state
@@ -513,45 +606,61 @@ pub async fn workflow_execute_handler(
         serde_json::Value::Object(m) => {
             let success = m.get("success").and_then(|v| v.as_bool()).unwrap_or(false);
             let d = m.get("data").cloned().unwrap_or(serde_json::Value::Null);
-            let e = m.get("error").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let e = m
+                .get("error")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
             (success, Some(d), e)
         }
-        _ => (false, Some(resp_value.clone()), Some("sidecar returned non-object".to_string())),
+        _ => (
+            false,
+            Some(resp_value.clone()),
+            Some("sidecar returned non-object".to_string()),
+        ),
     };
 
     let snap = state.sidecar.metrics.snapshot();
-    (StatusCode::OK, Json(ProcessResponse {
-        ok,
-        route: Some(RouteInfo {
-            intent: "workflow_execute".to_string(),
-            capability: "workflow_execute".to_string(),
-            executor: "sidecar".to_string(),
-            explain: None,
+    (
+        StatusCode::OK,
+        Json(ProcessResponse {
+            ok,
+            route: Some(RouteInfo {
+                intent: "workflow_execute".to_string(),
+                capability: "workflow_execute".to_string(),
+                executor: "sidecar".to_string(),
+                explain: None,
+            }),
+            data,
+            ai_summary: None,
+            metrics: Some(MetricsInfo {
+                total_ms: Some(total_ms),
+                local_ms: Some(total_ms),
+                ai_ms: Some(0),
+                cache_hit: Some(false),
+                sidecar_calls: snap.calls,
+                sidecar_fail: snap.fail,
+            }),
+            error: err,
         }),
-        data,
-        ai_summary: None,
-        metrics: Some(MetricsInfo {
-            total_ms: Some(total_ms),
-            local_ms: Some(total_ms),
-            ai_ms: Some(0),
-            cache_hit: Some(false),
-            sidecar_calls: snap.calls,
-            sidecar_fail: snap.fail,
-        }),
-        error: err,
-    }))
+    )
 }
 
 // 允许 process_handler 调用 agent 的 output 字段作为 summary。
 // 说明：trait AgentResultSummary —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
 // 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
-trait AgentResultSummary { fn summary(&self) -> Option<String>; }
+trait AgentResultSummary {
+    fn summary(&self) -> Option<String>;
+}
 // 说明：impl AgentResultSummary —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
 // 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl AgentResultSummary for ai_agent::engine::EngineResult {
     fn summary(&self) -> Option<String> {
         self.output.clone().or_else(|| {
-            if self.success { Some(format!("AI ok: steps={}", self.steps_executed)) } else { None }
+            if self.success {
+                Some(format!("AI ok: steps={}", self.steps_executed))
+            } else {
+                None
+            }
         })
     }
 }
@@ -571,9 +680,17 @@ pub(crate) fn deterministic_fallback_summary(
 ) -> String {
     let mut out = String::with_capacity(160);
     out.push_str("路由摘要：意图[");
-    if intent.is_empty() { out.push_str("未分类"); } else { out.push_str(intent); }
+    if intent.is_empty() {
+        out.push_str("未分类");
+    } else {
+        out.push_str(intent);
+    }
     out.push_str("] → 能力[");
-    if capability.is_empty() { out.push_str("默认处理"); } else { out.push_str(capability); }
+    if capability.is_empty() {
+        out.push_str("默认处理");
+    } else {
+        out.push_str(capability);
+    }
     out.push_str("]。");
     if let Some(q) = query {
         let trimmed = q.trim();
@@ -581,7 +698,9 @@ pub(crate) fn deterministic_fallback_summary(
             out.push_str("查询摘要：");
             let head: String = trimmed.chars().take(80).collect();
             out.push_str(&head);
-            if trimmed.chars().count() > 80 { out.push('…'); }
+            if trimmed.chars().count() > 80 {
+                out.push('…');
+            }
         }
     }
     out.push_str("（无 AI Agent 配置，已按本地关键词流程给出确定性结果）");
@@ -608,8 +727,10 @@ mod tests {
             let s = deterministic_fallback_summary(it, ca, *q);
             let lower = s.to_lowercase();
             assert!(
-                !lower.contains("[stub]") && !lower.contains("stub] query")
-                    && !lower.contains("[hybrid stub]") && !lower.contains("placeholder"),
+                !lower.contains("[stub]")
+                    && !lower.contains("stub] query")
+                    && !lower.contains("[hybrid stub]")
+                    && !lower.contains("placeholder"),
                 "case {i} summary 包含 stub/占位 标记：{s}"
             );
             assert!(
@@ -627,6 +748,10 @@ mod tests {
         let query_field: Vec<_> = s.match_indices("查询摘要：").collect();
         assert!(query_field.len() == 1, "未找到查询摘要段：{s}");
         // 省略号表示做了截断（我们用单字符 '…'，所以 s.contains("…") 成立）
-        assert!(s.contains('…'), "超长查询应带省略号：len={}", s.chars().count());
+        assert!(
+            s.contains('…'),
+            "超长查询应带省略号：len={}",
+            s.chars().count()
+        );
     }
 }

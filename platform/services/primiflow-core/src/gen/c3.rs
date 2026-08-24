@@ -4,9 +4,9 @@
 //! 说明: κ 复用检索 / 冻结（本地确定性 embedding 替代 pgvector，契约一致）。
 //! 规格: primiflow/SPEC.md（§4 资产 / §5 κ 检索 / §7 模块）
 
-use flow_ai::model::FlowGraph;
-use crate::gen::schema::Asset;
 use crate::gen::c4::Domain;
+use crate::gen::schema::Asset;
+use flow_ai::model::FlowGraph;
 
 /// embedding 维度（生产用 pgvector 1536，本地用 512 维哈希向量做离线可跑）
 const EMBED_DIM: usize = 512;
@@ -50,7 +50,12 @@ impl AssetService {
         graph: &FlowGraph,
     ) -> (Asset, f64) {
         let graph_json = serde_json::to_string(graph).unwrap_or_default();
-        let asset = Asset::new(topology_id, name, Some(domain.as_str().to_string()), graph_json);
+        let asset = Asset::new(
+            topology_id,
+            name,
+            Some(domain.as_str().to_string()),
+            graph_json,
+        );
         // 以资产名 + 所有节点名为语料生成 embedding
         let mut corpus = asset.name.clone();
         for n in &graph.nodes {
@@ -73,10 +78,17 @@ impl AssetService {
                 Some(d) => d == domain.as_str(), // 域硬过滤
                 None => true,
             })
-            .map(|(a, emb)| SearchHit { asset: a.clone(), score: cosine(&q, emb) })
+            .map(|(a, emb)| SearchHit {
+                asset: a.clone(),
+                score: cosine(&q, emb),
+            })
             .filter(|h| h.score > SIMILARITY_THRESHOLD)
             .collect();
-        hits.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        hits.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         hits.into_iter().take(top_k).collect()
     }
 
@@ -108,7 +120,12 @@ impl AssetService {
                                 Entity::new(&fid, EntityKind::FlowNode, n.name.clone())
                                     .with_keywords([n.name.clone()]),
                             );
-                            kb.graph.add_relation(Relation::new(&skill_id, &fid, RelationKind::Implements, 1.0));
+                            kb.graph.add_relation(Relation::new(
+                                &skill_id,
+                                &fid,
+                                RelationKind::Implements,
+                                1.0,
+                            ));
                         }
                     }
                 }
@@ -193,7 +210,12 @@ mod tests {
     fn freeze_then_search_hits_same_domain() {
         let mut svc = AssetService::new();
         let g = sample_graph();
-        let (asset, charge) = svc.freeze_asset(uuid::Uuid::new_v4(), "电商月度经营分析报告", Domain::BusinessSoftware, &g);
+        let (asset, charge) = svc.freeze_asset(
+            uuid::Uuid::new_v4(),
+            "电商月度经营分析报告",
+            Domain::BusinessSoftware,
+            &g,
+        );
         assert_eq!(svc.len(), 1);
         assert!(charge > 0.0);
         assert_eq!(asset.domain.as_deref(), Some("business_software"));
@@ -207,7 +229,12 @@ mod tests {
     fn domain_hard_filter_blocks_other_domain() {
         let mut svc = AssetService::new();
         let g = sample_graph();
-        svc.freeze_asset(uuid::Uuid::new_v4(), "电商报告", Domain::BusinessSoftware, &g);
+        svc.freeze_asset(
+            uuid::Uuid::new_v4(),
+            "电商报告",
+            Domain::BusinessSoftware,
+            &g,
+        );
         // 用 Unknown 域查询：硬过滤应排除 business_software 资产
         let hits = svc.search("电商", Domain::Unknown, 3);
         assert!(hits.is_empty(), "域硬过滤应阻断跨域命中");
@@ -224,12 +251,20 @@ mod tests {
     fn related_query_outranks_unrelated() {
         let mut svc = AssetService::new();
         let g = sample_graph();
-        svc.freeze_asset(uuid::Uuid::new_v4(), "电商报告", Domain::BusinessSoftware, &g);
+        svc.freeze_asset(
+            uuid::Uuid::new_v4(),
+            "电商报告",
+            Domain::BusinessSoftware,
+            &g,
+        );
         let related = svc.search("我想做一份电商经营分析报告", Domain::BusinessSoftware, 3);
         let unrelated = svc.search("宠物狗喂养指南", Domain::BusinessSoftware, 3);
         let related_score = related.first().map(|h| h.score).unwrap_or(0.0);
         let unrelated_score = unrelated.first().map(|h| h.score).unwrap_or(0.0);
-        assert!(related_score > unrelated_score, "κ 复用应保证相关查询相似度高于无关查询");
+        assert!(
+            related_score > unrelated_score,
+            "κ 复用应保证相关查询相似度高于无关查询"
+        );
         assert!(related_score > 0.1, "相关查询应显著命中");
     }
 }

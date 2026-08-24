@@ -1,4 +1,4 @@
-﻿//! 璇玑系统：演示 / 服务入口
+//! 璇玑系统：演示 / 服务入口
 //!
 //! 运行方式：
 //! - `cargo run -p xuanji-system -- --demo` 运行端到端演示（无需网络）
@@ -69,7 +69,13 @@ async fn run_demo() {
 
     println!("\n=== 3. 创建任务并由管理员分派给艾莉 ===");
     let t = sys
-        .create_task(&admin.id, &aln.id, "推理服务压测", "对 v2 推理服务做全链路压测", Priority::High)
+        .create_task(
+            &admin.id,
+            &aln.id,
+            "推理服务压测",
+            "对 v2 推理服务做全链路压测",
+            Priority::High,
+        )
         .await
         .expect("create task");
     println!("  任务: 《{}》 状态={}", t.title, t.status.label());
@@ -77,7 +83,11 @@ async fn run_demo() {
         .assign_task(&admin.id, &t.id, vec![e1.id.clone()])
         .await
         .expect("assign");
-    println!("  分派后状态={} 被分派者={:?}", t.status.label(), t.assignees);
+    println!(
+        "  分派后状态={} 被分派者={:?}",
+        t.status.label(),
+        t.assignees
+    );
 
     println!("\n=== 4. 艾莉推进任务状态并评论 ===");
     let t = sys
@@ -127,7 +137,15 @@ async fn run_demo() {
     let ch = sys.store.task_channel(&aln.id, &t.id).await;
     let msgs = sys.comm.list_messages(&ch.id).await;
     for m in &msgs {
-        let who = if m.sender_id == "system" { "系统".into() } else { sys.member.get(&m.sender_id).await.map(|x| x.name).unwrap_or_default() };
+        let who = if m.sender_id == "system" {
+            "系统".into()
+        } else {
+            sys.member
+                .get(&m.sender_id)
+                .await
+                .map(|x| x.name)
+                .unwrap_or_default()
+        };
         println!("  [{}] {}: {}", m.kind_as_str(), who, m.body);
     }
 

@@ -24,7 +24,9 @@ impl SqlitePersistence {
     }
 
     fn wrap(conn: rusqlite::Connection) -> Self {
-        Self { inner: Arc::new(Mutex::new(conn)) }
+        Self {
+            inner: Arc::new(Mutex::new(conn)),
+        }
     }
 
     /// 允许同一进程内共享同一底层 SQLite 连接（保留 现有 ai-agent/db:Arc<Mutex<Connection>> 使用习惯）
@@ -69,13 +71,19 @@ impl PersistenceProvider for SqlitePersistence {
     fn exec(&self, sql: &str, params: &[SqlValue]) -> anyhow::Result<usize> {
         let mut scratch = Vec::with_capacity(params.len());
         let refs = to_rusqlite_params(params, &mut scratch);
-        let conn = self.inner.lock().map_err(|e| anyhow::anyhow!("sqlite mutex: {e}"))?;
+        let conn = self
+            .inner
+            .lock()
+            .map_err(|e| anyhow::anyhow!("sqlite mutex: {e}"))?;
         let n = conn.execute(sql, refs.as_slice())?;
         Ok(n)
     }
 
     fn exec_batch(&self, sql: &str) -> anyhow::Result<()> {
-        let conn = self.inner.lock().map_err(|e| anyhow::anyhow!("sqlite mutex: {e}"))?;
+        let conn = self
+            .inner
+            .lock()
+            .map_err(|e| anyhow::anyhow!("sqlite mutex: {e}"))?;
         conn.execute_batch(sql)?;
         Ok(())
     }
@@ -83,7 +91,10 @@ impl PersistenceProvider for SqlitePersistence {
     fn query(&self, sql: &str, params: &[SqlValue]) -> anyhow::Result<Vec<SqlRow>> {
         let mut scratch = Vec::with_capacity(params.len());
         let refs = to_rusqlite_params(params, &mut scratch);
-        let conn = self.inner.lock().map_err(|e| anyhow::anyhow!("sqlite mutex: {e}"))?;
+        let conn = self
+            .inner
+            .lock()
+            .map_err(|e| anyhow::anyhow!("sqlite mutex: {e}"))?;
         let mut stmt = conn.prepare(sql)?;
         let cols: Vec<String> = stmt.column_names().into_iter().map(String::from).collect();
         let rows = stmt.query_map(refs.as_slice(), |row| {
@@ -109,12 +120,18 @@ pub fn json_to_sql_value(v: &serde_json::Value) -> SqlValue {
         serde_json::Value::Null => SqlValue::Null,
         serde_json::Value::Bool(b) => SqlValue::Bool(*b),
         serde_json::Value::Number(n) => {
-            if let Some(i) = n.as_i64() { SqlValue::Int(i) }
-            else if let Some(f) = n.as_f64() { SqlValue::Real(f) }
-            else { SqlValue::Text(n.to_string()) }
+            if let Some(i) = n.as_i64() {
+                SqlValue::Int(i)
+            } else if let Some(f) = n.as_f64() {
+                SqlValue::Real(f)
+            } else {
+                SqlValue::Text(n.to_string())
+            }
         }
         serde_json::Value::String(s) => SqlValue::Text(s.clone()),
         serde_json::Value::Array(a) => SqlValue::Text(serde_json::to_string(a).unwrap_or_default()),
-        serde_json::Value::Object(o) => SqlValue::Text(serde_json::to_string(o).unwrap_or_default()),
+        serde_json::Value::Object(o) => {
+            SqlValue::Text(serde_json::to_string(o).unwrap_or_default())
+        }
     }
 }

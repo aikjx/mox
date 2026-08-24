@@ -201,8 +201,7 @@ pub fn detect_deviation(graph: &UnifiedGraph) -> DeviationReport {
         core_nodes,
         aligned,
         // 放行条件：无 GR-E6/E7 硬偏离，且覆盖率不低于下限
-        passed: !deviations.iter().any(|d| d.code != "GR-E3")
-            && coverage >= COVERAGE_FLOOR,
+        passed: !deviations.iter().any(|d| d.code != "GR-E3") && coverage >= COVERAGE_FLOOR,
         coverage: (coverage * 10.0).round() / 10.0,
         deviations,
     }

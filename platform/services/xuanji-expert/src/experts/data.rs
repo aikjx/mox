@@ -8,8 +8,12 @@ use flow_ai::model::{AccessMode, ToolKind};
 pub struct DataExpert;
 
 impl Expert for DataExpert {
-    fn id(&self) -> String { "data".into() }
-    fn dimension(&self) -> Dimension { Dimension::Data }
+    fn id(&self) -> String {
+        "data".into()
+    }
+    fn dimension(&self) -> Dimension {
+        Dimension::Data
+    }
 
     fn analyze(&self, ctx: &ExpertContext) -> ExpertOpinion {
         if !ctx.can(crate::context::Capability::EditFlow) {
@@ -23,7 +27,10 @@ impl Expert for DataExpert {
             let writes = n.accesses.iter().any(|a| a.mode == AccessMode::Write);
             let non_idem = matches!(
                 n.tool,
-                Some(ToolKind::Browser) | Some(ToolKind::Http) | Some(ToolKind::Shell) | Some(ToolKind::Database)
+                Some(ToolKind::Browser)
+                    | Some(ToolKind::Http)
+                    | Some(ToolKind::Shell)
+                    | Some(ToolKind::Database)
             ) && !n.idempotent;
             if writes && non_idem {
                 o.push_risk(
@@ -34,10 +41,11 @@ impl Expert for DataExpert {
                 );
                 // 保序：强制其前驱在其之前完成（已由 flow-ai 数据流处理，这里补一条软约束）
                 if let Some(pred) = g.edges.iter().find(|e| e.to == n.id) {
-                    o.constraints.push(Constraint::MustOrder(crate::expert::NodeEdge {
-                        from: pred.from.clone(),
-                        to: n.id.clone(),
-                    }));
+                    o.constraints
+                        .push(Constraint::MustOrder(crate::expert::NodeEdge {
+                            from: pred.from.clone(),
+                            to: n.id.clone(),
+                        }));
                 }
             }
         }
@@ -47,7 +55,9 @@ impl Expert for DataExpert {
             for w in n.accesses.iter().filter(|a| a.mode == AccessMode::Write) {
                 let consumed = g.nodes.iter().any(|m| {
                     m.id != n.id
-                        && m.accesses.iter().any(|a| a.mode == AccessMode::Read && a.resource == w.resource)
+                        && m.accesses
+                            .iter()
+                            .any(|a| a.mode == AccessMode::Read && a.resource == w.resource)
                 });
                 if !consumed && !w.resource.starts_with("file:") && !w.resource.starts_with("db:") {
                     o.push_risk(
@@ -69,7 +79,10 @@ impl Expert for DataExpert {
                 o.push_risk(
                     flow_ai::model::Severity::Warning,
                     vec![n.id.clone()],
-                    format!("节点「{}」执行库写但未开启事务，部分失败将破坏一致性", n.name),
+                    format!(
+                        "节点「{}」执行库写但未开启事务，部分失败将破坏一致性",
+                        n.name
+                    ),
                     Some("开启事务边界".into()),
                 );
             }

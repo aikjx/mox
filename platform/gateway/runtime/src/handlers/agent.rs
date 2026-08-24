@@ -4,13 +4,9 @@
 //!
 //! - `run_engine_task` — 接收任务描述，调用 AI Agent 引擎执行并返回结果
 
-use axum::{
-    extract::State,
-    http::StatusCode,
-    response::Json,
-};
 use ai_agent::engine::EngineResult;
 use ai_agent::AIAgent;
+use axum::{extract::State, http::StatusCode, response::Json};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 

@@ -34,8 +34,8 @@ impl RateLimiter {
         let now = Instant::now();
         match map.get_mut(key) {
             Some(b) => {
-                let expired = self.window > Duration::ZERO
-                    && now.duration_since(b.start) >= self.window;
+                let expired =
+                    self.window > Duration::ZERO && now.duration_since(b.start) >= self.window;
                 if expired {
                     b.count = 1;
                     b.start = now;

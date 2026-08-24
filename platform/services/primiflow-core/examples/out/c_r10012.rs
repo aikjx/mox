@@ -10,12 +10,13 @@
 pub struct Feature {}
 
 impl Feature {
-pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     /// 编排任务 `feature` 的真实落位：打印执行踪迹并返回零值成功。
     /// 溯源链路: R_r4 → F_r4 → B_r4 → A_kt_r4 → T_r4_1 → C_r4_1
     pub fn feature(&self) {
         println!("[Feature::feature] trace=R_r4 → F_r4 → B_r4 → A_kt_r4 → T_r4_1 → C_r4_1; schemas=S_r4(data_r4);");
     }
-
 }

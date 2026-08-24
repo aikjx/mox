@@ -32,7 +32,9 @@ pub struct RegularizeOutput {
 pub struct Scheduler;
 
 impl Scheduler {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
     /// 滑块 s∈[0,1]（稳定优先 ↔ 探索优先）→ 原语状态（SPEC §1）
     ///
     /// ```text
@@ -45,7 +47,12 @@ impl Scheduler {
         let kappa = theta.cos();
         let tau = theta.sin();
         let c = (c_base * (1.0 + budget_factor.max(0.0))).max(1e-6);
-        PrimitiveState { c, kappa: kappa * c, tau: tau * c, q: 0.0 }
+        PrimitiveState {
+            c,
+            kappa: kappa * c,
+            tau: tau * c,
+            q: 0.0,
+        }
     }
 
     /// ℛ̂ 正则化：对给定拓扑 + 预算做守恒/因果/资源三道闸门裁剪，保证 Δ≥0。
@@ -80,7 +87,10 @@ impl Scheduler {
 }
 
 fn total_ms(g: &FlowGraph) -> u64 {
-    g.nodes.iter().filter_map(|n| n.tool.map(|_| n.duration_ms)).sum()
+    g.nodes
+        .iter()
+        .filter_map(|n| n.tool.map(|_| n.duration_ms))
+        .sum()
 }
 
 #[cfg(test)]
@@ -104,7 +114,10 @@ mod tests {
         let sc = Scheduler::new();
         let s1 = sc.from_slider(0.5, 10.0, 0.0);
         let s2 = sc.from_slider(0.5, 10.0, 1.0);
-        assert!((s2.c - 2.0 * s1.c).abs() < 1e-9, "budget_factor=1 应使 C 翻倍");
+        assert!(
+            (s2.c - 2.0 * s1.c).abs() < 1e-9,
+            "budget_factor=1 应使 C 翻倍"
+        );
     }
 
     #[test]
@@ -115,7 +128,10 @@ mod tests {
         g.add_node(FlowNode::task("b", "B", ToolKind::Compute, 200));
         g.add_edge(FlowEdge::seq("a", "b"));
         let state = sc.from_slider(0.3, 10.0, 0.0);
-        let budget = ResourceBudget { total_ms: 10_000, per_pool: Default::default() };
+        let budget = ResourceBudget {
+            total_ms: 10_000,
+            per_pool: Default::default(),
+        };
         let out = sc.regularize(g, state, budget);
         assert!(out.delta.abs() < 1e-6, "守恒残差应≈0");
         assert!(!out.regularized);
@@ -129,7 +145,10 @@ mod tests {
         g.add_node(FlowNode::task("b", "B", ToolKind::Compute, 200));
         g.add_edge(FlowEdge::seq("a", "b"));
         let state = sc.from_slider(0.9, 10.0, 0.0); // 探索优先，节点多
-        let budget = ResourceBudget { total_ms: 100, per_pool: Default::default() };
+        let budget = ResourceBudget {
+            total_ms: 100,
+            per_pool: Default::default(),
+        };
         let out = sc.regularize(g, state, budget);
         assert!(out.regularized, "超预算应触发正则化");
         assert!(out.cost_ms <= out.budget_ms.max(1), "裁剪后代价应≤预算");

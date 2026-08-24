@@ -50,7 +50,10 @@ pub async fn push_loop(state: Arc<BridgeState>, session: String, endpoint: Strin
         };
 
         if let Some(g) = state.recorder.snapshot(&session) {
-            let body = IngestBody { session: &session, flow: &g };
+            let body = IngestBody {
+                session: &session,
+                flow: &g,
+            };
             let send_res = tokio::time::timeout(
                 Duration::from_secs(4),
                 client

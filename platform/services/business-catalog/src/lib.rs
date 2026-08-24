@@ -50,17 +50,31 @@ pub mod spiral;
 fn build_query(biz: &Business) -> ConsultQuery {
     let raw = (biz.build)();
     let mut ctx: HashMap<String, String> = HashMap::new();
-    ctx.insert("flow_json".into(), serde_json::to_string(&raw).unwrap_or_default());
+    ctx.insert(
+        "flow_json".into(),
+        serde_json::to_string(&raw).unwrap_or_default(),
+    );
     ctx.insert("tenant".into(), biz.domain.into());
     ctx.insert("namespace".into(), "ns".into());
     ctx.insert("principal".into(), "architect".into());
     ctx.insert("roles".into(), "admin".into());
     ctx.insert("pool_browser".into(), "1".into());
-    ctx.insert("regulated".into(), if biz.regulated { "true".into() } else { "false".into() });
+    ctx.insert(
+        "regulated".into(),
+        if biz.regulated {
+            "true".into()
+        } else {
+            "false".into()
+        },
+    );
     ctx.insert("max_parallel".into(), "8".into());
     ctx.insert("max_cost_budget".into(), "100".into());
     ctx.insert("sla_ms".into(), "50000".into());
-    ConsultQuery { id: biz.id.into(), query: biz.name.into(), ctx }
+    ConsultQuery {
+        id: biz.id.into(),
+        query: biz.name.into(),
+        ctx,
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -139,32 +153,104 @@ impl Business {
     }
 }
 
-/// 基于 Arc<dyn ExpertRegistry>（DIP）为每条业务注册其对应领域专家元信息，
-/// 证明业务目录"注册专家 / 查询专家清单"的生产路径也走 trait 抽象。
-pub async fn register_business_experts(registry: Arc<dyn ExpertRegistry>) -> xuanji_expert::types::Result<()> {
+/// 基于 Arc<dyn ExpertRegistry>（DIP）为每条业务注册其对应领域专家元信息。
+///
+/// 【归一化】架构层不再维护 "业务 ID → 专属关键词" 的硬编码 switch 表。
+/// 专家元信息统一从 `Business` 自身字段（id / name / domain / regulated）泛化推导：
+/// - 专家 id    → `biz-<id>`
+/// - 专家名    → `<name>·领域专家`
+/// - 能力集合  → `default_caps_for(&b)`（基于 域 + regulated flag 给出通用能力词，
+///   不包含任何 政务/财务 等具体业务专属关键词）
+///
+/// 业务专属能力（政务的 pii/authz、财务的对账）
+/// 由对应 `projects/business-*/` crate 自行 `registry.register(&custom_meta)` 外部注入，
+/// 不再污染架构 business-catalog 源码。
+pub async fn register_business_experts(
+    registry: Arc<dyn ExpertRegistry>,
+) -> xuanji_expert::types::Result<()> {
     for b in all_businesses() {
-        // 政务 → 权限+安全专家；财务 → 数据+资源；等等：对应 capabilities 匹配注册表
-        let (exp_id, exp_name, caps): (&str, &str, &[&str]) = match b.id {
-            "gov-pii" => ("biz-gov-pii", "政务数据归集·领域专家", &["security", "pii", "permission", "authz", "data"]),
-            "court"   => ("biz-court",   "法院文书·领域专家",   &["security", "permission", "dual-review", "留痕", "data"]),
-            "finance" => ("biz-finance", "财务对账·领域专家",   &["data", "resource", "审计", "对账", "compliance"]),
-            "bot"     => ("biz-bot",     "智能客服·领域专家",   &["data", "knowledge", "意图", "路由", "observability"]),
-            "etl"     => ("biz-etl",     "ETL·领域专家",        &["data", "etl", "mapping", "compliance"]),
-            "mcp"     => ("biz-mcp",     "MCP编排·领域专家",    &["resource", "mcp", "plugin", "permission", "鉴权"]),
-            "spiral"  => ("biz-spiral",  "空间螺旋·领域专家",   &["algorithm", "量纲", "科学计算", "compliance"]),
-            _         => ("biz-default", "通用业务专家",        &["business"]),
-        };
         let meta = ExpertMeta {
-            id: exp_id.into(),
-            name: exp_name.into(),
+            id: format!("biz-{}", b.id),
+            name: format!("{}·领域专家", b.name),
             domain: b.domain.into(),
-            capabilities: caps.iter().map(|s| s.to_string()).collect(),
-            description: format!("业务目录自动注册 · 业务={}/{}", b.id, b.name),
+            capabilities: default_caps_for(&b),
+            description: format!("业务目录泛化注册 · 业务={}/{}", b.id, b.name),
             dimension: Some("Business".into()),
         };
         registry.register(&meta).await?;
     }
     Ok(())
+}
+
+/// 【归一化】架构级通用能力推导：禁止出现任何具体业务专属关键词
+/// （pii / 对账 / 留痕 / 政务 … 一律不得写入此处）。
+///
+/// | 条件 | 注入能力（通用抽象） |
+/// |---|---|
+/// | `regulated=true` | compliance / permission / security（强监管三件套） |
+/// | domain = data/gov    | data / governance / observability（数据治理类域） |
+/// | domain = finance     | resource / data / reconciliation（资源 + 数据一致性） |
+/// | domain = service     | knowledge / routing / observability（对话服务类域） |
+/// | domain = integration/mcp | resource / plugin / permission（插件编排域） |
+/// | domain = science/algo    | algorithm / validation / compliance（科学计算域） |
+/// | 其它兜底             | business（通用业务） |
+///
+/// 业务专属能力在 `projects/business-*/src/lib.rs::expert_meta()` 中自声明并外部注入。
+fn default_caps_for(b: &Business) -> Vec<String> {
+    let mut caps: Vec<String> = Vec::new();
+
+    if b.regulated {
+        caps.extend(
+            ["compliance", "permission", "security"]
+                .iter()
+                .map(|s| s.to_string()),
+        );
+    }
+
+    match b.domain {
+        "data" | "gov" => {
+            caps.extend(
+                ["data", "governance", "observability"]
+                    .iter()
+                    .map(|s| s.to_string()),
+            );
+        }
+        "finance" => {
+            caps.extend(
+                ["resource", "data", "reconciliation"]
+                    .iter()
+                    .map(|s| s.to_string()),
+            );
+        }
+        "service" => {
+            caps.extend(
+                ["knowledge", "routing", "observability"]
+                    .iter()
+                    .map(|s| s.to_string()),
+            );
+        }
+        "integration" | "mcp" => {
+            caps.extend(
+                ["resource", "plugin", "permission"]
+                    .iter()
+                    .map(|s| s.to_string()),
+            );
+        }
+        "science" | "algo" => {
+            caps.extend(
+                ["algorithm", "validation", "compliance"]
+                    .iter()
+                    .map(|s| s.to_string()),
+            );
+        }
+        _ => {
+            caps.push("business".into());
+        }
+    }
+
+    caps.sort();
+    caps.dedup();
+    caps
 }
 
 // ---------------------------------------------------------------------------
@@ -174,10 +260,7 @@ fn gov_pii() -> FlowGraph {
     let mut g = FlowGraph::new("gov-pii", "政务数据归集");
     g.add_node(start("s"));
     g.add_node(FlowNode::task("asr", "语音识别", ToolKind::Llm, 150));
-    g.add_node(
-        FlowNode::task("ic", "意图分类", ToolKind::Llm, 200)
-            .with_tag("dim:algo"),
-    );
+    g.add_node(FlowNode::task("ic", "意图分类", ToolKind::Llm, 200).with_tag("dim:algo"));
     g.add_node(
         FlowNode::task("guard", "脱敏", ToolKind::Compute, 50)
             .with_tag("desensitize")
@@ -232,47 +315,23 @@ fn gov_pii() -> FlowGraph {
 }
 
 // ---------------------------------------------------------------------------
-// 业务二：法院文书生成（卷宗 OCR + 要素抽取 + 文书起草）
-// ---------------------------------------------------------------------------
-fn court_doc() -> FlowGraph {
-    let mut g = FlowGraph::new("court", "法院文书生成");
-    g.add_node(start("s"));
-    g.add_node(FlowNode::task("fetch", "调取卷宗", ToolKind::Database, 400).with_tag("dim:data"));
-    g.add_node(FlowNode::task("ocr", "卷宗OCR", ToolKind::Llm, 600).with_tag("dim:algo"));
-    g.add_node(
-        FlowNode::task("extract", "要素抽取", ToolKind::Llm, 300)
-            .with_tag("dim:algo")
-            .with_access(Access::read("var:case")),
-    );
-    g.add_node(
-        FlowNode::task("draft", "文书起草", ToolKind::Llm, 800)
-            .with_tag("dim:sec")
-            .with_access(Access::read("var:case")),
-    );
-    g.add_node(
-        FlowNode::task("review", "合规复核", ToolKind::Llm, 300)
-            .with_tag("dim:perm")
-            .with_tag("dim:sec"),
-    );
-    g.add_node(end("e"));
-    g.rules.push(rule("r-court", "文书须双人复核且留痕", &["var:"]));
-    g.add_edge(FlowEdge::seq("s", "fetch"));
-    g.add_edge(FlowEdge::seq("fetch", "ocr"));
-    g.add_edge(FlowEdge::seq("ocr", "extract"));
-    g.add_edge(FlowEdge::seq("extract", "draft"));
-    g.add_edge(FlowEdge::seq("draft", "review"));
-    g.add_edge(FlowEdge::seq("review", "e"));
-    g
-}
-
-// ---------------------------------------------------------------------------
 // 业务三：财务对账（多源拉取 + 差异解释）
 // ---------------------------------------------------------------------------
 fn finance_reco() -> FlowGraph {
     let mut g = FlowGraph::new("finance", "财务对账");
     g.add_node(start("s"));
-    g.add_node(FlowNode::task("pull_a", "拉取A系统", ToolKind::Database, 300));
-    g.add_node(FlowNode::task("pull_b", "拉取B系统", ToolKind::Database, 300));
+    g.add_node(FlowNode::task(
+        "pull_a",
+        "拉取A系统",
+        ToolKind::Database,
+        300,
+    ));
+    g.add_node(FlowNode::task(
+        "pull_b",
+        "拉取B系统",
+        ToolKind::Database,
+        300,
+    ));
     g.add_node(
         FlowNode::task("diff", "比对差异", ToolKind::Compute, 200)
             .with_tag("dim:algo")
@@ -307,10 +366,7 @@ fn customer_bot() -> FlowGraph {
     let mut g = FlowGraph::new("bot", "智能客服");
     g.add_node(start("s"));
     g.add_node(FlowNode::task("asr", "语音识别", ToolKind::Llm, 150));
-    g.add_node(
-        FlowNode::task("ic", "意图分类", ToolKind::Llm, 120)
-            .with_tag("dim:algo"),
-    );
+    g.add_node(FlowNode::task("ic", "意图分类", ToolKind::Llm, 120).with_tag("dim:algo"));
     g.add_node(
         FlowNode::task("kb", "知识库检索", ToolKind::Llm, 250)
             .with_tag("dim:data")
@@ -343,7 +399,12 @@ fn customer_bot() -> FlowGraph {
 fn etl() -> FlowGraph {
     let mut g = FlowGraph::new("etl", "ETL归集管道");
     g.add_node(start("s"));
-    g.add_node(FlowNode::task("ingest", "接入数据源", ToolKind::Database, 200));
+    g.add_node(FlowNode::task(
+        "ingest",
+        "接入数据源",
+        ToolKind::Database,
+        200,
+    ));
     g.add_node(FlowNode::task("map", "字段映射", ToolKind::Llm, 250).with_tag("dim:algo"));
     g.add_node(FlowNode::task("parse", "解析", ToolKind::Compute, 150));
     g.add_node(FlowNode::task("transform", "转换", ToolKind::Compute, 200).with_tag("dim:data"));
@@ -386,7 +447,12 @@ fn mcp_orchestration() -> FlowGraph {
             .with_tag("mcp")
             .with_access(Access::read("var:ctx")),
     );
-    g.add_node(FlowNode::task("aggregate", "聚合结果", ToolKind::Compute, 120));
+    g.add_node(FlowNode::task(
+        "aggregate",
+        "聚合结果",
+        ToolKind::Compute,
+        120,
+    ));
     g.add_node(end("e"));
     g.add_edge(FlowEdge::seq("s", "discover"));
     g.add_edge(FlowEdge::seq("discover", "authz"));
@@ -410,8 +476,7 @@ fn spiral_analysis() -> FlowGraph {
             .with_access(Access::read("var:spiral_params")),
     );
     g.add_node(
-        FlowNode::task("kinematics", "螺旋运动学计算", ToolKind::Compute, 200)
-            .with_tag("dim:algo"),
+        FlowNode::task("kinematics", "螺旋运动学计算", ToolKind::Compute, 200).with_tag("dim:algo"),
     );
     g.add_node(
         FlowNode::task("dimcheck", "量纲自洽诊断", ToolKind::Compute, 150)
@@ -419,8 +484,7 @@ fn spiral_analysis() -> FlowGraph {
             .with_tag("compliance"),
     );
     g.add_node(
-        FlowNode::task("numcheck", "数值巧合标注", ToolKind::Compute, 120)
-            .with_tag("dim:algo"),
+        FlowNode::task("numcheck", "数值巧合标注", ToolKind::Compute, 120).with_tag("dim:algo"),
     );
     g.add_node(
         FlowNode::task("report", "生成诊断报告", ToolKind::Compute, 100)
@@ -428,7 +492,11 @@ fn spiral_analysis() -> FlowGraph {
             .with_access(Access::write("var:spiral_report")),
     );
     g.add_node(end("e"));
-    g.rules.push(rule("r-spiral", "螺旋模型物理推论须经量纲校验方可对外发布", &["var:"]));
+    g.rules.push(rule(
+        "r-spiral",
+        "螺旋模型物理推论须经量纲校验方可对外发布",
+        &["var:"],
+    ));
     g.add_edge(FlowEdge::seq("s", "input"));
     g.add_edge(FlowEdge::seq("input", "kinematics"));
     g.add_edge(FlowEdge::seq("kinematics", "dimcheck"));
@@ -442,44 +510,155 @@ fn spiral_analysis() -> FlowGraph {
 /// 全部业务目录
 pub fn all_businesses() -> Vec<Business> {
     vec![
-        Business { id: "gov-pii", name: "政务数据归集", domain: "gov", regulated: true, build: gov_pii },
-        Business { id: "court", name: "法院文书生成", domain: "court", regulated: true, build: court_doc },
-        Business { id: "finance", name: "财务对账", domain: "finance", regulated: true, build: finance_reco },
-        Business { id: "bot", name: "智能客服", domain: "service", regulated: false, build: customer_bot },
-        Business { id: "etl", name: "ETL归集管道", domain: "data", regulated: false, build: etl },
-        Business { id: "mcp", name: "MCP插件编排", domain: "integration", regulated: false, build: mcp_orchestration },
-        Business { id: "spiral", name: "空间光速螺旋模型分析", domain: "science", regulated: false, build: spiral_analysis },
+        Business {
+            id: "gov-pii",
+            name: "政务数据归集",
+            domain: "gov",
+            regulated: true,
+            build: gov_pii,
+        },
+        Business {
+            id: "finance",
+            name: "财务对账",
+            domain: "finance",
+            regulated: true,
+            build: finance_reco,
+        },
+        Business {
+            id: "bot",
+            name: "智能客服",
+            domain: "service",
+            regulated: false,
+            build: customer_bot,
+        },
+        Business {
+            id: "etl",
+            name: "ETL归集管道",
+            domain: "data",
+            regulated: false,
+            build: etl,
+        },
+        Business {
+            id: "mcp",
+            name: "MCP插件编排",
+            domain: "integration",
+            regulated: false,
+            build: mcp_orchestration,
+        },
+        Business {
+            id: "spiral",
+            name: "空间光速螺旋模型分析",
+            domain: "science",
+            regulated: false,
+            build: spiral_analysis,
+        },
     ]
 }
 
 /// 跨业务共享的六维关系网：注入 Skill / Rule / Memory / Model 实体与关系
 pub fn build_topology() -> TopologyGraph {
     let mut topo = TopologyGraph::new();
-    topo.add_entity(Entity::new("model:hermes3", EntityKind::Model, "Hermes3 重模型").with_cost(800).with_keywords(["流程图", "代码", "重推理"]));
-    topo.add_entity(Entity::new("model:light", EntityKind::Model, "轻量模型").with_cost(120).with_keywords(["分类", "意图", "摘要"]));
-    for t in ["database", "browser", "file", "http", "shell", "llm", "compute", "guard"] {
-        topo.add_entity(Entity::new(format!("tool:{}", t), EntityKind::Tool, t.to_string()).with_keywords([t]));
+    topo.add_entity(
+        Entity::new("model:hermes3", EntityKind::Model, "Hermes3 重模型")
+            .with_cost(800)
+            .with_keywords(["流程图", "代码", "重推理"]),
+    );
+    topo.add_entity(
+        Entity::new("model:light", EntityKind::Model, "轻量模型")
+            .with_cost(120)
+            .with_keywords(["分类", "意图", "摘要"]),
+    );
+    for t in [
+        "database", "browser", "file", "http", "shell", "llm", "compute", "guard",
+    ] {
+        topo.add_entity(
+            Entity::new(format!("tool:{}", t), EntityKind::Tool, t.to_string()).with_keywords([t]),
+        );
     }
-    topo.add_entity(Entity::new("skill:desensitize", EntityKind::Skill, "脱敏模板").with_keywords(["脱敏", "pii", "政务"]).with_cost(50));
-    topo.add_entity(Entity::new("skill:intent-route", EntityKind::Skill, "意图路由模板").with_keywords(["意图", "分类", "路由", "客服"]).with_cost(120));
-    topo.add_entity(Entity::new("skill:etl-map", EntityKind::Skill, "ETL字段映射模板").with_keywords(["etl", "映射", "抽取"]).with_cost(250));
-    topo.add_entity(Entity::new("skill:db-pull", EntityKind::Skill, "数据库拉取模板").with_keywords(["数据库", "拉取", "对账"]).with_cost(300));
-    topo.add_entity(Entity::new("mem:kb_vec", EntityKind::Memory, "知识库向量").with_keywords(["知识", "检索", "客服"]));
-    topo.add_entity(Entity::new("mem:case_vec", EntityKind::Memory, "卷宗向量").with_keywords(["卷宗", "法院", "检索"]));
-    topo.add_entity(Entity::new("rule:pii", EntityKind::Rule, "PII 必须脱敏").with_keywords(["pii", "脱敏", "政务"]));
-    topo.add_entity(Entity::new("rule:dual-review", EntityKind::Rule, "文书双人复核").with_keywords(["复核", "法院", "留痕"]));
-    topo.add_entity(Entity::new("flownode:start", EntityKind::FlowNode, "开始节点").with_keywords(["流程", "节点", "start"]));
-    topo.add_entity(Entity::new("flownode:end", EntityKind::FlowNode, "结束节点").with_keywords(["流程", "节点", "end"]));
-    topo.add_relation(Relation::new("model:hermes3", "flow:gov-pii:ic", RelationKind::Serves, 0.9));
-    topo.add_relation(Relation::new("model:light", "flow:bot:ic", RelationKind::Serves, 0.95));
-    topo.add_relation(Relation::new("skill:desensitize", "flow:gov-pii:guard", RelationKind::Implements, 1.0));
-    topo.add_relation(Relation::new("skill:intent-route", "flow:bot:ic", RelationKind::Implements, 1.0));
-    topo.add_relation(Relation::new("skill:etl-map", "flow:etl:map", RelationKind::Implements, 1.0));
-    topo.add_relation(Relation::new("skill:db-pull", "flow:finance:pull_a", RelationKind::Implements, 1.0));
-    topo.add_relation(Relation::new("skill:intent-route", "mem:kb_vec", RelationKind::Recalls, 0.8));
-    topo.add_relation(Relation::new("skill:etl-map", "mem:case_vec", RelationKind::Recalls, 0.6));
-    topo.add_relation(Relation::new("rule:pii", "flow:gov-pii:db", RelationKind::Constrains, 1.0));
-    topo.add_relation(Relation::new("rule:dual-review", "flow:court:review", RelationKind::Constrains, 1.0));
+    topo.add_entity(
+        Entity::new("skill:desensitize", EntityKind::Skill, "脱敏模板")
+            .with_keywords(["脱敏", "pii", "政务"])
+            .with_cost(50),
+    );
+    topo.add_entity(
+        Entity::new("skill:intent-route", EntityKind::Skill, "意图路由模板")
+            .with_keywords(["意图", "分类", "路由", "客服"])
+            .with_cost(120),
+    );
+    topo.add_entity(
+        Entity::new("skill:etl-map", EntityKind::Skill, "ETL字段映射模板")
+            .with_keywords(["etl", "映射", "抽取"])
+            .with_cost(250),
+    );
+    topo.add_entity(
+        Entity::new("skill:db-pull", EntityKind::Skill, "数据库拉取模板")
+            .with_keywords(["数据库", "拉取", "对账"])
+            .with_cost(300),
+    );
+    topo.add_entity(
+        Entity::new("mem:kb_vec", EntityKind::Memory, "知识库向量")
+            .with_keywords(["知识", "检索", "客服"]),
+    );
+    topo.add_entity(
+        Entity::new("rule:pii", EntityKind::Rule, "PII 必须脱敏")
+            .with_keywords(["pii", "脱敏", "政务"]),
+    );
+    topo.add_entity(
+        Entity::new("flownode:start", EntityKind::FlowNode, "开始节点")
+            .with_keywords(["流程", "节点", "start"]),
+    );
+    topo.add_entity(
+        Entity::new("flownode:end", EntityKind::FlowNode, "结束节点")
+            .with_keywords(["流程", "节点", "end"]),
+    );
+    topo.add_relation(Relation::new(
+        "model:hermes3",
+        "flow:gov-pii:ic",
+        RelationKind::Serves,
+        0.9,
+    ));
+    topo.add_relation(Relation::new(
+        "model:light",
+        "flow:bot:ic",
+        RelationKind::Serves,
+        0.95,
+    ));
+    topo.add_relation(Relation::new(
+        "skill:desensitize",
+        "flow:gov-pii:guard",
+        RelationKind::Implements,
+        1.0,
+    ));
+    topo.add_relation(Relation::new(
+        "skill:intent-route",
+        "flow:bot:ic",
+        RelationKind::Implements,
+        1.0,
+    ));
+    topo.add_relation(Relation::new(
+        "skill:etl-map",
+        "flow:etl:map",
+        RelationKind::Implements,
+        1.0,
+    ));
+    topo.add_relation(Relation::new(
+        "skill:db-pull",
+        "flow:finance:pull_a",
+        RelationKind::Implements,
+        1.0,
+    ));
+    topo.add_relation(Relation::new(
+        "skill:intent-route",
+        "mem:kb_vec",
+        RelationKind::Recalls,
+        0.8,
+    ));
+    topo.add_relation(Relation::new(
+        "rule:pii",
+        "flow:gov-pii:db",
+        RelationKind::Constrains,
+        1.0,
+    ));
     topo
 }
 
@@ -490,7 +669,7 @@ mod tests {
     #[test]
     fn catalog_builds_all_businesses() {
         let biz = all_businesses();
-        assert_eq!(biz.len(), 7);
+        assert_eq!(biz.len(), 6, "架构内置业务数应为 6");
         for b in &biz {
             let g = (b.build)();
             assert!(!g.nodes.is_empty(), "{} 应有节点", b.id);
@@ -501,8 +680,11 @@ mod tests {
     #[test]
     fn topology_has_six_dimension_entities() {
         let topo = build_topology();
-        let kinds: std::collections::HashSet<_> =
-            topo.entities.iter().map(|e| format!("{:?}", e.kind)).collect();
+        let kinds: std::collections::HashSet<_> = topo
+            .entities
+            .iter()
+            .map(|e| format!("{:?}", e.kind))
+            .collect();
         for k in ["Model", "Tool", "Skill", "Memory", "Rule", "FlowNode"] {
             assert!(kinds.iter().any(|x| x == k), "关系网应含 {} 维", k);
         }
@@ -515,10 +697,16 @@ mod tests {
         struct MockAlwaysApproved;
         #[async_trait]
         impl xuanji_expert::expert_traits::ExpertConsultant for MockAlwaysApproved {
-            async fn consult(&self, _q: &ConsultQuery) -> xuanji_expert::types::Result<ConsultReport> {
+            async fn consult(
+                &self,
+                _q: &ConsultQuery,
+            ) -> xuanji_expert::types::Result<ConsultReport> {
                 unreachable!("sync 路径不进入 async consult")
             }
-            fn consult_blocking(&self, q: &ConsultQuery) -> xuanji_expert::types::Result<ConsultReport> {
+            fn consult_blocking(
+                &self,
+                q: &ConsultQuery,
+            ) -> xuanji_expert::types::Result<ConsultReport> {
                 Ok(ConsultReport {
                     report_id: q.id.clone(),
                     steps: vec!["[Mock] 已批准（无璇玑引擎）".into()],
@@ -543,6 +731,9 @@ mod tests {
         register_business_experts(reg.clone()).await.unwrap();
         let all = reg.list(Some("gov")).await.unwrap();
         assert!(!all.is_empty(), "应注册 gov 领域专家");
-        assert!(reg.find("biz-gov-pii").await.unwrap().is_some(), "应注册 gov-pii 的领域专家");
+        assert!(
+            reg.find("biz-gov-pii").await.unwrap().is_some(),
+            "应注册 gov-pii 的领域专家"
+        );
     }
 }

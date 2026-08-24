@@ -61,7 +61,10 @@ async fn l5_get_topology_returns_mermaid() {
         .unwrap();
     assert_eq!(topo.status(), 200);
     let md = topo.text().await.unwrap();
-    assert!(md.contains("graph") || md.contains("flowchart"), "拓扑应为 Mermaid 图：{md}");
+    assert!(
+        md.contains("graph") || md.contains("flowchart"),
+        "拓扑应为 Mermaid 图：{md}"
+    );
 }
 
 #[tokio::test]
@@ -82,7 +85,10 @@ async fn l5_freeze_increments_kb_assets() {
         .unwrap();
     assert_eq!(f.status(), 200);
     let fj: Value = f.json().await.unwrap();
-    assert!(fj["kb_assets"].as_u64().unwrap() >= 1, "冻结后应至少沉淀 1 个资产");
+    assert!(
+        fj["kb_assets"].as_u64().unwrap() >= 1,
+        "冻结后应至少沉淀 1 个资产"
+    );
 }
 
 #[tokio::test]
@@ -154,14 +160,22 @@ async fn l5_get_project_detail() {
         .unwrap();
     let v: Value = r.json().await.unwrap();
     let id = v["id"].as_str().unwrap();
-    let d = c.get(format!("{base}/api/projects/{id}")).send().await.unwrap();
+    let d = c
+        .get(format!("{base}/api/projects/{id}"))
+        .send()
+        .await
+        .unwrap();
     assert_eq!(d.status(), 200);
     let dj: Value = d.json().await.unwrap();
     assert_eq!(dj["project"]["id"].as_str().unwrap(), id);
     assert!(dj["project"]["kappa"].is_number());
     assert!(dj["project"]["q_after"].is_number());
     // 不存在的项目应 404
-    let miss = c.get(format!("{base}/api/projects/nope")).send().await.unwrap();
+    let miss = c
+        .get(format!("{base}/api/projects/nope"))
+        .send()
+        .await
+        .unwrap();
     assert_eq!(miss.status(), 404);
 }
 
@@ -209,19 +223,24 @@ async fn l5_replay_across_restart_continues_q() {
         }
         tokio::time::sleep(std::time::Duration::from_millis(20)).await;
     }
-    let a = client.get(format!("{base2}/api/assets")).send().await.unwrap();
+    let a = client
+        .get(format!("{base2}/api/assets"))
+        .send()
+        .await
+        .unwrap();
     assert_eq!(a.status(), 200);
     let aj: Value = a.json().await.unwrap();
     assert!(
         aj["total"].as_u64().unwrap() >= 1,
         "重启后应通过重放恢复资产 Q"
     );
-    let p = client.get(format!("{base2}/api/projects")).send().await.unwrap();
+    let p = client
+        .get(format!("{base2}/api/projects"))
+        .send()
+        .await
+        .unwrap();
     let pj: Value = p.json().await.unwrap();
-    assert!(
-        pj["total"].as_u64().unwrap() >= 1,
-        "重启后应恢复项目记录"
-    );
+    assert!(pj["total"].as_u64().unwrap() >= 1, "重启后应恢复项目记录");
 
     let _ = std::fs::remove_file(&db);
 }
@@ -268,10 +287,7 @@ async fn l5_options_preflight_returns_204() {
         .await
         .unwrap();
     assert_eq!(r.status(), 204, "预检应直接 204");
-    assert_eq!(
-        r.headers().get("access-control-allow-origin").unwrap(),
-        "*"
-    );
+    assert_eq!(r.headers().get("access-control-allow-origin").unwrap(), "*");
     assert!(r
         .headers()
         .get("access-control-allow-methods")

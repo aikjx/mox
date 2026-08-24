@@ -575,7 +575,9 @@ module.exports = { FLOWS };
     flows.push({
       id: 'flow-content-governance',
       name: '内容治理闭环流程（采集→质检→发布→归档）',
-      domain: 'governance',
+      // 注意：DOMAINS 中无独立 governance 域，为保证 W9 流程归属域存在，
+      // 挂到 atlas 域（其业务范围包含内容治理与图谱治理：全局归一化统一治理服务）。
+      domain: 'atlas',
       title: '内容治理闭环流程（采集→质检→发布→归档）',
       standard: 'AIS-SPEC-9001',
       standardsRef: ['AIS-SPEC-9001', 'EAF-STD-002'],

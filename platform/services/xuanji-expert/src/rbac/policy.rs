@@ -12,7 +12,10 @@ pub struct Permission {
 
 impl Permission {
     pub fn new(action: &str, resource: &str) -> Self {
-        Self { action: action.into(), resource: resource.into() }
+        Self {
+            action: action.into(),
+            resource: resource.into(),
+        }
     }
 
     /// 资源路径通配符匹配：db:prod/* 匹配 db:prod/citizen_info
@@ -23,7 +26,9 @@ impl Permission {
 
     fn wildcard_match(&self, resource: &str) -> bool {
         let pattern = &self.resource;
-        if pattern == "*" { return true; }
+        if pattern == "*" {
+            return true;
+        }
         // 尾缀通配：db:prod/* 匹配 db:prod/a、db:prod/a/b
         if let Some(stripped) = pattern.strip_suffix("/*") {
             return resource.starts_with(stripped)
@@ -46,13 +51,19 @@ pub struct RoleDef {
 
 impl RoleDef {
     pub fn new(name: &str) -> Self {
-        Self { name: name.into(), extends: Vec::new(), grants: Vec::new() }
+        Self {
+            name: name.into(),
+            extends: Vec::new(),
+            grants: Vec::new(),
+        }
     }
     pub fn extends(mut self, parent: &str) -> Self {
-        self.extends.push(parent.into()); self
+        self.extends.push(parent.into());
+        self
     }
     pub fn grant(mut self, action: &str, resource: &str) -> Self {
-        self.grants.push(Permission::new(action, resource)); self
+        self.grants.push(Permission::new(action, resource));
+        self
     }
 }
 
@@ -66,8 +77,14 @@ impl BuiltinRoles {
         Self::resolve_impl(policy, role, &mut visited)
     }
 
-    fn resolve_impl(policy: &RbacPolicy, role: &str, visited: &mut std::collections::HashSet<String>) -> Vec<Permission> {
-        if visited.contains(role) { return Vec::new(); } // 防止循环继承
+    fn resolve_impl(
+        policy: &RbacPolicy,
+        role: &str,
+        visited: &mut std::collections::HashSet<String>,
+    ) -> Vec<Permission> {
+        if visited.contains(role) {
+            return Vec::new();
+        } // 防止循环继承
         visited.insert(role.into());
 
         let mut perms = Vec::new();
@@ -91,45 +108,48 @@ pub struct RbacPolicy {
 }
 
 impl RbacPolicy {
-    pub fn new() -> Self { Self { roles: HashMap::new() } }
+    pub fn new() -> Self {
+        Self {
+            roles: HashMap::new(),
+        }
+    }
     pub fn with_roles(mut self, roles: Vec<RoleDef>) -> Self {
-        for r in roles { self.roles.insert(r.name.clone(), r); }
+        for r in roles {
+            self.roles.insert(r.name.clone(), r);
+        }
         self
     }
 }
 
 impl Default for RbacPolicy {
     fn default() -> Self {
-        Self::new()
-            .with_roles(vec![
-                // admin 继承 editor 继承 viewer
-                RoleDef::new("admin")
-                    .extends("editor")
-                    .grant("admin", "*"),
-                RoleDef::new("editor")
-                    .extends("viewer")
-                    .grant("write", "db:test/*")
-                    .grant("write", "db:staging/*")
-                    .grant("write", "flow:*")
-                    .grant("execute", "flow:*"),
-                RoleDef::new("viewer")
-                    .grant("read", "db:*")
-                    .grant("read", "flow:*")
-                    .grant("read", "mem:*")
-                    .grant("execute", "flow:readonly/*"),
-                RoleDef::new("safety_approver")
-                    .grant("admin", "db:prod/*")  // 仅审批写生产
-                    .grant("write", "flow:gov-pii/*")
-                    .grant("execute", "flow:gov-pii/*"),
-                RoleDef::new("operator")
-                    .grant("read", "*")
-                    .grant("execute", "flow:*"),
-                RoleDef::new("auditor")
-                    .grant("read", "db:*")
-                    .grant("read", "flow:*")
-                    .grant("read", "mem:*")
-                    .grant("read", "audit:*"),
-            ])
+        Self::new().with_roles(vec![
+            // admin 继承 editor 继承 viewer
+            RoleDef::new("admin").extends("editor").grant("admin", "*"),
+            RoleDef::new("editor")
+                .extends("viewer")
+                .grant("write", "db:test/*")
+                .grant("write", "db:staging/*")
+                .grant("write", "flow:*")
+                .grant("execute", "flow:*"),
+            RoleDef::new("viewer")
+                .grant("read", "db:*")
+                .grant("read", "flow:*")
+                .grant("read", "mem:*")
+                .grant("execute", "flow:readonly/*"),
+            RoleDef::new("safety_approver")
+                .grant("admin", "db:prod/*") // 仅审批写生产
+                .grant("write", "flow:gov-pii/*")
+                .grant("execute", "flow:gov-pii/*"),
+            RoleDef::new("operator")
+                .grant("read", "*")
+                .grant("execute", "flow:*"),
+            RoleDef::new("auditor")
+                .grant("read", "db:*")
+                .grant("read", "flow:*")
+                .grant("read", "mem:*")
+                .grant("read", "audit:*"),
+        ])
     }
 }
 
@@ -159,7 +179,7 @@ mod tests {
         assert!(p.matches("write", "db:prod/citizen_info"));
         assert!(p.matches("write", "db:prod/citizen"));
         assert!(!p.matches("write", "db:prodx/citizen")); // 不同顶级
-        assert!(!p.matches("write", "db:prod"));          // 精确路径不匹配通配
+        assert!(!p.matches("write", "db:prod")); // 精确路径不匹配通配
     }
 
     #[test]

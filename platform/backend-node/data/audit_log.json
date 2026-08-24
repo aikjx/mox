@@ -3298,5 +3298,4405 @@
       "cause": "key_bucket",
       "cost": 1
     }
+  },
+  {
+    "id": "78649fba-b891-413e-a027-1a865657570a",
+    "timestamp": "2026-08-23T14:57:07.399Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "888cef2e-0c1a-4415-8cad-2b262653be02",
+    "timestamp": "2026-08-23T14:57:07.399Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "941003f0-812f-4dae-819c-4c7273abb3bb",
+    "timestamp": "2026-08-23T14:57:07.399Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "5d454edf-fb07-46b8-b910-bee68332259c",
+    "timestamp": "2026-08-23T14:57:07.399Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "e331b6ca-fb9f-4a45-b679-f5b8d339421b",
+    "timestamp": "2026-08-23T14:57:07.399Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "9eacaaaf-2f86-4719-a316-de0593daeb17",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "89e4ab28-946f-4cf5-9d4e-6e943bd11ca1",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "589aa73b-44c4-4660-8a2e-f816f902d98f",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "9e36b655-5183-40eb-ab6d-8a932448149c",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "d07a4b83-ee0e-4fe2-a2ca-bc64d425f679",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "ef236abb-2ad5-48df-a89a-6a782f9598db",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b8364751-f0e6-4989-8e2b-bee99a5e21ba",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "119ba520-0483-4700-913d-8de56590c4bc",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "d181418e-5c41-425e-ab79-269481c91615",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "8af3fad4-1c94-4756-8ecf-325de7ea75b2",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "75fe29d1-7220-48c4-9b99-8da453ce1071",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "3a534c34-257a-44ad-bb3a-11a37f8c1ba3",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "22a3e94e-5655-41fe-83a5-4376ac41f5d1",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "0accbd0a-c536-4f63-9b06-1c7322c890ff",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "f44c48f4-00a2-4329-9716-11290333b41b",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "49763871-f8f8-4d32-b3c8-96cac31e3b3c",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "960a3cb5-ab12-481e-85ae-00b328055296",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "72309673-3e5f-4824-92b4-7697ae563728",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "9c61a44b-9958-4747-a935-9e418bac295f",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "2032d6a8-0cf9-4ebb-9017-67957874f225",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "46fe221f-b217-47e6-ac36-8ae4d9bfeb76",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "d6da63b7-0cf2-42b2-b978-2d6c8484ba58",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "2d095841-f516-4607-9c7e-b004f70125d0",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "2b2acd43-bb05-4cb6-862b-e7a80bfb930a",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "167c1cd2-fcd0-4a08-8169-0a9cf42ade1b",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "7613cd65-d46b-419d-9326-259b9b78bd42",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "225b6b5c-bff1-4d89-926d-84cc680e2ab0",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "c2a3b2b3-7d93-4c03-8b4a-f0f3a9d1be5f",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "43e18a33-4ddd-4c52-9b96-0284f192d4f2",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "cea7c2ef-fe93-491b-b2a9-ebd9cd1d2cb4",
+    "timestamp": "2026-08-23T14:57:07.400Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "cd5ca4de-d020-4e29-9119-5f5e5c61b6bc",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "34757c88-20bc-47b9-ae4d-9d4b032f01ae",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "f8b46363-d895-4a01-8b4d-a025e77ee37a",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "08b629fc-1ede-4559-88c8-a718cee418df",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "e890e41b-9773-4819-a440-29459bcc0903",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "e36ba32e-feec-43e2-93be-95846aa06dd0",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "839b70b1-74db-4651-8a47-342b78bb114a",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "6901cfe7-860d-4275-8844-14ac760a2334",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "c053f52a-e704-42b1-829d-2aaa48b89d7e",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "d2128a1f-42f1-4864-b6b2-a166d55e5fbb",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "9e26ac52-a44b-4a2f-b995-f78f30dc63d1",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "e1ae31e4-9435-451a-8c95-b77a97e238f8",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "67750d2f-71cc-40a9-97cb-849c1aa3831b",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "96796edc-d014-47c8-b6c3-90e3b2c34761",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "a38bcc70-ed47-4414-ac6d-57aae8af4e27",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "7529b776-2e6e-4bbe-918a-c2ba71679b6d",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b6c03842-1bad-4967-b69a-674c353f7e4f",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "1eb1fa2b-9386-4322-a6d7-4569a789aa31",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "d66829cb-db49-4c1b-966d-0d41bd551418",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "e3ba56e1-6d80-4911-b169-aa69ca59b5bb",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "8b82c356-a9c1-4932-a85d-c1d47409939b",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "bbc8459a-1399-4cb0-8e78-f9270aabb419",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "569c42a4-cf99-4d03-9c6e-4108f526b7e1",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "6017329f-5a74-4fa9-a8a5-7cffd345032e",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "da6283d6-8dc5-42a9-bfa8-79c1417debe3",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "894a32a2-c2bf-408b-918b-25c3d46d5ad6",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "4beb7b04-a256-4144-9274-cf578e217f2a",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "0946ac75-37de-4513-a7b9-51e0fce9533c",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "7712123f-9a7f-438d-bfe0-c8ffe1fd64f1",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "0cbf4e57-7b43-4a79-a2e7-b3b1724dd96b",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "c084c74e-943e-4614-a31c-57aa25965ce9",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "1de16940-5edf-4b54-9032-2ce5dd8aee90",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "9d558c5c-8d8a-4598-9f80-c3e9261e2a66",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "f33f4495-3c71-40fa-b3f6-177dad5b2c17",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "ae22603b-cdf4-4865-9437-11bdda869b14",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "20b3b00c-a431-46cf-b4ca-ab3828245c5f",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "85c29158-8c17-4ca3-b983-395e63f657d8",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "bfba6b38-4eda-4928-8db7-93c24912d531",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "f88d3ce8-edf1-4eae-bf4c-343e96c075dd",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "ce79e1b7-087d-402d-9c8a-57624cf87223",
+    "timestamp": "2026-08-23T14:57:07.401Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "ac3cc737-34b6-4cba-a550-0a0ff98aee8d",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "718ccb79-efe7-4b31-9f79-4a86467bf8de",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "c3d3d560-02e9-4f0d-90a6-bdcaec8ac608",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "5a3d81a7-003d-4bc0-bb76-87c88f86dd0d",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "4f9376ef-da7a-4715-81c1-29dcec9bbc27",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "e76dea7a-07d2-4aaf-b620-ae7ef73d2a82",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "1bcd369e-3efe-48ae-9d30-c6ed49145131",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "f704fc32-5c20-44fe-9649-075aac2fd94a",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "fd4183af-5814-4da2-9348-28a93e6eac22",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "dd3796f7-9bf7-45a3-bb22-41f33b7b392a",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "043dc271-db3e-4243-b4a9-7b9636c16608",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b847ecc2-3d2b-4fa0-9b0d-15fd6454a601",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b39fdf19-2466-4e7b-8886-5ab022606bd1",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "46e59112-c300-4e3a-a009-dcc80906be21",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "9153b717-05bb-4a01-814f-06c4a6d6e633",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "0b57af15-ddf2-452c-931f-fbaca1ea0295",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "76a4a397-d99d-457e-9df2-0435a81136e4",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "25cdf5ab-f791-4a9d-b5ac-3e7a966a0c4a",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "107b82da-9979-463d-b36a-59027efe86f8",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "ebe4af9f-faea-49bd-8a09-1bf92a8d89b7",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "1e48c8bd-f753-434f-a4b5-7a87471b7149",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "37781914-9cc7-45f8-aaff-97bccd6d75b4",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "03e4abac-62f6-4741-9b31-e5536b17bcb8",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "ebfa2c07-92f0-422a-9297-342c6a92bb1b",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "159f9392-39bb-4135-ac78-8826789ffb53",
+    "timestamp": "2026-08-23T14:57:07.402Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b38d594e-b03b-4411-abd1-f66305d782de",
+    "timestamp": "2026-08-23T14:57:55.302Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "aa88c5d0-3aa3-4d87-bfb7-78d77bc5f3a8",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "f2f48bb5-35ca-4617-bd16-7166c40aa7c4",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "0ff32e3b-9e8e-4b57-bfd0-608260d1d507",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "751d950d-7ddf-4ca9-aed7-830241153ee3",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "9dcb4455-639a-4aa3-8a23-f971959002e0",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "ecb03b13-1e12-4a80-964e-16903a7a4aa6",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "aebee51d-108c-4f9a-ab00-116d15916097",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b00de727-5670-456c-9cc7-096360b88c8f",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "0344927a-d5b7-4b4f-8290-d7b140ce9710",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "6727e084-6a35-46dc-b1b3-0475147fcac4",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "5724bea5-f0a3-4523-a4f5-519f80dfc58d",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "7ee53352-93d6-4918-a890-5c10815bce5e",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "468fb320-1303-421d-92af-ec1a170f02e4",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "a5ed6c8b-b00b-454d-8dfc-0f2a8ea8cf3f",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "ce349aee-24ec-4d3f-9d75-d354cc0a4187",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b069ec5f-742f-4107-822e-5fde7ecda8a0",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "c0c2d073-93c5-46d9-8716-a6b7410f2d7d",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "a8fd1ff0-ec34-4721-bfab-8dfa342ba0fe",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "fc833518-3c61-4924-b164-cdeafddd53c8",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "bc881e7e-ddc7-4b68-b6eb-e1c0bfbc4551",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "d807bac4-d2e2-45a5-92ec-6f518e150e55",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "58c69288-a953-4e74-9805-f35f40af0f15",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "226110cc-cbff-4a05-8d25-9c1ef63739bf",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "4f3e5c74-62d4-4fba-b263-45209ed94469",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "1e4a3833-9010-430f-b642-b485e49781f3",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "ccabc6bd-6d1b-45c2-9448-d358c4bf8f38",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "904f6a5f-7d6e-4b4f-9f86-e0ecdea4653b",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "e6afc10a-7aeb-476d-83fd-2fde7e0e3fed",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "17e7d61d-265d-4e26-a9db-272a0737025d",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "69c97e5c-c3b0-45f7-b3f6-08f934fded77",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "97e08188-60b2-4cd2-87e6-64bcce5c76cd",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "73ff5c8f-d451-4ff2-a67f-a9bd9222911c",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "570cbb1a-0416-4174-babb-407f4e0d6281",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "86087689-9d37-4848-9902-691881542f21",
+    "timestamp": "2026-08-23T14:57:55.303Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b558f36b-08d3-4290-8aee-1af9cfa835c3",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "e2c69506-16f9-49ac-be9c-9ce98e46479d",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "608af96a-9df9-4f20-ae0c-8180ff40cfcc",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "66993f62-f692-408f-8016-67d1490d2568",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "ba87c7de-b671-424a-8f65-37ce9bd13722",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "d6f0faa0-63ae-4c8a-8c0f-c6e3f079aa3c",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "5f8930b6-ecc1-4ac4-9fb4-1a25657f3971",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "840bed92-9102-4fc5-947c-cddd8e5e564a",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "20a5d4f4-ba6e-4a15-ab48-fc6e1022f3fd",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "5b5447bf-1bea-42af-a434-a69cf6a53b4f",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "8f4d07c4-b48a-4506-9e1f-b6d921abc324",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "d1588ea9-d10d-4b1f-b13d-74e4f7dd18b8",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "13cd850b-0f04-4bed-aee8-5810c47c4270",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "87769445-54d9-4bf1-90b2-53e09e1ee67f",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "79aff8e5-e5ed-4a01-af04-0e78ea4635e6",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "6ce2e242-7005-4b8d-9534-63db89727dbf",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "2b45b77b-471d-4307-bd42-923487652405",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "53cb9193-7a90-421a-9c50-05e478a54a32",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "d466a19c-86ab-46df-afa1-d95b4e30aedd",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "cc2984a7-f1ea-457b-9dbe-fe181e7e745d",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b250631d-ddd2-41df-9840-3d3cbf08957f",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "6fed66a4-369c-43c4-9727-f330dbac6efb",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "70cd044a-5eee-40a3-8951-039aae0aff07",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "a435f043-36c9-40ec-adf4-b4f83475dfa8",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "a608d516-0d22-49b8-8667-7d45969feecb",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "f2cf88a6-8f6b-4f7b-a18c-14daa8b07c57",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "3b0992eb-fa05-43cd-a46a-8611769a8aeb",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b1056249-0663-4dcd-a55c-cf519e1dd311",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "d4a1a2c1-871e-4a7c-9b3f-145e504c3a6b",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "6526bca1-9c80-49d3-9a5e-85f29a322e3e",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "e5c44f7c-66bc-4c88-804a-6a324cd6a543",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "da7656f5-d9fe-4d75-830b-bce67b3c761b",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "96ef0d10-05ff-4c5d-8ca1-94456520b878",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "6048f6d4-741a-4c29-806f-ef35af176114",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "4061024f-9569-4f02-826d-fbc132f1889f",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "12f404af-fa4d-4d8a-b316-7124f978a33e",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b76fe277-69c6-43f5-a744-0bd8ddc7ba86",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "59834f54-e133-40ba-9719-712b67ae217b",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "4208f7e4-4dcc-4ffd-a017-02ae8eb509f2",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "d0900194-6f60-4c17-b0e7-ace2ee9c18ce",
+    "timestamp": "2026-08-23T14:57:55.304Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "857ee259-04e7-4dc8-a6e2-5454f48501bc",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "1c0e5ae5-344c-40c6-8ee8-af1d12c9e7af",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "f044e191-84f7-4c48-941b-364467d310d5",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "021d6bd0-960f-4d9a-90b4-88650196c148",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b9b45b3f-043b-4793-b2a7-8b65e3981228",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "16c54969-c943-4908-8804-976b340a24e2",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "fb0067f2-1f36-4da3-83eb-a3537f11d66e",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "cbca6bca-7adc-47f0-8b06-7dfe86d96773",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "ee885aa0-8ef8-4fcc-9b3b-361e2bd60ed6",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b93fa92f-aad1-49a5-897c-29ea3169e6a5",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "291d8f7e-1f88-4f54-b734-9c7b637ae667",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "d9cb1093-ae3f-4622-8245-c5fdf98dd41d",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "045e8b92-a798-4f6f-92c5-54375b31d44c",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "5f71cb2a-c7a0-4cb3-a264-f4718f054e98",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "31ff9b9a-03b3-467e-b283-4b90a4ef93cc",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "0dc0865b-27e9-4ec0-ac15-cff711364927",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "6a9e8d88-96df-4d64-a435-820fe688f9e4",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "bc92bf08-1006-4af4-b047-4548d2ce9042",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b9b70687-00ca-4a5b-b80a-b597359991c6",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "1c3aec72-fdfd-4cdc-8dc0-ff6c39007bab",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "7c493727-654a-48a0-86c1-5787bb2363c3",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "73e517b1-477c-4204-a482-ebbfad71770f",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "924b98c5-2fa8-4d8b-a2a6-c69dd347cee0",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "850dad2c-9daa-4d28-8523-20f29c76ddfc",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "bc09267a-a873-475a-9635-6b6b19807515",
+    "timestamp": "2026-08-23T14:57:55.305Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "be918eee-b54e-4377-bd7b-132587c44b03",
+    "timestamp": "2026-08-23T14:58:37.367Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "ec03a564-beed-48be-9010-33d870cc2a92",
+    "timestamp": "2026-08-23T14:58:37.367Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "708dfd9d-a202-43f9-907c-ee4ccfac0ea2",
+    "timestamp": "2026-08-23T14:58:37.367Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b15b3808-a1e3-4bd0-acb4-e37a809c0598",
+    "timestamp": "2026-08-23T14:58:37.367Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "51173b27-688e-4b1a-b422-91c8e232e68c",
+    "timestamp": "2026-08-23T14:58:37.367Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "5efd1d1b-3857-48bf-ad76-0e7213e18e0c",
+    "timestamp": "2026-08-23T14:58:37.367Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "9c1207fd-3618-4186-b6e6-3887bec53ab4",
+    "timestamp": "2026-08-23T14:58:37.367Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "3cea555c-478b-4191-ad2d-0b898e409b90",
+    "timestamp": "2026-08-23T14:58:37.367Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "9a661547-2b11-4b34-8efd-5338209f03a9",
+    "timestamp": "2026-08-23T14:58:37.367Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "3b747ef2-945a-4cec-aedb-facf2cfb648e",
+    "timestamp": "2026-08-23T14:58:37.367Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "14a9fc67-32da-4bd3-96be-e3de2895e217",
+    "timestamp": "2026-08-23T14:58:37.367Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b2df9a36-08aa-4086-912c-1385aaf48eb1",
+    "timestamp": "2026-08-23T14:58:37.367Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "d67e124e-65d1-4996-9e86-555f4dc2a9c2",
+    "timestamp": "2026-08-23T14:58:37.367Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "d762a6d5-3053-4251-ad72-68821bcb15b8",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "13b909b9-a92c-47d7-a5ad-52d5718f1d31",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "0a2d3e3a-5c63-4029-be9c-621efeb38783",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "0d29fe3c-7dfa-4c1a-ac81-9a82f19edabd",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "3f115898-1efb-4984-8b6a-407663694cea",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "6e5306c4-a954-4660-b993-b8a876ed41b3",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "5bc8e09f-902e-46b0-b807-cbdecda24238",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "25df5514-0c0d-448c-8310-925bf2a6c66e",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b2a746ab-9560-45a1-8d53-d72a19051684",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "bc366b32-12e5-4147-866c-335026a8381e",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "fb485fc0-ebfb-4a2b-bfb9-0fe24ab0cc13",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "fb13cc52-7822-41bb-b1fc-61d698dafe7f",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b01d0b55-9641-401e-a841-8bf6fef03a18",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "9bcbc926-12c9-4e1e-bdc9-868b3552b34b",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "69ee5608-e4d1-4d52-8599-f6c212cf640c",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "f5876cf7-2768-40a7-a4ba-4b1b09139c76",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "e4ff57bd-450b-4e8d-9466-100832a537fa",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "608bb9e0-2506-4c90-a2ea-227e238df2dd",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "fcf6743b-3acf-41a4-929c-80c9291027cd",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "e4be957d-75ba-4ce9-9b0f-a31c77915257",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "f920c625-27b0-4ef2-8355-a1c05772cb2e",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "3d87c265-e534-474a-9a5b-d040a69fa068",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "c4bf31ff-ac3f-4b9a-bd52-a4f92cd87361",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "ced09145-b2fd-4019-b1cb-2dc61b450ef9",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "6361e987-09ee-4be9-b4a6-d245a1ba5cb7",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "ace5fb87-f982-4355-891d-4f41894d2fae",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "e6624a20-6fff-4bf8-8149-3c1edc345748",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "a64240cd-0108-4e6c-900b-9d1aea7d591c",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "c6fe7fca-2d96-4f9e-aecd-5aabb3a5805d",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "bd9347a6-7dab-4038-b379-e16a31509a6c",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "19347421-a969-4118-a371-e099c8177a93",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "dac295f9-ef10-4147-afd1-6c10b19d4528",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "fb75297a-02cf-41a3-a4a5-f313d9b43142",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "4c17370a-e20e-48af-b59e-864de3576956",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "10313c8f-1f28-4104-9904-ef207b283d87",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "86c14cad-7c9a-4268-a16c-bce9c69730f2",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "2c3a6eaf-4534-4695-bb1c-53dd65b8036e",
+    "timestamp": "2026-08-23T14:58:37.368Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "6bf7d84d-c5a5-4dc5-8ef9-90c5880ac8e3",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "c1b2cbff-21c2-4c28-aa6c-0e3dcf41184d",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "97ceb064-dbfe-4b97-b39d-7e5a78a3dec8",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "ad8c97ab-123e-4d62-97ec-4f2c3bc67053",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "fc694982-00af-4611-ab14-d7f6abf5006f",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "087bb9a7-b6c2-46ee-9215-2bdd5caea5b3",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "cdc499d2-e5e8-4d8a-a8f4-f2e153b2fecf",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "a1f75fd6-eae2-436c-966b-5ef4922d32ac",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "6154c619-ea6c-4455-aa4d-0fc5733fa3f6",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "aa6d05be-3562-411b-a222-8a8972fea2c1",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "d904d0a0-bcd6-4525-ac8d-9dc2d0635c0f",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "70ab30c8-5628-4ad4-bf39-755ef0990ba2",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "19b9b3fc-6341-44bd-bff4-3ebdd75effb2",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "93e07f84-6233-48b6-93db-fc233b9b3d12",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "1b4a900a-c50a-4c54-9c49-f6f4f99bc945",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b9951250-a89c-44c0-86e8-112f20ea3311",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "9e93102a-a052-4af0-9bc0-dfb405b50283",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "e61f0da5-a1c7-4fca-9c79-0bb00e30b704",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "a209e2e9-e2ae-45a2-9b2d-56321bb2b962",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "8a9ba0d7-bf7f-4153-bcf6-6d44955ff17a",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "1bde8366-2458-4bec-b03e-ee1a8845d135",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "7a7137b9-d688-49b8-aad4-45e9158dfc48",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "7485fa16-c396-4121-848f-93e1e8b97ffa",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "09ce4ab4-aba5-4974-bdc8-fb28b13dfdff",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "895704c6-372d-4c39-9e85-4bb8be44b834",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "52a5b53f-6322-44bc-9ca4-5b53f583a8be",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "ca4cf01d-60ee-4d31-919d-73e92463ee08",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "508c9898-aea1-474e-9384-95ef16f65f38",
+    "timestamp": "2026-08-23T14:58:37.369Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "0ee9a607-e82b-4fad-95ea-cb483f050f5b",
+    "timestamp": "2026-08-23T14:58:37.370Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "96d5ceaf-88f3-4d4f-ba2a-5057c2035f3e",
+    "timestamp": "2026-08-23T14:58:37.370Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "8947860f-323c-41ca-b76e-b5dff9167ddd",
+    "timestamp": "2026-08-23T14:58:37.370Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "1842d06e-a211-4d68-8c8a-fdc73983bd27",
+    "timestamp": "2026-08-23T14:58:37.370Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "ca2a967b-64f7-4985-83a1-af4b567ac4bd",
+    "timestamp": "2026-08-23T14:58:37.370Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "49c90fdd-76a3-458f-a2ae-295f2ce56c9c",
+    "timestamp": "2026-08-23T14:58:37.370Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "964b11c9-b5e2-4eff-a533-af2a2cf96ba2",
+    "timestamp": "2026-08-23T14:58:37.370Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b6c04e18-d0e3-4524-93ed-b6bfbd5ff485",
+    "timestamp": "2026-08-23T14:58:37.370Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "92e838ba-1aef-42a4-a2e0-64cc4b53f6ed",
+    "timestamp": "2026-08-23T14:58:37.370Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "1d421b30-130b-4ea7-ba02-70b59ca91c3e",
+    "timestamp": "2026-08-23T14:58:37.370Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "df93cc64-f59b-4603-8675-329958f55000",
+    "timestamp": "2026-08-23T14:58:37.370Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "778516d4-5d50-4a1c-b49f-cf1d44c8af99",
+    "timestamp": "2026-08-23T14:58:37.370Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "8635ea26-0642-4014-8ff4-901d90ec6451",
+    "timestamp": "2026-08-23T14:58:37.370Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "e77a1c45-2d73-4a3d-a389-c451fa850ade",
+    "timestamp": "2026-08-23T14:58:37.370Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "c6a1ef2c-783d-4bc5-8cb2-9b60ef46b3b2",
+    "timestamp": "2026-08-23T14:58:37.370Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "38c81904-43d2-4157-9367-576527dc7e8e",
+    "timestamp": "2026-08-23T14:58:37.370Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "a2d19c99-47ac-429e-ba74-4d3d2de70d8b",
+    "timestamp": "2026-08-23T14:58:37.370Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "12981553-a40f-4ed4-902f-d9bfce335354",
+    "timestamp": "2026-08-23T14:58:37.370Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "c9b12959-e992-4844-b1f2-1a75832b5427",
+    "timestamp": "2026-08-23T14:58:37.370Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "a1e99095-1b6f-4679-8463-5ab3369439ed",
+    "timestamp": "2026-08-23T14:58:37.370Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "674213d5-3e27-4a38-9444-42406e9fe777",
+    "timestamp": "2026-08-23T14:58:37.370Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "72ddeae9-87c2-405e-944a-d03ff18f4f21",
+    "timestamp": "2026-08-23T14:58:37.370Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "88d3bed8-e4b5-4134-a298-07e6537e05bd",
+    "timestamp": "2026-08-23T14:59:37.086Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "2b71b8f4-f053-419d-92b0-b15c483c92cb",
+    "timestamp": "2026-08-23T14:59:37.086Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "9304cb59-55c8-4245-b506-dfeaf648d7e1",
+    "timestamp": "2026-08-23T14:59:37.087Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "f6a5c474-b1ed-496d-8839-2acd139719a9",
+    "timestamp": "2026-08-23T14:59:37.087Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "904f6ba2-22e4-4af9-b548-092457768bd6",
+    "timestamp": "2026-08-23T14:59:37.087Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "0eb1f995-f7ea-4878-93c1-addf0585eb6a",
+    "timestamp": "2026-08-23T14:59:37.087Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "676783a8-c7e1-48df-8348-04e4ba676e02",
+    "timestamp": "2026-08-23T14:59:37.088Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "a581a452-edc0-4351-8a11-ff413bb43b43",
+    "timestamp": "2026-08-23T14:59:37.088Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "7f83b20e-586c-4d3e-b7f2-b4edb8a32955",
+    "timestamp": "2026-08-23T14:59:37.088Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "f3c965a0-cf14-41e7-992c-0f0c8ce70adb",
+    "timestamp": "2026-08-23T14:59:37.088Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "7e301bc0-e84e-48e6-9e28-c4f2c2d912c9",
+    "timestamp": "2026-08-23T14:59:37.088Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "396bc777-cdf5-45f2-b08b-9924742b62cb",
+    "timestamp": "2026-08-23T14:59:37.088Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "de2f758c-6fc4-479b-b5de-b8e9a326a25e",
+    "timestamp": "2026-08-23T14:59:37.088Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "626741b6-3209-48ed-83fe-89ed485048bb",
+    "timestamp": "2026-08-23T14:59:37.088Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "8de55eae-7bff-4dbb-8b4e-f312ec1a752b",
+    "timestamp": "2026-08-23T14:59:37.088Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "33f48164-12c0-42bf-9c49-a6878e2d8900",
+    "timestamp": "2026-08-23T14:59:37.088Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "ec2c4f41-f91f-4558-ac89-59040ac3e6b7",
+    "timestamp": "2026-08-23T14:59:37.088Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "a37e1f58-33d0-4421-86ed-01cbe9dfe8ae",
+    "timestamp": "2026-08-23T14:59:37.088Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "3e648a0c-bcc0-422b-a199-6cd6435b6771",
+    "timestamp": "2026-08-23T14:59:37.088Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "f07d3ba6-beae-4b31-8a6b-1d8f3c6e2af8",
+    "timestamp": "2026-08-23T14:59:37.088Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "130ebd2c-5112-4816-846a-ae2ed4378f54",
+    "timestamp": "2026-08-23T14:59:37.088Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "e5302c4a-9f21-4bd7-9e09-6d8c0e2db9b1",
+    "timestamp": "2026-08-23T14:59:37.088Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "40af2a56-8688-49c2-bafb-0838428a0409",
+    "timestamp": "2026-08-23T14:59:37.088Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "a5a899cd-fb97-4a09-8c14-77702e21424b",
+    "timestamp": "2026-08-23T14:59:37.088Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "62cbb170-576b-4a6b-9cfd-c159b78e9567",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "5221c8c7-d172-4c4d-ba24-af873cb45656",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "8c3417d3-68c1-4461-83a1-ab8c4b17306d",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b5e97f7e-5cfe-4560-b7bc-c8448d283a3d",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "5f3d8f31-6555-4a5a-bd9b-43519163b718",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "06db7ad3-a291-4e20-b8c0-99419a591663",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "67548849-c0a4-466d-9e9f-a814aa3bd7f5",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "cecc1073-1fe7-4431-be7b-3b6f1166bf79",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b1983b88-df72-4fcb-89fd-1f6b2ec900bb",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "2bd34cd7-37a5-4983-8606-1a7b43f8d5cd",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "cc32bd73-7104-4591-bc38-18b7d683517e",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "db061068-19cd-4536-a6aa-682510faef77",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "69840a16-0315-4653-8f55-6885dcc20fe4",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "3a30392f-028f-4893-bcc1-4b39ec814b96",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b3837c4c-f033-4b26-9d42-b951ba304cb6",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b2e8e5e0-9c4b-4fa5-898a-6f293db4bc0d",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "e8742ec0-79e9-4043-be65-65281e8736ad",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "3fa8760e-c769-4b46-93ec-1b6f21e887ee",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "6ec3002d-d54d-4ec9-9443-d77b895f95e9",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "45fc7509-a60b-4619-b098-dc11be54065c",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "d9fc7d9e-b2d1-499c-81d9-a16685899044",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "a51f8159-e99e-4a02-92b9-669e839a1b98",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "d5c9491b-1c45-4112-bab9-2e34c9776cab",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "08429044-272f-455f-b8e2-cf48ea59b6f3",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "ab4ed2f0-e170-4c31-b7fe-7d3951a3bb42",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "6086880a-adbd-41fd-bf12-c90285f2f1c7",
+    "timestamp": "2026-08-23T14:59:37.089Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "085a5793-60bf-4436-9f33-f6f21e827334",
+    "timestamp": "2026-08-23T14:59:37.090Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "e3ba8950-3aa9-4f37-a5af-a5c71fc8793e",
+    "timestamp": "2026-08-23T14:59:37.090Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "126479bd-2830-410f-ba69-3f8b3fb21e61",
+    "timestamp": "2026-08-23T14:59:37.090Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "d0fc7361-9e53-4c63-911c-1b0c20fd5495",
+    "timestamp": "2026-08-23T14:59:37.090Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "f41aad1d-3092-403d-aea1-13fae27eb09f",
+    "timestamp": "2026-08-23T14:59:37.090Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "984faa3b-1e4d-4266-9b20-68b08b9e6e93",
+    "timestamp": "2026-08-23T14:59:37.090Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "d809a82f-2aee-4d75-8a3e-8a5f23dcf798",
+    "timestamp": "2026-08-23T14:59:37.090Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "5420190b-3a05-4b54-967c-73b5bf5185d4",
+    "timestamp": "2026-08-23T14:59:37.090Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "d620c528-f1c5-4b1b-8fcd-aa68a38c852b",
+    "timestamp": "2026-08-23T14:59:37.090Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "47901189-2195-4833-8eaf-d7387e6e225d",
+    "timestamp": "2026-08-23T14:59:37.090Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "3207cb0e-dad9-41cc-b9cd-cdfb5e8f165d",
+    "timestamp": "2026-08-23T14:59:37.090Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "33ec4022-9894-4914-bdfc-5cf8884bf5b5",
+    "timestamp": "2026-08-23T14:59:37.090Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "99048d21-57d4-4eef-a29f-2c99f8e7cf29",
+    "timestamp": "2026-08-23T14:59:37.090Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "c8d16a83-7021-457e-8429-9824efa102c0",
+    "timestamp": "2026-08-23T14:59:37.091Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "2e2d4716-af3a-42c7-a5ee-21f2733dc1a1",
+    "timestamp": "2026-08-23T14:59:37.091Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "188358dc-ab12-4819-bfcb-2a9c1a019f9c",
+    "timestamp": "2026-08-23T14:59:37.091Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "70b1a845-a909-4f2d-a0ea-981d95f1609a",
+    "timestamp": "2026-08-23T14:59:37.091Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "00db0eb6-ed3b-4ef0-baf0-89e8d3a7f65d",
+    "timestamp": "2026-08-23T14:59:37.091Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "e4a35513-297a-4db2-9790-f660bb319b82",
+    "timestamp": "2026-08-23T14:59:37.091Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "910842e2-e048-4bd7-930a-f745601dd991",
+    "timestamp": "2026-08-23T14:59:37.091Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "e9de46a3-892d-4908-b78a-01be46a11593",
+    "timestamp": "2026-08-23T14:59:37.091Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "9c33feeb-da88-46af-bd35-75e12713db11",
+    "timestamp": "2026-08-23T14:59:37.091Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "00fd6eb4-d13a-48df-ace2-b7dc5808da3c",
+    "timestamp": "2026-08-23T14:59:37.091Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "8ff15d7f-a063-450d-9791-c49c4cb28585",
+    "timestamp": "2026-08-23T14:59:37.091Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "3d118423-9183-4af0-a7fa-bd26560a5747",
+    "timestamp": "2026-08-23T14:59:37.091Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "d3ac891d-2d82-4a61-b6c5-262653c4a784",
+    "timestamp": "2026-08-23T14:59:37.091Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "b13f4e41-d2d9-41d9-b1c4-7555e17ffc78",
+    "timestamp": "2026-08-23T14:59:37.091Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "771e2447-48d5-47fc-9c40-d4d2c863ea3b",
+    "timestamp": "2026-08-23T14:59:37.091Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "c3833cd4-fae1-4a74-ad19-515240b44cf6",
+    "timestamp": "2026-08-23T14:59:37.091Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "1abf2b97-5457-4715-9565-74db538677fc",
+    "timestamp": "2026-08-23T14:59:37.091Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "cd8b291e-fbf5-42b4-8a00-5bff76d69826",
+    "timestamp": "2026-08-23T14:59:37.091Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "fdcc607c-a502-4fbe-83ec-7876b40bae67",
+    "timestamp": "2026-08-23T14:59:37.091Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "0db7a3fa-73b6-4cda-81b4-caaa8aa53470",
+    "timestamp": "2026-08-23T14:59:37.092Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "89127b05-517d-4a3e-9190-78c89e7aed7b",
+    "timestamp": "2026-08-23T14:59:37.092Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "7a01f12a-55c3-4683-8b94-39bc80c0fb42",
+    "timestamp": "2026-08-23T14:59:37.092Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "41d6a2de-b705-4953-950c-e7c45e0d706c",
+    "timestamp": "2026-08-23T14:59:37.092Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "0cfbe424-f3f6-43db-8288-117bb06a287a",
+    "timestamp": "2026-08-23T14:59:37.092Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "6ceca9ef-38fe-4ea3-bea9-6b79c52e7d7f",
+    "timestamp": "2026-08-23T14:59:37.092Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "00514291-340d-4e05-8f3f-6c0ee4c31cc5",
+    "timestamp": "2026-08-23T14:59:37.092Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "7d3055ae-1e74-46fe-9072-92e0ce94f36d",
+    "timestamp": "2026-08-23T14:59:37.092Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "99dbfe72-2daa-4323-b07e-fd6bb1211668",
+    "timestamp": "2026-08-23T14:59:37.092Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "250c4bca-d976-4a14-9f8d-d615dbfade30",
+    "timestamp": "2026-08-23T14:59:37.092Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "92fe2b83-a80c-473b-8030-6b281b76fb3b",
+    "timestamp": "2026-08-23T14:59:37.092Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "65ed8d9d-ca3f-4007-862b-d5ec67cc0afd",
+    "timestamp": "2026-08-23T14:59:37.092Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "11679dba-4da3-4edb-9122-4364871577c5",
+    "timestamp": "2026-08-23T14:59:37.092Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "7abc8435-baaa-4d2f-a5b8-64e0c8027a4f",
+    "timestamp": "2026-08-23T14:59:37.092Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "8fb722c0-89b8-4d6d-b929-f963b596524b",
+    "timestamp": "2026-08-23T14:59:37.092Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "07b13561-bc47-470a-858a-363d8837d87d",
+    "timestamp": "2026-08-23T14:59:37.092Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "cbbb34a9-43d6-4c00-8b8c-222c52dfe9c2",
+    "timestamp": "2026-08-23T14:59:37.092Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
+  },
+  {
+    "id": "627d46f1-45d4-42df-88a4-42818769cd18",
+    "timestamp": "2026-08-23T14:59:37.092Z",
+    "action": "rate_limit_exceeded",
+    "actor": "system",
+    "details": {
+      "key": "****",
+      "cause": "key_bucket",
+      "cost": 1
+    }
   }
 ]

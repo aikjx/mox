@@ -12,8 +12,8 @@
 //! 共享 `Arc<dyn ExpertConsultant>` 放在 `BridgeState.consultant`；独立 `optimize_session`
 //! 为兼容旧公共 API 签名，内部用默认工厂获取 trait object。
 
-use crate::state::GateState;
 use crate::recorder::Recorder;
+use crate::state::GateState;
 use flow_ai::model::FlowGraph;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -27,20 +27,31 @@ use xuanji_expert::types::{ConsultQuery, ConsultReport};
 /// ctx 键与 `ExpertServiceImpl::consult_sync` 约定保持一致（flow_json / tenant / namespace / principal）。
 fn build_query(graph: &FlowGraph, id: impl Into<String>) -> ConsultQuery {
     let mut ctx: HashMap<String, String> = HashMap::new();
-    ctx.insert("flow_json".into(), serde_json::to_string(graph).unwrap_or_default());
+    ctx.insert(
+        "flow_json".into(),
+        serde_json::to_string(graph).unwrap_or_default(),
+    );
     ctx.insert("tenant".into(), "hermes".into());
     ctx.insert("namespace".into(), "default".into());
     ctx.insert("principal".into(), "hermes-agent".into());
     ctx.insert("max_parallel".into(), "8".into());
     ctx.insert("max_cost_budget".into(), "100".into());
     ctx.insert("sla_ms".into(), "50000".into());
-    ConsultQuery { id: id.into(), query: graph.name.clone(), ctx }
+    ConsultQuery {
+        id: id.into(),
+        query: graph.name.clone(),
+        ctx,
+    }
 }
 
 /// 用默认 consultant 做优化 + 验证，返回 ConsultReport（便于调试/测试）。
 /// 同时根据 `report.vetoed` 置位 `GateState.vetoed` 算法否决标志（最高权限）。
 pub fn optimize_session(graph: &FlowGraph, gate: &GateState) -> ConsultReport {
-    optimize_session_with(graph, gate, xuanji_expert::expert_traits::default_consultant())
+    optimize_session_with(
+        graph,
+        gate,
+        xuanji_expert::expert_traits::default_consultant(),
+    )
 }
 
 /// 接受自定义 consultant（DIP 证据：测试可替换为 Mock，无需真实璇玑引擎）。
@@ -55,7 +66,10 @@ pub fn optimize_session_with(
         .consult_blocking(&q)
         .unwrap_or_else(|e| ConsultReport {
             report_id: q.id.clone(),
-            steps: vec![format!("[ExpertConsultant] 调用失败（保留原 gate 否决位）: {}", e)],
+            steps: vec![format!(
+                "[ExpertConsultant] 调用失败（保留原 gate 否决位）: {}",
+                e
+            )],
             score: 0.0,
             vetoed: gate.is_vetoed(),
             reason: Some(format!("error: {}", e)),
@@ -71,7 +85,11 @@ pub fn optimize_session_with(
 /// 启动后台轮询线程：周期性把各会话累积图推给优化内核。
 /// 返回句柄（真实环境用 tokio task；此处用 std 线程演示，避免引入 async 运行时复杂度）。
 pub fn spawn_optimizer(recorder: Recorder, gate: GateState) -> Arc<()> {
-    spawn_optimizer_with(recorder, gate, xuanji_expert::expert_traits::default_consultant())
+    spawn_optimizer_with(
+        recorder,
+        gate,
+        xuanji_expert::expert_traits::default_consultant(),
+    )
 }
 
 /// 接受自定义 consultant 的后台轮询版本。
@@ -147,18 +165,30 @@ mod tests {
         // 构造一张简单政务图：db.read → guard → web1
         st.recorder.record(
             "default",
-            &ToolCall { tool_name: "db.read".into(), args: json!({"query":"select * from citizen_info"}), turn: 1 },
+            &ToolCall {
+                tool_name: "db.read".into(),
+                args: json!({"query":"select * from citizen_info"}),
+                turn: 1,
+            },
         );
         st.recorder.record(
             "default",
-            &ToolCall { tool_name: "guard.desensitize".into(), args: json!({"var":"citizen"}), turn: 1 },
+            &ToolCall {
+                tool_name: "guard.desensitize".into(),
+                args: json!({"var":"citizen"}),
+                turn: 1,
+            },
         );
         let g = st.recorder.snapshot("default").unwrap();
         // DIP 证据：通过 st.consultant trait object 调用，不直接出现 xuanji-expert 具体 struct。
         let rep = optimize_session_with(&g, &st.gate, st.consultant.clone());
         assert!(rep.score >= 0.0 && rep.score <= 1.0);
         // 简单合法图应通过（不触发否决）
-        assert!(!st.gate.is_vetoed(), "合法流程图不应被算法否决（vetoed=false），report={:?}", rep);
+        assert!(
+            !st.gate.is_vetoed(),
+            "合法流程图不应被算法否决（vetoed=false），report={:?}",
+            rep
+        );
     }
 
     #[test]
@@ -167,17 +197,23 @@ mod tests {
         // 证明 optimize_session_with 可脱离真实璇玑引擎运行。
         // 只覆写 consult_blocking（同步默认方法，不触发 tokio runtime）即可满足 sync 测试路径。
         use async_trait::async_trait;
-// 说明：struct MockHealthy —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
-// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
+        // 说明：struct MockHealthy —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+        // 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
         struct MockHealthy;
         #[async_trait]
-// 说明：impl xuanji_expert —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
-// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
+        // 说明：impl xuanji_expert —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+        // 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
         impl xuanji_expert::expert_traits::ExpertConsultant for MockHealthy {
-            async fn consult(&self, _q: &ConsultQuery) -> xuanji_expert::types::Result<ConsultReport> {
+            async fn consult(
+                &self,
+                _q: &ConsultQuery,
+            ) -> xuanji_expert::types::Result<ConsultReport> {
                 unreachable!("sync 测试路径使用 consult_blocking，不应走到 async consult")
             }
-            fn consult_blocking(&self, q: &ConsultQuery) -> xuanji_expert::types::Result<ConsultReport> {
+            fn consult_blocking(
+                &self,
+                q: &ConsultQuery,
+            ) -> xuanji_expert::types::Result<ConsultReport> {
                 Ok(ConsultReport {
                     report_id: q.id.clone(),
                     steps: vec!["mock".into()],
@@ -191,7 +227,11 @@ mod tests {
         let st = BridgeState::with_consultant(Arc::new(MockHealthy));
         st.recorder.record(
             "default",
-            &ToolCall { tool_name: "any".into(), args: json!({}), turn: 1 },
+            &ToolCall {
+                tool_name: "any".into(),
+                args: json!({}),
+                turn: 1,
+            },
         );
         let g = st.recorder.snapshot("default").unwrap();
         let rep = optimize_session_with(&g, &st.gate, st.consultant.clone());

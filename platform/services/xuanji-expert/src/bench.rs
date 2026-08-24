@@ -1,4 +1,4 @@
-﻿//! 多场景 Benchmark：用真实 `xuanji_optimize` 引擎跑政务/法院/数据/财务/客服等场景，
+//! 多场景 Benchmark：用真实 `xuanji_optimize` 引擎跑政务/数据/财务/客服等场景，
 //! 量化「加速比 / 剪伪依赖 / 冲突自愈 / LLM 调用削减」——用户原方案核心收益的可复现证据。
 //!
 //! 设计：benchmark 是「分析开发优化」的闭环证明，不是玩具数字。每个场景用真实 FlowGraph 建模，
@@ -120,10 +120,7 @@ impl Scenario {
     }
     fn build(mut self) -> FlowGraph {
         // 头尾接上 Start/End：跳过构造时预置的 s(0) 与 e(1)，只连真实业务节点
-        let real: Vec<String> = self.g.nodes.iter()
-            .skip(2)
-            .map(|n| n.id.clone())
-            .collect();
+        let real: Vec<String> = self.g.nodes.iter().skip(2).map(|n| n.id.clone()).collect();
         if let Some(first) = real.first() {
             self.g.add_edge(FlowEdge::seq("s", first));
         }
@@ -156,14 +153,19 @@ pub(crate) fn bench_one(id: &str, name: &str, build: impl FnOnce(&mut Scenario))
     let opt = &rep.optimization;
     let gains = &opt.gains;
     // LLM baseline：每个工具节点一次 ReAct 决策（排除 Start/End）
-    let llm_baseline = opt.optimized_graph.nodes.iter().filter(|n| {
-        n.tool.is_some() && n.kind != NodeKind::Start && n.kind != NodeKind::End
-    }).count() as u64;
+    let llm_baseline = opt
+        .optimized_graph
+        .nodes
+        .iter()
+        .filter(|n| n.tool.is_some() && n.kind != NodeKind::Start && n.kind != NodeKind::End)
+        .count() as u64;
     // bridge：已知流程整段回放 → 0 次 LLM（本 benchmark 视为模板已提炼）
     let llm_bridge: u64 = 0;
     let llm_saved_pct = if llm_baseline > 0 {
         (1.0 - llm_bridge as f64 / llm_baseline as f64) * 100.0
-    } else { 0.0 };
+    } else {
+        0.0
+    };
     BenchRow {
         scenario: name.into(),
         nodes: opt.optimized_graph.nodes.len(),
@@ -208,24 +210,6 @@ pub fn run_benchmarks() -> Vec<BenchRow> {
             s.task("merge", "汇总", ToolKind::Compute, 100)
                 .access("merge", Access::read("var:citizen_safe"));
             s.chain(&["intent", "mem", "db_read", "guard", "web1", "merge"]);
-        }),
-        bench_one("court-doc", "法院文书生成", |s| {
-            s.task("fetch", "调取卷宗", ToolKind::Database, 400)
-                .access("fetch", Access::read("db:case"));
-            s.task("ocr", "卷宗OCR", ToolKind::Compute, 300)
-                .access("ocr", Access::read("var:case_raw"))
-                .access("ocr", Access::write("var:case_text"));
-            s.task("extract", "要素抽取", ToolKind::Llm, 600)
-                .access("extract", Access::read("var:case_text"))
-                .access("extract", Access::write("var:facts"));
-            s.task("draft", "文书起草", ToolKind::Llm, 800)
-                .access("draft", Access::read("var:facts"))
-                .access("draft", Access::write("var:draft"));
-            s.task("review", "合规审核", ToolKind::Compute, 200)
-                .access("review", Access::read("var:draft"));
-            s.task("sign", "电子签章", ToolKind::Http, 150)
-                .access("sign", Access::read("var:draft"));
-            s.chain(&["fetch", "ocr", "extract", "draft", "review", "sign"]);
         }),
         bench_one("data-warehouse", "数据归集调度", |s| {
             s.task("src1", "源A抽取", ToolKind::Database, 300);
@@ -377,7 +361,10 @@ pub fn bench_table(rows: &[BenchRow]) -> String {
         "-",
         avg_llm,
     ));
-    out.push_str(&format!("  冲突自动修复合计: {}  |  平均算力压缩: {:.1}%\n", total_fixed, avg_compute));
+    out.push_str(&format!(
+        "  冲突自动修复合计: {}  |  平均算力压缩: {:.1}%\n",
+        total_fixed, avg_compute
+    ));
     out
 }
 

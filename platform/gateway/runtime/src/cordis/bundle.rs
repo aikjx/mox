@@ -1,12 +1,12 @@
 //! Bundle 插件包管理
 
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::sync::Arc;
 use operator_core::{
     ExecutionContext, Operator, OperatorMetadata, ResourceCost, StateVector, TypeCheck,
     TypeIdentifier,
 };
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::Arc;
 
 /// Bundle管理器
 pub struct BundleManager {
@@ -31,7 +31,8 @@ impl BundleManager {
     pub async fn load(&mut self, path: &str) -> Result<Bundle, BundleError> {
         // 读取manifest
         let manifest_path = format!("{}/manifest.yaml", path);
-        let content = tokio::fs::read_to_string(&manifest_path).await
+        let content = tokio::fs::read_to_string(&manifest_path)
+            .await
             .map_err(|e| BundleError::LoadError(format!("Failed to read manifest: {}", e)))?;
 
         let manifest: BundleManifest = serde_yaml::from_str(&content)
@@ -47,14 +48,18 @@ impl BundleManager {
         let mut agents: Vec<AgentDefinition> = Vec::with_capacity(manifest.agents.len());
         for agent_name in &manifest.agents {
             let agent_path = format!("{}/agents/{}.yaml", path, agent_name);
-            let agent_content = tokio::fs::read_to_string(&agent_path).await
-                .map_err(|e| {
-                    BundleError::LoadError(format!("Failed to read agent '{}' at {}: {}", agent_name, agent_path, e))
-                })?;
-            let agent: AgentDefinition = serde_yaml::from_str(&agent_content)
-                .map_err(|e| {
-                    BundleError::InvalidManifest(format!("agent '{}' YAML parse error: {}", agent_name, e))
-                })?;
+            let agent_content = tokio::fs::read_to_string(&agent_path).await.map_err(|e| {
+                BundleError::LoadError(format!(
+                    "Failed to read agent '{}' at {}: {}",
+                    agent_name, agent_path, e
+                ))
+            })?;
+            let agent: AgentDefinition = serde_yaml::from_str(&agent_content).map_err(|e| {
+                BundleError::InvalidManifest(format!(
+                    "agent '{}' YAML parse error: {}",
+                    agent_name, e
+                ))
+            })?;
             agents.push(agent);
         }
 
@@ -62,22 +67,27 @@ impl BundleManager {
         let mut event_handlers = Vec::new();
         let handlers_dir = format!("{}/handlers", path);
         if let Ok(mut entries) = tokio::fs::read_dir(&handlers_dir).await {
-            while let Some(entry) = entries.next_entry().await
-                .map_err(|e| BundleError::LoadError(format!("Failed to scan handlers dir: {}", e)))?
-            {
+            while let Some(entry) = entries.next_entry().await.map_err(|e| {
+                BundleError::LoadError(format!("Failed to scan handlers dir: {}", e))
+            })? {
                 let p = entry.path();
-                let is_yaml = p.extension()
+                let is_yaml = p
+                    .extension()
                     .map(|e| e == "yaml" || e == "yml")
                     .unwrap_or(false);
                 if !is_yaml {
                     continue;
                 }
-                let spec_content = tokio::fs::read_to_string(&p).await
-                    .map_err(|e| BundleError::LoadError(format!("Failed to read handler {}: {}", p.display(), e)))?;
-                let spec: HandlerSpec = serde_yaml::from_str(&spec_content)
-                    .map_err(|e| {
-                        BundleError::InvalidManifest(format!("handler {} YAML parse error: {}", p.display(), e))
-                    })?;
+                let spec_content = tokio::fs::read_to_string(&p).await.map_err(|e| {
+                    BundleError::LoadError(format!("Failed to read handler {}: {}", p.display(), e))
+                })?;
+                let spec: HandlerSpec = serde_yaml::from_str(&spec_content).map_err(|e| {
+                    BundleError::InvalidManifest(format!(
+                        "handler {} YAML parse error: {}",
+                        p.display(),
+                        e
+                    ))
+                })?;
                 let handler_name = spec.name.clone();
                 let callback: EventHandlerFn = Arc::new(move |payload: serde_json::Value| {
                     tracing::debug!(
@@ -246,7 +256,11 @@ impl Operator for DeclarativeOperator {
         }
     }
 
-    fn apply(&self, input: &StateVector, ctx: &mut ExecutionContext) -> operator_core::Result<StateVector> {
+    fn apply(
+        &self,
+        input: &StateVector,
+        ctx: &mut ExecutionContext,
+    ) -> operator_core::Result<StateVector> {
         // 类型契约校验：输入维度与声明不一致时报错（真实校验，不静默通过）
         let declared_dim: usize = self.meta.input_type.parse().unwrap_or(0);
         if declared_dim > 0 && input.dimension != declared_dim {
@@ -255,10 +269,8 @@ impl Operator for DeclarativeOperator {
                 declared_dim, input.dimension
             )));
         }
-        ctx.metadata.insert(
-            "operator".to_string(),
-            serde_json::json!(self.meta.name),
-        );
+        ctx.metadata
+            .insert("operator".to_string(), serde_json::json!(self.meta.name));
         Ok(input.clone())
     }
 }
@@ -315,7 +327,9 @@ mod tests {
         let mut ctx = ExecutionContext::default();
         let input = StateVector::from_vec(vec![1.0, 2.0, 3.0]); // 3 维，声明 4 维
 
-        let err = op.apply(&input, &mut ctx).expect_err("should reject mismatch");
+        let err = op
+            .apply(&input, &mut ctx)
+            .expect_err("should reject mismatch");
         assert!(err.to_string().contains("声明输入维度"));
     }
 }

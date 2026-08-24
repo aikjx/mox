@@ -18,10 +18,19 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex, OnceLock};
 use tokio::sync::Mutex as TokioMutex;
 
-use runtime::market::{list_packages_filtered, load_package, package_path, save_package, FlowEdge, FlowNode, MarketState, OperatorPackage};
+use runtime::market::{
+    list_packages_filtered, load_package, package_path, save_package, FlowEdge, FlowNode,
+    MarketState, OperatorPackage,
+};
 use runtime::market_dsl;
-use runtime::market_migration::{audit_log_path, backups_dir, ensure_migrated, packages_dir, sign_doc, verify_doc, zip_read, zip_write};
-use runtime::market_version::{bump_patch_version, diff_packages, get_version, is_valid_version, list_versions, read_changelog, rollback, snapshot_package, version_cmp, SemVer};
+use runtime::market_migration::{
+    audit_log_path, backups_dir, ensure_migrated, packages_dir, sign_doc, verify_doc, zip_read,
+    zip_write,
+};
+use runtime::market_version::{
+    bump_patch_version, diff_packages, get_version, is_valid_version, list_versions,
+    read_changelog, rollback, snapshot_package, version_cmp, SemVer,
+};
 
 /// 环境变量测试串行锁
 static ENV_LOCK: Mutex<()> = Mutex::new(());
@@ -80,13 +89,28 @@ fn semver_parse_compare_and_bump() {
 
     assert_eq!(version_cmp("1.0.0", "1.0.1"), std::cmp::Ordering::Less);
     assert_eq!(version_cmp("1.9.0", "1.10.0"), std::cmp::Ordering::Less);
-    assert_eq!(version_cmp("2.0.0-alpha", "2.0.0"), std::cmp::Ordering::Less);
-    assert_eq!(version_cmp("2.0.0-alpha.10", "2.0.0-alpha.9"), std::cmp::Ordering::Greater);
-    assert_eq!(version_cmp("1.0.0+build5", "1.0.0"), std::cmp::Ordering::Equal);
+    assert_eq!(
+        version_cmp("2.0.0-alpha", "2.0.0"),
+        std::cmp::Ordering::Less
+    );
+    assert_eq!(
+        version_cmp("2.0.0-alpha.10", "2.0.0-alpha.9"),
+        std::cmp::Ordering::Greater
+    );
+    assert_eq!(
+        version_cmp("1.0.0+build5", "1.0.0"),
+        std::cmp::Ordering::Equal
+    );
 
     assert_eq!(bump_patch_version("1.2.9"), "1.2.10");
-    assert_eq!(SemVer::parse("1.2.3").unwrap().bump_minor().to_string(), "1.3.0");
-    assert_eq!(SemVer::parse("1.2.3").unwrap().bump_major().to_string(), "2.0.0");
+    assert_eq!(
+        SemVer::parse("1.2.3").unwrap().bump_minor().to_string(),
+        "1.3.0"
+    );
+    assert_eq!(
+        SemVer::parse("1.2.3").unwrap().bump_major().to_string(),
+        "2.0.0"
+    );
 }
 
 // ========== 2) 快照 / 回滚 ==========
@@ -178,8 +202,16 @@ fn migrate_legacy_dir_with_backup_and_audit() {
     std::fs::create_dir_all(&legacy).unwrap();
     let p1 = make_pkg("legacy-1", "1.0.0", "旧包1");
     let p2 = make_pkg("legacy-2", "2.0.0", "旧包2");
-    std::fs::write(legacy.join("legacy-1.json"), serde_json::to_string_pretty(&p1).unwrap()).unwrap();
-    std::fs::write(legacy.join("legacy-2.json"), serde_json::to_string_pretty(&p2).unwrap()).unwrap();
+    std::fs::write(
+        legacy.join("legacy-1.json"),
+        serde_json::to_string_pretty(&p1).unwrap(),
+    )
+    .unwrap();
+    std::fs::write(
+        legacy.join("legacy-2.json"),
+        serde_json::to_string_pretty(&p2).unwrap(),
+    )
+    .unwrap();
     // 非 json 文件不迁移
     std::fs::write(legacy.join("notes.txt"), "x").unwrap();
 
@@ -229,13 +261,20 @@ fn read_falls_back_to_legacy_and_auto_migrates() {
 
     std::fs::create_dir_all(&legacy).unwrap();
     let p = make_pkg("fb-1", "1.0.0", "遗留读取");
-    std::fs::write(legacy.join("fb-1.json"), serde_json::to_string_pretty(&p).unwrap()).unwrap();
+    std::fs::write(
+        legacy.join("fb-1.json"),
+        serde_json::to_string_pretty(&p).unwrap(),
+    )
+    .unwrap();
 
     // 未迁移时也能读到（向后兼容）
     let loaded = load_package("fb-1").expect("应能从遗留路径读到");
     assert_eq!(loaded.id, "fb-1");
     // 读操作触发自动补迁到归一化路径
-    assert!(package_path("fb-1").exists(), "读取后应自动迁移到 packages/");
+    assert!(
+        package_path("fb-1").exists(),
+        "读取后应自动迁移到 packages/"
+    );
     assert!(!legacy.join("fb-1.json").exists(), "遗留副本应被清理");
 
     cleanup(&home);
@@ -284,19 +323,37 @@ fn import_conflict_strategies() {
     sign_doc(&mut doc);
 
     // skip（默认）：不覆盖
-    let r = runtime::routes::market::import_one(doc.clone(), runtime::routes::market::ConflictStrategy::Skip, true, "tester");
+    let r = runtime::routes::market::import_one(
+        doc.clone(),
+        runtime::routes::market::ConflictStrategy::Skip,
+        true,
+        "tester",
+    );
     assert_eq!(r.status, "skipped");
     assert_eq!(load_package("imp-1").unwrap().version, "1.0.0");
 
     // overwrite：覆盖，且旧版本被快照
-    let r = runtime::routes::market::import_one(doc.clone(), runtime::routes::market::ConflictStrategy::Overwrite, true, "tester");
+    let r = runtime::routes::market::import_one(
+        doc.clone(),
+        runtime::routes::market::ConflictStrategy::Overwrite,
+        true,
+        "tester",
+    );
     assert_eq!(r.status, "overwritten");
     assert_eq!(load_package("imp-1").unwrap().version, "2.0.0");
     let versions = list_versions("imp-1");
-    assert!(versions.iter().any(|v| v.version == "1.0.0"), "覆盖前旧版本应已快照");
+    assert!(
+        versions.iter().any(|v| v.version == "1.0.0"),
+        "覆盖前旧版本应已快照"
+    );
 
     // rename：新 id 导入
-    let r = runtime::routes::market::import_one(doc.clone(), runtime::routes::market::ConflictStrategy::Rename, true, "tester");
+    let r = runtime::routes::market::import_one(
+        doc.clone(),
+        runtime::routes::market::ConflictStrategy::Rename,
+        true,
+        "tester",
+    );
     assert_eq!(r.status, "renamed");
     let new_id = r.id;
     assert_ne!(new_id, "imp-1");
@@ -305,13 +362,23 @@ fn import_conflict_strategies() {
     // 签名被篡改：verify=true 应拒绝
     let mut tampered = doc.clone();
     tampered["package"]["requirement"] = serde_json::Value::String("被篡改".into());
-    let r = runtime::routes::market::import_one(tampered, runtime::routes::market::ConflictStrategy::Overwrite, true, "tester");
+    let r = runtime::routes::market::import_one(
+        tampered,
+        runtime::routes::market::ConflictStrategy::Overwrite,
+        true,
+        "tester",
+    );
     assert_eq!(r.status, "rejected");
     assert!(r.reason.unwrap_or_default().contains("签名"));
 
     // verify=false 时无签名也允许（裸包）
     let bare = make_pkg("imp-2", "1.0.0", "裸包");
-    let r = runtime::routes::market::import_one(serde_json::to_value(&bare).unwrap(), runtime::routes::market::ConflictStrategy::Skip, false, "tester");
+    let r = runtime::routes::market::import_one(
+        serde_json::to_value(&bare).unwrap(),
+        runtime::routes::market::ConflictStrategy::Skip,
+        false,
+        "tester",
+    );
     assert_eq!(r.status, "imported");
     assert!(load_package("imp-2").is_ok());
 
@@ -372,16 +439,64 @@ fn tenant_owner_permission_filters() {
 fn dsl_conversion_chain() {
     let mut p = make_pkg("dsl-1", "1.0.0", "订单处理需求");
     p.nodes = vec![
-        FlowNode { id: "s".into(), label: "开始".into(), node_type: "start".into(), x: 0.0, y: 0.0, note: "".into() },
-        FlowNode { id: "c".into(), label: "校验库存".into(), node_type: "decision".into(), x: 0.0, y: 1.0, note: "查库存".into() },
-        FlowNode { id: "o".into(), label: "发货".into(), node_type: "operator".into(), x: 0.0, y: 2.0, note: "".into() },
-        FlowNode { id: "e".into(), label: "结束".into(), node_type: "end".into(), x: 0.0, y: 3.0, note: "".into() },
+        FlowNode {
+            id: "s".into(),
+            label: "开始".into(),
+            node_type: "start".into(),
+            x: 0.0,
+            y: 0.0,
+            note: "".into(),
+        },
+        FlowNode {
+            id: "c".into(),
+            label: "校验库存".into(),
+            node_type: "decision".into(),
+            x: 0.0,
+            y: 1.0,
+            note: "查库存".into(),
+        },
+        FlowNode {
+            id: "o".into(),
+            label: "发货".into(),
+            node_type: "operator".into(),
+            x: 0.0,
+            y: 2.0,
+            note: "".into(),
+        },
+        FlowNode {
+            id: "e".into(),
+            label: "结束".into(),
+            node_type: "end".into(),
+            x: 0.0,
+            y: 3.0,
+            note: "".into(),
+        },
     ];
     p.edges = vec![
-        FlowEdge { id: "e1".into(), source: "s".into(), target: "c".into(), label: "".into() },
-        FlowEdge { id: "e2".into(), source: "c".into(), target: "o".into(), label: "有货".into() },
-        FlowEdge { id: "e3".into(), source: "c".into(), target: "e".into(), label: "缺货".into() },
-        FlowEdge { id: "e4".into(), source: "o".into(), target: "e".into(), label: "".into() },
+        FlowEdge {
+            id: "e1".into(),
+            source: "s".into(),
+            target: "c".into(),
+            label: "".into(),
+        },
+        FlowEdge {
+            id: "e2".into(),
+            source: "c".into(),
+            target: "o".into(),
+            label: "有货".into(),
+        },
+        FlowEdge {
+            id: "e3".into(),
+            source: "c".into(),
+            target: "e".into(),
+            label: "缺货".into(),
+        },
+        FlowEdge {
+            id: "e4".into(),
+            source: "o".into(),
+            target: "e".into(),
+            label: "".into(),
+        },
     ];
 
     let dsl = market_dsl::package_to_flow_definition(&p);

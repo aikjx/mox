@@ -57,19 +57,39 @@ impl SemVer {
         if parts.next().is_some() {
             return None;
         }
-        Some(SemVer { major, minor, patch, pre })
+        Some(SemVer {
+            major,
+            minor,
+            patch,
+            pre,
+        })
     }
 
     #[allow(dead_code)]
     pub fn bump_major(&self) -> SemVer {
-        SemVer { major: self.major + 1, minor: 0, patch: 0, pre: None }
+        SemVer {
+            major: self.major + 1,
+            minor: 0,
+            patch: 0,
+            pre: None,
+        }
     }
     #[allow(dead_code)]
     pub fn bump_minor(&self) -> SemVer {
-        SemVer { major: self.major, minor: self.minor + 1, patch: 0, pre: None }
+        SemVer {
+            major: self.major,
+            minor: self.minor + 1,
+            patch: 0,
+            pre: None,
+        }
     }
     pub fn bump_patch(&self) -> SemVer {
-        SemVer { major: self.major, minor: self.minor, patch: self.patch + 1, pre: None }
+        SemVer {
+            major: self.major,
+            minor: self.minor,
+            patch: self.patch + 1,
+            pre: None,
+        }
     }
 
     /// semver 2.0 优先级比较（预发布 < 正式版）
@@ -145,7 +165,10 @@ pub fn bump_patch_version(v: &str) -> String {
         Some(s) => s.bump_patch().to_string(),
         None => {
             let parts: Vec<&str> = v.split('.').collect();
-            let mut nums: Vec<u32> = parts.iter().map(|p| p.parse::<u32>().unwrap_or(0)).collect();
+            let mut nums: Vec<u32> = parts
+                .iter()
+                .map(|p| p.parse::<u32>().unwrap_or(0))
+                .collect();
             while nums.len() < 3 {
                 nums.push(0);
             }
@@ -188,13 +211,22 @@ pub struct VersionDiff {
 
 fn sanitize_version_file(v: &str) -> String {
     v.chars()
-        .map(|c| if c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_' { c } else { '_' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect()
 }
 
 /// 变更日志文件：`$OUS_HOME/market/changelog/<id>.md`
 pub fn changelog_path(id: &str) -> std::path::PathBuf {
-    changelogs_dir().join(format!("{}.md", crate::market_migration::sanitize_file_component(id)))
+    changelogs_dir().join(format!(
+        "{}.md",
+        crate::market_migration::sanitize_file_component(id)
+    ))
 }
 
 /// 把当前包快照进版本库（best-effort：失败只告警，不阻塞主流程）。
@@ -217,7 +249,11 @@ pub fn snapshot_package(pkg: &OperatorPackage, by: &str, note: &str) -> std::io:
             pkg.version,
             now_rfc3339(),
             if by.is_empty() { "anonymous" } else { by },
-            if note.is_empty() { "更新算子包" } else { note }
+            if note.is_empty() {
+                "更新算子包"
+            } else {
+                note
+            }
         ),
     )?;
 
@@ -278,9 +314,7 @@ pub fn prune_versions(id: &str) {
     snapshots.sort_by(|a, b| {
         let (va, ta) = split_snapshot_name(&a.0);
         let (vb, tb) = split_snapshot_name(&b.0);
-        version_cmp(&va, &vb)
-            .then(ta.cmp(&tb))
-            .then(b.0.cmp(&a.0))
+        version_cmp(&va, &vb).then(ta.cmp(&tb)).then(b.0.cmp(&a.0))
     });
     // 保留最后 limit 个（排序为升序 → 保留尾部）
     let keep = snapshots.len() - limit;
@@ -292,7 +326,10 @@ pub fn prune_versions(id: &str) {
 fn split_snapshot_name(name: &str) -> (String, i64) {
     let base = name.trim_end_matches(".json");
     match base.split_once('@') {
-        Some((v, ts)) => (v.trim_start_matches('v').to_string(), ts.parse().unwrap_or(0)),
+        Some((v, ts)) => (
+            v.trim_start_matches('v').to_string(),
+            ts.parse().unwrap_or(0),
+        ),
         None => (base.to_string(), 0),
     }
 }
@@ -307,7 +344,11 @@ pub fn list_versions(id: &str) -> Vec<VersionEntry> {
             if path.extension().and_then(|e| e.to_str()) != Some("json") {
                 continue;
             }
-            let file = path.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
+            let file = path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("")
+                .to_string();
             let (version, _ts) = split_snapshot_name(&file);
             // 从快照内容中取准确信息
             let (by, note, created_at) = match std::fs::read_to_string(&path)
@@ -318,7 +359,11 @@ pub fn list_versions(id: &str) -> Vec<VersionEntry> {
                 None => (String::new(), String::new(), String::new()),
             };
             entries.push(VersionEntry {
-                version: if version.is_empty() { file.clone() } else { version },
+                version: if version.is_empty() {
+                    file.clone()
+                } else {
+                    version
+                },
                 created_at,
                 by,
                 note,
@@ -386,9 +431,19 @@ pub fn rollback(id: &str, version: &str, actor: &str) -> Result<OperatorPackage,
     let note = format!("回滚到 v{}", version);
     let _ = append_changelog(
         id,
-        &format!("## v{} — {} (by {})\n- {}", target.version, now_rfc3339(), if actor.is_empty() { "anonymous" } else { actor }, note),
+        &format!(
+            "## v{} — {} (by {})\n- {}",
+            target.version,
+            now_rfc3339(),
+            if actor.is_empty() { "anonymous" } else { actor },
+            note
+        ),
     );
-    audit("rollback", actor, &format!("算子包 {} 回滚到 v{}", id, version));
+    audit(
+        "rollback",
+        actor,
+        &format!("算子包 {} 回滚到 v{}", id, version),
+    );
     Ok(target)
 }
 
@@ -407,7 +462,11 @@ pub fn diff_packages(base: &OperatorPackage, target: &OperatorPackage) -> Versio
         ("requirement", &base.requirement, &target.requirement),
         ("tenant", &base.tenant, &target.tenant),
         ("tenant_id", &base.tenant_id, &target.tenant_id),
-        ("tags", &serde_json::to_string(&base.tags).unwrap_or_default(), &serde_json::to_string(&target.tags).unwrap_or_default()),
+        (
+            "tags",
+            &serde_json::to_string(&base.tags).unwrap_or_default(),
+            &serde_json::to_string(&target.tags).unwrap_or_default(),
+        ),
     ] {
         if b != t {
             diff.fields_changed.push(f.to_string());
@@ -420,12 +479,36 @@ pub fn diff_packages(base: &OperatorPackage, target: &OperatorPackage) -> Versio
     let t_edges: Vec<String> = target.edges.iter().map(|e| e.id.clone()).collect();
     let b_feats: Vec<String> = base.features.iter().map(|f| f.id.clone()).collect();
     let t_feats: Vec<String> = target.features.iter().map(|f| f.id.clone()).collect();
-    diff.nodes_added = ids(&t_nodes.iter().filter(|x| !b_nodes.contains(x)).cloned().collect());
-    diff.nodes_removed = ids(&b_nodes.iter().filter(|x| !t_nodes.contains(x)).cloned().collect());
-    diff.edges_added = ids(&t_edges.iter().filter(|x| !b_edges.contains(x)).cloned().collect());
-    diff.edges_removed = ids(&b_edges.iter().filter(|x| !t_edges.contains(x)).cloned().collect());
-    diff.features_added = ids(&t_feats.iter().filter(|x| !b_feats.contains(x)).cloned().collect());
-    diff.features_removed = ids(&b_feats.iter().filter(|x| !t_feats.contains(x)).cloned().collect());
+    diff.nodes_added = ids(&t_nodes
+        .iter()
+        .filter(|x| !b_nodes.contains(x))
+        .cloned()
+        .collect());
+    diff.nodes_removed = ids(&b_nodes
+        .iter()
+        .filter(|x| !t_nodes.contains(x))
+        .cloned()
+        .collect());
+    diff.edges_added = ids(&t_edges
+        .iter()
+        .filter(|x| !b_edges.contains(x))
+        .cloned()
+        .collect());
+    diff.edges_removed = ids(&b_edges
+        .iter()
+        .filter(|x| !t_edges.contains(x))
+        .cloned()
+        .collect());
+    diff.features_added = ids(&t_feats
+        .iter()
+        .filter(|x| !b_feats.contains(x))
+        .cloned()
+        .collect());
+    diff.features_removed = ids(&b_feats
+        .iter()
+        .filter(|x| !t_feats.contains(x))
+        .cloned()
+        .collect());
     diff.changed = !diff.fields_changed.is_empty()
         || !diff.nodes_added.is_empty()
         || !diff.nodes_removed.is_empty()
@@ -444,7 +527,10 @@ pub fn version_routes() -> Router<MarketState> {
         .route("/:id/versions", get(list_versions_handler))
         .route("/:id/versions/compare", get(compare_versions_handler))
         .route("/:id/versions/:version", get(get_version_handler))
-        .route("/:id/rollback/:version", axum::routing::post(rollback_handler))
+        .route(
+            "/:id/rollback/:version",
+            axum::routing::post(rollback_handler),
+        )
 }
 
 /// GET /:id/versions —— 版本列表（含变更日志摘要）
@@ -473,12 +559,16 @@ async fn compare_versions_handler(
     let base_v = params.get("base").cloned().unwrap_or_default();
     let target_v = params.get("target").cloned().unwrap_or_default();
     if base_v.is_empty() || target_v.is_empty() {
-        return Json(serde_json::json!({ "success": false, "error": "需要 base 与 target 两个版本号" }));
+        return Json(
+            serde_json::json!({ "success": false, "error": "需要 base 与 target 两个版本号" }),
+        );
     }
     let base = match get_version(&id, &base_v) {
         Some(p) => p,
         None => {
-            return Json(serde_json::json!({ "success": false, "error": format!("版本 {} 不存在", base_v) }))
+            return Json(
+                serde_json::json!({ "success": false, "error": format!("版本 {} 不存在", base_v) }),
+            )
         }
     };
     // target 允许指向当前最新版
@@ -493,7 +583,9 @@ async fn compare_versions_handler(
         match get_version(&id, &target_v) {
             Some(p) => p,
             None => {
-                return Json(serde_json::json!({ "success": false, "error": format!("版本 {} 不存在", target_v) }))
+                return Json(
+                    serde_json::json!({ "success": false, "error": format!("版本 {} 不存在", target_v) }),
+                )
             }
         }
     };
@@ -514,7 +606,9 @@ async fn get_version_handler(
     }
     match get_version(&id, &version) {
         Some(pkg) => Json(serde_json::json!({ "success": true, "package": pkg })),
-        None => Json(serde_json::json!({ "success": false, "error": format!("版本 {} 不存在", version) })),
+        None => Json(
+            serde_json::json!({ "success": false, "error": format!("版本 {} 不存在", version) }),
+        ),
     }
 }
 
@@ -530,10 +624,15 @@ async fn rollback_handler(
             reload_index_sync(&state);
             (
                 StatusCode::OK,
-                Json(serde_json::json!({ "success": true, "package": pkg, "rolled_back_to": version })),
+                Json(
+                    serde_json::json!({ "success": true, "package": pkg, "rolled_back_to": version }),
+                ),
             )
         }
-        Err(e) => (StatusCode::BAD_REQUEST, Json(serde_json::json!({ "success": false, "error": e }))),
+        Err(e) => (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "success": false, "error": e })),
+        ),
     }
 }
 
@@ -554,7 +653,10 @@ mod tests {
     #[test]
     fn semver_parse_and_precedence() {
         assert_eq!(SemVer::parse("1.2.3").unwrap().to_string(), "1.2.3");
-        assert_eq!(SemVer::parse("2.0.0-alpha.1").unwrap().pre.as_deref(), Some("alpha.1"));
+        assert_eq!(
+            SemVer::parse("2.0.0-alpha.1").unwrap().pre.as_deref(),
+            Some("alpha.1")
+        );
         assert_eq!(SemVer::parse("1.0").unwrap().to_string(), "1.0.0");
         assert!(SemVer::parse("1.2.3.4").is_none());
         assert!(SemVer::parse("abc").is_none());
@@ -566,14 +668,23 @@ mod tests {
         // 1.0.0-alpha < 1.0.0-alpha.1
         assert_eq!(version_cmp("1.0.0-alpha", "1.0.0-alpha.1"), Ordering::Less);
         // 1.0.0-alpha.1 < 1.0.0-alpha.beta（数字 < 字母数字）
-        assert_eq!(version_cmp("1.0.0-alpha.1", "1.0.0-alpha.beta"), Ordering::Less);
+        assert_eq!(
+            version_cmp("1.0.0-alpha.1", "1.0.0-alpha.beta"),
+            Ordering::Less
+        );
         // 构建元数据不参与比较
         assert_eq!(version_cmp("1.0.0+build1", "1.0.0"), Ordering::Equal);
         // bump
         assert_eq!(bump_patch_version("1.2.9"), "1.2.10");
         assert_eq!(bump_patch_version("1.2.3-alpha"), "1.2.4");
-        assert_eq!(SemVer::parse("1.2.3").unwrap().bump_minor().to_string(), "1.3.0");
-        assert_eq!(SemVer::parse("1.2.3").unwrap().bump_major().to_string(), "2.0.0");
+        assert_eq!(
+            SemVer::parse("1.2.3").unwrap().bump_minor().to_string(),
+            "1.3.0"
+        );
+        assert_eq!(
+            SemVer::parse("1.2.3").unwrap().bump_major().to_string(),
+            "2.0.0"
+        );
     }
 
     #[test]

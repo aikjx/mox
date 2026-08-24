@@ -12,8 +12,8 @@ use ai_agent::requirement_compiler::{RequirementCompiler, SystemBlueprint};
 use flow_ai::codegen::{generate, generate_full_stack};
 use flow_ai::model::{Access, FlowEdge, FlowGraph, FlowNode, NodeKind};
 use flow_ai::{conflict, dataflow, schedule};
-use template_market::{Domain, SystemTemplate, TemplateMarket};
 use serde_json::json;
+use template_market::{Domain, SystemTemplate, TemplateMarket};
 
 /// ai-agent 的 NodeType → flow-ai 的 NodeKind 映射（两库枚举独立，需显式转换）
 fn map_node_kind(t: &NodeType) -> NodeKind {
@@ -86,14 +86,21 @@ async fn e2e_dialogue_to_fullstack_code_and_market_template() {
     let sc = schedule::schedule(&g, &plan.dependencies);
     let cf = conflict::detect(&g, &plan.layers);
     let bundle = generate_full_stack(&g, &plan, &sc, &cf);
-    assert!(!bundle.rejected, "生成不应被否决: {:?}", bundle.reject_reasons);
+    assert!(
+        !bundle.rejected,
+        "生成不应被否决: {:?}",
+        bundle.reject_reasons
+    );
 
     let files: Vec<&String> = bundle.files.iter().map(|f| &f.path).collect();
     // 后端骨架
     assert!(files.iter().any(|p| p.ends_with("main.py")), "缺少后端入口");
     // 数据库 DDL（草莓多新增）
     let schema = bundle.file("generated/schema.sql").expect("缺 schema.sql");
-    assert!(schema.content.contains("CREATE TABLE IF NOT EXISTS"), "缺建表语句");
+    assert!(
+        schema.content.contains("CREATE TABLE IF NOT EXISTS"),
+        "缺建表语句"
+    );
     // 前端 Vue（草莓多新增）
     let vue = bundle.file("generated/App.vue").expect("缺 App.vue");
     assert!(vue.content.contains("<template>"), "缺前端模板");

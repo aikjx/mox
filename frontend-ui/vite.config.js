@@ -12,6 +12,12 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 3020,
+    headers: {
+      // 安全响应头（开发环境保持宽松）
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'SAMEORIGIN',
+      'Referrer-Policy': 'strict-origin-when-cross-origin'
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:3010',
@@ -31,6 +37,10 @@ export default defineConfig({
     // 旧资源为孤立文件（index.html 由新构建覆盖），不影响运行。
     emptyOutDir: false,
     chunkSizeWarningLimit: 2000,
+    // 压缩：企业级发布产物，ES 压缩减少体积，保留可调试的注释剥离
+    minify: 'esbuild',
+    cssCodeSplit: true,
+    reportCompressedSize: true,
     rollupOptions: {
       input: {
         main: fileURLToPath(new URL('./index.html', import.meta.url))
@@ -63,6 +73,8 @@ export default defineConfig({
             if (id.includes('echarts') || id.includes('zrender')) return 'vendor-echarts'
             if (id.includes('element-plus') || id.includes('@element-plus')) return 'vendor-element'
             if (id.includes('vue') || id.includes('vue-router')) return 'vendor-vue'
+            // vexflow/3d 已随懒加载视图拆分：保持 vendor 仅通用依赖
+            if (id.includes('axios')) return 'vendor-axios'
             return 'vendor'
           }
         }

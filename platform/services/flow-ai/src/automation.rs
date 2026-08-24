@@ -200,8 +200,11 @@ impl RbacDeriver {
             }
         }
         perms.sort_by(|a, b| {
-            (a.role.as_str(), a.resource.as_str(), a.action.as_str())
-                .cmp(&(b.role.as_str(), b.resource.as_str(), b.action.as_str()))
+            (a.role.as_str(), a.resource.as_str(), a.action.as_str()).cmp(&(
+                b.role.as_str(),
+                b.resource.as_str(),
+                b.action.as_str(),
+            ))
         });
         (roles, perms)
     }
@@ -366,7 +369,10 @@ fn with_safe_import(code: &str) -> String {
     for line in code.lines() {
         let trimmed = line.trim_start();
         if trimmed.starts_with("import ") || trimmed.starts_with("from ") {
-            out.push_str(&format!("try:\n    {}\nexcept ImportError:\n    pass\n", line.trim()));
+            out.push_str(&format!(
+                "try:\n    {}\nexcept ImportError:\n    pass\n",
+                line.trim()
+            ));
         } else {
             out.push_str(line);
             out.push('\n');
@@ -380,7 +386,10 @@ fn with_zero_guard(code: &str) -> String {
     let mut out = String::new();
     for line in code.lines() {
         if line.contains('/') && !line.trim_start().starts_with("//") {
-            out.push_str(&format!("{}  # [auto-guard] 建议在除法前判断分母 != 0", line));
+            out.push_str(&format!(
+                "{}  # [auto-guard] 建议在除法前判断分母 != 0",
+                line
+            ));
         } else {
             out.push_str(line);
         }
@@ -408,11 +417,16 @@ impl AutoTestGen {
     pub fn generate(code: &str, module_name: &str, entry_fn: &str) -> AutoTest {
         let has_main = code.contains("def main") || code.contains("if __name__");
         let call = if has_main {
-            format!("    import runpy\n    runpy.run_path('{}.py', run_name='__main__')\n", module_name)
-        } else if !entry_fn.is_empty()
-            && code.contains(&format!("def {}", entry_fn))
-        {
-            format!("    import {m}\n    r = {m}.{f}()\n    assert r is not None or True\n", m = module_name, f = entry_fn)
+            format!(
+                "    import runpy\n    runpy.run_path('{}.py', run_name='__main__')\n",
+                module_name
+            )
+        } else if !entry_fn.is_empty() && code.contains(&format!("def {}", entry_fn)) {
+            format!(
+                "    import {m}\n    r = {m}.{f}()\n    assert r is not None or True\n",
+                m = module_name,
+                f = entry_fn
+            )
         } else {
             "    # 无明确入口，仅做语法/导入校验\n    pass\n".to_string()
         };
@@ -510,14 +524,14 @@ mod tests {
         assert!(roles.contains(&"customer".to_string()));
         assert!(roles.contains(&"merchant".to_string()));
         // 下单 → order:create 应存在（admin + customer）
-        let has_order_create = perms.iter().any(|p| {
-            p.resource == "order" && p.action == "create" && p.role == "customer"
-        });
+        let has_order_create = perms
+            .iter()
+            .any(|p| p.resource == "order" && p.action == "create" && p.role == "customer");
         assert!(has_order_create, "应推导出 order:create 权限");
         // admin 应拥有全部
-        let admin_order_create = perms.iter().any(|p| {
-            p.role == "admin" && p.resource == "order" && p.action == "create"
-        });
+        let admin_order_create = perms
+            .iter()
+            .any(|p| p.role == "admin" && p.resource == "order" && p.action == "create");
         assert!(admin_order_create);
     }
 
@@ -526,7 +540,10 @@ mod tests {
         let tb = "Traceback (most recent call last):\n  File \"x.py\", line 1, in <module>\nNameError: name 'foo' is not defined";
         assert_eq!(ErrorCategory::from_traceback(tb), ErrorCategory::NameError);
         let tb2 = "ModuleNotFoundError: No module named 'pandas'";
-        assert_eq!(ErrorCategory::from_traceback(tb2), ErrorCategory::ImportError);
+        assert_eq!(
+            ErrorCategory::from_traceback(tb2),
+            ErrorCategory::ImportError
+        );
     }
 
     #[test]
@@ -583,9 +600,6 @@ mod tests {
         });
         let ok = patch_flow_with_fix(&mut flow, "n1", "x=1");
         assert!(ok);
-        assert_eq!(
-            flow["nodes"][0]["config"]["code"].as_str().unwrap(),
-            "x=1"
-        );
+        assert_eq!(flow["nodes"][0]["config"]["code"].as_str().unwrap(), "x=1");
     }
 }

@@ -250,16 +250,22 @@ module.exports = function registerGraphRoutes(ctx) {
   //   硬约束：method=spread 必须作为个性化 PageRank 特例，d=0.85，30 轮收敛
   reg('post', '/graph/activate', async (req, res) => {
     const body = await readBody(req);
-    const seed = body.seed || body.seedId;
-    if (!seed) return fail(res, 400, 'seed required');
+    // 兼容：前端可能传 string（单种子）或 string[]（多种子，如多选激活）；多种子时均等分配初始激活能量
+    let seedRaw = body.seed || body.seedId;
+    if (!seedRaw) return fail(res, 400, 'seed required');
+    const seeds = Array.isArray(seedRaw) ? seedRaw.slice() : [seedRaw];
     const { nodes, edges } = graphAdjacency();
-    if (!nodes.find(n => n.id === seed)) {
-      return fail(res, 404, 'seed node not found in graph');
+    const validSeeds = seeds.filter(s => nodes.find(n => n.id === s));
+    if (!validSeeds.length) {
+      return fail(res, 404, 'seed node not found in graph: ' + seeds.join(','));
     }
     // decay 参数兼容（旧 API 曾允许传入 body.decay）：若在 (0,1) 范围则覆盖默认 0.85
     const userDecay = parseFloat(body.decay);
     const damping = (userDecay && userDecay > 0 && userDecay < 1) ? userDecay : 0.85;
-    const personalization = { [seed]: 1.0 };
+    // 多种子：平均分配 personalization 初值 1.0（与老接口单种子总能量保持一致，便于结果横向比较）
+    const unitWeight = 1.0 / validSeeds.length;
+    const personalization = {};
+    validSeeds.forEach(s => { personalization[s] = unitWeight; });
     const result = await aiIntegration.graphEngine.computePersonalizedPageRank(
       { nodes, edges },
       { damping, maxIterations: 30, personalization, topK: Math.min(nodes.length, 50) }
@@ -269,8 +275,11 @@ module.exports = function registerGraphRoutes(ctx) {
     const rank = (result.topK || result.scores || []).slice(0, 20).map(r => ({
       id: r.id, energy: r.score
     }));
+    // body.iterations 仅作为诊断字段保存，但实际执行硬编码 30 轮（§18-4 激活扩散约束）
+    const rawIter = parseInt(body.iterations, 10);
     ok(res, {
-      seed,
+      seed: validSeeds.length === 1 ? validSeeds[0] : validSeeds,
+      seeds: validSeeds,
       energy,
       rank,
       activation: {
@@ -279,7 +288,8 @@ module.exports = function registerGraphRoutes(ctx) {
         max_iterations: 30,
         iterations: result.iterations,
         converged: result.converged,
-        note: '个性化 PageRank 特例（method=spread, d=0.85, 30 轮收敛），单种子个性化向量'
+        requested_iterations: Number.isInteger(rawIter) ? rawIter : null,
+        note: '个性化 PageRank 特例（method=spread, d=0.85, 30 轮收敛）'
       }
     });
   });

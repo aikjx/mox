@@ -72,7 +72,7 @@
 - Flow YAML 外部化（`flow_loader`）
 
 **E. 业务目录（business-catalog）**
-- 内置 7 业务：政务数据归集 / 法院文书 / 财务对账 / 智能客服 / ETL / MCP 编排 / 空间光速螺旋（`lib.rs:366`）
+- 内置 6 业务：政务数据归集 / 财务对账 / 智能客服 / ETL / MCP 编排 / 空间光速螺旋（`lib.rs:366`）
 - 跨业务六维关系网（`build_topology`，`:379`）
 
 **F. AI 智能体（ai-agent）**

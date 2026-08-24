@@ -112,13 +112,22 @@ pub struct Access {
 
 impl Access {
     pub fn read(r: impl Into<String>) -> Self {
-        Self { resource: r.into(), mode: AccessMode::Read }
+        Self {
+            resource: r.into(),
+            mode: AccessMode::Read,
+        }
     }
     pub fn write(r: impl Into<String>) -> Self {
-        Self { resource: r.into(), mode: AccessMode::Write }
+        Self {
+            resource: r.into(),
+            mode: AccessMode::Write,
+        }
     }
     pub fn rw(r: impl Into<String>) -> Self {
-        Self { resource: r.into(), mode: AccessMode::ReadWrite }
+        Self {
+            resource: r.into(),
+            mode: AccessMode::ReadWrite,
+        }
     }
 }
 
@@ -132,7 +141,7 @@ pub enum Severity {
     Blocking,
 }
 
-/// 业务专家规则（政务 / 法院 / 等保等）
+/// 业务专家规则（政务 / 等保等）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExpertRule {
     pub id: String,
@@ -194,7 +203,12 @@ impl FlowNode {
         }
     }
 
-    pub fn task(id: impl Into<String>, name: impl Into<String>, tool: ToolKind, duration_ms: u64) -> Self {
+    pub fn task(
+        id: impl Into<String>,
+        name: impl Into<String>,
+        tool: ToolKind,
+        duration_ms: u64,
+    ) -> Self {
         let mut n = Self::new(id, name, NodeKind::Task);
         n.tool = Some(tool);
         n.duration_ms = duration_ms;
@@ -259,7 +273,10 @@ pub enum EdgeKind {
 impl EdgeKind {
     /// 该边是否为不可剪除的硬约束
     pub fn is_hard(&self) -> bool {
-        matches!(self, EdgeKind::Conditional | EdgeKind::Exception | EdgeKind::Mutex)
+        matches!(
+            self,
+            EdgeKind::Conditional | EdgeKind::Exception | EdgeKind::Mutex
+        )
     }
 }
 
@@ -281,7 +298,12 @@ fn default_edge_kind() -> EdgeKind {
 
 impl FlowEdge {
     pub fn seq(from: impl Into<String>, to: impl Into<String>) -> Self {
-        Self { from: from.into(), to: to.into(), kind: EdgeKind::Sequence, condition: None }
+        Self {
+            from: from.into(),
+            to: to.into(),
+            kind: EdgeKind::Sequence,
+            condition: None,
+        }
     }
     pub fn cond(from: impl Into<String>, to: impl Into<String>, expr: impl Into<String>) -> Self {
         Self {
@@ -292,11 +314,21 @@ impl FlowEdge {
         }
     }
     pub fn exception(from: impl Into<String>, to: impl Into<String>) -> Self {
-        Self { from: from.into(), to: to.into(), kind: EdgeKind::Exception, condition: None }
+        Self {
+            from: from.into(),
+            to: to.into(),
+            kind: EdgeKind::Exception,
+            condition: None,
+        }
     }
     /// 资源互斥边：强制 from 先于 to，冲突修复专用
     pub fn mutex(from: impl Into<String>, to: impl Into<String>) -> Self {
-        Self { from: from.into(), to: to.into(), kind: EdgeKind::Mutex, condition: None }
+        Self {
+            from: from.into(),
+            to: to.into(),
+            kind: EdgeKind::Mutex,
+            condition: None,
+        }
     }
 }
 

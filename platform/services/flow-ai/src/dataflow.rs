@@ -120,10 +120,7 @@ fn side_effect_ordered(a: &FlowNode, b: &FlowNode) -> bool {
 /// 节点的全部访问资源（读 + 写）集合
 #[allow(dead_code)]
 fn node_resources(n: &FlowNode) -> BTreeSet<String> {
-    n.accesses
-        .iter()
-        .map(|a| a.resource.clone())
-        .collect()
+    n.accesses.iter().map(|a| a.resource.clone()).collect()
 }
 
 /// 计算两节点间的资源冒险类型
@@ -173,8 +170,8 @@ pub fn analyze(graph: &FlowGraph) -> ParallelPlan {
     for (i, nd) in graph.nodes.iter().enumerate() {
         id_index.insert(nd.id.as_str(), i);
     }
-// 说明：struct NodeSets —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
-// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
+    // 说明：struct NodeSets —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+    // 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
     struct NodeSets<'a> {
         reads: Vec<&'a str>,
         writes: Vec<&'a str>,
@@ -209,7 +206,8 @@ pub fn analyze(graph: &FlowGraph) -> ParallelPlan {
 
     // 1a) 结构性 / 异常 / 条件 / 互斥边一律保留
     for e in &graph.edges {
-        let (Some(&u), Some(&v)) = (id_index.get(e.from.as_str()), id_index.get(e.to.as_str())) else {
+        let (Some(&u), Some(&v)) = (id_index.get(e.from.as_str()), id_index.get(e.to.as_str()))
+        else {
             continue;
         };
         if e.kind == EdgeKind::Mutex {
@@ -313,7 +311,9 @@ pub fn analyze(graph: &FlowGraph) -> ParallelPlan {
     for (&(u, v), (kind, res)) in keep.iter() {
         // 互斥硬约束永不参与传递归约，避免修复结果被"优化掉"
         let redundant = *kind != DepKind::Mutex
-            && dep_adj[u].iter().any(|&w| w != v && dep_reach.reaches(w, v));
+            && dep_adj[u]
+                .iter()
+                .any(|&w| w != v && dep_reach.reaches(w, v));
         if redundant {
             continue;
         }
@@ -324,12 +324,14 @@ pub fn analyze(graph: &FlowGraph) -> ParallelPlan {
             resource: res.clone(),
         });
     }
-    dependencies.sort_by(|a, b| (a.from.as_str(), a.to.as_str()).cmp(&(b.from.as_str(), b.to.as_str())));
+    dependencies
+        .sort_by(|a, b| (a.from.as_str(), a.to.as_str()).cmp(&(b.from.as_str(), b.to.as_str())));
 
     // 3) 找出被剪掉的伪依赖边（复用 id_index 避免 2×O(n) 线性扫描/边）
     let mut removed_edges = Vec::new();
     for e in &graph.edges {
-        let (Some(&u), Some(&v)) = (id_index.get(e.from.as_str()), id_index.get(e.to.as_str())) else {
+        let (Some(&u), Some(&v)) = (id_index.get(e.from.as_str()), id_index.get(e.to.as_str()))
+        else {
             continue;
         };
         if !keep.contains_key(&(u, v)) {
@@ -346,7 +348,13 @@ pub fn analyze(graph: &FlowGraph) -> ParallelPlan {
     let sequential_ms: u64 = graph.nodes.iter().map(|x| x.duration_ms).sum();
     let parallel_ms = longest_path_ms_fast(graph, &dependencies, &id_index);
 
-    ParallelPlan { dependencies, removed_edges, layers, sequential_ms, parallel_ms }
+    ParallelPlan {
+        dependencies,
+        removed_edges,
+        layers,
+        sequential_ms,
+        parallel_ms,
+    }
 }
 
 fn build_adj(n: usize, edges: impl Iterator<Item = (usize, usize)>) -> Vec<Vec<usize>> {
@@ -427,7 +435,8 @@ fn layer_by_deps_fast(
     let mut indeg = vec![0usize; n];
     let mut succ = vec![Vec::new(); n];
     for d in deps {
-        let (Some(&u), Some(&v)) = (id_index.get(d.from.as_str()), id_index.get(d.to.as_str())) else {
+        let (Some(&u), Some(&v)) = (id_index.get(d.from.as_str()), id_index.get(d.to.as_str()))
+        else {
             continue;
         };
         succ[u].push(v);
@@ -445,7 +454,11 @@ fn layer_by_deps_fast(
         let u = queue[head];
         head += 1;
         order.push(u);
-        let step = if graph.nodes[u].kind.is_executable() { 1 } else { 0 };
+        let step = if graph.nodes[u].kind.is_executable() {
+            1
+        } else {
+            0
+        };
         for &v in &succ[u] {
             depth[v] = depth[v].max(depth[u] + step);
             deg[v] -= 1;
@@ -485,7 +498,8 @@ fn longest_path_ms_fast(
     let mut succ = vec![Vec::new(); n];
     let mut indeg = vec![0usize; n];
     for d in deps {
-        let (Some(&u), Some(&v)) = (id_index.get(d.from.as_str()), id_index.get(d.to.as_str())) else {
+        let (Some(&u), Some(&v)) = (id_index.get(d.from.as_str()), id_index.get(d.to.as_str()))
+        else {
             continue;
         };
         succ[u].push(v);
@@ -513,7 +527,10 @@ fn longest_path_ms_fast(
 ///
 /// 生成的图可直接回灌给前端可视化编辑器，实现「优化结果可见」。
 pub fn rewrite_with_gateways(graph: &FlowGraph, plan: &ParallelPlan) -> FlowGraph {
-    let mut out = FlowGraph::new(format!("{}-parallel", graph.id), format!("{} (并行化)", graph.name));
+    let mut out = FlowGraph::new(
+        format!("{}-parallel", graph.id),
+        format!("{} (并行化)", graph.name),
+    );
     out.pools = graph.pools.clone();
     out.rules = graph.rules.clone();
     out.nodes = graph.nodes.clone();
@@ -543,7 +560,11 @@ pub fn rewrite_with_gateways(graph: &FlowGraph, plan: &ParallelPlan) -> FlowGrap
     for (li, layer) in plan.layers.iter().enumerate() {
         let executable: Vec<&String> = layer
             .iter()
-            .filter(|id| out.node(id).map(|n| n.kind.is_executable()).unwrap_or(false))
+            .filter(|id| {
+                out.node(id)
+                    .map(|n| n.kind.is_executable())
+                    .unwrap_or(false)
+            })
             .collect();
         if executable.len() < 2 {
             continue;
@@ -551,8 +572,16 @@ pub fn rewrite_with_gateways(graph: &FlowGraph, plan: &ParallelPlan) -> FlowGrap
         gw += 1;
         let fork_id = format!("__fork_{}_{}", li, gw);
         let join_id = format!("__join_{}_{}", li, gw);
-        out.nodes.push(FlowNode::new(fork_id.clone(), format!("并行开始 L{}", li), NodeKind::ParallelFork));
-        out.nodes.push(FlowNode::new(join_id.clone(), format!("并行汇合 L{}", li), NodeKind::ParallelJoin));
+        out.nodes.push(FlowNode::new(
+            fork_id.clone(),
+            format!("并行开始 L{}", li),
+            NodeKind::ParallelFork,
+        ));
+        out.nodes.push(FlowNode::new(
+            join_id.clone(),
+            format!("并行汇合 L{}", li),
+            NodeKind::ParallelJoin,
+        ));
         for id in executable {
             out.edges.push(FlowEdge::seq(fork_id.clone(), id.clone()));
             out.edges.push(FlowEdge::seq(id.clone(), join_id.clone()));
@@ -609,8 +638,14 @@ mod tests {
         let g = office_pipeline();
         let plan = analyze(&g);
         // excel→rpa 与 rpa→db 都是伪依赖，应被剪掉
-        assert!(plan.removed_edges.iter().any(|(a, b)| a == "excel" && b == "rpa"));
-        assert!(plan.removed_edges.iter().any(|(a, b)| a == "rpa" && b == "db"));
+        assert!(plan
+            .removed_edges
+            .iter()
+            .any(|(a, b)| a == "excel" && b == "rpa"));
+        assert!(plan
+            .removed_edges
+            .iter()
+            .any(|(a, b)| a == "rpa" && b == "db"));
     }
 
     #[test]
@@ -652,17 +687,17 @@ mod tests {
         // 两个 shell 节点写同一文件 → 必须保序（经 WAW 数据依赖捕获，比 SideEffect 更精确）
         let mut g = FlowGraph::new("s", "shell");
         g.add_node(
-            FlowNode::task("a", "A", ToolKind::Shell, 10)
-                .with_access(Access::write("file:lock")),
+            FlowNode::task("a", "A", ToolKind::Shell, 10).with_access(Access::write("file:lock")),
         );
         g.add_node(
-            FlowNode::task("b", "B", ToolKind::Shell, 10)
-                .with_access(Access::write("file:lock")),
+            FlowNode::task("b", "B", ToolKind::Shell, 10).with_access(Access::write("file:lock")),
         );
         g.add_edge(FlowEdge::seq("a", "b"));
         let plan = analyze(&g);
         assert!(
-            plan.dependencies.iter().any(|d| d.from == "a" && d.to == "b"),
+            plan.dependencies
+                .iter()
+                .any(|d| d.from == "a" && d.to == "b"),
             "共享资源 shell 节点应保留顺序依赖"
         );
     }
@@ -682,7 +717,10 @@ mod tests {
         g.add_edge(FlowEdge::seq("draft", "review"));
         let plan = analyze(&g);
         assert!(
-            !plan.dependencies.iter().any(|d| d.from == "draft" && d.to == "review"),
+            !plan
+                .dependencies
+                .iter()
+                .any(|d| d.from == "draft" && d.to == "review"),
             "写不同变量的 WAW 应被重命名消除"
         );
         assert_eq!(plan.parallel_ms, 300, "两节点并行 → 关键路径=单任务耗时");
@@ -693,17 +731,17 @@ mod tests {
         // 两个步骤写同一变量 → WAW 冲突，必须保序（最终值确定性）
         let mut g = FlowGraph::new("w", "waw");
         g.add_node(
-            FlowNode::task("a", "A", ToolKind::Llm, 300)
-                .with_access(Access::write("var:out")),
+            FlowNode::task("a", "A", ToolKind::Llm, 300).with_access(Access::write("var:out")),
         );
         g.add_node(
-            FlowNode::task("b", "B", ToolKind::Llm, 300)
-                .with_access(Access::write("var:out")),
+            FlowNode::task("b", "B", ToolKind::Llm, 300).with_access(Access::write("var:out")),
         );
         g.add_edge(FlowEdge::seq("a", "b"));
         let plan = analyze(&g);
         assert!(
-            plan.dependencies.iter().any(|d| d.from == "a" && d.to == "b" && d.kind == DepKind::Waw),
+            plan.dependencies
+                .iter()
+                .any(|d| d.from == "a" && d.to == "b" && d.kind == DepKind::Waw),
             "写同一变量的 WAW 必须保序"
         );
         assert_eq!(plan.parallel_ms, 600);
@@ -725,7 +763,10 @@ mod tests {
         let plan = analyze(&g);
         // 应判定为可剪除的伪依赖（无 SideEffect 依赖，且被移入并行层）
         assert!(
-            !plan.dependencies.iter().any(|d| d.kind == DepKind::SideEffect),
+            !plan
+                .dependencies
+                .iter()
+                .any(|d| d.kind == DepKind::SideEffect),
             "disjoint-resource shell 节点应并行化"
         );
         assert_eq!(plan.parallel_ms, 10, "两节点并行 → 关键路径=单任务耗时");
@@ -736,8 +777,14 @@ mod tests {
         let g = office_pipeline();
         let plan = analyze(&g);
         let rewritten = rewrite_with_gateways(&g, &plan);
-        assert!(rewritten.nodes.iter().any(|n| n.kind == NodeKind::ParallelFork));
-        assert!(rewritten.nodes.iter().any(|n| n.kind == NodeKind::ParallelJoin));
+        assert!(rewritten
+            .nodes
+            .iter()
+            .any(|n| n.kind == NodeKind::ParallelFork));
+        assert!(rewritten
+            .nodes
+            .iter()
+            .any(|n| n.kind == NodeKind::ParallelJoin));
         assert!(rewritten.topo_order().is_ok(), "重写后仍须是 DAG");
     }
 }

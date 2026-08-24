@@ -141,7 +141,10 @@ impl Node {
     pub fn with_fields(mut self, fields: &[(&str, &str)]) -> Self {
         self.fields = fields
             .iter()
-            .map(|(n, t)| Field { name: n.to_string(), ty: t.to_string() })
+            .map(|(n, t)| Field {
+                name: n.to_string(),
+                ty: t.to_string(),
+            })
             .collect();
         self
     }
@@ -161,7 +164,11 @@ pub struct Edge {
 
 impl Edge {
     pub fn new(from: impl Into<String>, to: impl Into<String>, kind: EdgeKind) -> Self {
-        Self { from: from.into(), to: to.into(), kind }
+        Self {
+            from: from.into(),
+            to: to.into(),
+            kind,
+        }
     }
 }
 
@@ -192,7 +199,10 @@ impl AssocGraph {
     }
 
     fn out_edges(&self, id: &str, kind: EdgeKind) -> Vec<&Edge> {
-        self.edges.iter().filter(|e| e.from == id && e.kind == kind).collect()
+        self.edges
+            .iter()
+            .filter(|e| e.from == id && e.kind == kind)
+            .collect()
     }
 
     /// 反向追溯：从某节点沿指定边类型一路向上找到所有上游 id
@@ -218,19 +228,39 @@ impl AssocGraph {
     pub fn trace_chain(&self, code_id: &str) -> Vec<String> {
         let mut chain = vec![code_id.to_string()];
         // 任务：Codes 边 to == code
-        if let Some(task) = self.edges.iter().find(|e| e.kind == EdgeKind::Codes && e.to == code_id) {
+        if let Some(task) = self
+            .edges
+            .iter()
+            .find(|e| e.kind == EdgeKind::Codes && e.to == code_id)
+        {
             chain.insert(0, task.from.clone());
             // 算法：Executes 边 to == task
-            if let Some(algo) = self.edges.iter().find(|e| e.kind == EdgeKind::Executes && e.to == task.from) {
+            if let Some(algo) = self
+                .edges
+                .iter()
+                .find(|e| e.kind == EdgeKind::Executes && e.to == task.from)
+            {
                 chain.insert(0, algo.from.clone());
                 // 业务：Implements 边 to == algo
-                if let Some(biz) = self.edges.iter().find(|e| e.kind == EdgeKind::Implements && e.to == algo.from) {
+                if let Some(biz) = self
+                    .edges
+                    .iter()
+                    .find(|e| e.kind == EdgeKind::Implements && e.to == algo.from)
+                {
                     chain.insert(0, biz.from.clone());
                     // 功能：Realizes 边 to == biz
-                    if let Some(feat) = self.edges.iter().find(|e| e.kind == EdgeKind::Realizes && e.to == biz.from) {
+                    if let Some(feat) = self
+                        .edges
+                        .iter()
+                        .find(|e| e.kind == EdgeKind::Realizes && e.to == biz.from)
+                    {
                         chain.insert(0, feat.from.clone());
                         // 需求：Satisfies 边 to == feat
-                        if let Some(req) = self.edges.iter().find(|e| e.kind == EdgeKind::Satisfies && e.to == feat.from) {
+                        if let Some(req) = self
+                            .edges
+                            .iter()
+                            .find(|e| e.kind == EdgeKind::Satisfies && e.to == feat.from)
+                        {
                             chain.insert(0, req.from.clone());
                         }
                     }
@@ -242,7 +272,10 @@ impl AssocGraph {
 
     /// 取某代码节点对应的数据设计节点 id（Designs 边）
     pub fn data_schemas_of(&self, code_id: &str) -> Vec<String> {
-        self.out_edges(code_id, EdgeKind::Designs).iter().map(|e| e.to.clone()).collect()
+        self.out_edges(code_id, EdgeKind::Designs)
+            .iter()
+            .map(|e| e.to.clone())
+            .collect()
     }
 
     /// 「一一对应」校验：返回所有违反不变量的描述
@@ -303,12 +336,15 @@ impl AssocGraph {
                     .filter(|e| e.kind == EdgeKind::Codes)
                     .collect();
                 let reaches_code = self
-                    .upstream_ids(&n.id, &[
-                        EdgeKind::Satisfies,
-                        EdgeKind::Realizes,
-                        EdgeKind::Implements,
-                        EdgeKind::Executes,
-                    ])
+                    .upstream_ids(
+                        &n.id,
+                        &[
+                            EdgeKind::Satisfies,
+                            EdgeKind::Realizes,
+                            EdgeKind::Implements,
+                            EdgeKind::Executes,
+                        ],
+                    )
                     .iter()
                     .any(|id| {
                         codes
@@ -318,12 +354,15 @@ impl AssocGraph {
                 // 简化判定：存在 T→C 边且其上游可达本需求即可
                 let mut ok = false;
                 for ce in &codes {
-                    let up = self.upstream_ids(&ce.from, &[
-                        EdgeKind::Executes,
-                        EdgeKind::Implements,
-                        EdgeKind::Realizes,
-                        EdgeKind::Satisfies,
-                    ]);
+                    let up = self.upstream_ids(
+                        &ce.from,
+                        &[
+                            EdgeKind::Executes,
+                            EdgeKind::Implements,
+                            EdgeKind::Realizes,
+                            EdgeKind::Satisfies,
+                        ],
+                    );
                     if up.contains(&n.id) {
                         ok = true;
                         break;
@@ -368,72 +407,100 @@ pub fn primiflow_seed() -> AssocGraph {
     let mut g = AssocGraph::new();
 
     // ── 需求 R（SPEC §10 DoD）──
-    g.add(Node::new("R1", NodeKind::Requirement, "自然语言需求→可渲染DAG画布").with_doc(
-        "输入自然语言需求+滑块，端到端产出可渲染 DAG 画布，无人工画流程图。",
-    ));
-    g.add(Node::new("R2", NodeKind::Requirement, "ℛ̂ 合规裁剪").with_doc(
-        "ℛ̂ 对任意超预算/矛盾拓扑产出 Δ≥0 合规 DAG，或显式 rejected 触发重生成。",
-    ));
-    g.add(Node::new("R3", NodeKind::Requirement, "八份说明书自动生成").with_doc(
-        "8 份文档可从拓扑自动生成并在 DocViewer 查看；#7 为骨架/桩。",
-    ));
-    g.add(Node::new("R4", NodeKind::Requirement, "六维溯源绑定").with_doc(
-        "trace_links 对每条 需求-功能-业务-算法-任务-代码 建立可追溯绑定。",
-    ));
-    g.add(Node::new("R5", NodeKind::Requirement, "κ 复用资产 Q").with_doc(
-        "第二次同类需求能检索到首次冻结的资产 Q 并优先复用。",
-    ));
-    g.add(Node::new("R6", NodeKind::Requirement, "冒烟兜底主链路").with_doc(
-        "schema 校验+smoke 冒烟覆盖主链路，失败回写对话重生成，不静默放行。",
-    ));
+    g.add(
+        Node::new("R1", NodeKind::Requirement, "自然语言需求→可渲染DAG画布")
+            .with_doc("输入自然语言需求+滑块，端到端产出可渲染 DAG 画布，无人工画流程图。"),
+    );
+    g.add(
+        Node::new("R2", NodeKind::Requirement, "ℛ̂ 合规裁剪")
+            .with_doc("ℛ̂ 对任意超预算/矛盾拓扑产出 Δ≥0 合规 DAG，或显式 rejected 触发重生成。"),
+    );
+    g.add(
+        Node::new("R3", NodeKind::Requirement, "八份说明书自动生成")
+            .with_doc("8 份文档可从拓扑自动生成并在 DocViewer 查看；#7 为骨架/桩。"),
+    );
+    g.add(
+        Node::new("R4", NodeKind::Requirement, "六维溯源绑定")
+            .with_doc("trace_links 对每条 需求-功能-业务-算法-任务-代码 建立可追溯绑定。"),
+    );
+    g.add(
+        Node::new("R5", NodeKind::Requirement, "κ 复用资产 Q")
+            .with_doc("第二次同类需求能检索到首次冻结的资产 Q 并优先复用。"),
+    );
+    g.add(
+        Node::new("R6", NodeKind::Requirement, "冒烟兜底主链路")
+            .with_doc("schema 校验+smoke 冒烟覆盖主链路，失败回写对话重生成，不静默放行。"),
+    );
 
     // ── 功能 F（SPEC §7 模块）──
-    g.add(Node::new("F1", NodeKind::Feature, "orchestrator 编排状态机").with_doc(
-        "requirement→topology→docs 状态机，写六维溯源绑定。",
-    ));
-    g.add(Node::new("F2", NodeKind::Feature, "scheduler κ/τ+ℛ̂").with_doc(
-        "κ/τ 预算 + ℛ̂ 裁剪。",
-    ));
-    g.add(Node::new("F3", NodeKind::Feature, "asset 资产检索/冻结").with_doc(
-        "pgvector 检索与冻结。",
-    ));
-    g.add(Node::new("F4", NodeKind::Feature, "topology_operator 需求→DAG").with_doc(
-        "需求结构化 + 拓扑涌现。",
-    ));
-    g.add(Node::new("F5", NodeKind::Feature, "doc_generator 八文档").with_doc(
-        "生成 8 份说明书 + 代码骨架 + 导出。",
-    ));
-    g.add(Node::new("F6", NodeKind::Feature, "smoke_tester 校验/冒烟").with_doc(
-        "schema 校验 + 冒烟测试。",
-    ));
-    g.add(Node::new("F7", NodeKind::Feature, "canvas 可视化可编辑画布").with_doc(
-        "Cytoscape 渲染 + 拖拽编辑，改完重算 ℛ̂。",
-    ));
-    g.add(Node::new("F8", NodeKind::Feature, "asr 语音转写").with_doc(
-        "语音→文本，作为需求输入模态。",
-    ));
+    g.add(
+        Node::new("F1", NodeKind::Feature, "orchestrator 编排状态机")
+            .with_doc("requirement→topology→docs 状态机，写六维溯源绑定。"),
+    );
+    g.add(Node::new("F2", NodeKind::Feature, "scheduler κ/τ+ℛ̂").with_doc("κ/τ 预算 + ℛ̂ 裁剪。"));
+    g.add(
+        Node::new("F3", NodeKind::Feature, "asset 资产检索/冻结").with_doc("pgvector 检索与冻结。"),
+    );
+    g.add(
+        Node::new("F4", NodeKind::Feature, "topology_operator 需求→DAG")
+            .with_doc("需求结构化 + 拓扑涌现。"),
+    );
+    g.add(
+        Node::new("F5", NodeKind::Feature, "doc_generator 八文档")
+            .with_doc("生成 8 份说明书 + 代码骨架 + 导出。"),
+    );
+    g.add(
+        Node::new("F6", NodeKind::Feature, "smoke_tester 校验/冒烟")
+            .with_doc("schema 校验 + 冒烟测试。"),
+    );
+    g.add(
+        Node::new("F7", NodeKind::Feature, "canvas 可视化可编辑画布")
+            .with_doc("Cytoscape 渲染 + 拖拽编辑，改完重算 ℛ̂。"),
+    );
+    g.add(
+        Node::new("F8", NodeKind::Feature, "asr 语音转写")
+            .with_doc("语音→文本，作为需求输入模态。"),
+    );
 
     // ── 业务 B ──
-    g.add(Node::new("B1", NodeKind::Business, "需求结构化").with_doc("NL 需求 → 结构化需求树/约束。"));
-    g.add(Node::new("B2", NodeKind::Business, "拓扑涌现").with_doc("需求 → DAG（节点=功能/模块，边=依赖/数据流）。"));
+    g.add(
+        Node::new("B1", NodeKind::Business, "需求结构化").with_doc("NL 需求 → 结构化需求树/约束。"),
+    );
+    g.add(
+        Node::new("B2", NodeKind::Business, "拓扑涌现")
+            .with_doc("需求 → DAG（节点=功能/模块，边=依赖/数据流）。"),
+    );
     g.add(Node::new("B3", NodeKind::Business, "正则化裁剪").with_doc("Δ=C²−(κ²+τ²)≥0 合规裁剪。"));
-    g.add(Node::new("B4", NodeKind::Business, "资产冻结复用").with_doc("合格产出冻结为 Q 资产，pgvector 召回复用。"));
-    g.add(Node::new("B5", NodeKind::Business, "六维溯源").with_doc("需求↔功能↔业务↔算法↔任务↔代码 全绑定。"));
-    g.add(Node::new("B6", NodeKind::Business, "导出工程").with_doc("导出代码骨架工程 / 迁移包 / 部署清单。"));
+    g.add(
+        Node::new("B4", NodeKind::Business, "资产冻结复用")
+            .with_doc("合格产出冻结为 Q 资产，pgvector 召回复用。"),
+    );
+    g.add(
+        Node::new("B5", NodeKind::Business, "六维溯源")
+            .with_doc("需求↔功能↔业务↔算法↔任务↔代码 全绑定。"),
+    );
+    g.add(
+        Node::new("B6", NodeKind::Business, "导出工程")
+            .with_doc("导出代码骨架工程 / 迁移包 / 部署清单。"),
+    );
 
     // ── 算法 A ──
-    g.add(Node::new("A1", NodeKind::Algorithm, "κτ 调度").with_doc(
-        "滑动 θ→κ=cosθ,τ=sinθ，预算 C 上界；复用偏置抬高 κ。",
-    ));
-    g.add(Node::new("A2", NodeKind::Algorithm, "ℛ̂ 正则化").with_doc(
-        "Δ<0 或 cost>C 时按最低优先级裁剪边/节点直至 Δ≥0。",
-    ));
-    g.add(Node::new("A3", NodeKind::Algorithm, "pgvector 检索").with_doc(
-        "按 domain + embedding 相似度检索 Top-K 候选资产。",
-    ));
-    g.add(Node::new("A4", NodeKind::Algorithm, "六维溯源绑定").with_doc(
-        "每条产出写入 trace_links 六维绑定。",
-    ));
+    g.add(
+        Node::new("A1", NodeKind::Algorithm, "κτ 调度")
+            .with_doc("滑动 θ→κ=cosθ,τ=sinθ，预算 C 上界；复用偏置抬高 κ。"),
+    );
+    g.add(
+        Node::new("A2", NodeKind::Algorithm, "ℛ̂ 正则化")
+            .with_doc("Δ<0 或 cost>C 时按最低优先级裁剪边/节点直至 Δ≥0。"),
+    );
+    g.add(
+        Node::new("A3", NodeKind::Algorithm, "pgvector 检索")
+            .with_doc("按 domain + embedding 相似度检索 Top-K 候选资产。"),
+    );
+    g.add(
+        Node::new("A4", NodeKind::Algorithm, "六维溯源绑定")
+            .with_doc("每条产出写入 trace_links 六维绑定。"),
+    );
 
     // ── 任务 T ──
     g.add(Node::new("T0", NodeKind::Task, "asr_transcribe").with_doc("语音转写。"));
@@ -448,90 +515,119 @@ pub fn primiflow_seed() -> AssocGraph {
     g.add(Node::new("T9", NodeKind::Task, "edit_canvas").with_doc("画布编辑后重算。"));
 
     // ── 代码 C（Rust 模块骨架）──
-    g.add(Node::new("C1", NodeKind::Code, "Orchestrator").stateful(true).with_doc(
-        "状态机编排：需求→拓扑→文档，并写六维溯源。",
-    ));
-    g.add(Node::new("C2", NodeKind::Code, "Scheduler").stateful(true).with_doc(
-        "κ/τ 预算 + ℛ̂ 裁剪。",
-    ));
-    g.add(Node::new("C3", NodeKind::Code, "AssetService").stateful(true).with_doc(
-        "pgvector 检索 / 冻结。",
-    ));
-    g.add(Node::new("C4", NodeKind::Code, "TopologyOperator").stateful(true).with_doc(
-        "需求结构化 + 拓扑涌现。",
-    ));
-    g.add(Node::new("C5", NodeKind::Code, "DocGenerator").stateful(true).with_doc(
-        "8 文档 + 代码骨架 + 导出。",
-    ));
-    g.add(Node::new("C6", NodeKind::Code, "SmokeTester").stateful(true).with_doc(
-        "schema 校验 + 冒烟。",
-    ));
-    g.add(Node::new("C7", NodeKind::Code, "CanvasState").stateful(true).with_doc(
-        "画布状态 + 编辑后重算 ℛ̂。",
-    ));
-    g.add(Node::new("C8", NodeKind::Code, "AsrClient").stateful(true).with_doc(
-        "语音转写客户端。",
-    ));
+    g.add(
+        Node::new("C1", NodeKind::Code, "Orchestrator")
+            .stateful(true)
+            .with_doc("状态机编排：需求→拓扑→文档，并写六维溯源。"),
+    );
+    g.add(
+        Node::new("C2", NodeKind::Code, "Scheduler")
+            .stateful(true)
+            .with_doc("κ/τ 预算 + ℛ̂ 裁剪。"),
+    );
+    g.add(
+        Node::new("C3", NodeKind::Code, "AssetService")
+            .stateful(true)
+            .with_doc("pgvector 检索 / 冻结。"),
+    );
+    g.add(
+        Node::new("C4", NodeKind::Code, "TopologyOperator")
+            .stateful(true)
+            .with_doc("需求结构化 + 拓扑涌现。"),
+    );
+    g.add(
+        Node::new("C5", NodeKind::Code, "DocGenerator")
+            .stateful(true)
+            .with_doc("8 文档 + 代码骨架 + 导出。"),
+    );
+    g.add(
+        Node::new("C6", NodeKind::Code, "SmokeTester")
+            .stateful(true)
+            .with_doc("schema 校验 + 冒烟。"),
+    );
+    g.add(
+        Node::new("C7", NodeKind::Code, "CanvasState")
+            .stateful(true)
+            .with_doc("画布状态 + 编辑后重算 ℛ̂。"),
+    );
+    g.add(
+        Node::new("C8", NodeKind::Code, "AsrClient")
+            .stateful(true)
+            .with_doc("语音转写客户端。"),
+    );
 
     // ── 数据设计 S（SPEC §4）──
-    g.add(Node::new("S1", NodeKind::DataSchema, "Project").with_fields(&[
-        ("id", "Uuid"),
-        ("name", "String"),
-        ("tenant_id", "Option<String>"),
-        ("k_t_pref", "String"),
-        ("budget_c", "f32"),
-        ("created_at", "DateTime<Utc>"),
-    ]));
-    g.add(Node::new("S2", NodeKind::DataSchema, "Conversation").with_fields(&[
-        ("id", "Uuid"),
-        ("project_id", "Uuid"),
-        ("role", "String"),
-        ("content", "String"),
-        ("meta", "Option<String>"),
-        ("created_at", "DateTime<Utc>"),
-    ]));
-    g.add(Node::new("S3", NodeKind::DataSchema, "Topology").with_fields(&[
-        ("id", "Uuid"),
-        ("project_id", "Uuid"),
-        ("status", "String"),
-        ("k", "f32"),
-        ("t", "f32"),
-        ("c", "f32"),
-        ("residual_delta", "f32"),
-        ("graph_json", "String"),
-        ("created_at", "DateTime<Utc>"),
-    ]));
-    g.add(Node::new("S4", NodeKind::DataSchema, "Asset").with_fields(&[
-        ("id", "Uuid"),
-        ("topology_id", "Uuid"),
-        ("name", "String"),
-        ("domain", "Option<String>"),
-        ("graph_json", "String"),
-        ("frozen_at", "DateTime<Utc>"),
-    ]));
-    g.add(Node::new("S5", NodeKind::DataSchema, "Artifact").with_fields(&[
-        ("id", "Uuid"),
-        ("project_id", "Uuid"),
-        ("kind", "String"),
-        ("title", "String"),
-        ("content", "String"),
-        ("created_at", "DateTime<Utc>"),
-    ]));
-    g.add(Node::new("S6", NodeKind::DataSchema, "TraceLink").with_fields(&[
-        ("id", "Uuid"),
-        ("project_id", "Uuid"),
-        ("requirement_id", "String"),
-        ("feature_id", "String"),
-        ("business_id", "String"),
-        ("algorithm_id", "String"),
-        ("task_id", "String"),
-        ("code_id", "String"),
-    ]));
+    g.add(
+        Node::new("S1", NodeKind::DataSchema, "Project").with_fields(&[
+            ("id", "Uuid"),
+            ("name", "String"),
+            ("tenant_id", "Option<String>"),
+            ("k_t_pref", "String"),
+            ("budget_c", "f32"),
+            ("created_at", "DateTime<Utc>"),
+        ]),
+    );
+    g.add(
+        Node::new("S2", NodeKind::DataSchema, "Conversation").with_fields(&[
+            ("id", "Uuid"),
+            ("project_id", "Uuid"),
+            ("role", "String"),
+            ("content", "String"),
+            ("meta", "Option<String>"),
+            ("created_at", "DateTime<Utc>"),
+        ]),
+    );
+    g.add(
+        Node::new("S3", NodeKind::DataSchema, "Topology").with_fields(&[
+            ("id", "Uuid"),
+            ("project_id", "Uuid"),
+            ("status", "String"),
+            ("k", "f32"),
+            ("t", "f32"),
+            ("c", "f32"),
+            ("residual_delta", "f32"),
+            ("graph_json", "String"),
+            ("created_at", "DateTime<Utc>"),
+        ]),
+    );
+    g.add(
+        Node::new("S4", NodeKind::DataSchema, "Asset").with_fields(&[
+            ("id", "Uuid"),
+            ("topology_id", "Uuid"),
+            ("name", "String"),
+            ("domain", "Option<String>"),
+            ("graph_json", "String"),
+            ("frozen_at", "DateTime<Utc>"),
+        ]),
+    );
+    g.add(
+        Node::new("S5", NodeKind::DataSchema, "Artifact").with_fields(&[
+            ("id", "Uuid"),
+            ("project_id", "Uuid"),
+            ("kind", "String"),
+            ("title", "String"),
+            ("content", "String"),
+            ("created_at", "DateTime<Utc>"),
+        ]),
+    );
+    g.add(
+        Node::new("S6", NodeKind::DataSchema, "TraceLink").with_fields(&[
+            ("id", "Uuid"),
+            ("project_id", "Uuid"),
+            ("requirement_id", "String"),
+            ("feature_id", "String"),
+            ("business_id", "String"),
+            ("algorithm_id", "String"),
+            ("task_id", "String"),
+            ("code_id", "String"),
+        ]),
+    );
 
     // ── 数据存储 D ──
-    g.add(Node::new("D1", NodeKind::DataStore, "PostgreSQL + pgvector").with_doc(
-        "主存储 + 资产语义检索（κ 复用）。",
-    ));
+    g.add(
+        Node::new("D1", NodeKind::DataStore, "PostgreSQL + pgvector")
+            .with_doc("主存储 + 资产语义检索（κ 复用）。"),
+    );
 
     // ── 边：需求 → 功能 ──
     g.link("R1", "F4", EdgeKind::Satisfies);

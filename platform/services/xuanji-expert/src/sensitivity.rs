@@ -47,8 +47,14 @@ pub fn is_production(resource: &str) -> bool {
         Some((_, r)) => r,
         None => return false,
     };
-    let env = after_scheme.split('/').next().unwrap_or("").trim_matches(':');
-    PRODUCTION_ENVS.iter().any(|p| env == *p || env.starts_with(p))
+    let env = after_scheme
+        .split('/')
+        .next()
+        .unwrap_or("")
+        .trim_matches(':');
+    PRODUCTION_ENVS
+        .iter()
+        .any(|p| env == *p || env.starts_with(p))
 }
 
 /// 判断资源是否构成**真实敏感泄露风险**：敏感域 且 未脱敏。

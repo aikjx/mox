@@ -1310,10 +1310,7 @@ mod tests {
             });
         }
 
-        assert!(
-            new_g.full_gate().passed,
-            "无基线时 new_g 自身应合法通过"
-        );
+        assert!(new_g.full_gate().passed, "无基线时 new_g 自身应合法通过");
 
         let gate = new_g.full_gate_with_baseline(&baseline);
         assert!(!gate.passed, "sync 漂移应阻断发布（G8）");

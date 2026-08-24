@@ -52,6 +52,7 @@ const online = ref(false)
 const clock = ref('')
 let seq = 0
 let timer = null
+let statusTimer = null
 
 function genId() {
   return 'sess-' + Date.now().toString(36) + '-' + (++seq).toString(36)
@@ -128,11 +129,12 @@ onMounted(async () => {
   tick()
   timer = setInterval(tick, 1000)
   await checkStatus()
-  setInterval(checkStatus, 15000)
+  statusTimer = setInterval(checkStatus, 15000)
 })
 
 onBeforeUnmount(() => {
   timer && clearInterval(timer)
+  statusTimer && clearInterval(statusTimer)
 })
 </script>
 

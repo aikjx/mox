@@ -7,10 +7,10 @@
 //! - **与审计集成**：`check()` 失败自动调用外部审计
 
 pub mod check;
-pub mod policy;
 pub mod error;
+pub mod policy;
 
 // Re-export from both submodules
-pub use check::{PermissionCheck, PermissionResult, check, check_with_audit};
-pub use policy::{Permission, RbacPolicy, RoleDef, BuiltinRoles, POLICY};
+pub use check::{check, check_with_audit, PermissionCheck, PermissionResult};
 pub use error::RbacError;
+pub use policy::{BuiltinRoles, Permission, RbacPolicy, RoleDef, POLICY};

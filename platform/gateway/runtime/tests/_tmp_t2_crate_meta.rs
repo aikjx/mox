@@ -6,22 +6,22 @@
 use std::collections::HashSet;
 
 // 16 个 crate 逐一 extern 引入（用别名 c_ 前缀规避保留字歧义；共 16 = 14 services + runtime + xuanji-common-meta）
+extern crate ai_agent as c_ai_agent;
+extern crate business_catalog as c_business_catalog;
+extern crate flow_ai as c_flow_ai;
+extern crate graph_algorithms as c_graph_algorithms;
+extern crate hermes_flow_bridge as c_hermes_flow_bridge;
+extern crate kg_hub as c_kg_hub;
 extern crate operator_core as c_operator_core;
 extern crate operator_wasm as c_operator_wasm;
-extern crate graph_algorithms as c_graph_algorithms;
 extern crate optimizer as c_optimizer;
-extern crate flow_ai as c_flow_ai;
-extern crate xuanji_expert as c_xuanji_expert;
-extern crate hermes_flow_bridge as c_hermes_flow_bridge;
-extern crate business_catalog as c_business_catalog;
-extern crate ai_agent as c_ai_agent;
-extern crate template_market as c_template_market;
-extern crate runtime as c_runtime;
-extern crate xuanji_system as c_xuanji_system;
 extern crate primiflow_core as c_primiflow_core;
 extern crate primiflow_fusion as c_primiflow_fusion;
-extern crate kg_hub as c_kg_hub;
+extern crate runtime as c_runtime;
+extern crate template_market as c_template_market;
 extern crate xuanji_common_meta as c_xuanji_common_meta;
+extern crate xuanji_expert as c_xuanji_expert;
+extern crate xuanji_system as c_xuanji_system;
 
 const EXPECTED_COUNT: usize = 16;
 
@@ -55,7 +55,11 @@ fn sixteen_crates_have_valid_crate_id_engine_name_and_crate_meta() {
     // --------- operator-core (L6Kernel) ---------
     {
         assert_eq!(c_operator_core::ENGINE_NAME, "xuanji::operator_core");
-        assert!(is_uuid_v5(c_operator_core::CRATE_ID), "operator-core CRATE_ID 不是 UUIDv5: {}", c_operator_core::CRATE_ID);
+        assert!(
+            is_uuid_v5(c_operator_core::CRATE_ID),
+            "operator-core CRATE_ID 不是 UUIDv5: {}",
+            c_operator_core::CRATE_ID
+        );
         let m = &c_operator_core::CRATE_META;
         assert_eq!(m.id, c_operator_core::CRATE_ID);
         assert_eq!(m.name, "operator-core");
@@ -114,7 +118,10 @@ fn sixteen_crates_have_valid_crate_id_engine_name_and_crate_meta() {
     }
     // --------- hermes-flow-bridge (L4Services) ---------
     {
-        assert_eq!(c_hermes_flow_bridge::ENGINE_NAME, "xuanji::hermes_flow_bridge");
+        assert_eq!(
+            c_hermes_flow_bridge::ENGINE_NAME,
+            "xuanji::hermes_flow_bridge"
+        );
         assert!(is_uuid_v5(c_hermes_flow_bridge::CRATE_ID));
         let m = &c_hermes_flow_bridge::CRATE_META;
         assert_eq!(m.id, c_hermes_flow_bridge::CRATE_ID);
@@ -160,7 +167,10 @@ fn sixteen_crates_have_valid_crate_id_engine_name_and_crate_meta() {
         assert_eq!(m.id, c_runtime::CRATE_ID);
         assert_eq!(m.name, "runtime");
         assert_eq!(m.owner, "xuanji-core");
-        assert!(matches!(m.layer, xuanji_common_meta::AisLayer::L3Orchestration));
+        assert!(matches!(
+            m.layer,
+            xuanji_common_meta::AisLayer::L3Orchestration
+        ));
     }
     // --------- xuanji-system (L7Infrastructure) ---------
     {
@@ -170,7 +180,10 @@ fn sixteen_crates_have_valid_crate_id_engine_name_and_crate_meta() {
         assert_eq!(m.id, c_xuanji_system::CRATE_ID);
         assert_eq!(m.name, "xuanji-system");
         assert_eq!(m.owner, "xuanji-core");
-        assert!(matches!(m.layer, xuanji_common_meta::AisLayer::L7Infrastructure));
+        assert!(matches!(
+            m.layer,
+            xuanji_common_meta::AisLayer::L7Infrastructure
+        ));
     }
     // --------- primiflow-core (L4Services) ---------
     {
@@ -204,7 +217,10 @@ fn sixteen_crates_have_valid_crate_id_engine_name_and_crate_meta() {
     }
     // --------- xuanji-common-meta (L5Domain) ---------
     {
-        assert_eq!(c_xuanji_common_meta::ENGINE_NAME, "xuanji::xuanji_common_meta");
+        assert_eq!(
+            c_xuanji_common_meta::ENGINE_NAME,
+            "xuanji::xuanji_common_meta"
+        );
         assert!(is_uuid_v5(c_xuanji_common_meta::CRATE_ID));
         let m = &c_xuanji_common_meta::CRATE_META;
         assert_eq!(m.id, c_xuanji_common_meta::CRATE_ID);
@@ -288,14 +304,49 @@ fn sixteen_crates_have_valid_crate_id_engine_name_and_crate_meta() {
         c_kg_hub::CRATE_META.layer,
         c_xuanji_common_meta::CRATE_META.layer,
     ];
-    let l4_count = layers.iter().filter(|l| matches!(l, xuanji_common_meta::AisLayer::L4Services)).count();
-    assert_eq!(l4_count, 12, "L4Services 应有 12 个（11 L4 + xuanji-expert），实际 {}", l4_count);
-    let l6_kernel_count = layers.iter().filter(|l| matches!(l, xuanji_common_meta::AisLayer::L6Kernel)).count();
-    assert_eq!(l6_kernel_count, 1, "L6Kernel 应有 1 个 (operator-core)，实际 {}", l6_kernel_count);
-    let l7_count = layers.iter().filter(|l| matches!(l, xuanji_common_meta::AisLayer::L7Infrastructure)).count();
-    assert_eq!(l7_count, 1, "L7Infrastructure 应有 1 个 (xuanji-system)，实际 {}", l7_count);
-    let l5_count = layers.iter().filter(|l| matches!(l, xuanji_common_meta::AisLayer::L5Domain)).count();
-    assert_eq!(l5_count, 1, "L5Domain 应有 1 个 (xuanji-common-meta)，实际 {}", l5_count);
-    let l3_count = layers.iter().filter(|l| matches!(l, xuanji_common_meta::AisLayer::L3Orchestration)).count();
-    assert_eq!(l3_count, 1, "L3Orchestration 应有 1 个 (runtime)，实际 {}", l3_count);
+    let l4_count = layers
+        .iter()
+        .filter(|l| matches!(l, xuanji_common_meta::AisLayer::L4Services))
+        .count();
+    assert_eq!(
+        l4_count, 12,
+        "L4Services 应有 12 个（11 L4 + xuanji-expert），实际 {}",
+        l4_count
+    );
+    let l6_kernel_count = layers
+        .iter()
+        .filter(|l| matches!(l, xuanji_common_meta::AisLayer::L6Kernel))
+        .count();
+    assert_eq!(
+        l6_kernel_count, 1,
+        "L6Kernel 应有 1 个 (operator-core)，实际 {}",
+        l6_kernel_count
+    );
+    let l7_count = layers
+        .iter()
+        .filter(|l| matches!(l, xuanji_common_meta::AisLayer::L7Infrastructure))
+        .count();
+    assert_eq!(
+        l7_count, 1,
+        "L7Infrastructure 应有 1 个 (xuanji-system)，实际 {}",
+        l7_count
+    );
+    let l5_count = layers
+        .iter()
+        .filter(|l| matches!(l, xuanji_common_meta::AisLayer::L5Domain))
+        .count();
+    assert_eq!(
+        l5_count, 1,
+        "L5Domain 应有 1 个 (xuanji-common-meta)，实际 {}",
+        l5_count
+    );
+    let l3_count = layers
+        .iter()
+        .filter(|l| matches!(l, xuanji_common_meta::AisLayer::L3Orchestration))
+        .count();
+    assert_eq!(
+        l3_count, 1,
+        "L3Orchestration 应有 1 个 (runtime)，实际 {}",
+        l3_count
+    );
 }

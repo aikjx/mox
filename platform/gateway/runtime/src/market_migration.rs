@@ -107,7 +107,13 @@ fn sanitize_id(id: &str) -> String {
 /// 把任意字符串清洗为安全的文件名组件（仅保留字母数字 . _ -）
 pub fn sanitize_file_component(s: &str) -> String {
     s.chars()
-        .map(|c| if c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.' { c } else { '_' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect()
 }
 
@@ -190,7 +196,12 @@ pub fn ensure_migrated() -> MigrationReport {
                 audit(
                     "migration",
                     "system",
-                    &format!("从 {} 迁移 {} 个包到 {}", legacy.display(), moved, pkg_dir.display()),
+                    &format!(
+                        "从 {} 迁移 {} 个包到 {}",
+                        legacy.display(),
+                        moved,
+                        pkg_dir.display()
+                    ),
                 );
                 tracing::info!(
                     "算子商城路径归一化：从 {} 迁移 {} 个包到 {}（备份于 {}）",
@@ -227,7 +238,12 @@ pub fn ensure_migrated() -> MigrationReport {
             audit(
                 "migration",
                 "system",
-                &format!("从 {} 迁移 {} 个散包到 {}", root.display(), moved, pkg_dir.display()),
+                &format!(
+                    "从 {} 迁移 {} 个散包到 {}",
+                    root.display(),
+                    moved,
+                    pkg_dir.display()
+                ),
             );
         }
     }
@@ -272,7 +288,11 @@ pub fn backup_now(tag: &str) -> Option<PathBuf> {
             }
         }
     }
-    audit("backup", "system", &format!("手动备份 {} 个包到 {}", n, dir.display()));
+    audit(
+        "backup",
+        "system",
+        &format!("手动备份 {} 个包到 {}", n, dir.display()),
+    );
     Some(dir)
 }
 
@@ -285,8 +305,18 @@ pub fn audit(action: &str, actor: &str, detail: &str) {
     if let Some(parent) = path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
-    let line = format!("{} | market | {} | {} | {}\n", now_rfc3339(), action, actor, detail);
-    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&path) {
+    let line = format!(
+        "{} | market | {} | {} | {}\n",
+        now_rfc3339(),
+        action,
+        actor,
+        detail
+    );
+    if let Ok(mut f) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+    {
         use std::io::Write;
         if f.write_all(line.as_bytes()).is_err() {
             tracing::warn!("审计日志写入失败: {}", path.display());
@@ -394,7 +424,14 @@ pub fn zip_write(entries: &[(String, Vec<u8>)]) -> Vec<u8> {
         out.extend_from_slice(&0u16.to_le_bytes()); // extra len
         out.extend_from_slice(name_bytes);
         out.extend_from_slice(data);
-        central.push((name.clone(), crc, data.len() as u32, offset, dos_time as u32, dos_date as u32));
+        central.push((
+            name.clone(),
+            crc,
+            data.len() as u32,
+            offset,
+            dos_time as u32,
+            dos_date as u32,
+        ));
     }
     // Central directory
     let cd_start = out.len() as u32;
@@ -436,7 +473,11 @@ pub fn zip_write(entries: &[(String, Vec<u8>)]) -> Vec<u8> {
 /// 仅支持 stored（method 0）；deflate（method 8）返回明确错误。
 pub fn zip_read(data: &[u8]) -> Result<Vec<(String, Vec<u8>)>, String> {
     // 定位 EOCD：从末尾往前找 PK\x05\x06
-    let min_eocd = if data.len() > 65557 { data.len() - 65557 } else { 0 };
+    let min_eocd = if data.len() > 65557 {
+        data.len() - 65557
+    } else {
+        0
+    };
     let mut eocd = None;
     for i in (min_eocd..data.len().saturating_sub(3)).rev() {
         if data[i] == 0x50 && data[i + 1] == 0x4B && data[i + 2] == 0x05 && data[i + 3] == 0x06 {
@@ -445,9 +486,22 @@ pub fn zip_read(data: &[u8]) -> Result<Vec<(String, Vec<u8>)>, String> {
         }
     }
     let eocd = eocd.ok_or_else(|| "不是合法的 ZIP 文件（找不到 EOCD）".to_string())?;
+    if eocd + 22 > data.len() {
+        return Err("ZIP EOCD 记录不完整".to_string());
+    }
     let total = u16::from_le_bytes([data[eocd + 10], data[eocd + 11]]) as usize;
-    let cd_size = u32::from_le_bytes([data[eocd + 12], data[eocd + 13], data[eocd + 14], data[eocd + 15]]) as usize;
-    let cd_off = u32::from_le_bytes([data[eocd + 16], data[eocd + 17], data[eocd + 18], data[eocd + 19]]) as usize;
+    let cd_size = u32::from_le_bytes([
+        data[eocd + 12],
+        data[eocd + 13],
+        data[eocd + 14],
+        data[eocd + 15],
+    ]) as usize;
+    let cd_off = u32::from_le_bytes([
+        data[eocd + 16],
+        data[eocd + 17],
+        data[eocd + 18],
+        data[eocd + 19],
+    ]) as usize;
     if cd_off + cd_size > data.len() {
         return Err("ZIP 中央目录越界".to_string());
     }
@@ -458,16 +512,41 @@ pub fn zip_read(data: &[u8]) -> Result<Vec<(String, Vec<u8>)>, String> {
             return Err("ZIP 中央目录条目格式错误".to_string());
         }
         let method = u16::from_le_bytes([data[pos + 10], data[pos + 11]]);
-        let crc = u32::from_le_bytes([data[pos + 16], data[pos + 17], data[pos + 18], data[pos + 19]]);
-        let comp_size = u32::from_le_bytes([data[pos + 20], data[pos + 21], data[pos + 22], data[pos + 23]]) as usize;
-        let _uncomp_size = u32::from_le_bytes([data[pos + 24], data[pos + 25], data[pos + 26], data[pos + 27]]) as usize;
+        let crc = u32::from_le_bytes([
+            data[pos + 16],
+            data[pos + 17],
+            data[pos + 18],
+            data[pos + 19],
+        ]);
+        let comp_size = u32::from_le_bytes([
+            data[pos + 20],
+            data[pos + 21],
+            data[pos + 22],
+            data[pos + 23],
+        ]) as usize;
+        let _uncomp_size = u32::from_le_bytes([
+            data[pos + 24],
+            data[pos + 25],
+            data[pos + 26],
+            data[pos + 27],
+        ]) as usize;
         let name_len = u16::from_le_bytes([data[pos + 28], data[pos + 29]]) as usize;
         let extra_len = u16::from_le_bytes([data[pos + 30], data[pos + 31]]) as usize;
         let comment_len = u16::from_le_bytes([data[pos + 32], data[pos + 33]]) as usize;
-        let local_off = u32::from_le_bytes([data[pos + 42], data[pos + 43], data[pos + 44], data[pos + 45]]) as usize;
-        let name = String::from_utf8_lossy(&data[pos + 46..pos + 46 + name_len]).to_string();
+        let local_off = u32::from_le_bytes([
+            data[pos + 42],
+            data[pos + 43],
+            data[pos + 44],
+            data[pos + 45],
+        ]) as usize;
+        let name_end = pos + 46 + name_len;
+        if name_end > data.len() {
+            return Err(format!("ZIP 条目 {} 名称越界", pos));
+        }
+        let name = String::from_utf8_lossy(&data[pos + 46..name_end]).to_string();
         // 读取本地头，定位数据区
-        if local_off + 30 > data.len() || data[local_off..local_off + 4] != [0x50, 0x4B, 0x03, 0x04] {
+        if local_off + 30 > data.len() || data[local_off..local_off + 4] != [0x50, 0x4B, 0x03, 0x04]
+        {
             return Err(format!("条目 {} 本地头缺失", name));
         }
         let lname_len = u16::from_le_bytes([data[local_off + 26], data[local_off + 27]]) as usize;

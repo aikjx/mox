@@ -10,12 +10,13 @@
 pub struct Cluster {}
 
 impl Cluster {
-pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     /// 编排任务 `cluster` 的真实落位：打印执行踪迹并返回零值成功。
     /// 溯源链路: R_r3 → F_r3 → B_r3 → A_kt_r3 → T_r3_2 → C_r3_2
     pub fn cluster(&self) {
         println!("[Cluster::cluster] trace=R_r3 → F_r3 → B_r3 → A_kt_r3 → T_r3_2 → C_r3_2; schemas=S_r3(data_r3);");
     }
-
 }

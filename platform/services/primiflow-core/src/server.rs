@@ -83,8 +83,14 @@ async fn run_requirement(
     let report = {
         let mut engine = state.engine.lock().await;
         let mut master = state.master.lock().await;
-        run_pipeline(&mut engine, &engine_req, policy, &mut master, &state.out_dir)
-            .map_err(|e| e.to_string())?
+        run_pipeline(
+            &mut engine,
+            &engine_req,
+            policy,
+            &mut master,
+            &state.out_dir,
+        )
+        .map_err(|e| e.to_string())?
     };
 
     // 持久化（知识库 + 溯源图 + 项目记录）
@@ -96,8 +102,8 @@ async fn run_requirement(
     }
 
     // 读取引擎写出的真实涌现 DAG Mermaid
-    let topo = std::fs::read_to_string(state.out_dir.join(format!("topo_{id}.mmd")))
-        .unwrap_or_default();
+    let topo =
+        std::fs::read_to_string(state.out_dir.join(format!("topo_{id}.mmd"))).unwrap_or_default();
     state.topologies.lock().await.insert(id.clone(), topo);
     state
         .last_input
@@ -263,7 +269,12 @@ async fn get_topology(
 ) -> impl IntoResponse {
     let topo = state.topologies.lock().await.get(&id).cloned();
     match topo {
-        Some(md) => (StatusCode::OK, [( "content-type", "text/plain; charset=utf-8")], md).into_response(),
+        Some(md) => (
+            StatusCode::OK,
+            [("content-type", "text/plain; charset=utf-8")],
+            md,
+        )
+            .into_response(),
         None => (StatusCode::NOT_FOUND, "拓扑不存在").into_response(),
     }
 }
@@ -292,10 +303,7 @@ async fn regularize(
 }
 
 /// `POST /api/topologies/:id/freeze`
-async fn freeze(
-    State(state): State<Arc<AppState>>,
-    Path(id): Path<String>,
-) -> impl IntoResponse {
+async fn freeze(State(state): State<Arc<AppState>>, Path(id): Path<String>) -> impl IntoResponse {
     let engine = state.engine.lock().await;
     let resp = FreezeResp {
         project_id: id,
@@ -318,7 +326,9 @@ async fn list_assets(
         .filter(|a| {
             let hit_q = q.q.is_empty() || a.signature.contains(&q.q);
             let hit_d = q.domain.is_empty()
-                || a.signature.to_lowercase().contains(&q.domain.to_lowercase());
+                || a.signature
+                    .to_lowercase()
+                    .contains(&q.domain.to_lowercase());
             hit_q && hit_d
         })
         .map(|a| AssetView {
@@ -333,9 +343,7 @@ async fn list_assets(
 }
 
 /// `GET /api/projects`
-async fn list_projects(
-    State(state): State<Arc<AppState>>,
-) -> impl IntoResponse {
+async fn list_projects(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     let store = state.store.lock().await;
     match store.list_projects() {
         Ok(recs) => {
@@ -460,10 +468,7 @@ pub async fn serve(state: Arc<AppState>, addr: &str) -> anyhow::Result<()> {
 }
 
 /// 非阻塞启动并返回监听地址（供集成测试用 `reqwest` 真正驱动 HTTP 全链路）
-pub async fn spawn_serve(
-    state: Arc<AppState>,
-    addr: &str,
-) -> anyhow::Result<std::net::SocketAddr> {
+pub async fn spawn_serve(state: Arc<AppState>, addr: &str) -> anyhow::Result<std::net::SocketAddr> {
     use axum::serve;
     state.replay_from_store().await;
     let app = build_router(state);

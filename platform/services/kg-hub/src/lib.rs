@@ -60,13 +60,13 @@ pub mod urn;
 use primiflow_fusion::UnifiedGraph;
 use serde::{Deserialize, Serialize};
 
+pub use consolidator::{ConsolidationResult, EngineTrace, TraceConsolidator};
 pub use govern::{DeviationReport, GateReport, GovernanceSummary};
 pub use index::{HybridIndex, HybridQuery, HybridWeights, SearchHit};
 pub use ingest::{
-    Connector, GraphSink, IngestStat, InfoGraphConnector, KnowledgeBaseConnector, KnowledgeItem,
-    KnowledgeGraphConnector, SixDimConnector,
+    Connector, GraphSink, InfoGraphConnector, IngestStat, KnowledgeBaseConnector,
+    KnowledgeGraphConnector, KnowledgeItem, SixDimConnector,
 };
-pub use consolidator::{ConsolidationResult, EngineTrace, TraceConsolidator};
 pub use loop_engine::{Decision, LoopConfig, LoopReport, Stage, StageTrace};
 pub use reason::{Hotspot, ImpactReport, TraceReport};
 

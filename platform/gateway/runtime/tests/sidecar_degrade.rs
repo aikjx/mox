@@ -8,10 +8,15 @@ use runtime::sidecar::node_sidecar::{IntentReq, NodeSidecarClient, SidecarError}
 #[tokio::test]
 async fn sidecar_down_produces_diagnostic_unavailable_and_sidecar_fail_counter() {
     // 故意设置 1ms 超时 + 监听端口 1 → 必然 Unreachable
-    let client = NodeSidecarClient::new("http://127.0.0.1:1").with_timeout(1).with_fallback(false);
+    let client = NodeSidecarClient::new("http://127.0.0.1:1")
+        .with_timeout(1)
+        .with_fallback(false);
     let before = client.metrics.snapshot();
     let err = client
-        .intent(IntentReq { query: "列出 Project 节点".to_string(), context: Default::default() })
+        .intent(IntentReq {
+            query: "列出 Project 节点".to_string(),
+            context: Default::default(),
+        })
         .await
         .unwrap_err();
     let after = client.metrics.snapshot();
@@ -29,10 +34,15 @@ async fn sidecar_down_produces_diagnostic_unavailable_and_sidecar_fail_counter()
 
 #[tokio::test]
 async fn sidecar_down_fallback_returns_ok_and_bumps_fallback_used() {
-    let client = NodeSidecarClient::new("http://127.0.0.1:1").with_timeout(1).with_fallback(true);
+    let client = NodeSidecarClient::new("http://127.0.0.1:1")
+        .with_timeout(1)
+        .with_fallback(true);
     let before = client.metrics.snapshot();
     let resp = client
-        .intent(IntentReq { query: "查询所有文件".to_string(), context: Default::default() })
+        .intent(IntentReq {
+            query: "查询所有文件".to_string(),
+            context: Default::default(),
+        })
         .await
         .expect("fallback=true 应返回 Ok(IntentResp)");
     assert!(resp.ok);

@@ -1,12 +1,12 @@
-﻿//! 代码安全专家（开发维度）：审查代码安全漏洞、注入风险、敏感数据处理
+//! 代码安全专家（开发维度）：审查代码安全漏洞、注入风险、敏感数据处理
 //!
 //! 分析基于 `CodeUnit` 的**预分析真字段**（`hardcoded_secret` / `sql_injection_risk` /
 //! `weak_hash` / `n_plus_one`），不再做脆弱的字符串子串匹配。
 //! 安全问题一律 `veto=true`（强制否决，治理闸门不可覆盖）。
 
+use crate::context::ExpertContext;
 use crate::expert::{Expert, ExpertOpinion, Risk};
 use crate::ir::{Dimension, ExpertId};
-use crate::context::ExpertContext;
 use flow_ai::model::Severity;
 
 /// 代码安全专家：审查代码层面的安全问题

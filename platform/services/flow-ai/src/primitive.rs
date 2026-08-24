@@ -55,7 +55,12 @@ impl PrimitiveState {
     /// 均衡初始化：κ = τ = C/√2
     pub fn new(c: f64) -> Self {
         let x = c / std::f64::consts::SQRT_2;
-        Self { c, kappa: x, tau: x, q: 0.0 }
+        Self {
+            c,
+            kappa: x,
+            tau: x,
+            q: 0.0,
+        }
     }
 
     /// 由交付策略 + 知识库复用压力推导初始状态
@@ -139,18 +144,38 @@ impl DeliveryPolicy {
         let mut s = match self {
             DeliveryPolicy::Urgent => {
                 let k = c * 0.92;
-                PrimitiveState { c, kappa: k, tau: (c * c - k * k).max(0.0).sqrt(), q: 0.0 }
+                PrimitiveState {
+                    c,
+                    kappa: k,
+                    tau: (c * c - k * k).max(0.0).sqrt(),
+                    q: 0.0,
+                }
             }
             DeliveryPolicy::Balanced => {
                 let x = c / std::f64::consts::SQRT_2;
-                PrimitiveState { c, kappa: x, tau: x, q: 0.0 }
+                PrimitiveState {
+                    c,
+                    kappa: x,
+                    tau: x,
+                    q: 0.0,
+                }
             }
             DeliveryPolicy::Exploratory => {
                 let t = c * 0.92;
-                PrimitiveState { c, kappa: (c * c - t * t).max(0.0).sqrt(), tau: t, q: 0.0 }
+                PrimitiveState {
+                    c,
+                    kappa: (c * c - t * t).max(0.0).sqrt(),
+                    tau: t,
+                    q: 0.0,
+                }
             }
             DeliveryPolicy::Custom { kappa, tau } => {
-                let mut s = PrimitiveState { c, kappa, tau, q: 0.0 };
+                let mut s = PrimitiveState {
+                    c,
+                    kappa,
+                    tau,
+                    q: 0.0,
+                };
                 s.rescale_to_conserve();
                 s
             }
@@ -176,7 +201,12 @@ pub struct SubTask {
 }
 
 impl SubTask {
-    pub fn new(id: impl Into<String>, name: impl Into<String>, tool: ToolKind, duration_ms: u64) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        name: impl Into<String>,
+        tool: ToolKind,
+        duration_ms: u64,
+    ) -> Self {
         Self {
             id: id.into(),
             name: name.into(),
@@ -197,7 +227,11 @@ pub struct Requirement {
 
 impl Requirement {
     pub fn new(id: impl Into<String>, name: impl Into<String>) -> Self {
-        Self { id: id.into(), name: name.into(), subtasks: Vec::new() }
+        Self {
+            id: id.into(),
+            name: name.into(),
+            subtasks: Vec::new(),
+        }
     }
     pub fn with_subtask(mut self, st: SubTask) -> Self {
         self.subtasks.push(st);
@@ -276,7 +310,11 @@ impl ValidationReport {
 ///
 /// - 复用偏置高且图谱命中强 → 子任务实例化为 `SubFlow`（复用历史模板）；
 /// - 探索偏置高且图谱无成熟匹配 → 子任务派生 `fanout` 条并行候选分支（自动探索新路径）。
-pub fn generate(req: &Requirement, state: &PrimitiveState, kb: &KnowledgeBase) -> CandidateTopology {
+pub fn generate(
+    req: &Requirement,
+    state: &PrimitiveState,
+    kb: &KnowledgeBase,
+) -> CandidateTopology {
     let fanout = (1 + (state.explore_bias() * MAX_FANOUT as f64).floor() as usize).max(1);
 
     let mut g = FlowGraph::new(format!("topo:{}", req.id), req.name.clone());
@@ -288,11 +326,21 @@ pub fn generate(req: &Requirement, state: &PrimitiveState, kb: &KnowledgeBase) -
     let mut stages: Vec<(String, String)> = Vec::new(); // (entry, exit)
 
     for (i, st) in req.subtasks.iter().enumerate() {
-        let score = kb.graph.search(&st.name, 1).into_iter().next().map(|m| m.score).unwrap_or(0.0);
+        let score = kb
+            .graph
+            .search(&st.name, 1)
+            .into_iter()
+            .next()
+            .map(|m| m.score)
+            .unwrap_or(0.0);
         let do_reuse = state.reuse_bias() >= 0.5 && score >= REUSE_SCORE_THRESHOLD;
 
         let out_var = format!("var:s{}", i);
-        let read_var = if i == 0 { None } else { Some(format!("var:s{}", i - 1)) };
+        let read_var = if i == 0 {
+            None
+        } else {
+            Some(format!("var:s{}", i - 1))
+        };
 
         if do_reuse {
             // 复用：实例化为子流程引用（SubFlow）
@@ -303,7 +351,11 @@ pub fn generate(req: &Requirement, state: &PrimitiveState, kb: &KnowledgeBase) -
                 st.name.clone(),
                 Some(st.tool),
                 st.duration_ms,
-                AccessPlan { read: read_var.as_deref(), write: &out_var, extra: &st.accesses },
+                AccessPlan {
+                    read: read_var.as_deref(),
+                    write: &out_var,
+                    extra: &st.accesses,
+                },
             );
             g.add_node(node);
             reused.push(st.id.clone());
@@ -312,8 +364,16 @@ pub fn generate(req: &Requirement, state: &PrimitiveState, kb: &KnowledgeBase) -
             // 探索：派生 fanout 条并行候选分支，收敛后进入下一阶段
             let fork = format!("fork{}", i);
             let join = format!("join{}", i);
-            g.add_node(FlowNode::new(&fork, format!("并行探索#{}", i), NodeKind::ParallelFork));
-            g.add_node(FlowNode::new(&join, format!("收敛#{}", i), NodeKind::ParallelJoin));
+            g.add_node(FlowNode::new(
+                &fork,
+                format!("并行探索#{}", i),
+                NodeKind::ParallelFork,
+            ));
+            g.add_node(FlowNode::new(
+                &join,
+                format!("收敛#{}", i),
+                NodeKind::ParallelJoin,
+            ));
             for j in 0..fanout {
                 let vid = format!("s{}_v{}", i, j);
                 let v = build_node(
@@ -322,7 +382,11 @@ pub fn generate(req: &Requirement, state: &PrimitiveState, kb: &KnowledgeBase) -
                     format!("{}·候选{}", st.name, j),
                     Some(st.tool),
                     st.duration_ms,
-                    AccessPlan { read: read_var.as_deref(), write: &out_var, extra: &st.accesses },
+                    AccessPlan {
+                        read: read_var.as_deref(),
+                        write: &out_var,
+                        extra: &st.accesses,
+                    },
                 );
                 g.add_node(v);
                 g.add_edge(FlowEdge::seq(&fork, &vid));
@@ -339,7 +403,11 @@ pub fn generate(req: &Requirement, state: &PrimitiveState, kb: &KnowledgeBase) -
                 st.name.clone(),
                 Some(st.tool),
                 st.duration_ms,
-                AccessPlan { read: read_var.as_deref(), write: &out_var, extra: &st.accesses },
+                AccessPlan {
+                    read: read_var.as_deref(),
+                    write: &out_var,
+                    extra: &st.accesses,
+                },
             );
             g.add_node(node);
             explored.push(st.id.clone());
@@ -359,7 +427,12 @@ pub fn generate(req: &Requirement, state: &PrimitiveState, kb: &KnowledgeBase) -
         g.add_edge(FlowEdge::seq(last_exit, "end"));
     }
 
-    CandidateTopology { graph: g, reused_subtasks: reused, explored_subtasks: explored, fanout }
+    CandidateTopology {
+        graph: g,
+        reused_subtasks: reused,
+        explored_subtasks: explored,
+        fanout,
+    }
 }
 
 /// 节点访问声明（读 / 写 / 附加），收敛多参数为单一结构体以消除 too_many_arguments
@@ -392,13 +465,21 @@ fn build_node(
 }
 
 /// 拓扑自洽校验层：守恒残差 / 因果环 / 资源配额
-pub fn validate(topo: &CandidateTopology, state: &PrimitiveState, budget: &ResourceBudget) -> ValidationReport {
+pub fn validate(
+    topo: &CandidateTopology,
+    state: &PrimitiveState,
+    budget: &ResourceBudget,
+) -> ValidationReport {
     let mut violations = Vec::new();
 
     if !state.is_conserved(CONSERVATION_EPS) {
         violations.push(Violation {
             kind: ViolationKind::Conservation,
-            message: format!("守恒残差 {:.4} 超出阈值 {:.4}", state.conservation_residual(), CONSERVATION_EPS),
+            message: format!(
+                "守恒残差 {:.4} 超出阈值 {:.4}",
+                state.conservation_residual(),
+                CONSERVATION_EPS
+            ),
         });
     }
 
@@ -461,7 +542,9 @@ pub fn regularize(
         collapse_exploration(&mut g);
         // 抬高复用权重、压低探索权重（更保守，贴近成熟链路）
         working.kappa = (working.kappa + working.tau * 0.25).min(working.c);
-        working.tau = (working.c * working.c - working.kappa * working.kappa).max(0.0).sqrt();
+        working.tau = (working.c * working.c - working.kappa * working.kappa)
+            .max(0.0)
+            .sqrt();
         // 仍超预算：拓扑时长持续折半，释放算力（真实场景会进一步裁剪子任务）
         let mut guard = 0;
         while budget.total_ms > 0 && total_ms(&g) > budget.total_ms && guard < 64 {
@@ -484,16 +567,41 @@ pub fn regularize(
 
 /// 折叠所有并行探索分支：删除 fork/join 网关与多余候选，保留首条并重连
 fn collapse_exploration(g: &mut FlowGraph) {
-    let forks: Vec<String> = g.nodes.iter().filter(|n| n.kind == NodeKind::ParallelFork).map(|n| n.id.clone()).collect();
+    let forks: Vec<String> = g
+        .nodes
+        .iter()
+        .filter(|n| n.kind == NodeKind::ParallelFork)
+        .map(|n| n.id.clone())
+        .collect();
     for fork in forks {
-        let variants: Vec<String> = g.edges.iter().filter(|e| e.from == fork).map(|e| e.to.clone()).collect();
-        let preds: Vec<String> = g.edges.iter().filter(|e| e.to == fork).map(|e| e.from.clone()).collect();
-        let joins: HashSet<String> = g.edges.iter().filter(|e| variants.contains(&e.from)).map(|e| e.to.clone()).collect();
+        let variants: Vec<String> = g
+            .edges
+            .iter()
+            .filter(|e| e.from == fork)
+            .map(|e| e.to.clone())
+            .collect();
+        let preds: Vec<String> = g
+            .edges
+            .iter()
+            .filter(|e| e.to == fork)
+            .map(|e| e.from.clone())
+            .collect();
+        let joins: HashSet<String> = g
+            .edges
+            .iter()
+            .filter(|e| variants.contains(&e.from))
+            .map(|e| e.to.clone())
+            .collect();
         let join = joins.iter().next().cloned();
         let kept = variants.first().cloned();
         let mut succs = Vec::new();
         if let Some(j) = &join {
-            succs = g.edges.iter().filter(|e| e.from == *j).map(|e| e.to.clone()).collect();
+            succs = g
+                .edges
+                .iter()
+                .filter(|e| e.from == *j)
+                .map(|e| e.to.clone())
+                .collect();
         }
         // 删除网关与多余候选
         g.nodes.retain(|n| {
@@ -523,7 +631,10 @@ fn collapse_exploration(g: &mut FlowGraph) {
 }
 
 fn total_ms(g: &FlowGraph) -> u64 {
-    g.nodes.iter().filter_map(|n| n.tool.map(|_| n.duration_ms)).sum()
+    g.nodes
+        .iter()
+        .filter_map(|n| n.tool.map(|_| n.duration_ms))
+        .sum()
 }
 
 /// 沉淀入知识库的拓扑模板（带拓扑荷 Q）
@@ -552,7 +663,13 @@ impl KnowledgeBase {
     pub fn reuse_pressure(&self, req: &Requirement) -> f64 {
         let mut best: f64 = 0.0;
         for st in &req.subtasks {
-            let s = self.graph.search(&st.name, 1).into_iter().next().map(|m| m.score).unwrap_or(0.0);
+            let s = self
+                .graph
+                .search(&st.name, 1)
+                .into_iter()
+                .next()
+                .map(|m| m.score)
+                .unwrap_or(0.0);
             best = best.max(s);
         }
         best.min(1.0)
@@ -631,7 +748,12 @@ pub fn adjust_after_success(state: &PrimitiveState, c: f64) -> PrimitiveState {
         tau = floor;
         kappa = (c * c - tau * tau).max(0.0).sqrt();
     }
-    PrimitiveState { c, kappa, tau, q: state.q }
+    PrimitiveState {
+        c,
+        kappa,
+        tau,
+        q: state.q,
+    }
 }
 
 /// 失败后的 κ、τ 自调整：提高探索（τ↑），降低该路径复用（κ↓）
@@ -644,7 +766,12 @@ pub fn adjust_after_failure(state: &PrimitiveState, c: f64, severity: f64) -> Pr
         kappa = floor;
         tau = (c * c - kappa * kappa).max(0.0).sqrt();
     }
-    PrimitiveState { c, kappa, tau, q: state.q }
+    PrimitiveState {
+        c,
+        kappa,
+        tau,
+        q: state.q,
+    }
 }
 
 /// 自涌现结果状态
@@ -671,7 +798,14 @@ pub struct EmergenceResult {
 impl EmergenceResult {
     pub fn summary(&self) -> String {
         let (tag, _reg) = match &self.status {
-            EmergeStatus::Validated { regularized } => ("通过", if *regularized { "（经正则化）" } else { "" }),
+            EmergeStatus::Validated { regularized } => (
+                "通过",
+                if *regularized {
+                    "（经正则化）"
+                } else {
+                    ""
+                },
+            ),
             EmergeStatus::Failed => ("未通过", "（超过最大重试）"),
         };
         format!(
@@ -716,7 +850,9 @@ impl PrimiEngine {
             let target = p.apply(working.c, self.kb.reuse_pressure(req));
             // 向策略目标靠拢，但保留历史累积倾向
             working.kappa = working.kappa + (target.kappa - working.kappa) * 0.7;
-            working.tau = (working.c * working.c - working.kappa * working.kappa).max(0.0).sqrt();
+            working.tau = (working.c * working.c - working.kappa * working.kappa)
+                .max(0.0)
+                .sqrt();
             working.rescale_to_conserve();
         }
 
@@ -735,7 +871,9 @@ impl PrimiEngine {
             }
             // 仍不通过：加大探索，迫使下一轮生成不同拓扑
             working.tau = (working.tau * 1.15).min(working.c);
-            working.kappa = (working.c * working.c - working.tau * working.tau).max(0.0).sqrt();
+            working.kappa = (working.c * working.c - working.tau * working.tau)
+                .max(0.0)
+                .sqrt();
             last_topo = generate(req, &working, &self.kb);
             last_report = validate(&last_topo, &working, &self.budget);
         }
@@ -792,11 +930,24 @@ mod tests {
     fn rich_kb() -> KnowledgeBase {
         let mut kb = KnowledgeBase::new();
         kb.graph.add_entity(
-            Entity::new("skill:report", EntityKind::Skill, "电商月度经营分析报告")
-                .with_keywords(["电商", "月度", "经营分析", "报告", "电商月度经营分析报告"]),
+            Entity::new("skill:report", EntityKind::Skill, "电商月度经营分析报告").with_keywords([
+                "电商",
+                "月度",
+                "经营分析",
+                "报告",
+                "电商月度经营分析报告",
+            ]),
         );
-        kb.graph.add_entity(Entity::new("flow:demo:report", EntityKind::FlowNode, "生成图表报告").with_keywords(["生成图表报告"]));
-        kb.graph.add_relation(Relation::new("skill:report", "flow:demo:report", RelationKind::Implements, 1.0));
+        kb.graph.add_entity(
+            Entity::new("flow:demo:report", EntityKind::FlowNode, "生成图表报告")
+                .with_keywords(["生成图表报告"]),
+        );
+        kb.graph.add_relation(Relation::new(
+            "skill:report",
+            "flow:demo:report",
+            RelationKind::Implements,
+            1.0,
+        ));
         kb
     }
 
@@ -804,9 +955,18 @@ mod tests {
 
     #[test]
     fn conservation_holds_for_all_policies() {
-        for p in [DeliveryPolicy::Urgent, DeliveryPolicy::Balanced, DeliveryPolicy::Exploratory] {
+        for p in [
+            DeliveryPolicy::Urgent,
+            DeliveryPolicy::Balanced,
+            DeliveryPolicy::Exploratory,
+        ] {
             let s = PrimitiveState::from_policy(10.0, p, 0.0);
-            assert!(s.is_conserved(CONSERVATION_EPS), "{:?} 残差 {}", p, s.conservation_residual());
+            assert!(
+                s.is_conserved(CONSERVATION_EPS),
+                "{:?} 残差 {}",
+                p,
+                s.conservation_residual()
+            );
         }
     }
 
@@ -837,7 +997,12 @@ mod tests {
 
     #[test]
     fn rescale_recovers_conservation() {
-        let mut s = PrimitiveState { c: 10.0, kappa: 6.0, tau: 6.0, q: 0.0 };
+        let mut s = PrimitiveState {
+            c: 10.0,
+            kappa: 6.0,
+            tau: 6.0,
+            q: 0.0,
+        };
         assert!(!s.is_conserved(CONSERVATION_EPS));
         s.rescale_to_conserve();
         assert!(s.is_conserved(CONSERVATION_EPS));
@@ -851,7 +1016,13 @@ mod tests {
         let kb = KnowledgeBase::new();
         let s = PrimitiveState::from_policy(10.0, DeliveryPolicy::Exploratory, 0.0);
         let topo = generate(&sample_req(), &s, &kb);
-        assert!(topo.graph.nodes.iter().any(|n| n.kind == NodeKind::ParallelFork), "探索策略应出现并行分叉");
+        assert!(
+            topo.graph
+                .nodes
+                .iter()
+                .any(|n| n.kind == NodeKind::ParallelFork),
+            "探索策略应出现并行分叉"
+        );
         assert!(topo.fanout > 1, "探索策略分叉度应 > 1");
         assert_eq!(topo.reused_subtasks.len(), 0, "无知识库时不该复用");
     }
@@ -861,7 +1032,10 @@ mod tests {
         let kb = rich_kb();
         let s = PrimitiveState::from_policy(10.0, DeliveryPolicy::Urgent, 0.0);
         let topo = generate(&sample_req(), &s, &kb);
-        assert!(topo.graph.nodes.iter().any(|n| n.kind == NodeKind::SubFlow), "强命中应出现 SubFlow 复用");
+        assert!(
+            topo.graph.nodes.iter().any(|n| n.kind == NodeKind::SubFlow),
+            "强命中应出现 SubFlow 复用"
+        );
         assert!(!topo.reused_subtasks.is_empty(), "应记录复用子任务");
     }
 
@@ -880,7 +1054,10 @@ mod tests {
         let kb = KnowledgeBase::new();
         let s = PrimitiveState::from_policy(10.0, DeliveryPolicy::Balanced, 0.0);
         let topo = generate(&sample_req(), &s, &kb);
-        let budget = ResourceBudget { total_ms: 10_000, per_pool: HashMap::new() };
+        let budget = ResourceBudget {
+            total_ms: 10_000,
+            per_pool: HashMap::new(),
+        };
         let rep = validate(&topo, &s, &budget);
         assert!(rep.ok, "充裕预算应通过校验: {:?}", rep.violations);
     }
@@ -890,7 +1067,10 @@ mod tests {
         let kb = KnowledgeBase::new();
         let s = PrimitiveState::from_policy(10.0, DeliveryPolicy::Exploratory, 0.0);
         let topo = generate(&sample_req(), &s, &kb);
-        let budget = ResourceBudget { total_ms: 100, per_pool: HashMap::new() };
+        let budget = ResourceBudget {
+            total_ms: 100,
+            per_pool: HashMap::new(),
+        };
         let rep = validate(&topo, &s, &budget);
         assert!(rep.has(ViolationKind::ResourceQuota));
         assert!(!rep.ok);
@@ -901,19 +1081,34 @@ mod tests {
         let kb = KnowledgeBase::new();
         let s = PrimitiveState::from_policy(10.0, DeliveryPolicy::Exploratory, 0.0);
         let topo = generate(&sample_req(), &s, &kb);
-        let budget = ResourceBudget { total_ms: 100, per_pool: HashMap::new() };
+        let budget = ResourceBudget {
+            total_ms: 100,
+            per_pool: HashMap::new(),
+        };
         let rep = validate(&topo, &s, &budget);
         let (fixed, _) = regularize(&rep, &topo, &s, &budget);
         let rep2 = validate(&fixed, &s, &budget);
         assert!(rep2.ok, "正则化后应通过校验: {:?}", rep2.violations);
-        assert!(fixed.graph.nodes.iter().all(|n| n.kind != NodeKind::ParallelFork), "正则化应折叠探索分支");
+        assert!(
+            fixed
+                .graph
+                .nodes
+                .iter()
+                .all(|n| n.kind != NodeKind::ParallelFork),
+            "正则化应折叠探索分支"
+        );
     }
 
     #[test]
     fn conservation_violation_is_reported() {
         let kb = KnowledgeBase::new();
         let topo = generate(&sample_req(), &PrimitiveState::new(10.0), &kb);
-        let broken = PrimitiveState { c: 10.0, kappa: 9.0, tau: 9.0, q: 0.0 };
+        let broken = PrimitiveState {
+            c: 10.0,
+            kappa: 9.0,
+            tau: 9.0,
+            q: 0.0,
+        };
         let rep = validate(&topo, &broken, &ResourceBudget::default());
         assert!(rep.has(ViolationKind::Conservation));
     }
@@ -923,7 +1118,11 @@ mod tests {
     #[test]
     fn success_commits_charge_and_stores_template() {
         let mut kb = KnowledgeBase::new();
-        let topo = generate(&sample_req(), &PrimitiveState::from_policy(10.0, DeliveryPolicy::Balanced, 0.0), &kb);
+        let topo = generate(
+            &sample_req(),
+            &PrimitiveState::from_policy(10.0, DeliveryPolicy::Balanced, 0.0),
+            &kb,
+        );
         let q = kb.commit_success(&topo, 0.9);
         assert!(q > 0.0);
         assert_eq!(kb.stored.len(), 1);
@@ -935,7 +1134,11 @@ mod tests {
     #[test]
     fn repeated_success_accumulates_charge() {
         let mut kb = KnowledgeBase::new();
-        let topo = generate(&sample_req(), &PrimitiveState::from_policy(10.0, DeliveryPolicy::Balanced, 0.0), &kb);
+        let topo = generate(
+            &sample_req(),
+            &PrimitiveState::from_policy(10.0, DeliveryPolicy::Balanced, 0.0),
+            &kb,
+        );
         kb.commit_success(&topo, 0.9);
         let before = kb.stored[0].charge;
         kb.commit_success(&topo, 0.9);
@@ -946,7 +1149,14 @@ mod tests {
 
     #[test]
     fn closed_loop_consolidates_after_success() {
-        let mut engine = PrimiEngine::new(10.0, KnowledgeBase::new(), ResourceBudget { total_ms: 10_000, per_pool: HashMap::new() });
+        let mut engine = PrimiEngine::new(
+            10.0,
+            KnowledgeBase::new(),
+            ResourceBudget {
+                total_ms: 10_000,
+                per_pool: HashMap::new(),
+            },
+        );
         let k0 = engine.state.kappa;
         let res = engine.emerge(&sample_req(), Some(DeliveryPolicy::Urgent));
         assert_eq!(res.status, EmergeStatus::Validated { regularized: false });
@@ -956,7 +1166,14 @@ mod tests {
 
     #[test]
     fn closed_loop_explores_more_after_failure() {
-        let mut engine = PrimiEngine::new(10.0, KnowledgeBase::new(), ResourceBudget { total_ms: 10_000, per_pool: HashMap::new() });
+        let mut engine = PrimiEngine::new(
+            10.0,
+            KnowledgeBase::new(),
+            ResourceBudget {
+                total_ms: 10_000,
+                per_pool: HashMap::new(),
+            },
+        );
         let res = engine.emerge(&sample_req(), Some(DeliveryPolicy::Balanced));
         let tau_before = engine.state.tau;
         engine.accept(&res, Outcome::Failure { severity: 1.0 });
@@ -965,14 +1182,32 @@ mod tests {
 
     #[test]
     fn closed_loop_eventually_passes_under_tight_budget() {
-        let mut engine = PrimiEngine::new(10.0, KnowledgeBase::new(), ResourceBudget { total_ms: 600, per_pool: HashMap::new() });
+        let mut engine = PrimiEngine::new(
+            10.0,
+            KnowledgeBase::new(),
+            ResourceBudget {
+                total_ms: 600,
+                per_pool: HashMap::new(),
+            },
+        );
         let res = engine.emerge(&sample_req(), Some(DeliveryPolicy::Exploratory));
-        assert_eq!(res.status, EmergeStatus::Validated { regularized: true }, "紧预算下应经正则化通过");
+        assert_eq!(
+            res.status,
+            EmergeStatus::Validated { regularized: true },
+            "紧预算下应经正则化通过"
+        );
     }
 
     #[test]
     fn end_to_end_builds_knowledge_across_runs() {
-        let mut engine = PrimiEngine::new(10.0, KnowledgeBase::new(), ResourceBudget { total_ms: 10_000, per_pool: HashMap::new() });
+        let mut engine = PrimiEngine::new(
+            10.0,
+            KnowledgeBase::new(),
+            ResourceBudget {
+                total_ms: 10_000,
+                per_pool: HashMap::new(),
+            },
+        );
         // 第一轮探索研发
         let r1 = engine.emerge(&sample_req(), Some(DeliveryPolicy::Exploratory));
         engine.accept(&r1, Outcome::Success { quality: 0.85 });
@@ -980,6 +1215,9 @@ mod tests {
         let r2 = engine.emerge(&sample_req(), Some(DeliveryPolicy::Urgent));
         engine.accept(&r2, Outcome::Success { quality: 0.9 });
         assert!(!engine.kb.stored.is_empty(), "知识库应已沉淀拓扑模板");
-        assert!(r2.topology.reused_subtasks.len() >= r1.topology.reused_subtasks.len(), "复用量应不降");
+        assert!(
+            r2.topology.reused_subtasks.len() >= r1.topology.reused_subtasks.len(),
+            "复用量应不降"
+        );
     }
 }

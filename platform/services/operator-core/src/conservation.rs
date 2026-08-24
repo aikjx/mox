@@ -114,11 +114,7 @@ impl GuardedGraph {
     }
 
     /// 预检查两个节点合并后的守恒状态
-    pub fn check_edge<N: GraphNode>(
-        &self,
-        source: &N,
-        target: &N,
-    ) -> Result<(), OperatorError> {
+    pub fn check_edge<N: GraphNode>(&self, source: &N, target: &N) -> Result<(), OperatorError> {
         let source_state = source.state_vector();
         let target_state = target.state_vector();
         let combined = source_state.combine(target_state)?;
@@ -228,8 +224,8 @@ impl GuardedGraph {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::assert_relative_eq;
     use crate::state::StateVector;
+    use approx::assert_relative_eq;
 
     #[test]
     fn test_l1_conservation() {
@@ -370,7 +366,11 @@ mod tests {
         let result = law.verify(&bad, 1e-10);
         assert!(result.is_err());
         match result.unwrap_err() {
-            OperatorError::ConservationViolation { law: l, residual, threshold } => {
+            OperatorError::ConservationViolation {
+                law: l,
+                residual,
+                threshold,
+            } => {
                 assert!(l.contains("L1"));
                 assert!(residual > 0.5);
                 assert_eq!(threshold, 1e-10);

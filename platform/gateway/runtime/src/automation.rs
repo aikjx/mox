@@ -13,11 +13,9 @@
 //!
 //! 资产模型与持久化在 [`crate::automation_asset`]（独立模块，避免循环依赖）。
 
-use crate::AppState;
-use crate::automation_asset::{
-    AutomationAsset, GeneratedCode, RunRecord,
-};
+use crate::automation_asset::{AutomationAsset, GeneratedCode, RunRecord};
 use crate::rbac_middleware::{check_permission, Permission, Principal};
+use crate::AppState;
 use ai_agent::requirement_compiler::SystemBlueprint;
 use axum::{
     extract::{Extension, Path, State},
@@ -31,9 +29,9 @@ use flow_ai::automation::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::process::Command;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+use tokio::process::Command;
 
 // ============================================================================
 // 请求/响应结构
@@ -202,7 +200,10 @@ fn generate_code_from_blueprint(bp: &SystemBlueprint) -> GeneratedCode {
     py.push_str("def main() -> None:\n    ctx = _ctx()\n");
     for (i, _f) in bp.features.iter().enumerate() {
         let fn_name = &fn_names[i];
-        py.push_str(&format!("    print({}.__name__, {}(ctx))\n", fn_name, fn_name));
+        py.push_str(&format!(
+            "    print({}.__name__, {}(ctx))\n",
+            fn_name, fn_name
+        ));
     }
     py.push_str("\n\nif __name__ == \"__main__\":\n    main()\n");
 
@@ -255,7 +256,11 @@ fn generate_code_from_blueprint(bp: &SystemBlueprint) -> GeneratedCode {
     vue.push_str("async function run(id) {\n  // 真实调用后端自动化执行接口\n  const res = await fetch(`/api/automation/${id}/run`, { method: 'POST' })\n  const data = await res.json()\n  console.log('run', id, data)\n}\n");
     vue.push_str("</script>\n");
 
-    GeneratedCode { python: py, sql, vue }
+    GeneratedCode {
+        python: py,
+        sql,
+        vue,
+    }
 }
 
 /// 常见中文业务词 → 英文标识符映射（命中则产出可读英文，否则回退序号标识）
@@ -320,7 +325,9 @@ fn make_ident(raw: &str, used: &mut std::collections::HashSet<String>) -> String
             // 未命中：用名称哈希式占位，保证非空且与中文脱钩
             format!(
                 "node_{}",
-                raw.chars().fold(0u32, |a, c| a.wrapping_mul(31).wrapping_add(c as u32)) % 100000
+                raw.chars()
+                    .fold(0u32, |a, c| a.wrapping_mul(31).wrapping_add(c as u32))
+                    % 100000
             )
         } else {
             mapped
@@ -358,8 +365,8 @@ fn make_col_ident(col: &str) -> String {
 
 /// SQL 保留字（作为表名/列名需加前缀规避）
 const SQL_RESERVED: &[&str] = &[
-    "order", "group", "select", "from", "where", "table", "index", "key", "user",
-    "level", "comment", "desc", "asc", "limit", "offset", "primary", "foreign",
+    "order", "group", "select", "from", "where", "table", "index", "key", "user", "level",
+    "comment", "desc", "asc", "limit", "offset", "primary", "foreign",
 ];
 
 /// 把标识符处理为合法的 SQL 标识符（保留字加 t_/col_ 前缀；首字符数字加 _）
@@ -373,17 +380,22 @@ fn sql_safe_ident(ident: &str) -> String {
         }
         return format!("t_{}", lower);
     }
-    if lower.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+    if lower
+        .chars()
+        .next()
+        .map(|c| c.is_ascii_digit())
+        .unwrap_or(false)
+    {
         return format!("_{}", lower);
     }
     lower
 }
 
-/// 沙箱实跑 Python 代码：写入临时目录、加超时、捕获输出
-fn run_python_sandbox(code: &str, timeout: Duration) -> RunResult {
+/// 沙箱实跑 Python 代码：写入临时目录、强制墙钟超时 + kill_on_drop、捕获输出。
+/// 使用 tokio::process 异步执行，避免阻塞 tokio worker 线程；超出墙钟后 kill_on_drop 终止子进程。
+async fn run_python_sandbox(code: &str, timeout: Duration) -> RunResult {
     // 解释器可配置（默认 python3；Windows 上常为 python）
-    let python_bin =
-        std::env::var("OUS_PYTHON").unwrap_or_else(|_| "python3".to_string());
+    let python_bin = std::env::var("OUS_PYTHON").unwrap_or_else(|_| "python3".to_string());
 
     let dir = std::env::temp_dir().join(format!("ous_auto_{}", uuid::Uuid::new_v4().simple()));
     let _ = std::fs::create_dir_all(&dir);
@@ -398,22 +410,29 @@ fn run_python_sandbox(code: &str, timeout: Duration) -> RunResult {
     }
 
     let start = Instant::now();
-    let child = Command::new(&python_bin)
-        .arg(file.to_str().unwrap())
-        .current_dir(&dir)
-        .output();
+    // tokio::time::timeout 包裹 output()：到点返回 Err 并丢弃未来 → kill_on_drop 终止子进程，
+    // 从而杜绝 `while True` 失控进程无限占用 CPU / 阻塞主机（此前仅事后测量，不真正 kill）。
+    let out = tokio::time::timeout(
+        timeout,
+        Command::new(&python_bin)
+            .arg(file.to_str().unwrap())
+            .current_dir(&dir)
+            .kill_on_drop(true)
+            .output(),
+    )
+    .await;
 
-    let result = match child {
-        Ok(out) => {
+    let result = match out {
+        Ok(Ok(o)) => {
             let elapsed = start.elapsed();
             RunResult {
-                exit_code: out.status.code().unwrap_or(-1),
-                stdout: String::from_utf8_lossy(&out.stdout).to_string(),
-                stderr: String::from_utf8_lossy(&out.stderr).to_string(),
+                exit_code: o.status.code().unwrap_or(-1),
+                stdout: String::from_utf8_lossy(&o.stdout).to_string(),
+                stderr: String::from_utf8_lossy(&o.stderr).to_string(),
                 timed_out: elapsed > timeout,
             }
         }
-        Err(e) => RunResult {
+        Ok(Err(e)) => RunResult {
             // exit_code 9009 = Windows "命令未找到"；标记为环境错误，避免无意义的代码修复
             exit_code: 9009,
             stdout: String::new(),
@@ -422,6 +441,15 @@ fn run_python_sandbox(code: &str, timeout: Duration) -> RunResult {
                 python_bin, e
             ),
             timed_out: false,
+        },
+        Err(_) => RunResult {
+            exit_code: -1,
+            stdout: String::new(),
+            stderr: format!(
+                "[超时] Python 沙箱执行超过 {}ms，已强制终止（防止失控进程拖垮主机）",
+                timeout.as_millis()
+            ),
+            timed_out: true,
         },
     };
 
@@ -530,7 +558,10 @@ pub async fn chat_handler(
             roles = ?principal.roles,
             "RBAC denied: EditFlow required for compile"
         );
-        return Err((StatusCode::FORBIDDEN, "权限不足：需 Editor 角色以上才可提交需求编译".into()));
+        return Err((
+            StatusCode::FORBIDDEN,
+            "权限不足：需 Editor 角色以上才可提交需求编译".into(),
+        ));
     }
 
     let name = req
@@ -593,7 +624,10 @@ pub async fn refine_handler(
             roles = ?principal.roles,
             "RBAC denied: EditFlow required for refine"
         );
-        return Err((StatusCode::FORBIDDEN, "权限不足：需 Editor 角色以上才可追加功能".into()));
+        return Err((
+            StatusCode::FORBIDDEN,
+            "权限不足：需 Editor 角色以上才可追加功能".into(),
+        ));
     }
 
     let mut asset = crate::automation_asset::get_automation(&id)
@@ -660,8 +694,9 @@ pub async fn run_handler(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?
         .ok_or((StatusCode::NOT_FOUND, "自动化资产不存在".into()))?;
 
-    let timeout = Duration::from_secs(req.timeout_sec.unwrap_or(15));
-    let mut run_result = run_python_sandbox(&asset.code.python, timeout);
+    // 安全上限：客户端可传 timeout_sec，夹在 [1,30]s，防止无界等待/资源占用
+    let timeout = Duration::from_secs(req.timeout_sec.unwrap_or(15).clamp(1, 30));
+    let mut run_result = run_python_sandbox(&asset.code.python, timeout).await;
 
     let mut fix_summary: Option<FixSummary> = None;
     let mut updated_code: Option<String> = None;
@@ -700,7 +735,8 @@ pub async fn run_handler(
         {
             if applied {
                 // 回写到流程图 Script/Operator 节点 + 代码资产
-                let mut flow_json = serde_json::to_value(&asset.blueprint.flow).unwrap_or(Value::Null);
+                let mut flow_json =
+                    serde_json::to_value(&asset.blueprint.flow).unwrap_or(Value::Null);
                 let target = asset
                     .blueprint
                     .flow
@@ -722,7 +758,7 @@ pub async fn run_handler(
                 asset.code.python = fixed_code.clone();
                 updated_code = Some(fixed_code.clone());
                 // 重新实跑验证修复（最多一次）
-                run_result = run_python_sandbox(&asset.code.python, timeout);
+                run_result = run_python_sandbox(&asset.code.python, timeout).await;
             }
             fix_summary = Some(FixSummary {
                 category: format!("{:?}", prop.category),
@@ -781,8 +817,7 @@ pub async fn update_handler(
         asset.code.vue = vue;
     }
     if let Some(flow_json) = payload.flow {
-        if let Ok(flow) =
-            serde_json::from_value::<ai_agent::flow_engine::FlowDefinition>(flow_json)
+        if let Ok(flow) = serde_json::from_value::<ai_agent::flow_engine::FlowDefinition>(flow_json)
         {
             asset.blueprint.flow = flow;
         }

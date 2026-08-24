@@ -137,7 +137,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, CopyDocument, Select, Plus, Close, Edit, Download } from '@element-plus/icons-vue'
@@ -342,7 +342,8 @@ async function exportApp() {
   }
 }
 
-onMounted(load)
+// 复用同一组件实例时路由参数变化不会触发 onMounted，故用 watch 监听 id 重新加载
+watch(() => route.params.id, load, { immediate: true })
 </script>
 
 <style scoped>

@@ -115,8 +115,18 @@ pub struct Relation {
 }
 
 impl Relation {
-    pub fn new(from: impl Into<String>, to: impl Into<String>, kind: RelationKind, strength: f64) -> Self {
-        Self { from: from.into(), to: to.into(), kind, strength: strength.clamp(0.001, 1.0) }
+    pub fn new(
+        from: impl Into<String>,
+        to: impl Into<String>,
+        kind: RelationKind,
+        strength: f64,
+    ) -> Self {
+        Self {
+            from: from.into(),
+            to: to.into(),
+            kind,
+            strength: strength.clamp(0.001, 1.0),
+        }
     }
 }
 
@@ -207,7 +217,11 @@ impl TopologyGraph {
             if let Some(tool) = n.tool {
                 let tid = format!("tool:{:?}", tool).to_lowercase();
                 if self.entity(&tid).is_none() {
-                    self.add_entity(Entity::new(tid.clone(), EntityKind::Tool, format!("{:?}", tool)));
+                    self.add_entity(Entity::new(
+                        tid.clone(),
+                        EntityKind::Tool,
+                        format!("{:?}", tool),
+                    ));
                 }
                 self.add_relation(Relation::new(eid.clone(), tid, RelationKind::Binds, 0.9));
             }
@@ -221,7 +235,9 @@ impl TopologyGraph {
             }
             for n in &flow.nodes {
                 if n.accesses.iter().any(|a| {
-                    r.resource_prefixes.iter().any(|p| a.resource.starts_with(p.as_str()))
+                    r.resource_prefixes
+                        .iter()
+                        .any(|p| a.resource.starts_with(p.as_str()))
                 }) {
                     self.add_relation(Relation::new(
                         rid.clone(),
@@ -264,7 +280,11 @@ impl TopologyGraph {
                 })
             })
             .collect();
-        scored.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        scored.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         scored.truncate(top_k);
         scored
     }
@@ -319,7 +339,12 @@ impl TopologyGraph {
             path.push(cur);
         }
         path.reverse();
-        Some((path.into_iter().map(|i| self.entities[i].id.clone()).collect(), dist[t]))
+        Some((
+            path.into_iter()
+                .map(|i| self.entities[i].id.clone())
+                .collect(),
+            dist[t],
+        ))
     }
 
     fn edge_cost(&self, r: &Relation, target: usize) -> f64 {
@@ -434,7 +459,10 @@ impl TopologyGraph {
             bwd.entry(r.to.as_str()).or_default().push(r.from.as_str());
         }
         while let Some(cur) = stack.pop() {
-            for m in [fwd.get(cur.as_str()), bwd.get(cur.as_str())].into_iter().flatten() {
+            for m in [fwd.get(cur.as_str()), bwd.get(cur.as_str())]
+                .into_iter()
+                .flatten()
+            {
                 for nxt in m.iter() {
                     if seen.insert(nxt.to_string()) {
                         stack.push(nxt.to_string());
@@ -455,7 +483,11 @@ impl TopologyGraph {
         for v in affected.values_mut() {
             v.sort();
         }
-        ImpactSet { origin: origin.to_string(), total: seen.len(), affected }
+        ImpactSet {
+            origin: origin.to_string(),
+            total: seen.len(),
+            affected,
+        }
     }
 }
 
@@ -481,8 +513,14 @@ fn tokenize(s: &str) -> Vec<String> {
         out.push(buf);
     }
     // 中文二元组
-    let cjk: Vec<&String> = out.iter().filter(|t| t.chars().count() == 1 && !t.is_ascii()).collect();
-    let bigrams: Vec<String> = cjk.windows(2).map(|w| format!("{}{}", w[0], w[1])).collect();
+    let cjk: Vec<&String> = out
+        .iter()
+        .filter(|t| t.chars().count() == 1 && !t.is_ascii())
+        .collect();
+    let bigrams: Vec<String> = cjk
+        .windows(2)
+        .map(|w| format!("{}{}", w[0], w[1]))
+        .collect();
     out.extend(bigrams);
     out.sort();
     out.dedup();
@@ -500,7 +538,9 @@ impl PartialOrd for OrderedF64 {
 }
 impl Ord for OrderedF64 {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.0.partial_cmp(&other.0).unwrap_or(std::cmp::Ordering::Equal)
+        self.0
+            .partial_cmp(&other.0)
+            .unwrap_or(std::cmp::Ordering::Equal)
     }
 }
 
@@ -511,17 +551,41 @@ mod tests {
     fn demo() -> TopologyGraph {
         let mut g = TopologyGraph::new();
         g.add_entity(
-            Entity::new("skill:report", EntityKind::Skill, "月度报表生成")
-                .with_keywords(["报表", "月度", "月度报表", "生成"]),
+            Entity::new("skill:report", EntityKind::Skill, "月度报表生成").with_keywords([
+                "报表",
+                "月度",
+                "月度报表",
+                "生成",
+            ]),
         );
         g.add_entity(Entity::new("flow:n1", EntityKind::FlowNode, "读取Excel").with_cost(300));
         g.add_entity(Entity::new("flow:n2", EntityKind::FlowNode, "汇总输出").with_cost(100));
         g.add_entity(Entity::new("tool:file", EntityKind::Tool, "File"));
         g.add_entity(Entity::new("mem:last", EntityKind::Memory, "上次执行记录"));
-        g.add_relation(Relation::new("skill:report", "flow:n1", RelationKind::Implements, 1.0));
-        g.add_relation(Relation::new("flow:n1", "flow:n2", RelationKind::Implements, 1.0));
-        g.add_relation(Relation::new("flow:n1", "tool:file", RelationKind::Binds, 0.9));
-        g.add_relation(Relation::new("skill:report", "mem:last", RelationKind::Recalls, 0.7));
+        g.add_relation(Relation::new(
+            "skill:report",
+            "flow:n1",
+            RelationKind::Implements,
+            1.0,
+        ));
+        g.add_relation(Relation::new(
+            "flow:n1",
+            "flow:n2",
+            RelationKind::Implements,
+            1.0,
+        ));
+        g.add_relation(Relation::new(
+            "flow:n1",
+            "tool:file",
+            RelationKind::Binds,
+            0.9,
+        ));
+        g.add_relation(Relation::new(
+            "skill:report",
+            "mem:last",
+            RelationKind::Recalls,
+            0.7,
+        ));
         g
     }
 

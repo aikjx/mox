@@ -1,5 +1,85 @@
 [
   {
+    "id": "log_yw4iyd0yp3",
+    "ts": "2026-08-23T18:12:58.720Z",
+    "type": "market",
+    "msg": "upload 契约冒烟算子包 1787508778714"
+  },
+  {
+    "id": "log_gs421p5so6",
+    "ts": "2026-08-23T18:01:39.783Z",
+    "type": "system",
+    "msg": "logs-append",
+    "level": "info",
+    "entry_type": "audit"
+  },
+  {
+    "id": "log_o1t7vlbyhh",
+    "ts": "2026-08-23T17:58:10.023Z",
+    "type": "system",
+    "msg": "logs-append",
+    "level": "info",
+    "entry_type": "audit"
+  },
+  {
+    "id": "log_rq859vy6er",
+    "ts": "2026-08-23T17:54:05.189Z",
+    "type": "system",
+    "msg": "logs-append",
+    "level": "info",
+    "entry_type": "audit"
+  },
+  {
+    "id": "log_pxyh4d0lk9",
+    "ts": "2026-08-23T17:52:19.683Z",
+    "type": "system",
+    "msg": "logs-append",
+    "level": "info",
+    "entry_type": "audit"
+  },
+  {
+    "id": "log_7f01nw5q44",
+    "ts": "2026-08-23T17:50:17.702Z",
+    "type": "system",
+    "msg": "logs-append",
+    "level": "info",
+    "entry_type": "audit"
+  },
+  {
+    "id": "log_yobs3wm7h7",
+    "ts": "2026-08-23T17:49:20.551Z",
+    "type": "market",
+    "msg": "upload 契约冒烟算子包 1787507360545"
+  },
+  {
+    "id": "log_j95blxbx29",
+    "ts": "2026-08-23T17:46:37.614Z",
+    "type": "system",
+    "msg": "logs-append",
+    "level": "info",
+    "entry_type": "audit"
+  },
+  {
+    "id": "log_sf4wv7cj4p",
+    "ts": "2026-08-23T17:44:25.496Z",
+    "type": "system",
+    "msg": "logs-append",
+    "level": "info",
+    "entry_type": "audit"
+  },
+  {
+    "id": "log_1j72esoj70",
+    "ts": "2026-08-23T16:59:24.092Z",
+    "type": "market",
+    "msg": "upload 契约冒烟算子包 1787504364086"
+  },
+  {
+    "id": "log_94oa65cfur",
+    "ts": "2026-08-23T16:58:57.381Z",
+    "type": "market",
+    "msg": "upload 契约冒烟算子包 1787504337364"
+  },
+  {
     "id": "log_ejv5tlmi1d",
     "ts": "2026-08-23T00:55:51.649Z",
     "type": "kb",
@@ -3837,91 +3917,893 @@
     "edges": 29
   },
   {
-    "id": "log_x57ttrf2m4",
-    "ts": "2026-08-20T13:57:29.792Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
+    "timestamp": "2026-08-23T18:23:06.069Z",
+    "ts": 1787509386073,
+    "level": "info",
+    "type": "audit",
+    "module": "d3-obs-test",
+    "message": "audit-1787509386069-d3obs",
+    "tags": [
+      "d3",
+      "obs",
+      "audit"
+    ],
+    "success": true,
+    "duration": 0,
+    "actor": null
   },
   {
-    "id": "log_oxvw2nrcx0",
-    "ts": "2026-08-20T13:57:26.780Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
+    "timestamp": "2026-08-23T18:23:12.742Z",
+    "ts": 1787509392742,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-bearer-ok-1787509392740",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
   },
   {
-    "id": "log_26ac50214a",
-    "ts": "2026-08-20T13:57:23.776Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
+    "timestamp": "2026-08-23T18:23:12.753Z",
+    "ts": 1787509392753,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-xheader-ok-1787509392751",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
   },
   {
-    "id": "log_ph2c8gtigo",
-    "ts": "2026-08-20T13:57:20.773Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
+    "timestamp": "2026-08-23T18:23:12.762Z",
+    "ts": 1787509392762,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-query-ok-1787509392760",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
   },
   {
-    "id": "log_8z0ni4anfx",
-    "ts": "2026-08-20T13:57:17.772Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
+    "timestamp": "2026-08-23T18:24:04.434Z",
+    "ts": 1787509444435,
+    "level": "info",
+    "type": "audit",
+    "module": "d3-obs-test",
+    "message": "audit-1787509444434-d3obs",
+    "tags": [
+      "d3",
+      "obs",
+      "audit"
+    ],
+    "success": true,
+    "duration": 0,
+    "actor": null
   },
   {
-    "id": "log_5le8yavdwb",
-    "ts": "2026-08-20T13:57:14.765Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
+    "timestamp": "2026-08-23T18:24:05.078Z",
+    "ts": 1787509445078,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-bearer-ok-1787509445076",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
   },
   {
-    "id": "log_nt8o84xkws",
-    "ts": "2026-08-20T13:57:11.757Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
+    "timestamp": "2026-08-23T18:24:05.106Z",
+    "ts": 1787509445106,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-xheader-ok-1787509445104",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
   },
   {
-    "id": "log_cst595keqc",
-    "ts": "2026-08-20T13:57:08.748Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
+    "timestamp": "2026-08-23T18:24:05.117Z",
+    "ts": 1787509445117,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-query-ok-1787509445115",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
   },
   {
-    "id": "log_6k8ebtk0od",
-    "ts": "2026-08-20T13:57:05.737Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
+    "timestamp": "2026-08-23T18:24:18.008Z",
+    "ts": 1787509458010,
+    "level": "info",
+    "type": "audit",
+    "module": "d3-obs-test",
+    "message": "audit-1787509458008-d3obs",
+    "tags": [
+      "d3",
+      "obs",
+      "audit"
+    ],
+    "success": true,
+    "duration": 0,
+    "actor": null
   },
   {
-    "id": "log_2wl1ilod3s",
-    "ts": "2026-08-20T13:57:02.736Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
+    "timestamp": "2026-08-23T18:24:24.487Z",
+    "ts": 1787509464487,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-bearer-ok-1787509464485",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
   },
   {
-    "id": "log_4wtk388i9z",
-    "ts": "2026-08-20T13:56:59.728Z",
-    "type": "auto-sync",
-    "msg": "auto sync tick",
-    "nodes": 24,
-    "edges": 29
+    "timestamp": "2026-08-23T18:24:24.498Z",
+    "ts": 1787509464498,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-xheader-ok-1787509464496",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T18:24:24.507Z",
+    "ts": 1787509464507,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-query-ok-1787509464505",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T18:27:36.446Z",
+    "ts": 1787509656447,
+    "level": "info",
+    "type": "audit",
+    "module": "d3-obs-test",
+    "message": "audit-1787509656446-d3obs",
+    "tags": [
+      "d3",
+      "obs",
+      "audit"
+    ],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T18:27:37.106Z",
+    "ts": 1787509657106,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-bearer-ok-1787509657104",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T18:27:37.116Z",
+    "ts": 1787509657116,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-xheader-ok-1787509657114",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T18:27:37.124Z",
+    "ts": 1787509657124,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-query-ok-1787509657123",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T18:27:49.920Z",
+    "ts": 1787509669922,
+    "level": "info",
+    "type": "audit",
+    "module": "d3-obs-test",
+    "message": "audit-1787509669920-d3obs",
+    "tags": [
+      "d3",
+      "obs",
+      "audit"
+    ],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T18:27:56.442Z",
+    "ts": 1787509676442,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-bearer-ok-1787509676439",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T18:27:56.452Z",
+    "ts": 1787509676452,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-xheader-ok-1787509676451",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T18:27:56.465Z",
+    "ts": 1787509676465,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-query-ok-1787509676464",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T18:30:00.797Z",
+    "ts": 1787509800799,
+    "level": "info",
+    "type": "audit",
+    "module": "d3-obs-test",
+    "message": "audit-1787509800797-d3obs",
+    "tags": [
+      "d3",
+      "obs",
+      "audit"
+    ],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T18:30:01.440Z",
+    "ts": 1787509801440,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-bearer-ok-1787509801439",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T18:30:01.449Z",
+    "ts": 1787509801449,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-xheader-ok-1787509801448",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T18:30:01.458Z",
+    "ts": 1787509801458,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-query-ok-1787509801457",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T18:30:14.339Z",
+    "ts": 1787509814342,
+    "level": "info",
+    "type": "audit",
+    "module": "d3-obs-test",
+    "message": "audit-1787509814339-d3obs",
+    "tags": [
+      "d3",
+      "obs",
+      "audit"
+    ],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T18:30:20.875Z",
+    "ts": 1787509820875,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-bearer-ok-1787509820873",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T18:30:20.885Z",
+    "ts": 1787509820885,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-xheader-ok-1787509820884",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T18:30:20.894Z",
+    "ts": 1787509820894,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-query-ok-1787509820893",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T23:39:21.475Z",
+    "ts": 1787528361477,
+    "level": "info",
+    "type": "audit",
+    "module": "d3-obs-test",
+    "message": "audit-1787528361475-d3obs",
+    "tags": [
+      "d3",
+      "obs",
+      "audit"
+    ],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T23:39:22.122Z",
+    "ts": 1787528362122,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-bearer-ok-1787528362120",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T23:39:22.132Z",
+    "ts": 1787528362132,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-xheader-ok-1787528362130",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T23:39:22.141Z",
+    "ts": 1787528362141,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-query-ok-1787528362140",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T23:39:34.248Z",
+    "ts": 1787528374250,
+    "level": "info",
+    "type": "audit",
+    "module": "d3-obs-test",
+    "message": "audit-1787528374248-d3obs",
+    "tags": [
+      "d3",
+      "obs",
+      "audit"
+    ],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T23:39:40.294Z",
+    "ts": 1787528380294,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-bearer-ok-1787528380293",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T23:39:40.304Z",
+    "ts": 1787528380304,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-xheader-ok-1787528380303",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T23:39:40.312Z",
+    "ts": 1787528380312,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-query-ok-1787528380311",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T23:39:56.708Z",
+    "ts": 1787528396708,
+    "level": "info",
+    "type": "audit",
+    "module": "d3-obs-test",
+    "message": "audit-1787528396708-d3obs",
+    "tags": [
+      "d3",
+      "obs",
+      "audit"
+    ],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T23:39:57.344Z",
+    "ts": 1787528397344,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-bearer-ok-1787528397344",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T23:39:57.354Z",
+    "ts": 1787528397354,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-xheader-ok-1787528397354",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T23:39:57.363Z",
+    "ts": 1787528397363,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-query-ok-1787528397363",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T23:40:08.475Z",
+    "ts": 1787528408476,
+    "level": "info",
+    "type": "audit",
+    "module": "d3-obs-test",
+    "message": "audit-1787528408475-d3obs",
+    "tags": [
+      "d3",
+      "obs",
+      "audit"
+    ],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T23:40:14.884Z",
+    "ts": 1787528414884,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-bearer-ok-1787528414882",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T23:40:14.896Z",
+    "ts": 1787528414896,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-xheader-ok-1787528414895",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T23:40:14.903Z",
+    "ts": 1787528414903,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-query-ok-1787528414902",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T23:41:46.633Z",
+    "ts": 1787528506636,
+    "level": "info",
+    "type": "audit",
+    "module": "d3-obs-test",
+    "message": "audit-1787528506633-d3obs",
+    "tags": [
+      "d3",
+      "obs",
+      "audit"
+    ],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T23:41:47.274Z",
+    "ts": 1787528507274,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-bearer-ok-1787528507272",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T23:41:47.282Z",
+    "ts": 1787528507282,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-xheader-ok-1787528507281",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T23:41:47.290Z",
+    "ts": 1787528507290,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-query-ok-1787528507288",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-23T23:41:58.356Z",
+    "ts": 1787528518358,
+    "level": "info",
+    "type": "audit",
+    "module": "d3-obs-test",
+    "message": "audit-1787528518356-d3obs",
+    "tags": [
+      "d3",
+      "obs",
+      "audit"
+    ],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-24T00:04:53.453Z",
+    "ts": 1787529893453,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-bearer-ok-1787529893451",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-24T00:04:53.472Z",
+    "ts": 1787529893472,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-xheader-ok-1787529893470",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-24T00:04:53.487Z",
+    "ts": 1787529893487,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-query-ok-1787529893485",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-24T00:05:06.057Z",
+    "ts": 1787529906059,
+    "level": "info",
+    "type": "audit",
+    "module": "d3-obs-test",
+    "message": "audit-1787529906057-d3obs",
+    "tags": [
+      "d3",
+      "obs",
+      "audit"
+    ],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-24T00:05:06.702Z",
+    "ts": 1787529906702,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-bearer-ok-1787529906701",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-24T00:05:06.714Z",
+    "ts": 1787529906714,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-xheader-ok-1787529906712",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-24T00:05:06.723Z",
+    "ts": 1787529906723,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-query-ok-1787529906722",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-24T00:05:19.385Z",
+    "ts": 1787529919387,
+    "level": "info",
+    "type": "audit",
+    "module": "d3-obs-test",
+    "message": "audit-1787529919385-d3obs",
+    "tags": [
+      "d3",
+      "obs",
+      "audit"
+    ],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-24T00:05:25.578Z",
+    "ts": 1787529925578,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-bearer-ok-1787529925575",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-24T00:05:25.590Z",
+    "ts": 1787529925590,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-xheader-ok-1787529925588",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-24T00:05:25.599Z",
+    "ts": 1787529925599,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-query-ok-1787529925597",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-24T00:05:43.993Z",
+    "ts": 1787529943994,
+    "level": "info",
+    "type": "audit",
+    "module": "d3-obs-test",
+    "message": "audit-1787529943993-d3obs",
+    "tags": [
+      "d3",
+      "obs",
+      "audit"
+    ],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-24T00:05:44.625Z",
+    "ts": 1787529944625,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-bearer-ok-1787529944625",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-24T00:05:44.634Z",
+    "ts": 1787529944634,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-xheader-ok-1787529944634",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-24T00:05:44.645Z",
+    "ts": 1787529944645,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-query-ok-1787529944644",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-24T00:05:56.330Z",
+    "ts": 1787529956331,
+    "level": "info",
+    "type": "audit",
+    "module": "d3-obs-test",
+    "message": "audit-1787529956330-d3obs",
+    "tags": [
+      "d3",
+      "obs",
+      "audit"
+    ],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-24T00:06:02.471Z",
+    "ts": 1787529962471,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-bearer-ok-1787529962469",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-24T00:06:02.480Z",
+    "ts": 1787529962480,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-xheader-ok-1787529962479",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "timestamp": "2026-08-24T00:06:02.489Z",
+    "ts": 1787529962489,
+    "level": "info",
+    "type": "audit",
+    "module": null,
+    "message": "d4sec-query-ok-1787529962487",
+    "tags": [],
+    "success": true,
+    "duration": 0,
+    "actor": null
+  },
+  {
+    "id": "kb_doc_c63tjx3vni",
+    "ts": "2026-08-24T00:06:02.546Z",
+    "type": "kb",
+    "msg": "create document"
   }
 ]

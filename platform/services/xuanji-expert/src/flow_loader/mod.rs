@@ -2,16 +2,18 @@
 //!
 //! 将业务工作流从硬编码 Rust 解放出来，业务人员可用 YAML 增删改流程。
 
-use crate::flow::{EdgeKind, FlowEdge, FlowGraph, FlowNode, NodeKind, ToolKind, Access, AccessMode};
+use crate::flow::{
+    Access, AccessMode, EdgeKind, FlowEdge, FlowGraph, FlowNode, NodeKind, ToolKind,
+};
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 
-mod yaml;
 mod validate;
+mod yaml;
 
-pub use yaml::{FlowDef, NodeDef, EdgeDef as YamlEdgeDef, RuleDef, YamlFlowLoader};
 pub use validate::ValidationError;
+pub use yaml::{EdgeDef as YamlEdgeDef, FlowDef, NodeDef, RuleDef, YamlFlowLoader};
 
 /// 流程加载器
 pub struct FlowLoader {
@@ -19,15 +21,19 @@ pub struct FlowLoader {
 }
 
 impl FlowLoader {
-    pub fn new(root: impl Into<PathBuf>) -> Self { Self { root: root.into() } }
+    pub fn new(root: impl Into<PathBuf>) -> Self {
+        Self { root: root.into() }
+    }
 
     /// 加载单个流程
     pub fn load(&self, filename: &str) -> Result<FlowGraph, FlowLoadError> {
         let path = self.root.join(filename);
-        if !path.exists() { return Err(FlowLoadError::FileNotFound(path)); }
+        if !path.exists() {
+            return Err(FlowLoadError::FileNotFound(path));
+        }
         let text = fs::read_to_string(&path).map_err(|e| FlowLoadError::Io(e.to_string()))?;
-        let def: FlowDef = serde_yaml::from_str(&text)
-            .map_err(|e| FlowLoadError::Parse(e.to_string()))?;
+        let def: FlowDef =
+            serde_yaml::from_str(&text).map_err(|e| FlowLoadError::Parse(e.to_string()))?;
         validate::validate(&def).map_err(FlowLoadError::Validation)?;
         Self::def_to_graph(filename.trim_end_matches(".yaml"), &def)
     }
@@ -53,8 +59,8 @@ impl FlowLoader {
     /// 保存 FlowGraph 回 YAML
     pub fn save(&self, name: &str, graph: &FlowGraph) -> Result<(), FlowLoadError> {
         let def = Self::graph_to_def(name, graph)?;
-        let yaml_text = serde_yaml::to_string(&def)
-            .map_err(|e| FlowLoadError::Serialize(e.to_string()))?;
+        let yaml_text =
+            serde_yaml::to_string(&def).map_err(|e| FlowLoadError::Serialize(e.to_string()))?;
         let path = self.root.join(format!("{name}.yaml"));
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).map_err(|e| FlowLoadError::Io(e.to_string()))?;
@@ -66,9 +72,15 @@ impl FlowLoader {
     /// 列出可用流程（不加载内容）
     pub fn list(&self) -> Result<Vec<String>, FlowLoadError> {
         let entries = fs::read_dir(&self.root).map_err(|e| FlowLoadError::Io(e.to_string()))?;
-        let mut names: Vec<_> = entries.flatten()
+        let mut names: Vec<_> = entries
+            .flatten()
             .filter(|e| e.path().extension().and_then(|s| s.to_str()) == Some("yaml"))
-            .filter_map(|e| e.path().file_stem().and_then(|s| s.to_str()).map(String::from))
+            .filter_map(|e| {
+                e.path()
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .map(String::from)
+            })
             .collect();
         names.sort();
         Ok(names)
@@ -85,10 +97,14 @@ impl FlowLoader {
             let kind = Self::parse_node_kind(nd.kind.as_str().unwrap_or("task"));
             let mut node = FlowNode::new(&nd.id, &nd.name, kind);
             node.duration_ms = nd.duration_ms;
-            if let Some(ref tags) = nd.tags { node.tags.clone_from(tags); }
+            if let Some(ref tags) = nd.tags {
+                node.tags.clone_from(tags);
+            }
             if let Some(ref tool_val) = nd.tool {
                 if let Some(tool_str) = tool_val.as_str() {
-                    if let Some(tk) = Self::parse_tool(tool_str) { node.tool = Some(tk); }
+                    if let Some(tk) = Self::parse_tool(tool_str) {
+                        node.tool = Some(tk);
+                    }
                 }
             }
             if let Some(ref access_list) = nd.access {
@@ -99,11 +115,16 @@ impl FlowLoader {
                             "read" => AccessMode::Read,
                             _ => AccessMode::ReadWrite,
                         };
-                        node.accesses.push(Access { resource: res.trim().to_string(), mode });
+                        node.accesses.push(Access {
+                            resource: res.trim().to_string(),
+                            mode,
+                        });
                     }
                 }
             }
-            if nd.transactional.unwrap_or(false) { node.transactional = true; }
+            if nd.transactional.unwrap_or(false) {
+                node.transactional = true;
+            }
             let idx = graph.nodes.len();
             graph.nodes.push(node);
             id_map.insert(nd.id.as_str(), idx);
@@ -111,12 +132,19 @@ impl FlowLoader {
 
         // 再注册边
         for ed in &def.edges {
-            let from_idx = id_map.get(ed.from.as_str())
+            let from_idx = id_map
+                .get(ed.from.as_str())
                 .ok_or_else(|| FlowLoadError::MissingNode(ed.from.clone()))?;
-            let to_idx = id_map.get(ed.to.as_str())
+            let to_idx = id_map
+                .get(ed.to.as_str())
                 .ok_or_else(|| FlowLoadError::MissingNode(ed.to.clone()))?;
             let edge_kind = Self::parse_edge_kind(ed.kind.as_str().unwrap_or("sequence"));
-            graph.edges.push(FlowEdge { from: format!("n{}", from_idx), to: format!("n{}", to_idx), kind: edge_kind, condition: None });
+            graph.edges.push(FlowEdge {
+                from: format!("n{}", from_idx),
+                to: format!("n{}", to_idx),
+                kind: edge_kind,
+                condition: None,
+            });
         }
 
         // 规则
@@ -126,7 +154,9 @@ impl FlowLoader {
                 "info" => flow_ai::model::Severity::Info,
                 _ => flow_ai::model::Severity::Warning,
             };
-            let tool_kinds: Vec<_> = rd.tool.as_ref()
+            let tool_kinds: Vec<_> = rd
+                .tool
+                .as_ref()
                 .and_then(|v: &serde_yaml::Value| v.as_str())
                 .and_then(Self::parse_tool)
                 .map(|tk| vec![tk])
@@ -145,35 +175,54 @@ impl FlowLoader {
     }
 
     fn graph_to_def(_name: &str, graph: &FlowGraph) -> Result<FlowDef, FlowLoadError> {
-        let nodes: Vec<_> = graph.nodes.iter().map(|n| {
-            let access: Option<Vec<_>> = if n.accesses.is_empty() { None } else {
-                Some(n.accesses.iter().map(|a| {
-                    let mode = match a.mode {
-                        AccessMode::Read => "read",
-                        AccessMode::Write => "write",
-                        AccessMode::ReadWrite => "readwrite",
-                    };
-                    format!("{mode}:{resource}", resource = a.resource)
-                }).collect())
-            };
-            NodeDef {
-                id: n.id.clone(),
-                name: n.name.clone(),
-                kind: serde_yaml::Value::String(format!("{:?}", n.kind).to_lowercase()),
-                duration_ms: n.duration_ms,
-                tags: if n.tags.is_empty() { None } else { Some(n.tags.clone()) },
-                tool: n.tool.map(|tk| serde_yaml::Value::String(format!("{:?}", tk).to_lowercase())),
-                access,
-                transactional: if n.transactional { Some(true) } else { None },
-            }
-        }).collect();
-        let edges: Vec<_> = graph.edges.iter().map(|e| {
-            YamlEdgeDef {
+        let nodes: Vec<_> = graph
+            .nodes
+            .iter()
+            .map(|n| {
+                let access: Option<Vec<_>> = if n.accesses.is_empty() {
+                    None
+                } else {
+                    Some(
+                        n.accesses
+                            .iter()
+                            .map(|a| {
+                                let mode = match a.mode {
+                                    AccessMode::Read => "read",
+                                    AccessMode::Write => "write",
+                                    AccessMode::ReadWrite => "readwrite",
+                                };
+                                format!("{mode}:{resource}", resource = a.resource)
+                            })
+                            .collect(),
+                    )
+                };
+                NodeDef {
+                    id: n.id.clone(),
+                    name: n.name.clone(),
+                    kind: serde_yaml::Value::String(format!("{:?}", n.kind).to_lowercase()),
+                    duration_ms: n.duration_ms,
+                    tags: if n.tags.is_empty() {
+                        None
+                    } else {
+                        Some(n.tags.clone())
+                    },
+                    tool: n
+                        .tool
+                        .map(|tk| serde_yaml::Value::String(format!("{:?}", tk).to_lowercase())),
+                    access,
+                    transactional: if n.transactional { Some(true) } else { None },
+                }
+            })
+            .collect();
+        let edges: Vec<_> = graph
+            .edges
+            .iter()
+            .map(|e| YamlEdgeDef {
                 from: e.from.clone(),
                 to: e.to.clone(),
                 kind: serde_yaml::Value::String(format!("{:?}", e.kind).to_lowercase()),
-            }
-        }).collect();
+            })
+            .collect();
         Ok(FlowDef {
             name: graph.name.clone(),
             description: None,
@@ -227,7 +276,9 @@ impl FlowLoader {
 }
 
 impl Default for FlowLoader {
-    fn default() -> Self { Self::new("flows") }
+    fn default() -> Self {
+        Self::new("flows")
+    }
 }
 
 // ── 错误类型 ─────────────────────────────────────────────────────────────────
@@ -270,7 +321,10 @@ mod tests {
     #[test]
     fn missing_file_is_not_found() {
         let l = FlowLoader::new("/nonexistent/path");
-        assert!(matches!(l.load("x.yaml"), Err(FlowLoadError::FileNotFound(_))));
+        assert!(matches!(
+            l.load("x.yaml"),
+            Err(FlowLoadError::FileNotFound(_))
+        ));
     }
 
     #[test]

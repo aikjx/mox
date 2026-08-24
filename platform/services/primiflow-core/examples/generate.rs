@@ -38,11 +38,21 @@ fn cmd_emit() -> anyhow::Result<()> {
 
 fn cmd_list() {
     let mods: &[&str] = &[
-        "c_r10001 (Fetch)", "c_r10002 (Clean)", "c_r10003 (Report)",
-        "c_r10004 (Fetch)", "c_r10005 (Stock)", "c_r10006 (Report)",
-        "c_r10007 (Pull)",  "c_r10008 (Embed)", "c_r10009 (Cluster)", "c_r10010 (Report)",
-        "c_r10011 (Ingest)","c_r10012 (Feature)","c_r10013 (Model)",
-        "c_r10014 (Alert)", "c_r10015 (Report)",
+        "c_r10001 (Fetch)",
+        "c_r10002 (Clean)",
+        "c_r10003 (Report)",
+        "c_r10004 (Fetch)",
+        "c_r10005 (Stock)",
+        "c_r10006 (Report)",
+        "c_r10007 (Pull)",
+        "c_r10008 (Embed)",
+        "c_r10009 (Cluster)",
+        "c_r10010 (Report)",
+        "c_r10011 (Ingest)",
+        "c_r10012 (Feature)",
+        "c_r10013 (Model)",
+        "c_r10014 (Alert)",
+        "c_r10015 (Report)",
     ];
     println!("[generate::list] 15 个生成示例 (c_r10001..=c_r10015):");
     for m in mods {
@@ -52,24 +62,41 @@ fn cmd_list() {
 
 fn cmd_check() {
     println!("[generate::check] 构造并调用 15 个代码骨架全部方法:");
-    let f1 = out::c_r10001::Fetch::new(); f1.fetch();
-    let f2 = out::c_r10002::Clean::new(); f2.clean();
-    let f3 = out::c_r10003::Report::new(); f3.report();
-    let f4 = out::c_r10004::Fetch::new(); f4.fetch();
-    let f5 = out::c_r10005::Stock::new(); f5.stock();
-    let f6 = out::c_r10006::Report::new(); f6.report();
-    let f7 = out::c_r10007::Pull::new();  f7.pull();
-    let f8 = out::c_r10008::Embed::new(); f8.embed();
-    let f9 = out::c_r10009::Cluster::new(); f9.cluster();
-    let f10 = out::c_r10010::Report::new(); f10.report();
-    let f11 = out::c_r10011::Ingest::new(); f11.ingest();
-    let f12 = out::c_r10012::Feature::new(); f12.feature();
-    let f13 = out::c_r10013::Model::new(); f13.model();
-    let f14 = out::c_r10014::Alert::new(); f14.alert();
-    let f15 = out::c_r10015::Report::new(); f15.report();
+    let f1 = out::c_r10001::Fetch::new();
+    f1.fetch();
+    let f2 = out::c_r10002::Clean::new();
+    f2.clean();
+    let f3 = out::c_r10003::Report::new();
+    f3.report();
+    let f4 = out::c_r10004::Fetch::new();
+    f4.fetch();
+    let f5 = out::c_r10005::Stock::new();
+    f5.stock();
+    let f6 = out::c_r10006::Report::new();
+    f6.report();
+    let f7 = out::c_r10007::Pull::new();
+    f7.pull();
+    let f8 = out::c_r10008::Embed::new();
+    f8.embed();
+    let f9 = out::c_r10009::Cluster::new();
+    f9.cluster();
+    let f10 = out::c_r10010::Report::new();
+    f10.report();
+    let f11 = out::c_r10011::Ingest::new();
+    f11.ingest();
+    let f12 = out::c_r10012::Feature::new();
+    f12.feature();
+    let f13 = out::c_r10013::Model::new();
+    f13.model();
+    let f14 = out::c_r10014::Alert::new();
+    f14.alert();
+    let f15 = out::c_r10015::Report::new();
+    f15.report();
     // Clippy: drop(non_drop) forbidden → 改用 let _ = ...（仍然保证 15 个模块至少一次使用，不触发 dead_code）
     #[allow(clippy::let_unit_value)]
-    let _ = (f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15);
+    let _ = (
+        f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15,
+    );
     println!("[generate::check] OK  15/15 模块均已真实化，全部宏占位均已消除。");
 }
 

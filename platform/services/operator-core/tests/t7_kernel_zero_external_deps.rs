@@ -35,7 +35,7 @@ const FORBIDDEN_PREFIXES: &[&str] = &[
 const FORBIDDEN_DERIVE_NAMES: &[&str] = &[
     "Serialize",
     "Deserialize",
-    "Error",          // thiserror::Error
+    "Error", // thiserror::Error
 ];
 
 /// 属性宏路径（出现这些前缀=显式调用了禁用 crate 的宏）
@@ -138,11 +138,7 @@ fn extract_derive_names(line: &str) -> Vec<String> {
                     .chars()
                     .take_while(|c| c.is_alphanumeric() || *c == '_' || *c == ':')
                     .collect();
-                let last_segment = cleaned
-                    .rsplit("::")
-                    .next()
-                    .unwrap_or("")
-                    .to_string();
+                let last_segment = cleaned.rsplit("::").next().unwrap_or("").to_string();
                 if !last_segment.is_empty() {
                     out.push(last_segment);
                 }
@@ -156,13 +152,8 @@ fn extract_derive_names(line: &str) -> Vec<String> {
 }
 
 fn assert_kernel_no_external_use(path: &Path) {
-    let content = fs::read_to_string(path).unwrap_or_else(|e| {
-        panic!(
-            "tr_07: 无法读取 kernel.rs 文件 {}: {}",
-            path.display(),
-            e
-        )
-    });
+    let content = fs::read_to_string(path)
+        .unwrap_or_else(|e| panic!("tr_07: 无法读取 kernel.rs 文件 {}: {}", path.display(), e));
 
     let mut line_no = 0usize;
     for raw_line in content.lines() {
@@ -264,10 +255,7 @@ fn tr_07_01_c_kernel_no_cfg_attr_conditional_derive() {
             // 从 cfg_attr 中提取 derive(...) 段
             if let Some(start) = t.find("derive(") {
                 let rest = &t[start..];
-                let sub: String = rest
-                    .chars()
-                    .take_while(|c| !matches!(c, ']'))
-                    .collect();
+                let sub: String = rest.chars().take_while(|c| !matches!(c, ']')).collect();
                 // 7 个禁用 derive 名关键字
                 for bad in FORBIDDEN_DERIVE_NAMES.iter() {
                     if sub.contains(bad) {
@@ -292,7 +280,10 @@ fn tr_07_01_d_kernel_prefixes_only_std_family() {
     let path = Path::new(manifest_dir).join("src").join("kernel.rs");
     let content = fs::read_to_string(&path).unwrap();
     let allowed: std::collections::HashSet<&str> =
-        ["std", "alloc", "core", "crate", "super", "self"].iter().copied().collect();
+        ["std", "alloc", "core", "crate", "super", "self"]
+            .iter()
+            .copied()
+            .collect();
     let mut line_no = 0usize;
     for raw in content.lines() {
         line_no += 1;
@@ -315,8 +306,14 @@ fn tr_07_01_e_kernel_ext_contains_external_positive_control() {
     let manifest_dir = env!("CARGO_MANIFEST_DIR");
     let path = Path::new(manifest_dir).join("src").join("kernel_ext.rs");
     let content = fs::read_to_string(&path).unwrap_or_default();
-    let has_serde = content.lines().filter_map(extract_use_prefix).any(|p| p == "serde");
-    let has_nalgebra = content.lines().filter_map(extract_use_prefix).any(|p| p == "nalgebra");
+    let has_serde = content
+        .lines()
+        .filter_map(extract_use_prefix)
+        .any(|p| p == "serde");
+    let has_nalgebra = content
+        .lines()
+        .filter_map(extract_use_prefix)
+        .any(|p| p == "nalgebra");
     assert!(
         has_serde && has_nalgebra,
         "tr_07_01_e 正对照失败：kernel_ext.rs 应至少含 use serde + use nalgebra（当前 serde={}, nalgebra={}）",
@@ -352,9 +349,7 @@ macro_rules! per_crate_test {
                             "serde" => extract_derive_names(ln)
                                 .iter()
                                 .any(|d| d == "Serialize" || d == "Deserialize"),
-                            "thiserror" => extract_derive_names(ln)
-                                .iter()
-                                .any(|d| d == "Error"),
+                            "thiserror" => extract_derive_names(ln).iter().any(|d| d == "Error"),
                             _ => false,
                         }
                     };
@@ -460,7 +455,11 @@ mod sanity {
     fn derive_extracts_serialize_and_deserialize() {
         let names = extract_derive_names("#[derive(Debug, Clone, Serialize, Deserialize)]");
         assert!(names.iter().any(|n| n == "Serialize"), "names: {:?}", names);
-        assert!(names.iter().any(|n| n == "Deserialize"), "names: {:?}", names);
+        assert!(
+            names.iter().any(|n| n == "Deserialize"),
+            "names: {:?}",
+            names
+        );
         assert!(names.iter().any(|n| n == "Debug"));
         assert!(names.iter().any(|n| n == "Clone"));
     }

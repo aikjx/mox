@@ -1,4 +1,4 @@
-﻿//! 12-Factor 应用配置（企业级可运维基线）
+//! 12-Factor 应用配置（企业级可运维基线）
 //!
 //! 所有配置项均可通过环境变量（`XUANJI_*` 前缀）覆盖，便于容器化部署与多环境切换，
 //! 无需重新编译即可调整配额、绑定地址、限流与 CORS 策略。
@@ -35,15 +35,13 @@ impl Default for Quotas {
 }
 
 /// 持久化后端类型（对应 Spring Boot 的多数据源抽象）
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
-#[derive(Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Default)]
 pub enum Backend {
     #[default]
     Sqlite,
     Postgres,
     MySql,
 }
-
 
 impl Backend {
     pub fn parse(s: &str) -> Self {
@@ -127,7 +125,11 @@ impl AppConfig {
             cfg.bind_addr = v;
         }
         if let Some(v) = get("CORS_ORIGINS") {
-            cfg.cors_allowed_origins = v.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect();
+            cfg.cors_allowed_origins = v
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
         }
         if let Some(v) = get("RATE_LIMIT") {
             if let Ok(n) = v.parse() {

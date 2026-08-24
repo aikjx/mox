@@ -86,7 +86,12 @@ mod t6_dip_tests {
     #[test]
     fn tr_06_05_orch_use_only_traits_not_concrete() {
         let code = fs::read_to_string(ORCH_PATH).expect("orchestrator.rs readable");
-        let names = ["MemberService", "TaskService", "PermissionService", "CommService"];
+        let names = [
+            "MemberService",
+            "TaskService",
+            "PermissionService",
+            "CommService",
+        ];
         for n in names.iter() {
             let bad_lines: Vec<_> = code
                 .lines()
@@ -177,17 +182,21 @@ mod t6_dip_tests {
     // ========================================================================
     // TR-06-03（扩充）：MemberService / PermissionService 至少各有 Mock 实现
     // ========================================================================
-    use xuanji_system::domain_traits::{CommServiceTrait, MemberServiceTrait, PermissionServiceTrait, TaskServiceTrait};
-    use xuanji_system::rbac::{Role, RoleBinding};
+    use xuanji_system::domain_traits::{
+        CommServiceTrait, MemberServiceTrait, PermissionServiceTrait, TaskServiceTrait,
+    };
     use xuanji_system::error::Result;
     use xuanji_system::model::*;
     use xuanji_system::rbac::{Permission, ResourceCtx};
+    use xuanji_system::rbac::{Role, RoleBinding};
 
     struct MockMember;
     #[async_trait::async_trait]
     impl MemberServiceTrait for MockMember {
         async fn invite(&self, _by: &str, _input: &InviteInput) -> Result<Member> {
-            Err(xuanji_system::error::AppError::NotFound("MockMember".into()))
+            Err(xuanji_system::error::AppError::NotFound(
+                "MockMember".into(),
+            ))
         }
         async fn get(&self, id: &str) -> Result<Member> {
             Ok(Member {
@@ -228,19 +237,30 @@ mod t6_dip_tests {
                 joined_at: chrono::Utc::now(),
             })
         }
-        async fn list(&self, _xuanji_id: &str) -> Vec<Member> { vec![] }
+        async fn list(&self, _xuanji_id: &str) -> Vec<Member> {
+            vec![]
+        }
     }
 
     struct MockPerm;
     #[async_trait::async_trait]
     impl PermissionServiceTrait for MockPerm {
-        async fn authorize(&self, _mid: &str, _p: Permission, _ctx: &ResourceCtx) -> Result<()> { Ok(()) }
-        async fn assign_role(&self, _b: RoleBinding) { /* mock noop */ }
-        async fn bindings_of(&self, _mid: &str) -> Vec<RoleBinding> { vec![] }
+        async fn authorize(&self, _mid: &str, _p: Permission, _ctx: &ResourceCtx) -> Result<()> {
+            Ok(())
+        }
+        async fn assign_role(&self, _b: RoleBinding) { /* mock noop */
+        }
+        async fn bindings_of(&self, _mid: &str) -> Vec<RoleBinding> {
+            vec![]
+        }
         async fn effective_permissions(&self, mid: &str) -> Vec<Permission> {
             // TR-3.3：分级权限矩阵，可断言
             match mid {
-                "u1" => vec![Permission::TaskViewAssigned, Permission::TaskComment, Permission::AuditView],
+                "u1" => vec![
+                    Permission::TaskViewAssigned,
+                    Permission::TaskComment,
+                    Permission::AuditView,
+                ],
                 "u2" => vec![
                     Permission::TaskCreate,
                     Permission::TaskAssign,
@@ -261,9 +281,13 @@ mod t6_dip_tests {
         let pm = MockPerm;
         // list 返回 Vec（非 Result），直接判空
         assert!(mm.list("x").await.is_empty());
-        let rc = ResourceCtx { xuanji_id: "x".into(), task: None };
+        let rc = ResourceCtx {
+            xuanji_id: "x".into(),
+            task: None,
+        };
         assert!(pm.authorize("u", Permission::AuditView, &rc).await.is_ok());
-        pm.assign_role(RoleBinding::global(Role::XuanjiAdmin, "u")).await;
+        pm.assign_role(RoleBinding::global(Role::XuanjiAdmin, "u"))
+            .await;
     }
 
     // ========================================================================
@@ -297,9 +321,13 @@ mod t6_dip_tests {
             })
         }
         async fn get(&self, _id: &str) -> Result<Task> {
-            Err(xuanji_system::error::AppError::NotFound("MockTask.get".into()))
+            Err(xuanji_system::error::AppError::NotFound(
+                "MockTask.get".into(),
+            ))
         }
-        async fn list(&self, _xuanji_id: &str) -> Vec<Task> { vec![] }
+        async fn list(&self, _xuanji_id: &str) -> Vec<Task> {
+            vec![]
+        }
         async fn assign(&self, tid: &str, _actor: &str, assignees: Vec<String>) -> Result<Task> {
             Ok(Task {
                 id: tid.into(),
@@ -406,7 +434,11 @@ mod t6_dip_tests {
                 status: TaskStatus::InProgress,
                 assignees: vec![],
                 watchers: vec![],
-                subtasks: vec![SubTask { id: sub.into(), title: format!("st-{sub}"), done: true }],
+                subtasks: vec![SubTask {
+                    id: sub.into(),
+                    title: format!("st-{sub}"),
+                    done: true,
+                }],
                 depends_on: vec![],
                 created_by: "sys".into(),
                 created_at: chrono::Utc::now(),
@@ -449,12 +481,18 @@ mod t6_dip_tests {
                 created_at: chrono::Utc::now(),
             })
         }
-        async fn list_messages(&self, _cid: &str) -> Vec<Message> { vec![] }
+        async fn list_messages(&self, _cid: &str) -> Vec<Message> {
+            vec![]
+        }
         async fn notify(&self, _mid: &str, _title: &str, _body: &str, _related: Option<&str>) {
             // noop mock
         }
-        async fn list_notifications(&self, _mid: &str) -> Vec<Notification> { vec![] }
-        async fn mark_read(&self, _id: &str, _mid: &str) -> Result<()> { Ok(()) }
+        async fn list_notifications(&self, _mid: &str) -> Vec<Notification> {
+            vec![]
+        }
+        async fn mark_read(&self, _id: &str, _mid: &str) -> Result<()> {
+            Ok(())
+        }
     }
 
     #[tokio::test]
@@ -467,14 +505,23 @@ mod t6_dip_tests {
 
         // 基本运行性：trait object 可调用方法（不触发 unimplemented 路径）
         assert!(m.list("x").await.is_empty());
-        let rc = ResourceCtx { xuanji_id: "x".into(), task: None };
+        let rc = ResourceCtx {
+            xuanji_id: "x".into(),
+            task: None,
+        };
         assert!(p.authorize("u", Permission::AuditView, &rc).await.is_ok());
-        p.assign_role(RoleBinding::global(Role::XuanjiAdmin, "u")).await;
+        p.assign_role(RoleBinding::global(Role::XuanjiAdmin, "u"))
+            .await;
         assert!(p.bindings_of("u").await.is_empty());
-        let created = t.create("x", "u", "hello", "d", Priority::High).await.unwrap();
+        let created = t
+            .create("x", "u", "hello", "d", Priority::High)
+            .await
+            .unwrap();
         assert_eq!(created.title, "hello");
         assert!(t.list("x").await.is_empty());
-        let _ch = c.create_channel("x", ChannelKind::Xuanji, "大厅", vec![]).await;
+        let _ch = c
+            .create_channel("x", ChannelKind::Xuanji, "大厅", vec![])
+            .await;
         assert!(c.list_messages("c").await.is_empty());
         assert!(c.list_notifications("u").await.is_empty());
         c.notify("u", "t", "b", None).await;
@@ -505,7 +552,9 @@ mod t6_dip_tests {
         assert_eq!(m.sender_id, "sys");
         assert_eq!(m.body, "hello world");
         // notify 无返回值，调用即成功
-        comm_mock.notify("member1", "你好", "DIP 通知", Some("t1")).await;
+        comm_mock
+            .notify("member1", "你好", "DIP 通知", Some("t1"))
+            .await;
     }
 
     // ========================================================================
@@ -516,15 +565,21 @@ mod t6_dip_tests {
     #[tokio::test]
     async fn mock_task_add_subtask_prefixed_parent_id() {
         let t: Arc<dyn TaskServiceTrait> = Arc::new(MockTask);
-        let parent = t.create("x", "u", "Parent", "d", Priority::High).await.unwrap();
+        let parent = t
+            .create("x", "u", "Parent", "d", Priority::High)
+            .await
+            .unwrap();
         let sub = t.add_subtask(&parent.id, "child-1").await.unwrap();
         assert!(
             sub.id.starts_with("sub_"),
-            "子任务 id 必须以 sub_ 前缀；实际：{}", sub.id
+            "子任务 id 必须以 sub_ 前缀；实际：{}",
+            sub.id
         );
         assert!(
             sub.id.ends_with(&parent.id),
-            "子任务 id 必须以前缀+父 id 构成；实际：{} vs 父 id {}", sub.id, parent.id
+            "子任务 id 必须以前缀+父 id 构成；实际：{} vs 父 id {}",
+            sub.id,
+            parent.id
         );
         assert_eq!(sub.title, "child-1");
     }
@@ -538,12 +593,25 @@ mod t6_dip_tests {
         // u1 viewer: 至少 TaskViewAssigned + AuditView
         let u1_has_view = u1.iter().any(|x| matches!(x, Permission::TaskViewAssigned));
         let u1_has_audit = u1.iter().any(|x| matches!(x, Permission::AuditView));
-        assert!(u1_has_view && u1_has_audit, "u1 (viewer) 必须包含 view + audit 权限；实际：{:?}", u1.iter().map(Permission::as_str).collect::<Vec<_>>());
+        assert!(
+            u1_has_view && u1_has_audit,
+            "u1 (viewer) 必须包含 view + audit 权限；实际：{:?}",
+            u1.iter().map(Permission::as_str).collect::<Vec<_>>()
+        );
         // u2 editor: 必须包含 TaskCreate + TaskEditAll（比 viewer 更强）
         let u2_has_create = u2.iter().any(|x| matches!(x, Permission::TaskCreate));
         let u2_has_edit_all = u2.iter().any(|x| matches!(x, Permission::TaskEditAll));
-        assert!(u2_has_create && u2_has_edit_all, "u2 (editor) 必须包含 create + edit_all；实际：{:?}", u2.iter().map(Permission::as_str).collect::<Vec<_>>());
+        assert!(
+            u2_has_create && u2_has_edit_all,
+            "u2 (editor) 必须包含 create + edit_all；实际：{:?}",
+            u2.iter().map(Permission::as_str).collect::<Vec<_>>()
+        );
         // 严格：editor 权限数 > viewer
-        assert!(u2.len() > u1.len(), "editor 权限应超过 viewer：u2={} u1={}", u2.len(), u1.len());
+        assert!(
+            u2.len() > u1.len(),
+            "editor 权限应超过 viewer：u2={} u1={}",
+            u2.len(),
+            u1.len()
+        );
     }
 }

@@ -1,0 +1,91 @@
+{
+  "date": "2026-08-24",
+  "part1_fe": {
+    "dep_check": {
+      "pinia": false,
+      "axios": true,
+      "vitest": false,
+      "playwright": false,
+      "lighthouse": false,
+      "echarts": true,
+      "zod": false,
+      "vueuse": false,
+      "msw": false,
+      "total_expected": 10,
+      "missing": ["pinia", "vitest", "@playwright/test", "lighthouse", "storybook", "zod", "@vueuse/core", "msw"]
+    },
+    "fe_build": {
+      "exit_code": 0,
+      "dist_size_kb": 73649,
+      "duration_s": 26,
+      "errors_trimmed": "",
+      "pass": true,
+      "threshold": "exit_code=0"
+    },
+    "fe_structure": {
+      "views_count": 39,
+      "routes_count": 34,
+      "admin_panel_exists": true,
+      "xuanji_fusion_view_exists": true,
+      "pass": true,
+      "note": "views=39>=28, AdminView + Admin*Panels 存在, XuanjiFusionView 存在, 路由数=34 (含 redirect)"
+    },
+    "summary": {
+      "pass": 2,
+      "warn": 1,
+      "fail": 0,
+      "note": "构建 PASS、结构 PASS；dep_check 缺失 8 个依赖（仅 axios/echarts 命中）= WARN"
+    }
+  },
+  "part2_be": {
+    "backend_mocha": {
+      "suites": 6,
+      "passes": 5,
+      "failures": 1,
+      "duration_s": 2,
+      "exit_code": 1,
+      "failures_list_trimmed": "[FAIL] 业务域数 === 62（Node 基线 46 + 15 Rust + 1 容器）  (actual=70) [TR-01-01]",
+      "pass": false,
+      "so_t": "边缘入口全量Mocha烟测"
+    },
+    "ai_benchmark_script": {
+      "exists": true,
+      "categories_7_found": ["GSM8K", "HumanEval", "MMLU", "常识", "CMMLU", "TODAY", "JSON"],
+      "question_count": 30,
+      "strict_single_param": false,
+      "no_retry_param": false,
+      "pass": false,
+      "so_t": "25 号同款 7大类30题严格单次脚本；脚本设计=严格单次不重试（注释与引擎调用路径显式声明），但 CLI 参数 --strict-single/--no-retry 未暴露",
+      "note_categories_map": {
+        "GSM8K": "数学 5 题",
+        "HumanEval": "代码 3 题",
+        "MMLU": "逻辑 5 题",
+        "常识": "知识 5 题",
+        "CMMLU": "中文 5 题 (含数学/逻辑副标签)",
+        "TODAY": "时效性 2 题 (TODAY=2026-08-23)",
+        "JSON": "指令遵循 5 题 (含 json_schema)"
+      }
+    },
+    "backend_smoke_start": {
+      "health_status": 502,
+      "duration_ms": 284,
+      "pass": false,
+      "note": "Node 反向代理已成功启动（端口 3777），/api/health 由 Rust 上游(3778)返回；Rust operator-server 未启动故 502 Bad Gateway，符合设计（Node 仅转发）。先验 :3000 同 502。"
+    },
+    "summary": {
+      "pass": 0,
+      "warn": 1,
+      "fail": 2,
+      "note": "mocha 1 FAIL (域注册 actual=70 vs expected=62); health=502(上游Rust未起); AI脚本30题7类齐全但缺 CLI 参数(WARN)"
+    }
+  },
+  "meta_test_mock_fail_proof": {
+    "what_mocked": "fe_build with invalid flag (vite build --this-flag-does-not-exist)",
+    "exit_code": 1,
+    "expected": "FAIL",
+    "actual": "FAIL",
+    "error_trimmed": "CACError: Unknown option `--thisFlagDoesNotExist`",
+    "proves_not_always_green": true
+  },
+  "sha256": "A66EABCA68A4317D50D622B5AA0B9177603C4DCEBB0F8ADEC80FCDC2F2AC8B0C"
+}

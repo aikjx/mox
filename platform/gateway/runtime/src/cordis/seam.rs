@@ -2,11 +2,11 @@
 //!
 //! 外部世界（文件系统、子进程、LLM、数据库）的抽象层
 
-use std::collections::HashMap;
-use std::sync::Arc;
+use async_trait::async_trait;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
-use async_trait::async_trait;
+use std::collections::HashMap;
+use std::sync::Arc;
 
 /// Seam注册表
 pub struct SeamRegistry {

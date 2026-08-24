@@ -17,4 +17,3 @@ pub use node_sidecar::{
     GraphAlgoReq, GraphAlgoResp, IntentReq, IntentResp, NodeSidecarClient, SidecarError,
     SidecarMetrics, SidecarMetricsSnapshot,
 };
-

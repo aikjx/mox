@@ -210,34 +210,128 @@ impl AIFlowGraph {
     pub fn default_config() -> Self {
         let rules = vec![
             // graph
-            IntentRule { capability: "graph".into(), keyword: "图谱".into(), weight: 3.0 },
-            IntentRule { capability: "graph".into(), keyword: "PageRank".into(), weight: 3.0 },
-            IntentRule { capability: "graph".into(), keyword: "中心性".into(), weight: 2.5 },
-            IntentRule { capability: "graph".into(), keyword: "社区结构".into(), weight: 2.5 },
-            IntentRule { capability: "graph".into(), keyword: "节点关系".into(), weight: 2.0 },
+            IntentRule {
+                capability: "graph".into(),
+                keyword: "图谱".into(),
+                weight: 3.0,
+            },
+            IntentRule {
+                capability: "graph".into(),
+                keyword: "PageRank".into(),
+                weight: 3.0,
+            },
+            IntentRule {
+                capability: "graph".into(),
+                keyword: "中心性".into(),
+                weight: 2.5,
+            },
+            IntentRule {
+                capability: "graph".into(),
+                keyword: "社区结构".into(),
+                weight: 2.5,
+            },
+            IntentRule {
+                capability: "graph".into(),
+                keyword: "节点关系".into(),
+                weight: 2.0,
+            },
             // reasoning
-            IntentRule { capability: "reasoning".into(), keyword: "深度推理".into(), weight: 3.0 },
-            IntentRule { capability: "reasoning".into(), keyword: "逐步分析".into(), weight: 2.5 },
-            IntentRule { capability: "reasoning".into(), keyword: "逻辑推理".into(), weight: 2.5 },
-            IntentRule { capability: "reasoning".into(), keyword: "证明".into(), weight: 2.0 },
+            IntentRule {
+                capability: "reasoning".into(),
+                keyword: "深度推理".into(),
+                weight: 3.0,
+            },
+            IntentRule {
+                capability: "reasoning".into(),
+                keyword: "逐步分析".into(),
+                weight: 2.5,
+            },
+            IntentRule {
+                capability: "reasoning".into(),
+                keyword: "逻辑推理".into(),
+                weight: 2.5,
+            },
+            IntentRule {
+                capability: "reasoning".into(),
+                keyword: "证明".into(),
+                weight: 2.0,
+            },
             // expert
-            IntentRule { capability: "expert".into(), keyword: "专家".into(), weight: 3.0 },
-            IntentRule { capability: "expert".into(), keyword: "会诊".into(), weight: 3.0 },
-            IntentRule { capability: "expert".into(), keyword: "多角度".into(), weight: 2.0 },
+            IntentRule {
+                capability: "expert".into(),
+                keyword: "专家".into(),
+                weight: 3.0,
+            },
+            IntentRule {
+                capability: "expert".into(),
+                keyword: "会诊".into(),
+                weight: 3.0,
+            },
+            IntentRule {
+                capability: "expert".into(),
+                keyword: "多角度".into(),
+                weight: 2.0,
+            },
             // memory
-            IntentRule { capability: "memory".into(), keyword: "记忆".into(), weight: 2.5 },
-            IntentRule { capability: "memory".into(), keyword: "历史记录".into(), weight: 2.0 },
+            IntentRule {
+                capability: "memory".into(),
+                keyword: "记忆".into(),
+                weight: 2.5,
+            },
+            IntentRule {
+                capability: "memory".into(),
+                keyword: "历史记录".into(),
+                weight: 2.0,
+            },
             // workflow
-            IntentRule { capability: "workflow".into(), keyword: "工作流".into(), weight: 3.0 },
-            IntentRule { capability: "workflow".into(), keyword: "流程编排".into(), weight: 2.5 },
+            IntentRule {
+                capability: "workflow".into(),
+                keyword: "工作流".into(),
+                weight: 3.0,
+            },
+            IntentRule {
+                capability: "workflow".into(),
+                keyword: "流程编排".into(),
+                weight: 2.5,
+            },
         ];
         let capabilities = vec![
-            CapabilityMeta { id: "expert".into(), engine: "expert-alliance-engine".into(), description: "专家联盟会诊".into(), is_default: false },
-            CapabilityMeta { id: "reasoning".into(), engine: "ultimate-ai-engine".into(), description: "终极深度推理".into(), is_default: false },
-            CapabilityMeta { id: "memory".into(), engine: "ai-engine".into(), description: "记忆检索".into(), is_default: false },
-            CapabilityMeta { id: "graph".into(), engine: "ai-engine".into(), description: "图谱分析".into(), is_default: false },
-            CapabilityMeta { id: "workflow".into(), engine: "ai-engine".into(), description: "工作流执行".into(), is_default: false },
-            CapabilityMeta { id: "chat".into(), engine: "llm-gateway".into(), description: "通用对话（默认）".into(), is_default: true },
+            CapabilityMeta {
+                id: "expert".into(),
+                engine: "expert-alliance-engine".into(),
+                description: "专家联盟会诊".into(),
+                is_default: false,
+            },
+            CapabilityMeta {
+                id: "reasoning".into(),
+                engine: "ultimate-ai-engine".into(),
+                description: "终极深度推理".into(),
+                is_default: false,
+            },
+            CapabilityMeta {
+                id: "memory".into(),
+                engine: "ai-engine".into(),
+                description: "记忆检索".into(),
+                is_default: false,
+            },
+            CapabilityMeta {
+                id: "graph".into(),
+                engine: "ai-engine".into(),
+                description: "图谱分析".into(),
+                is_default: false,
+            },
+            CapabilityMeta {
+                id: "workflow".into(),
+                engine: "ai-engine".into(),
+                description: "工作流执行".into(),
+                is_default: false,
+            },
+            CapabilityMeta {
+                id: "chat".into(),
+                engine: "llm-gateway".into(),
+                description: "通用对话（默认）".into(),
+                is_default: true,
+            },
         ];
         Self::build(&rules, &capabilities)
     }
@@ -293,11 +387,7 @@ impl AIFlowGraph {
                 (cap.id.clone(), sc)
             })
             .collect();
-        cap_scores.sort_by(|a, b| {
-            b.1.partial_cmp(&a.1)
-                .unwrap()
-                .then(a.0.cmp(&b.0))
-        });
+        cap_scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap().then(a.0.cmp(&b.0)));
 
         let (best, best_score) = cap_scores[0].clone();
         let scores: HashMap<String, f64> = cap_scores.into_iter().collect();
@@ -400,8 +490,16 @@ mod tests {
         //   c 度=4 → 4/4=1.0；叶=1 → 0.25（修复 R-D4 前 c=0.5）
         let g_raw = build_graph(&["c", "s1", "s2", "s3", "s4"], &raw);
         let deg = g_raw.degree_centrality();
-        assert!((deg["c"] - 1.0).abs() < EPS, "度中心性 c 应=1.0，实测 {}", deg["c"]);
-        assert!((deg["s1"] - 0.25).abs() < EPS, "度中心性 s1 应=0.25，实测 {}", deg["s1"]);
+        assert!(
+            (deg["c"] - 1.0).abs() < EPS,
+            "度中心性 c 应=1.0，实测 {}",
+            deg["c"]
+        );
+        assert!(
+            (deg["s1"] - 0.25).abs() < EPS,
+            "度中心性 s1 应=0.25，实测 {}",
+            deg["s1"]
+        );
 
         // F4/F5：双向边图（DiGraph 上表达无向语义）
         let bidi: Vec<(&str, &str)> = raw
@@ -413,13 +511,25 @@ mod tests {
         // F4 介数中心性（Brandes 有向版，双向边=无向语义，路径计两次）：
         //   c 未归一化 12，有向归一化 (5-1)(5-2)=12 → c=1.0；叶=0
         let btw = g_bidi.betweenness_centrality();
-        assert!((btw["c"] - 1.0).abs() < EPS, "介数 c 应=1.0，实测 {}", btw["c"]);
+        assert!(
+            (btw["c"] - 1.0).abs() < EPS,
+            "介数 c 应=1.0，实测 {}",
+            btw["c"]
+        );
         assert!(btw["s1"].abs() < EPS, "介数 s1 应=0，实测 {}", btw["s1"]);
 
         // F5 紧密中心性（harmonic）：c=1.0，叶=0.625
         let cls = g_bidi.closeness_centrality();
-        assert!((cls["c"] - 1.0).abs() < EPS, "紧密 c 应=1.0，实测 {}", cls["c"]);
-        assert!((cls["s1"] - 0.625).abs() < EPS, "紧密 s1 应=0.625，实测 {}", cls["s1"]);
+        assert!(
+            (cls["c"] - 1.0).abs() < EPS,
+            "紧密 c 应=1.0，实测 {}",
+            cls["c"]
+        );
+        assert!(
+            (cls["s1"] - 0.625).abs() < EPS,
+            "紧密 s1 应=0.625，实测 {}",
+            cls["s1"]
+        );
     }
 
     // ---------- T2 链（有向）：F3 PageRank / F4 介数 / F5 紧密 ----------
@@ -433,20 +543,36 @@ mod tests {
         // F3 PageRank：ΣPR=1（修复 R-D2 悬挂回传后守恒）；e 最高（汇聚末端）
         let pr = g.pagerank(100);
         let sum: f64 = pr.values().sum();
-        assert!((sum - 1.0).abs() < 1e-4, "ΣPR 应=1（悬挂回传守恒），实测 {}", sum);
+        assert!(
+            (sum - 1.0).abs() < 1e-4,
+            "ΣPR 应=1（悬挂回传守恒），实测 {}",
+            sum
+        );
         let mut sorted: Vec<(String, f64)> = pr.into_iter().collect();
         sorted.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
         assert_eq!(sorted[0].0, "e", "PageRank 最高应为 e（汇聚末端）");
 
         // F4 介数：b=3/12=0.25；c=4/12=1/3；端点 a、e=0
         let btw = g.betweenness_centrality();
-        assert!((btw["b"] - 0.25).abs() < EPS, "介数 b 应=0.25，实测 {}", btw["b"]);
-        assert!((btw["c"] - 1.0 / 3.0).abs() < EPS, "介数 c 应=1/3，实测 {}", btw["c"]);
+        assert!(
+            (btw["b"] - 0.25).abs() < EPS,
+            "介数 b 应=0.25，实测 {}",
+            btw["b"]
+        );
+        assert!(
+            (btw["c"] - 1.0 / 3.0).abs() < EPS,
+            "介数 c 应=1/3，实测 {}",
+            btw["c"]
+        );
         assert!(btw["a"].abs() < EPS && btw["e"].abs() < EPS, "端点介数应=0");
 
         // F5 紧密（harmonic）：a=25/48；e=0（不可达任何节点）
         let cls = g.closeness_centrality();
-        assert!((cls["a"] - 25.0 / 48.0).abs() < EPS, "紧密 a 应=25/48，实测 {}", cls["a"]);
+        assert!(
+            (cls["a"] - 25.0 / 48.0).abs() < EPS,
+            "紧密 a 应=25/48，实测 {}",
+            cls["a"]
+        );
         assert!(cls["e"].abs() < EPS, "紧密 e 应=0，实测 {}", cls["e"]);
     }
 
@@ -455,16 +581,28 @@ mod tests {
     fn t4_two_cycle_pagerank() {
         let g = build_graph(&["a", "b"], &[("a", "b"), ("b", "a")]);
         let pr = g.pagerank(100);
-        assert!((pr["a"] - 0.5).abs() < EPS, "PR(a) 应=0.5，实测 {}", pr["a"]);
-        assert!((pr["b"] - 0.5).abs() < EPS, "PR(b) 应=0.5，实测 {}", pr["b"]);
+        assert!(
+            (pr["a"] - 0.5).abs() < EPS,
+            "PR(a) 应=0.5，实测 {}",
+            pr["a"]
+        );
+        assert!(
+            (pr["b"] - 0.5).abs() < EPS,
+            "PR(b) 应=0.5，实测 {}",
+            pr["b"]
+        );
     }
 
     // ---------- T3 双团+桥：F6 CNM 社区检测 ----------
     #[test]
     fn t3_two_cliques_communities() {
         let raw: Vec<(&str, &str)> = vec![
-            ("a", "b"), ("a", "c"), ("b", "c"),
-            ("d", "e"), ("d", "f"), ("e", "f"),
+            ("a", "b"),
+            ("a", "c"),
+            ("b", "c"),
+            ("d", "e"),
+            ("d", "f"),
+            ("e", "f"),
             ("b", "d"),
         ];
         let bidi: Vec<(&str, &str)> = raw
@@ -475,12 +613,20 @@ mod tests {
 
         // CNM：恰好 2 社区 {a,b,c} + {d,e,f}（LPA 会标签吞并为 1 个）
         let comms = g.detect_communities(50);
-        assert_eq!(comms.len(), 2, "双团+桥应得 2 社区，实测 {} 个", comms.len());
-        let mut sets: Vec<Vec<String>> = comms.iter().map(|c| {
-            let mut v = c.nodes.clone();
-            v.sort();
-            v
-        }).collect();
+        assert_eq!(
+            comms.len(),
+            2,
+            "双团+桥应得 2 社区，实测 {} 个",
+            comms.len()
+        );
+        let mut sets: Vec<Vec<String>> = comms
+            .iter()
+            .map(|c| {
+                let mut v = c.nodes.clone();
+                v.sort();
+                v
+            })
+            .collect();
         sets.sort();
         assert_eq!(sets[0], vec!["a", "b", "c"], "社区1 应为 {{a,b,c}}");
         assert_eq!(sets[1], vec!["d", "e", "f"], "社区2 应为 {{d,e,f}}");
@@ -506,7 +652,10 @@ mod tests {
             &[("c", "s1"), ("c", "s2"), ("c", "s3"), ("c", "s4")],
         );
         let btw = g.betweenness_centrality();
-        assert!(btw.values().all(|&v| v.abs() < EPS), "有向星型（中心→叶）介数应全 0");
+        assert!(
+            btw.values().all(|&v| v.abs() < EPS),
+            "有向星型（中心→叶）介数应全 0"
+        );
     }
 
     // ---------- T7 激活扩散意图识别（F8） ----------
@@ -537,11 +686,13 @@ mod tests {
         let stats = fg.stats();
 
         // 节点守恒：总数 = step + keyword + capability + engine
-        let expected_nodes = stats.step_nodes + stats.keyword_nodes + stats.capability_nodes + stats.engine_nodes;
+        let expected_nodes =
+            stats.step_nodes + stats.keyword_nodes + stats.capability_nodes + stats.engine_nodes;
         assert_eq!(stats.node_count, expected_nodes, "节点数守恒");
 
         // 边守恒：总数 = triggers + flows_to + delegates_to + degrades_to
-        let expected_edges = stats.trigger_edges + stats.flow_edges + stats.delegate_edges + stats.degrade_edges;
+        let expected_edges =
+            stats.trigger_edges + stats.flow_edges + stats.delegate_edges + stats.degrade_edges;
         assert_eq!(stats.edge_count, expected_edges, "边数守恒");
 
         // 流水线：5 步 4 边

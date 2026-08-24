@@ -1,8 +1,8 @@
 //! 数据设计 · 由关联图谱自动生成（primiflow_core::assoc::primiflow_seed）
 //! 对应 primiflow/SPEC.md §4 数据模型
-use serde::{Serialize, Deserialize};
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[allow(dead_code)]
@@ -39,4 +39,3 @@ pub struct DataR4 {
     pub graph_json: String,
     pub created_at: DateTime<Utc>,
 }
-

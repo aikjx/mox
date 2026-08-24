@@ -1,0 +1,161 @@
+# Xuanji V5 — License 合规配置 (T16)
+# cargo-deny 0.20+ schema
+# 校验命令: `cargo deny -L error check licenses bans` (exit 0 为合规)
+# -------------------------------------------------------------------
+# 设计原则:
+#   [licenses] allow = T16 任务规定的 MIT/宽松型白名单 + 工作空间内实际出现
+#     的同等级宽松补充（全为非 copyleft）。不在白名单中的任何 License → 自动 fail
+#     → 等价于显式阻断任务要求的强 copyleft/商业污染族:
+#        AGPL-1.0-only, AGPL-1.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later,
+#        GPL-1.0-only,  GPL-1.0-or-later,  GPL-2.0-only,  GPL-2.0-or-later,
+#        GPL-3.0-only,  GPL-3.0-or-later,  SSPL-1.0,      BUSL-1.1,
+#        以及任何其它未登记 License（未知 = 默认 deny）。
+#   [bans]   multiple-versions = "deny"（同名 crate 多租版本 → fail），wildcards = "allow"。
+#            历史遗留的 windows-*/rand*/syn*/hashbrown 等生态版本差通过 skip 逐项豁免；
+#            任何新出现的多租冲突仍然会 fail（保证增量收敛）。
+#   [sources] 仅 crates.io 官方注册索引；未知 git/registry → fail。
+# -------------------------------------------------------------------
+
+[graph]
+all-features = false
+no-default-features = false
+targets = []
+
+[output]
+feature-depth = 1
+
+[advisories]
+ignore = []
+
+# -------------------------------------------------------------------
+# License 白名单
+#   行 1..7 = T16 任务要求精确照抄的 allow list 7 项
+#   行 8..末尾 = 工作空间真实依赖中实际存在、且同等宽松/非 copyleft 的补充
+#               （每一项都有 OSI/FSF 或公域等效授权背书，不会引入 deny list 的污染）
+# -------------------------------------------------------------------
+[licenses]
+allow = [
+    # ---- T16 指定 7 项（严禁删除/替换） ----
+    "MIT",
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-DFS-2016",
+    "OpenSSL",
+    # ---- 实际依赖中的宽松补充（全部非 copyleft / 公域等效） ----
+    "0BSD",                                   # enum-iterator 等; BSD 零条款（公域等效）
+    "BSL-1.0",                                # Boost Software License 1.0（非 BUSL!）
+    "CC0-1.0",                                # ring / time 等; 公域等效
+    "CDLA-Permissive-2.0",                    # Community Data License Agreement (宽松数据)
+    "Unicode-3.0",                            # reqwest/sqlx idna 数据表
+    "Apache-2.0 WITH LLVM-exception",         # cranelift (wasmer) → LLVM 例外不传染
+    "Zlib",                                   # flate2/miniz_oxide (宽松)
+    "MIT-0",                                  # MIT 无署名变体
+    # "(MIT OR Apache-2.0) AND Unicode-3.0" 由已存在的 MIT/Apache-2.0/Unicode-3.0 自动满足
+    # （cargo-deny 解析 conjunctive license 表达式时要求所有子项都在 allow 里；已全部覆盖）
+]
+confidence-threshold = 0.8
+exceptions = []
+
+[licenses.private]
+ignore = true      # 自研 workspace crate (publish = false) 本身跳过 license 核对
+registries = []
+
+# -------------------------------------------------------------------
+# bans: 多租版本禁令 + wildcard 禁令
+# -------------------------------------------------------------------
+[bans]
+multiple-versions = "deny"      # T16 要求：同名 crate 多版本出现默认 fail
+wildcards = "allow"             # T16 要求
+highlight = "all"
+workspace-default-features = "allow"
+external-default-features = "allow"
+allow = []
+deny = []
+
+# 历史遗留的生态多版本差（逐项登记豁免理由；新增任何其它多租仍然会按 deny 拦截）
+#   原则：同组内保留"最新 semver"作为 keeper，其它旧版本登记 skip。
+#   R2 里程碑前由 L4 平台团队统一收敛（对应 roadmap：wasmer/sqlx/tokio 三链对齐）。
+skip = [
+    # --- ahash/bitflags/darling/fallible-iterator/wasi (多租增量补充: 由 wasmer/sqlx 拉取) ---
+    { crate = "ahash@0.7.8",             reason = "wasmer cranelift 0.91 + hashbrown 0.12 锁旧版; R2 收敛 0.8" },
+    { crate = "bitflags@1.3.2",          reason = "region v3 (wasmer) 仍用 bitflags 1; R2 统一升 2" },
+    { crate = "darling@0.20.11",         reason = "syn 1 派生的 darling 旧代; R2 升级 darling 0.21 + syn 2/3" },
+    { crate = "darling_core@0.20.11",    reason = "镜像 darling 0.20; R2 同步" },
+    { crate = "darling_macro@0.20.11",   reason = "镜像 darling 0.20; R2 同步" },
+    { crate = "fallible-iterator@0.2.0", reason = "旧 rusqlite/sqlx 链路; R2 收敛 0.3" },
+    { crate = "wasi@0.9.0",              reason = "wasmer 4.4 旧 wasi-common; R2 对齐 wasi 0.11+" },
+
+    # --- getrandom / rand 家族 ---
+    { crate = "getrandom@0.1.16",  reason = "wasmer 4.4 锁定旧 rand 链; R2 收敛" },
+    { crate = "getrandom@0.2.17",  reason = "reqwest/sqlx rand 0.8 时代遗留; R2 收敛" },
+    { crate = "rand@0.7.3",        reason = "wasmer-compiler 4.4 遗留; R2 收敛" },
+    { crate = "rand_chacha@0.2.2", reason = "wasmer 4.4 rand 0.7 传递; R2 收敛" },
+    { crate = "rand_core@0.5.1",   reason = "wasmer 4.4 rand 0.7 传递; R2 收敛" },
+
+    # --- syn / hashbrown / indexmap / heck / thiserror 宏生态 ---
+    { crate = "syn@1.0.109",       reason = "legacy codegen 仍用 syn 1; R2 统一到 syn 2+" },
+    { crate = "syn@2.0.119",       reason = "大部分 crates 用 syn 2; wasmer 用 syn 3 过渡期" },
+    { crate = "hashbrown@0.12.3",  reason = "Rust 旧 std 时代 indexmap 绑定" },
+    { crate = "hashbrown@0.14.5",  reason = "1.x indexmap → new hashbrown 过渡期" },
+    { crate = "indexmap@1.9.3",    reason = "serde/legacy codegen 绑定; R2 升 2.x" },
+    { crate = "heck@0.4.1",        reason = "clap/structopt 旧版; R2 对齐" },
+    { crate = "thiserror@1.0.69",  reason = "存量 crates 未升 thiserror 2; R2 收敛" },
+    { crate = "thiserror-impl@1.0.69", reason = "镜像 thiserror@1; R2 同步收敛" },
+
+    # --- gimli / addr2line ---
+    { crate = "gimli@0.26.2",      reason = "旧 wasm debug-info 链路; R2 收敛" },
+
+    # --- redox (Unix-only target 差异) ---
+    { crate = "redox_syscall@0.5.18", reason = "Linux 旧 redox; R2 升 0.9+" },
+
+    # --- ws/tower http ---
+    { crate = "tokio-tungstenite@0.21.0", reason = "旧 graphql-ws 链路; R2 收敛 0.24" },
+    { crate = "tungstenite@0.21.0",       reason = "镜像 tokio-tungstenite 0.21" },
+    { crate = "tower-http@0.5.2",         reason = "axum 0.6 时代; R2 对齐 axum 0.7 + tower-http 0.6" },
+
+    # --- windows-sys/windows-targets/windows_* (最严重的 3-5 租，因 wasmer/sqlx/rustls 各锁一版) ---
+    # windows_aarch64_gnullvm (keeper 0.52.6)
+    { crate = "windows_aarch64_gnullvm@0.48.5", reason = "rustls 0.23 绑定; R2 收敛" },
+    # windows_aarch64_msvc (keeper 0.52.6)
+    { crate = "windows_aarch64_msvc@0.33.0",    reason = "wasmer 4.4 锁 windows-sys 0.33; R2 收敛" },
+    { crate = "windows_aarch64_msvc@0.48.5",    reason = "sqlx/etcetera 锁 windows-sys 0.48; R2 收敛" },
+    # windows_i686_gnu (keeper 0.52.6)
+    { crate = "windows_i686_gnu@0.33.0", reason = "wasmer 4.4; R2 收敛" },
+    { crate = "windows_i686_gnu@0.48.5", reason = "sqlx/etcetera 0.48; R2 收敛" },
+    # windows_i686_msvc (keeper 0.52.6)
+    { crate = "windows_i686_msvc@0.33.0", reason = "wasmer 4.4; R2 收敛" },
+    { crate = "windows_i686_msvc@0.48.5", reason = "sqlx/etcetera 0.48; R2 收敛" },
+    # windows_x86_64_gnu (keeper 0.52.6)
+    { crate = "windows_x86_64_gnu@0.33.0", reason = "wasmer 4.4; R2 收敛" },
+    { crate = "windows_x86_64_gnu@0.48.5", reason = "sqlx/etcetera 0.48; R2 收敛" },
+    # windows_x86_64_gnullvm (keeper 0.52.6)
+    { crate = "windows_x86_64_gnullvm@0.48.5", reason = "rustls 0.23; R2 收敛" },
+    # windows_x86_64_msvc (keeper 0.52.6)
+    { crate = "windows_x86_64_msvc@0.33.0", reason = "wasmer 4.4; R2 收敛" },
+    { crate = "windows_x86_64_msvc@0.48.5", reason = "sqlx/etcetera 0.48 + ring 0.17; R2 收敛" },
+    # windows-sys (keeper 0.61.2) — R2 前一次性统一升级
+    { crate = "windows-sys@0.33.0", reason = "wasmer-compiler cranelift 0.91; R2 收敛" },
+    { crate = "windows-sys@0.48.0", reason = "sqlx + etcetera 锁; R2 收敛" },
+    { crate = "windows-sys@0.52.0", reason = "ring 0.17 + region; R2 收敛" },
+    { crate = "windows-sys@0.59.0", reason = "wasmer v4.4.0 sys; R2 收敛" },
+    # windows-targets (keeper 0.52.6)
+    { crate = "windows-targets@0.48.5", reason = "windows-sys 0.48 绑定; R2 收敛" },
+]
+
+skip-tree = []
+
+# -------------------------------------------------------------------
+# 供应链来源：仅 crates.io
+# -------------------------------------------------------------------
+[sources]
+unknown-registry = "deny"
+unknown-git      = "deny"
+allow-registry   = ["https://github.com/rust-lang/crates.io-index"]
+allow-git        = []
+
+[sources.allow-org]
+github    = []
+gitlab    = []
+bitbucket = []

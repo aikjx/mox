@@ -285,7 +285,13 @@ impl MultiAgentOrchestrator {
     }
 
     /// 向指定 Agent 发送消息
-    pub fn send_message(&mut self, from: &str, to: &str, role: AgentRole, content: impl Into<String>) {
+    pub fn send_message(
+        &mut self,
+        from: &str,
+        to: &str,
+        role: AgentRole,
+        content: impl Into<String>,
+    ) {
         let msg = AgentMessage::new(from, role, content).to_agent(to);
         self.message_bus.send_to(to, msg.clone());
         if let Some(agent) = self.agents.get_mut(to) {
@@ -295,8 +301,7 @@ impl MultiAgentOrchestrator {
 
     /// 向所有 Agent 广播消息
     pub fn broadcast_task(&mut self, from: &str, role: AgentRole, content: impl Into<String>) {
-        let msg = AgentMessage::new(from, role, content)
-            .with_type(AgentMessageType::Broadcast);
+        let msg = AgentMessage::new(from, role, content).with_type(AgentMessageType::Broadcast);
         let agent_ids: Vec<String> = self.agents.keys().cloned().collect();
         for agent_id in &agent_ids {
             let cloned = msg.clone();
@@ -415,7 +420,10 @@ mod tests {
         assert_eq!(AgentRole::parse("researcher"), Some(AgentRole::Researcher));
         assert_eq!(AgentRole::parse("analyst"), Some(AgentRole::Analyst));
         assert_eq!(AgentRole::parse("writer"), Some(AgentRole::Writer));
-        assert_eq!(AgentRole::parse("coordinator"), Some(AgentRole::Coordinator));
+        assert_eq!(
+            AgentRole::parse("coordinator"),
+            Some(AgentRole::Coordinator)
+        );
         assert_eq!(AgentRole::parse("executor"), Some(AgentRole::Executor));
         assert_eq!(AgentRole::parse("unknown"), None);
     }
@@ -427,7 +435,10 @@ mod tests {
         assert!(!id.is_empty());
         assert_eq!(orchestrator.agent_count(), 1);
         assert!(orchestrator.get_agent_status(&id).is_some());
-        assert_eq!(*orchestrator.get_agent_status(&id).unwrap(), SubAgentStatus::Idle);
+        assert_eq!(
+            *orchestrator.get_agent_status(&id).unwrap(),
+            SubAgentStatus::Idle
+        );
     }
 
     #[test]

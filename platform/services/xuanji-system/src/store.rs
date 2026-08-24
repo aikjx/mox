@@ -1,4 +1,4 @@
-﻿//! 存储层：内存热缓存 + 可选 SQLite 系统记录（持久化 / WAL 重放）
+//! 存储层：内存热缓存 + 可选 SQLite 系统记录（持久化 / WAL 重放）
 //!
 //! 设计要点（企业级 I-01 / I-02）：
 //! - **热缓存**：所有读操作命中内存 `State`（低延迟、高并发）。
@@ -64,8 +64,8 @@ impl Store {
         use crate::repo::Repository;
         let repo: Box<dyn Repository> = match backend {
             Backend::Sqlite => {
-                let r = crate::repo::sqlite::SqliteRepository::open(url)
-                    .map_err(AppError::Internal)?;
+                let r =
+                    crate::repo::sqlite::SqliteRepository::open(url).map_err(AppError::Internal)?;
                 Box::new(r)
             }
             Backend::Postgres => {
@@ -159,7 +159,11 @@ impl Store {
 
     // ---------- 璇玑 ----------
     pub async fn create_xuanji(&self, a: Xuanji) {
-        self.state.write().await.xuanjis.insert(a.id.clone(), a.clone());
+        self.state
+            .write()
+            .await
+            .xuanjis
+            .insert(a.id.clone(), a.clone());
         self.p_xuanji(&a).await;
     }
     pub async fn get_xuanji(&self, id: &str) -> Option<Xuanji> {
@@ -168,7 +172,11 @@ impl Store {
 
     // ---------- 成员 ----------
     pub async fn create_member(&self, m: Member) {
-        self.state.write().await.members.insert(m.id.clone(), m.clone());
+        self.state
+            .write()
+            .await
+            .members
+            .insert(m.id.clone(), m.clone());
         self.p_member(&m).await;
     }
     pub async fn get_member(&self, id: &str) -> Option<Member> {
@@ -235,7 +243,11 @@ impl Store {
 
     // ---------- 任务 ----------
     pub async fn create_task(&self, t: Task) {
-        self.state.write().await.tasks.insert(t.id.clone(), t.clone());
+        self.state
+            .write()
+            .await
+            .tasks
+            .insert(t.id.clone(), t.clone());
         self.p_task(&t).await;
     }
     pub async fn get_task(&self, id: &str) -> Option<Task> {
@@ -271,7 +283,11 @@ impl Store {
 
     // ---------- 频道 ----------
     pub async fn create_channel(&self, c: Channel) {
-        self.state.write().await.channels.insert(c.id.clone(), c.clone());
+        self.state
+            .write()
+            .await
+            .channels
+            .insert(c.id.clone(), c.clone());
         self.p_channel(&c).await;
     }
     pub async fn get_channel(&self, id: &str) -> Option<Channel> {
@@ -351,7 +367,11 @@ impl Store {
 
     // ---------- 消息 ----------
     pub async fn add_message(&self, m: Message) {
-        self.state.write().await.messages.insert(m.id.clone(), m.clone());
+        self.state
+            .write()
+            .await
+            .messages
+            .insert(m.id.clone(), m.clone());
         self.p_message(&m).await;
     }
     pub async fn list_messages(&self, channel_id: &str) -> Vec<Message> {
@@ -432,5 +452,7 @@ impl Store {
 /// 被 `repo::sqlite` 复用，故导出为 `pub(crate)`。
 pub(crate) fn id_of<T: serde::Serialize>(v: &T) -> Option<String> {
     let val = serde_json::to_value(v).ok()?;
-    val.get("id").and_then(|x| x.as_str()).map(|s| s.to_string())
+    val.get("id")
+        .and_then(|x| x.as_str())
+        .map(|s| s.to_string())
 }

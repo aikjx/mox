@@ -4,10 +4,10 @@
 //! 说明: 画布状态 + 编辑后重算 ℛ̂（用户改流程图 → 系统跟着变）。
 //! 规格: primiflow/SPEC.md（§3 客户旅程 / §9 风险缓解）
 
+use crate::gen::c2::RegularizeOutput;
+use crate::gen::c2::Scheduler;
 use flow_ai::model::{FlowEdge, FlowGraph, FlowNode};
 use flow_ai::primitive::{PrimitiveState, ResourceBudget};
-use crate::gen::c2::Scheduler;
-use crate::gen::c2::RegularizeOutput;
 
 /// 画布编辑操作
 #[derive(Debug, Clone)]
@@ -94,7 +94,11 @@ impl CanvasState {
     }
 
     /// 编辑后重算 ℛ̂：返回合规拓扑与调整后 κ‑τ（SPEC §3 "改完系统跟着变"）
-    pub fn recompute(&mut self, state: PrimitiveState, budget: ResourceBudget) -> &RegularizeOutput {
+    pub fn recompute(
+        &mut self,
+        state: PrimitiveState,
+        budget: ResourceBudget,
+    ) -> &RegularizeOutput {
         let out = self.scheduler.regularize(self.graph.clone(), state, budget);
         self.last_regularize = Some(out);
         self.last_regularize.as_ref().unwrap()
@@ -120,7 +124,12 @@ mod tests {
     #[test]
     fn edit_adds_node_and_history() {
         let mut c = CanvasState::new();
-        c.edit_canvas(CanvasOp::AddNode(FlowNode::task("a", "A", ToolKind::Http, 300)));
+        c.edit_canvas(CanvasOp::AddNode(FlowNode::task(
+            "a",
+            "A",
+            ToolKind::Http,
+            300,
+        )));
         assert_eq!(c.graph.nodes.len(), 1);
         assert_eq!(c.revision(), 1);
         assert!(c.undo());
@@ -130,8 +139,18 @@ mod tests {
     #[test]
     fn remove_node_clears_its_edges() {
         let mut c = CanvasState::new();
-        c.edit_canvas(CanvasOp::AddNode(FlowNode::task("a", "A", ToolKind::Http, 300)));
-        c.edit_canvas(CanvasOp::AddNode(FlowNode::task("b", "B", ToolKind::Compute, 200)));
+        c.edit_canvas(CanvasOp::AddNode(FlowNode::task(
+            "a",
+            "A",
+            ToolKind::Http,
+            300,
+        )));
+        c.edit_canvas(CanvasOp::AddNode(FlowNode::task(
+            "b",
+            "B",
+            ToolKind::Compute,
+            200,
+        )));
         c.edit_canvas(CanvasOp::AddEdge(FlowEdge::seq("a", "b")));
         assert_eq!(c.graph.edges.len(), 1);
         c.edit_canvas(CanvasOp::RemoveNode("a".into()));
@@ -141,9 +160,20 @@ mod tests {
     #[test]
     fn recompute_refreshes_state() {
         let mut c = CanvasState::new();
-        c.edit_canvas(CanvasOp::AddNode(FlowNode::task("a", "A", ToolKind::Http, 300)));
+        c.edit_canvas(CanvasOp::AddNode(FlowNode::task(
+            "a",
+            "A",
+            ToolKind::Http,
+            300,
+        )));
         let state = PrimitiveState::from_policy(10.0, DeliveryPolicy::Balanced, 0.0);
-        let out = c.recompute(state, ResourceBudget { total_ms: 10_000, per_pool: Default::default() });
+        let out = c.recompute(
+            state,
+            ResourceBudget {
+                total_ms: 10_000,
+                per_pool: Default::default(),
+            },
+        );
         assert!(out.delta.abs() < 1e-6, "重算后守恒残差应≈0");
     }
 

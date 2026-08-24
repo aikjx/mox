@@ -72,19 +72,23 @@ pub async fn build() -> SubServers {
             Ok(sys) => {
                 let sys = Arc::new(sys);
                 if sys.store.xuanji_count().await == 0 {
-                    match sys.bootstrap("默认璇玑", "系统管理员", "admin@xuanji.io").await {
+                    match sys
+                        .bootstrap("默认璇玑", "系统管理员", "admin@xuanji.io")
+                        .await
+                    {
                         Ok((xuanji, _admin, token)) => {
                             out.notes.push(format!(
                                 "  [聚合] xuanji-system 首次引导：璇玑「{}」id={}，管理员令牌={}",
                                 xuanji.name, xuanji.id, token
                             ));
                         }
-                        Err(e) => {
-                            out.notes.push(format!("  [聚合] xuanji-system 引导失败（跳过）: {e}"))
-                        }
+                        Err(e) => out
+                            .notes
+                            .push(format!("  [聚合] xuanji-system 引导失败（跳过）: {e}")),
                     }
                 } else {
-                    out.notes.push("  [聚合] xuanji-system 已有数据，跳过引导".into());
+                    out.notes
+                        .push("  [聚合] xuanji-system 已有数据，跳过引导".into());
                 }
                 let _reactor = sys.start_reactor();
                 out.routers
@@ -108,8 +112,10 @@ pub async fn build() -> SubServers {
             out_dir,
             primiflow_core::persistence::Persistence::memory(),
         );
-        out.routers
-            .push((PREFIX_PRIMIFLOW, primiflow_core::server::build_router(state)));
+        out.routers.push((
+            PREFIX_PRIMIFLOW,
+            primiflow_core::server::build_router(state),
+        ));
         out.notes.push(format!(
             "  [聚合] primiflow → {PREFIX_PRIMIFLOW}（六维溯源拓扑引擎）"
         ));

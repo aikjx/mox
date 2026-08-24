@@ -1,11 +1,11 @@
-﻿//! 文档专家（开发维度）：审查 API/代码文档完整性
+//! 文档专家（开发维度）：审查 API/代码文档完整性
 //!
 //! 分析基于 `CodeUnit` 的**预分析真字段**（`has_doc` / `comment_lines`），
 //! 不再用字符串猜测是否有文档。
 
+use crate::context::ExpertContext;
 use crate::expert::{Expert, ExpertOpinion, Risk, Suggestion};
 use crate::ir::{Dimension, ExpertId};
-use crate::context::ExpertContext;
 use flow_ai::model::Severity;
 
 /// 文档专家：审查文档完整性

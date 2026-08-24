@@ -100,13 +100,7 @@ pub trait CommServiceTrait: Send + Sync {
     /// 列出指定频道所有消息（按时间升序）。
     async fn list_messages(&self, channel_id: &str) -> Vec<Message>;
     /// 向单个成员推送通知（related_task 关联任务 id，用于点击跳转）。
-    async fn notify(
-        &self,
-        member_id: &str,
-        title: &str,
-        body: &str,
-        related_task: Option<&str>,
-    );
+    async fn notify(&self, member_id: &str, title: &str, body: &str, related_task: Option<&str>);
     /// 列出某成员的全部通知（含已读/未读）。
     async fn list_notifications(&self, member_id: &str) -> Vec<Notification>;
     /// 把一条通知标记为已读（id + member_id 校验归属）。

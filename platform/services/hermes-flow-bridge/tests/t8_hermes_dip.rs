@@ -25,11 +25,19 @@ fn small_graph() -> (std::sync::Arc<BridgeState>, flow_ai::model::FlowGraph) {
     let st = BridgeState::new();
     st.recorder.record(
         "default",
-        &ToolCall { tool_name: "db.read".into(), args: json!({"q":"select 1"}), turn: 1 },
+        &ToolCall {
+            tool_name: "db.read".into(),
+            args: json!({"q":"select 1"}),
+            turn: 1,
+        },
     );
     st.recorder.record(
         "default",
-        &ToolCall { tool_name: "guard.authz".into(), args: json!({}), turn: 1 },
+        &ToolCall {
+            tool_name: "guard.authz".into(),
+            args: json!({}),
+            turn: 1,
+        },
     );
     let g = st.recorder.snapshot("default").unwrap();
     (st, g)
@@ -75,14 +83,22 @@ impl ExpertConsultant for MockVeto {
 fn tr_h8_01_bridge_state_with_mock_uses_trait_object() {
     let st = BridgeState::with_consultant(Arc::new(MockHealthy));
     let g = st.recorder.snapshot("default").unwrap_or_else(|| {
-        let tool = ToolCall { tool_name: "t".into(), args: json!({}), turn: 1 };
+        let tool = ToolCall {
+            tool_name: "t".into(),
+            args: json!({}),
+            turn: 1,
+        };
         st.recorder.record("default", &tool);
         st.recorder.snapshot("default").unwrap()
     });
     let rep = optimize_session_with(&g, &st.gate, st.consultant.clone());
     assert!((rep.score - 0.95).abs() < 1e-9, "score={}", rep.score);
     assert!(!st.gate.is_vetoed(), "healthy 不应触发否决");
-    assert!(rep.steps.iter().any(|s| s.contains("DIP")), "mock 特征步骤缺失: {:?}", rep.steps);
+    assert!(
+        rep.steps.iter().any(|s| s.contains("DIP")),
+        "mock 特征步骤缺失: {:?}",
+        rep.steps
+    );
 }
 
 #[test]
@@ -100,7 +116,11 @@ fn tr_h8_03_default_factory_returns_trait_object() {
     // 直接使用 expert_traits::default_consultant() 工厂，不出现 concrete 名
     let c: Arc<dyn ExpertConsultant> = xuanji_expert::expert_traits::default_consultant();
     // 可调用 trait 方法（通过 Arc deref），无需 `downcast_ref`
-    let q = ConsultQuery { id: "q".into(), query: String::new(), ctx: std::collections::HashMap::new() };
+    let q = ConsultQuery {
+        id: "q".into(),
+        query: String::new(),
+        ctx: std::collections::HashMap::new(),
+    };
     // consult_blocking 是 trait 默认方法 / impl 覆写（均对象安全）
     let _ = c.consult_blocking(&q);
 }
@@ -131,11 +151,16 @@ fn tr_h8_05_no_xuanji_concrete_in_lib_use() {
     assert!(src_dir.is_dir());
 
     fn walk(dir: &Path, out: &mut Vec<PathBuf>) {
-        let Ok(rd) = std::fs::read_dir(dir) else { return };
+        let Ok(rd) = std::fs::read_dir(dir) else {
+            return;
+        };
         for entry in rd.flatten() {
             let p = entry.path();
-            if p.is_dir() { walk(&p, out) }
-            else if p.extension().map(|e| e == "rs").unwrap_or(false) { out.push(p); }
+            if p.is_dir() {
+                walk(&p, out)
+            } else if p.extension().map(|e| e == "rs").unwrap_or(false) {
+                out.push(p);
+            }
         }
     }
     let mut files = Vec::new();
@@ -148,8 +173,12 @@ fn tr_h8_05_no_xuanji_concrete_in_lib_use() {
         let content = std::fs::read_to_string(f).unwrap();
         for (idx, line) in content.lines().enumerate() {
             let t = line.trim_start();
-            if !(t.starts_with("use ") || t.starts_with("pub use ")) { continue; }
-            let Some(rest_p) = t.find("xuanji_expert::") else { continue };
+            if !(t.starts_with("use ") || t.starts_with("pub use ")) {
+                continue;
+            }
+            let Some(rest_p) = t.find("xuanji_expert::") else {
+                continue;
+            };
             let after = &t[rest_p + "xuanji_expert::".len()..];
             let end = after
                 .find(|c: char| !(c.is_alphanumeric() || c == '_'))

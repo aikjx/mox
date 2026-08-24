@@ -4,13 +4,9 @@
 
 use crate::handlers::agent;
 use ai_agent::AIAgent;
-use axum::{
-    routing::post,
-    Router,
-};
+use axum::{routing::post, Router};
 use std::sync::Arc;
 
 pub fn agent_routes() -> Router<Arc<AIAgent>> {
-    Router::new()
-        .route("/run", post(agent::run_engine_task_handler))
+    Router::new().route("/run", post(agent::run_engine_task_handler))
 }

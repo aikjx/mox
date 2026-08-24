@@ -45,7 +45,9 @@ function login() {
     ElMessage.warning('请输入密码（演示任意非空）')
     return
   }
-  localStorage.setItem('ous_token', 'demo-' + Date.now())
+  const token = 'demo-' + Date.now()
+  localStorage.setItem('ous_api_token', token)
+  localStorage.setItem('ous_token', token)
   localStorage.setItem('OUS_RUN_MODE', runMode.value)
   localStorage.setItem('OUS_LLM_MODE', llmMode.value)
   ElMessage.success('登录成功')

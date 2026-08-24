@@ -1,12 +1,12 @@
-﻿//! HTTP 服务：把全维治理报告转为前端可视化 DTO，供 Three.js 力导向图实时联动高亮
+//! HTTP 服务：把全维治理报告转为前端可视化 DTO，供 Three.js 力导向图实时联动高亮
 //!
 //! 设计：本服务完全独立，仅依赖 `xuanji-expert` + `flow-ai`，不触碰已失败的 runtime/ai-agent。
 //! 可视化契约（DTO）在本模块内定义，核心层类型保持纯净。
 
 use crate::context::{GovernContext, Principal, Tenant};
+use crate::executor::{self, ExecState};
 use crate::pipeline::{xuanji_optimize, GovernanceReport};
 use crate::programming::programming_pipeline;
-use crate::executor::{self, ExecState};
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{Html, IntoResponse, Json};
@@ -44,10 +44,18 @@ pub struct OptimizeRequest {
     pub instruction: String,
 }
 
-fn default_tenant() -> String { "gov-tenant".into() }
-fn default_ns() -> String { "ns-gov".into() }
-fn default_principal() -> String { "anonymous".into() }
-fn default_true() -> bool { true }
+fn default_tenant() -> String {
+    "gov-tenant".into()
+}
+fn default_ns() -> String {
+    "ns-gov".into()
+}
+fn default_principal() -> String {
+    "anonymous".into()
+}
+fn default_true() -> bool {
+    true
+}
 
 /// 可视化 DTO：前端唯一需要理解的结构
 #[derive(Debug, Clone, Serialize)]
@@ -323,12 +331,8 @@ fn build_topology(
     let mut reuse: Vec<String> = Vec::new();
 
     if let Some(t) = topo {
-        let on_path: std::collections::HashSet<String> = t
-            .route("", 0.15)
-            .path
-            .iter()
-            .cloned()
-            .collect();
+        let on_path: std::collections::HashSet<String> =
+            t.route("", 0.15).path.iter().cloned().collect();
         for e in &t.entities {
             entities.push(VizEntity {
                 id: e.id.clone(),
@@ -422,8 +426,8 @@ fn build_topology(
 /// 安全修复：不再硬编码 admin/editor 角色，而是透传调用方显式声明的角色；
 /// 未声明时仅授予最低权限 `viewer` 角色，避免 RBAC 被绕过导致越权治理。
 fn run(req: &OptimizeRequest) -> GovernanceReport {
-    let mut tenant = Tenant::new(req.tenant.clone(), req.namespace.clone())
-        .regulated(req.regulated);
+    let mut tenant =
+        Tenant::new(req.tenant.clone(), req.namespace.clone()).regulated(req.regulated);
     // 浏览器默认单例（政务填报互斥）
     tenant = tenant.with_pool("browser", 1);
     let roles = req.roles.clone().unwrap_or_else(|| vec!["viewer".into()]);
@@ -435,18 +439,53 @@ fn run(req: &OptimizeRequest) -> GovernanceReport {
 /// 默认派生一个示例关系网（含 Skill/Rule 维度），供前端演示「复用路径点亮」
 pub fn demo_topology() -> TopologyGraph {
     let mut t = TopologyGraph::new();
-    t.add_entity(Entity::new("skill:rpa-citizen", EntityKind::Skill, "政务公民库 RPA 模板")
-        .with_keywords(vec!["政务".to_string(), "公民".to_string()]));
+    t.add_entity(
+        Entity::new(
+            "skill:rpa-citizen",
+            EntityKind::Skill,
+            "政务公民库 RPA 模板",
+        )
+        .with_keywords(vec!["政务".to_string(), "公民".to_string()]),
+    );
     t.add_entity(Entity::new("node:read", EntityKind::FlowNode, "读取公民库"));
     t.add_entity(Entity::new("node:guard", EntityKind::FlowNode, "脱敏"));
     t.add_entity(Entity::new("tool:db", EntityKind::Tool, "数据库工具"));
     t.add_entity(Entity::new("rule:gdpr", EntityKind::Rule, "个保法合规"));
-    t.add_entity(Entity::new("mem:citizen_vec", EntityKind::Memory, "公民向量块"));
-    t.add_relation(Relation::new("skill:rpa-citizen", "node:read", RelationKind::Implements, 0.95));
-    t.add_relation(Relation::new("skill:rpa-citizen", "mem:citizen_vec", RelationKind::Recalls, 0.8));
-    t.add_relation(Relation::new("node:read", "tool:db", RelationKind::Binds, 0.9));
-    t.add_relation(Relation::new("rule:gdpr", "node:guard", RelationKind::Constrains, 0.9));
-    t.add_relation(Relation::new("node:guard", "node:read", RelationKind::Constrains, 0.6));
+    t.add_entity(Entity::new(
+        "mem:citizen_vec",
+        EntityKind::Memory,
+        "公民向量块",
+    ));
+    t.add_relation(Relation::new(
+        "skill:rpa-citizen",
+        "node:read",
+        RelationKind::Implements,
+        0.95,
+    ));
+    t.add_relation(Relation::new(
+        "skill:rpa-citizen",
+        "mem:citizen_vec",
+        RelationKind::Recalls,
+        0.8,
+    ));
+    t.add_relation(Relation::new(
+        "node:read",
+        "tool:db",
+        RelationKind::Binds,
+        0.9,
+    ));
+    t.add_relation(Relation::new(
+        "rule:gdpr",
+        "node:guard",
+        RelationKind::Constrains,
+        0.9,
+    ));
+    t.add_relation(Relation::new(
+        "node:guard",
+        "node:read",
+        RelationKind::Constrains,
+        0.6,
+    ));
     t
 }
 
@@ -507,12 +546,18 @@ fn closedloop() -> ClosedLoopBundle {
     let rep = run(&req);
     let viz = to_viz(&rep, Some(&topo));
     // baseline：每个工具节点一次 LLM 决策
-    let llm_baseline = viz.flow_nodes.iter().filter(|n| n.tool.is_some() && n.kind != "Start" && n.kind != "End").count() as u64;
+    let llm_baseline = viz
+        .flow_nodes
+        .iter()
+        .filter(|n| n.tool.is_some() && n.kind != "Start" && n.kind != "End")
+        .count() as u64;
     // bridge：已知完整流程（gov-pii 模板）整段回放 → 0 次 LLM
     let llm_bridge: u64 = 0;
     let llm_saved_pct = if llm_baseline > 0 {
         (1.0 - llm_bridge as f64 / llm_baseline as f64) * 100.0
-    } else { 0.0 };
+    } else {
+        0.0
+    };
     ClosedLoopBundle {
         viz,
         llm_baseline,
@@ -544,7 +589,9 @@ pub struct RunRequest {
     pub regulated: bool,
 }
 
-fn default_rate() -> f64 { 1.0 }
+fn default_rate() -> f64 {
+    1.0
+}
 
 /// 构建 Router
 pub fn router(state: AppState) -> Router {
@@ -611,9 +658,7 @@ fn demo_session_graph() -> FlowGraph {
 }
 
 /// Step 10：对实时会话图跑完整 optimize+verify，返回带高亮的 VizBundle
-async fn live_handler(
-    State(state): State<Arc<AppState>>,
-) -> impl IntoResponse {
+async fn live_handler(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     let g = state.live.lock().await.clone();
     let g = match g {
         Some(g) => g,
@@ -751,17 +796,23 @@ mod tests {
     fn sample_req() -> OptimizeRequest {
         let mut g = FlowGraph::new("gov", "政务数据归集");
         g.add_node(FlowNode::new("s", "开始", NodeKind::Start));
-        g.add_node(FlowNode::task("read", "读取公民库", ToolKind::Database, 300)
-            .with_access(flow_ai::model::Access::read("db:citizen_info"))
-            .with_access(flow_ai::model::Access::write("var:citizen")));
-        g.add_node(FlowNode::task("guard", "脱敏", ToolKind::Compute, 50)
-            .with_tag("desensitize")
-            .with_access(flow_ai::model::Access::read("var:citizen"))
-            .with_access(flow_ai::model::Access::write("var:citizen_safe")));
+        g.add_node(
+            FlowNode::task("read", "读取公民库", ToolKind::Database, 300)
+                .with_access(flow_ai::model::Access::read("db:citizen_info"))
+                .with_access(flow_ai::model::Access::write("var:citizen")),
+        );
+        g.add_node(
+            FlowNode::task("guard", "脱敏", ToolKind::Compute, 50)
+                .with_tag("desensitize")
+                .with_access(flow_ai::model::Access::read("var:citizen"))
+                .with_access(flow_ai::model::Access::write("var:citizen_safe")),
+        );
         g.add_node(FlowNode::task("web1", "网办A", ToolKind::Browser, 500));
         g.add_node(FlowNode::task("web2", "网办B", ToolKind::Browser, 400));
-        g.add_node(FlowNode::task("merge", "汇总", ToolKind::Compute, 100)
-            .with_access(flow_ai::model::Access::read("var:citizen_safe")));
+        g.add_node(
+            FlowNode::task("merge", "汇总", ToolKind::Compute, 100)
+                .with_access(flow_ai::model::Access::read("var:citizen_safe")),
+        );
         g.add_node(FlowNode::new("e", "结束", NodeKind::End));
         g.add_edge(FlowEdge::seq("s", "read"));
         g.add_edge(FlowEdge::seq("read", "guard"));
@@ -803,7 +854,10 @@ mod tests {
     #[test]
     fn demo_topology_has_skill_and_rule() {
         let t = demo_topology();
-        assert!(t.entities.iter().any(|e| format!("{:?}", e.kind) == "Skill"));
+        assert!(t
+            .entities
+            .iter()
+            .any(|e| format!("{:?}", e.kind) == "Skill"));
         assert!(t.entities.iter().any(|e| format!("{:?}", e.kind) == "Rule"));
     }
 }

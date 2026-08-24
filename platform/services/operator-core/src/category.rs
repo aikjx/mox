@@ -163,7 +163,12 @@ impl Operator for Workflow {
         let mut current = input.clone();
 
         for (i, op) in self.operators.iter().enumerate() {
-            tracing::info!("执行工作流第 {}/{} 步: {}", i + 1, self.operators.len(), op.metadata().name);
+            tracing::info!(
+                "执行工作流第 {}/{} 步: {}",
+                i + 1,
+                self.operators.len(),
+                op.metadata().name
+            );
             let result = op.execute(&current, ctx)?;
             if !result.success {
                 return Ok(ExecutionResult {
@@ -296,8 +301,12 @@ mod tests {
     #[test]
     fn test_workflow() {
         let workflow = Workflow::new("test")
-            .then(IdentityOperator::new(2)).unwrap()
-            .then(LinearOperator::new(nalgebra::DMatrix::from_diagonal_element(2, 2, 2.0))).unwrap();
+            .then(IdentityOperator::new(2))
+            .unwrap()
+            .then(LinearOperator::new(
+                nalgebra::DMatrix::from_diagonal_element(2, 2, 2.0),
+            ))
+            .unwrap();
 
         let input = StateVector::from_vec(vec![1.0, 2.0]);
         let mut ctx = ExecutionContext::default();

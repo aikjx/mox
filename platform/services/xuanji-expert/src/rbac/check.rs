@@ -13,9 +13,17 @@ pub struct Resource {
 }
 
 impl Resource {
-    pub fn new(path: &str) -> Self { Self { path: path.into(), tenant: None } }
+    pub fn new(path: &str) -> Self {
+        Self {
+            path: path.into(),
+            tenant: None,
+        }
+    }
     pub fn with_tenant(path: &str, tenant: &str) -> Self {
-        Self { path: path.into(), tenant: Some(tenant.into()) }
+        Self {
+            path: path.into(),
+            tenant: Some(tenant.into()),
+        }
     }
 }
 
@@ -32,10 +40,23 @@ pub struct PermissionCheck {
 
 impl PermissionCheck {
     pub fn new(principal: &str, roles: Vec<String>, action: &str, resource: Resource) -> Self {
-        Self { principal: principal.into(), roles, resource, action: action.into(), session_id: None, client_ip: None }
+        Self {
+            principal: principal.into(),
+            roles,
+            resource,
+            action: action.into(),
+            session_id: None,
+            client_ip: None,
+        }
     }
-    pub fn with_session(mut self, sid: &str) -> Self { self.session_id = Some(sid.into()); self }
-    pub fn with_client_ip(mut self, ip: &str) -> Self { self.client_ip = Some(ip.into()); self }
+    pub fn with_session(mut self, sid: &str) -> Self {
+        self.session_id = Some(sid.into());
+        self
+    }
+    pub fn with_client_ip(mut self, ip: &str) -> Self {
+        self.client_ip = Some(ip.into());
+        self
+    }
 }
 
 /// 权限检查结果
@@ -46,9 +67,14 @@ pub enum PermissionResult {
 }
 
 impl PermissionResult {
-    pub fn is_granted(&self) -> bool { matches!(self, Self::Granted) }
+    pub fn is_granted(&self) -> bool {
+        matches!(self, Self::Granted)
+    }
     pub fn denied_reason(&self) -> Option<&str> {
-        match self { Self::Granted => None, Self::Denied(r) => Some(r) }
+        match self {
+            Self::Granted => None,
+            Self::Denied(r) => Some(r),
+        }
     }
 }
 
@@ -89,7 +115,9 @@ pub fn check(ctx: &PermissionCheck) -> PermissionResult {
         Some(_) => PermissionResult::Granted,
         None => PermissionResult::Denied(format!(
             "role(s) '{}' lacks permission {}:{}",
-            ctx.roles.join(", "), ctx.action, ctx.resource.path
+            ctx.roles.join(", "),
+            ctx.action,
+            ctx.resource.path
         )),
     }
 }
@@ -105,7 +133,12 @@ pub fn check_with_audit(
             let reason = result.denied_reason().unwrap_or("unknown");
             let tenant = ctx.resource.tenant.as_deref().unwrap_or("default");
             let resource = AuditResource::flow(&ctx.resource.path, tenant);
-            let _ = audit.log_rbac_denied(resource, tenant, reason, &format!("{}:{}", ctx.action, ctx.resource.path));
+            let _ = audit.log_rbac_denied(
+                resource,
+                tenant,
+                reason,
+                &format!("{}:{}", ctx.action, ctx.resource.path),
+            );
         }
     }
 
@@ -119,7 +152,10 @@ mod tests {
     #[test]
     fn viewer_cannot_write_prod() {
         let ctx = PermissionCheck::new(
-            "user:alice", vec!["viewer".into()], "write", Resource::new("db:prod/citizen_info")
+            "user:alice",
+            vec!["viewer".into()],
+            "write",
+            Resource::new("db:prod/citizen_info"),
         );
         let r = check(&ctx);
         assert!(!r.is_granted());
@@ -129,7 +165,10 @@ mod tests {
     #[test]
     fn editor_can_write_test() {
         let ctx = PermissionCheck::new(
-            "user:bob", vec!["editor".into()], "write", Resource::new("db:test/citizen_info")
+            "user:bob",
+            vec!["editor".into()],
+            "write",
+            Resource::new("db:test/citizen_info"),
         );
         assert!(check(&ctx).is_granted());
     }
@@ -137,7 +176,10 @@ mod tests {
     #[test]
     fn admin_can_do_anything() {
         let ctx = PermissionCheck::new(
-            "user:charlie", vec!["admin".into()], "write", Resource::new("db:prod/anything")
+            "user:charlie",
+            vec!["admin".into()],
+            "write",
+            Resource::new("db:prod/anything"),
         );
         assert!(check(&ctx).is_granted());
     }
@@ -145,7 +187,10 @@ mod tests {
     #[test]
     fn safety_approver_prod_write() {
         let ctx = PermissionCheck::new(
-            "user:david", vec!["safety_approver".into()], "write", Resource::new("db:prod/citizen_info")
+            "user:david",
+            vec!["safety_approver".into()],
+            "write",
+            Resource::new("db:prod/citizen_info"),
         );
         assert!(check(&ctx).is_granted());
     }
@@ -172,7 +217,10 @@ mod tests {
     #[test]
     fn wildcard_everything() {
         let ctx = PermissionCheck::new(
-            "user:eve", vec!["admin".into()], "execute", Resource::new("flow:anything")
+            "user:eve",
+            vec!["admin".into()],
+            "execute",
+            Resource::new("flow:anything"),
         );
         assert!(check(&ctx).is_granted());
     }

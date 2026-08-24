@@ -11,12 +11,12 @@ pub mod security;
 
 // ---- 开发七维（分析代码IR）----
 pub mod architecture;
-pub mod security_code;
 pub mod code_quality;
-pub mod performance;
-pub mod testing;
 pub mod documentation;
 pub mod maintainability;
+pub mod performance;
+pub mod security_code;
+pub mod testing;
 
 use crate::expert::Expert;
 use std::boxed::Box;

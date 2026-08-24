@@ -20,46 +20,47 @@ pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateM
     owner: "xuanji-core",
 };
 
-pub mod conversation;
 pub mod algorithm;
-pub mod resource_manager;
-pub mod plugin_bus;
-pub mod workflow_engine;
-pub mod types;
-pub mod llm_client;
 pub mod browser_automation;
+pub mod conversation;
+pub mod dialogue_graph;
+pub mod engine;
 pub mod flow_engine;
 pub mod knowledge;
-pub mod requirement_compiler;
-pub mod dialogue_graph;
+pub mod llm_client;
+/// O5 补丁：并发扇出 Parallel Fan-Out + CancellationToken 模块
+pub mod parallel_executor;
+pub mod plugin_bus;
 pub mod provider;
-pub mod engine;
+pub mod requirement_compiler;
+pub mod resource_manager;
+pub mod types;
 mod util;
+pub mod workflow_engine;
 
-pub use conversation::*;
-pub use requirement_compiler::*;
 pub use algorithm::*;
-pub use resource_manager::*;
-pub use plugin_bus::*;
-pub use workflow_engine::*;
-pub use types::{
-    MessageRole, ChatMessage, ChatSession, SessionContext, UserIntent, ChatResponse,
-    SuggestedAction, ActionType, AlgorithmType, AlgorithmFlow, OptimizationSuggestion,
-    OptimizationImpact, ComplexityAnalysis, ResourceType, ResourceAllocation,
-    ResourceUsageStats, ResourcePanorama, PluginInfo, PluginType, PluginStatus,
-    PluginMessage, MessageSubscription, BusinessWorkflow, WorkflowNode, WorkflowNodeType,
-    WorkflowNodeConfig, MergeStrategy, NodePosition, WorkflowEdge, WorkflowInstance,
-    WorkflowStatus, NodeExecutionRecord, WorkflowResult, WorkflowMetrics,
-    WorkflowConnection, NodeStatus, WorkflowTemplate,
-};
-pub use llm_client::*;
 pub use browser_automation::*;
-pub use flow_engine::*;
+pub use conversation::*;
 pub use dialogue_graph::*;
+pub use flow_engine::*;
+pub use llm_client::*;
+pub use plugin_bus::*;
+pub use requirement_compiler::*;
+pub use resource_manager::*;
+pub use types::{
+    ActionType, AlgorithmFlow, AlgorithmType, BusinessWorkflow, ChatMessage, ChatResponse,
+    ChatSession, ComplexityAnalysis, MergeStrategy, MessageRole, MessageSubscription,
+    NodeExecutionRecord, NodePosition, NodeStatus, OptimizationImpact, OptimizationSuggestion,
+    PluginInfo, PluginMessage, PluginStatus, PluginType, ResourceAllocation, ResourcePanorama,
+    ResourceType, ResourceUsageStats, SessionContext, SuggestedAction, UserIntent,
+    WorkflowConnection, WorkflowEdge, WorkflowInstance, WorkflowMetrics, WorkflowNode,
+    WorkflowNodeConfig, WorkflowNodeType, WorkflowResult, WorkflowStatus, WorkflowTemplate,
+};
+pub use workflow_engine::*;
 
-use crate::engine::{AgentRole, Engine, EngineContext, EngineConfig, MultiAgentOrchestrator};
-use operator_core::{OperatorError, Result};
+use crate::engine::{AgentRole, Engine, EngineConfig, EngineContext, MultiAgentOrchestrator};
 use graph_algorithms::KnowledgeGraph;
+use operator_core::{OperatorError, Result};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -131,7 +132,9 @@ impl AIAgent {
             algorithm_analyzer: Arc::new(RwLock::new(AlgorithmAnalyzer::new())),
             resource_manager: Arc::new(RwLock::new(ResourceManager::new())),
             plugin_bus: Arc::new(RwLock::new(PluginBus::new())),
-            workflow_engine: Arc::new(RwLock::new(WorkflowEngine::new_with_llm(Some(llm_client.clone())))),
+            workflow_engine: Arc::new(RwLock::new(WorkflowEngine::new_with_llm(Some(
+                llm_client.clone(),
+            )))),
             llm_client,
             browser: Arc::new(RwLock::new(BrowserAutomationEngine::new())),
             flow_engine: Arc::new(RwLock::new(flow_engine)),
@@ -202,12 +205,20 @@ impl AIAgent {
 
     fn detect_browser_intent(&self, message: &str) -> bool {
         let p = message.to_lowercase();
-        p.contains("http://") || p.contains("https://") || 
-        p.contains("www.") || p.contains(".com") || p.contains(".cn") ||
-        p.contains("浏览器") || p.contains("打开网页") || p.contains("访问") ||
-        p.contains("截图") && (p.contains("网页") || p.contains("页面") || p.contains("网站")) ||
-        p.contains("搜索") && !p.contains("算子") && !p.contains("算法") ||
-        p.contains("浏览") || p.contains("爬取") || p.contains("抓取")
+        p.contains("http://")
+            || p.contains("https://")
+            || p.contains("www.")
+            || p.contains(".com")
+            || p.contains(".cn")
+            || p.contains("浏览器")
+            || p.contains("打开网页")
+            || p.contains("访问")
+            || p.contains("截图")
+                && (p.contains("网页") || p.contains("页面") || p.contains("网站"))
+            || p.contains("搜索") && !p.contains("算子") && !p.contains("算法")
+            || p.contains("浏览")
+            || p.contains("爬取")
+            || p.contains("抓取")
     }
 
     async fn chat_with_llm(&self, session_id: &str, message: &str) -> Result<ChatResponse> {
@@ -216,14 +227,17 @@ impl AIAgent {
         drop(conv);
 
         // history 已包含本次用户消息（由 chat 入口写入），直接映射为 LLM 上下文
-        let messages: Vec<LLMChatMessage> = history.iter().map(|m| LLMChatMessage {
-            role: match m.role {
-                MessageRole::User => "user".to_string(),
-                MessageRole::Assistant => "assistant".to_string(),
-                _ => "system".to_string(),
-            },
-            content: m.content.clone(),
-        }).collect();
+        let messages: Vec<LLMChatMessage> = history
+            .iter()
+            .map(|m| LLMChatMessage {
+                role: match m.role {
+                    MessageRole::User => "user".to_string(),
+                    MessageRole::Assistant => "assistant".to_string(),
+                    _ => "system".to_string(),
+                },
+                content: m.content.clone(),
+            })
+            .collect();
 
         let llm = self.llm_client.read().await;
         match llm.chat(messages).await {
@@ -242,7 +256,11 @@ impl AIAgent {
         }
     }
 
-    async fn handle_browser_automation(&self, session_id: &str, message: &str) -> Result<ChatResponse> {
+    async fn handle_browser_automation(
+        &self,
+        session_id: &str,
+        message: &str,
+    ) -> Result<ChatResponse> {
         let (url, steps) = {
             let _browser = self.browser.read().await;
             BrowserAutomationEngine::parse_natural_language(message)
@@ -250,7 +268,9 @@ impl AIAgent {
 
         if steps.is_empty() {
             let mut conv = self.conversation.write().await;
-            return conv.process_message(session_id, "请提供要访问的URL或具体的浏览器操作指令").await;
+            return conv
+                .process_message(session_id, "请提供要访问的URL或具体的浏览器操作指令")
+                .await;
         }
 
         let mut browser = self.browser.write().await;
@@ -260,18 +280,32 @@ impl AIAgent {
         match result {
             Ok(task_result) => {
                 response_text.push_str("🌐 **浏览器自动化任务执行完成**\n\n");
-                response_text.push_str(&format!("任务: {} | 状态: {}\n", 
+                response_text.push_str(&format!(
+                    "任务: {} | 状态: {}\n",
                     task_result.task_name,
-                    if task_result.success { "✅ 成功" } else { "❌ 失败" }));
-                response_text.push_str(&format!("会话: {} | 耗时: {}ms\n", 
-                    task_result.session_id, task_result.total_duration_ms));
+                    if task_result.success {
+                        "✅ 成功"
+                    } else {
+                        "❌ 失败"
+                    }
+                ));
+                response_text.push_str(&format!(
+                    "会话: {} | 耗时: {}ms\n",
+                    task_result.session_id, task_result.total_duration_ms
+                ));
                 if !task_result.final_url.is_empty() {
                     response_text.push_str(&format!("最终URL: {}\n", task_result.final_url));
                 }
                 response_text.push_str("\n**执行步骤:**\n");
                 for (i, step) in task_result.steps_results.iter().enumerate() {
                     let icon = if step.success { "✅" } else { "❌" };
-                    response_text.push_str(&format!("{}. {} {} ({}ms)\n", i+1, icon, step.action_type, step.duration_ms));
+                    response_text.push_str(&format!(
+                        "{}. {} {} ({}ms)\n",
+                        i + 1,
+                        icon,
+                        step.action_type,
+                        step.duration_ms
+                    ));
                     if let Some(data) = &step.data {
                         if let Some(text) = data.get("text").and_then(|v| v.as_str()) {
                             response_text.push_str(&format!("   📄 提取: {}\n", text));
@@ -298,7 +332,11 @@ impl AIAgent {
             message: response.message,
             actions: vec![],
             recommended_operators: vec![],
-            suggestions: vec!["访问其他网站".to_string(), "截图网页".to_string(), "搜索内容".to_string()],
+            suggestions: vec![
+                "访问其他网站".to_string(),
+                "截图网页".to_string(),
+                "搜索内容".to_string(),
+            ],
             workflow_suggestion: None,
         })
     }
@@ -313,7 +351,12 @@ impl AIAgent {
         {
             let cfg = self.llm_client.read().await.get_config().clone();
             if cfg.enabled && !cfg.api_key.trim().is_empty() {
-                let provider = provider::make_openai_compatible("custom", &cfg.api_base, &cfg.api_key, &cfg.model);
+                let provider = provider::make_openai_compatible(
+                    "custom",
+                    &cfg.api_base,
+                    &cfg.api_key,
+                    &cfg.model,
+                );
                 self.router.register_provider(provider);
                 // 把 custom 提到 fallback 链首位（用户显式配置优先）
                 let mut chain = self.router.chain();
@@ -349,7 +392,11 @@ impl AIAgent {
     }
 
     /// 分析算法并生成归一化流程图
-    pub async fn analyze_algorithm(&self, algo_code: &str, algo_type: AlgorithmType) -> Result<AlgorithmFlow> {
+    pub async fn analyze_algorithm(
+        &self,
+        algo_code: &str,
+        algo_type: AlgorithmType,
+    ) -> Result<AlgorithmFlow> {
         let analyzer = self.algorithm_analyzer.read().await;
         analyzer.analyze(algo_code, algo_type).await
     }
@@ -436,26 +483,29 @@ impl AIAgent {
         let llm = self.llm_client.read().await;
         let llm_fn: Option<crate::requirement_compiler::LlmFn> = if llm.is_enabled() {
             let client = (*llm).clone();
-            Some(Arc::new(move |msgs: Vec<crate::requirement_compiler::LlmMsg>| {
-                let client = client.clone();
-                Box::pin(async move {
-                    let chat_msgs: Vec<_> = msgs
-                        .into_iter()
-                        .map(|m| crate::llm_client::LLMChatMessage {
-                            role: m.role,
-                            content: m.content,
-                        })
-                        .collect();
-                    client.chat(chat_msgs).await
-                })
-            }))
+            Some(Arc::new(
+                move |msgs: Vec<crate::requirement_compiler::LlmMsg>| {
+                    let client = client.clone();
+                    Box::pin(async move {
+                        let chat_msgs: Vec<_> = msgs
+                            .into_iter()
+                            .map(|m| crate::llm_client::LLMChatMessage {
+                                role: m.role,
+                                content: m.content,
+                            })
+                            .collect();
+                        client.chat(chat_msgs).await
+                    })
+                },
+            ))
         } else {
             None
         };
         drop(llm);
 
         let mut rc = self.requirement_compiler.write().await;
-        rc.compile_with_llm(requirement, name, tags, llm_fn.as_ref()).await
+        rc.compile_with_llm(requirement, name, tags, llm_fn.as_ref())
+            .await
     }
 
     /// 把蓝图直接注册为可执行的 FlowDefinition（供 execute_flow 运行）
@@ -469,7 +519,9 @@ impl AIAgent {
     /// 创建流程图
     pub async fn create_flow(&self, flow: FlowDefinition) -> Result<FlowDefinition> {
         let mut engine = self.flow_engine.write().await;
-        engine.create_flow(flow).map_err(|e| OperatorError::Other(anyhow::anyhow!(e.to_string())))
+        engine
+            .create_flow(flow)
+            .map_err(|e| OperatorError::Other(anyhow::anyhow!(e.to_string())))
     }
 
     /// 获取流程图
@@ -493,12 +545,15 @@ impl AIAgent {
     /// 更新流程图（目标须已存在，更新后须通过结构校验）
     pub async fn update_flow(&self, flow: FlowDefinition) -> Result<FlowDefinition> {
         let mut engine = self.flow_engine.write().await;
-        engine.update_flow(flow).map_err(|e| OperatorError::Other(anyhow::anyhow!(e.to_string())))
+        engine
+            .update_flow(flow)
+            .map_err(|e| OperatorError::Other(anyhow::anyhow!(e.to_string())))
     }
 
     /// 验证流程图
     pub fn validate_flow(flow: &FlowDefinition) -> Result<()> {
-        FlowEngine::validate_flow(flow).map_err(|e| OperatorError::Other(anyhow::anyhow!(e.to_string())))
+        FlowEngine::validate_flow(flow)
+            .map_err(|e| OperatorError::Other(anyhow::anyhow!(e.to_string())))
     }
 
     /// 执行流程图
@@ -511,14 +566,17 @@ impl AIAgent {
         let flow_def = {
             let engine = self.flow_engine.read().await;
             engine.get_flow(flow_id).cloned()
-        }.ok_or_else(|| OperatorError::Other(anyhow::anyhow!("流程图不存在: {}", flow_id)))?;
+        }
+        .ok_or_else(|| OperatorError::Other(anyhow::anyhow!("流程图不存在: {}", flow_id)))?;
 
         // 执行节点（支持真实的LLM、浏览器、HTTP请求）
         let mut results = Vec::new();
         let mut variables = flow_def.variables.clone();
         variables.extend(input.clone());
 
-        let start_node = flow_def.nodes.iter()
+        let start_node = flow_def
+            .nodes
+            .iter()
             .find(|n| matches!(n.node_type, NodeType::Start))
             .ok_or_else(|| OperatorError::Other(anyhow::anyhow!("缺少Start节点")))?;
 
@@ -532,9 +590,13 @@ impl AIAgent {
             }
             max_steps -= 1;
 
-            let node = flow_def.nodes.iter()
+            let node = flow_def
+                .nodes
+                .iter()
                 .find(|n| n.id == current_node_id)
-                .ok_or_else(|| OperatorError::Other(anyhow::anyhow!("节点不存在: {}", current_node_id)))?
+                .ok_or_else(|| {
+                    OperatorError::Other(anyhow::anyhow!("节点不存在: {}", current_node_id))
+                })?
                 .clone();
 
             let result = self.execute_flow_node(&node, &variables).await;
@@ -575,17 +637,23 @@ impl AIAgent {
 
             // 条件节点
             if matches!(node.node_type, NodeType::Condition) {
-                let condition = node.config.get("condition")
+                let condition = node
+                    .config
+                    .get("condition")
                     .and_then(|c| c.as_str())
                     .unwrap_or("true");
                 let should_take_true = flow_engine::evaluate_condition(condition, &variables);
                 let condition_match = if should_take_true { "true" } else { "false" };
 
-                let next_edge = flow_def.edges.iter()
-                    .find(|e| e.source == node.id &&
-                        (e.condition.as_deref() == Some(condition_match) || e.condition.is_none()))
-                    .or_else(|| flow_def.edges.iter()
-                        .find(|e| e.source == node.id))
+                let next_edge = flow_def
+                    .edges
+                    .iter()
+                    .find(|e| {
+                        e.source == node.id
+                            && (e.condition.as_deref() == Some(condition_match)
+                                || e.condition.is_none())
+                    })
+                    .or_else(|| flow_def.edges.iter().find(|e| e.source == node.id))
                     .cloned();
 
                 if let Some(edge) = next_edge {
@@ -597,9 +665,7 @@ impl AIAgent {
             }
 
             // 普通节点
-            let next_edge = flow_def.edges.iter()
-                .find(|e| e.source == node.id)
-                .cloned();
+            let next_edge = flow_def.edges.iter().find(|e| e.source == node.id).cloned();
 
             if let Some(edge) = next_edge {
                 current_node_id = edge.target;
@@ -632,14 +698,29 @@ impl AIAgent {
 
         match &node.node_type {
             NodeType::LLM => {
-                let prompt_template = node.config.get("prompt").and_then(|p| p.as_str()).unwrap_or("");
+                let prompt_template = node
+                    .config
+                    .get("prompt")
+                    .and_then(|p| p.as_str())
+                    .unwrap_or("");
                 let prompt = flow_engine::apply_template(prompt_template, variables);
-                let model = node.config.get("model").and_then(|m| m.as_str())
+                let model = node
+                    .config
+                    .get("model")
+                    .and_then(|m| m.as_str())
                     .unwrap_or("deepseek-chat");
                 // 智能 AI 节点：支持在节点配置里指定 provider（如 "deepseek"/"openai"/"qwen"），
                 // 不指定则走 AI Gateway 默认 fallback 链（deepseek→openai→…）。
-                let preferred_provider = node.config.get("provider").and_then(|p| p.as_str()).map(|s| s.to_string());
-                let temperature = node.config.get("temperature").and_then(|t| t.as_f64()).unwrap_or(0.7) as f32;
+                let preferred_provider = node
+                    .config
+                    .get("provider")
+                    .and_then(|p| p.as_str())
+                    .map(|s| s.to_string());
+                let temperature = node
+                    .config
+                    .get("temperature")
+                    .and_then(|t| t.as_f64())
+                    .unwrap_or(0.7) as f32;
 
                 let messages = vec![LLMChatMessage {
                     role: "user".into(),
@@ -665,14 +746,18 @@ impl AIAgent {
 
                 if let Ok(resp) = gateway_result {
                     NodeExecutionResult {
-                        node_id, node_name, node_type: "llm".into(),
+                        node_id,
+                        node_name,
+                        node_type: "llm".into(),
                         status: "success".into(),
                         input: Some(serde_json::json!({
                             "prompt": prompt,
                             "model": model,
                             "provider": preferred_provider.clone().unwrap_or_else(|| "gateway-fallback".to_string())
                         })),
-                        output: Some(serde_json::json!({"response": resp.content, "provider": resp.provider, "model": resp.model})),
+                        output: Some(
+                            serde_json::json!({"response": resp.content, "provider": resp.provider, "model": resp.model}),
+                        ),
                         error: None,
                         duration_ms: start.elapsed().as_millis() as u64,
                     }
@@ -680,17 +765,29 @@ impl AIAgent {
                     // 2) 降级到直接 LLMClient（保持既有兜底）
                     let llm = self.llm_client.read().await;
                     if llm.is_enabled() {
-                        match llm.chat(vec![LLMChatMessage { role: "user".into(), content: prompt.clone() }]).await {
+                        match llm
+                            .chat(vec![LLMChatMessage {
+                                role: "user".into(),
+                                content: prompt.clone(),
+                            }])
+                            .await
+                        {
                             Ok(response) => NodeExecutionResult {
-                                node_id, node_name, node_type: "llm".into(),
+                                node_id,
+                                node_name,
+                                node_type: "llm".into(),
                                 status: "success".into(),
                                 input: Some(serde_json::json!({"prompt": prompt, "model": model})),
-                                output: Some(serde_json::json!({"response": response, "provider": "llm_client"})),
+                                output: Some(
+                                    serde_json::json!({"response": response, "provider": "llm_client"}),
+                                ),
                                 error: None,
                                 duration_ms: start.elapsed().as_millis() as u64,
                             },
                             Err(e) => NodeExecutionResult {
-                                node_id, node_name, node_type: "llm".into(),
+                                node_id,
+                                node_name,
+                                node_type: "llm".into(),
                                 status: "error".into(),
                                 input: Some(serde_json::json!({"prompt": prompt})),
                                 output: None,
@@ -701,10 +798,14 @@ impl AIAgent {
                     } else {
                         // 3) 模拟 LLM 响应（离线兜底）
                         NodeExecutionResult {
-                            node_id, node_name, node_type: "llm".into(),
+                            node_id,
+                            node_name,
+                            node_type: "llm".into(),
                             status: "simulated".into(),
                             input: Some(serde_json::json!({"prompt": prompt})),
-                            output: Some(serde_json::json!({"response": format!("[模拟LLM] 收到: {}", prompt)})),
+                            output: Some(
+                                serde_json::json!({"response": format!("[模拟LLM] 收到: {}", prompt)}),
+                            ),
                             error: None,
                             duration_ms: start.elapsed().as_millis() as u64,
                         }
@@ -712,17 +813,28 @@ impl AIAgent {
                 }
             }
             NodeType::Browser => {
-                let url_template = node.config.get("url").and_then(|u| u.as_str()).unwrap_or("");
+                let url_template = node
+                    .config
+                    .get("url")
+                    .and_then(|u| u.as_str())
+                    .unwrap_or("");
                 let url = flow_engine::apply_template(url_template, variables);
-                let action = node.config.get("action").and_then(|a| a.as_str())
+                let action = node
+                    .config
+                    .get("action")
+                    .and_then(|a| a.as_str())
                     .unwrap_or("navigate");
 
                 let mut browser = self.browser.write().await;
-                let result = browser.execute_action("default", BrowserAction::Navigate { url: url.clone() }).await;
+                let result = browser
+                    .execute_action("default", BrowserAction::Navigate { url: url.clone() })
+                    .await;
 
                 match result {
                     Ok(page) => NodeExecutionResult {
-                        node_id, node_name, node_type: "browser".into(),
+                        node_id,
+                        node_name,
+                        node_type: "browser".into(),
                         status: "success".into(),
                         input: Some(serde_json::json!({"url": url, "action": action})),
                         output: Some(serde_json::json!({
@@ -734,7 +846,9 @@ impl AIAgent {
                         duration_ms: start.elapsed().as_millis() as u64,
                     },
                     Err(e) => NodeExecutionResult {
-                        node_id, node_name, node_type: "browser".into(),
+                        node_id,
+                        node_name,
+                        node_type: "browser".into(),
                         status: "error".into(),
                         input: Some(serde_json::json!({"url": url})),
                         output: None,
@@ -744,8 +858,16 @@ impl AIAgent {
                 }
             }
             NodeType::HttpRequest => {
-                let url = node.config.get("url").and_then(|u| u.as_str()).unwrap_or("");
-                let method = node.config.get("method").and_then(|m| m.as_str()).unwrap_or("GET");
+                let url = node
+                    .config
+                    .get("url")
+                    .and_then(|u| u.as_str())
+                    .unwrap_or("");
+                let method = node
+                    .config
+                    .get("method")
+                    .and_then(|m| m.as_str())
+                    .unwrap_or("GET");
                 let body = node.config.get("body").and_then(|b| b.as_str());
 
                 let client = reqwest::Client::new();
@@ -762,7 +884,9 @@ impl AIAgent {
                     }
                     _ => {
                         return NodeExecutionResult {
-                            node_id, node_name, node_type: "http_request".into(),
+                            node_id,
+                            node_name,
+                            node_type: "http_request".into(),
                             status: "error".into(),
                             input: Some(serde_json::json!({"url": url, "method": method})),
                             output: None,
@@ -777,7 +901,9 @@ impl AIAgent {
                         let status = resp.status();
                         let body_text = resp.text().await.unwrap_or_default();
                         NodeExecutionResult {
-                            node_id, node_name, node_type: "http_request".into(),
+                            node_id,
+                            node_name,
+                            node_type: "http_request".into(),
                             status: "success".into(),
                             input: Some(serde_json::json!({"url": url, "method": method})),
                             output: Some(serde_json::json!({
@@ -789,7 +915,9 @@ impl AIAgent {
                         }
                     }
                     Err(e) => NodeExecutionResult {
-                        node_id, node_name, node_type: "http_request".into(),
+                        node_id,
+                        node_name,
+                        node_type: "http_request".into(),
                         status: "error".into(),
                         input: Some(serde_json::json!({"url": url})),
                         output: None,
@@ -816,7 +944,9 @@ impl AIAgent {
                 match results {
                     Ok(mut r) if !r.node_results.is_empty() => r.node_results.remove(0),
                     _ => NodeExecutionResult {
-                        node_id, node_name, node_type: node_type_str,
+                        node_id,
+                        node_name,
+                        node_type: node_type_str,
                         status: "pending".into(),
                         input: None,
                         output: None,

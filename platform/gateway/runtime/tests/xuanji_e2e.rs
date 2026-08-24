@@ -129,11 +129,13 @@ fn e2e_regulated_tenant_blocks_raw_sensitive_write() {
         vec![],
         Some(&report),
         Some("task-bad-001".into()), // source_task_id
-
     )
     .expect("即便被拦截也应能落盘（溯源标记失败）");
 
     let prov = pkg.provenance.expect("产物仍应携带溯源");
-    assert!(!prov.gates_passed, "被拦截流程的溯源应标记 gates_passed=false");
+    assert!(
+        !prov.gates_passed,
+        "被拦截流程的溯源应标记 gates_passed=false"
+    );
     assert!(!pkg.dual_acceptance, "双验收未达成则不应标记通过");
 }

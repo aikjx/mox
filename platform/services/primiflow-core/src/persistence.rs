@@ -235,7 +235,9 @@ impl Persistence {
     pub fn save_graph(&mut self, g: &AssocGraph) -> Result<()> {
         let json = serde_json::to_string(g)?;
         match self {
-            Persistence::Memory { trace_graph_json, .. } => {
+            Persistence::Memory {
+                trace_graph_json, ..
+            } => {
                 *trace_graph_json = Some(json);
                 Ok(())
             }
@@ -253,7 +255,9 @@ impl Persistence {
     /// 载入六维溯源主图（重放）
     pub fn load_graph(&self) -> Result<AssocGraph> {
         let json = match self {
-            Persistence::Memory { trace_graph_json, .. } => trace_graph_json.clone(),
+            Persistence::Memory {
+                trace_graph_json, ..
+            } => trace_graph_json.clone(),
             Persistence::Sqlite { provider, .. } => {
                 let mut out = None;
                 if let Some(row) =
@@ -437,10 +441,17 @@ mod tests {
         store.replay_into(&mut engine2, &mut master2).unwrap();
 
         assert_eq!(engine2.kb.stored.len(), assets_before, "资产应完整恢复");
-        assert_eq!(master2.nodes.len(), master.nodes.len(), "溯源节点应完整恢复");
+        assert_eq!(
+            master2.nodes.len(),
+            master.nodes.len(),
+            "溯源节点应完整恢复"
+        );
         assert_eq!(master2.edges.len(), master.edges.len(), "溯源边应完整恢复");
         // 知识库图谱实体也应恢复（六维关系网可继续检索复用）
-        assert_eq!(engine2.kb.graph.entities.len(), engine.kb.graph.entities.len());
+        assert_eq!(
+            engine2.kb.graph.entities.len(),
+            engine.kb.graph.entities.len()
+        );
 
         let _ = std::fs::remove_file(&path);
         let _ = std::fs::remove_dir_all(&dir);
@@ -452,9 +463,16 @@ mod tests {
         let mut engine = memory_engine();
         let master = AssocGraph::new();
         let specs = enterprise_specs();
-        let reports = run_all(&mut engine, &specs, std::path::Path::new(&std::env::temp_dir().join("pf_mem"))).unwrap();
+        let reports = run_all(
+            &mut engine,
+            &specs,
+            std::path::Path::new(&std::env::temp_dir().join("pf_mem")),
+        )
+        .unwrap();
         for (i, rep) in reports.iter().enumerate() {
-            store.persist_pipeline(&engine, &master, &format!("p{i}"), rep).unwrap();
+            store
+                .persist_pipeline(&engine, &master, &format!("p{i}"), rep)
+                .unwrap();
         }
         assert!(store.list_projects().unwrap().len() >= 4);
         let mut engine2 = memory_engine();
@@ -470,9 +488,16 @@ mod tests {
         let mut engine = memory_engine();
         let master = AssocGraph::new();
         let specs = enterprise_specs();
-        let reports = run_all(&mut engine, &specs, std::path::Path::new(&std::env::temp_dir().join("pf_sqlmem"))).unwrap();
+        let reports = run_all(
+            &mut engine,
+            &specs,
+            std::path::Path::new(&std::env::temp_dir().join("pf_sqlmem")),
+        )
+        .unwrap();
         for (i, rep) in reports.iter().enumerate() {
-            store.persist_pipeline(&engine, &master, &format!("p{i}"), rep).unwrap();
+            store
+                .persist_pipeline(&engine, &master, &format!("p{i}"), rep)
+                .unwrap();
         }
         let assets_before = engine.kb.stored.len();
         assert!(assets_before >= 1);
@@ -501,7 +526,9 @@ mod tests {
             let specs = enterprise_specs();
             let reports = run_all(&mut engine, &specs, dir.as_path()).unwrap();
             for (i, rep) in reports.iter().enumerate() {
-                store.persist_pipeline(&engine, &master, &format!("p{i}"), rep).unwrap();
+                store
+                    .persist_pipeline(&engine, &master, &format!("p{i}"), rep)
+                    .unwrap();
             }
             assert!(store.list_projects().unwrap().len() >= 4);
         }
@@ -519,7 +546,10 @@ mod tests {
             let mut master2 = AssocGraph::new();
             store.replay_into(&mut engine2, &mut master2).unwrap();
             assert!(!engine2.kb.stored.is_empty(), "重开文件后应恢复资产");
-            assert!(store.list_projects().unwrap().len() >= 4, "重开文件后应恢复项目记录");
+            assert!(
+                store.list_projects().unwrap().len() >= 4,
+                "重开文件后应恢复项目记录"
+            );
         }
 
         let _ = std::fs::remove_file(&path);

@@ -7,7 +7,11 @@ use primiflow_core::assoc::AssocGraph;
 use primiflow_core::runner::{enterprise_specs, run_all, run_pipeline, Spec};
 
 fn fresh_engine() -> PrimiEngine {
-    PrimiEngine::new(1.0, KnowledgeBase::new(), flow_ai::primitive::ResourceBudget::default())
+    PrimiEngine::new(
+        1.0,
+        KnowledgeBase::new(),
+        flow_ai::primitive::ResourceBudget::default(),
+    )
 }
 
 #[test]
@@ -26,12 +30,13 @@ fn pipeline_executes_real_operators_and_charges_q() {
 
     assert!(!rep.execution.is_empty(), "应记录真实执行");
     assert_eq!(rep.execution.len(), 3, "应有 3 条算子记录");
-    assert!(
-        rep.execution.iter().all(|r| r.ok),
-        "所有算子应真实执行成功"
-    );
+    assert!(rep.execution.iter().all(|r| r.ok), "所有算子应真实执行成功");
     // 执行质量应来自真实执行（exec_q≈0.95 回灌），使 Q 真实上升——而非硬编码 0.9
-    assert!(rep.q_after > rep.q_before, "注荷后 Q 应上升（实得 q_after={:.2}）", rep.q_after);
+    assert!(
+        rep.q_after > rep.q_before,
+        "注荷后 Q 应上升（实得 q_after={:.2}）",
+        rep.q_after
+    );
     assert!(rep.all_ok(), "全部分步验证应通过");
 
     // 真实执行记录应落盘为审计产物

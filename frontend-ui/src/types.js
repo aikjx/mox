@@ -88,6 +88,46 @@ export const NAV_MODULES = [
   { key: 'admin', label: '系统管理', icon: 'Lock', path: '/admin', color: '#475569', bg: '#f1f5f9' }
 ]
 
+// 产品体验增强：全局导航分组（侧边栏 24 项按 4 大域聚合，减少扫描成本）
+export const NAV_GROUPS = [
+  { key: 'workbench', label: '工作台', items: ['dashboard', 'projects', 'portal', 'business-hall'] },
+  { key: 'graph-ai', label: '图谱与 AI', items: ['graph', 'operators', 'ai', 'knowledge-base', 'llm-config'] },
+  { key: 'biz', label: '业务与协作', items: ['tasks', 'market', 'expert-center', 'expert-enterprise', 'expert-orchestrator', 'workflow', 'resources', 'plugins', 'mcp', 'automation'] },
+  { key: 'governance', label: '平台与治理', items: ['caomei', 'algolab', 'infinite-optimizer', 'xuanji-fusion', 'browser', 'monitor', 'docs', 'admin'] }
+]
+
+// 产品体验增强：顶栏⚡ 快捷「新建」菜单（最常用 4 项创建入口）
+// action 支持两种：'route' 跳转 / 'event' 发全局事件（TaskView/MarketView 监听后直接开 Dialog）
+export const QUICK_CREATE_COMMANDS = [
+  { key: 'task', label: '新建任务', icon: 'List', tip: 'Ctrl + Shift + N', action: 'event', event: 'xuanji:open-create-task' },
+  { key: 'market', label: '上传算子包', icon: 'Shop', tip: '跳商城并打开表单', action: 'route', route: '/market', query: { action: 'upload' } },
+  { key: 'ai-session', label: '新建 AI 对话', icon: 'ChatDotRound', tip: '新起一轮对话', action: 'route', route: '/ai', query: { fresh: '1' } },
+  { key: 'workflow', label: '新建工作流', icon: 'Operation', tip: '编排新流程', action: 'route', route: '/workflow', query: { action: 'create' } }
+]
+
+// 产品体验增强：快捷键分组（Shift + ? 弹 Drawer 展示给用户）
+export const HOTKEY_GROUPS = [
+  {
+    group: '全局',
+    items: [
+      { keys: ['Ctrl', 'K'], desc: '聚焦全局搜索（命令面板）' },
+      { keys: ['Ctrl', '⇧', 'P'], desc: '同上（命令面板，兼容 VS Code 用户）' },
+      { keys: ['Ctrl', '⇧', 'N'], desc: '弹出新建任务 Dialog（任何页面）' },
+      { keys: ['Shift', '?'], desc: '打开 / 关闭本快捷键帮助' },
+      { keys: ['Alt', '1..9'], desc: '按导航分组 1-9 顺序跳转到对应模块' }
+    ]
+  },
+  {
+    group: '表单与列表',
+    items: [
+      { keys: ['Esc'], desc: '关闭当前 Dialog / Drawer / 取消搜索' },
+      { keys: ['Enter'], desc: '提交聚焦中的表单 / 搜索（已在 10+ 页面启用）' },
+      { keys: ['Ctrl', 'Enter'], desc: 'AI 场景下提交长文本（Chat/Automation 中）' },
+      { keys: ['⌫ / Backspace'], desc: '在列表内清空筛选（需列表聚焦）' }
+    ]
+  }
+]
+
 // 专家类型映射
 export const EXPERT_TYPES = {
   algorithm: '算法专家',

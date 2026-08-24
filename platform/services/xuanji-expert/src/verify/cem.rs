@@ -13,8 +13,8 @@
 //! 与「目标感知剪枝」是 AND 关系：任何一条先命中就停止。
 
 use flow_ai::model::FlowGraph;
-use flow_ai::OptimizationReport;
 use flow_ai::pipeline::{optimize, OptimizeConfig};
+use flow_ai::OptimizationReport;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
@@ -281,7 +281,8 @@ fn evaluate_triple(
         let speedup_better = 1.0 - f_speedup;
         let conflict_better = 1.0 - f_cv.min(1.0);
         let algo_better = 1.0 - f_algo;
-        score = 0.55 * sched_better + 0.2 * speedup_better + 0.15 * conflict_better + 0.1 * algo_better;
+        score =
+            0.55 * sched_better + 0.2 * speedup_better + 0.15 * conflict_better + 0.1 * algo_better;
     } else {
         for o in objectives {
             let w = o.weight_e4 as f64 / 10_000.0 / weight_sum;
@@ -315,11 +316,15 @@ fn global_verify_or_cached(g: &FlowGraph, rep: &OptimizationReport) -> AlgoVerif
 
     struct Key3((String, String, String));
     impl PartialEq for Key3 {
-        fn eq(&self, other: &Self) -> bool { self.0 == other.0 }
+        fn eq(&self, other: &Self) -> bool {
+            self.0 == other.0
+        }
     }
     impl Eq for Key3 {}
     impl std::hash::Hash for Key3 {
-        fn hash<H: std::hash::Hasher>(&self, state: &mut H) { self.0.hash(state); }
+        fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+            self.0.hash(state);
+        }
     }
 
     fn cache() -> &'static Mutex<HashMap<Key3, AlgoVerification>> {
@@ -369,11 +374,17 @@ fn prefix_deep_chain_subgraph_inner(total: usize, subgraph_id: &str) -> FlowGrap
     for i in 0..task_count {
         let id = format!("t{}", i);
         let write_tag = format!("var:x{}__p{}", i, total);
-        let mut nd = FlowNode::task(&id, format!("任务{}", i), ToolKind::Compute, 10)
-            .with_access(Access { resource: write_tag, mode: AccessMode::Write });
+        let mut nd =
+            FlowNode::task(&id, format!("任务{}", i), ToolKind::Compute, 10).with_access(Access {
+                resource: write_tag,
+                mode: AccessMode::Write,
+            });
         if i > 0 {
             let read_tag = format!("var:x{}__p{}", i - 1, total);
-            nd = nd.with_access(Access { resource: read_tag, mode: AccessMode::Read });
+            nd = nd.with_access(Access {
+                resource: read_tag,
+                mode: AccessMode::Read,
+            });
         }
         g.add_node(nd);
         g.add_edge(FlowEdge::seq(&prev, &id));
@@ -392,12 +403,7 @@ fn sample_population(
     base_graph_id: &str,
     base_constraints: &[ConstraintSpec],
     base_objectives: &[ObjectiveSpec],
-) -> Vec<(
-    String,
-    FlowGraph,
-    Vec<ConstraintSpec>,
-    Vec<ObjectiveSpec>,
-)> {
+) -> Vec<(String, FlowGraph, Vec<ConstraintSpec>, Vec<ObjectiveSpec>)> {
     use rand_like::*;
     // 轻量 xorshift PRNG（不再引入额外依赖；round + 种子确定性）
     let mut rng = Xorshift64::new(0x9E37_79B9_7F4A_7C15_u64.wrapping_add(round as u64));
@@ -429,7 +435,9 @@ fn sample_population(
         let os = if i.is_multiple_of(4) && !base_objectives.is_empty() {
             let mut v = base_objectives.to_vec();
             for o in v.iter_mut() {
-                o.weight_e4 = o.weight_e4.saturating_add(if round.is_multiple_of(2) { 1 } else { 0 });
+                o.weight_e4 =
+                    o.weight_e4
+                        .saturating_add(if round.is_multiple_of(2) { 1 } else { 0 });
             }
             v
         } else {
@@ -448,7 +456,13 @@ mod rand_like {
     impl Xorshift64 {
         pub fn new(seed: u64) -> Self {
             // 0 种子会退化为全 0，特殊兜底
-            Self { state: if seed == 0 { 0xDEAD_BEEF_CAFE_BABE } else { seed } }
+            Self {
+                state: if seed == 0 {
+                    0xDEAD_BEEF_CAFE_BABE
+                } else {
+                    seed
+                },
+            }
         }
         pub fn next_u64(&mut self) -> u64 {
             let mut x = self.state;
@@ -472,12 +486,7 @@ mod rand_like {
 /// 真实 optimize + verify。memo 以 canonical(subgraph_id, constraints, objectives) 为 key。
 fn evaluate_population(
     cfg: &OptimizeConfig,
-    individuals: Vec<(
-        String,
-        FlowGraph,
-        Vec<ConstraintSpec>,
-        Vec<ObjectiveSpec>,
-    )>,
+    individuals: Vec<(String, FlowGraph, Vec<ConstraintSpec>, Vec<ObjectiveSpec>)>,
     memo: Option<std::sync::Mutex<&mut EvalMemo>>,
     parallel: bool,
     use_verify_cache: bool,
@@ -487,7 +496,13 @@ fn evaluate_population(
     let cfg_arc: Arc<OptimizeConfig> = Arc::new(cfg.clone());
     let uvc_arc: Arc<bool> = Arc::new(use_verify_cache);
 
-    type WorkItem = (EvalCacheKey, String, FlowGraph, Vec<ConstraintSpec>, Vec<ObjectiveSpec>);
+    type WorkItem = (
+        EvalCacheKey,
+        String,
+        FlowGraph,
+        Vec<ConstraintSpec>,
+        Vec<ObjectiveSpec>,
+    );
     let work: Vec<WorkItem> = individuals
         .into_iter()
         .map(|(sid, sub, cs, os)| {
@@ -517,7 +532,12 @@ fn evaluate_population(
                 fresh
             }
         };
-        Individual { subgraph_id: sid, constraints: cs, objectives: os, outcome }
+        Individual {
+            subgraph_id: sid,
+            constraints: cs,
+            objectives: os,
+            outcome,
+        }
     };
 
     if parallel {
@@ -563,8 +583,10 @@ fn sigma_bar(pop: &[Individual]) -> f64 {
 /// pareto 前沿大小（按 objectives 非支配 + 约束违反=0 优先）
 fn pareto_count(pop: &[Individual]) -> usize {
     // 只看 feasible（constraint_violation = 0）的个体算前沿
-    let feasibles: Vec<&Individual> =
-        pop.iter().filter(|p| p.outcome.constraint_violation <= 0.0 && p.outcome.verified).collect();
+    let feasibles: Vec<&Individual> = pop
+        .iter()
+        .filter(|p| p.outcome.constraint_violation <= 0.0 && p.outcome.verified)
+        .collect();
     let mut front = Vec::new();
     for (i, a) in feasibles.iter().enumerate() {
         let mut dominated = false;
@@ -639,7 +661,13 @@ pub fn cem_deep_chain_with_defaults(
         let round_pop: Vec<Individual> = if options.memo {
             // 共享 memo → 引入互斥
             let mu = std::sync::Mutex::new(&mut *memo_ref);
-            evaluate_population(cfg, sample, Some(mu), options.parallel, options.verify_cache)
+            evaluate_population(
+                cfg,
+                sample,
+                Some(mu),
+                options.parallel,
+                options.verify_cache,
+            )
         } else {
             evaluate_population(cfg, sample, None, options.parallel, options.verify_cache)
         };
@@ -705,7 +733,10 @@ pub fn cem_deep_chain_with_defaults(
         // ---- T9 (b) 目标感知剪枝（AND 提前停止；不降低质量）----
         if options.obj_prune
             && r + 1 >= 5
-            && best.as_ref().map(|b| b.constraint_violation <= 0.0 && b.verified).unwrap_or(false)
+            && best
+                .as_ref()
+                .map(|b| b.constraint_violation <= 0.0 && b.verified)
+                .unwrap_or(false)
             && pareto_history >= 3
         {
             stop = CemStopReason::ObjectivePrune;
@@ -721,7 +752,14 @@ pub fn cem_deep_chain_with_defaults(
         }
     }
 
-    finalize(best, options.max_rounds, stop, pareto_history, memo_ref, sigma_final)
+    finalize(
+        best,
+        options.max_rounds,
+        stop,
+        pareto_history,
+        memo_ref,
+        sigma_final,
+    )
 }
 
 fn finalize(

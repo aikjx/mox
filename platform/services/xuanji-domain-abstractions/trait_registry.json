@@ -1,0 +1,78 @@
+{
+  "crate": "xuanji-domain-abstractions",
+  "version": "3.0.0-ai-powered",
+  "layer": "L5",
+  "license": "MIT OR Apache-2.0",
+  "traits": [
+    {
+      "name": "ObjectStorageProvider",
+      "methods": 9,
+      "standard_compat": "AWS S3 v20060301",
+      "mock_impl": "MockObjectStorageProvider",
+      "methods_detail": ["put_object","get_object","delete_object","list_objects","create_multipart_upload","upload_part","complete_multipart_upload","abort_multipart_upload","head_object"]
+    },
+    {
+      "name": "MetaStorageProvider",
+      "methods": 12,
+      "standard_compat": "POSIX 1003.1",
+      "mock_impl": "MockMetaStorageProvider",
+      "methods_detail": ["mkdir","rmdir","rename","symlink","readlink","stat","getxattr","setxattr","listxattr","chmod","chown","statfs"]
+    },
+    {
+      "name": "ChunkManagerProvider",
+      "methods": 7,
+      "standard_compat": "Internal (erasure-coding ready)",
+      "mock_impl": "MockChunkManagerProvider",
+      "methods_detail": ["allocate_chunk","write_chunk","read_chunk","delete_chunk","rebuild_chunk","report_stats","gc_orphan_chunks"]
+    },
+    {
+      "name": "IamProvider",
+      "methods": 9,
+      "standard_compat": "AWS IAM + STS AssumeRole",
+      "mock_impl": "MockIamProvider",
+      "methods_detail": ["create_user","delete_user","authenticate","authorize_policy","list_roles","sts_assume_role","attach_policy","detach_policy","list_user_policies"]
+    },
+    {
+      "name": "QuotaProvider",
+      "methods": 8,
+      "standard_compat": "POSIX quota + Lustre dir quota",
+      "mock_impl": "MockQuotaProvider",
+      "methods_detail": ["get_user_quota","set_user_quota","check_put_allowed","get_directory_quota","set_directory_quota","check_directory_write_allowed","list_user_quotas","list_directory_quotas"]
+    },
+    {
+      "name": "GraphQueryProvider",
+      "methods": 8,
+      "standard_compat": "nGQL + OpenCypher 9",
+      "mock_impl": "MockGraphQueryProvider",
+      "methods_detail": ["get_vertex","get_edge","get_neighbors","k_hop_neighbors","subgraph_by_vids","execute_ngql","execute_cypher","run_single_algo"]
+    },
+    {
+      "name": "GraphMetaProvider",
+      "methods": 11,
+      "standard_compat": "nGQL DDL",
+      "mock_impl": "MockGraphMetaProvider",
+      "methods_detail": ["create_space","drop_space","list_spaces","create_tag","create_edge_type","alter_tag","drop_tag","drop_edge_type","show_hosts","list_tags","list_edge_types"]
+    },
+    {
+      "name": "GraphAlgoSingleProvider",
+      "methods": 7,
+      "standard_compat": "SPEC 7-algo guardrail",
+      "mock_impl": "MockGraphAlgoSingleProvider",
+      "methods_detail": ["personalized_page_rank","cnm_communities","betweenness_centrality","harmonic_closeness","degree_centrality","density","raw_bidirectional_expand"]
+    },
+    {
+      "name": "PartitionRouterProvider",
+      "methods": 7,
+      "standard_compat": "Consistent hash + static shard",
+      "mock_impl": "MockPartitionRouterProvider",
+      "methods_detail": ["vid_to_shard","shard_to_storage_addr","list_shards","rebalance_plan","apply_rebalance","total_shard_count","update_storage_host"]
+    },
+    {
+      "name": "CdcPublisherProvider",
+      "methods": 9,
+      "standard_compat": "Kafka-like topic+CG+offset",
+      "mock_impl": "MockCdcPublisherProvider",
+      "methods_detail": ["emit_vertex_created","emit_vertex_updated","emit_vertex_deleted","emit_edge_created","emit_edge_deleted","subscribe","list_topics","get_consumer_lag","commit_offset"]
+    }
+  ]
+}

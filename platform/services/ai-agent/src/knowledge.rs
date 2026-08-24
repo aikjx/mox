@@ -20,7 +20,10 @@ pub const OPERATOR_KEYWORDS: &[(&str, &[&str])] = &[
     ("softmax", &["softmax", "指数归一化", "分类", "概率分布"]),
     ("matmul", &["矩阵乘法", "matmul", "线性变换"]),
     ("conv2d", &["卷积", "conv", "CNN", "特征提取"]),
-    ("attention", &["注意力", "attention", "transformer", "自注意力"]),
+    (
+        "attention",
+        &["注意力", "attention", "transformer", "自注意力"],
+    ),
     ("adam", &["adam", "优化器", "训练", "梯度下降"]),
 ];
 
@@ -36,9 +39,26 @@ pub const OPERATOR_CATEGORY_KEYWORDS: &[(&str, &[&str])] = &[
 
 /// 全部已知算子（抽取用户消息中提及的算子）
 pub const ALL_OPERATORS: &[&str] = &[
-    "identity", "linear", "normalize", "normalize_l1", "relu", "sigmoid", "tanh",
-    "softmax", "scale", "add_bias", "matmul", "conv2d", "maxpool", "attention",
-    "self_attention", "cross_attention", "feedforward", "embedding", "adam", "sgd",
+    "identity",
+    "linear",
+    "normalize",
+    "normalize_l1",
+    "relu",
+    "sigmoid",
+    "tanh",
+    "softmax",
+    "scale",
+    "add_bias",
+    "matmul",
+    "conv2d",
+    "maxpool",
+    "attention",
+    "self_attention",
+    "cross_attention",
+    "feedforward",
+    "embedding",
+    "adam",
+    "sgd",
 ];
 
 /// 需求编译：动作动词 → 节点类型
@@ -61,8 +81,21 @@ pub const REQUIREMENT_ACTION_VERBS: &[(&str, NodeType)] = &[
 
 /// 需求编译：从一句话里识别的"实体名词" → 数据表候选
 pub const REQUIREMENT_ENTITY_NOUNS: &[&str] = &[
-    "商品", "用户", "订单", "购物车", "支付", "评论", "文章", "小说",
-    "论文", "图书", "视频", "产品", "库存", "会员", "日志",
+    "商品",
+    "用户",
+    "订单",
+    "购物车",
+    "支付",
+    "评论",
+    "文章",
+    "小说",
+    "论文",
+    "图书",
+    "视频",
+    "产品",
+    "库存",
+    "会员",
+    "日志",
 ];
 
 /// 需求编译：动作动词 → 实体别名（"下单"语义指向"订单"实体）
@@ -121,7 +154,10 @@ mod tests {
     fn dialogue_known_entities_have_unique_keys() {
         let mut seen = std::collections::HashSet::new();
         for (kw, _ty) in DIALOGUE_KNOWN_ENTITIES {
-            assert!(seen.insert(*kw), "DIALOGUE_KNOWN_ENTITIES 存在重复关键词: {kw}");
+            assert!(
+                seen.insert(*kw),
+                "DIALOGUE_KNOWN_ENTITIES 存在重复关键词: {kw}"
+            );
         }
         assert!(!DIALOGUE_KNOWN_ENTITIES.is_empty());
     }
@@ -133,4 +169,3 @@ mod tests {
         assert!(!REQUIREMENT_VERB_TO_ENTITY.is_empty());
     }
 }
-

@@ -91,7 +91,7 @@ async function runOperator(op) {
   } catch (e) {
     resultText.value = '该算子需要参数，请在「算子工坊」中选择并填入参数后再执行。'
     ElMessage.warning('已转入参数引导模式')
-    router.push({ name: 'operators' })
+    router.push({ path: '/operators' })
   }
 }
 

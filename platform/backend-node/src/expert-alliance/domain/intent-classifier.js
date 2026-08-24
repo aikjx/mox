@@ -34,9 +34,49 @@ function keywordMatches(text, keyword) {
 }
 
 /**
+ * [C3 单一真源 · 轻量映射表] 领域意图 → 统一编排能力（AIEC capability）。
+ * 图谱激活扩散与关键词打分共享此映射，确保 top-1 决策一致性（T8 对账约束）。
+ * 保持 domain 层零 IO：纯对象字面量，不引用引擎文件。
+ */
+const INTENT_TO_CAPABILITY = {
+  // AI-1 深度推理能力
+  'ai': 'reasoning',
+  'requirement': 'reasoning',
+  // AI-2 专家联盟协作能力
+  'fusion': 'expert',
+  'automation': 'expert',
+  'operator': 'expert',
+  'workflow': 'workflow',
+  // AI-3 图谱分析能力
+  'graph': 'graph',
+  'data': 'graph',
+  'performance': 'graph',
+  'monitor': 'graph',
+  'algorithm': 'graph',
+  'architecture': 'graph',
+  'security': 'graph',
+  'mcp': 'graph',
+  'market': 'graph',
+  // 其余（general/chat 等）→ chat 兜底
+};
+const CAPABILITY_DEFAULT = 'chat';
+
+/**
+ * 将领域意图映射为统一编排能力（单一真源映射）。
+ * @param {string} intent 领域意图（来自 intent-patterns）
+ * @returns {string} capability
+ */
+function toCapability(intent) {
+  if (!intent) return CAPABILITY_DEFAULT;
+  return INTENT_TO_CAPABILITY[intent] || CAPABILITY_DEFAULT;
+}
+
+/**
  * 检测问题文本的意图分布。
+ * 说明：返回中的 primary 是"领域意图"（intent-patterns 中的 intent 字段）。
+ * 若需要统一编排能力，请使用 `toCapability(result.primary)` 或调用 wrapper。
  * @param {string} question 用户问题
- * @returns {{primary:string, secondary:string[], confidence:number, matchedKeywords:string[], allScores:Object}}
+ * @returns {{primary:string, secondary:string[], confidence:number, matchedKeywords:string[], allScores:Object, capability:string}}
  */
 function detectIntent(question) {
   const text = (question || '').toLowerCase();
@@ -62,28 +102,81 @@ function detectIntent(question) {
     }
   }
 
-  const sorted = Object.entries(scores)
+  let sorted = Object.entries(scores)
     .sort((a, b) => b[1].score - a[1].score)
     .map(([intent, data]) => ({ intent, ...data }));
 
-  if (sorted.length === 0) {
-    return { primary: 'general', secondary: [], confidence: 0, matchedKeywords: [], allScores: {} };
+  // --- [T8 对账修复] 同义意图按 capability 归并，避免"ai=1"与"general=0"的漂移 ---
+  // 同一 capability 下多个 intent 的分数加总后再选 top capability，
+  // 然后在该 capability 内取分最高的领域 intent 作为 primary（保持原字段语义）。
+  const capBuckets = {}; // capability -> { total, intents: [{intent, score, matchedKeywords}] }
+  for (const s of sorted) {
+    const cap = toCapability(s.intent);
+    if (!capBuckets[cap]) capBuckets[cap] = { total: 0, intents: [] };
+    capBuckets[cap].total += s.score;
+    capBuckets[cap].intents.push(s);
+  }
+  const capRanking = Object.entries(capBuckets)
+    .sort((a, b) => b[1].total - a[1].total);
+
+  let primary = 'general';
+  let matchedKeywords = [];
+  if (capRanking.length > 0) {
+    const topCap = capRanking[0][0];
+    const topIntents = capBuckets[topCap].intents.sort((a, b) => b.score - a.score);
+    primary = topIntents[0].intent;
+    matchedKeywords = topIntents[0].matchedKeywords;
+    // 重排 sorted：按 bucket 总分 优先（保证 secondary 也符合 capability 层的决策顺序）
+    const capOrder = Object.fromEntries(capRanking.map(([cap], i) => [cap, i]));
+    sorted = sorted.slice().sort((a, b) => {
+      const ca = capOrder[toCapability(a.intent)] ?? 99;
+      const cb = capOrder[toCapability(b.intent)] ?? 99;
+      if (ca !== cb) return ca - cb;
+      return b.score - a.score;
+    });
   }
 
-  const topScore = sorted[0].score;
-  const runnerUpScore = sorted[1]?.score || 0;
-  // 置信度计算：top分与次高分的差距占比
+  if (sorted.length === 0) {
+    return {
+      primary: 'general',
+      secondary: [],
+      confidence: 0,
+      matchedKeywords: [],
+      allScores: {},
+      capability: CAPABILITY_DEFAULT,
+    };
+  }
+
+  const topScore = capRanking[0][1].total;
+  const runnerUpScore = capRanking[1]?.[1].total || 0;
   const confidence = runnerUpScore > 0
     ? Math.min(1, topScore / (topScore + runnerUpScore))
-    : Math.min(1, topScore / 3); // 无竞争时根据命中数计算
+    : Math.min(1, topScore / 3);
 
   return {
-    primary: sorted[0].intent,
+    primary,
     secondary: sorted.slice(1, 3).map(s => s.intent),
     confidence: Math.round(confidence * 100) / 100,
-    matchedKeywords: sorted[0].matchedKeywords,
-    allScores: Object.fromEntries(sorted.map(s => [s.intent, s.score]))
+    matchedKeywords,
+    allScores: Object.fromEntries(sorted.map(s => [s.intent, s.score])),
+    capability: toCapability(primary),
   };
 }
 
-module.exports = { detectIntent, keywordMatches };
+/**
+ * 轻量级公开 API：直接返回"统一能力"（capability），避免调用方各自映射。
+ * @param {string} question
+ * @returns {{capability:string, intent:string, confidence:number, matchedKeywords:string[], allScores:Object}}
+ */
+function intentClassify(question) {
+  const r = detectIntent(question);
+  return {
+    capability: r.capability,
+    intent: r.primary,
+    confidence: r.confidence,
+    matchedKeywords: r.matchedKeywords,
+    allScores: r.allScores,
+  };
+}
+
+module.exports = { detectIntent, keywordMatches, intentClassify, toCapability, INTENT_TO_CAPABILITY };

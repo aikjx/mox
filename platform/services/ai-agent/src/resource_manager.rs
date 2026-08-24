@@ -4,11 +4,11 @@
 //! 实现资源分配、回收、监控、调度和配额管理
 
 use super::types::*;
-use operator_core::{Result, OperatorError};
+use chrono::Utc;
+use operator_core::{OperatorError, Result};
 use std::collections::HashMap;
 use tracing;
 use uuid::Uuid;
-use chrono::Utc;
 
 /// 全资源管理器 - 统一资源调度核心
 pub struct ResourceManager {
@@ -86,8 +86,19 @@ impl ResourceManager {
     }
 
     /// 分配资源
-    pub fn allocate(&mut self, owner_id: &str, owner_type: &str, resource_type: ResourceType, amount: f64) -> Result<ResourceAllocation> {
-        tracing::debug!("分配资源: owner={}, type={:?}, amount={}", owner_id, resource_type, amount);
+    pub fn allocate(
+        &mut self,
+        owner_id: &str,
+        owner_type: &str,
+        resource_type: ResourceType,
+        amount: f64,
+    ) -> Result<ResourceAllocation> {
+        tracing::debug!(
+            "分配资源: owner={}, type={:?}, amount={}",
+            owner_id,
+            resource_type,
+            amount
+        );
 
         let current_used = self.calculate_usage(&resource_type);
         let limit = self.limits.get(&resource_type).copied().unwrap_or(f64::MAX);
@@ -142,12 +153,7 @@ impl ResourceManager {
     /// 注册插件
     pub fn register_plugin(&mut self, plugin: PluginInfo) -> Result<()> {
         // 分配插件资源
-        self.allocate(
-            &plugin.id,
-            "plugin",
-            ResourceType::Plugin,
-            1.0,
-        )?;
+        self.allocate(&plugin.id, "plugin", ResourceType::Plugin, 1.0)?;
 
         // 分配内存资源给插件
         self.allocate(
@@ -158,7 +164,10 @@ impl ResourceManager {
         )?;
 
         self.registered_plugins.insert(plugin.id.clone(), plugin);
-        tracing::info!("插件注册成功，当前插件数: {}", self.registered_plugins.len());
+        tracing::info!(
+            "插件注册成功，当前插件数: {}",
+            self.registered_plugins.len()
+        );
         Ok(())
     }
 
@@ -170,7 +179,9 @@ impl ResourceManager {
 
     /// 缓存算子
     pub fn cache_operator(&mut self, operator_id: &str, memory_footprint: u64) -> Result<()> {
-        if self.operator_cache.len() as f64 >= *self.totals.get(&ResourceType::Operator).unwrap_or(&256.0) {
+        if self.operator_cache.len() as f64
+            >= *self.totals.get(&ResourceType::Operator).unwrap_or(&256.0)
+        {
             // LRU淘汰
             self.evict_lru_operator();
         }
@@ -183,13 +194,16 @@ impl ResourceManager {
         )?;
 
         let now = Utc::now();
-        self.operator_cache.insert(operator_id.to_string(), CachedOperator {
-            operator_id: operator_id.to_string(),
-            loaded_at: now,
-            last_used: now,
-            usage_count: 0,
-            memory_footprint,
-        });
+        self.operator_cache.insert(
+            operator_id.to_string(),
+            CachedOperator {
+                operator_id: operator_id.to_string(),
+                loaded_at: now,
+                last_used: now,
+                usage_count: 0,
+                memory_footprint,
+            },
+        );
 
         Ok(())
     }
@@ -204,7 +218,9 @@ impl ResourceManager {
 
     /// LRU淘汰算子
     fn evict_lru_operator(&mut self) {
-        if let Some(lru_id) = self.operator_cache.values()
+        if let Some(lru_id) = self
+            .operator_cache
+            .values()
             .min_by_key(|c| c.last_used)
             .map(|c| c.operator_id.clone())
         {
@@ -216,7 +232,9 @@ impl ResourceManager {
 
     /// 开始工作流
     pub fn start_workflow(&mut self, workflow_id: &str) -> Result<()> {
-        if self.active_workflows.len() as f64 >= *self.totals.get(&ResourceType::Workflow).unwrap_or(&32.0) {
+        if self.active_workflows.len() as f64
+            >= *self.totals.get(&ResourceType::Workflow).unwrap_or(&32.0)
+        {
             return Err(OperatorError::ResourceExhausted {
                 required: "Workflow slot".to_string(),
                 available: "0".to_string(),
@@ -225,14 +243,21 @@ impl ResourceManager {
 
         self.allocate(workflow_id, "workflow", ResourceType::Workflow, 1.0)?;
 
-        self.active_workflows.insert(workflow_id.to_string(), WorkflowContext {
-            workflow_id: workflow_id.to_string(),
-            started_at: Utc::now(),
-            resources_held: Vec::new(),
-            status: "running".to_string(),
-        });
+        self.active_workflows.insert(
+            workflow_id.to_string(),
+            WorkflowContext {
+                workflow_id: workflow_id.to_string(),
+                started_at: Utc::now(),
+                resources_held: Vec::new(),
+                status: "running".to_string(),
+            },
+        );
 
-        tracing::info!("工作流启动: {}, 当前活动数: {}", workflow_id, self.active_workflows.len());
+        tracing::info!(
+            "工作流启动: {}, 当前活动数: {}",
+            workflow_id,
+            self.active_workflows.len()
+        );
         Ok(())
     }
 
@@ -240,7 +265,11 @@ impl ResourceManager {
     pub fn end_workflow(&mut self, workflow_id: &str) {
         self.release_all_owner(workflow_id);
         self.active_workflows.remove(workflow_id);
-        tracing::info!("工作流结束: {}, 当前活动数: {}", workflow_id, self.active_workflows.len());
+        tracing::info!(
+            "工作流结束: {}, 当前活动数: {}",
+            workflow_id,
+            self.active_workflows.len()
+        );
     }
 
     /// 获取资源全景
@@ -249,17 +278,26 @@ impl ResourceManager {
 
         for (rt, total) in &self.totals {
             let used = self.calculate_usage(rt);
-            resources.insert(format!("{:?}", rt), ResourceUsageStats {
-                resource_type: rt.clone(),
-                total: *total,
-                used,
-                available: total - used,
-                utilization_percent: if *total > 0.0 { used / total * 100.0 } else { 0.0 },
-                allocations: self.allocations.iter()
-                    .filter(|a| a.resource_type == *rt)
-                    .cloned()
-                    .collect(),
-            });
+            resources.insert(
+                format!("{:?}", rt),
+                ResourceUsageStats {
+                    resource_type: rt.clone(),
+                    total: *total,
+                    used,
+                    available: total - used,
+                    utilization_percent: if *total > 0.0 {
+                        used / total * 100.0
+                    } else {
+                        0.0
+                    },
+                    allocations: self
+                        .allocations
+                        .iter()
+                        .filter(|a| a.resource_type == *rt)
+                        .cloned()
+                        .collect(),
+                },
+            );
         }
 
         ResourcePanorama {
@@ -274,7 +312,8 @@ impl ResourceManager {
 
     /// 计算资源使用量
     fn calculate_usage(&self, resource_type: &ResourceType) -> f64 {
-        self.allocations.iter()
+        self.allocations
+            .iter()
             .filter(|a| a.resource_type == *resource_type)
             .map(|a| a.amount)
             .sum()
@@ -298,7 +337,12 @@ impl ResourceManager {
 
     /// 获取资源使用历史
     pub fn get_usage_history(&self, limit: usize) -> Vec<ResourceUsageSnapshot> {
-        self.usage_history.iter().rev().take(limit).cloned().collect()
+        self.usage_history
+            .iter()
+            .rev()
+            .take(limit)
+            .cloned()
+            .collect()
     }
 
     /// 检查资源健康状态
@@ -311,9 +355,17 @@ impl ResourceManager {
             let utilization = if *total > 0.0 { used / total } else { 0.0 };
 
             if utilization > 0.95 {
-                critical.push(format!("{:?} 资源严重不足: {:.1}%", rt, utilization * 100.0));
+                critical.push(format!(
+                    "{:?} 资源严重不足: {:.1}%",
+                    rt,
+                    utilization * 100.0
+                ));
             } else if utilization > 0.8 {
-                warnings.push(format!("{:?} 资源使用较高: {:.1}%", rt, utilization * 100.0));
+                warnings.push(format!(
+                    "{:?} 资源使用较高: {:.1}%",
+                    rt,
+                    utilization * 100.0
+                ));
             }
         }
 
@@ -321,7 +373,9 @@ impl ResourceManager {
         let stale_timeout = chrono::Duration::minutes(30);
         for (wf_id, ctx) in &self.active_workflows {
             let _ = wf_id; // key 即 id；字段本身用于状态审计
-            if ctx.status == "running" && Utc::now().signed_duration_since(ctx.started_at) > stale_timeout {
+            if ctx.status == "running"
+                && Utc::now().signed_duration_since(ctx.started_at) > stale_timeout
+            {
                 warnings.push(format!(
                     "僵尸工作流: {} 已运行超过 30 分钟（持有 {} 项资源）",
                     ctx.workflow_id,
@@ -335,16 +389,24 @@ impl ResourceManager {
         let stale_cache = chrono::Duration::hours(24);
         for (op_id, cached) in &self.operator_cache {
             let idle = Utc::now().signed_duration_since(cached.last_used);
-            if Utc::now().signed_duration_since(cached.loaded_at) > stale_cache && idle > stale_cache {
+            if Utc::now().signed_duration_since(cached.loaded_at) > stale_cache
+                && idle > stale_cache
+            {
                 tracing::warn!(
                     "缓存算子 {} 已加载超 24h 且闲置（loaded_at={}, last_used={}），建议重载",
-                    op_id, cached.loaded_at, cached.last_used
+                    op_id,
+                    cached.loaded_at,
+                    cached.last_used
                 );
             }
         }
 
         // 缓存算子内存审计：汇总 loaded 算子的 memory_footprint（消费 CachedOperator 字段）
-        let cached_mem_bytes: u64 = self.operator_cache.values().map(|c| c.memory_footprint).sum();
+        let cached_mem_bytes: u64 = self
+            .operator_cache
+            .values()
+            .map(|c| c.memory_footprint)
+            .sum();
         if cached_mem_bytes > 256 * 1024 * 1024 {
             warnings.push(format!(
                 "算子缓存内存占用偏高: {:.1} MB（{} 个缓存算子）",

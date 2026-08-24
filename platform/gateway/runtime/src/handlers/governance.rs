@@ -1,4 +1,4 @@
-﻿//! # 治理台核心 Handlers
+//! # 治理台核心 Handlers
 //!
 //! 提供 OUS 前端治理台的所有 REST API 处理器：
 //!
@@ -10,21 +10,21 @@
 
 use crate::api_standard::ApiResult;
 use axum::{
-    extract::{Query, State},
     extract::ws::WebSocketUpgrade,
+    extract::{Query, State},
     response::IntoResponse,
     Json,
 };
-use xuanji_expert::context::{GovernContext, Principal, Tenant};
-use xuanji_expert::govern::{AuditChain, AuditEvent, FlowStatus, GateResult};
-use futures_util::SinkExt;
 use flow_ai::model::FlowGraph;
+use futures_util::SinkExt;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::{broadcast, Mutex, RwLock};
+use xuanji_expert::context::{GovernContext, Principal, Tenant};
+use xuanji_expert::govern::{AuditChain, AuditEvent, FlowStatus, GateResult};
 
 // ============================================================================
 // 治理台共享状态
@@ -98,28 +98,50 @@ impl GovernanceState {
         let mut states = self.expert_states.write().await;
         if states.is_empty() {
             // 业务七维
-            for dim in &["business", "algorithm", "permission", "resource", "security", "data", "observability"] {
-                states.insert(dim.to_string(), ExpertStatus {
-                    expert_id: dim.to_string(),
-                    dimension: dim.to_string(),
-                    health_score: 1.0,
-                    enabled: true,
-                    last_updated: unix_ts(),
-                    veto_count: 0,
-                    total_checks: 0,
-                });
+            for dim in &[
+                "business",
+                "algorithm",
+                "permission",
+                "resource",
+                "security",
+                "data",
+                "observability",
+            ] {
+                states.insert(
+                    dim.to_string(),
+                    ExpertStatus {
+                        expert_id: dim.to_string(),
+                        dimension: dim.to_string(),
+                        health_score: 1.0,
+                        enabled: true,
+                        last_updated: unix_ts(),
+                        veto_count: 0,
+                        total_checks: 0,
+                    },
+                );
             }
             // 开发七维
-            for dim in &["api_compat", "performance", "maintainability", "testing", "style", "cost", "sensitive"] {
-                states.insert(dim.to_string(), ExpertStatus {
-                    expert_id: dim.to_string(),
-                    dimension: dim.to_string(),
-                    health_score: 1.0,
-                    enabled: true,
-                    last_updated: unix_ts(),
-                    veto_count: 0,
-                    total_checks: 0,
-                });
+            for dim in &[
+                "api_compat",
+                "performance",
+                "maintainability",
+                "testing",
+                "style",
+                "cost",
+                "sensitive",
+            ] {
+                states.insert(
+                    dim.to_string(),
+                    ExpertStatus {
+                        expert_id: dim.to_string(),
+                        dimension: dim.to_string(),
+                        health_score: 1.0,
+                        enabled: true,
+                        last_updated: unix_ts(),
+                        veto_count: 0,
+                        total_checks: 0,
+                    },
+                );
             }
         }
     }
@@ -287,9 +309,7 @@ impl Default for RbacConfig {
             roles: vec![
                 RolePermission {
                     role: "admin".to_string(),
-                    permissions: vec![
-                        "*".to_string(),
-                    ],
+                    permissions: vec!["*".to_string()],
                     description: "超级管理员，拥有所有权限".to_string(),
                 },
                 RolePermission {
@@ -319,9 +339,7 @@ impl Default for RbacConfig {
                 },
                 RolePermission {
                     role: "viewer".to_string(),
-                    permissions: vec![
-                        "governance:read".to_string(),
-                    ],
+                    permissions: vec!["governance:read".to_string()],
                     description: "只读用户".to_string(),
                 },
             ],
@@ -352,11 +370,27 @@ pub struct ExpertThresholds {
 impl Default for ExpertConfig {
     fn default() -> Self {
         let mut business = HashMap::new();
-        for dim in &["business", "algorithm", "permission", "resource", "security", "data", "observability"] {
+        for dim in &[
+            "business",
+            "algorithm",
+            "permission",
+            "resource",
+            "security",
+            "data",
+            "observability",
+        ] {
             business.insert(dim.to_string(), 1.0);
         }
         let mut dev = HashMap::new();
-        for dim in &["api_compat", "performance", "maintainability", "testing", "style", "cost", "sensitive"] {
+        for dim in &[
+            "api_compat",
+            "performance",
+            "maintainability",
+            "testing",
+            "style",
+            "cost",
+            "sensitive",
+        ] {
             dev.insert(dim.to_string(), 1.0);
         }
         Self {
@@ -421,31 +455,50 @@ pub async fn dashboard_handler(
         0.0
     };
     // 最近10条否决事件
-    let recent: Vec<VetoEvent> = veto_events
-        .iter()
-        .rev()
-        .take(10)
-        .cloned()
-        .collect();
+    let recent: Vec<VetoEvent> = veto_events.iter().rev().take(10).cloned().collect();
     drop(veto_events);
 
     let expert_states = gs.expert_states.read().await;
-    let business_dims = ["business", "algorithm", "permission", "resource", "security", "data", "observability"];
-    let dev_dims = ["api_compat", "performance", "maintainability", "testing", "style", "cost", "sensitive"];
+    let business_dims = [
+        "business",
+        "algorithm",
+        "permission",
+        "resource",
+        "security",
+        "data",
+        "observability",
+    ];
+    let dev_dims = [
+        "api_compat",
+        "performance",
+        "maintainability",
+        "testing",
+        "style",
+        "cost",
+        "sensitive",
+    ];
 
     let business_health = if !expert_states.is_empty() {
-        business_dims.iter()
+        business_dims
+            .iter()
             .filter_map(|d| expert_states.get(*d))
             .map(|s| s.health_score)
-            .sum::<f64>() / 7.0
-    } else { 1.0 };
+            .sum::<f64>()
+            / 7.0
+    } else {
+        1.0
+    };
 
     let dev_health = if !expert_states.is_empty() {
-        dev_dims.iter()
+        dev_dims
+            .iter()
             .filter_map(|d| expert_states.get(*d))
             .map(|s| s.health_score)
-            .sum::<f64>() / 7.0
-    } else { 1.0 };
+            .sum::<f64>()
+            / 7.0
+    } else {
+        1.0
+    };
 
     // 统计各状态流程数（从否决事件中推断）
     let approved_flows = recent.len().saturating_sub(blocked);
@@ -481,23 +534,42 @@ pub async fn experts_status_handler(
 ) -> ApiResult<Json<Value>> {
     let states = gs.expert_states.read().await;
 
-    let business_league = ["business", "algorithm", "permission", "resource", "security", "data", "observability"];
-    let dev_league = ["api_compat", "performance", "maintainability", "testing", "style", "cost", "sensitive"];
+    let business_league = [
+        "business",
+        "algorithm",
+        "permission",
+        "resource",
+        "security",
+        "data",
+        "observability",
+    ];
+    let dev_league = [
+        "api_compat",
+        "performance",
+        "maintainability",
+        "testing",
+        "style",
+        "cost",
+        "sensitive",
+    ];
 
-    let business: Vec<&ExpertStatus> = business_league.iter()
+    let business: Vec<&ExpertStatus> = business_league
+        .iter()
         .filter_map(|d| states.get(*d))
         .collect();
-    let dev: Vec<&ExpertStatus> = dev_league.iter()
-        .filter_map(|d| states.get(*d))
-        .collect();
+    let dev: Vec<&ExpertStatus> = dev_league.iter().filter_map(|d| states.get(*d)).collect();
 
     let avg_business = if !business.is_empty() {
         business.iter().map(|s| s.health_score).sum::<f64>() / business.len() as f64
-    } else { 0.0 };
+    } else {
+        0.0
+    };
 
     let avg_dev = if !dev.is_empty() {
         dev.iter().map(|s| s.health_score).sum::<f64>() / dev.len() as f64
-    } else { 0.0 };
+    } else {
+        0.0
+    };
 
     Ok(Json(serde_json::json!({
         "timestamp": unix_ts(),
@@ -681,7 +753,8 @@ pub async fn update_rbac_config_handler(
         "rbac",
         "update_rbac",
         &format!("version={}", new_version),
-    ).await;
+    )
+    .await;
 
     let config = gs.rbac_config.read().await;
     Ok(Json(serde_json::json!({
@@ -744,7 +817,8 @@ pub async fn update_expert_config_handler(
         "expert-config",
         "update_expert_config",
         &format!("version={}", new_version),
-    ).await;
+    )
+    .await;
 
     // 广播专家配置变化（触发前端刷新）
     let change = ExpertStatusChange {
@@ -795,11 +869,16 @@ pub async fn governance_ws_handler(
         // 发送连接成功消息
         {
             let mut w = write.lock().await;
-            let _ = w.send(Message::Text(serde_json::json!({
-                "type": "connected",
-                "timestamp": unix_ts(),
-                "message": "治理台实时推送已连接"
-            }).to_string())).await;
+            let _ = w
+                .send(Message::Text(
+                    serde_json::json!({
+                        "type": "connected",
+                        "timestamp": unix_ts(),
+                        "message": "治理台实时推送已连接"
+                    })
+                    .to_string(),
+                ))
+                .await;
         }
 
         // 启动广播接收任务（监听否决事件 + 专家状态变化）
@@ -815,10 +894,13 @@ pub async fn governance_ws_handler(
                 loop {
                     match rx.recv().await {
                         Ok(event) => {
-                            let msg = Message::Text(serde_json::json!({
-                                "type": "veto_event",
-                                "data": event,
-                            }).to_string());
+                            let msg = Message::Text(
+                                serde_json::json!({
+                                    "type": "veto_event",
+                                    "data": event,
+                                })
+                                .to_string(),
+                            );
                             // 每次发送前短时持锁（避免跨 await 长期占用写半部，阻塞其他发送者）
                             let mut w = w_veto.lock().await;
                             let _ = w.send(msg).await;
@@ -838,10 +920,13 @@ pub async fn governance_ws_handler(
                 loop {
                     match rx.recv().await {
                         Ok(change) => {
-                            let msg = Message::Text(serde_json::json!({
-                                "type": "expert_status_change",
-                                "data": change,
-                            }).to_string());
+                            let msg = Message::Text(
+                                serde_json::json!({
+                                    "type": "expert_status_change",
+                                    "data": change,
+                                })
+                                .to_string(),
+                            );
                             let mut w = w_state.lock().await;
                             let _ = w.send(msg).await;
                             drop(w);
@@ -918,7 +1003,11 @@ pub async fn trigger_governance(
             expert_id: dim.clone(),
             dimension: dim.clone(),
             reason: format!("专家 {} 健康分 {} 低于阈值 0.5", dim, score),
-            severity: if *score < 0.3 { "critical".to_string() } else { "warning".to_string() },
+            severity: if *score < 0.3 {
+                "critical".to_string()
+            } else {
+                "warning".to_string()
+            },
             ts: unix_ts(),
             blocked: gate.algorithm_veto || gate.status == FlowStatus::Blocked,
             gate_result: Some(GateResultDto::from(gate)),
@@ -947,20 +1036,30 @@ pub async fn trigger_governance(
     }
 
     // 写入审计链
-    let decision = if gate.approved {
-        "approved"
-    } else {
-        "blocked"
-    };
-    let audit_ev = gs.append_audit("governance-api", flow_id, "xuanji_optimize", decision).await;
+    let decision = if gate.approved { "approved" } else { "blocked" };
+    let audit_ev = gs
+        .append_audit("governance-api", flow_id, "xuanji_optimize", decision)
+        .await;
     let _ = audit_ev;
 
     // 构造摘要：将双璇玑专家健康分映射到摘要
     let business_dims = [
-        "business", "algorithm", "permission", "resource", "security", "data", "observability",
+        "business",
+        "algorithm",
+        "permission",
+        "resource",
+        "security",
+        "data",
+        "observability",
     ];
     let dev_dims = [
-        "api_compat", "performance", "maintainability", "testing", "style", "cost", "sensitive",
+        "api_compat",
+        "performance",
+        "maintainability",
+        "testing",
+        "style",
+        "cost",
+        "sensitive",
     ];
 
     let mut business_scores: HashMap<String, f64> = HashMap::new();
@@ -981,8 +1080,16 @@ pub async fn trigger_governance(
         }
     }
 
-    let business_league_score = if business_cnt > 0 { business_sum / business_cnt as f64 } else { 0.0 };
-    let dev_league_score = if dev_cnt > 0 { dev_sum / dev_cnt as f64 } else { 0.0 };
+    let business_league_score = if business_cnt > 0 {
+        business_sum / business_cnt as f64
+    } else {
+        0.0
+    };
+    let dev_league_score = if dev_cnt > 0 {
+        dev_sum / dev_cnt as f64
+    } else {
+        0.0
+    };
 
     GovernanceReportSummary {
         flow_id: flow_id.to_string(),

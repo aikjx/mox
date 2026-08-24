@@ -1,4 +1,4 @@
-﻿//! 端到端会话级集成测试：模拟 Hermes 多轮工具调用，走完整 bridge 链路。
+//! 端到端会话级集成测试：模拟 Hermes 多轮工具调用，走完整 bridge 链路。
 //!
 //! 覆盖：录制→复用路由→后台优化(xuanji_optimize)→算法网关；以及否决拦截接线。
 //! 这是「真实 Hermes 会话」的投影，不依赖 Hermes 源码编译（hook 只认最小投影）。
@@ -12,8 +12,20 @@ use serde_json::json;
 /// 模拟 Hermes 一个会话里跨多轮的工具调用序列（含脱敏 PII 政务流程）。
 fn simulate_session(st: &BridgeState, session: &str) {
     // 回合 1：读库 + 脱敏
-    on_tool_request(st, session, "db.read", &json!({"query":"select * from citizen_info"}), 1);
-    on_tool_request(st, session, "guard.desensitize", &json!({"var":"citizen"}), 1);
+    on_tool_request(
+        st,
+        session,
+        "db.read",
+        &json!({"query":"select * from citizen_info"}),
+        1,
+    );
+    on_tool_request(
+        st,
+        session,
+        "guard.desensitize",
+        &json!({"var":"citizen"}),
+        1,
+    );
     // 回合 2：浏览器填报 + 汇总
     on_tool_request(st, session, "web1.submit", &json!({}), 2);
     on_tool_request(st, session, "merge.report", &json!({}), 2);
@@ -90,7 +102,13 @@ fn execution_middleware_blocks_when_algorithm_vetoes() {
 fn full_chain_session_then_optimize_then_route_free() {
     let st = BridgeState::new();
     // 1) Hermes 真实调用逐轮录制
-    on_tool_request(&st, "s4", "db.read", &json!({"query":"select * from citizen_info"}), 1);
+    on_tool_request(
+        &st,
+        "s4",
+        "db.read",
+        &json!({"query":"select * from citizen_info"}),
+        1,
+    );
     on_tool_request(&st, "s4", "guard.desensitize", &json!({"var":"citizen"}), 1);
     on_tool_request(&st, "s4", "web1.submit", &json!({}), 2);
     on_tool_request(&st, "s4", "merge.report", &json!({}), 2);

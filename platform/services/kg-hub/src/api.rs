@@ -43,10 +43,18 @@ pub struct ApiResp<T> {
 
 impl<T> ApiResp<T> {
     pub fn ok(data: T) -> Json<Self> {
-        Json(Self { ok: true, data: Some(data), error: None })
+        Json(Self {
+            ok: true,
+            data: Some(data),
+            error: None,
+        })
     }
     pub fn err(msg: impl Into<String>) -> Json<Self> {
-        Json(Self { ok: false, data: None, error: Some(msg.into()) })
+        Json(Self {
+            ok: false,
+            data: None,
+            error: Some(msg.into()),
+        })
     }
 }
 
@@ -223,7 +231,10 @@ async fn ingest_kb(
     State(h): State<SharedHub>,
     Json(req): Json<IngestKbReq>,
 ) -> (StatusCode, Json<ApiResp<crate::IngestStat>>) {
-    let conn = KnowledgeBaseConnector { source: req.source, items: req.items };
+    let conn = KnowledgeBaseConnector {
+        source: req.source,
+        items: req.items,
+    };
     match h.write().await.ingest(&conn) {
         Ok(st) => (StatusCode::OK, ApiResp::ok(st)),
         Err(e) => (StatusCode::BAD_REQUEST, ApiResp::err(e.to_string())),
@@ -254,7 +265,11 @@ async fn run_loop(State(h): State<SharedHub>) -> Json<ApiResp<LoopResp>> {
         decision_reason: format!(
             "闸门{} / 偏离{}",
             if gov.gate.passed { "通过" } else { "失败" },
-            if gov.deviation.passed { "通过" } else { "失败" }
+            if gov.deviation.passed {
+                "通过"
+            } else {
+                "失败"
+            }
         ),
         persisted: decision != crate::Decision::Reject,
         node_count: gov.node_count,
@@ -304,8 +319,14 @@ mod tests {
     #[tokio::test]
     async fn ingest_handler_rejects_empty_payload() {
         let h = shared(KgHub::new("default"));
-        let (code, Json(r)) =
-            ingest_info_graph(State(h), Json(IngestGraphReq { graph_json: None, path: None })).await;
+        let (code, Json(r)) = ingest_info_graph(
+            State(h),
+            Json(IngestGraphReq {
+                graph_json: None,
+                path: None,
+            }),
+        )
+        .await;
         assert_eq!(code, StatusCode::BAD_REQUEST);
         assert!(!r.ok);
         assert!(r.error.unwrap().contains("graph_json"));
@@ -316,7 +337,10 @@ mod tests {
         let h = shared(KgHub::new("default"));
         let (code, Json(r)) = ingest_info_graph(
             State(h.clone()),
-            Json(IngestGraphReq { graph_json: Some(sample().into()), path: None }),
+            Json(IngestGraphReq {
+                graph_json: Some(sample().into()),
+                path: None,
+            }),
         )
         .await;
         assert_eq!(code, StatusCode::OK);
@@ -329,7 +353,10 @@ mod tests {
         let h = shared(KgHub::new("default"));
         let (code, Json(r)) = ingest_info_graph(
             State(h),
-            Json(IngestGraphReq { graph_json: Some("{oops".into()), path: None }),
+            Json(IngestGraphReq {
+                graph_json: Some("{oops".into()),
+                path: None,
+            }),
         )
         .await;
         assert_eq!(code, StatusCode::BAD_REQUEST);
@@ -342,7 +369,11 @@ mod tests {
         hub.ingest(&InfoGraphConnector::from_str(sample())).unwrap();
         let Json(r) = quick_search(
             State(shared(hub)),
-            Query(QuickQ { q: "a.rs".into(), top_k: Some(5), hops: Some(1) }),
+            Query(QuickQ {
+                q: "a.rs".into(),
+                top_k: Some(5),
+                hops: Some(1),
+            }),
         )
         .await;
         assert!(r.ok);

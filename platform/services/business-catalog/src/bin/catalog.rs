@@ -42,7 +42,10 @@ fn main() {
         let (summary, vetoed, score) = summarize(&rep);
 
         if vetoed {
-            report_lines.push(format!("       └ ⛨ 否决（score={:.2}）: {}", score, summary));
+            report_lines.push(format!(
+                "       └ ⛨ 否决（score={:.2}）: {}",
+                score, summary
+            ));
         }
         topo.ingest_flow(&flow); // 把该业务汇入共享六维关系网
         report_lines.push(format!(
@@ -104,10 +107,7 @@ fn main() {
     // ── 4. 级联影响分析（改一节点，全链路同步）──
     println!("\n【四】级联影响：修改脱敏节点 → 哪些实体需同步更新");
     let impact = topo.impact_of("flow:gov-pii:guard");
-    println!(
-        "  改动 flow:gov-pii:guard 影响 {} 个实体：",
-        impact.total
-    );
+    println!("  改动 flow:gov-pii:guard 影响 {} 个实体：", impact.total);
     for (k, v) in &impact.affected {
         println!("    {}: {}", k, v.join(", "));
     }

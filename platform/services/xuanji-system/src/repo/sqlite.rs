@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use rusqlite::{Connection, params};
+use rusqlite::{params, Connection};
 
 use crate::model::*;
 use crate::rbac::RoleBinding;
@@ -20,11 +20,14 @@ impl SqliteRepository {
     pub fn open(path: &str) -> Result<Self, String> {
         if let Some(parent) = std::path::Path::new(path).parent() {
             if !parent.as_os_str().is_empty() {
-                std::fs::create_dir_all(parent).map_err(|e| format!("无法创建数据目录 {:?}: {}", parent, e))?;
+                std::fs::create_dir_all(parent)
+                    .map_err(|e| format!("无法创建数据目录 {:?}: {}", parent, e))?;
             }
         }
         let conn = Connection::open(path).map_err(|e| format!("SQLite 打开失败: {}", e))?;
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 
     fn exec<P: rusqlite::Params>(&self, sql: &str, p: P) {
@@ -57,7 +60,10 @@ impl SqliteRepository {
 #[async_trait::async_trait]
 impl Repository for SqliteRepository {
     async fn migrate(&self) -> Result<(), String> {
-        let conn = self.conn.lock().map_err(|_| "sqlite 连接锁 poisoned".to_string())?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| "sqlite 连接锁 poisoned".to_string())?;
         // 委托给方言层生成建表 SQL（当前后端为 Sqlite）
         for sql in crate::repo::schema::create_tables_sql(crate::config::Backend::Sqlite) {
             conn.execute_batch(&sql)
@@ -85,7 +91,11 @@ impl Repository for SqliteRepository {
         Self::load_into(&conn, &mut st.tasks, "SELECT data FROM tasks");
         Self::load_into(&conn, &mut st.channels, "SELECT data FROM channels");
         Self::load_into(&conn, &mut st.messages, "SELECT data FROM messages");
-        Self::load_into(&conn, &mut st.notifications, "SELECT data FROM notifications");
+        Self::load_into(
+            &conn,
+            &mut st.notifications,
+            "SELECT data FROM notifications",
+        );
 
         if let Ok(mut stmt) = conn.prepare("SELECT member_id, data FROM bindings") {
             if let Ok(rows) =
@@ -128,37 +138,60 @@ impl Repository for SqliteRepository {
     async fn persist_member(&self, m: &Member) {
         self.exec(
             "INSERT OR REPLACE INTO members (id, xuanji_id, data) VALUES (?1, ?2, ?3)",
-            params![m.id, m.xuanji_id, serde_json::to_string(m).unwrap_or_default()],
+            params![
+                m.id,
+                m.xuanji_id,
+                serde_json::to_string(m).unwrap_or_default()
+            ],
         );
     }
     async fn persist_task(&self, t: &Task) {
         self.exec(
             "INSERT OR REPLACE INTO tasks (id, xuanji_id, data) VALUES (?1, ?2, ?3)",
-            params![t.id, t.xuanji_id, serde_json::to_string(t).unwrap_or_default()],
+            params![
+                t.id,
+                t.xuanji_id,
+                serde_json::to_string(t).unwrap_or_default()
+            ],
         );
     }
     async fn persist_channel(&self, c: &Channel) {
         self.exec(
             "INSERT OR REPLACE INTO channels (id, xuanji_id, data) VALUES (?1, ?2, ?3)",
-            params![c.id, c.xuanji_id, serde_json::to_string(c).unwrap_or_default()],
+            params![
+                c.id,
+                c.xuanji_id,
+                serde_json::to_string(c).unwrap_or_default()
+            ],
         );
     }
     async fn persist_message(&self, m: &Message) {
         self.exec(
             "INSERT OR REPLACE INTO messages (id, channel_id, data) VALUES (?1, ?2, ?3)",
-            params![m.id, m.channel_id, serde_json::to_string(m).unwrap_or_default()],
+            params![
+                m.id,
+                m.channel_id,
+                serde_json::to_string(m).unwrap_or_default()
+            ],
         );
     }
     async fn persist_notification(&self, n: &Notification) {
         self.exec(
             "INSERT OR REPLACE INTO notifications (id, member_id, data) VALUES (?1, ?2, ?3)",
-            params![n.id, n.member_id, serde_json::to_string(n).unwrap_or_default()],
+            params![
+                n.id,
+                n.member_id,
+                serde_json::to_string(n).unwrap_or_default()
+            ],
         );
     }
     async fn persist_bindings(&self, member_id: &str, bindings: &[RoleBinding]) {
         self.exec(
             "INSERT OR REPLACE INTO bindings (member_id, data) VALUES (?1, ?2)",
-            params![member_id, serde_json::to_string(bindings).unwrap_or_default()],
+            params![
+                member_id,
+                serde_json::to_string(bindings).unwrap_or_default()
+            ],
         );
     }
     async fn persist_token(&self, hash: &str, member_id: &str) {

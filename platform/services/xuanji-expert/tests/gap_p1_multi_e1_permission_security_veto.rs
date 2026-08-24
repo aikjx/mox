@@ -1,4 +1,4 @@
-﻿//! 缺口 P1.1 —— Multi-expert 交互测试（Permission + Security 双专家同时触发 veto）
+//! 缺口 P1.1 —— Multi-expert 交互测试（Permission + Security 双专家同时触发 veto）
 //!
 //! 目的：验证当同一份流程图同时违反「权限专家的生产/敏感数据越权写」与
 //! 「安全专家的强合规租户 PII 外发」时，两位专家**独立**给出各自最强反对意见，
@@ -11,12 +11,12 @@
 //! （说明当前 Security 的阻断级风险走的是「记录」语义，只有 push_veto 才是硬否决入口——
 //! 这正是多专家正交机制的设计意图：任何专家想强制否决，只需 push_veto）。
 
+use flow_ai::model::{Access, AccessMode, FlowEdge, FlowGraph, FlowNode, NodeKind, ToolKind};
 use xuanji_expert::context::{GovernContext, Principal, Tenant};
 use xuanji_expert::expert::dispatch;
 use xuanji_expert::experts::all_experts;
 use xuanji_expert::govern::FlowStatus;
 use xuanji_expert::pipeline::xuanji_optimize;
-use flow_ai::model::{Access, AccessMode, FlowEdge, FlowGraph, FlowNode, NodeKind, ToolKind};
 
 /// 有 edit-flow 权限的主体（专家才会真正分析，否则直接 skip）
 fn editor_ctx(regulated: bool) -> GovernContext {
@@ -85,18 +85,28 @@ fn dual_violation_both_experts_object_and_flow_blocked() {
     let ectx = xuanji_expert::context::ExpertContext::new(&g, &ctx);
     let opinions = dispatch(&ectx, &all_experts());
 
-    let perm = opinions.iter().find(|o| o.expert == "permission").expect("应有 permission 专家");
-    let sec = opinions.iter().find(|o| o.expert == "security").expect("应有 security 专家");
+    let perm = opinions
+        .iter()
+        .find(|o| o.expert == "permission")
+        .expect("应有 permission 专家");
+    let sec = opinions
+        .iter()
+        .find(|o| o.expert == "security")
+        .expect("应有 security 专家");
 
     // Permission 必须触发否决级风险（veto=true），针对越权写生产库
     assert!(
-        perm.risks.iter().any(|r| r.veto && r.severity == flow_ai::model::Severity::Blocking),
+        perm.risks
+            .iter()
+            .any(|r| r.veto && r.severity == flow_ai::model::Severity::Blocking),
         "Permission 专家应对越权写生产库触发 push_veto，实际 risks={:?}",
         perm.risks
     );
     // Security 必须给出 Blocking 级风险（regulated 租户 PII 外发）
     assert!(
-        sec.risks.iter().any(|r| r.severity == flow_ai::model::Severity::Blocking),
+        sec.risks
+            .iter()
+            .any(|r| r.severity == flow_ai::model::Severity::Blocking),
         "Security 专家应对 regulated 租户 PII 外发给出 Blocking 风险，实际 risks={:?}",
         sec.risks
     );
@@ -129,7 +139,9 @@ fn permission_only_veto_blocks_even_without_security() {
     assert!(perm.risks.iter().any(|r| r.veto), "Permission 应触发 veto");
     // 没有 PII 外发 → Security 不应产生 Blocking 风险
     assert!(
-        !sec.risks.iter().any(|r| r.severity == flow_ai::model::Severity::Blocking),
+        !sec.risks
+            .iter()
+            .any(|r| r.severity == flow_ai::model::Severity::Blocking),
         "无 PII 外发时 Security 不应给 Blocking"
     );
 
@@ -150,7 +162,9 @@ fn security_only_blocking_is_recorded_but_not_hard_veto() {
 
     // Security 给出 Blocking 级风险
     assert!(
-        sec.risks.iter().any(|r| r.severity == flow_ai::model::Severity::Blocking),
+        sec.risks
+            .iter()
+            .any(|r| r.severity == flow_ai::model::Severity::Blocking),
         "Security 应对 PII 外发给 Blocking 风险"
     );
     // 但 Security 用的是 push_risk（veto=false），不构成硬否决入口
@@ -159,7 +173,10 @@ fn security_only_blocking_is_recorded_but_not_hard_veto() {
         "Security 阻断级风险不应是 veto（只有 push_veto 才是硬否决入口）"
     );
     // 没有生产/敏感库越权写 → Permission 不触发 veto
-    assert!(!perm.risks.iter().any(|r| r.veto), "无越权写时 Permission 不应 veto");
+    assert!(
+        !perm.risks.iter().any(|r| r.veto),
+        "无越权写时 Permission 不应 veto"
+    );
 
     let rep = xuanji_optimize(&g, &ctx);
     // 当前语义：仅 Security 阻断级风险（非 veto）不会触发算法硬否决
@@ -187,7 +204,10 @@ fn both_experts_skipped_without_edit_flow_capability() {
     assert!(perm.skipped, "无 edit-flow 权限时 Permission 应 skip");
     assert!(sec.skipped, "无 edit-flow 权限时 Security 应 skip");
     assert!(!perm.risks.iter().any(|r| r.veto));
-    assert!(!sec.risks.iter().any(|r| r.severity == flow_ai::model::Severity::Blocking));
+    assert!(!sec
+        .risks
+        .iter()
+        .any(|r| r.severity == flow_ai::model::Severity::Blocking));
 }
 
 /// 收益性检查：AccessMode::Write 在双违规图中确实存在，确保构造正确
@@ -200,8 +220,5 @@ fn graph_constructs_expected_access_modes() {
         .iter()
         .any(|a| a.mode == AccessMode::Write && a.resource == "db:prod"));
     let http = g.node("http_pii").expect("http_pii 节点存在");
-    assert!(http
-        .accesses
-        .iter()
-        .any(|a| a.resource.contains("pii")));
+    assert!(http.accesses.iter().any(|a| a.resource.contains("pii")));
 }

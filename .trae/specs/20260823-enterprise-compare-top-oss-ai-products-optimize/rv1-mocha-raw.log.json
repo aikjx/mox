@@ -1,0 +1,1225 @@
+[LLM] 已从环境变量 DEEPSEEK_API_KEY 自动启用 DeepSeek 引擎
+{
+  "stats": {
+    "suites": 38,
+    "tests": 67,
+    "passes": 67,
+    "pending": 0,
+    "failures": 0,
+    "start": "2026-08-23T14:57:06.383Z",
+    "end": "2026-08-23T14:57:07.484Z",
+    "duration": 1101
+  },
+  "tests": [
+    {
+      "title": "能 new 成功，providers EWMA latency 默认 400ms，success 0.95",
+      "fullTitle": "[T7-AC-1] LatencyWarmRouter 初始化 + EWMA 默认值 能 new 成功，providers EWMA latency 默认 400ms，success 0.95",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o1_latency_warm.js",
+      "duration": 3,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "α=0.2 下一次快请求后 latency 下降，success_rate 不变",
+      "fullTitle": "[T7-AC-2] recordResult 更新 EWMA α=0.2 下一次快请求后 latency 下降，success_rate 不变",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o1_latency_warm.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "失败时 success_rate EWMA 下降",
+      "fullTitle": "[T7-AC-2] recordResult 更新 EWMA 失败时 success_rate EWMA 下降",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o1_latency_warm.js",
+      "duration": 2,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "禁用 provider 不出现；得分高者在前",
+      "fullTitle": "[T7-AC-3] rankedEnabledIds 禁用 provider 剔除 + 评分排序 禁用 provider 不出现；得分高者在前",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o1_latency_warm.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "warmEveryN=2 warmTopK=1 正确触发 warmCb 1 次 / 2 次调用",
+      "fullTitle": "[T7-AC-4] maybeWarmTop：每 warmEveryN=2 次触发一次 Top-1 预热 warmEveryN=2 warmTopK=1 正确触发 warmCb 1 次 / 2 次调用",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o1_latency_warm.js",
+      "duration": 2,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "3 策略存在，默认路由配置 strategy=latency-warm（已有 llm_routing.json 沿用，但 fallback/权重/Warm 字段校验）",
+      "fullTitle": "[T7-AC-5] ROUTING_STRATEGIES + LLMGateway.getRoutingConfig 默认 latency-warm 3 策略存在，默认路由配置 strategy=latency-warm（已有 llm_routing.json 沿用，但 fallback/权重/Warm 字段校验）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o1_latency_warm.js",
+      "duration": 13,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "1000 次候选 3 个 provider：mock 结果 ok/fail 通过 EWMA 驱动排序，最终成功 ≥ 990",
+      "fullTitle": "[T7-AC-6] 3 策略 × 1000 次：success_rate ≥ 99%（H2 baseline 的断言在 O1 后更严格） 1000 次候选 3 个 provider：mock 结果 ok/fail 通过 EWMA 驱动排序，最终成功 ≥ 990",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o1_latency_warm.js",
+      "duration": 31,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "burst=5, qps=10 → 5 次立即成功，第 6 次失败且 resetMs > 0",
+      "fullTitle": "[T8-AC-1] TokenBucket 基本语义：burst 内允许，超出按 QPS 限流 burst=5, qps=10 → 5 次立即成功，第 6 次失败且 resetMs > 0",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o2_token_bucket.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "500ms 后补充 tokens 5（qps=10 → 0.5s 补充 5）→ 再取 5 次成功",
+      "fullTitle": "[T8-AC-1] TokenBucket 基本语义：burst 内允许，超出按 QPS 限流 500ms 后补充 tokens 5（qps=10 → 0.5s 补充 5）→ 再取 5 次成功",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o2_token_bucket.js",
+      "duration": 557,
+      "currentRetry": 0,
+      "speed": "slow",
+      "err": {}
+    },
+    {
+      "title": "构造后 SEC_ENABLE_TOKEN_BUCKET≠1 → mode=sliding_window",
+      "fullTitle": "[T8-AC-2] SecurityManager 默认滑动窗口（无 env）向后兼容 构造后 SEC_ENABLE_TOKEN_BUCKET≠1 → mode=sliding_window",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o2_token_bucket.js",
+      "duration": 11,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "强制 O2，qps=10 burst=5；burst 内放行，第 6 次被拦",
+      "fullTitle": "[T8-AC-3] O2 SEC_ENABLE_TOKEN_BUCKET=1 → mode=token_bucket + key 级别限流生效 强制 O2，qps=10 burst=5；burst 内放行，第 6 次被拦",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o2_token_bucket.js",
+      "duration": 4,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "VIP 租户 200 qps burst 400；单 key burst=5；6 次请求中第 6 次应 key 级被拦（非 tenant）",
+      "fullTitle": "[T8-AC-4] O2 tenant 双维：按 tier 单独配额 + key 通过但 tenant 被拦时回滚 key tokens VIP 租户 200 qps burst 400；单 key burst=5；6 次请求中第 6 次应 key 级被拦（非 tenant）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o2_token_bucket.js",
+      "duration": 4,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "匿名 ANONYMOUS 低配额（qps=2 burst=4）：连续 4 次通过，第 5 次被拦（tenant 级）",
+      "fullTitle": "[T8-AC-4] O2 tenant 双维：按 tier 单独配额 + key 通过但 tenant 被拦时回滚 key tokens 匿名 ANONYMOUS 低配额（qps=2 burst=4）：连续 4 次通过，第 5 次被拦（tenant 级）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o2_token_bucket.js",
+      "duration": 3,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "bucketIdleCleanupMs=200，350ms 后再次 checkRateLimit → 仅保留新 key bucket（ephemeral 被回收）",
+      "fullTitle": "[T8-AC-5] 闲置 bucket GC：超过 bucketIdleCleanupMs + 触发周期后 _tokenBuckets 为空 bucketIdleCleanupMs=200，350ms 后再次 checkRateLimit → 仅保留新 key bucket（ephemeral 被回收）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o2_token_bucket.js",
+      "duration": 362,
+      "currentRetry": 0,
+      "speed": "slow",
+      "err": {}
+    },
+    {
+      "title": "60 QPS 封顶 burst=10，连续 120 次在同一 ms 触发 → 前 10 次 ok，后 110 次 blocked",
+      "fullTitle": "[T8-AC-6] 60 秒 × 200 QPS 模拟：O2 rl_blocked 为 NORMAL 的 QPS 封顶的 100% 对齐（H1_AFTER ≤ H1_BEFORE rl_blocked×0.1 同类验证，这里做 1s burst 验证） 60 QPS 封顶 burst=10，连续 120 次在同一 ms 触发 → 前 10 次 ok，后 110 次 blocked",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o2_token_bucket.js",
+      "duration": 8,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "new / reset / listDomains 工作正常",
+      "fullTitle": "[T10-AC1] SloTracker 基本 API + 空态快照 new / reset / listDomains 工作正常",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "record 一批后 listDomains 去重排序",
+      "fullTitle": "[T10-AC1] SloTracker 基本 API + 空态快照 record 一批后 listDomains 去重排序",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "quantile(n=1) 返回自身",
+      "fullTitle": "[T10-AC2] 分位数 + 精确排序 quantile(n=1) 返回自身",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "quantile(n=5, p99) 线性插值：接近最大值",
+      "fullTitle": "[T10-AC2] 分位数 + 精确排序 quantile(n=5, p99) 线性插值：接近最大值",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "summarize: 10 样本 p50/p95/p99 非空且递增",
+      "fullTitle": "[T10-AC2] 分位数 + 精确排序 summarize: 10 样本 p50/p95/p99 非空且递增",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "完美样本=ok",
+      "fullTitle": "[T10-AC3] evaluateStatus 三态分类（ok / warning / violated） 完美样本=ok",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "p99 刚好超过上限 = violated",
+      "fullTitle": "[T10-AC3] evaluateStatus 三态分类（ok / warning / violated） p99 刚好超过上限 = violated",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "成功率低于目标 = violated",
+      "fullTitle": "[T10-AC3] evaluateStatus 三态分类（ok / warning / violated） 成功率低于目标 = violated",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "距目标 ≤10% buffer = warning（p99 接近上限）",
+      "fullTitle": "[T10-AC3] evaluateStatus 三态分类（ok / warning / violated） 距目标 ≤10% buffer = warning（p99 接近上限）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "无样本 = no_data",
+      "fullTitle": "[T10-AC3] evaluateStatus 三态分类（ok / warning / violated） 无样本 = no_data",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "全局 200 个成功样本，4 窗口 count 非增（1m ≤ 5m ≤ 15m ≤ total）",
+      "fullTitle": "[T10-AC4] SloTracker.snapshot 四窗口 + 整体 status 全局 200 个成功样本，4 窗口 count 非增（1m ≤ 5m ≤ 15m ≤ total）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "违反目标时 overall status = violated",
+      "fullTitle": "[T10-AC4] SloTracker.snapshot 四窗口 + 整体 status 违反目标时 overall status = violated",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "domains=[A] 只聚 A 域样本",
+      "fullTitle": "[T10-AC5] 域名/租户过滤 domains=[A] 只聚 A 域样本",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "tenant 过滤，跨域正确",
+      "fullTitle": "[T10-AC5] 域名/租户过滤 tenant 过滤，跨域正确",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "超过 maxRingSize 后旧样本被头截；count 稳定",
+      "fullTitle": "[T10-AC6] 环形缓冲 bounded memory（maxRingSize） 超过 maxRingSize 后旧样本被头截；count 稳定",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 2,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "目标更严格时，原来 ok 的结果变成 violated",
+      "fullTitle": "[T10-AC7] 自定义 objective 覆盖默认 目标更严格时，原来 ok 的结果变成 violated",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "目标成功率收紧 → warning/violated",
+      "fullTitle": "[T10-AC7] 自定义 objective 覆盖默认 目标成功率收紧 → warning/violated",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "A=成功，B=全部失败：per_domain 状态分离",
+      "fullTitle": "[T10-AC8] per_domain 分域 SLO A=成功，B=全部失败：per_domain 状态分离",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "老样本（> 1m）只落在 total，不再落在 1m 窗口",
+      "fullTitle": "[T10-AC9] 窗口老化（sleep 验证 1m / total 差异） 老样本（> 1m）只落在 total，不再落在 1m 窗口",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "ATX H1/H3/H6",
+      "fullTitle": "[T12-AC1] parseHeading 标题解析（6 种形态） ATX H1/H3/H6",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "Setext H1/H2（依赖下一行判定，使用 ctx 注入）",
+      "fullTitle": "[T12-AC1] parseHeading 标题解析（6 种形态） Setext H1/H2（依赖下一行判定，使用 ctx 注入）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "中文 第X章 / 第X节",
+      "fullTitle": "[T12-AC1] parseHeading 标题解析（6 种形态） 中文 第X章 / 第X节",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "一、二、 中文枚举",
+      "fullTitle": "[T12-AC1] parseHeading 标题解析（6 种形态） 一、二、 中文枚举",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "1. / 1.1 / 1.1.1 数字分级",
+      "fullTitle": "[T12-AC1] parseHeading 标题解析（6 种形态） 1. / 1.1 / 1.1.1 数字分级",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "空行/正文不解析为标题",
+      "fullTitle": "[T12-AC1] parseHeading 标题解析（6 种形态） 空行/正文不解析为标题",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "返回 chunks >= 1，heading_path 首项 = \"项目介绍\"",
+      "fullTitle": "[T12-AC2] splitDocument 最小文档：H1 加两段 → 每 chunk heading_path 非空 返回 chunks >= 1，heading_path 首项 = \"项目介绍\"",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 2,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "chunk 文本都应包含正文内容（不只是标题空壳）",
+      "fullTitle": "[T12-AC2] splitDocument 最小文档：H1 加两段 → 每 chunk heading_path 非空 chunk 文本都应包含正文内容（不只是标题空壳）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "summarizeChunks().cross_heading_chunks 必须是 0",
+      "fullTitle": "[T12-AC3] cross_heading_chunks = 0：绝不跨节切割 summarizeChunks().cross_heading_chunks 必须是 0",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "chunk heading_path 中若含 \"第二章 B\"，该 chunk 文本不应出现 \"第一章\"",
+      "fullTitle": "[T12-AC3] cross_heading_chunks = 0：绝不跨节切割 chunk heading_path 中若含 \"第二章 B\"，该 chunk 文本不应出现 \"第一章\"",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "后端块 path 至少 3 级",
+      "fullTitle": "[T12-AC4] heading_path 层级正确 后端块 path 至少 3 级",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "运维 path 深度：至少 2 级（[\"一、平台\",\"2. 运维\"]）",
+      "fullTitle": "[T12-AC4] heading_path 层级正确 运维 path 深度：至少 2 级（[\"一、平台\",\"2. 运维\"]）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "产出多块且所有块 heading_path[0]=\"大章节\"，单块 chars ≤ max_chars+小余量",
+      "fullTitle": "[T12-AC5] 超长单节按 max_chars/overlap 滑窗切割（无 heading 漏网） 产出多块且所有块 heading_path[0]=\"大章节\"，单块 chars ≤ max_chars+小余量",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "overlap：相邻块应有重叠部分（避免滑窗断点遗漏句子）",
+      "fullTitle": "[T12-AC5] 超长单节按 max_chars/overlap 滑窗切割（无 heading 漏网） overlap：相邻块应有重叠部分（避免滑窗断点遗漏句子）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "存在两块 path 首项分别为 \"范围\" 和 \"引用文件\"",
+      "fullTitle": "[T12-AC6] 中文编号：第X章 + 第X节 正确出栈/压栈 存在两块 path 首项分别为 \"范围\" 和 \"引用文件\"",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "存在一块 path 包含 \"规范性引用\"",
+      "fullTitle": "[T12-AC6] 中文编号：第X章 + 第X节 正确出栈/压栈 存在一块 path 包含 \"规范性引用\"",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "20 块 chars=100…2000 线性递增 → p99 接近最大值（≈1981）",
+      "fullTitle": "[T12-AC7] summarizeChunks p95/p99 统计正确 20 块 chars=100…2000 线性递增 → p99 接近最大值（≈1981）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "空 chunks 所有指标 = 0",
+      "fullTitle": "[T12-AC7] summarizeChunks p95/p99 统计正确 空 chunks 所有指标 = 0",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "仍可正确切块，无 crash；cross_heading_chunks=0",
+      "fullTitle": "[T12-AC8] edge case：无标题纯文本 仍可正确切块，无 crash；cross_heading_chunks=0",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "空字符串返回 []",
+      "fullTitle": "[T12-AC8] edge case：无标题纯文本 空字符串返回 []",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "prefer=length 下所有块不超过 max_chars+小余量",
+      "fullTitle": "[T12-AC9] prefer=length 定长降级与向后兼容 prefer=length 下所有块不超过 max_chars+小余量",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "默认 DEFAULT_MAX_CHARS = 800",
+      "fullTitle": "[T12-AC9] prefer=length 定长降级与向后兼容 默认 DEFAULT_MAX_CHARS = 800",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "new/snapshot/reset 无异常，空态 count=0",
+      "fullTitle": "[T12-AC10] GraphP99Reporter 基本 API + 空态 new/snapshot/reset 无异常，空态 count=0",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o7_graph_p99.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "VALID_CATEGORIES 含所有契约域",
+      "fullTitle": "[T12-AC10] GraphP99Reporter 基本 API + 空态 VALID_CATEGORIES 含所有契约域",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o7_graph_p99.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "非法 category 归一为 other",
+      "fullTitle": "[T12-AC10] GraphP99Reporter 基本 API + 空态 非法 category 归一为 other",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o7_graph_p99.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "100 条线性递增 latency 1~100ms：p50≈50, p95≈95, p99≈99",
+      "fullTitle": "[T12-AC11] p50/p95/p99 单调且精确 100 条线性递增 latency 1~100ms：p50≈50, p95≈95, p99≈99",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o7_graph_p99.js",
+      "duration": 3,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "100 条中 3 条失败 → success_rate=0.97 error_count=3",
+      "fullTitle": "[T12-AC12] success_rate / error_count / rps 正确 100 条中 3 条失败 → success_rate=0.97 error_count=3",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o7_graph_p99.js",
+      "duration": 2,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "algo/wasm/rag_chunk 三类计数正确",
+      "fullTitle": "[T12-AC13] per_category 分域正确 algo/wasm/rag_chunk 三类计数正确",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o7_graph_p99.js",
+      "duration": 2,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "5 个 key 各 10 条，topKeysOnly=2 只保留调用量相同 top 2（按 count 排序取前 2）",
+      "fullTitle": "[T12-AC14] per_key + topKeysOnly=N 正确 5 个 key 各 10 条，topKeysOnly=2 只保留调用量相同 top 2（按 count 排序取前 2）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o7_graph_p99.js",
+      "duration": 3,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "categories=[rag_chunk] 只聚该类",
+      "fullTitle": "[T12-AC15] category/key 过滤 categories=[rag_chunk] 只聚该类",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o7_graph_p99.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "key filter 精确匹配",
+      "fullTitle": "[T12-AC15] category/key 过滤 key filter 精确匹配",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o7_graph_p99.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "maxSamples=200，10000 records → sample_count=200",
+      "fullTitle": "[T12-AC16] bounded memory ring maxSamples=200，10000 records → sample_count=200",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o7_graph_p99.js",
+      "duration": 25,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "3 条 samples 分别 nodes=10, edges=20 × 3 → nodes_total=30, edges_total=60",
+      "fullTitle": "[T12-AC17] summarize graph nodes/edges 聚合 3 条 samples 分别 nodes=10, edges=20 × 3 → nodes_total=30, edges_total=60",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o7_graph_p99.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    }
+  ],
+  "pending": [],
+  "failures": [],
+  "passes": [
+    {
+      "title": "能 new 成功，providers EWMA latency 默认 400ms，success 0.95",
+      "fullTitle": "[T7-AC-1] LatencyWarmRouter 初始化 + EWMA 默认值 能 new 成功，providers EWMA latency 默认 400ms，success 0.95",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o1_latency_warm.js",
+      "duration": 3,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "α=0.2 下一次快请求后 latency 下降，success_rate 不变",
+      "fullTitle": "[T7-AC-2] recordResult 更新 EWMA α=0.2 下一次快请求后 latency 下降，success_rate 不变",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o1_latency_warm.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "失败时 success_rate EWMA 下降",
+      "fullTitle": "[T7-AC-2] recordResult 更新 EWMA 失败时 success_rate EWMA 下降",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o1_latency_warm.js",
+      "duration": 2,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "禁用 provider 不出现；得分高者在前",
+      "fullTitle": "[T7-AC-3] rankedEnabledIds 禁用 provider 剔除 + 评分排序 禁用 provider 不出现；得分高者在前",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o1_latency_warm.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "warmEveryN=2 warmTopK=1 正确触发 warmCb 1 次 / 2 次调用",
+      "fullTitle": "[T7-AC-4] maybeWarmTop：每 warmEveryN=2 次触发一次 Top-1 预热 warmEveryN=2 warmTopK=1 正确触发 warmCb 1 次 / 2 次调用",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o1_latency_warm.js",
+      "duration": 2,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "3 策略存在，默认路由配置 strategy=latency-warm（已有 llm_routing.json 沿用，但 fallback/权重/Warm 字段校验）",
+      "fullTitle": "[T7-AC-5] ROUTING_STRATEGIES + LLMGateway.getRoutingConfig 默认 latency-warm 3 策略存在，默认路由配置 strategy=latency-warm（已有 llm_routing.json 沿用，但 fallback/权重/Warm 字段校验）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o1_latency_warm.js",
+      "duration": 13,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "1000 次候选 3 个 provider：mock 结果 ok/fail 通过 EWMA 驱动排序，最终成功 ≥ 990",
+      "fullTitle": "[T7-AC-6] 3 策略 × 1000 次：success_rate ≥ 99%（H2 baseline 的断言在 O1 后更严格） 1000 次候选 3 个 provider：mock 结果 ok/fail 通过 EWMA 驱动排序，最终成功 ≥ 990",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o1_latency_warm.js",
+      "duration": 31,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "burst=5, qps=10 → 5 次立即成功，第 6 次失败且 resetMs > 0",
+      "fullTitle": "[T8-AC-1] TokenBucket 基本语义：burst 内允许，超出按 QPS 限流 burst=5, qps=10 → 5 次立即成功，第 6 次失败且 resetMs > 0",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o2_token_bucket.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "500ms 后补充 tokens 5（qps=10 → 0.5s 补充 5）→ 再取 5 次成功",
+      "fullTitle": "[T8-AC-1] TokenBucket 基本语义：burst 内允许，超出按 QPS 限流 500ms 后补充 tokens 5（qps=10 → 0.5s 补充 5）→ 再取 5 次成功",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o2_token_bucket.js",
+      "duration": 557,
+      "currentRetry": 0,
+      "speed": "slow",
+      "err": {}
+    },
+    {
+      "title": "构造后 SEC_ENABLE_TOKEN_BUCKET≠1 → mode=sliding_window",
+      "fullTitle": "[T8-AC-2] SecurityManager 默认滑动窗口（无 env）向后兼容 构造后 SEC_ENABLE_TOKEN_BUCKET≠1 → mode=sliding_window",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o2_token_bucket.js",
+      "duration": 11,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "强制 O2，qps=10 burst=5；burst 内放行，第 6 次被拦",
+      "fullTitle": "[T8-AC-3] O2 SEC_ENABLE_TOKEN_BUCKET=1 → mode=token_bucket + key 级别限流生效 强制 O2，qps=10 burst=5；burst 内放行，第 6 次被拦",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o2_token_bucket.js",
+      "duration": 4,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "VIP 租户 200 qps burst 400；单 key burst=5；6 次请求中第 6 次应 key 级被拦（非 tenant）",
+      "fullTitle": "[T8-AC-4] O2 tenant 双维：按 tier 单独配额 + key 通过但 tenant 被拦时回滚 key tokens VIP 租户 200 qps burst 400；单 key burst=5；6 次请求中第 6 次应 key 级被拦（非 tenant）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o2_token_bucket.js",
+      "duration": 4,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "匿名 ANONYMOUS 低配额（qps=2 burst=4）：连续 4 次通过，第 5 次被拦（tenant 级）",
+      "fullTitle": "[T8-AC-4] O2 tenant 双维：按 tier 单独配额 + key 通过但 tenant 被拦时回滚 key tokens 匿名 ANONYMOUS 低配额（qps=2 burst=4）：连续 4 次通过，第 5 次被拦（tenant 级）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o2_token_bucket.js",
+      "duration": 3,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "bucketIdleCleanupMs=200，350ms 后再次 checkRateLimit → 仅保留新 key bucket（ephemeral 被回收）",
+      "fullTitle": "[T8-AC-5] 闲置 bucket GC：超过 bucketIdleCleanupMs + 触发周期后 _tokenBuckets 为空 bucketIdleCleanupMs=200，350ms 后再次 checkRateLimit → 仅保留新 key bucket（ephemeral 被回收）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o2_token_bucket.js",
+      "duration": 362,
+      "currentRetry": 0,
+      "speed": "slow",
+      "err": {}
+    },
+    {
+      "title": "60 QPS 封顶 burst=10，连续 120 次在同一 ms 触发 → 前 10 次 ok，后 110 次 blocked",
+      "fullTitle": "[T8-AC-6] 60 秒 × 200 QPS 模拟：O2 rl_blocked 为 NORMAL 的 QPS 封顶的 100% 对齐（H1_AFTER ≤ H1_BEFORE rl_blocked×0.1 同类验证，这里做 1s burst 验证） 60 QPS 封顶 burst=10，连续 120 次在同一 ms 触发 → 前 10 次 ok，后 110 次 blocked",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o2_token_bucket.js",
+      "duration": 8,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "new / reset / listDomains 工作正常",
+      "fullTitle": "[T10-AC1] SloTracker 基本 API + 空态快照 new / reset / listDomains 工作正常",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "record 一批后 listDomains 去重排序",
+      "fullTitle": "[T10-AC1] SloTracker 基本 API + 空态快照 record 一批后 listDomains 去重排序",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "quantile(n=1) 返回自身",
+      "fullTitle": "[T10-AC2] 分位数 + 精确排序 quantile(n=1) 返回自身",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "quantile(n=5, p99) 线性插值：接近最大值",
+      "fullTitle": "[T10-AC2] 分位数 + 精确排序 quantile(n=5, p99) 线性插值：接近最大值",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "summarize: 10 样本 p50/p95/p99 非空且递增",
+      "fullTitle": "[T10-AC2] 分位数 + 精确排序 summarize: 10 样本 p50/p95/p99 非空且递增",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "完美样本=ok",
+      "fullTitle": "[T10-AC3] evaluateStatus 三态分类（ok / warning / violated） 完美样本=ok",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "p99 刚好超过上限 = violated",
+      "fullTitle": "[T10-AC3] evaluateStatus 三态分类（ok / warning / violated） p99 刚好超过上限 = violated",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "成功率低于目标 = violated",
+      "fullTitle": "[T10-AC3] evaluateStatus 三态分类（ok / warning / violated） 成功率低于目标 = violated",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "距目标 ≤10% buffer = warning（p99 接近上限）",
+      "fullTitle": "[T10-AC3] evaluateStatus 三态分类（ok / warning / violated） 距目标 ≤10% buffer = warning（p99 接近上限）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "无样本 = no_data",
+      "fullTitle": "[T10-AC3] evaluateStatus 三态分类（ok / warning / violated） 无样本 = no_data",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "全局 200 个成功样本，4 窗口 count 非增（1m ≤ 5m ≤ 15m ≤ total）",
+      "fullTitle": "[T10-AC4] SloTracker.snapshot 四窗口 + 整体 status 全局 200 个成功样本，4 窗口 count 非增（1m ≤ 5m ≤ 15m ≤ total）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "违反目标时 overall status = violated",
+      "fullTitle": "[T10-AC4] SloTracker.snapshot 四窗口 + 整体 status 违反目标时 overall status = violated",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "domains=[A] 只聚 A 域样本",
+      "fullTitle": "[T10-AC5] 域名/租户过滤 domains=[A] 只聚 A 域样本",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "tenant 过滤，跨域正确",
+      "fullTitle": "[T10-AC5] 域名/租户过滤 tenant 过滤，跨域正确",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "超过 maxRingSize 后旧样本被头截；count 稳定",
+      "fullTitle": "[T10-AC6] 环形缓冲 bounded memory（maxRingSize） 超过 maxRingSize 后旧样本被头截；count 稳定",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 2,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "目标更严格时，原来 ok 的结果变成 violated",
+      "fullTitle": "[T10-AC7] 自定义 objective 覆盖默认 目标更严格时，原来 ok 的结果变成 violated",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "目标成功率收紧 → warning/violated",
+      "fullTitle": "[T10-AC7] 自定义 objective 覆盖默认 目标成功率收紧 → warning/violated",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "A=成功，B=全部失败：per_domain 状态分离",
+      "fullTitle": "[T10-AC8] per_domain 分域 SLO A=成功，B=全部失败：per_domain 状态分离",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "老样本（> 1m）只落在 total，不再落在 1m 窗口",
+      "fullTitle": "[T10-AC9] 窗口老化（sleep 验证 1m / total 差异） 老样本（> 1m）只落在 total，不再落在 1m 窗口",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o4_slo_tracker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "ATX H1/H3/H6",
+      "fullTitle": "[T12-AC1] parseHeading 标题解析（6 种形态） ATX H1/H3/H6",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "Setext H1/H2（依赖下一行判定，使用 ctx 注入）",
+      "fullTitle": "[T12-AC1] parseHeading 标题解析（6 种形态） Setext H1/H2（依赖下一行判定，使用 ctx 注入）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "中文 第X章 / 第X节",
+      "fullTitle": "[T12-AC1] parseHeading 标题解析（6 种形态） 中文 第X章 / 第X节",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "一、二、 中文枚举",
+      "fullTitle": "[T12-AC1] parseHeading 标题解析（6 种形态） 一、二、 中文枚举",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "1. / 1.1 / 1.1.1 数字分级",
+      "fullTitle": "[T12-AC1] parseHeading 标题解析（6 种形态） 1. / 1.1 / 1.1.1 数字分级",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "空行/正文不解析为标题",
+      "fullTitle": "[T12-AC1] parseHeading 标题解析（6 种形态） 空行/正文不解析为标题",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "返回 chunks >= 1，heading_path 首项 = \"项目介绍\"",
+      "fullTitle": "[T12-AC2] splitDocument 最小文档：H1 加两段 → 每 chunk heading_path 非空 返回 chunks >= 1，heading_path 首项 = \"项目介绍\"",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 2,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "chunk 文本都应包含正文内容（不只是标题空壳）",
+      "fullTitle": "[T12-AC2] splitDocument 最小文档：H1 加两段 → 每 chunk heading_path 非空 chunk 文本都应包含正文内容（不只是标题空壳）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "summarizeChunks().cross_heading_chunks 必须是 0",
+      "fullTitle": "[T12-AC3] cross_heading_chunks = 0：绝不跨节切割 summarizeChunks().cross_heading_chunks 必须是 0",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "chunk heading_path 中若含 \"第二章 B\"，该 chunk 文本不应出现 \"第一章\"",
+      "fullTitle": "[T12-AC3] cross_heading_chunks = 0：绝不跨节切割 chunk heading_path 中若含 \"第二章 B\"，该 chunk 文本不应出现 \"第一章\"",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "后端块 path 至少 3 级",
+      "fullTitle": "[T12-AC4] heading_path 层级正确 后端块 path 至少 3 级",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "运维 path 深度：至少 2 级（[\"一、平台\",\"2. 运维\"]）",
+      "fullTitle": "[T12-AC4] heading_path 层级正确 运维 path 深度：至少 2 级（[\"一、平台\",\"2. 运维\"]）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "产出多块且所有块 heading_path[0]=\"大章节\"，单块 chars ≤ max_chars+小余量",
+      "fullTitle": "[T12-AC5] 超长单节按 max_chars/overlap 滑窗切割（无 heading 漏网） 产出多块且所有块 heading_path[0]=\"大章节\"，单块 chars ≤ max_chars+小余量",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "overlap：相邻块应有重叠部分（避免滑窗断点遗漏句子）",
+      "fullTitle": "[T12-AC5] 超长单节按 max_chars/overlap 滑窗切割（无 heading 漏网） overlap：相邻块应有重叠部分（避免滑窗断点遗漏句子）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "存在两块 path 首项分别为 \"范围\" 和 \"引用文件\"",
+      "fullTitle": "[T12-AC6] 中文编号：第X章 + 第X节 正确出栈/压栈 存在两块 path 首项分别为 \"范围\" 和 \"引用文件\"",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "存在一块 path 包含 \"规范性引用\"",
+      "fullTitle": "[T12-AC6] 中文编号：第X章 + 第X节 正确出栈/压栈 存在一块 path 包含 \"规范性引用\"",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "20 块 chars=100…2000 线性递增 → p99 接近最大值（≈1981）",
+      "fullTitle": "[T12-AC7] summarizeChunks p95/p99 统计正确 20 块 chars=100…2000 线性递增 → p99 接近最大值（≈1981）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "空 chunks 所有指标 = 0",
+      "fullTitle": "[T12-AC7] summarizeChunks p95/p99 统计正确 空 chunks 所有指标 = 0",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "仍可正确切块，无 crash；cross_heading_chunks=0",
+      "fullTitle": "[T12-AC8] edge case：无标题纯文本 仍可正确切块，无 crash；cross_heading_chunks=0",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "空字符串返回 []",
+      "fullTitle": "[T12-AC8] edge case：无标题纯文本 空字符串返回 []",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "prefer=length 下所有块不超过 max_chars+小余量",
+      "fullTitle": "[T12-AC9] prefer=length 定长降级与向后兼容 prefer=length 下所有块不超过 max_chars+小余量",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "默认 DEFAULT_MAX_CHARS = 800",
+      "fullTitle": "[T12-AC9] prefer=length 定长降级与向后兼容 默认 DEFAULT_MAX_CHARS = 800",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o6_heading_chunker.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "new/snapshot/reset 无异常，空态 count=0",
+      "fullTitle": "[T12-AC10] GraphP99Reporter 基本 API + 空态 new/snapshot/reset 无异常，空态 count=0",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o7_graph_p99.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "VALID_CATEGORIES 含所有契约域",
+      "fullTitle": "[T12-AC10] GraphP99Reporter 基本 API + 空态 VALID_CATEGORIES 含所有契约域",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o7_graph_p99.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "非法 category 归一为 other",
+      "fullTitle": "[T12-AC10] GraphP99Reporter 基本 API + 空态 非法 category 归一为 other",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o7_graph_p99.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "100 条线性递增 latency 1~100ms：p50≈50, p95≈95, p99≈99",
+      "fullTitle": "[T12-AC11] p50/p95/p99 单调且精确 100 条线性递增 latency 1~100ms：p50≈50, p95≈95, p99≈99",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o7_graph_p99.js",
+      "duration": 3,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "100 条中 3 条失败 → success_rate=0.97 error_count=3",
+      "fullTitle": "[T12-AC12] success_rate / error_count / rps 正确 100 条中 3 条失败 → success_rate=0.97 error_count=3",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o7_graph_p99.js",
+      "duration": 2,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "algo/wasm/rag_chunk 三类计数正确",
+      "fullTitle": "[T12-AC13] per_category 分域正确 algo/wasm/rag_chunk 三类计数正确",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o7_graph_p99.js",
+      "duration": 2,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "5 个 key 各 10 条，topKeysOnly=2 只保留调用量相同 top 2（按 count 排序取前 2）",
+      "fullTitle": "[T12-AC14] per_key + topKeysOnly=N 正确 5 个 key 各 10 条，topKeysOnly=2 只保留调用量相同 top 2（按 count 排序取前 2）",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o7_graph_p99.js",
+      "duration": 3,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "categories=[rag_chunk] 只聚该类",
+      "fullTitle": "[T12-AC15] category/key 过滤 categories=[rag_chunk] 只聚该类",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o7_graph_p99.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "key filter 精确匹配",
+      "fullTitle": "[T12-AC15] category/key 过滤 key filter 精确匹配",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o7_graph_p99.js",
+      "duration": 1,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "maxSamples=200，10000 records → sample_count=200",
+      "fullTitle": "[T12-AC16] bounded memory ring maxSamples=200，10000 records → sample_count=200",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o7_graph_p99.js",
+      "duration": 25,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    },
+    {
+      "title": "3 条 samples 分别 nodes=10, edges=20 × 3 → nodes_total=30, edges_total=60",
+      "fullTitle": "[T12-AC17] summarize graph nodes/edges 聚合 3 条 samples 分别 nodes=10, edges=20 × 3 → nodes_total=30, edges_total=60",
+      "file": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\test\\mocha_o7_graph_p99.js",
+      "duration": 0,
+      "currentRetry": 0,
+      "speed": "fast",
+      "err": {}
+    }
+  ]
+}

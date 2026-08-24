@@ -1,4 +1,4 @@
-﻿//! 能力融合 Registry（规范缺口 R06 六维绑定 Registry + R08 文档/数据挂接）
+//! 能力融合 Registry（规范缺口 R06 六维绑定 Registry + R08 文档/数据挂接）
 //!
 //! 把全工程 13 个 crate 的能力、关图 12 类实体、PT-Primi 六维绑定，**融合**进一张
 //! [`UnifiedGraph`]。同时把 `ddl.sql` 里悬空的 6 张表挂接到 primiflow 代码节点，
@@ -120,7 +120,9 @@ pub fn fuse_all() -> UnifiedGraph {
             to: tid.clone(),
             kind: RelKind::ReadWrite,
             label: "读写".into(),
-            evidence: format!("primiflow-core/src/gen/schema.rs 结构 {struct_name} → ddl.sql {table}"),
+            evidence: format!(
+                "primiflow-core/src/gen/schema.rs 结构 {struct_name} → ddl.sql {table}"
+            ),
         });
         g.add_edge(UnifiedEdge {
             id: format!("{tid}<=deploy"),

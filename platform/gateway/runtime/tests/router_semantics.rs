@@ -8,12 +8,12 @@ use runtime::ai_router::RouterTable;
 #[test]
 fn ac10_six_routes_and_four_requests_match_expectations() {
     let mut rt = RouterTable::new();
-    rt.register("s3", "/a/b/c");              // 静态 3 段
-    rt.register("p1_long", "/a/b/:x");        // 参数 1 段；静态段=2（a,b）
-    rt.register("p1_short", "/a/:y/c");       // 参数 1 段；静态段=2（a,c）；同参同总段 → 序 tiebreak
-    rt.register("p2", "/a/:y/:z");            // 参数 2 段
-    rt.register("p3", "/a/:y/:z/:w");         // 参数 3 段
-    rt.register("s4", "/x/y/z/w");            // 静态 4 段
+    rt.register("s3", "/a/b/c"); // 静态 3 段
+    rt.register("p1_long", "/a/b/:x"); // 参数 1 段；静态段=2（a,b）
+    rt.register("p1_short", "/a/:y/c"); // 参数 1 段；静态段=2（a,c）；同参同总段 → 序 tiebreak
+    rt.register("p2", "/a/:y/:z"); // 参数 2 段
+    rt.register("p3", "/a/:y/:z/:w"); // 参数 3 段
+    rt.register("s4", "/x/y/z/w"); // 静态 4 段
 
     // AC-10 预期命中：
     assert_eq!(rt.match_route("/a/b/c").unwrap().handler_id, "s3");

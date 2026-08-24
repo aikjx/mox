@@ -16,11 +16,7 @@ fn main() {
 
     // 1) 一一对应校验：不满足就停下，绝不生成半成品
     let errs = graph.validate_correspondence();
-    assert!(
-        errs.is_empty(),
-        "关联图谱不满足一一对应不变量:\n{:?}",
-        errs
-    );
+    assert!(errs.is_empty(), "关联图谱不满足一一对应不变量:\n{:?}", errs);
     println!(
         "[primiflow] 关联图谱校验通过：{} 节点 / {} 边，全链路一一对应。",
         graph.nodes.len(),

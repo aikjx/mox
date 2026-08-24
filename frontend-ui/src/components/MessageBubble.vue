@@ -111,12 +111,22 @@ const fmtTime = computed(() => {
 function esc(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
+// 仅允许安全协议并做属性上下文转义，杜绝 javascript:/data: 等 XSS 链接
+function safeUrl(u) {
+  const trimmed = (u || '').trim()
+  if (!/^(https?:|mailto:|tel:|#)/i.test(trimmed)) return ''
+  return trimmed.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
 function inline(s) {
   return s
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/\*([^*]+)\*/g, '<em>$1</em>')
     .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, label, url) => {
+      const href = safeUrl(url)
+      if (!href) return label // 非法协议：仅显示文本，不渲染为链接
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>`
+    })
 }
 
 // 检测 Mermaid 图表
@@ -222,7 +232,7 @@ const rendered = computed(() => {
     if (headingMatch) {
       closeLists()
       const level = headingMatch[1].length
-      const content = inline(headingMatch[2].trim())
+      const content = inline(esc(headingMatch[2].trim()))
       html += `<h${level} class="md-heading md-h${level}">${content}</h${level}>`
       continue
     }

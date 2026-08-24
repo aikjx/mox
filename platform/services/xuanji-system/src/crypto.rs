@@ -1,4 +1,4 @@
-﻿//! 纯 Rust SHA-256 实现（零依赖，FIPS 180-4）
+//! 纯 Rust SHA-256 实现（零依赖，FIPS 180-4）
 //!
 //! 仅用于**不可逆令牌存储**与完整性校验，避免引入外部加密依赖带来的供应链风险。
 //! 璇玑登录令牌在存储前先做 SHA-256 哈希，数据库与内存中只保留哈希值，
@@ -89,10 +89,7 @@ pub fn sha256(input: &[u8]) -> [u8; 32] {
 
 /// 返回十六进制小写字符串（用于令牌哈希存储）
 pub fn sha256_hex(input: &[u8]) -> String {
-    sha256(input)
-        .iter()
-        .map(|b| format!("{:02x}", b))
-        .collect()
+    sha256(input).iter().map(|b| format!("{:02x}", b)).collect()
 }
 
 #[cfg(test)]

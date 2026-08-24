@@ -7,8 +7,8 @@
 //!  4) `search()` 排序与召回（多技能竞争时返回最优匹配）；
 //!  5) `ingest_flow()` 从流程图自动构建 节点↔工具 绑定关系。
 
-use flow_ai::schedule::route_models;
 use flow_ai::model::{FlowEdge, FlowGraph, FlowNode, NodeKind, ToolKind};
+use flow_ai::schedule::route_models;
 use flow_ai::schedule::ModelTier;
 use flow_ai::topology::{Entity, EntityKind, Relation, RelationKind, TopologyGraph};
 
@@ -32,8 +32,15 @@ fn dijkstra_prefers_cheaper_multi_hop_path() {
     let g = cost_graph();
     let (path, cost) = g.shortest_path("A", "B").expect("应存在路径");
     // 多跳 A→C→B（1.0）优于直连 A→B（5.0）
-    assert_eq!(path, vec!["A".to_string(), "C".to_string(), "B".to_string()]);
-    assert!((cost - 1.0).abs() < 1e-9, "最短路径代价应为 1.0，实际 {}", cost);
+    assert_eq!(
+        path,
+        vec!["A".to_string(), "C".to_string(), "B".to_string()]
+    );
+    assert!(
+        (cost - 1.0).abs() < 1e-9,
+        "最短路径代价应为 1.0，实际 {}",
+        cost
+    );
 }
 
 #[test]
@@ -43,7 +50,11 @@ fn shortest_path_avoids_archived_entity() {
     g.entity_mut("C").unwrap().archived = true;
     let (path, cost) = g.shortest_path("A", "B").expect("直连路径应仍存在");
     assert_eq!(path, vec!["A".to_string(), "B".to_string()]);
-    assert!((cost - 5.0).abs() < 1e-9, "绕行后代价应回到直连 5.0，实际 {}", cost);
+    assert!(
+        (cost - 5.0).abs() < 1e-9,
+        "绕行后代价应回到直连 5.0，实际 {}",
+        cost
+    );
 }
 
 #[test]
@@ -58,17 +69,41 @@ fn shortest_path_none_when_target_unreachable() {
 fn skill_topology() -> TopologyGraph {
     let mut g = TopologyGraph::new();
     g.add_entity(
-        Entity::new("skill:report", EntityKind::Skill, "月度报表生成")
-            .with_keywords(["报表", "月度", "月度报表", "生成"]),
+        Entity::new("skill:report", EntityKind::Skill, "月度报表生成").with_keywords([
+            "报表",
+            "月度",
+            "月度报表",
+            "生成",
+        ]),
     );
     g.add_entity(Entity::new("flow:n1", EntityKind::FlowNode, "读取Excel").with_cost(300));
     g.add_entity(Entity::new("flow:n2", EntityKind::FlowNode, "汇总输出").with_cost(100));
     g.add_entity(Entity::new("tool:file", EntityKind::Tool, "File"));
     g.add_entity(Entity::new("mem:last", EntityKind::Memory, "上次执行记录"));
-    g.add_relation(Relation::new("skill:report", "flow:n1", RelationKind::Implements, 1.0));
-    g.add_relation(Relation::new("flow:n1", "flow:n2", RelationKind::Implements, 1.0));
-    g.add_relation(Relation::new("flow:n1", "tool:file", RelationKind::Binds, 0.9));
-    g.add_relation(Relation::new("skill:report", "mem:last", RelationKind::Recalls, 0.7));
+    g.add_relation(Relation::new(
+        "skill:report",
+        "flow:n1",
+        RelationKind::Implements,
+        1.0,
+    ));
+    g.add_relation(Relation::new(
+        "flow:n1",
+        "flow:n2",
+        RelationKind::Implements,
+        1.0,
+    ));
+    g.add_relation(Relation::new(
+        "flow:n1",
+        "tool:file",
+        RelationKind::Binds,
+        0.9,
+    ));
+    g.add_relation(Relation::new(
+        "skill:report",
+        "mem:last",
+        RelationKind::Recalls,
+        0.7,
+    ));
     g
 }
 
@@ -142,4 +177,3 @@ fn route_models_assigns_tiers_by_semantics() {
     assert_eq!(tier_of("light"), ModelTier::Light, "短类任务应为轻量");
     assert_eq!(tier_of("std"), ModelTier::Standard, "常规推理应为标准");
 }
-

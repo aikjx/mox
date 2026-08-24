@@ -1,10 +1,10 @@
-﻿//! Syslog Sink — RFC 5424 格式，写入系统日志或 SIEM
+//! Syslog Sink — RFC 5424 格式，写入系统日志或 SIEM
 
-use super::{AuditError, AuditSink, FlushPolicy};
 use super::event::ExtAuditEvent;
-use std::sync::RwLock;
+use super::{AuditError, AuditSink, FlushPolicy};
 use std::io::Write;
 use std::net::TcpStream;
+use std::sync::RwLock;
 use std::time::Duration;
 
 pub struct SyslogSink {
@@ -19,7 +19,11 @@ pub struct SyslogSink {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SyslogProtocol { Tcp, Udp, Tls }
+pub enum SyslogProtocol {
+    Tcp,
+    Udp,
+    Tls,
+}
 
 impl SyslogSink {
     pub fn new(address: &str, protocol: &str) -> Self {
@@ -41,9 +45,15 @@ impl SyslogSink {
         }
     }
 
-    pub fn with_app_name(mut self, name: &str) -> Self { self.app_name = name.into(); self }
+    pub fn with_app_name(mut self, name: &str) -> Self {
+        self.app_name = name.into();
+        self
+    }
 
-    pub fn with_flush_policy(mut self, policy: FlushPolicy) -> Self { self.flush_policy = policy; self }
+    pub fn with_flush_policy(mut self, policy: FlushPolicy) -> Self {
+        self.flush_policy = policy;
+        self
+    }
 
     fn serialize(&self, event: &ExtAuditEvent) -> String {
         use std::fmt::Write;
@@ -65,8 +75,12 @@ impl SyslogSink {
         write!(s, " tenant=\"{}\"", event.tenant_id).unwrap();
         write!(s, " actor=\"{}\"", event.actor.id).unwrap();
         write!(s, " role=\"{}\"", event.actor.role).unwrap();
-        if let Some(ref session) = event.session_id { write!(s, " session=\"{session}\"").unwrap(); }
-        if let Some(ref ip) = event.client_ip { write!(s, " client_ip=\"{ip}\"").unwrap(); }
+        if let Some(ref session) = event.session_id {
+            write!(s, " session=\"{session}\"").unwrap();
+        }
+        if let Some(ref ip) = event.client_ip {
+            write!(s, " client_ip=\"{ip}\"").unwrap();
+        }
         write!(s, " outcome=\"{:?}\"", event.outcome).unwrap();
         write!(s, " resource_type=\"{}\"", event.resource.resource_type).unwrap();
         write!(s, " resource_id=\"{}\"", event.resource.resource_id).unwrap();
@@ -78,16 +92,21 @@ impl SyslogSink {
         write!(s, " content_hash=\"{}\"", event.content_hash).unwrap();
         write!(s, " chain_hash=\"{}\"", event.chain_hash).unwrap();
         write!(s, "] ").unwrap();
-        write!(s, "action={} resource={}:{} outcome={:?}",
-            event.action, event.resource.resource_type, event.resource.resource_id, event.outcome).unwrap();
+        write!(
+            s,
+            "action={} resource={}:{} outcome={:?}",
+            event.action, event.resource.resource_type, event.resource.resource_id, event.outcome
+        )
+        .unwrap();
         s
     }
 
     fn connect_tcp(&self) -> std::io::Result<TcpStream> {
-        let addr: std::net::SocketAddr = self
-            .address
-            .parse::<std::net::SocketAddr>()
-            .map_err(|e: std::net::AddrParseError| std::io::Error::new(std::io::ErrorKind::InvalidInput, e.to_string()))?;
+        let addr: std::net::SocketAddr = self.address.parse::<std::net::SocketAddr>().map_err(
+            |e: std::net::AddrParseError| {
+                std::io::Error::new(std::io::ErrorKind::InvalidInput, e.to_string())
+            },
+        )?;
         let stream = TcpStream::connect_timeout(&addr, Duration::from_secs(5))?;
         stream.set_write_timeout(Some(Duration::from_secs(10)))?;
         Ok(stream)
@@ -100,23 +119,36 @@ impl SyslogSink {
                 loop {
                     match self.connect_tcp() {
                         Ok(mut stream) => {
-                            stream.write_all(frame.as_bytes()).map_err(|e| AuditError::WriteFailed(e.to_string()))?;
+                            stream
+                                .write_all(frame.as_bytes())
+                                .map_err(|e| AuditError::WriteFailed(e.to_string()))?;
                             stream.write_all(b"\n").ok();
                             return Ok(());
                         }
                         Err(_e) if retry < 3 => {
                             retry += 1;
-                            std::thread::sleep(Duration::from_secs(self.reconnect_interval_sec * 2u64.pow(retry as u32)));
+                            std::thread::sleep(Duration::from_secs(
+                                self.reconnect_interval_sec * 2u64.pow(retry as u32),
+                            ));
                         }
-                        Err(e) => return Err(AuditError::Connection(format!("TCP failed after 3 retries: {e}"))),
+                        Err(e) => {
+                            return Err(AuditError::Connection(format!(
+                                "TCP failed after 3 retries: {e}"
+                            )))
+                        }
                     }
                 }
             }
             SyslogProtocol::Udp => {
-                let addr: std::net::SocketAddr = self.address.parse::<std::net::SocketAddr>()
+                let addr: std::net::SocketAddr = self
+                    .address
+                    .parse::<std::net::SocketAddr>()
                     .map_err(|e| AuditError::Connection(e.to_string()))?;
-                let socket = std::net::UdpSocket::bind("0.0.0.0:0").map_err(|e| AuditError::Connection(e.to_string()))?;
-                socket.send_to(frame.as_bytes(), addr).map_err(|e| AuditError::WriteFailed(e.to_string()))?;
+                let socket = std::net::UdpSocket::bind("0.0.0.0:0")
+                    .map_err(|e| AuditError::Connection(e.to_string()))?;
+                socket
+                    .send_to(frame.as_bytes(), addr)
+                    .map_err(|e| AuditError::WriteFailed(e.to_string()))?;
                 Ok(())
             }
             SyslogProtocol::Tls => Err(AuditError::Connection("TLS not yet implemented".into())),
@@ -153,10 +185,7 @@ impl AuditSink for SyslogSink {
                         .write()
                         .expect("审计缓冲写锁已 poison，无法清空")
                         .clear();
-                    *self
-                        .last_flush_ms
-                        .write()
-                        .expect("刷新时间戳写锁已 poison") = now_ms();
+                    *self.last_flush_ms.write().expect("刷新时间戳写锁已 poison") = now_ms();
                 }
                 Ok(())
             }
@@ -183,10 +212,7 @@ impl AuditSink for SyslogSink {
                         .write()
                         .expect("审计缓冲写锁已 poison，无法清空")
                         .clear();
-                    *self
-                        .last_flush_ms
-                        .write()
-                        .expect("刷新时间戳写锁已 poison") = now_ms();
+                    *self.last_flush_ms.write().expect("刷新时间戳写锁已 poison") = now_ms();
                 }
                 Ok(())
             }
@@ -206,10 +232,7 @@ impl AuditSink for SyslogSink {
             .write()
             .expect("审计缓冲写锁已 poison，无法清空")
             .clear();
-        *self
-            .last_flush_ms
-            .write()
-            .expect("刷新时间戳写锁已 poison") = now_ms();
+        *self.last_flush_ms.write().expect("刷新时间戳写锁已 poison") = now_ms();
         Ok(())
     }
 
