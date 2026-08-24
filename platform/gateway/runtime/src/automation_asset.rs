@@ -5,9 +5,7 @@
 //! 由 `automation` 与 `main` 单向引用。
 
 use ai_agent::requirement_compiler::SystemBlueprint;
-use flow_ai::automation::{
-    AutoTest, RolePermission,
-};
+use flow_ai::automation::{AutoTest, RolePermission};
 use serde::{Deserialize, Serialize};
 
 /// 自动生成的全栈代码（与 flow-ai 解耦，避免其内部 model 类型耦合）
@@ -64,8 +62,22 @@ fn automation_dir() -> std::path::PathBuf {
     ous_home().join("automation")
 }
 
+/// 把任意资产 id 清洗为安全文件名组件（防路径穿越），仅保留字母数字 `.` `_` `-`。
+/// 与 `market_migration::sanitize_file_component` 语义一致，避免 `/`、`\`、`..` 逃逸出资产目录。
+fn sanitize_asset_id(s: &str) -> String {
+    s.chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.' {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect()
+}
+
 fn automation_path(id: &str) -> std::path::PathBuf {
-    automation_dir().join(format!("{}.json", id))
+    automation_dir().join(format!("{}.json", sanitize_asset_id(id)))
 }
 
 /// 保存（创建或覆盖）一份自动化资产
@@ -74,8 +86,8 @@ pub fn save_automation(asset: AutomationAsset) -> Result<(), String> {
     if !dir.exists() {
         std::fs::create_dir_all(&dir).map_err(|e| format!("创建自动化目录失败: {}", e))?;
     }
-    let content = serde_json::to_string_pretty(&asset)
-        .map_err(|e| format!("序列化自动化资产失败: {}", e))?;
+    let content =
+        serde_json::to_string_pretty(&asset).map_err(|e| format!("序列化自动化资产失败: {}", e))?;
     std::fs::write(automation_path(&asset.id), content)
         .map_err(|e| format!("写入自动化资产失败: {}", e))
 }
@@ -100,8 +112,7 @@ pub fn list_automations() -> Result<Vec<AutomationAsset>, String> {
         return Ok(vec![]);
     }
     let mut out = vec![];
-    let entries =
-        std::fs::read_dir(&dir).map_err(|e| format!("枚举自动化目录失败: {}", e))?;
+    let entries = std::fs::read_dir(&dir).map_err(|e| format!("枚举自动化目录失败: {}", e))?;
     for entry in entries.flatten() {
         let path = entry.path();
         if path.extension().and_then(|e| e.to_str()) == Some("json") {

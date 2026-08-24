@@ -56,7 +56,9 @@ struct MockRegistry {
 }
 impl MockRegistry {
     fn new() -> Self {
-        Self { inner: Mutex::new(Vec::new()) }
+        Self {
+            inner: Mutex::new(Vec::new()),
+        }
     }
     fn len(&self) -> usize {
         self.inner.lock().unwrap().len()
@@ -82,7 +84,13 @@ impl ExpertRegistry for MockRegistry {
         Ok(res)
     }
     async fn find(&self, id: &str) -> ExpertResult<Option<ExpertMeta>> {
-        Ok(self.inner.lock().unwrap().iter().find(|e| e.id == id).cloned())
+        Ok(self
+            .inner
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|e| e.id == id)
+            .cloned())
     }
 }
 
@@ -98,7 +106,7 @@ fn tr_b8_01_optimize_with_mock_approved() {
 
 #[test]
 fn tr_b8_02_error_fallback_to_veto_guarantees_no_panic() {
-    let biz: &Business = &all_businesses()[1]; // court
+    let biz: &Business = &all_businesses()[1]; // finance
     let rep = biz.optimize_with(Arc::new(MockError));
     // 生产降级保证： consultant 出错不应 panic，而是返回 vetoed=true 带 error reason
     assert!(rep.vetoed, "fallback 应返回 vetoed=true，实际 {:?}", rep);
@@ -110,7 +118,9 @@ fn tr_b8_02_error_fallback_to_veto_guarantees_no_panic() {
 #[tokio::test]
 async fn tr_b8_03_register_uses_mock_registry_trait_object() {
     let reg = Arc::new(MockRegistry::new());
-    register_business_experts(reg.clone()).await.expect("register 应成功");
+    register_business_experts(reg.clone())
+        .await
+        .expect("register 应成功");
     // 至少应注册 N 条业务（全量业务 > 5）
     assert!(reg.len() >= 5, "应至少注册 5 条，实际 {}", reg.len());
     assert!(reg.contains("biz-gov-pii"), "缺少政务专家注册");
@@ -127,10 +137,7 @@ async fn tr_b8_04_all_businesses_can_be_found_via_trait_list() {
 
     // 按 domain 过滤 gov 至少 1 条
     let gov = reg.list(Some("gov")).await.unwrap();
-    assert!(
-        !gov.is_empty(),
-        "gov 领域应有专家注册（来自 gov-pii 业务）"
-    );
+    assert!(!gov.is_empty(), "gov 领域应有专家注册（来自 gov-pii 业务）");
 
     // find 按 id
     let bot = reg.find("biz-bot").await.unwrap();
@@ -144,11 +151,16 @@ fn tr_b8_05_no_xuanji_concrete_import() {
     let src_dir = manifest.join("src");
     assert!(src_dir.is_dir());
     fn walk(dir: &Path, out: &mut Vec<PathBuf>) {
-        let Ok(rd) = std::fs::read_dir(dir) else { return };
+        let Ok(rd) = std::fs::read_dir(dir) else {
+            return;
+        };
         for entry in rd.flatten() {
             let p = entry.path();
-            if p.is_dir() { walk(&p, out) }
-            else if p.extension().map(|e| e == "rs").unwrap_or(false) { out.push(p); }
+            if p.is_dir() {
+                walk(&p, out)
+            } else if p.extension().map(|e| e == "rs").unwrap_or(false) {
+                out.push(p);
+            }
         }
     }
     let mut files = Vec::new();
@@ -160,8 +172,12 @@ fn tr_b8_05_no_xuanji_concrete_import() {
         let content = std::fs::read_to_string(f).unwrap();
         for (idx, line) in content.lines().enumerate() {
             let t = line.trim_start();
-            if !(t.starts_with("use ") || t.starts_with("pub use ")) { continue; }
-            let Some(rest_p) = t.find("xuanji_expert::") else { continue };
+            if !(t.starts_with("use ") || t.starts_with("pub use ")) {
+                continue;
+            }
+            let Some(rest_p) = t.find("xuanji_expert::") else {
+                continue;
+            };
             let after = &t[rest_p + "xuanji_expert::".len()..];
             let end = after
                 .find(|c: char| !(c.is_alphanumeric() || c == '_'))

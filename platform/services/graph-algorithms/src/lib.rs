@@ -114,6 +114,184 @@ pub struct KnowledgeGraph {
     activation_history: Vec<HashMap<String, f64>>,
 }
 
+// ============================================================================
+// CSR 稀疏邻接：O(N+E) 表示，避免 O(N²) dense 矩阵。(私有，对外零暴露)
+// ============================================================================
+/// 按出边组织的 CSR 邻接（出边表 i → j₁,j₂…）
+#[derive(Debug, Clone)]
+struct CsrAdj {
+    n: usize,
+    /// offsets[i+1] - offsets[i] == i 的出边数
+    offsets: Vec<usize>,
+    /// targets[offsets[i]..offsets[i+1]]：i 指向的邻居
+    targets: Vec<usize>,
+    /// weights[*]：与 targets 一一对应
+    weights: Vec<f64>,
+    /// out_weight[i] = Σ W(i,·)；0 表示 dangling
+    out_weight: Vec<f64>,
+    /// true ⟺ 所有边权 == 1.0（此时 closeness 可走 BFS，跳过二叉堆）
+    all_unit_weight: bool,
+}
+
+impl CsrAdj {
+    fn from_graph<N>(g: &DiGraph<N, f64>) -> Self {
+        let n = g.node_count();
+        let m = g.edge_count();
+
+        let mut out_deg = vec![0usize; n];
+        let mut out_weight = vec![0.0f64; n];
+        let mut all_unit_weight = true;
+        let mut edges: Vec<(usize, usize, f64)> = Vec::with_capacity(m);
+
+        for e in g.edge_references() {
+            let i = e.source().index();
+            let j = e.target().index();
+            let w = *e.weight();
+            out_deg[i] += 1;
+            out_weight[i] += w;
+            if (w - 1.0).abs() > 1e-15 {
+                all_unit_weight = false;
+            }
+            edges.push((i, j, w));
+        }
+
+        let mut offsets = vec![0usize; n + 1];
+        for i in 0..n {
+            offsets[i + 1] = offsets[i] + out_deg[i];
+        }
+        let mut targets = vec![0usize; m];
+        let mut weights = vec![0.0f64; m];
+        let mut curs = offsets[0..n].to_vec();
+        for (i, j, w) in edges {
+            let slot = curs[i];
+            curs[i] += 1;
+            targets[slot] = j;
+            weights[slot] = w;
+        }
+
+        Self {
+            n,
+            offsets,
+            targets,
+            weights,
+            out_weight,
+            all_unit_weight,
+        }
+    }
+
+    /// 标准 PageRank（CSR 推模型）
+    fn pagerank(&self, alpha: f64, iterations: usize) -> Vec<f64> {
+        let n = self.n;
+        if n == 0 {
+            return Vec::new();
+        }
+        let nf = n as f64;
+        let mut rank = vec![1.0 / nf; n];
+        let teleport = 1.0 / nf;
+        let mut propagated = vec![0.0f64; n];
+        let mut tmp_send = vec![0.0f64; n];
+
+        for _ in 0..iterations {
+            let mut dangling_mass = 0.0;
+            for i in 0..n {
+                let ow = self.out_weight[i];
+                if ow > 1e-15 {
+                    tmp_send[i] = rank[i] / ow;
+                } else {
+                    dangling_mass += rank[i];
+                    tmp_send[i] = 0.0;
+                }
+            }
+
+            for x in propagated.iter_mut() {
+                *x = 0.0;
+            }
+            for (i, &ts) in tmp_send.iter().enumerate().take(n) {
+                let rng = self.offsets[i]..self.offsets[i + 1];
+                for k in rng {
+                    let j = self.targets[k];
+                    let w = self.weights[k];
+                    propagated[j] += ts * w;
+                }
+            }
+
+            let mut max_diff = 0.0;
+            let dterm = alpha * dangling_mass * teleport;
+            let tterm = (1.0 - alpha) * teleport;
+            for j in 0..n {
+                let new = tterm + alpha * propagated[j] + dterm;
+                let d = (new - rank[j]).abs();
+                if d > max_diff {
+                    max_diff = d;
+                }
+                rank[j] = new;
+            }
+            if max_diff < 1e-6 {
+                break;
+            }
+        }
+        rank
+    }
+
+    /// 个性化 PageRank（CSR）：悬挂质量按 p 分配。
+    fn pagerank_personalized(&self, alpha: f64, iterations: usize, p: &[f64]) -> Vec<f64> {
+        let n = self.n;
+        if n == 0 {
+            return Vec::new();
+        }
+        let mut rank = p.to_vec();
+        let mut propagated = vec![0.0f64; n];
+        let mut tmp_send = vec![0.0f64; n];
+
+        for _ in 0..iterations {
+            let mut dangling_mass = 0.0;
+            for i in 0..n {
+                let ow = self.out_weight[i];
+                if ow > 1e-15 {
+                    tmp_send[i] = rank[i] / ow;
+                } else {
+                    dangling_mass += rank[i];
+                    tmp_send[i] = 0.0;
+                }
+            }
+
+            for x in propagated.iter_mut() {
+                *x = 0.0;
+            }
+            for (i, &ts) in tmp_send.iter().enumerate().take(n) {
+                let rng = self.offsets[i]..self.offsets[i + 1];
+                for k in rng {
+                    let j = self.targets[k];
+                    let w = self.weights[k];
+                    propagated[j] += ts * w;
+                }
+            }
+
+            let mut max_diff = 0.0;
+            for j in 0..n {
+                let pj = p[j];
+                let new = alpha * propagated[j] + alpha * dangling_mass * pj + (1.0 - alpha) * pj;
+                let d = (new - rank[j]).abs();
+                if d > max_diff {
+                    max_diff = d;
+                }
+                rank[j] = new;
+            }
+            if max_diff < 1e-6 {
+                break;
+            }
+        }
+        rank
+    }
+}
+
+fn rank_vec_to_map(rank: &[f64], node_map: &HashMap<String, NodeIndex>) -> HashMap<String, f64> {
+    let mut result = HashMap::with_capacity(rank.len());
+    for (id, idx) in node_map {
+        result.insert(id.clone(), rank[idx.index()]);
+    }
+    result
+}
 impl KnowledgeGraph {
     pub fn new() -> Self {
         Self {
@@ -153,7 +331,7 @@ impl KnowledgeGraph {
             .node_map
             .get(&edge.target)
             .ok_or_else(|| anyhow::anyhow!("目标节点不存在: {}", edge.target))?;
-        
+
         // 如果边已存在，强化权重（Hebbian学习）
         if let Some(existing_edge) = self.graph.find_edge(*source, *target) {
             let current_weight = *self.graph.edge_weight(existing_edge).unwrap();
@@ -202,14 +380,16 @@ impl KnowledgeGraph {
         adj
     }
 
-    /// 构建度矩阵
+    /// 构建度矩阵（CSR O(E)：行和 = Σ W(i,·)；仅最终对角矩阵分配一次 O(N²)）
     pub fn degree_matrix(&self) -> DMatrix<f64> {
         let n = self.node_count();
-        let adj = self.adjacency_matrix();
+        if n == 0 {
+            return DMatrix::zeros(0, 0);
+        }
+        let csr = CsrAdj::from_graph(&self.graph);
         let mut deg = DMatrix::zeros(n, n);
         for i in 0..n {
-            let row_sum: f64 = (0..n).map(|j| adj[(i, j)]).sum();
-            deg[(i, i)] = row_sum;
+            deg[(i, i)] = csr.out_weight[i];
         }
         deg
     }
@@ -221,21 +401,35 @@ impl KnowledgeGraph {
         &deg - &adj
     }
 
-    /// 构建对称归一化拉普拉斯矩阵
+    /// 构建对称归一化拉普拉斯矩阵（CSR O(E)，仅最终 N² 结果分配一次）
     pub fn normalized_laplacian(&self) -> DMatrix<f64> {
         let n = self.node_count();
-        let adj = self.adjacency_matrix();
-        let mut deg_inv_sqrt = DMatrix::zeros(n, n);
-        
+        if n == 0 {
+            return DMatrix::zeros(0, 0);
+        }
+        let csr = CsrAdj::from_graph(&self.graph);
+
+        // 无向语义度 d[i]：行和 + 列和（对称归一化拉普拉斯一般基于对称邻接。
+        // 历史实现取 row_sum(i) = Σ_j W(i,j) 作为 d[i]，故保持兼容）
+        let mut d = vec![0.0f64; n];
+        d[..n].copy_from_slice(&csr.out_weight[..n]);
+
+        // L = I − D^-1/2 A D^-1/2
+        #[allow(non_snake_case)]
+        let mut L = DMatrix::identity(n, n);
         for i in 0..n {
-            let d: f64 = (0..n).map(|j| adj[(i, j)]).sum();
-            if d > 1e-15 {
-                deg_inv_sqrt[(i, i)] = 1.0 / d.sqrt();
+            let di = d[i];
+            let di_sqrt = if di > 1e-15 { 1.0 / di.sqrt() } else { 0.0 };
+            let rng = csr.offsets[i]..csr.offsets[i + 1];
+            for k in rng {
+                let j = csr.targets[k];
+                let w = csr.weights[k];
+                let dj = d[j];
+                let dj_sqrt = if dj > 1e-15 { 1.0 / dj.sqrt() } else { 0.0 };
+                L[(i, j)] -= di_sqrt * w * dj_sqrt;
             }
         }
-        
-        let identity = DMatrix::identity(n, n);
-        &identity - &(&deg_inv_sqrt * &adj * &deg_inv_sqrt)
+        L
     }
 
     /// 计算k步关联度
@@ -288,16 +482,34 @@ impl KnowledgeGraph {
     ///
     /// 修复 R-D2：悬挂节点（出度为 0）的质量此前直接丢失，导致 ΣPR < 1（不守恒）。
     /// 现将悬挂质量均匀回传全图，并加收敛提前终止（容差 1e-6）。
+    ///
+    /// CSR 新路径（默认）：O(E·iter) 避免 N² dense。
+    /// 回滚开关：设环境变量 GRAPH_LEGACY_DENSE=1 则走原 dense 路径。
     pub fn pagerank(&self, iterations: usize) -> HashMap<String, f64> {
         let n = self.node_count();
         if n == 0 {
             return HashMap::new();
         }
 
+        if std::env::var("GRAPH_LEGACY_DENSE").is_ok() {
+            return self.pagerank_dense_legacy(iterations);
+        }
+
+        let alpha = self.damping_factor;
+        let csr = CsrAdj::from_graph(&self.graph);
+        let rank = csr.pagerank(alpha, iterations);
+        rank_vec_to_map(&rank, &self.node_map)
+    }
+
+    /// dense 回滚路径（保留原语义）。
+    fn pagerank_dense_legacy(&self, iterations: usize) -> HashMap<String, f64> {
+        let n = self.node_count();
+        if n == 0 {
+            return HashMap::new();
+        }
         let alpha = self.damping_factor;
         let adj = self.adjacency_matrix();
 
-        // 出度归一化矩阵 + 悬挂节点标记
         let mut deg = DMatrix::zeros(n, n);
         let mut dangling = vec![false; n];
         for i in 0..n {
@@ -314,22 +526,17 @@ impl KnowledgeGraph {
         let teleport = 1.0 / n as f64;
 
         for _ in 0..iterations {
-            // 悬挂质量：均匀回传全图（质量守恒）
-            let dangling_mass: f64 = (0..n)
-                .filter(|&i| dangling[i])
-                .map(|i| rank[(i, 0)])
-                .sum();
+            let dangling_mass: f64 = (0..n).filter(|&i| dangling[i]).map(|i| rank[(i, 0)]).sum();
 
-            // 修复 R-D6：transition[i][j] = W(i,j)/out(i) 是"i 给 j 的份额"，
-            // 传播须取转置（推模型）：rank_new[j] = Σ_i transition[i][j]·rank[i]
             let propagated = transition.transpose() * &rank;
             let mut new_rank = propagated * alpha;
             for i in 0..n {
                 new_rank[(i, 0)] += alpha * dangling_mass / n as f64 + (1.0 - alpha) * teleport;
             }
 
-            // 收敛判断
-            let max_diff: f64 = (0..n).map(|i| (new_rank[(i, 0)] - rank[(i, 0)]).abs()).fold(0.0, f64::max);
+            let max_diff: f64 = (0..n)
+                .map(|i| (new_rank[(i, 0)] - rank[(i, 0)]).abs())
+                .fold(0.0, f64::max);
             rank = new_rank;
             if max_diff < 1e-6 {
                 break;
@@ -345,8 +552,10 @@ impl KnowledgeGraph {
 
     /// 个性化 PageRank（激活扩散意图识别的算法基础）
     ///
-    /// a_i = (1-d)·p_i + d·(Σ_{j→i} a_j·W(j,i)/outW(j) + dangling_mass/n)
+    /// a_i = (1-d)·p_i + d·(Σ_{j→i} a_j·W(j,i)/outW(j) + dangling_mass·p[i])
     /// p 为个性化向量（命中关键词按权重归一），和为 1。
+    ///
+    /// 默认走 CSR；设 GRAPH_LEGACY_DENSE=1 走原 dense 路径。
     pub fn pagerank_personalized(
         &self,
         personalization: &HashMap<String, f64>,
@@ -356,7 +565,41 @@ impl KnowledgeGraph {
         if n == 0 {
             return HashMap::new();
         }
+        if std::env::var("GRAPH_LEGACY_DENSE").is_ok() {
+            return self.ppr_dense_legacy(personalization, iterations);
+        }
 
+        let alpha = self.damping_factor;
+
+        // 个性化向量
+        let mut p = vec![0.0f64; n];
+        let total: f64 = personalization.values().sum();
+        if total > 1e-15 {
+            for (id, w) in personalization {
+                if let Some(&idx) = self.node_map.get(id) {
+                    p[idx.index()] = w / total;
+                }
+            }
+        } else {
+            for v in p.iter_mut() {
+                *v = 1.0 / n as f64;
+            }
+        }
+
+        let csr = CsrAdj::from_graph(&self.graph);
+        let rank = csr.pagerank_personalized(alpha, iterations, &p);
+        rank_vec_to_map(&rank, &self.node_map)
+    }
+
+    fn ppr_dense_legacy(
+        &self,
+        personalization: &HashMap<String, f64>,
+        iterations: usize,
+    ) -> HashMap<String, f64> {
+        let n = self.node_count();
+        if n == 0 {
+            return HashMap::new();
+        }
         let alpha = self.damping_factor;
         let adj = self.adjacency_matrix();
 
@@ -371,7 +614,6 @@ impl KnowledgeGraph {
             }
         }
 
-        // 个性化向量：命中的节点带权重，其余为 0（和为 1）
         let mut p = vec![0.0f64; n];
         let total: f64 = personalization.values().sum();
         if total > 1e-15 {
@@ -381,7 +623,6 @@ impl KnowledgeGraph {
                 }
             }
         } else {
-            // 空个性化 → 均匀分布（退化为标准 PageRank）
             for v in p.iter_mut() {
                 *v = 1.0 / n as f64;
             }
@@ -391,21 +632,17 @@ impl KnowledgeGraph {
         let mut rank: DMatrix<f64> = DMatrix::from_column_slice(n, 1, &p);
 
         for _ in 0..iterations {
-            let dangling_mass: f64 = (0..n)
-                .filter(|&i| dangling[i])
-                .map(|i| rank[(i, 0)])
-                .sum();
+            let dangling_mass: f64 = (0..n).filter(|&i| dangling[i]).map(|i| rank[(i, 0)]).sum();
 
-            // 修复 R-D6：推模型取转置（与 pagerank() 一致）
             let propagated = transition.transpose() * &rank;
             let mut new_rank = propagated * alpha;
             for i in 0..n {
-                // 悬挂节点质量：按个性化向量 p 分配（而非均匀 1/n），
-                // 保证 seed=a 的 PPR 在 a 处最高、并沿 seed 方向衰减（项目记忆 TR-5.2）。
                 new_rank[(i, 0)] += alpha * dangling_mass * p[i] + (1.0 - alpha) * p[i];
             }
 
-            let max_diff: f64 = (0..n).map(|i| (new_rank[(i, 0)] - rank[(i, 0)]).abs()).fold(0.0, f64::max);
+            let max_diff: f64 = (0..n)
+                .map(|i| (new_rank[(i, 0)] - rank[(i, 0)]).abs())
+                .fold(0.0, f64::max);
             rank = new_rank;
             if max_diff < 1e-6 {
                 break;
@@ -428,8 +665,14 @@ impl KnowledgeGraph {
         let mut result = HashMap::new();
 
         for (id, idx) in &self.node_map {
-            let in_degree = self.graph.edges_directed(*idx, petgraph::Direction::Incoming).count() as f64;
-            let out_degree = self.graph.edges_directed(*idx, petgraph::Direction::Outgoing).count() as f64;
+            let in_degree = self
+                .graph
+                .edges_directed(*idx, petgraph::Direction::Incoming)
+                .count() as f64;
+            let out_degree = self
+                .graph
+                .edges_directed(*idx, petgraph::Direction::Outgoing)
+                .count() as f64;
             if n > 1.0 {
                 result.insert(id.clone(), (in_degree + out_degree) / (n - 1.0));
             } else {
@@ -510,38 +753,160 @@ impl KnowledgeGraph {
 
     /// 紧密中心性（harmonic 版本，对不可达节点稳健）
     ///
-    /// 修复 R-D5：此前用经典公式 (n-1)/Σd，存在不可达节点时结果偏大（分母漏掉 ∞ 项）。
-    /// 统一为 harmonic：C_C(v) = (Σ_{u≠v} 1/d(v,u))/(N-1)，不可达贡献 0（与 Node 层 F5 一致）。
+    /// 修复 R-D5：harmonic：C_C(v) = (Σ_{u≠v} 1/d(v,u))/(N-1)，不可达贡献 0。
+    /// 性能：CSR 判定 all_unit_weight 时改用 BFS（O(N+E)·N，跳过 dijkstra 二叉堆的 log N）；
+    /// 否则退化为 Dijkstra（保证有向加权图正确）。
     pub fn closeness_centrality(&self) -> HashMap<String, f64> {
         let mut result = HashMap::new();
         let n = self.node_count();
+        if n == 0 {
+            return result;
+        }
 
-        for (id, idx) in &self.node_map {
-            let distances = dijkstra(&self.graph, *idx, None, |e| *e.weight());
-            let mut harmonic = 0.0f64;
-            for (other, &d) in &distances {
-                if *other != *idx && d > 0.0 {
-                    harmonic += 1.0 / d;
+        let csr = CsrAdj::from_graph(&self.graph);
+        if csr.all_unit_weight {
+            // BFS 版（无权图最短路 = hop 数，距离 = 层数，作为 f64）
+            let mut dist = vec![-1i32; n];
+            let mut queue = std::collections::VecDeque::with_capacity(n);
+            for (id, idx) in &self.node_map {
+                let s = idx.index();
+                for x in dist.iter_mut() {
+                    *x = -1;
                 }
+                dist[s] = 0;
+                queue.clear();
+                queue.push_back(s);
+                while let Some(u) = queue.pop_front() {
+                    let rng = csr.offsets[u]..csr.offsets[u + 1];
+                    for k in rng {
+                        let v = csr.targets[k];
+                        if dist[v] < 0 {
+                            dist[v] = dist[u] + 1;
+                            queue.push_back(v);
+                        }
+                    }
+                }
+                let mut harmonic = 0.0f64;
+                for (_u, &d_u) in dist.iter().enumerate().take(n) {
+                    if d_u > 0 {
+                        harmonic += 1.0 / d_u as f64;
+                    }
+                }
+                let value = if n > 1 {
+                    harmonic / (n as f64 - 1.0)
+                } else {
+                    0.0
+                };
+                result.insert(id.clone(), value);
             }
-            let value = if n > 1 {
-                harmonic / (n as f64 - 1.0)
-            } else {
-                0.0
-            };
-            result.insert(id.clone(), value);
+        } else {
+            for (id, idx) in &self.node_map {
+                let distances = dijkstra(&self.graph, *idx, None, |e| *e.weight());
+                let mut harmonic = 0.0f64;
+                for (other, &d) in &distances {
+                    if *other != *idx && d > 0.0 {
+                        harmonic += 1.0 / d;
+                    }
+                }
+                let value = if n > 1 {
+                    harmonic / (n as f64 - 1.0)
+                } else {
+                    0.0
+                };
+                result.insert(id.clone(), value);
+            }
         }
         result
     }
 
-    /// 综合中心性指标
+    /// 综合中心性指标（一次构造 CSR 复用给 PageRank/Closeness）
     pub fn centrality_metrics(&self) -> CentralityMetrics {
+        let n = self.node_count();
+        let alpha = self.damping_factor;
+        let pr: HashMap<String, f64>;
+        let closeness: HashMap<String, f64>;
+
+        if std::env::var("GRAPH_LEGACY_DENSE").is_ok() {
+            pr = self.pagerank_dense_legacy(20);
+            closeness = self.closeness_centrality(); // Dijkstra fallback 不受 env 影响
+        } else if n == 0 {
+            pr = HashMap::new();
+            closeness = HashMap::new();
+        } else {
+            // 只做 1 次 CSR 构造
+            let csr = CsrAdj::from_graph(&self.graph);
+            let pr_vec = csr.pagerank(alpha, 20);
+            pr = rank_vec_to_map(&pr_vec, &self.node_map);
+            closeness = self.closeness_centrality_with_csr(&csr);
+        }
+
         CentralityMetrics {
             degree_centrality: self.degree_centrality(),
             betweenness_centrality: self.betweenness_centrality(),
-            pagerank: self.pagerank(20),
-            closeness_centrality: self.closeness_centrality(),
+            pagerank: pr,
+            closeness_centrality: closeness,
         }
+    }
+
+    /// closeness_centrality 复用调用方已构造好的 CSR（避免重复扫描边）。
+    fn closeness_centrality_with_csr(&self, csr: &CsrAdj) -> HashMap<String, f64> {
+        let mut result = HashMap::new();
+        let n = self.node_count();
+        if n == 0 {
+            return result;
+        }
+        if csr.all_unit_weight {
+            let mut dist = vec![-1i32; n];
+            let mut queue = std::collections::VecDeque::with_capacity(n);
+            for (id, idx) in &self.node_map {
+                let s = idx.index();
+                for x in dist.iter_mut() {
+                    *x = -1;
+                }
+                dist[s] = 0;
+                queue.clear();
+                queue.push_back(s);
+                while let Some(u) = queue.pop_front() {
+                    let rng = csr.offsets[u]..csr.offsets[u + 1];
+                    for k in rng {
+                        let v = csr.targets[k];
+                        if dist[v] < 0 {
+                            dist[v] = dist[u] + 1;
+                            queue.push_back(v);
+                        }
+                    }
+                }
+                let mut harmonic = 0.0f64;
+                for (_u, &d_u) in dist.iter().enumerate().take(n) {
+                    if d_u > 0 {
+                        harmonic += 1.0 / d_u as f64;
+                    }
+                }
+                let value = if n > 1 {
+                    harmonic / (n as f64 - 1.0)
+                } else {
+                    0.0
+                };
+                result.insert(id.clone(), value);
+            }
+        } else {
+            for (id, idx) in &self.node_map {
+                let distances = dijkstra(&self.graph, *idx, None, |e| *e.weight());
+                let mut harmonic = 0.0f64;
+                for (other, &d) in &distances {
+                    if *other != *idx && d > 0.0 {
+                        harmonic += 1.0 / d;
+                    }
+                }
+                let value = if n > 1 {
+                    harmonic / (n as f64 - 1.0)
+                } else {
+                    0.0
+                };
+                result.insert(id.clone(), value);
+            }
+        }
+        result
     }
 
     /// 最短路径 - Dijkstra算法
@@ -556,15 +921,18 @@ impl KnowledgeGraph {
             .ok_or_else(|| anyhow::anyhow!("目标节点不存在: {}", target))?;
 
         let distances = dijkstra(&self.graph, *source_idx, Some(*target_idx), |e| *e.weight());
-        
+
         if let Some(&dist) = distances.get(target_idx) {
             let mut path = Vec::new();
             let mut current = *target_idx;
             path.push(self.graph[current].id.clone());
-            
+
             let mut predecessors = HashMap::new();
             for (node, &d) in &distances {
-                for edge in self.graph.edges_directed(*node, petgraph::Direction::Incoming) {
+                for edge in self
+                    .graph
+                    .edges_directed(*node, petgraph::Direction::Incoming)
+                {
                     let from = edge.source();
                     if let Some(&from_d) = distances.get(&from) {
                         if (d - from_d - edge.weight()).abs() < 1e-10 {
@@ -573,7 +941,7 @@ impl KnowledgeGraph {
                     }
                 }
             }
-            
+
             while current != *source_idx {
                 if let Some(&prev) = predecessors.get(&current) {
                     path.push(self.graph[prev].id.clone());
@@ -583,7 +951,7 @@ impl KnowledgeGraph {
                 }
             }
             path.reverse();
-            
+
             Ok(Some(PathResult {
                 path,
                 total_weight: dist,
@@ -656,7 +1024,11 @@ impl KnowledgeGraph {
         }
 
         // 贪心合并循环（上限保护：n 次合并足够收敛）
-        let max_merges = if iterations == 0 { n } else { iterations.min(n * n) };
+        let max_merges = if iterations == 0 {
+            n
+        } else {
+            iterations.min(n * n)
+        };
         let mut merges = 0;
         loop {
             if merges >= max_merges {
@@ -668,21 +1040,18 @@ impl KnowledgeGraph {
                 if cnt == 0 || !comm_alive[a] || !comm_alive[b] {
                     continue;
                 }
-                // CNM 标准 ΔQ = 2 · [ e_ab/m − (Σ_a·Σ_b) / (2m)^2 ]
-                // （×2 是 Newman 文献中常见的"边双向模块化度"写法；统一按此避免低估增益导致合并停止过早）
+                // CNM 标准 ΔQ = e_ab − (Σ_a·Σ_b)/(2m)^2，其中 e_ab = cnt/m，Σ_x = d_x/(2m)。
+                // 修正：原实现再乘 2 会把「边项」重复放大一倍（伪增益），导致过度合并、社区坍缩。
                 let e_ab_over_m = cnt as f64 / m as f64;
-                let two_m_sq = (2.0 * m as f64) * (2.0 * m as f64);
                 let degree_term =
-                    (comm_degree[a] as f64 * comm_degree[b] as f64) / two_m_sq;
-                let gain = 2.0 * (e_ab_over_m - degree_term);
+                    (comm_degree[a] as f64 * comm_degree[b] as f64) / (2.0 * m as f64 * m as f64);
+                let gain = e_ab_over_m - degree_term;
                 candidates.push(((a, b), gain));
             }
             if candidates.is_empty() {
                 break;
             }
-            candidates.sort_by(|x, y| {
-                y.1.partial_cmp(&x.1).unwrap().then(x.0.cmp(&y.0))
-            });
+            candidates.sort_by(|x, y| y.1.partial_cmp(&x.1).unwrap().then(x.0.cmp(&y.0)));
             let ((a, b), gain) = candidates[0];
             if gain <= 1e-12 {
                 break; // 无正增益 → 收敛
@@ -744,9 +1113,10 @@ impl KnowledgeGraph {
                 let mut internal_edges = 0;
                 for (j, n1) in nodes.iter().enumerate() {
                     for n2 in nodes.iter().skip(j + 1) {
-                        if let (Some(idx1), Some(idx2)) =
-                            (self.node_map.get(n1.as_str()), self.node_map.get(n2.as_str()))
-                        {
+                        if let (Some(idx1), Some(idx2)) = (
+                            self.node_map.get(n1.as_str()),
+                            self.node_map.get(n2.as_str()),
+                        ) {
                             if self.graph.find_edge(*idx1, *idx2).is_some()
                                 || self.graph.find_edge(*idx2, *idx1).is_some()
                             {
@@ -773,7 +1143,11 @@ impl KnowledgeGraph {
     }
 
     /// 激活传播 - AI神经网络风格传播
-    pub fn propagate_activation(&mut self, start_nodes: &[String], iterations: usize) -> HashMap<String, f64> {
+    pub fn propagate_activation(
+        &mut self,
+        start_nodes: &[String],
+        iterations: usize,
+    ) -> HashMap<String, f64> {
         // 重置激活值
         for idx in self.node_map.values() {
             self.graph[*idx].activation = 0.0;
@@ -791,14 +1165,17 @@ impl KnowledgeGraph {
 
         for _ in 0..iterations {
             let mut new_activations = vec![0.0; n];
-            
+
             for (i, &idx) in indices.iter().enumerate() {
                 let mut incoming = 0.0;
-                for edge in self.graph.edges_directed(idx, petgraph::Direction::Incoming) {
+                for edge in self
+                    .graph
+                    .edges_directed(idx, petgraph::Direction::Incoming)
+                {
                     let weight = *edge.weight();
                     incoming += self.graph[edge.source()].activation * weight;
                 }
-                
+
                 // Sigmoid激活函数
                 let current = self.graph[idx].activation;
                 new_activations[i] = 1.0 / (1.0 + E.powf(-incoming)) * 0.3 + current * 0.7;
@@ -823,7 +1200,7 @@ impl KnowledgeGraph {
         let mut scores = HashMap::new();
         let pagerank = self.pagerank(20);
         let centrality = self.degree_centrality();
-        
+
         // 初始分数：PageRank + 中心性
         for id in self.node_map.keys() {
             if !context_nodes.contains(id) {
@@ -858,7 +1235,7 @@ impl KnowledgeGraph {
                     reasons.push(format!("类型: {}", node.node_type));
                 }
                 reasons.push(format!("相关度得分: {:.4}", score));
-                
+
                 NodeRecommendation {
                     node_id,
                     score,
@@ -872,7 +1249,7 @@ impl KnowledgeGraph {
     pub fn stats(&self) -> GraphStats {
         let n = self.node_count();
         let m = self.edge_count();
-        
+
         let density = if n > 1 {
             m as f64 / (n as f64 * (n as f64 - 1.0))
         } else {
@@ -891,17 +1268,22 @@ impl KnowledgeGraph {
             let neighbors: Vec<NodeIndex> = self
                 .graph
                 .neighbors(*idx)
-                .chain(self.graph.neighbors_directed(*idx, petgraph::Direction::Incoming))
+                .chain(
+                    self.graph
+                        .neighbors_directed(*idx, petgraph::Direction::Incoming),
+                )
                 .collect();
             let unique_neighbors: HashSet<_> = neighbors.iter().collect();
             let k = unique_neighbors.len();
-            
+
             if k >= 2 {
                 let mut triangles = 0;
                 let neighbor_vec: Vec<_> = unique_neighbors.into_iter().collect();
                 for (i, &&n1) in neighbor_vec.iter().enumerate() {
                     for &&n2 in neighbor_vec.iter().skip(i + 1) {
-                        if self.graph.find_edge(n1, n2).is_some() || self.graph.find_edge(n2, n1).is_some() {
+                        if self.graph.find_edge(n1, n2).is_some()
+                            || self.graph.find_edge(n2, n1).is_some()
+                        {
                             triangles += 1;
                         }
                     }
@@ -909,7 +1291,7 @@ impl KnowledgeGraph {
                 clustering_sum += (2 * triangles) as f64 / (k * (k - 1)) as f64;
             }
         }
-        
+
         let clustering_coefficient = if n > 0 {
             clustering_sum / n as f64
         } else {
@@ -934,12 +1316,15 @@ impl KnowledgeGraph {
             .get(id)
             .ok_or_else(|| anyhow::anyhow!("节点不存在: {}", id))?;
         let mut neighbors = Vec::new();
-        
+
         for edge in self.graph.edges(*idx) {
             let target = &self.graph[edge.target()];
             neighbors.push((target.id.clone(), *edge.weight(), target.node_type.clone()));
         }
-        for edge in self.graph.edges_directed(*idx, petgraph::Direction::Incoming) {
+        for edge in self
+            .graph
+            .edges_directed(*idx, petgraph::Direction::Incoming)
+        {
             let source = &self.graph[edge.source()];
             neighbors.push((source.id.clone(), *edge.weight(), source.node_type.clone()));
         }
@@ -976,8 +1361,12 @@ impl KnowledgeGraph {
 
     /// 余弦相似度计算（基于嵌入向量）
     pub fn cosine_similarity(&self, a: &str, b: &str) -> Result<f64> {
-        let node_a = self.get_node(a).ok_or_else(|| anyhow::anyhow!("节点不存在: {}", a))?;
-        let node_b = self.get_node(b).ok_or_else(|| anyhow::anyhow!("节点不存在: {}", b))?;
+        let node_a = self
+            .get_node(a)
+            .ok_or_else(|| anyhow::anyhow!("节点不存在: {}", a))?;
+        let node_b = self
+            .get_node(b)
+            .ok_or_else(|| anyhow::anyhow!("节点不存在: {}", b))?;
 
         if let (Some(emb_a), Some(emb_b)) = (&node_a.embedding, &node_b.embedding) {
             if emb_a.len() != emb_b.len() {
@@ -1028,7 +1417,13 @@ impl KnowledgeGraphBuilder {
         self
     }
 
-    pub fn add_node_with_embedding(mut self, id: &str, label: &str, node_type: &str, embedding: Vec<f64>) -> Self {
+    pub fn add_node_with_embedding(
+        mut self,
+        id: &str,
+        label: &str,
+        node_type: &str,
+        embedding: Vec<f64>,
+    ) -> Self {
         self.graph.add_node(KnowledgeNode {
             id: id.to_string(),
             label: label.to_string(),
@@ -1052,7 +1447,13 @@ impl KnowledgeGraphBuilder {
         self
     }
 
-    pub fn add_edge_typed(mut self, source: &str, target: &str, weight: f64, relation: &str) -> Self {
+    pub fn add_edge_typed(
+        mut self,
+        source: &str,
+        target: &str,
+        weight: f64,
+        relation: &str,
+    ) -> Self {
         let _ = self.graph.add_edge(KnowledgeEdge {
             source: source.to_string(),
             target: target.to_string(),
@@ -1212,6 +1613,157 @@ mod tests {
         assert!(communities.len() >= 2);
     }
 
+    // —— CSR vs Dense 等价性回归 ——
+    fn deterministic_graph(n: usize, edge_p: f64, seed: u64) -> KnowledgeGraph {
+        let mut rng = seed;
+        let mut xorshift = || {
+            rng ^= rng << 13;
+            rng ^= rng >> 7;
+            rng ^= rng << 17;
+            (rng as f64) / (u64::MAX as f64)
+        };
+        let mut g = KnowledgeGraph::new();
+        for i in 0..n {
+            g.add_node(KnowledgeNode {
+                id: format!("n{i}"),
+                label: format!("N{i}"),
+                node_type: "t".to_string(),
+                properties: serde_json::json!({}),
+                embedding: None,
+                activation: 0.0,
+                metadata: HashMap::new(),
+            });
+        }
+        for i in 0..n {
+            for j in 0..n {
+                if i == j {
+                    continue;
+                }
+                if xorshift() < edge_p {
+                    let w = 0.5 + xorshift() * 2.0;
+                    let _ = g.add_edge(KnowledgeEdge {
+                        source: format!("n{i}"),
+                        target: format!("n{j}"),
+                        weight: w,
+                        relation_type: "r".to_string(),
+                        properties: serde_json::json!({}),
+                    });
+                }
+            }
+        }
+        g
+    }
+
+    fn pearson(a: &[f64], b: &[f64]) -> f64 {
+        let n = a.len() as f64;
+        let ma: f64 = a.iter().sum::<f64>() / n;
+        let mb: f64 = b.iter().sum::<f64>() / n;
+        let mut num = 0.0f64;
+        let mut da = 0.0f64;
+        let mut db = 0.0f64;
+        for i in 0..a.len() {
+            let x = a[i] - ma;
+            let y = b[i] - mb;
+            num += x * y;
+            da += x * x;
+            db += y * y;
+        }
+        if da <= 0.0 || db <= 0.0 {
+            return 1.0;
+        }
+        num / (da.sqrt() * db.sqrt())
+    }
+
+    #[test]
+    fn test_csr_pagerank_vs_dense_pearson() {
+        let g = deterministic_graph(40, 0.15, 0x9E37_79B9_7F4A_7C15);
+        let pr_csr: HashMap<String, f64> = {
+            let csr = CsrAdj::from_graph(&g.graph);
+            let vec = csr.pagerank(g.damping_factor, 100);
+            rank_vec_to_map(&vec, &g.node_map)
+        };
+        let pr_dense = g.pagerank_dense_legacy(100);
+        let mut ids: Vec<&String> = pr_csr.keys().collect();
+        ids.sort();
+        let a: Vec<f64> = ids.iter().map(|k| pr_csr[*k]).collect();
+        let b: Vec<f64> = ids.iter().map(|k| pr_dense[*k]).collect();
+        let r = pearson(&a, &b);
+        assert!(
+            r >= 0.9999,
+            "CSR PR vs Dense PR pearson = {r}, need >= 0.9999"
+        );
+    }
+
+    #[test]
+    fn test_csr_ppr_vs_dense_pearson() {
+        let g = deterministic_graph(40, 0.15, 0x517C_C1CC_8115_3929);
+        let mut pers = HashMap::new();
+        pers.insert("n3".to_string(), 2.0);
+        pers.insert("n17".to_string(), 1.0);
+        pers.insert("n29".to_string(), 0.5);
+        let ppr_csr: HashMap<String, f64> = {
+            let n = g.node_count();
+            let mut p = vec![0.0f64; n];
+            let total: f64 = pers.values().sum();
+            for (id, w) in &pers {
+                if let Some(&idx) = g.node_map.get(id) {
+                    p[idx.index()] = w / total;
+                }
+            }
+            let csr = CsrAdj::from_graph(&g.graph);
+            let vec = csr.pagerank_personalized(g.damping_factor, PPR_MAX_ITER, &p);
+            rank_vec_to_map(&vec, &g.node_map)
+        };
+        let ppr_dense = g.ppr_dense_legacy(&pers, PPR_MAX_ITER);
+        let mut ids: Vec<&String> = ppr_csr.keys().collect();
+        ids.sort();
+        let a: Vec<f64> = ids.iter().map(|k| ppr_csr[*k]).collect();
+        let b: Vec<f64> = ids.iter().map(|k| ppr_dense[*k]).collect();
+        let r = pearson(&a, &b);
+        assert!(
+            r >= 0.9999,
+            "CSR PPR vs Dense PPR pearson = {r}, need >= 0.9999"
+        );
+    }
+
+    #[test]
+    fn test_degree_matrix_csr_equals_dense() {
+        let g = deterministic_graph(25, 0.25, 0xCAFE_BABE);
+        let deg_csr = g.degree_matrix();
+        let adj = g.adjacency_matrix();
+        let n = g.node_count();
+        for i in 0..n {
+            let sum: f64 = (0..n).map(|j| adj[(i, j)]).sum();
+            assert_relative_eq!(deg_csr[(i, i)], sum, epsilon = 1e-12);
+            for j in 0..n {
+                if i != j {
+                    assert_relative_eq!(deg_csr[(i, j)], 0.0);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_normalized_laplacian_csr_equals_dense() {
+        let g = deterministic_graph(20, 0.3, 0xC0FFEE_5EED);
+        let lap_csr = g.normalized_laplacian();
+        let n = g.node_count();
+        let adj = g.adjacency_matrix();
+        let mut d_inv_sqrt = DMatrix::zeros(n, n);
+        for i in 0..n {
+            let d: f64 = (0..n).map(|j| adj[(i, j)]).sum();
+            if d > 1e-15 {
+                d_inv_sqrt[(i, i)] = 1.0 / d.sqrt();
+            }
+        }
+        let iden = DMatrix::identity(n, n);
+        let lap_ref = &iden - &(&d_inv_sqrt * &adj * &d_inv_sqrt);
+        for i in 0..n {
+            for j in 0..n {
+                assert_relative_eq!(lap_csr[(i, j)], lap_ref[(i, j)], epsilon = 1e-12);
+            }
+        }
+    }
     #[test]
     fn test_stats() {
         let graph = KnowledgeGraphBuilder::new()

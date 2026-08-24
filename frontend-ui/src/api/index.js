@@ -12,30 +12,44 @@ const http = axios.create({
 http.interceptors.response.use(
   (resp) => {
     const body = resp.data
-    if (body && typeof body === 'object' && 'success' in body && 'data' in body) {
+    if (body && typeof body === 'object' && 'success' in body) {
+      // {success:false}: 失败路径统一带 code 前缀，便于诊断
       if (!body.success) {
-        return Promise.reject(new Error(body.error || body.message || '请求失败'))
+        const code = body.code ? `[${body.code}] ` : ''
+        return Promise.reject(new Error(code + (body.error || body.message || body.detail || '请求失败')))
       }
-      return body.data
+      // 标准信封 { success, data }: 返回 data 本体
+      if ('data' in body) return body.data
+      // 兼容 { success: true, ...rest }: 返回整包（保留 latency/provider/message 等额外字段）
+      return body
     }
     return body
   },
   (err) => {
     const status = err.response && err.response.status
     const data = err.response && err.response.data
-    let msg =
-      (data && (data.detail || data.title || data.message)) ||
-      err.message ||
-      '网络请求失败'
-    // 鉴权/服务类错误的全局友好提示（业务校验错误仍由各视图自行处理）
+    const extractMsg = (d) => {
+      if (!d) return ''
+      if (typeof d === 'string') return d
+      return d.error || d.message || d.detail || d.title || (typeof d.data === 'string' ? d.data : '')
+    }
+    let msg = extractMsg(data) || err.message || '网络请求失败'
+    const codePrefix =
+      data && typeof data === 'object' && data.code ? `[${data.code}] ` : ''
+    if (codePrefix && msg.indexOf(codePrefix) !== 0) msg = codePrefix + msg
     if (status === 401 || status === 503) {
-      msg = status === 401
-        ? '鉴权失败：请检查 API 令牌（OUS_API_TOKEN）是否已配置'
-        : '服务暂不可用：后端未启动或正在重启，请稍后重试'
+      msg =
+        status === 401
+          ? '鉴权失败：请检查 API 令牌（OUS_API_TOKEN）是否已配置'
+          : '服务暂不可用：后端未启动或正在重启，请稍后重试'
       ElMessage.error(msg)
     } else if (err.code === 'ECONNABORTED') {
       msg = '请求超时：后端处理较慢，请稍后重试'
       ElMessage.warning(msg)
+    } else if (status === 400 || status === 404 || status === 409) {
+      ElMessage.warning(msg)
+    } else if (status && status >= 500) {
+      ElMessage.error('服务端异常：' + msg)
     } else if (!err.response) {
       msg = '无法连接后端：请确认服务已启动（http://localhost:3010）'
       ElMessage.error(msg)
@@ -49,11 +63,16 @@ http.interceptors.response.use(
 const DEV_TOKEN = 'dev-secret-token'
 http.interceptors.request.use((config) => {
   const token =
-    (typeof localStorage !== 'undefined' && localStorage.getItem('ous_api_token')) ||
+    (typeof localStorage !== 'undefined' &&
+      (localStorage.getItem('ous_api_token') || localStorage.getItem('ous_token'))) ||
     (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_TOKEN) ||
     DEV_TOKEN
   config.headers = config.headers || {}
-  config.headers['Authorization'] = 'Bearer ' + token
+  if (token) config.headers['Authorization'] = 'Bearer ' + token
+  // 兜底：未显式设置 Content-Type 时默认 JSON
+  if (!config.headers['Content-Type'] && config.method && String(config.method).toLowerCase() !== 'get') {
+    config.headers['Content-Type'] = 'application/json'
+  }
   return config
 })
 

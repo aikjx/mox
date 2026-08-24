@@ -44,8 +44,12 @@ impl NodeDef {
     }
 }
 
-fn default_kind() -> serde_yaml::Value { serde_yaml::Value::String("task".into()) }
-fn default_duration() -> u64 { 100 }
+fn default_kind() -> serde_yaml::Value {
+    serde_yaml::Value::String("task".into())
+}
+fn default_duration() -> u64 {
+    100
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EdgeDef {
@@ -55,7 +59,9 @@ pub struct EdgeDef {
     pub kind: serde_yaml::Value,
 }
 
-fn default_edge_kind() -> serde_yaml::Value { serde_yaml::Value::String("sequence".into()) }
+fn default_edge_kind() -> serde_yaml::Value {
+    serde_yaml::Value::String("sequence".into())
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RuleDef {
@@ -71,7 +77,9 @@ pub struct RuleDef {
     pub required_guard_tags: Option<Vec<String>>,
 }
 
-fn default_severity() -> serde_yaml::Value { serde_yaml::Value::String("warning".into()) }
+fn default_severity() -> serde_yaml::Value {
+    serde_yaml::Value::String("warning".into())
+}
 
 /// YAML 纯解析工具（不读写文件系统）
 pub struct YamlFlowLoader;

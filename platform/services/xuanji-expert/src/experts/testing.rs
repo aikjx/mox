@@ -1,11 +1,11 @@
-﻿//! 测试专家（开发维度）：审查测试覆盖、可测试性
+//! 测试专家（开发维度）：审查测试覆盖、可测试性
 //!
 //! 分析基于 `CodeUnit` 的**预分析真字段**（`test_coverage` / `uncovered`），
 //! 不再用字符串猜测是否有测试。
 
+use crate::context::ExpertContext;
 use crate::expert::{Expert, ExpertOpinion, Risk};
 use crate::ir::{Dimension, ExpertId};
-use crate::context::ExpertContext;
 use flow_ai::model::Severity;
 
 /// 测试专家：审查代码测试
@@ -35,7 +35,8 @@ impl Expert for TestingExpert {
                         dimension: Dimension::Testing,
                         message: format!(
                             "模块 {} 测试覆盖率过低（{:.1}%）",
-                            unit.name, unit.test_coverage * 100.0
+                            unit.name,
+                            unit.test_coverage * 100.0
                         ),
                         remediation: Some("补充单元测试".to_string()),
                         veto: false,

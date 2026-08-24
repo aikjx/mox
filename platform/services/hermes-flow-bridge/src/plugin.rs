@@ -1,4 +1,4 @@
-﻿//! Step 5 / Step 9：实现 Hermes `Plugin` trait，注册两个中间件。
+//! Step 5 / Step 9：实现 Hermes `Plugin` trait，注册两个中间件。
 //!
 //! 设计铁律：两个中间件都是**同步**的，不在闭包内跑 `xuanji_optimize`（async + 重计算）。
 //! 重计算在 `BridgeState` 持有的后台任务里跑（见 bridge.rs），中间件只做：
@@ -39,7 +39,11 @@ mod hermes_mirror {
     }
     impl ToolRequestMiddlewareUpdate {
         pub fn new(args: Value) -> Self {
-            Self { args, source: None, reason: None }
+            Self {
+                args,
+                source: None,
+                reason: None,
+            }
         }
     }
     #[derive(Debug, Clone)]
@@ -58,16 +62,23 @@ mod hermes_mirror {
     }
     impl ToolResult {
         pub fn error(msg: &str) -> Self {
-            Self { ok: false, content: msg.into() }
+            Self {
+                ok: false,
+                content: msg.into(),
+            }
         }
         pub fn ok(content: String) -> Self {
             Self { ok: true, content }
         }
     }
-    pub type ToolRequestMiddleware =
-        Arc<dyn Fn(&ToolRequestMiddlewareContext) -> Option<ToolRequestMiddlewareUpdate> + Send + Sync>;
+    pub type ToolRequestMiddleware = Arc<
+        dyn Fn(&ToolRequestMiddlewareContext) -> Option<ToolRequestMiddlewareUpdate> + Send + Sync,
+    >;
     pub type ToolExecutionMiddleware = Arc<
-        dyn Fn(&ToolExecutionMiddlewareContext, &mut dyn FnMut(Option<Value>) -> ToolResult) -> ToolResult
+        dyn Fn(
+                &ToolExecutionMiddlewareContext,
+                &mut dyn FnMut(Option<Value>) -> ToolResult,
+            ) -> ToolResult
             + Send
             + Sync,
     >;
@@ -77,7 +88,10 @@ mod hermes_mirror {
     }
     impl PluginContext {
         pub fn new() -> Self {
-            Self { tool_request: Vec::new(), tool_exec: Vec::new() }
+            Self {
+                tool_request: Vec::new(),
+                tool_exec: Vec::new(),
+            }
         }
         pub fn on_tool_request(&mut self, mw: ToolRequestMiddleware) {
             self.tool_request.push(mw);
@@ -101,7 +115,10 @@ pub struct FlowBridgePlugin {
 
 impl FlowBridgePlugin {
     pub fn new(state: Arc<BridgeState>) -> Self {
-        Self { state, session: "default".into() }
+        Self {
+            state,
+            session: "default".into(),
+        }
     }
     /// 指定会话 id（真实环境由 Hermes 注入）。
     pub fn with_session(mut self, session: impl Into<String>) -> Self {
@@ -116,27 +133,35 @@ impl Plugin for FlowBridgePlugin {
         let sess = self.session.clone();
 
         // --- ToolRequestMiddleware：累积流程图 + 轻量复用路由 ---
-        ctx.on_tool_request(Arc::new(move |c: &ToolRequestMiddlewareContext| {
-            match on_tool_request(&st, &sess, &c.tool_name, &c.args, c.turn) {
+        ctx.on_tool_request(Arc::new(
+            move |c: &ToolRequestMiddlewareContext| match on_tool_request(
+                &st,
+                &sess,
+                &c.tool_name,
+                &c.args,
+                c.turn,
+            ) {
                 Some(d) => Some(ToolRequestMiddlewareUpdate {
                     args: d.args,
                     source: d.source,
                     reason: d.reason,
                 }),
                 None => None,
-            }
-        }));
+            },
+        ));
 
         // --- ToolExecutionMiddleware：算法否决拦截（最高权限）---
         let st2 = self.state.clone();
-        ctx.on_tool_execution(Arc::new(move |_c: &ToolExecutionMiddlewareContext,
-                                            run: &mut dyn FnMut(Option<Value>) -> ToolResult| {
-            let decision: ExecutionDecision = on_tool_execution(&st2);
-            if decision.blocked {
-                return ToolResult::error(&decision.reason.unwrap_or_default());
-            }
-            run(None)
-        }));
+        ctx.on_tool_execution(Arc::new(
+            move |_c: &ToolExecutionMiddlewareContext,
+                  run: &mut dyn FnMut(Option<Value>) -> ToolResult| {
+                let decision: ExecutionDecision = on_tool_execution(&st2);
+                if decision.blocked {
+                    return ToolResult::error(&decision.reason.unwrap_or_default());
+                }
+                run(None)
+            },
+        ));
     }
 }
 
@@ -169,7 +194,10 @@ mod tests {
             original_args: Value::Null,
             turn: 1,
         };
-        let res = mw(&c, &mut |_| ToolResult { ok: true, content: "ok".into() });
+        let res = mw(&c, &mut |_| ToolResult {
+            ok: true,
+            content: "ok".into(),
+        });
         assert!(!res.ok, "vetoed 时必须拦截，不应执行工具");
     }
 
@@ -182,7 +210,11 @@ mod tests {
         });
         st.recorder.record(
             "default",
-            &crate::normalize::ToolCall { tool_name: "a".into(), args: Value::Null, turn: 1 },
+            &crate::normalize::ToolCall {
+                tool_name: "a".into(),
+                args: Value::Null,
+                turn: 1,
+            },
         );
         let plugin = FlowBridgePlugin::new(st.clone());
         let mut ctx = PluginContext::new();

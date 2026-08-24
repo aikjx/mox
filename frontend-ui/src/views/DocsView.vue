@@ -33,14 +33,14 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import * as api from '@/api'
 
 const kw = ref('')
 
-const endpoints = [
+const endpoints = reactive([
   { method: 'GET', path: '/health', group: '系统', desc: '健康检查', fn: () => api.getHealth() },
   { method: 'GET', path: '/status', group: '系统', desc: '系统状态摘要', fn: () => api.getStatus() },
   { method: 'GET', path: '/status/full', group: '系统', desc: '完整运行时状态', fn: () => api.getFullStatus() },
@@ -73,7 +73,7 @@ const endpoints = [
   { method: 'GET', path: '/ai/browser/sessions', group: '浏览器', desc: '浏览器会话', fn: () => api.getBrowserSessions() },
   { method: 'GET', path: '/plugins', group: '系统', desc: '运行时插件', fn: () => api.getPlugins() },
   { method: 'GET', path: '/dialogue/sessions', group: '对话', desc: '后端会话列表（跨设备恢复）', fn: () => api.listDialogueSessions() }
-]
+])
 
 const filtered = computed(() => {
   const k = kw.value.trim().toLowerCase()
@@ -92,8 +92,6 @@ async function tryIt(a) {
   } catch (e) {
     a.res = '错误：' + e.message
   }
-  // 触发响应式
-  endpoints.splice(0, 0)
 }
 </script>
 

@@ -190,16 +190,10 @@ pub fn enterprise_specs() -> Vec<Spec> {
 /// ```
 ///
 /// 同时按子任务先后顺序建立 `C → C` 依赖边，反映涌现 DAG 的无环性。
-fn bind_to_graph(
-    g: &mut AssocGraph,
-    req_id: &str,
-    req_label: &str,
-    subtask_keys: &[String],
-) {
+fn bind_to_graph(g: &mut AssocGraph, req_id: &str, req_label: &str, subtask_keys: &[String]) {
     let r = format!("R_{req_id}");
     g.add(
-        Node::new(&r, NodeKind::Requirement, req_label)
-            .with_doc("由 PrimiEngine 自涌现闭环生成"),
+        Node::new(&r, NodeKind::Requirement, req_label).with_doc("由 PrimiEngine 自涌现闭环生成"),
     );
 
     let f = format!("F_{req_id}");
@@ -210,10 +204,7 @@ fn bind_to_graph(
     g.link(&r, &f, EdgeKind::Satisfies);
 
     let b = format!("B_{req_id}");
-    g.add(
-        Node::new(&b, NodeKind::Business, "拓扑涌现+正则化")
-            .with_doc("需求→DAG，ℛ̂ 裁剪至合规"),
-    );
+    g.add(Node::new(&b, NodeKind::Business, "拓扑涌现+正则化").with_doc("需求→DAG，ℛ̂ 裁剪至合规"));
     g.link(&f, &b, EdgeKind::Realizes);
 
     let a1 = format!("A_kt_{req_id}");
@@ -325,7 +316,11 @@ pub fn run_pipeline(
     steps.push(Step {
         name: "因果无环",
         ok: acyclic,
-        detail: if acyclic { "DAG 拓扑序存在".into() } else { "检测到环".into() },
+        detail: if acyclic {
+            "DAG 拓扑序存在".into()
+        } else {
+            "检测到环".into()
+        },
     });
 
     // Step 5 · 资源预算闸门（守恒/因果/资源三道闸门）

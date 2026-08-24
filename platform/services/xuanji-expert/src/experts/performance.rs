@@ -1,11 +1,11 @@
-﻿//! 性能专家（开发维度）：审查代码性能、资源使用
+//! 性能专家（开发维度）：审查代码性能、资源使用
 //!
 //! 分析基于 `CodeUnit` 的**预分析真字段**（执行耗时 / 内存 / N+1），
 //! 不再用字符串特征猜测性能问题。
 
+use crate::context::ExpertContext;
 use crate::expert::{Expert, ExpertOpinion, Risk};
 use crate::ir::{Dimension, ExpertId};
-use crate::context::ExpertContext;
 use flow_ai::model::Severity;
 
 /// 性能专家：审查代码性能
@@ -59,7 +59,10 @@ impl Expert for PerformanceExpert {
                         severity: Severity::Info,
                         nodes: vec![unit.id.clone()],
                         dimension: Dimension::Performance,
-                        message: format!("模块 {} 复杂度过高（{}），执行路径多", unit.name, unit.cyclomatic_complexity),
+                        message: format!(
+                            "模块 {} 复杂度过高（{}），执行路径多",
+                            unit.name, unit.cyclomatic_complexity
+                        ),
                         remediation: Some("拆分热点路径".to_string()),
                         veto: false,
                     });

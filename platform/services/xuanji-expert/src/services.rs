@@ -13,9 +13,7 @@ use crate::expert_traits::{AllianceOrchestrator, ExpertConsultant, ExpertRegistr
 use crate::experts::all_experts;
 use crate::ir::Dimension;
 use crate::pipeline::xuanji_optimize;
-use crate::types::{
-    ConsultQuery, ConsultReport, ExpertMeta, Result, RoutingDecision, TaskSpec,
-};
+use crate::types::{ConsultQuery, ConsultReport, ExpertMeta, Result, RoutingDecision, TaskSpec};
 use async_trait::async_trait;
 use flow_ai::model::FlowGraph;
 use std::collections::HashMap;
@@ -38,7 +36,9 @@ impl Default for RegistryImpl {
 
 impl RegistryImpl {
     pub fn new() -> Self {
-        let s = Self { inner: RwLock::new(HashMap::new()) };
+        let s = Self {
+            inner: RwLock::new(HashMap::new()),
+        };
         // 预填内置专家：把 crate::experts::all_experts() 中的 trait 对象映射为 ExpertMeta。
         let experts = all_experts();
         for e in experts {
@@ -118,7 +118,9 @@ impl Default for ExpertServiceImpl {
 
 impl ExpertServiceImpl {
     pub fn new() -> Self {
-        Self { default_quota: None }
+        Self {
+            default_quota: None,
+        }
     }
     pub fn with_default_quota(mut self, q: ResourceQuota) -> Self {
         self.default_quota = Some(q);
@@ -138,8 +140,9 @@ impl ExpertServiceImpl {
                 // 没有图，返回空报告（便于测试 / mock 路径）
                 Ok(ConsultReport {
                     report_id: query.id.clone(),
-                    steps: vec!["[ExpertServiceImpl] 未传入 FlowGraph，跳过璇玑 14 维分析（空报告）"
-                        .into()],
+                    steps: vec![
+                        "[ExpertServiceImpl] 未传入 FlowGraph，跳过璇玑 14 维分析（空报告）".into(),
+                    ],
                     score: 1.0,
                     vetoed: false,
                     reason: None,
@@ -147,26 +150,59 @@ impl ExpertServiceImpl {
             }
             Some(flow) => {
                 // 2) 构造 GovernContext
-                let tenant_name = query.ctx.get("tenant").cloned().unwrap_or_else(|| "default".into());
-                let ns = query.ctx.get("namespace").cloned().unwrap_or_else(|| "default".into());
-                let regulated = query.ctx.get("regulated").map(|s| s == "true").unwrap_or(false);
+                let tenant_name = query
+                    .ctx
+                    .get("tenant")
+                    .cloned()
+                    .unwrap_or_else(|| "default".into());
+                let ns = query
+                    .ctx
+                    .get("namespace")
+                    .cloned()
+                    .unwrap_or_else(|| "default".into());
+                let regulated = query
+                    .ctx
+                    .get("regulated")
+                    .map(|s| s == "true")
+                    .unwrap_or(false);
                 let mut tenant = Tenant::new(&tenant_name, &ns).regulated(regulated);
-                if let Some(pool) = query.ctx.get("pool_browser").and_then(|s| s.parse::<u32>().ok()) {
+                if let Some(pool) = query
+                    .ctx
+                    .get("pool_browser")
+                    .and_then(|s| s.parse::<u32>().ok())
+                {
                     tenant = tenant.with_pool("browser", pool);
                 }
-                let principal_name = query.ctx.get("principal").cloned().unwrap_or_else(|| "consultant".into());
+                let principal_name = query
+                    .ctx
+                    .get("principal")
+                    .cloned()
+                    .unwrap_or_else(|| "consultant".into());
                 let mut principal = Principal::new(&principal_name);
                 if let Some(roles) = query.ctx.get("roles") {
-                    principal = principal.with_roles(roles.split(',').map(|s| s.to_string()).collect());
+                    principal =
+                        principal.with_roles(roles.split(',').map(|s| s.to_string()).collect());
                 }
                 let mut ctx = GovernContext::new(tenant, principal);
                 if let Some(q) = &self.default_quota {
                     ctx.quota = q.clone();
                 } else {
                     ctx.quota = ResourceQuota {
-                        max_parallel: query.ctx.get("max_parallel").and_then(|s| s.parse().ok()).unwrap_or(8),
-                        max_cost_budget: query.ctx.get("max_cost_budget").and_then(|s| s.parse().ok()).unwrap_or(100.0),
-                        sla_ms: query.ctx.get("sla_ms").and_then(|s| s.parse().ok()).unwrap_or(50_000),
+                        max_parallel: query
+                            .ctx
+                            .get("max_parallel")
+                            .and_then(|s| s.parse().ok())
+                            .unwrap_or(8),
+                        max_cost_budget: query
+                            .ctx
+                            .get("max_cost_budget")
+                            .and_then(|s| s.parse().ok())
+                            .unwrap_or(100.0),
+                        sla_ms: query
+                            .ctx
+                            .get("sla_ms")
+                            .and_then(|s| s.parse().ok())
+                            .unwrap_or(50_000),
                     };
                 }
                 // 3) 调用璇玑优化
@@ -186,12 +222,20 @@ impl ExpertServiceImpl {
                 ));
                 steps.push(format!(
                     "[2/3] 算法验证 {} · {}",
-                    if rep.algo.vetoed { "否决⛨" } else { "通过" },
+                    if rep.algo.vetoed {
+                        "否决⛨"
+                    } else {
+                        "通过"
+                    },
                     rep.algo.summary
                 ));
                 steps.push(format!(
                     "[3/3] 治理闸门 {}（通过={} · SLA={} · 预算={}）",
-                    if rep.gate.approved { "通过" } else { "驳回" },
+                    if rep.gate.approved {
+                        "通过"
+                    } else {
+                        "驳回"
+                    },
                     rep.gate.approved,
                     rep.gate.sla_ok,
                     rep.gate.budget_ok,
@@ -206,7 +250,11 @@ impl ExpertServiceImpl {
                     None
                 };
                 Ok(ConsultReport {
-                    report_id: if query.id.is_empty() { rep.flow_id.clone() } else { query.id.clone() },
+                    report_id: if query.id.is_empty() {
+                        rep.flow_id.clone()
+                    } else {
+                        query.id.clone()
+                    },
                     steps,
                     score: avg_score,
                     vetoed,
@@ -227,7 +275,9 @@ impl ExpertConsultant for ExpertServiceImpl {
         // 这里 sync 实现是纯 CPU 计算，使用 spawn_blocking 是规范
         let rep = tokio::task::spawn_blocking(move || {
             // 重建一个临时 Self 并调用 consult_sync
-            let svc = ExpertServiceImpl { default_quota: (*self_arc).clone() };
+            let svc = ExpertServiceImpl {
+                default_quota: (*self_arc).clone(),
+            };
             svc.consult_sync(&owned_q)
         })
         .await
@@ -286,7 +336,10 @@ impl AllianceOrchestrator for AllianceRouter {
             .chain(constraint_words.iter())
             .map(|s| s.as_str())
             .collect();
-        let list = self.registry.list(task.constraints.get("domain").map(|s| s.as_str())).await?;
+        let list = self
+            .registry
+            .list(task.constraints.get("domain").map(|s| s.as_str()))
+            .await?;
         let mut best: Option<(ExpertMeta, f64)> = None;
         for m in list {
             let mut hit = 0usize;
@@ -294,7 +347,9 @@ impl AllianceOrchestrator for AllianceRouter {
                 let wl = w.to_lowercase();
                 if m.id.to_lowercase().contains(&wl)
                     || m.name.to_lowercase().contains(&wl)
-                    || m.capabilities.iter().any(|c| c.to_lowercase().contains(&wl))
+                    || m.capabilities
+                        .iter()
+                        .any(|c| c.to_lowercase().contains(&wl))
                 {
                     hit += 1;
                 }
@@ -403,7 +458,11 @@ mod tests {
     #[test]
     fn consultant_sync_empty_returns_healthy() {
         let svc = ExpertServiceImpl::new();
-        let q = ConsultQuery { id: "q".into(), query: "hello".into(), ctx: HashMap::new() };
+        let q = ConsultQuery {
+            id: "q".into(),
+            query: "hello".into(),
+            ctx: HashMap::new(),
+        };
         let rep = svc.consult_sync(&q).unwrap();
         assert_eq!(rep.report_id, "q");
         assert!((rep.score - 1.0).abs() < 1e-9);
@@ -414,7 +473,9 @@ mod tests {
     async fn alliance_router_uses_prefer_expert() {
         let r = Arc::new(RegistryImpl::new());
         let router = AllianceRouter::new(r.clone());
-        r.register(&ExpertMeta::new("demo-exp", "Demo", "t")).await.unwrap();
+        r.register(&ExpertMeta::new("demo-exp", "Demo", "t"))
+            .await
+            .unwrap();
         let task = TaskSpec {
             task_id: "t1".into(),
             scenario: "anything".into(),
@@ -439,6 +500,10 @@ mod tests {
         };
         let d = router.route(&task).await.unwrap();
         // 预期命中 security 专家（或其他安全相关，只要不是 default 和 0.0 就行）
-        assert!(d.confidence > 0.0, "route 应该匹配到关键词，但得到 default：{:?}", d);
+        assert!(
+            d.confidence > 0.0,
+            "route 应该匹配到关键词，但得到 default：{:?}",
+            d
+        );
     }
 }

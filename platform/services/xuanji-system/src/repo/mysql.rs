@@ -93,11 +93,16 @@ impl Repository for MySqlRepository {
             }
             Err(e) => tracing::error!("mysql 加载 xuanjis 失败: {}", e),
         }
-        self.load_into(&mut st.members, "SELECT data FROM members").await;
-        self.load_into(&mut st.tasks, "SELECT data FROM tasks").await;
-        self.load_into(&mut st.channels, "SELECT data FROM channels").await;
-        self.load_into(&mut st.messages, "SELECT data FROM messages").await;
-        self.load_into(&mut st.notifications, "SELECT data FROM notifications").await;
+        self.load_into(&mut st.members, "SELECT data FROM members")
+            .await;
+        self.load_into(&mut st.tasks, "SELECT data FROM tasks")
+            .await;
+        self.load_into(&mut st.channels, "SELECT data FROM channels")
+            .await;
+        self.load_into(&mut st.messages, "SELECT data FROM messages")
+            .await;
+        self.load_into(&mut st.notifications, "SELECT data FROM notifications")
+            .await;
 
         if let Ok(rows) = sqlx::query("SELECT member_id, data FROM bindings")
             .fetch_all(&self.pool)
@@ -143,49 +148,87 @@ impl Repository for MySqlRepository {
 
     async fn persist_xuanji(&self, a: &Xuanji) {
         let sql = schema::upsert_sql(Backend::MySql, "xuanjis", "id", &["data"]);
-        self.exec_str(&sql, &[&a.id, &serde_json::to_string(a).unwrap_or_default()]).await;
+        self.exec_str(
+            &sql,
+            &[&a.id, &serde_json::to_string(a).unwrap_or_default()],
+        )
+        .await;
     }
     async fn persist_member(&self, m: &Member) {
         let sql = schema::upsert_sql(Backend::MySql, "members", "id", &["xuanji_id", "data"]);
         self.exec_str(
             &sql,
-            &[&m.id, &m.xuanji_id, &serde_json::to_string(m).unwrap_or_default()],
-        ).await;
+            &[
+                &m.id,
+                &m.xuanji_id,
+                &serde_json::to_string(m).unwrap_or_default(),
+            ],
+        )
+        .await;
     }
     async fn persist_task(&self, t: &Task) {
         let sql = schema::upsert_sql(Backend::MySql, "tasks", "id", &["xuanji_id", "data"]);
         self.exec_str(
             &sql,
-            &[&t.id, &t.xuanji_id, &serde_json::to_string(t).unwrap_or_default()],
-        ).await;
+            &[
+                &t.id,
+                &t.xuanji_id,
+                &serde_json::to_string(t).unwrap_or_default(),
+            ],
+        )
+        .await;
     }
     async fn persist_channel(&self, c: &Channel) {
         let sql = schema::upsert_sql(Backend::MySql, "channels", "id", &["xuanji_id", "data"]);
         self.exec_str(
             &sql,
-            &[&c.id, &c.xuanji_id, &serde_json::to_string(c).unwrap_or_default()],
-        ).await;
+            &[
+                &c.id,
+                &c.xuanji_id,
+                &serde_json::to_string(c).unwrap_or_default(),
+            ],
+        )
+        .await;
     }
     async fn persist_message(&self, m: &Message) {
         let sql = schema::upsert_sql(Backend::MySql, "messages", "id", &["channel_id", "data"]);
         self.exec_str(
             &sql,
-            &[&m.id, &m.channel_id, &serde_json::to_string(m).unwrap_or_default()],
-        ).await;
+            &[
+                &m.id,
+                &m.channel_id,
+                &serde_json::to_string(m).unwrap_or_default(),
+            ],
+        )
+        .await;
     }
     async fn persist_notification(&self, n: &Notification) {
-        let sql = schema::upsert_sql(Backend::MySql, "notifications", "id", &["member_id", "data"]);
+        let sql = schema::upsert_sql(
+            Backend::MySql,
+            "notifications",
+            "id",
+            &["member_id", "data"],
+        );
         self.exec_str(
             &sql,
-            &[&n.id, &n.member_id, &serde_json::to_string(n).unwrap_or_default()],
-        ).await;
+            &[
+                &n.id,
+                &n.member_id,
+                &serde_json::to_string(n).unwrap_or_default(),
+            ],
+        )
+        .await;
     }
     async fn persist_bindings(&self, member_id: &str, bindings: &[RoleBinding]) {
         let sql = schema::upsert_sql(Backend::MySql, "bindings", "member_id", &["data"]);
         self.exec_str(
             &sql,
-            &[member_id, &serde_json::to_string(bindings).unwrap_or_default()],
-        ).await;
+            &[
+                member_id,
+                &serde_json::to_string(bindings).unwrap_or_default(),
+            ],
+        )
+        .await;
     }
     async fn persist_token(&self, hash: &str, member_id: &str) {
         let sql = schema::upsert_sql(Backend::MySql, "tokens", "hash", &["member_id"]);

@@ -9,7 +9,17 @@
  *   - 兼容无 aiEngine / llm-gateway 场景：只基于 logs.json 事件回放 + 当前会话内 record
  */
 module.exports = function registerSystemRoutes(ctx) {
-  const { fs, path, gateway, storage, aiEngine, security, modules, config, uid, readJSON, writeJSON, ok, fail, readBody, appendLog, reg } = ctx;
+  const { fs, path, gateway, storage, aiEngine, security, modules, config, uid, readJSON, writeJSON, ok, fail, readBody, appendLog, reg: regRaw } = ctx;
+  // 可用性归一化：system 域的路由对外同时支持 无前缀（/health）与 /system 前缀（/system/health），
+  // 配合 api-server 的 /api 前缀剥离，最终 /api/system/health 也能通。其他域全部使用域前缀（如 /kb/documents）。
+  function reg(method, p, fn) {
+    regRaw(method, p, fn);
+    if (!p.startsWith('/system/') && p !== '/') {
+      regRaw(method, '/system' + p, fn);
+    }
+  }
+  // 此外根路由 / 提供系统域索引页，同时注册别名 /system/ 与 /system/index
+  // 下面 '/' 会正常注册，并走上述 reg 函数注册到 /system/（因为 p='/' 只走第一次注册即可，避免重复 handler 覆盖）。
 
   // -------- O4 SLO tracker（进程级单例，供 /system/slo 读取和内部 record）--------
   const { SloTracker } = require('../slo-tracker');
@@ -202,55 +212,67 @@ module.exports = function registerSystemRoutes(ctx) {
   });
 
   reg('get', '/logs', (req, res) => {
-    const rawLogs = readJSON('logs.json', []);
-    const execLogs = rawLogs.filter(l => l.type === 'execute' || l.type === 'workflow');
-    if (execLogs.length > 0) {
-      ok(res, execLogs.map(l => ({
-        timestamp: l.timestamp || l.ts,
-        workflow: l.workflow || [l.msg || 'execute'],
-        success: l.success !== false,
-        execution_time_ms: l.execution_time_ms || l.duration || 50 + Math.floor(Math.random() * 500),
-        input_dim: l.input_dim || 3,
-        output_dim: l.output_dim || 7,
-        ai_powerd: l.ai_powerd || false
-      })));
-    } else {
-      const aiExecLog = readJSON('ai_execution_log.json', []);
-      if (aiExecLog.length > 0) {
-        ok(res, aiExecLog.map(l => ({
-          timestamp: l.timestamp,
-          workflow: [l.operator || 'execute'],
-          success: l.status === 'success',
-          execution_time_ms: l.duration || 100,
-          input_dim: 3,
-          output_dim: 7,
-          ai_powerd: l.ai_powerd || false
-        })));
-      } else {
-        const mockLogs = [];
-        const now = Date.now();
-        const workflows = [
-          ['需求采集', '归一化 IR', '双联盟十四维特派', '归一化裁决', '璇玑验证网关'],
-          ['数据输入', '知识图谱算子', 'PageRank 计算', '社区发现'],
-          ['浏览器自动化', '页面解析', '数据提取', '报告生成'],
-          ['AI 对话', '意图识别', '算子匹配', '结果聚合'],
-          ['工作流编排', '算子执行', '状态监控', '异常处理']
-        ];
-        for (let i = 0; i < 15; i++) {
-          const wf = workflows[i % workflows.length];
-          mockLogs.push({
-            timestamp: new Date(now - i * 300000).toISOString(),
-            workflow: wf,
-            success: Math.random() > 0.1,
-            execution_time_ms: 50 + Math.floor(Math.random() * 500),
-            input_dim: 2 + Math.floor(Math.random() * 5),
-            output_dim: 5 + Math.floor(Math.random() * 10),
-            ai_powerd: gateway.activeProvider && Math.random() > 0.5
-          });
+    // 支持分页：?limit=50&offset=0&level=info&type=execute
+    const u = new URL(req.url, 'http://localhost');
+    let limit = Math.max(1, Math.min(500, Number(u.searchParams.get('limit')) || 50));
+    let offset = Math.max(0, Number(u.searchParams.get('offset')) || 0);
+    const wantLevel = (u.searchParams.get('level') || '').toLowerCase();
+    const wantType = u.searchParams.get('type') || '';
+    const rawLogs = readJSON('logs.json', []) || [];
+    let arr = Array.isArray(rawLogs) ? rawLogs : [];
+    if (wantLevel) arr = arr.filter(l => l && String(l.level || '').toLowerCase() === wantLevel);
+    if (wantType) arr = arr.filter(l => l && String(l.type || '') === wantType);
+    const total = arr.length;
+    arr = arr.slice().reverse().slice(offset, offset + limit); // 时间倒序 + 分页
+    ok(res, arr, {
+      total,
+      limit,
+      offset,
+      returned: arr.length,
+      generatedAt: new Date().toISOString(),
+    });
+  });
+
+  reg('post', '/logs/append', async (req, res) => {
+    // 写入审计日志到 logs.json（企业级合规/审计链路）
+    try {
+      const body = await readBody(req);
+      if (!body || typeof body !== 'object') return fail(res, 400, '需要 JSON 负载');
+      const level = (body.level || 'info').toString().slice(0, 16);
+      const type = (body.type || 'audit').toString().slice(0, 32);
+      const entry = {
+        timestamp: body.ts ? (new Date(Number(body.ts) || String(body.ts))).toISOString() : new Date().toISOString(),
+        ts: Date.now(),
+        level,
+        type,
+        module: body.module ? String(body.module).slice(0, 64) : null,
+        message: body.message ? String(body.message).slice(0, 2000) : null,
+        tags: Array.isArray(body.tags) ? body.tags.filter(x => typeof x === 'string').slice(0, 20) : [],
+        success: body.success == null ? true : !!body.success,
+        duration: Number(body.duration) || 0,
+        actor: body.actor ? String(body.actor).slice(0, 128) : null,
+      };
+      const { LOG_CAPACITY } = require('../lib/logger');
+      const store = readJSON('logs.json', []) || [];
+      store.push(entry);
+      // 保持日志文件大小上限，超过 LOG_CAPACITY 丢弃最旧 10%
+      if (store.length > LOG_CAPACITY) store.splice(0, Math.floor(store.length * 0.1));
+      const okWrite = writeJSON('logs.json', store);
+      // 可靠性兜底：writeJSON 基于存储后端，若存储层初始化未完成/抛错则直接落盘
+      // 磁盘文件是企业级审计 Source of Truth，必须保证。
+      if (!okWrite) {
+        try {
+          const fp = path.join(config.DATA_DIR, 'logs.json');
+          fs.writeFileSync(fp, JSON.stringify(store, null, 2), 'utf8');
+        } catch (e2) {
+          try { fs.appendFileSync(path.join(config.DATA_DIR, 'logs.audit.ndjson'), JSON.stringify(entry) + '\n', 'utf8'); } catch(_) {}
+          return fail(res, 500, '审计日志持久化失败: ' + e2.message);
         }
-        ok(res, mockLogs);
       }
-    }
+      // 不要在此处再调用 appendLog()：logger.appendLog 内部会二次 readJSON + push + writeJSON，
+      // 虽然容量已对齐，但该调用会产生额外的"logs-append"包装条目造成审计噪音。
+      ok(res, entry, { appended: true, totalNow: store.length, persisted: true });
+    } catch (e) { fail(res, 500, 'logs append 失败: ' + e.message); }
   });
 
   reg('get', '/config', (req, res) => {

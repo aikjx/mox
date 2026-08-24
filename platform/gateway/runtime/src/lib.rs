@@ -12,9 +12,9 @@ pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateM
     owner: "xuanji-core",
 };
 
-pub mod rbac_middleware;
 pub mod api_standard;
 pub mod openapi;
+pub mod rbac_middleware;
 /// 子服务聚合（xuanji-expert / xuanji-system / primiflow / primiflow-fusion）：
 /// 挂载前缀常量与聚合构建，供 main 与 rbac_middleware 共用鉴权边界定义。
 pub mod subservers;
@@ -23,9 +23,9 @@ pub mod subservers;
 /// 含路径迁移（market_migration）、版本化（market_version）、
 /// DSL 转换（market_dsl）与导入导出/租户扩展路由（routes::market）
 pub mod market;
-pub mod market_version;
-pub mod market_migration;
 pub mod market_dsl;
+pub mod market_migration;
+pub mod market_version;
 
 /// OUS 前端治理台 API（handlers::governance / routes::governance，对应 /api/governance/*）
 // 治理台状态自包含于 GovernanceState 并适配 xuanji-expert 当前 API（pipeline::GovernanceReport /
@@ -42,7 +42,7 @@ pub mod ai_router;
 pub mod sidecar;
 
 /// OUS-Cordis 插件化运行时内核
-/// 
+///
 /// 参考 DeepSeek Harness "Everything is a Plugin" 范式
 /// 核心特性：
 /// - Profile: 配置集合（LLM、工具、Agent）

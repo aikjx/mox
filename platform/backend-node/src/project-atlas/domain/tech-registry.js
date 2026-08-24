@@ -306,7 +306,18 @@ const DATA_ASSETS = [
   { file: 'doc_graph_links.json', domain: 'kb', desc: '文档实体图谱绑定记录（doc→实体→域 三层绑定）' },
   { file: 'automation.json', domain: 'auto-tasks', desc: '自动化任务' },
   { file: 'ultimate_reasoning_rules.json', domain: 'ai-ultimate', desc: '推理规则' },
-  { file: 'projects.json', domain: 'projects', desc: '项目中心（全维项目化归类与项目-资源绑定）' }
+  { file: 'projects.json', domain: 'projects', desc: '项目中心（全维项目化归类与项目-资源绑定）' },
+  // —— 企业级 10-task 验收数据（全域共享，T0/TD 评分脚本读写） ——
+  { file: 'enterprise_10task_definitions.json', domain: 'atlas', desc: '企业级 10-task 任务定义（阈值/AC 清单）' },
+  { file: 'enterprise_10task_scores.json', domain: 'atlas', desc: '企业级 10-task 评分快照（Rule+Rubric 逐项、cheat、summary）' },
+  { file: 'enterprise_10task_history.jsonl', domain: 'atlas', desc: '企业级 10-task 历史评分曲线 JSONL（每次 -Full 追加 1 行）' },
+  // —— 图谱自管理扫描/索引产物（atlas-auto 域承载，避免漏登记） ——
+  { file: 'all_module_cards.json', domain: 'atlas', desc: '模块化卡片索引（全域模块清单 · JS/Rust 复用）' },
+  { file: 'graph_modules.nodes.json', domain: 'atlas', desc: '模块图谱节点（graph_modules 模块 CNM 视图）' },
+  { file: 'graph_modules.edges.json', domain: 'atlas', desc: '模块图谱边（模块间依赖/协同关系）' },
+  { file: 'ai_benchmark_results.json', domain: 'ai-benchmarks', desc: 'AI 引擎真实基准评测结果（企业基准 25 项）' },
+  { file: 'engine_core_metrics.json', domain: 'ai-engine', desc: '引擎核心 SLO 指标（延迟/吞吐/失败率 滚动）' },
+  { file: 'audit_log.json', domain: 'system', desc: '企业级安全审计日志（敏感操作记录）' },
 ];
 
 // ============ 核心文档（项目智慧沉淀，关联业务域） ============

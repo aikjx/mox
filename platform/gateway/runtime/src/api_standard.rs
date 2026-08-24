@@ -127,9 +127,11 @@ impl ApiError {
     fn parts(&self) -> (StatusCode, String, Option<String>) {
         match self {
             ApiError::NotFound(m) => (StatusCode::NOT_FOUND, m.clone(), Some("NOT_FOUND".into())),
-            ApiError::BadRequest(m) => {
-                (StatusCode::BAD_REQUEST, m.clone(), Some("BAD_REQUEST".into()))
-            }
+            ApiError::BadRequest(m) => (
+                StatusCode::BAD_REQUEST,
+                m.clone(),
+                Some("BAD_REQUEST".into()),
+            ),
             ApiError::Unauthorized => (
                 StatusCode::UNAUTHORIZED,
                 "未授权访问".into(),

@@ -17,9 +17,9 @@ mod code_rt;
 mod conflict;
 mod data_dep;
 mod gains;
-mod topology;
 #[cfg(test)]
 mod tests;
+mod topology;
 
 pub use cem::{
     cem_deep_chain_with_defaults, CemConfig, CemResult, CemStopReason, ConstraintSpec,
@@ -80,7 +80,9 @@ pub fn verify(before: &FlowGraph, opt: &OptimizationReport) -> AlgoVerification 
 
     // 并行：把 5 项独立检查作为 trait object 动态派发（捕获上下文的闭包，Rayon 可收集）
     let steps: Vec<Box<dyn FnOnce() -> Check + Send>> = vec![
-        Box::new(|| topology::topology_invariant_with_reach(before, after, Some(&after_reach_owned))),
+        Box::new(|| {
+            topology::topology_invariant_with_reach(before, after, Some(&after_reach_owned))
+        }),
         Box::new(|| {
             data_dep::data_dependency_invariant_with_reach(
                 before,

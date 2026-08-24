@@ -29,7 +29,9 @@ use crate::market::{load_package, MarketState, OperatorPackage};
 use crate::market_migration::now_rfc3339;
 
 // 复用内核类型
-use ai_agent::flow_engine::{FlowDefinition, FlowEdge as AFlowEdge, FlowNode as AFlowNode, NodeType, Position};
+use ai_agent::flow_engine::{
+    FlowDefinition, FlowEdge as AFlowEdge, FlowNode as AFlowNode, NodeType, Position,
+};
 use ai_agent::{
     BusinessWorkflow, MergeStrategy, NodePosition, WorkflowEdge, WorkflowNode, WorkflowNodeConfig,
     WorkflowNodeType,
@@ -86,7 +88,11 @@ pub fn flowchart_to_definition(
             AFlowNode {
                 id: n.id.clone(),
                 node_type,
-                name: if n.label.is_empty() { n.id.clone() } else { n.label.clone() },
+                name: if n.label.is_empty() {
+                    n.id.clone()
+                } else {
+                    n.label.clone()
+                },
                 config,
                 position: Some(Position { x: n.x, y: n.y }),
             }
@@ -98,11 +104,18 @@ pub fn flowchart_to_definition(
             id: e.id.clone(),
             source: e.source.clone(),
             target: e.target.clone(),
-            condition: if e.label.is_empty() { None } else { Some(e.label.clone()) },
+            condition: if e.label.is_empty() {
+                None
+            } else {
+                Some(e.label.clone())
+            },
         })
         .collect();
     let mut variables = HashMap::new();
-    variables.insert("requirement".to_string(), serde_json::Value::String(requirement.to_string()));
+    variables.insert(
+        "requirement".to_string(),
+        serde_json::Value::String(requirement.to_string()),
+    );
     FlowDefinition {
         id: id.to_string(),
         name: name.to_string(),
@@ -127,7 +140,10 @@ fn outgoing_edges<'a>(fd: &'a FlowDefinition, node_id: &str) -> Vec<&'a AFlowEdg
 }
 
 /// 节点类型 → 工作流节点类型与配置
-fn to_workflow_node(fd: &FlowDefinition, node: &AFlowNode) -> (WorkflowNodeType, WorkflowNodeConfig) {
+fn to_workflow_node(
+    fd: &FlowDefinition,
+    node: &AFlowNode,
+) -> (WorkflowNodeType, WorkflowNodeConfig) {
     let outs = outgoing_edges(fd, &node.id);
     match node.node_type {
         NodeType::Start => (WorkflowNodeType::Start, WorkflowNodeConfig::Start),
@@ -148,7 +164,11 @@ fn to_workflow_node(fd: &FlowDefinition, node: &AFlowNode) -> (WorkflowNodeType,
             }
             (
                 WorkflowNodeType::Condition,
-                WorkflowNodeConfig::Condition { expression, true_path, false_path },
+                WorkflowNodeConfig::Condition {
+                    expression,
+                    true_path,
+                    false_path,
+                },
             )
         }
         NodeType::Parallel => (
@@ -165,7 +185,13 @@ fn to_workflow_node(fd: &FlowDefinition, node: &AFlowNode) -> (WorkflowNodeType,
                 .and_then(|v| v.as_str())
                 .unwrap_or("")
                 .to_string();
-            (WorkflowNodeType::AiTask, WorkflowNodeConfig::AiTask { task_type: "llm".to_string(), prompt })
+            (
+                WorkflowNodeType::AiTask,
+                WorkflowNodeConfig::AiTask {
+                    task_type: "llm".to_string(),
+                    prompt,
+                },
+            )
         }
         NodeType::Script | NodeType::Transform => {
             let code = node
@@ -176,7 +202,10 @@ fn to_workflow_node(fd: &FlowDefinition, node: &AFlowNode) -> (WorkflowNodeType,
                 .to_string();
             (
                 WorkflowNodeType::Script,
-                WorkflowNodeConfig::Script { language: "javascript".to_string(), code },
+                WorkflowNodeConfig::Script {
+                    language: "javascript".to_string(),
+                    code,
+                },
             )
         }
         NodeType::Browser => (
@@ -231,7 +260,10 @@ pub fn flow_definition_to_business_workflow(fd: &FlowDefinition) -> BusinessWork
             node_type: nt,
             name: node.name.clone(),
             config,
-            position: node.position.clone().map(|p| NodePosition { x: p.x, y: p.y }),
+            position: node
+                .position
+                .clone()
+                .map(|p| NodePosition { x: p.x, y: p.y }),
         });
     }
     if start_node_id.is_empty() {
@@ -278,21 +310,25 @@ pub fn package_to_business_workflow(pkg: &OperatorPackage) -> BusinessWorkflow {
 pub fn generate_workflow_code(wf: &BusinessWorkflow) -> String {
     let mut out = String::new();
     out.push_str(&format!("// 自动生成: BusinessWorkflow (id: {})\n", wf.id));
-    out.push_str(&format!("const workflow = {{\n  id: {:?},\n  name: {:?},\n  start: {:?},\n  steps: [\n", wf.id, wf.name, wf.start_node_id));
+    out.push_str(&format!(
+        "const workflow = {{\n  id: {:?},\n  name: {:?},\n  start: {:?},\n  steps: [\n",
+        wf.id, wf.name, wf.start_node_id
+    ));
     for n in &wf.nodes {
         let t = serde_json::to_string(&n.node_type).unwrap_or_default();
         let brief = match &n.config {
-            WorkflowNodeConfig::Condition { expression, .. } => format!(", expression: {:?}", expression),
-            WorkflowNodeConfig::Operator { operator_id, .. } => format!(", operator: {:?}", operator_id),
+            WorkflowNodeConfig::Condition { expression, .. } => {
+                format!(", expression: {:?}", expression)
+            }
+            WorkflowNodeConfig::Operator { operator_id, .. } => {
+                format!(", operator: {:?}", operator_id)
+            }
             WorkflowNodeConfig::AiTask { task_type, .. } => format!(", task: {:?}", task_type),
             _ => String::new(),
         };
         out.push_str(&format!(
             "    {{ id: {:?}, type: {}, name: {:?}{} }},\n",
-            n.id,
-            t,
-            n.name,
-            brief
+            n.id, t, n.name, brief
         ));
     }
     out.push_str("  ],\n  transitions: [\n");
@@ -392,7 +428,10 @@ pub fn dsl_routes() -> Router<MarketState> {
 }
 
 /// GET /:id/dsl —— 返回 FlowDefinition DSL
-async fn dsl_handler(State(_s): State<MarketState>, Path(id): Path<String>) -> Json<serde_json::Value> {
+async fn dsl_handler(
+    State(_s): State<MarketState>,
+    Path(id): Path<String>,
+) -> Json<serde_json::Value> {
     match load_package(&id) {
         Ok(pkg) => {
             let dsl = package_to_flow_definition(&pkg);
@@ -403,7 +442,10 @@ async fn dsl_handler(State(_s): State<MarketState>, Path(id): Path<String>) -> J
 }
 
 /// GET /:id/workflow —— 返回自动生成的 BusinessWorkflow + 代码
-async fn workflow_handler(State(_s): State<MarketState>, Path(id): Path<String>) -> Json<serde_json::Value> {
+async fn workflow_handler(
+    State(_s): State<MarketState>,
+    Path(id): Path<String>,
+) -> Json<serde_json::Value> {
     match load_package(&id) {
         Ok(pkg) => {
             let wf = package_to_business_workflow(&pkg);
@@ -439,7 +481,11 @@ async fn convert_handler(
     Path(id): Path<String>,
     Json(req): Json<ConvertRequest>,
 ) -> Json<serde_json::Value> {
-    let name = if req.name.is_empty() { format!("convert-{}", id) } else { req.name.clone() };
+    let name = if req.name.is_empty() {
+        format!("convert-{}", id)
+    } else {
+        req.name.clone()
+    };
     let dsl = flowchart_to_definition(&id, &name, &req.requirement, &req.nodes, &req.edges);
     let wf = flow_definition_to_business_workflow(&dsl);
     let code = generate_workflow_code(&wf);
@@ -466,16 +512,64 @@ mod tests {
             summary: "测试".to_string(),
             requirement: "处理订单全流程".to_string(),
             nodes: vec![
-                FlowNode { id: "n1".into(), label: "开始".into(), node_type: "start".into(), x: 0.0, y: 0.0, note: "".into() },
-                FlowNode { id: "n2".into(), label: "校验".into(), node_type: "decision".into(), x: 0.0, y: 100.0, note: "检查库存".into() },
-                FlowNode { id: "n3".into(), label: "发货".into(), node_type: "process".into(), x: 0.0, y: 200.0, note: "".into() },
-                FlowNode { id: "n4".into(), label: "结束".into(), node_type: "end".into(), x: 0.0, y: 300.0, note: "".into() },
+                FlowNode {
+                    id: "n1".into(),
+                    label: "开始".into(),
+                    node_type: "start".into(),
+                    x: 0.0,
+                    y: 0.0,
+                    note: "".into(),
+                },
+                FlowNode {
+                    id: "n2".into(),
+                    label: "校验".into(),
+                    node_type: "decision".into(),
+                    x: 0.0,
+                    y: 100.0,
+                    note: "检查库存".into(),
+                },
+                FlowNode {
+                    id: "n3".into(),
+                    label: "发货".into(),
+                    node_type: "process".into(),
+                    x: 0.0,
+                    y: 200.0,
+                    note: "".into(),
+                },
+                FlowNode {
+                    id: "n4".into(),
+                    label: "结束".into(),
+                    node_type: "end".into(),
+                    x: 0.0,
+                    y: 300.0,
+                    note: "".into(),
+                },
             ],
             edges: vec![
-                FlowEdge { id: "e1".into(), source: "n1".into(), target: "n2".into(), label: "".into() },
-                FlowEdge { id: "e2".into(), source: "n2".into(), target: "n3".into(), label: "有货".into() },
-                FlowEdge { id: "e3".into(), source: "n2".into(), target: "n4".into(), label: "缺货".into() },
-                FlowEdge { id: "e4".into(), source: "n3".into(), target: "n4".into(), label: "".into() },
+                FlowEdge {
+                    id: "e1".into(),
+                    source: "n1".into(),
+                    target: "n2".into(),
+                    label: "".into(),
+                },
+                FlowEdge {
+                    id: "e2".into(),
+                    source: "n2".into(),
+                    target: "n3".into(),
+                    label: "有货".into(),
+                },
+                FlowEdge {
+                    id: "e3".into(),
+                    source: "n2".into(),
+                    target: "n4".into(),
+                    label: "缺货".into(),
+                },
+                FlowEdge {
+                    id: "e4".into(),
+                    source: "n3".into(),
+                    target: "n4".into(),
+                    label: "".into(),
+                },
             ],
             features: vec![],
             tags: vec![],
@@ -497,8 +591,14 @@ mod tests {
         let dsl = package_to_flow_definition(&pkg);
         assert_eq!(dsl.nodes.len(), 4);
         assert_eq!(dsl.edges.len(), 4);
-        assert!(dsl.nodes.iter().any(|n| matches!(n.node_type, NodeType::Start)));
-        assert!(dsl.nodes.iter().any(|n| matches!(n.node_type, NodeType::Decision)));
+        assert!(dsl
+            .nodes
+            .iter()
+            .any(|n| matches!(n.node_type, NodeType::Start)));
+        assert!(dsl
+            .nodes
+            .iter()
+            .any(|n| matches!(n.node_type, NodeType::Decision)));
         assert_eq!(dsl.variables["requirement"], "处理订单全流程");
 
         let wf = flow_definition_to_business_workflow(&dsl);
@@ -512,7 +612,11 @@ mod tests {
             .find(|n| matches!(n.node_type, WorkflowNodeType::Condition))
             .expect("应有 Condition 节点");
         match &cond.config {
-            WorkflowNodeConfig::Condition { expression, true_path, false_path } => {
+            WorkflowNodeConfig::Condition {
+                expression,
+                true_path,
+                false_path,
+            } => {
                 assert_eq!(expression, "有货");
                 assert_eq!(true_path, "n3");
                 assert_eq!(false_path, "n4");

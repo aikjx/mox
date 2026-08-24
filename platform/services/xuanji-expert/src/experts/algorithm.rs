@@ -8,8 +8,12 @@ use flow_ai::model::{NodeKind, ToolKind};
 pub struct AlgorithmExpert;
 
 impl Expert for AlgorithmExpert {
-    fn id(&self) -> String { "algorithm".into() }
-    fn dimension(&self) -> Dimension { Dimension::Algorithm }
+    fn id(&self) -> String {
+        "algorithm".into()
+    }
+    fn dimension(&self) -> Dimension {
+        Dimension::Algorithm
+    }
 
     fn analyze(&self, ctx: &ExpertContext) -> ExpertOpinion {
         let mut o = ExpertOpinion::empty("algorithm", Dimension::Algorithm);
@@ -25,7 +29,10 @@ impl Expert for AlgorithmExpert {
                     o.push_risk(
                         flow_ai::model::Severity::Info,
                         vec![n.id.clone()],
-                        format!("节点「{}」为重型 LLM 推理({}ms)，建议结果缓存以降低算力", n.name, n.duration_ms),
+                        format!(
+                            "节点「{}」为重型 LLM 推理({}ms)，建议结果缓存以降低算力",
+                            n.name, n.duration_ms
+                        ),
                         Some("对幂等输入启用缓存键".into()),
                     );
                 }
@@ -39,7 +46,9 @@ impl Expert for AlgorithmExpert {
                     n.id.clone(),
                     flow_ai::schedule::ModelTier::Light,
                 ));
-                o.suggestions.push(crate::expert::Suggestion::Offload(flow_ai::schedule::ModelTier::Light));
+                o.suggestions.push(crate::expert::Suggestion::Offload(
+                    flow_ai::schedule::ModelTier::Light,
+                ));
             }
         }
 
@@ -55,7 +64,10 @@ impl Expert for AlgorithmExpert {
             o.push_risk(
                 flow_ai::model::Severity::Info,
                 vec![],
-                format!("检测到 {} 个循环结构，请确保有终止条件且单轮 O(1) 副作用", loop_cnt),
+                format!(
+                    "检测到 {} 个循环结构，请确保有终止条件且单轮 O(1) 副作用",
+                    loop_cnt
+                ),
                 None,
             );
         }

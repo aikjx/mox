@@ -39,7 +39,9 @@ pub struct RouteMatch {
 }
 
 impl RouterTable {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     /// 注册一条路由。路径段以 '/' 分隔。以 ':' 开头的段视为参数（如 :x），其它为静态段。
     pub fn register(&mut self, id: impl Into<String>, pattern: &str) {
@@ -55,10 +57,19 @@ impl RouterTable {
                 }
             })
             .collect();
-        let static_count = segments.iter().filter(|s| matches!(s, Segment::Static(_))).count();
+        let static_count = segments
+            .iter()
+            .filter(|s| matches!(s, Segment::Static(_)))
+            .count();
         let param_count = segments.len() - static_count;
         let total_segments = segments.len();
-        self.routes.push(RegisteredRoute { id: id.into(), segments, static_count, param_count, total_segments });
+        self.routes.push(RegisteredRoute {
+            id: id.into(),
+            segments,
+            static_count,
+            param_count,
+            total_segments,
+        });
     }
 
     /// 返回按匹配优先级排序的候选索引（只排序，不做语义过滤）。
@@ -97,18 +108,28 @@ impl RouterTable {
         let order = self.priority_order();
         for r_idx in order {
             let r = &self.routes[r_idx];
-            if r.segments.len() != req_segs.len() { continue; }
+            if r.segments.len() != req_segs.len() {
+                continue;
+            }
             let mut params = std::collections::BTreeMap::new();
             let mut ok = true;
             for (seg, req) in r.segments.iter().zip(req_segs.iter()) {
                 match seg {
                     Segment::Static(s) if s == *req => {}
-                    Segment::Param(name) => { params.insert(name.clone(), req.to_string()); }
-                    _ => { ok = false; break; }
+                    Segment::Param(name) => {
+                        params.insert(name.clone(), req.to_string());
+                    }
+                    _ => {
+                        ok = false;
+                        break;
+                    }
                 }
             }
             if ok {
-                return Some(RouteMatch { handler_id: r.id.clone(), params });
+                return Some(RouteMatch {
+                    handler_id: r.id.clone(),
+                    params,
+                });
             }
         }
         None
@@ -117,14 +138,21 @@ impl RouterTable {
     /// 仅用于调试：返回全部注册路由（按优先级降序）的 handler_id 列表快照。
     #[allow(dead_code)] // 见 priority_order 说明
     pub fn priority_snapshot(&self) -> Vec<String> {
-        self.priority_order().into_iter().map(|i| self.routes[i].id.clone()).collect()
+        self.priority_order()
+            .into_iter()
+            .map(|i| self.routes[i].id.clone())
+            .collect()
     }
 
     /// 返回当前注册路由数量
     #[allow(dead_code)]
-    pub fn len(&self) -> usize { self.routes.len() }
+    pub fn len(&self) -> usize {
+        self.routes.len()
+    }
     #[allow(dead_code)]
-    pub fn is_empty(&self) -> bool { self.routes.is_empty() }
+    pub fn is_empty(&self) -> bool {
+        self.routes.is_empty()
+    }
 }
 
 // ========= 能力路由（intent → capability → executor） =========
@@ -153,7 +181,9 @@ pub struct CapabilityRouter {
 }
 
 impl CapabilityRouter {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
     pub fn register(
         &mut self,
         intent: impl Into<String>,
@@ -175,7 +205,10 @@ impl CapabilityRouter {
         self.entries.get(intent)
     }
     pub fn list(&self) -> Vec<(String, CapabilityEntry)> {
-        self.entries.iter().map(|(k, v)| (k.clone(), v.clone())).collect()
+        self.entries
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect()
     }
 }
 
@@ -199,22 +232,38 @@ mod tests {
         // Given: 路由表注册 6 条
         let mut rt = RouterTable::new();
         rt.register("static3", "/a/b/c");
-        rt.register("one1_long", "/a/b/:x");      // 1 参，静态段 2 → static_count=2
-        rt.register("one1_short", "/a/:y/c");     // 1 参，静态段 2 → static_count=2 同；同参数数下按总段数相同（3），保留注册序 tiebreak
-        // 为满足 AC-10：/a/b/:x 应优于 /a/:y/c → 需要 one1_long static_count 更高。
-        // 但 2 条静态段数均为 2，总段数均 3 → tie；此时应让 /a/b/:x 优先。
-        // 我们在企业级实现中额外引入"前缀静态段连续性计数"加权不合理。
-        // 本实现保证用户注册顺序 one1_long 先于 one1_short，即 one1_long 先命中。
+        rt.register("one1_long", "/a/b/:x"); // 1 参，静态段 2 → static_count=2
+        rt.register("one1_short", "/a/:y/c"); // 1 参，静态段 2 → static_count=2 同；同参数数下按总段数相同（3），保留注册序 tiebreak
+                                              // 为满足 AC-10：/a/b/:x 应优于 /a/:y/c → 需要 one1_long static_count 更高。
+                                              // 但 2 条静态段数均为 2，总段数均 3 → tie；此时应让 /a/b/:x 优先。
+                                              // 我们在企业级实现中额外引入"前缀静态段连续性计数"加权不合理。
+                                              // 本实现保证用户注册顺序 one1_long 先于 one1_short，即 one1_long 先命中。
         rt.register("two", "/a/:y/:z");
         rt.register("three", "/a/:y/:z/:w");
         rt.register("static4", "/x/y/z/w");
 
         // Then 命中顺序期望
-        assert_eq!(rt.match_route("/a/b/c").map(|m| m.handler_id).as_deref(), Some("static3"));
-        assert_eq!(rt.match_route("/a/b/hello").map(|m| m.handler_id).as_deref(), Some("one1_long"),
-            "同参数数：one1_long 先注册，优先级与 one1_short 齐平但 tiebreak 优先");
-        assert_eq!(rt.match_route("/a/foo/bar").map(|m| m.handler_id).as_deref(), Some("two"));
-        assert_eq!(rt.match_route("/x/y/z/w").map(|m| m.handler_id).as_deref(), Some("static4"));
+        assert_eq!(
+            rt.match_route("/a/b/c").map(|m| m.handler_id).as_deref(),
+            Some("static3")
+        );
+        assert_eq!(
+            rt.match_route("/a/b/hello")
+                .map(|m| m.handler_id)
+                .as_deref(),
+            Some("one1_long"),
+            "同参数数：one1_long 先注册，优先级与 one1_short 齐平但 tiebreak 优先"
+        );
+        assert_eq!(
+            rt.match_route("/a/foo/bar")
+                .map(|m| m.handler_id)
+                .as_deref(),
+            Some("two")
+        );
+        assert_eq!(
+            rt.match_route("/x/y/z/w").map(|m| m.handler_id).as_deref(),
+            Some("static4")
+        );
 
         // 参数捕获
         let m_hello = rt.match_route("/a/b/hello").unwrap();

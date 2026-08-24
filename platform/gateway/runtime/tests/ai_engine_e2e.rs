@@ -4,15 +4,17 @@
 //! 然后用 reqwest 对 4 个端点逐一请求 → 断言 status=200 + JSON schema 关键字段。
 //! 不依赖真实 Node sidecar：配置 127.0.0.1:1（无监听）并启用 fallback，因此意图识别可兜底。
 
-use runtime::handlers::ai_engine::{AiEngineState, ProcessRequest, ProcessOptions};
-use runtime::sidecar::node_sidecar::NodeSidecarClient;
 use axum::Router;
+use runtime::handlers::ai_engine::{AiEngineState, ProcessOptions, ProcessRequest};
+use runtime::sidecar::node_sidecar::NodeSidecarClient;
 use std::net::{SocketAddr, TcpListener};
 use std::sync::Arc;
 
 fn build_router() -> Router {
     let state = AiEngineState::default().with_sidecar(
-        NodeSidecarClient::new("http://127.0.0.1:1").with_timeout(1).with_fallback(true),
+        NodeSidecarClient::new("http://127.0.0.1:1")
+            .with_timeout(1)
+            .with_fallback(true),
     );
     runtime::routes::ai_engine::ai_engine_routes(Arc::new(state))
 }
@@ -49,11 +51,17 @@ async fn four_endpoints_return_200_and_schema_ok() {
     assert_eq!(caps.status(), 200);
     let caps_json: serde_json::Value = caps.json().await.unwrap();
     assert_eq!(caps_json["ok"], true);
-    assert!(caps_json["count"].as_u64().unwrap() >= 5, "应至少注册 5+ 能力");
+    assert!(
+        caps_json["count"].as_u64().unwrap() >= 5,
+        "应至少注册 5+ 能力"
+    );
     let items = caps_json["items"].as_array().unwrap();
     for it in items {
         assert!(it.get("name").is_some());
-        assert!(matches!(it["executor"].as_str().unwrap(), "local" | "ai" | "hybrid"));
+        assert!(matches!(
+            it["executor"].as_str().unwrap(),
+            "local" | "ai" | "hybrid"
+        ));
         assert!(it.get("category").is_some());
     }
 
@@ -63,10 +71,20 @@ async fn four_endpoints_return_200_and_schema_ok() {
         intent: None,
         capability: None,
         context: Default::default(),
-        options: ProcessOptions { prefer: Some("hybrid".to_string()), max_latency_ms: Some(500), explain: Some(true), compat: Some(true) },
+        options: ProcessOptions {
+            prefer: Some("hybrid".to_string()),
+            max_latency_ms: Some(500),
+            explain: Some(true),
+            compat: Some(true),
+        },
         data: None,
     };
-    let r = client.post(format!("{base}/process")).json(&body).send().await.unwrap();
+    let r = client
+        .post(format!("{base}/process"))
+        .json(&body)
+        .send()
+        .await
+        .unwrap();
     assert_eq!(r.status(), 200);
     let pr: serde_json::Value = r.json().await.unwrap();
     assert_eq!(pr["ok"], true);
@@ -85,8 +103,16 @@ async fn four_endpoints_return_200_and_schema_ok() {
         capability: String,
         query: String,
     }
-    let an = An { capability: "llm_chat".into(), query: "你好".into() };
-    let ra = client.post(format!("{base}/analyze")).json(&an).send().await.unwrap();
+    let an = An {
+        capability: "llm_chat".into(),
+        query: "你好".into(),
+    };
+    let ra = client
+        .post(format!("{base}/analyze"))
+        .json(&an)
+        .send()
+        .await
+        .unwrap();
     assert_eq!(ra.status(), 200);
     let pr_a: serde_json::Value = ra.json().await.unwrap();
     assert_eq!(pr_a["ok"], true);

@@ -4,7 +4,9 @@
 //!
 //! 设计目标：每一步验证都可独立定位失败，覆盖「一定要可以运行」的全部质量闸门。
 
-use flow_ai::primitive::{DeliveryPolicy, KnowledgeBase, PrimitiveState, PrimiEngine, ResourceBudget};
+use flow_ai::primitive::{
+    DeliveryPolicy, KnowledgeBase, PrimiEngine, PrimitiveState, ResourceBudget,
+};
 use primiflow_core::assoc::AssocGraph;
 use primiflow_core::{enterprise_specs, run_all, run_pipeline};
 use std::collections::HashMap;
@@ -57,8 +59,14 @@ fn l1_policy_bias_direction() {
     let explore = PrimitiveState::from_policy(10.0, DeliveryPolicy::Exploratory, 0.0);
     let balanced = PrimitiveState::from_policy(10.0, DeliveryPolicy::Balanced, 0.0);
 
-    assert!(urgent.reuse_bias() > urgent.explore_bias(), "紧急交付应复用优先");
-    assert!(explore.explore_bias() > explore.reuse_bias(), "探索研发应探索优先");
+    assert!(
+        urgent.reuse_bias() > urgent.explore_bias(),
+        "紧急交付应复用优先"
+    );
+    assert!(
+        explore.explore_bias() > explore.reuse_bias(),
+        "探索研发应探索优先"
+    );
     assert!((balanced.kappa - balanced.tau).abs() < 1e-9, "均衡应 κ=τ");
 }
 
@@ -156,7 +164,13 @@ fn l3_e2e_runs_and_generates_artifacts() {
     }
 
     // 文档自生成产物非空
-    for f in ["graph.mmd", "trace_matrix.md", "ddl.sql", "schema.rs", "mod.rs"] {
+    for f in [
+        "graph.mmd",
+        "trace_matrix.md",
+        "ddl.sql",
+        "schema.rs",
+        "mod.rs",
+    ] {
         let p = out.join(f);
         assert!(p.exists(), "缺少产物 {f}");
         let len = std::fs::metadata(&p).unwrap().len();
@@ -178,7 +192,12 @@ fn l3_e2e_runs_and_generates_artifacts() {
     let topo_count = std::fs::read_dir(&out)
         .unwrap()
         .filter_map(|e| e.ok())
-        .filter(|e| e.file_name().to_string_lossy().into_owned().starts_with("topo_"))
+        .filter(|e| {
+            e.file_name()
+                .to_string_lossy()
+                .into_owned()
+                .starts_with("topo_")
+        })
         .count();
     assert_eq!(topo_count, specs.len(), "涌现 DAG 可视化张数不符");
 
@@ -198,7 +217,10 @@ fn l4_doc_content_quality() {
     let _ = run_all(&mut e, &specs, &out).unwrap();
 
     let graph = std::fs::read_to_string(out.join("graph.mmd")).unwrap();
-    assert!(graph.contains("flowchart LR"), "Mermaid 图头应为 flowchart LR");
+    assert!(
+        graph.contains("flowchart LR"),
+        "Mermaid 图头应为 flowchart LR"
+    );
     for s in &specs {
         assert!(graph.contains(&s.name), "可视化图应含需求「{}」", s.name);
     }
@@ -213,7 +235,10 @@ fn l4_doc_content_quality() {
     let schema = std::fs::read_to_string(out.join("schema.rs")).unwrap();
     assert!(schema.contains("pub struct"), "schema.rs 应含结构体定义");
     assert!(schema.contains("serde"), "schema.rs 应启用 serde 派生");
-    assert!(schema.contains("DateTime<Utc>"), "schema.rs 应含时间字段类型");
+    assert!(
+        schema.contains("DateTime<Utc>"),
+        "schema.rs 应含时间字段类型"
+    );
 
     let ddl = std::fs::read_to_string(out.join("ddl.sql")).unwrap();
     assert!(ddl.contains("CREATE TABLE"), "ddl.sql 应含建表语句");

@@ -33,7 +33,7 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
     response::Json,
-    routing::{get, post, delete},
+    routing::{delete, get, post},
     Router,
 };
 use serde::{Deserialize, Serialize};
@@ -329,7 +329,12 @@ pub fn package_path(id: &str) -> PathBuf {
 }
 
 pub(crate) fn gen_id() -> String {
-    uuid::Uuid::new_v4().to_string().split('-').next().unwrap().to_string()
+    uuid::Uuid::new_v4()
+        .to_string()
+        .split('-')
+        .next()
+        .unwrap()
+        .to_string()
 }
 
 /// 版本号自动 bump：x.y.z -> x.y.(z+1)（语义化版本，market_version 实现）
@@ -381,7 +386,12 @@ pub async fn init_market_state() -> MarketState {
     // 路径归一化：首次启动自动迁移旧路径（自动备份）
     let report = crate::market_migration::ensure_migrated();
     if report.migrated_from_legacy > 0 || report.migrated_from_root > 0 {
-        tracing::info!("算子商城迁移完成：legacy={} root={} backup={:?}", report.migrated_from_legacy, report.migrated_from_root, report.backup_dir);
+        tracing::info!(
+            "算子商城迁移完成：legacy={} root={} backup={:?}",
+            report.migrated_from_legacy,
+            report.migrated_from_root,
+            report.backup_dir
+        );
     }
     let dir = packages_dir();
     if !dir.exists() {
@@ -522,7 +532,10 @@ async fn random_package(State(state): State<MarketState>) -> Json<serde_json::Va
         return Json(serde_json::json!({ "success": false, "error": "商城暂无算子包" }));
     }
     // 用时间做简单随机
-    let i = (chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0).unsigned_abs()
+    let i = (chrono::Utc::now()
+        .timestamp_nanos_opt()
+        .unwrap_or(0)
+        .unsigned_abs()
         % vals.len() as u64) as usize;
     let id = vals[i].id.clone();
     drop(idx);
@@ -530,7 +543,10 @@ async fn random_package(State(state): State<MarketState>) -> Json<serde_json::Va
 }
 
 /// 获取单个包完整内容（向后兼容：新布局 → 中间布局 → 遗留布局）
-async fn get_package(State(_state): State<MarketState>, Path(id): Path<String>) -> Json<serde_json::Value> {
+async fn get_package(
+    State(_state): State<MarketState>,
+    Path(id): Path<String>,
+) -> Json<serde_json::Value> {
     match load_package(&id) {
         Ok(pkg) => Json(serde_json::json!({ "success": true, "package": pkg })),
         Err(e) => Json(serde_json::json!({ "success": false, "error": e })),
@@ -551,27 +567,43 @@ async fn upload_package(
     if req.requirement.trim().is_empty() {
         return (
             StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({ "success": false, "error": "需求描述(requirement)不能为空，这是算子包最核心的部分" })),
+            Json(
+                serde_json::json!({ "success": false, "error": "需求描述(requirement)不能为空，这是算子包最核心的部分" }),
+            ),
         );
     }
     // 版本字段遵循 semver（主.次.补[-预发布]）
     if !req.version.is_empty() && !crate::market_version::is_valid_version(&req.version) {
         return (
             StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({ "success": false, "error": format!("版本号不是合法 semver（主.次.补）: {}", req.version) })),
+            Json(
+                serde_json::json!({ "success": false, "error": format!("版本号不是合法 semver（主.次.补）: {}", req.version) }),
+            ),
         );
     }
 
     let id = gen_id();
     let now = now_rfc3339();
-    let tenant = if req.tenant.is_empty() { default_tenant() } else { req.tenant };
-    let tenant_id = if req.tenant_id.is_empty() { tenant.clone() } else { req.tenant_id };
+    let tenant = if req.tenant.is_empty() {
+        default_tenant()
+    } else {
+        req.tenant
+    };
+    let tenant_id = if req.tenant_id.is_empty() {
+        tenant.clone()
+    } else {
+        req.tenant_id
+    };
     let pkg = OperatorPackage {
         id: id.clone(),
         name: req.name,
         category: req.category,
         author: req.author,
-        version: if req.version.is_empty() { default_version() } else { req.version },
+        version: if req.version.is_empty() {
+            default_version()
+        } else {
+            req.version
+        },
         summary: req.summary,
         requirement: req.requirement,
         nodes: req.nodes,
@@ -624,36 +656,62 @@ async fn update_package(
     // 版本化：先快照旧版本（best-effort，不阻塞主流程）
     let _ = crate::market_version::snapshot_package(&pkg, &actor, "更新前快照");
 
-    if let Some(v) = req.name { pkg.name = v; }
-    if let Some(v) = req.category { pkg.category = v; }
-    if let Some(v) = req.author { pkg.author = v; }
+    if let Some(v) = req.name {
+        pkg.name = v;
+    }
+    if let Some(v) = req.category {
+        pkg.category = v;
+    }
+    if let Some(v) = req.author {
+        pkg.author = v;
+    }
     // 归一化：除非显式传了版本，否则每次实质性更新自动 +1 补丁号（版本化）
     if let Some(v) = req.version {
         if !crate::market_version::is_valid_version(&v) {
             return (
                 StatusCode::BAD_REQUEST,
-                Json(serde_json::json!({ "success": false, "error": format!("版本号不是合法 semver（主.次.补）: {}", v) })),
+                Json(
+                    serde_json::json!({ "success": false, "error": format!("版本号不是合法 semver（主.次.补）: {}", v) }),
+                ),
             );
         }
         pkg.version = v;
     } else {
         pkg.version = bump_patch_version(&pkg.version);
     }
-    if let Some(v) = req.summary { pkg.summary = v; }
-    if let Some(v) = req.requirement { pkg.requirement = v; }
-    if let Some(v) = req.nodes { pkg.nodes = v; }
-    if let Some(v) = req.edges { pkg.edges = v; }
-    if let Some(v) = req.features { pkg.features = v; }
-    if let Some(v) = req.tags { pkg.tags = v; }
-    if let Some(v) = req.tenant { pkg.tenant = v; }
+    if let Some(v) = req.summary {
+        pkg.summary = v;
+    }
+    if let Some(v) = req.requirement {
+        pkg.requirement = v;
+    }
+    if let Some(v) = req.nodes {
+        pkg.nodes = v;
+    }
+    if let Some(v) = req.edges {
+        pkg.edges = v;
+    }
+    if let Some(v) = req.features {
+        pkg.features = v;
+    }
+    if let Some(v) = req.tags {
+        pkg.tags = v;
+    }
+    if let Some(v) = req.tenant {
+        pkg.tenant = v;
+    }
     if let Some(v) = req.tenant_id {
         pkg.tenant_id = v;
         if pkg.tenant.is_empty() {
             pkg.tenant = pkg.tenant_id.clone();
         }
     }
-    if let Some(v) = req.created_by { pkg.created_by = v; }
-    if let Some(v) = req.permissions { pkg.permissions = v; }
+    if let Some(v) = req.created_by {
+        pkg.created_by = v;
+    }
+    if let Some(v) = req.permissions {
+        pkg.permissions = v;
+    }
     pkg.updated_at = now_rfc3339();
 
     if let Err(e) = save_package(&pkg) {
@@ -721,7 +779,11 @@ async fn clone_package(
             Json(serde_json::json!({ "success": false, "error": format!("克隆保存失败: {}", e) })),
         );
     }
-    state.index.lock().await.insert(cloned.id.clone(), cloned.meta());
+    state
+        .index
+        .lock()
+        .await
+        .insert(cloned.id.clone(), cloned.meta());
     (
         StatusCode::OK,
         Json(serde_json::json!({ "success": true, "id": new_id, "package": cloned })),
@@ -870,7 +932,15 @@ pub fn load_package(id: &str) -> Result<OperatorPackage, String> {
             let _ = std::fs::create_dir_all(parent);
         }
         if std::fs::copy(&path, &canonical).is_ok() {
-            audit("auto_migrate", "system", &format!("读取时自动迁移 {} → {}", path.display(), canonical.display()));
+            audit(
+                "auto_migrate",
+                "system",
+                &format!(
+                    "读取时自动迁移 {} → {}",
+                    path.display(),
+                    canonical.display()
+                ),
+            );
             let _ = std::fs::remove_file(&path);
         }
     }
@@ -933,7 +1003,11 @@ async fn ensure_seed(state: &MarketState) {
         ..Default::default()
     };
     let _ = save_package(&seed);
-    state.index.lock().await.insert(seed.id.clone(), seed.meta());
+    state
+        .index
+        .lock()
+        .await
+        .insert(seed.id.clone(), seed.meta());
 }
 
 /// 全维融合落盘：接收璇玑归一化产出的优化流程图（flow_ai::FlowNode/FlowEdge）+

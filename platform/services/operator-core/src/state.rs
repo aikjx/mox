@@ -258,8 +258,8 @@ impl From<StateVector> for crate::kernel::KernelStateVector {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::assert_relative_eq;
     use crate::kernel::{ConservationChecker, ConservationLaw, L2Conservation};
+    use approx::assert_relative_eq;
 
     #[test]
     fn test_state_vector_creation() {

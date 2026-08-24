@@ -1,14 +1,14 @@
-﻿//! 全维处理流水线：normalize → 并行派发专家 → 裁决 → flow-ai 求解 → 治理闸门 → 出码
+//! 全维处理流水线：normalize → 并行派发专家 → 裁决 → flow-ai 求解 → 治理闸门 → 出码
 
 use crate::context::{ExpertContext, GovernContext};
 use crate::govern::{apply_rules, govern, AuditChain, FlowStatus, GateResult};
-use crate::tenant_policy::{apply_gates, evaluate_gates};
 use crate::harness::{
     expert_plugins, run_experts, HarnessCtx, HarnessProfile, ModelAdapterConfig, WaterfallEvent,
     WaterfallState,
 };
 use crate::ir::auto_dimension;
 use crate::reconcile::reconcile;
+use crate::tenant_policy::{apply_gates, evaluate_gates};
 use crate::verify::{verify, AlgoVerification};
 use flow_ai::model::FlowGraph;
 use flow_ai::pipeline::optimize;
@@ -60,7 +60,11 @@ pub fn xuanji_optimize(raw: &FlowGraph, ctx: &GovernContext) -> GovernanceReport
         WaterfallEvent::PostGate,
         std::sync::Arc::new(|_ev, hctx, state, next| {
             if let Some(gate) = &state.gate {
-                hctx.emit(if gate.approved { "gate/approved" } else { "gate/blocked" });
+                hctx.emit(if gate.approved {
+                    "gate/approved"
+                } else {
+                    "gate/blocked"
+                });
             }
             next(state)
         }),
@@ -117,19 +121,34 @@ pub fn xuanji_optimize(raw: &FlowGraph, ctx: &GovernContext) -> GovernanceReport
             .filter(|c| c.escalated)
             .map(|c| c.resolution.clone())
             .collect();
-        algo.summary = format!(
-            "{}; 裁决冲突升级阻断: {}",
-            algo.summary,
-            detail.join(" | ")
-        );
+        algo.summary = format!("{}; 裁决冲突升级阻断: {}", algo.summary, detail.join(" | "));
     }
 
     // 6. 治理闸门（尊重算法否决）
-    let status = if algo.vetoed { FlowStatus::Blocked } else { FlowStatus::Approved };
-    let mut gate = govern(&plan, &opt, status, &ctx.quota, &ctx.principal.subject, algo.vetoed);
+    let status = if algo.vetoed {
+        FlowStatus::Blocked
+    } else {
+        FlowStatus::Approved
+    };
+    let mut gate = govern(
+        &plan,
+        &opt,
+        status,
+        &ctx.quota,
+        &ctx.principal.subject,
+        algo.vetoed,
+    );
     // 6.x 治理 8 闸门全量门禁（I-06）：把租户策略 + 租户合规(G3)/敏感度(G6)/灾备(G8)
     // 等此前未接进门禁的闸门，统一接管 approve 判定。G4 SLA/G5 预算/G1/G2/G7 复用治理内核既有结论。
-    let gates = evaluate_gates(ctx, &opt, status, algo.vetoed, gate.sla_ok, gate.budget_ok, gate.approved);
+    let gates = evaluate_gates(
+        ctx,
+        &opt,
+        status,
+        algo.vetoed,
+        gate.sla_ok,
+        gate.budget_ok,
+        gate.approved,
+    );
     gate = apply_gates(gate, &gates);
 
     // 6.5 闸门瀑布扩展点：PreGate 钩子可追加前置校验，PostGate 钩子做后置审计
@@ -182,15 +201,28 @@ mod tests {
     fn gov_flow() -> FlowGraph {
         let mut g = FlowGraph::new("gov", "政务数据归集");
         g.add_node(FlowNode::new("s", "开始", NodeKind::Start));
-        g.add_node(FlowNode::task("read", "读取公民库", ToolKind::Database, 300)
-            .with_access(flow_ai::model::Access::read("db:citizen_info"))
-            .with_access(flow_ai::model::Access::write("var:citizen")));
-        g.add_node(FlowNode::task("guard", "脱敏", ToolKind::Compute, 50)
-            .with_tag("desensitize"));
-        g.add_node(FlowNode::task("web1", "网办系统A填报", ToolKind::Browser, 500));
-        g.add_node(FlowNode::task("web2", "网办系统B填报", ToolKind::Browser, 400));
-        g.add_node(FlowNode::task("merge", "汇总", ToolKind::Compute, 100)
-            .with_access(flow_ai::model::Access::read("var:citizen")));
+        g.add_node(
+            FlowNode::task("read", "读取公民库", ToolKind::Database, 300)
+                .with_access(flow_ai::model::Access::read("db:citizen_info"))
+                .with_access(flow_ai::model::Access::write("var:citizen")),
+        );
+        g.add_node(FlowNode::task("guard", "脱敏", ToolKind::Compute, 50).with_tag("desensitize"));
+        g.add_node(FlowNode::task(
+            "web1",
+            "网办系统A填报",
+            ToolKind::Browser,
+            500,
+        ));
+        g.add_node(FlowNode::task(
+            "web2",
+            "网办系统B填报",
+            ToolKind::Browser,
+            400,
+        ));
+        g.add_node(
+            FlowNode::task("merge", "汇总", ToolKind::Compute, 100)
+                .with_access(flow_ai::model::Access::read("var:citizen")),
+        );
         g.add_node(FlowNode::new("e", "结束", NodeKind::End));
         g.add_edge(FlowEdge::seq("s", "read"));
         g.add_edge(FlowEdge::seq("read", "guard"));
@@ -205,7 +237,9 @@ mod tests {
     #[test]
     fn xuanji_end_to_end_runs() {
         let g = gov_flow();
-        let tenant = Tenant::new("gov-tenant", "ns-gov").regulated(true).with_pool("browser", 1);
+        let tenant = Tenant::new("gov-tenant", "ns-gov")
+            .regulated(true)
+            .with_pool("browser", 1);
         let principal = Principal::new("admin").with_roles(vec!["admin".into(), "editor".into()]);
         let ctx = GovernContext::new(tenant, principal);
         let rep = xuanji_optimize(&g, &ctx);
@@ -218,7 +252,9 @@ mod tests {
     #[test]
     fn xuanji_double_league_fourteen_dimensions() {
         let g = gov_flow();
-        let tenant = Tenant::new("gov-tenant", "ns-gov").regulated(true).with_pool("browser", 1);
+        let tenant = Tenant::new("gov-tenant", "ns-gov")
+            .regulated(true)
+            .with_pool("browser", 1);
         let principal = Principal::new("admin").with_roles(vec!["admin".into(), "editor".into()]);
         let ctx = GovernContext::new(tenant, principal);
         let rep = xuanji_optimize(&g, &ctx);
@@ -227,9 +263,20 @@ mod tests {
         let dims: std::collections::HashSet<String> =
             rep.expert_scores.iter().map(|(d, _)| d.clone()).collect();
         for expected in [
-            "business", "algorithm", "permission", "resource", "security", "data", "observability",
-            "architecture", "security_code", "code_quality", "performance",
-            "testing", "documentation", "maintainability",
+            "business",
+            "algorithm",
+            "permission",
+            "resource",
+            "security",
+            "data",
+            "observability",
+            "architecture",
+            "security_code",
+            "code_quality",
+            "performance",
+            "testing",
+            "documentation",
+            "maintainability",
         ] {
             assert!(
                 dims.contains(expected),
@@ -251,7 +298,10 @@ mod tests {
         assert!(!rep.algo.vetoed, "恒等优化不应被璇玑否决");
 
         // 4) 治理闸门结果明确
-        assert!(rep.gate.approved || rep.gate.algorithm_veto, "闸门须明确（通过或被璇玑否决）");
+        assert!(
+            rep.gate.approved || rep.gate.algorithm_veto,
+            "闸门须明确（通过或被璇玑否决）"
+        );
 
         // 5) 审计链已记录（Debug 序列化非空即代表有审计条目）
         assert!(format!("{:?}", rep.audit).len() > 2, "审计链须有记录");

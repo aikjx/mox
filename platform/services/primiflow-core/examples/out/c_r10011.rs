@@ -10,12 +10,13 @@
 pub struct Ingest {}
 
 impl Ingest {
-pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     /// 编排任务 `ingest` 的真实落位：打印执行踪迹并返回零值成功。
     /// 溯源链路: R_r4 → F_r4 → B_r4 → A_kt_r4 → T_r4_0 → C_r4_0
     pub fn ingest(&self) {
         println!("[Ingest::ingest] trace=R_r4 → F_r4 → B_r4 → A_kt_r4 → T_r4_0 → C_r4_0; schemas=S_r4(data_r4);");
     }
-
 }

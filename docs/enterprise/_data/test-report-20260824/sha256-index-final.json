@@ -1,0 +1,62 @@
+{
+  "generated_at": "2026-08-24 10:44:28",
+  "report_version": "T4 14节正式报告 + T6 REJECT 7.8人天优化路线 V1.0",
+  "algorithm_highlight": "7x8=56/56 0 RED Δ≤1e-6 ALL GREEN ✅（算法核过硬）",
+  "final_decision": "REJECT（命中 ①②④⑤ 四条破防线）",
+  "evidence_files": {
+    "rust-test-suite.json": {
+      "exists": true,
+      "sha256": "25c6557815ab575fe823af89b1f0cc84edbd8d0ea6952456437c27f9f59959c7",
+      "size_kb": 8.86
+    },
+    "rust-test-suite.nosig.json": {
+      "exists": true,
+      "sha256": "0762e4b45dd22e00df07090b045ab59b25bcba248ec015eea2d45566c244d8f0",
+      "size_kb": 8.82
+    },
+    "clippy.log": {
+      "exists": true,
+      "sha256": "0405dca69124fff28de44abada5b3118e690b703cc3f4020e3bc7cef733fd36b",
+      "size_kb": 9.27
+    },
+    "reconcile_7x8.log": {
+      "exists": true,
+      "sha256": "f78c883cfbf00cb02d22db19bef73dff8fab8898171fe7e65435b0dfad0de73a",
+      "size_kb": 0.1
+    },
+    "t4-enterprise-test-report-20260824.md": {
+      "exists": true,
+      "sha256": "a0513d256c824c383a56a806e8ba8d3e1010dee7197a4797e6c59d101af14d05",
+      "size_kb": 76.78
+    },
+    "cargo_test.log": {
+      "exists": true,
+      "sha256": "b2e933b7e6615fde5cc7eebb6b8d368914b571cf520deea4ad5d5f180c73d815",
+      "size_kb": 9.8
+    },
+    "fe-be-ai-suite.json": {
+      "exists": true,
+      "sha256": "ede4e290b1da245f040cb6afbcd1f52ba07e33324ad0da2d4a4690e1c498c8e7",
+      "size_kb": 3.1
+    }
+  },
+  "t6_decision_7_branches": {
+    "① T0 18/18": "FAIL (4实锤 FAIL)",
+    "_summary_3_选_1": "❌ REJECT (命中 ①/②/④/⑤ =四条 破防)",
+    "③ 7×8 56/56 Δ≤1e-6": "✅ PASS (最大亮点，算法核)",
+    "④ 棘轮 0 退化": "FAIL (3实锤退化：clippy/UT/dead_code)",
+    "② 48 ≥46 PASS 0 FAIL": "FAIL (6实锤 FAIL)",
+    "⑤ 四闸门 4/4": "FAIL (0/4 实际通过)",
+    "⑥ SRS ≥95%": "N/A SKIP",
+    "⑦ 诚信 + meta-test 骗分检测": "✅ PASS (5 Mock FAIL齐全，诚信度过关)"
+  },
+  "optimization_summary_person_days": {
+    "P0+P1 合计 M0→L1": 7.8,
+    "P3 棘轮正向 + 架构高可用(提升)": "(可选) 20+",
+    "P0(F1~F4 过 T0 硬门槛)": 5.2,
+    "P0+P1+P2 合计 冲 RELEASE_L2": 24.8,
+    "P2(CI YAML + 19 SKIP 精密补测 + FE 精细化)": 17.0,
+    "P1(W1~W4 精密测 FE/AI/Mocha/算法独立脚本)": 2.6
+  },
+  "final_note": "本索引 JSON 连同 T4 报告用于 git commit 永久归档（docs/enterprise/_data/test-report-20260824/ 目录）"
+}

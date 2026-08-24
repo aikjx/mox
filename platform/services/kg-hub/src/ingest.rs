@@ -238,14 +238,20 @@ impl InfoGraphConnector {
     // 命名与 std::str::FromStr 易混淆；此处为 JSON 构造器（impl Into<String>），保留显式 allow
     #[allow(clippy::should_implement_trait)]
     pub fn from_str(json: impl Into<String>) -> Self {
-        Self { json: json.into(), label: "info-graph".to_string() }
+        Self {
+            json: json.into(),
+            label: "info-graph".to_string(),
+        }
     }
 
     pub fn from_path(path: impl AsRef<std::path::Path>) -> anyhow::Result<Self> {
         let p = path.as_ref();
         let json = std::fs::read_to_string(p)
             .map_err(|e| anyhow::anyhow!("读取静态关图失败 {}: {e}", p.display()))?;
-        Ok(Self { json, label: format!("info-graph:{}", p.display()) })
+        Ok(Self {
+            json,
+            label: format!("info-graph:{}", p.display()),
+        })
     }
 }
 
@@ -270,7 +276,11 @@ impl Connector for InfoGraphConnector {
                 id: String::new(),
                 kind,
                 layer: ontology::default_layer(kind),
-                name: if n.name.is_empty() { n.id.clone() } else { n.name.clone() },
+                name: if n.name.is_empty() {
+                    n.id.clone()
+                } else {
+                    n.name.clone()
+                },
                 path: n.path.clone(),
                 summary: n.summary.clone(),
                 // 静态关图节点自身即证据：来自代码库扫描的真实路径
@@ -571,7 +581,12 @@ fn summarize(body: &str) -> String {
 
 /// 六维绑定链最小 URN：对外暴露便于测试与治理层构造需求根
 pub fn req_urn(tenant: &str, req_id: &str) -> String {
-    urn::build(tenant, Layer::RequirementSemantic, EntityKind::Requirement, req_id)
+    urn::build(
+        tenant,
+        Layer::RequirementSemantic,
+        EntityKind::Requirement,
+        req_id,
+    )
 }
 
 #[cfg(test)]
@@ -606,7 +621,11 @@ mod tests {
         assert_eq!(st.edges_dangling, 1);
 
         // CodeFile 归一为 Code 并落在 L5
-        let u = urn::build_default(Layer::ExecutionRuntime, EntityKind::Code, "crates/a/src/lib.rs");
+        let u = urn::build_default(
+            Layer::ExecutionRuntime,
+            EntityKind::Code,
+            "crates/a/src/lib.rs",
+        );
         let n = sink.graph().node(&u).expect("code node exists");
         assert_eq!(n.kind, EntityKind::Code);
         assert_eq!(n.evidence, "crates/a/src/lib.rs");
@@ -653,7 +672,9 @@ mod tests {
             .insert("path".into(), "crates/a/src/lib.rs".into());
         kg2.add_node(node);
 
-        let st = KnowledgeGraphConnector { graph: &kg2 }.ingest(&mut sink).unwrap();
+        let st = KnowledgeGraphConnector { graph: &kg2 }
+            .ingest(&mut sink)
+            .unwrap();
         assert_eq!(st.nodes_merged, 1, "同一实体跨来源必须合并");
         assert_eq!(st.nodes_new, 0);
         assert_eq!(sink.graph().nodes.len(), before, "图规模不得增长");
@@ -681,9 +702,12 @@ mod tests {
             },
         ];
         let mut sink = GraphSink::new("default");
-        let st = KnowledgeBaseConnector { source: "wiki".into(), items }
-            .ingest(&mut sink)
-            .unwrap();
+        let st = KnowledgeBaseConnector {
+            source: "wiki".into(),
+            items,
+        }
+        .ingest(&mut sink)
+        .unwrap();
         assert_eq!(st.nodes_new, 2);
         assert_eq!(st.edges_new, 1);
         assert_eq!(st.edges_dangling, 0, "前向引用不应成为悬挂边");

@@ -18,9 +18,9 @@ pub struct ResourceMonitor {
 // 说明：impl ResourceMonitor —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
 // 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 impl ResourceMonitor {
-/// 公共函数：new（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    /// 公共函数：new（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn new(limits: ResourceLimits) -> Self {
         Self {
             start_time: std::time::Instant::now(),
@@ -34,9 +34,9 @@ impl ResourceMonitor {
         0
     }
 
-/// 公共函数：current_usage（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    /// 公共函数：current_usage（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn current_usage(&self) -> ResourceUsage {
         ResourceUsage {
             cpu_time_ms: self.start_time.elapsed().as_millis() as u64,
@@ -46,9 +46,9 @@ impl ResourceMonitor {
         }
     }
 
-/// 公共函数：check_limits（自动化补全 AIS 文档）
-///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
-///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
+    /// 公共函数：check_limits（自动化补全 AIS 文档）
+    ///   - AIS-语义：按所属模块契约执行，输入输出符合 module 级说明
+    ///   - 错误：错误类型遵循本模块统一 Error 枚举约定（本工程统一一）
     pub fn check_limits(&self) -> Result<(), String> {
         let usage = self.current_usage();
         if !usage.within_limits(&self.limits) {

@@ -77,7 +77,12 @@ fn cmd_demo() -> anyhow::Result<()> {
         println!("  {}", p.join(" -> "));
     }
     println!("  浮动时间排行:");
-    let mut ts: Vec<&NodeTiming> = rep.critical_path.timings.iter().filter(|t| t.duration_ms > 0).collect();
+    let mut ts: Vec<&NodeTiming> = rep
+        .critical_path
+        .timings
+        .iter()
+        .filter(|t| t.duration_ms > 0)
+        .collect();
     ts.sort_by_key(|t| t.total_float);
     for t in ts {
         println!(
@@ -162,7 +167,10 @@ fn cmd_optimize(args: &[String]) -> anyhow::Result<()> {
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("未生成代码"))?;
         if code.rejected {
-            anyhow::bail!("存在阻断级冲突，拒绝出码:\n  - {}", code.reject_reasons.join("\n  - "));
+            anyhow::bail!(
+                "存在阻断级冲突，拒绝出码:\n  - {}",
+                code.reject_reasons.join("\n  - ")
+            );
         }
         for f in &code.files {
             let p = Path::new(&dir).join(&f.path);
@@ -186,7 +194,11 @@ fn cmd_reverse(args: &[String]) -> anyhow::Result<()> {
         .map(|s| s.to_string_lossy().to_string())
         .unwrap_or_else(|| "legacy".into());
     let res = reverse_from_python(&src, &stem);
-    println!("反解析节点数: {}  边数: {}", res.graph.nodes.len(), res.graph.edges.len());
+    println!(
+        "反解析节点数: {}  边数: {}",
+        res.graph.nodes.len(),
+        res.graph.edges.len()
+    );
     for gap in &res.gaps {
         println!("  [缺陷补全] {gap}");
     }
@@ -217,8 +229,14 @@ fn flag_value(args: &[String], flag: &str) -> Option<String> {
 /// 内置演示：政务 RPA 数据归集
 fn demo_flow() -> FlowGraph {
     let mut g = FlowGraph::new("gov-demo", "政务数据归集流水线");
-    g.pools.push(ResourcePool { name: "browser".into(), capacity: 1 });
-    g.pools.push(ResourcePool { name: "db".into(), capacity: 2 });
+    g.pools.push(ResourcePool {
+        name: "browser".into(),
+        capacity: 1,
+    });
+    g.pools.push(ResourcePool {
+        name: "db".into(),
+        capacity: 2,
+    });
 
     g.add_node(FlowNode::new("start", "开始", NodeKind::Start));
     g.add_node(

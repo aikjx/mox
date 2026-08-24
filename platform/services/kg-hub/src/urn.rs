@@ -92,7 +92,11 @@ pub fn normalize_key(key: &str) -> String {
 
 /// 构造 URN
 pub fn build(tenant: &str, layer: Layer, kind: EntityKind, key: &str) -> String {
-    let t = if tenant.trim().is_empty() { DEFAULT_TENANT } else { tenant.trim() };
+    let t = if tenant.trim().is_empty() {
+        DEFAULT_TENANT
+    } else {
+        tenant.trim()
+    };
     format!(
         "{}:{}:{}:{}:{}",
         URN_PREFIX,

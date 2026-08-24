@@ -7,9 +7,11 @@
 //! - 可配置最大循环次数与超时策略
 //! - 可选接入 LLM 客户端与浏览器自动化引擎
 
-use super::guards::{BudgetGuard, CompositeGuard, GuardContext, GuardResult, ProgressGuard, RiskGuard};
+use super::guards::{
+    BudgetGuard, CompositeGuard, GuardContext, GuardResult, ProgressGuard, RiskGuard,
+};
 use super::state_machine::{EngineEvent, EngineFSM, EngineState};
-use super::tools::{ToolRegistry, tool_type_to_name};
+use super::tools::{tool_type_to_name, ToolRegistry};
 use crate::browser_automation::{BrowserAction, BrowserAutomationEngine};
 use crate::llm_client::{LLMChatMessage, LLMClient};
 use kg_hub::consolidator::{EngineTrace, TraceConsolidator};
@@ -90,7 +92,10 @@ impl Engine {
 
     pub fn with_config(config: EngineConfig) -> Self {
         let mut guards = CompositeGuard::new();
-        guards.add(Box::new(BudgetGuard::new(config.max_steps, config.max_budget)));
+        guards.add(Box::new(BudgetGuard::new(
+            config.max_steps,
+            config.max_budget,
+        )));
         guards.add(Box::new(ProgressGuard::new(config.max_stagnant)));
         guards.add(Box::new(RiskGuard::default()));
 
@@ -136,7 +141,9 @@ impl Engine {
     }
 
     fn get_strong_client(&self) -> Option<&Arc<RwLock<LLMClient>>> {
-        self.strong_model_client.as_ref().or(self.llm_client.as_ref())
+        self.strong_model_client
+            .as_ref()
+            .or(self.llm_client.as_ref())
     }
 
     pub fn state(&self) -> &EngineState {
@@ -225,7 +232,8 @@ impl Engine {
                 Err(e) => {
                     tracing::warn!(target: "engine", error = %e, "ACT 执行失败");
                     if let Err(fe) = self.fsm.trigger(EngineEvent::ActFailed) {
-                        return self.abort_result(start, format!("ActFailed→Reflect 转移失败: {}", fe));
+                        return self
+                            .abort_result(start, format!("ActFailed→Reflect 转移失败: {}", fe));
                     }
                 }
             }
@@ -233,7 +241,8 @@ impl Engine {
             match self.phase_observe().await {
                 Ok(()) => {
                     if let Err(e) = self.fsm.trigger(EngineEvent::ObserveDone) {
-                        return self.abort_result(start, format!("Observe→Reflect 转移失败: {}", e));
+                        return self
+                            .abort_result(start, format!("Observe→Reflect 转移失败: {}", e));
                     }
                 }
                 Err(e) => return self.abort_result(start, e),
@@ -265,7 +274,8 @@ impl Engine {
                 }
                 ReflectDecision::ToGenerate => {
                     if let Err(e) = self.fsm.trigger(EngineEvent::ReflectToGenerate) {
-                        return self.abort_result(start, format!("Reflect→Generate 转移失败: {}", e));
+                        return self
+                            .abort_result(start, format!("Reflect→Generate 转移失败: {}", e));
                     }
                     break;
                 }
@@ -273,16 +283,19 @@ impl Engine {
                     if self.config.enable_hitl {
                         tracing::info!(target: "engine", prompt = %prompt, "需要人机协同介入");
                         if let Err(e) = self.fsm.trigger(EngineEvent::NeedHumanInput) {
-                            return self.abort_result(start, format!("Reflect→HitlPause 转移失败: {}", e));
+                            return self
+                                .abort_result(start, format!("Reflect→HitlPause 转移失败: {}", e));
                         }
                         if let Err(e) = self.fsm.trigger(EngineEvent::HumanApproved) {
-                            return self.abort_result(start, format!("HitlPause→Act 转移失败: {}", e));
+                            return self
+                                .abort_result(start, format!("HitlPause→Act 转移失败: {}", e));
                         }
                         continue;
                     } else {
                         tracing::warn!(target: "engine", "HITL 已禁用，跳过人工介入直接进入生成");
                         if let Err(e) = self.fsm.trigger(EngineEvent::ReflectToGenerate) {
-                            return self.abort_result(start, format!("Reflect→Generate 转移失败: {}", e));
+                            return self
+                                .abort_result(start, format!("Reflect→Generate 转移失败: {}", e));
                         }
                         break;
                     }
@@ -297,7 +310,8 @@ impl Engine {
             Ok(output) => {
                 self.context.generated_output = Some(output);
                 if let Err(e) = self.fsm.trigger(EngineEvent::GenerateDone) {
-                    return self.abort_result(start, format!("Generate→Consolidate 转移失败: {}", e));
+                    return self
+                        .abort_result(start, format!("Generate→Consolidate 转移失败: {}", e));
                 }
             }
             Err(e) => return self.abort_result(start, e),
@@ -338,10 +352,9 @@ impl Engine {
         if self.context.task.is_empty() {
             return Err("任务描述为空，无法感知".to_string());
         }
-        self.context.observations.push(format!(
-            "感知到任务: {}",
-            self.context.task
-        ));
+        self.context
+            .observations
+            .push(format!("感知到任务: {}", self.context.task));
         Ok(())
     }
 
@@ -360,10 +373,9 @@ impl Engine {
                 .push("RECALL: 未检索到相关记忆".to_string());
         } else {
             self.context.recalled_memories = memories.clone();
-            self.context.observations.push(format!(
-                "RECALL: 检索到 {} 条相关记忆",
-                memories.len()
-            ));
+            self.context
+                .observations
+                .push(format!("RECALL: 检索到 {} 条相关记忆", memories.len()));
         }
 
         Ok(())
@@ -483,9 +495,10 @@ impl Engine {
         };
 
         if let Some(response) = light_decision {
-            self.context
-                .observations
-                .push(format!("轻量模型动作选择: {}", response.chars().take(100).collect::<String>()));
+            self.context.observations.push(format!(
+                "轻量模型动作选择: {}",
+                response.chars().take(100).collect::<String>()
+            ));
         }
 
         let plan = self.context.plan.clone().unwrap_or_default();
@@ -495,15 +508,22 @@ impl Engine {
                 if self.plan_step_index < steps.len() {
                     let step = &steps[self.plan_step_index];
                     let step_type = step.get("type").and_then(|t| t.as_str()).unwrap_or("tool");
-                    let description = step.get("description").and_then(|d| d.as_str()).unwrap_or("");
-                    let action_name = step.get("action").and_then(|a| a.as_str()).unwrap_or("unknown");
+                    let description = step
+                        .get("description")
+                        .and_then(|d| d.as_str())
+                        .unwrap_or("");
+                    let action_name = step
+                        .get("action")
+                        .and_then(|a| a.as_str())
+                        .unwrap_or("unknown");
 
                     match step_type {
                         "browser" => {
                             let result = self.execute_browser_step(step).await;
                             let desc = format!(
                                 "浏览器步骤 #{} [{}]: {}",
-                                self.plan_step_index, action_name,
+                                self.plan_step_index,
+                                action_name,
                                 if result { "成功" } else { "失败" }
                             );
                             self.context.action_results.push(desc.clone());
@@ -511,13 +531,18 @@ impl Engine {
                         }
                         "database" | "sandbox" | "http" | "file" | "calculator" => {
                             if let Some(tool_name) = tool_type_to_name(step_type) {
-                                let tool_params = step.get("params").cloned().unwrap_or_else(|| step.clone());
+                                let tool_params =
+                                    step.get("params").cloned().unwrap_or_else(|| step.clone());
                                 let tool_result = self.tools.execute(tool_name, &tool_params);
                                 let desc = format!(
                                     "工具步骤 #{} [{}]: {} {}",
                                     self.plan_step_index,
                                     tool_name,
-                                    if tool_result.success { "成功" } else { "失败" },
+                                    if tool_result.success {
+                                        "成功"
+                                    } else {
+                                        "失败"
+                                    },
                                     tool_result.error.as_deref().unwrap_or("")
                                 );
                                 self.context.action_results.push(desc.clone());
@@ -529,18 +554,26 @@ impl Engine {
                                     } else {
                                         data_str
                                     };
-                                    self.context.observations.push(format!("{} 输出: {}", tool_name, preview));
+                                    self.context
+                                        .observations
+                                        .push(format!("{} 输出: {}", tool_name, preview));
                                 }
                                 self.budget_used += 2.0;
                             } else {
-                                let desc = format!("工具步骤 #{} [{}]: {} (无映射)", self.plan_step_index, action_name, description);
+                                let desc = format!(
+                                    "工具步骤 #{} [{}]: {} (无映射)",
+                                    self.plan_step_index, action_name, description
+                                );
                                 self.context.action_results.push(desc.clone());
                                 self.context.observations.push(desc);
                                 self.budget_used += 1.0;
                             }
                         }
                         _ => {
-                            let desc = format!("工具步骤 #{} [{}]: {}", self.plan_step_index, action_name, description);
+                            let desc = format!(
+                                "工具步骤 #{} [{}]: {}",
+                                self.plan_step_index, action_name, description
+                            );
                             self.context.action_results.push(desc.clone());
                             self.context.observations.push(desc);
                             self.budget_used += 1.0;
@@ -580,7 +613,12 @@ impl Engine {
     async fn phase_reflect(&mut self) -> ReflectDecision {
         tracing::debug!(target: "engine", "REFLECT: 反思评估");
 
-        let last_result = self.context.action_results.last().cloned().unwrap_or_default();
+        let last_result = self
+            .context
+            .action_results
+            .last()
+            .cloned()
+            .unwrap_or_default();
 
         let llm_reflection = {
             if let Some(strong_arc) = self.get_strong_client() {
@@ -638,14 +676,18 @@ impl Engine {
 
         if self.step_count >= self.config.max_steps {
             tracing::info!(target: "engine", "达到最大步数，进入生成阶段");
-            self.context.reflections.push("达到最大步数限制".to_string());
+            self.context
+                .reflections
+                .push("达到最大步数限制".to_string());
             return ReflectDecision::ToGenerate;
         }
 
         let total_plan_steps = self.count_plan_steps();
         if self.plan_step_index >= total_plan_steps && total_plan_steps > 0 {
             tracing::info!(target: "engine", "计划步骤已全部执行完毕，进入生成阶段");
-            self.context.reflections.push("计划步骤全部执行完毕".to_string());
+            self.context
+                .reflections
+                .push("计划步骤全部执行完毕".to_string());
             return ReflectDecision::ToGenerate;
         }
 
@@ -756,13 +798,14 @@ impl Engine {
                     Ok(result) => {
                         if let Some(data) = &result.data {
                             if let Some(text) = data.get("text").and_then(|v| v.as_str()) {
-                                self.context.observations.push(format!(
-                                    "浏览器提取: {}",
-                                    &text[..text.len().min(200)]
-                                ));
+                                self.context
+                                    .observations
+                                    .push(format!("浏览器提取: {}", &text[..text.len().min(200)]));
                             }
                             if let Some(title) = data.get("title").and_then(|v| v.as_str()) {
-                                self.context.observations.push(format!("页面标题: {}", title));
+                                self.context
+                                    .observations
+                                    .push(format!("页面标题: {}", title));
                             }
                         }
                         result.success
@@ -773,11 +816,15 @@ impl Engine {
                     }
                 }
             } else {
-                self.context.observations.push("无法解析浏览器动作".to_string());
+                self.context
+                    .observations
+                    .push("无法解析浏览器动作".to_string());
                 false
             }
         } else {
-            self.context.observations.push("浏览器引擎不可用".to_string());
+            self.context
+                .observations
+                .push("浏览器引擎不可用".to_string());
             false
         }
     }
@@ -787,20 +834,34 @@ impl Engine {
         match action {
             "navigate" => {
                 let url = step.get("url").and_then(|u| u.as_str()).unwrap_or("");
-                Some(BrowserAction::Navigate { url: url.to_string() })
+                Some(BrowserAction::Navigate {
+                    url: url.to_string(),
+                })
             }
             "click" => {
                 let selector = step.get("selector").and_then(|s| s.as_str()).unwrap_or("");
-                Some(BrowserAction::Click { selector: selector.to_string(), timeout_ms: None })
+                Some(BrowserAction::Click {
+                    selector: selector.to_string(),
+                    timeout_ms: None,
+                })
             }
             "type" => {
                 let selector = step.get("selector").and_then(|s| s.as_str()).unwrap_or("");
                 let text = step.get("text").and_then(|t| t.as_str()).unwrap_or("");
-                Some(BrowserAction::Type { selector: selector.to_string(), text: text.to_string(), clear_first: Some(true) })
+                Some(BrowserAction::Type {
+                    selector: selector.to_string(),
+                    text: text.to_string(),
+                    clear_first: Some(true),
+                })
             }
             "extract_text" => {
-                let selector = step.get("selector").and_then(|s| s.as_str()).unwrap_or("body");
-                Some(BrowserAction::ExtractText { selector: selector.to_string() })
+                let selector = step
+                    .get("selector")
+                    .and_then(|s| s.as_str())
+                    .unwrap_or("body");
+                Some(BrowserAction::ExtractText {
+                    selector: selector.to_string(),
+                })
             }
             "extract_html" => Some(BrowserAction::ExtractHtml),
             "get_title" => Some(BrowserAction::GetTitle),
@@ -816,14 +877,23 @@ impl Engine {
 
     fn is_goal_achieved(&self, last_result: &str) -> bool {
         let lower = last_result.to_lowercase();
-        let success_indicators = ["成功", "完成", "已获取", "✅", "success", "completed", "done"];
+        let success_indicators = [
+            "成功",
+            "完成",
+            "已获取",
+            "✅",
+            "success",
+            "completed",
+            "done",
+        ];
         for indicator in &success_indicators {
             if lower.contains(&indicator.to_lowercase()) {
                 return true;
             }
         }
 
-        let all_steps_done = self.plan_step_index >= self.count_plan_steps() && self.plan_step_index > 0;
+        let all_steps_done =
+            self.plan_step_index >= self.count_plan_steps() && self.plan_step_index > 0;
         let has_results = !self.context.action_results.is_empty();
         if all_steps_done && has_results {
             return true;
@@ -1016,7 +1086,8 @@ mod tests {
             let mut engine = Engine::new();
             assert_eq!(engine.count_plan_steps(), 0);
 
-            engine.context.plan = Some("{\"steps\": [{\"action\": \"a\"}, {\"action\": \"b\"}]}".to_string());
+            engine.context.plan =
+                Some("{\"steps\": [{\"action\": \"a\"}, {\"action\": \"b\"}]}".to_string());
             assert_eq!(engine.count_plan_steps(), 2);
 
             engine.context.plan = Some("not json".to_string());

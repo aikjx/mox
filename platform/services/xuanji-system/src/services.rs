@@ -25,11 +25,7 @@ impl MemberService {
         Self { store, bus, config }
     }
 
-    pub async fn invite(
-        &self,
-        by: &str,
-        input: &InviteInput,
-    ) -> Result<Member> {
+    pub async fn invite(&self, by: &str, input: &InviteInput) -> Result<Member> {
         if self.store.get_xuanji(&input.xuanji_id).await.is_none() {
             return Err(AppError::BadRequest(format!(
                 "璇玑 {} 不存在",
@@ -41,7 +37,10 @@ impl MemberService {
             return Err(AppError::BadRequest("成员名称不能为空".into()));
         }
         if !input.email.contains('@') {
-            return Err(AppError::BadRequest(format!("邮箱格式非法: {}", input.email)));
+            return Err(AppError::BadRequest(format!(
+                "邮箱格式非法: {}",
+                input.email
+            )));
         }
         // 配额（I-03）：单璇玑成员数上限
         let count = self.store.list_members(&input.xuanji_id).await.len();
@@ -96,8 +95,9 @@ impl MemberService {
     pub async fn activate(&self, member_id: &str, _by: &str) -> Result<Member> {
         // 复用状态机校验，保证 Invited → Active 是唯一合法激活路径（BR-21）
         let updated = self.set_status(member_id, MemberStatus::Active).await?;
-        self.bus
-            .publish(DomainEvent::MemberActivated { member_id: member_id.to_string() });
+        self.bus.publish(DomainEvent::MemberActivated {
+            member_id: member_id.to_string(),
+        });
         Ok(updated)
     }
 
@@ -778,7 +778,13 @@ impl CommService {
     }
 
     /// 生成一条成员通知（供编排层反应器调用）
-    pub async fn notify(&self, member_id: &str, title: &str, body: &str, related_task: Option<&str>) {
+    pub async fn notify(
+        &self,
+        member_id: &str,
+        title: &str,
+        body: &str,
+        related_task: Option<&str>,
+    ) {
         let n = Notification {
             id: new_id("ntf"),
             member_id: member_id.to_string(),
@@ -913,13 +919,7 @@ impl CommServiceTrait for CommService {
     async fn list_messages(&self, channel_id: &str) -> Vec<Message> {
         CommService::list_messages(self, channel_id).await
     }
-    async fn notify(
-        &self,
-        member_id: &str,
-        title: &str,
-        body: &str,
-        related_task: Option<&str>,
-    ) {
+    async fn notify(&self, member_id: &str, title: &str, body: &str, related_task: Option<&str>) {
         CommService::notify(self, member_id, title, body, related_task).await
     }
     async fn list_notifications(&self, member_id: &str) -> Vec<Notification> {

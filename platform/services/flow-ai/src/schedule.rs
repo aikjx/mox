@@ -157,7 +157,10 @@ pub fn schedule(graph: &FlowGraph, deps: &[Dependency]) -> Schedule {
     let mut ready: BinaryHeap<Ready> = BinaryHeap::new();
     for i in 0..n {
         if remaining[i] == 0 {
-            ready.push(Ready { priority: rank[i], idx: i });
+            ready.push(Ready {
+                priority: rank[i],
+                idx: i,
+            });
         }
     }
 
@@ -195,7 +198,12 @@ pub fn schedule(graph: &FlowGraph, deps: &[Dependency]) -> Schedule {
         for d in deferred {
             ready.push(d);
         }
-        max_conc = max_conc.max(running.iter().filter(|(_, i)| graph.nodes[*i].duration_ms > 0).count());
+        max_conc = max_conc.max(
+            running
+                .iter()
+                .filter(|(_, i)| graph.nodes[*i].duration_ms > 0)
+                .count(),
+        );
 
         if running.is_empty() {
             // 无法推进（资源全被占用但没有运行中任务 → 容量为 0 的病态配置）
@@ -223,7 +231,10 @@ pub fn schedule(graph: &FlowGraph, deps: &[Dependency]) -> Schedule {
                 for &v in &succ[idx] {
                     remaining[v] -= 1;
                     if remaining[v] == 0 {
-                        ready.push(Ready { priority: rank[v], idx: v });
+                        ready.push(Ready {
+                            priority: rank[v],
+                            idx: v,
+                        });
                     }
                 }
             } else {
@@ -245,7 +256,12 @@ pub fn schedule(graph: &FlowGraph, deps: &[Dependency]) -> Schedule {
             } else {
                 busy as f64 / (cap as f64 * makespan as f64)
             };
-            PoolUsage { pool: p.clone(), capacity: cap, peak, utilization: util }
+            PoolUsage {
+                pool: p.clone(),
+                capacity: cap,
+                peak,
+                utilization: util,
+            }
         })
         .collect();
 
@@ -263,7 +279,10 @@ pub fn schedule(graph: &FlowGraph, deps: &[Dependency]) -> Schedule {
 
 fn peak_usage(slots: &[Slot], pool: &str) -> u32 {
     let mut events: Vec<(u64, i32)> = Vec::new();
-    for s in slots.iter().filter(|s| s.pool == pool && s.finish_ms > s.start_ms) {
+    for s in slots
+        .iter()
+        .filter(|s| s.pool == pool && s.finish_ms > s.start_ms)
+    {
         events.push((s.start_ms, 1));
         events.push((s.finish_ms, -1));
     }
@@ -307,13 +326,36 @@ pub fn route_models(graph: &FlowGraph) -> Vec<ModelRouting> {
             let tags = n.tags.join(",");
             let heavy_kw = ["代码", "code", "生成工程", "重构", "流程建模", "架构"];
             let light_kw = [
-                "分类", "意图", "抽取", "判断", "路由", "摘要", "识别", "解析",
-                "预处理", "预校验", "脱敏", "汇总", "校验", "提炼", "检索", "回填",
-                "classify", "intent", "extract", "summarize", "parse",
+                "分类",
+                "意图",
+                "抽取",
+                "判断",
+                "路由",
+                "摘要",
+                "识别",
+                "解析",
+                "预处理",
+                "预校验",
+                "脱敏",
+                "汇总",
+                "校验",
+                "提炼",
+                "检索",
+                "回填",
+                "classify",
+                "intent",
+                "extract",
+                "summarize",
+                "parse",
             ];
-            let (tier, reason) = if heavy_kw.iter().any(|k| name.contains(k) || tags.contains(k)) {
+            let (tier, reason) = if heavy_kw
+                .iter()
+                .any(|k| name.contains(k) || tags.contains(k))
+            {
                 (ModelTier::Heavy, "代码/架构类重型任务，需强推理模型")
-            } else if light_kw.iter().any(|k| name.contains(k) || tags.contains(k))
+            } else if light_kw
+                .iter()
+                .any(|k| name.contains(k) || tags.contains(k))
                 || n.duration_ms <= 200
             {
                 (ModelTier::Light, "短时分类/抽取类任务，轻量模型足够")
@@ -339,9 +381,14 @@ mod tests {
         let mut g = FlowGraph::new("b", "browser jobs");
         for i in 0..3 {
             g.add_node(
-                FlowNode::task(format!("b{}", i), format!("抓取{}", i), ToolKind::Browser, 100)
-                    .with_access(Access::write(format!("var:page{}", i)))
-                    .idempotent(true),
+                FlowNode::task(
+                    format!("b{}", i),
+                    format!("抓取{}", i),
+                    ToolKind::Browser,
+                    100,
+                )
+                .with_access(Access::write(format!("var:page{}", i)))
+                .idempotent(true),
             );
         }
         g
@@ -362,7 +409,10 @@ mod tests {
     #[test]
     fn raising_capacity_enables_parallel() {
         let mut g = three_browsers();
-        g.pools.push(ResourcePool { name: "browser".into(), capacity: 3 });
+        g.pools.push(ResourcePool {
+            name: "browser".into(),
+            capacity: 3,
+        });
         let plan = dataflow::analyze(&g);
         let s = schedule(&g, &plan.dependencies);
         assert_eq!(s.makespan_ms, 100);
@@ -386,9 +436,16 @@ mod tests {
     fn priority_prefers_critical_chain() {
         // 长链 a1->a2(共200) 与 短任务 s(10)，容量1，应先派发长链头
         let mut g = FlowGraph::new("p", "prio");
-        g.pools.push(ResourcePool { name: "cpu".into(), capacity: 1 });
-        g.add_node(FlowNode::task("a1", "A1", ToolKind::Compute, 100).with_access(Access::write("x")));
-        g.add_node(FlowNode::task("a2", "A2", ToolKind::Compute, 100).with_access(Access::read("x")));
+        g.pools.push(ResourcePool {
+            name: "cpu".into(),
+            capacity: 1,
+        });
+        g.add_node(
+            FlowNode::task("a1", "A1", ToolKind::Compute, 100).with_access(Access::write("x")),
+        );
+        g.add_node(
+            FlowNode::task("a2", "A2", ToolKind::Compute, 100).with_access(Access::read("x")),
+        );
         g.add_node(FlowNode::task("s", "S", ToolKind::Compute, 10));
         g.add_edge(FlowEdge::seq("a1", "a2"));
         let plan = dataflow::analyze(&g);
@@ -402,7 +459,13 @@ mod tests {
         g.add_node(FlowNode::task("c", "意图分类", ToolKind::Llm, 100));
         g.add_node(FlowNode::task("g", "代码生成", ToolKind::Llm, 3000));
         let r = route_models(&g);
-        assert_eq!(r.iter().find(|x| x.node_id == "c").unwrap().model_tier, ModelTier::Light);
-        assert_eq!(r.iter().find(|x| x.node_id == "g").unwrap().model_tier, ModelTier::Heavy);
+        assert_eq!(
+            r.iter().find(|x| x.node_id == "c").unwrap().model_tier,
+            ModelTier::Light
+        );
+        assert_eq!(
+            r.iter().find(|x| x.node_id == "g").unwrap().model_tier,
+            ModelTier::Heavy
+        );
     }
 }

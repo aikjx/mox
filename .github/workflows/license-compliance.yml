@@ -1,0 +1,156 @@
+name: License Compliance (T16)
+
+on:
+  push:
+    branches: [main, master, develop, release/*]
+    paths:
+      - "**/Cargo.toml"
+      - "Cargo.lock"
+      - "deny.toml"
+      - ".github/workflows/license-compliance.yml"
+      - "frontend-ui/package.json"
+      - "platform/backend-node/package.json"
+  pull_request:
+    branches: [main, master, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # -----------------------------------------------------------------
+  # Job 1: Rust 端 — cargo-deny 检查 licenses + bans + multiple-versions
+  # -----------------------------------------------------------------
+  cargo-deny:
+    name: Rust cargo-deny (licenses + bans)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry and binaries
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            ~/.cargo/bin
+            target/
+          key: ${{ runner.os }}-cargo-deny-${{ hashFiles('Cargo.lock', 'deny.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-deny-
+
+      - name: Install cargo-deny (locked)
+        run: |
+          if ! command -v cargo-deny &>/dev/null; then
+            cargo install cargo-deny --locked
+          fi
+          cargo deny --version
+
+      - name: Run cargo-deny (licenses + bans) — exit 0 on clean
+        run: cargo deny -L error check licenses bans
+
+  # -----------------------------------------------------------------
+  # Job 2: Node 端 — license-scanner（不存在则回退到 npm ls 快照）
+  # -----------------------------------------------------------------
+  node-license-scan:
+    name: Node license report (license-scanner or npm ls fallback)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: |
+            frontend-ui/package-lock.json
+            platform/backend-node/package-lock.json
+
+      - name: Install license-scanner globally (non-fatal if network fails)
+        id: scanner
+        run: |
+          if npm install -g license-scanner@latest 2>/dev/null; then
+            echo "installed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::license-scanner 安装失败，使用 npm ls fallback 生成报告"
+            echo "installed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate license report (frontend-ui + backend-node)
+        run: |
+          set +e
+          OUT="licenses-report-node.txt"
+          : > "$OUT"
+          echo "=== frontend-ui ===" >> "$OUT"
+          if [ "${{ steps.scanner.outputs.installed }}" = "true" ]; then
+            (cd frontend-ui && npx license-scanner --recursive --format json >> "../$OUT" 2>&1) || true
+          else
+            (cd frontend-ui && npm ls --json 2>/dev/null | grep -E '"license"' >> "../$OUT" 2>&1) || true
+          fi
+          echo "" >> "$OUT"
+          echo "=== platform/backend-node ===" >> "$OUT"
+          if [ "${{ steps.scanner.outputs.installed }}" = "true" ]; then
+            (cd platform/backend-node && npx license-scanner --recursive --format json >> "../../$OUT" 2>&1) || true
+          else
+            (cd platform/backend-node && npm ls --json 2>/dev/null | grep -E '"license"' >> "../../$OUT" 2>&1) || true
+          fi
+          echo "License report preview (first 30 lines):"
+          head -30 "$OUT"
+          echo "--- (total lines: $(wc -l < $OUT)) ---"
+        shell: bash
+
+      - name: Upload license report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-license-report
+          path: licenses-report-node.txt
+          retention-days: 30
+
+  # -----------------------------------------------------------------
+  # Job 3: 自研边界 grep 阻断（AC-18：禁止引入特定第三方组件源码词）
+  # -----------------------------------------------------------------
+  boundary-grep-block:
+    name: AC-18 Boundary grep — 严禁引入 seaweed/juicefs/minio/ceph/nebula-graph/neo4j/janusgraph 源码
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Grep boundary tokens (排除 *.md *.html *.json 纯注释文本)
+        shell: bash
+        run: |
+          set +e
+          TOKENS=(seaweed juicefs minio ceph nebula-graph neo4j janusgraph)
+          EXCLUDES=(--exclude='*.md' --exclude='*.html' --exclude='*.json' --exclude='*.lock' --exclude='*.png' --exclude='*.jpg' --exclude='*.svg' --exclude='*.ico' --exclude='*.mmd' --exclude='Cargo.lock' --exclude='pnpm-lock.yaml' --exclude='*.csv')
+          FOUND=0
+          echo "Scanning for forbidden boundary tokens: ${TOKENS[*]}"
+          for tok in "${TOKENS[@]}"; do
+            echo "  - token: $tok"
+            MATCHES=$(grep -r -i -n -w "${EXCLUDES[@]}" "$tok" . 2>/dev/null || true)
+            if [ -n "$MATCHES" ]; then
+              echo "    ✗ 发现边界违规（以下匹配需人工审核删除）："
+              echo "$MATCHES" | head -50
+              FOUND=1
+            else
+              echo "    ✓ clean"
+            fi
+          done
+          if [ "$FOUND" -ne 0 ]; then
+            echo ""
+            echo "::error:: 检测到 AC-18 边界违规 token — 请移除相关组件源码/引用后再合入"
+            exit 1
+          fi
+          echo "✓ All boundary tokens clean (AC-18 compliance)."

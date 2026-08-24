@@ -1,4 +1,4 @@
-﻿//! 领域模型：璇玑 / 成员 / 任务 / 通信
+//! 领域模型：璇玑 / 成员 / 任务 / 通信
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -100,12 +100,12 @@ pub struct Xuanji {
 /// 任务状态（FSM）
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum TaskStatus {
-    Draft,     // 草稿
-    Assigned,  // 已分派
-    InProgress,// 进行中
-    InReview,  // 评审中
-    Done,      // 完成
-    Cancelled, // 取消
+    Draft,      // 草稿
+    Assigned,   // 已分派
+    InProgress, // 进行中
+    InReview,   // 评审中
+    Done,       // 完成
+    Cancelled,  // 取消
 }
 
 impl TaskStatus {
@@ -176,7 +176,7 @@ pub struct Task {
 /// 通信频道类型
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ChannelKind {
-    Xuanji,            // 璇玑公开频道
+    Xuanji,              // 璇玑公开频道
     Task(String),        // 任务协作频道（与任务 1:1 绑定）
     Direct(Vec<String>), // 私信频道
 }
@@ -218,10 +218,10 @@ impl Message {
 /// 审计动作类别
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum AuditAction {
-    AuthzDenied,       // 鉴权被拒
-    MemberStatusChange,// 成员状态迁移
-    TaskStatusChange,  // 任务状态迁移
-    TaskAssign,        // 任务分派
+    AuthzDenied,        // 鉴权被拒
+    MemberStatusChange, // 成员状态迁移
+    TaskStatusChange,   // 任务状态迁移
+    TaskAssign,         // 任务分派
 }
 
 impl AuditAction {
@@ -356,7 +356,11 @@ mod tests {
         ];
         let mut seen = std::collections::HashSet::new();
         for a in actions {
-            assert!(seen.insert(a.as_str()), "重复审计动作字符串: {}", a.as_str());
+            assert!(
+                seen.insert(a.as_str()),
+                "重复审计动作字符串: {}",
+                a.as_str()
+            );
         }
     }
 

@@ -38,8 +38,11 @@ pub trait Operator: Send + Sync + TypeCheck {
 
         if ctx.config.enable_type_check {
             let expected_input = self.input_type();
-            let actual_input = TypeIdentifier::new(input.metadata["type"].as_str().unwrap_or("StateVector"));
-            if !expected_input.matches(&actual_input) && !expected_input.matches(&builtin::any_type()) {
+            let actual_input =
+                TypeIdentifier::new(input.metadata["type"].as_str().unwrap_or("StateVector"));
+            if !expected_input.matches(&actual_input)
+                && !expected_input.matches(&builtin::any_type())
+            {
                 return Ok(ExecutionResult {
                     success: false,
                     output_state: None,
@@ -162,10 +165,7 @@ pub struct LinearOperator {
 
 impl LinearOperator {
     pub fn new(matrix: nalgebra::DMatrix<f64>) -> Self {
-        Self {
-            matrix,
-            bias: None,
-        }
+        Self { matrix, bias: None }
     }
 
     pub fn with_bias(matrix: nalgebra::DMatrix<f64>, bias: nalgebra::DVector<f64>) -> Self {
@@ -199,6 +199,14 @@ impl Operator for LinearOperator {
     }
 
     fn apply(&self, input: &StateVector, _ctx: &mut ExecutionContext) -> Result<StateVector> {
+        // 安全加固：nalgebra 矩阵乘法对维度不匹配会直接 panic（进程崩溃），需在乘前显式校验。
+        if self.matrix.ncols() != input.dimension {
+            return Err(crate::OperatorError::ExecutionError(format!(
+                "线性算子维度不匹配: 矩阵列数 {} != 输入维度 {}",
+                self.matrix.ncols(),
+                input.dimension
+            )));
+        }
         let mut result = self.matrix.clone() * &input.data;
         if let Some(bias) = &self.bias {
             result += bias;

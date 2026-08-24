@@ -8,11 +8,11 @@
 //! - 消息路由与过滤
 
 use super::types::*;
-use operator_core::{Result, OperatorError};
+use chrono::Utc;
+use operator_core::{OperatorError, Result};
 use std::collections::HashMap;
 use tracing;
 use uuid::Uuid;
-use chrono::Utc;
 
 /// 插件消息总线 - 插件互通核心
 pub struct PluginBus {
@@ -52,10 +52,18 @@ struct ConversationHandler;
 
 impl MessageHandler for ConversationHandler {
     fn handle(&self, msg: &PluginMessage) -> Result<Option<PluginMessage>> {
-        let response_text = format!("[AI-Core] 收到来自{}的消息: topic={}, payload={:?}",
-            msg.source_plugin, msg.topic, msg.payload);
-        Ok(Some(PluginMessage::new("ai-core", "response", serde_json::json!({ "reply": response_text }))
-            .with_correlation(&msg.id)))
+        let response_text = format!(
+            "[AI-Core] 收到来自{}的消息: topic={}, payload={:?}",
+            msg.source_plugin, msg.topic, msg.payload
+        );
+        Ok(Some(
+            PluginMessage::new(
+                "ai-core",
+                "response",
+                serde_json::json!({ "reply": response_text }),
+            )
+            .with_correlation(&msg.id),
+        ))
     }
 }
 
@@ -64,11 +72,18 @@ struct OperatorHandler;
 
 impl MessageHandler for OperatorHandler {
     fn handle(&self, msg: &PluginMessage) -> Result<Option<PluginMessage>> {
-        Ok(Some(PluginMessage::new("operator-executor", "operator-result", serde_json::json!({
-            "status": "dispatched",
-            "original_topic": msg.topic,
-            "message": "算子执行请求已派发至执行引擎"
-        })).with_correlation(&msg.id)))
+        Ok(Some(
+            PluginMessage::new(
+                "operator-executor",
+                "operator-result",
+                serde_json::json!({
+                    "status": "dispatched",
+                    "original_topic": msg.topic,
+                    "message": "算子执行请求已派发至执行引擎"
+                }),
+            )
+            .with_correlation(&msg.id),
+        ))
     }
 }
 
@@ -77,68 +92,92 @@ struct ResourceHandler;
 
 impl MessageHandler for ResourceHandler {
     fn handle(&self, msg: &PluginMessage) -> Result<Option<PluginMessage>> {
-        Ok(Some(PluginMessage::new("resource-manager", "resource-status", serde_json::json!({
-            "cpu_available": true,
-            "memory_available": true,
-            "workflow_slots": 32,
-            "message": "资源状态正常"
-        })).with_correlation(&msg.id)))
+        Ok(Some(
+            PluginMessage::new(
+                "resource-manager",
+                "resource-status",
+                serde_json::json!({
+                    "cpu_available": true,
+                    "memory_available": true,
+                    "workflow_slots": 32,
+                    "message": "资源状态正常"
+                }),
+            )
+            .with_correlation(&msg.id),
+        ))
     }
 }
 
 impl PluginBus {
     pub fn new() -> Self {
-        let mut builtin_handlers: HashMap<String, Box<dyn MessageHandler + Send + Sync>> = HashMap::new();
+        let mut builtin_handlers: HashMap<String, Box<dyn MessageHandler + Send + Sync>> =
+            HashMap::new();
         builtin_handlers.insert("ai.converse".to_string(), Box::new(ConversationHandler));
         builtin_handlers.insert("operator.execute".to_string(), Box::new(OperatorHandler));
         builtin_handlers.insert("resource.query".to_string(), Box::new(ResourceHandler));
 
         // 注册内置插件
         let mut plugins = HashMap::new();
-        plugins.insert("ai-core".to_string(), PluginInfo {
-            id: "ai-core".to_string(),
-            name: "AI核心对话引擎".to_string(),
-            version: "1.0.0".to_string(),
-            plugin_type: PluginType::Builtin,
-            capabilities: vec!["conversation".to_string(), "intent_recognition".to_string(), "recommendation".to_string()],
-            input_topics: vec!["ai.converse".to_string(), "ai.analyze".to_string()],
-            output_topics: vec!["ai.response".to_string()],
-            status: PluginStatus::Active,
-            metadata: HashMap::new(),
-        });
-        plugins.insert("operator-executor".to_string(), PluginInfo {
-            id: "operator-executor".to_string(),
-            name: "算子执行引擎".to_string(),
-            version: "1.0.0".to_string(),
-            plugin_type: PluginType::Builtin,
-            capabilities: vec!["execute".to_string(), "workflow".to_string()],
-            input_topics: vec!["operator.execute".to_string()],
-            output_topics: vec!["operator.result".to_string()],
-            status: PluginStatus::Active,
-            metadata: HashMap::new(),
-        });
-        plugins.insert("resource-manager".to_string(), PluginInfo {
-            id: "resource-manager".to_string(),
-            name: "资源管理器".to_string(),
-            version: "1.0.0".to_string(),
-            plugin_type: PluginType::Builtin,
-            capabilities: vec!["allocate".to_string(), "monitor".to_string()],
-            input_topics: vec!["resource.query".to_string()],
-            output_topics: vec!["resource.status".to_string()],
-            status: PluginStatus::Active,
-            metadata: HashMap::new(),
-        });
-        plugins.insert("workflow-engine".to_string(), PluginInfo {
-            id: "workflow-engine".to_string(),
-            name: "工作流引擎".to_string(),
-            version: "1.0.0".to_string(),
-            plugin_type: PluginType::Builtin,
-            capabilities: vec!["orchestrate".to_string(), "automate".to_string()],
-            input_topics: vec!["workflow.start".to_string()],
-            output_topics: vec!["workflow.status".to_string()],
-            status: PluginStatus::Active,
-            metadata: HashMap::new(),
-        });
+        plugins.insert(
+            "ai-core".to_string(),
+            PluginInfo {
+                id: "ai-core".to_string(),
+                name: "AI核心对话引擎".to_string(),
+                version: "1.0.0".to_string(),
+                plugin_type: PluginType::Builtin,
+                capabilities: vec![
+                    "conversation".to_string(),
+                    "intent_recognition".to_string(),
+                    "recommendation".to_string(),
+                ],
+                input_topics: vec!["ai.converse".to_string(), "ai.analyze".to_string()],
+                output_topics: vec!["ai.response".to_string()],
+                status: PluginStatus::Active,
+                metadata: HashMap::new(),
+            },
+        );
+        plugins.insert(
+            "operator-executor".to_string(),
+            PluginInfo {
+                id: "operator-executor".to_string(),
+                name: "算子执行引擎".to_string(),
+                version: "1.0.0".to_string(),
+                plugin_type: PluginType::Builtin,
+                capabilities: vec!["execute".to_string(), "workflow".to_string()],
+                input_topics: vec!["operator.execute".to_string()],
+                output_topics: vec!["operator.result".to_string()],
+                status: PluginStatus::Active,
+                metadata: HashMap::new(),
+            },
+        );
+        plugins.insert(
+            "resource-manager".to_string(),
+            PluginInfo {
+                id: "resource-manager".to_string(),
+                name: "资源管理器".to_string(),
+                version: "1.0.0".to_string(),
+                plugin_type: PluginType::Builtin,
+                capabilities: vec!["allocate".to_string(), "monitor".to_string()],
+                input_topics: vec!["resource.query".to_string()],
+                output_topics: vec!["resource.status".to_string()],
+                status: PluginStatus::Active,
+                metadata: HashMap::new(),
+            },
+        );
+        plugins.insert(
+            "workflow-engine".to_string(),
+            PluginInfo {
+                id: "workflow-engine".to_string(),
+                name: "工作流引擎".to_string(),
+                version: "1.0.0".to_string(),
+                plugin_type: PluginType::Builtin,
+                capabilities: vec!["orchestrate".to_string(), "automate".to_string()],
+                input_topics: vec!["workflow.start".to_string()],
+                output_topics: vec!["workflow.status".to_string()],
+                status: PluginStatus::Active,
+                metadata: HashMap::new(),
+            },
+        );
 
         Self {
             plugins,
@@ -150,7 +189,11 @@ impl PluginBus {
 
     /// 注册插件到总线
     pub fn register(&mut self, plugin: PluginInfo) -> Result<()> {
-        tracing::info!("插件注册到消息总线: {} (type={:?})", plugin.id, plugin.plugin_type);
+        tracing::info!(
+            "插件注册到消息总线: {} (type={:?})",
+            plugin.id,
+            plugin.plugin_type
+        );
 
         // 自动订阅插件声明的输入主题
         for topic in &plugin.input_topics {
@@ -192,7 +235,12 @@ impl PluginBus {
 
     /// 路由消息 - 核心消息分发
     pub async fn route_message(&self, msg: PluginMessage) -> Result<Option<PluginMessage>> {
-        tracing::debug!("路由消息: {} -> topic={}, target={:?}", msg.source_plugin, msg.topic, msg.target_plugin);
+        tracing::debug!(
+            "路由消息: {} -> topic={}, target={:?}",
+            msg.source_plugin,
+            msg.topic,
+            msg.target_plugin
+        );
 
         // 记录消息（环形保留最近 500 条，供可观测性查询）
         {
@@ -253,7 +301,11 @@ impl PluginBus {
     }
 
     /// 投递消息到指定插件
-    async fn deliver_to_plugin(&self, msg: &PluginMessage, plugin_id: &str) -> Result<Option<PluginMessage>> {
+    async fn deliver_to_plugin(
+        &self,
+        msg: &PluginMessage,
+        plugin_id: &str,
+    ) -> Result<Option<PluginMessage>> {
         let plugin = self.plugins.get(plugin_id).ok_or_else(|| {
             OperatorError::Other(anyhow::anyhow!("目标插件不存在: {}", plugin_id))
         })?;
@@ -271,19 +323,33 @@ impl PluginBus {
                 return handler.handle(msg);
             }
             // 内置插件的默认响应
-            return Ok(Some(PluginMessage::new(plugin_id, "ack", serde_json::json!({
-                "status": "received",
-                "from": msg.source_plugin,
-                "topic": msg.topic
-            })).with_correlation(&msg.id)));
+            return Ok(Some(
+                PluginMessage::new(
+                    plugin_id,
+                    "ack",
+                    serde_json::json!({
+                        "status": "received",
+                        "from": msg.source_plugin,
+                        "topic": msg.topic
+                    }),
+                )
+                .with_correlation(&msg.id),
+            ));
         }
 
         // WASM/外部插件：在完整实现中会通过WASM调用或HTTP/gRPC投递
         // 这里返回接收确认
-        Ok(Some(PluginMessage::new(plugin_id, "ack", serde_json::json!({
-            "status": "delivered",
-            "plugin_type": format!("{:?}", plugin.plugin_type)
-        })).with_correlation(&msg.id)))
+        Ok(Some(
+            PluginMessage::new(
+                plugin_id,
+                "ack",
+                serde_json::json!({
+                    "status": "delivered",
+                    "plugin_type": format!("{:?}", plugin.plugin_type)
+                }),
+            )
+            .with_correlation(&msg.id),
+        ))
     }
 
     /// 检查消息是否匹配过滤器
@@ -296,7 +362,13 @@ impl PluginBus {
     }
 
     /// 发送请求并等待响应（请求-响应模式）
-    pub async fn request_response(&self, target: &str, topic: &str, payload: serde_json::Value, _timeout_ms: u64) -> Result<PluginMessage> {
+    pub async fn request_response(
+        &self,
+        target: &str,
+        topic: &str,
+        payload: serde_json::Value,
+        _timeout_ms: u64,
+    ) -> Result<PluginMessage> {
         let corr_id = Uuid::new_v4().to_string();
 
         let msg = PluginMessage::new("system", topic, payload)
@@ -339,9 +411,16 @@ impl PluginBus {
     }
 
     /// 调用插件方法
-    pub async fn call_plugin(&self, plugin_id: &str, method: &str, params: serde_json::Value) -> Result<serde_json::Value> {
+    pub async fn call_plugin(
+        &self,
+        plugin_id: &str,
+        method: &str,
+        params: serde_json::Value,
+    ) -> Result<serde_json::Value> {
         let topic = format!("plugin.{}.{}", plugin_id, method);
-        let response = self.request_response(plugin_id, &topic, params, 5000).await?;
+        let response = self
+            .request_response(plugin_id, &topic, params, 5000)
+            .await?;
         Ok(response.payload)
     }
 
@@ -362,16 +441,18 @@ impl PluginBus {
 
     /// 获取主题订阅者
     pub fn get_subscribers(&self, topic: &str) -> Vec<String> {
-        self.subscriptions.get(topic)
+        self.subscriptions
+            .get(topic)
             .map(|subs| subs.iter().map(|s| s.plugin_id.clone()).collect())
             .unwrap_or_default()
     }
 
     /// 更新插件状态
     pub fn set_plugin_status(&mut self, plugin_id: &str, status: PluginStatus) -> Result<()> {
-        let plugin = self.plugins.get_mut(plugin_id).ok_or_else(|| {
-            OperatorError::Other(anyhow::anyhow!("插件不存在: {}", plugin_id))
-        })?;
+        let plugin = self
+            .plugins
+            .get_mut(plugin_id)
+            .ok_or_else(|| OperatorError::Other(anyhow::anyhow!("插件不存在: {}", plugin_id)))?;
         plugin.status = status;
         Ok(())
     }
@@ -383,7 +464,9 @@ impl PluginBus {
             for sub in subs {
                 // 查找发布此主题的插件
                 for plugin in self.plugins.values() {
-                    if plugin.output_topics.contains(topic) || topic.starts_with(&format!("{}.", plugin.id)) {
+                    if plugin.output_topics.contains(topic)
+                        || topic.starts_with(&format!("{}.", plugin.id))
+                    {
                         connections.push(PluginConnection {
                             from: plugin.id.clone(),
                             to: sub.plugin_id.clone(),
@@ -403,27 +486,42 @@ impl PluginBus {
 
     /// 创建标准对话消息
     pub fn create_chat_message(session_id: &str, content: &str) -> PluginMessage {
-        PluginMessage::new("user", "ai.converse", serde_json::json!({
-            "session_id": session_id,
-            "content": content,
-            "timestamp": Utc::now().to_rfc3339()
-        })).need_response()
+        PluginMessage::new(
+            "user",
+            "ai.converse",
+            serde_json::json!({
+                "session_id": session_id,
+                "content": content,
+                "timestamp": Utc::now().to_rfc3339()
+            }),
+        )
+        .need_response()
     }
 
     /// 创建工作流启动消息
     pub fn create_workflow_start(workflow_id: &str, params: serde_json::Value) -> PluginMessage {
-        PluginMessage::new("user", "workflow.start", serde_json::json!({
-            "workflow_id": workflow_id,
-            "parameters": params
-        })).need_response()
+        PluginMessage::new(
+            "user",
+            "workflow.start",
+            serde_json::json!({
+                "workflow_id": workflow_id,
+                "parameters": params
+            }),
+        )
+        .need_response()
     }
 
     /// 创建算子执行消息
     pub fn create_operator_execute(operator_id: &str, input: Vec<f64>) -> PluginMessage {
-        PluginMessage::new("user", "operator.execute", serde_json::json!({
-            "operator_id": operator_id,
-            "input": input
-        })).need_response()
+        PluginMessage::new(
+            "user",
+            "operator.execute",
+            serde_json::json!({
+                "operator_id": operator_id,
+                "input": input
+            }),
+        )
+        .need_response()
     }
 
     /// 创建资源查询消息
@@ -477,8 +575,14 @@ mod tests {
         let mut bus = PluginBus::new();
         // bus 预置若干内置插件，注册后应 >= 2
         let before = bus.list_plugins().len();
-        bus.register(sample_plugin("p1", PluginStatus::Active, PluginType::Builtin)).unwrap();
-        bus.register(sample_plugin("p2", PluginStatus::Active, PluginType::Wasm)).unwrap();
+        bus.register(sample_plugin(
+            "p1",
+            PluginStatus::Active,
+            PluginType::Builtin,
+        ))
+        .unwrap();
+        bus.register(sample_plugin("p2", PluginStatus::Active, PluginType::Wasm))
+            .unwrap();
 
         let plugins = bus.list_plugins();
         assert_eq!(plugins.len(), before + 2);
@@ -489,7 +593,8 @@ mod tests {
     #[tokio::test]
     async fn test_route_to_target_plugin_returns_ack() {
         let mut bus = PluginBus::new();
-        bus.register(sample_plugin("dst", PluginStatus::Active, PluginType::Wasm)).unwrap();
+        bus.register(sample_plugin("dst", PluginStatus::Active, PluginType::Wasm))
+            .unwrap();
 
         let msg = PluginMessage::new("src", "test.topic", serde_json::json!({"x": 1}))
             .to_target("dst")
@@ -504,7 +609,8 @@ mod tests {
     #[tokio::test]
     async fn test_route_to_paused_plugin_returns_none() {
         let mut bus = PluginBus::new();
-        bus.register(sample_plugin("dst", PluginStatus::Paused, PluginType::Wasm)).unwrap();
+        bus.register(sample_plugin("dst", PluginStatus::Paused, PluginType::Wasm))
+            .unwrap();
 
         let msg = PluginMessage::new("src", "test.topic", serde_json::json!({"x": 1}))
             .to_target("dst")
@@ -526,7 +632,12 @@ mod tests {
     #[test]
     fn test_unregister_removes_plugin() {
         let mut bus = PluginBus::new();
-        bus.register(sample_plugin("p1", PluginStatus::Active, PluginType::Builtin)).unwrap();
+        bus.register(sample_plugin(
+            "p1",
+            PluginStatus::Active,
+            PluginType::Builtin,
+        ))
+        .unwrap();
         assert!(bus.get_plugin("p1").is_some());
         assert!(bus.unregister("p1"));
         assert!(bus.get_plugin("p1").is_none());
@@ -536,16 +647,28 @@ mod tests {
     #[test]
     fn test_set_plugin_status() {
         let mut bus = PluginBus::new();
-        bus.register(sample_plugin("p1", PluginStatus::Active, PluginType::Builtin)).unwrap();
+        bus.register(sample_plugin(
+            "p1",
+            PluginStatus::Active,
+            PluginType::Builtin,
+        ))
+        .unwrap();
         bus.set_plugin_status("p1", PluginStatus::Paused).unwrap();
         assert_eq!(bus.get_plugin("p1").unwrap().status, PluginStatus::Paused);
-        assert!(bus.set_plugin_status("ghost", PluginStatus::Active).is_err());
+        assert!(bus
+            .set_plugin_status("ghost", PluginStatus::Active)
+            .is_err());
     }
 
     #[test]
     fn test_get_topology_lists_plugins_and_topics() {
         let mut bus = PluginBus::new();
-        bus.register(sample_plugin("p1", PluginStatus::Active, PluginType::Builtin)).unwrap();
+        bus.register(sample_plugin(
+            "p1",
+            PluginStatus::Active,
+            PluginType::Builtin,
+        ))
+        .unwrap();
         let topo = bus.get_topology();
         assert!(topo.plugins.iter().any(|p| p.id == "p1"));
     }
@@ -569,16 +692,26 @@ mod tests {
     #[tokio::test]
     async fn test_request_response_success() {
         let mut bus = PluginBus::new();
-        bus.register(sample_plugin("svc", PluginStatus::Active, PluginType::Wasm)).unwrap();
-        let resp = bus.request_response("svc", "svc.ping", serde_json::json!({"a":1}), 1000).await.unwrap();
+        bus.register(sample_plugin("svc", PluginStatus::Active, PluginType::Wasm))
+            .unwrap();
+        let resp = bus
+            .request_response("svc", "svc.ping", serde_json::json!({"a":1}), 1000)
+            .await
+            .unwrap();
         assert_eq!(resp.topic, "ack");
     }
 
     #[tokio::test]
     async fn test_subscribe_and_route_broadcast() {
         let mut bus = PluginBus::new();
-        bus.register(sample_plugin("a", PluginStatus::Active, PluginType::Builtin)).unwrap();
-        bus.register(sample_plugin("b", PluginStatus::Active, PluginType::Wasm)).unwrap();
+        bus.register(sample_plugin(
+            "a",
+            PluginStatus::Active,
+            PluginType::Builtin,
+        ))
+        .unwrap();
+        bus.register(sample_plugin("b", PluginStatus::Active, PluginType::Wasm))
+            .unwrap();
         // a 订阅 ai.converse
         bus.subscribe("a", "ai.converse", None);
         let msg = PluginMessage::new("user", "ai.converse", serde_json::json!({"c":"hi"}));
@@ -586,6 +719,8 @@ mod tests {
         // 这里验证不会 panic 且返回 None（无 response_required）
         let r = bus.route_message(msg).await.unwrap();
         assert!(r.is_none());
-        assert!(bus.get_subscribers("ai.converse").contains(&"a".to_string()));
+        assert!(bus
+            .get_subscribers("ai.converse")
+            .contains(&"a".to_string()));
     }
 }

@@ -74,11 +74,7 @@ pub fn analyze(graph: &FlowGraph, deps: &[Dependency]) -> CriticalPathReport {
     let mut lf = vec![makespan; n];
     let mut ls = vec![0u64; n];
     for &u in order.iter().rev() {
-        lf[u] = succ[u]
-            .iter()
-            .map(|&s| ls[s])
-            .min()
-            .unwrap_or(makespan);
+        lf[u] = succ[u].iter().map(|&s| ls[s]).min().unwrap_or(makespan);
         ls[u] = lf[u].saturating_sub(graph.nodes[u].duration_ms);
     }
 
@@ -149,7 +145,9 @@ fn enumerate_critical_paths(
 ) -> Vec<Vec<String>> {
     let n = graph.nodes.len();
     let crit = |i: usize| timings[i].critical;
-    let starts: Vec<usize> = (0..n).filter(|&i| crit(i) && pred[i].iter().all(|&p| !crit(p))).collect();
+    let starts: Vec<usize> = (0..n)
+        .filter(|&i| crit(i) && pred[i].iter().all(|&p| !crit(p)))
+        .collect();
 
     let mut paths = Vec::new();
     let mut stack: Vec<(usize, Vec<usize>)> = starts.into_iter().map(|s| (s, vec![s])).collect();
@@ -187,7 +185,9 @@ mod tests {
 
     fn diamond() -> FlowGraph {
         let mut g = FlowGraph::new("d", "diamond");
-        g.add_node(FlowNode::task("a", "A", ToolKind::Compute, 100).with_access(Access::write("x")));
+        g.add_node(
+            FlowNode::task("a", "A", ToolKind::Compute, 100).with_access(Access::write("x")),
+        );
         g.add_node(
             FlowNode::task("b", "B", ToolKind::Compute, 300)
                 .with_access(Access::read("x"))
@@ -216,11 +216,10 @@ mod tests {
         let plan = dataflow::analyze(&g);
         let rep = analyze(&g, &plan.dependencies);
         assert_eq!(rep.makespan_ms, 500); // 100 + 300 + 100
-        assert!(rep.critical_paths.iter().any(|p| p == &vec![
-            "a".to_string(),
-            "b".to_string(),
-            "d".to_string()
-        ]));
+        assert!(rep
+            .critical_paths
+            .iter()
+            .any(|p| p == &vec!["a".to_string(), "b".to_string(), "d".to_string()]));
     }
 
     #[test]
@@ -240,6 +239,9 @@ mod tests {
         let g = diamond();
         let plan = dataflow::analyze(&g);
         let rep = analyze(&g, &plan.dependencies);
-        assert_eq!(rep.optimization_targets.first().map(|s| s.as_str()), Some("b"));
+        assert_eq!(
+            rep.optimization_targets.first().map(|s| s.as_str()),
+            Some("b")
+        );
     }
 }

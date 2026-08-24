@@ -151,8 +151,7 @@ pub fn evaluate_gates(
     ctx: &GovernContext,
     opt: &flow_ai::pipeline::OptimizationReport,
     status: crate::govern::FlowStatus,
-    #[allow(unused_variables)]
-    algo_veto: bool,
+    #[allow(unused_variables)] algo_veto: bool,
     // G4 SLA / G5 预算：直接复用治理内核 `govern()` 的判定，避免重复计算漂移
     sla_ok: bool,
     budget_ok: bool,
@@ -194,14 +193,16 @@ pub fn evaluate_gates(
     // G8 灾备：regulated 租户且含「持久化写」（存储类写，非流程变量）时，
     // 要求流程具备回滚/备份策略标签；仅流程变量写不触发灾备要求。
     let has_persistent_write = opt.optimized_graph.nodes.iter().any(|n| {
-        n.accesses.iter().any(|a| a.mode.writes() && is_storage_resource(&a.resource))
+        n.accesses
+            .iter()
+            .any(|a| a.mode.writes() && is_storage_resource(&a.resource))
     });
     let dr_ok = if policy.require_dr {
-        opt.optimized_graph
-            .nodes
-            .iter()
-            .any(|n| n.tags.iter().any(|t| t == "rollback" || t == "backup" || t == "dr"))
-            || !has_persistent_write
+        opt.optimized_graph.nodes.iter().any(|n| {
+            n.tags
+                .iter()
+                .any(|t| t == "rollback" || t == "backup" || t == "dr")
+        }) || !has_persistent_write
     } else {
         true
     };
@@ -211,13 +212,23 @@ pub fn evaluate_gates(
             id: GateId::Conservation,
             passed: conserved,
             strict: false,
-            reason: if conserved { "资源/权限守恒自洽" } else { "存在凭空新增的资源或权限" }.into(),
+            reason: if conserved {
+                "资源/权限守恒自洽"
+            } else {
+                "存在凭空新增的资源或权限"
+            }
+            .into(),
         },
         GateCheck {
             id: GateId::NoOrphan,
             passed: orphan_free,
             strict: false,
-            reason: if orphan_free { "无悬空节点" } else { "存在孤儿节点" }.into(),
+            reason: if orphan_free {
+                "无悬空节点"
+            } else {
+                "存在孤儿节点"
+            }
+            .into(),
         },
         GateCheck {
             id: GateId::TenantCompliance,
@@ -234,13 +245,23 @@ pub fn evaluate_gates(
             id: GateId::Sla,
             passed: sla_ok,
             strict: false,
-            reason: if sla_ok { "SLA 上限满足" } else { "超出 SLA 上限" }.into(),
+            reason: if sla_ok {
+                "SLA 上限满足"
+            } else {
+                "超出 SLA 上限"
+            }
+            .into(),
         },
         GateCheck {
             id: GateId::Budget,
             passed: budget_ok,
             strict: false,
-            reason: if budget_ok { "成本预算内" } else { "超出成本预算" }.into(),
+            reason: if budget_ok {
+                "成本预算内"
+            } else {
+                "超出成本预算"
+            }
+            .into(),
         },
         GateCheck {
             id: GateId::Sensitivity,
@@ -257,7 +278,12 @@ pub fn evaluate_gates(
             id: GateId::StateMachine,
             passed: state_ok,
             strict: false,
-            reason: if state_ok { "状态机处于 Approved" } else { "非 Approved 档位，禁止出码" }.into(),
+            reason: if state_ok {
+                "状态机处于 Approved"
+            } else {
+                "非 Approved 档位，禁止出码"
+            }
+            .into(),
         },
         GateCheck {
             id: GateId::DisasterRecovery,
@@ -292,10 +318,7 @@ pub fn apply_gates(mut gate: GateResult, gates: &[GateCheck]) -> GateResult {
 /// I-05 双验收联动门禁（纯函数，便于 handler 与单测复用）：
 /// 需求侧任务 Done ∧ 融合侧璇玑验证通过（algo 未否决且 gate 放行）。
 /// 任一方不达成即不可上架（publish）。
-pub fn dual_acceptance(
-    task_done: bool,
-    report: &crate::pipeline::GovernanceReport,
-) -> bool {
+pub fn dual_acceptance(task_done: bool, report: &crate::pipeline::GovernanceReport) -> bool {
     task_done && !report.algo.vetoed && report.gate.approved
 }
 
@@ -346,7 +369,9 @@ mod tests {
         let p_reg = TenantPolicy::from_tenant(&reg);
         let p_nor = TenantPolicy::from_tenant(&normal);
         // 强合规租户权限维度严格度更高
-        assert!(p_reg.strength_of(Dimension::Permission) > p_nor.strength_of(Dimension::Permission));
+        assert!(
+            p_reg.strength_of(Dimension::Permission) > p_nor.strength_of(Dimension::Permission)
+        );
         assert!(p_reg.require_dr);
         assert!(!p_nor.require_dr);
     }
@@ -360,7 +385,15 @@ mod tests {
             &flow_ai::model::FlowGraph::new("x", "t"),
             &flow_ai::pipeline::OptimizeConfig::default(),
         );
-        let gates = evaluate_gates(&ctx, &opt, crate::govern::FlowStatus::Approved, false, true, true, true);
+        let gates = evaluate_gates(
+            &ctx,
+            &opt,
+            crate::govern::FlowStatus::Approved,
+            false,
+            true,
+            true,
+            true,
+        );
         assert_eq!(gates.len(), 8, "治理 8 闸门须全部接进门禁");
         for id in GateId::ALL {
             assert!(gates.iter().any(|g| g.id == id), "缺少闸门 {:?}", id);
@@ -376,12 +409,21 @@ mod tests {
         let mut n = flow_ai::model::FlowNode::new("n1", "敏感写库", flow_ai::model::NodeKind::Task);
         n.accesses.push(flow_ai::model::Access::write("db:secret"));
         graph.nodes.push(n);
-        let opt = flow_ai::pipeline::optimize(
-            &graph,
-            &flow_ai::pipeline::OptimizeConfig::default(),
+        let opt =
+            flow_ai::pipeline::optimize(&graph, &flow_ai::pipeline::OptimizeConfig::default());
+        let gates = evaluate_gates(
+            &ctx,
+            &opt,
+            crate::govern::FlowStatus::Approved,
+            false,
+            true,
+            true,
+            true,
         );
-        let gates = evaluate_gates(&ctx, &opt, crate::govern::FlowStatus::Approved, false, true, true, true);
-        let g3 = gates.iter().find(|g| g.id == GateId::TenantCompliance).unwrap();
+        let g3 = gates
+            .iter()
+            .find(|g| g.id == GateId::TenantCompliance)
+            .unwrap();
         let g6 = gates.iter().find(|g| g.id == GateId::Sensitivity).unwrap();
         assert!(!g3.passed, "G3 租户合规应拦截未脱敏敏感写");
         assert!(!g6.passed, "G6 敏感度应拦截未脱敏敏感写");
@@ -397,7 +439,10 @@ mod tests {
         assert!(!dual_acceptance(false, &rep));
         // 融合侧通过（未否决且闸门放行）且需求侧 Done -> 双验收通过
         if !rep.algo.vetoed && rep.gate.approved {
-            assert!(dual_acceptance(true, &rep), "融合侧通过 + Done 应达成双验收");
+            assert!(
+                dual_acceptance(true, &rep),
+                "融合侧通过 + Done 应达成双验收"
+            );
         } else {
             // 该图本身未通过融合治理，则双验收失败符合预期（由集成测试覆盖可达图）
             assert!(!dual_acceptance(true, &rep));

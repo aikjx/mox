@@ -26,7 +26,8 @@ async fn main() -> anyhow::Result<()> {
     let out_dir = PathBuf::from("./primiflow_runtime");
     std::fs::create_dir_all(&out_dir).ok();
     let db_path = out_dir.join("primiflow.db");
-    let store = Persistence::sqlite(db_path.to_str().unwrap()).unwrap_or_else(|_| Persistence::memory());
+    let store =
+        Persistence::sqlite(db_path.to_str().unwrap()).unwrap_or_else(|_| Persistence::memory());
 
     let state = new_state(out_dir, store);
 

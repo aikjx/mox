@@ -19,7 +19,9 @@
         "graph_modules.edges.json",
         "graph_modules.nodes.json",
         "ai_benchmark_results.json",
-        "engine_core_metrics.json"
+        "engine_core_metrics.json",
+        "audit_log.json",
+        "enterprise_10task_history.jsonl"
       ],
       "docs": [
         "docs/_archive/2026-08-16/PrimiFlow-API健康探活与CORS-20260816.md",
@@ -64,10 +66,148 @@
         "docs/enterprise/23-竞品全维功能对比与可用性判定报告-V1.0.md",
         "docs/enterprise/24-全资源模块化与知识图谱贯通-企业级开发完成总控-V1.0.md",
         "docs/xuanji-relgraph-product-handbook-v3.md",
-        "docs/enterprise/25-AI引擎真实基准评测报告-V1.0.md"
+        "docs/enterprise/25-AI引擎真实基准评测报告-V1.0.md",
+        "docs/enterprise/26-前端开发专家主控提示词与流程透明化最佳实践清单-V1.0.md",
+        "docs/enterprise/27-企业级测试与评测主控提示词与全维自动化测试报告-V1.0.md"
       ],
       "auto": true,
       "autoRegisteredAt": "2026-08-22T08:51:41.105Z"
+    },
+    {
+      "id": "mod-graph",
+      "name": "图谱模块",
+      "codePath": "src/routes/mod-graph.js",
+      "keyFeatures": [
+        "自动发现并登记（图谱自管理 self-sync）",
+        "路由域 mod-graph 由扫描器发现，零人工登记",
+        "待业务 owner 补充关键功能描述后可覆盖此条目"
+      ],
+      "engines": [
+        "project-atlas"
+      ],
+      "dataAssets": [],
+      "docs": [],
+      "auto": true,
+      "autoRegisteredAt": "2026-08-23T17:35:00.942Z"
+    },
+    {
+      "id": "mod-task",
+      "name": "任务模块",
+      "codePath": "src/routes/mod-task.js",
+      "keyFeatures": [
+        "自动发现并登记（图谱自管理 self-sync）",
+        "路由域 mod-task 由扫描器发现，零人工登记",
+        "待业务 owner 补充关键功能描述后可覆盖此条目"
+      ],
+      "engines": [
+        "project-atlas"
+      ],
+      "dataAssets": [],
+      "docs": [],
+      "auto": true,
+      "autoRegisteredAt": "2026-08-23T17:35:00.942Z"
+    },
+    {
+      "id": "mod-storage",
+      "name": "存储模块",
+      "codePath": "src/routes/mod-storage.js",
+      "keyFeatures": [
+        "自动发现并登记（图谱自管理 self-sync）",
+        "路由域 mod-storage 由扫描器发现，零人工登记",
+        "待业务 owner 补充关键功能描述后可覆盖此条目"
+      ],
+      "engines": [
+        "project-atlas"
+      ],
+      "dataAssets": [],
+      "docs": [],
+      "auto": true,
+      "autoRegisteredAt": "2026-08-23T17:35:00.942Z"
+    },
+    {
+      "id": "mod-melody2score",
+      "name": "旋律转谱模块",
+      "codePath": "src/routes/mod-melody2score.js",
+      "keyFeatures": [
+        "自动发现并登记（图谱自管理 self-sync）",
+        "路由域 mod-melody2score 由扫描器发现，零人工登记",
+        "待业务 owner 补充关键功能描述后可覆盖此条目"
+      ],
+      "engines": [
+        "project-atlas"
+      ],
+      "dataAssets": [],
+      "docs": [],
+      "auto": true,
+      "autoRegisteredAt": "2026-08-23T17:35:00.942Z"
+    },
+    {
+      "id": "mod-rust-operator-wasm",
+      "name": "Rust/WASM 算子沙箱模块",
+      "codePath": "src/routes/mod-rust-operator-wasm.js",
+      "keyFeatures": [
+        "自动发现并登记（图谱自管理 self-sync）",
+        "路由域 mod-rust-operator-wasm 由扫描器发现，零人工登记",
+        "待业务 owner 补充关键功能描述后可覆盖此条目"
+      ],
+      "engines": [
+        "project-atlas"
+      ],
+      "dataAssets": [],
+      "docs": [],
+      "auto": true,
+      "autoRegisteredAt": "2026-08-23T17:35:00.942Z"
+    },
+    {
+      "id": "mod-rust-hermes-flow-bridge",
+      "name": "Rust/Hermes 流程桥接模块",
+      "codePath": "src/routes/mod-rust-hermes-flow-bridge.js",
+      "keyFeatures": [
+        "自动发现并登记（图谱自管理 self-sync）",
+        "路由域 mod-rust-hermes-flow-bridge 由扫描器发现，零人工登记",
+        "待业务 owner 补充关键功能描述后可覆盖此条目"
+      ],
+      "engines": [
+        "project-atlas"
+      ],
+      "dataAssets": [],
+      "docs": [],
+      "auto": true,
+      "autoRegisteredAt": "2026-08-23T17:35:00.942Z"
+    },
+    {
+      "id": "mod-rust-business-catalog",
+      "name": "Rust/业务目录模块",
+      "codePath": "src/routes/mod-rust-business-catalog.js",
+      "keyFeatures": [
+        "自动发现并登记（图谱自管理 self-sync）",
+        "路由域 mod-rust-business-catalog 由扫描器发现，零人工登记",
+        "待业务 owner 补充关键功能描述后可覆盖此条目"
+      ],
+      "engines": [
+        "project-atlas"
+      ],
+      "dataAssets": [],
+      "docs": [],
+      "auto": true,
+      "autoRegisteredAt": "2026-08-23T17:35:00.942Z"
+    },
+    {
+      "id": "mod-rust-template-market",
+      "name": "Rust/模板市场模块",
+      "codePath": "src/routes/mod-rust-template-market.js",
+      "keyFeatures": [
+        "自动发现并登记（图谱自管理 self-sync）",
+        "路由域 mod-rust-template-market 由扫描器发现，零人工登记",
+        "待业务 owner 补充关键功能描述后可覆盖此条目"
+      ],
+      "engines": [
+        "project-atlas"
+      ],
+      "dataAssets": [],
+      "docs": [],
+      "auto": true,
+      "autoRegisteredAt": "2026-08-23T17:35:00.942Z"
     }
   ],
   "dataAssets": [
@@ -103,6 +243,16 @@
     },
     {
       "file": "engine_core_metrics.json",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "audit_log.json",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "enterprise_10task_history.jsonl",
       "domain": "atlas-auto",
       "desc": "自动发现（self-sync）"
     }
@@ -320,6 +470,16 @@
     },
     {
       "file": "docs/enterprise/25-AI引擎真实基准评测报告-V1.0.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/enterprise/26-前端开发专家主控提示词与流程透明化最佳实践清单-V1.0.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/enterprise/27-企业级测试与评测主控提示词与全维自动化测试报告-V1.0.md",
       "domain": "atlas-auto",
       "desc": "自动发现（self-sync）"
     }

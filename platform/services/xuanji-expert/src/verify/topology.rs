@@ -30,7 +30,10 @@ pub fn topology_invariant_with_reach(
             name: "topology".into(),
             passed: false,
             blocking: true,
-            detail: format!("原始节点在优化后丢失: {:?}", &missing[..missing.len().min(5)]),
+            detail: format!(
+                "原始节点在优化后丢失: {:?}",
+                &missing[..missing.len().min(5)]
+            ),
         };
     }
 
@@ -45,7 +48,9 @@ pub fn topology_invariant_with_reach(
     let (ra, a_pos_vec): (&Reachability, Vec<Option<usize>>) = match after_reach_cached {
         Some(r) => {
             // 复用缓存：仍要算一次 after 的 topo_pos（拓扑位置本身比传闭包便宜 ~100×）
-            let order = after.topo_order().unwrap_or_else(|_| (0..after.nodes.len()).collect());
+            let order = after
+                .topo_order()
+                .unwrap_or_else(|_| (0..after.nodes.len()).collect());
             let mut pos = vec![None; after.nodes.len()];
             for (rank, &u) in order.iter().enumerate() {
                 pos[u] = Some(rank);
@@ -110,7 +115,11 @@ pub fn topology_invariant_with_reach(
                 None => continue,
             };
             // 拓扑秩短切：before 上 u 的秩 ≥ v，就不可能 u→* v
-            let before_reach = if bu_pos < bv_pos { rb.reaches(ui, vi) } else { false };
+            let before_reach = if bu_pos < bv_pos {
+                rb.reaches(ui, vi)
+            } else {
+                false
+            };
             if !before_reach {
                 continue;
             }
@@ -119,11 +128,18 @@ pub fn topology_invariant_with_reach(
                 Some(p) => p,
                 None => continue,
             };
-            let after_reach = if au_pos < av_pos { ra.reaches(ai, avi) } else { false };
+            let after_reach = if au_pos < av_pos {
+                ra.reaches(ai, avi)
+            } else {
+                false
+            };
             if after_reach {
                 continue;
             }
-            mismatch.push(format!("{u}→{v}（写 {:?} 必须早于读，但可达性被破坏）", writes));
+            mismatch.push(format!(
+                "{u}→{v}（写 {:?} 必须早于读，但可达性被破坏）",
+                writes
+            ));
             if mismatch.len() >= 5 {
                 // 诊断只收集前 5 例，避免巨型反例
                 break;
@@ -138,7 +154,10 @@ pub fn topology_invariant_with_reach(
             name: "topology".into(),
             passed: false,
             blocking: true,
-            detail: format!("真数据依赖可达性被破坏（≤5 例）: {:?}", &mismatch[..mismatch.len().min(5)]),
+            detail: format!(
+                "真数据依赖可达性被破坏（≤5 例）: {:?}",
+                &mismatch[..mismatch.len().min(5)]
+            ),
         };
     }
     Check {

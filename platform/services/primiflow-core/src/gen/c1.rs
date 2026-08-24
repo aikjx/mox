@@ -4,9 +4,6 @@
 //! 说明: 状态机编排：需求→拓扑→文档，并写六维溯源。
 //! 规格: primiflow/SPEC.md（§7 模块 / §10 DoD）
 
-/// 依赖模块: C4, C2, C3
-use flow_ai::model::FlowGraph;
-use flow_ai::primitive::{KnowledgeBase, PrimitiveState, ResourceBudget};
 use crate::gen::c2::{RegularizeOutput, Scheduler};
 use crate::gen::c3::AssetService;
 use crate::gen::c4::{Domain, StructuredRequirement, TopologyOperator};
@@ -15,6 +12,9 @@ use crate::gen::c6::{SmokeReport, SmokeTester};
 use crate::gen::c7::CanvasState;
 use crate::gen::c8::AsrClient;
 use crate::gen::schema::{Artifact, Asset, Project, Topology, TopologyStatus, TraceLink};
+/// 依赖模块: C4, C2, C3
+use flow_ai::model::FlowGraph;
+use flow_ai::primitive::{KnowledgeBase, PrimitiveState, ResourceBudget};
 
 /// 主链路输入：文本需求或音频路径
 #[derive(Debug, Clone)]
@@ -133,7 +133,10 @@ impl Orchestrator {
             engine: flow_ai::primitive::PrimiEngine::new(
                 c_base,
                 KnowledgeBase::new(),
-                ResourceBudget { total_ms: 1_000_000, per_pool: Default::default() },
+                ResourceBudget {
+                    total_ms: 1_000_000,
+                    per_pool: Default::default(),
+                },
             ),
             c_base,
             freeze_policy: FreezePolicy::default(),
@@ -171,7 +174,9 @@ impl Orchestrator {
         };
 
         // 2) 需求结构化
-        let structured = self.topo_op.structure_requirement(&text, uuid::Uuid::new_v4().to_string());
+        let structured = self
+            .topo_op
+            .structure_requirement(&text, uuid::Uuid::new_v4().to_string());
 
         // 3) 域白名单：超域显式拒绝
         if !structured.is_in_scope() {
@@ -202,8 +207,13 @@ impl Orchestrator {
         let candidate = self.topo_op.emerge_topology(&structured.primi, &state, &kb);
 
         // 7) ℛ̂ 正则化
-        let budget = ResourceBudget { total_ms: 1_000_000, per_pool: Default::default() };
-        let mut reg = self.scheduler.regularize(candidate.graph.clone(), state.clone(), budget);
+        let budget = ResourceBudget {
+            total_ms: 1_000_000,
+            per_pool: Default::default(),
+        };
+        let mut reg = self
+            .scheduler
+            .regularize(candidate.graph.clone(), state.clone(), budget);
         state = reg.state.clone();
         reg.state.q = self.engine.state.q; // 继承累积拓扑荷
 
@@ -324,12 +334,9 @@ impl Orchestrator {
         reg: &RegularizeOutput,
         state: &PrimitiveState,
     ) -> (Topology, Asset) {
-        let (asset, _charge) = self.assets.freeze_asset(
-            topo_rec.id,
-            name,
-            Domain::BusinessSoftware,
-            &reg.graph,
-        );
+        let (asset, _charge) =
+            self.assets
+                .freeze_asset(topo_rec.id, name, Domain::BusinessSoftware, &reg.graph);
         let emer = flow_ai::primitive::EmergenceResult {
             topology: flow_ai::primitive::CandidateTopology {
                 graph: reg.graph.clone(),
@@ -338,12 +345,18 @@ impl Orchestrator {
                 fanout: 1,
             },
             state: state.clone(),
-            validation: flow_ai::primitive::ValidationReport { ok: true, violations: Vec::new() },
+            validation: flow_ai::primitive::ValidationReport {
+                ok: true,
+                violations: Vec::new(),
+            },
             charge_estimate: 1.0,
             attempts: 0,
-            status: flow_ai::primitive::EmergeStatus::Validated { regularized: reg.regularized },
+            status: flow_ai::primitive::EmergeStatus::Validated {
+                regularized: reg.regularized,
+            },
         };
-        self.engine.accept(&emer, flow_ai::primitive::Outcome::Success { quality: 0.9 });
+        self.engine
+            .accept(&emer, flow_ai::primitive::Outcome::Success { quality: 0.9 });
 
         let mut topo_rec = topo_rec;
         topo_rec.set_status(TopologyStatus::Frozen);
@@ -390,12 +403,24 @@ mod tests {
     fn end_to_end_text_requirement_completes() {
         let project = Project::new("电商分析平台", Some("t1".into()), 0.7, 0.3, 1.0);
         let mut orch = Orchestrator::new();
-        let r = orch.run(&project, &Input::Text("请抓取销售数据。清洗对账。生成图表报告。".into()), 0.2);
-        assert_eq!(r.status, OrchestrationStatus::Completed, "主链路应跑通: {:?}", r.smoke);
+        let r = orch.run(
+            &project,
+            &Input::Text("请抓取销售数据。清洗对账。生成图表报告。".into()),
+            0.2,
+        );
+        assert_eq!(
+            r.status,
+            OrchestrationStatus::Completed,
+            "主链路应跑通: {:?}",
+            r.smoke
+        );
         assert!(r.graph.is_some());
         assert_eq!(r.artifacts.len(), 8, "应生成 8 份文档");
         assert!(r.frozen_asset_id.is_some(), "应冻结资产");
-        assert!(r.trace_link.as_ref().unwrap().is_complete(), "六维溯源应完整");
+        assert!(
+            r.trace_link.as_ref().unwrap().is_complete(),
+            "六维溯源应完整"
+        );
     }
 
     #[test]
@@ -410,12 +435,20 @@ mod tests {
     fn second_similar_requirement_reuses_asset() {
         let project = Project::new("分析平台", Some("t1".into()), 0.7, 0.3, 1.0);
         let mut orch = Orchestrator::new();
-        let r1 = orch.run(&project, &Input::Text("请抓取销售数据。清洗对账。生成图表报告。".into()), 0.2);
+        let r1 = orch.run(
+            &project,
+            &Input::Text("请抓取销售数据。清洗对账。生成图表报告。".into()),
+            0.2,
+        );
         assert_eq!(r1.status, OrchestrationStatus::Completed);
         assert!(r1.frozen_asset_id.is_some());
 
         // 第二次同类需求：应检索到首次冻结的资产并复用（κ 复用）
-        let r2 = orch.run(&project, &Input::Text("我想做一份电商经营分析报告，需要销售数据抓取和图表生成。".into()), 0.1);
+        let r2 = orch.run(
+            &project,
+            &Input::Text("我想做一份电商经营分析报告，需要销售数据抓取和图表生成。".into()),
+            0.1,
+        );
         assert_eq!(r2.status, OrchestrationStatus::Completed);
         assert!(!r2.reuse_hits.is_empty(), "第二次同类需求应命中历史资产 Q");
     }
@@ -425,8 +458,16 @@ mod tests {
         let project = Project::new("延迟冻结验证", Some("t1".into()), 0.7, 0.3, 1.0);
         let mut orch = Orchestrator::new();
         orch.set_freeze_policy(FreezePolicy::Deferred);
-        let mut r = orch.run(&project, &Input::Text("请抓取销售数据。清洗对账。生成图表报告。".into()), 0.2);
-        assert_eq!(r.status, OrchestrationStatus::CompletedPendingGate, "Deferred 策略应暂缓冻结");
+        let mut r = orch.run(
+            &project,
+            &Input::Text("请抓取销售数据。清洗对账。生成图表报告。".into()),
+            0.2,
+        );
+        assert_eq!(
+            r.status,
+            OrchestrationStatus::CompletedPendingGate,
+            "Deferred 策略应暂缓冻结"
+        );
         assert!(r.frozen_asset_id.is_none(), "闸门确认前不得冻结资产");
         assert_eq!(r.artifacts.len(), 8, "文档照常生成");
 
@@ -441,22 +482,38 @@ mod tests {
         let project = Project::new("闸门拦截验证", Some("t1".into()), 0.7, 0.3, 1.0);
         let mut orch = Orchestrator::new();
         orch.set_freeze_policy(FreezePolicy::Deferred);
-        let mut r = orch.run(&project, &Input::Text("请抓取销售数据。清洗对账。生成图表报告。".into()), 0.2);
+        let mut r = orch.run(
+            &project,
+            &Input::Text("请抓取销售数据。清洗对账。生成图表报告。".into()),
+            0.2,
+        );
         assert_eq!(r.status, OrchestrationStatus::CompletedPendingGate);
 
         // 闸门未通过 → 永不冻结，拓扑标记 Rejected
         assert!(!orch.confirm_gate(&mut r, false), "闸门未通过不得冻结");
         assert!(r.frozen_asset_id.is_none(), "闸门未通过资产必须保持未冻结");
         let rec = r.topology_record.as_ref().unwrap();
-        assert_eq!(rec.status, TopologyStatus::Rejected.as_str(), "拓扑应标记为 Rejected");
+        assert_eq!(
+            rec.status,
+            TopologyStatus::Rejected.as_str(),
+            "拓扑应标记为 Rejected"
+        );
     }
 
     #[test]
     fn immediate_policy_keeps_legacy_behavior() {
         let project = Project::new("立即冻结回归", Some("t1".into()), 0.7, 0.3, 1.0);
         let mut orch = Orchestrator::new();
-        let r = orch.run(&project, &Input::Text("请抓取销售数据。清洗对账。生成图表报告。".into()), 0.2);
-        assert_eq!(r.status, OrchestrationStatus::Completed, "默认策略应保持即冻结行为");
+        let r = orch.run(
+            &project,
+            &Input::Text("请抓取销售数据。清洗对账。生成图表报告。".into()),
+            0.2,
+        );
+        assert_eq!(
+            r.status,
+            OrchestrationStatus::Completed,
+            "默认策略应保持即冻结行为"
+        );
         assert!(r.frozen_asset_id.is_some());
     }
 
@@ -467,6 +524,12 @@ mod tests {
         // 命中 LocalMockAsr 词表的音频文件名
         let r = orch.run(&project, &Input::Audio("报销审批录音.mp3".into()), 0.2);
         assert_eq!(r.status, OrchestrationStatus::Completed);
-        assert!(r.requirement.unwrap().primi.subtasks.iter().any(|s| s.tool == flow_ai::model::ToolKind::Human));
+        assert!(r
+            .requirement
+            .unwrap()
+            .primi
+            .subtasks
+            .iter()
+            .any(|s| s.tool == flow_ai::model::ToolKind::Human));
     }
 }

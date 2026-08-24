@@ -68,7 +68,11 @@ const ENGINE_EDGES = [
   // 流程图谱与知识层
   { from: 'ai-flow-graph', to: 'ai-integration-engine', type: 'delegates_to', note: 'F8 激活扩散委托图计算（延迟边）' },
   { from: 'kb', to: 'knowledge-graph', type: 'data_flows_to', note: '文档实体与图谱节点互链（graphLinks）' },
-  { from: 'engine-universe', to: 'knowledge-graph', type: 'data_flows_to', note: '引擎宇宙图谱由图谱引擎统一承载' }
+  { from: 'engine-universe', to: 'knowledge-graph', type: 'data_flows_to', note: '引擎宇宙图谱由图谱引擎统一承载' },
+
+  // W8 兜底：flow-engine（Rust 侧流程引擎）接入主连通分量 → 编排引擎 + ai-engine-core（避免孤岛）
+  { from: 'orchestration-engine', to: 'flow-engine', type: 'delegates_to', note: '复杂流程状态机委托 Rust flow-engine（xuanji-system 协同）' },
+  { from: 'flow-engine', to: 'ai-engine-core', type: 'depends_on', note: '流程引擎复用 AI Engine Core 的 LLM/会话侧车' }
 ];
 
 // ---------- 需求归一化链内部流转 ----------

@@ -1,11 +1,11 @@
-﻿//! 架构专家（开发维度）：审查代码架构、模块边界、依赖关系
+//! 架构专家（开发维度）：审查代码架构、模块边界、依赖关系
 //!
 //! 分析基于 `CodeUnit` 的**预分析真字段**（`coupling`）与 `dependencies` 拓扑，
 //! 循环依赖用真实 DFS 检测（不再返回固定值）。
 
-use crate::expert::{Expert, ExpertOpinion, Risk, Suggestion};
-use crate::ir::{Dimension, CodeUnit, ExpertId};
 use crate::context::ExpertContext;
+use crate::expert::{Expert, ExpertOpinion, Risk, Suggestion};
+use crate::ir::{CodeUnit, Dimension, ExpertId};
 use flow_ai::model::Severity;
 use std::collections::HashMap;
 
@@ -132,10 +132,9 @@ fn has_circular_dependency(units: &[CodeUnit]) -> bool {
     let dep_map = build_dep_map(units);
     let mut color: HashMap<String, u8> = HashMap::new(); // 0=白 1=灰 2=黑
     for id in dep_map.keys() {
-        if color.get(id).copied().unwrap_or(0) == 0
-            && dfs_has_cycle(id, &dep_map, &mut color) {
-                return true;
-            }
+        if color.get(id).copied().unwrap_or(0) == 0 && dfs_has_cycle(id, &dep_map, &mut color) {
+            return true;
+        }
     }
     false
 }
@@ -148,11 +147,10 @@ fn dfs_has_cycle(
     color.insert(id.to_string(), 1);
     for next in dep_map.get(id).cloned().unwrap_or_default() {
         match color.get(&next).copied().unwrap_or(0) {
-            1 => return true,            // 灰节点 => 环
-            0
-                if dfs_has_cycle(&next, dep_map, color) => {
-                    return true;
-                }
+            1 => return true, // 灰节点 => 环
+            0 if dfs_has_cycle(&next, dep_map, color) => {
+                return true;
+            }
             _ => {}
         }
     }

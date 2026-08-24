@@ -8,8 +8,12 @@ use flow_ai::model::NodeKind;
 pub struct ObservabilityExpert;
 
 impl Expert for ObservabilityExpert {
-    fn id(&self) -> String { "observability".into() }
-    fn dimension(&self) -> Dimension { Dimension::Observability }
+    fn id(&self) -> String {
+        "observability".into()
+    }
+    fn dimension(&self) -> Dimension {
+        Dimension::Observability
+    }
 
     fn analyze(&self, ctx: &ExpertContext) -> ExpertOpinion {
         let mut o = ExpertOpinion::empty("observability", Dimension::Observability);
@@ -42,8 +46,14 @@ impl Expert for ObservabilityExpert {
         }
 
         // 异常边必须有告警收口
-        let has_handler = g.nodes.iter().any(|n| n.tags.iter().any(|t| t == "error_handler"));
-        let has_exception_edge = g.edges.iter().any(|e| e.kind == flow_ai::model::EdgeKind::Exception);
+        let has_handler = g
+            .nodes
+            .iter()
+            .any(|n| n.tags.iter().any(|t| t == "error_handler"));
+        let has_exception_edge = g
+            .edges
+            .iter()
+            .any(|e| e.kind == flow_ai::model::EdgeKind::Exception);
         if has_exception_edge && !has_handler {
             o.push_risk(
                 flow_ai::model::Severity::Warning,

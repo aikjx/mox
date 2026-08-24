@@ -27,7 +27,11 @@ fn build_deep(n: u32) -> FlowGraph {
 }
 
 fn cfg() -> OptimizeConfig {
-    OptimizeConfig { emit_code: false, auto_repair: true, ..Default::default() }
+    OptimizeConfig {
+        emit_code: false,
+        auto_repair: true,
+        ..Default::default()
+    }
 }
 
 fn main() {
@@ -41,7 +45,11 @@ fn main() {
     // --- verify only ---
     t = Instant::now();
     let v = verify(&g, &rep);
-    println!("verify once: {} ms, vetoed={}", t.elapsed().as_millis(), v.vetoed);
+    println!(
+        "verify once: {} ms, vetoed={}",
+        t.elapsed().as_millis(),
+        v.vetoed
+    );
     // --- xuanji_optimize ---
     let tenant = Tenant::new("acme", "fin");
     let prin = Principal::new("ops").with_roles(vec!["editor".into(), "approver".into()]);
@@ -52,5 +60,10 @@ fn main() {
     let _ = xuanji_expert::pipeline::xuanji_optimize(&FlowGraph::new("mini", "m"), &ctx);
     t = Instant::now();
     let r = xuanji_expert::pipeline::xuanji_optimize(&g, &ctx);
-    println!("xuanji_optimize once: {} ms, vetoed={}, gate.approved={}", t.elapsed().as_millis(), r.algo.vetoed, r.gate.approved);
+    println!(
+        "xuanji_optimize once: {} ms, vetoed={}, gate.approved={}",
+        t.elapsed().as_millis(),
+        r.algo.vetoed,
+        r.gate.approved
+    );
 }

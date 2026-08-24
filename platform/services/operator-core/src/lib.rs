@@ -29,24 +29,24 @@ pub mod kernel;
 /// L5 扩展层：为 kernel 纯类型提供 serde 派生实现 + 为 nalgebra 类型 impl kernel trait（DIP）。
 pub mod kernel_ext;
 
-pub mod types;
-pub mod state;
-pub mod operator;
 pub mod category;
-pub mod resource;
 pub mod conservation;
-pub mod monad;
 pub mod engine;
+pub mod monad;
+pub mod operator;
 pub mod registry;
+pub mod resource;
+pub mod state;
+pub mod types;
 
-pub use types::*;
-pub use state::*;
-pub use operator::*;
 pub use category::*;
-pub use resource::*;
 pub use conservation::*;
 pub use monad::*;
+pub use operator::*;
 pub use registry::*;
+pub use resource::*;
+pub use state::*;
+pub use types::*;
 // kernel 核心守恒与校验类型对外暴露（供下游与内部 #[cfg(test)] 一致性复用）
 pub use kernel::{ConservationChecker, L2Conservation};
 
@@ -54,10 +54,7 @@ pub use kernel::{ConservationChecker, L2Conservation};
 #[derive(Debug, Error)]
 pub enum OperatorError {
     #[error("类型不匹配: 期望 {expected:?}, 得到 {actual:?}")]
-    TypeMismatch {
-        expected: TypeId,
-        actual: TypeId,
-    },
+    TypeMismatch { expected: TypeId, actual: TypeId },
 
     #[error("守恒律违反: {law} - 残差 {residual} 超过阈值 {threshold}")]
     ConservationViolation {
@@ -67,10 +64,7 @@ pub enum OperatorError {
     },
 
     #[error("资源不足: 需要 {required}, 可用 {available}")]
-    ResourceExhausted {
-        required: String,
-        available: String,
-    },
+    ResourceExhausted { required: String, available: String },
 
     #[error("算子组合错误: {0}")]
     CompositionError(String),

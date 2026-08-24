@@ -39,9 +39,18 @@ impl LocalMockAsr {
     pub fn new() -> Self {
         // 预置几条业务短语，覆盖常见需求输入，方便端到端演示
         let vocabulary = vec![
-            ("报表".into(), "请帮我做一个电商月度经营分析报告，包含销售数据抓取、清洗对账和图表生成。".into()),
-            ("审批".into(), "做一个报销审批流程，需要人工审批节点和入库节点。".into()),
-            ("爬虫".into(), "抓取公开网页新闻并存储到数据库，生成摘要。".into()),
+            (
+                "报表".into(),
+                "请帮我做一个电商月度经营分析报告，包含销售数据抓取、清洗对账和图表生成。".into(),
+            ),
+            (
+                "审批".into(),
+                "做一个报销审批流程，需要人工审批节点和入库节点。".into(),
+            ),
+            (
+                "爬虫".into(),
+                "抓取公开网页新闻并存储到数据库，生成摘要。".into(),
+            ),
         ];
         Self { vocabulary }
     }
@@ -60,7 +69,11 @@ impl Transcriber for LocalMockAsr {
             anyhow::bail!("不支持的音频格式 .{}（仅支持 {:?}）", ext, SUPPORTED_EXT);
         }
         // 2) 文件名（去扩展名）作为「语义种子」做确定性转写
-        let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("").to_string();
+        let stem = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("")
+            .to_string();
         let (text, confidence) = self
             .vocabulary
             .iter()
@@ -76,7 +89,11 @@ impl Transcriber for LocalMockAsr {
         // 3) 文本规范化：去除首尾空白、合并多余空白、统一全角标点
         let text = normalize(&text);
         let duration_ms = (stem.len() as u64 + 8) * 350;
-        Ok(AsrResult { text, confidence, duration_ms })
+        Ok(AsrResult {
+            text,
+            confidence,
+            duration_ms,
+        })
     }
 }
 
@@ -122,7 +139,9 @@ pub struct AsrClient {
 
 impl AsrClient {
     pub fn new() -> Self {
-        Self { engine: LocalMockAsr::new() }
+        Self {
+            engine: LocalMockAsr::new(),
+        }
     }
     /// 便捷封装：用内置 LocalMockAsr 转写
     pub fn asr_transcribe(&self, audio_path: &str) -> anyhow::Result<AsrResult> {

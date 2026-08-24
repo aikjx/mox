@@ -1,11 +1,13 @@
-﻿//! 迭代测试：企业级业务流程 + 算法控制流（并行/互斥/异常/循环/子流程）
+//! 迭代测试：企业级业务流程 + 算法控制流（并行/互斥/异常/循环/子流程）
 //!
 //! 目的：用复杂真实用例压 `programming_pipeline`，验证 G-A~E 护栏与
 //! ①-⑩ 在边界场景下的正确性。每轮失败→修复→复测，结果记入工作区文档。
 
-use xuanji_expert::context::{GovernContext, LoopGuard, LoopPolicy, Principal, ResourceQuota, Tenant};
-use xuanji_expert::programming::{programming_pipeline, Checkpoint};
 use flow_ai::model::{Access, EdgeKind, FlowEdge, FlowGraph, FlowNode, NodeKind, ToolKind};
+use xuanji_expert::context::{
+    GovernContext, LoopGuard, LoopPolicy, Principal, ResourceQuota, Tenant,
+};
+use xuanji_expert::programming::{programming_pipeline, Checkpoint};
 
 /// 放宽配额，避免 SLA/成本预算误杀正常示例
 fn base_ctx(roles: Vec<&str>, regulated: bool) -> GovernContext {
@@ -239,14 +241,29 @@ fn debug_b1_veto_detail() {
         &ctx,
     );
     if let Some(gov) = &rep.governance {
-        eprintln!("[B1] vetoed={} reason={}", gov.algo.vetoed, gov.algo.summary);
+        eprintln!(
+            "[B1] vetoed={} reason={}",
+            gov.algo.vetoed, gov.algo.summary
+        );
         for c in &gov.algo.checks {
-            eprintln!("[B1] check {} passed={} blocking={}", c.name, c.passed, c.blocking);
+            eprintln!(
+                "[B1] check {} passed={} blocking={}",
+                c.name, c.passed, c.blocking
+            );
         }
-        eprintln!("[B1] gate.approved={} reason={:?}", gov.gate.approved, gov.gate.reason);
-        eprintln!("[B1] conflicts.len={}", gov.optimization.conflicts.conflicts.len());
+        eprintln!(
+            "[B1] gate.approved={} reason={:?}",
+            gov.gate.approved, gov.gate.reason
+        );
+        eprintln!(
+            "[B1] conflicts.len={}",
+            gov.optimization.conflicts.conflicts.len()
+        );
         for c in &gov.optimization.conflicts.conflicts {
-            eprintln!("[B1] conflict kind={:?} sev={:?} nodes={:?} msg={}", c.kind, c.severity, c.nodes, c.message);
+            eprintln!(
+                "[B1] conflict kind={:?} sev={:?} nodes={:?} msg={}",
+                c.kind, c.severity, c.nodes, c.message
+            );
         }
     } else {
         eprintln!("[B1] no governance, checkpoint={:?}", rep.checkpoint);
@@ -391,9 +408,15 @@ fn b6_bounded_loop_max_iter_in_code() {
         &g,
         &ctx,
     );
-    assert!(rep.safe_to_emit, "有界循环应出码，checkpoint={:?}", rep.checkpoint);
+    assert!(
+        rep.safe_to_emit,
+        "有界循环应出码，checkpoint={:?}",
+        rep.checkpoint
+    );
     let code = rep.code.expect("应有生成代码");
-    let sched = code.file("generated/scheduler.py").expect("应有 scheduler.py");
+    let sched = code
+        .file("generated/scheduler.py")
+        .expect("应有 scheduler.py");
     assert!(
         sched.content.contains("range(100)"),
         "生成的调度层须含 range(100) 迭代上限护栏，实际:\n{}",

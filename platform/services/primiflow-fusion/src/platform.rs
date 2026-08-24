@@ -8,7 +8,9 @@ use crate::envelope::PTEnvelope;
 use crate::registry::fuse_all;
 use crate::sixdim::{now_ms, SixDimBinding, SixDimRegistry};
 use crate::unified::{PlatformGate, PrimitiveCoords, UnifiedGraph};
-use primiflow_core::gen::c1::{FreezePolicy, Input, OrchestrationResult, OrchestrationStatus, Orchestrator};
+use primiflow_core::gen::c1::{
+    FreezePolicy, Input, OrchestrationResult, OrchestrationStatus, Orchestrator,
+};
 use primiflow_core::gen::schema::Project;
 
 /// 一体化平台：六维绑定注册表（事实源）+ 融合统一图 + 主链路编排器
@@ -68,9 +70,9 @@ impl PrimiPlatform {
     pub fn synthesize(&mut self, requirement: &str, slider_s: f64) -> PlatformReport {
         let proj_name = truncate(&format!("proj:{requirement}"), 48);
         let project = Project::new(&proj_name, Some("t1".into()), 0.7, 0.3, 1.0);
-        let mut result = self
-            .orchestrator
-            .run(&project, &Input::Text(requirement.into()), slider_s);
+        let mut result =
+            self.orchestrator
+                .run(&project, &Input::Text(requirement.into()), slider_s);
 
         let binding = build_binding(&project, &result);
         let registered = if self.registry.by_requirement(&binding.req_id).is_some() {
@@ -310,7 +312,12 @@ mod tests {
             req_text: "守恒违规投毒绑定".into(),
             project_id: "poison".into(),
             status: "Completed".into(),
-            coords: PrimitiveCoords { kappa: 1.0, tau: 0.0, c: 9.0, q: 1.0 },
+            coords: PrimitiveCoords {
+                kappa: 1.0,
+                tau: 0.0,
+                c: 9.0,
+                q: 1.0,
+            },
             requirement: "REQ:poison".into(),
             feature: "FUN:poison".into(),
             business: "BIZ:poison".into(),

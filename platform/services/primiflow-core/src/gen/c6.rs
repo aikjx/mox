@@ -124,7 +124,11 @@ impl SmokeTester {
         }
 
         let ok = schema_ok && !g.nodes.is_empty();
-        SmokeReport { ok, checks, executed }
+        SmokeReport {
+            ok,
+            checks,
+            executed,
+        }
     }
 }
 
@@ -155,7 +159,10 @@ mod tests {
         g.add_edge(FlowEdge::seq("a", "ghost"));
         let r = SmokeTester::new().smoke_test(&g);
         assert!(!r.ok);
-        assert!(r.checks.iter().any(|c| c.name == "边端点存在性" && !c.passed));
+        assert!(r
+            .checks
+            .iter()
+            .any(|c| c.name == "边端点存在性" && !c.passed));
     }
 
     #[test]
@@ -182,6 +189,9 @@ mod tests {
         g.add_edge(FlowEdge::seq("a", "end"));
         let r = SmokeTester::new().smoke_test(&g);
         assert!(!r.ok);
-        assert!(r.checks.iter().any(|c| c.name == "可执行节点绑定工具" && !c.passed));
+        assert!(r
+            .checks
+            .iter()
+            .any(|c| c.name == "可执行节点绑定工具" && !c.passed));
     }
 }

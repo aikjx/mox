@@ -347,18 +347,22 @@ async function main() {
   const r4 = await flowGraph.detectIntentBySpread(T7_CASES[3].q);
   assertEq('F8×T7-4: 闲聊→chat', r4.intent, T7_CASES[3].exp);
 
-  // T8-1 决策一致性 graph（激活扩散 ≡ 旧关键词打分）
+  // T8-1 决策一致性 graph（激活扩散 ≡ 旧关键词打分，归一化到 capability 层）
   const l1 = coreInstance.detectIntent(T7_CASES[0].q);
-  assertEq('F8×T8-1: graph top-1 ≡ 旧打分', r1.intent, l1.intent);
+  const l1Cap = l1.capability || l1.intent;
+  assertEq('F8×T8-1: graph top-1 ≡ 旧打分', r1.intent, l1Cap);
   // T8-2 reasoning
   const l2 = coreInstance.detectIntent(T7_CASES[1].q);
-  assertEq('F8×T8-2: reasoning top-1 ≡ 旧打分', r2.intent, l2.intent);
+  const l2Cap = l2.capability || l2.intent;
+  assertEq('F8×T8-2: reasoning top-1 ≡ 旧打分', r2.intent, l2Cap);
   // T8-3 expert
   const l3 = coreInstance.detectIntent(T7_CASES[2].q);
-  assertEq('F8×T8-3: expert top-1 ≡ 旧打分', r3.intent, l3.intent);
+  const l3Cap = l3.capability || l3.intent;
+  assertEq('F8×T8-3: expert top-1 ≡ 旧打分', r3.intent, l3Cap);
   // T8-4 chat
   const l4 = coreInstance.detectIntent(T7_CASES[3].q);
-  assertEq('F8×T8-4: chat top-1 ≡ 旧打分', r4.intent, l4.intent);
+  const l4Cap = l4.capability || l4.intent;
+  assertEq('F8×T8-4: chat top-1 ≡ 旧打分', r4.intent, l4Cap);
 
   // ============================================================
   // 报告 & 退出约束

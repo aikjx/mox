@@ -39,6 +39,7 @@ module.exports = function registerTasksRoutes(ctx) {
       updated_at: new Date().toISOString(),
       due_date: body.due_date || null,
       assignee: body.assignee || null,
+      estimate_hours: Number.isFinite(+body.estimate_hours) ? +body.estimate_hours : (body.estimate_hours || null),
       metadata: body.metadata || {}
     }
     tasks.unshift(task)

@@ -378,7 +378,11 @@ impl fmt::Display for KernelError {
                 write!(f, "索引越界: {} / {}", idx, len)
             }
             KernelError::TypeMismatch { expected, actual } => {
-                write!(f, "类型不匹配: expected_id={}, actual_id={}", expected, actual)
+                write!(
+                    f,
+                    "类型不匹配: expected_id={}, actual_id={}",
+                    expected, actual
+                )
             }
             KernelError::Other(s) => write!(f, "{}", s),
         }
@@ -801,10 +805,7 @@ impl<S: 'static, A: 'static> StateOp<S, A> {
         Self::new(move |s| (a.clone(), s))
     }
 
-    pub fn bind<B: 'static, F: FnOnce(A) -> StateOp<S, B> + 'static>(
-        self,
-        f: F,
-    ) -> StateOp<S, B> {
+    pub fn bind<B: 'static, F: FnOnce(A) -> StateOp<S, B> + 'static>(self, f: F) -> StateOp<S, B> {
         StateOp::new(move |s| {
             let (a, s1) = (self.run)(s);
             (f(a).run)(s1)

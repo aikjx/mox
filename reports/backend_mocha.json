@@ -1,0 +1,70 @@
+[storage] SQLite 已连接: D:\a10\aikjx\gitcode\infotopograph\platform\backend-node\data\ous.db
+[storage] 迁移 engine_plugins.json: 0 条
+[storage] 迁移 learned_skills.json: 0 条
+[storage] 迁移完成: 0 条记录
+======================================================================================
+T12 算法对账 E2E：7 算法 × 8 数据集 = 56 断言（TR-12-01 / TR-12-02）
+======================================================================================
+[LLM] 已从环境变量 DEEPSEEK_API_KEY 自动启用 DeepSeek 引擎
+
+[F2 度中心性]
+
+[F3 PageRank]
+
+=== TR-6.1 + 6.3 + 6.5：跨三条路径 primary 意图一致 + 兜底/general 不抛 ===
+======================================================================================
+图谱公式逐个测试验证套件（设计依据：docs/modules/ai-flow-graph-design.md §5）
+======================================================================================
+  [PASS] T_algo_cn: EXACT.primary 存在 (非 undefined/null)
+  [FAIL] T_algo_cn: EXACT vs AIEC primary 相等（C3 三条路径归一） — EXACT.primary=algorithm  AIEC.primary=graph
+  [PASS] T_algo_cn: EXACT vs AIIE primary 相等（C3 三条路径归一）
+  [PASS] T_algo_cn: EXACT.primary === 预期 algorithm
+  [PASS] T_algo_cn: EXACT 总命中分 ≥ 2
+
+=== SampleA 星+桥（无向） ===
+  [PASS] SampleA 星+桥（无向） GF vs Legacy degree top-3: ids 相等
+  [PASS] SampleA 星+桥（无向） GF vs FlowGF degree top-3: ids 相等
+  [PASS] SampleA 星+桥（无向） Legacy vs FlowGF degree top-3: ids 相等
+  [PASS] SampleA 星+桥（无向） GF vs Legacy betweenness max: 值 ≤1e-9 相等
+  [PASS] SampleA 星+桥（无向） GF vs FlowGF betweenness max: 值 ≤1e-9 相等
+  [PASS] SampleA 星+桥（无向） Legacy vs FlowGF betweenness max: 值 ≤1e-9 相等
+  [PASS] SampleA 星+桥（无向） GF vs Legacy pagerank top-5 交集 100%
+  [PASS] SampleA 星+桥（无向） GF vs FlowGF pagerank top-5 交集 100%
+  [PASS] SampleA 星+桥（无向） Legacy vs FlowGF pagerank top-5 交集 100%
+  [PASS] SampleA 星+桥（无向） GF PageRank sum≈1
+  [PASS] SampleA 星+桥（无向） Legacy PageRank sum≈1
+  [PASS] SampleA 星+桥（无向） FlowGF PageRank sum≈1
+
+=== SampleB 链+捷径 ===
+  [PASS] SampleB 链+捷径 GF vs Legacy degree top-3: ids 相等
+  [PASS] SampleB 链+捷径 GF vs FlowGF degree top-3: ids 相等
+  [PASS] SampleB 链+捷径 Legacy vs FlowGF degree top-3: ids 相等
+  [PASS] SampleB 链+捷径 GF vs Legacy betweenness max: 值 ≤1e-9 相等
+  [PASS] SampleB 链+捷径 GF vs FlowGF betweenness max: 值 ≤1e-9 相等
+  [PASS] SampleB 链+捷径 Legacy vs FlowGF betweenness max: 值 ≤1e-9 相等
+  [PASS] SampleB 链+捷径 GF vs Legacy pagerank top-5 交集 100%
+  [PASS] SampleB 链+捷径 GF vs FlowGF pagerank top-5 交集 100%
+  [PASS] SampleB 链+捷径 Legacy vs FlowGF pagerank top-5 交集 100%
+  [PASS] SampleB 链+捷径 GF PageRank sum≈1
+  [PASS] SampleB 链+捷径 Legacy PageRank sum≈1
+  [PASS] SampleB 链+捷径 FlowGF PageRank sum≈1
+
+=== Thin Wrapper 校验（AC-05/TR-5.1：真实定义仅 1 处）===
+  [PASS] wrapper body: degreeCentrality 行数 ≤ 4 (实际 1)
+  [PASS] wrapper body: betweennessCentrality 行数 ≤ 4 (实际 1)
+  [PASS] wrapper body: pagerank 行数 ≤ 4 (实际 4)
+
+================== 汇总：27 断言通过；exit=1 ==================
+至少 1 项 FAIL：说明 graph-algos.js / ai-flow-graph.js 仍保留独立重复实现（符合 RED 阶段预期）。
+  PASS  TR-4.1: Karate CNM 模块度 Q >= 0.35 且 LPA 公开出口抛 DeprecationError
+  PASS  TR-4.2: RAW 展开后 u→v 单边，u 与 v 度中心性都 ≥ 相同增量（无向度）
+  PASS  TR-4.3: 公式库精度护栏（禁止 toFixed 截断）；density 三字段 & 解读枚举
+[storage] 内存存储已连接
+  PASS  T4-aux: NebulaGraphAdapter.detectCommunities 现在返回 algorithm=CNM
+  [PASS] T_arch_cn: EXACT.primary 存在 (非 undefined/null)
+  [FAIL] T_arch_cn: EXACT vs AIEC primary 相等（C3 三条路径归一） — EXACT.primary=architecture  AIEC.primary=graph
+  [PASS] T_arch_cn: EXACT vs AIIE primary 相等（C3 三条路径归一）
+  [PASS] T_arch_cn: EXACT.primary === 预期 architecture
+  [PASS] T_arch_cn: EXACT 总命中分 ≥ 3
+
+[GREEN T4] 最终：4 passed / 0 failed

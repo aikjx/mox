@@ -1,12 +1,12 @@
-﻿//! 端到端集成测试：成员管理 / 任务协作 / 权限分配 / 通信机制
+//! 端到端集成测试：成员管理 / 任务协作 / 权限分配 / 通信机制
 //! + 企业级能力：SQLite 持久化重放、令牌哈希、配额强制、限流
+use std::sync::Arc;
 use xuanji_system::config::{AppConfig, Backend};
 use xuanji_system::event::DomainEvent;
 use xuanji_system::model::{InviteInput, Priority, TaskStatus, Tier};
-use xuanji_system::orchestrator::{XuanjiSystem, Reactor};
+use xuanji_system::orchestrator::{Reactor, XuanjiSystem};
 use xuanji_system::rbac::{Permission, ResourceCtx, Role, RoleBinding, Scope};
 use xuanji_system::store::Store;
-use std::sync::Arc;
 
 /// 分配一个临时 SQLite 数据库路径。
 ///
@@ -59,7 +59,10 @@ async fn full_lifecycle_and_rbac() {
     assert_eq!(t.status, TaskStatus::Draft);
 
     // 分派
-    let t = sys.assign_task(&admin.id, &t.id, vec![e1.id.clone()]).await.unwrap();
+    let t = sys
+        .assign_task(&admin.id, &t.id, vec![e1.id.clone()])
+        .await
+        .unwrap();
     assert_eq!(t.status, TaskStatus::Assigned);
     assert!(t.assignees.contains(&e1.id));
 
@@ -76,18 +79,23 @@ async fn full_lifecycle_and_rbac() {
 
     // 非分派者推进被 RBAC 拦截
     let e2 = sys
-        .invite_member(&admin.id, &xuanji_system::model::InviteInput {
-            xuanji_id: aln.id.clone(),
-            name: "专家B".into(),
-            email: "b@t.io".into(),
-            title: "安全".into(),
-            expertise: vec!["安全".into()],
-            tier: Tier::Senior,
-        })
+        .invite_member(
+            &admin.id,
+            &xuanji_system::model::InviteInput {
+                xuanji_id: aln.id.clone(),
+                name: "专家B".into(),
+                email: "b@t.io".into(),
+                title: "安全".into(),
+                expertise: vec!["安全".into()],
+                tier: Tier::Senior,
+            },
+        )
         .await
         .unwrap();
     let e2 = sys.member.activate(&e2.id, &admin.id).await.unwrap();
-    let denied = sys.transition_task(&e2.id, &t.id, TaskStatus::InReview).await;
+    let denied = sys
+        .transition_task(&e2.id, &t.id, TaskStatus::InReview)
+        .await;
     assert!(denied.is_err(), "非分派专家不应能推进任务");
 
     // 评论写入任务频道
@@ -99,7 +107,11 @@ async fn full_lifecycle_and_rbac() {
         xuanji_id: aln.id.clone(),
         task: None,
     };
-    assert!(sys.perm.authorize(&admin.id, Permission::TaskViewAll, &ctx_all).await.is_ok());
+    assert!(sys
+        .perm
+        .authorize(&admin.id, Permission::TaskViewAll, &ctx_all)
+        .await
+        .is_ok());
     let task_res = xuanji_system::rbac::TaskResource {
         id: t.id.clone(),
         xuanji_id: aln.id.clone(),
@@ -110,8 +122,16 @@ async fn full_lifecycle_and_rbac() {
         task: Some(task_res),
     };
     // 专家对自己的任务可编辑/推进（Own）
-    assert!(sys.perm.authorize(&e1.id, Permission::TaskEditOwn, &ctx_task).await.is_ok());
-    assert!(sys.perm.authorize(&e1.id, Permission::TaskTransitionOwn, &ctx_task).await.is_ok());
+    assert!(sys
+        .perm
+        .authorize(&e1.id, Permission::TaskEditOwn, &ctx_task)
+        .await
+        .is_ok());
+    assert!(sys
+        .perm
+        .authorize(&e1.id, Permission::TaskTransitionOwn, &ctx_task)
+        .await
+        .is_ok());
     // 专家对未分派的任务不可编辑
     let other = xuanji_system::rbac::TaskResource {
         id: "other".into(),
@@ -122,7 +142,11 @@ async fn full_lifecycle_and_rbac() {
         xuanji_id: aln.id.clone(),
         task: Some(other),
     };
-    assert!(sys.perm.authorize(&e1.id, Permission::TaskEditOwn, &ctx_other).await.is_err());
+    assert!(sys
+        .perm
+        .authorize(&e1.id, Permission::TaskEditOwn, &ctx_other)
+        .await
+        .is_err());
 }
 
 #[tokio::test]
@@ -130,14 +154,17 @@ async fn event_reactor_produces_notifications() {
     let sys = XuanjiSystem::new();
     let (aln, _admin, _token) = sys.bootstrap("璇玑X", "A", "a@x.io").await.unwrap();
     let expert = sys
-        .invite_member(&_admin.id, &xuanji_system::model::InviteInput {
-            xuanji_id: aln.id.clone(),
-            name: "E".into(),
-            email: "e@x.io".into(),
-            title: "算法".into(),
-            expertise: vec![],
-            tier: Tier::Senior,
-        })
+        .invite_member(
+            &_admin.id,
+            &xuanji_system::model::InviteInput {
+                xuanji_id: aln.id.clone(),
+                name: "E".into(),
+                email: "e@x.io".into(),
+                title: "算法".into(),
+                expertise: vec![],
+                tier: Tier::Senior,
+            },
+        )
         .await
         .unwrap();
     let expert = sys.member.activate(&expert.id, &_admin.id).await.unwrap();
@@ -158,7 +185,9 @@ async fn event_reactor_produces_notifications() {
 
     let notes = sys.comm.list_notifications(&expert.id).await;
     assert!(
-        notes.iter().any(|n| n.related_task.as_deref() == Some(&task.id)),
+        notes
+            .iter()
+            .any(|n| n.related_task.as_deref() == Some(&task.id)),
         "分派事件应产生关联任务的通知"
     );
 }
@@ -168,14 +197,17 @@ async fn role_inheritance_and_scope() {
     let sys = XuanjiSystem::new();
     let (aln, admin, _tok) = sys.bootstrap("璇玑Y", "A", "a@y.io").await.unwrap();
     let m = sys
-        .invite_member(&admin.id, &xuanji_system::model::InviteInput {
-            xuanji_id: aln.id.clone(),
-            name: "M".into(),
-            email: "m@y.io".into(),
-            title: "x".into(),
-            expertise: vec![],
-            tier: Tier::Associate,
-        })
+        .invite_member(
+            &admin.id,
+            &xuanji_system::model::InviteInput {
+                xuanji_id: aln.id.clone(),
+                name: "M".into(),
+                email: "m@y.io".into(),
+                title: "x".into(),
+                expertise: vec![],
+                tier: Tier::Associate,
+            },
+        )
         .await
         .unwrap();
 
@@ -205,9 +237,24 @@ async fn role_inheritance_and_scope() {
     };
     sys.perm.assign_role(scoped).await;
     // 原璇玑仍由 global 绑定覆盖
-    assert!(sys.perm.authorize(&m.id, Permission::TaskCreate, &ResourceCtx { xuanji_id: aln.id.clone(), task: None }).await.is_ok());
+    assert!(sys
+        .perm
+        .authorize(
+            &m.id,
+            Permission::TaskCreate,
+            &ResourceCtx {
+                xuanji_id: aln.id.clone(),
+                task: None
+            }
+        )
+        .await
+        .is_ok());
     // 另一璇玑也允许（scoped 绑定）
-    assert!(sys.perm.authorize(&m.id, Permission::TaskCreate, &ctx_other).await.is_ok());
+    assert!(sys
+        .perm
+        .authorize(&m.id, Permission::TaskCreate, &ctx_other)
+        .await
+        .is_ok());
 }
 
 // ---------------- 企业级能力测试 ----------------
@@ -219,7 +266,10 @@ async fn store_persists_and_hashes_tokens() {
         let s = Store::open(Backend::Sqlite, &db).await.unwrap();
         // 令牌以 SHA-256 哈希落盘，明文不存储
         s.set_token("secret-token-123", "mem_1").await;
-        assert_eq!(s.member_by_token("secret-token-123").await, Some("mem_1".to_string()));
+        assert_eq!(
+            s.member_by_token("secret-token-123").await,
+            Some("mem_1".to_string())
+        );
         assert_eq!(s.member_by_token("wrong-token").await, None);
     }
     // 模拟进程重启：重放 SQLite，令牌仍可用
@@ -336,8 +386,7 @@ async fn quota_enforcement() {
     cfg2.quotas.max_tasks = 1;
     let sys2 = XuanjiSystem::with_config(cfg2).await.unwrap();
     let (aln2, admin2, _t2) = sys2.bootstrap("配额璇玑2", "A", "a@q2.io").await.unwrap();
-    sys2
-        .create_task(&admin2.id, &aln2.id, "任务1", "d", Priority::Low)
+    sys2.create_task(&admin2.id, &aln2.id, "任务1", "d", Priority::Low)
         .await
         .unwrap();
     let r2 = sys2
@@ -398,10 +447,7 @@ async fn postgres_system_survives_restart() {
     let task_id;
     {
         let sys = Arc::new(XuanjiSystem::with_config(cfg.clone()).await.unwrap());
-        let (aln, admin, tok) = sys
-            .bootstrap("PG璇玑", "管理员", "pg@p.io")
-            .await
-            .unwrap();
+        let (aln, admin, tok) = sys.bootstrap("PG璇玑", "管理员", "pg@p.io").await.unwrap();
         token = tok;
         let t = sys
             .create_task(&admin.id, &aln.id, "PG任务", "desc", Priority::High)

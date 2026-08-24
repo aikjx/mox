@@ -772,7 +772,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Plus, Search, Refresh, View, Edit, Delete, MagicStick,
@@ -979,9 +979,18 @@ const renderedCompareTo = computed(() => {
 })
 
 // ========== Markdown Renderer ==========
+// 安全加固：先 HTML-escape 用户文本再套 markdown，且链接仅允许安全协议，杜绝 v-html 存储型 XSS。
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+function safeUrl(u) {
+  const trimmed = (u || '').trim()
+  if (!/^(https?:|mailto:|tel:|#)/i.test(trimmed)) return ''
+  return trimmed.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+}
 function simpleMarkdownRender(text) {
   if (!text) return ''
-  let html = text
+  let html = escapeHtml(text)
     .replace(/^### (.*$)/gm, '<h3>$1</h3>')
     .replace(/^## (.*$)/gm, '<h2>$1</h2>')
     .replace(/^# (.*$)/gm, '<h1>$1</h1>')
@@ -990,7 +999,11 @@ function simpleMarkdownRender(text) {
     .replace(/`(.*?)`/g, '<code class="inline-code">$1</code>')
     .replace(/\n\n/g, '</p><p>')
     .replace(/\n/g, '<br/>')
-    .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>')
+    .replace(/\[(.*?)\]\((.*?)\)/g, (m, label, url) => {
+      const href = safeUrl(url)
+      if (!href) return label // 非法协议：仅显示文本，不渲染为链接
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>`
+    })
   return `<p>${html}</p>`
 }
 
@@ -1558,6 +1571,10 @@ onMounted(async () => {
   fetchCategories()
   fetchTags()
   fetchStats()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleKeydown)
 })
 
 watch(detailVisible, (v) => {

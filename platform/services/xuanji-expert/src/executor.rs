@@ -249,7 +249,11 @@ pub async fn run_report(rep: &ProgrammingReport, rate: f64) -> Arc<ExecState> {
                     };
                     ev.t_ms = t;
                 }
-                let done = t2.nodes.iter().filter(|n| n.status == ExecStatus::Done).count();
+                let done = t2
+                    .nodes
+                    .iter()
+                    .filter(|n| n.status == ExecStatus::Done)
+                    .count();
                 t2.progress = if t2.nodes.is_empty() {
                     1.0
                 } else {
@@ -287,8 +291,10 @@ mod tests {
     fn demo_graph() -> FlowGraph {
         let mut g = FlowGraph::new("demo", "演示执行");
         g.add_node(FlowNode::new("s", "开始", NodeKind::Start));
-        g.add_node(FlowNode::task("a", "拉取", ToolKind::Database, 200)
-            .with_access(flow_ai::model::Access::read("db:x")));
+        g.add_node(
+            FlowNode::task("a", "拉取", ToolKind::Database, 200)
+                .with_access(flow_ai::model::Access::read("db:x")),
+        );
         g.add_node(FlowNode::task("b", "处理", ToolKind::Compute, 100));
         g.add_node(FlowNode::task("c", "汇总", ToolKind::Compute, 50));
         g.add_node(FlowNode::new("e", "结束", NodeKind::End));
@@ -312,16 +318,10 @@ mod tests {
     #[tokio::test]
     async fn deterministic_execution_completes() {
         let g = demo_graph();
-        let rep = programming_pipeline(
-            "演示执行流程",
-            vec!["顺序执行".into()],
-            true,
-            &g,
-            &ctx(),
-        );
+        let rep = programming_pipeline("演示执行流程", vec!["顺序执行".into()], true, &g, &ctx());
         assert!(rep.safe_to_emit, "演示图应可出码");
         let state = run_report(&rep, 0.001).await; // 极速回放
-        // 等待执行完成
+                                                   // 等待执行完成
         let mut rx = state.subscribe();
         let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
         loop {
@@ -354,8 +354,10 @@ mod tests {
         let mut g = FlowGraph::new("bad", "危险");
         g.add_node(FlowNode::new("s", "开始", NodeKind::Start));
         g.add_node(FlowNode::new("ls", "循环", NodeKind::LoopStart));
-        g.add_node(FlowNode::task("scr", "改写", ToolKind::Database, 100)
-            .with_access(flow_ai::model::Access::write("db:prod")));
+        g.add_node(
+            FlowNode::task("scr", "改写", ToolKind::Database, 100)
+                .with_access(flow_ai::model::Access::write("db:prod")),
+        );
         g.add_node(FlowNode::new("le", "出口", NodeKind::LoopEnd));
         g.add_node(FlowNode::new("e", "结束", NodeKind::End));
         g.add_edge(FlowEdge::seq("s", "ls"));

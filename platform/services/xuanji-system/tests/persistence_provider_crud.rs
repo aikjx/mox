@@ -76,16 +76,18 @@ CREATE TABLE IF NOT EXISTS notifications (
 fn crud_member_1_save() {
     let db = new_provider();
     init_schema(db.as_ref());
-    let n = db.exec(
-        "INSERT INTO members(id, xuanji_id, name, email, status) VALUES (?,?,?,?,?)",
-        &[
-            SqlValue::Text("m1".into()),
-            SqlValue::Text("xj1".into()),
-            SqlValue::Text("Alice".into()),
-            SqlValue::Text("a@x".into()),
-            SqlValue::Text("Active".into()),
-        ],
-    ).unwrap();
+    let n = db
+        .exec(
+            "INSERT INTO members(id, xuanji_id, name, email, status) VALUES (?,?,?,?,?)",
+            &[
+                SqlValue::Text("m1".into()),
+                SqlValue::Text("xj1".into()),
+                SqlValue::Text("Alice".into()),
+                SqlValue::Text("a@x".into()),
+                SqlValue::Text("Active".into()),
+            ],
+        )
+        .unwrap();
     assert_eq!(n, 1);
 }
 
@@ -102,9 +104,15 @@ fn crud_member_2_get() {
             SqlValue::Text("a@x".into()),
             SqlValue::Text("Active".into()),
         ],
-    ).unwrap();
-    let row = db.query_one("SELECT id, xuanji_id, name, email, status FROM members WHERE id = ?",
-        &[SqlValue::Text("m1".into())]).unwrap().unwrap();
+    )
+    .unwrap();
+    let row = db
+        .query_one(
+            "SELECT id, xuanji_id, name, email, status FROM members WHERE id = ?",
+            &[SqlValue::Text("m1".into())],
+        )
+        .unwrap()
+        .unwrap();
     assert_eq!(text(&row, "name"), "Alice");
     assert_eq!(text(&row, "status"), "Active");
 }
@@ -122,13 +130,26 @@ fn crud_member_3_update() {
             SqlValue::Text("a@x".into()),
             SqlValue::Text("Active".into()),
         ],
-    ).unwrap();
-    let n = db.exec("UPDATE members SET status = ?, email = ? WHERE id = ?",
-        &[SqlValue::Text("Suspended".into()), SqlValue::Text("a2@x".into()), SqlValue::Text("m1".into())]
-    ).unwrap();
+    )
+    .unwrap();
+    let n = db
+        .exec(
+            "UPDATE members SET status = ?, email = ? WHERE id = ?",
+            &[
+                SqlValue::Text("Suspended".into()),
+                SqlValue::Text("a2@x".into()),
+                SqlValue::Text("m1".into()),
+            ],
+        )
+        .unwrap();
     assert_eq!(n, 1);
-    let row = db.query_one("SELECT status, email FROM members WHERE id = ?",
-        &[SqlValue::Text("m1".into())]).unwrap().unwrap();
+    let row = db
+        .query_one(
+            "SELECT status, email FROM members WHERE id = ?",
+            &[SqlValue::Text("m1".into())],
+        )
+        .unwrap()
+        .unwrap();
     assert_eq!(text(&row, "status"), "Suspended");
     assert_eq!(text(&row, "email"), "a2@x");
 }
@@ -146,12 +167,21 @@ fn crud_member_4_delete() {
             SqlValue::Text("a@x".into()),
             SqlValue::Text("Active".into()),
         ],
-    ).unwrap();
-    let n = db.exec("DELETE FROM members WHERE id = ?",
-        &[SqlValue::Text("m1".into())]).unwrap();
+    )
+    .unwrap();
+    let n = db
+        .exec(
+            "DELETE FROM members WHERE id = ?",
+            &[SqlValue::Text("m1".into())],
+        )
+        .unwrap();
     assert_eq!(n, 1);
-    let rows = db.query("SELECT id FROM members WHERE id = ?",
-        &[SqlValue::Text("m1".into())]).unwrap();
+    let rows = db
+        .query(
+            "SELECT id FROM members WHERE id = ?",
+            &[SqlValue::Text("m1".into())],
+        )
+        .unwrap();
     assert!(rows.is_empty());
 }
 
@@ -160,13 +190,18 @@ fn crud_member_4_delete() {
 fn crud_task_1_save() {
     let db = new_provider();
     init_schema(db.as_ref());
-    let n = db.exec(
-        "INSERT INTO tasks(id, xuanji_id, title, status, priority) VALUES (?,?,?,?,?)",
-        &[
-            SqlValue::Text("t1".into()), SqlValue::Text("xj1".into()),
-            SqlValue::Text("Build spec".into()), SqlValue::Text("Draft".into()), SqlValue::Int(2),
-        ],
-    ).unwrap();
+    let n = db
+        .exec(
+            "INSERT INTO tasks(id, xuanji_id, title, status, priority) VALUES (?,?,?,?,?)",
+            &[
+                SqlValue::Text("t1".into()),
+                SqlValue::Text("xj1".into()),
+                SqlValue::Text("Build spec".into()),
+                SqlValue::Text("Draft".into()),
+                SqlValue::Int(2),
+            ],
+        )
+        .unwrap();
     assert_eq!(n, 1);
 }
 
@@ -177,12 +212,21 @@ fn crud_task_2_get() {
     db.exec(
         "INSERT INTO tasks(id, xuanji_id, title, status, priority) VALUES (?,?,?,?,?)",
         &[
-            SqlValue::Text("t1".into()), SqlValue::Text("xj1".into()),
-            SqlValue::Text("Build spec".into()), SqlValue::Text("Draft".into()), SqlValue::Int(2),
+            SqlValue::Text("t1".into()),
+            SqlValue::Text("xj1".into()),
+            SqlValue::Text("Build spec".into()),
+            SqlValue::Text("Draft".into()),
+            SqlValue::Int(2),
         ],
-    ).unwrap();
-    let row = db.query_one("SELECT * FROM tasks WHERE id = ?",
-        &[SqlValue::Text("t1".into())]).unwrap().unwrap();
+    )
+    .unwrap();
+    let row = db
+        .query_one(
+            "SELECT * FROM tasks WHERE id = ?",
+            &[SqlValue::Text("t1".into())],
+        )
+        .unwrap()
+        .unwrap();
     assert_eq!(text(&row, "title"), "Build spec");
     assert_eq!(int(&row, "priority"), 2);
 }
@@ -194,15 +238,32 @@ fn crud_task_3_update() {
     db.exec(
         "INSERT INTO tasks(id, xuanji_id, title, status, priority) VALUES (?,?,?,?,?)",
         &[
-            SqlValue::Text("t1".into()), SqlValue::Text("xj1".into()),
-            SqlValue::Text("Build spec".into()), SqlValue::Text("Draft".into()), SqlValue::Int(2),
+            SqlValue::Text("t1".into()),
+            SqlValue::Text("xj1".into()),
+            SqlValue::Text("Build spec".into()),
+            SqlValue::Text("Draft".into()),
+            SqlValue::Int(2),
         ],
-    ).unwrap();
-    let n = db.exec("UPDATE tasks SET status = ?, priority = ? WHERE id = ?",
-        &[SqlValue::Text("InProgress".into()), SqlValue::Int(3), SqlValue::Text("t1".into())]).unwrap();
+    )
+    .unwrap();
+    let n = db
+        .exec(
+            "UPDATE tasks SET status = ?, priority = ? WHERE id = ?",
+            &[
+                SqlValue::Text("InProgress".into()),
+                SqlValue::Int(3),
+                SqlValue::Text("t1".into()),
+            ],
+        )
+        .unwrap();
     assert_eq!(n, 1);
-    let row = db.query_one("SELECT status, priority FROM tasks WHERE id = ?",
-        &[SqlValue::Text("t1".into())]).unwrap().unwrap();
+    let row = db
+        .query_one(
+            "SELECT status, priority FROM tasks WHERE id = ?",
+            &[SqlValue::Text("t1".into())],
+        )
+        .unwrap()
+        .unwrap();
     assert_eq!(text(&row, "status"), "InProgress");
     assert_eq!(int(&row, "priority"), 3);
 }
@@ -214,14 +275,27 @@ fn crud_task_4_delete() {
     db.exec(
         "INSERT INTO tasks(id, xuanji_id, title, status, priority) VALUES (?,?,?,?,?)",
         &[
-            SqlValue::Text("t1".into()), SqlValue::Text("xj1".into()),
-            SqlValue::Text("Build spec".into()), SqlValue::Text("Draft".into()), SqlValue::Int(2),
+            SqlValue::Text("t1".into()),
+            SqlValue::Text("xj1".into()),
+            SqlValue::Text("Build spec".into()),
+            SqlValue::Text("Draft".into()),
+            SqlValue::Int(2),
         ],
-    ).unwrap();
-    let n = db.exec("DELETE FROM tasks WHERE id = ?", &[SqlValue::Text("t1".into())]).unwrap();
+    )
+    .unwrap();
+    let n = db
+        .exec(
+            "DELETE FROM tasks WHERE id = ?",
+            &[SqlValue::Text("t1".into())],
+        )
+        .unwrap();
     assert_eq!(n, 1);
-    let rows = db.query("SELECT id FROM tasks WHERE id = ?",
-        &[SqlValue::Text("t1".into())]).unwrap();
+    let rows = db
+        .query(
+            "SELECT id FROM tasks WHERE id = ?",
+            &[SqlValue::Text("t1".into())],
+        )
+        .unwrap();
     assert!(rows.is_empty());
 }
 
@@ -230,13 +304,18 @@ fn crud_task_4_delete() {
 fn crud_document_1_save() {
     let db = new_provider();
     init_schema(db.as_ref());
-    let n = db.exec(
-        "INSERT INTO documents(id, owner_id, title, body, version) VALUES (?,?,?,?,?)",
-        &[
-            SqlValue::Text("d1".into()), SqlValue::Text("u1".into()),
-            SqlValue::Text("README".into()), SqlValue::Text("body here".into()), SqlValue::Int(1),
-        ],
-    ).unwrap();
+    let n = db
+        .exec(
+            "INSERT INTO documents(id, owner_id, title, body, version) VALUES (?,?,?,?,?)",
+            &[
+                SqlValue::Text("d1".into()),
+                SqlValue::Text("u1".into()),
+                SqlValue::Text("README".into()),
+                SqlValue::Text("body here".into()),
+                SqlValue::Int(1),
+            ],
+        )
+        .unwrap();
     assert_eq!(n, 1);
 }
 
@@ -247,12 +326,21 @@ fn crud_document_2_get() {
     db.exec(
         "INSERT INTO documents(id, owner_id, title, body, version) VALUES (?,?,?,?,?)",
         &[
-            SqlValue::Text("d1".into()), SqlValue::Text("u1".into()),
-            SqlValue::Text("README".into()), SqlValue::Text("body here".into()), SqlValue::Int(1),
+            SqlValue::Text("d1".into()),
+            SqlValue::Text("u1".into()),
+            SqlValue::Text("README".into()),
+            SqlValue::Text("body here".into()),
+            SqlValue::Int(1),
         ],
-    ).unwrap();
-    let row = db.query_one("SELECT title, body, version FROM documents WHERE id = ?",
-        &[SqlValue::Text("d1".into())]).unwrap().unwrap();
+    )
+    .unwrap();
+    let row = db
+        .query_one(
+            "SELECT title, body, version FROM documents WHERE id = ?",
+            &[SqlValue::Text("d1".into())],
+        )
+        .unwrap()
+        .unwrap();
     assert_eq!(text(&row, "title"), "README");
     assert_eq!(int(&row, "version"), 1);
     assert_eq!(text(&row, "body"), "body here");
@@ -265,16 +353,32 @@ fn crud_document_3_update() {
     db.exec(
         "INSERT INTO documents(id, owner_id, title, body, version) VALUES (?,?,?,?,?)",
         &[
-            SqlValue::Text("d1".into()), SqlValue::Text("u1".into()),
-            SqlValue::Text("README".into()), SqlValue::Text("body here".into()), SqlValue::Int(1),
+            SqlValue::Text("d1".into()),
+            SqlValue::Text("u1".into()),
+            SqlValue::Text("README".into()),
+            SqlValue::Text("body here".into()),
+            SqlValue::Int(1),
         ],
-    ).unwrap();
-    let n = db.exec("UPDATE documents SET body = ?, version = ? WHERE id = ?",
-        &[SqlValue::Text("body v2".into()), SqlValue::Int(2), SqlValue::Text("d1".into())]
-    ).unwrap();
+    )
+    .unwrap();
+    let n = db
+        .exec(
+            "UPDATE documents SET body = ?, version = ? WHERE id = ?",
+            &[
+                SqlValue::Text("body v2".into()),
+                SqlValue::Int(2),
+                SqlValue::Text("d1".into()),
+            ],
+        )
+        .unwrap();
     assert_eq!(n, 1);
-    let row = db.query_one("SELECT body, version FROM documents WHERE id = ?",
-        &[SqlValue::Text("d1".into())]).unwrap().unwrap();
+    let row = db
+        .query_one(
+            "SELECT body, version FROM documents WHERE id = ?",
+            &[SqlValue::Text("d1".into())],
+        )
+        .unwrap()
+        .unwrap();
     assert_eq!(text(&row, "body"), "body v2");
     assert_eq!(int(&row, "version"), 2);
 }
@@ -286,14 +390,27 @@ fn crud_document_4_delete() {
     db.exec(
         "INSERT INTO documents(id, owner_id, title, body, version) VALUES (?,?,?,?,?)",
         &[
-            SqlValue::Text("d1".into()), SqlValue::Text("u1".into()),
-            SqlValue::Text("README".into()), SqlValue::Text("body here".into()), SqlValue::Int(1),
+            SqlValue::Text("d1".into()),
+            SqlValue::Text("u1".into()),
+            SqlValue::Text("README".into()),
+            SqlValue::Text("body here".into()),
+            SqlValue::Int(1),
         ],
-    ).unwrap();
-    let n = db.exec("DELETE FROM documents WHERE id = ?", &[SqlValue::Text("d1".into())]).unwrap();
+    )
+    .unwrap();
+    let n = db
+        .exec(
+            "DELETE FROM documents WHERE id = ?",
+            &[SqlValue::Text("d1".into())],
+        )
+        .unwrap();
     assert_eq!(n, 1);
-    let rows = db.query("SELECT id FROM documents WHERE id = ?",
-        &[SqlValue::Text("d1".into())]).unwrap();
+    let rows = db
+        .query(
+            "SELECT id FROM documents WHERE id = ?",
+            &[SqlValue::Text("d1".into())],
+        )
+        .unwrap();
     assert!(rows.is_empty());
 }
 
@@ -302,13 +419,17 @@ fn crud_document_4_delete() {
 fn crud_resource_1_save() {
     let db = new_provider();
     init_schema(db.as_ref());
-    let n = db.exec(
-        "INSERT INTO resources(id, kind, name, location) VALUES (?,?,?,?)",
-        &[
-            SqlValue::Text("r1".into()), SqlValue::Text("file".into()),
-            SqlValue::Text("logo.png".into()), SqlValue::Text("s3://x/a.png".into()),
-        ],
-    ).unwrap();
+    let n = db
+        .exec(
+            "INSERT INTO resources(id, kind, name, location) VALUES (?,?,?,?)",
+            &[
+                SqlValue::Text("r1".into()),
+                SqlValue::Text("file".into()),
+                SqlValue::Text("logo.png".into()),
+                SqlValue::Text("s3://x/a.png".into()),
+            ],
+        )
+        .unwrap();
     assert_eq!(n, 1);
 }
 
@@ -319,12 +440,20 @@ fn crud_resource_2_get() {
     db.exec(
         "INSERT INTO resources(id, kind, name, location) VALUES (?,?,?,?)",
         &[
-            SqlValue::Text("r1".into()), SqlValue::Text("file".into()),
-            SqlValue::Text("logo.png".into()), SqlValue::Text("s3://x/a.png".into()),
+            SqlValue::Text("r1".into()),
+            SqlValue::Text("file".into()),
+            SqlValue::Text("logo.png".into()),
+            SqlValue::Text("s3://x/a.png".into()),
         ],
-    ).unwrap();
-    let row = db.query_one("SELECT kind, name, location FROM resources WHERE id = ?",
-        &[SqlValue::Text("r1".into())]).unwrap().unwrap();
+    )
+    .unwrap();
+    let row = db
+        .query_one(
+            "SELECT kind, name, location FROM resources WHERE id = ?",
+            &[SqlValue::Text("r1".into())],
+        )
+        .unwrap()
+        .unwrap();
     assert_eq!(text(&row, "kind"), "file");
     assert_eq!(text(&row, "name"), "logo.png");
 }
@@ -336,16 +465,30 @@ fn crud_resource_3_update() {
     db.exec(
         "INSERT INTO resources(id, kind, name, location) VALUES (?,?,?,?)",
         &[
-            SqlValue::Text("r1".into()), SqlValue::Text("file".into()),
-            SqlValue::Text("logo.png".into()), SqlValue::Text("s3://x/a.png".into()),
+            SqlValue::Text("r1".into()),
+            SqlValue::Text("file".into()),
+            SqlValue::Text("logo.png".into()),
+            SqlValue::Text("s3://x/a.png".into()),
         ],
-    ).unwrap();
-    let n = db.exec("UPDATE resources SET location = ? WHERE id = ?",
-        &[SqlValue::Text("s3://x/b.png".into()), SqlValue::Text("r1".into())]
-    ).unwrap();
+    )
+    .unwrap();
+    let n = db
+        .exec(
+            "UPDATE resources SET location = ? WHERE id = ?",
+            &[
+                SqlValue::Text("s3://x/b.png".into()),
+                SqlValue::Text("r1".into()),
+            ],
+        )
+        .unwrap();
     assert_eq!(n, 1);
-    let row = db.query_one("SELECT location FROM resources WHERE id = ?",
-        &[SqlValue::Text("r1".into())]).unwrap().unwrap();
+    let row = db
+        .query_one(
+            "SELECT location FROM resources WHERE id = ?",
+            &[SqlValue::Text("r1".into())],
+        )
+        .unwrap()
+        .unwrap();
     assert_eq!(text(&row, "location"), "s3://x/b.png");
 }
 
@@ -356,14 +499,27 @@ fn crud_resource_4_delete() {
     db.exec(
         "INSERT INTO resources(id, kind, name, location) VALUES (?,?,?,?)",
         &[
-            SqlValue::Text("r1".into()), SqlValue::Text("file".into()),
-            SqlValue::Text("logo.png".into()), SqlValue::Text("s3://x/a.png".into()),
+            SqlValue::Text("r1".into()),
+            SqlValue::Text("file".into()),
+            SqlValue::Text("logo.png".into()),
+            SqlValue::Text("s3://x/a.png".into()),
         ],
-    ).unwrap();
-    let n = db.exec("DELETE FROM resources WHERE id = ?", &[SqlValue::Text("r1".into())]).unwrap();
+    )
+    .unwrap();
+    let n = db
+        .exec(
+            "DELETE FROM resources WHERE id = ?",
+            &[SqlValue::Text("r1".into())],
+        )
+        .unwrap();
     assert_eq!(n, 1);
-    assert!(db.query("SELECT id FROM resources WHERE id = ?",
-        &[SqlValue::Text("r1".into())]).unwrap().is_empty());
+    assert!(db
+        .query(
+            "SELECT id FROM resources WHERE id = ?",
+            &[SqlValue::Text("r1".into())]
+        )
+        .unwrap()
+        .is_empty());
 }
 
 // ---------- Notification (4) ----------
@@ -371,13 +527,18 @@ fn crud_resource_4_delete() {
 fn crud_notification_1_save() {
     let db = new_provider();
     init_schema(db.as_ref());
-    let n = db.exec(
-        "INSERT INTO notifications(id, member_id, title, body, read_flag) VALUES (?,?,?,?,?)",
-        &[
-            SqlValue::Text("n1".into()), SqlValue::Text("m1".into()),
-            SqlValue::Text("Hi".into()), SqlValue::Text("Welcome".into()), SqlValue::Int(0),
-        ],
-    ).unwrap();
+    let n = db
+        .exec(
+            "INSERT INTO notifications(id, member_id, title, body, read_flag) VALUES (?,?,?,?,?)",
+            &[
+                SqlValue::Text("n1".into()),
+                SqlValue::Text("m1".into()),
+                SqlValue::Text("Hi".into()),
+                SqlValue::Text("Welcome".into()),
+                SqlValue::Int(0),
+            ],
+        )
+        .unwrap();
     assert_eq!(n, 1);
 }
 
@@ -388,12 +549,21 @@ fn crud_notification_2_get() {
     db.exec(
         "INSERT INTO notifications(id, member_id, title, body, read_flag) VALUES (?,?,?,?,?)",
         &[
-            SqlValue::Text("n1".into()), SqlValue::Text("m1".into()),
-            SqlValue::Text("Hi".into()), SqlValue::Text("Welcome".into()), SqlValue::Int(0),
+            SqlValue::Text("n1".into()),
+            SqlValue::Text("m1".into()),
+            SqlValue::Text("Hi".into()),
+            SqlValue::Text("Welcome".into()),
+            SqlValue::Int(0),
         ],
-    ).unwrap();
-    let row = db.query_one("SELECT member_id, title, read_flag FROM notifications WHERE id = ?",
-        &[SqlValue::Text("n1".into())]).unwrap().unwrap();
+    )
+    .unwrap();
+    let row = db
+        .query_one(
+            "SELECT member_id, title, read_flag FROM notifications WHERE id = ?",
+            &[SqlValue::Text("n1".into())],
+        )
+        .unwrap()
+        .unwrap();
     assert_eq!(text(&row, "title"), "Hi");
     assert_eq!(int(&row, "read_flag"), 0);
 }
@@ -405,15 +575,32 @@ fn crud_notification_3_update() {
     db.exec(
         "INSERT INTO notifications(id, member_id, title, body, read_flag) VALUES (?,?,?,?,?)",
         &[
-            SqlValue::Text("n1".into()), SqlValue::Text("m1".into()),
-            SqlValue::Text("Hi".into()), SqlValue::Text("Welcome".into()), SqlValue::Int(0),
+            SqlValue::Text("n1".into()),
+            SqlValue::Text("m1".into()),
+            SqlValue::Text("Hi".into()),
+            SqlValue::Text("Welcome".into()),
+            SqlValue::Int(0),
         ],
-    ).unwrap();
-    let n = db.exec("UPDATE notifications SET read_flag = ?, body = ? WHERE id = ?",
-        &[SqlValue::Int(1), SqlValue::Text("Welcome!".into()), SqlValue::Text("n1".into())]).unwrap();
+    )
+    .unwrap();
+    let n = db
+        .exec(
+            "UPDATE notifications SET read_flag = ?, body = ? WHERE id = ?",
+            &[
+                SqlValue::Int(1),
+                SqlValue::Text("Welcome!".into()),
+                SqlValue::Text("n1".into()),
+            ],
+        )
+        .unwrap();
     assert_eq!(n, 1);
-    let row = db.query_one("SELECT read_flag, body FROM notifications WHERE id = ?",
-        &[SqlValue::Text("n1".into())]).unwrap().unwrap();
+    let row = db
+        .query_one(
+            "SELECT read_flag, body FROM notifications WHERE id = ?",
+            &[SqlValue::Text("n1".into())],
+        )
+        .unwrap()
+        .unwrap();
     assert_eq!(int(&row, "read_flag"), 1);
     assert_eq!(text(&row, "body"), "Welcome!");
 }
@@ -425,12 +612,26 @@ fn crud_notification_4_delete() {
     db.exec(
         "INSERT INTO notifications(id, member_id, title, body, read_flag) VALUES (?,?,?,?,?)",
         &[
-            SqlValue::Text("n1".into()), SqlValue::Text("m1".into()),
-            SqlValue::Text("Hi".into()), SqlValue::Text("Welcome".into()), SqlValue::Int(0),
+            SqlValue::Text("n1".into()),
+            SqlValue::Text("m1".into()),
+            SqlValue::Text("Hi".into()),
+            SqlValue::Text("Welcome".into()),
+            SqlValue::Int(0),
         ],
-    ).unwrap();
-    let n = db.exec("DELETE FROM notifications WHERE id = ?", &[SqlValue::Text("n1".into())]).unwrap();
+    )
+    .unwrap();
+    let n = db
+        .exec(
+            "DELETE FROM notifications WHERE id = ?",
+            &[SqlValue::Text("n1".into())],
+        )
+        .unwrap();
     assert_eq!(n, 1);
-    assert!(db.query("SELECT id FROM notifications WHERE id = ?",
-        &[SqlValue::Text("n1".into())]).unwrap().is_empty());
+    assert!(db
+        .query(
+            "SELECT id FROM notifications WHERE id = ?",
+            &[SqlValue::Text("n1".into())]
+        )
+        .unwrap()
+        .is_empty());
 }

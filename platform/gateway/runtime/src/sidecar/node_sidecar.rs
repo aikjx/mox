@@ -95,11 +95,19 @@ impl NodeSidecarClient {
     }
 
     #[allow(dead_code)] // 作为 sidecar SDK 预留扩展 API（测试使用；lint 放行）
-    pub fn with_timeout(mut self, ms: u64) -> Self { self.timeout_ms = ms; self }
+    pub fn with_timeout(mut self, ms: u64) -> Self {
+        self.timeout_ms = ms;
+        self
+    }
     #[allow(dead_code)] // 同上
-    pub fn with_fallback(mut self, v: bool) -> Self { self.enable_fallback = v; self }
+    pub fn with_fallback(mut self, v: bool) -> Self {
+        self.enable_fallback = v;
+        self
+    }
     #[allow(dead_code)] // 同上
-    pub fn base_url(&self) -> &str { &self.base_url }
+    pub fn base_url(&self) -> &str {
+        &self.base_url
+    }
 
     /// 调 /internal/intent（真实 HTTP）。失败时：若 enable_fallback → 生成本地兜底（关键词匹配）；否则返回 Err。
     pub async fn intent(&self, req: IntentReq) -> Result<IntentResp, SidecarError> {
@@ -108,8 +116,8 @@ impl NodeSidecarClient {
         let res = self._post_json(&url, &req).await;
         match res {
             Ok(body) => {
-                let parsed: IntentResp = serde_json::from_str(&body)
-                    .map_err(|e| SidecarError::Serde(e.to_string()))?;
+                let parsed: IntentResp =
+                    serde_json::from_str(&body).map_err(|e| SidecarError::Serde(e.to_string()))?;
                 self.metrics.success.fetch_add(1, Ordering::Relaxed);
                 Ok(parsed)
             }
@@ -128,11 +136,14 @@ impl NodeSidecarClient {
     /// 调 /internal/graph-algo（真实 HTTP）。失败时：若 enable_fallback → 空 ok=false；否则 Err。
     pub async fn graph_algo(&self, req: GraphAlgoReq) -> Result<GraphAlgoResp, SidecarError> {
         self.metrics.calls.fetch_add(1, Ordering::Relaxed);
-        let url = format!("{}/internal/graph-algo", self.base_url.trim_end_matches('/'));
+        let url = format!(
+            "{}/internal/graph-algo",
+            self.base_url.trim_end_matches('/')
+        );
         match self._post_json(&url, &req).await {
             Ok(body) => {
-                let parsed: GraphAlgoResp = serde_json::from_str(&body)
-                    .map_err(|e| SidecarError::Serde(e.to_string()))?;
+                let parsed: GraphAlgoResp =
+                    serde_json::from_str(&body).map_err(|e| SidecarError::Serde(e.to_string()))?;
                 self.metrics.success.fetch_add(1, Ordering::Relaxed);
                 Ok(parsed)
             }
@@ -158,9 +169,20 @@ impl NodeSidecarClient {
         let client = reqwest::Client::builder()
             .timeout(std::time::Duration::from_millis(self.timeout_ms))
             .build()
-            .map_err(|e| SidecarError::Unavailable { base: self.base_url.clone(), msg: format!("client build: {e}") })?;
-        let resp = client.post(url).json(body).send().await
-            .map_err(|e| SidecarError::Unavailable { base: self.base_url.clone(), msg: e.to_string() })?;
+            .map_err(|e| SidecarError::Unavailable {
+                base: self.base_url.clone(),
+                msg: format!("client build: {e}"),
+            })?;
+        let resp =
+            client
+                .post(url)
+                .json(body)
+                .send()
+                .await
+                .map_err(|e| SidecarError::Unavailable {
+                    base: self.base_url.clone(),
+                    msg: e.to_string(),
+                })?;
         let status = resp.status().as_u16();
         let text = resp.text().await.unwrap_or_default();
         if !(200..=299).contains(&status) {
@@ -171,15 +193,19 @@ impl NodeSidecarClient {
 
     /// 通用 POST passthrough：把任意 JSON body 透传到 sidecar 指定相对 path，原样返回 JSON Value。
     /// 用于 workflow/execute 等 Node 侧业务端点（在 Rust 只做薄代理）。
-    pub async fn post_passthrough(&self, rel_path: &str, body: serde_json::Value) -> Result<serde_json::Value, SidecarError> {
+    pub async fn post_passthrough(
+        &self,
+        rel_path: &str,
+        body: serde_json::Value,
+    ) -> Result<serde_json::Value, SidecarError> {
         self.metrics.calls.fetch_add(1, Ordering::Relaxed);
         let base = self.base_url.trim_end_matches('/');
         let p = rel_path.trim_start_matches('/');
         let url = format!("{base}/{p}");
         match self._post_json(&url, &body).await {
             Ok(text) => {
-                let parsed: serde_json::Value = serde_json::from_str(&text)
-                    .map_err(|e| SidecarError::Serde(e.to_string()))?;
+                let parsed: serde_json::Value =
+                    serde_json::from_str(&text).map_err(|e| SidecarError::Serde(e.to_string()))?;
                 self.metrics.success.fetch_add(1, Ordering::Relaxed);
                 Ok(parsed)
             }
@@ -199,17 +225,26 @@ impl NodeSidecarClient {
         let client = reqwest::Client::builder()
             .timeout(std::time::Duration::from_millis(self.timeout_ms))
             .build()
-            .map_err(|e| SidecarError::Unavailable { base: self.base_url.clone(), msg: format!("client build: {e}") })?;
-        let resp = client.get(&url).send().await
-            .map_err(|e| SidecarError::Unavailable { base: self.base_url.clone(), msg: e.to_string() })?;
+            .map_err(|e| SidecarError::Unavailable {
+                base: self.base_url.clone(),
+                msg: format!("client build: {e}"),
+            })?;
+        let resp = client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| SidecarError::Unavailable {
+                base: self.base_url.clone(),
+                msg: e.to_string(),
+            })?;
         let status = resp.status().as_u16();
         let text = resp.text().await.unwrap_or_default();
         if !(200..=299).contains(&status) {
             self.metrics.fail.fetch_add(1, Ordering::Relaxed);
             return Err(SidecarError::Http { status, body: text });
         }
-        let parsed: serde_json::Value = serde_json::from_str(&text)
-            .map_err(|e| SidecarError::Serde(e.to_string()))?;
+        let parsed: serde_json::Value =
+            serde_json::from_str(&text).map_err(|e| SidecarError::Serde(e.to_string()))?;
         self.metrics.success.fetch_add(1, Ordering::Relaxed);
         Ok(parsed)
     }
@@ -222,11 +257,24 @@ fn fallback_intent(req: &IntentReq) -> IntentResp {
     let mut score_file: u32 = 0;
     let mut score_graph: u32 = 0;
     let mut score_kb: u32 = 0;
-    if q.contains("文档") || q.contains("文件") || q.contains("doc") || q.contains("上传") { score_file += 3; }
-    if q.contains("节点") || q.contains("边") || q.contains("图谱") || q.contains("graph") { score_graph += 3; }
-    if q.contains("知识") || q.contains("检索") || q.contains("需求") { score_kb += 2; }
-    let best = [("chat", score_chat), ("file_search", score_file), ("graph_query", score_graph), ("kb_search", score_kb)]
-        .into_iter().max_by_key(|x| x.1).unwrap_or(("chat", 1));
+    if q.contains("文档") || q.contains("文件") || q.contains("doc") || q.contains("上传") {
+        score_file += 3;
+    }
+    if q.contains("节点") || q.contains("边") || q.contains("图谱") || q.contains("graph") {
+        score_graph += 3;
+    }
+    if q.contains("知识") || q.contains("检索") || q.contains("需求") {
+        score_kb += 2;
+    }
+    let best = [
+        ("chat", score_chat),
+        ("file_search", score_file),
+        ("graph_query", score_graph),
+        ("kb_search", score_kb),
+    ]
+    .into_iter()
+    .max_by_key(|x| x.1)
+    .unwrap_or(("chat", 1));
     IntentResp {
         ok: true,
         intent: best.0.to_string(),
@@ -252,9 +300,17 @@ mod tests {
     #[tokio::test]
     async fn unreachable_sidecar_fallback_ok_and_metrics_increment_fail() {
         // 监听端口 1：保证必然连不上；启用 fallback → 仍能拿到 ok=true 响应 + sidecar_fail +1
-        let client = NodeSidecarClient::new("http://127.0.0.1:1").with_timeout(200).with_fallback(true);
+        let client = NodeSidecarClient::new("http://127.0.0.1:1")
+            .with_timeout(200)
+            .with_fallback(true);
         let before = client.metrics.snapshot();
-        let resp = client.intent(IntentReq { query: "列出所有 Project 节点".to_string(), context: Default::default() }).await.unwrap();
+        let resp = client
+            .intent(IntentReq {
+                query: "列出所有 Project 节点".to_string(),
+                context: Default::default(),
+            })
+            .await
+            .unwrap();
         assert!(resp.ok);
         assert_eq!(resp.intent, "graph_query");
         let after = client.metrics.snapshot();
@@ -266,9 +322,17 @@ mod tests {
 
     #[tokio::test]
     async fn unreachable_sidecar_no_fallback_err_diagnostic() {
-        let client = NodeSidecarClient::new("http://127.0.0.1:1").with_timeout(100).with_fallback(false);
+        let client = NodeSidecarClient::new("http://127.0.0.1:1")
+            .with_timeout(100)
+            .with_fallback(false);
         let before = client.metrics.snapshot();
-        let err = client.intent(IntentReq { query: "hi".into(), context: Default::default() }).await.unwrap_err();
+        let err = client
+            .intent(IntentReq {
+                query: "hi".into(),
+                context: Default::default(),
+            })
+            .await
+            .unwrap_err();
         match err {
             SidecarError::Unavailable { base, msg } => {
                 assert!(base.contains("127.0.0.1:1"));

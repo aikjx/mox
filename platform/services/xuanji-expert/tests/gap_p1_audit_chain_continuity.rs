@@ -1,4 +1,4 @@
-﻿//! 缺口 P1.3 —— AuditChain 跨版本连续性测试
+//! 缺口 P1.3 —— AuditChain 跨版本连续性测试
 //!
 //! 目的：验证不可篡改审计哈希链在多「版本」事件交错追加时仍保持：
 //!  1) 任意时刻 `verify()` 为真（完整性守恒）；
@@ -46,7 +46,10 @@ fn cross_version_chain_consistent_after_each_append() {
         prev_hash = ev.hash.clone();
     }
     // 最终 latest_hash 等于链尾事件哈希
-    assert_eq!(c.latest_hash().as_deref(), c.events.last().map(|e| e.hash.as_str()));
+    assert_eq!(
+        c.latest_hash().as_deref(),
+        c.events.last().map(|e| e.hash.as_str())
+    );
     assert_eq!(c.events.len(), 5);
 }
 
@@ -74,7 +77,10 @@ fn cross_version_hash_chain_continuous_across_versions() {
     let c = build_versioned_chain();
     // 不变量：events[i].hash == events[i+1].prev_hash，对全部相邻对成立（跨版本无关）
     for w in c.events.windows(2) {
-        assert_eq!(w[1].prev_hash, w[0].hash, "相邻事件哈希指针必须连续（跨版本）");
+        assert_eq!(
+            w[1].prev_hash, w[0].hash,
+            "相邻事件哈希指针必须连续（跨版本）"
+        );
     }
     // 首事件锚定 GENESIS
     assert_eq!(c.events[0].prev_hash, "GENESIS");

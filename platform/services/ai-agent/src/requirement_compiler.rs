@@ -190,7 +190,11 @@ fn singular(name: &str) -> String {
         .trim_end_matches("列表")
         .trim_end_matches("模块")
         .trim();
-    if cleaned.is_empty() { "item".to_string() } else { cleaned.to_string() }
+    if cleaned.is_empty() {
+        "item".to_string()
+    } else {
+        cleaned.to_string()
+    }
 }
 
 /// 需求编译器
@@ -219,9 +223,8 @@ impl RequirementCompiler {
     /// `new()` 仍保持纯内存（向后兼容，不创建任何文件）。
     pub fn with_storage(db_path: &str) -> Result<Self, OperatorError> {
         use xuanji_system::sqlite_provider::SqlitePersistence;
-        let pvd = SqlitePersistence::file(db_path).map_err(|e| {
-            OperatorError::Other(anyhow::anyhow!("蓝图库打开失败: {}", e))
-        })?;
+        let pvd = SqlitePersistence::file(db_path)
+            .map_err(|e| OperatorError::Other(anyhow::anyhow!("蓝图库打开失败: {}", e)))?;
         pvd.exec_batch(
             "CREATE TABLE IF NOT EXISTS blueprints (id TEXT PRIMARY KEY, name TEXT NOT NULL, tags TEXT NOT NULL, json TEXT NOT NULL, updated_at TEXT NOT NULL)",
         )
@@ -248,7 +251,9 @@ impl RequirementCompiler {
             let ents = RuleExtractor::entities(phrase);
             // 实体归并到全局实体表
             for e in &ents {
-                entities.entry(e.clone()).or_insert_with(|| vec!["id".into(), "created_at".into()]);
+                entities
+                    .entry(e.clone())
+                    .or_insert_with(|| vec!["id".into(), "created_at".into()]);
             }
             let fid = format!("f{}", i + 1);
             // 关联关系：默认依赖前一个功能（形成主链），实体共享则建立数据依赖
@@ -320,7 +325,11 @@ impl RequirementCompiler {
                                 .or_insert_with(|| vec!["id".into(), "created_at".into()]);
                         }
                         let fid = format!("f{}", i + 1);
-                        let depends_on = if i == 0 { Vec::new() } else { vec![format!("f{}", i)] };
+                        let depends_on = if i == 0 {
+                            Vec::new()
+                        } else {
+                            vec![format!("f{}", i)]
+                        };
                         blueprint.features.push(Feature {
                             id: fid,
                             name: f.name.clone(),
@@ -345,7 +354,11 @@ impl RequirementCompiler {
     }
 
     /// 调用 LLM 把需求拆成结构化功能点列表
-    async fn llm_disassemble(&self, requirement: &str, llm: &LlmFn) -> anyhow::Result<Vec<LlmFeature>> {
+    async fn llm_disassemble(
+        &self,
+        requirement: &str,
+        llm: &LlmFn,
+    ) -> anyhow::Result<Vec<LlmFeature>> {
         let prompt = format!(
             "你是一个系统架构拆解助手。请把下面的业务需求拆解为若干独立功能点。\n\
              每个功能点包含：name(简短中文名)、action(动词，如 下单/支付/查询/生成/审批)、\
@@ -355,14 +368,20 @@ impl RequirementCompiler {
             requirement
         );
         let messages = vec![
-            LlmMsg { role: "system".to_string(), content: "你是严谨的软件架构拆解器，只输出 JSON。".to_string() },
-            LlmMsg { role: "user".to_string(), content: prompt },
+            LlmMsg {
+                role: "system".to_string(),
+                content: "你是严谨的软件架构拆解器，只输出 JSON。".to_string(),
+            },
+            LlmMsg {
+                role: "user".to_string(),
+                content: prompt,
+            },
         ];
         let resp = llm(messages).await?;
         let clean = crate::util::extract_json_object(&resp)
             .ok_or_else(|| anyhow::anyhow!("LLM 返回无 JSON 内容"))?;
-        let plan: LlmPlan = serde_json::from_str(clean)
-            .map_err(|e| anyhow::anyhow!("LLM 返回无法解析: {}", e))?;
+        let plan: LlmPlan =
+            serde_json::from_str(clean).map_err(|e| anyhow::anyhow!("LLM 返回无法解析: {}", e))?;
         Ok(plan.features)
     }
 
@@ -386,10 +405,16 @@ impl RequirementCompiler {
             let (action, node_type) = RuleExtractor::classify(phrase);
             let ents = RuleExtractor::entities(phrase);
             for e in &ents {
-                bp.entities.entry(e.clone()).or_insert_with(|| vec!["id".into(), "created_at".into()]);
+                bp.entities
+                    .entry(e.clone())
+                    .or_insert_with(|| vec!["id".into(), "created_at".into()]);
             }
             let fid = format!("f{}", i + 1);
-            let depends_on = if i == 0 { Vec::new() } else { vec![format!("f{}", i)] };
+            let depends_on = if i == 0 {
+                Vec::new()
+            } else {
+                vec![format!("f{}", i)]
+            };
             bp.features.push(Feature {
                 id: fid,
                 name: phrase.clone(),
@@ -449,7 +474,10 @@ impl RequirementCompiler {
             node_type: NodeType::End,
             name: "结束".into(),
             config: serde_json::json!({}),
-            position: Some(Position { x: 100.0, y: 120.0 + features.len() as f64 * 90.0 }),
+            position: Some(Position {
+                x: 100.0,
+                y: 120.0 + features.len() as f64 * 90.0,
+            }),
         });
         edges.push(FlowEdge {
             id: "e_end".to_string(),
@@ -499,7 +527,8 @@ impl RequirementCompiler {
     /// 列出全部蓝图：持久化优先；无存储后端时返回内存缓存。
     pub fn list_blueprints(&self) -> Vec<SystemBlueprint> {
         if let Some(db) = &self.db {
-            if let Ok(rows) = db.query("SELECT json FROM blueprints ORDER BY updated_at DESC", &[]) {
+            if let Ok(rows) = db.query("SELECT json FROM blueprints ORDER BY updated_at DESC", &[])
+            {
                 let mut out = Vec::new();
                 for r in rows {
                     if let Some(SqlValue::Text(s)) = r.get("json") {
@@ -516,7 +545,9 @@ impl RequirementCompiler {
 
     /// 可选持久化：若配置了存储后端，将蓝图 upsert 进 SQLite（非致命，失败仅告警）
     fn persist(&self, bp: &SystemBlueprint) {
-        let Some(db) = &self.db else { return; };
+        let Some(db) = &self.db else {
+            return;
+        };
         let tags = serde_json::to_string(&bp.tags).unwrap_or_else(|_| "[]".to_string());
         let json = match serde_json::to_string(bp) {
             Ok(j) => j,
@@ -560,8 +591,16 @@ mod tests {
         assert!(bp.features.iter().any(|f| f.action == "支付"));
         // 流程图：Start + 4 功能 + End = 6 节点
         assert_eq!(bp.flow.nodes.len(), 6);
-        assert!(bp.flow.nodes.iter().any(|n| matches!(n.node_type, NodeType::Start)));
-        assert!(bp.flow.nodes.iter().any(|n| matches!(n.node_type, NodeType::End)));
+        assert!(bp
+            .flow
+            .nodes
+            .iter()
+            .any(|n| matches!(n.node_type, NodeType::Start)));
+        assert!(bp
+            .flow
+            .nodes
+            .iter()
+            .any(|n| matches!(n.node_type, NodeType::End)));
         // 实体抽取：商品/购物车/订单/支付
         assert!(bp.entities.contains_key("商品"));
         assert!(bp.entities.contains_key("订单"));
@@ -570,7 +609,9 @@ mod tests {
     #[test]
     fn refine_appends_new_feature_and_rebuilds_flow() {
         let mut rc = RequirementCompiler::new();
-        let bp = rc.compile("商城：商品，购物车", "商城", vec!["mall".into()]).unwrap();
+        let bp = rc
+            .compile("商城：商品，购物车", "商城", vec!["mall".into()])
+            .unwrap();
         let id = bp.id.clone();
         let refined = rc.refine(&id, "再加一个退货功能").unwrap();
         // 原 2 个 + 新增 1 个 = 3 功能
@@ -583,15 +624,25 @@ mod tests {
     #[test]
     fn classifies_guard_and_llm_nodes() {
         let mut rc = RequirementCompiler::new();
-        let bp = rc.compile("登录，校验手机号，AI生成推荐", "demo", vec![]).unwrap();
-        assert!(bp.features.iter().any(|f| matches!(f.node_type, NodeType::Transform) && f.name.contains("校验")));
-        assert!(bp.features.iter().any(|f| matches!(f.node_type, NodeType::LLM) && f.name.contains("推荐")));
+        let bp = rc
+            .compile("登录，校验手机号，AI生成推荐", "demo", vec![])
+            .unwrap();
+        assert!(bp
+            .features
+            .iter()
+            .any(|f| matches!(f.node_type, NodeType::Transform) && f.name.contains("校验")));
+        assert!(bp
+            .features
+            .iter()
+            .any(|f| matches!(f.node_type, NodeType::LLM) && f.name.contains("推荐")));
     }
 
     #[test]
     fn builds_valid_flow_definition() {
         let mut rc = RequirementCompiler::new();
-        let bp = rc.compile("注册，登录，发布文章", "内容平台", vec!["thesis".into()]).unwrap();
+        let bp = rc
+            .compile("注册，登录，发布文章", "内容平台", vec!["thesis".into()])
+            .unwrap();
         // 验证流程图可被 flow_engine 接受（含 Start + End + 连通）
         assert!(crate::flow_engine::FlowEngine::validate_flow(&bp.flow).is_ok());
     }

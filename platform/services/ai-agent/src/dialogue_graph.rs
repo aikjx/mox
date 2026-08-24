@@ -108,10 +108,7 @@ impl DialogueGraphSyncer {
     }
 
     /// 内存模式（无 SQLite）：SQLite 不可用时降级使用，对话不落库但图谱同步仍生效
-    pub fn new_in_memory(
-        graph: Arc<RwLock<KnowledgeGraph>>,
-        llm: Arc<RwLock<LLMClient>>,
-    ) -> Self {
+    pub fn new_in_memory(graph: Arc<RwLock<KnowledgeGraph>>, llm: Arc<RwLock<LLMClient>>) -> Self {
         let pvd = SqlitePersistence::memory().unwrap();
         pvd.exec_batch(DB_SCHEMA).unwrap();
         Self {
@@ -188,10 +185,7 @@ impl DialogueGraphSyncer {
         )?;
         self.db.exec(
             "UPDATE dialogue_sessions SET updated_at = ?1 WHERE id = ?2",
-            &[
-                SqlValue::Text(now),
-                SqlValue::Text(session_id.to_string()),
-            ],
+            &[SqlValue::Text(now), SqlValue::Text(session_id.to_string())],
         )?;
 
         // 全自动：仅对 user 消息做图谱抽取（避免 bot 回声污染）
@@ -318,10 +312,7 @@ impl DialogueGraphSyncer {
                  FROM dialogue_messages m JOIN dialogue_sessions s ON s.id = m.session_id \
                  WHERE m.content LIKE ?1 OR s.title LIKE ?1 \
                  ORDER BY m.created_at DESC LIMIT ?2",
-                &[
-                    SqlValue::Text(q),
-                    SqlValue::Int(limit as i64),
-                ],
+                &[SqlValue::Text(q), SqlValue::Int(limit as i64)],
             )?;
             for row in rows {
                 let get_text = |k: &str| -> Option<String> {
@@ -376,7 +367,10 @@ impl DialogueGraphSyncer {
     pub async fn export_bundle(&self) -> Result<ExportBundle> {
         let mut sessions = Vec::new();
         {
-            let srows = self.db.query("SELECT id, title, created_at, updated_at FROM dialogue_sessions", &[])?;
+            let srows = self.db.query(
+                "SELECT id, title, created_at, updated_at FROM dialogue_sessions",
+                &[],
+            )?;
             for s in srows {
                 let get_text = |k: &str| -> Option<String> {
                     match s.get(k) {
@@ -405,7 +399,12 @@ impl DialogueGraphSyncer {
                     let role = get_text_m("role").unwrap_or_default();
                     let content = get_text_m("content").unwrap_or_default();
                     let ts = get_text_m("created_at").unwrap_or_default();
-                    messages.push(ExportMessage { id: mid, role, content, created_at: ts });
+                    messages.push(ExportMessage {
+                        id: mid,
+                        role,
+                        content,
+                        created_at: ts,
+                    });
                 }
                 sessions.push(ExportSession {
                     id,
@@ -627,7 +626,13 @@ fn rule_based_extract(content: &str) -> LlmExtract {
 fn sanitize_id(name: &str) -> String {
     let cleaned: String = name
         .chars()
-        .map(|c| if c.is_alphanumeric() || c == '_' || c == ':' { c } else { '_' })
+        .map(|c| {
+            if c.is_alphanumeric() || c == '_' || c == ':' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect();
     if cleaned.is_empty() {
         format!("ent_{}", &Uuid::new_v4().to_string()[..8])
@@ -657,8 +662,7 @@ fn truncate(s: &str, max: usize) -> String {
 pub const ALLOWED_ENTITY_TYPES: &[&str] =
     &["operator", "algorithm", "concept", "capability", "workflow"];
 /// 允许的关系类型白名单（含内部 mentioned_in）
-pub const ALLOWED_RELATIONS: &[&str] =
-    &["依赖", "包含", "实现", "属于", "mentioned_in"];
+pub const ALLOWED_RELATIONS: &[&str] = &["依赖", "包含", "实现", "属于", "mentioned_in"];
 
 fn is_allowed_entity_type(t: &str) -> bool {
     ALLOWED_ENTITY_TYPES.contains(&t)
@@ -672,7 +676,8 @@ fn is_allowed_relation(r: &str) -> bool {
 /// 防御 LLM 提示注入导致的图谱类型污染。返回 (过滤后结果, 丢弃数量)。
 fn sanitize_extracted(mut ext: LlmExtract) -> (LlmExtract, usize) {
     let before = ext.entities.len() + ext.relations.len();
-    ext.entities.retain(|e| is_allowed_entity_type(&e.entity_type));
+    ext.entities
+        .retain(|e| is_allowed_entity_type(&e.entity_type));
     ext.relations.retain(|r| is_allowed_relation(&r.relation));
     let dropped = before - (ext.entities.len() + ext.relations.len());
     (ext, dropped)
@@ -827,13 +832,18 @@ mod tests {
         let sid = s.create_session("t").await.unwrap();
         s.append_message(&sid, "user", "线性变换").await.unwrap();
         let g = s.graph.read().await;
-        let has_pr = g.nodes().iter().any(|n| n.metadata.contains_key("pagerank"));
+        let has_pr = g
+            .nodes()
+            .iter()
+            .any(|n| n.metadata.contains_key("pagerank"));
         assert!(!has_pr, "interval=0 时不应自动重算布局");
         drop(g);
         s.recompute_layout().await;
         let g2 = s.graph.read().await;
         assert!(
-            g2.nodes().iter().any(|n| n.metadata.contains_key("pagerank")),
+            g2.nodes()
+                .iter()
+                .any(|n| n.metadata.contains_key("pagerank")),
             "显式 recompute 应补算布局"
         );
     }

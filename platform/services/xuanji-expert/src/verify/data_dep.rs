@@ -59,16 +59,20 @@ pub fn data_dependency_invariant_with_reach(
     let (ra_cache, a_pos) = build_reach_and_pos(after, after_reach_cached);
     // id_index 用于快速把 node id 翻译成索引
     let n = after.nodes.len();
-    let mut id_index: std::collections::HashMap<&str, usize> = std::collections::HashMap::with_capacity(n);
+    let mut id_index: std::collections::HashMap<&str, usize> =
+        std::collections::HashMap::with_capacity(n);
     for (i, nd) in after.nodes.iter().enumerate() {
         id_index.insert(nd.id.as_str(), i);
     }
 
     for layer in layers {
         // 预取出层内每个节点的 (idx, write_set, read_set, pos)
-        let mut members: Vec<(usize, Vec<&str>, Vec<&str>, usize)> = Vec::with_capacity(layer.len());
+        let mut members: Vec<(usize, Vec<&str>, Vec<&str>, usize)> =
+            Vec::with_capacity(layer.len());
         for id in layer {
-            let Some(&idx) = id_index.get(id.as_str()) else { continue };
+            let Some(&idx) = id_index.get(id.as_str()) else {
+                continue;
+            };
             let Some(node) = after.node(id) else { continue };
             let Some(pos) = a_pos[idx] else { continue };
             let ws: Vec<&str> = node.write_set().into_iter().collect();
@@ -138,14 +142,20 @@ pub fn data_dependency_invariant_with_reach(
             name: "data_dep".into(),
             passed: false,
             blocking: false,
-            detail: format!("并行层存在 RAW 冒险风险: {:?}", &raw_risk[..raw_risk.len().min(5)]),
+            detail: format!(
+                "并行层存在 RAW 冒险风险: {:?}",
+                &raw_risk[..raw_risk.len().min(5)]
+            ),
         };
     }
     Check {
         name: "data_dep".into(),
         passed: true,
         blocking: true,
-        detail: format!("剪除 {} 条伪依赖，真数据依赖全部保留", opt.plan.removed_edges.len()),
+        detail: format!(
+            "剪除 {} 条伪依赖，真数据依赖全部保留",
+            opt.plan.removed_edges.len()
+        ),
     }
 }
 
@@ -157,7 +167,9 @@ fn build_reach_and_pos<'a>(
     match cached {
         Some(r) => {
             // 缓存命中：重算 topo_pos（便宜）
-            let order = g.topo_order().unwrap_or_else(|_| (0..g.nodes.len()).collect());
+            let order = g
+                .topo_order()
+                .unwrap_or_else(|_| (0..g.nodes.len()).collect());
             let mut pos = vec![None; g.nodes.len()];
             for (rank, &u) in order.iter().enumerate() {
                 pos[u] = Some(rank);

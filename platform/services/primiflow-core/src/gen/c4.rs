@@ -6,7 +6,10 @@
 
 /// 依赖模块: C2
 use flow_ai::model::ToolKind;
-use flow_ai::primitive::{generate, CandidateTopology, KnowledgeBase, PrimitiveState, Requirement as PrimiRequirement, SubTask};
+use flow_ai::primitive::{
+    generate, CandidateTopology, KnowledgeBase, PrimitiveState, Requirement as PrimiRequirement,
+    SubTask,
+};
 
 /// 业务域（用于 κ 检索硬过滤与域白名单）
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -54,12 +57,18 @@ impl StructuredRequirement {
 pub struct TopologyOperator;
 
 impl TopologyOperator {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
     /// 需求结构化：自然语言 → 子任务树（无 LLM，规则分词 + 关键词分类）
     ///
     /// 仅依赖标点切分与关键词词典，离线可跑；真实环境可替换为 llm‑gateway 提示链，
     /// 但输出契约（`StructuredRequirement`）保持不变。
-    pub fn structure_requirement(&self, text: &str, req_id: impl Into<String>) -> StructuredRequirement {
+    pub fn structure_requirement(
+        &self,
+        text: &str,
+        req_id: impl Into<String>,
+    ) -> StructuredRequirement {
         let domain = detect_domain(text);
         let clauses: Vec<String> = split_clauses(text);
         let mut primi = PrimiRequirement::new(req_id.into(), truncate_name(text));
@@ -96,7 +105,11 @@ fn split_clauses(text: &str) -> Vec<String> {
     let mut out = Vec::new();
     let mut cur = String::new();
     for c in text.chars() {
-        if ['，', '。', '；', ';', '、', '\n', '；', '.', '！', '!', '？', '?', ',', ':'].contains(&c) {
+        if [
+            '，', '。', '；', ';', '、', '\n', '；', '.', '！', '!', '？', '?', ',', ':',
+        ]
+        .contains(&c)
+        {
             let t = cur.trim().to_string();
             if !t.is_empty() {
                 out.push(t);
@@ -116,11 +129,35 @@ fn split_clauses(text: &str) -> Vec<String> {
 /// 关键词 → 工具类别 + 预估耗时（毫秒）
 fn classify(clause: &str) -> (ToolKind, u64) {
     let rules: &[(&[&str], ToolKind, u64)] = &[
-        (&["抓取", "采集", "爬", "下载", "拉取", "http", "接口", "调用"], ToolKind::Http, 300),
-        (&["入库", "存储", "写入", "保存", "落库", "数据库", "db"], ToolKind::Database, 250),
-        (&["清洗", "对账", "计算", "统计", "汇总", "解析", "转换", "抽取"], ToolKind::Compute, 200),
-        (&["生成", "报告", "图表", "分析", "摘要", "总结", "写作", "问答", "分类"], ToolKind::Llm, 400),
-        (&["读取", "导出", "文件", "excel", "csv", "文档"], ToolKind::File, 150),
+        (
+            &["抓取", "采集", "爬", "下载", "拉取", "http", "接口", "调用"],
+            ToolKind::Http,
+            300,
+        ),
+        (
+            &["入库", "存储", "写入", "保存", "落库", "数据库", "db"],
+            ToolKind::Database,
+            250,
+        ),
+        (
+            &[
+                "清洗", "对账", "计算", "统计", "汇总", "解析", "转换", "抽取",
+            ],
+            ToolKind::Compute,
+            200,
+        ),
+        (
+            &[
+                "生成", "报告", "图表", "分析", "摘要", "总结", "写作", "问答", "分类",
+            ],
+            ToolKind::Llm,
+            400,
+        ),
+        (
+            &["读取", "导出", "文件", "excel", "csv", "文档"],
+            ToolKind::File,
+            150,
+        ),
         (&["审批", "人工", "确认", "复核"], ToolKind::Human, 500),
     ];
     for (kws, tool, ms) in rules {
@@ -133,7 +170,9 @@ fn classify(clause: &str) -> (ToolKind, u64) {
 
 /// 业务域探测：命中业务软件关键词则放行
 fn detect_domain(text: &str) -> Domain {
-    let kw = ["报表", "审批", "流程", "管理", "系统", "订单", "用户", "数据", "接口", "入库", "生成"];
+    let kw = [
+        "报表", "审批", "流程", "管理", "系统", "订单", "用户", "数据", "接口", "入库", "生成",
+    ];
     if kw.iter().any(|k| text.contains(k)) {
         Domain::BusinessSoftware
     } else {
@@ -167,7 +206,7 @@ mod tests {
         assert_eq!(s.primi.subtasks[2].tool, ToolKind::Llm);
     }
 
-    #[ test]
+    #[test]
     fn domain_whitelist() {
         let op = TopologyOperator::new();
         let in_scope = op.structure_requirement("做一个报销审批流程系统", "r2");
@@ -189,7 +228,8 @@ mod tests {
     fn emerge_produces_acyclic_topology() {
         let op = TopologyOperator::new();
         let s = op.structure_requirement("抓取销售数据。清洗对账。生成报告。", "r5");
-        let state = PrimitiveState::from_policy(10.0, flow_ai::primitive::DeliveryPolicy::Exploratory, 0.0);
+        let state =
+            PrimitiveState::from_policy(10.0, flow_ai::primitive::DeliveryPolicy::Exploratory, 0.0);
         let topo = op.emerge_topology(&s.primi, &state, &KnowledgeBase::new());
         assert!(topo.graph.topo_order().is_ok());
     }

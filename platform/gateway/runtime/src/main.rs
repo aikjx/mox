@@ -8,39 +8,36 @@
 //! 5. 业务流程自动化 - BPMN工作流驱动AI执行
 
 use axum::{
-    extract::{Query, State, Path, Request},
-    http::{StatusCode, HeaderMap},
+    extract::{Path, Query, Request, State},
+    http::{HeaderMap, StatusCode},
     middleware::{self, Next},
     response::Json,
     response::Response,
-    routing::{get, post, put, delete},
+    routing::{delete, get, post, put},
     Router,
+};
+use graph_algorithms::{
+    CentralityMetrics, Community, GraphStats, KnowledgeEdge, KnowledgeGraph, KnowledgeGraphBuilder,
+    KnowledgeNode, NodeRecommendation, PathResult,
 };
 use operator_core::category::Workflow;
 use operator_core::operator::{FunctionOperator, IdentityOperator, LinearOperator, Operator};
 use operator_core::state::StateVector;
 use operator_core::ExecutionContext;
-use graph_algorithms::{
-    CentralityMetrics, Community, GraphStats, KnowledgeEdge, KnowledgeGraph, KnowledgeGraphBuilder,
-    KnowledgeNode, NodeRecommendation, PathResult,
-};
 use operator_wasm::WasmPluginManager;
 // 璇玑全维治理内核：双璇玑十四维 → 治理报告
-use xuanji_expert::pipeline::xuanji_optimize;
 use xuanji_expert::context::GovernContext;
+use xuanji_expert::pipeline::xuanji_optimize;
 // OUS 前端治理台状态
 use crate::handlers::governance::GovernanceState;
 // HITL 人机协同审批状态
 use crate::handlers::hitl::HitlState;
-use business_catalog::spiral::{analyze_spiral, SpiralParams};
 use ai_agent::{
-    AIAgent, ChatResponse, AlgorithmType,
-    BusinessWorkflow, WorkflowResult, PluginInfo, PluginType, PluginStatus,
-    ResourcePanorama, ResourceHealthReport, PluginTopology,
-    BrowserAction,
-    FlowDefinition,
-    ExportBundle,
+    AIAgent, AlgorithmType, BrowserAction, BusinessWorkflow, ChatResponse, ExportBundle,
+    FlowDefinition, PluginInfo, PluginStatus, PluginTopology, PluginType, ResourceHealthReport,
+    ResourcePanorama, WorkflowResult,
 };
+use business_catalog::spiral::{analyze_spiral, SpiralParams};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
@@ -54,26 +51,26 @@ use tracing_subscriber::{prelude::*, EnvFilter};
 // api_standard: RFC 9457 Problem+JSON 统一错误契约 + 响应标准化中间件
 // openapi: OpenAPI 3.1 标准契约文档 + Swagger UI
 // rbac_middleware: RBAC + 审计中间件
-mod api_standard;
-mod openapi;
-mod rbac_middleware;
-/// 算子商城：需求 + 可编辑业务流程图的资产市场
-mod market;
-/// 商城版本化管理：semver 快照 / 变更日志 / 回滚 / 差异对比
-mod market_version;
-/// 商城路径迁移与存储 IO：$OUS_HOME/market/packages/ 归一化、备份、审计、ZIP、签名
-mod market_migration;
-/// 商城 DSL 转换：流程图 → FlowDefinition → BusinessWorkflow
-mod market_dsl;
-/// AI 自动化中枢共享资产模型 + 持久化（独立模块，避免与 market/automation 循环依赖）
-mod automation_asset;
-/// AI 自动化中枢：需求对话 → 蓝图/流程图/代码/测试/RBAC → 沙箱实跑异常自动修复 → 回写
-mod automation;
-/// OUS 前端治理台 API：Dashboard / Audit / Config / WebSocket
-mod handlers;
-mod routes;
 /// 统一 AI 查询：路由语义（静态→少参数→长路径优先）+ Node sidecar 客户端
 mod ai_router;
+mod api_standard;
+/// AI 自动化中枢：需求对话 → 蓝图/流程图/代码/测试/RBAC → 沙箱实跑异常自动修复 → 回写
+mod automation;
+/// AI 自动化中枢共享资产模型 + 持久化（独立模块，避免与 market/automation 循环依赖）
+mod automation_asset;
+/// OUS 前端治理台 API：Dashboard / Audit / Config / WebSocket
+mod handlers;
+/// 算子商城：需求 + 可编辑业务流程图的资产市场
+mod market;
+/// 商城 DSL 转换：流程图 → FlowDefinition → BusinessWorkflow
+mod market_dsl;
+/// 商城路径迁移与存储 IO：$OUS_HOME/market/packages/ 归一化、备份、审计、ZIP、签名
+mod market_migration;
+/// 商城版本化管理：semver 快照 / 变更日志 / 回滚 / 差异对比
+mod market_version;
+mod openapi;
+mod rbac_middleware;
+mod routes;
 mod sidecar;
 /// 子服务聚合（Phase 1 收敛）：xuanji-expert / xuanji-system / primiflow / primiflow-fusion
 /// 以库方式挂载，由 runtime 唯一对外暴露
@@ -301,8 +298,7 @@ struct BrowserNaturalRequest {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // 企业级可观测性：结构化日志 + 环境变量过滤（RUST_LOG，默认 info）
-    let env_filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new("info"));
+    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
     tracing_subscriber::registry()
         .with(env_filter)
         .with(
@@ -370,14 +366,16 @@ async fn main() -> anyhow::Result<()> {
     // 启动时使用真实环境变量 DEEPSEEK_API_KEY 自动接入 DeepSeek LLM
     if let Ok(deepseek_key) = std::env::var("DEEPSEEK_API_KEY") {
         if !deepseek_key.is_empty() {
-            ai_agent.configure_llm(ai_agent::LLMConfig {
-                api_base: "https://api.deepseek.com/v1".to_string(),
-                api_key: deepseek_key,
-                model: "deepseek-chat".to_string(),
-                temperature: 0.7,
-                max_tokens: 2048,
-                enabled: true,
-            }).await;
+            ai_agent
+                .configure_llm(ai_agent::LLMConfig {
+                    api_base: "https://api.deepseek.com/v1".to_string(),
+                    api_key: deepseek_key,
+                    model: "deepseek-chat".to_string(),
+                    temperature: 0.7,
+                    max_tokens: 2048,
+                    enabled: true,
+                })
+                .await;
             tracing::info!("已通过 DEEPSEEK_API_KEY 启用真实 LLM 接入 (model=deepseek-chat)");
         }
     } else {
@@ -405,7 +403,11 @@ async fn main() -> anyhow::Result<()> {
             name: "知识图谱引擎".to_string(),
             version: "1.0.0".to_string(),
             plugin_type: PluginType::Builtin,
-            capabilities: vec!["graph_query".to_string(), "recommend".to_string(), "centrality".to_string()],
+            capabilities: vec![
+                "graph_query".to_string(),
+                "recommend".to_string(),
+                "centrality".to_string(),
+            ],
             input_topics: vec!["graph.query".to_string(), "graph.recommend".to_string()],
             output_topics: vec!["graph.result".to_string()],
             status: PluginStatus::Active,
@@ -417,7 +419,10 @@ async fn main() -> anyhow::Result<()> {
     {
         let engine = ai_agent.workflow_engine();
         let engine_guard = engine.read().await;
-        tracing::info!("已加载 {} 个工作流模板", engine_guard.list_templates().len());
+        tracing::info!(
+            "已加载 {} 个工作流模板",
+            engine_guard.list_templates().len()
+        );
     }
 
     // 初始化内置算子列表
@@ -507,10 +512,16 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/ai/browser/sessions", get(list_browser_sessions))
         .route("/api/ai/browser/execute-task", post(execute_browser_task))
         .route("/api/ai/browser/execute-steps", post(execute_browser_steps))
-        .route("/api/ai/browser/execute-action", post(execute_browser_action))
+        .route(
+            "/api/ai/browser/execute-action",
+            post(execute_browser_action),
+        )
         .route("/api/ai/browser/natural", post(browser_natural))
         .route("/api/ai/browser/sessions/:id", get(get_browser_session))
-        .route("/api/ai/browser/sessions/:id", delete(close_browser_session))
+        .route(
+            "/api/ai/browser/sessions/:id",
+            delete(close_browser_session),
+        )
         // ========== 流程图引擎API ==========
         .route("/api/ai/flows", get(list_flows))
         .route("/api/ai/flows", post(create_flow))
@@ -536,7 +547,10 @@ async fn main() -> anyhow::Result<()> {
         .nest("/api/automation", automation::router())
         // ========== AI Agent 引擎任务 API ==========
         // AI Agent 引擎任务执行端点，共享 AppState（含 ai_agent）。
-        .nest("/api/agent", crate::routes::agent::agent_routes().with_state(state.ai_agent.clone()))
+        .nest(
+            "/api/agent",
+            crate::routes::agent::agent_routes().with_state(state.ai_agent.clone()),
+        )
         // ========== 统一 AI 查询：/ai/engine/* 四端点（T6）==========
         // 四端点：POST process / POST analyze / GET capabilities / GET metrics。
         // 统一语义网关：本地等价直调 sidecar → backend-node；AI 混合编排；返回 data 段 shape 与本地同。
@@ -549,7 +563,8 @@ async fn main() -> anyhow::Result<()> {
                     std::env::var("BACKEND_NODE_INTERNAL_BASE")
                         .unwrap_or_else(|_| "http://127.0.0.1:3010".to_string()),
                 ));
-            let r: Router = crate::routes::ai_engine::ai_engine_routes(std::sync::Arc::new(ai_state));
+            let r: Router =
+                crate::routes::ai_engine::ai_engine_routes(std::sync::Arc::new(ai_state));
             r.with_state(())
         })
         // ========== MCP 兼容层（Model Context Protocol）==========
@@ -576,7 +591,10 @@ async fn main() -> anyhow::Result<()> {
             crate::routes::governance::governance_routes().with_state(gov_state)
         })
         // ========== HITL 人机协同审批 WebSocket ==========
-        .route("/ws/hitl", get(crate::handlers::hitl::hitl_ws_handler).with_state(state.hitl.clone()))
+        .route(
+            "/ws/hitl",
+            get(crate::handlers::hitl::hitl_ws_handler).with_state(state.hitl.clone()),
+        )
         // ========== 静态前端
         .nest_service("/", ServeDir::new("./frontend/dist"))
         // 先固化状态为 Router<()>（axum nest 要求内外 state 一致），再挂载子服务
@@ -605,10 +623,7 @@ async fn main() -> anyhow::Result<()> {
             rbac_ctx,
             rbac_middleware::rbac_audit_middleware,
         ))
-        .layer(middleware::from_fn_with_state(
-            auth_ctx,
-            auth_middleware,
-        ))
+        .layer(middleware::from_fn_with_state(auth_ctx, auth_middleware))
         .layer(build_cors()?);
 
     // 解析命令行参数：支持 `--port <NUM>`（默认 3001，Node 边缘入口占 3000）
@@ -654,15 +669,14 @@ fn build_cors() -> anyhow::Result<CorsLayer> {
         tracing::warn!("OUS_CORS_ORIGINS 包含 '*'，已退化为全开放 CORS（不推荐用于生产）");
         return Ok(CorsLayer::permissive());
     }
-    let origins: Vec<axum::http::HeaderValue> = origins
-        .into_iter()
-        .filter_map(|o| o.parse().ok())
-        .collect();
+    let origins: Vec<axum::http::HeaderValue> =
+        origins.into_iter().filter_map(|o| o.parse().ok()).collect();
     Ok(CorsLayer::new()
         .allow_origin(origins)
         .allow_methods([
             axum::http::Method::GET,
             axum::http::Method::POST,
+            axum::http::Method::PUT,
             axum::http::Method::DELETE,
         ])
         .allow_headers(Any))
@@ -694,16 +708,64 @@ fn resolve_principal(auth: &AuthCtx, token: &str) -> Option<rbac_middleware::Pri
     if auth.registry.strict() {
         return auth.registry.resolve(token);
     }
-    // 3) 兼容模式：按前缀推断角色
-    let roles = rbac_middleware::extract_roles_from_token(token);
-    if roles.is_empty() {
-        return None;
+    // 3) 兼容模式（默认关闭）：仅当显式设置 OUS_AUTH_COMPAT=1 时才按令牌前缀推断角色。
+    //    默认关闭后，未配置 OUS_API_TOKEN / OUS_RBAC_TOKENS 时任何令牌都无法认证（安全默认），
+    //    杜绝「admin_* 任意令牌即 Admin」的越权默认。
+    let compat = std::env::var("OUS_AUTH_COMPAT")
+        .map(|v| v == "1")
+        .unwrap_or(false);
+    if compat {
+        let roles = rbac_middleware::extract_roles_from_token(token);
+        if roles.is_empty() {
+            return None;
+        }
+        return Some(rbac_middleware::Principal {
+            token_id: token.chars().take(8).collect(),
+            roles,
+            tenant_id: rbac_middleware::extract_tenant_from_token(token, "default"),
+        });
     }
-    Some(rbac_middleware::Principal {
-        token_id: token.chars().take(8).collect(),
-        roles,
-        tenant_id: rbac_middleware::extract_tenant_from_token(token, "default"),
-    })
+    None
+}
+
+/// 极简 URL 百分号解码（用于查询参数 token；非完整 RFC 3986，仅覆盖 `+` 与 `%XX`）。
+fn url_decode(s: &str) -> String {
+    let bytes = s.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        match bytes[i] {
+            b'+' => {
+                out.push(b' ');
+                i += 1;
+            }
+            b'%' if i + 2 < bytes.len() => {
+                let hi = hex_val(bytes[i + 1]);
+                let lo = hex_val(bytes[i + 2]);
+                if let (Some(h), Some(l)) = (hi, lo) {
+                    out.push((h << 4) | l);
+                    i += 3;
+                } else {
+                    out.push(b'%');
+                    i += 1;
+                }
+            }
+            b => {
+                out.push(b);
+                i += 1;
+            }
+        }
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
+fn hex_val(b: u8) -> Option<u8> {
+    match b {
+        b'0'..=b'9' => Some(b - b'0'),
+        b'a'..=b'f' => Some(b - b'a' + 10),
+        b'A'..=b'F' => Some(b - b'A' + 10),
+        _ => None,
+    }
 }
 
 /// 鉴权中间件：除公开端点（健康检查、静态资源、AI 对话、子服务透传）外，
@@ -728,17 +790,35 @@ async fn auth_middleware(
     let is_gateway = subservers::GATEWAY_PREFIXES
         .iter()
         .any(|p| path.starts_with(p));
-    // 公开端点：健康检查、前端静态资源、AI对话、子服务透传前缀（无需网关token）
-    if !is_gateway && (path == "/api/health" || path == "/healthz" || !path.starts_with("/api/")
-        || path == "/api/ai/chat" || path.starts_with("/api/ai/chat/history")
-        || is_passthrough
-        || (path.starts_with("/api/market") && req.method() == axum::http::Method::GET)) {
+    // 公开端点：健康检查、前端静态资源、AI对话、子服务透传前缀（无需网关token）。
+    // 注意：/ai/engine/* 是统一 AI 能力编排入口（process/analyze/flow-graph/workflow 等），
+    // 必须要求 Bearer 认证，防止匿名调用烧耗 LLM/浏览器自动化预算。前端经统一 fetcher（自动注入令牌）调用。
+    if !is_gateway
+        && (path == "/api/health"
+            || path == "/healthz"
+            || (!path.starts_with("/api/")
+                && !path.starts_with("/ai/engine")
+                && !path.starts_with("/ws/hitl"))
+            || path == "/api/ai/chat"
+            || path.starts_with("/api/ai/chat/history")
+            || is_passthrough
+            || (path.starts_with("/api/market") && req.method() == axum::http::Method::GET))
+    {
         return Ok(next.run(req).await);
     }
-    let token = headers
+    // 令牌来源：优先 Authorization: Bearer；WebSocket 升级(如 /ws/hitl)无法携带自定义头，
+    // 前端经查询参数 ?token= 传入（见 hitl-ws.js），此处做 URL 解码兼容。
+    let bearer = headers
         .get(axum::http::header::AUTHORIZATION)
         .and_then(|v| v.to_str().ok())
-        .and_then(|v| v.strip_prefix("Bearer "));
+        .and_then(|v| v.strip_prefix("Bearer "))
+        .map(|t| t.to_string());
+    let query_token = req.uri().query().and_then(|q| {
+        q.split('&')
+            .find_map(|kv| kv.strip_prefix("token="))
+            .map(url_decode)
+    });
+    let token = bearer.or(query_token);
     match token {
         None => {
             tracing::warn!(target: "auth", "缺少 Authorization: Bearer 令牌: {}", path);
@@ -748,7 +828,7 @@ async fn auth_middleware(
                 Some("UNAUTHORIZED".into()),
             ))
         }
-        Some(t) => match resolve_principal(&auth, t) {
+        Some(t) => match resolve_principal(&auth, &t) {
             Some(principal) => {
                 req.extensions_mut().insert(principal);
                 Ok(next.run(req).await)
@@ -858,16 +938,96 @@ fn build_knowledge_graph() -> KnowledgeGraph {
 
 fn build_default_operators() -> Vec<OperatorInfo> {
     vec![
-        OperatorInfo { id: "identity".to_string(), name: "恒等算子".to_string(), description: "输出等于输入，用于测试和残差连接".to_string(), category: "core".to_string(), input_type: "StateVector".to_string(), output_type: "StateVector".to_string(), parameters: serde_json::json!({}) },
-        OperatorInfo { id: "linear".to_string(), name: "线性变换算子".to_string(), description: "y = 2x，可配置缩放因子".to_string(), category: "core".to_string(), input_type: "StateVector".to_string(), output_type: "StateVector".to_string(), parameters: serde_json::json!({"scale": 2.0}) },
-        OperatorInfo { id: "normalize".to_string(), name: "L2归一化算子".to_string(), description: "归一化到单位范数（欧几里得范数=1）".to_string(), category: "core".to_string(), input_type: "StateVector".to_string(), output_type: "StateVector".to_string(), parameters: serde_json::json!({}) },
-        OperatorInfo { id: "normalize_l1".to_string(), name: "L1归一化算子".to_string(), description: "归一化到概率分布（L1范数=1）".to_string(), category: "core".to_string(), input_type: "StateVector".to_string(), output_type: "StateVector".to_string(), parameters: serde_json::json!({}) },
-        OperatorInfo { id: "relu".to_string(), name: "ReLU激活算子".to_string(), description: "max(0, x)，整流线性单元".to_string(), category: "activation".to_string(), input_type: "StateVector".to_string(), output_type: "StateVector".to_string(), parameters: serde_json::json!({}) },
-        OperatorInfo { id: "sigmoid".to_string(), name: "Sigmoid激活算子".to_string(), description: "1/(1+exp(-x))，S型激活函数".to_string(), category: "activation".to_string(), input_type: "StateVector".to_string(), output_type: "StateVector".to_string(), parameters: serde_json::json!({}) },
-        OperatorInfo { id: "tanh".to_string(), name: "Tanh激活算子".to_string(), description: "双曲正切激活函数".to_string(), category: "activation".to_string(), input_type: "StateVector".to_string(), output_type: "StateVector".to_string(), parameters: serde_json::json!({}) },
-        OperatorInfo { id: "softmax".to_string(), name: "Softmax算子".to_string(), description: "指数归一化，输出概率分布".to_string(), category: "activation".to_string(), input_type: "StateVector".to_string(), output_type: "StateVector".to_string(), parameters: serde_json::json!({}) },
-        OperatorInfo { id: "scale".to_string(), name: "缩放算子".to_string(), description: "按指定因子缩放向量".to_string(), category: "math".to_string(), input_type: "StateVector".to_string(), output_type: "StateVector".to_string(), parameters: serde_json::json!({"factor": 1.0}) },
-        OperatorInfo { id: "add_bias".to_string(), name: "偏置加算子".to_string(), description: "添加可学习偏置".to_string(), category: "math".to_string(), input_type: "StateVector".to_string(), output_type: "StateVector".to_string(), parameters: serde_json::json!({}) },
+        OperatorInfo {
+            id: "identity".to_string(),
+            name: "恒等算子".to_string(),
+            description: "输出等于输入，用于测试和残差连接".to_string(),
+            category: "core".to_string(),
+            input_type: "StateVector".to_string(),
+            output_type: "StateVector".to_string(),
+            parameters: serde_json::json!({}),
+        },
+        OperatorInfo {
+            id: "linear".to_string(),
+            name: "线性变换算子".to_string(),
+            description: "y = 2x，可配置缩放因子".to_string(),
+            category: "core".to_string(),
+            input_type: "StateVector".to_string(),
+            output_type: "StateVector".to_string(),
+            parameters: serde_json::json!({"scale": 2.0}),
+        },
+        OperatorInfo {
+            id: "normalize".to_string(),
+            name: "L2归一化算子".to_string(),
+            description: "归一化到单位范数（欧几里得范数=1）".to_string(),
+            category: "core".to_string(),
+            input_type: "StateVector".to_string(),
+            output_type: "StateVector".to_string(),
+            parameters: serde_json::json!({}),
+        },
+        OperatorInfo {
+            id: "normalize_l1".to_string(),
+            name: "L1归一化算子".to_string(),
+            description: "归一化到概率分布（L1范数=1）".to_string(),
+            category: "core".to_string(),
+            input_type: "StateVector".to_string(),
+            output_type: "StateVector".to_string(),
+            parameters: serde_json::json!({}),
+        },
+        OperatorInfo {
+            id: "relu".to_string(),
+            name: "ReLU激活算子".to_string(),
+            description: "max(0, x)，整流线性单元".to_string(),
+            category: "activation".to_string(),
+            input_type: "StateVector".to_string(),
+            output_type: "StateVector".to_string(),
+            parameters: serde_json::json!({}),
+        },
+        OperatorInfo {
+            id: "sigmoid".to_string(),
+            name: "Sigmoid激活算子".to_string(),
+            description: "1/(1+exp(-x))，S型激活函数".to_string(),
+            category: "activation".to_string(),
+            input_type: "StateVector".to_string(),
+            output_type: "StateVector".to_string(),
+            parameters: serde_json::json!({}),
+        },
+        OperatorInfo {
+            id: "tanh".to_string(),
+            name: "Tanh激活算子".to_string(),
+            description: "双曲正切激活函数".to_string(),
+            category: "activation".to_string(),
+            input_type: "StateVector".to_string(),
+            output_type: "StateVector".to_string(),
+            parameters: serde_json::json!({}),
+        },
+        OperatorInfo {
+            id: "softmax".to_string(),
+            name: "Softmax算子".to_string(),
+            description: "指数归一化，输出概率分布".to_string(),
+            category: "activation".to_string(),
+            input_type: "StateVector".to_string(),
+            output_type: "StateVector".to_string(),
+            parameters: serde_json::json!({}),
+        },
+        OperatorInfo {
+            id: "scale".to_string(),
+            name: "缩放算子".to_string(),
+            description: "按指定因子缩放向量".to_string(),
+            category: "math".to_string(),
+            input_type: "StateVector".to_string(),
+            output_type: "StateVector".to_string(),
+            parameters: serde_json::json!({"factor": 1.0}),
+        },
+        OperatorInfo {
+            id: "add_bias".to_string(),
+            name: "偏置加算子".to_string(),
+            description: "添加可学习偏置".to_string(),
+            category: "math".to_string(),
+            input_type: "StateVector".to_string(),
+            output_type: "StateVector".to_string(),
+            parameters: serde_json::json!({}),
+        },
     ]
 }
 
@@ -896,8 +1056,16 @@ fn normalize_flow_to_graph(v: &serde_json::Value) -> flow_ai::model::FlowGraph {
     let mut g = flow_ai::model::FlowGraph::new("unified", "unified-flow");
     if let Some(nodes) = v.get("nodes").and_then(|n| n.as_array()) {
         for n in nodes {
-            let id = n.get("id").and_then(|x| x.as_str()).unwrap_or("").to_string();
-            let name = n.get("name").and_then(|x| x.as_str()).unwrap_or("").to_string();
+            let id = n
+                .get("id")
+                .and_then(|x| x.as_str())
+                .unwrap_or("")
+                .to_string();
+            let name = n
+                .get("name")
+                .and_then(|x| x.as_str())
+                .unwrap_or("")
+                .to_string();
             let t = n.get("type").and_then(|x| x.as_str()).unwrap_or("operator");
             let kind = match t {
                 "start" => flow_ai::model::NodeKind::Start,
@@ -910,23 +1078,39 @@ fn normalize_flow_to_graph(v: &serde_json::Value) -> flow_ai::model::FlowGraph {
             };
             let mut node = flow_ai::model::FlowNode::new(id, name, kind);
             if let Some(tool) = n.get("tool").and_then(|x| x.as_str()) {
-                node.tool = serde_json::from_str::<flow_ai::model::ToolKind>(&format!(
-                    "\"{}\"", tool)).ok();
+                node.tool =
+                    serde_json::from_str::<flow_ai::model::ToolKind>(&format!("\"{}\"", tool)).ok();
             }
             g.add_node(node);
         }
     }
     if let Some(edges) = v.get("edges").and_then(|e| e.as_array()) {
         for e in edges {
-            let from = e.get("from").and_then(|x| x.as_str()).unwrap_or("").to_string();
-            let to = e.get("to").and_then(|x| x.as_str()).unwrap_or("").to_string();
+            let from = e
+                .get("from")
+                .and_then(|x| x.as_str())
+                .unwrap_or("")
+                .to_string();
+            let to = e
+                .get("to")
+                .and_then(|x| x.as_str())
+                .unwrap_or("")
+                .to_string();
             let kind = if e.get("condition").is_some() || e.get("label").is_some() {
                 flow_ai::model::EdgeKind::Conditional
             } else {
                 flow_ai::model::EdgeKind::Sequence
             };
-            let condition = e.get("condition").and_then(|x| x.as_str()).map(|s| s.to_string());
-            let edge = flow_ai::model::FlowEdge { from, to, kind, condition };
+            let condition = e
+                .get("condition")
+                .and_then(|x| x.as_str())
+                .map(|s| s.to_string());
+            let edge = flow_ai::model::FlowEdge {
+                from,
+                to,
+                kind,
+                condition,
+            };
             g.add_edge(edge);
         }
     }
@@ -979,10 +1163,8 @@ async fn xuanji_optimize_handler(
     Json(v)
 }
 
-async fn xuanji_publish_handler(
-    Json(req): Json<XuanjiPublishRequest>,
-) -> Json<serde_json::Value> {
-    use xuanji_expert::context::{GovernContext, Tenant, Principal};
+async fn xuanji_publish_handler(Json(req): Json<XuanjiPublishRequest>) -> Json<serde_json::Value> {
+    use xuanji_expert::context::{GovernContext, Principal, Tenant};
     let ctx = GovernContext::new(
         Tenant::new("default", "default"),
         Principal::new("designer").with_roles(vec!["editor".into()]),
@@ -995,13 +1177,15 @@ async fn xuanji_publish_handler(
         report.expert_scores.iter().map(|(_, s)| s).sum::<f64>() / report.expert_scores.len() as f64
     };
     let name = req.name.clone().unwrap_or_else(|| "全维融合算子".into());
-    let description = req.description.clone().unwrap_or_else(|| {
-        format!("由璇玑双璇玑十四维归一化生成（治理评分 {:.2}）", score)
-    });
+    let description = req
+        .description
+        .clone()
+        .unwrap_or_else(|| format!("由璇玑双璇玑十四维归一化生成（治理评分 {:.2}）", score));
     let requirement = req.requirement.clone().unwrap_or_default();
-    let tags = req.tags.clone().unwrap_or_else(|| {
-        vec!["全维融合".into(), "璇玑".into(), "业务流程图".into()]
-    });
+    let tags = req
+        .tags
+        .clone()
+        .unwrap_or_else(|| vec!["全维融合".into(), "璇玑".into(), "业务流程图".into()]);
 
     // ===== I-05 双验收联动门禁 =====
     // 需求侧任务 Done（req.task_done=true） ∧ 融合侧璇玑验证通过（algo 未否决且 gate 放行）
@@ -1070,8 +1254,20 @@ struct XuanjiPublishRequest {
 
 async fn xuanji_health() -> Json<serde_json::Value> {
     let dims: Vec<&str> = vec![
-        "Business", "Algorithm", "Permission", "Resource", "Security", "Data", "Observability",
-        "ApiCompat", "Perf", "Maintain", "Test", "Style", "Cost", "Sensitive",
+        "Business",
+        "Algorithm",
+        "Permission",
+        "Resource",
+        "Security",
+        "Data",
+        "Observability",
+        "ApiCompat",
+        "Perf",
+        "Maintain",
+        "Test",
+        "Style",
+        "Cost",
+        "Sensitive",
     ];
     Json(json!({
         "xuanji": "double-league-14-dim",
@@ -1119,7 +1315,10 @@ async fn register_operator(
         },
     );
 
-    (StatusCode::OK, Json(serde_json::json!({"success": true, "message": "算子注册成功", "operator": op_info})))
+    (
+        StatusCode::OK,
+        Json(serde_json::json!({"success": true, "message": "算子注册成功", "operator": op_info})),
+    )
 }
 
 // 内部复用：真正执行算子/工作流的核心逻辑，供 HTTP handler 与 MCP 兼容层共用
@@ -1132,6 +1331,31 @@ pub(crate) async fn run_workflow_inner(
     let input = StateVector::from_vec(req.input.clone());
     let input_norm = input.norm();
     let params = req.parameters.unwrap_or_default();
+
+    // 安全加固：客户端可控 input 维度；linear 算子会构造 n×n 稠密矩阵（O(n²) 内存）。
+    // 若不设上限，2MB 请求体（n≈25 万）即可触发数百 GB 分配 → OOM abort 进程。
+    // 资源预检在算子构造之后才运行，无法拦截分配本身，故此处先行拒绝超限维度。
+    const MAX_VECTOR_DIM: usize = 1024; // 1024² × 8B = 8MB，安全
+    let max_dim = std::env::var("OUS_EXEC_MAX_DIM")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(MAX_VECTOR_DIM);
+    if input.dimension > max_dim {
+        return ExecuteResponse {
+            success: false,
+            output: None,
+            execution_time_ms: start.elapsed().as_millis() as u64,
+            logs: vec![format!(
+                "[scheduler] 输入维度 {} 超过上限 {}（阻止 O(n²) 矩阵分配导致 OOM）",
+                input.dimension, max_dim
+            )],
+            error: Some(format!(
+                "输入维度 {} 超过允许上限 {}，拒绝执行；可经 OUS_EXEC_MAX_DIM 调优",
+                input.dimension, max_dim
+            )),
+            metrics: None,
+        };
+    }
 
     // 公理5（资源约束优化）接线：构造算子 DAG 做调度预检。
     // 每个算子按请求顺序建立串行依赖；预检通过后才进入真实执行。
@@ -1148,47 +1372,85 @@ pub(crate) async fn run_workflow_inner(
                     nalgebra::DMatrix::from_diagonal_element(n, n, scale),
                 ))
             }
-            "normalize" => std::sync::Arc::new(FunctionOperator::new("normalize", |s: &StateVector, _ctx| {
-                let mut s = s.clone(); s.normalize(); Ok(s)
-            })),
-            "normalize_l1" => std::sync::Arc::new(FunctionOperator::new("normalize_l1", |s: &StateVector, _ctx| {
-                let mut s = s.clone(); s.normalize_probability(); Ok(s)
-            })),
-            "relu" => std::sync::Arc::new(FunctionOperator::new("relu", |s: &StateVector, _ctx| {
-                let mut result = s.clone();
-                for i in 0..result.dimension { result[i] = result[i].max(0.0); }
-                Ok(result)
-            })),
-            "sigmoid" => std::sync::Arc::new(FunctionOperator::new("sigmoid", |s: &StateVector, _ctx| {
-                let mut result = s.clone();
-                for i in 0..result.dimension { result[i] = 1.0 / (1.0 + (-result[i]).exp()); }
-                Ok(result)
-            })),
-            "tanh" => std::sync::Arc::new(FunctionOperator::new("tanh", |s: &StateVector, _ctx| {
-                let mut result = s.clone();
-                for i in 0..result.dimension { result[i] = result[i].tanh(); }
-                Ok(result)
-            })),
-            "softmax" => std::sync::Arc::new(FunctionOperator::new("softmax", |s: &StateVector, _ctx| {
-                let mut result = s.clone();
-                let max_val = (0..result.dimension).map(|i| result[i]).fold(f64::NEG_INFINITY, f64::max);
-                let sum_exp: f64 = (0..result.dimension).map(|i| (result[i] - max_val).exp()).sum();
-                for i in 0..result.dimension { result[i] = (result[i] - max_val).exp() / sum_exp; }
-                Ok(result)
-            })),
-            "scale" => {
-                let factor = params.get("factor").copied().unwrap_or(1.0);
-                std::sync::Arc::new(FunctionOperator::new("scale", move |s: &StateVector, _ctx| {
+            "normalize" => std::sync::Arc::new(FunctionOperator::new(
+                "normalize",
+                |s: &StateVector, _ctx| {
+                    let mut s = s.clone();
+                    s.normalize();
+                    Ok(s)
+                },
+            )),
+            "normalize_l1" => std::sync::Arc::new(FunctionOperator::new(
+                "normalize_l1",
+                |s: &StateVector, _ctx| {
+                    let mut s = s.clone();
+                    s.normalize_probability();
+                    Ok(s)
+                },
+            )),
+            "relu" => {
+                std::sync::Arc::new(FunctionOperator::new("relu", |s: &StateVector, _ctx| {
                     let mut result = s.clone();
-                    for i in 0..result.dimension { result[i] *= factor; }
+                    for i in 0..result.dimension {
+                        result[i] = result[i].max(0.0);
+                    }
                     Ok(result)
                 }))
             }
+            "sigmoid" => {
+                std::sync::Arc::new(FunctionOperator::new("sigmoid", |s: &StateVector, _ctx| {
+                    let mut result = s.clone();
+                    for i in 0..result.dimension {
+                        result[i] = 1.0 / (1.0 + (-result[i]).exp());
+                    }
+                    Ok(result)
+                }))
+            }
+            "tanh" => {
+                std::sync::Arc::new(FunctionOperator::new("tanh", |s: &StateVector, _ctx| {
+                    let mut result = s.clone();
+                    for i in 0..result.dimension {
+                        result[i] = result[i].tanh();
+                    }
+                    Ok(result)
+                }))
+            }
+            "softmax" => {
+                std::sync::Arc::new(FunctionOperator::new("softmax", |s: &StateVector, _ctx| {
+                    let mut result = s.clone();
+                    let max_val = (0..result.dimension)
+                        .map(|i| result[i])
+                        .fold(f64::NEG_INFINITY, f64::max);
+                    let sum_exp: f64 = (0..result.dimension)
+                        .map(|i| (result[i] - max_val).exp())
+                        .sum();
+                    for i in 0..result.dimension {
+                        result[i] = (result[i] - max_val).exp() / sum_exp;
+                    }
+                    Ok(result)
+                }))
+            }
+            "scale" => {
+                let factor = params.get("factor").copied().unwrap_or(1.0);
+                std::sync::Arc::new(FunctionOperator::new(
+                    "scale",
+                    move |s: &StateVector, _ctx| {
+                        let mut result = s.clone();
+                        for i in 0..result.dimension {
+                            result[i] *= factor;
+                        }
+                        Ok(result)
+                    },
+                ))
+            }
             _ => {
                 return ExecuteResponse {
-                    success: false, output: None,
+                    success: false,
+                    output: None,
                     execution_time_ms: start.elapsed().as_millis() as u64,
-                    logs: vec![], error: Some(format!("未知算子: {}", op_id)), metrics: None,
+                    logs: vec![],
+                    error: Some(format!("未知算子: {}", op_id)),
+                    metrics: None,
                 };
             }
         };
@@ -1202,22 +1464,34 @@ pub(crate) async fn run_workflow_inner(
         if i > 0 {
             if let Err(e) = dag.add_dependency(&req.workflow[i - 1], &req.workflow[i]) {
                 return ExecuteResponse {
-                    success: false, output: None,
+                    success: false,
+                    output: None,
                     execution_time_ms: start.elapsed().as_millis() as u64,
-                    logs: vec![], error: Some(e), metrics: None,
+                    logs: vec![],
+                    error: Some(e),
+                    metrics: None,
                 };
             }
         }
     }
     if let Err(e) = dag.topological_order() {
         return ExecuteResponse {
-            success: false, output: None,
+            success: false,
+            output: None,
             execution_time_ms: start.elapsed().as_millis() as u64,
-            logs: vec![], error: Some(format!("调度预检失败（DAG 含环）: {}", e)), metrics: None,
+            logs: vec![],
+            error: Some(format!("调度预检失败（DAG 含环）: {}", e)),
+            metrics: None,
         };
     }
-    let max_cpu = std::env::var("OUS_EXEC_MAX_CPU").ok().and_then(|s| s.parse().ok()).unwrap_or(1_000_000_000_000_u64);
-    let max_mem = std::env::var("OUS_EXEC_MAX_MEM").ok().and_then(|s| s.parse().ok()).unwrap_or(1_000_000_000_000_u64);
+    let max_cpu = std::env::var("OUS_EXEC_MAX_CPU")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(1_000_000_000_000_u64);
+    let max_mem = std::env::var("OUS_EXEC_MAX_MEM")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(1_000_000_000_000_u64);
     let scheduler = optimizer::ResourceOptimizer::new(max_cpu, max_mem);
     if !scheduler.check_resources(&dag_ops) {
         let cost = dag.estimated_resource_cost();
@@ -1232,7 +1506,8 @@ pub(crate) async fn run_workflow_inner(
     }
     let est_ms = dag.estimated_execution_time();
     let est_cost = dag.estimated_resource_cost();
-    let mut all_logs = vec![format!(
+    let mut all_logs =
+        vec![format!(
         "[scheduler] 公理5 预检通过: 关键路径={:?} 预估执行时间={}ms 资源成本=CPU {} / MEM {} B",
         dag.critical_path(), est_ms, est_cost.cpu_cycles, est_cost.memory_bytes
     )];
@@ -1247,47 +1522,81 @@ pub(crate) async fn run_workflow_inner(
                 let matrix = nalgebra::DMatrix::from_diagonal_element(n, n, scale);
                 workflow.then(LinearOperator::new(matrix))
             }
-            "normalize" => workflow.then(FunctionOperator::new("normalize", |s: &StateVector, _ctx| {
-                let mut s = s.clone(); s.normalize(); Ok(s)
-            })),
-            "normalize_l1" => workflow.then(FunctionOperator::new("normalize_l1", |s: &StateVector, _ctx| {
-                let mut s = s.clone(); s.normalize_probability(); Ok(s)
-            })),
+            "normalize" => workflow.then(FunctionOperator::new(
+                "normalize",
+                |s: &StateVector, _ctx| {
+                    let mut s = s.clone();
+                    s.normalize();
+                    Ok(s)
+                },
+            )),
+            "normalize_l1" => workflow.then(FunctionOperator::new(
+                "normalize_l1",
+                |s: &StateVector, _ctx| {
+                    let mut s = s.clone();
+                    s.normalize_probability();
+                    Ok(s)
+                },
+            )),
             "relu" => workflow.then(FunctionOperator::new("relu", |s: &StateVector, _ctx| {
                 let mut result = s.clone();
-                for i in 0..result.dimension { result[i] = result[i].max(0.0); }
+                for i in 0..result.dimension {
+                    result[i] = result[i].max(0.0);
+                }
                 Ok(result)
             })),
-            "sigmoid" => workflow.then(FunctionOperator::new("sigmoid", |s: &StateVector, _ctx| {
-                let mut result = s.clone();
-                for i in 0..result.dimension { result[i] = 1.0 / (1.0 + (-result[i]).exp()); }
-                Ok(result)
-            })),
-            "tanh" => workflow.then(FunctionOperator::new("tanh", |s: &StateVector, _ctx| {
-                let mut result = s.clone();
-                for i in 0..result.dimension { result[i] = result[i].tanh(); }
-                Ok(result)
-            })),
-            "softmax" => workflow.then(FunctionOperator::new("softmax", |s: &StateVector, _ctx| {
-                let mut result = s.clone();
-                let max_val = (0..result.dimension).map(|i| result[i]).fold(f64::NEG_INFINITY, f64::max);
-                let sum_exp: f64 = (0..result.dimension).map(|i| (result[i] - max_val).exp()).sum();
-                for i in 0..result.dimension { result[i] = (result[i] - max_val).exp() / sum_exp; }
-                Ok(result)
-            })),
-            "scale" => {
-                let factor = params.get("factor").copied().unwrap_or(1.0);
-                workflow.then(FunctionOperator::new("scale", move |s: &StateVector, _ctx| {
+            "sigmoid" => {
+                workflow.then(FunctionOperator::new("sigmoid", |s: &StateVector, _ctx| {
                     let mut result = s.clone();
-                    for i in 0..result.dimension { result[i] *= factor; }
+                    for i in 0..result.dimension {
+                        result[i] = 1.0 / (1.0 + (-result[i]).exp());
+                    }
                     Ok(result)
                 }))
             }
+            "tanh" => workflow.then(FunctionOperator::new("tanh", |s: &StateVector, _ctx| {
+                let mut result = s.clone();
+                for i in 0..result.dimension {
+                    result[i] = result[i].tanh();
+                }
+                Ok(result)
+            })),
+            "softmax" => {
+                workflow.then(FunctionOperator::new("softmax", |s: &StateVector, _ctx| {
+                    let mut result = s.clone();
+                    let max_val = (0..result.dimension)
+                        .map(|i| result[i])
+                        .fold(f64::NEG_INFINITY, f64::max);
+                    let sum_exp: f64 = (0..result.dimension)
+                        .map(|i| (result[i] - max_val).exp())
+                        .sum();
+                    for i in 0..result.dimension {
+                        result[i] = (result[i] - max_val).exp() / sum_exp;
+                    }
+                    Ok(result)
+                }))
+            }
+            "scale" => {
+                let factor = params.get("factor").copied().unwrap_or(1.0);
+                workflow.then(FunctionOperator::new(
+                    "scale",
+                    move |s: &StateVector, _ctx| {
+                        let mut result = s.clone();
+                        for i in 0..result.dimension {
+                            result[i] *= factor;
+                        }
+                        Ok(result)
+                    },
+                ))
+            }
             _ => {
                 return ExecuteResponse {
-                    success: false, output: None,
+                    success: false,
+                    output: None,
                     execution_time_ms: start.elapsed().as_millis() as u64,
-                    logs: vec![], error: Some(format!("未知算子: {}", op_id)), metrics: None,
+                    logs: vec![],
+                    error: Some(format!("未知算子: {}", op_id)),
+                    metrics: None,
                 };
             }
         };
@@ -1295,9 +1604,13 @@ pub(crate) async fn run_workflow_inner(
         match result {
             Ok(w) => workflow = w,
             Err(e) => {
-                return ExecuteResponse { success: false, output: None,
+                return ExecuteResponse {
+                    success: false,
+                    output: None,
                     execution_time_ms: start.elapsed().as_millis() as u64,
-                    logs: all_logs, error: Some(e.to_string()), metrics: None,
+                    logs: all_logs,
+                    error: Some(e.to_string()),
+                    metrics: None,
                 };
             }
         }
@@ -1305,29 +1618,57 @@ pub(crate) async fn run_workflow_inner(
 
     match workflow.execute(&input, &mut ctx) {
         Ok(result) => {
-            let output_norm = result.output_state.as_ref().map(|s| s.norm()).unwrap_or(0.0);
-            let l1_residual = result.output_state.as_ref().map(|_| (input_norm - output_norm).abs()).unwrap_or(0.0);
+            let output_norm = result
+                .output_state
+                .as_ref()
+                .map(|s| s.norm())
+                .unwrap_or(0.0);
+            let l1_residual = result
+                .output_state
+                .as_ref()
+                .map(|_| (input_norm - output_norm).abs())
+                .unwrap_or(0.0);
             all_logs.extend(result.logs.clone());
 
             let mut logs = state.execution_logs.lock().await;
             logs.push(ExecutionLog {
-                timestamp: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64,
-                operator_id: "workflow".to_string(), workflow: req.workflow.clone(),
-                success: result.success, execution_time_ms: result.execution_time_ms,
-                residual: result.residual, input_dim: input.dimension,
-                output_dim: result.output_state.as_ref().map(|s| s.dimension).unwrap_or(0),
+                timestamp: std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as u64,
+                operator_id: "workflow".to_string(),
+                workflow: req.workflow.clone(),
+                success: result.success,
+                execution_time_ms: result.execution_time_ms,
+                residual: result.residual,
+                input_dim: input.dimension,
+                output_dim: result
+                    .output_state
+                    .as_ref()
+                    .map(|s| s.dimension)
+                    .unwrap_or(0),
             });
 
             ExecuteResponse {
-                success: result.success, output: result.output_state.map(|s| s.to_vec()),
-                execution_time_ms: result.execution_time_ms, logs: all_logs, error: result.error,
-                metrics: Some(ExecutionMetrics { input_norm, output_norm, l1_residual }),
+                success: result.success,
+                output: result.output_state.map(|s| s.to_vec()),
+                execution_time_ms: result.execution_time_ms,
+                logs: all_logs,
+                error: result.error,
+                metrics: Some(ExecutionMetrics {
+                    input_norm,
+                    output_norm,
+                    l1_residual,
+                }),
             }
         }
         Err(e) => ExecuteResponse {
-            success: false, output: None,
+            success: false,
+            output: None,
             execution_time_ms: start.elapsed().as_millis() as u64,
-            logs: all_logs, error: Some(e.to_string()), metrics: None,
+            logs: all_logs,
+            error: Some(e.to_string()),
+            metrics: None,
         },
     }
 }
@@ -1347,29 +1688,66 @@ async fn get_graph(State(state): State<Arc<AppState>>) -> Json<GraphData> {
     let stats = kg.stats();
 
     let type_colors: HashMap<&str, &str> = [
-        ("core", "#6366f1"), ("activation", "#f59e0b"), ("math", "#10b981"),
-        ("signal", "#ef4444"), ("data", "#8b5cf6"), ("ai", "#ec4899"),
-        ("graph", "#06b6d4"), ("optimizer", "#84cc16"), ("loss", "#f97316"),
-        ("regularization", "#a855f7"), ("normalization", "#14b8a6"), ("custom", "#64748b"),
-    ].iter().cloned().collect();
+        ("core", "#6366f1"),
+        ("activation", "#f59e0b"),
+        ("math", "#10b981"),
+        ("signal", "#ef4444"),
+        ("data", "#8b5cf6"),
+        ("ai", "#ec4899"),
+        ("graph", "#06b6d4"),
+        ("optimizer", "#84cc16"),
+        ("loss", "#f97316"),
+        ("regularization", "#a855f7"),
+        ("normalization", "#14b8a6"),
+        ("custom", "#64748b"),
+    ]
+    .iter()
+    .cloned()
+    .collect();
 
-    let nodes = kg.nodes().iter().map(|n| {
-        let pr = centrality.pagerank.get(&n.id).copied().unwrap_or(0.0);
-        let dc = centrality.degree_centrality.get(&n.id).copied().unwrap_or(0.0);
-        NodeData {
-            id: n.id.clone(), label: n.label.clone(), node_type: n.node_type.clone(),
-            pagerank: pr, degree_centrality: dc, activation: n.activation,
-            size: 20.0 + pr * 200.0,
-            color: type_colors.get(n.node_type.as_str()).copied().unwrap_or("#64748b").to_string(),
-        }
-    }).collect();
+    let nodes = kg
+        .nodes()
+        .iter()
+        .map(|n| {
+            let pr = centrality.pagerank.get(&n.id).copied().unwrap_or(0.0);
+            let dc = centrality
+                .degree_centrality
+                .get(&n.id)
+                .copied()
+                .unwrap_or(0.0);
+            NodeData {
+                id: n.id.clone(),
+                label: n.label.clone(),
+                node_type: n.node_type.clone(),
+                pagerank: pr,
+                degree_centrality: dc,
+                activation: n.activation,
+                size: 20.0 + pr * 200.0,
+                color: type_colors
+                    .get(n.node_type.as_str())
+                    .copied()
+                    .unwrap_or("#64748b")
+                    .to_string(),
+            }
+        })
+        .collect();
 
-    let edges = kg.edges().iter().map(|e| EdgeData {
-        source: e.source.clone(), target: e.target.clone(),
-        weight: e.weight, relation_type: e.relation_type.clone(),
-    }).collect();
+    let edges = kg
+        .edges()
+        .iter()
+        .map(|e| EdgeData {
+            source: e.source.clone(),
+            target: e.target.clone(),
+            weight: e.weight,
+            relation_type: e.relation_type.clone(),
+        })
+        .collect();
 
-    Json(GraphData { nodes, edges, stats })
+    Json(GraphData {
+        nodes,
+        edges,
+        stats,
+    })
 }
 
 async fn get_graph_stats(State(state): State<Arc<AppState>>) -> Json<GraphStats> {
@@ -1387,7 +1765,10 @@ async fn get_communities(State(state): State<Arc<AppState>>) -> Json<Vec<Communi
     Json(kg.detect_communities(20))
 }
 
-async fn get_shortest_path(State(state): State<Arc<AppState>>, Query(query): Query<PathQuery>) -> Json<Option<PathResult>> {
+async fn get_shortest_path(
+    State(state): State<Arc<AppState>>,
+    Query(query): Query<PathQuery>,
+) -> Json<Option<PathResult>> {
     let kg = state.knowledge_graph.lock().await;
     match kg.shortest_path(&query.source, &query.target) {
         Ok(path) => Json(path),
@@ -1400,38 +1781,64 @@ async fn get_pagerank(State(state): State<Arc<AppState>>) -> Json<HashMap<String
     Json(kg.pagerank(30))
 }
 
-async fn get_neighbors(State(state): State<Arc<AppState>>, Path(id): Path<String>) -> Json<Vec<(String, f64, String)>> {
+async fn get_neighbors(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> Json<Vec<(String, f64, String)>> {
     let kg = state.knowledge_graph.lock().await;
-    match kg.neighbors(&id) { Ok(neighbors) => Json(neighbors), Err(_) => Json(vec![]) }
+    match kg.neighbors(&id) {
+        Ok(neighbors) => Json(neighbors),
+        Err(_) => Json(vec![]),
+    }
 }
 
-async fn add_node(State(state): State<Arc<AppState>>, Json(req): Json<AddNodeRequest>) -> (StatusCode, Json<serde_json::Value>) {
+async fn add_node(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<AddNodeRequest>,
+) -> (StatusCode, Json<serde_json::Value>) {
     let mut kg = state.knowledge_graph.lock().await;
     kg.add_node(KnowledgeNode {
-        id: req.id.clone(), label: req.label,
+        id: req.id.clone(),
+        label: req.label,
         node_type: req.node_type.unwrap_or_else(|| "custom".to_string()),
         properties: req.properties.unwrap_or(serde_json::json!({})),
-        embedding: None, activation: 0.0, metadata: HashMap::new(),
+        embedding: None,
+        activation: 0.0,
+        metadata: HashMap::new(),
     });
-    (StatusCode::OK, Json(serde_json::json!({"success": true, "id": req.id})))
+    (
+        StatusCode::OK,
+        Json(serde_json::json!({"success": true, "id": req.id})),
+    )
 }
 
-async fn add_edge(State(state): State<Arc<AppState>>, Json(req): Json<AddEdgeRequest>) -> StatusCode {
+async fn add_edge(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<AddEdgeRequest>,
+) -> StatusCode {
     let mut kg = state.knowledge_graph.lock().await;
     let _ = kg.add_edge(KnowledgeEdge {
-        source: req.source, target: req.target, weight: req.weight,
+        source: req.source,
+        target: req.target,
+        weight: req.weight,
         relation_type: req.relation_type.unwrap_or_else(|| "related".to_string()),
         properties: serde_json::json!({}),
     });
     StatusCode::OK
 }
 
-async fn propagate_activation(State(state): State<Arc<AppState>>, Json(req): Json<ActivationRequest>) -> Json<HashMap<String, f64>> {
+async fn propagate_activation(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<ActivationRequest>,
+) -> Json<HashMap<String, f64>> {
     let mut kg = state.knowledge_graph.lock().await;
     Json(kg.propagate_activation(&req.start_nodes, req.iterations.unwrap_or(10)))
 }
 
-async fn recommend_nodes(State(state): State<Arc<AppState>>, Json(req): Json<RecommendRequest>) -> Json<Vec<NodeRecommendation>> {
+async fn recommend_nodes(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<RecommendRequest>,
+) -> Json<Vec<NodeRecommendation>> {
     let kg = state.knowledge_graph.lock().await;
     Json(kg.recommend(&req.context_nodes, req.limit.unwrap_or(10)))
 }
@@ -1445,7 +1852,12 @@ async fn graph_search(
 ) -> (StatusCode, Json<serde_json::Value>) {
     let q = match params.get("q") {
         Some(q) if !q.trim().is_empty() => q.clone(),
-        _ => return (StatusCode::BAD_REQUEST, Json(serde_json::json!({"success": false, "error": "缺少查询参数 q"}))),
+        _ => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({"success": false, "error": "缺少查询参数 q"})),
+            )
+        }
     };
     let limit = params
         .get("limit")
@@ -1454,7 +1866,10 @@ async fn graph_search(
 
     match state.ai_agent.dialogue_graph().search(&q, limit).await {
         Ok(result) => (StatusCode::OK, Json(serde_json::to_value(&result).unwrap())),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({"success": false, "error": format!("搜索失败: {e}")}))),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({"success": false, "error": format!("搜索失败: {e}")})),
+        ),
     }
 }
 
@@ -1463,30 +1878,55 @@ async fn toggle_auto_sync(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<serde_json::Value>,
 ) -> (StatusCode, Json<serde_json::Value>) {
-    let enabled = payload.get("enabled").and_then(|v| v.as_bool()).unwrap_or(true);
+    let enabled = payload
+        .get("enabled")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(true);
     state.ai_agent.dialogue_graph().set_auto_sync(enabled).await;
-    (StatusCode::OK, Json(serde_json::json!({ "auto_sync": enabled, "message": "已更新对话自动同步设置" })))
+    (
+        StatusCode::OK,
+        Json(serde_json::json!({ "auto_sync": enabled, "message": "已更新对话自动同步设置" })),
+    )
 }
 
 /// 查询全自动同步状态
-async fn auto_sync_status(State(state): State<Arc<AppState>>) -> (StatusCode, Json<serde_json::Value>) {
+async fn auto_sync_status(
+    State(state): State<Arc<AppState>>,
+) -> (StatusCode, Json<serde_json::Value>) {
     let enabled = state.ai_agent.dialogue_graph().is_auto_sync().await;
-    (StatusCode::OK, Json(serde_json::json!({ "auto_sync": enabled })))
+    (
+        StatusCode::OK,
+        Json(serde_json::json!({ "auto_sync": enabled })),
+    )
 }
 
 /// 列出对话会话
-async fn list_dialogue_sessions(State(state): State<Arc<AppState>>) -> (StatusCode, Json<serde_json::Value>) {
+async fn list_dialogue_sessions(
+    State(state): State<Arc<AppState>>,
+) -> (StatusCode, Json<serde_json::Value>) {
     match state.ai_agent.dialogue_graph().list_sessions().await {
-        Ok(sessions) => (StatusCode::OK, Json(serde_json::json!({ "sessions": sessions }))),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({"success": false, "error": format!("列出会话失败: {e}")}))),
+        Ok(sessions) => (
+            StatusCode::OK,
+            Json(serde_json::json!({ "sessions": sessions })),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({"success": false, "error": format!("列出会话失败: {e}")})),
+        ),
     }
 }
 
 /// 导出：对话 + 知识图谱 打包为单文件迁移包
 async fn graph_export(State(state): State<Arc<AppState>>) -> (StatusCode, Json<serde_json::Value>) {
     match state.ai_agent.dialogue_graph().export_bundle().await {
-        Ok(bundle) => (StatusCode::OK, Json(serde_json::to_value(&bundle).unwrap_or(serde_json::json!({})))),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({"success": false, "error": format!("导出失败: {e}")}))),
+        Ok(bundle) => (
+            StatusCode::OK,
+            Json(serde_json::to_value(&bundle).unwrap_or(serde_json::json!({}))),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({"success": false, "error": format!("导出失败: {e}")})),
+        ),
     }
 }
 
@@ -1496,16 +1936,22 @@ async fn graph_import(
     Json(bundle): Json<ExportBundle>,
 ) -> (StatusCode, Json<serde_json::Value>) {
     match state.ai_agent.dialogue_graph().import_bundle(bundle).await {
-        Ok(report) => (StatusCode::OK, Json(serde_json::json!({
-            "imported": {
-                "sessions": report.sessions,
-                "messages": report.messages,
-                "nodes": report.nodes,
-                "edges": report.edges,
-            },
-            "message": "导入完成，已自动优化布局"
-        }))),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({"success": false, "error": format!("导入失败: {e}")}))),
+        Ok(report) => (
+            StatusCode::OK,
+            Json(serde_json::json!({
+                "imported": {
+                    "sessions": report.sessions,
+                    "messages": report.messages,
+                    "nodes": report.nodes,
+                    "edges": report.edges,
+                },
+                "message": "导入完成，已自动优化布局"
+            })),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({"success": false, "error": format!("导入失败: {e}")})),
+        ),
     }
 }
 
@@ -1547,15 +1993,23 @@ async fn get_access_audit(State(state): State<Arc<AppState>>) -> Json<serde_json
 
 // ========== AI智能对话API ==========
 
-async fn ai_chat(State(state): State<Arc<AppState>>, Json(req): Json<ChatRequest>) -> Json<ChatResponse> {
-    let session_id = req.session_id.unwrap_or_else(|| format!("session-{}", &uuid::Uuid::new_v4().to_string()[..8]));
+async fn ai_chat(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<ChatRequest>,
+) -> Json<ChatResponse> {
+    let session_id = req
+        .session_id
+        .unwrap_or_else(|| format!("session-{}", &uuid::Uuid::new_v4().to_string()[..8]));
 
     // 调用AI对话
     let response = match state.ai_agent.chat(&session_id, &req.message).await {
         Ok(resp) => resp,
         Err(e) => ChatResponse {
             message: ai_agent::ChatMessage::assistant(format!("AI处理错误: {}", e)),
-            suggestions: vec![], recommended_operators: vec![], actions: vec![], workflow_suggestion: None,
+            suggestions: vec![],
+            recommended_operators: vec![],
+            actions: vec![],
+            workflow_suggestion: None,
         },
     };
 
@@ -1575,7 +2029,10 @@ async fn ai_chat(State(state): State<Arc<AppState>>, Json(req): Json<ChatRequest
     Json(response)
 }
 
-async fn get_chat_history(State(state): State<Arc<AppState>>, Path(session): Path<String>) -> Json<Vec<ai_agent::ChatMessage>> {
+async fn get_chat_history(
+    State(state): State<Arc<AppState>>,
+    Path(session): Path<String>,
+) -> Json<Vec<ai_agent::ChatMessage>> {
     let sessions = state.chat_sessions.lock().await;
     Json(sessions.get(&session).cloned().unwrap_or_default())
 }
@@ -1604,7 +2061,11 @@ async fn caomei_compile(
 ) -> Json<serde_json::Value> {
     let name = req.name.unwrap_or_else(|| "未命名系统".to_string());
     let tags = req.tags.unwrap_or_default();
-    match state.ai_agent.compile_requirement(&req.requirement, &name, tags).await {
+    match state
+        .ai_agent
+        .compile_requirement(&req.requirement, &name, tags)
+        .await
+    {
         Ok(bp) => Json(serde_json::json!({
             "success": true,
             "blueprint_id": bp.id,
@@ -1622,7 +2083,11 @@ async fn caomei_refine(
     State(state): State<Arc<AppState>>,
     Json(req): Json<CaomeiRefineRequest>,
 ) -> Json<serde_json::Value> {
-    match state.ai_agent.refine_blueprint(&req.blueprint_id, &req.addition).await {
+    match state
+        .ai_agent
+        .refine_blueprint(&req.blueprint_id, &req.addition)
+        .await
+    {
         Ok(bp) => Json(serde_json::json!({
             "success": true,
             "blueprint_id": bp.id,
@@ -1685,12 +2150,17 @@ async fn analyze_spiral_handler(Json(req): Json<SpiralAnalysisRequest>) -> Json<
 
 // ========== 算法分析 API ==========
 
-async fn analyze_algorithm(State(state): State<Arc<AppState>>, Json(req): Json<AnalyzeAlgorithmRequest>) -> Json<serde_json::Value> {
+async fn analyze_algorithm(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<AnalyzeAlgorithmRequest>,
+) -> Json<serde_json::Value> {
     let algo_type = match req.algorithm_type.as_deref() {
         Some("sorting") | Some("排序") => AlgorithmType::Sorting,
         Some("search") | Some("搜索") => AlgorithmType::Search,
         Some("graph") | Some("图") => AlgorithmType::Graph,
-        Some("ml") | Some("machine_learning") | Some("机器学习") => AlgorithmType::MachineLearning,
+        Some("ml") | Some("machine_learning") | Some("机器学习") => {
+            AlgorithmType::MachineLearning
+        }
         Some("dl") | Some("deep_learning") | Some("深度学习") => AlgorithmType::DeepLearning,
         Some("optimization") | Some("优化") => AlgorithmType::Optimization,
         Some("signal") | Some("信号处理") => AlgorithmType::SignalProcessing,
@@ -1698,7 +2168,9 @@ async fn analyze_algorithm(State(state): State<Arc<AppState>>, Json(req): Json<A
     };
 
     match state.ai_agent.analyze_algorithm(&req.code, algo_type).await {
-        Ok(flow) => Json(serde_json::to_value(flow).unwrap_or(serde_json::json!({"error": "序列化失败"}))),
+        Ok(flow) => {
+            Json(serde_json::to_value(flow).unwrap_or(serde_json::json!({"error": "序列化失败"})))
+        }
         Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
     }
 }
@@ -1725,7 +2197,10 @@ async fn get_resources(State(state): State<Arc<AppState>>) -> Json<ResourcePanor
         Err(_) => Json(ResourcePanorama {
             timestamp: chrono::Utc::now(),
             resources: HashMap::new(),
-            active_plugins: 0, active_workflows: 0, cached_operators: 0, total_allocations: 0,
+            active_plugins: 0,
+            active_workflows: 0,
+            cached_operators: 0,
+            total_allocations: 0,
         }),
     }
 }
@@ -1744,7 +2219,10 @@ async fn list_ai_plugins(State(state): State<Arc<AppState>>) -> Json<Vec<PluginI
     Json(bus_guard.list_plugins())
 }
 
-async fn register_ai_plugin(State(state): State<Arc<AppState>>, Json(req): Json<RegisterPluginRequest>) -> Json<serde_json::Value> {
+async fn register_ai_plugin(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<RegisterPluginRequest>,
+) -> Json<serde_json::Value> {
     let plugin_type = match req.plugin_type.as_deref() {
         Some("wasm") => PluginType::Wasm,
         Some("external") => PluginType::External,
@@ -1754,17 +2232,24 @@ async fn register_ai_plugin(State(state): State<Arc<AppState>>, Json(req): Json<
     };
 
     let plugin = PluginInfo {
-        id: req.id.clone(), name: req.name, version: "1.0.0".to_string(),
-        plugin_type, capabilities: req.capabilities,
-        input_topics: req.input_topics, output_topics: req.output_topics,
-        status: PluginStatus::Active, metadata: HashMap::new(),
+        id: req.id.clone(),
+        name: req.name,
+        version: "1.0.0".to_string(),
+        plugin_type,
+        capabilities: req.capabilities,
+        input_topics: req.input_topics,
+        output_topics: req.output_topics,
+        status: PluginStatus::Active,
+        metadata: HashMap::new(),
     };
 
     let bus = state.ai_agent.plugin_bus();
     let mut bus_guard = bus.write().await;
 
     match bus_guard.register(plugin) {
-        Ok(()) => Json(serde_json::json!({"success": true, "message": "插件注册成功", "plugin_id": req.id})),
+        Ok(()) => Json(
+            serde_json::json!({"success": true, "message": "插件注册成功", "plugin_id": req.id}),
+        ),
         Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
     }
 }
@@ -1775,10 +2260,17 @@ async fn plugin_topology(State(state): State<Arc<AppState>>) -> Json<PluginTopol
     Json(bus_guard.get_topology())
 }
 
-async fn send_plugin_message(State(state): State<Arc<AppState>>, Json(req): Json<PluginMessageRequest>) -> Json<serde_json::Value> {
+async fn send_plugin_message(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<PluginMessageRequest>,
+) -> Json<serde_json::Value> {
     let mut msg = ai_agent::PluginMessage::new(&req.source, &req.topic, req.payload);
-    if let Some(target) = req.target { msg = msg.to_target(&target); }
-    if req.need_response.unwrap_or(false) { msg = msg.need_response(); }
+    if let Some(target) = req.target {
+        msg = msg.to_target(&target);
+    }
+    if req.need_response.unwrap_or(false) {
+        msg = msg.need_response();
+    }
 
     let bus = state.ai_agent.plugin_bus();
     let bus_guard = bus.read().await;
@@ -1795,11 +2287,15 @@ async fn send_plugin_message(State(state): State<Arc<AppState>>, Json(req): Json
 async fn list_workflow_templates(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
     let engine = state.ai_agent.workflow_engine();
     let engine_guard = engine.read().await;
-    let templates: Vec<_> = engine_guard.list_templates().iter().map(|t| {
-        serde_json::json!({
-            "id": t.id, "name": t.name, "description": t.description, "category": t.category
+    let templates: Vec<_> = engine_guard
+        .list_templates()
+        .iter()
+        .map(|t| {
+            serde_json::json!({
+                "id": t.id, "name": t.name, "description": t.description, "category": t.category
+            })
         })
-    }).collect();
+        .collect();
     Json(serde_json::json!({"templates": templates}))
 }
 
@@ -1819,7 +2315,10 @@ async fn list_workflows(State(state): State<Arc<AppState>>) -> Json<serde_json::
     Json(serde_json::json!({"workflows": wfs}))
 }
 
-async fn execute_business_workflow(State(state): State<Arc<AppState>>, Json(req): Json<WorkflowExecuteRequest>) -> Json<WorkflowResult> {
+async fn execute_business_workflow(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<WorkflowExecuteRequest>,
+) -> Json<WorkflowResult> {
     // 如果指定了模板ID，从模板创建
     if let Some(template_id) = req.template_id {
         let engine = state.ai_agent.workflow_engine();
@@ -1830,29 +2329,41 @@ async fn execute_business_workflow(State(state): State<Arc<AppState>>, Json(req)
                     drop(engine_guard);
                     match state.ai_agent.execute_workflow(wf).await {
                         Ok(result) => return Json(result),
-                        Err(e) => return Json(WorkflowResult {
-                            instance: ai_agent::WorkflowInstance {
-                                id: "error".to_string(), workflow_id: template_id,
-                                status: ai_agent::WorkflowStatus::Failed,
-                                current_nodes: vec![], variables: HashMap::new(),
-                                node_executions: vec![], started_at: chrono::Utc::now(), completed_at: None,
-                            },
-                            final_output: None,
-                            execution_log: vec![format!("执行错误: {}", e)],
-                            metrics: Default::default(),
-                        }),
+                        Err(e) => {
+                            return Json(WorkflowResult {
+                                instance: ai_agent::WorkflowInstance {
+                                    id: "error".to_string(),
+                                    workflow_id: template_id,
+                                    status: ai_agent::WorkflowStatus::Failed,
+                                    current_nodes: vec![],
+                                    variables: HashMap::new(),
+                                    node_executions: vec![],
+                                    started_at: chrono::Utc::now(),
+                                    completed_at: None,
+                                },
+                                final_output: None,
+                                execution_log: vec![format!("执行错误: {}", e)],
+                                metrics: Default::default(),
+                            })
+                        }
                     }
                 }
             }
             Err(e) => {
                 return Json(WorkflowResult {
                     instance: ai_agent::WorkflowInstance {
-                        id: "error".to_string(), workflow_id: template_id,
+                        id: "error".to_string(),
+                        workflow_id: template_id,
                         status: ai_agent::WorkflowStatus::Failed,
-                        current_nodes: vec![], variables: HashMap::new(),
-                        node_executions: vec![], started_at: chrono::Utc::now(), completed_at: None,
+                        current_nodes: vec![],
+                        variables: HashMap::new(),
+                        node_executions: vec![],
+                        started_at: chrono::Utc::now(),
+                        completed_at: None,
                     },
-                    final_output: None, execution_log: vec![format!("模板错误: {}", e)], metrics: Default::default(),
+                    final_output: None,
+                    execution_log: vec![format!("模板错误: {}", e)],
+                    metrics: Default::default(),
                 });
             }
         }
@@ -1864,21 +2375,31 @@ async fn execute_business_workflow(State(state): State<Arc<AppState>>, Json(req)
             Ok(result) => Json(result),
             Err(e) => Json(WorkflowResult {
                 instance: ai_agent::WorkflowInstance {
-                    id: "error".to_string(), workflow_id: "custom".to_string(),
+                    id: "error".to_string(),
+                    workflow_id: "custom".to_string(),
                     status: ai_agent::WorkflowStatus::Failed,
-                    current_nodes: vec![], variables: HashMap::new(),
-                    node_executions: vec![], started_at: chrono::Utc::now(), completed_at: None,
+                    current_nodes: vec![],
+                    variables: HashMap::new(),
+                    node_executions: vec![],
+                    started_at: chrono::Utc::now(),
+                    completed_at: None,
                 },
-                final_output: None, execution_log: vec![format!("执行错误: {}", e)], metrics: Default::default(),
+                final_output: None,
+                execution_log: vec![format!("执行错误: {}", e)],
+                metrics: Default::default(),
             }),
         }
     } else {
         Json(WorkflowResult {
             instance: ai_agent::WorkflowInstance {
-                id: "error".to_string(), workflow_id: "none".to_string(),
+                id: "error".to_string(),
+                workflow_id: "none".to_string(),
                 status: ai_agent::WorkflowStatus::Failed,
-                current_nodes: vec![], variables: HashMap::new(),
-                node_executions: vec![], started_at: chrono::Utc::now(), completed_at: None,
+                current_nodes: vec![],
+                variables: HashMap::new(),
+                node_executions: vec![],
+                started_at: chrono::Utc::now(),
+                completed_at: None,
             },
             final_output: None,
             execution_log: vec!["请指定workflow或template_id".to_string()],
@@ -1887,7 +2408,10 @@ async fn execute_business_workflow(State(state): State<Arc<AppState>>, Json(req)
     }
 }
 
-async fn save_workflow(State(state): State<Arc<AppState>>, Json(workflow): Json<BusinessWorkflow>) -> Json<serde_json::Value> {
+async fn save_workflow(
+    State(state): State<Arc<AppState>>,
+    Json(workflow): Json<BusinessWorkflow>,
+) -> Json<serde_json::Value> {
     let mut saved = state.saved_workflows.lock().await;
     saved.insert(workflow.id.clone(), workflow.clone());
     Json(serde_json::json!({"success": true, "message": "工作流已保存", "id": workflow.id}))
@@ -1896,13 +2420,17 @@ async fn save_workflow(State(state): State<Arc<AppState>>, Json(workflow): Json<
 async fn list_workflow_instances(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
     let engine = state.ai_agent.workflow_engine();
     let engine_guard = engine.read().await;
-    let instances: Vec<_> = engine_guard.list_instances().iter().map(|i| {
-        serde_json::json!({
-            "id": i.id, "workflow_id": i.workflow_id, "status": format!("{:?}", i.status),
-            "nodes_executed": i.node_executions.len(),
-            "started_at": i.started_at.to_rfc3339(),
+    let instances: Vec<_> = engine_guard
+        .list_instances()
+        .iter()
+        .map(|i| {
+            serde_json::json!({
+                "id": i.id, "workflow_id": i.workflow_id, "status": format!("{:?}", i.status),
+                "nodes_executed": i.node_executions.len(),
+                "started_at": i.started_at.to_rfc3339(),
+            })
         })
-    }).collect();
+        .collect();
     Json(serde_json::json!({"instances": instances}))
 }
 
@@ -1983,16 +2511,31 @@ async fn get_llm_config(State(state): State<Arc<AppState>>) -> Json<serde_json::
     }))
 }
 
-async fn update_llm_config(State(state): State<Arc<AppState>>, Json(req): Json<LLMConfigRequest>) -> Json<serde_json::Value> {
+async fn update_llm_config(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<LLMConfigRequest>,
+) -> Json<serde_json::Value> {
     let llm = state.ai_agent.llm_client();
     let mut client = llm.write().await;
     let mut config = client.get_config().clone();
-    if let Some(v) = req.api_base { config.api_base = v; }
-    if let Some(v) = req.api_key { config.api_key = v; }
-    if let Some(v) = req.model { config.model = v; }
-    if let Some(v) = req.temperature { config.temperature = v; }
-    if let Some(v) = req.max_tokens { config.max_tokens = v; }
-    if let Some(v) = req.enabled { config.enabled = v; }
+    if let Some(v) = req.api_base {
+        config.api_base = v;
+    }
+    if let Some(v) = req.api_key {
+        config.api_key = v;
+    }
+    if let Some(v) = req.model {
+        config.model = v;
+    }
+    if let Some(v) = req.temperature {
+        config.temperature = v;
+    }
+    if let Some(v) = req.max_tokens {
+        config.max_tokens = v;
+    }
+    if let Some(v) = req.enabled {
+        config.enabled = v;
+    }
     client.update_config(config.clone());
     Json(serde_json::json!({"success": true, "config": {
         "api_base": config.api_base,
@@ -2006,7 +2549,7 @@ async fn update_llm_config(State(state): State<Arc<AppState>>, Json(req): Json<L
 async fn test_llm_connection(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
     match state.ai_agent.test_llm_connection().await {
         Ok(result) => Json(serde_json::json!({"success": true, "result": result})),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()}))
+        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
     }
 }
 
@@ -2014,32 +2557,47 @@ async fn test_llm_connection(State(state): State<Arc<AppState>>) -> Json<serde_j
 async fn list_browser_templates(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
     let browser = state.ai_agent.browser();
     let b = browser.read().await;
-    let templates: Vec<_> = b.list_task_templates().iter().map(|t| serde_json::json!({
-        "id": t.id,
-        "name": t.name,
-        "description": t.description,
-        "has_start_url": t.start_url.is_some(),
-        "step_count": t.steps.len(),
-        "variables": t.variables.keys().collect::<Vec<_>>()
-    })).collect();
+    let templates: Vec<_> = b
+        .list_task_templates()
+        .iter()
+        .map(|t| {
+            serde_json::json!({
+                "id": t.id,
+                "name": t.name,
+                "description": t.description,
+                "has_start_url": t.start_url.is_some(),
+                "step_count": t.steps.len(),
+                "variables": t.variables.keys().collect::<Vec<_>>()
+            })
+        })
+        .collect();
     Json(serde_json::json!({"templates": templates}))
 }
 
 async fn list_browser_sessions(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
     let browser = state.ai_agent.browser();
     let b = browser.read().await;
-    let sessions: Vec<_> = b.list_sessions().iter().map(|s| serde_json::json!({
-        "id": s.id,
-        "current_url": s.current_url,
-        "title": s.title,
-        "status": s.status,
-        "action_count": s.action_log.len(),
-        "started_at": s.started_at
-    })).collect();
+    let sessions: Vec<_> = b
+        .list_sessions()
+        .iter()
+        .map(|s| {
+            serde_json::json!({
+                "id": s.id,
+                "current_url": s.current_url,
+                "title": s.title,
+                "status": s.status,
+                "action_count": s.action_log.len(),
+                "started_at": s.started_at
+            })
+        })
+        .collect();
     Json(serde_json::json!({"sessions": sessions}))
 }
 
-async fn get_browser_session(State(state): State<Arc<AppState>>, Path(id): Path<String>) -> Json<serde_json::Value> {
+async fn get_browser_session(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> Json<serde_json::Value> {
     let browser = state.ai_agent.browser();
     let b = browser.read().await;
     match b.get_session(&id) {
@@ -2048,26 +2606,35 @@ async fn get_browser_session(State(state): State<Arc<AppState>>, Path(id): Path<
     }
 }
 
-async fn close_browser_session(State(state): State<Arc<AppState>>, Path(id): Path<String>) -> Json<serde_json::Value> {
+async fn close_browser_session(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> Json<serde_json::Value> {
     let browser = state.ai_agent.browser();
     let mut b = browser.write().await;
     match b.close_session(&id) {
         Ok(()) => Json(serde_json::json!({"success": true})),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()}))
+        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
     }
 }
 
-async fn execute_browser_task(State(state): State<Arc<AppState>>, Json(req): Json<BrowserTaskRequest>) -> Json<serde_json::Value> {
+async fn execute_browser_task(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<BrowserTaskRequest>,
+) -> Json<serde_json::Value> {
     let task_id = req.task_id.unwrap_or_else(|| "web-search".to_string());
     let browser = state.ai_agent.browser();
     let mut b = browser.write().await;
     match b.execute_task(&task_id, req.variables).await {
         Ok(result) => Json(serde_json::json!(result)),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()}))
+        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
     }
 }
 
-async fn execute_browser_steps(State(state): State<Arc<AppState>>, Json(req): Json<BrowserTaskRequest>) -> Json<serde_json::Value> {
+async fn execute_browser_steps(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<BrowserTaskRequest>,
+) -> Json<serde_json::Value> {
     let steps = req.steps.unwrap_or_default();
     if steps.is_empty() {
         return Json(serde_json::json!({"success": false, "error": "no steps provided"}));
@@ -2076,20 +2643,26 @@ async fn execute_browser_steps(State(state): State<Arc<AppState>>, Json(req): Js
     let mut b = browser.write().await;
     match b.execute_custom_steps(steps, req.start_url).await {
         Ok(result) => Json(serde_json::json!(result)),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()}))
+        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
     }
 }
 
-async fn execute_browser_action(State(state): State<Arc<AppState>>, Json(req): Json<BrowserActionRequest>) -> Json<serde_json::Value> {
+async fn execute_browser_action(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<BrowserActionRequest>,
+) -> Json<serde_json::Value> {
     let browser = state.ai_agent.browser();
     let mut b = browser.write().await;
     match b.execute_action(&req.session_id, req.action).await {
         Ok(result) => Json(serde_json::json!(result)),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()}))
+        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
     }
 }
 
-async fn browser_natural(State(state): State<Arc<AppState>>, Json(req): Json<BrowserNaturalRequest>) -> Json<serde_json::Value> {
+async fn browser_natural(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<BrowserNaturalRequest>,
+) -> Json<serde_json::Value> {
     let (url, steps) = ai_agent::BrowserAutomationEngine::parse_natural_language(&req.prompt);
     if steps.is_empty() {
         return Json(serde_json::json!({
@@ -2101,8 +2674,10 @@ async fn browser_natural(State(state): State<Arc<AppState>>, Json(req): Json<Bro
     let browser = state.ai_agent.browser();
     let mut b = browser.write().await;
     match b.execute_custom_steps(steps, url).await {
-        Ok(result) => Json(serde_json::json!({"success": true, "result": result, "ai_parsed": true})),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()}))
+        Ok(result) => {
+            Json(serde_json::json!({"success": true, "result": result, "ai_parsed": true}))
+        }
+        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
     }
 }
 
@@ -2120,7 +2695,11 @@ struct ExecuteFlowRequest {
 }
 
 /// PUT /api/ai/flows/:id — 更新流程图（目标须已存在；校验规则与创建一致）
-async fn update_flow(State(state): State<Arc<AppState>>, Path(id): Path<String>, Json(flow): Json<FlowDefinition>) -> Json<serde_json::Value> {
+async fn update_flow(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    Json(flow): Json<FlowDefinition>,
+) -> Json<serde_json::Value> {
     if flow.id != id {
         return Json(serde_json::json!({
             "success": false,
@@ -2132,59 +2711,78 @@ async fn update_flow(State(state): State<Arc<AppState>>, Path(id): Path<String>,
     }
     match state.ai_agent.update_flow(flow).await {
         Ok(updated) => Json(serde_json::json!({"success": true, "flow": updated})),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()}))
+        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
     }
 }
 
 async fn list_flows(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
     match state.ai_agent.list_flows().await {
         Ok(flows) => Json(serde_json::json!({"success": true, "flows": flows})),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()}))
+        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
     }
 }
 
-async fn create_flow(State(state): State<Arc<AppState>>, Json(flow): Json<FlowDefinition>) -> Json<serde_json::Value> {
+async fn create_flow(
+    State(state): State<Arc<AppState>>,
+    Json(flow): Json<FlowDefinition>,
+) -> Json<serde_json::Value> {
     // 先验证
     if let Err(e) = AIAgent::validate_flow(&flow) {
         return Json(serde_json::json!({"success": false, "error": format!("验证失败: {}", e)}));
     }
     match state.ai_agent.create_flow(flow).await {
         Ok(created) => Json(serde_json::json!({"success": true, "flow": created})),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()}))
+        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
     }
 }
 
-async fn get_flow(State(state): State<Arc<AppState>>, Path(id): Path<String>) -> Json<serde_json::Value> {
+async fn get_flow(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> Json<serde_json::Value> {
     match state.ai_agent.get_flow(&id).await {
         Ok(Some(flow)) => Json(serde_json::json!({"success": true, "flow": flow})),
         Ok(None) => Json(serde_json::json!({"success": false, "error": "流程图不存在"})),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()}))
+        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
     }
 }
 
-async fn delete_flow(State(state): State<Arc<AppState>>, Path(id): Path<String>) -> Json<serde_json::Value> {
+async fn delete_flow(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> Json<serde_json::Value> {
     match state.ai_agent.delete_flow(&id).await {
         Ok(true) => Json(serde_json::json!({"success": true})),
         Ok(false) => Json(serde_json::json!({"success": false, "error": "流程图不存在"})),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()}))
+        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
     }
 }
 
-async fn validate_flow(State(_state): State<Arc<AppState>>, Json(req): Json<ValidateFlowRequest>) -> Json<serde_json::Value> {
+async fn validate_flow(
+    State(_state): State<Arc<AppState>>,
+    Json(req): Json<ValidateFlowRequest>,
+) -> Json<serde_json::Value> {
     match AIAgent::validate_flow(&req.flow) {
-        Ok(()) => Json(serde_json::json!({"success": true, "valid": true, "message": "流程图验证通过"})),
-        Err(e) => Json(serde_json::json!({"success": true, "valid": false, "error": e.to_string()}))
+        Ok(()) => {
+            Json(serde_json::json!({"success": true, "valid": true, "message": "流程图验证通过"}))
+        }
+        Err(e) => {
+            Json(serde_json::json!({"success": true, "valid": false, "error": e.to_string()}))
+        }
     }
 }
 
-async fn execute_flow(State(state): State<Arc<AppState>>, Json(req): Json<ExecuteFlowRequest>) -> Json<serde_json::Value> {
+async fn execute_flow(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<ExecuteFlowRequest>,
+) -> Json<serde_json::Value> {
     let input = req.input.unwrap_or_default();
     match state.ai_agent.execute_flow(&req.flow_id, input).await {
         Ok(result) => Json(serde_json::json!({
             "success": result.success,
             "result": result
         })),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()}))
+        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
     }
 }
 
@@ -2263,10 +2861,20 @@ struct McpRpcErr {
 }
 
 fn mcp_ok(id: serde_json::Value, result: serde_json::Value) -> Json<McpRpcRes> {
-    Json(McpRpcRes { jsonrpc: "2.0".into(), id, result: Some(result), error: None })
+    Json(McpRpcRes {
+        jsonrpc: "2.0".into(),
+        id,
+        result: Some(result),
+        error: None,
+    })
 }
 fn mcp_err(id: serde_json::Value, code: i32, message: String) -> Json<McpRpcRes> {
-    Json(McpRpcRes { jsonrpc: "2.0".into(), id, result: None, error: Some(McpRpcErr { code, message }) })
+    Json(McpRpcRes {
+        jsonrpc: "2.0".into(),
+        id,
+        result: None,
+        error: Some(McpRpcErr { code, message }),
+    })
 }
 
 /// 把算子元数据收敛为 JSON-Schema 风格的 inputSchema
@@ -2293,14 +2901,20 @@ fn operator_to_mcp_tool(op: &OperatorInfo) -> serde_json::Value {
     })
 }
 
-async fn handle_mcp_rpc(State(state): State<Arc<AppState>>, Json(req): Json<McpRpcReq>) -> Json<McpRpcRes> {
+async fn handle_mcp_rpc(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<McpRpcReq>,
+) -> Json<McpRpcRes> {
     let id = req.id.clone();
     match req.method.as_str() {
-        "initialize" => mcp_ok(id, serde_json::json!({
-            "protocolVersion": "2024-11-05",
-            "capabilities": { "tools": { "listChanged": false } },
-            "serverInfo": { "name": "operator-unified-system", "version": env!("CARGO_PKG_VERSION") }
-        })),
+        "initialize" => mcp_ok(
+            id,
+            serde_json::json!({
+                "protocolVersion": "2024-11-05",
+                "capabilities": { "tools": { "listChanged": false } },
+                "serverInfo": { "name": "operator-unified-system", "version": env!("CARGO_PKG_VERSION") }
+            }),
+        ),
         "ping" => mcp_ok(id, serde_json::json!({})),
         "tools/list" => {
             let ops = state.operators.lock().await;
@@ -2325,62 +2939,99 @@ async fn handle_mcp_rpc(State(state): State<Arc<AppState>>, Json(req): Json<McpR
             mcp_ok(id, serde_json::json!({ "tools": tools }))
         }
         "tools/call" => {
-            let name = req.params.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            let arguments = req.params.get("arguments").cloned().unwrap_or(serde_json::json!({}));
+            let name = req
+                .params
+                .get("name")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let arguments = req
+                .params
+                .get("arguments")
+                .cloned()
+                .unwrap_or(serde_json::json!({}));
 
             if let Some(op_id) = name.strip_prefix("operator_") {
                 let real_id = op_id.replace('_', "-");
                 // 解析输入向量：支持 arguments.input 或 arguments 本身为数组
-                let input: Vec<f64> = if let Some(arr) = arguments.get("input").and_then(|v| v.as_array()) {
-                    arr.iter().filter_map(|x| x.as_f64()).collect()
-                } else if let Some(arr) = arguments.as_array() {
-                    arr.iter().filter_map(|x| x.as_f64()).collect()
-                } else {
-                    vec![1.0, 2.0, 3.0]
-                };
-                let params: Option<HashMap<String, f64>> = arguments.get("input")
-                    .and(None)
-                    .or_else(|| {
+                let input: Vec<f64> =
+                    if let Some(arr) = arguments.get("input").and_then(|v| v.as_array()) {
+                        arr.iter().filter_map(|x| x.as_f64()).collect()
+                    } else if let Some(arr) = arguments.as_array() {
+                        arr.iter().filter_map(|x| x.as_f64()).collect()
+                    } else {
+                        vec![1.0, 2.0, 3.0]
+                    };
+                let params: Option<HashMap<String, f64>> =
+                    arguments.get("input").and(None).or_else(|| {
                         // 提取顶层数字参数作为算子参数
                         let mut m = HashMap::new();
                         for (k, v) in arguments.as_object()? {
-                            if let Some(f) = v.as_f64() { m.insert(k.clone(), f); }
+                            if let Some(f) = v.as_f64() {
+                                m.insert(k.clone(), f);
+                            }
                         }
                         Some(m)
                     });
-                let exec_req = ExecuteRequest { workflow: vec![real_id], input, parameters: params };
+                let exec_req = ExecuteRequest {
+                    workflow: vec![real_id],
+                    input,
+                    parameters: params,
+                };
                 let resp = run_workflow_inner(&state, exec_req).await;
                 if resp.success {
-                    mcp_ok(id, serde_json::json!({
-                        "content": [ { "type": "text", "text": serde_json::to_string_pretty(&resp).unwrap_or_default() } ],
-                        "isError": false
-                    }))
+                    mcp_ok(
+                        id,
+                        serde_json::json!({
+                            "content": [ { "type": "text", "text": serde_json::to_string_pretty(&resp).unwrap_or_default() } ],
+                            "isError": false
+                        }),
+                    )
                 } else {
-                    mcp_ok(id, serde_json::json!({
-                        "content": [ { "type": "text", "text": format!("执行失败: {}", resp.error.unwrap_or_default()) } ],
-                        "isError": true
-                    }))
+                    mcp_ok(
+                        id,
+                        serde_json::json!({
+                            "content": [ { "type": "text", "text": format!("执行失败: {}", resp.error.unwrap_or_default()) } ],
+                            "isError": true
+                        }),
+                    )
                 }
             } else if let Some(plg) = name.strip_prefix("plugin_") {
                 let _real_id = plg.replace('_', "-");
-                let message = arguments.get("message").and_then(|v| v.as_str()).unwrap_or("").to_string();
-                let payload = arguments.get("payload").cloned().unwrap_or(serde_json::json!({}));
+                let message = arguments
+                    .get("message")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string();
+                let payload = arguments
+                    .get("payload")
+                    .cloned()
+                    .unwrap_or(serde_json::json!({}));
                 let bus = state.ai_agent.plugin_bus();
                 let bus_guard = bus.read().await;
                 let msg = ai_agent::PluginMessage::new("mcp-client", &message, payload);
                 match bus_guard.route_message(msg).await {
-                    Ok(Some(r)) => mcp_ok(id, serde_json::json!({
-                        "content": [ { "type": "text", "text": serde_json::to_string_pretty(&r).unwrap_or_default() } ],
-                        "isError": false
-                    })),
-                    Ok(None) => mcp_ok(id, serde_json::json!({
-                        "content": [ { "type": "text", "text": "消息已投递（无响应）" } ],
-                        "isError": false
-                    })),
-                    Err(e) => mcp_ok(id, serde_json::json!({
-                        "content": [ { "type": "text", "text": format!("插件调用失败: {}", e) } ],
-                        "isError": true
-                    })),
+                    Ok(Some(r)) => mcp_ok(
+                        id,
+                        serde_json::json!({
+                            "content": [ { "type": "text", "text": serde_json::to_string_pretty(&r).unwrap_or_default() } ],
+                            "isError": false
+                        }),
+                    ),
+                    Ok(None) => mcp_ok(
+                        id,
+                        serde_json::json!({
+                            "content": [ { "type": "text", "text": "消息已投递（无响应）" } ],
+                            "isError": false
+                        }),
+                    ),
+                    Err(e) => mcp_ok(
+                        id,
+                        serde_json::json!({
+                            "content": [ { "type": "text", "text": format!("插件调用失败: {}", e) } ],
+                            "isError": true
+                        }),
+                    ),
                 }
             } else {
                 mcp_err(id, -32602, format!("未知 tool: {}", name))
@@ -2389,7 +3040,3 @@ async fn handle_mcp_rpc(State(state): State<Arc<AppState>>, Json(req): Json<McpR
         _ => mcp_err(id, -32601, format!("方法不存在: {}", req.method)),
     }
 }
-
-
-
-

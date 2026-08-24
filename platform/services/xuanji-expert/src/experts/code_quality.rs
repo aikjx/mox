@@ -1,11 +1,11 @@
-﻿//! 代码质量专家（开发维度）：审查代码复杂度、可读性、最佳实践
+//! 代码质量专家（开发维度）：审查代码复杂度、可读性、最佳实践
 //!
 //! 分析基于 `CodeUnit` 的**预分析真字段**（圈复杂度 / 行数 / 注释行 / 重复率），
 //! 不再做脆弱的字符串命名猜测。
 
+use crate::context::ExpertContext;
 use crate::expert::{Expert, ExpertOpinion, Risk, Suggestion};
 use crate::ir::{Dimension, ExpertId};
-use crate::context::ExpertContext;
 use flow_ai::model::Severity;
 
 /// 代码质量专家：审查代码质量指标
@@ -77,7 +77,8 @@ impl Expert for CodeQualityExpert {
                         dimension: Dimension::CodeQuality,
                         message: format!(
                             "模块 {} 存在代码重复（{:.1}%）",
-                            unit.name, unit.duplication_score * 100.0
+                            unit.name,
+                            unit.duplication_score * 100.0
                         ),
                         remediation: Some("提取公共逻辑".to_string()),
                         veto: false,

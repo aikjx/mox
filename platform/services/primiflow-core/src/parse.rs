@@ -105,7 +105,12 @@ impl ParsedRequirement {
             while !seen.insert(key.clone()) {
                 key = format!("{}_{}", st.category.key(), i);
             }
-            spec = spec.sub(&key, &st.label, st.category.tool(), st.category.default_ms());
+            spec = spec.sub(
+                &key,
+                &st.label,
+                st.category.tool(),
+                st.category.default_ms(),
+            );
         }
         spec
     }
@@ -122,18 +127,49 @@ pub fn parse(text: &str) -> ParsedRequirement {
     // 2) 角色 / 外部系统 / 约束
     let roles = extract_list(
         &raw,
-        &["角色", "用户", "管理员", "运营", "客服", "员工", "客户", "商家", "分析师"],
+        &[
+            "角色",
+            "用户",
+            "管理员",
+            "运营",
+            "客服",
+            "员工",
+            "客户",
+            "商家",
+            "分析师",
+        ],
     );
     let external_systems = extract_list(
         &raw,
         &[
-            "对接", "数据库", "PostgreSQL", "MySQL", "Redis", "Kafka", "API", "第三方", "支付",
-            "微信", "短信", "erp", "ERP", "CRM",
+            "对接",
+            "数据库",
+            "PostgreSQL",
+            "MySQL",
+            "Redis",
+            "Kafka",
+            "API",
+            "第三方",
+            "支付",
+            "微信",
+            "短信",
+            "erp",
+            "ERP",
+            "CRM",
         ],
     );
     let constraints = extract_list(
         &raw,
-        &["限制", "约束", "不能超过", "不超过", "要求", "必须", "禁止", "不得"],
+        &[
+            "限制",
+            "约束",
+            "不能超过",
+            "不超过",
+            "要求",
+            "必须",
+            "禁止",
+            "不得",
+        ],
     );
 
     // 3) 交付策略
@@ -217,16 +253,62 @@ fn classify(clause: &str) -> Vec<Category> {
     if contains_any(c, &["告警", "下发", "执行", "脚本", "命令", "通知", "推送"]) {
         out.push(Category::Shell);
     }
-    if contains_any(c, &["入库", "落库", "存储", "写库", "检索", "查询", "查库", "保存至", "同步到"]) {
+    if contains_any(
+        c,
+        &[
+            "入库",
+            "落库",
+            "存储",
+            "写库",
+            "检索",
+            "查询",
+            "查库",
+            "保存至",
+            "同步到",
+        ],
+    ) {
         out.push(Category::Database);
     }
-    if contains_any(c, &["抓取", "拉取", "采集", "接入", "爬取", "读取", "获取", "下载", "订阅"]) {
+    if contains_any(
+        c,
+        &[
+            "抓取", "拉取", "采集", "接入", "爬取", "读取", "获取", "下载", "订阅",
+        ],
+    ) {
         out.push(Category::Fetch);
     }
-    if contains_any(c, &["清洗", "对账", "核算", "计算", "特征", "向量化", "聚类", "分析", "建模", "预测", "转换"]) {
+    if contains_any(
+        c,
+        &[
+            "清洗",
+            "对账",
+            "核算",
+            "计算",
+            "特征",
+            "向量化",
+            "聚类",
+            "分析",
+            "建模",
+            "预测",
+            "转换",
+        ],
+    ) {
         out.push(Category::Compute);
     }
-    if contains_any(c, &["报告", "图表", "汇总", "生成", "绘制", "可视化", "撰写", "总结", "提示"]) {
+    if contains_any(
+        c,
+        &[
+            "报告",
+            "图表",
+            "汇总",
+            "生成",
+            "绘制",
+            "可视化",
+            "撰写",
+            "总结",
+            "提示",
+        ],
+    ) {
         out.push(Category::Llm);
     }
     out
@@ -234,7 +316,9 @@ fn classify(clause: &str) -> Vec<Category> {
 
 /// 把从句规整为子任务标签（去掉连接词/标点，保留业务语义）
 fn normalize_label(clause: &str) -> String {
-    let stop = ["然后", "接着", "再", "并", "最后", "首先", "先", "之后", "随后"];
+    let stop = [
+        "然后", "接着", "再", "并", "最后", "首先", "先", "之后", "随后",
+    ];
     let mut s = clause.trim().to_string();
     for w in &stop {
         if let Some(pos) = s.find(w) {
@@ -255,19 +339,34 @@ fn normalize_label(clause: &str) -> String {
 
 fn detect_schedule(text: &str) -> Option<Schedule> {
     if contains_any(text, &["每天", "每日"]) {
-        return Some(Schedule { cron: "0 0 * * *".into(), desc: "每日执行".into() });
+        return Some(Schedule {
+            cron: "0 0 * * *".into(),
+            desc: "每日执行".into(),
+        });
     }
     if contains_any(text, &["每周", "每星期"]) {
-        return Some(Schedule { cron: "0 0 * * 1".into(), desc: "每周一执行".into() });
+        return Some(Schedule {
+            cron: "0 0 * * 1".into(),
+            desc: "每周一执行".into(),
+        });
     }
     if contains_any(text, &["每月"]) {
-        return Some(Schedule { cron: "0 0 1 * *".into(), desc: "每月1日执行".into() });
+        return Some(Schedule {
+            cron: "0 0 1 * *".into(),
+            desc: "每月1日执行".into(),
+        });
     }
     if contains_any(text, &["每小时", "实时"]) {
-        return Some(Schedule { cron: "0 * * * *".into(), desc: "每小时执行".into() });
+        return Some(Schedule {
+            cron: "0 * * * *".into(),
+            desc: "每小时执行".into(),
+        });
     }
     if contains_any(text, &["定时", "周期", "调度", "cron", "Cron", "CRON"]) {
-        return Some(Schedule { cron: "0 0 * * *".into(), desc: "周期调度".into() });
+        return Some(Schedule {
+            cron: "0 0 * * *".into(),
+            desc: "周期调度".into(),
+        });
     }
     None
 }
@@ -355,7 +454,8 @@ mod tests {
 
     #[test]
     fn exploratory_policy_detected() {
-        let p = parse("探索性研发一个未知领域的智能客服工单聚类方案：抓取工单，文本向量化，聚类分析。");
+        let p =
+            parse("探索性研发一个未知领域的智能客服工单聚类方案：抓取工单，文本向量化，聚类分析。");
         assert!(matches!(p.policy, DeliveryPolicy::Exploratory));
     }
 

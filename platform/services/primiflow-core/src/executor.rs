@@ -214,7 +214,9 @@ mod tests {
         assert_eq!(recs.len(), 3);
         assert!(recs.iter().all(|r| r.ok));
         // 下一步应收到上一步放大的 rows
-        assert!(recs[1].output["rows"].as_u64().unwrap() >= recs[0].output["rows"].as_u64().unwrap());
+        assert!(
+            recs[1].output["rows"].as_u64().unwrap() >= recs[0].output["rows"].as_u64().unwrap()
+        );
         assert!((0.9..=1.0).contains(&q), "全成功质量应≈0.95，实得{q:.3}");
     }
 

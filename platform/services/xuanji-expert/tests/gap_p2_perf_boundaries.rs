@@ -1,4 +1,4 @@
-﻿//! 缺口 P2 —— 性能与边界用例测试
+//! 缺口 P2 —— 性能与边界用例测试
 //!
 //! 覆盖三类压力/边界场景：
 //!  P2.1  1000+ 节点 CPM 性能：深链/扇出/全链路璇玑优化均需在预算内完成，且关键路径正确；
@@ -7,12 +7,12 @@
 
 use std::time::Instant;
 
+use flow_ai::model::{Access, EdgeKind, FlowEdge, FlowGraph, FlowNode, NodeKind, ToolKind};
+use flow_ai::{optimize, OptimizeConfig};
 use xuanji_expert::context::{GovernContext, Principal, Tenant};
 use xuanji_expert::executor::run_report;
 use xuanji_expert::programming::{programming_pipeline, ProgrammingReport};
 use xuanji_expert::verify::verify;
-use flow_ai::model::{Access, EdgeKind, FlowEdge, FlowGraph, FlowNode, NodeKind, ToolKind};
-use flow_ai::{optimize, OptimizeConfig};
 
 /// 关闭代码生成的优化配置（性能测试聚焦 CPM 引擎本身）
 fn cpm_config() -> OptimizeConfig {
@@ -63,7 +63,11 @@ fn cpm_deep_chain_preserves_real_data_dependency() {
     let rep = optimize(&g, &cfg);
     let elapsed = start.elapsed();
 
-    assert!(elapsed.as_secs_f64() < 10.0, "400 级依赖深链优化耗时 {}ms 超预算 10s", elapsed.as_millis());
+    assert!(
+        elapsed.as_secs_f64() < 10.0,
+        "400 级依赖深链优化耗时 {}ms 超预算 10s",
+        elapsed.as_millis()
+    );
     // 正确性：真实依赖链必须保持串行，关键路径 = 各节点时长之和 = 400 * 10 = 4000ms
     assert_eq!(rep.gains.sequential_ms, 4000, "串行总时长应为 4000ms");
     assert!(
@@ -71,7 +75,10 @@ fn cpm_deep_chain_preserves_real_data_dependency() {
         "依赖深链调度时长应≈4000ms，实际 {}",
         rep.gains.scheduled_ms
     );
-    assert!((rep.gains.speedup - 1.0).abs() < 0.1, "依赖深链加速比应≈1.0");
+    assert!(
+        (rep.gains.speedup - 1.0).abs() < 0.1,
+        "依赖深链加速比应≈1.0"
+    );
     // 算法验证必须接受该合法依赖深链
     assert!(!verify(&g, &rep).vetoed, "合法依赖深链不应被算法否决");
 }
@@ -98,7 +105,11 @@ fn cpm_1000_node_independent_tasks_parallelize() {
     let rep = optimize(&g, &cfg);
     let elapsed = start.elapsed();
 
-    assert!(elapsed.as_secs_f64() < 30.0, "1000 节点独立任务优化耗时 {}ms 超预算", elapsed.as_millis());
+    assert!(
+        elapsed.as_secs_f64() < 30.0,
+        "1000 节点独立任务优化耗时 {}ms 超预算",
+        elapsed.as_millis()
+    );
     assert_eq!(rep.gains.sequential_ms, 10000, "总工作量应为 10000ms");
     // 无依赖 → 关键路径仅为单个任务，调度时长远小于串行（资源受限仍大幅并行）
     assert!(
@@ -106,7 +117,11 @@ fn cpm_1000_node_independent_tasks_parallelize() {
         "独立任务应被并行化，调度时长应远小于串行 10000ms，实际 {}",
         rep.gains.scheduled_ms
     );
-    assert!(rep.gains.speedup >= 2.0, "独立任务加速比应 ≥ 2.0，实际 {}", rep.gains.speedup);
+    assert!(
+        rep.gains.speedup >= 2.0,
+        "独立任务加速比应 ≥ 2.0，实际 {}",
+        rep.gains.speedup
+    );
     assert!(!verify(&g, &rep).vetoed, "合法独立任务不应被算法否决");
 }
 
@@ -132,7 +147,11 @@ fn cpm_1000_node_fanout_is_fast_and_parallel() {
     let rep = optimize(&g, &cfg);
     let elapsed = start.elapsed();
 
-    assert!(elapsed.as_secs_f64() < 30.0, "1000 节点扇出优化耗时 {}ms 超预算", elapsed.as_millis());
+    assert!(
+        elapsed.as_secs_f64() < 30.0,
+        "1000 节点扇出优化耗时 {}ms 超预算",
+        elapsed.as_millis()
+    );
     // 串行总时长 = 1000 * 10 = 10000ms
     assert_eq!(rep.gains.sequential_ms, 10000);
     // 并行调度绝不劣于串行，且应显著更短（资源充足时≈单任务时长）
@@ -155,7 +174,12 @@ fn xuanji_optimize_1000_nodes_scales() {
     let mut prev = "s".to_string();
     for i in 0..n {
         let id = format!("t{}", i);
-        g.add_node(FlowNode::task(&id, format!("任务{}", i), ToolKind::Compute, 10));
+        g.add_node(FlowNode::task(
+            &id,
+            format!("任务{}", i),
+            ToolKind::Compute,
+            10,
+        ));
         g.add_edge(FlowEdge::seq(&prev, &id));
         prev = id;
     }
@@ -171,7 +195,11 @@ fn xuanji_optimize_1000_nodes_scales() {
     let rep = xuanji_expert::pipeline::xuanji_optimize(&g, &ctx);
     let elapsed = start.elapsed();
 
-    assert!(elapsed.as_secs_f64() < 60.0, "全链路 1000 节点优化耗时 {}ms 超预算", elapsed.as_millis());
+    assert!(
+        elapsed.as_secs_f64() < 60.0,
+        "全链路 1000 节点优化耗时 {}ms 超预算",
+        elapsed.as_millis()
+    );
     assert!(!rep.algo.vetoed, "无敏感操作的千级图不应被否决");
     assert!(rep.gate.approved, "应能通过治理闸门：{}", rep.gate.reason);
 }
@@ -250,7 +278,10 @@ async fn concurrent_120_flow_executions_all_complete() {
 fn boundary_empty_graph_no_panic() {
     let g = FlowGraph::new("empty", "空图");
     let rep = optimize(&g, &cpm_config());
-    assert!(rep.optimized_graph.nodes.is_empty(), "空图优化后节点应仍为空");
+    assert!(
+        rep.optimized_graph.nodes.is_empty(),
+        "空图优化后节点应仍为空"
+    );
     assert!(!verify(&g, &rep).vetoed, "空图算法验证应通过");
     // 璇玑层面对空图也不应 panic
     let rep2 = xuanji_expert::pipeline::xuanji_optimize(&g, &safe_ctx());
@@ -309,7 +340,11 @@ fn boundary_ultra_deep_chain_with_data_deps() {
     let rep = optimize(&g, &cpm_config());
     let elapsed = start.elapsed();
 
-    assert!(elapsed.as_secs_f64() < 10.0, "500 级深链耗时 {}ms 超预算 10s", elapsed.as_millis());
+    assert!(
+        elapsed.as_secs_f64() < 10.0,
+        "500 级深链耗时 {}ms 超预算 10s",
+        elapsed.as_millis()
+    );
     assert_eq!(rep.gains.sequential_ms, 5000, "串行时长应为 500*10=5000ms");
     assert!(
         (rep.gains.scheduled_ms as i64 - 5000).abs() <= 200,
@@ -318,7 +353,11 @@ fn boundary_ultra_deep_chain_with_data_deps() {
     );
     // 带真数据依赖的深链，算法验证（含 data_dependency）必须放行
     let v = verify(&g, &rep);
-    assert!(!v.vetoed, "深链数据依赖应保持一致，不应否决：{:?}", v.checks);
+    assert!(
+        !v.vetoed,
+        "深链数据依赖应保持一致，不应否决：{:?}",
+        v.checks
+    );
 }
 
 #[test]
@@ -342,7 +381,11 @@ fn boundary_ultra_large_fanout() {
     let rep = optimize(&g, &cpm_config());
     let elapsed = start.elapsed();
 
-    assert!(elapsed.as_secs_f64() < 3.0, "500 扇出耗时 {}ms 超预算", elapsed.as_millis());
+    assert!(
+        elapsed.as_secs_f64() < 3.0,
+        "500 扇出耗时 {}ms 超预算",
+        elapsed.as_millis()
+    );
     assert_eq!(rep.gains.sequential_ms, 5000, "串行时长应为 500*10=5000ms");
     // 独立扇出应被并行，调度时长远小于串行
     assert!(

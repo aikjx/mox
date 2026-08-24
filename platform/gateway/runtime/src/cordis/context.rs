@@ -1,10 +1,10 @@
 //! 插件上下文：会话日志、算子注册表、Agent注册表
 
-use std::sync::Arc;
-use parking_lot::RwLock;
-use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
 use operator_core::Operator;
+use parking_lot::RwLock;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::Arc;
 
 /// 会话日志条目：记录一次 Turn / Step 的生命周期事件，是溯源(SoT)的最小单元。
 /// 定义于此供 `cordis` 模块统一 re-export（`cordis::SessionEntry`）。
@@ -23,10 +23,7 @@ pub enum SessionEntry {
         action: String,
     },
     /// Turn 完成（携带摘要）
-    TurnComplete {
-        turn_id: String,
-        summary: String,
-    },
+    TurnComplete { turn_id: String, summary: String },
 }
 
 /// 插件上下文树
@@ -107,12 +104,14 @@ impl SessionLog {
         // 更新索引
         match &entry {
             SessionEntry::TurnStart { turn_id, .. } => {
-                index.entry(turn_id.as_str().to_string())
+                index
+                    .entry(turn_id.as_str().to_string())
                     .or_default()
                     .push(idx);
             }
             SessionEntry::StepStart { turn_id, .. } => {
-                index.entry(turn_id.as_str().to_string())
+                index
+                    .entry(turn_id.as_str().to_string())
                     .or_default()
                     .push(idx);
             }
@@ -331,10 +330,14 @@ impl Default for LlmAdapter {
 impl LlmAdapter {
     /// 从环境变量构建真实 DeepSeek 适配器；未设置 DEEPSEEK_API_KEY 时返回未配置实例。
     pub fn from_env() -> Self {
-        let key = std::env::var("DEEPSEEK_API_KEY").ok().filter(|k| !k.trim().is_empty());
+        let key = std::env::var("DEEPSEEK_API_KEY")
+            .ok()
+            .filter(|k| !k.trim().is_empty());
         Self {
             provider: "deepseek".to_string(),
-            model: std::env::var("DEEPSEEK_MODEL").ok().unwrap_or_else(|| "deepseek-chat".to_string()),
+            model: std::env::var("DEEPSEEK_MODEL")
+                .ok()
+                .unwrap_or_else(|| "deepseek-chat".to_string()),
             api_key: key.clone(),
             base_url: Some(
                 std::env::var("DEEPSEEK_BASE_URL")
@@ -346,12 +349,20 @@ impl LlmAdapter {
 
     /// 是否已具备真实调用条件（必须存在 API Key）。
     pub fn is_configured(&self) -> bool {
-        self.api_key.as_ref().map(|k| !k.trim().is_empty()).unwrap_or(false)
+        self.api_key
+            .as_ref()
+            .map(|k| !k.trim().is_empty())
+            .unwrap_or(false)
     }
 
     /// 用显式 LlmConfig 覆盖当前适配器（保留真实连接能力，支持前端/Profile 覆盖）。
     pub fn configure(&self, config: LlmConfig) -> Result<LlmAdapter, String> {
-        if config.api_key.as_ref().map(|k| k.trim().is_empty()).unwrap_or(true) {
+        if config
+            .api_key
+            .as_ref()
+            .map(|k| k.trim().is_empty())
+            .unwrap_or(true)
+        {
             return Err("LLM 未配置：缺少 API Key（请设置 DEEPSEEK_API_KEY）".to_string());
         }
         Ok(LlmAdapter {
@@ -435,6 +446,5 @@ impl Default for SystemPromptBuilder {
         Self::new()
     }
 }
-
 
 // 导入必要的类型

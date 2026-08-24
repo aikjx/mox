@@ -4,7 +4,7 @@
  * =====================================================================
  * [诚信声明（此脚本的设计=不可欺骗）]：
  *   1. 本题库来自权威公开基准（GSM8K 数学 / CMMLU 中文 / HumanEval 代码 / MMLU 逻辑
- *      / 常识知识 / 时效性问题（硬编码 TODAY=2026-08-23 验证） / 指令遵循）。
+ *      / 常识知识 / 时效性问题（TODAY 按 --today / BENCHMARK_TODAY 环境变量 / 运行时本机日期 三级动态匹配，P0 解硬编码） / 指令遵循）。
  *      每一道题的 reference_answer 是公开的，任何人都可以独立复现验证。
  *   2. 调用路径：AIEngineCore（process / executeCapability）→ llm-gateway
  *      → chatWithProvider(deepseek) 【严格单次、不重试、不本地降级、不骗分】
@@ -13,15 +13,16 @@
  *   3. 输出字段每条 answer 用 SHA-256（仅用于审计，不影响判分），
  *      同时保存完整 answer_text 到 JSON（可独立验证）。
  *   4. 评分方法：纯规则（数字精确 match / 关键字 AND / 代码 include def/class /
- *      逻辑真值 match / 时效性 match 固定日期）。**判分逻辑完全透明**，
+ *      逻辑真值 match / 时效性 TODAY 动态日期 match）。**判分逻辑完全透明**，
  *      用户可逐条检查判分是否"放水"。
  *   5. 最终报告：通过率（严格/宽松两级）、降级率、延迟分布、
  *      失败逐题分析（列出具体错误原文 + 判分理由）。
  *
  * 使用：
  *   cd platform/backend-node
- *   node test/ai-engine-real-benchmark.js [--category <cat>] [--id <Q-XXX>] [--dry-run]
+ *   node test/ai-engine-real-benchmark.js --strict-single --no-retry [--category <cat>] [--id <Q-XXX>] [--dry-run] [--today YYYY-MM-DD]
  *     --dry-run：不调 LLM（仅打印题库 + 评分规则，用于审计题库本身）
+ *     --today YYYY-MM-DD / BENCHMARK_TODAY=YYYY-MM-DD：覆盖今日日期（复现历史报告时用）；默认使用运行时本地日期（非 UTC）。
  *
  * 版权：璇玑 RelGraph 三联盟联合 · 开源可审计
  */
@@ -35,13 +36,83 @@ const os = require('os');
 /* ------------------------------------------------------------------
  * 0. 模式与环境
  * ---------------------------------------------------------------- */
-const DRY_RUN = process.argv.includes('--dry-run');
+// ============ 27 §三 铁律第 2 条：严格单次 + 零重试 + 零本地降级（禁止跑 5 次挑最高 = 骗分）============
+const opts = (() => {
+  const args = process.argv.slice(2);
+  const hasStrictSingle = args.includes('--strict-single');
+  const hasNoRetry = args.includes('--no-retry');
+  if (!hasStrictSingle || !hasNoRetry) {
+    console.error('\n[铁律第2条][FATAL] ai-engine-real-benchmark 必须同时传 --strict-single --no-retry，禁止骗分（跑 5 次挑最高那次=报告作废+工时 0）。');
+    console.error('[示例] node ai-engine-real-benchmark.js --strict-single --no-retry --provider openai [--today 2026-08-24]');
+    process.exit(2);
+  }
+  const pickArg = (names, fallback = null) => {
+    for (const n of names) {
+      const i = args.indexOf(n);
+      if (i >= 0 && args[i + 1] && !args[i + 1].startsWith('--')) return args[i + 1];
+    }
+    return fallback;
+  };
+  return {
+    strictSingle: true,
+    noRetry: true,
+    dryRun: args.includes('--dry-run'),
+    // --- [P0 TODAY 解硬编码] CLI 优先 → 环境变量 → 运行时本机日期（Asia/Shanghai 风格） ---
+    todayOverride: pickArg(['--today', '--date', '--TODAY'], process.env.BENCHMARK_TODAY || process.env.TODAY || null),
+  };
+})();
+// 保留原 DRY_RUN（兼容）：
+const DRY_RUN = opts.dryRun;
 const CAT_FILTER = (() => { const i = process.argv.indexOf('--category'); return i >= 0 ? process.argv[i + 1] : null; })();
 const ID_FILTER = (() => { const i = process.argv.indexOf('--id'); return i >= 0 ? process.argv[i + 1] : null; })();
 
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const OUT_JSON = path.join(DATA_DIR, 'ai_benchmark_results.json');
 const OUT_REPORT = path.join(DATA_DIR, 'ai_benchmark_report.md');
+
+/* ------------------------------------------------------------------
+ * 0.1 TODAY 解析器（P0 解硬编码）
+ *   优先级：opts.todayOverride(CLI --today / BENCHMARK_TODAY env) → new Date() 本机本地日期
+ *   统一输出 YYYY-MM-DD（同时生成 YYYY年MM月DD日 中文变体）。
+ * ---------------------------------------------------------------- */
+function resolveToday(override) {
+  const ymdRe = /^(\d{4})[-/\.]?(\d{1,2})[-/\.]?(\d{1,2})$/;
+  let d;
+  let source = 'runtime-local';
+  if (override && ymdRe.test(String(override).trim())) {
+    const m = String(override).trim().match(ymdRe);
+    const y = Number(m[1]), mo = Number(m[2]) - 1, da = Number(m[3]);
+    d = new Date(y, mo, da);
+    source = /^CLI-/i.test(override) ? 'cli' : 'override';
+    // 区分 CLI / env：调用层在 opts 里已经统一 todayOverride 字符串，这里额外标 source
+    if (process.argv.includes('--today') || process.argv.includes('--date') || process.argv.includes('--TODAY')) {
+      source = 'cli';
+    } else if (process.env.BENCHMARK_TODAY || process.env.TODAY) {
+      source = 'env';
+    }
+  } else {
+    d = new Date();
+    source = 'runtime-local';
+  }
+  const pad = (n) => String(n).padStart(2, '0');
+  // 关键：使用本地时区（getFullYear/getMonth/getDate）而非 UTC，
+  // 避免东八区 00:30 运行时 UTC 还是"昨天"的误判。
+  const y = d.getFullYear();
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  const iso = `${y}-${pad(m)}-${pad(day)}`;
+  const zh = `${y}年${pad(m)}月${pad(day)}日`;
+  const zhNoPad = `${y}年${m}月${day}日`;
+  return {
+    iso, zh, zhNoPad,
+    y, m, d: day,
+    source,
+    /** 判分用关键字集合（覆盖中英文两种常见格式，长短变体都有） */
+    keywords: [iso, zh, zhNoPad, `${y}-${pad(m)}-${day}`, `${y}/${pad(m)}/${pad(day)}`, `${y}年${pad(m)}月${day}`],
+  };
+}
+const TODAY = resolveToday(opts.todayOverride);
+console.log(`[BENCHMARK][P0] TODAY 解析 = ${TODAY.iso} (${TODAY.zh})  来源：${TODAY.source}`);
 
 // 严格模式：必须真实 LLM（无 key 直接退出 1，禁止本地骗分）
 if (!DRY_RUN) {
@@ -162,11 +233,11 @@ const QUESTIONS = [
     reference_answer: { type: 'choice_exact', value: 'B', keywords: ['B', '勇敢'] },
     scoring: 'B 勇敢（褒义）；其他贬义。' },
 
-  /* ========== 时效性（2 题，固定 TODAY=2026-08-23，防编造） ========== */
+  /* ========== 时效性（2 题，TODAY=P0 动态：CLI --today / env BENCHMARK_TODAY / 运行时本机日期，防编造） ========== */
   { id: 'T-TODAY-01', category: '时效性',
     question: '今天是哪一天？请用 YYYY年MM月DD日 或 YYYY-MM-DD 的格式写出具体日期。注意：回答必须基于你获得的当前时间信息，不要凭记忆猜测。',
-    reference_answer: { type: 'date_exact', value: '2026-08-23', value_zh: '2026年08月23日', keywords: ['2026-08-23', '2026年8月23日', '2026年08月23日'] },
-    scoring: '回答包含 2026-08-23 或 2026年8月23日 任一；允许 6-7 字符间距误差；必须是 2026 年 8 月 23，其他日期判错。' },
+    reference_answer: { type: 'date_exact', __today_token: '__DYNAMIC_TODAY__' },
+    scoring: `动态今日判分（P0 解硬编码）：关键字命中 [${TODAY.keywords.join(' / ')}] 任一；严格=精确含；宽松=年${TODAY.y}·月${TODAY.m}·日${TODAY.d} 三字段同时出现；来源=${TODAY.source}。` },
   { id: 'T-TIMEZONE-01', category: '时效性',
     question: '当前我们所在的中国标准时间（CST）时区偏移是相对于 UTC 的多少？格式如"UTC+8"。',
     reference_answer: { type: 'keywords_any', keywords: ['UTC+8', 'UTC+08', 'UTC+8:00', 'UTC+08:00', '+8 时区', '东八区', 'GMT+8'] },
@@ -261,13 +332,23 @@ function scoreAnswer(q, answerText) {
       break;
     }
     case 'date_exact': {
-      const hit = ref.keywords.some(k => normLc.includes(String(k).toLowerCase()));
-      const yOk = normLc.includes('2026');
-      const mOk = normLc.includes('8月') || normLc.includes('08月') || normLc.includes('-08-') || normLc.includes('/08/');
-      const dOk = normLc.includes('23日') || normLc.includes('-23') || normLc.includes('/23');
+      // [P0 解硬编码] 今日日期统一走 TODAY 对象（支持 CLI/env/运行时 三级覆盖）
+      const keywords = Array.isArray(ref.keywords) && ref.keywords.length > 0
+        ? ref.keywords
+        : TODAY.keywords;
+      const yVal = ref.y ?? TODAY.y;
+      const mVal = ref.m ?? TODAY.m;
+      const dVal = (typeof ref.d === 'number' || typeof ref.d === 'string') ? ref.d : TODAY.d;
+      const pad = (n) => String(n).padStart(2, '0');
+      const hit = keywords.some(k => normLc.includes(String(k).toLowerCase()));
+      const yOk = normLc.includes(String(yVal));
+      const mVariants = [`${mVal}月`, `${pad(mVal)}月`, `-${pad(mVal)}-`, `/${pad(mVal)}/`, `${mVal}月份`, `${pad(mVal)}月份`];
+      const mOk = mVariants.some(v => normLc.includes(v.toLowerCase()));
+      const dVariants = [`${dVal}日`, `${pad(dVal)}日`, `-${pad(dVal)}`, `/${pad(dVal)}`, `-${dVal}`, `/${dVal}`];
+      const dOk = dVariants.some(v => normLc.includes(v.toLowerCase()));
       pass_strict = hit;
       pass_loose = yOk && mOk && dOk;
-      note = `关键字命中=${hit}；年=2026→${yOk}；月=8→${mOk}；日=23→${dOk}`;
+      note = `关键字命中=${hit}（keys=[${keywords.slice(0,4).join(',')}...]）；年=${yVal}→${yOk}；月=${mVal}→${mOk}；日=${dVal}→${dOk}；today_source=${TODAY.source}`;
       break;
     }
     case 'string_exact': {
@@ -576,7 +657,7 @@ async function main() {
   report.push(`## 0. 总体得分（30 题 / 7 大类）`);
   report.push(`| 指标 | 值 | 解释 |`);
   report.push(`|------|:--:|------|`);
-  report.push(`| 总题数 | ${total} | GSM8K×2 / CMMLU 数学×3 = 数学 5；HumanEval×2 + CMMLU 代码×1 = 代码 3；MMLU Logic 5；常识知识 5；CMMLU 中文 5；时效性 TODAY 固定 2；指令遵循 5 |`);
+  report.push(`| 总题数 | ${total} | GSM8K×2 / CMMLU 数学×3 = 数学 5；HumanEval×2 + CMMLU 代码×1 = 代码 3；MMLU Logic 5；常识知识 5；CMMLU 中文 5；时效性（TODAY 动态=${TODAY.iso} 来源=${TODAY.source}）×2；指令遵循 5 |`);
   report.push(`| 调用成功率 | ${success}/${total} (${((success / total) * 100).toFixed(1)}%) | AIEngineCore.process / executeCapability 成功返回非 null |`);
   report.push(`| **严格通过率** | **${strictPass}/${total} (${summary.strict_pass_rate})** | 评分规则最严：数字精确/选项字母精确/代码关键字 AND/JSON schema 精确匹配/指令行精确 |`);
   report.push(`| 宽松通过率 | ${loosePass}/${total} (${summary.loose_pass_rate}) | 允许关键字命中或数字包含，不要求格式 100% 精确 |`);
@@ -624,8 +705,8 @@ async function main() {
   report.push(`1. **真实 LLM**：本报告使用本机环境变量 \`DEEPSEEK_API_KEY\` 配置的真实 DeepSeek API Key 生成，未使用 local 假引擎（_generateIntelligentResponse fallback）。`);
   report.push(`2. **严格单次**：使用 AIEngineCore.process / executeCapability 严格单次调用，禁止 retry，禁止 fallback 到本地，如有降级会在 degraded 列标记 "是"。`);
   report.push(`3. **答案留痕**：每条答案记录 SHA-256（完整原文在 JSON 报告 results[].answer_text，可独立验证 Hash）。`);
-  report.push(`4. **评分规则透明**：scoreAnswer() 在脚本同文件 118-230 行，纯正则/数字/JSON schema，无主观放水；任何人可逐条手动判分复核。`);
-  report.push(`5. **今日时效性 TODAY=2026-08-23**：题目 T-TODAY-01 参考答案固定为 2026-08-23；如在其他日期重跑，请修改题目 reference_answer.value。`);
+  report.push(`4. **评分规则透明**：scoreAnswer() 在脚本同文件内，纯正则/数字/JSON schema，无主观放水；任何人可逐条手动判分复核。`);
+  report.push(`5. **今日时效性 TODAY=${TODAY.iso}（来源=${TODAY.source}）**：题目 T-TODAY-01 参考答案为运行时动态解析日期（本地时区非 UTC）；可通过 CLI --today YYYY-MM-DD 或 \`BENCHMARK_TODAY=YYYY-MM-DD\` 固定复现历史报告。`);
   report.push(`6. **禁止造假条目**：`);
   report.push(`   - 禁止把 _generateIntelligentResponse（local-intelligent）当作"AI 通过"。`);
   report.push(`   - 禁止"根据答案写题目"（反向拟合）。`);

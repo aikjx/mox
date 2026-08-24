@@ -1,0 +1,36 @@
+[package]
+name = "xuanji-graph-storage"
+version.workspace = true
+edition.workspace = true
+license = "MIT OR Apache-2.0"
+authors.workspace = true
+description = "Xuanji R2 Graph Storage Service: RocksDB K-V + Sharded Raft + 7 Storage APIs + CDC (100% self-engineered)"
+
+[features]
+default = []
+# RocksDB snapshot persistence (Apache-2.0). Default off so unit tests are fast and build on
+# systems without libclang; the public API surface is identical between mem/rocks impls.
+persist-rocksdb = ["dep:rocksdb"]
+
+[dependencies]
+xuanji-domain-abstractions = { path = "../xuanji-domain-abstractions" }
+xuanji-graph-meta = { path = "../xuanji-graph-meta" }
+graph-algorithms = { path = "../graph-algorithms" }
+rocksdb = { version = "0.25", optional = true }
+async-raft = "0.6"
+tokio = { workspace = true }
+parking_lot = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+async-trait = { workspace = true }
+rand = "0.8"
+thiserror = { workspace = true }
+bytes = "1"
+
+[dev-dependencies]
+tempfile = "3"
+criterion = { workspace = true }

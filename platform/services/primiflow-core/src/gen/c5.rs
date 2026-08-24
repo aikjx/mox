@@ -4,9 +4,9 @@
 //! 说明: 八份标准化说明书 + 代码骨架 + 导出（SPEC §8）。
 //! 规格: primiflow/SPEC.md（§8 八文档 / §10 DoD）
 
+use crate::gen::schema::{Artifact, ArtifactKind, Project, Topology, TraceLink};
 /// 依赖模块: C1
 use flow_ai::model::{FlowGraph, NodeKind};
-use crate::gen::schema::{Artifact, ArtifactKind, Project, Topology, TraceLink};
 
 /// 数据 DDL（与 `emit_all` 产出的 `ddl.sql` 同源；此处保留本地确定性副本便于离线可跑）
 pub const SCHEMA_DDL: &str = "\
@@ -55,7 +55,11 @@ impl DocGenerator {
         let docs = self.generate_docs(ctx);
         let code_skeleton = render_code_skeleton(ctx.graph);
         let ddl = SCHEMA_DDL.to_string();
-        ExportBundle { docs, code_skeleton, ddl }
+        ExportBundle {
+            docs,
+            code_skeleton,
+            ddl,
+        }
     }
 }
 
@@ -149,7 +153,12 @@ mod tests {
         let topo = Topology::new(p.id, 0.7, 0.3, 1.0, 0.0, serde_json::to_string(&g).unwrap());
         let tl = TraceLink::new(p.id, "R1", "F1", "B1", "A1", "T1", "C1");
         let links = vec![tl];
-        let ctx = DocContext { project: &p, topology: &topo, graph: &g, trace_links: &links };
+        let ctx = DocContext {
+            project: &p,
+            topology: &topo,
+            graph: &g,
+            trace_links: &links,
+        };
         let dg = DocGenerator::new();
         let docs = dg.generate_docs(&ctx);
         assert_eq!(docs.len(), 8, "应生成 8 份文档");
@@ -169,7 +178,12 @@ mod tests {
         g.add_node(FlowNode::task("a", "抓取销售数据", ToolKind::Http, 300));
         let topo = Topology::new(p.id, 0.7, 0.3, 1.0, 0.0, serde_json::to_string(&g).unwrap());
         let links = vec![TraceLink::new(p.id, "R1", "F1", "B1", "A1", "T1", "C1")];
-        let ctx = DocContext { project: &p, topology: &topo, graph: &g, trace_links: &links };
+        let ctx = DocContext {
+            project: &p,
+            topology: &topo,
+            graph: &g,
+            trace_links: &links,
+        };
         let dg = DocGenerator::new();
         let bundle = dg.export_project(&ctx);
         assert!(bundle.code_skeleton.contains("todo!"));

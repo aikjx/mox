@@ -20,7 +20,9 @@ pub struct GateState {
 
 impl Clone for GateState {
     fn clone(&self) -> Self {
-        Self { vetoed: AtomicBool::new(self.vetoed.load(Ordering::SeqCst)) }
+        Self {
+            vetoed: AtomicBool::new(self.vetoed.load(Ordering::SeqCst)),
+        }
     }
 }
 
@@ -32,7 +34,9 @@ impl Default for GateState {
 
 impl GateState {
     pub fn new() -> Self {
-        Self { vetoed: AtomicBool::new(false) }
+        Self {
+            vetoed: AtomicBool::new(false),
+        }
     }
     pub fn set_vetoed(&self, v: bool) {
         self.vetoed.store(v, Ordering::SeqCst);

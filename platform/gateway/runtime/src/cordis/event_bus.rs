@@ -1,9 +1,9 @@
 //! 事件总线
 
-use std::collections::HashMap;
-use std::sync::Arc;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::Arc;
 
 /// 订阅映射类型别名：domain -> (event_type -> [(subscription_id, handler)])
 type SubscriptionMap = HashMap<String, HashMap<String, Vec<(String, EventHandlerFn)>>>;
@@ -83,26 +83,60 @@ impl Default for EventBus {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Event {
     // Profile事件
-    ProfileLoaded { name: String, path: String },
-    ProfileUnloaded { name: String },
+    ProfileLoaded {
+        name: String,
+        path: String,
+    },
+    ProfileUnloaded {
+        name: String,
+    },
 
     // Bundle事件
-    BundleMounted { name: String, version: String },
-    BundleUnmounted { name: String },
+    BundleMounted {
+        name: String,
+        version: String,
+    },
+    BundleUnmounted {
+        name: String,
+    },
 
     // Turn事件
-    TurnStarted { turn_id: String, agent_id: String },
-    TurnCompleted { turn_id: String, summary: super::TurnSummary },
+    TurnStarted {
+        turn_id: String,
+        agent_id: String,
+    },
+    TurnCompleted {
+        turn_id: String,
+        summary: super::TurnSummary,
+    },
 
     // Step事件
-    StepStarted { step_id: String, turn_id: String },
-    StepCompleted { step_id: String, turn_id: String, success: bool },
-    StepFailed { step_id: String, turn_id: String, error: String },
+    StepStarted {
+        step_id: String,
+        turn_id: String,
+    },
+    StepCompleted {
+        step_id: String,
+        turn_id: String,
+        success: bool,
+    },
+    StepFailed {
+        step_id: String,
+        turn_id: String,
+        error: String,
+    },
 
     // 系统事件
-    SystemStarted { timestamp: chrono::DateTime<chrono::Utc> },
-    SystemShutdown { timestamp: chrono::DateTime<chrono::Utc> },
-    Error { domain: String, error: String },
+    SystemStarted {
+        timestamp: chrono::DateTime<chrono::Utc>,
+    },
+    SystemShutdown {
+        timestamp: chrono::DateTime<chrono::Utc>,
+    },
+    Error {
+        domain: String,
+        error: String,
+    },
 }
 
 impl Event {
@@ -112,8 +146,12 @@ impl Event {
             Event::ProfileLoaded { .. } | Event::ProfileUnloaded { .. } => "profile".to_string(),
             Event::BundleMounted { .. } | Event::BundleUnmounted { .. } => "bundle".to_string(),
             Event::TurnStarted { .. } | Event::TurnCompleted { .. } => "turn".to_string(),
-            Event::StepStarted { .. } | Event::StepCompleted { .. } | Event::StepFailed { .. } => "step".to_string(),
-            Event::SystemStarted { .. } | Event::SystemShutdown { .. } | Event::Error { .. } => "system".to_string(),
+            Event::StepStarted { .. } | Event::StepCompleted { .. } | Event::StepFailed { .. } => {
+                "step".to_string()
+            }
+            Event::SystemStarted { .. } | Event::SystemShutdown { .. } | Event::Error { .. } => {
+                "system".to_string()
+            }
         }
     }
 
@@ -180,12 +218,15 @@ mod tests {
             })
         };
 
-        let sub = bus.subscribe("turn".to_string(), "started".to_string(), handler).await;
+        let sub = bus
+            .subscribe("turn".to_string(), "started".to_string(), handler)
+            .await;
 
         bus.emit(Event::TurnStarted {
             turn_id: "test-turn".to_string(),
             agent_id: "test-agent".to_string(),
-        }).await;
+        })
+        .await;
 
         assert!(called.load(std::sync::atomic::Ordering::SeqCst));
 
@@ -195,7 +236,8 @@ mod tests {
         bus.emit(Event::TurnStarted {
             turn_id: "test-turn-2".to_string(),
             agent_id: "test-agent".to_string(),
-        }).await;
+        })
+        .await;
         assert!(!called.load(std::sync::atomic::Ordering::SeqCst));
 
         // 重复取消返回 false
@@ -213,13 +255,18 @@ mod tests {
             })
         };
 
-        let a = bus.subscribe("turn".to_string(), "started".to_string(), mk(hits.clone())).await;
-        let b = bus.subscribe("turn".to_string(), "started".to_string(), mk(hits.clone())).await;
+        let a = bus
+            .subscribe("turn".to_string(), "started".to_string(), mk(hits.clone()))
+            .await;
+        let b = bus
+            .subscribe("turn".to_string(), "started".to_string(), mk(hits.clone()))
+            .await;
 
         bus.emit(Event::TurnStarted {
             turn_id: "t".to_string(),
             agent_id: "a".to_string(),
-        }).await;
+        })
+        .await;
         assert_eq!(hits.load(std::sync::atomic::Ordering::SeqCst), 2);
 
         // 只取消 a，b 仍接收
@@ -227,14 +274,16 @@ mod tests {
         bus.emit(Event::TurnStarted {
             turn_id: "t2".to_string(),
             agent_id: "a".to_string(),
-        }).await;
+        })
+        .await;
         assert_eq!(hits.load(std::sync::atomic::Ordering::SeqCst), 3);
 
         assert!(bus.unsubscribe(&b.id).await);
         bus.emit(Event::TurnStarted {
             turn_id: "t3".to_string(),
             agent_id: "a".to_string(),
-        }).await;
+        })
+        .await;
         assert_eq!(hits.load(std::sync::atomic::Ordering::SeqCst), 3);
     }
 }

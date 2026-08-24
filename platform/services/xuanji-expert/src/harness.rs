@@ -1,4 +1,4 @@
-﻿//! 璇玑插件化运行时（参考 DeepSeek Harness "Everything is a Plugin" 范式）
+//! 璇玑插件化运行时（参考 DeepSeek Harness "Everything is a Plugin" 范式）
 //!
 //! 设计要点（对照 deepseek-harness / Cordis）：
 //! - **无特权核心**：专家、模型适配器、治理钩子、审计桥接都实现 [`Plugin`]，
@@ -224,7 +224,11 @@ impl HarnessCtx {
 
     /// 运行一个瀑布事件：从责任链首环开始，逐个调用处理器并传入 `next` 委托闭包。
     /// 处理器若不调用 `next` 即短路；下游错误会沿调用栈向上传播。
-    pub fn run_waterfall(&self, event: WaterfallEvent, state: &mut WaterfallState) -> Result<(), String> {
+    pub fn run_waterfall(
+        &self,
+        event: WaterfallEvent,
+        state: &mut WaterfallState,
+    ) -> Result<(), String> {
         let handlers = self.waterfalls.read().unwrap().get(&event).cloned();
         let handlers = match handlers {
             Some(h) => h,
@@ -302,7 +306,9 @@ impl ModelAdapterConfig {
                 return Some(k);
             }
         }
-        std::env::var("DEEPSEEK_API_KEY").ok().filter(|k| !k.trim().is_empty())
+        std::env::var("DEEPSEEK_API_KEY")
+            .ok()
+            .filter(|k| !k.trim().is_empty())
     }
 
     /// 是否已具备真实调用条件。
@@ -393,8 +399,12 @@ mod tests {
 
     struct StubExpert;
     impl Expert for StubExpert {
-        fn id(&self) -> ExpertId { "stub".into() }
-        fn dimension(&self) -> Dimension { Dimension::Business }
+        fn id(&self) -> ExpertId {
+            "stub".into()
+        }
+        fn dimension(&self) -> Dimension {
+            Dimension::Business
+        }
         fn analyze(&self, _ctx: &ExpertContext) -> ExpertOpinion {
             ExpertOpinion::empty("stub", Dimension::Business)
         }
@@ -405,7 +415,10 @@ mod tests {
         let ctx = HarnessCtx::default();
         let hit = Arc::new(std::sync::atomic::AtomicBool::new(false));
         let h = Arc::clone(&hit);
-        ctx.on("ping", Arc::new(move |_| h.store(true, std::sync::atomic::Ordering::SeqCst)));
+        ctx.on(
+            "ping",
+            Arc::new(move |_| h.store(true, std::sync::atomic::Ordering::SeqCst)),
+        );
         ctx.emit("ping");
         assert!(hit.load(std::sync::atomic::Ordering::SeqCst));
     }
@@ -414,7 +427,10 @@ mod tests {
     fn service_registry_roundtrip() {
         let ctx = HarnessCtx::default();
         ctx.provide("llm-endpoint".to_string());
-        assert_eq!(ctx.get_service::<String>(), Some(Arc::new("llm-endpoint".to_string())));
+        assert_eq!(
+            ctx.get_service::<String>(),
+            Some(Arc::new("llm-endpoint".to_string()))
+        );
         assert_eq!(ctx.get_service::<u32>(), None);
     }
 
@@ -439,7 +455,8 @@ mod tests {
             }),
         );
         let mut state = WaterfallState::default();
-        ctx.run_waterfall(WaterfallEvent::PreAnalyze, &mut state).unwrap();
+        ctx.run_waterfall(WaterfallEvent::PreAnalyze, &mut state)
+            .unwrap();
         assert_eq!(*seen.lock().unwrap(), vec!["h1", "h2"]);
     }
 

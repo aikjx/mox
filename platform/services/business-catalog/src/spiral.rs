@@ -360,7 +360,8 @@ pub fn diagnose_dimensions(k: &PhysicalConstants) -> Vec<DimensionCheck> {
             rhs_dim: rhs,
             consistent: false,
             note: "量纲不等价（右侧为 M T⁻¹，即角动量/长度÷长度 = 作用量密度/长度）。\
-                   质量↔频率映射是额外公设，需引入 c² 仅取数值而非量纲补偿。".into(),
+                   质量↔频率映射是额外公设，需引入 c² 仅取数值而非量纲补偿。"
+                .into(),
         });
     }
 
@@ -404,7 +405,8 @@ pub fn diagnose_dimensions(k: &PhysicalConstants) -> Vec<DimensionCheck> {
             rhs: "[2π h] = L".into(),
             rhs_dim: Dimension::LENGTH,
             consistent: true,
-            note: "量纲自洽。原报告称 h 为『一周步长』是正确的，但动力学方程里误把 h 当螺距用。".into(),
+            note: "量纲自洽。原报告称 h 为『一周步长』是正确的，但动力学方程里误把 h 当螺距用。"
+                .into(),
         });
     }
 
@@ -469,7 +471,10 @@ pub fn numerical_checks(k: &PhysicalConstants) -> Vec<NumericalCoincidence> {
         reference: m_e,
         rel_err: rel3,
         is_coincidence: false,
-        note: format!("相对误差 {:.2e}（含 2π 因子差）。该式数值可成立，但量纲仍不等价，属公设。", rel3),
+        note: format!(
+            "相对误差 {:.2e}（含 2π 因子差）。该式数值可成立，但量纲仍不等价，属公设。",
+            rel3
+        ),
     });
 
     out
@@ -492,7 +497,11 @@ pub struct SpiralAnalysisReport {
 }
 
 /// 执行一次完整的空间光速螺旋模型分析。
-pub fn analyze_spiral(params: &SpiralParams, speed: f64, k: &PhysicalConstants) -> SpiralAnalysisReport {
+pub fn analyze_spiral(
+    params: &SpiralParams,
+    speed: f64,
+    k: &PhysicalConstants,
+) -> SpiralAnalysisReport {
     let kinematics = params.kinematics(speed);
     let dimension_checks = diagnose_dimensions(k);
     let numerical_checks = numerical_checks(k);
@@ -530,7 +539,9 @@ mod tests {
         assert_eq!(speed.time, -1);
         let vol = Dimension::LENGTH.pow(3);
         assert_eq!(vol.length, 3);
-        let energy = Dimension::MASS.mul(&Dimension::LENGTH.pow(2)).mul(&Dimension::TIME.pow(-2));
+        let energy = Dimension::MASS
+            .mul(&Dimension::LENGTH.pow(2))
+            .mul(&Dimension::TIME.pow(-2));
         assert_eq!(energy.mass, 1);
         assert_eq!(energy.length, 2);
         assert_eq!(energy.time, -2);
@@ -549,7 +560,11 @@ mod tests {
     fn test_physical_constants_default_fine_structure() {
         let k = PhysicalConstants::default();
         // 精细结构常数 α ≈ 1/137
-        assert!(k.alpha > 1.0 / 140.0 && k.alpha < 1.0 / 130.0, "alpha={}", k.alpha);
+        assert!(
+            k.alpha > 1.0 / 140.0 && k.alpha < 1.0 / 130.0,
+            "alpha={}",
+            k.alpha
+        );
         // 元电荷、光速、引力常数合理
         assert_eq!(k.c, 299_792_458.0);
         assert!(k.e > 1.6e-19 && k.e < 1.7e-19);
@@ -559,7 +574,12 @@ mod tests {
 
     #[test]
     fn test_kinematics_relationships() {
-        let params = SpiralParams { curvature: 0.5, torsion: 0.25, step_h: 1.0, radius: Some(2.0) };
+        let params = SpiralParams {
+            curvature: 0.5,
+            torsion: 0.25,
+            step_h: 1.0,
+            radius: Some(2.0),
+        };
         let kin = params.kinematics(299_792_458.0);
         // 真实螺距 = 2π h
         assert!((kin.true_pitch - 2.0 * std::f64::consts::PI).abs() < 1e-6);
@@ -590,7 +610,12 @@ mod tests {
     #[test]
     fn test_analyze_spiral_full_pipeline() {
         let k = PhysicalConstants::default();
-        let params = SpiralParams { curvature: 1.0, torsion: 0.5, step_h: 0.1, radius: None };
+        let params = SpiralParams {
+            curvature: 1.0,
+            torsion: 0.5,
+            step_h: 0.1,
+            radius: None,
+        };
         let report = analyze_spiral(&params, k.c, &k);
         assert!(!report.verdict.is_empty());
         assert!(!report.reliable_parts.is_empty());

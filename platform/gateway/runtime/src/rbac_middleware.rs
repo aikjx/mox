@@ -1,5 +1,5 @@
-﻿//! Runtime RBAC + Audit 中间件
-//! 
+//! Runtime RBAC + Audit 中间件
+//!
 //! 企业级权限控制：
 //! - Bearer Token 鉴权
 //! - RBAC 6 角色权限检查
@@ -17,11 +17,11 @@ use axum::{
     middleware::Next,
     response::Response,
 };
-use std::sync::Arc;
-use std::collections::HashMap;
-use sha2::{Sha256, Digest};
-use hmac::{Hmac, Mac};
 use chrono::Utc;
+use hmac::{Hmac, Mac};
+use sha2::{Digest, Sha256};
+use std::collections::HashMap;
+use std::sync::Arc;
 
 // ==================== RBAC 定义 ====================
 
@@ -52,7 +52,13 @@ impl Role {
 
     pub fn inherited_roles(&self) -> Vec<Role> {
         match self {
-            Self::Admin => vec![Self::Admin, Self::Editor, Self::Viewer, Self::Operator, Self::Auditor],
+            Self::Admin => vec![
+                Self::Admin,
+                Self::Editor,
+                Self::Viewer,
+                Self::Operator,
+                Self::Auditor,
+            ],
             Self::Editor => vec![Self::Editor, Self::Viewer],
             Self::Operator => vec![Self::Operator, Self::Viewer],
             Self::SafetyApprover => vec![Self::SafetyApprover, Self::Viewer],
@@ -84,7 +90,7 @@ impl Permission {
             ("/api/ai/resources", "GET") => Some(Self::ViewFlow),
             ("/api/ai/flows", "GET") => Some(Self::ViewFlow),
             ("/api/status", "GET") => Some(Self::ViewFlow),
-            
+
             // 执行权限
             ("/api/execute", "POST") => Some(Self::ExecuteOperator),
             ("/api/ai/browser/execute-task", "POST") => Some(Self::ExecuteOperator),
@@ -92,7 +98,7 @@ impl Permission {
             ("/api/ai/browser/execute-action", "POST") => Some(Self::ExecuteOperator),
             ("/api/ai/flows/execute", "POST") => Some(Self::ExecuteOperator),
             ("/api/ai/workflows/execute", "POST") => Some(Self::ExecuteOperator),
-            
+
             // 编辑权限
             ("/api/operators/register", "POST") => Some(Self::EditFlow),
             ("/api/graph/node", "POST") => Some(Self::EditFlow),
@@ -101,26 +107,26 @@ impl Permission {
             ("/api/ai/flows", "PUT") => Some(Self::EditFlow),
             ("/api/ai/flows", "DELETE") => Some(Self::EditFlow),
             ("/api/ai/workflows/save", "POST") => Some(Self::EditFlow),
-            
+
             // 插件管理
             ("/api/ai/plugins/register", "POST") => Some(Self::ManagePlugins),
             ("/api/plugins", "POST") => Some(Self::ManagePlugins),
-            
+
             // LLM 配置
             ("/api/ai/llm/config", "POST") => Some(Self::ConfigureLlm),
-            
+
             // 浏览器管理
             ("/api/ai/browser/sessions", "DELETE") => Some(Self::ManageBrowser),
-            
+
             // 审计查看
             ("/api/logs", "GET") => Some(Self::ViewAudit),
             ("/api/audit", "GET") => Some(Self::ViewAudit),
-            
+
             // 生产审批
             (path, "POST") if path.starts_with("/api/flows/") && path.ends_with("/approve") => {
                 Some(Self::ApproveProduction)
             }
-            
+
             // 默认
             (_, "GET") => Some(Self::ViewFlow),
             _ => None,
@@ -146,37 +152,30 @@ pub fn required_permission(path: &str, method: &str) -> Permission {
 }
 
 pub fn check_permission(roles: &[Role], permission: &Permission) -> bool {
-    roles.iter()
+    roles
+        .iter()
         .flat_map(|r| r.inherited_roles())
         .any(|r| role_has_permission(&r, permission))
 }
 
 fn role_has_permission(role: &Role, perm: &Permission) -> bool {
     match role {
-        Role::Admin => true,  // Admin 拥有所有权限
-        
-        Role::Editor => matches!(perm, 
-            Permission::ViewFlow 
-            | Permission::EditFlow 
-            | Permission::ExecuteOperator
+        Role::Admin => true, // Admin 拥有所有权限
+
+        Role::Editor => matches!(
+            perm,
+            Permission::ViewFlow | Permission::EditFlow | Permission::ExecuteOperator
         ),
-        
-        Role::Operator => matches!(perm, 
-            Permission::ViewFlow 
-            | Permission::ExecuteOperator
-        ),
-        
+
+        Role::Operator => matches!(perm, Permission::ViewFlow | Permission::ExecuteOperator),
+
         Role::Viewer => matches!(perm, Permission::ViewFlow),
-        
-        Role::SafetyApprover => matches!(perm, 
-            Permission::ViewFlow 
-            | Permission::ApproveProduction
-        ),
-        
-        Role::Auditor => matches!(perm, 
-            Permission::ViewFlow 
-            | Permission::ViewAudit
-        ),
+
+        Role::SafetyApprover => {
+            matches!(perm, Permission::ViewFlow | Permission::ApproveProduction)
+        }
+
+        Role::Auditor => matches!(perm, Permission::ViewFlow | Permission::ViewAudit),
     }
 }
 
@@ -211,7 +210,10 @@ pub struct TokenRegistry {
 
 impl TokenRegistry {
     pub fn new() -> Self {
-        Self { entries: HashMap::new(), strict_mode: false }
+        Self {
+            entries: HashMap::new(),
+            strict_mode: false,
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -229,7 +231,12 @@ impl TokenRegistry {
         self.strict_mode
     }
 
-    pub fn insert(&mut self, token: impl Into<String>, roles: Vec<Role>, tenant: impl Into<String>) {
+    pub fn insert(
+        &mut self,
+        token: impl Into<String>,
+        roles: Vec<Role>,
+        tenant: impl Into<String>,
+    ) {
         self.entries.insert(token.into(), (roles, tenant.into()));
     }
 
@@ -326,7 +333,7 @@ impl AuditEvent {
     ) -> Self {
         let timestamp = Utc::now().timestamp();
         let id = format!("evt_{}", uuid::Uuid::new_v4());
-        
+
         let mut event = Self {
             id,
             timestamp,
@@ -342,7 +349,7 @@ impl AuditEvent {
             content_hash: String::new(),
             signature: None,
         };
-        
+
         event.content_hash = event.compute_hash();
         event
     }
@@ -422,10 +429,7 @@ impl MemoryAuditSink {
 
     /// 返回已记录事件的快照
     pub fn events(&self) -> Vec<AuditEvent> {
-        self.events
-            .lock()
-            .map(|g| g.clone())
-            .unwrap_or_default()
+        self.events.lock().map(|g| g.clone()).unwrap_or_default()
     }
 
     /// 已记录事件数量
@@ -468,7 +472,8 @@ impl AuditSink for LogAuditSink {
 
 /// 公开路由白名单
 pub fn is_public_route(path: &str) -> bool {
-    matches!(path,
+    matches!(
+        path,
         "/api/health" 
         | "/api/docs"
         | "/api/openapi.yaml"
@@ -478,7 +483,8 @@ pub fn is_public_route(path: &str) -> bool {
         // 双璇玑十四维治理自检端点：只读、不改状态，供 CI 与前端治理台直接调用
         | "/api/xuanji/health"
         | "/api/xuanji/optimize"
-    ) || path.starts_with("/static/") || path.starts_with("/api/xuanji/")
+    ) || path.starts_with("/static/")
+        || path.starts_with("/api/xuanji/")
 }
 
 /// 从 Token 提取角色（简化版，实际应用应从 JWT 解析）
@@ -507,7 +513,8 @@ pub fn extract_roles_from_token(token: &str) -> Vec<Role> {
 pub fn extract_tenant_from_token(token: &str, default_tenant: &str) -> String {
     // 简化版：实际应用中应从 JWT 解析
     if token.contains(":tenant_") {
-        token.split(":tenant_")
+        token
+            .split(":tenant_")
             .nth(1)
             .map(|s| s.split('_').next().unwrap_or(default_tenant).to_string())
             .unwrap_or_else(|| default_tenant.to_string())
@@ -629,7 +636,7 @@ mod tests {
     fn test_role_inheritance() {
         let admin = Role::Admin;
         let inherited = admin.inherited_roles();
-        
+
         assert!(inherited.contains(&Role::Admin));
         assert!(inherited.contains(&Role::Editor));
         assert!(inherited.contains(&Role::Viewer));
@@ -638,11 +645,14 @@ mod tests {
     #[test]
     fn test_permission_check() {
         let editor_roles = vec![Role::Editor];
-        
+
         assert!(check_permission(&editor_roles, &Permission::ViewFlow));
         assert!(check_permission(&editor_roles, &Permission::EditFlow));
-        assert!(!check_permission(&editor_roles, &Permission::ApproveProduction));
-        
+        assert!(!check_permission(
+            &editor_roles,
+            &Permission::ApproveProduction
+        ));
+
         let viewer_roles = vec![Role::Viewer];
         assert!(check_permission(&viewer_roles, &Permission::ViewFlow));
         assert!(!check_permission(&viewer_roles, &Permission::EditFlow));
@@ -654,12 +664,12 @@ mod tests {
             Permission::from_route("/api/execute", "POST"),
             Some(Permission::ExecuteOperator)
         );
-        
+
         assert_eq!(
             Permission::from_route("/api/operators/register", "POST"),
             Some(Permission::EditFlow)
         );
-        
+
         assert_eq!(
             Permission::from_route("/api/logs", "GET"),
             Some(Permission::ViewAudit)
@@ -681,9 +691,9 @@ mod tests {
 
         let hash1 = event.compute_hash();
         let hash2 = event.compute_hash();
-        
+
         assert_eq!(hash1, hash2);
-        assert_eq!(hash1.len(), 64);  // SHA-256 输出 64 字符
+        assert_eq!(hash1.len(), 64); // SHA-256 输出 64 字符
     }
 
     #[test]
@@ -701,15 +711,15 @@ mod tests {
         );
 
         event.sign(key);
-        
+
         assert!(event.signature.is_some());
         assert!(event.verify_signature(key));
-        
+
         // 篡改后验证失败
         let mut tampered = event.clone();
         tampered.outcome = "failed".into();
         tampered.content_hash = tampered.compute_hash();
-        
+
         assert!(!tampered.verify_signature(key));
     }
 
@@ -719,12 +729,12 @@ mod tests {
             extract_roles_from_token("admin_token123"),
             vec![Role::Admin]
         );
-        
+
         assert_eq!(
             extract_roles_from_token("viewer_token456"),
             vec![Role::Viewer]
         );
-        
+
         assert_eq!(
             extract_roles_from_token("unknown_token"),
             Vec::<Role>::new()
@@ -761,12 +771,13 @@ mod tests {
             ("/api/logs", "GET"),
             ("/api/status", "GET"),
         ];
-        
+
         for (path, method) in routes {
             assert!(
                 Permission::from_route(path, method).is_some(),
                 "路由 {} {} 应有权限映射",
-                method, path
+                method,
+                path
             );
         }
     }

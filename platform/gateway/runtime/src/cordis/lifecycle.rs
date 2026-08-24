@@ -5,10 +5,10 @@
 //! - Step: 执行步骤
 //! - Waterfall: 瀑布式事件流
 
-use std::collections::HashMap;
+use async_trait::async_trait;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
-use async_trait::async_trait;
+use std::collections::HashMap;
 
 /// 生命周期管理器
 pub struct LifecycleManager {
@@ -38,11 +38,7 @@ impl LifecycleManager {
     }
 
     /// 执行Step
-    pub async fn execute_step(
-        &self,
-        turn_id: &str,
-        step: Step,
-    ) -> Result<StepResult, String> {
+    pub async fn execute_step(&self, turn_id: &str, step: Step) -> Result<StepResult, String> {
         // 先取出 turn 并立即释放写锁，避免持同步锁跨 await（死锁风险）
         let mut turn = self
             .active_turns
@@ -160,7 +156,9 @@ impl Turn {
         self.state = TurnState::Completed;
         self.completed_at = Some(chrono::Utc::now());
 
-        let total_duration_ms = self.steps.iter()
+        let total_duration_ms = self
+            .steps
+            .iter()
             .map(|s| s.result.as_ref().map(|r| r.duration_ms).unwrap_or(0))
             .sum();
 
@@ -248,9 +246,7 @@ pub struct WaterfallEventStream {
 
 impl WaterfallEventStream {
     pub fn new() -> Self {
-        Self {
-            events: Vec::new(),
-        }
+        Self { events: Vec::new() }
     }
 
     pub fn push(&mut self, event: WaterfallEvent) {
@@ -360,33 +356,27 @@ mod tests {
 
     #[test]
     fn test_dispatch_echo() {
-        let out = BuiltinStepExecutor::dispatch("echo", &serde_json::json!({"k": "v"}))
-            .expect("echo ok");
+        let out =
+            BuiltinStepExecutor::dispatch("echo", &serde_json::json!({"k": "v"})).expect("echo ok");
         assert_eq!(out, serde_json::json!({"k": "v"}));
     }
 
     #[test]
     fn test_dispatch_math() {
-        let out = BuiltinStepExecutor::dispatch(
-            "math:add",
-            &serde_json::json!({"a": 2.0, "b": 3.0}),
-        )
-        .expect("add ok");
+        let out =
+            BuiltinStepExecutor::dispatch("math:add", &serde_json::json!({"a": 2.0, "b": 3.0}))
+                .expect("add ok");
         assert_eq!(out["result"], 5.0);
 
-        let out = BuiltinStepExecutor::dispatch(
-            "math:mul",
-            &serde_json::json!({"a": 4.0, "b": 0.5}),
-        )
-        .expect("mul ok");
+        let out =
+            BuiltinStepExecutor::dispatch("math:mul", &serde_json::json!({"a": 4.0, "b": 0.5}))
+                .expect("mul ok");
         assert_eq!(out["result"], 2.0);
 
         // 除零真实报错
-        let err = BuiltinStepExecutor::dispatch(
-            "math:div",
-            &serde_json::json!({"a": 1.0, "b": 0.0}),
-        )
-        .expect_err("div by zero rejected");
+        let err =
+            BuiltinStepExecutor::dispatch("math:div", &serde_json::json!({"a": 1.0, "b": 0.0}))
+                .expect_err("div by zero rejected");
         assert!(err.contains("除数为零"));
     }
 

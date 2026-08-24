@@ -1,4 +1,4 @@
-﻿//! Mini Hermes：可运行 agent-loop 原型 + LLM 调用计数器。
+//! Mini Hermes：可运行 agent-loop 原型 + LLM 调用计数器。
 //!
 //! 证明「录制即优化 + 复用路由」能真实削减 LLM 调用次数（用户原方案核心收益：LLM 调用减半）。
 //! 在 baseline 模式里每个工具调用都跑一次 LLM ReAct 决策；在 bridge 模式里命中复用模板的工具
@@ -45,7 +45,10 @@ pub fn gov_pii_plan() -> Vec<(&'static str, Value)> {
 pub fn register_gov_template(st: &BridgeState) {
     st.router.register(FlowTemplate {
         id: "gov-pii".into(),
-        tool_seq: gov_pii_plan().into_iter().map(|(t, _)| t.to_string()).collect(),
+        tool_seq: gov_pii_plan()
+            .into_iter()
+            .map(|(t, _)| t.to_string())
+            .collect(),
     });
 }
 

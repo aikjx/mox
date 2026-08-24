@@ -7,10 +7,7 @@
 pub(crate) fn extract_json_object(text: &str) -> Option<&str> {
     let trimmed = text.trim();
     let start = trimmed.find('{')?;
-    let end = trimmed
-        .rfind('}')
-        .map(|i| i + 1)
-        .unwrap_or(trimmed.len());
+    let end = trimmed.rfind('}').map(|i| i + 1).unwrap_or(trimmed.len());
     if start >= end {
         return None;
     }

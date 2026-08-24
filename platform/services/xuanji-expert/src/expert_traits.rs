@@ -9,9 +9,7 @@
 //! 下游（hermes-flow-bridge / business-catalog）改依赖 `Arc<dyn ExpertConsultant>` 等后，
 //! 即可通过 Mock 实现脱离 xuanji-expert concrete 做独立测试，完成 DIP。
 
-use crate::types::{
-    ConsultQuery, ConsultReport, ExpertMeta, Result, RoutingDecision, TaskSpec,
-};
+use crate::types::{ConsultQuery, ConsultReport, ExpertMeta, Result, RoutingDecision, TaskSpec};
 use async_trait::async_trait;
 use std::sync::Arc;
 

@@ -1,0 +1,42 @@
+[BENCHMARK] 检测到 DEEPSEEK_API_KEY 已设置，将使用真实 DeepSeek LLM 评测（严格单次，不重试，不降级）。
+[BENCHMARK] 题库加载: 30 / 总 30 题
+  分类统计: 数学:5, 代码:3, 逻辑:5, 知识:5, 中文:5, 时效性:2, 指令遵循:5
+[storage] SQLite 已连接: D:\a10\aikjx\gitcode\infotopograph\platform\backend-node\data\ous.db
+[storage] 迁移 engine_plugins.json: 0 条
+[storage] 迁移 learned_skills.json: 0 条
+[storage] 迁移完成: 0 条记录
+[LLM] 已从环境变量 DEEPSEEK_API_KEY 自动启用 DeepSeek 引擎
+
+[BENCHMARK] 端点 GET /ai/engine/capabilities 等价调用 getCapabilities():
+  capabilities 数量: 6；能力 ID: expert, reasoning, memory, graph, workflow, chat；pipeline: 意图识别→能力路由→引擎执行→质量校验→指标反馈
+[BENCHMARK] 端点 GET /ai/engine/metrics 等价 metrics()：
+  metrics.total=0；by_capability keys=reasoning,chat
+
+============================================================
+[BENCHMARK] 开始逐题真实 POST AIEngineCore.process() / analyze 严格单次
+============================================================
+
+
+[TR-01-01] 图谱域注册全量（46 域 = 30 Node 基线 + 15 Rust auto 域 + atlas-auto 容器）
+  [FAIL] 业务域数 === 62（Node 基线 46 + 15 Rust + 1 容器）  (actual=70)
+
+[TR-01-02] 三注册表 Rust crate 条目完备（business/tech/engine 注册表 ≥16 条，每条 codePath 真实）
+  [PASS] 三注册表 Rust crate 域条目 ≥ 16  (domains=15 algos=8 engines(rustEngineIds fallback)=16 total>=16? 39≥16)
+  [PASS] Rust crate 域每条 codePath 在本地真实存在  (exists=15/15)
+
+[TR-01-03] 自管理登记层 Rust 条目 ≥ 15
+  [PASS] atlas_auto_registry 中 Rust 条目 ≥ 15  或  atlas.DOMAINS 运行时 Rust auto 域 = 15  (atlas_auto_registry.rust=0  atlas.DOMAINS.rust-auto=15)
+
+[TR-01-04] W10 项目归属唯一（Rust crate 域不重复，无孤儿）
+  [PASS] W10 全规则通过  (W10=W10 项目 id 全局唯一（代码基线 + 运行时注册层）=PASS,W10 项目建模合法 [proj-xuanji-core]（P1身份/P3引用/P4状态/P6内聚）=PASS,W10 项目建模合法 [proj-knowledge]（P1身份/P3引用/P4状态/P6内聚）=PASS,W10 项目建模合法 [proj-ai-dialogue]（P1身份/P3引用/P4状态/P6内聚）=PASS,W10 项目建模合法 [proj-expert-alliance]（P1身份/P3引用/P4状态/P6内聚）=PASS,W10 项目建模合法 [proj-ai-engine]（P1身份/P3引用/P4状态/P6内聚）=PASS,W10 项目建模合法 [proj-ai-platform]（P1身份/P3引用/P4状态/P6内聚）=PASS,W10 项目建模合法 [proj-xuanji-platform]（P1身份/P3引用/P4状态/P6内聚）=PASS,W10 项目建模合法 [proj-auto-dev]（P1身份/P3引用/P4状态/P6内聚）=PASS,W10 项目建模合法 [proj-graph-infra]（P1身份/P3引用/P4状态/P6内聚）=PASS,W10 全部业务域与模块归属项目（无孤儿资产，容器域豁免）=PASS,W10 域归属唯一（无重复归属）=PASS,W10 auto 层自动发现域亦归属项目（容器域豁免）=PASS)
+
+[TR-01-05] Rust→图谱绑定完备度（四元组：域+codePath+归属项目+关联资产） ≥ 3.5/4
+  [PASS] 绑定完备度 4.00/4（准入 ≥ 3.5），四元组全完备=15/15  (domain-rust-operator-core:4/4  [true,true,true,true] ; domain-rust-operator-wasm:4/4  [true,true,true,true] ; domain-rust-graph-algorithms:4/4  [true,true,true,true] ; domain-rust-optimizer:4/4  [true,true,true,true] ; domain-rust-flow-ai:4/4  [true,true,true,true]  ...)
+
+===== Rust crate 双向绑定 E2E 汇总 =====
+通过: 5 项，失败: 1 项
+TR-01-01 46 域全登记          : FAIL
+TR-01-02 三注册表 ≥16 + codePath: PASS
+TR-01-03 auto 层 Rust 条目 ≥15  : PASS
+TR-01-04 W10 归属唯一无孤儿    : PASS
+TR-01-05 绑定完备度 4.00/4 ≥ 3.5 : PASS

@@ -18,7 +18,8 @@ mod runtime_integration_tests {
     #[ignore = "需要启动服务器"]
     async fn test_health_endpoint() {
         let client = reqwest::Client::new();
-        let resp = client.get("http://localhost:3000/api/health")
+        let resp = client
+            .get("http://localhost:3000/api/health")
             .send()
             .await
             .unwrap();
@@ -29,7 +30,8 @@ mod runtime_integration_tests {
     #[ignore = "需要启动服务器"]
     async fn test_rbac_viewer_denied_write() {
         let client = reqwest::Client::new();
-        let resp = client.post("http://localhost:3000/api/operators/register")
+        let resp = client
+            .post("http://localhost:3000/api/operators/register")
             .header("Authorization", "Bearer viewer_token123")
             .json(&serde_json::json!({
                 "id": "test_op",
@@ -47,7 +49,8 @@ mod runtime_integration_tests {
     #[ignore = "需要启动服务器"]
     async fn test_rbac_admin_has_all_permissions() {
         let client = reqwest::Client::new();
-        let resp = client.get("http://localhost:3000/api/logs")
+        let resp = client
+            .get("http://localhost:3000/api/logs")
             .header("Authorization", "Bearer admin_token123")
             .send()
             .await
@@ -59,7 +62,8 @@ mod runtime_integration_tests {
     #[ignore = "需要启动服务器"]
     async fn test_audit_event_recorded() {
         let client = reqwest::Client::new();
-        let _ = client.post("http://localhost:3000/api/execute")
+        let _ = client
+            .post("http://localhost:3000/api/execute")
             .header("Authorization", "Bearer admin_token123")
             .json(&serde_json::json!({
                 "workflow": ["identity"],
@@ -67,7 +71,8 @@ mod runtime_integration_tests {
             }))
             .send()
             .await;
-        let resp = client.get("http://localhost:3000/api/logs")
+        let resp = client
+            .get("http://localhost:3000/api/logs")
             .header("Authorization", "Bearer admin_token123")
             .send()
             .await
@@ -80,7 +85,8 @@ mod runtime_integration_tests {
     #[ignore = "需要启动服务器"]
     async fn test_error_format_rfc9457() {
         let client = reqwest::Client::new();
-        let resp = client.get("http://localhost:3000/api/ai/flows/nonexistent")
+        let resp = client
+            .get("http://localhost:3000/api/ai/flows/nonexistent")
             .header("Authorization", "Bearer admin_token123")
             .send()
             .await

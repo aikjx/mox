@@ -22,7 +22,9 @@ use axum::{
 use serde::Deserialize;
 use std::collections::HashMap;
 
-use crate::market::{gen_id, list_packages_filtered, load_package, save_package, MarketState, OperatorPackage};
+use crate::market::{
+    gen_id, list_packages_filtered, load_package, save_package, MarketState, OperatorPackage,
+};
 use crate::market_migration::{
     audit, now_rfc3339, packages_dir, sign_doc, verify_doc, zip_read, zip_write,
 };
@@ -41,7 +43,6 @@ pub enum ConflictStrategy {
     /// 重命名：以新 id 导入（名称加后缀）
     Rename,
 }
-
 
 /// 导入请求体（JSON / YAML 均可）
 #[derive(Debug, Deserialize)]
@@ -87,7 +88,14 @@ fn log_import(pkg: &OperatorPackage, actor: &str, status: &str, detail: &str) {
             detail
         ),
     );
-    audit("import", actor, &format!("算子包 {} v{} 导入状态={}（{}）", pkg.id, pkg.version, status, detail));
+    audit(
+        "import",
+        actor,
+        &format!(
+            "算子包 {} v{} 导入状态={}（{}）",
+            pkg.id, pkg.version, status, detail
+        ),
+    );
 }
 
 /// 从原始字节解析包（JSON 优先，失败尝试 YAML）
@@ -96,7 +104,10 @@ fn parse_package_value(raw: &[u8]) -> Result<serde_json::Value, String> {
         Ok(v) => Ok(v),
         Err(json_err) => match serde_yaml::from_slice::<serde_json::Value>(raw) {
             Ok(v) => Ok(v),
-            Err(yaml_err) => Err(format!("JSON 解析失败: {}；YAML 解析失败: {}", json_err, yaml_err)),
+            Err(yaml_err) => Err(format!(
+                "JSON 解析失败: {}；YAML 解析失败: {}",
+                json_err, yaml_err
+            )),
         },
     }
 }
@@ -123,27 +134,53 @@ pub fn import_one(
 ) -> ImportItemResult {
     let (doc, pkg_value) = normalize_import(value);
     // 1) 签名校验
-    if verify
-        && !verify_doc(&doc) {
-            audit("import", actor, "签名校验失败（已拒绝）");
-            return ImportItemResult {
-                id: pkg_value.get("id").and_then(|v| v.as_str()).unwrap_or("?").to_string(),
-                name: pkg_value.get("name").and_then(|v| v.as_str()).unwrap_or("?").to_string(),
-                status: "rejected".to_string(),
-                version: pkg_value.get("version").and_then(|v| v.as_str()).unwrap_or("?").to_string(),
-                reason: Some("签名校验失败（导出物被篡改或密钥不匹配；如需信任来源可传 verify=false）".to_string()),
-            };
-        }
+    if verify && !verify_doc(&doc) {
+        audit("import", actor, "签名校验失败（已拒绝）");
+        return ImportItemResult {
+            id: pkg_value
+                .get("id")
+                .and_then(|v| v.as_str())
+                .unwrap_or("?")
+                .to_string(),
+            name: pkg_value
+                .get("name")
+                .and_then(|v| v.as_str())
+                .unwrap_or("?")
+                .to_string(),
+            status: "rejected".to_string(),
+            version: pkg_value
+                .get("version")
+                .and_then(|v| v.as_str())
+                .unwrap_or("?")
+                .to_string(),
+            reason: Some(
+                "签名校验失败（导出物被篡改或密钥不匹配；如需信任来源可传 verify=false）"
+                    .to_string(),
+            ),
+        };
+    }
     // 2) 反序列化为包
     let mut pkg: OperatorPackage = match serde_json::from_value(pkg_value) {
         Ok(p) => p,
         Err(e) => {
             audit("import", actor, &format!("包结构非法（已拒绝）: {}", e));
             return ImportItemResult {
-                id: doc.get("id").and_then(|v| v.as_str()).unwrap_or("?").to_string(),
-                name: doc.get("name").and_then(|v| v.as_str()).unwrap_or("?").to_string(),
+                id: doc
+                    .get("id")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("?")
+                    .to_string(),
+                name: doc
+                    .get("name")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("?")
+                    .to_string(),
                 status: "rejected".to_string(),
-                version: doc.get("version").and_then(|v| v.as_str()).unwrap_or("?").to_string(),
+                version: doc
+                    .get("version")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("?")
+                    .to_string(),
                 reason: Some(format!("包结构非法: {}", e)),
             };
         }
@@ -198,7 +235,11 @@ pub fn import_one(
             ConflictStrategy::Overwrite => {
                 // 覆盖前快照旧版本（版本化不丢历史）
                 if let Ok(old) = load_package(&pkg.id) {
-                    let _ = snapshot_package(&old, actor, &format!("导入覆盖前快照（新版本 {}）", pkg.version));
+                    let _ = snapshot_package(
+                        &old,
+                        actor,
+                        &format!("导入覆盖前快照（新版本 {}）", pkg.version),
+                    );
                 }
                 if save_package(&pkg).is_err() {
                     return ImportItemResult {
@@ -262,12 +303,17 @@ async fn download_package(
         Ok(p) => p,
         Err(_) => {
             let mut h = HeaderMap::new();
-            h.insert(header::CONTENT_TYPE, header::HeaderValue::from_static("application/json"));
+            h.insert(
+                header::CONTENT_TYPE,
+                header::HeaderValue::from_static("application/json"),
+            );
             return (
                 StatusCode::NOT_FOUND,
                 h,
-                "{\"success\":false,\"error\":\"算子包不存在\"}".as_bytes().to_vec(),
-            )
+                "{\"success\":false,\"error\":\"算子包不存在\"}"
+                    .as_bytes()
+                    .to_vec(),
+            );
         }
     };
     let (body, mime, ext) = match format {
@@ -277,21 +323,36 @@ async fn download_package(
             "yaml",
         ),
         _ => (
-            serde_json::to_string_pretty(&pkg).unwrap_or_default().into_bytes(),
+            serde_json::to_string_pretty(&pkg)
+                .unwrap_or_default()
+                .into_bytes(),
             "application/json".to_string(),
             "json",
         ),
     };
-    audit("export", &actor, &format!("导出包 {} v{}（format={}）", id, pkg.version, ext));
+    audit(
+        "export",
+        &actor,
+        &format!("导出包 {} v{}（format={}）", id, pkg.version, ext),
+    );
     let filename = format!("{}-v{}.{}", id, pkg.version, ext);
     let disposition = format!("attachment; filename=\"{}\"", filename);
     let mut h = HeaderMap::new();
     h.insert(
         header::CONTENT_TYPE,
-        header::HeaderValue::from_str(&mime).unwrap_or_else(|_| header::HeaderValue::from_static("application/octet-stream")),
+        header::HeaderValue::from_str(&mime)
+            .unwrap_or_else(|_| header::HeaderValue::from_static("application/octet-stream")),
     );
-    h.insert(header::CONTENT_DISPOSITION, header::HeaderValue::from_str(&disposition).unwrap_or_else(|_| header::HeaderValue::from_static("application/octet-stream")));
-    h.insert(header::CONTENT_LENGTH, header::HeaderValue::from_str(&body.len().to_string()).unwrap_or_else(|_| header::HeaderValue::from_static("application/octet-stream")));
+    h.insert(
+        header::CONTENT_DISPOSITION,
+        header::HeaderValue::from_str(&disposition)
+            .unwrap_or_else(|_| header::HeaderValue::from_static("application/octet-stream")),
+    );
+    h.insert(
+        header::CONTENT_LENGTH,
+        header::HeaderValue::from_str(&body.len().to_string())
+            .unwrap_or_else(|_| header::HeaderValue::from_static("application/octet-stream")),
+    );
     (StatusCode::OK, h, body)
 }
 
@@ -328,11 +389,25 @@ async fn export_all(
             "packages": packages,
         }))
         .unwrap_or_default();
-        audit("export", &actor, &format!("全量导出 JSON 共 {} 个包", packages.len()));
+        audit(
+            "export",
+            &actor,
+            &format!("全量导出 JSON 共 {} 个包", packages.len()),
+        );
         let mut h = HeaderMap::new();
-        h.insert(header::CONTENT_TYPE, header::HeaderValue::from_static("application/json"));
-        h.insert(header::CONTENT_DISPOSITION, header::HeaderValue::from_static("attachment; filename=\"ous-market-export.json\""));
-        h.insert(header::CONTENT_LENGTH, header::HeaderValue::from_str(&body.len().to_string()).unwrap_or_else(|_| header::HeaderValue::from_static("application/octet-stream")));
+        h.insert(
+            header::CONTENT_TYPE,
+            header::HeaderValue::from_static("application/json"),
+        );
+        h.insert(
+            header::CONTENT_DISPOSITION,
+            header::HeaderValue::from_static("attachment; filename=\"ous-market-export.json\""),
+        );
+        h.insert(
+            header::CONTENT_LENGTH,
+            header::HeaderValue::from_str(&body.len().to_string())
+                .unwrap_or_else(|_| header::HeaderValue::from_static("application/octet-stream")),
+        );
         return (StatusCode::OK, h, body);
     }
 
@@ -348,7 +423,10 @@ async fn export_all(
     });
     let sig = sign_doc(&mut manifest);
     manifest["signature"] = serde_json::Value::String(sig);
-    entries.push(("manifest.json".to_string(), serde_json::to_vec_pretty(&manifest).unwrap_or_default()));
+    entries.push((
+        "manifest.json".to_string(),
+        serde_json::to_vec_pretty(&manifest).unwrap_or_default(),
+    ));
     for pkg in &packages {
         entries.push((
             format!("packages/{}.json", pkg.id),
@@ -360,11 +438,25 @@ async fn export_all(
         }
     }
     let bytes = zip_write(&entries);
-    audit("export", &actor, &format!("全量导出 ZIP 共 {} 个包", packages.len()));
+    audit(
+        "export",
+        &actor,
+        &format!("全量导出 ZIP 共 {} 个包", packages.len()),
+    );
     let mut h = HeaderMap::new();
-    h.insert(header::CONTENT_TYPE, header::HeaderValue::from_static("application/zip"));
-    h.insert(header::CONTENT_DISPOSITION, header::HeaderValue::from_static("attachment; filename=\"ous-market-export.zip\""));
-    h.insert(header::CONTENT_LENGTH, header::HeaderValue::from_str(&bytes.len().to_string()).unwrap_or_else(|_| header::HeaderValue::from_static("application/octet-stream")));
+    h.insert(
+        header::CONTENT_TYPE,
+        header::HeaderValue::from_static("application/zip"),
+    );
+    h.insert(
+        header::CONTENT_DISPOSITION,
+        header::HeaderValue::from_static("attachment; filename=\"ous-market-export.zip\""),
+    );
+    h.insert(
+        header::CONTENT_LENGTH,
+        header::HeaderValue::from_str(&bytes.len().to_string())
+            .unwrap_or_else(|_| header::HeaderValue::from_static("application/octet-stream")),
+    );
     (StatusCode::OK, h, bytes)
 }
 
@@ -389,7 +481,12 @@ async fn import_packages(
         Err(e) => {
             // 裸包对象（没有 package/packages 包装）也支持
             if let Ok(pkg) = serde_json::from_value::<OperatorPackage>(value.clone()) {
-                let item = import_one(serde_json::to_value(&pkg).unwrap(), req_conflict(&value), req_verify(&value), &actor);
+                let item = import_one(
+                    serde_json::to_value(&pkg).unwrap(),
+                    req_conflict(&value),
+                    req_verify(&value),
+                    &actor,
+                );
                 return (
                     StatusCode::OK,
                     Json(serde_json::json!({ "success": true, "results": [item] })),
@@ -397,8 +494,10 @@ async fn import_packages(
             }
             return (
                 StatusCode::BAD_REQUEST,
-                Json(serde_json::json!({ "success": false, "error": format!("导入请求格式非法: {}", e) })),
-            )
+                Json(
+                    serde_json::json!({ "success": false, "error": format!("导入请求格式非法: {}", e) }),
+                ),
+            );
         }
     };
     let mut items: Vec<serde_json::Value> = Vec::new();
@@ -413,7 +512,9 @@ async fn import_packages(
     if items.is_empty() {
         return (
             StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({ "success": false, "error": "没有可导入的包（需要 package 或 packages 字段）" })),
+            Json(
+                serde_json::json!({ "success": false, "error": "没有可导入的包（需要 package 或 packages 字段）" }),
+            ),
         );
     }
     let counts = count_statuses(&items);
@@ -439,7 +540,11 @@ fn req_verify(v: &serde_json::Value) -> bool {
 fn count_statuses(items: &[serde_json::Value]) -> serde_json::Value {
     let mut map: HashMap<String, usize> = HashMap::new();
     for it in items {
-        let s = it.get("status").and_then(|v| v.as_str()).unwrap_or("?").to_string();
+        let s = it
+            .get("status")
+            .and_then(|v| v.as_str())
+            .unwrap_or("?")
+            .to_string();
         *map.entry(s).or_insert(0) += 1;
     }
     serde_json::to_value(map).unwrap_or_default()
@@ -454,15 +559,32 @@ async fn import_zip(
     let actor = actor_from_headers(&headers);
     let req: ZipImportRequest = match serde_json::from_slice(&body) {
         Ok(r) => r,
-        Err(e) => return (StatusCode::BAD_REQUEST, Json(serde_json::json!({ "success": false, "error": format!("请求体需为 {{ \"data\": \"<base64 zip>\" }}: {}", e) }))),
+        Err(e) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(
+                    serde_json::json!({ "success": false, "error": format!("请求体需为 {{ \"data\": \"<base64 zip>\" }}: {}", e) }),
+                ),
+            )
+        }
     };
     let raw = match base64_decode(&req.data) {
         Ok(b) => b,
-        Err(e) => return (StatusCode::BAD_REQUEST, Json(serde_json::json!({ "success": false, "error": e }))),
+        Err(e) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({ "success": false, "error": e })),
+            )
+        }
     };
     let entries = match zip_read(&raw) {
         Ok(e) => e,
-        Err(e) => return (StatusCode::BAD_REQUEST, Json(serde_json::json!({ "success": false, "error": e }))),
+        Err(e) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({ "success": false, "error": e })),
+            )
+        }
     };
     // manifest 校验
     let manifest_entry = entries.iter().find(|(n, _)| n == "manifest.json");
@@ -474,15 +596,32 @@ async fn import_zip(
             Some((_, content)) => {
                 let doc: serde_json::Value = match serde_json::from_slice(content) {
                     Ok(d) => d,
-                    Err(e) => return (StatusCode::BAD_REQUEST, Json(serde_json::json!({ "success": false, "error": format!("manifest 解析失败: {}", e) }))),
+                    Err(e) => {
+                        return (
+                            StatusCode::BAD_REQUEST,
+                            Json(
+                                serde_json::json!({ "success": false, "error": format!("manifest 解析失败: {}", e) }),
+                            ),
+                        )
+                    }
                 };
                 if !verify_doc(&doc) {
                     audit("import", &actor, "ZIP manifest 签名校验失败（已拒绝）");
-                    return (StatusCode::BAD_REQUEST, Json(serde_json::json!({ "success": false, "error": "ZIP manifest 签名校验失败（导出物被篡改或密钥不匹配）" })));
+                    return (
+                        StatusCode::BAD_REQUEST,
+                        Json(
+                            serde_json::json!({ "success": false, "error": "ZIP manifest 签名校验失败（导出物被篡改或密钥不匹配）" }),
+                        ),
+                    );
                 }
             }
             None => {
-                return (StatusCode::BAD_REQUEST, Json(serde_json::json!({ "success": false, "error": "ZIP 缺少 manifest.json（不是 OUS 导出的全量包）" })));
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(
+                        serde_json::json!({ "success": false, "error": "ZIP 缺少 manifest.json（不是 OUS 导出的全量包）" }),
+                    ),
+                );
             }
         }
     }
@@ -507,10 +646,16 @@ async fn import_zip(
             results.push(serde_json::to_value(&item).unwrap_or_default());
         }
     }
-    audit("import", &actor, &format!("ZIP 导入完成，处理 {} 个包", results.len()));
+    audit(
+        "import",
+        &actor,
+        &format!("ZIP 导入完成，处理 {} 个包", results.len()),
+    );
     (
         StatusCode::OK,
-        Json(serde_json::json!({ "success": true, "results": results, "summary": count_statuses(&results) })),
+        Json(
+            serde_json::json!({ "success": true, "results": results, "summary": count_statuses(&results) }),
+        ),
     )
 }
 
@@ -539,7 +684,13 @@ fn import_one_allow(
         match conflict {
             ConflictStrategy::Skip => {
                 log_import(&pkg, &actor, "skipped", "目标已存在（skip 策略）");
-                return ImportItemResult { id: pkg.id.clone(), name: pkg.name.clone(), status: "skipped".to_string(), version: pkg.version.clone(), reason: Some("目标已存在".to_string()) };
+                return ImportItemResult {
+                    id: pkg.id.clone(),
+                    name: pkg.name.clone(),
+                    status: "skipped".to_string(),
+                    version: pkg.version.clone(),
+                    reason: Some("目标已存在".to_string()),
+                };
             }
             ConflictStrategy::Rename => {
                 let old_id = pkg.id.clone();
@@ -549,7 +700,13 @@ fn import_one_allow(
                 pkg.forked_from = Some(old_id);
                 let _ = save_package(&pkg);
                 log_import(&pkg, &actor, "renamed", &detail);
-                return ImportItemResult { id: pkg.id.clone(), name: pkg.name.clone(), status: "renamed".to_string(), version: pkg.version.clone(), reason: None };
+                return ImportItemResult {
+                    id: pkg.id.clone(),
+                    name: pkg.name.clone(),
+                    status: "renamed".to_string(),
+                    version: pkg.version.clone(),
+                    reason: None,
+                };
             }
             ConflictStrategy::Overwrite => {
                 if let Ok(old) = load_package(&pkg.id) {
@@ -557,7 +714,13 @@ fn import_one_allow(
                 }
                 let _ = save_package(&pkg);
                 log_import(&pkg, &actor, "overwritten", "zip 导入覆盖（旧版本已快照）");
-                return ImportItemResult { id: pkg.id.clone(), name: pkg.name.clone(), status: "overwritten".to_string(), version: pkg.version.clone(), reason: None };
+                return ImportItemResult {
+                    id: pkg.id.clone(),
+                    name: pkg.name.clone(),
+                    status: "overwritten".to_string(),
+                    version: pkg.version.clone(),
+                    reason: None,
+                };
             }
         }
     }
@@ -567,7 +730,13 @@ fn import_one_allow(
     pkg.updated_at = now_rfc3339();
     let _ = save_package(&pkg);
     log_import(&pkg, &actor, "imported", detail);
-    ImportItemResult { id: pkg.id.clone(), name: pkg.name.clone(), status: "imported".to_string(), version: pkg.version.clone(), reason: None }
+    ImportItemResult {
+        id: pkg.id.clone(),
+        name: pkg.name.clone(),
+        status: "imported".to_string(),
+        version: pkg.version.clone(),
+        reason: None,
+    }
 }
 
 /// GET /tenant/:tenant_id —— 按租户过滤
@@ -576,7 +745,9 @@ async fn list_by_tenant(
     Path(tenant_id): Path<String>,
 ) -> Json<serde_json::Value> {
     let meta = list_packages_filtered(&state, None, None, None, Some(&tenant_id), None, None);
-    Json(serde_json::json!({ "success": true, "tenant_id": tenant_id, "total": meta.len(), "packages": meta }))
+    Json(
+        serde_json::json!({ "success": true, "tenant_id": tenant_id, "total": meta.len(), "packages": meta }),
+    )
 }
 
 /// GET /owner/:created_by —— 按创建人过滤
@@ -585,7 +756,9 @@ async fn list_by_owner(
     Path(created_by): Path<String>,
 ) -> Json<serde_json::Value> {
     let meta = list_packages_filtered(&state, None, None, None, None, Some(&created_by), None);
-    Json(serde_json::json!({ "success": true, "created_by": created_by, "total": meta.len(), "packages": meta }))
+    Json(
+        serde_json::json!({ "success": true, "created_by": created_by, "total": meta.len(), "packages": meta }),
+    )
 }
 
 /// base64 解码（支持标准/URL-safe）

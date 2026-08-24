@@ -135,7 +135,11 @@ impl OperatorPipeline {
     ///
     /// 返回 `PipelineResult`；任一阶段算子自身 `success=false` 或（严格模式下）
     /// 守恒残差超阈，都会以 `success=false` 提前结束（已执行阶段仍记录）。
-    pub fn run(&self, input: &StateVector, config: &SystemConfig) -> Result<PipelineResult, crate::OperatorError> {
+    pub fn run(
+        &self,
+        input: &StateVector,
+        config: &SystemConfig,
+    ) -> Result<PipelineResult, crate::OperatorError> {
         let mut ctx = ExecutionContext {
             config: config.clone(),
             trace_id: crate::generate_operator_id(),
@@ -258,7 +262,9 @@ mod tests {
     use std::sync::Arc;
 
     fn scale_op(factor: f64) -> Arc<dyn Operator> {
-        Arc::new(FunctionOperator::new("scale", move |s, _ctx| Ok(s.scale(factor))))
+        Arc::new(FunctionOperator::new("scale", move |s, _ctx| {
+            Ok(s.scale(factor))
+        }))
     }
 
     #[test]
@@ -303,7 +309,11 @@ mod tests {
         let result = pipe.run(&input, &cfg).unwrap();
 
         assert!(result.success);
-        assert!(result.total_residual < 1e-9, "residual={}", result.total_residual);
+        assert!(
+            result.total_residual < 1e-9,
+            "residual={}",
+            result.total_residual
+        );
         assert!(result.converged);
     }
 

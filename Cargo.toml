@@ -16,6 +16,17 @@ members = [
     "platform/services/primiflow-fusion",
     "platform/services/kg-hub",
     "platform/services/xuanji-common-meta",
+    "platform/services/xuanji-domain-abstractions",
+    "platform/services/xuanji-cloud-drive-master",
+    "platform/services/xuanji-cloud-drive-volume",
+    "platform/services/xuanji-standards",
+    "platform/services/xuanji-graph-meta",
+    "platform/services/xuanji-cloud-drive-s3",
+    "platform/services/xuanji-graph-storage",
+    "platform/sdk/rust/xuanji-sdk-cloud",
+    "platform/sdk/rust/xuanji-sdk-graph",
+    "platform/services/xuanji-cloud-drive-filer",
+    "platform/services/xuanji-graph-service",
 ]
 resolver = "2"
 

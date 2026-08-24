@@ -9,9 +9,7 @@
 //!
 //! 检测在**代码生成之前**执行，命中 Blocking 即拒绝出码 —— 这就是「异常分支前置拦截」。
 
-use crate::model::{
-    EdgeKind, FlowEdge, FlowGraph, FlowNode, NodeKind, Severity, ToolKind,
-};
+use crate::model::{EdgeKind, FlowEdge, FlowGraph, FlowNode, NodeKind, Severity, ToolKind};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
@@ -65,7 +63,14 @@ impl Conflict {
         message: impl Into<String>,
         remedy: Option<Remedy>,
     ) -> Self {
-        Self { kind, severity, nodes, resource, message: message.into(), remedy }
+        Self {
+            kind,
+            severity,
+            nodes,
+            resource,
+            message: message.into(),
+            remedy,
+        }
     }
 }
 
@@ -76,7 +81,11 @@ pub enum Remedy {
     /// 在两节点之间加互斥序（串行化）
     Serialize { first: String, second: String },
     /// 插入 Guard 校验节点
-    InsertGuard { before: String, tag: String, name: String },
+    InsertGuard {
+        before: String,
+        tag: String,
+        name: String,
+    },
     /// 为节点补一条异常边到指定处理节点
     AddExceptionEdge { from: String, to: String },
     /// 提示人工处理
@@ -91,10 +100,15 @@ pub struct ConflictReport {
 
 impl ConflictReport {
     pub fn blocking(&self) -> Vec<&Conflict> {
-        self.conflicts.iter().filter(|c| c.severity == Severity::Blocking).collect()
+        self.conflicts
+            .iter()
+            .filter(|c| c.severity == Severity::Blocking)
+            .collect()
     }
     pub fn has_blocking(&self) -> bool {
-        self.conflicts.iter().any(|c| c.severity == Severity::Blocking)
+        self.conflicts
+            .iter()
+            .any(|c| c.severity == Severity::Blocking)
     }
     pub fn count_of(&self, kind: ConflictKind) -> usize {
         self.conflicts.iter().filter(|c| c.kind == kind).count()
@@ -127,13 +141,23 @@ fn structural_checks(graph: &FlowGraph, out: &mut Vec<Conflict>) {
         });
         out.push(Conflict {
             kind: ConflictKind::Cycle,
-            severity: if declared_loop { Severity::Warning } else { Severity::Blocking },
+            severity: if declared_loop {
+                Severity::Warning
+            } else {
+                Severity::Blocking
+            },
             nodes: cyc.clone(),
             resource: None,
             message: if declared_loop {
-                format!("检测到显式循环结构，涉及 {} 个节点，请确认存在终止条件", cyc.len())
+                format!(
+                    "检测到显式循环结构，涉及 {} 个节点，请确认存在终止条件",
+                    cyc.len()
+                )
             } else {
-                format!("流程存在未声明的环（死循环风险），涉及节点: {}", cyc.join(", "))
+                format!(
+                    "流程存在未声明的环（死循环风险），涉及节点: {}",
+                    cyc.join(", ")
+                )
             },
             remedy: Some(Remedy::Manual {
                 hint: "将回边改为 LoopStart/LoopEnd 显式循环，并补充最大迭代次数".into(),
@@ -172,7 +196,9 @@ fn structural_checks(graph: &FlowGraph, out: &mut Vec<Conflict>) {
                 nodes: vec![node.id.clone()],
                 resource: None,
                 message: format!("节点 `{}` 从起点不可达，属于死代码", node.name),
-                remedy: Some(Remedy::Manual { hint: "删除该节点或补充入边".into() }),
+                remedy: Some(Remedy::Manual {
+                    hint: "删除该节点或补充入边".into(),
+                }),
             });
         }
     }
@@ -186,22 +212,32 @@ fn structural_checks(graph: &FlowGraph, out: &mut Vec<Conflict>) {
                 nodes: vec![node.id.clone()],
                 resource: None,
                 message: format!("节点 `{}` 没有后继且不是终点，流程会静默中断", node.name),
-                remedy: Some(Remedy::Manual { hint: "连接到 End 节点或后续任务".into() }),
+                remedy: Some(Remedy::Manual {
+                    hint: "连接到 End 节点或后续任务".into(),
+                }),
             });
         }
 
         // 判断节点分支完整性
         if node.kind == NodeKind::Decision {
             let outs: Vec<&FlowEdge> = graph.edges.iter().filter(|e| e.from == node.id).collect();
-            let has_default = outs.iter().any(|e| e.condition.is_none() || e.condition.as_deref() == Some("else"));
+            let has_default = outs
+                .iter()
+                .any(|e| e.condition.is_none() || e.condition.as_deref() == Some("else"));
             if outs.len() < 2 {
                 out.push(Conflict {
                     kind: ConflictKind::IncompleteBranch,
                     severity: Severity::Blocking,
                     nodes: vec![node.id.clone()],
                     resource: None,
-                    message: format!("判断节点 `{}` 只有 {} 条出边，分支不完整", node.name, outs.len()),
-                    remedy: Some(Remedy::Manual { hint: "补齐 true/false 或 else 分支".into() }),
+                    message: format!(
+                        "判断节点 `{}` 只有 {} 条出边，分支不完整",
+                        node.name,
+                        outs.len()
+                    ),
+                    remedy: Some(Remedy::Manual {
+                        hint: "补齐 true/false 或 else 分支".into(),
+                    }),
                 });
             } else if !has_default {
                 out.push(Conflict {
@@ -209,8 +245,13 @@ fn structural_checks(graph: &FlowGraph, out: &mut Vec<Conflict>) {
                     severity: Severity::Warning,
                     nodes: vec![node.id.clone()],
                     resource: None,
-                    message: format!("判断节点 `{}` 缺少默认(else)分支，条件全不命中时会卡死", node.name),
-                    remedy: Some(Remedy::Manual { hint: "增加 else 兜底分支".into() }),
+                    message: format!(
+                        "判断节点 `{}` 缺少默认(else)分支，条件全不命中时会卡死",
+                        node.name
+                    ),
+                    remedy: Some(Remedy::Manual {
+                        hint: "增加 else 兜底分支".into(),
+                    }),
                 });
             }
         }
@@ -218,7 +259,10 @@ fn structural_checks(graph: &FlowGraph, out: &mut Vec<Conflict>) {
         // 外部高风险节点缺异常边
         let risky = matches!(
             node.tool,
-            Some(ToolKind::Browser) | Some(ToolKind::Database) | Some(ToolKind::Http) | Some(ToolKind::Shell)
+            Some(ToolKind::Browser)
+                | Some(ToolKind::Database)
+                | Some(ToolKind::Http)
+                | Some(ToolKind::Shell)
         );
         if risky {
             let has_exc = graph
@@ -295,7 +339,11 @@ fn concurrency_checks(graph: &FlowGraph, groups: &[Vec<String>], out: &mut Vec<C
                             a.name,
                             b.name,
                             res,
-                            if both_write { "均写入" } else { "读写混合" },
+                            if both_write {
+                                "均写入"
+                            } else {
+                                "读写混合"
+                            },
                             match kind {
                                 ConflictKind::DbTransaction => "事务",
                                 ConflictKind::FileLock => "文件锁",
@@ -331,21 +379,24 @@ fn concurrency_checks(graph: &FlowGraph, groups: &[Vec<String>], out: &mut Vec<C
 
         // 并行段中的非幂等节点
         for nd in &nodes {
-            if nd.kind.is_executable() && !nd.idempotent && group.len() > 1
-                && matches!(nd.tool, Some(ToolKind::Http) | Some(ToolKind::Shell)) {
-                    out.push(Conflict {
-                        kind: ConflictKind::UnsafeRetry,
-                        severity: Severity::Info,
-                        nodes: vec![nd.id.clone()],
-                        resource: None,
-                        message: format!(
-                            "节点 `{}` 非幂等却处于并行段，重试可能造成重复副作用",
-                            nd.name
-                        ),
-                        remedy: Some(Remedy::Manual {
-                            hint: "标记 idempotent=true 或增加幂等键".into(),
-                        }),
-                    });
+            if nd.kind.is_executable()
+                && !nd.idempotent
+                && group.len() > 1
+                && matches!(nd.tool, Some(ToolKind::Http) | Some(ToolKind::Shell))
+            {
+                out.push(Conflict {
+                    kind: ConflictKind::UnsafeRetry,
+                    severity: Severity::Info,
+                    nodes: vec![nd.id.clone()],
+                    resource: None,
+                    message: format!(
+                        "节点 `{}` 非幂等却处于并行段，重试可能造成重复副作用",
+                        nd.name
+                    ),
+                    remedy: Some(Remedy::Manual {
+                        hint: "标记 idempotent=true 或增加幂等键".into(),
+                    }),
+                });
             }
         }
     }
@@ -374,7 +425,11 @@ fn resource_clash(a: &FlowNode, b: &FlowNode) -> Option<(String, bool)> {
 fn classify_clash(a: &FlowNode, b: &FlowNode, both_write: bool) -> (ConflictKind, Severity) {
     let is_db = a.tool == Some(ToolKind::Database) || b.tool == Some(ToolKind::Database);
     let is_file = a.tool == Some(ToolKind::File) || b.tool == Some(ToolKind::File);
-    let sev = if both_write { Severity::Blocking } else { Severity::Warning };
+    let sev = if both_write {
+        Severity::Blocking
+    } else {
+        Severity::Warning
+    };
     if is_db {
         (ConflictKind::DbTransaction, sev)
     } else if is_file {
@@ -426,7 +481,11 @@ fn compliance_checks(graph: &FlowGraph, out: &mut Vec<Conflict>) {
                     rule.id,
                     node.name,
                     rule.description,
-                    missing.iter().map(|s| s.as_str()).collect::<Vec<_>>().join(", ")
+                    missing
+                        .iter()
+                        .map(|s| s.as_str())
+                        .collect::<Vec<_>>()
+                        .join(", ")
                 ),
                 remedy: Some(Remedy::InsertGuard {
                     before: node.id.clone(),
@@ -439,10 +498,7 @@ fn compliance_checks(graph: &FlowGraph, out: &mut Vec<Conflict>) {
 }
 
 fn rule_matches(rule: &crate::model::ExpertRule, node: &FlowNode) -> bool {
-    let tool_hit = rule
-        .tool_kinds
-        .iter()
-        .any(|t| Some(*t) == node.tool);
+    let tool_hit = rule.tool_kinds.iter().any(|t| Some(*t) == node.tool);
     let res_hit = node.accesses.iter().any(|a| {
         rule.resource_prefixes
             .iter()
@@ -594,10 +650,12 @@ mod tests {
     fn detects_file_lock() {
         let mut g = FlowGraph::new("f", "file");
         g.add_node(
-            FlowNode::task("f1", "写报表", ToolKind::File, 10).with_access(Access::write("file:r.xlsx")),
+            FlowNode::task("f1", "写报表", ToolKind::File, 10)
+                .with_access(Access::write("file:r.xlsx")),
         );
         g.add_node(
-            FlowNode::task("f2", "改报表", ToolKind::File, 10).with_access(Access::write("file:r.xlsx")),
+            FlowNode::task("f2", "改报表", ToolKind::File, 10)
+                .with_access(Access::write("file:r.xlsx")),
         );
         let rep = detect(&g, &[vec!["f1".into(), "f2".into()]]);
         assert!(rep.count_of(ConflictKind::FileLock) >= 1);
@@ -646,7 +704,11 @@ mod tests {
         let (fixed, applied) = auto_repair(&g, &rep);
         assert!(applied >= 1);
         let rep2 = detect(&fixed, &[]);
-        assert_eq!(rep2.count_of(ConflictKind::Compliance), 0, "修复后不应再有合规冲突");
+        assert_eq!(
+            rep2.count_of(ConflictKind::Compliance),
+            0,
+            "修复后不应再有合规冲突"
+        );
         assert!(fixed.topo_order().is_ok());
     }
 

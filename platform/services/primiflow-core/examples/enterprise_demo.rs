@@ -54,7 +54,13 @@ fn main() {
     println!("══════════════════════════════════════════════════════════════");
 
     // 产物校验
-    let files = ["graph.mmd", "trace_matrix.md", "ddl.sql", "schema.rs", "mod.rs"];
+    let files = [
+        "graph.mmd",
+        "trace_matrix.md",
+        "ddl.sql",
+        "schema.rs",
+        "mod.rs",
+    ];
     println!("\n文档自生成产物 (examples/out):");
     let mut artifacts_ok = true;
     for f in files {
@@ -81,7 +87,12 @@ fn main() {
     let topo_count = std::fs::read_dir(&out)
         .map(|d| {
             d.filter_map(|e| e.ok())
-                .filter(|e| e.file_name().to_string_lossy().into_owned().starts_with("topo_"))
+                .filter(|e| {
+                    e.file_name()
+                        .to_string_lossy()
+                        .into_owned()
+                        .starts_with("topo_")
+                })
                 .count()
         })
         .unwrap_or(0);

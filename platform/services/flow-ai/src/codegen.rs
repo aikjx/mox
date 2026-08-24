@@ -100,15 +100,30 @@ pub fn generate(
     }
 
     let files = vec![
-        GeneratedFile { path: "generated/__init__.py".into(), content: String::new() },
-        GeneratedFile { path: "generated/tools.py".into(), content: gen_tools(graph) },
-        GeneratedFile { path: "generated/tasks.py".into(), content: gen_tasks(graph) },
-        GeneratedFile { path: "generated/errors.py".into(), content: gen_errors(graph) },
+        GeneratedFile {
+            path: "generated/__init__.py".into(),
+            content: String::new(),
+        },
+        GeneratedFile {
+            path: "generated/tools.py".into(),
+            content: gen_tools(graph),
+        },
+        GeneratedFile {
+            path: "generated/tasks.py".into(),
+            content: gen_tasks(graph),
+        },
+        GeneratedFile {
+            path: "generated/errors.py".into(),
+            content: gen_errors(graph),
+        },
         GeneratedFile {
             path: "generated/scheduler.py".into(),
             content: gen_scheduler(graph, plan, schedule),
         },
-        GeneratedFile { path: "generated/main.py".into(), content: gen_main(graph) },
+        GeneratedFile {
+            path: "generated/main.py".into(),
+            content: gen_main(graph),
+        },
         // ↓↓↓ 草莓多平台：全栈生成器扩展 ↓↓↓
         GeneratedFile {
             path: "generated/schema.sql".into(),
@@ -120,7 +135,11 @@ pub fn generate(
         },
     ];
 
-    CodeBundle { files, rejected: false, reject_reasons: Vec::new() }
+    CodeBundle {
+        files,
+        rejected: false,
+        reject_reasons: Vec::new(),
+    }
 }
 
 /// 工具层：每类工具一个受控封装，统一超时/重试/资源池
@@ -128,11 +147,19 @@ fn gen_tools(graph: &FlowGraph) -> String {
     let used: BTreeSet<ToolKind> = graph.nodes.iter().filter_map(|n| n.tool).collect();
     let mut s = String::new();
     let _ = writeln!(s, "\"\"\"工具层 —— 由流程图自动生成，勿手改。\n\n每个工具封装资源池信号量，与流程图的 pools 配置一一对应。\n\"\"\"");
-    let _ = writeln!(s, "import threading\nimport time\nfrom contextlib import contextmanager\n");
+    let _ = writeln!(
+        s,
+        "import threading\nimport time\nfrom contextlib import contextmanager\n"
+    );
     let _ = writeln!(s, "_POOLS = {{");
     for t in &used {
         let pool = t.resource_pool();
-        let _ = writeln!(s, "    \"{}\": threading.Semaphore({}),", pool, graph.capacity_of(pool));
+        let _ = writeln!(
+            s,
+            "    \"{}\": threading.Semaphore({}),",
+            pool,
+            graph.capacity_of(pool)
+        );
     }
     let _ = writeln!(s, "}}\n");
     let _ = writeln!(
@@ -165,13 +192,20 @@ fn capitalize(s: &str) -> String {
 fn gen_tasks(graph: &FlowGraph) -> String {
     let mut s = String::new();
     let _ = writeln!(s, "\"\"\"业务层 —— 每个函数对应流程图一个节点。\n\n读写集由流程图声明推导，供调度层做依赖校验。\n\"\"\"");
-    let _ = writeln!(s, "from .tools import *  # noqa\nfrom .errors import GuardFailed\n");
+    let _ = writeln!(
+        s,
+        "from .tools import *  # noqa\nfrom .errors import GuardFailed\n"
+    );
     for n in graph.nodes.iter().filter(|n| n.kind.is_executable()) {
         let fname = py_ident(&n.id);
         let reads: Vec<String> = n.read_set().iter().map(|r| format!("\"{}\"", r)).collect();
         let writes: Vec<String> = n.write_set().iter().map(|r| format!("\"{}\"", r)).collect();
         let _ = writeln!(s, "def {}(ctx: dict):", fname);
-        let _ = writeln!(s, "    \"\"\"{}\n\n    节点: {} | 类型: {:?} | 预估: {}ms", n.name, n.id, n.kind, n.duration_ms);
+        let _ = writeln!(
+            s,
+            "    \"\"\"{}\n\n    节点: {} | 类型: {:?} | 预估: {}ms",
+            n.name, n.id, n.kind, n.duration_ms
+        );
         let _ = writeln!(s, "    reads : [{}]", reads.join(", "));
         let _ = writeln!(s, "    writes: [{}]", writes.join(", "));
         let _ = writeln!(s, "    \"\"\"");
@@ -255,16 +289,27 @@ fn gen_scheduler(graph: &FlowGraph, plan: &ParallelPlan, schedule: &Schedule) ->
         schedule.makespan_ms,
         plan.speedup()
     );
-    let _ = writeln!(s, "from concurrent.futures import ThreadPoolExecutor, as_completed\n");
+    let _ = writeln!(
+        s,
+        "from concurrent.futures import ThreadPoolExecutor, as_completed\n"
+    );
     let _ = writeln!(s, "from . import tasks, errors\n");
 
     let _ = writeln!(s, "# 执行层次：同层节点无数据依赖，可并发下发");
-    let _ = writeln!(s, "# （异常处理节点已排除，仅在失败时由 errors.handle 路由触发）");
+    let _ = writeln!(
+        s,
+        "# （异常处理节点已排除，仅在失败时由 errors.handle 路由触发）"
+    );
     let _ = writeln!(s, "LAYERS = [");
     for layer in &plan.layers {
         let exec: Vec<&String> = layer
             .iter()
-            .filter(|id| graph.node(id).map(|n| n.kind.is_executable()).unwrap_or(false))
+            .filter(|id| {
+                graph
+                    .node(id)
+                    .map(|n| n.kind.is_executable())
+                    .unwrap_or(false)
+            })
             .filter(|id| !is_exception_handler(graph, id))
             .collect();
         if exec.is_empty() {
@@ -306,7 +351,11 @@ fn gen_scheduler(graph: &FlowGraph, plan: &ParallelPlan, schedule: &Schedule) ->
         Some(n) => format!("    for _loop_iter in range({}):\n", n),
         None => String::new(),
     };
-    let loop_indent = if loop_bound.is_some() { "        " } else { "    " };
+    let loop_indent = if loop_bound.is_some() {
+        "        "
+    } else {
+        "    "
+    };
 
     let _ = writeln!(
         s,
@@ -369,23 +418,51 @@ pub fn gen_db_schema(graph: &FlowGraph) -> String {
     }
 
     let mut s = String::new();
-    let _ = writeln!(s, "-- 数据库 Schema —— 由流程图「{}」自动生成，勿手改。", graph.name);
+    let _ = writeln!(
+        s,
+        "-- 数据库 Schema —— 由流程图「{}」自动生成，勿手改。",
+        graph.name
+    );
     let _ = writeln!(s, "-- 生成时间无关，可重复执行（幂等 DDL）。\n");
 
     for (table, fields) in &tables {
-        let _ = writeln!(s, "-- 表: {} {}", table, if transactional_tables.contains(table) { "(事务表)" } else { "" });
-        let _ = writeln!(s, "CREATE TABLE IF NOT EXISTS {} (", table);
+        // 安全加固：表名来自 `db:<table>.<field>` 资源解析，必须在生成 DDL 前做严格标识符消毒，
+        // 防止名称中夹带 `; DROP TABLE ...` / 引号等注入（与列名 sql_ident 同规）。
+        let table_ident = sql_ident(table);
+        if table_ident.is_empty() {
+            continue; // 表名全为非法字符：跳过，绝不注入未消毒标识符
+        }
+        let _ = writeln!(
+            s,
+            "-- 表: {} {}",
+            table_ident,
+            if transactional_tables.contains(table) {
+                "(事务表)"
+            } else {
+                ""
+            }
+        );
+        let _ = writeln!(s, "CREATE TABLE IF NOT EXISTS {} (", table_ident);
         let _ = writeln!(s, "    id          BIGSERIAL PRIMARY KEY,");
         // 由流程字段推导业务列（不含 id，已单独声明）
         let cols: Vec<&String> = fields.keys().filter(|f| *f != "id").collect();
         for (i, col) in cols.iter().enumerate() {
             let comma = if i + 1 == cols.len() { "" } else { "," };
-            let _ = writeln!(s, "    {}   TEXT NOT NULL DEFAULT ''{}", sql_ident(col), comma);
+            let _ = writeln!(
+                s,
+                "    {}   TEXT NOT NULL DEFAULT ''{}",
+                sql_ident(col),
+                comma
+            );
         }
         let _ = writeln!(s, "    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),");
         let _ = writeln!(s, "    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()");
         let _ = writeln!(s, ");\n");
-        let _ = writeln!(s, "CREATE INDEX IF NOT EXISTS idx_{}_updated ON {} (updated_at);\n", table, table);
+        let _ = writeln!(
+            s,
+            "CREATE INDEX IF NOT EXISTS idx_{}_updated ON {} (updated_at);\n",
+            table_ident, table_ident
+        );
     }
 
     let _ = writeln!(s, "-- 行级注释：企业级数据治理留痕");
@@ -437,7 +514,11 @@ fn collect_form_fields(graph: &FlowGraph) -> Vec<(String, bool)> {
 pub fn gen_frontend(graph: &FlowGraph) -> String {
     let fields = collect_form_fields(graph);
     let mut s = String::new();
-    let _ = writeln!(s, "<!-- 前端视图骨架 —— 由流程图「{}」自动生成，勿手改。 -->", graph.name);
+    let _ = writeln!(
+        s,
+        "<!-- 前端视图骨架 —— 由流程图「{}」自动生成，勿手改。 -->",
+        graph.name
+    );
     let _ = writeln!(s, "<template>");
     let _ = writeln!(s, "  <div class=\"caomei-flow\">");
     let _ = writeln!(s, "    <h2>{}</h2>", graph.name);
@@ -445,7 +526,12 @@ pub fn gen_frontend(graph: &FlowGraph) -> String {
     for (field, required) in &fields {
         let label = field.replace('_', " ");
         let _ = writeln!(s, "      <label>{}:", label);
-        let _ = writeln!(s, "        <input v-model=\"form.{}\" {} />", field, if *required { "required" } else { "" });
+        let _ = writeln!(
+            s,
+            "        <input v-model=\"form.{}\" {} />",
+            field,
+            if *required { "required" } else { "" }
+        );
         let _ = writeln!(s, "      </label>");
     }
     let _ = writeln!(s, "      <button type=\"submit\">提交</button>");
@@ -554,10 +640,15 @@ pub fn reverse_from_python(src: &str, flow_id: &str) -> ReverseResult {
             prev = nid;
         } else if trimmed.starts_with("elif ") || trimmed == "else:" {
             // 挂回最近的 Decision
-            if let Some((_, did, _)) = stack.iter().rev().find(|(_, _, k)| *k == NodeKind::Decision) {
+            if let Some((_, did, _)) = stack
+                .iter()
+                .rev()
+                .find(|(_, _, k)| *k == NodeKind::Decision)
+            {
                 prev = did.clone();
             }
-        } else if let Some(cond) = strip_kw(trimmed, "for ").or_else(|| strip_kw(trimmed, "while ")) {
+        } else if let Some(cond) = strip_kw(trimmed, "for ").or_else(|| strip_kw(trimmed, "while "))
+        {
             let node = FlowNode::new(nid.clone(), format!("循环: {}", cond), NodeKind::LoopStart);
             g.add_node(node);
             g.add_edge(FlowEdge::seq(prev.clone(), nid.clone()));
@@ -611,7 +702,10 @@ pub fn reverse_from_python(src: &str, flow_id: &str) -> ReverseResult {
         .filter(|n| {
             matches!(
                 n.tool,
-                Some(ToolKind::Browser) | Some(ToolKind::Database) | Some(ToolKind::Http) | Some(ToolKind::Shell)
+                Some(ToolKind::Browser)
+                    | Some(ToolKind::Database)
+                    | Some(ToolKind::Http)
+                    | Some(ToolKind::Shell)
             )
         })
         .map(|n| n.name.clone())
@@ -622,7 +716,8 @@ pub fn reverse_from_python(src: &str, flow_id: &str) -> ReverseResult {
             risky.len(),
             risky.join("、")
         ));
-        let handler = FlowNode::new("__error_handler", "统一异常处理", NodeKind::Guard).with_tag("error_handler");
+        let handler = FlowNode::new("__error_handler", "统一异常处理", NodeKind::Guard)
+            .with_tag("error_handler");
         g.add_node(handler);
         let ids: Vec<String> = g
             .nodes
@@ -689,7 +784,11 @@ fn detect_tool_call(line: &str) -> Option<(ToolKind, String)> {
     // 识别本库自己生成的工具层调用，支持 代码→流程图 回稻
     if let Some(pos) = l.find("tool.call(") {
         let prefix = &l[..pos];
-        let kind = match prefix.rsplit(|c: char| !c.is_alphanumeric()).next().unwrap_or("") {
+        let kind = match prefix
+            .rsplit(|c: char| !c.is_alphanumeric())
+            .next()
+            .unwrap_or("")
+        {
             "browser" => ToolKind::Browser,
             "database" => ToolKind::Database,
             "http" => ToolKind::Http,
@@ -702,12 +801,48 @@ fn detect_tool_call(line: &str) -> Option<(ToolKind, String)> {
         return Some((kind, label));
     }
     let table: &[(&[&str], ToolKind)] = &[
-        (&["driver.", "selenium", "page.", "playwright", "webdriver", "browser."], ToolKind::Browser),
-        (&["cursor.execute", "conn.", "session.query", "sqlalchemy", "cursor."], ToolKind::Database),
-        (&["requests.", "httpx.", "urlopen", "aiohttp"], ToolKind::Http),
+        (
+            &[
+                "driver.",
+                "selenium",
+                "page.",
+                "playwright",
+                "webdriver",
+                "browser.",
+            ],
+            ToolKind::Browser,
+        ),
+        (
+            &[
+                "cursor.execute",
+                "conn.",
+                "session.query",
+                "sqlalchemy",
+                "cursor.",
+            ],
+            ToolKind::Database,
+        ),
+        (
+            &["requests.", "httpx.", "urlopen", "aiohttp"],
+            ToolKind::Http,
+        ),
         (&["subprocess.", "os.system", "popen"], ToolKind::Shell),
-        (&["open(", "pandas.read", "pd.read", "to_excel", "to_csv", "openpyxl", "workbook"], ToolKind::File),
-        (&["openai.", "llm.", "chat.completions", "invoke_model"], ToolKind::Llm),
+        (
+            &[
+                "open(",
+                "pandas.read",
+                "pd.read",
+                "to_excel",
+                "to_csv",
+                "openpyxl",
+                "workbook",
+            ],
+            ToolKind::File,
+        ),
+        (
+            &["openai.", "llm.", "chat.completions", "invoke_model"],
+            ToolKind::Llm,
+        ),
         (&["input(", "confirm(", "approve("], ToolKind::Human),
     ];
     for (pats, kind) in table {
@@ -787,7 +922,13 @@ mod tests {
         let g = pipeline();
         let b = bundle_of(&g);
         assert!(!b.rejected, "{:?}", b.reject_reasons);
-        for p in ["generated/tools.py", "generated/tasks.py", "generated/scheduler.py", "generated/errors.py", "generated/main.py"] {
+        for p in [
+            "generated/tools.py",
+            "generated/tasks.py",
+            "generated/scheduler.py",
+            "generated/errors.py",
+            "generated/main.py",
+        ] {
             assert!(b.file(p).is_some(), "缺少 {}", p);
         }
         assert!(b.total_lines() > 60);
@@ -805,7 +946,9 @@ mod tests {
             .find(|l| l.contains("\"query\"") && l.contains("\"read\""))
             .unwrap_or("");
         assert!(
-            layer_line.contains("\"query\"") && layer_line.contains("\"read\"") && layer_line.contains('['),
+            layer_line.contains("\"query\"")
+                && layer_line.contains("\"read\"")
+                && layer_line.contains('['),
             "调度层未将 read/query 放入同一并行层:\n{}",
             sched
         );
@@ -848,7 +991,10 @@ mod tests {
     #[test]
     fn generated_identifiers_avoid_name_mangling() {
         assert_eq!(py_ident("__error_handler"), "op_error_handler");
-        assert_eq!(py_ident("__guard_desensitize_db"), "op_guard_desensitize_db");
+        assert_eq!(
+            py_ident("__guard_desensitize_db"),
+            "op_guard_desensitize_db"
+        );
         assert_eq!(py_ident("read"), "read");
         assert_eq!(py_ident("9bad"), "_9bad");
         // 生成的 tasks.py 不得出现 `def __` 开头的函数
@@ -856,7 +1002,11 @@ mod tests {
         let g = reverse_from_python(src, "lg").graph;
         let b = bundle_of(&g);
         let tasks = &b.file("generated/tasks.py").unwrap().content;
-        assert!(!tasks.contains("def __"), "不应生成双下划线函数名:\n{}", tasks);
+        assert!(
+            !tasks.contains("def __"),
+            "不应生成双下划线函数名:\n{}",
+            tasks
+        );
     }
 
     #[test]
@@ -879,7 +1029,10 @@ mod tests {
             layers_block
         );
         // 但它仍须可被路由调度
-        assert!(sched.contains("__error_handler"), "处理器应仍在 DISPATCH 中可被路由");
+        assert!(
+            sched.contains("__error_handler"),
+            "处理器应仍在 DISPATCH 中可被路由"
+        );
         assert!(sched.contains("handler(ctx) if handler else None"));
     }
 
@@ -898,8 +1051,16 @@ def run():
         let kinds: Vec<NodeKind> = r.graph.nodes.iter().map(|n| n.kind).collect();
         assert!(kinds.contains(&NodeKind::LoopStart));
         assert!(kinds.contains(&NodeKind::Decision));
-        assert!(r.graph.nodes.iter().any(|n| n.tool == Some(ToolKind::Browser)));
-        assert!(r.graph.nodes.iter().any(|n| n.tool == Some(ToolKind::Database)));
+        assert!(r
+            .graph
+            .nodes
+            .iter()
+            .any(|n| n.tool == Some(ToolKind::Browser)));
+        assert!(r
+            .graph
+            .nodes
+            .iter()
+            .any(|n| n.tool == Some(ToolKind::Database)));
         assert!(r.graph.nodes.iter().any(|n| n.tool == Some(ToolKind::File)));
     }
 
@@ -909,11 +1070,7 @@ def run():
         let r = reverse_from_python(src, "legacy2");
         assert!(!r.gaps.is_empty());
         assert!(r.graph.node("__error_handler").is_some());
-        assert!(r
-            .graph
-            .edges
-            .iter()
-            .any(|e| e.kind == EdgeKind::Exception));
+        assert!(r.graph.edges.iter().any(|e| e.kind == EdgeKind::Exception));
     }
 
     #[test]
@@ -925,7 +1082,11 @@ def run():
         // 反解析应至少恢复出可执行节点，且图保持有效拓扑序
         assert!(back.graph.nodes.len() > 2);
         let topo = back.graph.topo_order();
-        assert!(topo.is_ok(), "roundtrip 反解析图应满足拓扑序，实际: {:?}", topo.err());
+        assert!(
+            topo.is_ok(),
+            "roundtrip 反解析图应满足拓扑序，实际: {:?}",
+            topo.err()
+        );
     }
 
     // ============ 草莓多平台：全栈生成扩展测试 ============
@@ -936,7 +1097,11 @@ def run():
         let b = bundle_of(&g);
         let sql = &b.file("generated/schema.sql").unwrap().content;
         // 落库节点写入 db:orders.order_no/amount ⇒ 应建 orders 表
-        assert!(sql.contains("CREATE TABLE IF NOT EXISTS orders"), "未生成 orders 表:\n{}", sql);
+        assert!(
+            sql.contains("CREATE TABLE IF NOT EXISTS orders"),
+            "未生成 orders 表:\n{}",
+            sql
+        );
         assert!(sql.contains("order_no"), "字段推导缺失:\n{}", sql);
         assert!(sql.contains("amount"), "字段推导缺失:\n{}", sql);
         // 读访问 db:orders 不应重复建表
@@ -964,7 +1129,9 @@ def run():
         assert!(vue.contains("<script setup>"));
         assert!(vue.contains("import { reactive, ref }"));
         // 表单字段来自流程读写集
-        assert!(vue.contains("v-model=\"form.order_no\"") || vue.contains("v-model=\"form.amount\""));
+        assert!(
+            vue.contains("v-model=\"form.order_no\"") || vue.contains("v-model=\"form.amount\"")
+        );
     }
 
     #[test]
@@ -985,6 +1152,10 @@ def run():
         let b = generate(&g, &plan, &sc, &cf);
         let vue = &b.file("generated/App.vue").unwrap().content;
         assert!(vue.contains("required"), "Guard 写入字段应为必填:\n{}", vue);
-        assert!(vue.contains("v-model=\"form.phone\""), "字段未出现在表单:\n{}", vue);
+        assert!(
+            vue.contains("v-model=\"form.phone\""),
+            "字段未出现在表单:\n{}",
+            vue
+        );
     }
 }

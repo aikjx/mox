@@ -22,7 +22,7 @@ pub struct ExpertMeta {
     pub id: String,
     /// 显示名称
     pub name: String,
-    /// 所属领域（如 `gov` / `court` / `finance`；`*` 表示通用）
+    /// 所属领域（如 `gov` / `finance`；`*` 表示通用）
     pub domain: String,
     /// 能力标签：用于 find/list 的关键词匹配（如 `["security","pii","authz"]`）
     pub capabilities: Vec<String>,

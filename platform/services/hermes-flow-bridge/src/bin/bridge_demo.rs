@@ -34,14 +34,30 @@ fn main() {
 
     // ---- 阶段 1：Hermes 真实多轮工具调用（同步中间件投影）----
     println!("[1] Hermes 会话 s_demo 多轮工具调用录制：");
-    on_tool_request(&st, "s_demo", "db.read", &json!({"query":"select * from citizen_info"}), 1);
-    on_tool_request(&st, "s_demo", "guard.desensitize", &json!({"var":"citizen"}), 1);
+    on_tool_request(
+        &st,
+        "s_demo",
+        "db.read",
+        &json!({"query":"select * from citizen_info"}),
+        1,
+    );
+    on_tool_request(
+        &st,
+        "s_demo",
+        "guard.desensitize",
+        &json!({"var":"citizen"}),
+        1,
+    );
     on_tool_request(&st, "s_demo", "web1.submit", &json!({}), 2);
     let d = on_tool_request(&st, "s_demo", "merge.report", &json!({}), 2);
     let g = st.recorder.snapshot("s_demo").expect("会话图存在");
     println!("    录制节点数 = {}", g.nodes.len());
     if let Some(d) = d {
-        println!("    复用路由命中：{} —— {}", d.source.unwrap_or_default(), d.reason.unwrap_or_default());
+        println!(
+            "    复用路由命中：{} —— {}",
+            d.source.unwrap_or_default(),
+            d.reason.unwrap_or_default()
+        );
     }
 
     // ---- 阶段 2：后台把会话图推给璇玑引擎（通过 ExpertConsultant trait）----
@@ -53,20 +69,34 @@ fn main() {
     println!("\n[3] 投影 ConsultReport（DIP 归一化类型）：");
     let consultant = st.consultant.clone();
     let mut ctx = HashMap::new();
-    ctx.insert("flow_json".into(), serde_json::to_string(&g).unwrap_or_default());
+    ctx.insert(
+        "flow_json".into(),
+        serde_json::to_string(&g).unwrap_or_default(),
+    );
     ctx.insert("tenant".into(), "hermes".into());
     ctx.insert("namespace".into(), "default".into());
     ctx.insert("principal".into(), "hermes-agent".into());
     ctx.insert("max_parallel".into(), "8".into());
     ctx.insert("max_cost_budget".into(), "100".into());
     ctx.insert("sla_ms".into(), "50000".into());
-    let q = ConsultQuery { id: "bridge-demo".into(), query: String::new(), ctx };
+    let q = ConsultQuery {
+        id: "bridge-demo".into(),
+        query: String::new(),
+        ctx,
+    };
     let rep: ConsultReport = consultant
         .consult_blocking(&q)
         .expect("ExpertConsultant.consult_blocking 不应失败");
     println!("    report_id   = {}", rep.report_id);
     println!("    综合健康分  = {:.2}", rep.score);
-    println!("    治理闸门状态 = {}", if rep.vetoed { "⛨ Blocked / 否决" } else { "✅ Approved" });
+    println!(
+        "    治理闸门状态 = {}",
+        if rep.vetoed {
+            "⛨ Blocked / 否决"
+        } else {
+            "✅ Approved"
+        }
+    );
     if let Some(r) = &rep.reason {
         println!("    原因        : {}", r);
     }
@@ -76,7 +106,11 @@ fn main() {
     }
     // 直接调 optimize_session_with（演示传入自定义 consultant 能力）
     let rep2 = optimize_session_with(&g, &st.gate, consultant.clone());
-    assert_eq!(rep2.vetoed, st.gate.is_vetoed(), "veto 位必须与 gate 保持一致");
+    assert_eq!(
+        rep2.vetoed,
+        st.gate.is_vetoed(),
+        "veto 位必须与 gate 保持一致"
+    );
 
     // ---- 阶段 4：算法否决拦截接线（演示否决位如何阻断工具执行）----
     println!("\n[4] ToolExecutionMiddleware 拦截接线：");
@@ -84,7 +118,11 @@ fn main() {
     println!("    当前否决位下执行工具 → blocked = {}", before.blocked);
     st.set_vetoed(true);
     let after = on_tool_execution(&st);
-    println!("    强制置位否决后执行工具 → blocked = {} ({})", after.blocked, after.reason.unwrap_or_default());
+    println!(
+        "    强制置位否决后执行工具 → blocked = {} ({})",
+        after.blocked,
+        after.reason.unwrap_or_default()
+    );
 
     // ---- 阶段 5：LLM 调用次数对比（用户原方案核心收益：调用减半）----
     println!("\n[5] LLM 调用次数对比（与 linear ReAct baseline）：");
@@ -101,11 +139,19 @@ fn main() {
     let bridge_calls = br_tracer.count();
     let saved = if baseline_calls > 0 {
         (1.0 - bridge_calls as f64 / baseline_calls as f64) * 100.0
-    } else { 0.0 };
-    println!("    baseline (linear ReAct) : {} 次 LLM 调用", baseline_calls);
+    } else {
+        0.0
+    };
+    println!(
+        "    baseline (linear ReAct) : {} 次 LLM 调用",
+        baseline_calls
+    );
     println!("    bridge   (复用回放)    : {} 次 LLM 调用", bridge_calls);
     println!("    削减比例              : {:.1}%", saved);
-    println!("    回放动作样本          : {:?}", &br_out[..3.min(br_out.len())]);
+    println!(
+        "    回放动作样本          : {:?}",
+        &br_out[..3.min(br_out.len())]
+    );
 
     println!("\n=== 闭环验证完成：合法图通过算法网关且复用路由命中；否决位可强制拦截；LLM 调用显著削减 ===");
 }

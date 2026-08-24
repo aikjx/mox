@@ -8,8 +8,12 @@ use flow_ai::model::NodeKind;
 pub struct BusinessExpert;
 
 impl Expert for BusinessExpert {
-    fn id(&self) -> String { "business".into() }
-    fn dimension(&self) -> Dimension { Dimension::Business }
+    fn id(&self) -> String {
+        "business".into()
+    }
+    fn dimension(&self) -> Dimension {
+        Dimension::Business
+    }
 
     fn analyze(&self, ctx: &ExpertContext) -> ExpertOpinion {
         if !ctx.can(crate::context::Capability::EditFlow) {
@@ -27,7 +31,10 @@ impl Expert for BusinessExpert {
                     o.push_risk(
                         flow_ai::model::Severity::Warning,
                         vec![n.id.clone()],
-                        format!("决策节点「{}」缺少 else 分支，业务流程存在未覆盖路径", n.name),
+                        format!(
+                            "决策节点「{}」缺少 else 分支，业务流程存在未覆盖路径",
+                            n.name
+                        ),
                         Some("补充默认分支或兜底处理".into()),
                     );
                 }
@@ -74,7 +81,13 @@ impl Expert for BusinessExpert {
             }
         }
 
-        o.metrics.insert("decision_nodes".into(), g.nodes.iter().filter(|n| n.kind == NodeKind::Decision).count() as f64);
+        o.metrics.insert(
+            "decision_nodes".into(),
+            g.nodes
+                .iter()
+                .filter(|n| n.kind == NodeKind::Decision)
+                .count() as f64,
+        );
         o
     }
 }

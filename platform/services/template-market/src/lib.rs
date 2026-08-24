@@ -36,13 +36,13 @@ use uuid::Uuid;
 /// 模板业务域标签（可无限扩展 → "所有模块都是通用的"）
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Domain {
-    Mall,        // 商城
-    Novel,       // 小说
-    Thesis,      // 论文
-    Book,        // 图书/出版
-    VideoDesign, // 影视设计
+    Mall,          // 商城
+    Novel,         // 小说
+    Thesis,        // 论文
+    Book,          // 图书/出版
+    VideoDesign,   // 影视设计
     ProductDesign, // 产品设计
-    SystemDesign, // 系统设计
+    SystemDesign,  // 系统设计
     Other(String),
 }
 
@@ -96,7 +96,12 @@ pub struct SystemTemplate {
 }
 
 impl SystemTemplate {
-    pub fn new(name: &str, description: &str, domains: Vec<Domain>, graph_json: serde_json::Value) -> Self {
+    pub fn new(
+        name: &str,
+        description: &str,
+        domains: Vec<Domain>,
+        graph_json: serde_json::Value,
+    ) -> Self {
         let now = Utc::now();
         Self {
             id: Uuid::new_v4().to_string(),
@@ -175,7 +180,11 @@ impl TemplateMarket {
     }
 
     /// 列出全部模板（可按域/关键词过滤）
-    pub fn list(&self, domain: Option<&Domain>, keyword: Option<&str>) -> Result<Vec<SystemTemplate>, MarketError> {
+    pub fn list(
+        &self,
+        domain: Option<&Domain>,
+        keyword: Option<&str>,
+    ) -> Result<Vec<SystemTemplate>, MarketError> {
         let mut out = Vec::new();
         for entry in std::fs::read_dir(&self.root)? {
             let entry = entry?;
@@ -231,7 +240,11 @@ impl TemplateMarket {
         let mut tpl = self.load(id)?;
         // 简单指数滑动平均
         let s = score.clamp(0.0, 5.0);
-        tpl.rating = if tpl.rating == 0.0 { s } else { tpl.rating * 0.8 + s * 0.2 };
+        tpl.rating = if tpl.rating == 0.0 {
+            s
+        } else {
+            tpl.rating * 0.8 + s * 0.2
+        };
         self.publish(&tpl)?;
         Ok(())
     }
@@ -241,7 +254,9 @@ impl TemplateMarket {
         let mut list = self.list(domain, None)?;
         list.sort_by(|a, b| {
             let heat = |t: &SystemTemplate| (t.rating as f64) * (1.0 + t.reuse_count as f64);
-            heat(b).partial_cmp(&heat(a)).unwrap_or(std::cmp::Ordering::Equal)
+            heat(b)
+                .partial_cmp(&heat(a))
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
         Ok(list)
     }
@@ -468,9 +483,27 @@ mod tests {
     #[test]
     fn list_filter_by_domain_and_keyword() {
         let m = market();
-        m.publish(&SystemTemplate::new("小说平台", "网文创作", vec![Domain::Novel], serde_json::json!({}))).unwrap();
-        m.publish(&SystemTemplate::new("商城A", "电商", vec![Domain::Mall], serde_json::json!({}))).unwrap();
-        m.publish(&SystemTemplate::new("商城B", "零售电商", vec![Domain::Mall], serde_json::json!({}))).unwrap();
+        m.publish(&SystemTemplate::new(
+            "小说平台",
+            "网文创作",
+            vec![Domain::Novel],
+            serde_json::json!({}),
+        ))
+        .unwrap();
+        m.publish(&SystemTemplate::new(
+            "商城A",
+            "电商",
+            vec![Domain::Mall],
+            serde_json::json!({}),
+        ))
+        .unwrap();
+        m.publish(&SystemTemplate::new(
+            "商城B",
+            "零售电商",
+            vec![Domain::Mall],
+            serde_json::json!({}),
+        ))
+        .unwrap();
 
         let novels = m.list(Some(&Domain::Novel), None).unwrap();
         assert_eq!(novels.len(), 1);

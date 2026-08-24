@@ -144,17 +144,68 @@ function registerRoutes() {
 
 registerRoutes();
 
+// ===== OUS_API_TOKEN 企业级鉴权（分发层前置，尽早拒绝，避免任何 handler 被执行）=====
+const TOKEN_REQUIRED_METHODS = new Set(['post', 'put', 'delete', 'patch']);
+const AUTH_NEEDED = (() => {
+  const t = (process.env.OUS_API_TOKEN || '').trim();
+  if (!t) return null; // 未设置，鉴权关闭
+  const tokens = t.split(/[;,]/).map(s => s.trim()).filter(Boolean);
+  return new Set(tokens);
+})();
+
+function extractTokenFromRequest(req, parsed) {
+  try {
+    const auth = req.headers && (req.headers['authorization'] || req.headers['Authorization']);
+    if (auth) {
+      const m = String(auth).match(/^\s*Bearer\s+([^\s,]+)\s*$/i);
+      if (m && m[1]) return m[1];
+      // 兼容：Authorization: <token>（非 Bearer 前缀，仍接受）
+      const plain = String(auth).trim();
+      if (plain && !/\s/.test(plain)) return plain;
+    }
+    const xt = req.headers && (req.headers['x-token'] || req.headers['x-api-token'] || req.headers['auth-token']);
+    if (xt) return String(xt).trim();
+    if (parsed && parsed.query && typeof parsed.query.token === 'string' && parsed.query.token) return parsed.query.token;
+    const cookie = req.headers && req.headers.cookie;
+    if (cookie) {
+      const m2 = String(cookie).match(/(?:^|;\s*)x-token=([^;]+)/);
+      if (m2 && m2[1]) return decodeURIComponent(m2[1]).trim();
+    }
+  } catch (_) {}
+  return '';
+}
+
+function _unauthorized(res, reason) {
+  res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8', 'WWW-Authenticate': 'Bearer realm="ous"' });
+  res.end(JSON.stringify({ success: false, code: 'UNAUTHORIZED', error: reason || '需要有效的 OUS_API_TOKEN 鉴权', required: true }));
+}
+
 // ===== HTTP 服务器（鉴权 → 路由分发 → 统一错误响应）=====
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept,X-Requested-With,Origin');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept,X-Requested-With,Origin,X-Token,X-API-Token,Auth-Token');
+  res.setHeader('Access-Control-Expose-Headers', 'X-Request-ID');
   res.setHeader('Access-Control-Max-Age', '86400');
   if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
 
   const parsed = url.parse(req.url, true);
-  const pathname = parsed.pathname.replace(/\/+$/, '') || '/';
+  let pathname = parsed.pathname.replace(/\/+$/, '') || '/';
+  // 可用性归一化：接受传统的 /api 前缀（对外习惯）与无前缀路由（对内兼容），两者等价。
+  // 即 /api/system/health === /system/health，/api/kb/list === /kb/list。
+  if (pathname.startsWith('/api/')) {
+    pathname = pathname.slice('/api'.length) || '/';
+  } else if (pathname === '/api') {
+    pathname = '/';
+  }
   const method = req.method.toLowerCase();
+
+  // ===== 企业级前置鉴权：OUS_API_TOKEN
+  if (AUTH_NEEDED && TOKEN_REQUIRED_METHODS.has(method)) {
+    const token = extractTokenFromRequest(req, parsed);
+    if (!token) return _unauthorized(res, '缺少 token（请通过 Authorization: Bearer / X-Token header / ?token= query 提供）');
+    if (!AUTH_NEEDED.has(token)) return _unauthorized(res, 'token 无效');
+  }
 
   if (parsed.query.pretty !== undefined) res._pretty = true;
 

@@ -1,0 +1,55 @@
+
+
+  D1-ARCH：域注册表三向一致性（business-registry ↔ routes ↔ projects）
+    ✔ A (business-registry 域数) ≥ 30（对照启动日志 30 域）
+    ✔ B (routes 装配域数) ≥ 30
+    ✔ 1) 所有 registry 域都已在 routes 装配（A ⊆ B）
+    ✔ 2) 所有路由装配域都已在 registry 登记（B ⊆ A）
+    ✔ 3) 项目引用的域必须是 registry ∩ routes 的有效域（C ⊆ A ∩ B）
+    ✔ 4) A 与 B 对称差为空（三向核心一致性：A ≡ B 作为治理 + 路由对等真相）
+    ✔ 5) internal 域必须三向均存在（W1 已修复的关键回归测试）
+
+  D2-OPS：游戏制品发布管线（T5 真实可玩游戏落地）
+    ✔ 1) 默认游戏 HTML 模板文件已落地 data/artifacts（size>2KB，有标题与脚本）
+    ✔ 2) GET /artifacts?kind=game 返回 ≥1 条且字段完整（kind=game + htmlSource 或 url）
+    ✔ 3) 制品 url 可下载为 HTML 200（浏览器直接打开）
+    ✔ 4) 游戏 HTML 内嵌脚本 node --check 0 语法错（保证前端零 console error） (98ms)
+    ✔ 5) 去重发布：POST /artifacts 同样 title 两次返回同一实体（幂等 / 不会重复占用存储）
+
+  D3-OBS：观测与 SLO 闭环（system 域日志 + SLO 4窗口）
+    ✔ 1) logs.json 已落地且条目 ≥ 10（有种子事件 seed）
+    ✔ 2) GET /system/logs 返回 JSON 数组 + 分页支持
+    ✔ 3) GET /system/slo 返回 4 个标准窗口（1m/5m/15m/1h）各非空样本
+    ✔ 4) SLO 每个窗口具备 4 大指标（availability/p95_latency_ms/error_rate/throughput_rps）
+    ✔ 5) SLO 数值合理性（无 NaN/Inf/负数，availability/error_rate ∈[0,1]，p95 非负）
+    ✔ 6) 审计链路：POST /system/logs/append 写 → GET /system/logs 回读 (172ms)
+
+  D4-SEC：OUS_API_TOKEN 鉴权（分发层 + 敏感写接口）
+    ✔ 1) 未带 token 时敏感写 POST /artifacts 返回 401（Gated: OFF 时返回 2xx/4xx 业务码，ON 时必须 401）
+    ✔ 2) 非法 token（Bearer 随机字符串）POST /system/logs/append 也被拒绝
+    ✔ 3) 合法 token（Authorization: Bearer）POST /system/logs/append 放行并返回 2xx
+    ✔ 4) 合法 token（X-Token header）POST /system/logs/append 放行
+    ✔ 5) 合法 token（?token= query）POST /system/logs/append 放行
+    ✔ 6) GET 类接口即使 OUS_API_TOKEN 开启也无需鉴权（/system/health, /system/slo, /artifacts, /kb/list 全部返回 2xx）
+    ✔ 7) 敏感写接口清单：已知敏感写路径的统一行为一致性（无 token → 401/403；有 token → 2xx 或业务级错误，但不能是 401）
+
+  D5-BUILD：Cargo Workspace 成员一致性 + cargo metadata 校验
+[D5] workspace members count: 23
+    ✔ 1) workspace.members 中每个路径都存在、有 Cargo.toml、具备 src 入口（lib.rs 或 main.rs）
+    ✔ 2) 反向：platform/services/* 与 platform/gateway/* 下的 Cargo.toml 均在 workspace members 中（或明确 workspace=false）
+    ✔ 3) cargo metadata 成功执行、不报错（exit code 0） (219ms)
+[D5] workspace_members field=23；packages=23；members manifest=23
+    ✔ 4) cargo metadata packages 数量与 workspace members 一致（21），每个包 manifest_path 与成员路径对应 (224ms)
+    ✔ 5) cargo metadata 无 workspace resolve_error、无 fatal 错误字段 (213ms)
+
+  D6-FINAL：一键验收 + 自研vs开源对比 + 业务流程最优（交付级产出）
+    ✔ 1) run-enterprise-final-acceptance.ps1 验收脚本存在且 PowerShell 语法有效（AST parse 无错误） (658ms)
+    ✔ 2) 自研 vs 开源对比报告：存在、含核心章节（架构/算法/观测/安全/性能对比表）
+    ✔ 3) 最优业务处理流程：存在、含 10 阶段（需求归一→架构→开发→测试→观测→迭代）+ 交付物汇总
+    ✔ 4) 一键验收脚本 SkipRust+SkipNode+SkipScoring 快速模式可产出 md+json 报告 (23591ms)
+    ✔ 5) 报告 JSON：result=PASS 且 pass_count = total_phases（全绿），D1~D5 五个专项全部 PASS
+    ✔ 6) 报告 MD：包含总览表、明细表（5 大 D 专项 GREEN 行）、环境信息、结果判定
+
+
+  36 passing (27s)
+

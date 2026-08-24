@@ -180,7 +180,7 @@ infotopograph/  （= 璇玑 RelGraph 项目仓；根历史遗留 operator-unifie
 │   │   ├── xuanji-expert/        #     ⛨璇玑引擎：双璇玑十四维治理/归一化 IR/裁决/验证/审计三汇/RBAC（算法+开发联盟）
 │   │   ├── xuanji-system/        #     璇玑协作治理域：成员/任务/权限/通信/审计/RBAC/多后端 SQLite+PG+MySQL（开发联盟）
 │   │   ├── hermes-flow-bridge/   #     Hermes Agent 桥接：normalize/recorder/router/拦截注入
-│   │   ├── business-catalog/     #     7 预置 FlowGraph + TopologyGraph（政务/法院/财务/客服/ETL/MCP/螺旋）
+│   │   ├── business-catalog/     #     6 预置 FlowGraph + TopologyGraph（政务/财务/客服/ETL/MCP/螺旋）
 │   │   ├── template-market/      #     模板市场：发布/加载/评分/排序/Fork/2 种子
 │   │   ├── primiflow-core/       #     PrimiFlow 解析/代码生成/8 类骨架模板/执行/持久化
 │   │   ├── primiflow-fusion/     #     PrimiFlow 六维融合/守恒闸门/Registry/平台编排/12Factor+可观测（对齐 GR-STD 8 闸门）
@@ -225,7 +225,8 @@ infotopograph/  （= 璇玑 RelGraph 项目仓；根历史遗留 operator-unifie
 │   └── *.html / *.mmd            # 🟡 可视化产物（以同名 .md 为源；同位存放）
 ├── benches/                      # 性能基准
 ├── tests/                        # 集成测试
-├── verify_axioms.py              # 六大公理数学自洽性验证脚本（Python；算法联盟对账用）
+├── scripts/
+│   └── manage.py             # 统一运维脚本（服务管理 + Web 面板 + 公理验证，单文件整合）
 ├── start.sh                      # 一键启动脚本
 └── README.md
 ```
@@ -281,7 +282,7 @@ npm run build      # 产物输出到 frontend-ui/dist/（已 gitignore）
 运行 6 大公理验证（含范畴论定律、守恒律、图算法）：
 
 ```bash
-python3 verify_axioms.py
+python3 scripts/manage.py verify
 ```
 
 验证内容：

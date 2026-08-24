@@ -230,7 +230,10 @@ fn algo_cnm(input: &AlgoInput) -> Value {
     })
 }
 
-fn compute_modularity_scalar(g: &KnowledgeGraph, communities: &[graph_algorithms::Community]) -> f64 {
+fn compute_modularity_scalar(
+    g: &KnowledgeGraph,
+    communities: &[graph_algorithms::Community],
+) -> f64 {
     let ids: HashMap<String, usize> = g
         .node_ids()
         .into_iter()
@@ -414,7 +417,9 @@ fn parse_args() -> Result<(String, String, String)> {
         }
     }
     Ok((
-        name.ok_or_else(|| anyhow!("缺少必填 --name <cnm|ppr|brandes|harmonic|degree|density|raw_expand>"))?,
+        name.ok_or_else(|| {
+            anyhow!("缺少必填 --name <cnm|ppr|brandes|harmonic|degree|density|raw_expand>")
+        })?,
         input.unwrap_or_else(|| "-".to_string()),
         output.unwrap_or_else(|| "-".to_string()),
     ))
@@ -432,11 +437,9 @@ fn main() -> Result<()> {
         "cnm" | "community" => algo_cnm(&input),
         "density" => algo_density(&input),
         "raw_expand" | "expandRawEdges" | "rawExpand" => algo_raw_expand(&input),
-        other => {
-            return Err(anyhow!(
-                "未知算法名: {other}；可选值: cnm, ppr, brandes, harmonic, degree, density, raw_expand"
-            ))
-        }
+        other => return Err(anyhow!(
+            "未知算法名: {other}；可选值: cnm, ppr, brandes, harmonic, degree, density, raw_expand"
+        )),
     };
 
     write_output(&output_path, &result)?;

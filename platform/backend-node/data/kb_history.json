@@ -1,5 +1,149 @@
 [
   {
+    "id": "kb_hist_o8cggw55le",
+    "documentId": "kb_doc_c63tjx3vni",
+    "action": "create",
+    "detail": "创建文档: d4 kb",
+    "user": "user",
+    "ts": "2026-08-24T00:06:02.543Z"
+  },
+  {
+    "id": "kb_hist_clvhmmie82",
+    "documentId": "kb_doc_yt80xojd80",
+    "action": "create",
+    "detail": "创建文档: d4 kb",
+    "user": "user",
+    "ts": "2026-08-24T00:05:44.691Z"
+  },
+  {
+    "id": "kb_hist_mv1siip24b",
+    "documentId": "kb_doc_n2vrsxutbv",
+    "action": "create",
+    "detail": "创建文档: d4 kb",
+    "user": "user",
+    "ts": "2026-08-24T00:05:25.647Z"
+  },
+  {
+    "id": "kb_hist_i8sczljyec",
+    "documentId": "kb_doc_w18yzfq2jq",
+    "action": "create",
+    "detail": "创建文档: d4 kb",
+    "user": "user",
+    "ts": "2026-08-24T00:05:06.782Z"
+  },
+  {
+    "id": "kb_hist_1xr0ku6ukx",
+    "documentId": "kb_doc_gn913h2nfx",
+    "action": "create",
+    "detail": "创建文档: d4 kb",
+    "user": "user",
+    "ts": "2026-08-24T00:04:53.558Z"
+  },
+  {
+    "id": "kb_hist_kg4sotlv57",
+    "documentId": "kb_doc_wjw2l8ckem",
+    "action": "create",
+    "detail": "创建文档: d4 kb",
+    "user": "user",
+    "ts": "2026-08-23T23:41:47.328Z"
+  },
+  {
+    "id": "kb_hist_gs8yjx72qm",
+    "documentId": "kb_doc_zprnclqodc",
+    "action": "create",
+    "detail": "创建文档: d4 kb",
+    "user": "user",
+    "ts": "2026-08-23T23:40:14.948Z"
+  },
+  {
+    "id": "kb_hist_ooftb42xrm",
+    "documentId": "kb_doc_xw4yww97ss",
+    "action": "create",
+    "detail": "创建文档: d4 kb",
+    "user": "user",
+    "ts": "2026-08-23T23:39:57.400Z"
+  },
+  {
+    "id": "kb_hist_nylulodfl0",
+    "documentId": "kb_doc_08gm9r7hjq",
+    "action": "create",
+    "detail": "创建文档: d4 kb",
+    "user": "user",
+    "ts": "2026-08-23T23:39:40.353Z"
+  },
+  {
+    "id": "kb_hist_uvtxg34mbp",
+    "documentId": "kb_doc_c8153z6a7q",
+    "action": "create",
+    "detail": "创建文档: d4 kb",
+    "user": "user",
+    "ts": "2026-08-23T23:39:22.193Z"
+  },
+  {
+    "id": "kb_hist_gvdc4y3eis",
+    "documentId": "kb_doc_anlmkp07tk",
+    "action": "create",
+    "detail": "创建文档: d4 kb",
+    "user": "user",
+    "ts": "2026-08-23T18:30:20.939Z"
+  },
+  {
+    "id": "kb_hist_3cjpojl24z",
+    "documentId": "kb_doc_sjnoymla9r",
+    "action": "create",
+    "detail": "创建文档: d4 kb",
+    "user": "user",
+    "ts": "2026-08-23T18:30:01.503Z"
+  },
+  {
+    "id": "kb_hist_9r9iiiawaa",
+    "documentId": "kb_doc_j5q03kveuj",
+    "action": "create",
+    "detail": "创建文档: d4 kb",
+    "user": "user",
+    "ts": "2026-08-23T18:27:56.523Z"
+  },
+  {
+    "id": "kb_hist_jgpw6u8fi1",
+    "documentId": "kb_doc_4javqqu8mg",
+    "action": "create",
+    "detail": "创建文档: d4 kb",
+    "user": "user",
+    "ts": "2026-08-23T18:27:37.165Z"
+  },
+  {
+    "id": "kb_hist_mu62qdx3gh",
+    "documentId": "kb_doc_wfxwjq4m2f",
+    "action": "create",
+    "detail": "创建文档: d4 kb",
+    "user": "user",
+    "ts": "2026-08-23T18:24:24.553Z"
+  },
+  {
+    "id": "kb_hist_hgbwi78ttb",
+    "documentId": "kb_doc_99btw7tr7b",
+    "action": "create",
+    "detail": "创建文档: d4 kb",
+    "user": "user",
+    "ts": "2026-08-23T18:24:05.157Z"
+  },
+  {
+    "id": "kb_hist_wudlwzurp9",
+    "documentId": "kb_doc_6tzo4buedw",
+    "action": "create",
+    "detail": "创建文档: d4 kb",
+    "user": "user",
+    "ts": "2026-08-23T18:23:12.808Z"
+  },
+  {
+    "id": "kb_hist_kccptpldjg",
+    "documentId": "kb_doc_d7ryczyffs",
+    "action": "create",
+    "detail": "创建文档: d4 kb",
+    "user": "user",
+    "ts": "2026-08-23T18:11:21.715Z"
+  },
+  {
     "id": "kb_hist_xj0t0cd26q",
     "documentId": "kb_doc_1x9djgk4mz",
     "action": "auto-graph-sync",

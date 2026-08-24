@@ -64,7 +64,8 @@ impl ConversationEngine {
 4. 插件互通 - WASM/内置/外部插件通过消息总线协作
 5. 业务流程自动化 - BPMN风格工作流驱动AI智能体执行
 
-回答应当专业、精确，并推荐合适的算子组合。"#.to_string()
+回答应当专业、精确，并推荐合适的算子组合。"#
+            .to_string()
     }
 
     fn build_operator_knowledge() -> OperatorKnowledge {
@@ -91,7 +92,11 @@ impl ConversationEngine {
     /// 注意：调用方负责把用户消息写入会话历史（两条调用路径
     /// `chat`/`chat_with_llm` 都会先 `add_user_message`）。本方法只负责
     /// 把生成的助手回复持久化进会话，从而实现真正的多轮对话记忆。
-    pub async fn process_message(&mut self, session_id: &str, message: &str) -> Result<ChatResponse> {
+    pub async fn process_message(
+        &mut self,
+        session_id: &str,
+        message: &str,
+    ) -> Result<ChatResponse> {
         tracing::debug!("处理对话消息: session={}, msg={}", session_id, message);
 
         let intent = self.recognize_intent(message);
@@ -109,7 +114,10 @@ impl ConversationEngine {
             timestamp: chrono::Utc::now(),
             metadata: {
                 let mut m = HashMap::new();
-                m.insert("intent".to_string(), serde_json::to_value(&intent).unwrap_or(serde_json::Value::Null));
+                m.insert(
+                    "intent".to_string(),
+                    serde_json::to_value(&intent).unwrap_or(serde_json::Value::Null),
+                );
                 m
             },
             referenced_operators: referenced_ops.clone(),
@@ -196,37 +204,72 @@ impl ConversationEngine {
     fn recognize_intent(&self, message: &str) -> UserIntent {
         let msg_lower = message.to_lowercase();
 
-        if msg_lower.contains("状态") || msg_lower.contains("运行") || msg_lower.contains("status") {
+        if msg_lower.contains("状态") || msg_lower.contains("运行") || msg_lower.contains("status")
+        {
             return UserIntent::QueryStatus;
         }
-        if msg_lower.contains("算子") || msg_lower.contains("列表") || msg_lower.contains("operator") || msg_lower.contains("list") {
+        if msg_lower.contains("算子")
+            || msg_lower.contains("列表")
+            || msg_lower.contains("operator")
+            || msg_lower.contains("list")
+        {
             return UserIntent::ListOperators;
         }
-        if msg_lower.contains("执行") || msg_lower.contains("运行") || msg_lower.contains("execute") || msg_lower.contains("run") || msg_lower.contains("工作流") {
+        if msg_lower.contains("执行")
+            || msg_lower.contains("运行")
+            || msg_lower.contains("execute")
+            || msg_lower.contains("run")
+            || msg_lower.contains("工作流")
+        {
             let ops = self.extract_referenced_operators(message);
             if !ops.is_empty() {
                 return UserIntent::ExecuteWorkflow { operators: ops };
             }
         }
-        if msg_lower.contains("算法") || msg_lower.contains("分析") || msg_lower.contains("analyze") || msg_lower.contains("algorithm") || msg_lower.contains("流程图") {
-            return UserIntent::AnalyzeAlgorithm { algo_type: "general".to_string() };
+        if msg_lower.contains("算法")
+            || msg_lower.contains("分析")
+            || msg_lower.contains("analyze")
+            || msg_lower.contains("algorithm")
+            || msg_lower.contains("流程图")
+        {
+            return UserIntent::AnalyzeAlgorithm {
+                algo_type: "general".to_string(),
+            };
         }
-        if msg_lower.contains("创建") && (msg_lower.contains("算子") || msg_lower.contains("operator")) {
+        if msg_lower.contains("创建")
+            && (msg_lower.contains("算子") || msg_lower.contains("operator"))
+        {
             return UserIntent::CreateOperator;
         }
-        if msg_lower.contains("资源") || msg_lower.contains("内存") || msg_lower.contains("cpu") || msg_lower.contains("resource") {
+        if msg_lower.contains("资源")
+            || msg_lower.contains("内存")
+            || msg_lower.contains("cpu")
+            || msg_lower.contains("resource")
+        {
             return UserIntent::QueryResources;
         }
-        if msg_lower.contains("插件") || msg_lower.contains("plugin") || msg_lower.contains("wasm") {
+        if msg_lower.contains("插件") || msg_lower.contains("plugin") || msg_lower.contains("wasm")
+        {
             return UserIntent::ManagePlugins;
         }
-        if msg_lower.contains("图谱") || msg_lower.contains("图") || msg_lower.contains("graph") || msg_lower.contains("知识") {
+        if msg_lower.contains("图谱")
+            || msg_lower.contains("图")
+            || msg_lower.contains("graph")
+            || msg_lower.contains("知识")
+        {
             return UserIntent::ViewGraph;
         }
-        if msg_lower.contains("推荐") || msg_lower.contains("建议") || msg_lower.contains("recommend") {
+        if msg_lower.contains("推荐")
+            || msg_lower.contains("建议")
+            || msg_lower.contains("recommend")
+        {
             return UserIntent::GetRecommendation;
         }
-        if msg_lower.contains("流程") || msg_lower.contains("业务") || msg_lower.contains("workflow") || msg_lower.contains("编排") {
+        if msg_lower.contains("流程")
+            || msg_lower.contains("业务")
+            || msg_lower.contains("workflow")
+            || msg_lower.contains("编排")
+        {
             return UserIntent::CreateWorkflow;
         }
 
@@ -258,7 +301,12 @@ impl ConversationEngine {
     }
 
     /// 生成回复
-    fn generate_response(&self, message: &str, intent: &UserIntent, referenced_ops: &[String]) -> String {
+    fn generate_response(
+        &self,
+        message: &str,
+        intent: &UserIntent,
+        referenced_ops: &[String],
+    ) -> String {
         match intent {
             UserIntent::QueryStatus => {
                 "🚀 算子统一系统运行正常！\n\n系统状态：\n• 核心引擎：运行中\n• 知识图谱：已加载（34+算子节点，30+关系边）\n• 插件系统：就绪\n• AI智能体：活跃\n\n你可以：执行算子工作流、分析算法、管理资源、编排业务流程。".to_string()
@@ -370,7 +418,10 @@ impl ConversationEngine {
                         ("relu", vec!["normalize", "dropout", "linear"]),
                         ("conv2d", vec!["relu", "maxpool", "batchnorm"]),
                         ("normalize", vec!["softmax", "linear"]),
-                    ].iter().cloned().collect();
+                    ]
+                    .iter()
+                    .cloned()
+                    .collect();
                     if let Some(succ) = successors.get(last.as_str()) {
                         for s in succ {
                             if !recommended.contains(&s.to_string()) {
@@ -381,28 +432,68 @@ impl ConversationEngine {
                 }
             }
             UserIntent::AnalyzeAlgorithm { .. } => {
-                recommended = vec!["identity".to_string(), "linear".to_string(), "normalize".to_string(), "relu".to_string()];
+                recommended = vec![
+                    "identity".to_string(),
+                    "linear".to_string(),
+                    "normalize".to_string(),
+                    "relu".to_string(),
+                ];
             }
             _ => {
                 // 基于关键词推荐
-                if msg_lower.contains("神经") || msg_lower.contains("network") || msg_lower.contains("深度学习") {
-                    recommended = vec!["linear".to_string(), "relu".to_string(), "softmax".to_string(), "adam".to_string()];
+                if msg_lower.contains("神经")
+                    || msg_lower.contains("network")
+                    || msg_lower.contains("深度学习")
+                {
+                    recommended = vec![
+                        "linear".to_string(),
+                        "relu".to_string(),
+                        "softmax".to_string(),
+                        "adam".to_string(),
+                    ];
                 } else if msg_lower.contains("分类") || msg_lower.contains("classif") {
-                    recommended = vec!["linear".to_string(), "sigmoid".to_string(), "softmax".to_string()];
-                } else if msg_lower.contains("图像") || msg_lower.contains("image") || msg_lower.contains("卷积") {
-                    recommended = vec!["conv2d".to_string(), "relu".to_string(), "maxpool".to_string(), "normalize".to_string()];
-                } else if msg_lower.contains("注意力") || msg_lower.contains("attention") || msg_lower.contains("transformer") {
-                    recommended = vec!["embedding".to_string(), "attention".to_string(), "feedforward".to_string(), "normalize".to_string()];
+                    recommended = vec![
+                        "linear".to_string(),
+                        "sigmoid".to_string(),
+                        "softmax".to_string(),
+                    ];
+                } else if msg_lower.contains("图像")
+                    || msg_lower.contains("image")
+                    || msg_lower.contains("卷积")
+                {
+                    recommended = vec![
+                        "conv2d".to_string(),
+                        "relu".to_string(),
+                        "maxpool".to_string(),
+                        "normalize".to_string(),
+                    ];
+                } else if msg_lower.contains("注意力")
+                    || msg_lower.contains("attention")
+                    || msg_lower.contains("transformer")
+                {
+                    recommended = vec![
+                        "embedding".to_string(),
+                        "attention".to_string(),
+                        "feedforward".to_string(),
+                        "normalize".to_string(),
+                    ];
                 } else {
                     // 分类关键词兜底：命中算子知识库的分类词汇时给出该分类代表算子
                     // （消费 OperatorKnowledge.category_keywords：category → 关键词）
                     for (category, keywords) in &self.operator_knowledge.category_keywords {
-                        if keywords.iter().any(|kw| msg_lower.contains(&kw.to_lowercase())) {
+                        if keywords
+                            .iter()
+                            .any(|kw| msg_lower.contains(&kw.to_lowercase()))
+                        {
                             recommended = match category.as_str() {
                                 "core" => vec!["identity".to_string(), "linear".to_string()],
                                 "activation" => vec!["relu".to_string(), "sigmoid".to_string()],
                                 "math" => vec!["matmul".to_string(), "scale".to_string()],
-                                "ai" => vec!["linear".to_string(), "relu".to_string(), "softmax".to_string()],
+                                "ai" => vec![
+                                    "linear".to_string(),
+                                    "relu".to_string(),
+                                    "softmax".to_string(),
+                                ],
                                 "signal" => vec!["conv2d".to_string(), "maxpool".to_string()],
                                 "optimizer" => vec!["adam".to_string(), "sgd".to_string()],
                                 _ => vec![],
@@ -470,21 +561,42 @@ impl ConversationEngine {
     fn suggest_workflow(&self, intent: &UserIntent, message: &str) -> Option<Vec<String>> {
         let msg_lower = message.to_lowercase();
 
-        if msg_lower.contains("前向") || msg_lower.contains("forward") || msg_lower.contains("神经网络") {
-            return Some(vec!["linear".to_string(), "relu".to_string(), "linear".to_string(), "softmax".to_string()]);
+        if msg_lower.contains("前向")
+            || msg_lower.contains("forward")
+            || msg_lower.contains("神经网络")
+        {
+            return Some(vec![
+                "linear".to_string(),
+                "relu".to_string(),
+                "linear".to_string(),
+                "softmax".to_string(),
+            ]);
         }
-        if msg_lower.contains("卷积") || msg_lower.contains("cnn") || msg_lower.contains("图像") {
-            return Some(vec!["conv2d".to_string(), "relu".to_string(), "maxpool".to_string(), "normalize".to_string()]);
+        if msg_lower.contains("卷积") || msg_lower.contains("cnn") || msg_lower.contains("图像")
+        {
+            return Some(vec![
+                "conv2d".to_string(),
+                "relu".to_string(),
+                "maxpool".to_string(),
+                "normalize".to_string(),
+            ]);
         }
         if msg_lower.contains("transformer") || msg_lower.contains("注意力") {
-            return Some(vec!["embedding".to_string(), "attention".to_string(), "feedforward".to_string(), "normalize".to_string()]);
+            return Some(vec![
+                "embedding".to_string(),
+                "attention".to_string(),
+                "feedforward".to_string(),
+                "normalize".to_string(),
+            ]);
         }
         if msg_lower.contains("归一化") || msg_lower.contains("概率") {
             return Some(vec!["linear".to_string(), "normalize_l1".to_string()]);
         }
 
         match intent {
-            UserIntent::ExecuteWorkflow { operators } if !operators.is_empty() => Some(operators.clone()),
+            UserIntent::ExecuteWorkflow { operators } if !operators.is_empty() => {
+                Some(operators.clone())
+            }
             _ => None,
         }
     }
@@ -507,7 +619,9 @@ impl ConversationEngine {
 
     /// upsert 会话元数据行
     fn persist_session_meta(&self, session: &ChatSession) {
-        let Some(db) = &self.db else { return; };
+        let Some(db) = &self.db else {
+            return;
+        };
         let ctx = serde_json::to_string(&session.context).unwrap_or_else(|_| " {}".to_string());
         if let Err(e) = db.exec(
             "INSERT OR REPLACE INTO sessions (id, created_at, updated_at, context_json) VALUES (?1, ?2, ?3, ?4)",
@@ -524,10 +638,13 @@ impl ConversationEngine {
 
     /// upsert 单条消息行（幂等）
     fn persist_message(&self, session_id: &str, msg: &ChatMessage) {
-        let Some(db) = &self.db else { return; };
+        let Some(db) = &self.db else {
+            return;
+        };
         let role = serde_json::to_string(&msg.role).unwrap_or_else(|_| "\"user\"".to_string());
         let meta = serde_json::to_string(&msg.metadata).unwrap_or_else(|_| " {}".to_string());
-        let refs = serde_json::to_string(&msg.referenced_operators).unwrap_or_else(|_| "[]".to_string());
+        let refs =
+            serde_json::to_string(&msg.referenced_operators).unwrap_or_else(|_| "[]".to_string());
         if let Err(e) = db.exec(
             "INSERT OR REPLACE INTO messages (id, session_id, role, content, timestamp, metadata_json, referenced_operators_json) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             &[
@@ -546,7 +663,9 @@ impl ConversationEngine {
 
     /// 更新会话 updated_at（消息写入后）
     fn touch_session(&self, session_id: &str) {
-        let Some(db) = &self.db else { return; };
+        let Some(db) = &self.db else {
+            return;
+        };
         let _ = db.exec(
             "UPDATE sessions SET updated_at = ?1 WHERE id = ?2",
             &[
@@ -578,8 +697,12 @@ impl ConversationEngine {
             Some(SqlValue::Text(s)) => s.clone(),
             _ => return None,
         };
-        let created_at = chrono::DateTime::parse_from_rfc3339(&created_at_str).ok()?.with_timezone(&chrono::Utc);
-        let updated_at = chrono::DateTime::parse_from_rfc3339(&updated_at_str).ok()?.with_timezone(&chrono::Utc);
+        let created_at = chrono::DateTime::parse_from_rfc3339(&created_at_str)
+            .ok()?
+            .with_timezone(&chrono::Utc);
+        let updated_at = chrono::DateTime::parse_from_rfc3339(&updated_at_str)
+            .ok()?
+            .with_timezone(&chrono::Utc);
         let context: SessionContext = serde_json::from_str(&ctx_str).unwrap_or_default();
 
         let mut messages = Vec::new();
@@ -602,7 +725,8 @@ impl ConversationEngine {
                 let meta_str = get_text("metadata_json").unwrap_or_default();
                 let refs_str = get_text("referenced_operators_json").unwrap_or_default();
 
-                let role: MessageRole = serde_json::from_str(&role_str).unwrap_or(MessageRole::User);
+                let role: MessageRole =
+                    serde_json::from_str(&role_str).unwrap_or(MessageRole::User);
                 let timestamp = chrono::DateTime::parse_from_rfc3339(&ts_str)
                     .ok()
                     .map(|t| t.with_timezone(&chrono::Utc))
@@ -675,7 +799,10 @@ mod tests {
     #[tokio::test]
     async fn test_process_message_list_operators_intent() {
         let mut engine = ConversationEngine::new();
-        let resp = engine.process_message("列出所有算子", "sess-1").await.unwrap();
+        let resp = engine
+            .process_message("列出所有算子", "sess-1")
+            .await
+            .unwrap();
         assert!(!resp.message.content.is_empty());
         assert!(!resp.suggestions.is_empty());
     }
@@ -683,25 +810,43 @@ mod tests {
     #[tokio::test]
     async fn test_process_message_execute_intent_with_operators() {
         let mut engine = ConversationEngine::new();
-        let resp = engine.process_message("sess-2", "执行 linear relu normalize 工作流").await.unwrap();
+        let resp = engine
+            .process_message("sess-2", "执行 linear relu normalize 工作流")
+            .await
+            .unwrap();
         // 应识别到执行意图，响应提到工作流且含推荐算子
         assert!(resp.message.content.contains("工作流") || resp.message.content.contains("linear"));
-        assert!(resp.actions.iter().any(|a| matches!(a.action_type, ActionType::ExecuteWorkflow)));
-        assert!(resp.recommended_operators.iter().any(|o| o == "linear" || o == "relu" || o == "normalize"));
+        assert!(resp
+            .actions
+            .iter()
+            .any(|a| matches!(a.action_type, ActionType::ExecuteWorkflow)));
+        assert!(resp
+            .recommended_operators
+            .iter()
+            .any(|o| o == "linear" || o == "relu" || o == "normalize"));
     }
 
     #[tokio::test]
     async fn test_process_message_analyze_algorithm_intent() {
         let mut engine = ConversationEngine::new();
-        let resp = engine.process_message("sess-3", "分析快速排序算法").await.unwrap();
+        let resp = engine
+            .process_message("sess-3", "分析快速排序算法")
+            .await
+            .unwrap();
         assert!(resp.message.content.contains("算法") || resp.message.content.contains("归一化"));
-        assert!(resp.actions.iter().any(|a| matches!(a.action_type, ActionType::AnalyzeAlgorithm)));
+        assert!(resp
+            .actions
+            .iter()
+            .any(|a| matches!(a.action_type, ActionType::AnalyzeAlgorithm)));
     }
 
     #[tokio::test]
     async fn test_process_message_vision_recommends_conv2d() {
         let mut engine = ConversationEngine::new();
-        let resp = engine.process_message("sess-4", "处理图像卷积任务").await.unwrap();
+        let resp = engine
+            .process_message("sess-4", "处理图像卷积任务")
+            .await
+            .unwrap();
         // recommend_operators 应基于中文关键词「卷积」提取 conv2d
         assert!(resp.recommended_operators.contains(&"conv2d".to_string()));
     }
@@ -722,8 +867,12 @@ mod tests {
         let history = engine2.get_session_history("s1");
         // system + user + assistant = 3
         assert_eq!(history.len(), 3);
-        assert!(history.iter().any(|m| m.role == MessageRole::User && m.content == "你好"));
-        assert!(history.iter().any(|m| m.role == MessageRole::Assistant && m.content == "世界"));
+        assert!(history
+            .iter()
+            .any(|m| m.role == MessageRole::User && m.content == "你好"));
+        assert!(history
+            .iter()
+            .any(|m| m.role == MessageRole::Assistant && m.content == "世界"));
         let _ = std::fs::remove_file(&path);
     }
 
@@ -752,7 +901,10 @@ mod tests {
             .unwrap()
             .to_string();
         let mut engine = ConversationEngine::with_storage(&path).unwrap();
-        let _ = engine.process_message("sess-p", "列出所有算子").await.unwrap();
+        let _ = engine
+            .process_message("sess-p", "列出所有算子")
+            .await
+            .unwrap();
         drop(engine);
         let mut engine2 = ConversationEngine::with_storage(&path).unwrap();
         let history = engine2.get_session_history("sess-p");

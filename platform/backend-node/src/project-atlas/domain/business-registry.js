@@ -471,4 +471,30 @@ const MODULES = [
   }
 ];
 
-module.exports = { DOMAINS, MODULES };
+module.exports = {
+  DOMAINS,
+  MODULES,
+  /** 返回业务主域 + Rust crate 治理域（HTTP 域注册表的主列表） */
+  getDomains() {
+    return Array.isArray(DOMAINS) ? DOMAINS.slice() : [];
+  },
+  /** 返回引擎模块清单（与主域注册表分离，供模块安装/路由映射） */
+  getModules() {
+    return Array.isArray(MODULES) ? MODULES.slice() : [];
+  },
+  findById(id) { return (DOMAINS || []).find(d => d && d.id === id); },
+  /** 返回"治理图谱注册表全量实体"id = 业务主域 ∪ Rust 域 ∪ 引擎模块。用于三向一致性校验（Registry ↔ Routes ↔ Projects）。 */
+  getAllEntityIds() {
+    const ids = new Set();
+    for (const d of DOMAINS || []) if (d && d.id) ids.add(d.id);
+    for (const m of MODULES || []) if (m && m.id) ids.add(m.id);
+    return Array.from(ids);
+  },
+  /** 返回"治理图谱注册表全量实体"对象列表 */
+  getAllEntities() {
+    return [...(DOMAINS || []), ...(MODULES || [])].filter(Boolean);
+  },
+  getEntityById(id) {
+    return this.getAllEntities().find(e => e && e.id === id);
+  },
+};

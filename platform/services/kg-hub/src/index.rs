@@ -26,7 +26,12 @@ pub struct HybridWeights {
 impl Default for HybridWeights {
     fn default() -> Self {
         // 关键词权重最高：企业场景下精确命名召回的可信度高于语义猜测
-        Self { keyword: 1.0, vector: 0.8, graph: 0.5, hop_decay: 0.5 }
+        Self {
+            keyword: 1.0,
+            vector: 0.8,
+            graph: 0.5,
+            hop_decay: 0.5,
+        }
     }
 }
 
@@ -399,8 +404,18 @@ mod tests {
 
     fn sample() -> UnifiedGraph {
         let mut g = UnifiedGraph::new();
-        g.add_node(node("A", "operator-core", "算子内核执行引擎", EntityKind::Code));
-        g.add_node(node("B", "偏离检测", "需求对齐覆盖率与偏离治理", EntityKind::Function));
+        g.add_node(node(
+            "A",
+            "operator-core",
+            "算子内核执行引擎",
+            EntityKind::Code,
+        ));
+        g.add_node(node(
+            "B",
+            "偏离检测",
+            "需求对齐覆盖率与偏离治理",
+            EntityKind::Function,
+        ));
         g.add_node(node("C", "README", "项目说明文档", EntityKind::Doc));
         g.add_edge(UnifiedEdge {
             id: "e1".into(),
@@ -442,7 +457,10 @@ mod tests {
     fn keyword_search_finds_exact_name() {
         let g = sample();
         let idx = HybridIndex::build(&g);
-        let q = HybridQuery { text: "operator-core".into(), ..Default::default() };
+        let q = HybridQuery {
+            text: "operator-core".into(),
+            ..Default::default()
+        };
         let hits = idx.search(&g, &q);
         assert!(!hits.is_empty());
         assert_eq!(hits[0].id, "A");
@@ -453,7 +471,10 @@ mod tests {
     fn cjk_semantic_query_hits_by_bigram() {
         let g = sample();
         let idx = HybridIndex::build(&g);
-        let q = HybridQuery { text: "偏离治理".into(), ..Default::default() };
+        let q = HybridQuery {
+            text: "偏离治理".into(),
+            ..Default::default()
+        };
         let hits = idx.search(&g, &q);
         assert_eq!(hits[0].id, "B", "中文查询必须命中偏离检测节点");
     }
@@ -470,7 +491,10 @@ mod tests {
         };
         let hits = idx.search(&g, &q);
         let ids: Vec<&str> = hits.iter().map(|h| h.id.as_str()).collect();
-        assert!(ids.contains(&"B"), "1 跳扩散应带出 Bind 邻居 B, got {ids:?}");
+        assert!(
+            ids.contains(&"B"),
+            "1 跳扩散应带出 Bind 邻居 B, got {ids:?}"
+        );
         let b = hits.iter().find(|h| h.id == "B").unwrap();
         assert!(b.graph_score > 0.0);
         assert!(b.matched_by.contains(&"graph".to_string()));
@@ -516,7 +540,11 @@ mod tests {
     fn results_are_deterministic() {
         let g = sample();
         let idx = HybridIndex::build(&g);
-        let q = HybridQuery { text: "算子".into(), expand_hops: 2, ..Default::default() };
+        let q = HybridQuery {
+            text: "算子".into(),
+            expand_hops: 2,
+            ..Default::default()
+        };
         let a: Vec<String> = idx.search(&g, &q).into_iter().map(|h| h.id).collect();
         for _ in 0..5 {
             let b: Vec<String> = idx.search(&g, &q).into_iter().map(|h| h.id).collect();

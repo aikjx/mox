@@ -19,12 +19,30 @@
     <div class="task-filters">
       <el-input
         v-model="searchText"
-        placeholder="搜索任务..."
+        placeholder="搜索任务标题/描述…（最近 5 条）"
         clearable
-        style="width: 240px"
+        style="width: 300px"
+        @change="pushHistory('task', searchText)"
+        @keyup.enter="pushHistory('task', searchText)"
       >
         <template #prefix><el-icon><Search /></el-icon></template>
       </el-input>
+      <el-popover v-if="taskSearchHistory.length" placement="bottom" trigger="click" width="300">
+        <template #reference>
+          <el-button plain :icon="Clock">历史</el-button>
+        </template>
+        <div class="hist-list">
+          <div
+            v-for="h in taskSearchHistory"
+            :key="h"
+            class="hist-item"
+            @click="searchText = h; pushHistory('task', h)"
+          >
+            <el-icon><Clock /></el-icon>{{ h }}
+          </div>
+          <el-button v-if="taskSearchHistory.length" link size="small" type="danger" @click="taskSearchHistory = clearHistory('task')">清空</el-button>
+        </div>
+      </el-popover>
       <el-select v-model="filterStatus" placeholder="状态" clearable style="width: 120px">
         <el-option label="待处理" value="todo" />
         <el-option label="进行中" value="in_progress" />
@@ -40,6 +58,7 @@
         <el-option label="手动创建" value="manual" />
         <el-option label="对话转换" value="chat" />
       </el-select>
+      <span class="filter-range">{{ pageFrom }}–{{ pageTo }} / {{ filteredTasks.length }} 条</span>
     </div>
 
     <div class="stats-row">
@@ -50,9 +69,13 @@
     </div>
 
     <div class="task-list" v-loading="loading">
-      <el-empty v-if="!filteredTasks.length && !loading" description="暂无任务，点击右上角创建或在AI对话中转换" />
+      <div v-if="!filteredTasks.length && !loading" class="empty-cta">
+        <el-empty description="还没有任务，用下面按钮 30 秒建一个，或 Ctrl+⇧+N 快捷键召唤" :image-size="90">
+          <el-button type="primary" size="large" :icon="Plus" @click="openCreate">立即新建第一个任务</el-button>
+        </el-empty>
+      </div>
       <div
-        v-for="task in filteredTasks"
+        v-for="task in pagedTasks"
         :key="task.id"
         class="task-card"
         :class="{ 'task-selected': selectedId === task.id }"
@@ -67,6 +90,14 @@
         </div>
         <div class="task-card-title">{{ task.title }}</div>
         <div class="task-card-desc">{{ task.description || '无描述' }}</div>
+        <div class="task-card-meta-row">
+          <el-tooltip content="截止日期" placement="top">
+            <span class="meta-chip" v-if="task.due_date"><el-icon><Clock /></el-icon>{{ formatDate(task.due_date) }}</span>
+          </el-tooltip>
+          <el-tooltip content="预估工时" placement="top">
+            <span class="meta-chip" v-if="task.estimate_hours != null"><el-icon><Operation /></el-icon>{{ task.estimate_hours }}h</span>
+          </el-tooltip>
+        </div>
         <div class="task-card-steps" v-if="task.steps && task.steps.length">
           <div v-for="(step, i) in task.steps.slice(0, 3)" :key="i" class="step-item">
             <el-icon><CircleCheck /></el-icon> {{ step }}
@@ -77,6 +108,17 @@
           <el-tag v-for="tag in task.tags.slice(0, 4)" :key="tag" size="small" type="info" effect="plain">{{ tag }}</el-tag>
         </div>
       </div>
+    </div>
+
+    <div v-if="filteredTasks.length > pageSize" class="pager-row">
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="pageSize"
+        :page-sizes="[12, 24, 48, 96]"
+        :total="filteredTasks.length"
+        layout="sizes, prev, pager, next, jumper, total"
+        background
+      />
     </div>
 
     <el-drawer
@@ -194,34 +236,71 @@
       </template>
     </el-drawer>
 
-    <el-dialog v-model="createOpen" title="新建任务" width="500px">
-      <el-form :model="newTaskForm" label-width="80px">
-        <el-form-item label="标题">
-          <el-input v-model="newTaskForm.title" placeholder="任务标题" />
+    <el-dialog v-model="createOpen" title="新建任务" width="560px" :close-on-click-modal="false">
+      <!-- 6 字段完成度（企业最优：实时可感知进展感） -->
+      <div class="create-progress">
+        <el-progress
+          :percentage="progressPercent"
+          :stroke-width="10"
+          :color="progressPercent === 100 ? '#10b981' : '#6366f1'"
+        />
+        <div class="progress-meta">
+          <span>已完成 <b>{{ progressCount }}</b>/6 字段</span>
+          <span class="progress-tip" v-if="progressPercent < 100">还差 {{ 6 - progressCount }} 项即可提交</span>
+          <span class="progress-tip done" v-else>🎉 全部就绪，创建吧！</span>
+        </div>
+      </div>
+      <el-form ref="createFormRef" :model="newTaskForm" :rules="createFormRules" label-width="86px">
+        <el-form-item label="标题" prop="title">
+          <el-input v-model="newTaskForm.title" maxlength="120" show-word-limit placeholder="任务标题（2~120 字）" />
         </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="newTaskForm.description" type="textarea" :rows="3" placeholder="任务描述" />
+        <el-form-item label="描述" prop="description">
+          <el-input v-model="newTaskForm.description" type="textarea" :rows="3" maxlength="1000" show-word-limit placeholder="任务描述（可选）" />
         </el-form-item>
-        <el-form-item label="优先级">
-          <el-select v-model="newTaskForm.priority">
-            <el-option label="高" value="high" />
-            <el-option label="中" value="medium" />
-            <el-option label="低" value="low" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="分类">
-          <el-select v-model="newTaskForm.category">
-            <el-option label="通用" value="general" />
-            <el-option label="需求" value="requirement" />
-            <el-option label="开发" value="development" />
-            <el-option label="测试" value="testing" />
-            <el-option label="运维" value="devops" />
-          </el-select>
-        </el-form-item>
+        <div class="form-grid-2">
+          <el-form-item label="优先级" prop="priority">
+            <el-select v-model="newTaskForm.priority" style="width:100%">
+              <el-option label="高（24h 内推进）" value="high" />
+              <el-option label="中（本周完成）" value="medium" />
+              <el-option label="低（排期待定）" value="low" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="分类" prop="category">
+            <el-select v-model="newTaskForm.category" style="width:100%">
+              <el-option label="通用" value="general" />
+              <el-option label="需求" value="requirement" />
+              <el-option label="开发" value="development" />
+              <el-option label="测试" value="testing" />
+              <el-option label="运维" value="devops" />
+            </el-select>
+          </el-form-item>
+        </div>
+        <div class="form-grid-2">
+          <el-form-item label="截止日期" prop="due_date">
+            <el-date-picker
+              v-model="newTaskForm.due_date"
+              type="datetime"
+              value-format="YYYY-MM-DDTHH:mm:ss"
+              placeholder="默认 3 天后 18:00"
+              style="width:100%"
+            />
+          </el-form-item>
+          <el-form-item label="预估工时" prop="estimate_hours">
+            <el-input-number
+              v-model="newTaskForm.estimate_hours"
+              :min="0"
+              :max="8760"
+              :step="0.5"
+              :precision="2"
+              style="width:100%"
+              placeholder="小时，默认 2h"
+            />
+          </el-form-item>
+        </div>
       </el-form>
       <template #footer>
         <el-button @click="createOpen = false">取消</el-button>
-        <el-button type="primary" @click="createTask">创建</el-button>
+        <el-button type="primary" :loading="creating" @click="createTask">创建任务</el-button>
       </template>
     </el-dialog>
 
@@ -247,27 +326,29 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  List, Plus, Refresh, Search, CircleCheck, Check,
-  Delete, ChatDotRound, VideoPlay, Loading, Promotion
+  List, Plus, Refresh, Search, CircleCheck, Check, Clock,
+  Delete, ChatDotRound, VideoPlay, Loading, Promotion, Operation
 } from '@element-plus/icons-vue'
 import {
   getTasks, createTask as createTaskApi, updateTask,
   deleteTask as deleteTaskApi, convertTaskToChat, executeTask as executeTaskApi,
   aiChat
 } from '@/api'
+import { getSearchHistory, pushSearchHistory } from '@/globalShortcuts'
 
 const router = useRouter()
 const route = useRoute()
 const tasks = ref([])
 const loading = ref(false)
-const searchText = ref('')
-const filterStatus = ref('')
-const filterPriority = ref('')
-const filterSource = ref('')
+const creating = ref(false)
+const searchText = ref(route.query?.q || '')
+const filterStatus = ref(route.query?.status || '')
+const filterPriority = ref(route.query?.priority || '')
+const filterSource = ref(route.query?.source || '')
 const selectedId = ref(null)
 const detailOpen = ref(false)
 const createOpen = ref(false)
@@ -275,18 +356,73 @@ const convertChatOpen = ref(false)
 const convertResult = ref(null)
 const newTag = ref('')
 
+// 列表页高级：分页 + 搜索历史 + URL 持久化
+const page = ref(parseInt(route.query?.page || '1', 10) || 1)
+const pageSize = ref(parseInt(route.query?.size || '12', 10) || 12)
+const taskSearchHistory = ref(getSearchHistory('task'))
+
 // 任务内置对话
 const taskChatMessages = ref([])
 const taskChatDraft = ref('')
 const taskChatThinking = ref(false)
 const taskChatScroll = ref(null)
 
-const newTaskForm = ref({
-  title: '',
-  description: '',
-  priority: 'medium',
-  category: 'general'
+const createFormRef = ref(null)
+
+function defaultDueDate() {
+  const d = new Date()
+  d.setDate(d.getDate() + 3)
+  d.setHours(18, 0, 0, 0)
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+function emptyNewTaskForm() {
+  return {
+    title: '',
+    description: '',
+    priority: 'medium',
+    category: 'general',
+    due_date: defaultDueDate(),
+    estimate_hours: 2
+  }
+}
+const newTaskForm = ref(emptyNewTaskForm())
+// 新建任务表单校验规则（必填 + 长度 + 枚举 + 数值范围）
+const createFormRules = {
+  title: [
+    { required: true, message: '请输入任务标题', trigger: 'blur' },
+    { min: 2, max: 120, message: '标题长度应为 2~120 字符', trigger: 'blur' }
+  ],
+  description: [
+    { max: 1000, message: '描述不得超过 1000 字符', trigger: 'blur' }
+  ],
+  priority: [
+    { required: true, message: '请选择优先级', trigger: 'change' },
+    { validator: (_r, value, cb) => (['high', 'medium', 'low'].includes(value) ? cb() : cb(new Error('非法优先级枚举'))), trigger: 'change' }
+  ],
+  category: [
+    { required: true, message: '请选择分类', trigger: 'change' },
+    { validator: (_r, value, cb) => (['general', 'requirement', 'development', 'testing', 'devops'].includes(value) ? cb() : cb(new Error('非法分类枚举'))), trigger: 'change' }
+  ],
+  estimate_hours: [
+    { validator: (_r, value, cb) => (value === null || value === undefined || (typeof value === 'number' && value >= 0 && value <= 8760) ? cb() : cb(new Error('工时范围 0~8760 小时'))), trigger: 'change' }
+  ]
+}
+
+// 6 字段完成度：title / description(可空，填了算) / priority / category / due_date / estimate_hours
+const progressCount = computed(() => {
+  const f = newTaskForm.value || {}
+  let n = 0
+  if (f.title && String(f.title).trim().length >= 2) n++
+  if (f.description && String(f.description).trim().length >= 1) n++
+  else n++ // 描述可空 → 视作"已就绪"
+  if (['high', 'medium', 'low'].includes(f.priority)) n++
+  if (['general', 'requirement', 'development', 'testing', 'devops'].includes(f.category)) n++
+  if (f.due_date && String(f.due_date).length >= 10) n++
+  if (f.estimate_hours !== '' && f.estimate_hours != null) n++
+  return Math.min(n, 6)
 })
+const progressPercent = computed(() => Math.round((progressCount.value / 6) * 100))
 
 const currentTask = computed(() => tasks.value.find(t => t.id === selectedId.value))
 
@@ -300,7 +436,7 @@ function statusTagType(s) {
 const filteredTasks = computed(() => {
   return tasks.value.filter(t => {
     if (searchText.value) {
-      const q = searchText.value.toLowerCase()
+      const q = String(searchText.value).toLowerCase()
       if (!t.title.toLowerCase().includes(q) && !(t.description || '').toLowerCase().includes(q)) return false
     }
     if (filterStatus.value && t.status !== filterStatus.value) return false
@@ -309,6 +445,24 @@ const filteredTasks = computed(() => {
     return true
   })
 })
+const pagedTasks = computed(() => {
+  const s = (page.value - 1) * pageSize.value
+  return filteredTasks.value.slice(s, s + pageSize.value)
+})
+const pageFrom = computed(() => (filteredTasks.value.length ? (page.value - 1) * pageSize.value + 1 : 0))
+const pageTo = computed(() => Math.min(page.value * pageSize.value, filteredTasks.value.length))
+
+// URL 筛选参数同步（可复制链接给同事，打开直接看同一筛选视图）
+function syncQueryToRoute() {
+  const q = {}
+  if (searchText.value) q.q = String(searchText.value).trim().slice(0, 120)
+  if (filterStatus.value) q.status = filterStatus.value
+  if (filterPriority.value) q.priority = filterPriority.value
+  if (filterSource.value) q.source = filterSource.value
+  if (page.value !== 1) q.page = String(page.value)
+  if (pageSize.value !== 12) q.size = String(pageSize.value)
+  router.replace({ path: route.path, query: q })
+}
 
 const stats = computed(() => {
   const total = tasks.value.length
@@ -322,6 +476,15 @@ const stats = computed(() => {
     { key: 'done', label: '已完成', value: done, color: '#10b981' }
   ]
 })
+
+function pushHistory(key, term) {
+  taskSearchHistory.value = pushSearchHistory(key, term)
+  syncQueryToRoute()
+}
+function clearHistory(key) {
+  pushSearchHistory(key, '__CLEAR__', 0)
+  return []
+}
 
 async function loadTasks() {
   loading.value = true
@@ -378,22 +541,47 @@ async function sendTaskChat() {
 }
 
 function openCreate() {
-  newTaskForm.value = { title: '', description: '', priority: 'medium', category: 'general' }
+  newTaskForm.value = emptyNewTaskForm()
+  nextTick(() => { createFormRef.value?.clearValidate?.() })
   createOpen.value = true
 }
 
+// 顶栏「⚡ 新建」/ 快捷键 / ?action=create query 通用入口（全局事件）
+function onGlobalOpenTaskCreate() {
+  openCreate()
+}
+
 async function createTask() {
-  if (!newTaskForm.value.title.trim()) {
-    ElMessage.warning('请输入任务标题')
+  try {
+    await createFormRef.value?.validate()
+  } catch (_e) {
+    ElMessage.warning('请检查必填项与格式校验（顶部有完成度提示）')
     return
   }
+  creating.value = true
   try {
-    await createTaskApi(newTaskForm.value)
+    // 表单 -> API DTO 映射：统一字段名、类型转换与默认值
+    const payload = {
+      title: String(newTaskForm.value.title || '').trim(),
+      description: String(newTaskForm.value.description || '').trim(),
+      priority: newTaskForm.value.priority || 'medium',
+      category: newTaskForm.value.category || 'general',
+      status: 'todo',
+      due_date: newTaskForm.value.due_date || null,
+      estimate_hours: newTaskForm.value.estimate_hours === '' || newTaskForm.value.estimate_hours == null
+        ? null
+        : Number(newTaskForm.value.estimate_hours),
+      tags: [],
+      created_at: new Date().toISOString()
+    }
+    await createTaskApi(payload)
     createOpen.value = false
     ElMessage.success('任务已创建')
     await loadTasks()
   } catch (e) {
     ElMessage.error('创建失败: ' + e.message)
+  } finally {
+    creating.value = false
   }
 }
 
@@ -475,38 +663,49 @@ function formatTime(iso) {
 }
 
 onMounted(async () => {
+  window.addEventListener('xuanji:open-create-task', onGlobalOpenTaskCreate)
   await loadTasks()
   // 支持从AI对话跳转并自动打开任务
   if (route.query.task) {
     const task = tasks.value.find(t => t.id === route.query.task)
-    if (task) {
-      selectTask(task)
-    } else {
-      // 如果任务不存在，可能需要重新加载
-      await loadTasks()
-      const t = tasks.value.find(tt => tt.id === route.query.task)
-      if (t) selectTask(t)
-    }
+    if (task) selectTask(task)
   }
+  // ?action=create（顶栏快捷/外部链接过来）直接开 Dialog
+  if (route.query.action === 'create') openCreate()
 })
+
+// 搜索/筛选/分页任意变化 → URL 同步（不重复刷新）
+watch([searchText, filterStatus, filterPriority, filterSource, page, pageSize], () => {
+  if (page.value < 1) page.value = 1
+  // 若当前页超过总页数，回到第 1 页
+  if (pageSize.value > 0 && (page.value - 1) * pageSize.value >= filteredTasks.value.length) page.value = 1
+  syncQueryToRoute()
+}, { flush: 'post' })
 
 // 监听路由变化，自动打开任务
 watch(() => route.query.task, async (taskId) => {
   if (!taskId) return
-  // 等待任务列表加载
-  if (!tasks.value.length) {
-    await loadTasks()
-  }
+  if (!tasks.value.length) await loadTasks()
   const task = tasks.value.find(t => t.id === taskId)
-  if (task) {
-    selectTask(task)
-  } else {
-    // 最后尝试：可能刚创建的任务，刷新列表
+  if (task) selectTask(task)
+  else {
     await loadTasks()
     const t = tasks.value.find(tt => tt.id === taskId)
     if (t) selectTask(t)
   }
 })
+watch(() => route.query.action, (a) => { if (a === 'create') openCreate() })
+
+onBeforeUnmount(() => {
+  window.removeEventListener('xuanji:open-create-task', onGlobalOpenTaskCreate)
+})
+
+function formatDate(d) {
+  if (!d) return ''
+  const dt = new Date(d)
+  if (isNaN(dt)) return String(d)
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`
+}
 </script>
 
 <style scoped>
@@ -646,6 +845,71 @@ watch(() => route.query.task, async (taskId) => {
   display: flex;
   gap: 4px;
   flex-wrap: wrap;
+}
+.task-card-meta-row {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.meta-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: var(--bg-page);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--text-2);
+  border: 1px solid var(--border);
+}
+.meta-chip .el-icon { font-size: 12px; color: var(--brand-dark); }
+
+.empty-cta {
+  grid-column: 1 / -1;
+  background: #fff;
+  border-radius: 16px;
+  padding: 36px 0;
+  border: 2px dashed var(--border);
+}
+
+.pager-row {
+  margin-top: 18px;
+  display: flex; justify-content: flex-end;
+}
+.filter-range {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-3);
+  align-self: center;
+  padding-right: 6px;
+}
+.hist-list { display: flex; flex-direction: column; gap: 4px; max-height: 260px; overflow: auto; }
+.hist-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; border-radius: 8px; cursor: pointer;
+  font-size: 13px; color: var(--text-1);
+}
+.hist-item:hover { background: var(--brand-soft); color: var(--brand-dark); }
+.hist-item .el-icon { font-size: 13px; color: var(--text-3); }
+
+/* 新建任务进度条 */
+.create-progress {
+  margin-bottom: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.05), rgba(6,182,212,0.05));
+  border: 1px solid rgba(99,102,241,0.1);
+}
+.progress-meta {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 8px;
+  font-size: 12px; color: var(--text-2);
+}
+.progress-meta b { color: var(--brand-dark); }
+.progress-tip.done { color: #059669; font-weight: 600; }
+
+.form-grid-2 {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px;
+}
+@media (max-width: 720px) {
+  .form-grid-2 { grid-template-columns: 1fr; }
 }
 
 .detail-section {

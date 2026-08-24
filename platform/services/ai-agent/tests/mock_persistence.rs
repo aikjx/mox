@@ -31,7 +31,9 @@ pub struct MockPersistence {
 }
 
 impl MockPersistence {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     fn exec_insert(&self, sql: &str, params: &[SqlValue]) -> anyhow::Result<usize> {
         // 简单解析：INSERT INTO tab(col1,col2) VALUES (?,?)
@@ -49,7 +51,10 @@ impl MockPersistence {
         }
         let mut guard = self.inner.lock().unwrap();
         let values: Vec<SqlValue> = params.to_vec();
-        let row = MockRow { columns: cols, values };
+        let row = MockRow {
+            columns: cols,
+            values,
+        };
         guard.tables.entry(table).or_default().push(row);
         guard.exec_log.push(sql.to_string());
         Ok(1)
@@ -93,7 +98,10 @@ impl MockPersistence {
             for c in &cols {
                 if c == "*" {
                     for (i, col) in r.columns.iter().enumerate() {
-                        hr.insert(col.clone(), r.values.get(i).cloned().unwrap_or(SqlValue::Null));
+                        hr.insert(
+                            col.clone(),
+                            r.values.get(i).cloned().unwrap_or(SqlValue::Null),
+                        );
                     }
                 } else {
                     let idx = r.columns.iter().position(|cc| cc == c);
@@ -134,7 +142,9 @@ impl PersistenceProvider for MockPersistence {
     fn exec_batch(&self, sql: &str) -> anyhow::Result<()> {
         for stmt in sql.split(';') {
             let stmt = stmt.trim();
-            if stmt.is_empty() { continue; }
+            if stmt.is_empty() {
+                continue;
+            }
             let _ = self.exec(stmt, &[])?;
         }
         Ok(())
@@ -158,7 +168,10 @@ fn regex_like_capture_insert(sql: &str) -> Option<(String, Vec<String>)> {
     let table = rest[..open_p].trim().to_string();
     let after_tbl = &rest[open_p + 1..];
     let close_p = after_tbl.find(')')?;
-    let cols: Vec<String> = after_tbl[..close_p].split(',').map(|c| c.trim().to_string()).collect();
+    let cols: Vec<String> = after_tbl[..close_p]
+        .split(',')
+        .map(|c| c.trim().to_string())
+        .collect();
     Some((table, cols))
 }
 
@@ -169,7 +182,13 @@ fn regex_like_capture_create(sql: &str) -> Option<String> {
     let rest = &s[lower.len() - after.len()..];
     let rest = rest.trim_start();
     let open = rest.find('(')?;
-    Some(rest[..open].trim().trim_matches('`').trim_matches('"').to_string())
+    Some(
+        rest[..open]
+            .trim()
+            .trim_matches('`')
+            .trim_matches('"')
+            .to_string(),
+    )
 }
 
 fn regex_like_capture_select(sql: &str) -> Option<(Vec<String>, String, Option<String>)> {
@@ -221,15 +240,20 @@ fn case1_mock_send_sync() {
 #[test]
 fn case2_insert_and_query_one() {
     let db = make_provider();
-    db.exec("CREATE TABLE agent_sessions (id TEXT, title TEXT)", &[]).unwrap();
+    db.exec("CREATE TABLE agent_sessions (id TEXT, title TEXT)", &[])
+        .unwrap();
     db.exec(
         "INSERT INTO agent_sessions(id, title) VALUES (?,?)",
         &[SqlValue::Text("s1".into()), SqlValue::Text("hello".into())],
-    ).unwrap();
-    let row = db.query_one(
-        "SELECT * FROM agent_sessions WHERE id = ?",
-        &[SqlValue::Text("s1".into())],
-    ).unwrap().expect("应得到 1 行");
+    )
+    .unwrap();
+    let row = db
+        .query_one(
+            "SELECT * FROM agent_sessions WHERE id = ?",
+            &[SqlValue::Text("s1".into())],
+        )
+        .unwrap()
+        .expect("应得到 1 行");
     assert_eq!(row.get("title"), Some(&SqlValue::Text("hello".into())));
 }
 
@@ -239,11 +263,20 @@ fn case3_exec_batch_multi_query() {
     db.exec_batch(
         "CREATE TABLE items (name TEXT, qty INT); \
          INSERT INTO items(name, qty) VALUES (?,?); \
-         INSERT INTO items(name, qty) VALUES (?,?);"
-    ).unwrap_or(()); // mock 简化：exec_batch 不会处理 VALUES 参数；退化为下面手写 INSERT
+         INSERT INTO items(name, qty) VALUES (?,?);",
+    )
+    .unwrap_or(()); // mock 简化：exec_batch 不会处理 VALUES 参数；退化为下面手写 INSERT
     let _ = db.exec_batch("CREATE TABLE items (name TEXT, qty INT)");
-    db.exec("INSERT INTO items(name, qty) VALUES (?,?)", &[SqlValue::Text("a".into()), SqlValue::Int(1)]).unwrap();
-    db.exec("INSERT INTO items(name, qty) VALUES (?,?)", &[SqlValue::Text("b".into()), SqlValue::Int(2)]).unwrap();
+    db.exec(
+        "INSERT INTO items(name, qty) VALUES (?,?)",
+        &[SqlValue::Text("a".into()), SqlValue::Int(1)],
+    )
+    .unwrap();
+    db.exec(
+        "INSERT INTO items(name, qty) VALUES (?,?)",
+        &[SqlValue::Text("b".into()), SqlValue::Int(2)],
+    )
+    .unwrap();
     let rows = db.query("SELECT name, qty FROM items", &[]).unwrap();
     assert_eq!(rows.len(), 2);
 }
@@ -251,13 +284,23 @@ fn case3_exec_batch_multi_query() {
 #[test]
 fn case4_params_binding_multi_columns() {
     let db = make_provider();
-    db.exec("CREATE TABLE mem (id TEXT, role TEXT, score INT)", &[]).unwrap();
-    db.exec("INSERT INTO mem(id, role, score) VALUES (?,?,?)",
-        &[SqlValue::Text("m1".into()), SqlValue::Text("admin".into()), SqlValue::Int(90)]
-    ).unwrap();
-    let rows = db.query("SELECT id, role, score FROM mem WHERE id = ?",
-        &[SqlValue::Text("m1".into())]
-    ).unwrap();
+    db.exec("CREATE TABLE mem (id TEXT, role TEXT, score INT)", &[])
+        .unwrap();
+    db.exec(
+        "INSERT INTO mem(id, role, score) VALUES (?,?,?)",
+        &[
+            SqlValue::Text("m1".into()),
+            SqlValue::Text("admin".into()),
+            SqlValue::Int(90),
+        ],
+    )
+    .unwrap();
+    let rows = db
+        .query(
+            "SELECT id, role, score FROM mem WHERE id = ?",
+            &[SqlValue::Text("m1".into())],
+        )
+        .unwrap();
     assert_eq!(rows.len(), 1);
     let r = &rows[0];
     assert_eq!(r.get("role"), Some(&SqlValue::Text("admin".into())));
@@ -268,11 +311,16 @@ fn case4_params_binding_multi_columns() {
 fn case5_query_one_should_error_on_multi_rows() {
     let db = make_provider();
     db.exec("CREATE TABLE dup (k INT)", &[]).unwrap();
-    db.exec("INSERT INTO dup(k) VALUES (?)", &[SqlValue::Int(1)]).unwrap();
-    db.exec("INSERT INTO dup(k) VALUES (?)", &[SqlValue::Int(1)]).unwrap();
+    db.exec("INSERT INTO dup(k) VALUES (?)", &[SqlValue::Int(1)])
+        .unwrap();
+    db.exec("INSERT INTO dup(k) VALUES (?)", &[SqlValue::Int(1)])
+        .unwrap();
     let err = match db.query_one("SELECT k FROM dup WHERE k = ?", &[SqlValue::Int(1)]) {
         Ok(_) => panic!("应返回错误：超过 1 行"),
         Err(e) => e,
     };
-    assert!(err.to_string().contains("期望 ≤1 行") || err.to_string().contains("query_one"), "错误内容：{err}");
+    assert!(
+        err.to_string().contains("期望 ≤1 行") || err.to_string().contains("query_one"),
+        "错误内容：{err}"
+    );
 }

@@ -1,4 +1,4 @@
-﻿//! AI 大模型辅助编程 · 全维处理算法（Phase 1 落地）
+//! AI 大模型辅助编程 · 全维处理算法（Phase 1 落地）
 //!
 //! 把设计文档《ai_programming_algorithm_design》的 10 步流程图落成可执行流水线：
 //!   ① 需求归一化(Normalize) → ② 流程图建模 → ③ 七专家审查 → ④ 裁决 →
@@ -71,7 +71,10 @@ impl NormalizedRequirement {
         if self.status != DraftStatus::Confirmed {
             return false; // G-A: AI 草稿不可直接处理
         }
-        let concrete = self.constraints.iter().all(|c| !c.is_empty() && !is_vague(c));
+        let concrete = self
+            .constraints
+            .iter()
+            .all(|c| !c.is_empty() && !is_vague(c));
         let forbidden_declared = self
             .forbidden
             .iter()
@@ -314,7 +317,12 @@ fn verify_code_roundtrip(graph: &FlowGraph, code: &CodeBundle) -> bool {
     if code.rejected {
         return false; // M2 硬红线：阻断冲突未解即不一致
     }
-    let joined = code.files.iter().map(|f| f.content.as_str()).collect::<Vec<_>>().join("\n");
+    let joined = code
+        .files
+        .iter()
+        .map(|f| f.content.as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
     for n in graph.nodes.iter().filter(|n| n.kind.is_executable()) {
         let fname = flow_ai::codegen::py_ident(&n.id);
         let def = format!("def {}(ctx:", fname);
@@ -360,11 +368,7 @@ fn check_loops(graph: &FlowGraph, ctx: &GovernContext) -> Option<String> {
             Some(g) => match &g.policy {
                 crate::context::LoopPolicy::Unbounded => {
                     // 无界循环：要求专门的安全专家审批角色（不能仅凭普通 approver）
-                    let approved = ctx
-                        .principal
-                        .roles
-                        .iter()
-                        .any(|r| r == "safety_approver")
+                    let approved = ctx.principal.roles.iter().any(|r| r == "safety_approver")
                         && ctx.tenant.regulated;
                     if !approved {
                         return Some(format!(

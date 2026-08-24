@@ -29,10 +29,7 @@ pub fn conflict_invariant(after: &FlowGraph, opt: &OptimizationReport) -> Check 
                     if !matches!(n.kind, NodeKind::Guard | NodeKind::End)
                         && !is_handler_name(&n.name)
                     {
-                        dangling.push(format!(
-                            "{}→{} 目标非 Handler/Guard/End",
-                            e.from, e.to
-                        ));
+                        dangling.push(format!("{}→{} 目标非 Handler/Guard/End", e.from, e.to));
                     }
                 }
             }
@@ -50,10 +47,16 @@ pub fn conflict_invariant(after: &FlowGraph, opt: &OptimizationReport) -> Check 
         name: "conflict".into(),
         passed: true,
         blocking: true,
-        detail: format!("阻塞冲突 0，异常边全部落点有效（{} 条）", opt.conflicts.conflicts.len()),
+        detail: format!(
+            "阻塞冲突 0，异常边全部落点有效（{} 条）",
+            opt.conflicts.conflicts.len()
+        ),
     }
 }
 
 pub fn is_handler_name(name: &str) -> bool {
-    name.contains("error") || name.contains("handler") || name.contains("错误处理") || name.starts_with("__")
+    name.contains("error")
+        || name.contains("handler")
+        || name.contains("错误处理")
+        || name.starts_with("__")
 }

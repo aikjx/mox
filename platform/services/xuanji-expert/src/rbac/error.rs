@@ -19,9 +19,13 @@ impl fmt::Display for RbacError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::RoleNotFound(r) => write!(f, "RBAC: role not found '{r}'"),
-            Self::CyclicInheritance(r) => write!(f, "RBAC: cyclic inheritance detected in role '{r}'"),
+            Self::CyclicInheritance(r) => {
+                write!(f, "RBAC: cyclic inheritance detected in role '{r}'")
+            }
             Self::PolicyLoadFailed(msg) => write!(f, "RBAC: policy load failed — {msg}"),
-            Self::AuditWriteFailed(msg) => write!(f, "RBAC: audit write failed — {msg} (non-blocking)"),
+            Self::AuditWriteFailed(msg) => {
+                write!(f, "RBAC: audit write failed — {msg} (non-blocking)")
+            }
         }
     }
 }

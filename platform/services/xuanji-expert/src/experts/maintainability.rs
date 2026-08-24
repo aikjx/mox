@@ -1,11 +1,11 @@
-﻿//! 可维护性专家（开发维度）：审查可维护性指标、技术债务
+//! 可维护性专家（开发维度）：审查可维护性指标、技术债务
 //!
 //! 分析基于 `CodeUnit` 的**预分析真字段**（耦合度 / 复杂度 / 重复率），
 //! 不再用字符串特征猜测可维护性。
 
+use crate::context::ExpertContext;
 use crate::expert::{Expert, ExpertOpinion, Risk, Suggestion};
 use crate::ir::{Dimension, ExpertId};
-use crate::context::ExpertContext;
 use flow_ai::model::Severity;
 
 /// 可维护性专家：审查代码可维护性
@@ -54,7 +54,8 @@ impl Expert for MaintainabilityExpert {
                         dimension: Dimension::Maintainability,
                         message: format!(
                             "模块 {} 重复率过高（{:.1}%）",
-                            unit.name, unit.duplication_score * 100.0
+                            unit.name,
+                            unit.duplication_score * 100.0
                         ),
                         remediation: Some("消除重复代码".to_string()),
                         veto: false,

@@ -12,7 +12,9 @@ pub enum FlushPolicy {
 }
 
 impl Default for FlushPolicy {
-    fn default() -> Self { Self::Batch { max_events: 100 } }
+    fn default() -> Self {
+        Self::Batch { max_events: 100 }
+    }
 }
 
 /// 外部审计写入接口
@@ -20,23 +22,42 @@ pub trait AuditSink: Send + Sync {
     fn append_sync(&self, event: &ExtAuditEvent) -> Result<(), AuditError>;
     fn append_async(&self, _event: &ExtAuditEvent) {}
     fn append_batch(&self, events: &[ExtAuditEvent]) -> Result<(), AuditError> {
-        for ev in events { self.append_sync(ev)?; }
+        for ev in events {
+            self.append_sync(ev)?;
+        }
         Ok(())
     }
-    fn flush(&self) -> Result<(), AuditError> { Ok(()) }
-    fn health_check(&self) -> Result<(), AuditError> { Ok(()) }
-    fn is_enabled(&self) -> bool { true }
+    fn flush(&self) -> Result<(), AuditError> {
+        Ok(())
+    }
+    fn health_check(&self) -> Result<(), AuditError> {
+        Ok(())
+    }
+    fn is_enabled(&self) -> bool {
+        true
+    }
 }
 
 /// 组合 Sink：同时写入多个外部存储，至少一个成功即可
-pub struct MultiSink { sinks: Vec<Box<dyn AuditSink>> }
-
-impl MultiSink {
-    pub fn new() -> Self { Self { sinks: Vec::new() } }
-    pub fn with_sink(mut self, sink: Box<dyn AuditSink>) -> Self { self.sinks.push(sink); self }
+pub struct MultiSink {
+    sinks: Vec<Box<dyn AuditSink>>,
 }
 
-impl Default for MultiSink { fn default() -> Self { Self::new() } }
+impl MultiSink {
+    pub fn new() -> Self {
+        Self { sinks: Vec::new() }
+    }
+    pub fn with_sink(mut self, sink: Box<dyn AuditSink>) -> Self {
+        self.sinks.push(sink);
+        self
+    }
+}
+
+impl Default for MultiSink {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl AuditSink for MultiSink {
     fn append_sync(&self, event: &ExtAuditEvent) -> Result<(), AuditError> {
@@ -55,29 +76,47 @@ impl AuditSink for MultiSink {
     }
 
     fn flush(&self) -> Result<(), AuditError> {
-        for sink in &self.sinks { if sink.is_enabled() { sink.flush()?; } }
+        for sink in &self.sinks {
+            if sink.is_enabled() {
+                sink.flush()?;
+            }
+        }
         Ok(())
     }
 
-    fn is_enabled(&self) -> bool { self.sinks.iter().any(|s| s.is_enabled()) }
+    fn is_enabled(&self) -> bool {
+        self.sinks.iter().any(|s| s.is_enabled())
+    }
 }
 
 /// 空操作 Sink（开发/测试环境）：写入即丢弃，但视为「已启用」，
 /// 因此可作为 MultiSink 中唯一 sink 使用（不会触发 Disabled 错误）。
 pub struct NoopSink;
 impl AuditSink for NoopSink {
-    fn append_sync(&self, _e: &ExtAuditEvent) -> Result<(), AuditError> { Ok(()) }
-    fn flush(&self) -> Result<(), AuditError> { Ok(()) }
-    fn is_enabled(&self) -> bool { true }
+    fn append_sync(&self, _e: &ExtAuditEvent) -> Result<(), AuditError> {
+        Ok(())
+    }
+    fn flush(&self) -> Result<(), AuditError> {
+        Ok(())
+    }
+    fn is_enabled(&self) -> bool {
+        true
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
-    fn noop_append_ok() { assert!(NoopSink.append_sync(&super::super::event::test_event()).is_ok()); }
+    fn noop_append_ok() {
+        assert!(NoopSink
+            .append_sync(&super::super::event::test_event())
+            .is_ok());
+    }
     #[test]
-    fn multi_empty_disabled() { assert!(!MultiSink::new().is_enabled()); }
+    fn multi_empty_disabled() {
+        assert!(!MultiSink::new().is_enabled());
+    }
     #[test]
     fn multi_noop_is_usable() {
         let m = MultiSink::new().with_sink(Box::new(NoopSink));

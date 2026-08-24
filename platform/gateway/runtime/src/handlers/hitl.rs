@@ -23,11 +23,13 @@
 //! | `DENY`             | 拒绝（直接驳回） |
 //! | `MODIFY_APPROVE`   | 修改后批准（需带 `modified_payload`，合并到原 payload 后放行） |
 
-use axum::extract::{ws::Message, ws::WebSocket, ws::WebSocketUpgrade, State};
+use axum::extract::{ws::Message, ws::WebSocket, ws::WebSocketUpgrade, Extension, State};
 use axum::response::IntoResponse;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
+
+use crate::rbac_middleware::Principal;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::{broadcast, Mutex, RwLock};
@@ -186,9 +188,7 @@ pub struct HitlDecisionRecord {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum HitlRequest {
     /// 订阅 HITL 事件（可选过滤条件：flow_id / kind）
-    Subscribe {
-        filters: Option<HitlFilter>,
-    },
+    Subscribe { filters: Option<HitlFilter> },
     /// 取消订阅
     Unsubscribe,
     /// 发送审批动作
@@ -201,9 +201,7 @@ pub enum HitlRequest {
         modified_payload: Option<Value>,
     },
     /// 查询当前待审批列表
-    ListPending {
-        flow_id: Option<String>,
-    },
+    ListPending { flow_id: Option<String> },
 }
 
 /// 订阅过滤条件
@@ -219,19 +217,14 @@ pub struct HitlFilter {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum HitlResponse {
     /// 连接成功
-    Connected {
-        timestamp: i64,
-        message: String,
-    },
+    Connected { timestamp: i64, message: String },
     /// 订阅确认
     Subscribed {
         filters: Option<HitlFilter>,
         pending_count: usize,
     },
     /// 新的待审批事项推送
-    HitlEvent {
-        data: HitlEvent,
-    },
+    HitlEvent { data: HitlEvent },
     /// 审批动作结果
     ActionResult {
         success: bool,
@@ -239,14 +232,9 @@ pub enum HitlResponse {
         error: Option<String>,
     },
     /// 待审批列表响应
-    PendingList {
-        items: Vec<HitlEvent>,
-    },
+    PendingList { items: Vec<HitlEvent> },
     /// 通用错误
-    Error {
-        code: String,
-        message: String,
-    },
+    Error { code: String, message: String },
 }
 
 /// UNIX 时间戳（秒）
@@ -273,8 +261,13 @@ pub fn unix_ts() -> i64 {
 pub async fn hitl_ws_handler(
     ws: WebSocketUpgrade,
     State(state): State<Arc<HitlState>>,
+    Extension(principal): Extension<Principal>,
 ) -> impl IntoResponse {
+    // 连接已由网关鉴权（/ws/hitl 现要求 Bearer 或查询参数 token）；以「经鉴权主体」作为审批动作的
+    // 实际 actor 落痕，不信任客户端自报 actor（原默认 'admin' 可被任意关联者冒充）。
     ws.on_upgrade(move |socket| async move {
+        // 以「经鉴权主体」作为审批动作的落痕 actor，不信任客户端自报 actor。
+        let actor = principal.token_id.clone();
         // 全双工 WebSocket 直接用 Arc<Mutex> 包裹，写半部被多个广播任务共享。
         let write = std::sync::Arc::new(tokio::sync::Mutex::new(socket));
 
@@ -306,6 +299,7 @@ pub async fn hitl_ws_handler(
             let state = state.clone();
             let w = write.clone();
             let subscribed = subscribed.clone();
+            let actor = actor.clone();
             tokio::spawn(async move {
                 loop {
                     let msg = {
@@ -317,7 +311,7 @@ pub async fn hitl_ws_handler(
                         Some(Ok(Message::Text(text))) => {
                             match serde_json::from_str::<HitlRequest>(text.as_ref()) {
                                 Ok(req) => {
-                                    handle_client_request(&state, &w, &subscribed, req).await;
+                                    handle_client_request(&state, &w, &subscribed, &actor, req).await;
                                 }
                                 Err(e) => {
                                     write_text(&w, HitlResponse::Error {
@@ -434,6 +428,7 @@ async fn handle_client_request(
     state: &Arc<HitlState>,
     write: &Arc<Mutex<WebSocket>>,
     subscribed: &Arc<Mutex<Option<HitlFilter>>>,
+    actor: &str,
     req: HitlRequest,
 ) {
     match req {
@@ -468,7 +463,7 @@ async fn handle_client_request(
         HitlRequest::Action {
             event_id,
             action,
-            actor,
+            actor: _, // 客户端自报 actor 不再采信；落痕 actor 为经鉴权的主体（见 hitl_ws_handler）
             comment,
             modified_payload,
         } => {
@@ -487,7 +482,7 @@ async fn handle_client_request(
             }
 
             match state
-                .handle_action(&event_id, action, &actor, comment, modified_payload)
+                .handle_action(&event_id, action, actor, comment, modified_payload)
                 .await
             {
                 Ok(record) => {

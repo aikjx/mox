@@ -1,7 +1,7 @@
 # business-catalog · 业务拓扑预置目录
 
 ## §1 · 概述
-璇玑 L4Services 层的**业务拓扑 & 流程预置目录**：内置 7 类高复用预置 FlowGraph/TopologyGraph（政务/法院/财务/客服/ETL/MCP/螺旋维度分析），供新需求一键骨架化、benchmark 对比和业务聚类算法样本。
+璇玑 L4Services 层的**业务拓扑 & 流程预置目录**：内置 6 类高复用预置 FlowGraph/TopologyGraph（政务/财务/客服/ETL/MCP/螺旋维度分析），供新需求一键骨架化、benchmark 对比和业务聚类算法样本。
 
 ## §2 · CRATE_ID / ENGINE_NAME / AIS 层级
 归属 **AIS Layer = L4Services**（12 个 L4 crate 之一）。
@@ -35,12 +35,13 @@ pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateM
 ```bash
 cargo test -p business-catalog
 cargo test -p business-catalog t8_business_dip   # T8 DIP 合规专项
-cargo run -p business-catalog --bin catalog -- --list  # CLI 列出 7 类预置
+cargo run -p business-catalog --bin catalog -- --list  # CLI 列出 6 类内置
 ```
 断言覆盖：每个预置 Topology 节点数 ≥4 边数 ≥3 且连通、螺旋分析数值巧合与物理常数列精确到 6 位小数、DIP 禁止直接改 Catalog 内部数组（通过 trait 扩展注入）。
 
 ## §6 · 二次开发 / DIP 反转指引
 - **新增业务目录模板**：实现 `trait CatalogProvider` → 在 `Catalog` 的 `registry: Vec<Box<dyn CatalogProvider>>` 追加。不允许直接在 `lib.rs` 写死硬编码新模板。
+- **移除业务**：业务 FlowGraph、专家映射、拓扑扩展完整迁入 `projects/business-*/`；架构层只留 Business 容器 + 泛化 register/topo 框架。
 - **新增螺旋家族维度**：在 `spiral.rs` 追加 `Dimension` 变体，并把新增维度注册到 `DimensionCheck::registry`（DIP 点）。
 
 ## §7 · TDD RED→GREEN 工作流 + 精度护栏

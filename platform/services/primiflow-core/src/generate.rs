@@ -215,8 +215,14 @@ fn emit_schema(graph: &AssocGraph, dir: &Path) -> (String, String) {
     fs::write(&schema_path, schema_rs).expect("write schema.rs");
     let ddl_path = dir.join("ddl.sql");
     fs::write(&ddl_path, ddl).expect("write ddl.sql");
-    (schema_path.file_name().unwrap().to_string_lossy().into_owned(),
-     ddl_path.file_name().unwrap().to_string_lossy().into_owned())
+    (
+        schema_path
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .into_owned(),
+        ddl_path.file_name().unwrap().to_string_lossy().into_owned(),
+    )
 }
 
 /// 生成 Mermaid 可视化图
@@ -234,14 +240,23 @@ fn emit_matrix(graph: &AssocGraph, dir: &Path) -> String {
          | 需求 | 功能 | 业务 | 算法 | 任务 | 代码 | 数据设计 |\n\
          |------|------|------|------|------|------|----------|\n",
     );
-    for n in graph.nodes.iter().filter(|n| n.kind == NodeKind::Requirement) {
+    for n in graph
+        .nodes
+        .iter()
+        .filter(|n| n.kind == NodeKind::Requirement)
+    {
         let down = downstream_by_kind(graph, &n.id);
         let join = |k: NodeKind| -> String {
             let mut labels: Vec<String> = down
                 .get(&k)
                 .map(|ids| {
                     ids.iter()
-                        .map(|id| graph.node(id).map(|nn| nn.label.clone()).unwrap_or_else(|| id.clone()))
+                        .map(|id| {
+                            graph
+                                .node(id)
+                                .map(|nn| nn.label.clone())
+                                .unwrap_or_else(|| id.clone())
+                        })
                         .collect::<Vec<_>>()
                 })
                 .unwrap_or_default();
@@ -281,7 +296,10 @@ fn emit_mod_rs(code_files: &[String], schema_file: &str, dir: &Path) {
     let mut content = String::from(
         "//! 自动生成的关联图谱落地代码 · 请勿手改，由 `cargo run --example gen` 重新生成\n",
     );
-    content.push_str(&format!("pub mod {};\n", sanitize_ident(schema_file.trim_end_matches(".rs"))));
+    content.push_str(&format!(
+        "pub mod {};\n",
+        sanitize_ident(schema_file.trim_end_matches(".rs"))
+    ));
     for f in code_files {
         content.push_str(&format!(
             "pub mod {};\n",

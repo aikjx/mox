@@ -9,8 +9,12 @@ use flow_ai::model::{NodeKind, ToolKind};
 pub struct SecurityExpert;
 
 impl Expert for SecurityExpert {
-    fn id(&self) -> String { "security".into() }
-    fn dimension(&self) -> Dimension { Dimension::Security }
+    fn id(&self) -> String {
+        "security".into()
+    }
+    fn dimension(&self) -> Dimension {
+        Dimension::Security
+    }
 
     fn analyze(&self, ctx: &ExpertContext) -> ExpertOpinion {
         if !ctx.can(crate::context::Capability::EditFlow) {
@@ -33,13 +37,19 @@ impl Expert for SecurityExpert {
             // LLM 节点：提示词注入风险，需输出校验 Guard
             if matches!(n.tool, Some(ToolKind::Llm)) {
                 let followed_by_guard = g.edges.iter().any(|e| {
-                    e.from == n.id && g.node(&e.to).map(|s| s.kind == NodeKind::Guard).unwrap_or(false)
+                    e.from == n.id
+                        && g.node(&e.to)
+                            .map(|s| s.kind == NodeKind::Guard)
+                            .unwrap_or(false)
                 });
                 if !followed_by_guard {
                     o.push_risk(
                         flow_ai::model::Severity::Info,
                         vec![n.id.clone()],
-                        format!("LLM 节点「{}」输出未做内容校验，存在提示词注入/越狱外溢风险", n.name),
+                        format!(
+                            "LLM 节点「{}」输出未做内容校验，存在提示词注入/越狱外溢风险",
+                            n.name
+                        ),
                         Some("下游增加输出校验 Guard".into()),
                     );
                 }

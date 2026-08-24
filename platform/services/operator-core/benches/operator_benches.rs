@@ -31,11 +31,21 @@ fn bench_state_algebra(c: &mut Criterion) {
     g.bench_function("norm_l2", |bch| bch.iter(|| black_box(&a).norm()));
     g.bench_function("norm_l1", |bch| bch.iter(|| black_box(&a).norm_l1()));
     g.bench_function("dot", |bch| {
-        bch.iter(|| black_box(&a).dot(black_box(&b_vec)).expect("同维点积不会失败"))
+        bch.iter(|| {
+            black_box(&a)
+                .dot(black_box(&b_vec))
+                .expect("同维点积不会失败")
+        })
     });
-    g.bench_function("scale", |bch| bch.iter(|| black_box(&a).scale(black_box(1.5))));
+    g.bench_function("scale", |bch| {
+        bch.iter(|| black_box(&a).scale(black_box(1.5)))
+    });
     g.bench_function("add", |bch| {
-        bch.iter(|| black_box(&a).add(black_box(&b_vec)).expect("同维相加不会失败"))
+        bch.iter(|| {
+            black_box(&a)
+                .add(black_box(&b_vec))
+                .expect("同维相加不会失败")
+        })
     });
     g.finish();
 }

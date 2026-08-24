@@ -1,4 +1,4 @@
-﻿//! 智能驱动信息闭环引擎（八段闭环）。
+//! 智能驱动信息闭环引擎（八段闭环）。
 //!
 //! ```text
 //! ① 感知 Sense    → 从企业各知识库拉取变更
@@ -216,7 +216,10 @@ pub fn run(connectors: &[&dyn Connector], cfg: &LoopConfig) -> LoopReport {
         code: Stage::Reason.code().into(),
         name: Stage::Reason.zh().into(),
         ok: true,
-        detail: format!("识别知识热点 {} 个，孤立知识 {isolated_n} 个", hotspots.len()),
+        detail: format!(
+            "识别知识热点 {} 个，孤立知识 {isolated_n} 个",
+            hotspots.len()
+        ),
         elapsed_ms: s.elapsed().as_millis(),
     });
 
@@ -263,8 +266,16 @@ pub fn run(connectors: &[&dyn Connector], cfg: &LoopConfig) -> LoopReport {
         ok: governance.passed,
         detail: format!(
             "闸门{} / 偏离{} / 覆盖率 {:.1}%",
-            if governance.gate.passed { "通过" } else { "失败" },
-            if governance.deviation.passed { "通过" } else { "失败" },
+            if governance.gate.passed {
+                "通过"
+            } else {
+                "失败"
+            },
+            if governance.deviation.passed {
+                "通过"
+            } else {
+                "失败"
+            },
             governance.deviation.coverage
         ),
         elapsed_ms: verify_ms,
@@ -279,7 +290,11 @@ pub fn run(connectors: &[&dyn Connector], cfg: &LoopConfig) -> LoopReport {
         name: Stage::Persist.zh().into(),
         ok: persisted,
         detail: if persisted {
-            format!("沉淀 {} 节点 / {} 边为事实源", graph.nodes.len(), graph.edges.len())
+            format!(
+                "沉淀 {} 节点 / {} 边为事实源",
+                graph.nodes.len(),
+                graph.edges.len()
+            )
         } else {
             "拦停未沉淀，事实源保持上一致状态".to_string()
         },
@@ -422,7 +437,12 @@ mod tests {
     fn aligned_source_is_accepted_and_persisted() {
         let c = InfoGraphConnector::from_str(aligned_json());
         let r = run(&[&c], &LoopConfig::default());
-        assert_eq!(r.decision, Decision::Accept, "全绿应放行: {}", r.decision_reason);
+        assert_eq!(
+            r.decision,
+            Decision::Accept,
+            "全绿应放行: {}",
+            r.decision_reason
+        );
         assert!(r.persisted);
         assert_eq!(r.governance.deviation.coverage, 100.0);
         assert_eq!(r.node_count, 2);
@@ -475,7 +495,11 @@ mod tests {
     fn malformed_source_marks_normalize_failed_without_panic() {
         let bad = InfoGraphConnector::from_str("{ this is not json");
         let r = run(&[&bad], &LoopConfig::default());
-        let s2 = r.traces.iter().find(|t| t.stage == Stage::Normalize).unwrap();
+        let s2 = r
+            .traces
+            .iter()
+            .find(|t| t.stage == Stage::Normalize)
+            .unwrap();
         assert!(!s2.ok, "非法源必须标记归一失败");
         assert!(s2.detail.contains("失败"));
         // 单源失败不应导致 panic，闭环仍需走完八段
@@ -523,7 +547,10 @@ mod tests {
             {"id":"e1","from":"Requirement:D01","to":"CodeFile:a.rs","kind":"Bind","label":"","evidence":""}
           ]
         }"#;
-        let r = run(&[&InfoGraphConnector::from_str(json)], &LoopConfig::default());
+        let r = run(
+            &[&InfoGraphConnector::from_str(json)],
+            &LoopConfig::default(),
+        );
         assert_eq!(r.decision, Decision::Reject, "未证实关系必须拦停");
         assert!(!r.persisted);
         assert!(r

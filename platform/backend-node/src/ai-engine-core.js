@@ -103,8 +103,18 @@ class AIEngineCore {
    */
   detectIntent(question) {
     // [C3] SINGLE-SOURCE wrapper（真实定义见 expert-alliance/domain/intent-classifier.js）
+    // 注意：AIEC.detectIntent (sync fallback) 保持 domain 层 primary 字段语义，
+    //   以满足 C3 三路径归一化 TR-6.1（EXACT.primary===AIEC.primary===AIIE.primary）。
+    // 对外需"统一 capability"时调用 getCapabilities() 或 intentClassify()。
     const r = _domainDetectIntent(question);
-    return { intent: r.primary, score: r.allScores?.[r.primary] || 0, scores: r.allScores || {}, matched_keywords: r.matchedKeywords || [], method: 'keyword-scoring-domain' };
+    return {
+      intent: r.primary,
+      score: r.allScores?.[r.primary] || 0,
+      scores: r.allScores || {},
+      matched_keywords: r.matchedKeywords || [],
+      method: 'keyword-scoring-domain',
+      capability: r.capability,
+    };
   }
 
   // 异步图谱版意图识别（激活扩散）：process 主路径

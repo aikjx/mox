@@ -3,9 +3,9 @@
 //!
 //! 本文件是 PrimiFlow 全平台的**统一数据载体**：八层模块（C1–C8）全部围绕这 6 张表
 //! 与 2 个状态/类型枚举读写，保证「图是图、代码是代码、数据是数据」三态同源。
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 /// 拓扑生命周期状态（SPEC §4 `topologies.status`）
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -127,7 +127,13 @@ pub struct Project {
 }
 
 impl Project {
-    pub fn new(name: impl Into<String>, tenant_id: Option<String>, k: f64, t: f64, budget_c: f32) -> Self {
+    pub fn new(
+        name: impl Into<String>,
+        tenant_id: Option<String>,
+        k: f64,
+        t: f64,
+        budget_c: f32,
+    ) -> Self {
         let k_t_pref = serde_json::json!({ "k": k, "t": t }).to_string();
         Self {
             id: Uuid::new_v4(),
@@ -140,13 +146,16 @@ impl Project {
     }
     /// 从默认偏好解析 κ、τ
     pub fn pref(&self) -> (f64, f64) {
-        let v: serde_json::Value = serde_json::from_str(&self.k_t_pref).unwrap_or(serde_json::json!({"k":0.7,"t":0.3}));
+        let v: serde_json::Value =
+            serde_json::from_str(&self.k_t_pref).unwrap_or(serde_json::json!({"k":0.7,"t":0.3}));
         (
             v.get("k").and_then(|x| x.as_f64()).unwrap_or(0.7),
             v.get("t").and_then(|x| x.as_f64()).unwrap_or(0.3),
         )
     }
-    pub fn to_json(&self) -> String { serde_json::to_string(self).unwrap() }
+    pub fn to_json(&self) -> String {
+        serde_json::to_string(self).unwrap()
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -162,10 +171,24 @@ pub struct Conversation {
 
 impl Conversation {
     pub fn user(project_id: Uuid, content: impl Into<String>, meta: Option<String>) -> Self {
-        Self { id: Uuid::new_v4(), project_id, role: "user".into(), content: content.into(), meta, created_at: Utc::now() }
+        Self {
+            id: Uuid::new_v4(),
+            project_id,
+            role: "user".into(),
+            content: content.into(),
+            meta,
+            created_at: Utc::now(),
+        }
     }
     pub fn assistant(project_id: Uuid, content: impl Into<String>, meta: Option<String>) -> Self {
-        Self { id: Uuid::new_v4(), project_id, role: "assistant".into(), content: content.into(), meta, created_at: Utc::now() }
+        Self {
+            id: Uuid::new_v4(),
+            project_id,
+            role: "assistant".into(),
+            content: content.into(),
+            meta,
+            created_at: Utc::now(),
+        }
     }
 }
 
@@ -184,7 +207,14 @@ pub struct Topology {
 }
 
 impl Topology {
-    pub fn new(project_id: Uuid, k: f64, t: f64, c: f64, delta: f64, graph_json: impl Into<String>) -> Self {
+    pub fn new(
+        project_id: Uuid,
+        k: f64,
+        t: f64,
+        c: f64,
+        delta: f64,
+        graph_json: impl Into<String>,
+    ) -> Self {
         Self {
             id: Uuid::new_v4(),
             project_id,
@@ -197,7 +227,9 @@ impl Topology {
             created_at: Utc::now(),
         }
     }
-    pub fn set_status(&mut self, s: TopologyStatus) { self.status = s.as_str().into(); }
+    pub fn set_status(&mut self, s: TopologyStatus) {
+        self.status = s.as_str().into();
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -212,7 +244,12 @@ pub struct Asset {
 }
 
 impl Asset {
-    pub fn new(topology_id: Uuid, name: impl Into<String>, domain: Option<String>, graph_json: impl Into<String>) -> Self {
+    pub fn new(
+        topology_id: Uuid,
+        name: impl Into<String>,
+        domain: Option<String>,
+        graph_json: impl Into<String>,
+    ) -> Self {
         Self {
             id: Uuid::new_v4(),
             topology_id,
@@ -237,11 +274,20 @@ pub struct Artifact {
 }
 
 impl Artifact {
-    pub fn new(project_id: Uuid, kind: ArtifactKind, title: impl Into<String>, content: impl Into<String>) -> Self {
+    pub fn new(
+        project_id: Uuid,
+        kind: ArtifactKind,
+        title: impl Into<String>,
+        content: impl Into<String>,
+    ) -> Self {
         Self {
             id: Uuid::new_v4(),
             project_id,
-            kind: match kind { ArtifactKind::RequirementSpec => "requirement_spec", _ => "" }.to_string(),
+            kind: match kind {
+                ArtifactKind::RequirementSpec => "requirement_spec",
+                _ => "",
+            }
+            .to_string(),
             title: title.into(),
             content: content.into(),
             created_at: Utc::now(),
@@ -261,7 +307,8 @@ impl Artifact {
                 ArtifactKind::ScheduledTask => "scheduled_task",
                 ArtifactKind::CodeProject => "code_project",
                 ArtifactKind::Deployment => "deployment",
-            }.to_string(),
+            }
+            .to_string(),
             title: kind.title().into(),
             content: content.into(),
             created_at: Utc::now(),

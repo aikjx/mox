@@ -1,9 +1,9 @@
-﻿//! 外部合规标准审计事件
-//! 
+//! 外部合规标准审计事件
+//!
 //! 与内部 govern::AuditEvent 并行写入：
 //! - 内部 AuditChain：验证自身一致性（防篡改检测）
 //! - 外部 ExtAuditEvent：满足 SOC2/GDPR/ISO27001 合规要求
-//! 
+//!
 //! 事件结构标准化后，可对接任意合规框架。
 
 use chrono::{DateTime, Utc};
@@ -12,7 +12,7 @@ use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 /// 外部合规标准审计事件
-/// 
+///
 /// 命名 ExtAuditEvent 以区别于内部 govern::AuditEvent，
 /// 两者同时写入，互不干扰。
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -149,30 +149,64 @@ pub struct AuditActor {
 
 impl AuditActor {
     pub fn system() -> Self {
-        Self { id: "system".into(), role: "system".into(), source: ActorSource::System }
+        Self {
+            id: "system".into(),
+            role: "system".into(),
+            source: ActorSource::System,
+        }
     }
     pub fn ai_agent(agent_id: &str) -> Self {
-        Self { id: agent_id.into(), role: "ai_agent".into(), source: ActorSource::Ai }
+        Self {
+            id: agent_id.into(),
+            role: "ai_agent".into(),
+            source: ActorSource::Ai,
+        }
     }
     pub fn human(user_id: &str, role: &str) -> Self {
-        Self { id: user_id.into(), role: role.into(), source: ActorSource::Human }
+        Self {
+            id: user_id.into(),
+            role: role.into(),
+            source: ActorSource::Human,
+        }
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum ActorSource { Human, Ai, System, Unknown }
+pub enum ActorSource {
+    Human,
+    Ai,
+    System,
+    Unknown,
+}
 
 /// 操作类型
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum AuditAction {
-    FlowCreated, FlowModified, FlowDeleted, FlowApproved, FlowRejected,
-    FlowVetoed, FlowExecuted, FlowRolledBack,
-    XuanjiOptimize, ExpertDispatch, ExpertVeto,
-    Reconciliation, VerificationGateway, GovernanceGate,
-    AuditChainExtend, AuditChainTamperDetected,
-    RBACDenied, PermissionDenied, SecurityViolation,
-    LoginSuccess, LoginFailed,
-    ConfigChanged, SkillRegistered, RuleRegistered, MCPPluginRegistered,
+    FlowCreated,
+    FlowModified,
+    FlowDeleted,
+    FlowApproved,
+    FlowRejected,
+    FlowVetoed,
+    FlowExecuted,
+    FlowRolledBack,
+    XuanjiOptimize,
+    ExpertDispatch,
+    ExpertVeto,
+    Reconciliation,
+    VerificationGateway,
+    GovernanceGate,
+    AuditChainExtend,
+    AuditChainTamperDetected,
+    RBACDenied,
+    PermissionDenied,
+    SecurityViolation,
+    LoginSuccess,
+    LoginFailed,
+    ConfigChanged,
+    SkillRegistered,
+    RuleRegistered,
+    MCPPluginRegistered,
     Unknown(String),
 }
 
@@ -220,19 +254,41 @@ pub struct AuditResource {
 
 impl AuditResource {
     pub fn flow(flow_id: &str, tenant_id: &str) -> Self {
-        Self { resource_type: "flow".into(), resource_id: flow_id.into(), tenant_id: tenant_id.into(), name: None }
+        Self {
+            resource_type: "flow".into(),
+            resource_id: flow_id.into(),
+            tenant_id: tenant_id.into(),
+            name: None,
+        }
     }
     pub fn rule(rule_id: &str, tenant_id: &str) -> Self {
-        Self { resource_type: "rule".into(), resource_id: rule_id.into(), tenant_id: tenant_id.into(), name: None }
+        Self {
+            resource_type: "rule".into(),
+            resource_id: rule_id.into(),
+            tenant_id: tenant_id.into(),
+            name: None,
+        }
     }
     pub fn skill(skill_id: &str, tenant_id: &str) -> Self {
-        Self { resource_type: "skill".into(), resource_id: skill_id.into(), tenant_id: tenant_id.into(), name: None }
+        Self {
+            resource_type: "skill".into(),
+            resource_id: skill_id.into(),
+            tenant_id: tenant_id.into(),
+            name: None,
+        }
     }
 }
 
 /// 操作结果
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum AuditOutcome { Success, Failure, PartialFailure, Blocked, Tampered, Pending }
+pub enum AuditOutcome {
+    Success,
+    Failure,
+    PartialFailure,
+    Blocked,
+    Tampered,
+    Pending,
+}
 
 impl AuditOutcome {
     pub fn to_severity(&self) -> AuditSeverity {
@@ -248,8 +304,14 @@ impl AuditOutcome {
 /// 审计严重程度（RFC 5424 优先级映射）
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub enum AuditSeverity {
-    Emergency = 0, Alert = 1, Critical = 2, Error = 3,
-    Warning = 4, Notice = 5, Info = 6, Debug = 7,
+    Emergency = 0,
+    Alert = 1,
+    Critical = 2,
+    Error = 3,
+    Warning = 4,
+    Notice = 5,
+    Info = 6,
+    Debug = 7,
 }
 
 impl std::fmt::Display for AuditSeverity {
@@ -269,7 +331,9 @@ impl std::fmt::Display for AuditSeverity {
 
 /// RFC 5424 syslog 优先级 = facility*8 + severity
 impl From<AuditSeverity> for u8 {
-    fn from(s: AuditSeverity) -> Self { 16 * 8 + s as u8 }
+    fn from(s: AuditSeverity) -> Self {
+        16 * 8 + s as u8
+    }
 }
 
 /// 测试用事件

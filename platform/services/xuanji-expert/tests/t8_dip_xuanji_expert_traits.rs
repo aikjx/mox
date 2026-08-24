@@ -24,9 +24,7 @@ use std::sync::Arc;
 use xuanji_expert::domain::{
     GovernContext, GovernExpert, GovernLevel, GovernVerdict, MinimalGovernContext, MockGovernExpert,
 };
-use xuanji_expert::expert_traits::{
-    AllianceOrchestrator, ExpertConsultant, ExpertRegistry,
-};
+use xuanji_expert::expert_traits::{AllianceOrchestrator, ExpertConsultant, ExpertRegistry};
 use xuanji_expert::types::{ConsultQuery, ConsultReport, TaskSpec};
 
 // ============================================================================
@@ -36,7 +34,9 @@ use xuanji_expert::types::{ConsultQuery, ConsultReport, TaskSpec};
 fn list_rs_files(dir: &Path) -> Vec<PathBuf> {
     let mut out = Vec::new();
     fn walk(dir: &Path, out: &mut Vec<PathBuf>) {
-        let Ok(rd) = std::fs::read_dir(dir) else { return };
+        let Ok(rd) = std::fs::read_dir(dir) else {
+            return;
+        };
         for entry in rd.flatten() {
             let path = entry.path();
             if path.is_dir() {
@@ -54,9 +54,12 @@ fn list_rs_files(dir: &Path) -> Vec<PathBuf> {
 fn workspace_root() -> PathBuf {
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     manifest
-        .parent().unwrap()   // services
-        .parent().unwrap()   // platform
-        .parent().unwrap()   // infotopograph (workspace root)
+        .parent()
+        .unwrap() // services
+        .parent()
+        .unwrap() // platform
+        .parent()
+        .unwrap() // infotopograph (workspace root)
         .to_path_buf()
 }
 
@@ -124,7 +127,11 @@ fn tr_08_01_hermes_only_use_traits() {
 fn tr_08_02_catalog_only_use_traits() {
     let ws = workspace_root();
     let dir = ws.join("platform/services/business-catalog/src");
-    assert!(dir.is_dir(), "找不到 business-catalog src: {}", dir.display());
+    assert!(
+        dir.is_dir(),
+        "找不到 business-catalog src: {}",
+        dir.display()
+    );
     let files = list_rs_files(&dir);
     assert!(!files.is_empty(), "catalog src 至少应有一个 .rs 文件");
 
@@ -168,7 +175,9 @@ fn tr_08_03_mock_consultant() {
         query: "Hello".into(),
         ctx: HashMap::new(),
     };
-    let rep = consultant.consult_blocking(&query).expect("mock consult 必成功");
+    let rep = consultant
+        .consult_blocking(&query)
+        .expect("mock consult 必成功");
     assert_eq!(rep.report_id, "mock-q");
     assert!((rep.score - 1.0).abs() < 1e-9);
     assert!(!rep.vetoed);
@@ -177,7 +186,11 @@ fn tr_08_03_mock_consultant() {
     assert!(rep.reason.is_none());
 
     fn downstream_api(consultant: Arc<dyn ExpertConsultant>) -> ConsultReport {
-        let q = ConsultQuery { id: "d".into(), query: String::new(), ctx: HashMap::new() };
+        let q = ConsultQuery {
+            id: "d".into(),
+            query: String::new(),
+            ctx: HashMap::new(),
+        };
         consultant.consult_blocking(&q).unwrap()
     }
     let r2 = downstream_api(consultant.clone());
@@ -325,9 +338,7 @@ fn tr_08_04_build_and_unit_test() {
         .arg("--lib")
         .arg("--quiet");
 
-    let status = cmd
-        .status()
-        .expect("无法启动 cargo 子进程");
+    let status = cmd.status().expect("无法启动 cargo 子进程");
 
     assert!(
         status.success(),

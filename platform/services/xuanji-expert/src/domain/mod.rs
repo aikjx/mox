@@ -136,14 +136,30 @@ impl Default for MinimalGovernContext {
 }
 
 impl GovernContext for MinimalGovernContext {
-    fn tenant(&self) -> &str { &self.tenant }
-    fn namespace(&self) -> &str { &self.namespace }
-    fn principal(&self) -> &str { &self.principal }
-    fn roles(&self) -> &[String] { &self.roles }
-    fn is_regulated(&self) -> bool { self.regulated }
-    fn max_parallel(&self) -> u32 { self.max_parallel }
-    fn cost_budget(&self) -> f64 { self.cost_budget }
-    fn sla_ms(&self) -> u64 { self.sla_ms }
+    fn tenant(&self) -> &str {
+        &self.tenant
+    }
+    fn namespace(&self) -> &str {
+        &self.namespace
+    }
+    fn principal(&self) -> &str {
+        &self.principal
+    }
+    fn roles(&self) -> &[String] {
+        &self.roles
+    }
+    fn is_regulated(&self) -> bool {
+        self.regulated
+    }
+    fn max_parallel(&self) -> u32 {
+        self.max_parallel
+    }
+    fn cost_budget(&self) -> f64 {
+        self.cost_budget
+    }
+    fn sla_ms(&self) -> u64 {
+        self.sla_ms
+    }
 }
 
 // ============================================================================
@@ -157,7 +173,10 @@ pub struct MockGovernExpert {
 
 impl Default for MockGovernExpert {
     fn default() -> Self {
-        Self { forced_level: GovernLevel::Pass, fixed_score: 1.0 }
+        Self {
+            forced_level: GovernLevel::Pass,
+            fixed_score: 1.0,
+        }
     }
 }
 

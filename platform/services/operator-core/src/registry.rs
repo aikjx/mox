@@ -149,9 +149,10 @@ impl OperatorRegistry {
             .cloned()
             .unwrap_or_else(|| id_or_name.to_string());
 
-        let entry = self.operators.get(&id).ok_or_else(|| {
-            OperatorError::ExecutionError(format!("算子未注册: {}", id_or_name))
-        })?;
+        let entry = self
+            .operators
+            .get(&id)
+            .ok_or_else(|| OperatorError::ExecutionError(format!("算子未注册: {}", id_or_name)))?;
 
         if entry.deprecated {
             tracing::warn!("算子 {} 已被标记为 deprecated", id_or_name);
@@ -186,16 +187,12 @@ impl OperatorRegistry {
             .values()
             .filter(|entry| {
                 !entry.deprecated
-                    && entry
-                        .capability
-                        .input_types
-                        .iter()
-                        .any(|t| t.matches(input_type) || t.matches(&crate::types::builtin::any_type()))
-                    && entry
-                        .capability
-                        .output_types
-                        .iter()
-                        .any(|t| t.matches(output_type) || t.matches(&crate::types::builtin::any_type()))
+                    && entry.capability.input_types.iter().any(|t| {
+                        t.matches(input_type) || t.matches(&crate::types::builtin::any_type())
+                    })
+                    && entry.capability.output_types.iter().any(|t| {
+                        t.matches(output_type) || t.matches(&crate::types::builtin::any_type())
+                    })
             })
             .collect()
     }
@@ -206,11 +203,9 @@ impl OperatorRegistry {
             .values()
             .filter(|entry| {
                 !entry.deprecated
-                    && entry
-                        .capability
-                        .input_types
-                        .iter()
-                        .any(|t| t.matches(input_type) || t.matches(&crate::types::builtin::any_type()))
+                    && entry.capability.input_types.iter().any(|t| {
+                        t.matches(input_type) || t.matches(&crate::types::builtin::any_type())
+                    })
             })
             .collect()
     }
@@ -300,7 +295,12 @@ impl OperatorRegistry {
         result
     }
 
-    fn collect_lineage(&self, id_or_name: &str, result: &mut Vec<String>, visited: &mut Vec<String>) {
+    fn collect_lineage(
+        &self,
+        id_or_name: &str,
+        result: &mut Vec<String>,
+        visited: &mut Vec<String>,
+    ) {
         if visited.contains(&id_or_name.to_string()) {
             return;
         }

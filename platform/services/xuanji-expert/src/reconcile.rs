@@ -77,9 +77,9 @@ impl ReconcileConflict {
 /// 约束类别，用于冲突检测时按"语义"而非"枚举变体"归类
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ConstraintKind {
-    Serialize,   // 强制串行（MustSerialize）
-    Guard,       // 脱敏/鉴权前置（MustGuard）
-    Isolate,     // 沙箱隔离（MustIsolate）
+    Serialize, // 强制串行（MustSerialize）
+    Guard,     // 脱敏/鉴权前置（MustGuard）
+    Isolate,   // 沙箱隔离（MustIsolate）
     Other,
 }
 
@@ -95,7 +95,11 @@ impl ConstraintKind {
 }
 
 /// 归一化裁决
-pub fn reconcile(opinions: &[ExpertOpinion], base: &FlowGraph, tenant_pools: &[ResourcePool]) -> ReconciledPlan {
+pub fn reconcile(
+    opinions: &[ExpertOpinion],
+    base: &FlowGraph,
+    tenant_pools: &[ResourcePool],
+) -> ReconciledPlan {
     let mut graph = base.clone();
     let mut rules: Vec<ExpertRule> = Vec::new();
     let mut conflicts: Vec<ReconcileConflict> = Vec::new();
@@ -195,7 +199,11 @@ pub fn reconcile(opinions: &[ExpertOpinion], base: &FlowGraph, tenant_pools: &[R
                     // 在 target 前插入 Guard 节点（若尚未存在）
                     let key = format!("__guard_{}_{}", tags.join("_"), target);
                     if graph.node(&key).is_none() {
-                        let mut gnode = FlowNode::new(key.clone(), format!("{} 校验", tags.join("/")), NodeKind::Guard);
+                        let mut gnode = FlowNode::new(
+                            key.clone(),
+                            format!("{} 校验", tags.join("/")),
+                            NodeKind::Guard,
+                        );
                         gnode.tags.extend(tags.iter().cloned());
                         gnode.duration_ms = 5;
                         graph.add_node(gnode);
@@ -207,7 +215,9 @@ pub fn reconcile(opinions: &[ExpertOpinion], base: &FlowGraph, tenant_pools: &[R
                         .filter(|e| e.to == *target && e.kind != EdgeKind::Exception)
                         .map(|e| e.from.clone())
                         .collect();
-                    graph.edges.retain(|e| !(e.to == *target && e.kind != EdgeKind::Exception));
+                    graph
+                        .edges
+                        .retain(|e| !(e.to == *target && e.kind != EdgeKind::Exception));
                     for p in preds {
                         graph.add_edge(FlowEdge::seq(p, key.clone()));
                     }
@@ -224,7 +234,9 @@ pub fn reconcile(opinions: &[ExpertOpinion], base: &FlowGraph, tenant_pools: &[R
                         && graph.node(&pair.1).is_some()
                     {
                         // 物化为 Mutex 硬约束边（flow-ai 不会剪除）
-                        graph.edges.push(FlowEdge::mutex(pair.0.clone(), pair.1.clone()));
+                        graph
+                            .edges
+                            .push(FlowEdge::mutex(pair.0.clone(), pair.1.clone()));
                         serialized.insert(pair);
                     }
                 }
@@ -246,7 +258,10 @@ pub fn reconcile(opinions: &[ExpertOpinion], base: &FlowGraph, tenant_pools: &[R
                     if let Some(p) = graph.pools.iter_mut().find(|p| p.name == *pool) {
                         p.capacity = (*cap).min(p.capacity);
                     } else {
-                        graph.pools.push(ResourcePool { name: pool.clone(), capacity: *cap });
+                        graph.pools.push(ResourcePool {
+                            name: pool.clone(),
+                            capacity: *cap,
+                        });
                     }
                 }
                 Constraint::Compliance(pid) => {
@@ -306,11 +321,15 @@ mod tests {
 
     fn base() -> FlowGraph {
         let mut g = FlowGraph::new("t", "t");
-        g.add_node(FlowNode::task("a", "读库", ToolKind::Database, 300)
-            .with_access(Access::read("db:citizen_info"))
-            .with_access(Access::write("var:citizen")));
-        g.add_node(FlowNode::task("b", "外发", ToolKind::Http, 100)
-            .with_access(Access::read("var:citizen")));
+        g.add_node(
+            FlowNode::task("a", "读库", ToolKind::Database, 300)
+                .with_access(Access::read("db:citizen_info"))
+                .with_access(Access::write("var:citizen")),
+        );
+        g.add_node(
+            FlowNode::task("b", "外发", ToolKind::Http, 100)
+                .with_access(Access::read("var:citizen")),
+        );
 
         g.add_node(FlowNode::new("s", "开始", NodeKind::Start));
         g.add_node(FlowNode::new("e", "结束", NodeKind::End));
@@ -324,19 +343,35 @@ mod tests {
     fn permission_guard_injected() {
         let g = base();
         let mut o = ExpertOpinion::empty("permission", Dimension::Permission);
-        o.constraints.push(Constraint::MustGuard("a".into(), vec!["desensitize".into()]));
+        o.constraints.push(Constraint::MustGuard(
+            "a".into(),
+            vec!["desensitize".into()],
+        ));
         let plan = reconcile(&[o], &g, &[]);
         assert!(plan.graph.nodes.iter().any(|n| n.kind == NodeKind::Guard));
         // a 现在被 guard 支配
-        let gnode = plan.graph.nodes.iter().find(|n| n.kind == NodeKind::Guard).unwrap();
-        assert!(plan.graph.edges.iter().any(|e| e.from == gnode.id && e.to == "a"));
+        let gnode = plan
+            .graph
+            .nodes
+            .iter()
+            .find(|n| n.kind == NodeKind::Guard)
+            .unwrap();
+        assert!(plan
+            .graph
+            .edges
+            .iter()
+            .any(|e| e.from == gnode.id && e.to == "a"));
     }
 
     #[test]
     fn mutex_is_hard_not_pruned() {
         let g = base();
         let mut o = ExpertOpinion::empty("resource", Dimension::Resource);
-        o.constraints.push(Constraint::MustSerialize(crate::expert::NodeEdge { from: "a".into(), to: "b".into() }));
+        o.constraints
+            .push(Constraint::MustSerialize(crate::expert::NodeEdge {
+                from: "a".into(),
+                to: "b".into(),
+            }));
         let plan = reconcile(&[o], &g, &[]);
         assert!(plan.graph.edges.iter().any(|e| e.kind == EdgeKind::Mutex));
     }
@@ -345,10 +380,15 @@ mod tests {
     fn resource_cap_applied() {
         let g = base();
         let mut o = ExpertOpinion::empty("resource", Dimension::Resource);
-        o.constraints.push(Constraint::ResourceCap("browser".into(), 1));
+        o.constraints
+            .push(Constraint::ResourceCap("browser".into(), 1));
         let plan = reconcile(&[o], &g, &[]);
         // 原图无 browser 池 → 新建
-        assert!(plan.graph.pools.iter().any(|p| p.name == "browser" && p.capacity == 1));
+        assert!(plan
+            .graph
+            .pools
+            .iter()
+            .any(|p| p.name == "browser" && p.capacity == 1));
     }
 
     #[test]
@@ -365,13 +405,19 @@ mod tests {
         // → 无法按优先级仲裁 → 升级 Blocking
         let g = base();
         let mut p = ExpertOpinion::empty("permission", Dimension::Permission);
-        p.constraints.push(Constraint::MustGuard("a".into(), vec!["desensitize".into()]));
+        p.constraints.push(Constraint::MustGuard(
+            "a".into(),
+            vec!["desensitize".into()],
+        ));
         let mut s = ExpertOpinion::empty("security", Dimension::Security);
         // 安全维度对同节点也要求 MustGuard（不同脱敏策略）→ 同类别冲突
-        s.constraints.push(Constraint::MustGuard("a".into(), vec!["sandbox".into()]));
+        s.constraints
+            .push(Constraint::MustGuard("a".into(), vec!["sandbox".into()]));
         let plan = reconcile(&[p, s], &g, &[]);
         assert!(
-            plan.conflicts.iter().any(|c| c.escalated && c.dimension_a == Dimension::Permission && c.dimension_b == Dimension::Security),
+            plan.conflicts.iter().any(|c| c.escalated
+                && c.dimension_a == Dimension::Permission
+                && c.dimension_b == Dimension::Security),
             "同级维度同类别约束冲突应升级为 escalated Blocking"
         );
     }
@@ -381,13 +427,21 @@ mod tests {
         // P2 验收：Permission(MustGuard) 与 Security(MustIsolate) 同节点属正交互补 → 记录 semantic，不升级
         let g = base();
         let mut p = ExpertOpinion::empty("permission", Dimension::Permission);
-        p.constraints.push(Constraint::MustGuard("a".into(), vec!["desensitize".into()]));
+        p.constraints.push(Constraint::MustGuard(
+            "a".into(),
+            vec!["desensitize".into()],
+        ));
         let mut s = ExpertOpinion::empty("security", Dimension::Security);
         s.constraints.push(Constraint::MustIsolate("a".into()));
         let plan = reconcile(&[p, s], &g, &[]);
-        assert!(!plan.conflicts.iter().any(|c| c.escalated), "互补约束不应升级 Blocking");
         assert!(
-            plan.conflicts.iter().any(|c| !c.escalated && c.dimension_a == Dimension::Permission && c.dimension_b == Dimension::Security),
+            !plan.conflicts.iter().any(|c| c.escalated),
+            "互补约束不应升级 Blocking"
+        );
+        assert!(
+            plan.conflicts.iter().any(|c| !c.escalated
+                && c.dimension_a == Dimension::Permission
+                && c.dimension_b == Dimension::Security),
             "互补约束应记录为 semantic 溯源"
         );
     }
@@ -397,12 +451,19 @@ mod tests {
         // P2 验收：MustSerialize（强制串行）与 Parallelize 建议语义相反 → 记录 semantic 冲突
         let g = base();
         let mut r = ExpertOpinion::empty("resource", Dimension::Resource);
-        r.constraints.push(Constraint::MustSerialize(crate::expert::NodeEdge { from: "a".into(), to: "b".into() }));
+        r.constraints
+            .push(Constraint::MustSerialize(crate::expert::NodeEdge {
+                from: "a".into(),
+                to: "b".into(),
+            }));
         let mut algo = ExpertOpinion::empty("algorithm", Dimension::Algorithm);
-        algo.suggestions.push(crate::expert::Suggestion::Parallelize);
+        algo.suggestions
+            .push(crate::expert::Suggestion::Parallelize);
         let plan = reconcile(&[r, algo], &g, &[]);
         assert!(
-            plan.conflicts.iter().any(|c| !c.escalated && c.dimension_a == Dimension::Resource && c.dimension_b == Dimension::Algorithm),
+            plan.conflicts.iter().any(|c| !c.escalated
+                && c.dimension_a == Dimension::Resource
+                && c.dimension_b == Dimension::Algorithm),
             "串行 vs 并行应记录为 semantic 冲突"
         );
     }
@@ -412,7 +473,10 @@ mod tests {
         // 不同节点各自约束，不应误报升级冲突
         let g = base();
         let mut p = ExpertOpinion::empty("permission", Dimension::Permission);
-        p.constraints.push(Constraint::MustGuard("a".into(), vec!["desensitize".into()]));
+        p.constraints.push(Constraint::MustGuard(
+            "a".into(),
+            vec!["desensitize".into()],
+        ));
         let mut s = ExpertOpinion::empty("security", Dimension::Security);
         s.constraints.push(Constraint::MustIsolate("b".into()));
         let plan = reconcile(&[p, s], &g, &[]);
@@ -429,11 +493,13 @@ mod tests {
         biz.suggestions.push(crate::expert::Suggestion::Merge);
         let plan = reconcile(&[algo, biz], &g, &[]);
         assert!(
-            plan.adopted_suggestions.contains(&crate::expert::Suggestion::Cache),
+            plan.adopted_suggestions
+                .contains(&crate::expert::Suggestion::Cache),
             "Cache 建议应被采纳"
         );
         assert!(
-            plan.adopted_suggestions.contains(&crate::expert::Suggestion::Merge),
+            plan.adopted_suggestions
+                .contains(&crate::expert::Suggestion::Merge),
             "Merge 建议应被采纳"
         );
     }
@@ -443,17 +509,26 @@ mod tests {
         // P1 验收：存在 MustSerialize 硬串行约束时，语义相反的 Parallelize 建议不应被采纳
         let g = base();
         let mut r = ExpertOpinion::empty("resource", Dimension::Resource);
-        r.constraints.push(Constraint::MustSerialize(crate::expert::NodeEdge { from: "a".into(), to: "b".into() }));
+        r.constraints
+            .push(Constraint::MustSerialize(crate::expert::NodeEdge {
+                from: "a".into(),
+                to: "b".into(),
+            }));
         let mut algo = ExpertOpinion::empty("algorithm", Dimension::Algorithm);
-        algo.suggestions.push(crate::expert::Suggestion::Parallelize);
+        algo.suggestions
+            .push(crate::expert::Suggestion::Parallelize);
         algo.suggestions.push(crate::expert::Suggestion::Cache);
         let plan = reconcile(&[r, algo], &g, &[]);
         assert!(
-            !plan.adopted_suggestions.iter().any(|s| matches!(s, crate::expert::Suggestion::Parallelize)),
+            !plan
+                .adopted_suggestions
+                .iter()
+                .any(|s| matches!(s, crate::expert::Suggestion::Parallelize)),
             "与串行约束冲突的 Parallelize 不应被采纳"
         );
         assert!(
-            plan.adopted_suggestions.contains(&crate::expert::Suggestion::Cache),
+            plan.adopted_suggestions
+                .contains(&crate::expert::Suggestion::Cache),
             "无冲突的 Cache 仍应被采纳"
         );
     }

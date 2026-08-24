@@ -23,8 +23,13 @@ pub fn tool_kind_of(name: &str) -> ToolKind {
         ToolKind::Browser
     } else if n.contains("db") || n.contains("sql") || n.contains("database") {
         ToolKind::Database
-    } else if n.contains("file") || n.contains("read") || n.contains("write") || n.contains("fs")
-        || n.contains("excel") || n.contains("sheet") || n.contains("csv")
+    } else if n.contains("file")
+        || n.contains("read")
+        || n.contains("write")
+        || n.contains("fs")
+        || n.contains("excel")
+        || n.contains("sheet")
+        || n.contains("csv")
     {
         ToolKind::File // Excel/CSV 也归入 File
     } else if n.contains("compute") || n.contains("math") || n.contains("transform") {
@@ -38,10 +43,12 @@ pub fn tool_kind_of(name: &str) -> ToolKind {
 fn infer_tags(args: &Value) -> Vec<String> {
     let mut tags = Vec::new();
     let s = args.to_string().to_ascii_lowercase();
-    if s.contains("pii") || s.contains("desensitize") || s.contains("脱敏") || s.contains("citizen") {
+    if s.contains("pii") || s.contains("desensitize") || s.contains("脱敏") || s.contains("citizen")
+    {
         tags.push("desensitize".into());
     }
-    if s.contains("authz") || s.contains("auth") || s.contains("鉴权") || s.contains("permission") {
+    if s.contains("authz") || s.contains("auth") || s.contains("鉴权") || s.contains("permission")
+    {
         tags.push("authz".into());
     }
     if s.contains("transaction") || s.contains("事务") {

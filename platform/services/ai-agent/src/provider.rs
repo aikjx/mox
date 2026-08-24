@@ -310,10 +310,7 @@ impl LlmRouter {
                 Some(r) => r,
                 None => return Err(anyhow::anyhow!("router registry lock poisoned")),
             };
-            chain
-                .iter()
-                .filter_map(|name| registry.get(name))
-                .collect()
+            chain.iter().filter_map(|name| registry.get(name)).collect()
         };
 
         let mut last_err: Option<anyhow::Error> = None;
@@ -383,14 +380,23 @@ pub fn default_providers_from_env() -> Vec<Arc<dyn LlmProvider>> {
         let base = std::env::var("DEEPSEEK_BASE_URL")
             .ok()
             .unwrap_or_else(|| "https://api.deepseek.com/v1".to_string());
-        let model = std::env::var("DEEPSEEK_MODEL").ok().unwrap_or_else(|| "deepseek-chat".to_string());
+        let model = std::env::var("DEEPSEEK_MODEL")
+            .ok()
+            .unwrap_or_else(|| "deepseek-chat".to_string());
         list.push(make_openai_compatible("deepseek", &base, &key, &model));
     }
 
     // OpenAI（fallback）：OPENAI_API_KEY
     if let Ok(key) = std::env::var("OPENAI_API_KEY") {
-        let model = std::env::var("OPENAI_MODEL").ok().unwrap_or_else(|| "gpt-4o-mini".to_string());
-        list.push(make_openai_compatible("openai", "https://api.openai.com/v1", &key, &model));
+        let model = std::env::var("OPENAI_MODEL")
+            .ok()
+            .unwrap_or_else(|| "gpt-4o-mini".to_string());
+        list.push(make_openai_compatible(
+            "openai",
+            "https://api.openai.com/v1",
+            &key,
+            &model,
+        ));
     }
 
     // 通义千问 Qwen（fallback）：DASHSCOPE_API_KEY
@@ -416,7 +422,9 @@ pub fn default_providers_from_env() -> Vec<Arc<dyn LlmProvider>> {
     // 本地 Ollama / vLLM（私有化/离线）：OLLAMA_BASE_URL
     if let Ok(base) = std::env::var("OLLAMA_BASE_URL") {
         let key = std::env::var("OLLAMA_API_KEY").ok().unwrap_or_default();
-        let model = std::env::var("OLLAMA_MODEL").ok().unwrap_or_else(|| "llama3".to_string());
+        let model = std::env::var("OLLAMA_MODEL")
+            .ok()
+            .unwrap_or_else(|| "llama3".to_string());
         list.push(make_openai_compatible("ollama", &base, &key, &model));
     }
 
