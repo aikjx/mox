@@ -1,0 +1,41 @@
+[package]
+name = "xuanji-server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Xuanji v2.0 AIS-grade fusion single-binary server: CLI, O11y, Bench/Deploy smoke tests"
+
+[lib]
+name = "xuanji_server"
+path = "src/lib.rs"
+
+[[bin]]
+name = "xuanji-server"
+path = "src/main.rs"
+
+[dependencies]
+clap = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+chrono = { workspace = true }
+tokio = { workspace = true }
+prometheus = { workspace = true }
+parking_lot = { workspace = true }
+uuid = { workspace = true }
+hex = { workspace = true }
+sha2 = { workspace = true }
+
+# Workspace path crates
+xuanji-data-plane = { path = "../xuanji-data-plane" }
+xuanji-compliance = { path = "../xuanji-compliance" }
+xuanji-etl-wasm = { path = "../xuanji-etl-wasm" }
+xuanji-fusion = { path = "../xuanji-fusion" }
+xuanji-cloud-drive-volume = { path = "../xuanji-cloud-drive-volume" }
+
+[dev-dependencies]
+tempfile = "3"
+rand = "0.8"

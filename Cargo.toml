@@ -33,6 +33,7 @@ members = [
     "platform/services/xuanji-fusion",
     "platform/services/xuanji-etl-wasm",
     "platform/services/xuanji-data-plane",
+    "platform/services/xuanji-server",
 ]
 resolver = "2"
 

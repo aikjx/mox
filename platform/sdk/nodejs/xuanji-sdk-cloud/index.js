@@ -1,6 +1,6 @@
 function crc64_ecma(state, bytes) {
   const POLY = 0x42F0E1EBA9EA3693n;
-  let s = BigInt(state >>> 0);
+  let s = (typeof state === "bigint") ? state : BigInt(state >>> 0);
   if (typeof bytes === 'string') bytes = Buffer.from(bytes, 'utf-8');
   for (let i = 0; i < bytes.length; i++) {
     s ^= BigInt(bytes[i]) << 56n;
@@ -12,7 +12,10 @@ function crc64_ecma(state, bytes) {
       }
     }
   }
-  return Number(s & 0xFFFFFFFFFFFFFFFFn);
+    s &= 0xFFFFFFFFFFFFFFFFn;
+  // Return numeric value as a BigInt for exact comparisons. Use .toString(16) for hex display.
+  // Also expose Number value only when caller explicitly converts.
+  return s;
 }
 
 function _fxhash16(bytes) {
@@ -331,3 +334,5 @@ class CloudClient {
 }
 
 module.exports = { CloudClient, crc64_ecma };
+
+
