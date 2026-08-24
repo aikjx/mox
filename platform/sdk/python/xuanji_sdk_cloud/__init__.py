@@ -1,9 +1,41 @@
+def crc64_ecma(state, data):
+    POLY = 0x42F0E1EBA9EA3693
+    s = state & 0xFFFFFFFFFFFFFFFF
+    if isinstance(data, str):
+        data = data.encode("utf-8")
+    for b in data:
+        s ^= (b & 0xFF) << 56
+        for _ in range(8):
+            if s & (1 << 63):
+                s = ((s << 1) ^ POLY) & 0xFFFFFFFFFFFFFFFF
+            else:
+                s = (s << 1) & 0xFFFFFFFFFFFFFFFF
+    return s
+
+
+def _fxhash16(data):
+    if isinstance(data, str):
+        data = data.encode("utf-8")
+    h = 0xcbf29ce484222325
+    FNV = 0x100000001b3
+    MASK = 0xFFFFFFFFFFFFFFFF
+    for b in data:
+        h ^= (b & 0xFF)
+        h = (h * FNV) & MASK
+    return format(h, "016x")
+
+
+def _rand_hex8():
+    import time
+    t = int(time.time() * 1_000_000) & 0xFFFFFFFF
+    return format(t, "08x")
 class CloudClient:
     def __init__(self, options=None):
         self.options = options or {}
         self._buckets = {}
         self._objects = {}
         self._policies = {}
+        self._multiparts = {}
 
     def createBucket(self, name, opts=None):
         opts = opts or {}
@@ -30,11 +62,13 @@ class CloudClient:
     def putObject(self, bucket, key, data, opts=None):
         opts = opts or {}
         full_key = f"{bucket}/{key}"
+        size = len(data) if data else 0
         self._objects[full_key] = {
             "bucket": bucket, "key": key, "data": data,
-            "size": len(data) if data else 0, **opts
+            "size": size, **opts
         }
-        return {"ok": True, "bucket": bucket, "key": key, "etag": f"fake-etag-{full_key}"}
+        etag = _fxhash16(data if data else b"")
+        return {"ok": True, "bucket": bucket, "key": key, "etag": etag}
 
     def getObject(self, bucket, key):
         full_key = f"{bucket}/{key}"
@@ -65,10 +99,73 @@ class CloudClient:
         return {"ok": True, "src": {"bucket": srcBucket, "key": srcKey},
                 "dst": {"bucket": dstBucket, "key": dstKey}}
 
+    def createMultipartUpload(self, bucket, key):
+        upload_id = f"mpu-{bucket}-{key}-{_rand_hex8()}-{_rand_hex8()}"
+        self._multiparts[upload_id] = {
+            "upload_id": upload_id, "bucket": bucket, "key": key,
+            "parts": {}
+        }
+        return {"ok": True, "upload_id": upload_id, "bucket": bucket, "key": key}
+
+    def uploadPart(self, bucket, key, upload_id, part_number, data):
+        mpu = self._multiparts.get(upload_id)
+        if mpu is None:
+            return {"ok": False, "error": "NotFound",
+                    "message": f"upload_id {upload_id} not found"}
+        if isinstance(data, str):
+            data = data.encode("utf-8")
+        if data is None or len(data) == 0:
+            return {"ok": False, "error": "EmptyPart", "message": "empty part"}
+        etag = _fxhash16(data)
+        mpu["parts"][part_number] = {"etag": etag, "data": data}
+        return {"ok": True, "part_number": part_number, "etag": etag, "upload_id": upload_id}
+
+    def completeMultipartUpload(self, bucket, key, upload_id, parts):
+        mpu = self._multiparts.get(upload_id)
+        if mpu is None:
+            return {"ok": False, "error": "NotFound",
+                    "message": f"upload_id {upload_id} not found"}
+        ordered = parts if (parts is not None and len(parts) > 0) else [
+            {"part_number": n} for n in sorted(mpu["parts"].keys())
+        ]
+        combined = bytearray()
+        for p in ordered:
+            stored = mpu["parts"].get(p["part_number"])
+            if stored is not None:
+                combined.extend(stored["data"])
+        del self._multiparts[upload_id]
+        full_key = f"{bucket}/{key}"
+        self._objects[full_key] = {
+            "bucket": bucket, "key": key, "data": bytes(combined),
+            "size": len(combined), "multipart": True, "parts": len(ordered)
+        }
+        final_etag = f"{len(ordered)}-{_fxhash16(bytes(combined))}{_fxhash16(full_key + str(len(ordered)))[:8]}"
+        return {"ok": True, "bucket": bucket, "key": key, "etag": final_etag,
+                "parts": len(ordered), "size": len(combined)}
+
+    def abortMultipartUpload(self, upload_id):
+        if upload_id in self._multiparts:
+            del self._multiparts[upload_id]
+            return {"ok": True, "upload_id": upload_id, "aborted": True}
+        return {"ok": False, "upload_id": upload_id, "aborted": False, "error": "NotFound"}
+
+    def listMultipartUploads(self):
+        uploads = []
+        for m in self._multiparts.values():
+            uploads.append({
+                "upload_id": m["upload_id"],
+                "bucket": m["bucket"],
+                "key": m["key"],
+                "parts_count": len(m["parts"])
+            })
+        uploads.sort(key=lambda x: x["upload_id"])
+        return {"ok": True, "uploads": uploads, "count": len(uploads)}
+
     def multipartUpload(self, bucket, key, parts=None):
         parts = parts or []
         full_key = f"{bucket}/{key}"
-        all_data = "".join(p.get("data", "") for p in parts)
+        all_data = b"".join((p.get("data", "") if isinstance(p.get("data", ""), bytes)
+                             else p.get("data", "").encode("utf-8")) for p in parts)
         self._objects[full_key] = {
             "bucket": bucket, "key": key, "data": all_data,
             "size": len(all_data), "multipart": True, "parts": len(parts)
@@ -186,8 +283,10 @@ class CloudClient:
         full_key = f"{bucket}/{key}"
         current = self._objects.get(full_key)
         total_data = current.get("data", "") if current else ""
-        for _ in range(blockCount):
-            total_data += "A" * 1024
+        if isinstance(total_data, bytes):
+            total_data = total_data + ("A" * 1024 * blockCount).encode("utf-8")
+        else:
+            total_data = total_data + "A" * (1024 * blockCount)
         self._objects[full_key] = {
             "bucket": bucket, "key": key, "data": total_data,
             "size": len(total_data), "dbhc": True, "blocks": blockCount
@@ -201,3 +300,4 @@ class CloudClient:
         return {"ok": True, "bucket": bucket, "key": key,
                 "verified": bool(obj and obj.get("dbhc")),
                 "size": obj["size"] if obj else 0}
+

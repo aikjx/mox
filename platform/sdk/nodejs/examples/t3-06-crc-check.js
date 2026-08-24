@@ -1,7 +1,7 @@
 const { CloudClient, crc64_ecma } = require("../xuanji-sdk-cloud");
 
 function main() {
-  const KNOWN = 0x6C40DF5F0B497347;
+  const KNOWN = 0x6C40DF5F0B497347n;
   const computed = crc64_ecma(0, "123456789");
   if (computed !== KNOWN) {
     throw new Error("known vector mismatch: computed=" + computed.toString(16) + " expected=" + KNOWN.toString(16));
@@ -33,3 +33,4 @@ function main() {
 
 if (require.main === module) main();
 module.exports = main;
+

@@ -1,0 +1,45 @@
+# Xuanji v2.0 AIS-grade fusion server — deploy/helm template values.
+# Tested by xuanji-server t10_bench_deploy_matrix (deploy_helm_values_smoke).
+
+replicaCount: 3
+
+image:
+  repository: registry.infotopograph.io/xuanji/xuanji-server
+  tag: "3.0.0"
+  pullPolicy: IfNotPresent
+
+singleNode: false
+
+# Erasure-coding profile used for hot-tier data.
+ecProfile: "8+4"
+
+# MiJi (密级) Bell-LaPadula enforcement toggle.
+mijiEnforce: true
+
+service:
+  type: ClusterIP
+  publicPort: 8080
+  ctrlPort: 9080
+  dataPort: 9081
+
+mountpaths:
+  - /mnt/xuanji/a
+  - /mnt/xuanji/b
+  - /mnt/xuanji/c
+  - /mnt/xuanji/d
+
+resources:
+  limits:
+    cpu: "8"
+    memory: "16Gi"
+  requests:
+    cpu: "2"
+    memory: "4Gi"
+
+prometheus:
+  scrape: true
+  port: 9090
+  path: /metrics
+
+legalHold:
+  defaultRetentionHours: 720

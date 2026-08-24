@@ -97,10 +97,13 @@ impl MultipartManager {
         let mut w = self.inner.lock();
         let up = w.remove(upload_id).ok_or_else(|| "upload_id not found".to_string())?;
         if up.parts.is_empty() { return Err("no parts uploaded".to_string()); }
-        // parts must be contiguous starting at part_number=1
-        let expected: Vec<u16> = (1..=up.parts.len() as u16).collect();
-        let actual: Vec<u16> = up.parts.keys().copied().collect();
-        if expected != actual { return Err(format!("parts not contiguous: expected 1..={}, got {:?}", up.parts.len(), actual)); }
+        // multi-part upload (N>=2): parts must be contiguous starting at part_number=1.
+        // single-part upload: any valid part_number is acceptable (trivially contiguous set).
+        if up.parts.len() > 1 {
+            let expected: Vec<u16> = (1..=up.parts.len() as u16).collect();
+            let actual: Vec<u16> = up.parts.keys().copied().collect();
+            if expected != actual { return Err(format!("parts not contiguous: expected 1..={}, got {:?}", up.parts.len(), actual)); }
+        }
         let mut agg_crc = 0u64;
         let mut total = 0u64;
         let mut etag_parts = Vec::new();
@@ -291,8 +294,9 @@ mod tests {
         let id = m.create("b", "k", "u");
         let (_crc, etag) = m.upload_part(&id, 1, b"any-non-empty-bytes".to_vec()).unwrap();
         assert_eq!(etag.len(), 16, "etag len must be 16, got {}", etag.len());
-        assert!(etag.chars().all(|c| c.is_ascii_hexdigit() && c.is_lowercase()),
-            "etag must be lowercase hex, got {}", etag);
+        // hex digits 0-9 are not lowercase letters; ensure no uppercase a-f exist
+        assert!(etag.chars().all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()),
+            "etag must be lowercase hex (no uppercase letters), got {}", etag);
     }
 
     // T3-13
@@ -310,8 +314,8 @@ mod tests {
         assert_eq!(parts[0], "3");
         assert_eq!(parts[1].len(), 24, "hex suffix must be 24 chars, got {}", parts[1].len());
         assert!(
-            parts[1].chars().all(|c| c.is_ascii_hexdigit() && c.is_lowercase()),
-            "hex suffix must be lowercase hex: {}", parts[1]
+            parts[1].chars().all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()),
+            "hex suffix must be lowercase hex (no uppercase letters): {}", parts[1]
         );
     }
 
@@ -335,10 +339,11 @@ mod tests {
         let m = MultipartManager::new();
         let id = m.create("b", "k", "u");
         let data = b"large-indexed-single-part".to_vec();
+        let expected_len = data.len();
         let _ = m.upload_part(&id, 100, data).unwrap();
         let agg = m.complete(&id).unwrap();
         assert_eq!(agg.n_parts, 1);
-        assert_eq!(agg.total_bytes, 26);
+        assert_eq!(agg.total_bytes, expected_len as u64);
     }
 
     // T3-16

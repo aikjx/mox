@@ -5,13 +5,14 @@ async fn main() {
     let client = Client::new();
     let names = ["alpha", "beta", "gamma", "delta"];
     for (i, n) in names.iter().enumerate() {
+        let key = format!("file/{}.bin", n);
         let uid = client
-            .create_multipart_upload("lb", format!("file/{}.bin", n))
+            .create_multipart_upload("lb", &key)
             .await
             .unwrap();
         if i % 2 == 0 {
             let _ = client
-                .upload_part("lb", &format!("file/{}.bin", n), &uid, 1, vec![0u8; 64])
+                .upload_part("lb", &key, &uid, 1, vec![0u8; 64])
                 .await
                 .unwrap();
         }
