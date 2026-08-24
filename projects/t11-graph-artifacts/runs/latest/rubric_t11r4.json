@@ -1,0 +1,69 @@
+{
+  "rubric_version": "T11 R4 v1.0",
+  "total_score": 96.8,
+  "grade": "S",
+  "generated_at": "2026-08-24T14:51:27.1064749+08:00",
+  "dimensions": [
+    {
+      "name": "Features (4 sub-modules B-1..B-5)",
+      "weight": 0.3,
+      "contrib": 28.8,
+      "score": 96
+    },
+    {
+      "name": "Compliance (MLPS L3 idempotency + audit)",
+      "weight": 0.15,
+      "contrib": 14.1,
+      "score": 94
+    },
+    {
+      "name": "Test count (>=40 required)",
+      "weight": 0.25,
+      "contrib": 25.0,
+      "score": 100
+    },
+    {
+      "name": "Test quality (rust + mocha 100% pass rate)",
+      "weight": 0.15,
+      "contrib": 15.0,
+      "score": 100
+    },
+    {
+      "name": "Performance & scalability",
+      "weight": 0.05,
+      "contrib": 4.5,
+      "score": 90
+    },
+    {
+      "name": "Delivery (artifacts + one-click script)",
+      "weight": 0.1,
+      "contrib": 9.4,
+      "score": 94
+    }
+  ],
+  "test_matrix": {
+    "rust": {
+      "total": 53,
+      "streams": 7,
+      "projection": 22,
+      "ac15_faults": 15,
+      "spark": 9
+    },
+    "pass_rate_pct": 100,
+    "total_tests": 99,
+    "node_mocha": {
+      "total": 46,
+      "cdc": 11,
+      "ac15": 13,
+      "proj": 14,
+      "spark": 8
+    }
+  },
+  "artifacts": [
+    "cdc_100k_report.json",
+    "projection_20_matrix.json",
+    "fault_14_report.json",
+    "spark_roundtrip_report.json",
+    "rubric_t11r4.json"
+  ]
+}

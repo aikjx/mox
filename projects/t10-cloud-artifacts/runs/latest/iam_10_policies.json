@@ -1,0 +1,57 @@
+{
+  "total": 10,
+  "generated": "2026-08-24T14:23:35.4128300+08:00",
+  "policies": [
+    {
+      "sid": "P1-AdminFullAccess",
+      "scope": "Admin: all actions/resources",
+      "effect": "Allow"
+    },
+    {
+      "sid": "P2-BucketOwnerFull",
+      "scope": "Own bucket full ops",
+      "effect": "Allow"
+    },
+    {
+      "sid": "P3-EditorWrite",
+      "scope": "Put/Get/Delete/List/Head + Upload/Download",
+      "effect": "Allow"
+    },
+    {
+      "sid": "P4-ViewerReadOnly",
+      "scope": "Get/List/Head + Download/List",
+      "effect": "Allow"
+    },
+    {
+      "sid": "P5-GuestListOnly",
+      "scope": "ListBucket only",
+      "effect": "Allow"
+    },
+    {
+      "sid": "P6-PublicRead",
+      "scope": "Get public/* prefix",
+      "effect": "Allow"
+    },
+    {
+      "sid": "P7-DenyNonMFADelete",
+      "scope": "Delete without MFA",
+      "effect": "Deny"
+    },
+    {
+      "sid": "P8-DenyIPOutOfRange",
+      "scope": "Requests outside 10./192.168./172.16-31.",
+      "effect": "Deny"
+    },
+    {
+      "sid": "P9-TagConditionalEdit",
+      "scope": "Write when tag project=alpha",
+      "effect": "Allow"
+    },
+    {
+      "sid": "P10-VPCSourceOnly",
+      "scope": "Any request not from VPC",
+      "effect": "Deny"
+    }
+  ],
+  "matrix_version": "T10 M4 v1.0"
+}

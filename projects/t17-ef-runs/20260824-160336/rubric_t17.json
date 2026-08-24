@@ -1,0 +1,71 @@
+{
+  "rubric_version": "T17 SDK v1.0",
+  "run_id": "20260824-160336",
+  "total_score": 98.8,
+  "grade": "S",
+  "generated_at": "2026-08-24T16:04:21.7565123+08:00",
+  "elapsed_sec": 44.82,
+  "test_matrix": {
+    "rust_unit": {
+      "total": 32,
+      "pass": 32,
+      "fail": 0
+    },
+    "node_mocha": {
+      "total": 76,
+      "pass": 76,
+      "fail": 0
+    },
+    "python_pytest": {
+      "total": 46,
+      "pass": 46,
+      "fail": 0
+    },
+    "grand_total": 154,
+    "grand_fail": 0,
+    "ac_c06_ge80_pass": true
+  },
+  "examples_verify": {
+    "node_x60": {
+      "ok": 60,
+      "total": 60
+    },
+    "python_x60": {
+      "ok": 60,
+      "total": 60
+    },
+    "rust_examples_build_exit": 0
+  },
+  "matrix": {
+    "path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\projects\\t17-sdk-examples\\matrix.json",
+    "cross_lang_aligned": true,
+    "total_entries": 180
+  },
+  "dimensions": [
+    {
+      "score": 98,
+      "contrib": 39.2,
+      "weight": 0.4,
+      "name": "Feature completeness (6 sub-SDKs)"
+    },
+    {
+      "score": 100,
+      "contrib": 25.0,
+      "weight": 0.25,
+      "name": "Cross-lang ID consistency"
+    },
+    {
+      "score": 98,
+      "contrib": 19.6,
+      "weight": 0.2,
+      "name": "Examples executable"
+    },
+    {
+      "score": 100,
+      "contrib": 15.0,
+      "weight": 0.15,
+      "name": "Coverage (tests >= 80)"
+    }
+  ],
+  "acceptance_pass": true
+}

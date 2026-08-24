@@ -4,22 +4,17 @@ version.workspace = true
 edition.workspace = true
 license = "MIT OR Apache-2.0"
 authors.workspace = true
-description = "Xuanji SDK Cloud — S3-compatible object storage client (SigV4 self-signed, no aws-sdk dependency)"
+description = "Xuanji SDK Cloud — S3-compatible object storage client (in-memory fake facade)"
 
 [dependencies]
-xuanji-domain-abstractions = { path = "../../../services/xuanji-domain-abstractions" }
-xuanji-standards = { path = "../../../services/xuanji-standards" }
 tokio = { workspace = true }
-reqwest = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-async-trait = { workspace = true }
-bytes = "1"
 thiserror = { workspace = true }
-tracing = { workspace = true }
-sha2 = { workspace = true }
-hex = { workspace = true }
-url = "2"
+async-trait = { workspace = true }
+
+[lib]
+path = "src/lib.rs"
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }

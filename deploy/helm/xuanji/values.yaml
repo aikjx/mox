@@ -1,0 +1,94 @@
+# Default values for xuanji umbrella chart (一键伞图).
+
+global:
+  # 全局灰度发布开关
+  gray:
+    enabled: false
+    # 灰度阶段：1% -> 10% -> 50% -> 100%
+    stages:
+      - 1
+      - 10
+      - 50
+      - 100
+    # 每阶段等待秒数（warmup 间隔）
+    warmupSeconds: 300
+    # 健康检查阈值：低于此百分比自动回滚
+    healthThresholdPercent: 95
+    # 灰度路由基于 header 或 cookie
+    routeBy:
+      header: "X-Xuanji-Gray"
+      cookie: "xuanji_gray"
+
+  # 全局镜像仓库
+  imageRegistry: registry.infotopograph.io
+  imagePullSecrets: []
+
+  # 全局存储类
+  storageClass: "xuanji-sc"
+
+  # 全局服务暴露
+  ingress:
+    enabled: false
+    className: "nginx"
+    domain: xuanji.local
+
+# xuanji-dr sub-chart values
+xuanji-dr:
+  enabled: true
+  primaryRegion: cn-north-1
+  failoverRegion: cn-south-1
+  replicaCount: 2
+
+# xuanji-core (alias: xuanji-core-local) sub-chart values
+xuanji-core-local:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: xuanji/graph-core
+    tag: "3.0.0"
+
+# xuanji-observability sub-chart values
+xuanji-observability:
+  enabled: true
+  grafana:
+    adminPassword: "changeme"
+  prometheus:
+    retention: "30d"
+  tracing:
+    backend: "otlp"
+    samplingRate: 1.0
+
+# Canary release 配置
+canary:
+  enabled: false
+  image:
+    tag: "canary"
+  weight: 1
+  analysis:
+    intervalSeconds: 60
+    maxFailed: 1
+    iterations: 5
+
+# 资源配额全局默认
+resourcesDefaults:
+  limits:
+    cpu: 4
+    memory: 8Gi
+  requests:
+    cpu: 1
+    memory: 2Gi
+
+# 命名空间配置
+namespace:
+  create: true
+  name: "xuanji-system"
+
+# RBAC
+rbac:
+  create: true
+
+# 网络策略
+networkPolicy:
+  enabled: false
+  ingressFrom: []
+  egressTo: []

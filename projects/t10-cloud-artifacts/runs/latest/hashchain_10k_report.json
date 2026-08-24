@@ -1,0 +1,10 @@
+{
+  "chain_length": 10000,
+  "gen_ms": 712,
+  "append_ips": 14045,
+  "verify_ms": 481,
+  "verify_ips": 20790,
+  "integrity": true,
+  "broken_at": null,
+  "root_key_sha256": "9399f16132df74ef2e1386f50de8327238c1b682a500e4b59973817813a7e984"
+}

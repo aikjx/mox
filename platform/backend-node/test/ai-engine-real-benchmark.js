@@ -342,9 +342,18 @@ function scoreAnswer(q, answerText) {
       const pad = (n) => String(n).padStart(2, '0');
       const hit = keywords.some(k => normLc.includes(String(k).toLowerCase()));
       const yOk = normLc.includes(String(yVal));
-      const mVariants = [`${mVal}月`, `${pad(mVal)}月`, `-${pad(mVal)}-`, `/${pad(mVal)}/`, `${mVal}月份`, `${pad(mVal)}月份`];
+      const mVariants = [
+        `${mVal}月`, `${pad(mVal)}月`,
+        `${mVal} 月`, `${pad(mVal)} 月`,
+        `-${pad(mVal)}-`, `/${pad(mVal)}/`,
+        `${mVal}月份`, `${pad(mVal)}月份`
+      ];
       const mOk = mVariants.some(v => normLc.includes(v.toLowerCase()));
-      const dVariants = [`${dVal}日`, `${pad(dVal)}日`, `-${pad(dVal)}`, `/${pad(dVal)}`, `-${dVal}`, `/${dVal}`];
+      const dVariants = [
+        `${dVal}日`, `${pad(dVal)}日`, `${dVal} 日`, `${pad(dVal)} 日`,
+        `${dVal}号`, `${pad(dVal)}号`, `${dVal} 号`, `${pad(dVal)} 号`,
+        `-${pad(dVal)}`, `/${pad(dVal)}`, `-${dVal}`, `/${dVal}`
+      ];
       const dOk = dVariants.some(v => normLc.includes(v.toLowerCase()));
       pass_strict = hit;
       pass_loose = yOk && mOk && dOk;

@@ -1,0 +1,46 @@
+{{/*
+Region-aware nodeSelector and affinity rules.
+These rules ensure Pods are scheduled in the correct AZ and region.
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "xuanji-dr.fullname" . }}-region-selector
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "xuanji-dr.labels" . | nindent 4 }}
+data:
+  primary-region: {{ .Values.primaryRegion | quote }}
+  secondary-region: {{ .Values.failoverRegion | quote }}
+  primary-node-selector: |
+    topology.kubernetes.io/region: {{ .Values.primaryRegion }}
+    {{- range $key, $value := .Values.nodeSelectorRegions.primary }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  secondary-node-selector: |
+    topology.kubernetes.io/region: {{ .Values.failoverRegion }}
+    {{- range $key, $value := .Values.nodeSelectorRegions.secondary }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  dr-mode: {{ .Values.dr.mode }}
+  replication-mode: {{ .Values.dr.replicationMode }}
+  failover-timeout-seconds: {{ .Values.dr.failoverTimeoutSeconds | quote }}
+  auto-failback: {{ .Values.dr.autoFailback | quote }}
+---
+{{/*
+Affinity rules as a reusable ConfigMap for reference.
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "xuanji-dr.fullname" . }}-affinity-rules
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "xuanji-dr.labels" . | nindent 4 }}
+data:
+  primary-pod-antiaffinity-topology-key: kubernetes.io/hostname
+  secondary-pod-antiaffinity-topology-key: kubernetes.io/hostname
+  node-affinity-primary-region: {{ .Values.primaryRegion }}
+  node-affinity-secondary-region: {{ .Values.failoverRegion }}
+  spread-constraint-topology-key: topology.kubernetes.io/zone
+  spread-constraint-max-skew: "1"

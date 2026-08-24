@@ -1,0 +1,19 @@
+{
+  "generated_at": "2026-08-24T06:23:35.370Z",
+  "total_objects": 1000,
+  "distribution": {
+    "HOT": 700,
+    "WARM": 200,
+    "COLD": 100
+  },
+  "capacity_bytes": {
+    "HOT": 183500800,
+    "WARM": 52428800,
+    "COLD": 26214400
+  },
+  "plan_actions": {
+    "to_warm": 0,
+    "to_cold": 0,
+    "restore_requests": 0
+  }
+}

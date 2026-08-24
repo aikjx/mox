@@ -1,0 +1,10 @@
+const { CloudClient } = require("../../xuanji-sdk-cloud");
+const client = new CloudClient({ region: "cn-east-1" });
+client.createBucket("pfx-bucket");
+client.putObject("pfx-bucket", "logs/2024/a.log", "a");
+client.putObject("pfx-bucket", "logs/2024/b.log", "b");
+client.putObject("pfx-bucket", "other.txt", "c");
+const result = client.listPrefix("pfx-bucket", "logs/");
+if (result.objects.length < 2) process.exit(1);
+console.log("XJ-OK: cloud-009_list_prefix");
+process.exit(0);

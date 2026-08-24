@@ -1,0 +1,1269 @@
+{
+  "generated_at": "2026-08-24T15:43:36.3903424+08:00",
+  "total_entries": 180,
+  "cloud_ids_count": 30,
+  "graph_ids_count": 30,
+  "cross_lang_aligned": true,
+  "entries": [
+    {
+      "id": "cloud-001_create_bucket",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-001_create_bucket.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-001_create_bucket.rs"
+    },
+    {
+      "id": "cloud-002_delete_bucket",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-002_delete_bucket.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-002_delete_bucket.rs"
+    },
+    {
+      "id": "cloud-003_list_buckets",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-003_list_buckets.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-003_list_buckets.rs"
+    },
+    {
+      "id": "cloud-004_head_bucket",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-004_head_bucket.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-004_head_bucket.rs"
+    },
+    {
+      "id": "cloud-005_set_bucket_acl",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-005_set_bucket_acl.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-005_set_bucket_acl.rs"
+    },
+    {
+      "id": "cloud-006_put_object",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-006_put_object.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-006_put_object.rs"
+    },
+    {
+      "id": "cloud-007_get_object",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-007_get_object.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-007_get_object.rs"
+    },
+    {
+      "id": "cloud-008_delete_object",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-008_delete_object.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-008_delete_object.rs"
+    },
+    {
+      "id": "cloud-009_list_prefix",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-009_list_prefix.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-009_list_prefix.rs"
+    },
+    {
+      "id": "cloud-010_copy_object",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-010_copy_object.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-010_copy_object.rs"
+    },
+    {
+      "id": "cloud-011_multipart_upload",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-011_multipart_upload.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-011_multipart_upload.rs"
+    },
+    {
+      "id": "cloud-012_sts_assume_900s_ok",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-012_sts_assume_900s_ok.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-012_sts_assume_900s_ok.rs"
+    },
+    {
+      "id": "cloud-013_sts_assume_3600s_reject",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-013_sts_assume_3600s_reject.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-013_sts_assume_3600s_reject.rs"
+    },
+    {
+      "id": "cloud-014_sts_token_signature_verify",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-014_sts_token_signature_verify.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-014_sts_token_signature_verify.rs"
+    },
+    {
+      "id": "cloud-015_sts_assume_chain",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-015_sts_assume_chain.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-015_sts_assume_chain.rs"
+    },
+    {
+      "id": "cloud-016_iam_put_policy",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-016_iam_put_policy.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-016_iam_put_policy.rs"
+    },
+    {
+      "id": "cloud-017_iam_get_policy",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-017_iam_get_policy.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-017_iam_get_policy.rs"
+    },
+    {
+      "id": "cloud-018_iam_eval_deny_first",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-018_iam_eval_deny_first.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-018_iam_eval_deny_first.rs"
+    },
+    {
+      "id": "cloud-019_quota_50_per_min",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-019_quota_50_per_min.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-019_quota_50_per_min.rs"
+    },
+    {
+      "id": "cloud-020_quota_burst_10",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-020_quota_burst_10.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-020_quota_burst_10.rs"
+    },
+    {
+      "id": "cloud-021_quota_retry_after_header",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-021_quota_retry_after_header.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-021_quota_retry_after_header.rs"
+    },
+    {
+      "id": "cloud-022_worm_retention_1y",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-022_worm_retention_1y.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-022_worm_retention_1y.rs"
+    },
+    {
+      "id": "cloud-023_worm_legal_hold_on_off",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-023_worm_legal_hold_on_off.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-023_worm_legal_hold_on_off.rs"
+    },
+    {
+      "id": "cloud-024_worm_compliance_immutable",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-024_worm_compliance_immutable.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-024_worm_compliance_immutable.rs"
+    },
+    {
+      "id": "cloud-025_lifecycle_hot_to_warm_30d",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-025_lifecycle_hot_to_warm_30d.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-025_lifecycle_hot_to_warm_30d.rs"
+    },
+    {
+      "id": "cloud-026_lifecycle_warm_to_cold_180d",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-026_lifecycle_warm_to_cold_180d.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-026_lifecycle_warm_to_cold_180d.rs"
+    },
+    {
+      "id": "cloud-027_lifecycle_cold_to_hot_restore",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-027_lifecycle_cold_to_hot_restore.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-027_lifecycle_cold_to_hot_restore.rs"
+    },
+    {
+      "id": "cloud-028_lifecycle_bucket_stats",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-028_lifecycle_bucket_stats.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-028_lifecycle_bucket_stats.rs"
+    },
+    {
+      "id": "cloud-029_dbhc_append_1k_blocks",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-029_dbhc_append_1k_blocks.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-029_dbhc_append_1k_blocks.rs"
+    },
+    {
+      "id": "cloud-030_dbhc_verify_cli_ok",
+      "lang": "rust-cloud",
+      "kind": "cloud",
+      "file": "cloud-030_dbhc_verify_cli_ok.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-030_dbhc_verify_cli_ok.rs"
+    },
+    {
+      "id": "graph-001_cdc_new",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-001_cdc_new.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-001_cdc_new.rs"
+    },
+    {
+      "id": "graph-002_cdc_next_blocking",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-002_cdc_next_blocking.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-002_cdc_next_blocking.rs"
+    },
+    {
+      "id": "graph-003_cdc_resume_offset",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-003_cdc_resume_offset.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-003_cdc_resume_offset.rs"
+    },
+    {
+      "id": "graph-004_cdc_100k_via_writer",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-004_cdc_100k_via_writer.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-004_cdc_100k_via_writer.rs"
+    },
+    {
+      "id": "graph-005_cdc_dedup_stats",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-005_cdc_dedup_stats.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-005_cdc_dedup_stats.rs"
+    },
+    {
+      "id": "graph-006_cdc_lag_monitor",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-006_cdc_lag_monitor.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-006_cdc_lag_monitor.rs"
+    },
+    {
+      "id": "graph-007_cdc_consumer_id_rotate",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-007_cdc_consumer_id_rotate.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-007_cdc_consumer_id_rotate.rs"
+    },
+    {
+      "id": "graph-008_spark_reader_paged_nodes",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-008_spark_reader_paged_nodes.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-008_spark_reader_paged_nodes.rs"
+    },
+    {
+      "id": "graph-009_spark_reader_paged_edges",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-009_spark_reader_paged_edges.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-009_spark_reader_paged_edges.rs"
+    },
+    {
+      "id": "graph-010_spark_writer_bulk",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-010_spark_writer_bulk.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-010_spark_writer_bulk.rs"
+    },
+    {
+      "id": "graph-011_spark_idempotent_upsert",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-011_spark_idempotent_upsert.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-011_spark_idempotent_upsert.rs"
+    },
+    {
+      "id": "graph-012_spark_roundtrip_2k_3k",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-012_spark_roundtrip_2k_3k.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-012_spark_roundtrip_2k_3k.rs"
+    },
+    {
+      "id": "graph-013_spark_roundtrip_5k_8k",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-013_spark_roundtrip_5k_8k.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-013_spark_roundtrip_5k_8k.rs"
+    },
+    {
+      "id": "graph-014_spark_stats_accumulate",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-014_spark_stats_accumulate.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-014_spark_stats_accumulate.rs"
+    },
+    {
+      "id": "graph-015_proj_type_out_1",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-015_proj_type_out_1.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-015_proj_type_out_1.rs"
+    },
+    {
+      "id": "graph-016_proj_type_out_2",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-016_proj_type_out_2.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-016_proj_type_out_2.rs"
+    },
+    {
+      "id": "graph-017_proj_community_in_1",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-017_proj_community_in_1.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-017_proj_community_in_1.rs"
+    },
+    {
+      "id": "graph-018_proj_community_in_2",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-018_proj_community_in_2.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-018_proj_community_in_2.rs"
+    },
+    {
+      "id": "graph-019_proj_attr_out",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-019_proj_attr_out.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-019_proj_attr_out.rs"
+    },
+    {
+      "id": "graph-020_proj_attr_in",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-020_proj_attr_in.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-020_proj_attr_in.rs"
+    },
+    {
+      "id": "graph-021_proj_degree_out_2",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-021_proj_degree_out_2.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-021_proj_degree_out_2.rs"
+    },
+    {
+      "id": "graph-022_proj_label_in_1",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-022_proj_label_in_1.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-022_proj_label_in_1.rs"
+    },
+    {
+      "id": "graph-023_ac15_f1_double_idempotent",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-023_ac15_f1_double_idempotent.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-023_ac15_f1_double_idempotent.rs"
+    },
+    {
+      "id": "graph-024_ac15_f3_lost_zero",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-024_ac15_f3_lost_zero.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-024_ac15_f3_lost_zero.rs"
+    },
+    {
+      "id": "graph-025_ac15_f6_partial",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-025_ac15_f6_partial.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-025_ac15_f6_partial.rs"
+    },
+    {
+      "id": "graph-026_ac15_f7_diskfull_err",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-026_ac15_f7_diskfull_err.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-026_ac15_f7_diskfull_err.rs"
+    },
+    {
+      "id": "graph-027_ac15_f8_cb_plus_audit",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-027_ac15_f8_cb_plus_audit.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-027_ac15_f8_cb_plus_audit.rs"
+    },
+    {
+      "id": "graph-028_ac15_f12_timeout_dedup",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-028_ac15_f12_timeout_dedup.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-028_ac15_f12_timeout_dedup.rs"
+    },
+    {
+      "id": "graph-029_ac15_f13_lag_spike",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-029_ac15_f13_lag_spike.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-029_ac15_f13_lag_spike.rs"
+    },
+    {
+      "id": "graph-030_ac15_f14_audit_cb",
+      "lang": "rust-graph",
+      "kind": "graph",
+      "file": "graph-030_ac15_f14_audit_cb.rs",
+      "path": "platform/sdk/rust/xuanji-sdk-graph/examples/graph-030_ac15_f14_audit_cb.rs"
+    },
+    {
+      "id": "cloud-001_create_bucket",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-001_create_bucket.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-001_create_bucket.js"
+    },
+    {
+      "id": "cloud-002_delete_bucket",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-002_delete_bucket.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-002_delete_bucket.js"
+    },
+    {
+      "id": "cloud-003_list_buckets",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-003_list_buckets.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-003_list_buckets.js"
+    },
+    {
+      "id": "cloud-004_head_bucket",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-004_head_bucket.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-004_head_bucket.js"
+    },
+    {
+      "id": "cloud-005_set_bucket_acl",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-005_set_bucket_acl.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-005_set_bucket_acl.js"
+    },
+    {
+      "id": "cloud-006_put_object",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-006_put_object.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-006_put_object.js"
+    },
+    {
+      "id": "cloud-007_get_object",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-007_get_object.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-007_get_object.js"
+    },
+    {
+      "id": "cloud-008_delete_object",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-008_delete_object.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-008_delete_object.js"
+    },
+    {
+      "id": "cloud-009_list_prefix",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-009_list_prefix.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-009_list_prefix.js"
+    },
+    {
+      "id": "cloud-010_copy_object",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-010_copy_object.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-010_copy_object.js"
+    },
+    {
+      "id": "cloud-011_multipart_upload",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-011_multipart_upload.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-011_multipart_upload.js"
+    },
+    {
+      "id": "cloud-012_sts_assume_900s_ok",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-012_sts_assume_900s_ok.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-012_sts_assume_900s_ok.js"
+    },
+    {
+      "id": "cloud-013_sts_assume_3600s_reject",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-013_sts_assume_3600s_reject.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-013_sts_assume_3600s_reject.js"
+    },
+    {
+      "id": "cloud-014_sts_token_signature_verify",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-014_sts_token_signature_verify.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-014_sts_token_signature_verify.js"
+    },
+    {
+      "id": "cloud-015_sts_assume_chain",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-015_sts_assume_chain.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-015_sts_assume_chain.js"
+    },
+    {
+      "id": "cloud-016_iam_put_policy",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-016_iam_put_policy.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-016_iam_put_policy.js"
+    },
+    {
+      "id": "cloud-017_iam_get_policy",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-017_iam_get_policy.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-017_iam_get_policy.js"
+    },
+    {
+      "id": "cloud-018_iam_eval_deny_first",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-018_iam_eval_deny_first.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-018_iam_eval_deny_first.js"
+    },
+    {
+      "id": "cloud-019_quota_50_per_min",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-019_quota_50_per_min.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-019_quota_50_per_min.js"
+    },
+    {
+      "id": "cloud-020_quota_burst_10",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-020_quota_burst_10.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-020_quota_burst_10.js"
+    },
+    {
+      "id": "cloud-021_quota_retry_after_header",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-021_quota_retry_after_header.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-021_quota_retry_after_header.js"
+    },
+    {
+      "id": "cloud-022_worm_retention_1y",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-022_worm_retention_1y.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-022_worm_retention_1y.js"
+    },
+    {
+      "id": "cloud-023_worm_legal_hold_on_off",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-023_worm_legal_hold_on_off.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-023_worm_legal_hold_on_off.js"
+    },
+    {
+      "id": "cloud-024_worm_compliance_immutable",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-024_worm_compliance_immutable.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-024_worm_compliance_immutable.js"
+    },
+    {
+      "id": "cloud-025_lifecycle_hot_to_warm_30d",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-025_lifecycle_hot_to_warm_30d.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-025_lifecycle_hot_to_warm_30d.js"
+    },
+    {
+      "id": "cloud-026_lifecycle_warm_to_cold_180d",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-026_lifecycle_warm_to_cold_180d.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-026_lifecycle_warm_to_cold_180d.js"
+    },
+    {
+      "id": "cloud-027_lifecycle_cold_to_hot_restore",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-027_lifecycle_cold_to_hot_restore.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-027_lifecycle_cold_to_hot_restore.js"
+    },
+    {
+      "id": "cloud-028_lifecycle_bucket_stats",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-028_lifecycle_bucket_stats.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-028_lifecycle_bucket_stats.js"
+    },
+    {
+      "id": "cloud-029_dbhc_append_1k_blocks",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-029_dbhc_append_1k_blocks.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-029_dbhc_append_1k_blocks.js"
+    },
+    {
+      "id": "cloud-030_dbhc_verify_cli_ok",
+      "lang": "node-cloud",
+      "kind": "cloud",
+      "file": "cloud-030_dbhc_verify_cli_ok.js",
+      "path": "platform/sdk/nodejs/examples/cloud/cloud-030_dbhc_verify_cli_ok.js"
+    },
+    {
+      "id": "graph-001_cdc_new",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-001_cdc_new.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-001_cdc_new.js"
+    },
+    {
+      "id": "graph-002_cdc_next_blocking",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-002_cdc_next_blocking.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-002_cdc_next_blocking.js"
+    },
+    {
+      "id": "graph-003_cdc_resume_offset",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-003_cdc_resume_offset.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-003_cdc_resume_offset.js"
+    },
+    {
+      "id": "graph-004_cdc_100k_via_writer",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-004_cdc_100k_via_writer.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-004_cdc_100k_via_writer.js"
+    },
+    {
+      "id": "graph-005_cdc_dedup_stats",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-005_cdc_dedup_stats.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-005_cdc_dedup_stats.js"
+    },
+    {
+      "id": "graph-006_cdc_lag_monitor",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-006_cdc_lag_monitor.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-006_cdc_lag_monitor.js"
+    },
+    {
+      "id": "graph-007_cdc_consumer_id_rotate",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-007_cdc_consumer_id_rotate.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-007_cdc_consumer_id_rotate.js"
+    },
+    {
+      "id": "graph-008_spark_reader_paged_nodes",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-008_spark_reader_paged_nodes.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-008_spark_reader_paged_nodes.js"
+    },
+    {
+      "id": "graph-009_spark_reader_paged_edges",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-009_spark_reader_paged_edges.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-009_spark_reader_paged_edges.js"
+    },
+    {
+      "id": "graph-010_spark_writer_bulk",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-010_spark_writer_bulk.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-010_spark_writer_bulk.js"
+    },
+    {
+      "id": "graph-011_spark_idempotent_upsert",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-011_spark_idempotent_upsert.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-011_spark_idempotent_upsert.js"
+    },
+    {
+      "id": "graph-012_spark_roundtrip_2k_3k",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-012_spark_roundtrip_2k_3k.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-012_spark_roundtrip_2k_3k.js"
+    },
+    {
+      "id": "graph-013_spark_roundtrip_5k_8k",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-013_spark_roundtrip_5k_8k.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-013_spark_roundtrip_5k_8k.js"
+    },
+    {
+      "id": "graph-014_spark_stats_accumulate",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-014_spark_stats_accumulate.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-014_spark_stats_accumulate.js"
+    },
+    {
+      "id": "graph-015_proj_type_out_1",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-015_proj_type_out_1.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-015_proj_type_out_1.js"
+    },
+    {
+      "id": "graph-016_proj_type_out_2",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-016_proj_type_out_2.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-016_proj_type_out_2.js"
+    },
+    {
+      "id": "graph-017_proj_community_in_1",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-017_proj_community_in_1.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-017_proj_community_in_1.js"
+    },
+    {
+      "id": "graph-018_proj_community_in_2",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-018_proj_community_in_2.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-018_proj_community_in_2.js"
+    },
+    {
+      "id": "graph-019_proj_attr_out",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-019_proj_attr_out.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-019_proj_attr_out.js"
+    },
+    {
+      "id": "graph-020_proj_attr_in",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-020_proj_attr_in.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-020_proj_attr_in.js"
+    },
+    {
+      "id": "graph-021_proj_degree_out_2",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-021_proj_degree_out_2.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-021_proj_degree_out_2.js"
+    },
+    {
+      "id": "graph-022_proj_label_in_1",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-022_proj_label_in_1.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-022_proj_label_in_1.js"
+    },
+    {
+      "id": "graph-023_ac15_f1_double_idempotent",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-023_ac15_f1_double_idempotent.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-023_ac15_f1_double_idempotent.js"
+    },
+    {
+      "id": "graph-024_ac15_f3_lost_zero",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-024_ac15_f3_lost_zero.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-024_ac15_f3_lost_zero.js"
+    },
+    {
+      "id": "graph-025_ac15_f6_partial",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-025_ac15_f6_partial.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-025_ac15_f6_partial.js"
+    },
+    {
+      "id": "graph-026_ac15_f7_diskfull_err",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-026_ac15_f7_diskfull_err.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-026_ac15_f7_diskfull_err.js"
+    },
+    {
+      "id": "graph-027_ac15_f8_cb_plus_audit",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-027_ac15_f8_cb_plus_audit.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-027_ac15_f8_cb_plus_audit.js"
+    },
+    {
+      "id": "graph-028_ac15_f12_timeout_dedup",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-028_ac15_f12_timeout_dedup.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-028_ac15_f12_timeout_dedup.js"
+    },
+    {
+      "id": "graph-029_ac15_f13_lag_spike",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-029_ac15_f13_lag_spike.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-029_ac15_f13_lag_spike.js"
+    },
+    {
+      "id": "graph-030_ac15_f14_audit_cb",
+      "lang": "node-graph",
+      "kind": "graph",
+      "file": "graph-030_ac15_f14_audit_cb.js",
+      "path": "platform/sdk/nodejs/examples/graph/graph-030_ac15_f14_audit_cb.js"
+    },
+    {
+      "id": "cloud-001_create_bucket",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-001_create_bucket.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-001_create_bucket.py"
+    },
+    {
+      "id": "cloud-002_delete_bucket",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-002_delete_bucket.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-002_delete_bucket.py"
+    },
+    {
+      "id": "cloud-003_list_buckets",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-003_list_buckets.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-003_list_buckets.py"
+    },
+    {
+      "id": "cloud-004_head_bucket",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-004_head_bucket.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-004_head_bucket.py"
+    },
+    {
+      "id": "cloud-005_set_bucket_acl",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-005_set_bucket_acl.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-005_set_bucket_acl.py"
+    },
+    {
+      "id": "cloud-006_put_object",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-006_put_object.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-006_put_object.py"
+    },
+    {
+      "id": "cloud-007_get_object",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-007_get_object.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-007_get_object.py"
+    },
+    {
+      "id": "cloud-008_delete_object",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-008_delete_object.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-008_delete_object.py"
+    },
+    {
+      "id": "cloud-009_list_prefix",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-009_list_prefix.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-009_list_prefix.py"
+    },
+    {
+      "id": "cloud-010_copy_object",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-010_copy_object.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-010_copy_object.py"
+    },
+    {
+      "id": "cloud-011_multipart_upload",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-011_multipart_upload.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-011_multipart_upload.py"
+    },
+    {
+      "id": "cloud-012_sts_assume_900s_ok",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-012_sts_assume_900s_ok.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-012_sts_assume_900s_ok.py"
+    },
+    {
+      "id": "cloud-013_sts_assume_3600s_reject",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-013_sts_assume_3600s_reject.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-013_sts_assume_3600s_reject.py"
+    },
+    {
+      "id": "cloud-014_sts_token_signature_verify",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-014_sts_token_signature_verify.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-014_sts_token_signature_verify.py"
+    },
+    {
+      "id": "cloud-015_sts_assume_chain",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-015_sts_assume_chain.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-015_sts_assume_chain.py"
+    },
+    {
+      "id": "cloud-016_iam_put_policy",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-016_iam_put_policy.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-016_iam_put_policy.py"
+    },
+    {
+      "id": "cloud-017_iam_get_policy",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-017_iam_get_policy.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-017_iam_get_policy.py"
+    },
+    {
+      "id": "cloud-018_iam_eval_deny_first",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-018_iam_eval_deny_first.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-018_iam_eval_deny_first.py"
+    },
+    {
+      "id": "cloud-019_quota_50_per_min",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-019_quota_50_per_min.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-019_quota_50_per_min.py"
+    },
+    {
+      "id": "cloud-020_quota_burst_10",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-020_quota_burst_10.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-020_quota_burst_10.py"
+    },
+    {
+      "id": "cloud-021_quota_retry_after_header",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-021_quota_retry_after_header.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-021_quota_retry_after_header.py"
+    },
+    {
+      "id": "cloud-022_worm_retention_1y",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-022_worm_retention_1y.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-022_worm_retention_1y.py"
+    },
+    {
+      "id": "cloud-023_worm_legal_hold_on_off",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-023_worm_legal_hold_on_off.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-023_worm_legal_hold_on_off.py"
+    },
+    {
+      "id": "cloud-024_worm_compliance_immutable",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-024_worm_compliance_immutable.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-024_worm_compliance_immutable.py"
+    },
+    {
+      "id": "cloud-025_lifecycle_hot_to_warm_30d",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-025_lifecycle_hot_to_warm_30d.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-025_lifecycle_hot_to_warm_30d.py"
+    },
+    {
+      "id": "cloud-026_lifecycle_warm_to_cold_180d",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-026_lifecycle_warm_to_cold_180d.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-026_lifecycle_warm_to_cold_180d.py"
+    },
+    {
+      "id": "cloud-027_lifecycle_cold_to_hot_restore",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-027_lifecycle_cold_to_hot_restore.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-027_lifecycle_cold_to_hot_restore.py"
+    },
+    {
+      "id": "cloud-028_lifecycle_bucket_stats",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-028_lifecycle_bucket_stats.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-028_lifecycle_bucket_stats.py"
+    },
+    {
+      "id": "cloud-029_dbhc_append_1k_blocks",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-029_dbhc_append_1k_blocks.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-029_dbhc_append_1k_blocks.py"
+    },
+    {
+      "id": "cloud-030_dbhc_verify_cli_ok",
+      "lang": "python-cloud",
+      "kind": "cloud",
+      "file": "cloud-030_dbhc_verify_cli_ok.py",
+      "path": "platform/sdk/python/examples/cloud/cloud-030_dbhc_verify_cli_ok.py"
+    },
+    {
+      "id": "graph-001_cdc_new",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-001_cdc_new.py",
+      "path": "platform/sdk/python/examples/graph/graph-001_cdc_new.py"
+    },
+    {
+      "id": "graph-002_cdc_next_blocking",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-002_cdc_next_blocking.py",
+      "path": "platform/sdk/python/examples/graph/graph-002_cdc_next_blocking.py"
+    },
+    {
+      "id": "graph-003_cdc_resume_offset",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-003_cdc_resume_offset.py",
+      "path": "platform/sdk/python/examples/graph/graph-003_cdc_resume_offset.py"
+    },
+    {
+      "id": "graph-004_cdc_100k_via_writer",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-004_cdc_100k_via_writer.py",
+      "path": "platform/sdk/python/examples/graph/graph-004_cdc_100k_via_writer.py"
+    },
+    {
+      "id": "graph-005_cdc_dedup_stats",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-005_cdc_dedup_stats.py",
+      "path": "platform/sdk/python/examples/graph/graph-005_cdc_dedup_stats.py"
+    },
+    {
+      "id": "graph-006_cdc_lag_monitor",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-006_cdc_lag_monitor.py",
+      "path": "platform/sdk/python/examples/graph/graph-006_cdc_lag_monitor.py"
+    },
+    {
+      "id": "graph-007_cdc_consumer_id_rotate",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-007_cdc_consumer_id_rotate.py",
+      "path": "platform/sdk/python/examples/graph/graph-007_cdc_consumer_id_rotate.py"
+    },
+    {
+      "id": "graph-008_spark_reader_paged_nodes",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-008_spark_reader_paged_nodes.py",
+      "path": "platform/sdk/python/examples/graph/graph-008_spark_reader_paged_nodes.py"
+    },
+    {
+      "id": "graph-009_spark_reader_paged_edges",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-009_spark_reader_paged_edges.py",
+      "path": "platform/sdk/python/examples/graph/graph-009_spark_reader_paged_edges.py"
+    },
+    {
+      "id": "graph-010_spark_writer_bulk",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-010_spark_writer_bulk.py",
+      "path": "platform/sdk/python/examples/graph/graph-010_spark_writer_bulk.py"
+    },
+    {
+      "id": "graph-011_spark_idempotent_upsert",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-011_spark_idempotent_upsert.py",
+      "path": "platform/sdk/python/examples/graph/graph-011_spark_idempotent_upsert.py"
+    },
+    {
+      "id": "graph-012_spark_roundtrip_2k_3k",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-012_spark_roundtrip_2k_3k.py",
+      "path": "platform/sdk/python/examples/graph/graph-012_spark_roundtrip_2k_3k.py"
+    },
+    {
+      "id": "graph-013_spark_roundtrip_5k_8k",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-013_spark_roundtrip_5k_8k.py",
+      "path": "platform/sdk/python/examples/graph/graph-013_spark_roundtrip_5k_8k.py"
+    },
+    {
+      "id": "graph-014_spark_stats_accumulate",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-014_spark_stats_accumulate.py",
+      "path": "platform/sdk/python/examples/graph/graph-014_spark_stats_accumulate.py"
+    },
+    {
+      "id": "graph-015_proj_type_out_1",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-015_proj_type_out_1.py",
+      "path": "platform/sdk/python/examples/graph/graph-015_proj_type_out_1.py"
+    },
+    {
+      "id": "graph-016_proj_type_out_2",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-016_proj_type_out_2.py",
+      "path": "platform/sdk/python/examples/graph/graph-016_proj_type_out_2.py"
+    },
+    {
+      "id": "graph-017_proj_community_in_1",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-017_proj_community_in_1.py",
+      "path": "platform/sdk/python/examples/graph/graph-017_proj_community_in_1.py"
+    },
+    {
+      "id": "graph-018_proj_community_in_2",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-018_proj_community_in_2.py",
+      "path": "platform/sdk/python/examples/graph/graph-018_proj_community_in_2.py"
+    },
+    {
+      "id": "graph-019_proj_attr_out",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-019_proj_attr_out.py",
+      "path": "platform/sdk/python/examples/graph/graph-019_proj_attr_out.py"
+    },
+    {
+      "id": "graph-020_proj_attr_in",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-020_proj_attr_in.py",
+      "path": "platform/sdk/python/examples/graph/graph-020_proj_attr_in.py"
+    },
+    {
+      "id": "graph-021_proj_degree_out_2",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-021_proj_degree_out_2.py",
+      "path": "platform/sdk/python/examples/graph/graph-021_proj_degree_out_2.py"
+    },
+    {
+      "id": "graph-022_proj_label_in_1",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-022_proj_label_in_1.py",
+      "path": "platform/sdk/python/examples/graph/graph-022_proj_label_in_1.py"
+    },
+    {
+      "id": "graph-023_ac15_f1_double_idempotent",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-023_ac15_f1_double_idempotent.py",
+      "path": "platform/sdk/python/examples/graph/graph-023_ac15_f1_double_idempotent.py"
+    },
+    {
+      "id": "graph-024_ac15_f3_lost_zero",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-024_ac15_f3_lost_zero.py",
+      "path": "platform/sdk/python/examples/graph/graph-024_ac15_f3_lost_zero.py"
+    },
+    {
+      "id": "graph-025_ac15_f6_partial",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-025_ac15_f6_partial.py",
+      "path": "platform/sdk/python/examples/graph/graph-025_ac15_f6_partial.py"
+    },
+    {
+      "id": "graph-026_ac15_f7_diskfull_err",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-026_ac15_f7_diskfull_err.py",
+      "path": "platform/sdk/python/examples/graph/graph-026_ac15_f7_diskfull_err.py"
+    },
+    {
+      "id": "graph-027_ac15_f8_cb_plus_audit",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-027_ac15_f8_cb_plus_audit.py",
+      "path": "platform/sdk/python/examples/graph/graph-027_ac15_f8_cb_plus_audit.py"
+    },
+    {
+      "id": "graph-028_ac15_f12_timeout_dedup",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-028_ac15_f12_timeout_dedup.py",
+      "path": "platform/sdk/python/examples/graph/graph-028_ac15_f12_timeout_dedup.py"
+    },
+    {
+      "id": "graph-029_ac15_f13_lag_spike",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-029_ac15_f13_lag_spike.py",
+      "path": "platform/sdk/python/examples/graph/graph-029_ac15_f13_lag_spike.py"
+    },
+    {
+      "id": "graph-030_ac15_f14_audit_cb",
+      "lang": "python-graph",
+      "kind": "graph",
+      "file": "graph-030_ac15_f14_audit_cb.py",
+      "path": "platform/sdk/python/examples/graph/graph-030_ac15_f14_audit_cb.py"
+    }
+  ]
+}

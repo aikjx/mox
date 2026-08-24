@@ -36,7 +36,7 @@ fn sign_session_token(
     let mut mac = HmacSha256::new_from_slice(secret).expect("Hmac accepts any key size");
     mac.update(role_id.as_bytes());
     mac.update(session_name.as_bytes());
-    mac.update(expiration_ms.to_le_bytes());
+    mac.update(&expiration_ms.to_le_bytes());
     let sig = mac.finalize().into_bytes();
     base64_encode(&sig)
 }

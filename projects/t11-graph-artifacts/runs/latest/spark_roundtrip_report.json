@@ -1,0 +1,36 @@
+{
+  "roundtrip_2000_nodes_3000_edges": {
+    "nodes_inserted": 2000,
+    "edges_inserted": 3000,
+    "symmetric_diff_nodes": 0,
+    "symmetric_diff_edges": 0,
+    "roundtrip_pass": true
+  },
+  "roundtrip_5000_8000": {
+    "nodes_inserted": 5000,
+    "edges_inserted": 8000,
+    "symmetric_diff_nodes": 0,
+    "symmetric_diff_edges": 0,
+    "roundtrip_pass": true
+  },
+  "schema_checks": {
+    "standard_node_fields": [
+      "id",
+      "label",
+      "type_",
+      "attr"
+    ],
+    "standard_edge_fields": [
+      "source",
+      "target",
+      "label",
+      "props"
+    ],
+    "node_field_types": [
+      "Long",
+      "String",
+      "String",
+      "Map"
+    ]
+  }
+}

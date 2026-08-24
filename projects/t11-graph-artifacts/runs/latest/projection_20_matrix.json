@@ -1,0 +1,26 @@
+{
+  "registry_size": 20,
+  "all_ids_unique": true,
+  "matrix": [
+    {"id":"proj_type_out_1","filter":"type","direction":"out","hops":1},
+    {"id":"proj_type_out_2","filter":"type","direction":"out","hops":2},
+    {"id":"proj_type_in_1","filter":"type","direction":"in","hops":1},
+    {"id":"proj_type_in_2","filter":"type","direction":"in","hops":2},
+    {"id":"proj_community_out_1","filter":"community","direction":"out","hops":1},
+    {"id":"proj_community_out_2","filter":"community","direction":"out","hops":2},
+    {"id":"proj_community_in_1","filter":"community","direction":"in","hops":1},
+    {"id":"proj_community_in_2","filter":"community","direction":"in","hops":2},
+    {"id":"proj_attr_out_1","filter":"attr","direction":"out","hops":1},
+    {"id":"proj_attr_out_2","filter":"attr","direction":"out","hops":2},
+    {"id":"proj_attr_in_1","filter":"attr","direction":"in","hops":1},
+    {"id":"proj_attr_in_2","filter":"attr","direction":"in","hops":2},
+    {"id":"proj_degree_out_1","filter":"degree","direction":"out","hops":1},
+    {"id":"proj_degree_out_2","filter":"degree","direction":"out","hops":2},
+    {"id":"proj_degree_in_1","filter":"degree","direction":"in","hops":1},
+    {"id":"proj_degree_in_2","filter":"degree","direction":"in","hops":2},
+    {"id":"proj_label_out_1","filter":"label","direction":"out","hops":1},
+    {"id":"proj_label_out_2","filter":"label","direction":"out","hops":2},
+    {"id":"proj_label_in_1","filter":"label","direction":"in","hops":1},
+    {"id":"proj_label_in_2","filter":"label","direction":"in","hops":2}
+  ]
+}

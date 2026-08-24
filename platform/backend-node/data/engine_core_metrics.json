@@ -1,23 +1,23 @@
 {
-  "total": 60,
+  "total": 90,
   "by_capability": {
     "reasoning": {
-      "calls": 20,
-      "success": 20,
+      "calls": 30,
+      "success": 30,
       "degraded": 0,
-      "total_latency_ms": 606699,
+      "total_latency_ms": 933455,
       "errors": 0,
       "last_error": null,
-      "last_called_at": "2026-08-24T04:05:33.010Z"
+      "last_called_at": "2026-08-24T04:42:30.382Z"
     },
     "chat": {
-      "calls": 40,
-      "success": 40,
+      "calls": 60,
+      "success": 60,
       "degraded": 0,
-      "total_latency_ms": 28979,
+      "total_latency_ms": 43651,
       "errors": 0,
       "last_error": null,
-      "last_called_at": "2026-08-24T04:05:45.069Z"
+      "last_called_at": "2026-08-24T04:42:43.186Z"
     }
   }
 }

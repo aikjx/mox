@@ -1,0 +1,72 @@
+{
+  "rubric_version": "T17+EF-All v1.0",
+  "run_id": "20260824-154943",
+  "total_score": 99.42,
+  "grade": "S",
+  "generated_at": "2026-08-24T15:51:18.2665050+08:00",
+  "elapsed_sec": 94.85,
+  "acceptance_pass": false,
+  "phase_exit": {
+    "T17SDK": 0,
+    "E12": 0,
+    "E13": 0,
+    "E15": 0,
+    "E18": 0,
+    "E19": 0,
+    "E20": 0
+  },
+  "metrics_overview": {
+    "T17_SDK_grade": "S",
+    "T17_SDK_accept": true,
+    "T12_DR_yaml_count": 11,
+    "T13_xinchuang_cells": 98,
+    "T13_ops_chapters": 13,
+    "T18_trace_tests": 13,
+    "T19_regression_total": 719,
+    "T19_regression_fail": 0
+  },
+  "dimensions": [
+    {
+      "name": "T17 SDK (official, 3 langs)",
+      "score": 98.8,
+      "contrib": 39.52,
+      "weight": 0.4
+    },
+    {
+      "name": "E12 Helm DR dual region",
+      "score": 100,
+      "contrib": 8.0,
+      "weight": 0.08
+    },
+    {
+      "name": "E13 Xinchuang matrix + ops manual",
+      "score": 100,
+      "contrib": 7.0,
+      "weight": 0.07
+    },
+    {
+      "name": "E15 HA 3m3s + Capacity + TCO(3y)",
+      "score": 99,
+      "contrib": 9.9,
+      "weight": 0.1
+    },
+    {
+      "name": "E18 Trace 8 stages OTel-compat",
+      "score": 100,
+      "contrib": 7.0,
+      "weight": 0.07
+    },
+    {
+      "name": "E19 Regression >= 706 tests matrix",
+      "score": 100,
+      "contrib": 18.0,
+      "weight": 0.18
+    },
+    {
+      "name": "E20 One-click Helm + Gray Warmup",
+      "score": 100,
+      "contrib": 10.0,
+      "weight": 0.1
+    }
+  ]
+}

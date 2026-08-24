@@ -1,0 +1,8 @@
+{
+  "benchmark": "sts_assume_role_sign_only",
+  "iterations": 1000,
+  "total_ms": 33,
+  "qps": 30303,
+  "ttl_seconds": 900,
+  "per_token_avg_us": 33
+}

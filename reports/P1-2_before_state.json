@@ -1,0 +1,294 @@
+{
+  "total_nodes_ALL": 55,
+  "requirement_nodes": 5,
+  "engine_like_nodes_NonReq": 50,
+  "engines_export_count": 49,
+  "all_edges_count": 44,
+  "without_codePath": [
+    {
+      "id": "engine::ai_agent",
+      "kind": "rust"
+    },
+    {
+      "id": "engine::business_catalog",
+      "kind": "rust"
+    },
+    {
+      "id": "engine::flow_ai",
+      "kind": "rust"
+    },
+    {
+      "id": "engine::graph_algorithms",
+      "kind": "rust"
+    },
+    {
+      "id": "engine::hermes_flow_bridge",
+      "kind": "rust"
+    },
+    {
+      "id": "engine::kg_hub",
+      "kind": "rust"
+    },
+    {
+      "id": "engine::operator_core",
+      "kind": "rust"
+    },
+    {
+      "id": "engine::operator_wasm",
+      "kind": "rust"
+    },
+    {
+      "id": "engine::optimizer",
+      "kind": "rust"
+    },
+    {
+      "id": "engine::primiflow_core",
+      "kind": "rust"
+    },
+    {
+      "id": "engine::primiflow_fusion",
+      "kind": "rust"
+    },
+    {
+      "id": "engine::template_market",
+      "kind": "rust"
+    },
+    {
+      "id": "engine::xuanji_expert",
+      "kind": "rust"
+    },
+    {
+      "id": "engine::xuanji_system",
+      "kind": "rust"
+    },
+    {
+      "id": "engine::xuanji_common_meta",
+      "kind": "rust"
+    },
+    {
+      "id": "engine::runtime",
+      "kind": "rust"
+    }
+  ],
+  "codePath_missing_file": [
+    {
+      "id": "llm-gateway",
+      "codePath": "src/llm-gateway.js"
+    },
+    {
+      "id": "ai-engine-core",
+      "codePath": "src/ai-engine-core.js"
+    },
+    {
+      "id": "ai-engine",
+      "codePath": "src/ai-engine.js"
+    },
+    {
+      "id": "ai-integration-engine",
+      "codePath": "src/ai-integration-engine.js"
+    },
+    {
+      "id": "ultimate-ai-engine",
+      "codePath": "src/ultimate-ai-engine.js"
+    },
+    {
+      "id": "expert-alliance-engine",
+      "codePath": "src/expert-alliance-engine.js"
+    },
+    {
+      "id": "expert-alliance",
+      "codePath": "src/expert-alliance/index.js"
+    },
+    {
+      "id": "expert-graph",
+      "codePath": "src/expert-graph.js"
+    },
+    {
+      "id": "expert-dispatcher",
+      "codePath": "src/expert-dispatcher.js"
+    },
+    {
+      "id": "orchestration-engine",
+      "codePath": "src/orchestration-engine.js"
+    },
+    {
+      "id": "auto-dev-engine",
+      "codePath": "src/auto-dev-engine.js"
+    },
+    {
+      "id": "infinite-dimension-optimizer",
+      "codePath": "src/infinite-dimension-optimizer.js"
+    },
+    {
+      "id": "web-search-service",
+      "codePath": "src/web-search-service.js"
+    },
+    {
+      "id": "session-store",
+      "codePath": "src/session-store.js"
+    },
+    {
+      "id": "ai-flow-graph",
+      "codePath": "src/ai-flow-graph.js"
+    },
+    {
+      "id": "kb",
+      "codePath": "src/kb/index.js"
+    },
+    {
+      "id": "knowledge-graph",
+      "codePath": "src/lib/graph-algos.js"
+    },
+    {
+      "id": "engine-rust-ai-agent",
+      "codePath": "../services/ai-agent/src"
+    },
+    {
+      "id": "engine-rust-xuanji-expert",
+      "codePath": "../services/xuanji-expert/src"
+    },
+    {
+      "id": "engine-rust-xuanji-system",
+      "codePath": "../services/xuanji-system/src"
+    },
+    {
+      "id": "engine-rust-runtime",
+      "codePath": "../gateway/runtime/src"
+    },
+    {
+      "id": "engine-rust-graph-algorithms",
+      "codePath": "../services/graph-algorithms/src"
+    },
+    {
+      "id": "engine-rust-flow-ai",
+      "codePath": "../services/flow-ai/src"
+    },
+    {
+      "id": "engine-rust-optimizer",
+      "codePath": "../services/optimizer/src"
+    },
+    {
+      "id": "engine-rust-operator-core",
+      "codePath": "../services/operator-core/src"
+    },
+    {
+      "id": "engine-rust-primiflow-core",
+      "codePath": "../services/primiflow-core/src"
+    },
+    {
+      "id": "engine-rust-primiflow-fusion",
+      "codePath": "../services/primiflow-fusion/src"
+    },
+    {
+      "id": "engine-rust-kg-hub",
+      "codePath": "../services/kg-hub/src"
+    },
+    {
+      "id": "project-atlas",
+      "codePath": "src/project-atlas/index.js"
+    },
+    {
+      "id": "engine-universe",
+      "codePath": "src/engine-universe/index.js"
+    },
+    {
+      "id": "engine-kernel",
+      "codePath": "src/engine-kernel/index.js"
+    },
+    {
+      "id": "gateway-runtime",
+      "codePath": "platform/gateway/runtime/src/lib.rs"
+    },
+    {
+      "id": "flow-engine",
+      "codePath": "platform/services/ai-agent/src/flow_engine.rs"
+    },
+    {
+      "id": "engine-universe",
+      "codePath": "src/engine-universe/index.js"
+    }
+  ],
+  "keyFunctions_less_than_3": [
+    {
+      "id": "engine::ai_agent",
+      "kfs": 0
+    },
+    {
+      "id": "engine::business_catalog",
+      "kfs": 0
+    },
+    {
+      "id": "engine::flow_ai",
+      "kfs": 0
+    },
+    {
+      "id": "engine::graph_algorithms",
+      "kfs": 0
+    },
+    {
+      "id": "engine::hermes_flow_bridge",
+      "kfs": 0
+    },
+    {
+      "id": "engine::kg_hub",
+      "kfs": 0
+    },
+    {
+      "id": "engine::operator_core",
+      "kfs": 0
+    },
+    {
+      "id": "engine::operator_wasm",
+      "kfs": 0
+    },
+    {
+      "id": "engine::optimizer",
+      "kfs": 0
+    },
+    {
+      "id": "engine::primiflow_core",
+      "kfs": 0
+    },
+    {
+      "id": "engine::primiflow_fusion",
+      "kfs": 0
+    },
+    {
+      "id": "engine::template_market",
+      "kfs": 0
+    },
+    {
+      "id": "engine::xuanji_expert",
+      "kfs": 0
+    },
+    {
+      "id": "engine::xuanji_system",
+      "kfs": 0
+    },
+    {
+      "id": "engine::xuanji_common_meta",
+      "kfs": 0
+    },
+    {
+      "id": "engine::runtime",
+      "kfs": 0
+    },
+    {
+      "id": "engine-universe",
+      "kfs": 2
+    },
+    {
+      "id": "engine-kernel",
+      "kfs": 2
+    },
+    {
+      "id": "gateway-runtime",
+      "kfs": 2
+    },
+    {
+      "id": "flow-engine",
+      "kfs": 2
+    }
+  ],
+  "ROOT_resolved": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform"
+}

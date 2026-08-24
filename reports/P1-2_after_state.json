@@ -1,0 +1,59 @@
+{
+  "nonReq_count": 50,
+  "req_count": 5,
+  "total_edges": 44,
+  "code_path_missing_count": 2,
+  "code_path_missing_top10": [
+    {
+      "id": "gateway-runtime",
+      "codePath": "platform/gateway/runtime/src/lib.rs",
+      "fp": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\platform\\gateway\\runtime\\src\\lib.rs"
+    },
+    {
+      "id": "flow-engine",
+      "codePath": "platform/services/ai-agent/src/flow_engine.rs",
+      "fp": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\platform\\services\\ai-agent\\src\\flow_engine.rs"
+    }
+  ],
+  "kf_less3_count": 4,
+  "kf_less3_top10": [
+    {
+      "id": "engine-universe",
+      "k": 2
+    },
+    {
+      "id": "engine-kernel",
+      "k": 2
+    },
+    {
+      "id": "gateway-runtime",
+      "k": 2
+    },
+    {
+      "id": "flow-engine",
+      "k": 2
+    }
+  ],
+  "verifyFullChain": {
+    "total": 147,
+    "passed": 144,
+    "failed": 3
+  },
+  "verifyFailures": [
+    {
+      "name": "代码路径存在 [gateway-runtime] platform/gateway/runtime/src/lib.rs",
+      "ok": false,
+      "detail": "解析路径=D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\platform\\gateway\\runtime\\src\\lib.rs"
+    },
+    {
+      "name": "代码路径存在 [flow-engine] platform/services/ai-agent/src/flow_engine.rs",
+      "ok": false,
+      "detail": "解析路径=D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\backend-node\\platform\\services\\ai-agent\\src\\flow_engine.rs"
+    },
+    {
+      "name": "全域连通无孤岛（单一连通分量）",
+      "ok": false,
+      "detail": "孤岛: engine-rust-ai-agent; engine-rust-xuanji-expert; engine-rust-xuanji-system; engine-rust-runtime; engine-rust-graph-algorithms; engine-rust-flow-ai; engine-rust-optimizer; engine-rust-operator-core; engine-rust-primiflow-core; engine-rust-primiflow-fusion; engine-rust-kg-hub; engine::ai_agent; engine::business_catalog; engine::flow_ai; engine::graph_algorithms; engine::hermes_flow_bridge; engine::kg_hub; engine::operator_core; engine::operator_wasm; engine::optimizer; engine::primiflow_core; engine::primiflow_fusion; engine::template_market; engine::xuanji_expert; engine::xuanji_system; engine::xuanji_common_meta; engine::runtime; project-atlas; engine-kernel; gateway-runtime"
+    }
+  ]
+}
