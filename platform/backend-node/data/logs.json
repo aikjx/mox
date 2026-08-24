@@ -4801,9 +4801,10 @@
     "actor": null
   },
   {
-    "id": "kb_doc_c63tjx3vni",
-    "ts": "2026-08-24T00:06:02.546Z",
-    "type": "kb",
-    "msg": "create document"
+    "id": "log_1621x0m1gz",
+    "ts": "2026-08-24T15:05:11.021Z",
+    "type": "expert",
+    "msg": "intelligent-consult",
+    "mode": "single"
   }
 ]

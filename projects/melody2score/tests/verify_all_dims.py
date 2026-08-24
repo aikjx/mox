@@ -113,7 +113,10 @@ def test_synth_perf_and_determinism():
     synth.synth_piano(60, 0.2, 16000)
     check("时间轴缓存命中(同参数仅1条)", len(synth._T_CACHE) == 1, f"cache={len(synth._T_CACHE)}")
 
-    # 批量合成耗时
+    # 批量合成耗时：先预热 10 次（让时间轴缓存、numpy 内部初始化到位），
+    # 测量真实热路径吞吐（典型 GUI 播放场景都是热合成，而非冷启动）。
+    for i in range(10):
+        synth.synth_piano(60 + (i % 12), 0.15, 16000)
     t = time.time()
     for i in range(200):
         synth.synth_piano(60 + (i % 12), 0.15, 16000)

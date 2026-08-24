@@ -334,7 +334,7 @@ impl From<PluginKindArg> for PluginKind {
 // only — tests build this state locally).
 // =========================================================================
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct CliState {
     pub legal_holds: RwLock<BTreeMap<String, LegalHold>>,
     pub miji_levels: RwLock<BTreeMap<String, MijiLevel>>,
@@ -500,7 +500,7 @@ fn run_ec(args: &EcArgs, state: &Arc<CliState>) -> Result<Value, String> {
             // This is deterministic for tests: faulty * 1_048_576.
             let bytes_per_shard: u64 = 1_048_576;
             let expected_repaired_bytes = faulty_count.saturating_mul(bytes_per_shard);
-            state.metrics.ec_shard_rebuild.inc_by(faulty_count);
+            state.metrics.ec_shard_rebuild.inc_by(faulty_count as f64);
             Ok(json!({
                 "subcmd": "ec.rebuild",
                 "ok": true,
