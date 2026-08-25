@@ -76,17 +76,32 @@ def merge_consecutive_repeats(notes: List[Dict]) -> Tuple[List[Dict], int]:
 
     真实场景：长音中部被 VAD/conf 切一刀，变成 [C 0.0-0.4][C 0.41-0.8]，
     量化时会出两个四分音符（重复 1 1）而非一个二分音符（1-）。
-    合并条件：音高相同 + (间隙 ≤ _GAP_MERGE_SEC 或 有时间重叠)。
+    合并条件（须同时满足，企业级收紧）：
+      1) 音高相同；
+      2) 两段之间无静音边界（sep_prev 必须为 False）——segment_notes 已把
+         「真实时间空洞/静音」标记为 sep_prev=True，那是独立音符（两个四分
+         音符的 1 1 之间常有 60ms 真实间隔），绝不能合并；
+      3) 间隙 ≤ _GAP_MERGE_SEC 或两段时间重叠；
+      4) 仅当两段都较短（各自 < _MERGE_MAX_SEC，被切断的长音碎片才这么短）
+         才合并——完整时长的重复同音（如每段 0.42s 的 5 5）不在此列，
+         若误合并会把旋律重复音吞成单音（小星星 14 音塌成 9 音的回归根因）。
     """
     if len(notes) < 2:
         return [dict(n) for n in notes], 0
+    # 被切断碎片的上界：约半拍（拍长未知时取 0.25s 保守值）。超过此长度的
+    # 同音段必是「有意为之的重复音」，不应合并。
+    _MERGE_MAX_SEC = 0.25
     merged = 0
     out: List[Dict] = [dict(notes[0])]
     for n in notes[1:]:
         prev = out[-1]
         same_pitch = int(round(prev["midi"])) == int(round(n["midi"]))
         gap = float(n["start"]) - float(prev["end"])
-        if same_pitch and gap <= _GAP_MERGE_SEC:
+        has_silence = bool(n.get("sep_prev"))   # 段间有真实静音边界 → 独立音符
+        short_prev = (float(prev["end"]) - float(prev["start"])) < _MERGE_MAX_SEC
+        short_cur = (float(n["end"]) - float(n["start"])) < _MERGE_MAX_SEC
+        if (same_pitch and not has_silence and gap <= _GAP_MERGE_SEC
+                and short_prev and short_cur):
             # 合并：取 min start, max end
             prev["start"] = min(float(prev["start"]), float(n["start"]))
             prev["end"] = max(float(prev["end"]), float(n["end"]))

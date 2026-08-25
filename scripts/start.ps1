@@ -1,11 +1,12 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
   璇玑（infotopograph）一键启动脚本 · Windows PowerShell 版
 
 .DESCRIPTION
   · 自动检测 py/python 解释器
-  · 内部调用 scripts/manage.py bootstrap（预检 → 拓扑启动 → 可选面板）
+  · 内部调用 scripts/manage.py bootstrap（预检 → 清理残留 → 可选启动服务 → 管理面板）
+  · 默认：仅拉起 Web 管理面板，项目服务 (api / frontend) 需在页面上按需 ▶ 启动
   · 提供 start / stop / restart / verify / dashboard 常用动作
 
 .PARAMETER Action
@@ -23,12 +24,17 @@
 .PARAMETER BuildRust
   显式执行 Rust release 构建（相当于 start.sh 的 --build-rust）。
 
+.PARAMETER WithServices
+  显式同步启动所有 auto_start=true 的项目服务（默认 False：仅开管理面板，在页面上按需启停）。
+  等价于旧版本的默认启动行为（api + frontend 一起拉起）。
+
 .EXAMPLE
-  .\scripts\start.ps1                        # 启动 auto_start 服务（默认）
+  .\scripts\start.ps1                        # 默认：预检 → 仅启动管理面板（项目服务不自动启）
+  .\scripts\start.ps1 Start -WithServices    # 与旧版一致：同步启动 api + frontend + 管理面板
   .\scripts\start.ps1 DryRun -Strict         # 仅预检，严格模式（不实际启动）
   .\scripts\start.ps1 Start -Strict -OpenDashboard
   .\scripts\start.ps1 Stop                   # 按拓扑停止
-  .\scripts\start.ps1 Restart -Strict        # 严格重启
+  .\scripts\start.ps1 Restart -Strict        # 严格重启（已配置服务）
 #>
 
 [CmdletBinding()]
@@ -39,7 +45,8 @@ param(
   [switch]$Strict,
   [switch]$OpenDashboard,
   [switch]$NoBuildRust,
-  [switch]$BuildRust
+  [switch]$BuildRust,
+  [switch]$WithServices
 )
 
 $ErrorActionPreference = 'Stop'
@@ -78,8 +85,12 @@ $($C.C)============================================================
       $cmd = Get-Command $c.Bin -ErrorAction SilentlyContinue
       if (-not $cmd) { continue }
       try {
-        $out = & $c.Bin @($c.Args + @('-c', 'import sys;sys.stdout.write("ok")')) 2>&1
-        if ($LASTEXITCODE -eq 0 -and "$out" -eq 'ok') {
+        # 注意：PS5 向原生进程传参时会剥离内嵌双引号，故探针代码务必避免使用 `"..."` 字符串字面量。
+        # 采用 print(sys.version_info[0]) — 无内嵌引号；预期 stdout 为 '3'
+        $probeArgs = @($c.Args) + @('-c', 'import sys;print(sys.version_info[0])')
+        $out = & $c.Bin @probeArgs 2>&1
+        $versionChar = ("$out").Trim()
+        if ($LASTEXITCODE -eq 0 -and $versionChar -eq '3') {
           return [pscustomobject]@{ Bin = $cmd.Source; ArgsPrefix = $c.Args }
         }
       } catch {}
@@ -165,12 +176,14 @@ $($C.C)============================================================
       exit $rc
     }
     default {  # Start
-      Write-Head '一键启动 bootstrap'
+      Write-Head '一键启动 bootstrap（默认：仅面板 → 页面上按需启动服务）'
       $boot = @('bootstrap')
       if ($Strict) { $boot += '--strict' }
+      if ($WithServices) { $boot += '--with-services' }
       if ($OpenDashboard) {
         $boot += '--with-dashboard'
       } else {
+        $boot += '--with-dashboard'
         $boot += '--no-browser'
       }
       $rc = Invoke-Manage $boot
@@ -184,20 +197,21 @@ $($C.C)============================================================
       try {
         $cfg = Get-Content (Join-Path $RepoRoot 'platform_config.json') -Raw -Encoding UTF8 | ConvertFrom-Json
         $dashPort = [int]$cfg.dashboard_port
-      } catch { $dashPort = 3040 }
+      } catch { $dashPort = 3999 }
       Write-Host @"
 
 $($C.G)============================================================$($C._)
-  启动完成（后台运行）。常用操作：
-   · API      : $($C.B)http://localhost:3010/health$($C._)
-   · Frontend : $($C.B)http://localhost:3020/$($C._)
-   · Dashboard: $($C.B)http://localhost:$dashPort/$($C._)  （运行 .\scripts\start.ps1 Dashboard -OpenDashboard）
+  启动完成（管理面板挂起 / 后台运行）。常用操作：
+   · Dashboard: $($C.B)http://localhost:$dashPort/$($C._)   → 登录后点 ▶ 启动所有 （api:3010 / frontend:3020）
+   · API      : $($C.B)http://localhost:3010/health$($C._)   （需在管理面板启动 api 服务后可用）
+   · Frontend : $($C.B)http://localhost:3020/$($C._)         （需在管理面板启动 frontend 服务后可用）
    · 停止所有 : $($C.C).\scripts\start.ps1 Stop$($C._)
    · 运维 CLI : $($C.C)& $($PY.Bin) scripts\manage.py list|status|logs|stop$($C._)
+   · 旧行为启动（脚本同步启动所有服务）: $($C.C).\scripts\start.ps1 Start -WithServices$($C._)
 $($C.G)============================================================$($C._)
 "@
       if ($OpenDashboard -eq $false) {
-        Write-Host "提示：若需挂起面板作为前台入口，使用 -OpenDashboard 开关（或 Dashboard 动作）。"
+        Write-Host "提示：已在后台启动管理面板，请手动访问 http://localhost:$dashPort/ ；需要前台挂起/自动开浏览器，请加 -OpenDashboard 开关（或 Dashboard 动作）。"
       }
       exit 0
     }

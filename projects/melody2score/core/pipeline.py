@@ -237,7 +237,44 @@ def _consensus(runs: List[List[Dict]], cfg: Config) -> Tuple[List[Dict], Dict]:
             conf_sum += counts[best_midi] / len(runs)
 
     merged.sort(key=lambda n: n["start"])
+
+    # 收尾：合并「被多 run 边界抖动切碎」的紧邻同音碎片。
+    # 静音边界保护（上方 sep_prev 强拆）让旋律重复音（如小星星 5 5）保持
+    # 独立成簇不被跨 run 合并；但同一真实长音若在多次 run 里被切成不同位置
+    # 的短段（各自 sep_prev=True），会形成多个紧邻同音簇。此处仅对
+    # 「两段都较短（< 0.3s，确属被切断碎片）且之间无真实正间隙（gap<0.1s）」
+    # 的同音簇合并，完整时长的重复音（≈0.42s）不在此列，安全。
+    merged = _merge_adjacent_short_fragments(merged)
+
     return merged, {"kept": kept, "confidence": conf_sum / max(1, len(merged))}
+
+
+def _merge_adjacent_short_fragments(notes: List[Dict],
+                                     short_max: float = 0.3,
+                                     gap_max: float = 0.1) -> List[Dict]:
+    """合并紧邻的同音短碎片（多 run 抖动把同一长音切碎的场景）。
+
+    约束（保护旋律重复音）：
+      - 仅当相邻两段 midi 相同；
+      - 且两段各自时长 < short_max（被切断的碎片才这么短，完整音符不触发）；
+      - 且两段之间 gap < gap_max（无真实静音间隔，属同一音的抖动边界）。
+    返回新列表，不修改输入。
+    """
+    if len(notes) < 2:
+        return notes
+    out: List[Dict] = [dict(notes[0])]
+    for n in notes[1:]:
+        prev = out[-1]
+        same_pitch = int(round(prev["midi"])) == int(round(n["midi"]))
+        gap = float(n["start"]) - float(prev["end"])
+        short_prev = (float(prev["end"]) - float(prev["start"])) < short_max
+        short_cur = (float(n["end"]) - float(n["start"])) < short_max
+        if same_pitch and gap < gap_max and short_prev and short_cur:
+            prev["start"] = min(float(prev["start"]), float(n["start"]))
+            prev["end"] = max(float(prev["end"]), float(n["end"]))
+        else:
+            out.append(dict(n))
+    return out
 
 
 def _segment_once(y, sr, cfg, k: int, det: "pitch.PitchDetector",
@@ -353,8 +390,11 @@ class Melody2Score:
             used_backend = "auto"
             last_pts: List[Dict] = []
 
-            # 稳健模式放宽 hop（10→18ms）可约减半音高检测耗时，对共识质量影响极小
-            det_hop = int(cfg.hop * 1.8) if cfg.robust else cfg.hop
+            # 音高检测帧移：稳健模式曾经放大到 cfg.hop*1.8（≈18ms）以加速，
+            # 但实测证明帧距变大会让 segment 把旋律里的重复同音（如小星星的
+            # 5 5 / 6 6，相邻间隙约 60ms）误判为同一长音并吞并，导致 14 音塌
+            # 成 9 音。识别正确性优先于速度，故稳健模式仍用原始 hop，不放大。
+            det_hop = cfg.hop
 
             # 复用同一个 PitchDetector 实例跨多次 run，避免 robust 模式反复
             # 加载 ONNX/torch 模型（单次加载即数百 ms~数 s，是卡顿主因之一）

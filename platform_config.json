@@ -1,7 +1,7 @@
 {
   "version": "2.1",
   "project_name": "璇玑系统",
-  "dashboard_port": 3040,
+  "dashboard_port": 3999,
   "log_rolling": {
     "max_bytes": 5242880,
     "backup": 3
@@ -22,7 +22,7 @@
       "binary_requires": ["node", "npm"],
       "npm_deps": true,
       "is_admin_only": true,
-      "auto_start": true,
+      "auto_start": false,
       "restart_delay": 3,
       "wait_time": 10,
       "startup_order_hint": 10,
@@ -40,7 +40,7 @@
       "binary_requires": ["node", "npm"],
       "npm_deps": true,
       "is_admin_only": false,
-      "auto_start": true,
+      "auto_start": false,
       "wait_time": 14,
       "startup_order_hint": 20,
       "depends_on": ["api"],

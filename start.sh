@@ -2,10 +2,11 @@
 # 璇玑（infotopograph）一键启动脚本 · POSIX 版 (Linux / macOS / WSL)
 #
 # 用法:
-#   ./start.sh                 # 默认：预检 → 启动 auto_start 全部服务
+#   ./start.sh                 # 默认：预检 → 清残留 → 拉起 Web 管理面板；项目服务需在页面上 ▶ 启动
+#   ./start.sh --with-services # 与旧版一致：同步启动 auto_start 服务 + 管理面板
 #   ./start.sh --dry-run       # 仅预检（二进制、工作目录、依赖关系），不动真格
 #   ./start.sh --strict        # 严格模式：任何服务启动失败立即退出非零
-#   ./start.sh --with-dashboard # 全部启动后前台挂起 Web 管理面板
+#   ./start.sh --with-dashboard # 一键流程最后前台挂起管理面板（Start 默认已启用）
 #   ./start.sh --build-rust    # 额外执行 Rust release 构建（遗留后端组件可选）
 #   ./start.sh --legacy        # *仅限旧 operator-server 用户*：走原始 cargo 模式（不推荐）
 #   ./start.sh --stop          # 一键停止所有服务（按拓扑）
@@ -47,7 +48,7 @@ usage() {
 
 # ----- 参数解析 -----
 DRY_RUN=0; STRICT=0; WITH_DASH=0; BUILD_RUST=0; LEGACY=0
-DO_STOP=0; DO_RESTART=0; DO_VERIFY=0
+DO_STOP=0; DO_RESTART=0; DO_VERIFY=0; WITH_SERVICES=0
 for arg in "$@"; do
   case "$arg" in
     -h|--help)         usage; exit 0 ;;
@@ -59,6 +60,7 @@ for arg in "$@"; do
     --stop)            DO_STOP=1 ;;
     --restart)         DO_RESTART=1 ;;
     --verify)          DO_VERIFY=1 ;;
+    --with-services)   WITH_SERVICES=1 ;;
     *) echo "${cross} 未知参数: $arg" >&2; usage; exit 2 ;;
   esac
 done
@@ -147,13 +149,17 @@ fi
 
 # --- 主流程：调用 manage.py bootstrap ---
 echo
-echo "[MAIN] 调用 scripts/manage.py bootstrap"
+echo "[MAIN] 调用 scripts/manage.py bootstrap（默认：仅面板 → 页面上按需启动服务）"
 
-BOOT_ARGS=(bootstrap)
+BOOT_ARGS=(bootstrap --with-dashboard --no-browser)
 [ "$DRY_RUN" -eq 1 ] && BOOT_ARGS+=(--dry-run)
 [ "$STRICT" -eq 1 ]  && BOOT_ARGS+=(--strict)
-[ "$WITH_DASH" -eq 1 ] && BOOT_ARGS+=(--with-dashboard)
-[ "$WITH_DASH" -eq 1 ] && BOOT_ARGS+=(--no-browser) # 不自动开浏览器（POSIX 图形环境差异大）
+[ "$WITH_SERVICES" -eq 1 ] && BOOT_ARGS+=(--with-services)
+# WITH_DASH=1 时去掉 --no-browser 以便打开浏览器（或前台挂起模式；POSIX 下一般不自动开浏览器）
+if [ "$WITH_DASH" -eq 1 ]; then
+  # 保持原来的 --no-browser（POSIX 图形环境差异大，不开浏览器）
+  :
+fi
 
 echo "   → $ $PY_BIN scripts/manage.py ${BOOT_ARGS[*]}"
 "$PY_BIN" scripts/manage.py "${BOOT_ARGS[@]}"
@@ -168,17 +174,18 @@ if [ "$rc" -ne 0 ]; then
   exit "$rc"
 fi
 
-# 仅 dry-run 或 未挂 dashboard 时，打印访问地址
-if [ "$DRY_RUN" -eq 1 ] || [ "$WITH_DASH" -eq 0 ]; then
-  API_PORT=3010
-  FE_PORT=3020
-  DASH_PORT=$("$PY_BIN" -c "import json,sys; d=json.load(open('platform_config.json',encoding='utf-8')); print(d.get('dashboard_port',3040))" 2>/dev/null || echo 3040)
-  echo
-  echo "============================================================"
-  echo "  $tick 完成（仍在后台运行以下服务，如需停止：$0 --stop  或  $PY_BIN scripts/manage.py stop all --force）"
-  echo "   · API      : ${C_BLU}http://localhost:${API_PORT}/health${C_RST}"
-  echo "   · Frontend : ${C_BLU}http://localhost:${FE_PORT}/${C_RST}"
-  echo "   · Dashboard: ${C_BLU}http://localhost:${DASH_PORT}/${C_RST}  （启动：$0 --with-dashboard）"
-  echo "   · 运维 CLI : ${C_CYN}$PY_BIN scripts/manage.py list|status|logs|stop${C_RST}"
-  echo "============================================================"
-fi
+# 打印访问地址
+API_PORT=3010
+FE_PORT=3020
+DASH_PORT=$("$PY_BIN" -c "import json,sys; d=json.load(open('platform_config.json',encoding='utf-8')); print(d.get('dashboard_port',3999))" 2>/dev/null || echo 3999)
+echo
+echo "============================================================"
+echo "  $tick 完成（管理面板挂起 / 后台运行）"
+echo "   · Dashboard: ${C_BLU}http://localhost:${DASH_PORT}/${C_RST}   → 登录 admin / admin123 后点 ▶ 启动所有（api+frontend）"
+echo "   · API      : ${C_BLU}http://localhost:${API_PORT}/health${C_RST}   （需先在管理面板启动 api）"
+echo "   · Frontend : ${C_BLU}http://localhost:${FE_PORT}/${C_RST}         （需先在管理面板启动 frontend）"
+echo "   · 停止所有 ：${C_CYN}$0 --stop  或  $PY_BIN scripts/manage.py stop all --force${C_RST}"
+echo "   · 运维 CLI ：${C_CYN}$PY_BIN scripts/manage.py list|status|logs|stop${C_RST}"
+echo "   · 旧行为启动（脚本同步启动服务）：${C_CYN}$0 --with-services${C_RST}"
+echo "   · 仍在后台运行以下服务（如需停止：$0 --stop）"
+echo "============================================================"

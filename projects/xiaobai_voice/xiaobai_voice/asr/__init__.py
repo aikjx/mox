@@ -1,7 +1,7 @@
 """ASR backends 包入口：统一接口 build_asr_backend(config)。"""
 from __future__ import annotations
 
-from .base import ASRBackend, ASRStreamResult, ASRFullResult  # noqa: F401
+from .base import ASRBackend, ASRPartial, ASRFullResult  # noqa: F401
 
 
 def build_asr_backend(

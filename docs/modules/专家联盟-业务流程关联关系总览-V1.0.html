@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>专家联盟 · 全维业务流程关联关系总览 · V1.0</title>
+<style>
+  :root {
+    /* Deep Space 深空高级配色 · 统一色彩系统 */
+    --bg-primary: #0a0e1a;
+    --bg-secondary: #121829;
+    --bg-tertiary: #1a2338;
+    --accent-gold: #d4af37;     /* 智慧金 · 核心主色 */
+    --accent-cyan: #5ce1e6;     /* 深空青 · 交互主色 */
+    --accent-purple: #9b6dff;   /* 光谱紫 · 推理主色 */
+    --accent-green: #6dd4a5;    /* 极光绿 · 通过主色 */
+    --accent-red: #e86a7c;      /* 警报红 · 阻断主色 */
+    --accent-orange: #f5a35c;   /* 琥珀橙 · 警告主色 */
+    --text-primary: #e8ecf5;
+    --text-secondary: #9ba7c3;
+    --text-muted: #657296;
+    --border-subtle: rgba(155,109,255,0.12);
+    --border-accent: rgba(92,225,230,0.35);
+    --shadow-glow: 0 0 32px rgba(92,225,230,0.08);
+    --radius-lg: 16px;
+    --radius-md: 10px;
+    --radius-sm: 6px;
+    --font-family: "PingFang SC", "Microsoft YaHei", "SF Pro Display", -apple-system, sans-serif;
+    --font-mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font-family);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.7;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(155,109,255,0.12), transparent),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(92,225,230,0.06), transparent);
+    background-attachment: fixed;
+  }
+  .container { max-width: 1440px; margin: 0 auto; padding: 48px 32px 80px; }
+
+  /* 标题区 · 黄金比例 */
+  .hero {
+    text-align: center;
+    padding: 64px 0 56px;
+    position: relative;
+  }
+  .hero::after {
+    content: '';
+    display: block;
+    width: 120px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+    margin: 32px auto 0;
+  }
+  .badge {
+    display: inline-block;
+    padding: 6px 16px;
+    border: 1px solid var(--border-accent);
+    border-radius: 100px;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--accent-cyan);
+    font-family: var(--font-mono);
+    background: rgba(92,225,230,0.05);
+    margin-bottom: 20px;
+  }
+  h1 {
+    font-size: 40px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-cyan) 50%, var(--accent-purple) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+  }
+  .subtitle {
+    font-size: 17px;
+    color: var(--text-secondary);
+    max-width: 780px;
+    margin: 0 auto;
+  }
+  .meta-row {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-top: 32px;
+    flex-wrap: wrap;
+  }
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+  }
+  .meta-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-gold);
+    box-shadow: 0 0 8px var(--accent-gold);
+  }
+
+  /* 概览卡片组 */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 56px;
+  }
+  @media (max-width: 900px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+  .kpi-card {
+    background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+    opacity: 0;
+    transition: opacity 0.35s;
+  }
+  .kpi-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--border-accent);
+    box-shadow: var(--shadow-glow);
+  }
+  .kpi-card:hover::before { opacity: 1; }
+  .kpi-value {
+    font-size: 42px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--accent-cyan);
+    line-height: 1;
+    margin-bottom: 10px;
+    letter-spacing: -1px;
+  }
+  .kpi-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .kpi-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* 区块标题 */
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 0 0 28px;
+  }
+  .section-number {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 15px;
+    color: #0a0e1a;
+  }
+  .section-title h2 {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.3px;
+  }
+  .section-title span {
+    color: var(--text-muted);
+    font-size: 13px;
+    font-family: var(--font-mono);
+    margin-left: auto;
+  }
+
+  .section { margin-bottom: 72px; }
+
+  /* 四层视图 */
+  .view-stack {
+    display: grid;
+    gap: 24px;
+  }
+  .view-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    position: relative;
+    transition: all 0.3s;
+  }
+  .view-card:hover {
+    border-color: var(--border-accent);
+    box-shadow: var(--shadow-glow);
+  }
+  .view-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .view-tag {
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+  .tag-v4 { background: rgba(232,106,124,0.1); color: var(--accent-red); border: 1px solid rgba(232,106,124,0.25); }
+  .tag-v3 { background: rgba(245,163,92,0.1); color: var(--accent-orange); border: 1px solid rgba(245,163,92,0.25); }
+  .tag-v2 { background: rgba(155,109,255,0.1); color: var(--accent-purple); border: 1px solid rgba(155,109,255,0.25); }
+  .tag-v1 { background: rgba(92,225,230,0.1); color: var(--accent-cyan); border: 1px solid rgba(92,225,230,0.25); }
+  .view-title { font-size: 19px; font-weight: 600; }
+  .view-desc { color: var(--text-secondary); font-size: 13px; margin-left: auto; }
+
+  .step-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .pill {
+    padding: 8px 15px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border-subtle);
+    border-radius: 100px;
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
+    transition: all 0.25s;
+    cursor: default;
+  }
+  .pill:hover {
+    background: rgba(92,225,230,0.06);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+  }
+  .pill-idx {
+    color: var(--accent-gold);
+    font-weight: 700;
+    margin-right: 6px;
+  }
+
+  /* 关联边矩阵表 */
+  .matrix-wrapper {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    overflow: auto;
+    max-height: 620px;
+  }
+  table.matrix {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-family: var(--font-mono);
+    min-width: 1100px;
+  }
+  .matrix th, .matrix td {
+    padding: 12px 10px;
+    border-bottom: 1px solid var(--border-subtle);
+    text-align: center;
+    white-space: nowrap;
+  }
+  .matrix thead th {
+    background: var(--bg-tertiary);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    color: var(--accent-cyan);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border-accent);
+  }
+  .matrix tbody th {
+    position: sticky;
+    left: 0;
+    background: var(--bg-tertiary);
+    z-index: 5;
+    text-align: left;
+    color: var(--accent-purple);
+    font-weight: 600;
+    min-width: 160px;
+    border-right: 1px solid var(--border-subtle);
+  }
+  .map-11 {
+    color: var(--accent-green);
+    font-weight: 700;
+  }
+  .map-1n {
+    color: var(--accent-cyan);
+    font-weight: 600;
+  }
+  .map-n1 {
+    color: var(--accent-orange);
+    font-weight: 600;
+  }
+  .map-empty {
+    color: var(--text-muted);
+    opacity: 0.4;
+  }
+
+  /* 关联边详情卡片 */
+  .edge-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 1000px) { .edge-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 640px) { .edge-grid { grid-template-columns: 1fr; } }
+  .edge-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-left: 3px solid var(--accent-gold);
+    border-radius: var(--radius-md);
+    padding: 18px;
+    transition: all 0.3s;
+  }
+  .edge-card:hover {
+    border-left-color: var(--accent-cyan);
+    transform: translateX(2px);
+    box-shadow: -4px 0 20px rgba(92,225,230,0.06);
+  }
+  .edge-id {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent-gold);
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .edge-flow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .edge-arrow {
+    color: var(--accent-cyan);
+    font-family: var(--font-mono);
+  }
+  .edge-sem {
+    font-size: 13px;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    line-height: 1.55;
+  }
+  .edge-rule {
+    font-size: 11px;
+    color: var(--accent-red);
+    background: rgba(232,106,124,0.06);
+    border-left: 2px solid var(--accent-red);
+    padding: 6px 10px;
+    border-radius: 0 4px 4px 0;
+    line-height: 1.5;
+  }
+
+  /* 代码锚点 */
+  .anchor-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 800px) { .anchor-grid { grid-template-columns: 1fr; } }
+  .anchor-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 20px;
+  }
+  .anchor-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .anchor-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent-cyan);
+  }
+  .anchor-domain {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    padding: 3px 8px;
+    border-radius: 100px;
+    background: rgba(155,109,255,0.1);
+    color: var(--accent-purple);
+    letter-spacing: 0.5px;
+  }
+  .anchor-item {
+    margin-bottom: 10px;
+    font-size: 12px;
+  }
+  .anchor-label {
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    margin-right: 8px;
+    min-width: 52px;
+    display: inline-block;
+  }
+  .anchor-value {
+    color: var(--text-secondary);
+    word-break: break-all;
+  }
+  .code-path {
+    background: rgba(0,0,0,0.25);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent-green);
+  }
+  .http-path {
+    background: rgba(92,225,230,0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent-cyan);
+    border: 1px solid rgba(92,225,230,0.15);
+  }
+
+  /* 页脚 */
+  .footer {
+    text-align: center;
+    padding: 56px 0 0;
+    border-top: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-family: var(--font-mono);
+  }
+  .footer a {
+    color: var(--accent-cyan);
+    text-decoration: none;
+    margin: 0 8px;
+  }
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin: 16px 0 0;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .legend-box {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+  }
+
+  /* 滚动条 */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg-primary); }
+  ::-webkit-scrollbar-thumb { background: var(--border-accent); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent-cyan); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="badge">ALLIANCE · FLOW · NORMALIZATION V1.0</div>
+    <h1>专家联盟 · 全维业务流程<br/>关联关系总览</h1>
+    <p class="subtitle">
+      4 套流程族归一化 · EAF 6 阶段 × 璇玑融合 8 步 × 璇玑协作 10 BP × AI 对话 7 步<br/>
+      20 条强关联边焊死 · 所有流程 ↔ 代码双向锚定 · 7 条命令真实可复现验证
+    </p>
+    <div class="meta-row">
+      <div class="meta-item"><div class="meta-dot"></div>归一化流程数：31 条</div>
+      <div class="meta-item"><div class="meta-dot" style="background:var(--accent-cyan)"></div>强关联边：20 条</div>
+      <div class="meta-item"><div class="meta-dot" style="background:var(--accent-purple)"></div>代码锚点：48 个</div>
+      <div class="meta-item"><div class="meta-dot" style="background:var(--accent-green)"></div>验证命令：7 条</div>
+    </div>
+  </div>
+
+  <!-- KPI 概览 -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-value">4</div>
+      <div class="kpi-label">流程族 (Flow Families)</div>
+      <div class="kpi-desc">V4 组织治理 / V3 蓝图治理 / V2 AI 推理 / V1 用户交互<br/>向下唯一依赖，层间调用显式关联</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value" style="color: var(--accent-purple)">31</div>
+      <div class="kpi-label">归一化流程卡</div>
+      <div class="kpi-desc">PHASE×7 + XOPT×8 + BP×10 + CHAT×7<br/>每卡 6 字段必齐：编号·RA·前置·步骤·闸门·产物</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value" style="color: var(--accent-gold)">20</div>
+      <div class="kpi-label">强关联不变式边</div>
+      <div class="kpi-desc">EB-ALL-01~12（跨族） + FE-01~08（图谱）<br/>违反即「名实分裂」，PR 阻断</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value" style="color: var(--accent-green)">7</div>
+      <div class="kpi-label">一键验证命令</div>
+      <div class="kpi-desc">专家联盟 34 项 / 璇玑 19+33 / 对账 7×8<br/>AI 基准 30/30 / 前端 E2E / 关图覆盖率</div>
+    </div>
+  </div>
+
+  <!-- 四层业务视图 -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-number">1</div>
+      <h2>四层业务视图 · 向下唯一依赖</h2>
+      <span>V4 → V3 → V2 → V1 · 调用关系显式标注</span>
+    </div>
+
+    <div class="view-stack">
+
+      <!-- V4 -->
+      <div class="view-card">
+        <div class="view-header">
+          <span class="view-tag tag-v4">V4 · 组织治理视图</span>
+          <div class="view-title">璇玑协作闭环 · 10 大标准 BP</div>
+          <div class="view-desc">产出「谁来做 / 做什么 / 是否通过」的组织决策</div>
+        </div>
+        <div class="step-pills">
+          <span class="pill"><span class="pill-idx">BP-9</span>P9 判重闸门（横切前置）</span>
+          <span class="pill"><span class="pill-idx">BP-1</span>璇玑组建</span>
+          <span class="pill"><span class="pill-idx">BP-2</span>专家入队（最小权限）</span>
+          <span class="pill"><span class="pill-idx">BP-3</span>任务立项 + 六维Bind</span>
+          <span class="pill"><span class="pill-idx">BP-4</span>任务派发（三重校验P0）</span>
+          <span class="pill"><span class="pill-idx">BP-5</span>协同推进（FSM 5 态）</span>
+          <span class="pill"><span class="pill-idx">BP-6</span>融合优化 → 调用 V3 XOPT</span>
+          <span class="pill"><span class="pill-idx">BP-7</span>验收上架（双验收AND）</span>
+          <span class="pill"><span class="pill-idx">BP-8</span>审计留痕（全程横切）</span>
+          <span class="pill"><span class="pill-idx">BP-10</span>文档归一治理（横切）</span>
+        </div>
+      </div>
+
+      <!-- V3 -->
+      <div class="view-card" style="margin-left: 32px;">
+        <div class="view-header">
+          <span class="view-tag tag-v3">V3 · 蓝图治理视图</span>
+          <div class="view-title">璇玑融合 · 8 步优化管线</div>
+          <div class="view-desc">产出「怎么做得更快 / 是否可信」的技术决策</div>
+        </div>
+        <div class="step-pills">
+          <span class="pill"><span class="pill-idx">1</span>准入检查</span>
+          <span class="pill"><span class="pill-idx">2</span>归一化维度着色</span>
+          <span class="pill"><span class="pill-idx">3</span>14专家并行会诊 → 调V2辩论</span>
+          <span class="pill"><span class="pill-idx">4</span>归一化裁决 reconcile</span>
+          <span class="pill"><span class="pill-idx">5</span>flow-ai 最优求解</span>
+          <span class="pill"><span class="pill-idx">6</span>⛨璇玑验证（最高权限不可逆）</span>
+          <span class="pill"><span class="pill-idx">7</span>治理闸门 G1~G8</span>
+          <span class="pill"><span class="pill-idx">8</span>审计链 + GovernanceReport</span>
+        </div>
+      </div>
+
+      <!-- V2 -->
+      <div class="view-card" style="margin-left: 64px;">
+        <div class="view-header">
+          <span class="view-tag tag-v2">V2 · AI 推理视图</span>
+          <div class="view-title">专家联盟 · 6 阶段管线（EAF-STD）</div>
+          <div class="view-desc">组队→辩论→合成→门禁→学习 · SSE 流式 7 帧事件</div>
+        </div>
+        <div class="step-pills">
+          <span class="pill"><span class="pill-idx">0</span>前置守卫（100ms快失败）</span>
+          <span class="pill"><span class="pill-idx">1</span>意图识别（关键词+激活扩散）</span>
+          <span class="pill"><span class="pill-idx">2</span>最优组队（安全专家强制）</span>
+          <span class="pill"><span class="pill-idx">3</span>并行咨询 + 自适应辩论</span>
+          <span class="pill"><span class="pill-idx">4</span>综合合成（共识+分歧）</span>
+          <span class="pill"><span class="pill-idx">5</span>质量门禁（C级单次重试）</span>
+          <span class="pill"><span class="pill-idx">6</span>反馈学习（技能沉淀）</span>
+          <span class="pill"><span class="pill-idx">✓</span>Done · SSE收口</span>
+        </div>
+      </div>
+
+      <!-- V1 -->
+      <div class="view-card" style="margin-left: 96px;">
+        <div class="view-header">
+          <span class="view-tag tag-v1">V1 · 用户交互视图</span>
+          <div class="view-title">AI 对话端到端 · 7 步 CHAT 流程</div>
+          <div class="view-desc">ChatView → 网关 → 引擎 → 逐帧渲染 → 7 种交互</div>
+        </div>
+        <div class="step-pills">
+          <span class="pill"><span class="pill-idx">1</span>用户输入 + Alt+N新会话</span>
+          <span class="pill"><span class="pill-idx">2</span>SSE 请求发起 → 调用 V2</span>
+          <span class="pill"><span class="pill-idx">3</span>Rust 网关接流 + RBAC</span>
+          <span class="pill"><span class="pill-idx">4</span>7 帧 SSE 事件推送</span>
+          <span class="pill"><span class="pill-idx">5</span>前端 5 芯片 + Mermaid 渲染</span>
+          <span class="pill"><span class="pill-idx">6</span>7 交互：复制/TTS/赞/踩/重/收/转</span>
+          <span class="pill"><span class="pill-idx">7</span>会话归档 + 学习沉淀</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 关联关系矩阵 -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-number">2</div>
+      <h2>流程 I/O 映射矩阵（纵=输出流程 / 横=输入流程）</h2>
+      <span>点击表格查看详细关联边</span>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-box" style="background:var(--accent-green)"></div>1:1 严格对应</div>
+      <div class="legend-item"><div class="legend-box" style="background:var(--accent-cyan)"></div>1:N 一输出多输入</div>
+      <div class="legend-item"><div class="legend-box" style="background:var(--accent-orange)"></div>N:1 多输出融合</div>
+      <div class="legend-item"><div class="legend-box" style="background:var(--text-muted); opacity:0.4"></div>— 无关联</div>
+    </div>
+
+    <div style="height: 18px;"></div>
+
+    <div class="matrix-wrapper">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th>输出 ↓ / 输入 →</th>
+            <th>PHASE-1<br/>意图</th>
+            <th>PHASE-2<br/>组队</th>
+            <th>PHASE-3<br/>辩论</th>
+            <th>PHASE-4<br/>合成</th>
+            <th>PHASE-5<br/>门禁</th>
+            <th>PHASE-6<br/>学习</th>
+            <th>XOPT-3<br/>会诊</th>
+            <th>XOPT-5<br/>求解</th>
+            <th>XOPT-6<br/>验证</th>
+            <th>XOPT-7<br/>治理</th>
+            <th>BP-6<br/>优化</th>
+            <th>CHAT-5<br/>渲染</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th>PHASE-0 守卫</th><td class="map-11">1:1</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td></tr>
+          <tr><th>PHASE-1 意图</th><td class="map-empty">—</td><td class="map-11">1:1</td><td class="map-empty">—</td><td class="map-11">1:1</td><td class="map-empty">—</td><td class="map-1n">1:N</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-11">1:1</td></tr>
+          <tr><th>PHASE-2 组队</th><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-11">1:1</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-1n">1:N</td><td class="map-1n">1:N</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-11">1:1</td></tr>
+          <tr><th>PHASE-3 辩论</th><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-11">1:1</td><td class="map-11">1:1</td><td class="map-empty">—</td><td class="map-1n">1:N</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-11">1:1</td></tr>
+          <tr><th>PHASE-4 合成</th><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-11">1:1</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-11">1:1</td></tr>
+          <tr><th>PHASE-5 门禁</th><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-11">1:1</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-1n">1:N</td><td class="map-11">1:1</td><td class="map-empty">—</td><td class="map-11">1:1</td></tr>
+          <tr><th>PHASE-6 学习</th><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-11">1:1</td></tr>
+          <tr><th>XOPT-2 归一着色</th><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-11">1:1</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td></tr>
+          <tr><th>XOPT-3 会诊</th><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-11">1:1</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td></tr>
+          <tr><th>XOPT-4 裁决</th><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-11">1:1</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td></tr>
+          <tr><th>XOPT-5 求解</th><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-11">1:1</td><td class="map-11">1:1</td><td class="map-empty">—</td><td class="map-empty">—</td></tr>
+          <tr><th>XOPT-6 验证</th><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-11" style="color:var(--accent-red)">1:1单向</td><td class="map-11">1:1</td><td class="map-empty">—</td></tr>
+          <tr><th>XOPT-7 治理</th><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-11">1:1</td><td class="map-empty">—</td></tr>
+          <tr><th>BP-6 融合优化</th><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-n1">N:1</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td></tr>
+          <tr><th>CHAT-2 SSE请求</th><td class="map-n1">N:1</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td><td class="map-empty">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 跨流程强关联边 -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-number">3</div>
+      <h2>跨流程强关联边 · 12 条不变式（EB-ALL-01~12）</h2>
+      <span>违反任意一条 = 名实分裂 = PR 阻断</span>
+    </div>
+
+    <div class="edge-grid">
+      <div class="edge-card">
+        <div class="edge-id">EB-ALL-01</div>
+        <div class="edge-flow">PHASE-1 意图 <span class="edge-arrow">→</span> PHASE-2 组队</div>
+        <div class="edge-sem">组队必须使用 PHASE-1 输出的安全标签进行强制专家路由</div>
+        <div class="edge-rule">安全类意图 + team 不含安全专家 → security_note ≠ ∅</div>
+      </div>
+      <div class="edge-card">
+        <div class="edge-id">EB-ALL-02</div>
+        <div class="edge-flow">PHASE-2 组队 <span class="edge-arrow">→</span> PHASE-3 辩论</div>
+        <div class="edge-sem">辩论并行度 = team.len()，单专家 60s 超时隔离不阻断</div>
+        <div class="edge-rule">辩论专家集合 = 组队集合（除被超时隔离排除的）</div>
+      </div>
+      <div class="edge-card">
+        <div class="edge-id">EB-ALL-03</div>
+        <div class="edge-flow">PHASE-3 辩论 <span class="edge-arrow">→</span> PHASE-4 合成</div>
+        <div class="edge-sem">合成必须包含所有 validCount 意见，不得强裁分歧</div>
+        <div class="edge-rule">SynthesizeResult.divergences.len ≥ DebateResult.consensus.divergences.len</div>
+      </div>
+      <div class="edge-card">
+        <div class="edge-id">EB-ALL-04</div>
+        <div class="edge-flow">PHASE-4 合成 <span class="edge-arrow">→</span> PHASE-5 门禁</div>
+        <div class="edge-sem">门禁必须校验合成主题 vs 意图类别的一致性</div>
+        <div class="edge-rule">不一致 → reasons 必须包含 intent_mismatch</div>
+      </div>
+      <div class="edge-card">
+        <div class="edge-id">EB-ALL-05</div>
+        <div class="edge-flow">PHASE-5 门禁 <span class="edge-arrow">→</span> PHASE-6 学习</div>
+        <div class="edge-sem">学习只沉淀门禁通过的处理，防止技能污染</div>
+        <div class="edge-rule">GateResult.passed=false → Phase-6 必须跳过不执行</div>
+      </div>
+      <div class="edge-card">
+        <div class="edge-id">EB-ALL-06</div>
+        <div class="edge-flow">XOPT-3 会诊 <span class="edge-arrow">→</span> XOPT-6 验证</div>
+        <div class="edge-sem">专家 veto=true 触发璇玑验证 vetoed=true（单向不可逆）</div>
+        <div class="edge-rule">ExpertOpinion.risk[].veto 任一=真 → verify() 返回 vetoed=true</div>
+      </div>
+      <div class="edge-card">
+        <div class="edge-id">EB-ALL-07</div>
+        <div class="edge-flow">XOPT-4 裁决 <span class="edge-arrow">→</span> XOPT-6 验证</div>
+        <div class="edge-sem">同优先级维度约束冲突无法裁决 → escalated → 升级 Blocking</div>
+        <div class="edge-rule">ReconciledPlan.conflicts[].escalated=true → verify() vetoed=true</div>
+      </div>
+      <div class="edge-card">
+        <div class="edge-id">EB-ALL-08</div>
+        <div class="edge-flow">XOPT-6 验证 <span class="edge-arrow">→</span> XOPT-7 治理</div>
+        <div class="edge-sem">璇玑验证最高权限，治理闸门不可覆盖验证结论</div>
+        <div class="edge-rule" style="color:var(--accent-red); border-left-color:var(--accent-red);">algo.vetoed=true → govern() 必须 Blocked（治理绝对不可覆盖）</div>
+      </div>
+      <div class="edge-card">
+        <div class="edge-id">EB-ALL-09</div>
+        <div class="edge-flow">XOPT-1~8 <span class="edge-arrow">↔</span> BP-6 融合</div>
+        <div class="edge-sem">BP-6 内部必须串行执行 XOPT-1 到 XOPT-8，不可跳步</div>
+        <div class="edge-rule">BP-6 GovernanceReport = XOPT-8 输出的深拷贝，字段完全一致</div>
+      </div>
+      <div class="edge-card">
+        <div class="edge-id">EB-ALL-10</div>
+        <div class="edge-flow">BP-5 推进 <span class="edge-arrow">→</span> BP-6 融合</div>
+        <div class="edge-sem">任务必须处于 InReview/Done 才能触发融合优化流程</div>
+        <div class="edge-rule">Task.status ∉ {InReview, Done} → /api/xuanji/optimize 412</div>
+      </div>
+      <div class="edge-card">
+        <div class="edge-id">EB-ALL-11</div>
+        <div class="edge-flow">CHAT-2 请求 <span class="edge-arrow">→</span> PHASE-0~6</div>
+        <div class="edge-sem">SSE 帧 phase_index 必须严格 0→6 单调递增，缺帧即降级</div>
+        <div class="edge-rule">SSE 缺帧 → 前端显示 degraded 标记 + 灰色芯片 + 告警日志</div>
+      </div>
+      <div class="edge-card">
+        <div class="edge-id">EB-ALL-12</div>
+        <div class="edge-flow">BP-9 判重 <span class="edge-arrow">→</span> BP-1~3</div>
+        <div class="edge-sem">P9 先判重后立项，在 BP-1/2/3 之前强制执行（铁律）</div>
+        <div class="edge-rule">请求头缺 X-P9-Dedup-Token → 428 Precondition Required</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 代码锚点矩阵 -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-number">4</div>
+      <h2>核心代码锚点矩阵（流程 ↔ 代码双向绑定）</h2>
+      <span>路径零老化 · 每条流程至少 1 个真实函数入口</span>
+    </div>
+
+    <div class="anchor-grid">
+
+      <div class="anchor-card">
+        <div class="anchor-head">
+          <div class="anchor-name">AllianceEngine 6 阶段管线</div>
+          <span class="anchor-domain">EAF-STD</span>
+        </div>
+        <div class="anchor-item"><span class="anchor-label">Rust:</span><span class="code-path">xuanji-expert/src/alliance/mod.rs</span></div>
+        <div class="anchor-item"><span class="anchor-label">管线:</span><span class="anchor-value">gate::run_full_pipeline(req) → 7 事件</span></div>
+        <div class="anchor-item"><span class="anchor-label">HTTP:</span><span class="http-path">POST /ai/engine/alliance/full (SSE)</span></div>
+        <div class="anchor-item"><span class="anchor-label">前端:</span><span class="anchor-value">alliance.ts runAllianceFullSSE</span></div>
+      </div>
+
+      <div class="anchor-card">
+        <div class="anchor-head">
+          <div class="anchor-name">xuanji_optimize 8 步融合</div>
+          <span class="anchor-domain">XUANJI-V3</span>
+        </div>
+        <div class="anchor-item"><span class="anchor-label">Rust:</span><span class="code-path">xuanji-expert/src/pipeline.rs:42</span></div>
+        <div class="anchor-item"><span class="anchor-label">专家:</span><span class="code-path">experts/mod.rs all_experts() (14位)</span></div>
+        <div class="anchor-item"><span class="anchor-label">HTTP:</span><span class="http-path">POST /api/xuanji/optimize</span></div>
+        <div class="anchor-item"><span class="anchor-label">前端:</span><span class="anchor-value">XuanjiFusionView.vue 三栏</span></div>
+      </div>
+
+      <div class="anchor-card">
+        <div class="anchor-head">
+          <div class="anchor-name">⛨璇玑验证 5 项</div>
+          <span class="anchor-domain" style="background:rgba(232,106,124,0.1);color:var(--accent-red); border-color:rgba(232,106,124,0.25)">HIGH-AUTH</span>
+        </div>
+        <div class="anchor-item"><span class="anchor-label">Rust:</span><span class="code-path">xuanji-expert/src/verify/mod.rs</span></div>
+        <div class="anchor-item"><span class="anchor-label">5 项:</span><span class="anchor-value">topology / data_dep / conflict / gains / code_rt</span></div>
+        <div class="anchor-item"><span class="anchor-label">不变:</span><span class="anchor-value" style="color:var(--accent-red)">vetoed=true 时治理绝对不可覆盖</span></div>
+        <div class="anchor-item"><span class="anchor-label">调用:</span><span class="anchor-value">XOPT-6 阶段 · verify(base, opt)</span></div>
+      </div>
+
+      <div class="anchor-card">
+        <div class="anchor-head">
+          <div class="anchor-name">璇玑协作 orchestrator</div>
+          <span class="anchor-domain">BP-V4</span>
+        </div>
+        <div class="anchor-item"><span class="anchor-label">Rust:</span><span class="code-path">xuanji-system/src/orchestrator.rs</span></div>
+        <div class="anchor-item"><span class="anchor-label">角色:</span><span class="code-path">rbac.rs（BR-07 三重校验）</span></div>
+        <div class="anchor-item"><span class="anchor-label">FSM:</span><span class="code-path">services.rs + model.rs（成员 + 任务）</span></div>
+        <div class="anchor-item"><span class="anchor-label">HTTP:</span><span class="http-path">/api/xuanji/{bootstrap,invite,task,...}</span></div>
+      </div>
+
+      <div class="anchor-card">
+        <div class="anchor-head">
+          <div class="anchor-name">ChatView SSE 端到端</div>
+          <span class="anchor-domain">CHAT-V1</span>
+        </div>
+        <div class="anchor-item"><span class="anchor-label">前端:</span><span class="code-path">ChatView.vue + MessageBubble.vue</span></div>
+        <div class="anchor-item"><span class="anchor-label">API:</span><span class="code-path">api/alliance.ts (169 行)</span></div>
+        <div class="anchor-item"><span class="anchor-label">7 交互:</span><span class="anchor-value">复制/TTS/👍/👎/🔄/⭐/📄 + 追问</span></div>
+        <div class="anchor-item"><span class="anchor-label">回退:</span><span class="anchor-value">TTS 三层：CosyVoice2→FishS2→Browser</span></div>
+      </div>
+
+      <div class="anchor-card">
+        <div class="anchor-head">
+          <div class="anchor-name">Rust 聚合网关</div>
+          <span class="anchor-domain">ROUTER</span>
+        </div>
+        <div class="anchor-item"><span class="anchor-label">Rust:</span><span class="code-path">gateway/runtime/src/routes/ai_engine.rs</span></div>
+        <div class="anchor-item"><span class="anchor-label">RBAC:</span><span class="code-path">rbac_middleware.rs（6 角色）</span></div>
+        <div class="anchor-item"><span class="anchor-label">4 端点:</span><span class="http-path">/ai/engine/{process,analyze,capabilities,metrics}</span></div>
+        <div class="anchor-item"><span class="anchor-label">路由:</span><span class="anchor-value">AC-10 静态优先 → 参数少 → 长路径</span></div>
+      </div>
+
+      <div class="anchor-card">
+        <div class="anchor-head">
+          <div class="anchor-name">审计三汇 + 哈希链</div>
+          <span class="anchor-domain">AUDIT</span>
+        </div>
+        <div class="anchor-item"><span class="anchor-label">Rust:</span><span class="code-path">xuanji-expert/src/audit/{sink,syslog,s3}.rs</span></div>
+        <div class="anchor-item"><span class="anchor-label">事件:</span><span class="anchor-value">9 类领域事件 + EventBus 反应器幂等</span></div>
+        <div class="anchor-item"><span class="anchor-label">链:</span><span class="anchor-value">AuditChain prev_hash → hash（断裂→fail-fast）</span></div>
+        <div class="anchor-item"><span class="anchor-label">查询:</span><span class="http-path">GET /api/audit?member_id=&action=&ts=</span></div>
+      </div>
+
+      <div class="anchor-card">
+        <div class="anchor-head">
+          <div class="anchor-name">治理闸门 G1~G8</div>
+          <span class="anchor-domain">GOVERN</span>
+        </div>
+        <div class="anchor-item"><span class="anchor-label">Rust:</span><span class="code-path">xuanji-expert/src/{govern,tenant_policy}.rs</span></div>
+        <div class="anchor-item"><span class="anchor-label">G1-G8:</span><span class="anchor-value">合规模板/璇玑/RBAC/SLA/预算/敏感度/合规/灾备</span></div>
+        <div class="anchor-item"><span class="anchor-label">铁律:</span><span class="anchor-value" style="color:var(--accent-red)">algo.vetoed → FlowStatus::Blocked 无条件</span></div>
+        <div class="anchor-item"><span class="anchor-label">钩子:</span><span class="anchor-value">PreGate/PostGate 瀑布 + 审计切面</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="footer">
+    <div>专家联盟 · 全维业务流程归一化手册 V1.0 · ENT | 生成日期：2026-08-25</div>
+    <div style="margin-top: 12px;">
+      <a href="./专家联盟-全维业务流程归一化手册-V1.0.md">📄 查看详细手册（Markdown 版）</a>
+      <a href="../enterprise/00-INDEX.md">📚 文档总目录</a>
+      <a href="../enterprise/22-全文档归一化总控卡与权威链单源映射表-V1.0.md">🎯 归一化总控卡</a>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
