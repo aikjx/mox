@@ -50,6 +50,10 @@
               <Fold v-if="!collapsed" />
               <Expand v-else />
             </el-icon>
+
+            <!-- 全局项目选择器（璇玑专家联盟 · 以项目为根） -->
+            <ProjectPicker />
+
             <el-breadcrumb separator="/">
               <el-breadcrumb-item :to="{ path: '/dashboard' }">首页</el-breadcrumb-item>
               <el-breadcrumb-item v-for="b in crumbs" :key="b.path">{{ b.label }}</el-breadcrumb-item>
@@ -148,8 +152,13 @@
           </div>
         </div>
 
+        <!-- 5 阶段全维流程条（仅项目化视图展示 · φ 布局定位元素） -->
+        <div v-if="showPipeline" class="phasebar-wrap">
+          <PhasePipeline v-model="currentPhase" compact @change="onPhaseChange" />
+        </div>
+
         <!-- 内容 -->
-        <main class="content">
+        <main class="content" :class="{ 'content--withphase': showPipeline }">
           <router-view v-slot="{ Component }">
             <transition name="fade" mode="out-in">
               <component :is="Component" />
@@ -196,10 +205,17 @@ import {
   Fold, Expand, Refresh, Document, ArrowDown, Close, Search, QuestionFilled, Lightning
 } from '@element-plus/icons-vue'
 import {
-  NAV_MODULES, APP_VERSION, NAV_GROUPS, QUICK_CREATE_COMMANDS, HOTKEY_GROUPS
+  NAV_MODULES, APP_VERSION, NAV_GROUPS, QUICK_CREATE_COMMANDS, HOTKEY_GROUPS, PROJECT_PHASES
 } from '@/types'
 import { getHealth } from '@/api'
 import { useGlobalShortcuts } from '@/globalShortcuts'
+import { provideProjectContext, useProject } from '@/composables/projectContext.js'
+import ProjectPicker from '@/components/ProjectPicker.vue'
+import PhasePipeline from '@/components/PhasePipeline.vue'
+
+// 全局项目上下文注入（ provide + 单例共享，任意视图可用 useProject() 读取）
+provideProjectContext()
+const { onChange: onProjectChange } = useProject()
 
 const route = useRoute()
 const router = useRouter()
@@ -211,6 +227,67 @@ const searchText = ref('')
 const searchFocused = ref(false)
 const helpDrawerOpen = ref(false)
 let disposeShortcuts = null
+
+// 当前项目阶段：按路由自动推断；用户点击流程条可切换
+const PIPELINE_ROUTES = new Set([
+  '/dashboard', '/projects', '/workbench', '/tasks', '/resources',
+  '/expert-center', '/expert-enterprise', '/expert-orchestrator',
+  '/ai', '/graph', '/mox-fusion', '/caomei', '/knowledge-base', '/llm-config',
+  '/workflow', '/automation', '/plugins', '/mcp',
+  '/algolab', '/infinite-optimizer', '/botCenter', '/browser',
+  '/monitor'
+])
+const showPipeline = computed(() => PIPELINE_ROUTES.has(route.path) || route.path.startsWith('/market'))
+
+// 根据路由推断阶段（也可由视图自定义事件 mox:set-phase 覆盖）
+const inferredPhase = computed(() => {
+  const mapping = {
+    '/caomei': 'requirement',
+    '/ai': 'requirement',
+    '/expert-center': 'requirement',
+    '/knowledge-base': 'requirement',
+    '/llm-config': 'requirement',
+    '/graph': 'graph',
+    '/mox-fusion': 'graph',
+    '/operators': 'graph',
+    '/expert-enterprise': 'graph',
+    '/expert-orchestrator': 'graph',
+    '/workflow': 'design',
+    '/automation': 'design',
+    '/plugins': 'design',
+    '/mcp': 'design',
+    '/market': 'design',
+    '/algolab': 'develop',
+    '/infinite-optimizer': 'develop',
+    '/botCenter': 'develop',
+    '/browser': 'develop',
+    '/monitor': 'release',
+    '/docs': 'release'
+  }
+  return mapping[route.path] || 'requirement'
+})
+const currentPhase = ref(inferredPhase.value)
+watch(inferredPhase, (p) => { currentPhase.value = p })
+// 允许子视图通过 window event 覆盖阶段（联盟内 5 段流程切换）
+window.addEventListener?.('mox:set-phase', (e) => {
+  const key = e?.detail?.key
+  if (key && PROJECT_PHASES.some((p) => p.key === key)) currentPhase.value = key
+})
+function onPhaseChange(p) {
+  // 跳阶段 → 跳对应默认路由
+  const ph = PROJECT_PHASES.find((x) => x.key === p.key)
+  if (!ph) return
+  // 路由规则：requirement 去 AI 助手（联盟入口）；其他跳到阶段首模块
+  const defaults = {
+    requirement: '/ai',
+    graph: '/graph',
+    design: '/workflow',
+    develop: '/algolab',
+    release: '/monitor'
+  }
+  const target = defaults[ph.key]
+  if (target && target !== route.path) router.push(target)
+}
 
 // 二级面包屑（路由 meta.subLabel 或监听子 Dialog 打开后的全局 crumb 事件）
 const crumbsExtra = computed(() => route.meta?.subLabel || null)
@@ -469,6 +546,14 @@ onBeforeUnmount(() => {
 .tab.active { background: var(--brand-soft); color: var(--brand-dark); font-weight: 600; }
 .tab-close { font-size: 12px; border-radius: 50%; }
 .tab-close:hover { background: #cbd5e1; color: #fff; }
+
+/* 阶段流程条（在 tabs 与 content 之间） */
+.phasebar-wrap {
+  padding: 0 22px 0;
+  background: transparent;
+  flex-shrink: 0;
+}
+.content--withphase { padding-top: 10px; }
 .content {
   flex: 1; overflow-y: auto; padding: 22px;
   background:

@@ -139,8 +139,36 @@ fn xiaobai_dsp_native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     }
 
     // ----- 5. 全链路组合：resample → SOLA → loudness → (wav bytes) -----
-    #[derive(FromPyObject)]
-    struct PipelineOpts {
+    /// 从 PyAny 中按 key 取值（支持 dict、Mapping、属性对象）。
+    fn get_opt<'py, T: for<'a> FromPyObject<'a>>(obj: &Bound<'py, PyAny>, key: &str) -> PyResult<Option<T>> {
+        if let Ok(dict) = obj.downcast::<pyo3::types::PyDict>() {
+            if let Some(v) = dict.get_item(key)? {
+                return v.extract::<T>().map(Some);
+            }
+            return Ok(None);
+        }
+        // Mapping（如 TypedDict/MappingProxy）：obj[key]
+        if let Ok(getitem) = obj.get_item(key) {
+            if !getitem.is_none() {
+                return getitem.extract::<T>().map(Some);
+            }
+        }
+        // 对象（带 attr 如 NamedTuple/dataclass）
+        if let Ok(attr) = obj.getattr(key) {
+            if !attr.is_none() {
+                return attr.extract::<T>().map(Some);
+            }
+        }
+        Ok(None)
+    }
+
+    #[pyfn(m)]
+    #[pyo3(name = "apply_dsp_pipeline", signature = (signal, opts = None, *, orig_sr = None, target_sr = None, speed = None, target_dbfs = None, enable_loudness = None, encode_wav = None, channels = None))]
+    #[allow(clippy::too_many_arguments)]
+    fn py_pipeline<'py>(
+        py: Python<'py>,
+        signal: &Bound<'py, PyAny>,
+        opts: Option<&Bound<'py, PyAny>>,
         orig_sr: Option<u32>,
         target_sr: Option<u32>,
         speed: Option<f32>,
@@ -148,41 +176,50 @@ fn xiaobai_dsp_native(m: &Bound<'_, PyModule>) -> PyResult<()> {
         enable_loudness: Option<bool>,
         encode_wav: Option<bool>,
         channels: Option<u16>,
-    }
-
-    #[pyfn(m)]
-    #[pyo3(name = "apply_dsp_pipeline")]
-    fn py_pipeline<'py>(
-        py: Python<'py>,
-        signal: &Bound<'py, PyAny>,
-        opts: PipelineOpts,
     ) -> PyResult<Py<PyAny>> {
+        // opts dict/mapping 合并优先级：显式关键字 > opts 对象
+        let mut o_orig_sr = orig_sr;
+        let mut o_target_sr = target_sr;
+        let mut o_speed = speed;
+        let mut o_target_dbfs = target_dbfs;
+        let mut o_enable_loudness = enable_loudness;
+        let mut o_encode_wav = encode_wav;
+        let mut o_channels = channels;
+        if let Some(o) = opts {
+            if o_orig_sr.is_none() { o_orig_sr = get_opt::<u32>(o, "orig_sr")?; }
+            if o_target_sr.is_none() { o_target_sr = get_opt::<u32>(o, "target_sr")?; }
+            if o_speed.is_none() { o_speed = get_opt::<f32>(o, "speed")?; }
+            if o_target_dbfs.is_none() { o_target_dbfs = get_opt::<f32>(o, "target_dbfs")?; }
+            if o_enable_loudness.is_none() { o_enable_loudness = get_opt::<bool>(o, "enable_loudness")?; }
+            if o_encode_wav.is_none() { o_encode_wav = get_opt::<bool>(o, "encode_wav")?; }
+            if o_channels.is_none() { o_channels = get_opt::<u16>(o, "channels")?; }
+        }
         let mut sig = to_vec_f32(signal)?;
-        let orig_sr = opts.orig_sr.unwrap_or(22050);
-        let target_sr = opts.target_sr.unwrap_or(orig_sr);
-        if orig_sr == 0 || target_sr == 0 {
+        let orig_sr_v = o_orig_sr.unwrap_or(22050);
+        let target_sr_v = o_target_sr.unwrap_or(orig_sr_v);
+        if orig_sr_v == 0 || target_sr_v == 0 {
             return Err(PyValueError::new_err("sample_rate must be > 0"));
         }
-        if orig_sr != target_sr {
-            sig = resample_linear(&sig, orig_sr, target_sr);
+        if orig_sr_v != target_sr_v {
+            sig = resample_linear(&sig, orig_sr_v, target_sr_v);
         }
-        let speed = opts.speed.unwrap_or(1.0);
-        if (speed - 1.0).abs() > 1e-6 {
-            if !(0.25..=4.0).contains(&speed) {
+        let speed_v = o_speed.unwrap_or(1.0);
+        if (speed_v - 1.0).abs() > 1e-6 {
+            if !(0.25..=4.0).contains(&speed_v) {
                 return Err(PyValueError::new_err("speed must be within [0.25, 4.0]"));
             }
-            let target_len = (sig.len() as f32 / speed.max(1e-6)) as usize;
-            let sopt = SolaOptions { sample_rate: target_sr, ..Default::default() };
+            let target_len = (sig.len() as f32 / speed_v.max(1e-6)) as usize;
+            let sopt = SolaOptions { sample_rate: target_sr_v, ..Default::default() };
             sig = time_stretch_sola(&sig, target_len, &sopt);
         }
         let lopts = LimiterOptions {
-            target_dbfs: opts.target_dbfs.unwrap_or(-18.0),
-            enable_loudness: opts.enable_loudness.unwrap_or(true),
+            target_dbfs: o_target_dbfs.unwrap_or(-18.0),
+            enable_loudness: o_enable_loudness.unwrap_or(true),
         };
         sig = apply_limiter_and_loudness(&sig, &lopts);
 
-        if opts.encode_wav.unwrap_or(false) {
-            let ch = opts.channels.unwrap_or(1);
+        if o_encode_wav.unwrap_or(false) {
+            let ch = o_channels.unwrap_or(1);
             if sig.len() % ch as usize != 0 {
                 return Err(PyValueError::new_err(format!(
                     "channels={ch} but samples={} not divisible",
@@ -190,7 +227,7 @@ fn xiaobai_dsp_native(m: &Bound<'_, PyModule>) -> PyResult<()> {
                 )));
             }
             let spec = WavSpec {
-                sample_rate: target_sr,
+                sample_rate: target_sr_v,
                 channels: ch,
             };
             let b = encode_wav_pcm16(&sig, &spec);

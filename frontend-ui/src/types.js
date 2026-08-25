@@ -88,21 +88,48 @@ export const NAV_MODULES = [
   { key: 'admin', label: '系统管理', icon: 'Lock', path: '/admin', color: '#475569', bg: '#f1f5f9' }
 ]
 
-// 产品体验增强：全局导航分组（侧边栏 24 项按 4 大域聚合，减少扫描成本）
+// 璇玑专家联盟 5 阶段生命周期导航（以项目为根 · 侧边栏按 S1~S5 排序）
+// ┌─ 工作台 ──────────────────────────────────────────────────┐
+// │ dashboard · projects · workbench · tasks · resources      │
+// ├─ S1 需求架构 ─────────────────────────────────────────────┤
+// │ caomei(编译) · ai(AI助手X) · expert-center(联盟)          │
+// │ knowledge-base · llm-config                               │
+// ├─ S2 璇玑图谱 ─────────────────────────────────────────────┤
+// │ graph · mox-fusion · operators · expert-enterprise        │
+// │ expert-orchestrator(V2编排)                               │
+// ├─ S3 方案设计 ─────────────────────────────────────────────┤
+// │ workflow · automation · plugins · mcp · market(商城)      │
+// ├─ S4 开发运行 ─────────────────────────────────────────────┤
+// │ algolab · infinite-optimizer · botCenter · browser        │
+// ├─ S5 运行发布 ─────────────────────────────────────────────┤
+// │ monitor · docs · portal · business-hall · admin           │
+// └───────────────────────────────────────────────────────────┘
 export const NAV_GROUPS = [
-  { key: 'workbench', label: '工作台', items: ['dashboard', 'projects', 'portal', 'business-hall'] },
-  { key: 'graph-ai', label: '图谱与 AI', items: ['graph', 'operators', 'ai', 'knowledge-base', 'llm-config'] },
-  { key: 'biz', label: '业务与协作', items: ['tasks', 'market', 'expert-center', 'expert-enterprise', 'expert-orchestrator', 'workflow', 'resources', 'plugins', 'mcp', 'automation'] },
-  { key: 'governance', label: '平台与治理', items: ['caomei', 'algolab', 'infinite-optimizer', 'mox-fusion', 'browser', 'monitor', 'docs', 'admin'] }
+  { key: 'workbench',  label: '工作台',     order: 0, items: ['dashboard', 'projects', 'workbench', 'tasks', 'resources'] },
+  { key: 's1-require', label: 'S1 · 需求架构', order: 1, items: ['caomei', 'ai', 'expert-center', 'knowledge-base', 'llm-config'] },
+  { key: 's2-graph',   label: 'S2 · 璇玑图谱', order: 2, items: ['graph', 'mox-fusion', 'operators', 'expert-enterprise', 'expert-orchestrator'] },
+  { key: 's3-design',  label: 'S3 · 方案设计', order: 3, items: ['workflow', 'automation', 'plugins', 'mcp', 'market'] },
+  { key: 's4-develop', label: 'S4 · 开发运行', order: 4, items: ['algolab', 'infinite-optimizer', 'botCenter', 'browser'] },
+  { key: 's5-release', label: 'S5 · 运行发布', order: 5, items: ['monitor', 'docs', 'portal', 'business-hall', 'admin'] }
 ]
 
-// 产品体验增强：顶栏⚡ 快捷「新建」菜单（最常用 4 项创建入口）
-// action 支持两种：'route' 跳转 / 'event' 发全局事件（TaskView/MarketView 监听后直接开 Dialog）
+// 5 阶段流程（与 PhasePipeline 对齐）
+export const PROJECT_PHASES = [
+  { key: 'requirement', label: '需求架构', desc: '编译 · 建模 · 拆解问题', color: '#6366f1', group: 's1-require' },
+  { key: 'graph',       label: '知识图谱', desc: '璇玑 · 关系 · 全维发现',   color: '#06b6d4', group: 's2-graph' },
+  { key: 'design',      label: '方案设计', desc: '架构 · 编排 · 资源绑定',   color: '#8b5cf6', group: 's3-design' },
+  { key: 'develop',     label: '开发运行', desc: '算子 · 代码 · 执行',       color: '#10b981', group: 's4-develop' },
+  { key: 'release',     label: '运行发布', desc: '发布 · 监控 · 交付',       color: '#f59e0b', group: 's5-release' }
+]
+
+// 顶栏⚡新建命令（6 项，按 5 阶段顺序排）
 export const QUICK_CREATE_COMMANDS = [
-  { key: 'task', label: '新建任务', icon: 'List', tip: 'Ctrl + Shift + N', action: 'event', event: 'mox:open-create-task' },
-  { key: 'market', label: '上传算子包', icon: 'Shop', tip: '跳商城并打开表单', action: 'route', route: '/market', query: { action: 'upload' } },
-  { key: 'ai-session', label: '新建 AI 对话', icon: 'ChatDotRound', tip: '新起一轮对话', action: 'route', route: '/ai', query: { fresh: '1' } },
-  { key: 'workflow', label: '新建工作流', icon: 'Operation', tip: '编排新流程', action: 'route', route: '/workflow', query: { action: 'create' } }
+  { key: 'project',    label: '新建项目',     icon: 'Folder',      tip: 'S0 启动跟进',         action: 'event', event: 'mox:open-create-project' },
+  { key: 'task',       label: '新建任务',     icon: 'List',        tip: 'Ctrl + Shift + N',    action: 'event', event: 'mox:open-create-task' },
+  { key: 'ai-session', label: '新建 AI 对话', icon: 'ChatDotRound',tip: 'AI助手X · φ模式',    action: 'route', route: '/ai', query: { fresh: '1' } },
+  { key: 'expert',     label: '注册专家',     icon: 'User',        tip: '专家联盟招募',        action: 'event', event: 'mox:open-register-expert' },
+  { key: 'workflow',   label: '新建工作流',   icon: 'Operation',   tip: 'S3 方案设计',         action: 'route', route: '/workflow', query: { action: 'create' } },
+  { key: 'market',     label: '上传算子包',   icon: 'Shop',        tip: 'S4 注册算子',         action: 'route', route: '/market', query: { action: 'upload' } }
 ]
 
 // 产品体验增强：快捷键分组（Shift + ? 弹 Drawer 展示给用户）

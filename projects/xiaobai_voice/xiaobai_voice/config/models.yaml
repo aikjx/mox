@@ -60,16 +60,27 @@ models:
 
   - id: tts-cosyvoice2-0.5b
     name: CosyVoice2 0.5B (Apache2 · 信创回退)
-    size_mb: 1120
+    size_mb: 3600
     license: Apache-2.0
     category: tts
     engine: cosyvoice2
     default: true
     fallback: true
+    # 推荐方式：modelscope SDK snapshot_download（断点续传 + 分片并发）
+    #   from modelscope import snapshot_download
+    #   snapshot_download('iic/CosyVoice2-0.5B', local_dir='projects/xiaobai_voice/models/tts-cosyvoice2-0.5b')
+    # 或 CLI：
+    #   modelscope download --model iic/CosyVoice2-0.5B \
+    #       --local_dir projects/xiaobai_voice/models/tts-cosyvoice2-0.5b
+    # 或 Git LFS：
+    #   git clone https://www.modelscope.cn/iic/CosyVoice2-0.5B.git projects/xiaobai_voice/models/tts-cosyvoice2-0.5b
+    download_method: modelscope_snapshot
+    modelscope_model_id: iic/CosyVoice2-0.5B
+    # URLs：下载器会先尝试 modelscope snapshot（HTTP 200），再尝试 ModelScope HF tarball 兜底
     urls:
-      - https://www.modelscope.cn/api/v1/models/AI-ModelScope/CosyVoice2-0.5B/repo?Revision=master&FilePath=CosyVoice2-0.5B.tar.gz
-      - https://huggingface.co/FunAudioLLM/CosyVoice2-0.5B/resolve/main/CosyVoice2-0.5B.tar.gz
+      - https://www.modelscope.cn/iic/CosyVoice2-0.5B
+      - https://huggingface.co/FunAudioLLM/CosyVoice2-0.5B
     sha256: TBD_PLEASE_PIN_BEFORE_RELEASE
-    archive_format: tgz
+    archive_format: dir
     subdir: tts-cosyvoice2-0.5b
     entry: {}

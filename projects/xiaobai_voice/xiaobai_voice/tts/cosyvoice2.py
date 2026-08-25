@@ -178,7 +178,88 @@ def _apply_limiter_and_loudness(audio, target_dbfs: float = -18.0, enable: bool 
     return audio
 
 
-# ==================================================================== backend
+# ================================================================= Rust DSP 接入
+# 优先 Rust xiaobai-dsp-py（5× 吞吐 / 低内存峰值）。任何原因加载失败 → 自动回退纯 Python 实现。
+# 环境变量 `XIAOBAI_VOICE_FORCE_PY_DSP=1` 可强制走 Python（便于 AB 对照）。
+_RUST_DSP = None
+_RUST_DSP_ERROR: str | None = None
+try:
+    import os as _os
+
+    if not _os.environ.get("XIAOBAI_VOICE_FORCE_PY_DSP"):
+        import xiaobai_dsp_native  # type: ignore
+
+        _RUST_DSP = xiaobai_dsp_native
+except Exception as _exc:  # noqa: BLE001
+    _RUST_DSP_ERROR = f"{type(_exc).__name__}: {_exc}"
+
+
+# --------------------------------------------------------------- CosyVoice src
+# FunAudioLLM/CosyVoice 官方仓库不带 setup.py/pyproject，通常直接 `git clone` 后
+# 把父目录加到 sys.path，`import cosyvoice` 即命中子包。
+# 支持三种配置：
+#   1) 环境变量 XIAOBAI_VOICE_COSYVOICE_SRC = <绝对路径到 CosyVoice 仓库根>
+#   2) <repo_root>/third_party/CosyVoice （项目自带 clone）
+#   3) pip install cosyvoice 已就绪（已在 sys.path 默认路径）
+def _ensure_cosyvoice_src_on_path() -> None:
+    import sys as _sys
+
+    candidates: list[str] = []
+    env_src = os.environ.get("XIAOBAI_VOICE_COSYVOICE_SRC") or ""
+    if env_src.strip():
+        candidates.append(os.path.abspath(os.path.expanduser(env_src.strip())))
+    # 项目内 third_party/CosyVoice
+    _here = os.path.dirname(__file__)
+    candidates.append(
+        os.path.abspath(
+            os.path.join(_here, "..", "..", "..", "..", "third_party", "CosyVoice")
+        )
+    )
+    for p in candidates:
+        if not p or not os.path.isdir(p):
+            continue
+        if p not in _sys.path:
+            _sys.path.insert(0, p)
+
+
+_ensure_cosyvoice_src_on_path()
+
+
+def _patch_cosyvoice_top_level_exports(mod_cv: Any) -> None:
+    """FunAudioLLM/CosyVoice 顶层 __init__ 未 re-export CosyVoice/CosyVoice2 类。
+    从 cli.cosyvoice 子模块别名到 mod_cv 顶层，保证 `cosyvoice.CosyVoice2(dir)` 可用。"""
+    needs: list[tuple[str, str]] = [
+        ("CosyVoice2", "CosyVoice2"),
+        ("CosyVoice", "CosyVoice"),
+        ("CosyVoice3", "CosyVoice3"),
+    ]
+    for attr_name, export_name in needs:
+        if hasattr(mod_cv, export_name):
+            continue
+        try:
+            from cosyvoice.cli.cosyvoice import (  # type: ignore
+                CosyVoice2 as _CV2,
+                CosyVoice as _CV1,
+                CosyVoice3 as _CV3,
+            )
+
+            mapping = {"CosyVoice2": _CV2, "CosyVoice": _CV1, "CosyVoice3": _CV3}
+            cls = mapping.get(attr_name)
+            if cls is not None:
+                setattr(mod_cv, export_name, cls)
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def rust_dsp_available() -> bool:
+    """返回 Rust DSP 是否成功加载（测试/监控用）。"""
+    return _RUST_DSP is not None
+
+
+def rust_dsp_error() -> str | None:
+    """返回 Rust DSP 加载失败原因（若有）。"""
+    return _RUST_DSP_ERROR
+
 class CosyVoice2Backend(TTSBackend):
     name = "cosyvoice2"
 
@@ -230,23 +311,68 @@ class CosyVoice2Backend(TTSBackend):
             r = registry.resolve("tts-cosyvoice2-0.5b")
             if r:
                 return r["root"]
-        candidates = []
+        candidates: list[str] = []
         import sys
 
+        # 显式环境变量：最高优先级（用户把权重下载到自定义位置时用）
+        for env_name in (
+            "XIAOBAI_VOICE_COSYVOICE_CKPT_DIR",
+            "COSYVOICE_CKPT_DIR",
+            "MODEL_DIR_TTS_COSYVOICE2",
+        ):
+            raw = os.environ.get(env_name) or ""
+            raw = raw.strip()
+            if not raw:
+                continue
+            p = os.path.abspath(os.path.expanduser(raw))
+            if os.path.isdir(p):
+                candidates.append(p)
+            # 允许 env 指向父目录（voice root），子目录固定 tts-cosyvoice2-0.5b
+            candidates.append(os.path.join(p, "tts-cosyvoice2-0.5b"))
         if getattr(sys, "frozen", False):
             candidates.append(os.path.join(os.path.dirname(sys.executable), "models", "tts-cosyvoice2-0.5b"))
         candidates.append(os.path.join(os.path.expanduser("~"), ".mox", "models", "voice", "tts-cosyvoice2-0.5b"))
         candidates.append(
             os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "models", "tts-cosyvoice2-0.5b"))
         )
+        # 兼容 ModelScope/HuggingFace 默认缓存名 CosyVoice2-0.5B
+        for parent in (
+            os.path.expanduser(r"~/.cache/modelscope/hub/speech_tts"),
+            os.path.expanduser(r"~/.cache/modelscope/hub/AI-ModelScope"),
+            os.path.expanduser(r"~/.cache/huggingface/hub"),
+        ):
+            if not os.path.isdir(parent):
+                continue
+            try:
+                for name in os.listdir(parent):
+                    low = name.lower()
+                    if low.startswith("cosyvoice2") or low.startswith("cosyvoice") and "0.5" in low:
+                        candidates.append(os.path.join(parent, name))
+            except OSError:
+                pass
         for c in candidates:
+            if not c:
+                continue
             if os.path.isfile(os.path.join(c, "configuration.json")) or os.path.isdir(c):
-                return c
-        raise FileNotFoundError(candidates[-1])
+                # entry 为空 → 目录存在即通过；额外宽松：只要有 .pt 文件也视为权重目录
+                if os.path.isdir(c):
+                    try:
+                        any_pt = any(
+                            n.lower().endswith((".pt", ".safetensors", ".ckpt", ".onnx"))
+                            for n in os.listdir(c)
+                        )
+                        if any_pt or os.path.isfile(os.path.join(c, "configuration.json")):
+                            return c
+                        continue
+                    except OSError:
+                        pass
+                    return c
+        raise FileNotFoundError(candidates[-1] if candidates else "tts-cosyvoice2-0.5b")
 
     def _load_engine(self) -> None:
         import cosyvoice  # type: ignore  # noqa: F401
 
+        _patch_cosyvoice_top_level_exports(cosyvoice)
         try:
             self._model = cosyvoice.CosyVoice2(self._ckpt_dir)
         except Exception:
@@ -389,13 +515,60 @@ class CosyVoice2Backend(TTSBackend):
 
         audio = np.concatenate(audio_chunks, axis=0) if len(audio_chunks) > 1 else audio_chunks[0]
 
+        # ---------------------------------------------------------------- DSP
+        # 优先 Rust xiaobai-dsp：一次性重采样+SOLA+响度归一+WAV PCM16 编码。
+        # Rust 模块不可用/抛错 → 自动 fallback 原 Python 流水线。
+        speed = float(getattr(opts, "speed", 1.0) or 1.0)
+        if speed <= 0:
+            speed = 1.0
+        dsp_impl = "Rust"
+        wav_bytes: bytes | None = None
+        if _RUST_DSP is not None:
+            try:
+                import numpy as _np  # local
+
+                _audio_arr = _np.asarray(audio, dtype=np.float32).reshape(-1)
+                _sig = _audio_arr.tolist()
+                res = _RUST_DSP.apply_dsp_pipeline(
+                    _sig,
+                    {
+                        "orig_sr": int(sample_rate_out),
+                        "target_sr": int(sr),
+                        "speed": float(speed),
+                        "target_dbfs": float(self._loudness_target_dbfs),
+                        "enable_loudness": bool(self._limiter),
+                        "encode_wav": True,
+                        "channels": 1,
+                    },
+                )
+                if isinstance(res, (bytes, bytearray)):
+                    wav_bytes = bytes(res)
+            except Exception:  # noqa: BLE001
+                wav_bytes = None
+                dsp_impl = "Python(FallbackFromRustError)"
+
+        if wav_bytes is not None:
+            # Rust 已输出完整 WAV（header + PCM16 body）。按流式 chunk 切片。
+            header_len = 44
+            if len(wav_bytes) >= header_len:
+                yield wav_bytes[:header_len]
+                body = wav_bytes[header_len:]
+            else:
+                yield wav_bytes[:]
+                body = b""
+            chunk_bytes = max(1024, int(sr * 2 * (opts.stream_chunk_ms / 1000.0)))
+            for i in range(0, len(body), chunk_bytes):
+                yield body[i : i + chunk_bytes]
+            # 记录实现来源（供健康检查/报告查询）
+            self._last_dsp_impl = dsp_impl  # type: ignore[attr-defined]
+            return
+
+        # -------------------------------- fallback：原 Python 流水线
+        dsp_impl = "Python"
         # 1) 重采样到目标 sr（linear/kaiser）
         audio = _resample(audio, sr, sample_rate_out, self._resample_quality)
 
         # 2) 语速缩放（speed != 1.0 时 SOLA）
-        speed = float(getattr(opts, "speed", 1.0) or 1.0)
-        if speed <= 0:
-            speed = 1.0
         if abs(speed - 1.0) > 1e-3 and 0.5 <= speed <= 2.0:
             target_len = int(round(audio.size / speed))
             audio = _time_stretch_sola(audio, target_len, frame_ms=20.0, overlap_ms=10.0, sr=sr)
@@ -407,8 +580,16 @@ class CosyVoice2Backend(TTSBackend):
             enable=self._limiter,
         )
 
-        # 4) float → int16 输出
-        int16 = (audio * 32767.0).clip(-32768, 32767).astype("<i2")
+        # 4) float → int16 输出（按 xiaobai-dsp wav.rs 精确钳位：负 ×32768 / 正 ×32767）
+        import numpy as _np2
+
+        audio = _np2.asarray(audio, dtype=np.float32).reshape(-1)
+        neg = audio < 0
+        pos = ~neg
+        scaled = _np2.zeros_like(audio, dtype=np.float32)
+        scaled[neg] = audio[neg] * 32768.0
+        scaled[pos] = audio[pos] * 32767.0
+        int16 = scaled.clip(-32768, 32767).astype("<i2")
         raw = int16.tobytes()
 
         from .browser_fallback import _make_wav_header
@@ -417,6 +598,7 @@ class CosyVoice2Backend(TTSBackend):
         chunk_bytes = max(1024, int(sr * 2 * (opts.stream_chunk_ms / 1000.0)))
         for i in range(0, len(raw), chunk_bytes):
             yield raw[i : i + chunk_bytes]
+        self._last_dsp_impl = dsp_impl  # type: ignore[attr-defined]
 
     def close(self) -> None:
         if self._model is not None:
