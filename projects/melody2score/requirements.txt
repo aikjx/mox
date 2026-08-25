@@ -1,13 +1,18 @@
 # melody2score 依赖清单（企业级：版本锁定，可复现）
-# 音高检测首选：crepe_onnx（ONNX 版 CREPE tiny，CPU 友好、稳定可复现）
+# 音高检测首选：crepe_onnx（ONNX 版 CREPE small，CPU 友好、稳定可复现）
 
 # ---- 音高检测后端 ----
-crepe_onnx>=0.1.0          # 首选：CREPE ONNX，CPU 高效
+crepe_onnx>=0.1.0          # 首选：CREPE ONNX，CPU 高效（v2: 默认 small 模型）
 onnxruntime>=1.16.0        # crepe_onnx 推理引擎（建议锁定小版本以保一致）
 numpy>=1.23,<2.0           # 注意：torchcrepe 对 numpy>=2 兼容需新版，故封顶 <2.0
 librosa>=0.10.0            # pyin 兜底后端 + 重采样 + BPM/调式（Krumhansl-Schmuckler）
 soundfile>=0.12.1          # wav 读写
 # torchcrepe>=0.4.0        # 可选兜底后端（部分 Windows 环境 onnxruntime 段错误时启用；需 PyTorch）
+
+# ---- 主旋律声源分离（v2 新增，零依赖自动走 HPSS；装 demucs 则启用工业级） ----
+# demucs>=4.0.0             # 可选工业级四源分离（Meta htdemucs，人声/鼓/贝斯/其他）
+# torch>=2.0                # demucs 需要；装了 demucs 会自动带。不装也没关系，
+#                            # core.separator 自动回退 Librosa HPSS Lite 近似方案。
 
 # ---- 音频采集/播放 ----
 sounddevice>=0.4.6         # 现场录音

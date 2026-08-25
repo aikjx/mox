@@ -28,6 +28,8 @@ import soundfile as sf
 from core.config import Config
 from core.paths import resource_path
 from core import capture, preprocess, pitch, analysis, score, vad, score_sheet
+from core import separator as _separator
+from core import postprocess as _postproc
 
 
 class _LRUCache:
@@ -284,13 +286,21 @@ class Melody2Score:
             raw = source.get("data")
             if raw is not None and isinstance(raw, (bytes, bytearray)):
                 raw = bytes(raw)
+                eff_sep_tag = (cfg.enable_separation if cfg.enable_separation is not None
+                               else bool(cfg.vocal_mode))
                 cfg_tag = (cfg.robust, cfg.enable_denoise, cfg.model_size, cfg.hop,
-                           cfg.vocal_mode, cfg.fmin, cfg.fmax, cfg.conf_thresh)
-                cache_key = "v2:" + hashlib.sha256(raw).hexdigest() + ":" + repr(cfg_tag)
+                           cfg.vocal_mode, cfg.fmin, cfg.fmax, cfg.conf_thresh,
+                           eff_sep_tag, cfg.separation_strategy,
+                           cfg.enable_postprocess)
+                cache_key = "v3:" + hashlib.sha256(raw).hexdigest() + ":" + repr(cfg_tag)
             elif source.get("kind") == "sample":
+                eff_sep_tag = (cfg.enable_separation if cfg.enable_separation is not None
+                               else bool(cfg.vocal_mode))
                 cfg_tag = (cfg.robust, cfg.enable_denoise, cfg.model_size, cfg.hop,
-                           cfg.vocal_mode, cfg.fmin, cfg.fmax, cfg.conf_thresh)
-                cache_key = "v2:sample:" + str(source.get("name")) + ":" + repr(cfg_tag)
+                           cfg.vocal_mode, cfg.fmin, cfg.fmax, cfg.conf_thresh,
+                           eff_sep_tag, cfg.separation_strategy,
+                           cfg.enable_postprocess)
+                cache_key = "v3:sample:" + str(source.get("name")) + ":" + repr(cfg_tag)
             if cache_key:
                 cached = _RESULT_CACHE.get(cache_key)
                 if cached is not None:
@@ -307,8 +317,32 @@ class Melody2Score:
                 progress_cb("load", "载入音频…", 0.02)
             y, sr = _load_source(source, cfg)
 
+            # ---- v2 新增：声源分离（前置主旋律提取） ----
+            # 混合音频必须先分离，否则贝斯/鼓点把旋律音高带偏（用户 mp3
+            # 出现「176 BPM + 满屏错音」的最大根因之一）。
+            # enable_separation=None 时跟随 vocal_mode：人声模式默认开，
+            # 纯乐器模式关（HPSS 对纯钢琴干净音的谐波有非必要削损）。
+            eff_sep = cfg.enable_separation
+            if eff_sep is None:
+                eff_sep = bool(cfg.vocal_mode)
+            sep_info: Dict = {"strategy": "passthrough", "snr_est": 0.0}
+            if eff_sep:
+                if progress_cb:
+                    progress_cb("separate", "主旋律分离中…", 0.08)
+                try:
+                    sep_res = _separator.separate_melody(
+                        y, sr, strategy=cfg.separation_strategy, verbose=False)
+                    sep_info = {k: v for k, v in sep_res.items() if k != "vocals"}
+                    y = sep_res["vocals"]  # 后续整条链路用分离后的主旋律
+                except Exception as _se:
+                    # 分离失败（缺依赖/不支持）：静默回退原音，保证不崩
+                    sep_info = {"strategy": "passthrough",
+                                "snr_est": 0.0, "sep_error": str(_se)}
+            else:
+                sep_info = {"strategy": "disabled", "snr_est": 0.0}
+
             if progress_cb:
-                progress_cb("preprocess", "预处理/降噪…", 0.12)
+                progress_cb("preprocess", "预处理/降噪…", 0.14)
             t0 = time.time()
             y = preprocess.preprocess(y, sr, cfg.enable_denoise)
             t_pre = time.time() - t0
@@ -343,7 +377,7 @@ class Melody2Score:
             for k in range(n_runs):
                 if progress_cb:
                     progress_cb("pitch", f"音高检测 ({k+1}/{n_runs})…",
-                                0.12 + 0.72 * (k + 1) / n_runs)
+                                0.16 + 0.68 * (k + 1) / n_runs)
                 t0 = time.time()
                 notes, pts = _segment_once(y, sr, cfg, k, det, vad_mask)
                 t_pitch_total += time.time() - t0
@@ -361,12 +395,21 @@ class Melody2Score:
 
             t0 = time.time()
             if progress_cb:
-                progress_cb("parse", "节拍/调式/音符解析…", 0.92)
-            # 八度归一化（halving 修复）：检测器半频锁定使音符 midi 偏低
-            # 1-2 八度 → 简谱满屏低音点 + 钢琴播放成超低音轰鸣。归一到
-            # 人声中心区（简谱记相对音级，绝对八度不承载乐义），后续
-            # BPM/调式/简谱/播放全部使用归一化后 notes。
+                progress_cb("parse", "后处理纠错 / 节拍 / 调式 / 音符解析…", 0.90)
+
+            # 八度归一化（halving 修复）：半频锁定导致 midi 偏低 1-2 八度
             notes, octave_shift = analysis.octave_normalize(notes)
+
+            # ---- v2 新增：MIDI 后处理全局纠错层 ----
+            # 修复 octave_normalize 之后的残留问题：
+            #   孤立八度幻影跳、重复短同音、音域外音符、过短/过长音。
+            # 开启后显著减少「满屏错音」，且不修改正确音符。
+            post_info: Dict = {}
+            if cfg.enable_postprocess:
+                pres = _postproc.postprocess_notes(notes)
+                notes = pres["notes"]
+                post_info = {k: v for k, v in pres.items() if k != "notes"}
+
             bpm = analysis.detect_bpm(y, sr, cfg.bpm_fallback, notes=notes)
             key_name = analysis.estimate_key(y, sr, notes)
             t_parse = time.time() - t0
@@ -394,6 +437,10 @@ class Melody2Score:
                          "pitch_ms": round(t_pitch * 1000, 1),
                          "parse_ms": round(t_parse * 1000, 1),
                          "pitch_frames": len(last_pts)},
+                # v2 新增诊断：分离/纠错结果，便于用户看到「176 BPM bug / 错音爆炸」
+                # 是在哪个阶段被修复的（支持排障 & 验收）。
+                "separation": sep_info,
+                "postprocess": post_info,
                 "source": source.get("source", ""),
             }
             if cache_key:
@@ -489,10 +536,19 @@ class Melody2Score:
     def print_summary(res: Dict) -> None:
         key = res.get("key", {})
         perf = res.get("perf", {})
+        sep = res.get("separation") or {}
+        pp = res.get("postprocess") or {}
         print("\n================ 旋律转谱结果 ================")
         print(f"  音高后端     : {res.get('backend')}")
+        print(f"  主旋律分离   : {sep.get('strategy','n/a')}"
+              f"{' SNR≈'+str(round(sep.get('snr_est',0),1))+'dB' if sep.get('snr_est') else ''}"
+              + (f"（错误降级: {sep.get('sep_error')}）" if sep.get('sep_error') else ""))
+        print(f"  纠错层       : 丢弃 {pp.get('dropped_count',0)} / "
+              f"合并同音 {pp.get('merged_count',0)} / "
+              f"修复跳音 {pp.get('corrected_jumps',0)} / "
+              f"平滑 {pp.get('smoothed',0)}")
         print(f"  调式         : {key.get('tonic')} {key.get('mode')}")
-        print(f"  速度 BPM     : {res.get('bpm')}")
+        print(f"  速度 BPM     : {res.get('bpm')}   （硬约束区间 [40,160]，禁止176等离谱输出）")
         print(f"  音符数       : {res.get('note_count')}")
         print(f"  时长(秒)     : {res.get('duration_sec')}")
         print(f"  置信度       : {res.get('confidence')}")

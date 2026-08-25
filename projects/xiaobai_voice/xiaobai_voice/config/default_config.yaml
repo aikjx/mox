@@ -1,0 +1,48 @@
+# xiaobai 默认配置（跨平台）。用户实际运行配置在 %APPDATA%/xuanji/xiaobai/config.yaml
+# 运行时会以本文件为基础，做 deep-merge 覆盖。
+voice:
+  port: 3717
+  host: 127.0.0.1
+  strategy: local_first          # local_first / cloud_only / cloud_fallback
+  license_tier: auto             # auto / research / apache2
+
+  asr:
+    engine: auto                 # auto / sherpa_paraformer / sensevoice
+    hotwords: []                 # [ {word: "璇玑", score: 3.0}, ... ]
+    vad_threshold_ms: 800        # ≥ 800 ms 静音 → VAD 自动断句
+    sample_rate: 16000
+    channels: 1
+
+  tts:
+    engine: auto                 # auto / fish_s2 / cosyvoice2 / browser
+    default_voice: xiaobai
+    clone_reference: null        # voice_clips/<sha1>.wav 的 id
+    emotion: neutral             # neutral | happy | sad | serious
+    speed: 1.0                   # 0.8 ~ 1.4
+    sample_rate: 24000           # fish 24k, cosyvoice 22.05k 运行时重采样
+    auto_read_assistant: true    # 助手返回后自动朗读
+
+  temp_cleanup_minutes: 10       # 临时音频自动清理周期
+
+ui:
+  float_ball_size: 68            # 42 / 68 / 110
+  float_ball_pos: [right, 120]   # [ edge in {left,right}, offset_y px ]
+  auto_start: false              # 开机自启（需 S3 任务生效）
+  shortcuts:
+    toggle_record: Alt+X
+    read_clipboard: Alt+S
+    quit: Alt+Q
+  ai_dialog_url: "http://localhost:3021/#/ai"
+  use_qt_webview: true           # 双击用 QWebEngineView 打开；否则默认浏览器
+
+logging:
+  level: INFO                    # DEBUG/INFO/WARNING/ERROR
+  path: null                     # null → 默认用户目录 /logs
+  rotation: "10 MB"
+  keep_days: 14
+
+cloud:
+  # 默认禁用云端 API；需要时请在这里填入 key，并把 strategy 改 cloud_fallback
+  asr_endpoint: ""
+  tts_endpoint: ""
+  api_key: ""
