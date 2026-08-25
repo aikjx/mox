@@ -44,6 +44,19 @@ pub struct RuleEngine {
     rules: Vec<Rule>,
 }
 
+/// 便捷入口：对一整批 records 依次执行所有规则（返回修改后的副本）。
+/// 绑定层直接调用，省去外部循环。
+pub fn resolve_rules(records: &[NormRecord], engine: &RuleEngine) -> Vec<NormRecord> {
+    records
+        .iter()
+        .map(|r| {
+            let mut out = r.clone();
+            let _ = engine.apply(&mut out);
+            out
+        })
+        .collect()
+}
+
 impl RuleEngine {
     pub fn new(mut rules: Vec<Rule>) -> Self {
         rules.sort_by(|a, b| a.priority.cmp(&b.priority).then(a.id.cmp(&b.id)));

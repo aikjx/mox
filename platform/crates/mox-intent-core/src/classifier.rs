@@ -76,7 +76,8 @@ impl IntentClassifier {
         let ac = AhoCorasickBuilder::new()
             .match_kind(MatchKind::LeftmostFirst)
             .ascii_case_insensitive(false) // 我们自己小写化，避免 unicode 大小写不一致
-            .build(&kw_lower);
+            .build(&kw_lower)
+            .expect("IntentClassifier: AhoCorasick build failed (empty pattern set? at least 1 keyword required)");
         Self { patterns, ac, kw_meta, kw_lower }
     }
 

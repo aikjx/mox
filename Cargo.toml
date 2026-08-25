@@ -1,4 +1,16 @@
 [workspace]
+# default-members：`cargo check / cargo build / cargo test` 默认只触发这些 crate
+#   - 4 个 MOX 计算核心
+#   - 3 个 FFI 绑定（napi/PyO3）不放默认，避免：
+#       ① napi cdylib 需要本地 napi-rs CLI 预构建 + node-gyp 工具链
+#       ② PyO3 abi3-py39 与当前默认 Python 3.8 不兼容
+#     绑定编译需单独执行：`cargo check -p <binding-crate>`
+default-members = [
+    "platform/crates/mox-formulas-core",
+    "platform/crates/mox-norm-core",
+    "platform/crates/mox-intent-core",
+    "platform/crates/xiaobai-dsp",
+]
 members = [
     "platform/services/operator-core",
     "platform/services/operator-wasm",
@@ -41,11 +53,11 @@ members = [
     "platform/crates/mox-norm-core",
     "platform/crates/mox-intent-core",
     "platform/crates/xiaobai-dsp",
-    # ===== Node.js napi 绑定（按需单独构建：需 node/npm 环境；默认不随 workspace check 触发）
-    #   "platform/crates/bindings/mox-formulas-native",
-    #   "platform/crates/bindings/mox-norm-intent-native",
-    # ===== Python PyO3 扩展（按需单独构建：PYO3_PYTHON 必须指向 py39+；当前系统默认 py38 与 abi3-py39 冲突）
-    #   "platform/crates/bindings/xiaobai-dsp-py",
+    # ===== Node.js napi 绑定（cargo check -p 显式调用；不进 default-members 避免 cdylib 工具链要求）
+    "platform/crates/bindings/mox-formulas-native",
+    "platform/crates/bindings/mox-norm-intent-native",
+    # ===== Python PyO3 扩展（需 PYO3_PYTHON 指向 py39+ 才能编译；cargo check -p 显式调用时指定环境变量）
+    "platform/crates/bindings/xiaobai-dsp-py",
 ]
 resolver = "2"
 
@@ -134,7 +146,9 @@ mox-graph-service = { path = "platform/services/mox-graph-service" }
 # MOX 计算密集核心（统一 workspace 依赖版本，避免 FFI 绑定版本漂移）
 # ================================================================
 # 高性能哈希（比 std HashMap 快 2~3×，用于归一化/意图/Aho-Corasick goto）
-hashbrown = { version = "0.15", features = ["rayon", "inline-more"] }
+# 版本锁定 0.17：与 indexmap 2.7 / serde_json 内建 hashbrown 依赖一致，避免双版本冲突
+# serde feature：使 hashbrown::HashMap<K, V, S> 直接支持 Serialize/Deserialize（无需手动远程 impl）
+hashbrown = { version = "0.17", features = ["rayon", "inline-more", "serde"] }
 ahash = { version = "0.8", features = ["compile-time-rng", "serde"] }
 
 # 数据结构辅助

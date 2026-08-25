@@ -5,7 +5,6 @@
 //! - rayon 并行逐候选打分，再 TOP-K 排序。
 
 use aho_corasick::{AhoCorasick, AhoCorasickBuilder, MatchKind};
-use ahash::RandomState;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap as StdMap;
@@ -64,7 +63,8 @@ impl AllianceScorer {
         }
         let ac = AhoCorasickBuilder::new()
             .match_kind(MatchKind::LeftmostFirst)
-            .build(&caps_patterns);
+            .build(&caps_patterns)
+            .expect("AllianceScorer: AhoCorasick build failed (experts capabilities empty?)");
         Self { caps, ac, pat_to_expert, experts }
     }
 

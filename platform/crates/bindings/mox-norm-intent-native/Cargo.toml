@@ -12,6 +12,7 @@ crate-type = ["cdylib"]
 [dependencies]
 mox-norm-core = { workspace = true }
 mox-intent-core = { workspace = true }
+mox-formulas-core = { workspace = true }
 napi = { workspace = true }
 napi-derive = { workspace = true }
 serde = { workspace = true }

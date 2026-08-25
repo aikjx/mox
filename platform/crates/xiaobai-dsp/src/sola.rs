@@ -78,7 +78,7 @@ pub fn time_stretch_sola(input: &[f32], target_len: usize, opts: &SolaOptions) -
             let np = write_pos as i64 + best_off as i64;
             write_pos = if np < 0 { 0 } else { np as usize };
         }
-        if write_pos < 0 { write_pos = 0; }
+        // write_pos 已在循环中通过 np<0 分支钳制为 0；此处无需重复 usize 无意义比较
         if write_pos + frame > out.len() {
             let grow = write_pos + frame - out.len() + 16;
             out.extend(std::iter::repeat(0.0f32).take(grow));
@@ -101,7 +101,6 @@ pub fn time_stretch_sola(input: &[f32], target_len: usize, opts: &SolaOptions) -
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::assert_relative_eq;
 
     #[test]
     fn preserve_energy_basic() {
@@ -121,7 +120,6 @@ mod tests {
         // 前 4096 点误差 < 0.05（SOLA 每帧 20ms 有轻微相位，要求不能太严）
         let err: f32 = sig[..4096.min(n)].iter().zip(out.iter()).map(|(a, b)| (a - b).abs()).sum::<f32>() / 4096.0 as f32;
         assert!(err < 0.05, "mean abs err = {err}");
-        let _ = assert_relative_eq;
     }
 
     #[test]

@@ -33,8 +33,8 @@ pub struct NormRecord {
 fn default_confidence() -> f32 { 0.5 }
 
 pub use dedup::{dedup_records, DedupReport};
-pub use merge::{merge_records, MergeStrategy, MergeResult};
-pub use rules::{Rule, RuleEngine, RuleOutcome};
+pub use merge::{merge_records, merge_conflicts, ConflictMergeFn, MergeStrategy, MergeResult};
+pub use rules::{Rule, RuleEngine, RuleOutcome, resolve_rules};
 
 #[cfg(test)]
 mod smoke {

@@ -13,13 +13,11 @@ impl CsrGraph {
     pub fn k_core(&self) -> HashMap<String, usize> {
         let n = self.n;
         if n == 0 { return HashMap::new(); }
-        // 使用邻接列表（双向无向语义下，out-neighbors 是对称邻居）
-        let deg: Vec<usize> = (0..n).map(|i| {
-            let d = self.out_off[i + 1] - self.out_off[i];
-            // 对 RawExpand::Undirected：deg 为 2 倍（每条无向边双向）— 正确做法是除以 2
-            // 对 RawExpand::None：保持原样（有向按出度）
-            if matches!(self.raw_expand, crate::csr::RawExpand::Undirected) { d / 2 } else { d }
-        }).collect();
+        // 使用 out_degree（count of out-neighbors）。
+        // 注：RawExpand::Undirected 已在 CSR 构造时双向展开，
+        //     所以 out_off[i+1] - out_off[i] 已经是节点 i 的真实无向度（≠2×）。
+        //     此处禁止再折半。
+        let deg: Vec<usize> = (0..n).map(|i| self.out_off[i + 1] - self.out_off[i]).collect();
 
         let mut md = 0usize;
         for &d in &deg { if d > md { md = d; } }
@@ -82,7 +80,7 @@ impl CsrGraph {
     // -----------------------------------------------------------
     pub fn triangle_count_and_clustering(&self) -> (u64, f64, f64) {
         let n = self.n;
-        // 使用"度"out-degree（RawExpand::Undirected 下为双向）
+        // 使用 out_degree 作为真实度（RawExpand::Undirected 已双向展开，度数已真实，无需折半）
         let deg: Vec<usize> = (0..n).map(|i| self.out_off[i + 1] - self.out_off[i]).collect();
         // 按度升序 rank
         let mut order: Vec<usize> = (0..n).collect();
@@ -127,47 +125,29 @@ impl CsrGraph {
         }
 
         // 平均局部聚集系数：对每个 v，
-        //   actual_tri(v)  /  (deg(v) choose 2)   （deg ≥ 2 计入；RawExpand::Undirected 下 deg/2）
+        //   actual_tri(v)  /  (deg(v) choose 2)   （deg ≥ 2 计入；deg 已是真实无向度）
         let mut avg_local = 0.0f64;
         let mut counted = 0usize;
         for v in 0..n {
-            let d_raw = deg[v];
-            let d = if matches!(self.raw_expand, crate::csr::RawExpand::Undirected) {
-                d_raw / 2
-            } else {
-                d_raw
-            };
+            // deg[v] 已经是真实度（Undirected 展开后 out 邻居 = 无向邻居）
+            let d = deg[v];
             if d >= 2 {
                 let possible = (d * (d - 1)) as f64;
-                // node_tri[v] 在 RawExpand::Undirected 下，三角形每条边会各出现一次方向组合？
-                // forward 算法中，每个无向三角 {a,b,c} 恰好当 v=rank 最小时被计 1 次（因 higher 仅 rank 大）。
-                // → 但我们在 v's (u,w) 组合里对每对 higher[v] 枚举，每个三角形 {a,b,c} 在各自最小节点的循环里
-                //   被 tri 加 1；node_tri[v] 则对三个顶点各加 1（无论谁是最小值）？
-                //   让我们仔细看：假设 rank[a]<rank[b]<rank[c]。仅当 v=a 时枚举 u=b,c，higher[a] 有 b、c；
-                //   u=b，higher[b] 应有 c（因 rank[c]>rank[b]）且 setv[c]=true → tri += 1；
-                //   node_tri[a] += 1，node_tri[b] += 1，node_tri[c] += 1 各 1 次。完美。
-                let local = (2 * node_tri[v]) as f64 / possible; // node_tri[v] 是 v 参加的"有序三角 1 次"
-                // 说明：上面 node_tri[v] 在三角 {a,b,c} 中 v 每个各 +1 → node_tri[v] 恰好是 v 参与的三角数
-                //   possible = d choose 2，局部聚集系数 = 2·t / (d(d−1))
+                let local = (2 * node_tri[v]) as f64 / possible;
                 avg_local += local;
                 counted += 1;
             }
         }
         if counted > 0 { avg_local /= counted as f64; }
 
-        // 全局聚集系数（传递性）= 3·triangles / (closed path length 2)
-        //   path length 2（连通三元组） = Σ_v deg(v) choose 2
+        // 全局聚集系数（传递性）= 3·triangles / Σ_v C(deg(v), 2)
+        //   Newman 标准公式：无向图中 closed triples = 3Δ；所有三元组（连通 path 长度 2）= Σ C(d,2)。
         let mut triples = 0u64;
         for v in 0..n {
-            let d_raw = deg[v];
-            let d = if matches!(self.raw_expand, crate::csr::RawExpand::Undirected) {
-                d_raw / 2
-            } else {
-                d_raw
-            };
+            let d = deg[v];
             if d >= 2 { triples += (d * (d - 1) / 2) as u64; }
         }
-        let global = if triples > 0 { (3 * tri) as f64 / (2 * triples) as f64 } else { 0.0 };
+        let global = if triples > 0 { (3 * tri) as f64 / triples as f64 } else { 0.0 };
         (tri, avg_local, global)
     }
 
@@ -181,13 +161,14 @@ impl CsrGraph {
     // -----------------------------------------------------------
     pub fn assortativity_degree(&self) -> f64 {
         let n = self.n;
-        let deg_raw: Vec<usize> = (0..n).map(|i| self.out_off[i + 1] - self.out_off[i]).collect();
-        let deg: Vec<f64> = deg_raw.iter().map(|&d| {
-            if matches!(self.raw_expand, crate::csr::RawExpand::Undirected) { (d as f64) * 0.5 } else { d as f64 }
-        }).collect();
+        // deg[i] = 真实度（Undirected 展开后 out-degree = 真实无向度；禁止再折半）
+        let deg: Vec<f64> = (0..n)
+            .map(|i| (self.out_off[i + 1] - self.out_off[i]) as f64)
+            .collect();
 
-        // 收集 unique 无向边的 (x,y)
-        let mut pairs: Vec<(f64, f64)> = Vec::with_capacity(self.edge_count() / 2 + 1);
+        // 收集度对：每条无向边 (j,k) 按 Newman 公式贡献两个有序对 (j,k) 与 (k,j)
+        //   （等价：将 Pearson r 的样本视为"每条端点"的配对观测；正则图协方差=0/r=0；星图全异配 r=-1）
+        let mut pairs: Vec<(f64, f64)> = Vec::with_capacity(self.edge_count());
         use std::collections::HashSet;
         let mut seen: HashSet<(usize, usize)> = HashSet::new();
         for i in 0..n {
@@ -197,7 +178,9 @@ impl CsrGraph {
                 if i == j { continue; }
                 let key = if i < j { (i, j) } else { (j, i) };
                 if !seen.insert(key) { continue; }
+                // 双向：无序边 → 两个有序样本（Newman 1999 Assortative Mixing in Networks）
                 pairs.push((deg[i], deg[j]));
+                pairs.push((deg[j], deg[i]));
             }
         }
         let m = pairs.len();
@@ -230,9 +213,9 @@ mod tests {
     use crate::{EdgeInput, NodeInput};
 
     fn triangle_graph() -> (Vec<NodeInput>, Vec<EdgeInput>) {
-        let nodes = ["a","b","c"].iter()
+        let nodes: Vec<NodeInput> = ["a","b","c"].iter()
             .map(|s| NodeInput { id: (*s).to_string(), label: None, properties: None }).collect();
-        let edges = [("a","b"),("b","c"),("c","a")].into_iter()
+        let edges: Vec<EdgeInput> = [("a","b"),("b","c"),("c","a")].into_iter()
             .map(|(s,t)| EdgeInput { source: s.into(), target: t.into(), weight: 1.0, relation_type: None }).collect();
         (nodes, edges)
     }
@@ -268,9 +251,9 @@ mod tests {
     #[test]
     fn assortativity_starmix_nonzero() {
         // 星型：中心度 4、叶子度 1 → 所有边是 (1,4) 组合 → 异配（负）
-        let nodes = ["c","a","b","d","e"].iter()
+        let nodes: Vec<NodeInput> = ["c","a","b","d","e"].iter()
             .map(|s| NodeInput { id: (*s).to_string(), label: None, properties: None }).collect();
-        let edges = ["a","b","d","e"].into_iter()
+        let edges: Vec<EdgeInput> = ["a","b","d","e"].into_iter()
             .map(|t| EdgeInput { source: "c".into(), target: t.into(), weight: 1.0, relation_type: None })
             .collect();
         let g = CsrGraph::from_inputs(&nodes, &edges, RawExpand::Undirected);

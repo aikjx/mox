@@ -187,11 +187,11 @@ mod tests {
     use crate::{EdgeInput, NodeInput};
 
     fn star() -> (Vec<NodeInput>, Vec<EdgeInput>) {
-        let nodes = ["a", "b", "c", "d", "e"]
+        let nodes: Vec<NodeInput> = ["a", "b", "c", "d", "e"]
             .iter()
             .map(|s| NodeInput { id: (*s).to_string(), label: None, properties: None })
             .collect();
-        let edges = vec!["a", "b", "d", "e"]
+        let edges: Vec<EdgeInput> = vec!["a", "b", "d", "e"]
             .into_iter()
             .map(|t| EdgeInput { source: "c".into(), target: t.into(), weight: 1.0, relation_type: None })
             .collect();
@@ -209,9 +209,9 @@ mod tests {
 
     #[test]
     fn brandes_chain() {
-        let nodes = ["a","b","c","d"].iter()
+        let nodes: Vec<NodeInput> = ["a","b","c","d"].iter()
             .map(|s| NodeInput { id: (*s).to_string(), label: None, properties: None }).collect();
-        let edges = vec![("a","b"),("b","c"),("c","d")].into_iter()
+        let edges: Vec<EdgeInput> = vec![("a","b"),("b","c"),("c","d")].into_iter()
             .map(|(s,t)| EdgeInput { source: s.into(), target: t.into(), weight: 1.0, relation_type: None }).collect();
         let g = CsrGraph::from_inputs(&nodes, &edges, RawExpand::Undirected);
         let cb = g.betweenness_centrality();

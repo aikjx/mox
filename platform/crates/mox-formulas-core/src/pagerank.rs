@@ -75,6 +75,13 @@ impl CsrGraph {
                 break;
             }
         }
+        // 精度护栏：Gauss-Seidel 数值舍入可能导致 ΣPR 偏离 1（~2e-6 级别）。
+        // 归一化到 Σ = 1（L1 renorm）：对 serde/对账/断言均严格。
+        let s: f64 = x.iter().sum();
+        if s > 1e-300 {
+            let inv = 1.0 / s;
+            for v in x.iter_mut() { *v *= inv; }
+        }
         (x, iter_used)
     }
 
@@ -157,6 +164,12 @@ impl CsrGraph {
                 break;
             }
         }
+        // PPR：同归一化护栏
+        let s: f64 = x.iter().sum();
+        if s > 1e-300 {
+            let inv = 1.0 / s;
+            for v in x.iter_mut() { *v *= inv; }
+        }
         (x, iter_used)
     }
 
@@ -196,12 +209,12 @@ mod tests {
     use crate::{EdgeInput, NodeInput};
 
     fn simple_graph() -> (Vec<NodeInput>, Vec<EdgeInput>) {
-        let nodes = vec!["A", "B", "C", "D"]
+        let nodes: Vec<NodeInput> = vec!["A", "B", "C", "D"]
             .iter()
             .map(|s| NodeInput { id: (*s).to_string(), label: None, properties: None })
             .collect();
         // A→B, A→C, B→C, C→A, D→C（悬挂 D？不：D→C，C 的出度只到 A）
-        let edges = vec![
+        let edges: Vec<EdgeInput> = vec![
             ("A", "B", 1.0),
             ("A", "C", 1.0),
             ("B", "C", 1.0),

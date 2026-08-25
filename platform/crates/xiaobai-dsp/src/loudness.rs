@@ -47,65 +47,65 @@ pub fn apply_limiter_and_loudness(input: &[f32], opts: &LimiterOptions) -> Vec<f
     let gain_lin = 10.0f32.powf(gain / 20.0);
 
     // ---- 应用增益 + 软限幅（SIMD 主体 + 尾标量）
+    // 设计注：soft-limiter 的 lane 条件选择不依赖 wide::f32x4 的 cmp_ge/blend mask API
+    // （wide 0.7/0.8 跨版本 mask 命名不稳定），改用 SIMD 同时计算 x 与 y_high 两条路径，
+    // 再 per-lane 做标量选择。选择开销相对于 rational tanh 可忽略。
     let mut out = vec![0.0f32; n];
-    let threshold = f32x4::splat(0.95);
-    let zero = f32x4::ZERO;
-    let mask_high_val = f32x4::splat(-0.0); // 在 IEEE754 中符号位 1 = 负零；用作 abs 辅助另写
-    let _ = mask_high_val;
+    let c_eps = f32x4::splat(1e-9);
     let k = f32x4::splat(1.0 / 0.95);
     let c095 = f32x4::splat(0.95);
     let c0045 = f32x4::splat(0.045);
+    let c27 = f32x4::splat(27.0);
+    let c9 = f32x4::splat(9.0);
     let glin = f32x4::splat(gain_lin);
+    let thr_scalar: f32 = 0.95;
 
     for i in 0..chunks {
         let base = 4 * i;
         let x = f32x4::new([
             input[base], input[base + 1], input[base + 2], input[base + 3],
         ]) * glin;
-        // abs
         let ax = x.abs();
-        // mask_high = ax >= 0.95
-        let mask_high = ax.cmp_ge(threshold);
-        // 处理高于阈值的：
-        // scaled = (ax - 0.95) * (1/0.95)
-        let scaled = (ax - c095) * k;
-        // tanh(scaled)：用 rational 近似（误差 < 1e-3 区间 0..3）
-        let s2 = scaled * scaled;
-        // tanh(x) ≈ x·(27 + x²) / (27 + 9·x²) （[0,3] 区间误差 < 2e-3）
-        let num = scaled * (f32x4::splat(27.0) + s2);
-        let den = f32x4::splat(27.0) + f32x4::splat(9.0) * s2;
-        let th = num / den;
-        // y = sign(x) * (0.95 + 0.045 * th)  [when high]
-        let sign = x / ax.max(f32x4::splat(1e-9));
-        // |x| 为 0 时 sign 可能 NaN/Inf：mask_high == false 时不受影响
-        let y_high = sign * (c095 + c0045 * th);
-        let processed = mask_high.blend(y_high, x);
-        // 当 0.95 <= |x| 但原本 x 是正常的，上面 blend 会替换；否则保留原 x
-        // 修复：ax < 0.95 时保持 x，否则 y_high。blend 参数：blend(true_branch, false_branch)
-        // → mask_high true 时取 true_branch（y_high），false 取 false_branch（x）
-        // 因此应为 mask_high.blend(y_high, x) 正确
 
-        let arr = processed.to_array();
-        out[base..base + 4].copy_from_slice(&arr);
+        // branch HIGH (ax >= 0.95)：
+        //   scaled = (ax - 0.95) / 0.95
+        //   tanh(scaled) ≈ scaled·(27 + scaled²) / (27 + 9·scaled²)  (误差 < 2e-3 on [0,3])
+        //   y_high = sign(x) * (0.95 + 0.045 * tanh(scaled))
+        let scaled = (ax - c095) * k;
+        let s2 = scaled * scaled;
+        let num = scaled * (c27 + s2);
+        let den = c27 + c9 * s2;
+        let th = num / den;
+        let sign = x / ax.max(c_eps);
+        let y_high = sign * (c095 + c0045 * th);
+
+        // per-lane 选择：ax[j] >= 0.95 → y_high[j]，否则 → x[j]
+        // （SIMD 计算两条路径 + 标量 lane 选择：避免 wide mask API 跨版本漂移）
+        let ax_arr = ax.to_array();
+        let x_arr = x.to_array();
+        let yh_arr = y_high.to_array();
+        let mut r = [0.0f32; 4];
+        for j in 0..4 {
+            r[j] = if ax_arr[j] >= thr_scalar { yh_arr[j] } else { x_arr[j] };
+        }
+        out[base..base + 4].copy_from_slice(&r);
     }
     // 尾部标量处理
     for i in rem_start..n {
         let mut v = input[i] * gain_lin;
         let av = v.abs();
-        if av >= 0.95 {
-            let scaled = (av - 0.95) * (1.0 / 0.95);
+        if av >= thr_scalar {
+            let scaled = (av - thr_scalar) * (1.0 / thr_scalar);
             let th = scaled.tanh();
-            v = v.signum() * (0.95 + 0.045 * th);
+            v = v.signum() * (thr_scalar + 0.045 * th);
         }
         out[i] = v;
     }
 
-    // 保护：修正 SIMD 可能出现的 NaN（ax == 0 时 sign 分支无影响，但 blend 正确）
+    // 保护：修正 sign 分母下溢导致的 NaN（ax==0 lane 选 x=0 路径，本步为兜底）
     for v in out.iter_mut() {
         if !v.is_finite() { *v = 0.0; }
     }
-    // 让 zero 变量至少出现一次引用
-    let _ = zero.to_array();
     out
 }
 

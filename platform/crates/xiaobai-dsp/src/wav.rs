@@ -43,10 +43,18 @@ pub fn encode_wav_pcm16(samples: &[f32], spec: &WavSpec) -> Vec<u8> {
     out.extend_from_slice(b"data");
     out.extend_from_slice(&data_len.to_le_bytes());
 
-    // PCM s16 LE
+    // PCM s16 LE：非对称缩放匹配 i16 真实范围 [-32768, +32767]
+    //   正半轴：x ∈ [0,1]   →  round(x·32767) ，最大 +32767
+    //   负半轴：x ∈ [-1, 0)  →  round(x·32768) ，最小 -32768
+    //   clamp(-1, 1) 确保 |x|>1 时精确到极值（测试 10/-10 精确命中 i16::MAX/MIN）
     for &s in samples {
         let clamped = s.clamp(-1.0, 1.0);
-        let v = (clamped * 32767.0f32).round() as i16;
+        let scaled = if clamped >= 0.0 {
+            clamped * 32767.0f32
+        } else {
+            clamped * 32768.0f32
+        };
+        let v = scaled.round() as i16;
         out.extend_from_slice(&v.to_le_bytes());
     }
     out

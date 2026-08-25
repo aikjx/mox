@@ -10,16 +10,78 @@ use ahash::RandomState;
 use hashbrown::HashMap;
 use serde::{Deserialize, Serialize};
 
+/// 自定义冲突合并函数签名：key → 冲突值列表 → strategy tag → 胜出值
+pub type ConflictMergeFn = fn(&str, &[serde_json::Value], &str) -> serde_json::Value;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "strategy")]
 pub enum MergeStrategy {
     HighestConfidenceFirst,
     UnionAttributes,
     SourceAuthority { src_order: Vec<String> },
+    /// FFI 兼容：最后写入胜出（新鲜度主，source 字典序副决断 ties）
+    LastWriteWins,
+    /// FFI 兼容：众数表决（每字段取出现最多的值；ties 取首次出现）
+    Majority,
+    /// FFI 兼容：并集兜底（与 UnionAttributes 语义等价；别名便于前端调用）
+    UnionFields,
 }
 
 impl Default for MergeStrategy {
     fn default() -> Self { MergeStrategy::HighestConfidenceFirst }
+}
+
+/// FFI 便捷入口：允许传入闭包风格的 ConflictMergeFn 做逐字段合并。
+/// records 按 id 分桶；同 id 的记录合并为一条。
+pub fn merge_conflicts(records: &[NormRecord], merge_fn: &mut ConflictMergeFn) -> Vec<NormRecord> {
+    let mut groups: HashMap<String, Vec<usize>, RandomState> =
+        HashMap::with_hasher(RandomState::new());
+    for (i, r) in records.iter().enumerate() {
+        groups.entry(r.id.clone()).or_default().push(i);
+    }
+    let mut out = Vec::with_capacity(groups.len());
+    for (_id, idxs) in groups {
+        if idxs.len() == 1 {
+            out.push(records[idxs[0]].clone());
+            continue;
+        }
+        // 取更新最"新"的作为基底（保留元数据）
+        let mut base_idx = 0usize;
+        let mut base_ts = i64::MIN;
+        for &i in &idxs {
+            if records[i].updated_at_ms > base_ts {
+                base_ts = records[i].updated_at_ms;
+                base_idx = i;
+            }
+        }
+        let mut merged = records[base_idx].clone();
+        // 逐字段冲突决断
+        let mut all_keys: hashbrown::HashSet<String, RandomState> =
+            hashbrown::HashSet::with_hasher(RandomState::new());
+        for &i in &idxs {
+            for k in records[i].attributes.keys() {
+                all_keys.insert(k.clone());
+            }
+        }
+        for k in all_keys {
+            let vals: Vec<serde_json::Value> = idxs
+                .iter()
+                .filter_map(|&i| records[i].attributes.get(&k).cloned())
+                .collect();
+            if !vals.is_empty() {
+                let strategy_tag = match vals.len() {
+                    1 => "single",
+                    _ => "conflict",
+                };
+                let winner = merge_fn(&k, &vals, strategy_tag);
+                merged.attributes.insert(k, winner);
+            }
+        }
+        // 对 confidence 取 max；元数据取最新
+        merged.confidence = idxs.iter().map(|&i| records[i].confidence).fold(0.0f32, f32::max);
+        out.push(merged);
+    }
+    out
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -54,8 +116,10 @@ pub fn merge_records(records: &[NormRecord], strategy: &MergeStrategy) -> MergeR
         let group: Vec<&NormRecord> = idxs.iter().map(|&i| &records[i]).collect();
         let m = match strategy {
             MergeStrategy::HighestConfidenceFirst => merge_highest_conf(&group),
-            MergeStrategy::UnionAttributes => merge_union(&group),
+            MergeStrategy::UnionAttributes | MergeStrategy::UnionFields => merge_union(&group),
             MergeStrategy::SourceAuthority { src_order } => merge_authority(&group, src_order),
+            MergeStrategy::LastWriteWins => merge_last_write_wins(&group),
+            MergeStrategy::Majority => merge_majority(&group),
         };
         result.push(m);
     }
@@ -121,6 +185,74 @@ fn merge_authority(group: &[&NormRecord], order: &[String]) -> NormRecord {
     for (_, rec) in with_rank.iter().skip(1) {
         for (k, v) in &rec.attributes {
             out.attributes.entry(k.clone()).or_insert_with(|| v.clone());
+        }
+    }
+    out
+}
+
+fn merge_last_write_wins(group: &[&NormRecord]) -> NormRecord {
+    // 按 updated_at_ms 降序；ties 按 source 字典序确保确定
+    let mut sorted: Vec<&NormRecord> = group.to_vec();
+    sorted.sort_by(|a, b| b.updated_at_ms.cmp(&a.updated_at_ms).then(a.source.cmp(&b.source)));
+    let base = sorted[0];
+    let mut out = base.clone();
+    // 其余记录只补充缺失字段（LWW：每个字段取最新写入者；由于 base 已是最新，非缺失字段就是最新）
+    for rec in sorted.iter().skip(1) {
+        for (k, v) in &rec.attributes {
+            out.attributes.entry(k.clone()).or_insert_with(|| v.clone());
+        }
+    }
+    out
+}
+
+fn merge_majority(group: &[&NormRecord]) -> NormRecord {
+    // 每字段众数表决；ties 取 group 中首次出现的值。
+    // 以新鲜度最高的记录为元数据基底。
+    let mut fresh: Vec<&NormRecord> = group.to_vec();
+    fresh.sort_by(|a, b| b.updated_at_ms.cmp(&a.updated_at_ms));
+    let base = fresh[0];
+    let mut out = base.clone();
+    let mut keys: hashbrown::HashSet<String, RandomState> =
+        hashbrown::HashSet::with_hasher(RandomState::new());
+    for r in group {
+        for k in r.attributes.keys() {
+            keys.insert(k.clone());
+        }
+    }
+    for k in keys {
+        // 统计频次 + 首次出现索引（ties 决断用）
+        let mut counts: HashMap<String, (usize, usize), RandomState> =
+            HashMap::with_hasher(RandomState::new());
+        let mut order: usize = 0;
+        for (i, r) in group.iter().enumerate() {
+            if let Some(v) = r.attributes.get(&k) {
+                let key = v.to_string();
+                let entry = counts.entry(key).or_insert((0, usize::MAX));
+                entry.0 += 1;
+                if order < entry.1 {
+                    entry.1 = i;  // 用 group 内位置代替 order，更确定
+                }
+                order += 1;
+            }
+        }
+        if counts.is_empty() {
+            continue;
+        }
+        // 选 (count desc, first_seen asc) 最佳
+        let best = counts
+            .into_iter()
+            .max_by(|a, b| a.1 .0.cmp(&b.1 .0).then(b.1 .1.cmp(&a.1 .1)))
+            .map(|(k, _)| k);
+        // 从首次出现的记录中取原始 Value（避免 to_string 反序列化丢失精度）
+        if let Some(target_str) = best {
+            for r in group {
+                if let Some(v) = r.attributes.get(&k) {
+                    if v.to_string() == target_str {
+                        out.attributes.insert(k.clone(), v.clone());
+                        break;
+                    }
+                }
+            }
         }
     }
     out

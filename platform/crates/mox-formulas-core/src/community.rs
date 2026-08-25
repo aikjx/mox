@@ -278,7 +278,7 @@ mod tests {
     #[test]
     fn cnm_two_cliques_two_communities() {
         // 两个三角形 (a-b-c, d-e-f) + 桥 (c-d)
-        let nodes = ["a","b","c","d","e","f"].iter()
+        let nodes: Vec<NodeInput> = ["a","b","c","d","e","f"].iter()
             .map(|s| NodeInput { id: (*s).to_string(), label: None, properties: None }).collect();
         let edges: Vec<_> = [
             ("a","b"),("a","c"),("b","c"),
@@ -299,7 +299,7 @@ mod tests {
     #[test]
     fn cnm_no_merge_negative_gain() {
         // 无边：每节点独立社区，0 合并
-        let nodes = ["a","b","c"].iter()
+        let nodes: Vec<NodeInput> = ["a","b","c"].iter()
             .map(|s| NodeInput { id: (*s).to_string(), label: None, properties: None }).collect();
         let g = CsrGraph::from_inputs(&nodes, &[], RawExpand::Undirected);
         let r = g.community_cnm();
@@ -310,7 +310,7 @@ mod tests {
 
     #[test]
     fn modularity_maximized_by_cnm() {
-        let nodes = ["a","b","c","d","e","f"].iter()
+        let nodes: Vec<NodeInput> = ["a","b","c","d","e","f"].iter()
             .map(|s| NodeInput { id: (*s).to_string(), label: None, properties: None }).collect();
         let edges: Vec<_> = [("a","b"),("a","c"),("b","c"),("d","e"),("d","f"),("e","f"),("c","d")]
             .into_iter()

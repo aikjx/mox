@@ -10,4 +10,4 @@ pub mod classifier;
 pub mod alliance;
 
 pub use classifier::{classify_intent, IntentPattern, IntentResult, IntentClassifier};
-pub use alliance::{ExpertCandidate, ExpertScore, ScoredExpert, score_alliance_candidates, AllianceScorer};
+pub use alliance::{ExpertCandidate, ScoredExpert, ScoreBreakdown, score_alliance_candidates, AllianceScorer};
