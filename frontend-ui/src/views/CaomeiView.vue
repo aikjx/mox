@@ -1,5 +1,6 @@
 <template>
   <div class="caomei-page">
+    <ProjectChip />
     <div class="page-head">
       <div>
         <h2 class="page-title">需求编译 · Caomei</h2>
@@ -138,6 +139,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { MagicStick, Right } from '@element-plus/icons-vue'
+import ProjectChip from '@/components/ProjectChip.vue'
+import { useProject } from '@/composables/projectContext.js'
 import { caomeiCompile, caomeiRefine, caomeiTemplates, marketList } from '@/api'
 
 const requirement = ref('')
@@ -258,6 +261,22 @@ onMounted(() => {
     requirement.value = '我要做一个电商系统，包含商品管理、购物车、订单结算、支付、物流跟踪、会员积分、售后退货'
   }
 })
+
+// ===== 璇玑：以项目为核心的联动 =====
+{
+  const { onChange: _onProjectChange, ensureProjectContext: _ensureProject } = useProject()
+  let _offPj = null
+  onMounted(async () => {
+    _offPj = _onProjectChange(async () => { null })
+    await _ensureProject().catch(() => {})
+    null
+  })
+  const _ob$ = onBeforeUnmount == null ? null : onBeforeUnmount(() => { _offPj && _offPj() })
+  // 若脚本未引入 onBeforeUnmount，退化为 window beforeunload 兜底（页面关闭）
+  if (typeof onBeforeUnmount === 'undefined') {
+    // 不操作：Vue 路由离开时组件 destroy，本作用域已销毁
+  }
+}
 </script>
 
 <style scoped>

@@ -2,7 +2,7 @@
 // - provide/inject + reactive + localStorage 持久化
 // - 视图刷新 / 路由跳转 / 浏览器重开 都保持「当前项目」不变
 import { ref, computed, watch, onMounted, onBeforeUnmount, provide, inject } from 'vue'
-import { getProjects, getProject, createProject } from '@/api'
+import { getProjects, getProject, createProject, registerProjectIdGetter } from '@/api'
 
 const STORAGE_KEY = 'mox.currentProject.v1'
 
@@ -11,6 +11,9 @@ const currentProject = ref(null)
 const projectList = ref([])
 const listLoading = ref(false)
 const projectReady = ref(false)
+
+// —— 把当前项目 id 暴露给请求层（所有 HTTP 自动带 project_id）——
+registerProjectIdGetter(() => currentProject.value?.id || null)
 
 let listeners = new Set()
 function notifyChange(changed) {

@@ -251,6 +251,27 @@ def _bind_routes(app: FastAPI, prefix: str) -> None:
     async def health():
         lc = get_lifecycle()
         fish_available = os.environ.get("XIAOBAI_ACCEPT_RESEARCH_LICENSE", "0") == "1"
+        tts_name = lc.tts_engine_name()
+        cosy_ok = tts_name == "cosyvoice2"
+        fish_ok = tts_name in {"fish_s2", "fish_s2_pro", "fish"} and fish_available
+        browser_ok = tts_name == "browser"
+        # Rust DSP 探测：CosyVoice2Backend 暴露 rust_dsp_available() 函数
+        rust_dsp_ok = False
+        try:
+            from ..tts.cosyvoice2 import rust_dsp_available as _rda
+            rust_dsp_ok = bool(_rda())
+        except Exception:  # noqa: BLE001
+            rust_dsp_ok = False
+        engines = [
+            dict(name="cosyvoice2", available=cosy_ok or (lc.tts is not None and not browser_ok and not fish_ok), license="Apache-2.0", rust_dsp_available=rust_dsp_ok),
+            dict(
+                name="fish_s2_pro",
+                available=fish_available and fish_ok,
+                license="Research",
+                note="默认禁用，需手动接受 Research License 后启用",
+            ),
+            dict(name="browser", available=browser_ok, license="Builtin"),
+        ]
         return JSONResponse(dict(
             ok=True,
             asr=dict(
@@ -260,16 +281,9 @@ def _bind_routes(app: FastAPI, prefix: str) -> None:
             ),
             tts=dict(
                 ready=lc.tts is not None,
-                engines=[
-                    dict(name="cosyvoice2", available=True, license="Apache-2.0"),
-                    dict(
-                        name="fish_s2_pro",
-                        available=fish_available,
-                        license="Research",
-                        note="默认禁用，需手动接受 Research License 后启用",
-                    ),
-                ],
-                active="cosyvoice2",
+                engines=engines,
+                active=tts_name,
+                rust_dsp_available=rust_dsp_ok,
             ),
             endpoints=dict(
                 asr_full="/voice/asr/full",

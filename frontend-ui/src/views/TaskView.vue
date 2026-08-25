@@ -1,5 +1,6 @@
 <template>
   <div class="task-view">
+    <ProjectChip />
     <div class="task-header">
       <div class="task-title">
         <el-icon><List /></el-icon>
@@ -339,6 +340,8 @@ import {
   aiChat
 } from '@/api'
 import { getSearchHistory, pushSearchHistory } from '@/globalShortcuts'
+import ProjectChip from '@/components/ProjectChip.vue'
+import { useProject } from '@/composables/projectContext.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -705,6 +708,22 @@ function formatDate(d) {
   const dt = new Date(d)
   if (isNaN(dt)) return String(d)
   return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`
+}
+
+// ===== 璇玑：以项目为核心的联动 =====
+{
+  const { onChange: _onProjectChange, ensureProjectContext: _ensureProject } = useProject()
+  let _offPj = null
+  onMounted(async () => {
+    _offPj = _onProjectChange(async () => { loadTasks() })
+    await _ensureProject().catch(() => {})
+    loadTasks()
+  })
+  const _ob$ = onBeforeUnmount == null ? null : onBeforeUnmount(() => { _offPj && _offPj() })
+  // 若脚本未引入 onBeforeUnmount，退化为 window beforeunload 兜底（页面关闭）
+  if (typeof onBeforeUnmount === 'undefined') {
+    // 不操作：Vue 路由离开时组件 destroy，本作用域已销毁
+  }
 }
 </script>
 

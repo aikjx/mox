@@ -15,7 +15,9 @@ STATE_COLORS = {
     "listen": "#22c55e",  # 绿
     "think":  "#a855f7",  # 紫
     "speak":  "#6366f1",  # 靛
+    "executing": "#f97316",  # 橙：FR-13 第 5 状态 — 正在执行系统算子动作（控电脑）
 }
+EXECUTING_STATES = frozenset({"executing"})  # 此集合内的状态下不允许二次录音触发
 
 
 class BallWidget(QtWidgets.QWidget):
@@ -35,6 +37,12 @@ class BallWidget(QtWidgets.QWidget):
         # 录音对象
         self._recorder = _LocalRecorder(ball=self)
         self.recognized_callback: Callable[[str], None] | None = None
+        # FR-13：意图 → 算子执行所需引用（可在外部调用 set_operator_engine 注入）
+        self._operator_engine: Any = None       # operator.OperatorEngine
+        self._proxy_client: Any = None          # proxy.VoiceProxyClient（optional）
+        self._exec_worker: QtCore.QThread | None = None
+        self._identity: Any = None              # operator.base.Identity
+        self._exec_queue_serial = QtCore.QMutex()  # 串行执行（防并发鼠标/键盘竞态）
         self._toast: "_ToastWidget | None" = None
         # 默认放到屏幕右侧 y=120 像素处
         screen = self.screen().availableGeometry() if hasattr(self, "screen") else QtWidgets.QApplication.primaryScreen().availableGeometry()
@@ -51,8 +59,106 @@ class BallWidget(QtWidgets.QWidget):
             self._state = s
             self.update()
 
+    # --------------------------------------------------------------- FR-13 API
+    def set_operator_engine(self, engine, identity=None, proxy_client=None) -> None:
+        """外部（desktop/main_window.py bootstrap）注入算子执行引擎。
+
+        Args:
+            engine: xiaobai_voice.operator.OperatorEngine（必传，FR-13 最小闭环）
+            identity: xiaobai_voice.operator.base.Identity（默认 Member 本地账户）
+            proxy_client: xiaobai_voice.proxy.VoiceProxyClient（可选，cloud_fallback/cloud_only 时必传）
+        """
+        self._operator_engine = engine
+        self._proxy_client = proxy_client
+        if identity is None:
+            from ..operator.base import Identity as _Id
+            identity = _Id(role="Member", user_id=f"desktop-{os.getenv('USERNAME', 'anon')}")
+        self._identity = identity
+
+    def execute_text(self, text: str) -> None:
+        """把一句话交给 PPR 路由/专家联盟 → 系统算子执行，并在状态 executing 中可视化。
+
+        调用来源：
+        1) toggle_listen 识别成功后（若已注入 engine）；
+        2) 外部快捷键或 AI 对话页 TTS 完成后的"意图→控电脑"路由。
+        """
+        if not text:
+            return
+        if self._operator_engine is None and self._proxy_client is None:
+            # 尚未注入：降级为只 recognized_callback（旧独立行为）
+            if callable(self.recognized_callback):
+                self.recognized_callback(text)
+            return
+        if self._exec_queue_serial.tryLock(1) is False:
+            # 串行保护：上一次未结束
+            self.show_toast("⏳ 仍有指令执行中，请稍候…")
+            return
+        try:
+            worker = _ExecWorker(
+                text=text,
+                engine=self._operator_engine,
+                proxy=self._proxy_client,
+                identity=self._identity,
+            )
+            self._exec_worker = worker
+            self.set_state("executing")
+            self.show_toast(f"⚙ 执行中：{text}", ms=3000)
+            worker.signals.progress.connect(self._on_exec_progress)
+            worker.signals.done.connect(self._on_exec_done)
+            worker.start()
+        except Exception as exc:  # noqa: BLE001
+            self._exec_queue_serial.unlock()
+            self.set_state("idle")
+            self.show_toast(f"❌ 启动执行失败：{exc}")
+
+    def _on_exec_progress(self, payload: dict) -> None:
+        stage = payload.get("stage") or ""
+        route = payload.get("route") or {}
+        if stage == "routed":
+            self.show_toast(
+                f"🧭 路由：{route.get('op') or '?'}.{route.get('act') or '?'}  "
+                f"conf={(route.get('confidence') or 0):.0%}",
+                ms=1600,
+            )
+
+    def _on_exec_done(self, payload: dict) -> None:
+        """payload = OperatorResult.to_dict() + {text, executed:bool}"""
+        try:
+            ok = bool(payload.get("ok"))
+            op = payload.get("op") or ""
+            act = payload.get("act") or ""
+            msg = payload.get("message") or ""
+            code = payload.get("code") or "OK"
+            if ok:
+                data = payload.get("data") or {}
+                short = data.get("summary") or (f"{op}.{act} 完成")
+                self.show_toast(f"✅ {short}", ms=2400)
+                self.set_state("idle")
+            else:
+                # 区分权限/桥断/未知
+                if code == "PERMISSION_DENIED":
+                    self.show_toast(f"🚫 权限不足：{msg}", ms=3600)
+                elif code == "BRIDGE_DISCONNECTED":
+                    self.show_toast(f"🔌 mox 桥离线：{msg}", ms=3600)
+                elif code == "INTENT_UNKNOWN":
+                    self.show_toast(f"❓ 未匹配动作：{msg}", ms=3200)
+                else:
+                    self.show_toast(f"⚠ 执行失败：{code or 'ERROR'} {msg}", ms=3600)
+                self.set_state("idle")
+            # 通知上层（AI 对话页可展示执行结果）
+            if callable(self.recognized_callback):
+                try:
+                    self.recognized_callback(payload.get("text") or "")
+                except Exception:  # noqa: BLE001
+                    pass
+        finally:
+            self._exec_queue_serial.unlock()
+
     def toggle_listen(self, main_window: Any) -> None:  # noqa: D401
-        """点击或 Alt+X 触发：切换录音 → 识别 → 发回主窗口 → 自动朗读回答。"""
+        """点击或 Alt+X 触发：切换录音 → 识别 → 路由→算子 或 回调 → 自动朗读回答。"""
+        if self._state in EXECUTING_STATES:
+            self.show_toast("⏳ 指令执行中，不接受新录音")
+            return
         if self._state == "listen":
             # 停止
             self._recorder.stop()
@@ -62,7 +168,11 @@ class BallWidget(QtWidgets.QWidget):
                 self.set_state("idle")
                 self.show_toast("🛑 未识别到内容")
                 return
-            self.show_toast("🛑 已识别并发送")
+            self.show_toast("🛑 已识别：" + recognized[:20] + ("…" if len(recognized) > 20 else ""), ms=1800)
+            # FR-13：优先本地 PPR 路由 / 代理桥 dispatch，失败时回退到 recognized_callback
+            if self._operator_engine is not None or self._proxy_client is not None:
+                self.execute_text(recognized)
+                return
             if callable(self.recognized_callback):
                 self.recognized_callback(recognized)
             self.set_state("idle")
@@ -140,6 +250,39 @@ class BallWidget(QtWidgets.QWidget):
                 p.setPen(QtCore.Qt.NoPen)
                 p.setBrush(color)
                 p.drawRoundedRect(r, bar_w / 2, bar_w / 2)
+        elif self._state == "executing":
+            # 三段彩虹弧 + 逆时针放射齿轮，突出"正在控制电脑"的紧迫感
+            arc_rect = QtCore.QRectF(rect).adjusted(5, 5, -5, -5)
+            colors_seq = ["#f97316", "#f59e0b", "#eab308"]
+            for i, col in enumerate(colors_seq):
+                c = QtGui.QColor(col)
+                c.setAlphaF(0.75 if i == 0 else (0.55 if i == 1 else 0.4))
+                pen = QtGui.QPen(c, pen_w + 1.3 * (2 - i), QtCore.Qt.SolidLine, QtCore.Qt.RoundCap)
+                p.setPen(pen)
+                p.setBrush(QtCore.Qt.NoBrush)
+                base_angle = int(t * 360 / 1.6) * 16   # 1.6s 整圈
+                start = (base_angle + i * 120 * 16) % (360 * 16)
+                span = 100 * 16 - i * 20 * 16
+                p.drawArc(arc_rect.adjusted(-i * 0.7, -i * 0.7, i * 0.7, i * 0.7), start, span)
+            # 12 个放射齿轮尖点（逆时针旋转 120°/s）
+            nspikes = 12
+            pen = QtGui.QPen(color, max(1.2, pen_w * 0.7), QtCore.Qt.SolidLine, QtCore.Qt.RoundCap)
+            p.setPen(pen)
+            cx = rect.center().x()
+            cy = rect.center().y()
+            radius_outer = rect.width() / 2 - 6
+            radius_inner = rect.width() / 2 - 12
+            for i in range(nspikes):
+                theta = 2 * math.pi * i / nspikes + t * 2 * math.pi / 1.2
+                ox = cx + radius_outer * math.cos(theta)
+                oy = cy + radius_outer * math.sin(theta)
+                ix = cx + radius_inner * math.cos(theta)
+                iy = cy + radius_inner * math.sin(theta)
+                alpha = 0.35 + 0.5 * abs(math.sin(t * 3 + i * 0.5))
+                color.setAlphaF(alpha)
+                pen.setColor(color)
+                p.setPen(pen)
+                p.drawLine(QtCore.QPointF(ix, iy), QtCore.QPointF(ox, oy))
         else:  # idle
             color.setAlphaF(0.9)
             pen = QtGui.QPen(color, pen_w, QtCore.Qt.SolidLine, QtCore.Qt.RoundCap)
@@ -409,6 +552,141 @@ class _LocalRecorder:
             log_warn("录音停止/上传错误：%s", exc)
             self.last_recognized = ""
             return ""
+
+
+# ========================================================== _ExecWorker (FR-13)
+
+class _ExecSignals(QtCore.QObject):
+    """worker 专用信号集合（QThread 不能多继承 QObject 且保留信号定义）。"""
+    progress = QtCore.Signal(dict)  # {stage: "routed", route: {...}}
+    done = QtCore.Signal(dict)      # OperatorResult.to_dict() + text
+
+
+class _ExecWorker(QtCore.QThread):
+    """桌面端异步执行 PPR 路由 + 算子执行（VoiceProxyClient.dispatch_intent
+    或直接 OperatorEngine.dispatch），避免 UI 卡顿。
+    """
+
+    def __init__(self, text: str, engine, proxy, identity, parent=None) -> None:
+        super().__init__(parent)
+        self.text = str(text)
+        self.engine = engine            # OperatorEngine 或 None
+        self.proxy = proxy              # VoiceProxyClient 或 None
+        self.identity = identity
+        self.signals = _ExecSignals()
+
+    def run(self) -> None:  # noqa: D401 （Qt 约定 run 是入口）
+        t0 = time.perf_counter()
+        try:
+            result_dict = self._run_inner()
+        except Exception as exc:  # noqa: BLE001
+            import traceback
+            tb = traceback.format_exc(limit=2)
+            log_warn("执行异常：%s\n%s", exc, tb)
+            result_dict = {
+                "op": "", "act": "", "ok": False,
+                "code": "OPERATOR_FAILED",
+                "message": f"{type(exc).__name__}: {exc}",
+                "data": {"traceback": tb},
+                "duration_ms": round((time.perf_counter() - t0) * 1000, 2),
+                "audit_id": "",
+            }
+        # 附带原始文本字段，方便上层
+        result_dict.setdefault("text", self.text)
+        result_dict.setdefault("executed", True)
+        self.signals.done.emit(result_dict)
+
+    def _run_inner(self) -> dict:
+        # 有 voice_proxy → 三策略路由（local_first/cloud_fallback/cloud_only）
+        if self.proxy is not None:
+            try:
+                import asyncio
+                # 在新线程里独立 event loop
+                try:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    try:
+                        r = loop.run_until_complete(self.proxy.dispatch_intent(self.text))
+                    finally:
+                        loop.close()
+                finally:
+                    try:
+                        asyncio.set_event_loop(None)
+                    except Exception:  # noqa: BLE001
+                        pass
+                # 构造 summary（便于 Ball toast 显示）
+                d = r.to_dict() if hasattr(r, "to_dict") else dict(r)
+                self._inject_summary(d)
+                return d
+            except Exception as exc:  # noqa: BLE001
+                # proxy 失败：若有 engine，engine 兜底
+                if self.engine is None:
+                    raise
+                log_warn("voice_proxy 失败，降级为本地 engine：%s", exc)
+
+        # 纯本地 engine：PPR 路由 → dispatch
+        if self.engine is None:
+            return {
+                "op": "", "act": "", "ok": False,
+                "code": "OPERATOR_UNSUPPORTED",
+                "message": "未注入 engine/proxy",
+                "duration_ms": 0, "audit_id": "",
+            }
+        from ..intent.router import IntentRouter
+        router = IntentRouter()
+        route = router.route(self.text, self.identity)
+        self.signals.progress.emit({"stage": "routed", "route": route.as_dict()})
+        if not route.op_name or not route.act:
+            return {
+                "op": "", "act": "", "ok": False,
+                "code": "INTENT_UNKNOWN",
+                "message": (
+                    "本地意图未命中"
+                    + (f"；候选：{route.candidates[:3]}" if route.candidates else "")
+                ),
+                "data": {"route": route.as_dict()},
+                "duration_ms": 0, "audit_id": "",
+            }
+        r = self.engine.dispatch(route.op_name, route.act, route.params, identity=self.identity)
+        d = r.to_dict()
+        self._inject_summary(d, route=route)
+        return d
+
+    @staticmethod
+    def _inject_summary(d: dict, route=None) -> None:
+        if d.get("data") is None:
+            d["data"] = {}
+        if d["data"].get("summary"):
+            return
+        ok = d.get("ok")
+        op = d.get("op") or (route.op_name if route else "")
+        act = d.get("act") or (route.act if route else "")
+        op_act = f"{op}.{act}"
+        if ok:
+            _SUMMARY = {
+                "app.open_app": "已启动应用",
+                "app.close_app": "已关闭应用",
+                "app.list_running": "进程列表已获取",
+                "app.open_file_with_app": "已打开文件",
+                "volume.get_volume": "已读取音量",
+                "volume.set_volume": "已设置音量",
+                "volume.mute": "已静音",
+                "volume.unmute": "已取消静音",
+                "volume.toggle_mute": "已切换静音",
+                "file.copy_to_clipboard": "已复制到剪贴板",
+                "file.move_to_trash": "已丢入回收站",
+                "file.read_text_head": "已读取文件片段",
+                "input.type_text": "已输入文本",
+                "input.press_key": "已按键",
+                "input.hotkey": "已执行快捷键",
+                "input.mouse_move": "已移动鼠标",
+                "input.mouse_click": "已点击鼠标",
+                "input.mouse_drag": "已拖拽鼠标",
+                "input.screenshot": "已截图",
+            }
+            d["data"]["summary"] = _SUMMARY.get(op_act, f"{op_act} 执行完成")
+        else:
+            d["data"]["summary"] = f"{op_act} 失败"
 
 
 # ================================================================= Toast

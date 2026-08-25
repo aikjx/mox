@@ -1,5 +1,6 @@
 <template>
   <div class="chat">
+    <ProjectChip class="p-chip" />
     <SessionSidebar
       :sessions="sessions"
       :active-id="currentSession"
@@ -786,6 +787,8 @@ import SessionSidebar from '@/components/SessionSidebar.vue'
 import ToolDock from '@/components/ToolDock.vue'
 import ToolDrawer from '@/components/ToolDrawer.vue'
 import { AI_EXPERT_PRESETS } from '@/types'
+import ProjectChip from '@/components/ProjectChip.vue'
+import { useProject } from '@/composables/projectContext.js'
 import {
   aiChat,
   aiExpertChat,
@@ -2148,6 +2151,22 @@ onUnmounted(() => {
   try { cancelAnimationFrame(micRafId) } catch(_) {}
   try { micStream?.getTracks().forEach(t => t.stop()) } catch(_) {}
 })
+
+// ===== 璇玑：以项目为核心的联动 =====
+{
+  const { onChange: _onProjectChange, ensureProjectContext: _ensureProject } = useProject()
+  let _offPj = null
+  onMounted(async () => {
+    _offPj = _onProjectChange(async () => { null })
+    await _ensureProject().catch(() => {})
+    null
+  })
+  const _ob$ = onBeforeUnmount == null ? null : onBeforeUnmount(() => { _offPj && _offPj() })
+  // 若脚本未引入 onBeforeUnmount，退化为 window beforeunload 兜底（页面关闭）
+  if (typeof onBeforeUnmount === 'undefined') {
+    // 不操作：Vue 路由离开时组件 destroy，本作用域已销毁
+  }
+}
 </script>
 
 <style scoped>

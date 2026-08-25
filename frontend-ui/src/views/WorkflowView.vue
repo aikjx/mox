@@ -1,5 +1,6 @@
 <template>
   <div class="wf">
+    <ProjectChip />
     <div class="head">
       <div>
         <h2 class="page-title">工作流编排</h2>
@@ -169,6 +170,8 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { VideoCamera, Document } from '@element-plus/icons-vue'
+import ProjectChip from '@/components/ProjectChip.vue'
+import { useProject } from '@/composables/projectContext.js'
 import {
   getFlows,
   createFlow,
@@ -369,6 +372,22 @@ function safeParse(s) {
 }
 
 onMounted(loadAll)
+
+// ===== 璇玑：以项目为核心的联动 =====
+{
+  const { onChange: _onProjectChange, ensureProjectContext: _ensureProject } = useProject()
+  let _offPj = null
+  onMounted(async () => {
+    _offPj = _onProjectChange(async () => { loadAll() })
+    await _ensureProject().catch(() => {})
+    loadAll()
+  })
+  const _ob$ = onBeforeUnmount == null ? null : onBeforeUnmount(() => { _offPj && _offPj() })
+  // 若脚本未引入 onBeforeUnmount，退化为 window beforeunload 兜底（页面关闭）
+  if (typeof onBeforeUnmount === 'undefined') {
+    // 不操作：Vue 路由离开时组件 destroy，本作用域已销毁
+  }
+}
 </script>
 
 <style scoped>

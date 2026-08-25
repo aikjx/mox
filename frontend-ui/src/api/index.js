@@ -58,6 +58,39 @@ http.interceptors.response.use(
   }
 )
 
+// 全局项目注入（璇玑：所有请求自动带上当前 project_id，后端忽略未知参数即安全）
+let _projectIdGetter = null
+/** 给 projectContext 用：在 setCurrentProject 后把 id 暴露给请求层 */
+export function registerProjectIdGetter(getter) {
+  _projectIdGetter = typeof getter === 'function' ? getter : null
+}
+function injectProjectToConfig(config) {
+  if (!_projectIdGetter) return config
+  let pid
+  try { pid = _projectIdGetter() } catch {}
+  if (!pid) return config
+  // GET/HEAD: params；其他：body；不覆盖显式传值
+  const method = String(config.method || 'get').toLowerCase()
+  if (method === 'get' || method === 'head') {
+    config.params = config.params ? { ...config.params } : {}
+    if (config.params.project_id == null && config.params.projectId == null) {
+      config.params.project_id = pid
+    }
+  } else {
+    const isForm =
+      config.headers && (config.headers['Content-Type'] || '').indexOf('multipart') >= 0
+    if (!isForm && config.data && typeof config.data === 'object' && !Array.isArray(config.data)) {
+      if (config.data.project_id == null && config.data.projectId == null) {
+        // 拷贝一层避免修改外部引用
+        config.data = { ...config.data, project_id: pid }
+      }
+    } else if (config.data == null) {
+      config.data = { project_id: pid }
+    }
+  }
+  return config
+}
+
 // 请求拦截：自动注入 API 令牌（兼容后端 OUS_API_TOKEN 鉴权）
 // 开发期默认令牌可由 .env 的 VITE_API_TOKEN 覆盖，否则回退本地存储 / 开发令牌
 const DEV_TOKEN = 'dev-secret-token'
@@ -73,6 +106,7 @@ http.interceptors.request.use((config) => {
   if (!config.headers['Content-Type'] && config.method && String(config.method).toLowerCase() !== 'get') {
     config.headers['Content-Type'] = 'application/json'
   }
+  injectProjectToConfig(config)
   return config
 })
 

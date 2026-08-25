@@ -80,6 +80,18 @@ const routes = [
     component: () => import('@/views/ChatView.vue'),
     meta: { title: 'AI 助手' }
   },
+  // 分享快照：#/share/<base64-snapshot> → 用 ChatView 渲染（解析 token 并恢复对话）
+  {
+    path: '/share/:token',
+    name: 'ShareSnapshot',
+    component: () => import('@/views/ChatView.vue'),
+    meta: { title: '分享对话', shareMode: true }
+  },
+  // 兼容短链 /s/TOKEN
+  {
+    path: '/s/:token',
+    redirect: to => `/share/${to.params.token}`
+  },
   {
     path: '/tasks',
     name: 'Tasks',

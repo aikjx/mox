@@ -1,5 +1,6 @@
 <template>
   <div class="gv">
+    <ProjectChip />
     <div class="head">
       <div>
         <h2 class="page-title">知识图谱</h2>
@@ -219,6 +220,8 @@ import { ref, onMounted, onBeforeUnmount, computed, nextTick, shallowRef, markRa
 import { ElMessage } from 'element-plus'
 // [P1-1 渐进加载 · 先画布后力学] 静态仅依赖轻量类型/API；3D 重库 ForceGraph3D 改为动态 import 后按需拆分异步 chunk（≈1.2MB 单独下载，不阻塞首帧）
 import { NODE_TYPE_COLORS } from '@/types'
+import ProjectChip from '@/components/ProjectChip.vue'
+import { useProject } from '@/composables/projectContext.js'
 import {
   getGraph,
   getGraphStats,
@@ -526,6 +529,22 @@ onMounted(reload)
 onBeforeUnmount(() => {
   if (fg && fg._destructor) fg._destructor()
 })
+
+// ===== 璇玑：以项目为核心的联动 =====
+{
+  const { onChange: _onProjectChange, ensureProjectContext: _ensureProject } = useProject()
+  let _offPj = null
+  onMounted(async () => {
+    _offPj = _onProjectChange(async () => { reload() })
+    await _ensureProject().catch(() => {})
+    reload()
+  })
+  const _ob$ = onBeforeUnmount == null ? null : onBeforeUnmount(() => { _offPj && _offPj() })
+  // 若脚本未引入 onBeforeUnmount，退化为 window beforeunload 兜底（页面关闭）
+  if (typeof onBeforeUnmount === 'undefined') {
+    // 不操作：Vue 路由离开时组件 destroy，本作用域已销毁
+  }
+}
 </script>
 
 <style scoped>

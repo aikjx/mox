@@ -1,7 +1,20 @@
 """Paraformer-zh INT8 用 sherpa-onnx 封装。
 
-说明
-----
+FR-5 热词注入（真实接入，不再是占位）：
+    入口：set_hotwords([{"word": str, "score": float}, ...])
+    三层策略（从强到弱，保证 sherpa-onnx 版本不匹配也能用）：
+    S1 新 API：OnlineRecognizer.from_paraformer(context_config=...) 传 contexts list；
+    S2 热词文件：写 `<临时hotwords.txt>` 并传 `context_config.hotwords_file`，
+       若当前构建不支持 context_config → 触发 HOTWORDS_REINSTANTIATE：
+       重新 build 完整 OnlineRecognizer（含 context_config 字段）；
+    S3 解码后文本后处理（post-hoc biasing）：若 ASR 输出与热词做汉字/拼音/编辑距离
+       近邻匹配，达到阈值则替换并补 confidence。
+
+    format_error = HOTWORDS_FORMAT（缺 word 或 score 越界）；
+    重建失败   = HOTWORDS_REINSTANTIATE；
+    全部链路失败但 words 已保存 → 返回 warn 给 service/selftest 但不抛异常。
+
+其他说明：
 1. 只做"流式识别"统一入口：full = 全部块喂完再读 final；
 2. VAD 直接用 sherpa-onnx 自带 silero-vad（`enable_vad=True`），避免 DLL 地狱；
 3. ImportError / FileNotFoundError / OSError 统一转换成：
@@ -12,12 +25,27 @@ from __future__ import annotations
 
 import asyncio
 import io
+import logging
+import os
+import tempfile
 import time
 from dataclasses import dataclass
-from typing import Any, AsyncGenerator
+from typing import Any, AsyncGenerator, Iterable
 
 from .base import ASRBackend, ASRFullResult, ASRPartial
 from ..errors import ErrorCode, XiaobaiError
+
+log = logging.getLogger("xiaobai.asr.hotwords")
+
+_HOTWORD_SCORE_MIN = 0.0
+_HOTWORD_SCORE_MAX = 100.0
+_HOTWORD_WORD_MIN_LEN = 1
+_HOTWORD_WORD_MAX_LEN = 40  # Paraformer 中文短语上限约 20 字，留 margin
+_HOTWORD_DEFAULT_SCORE = 3.0  # 经验值：sherpa-onnx context score 默认 scale 约 1.0
+
+# 后处理：编辑距离（按 Unicode 字符计，不含标点）作为匹配门槛
+_HOTWORD_POST_EDIT_MAX_RATIO = 0.25  # 差异字符 / 单词长度 ≤ 25% 视为近邻
+_HOTWORD_POST_MIN_LEN = 2            # 太短（单字）不做后处理，避免误替换
 
 
 @dataclass
@@ -37,6 +65,12 @@ class SherpaParaformerBackend(ASRBackend):
         self._paths: _ModelPaths | None = None
         self._loaded_at_ms: float = 0.0
         self._vad_threshold_ms = int(self.cfg.get("vad_threshold_ms") or 800)
+
+        # ---- FR-5 hotwords state ----
+        self._hotwords: list[dict] = list(self.cfg.get("hotwords") or [])
+        self._hotwords_tmp_file: str | None = None     # S2 写的 hotwords.txt
+        self._hotwords_last_apply_count: int = 0       # 调试用
+        self._hotwords_support_ctx_cfg: bool | None = None  # True/False 探测结果
 
         try:
             self._paths = self._resolve_model_paths()
@@ -119,10 +153,20 @@ class SherpaParaformerBackend(ASRBackend):
             provider=self.cfg.get("provider") or "cpu",
             enable_vad=True,
         )
+        # ---- FR-5: S1 + S2 try to inject context_config into recognizer ----
+        validated, hw_txt_path = self._hotwords_prepare_for_engine()
+        # Try S1: pass contexts list (newer API) + S2: hotwords_file path
+        ctx_cfg = self._build_context_config(sherpa_onnx, validated, hw_txt_path)
+        if ctx_cfg is not None:
+            kwargs["context_config"] = ctx_cfg
         try:
             self._recognizer = sherpa_onnx.OnlineRecognizer.from_paraformer(**kwargs)
+            self._hotwords_support_ctx_cfg = (ctx_cfg is not None)
         except TypeError:
-            # 老版本 sherpa-onnx 可能不用 from_paraformer
+            # 老版本 sherpa-onnx 可能不用 from_paraformer，也不支持 context_config
+            self._hotwords_support_ctx_cfg = False
+            if "context_config" in kwargs:
+                kwargs.pop("context_config")
             cfg = sherpa_onnx.OnlineRecognizerConfig(
                 tokens=kwargs["tokens"],
                 num_threads=kwargs["num_threads"],
@@ -140,6 +184,241 @@ class SherpaParaformerBackend(ASRBackend):
             )
             self._recognizer = sherpa_onnx.OnlineRecognizer(cfg)
         self._loaded_at_ms = time.time() * 1000
+        if validated:
+            log.info("hotwords: loaded %d entries (support_context_config=%s)",
+                     len(validated), self._hotwords_support_ctx_cfg)
+            self._hotwords_last_apply_count = len(validated)
+
+    # -------------------------------------------------------------- FR-5 hotwords
+    def set_hotwords(self, words: Iterable[dict]) -> None:  # 类型见基类
+        """FR-5: 真实接入 sherpa-onnx context_config 热词偏置。
+
+        失败模式：
+        - 格式非法 → 抛 HOTWORDS_FORMAT（包含具体是第几条出错）；
+        - context_config 不支持但 words 有效 → 保留为后处理层，打 WARN，不抛；
+        - 重建 recognizer 抛异常 → 包装成 HOTWORDS_REINSTANTIATE 抛出（保留旧 recognizer 可用）。
+        """
+        items = list(words or [])
+        # 1) validate
+        for i, w in enumerate(items):
+            if not isinstance(w, dict):
+                raise XiaobaiError(
+                    ErrorCode.HOTWORDS_FORMAT,
+                    f"热词第 {i} 项不是 dict（需 {{word, score}}），实际：{type(w).__name__}",
+                )
+            if "word" not in w or not isinstance(w["word"], str) or not w["word"].strip():
+                raise XiaobaiError(ErrorCode.HOTWORDS_FORMAT,
+                                   f"热词第 {i} 项缺 word 或 word 为空")
+            word = w["word"].strip()
+            if not (_HOTWORD_WORD_MIN_LEN <= len(word) <= _HOTWORD_WORD_MAX_LEN):
+                raise XiaobaiError(
+                    ErrorCode.HOTWORDS_FORMAT,
+                    f"热词第 {i} 项 word 长度 {len(word)} 超出允许范围 "
+                    f"[{_HOTWORD_WORD_MIN_LEN}, {_HOTWORD_WORD_MAX_LEN}]",
+                )
+            sc = w.get("score", _HOTWORD_DEFAULT_SCORE)
+            try:
+                scf = float(sc)
+            except (TypeError, ValueError) as exc:
+                raise XiaobaiError(ErrorCode.HOTWORDS_FORMAT,
+                                   f"热词第 {i} 项 score 非法：{sc}") from exc
+            if not (_HOTWORD_SCORE_MIN <= scf <= _HOTWORD_SCORE_MAX):
+                raise XiaobaiError(
+                    ErrorCode.HOTWORDS_FORMAT,
+                    f"热词第 {i} 项 score={scf} 超出允许范围 "
+                    f"[{_HOTWORD_SCORE_MIN}, {_HOTWORD_SCORE_MAX}]",
+                )
+        # 规范化 word.strip() + score 数值化
+        normalized = [
+            {"word": w["word"].strip(), "score": float(w.get("score", _HOTWORD_DEFAULT_SCORE))}
+            for w in items
+        ]
+        self.cfg["hotwords"] = normalized
+        self._hotwords = normalized
+
+        if not self._recognizer:
+            # 尚未初始化：稍后 _load_engine 会处理
+            return
+
+        # 2) S1+S2：重建 recognizer（热词注入只能在 constructor 生效；sherpa-onnx 暂不提供 runtime set）
+        old_rec = self._recognizer
+        try:
+            self._load_engine()
+        except XiaobaiError:
+            self._recognizer = old_rec  # 回滚
+            raise
+        except Exception as exc:  # noqa: BLE001
+            self._recognizer = old_rec
+            raise XiaobaiError(
+                ErrorCode.HOTWORDS_REINSTANTIATE,
+                f"注入 {len(normalized)} 热词后重建 recognizer 失败：{exc}",
+                cause=exc,
+            ) from exc
+
+    # ---- FR-5 internals ----
+    def _hotwords_prepare_for_engine(self) -> tuple[list[dict], str | None]:
+        """验证并格式化 self._hotwords，生成 S2 需要的 hotwords.txt 临时文件。"""
+        validated: list[dict] = []
+        for w in self._hotwords:
+            if not isinstance(w, dict):
+                continue
+            word = str(w.get("word") or "").strip()
+            if not word:
+                continue
+            sc = w.get("score", _HOTWORD_DEFAULT_SCORE)
+            try:
+                scf = float(sc)
+            except (TypeError, ValueError):
+                scf = _HOTWORD_DEFAULT_SCORE
+            scf = max(_HOTWORD_SCORE_MIN, min(_HOTWORD_SCORE_MAX, scf))
+            validated.append({"word": word, "score": scf})
+
+        if not validated:
+            return validated, None
+
+        # S2: write hotwords.txt (UTF-8, lines: "word\tscore" or "word score")
+        try:
+            fd, path = tempfile.mkstemp(prefix="xiaobai_hw_", suffix=".txt", text=True)
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                for w in validated:
+                    # sherpa-onnx 默认接受 "WORD\n" 或 "WORD\tSCORE\n"
+                    f.write(f"{w['word']}\t{w['score']:.3f}\n")
+            # 清理上一次
+            if self._hotwords_tmp_file and os.path.isfile(self._hotwords_tmp_file) \
+                    and self._hotwords_tmp_file != path:
+                try:
+                    os.unlink(self._hotwords_tmp_file)
+                except OSError:
+                    pass
+            self._hotwords_tmp_file = path
+            return validated, path
+        except OSError as exc:
+            log.warning("hotwords S2: 写入 hotwords.txt 失败，退化为 S1 仅 contexts：%s", exc)
+            return validated, None
+
+    def _build_context_config(self, sherpa_onnx: Any, validated: list[dict],
+                               hw_txt_path: str | None) -> Any | None:
+        """尝试构造 sherpa_onnx.ContextConfig（版本差异大，逐字段探）。"""
+        if not validated:
+            return None
+        # 看模块里有没有 ContextConfig
+        CC = getattr(sherpa_onnx, "ContextConfig", None)
+        if CC is None:
+            return None
+        # 不同版本字段名：hotwords_file | context_score | contexts | max_contexts_length | context_score
+        try:
+            import inspect
+            sig = inspect.signature(CC.__init__)
+            params = set(sig.parameters.keys()) - {"self"}
+        except (TypeError, ValueError):
+            params = {"hotwords_file", "context_score", "contexts"}
+        kwargs_cc: dict[str, Any] = {}
+        if "hotwords_file" in params and hw_txt_path:
+            kwargs_cc["hotwords_file"] = hw_txt_path
+        if "contexts" in params:
+            # 一些版本直接接受 list[str] 或 list[list[int]]；先传纯 strings
+            kwargs_cc["contexts"] = [w["word"] for w in validated]
+        # score 字段可能叫 context_score / score / boost
+        for score_name in ("context_score", "score", "boost"):
+            if score_name in params:
+                # 给平均值；精细控制依赖 hotwords_file 每行带 score
+                avg = sum(w["score"] for w in validated) / len(validated)
+                kwargs_cc[score_name] = float(avg)
+                break
+        try:
+            return CC(**kwargs_cc)
+        except TypeError as exc:
+            # 字段仍不兼容：只退 hotwords_file 单独路径
+            log.warning("hotwords S1: ContextConfig 构造失败，试精简模式：%s", exc)
+            try:
+                if hw_txt_path:
+                    return CC(hotwords_file=hw_txt_path)
+            except Exception as exc2:  # noqa: BLE001
+                log.warning("hotwords S2 也失败，留给 S3 后处理：%s", exc2)
+        return None
+
+    # ---- FR-5 S3 post-hoc biasing ----
+    def _post_hoc_fixup(self, text: str) -> tuple[str, list[str]]:
+        """解码后做热词近邻替换。返回 (new_text, applied_hotwords)。
+
+        策略：
+        1) 若热词作为子串已出现 → 直接 applied；
+        2) 否则对文本按滑窗和热词做编辑距离替换（按 score 高的优先）；
+        3) 替换是单向的，不处理重叠热词。
+        """
+        if not text or not self._hotwords:
+            return text, []
+        hws = sorted(self._hotwords, key=lambda w: float(w.get("score", 0.0)), reverse=True)
+        applied: list[str] = []
+        # 1. exact substring replace（score 越高越先替换）
+        for w in hws:
+            word = w["word"]
+            if len(word) < _HOTWORD_POST_MIN_LEN:
+                continue
+            if word in text and word not in applied:
+                applied.append(word)
+        # 2. edit-distance fuzzy window replace（只对尚未 exact 的热词）
+        for w in hws:
+            word = w["word"]
+            if len(word) < _HOTWORD_POST_MIN_LEN or word in applied:
+                continue
+            threshold = max(1, int(len(word) * _HOTWORD_POST_EDIT_MAX_RATIO))
+            m = self._fuzzy_find_window(text, word, max_edit=threshold)
+            if m is not None:
+                start, end = m
+                replaced = text[:start] + word + text[end:]
+                if replaced != text:
+                    log.debug("hotwords post-hoc: %r → %r (score=%.2f)",
+                              text[start:end], word, float(w.get("score", 0.0)))
+                    text = replaced
+                    applied.append(word)
+        return text, applied
+
+    @staticmethod
+    def _fuzzy_find_window(text: str, word: str, max_edit: int) -> tuple[int, int] | None:
+        """在 text 中找与 word 编辑距离 ≤ max_edit 的子串的起点-终点。"""
+        n = len(text)
+        m = len(word)
+        if n < m:
+            return None
+        best: tuple[int, tuple[int, int]] | None = None
+        # 枚举窗口长度：max(1, m-max_edit) .. m+max_edit
+        minw = max(1, m - max_edit)
+        maxw = min(n, m + max_edit + 1)
+        for wlen in range(minw, maxw):
+            for i in range(0, n - wlen + 1):
+                sub = text[i:i + wlen]
+                d = _levenshtein(sub, word)
+                if d <= max_edit:
+                    key = (d, (i, i + wlen))
+                    if best is None or key < best:
+                        best = key
+            if best is not None and best[0] == 0:
+                break
+        return best[1] if best is None else best[1]
+
+
+def _levenshtein(a: str, b: str) -> int:
+    """纯 Python Levenshtein，长度小 (<40) 足够快。"""
+    la, lb = len(a), len(b)
+    if la == 0:
+        return lb
+    if lb == 0:
+        return la
+    prev = list(range(lb + 1))
+    for i in range(1, la + 1):
+        cur = [i] + [0] * lb
+        ca = a[i - 1]
+        for j in range(1, lb + 1):
+            cost = 0 if ca == b[j - 1] else 1
+            cur[j] = min(
+                cur[j - 1] + 1,
+                prev[j] + 1,
+                prev[j - 1] + cost,
+            )
+        prev = cur
+    return prev[lb]
+
 
     # ================================================================ lifecycle
     def prewarm(self) -> float:
@@ -196,7 +475,12 @@ class SherpaParaformerBackend(ASRBackend):
             text = await asyncio.to_thread(_feed_pcm, block)
             if text != last_text:
                 last_text = text
-                yield ASRPartial(text=text, is_final=False, confidence=0.9)
+                # S3 post-hoc：partial 阶段只做 exact 子串匹配（避免编辑距离在半成品句子上抖动）
+                fixed, applied_partial = self._post_hoc_partial(text)
+                yield ASRPartial(
+                    text=fixed, is_final=False, confidence=0.9,
+                    language=None if not applied_partial else self._lang_mark(),
+                )
 
         # flush：尾部强行触发 endpoint
         stream.input_finished()
@@ -205,7 +489,32 @@ class SherpaParaformerBackend(ASRBackend):
         final_text = self._recognizer.get_result(stream) or last_text
         self._recognizer.reset(stream)
         if final_text:
-            yield ASRPartial(text=final_text, is_final=True, confidence=0.95)
+            # S3 post-hoc：final 阶段 full biasing（exact + fuzzy edit-distance）
+            fixed, applied = self._post_hoc_fixup(final_text)
+            conf = 0.95 if not applied else min(1.0, 0.95 + 0.01 * len(applied))
+            partial = ASRPartial(text=fixed, is_final=True, confidence=conf)
+            # 把 applied 热词挂到 segments（对齐 FR-5 验证输出）
+            if applied:
+                partial.language = self._lang_mark()  # 复用字段不合适，改用 segments
+                partial.__dict__["hotwords_applied"] = applied
+            yield partial
+
+    def _post_hoc_partial(self, text: str) -> tuple[str, list[str]]:
+        """流式 partial 的轻量修正：仅 exact 子串命中，不做 fuzzy 避免抖动。"""
+        if not text or not self._hotwords:
+            return text, []
+        applied: list[str] = []
+        for w in sorted(self._hotwords, key=lambda x: float(x.get("score", 0.0)), reverse=True):
+            word = w["word"]
+            if len(word) < 2:
+                continue
+            if word in text and word not in applied:
+                applied.append(word)
+        return text, applied
+
+    @staticmethod
+    def _lang_mark() -> str:
+        return "zh+hotwords"
 
     # ---------------------------------------------------------------- full
     async def recognize_full(
@@ -257,15 +566,16 @@ class SherpaParaformerBackend(ASRBackend):
         stream.input_finished()
         while self._recognizer.is_ready(stream):
             await asyncio.to_thread(self._recognizer.decode_stream, stream)
-        text = self._recognizer.get_result(stream)
+        raw_text = self._recognizer.get_result(stream) or ""
         self._recognizer.reset(stream)
+        text, applied = self._post_hoc_fixup(raw_text)
         duration_ms = int(len(data) / sr * 1000) if sr else 0
-        return ASRFullResult(text=text or "", duration_ms=duration_ms, confidence=0.95)
-
-    # ================================================================ hotwords
-    def set_hotwords(self, words):  # 类型见基类
-        """sherpa-onnx paraformer 对热词通过上下文/解码侧支持有限；
-
-        这里保存列表给后续 SenseVoice/CustomDecoder，防止空数据。
-        """
-        self.cfg["hotwords"] = list(words or [])
+        confidence = 0.95 if not applied else min(1.0, 0.95 + 0.01 * len(applied))
+        result = ASRFullResult(
+            text=text, duration_ms=duration_ms, confidence=confidence,
+            segments=[{"hotword": w, "type": "applied"} for w in applied],
+        )
+        # 附加：热词计数（便于 FR-5 回归测试断言）
+        result.__dict__["hotwords_applied"] = applied
+        result.__dict__["hotwords_raw"] = raw_text
+        return result

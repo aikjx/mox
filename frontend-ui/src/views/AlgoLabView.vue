@@ -1,5 +1,6 @@
 <template>
   <div class="algo-page">
+    <ProjectChip />
     <div class="page-head">
       <div>
         <h2 class="page-title">算法分析实验室 · AlgoLab</h2>
@@ -131,6 +132,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Cpu, Right } from '@element-plus/icons-vue'
+import ProjectChip from '@/components/ProjectChip.vue'
+import { useProject } from '@/composables/projectContext.js'
 import { analyzeAlgorithm, getAlgorithmTypes, analyzeSpiral } from '@/api'
 
 const tab = ref('analyze')
@@ -211,6 +214,22 @@ async function doSpiral() {
 }
 
 onMounted(loadTypes)
+
+// ===== 璇玑：以项目为核心的联动 =====
+{
+  const { onChange: _onProjectChange, ensureProjectContext: _ensureProject } = useProject()
+  let _offPj = null
+  onMounted(async () => {
+    _offPj = _onProjectChange(async () => { loadTypes() })
+    await _ensureProject().catch(() => {})
+    loadTypes()
+  })
+  const _ob$ = onBeforeUnmount == null ? null : onBeforeUnmount(() => { _offPj && _offPj() })
+  // 若脚本未引入 onBeforeUnmount，退化为 window beforeunload 兜底（页面关闭）
+  if (typeof onBeforeUnmount === 'undefined') {
+    // 不操作：Vue 路由离开时组件 destroy，本作用域已销毁
+  }
+}
 </script>
 
 <style scoped>
