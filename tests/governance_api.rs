@@ -21,12 +21,12 @@ use std::sync::Arc;
 // 测试夹具：构建最小治理台 AppState（不含真实 HTTP 服务器）
 // ---------------------------------------------------------------------------
 
-/// 从 xuanji-expert 引入核心类型
-use xuanji_expert::{
+/// 从 mox-expert 引入核心类型
+use mox_expert::{
     audit::AuditContext,
     context::{GovernContext, Principal, Tenant},
     govern::{AuditChain, FlowStatus, GateResult, GovernanceReport as EaGovernanceReport},
-    pipeline::xuanji_optimize,
+    pipeline::mox_optimize,
 };
 use flow_ai::model::{FlowEdge, FlowGraph, FlowNode, NodeKind, ToolKind};
 use runtime::handlers::governance::{
@@ -126,8 +126,8 @@ async fn experts_status_14_dimensions() {
         "testing", "style", "cost", "sensitive",
     ];
 
-    let xuanji = result.get("xuanji").and_then(|v| v.as_str()).unwrap();
-    assert_eq!(xuanji, "double-league-14-dim");
+    let mox = result.get("mox").and_then(|v| v.as_str()).unwrap();
+    assert_eq!(mox, "double-league-14-dim");
 
     let business_league = result.get("business_league").expect("business_league missing");
     let dims = business_league.get("dimensions").expect("dimensions missing");
@@ -440,16 +440,16 @@ async fn governance_assess_full_pipeline() {
     assert!(result.ts > 0);
 
     // 璇玑验证结论
-    assert!(result.xuanji_passed || !result.xuanji_passed, "xuanji_passed must be bool");
+    assert!(result.mox_passed || !result.mox_passed, "mox_passed must be bool");
 
-    // 审计链已追加 xuanji_optimize 事件
+    // 审计链已追加 mox_optimize 事件
     let chain = gs.audit_chain.lock().await;
     let assess_events: Vec<_> = chain
         .events
         .iter()
-        .filter(|e| e.action == "xuanji_optimize")
+        .filter(|e| e.action == "mox_optimize")
         .collect();
-    assert!(!assess_events.is_empty(), "audit chain must have xuanji_optimize entry");
+    assert!(!assess_events.is_empty(), "audit chain must have mox_optimize entry");
     drop(chain);
 
     // 否决事件（若有低分专家）

@@ -53,7 +53,7 @@
 |----|----------------|---------------------------|
 | 接入层 | 语音 ASR + 文本 ChatPanel | OUS `ChatView` 对话自动入图、统一搜索 |
 | 运行时/编排 | Go orchestrator + scheduler(κ/τ+ℛ̂) | OUS `runtime`(Axum) 鉴权/限流/观测；`flow-ai` 拓扑/DAG 调度 |
-| 算子层 | Python llm‑gateway / topology‑operator / doc‑generator / smoke‑tester | OUS `xuanji-expert` 多专家融合、`optimizer` DAG 关键路径、`business-catalog` 业务算子目录 |
+| 算子层 | Python llm‑gateway / topology‑operator / doc‑generator / smoke‑tester | OUS `mox-expert` 多专家融合、`optimizer` DAG 关键路径、`business-catalog` 业务算子目录 |
 | 数据/资产 | PostgreSQL + pgvector(资产 Q) | OUS 知识图谱(operator-graph) PageRank/社区发现可作 κ 复用信号 |
 | 画布/前端 | React + Cytoscape‑js（可编辑） | OUS `GraphView` 力导向图、流程图 SVG 编辑器 |
 | 插件/融合 | 功能数据插件总线（见 §4） | OUS `operator-wasm` 沙箱、`hermes-flow-bridge` 外部对接 |
@@ -102,7 +102,7 @@ flowchart TD
 
 **怎么融合（Fusion）**：
 - **纵向融合**：语音→文本→需求→拓扑→代码，靠六维溯源 `trace_links` 串联，任一环节改动向前/向后传播。
-- **横向融合**：多专家/多插件结果经 OUS `xuanji-expert` 归一化裁决，冲突用 κ/τ 权重调和（稳定取共识、探索取创新）。
+- **横向融合**：多专家/多插件结果经 OUS `mox-expert` 归一化裁决，冲突用 κ/τ 权重调和（稳定取共识、探索取创新）。
 - **资产融合**：每次合格产出冻结为 Q 资产，后续同类需求经 pgvector 相似度召回，κ 越高越优先复用 → 系统越用越"懂你业务"。
 
 ---
@@ -134,7 +134,7 @@ flowchart TD
 
 ## 7. 与现有文档的关系（归一映射）
 
-- 本文件 = `SPEC.md`(工程参数) + OUS `architecture.md`(总架构) + `business-process-flows.md`(执行引擎) + `market-module.md`(资产复用) + `xuanji-expert-*`(融合) 的**客户视角收敛版**。
+- 本文件 = `SPEC.md`(工程参数) + OUS `architecture.md`(总架构) + `business-process-flows.md`(执行引擎) + `market-module.md`(资产复用) + `mox-expert-*`(融合) 的**客户视角收敛版**。
 - 代码落点：PrimiFlow 编排/算子层为新增；执行/画布/插件/融合层复用 OUS 既有 crate，避免重复。
 
 ---

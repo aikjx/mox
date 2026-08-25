@@ -29,7 +29,7 @@ BIN_TO_CRATE = {
     "catalog": "business_catalog",
     "flowopt": "flow_ai",
     "operator_server": "runtime",
-    "xuanji_system": "xuanji_system",
+    "mox_system": "mox_system",
 }
 
 

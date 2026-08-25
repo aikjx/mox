@@ -53,7 +53,7 @@
     {
       "name": "全域连通无孤岛（单一连通分量）",
       "ok": false,
-      "detail": "孤岛: engine-rust-ai-agent; engine-rust-xuanji-expert; engine-rust-xuanji-system; engine-rust-runtime; engine-rust-graph-algorithms; engine-rust-flow-ai; engine-rust-optimizer; engine-rust-operator-core; engine-rust-primiflow-core; engine-rust-primiflow-fusion; engine-rust-kg-hub; engine::ai_agent; engine::business_catalog; engine::flow_ai; engine::graph_algorithms; engine::hermes_flow_bridge; engine::kg_hub; engine::operator_core; engine::operator_wasm; engine::optimizer; engine::primiflow_core; engine::primiflow_fusion; engine::template_market; engine::xuanji_expert; engine::xuanji_system; engine::xuanji_common_meta; engine::runtime; project-atlas; engine-kernel; gateway-runtime"
+      "detail": "孤岛: engine-rust-ai-agent; engine-rust-mox-expert; engine-rust-mox-system; engine-rust-runtime; engine-rust-graph-algorithms; engine-rust-flow-ai; engine-rust-optimizer; engine-rust-operator-core; engine-rust-primiflow-core; engine-rust-primiflow-fusion; engine-rust-kg-hub; engine::ai_agent; engine::business_catalog; engine::flow_ai; engine::graph_algorithms; engine::hermes_flow_bridge; engine::kg_hub; engine::operator_core; engine::operator_wasm; engine::optimizer; engine::primiflow_core; engine::primiflow_fusion; engine::template_market; engine::mox_expert; engine::mox_system; engine::mox_common_meta; engine::runtime; project-atlas; engine-kernel; gateway-runtime"
     }
   ]
 }

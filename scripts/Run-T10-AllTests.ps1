@@ -37,7 +37,7 @@ if (-not $RustOk -or -not $NodeOk) { Col Red "[FATAL] 缺少 cargo 或 node，�
 Write-Host ""
 Col Cyan "[1/6] Rust lib tests (3 crates) ..."
 $t = Measure-Command {
-    cargo test -p xuanji-cloud-drive-s3 -p xuanji-domain-abstractions -p xuanji-standards --lib 2>&1 | Tee-Object -Variable cargo_out
+    cargo test -p mox-cloud-drive-s3 -p mox-domain-abstractions -p mox-standards --lib 2>&1 | Tee-Object -Variable cargo_out
 }
 $ok = $LASTEXITCODE -eq 0
 $lines = ($cargo_out | Select-String -Pattern "test result:").Line
@@ -49,9 +49,9 @@ $results += [pscustomobject]@{Stage='Rust-lib-tests';Pass=$ok;Duration=$t.TotalS
 Write-Host ""
 Col Cyan "[2/6] Rust clippy (--lib 单 crate，禁止 errors) ..."
 $t = Measure-Command {
-    $out1 = cargo clippy -p xuanji-cloud-drive-s3 --lib 2>&1;      $e1 = $LASTEXITCODE
-    $out2 = cargo clippy -p xuanji-domain-abstractions --lib 2>&1; $e2 = $LASTEXITCODE
-    $out3 = cargo clippy -p xuanji-standards --lib 2>&1;           $e3 = $LASTEXITCODE
+    $out1 = cargo clippy -p mox-cloud-drive-s3 --lib 2>&1;      $e1 = $LASTEXITCODE
+    $out2 = cargo clippy -p mox-domain-abstractions --lib 2>&1; $e2 = $LASTEXITCODE
+    $out3 = cargo clippy -p mox-standards --lib 2>&1;           $e3 = $LASTEXITCODE
     $all_out = ($out1 + "`n" + $out2 + "`n" + $out3)
     if (-not $SkipArtifacts) {
         New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
@@ -102,7 +102,7 @@ if (-not $SkipArtifacts) {
     $stsb = Join-Path $OutDir 'sts_1000_bench.json'
     if (-not (Test-Path $stsb)) {
         $s = @'
-const c=require("crypto"),S=Buffer.from("xuanji-sts-root-secret-benchmark-000");
+const c=require("crypto"),S=Buffer.from("mox-sts-root-secret-benchmark-000");
 function sign(r,sess,e){const h=c.createHmac("sha256",S);h.update(r).update(sess);const b=Buffer.alloc(8);b.writeBigUInt64LE(BigInt(e),0);h.update(b);return h.digest("base64");}
 const N=1000,t=Date.now();for(let i=0;i<N;i++)sign("role/e","s"+i,t+900000);const d=Date.now()-t;
 require("fs").writeFileSync(process.argv[1],JSON.stringify({benchmark:"sts_sign_1000",iterations:N,total_ms:d,qps:Math.round(N/(d/1000)),avg_us:Math.round(d*1000/N)},null,2));
@@ -114,7 +114,7 @@ require("fs").writeFileSync(process.argv[1],JSON.stringify({benchmark:"sts_sign_
     $hcr = Join-Path $OutDir 'hashchain_10k_report.json'
     if (-not (Test-Path $hcr)) {
         $h = @'
-const c=require("crypto"),GP="GENESIS",GA="SYSTEM",GX="CHAIN_INIT",GR="urn:xuanji:dengbao:chain";
+const c=require("crypto"),GP="GENESIS",GA="SYSTEM",GX="CHAIN_INIT",GR="urn:mox:dengbao:chain";
 const K=Buffer.from("bench-chain-root-00000000000000000000000000000000");
 function s(b){return c.createHash("sha256").update(b).digest("hex");}
 function hm(b){return c.createHmac("sha256",K).update(b).digest("hex");}

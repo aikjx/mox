@@ -1,0 +1,17 @@
+[package]
+name = "xiaobai-dsp-py"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "PyO3 扩展：xiaobai-dsp → Python xiaobai_dsp.native（xiaobai_voice TTS 生产链路接入）"
+
+[lib]
+name = "xiaobai_dsp_native"
+crate-type = ["cdylib"]
+
+[dependencies]
+xiaobai-dsp = { workspace = true }
+pyo3 = { workspace = true }
+numpy = { workspace = true }
+anyhow = { workspace = true }

@@ -1,0 +1,26 @@
+[package]
+name = "mox-formulas-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "MOX · 图公式权威单源（12 项算法）：CSR PageRank/Gauss-Seidel、Brandes 并行介数、harmonic 紧密、CNM 社区、模块度、密度、K-core、特征向量中心性、聚集系数、三角计数、同配系数、PPR 激活扩散"
+
+[lib]
+crate-type = ["rlib", "cdylib", "staticlib"]
+
+[dependencies]
+mox-common-meta = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+rayon = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+hashbrown = { workspace = true }
+ahash = { workspace = true }
+indexmap = { workspace = true }
+approx = { workspace = true }
+num-traits = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }

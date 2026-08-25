@@ -1,0 +1,115 @@
+# Default values for mox-dr.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+## Global DR settings
+primaryRegion: cn-north-1
+failoverRegion: cn-south-1
+
+dr:
+  enabled: true
+  mode: active-active
+  replicationMode: async
+  failoverTimeoutSeconds: 120
+  autoFailback: false
+
+replicaCount: 2
+
+image:
+  repository: registry.infotopograph.io/mox/graph-server
+  tag: "3.0.0"
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 2000
+
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+resources:
+  limits:
+    cpu: 4000m
+    memory: 8Gi
+  requests:
+    cpu: 2000m
+    memory: 4Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 60
+  targetMemoryUtilizationPercentage: 80
+
+pdb:
+  enabled: true
+  minAvailable: 2
+
+nodeSelectorRegions:
+  primary:
+    topology.kubernetes.io/region: cn-north-1
+    dedicated: mox-primary
+  secondary:
+    topology.kubernetes.io/region: cn-south-1
+    dedicated: mox-secondary
+
+service:
+  type: ClusterIP
+  primaryPort: 7687
+  secondaryPort: 7687
+
+storage:
+  storageClass: "mox-dr-sc"
+  size: 500Gi
+  accessMode: ReadWriteOnce
+
+persistence:
+  enabled: true
+  mountPath: /var/lib/mox
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 8080
+  initialDelaySeconds: 60
+  periodSeconds: 20
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+  hosts: []
+  tls: []
+
+tolerations: []
+
+affinity: {}
+
+topologySpreadConstraints: []

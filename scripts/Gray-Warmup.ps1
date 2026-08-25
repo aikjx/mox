@@ -1,4 +1,4 @@
-# Xuanji Umbrella Chart 4-Stage Gray Warmup Script
+# Mox Umbrella Chart 4-Stage Gray Warmup Script
 #
 # 4 stages: 1% -> 10% -> 50% -> 100%.
 # Each stage calls Invoke-HealthCheck mock returning 0..100 percent.
@@ -6,7 +6,7 @@
 # On all 4 stages pass -> exit 0.
 #
 # PARAMETERS:
-#   -BaseUrl            Xuanji service base URL (default: http://localhost:8080)
+#   -BaseUrl            Mox service base URL (default: http://localhost:8080)
 #   -HealthThreshold    Minimum health % required per stage (default 95)
 #   -WarmupSeconds      Wait time per stage (default 60)
 #   -ForceFailPercent   Injected health score to test rollback path (-1 = disable)
@@ -97,7 +97,7 @@ function Write-RollbackLog {
 # ---------- main ----------
 
 try {
-    Write-Log "=== Xuanji Gray Warmup START ==="
+    Write-Log "=== Mox Gray Warmup START ==="
     Write-Log ("Stages={0}; Threshold={1}%; Warmup={2}s" -f $Stages.Count, $HealthThreshold, $WarmupSeconds)
     if ($ForceFailPercent -ge 0) {
         Write-Log ("FORCE-FAIL MODE: stage={0} score={1}%" -f $ForceFailAtStage, $ForceFailPercent)

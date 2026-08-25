@@ -149,7 +149,7 @@ def _temp_root() -> str:
 def _temp_cleanup_loop() -> None:  # pragma: no cover
     import shutil
 
-    temp = Path(os.environ.get("XUANJI_TEMP") or os.path.join(_temp_root(), "xuanji_voice"))
+    temp = Path(os.environ.get("MOX_TEMP") or os.path.join(_temp_root(), "mox_voice"))
     temp.mkdir(parents=True, exist_ok=True)
     while True:
         time.sleep(60.0)
@@ -172,7 +172,7 @@ def _temp_cleanup_loop() -> None:  # pragma: no cover
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # noqa: D401
     global _lifecycle, _loader, _registry, _downloader
-    cfg_path_env = os.environ.get("XUANJI_VOICE_CONFIG") or None
+    cfg_path_env = os.environ.get("MOX_VOICE_CONFIG") or None
     _loader = ConfigLoader(Path(cfg_path_env) if cfg_path_env else None, watch=True)
     _registry = ModelRegistry()
     _downloader = ModelDownloader(_registry)
@@ -394,56 +394,59 @@ def _bind_routes(app: FastAPI, prefix: str) -> None:
         voice: str = Query("xiaobai"),
         emotion: str = Query("neutral"),
         speed: float = Query(1.0, ge=0.5, le=2.0),
-        _post_fallback: bool = False,
     ):
         return await _tts_stream_impl(text=text, voice=voice, emotion=emotion, speed=speed)
 
-    @r.post("/tts/stream")
+    @r.post("/tts/stream", response_model=None)
     async def tts_stream_post(
-        text: str = Query(None),
+        request: Request,
+        text: str | None = Query(None),
         voice: str = Query("xiaobai"),
         emotion: str = Query("neutral"),
         speed: float = Query(1.0, ge=0.5, le=2.0),
-        body_req: Request | None = None,
     ):
         # 双保险：同时兼容 query string 与 form-body / JSON-body（旧版前端 POST form 提交不会 404/405）
-        text_q = text
-        voice_q = voice
-        emotion_q = emotion
-        speed_q = speed
+        text_q: str | None = text
+        voice_q: str = voice
+        emotion_q: str = emotion
+        speed_q: float = speed
         try:
-            if body_req is not None:
-                ctype = (body_req.headers.get("content-type") or "").lower()
-                if "application/json" in ctype:
+            ctype = (request.headers.get("content-type") or "").lower()
+            if "application/json" in ctype:
+                try:
+                    payload = await request.json() or {}
+                except Exception:  # noqa: BLE001
+                    payload = {}
+                if isinstance(payload, dict):
+                    text_q = str(payload.get("text") or text_q or "")
+                    voice_q = str(payload.get("voice") or voice_q)
+                    emotion_q = str(payload.get("emotion") or emotion_q)
                     try:
-                        payload = await body_req.json() or {}
+                        speed_q = float(payload.get("speed") or speed_q)
                     except Exception:  # noqa: BLE001
-                        payload = {}
-                    if isinstance(payload, dict):
-                        text_q = str(payload.get("text") or text_q or "")
-                        voice_q = str(payload.get("voice") or voice_q)
-                        emotion_q = str(payload.get("emotion") or emotion_q)
-                        try:
-                            speed_q = float(payload.get("speed") or speed_q)
-                        except Exception:  # noqa: BLE001
-                            pass
-                else:
-                    # form-urlencoded / multipart
+                        pass
+            else:
+                # form-urlencoded / multipart
+                try:
+                    formdata = await request.form()
+                except Exception:  # noqa: BLE001
+                    formdata = None
+                if formdata is not None and hasattr(formdata, "get"):
+                    text_q = str(formdata.get("text") or text_q or "")
+                    voice_q = str(formdata.get("voice") or voice_q)
+                    emotion_q = str(formdata.get("emotion") or emotion_q)
                     try:
-                        formdata = await body_req.form()
+                        speed_q = float(formdata.get("speed") or speed_q)
                     except Exception:  # noqa: BLE001
-                        formdata = {}
-                    if hasattr(formdata, "get"):
-                        text_q = str(formdata.get("text") or text_q or "")
-                        voice_q = str(formdata.get("voice") or voice_q)
-                        emotion_q = str(formdata.get("emotion") or emotion_q)
-                        try:
-                            speed_q = float(formdata.get("speed") or speed_q)
-                        except Exception:  # noqa: BLE001
-                            pass
+                        pass
         except Exception:  # noqa: BLE001
             pass
-        return await _tts_stream_impl(text=text_q, voice=voice_q, emotion=emotion_q, speed=speed_q)
+        return await _tts_stream_impl(
+            text=text_q or "",
+            voice=voice_q,
+            emotion=emotion_q,
+            speed=speed_q,
+        )
 
     async def _tts_stream_impl(*, text: str, voice: str, emotion: str, speed: float):
         lc = get_lifecycle()
@@ -496,7 +499,7 @@ def _bind_routes(app: FastAPI, prefix: str) -> None:
         if len(data) < 2048:
             raise HTTPException(400, "参考音频太短。请上传 3~5 秒 wav。")
         sha = hashlib.sha1(data).hexdigest()
-        clip_dir = Path(os.path.expanduser("~/.xuanji/models/voice/voice_clips"))
+        clip_dir = Path(os.path.expanduser("~/.mox/models/voice/voice_clips"))
         clip_dir.mkdir(parents=True, exist_ok=True)
         dst = clip_dir / f"{sha}.wav"
         if not dst.is_file():

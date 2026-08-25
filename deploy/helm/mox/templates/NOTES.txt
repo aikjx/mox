@@ -1,0 +1,73 @@
+MOX PLATFORM - 一键伞图部署 (UMBRELLA CHART)
+=================================================
+
+Release name:     {{ .Release.Name }}
+Namespace:        {{ .Release.Namespace }}
+Chart version:    {{ .Chart.Version }}
+App version:      {{ .Chart.AppVersion }}
+Gray Release:     {{ .Values.global.gray.enabled }}
+Gray Stages:      [{{ join ", " .Values.global.gray.stages }}]%
+
+========================================
+一、首次一键部署（最简版）
+========================================
+  $ helm dependency build deploy/helm/mox
+  $ helm install mox deploy/helm/mox \
+      --namespace mox-system --create-namespace
+
+  # 自定义参数（例如打开灰度 + 灾备多区域）
+  $ helm install mox deploy/helm/mox \
+      --namespace mox-system --create-namespace \
+      --set global.gray.enabled=true \
+      --set mox-dr.enabled=true \
+      --set mox-observability.enabled=true
+
+========================================
+二、灰度 Warmup 4 阶段发布
+========================================
+  # 1) 启动灰度 (1%)
+  $ helm upgrade mox deploy/helm/mox -n mox-system \
+      --set global.gray.enabled=true --set canary.weight=1
+
+  # 2) 运行随附的 Warmup 脚本做 4 阶段健康检查
+  $ powershell -ExecutionPolicy Bypass -File scripts/Gray-Warmup.ps1
+
+  # 3) 或者手动逐步推进
+  $ helm upgrade mox deploy/helm/mox -n mox-system --set canary.weight=10
+  $ helm upgrade mox deploy/helm/mox -n mox-system --set canary.weight=50
+  $ helm upgrade mox deploy/helm/mox -n mox-system --set canary.weight=100
+
+========================================
+三、一键安装 + 观察所有子组件
+========================================
+  $ helm dependency update deploy/helm/mox
+  $ helm template deploy/helm/mox --namespace mox-system | kubectl apply -f -
+  $ kubectl get pods -n mox-system -w
+  $ kubectl get svc -n mox-system
+
+========================================
+四、子 Chart 控制
+========================================
+  # 仅打开 DR（关闭 observability 可省资源）
+  $ helm install mox deploy/helm/mox -n mox-system \
+      --set mox-observability.enabled=false
+
+  # 禁用 DR，单集群部署
+  $ helm install mox deploy/helm/mox -n mox-system \
+      --set mox-dr.enabled=false
+
+========================================
+五、卸载
+========================================
+  $ helm uninstall mox -n mox-system
+  $ kubectl delete namespace mox-system
+
+========================================
+六、验证部署完整性
+========================================
+  $ helm list -n mox-system
+  $ helm status mox -n mox-system
+  $ kubectl get deploy,sts,svc,hpa,pdb,configmap -n mox-system
+
+提示：任何阶段健康检查不通过，运行 scripts/Gray-Warmup.ps1 -ForceFailPercent 80
+模拟回滚日志写入 rollback.log 并退出 1。

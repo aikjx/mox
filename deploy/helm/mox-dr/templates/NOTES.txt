@@ -1,0 +1,49 @@
+MOX DISASTER RECOVERY (DR) CHART
+====================================
+
+Release name:     {{ .Release.Name }}
+Namespace:        {{ .Release.Namespace }}
+Chart version:    {{ .Chart.Version }}
+App version:      {{ .Chart.AppVersion }}
+
+Primary Region:   {{ .Values.primaryRegion }}
+Failover Region:  {{ .Values.failoverRegion }}
+DR Mode:          {{ .Values.dr.mode }}
+Replication:      {{ .Values.dr.replicationMode }}
+
+1. 查看部署状态
+   $ kubectl get deployments -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+   $ kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }} -o wide
+
+2. 访问 Primary 服务
+   $ kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "mox-dr.fullname" . }}-primary 7687:7687 8080:8080
+   # 健康检查: http://localhost:8080/healthz
+
+3. 访问 Secondary (灾备) 服务
+   $ kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "mox-dr.fullname" . }}-secondary 7688:7687 8081:8080
+
+4. 查看 HPA 自动扩容
+   $ kubectl get hpa -n {{ .Release.Namespace }} {{ include "mox-dr.fullname" . }}
+
+5. 查看 PDB 中断预算
+   $ kubectl get pdb -n {{ .Release.Namespace }} {{ include "mox-dr.fullname" . }}
+
+6. 触发手动故障切换演练 (非生产)
+   $ kubectl scale deploy -n {{ .Release.Namespace }} {{ include "mox-dr.fullname" . }}-primary --replicas=0
+   $ # 等待 {{ .Values.dr.failoverTimeoutSeconds }}s 后观察 secondary 自动接管
+
+7. 查看跨区域配置
+   $ kubectl get configmap -n {{ .Release.Namespace }} {{ include "mox-dr.fullname" . }}-region-selector -o yaml
+
+8. 升级 Chart
+   $ helm upgrade {{ .Release.Name }} deploy/helm/mox-dr \
+       --namespace {{ .Release.Namespace }} \
+       --values custom-values.yaml
+
+9. 卸载 Chart
+   $ helm uninstall {{ .Release.Name }} -n {{ .Release.Namespace }}
+
+注意事项：
+- DR 模式依赖两个 Kubernetes 集群或多区域节点池都打上正确 topology.kubernetes.io/region 标签。
+- 存储卷建议使用支持跨区域快照的 StorageClass（{{ .Values.storage.storageClass }}）。
+- 生产切换前请先执行 failover 演练并验证 RPO/RTO 符合 SLA。

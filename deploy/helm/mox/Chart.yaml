@@ -1,0 +1,48 @@
+apiVersion: v2
+name: mox
+description: Mox Graph Platform Umbrella Helm Chart (一键伞图)
+type: application
+version: 3.0.0
+appVersion: "3.0.0"
+kubeVersion: ">=1.24.0-0"
+home: https://mox.infotopograph.io
+sources:
+  - https://gitcode.com/infotopograph/mox
+maintainers:
+  - name: Mox Platform Team
+    email: platform@infotopograph.io
+keywords:
+  - mox
+  - graph-platform
+  - umbrella-chart
+  - canary
+  - gray-release
+annotations:
+  category: "Platform"
+  release-strategy: "gray-warmup"
+  deployment: "one-click-umbrella"
+
+dependencies:
+  - name: mox-dr
+    version: "3.0.0"
+    repository: "file://../mox-dr"
+    condition: mox-dr.enabled
+    tags:
+      - dr
+      - multi-region
+  - name: mox-core
+    version: "3.0.0"
+    repository: "file://../mox-core"
+    alias: mox-core-local
+    condition: mox-core-local.enabled
+    tags:
+      - core
+      - graph-engine
+  - name: mox-observability
+    version: "3.0.0"
+    repository: "file://../mox-observability"
+    condition: mox-observability.enabled
+    tags:
+      - observability
+      - monitoring
+      - tracing

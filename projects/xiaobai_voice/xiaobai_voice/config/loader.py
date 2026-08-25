@@ -20,23 +20,23 @@ def _platform_config_path() -> Path:
     system = platform.system()
     if system == "Windows":
         base = os.environ.get("APPDATA") or str(Path.home() / "AppData" / "Roaming")
-        return Path(base) / "xuanji" / "xiaobai" / "config.yaml"
+        return Path(base) / "mox" / "xiaobai" / "config.yaml"
     if system == "Darwin":
-        return Path.home() / "Library" / "Application Support" / "xuanji" / "xiaobai" / "config.yaml"
+        return Path.home() / "Library" / "Application Support" / "mox" / "xiaobai" / "config.yaml"
     xdg = os.environ.get("XDG_CONFIG_HOME") or str(Path.home() / ".config")
-    return Path(xdg) / "xuanji" / "xiaobai" / "config.yaml"
+    return Path(xdg) / "mox" / "xiaobai" / "config.yaml"
 
 
 def default_log_path() -> Path:
     system = platform.system()
     if system == "Windows":
         base = os.environ.get("APPDATA") or str(Path.home() / "AppData" / "Roaming")
-        root = Path(base) / "xuanji" / "xiaobai" / "logs"
+        root = Path(base) / "mox" / "xiaobai" / "logs"
     elif system == "Darwin":
-        root = Path.home() / "Library" / "Logs" / "xuanji" / "xiaobai"
+        root = Path.home() / "Library" / "Logs" / "mox" / "xiaobai"
     else:
         xdg = os.environ.get("XDG_STATE_HOME") or str(Path.home() / ".local" / "state")
-        root = Path(xdg) / "xuanji" / "xiaobai" / "logs"
+        root = Path(xdg) / "mox" / "xiaobai" / "logs"
     root.mkdir(parents=True, exist_ok=True)
     return root
 
@@ -46,7 +46,7 @@ def _default_voice_models_dirs() -> list[Path]:
     dirs: list[Path] = []
     if getattr(sys, "frozen", False):
         dirs.append(Path(sys.executable).resolve().parent / "models")
-    dirs.append(Path.home() / ".xuanji" / "models" / "voice")
+    dirs.append(Path.home() / ".mox" / "models" / "voice")
     dirs.append(Path(__file__).resolve().parent.parent.parent / "models")
     return [d for d in dirs if d is not None]
 

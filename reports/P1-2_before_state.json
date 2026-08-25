@@ -54,15 +54,15 @@
       "kind": "rust"
     },
     {
-      "id": "engine::xuanji_expert",
+      "id": "engine::mox_expert",
       "kind": "rust"
     },
     {
-      "id": "engine::xuanji_system",
+      "id": "engine::mox_system",
       "kind": "rust"
     },
     {
-      "id": "engine::xuanji_common_meta",
+      "id": "engine::mox_common_meta",
       "kind": "rust"
     },
     {
@@ -144,12 +144,12 @@
       "codePath": "../services/ai-agent/src"
     },
     {
-      "id": "engine-rust-xuanji-expert",
-      "codePath": "../services/xuanji-expert/src"
+      "id": "engine-rust-mox-expert",
+      "codePath": "../services/mox-expert/src"
     },
     {
-      "id": "engine-rust-xuanji-system",
-      "codePath": "../services/xuanji-system/src"
+      "id": "engine-rust-mox-system",
+      "codePath": "../services/mox-system/src"
     },
     {
       "id": "engine-rust-runtime",
@@ -258,15 +258,15 @@
       "kfs": 0
     },
     {
-      "id": "engine::xuanji_expert",
+      "id": "engine::mox_expert",
       "kfs": 0
     },
     {
-      "id": "engine::xuanji_system",
+      "id": "engine::mox_system",
       "kfs": 0
     },
     {
-      "id": "engine::xuanji_common_meta",
+      "id": "engine::mox_common_meta",
       "kfs": 0
     },
     {

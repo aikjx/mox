@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  璇玑（Xuanji）企业级全维归一化 一键验收脚本
+  璇玑（Mox）企业级全维归一化 一键验收脚本
 .DESCRIPTION
   按流水线执行：
     Phase 1 : Rust 测试      （cargo test --workspace）
@@ -174,7 +174,7 @@ Set-Content -Path $REPORT_JSON -Value $reportJson -Encoding UTF8
 
 # Markdown 报告
 $md = New-Object System.Text.StringBuilder
-[void]$md.AppendLine("# 璇玑（Xuanji）企业级验收报告")
+[void]$md.AppendLine("# 璇玑（Mox）企业级验收报告")
 [void]$md.AppendLine()
 [void]$md.AppendLine("> 生成时间：$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')，总耗时：$([int]($Stopwatch.ElapsedMilliseconds/1000))s，结果：**$($reportObj.result)**")
 [void]$md.AppendLine()

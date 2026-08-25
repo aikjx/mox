@@ -1,0 +1,414 @@
+# ---------------------------------------------------------------------------
+# T24-6 璇玑 Kind 集群 3 主 3 从部署模板 (v2.1)
+# ---------------------------------------------------------------------------
+# 拓扑: 3 control-plane (master) + 3 worker (data) 节点
+#   - master: 部署 apiserver/etcd/controller，带 node-role.kubernetes.io/control-plane
+#   - worker: 存储数据面，部署 volume/s3/graph-server StatefulSet
+# 亲和性:
+#   - Kind 3 主 3 从，每个 node 分配 StatefulSet pod (PodAntiAffinity)
+#   - SM2 CA / STS Keystore 仅 master 节点部署 (nodeSelector role=master taint)
+# 副本:
+#   - mox-server Deployment: replicas=3 (spread to 3 worker nodes)
+#   - etcd StatefulSet: replicas=3 (control-plane spread)
+#   - minio StatefulSet: replicas=3 (worker spread, erasure coding 3 nodes)
+# ---------------------------------------------------------------------------
+
+{{- if .Values.kind3m3s.enabled -}}
+---
+# 节点亲和/污点辅助：声明 master-only 部署专用 Namespace。
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.kind3m3s.namespace | default "mox-system" }}
+  labels:
+    app.kubernetes.io/part-of: mox
+    app.kubernetes.io/managed-by: helm
+    mox.github.io/deployment-tier: "kind-3m3s"
+---
+# 主节点：SM2 根 CA 私钥（仅存在 master 节点；生产请替换为 KMS/HSM）。
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mox-sm2-root-ca
+  namespace: {{ .Values.kind3m3s.namespace | default "mox-system" }}
+  labels:
+    mox.github.io/sensitivity: "root-ca-private-key"
+type: Opaque
+data:
+  # 由 helm install --set-file sm2.sk32=./sk32.bin 注入；占位请不要提交到仓库。
+  sm2_sk_32.bin: {{ .Values.kind3m3s.sm2.sk32_b64 | default "" | quote }}
+  sm2_pk_65.bin: {{ .Values.kind3m3s.sm2.pk65_b64 | default "" | quote }}
+  issuer_id: {{ .Values.kind3m3s.sm2.issuer_id_b64 | default "eHVhbmppLXNtMi1yb290" | quote }}
+---
+# mox-server Deployment: 3 副本跨 worker 反亲和。
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mox-server
+  namespace: {{ .Values.kind3m3s.namespace | default "mox-system" }}
+  labels:
+    app: mox-server
+    mox.github.io/tier: "api-plane"
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: mox-server
+  template:
+    metadata:
+      labels:
+        app: mox-server
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      # 仅调度到 worker（control-plane master 节点默认带 node-role 污点）。
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: DoesNotExist
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: "kubernetes.io/hostname"
+              labelSelector:
+                matchLabels:
+                  app: mox-server
+      tolerations:
+        - key: "node-role.kubernetes.io/worker"
+          operator: "Equal"
+          value: "true"
+          effect: "NoSchedule"
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: mox-server
+          image: {{ .Values.kind3m3s.server.image | default "registry.cn-hangzhou.aliyuncs.com/mox/server:v2.1" }}
+          imagePullPolicy: {{ .Values.kind3m3s.server.pullPolicy | default "IfNotPresent" }}
+          args: ["--single-node", "--features=simd,gm-sm,glacier"]
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: metrics
+              containerPort: 9090
+          env:
+            - name: RUST_LOG
+              value: {{ .Values.kind3m3s.server.logLevel | default "info" }}
+            - name: MOX_SM2_CA_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: mox-sm2-root-ca
+                  key: sm2_sk_32.bin
+            - name: MOX_SM2_CA_PK
+              valueFrom:
+                secretKeyRef:
+                  name: mox-sm2-root-ca
+                  key: sm2_pk_65.bin
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "1"
+              memory: "1Gi"
+            limits:
+              cpu: "4"
+              memory: "8Gi"
+          volumeMounts:
+            - name: tmp-objects
+              mountPath: /data/mox/objects
+      volumes:
+        - name: tmp-objects
+          emptyDir:
+            sizeLimit: 100Gi
+---
+# mox-server Service (ClusterIP) → Kind 集群内部访问。
+apiVersion: v1
+kind: Service
+metadata:
+  name: mox-server
+  namespace: {{ .Values.kind3m3s.namespace | default "mox-system" }}
+spec:
+  type: ClusterIP
+  selector:
+    app: mox-server
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+    - name: metrics
+      port: 9090
+      targetPort: 9090
+---
+# Kind Ingress (nginx): 暴露 mox-server 到宿主机 80/443。
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mox-ingress
+  namespace: {{ .Values.kind3m3s.namespace | default "mox-system" }}
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: {{ .Values.kind3m3s.ingress.host | default "mox.localhost" }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: mox-server
+                port:
+                  number: 8080
+---
+# mox-etcd StatefulSet 3 副本 (control-plane 反亲和)。
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mox-etcd
+  namespace: {{ .Values.kind3m3s.namespace | default "mox-system" }}
+  labels:
+    app: mox-etcd
+    mox.github.io/tier: "control-plane"
+spec:
+  replicas: 3
+  serviceName: mox-etcd-headless
+  selector:
+    matchLabels:
+      app: mox-etcd
+  template:
+    metadata:
+      labels:
+        app: mox-etcd
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: Exists
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: "kubernetes.io/hostname"
+              labelSelector:
+                matchLabels:
+                  app: mox-etcd
+      tolerations:
+        - key: "node-role.kubernetes.io/control-plane"
+          operator: "Equal"
+          value: ""
+          effect: "NoSchedule"
+      containers:
+        - name: etcd
+          image: {{ .Values.kind3m3s.etcd.image | default "quay.io/coreos/etcd:v3.5.12" }}
+          command:
+            - /usr/local/bin/etcd
+            - --name=$(POD_NAME)
+            - --data-dir=/var/etcd/data
+            - --initial-cluster-state=new
+            - --initial-cluster-token=mox-etcd-1
+            - --initial-cluster=mox-etcd-0=http://mox-etcd-0.mox-etcd-headless:2380,mox-etcd-1=http://mox-etcd-1.mox-etcd-headless:2380,mox-etcd-2=http://mox-etcd-2.mox-etcd-headless:2380
+            - --listen-peer-urls=http://0.0.0.0:2380
+            - --listen-client-urls=http://0.0.0.0:2379
+            - --advertise-client-urls=http://$(POD_NAME).mox-etcd-headless:2379
+            - --initial-advertise-peer-urls=http://$(POD_NAME).mox-etcd-headless:2380
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - name: client
+              containerPort: 2379
+            - name: peer
+              containerPort: 2380
+          volumeMounts:
+            - name: data
+              mountPath: /var/etcd/data
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.kind3m3s.etcd.storageClass | default "standard" }}
+        resources:
+          requests:
+            storage: {{ .Values.kind3m3s.etcd.size | default "10Gi" }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mox-etcd-headless
+  namespace: {{ .Values.kind3m3s.namespace | default "mox-system" }}
+spec:
+  clusterIP: None
+  selector:
+    app: mox-etcd
+  ports:
+    - name: client
+      port: 2379
+    - name: peer
+      port: 2380
+---
+# MinIO StatefulSet 3 副本 (worker 反亲和)，冷/热/温三态对接的对象后端。
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mox-minio
+  namespace: {{ .Values.kind3m3s.namespace | default "mox-system" }}
+  labels:
+    app: mox-minio
+    mox.github.io/tier: "data-plane"
+spec:
+  replicas: 3
+  serviceName: mox-minio-headless
+  selector:
+    matchLabels:
+      app: mox-minio
+  template:
+    metadata:
+      labels:
+        app: mox-minio
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: DoesNotExist
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: "kubernetes.io/hostname"
+              labelSelector:
+                matchLabels:
+                  app: mox-minio
+      containers:
+        - name: minio
+          image: {{ .Values.kind3m3s.minio.image | default "quay.io/minio/minio:RELEASE.2024-08-03T04-33-23Z" }}
+          args:
+            - server
+            - --console-address=:9001
+            - http://mox-minio-{0...2}.mox-minio-headless/data/minio
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mox-minio-creds
+                  key: access-key
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mox-minio-creds
+                  key: secret-key
+          ports:
+            - name: s3
+              containerPort: 9000
+            - name: console
+              containerPort: 9001
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          livenessProbe:
+            httpGet:
+              path: /minio/health/live
+              port: 9000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /minio/health/ready
+              port: 9000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "1"
+              memory: "1Gi"
+            limits:
+              cpu: "4"
+              memory: "8Gi"
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.kind3m3s.minio.storageClass | default "standard" }}
+        resources:
+          requests:
+            storage: {{ .Values.kind3m3s.minio.size | default "200Gi" }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mox-minio-creds
+  namespace: {{ .Values.kind3m3s.namespace | default "mox-system" }}
+type: Opaque
+data:
+  access-key: {{ .Values.kind3m3s.minio.accessKeyB64 | default "eHVhbmppYWRtaW4=" | quote }}
+  secret-key: {{ .Values.kind3m3s.minio.secretKeyB64 | default "eHVhbmppU2VjcmV0UGFzczEyMyE=" | quote }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mox-minio-headless
+  namespace: {{ .Values.kind3m3s.namespace | default "mox-system" }}
+spec:
+  clusterIP: None
+  selector:
+    app: mox-minio
+  ports:
+    - name: s3
+      port: 9000
+    - name: console
+      port: 9001
+---
+# PodDisruptionBudget: 保证 3 副本 server 至少 2 存活；etcd 至少 2 存活。
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mox-server-pdb
+  namespace: {{ .Values.kind3m3s.namespace | default "mox-system" }}
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: mox-server
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mox-etcd-pdb
+  namespace: {{ .Values.kind3m3s.namespace | default "mox-system" }}
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: mox-etcd
+---
+{{- end -}}

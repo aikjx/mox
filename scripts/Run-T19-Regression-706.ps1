@@ -37,10 +37,10 @@ wr "--- BASELINE (real, not harness) ---"
 
 # T11 graph-service Rust lib tests (64)
 if (-not $SkipSlow) {
-  wr "[T11-graph/Rust] cargo test -p xuanji-graph-service --lib ..."
+  wr "[T11-graph/Rust] cargo test -p mox-graph-service --lib ..."
   $f = Join-Path $ART "t11_rust.log"
   Push-Location $ROOT
-  cargo test -p xuanji-graph-service --lib 2>&1 | Tee-Object -FilePath $f | Out-Null
+  cargo test -p mox-graph-service --lib 2>&1 | Tee-Object -FilePath $f | Out-Null
   $e = $LASTEXITCODE
   Pop-Location
   $m = (Get-Content $f | Select-String "test result:").ToString()
@@ -65,10 +65,10 @@ if (-not $SkipSlow) {
 
 # T17 Rust (32)
 if (-not $SkipSlow) {
-  wr "[T17-SDK/Rust] cargo test -p xuanji-sdk-cloud -p xuanji-sdk-graph ..."
+  wr "[T17-SDK/Rust] cargo test -p mox-sdk-cloud -p mox-sdk-graph ..."
   $f = Join-Path $ART "t17_rust.log"
   Push-Location $ROOT
-  cargo test -p xuanji-sdk-cloud -p xuanji-sdk-graph --test '*' 2>&1 | Tee-Object -FilePath $f | Out-Null
+  cargo test -p mox-sdk-cloud -p mox-sdk-graph --test '*' 2>&1 | Tee-Object -FilePath $f | Out-Null
   $e = $LASTEXITCODE
   Pop-Location
   $tot = 0; $pas = 0; $fai = 0
