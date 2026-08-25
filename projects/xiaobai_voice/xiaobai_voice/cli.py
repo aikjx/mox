@@ -2,10 +2,17 @@
 from __future__ import annotations
 
 import io
+import logging
 import os
 import sys
 import time
 from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# 运行期资源根目录（frozen 时由 main() 解析；开发态为 None，loader 使用 __file__）
+# config/loader.py 等模块可以读取此变量作为打包后资源的首选路径。
+# ---------------------------------------------------------------------------
+_RESOURCE_ROOT: Path | None = None
 
 
 def _ensure_windowed_streams() -> None:
@@ -251,7 +258,41 @@ def _ast_scan_fish():
 
 
 def main(argv=None) -> int:
+    global _RESOURCE_ROOT
     _ensure_windowed_streams()
+
+    # --- frozen 模式下资源根目录解析（onedir: exe.parent 或 _MEIPASS） ----
+    if getattr(sys, "frozen", False):
+        _log = logging.getLogger("xiaobai.cli")
+        exe_parent = Path(sys.executable).resolve().parent
+        meipass = Path(getattr(sys, "_MEIPASS", exe_parent))
+        try:
+            _log.info("frozen: sys.executable = %s", sys.executable)
+            _log.info("frozen: sys._MEIPASS    = %s", meipass)
+        except Exception:  # logging 尚未初始化时兜底到 stderr
+            print("[frozen] sys.executable =", sys.executable, file=sys.stderr)
+            print("[frozen] sys._MEIPASS    =", meipass, file=sys.stderr)
+
+        # PyInstaller 6+ onedir: datas 出现在 dist/Xiaobai/_internal/ 或根下
+        # 优先 exe.parent/xiaobai_voice/config，回退 _MEIPASS/xiaobai_voice/config
+        cand1 = exe_parent / "xiaobai_voice" / "config"
+        cand2 = meipass / "xiaobai_voice" / "config"
+        if cand1.is_dir():
+            _RESOURCE_ROOT = exe_parent
+        elif cand2.is_dir():
+            _RESOURCE_ROOT = meipass
+        else:
+            # 都不存在时仍取 _MEIPASS 作为兜底（后续读文件会各自处理 FileNotFound）
+            _RESOURCE_ROOT = meipass
+            try:
+                _log.warning(
+                    "frozen: xiaobai_voice/config 目录既不在 %s 也不在 %s，"
+                    "将以 _MEIPASS 作为 _RESOURCE_ROOT 兜底。",
+                    cand1, cand2,
+                )
+            except Exception:
+                print("[frozen] WARNING: config dir missing, fallback _MEIPASS =", meipass, file=sys.stderr)
+
     _inject_dll_dirs()
     _inject_env()
     _setup_logging()

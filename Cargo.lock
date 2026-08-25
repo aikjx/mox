@@ -5206,6 +5206,7 @@ dependencies = [
  "xuanji-data-plane",
  "xuanji-etl-wasm",
  "xuanji-fusion",
+ "xuanji-graph-service",
  "xuanji-standards",
 ]
 

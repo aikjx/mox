@@ -598,28 +598,34 @@ async fn main() -> anyhow::Result<()> {
             "/ws/hitl",
             get(crate::handlers::hitl::hitl_ws_handler).with_state(state.hitl.clone()),
         )
-        // ========== 静态前端
-        .nest_service("/", ServeDir::new("./frontend/dist"))
         // 先固化状态为 Router<()>（axum nest 要求内外 state 一致），再挂载子服务
         .with_state(state);
 
+    // 重要：下列 nest 操作必须在 .nest_service("/", ServeDir) **之前** 完成——
+    // ServeDir 作为「根路径 catch-all」会拦截所有未显式匹配的前缀，导致子路由 404。
+    let mut app = app;
+
     // ========== 子服务聚合（Phase 1 收敛）==========
-    // 四套并行 server（xuanji-expert / xuanji-system / primiflow / primiflow-fusion）
-    // 收敛为库，统一由 operator-server 对外暴露；可用 OUS_ENABLE_* 分别关闭。
     let subs = subservers::build().await;
     for note in &subs.notes {
         tracing::info!("{note}");
     }
-    let mut app = app;
     for (prefix, router) in subs.routers {
         app = app.nest(prefix, router);
     }
 
     // ========== T7 FR-GW-04：Voice 代理 /voice/** → :3717 ==========
     // 3717 不可达时自动回退到 browser_tts JSON（AC-22 标准），避免 502 炸前端。
-    app = app.merge(crate::routes::voice_proxy::voice_proxy_routes(
-        crate::routes::voice_proxy::VoiceProxyState::default(),
-    ));
+    //
+    // ⚠️  路由挂载方式（最终稳定版，永久保留）：
+    //   axum 不允许任何含前缀的 catch-all（/voice/{*tail} 会 panic），
+    //   子 Router .nest + .fallback 在嵌套下有子路径 404/POST 405 的隐藏 bug。
+    //   ✅ 解法：直接作为最外层 middleware（管线最早阶段）短路处理 /voice 前缀，
+    //           不走路由表匹配，天然支持任意方法 + 任意子路径 + 0 歧义。
+    let voice_state = crate::routes::voice_proxy::VoiceProxyState::default();
+
+    // ========== 静态前端（必须放最后：作为 fallback 匹配所有未显式路由的路径）==========
+    app = app.nest_service("/", ServeDir::new("./frontend/dist"));
 
     // 三层安全管线（从外到内）：
     //   ① CORS 受控来源
@@ -633,6 +639,13 @@ async fn main() -> anyhow::Result<()> {
             rbac_middleware::rbac_audit_middleware,
         ))
         .layer(middleware::from_fn_with_state(auth_ctx, auth_middleware))
+        // ⚠️ Voice 代理放 auth_middleware **之前**：
+        //    1) /voice/** 是公开端点（避免前端无令牌时 TTS 朗读直接失败，AC-22 三层回退第一层）
+        //    2) 不走路由表 = 不受 /api/ 与 nest_service("/") 的 404/405 歧义影响
+        .layer(middleware::from_fn_with_state(
+            voice_state,
+            voice_proxy_short_circuit,
+        ))
         .layer(build_cors()?);
 
     // 解析命令行参数：支持 `--port <NUM>`（默认 3001，Node 边缘入口占 3000）
@@ -799,12 +812,16 @@ async fn auth_middleware(
     let is_gateway = subservers::GATEWAY_PREFIXES
         .iter()
         .any(|p| path.starts_with(p));
-    // 公开端点：健康检查、前端静态资源、AI对话、子服务透传前缀（无需网关token）。
-    // 注意：/ai/engine/* 是统一 AI 能力编排入口（process/analyze/flow-graph/workflow 等），
-    // 必须要求 Bearer 认证，防止匿名调用烧耗 LLM/浏览器自动化预算。前端经统一 fetcher（自动注入令牌）调用。
+    // 公开端点：健康检查、静态资源、AI对话、子服务透传前缀。
+    // 注意（2026-08-25）：/voice/** 已经由 voice_proxy_short_circuit 中间件在
+    //       auth_middleware 之前短路处理，不再进入本函数。此处保留 /voice 判断是
+    //       防御性冗余（防止中间件被误移除导致 /voice/** 突然被 401）。
+    // /ai/engine/* 是统一 AI 能力编排入口，必须要求 Bearer 认证（防匿名烧 LLM 预算）。
+    let is_voice_proxy = path.starts_with("/voice");
     if !is_gateway
         && (path == "/api/health"
             || path == "/healthz"
+            || is_voice_proxy
             || (!path.starts_with("/api/")
                 && !path.starts_with("/ai/engine")
                 && !path.starts_with("/ws/hitl"))
@@ -851,6 +868,47 @@ async fn auth_middleware(
                 ))
             }
         },
+    }
+}
+
+/// Voice 代理短路中间件（管线最外层，早于 auth）。
+///
+/// - 请求路径以 `/voice` 开头 → 交给 `voice_proxy_handler` 处理并立即返回
+///   （不走 axum 路由表 = 不触发 nest/fallback/catch-all 的任何歧义 bug）。
+/// - 否则 → `next.run(req)` 正常进入路由匹配 + auth + rbac 管线。
+///
+/// 为什么能稳定工作：axum 的 middleware::from_fn_with_state 是 tower::Service 层，
+/// 在路由匹配之前就被调用；我们在这里做一次字符串前缀判断，O(1) 成本。
+async fn voice_proxy_short_circuit(
+    State(state): State<crate::routes::voice_proxy::VoiceProxyState>,
+    req: Request,
+    next: Next,
+) -> Response {
+    let path = req.uri().path();
+    if path == "/voice" || path.starts_with("/voice/") {
+        // voice_proxy_handler 的抽取参数结构 = handler(State, Method, HeaderMap, OriginalUri, Body)
+        // 中间件里直接从 Request 拆出所需信息再调用 handler。
+        use crate::routes::voice_proxy::voice_proxy_handler;
+        use axum::{
+            body::Body, extract::OriginalUri, http::HeaderMap, http::Method,
+        };
+        let (parts, body) = req.into_parts();
+        let method: Method = parts.method.clone();
+        let headers: HeaderMap = parts.headers.clone();
+        // OriginalUri 需要一个可借用的 http::Uri；把 parts.uri 移进去构造成 extract。
+        let uri = OriginalUri(parts.uri.clone());
+        // 为了保持 state 传递一致性，不调用 axum 的 extractor::FromRequestParts，
+        // 直接调 handler（它内部只用到 State + OriginalUri.uri.path_and_query）。
+        voice_proxy_handler(
+            axum::extract::State(state),
+            method,
+            headers,
+            uri,
+            Body::from(body),
+        )
+        .await
+    } else {
+        next.run(req).await
     }
 }
 

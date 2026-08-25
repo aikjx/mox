@@ -16,6 +16,7 @@
 
 pub mod ac15_faults;
 pub mod algo_bridge;
+pub mod community_cnm;
 pub mod cypher_parser;
 pub mod error;
 pub mod graph_server;

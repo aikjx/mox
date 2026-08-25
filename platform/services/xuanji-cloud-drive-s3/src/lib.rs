@@ -15,6 +15,7 @@ pub mod cors;
 pub mod error;
 pub mod etag;
 pub mod glacier_adapter;
+pub mod glacier_http;
 pub mod lifecycle;
 pub mod mpu;
 pub mod policy;

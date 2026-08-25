@@ -34,6 +34,7 @@ xuanji-data-plane = { path = "../xuanji-data-plane" }
 xuanji-compliance = { path = "../xuanji-compliance" }
 xuanji-etl-wasm = { path = "../xuanji-etl-wasm" }
 xuanji-fusion = { path = "../xuanji-fusion" }
+xuanji-graph-service = { path = "../xuanji-graph-service" }
 xuanji-cloud-drive-volume = { path = "../xuanji-cloud-drive-volume", features = [] }
 xuanji-standards = { path = "../xuanji-standards", features = [] }
 
