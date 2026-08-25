@@ -164,6 +164,53 @@ mod x86_impl {
             off += SIMD_CHUNK;
         }
     }
+
+    /// Fused GF(2^8) multiply-XOR over AVX2 `main_len` bytes of `src`/`dst`.
+    /// `dst[i] ^= mul(coef, src[i])` for all bytes.
+    ///
+    /// # Safety
+    /// Requires AVX2 support; `main_len` divisible by `SIMD_CHUNK` (32);
+    /// caller ensures pointer ranges are valid for read+write as indicated.
+    #[target_feature(enable = "avx2")]
+    pub(crate) unsafe fn avx2_xor_fused_body(
+        coef: u8,
+        src_ptr: *const u8,
+        dst_ptr: *mut u8,
+        main_len: usize,
+    ) {
+        use crate::reed_solomon::gf;
+        use super::SIMD_CHUNK;
+        debug_assert_eq!(main_len % SIMD_CHUNK, 0);
+        if coef == 0 {
+            return;
+        }
+        let tables = gf();
+        let log_subs = build_subtables(&tables.log);
+        let exp_subs = build_subtables(&tables.exp);
+        let log_coef = tables.log[coef as usize];
+        let log_coef_vec = _mm256_set1_epi8(log_coef as i8);
+
+        let mut off = 0;
+        while off < main_len {
+            let src_vec = _mm256_loadu_si256(src_ptr.add(off).cast::<__m256i>());
+            let log_src = lut256_256(&log_subs, src_vec);
+            let zero_mask = _mm256_cmpeq_epi8(src_vec, _mm256_setzero_si256());
+            let log_sum_wrap = _mm256_add_epi8(log_src, log_coef_vec);
+            let log_sum_sat = _mm256_adds_epu8(log_src, log_coef_vec);
+            let adjust_mask =
+                _mm256_cmpeq_epi8(log_sum_sat, _mm256_set1_epi8(255u8 as i8));
+            let adjust_one = _mm256_and_si256(adjust_mask, _mm256_set1_epi8(1));
+            let exp_idx = _mm256_add_epi8(log_sum_wrap, adjust_one);
+            let exp_raw = lut256_256(&exp_subs, exp_idx);
+            let prod = _mm256_andnot_si256(zero_mask, exp_raw);
+            let d = _mm256_loadu_si256(dst_ptr.add(off).cast::<__m256i>());
+            _mm256_storeu_si256(
+                dst_ptr.add(off).cast::<__m256i>(),
+                _mm256_xor_si256(d, prod),
+            );
+            off += SIMD_CHUNK;
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -407,6 +454,121 @@ pub fn gf_vec_mul_auto(coef: u8, src: &[u8], dst: &mut [u8]) {
     // Pure scalar fallback (universal).
     for i in 0..len {
         dst[i] = crate::reed_solomon::gf_mul(coef, src[i]);
+    }
+}
+
+/// Safe, runtime-dispatching vector fused multiply-XOR:
+/// `dst[i] ^= GF(2^8)::mul(coef, src[i])` for all `i`.
+///
+/// Uses the same dispatch tree as [`gf_vec_mul_auto`] but avoids a
+/// user-visible temporary allocation (this is the hot path in RS
+/// encode/decode parity construction).
+pub fn gf_vec_mul_xor_auto(coef: u8, src: &[u8], dst: &mut [u8]) {
+    assert_eq!(
+        src.len(),
+        dst.len(),
+        "gf_vec_mul_xor_auto: src/dst length mismatch"
+    );
+    let len = src.len();
+    if len == 0 {
+        return;
+    }
+    if coef == 0 {
+        // No-op: xor with zero.
+        return;
+    }
+    if coef == 1 {
+        // Xor-with-copy.
+        for (d, &s) in dst.iter_mut().zip(src.iter()) {
+            *d ^= s;
+        }
+        return;
+    }
+
+    #[cfg(feature = "simd")]
+    #[cfg(target_arch = "x86_64")]
+    {
+        if is_avx2_supported() {
+            let main_len = len & !(SIMD_CHUNK - 1);
+            if main_len > 0 {
+                unsafe {
+                    // Wrap the hot loop in a #[target_feature] so AVX2
+                    // intrinsics are inlined rather than turned into slow
+                    // outlined calls.  Without this we observed a 4–8×
+                    // regression vs the scalar path on release builds.
+                    x86_impl::avx2_xor_fused_body(
+                        coef,
+                        src.as_ptr(),
+                        dst.as_mut_ptr(),
+                        main_len,
+                    );
+                }
+            }
+            // Scalar tail: xor fused.
+            for i in main_len..len {
+                dst[i] ^= crate::reed_solomon::gf_mul(coef, src[i]);
+            }
+            return;
+        }
+    }
+
+    #[cfg(feature = "simd")]
+    #[cfg(target_arch = "aarch64")]
+    {
+        if is_neon_supported() {
+            let main_len = len & !(SIMD_CHUNK - 1);
+            if main_len > 0 {
+                unsafe {
+                    use std::arch::aarch64::*;
+                    use crate::reed_solomon::gf;
+                    let tables = gf();
+                    let log_subs = neon_impl::build_subtables(&tables.log);
+                    let exp_subs = neon_impl::build_subtables(&tables.exp);
+                    let log_coef = tables.log[coef as usize];
+                    let log_coef_v = vmovq_n_u8(log_coef);
+
+                    let src_ptr = src.as_ptr();
+                    let dst_ptr = dst.as_mut_ptr();
+                    let mut off = 0;
+                    while off < main_len {
+                        // 2× 128-bit NEON lanes = 32 bytes.
+                        for lane in 0..2usize {
+                            let base = off + lane * 16;
+                            let sv = vld1q_u8(src_ptr.add(base));
+                            let lsrc = neon_impl::lut256_lane(&log_subs, sv);
+                            let zm = vceqq_u8(sv, vmovq_n_u8(0));
+                            let lsumw = vaddq_u8(lsrc, log_coef_v);
+                            // saturating add of u8 -> vqaddq_u8
+                            let lsums = vqaddq_u8(lsrc, log_coef_v);
+                            let am = vceqq_u8(lsums, vmovq_n_u8(255));
+                            let aone = vandq_u8(am, vmovq_n_u8(1));
+                            let eidx = vaddq_u8(lsumw, aone);
+                            let eraw = neon_impl::lut256_lane(&exp_subs, eidx);
+                            let prod = vbicq_u8(eraw, zm); // andnot(zm, eraw) = eraw & ~zm
+                            let d = vld1q_u8(dst_ptr.add(base));
+                            vst1q_u8(dst_ptr.add(base), veorq_u8(d, prod));
+                        }
+                        off += SIMD_CHUNK;
+                    }
+                }
+            }
+            for i in main_len..len {
+                dst[i] ^= crate::reed_solomon::gf_mul(coef, src[i]);
+            }
+            return;
+        }
+    }
+
+    // Pure scalar fused mul-xor fallback.
+    let t = crate::reed_solomon::gf();
+    let log_coef = t.log[coef as usize] as usize;
+    for i in 0..len {
+        let s = src[i];
+        if s == 0 {
+            continue;
+        }
+        let idx = log_coef + t.log[s as usize] as usize;
+        dst[i] ^= t.exp[idx];
     }
 }
 

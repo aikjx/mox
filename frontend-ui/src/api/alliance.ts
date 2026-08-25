@@ -6,7 +6,21 @@
  * BASE_URL 默认 /api 转发到 Rust 网关 runtime-gateway；跨域未配时也可以直接走同源。
  */
 
-export const ALLIANCE_BASE = (import.meta as any).env?.VITE_API_BASE ?? '/api'
+export const ALLIANCE_BASE = (import.meta as any).env?.VITE_API_BASE ?? ''
+
+/** 读取前端可用的 Bearer 令牌：优先 env（Vite 注入时为 VITE_OUS_API_TOKEN，Node dev proxy 端用 OUS_API_TOKEN）。
+ *  前端本地运行时，vite.config 的 proxyReq 会兜底注入进程 env OUS_API_TOKEN，所以这里返回空字符串时不会阻断。 */
+function getBearerToken(): string | null {
+  const env = (import.meta as any).env ?? {}
+  return env.VITE_OUS_API_TOKEN || env.OUS_API_TOKEN || null
+}
+
+export function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  const h: Record<string, string> = { ...extra }
+  const t = getBearerToken()
+  if (t) h['Authorization'] = `Bearer ${t}`
+  return h
+}
 
 export type AlliancePhase =
   | 'intent' | 'team' | 'debate' | 'synthesize' | 'gate' | 'learn' | 'done'
@@ -59,7 +73,7 @@ export interface VoiceHealth {
 export async function getAllianceCapabilities(): Promise<AllianceCapabilities> {
   const r = await fetch(`${ALLIANCE_BASE}/ai/engine/alliance/capabilities`, {
     method: 'GET',
-    headers: { 'Accept': 'application/json' },
+    headers: authHeaders({ 'Accept': 'application/json' }),
   })
   if (!r.ok) throw new Error(`alliance/capabilities HTTP ${r.status}`)
   return await r.json()
@@ -77,10 +91,10 @@ export async function runAllianceFullSSE(
   // 使用 fetch + ReadableStream.getReader() 解析 SSE（比 EventSource 更灵活：支持 POST body + headers）
   const resp = await fetch(`${ALLIANCE_BASE}/ai/engine/alliance/full`, {
     method: 'POST',
-    headers: {
+    headers: authHeaders({
       'Content-Type': 'application/json',
       'Accept': 'text/event-stream',
-    },
+    }),
     body: JSON.stringify(req),
   })
   if (!resp.ok) {
@@ -133,7 +147,7 @@ export async function runAllianceFullSSE(
 /** GET /voice/health（T12 专用） */
 export async function getVoiceHealth(): Promise<VoiceHealth> {
   try {
-    const r = await fetch(`${ALLIANCE_BASE}/voice/health`, { method: 'GET', headers: { Accept: 'application/json' } })
+    const r = await fetch(`${ALLIANCE_BASE}/voice/health`, { method: 'GET', headers: authHeaders({ Accept: 'application/json' }) })
     if (!r.ok) throw new Error(`HTTP ${r.status}`)
     return await r.json()
   } catch (e: any) {

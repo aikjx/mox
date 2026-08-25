@@ -8,7 +8,7 @@ pub mod tag_parser;
 
 pub use audit_sync::{AuditBlock, AuditChain, AuditEvent, AuditRecordKind};
 pub use cdc_stage::{tag_cdc_graph_stage, ObjectTagged};
-pub use graph_projection_bridge::ProjectionBridge;
+pub use graph_projection_bridge::{MappingEntry, ProjectionBridge};
 pub use graph_writer::{
     Error as GraphError, GraphWriter, GraphWriterStats, ObjectMeta, Result as GraphResult, TagMeta,
 };

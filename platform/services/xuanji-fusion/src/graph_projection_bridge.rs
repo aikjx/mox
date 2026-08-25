@@ -4,8 +4,18 @@
 //! and tags can be materialised as integer-keyed vertices in SimpleGraph.
 
 use std::collections::BTreeMap;
+use serde::{Serialize, Deserialize};
 
 use xuanji_graph_service::projection_20::SimpleGraph;
+
+/// A single projection mapping entry: vertex id ↔ (object_id, layer, creation time).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct MappingEntry {
+    pub vertex_id: i64,
+    pub object_id: String,
+    pub layer: String,
+    pub created_unix_ms: u64,
+}
 
 /// Bridge state: bijection tables + SimpleGraph accumulator.
 pub struct ProjectionBridge {
@@ -13,6 +23,8 @@ pub struct ProjectionBridge {
     pub s2i: BTreeMap<String, i64>,
     pub i2s: BTreeMap<i64, String>,
     pub graph: SimpleGraph,
+    /// Per-object_id layer metadata (populated by register() and upsert helpers).
+    pub meta: BTreeMap<String, (String, u64)>, // object_id -> (layer, created_unix_ms)
 }
 
 impl std::fmt::Debug for ProjectionBridge {
@@ -46,7 +58,89 @@ impl ProjectionBridge {
                 fwd: BTreeMap::new(),
                 bwd: BTreeMap::new(),
             },
+            meta: BTreeMap::new(),
         }
+    }
+
+    /// Now timestamp helper (ms since unix epoch).
+    fn now_ms() -> u64 {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0)
+    }
+
+    /// Register (or re-lookup) a projection mapping. If the object_id already
+    /// exists in the bijection, returns its existing vertex_id; otherwise
+    /// allocates a new id and persists the (layer, created_at) metadata.
+    pub fn register(&mut self, object_id: &str, layer: &str) -> i64 {
+        if let Some(&id) = self.s2i.get(object_id) {
+            // ensure meta exists for revived entries
+            self.meta.entry(object_id.to_string()).or_insert_with(|| {
+                (layer.to_string(), Self::now_ms())
+            });
+            // ensure graph vertex present
+            if !self.graph.vertices.contains_key(&id) {
+                self.graph.add_vertex_with(id, layer, layer, 0, BTreeMap::new());
+            }
+            return id;
+        }
+        let id = self.next_id;
+        self.next_id += 1;
+        self.s2i.insert(object_id.to_string(), id);
+        self.i2s.insert(id, object_id.to_string());
+        let ts = Self::now_ms();
+        self.meta.insert(object_id.to_string(), (layer.to_string(), ts));
+        let mut attr = BTreeMap::new();
+        attr.insert("layer".into(), layer.to_string());
+        self.graph.add_vertex_with(id, layer, layer, 0, attr);
+        id
+    }
+
+    /// Return all known mappings as a list of `MappingEntry`. The returned
+    /// list length is capped at 20 entries (deterministic: smallest 20
+    /// vertex_ids first) per the T23-2 "20 entries" contract, but callers may
+    /// truncate further.
+    pub fn all_mappings(&self) -> Vec<MappingEntry> {
+        let mut out: Vec<MappingEntry> = Vec::with_capacity(self.i2s.len().min(20));
+        for (&vid, oid) in self.i2s.iter().take(20) {
+            let (layer, created_ms) = self.meta.get(oid).cloned()
+                .unwrap_or_else(|| ("default".to_string(), 0));
+            out.push(MappingEntry {
+                vertex_id: vid,
+                object_id: oid.clone(),
+                layer,
+                created_unix_ms: created_ms,
+            });
+        }
+        out
+    }
+
+    /// Look up a mapping by vertex id; returns None if unknown id.
+    pub fn lookup_vertex(&self, id: i64) -> Option<MappingEntry> {
+        let oid = self.i2s.get(&id)?;
+        let (layer, created_ms) = self.meta.get(oid).cloned()
+            .unwrap_or_else(|| ("default".to_string(), 0));
+        Some(MappingEntry {
+            vertex_id: id,
+            object_id: oid.clone(),
+            layer,
+            created_unix_ms: created_ms,
+        })
+    }
+
+    /// Reverse lookup by object_id; returns None if unknown.
+    pub fn lookup_object(&self, object_id: &str) -> Option<MappingEntry> {
+        let &vid = self.s2i.get(object_id)?;
+        let (layer, created_ms) = self.meta.get(object_id).cloned()
+            .unwrap_or_else(|| ("default".to_string(), 0));
+        Some(MappingEntry {
+            vertex_id: vid,
+            object_id: object_id.to_string(),
+            layer,
+            created_unix_ms: created_ms,
+        })
     }
 
     fn intern(

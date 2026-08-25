@@ -33,3 +33,9 @@ chrono = { workspace = true }
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time", "test-util"] }
 tempfile = "3"
+
+[features]
+default = []
+# Enables Glacier cold-layer adapters, 445 RESTORE status codes and the
+# lifecycle HTTP handler extensions.
+glacier = []

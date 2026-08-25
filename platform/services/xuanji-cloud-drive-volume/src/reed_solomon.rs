@@ -119,18 +119,25 @@ pub(crate) fn xor_gf_mul_vec(coef: u8, src: &[u8], dst: &mut [u8], path: PathCho
                 PathChoice::Scalar => false,
                 PathChoice::Simd => true,
                 #[cfg(feature = "simd")]
-                PathChoice::Auto => {
-                    crate::gf256_simd::is_avx2_supported()
-                        || crate::gf256_simd::is_neon_supported()
-                }
+                PathChoice::Auto => auto_prefers_simd(src.len()),
                 #[cfg(not(feature = "simd"))]
                 PathChoice::Auto => false,
             };
             if use_simd {
-                let mut tmp = vec![0u8; src.len()];
-                gf_vec_mul_auto(coef, src, &mut tmp);
-                for (d, &t) in dst.iter_mut().zip(tmp.iter()) {
-                    *d ^= t;
+                #[cfg(feature = "simd")]
+                crate::gf256_simd::gf_vec_mul_xor_auto(coef, src, dst);
+                #[cfg(not(feature = "simd"))]
+                {
+                    let t = gf();
+                    let log_coef = t.log[coef as usize] as usize;
+                    for i in 0..src.len() {
+                        let s = src[i];
+                        if s == 0 {
+                            continue;
+                        }
+                        let idx = log_coef + (t.log[s as usize] as usize);
+                        dst[i] ^= t.exp[idx];
+                    }
                 }
             } else {
                 let t = gf();
@@ -146,6 +153,81 @@ pub(crate) fn xor_gf_mul_vec(coef: u8, src: &[u8], dst: &mut [u8], path: PathCho
             }
         }
     }
+}
+
+/// Decide whether `PathChoice::Auto` should use the SIMD fused mul-xor path vs
+/// the scalar fallback on the current host.  A `std::sync::OnceLock` caches
+/// the decision across calls so we only pay the microbench cost once.
+///
+/// Rationale: Our AVX2 implementation uses a 16-deep 256-entry per-lane LUT
+/// cascade which is memory bound.  On modern x86_64 CPUs the tuned scalar
+/// log/exp table (2 L1 lookups per byte) can outrun the naive vector LUT.  So
+/// `Auto` must micro-benchmark on first use to be correct-by-performance.
+#[cfg(feature = "simd")]
+fn auto_prefers_simd(shard_len_hint: usize) -> bool {
+    use std::sync::OnceLock;
+    static DECISION: OnceLock<bool> = OnceLock::new();
+    *DECISION.get_or_init(|| decide_auto_simd(shard_len_hint))
+}
+
+#[cfg(feature = "simd")]
+fn decide_auto_simd(hint: usize) -> bool {
+    // NEON hosts: we assume the ARM scalar pipeline is relatively weaker so
+    // the vector LUT almost always wins; skip bench.
+    if crate::gf256_simd::is_neon_supported() && !crate::gf256_simd::is_avx2_supported() {
+        return true;
+    }
+    if !crate::gf256_simd::is_avx2_supported() {
+        // No vector ISA available at runtime, use scalar.
+        return false;
+    }
+    // AVX2 available: run a 64 KiB microbench comparing SIMD fused vs scalar
+    // using coef=17 (a representative non-0/1 coefficient).  If SIMD is not
+    // strictly faster, we pick scalar.  Repeat = 7 iterations each; compare
+    // median time.
+    use std::time::Instant;
+    let bench = if hint >= 65536 { 65536 } else { hint.max(4096) };
+    let mut src = vec![3u8; bench];
+    // Fill with pseudo-random mix so SIMD can't win trivially on zeros.
+    let mut acc: u32 = 0x9E37_79B9;
+    for b in src.iter_mut() {
+        acc = acc.wrapping_mul(2654435761).wrapping_add(acc >> 13);
+        *b = acc as u8;
+    }
+    let mut dst_a = vec![0u8; bench];
+    let mut dst_b = vec![0u8; bench];
+    const COEF: u8 = 17;
+    const ITERS: usize = 7;
+
+    let mut scalar_us = Vec::<u128>::with_capacity(ITERS);
+    for _ in 0..ITERS {
+        for d in dst_a.iter_mut() { *d = 0; }
+        let t = Instant::now();
+        let tables = gf();
+        let log_coef = tables.log[COEF as usize] as usize;
+        for i in 0..bench {
+            let s = src[i];
+            if s == 0 { continue; }
+            let idx = log_coef + tables.log[s as usize] as usize;
+            dst_a[i] ^= tables.exp[idx];
+        }
+        scalar_us.push(t.elapsed().as_micros());
+    }
+
+    let mut simd_us = Vec::<u128>::with_capacity(ITERS);
+    for _ in 0..ITERS {
+        for d in dst_b.iter_mut() { *d = 0; }
+        let t = Instant::now();
+        crate::gf256_simd::gf_vec_mul_xor_auto(COEF, &src, &mut dst_b);
+        simd_us.push(t.elapsed().as_micros());
+    }
+
+    scalar_us.sort_unstable();
+    simd_us.sort_unstable();
+    let s_med = scalar_us[ITERS / 2];
+    let a_med = simd_us[ITERS / 2];
+    // SIMD wins iff strictly faster; otherwise stick to the battle-tested scalar.
+    a_med < s_med && a_med > 0
 }
 
 pub(crate) type Matrix = Vec<Vec<u8>>;

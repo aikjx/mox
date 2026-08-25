@@ -1,9 +1,27 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
 
-export default defineConfig({
+// 双保险 RBAC 令牌：VITE_OUS_API_TOKEN（dev时前端可用）+ OUS_API_TOKEN（vite proxy进程级注入）
+// 关键（2026-08-26）：Vite 在 vite.config.js 求值完成后才运行 dotenv，
+// 所以必须用官方 API `loadEnv(mode, dir, prefixes)` 显式加载 .env.{mode}.local / .env.{mode} / .env.local / .env。
+// `prefixes=''` 表示加载所有变量（不按 VITE_ 前缀过滤），便于 process.env 级代理注入。
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+  // 合并到 process.env（方便后续 process.env.GATEWAY_URL 之类写法直取）
+  for (const [k, v] of Object.entries(env)) {
+    if (!(k in process.env)) process.env[k] = v
+  }
+  const _TOKEN = env.VITE_OUS_API_TOKEN || env.OUS_API_TOKEN || ''
+  console.log('[vite-config] mode=', mode, '_TOKEN=', _TOKEN ? `set(${_TOKEN.length}chars)` : 'EMPTY')
+  console.log('[vite-config] GATEWAY_URL=', process.env.GATEWAY_URL || 'default :3001')
+
+  return {
   plugins: [vue()],
+  define: _TOKEN ? {
+    'import.meta.env.VITE_OUS_API_TOKEN': JSON.stringify(_TOKEN),
+    'import.meta.env.OUS_API_TOKEN':       JSON.stringify(_TOKEN),
+  } : {},
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
@@ -18,19 +36,65 @@ export default defineConfig({
       'X-Frame-Options': 'SAMEORIGIN',
       'Referrer-Policy': 'strict-origin-when-cross-origin'
     },
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3010',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
-      },
-      // HITL 人机协同审批 WebSocket：由 Rust 网关承载（默认 :3001，可用 GATEWAY_URL 覆盖）
-      '/ws': {
-        target: process.env.GATEWAY_URL || 'http://localhost:3001',
-        ws: true,
-        changeOrigin: true
+    proxy: (() => {
+      const GW = process.env.GATEWAY_URL || 'http://localhost:3001'
+      const AUTH = _TOKEN ? `Bearer ${_TOKEN}` : ''
+      // Vite 官方推荐：configure(proxy, options) —— 在 http-proxy 实例创建后注册事件，100% 触发。
+      // 相比直接写 on 对象（部分 Vite 5.x 补丁版本里被内部 wrapper 覆盖），configure 永远生效。
+      /** @param {import('http-proxy')} proxy */
+      const mkConfigure = (label) => (proxy) => {
+        proxy.on('proxyReq', (proxyReq, req) => {
+          console.log(`[proxy:${label}] ${req.method} ${req.url} | incoming-auth=${!!req.headers['authorization']} inject_len=${AUTH.length}`)
+          if (AUTH && !req.headers['authorization']) {
+            proxyReq.setHeader('Authorization', AUTH)
+          }
+          const accept = (req.headers['accept'] || '').toString()
+          if (accept.includes('text/event-stream')) {
+            proxyReq.setHeader('Accept-Encoding', 'identity')
+            proxyReq.setHeader('Connection', 'keep-alive')
+          }
+        })
+        proxy.on('error', (err, req, res) => {
+          console.error(`[proxy:${label}:err] ${req?.method} ${req?.url}`, err?.message)
+        })
+        proxy.on('proxyRes', (proxyRes, req) => {
+          console.log(`[proxy:${label}:res] ${proxyRes.statusCode} ${req.method} ${req.url}`)
+        })
       }
-    }
+      const mkAuthOnlyConfigure = (label) => (proxy) => {
+        proxy.on('proxyReq', (proxyReq, req) => {
+          if (AUTH && !req.headers['authorization']) proxyReq.setHeader('Authorization', AUTH)
+        })
+      }
+      console.log('[vite-config] proxy target GW=', GW, 'AUTH_LEN=', AUTH.length)
+      return {
+        // ========== Rust 专家联盟网关（:3001）==========
+        '/ai/engine': {
+          target: GW,
+          changeOrigin: true,
+          configure: mkConfigure('ai-engine'),
+        },
+        // /voice/* → xiaobai_voice 服务代理（公开端点，3717 不可达时网关返回降级 JSON）
+        '/voice': {
+          target: GW,
+          changeOrigin: true,
+          configure: mkAuthOnlyConfigure('voice'),
+        },
+        // HITL 人机协同审批 WebSocket：由 Rust 网关承载（默认 :3001，可用 GATEWAY_URL 覆盖）
+        '/ws': {
+          target: GW,
+          ws: true,
+          changeOrigin: true,
+          configure: mkAuthOnlyConfigure('ws'),
+        },
+        // ========== Node 后端（:3010）—— 保留原入口，优先级低于上面的精确前缀 ==========
+        '/api': {
+          target: 'http://localhost:3010',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, '')
+        },
+      }
+    })()
   },
   build: {
     // 关闭 Vite 自动清空输出目录：避免 rmSync 触发安全删除批量守卫（>50 文件）。
@@ -81,4 +145,5 @@ export default defineConfig({
       }
     }
   }
-})
+  } // ← 闭合 return { 配置对象
+}) // ← 闭合 defineConfig 箭头函数

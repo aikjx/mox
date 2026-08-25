@@ -1,8 +1,10 @@
 //! Voice 代理（T7）：/voice/** → http://localhost:3717/voice/**
 //!
-//! 如果 3717 不可达，则返回 AC-22 标准 fallback JSON（而不是 502），保证前端 UI 不崩溃。
-//!
-//! 依赖：gateway/runtime 的 Cargo.toml 已有 reqwest。
+//! 核心实现注意（避免 404 / 405）：
+//! axum 的 `.nest(prefix, router)` 会把匹配到的 prefix 从「内部路径视角」剥离，
+//! 因此 Router.fallback 内用 `uri.path()` 看到的是 *相对子路由* 的路径（没有 `/voice` 前缀），
+//! 而 `OriginalUri` 保留完整客户端路径（带 `/voice` 前缀）。
+//! 本模块统一使用 `OriginalUri` 取得完整原始路径，不做任何前缀拒判（nest 本身已保证前缀）。
 
 use axum::{
     body::{to_bytes, Body},
@@ -55,18 +57,26 @@ pub async fn voice_proxy_handler(
     OriginalUri(uri): OriginalUri,
     body: Body,
 ) -> Response {
-    // 仅代理 /voice/ 开头路径
-    let path_and_query = uri
+    // 从 OriginalUri 取原始客户端路径（带 /voice 前缀）；若为空（理论不应发生），
+    // 默认 /voice/health 保持语义。关键：不要再做 "/voice/" 前缀拒判——
+    // nest("/voice", Router.route("/") + Router.fallback) 的 "/" 精确匹配导致 uri = "/voice" 或 "/voice/"，
+    // 均为合法请求（用户访问 /voice 即健康探测）。
+    let raw_pq = uri
         .path_and_query()
         .map(|pq| pq.as_str().to_string())
         .unwrap_or_else(|| "/voice/health".into());
-    if !path_and_query.starts_with("/voice/") {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({"error": "voice proxy only handles /voice/**"})),
-        )
-            .into_response();
-    }
+    // 规范化：
+    //   /voice       → /voice/health
+    //   /voice/      → /voice/health
+    //   /voice/X     → /voice/X 保持（X 含 query）
+    let path_and_query = match raw_pq.as_str() {
+        "/voice" | "/voice/" => "/voice/health".to_string(),
+        s if s.starts_with("/voice?") => {
+            format!("/voice/health{}", &s[7..]) // 保留 query
+        }
+        other => other.to_string(),
+    };
+    // 上游（:3717）FastAPI voice 服务本身前缀匹配 /voice/**，直接透传。
     let upstream = format!("{}{}", state.upstream_base, path_and_query);
 
     let body_bytes = match to_bytes(body, 10 * 1024 * 1024).await {
@@ -142,9 +152,25 @@ fn voice_fallback(base: &str, _hint: String) -> (StatusCode, Json<VoiceFallback>
     )
 }
 
-pub fn voice_proxy_routes(state: VoiceProxyState) -> Router {
+/// voice_proxy_routes() — 由主 main.rs 直接挂在顶层 Router。
+///
+/// ⚠️  不要用 `.nest("/voice", voice_proxy_routes(state))` 方式挂载！
+/// 经验证：axum 0.7.x 下 Router 嵌套 + Router.fallback + 非 GET 方法组合会出现
+/// 随机 404/405（子路径 404、POST 405、两者同时出现）。
+///
+/// ✅  正确挂法（写在 main.rs 构建 app 的第一梯队，位于 nest_service 之前）：
+/// ```ignore
+///   let vp_state = VoiceProxyState::default();
+///   let app = Router::new()
+///       .route("/voice",         any(voice_proxy_handler).with_state(vp_state.clone()))
+///       .route("/voice/{*tail}", any(voice_proxy_handler).with_state(vp_state))
+///       // ... 其他 /api/** /ai/engine/** route / nest ...
+///       .nest_service("/", ServeDir::new(...));
+/// ```
+/// 这里 `/voice/{*tail}` 的 catch-all 参数位于「该 route 的最后一个段」——满足 axum 约束，
+/// 不会触发 panic（与 `Router.route("/{*tail}", ...)` 作为子 Router 的情形不同）。
+pub fn voice_proxy_routes(_state: VoiceProxyState) -> Router {
+    // 保留此函数不删：给外部 crate 调用方一个稳定的 API 签名；
+    // 但实际调用应使用上面展示的「顶层双 route 直挂」方式。
     Router::new()
-        // 代理所有 /voice/** 方法与路径
-        .route("/voice/{*path}", any(voice_proxy_handler))
-        .with_state(state)
 }

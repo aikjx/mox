@@ -10,6 +10,8 @@ pub mod sigv4;
 
 #[cfg(feature = "gm-sm")]
 pub mod sm4_gcm;
+#[cfg(feature = "gm-sm")]
+pub mod sts_sm2;
 
 pub use sm3_hash::{hmac_sm3, hmac_sm3_hex, sm3, sm3_hex};
 pub use dengbao_hash_chain::{

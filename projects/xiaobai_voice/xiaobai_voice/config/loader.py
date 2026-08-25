@@ -54,6 +54,22 @@ def _default_voice_models_dirs() -> list[Path]:
 class ConfigLoader:
     DEFAULT_FILENAME = "default_config.yaml"
 
+    @staticmethod
+    def _resolve_default_path(filename: str) -> Path:
+        """解析默认配置文件路径：frozen 时优先 cli._RESOURCE_ROOT 兜底。"""
+        # 1) 先尝试 frozen 下由 cli.main() 确定的资源根
+        try:
+            from .. import cli
+            rr = getattr(cli, "_RESOURCE_ROOT", None)
+            if rr is not None:
+                cand = Path(rr) / "xiaobai_voice" / "config" / filename
+                if cand.is_file():
+                    return cand
+        except Exception:  # noqa: BLE001
+            pass
+        # 2) 开发态 / 兜底：按 __file__ 相对路径（PyInstaller 下通常也正确）
+        return Path(__file__).resolve().parent / filename
+
     def __init__(
         self,
         user_path: Path | None = None,
@@ -62,7 +78,7 @@ class ConfigLoader:
     ) -> None:
         self.user_path = Path(user_path) if user_path else _platform_config_path()
         self.user_path.parent.mkdir(parents=True, exist_ok=True)
-        self.default_path = Path(__file__).resolve().parent / self.DEFAULT_FILENAME
+        self.default_path = self._resolve_default_path(self.DEFAULT_FILENAME)
         self._data: dict = {}
         self._mtime: float | None = None
         self._on_change = on_change
