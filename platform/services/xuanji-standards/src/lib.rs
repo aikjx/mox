@@ -8,6 +8,9 @@ pub mod fips_hmac;
 pub mod rfc5424;
 pub mod sigv4;
 
+#[cfg(feature = "gm-sm")]
+pub mod sm4_gcm;
+
 pub use sm3_hash::{hmac_sm3, hmac_sm3_hex, sm3, sm3_hex};
 pub use dengbao_hash_chain::{
     verify_json_file, ChainVerifyResult, HashChain, HashChainBlock, Outcome,

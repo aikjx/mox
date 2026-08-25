@@ -1,209 +1,164 @@
-//! SM2 digital signature algorithm — pure Rust self-implemented.
+//! SM2 digital signature algorithm — pure Rust implementation.
 //!
-//! Follows GM/T 0003.2-2012 (256-bit recommended curve sm2p256v1).  Implements
-//! 256-bit big integer module (`big256`) using `[u32; 8]` limbs, curve point
-//! addition / doubling in Jacobian coordinates, scalar multiplication via
-//! double-and-add, and the standard SM2 sign / verify flows including the
-//! `ZA` identity hash preamble (`ENTL || ID || a || b || Gx || Gy || xA || yA`).
+//! Follows GM/T 0003.2-2012 (256-bit recommended curve sm2p256v1).  Big-integer
+//! primitives are backed by the well-audited `num-bigint` crate over `BigUint`
+//! to guarantee mathematical correctness.  Curve point operations use affine
+//! coordinates (explicit modular inverses), which are acceptable for the
+//! sign/verify rates our platform encounters.  Scalar multiplication is the
+//! classical left-to-right double-and-add.
 //!
 //! Only raw `(r, s)` signature format is produced; DER conversion helpers are
 //! also exposed.
 
 #![allow(clippy::needless_range_loop)]
 
+use num_bigint::BigUint;
+use num_traits::{One, Zero};
 use core::convert::TryFrom;
 
 // ---------------------------------------------------------------------------
-// 256-bit big integer helpers (limbs: little-endian u32, len = 8)
+// 256-bit big integer helpers: thin `[u32; 8]` (little-endian limbs) façade
+// over `num_bigint::BigUint`.  The same `U256` type alias is exported so
+// callers in `Sm2Sk` / `Sm2Pk` / tests remain completely unchanged.
 // ---------------------------------------------------------------------------
 
 mod big256 {
+    use super::BigUint;
+
     /// 256-bit unsigned integer stored as 8 × u32 little-endian limbs.
     /// Limb 0 is the least significant word.
     pub type U256 = [u32; 8];
 
     const LIMBS: usize = 8;
 
+    #[inline]
+    fn to_big(x: &U256) -> BigUint {
+        let bytes = to_bytes_le(x);
+        BigUint::from_bytes_le(&bytes)
+    }
+
+    #[inline]
+    fn from_big(b: &BigUint) -> U256 {
+        let mut bytes = b.to_bytes_le();
+        bytes.resize(32, 0u8);
+        let mut arr = [0u8; 32];
+        arr.copy_from_slice(&bytes[..32]);
+        bytes_to_le_u256(&arr)
+    }
+
+    #[inline]
+    fn to_bytes_le(x: &U256) -> [u8; 32] {
+        let mut out = [0u8; 32];
+        for i in 0..LIMBS {
+            out[i * 4]     = (x[i]      ) as u8;
+            out[i * 4 + 1] = (x[i] >> 8 ) as u8;
+            out[i * 4 + 2] = (x[i] >> 16) as u8;
+            out[i * 4 + 3] = (x[i] >> 24) as u8;
+        }
+        out
+    }
+
+    #[inline]
+    fn bytes_to_le_u256(b: &[u8; 32]) -> U256 {
+        let mut r = [0u32; LIMBS];
+        for i in 0..LIMBS {
+            r[i] = (b[i * 4] as u32)
+                | ((b[i * 4 + 1] as u32) << 8)
+                | ((b[i * 4 + 2] as u32) << 16)
+                | ((b[i * 4 + 3] as u32) << 24);
+        }
+        r
+    }
+
     /// Compare two U256 (limbs LE): returns true iff x >= y.
     #[inline]
     pub fn is_ge(x: &U256, y: &U256) -> bool {
-        for i in (0..LIMBS).rev() {
-            if x[i] > y[i] {
-                return true;
-            }
-            if x[i] < y[i] {
-                return false;
-            }
-        }
-        true
+        to_big(x) >= to_big(y)
     }
 
     /// Add two U256 (limbs LE), returning (low, carry).
     #[inline]
     pub fn add(x: &U256, y: &U256) -> (U256, u32) {
-        let mut r = [0u32; LIMBS];
-        let mut carry: u64 = 0;
-        for i in 0..LIMBS {
-            let s = (x[i] as u64) + (y[i] as u64) + carry;
-            r[i] = s as u32;
-            carry = s >> 32;
-        }
-        (r, carry as u32)
+        let a = to_big(x);
+        let b = to_big(y);
+        let sum = a + b;
+        let bytes = sum.to_bytes_le();
+        let carry: u32 = if bytes.len() > 32 {
+            // The extra limbs' value doesn't actually matter for current
+            // callers because they only test carry != 0.
+            1
+        } else {
+            0
+        };
+        let mut pad = [0u8; 32];
+        let n = bytes.len().min(32);
+        pad[..n].copy_from_slice(&bytes[..n]);
+        (bytes_to_le_u256(&pad), carry)
     }
 
     /// Subtract two U256 (limbs LE).  x MUST be >= y.
     #[inline]
     pub fn sub(x: &U256, y: &U256) -> U256 {
-        let mut r = [0u32; LIMBS];
-        let mut borrow: i64 = 0;
-        for i in 0..LIMBS {
-            let s = (x[i] as i64) - (y[i] as i64) - borrow;
-            if s < 0 {
-                r[i] = (s + (1i64 << 32)) as u32;
-                borrow = 1;
-            } else {
-                r[i] = s as u32;
-                borrow = 0;
-            }
-        }
-        r
+        let d = to_big(x) - to_big(y);
+        from_big(&d)
     }
 
     /// (x + y) mod m.
     pub fn add_mod(x: &U256, y: &U256, m: &U256) -> U256 {
-        let (s, carry) = add(x, y);
-        if carry != 0 || is_ge(&s, m) {
-            // s + carry*2^256 - m.  If carry then s alone is already < m is
-            // impossible — 2^256 > m for our curves (m is 256 bits).
-            sub_wide(s, carry, m)
-        } else {
-            s
-        }
+        let sum = to_big(x) + to_big(y);
+        let mm = to_big(m);
+        let r = if &sum >= &mm { sum - &mm } else { sum };
+        // Wrap to [0, m) explicitly (no-op for <2*m additions).
+        let r2 = if &r >= &mm { &r - &mm } else { r };
+        from_big(&r2)
     }
 
-    /// (x - y) mod m, branchy on underflow.
+    /// (x - y) mod m.
     pub fn sub_mod(x: &U256, y: &U256, m: &U256) -> U256 {
-        if is_ge(x, y) {
-            sub(x, y)
-        } else {
-            // m - (y - x)
-            let diff = sub(y, x);
-            sub(m, &diff)
-        }
-    }
-
-    /// Subtract m from (x + carry*2^256), carry in {0,1}.
-    fn sub_wide(x: U256, carry: u32, m: &U256) -> U256 {
-        // x + carry*2^256 - m, result in [0, m).
-        // Since x is < 2^256 and m is 256-bit, with carry ∈ {0,1} the
-        // operation is: if carry == 1 the value is in [2^256, 2^257-1); after
-        // one subtraction of m (< 2^256) we still may be >= m again.
-        let mut acc = x;
-        let mut c: i64 = carry as i64;
-        // subtract limb by limb m from (acc + c*2^256).
-        for i in 0..LIMBS {
-            let s = (acc[i] as i64) - (m[i] as i64);
-            if s < 0 {
-                acc[i] = (s + (1i64 << 32)) as u32;
-                c -= 1;
-            } else {
-                acc[i] = s as u32;
-            }
-        }
-        // after subtraction c is the net carry-out. If c < 0 we added 2^256,
-        // i.e. the subtraction underflowed; we then need to add m back.
-        if c < 0 {
-            let (s2, c2) = add(&acc, m);
-            let _ = c2;
-            return s2;
-        }
-        // If acc still >= m, subtract again.
-        if is_ge(&acc, m) {
-            sub(&acc, m)
-        } else {
-            acc
-        }
-    }
-
-    /// Schoolbook multiply → 512-bit result as [u32; 16] LE limbs.
-    fn mul_wide(x: &U256, y: &U256) -> [u32; 16] {
-        let mut r = [0u32; 16];
-        for i in 0..LIMBS {
-            let mut carry: u64 = 0;
-            for j in 0..LIMBS {
-                let prod = (x[i] as u64) * (y[j] as u64) + (r[i + j] as u64) + carry;
-                r[i + j] = prod as u32;
-                carry = prod >> 32;
-            }
-            r[i + LIMBS] = carry as u32;
-        }
-        r
-    }
-
-    /// Reduce 512-bit wide integer mod m by a straightforward binary
-    /// long-division: walk from the most significant bit (pos = 511) down,
-    /// shifting a running remainder left by 1 and adding the next bit from
-    /// the input; whenever the remainder >= m, subtract m.  Unquestionably
-    /// correct for any 256-bit modulus.
-    fn reduce_wide(lo: [u32; 16], m: &U256) -> U256 {
-        let mut rem = zero();
-        // Process bits from MSB (limb 15) down to LSB (limb 0).
-        let mut limb_idx = 15i32;
-        while limb_idx >= 0 {
-            let limb = lo[limb_idx as usize];
-            let mut bit_idx = 31i32;
-            while bit_idx >= 0 {
-                let bit: u32 = (limb >> bit_idx) & 1;
-                // rem <<= 1
-                let mut carry = 0u32;
-                for i in 0..LIMBS {
-                    let new = (rem[i] << 1) | carry;
-                    carry = rem[i] >> 31;
-                    rem[i] = new;
-                }
-                // rem[0] LSB = bit
-                rem[0] |= bit;
-                // if rem >= m: rem -= m
-                if carry != 0 || is_ge(&rem, m) {
-                    rem = sub_mod(&rem, m, m);
-                }
-                bit_idx -= 1;
-            }
-            limb_idx -= 1;
-        }
-        rem
+        let a = to_big(x);
+        let b = to_big(y);
+        let mm = to_big(m);
+        let r = if a >= b { a - b } else { &mm - (b - a) };
+        from_big(&r)
     }
 
     /// (x * y) mod m.
     pub fn mul_mod(x: &U256, y: &U256, m: &U256) -> U256 {
-        let wide = mul_wide(x, y);
-        reduce_wide(wide, m)
+        let prod = to_big(x) * to_big(y);
+        let mm = to_big(m);
+        let r = prod % &mm;
+        from_big(&r)
     }
 
     /// Modular exponentiation via square-and-multiply.
     pub fn pow_mod(base: &U256, exp: &U256, m: &U256) -> U256 {
-        let mut result = one();
-        let mut b = *base;
-        if is_ge(&b, m) {
-            b = sub(&b, m);
-        }
-        for i in 0..LIMBS {
-            let mut e = exp[i];
-            for _ in 0..32 {
-                if e & 1 == 1 {
-                    result = mul_mod(&result, &b, m);
+        let mm = to_big(m);
+        // BigUint::pow takes a usize for exponent (!= BigUint).  Use
+        // manual square-and-multiply over the exponent's LE bytes.
+        let e_bytes = to_bytes_le(exp);
+        let mut result = BigUint::from(1u32);
+        let mut b = to_big(base) % &mm;
+        for byte in &e_bytes {
+            let mut ee = *byte;
+            for _ in 0..8 {
+                if ee & 1 == 1 {
+                    result = (&result * &b) % &mm;
                 }
-                e >>= 1;
-                b = mul_mod(&b, &b, m);
+                ee >>= 1;
+                b = (&b * &b) % &mm;
             }
         }
-        result
+        from_big(&result)
     }
 
     /// Modular inverse via Fermat's little theorem.  m MUST be prime.
     pub fn inv_mod(x: &U256, m: &U256) -> U256 {
-        let mut exp = sub(m, &two());
-        pow_mod(x, &exp, m)
+        let mm = to_big(m);
+        let xb = to_big(x) % &mm;
+        // exponent: m - 2
+        let two = BigUint::from(2u32);
+        let exp = &mm - two;
+        pow_mod(&from_big(&xb), &from_big(&exp), m)
     }
 
     /// Return true if U256 == 0.
@@ -216,44 +171,27 @@ mod big256 {
         x[0] == 1 && x.iter().skip(1).all(|&l| l == 0)
     }
 
-    pub fn zero() -> U256 {
-        [0u32; 8]
-    }
-    pub fn one() -> U256 {
-        let mut r = [0u32; 8];
-        r[0] = 1;
-        r
-    }
-    pub fn two() -> U256 {
-        let mut r = [0u32; 8];
-        r[0] = 2;
-        r
-    }
+    pub fn zero() -> U256 { [0u32; 8] }
+    pub fn one()  -> U256 { let mut r = [0u32; 8]; r[0] = 1; r }
+    pub fn two()  -> U256 { let mut r = [0u32; 8]; r[0] = 2; r }
 
     /// Convert 32 big-endian bytes to U256 (limbs LE).
     pub fn from_be_bytes(b: &[u8; 32]) -> U256 {
-        let mut r = [0u32; 8];
-        for i in 0..8 {
-            let mut w = 0u32;
-            for j in 0..4 {
-                w = (w << 8) | b[i * 4 + j] as u32;
-            }
-            r[7 - i] = w;
+        let mut le = [0u8; 32];
+        for i in 0..32 {
+            le[i] = b[31 - i];
         }
-        r
+        bytes_to_le_u256(&le)
     }
 
     /// Convert U256 to 32 big-endian bytes.
     pub fn to_be_bytes(x: &U256) -> [u8; 32] {
-        let mut r = [0u8; 32];
-        for i in 0..8 {
-            let w = x[7 - i];
-            r[i * 4] = (w >> 24) as u8;
-            r[i * 4 + 1] = (w >> 16) as u8;
-            r[i * 4 + 2] = (w >> 8) as u8;
-            r[i * 4 + 3] = w as u8;
+        let le = to_bytes_le(x);
+        let mut be = [0u8; 32];
+        for i in 0..32 {
+            be[i] = le[31 - i];
         }
-        r
+        be
     }
 }
 
@@ -293,7 +231,7 @@ mod curve_params {
         }
     }
 
-    /// prime p = FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFF
+    /// prime p
     pub fn p() -> U256 {
         hex_u256!("FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFF")
     }
@@ -320,20 +258,46 @@ mod curve_params {
 }
 
 // ---------------------------------------------------------------------------
-// Jacobian projective point arithmetic over sm2p256v1
+// Affine-point arithmetic over sm2p256v1 (backed by BigUint — correctness)
 // ---------------------------------------------------------------------------
 
 mod ec {
     use super::big256::{self, U256};
     use super::curve_params;
+    use super::{BigUint, One, Zero};
 
-    /// Jacobian projective coordinates: (X : Y : Z), with affine x = X/Z²,
-    /// y = Y/Z³.  `infinity` is represented by Z = 0 and any X, Y.
+    fn to_b(x: &U256) -> BigUint {
+        let mut le = [0u8; 32];
+        for i in 0..8 {
+            le[i * 4]     = (x[i]      ) as u8;
+            le[i * 4 + 1] = (x[i] >> 8 ) as u8;
+            le[i * 4 + 2] = (x[i] >> 16) as u8;
+            le[i * 4 + 3] = (x[i] >> 24) as u8;
+        }
+        BigUint::from_bytes_le(&le)
+    }
+
+    fn from_b(b: &BigUint) -> U256 {
+        let mut bytes = b.to_bytes_le();
+        bytes.resize(32, 0u8);
+        let mut arr = [0u8; 32];
+        arr.copy_from_slice(&bytes[..32]);
+        let mut r = [0u32; 8];
+        for i in 0..8 {
+            r[i] = (arr[i * 4] as u32)
+                | ((arr[i * 4 + 1] as u32) << 8)
+                | ((arr[i * 4 + 2] as u32) << 16)
+                | ((arr[i * 4 + 3] as u32) << 24);
+        }
+        r
+    }
+
+    /// Affine point.  Infinity is represented by `inf = true`.
     #[derive(Clone, Copy)]
     pub struct Point {
         pub x: U256,
         pub y: U256,
-        pub z: U256,
+        pub inf: bool,
     }
 
     impl Point {
@@ -341,175 +305,127 @@ mod ec {
             Point {
                 x: big256::zero(),
                 y: big256::one(),
-                z: big256::zero(),
+                inf: true,
             }
         }
+        pub fn is_infinity(&self) -> bool { self.inf }
 
-        pub fn is_infinity(&self) -> bool {
-            big256::is_zero(&self.z)
-        }
-
-        /// Create from affine coordinates (x, y).
         pub fn from_affine(x: &U256, y: &U256) -> Self {
-            Point {
-                x: *x,
-                y: *y,
-                z: big256::one(),
-            }
+            Point { x: *x, y: *y, inf: false }
         }
 
         /// Return affine coordinates if point is not at infinity.
         pub fn to_affine(&self) -> Option<(U256, U256)> {
-            if self.is_infinity() {
-                return None;
-            }
-            let p = curve_params::p();
-            let z_inv = big256::inv_mod(&self.z, &p);
-            let z_inv2 = big256::mul_mod(&z_inv, &z_inv, &p);
-            let z_inv3 = big256::mul_mod(&z_inv2, &z_inv, &p);
-            let ax = big256::mul_mod(&self.x, &z_inv2, &p);
-            let ay = big256::mul_mod(&self.y, &z_inv3, &p);
-            Some((ax, ay))
+            if self.inf { None } else { Some((self.x, self.y)) }
         }
 
-        /// Generator G in projective.
+        /// Generator G in affine.
         pub fn generator() -> Self {
             Point::from_affine(&curve_params::gx(), &curve_params::gy())
         }
     }
 
-    /// Point double.
+    /// Point double in affine coords.
     pub fn point_double(p: &Point) -> Point {
-        if p.is_infinity() {
+        if p.inf { return Point::infinity(); }
+        let prime_b = to_b(&curve_params::p());
+        let a_b     = to_b(&curve_params::a());
+        let x_b = to_b(&p.x);
+        let y_b = to_b(&p.y);
+        // λ = (3·x² + a) / (2·y)   mod p
+        let three = BigUint::from(3u32);
+        let two   = BigUint::from(2u32);
+        let num = (&three * &x_b * &x_b + &a_b) % &prime_b;
+        let den = (&two * &y_b) % &prime_b;
+        if den.is_zero() {
             return Point::infinity();
         }
-        let prime = curve_params::p();
-        let a = curve_params::a();
-        // Jacobian doubling formulas:
-        //   M = 3(X + Z²)(X - Z²) + a·Z⁴
-        //   S = 4X·Y²
-        //   X' = M² - 2S
-        //   Y' = M(S - X') - 8Y⁴
-        //   Z' = 2Y·Z
-        let x = p.x;
-        let y = p.y;
-        let z = p.z;
-
-        let z2 = big256::mul_mod(&z, &z, &prime);
-        let z4 = big256::mul_mod(&z2, &z2, &prime);
-        let y2 = big256::mul_mod(&y, &y, &prime);
-        let y4 = big256::mul_mod(&y2, &y2, &prime);
-        // x + z2, x - z2
-        let x_plus_z2 = big256::add_mod(&x, &z2, &prime);
-        let x_minus_z2 = big256::sub_mod(&x, &z2, &prime);
-        let three = limb(3);
-        let two = big256::two();
-        let eight = limb(8);
-        let four = limb(4);
-        let prod = big256::mul_mod(&x_plus_z2, &x_minus_z2, &prime);
-        let three_prod = big256::mul_mod(&three, &prod, &prime);
-        let a_z4 = big256::mul_mod(&a, &z4, &prime);
-        let m = big256::add_mod(&three_prod, &a_z4, &prime);
-
-        let four_x_y2 = big256::mul_mod(&four, &big256::mul_mod(&x, &y2, &prime), &prime);
-        let m2 = big256::mul_mod(&m, &m, &prime);
-        let two_s = big256::mul_mod(&two, &four_x_y2, &prime);
-        let x_new = big256::sub_mod(&m2, &two_s, &prime);
-
-        let diff_s_x = big256::sub_mod(&four_x_y2, &x_new, &prime);
-        let m_diff = big256::mul_mod(&m, &diff_s_x, &prime);
-        let eight_y4 = big256::mul_mod(&eight, &y4, &prime);
-        let y_new = big256::sub_mod(&m_diff, &eight_y4, &prime);
-
-        let two_y_z = big256::mul_mod(&two, &big256::mul_mod(&y, &z, &prime), &prime);
-        Point {
-            x: x_new,
-            y: y_new,
-            z: two_y_z,
-        }
+        let lam = big_mul_mod(&num, &inv(&den, &prime_b), &prime_b);
+        // x_new = λ² - 2x mod p → ((λ² + p) - (2x mod p)) mod p, safe.
+        let lam2 = big_mul_mod(&lam, &lam, &prime_b);
+        let two_x = (&two * &x_b) % &prime_b;
+        let x_new = submod(&lam2, &two_x, &prime_b);
+        // y_new = λ·(x - x_new) - y mod p → λ·(x - x_new + p - y) mod p
+        let diff_x = submod(&x_b, &x_new, &prime_b);
+        let m_diff = big_mul_mod(&lam, &diff_x, &prime_b);
+        let y_new = submod(&m_diff, &y_b, &prime_b);
+        Point::from_affine(&from_b(&x_new), &from_b(&y_new))
     }
 
-    /// Point add (p + q).  p and q may be equal (double is used elsewhere).
+    /// Point add in affine coords.
     pub fn point_add(p: &Point, q: &Point) -> Point {
-        if p.is_infinity() {
-            return *q;
-        }
-        if q.is_infinity() {
-            return *p;
-        }
-        let prime = curve_params::p();
-        // Jacobian add formulas (mixed when q.z=1 handled by standard):
-        // U1 = X1·Z2², U2 = X2·Z1²
-        // S1 = Y1·Z2³, S2 = Y2·Z1³
-        let z1_2 = big256::mul_mod(&p.z, &p.z, &prime);
-        let z2_2 = big256::mul_mod(&q.z, &q.z, &prime);
-        let z1_3 = big256::mul_mod(&z1_2, &p.z, &prime);
-        let z2_3 = big256::mul_mod(&z2_2, &q.z, &prime);
-
-        let u1 = big256::mul_mod(&p.x, &z2_2, &prime);
-        let u2 = big256::mul_mod(&q.x, &z1_2, &prime);
-        let s1 = big256::mul_mod(&p.y, &z2_3, &prime);
-        let s2 = big256::mul_mod(&q.y, &z1_3, &prime);
-
-        if big256::is_ge(&u1, &u2) && big256::is_ge(&u2, &u1) {
-            // U1 == U2
-            if big256::is_ge(&s1, &s2) && big256::is_ge(&s2, &s1) {
+        if p.inf { return *q; }
+        if q.inf { return *p; }
+        let prime_b = to_b(&curve_params::p());
+        let (x1, y1) = (to_b(&p.x), to_b(&p.y));
+        let (x2, y2) = (to_b(&q.x), to_b(&q.y));
+        if x1 == x2 {
+            if y1 == y2 {
                 return point_double(p);
             }
             return Point::infinity();
         }
-        // H = U2 - U1, R = S2 - S1
-        let h = big256::sub_mod(&u2, &u1, &prime);
-        let r = big256::sub_mod(&s2, &s1, &prime);
-        let h2 = big256::mul_mod(&h, &h, &prime);
-        let h3 = big256::mul_mod(&h2, &h, &prime);
-        // X3 = R² - H³ - 2·U1·H²
-        let r2 = big256::mul_mod(&r, &r, &prime);
-        let two = big256::two();
-        let u1_h2 = big256::mul_mod(&u1, &h2, &prime);
-        let two_u1_h2 = big256::mul_mod(&two, &u1_h2, &prime);
-        let x3_inner = big256::sub_mod(&r2, &h3, &prime);
-        let x3 = big256::sub_mod(&x3_inner, &two_u1_h2, &prime);
-        // Y3 = R·(U1·H² - X3) - S1·H³
-        let diff = big256::sub_mod(&u1_h2, &x3, &prime);
-        let r_diff = big256::mul_mod(&r, &diff, &prime);
-        let s1_h3 = big256::mul_mod(&s1, &h3, &prime);
-        let y3 = big256::sub_mod(&r_diff, &s1_h3, &prime);
-        // Z3 = H·Z1·Z2
-        let z1z2 = big256::mul_mod(&p.z, &q.z, &prime);
-        let z3 = big256::mul_mod(&h, &z1z2, &prime);
-        Point { x: x3, y: y3, z: z3 }
+        // λ = (y2 - y1) / (x2 - x1) mod p
+        let dy = submod(&y2, &y1, &prime_b);
+        let dx = submod(&x2, &x1, &prime_b);
+        let lam = big_mul_mod(&dy, &inv(&dx, &prime_b), &prime_b);
+        let lam2 = big_mul_mod(&lam, &lam, &prime_b);
+        let t = submod(&lam2, &x1, &prime_b);
+        let x_new = submod(&t, &x2, &prime_b);
+        let dx_new = submod(&x1, &x_new, &prime_b);
+        let t2 = big_mul_mod(&lam, &dx_new, &prime_b);
+        let y_new = submod(&t2, &y1, &prime_b);
+        Point::from_affine(&from_b(&x_new), &from_b(&y_new))
     }
 
-    fn limb(n: u32) -> U256 {
-        let mut r = big256::zero();
-        r[0] = n;
-        r
+    /// (a - b) mod m, safe for all a,b (adds m beforehand).
+    fn submod(a: &BigUint, b: &BigUint, m: &BigUint) -> BigUint {
+        // compute a + m - b then mod m (avoids underflow entirely).
+        ((a + m) - b) % m
     }
 
-    /// Scalar multiplication using constant-time-ish double-and-add (not
-    /// actually constant-time; this code is for correctness, not side-channel
-    /// resistance).
-    pub fn scalar_mul(k: &U256, p: &Point) -> Point {
-        let mut acc = Point::infinity();
-        let mut cur = *p;
-        for i in 0..8 {
-            let mut kw = k[i];
-            for _ in 0..32 {
-                if kw & 1 == 1 {
-                    acc = point_add(&acc, &cur);
+    fn big_mul_mod(a: &BigUint, b: &BigUint, m: &BigUint) -> BigUint {
+        (a * b) % m
+    }
+
+    fn inv(x: &BigUint, m: &BigUint) -> BigUint {
+        // Fermat: m is prime.
+        let one = BigUint::one();
+        let two = BigUint::from(2u32);
+        let exp = m - two;
+        // ModPow: use simple square-multiply over exp bytes.
+        let e_bytes = exp.to_bytes_le();
+        let mut result = one.clone();
+        let mut base = x % m;
+        for byte in e_bytes {
+            let mut e = byte;
+            for _ in 0..8 {
+                if e & 1 == 1 {
+                    result = (&result * &base) % m;
                 }
-                kw >>= 1;
-                cur = point_double(&cur);
+                e >>= 1;
+                base = (&base * &base) % m;
+            }
+        }
+        result
+    }
+
+    /// Scalar multiplication: L2R MSB-first double-and-add over k's 256 bits.
+    pub fn scalar_mul(k: &U256, p: &Point) -> Point {
+        // walk be-bytes (from most significant) for L2R.
+        let be = big256::to_be_bytes(k);
+        let mut acc = Point::infinity();
+        for byte in be.iter() {
+            let mut e = *byte;
+            for _ in 0..8 {
+                acc = point_double(&acc);
+                if e & 0x80 != 0 {
+                    acc = point_add(&acc, p);
+                }
+                e <<= 1;
             }
         }
         acc
-    }
-
-    // Silence unused limb warning.
-    #[allow(dead_code)]
-    fn _limb_silence() -> U256 {
-        limb(0)
     }
 }
 
@@ -536,7 +452,7 @@ pub struct Sm2Sig {
 }
 
 // ---------------------------------------------------------------------------
-// Convenience: generate / public key / point
+// Convenience: generate / public key / sign
 // ---------------------------------------------------------------------------
 
 impl Sm2Sk {
@@ -551,12 +467,8 @@ impl Sm2Sk {
             let mut bytes = [0u8; 32];
             rng.fill_bytes(&mut bytes);
             let val = big256::from_be_bytes(&bytes);
-            if big256::is_zero(&val) {
-                continue;
-            }
-            if !big256::is_ge(&val, &n) {
-                return Sm2Sk(bytes);
-            }
+            if big256::is_zero(&val) { continue; }
+            if !big256::is_ge(&val, &n) { return Sm2Sk(bytes); }
         }
     }
 
@@ -579,10 +491,7 @@ impl Sm2Sk {
     /// nonce `k` sampled over [1, n-1] by rejection sampling.
     #[cfg(feature = "gm-sm")]
     pub fn sign<R: rand::RngCore + rand::CryptoRng>(
-        &self,
-        msg: &[u8],
-        id: &[u8],
-        rng: &mut R,
+        &self, msg: &[u8], id: &[u8], rng: &mut R,
     ) -> Sm2Sig {
         use big256;
         use curve_params;
@@ -598,42 +507,27 @@ impl Sm2Sk {
         let e = big256::from_be_bytes(&e_bytes);
         let d = big256::from_be_bytes(&self.0);
         loop {
-            // k ∈ [1, n-1]
             let k = loop {
                 let mut kb = [0u8; 32];
                 rng.fill_bytes(&mut kb);
                 let v = big256::from_be_bytes(&kb);
-                if big256::is_zero(&v) {
-                    continue;
-                }
-                if !big256::is_ge(&v, &n) {
-                    break v;
-                }
+                if big256::is_zero(&v) { continue; }
+                if !big256::is_ge(&v, &n) { break v; }
             };
             let (x1, _y1) = ec::scalar_mul(&k, &ec::Point::generator())
                 .to_affine()
                 .expect("k·G must not be infinity");
-            // r = (e + x1) mod n
             let r = big256::add_mod(&e, &x1, &n);
-            if big256::is_zero(&r) {
-                continue;
-            }
+            if big256::is_zero(&r) { continue; }
             let one = big256::one();
             let r_plus_k = big256::add_mod(&r, &k, &n);
-            // If r + k == n ( == 0 mod n) → reject
-            if big256::is_zero(&r_plus_k) {
-                continue;
-            }
-            // (1 + d)^-1 mod n
+            if big256::is_zero(&r_plus_k) { continue; }
             let d_plus_1 = big256::add_mod(&d, &one, &n);
             let inv_d1 = big256::inv_mod(&d_plus_1, &n);
-            // s = (1+d)^-1 * (k - r*d) mod n
             let rd = big256::mul_mod(&r, &d, &n);
             let k_minus_rd = big256::sub_mod(&k, &rd, &n);
             let s = big256::mul_mod(&inv_d1, &k_minus_rd, &n);
-            if big256::is_zero(&s) {
-                continue;
-            }
+            if big256::is_zero(&s) { continue; }
             return Sm2Sig {
                 r: big256::to_be_bytes(&r),
                 s: big256::to_be_bytes(&s),
@@ -652,12 +546,10 @@ impl Sm2Pk {
         out
     }
 
-    /// Parse uncompressed bytes back into an Sm2Pk.  Returns None if the
-    /// format is wrong (length != 65 or first byte != 0x04).
+    /// Parse uncompressed bytes back into an Sm2Pk.  Returns None on format
+    /// errors.
     pub fn from_uncompressed_bytes(b: &[u8]) -> Option<Self> {
-        if b.len() != 65 || b[0] != 0x04 {
-            return None;
-        }
+        if b.len() != 65 || b[0] != 0x04 { return None; }
         let mut x = [0u8; 32];
         let mut y = [0u8; 32];
         x.copy_from_slice(&b[1..33]);
@@ -665,7 +557,7 @@ impl Sm2Pk {
         Some(Sm2Pk { x, y })
     }
 
-    /// Verify an SM2 signature.
+    /// Verify an SM2 signature per GM/T 0003.2-2012 §6.2.
     pub fn verify(&self, msg: &[u8], id: &[u8], sig: &Sm2Sig) -> bool {
         use big256;
         use curve_params;
@@ -674,26 +566,16 @@ impl Sm2Pk {
         let n = curve_params::n();
         let r = big256::from_be_bytes(&sig.r);
         let s = big256::from_be_bytes(&sig.s);
-        // r, s in [1, n-1]
-        if big256::is_zero(&r) || big256::is_ge(&r, &n) {
-            return false;
-        }
-        if big256::is_zero(&s) || big256::is_ge(&s, &n) {
-            return false;
-        }
-        // ZA
+        if big256::is_zero(&r) || big256::is_ge(&r, &n) { return false; }
+        if big256::is_zero(&s) || big256::is_ge(&s, &n) { return false; }
         let za = compute_za(id.len() as u16 * 8, id, self);
         let mut e_parts: Vec<u8> = Vec::with_capacity(za.len() + msg.len());
         e_parts.extend_from_slice(&za);
         e_parts.extend_from_slice(msg);
         let e_bytes = sm3(&e_parts);
         let e = big256::from_be_bytes(&e_bytes);
-        // t = (r + s) mod n; if t == 0 fail.
         let t = big256::add_mod(&r, &s, &n);
-        if big256::is_zero(&t) {
-            return false;
-        }
-        // (x1', y1') = s·G + t·Q
+        if big256::is_zero(&t) { return false; }
         let sg = ec::scalar_mul(&s, &ec::Point::generator());
         let q_point = ec::Point::from_affine(
             &big256::from_be_bytes(&self.x),
@@ -705,13 +587,8 @@ impl Sm2Pk {
             Some(p) => p,
             None => return false,
         };
-        // R = (e + x1) mod n must == r
         let r_check = big256::add_mod(&e, &x1, &n);
-        if big256::is_ge(&r_check, &r) && big256::is_ge(&r, &r_check) {
-            true
-        } else {
-            false
-        }
+        big256::is_ge(&r_check, &r) && big256::is_ge(&r, &r_check)
     }
 }
 
@@ -747,7 +624,6 @@ impl Sm2Sig {
     /// `30 || len || 02 || rlen || r_be || 02 || slen || s_be`.
     pub fn to_der(&self) -> Vec<u8> {
         fn encode_int(be: &[u8; 32]) -> Vec<u8> {
-            // strip leading 0x00, prepend 0x00 if high bit set.
             let start = be.iter().position(|&b| b != 0).unwrap_or(32);
             let body = if start == 32 {
                 vec![0u8]
@@ -773,7 +649,6 @@ impl Sm2Sig {
         let total_len = r_der.len() + s_der.len();
         let mut out = Vec::with_capacity(2 + total_len);
         out.push(0x30);
-        // Length: if < 128, single byte.
         if total_len < 128 {
             out.push(total_len as u8);
         } else {
@@ -787,46 +662,31 @@ impl Sm2Sig {
 
     /// Minimal DER decode.  Returns `None` on format errors.
     pub fn from_der(data: &[u8]) -> Option<Self> {
-        if data.len() < 8 || data[0] != 0x30 {
-            return None;
-        }
+        if data.len() < 8 || data[0] != 0x30 { return None; }
         let (total_len, mut pos) = match data[1] {
             l if l < 0x80 => (l as usize, 2),
             0x81 => (data[2] as usize, 3),
             _ => return None,
         };
-        if data.len() != pos + total_len {
-            return None;
-        }
+        if data.len() != pos + total_len { return None; }
         fn read_int(data: &[u8], pos: &mut usize) -> Option<[u8; 32]> {
-            if data.len() < *pos + 2 || data[*pos] != 0x02 {
-                return None;
-            }
+            if data.len() < *pos + 2 || data[*pos] != 0x02 { return None; }
             let ilen = data[*pos + 1] as usize;
             *pos += 2;
-            if ilen == 0 || data.len() < *pos + ilen {
-                return None;
-            }
+            if ilen == 0 || data.len() < *pos + ilen { return None; }
             let int_bytes = &data[*pos..*pos + ilen];
             *pos += ilen;
-            // Strip leading 0x00 padding if present (sign-byte convention)
             let trimmed = if int_bytes[0] == 0x00 && int_bytes.len() > 1 {
                 &int_bytes[1..]
-            } else {
-                int_bytes
-            };
-            if trimmed.len() > 32 {
-                return None;
-            }
+            } else { int_bytes };
+            if trimmed.len() > 32 { return None; }
             let mut out = [0u8; 32];
             out[32 - trimmed.len()..].copy_from_slice(trimmed);
             Some(out)
         }
         let r = read_int(data, &mut pos)?;
         let s = read_int(data, &mut pos)?;
-        if pos != data.len() {
-            return None;
-        }
+        if pos != data.len() { return None; }
         Some(Sm2Sig { r, s })
     }
 }
@@ -834,10 +694,7 @@ impl Sm2Sig {
 /// Convenience: sign and return lowercase hex of `r || s` (128 chars).
 #[cfg(feature = "gm-sm")]
 pub fn sm2_sign_hex<R: rand::RngCore + rand::CryptoRng>(
-    msg: &[u8],
-    id: &[u8],
-    sk: &Sm2Sk,
-    rng: &mut R,
+    msg: &[u8], id: &[u8], sk: &Sm2Sk, rng: &mut R,
 ) -> String {
     use hex::ToHex;
     let sig = sk.sign(msg, id, rng);
@@ -855,9 +712,7 @@ pub fn sm2_verify_hex(msg: &[u8], id: &[u8], pk_bytes: &[u8], sig_hex: &str) -> 
         Some(p) => p,
         None => return false,
     };
-    if sig_hex.len() != 128 {
-        return false;
-    }
+    if sig_hex.len() != 128 { return false; }
     let sig_bytes = match Vec::<u8>::from_hex(sig_hex) {
         Ok(b) => b,
         Err(_) => return false,
@@ -916,7 +771,7 @@ mod t24_tests {
             g3s.to_affine().unwrap().0,
             "3G x mismatch"
         );
-        // Test scalar with large high-limb: 2^255 (MSB set) should not yield infinity.
+        // 2^255 (MSB set) should not yield infinity.
         let mut k255_bytes = [0u8; 32];
         k255_bytes[0] = 0x80;
         let k255 = big256::from_be_bytes(&k255_bytes);
@@ -985,9 +840,8 @@ mod t24_tests {
                 .expect("from_uncompressed_bytes must roundtrip");
             assert_eq!(pk, pk2, "pk roundtrip mismatch");
         }
-        // Also assert bad inputs return None.
         let mut bad = [0u8; 65];
-        bad[0] = 0x02; // compressed
+        bad[0] = 0x02;
         assert!(Sm2Pk::from_uncompressed_bytes(&bad).is_none(), "prefix 0x02 must fail");
         assert!(Sm2Pk::from_uncompressed_bytes(&[0u8; 10]).is_none(), "short slice must fail");
     }

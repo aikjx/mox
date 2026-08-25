@@ -59,12 +59,34 @@
 
           <!-- 全维分析 CTA · φ 主按钮 -->
           <el-tooltip content="架构开发专家联盟 · 一键启动全维分析（需求→架构→实现→测试→验收）" placement="bottom">
-            <el-button class="ct-cta-full" @click="triggerFullAnalysis">
+            <el-button class="ct-cta-full" @click="() => { triggerFullAnalysis(); triggerAlliance(); }">
               <el-icon><Promotion /></el-icon>
               <span class="ct-cta-text">全维分析</span>
               <span class="ct-cta-badge">φ</span>
             </el-button>
           </el-tooltip>
+
+          <!-- T11: 专家联盟 5 阶段 Chip（AC-10） -->
+          <div class="alliance-chips" v-if="allianceRunning || alliancePhase">
+            <div
+              v-for="p in PHASE_CHIPS"
+              :key="p"
+              class="chip"
+              :class="{
+                active: alliancePhase === p,
+                done: alliancePhase && PHASE_CHIPS.indexOf(alliancePhase) > PHASE_CHIPS.indexOf(p)
+              }"
+            >
+              <span class="dot" />
+              <span class="lbl">{{
+                p === 'intent' ? '①意图'
+                : p === 'team' ? '②组队'
+                : p === 'debate' ? '③辩论'
+                : p === 'gate' ? '④门禁'
+                : '⑤完成'
+              }}</span>
+            </div>
+          </div>
 
           <div class="ct-divider"></div>
 
@@ -615,6 +637,27 @@
               <span>{{ artifactLabel }}</span>
             </div>
           </el-tooltip>
+          <!-- T12 麦克风 UI + 语音状态 switch -->
+          <div class="voice-row" @click.stop>
+            <el-switch
+              v-model="voiceUiOpen"
+              size="small"
+              active-text="语音"
+              inactive-text="静音"
+              @change="() => { if (voiceUiOpen) refreshVoiceHealth(); else voiceHealth = null }"
+            />
+            <button
+              class="mic-btn"
+              :class="{ recording: isRecording }"
+              @click.stop="toggleMicRecording"
+              :title="isRecording ? '点击停止录音并识别' : '点击开始录音（Web Speech → Rust ASR）'"
+            >
+              <el-icon :size="18"><Microphone /></el-icon>
+              <span class="mic-level-bar">
+                <span class="mic-level-fill" :style="{ height: (micLevel * 100).toFixed(0) + '%' }" />
+              </span>
+            </button>
+          </div>
           <el-button type="primary" :loading="thinking" @click="send">
             <el-icon><Promotion /></el-icon> 发送
           </el-button>
@@ -736,7 +779,7 @@
 import { ref, nextTick, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { List, Loading, ArrowDown, Link, Document, FolderAdd, ChatDotRound, ChatLineRound, Delete, Upload, Download, Clock, Promotion, DocumentAdd } from '@element-plus/icons-vue'
+import { List, Loading, ArrowDown, Link, Document, FolderAdd, ChatDotRound, ChatLineRound, Delete, Upload, Download, Clock, Promotion, DocumentAdd, Microphone } from '@element-plus/icons-vue'
 import MessageBubble from '@/components/MessageBubble.vue'
 import SessionSidebar from '@/components/SessionSidebar.vue'
 import ToolDock from '@/components/ToolDock.vue'
@@ -769,6 +812,30 @@ import {
   getProject,
   createProject
 } from '@/api'
+
+// ===== T11 专家联盟 SSE =====
+import {
+  runAllianceFullSSE,
+  getAllianceCapabilities,
+  getVoiceHealth,
+} from '@/api/alliance'
+
+// 5 阶段 Chip（AC-10）——前端展示用 5 个：Intent → Team → Debate → Gate → Done，Learn 隐藏
+const PHASE_CHIPS = ['intent', 'team', 'debate', 'gate', 'done']
+const allianceRunning = ref(false)
+const alliancePhase = ref(null)
+const allianceTraceId = ref('')
+const allianceCapabilities = ref(null)
+
+// T12 语音状态
+const voiceHealth = ref(null)
+const voiceUiOpen = ref(false)
+const isRecording = ref(false)
+const micLevel = ref(0) // 0..1
+let audioCtx = null
+let micAnalyser = null
+let micRafId = 0
+let micStream = null
 
 const router = useRouter()
 
@@ -1952,7 +2019,115 @@ function jumpAnalysisStage(idx) {
   scroll()
 }
 
-onUnmounted(() => { if (streamTimer) clearInterval(streamTimer) })
+// ========== T11 触发：全维分析（专家联盟 SSE） ==========
+async function triggerAlliance(fromCurrentInput = true) {
+  if (allianceRunning.value) return
+  let query = ''
+  if (fromCurrentInput && (draft?.value ?? '').trim()) {
+    query = draft.value.trim()
+  } else {
+    const last = [...messages.value].reverse().find(m => m.role === 'user')
+    query = last?.content?.toString().trim() ?? ''
+  }
+  if (!query) {
+    ElMessage.warning('请先输入问题或发送一条消息后再做全维分析')
+    return
+  }
+  allianceRunning.value = true
+  alliancePhase.value = null
+  allianceTraceId.value = ''
+  try {
+    await runAllianceFullSSE(
+      {
+        query,
+        session_id: currentSession.value || null,
+        team_size: 4,
+        retry_on_c: true,
+        enable_llm_debate: false,
+      },
+      (frame) => {
+        alliancePhase.value = frame.phase
+        allianceTraceId.value = frame.trace_id
+        if (frame.phase === 'synthesize' && frame.payload?.markdown) {
+          const md = String(frame.payload.markdown)
+          messages.value.push({
+            id: 'alliance-syn-' + (Math.random().toString(36).slice(2)),
+            role: 'assistant',
+            content: md,
+            createdAt: new Date(),
+            sessionId: currentSession.value,
+          })
+        }
+        if (frame.phase === 'gate' && frame.payload?.score) {
+          const g = frame.payload.score
+          ElMessage({
+            type: g.grade === 'D' ? 'error' : g.grade === 'A' ? 'success' : 'info',
+            message: `质量门禁 ${g.grade} 级：综合分 ${(g.total * 100).toFixed(1)} / 100（公式 = ${g.formula ?? 'HC-8'}）`,
+            duration: g.grade === 'D' ? 0 : 4200,
+            showClose: true,
+          })
+        }
+        if (frame.phase === 'done') {
+          ElMessage.success(`全维分析完成（trace ${String(frame.trace_id || '').slice(0, 8)}…）`)
+        }
+      }
+    )
+  } catch (e) {
+    ElMessage.warning(`专家联盟不可用，已降级为普通对话：${e?.message ?? e}`)
+  } finally {
+    allianceRunning.value = false
+  }
+}
+
+// ========== T12: 麦克风录音 ==========
+async function toggleMicRecording() {
+  if (!isRecording.value) {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)()
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const src = audioCtx.createMediaStreamSource(micStream)
+      micAnalyser = audioCtx.createAnalyser()
+      micAnalyser.fftSize = 256
+      src.connect(micAnalyser)
+      const arr = new Uint8Array(micAnalyser.frequencyBinCount)
+      const loop = () => {
+        if (!micAnalyser || !isRecording.value) return
+        micAnalyser.getByteTimeDomainData(arr)
+        let sum = 0
+        for (let i = 0; i < arr.length; i++) {
+          const v = (arr[i] - 128) / 128
+          sum += v * v
+        }
+        const rms = Math.sqrt(sum / arr.length)
+        micLevel.value = Math.max(0, Math.min(1, rms * 3.2))
+        micRafId = requestAnimationFrame(loop)
+      }
+      isRecording.value = true
+      loop()
+      voiceUiOpen.value = true
+    } catch (e) {
+      ElMessage.error('麦克风授权失败：' + (e?.message ?? e))
+    }
+  } else {
+    isRecording.value = false
+    cancelAnimationFrame(micRafId)
+    micStream?.getTracks().forEach(t => t.stop())
+    micStream = null
+    micLevel.value = 0
+    ElMessage.info('录音停止（ASR 提交需 xiaobai_voice 服务；当前 UI 就绪）')
+  }
+}
+
+/** 刷新语音 health（T12） */
+async function refreshVoiceHealth() {
+  try { voiceHealth.value = await getVoiceHealth() } catch (e) { voiceHealth.value = { ok: false } }
+}
+
+onUnmounted(() => {
+  if (streamTimer) clearInterval(streamTimer)
+  try { cancelAnimationFrame(micRafId) } catch(_) {}
+  try { micStream?.getTracks().forEach(t => t.stop()) } catch(_) {}
+})
 </script>
 
 <style scoped>
@@ -3334,5 +3509,56 @@ onUnmounted(() => { if (streamTimer) clearInterval(streamTimer) })
   border-radius: var(--radius-md);
   overflow: hidden;
   border: 1px solid var(--border-ghost);
+}
+
+/* T11 alliance chips */
+.alliance-chips { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; }
+.alliance-chips .chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px;
+  background: rgba(86,105,179,0.08);
+  color: #8a97b8; font-size: 12px;
+  border: 1px solid rgba(138,151,184,0.2);
+  transition: all .2s ease;
+}
+.alliance-chips .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: #6d7c9e; }
+.alliance-chips .chip.active {
+  background: rgba(127,138,255,0.18); color: #c9d2ff;
+  border-color: rgba(127,138,255,0.6);
+  box-shadow: 0 0 14px rgba(127,138,255,0.15);
+}
+.alliance-chips .chip.active .dot { background: #7f8aff; animation: pulse 1.1s ease-in-out infinite; }
+.alliance-chips .chip.done { color: #6ad8b0; border-color: rgba(106,216,176,0.4); background: rgba(106,216,176,0.08); }
+.alliance-chips .chip.done .dot { background: #6ad8b0; }
+@keyframes pulse { 0%,100% { transform: scale(1); opacity: 1 } 50% { transform: scale(1.5); opacity: .5 } }
+
+/* T12 voice row */
+.voice-row { display: inline-flex; align-items: center; gap: 10px; margin-right: 8px; }
+.mic-btn {
+  position: relative; width: 36px; height: 36px; border-radius: 50%;
+  border: 1px solid rgba(138,151,184,0.3); background: rgba(86,105,179,0.06);
+  color: #b9c3de; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  transition: all .18s ease;
+}
+.mic-btn:hover { color: #fff; border-color: #7f8aff; background: rgba(127,138,255,0.15); }
+.mic-btn.recording {
+  color: #ff6a88; border-color: rgba(255,106,136,0.7);
+  background: rgba(255,106,136,0.12);
+  box-shadow: 0 0 0 0 rgba(255,106,136,0.35);
+  animation: micPulse 1.1s ease-out infinite;
+}
+@keyframes micPulse {
+  0% { box-shadow: 0 0 0 0 rgba(255,106,136,0.40); }
+  70% { box-shadow: 0 0 0 14px rgba(255,106,136,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,106,136,0); }
+}
+.mic-level-bar {
+  position: absolute; right: -4px; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 24px; border-radius: 2px; background: rgba(138,151,184,0.18);
+  overflow: hidden;
+}
+.mic-level-fill {
+  display: block; width: 100%; background: linear-gradient(180deg,#7f8aff,#6ad8b0);
+  position: absolute; left: 0; bottom: 0; transition: height .06s linear;
 }
 </style>

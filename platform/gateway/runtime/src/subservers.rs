@@ -134,3 +134,87 @@ pub async fn build() -> SubServers {
 
     out
 }
+
+// ========================
+// 子服务注册表（T8，FR-GW-05）
+// ========================
+// 启动时上报"已注册的子服务清单"到日志与 metrics。
+// —— 保留上文 Phase 1 聚合逻辑，此处追加注册表 + 打印 + TDD 测试。
+
+use serde::{Deserialize, Serialize};
+use std::time::Duration;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Subserver {
+    pub name: &'static str,
+    pub purpose: &'static str,
+    pub url: String,
+    pub health: String,
+    pub required: bool, // true = 启动失败也不影响主进程（降级）；目前全部 true 保持弹性
+    pub timeout_ms: u64,
+}
+
+pub fn registered_subservers() -> Vec<Subserver> {
+    vec![
+        Subserver {
+            name: "xiaobai_voice",
+            purpose: "ASR (Paraformer-zh + sherpa-onnx) / TTS (CosyVoice2 Apache-2.0 默认 / Fish-S2-Pro 需 Research License)",
+            url: "http://127.0.0.1:3717".into(),
+            health: "/voice/health".into(),
+            required: true,
+            timeout_ms: 1500,
+        },
+        Subserver {
+            name: "xuanji-expert-alliance",
+            purpose: "专家联盟 6 阶段全维分析引擎（Rust crate，内嵌于本 runtime）",
+            url: "builtin://xuanji-expert/alliance".into(),
+            health: "/ai/engine/alliance/capabilities".into(),
+            required: true,
+            timeout_ms: 800,
+        },
+    ]
+}
+
+/// 打印子服务注册到 stderr（main 启动时调用一次即可）
+pub fn print_subserver_registry() {
+    eprintln!("\n========== Platform Subservers (FR-GW-05) ==========");
+    for s in registered_subservers() {
+        eprintln!(
+            "  • {:26} | required={} | {} | health={}",
+            s.name, s.required, s.url, s.health
+        );
+    }
+    eprintln!("=====================================================\n");
+}
+
+/// TDD 友好：获取超时 Duration
+pub fn timeout(s: &Subserver) -> Duration {
+    Duration::from_millis(s.timeout_ms)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn at_least_two_subservers_and_voice_3717() {
+        let list = registered_subservers();
+        assert!(list.len() >= 2);
+        let voice = list
+            .iter()
+            .find(|s| s.name == "xiaobai_voice")
+            .expect("voice必须注册");
+        assert!(
+            voice.url.contains("3717"),
+            "voice URL 必须是 3717：{}",
+            voice.url
+        );
+        assert!(voice.health.starts_with("/voice/"));
+        let alliance = list
+            .iter()
+            .find(|s| s.name == "xuanji-expert-alliance")
+            .expect("alliance必须注册");
+        assert!(alliance.health.starts_with("/ai/engine/"));
+    }
+}
+

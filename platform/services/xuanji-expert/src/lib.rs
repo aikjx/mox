@@ -16,6 +16,8 @@ pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateM
 
 /// 外部审计 Sink：Syslog / S3(WORM) / Kafka，满足 SOC2/GDPR 合规要求
 pub mod audit;
+/// 专家联盟 6 阶段全维分析管线（新增，enterprise/18 BP-05 Rust 单一真相化）
+pub mod alliance;
 /// 多场景 Benchmark：用真实引擎量化核心收益（产品页可复用证据）
 pub mod bench;
 pub mod context;

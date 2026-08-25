@@ -2108,6 +2108,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "num-bigint"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93e7820bc0a80a0238e650327316f929ba18d5be054b647490a3a6a339f3e7c0"
+dependencies = [
+ "num-integer",
+ "num-traits",
+]
+
+[[package]]
 name = "num-bigint-dig"
 version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2919,6 +2929,7 @@ dependencies = [
  "business-catalog",
  "chrono",
  "flow-ai",
+ "futures",
  "futures-util",
  "graph-algorithms",
  "hermes-flow-bridge",
@@ -4896,6 +4907,7 @@ dependencies = [
  "axum",
  "base64",
  "bytes",
+ "chrono",
  "hex",
  "hmac",
  "http",
@@ -5207,6 +5219,8 @@ dependencies = [
  "bytes",
  "hex",
  "hmac",
+ "num-bigint",
+ "num-traits",
  "parking_lot",
  "rand 0.8.7",
  "serde",

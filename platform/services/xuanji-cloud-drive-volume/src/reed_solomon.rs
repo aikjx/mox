@@ -86,15 +86,65 @@ pub(crate) fn gf_inv(a: u8) -> u8 {
     t.exp[255 - la]
 }
 
-// --- simd import / fallback (T22-1 x86_64 AVX2 GF(2^8) vec mul) ---
-#[cfg(feature = "simd")]
-pub(crate) use crate::gf256_simd::gf_vec_mul_auto;
+// ---------------------------------------------------------------------------
+// SIMD path choice & accelerated vector×GF multiply (T22-3)
+// ---------------------------------------------------------------------------
 
-#[cfg(not(feature = "simd"))]
-pub(crate) fn gf_vec_mul_auto(coef: u8, src: &[u8], dst: &mut [u8]) {
-    assert_eq!(src.len(), dst.len(), "gf_vec_mul_auto: src/dst length mismatch");
-    for i in 0..src.len() {
-        dst[i] = gf_mul(coef, src[i]);
+/// Runtime path choice for Reed-Solomon matrix operations.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum PathChoice {
+    /// Runtime-detect AVX2/NEON and prefer SIMD.
+    Auto,
+    /// Force SIMD kernels (caller guarantees host has support).
+    Simd,
+    /// Force scalar byte-by-byte path.  Used for tests and for very short
+    /// work where the SIMD prologue / tail bookkeeping would dominate.
+    Scalar,
+}
+
+/// If coef is 0 the result is zero; if 1 it's pure copy/xor; otherwise SIMD
+/// is exploited when available.  `dst` is XOR'd with `coef × src`.
+#[inline]
+pub(crate) fn xor_gf_mul_vec(coef: u8, src: &[u8], dst: &mut [u8], path: PathChoice) {
+    debug_assert_eq!(src.len(), dst.len());
+    match coef {
+        0 => {}
+        1 => {
+            for (d, &s) in dst.iter_mut().zip(src.iter()) {
+                *d ^= s;
+            }
+        }
+        _ => {
+            let use_simd = match path {
+                PathChoice::Scalar => false,
+                PathChoice::Simd => true,
+                #[cfg(feature = "simd")]
+                PathChoice::Auto => {
+                    crate::gf256_simd::is_avx2_supported()
+                        || crate::gf256_simd::is_neon_supported()
+                }
+                #[cfg(not(feature = "simd"))]
+                PathChoice::Auto => false,
+            };
+            if use_simd {
+                let mut tmp = vec![0u8; src.len()];
+                gf_vec_mul_auto(coef, src, &mut tmp);
+                for (d, &t) in dst.iter_mut().zip(tmp.iter()) {
+                    *d ^= t;
+                }
+            } else {
+                let t = gf();
+                let log_coef = t.log[coef as usize] as usize;
+                for i in 0..src.len() {
+                    let s = src[i];
+                    if s == 0 {
+                        continue;
+                    }
+                    let idx = log_coef + (t.log[s as usize] as usize);
+                    dst[i] ^= t.exp[idx];
+                }
+            }
+        }
     }
 }
 
@@ -218,6 +268,17 @@ impl ReedSolomonEngine {
     }
 
     pub fn encode(&self, profile: &EcProfile, data_bytes: &[u8]) -> RSResult<Vec<Vec<u8>>> {
+        self.encode_with_path(profile, data_bytes, PathChoice::Auto)
+    }
+
+    /// Encode with explicit SIMD/scalar path choice.  Useful for benchmarks
+    /// and platforms where runtime feature-detection heuristic is wrong.
+    pub fn encode_with_path(
+        &self,
+        profile: &EcProfile,
+        data_bytes: &[u8],
+        path: PathChoice,
+    ) -> RSResult<Vec<Vec<u8>>> {
         let started = Instant::now();
         let data = profile.data_shards as usize;
         let parity = profile.parity_shards as usize;
@@ -234,29 +295,14 @@ impl ReedSolomonEngine {
         let data_shard: Vec<&[u8]> = (0..data)
             .map(|c| &padded[c * shard_size..(c + 1) * shard_size])
             .collect();
-        for row in 0..total {
-            if row < data {
-                output[row].copy_from_slice(data_shard[row]);
-                continue;
-            }
+        for row in 0..data {
+            output[row].copy_from_slice(data_shard[row]);
+        }
+        for row in data..total {
             let enc = &encoder[row];
             let dst = &mut output[row];
             for (c, &coef) in enc.iter().enumerate() {
-                if coef == 0 {
-                    continue;
-                }
-                if coef == 1 {
-                    for (d, &s) in dst.iter_mut().zip(data_shard[c].iter()) {
-                        *d ^= s;
-                    }
-                } else {
-                    for (d, &s) in dst.iter_mut().zip(data_shard[c].iter()) {
-                        if s == 0 {
-                            continue;
-                        }
-                        *d ^= gf_mul(coef, s);
-                    }
-                }
+                xor_gf_mul_vec(coef, data_shard[c], dst, path);
             }
         }
         let us = started.elapsed().as_micros() as u64;
@@ -269,6 +315,16 @@ impl ReedSolomonEngine {
         profile: &EcProfile,
         shards: &[Option<Vec<u8>>],
         original_len: usize,
+    ) -> RSResult<Vec<u8>> {
+        self.decode_with_path(profile, shards, original_len, PathChoice::Auto)
+    }
+
+    pub fn decode_with_path(
+        &self,
+        profile: &EcProfile,
+        shards: &[Option<Vec<u8>>],
+        original_len: usize,
+        path: PathChoice,
     ) -> RSResult<Vec<u8>> {
         let data = profile.data_shards as usize;
         let parity = profile.parity_shards as usize;
@@ -331,23 +387,9 @@ impl ReedSolomonEngine {
         for x in 0..data {
             for y in 0..data {
                 let coef = inv[x][y];
-                if coef == 0 {
-                    continue;
-                }
                 let src = &present[y];
                 let dst = &mut recovered[x];
-                if coef == 1 {
-                    for (d, &s) in dst.iter_mut().zip(src.iter()) {
-                        *d ^= s;
-                    }
-                } else {
-                    for (d, &s) in dst.iter_mut().zip(src.iter()) {
-                        if s == 0 {
-                            continue;
-                        }
-                        *d ^= gf_mul(coef, s);
-                    }
-                }
+                xor_gf_mul_vec(coef, src, dst, path);
             }
         }
         let mut flat = Vec::with_capacity(data * shard_size);
@@ -362,6 +404,18 @@ impl ReedSolomonEngine {
         &self,
         profile: &EcProfile,
         shards: &[Option<Vec<u8>>],
+    ) -> RSResult<Vec<Vec<u8>>> {
+        self.reconstruct_shards_with_path(profile, shards, PathChoice::Auto)
+    }
+
+    /// Convenience helper: [`ReedSolomonEngine::reconstruct_shards`] with
+    /// explicit [`PathChoice`].  Mirrors the public API but exposes SIMD
+    /// override for benchmarks and testing.
+    pub fn reconstruct_shards_with_path(
+        &self,
+        profile: &EcProfile,
+        shards: &[Option<Vec<u8>>],
+        path: PathChoice,
     ) -> RSResult<Vec<Vec<u8>>> {
         let data = profile.data_shards as usize;
         let parity = profile.parity_shards as usize;
@@ -393,7 +447,7 @@ impl ReedSolomonEngine {
             .find_map(|s| s.as_ref().map(|v| v.len()))
             .ok_or_else(|| RSError::InvalidInput("no shard present".into()))?;
         let synthetic = data * shard_size;
-        let recovered_data_bytes = self.decode_reconstruct(profile, shards, synthetic)?;
+        let recovered_data_bytes = self.decode_with_path(profile, shards, synthetic, path)?;
         let encoder = matrix_for(profile.data_shards, profile.parity_shards)?;
         let mut out: Vec<Vec<u8>> = vec![vec![0u8; shard_size]; total];
         for i in 0..data {
@@ -401,27 +455,11 @@ impl ReedSolomonEngine {
         }
         for p in 0..parity {
             let row = &encoder[data + p];
-            // split_at_mut so data shard `src` borrows don't conflict with
-            // the parity shard dst borrow (data and parity ranges are disjoint).
             let (data_shards, parity_shards) = out.split_at_mut(data);
             let dst = &mut parity_shards[p];
             for (c, &coef) in row.iter().enumerate() {
-                if coef == 0 {
-                    continue;
-                }
                 let src = &data_shards[c];
-                if coef == 1 {
-                    for (d, &s) in dst.iter_mut().zip(src.iter()) {
-                        *d ^= s;
-                    }
-                } else {
-                    for (d, &s) in dst.iter_mut().zip(src.iter()) {
-                        if s == 0 {
-                            continue;
-                        }
-                        *d ^= gf_mul(coef, s);
-                    }
-                }
+                xor_gf_mul_vec(coef, src, dst, path);
             }
         }
         Ok(out)
@@ -519,5 +557,110 @@ mod unit {
             .decode_reconstruct(&profile, &slots, bytes.len())
             .unwrap();
         assert_eq!(got, bytes);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// T22-3 acceptance tests: encode/decode SIMD vs scalar bit-identical.
+// ---------------------------------------------------------------------------
+#[cfg(test)]
+mod t22_rs_simd_tests {
+    use super::*;
+    use rand::RngCore;
+
+    fn profiles() -> [EcProfile; 3] {
+        [
+            EcProfile::with_default_min_size(2, 1).unwrap(),
+            EcProfile::with_default_min_size(4, 2).unwrap(),
+            EcProfile::with_default_min_size(12, 4).unwrap(),
+        ]
+    }
+    fn payloads() -> [usize; 4] { [64, 4096, 1_048_576, 16_777_216] }
+
+    /// Compare parity shards produced by Scalar path vs Auto (SIMD on supported
+    /// hosts).  All data shards + parity shards must be byte-identical.
+    #[test]
+    fn t22_encode_12plus4_identical_16mb() {
+        let mut rng = rand::thread_rng();
+        let profile = EcProfile::with_default_min_size(12, 4).unwrap();
+        let mut payload = vec![0u8; 16_777_216];
+        rng.fill_bytes(&mut payload);
+        let eng = ReedSolomonEngine::new();
+        let scalar = eng.encode_with_path(&profile, &payload, PathChoice::Scalar).unwrap();
+        let auto = eng.encode_with_path(&profile, &payload, PathChoice::Auto).unwrap();
+        for i in 0..scalar.len() {
+            assert_eq!(
+                scalar[i], auto[i],
+                "SIMD parity mismatch for shard i={} (16MB 12+4)",
+                i
+            );
+        }
+    }
+
+    /// For 3 profiles × 4 payload sizes × 2 loss patterns: Encode(SIMD-auto)
+    /// then drop shards, decode(Scalar) reconstruct identical bytes.
+    #[test]
+    fn t22_encode_bit_identical_3x4x2_grid() {
+        let mut rng = rand::thread_rng();
+        let eng = ReedSolomonEngine::new();
+        let mut grid_count = 0usize;
+        for profile in profiles().iter() {
+            for &size in payloads().iter() {
+                if profile.data_shards as usize * 64 > size {
+                    continue; // skip too-small combos
+                }
+                let mut payload = vec![0u8; size];
+                rng.fill_bytes(&mut payload);
+                let shards = eng.encode_with_path(profile, &payload, PathChoice::Auto).unwrap();
+                let parity = profile.parity_shards as usize;
+                for first_k in [true, false] {
+                    let mut slots: Vec<Option<Vec<u8>>> = shards.iter().cloned().map(Some).collect();
+                    if first_k {
+                        for i in 0..parity { slots[i] = None; }
+                    } else {
+                        // random parity indices plus potentially one data shard inside parity_count.
+                        let total = slots.len();
+                        let seed = (size ^ (profile.data_shards as usize)) % total;
+                        for k in 0..parity { slots[(seed + k) % total] = None; }
+                    }
+                    let recovered = eng
+                        .decode_with_path(profile, &slots, payload.len(), PathChoice::Scalar)
+                        .unwrap();
+                    assert_eq!(
+                        recovered, payload,
+                        "profile={}+{} size={} first_k={first_k}",
+                        profile.data_shards, profile.parity_shards, size
+                    );
+                    grid_count += 1;
+                }
+            }
+        }
+        // 3 profiles × 4 payloads (min 3 valid sizes) × 2 patterns ≥ 18 combos.
+        assert!(grid_count >= 18, "grid_count={grid_count}");
+    }
+
+    /// 1000 iterations of dropping random 1..=4 shards from 12+4 and
+    /// reconstruct_scalar vs original payload byte equality.
+    #[test]
+    fn t22_decode_lost_4_reconstruct_identical_1000() {
+        let mut rng = rand::thread_rng();
+        let profile = EcProfile::with_default_min_size(12, 4).unwrap();
+        let eng = ReedSolomonEngine::new();
+        let mut payload = vec![0u8; 4 * 1024];
+        rng.fill_bytes(&mut payload);
+        let shards = eng.encode(&profile, &payload).unwrap();
+        let total = shards.len();
+        for _ in 0..1000 {
+            use rand::seq::SliceRandom;
+            let loss = (rng.next_u32() as usize % 4) + 1;
+            let mut indices: Vec<usize> = (0..total).collect();
+            indices.shuffle(&mut rng);
+            let mut slots: Vec<Option<Vec<u8>>> = shards.iter().cloned().map(Some).collect();
+            for &idx in indices.iter().take(loss) { slots[idx] = None; }
+            let got = eng
+                .decode_reconstruct(&profile, &slots, payload.len())
+                .unwrap();
+            assert_eq!(got, payload, "1000-round mismatch at loss={loss}");
+        }
     }
 }

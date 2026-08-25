@@ -250,17 +250,32 @@ def _bind_routes(app: FastAPI, prefix: str) -> None:
     @r.get("/health")
     async def health():
         lc = get_lifecycle()
-        cfg = lc.loader.data
+        fish_available = os.environ.get("XIAOBAI_ACCEPT_RESEARCH_LICENSE", "0") == "1"
         return JSONResponse(dict(
-            status="ok",
-            asr=dict(engine=lc.asr_engine_name(), available=lc.asr is not None),
-            tts=dict(engine=lc.tts_engine_name(), available=lc.tts is not None),
-            license_tier=lc.license_tier,
-            port=int(((cfg.get("voice") or {}).get("port")) or 3717),
-            strategy=(cfg.get("voice") or {}).get("strategy") or "local_first",
-            uptime_s=round(lc.uptime_s(), 2),
-            stats=dict(lc.stats),
-            defaults=dict(asr=dict((cfg.get("voice") or {}).get("asr") or {}), tts=dict((cfg.get("voice") or {}).get("tts") or {})),
+            ok=True,
+            asr=dict(
+                ready=lc.asr is not None,
+                model="paraformer-zh",
+                backend="sherpa-onnx",
+            ),
+            tts=dict(
+                ready=lc.tts is not None,
+                engines=[
+                    dict(name="cosyvoice2", available=True, license="Apache-2.0"),
+                    dict(
+                        name="fish_s2_pro",
+                        available=fish_available,
+                        license="Research",
+                        note="默认禁用，需手动接受 Research License 后启用",
+                    ),
+                ],
+                active="cosyvoice2",
+            ),
+            endpoints=dict(
+                asr_full="/voice/asr/full",
+                tts_stream="/voice/tts/stream",
+                ws_asr_stream="/voice/ws/asr/stream",
+            ),
         ))
 
     @r.get("/models")

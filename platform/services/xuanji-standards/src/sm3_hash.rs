@@ -495,10 +495,11 @@ fn t24_debug_try_ss1_variants() {
 }
 #[test]
 fn t24_sample2_standard() {
-    // Sample 2 from GM/T 0004-2012: 64 bytes, 1 block
+    // Sample 2 from GM/T 0004-2012 Appendix B.2: 64 bytes, 1 block
     let s = b"abcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcd";
     assert_eq!(s.len(), 64, "need exactly 1 block for sample 2");
     let got = sm3_hex(s);
+    // GM/T 0004-2012 Appendix B.2 官方向量
     let exp = "debe9ff92275b8a138604889c18e5a4d6fdb70e5387e5765293dcba39c0c5732";
     eprintln!("sample2 got: {}", got);
     eprintln!("sample2 exp: {}", exp);
@@ -510,7 +511,7 @@ fn t24_1ma_sanity_check_blocks() {
     let n = 1_000_000;
     let data: Vec<u8> = std::iter::repeat(b'a').take(n).collect();
     let got = sm3_hex(&data);
-    let exp = "debe9ff92275b8a138604889c18e5a4d6fdb70e5387e5765293dcba39c0c5732";
+    let exp = "c8aaf89429554029e231941a2acc0ad61ff2a5acd8fadd25847a3a732b3b02c3";
     eprintln!("1ma got first 24: {}", &got[..24]);
     eprintln!("1ma exp first 24: {}", &exp[..24]);
     // Now compare with: SM3 of the first 2 blocks (128 a's) + remaining expected chaining? Use a short multi-block.
@@ -571,7 +572,7 @@ fn t24_debug_1ma_api_vs_manual_cf() {
 
     eprintln!("api:    {}", api_hex);
     eprintln!("manual: {}", manual);
-    let exp = "debe9ff92275b8a138604889c18e5a4d6fdb70e5387e5765293dcba39c0c5732";
+    let exp = "c8aaf89429554029e231941a2acc0ad61ff2a5acd8fadd25847a3a732b3b02c3";
     eprintln!("exp:    {}", exp);
 
     assert_eq!(api_hex, manual, "sm3() API differs from manual cf for 1M a's");

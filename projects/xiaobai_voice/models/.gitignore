@@ -1,0 +1,2 @@
+# models/ 目录用于存放下载的权重。大文件一律加 .gitignore。
+!README.txt

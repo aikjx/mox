@@ -19,3 +19,4 @@ pub mod agent;
 pub mod ai_engine;
 pub mod governance;
 pub mod market;
+pub mod voice_proxy;

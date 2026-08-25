@@ -40,7 +40,6 @@
           </template>
         </el-dropdown>
         <el-button class="mb-action-btn mb-tts" :class="{playing: speechState==='playing', paused: speechState==='paused'}" circle size="small"
-          :disabled="!supportsSpeechSynthesis"
           :title="speechState==='idle'?'朗读内容':(speechState==='playing'?'暂停朗读':'继续朗读')"
           @click="toggleSpeak">
           <el-icon :size="14"><component :is="speechState==='idle'?Microphone:(speechState==='playing'?VideoPause:VideoPlay)" /></el-icon>
@@ -323,6 +322,7 @@ import MarkdownIt from "markdown-it";
 import anchor from "markdown-it-anchor";
 import taskLists from "markdown-it-task-lists";
 import mermaid from "mermaid";
+import { ALLIANCE_BASE, getVoiceHealth } from "../api/alliance";
 
 const props = defineProps({
   msg: { type: Object, required: true },
@@ -804,7 +804,7 @@ function handleToolbarCopyCommand(cmd) {
   }
   return handleCopyCommand(cmd);
 }
-// ============ TTS 朗读 ============
+// ============ TTS 朗读 · 三层回退（T14 / AC-11 / AC-22） ============
 function pickZhVoice() {
   try {
     const vs = speechSynthesis.getVoices();
@@ -812,41 +812,122 @@ function pickZhVoice() {
     return zh || (vs && vs[0]) || null;
   } catch(_) { return null; }
 }
+
+// ========== 朗读 · 三层回退（T14 / AC-11 / AC-22） ==========
+async function handleSpeakThreeLayer(text) {
+  const cleanText = String(text || '').trim().slice(0, 4000)
+  if (!cleanText) { ElMessage.warning('无可朗读内容'); return }
+
+  // --- 第一层：Rust 网关 voice/tts/stream（PCM / MP3 流 → 音频元素） ---
+  try {
+    const h = await getVoiceHealth()
+    if (h.ok && h.tts?.ready && h.endpoints?.tts_stream) {
+      const url = `${ALLIANCE_BASE}${h.endpoints.tts_stream}`
+      const form = new URLSearchParams()
+      form.append('text', cleanText)
+      form.append('engine', h.tts.active || 'cosyvoice2')
+      const resp = await fetch(url, { method: 'POST', body: form })
+      if (resp.ok && resp.body) {
+        // 先停止之前任何浏览器朗读
+        try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel() } catch(_) {}
+        const blob = await resp.blob()
+        const src = URL.createObjectURL(blob)
+        const audio = new Audio(src)
+        ;(window).__mbAudio = audio
+        speechState.value = 'playing'
+        audio.onended = () => { URL.revokeObjectURL(src); speechState.value = 'idle' }
+        audio.onerror = () => { URL.revokeObjectURL(src); speechState.value = 'idle' }
+        audio.onpause = () => { if (!audio.ended) speechState.value = 'paused' }
+        await audio.play()
+        return
+      }
+    }
+  } catch (e) { /* fall through */ }
+
+  // --- 第二层：浏览器 Web Speech Synthesis（零依赖，广泛可用） ---
+  if ('speechSynthesis' in window) {
+    try {
+      window.speechSynthesis.cancel()
+      const u = new SpeechSynthesisUtterance(cleanText)
+      const v = pickZhVoice(); if (v) { try { u.voice = v; } catch(_){} }
+      u.lang = 'zh-CN'
+      u.rate = 1.0
+      u.pitch = 1.0
+      u.volume = 1.0
+      u.onstart = () => { speechState.value = 'playing'; }
+      u.onend = () => { speechState.value = 'idle'; speechUtterance = null; }
+      u.onerror = () => { speechState.value = 'idle'; speechUtterance = null; }
+      u.onpause = () => { speechState.value = 'paused'; }
+      u.onresume = () => { speechState.value = 'playing'; }
+      speechUtterance = u
+      window.speechSynthesis.speak(u)
+      speechState.value = 'playing'
+      return
+    } catch (e) { /* fall through */ }
+  }
+
+  // --- 第三层：兜底（AC-22）——弹提示并写入剪贴板，给用户自己读 ---
+  try {
+    await navigator.clipboard.writeText(cleanText)
+    ElMessage({
+      type: 'warning',
+      showClose: true,
+      duration: 0,
+      message: '🔈 本地 TTS 服务不可用且浏览器不支持语音合成。朗读文本已写入剪贴板（长度 ' + cleanText.length + '）。',
+    })
+  } catch {
+    ElMessage({
+      type: 'warning',
+      showClose: true,
+      duration: 0,
+      message: '🔈 无可用语音路径（三层回退均失败）。请手动复制消息文本。',
+    })
+  } finally {
+    speechState.value = 'idle'
+  }
+}
+
 function toggleSpeak() {
-  if (!supportsSpeechSynthesis.value) return;
   if (speechState.value === 'playing') {
-    try { speechSynthesis.pause(); speechState.value = 'paused'; } catch(_) {}
-    return;
+    // 尝试：若有流式音频，暂停；否则尝试 speechSynthesis pause
+    try {
+      const a = (window).__mbAudio
+      if (a && !a.paused) { a.pause(); speechState.value = 'paused'; return }
+    } catch(_) {}
+    try {
+      if (typeof speechSynthesis !== 'undefined') { speechSynthesis.pause(); speechState.value = 'paused'; return }
+    } catch(_) {}
+    speechState.value = 'paused'
+    return
   }
   if (speechState.value === 'paused') {
-    try { speechSynthesis.resume(); speechState.value = 'playing'; } catch(_) {}
-    return;
+    try {
+      const a = (window).__mbAudio
+      if (a && a.paused && !a.ended) { a.play(); speechState.value = 'playing'; return }
+    } catch(_) {}
+    try {
+      if (typeof speechSynthesis !== 'undefined') { speechSynthesis.resume(); speechState.value = 'playing'; return }
+    } catch(_) {}
+    speechState.value = 'playing'
+    return
   }
   // idle → 新播放
-  try { speechSynthesis.cancel(); } catch(_) {}
-  const text = mdToPlainText(_raw());
-  if (!text) { ElMessage.info('没有可朗读的内容'); return; }
-  const u = new SpeechSynthesisUtterance(text);
-  const v = pickZhVoice();
-  if (v) { try { u.voice = v; } catch(_){} }
-  u.lang = 'zh-CN';
-  u.rate = 1.0;
-  u.pitch = 1.0;
-  u.volume = 1.0;
-  u.onstart = () => { speechState.value = 'playing'; };
-  u.onend = () => { speechState.value = 'idle'; speechUtterance = null; };
-  u.onerror = () => { speechState.value = 'idle'; speechUtterance = null; };
-  u.onpause = () => { speechState.value = 'paused'; };
-  u.onresume = () => { speechState.value = 'playing'; };
-  speechUtterance = u;
-  try { speechSynthesis.speak(u); speechState.value = 'playing'; }
-  catch(e) { console.warn('[TTS] speak failed', e); speechState.value = 'idle'; ElMessage.warning('朗读启动失败'); }
+  try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch(_) {}
+  try {
+    const a = (window).__mbAudio
+    if (a) { try { a.pause() } catch(_) {} ; (window).__mbAudio = null }
+  } catch(_) {}
+  const text = mdToPlainText(_raw())
+  handleSpeakThreeLayer(text)
 }
 function cancelSpeak() {
-  if (!supportsSpeechSynthesis.value) return;
-  try { speechSynthesis.cancel(); } catch(_) {}
-  speechState.value = 'idle';
-  speechUtterance = null;
+  try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch(_) {}
+  try {
+    const a = (window).__mbAudio
+    if (a) { try { a.pause() } catch(_) {} ; (window).__mbAudio = null }
+  } catch(_) {}
+  speechState.value = 'idle'
+  speechUtterance = null
 }
 watch(() => props.msg?.content, () => cancelSpeak());
 onBeforeUnmount(() => cancelSpeak());
