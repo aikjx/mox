@@ -50,6 +50,11 @@
               <el-icon><List /></el-icon> 转任务
             </el-button>
           </el-tooltip>
+          <el-tooltip content="🏗️ 基于对话一键创建项目：自动生成需求图谱+流程图+PRD+ERD+需求-库关联矩阵+产品专家联盟企业级流水线报告，并归档云盘" placement="bottom">
+            <el-button type="success" @click="openProjectDialog">
+              <el-icon><FolderAdd /></el-icon> 创建项目
+            </el-button>
+          </el-tooltip>
           <el-tooltip content="开启后：AI分析对话自动创建任务并执行" placement="bottom">
             <el-switch
               v-model="autoTaskMode"
@@ -284,6 +289,256 @@
         </div>
       </div>
 
+      <!-- 项目一体化产物面板 · 产品专家联盟交付 -->
+      <div v-if="projectArtifact" class="artifact-panel">
+        <div class="art-head">
+          <div class="art-title">
+            <span class="art-emoji">🏗️</span>
+            <span v-if="projectArtifact.project" class="art-proj">
+              {{ projectArtifact.project.name }}
+              <el-tag size="small" effect="plain" type="info">{{ projectArtifact.project.category }}</el-tag>
+            </span>
+            <span v-else class="art-proj">联盟交付物</span>
+            <span class="art-meta muted">
+              <template v-if="projectArtifact.alliance_plan">
+                联盟评分 <b :class="{ hl: projectArtifact.alliance_plan.overall_score >= 80 }">
+                  {{ projectArtifact.alliance_plan.overall_score }}/100
+                </b>
+                <el-tag
+                  size="small"
+                  :type="projectArtifact.alliance_plan.overall_verdict === 'RELEASE_L3_PASS' ? 'success'
+                          : projectArtifact.alliance_plan.overall_verdict === 'CONDITIONAL_L2_PASS' ? 'warning' : 'danger'"
+                >
+                  {{ projectArtifact.alliance_plan.overall_verdict }}
+                </el-tag>
+              </template>
+              <template v-if="projectArtifact.kb_published">
+                · 云盘归档 <b>{{ projectArtifact.kb_published.published_count }}</b> 份
+              </template>
+            </span>
+          </div>
+          <div class="art-actions">
+            <el-button size="small" type="primary" plain @click="goToProject" v-if="projectArtifact.project">
+              前往项目中心
+            </el-button>
+            <el-button size="small" @click="runAllianceOnly" :loading="devTesting">
+              🏛️ 重跑联盟流水线
+            </el-button>
+            <el-button size="small" text @click="projectArtifact = null">关闭</el-button>
+          </div>
+        </div>
+        <el-tabs v-model="artifactTab" size="small" class="art-tabs">
+          <el-tab-pane label="📌 总览" name="overview">
+            <div v-if="projectArtifact.project" class="over-grid">
+              <div class="over-card">
+                <div class="over-k">项目ID</div>
+                <div class="over-v mono">{{ projectArtifact.project.id }}</div>
+              </div>
+              <div class="over-card">
+                <div class="over-k">项目状态</div>
+                <div class="over-v">{{ projectArtifact.project.status }}</div>
+              </div>
+              <div class="over-card">
+                <div class="over-k">知识图谱</div>
+                <div class="over-v">
+                  {{ projectArtifact.requirement_graph?.nodes?.length || 0 }} 节点 /
+                  {{ projectArtifact.requirement_graph?.edges?.length || 0 }} 边
+                  <el-button link type="primary" @click="goToGraph">查看大图</el-button>
+                </div>
+              </div>
+              <div class="over-card">
+                <div class="over-k">云盘产物</div>
+                <div class="over-v">
+                  {{ projectArtifact.kb_published?.published_count || 0 }} 份
+                </div>
+              </div>
+            </div>
+            <div v-if="projectArtifact.kb_published?.documents?.length" class="kb-links">
+              <div class="kb-title">📂 云盘知识库产物：</div>
+              <div class="kb-list">
+                <div
+                  v-for="d in projectArtifact.kb_published.documents"
+                  :key="d.id"
+                  class="kb-item"
+                  @click="goToKbDoc(d.id)"
+                >
+                  <span class="kb-tag">{{ d.category }}</span>
+                  <span class="kb-name">{{ d.title }}</span>
+                </div>
+              </div>
+            </div>
+          </el-tab-pane>
+
+          <el-tab-pane :label="`📊 图谱 (${projectArtifact?.requirement_graph?.nodes?.length || 0})`" name="graph">
+            <div v-if="projectArtifact.requirement_graph" class="graph-mini">
+              <div class="legend">
+                <span class="lg lg-project">项目</span>
+                <span class="lg lg-goal">目标</span>
+                <span class="lg lg-actor">角色</span>
+                <span class="lg lg-usecase">用例</span>
+                <span class="lg lg-decision">决策</span>
+                <span class="lg lg-data">数据</span>
+                <span class="lg lg-end">终点</span>
+              </div>
+              <el-descriptions :column="2" size="small" border>
+                <el-descriptions-item v-for="n in (projectArtifact.requirement_graph.nodes || []).slice(0, 16)" :key="n.id" :label="n.id" :label-class-name="'nd nd-'+n.type">
+                  <span>{{ n.label }}</span>
+                  <el-tag size="small" effect="plain" style="margin-left:6px">{{ n.type }}</el-tag>
+                </el-descriptions-item>
+              </el-descriptions>
+              <div class="edges-box">
+                <div class="edges-title">🔗 关系边 ({{ projectArtifact.requirement_graph.edges?.length || 0 }})</div>
+                <div v-for="(e, i) in (projectArtifact.requirement_graph.edges || []).slice(0, 30)" :key="i" class="edge-row">
+                  <code>{{ e.source }}</code>
+                  <span class="edge-type">{{ e.type }}·{{ e.label }}</span>
+                  <code>→ {{ e.target }}</code>
+                </div>
+              </div>
+            </div>
+          </el-tab-pane>
+
+          <el-tab-pane label="🔄 流程图" name="flow">
+            <pre class="mermaid-box">{{ projectArtifact.flow_diagram || '（暂无流程图）' }}</pre>
+          </el-tab-pane>
+
+          <el-tab-pane label="📝 PRD 需求文档" name="prd">
+            <div class="md-box"><pre>{{ projectArtifact.requirement_doc || '（暂无文档）' }}</pre></div>
+          </el-tab-pane>
+
+          <el-tab-pane label="🗃️ 数据库 ERD + DDL" name="erd">
+            <div class="erd-head">
+              <h4>ER 关系图</h4>
+            </div>
+            <pre class="mermaid-box">{{ projectArtifact.erd?.erd || '' }}</pre>
+            <div class="erd-head">
+              <h4>DDL 建表语句</h4>
+            </div>
+            <pre class="code-box"><code>{{ projectArtifact.erd?.ddl || '' }}</code></pre>
+            <div class="erd-head">
+              <h4>数据表明细 ({{ projectArtifact.erd?.tables?.length || 0 }})</h4>
+            </div>
+            <el-table :data="projectArtifact.erd?.tables || []" size="small" border>
+              <el-table-column prop="table" label="表名" width="220">
+                <template #default="{ row }"><code>{{ row.table }}</code></template>
+              </el-table-column>
+              <el-table-column prop="comment" label="说明" />
+              <el-table-column label="字段">
+                <template #default="{ row }">
+                  <div style="display:flex; gap:4px; flex-wrap: wrap;">
+                    <el-tag v-for="f in (row.fields||[])" :key="f" size="small" effect="plain">{{ f }}</el-tag>
+                  </div>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-tab-pane>
+
+          <el-tab-pane :label="`🔗 需求-库关联 (${projectArtifact?.db_link?.coverage_score || 0})`" name="dblink">
+            <div v-if="projectArtifact.db_link" class="db-head">
+              <el-alert
+                :title="`关联完整性评分：${projectArtifact.db_link.coverage_score}/100 · 级别：${projectArtifact.db_link.coverage_level}`"
+                :type="projectArtifact.db_link.coverage_score >= 80 ? 'success' : projectArtifact.db_link.coverage_score >= 60 ? 'warning' : 'error'"
+                :closable="false"
+                show-icon
+              />
+              <div style="margin-top: 6px" class="muted">💡 {{ projectArtifact.db_link.recommendation }}</div>
+            </div>
+            <el-table :data="projectArtifact.db_link?.mapping_matrix || []" size="small" border stripe>
+              <el-table-column prop="requirement_id" label="需求ID" width="90">
+                <template #default="{row}"><b>{{ row.requirement_id }}</b></template>
+              </el-table-column>
+              <el-table-column prop="requirement_text" label="需求摘要" min-width="220" show-overflow-tooltip />
+              <el-table-column prop="table_name" label="表" width="160">
+                <template #default="{row}"><code>{{ row.table_name }}</code></template>
+              </el-table-column>
+              <el-table-column prop="field_name" label="字段" width="120">
+                <template #default="{row}"><code>{{ row.field_name }}</code></template>
+              </el-table-column>
+              <el-table-column label="关联类型" width="90">
+                <template #default="{row}">
+                  <el-tag size="small" :type="row.association_type==='direct'?'success':row.association_type==='reference'?'warning':'info'">
+                    {{ row.association_type }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="置信度" width="90">
+                <template #default="{row}">{{ Math.round((row.coverage_confidence||0)*100) }}%</template>
+              </el-table-column>
+              <el-table-column prop="semantic_note" label="语义说明" min-width="200" show-overflow-tooltip />
+            </el-table>
+          </el-tab-pane>
+
+          <el-tab-pane :label="`🏛️ 联盟流水线 (${projectArtifact?.alliance_plan?.overall_score || 0}/100)`" name="alliance">
+            <div v-if="projectArtifact.alliance_plan" class="alliance-box">
+              <div class="alliance-score-row">
+                <div class="score-ring">
+                  <div class="score-value">{{ projectArtifact.alliance_plan.overall_score }}</div>
+                  <div class="score-label">总分 / 100</div>
+                </div>
+                <div class="alliance-summary">
+                  <div class="verdict-line">
+                    结论：
+                    <el-tag
+                      size="large"
+                      :type="projectArtifact.alliance_plan.overall_verdict === 'RELEASE_L3_PASS' ? 'success'
+                              : projectArtifact.alliance_plan.overall_verdict === 'CONDITIONAL_L2_PASS' ? 'warning' : 'danger'"
+                    >
+                      {{ projectArtifact.alliance_plan.overall_verdict }}
+                    </el-tag>
+                  </div>
+                  <div>通过闸门：<b>{{ projectArtifact.alliance_plan.passed_gates }}</b> / {{ projectArtifact.alliance_plan.total_gates }}</div>
+                  <div>执行模式：{{ projectArtifact.alliance_plan.mode }} · 耗时 {{ projectArtifact.alliance_plan.duration_ms }}ms</div>
+                  <div class="muted">{{ projectArtifact.alliance_plan.recommendation }}</div>
+                </div>
+              </div>
+              <div class="alliance-stages">
+                <div
+                  v-for="s in projectArtifact.alliance_plan.stages"
+                  :key="s.index"
+                  class="stage-card"
+                  :class="{ pass: s.status==='pass' }"
+                >
+                  <div class="stage-top">
+                    <span class="stage-no">{{ s.index }}</span>
+                    <span class="stage-name">{{ s.title }}</span>
+                    <el-tag size="small" effect="plain">{{ s.expert }}专家</el-tag>
+                    <span class="stage-score" :class="{ low: s.gate_score < s.gate_threshold }">
+                      {{ s.gate_score }}<span class="thr">/{{ s.gate_threshold }}</span>
+                    </span>
+                  </div>
+                  <div class="stage-summary">{{ s.summary }}</div>
+                  <div class="stage-deliver">
+                    交付物：
+                    <el-tag v-for="d in s.deliverables" :key="d" size="small" style="margin:2px">{{ d }}</el-tag>
+                  </div>
+                </div>
+              </div>
+              <div class="gates-title">🧱 闸门清单</div>
+              <el-table :data="projectArtifact.alliance_plan.gates" size="small" border>
+                <el-table-column prop="name" label="闸门" width="140">
+                  <template #default="{row}"><code>{{ row.name }}</code></template>
+                </el-table-column>
+                <el-table-column prop="stage" label="阶段" />
+                <el-table-column label="阈值" width="100">
+                  <template #default="{row}">≥ {{ row.threshold }}</template>
+                </el-table-column>
+                <el-table-column label="实际" width="100">
+                  <template #default="{row}">
+                    <b :class="row.pass ? 'txt-ok' : 'txt-bad'">{{ row.actual }}</b>
+                  </template>
+                </el-table-column>
+                <el-table-column label="结论" width="120">
+                  <template #default="{row}">
+                    <el-tag size="small" :type="row.pass ? 'success' : 'danger'">
+                      {{ row.pass ? '✅ PASS' : '❌ FAIL' }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </el-tab-pane>
+        </el-tabs>
+      </div>
+
       <div class="chat-input">
         <el-input
           v-model="draft"
@@ -318,6 +573,68 @@
 
     <!-- Tool Drawer -->
     <ToolDrawer :visible="drawerVisible" :tool="activeTool" @close="closeTool" />
+
+    <!-- 🏗️ 对话中创建项目 · 产品专家联盟一键生成 -->
+    <el-dialog
+      v-model="projectDlg.visible"
+      title="🏗️ 从对话创建项目 · 一键生成需求→图谱→文档→云盘→联盟流水线"
+      width="680px"
+      :close-on-click-modal="false"
+    >
+      <el-form :model="projectDlg.form" label-width="90px" label-position="left">
+        <el-form-item label="项目名称" required>
+          <el-input v-model="projectDlg.form.name" maxlength="80" show-word-limit placeholder="请输入项目名称，例如：企业级CRM客户管理平台" />
+        </el-form-item>
+        <el-form-item label="项目类别">
+          <el-radio-group v-model="projectDlg.form.category" style="display:flex; flex-wrap:wrap; gap:8px;">
+            <el-radio-button
+              v-for="c in PROJECT_CATEGORIES"
+              :key="c.key"
+              :label="c.key"
+              size="default"
+            >
+              {{ c.label }}
+            </el-radio-button>
+          </el-radio-group>
+          <div class="muted" style="margin-top:4px">{{ PROJECT_CATEGORIES.find(c=>c.key===projectDlg.form.category)?.desc }}</div>
+        </el-form-item>
+        <el-form-item label="项目描述">
+          <el-input v-model="projectDlg.form.description" type="textarea" :rows="3"
+            placeholder="简述项目背景、目标与范围（可留空，默认从对话内容提取）" />
+        </el-form-item>
+        <el-form-item label="默认负责人">
+          <el-input v-model="projectDlg.form.owner" placeholder="默认：ai-alliance（产品专家联盟）" />
+        </el-form-item>
+        <el-form-item label="需求输入">
+          <div class="req-source">
+            <el-checkbox v-model="projectDlg.form.useChatContext" border>
+              ✨ 复用当前对话内容（推荐）
+            </el-checkbox>
+            <el-checkbox v-model="projectDlg.form.autoPipeline" border>
+              🏛️ 创建后自动执行 6 阶段联盟流水线
+            </el-checkbox>
+          </div>
+        </el-form-item>
+      </el-form>
+      <div class="dlg-tip">
+        <el-alert
+          title="一键将创建：项目中心记录、需求知识图谱、业务流程图、PRD 需求文档、数据库 ERD+DDL、需求-库关联矩阵，并全部归档到知识库（云盘）。"
+          type="info"
+          :closable="false"
+          show-icon
+        />
+      </div>
+      <template #footer>
+        <el-button @click="projectDlg.visible = false">取消</el-button>
+        <el-button
+          type="primary"
+          :loading="projectDlg.submitting"
+          @click="submitProjectFromChat"
+        >
+          {{ projectDlg.submitting ? '正在创建：图谱 → 文档 → 库 → 联盟流水线…' : '✅ 一键创建项目并生成全部交付物' }}
+        </el-button>
+      </template>
+    </el-dialog>
 
     <!-- 对话转任务 -->
     <el-dialog v-model="convertDialogOpen" title="对话转任务" width="520px">
@@ -365,7 +682,7 @@
 import { ref, nextTick, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { List, Loading, ArrowDown, Link, Document } from '@element-plus/icons-vue'
+import { List, Loading, ArrowDown, Link, Document, FolderAdd } from '@element-plus/icons-vue'
 import MessageBubble from '@/components/MessageBubble.vue'
 import SessionSidebar from '@/components/SessionSidebar.vue'
 import ToolDock from '@/components/ToolDock.vue'
@@ -388,7 +705,15 @@ import {
   aiGenerateFlowDiagram,
   aiDevTestFix,
   aiFullComplete,
-  aiOptimizeDoc
+  aiOptimizeDoc,
+  aiProjectFromChat,
+  aiGenerateProjectGraph,
+  aiLinkReqToDb,
+  allianceEnterprisePipeline,
+  aiGenerateErd,
+  kbGetDocument,
+  getProject,
+  createProject
 } from '@/api'
 
 const router = useRouter()
@@ -445,7 +770,7 @@ const convertResult = ref(null)
 const autoTaskMode = ref(false)
 
 // 需求流程模式
-const requirementFlowMode = ref(true)
+const requirementFlowMode = ref(false)
 const selectedIssue = ref(null)
 const currentIssue = ref(null)
 const currentStage = ref(0)
@@ -458,6 +783,119 @@ const analyzing = ref(false)
 const generatingDoc = ref(false)
 const generatingDiagram = ref(false)
 const devTesting = ref(false)
+
+// ========== 对话内项目创建 · 产品专家联盟 ==========
+const PROJECT_CATEGORIES = [
+  { key: 'platform', label: '平台系统', color: '#6366f1', desc: '基础平台/中台/网关类' },
+  { key: 'business', label: '业务系统', color: '#0ea5e9', desc: 'CRM/ERP/财务/运营等业务' },
+  { key: 'custom', label: '自定义项目', color: '#64748b', desc: '其他类型' },
+  { key: 'algorithm', label: '算法工程', color: '#10b981', desc: '算法/模型/算子研发' },
+  { key: 'graph', label: '图谱项目', color: '#7c3aed', desc: '知识图谱/关系挖掘类' },
+  { key: 'app', label: '应用产品', color: '#f59e0b', desc: '独立APP/网页/SaaS产品' },
+]
+const projectDlg = ref({
+  visible: false,
+  submitting: false,
+  form: {
+    name: '',
+    category: 'platform',
+    description: '',
+    owner: 'ai-alliance',
+    useChatContext: true,
+    autoPipeline: true,
+  }
+})
+const projectArtifact = ref(null) // 最近一次一键生成产物
+const artifactTab = ref('graph')
+const openProjectDialog = () => {
+  // 预填充：标题取最近一条用户消息
+  const recent = [...messages.value].reverse().find(m => m.role === 'user' && !m.system)
+  projectDlg.value.form.name = recent ? String(recent.content).slice(0, 24) : ''
+  projectDlg.value.form.description = messages.value
+    .filter(m => m.role === 'user' && !m.system)
+    .map(m => m.content).join('\n').slice(0, 600)
+  projectDlg.value.visible = true
+}
+const submitProjectFromChat = async () => {
+  const f = projectDlg.value.form
+  if (!f.name || !String(f.name).trim()) {
+    ElMessage.warning('请填写项目名称')
+    return
+  }
+  projectDlg.value.submitting = true
+  try {
+    const payload = {
+      name: String(f.name).trim(),
+      category: f.category,
+      description: f.description || '',
+      owner: f.owner,
+      requirement: f.useChatContext
+        ? (messages.value.filter(m => m.role === 'user' && !m.system).map(m => m.content).join('\n') || f.description || f.name)
+        : (f.description || f.name),
+      session_id: currentSession.value,
+      messages: messages.value.filter(m => m.content).map(m => ({ role: m.role, content: m.content })),
+    }
+    const result = await aiProjectFromChat(payload)
+    projectArtifact.value = result
+    // 会话消息内写一条系统卡片
+    messages.value.push({
+      role: 'system',
+      content: `🏗️ 已在当前对话创建项目「${result.project.name}」\n` +
+        `📊 需求图谱节点: ${result.requirement_graph?.nodes?.length || 0}\n` +
+        `📝 云盘产物: ${result.kb_published?.published_count || 0} 份文档\n` +
+        `🏛️ 联盟流水线: ${result.alliance_plan?.overall_score}/100 · ${result.alliance_plan?.overall_verdict}`,
+      timestamp: Date.now(),
+      system: true,
+      project_from_chat: true,
+      project_data: result,
+    })
+    ElMessage.success(`✅ 项目「${result.project.name}」已创建，联盟产物 ${result.kb_published?.published_count || 0} 份已归档云盘`)
+    artifactTab.value = 'overview'
+    projectDlg.value.visible = false
+    projectDlg.value.form = { name: '', category: 'platform', description: '', owner: 'ai-alliance', useChatContext: true, autoPipeline: true }
+    persist()
+    await scroll()
+  } catch (e) {
+    console.error('[submitProjectFromChat]', e)
+    ElMessage.error('项目创建失败：' + (e.message || '未知错误'))
+  } finally {
+    projectDlg.value.submitting = false
+  }
+}
+// 独立运行联盟流水线
+const runAllianceOnly = async () => {
+  const ctx = messages.value.filter(m => m.role === 'user' && !m.system).map(m => m.content).join('\n') || (projectArtifact.value?.project?.name || '项目')
+  devTesting.value = true
+  try {
+    const r = await allianceEnterprisePipeline({
+      requirement: ctx,
+      project_name: projectArtifact.value?.project?.name || '联盟评估',
+      mode: 'parallel'
+    })
+    if (!projectArtifact.value) {
+      projectArtifact.value = { alliance_plan: r }
+    } else {
+      projectArtifact.value = { ...projectArtifact.value, alliance_plan: r }
+    }
+    artifactTab.value = 'alliance'
+    ElMessage.success(`🏛️ 联盟流水线完成：${r.overall_score}/100 · ${r.overall_verdict}`)
+  } catch (e) {
+    ElMessage.error('联盟流水线执行失败：' + (e.message || ''))
+  } finally {
+    devTesting.value = false
+  }
+}
+const goToProject = () => {
+  const pid = projectArtifact.value?.project?.id
+  if (pid) router.push({ path: '/projects', query: { pid } })
+}
+const goToKbDoc = (docId) => {
+  if (!docId) return
+  router.push({ path: '/knowledge-base', query: { doc: docId } })
+}
+const goToGraph = () => {
+  router.push('/graph')
+}
 
 // 问题类别
 const ISSUE_CATEGORIES = [
@@ -1830,4 +2268,164 @@ onUnmounted(() => { if (streamTimer) clearInterval(streamTimer) })
   color: #4c1d95;
   flex: 1;
 }
+/* ========== 项目创建弹窗 ========== */
+.req-source { display: flex; flex-wrap: wrap; gap: 8px; }
+.dlg-tip { margin: 8px -4px 0; }
+.muted { color: var(--text-3); font-size: 12px; }
+.mono { font-family: var(--font-mono, monospace); }
+
+/* ========== 产物面板 ========== */
+.artifact-panel {
+  margin: 12px 16px 4px;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 40%);
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  padding: 14px 16px 8px;
+  box-shadow: 0 6px 20px -12px rgba(37, 99, 235, 0.25);
+}
+.art-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed #cbd5e1;
+}
+.art-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.art-emoji { font-size: 22px; }
+.art-proj { font-weight: 700; font-size: 15px; color: #0f172a; display: inline-flex; align-items: center; gap: 6px; }
+.art-meta { margin-left: 4px; }
+.art-meta b.hl { color: #059669; }
+.art-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.art-tabs { margin-top: 8px; }
+.art-tabs :deep(.el-tabs__item) { padding: 0 10px; }
+
+/* 总览 */
+.over-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.over-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.over-k { font-size: 12px; color: #64748b; }
+.over-v { font-weight: 600; color: #0f172a; margin-top: 2px; word-break: break-all; }
+@media (max-width: 960px) { .over-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.kb-links { margin-top: 14px; }
+.kb-title { font-size: 13px; color: #475569; margin-bottom: 6px; }
+.kb-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.kb-item {
+  padding: 6px 10px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .15s ease;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+.kb-item:hover { background: #e0f2fe; transform: translateY(-1px); }
+.kb-tag { color: #0369a1; font-weight: 600; }
+.kb-name { color: #0f172a; }
+
+/* 图谱 mini */
+.legend { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.lg { padding: 2px 8px; border-radius: 10px; font-size: 11px; color: #fff; }
+.lg-project { background: #4f46e5; }
+.lg-goal { background: #0ea5e9; }
+.lg-actor { background: #10b981; }
+.lg-usecase { background: #f59e0b; }
+.lg-decision { background: #ef4444; }
+.lg-data { background: #8b5cf6; }
+.lg-end { background: #64748b; }
+.nd { color: #fff !important; padding: 0 8px; border-radius: 6px; font-size: 11px; font-family: var(--font-mono, monospace); }
+.nd-project { background: #4f46e5; }
+.nd-goal { background: #0ea5e9; }
+.nd-actor { background: #10b981; color: #064e3b !important; }
+.nd-usecase { background: #f59e0b; }
+.nd-decision { background: #ef4444; }
+.nd-data { background: #8b5cf6; }
+.nd-end { background: #64748b; }
+.nd-default { background: #94a3b8; }
+.edges-box { margin-top: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; max-height: 240px; overflow: auto; }
+.edges-title { font-weight: 600; font-size: 12px; color: #334155; margin-bottom: 4px; }
+.edge-row { font-size: 12px; padding: 2px 0; color: #475569; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.edge-type { color: #6366f1; background: #eef2ff; padding: 0 6px; border-radius: 4px; font-size: 11px; }
+
+.mermaid-box, .md-box, .code-box {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  max-height: 520px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--font-mono, Consolas, monospace);
+  margin: 8px 0 4px;
+}
+.code-box { border: 1px solid #1e293b; }
+.md-box { background: #f8fafc; color: #0f172a; border: 1px solid #e2e8f0; }
+.erd-head h4 { margin: 10px 0 6px; font-size: 13px; color: #0f172a; }
+
+/* 联盟 6 阶段 */
+.alliance-box { padding: 4px 2px; }
+.alliance-score-row {
+  display: flex; gap: 24px; align-items: center;
+  background: linear-gradient(135deg, #eef2ff 0%, #ecfeff 100%);
+  padding: 16px 20px;
+  border-radius: 14px;
+  border: 1px solid #c7d2fe;
+  margin-bottom: 14px;
+}
+.score-ring {
+  width: 110px; height: 110px; flex-shrink: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 56%, transparent 57%), conic-gradient(#6366f1 0 var(--sc, 80%), #e2e8f0 0);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  box-shadow: 0 4px 18px -6px rgba(99, 102, 241, .35);
+}
+.score-value { font-size: 28px; font-weight: 800; color: #4338ca; line-height: 1.1; }
+.score-label { font-size: 11px; color: #64748b; }
+.alliance-summary { flex: 1; min-width: 0; }
+.verdict-line { font-weight: 600; margin-bottom: 6px; display: inline-flex; align-items: center; gap: 8px; }
+.alliance-stages {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+@media (max-width: 1100px) { .alliance-stages { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 700px) { .alliance-stages { grid-template-columns: 1fr; } }
+.stage-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  transition: all .15s ease;
+}
+.stage-card.pass { border-color: #86efac; box-shadow: 0 6px 14px -10px rgba(16, 185, 129, .4); }
+.stage-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.stage-no {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: #6366f1; color: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+}
+.stage-card.pass .stage-no { background: #10b981; }
+.stage-name { font-weight: 700; color: #0f172a; flex: 1; min-width: 70px; }
+.stage-score { font-weight: 800; color: #059669; font-size: 14px; }
+.stage-score.low { color: #dc2626; }
+.stage-score .thr { color: #94a3b8; font-weight: 500; font-size: 12px; }
+.stage-summary { font-size: 12px; color: #475569; margin-bottom: 6px; line-height: 1.5; }
+.stage-deliver { font-size: 11px; }
+.gates-title { font-weight: 600; color: #334155; font-size: 13px; margin: 10px 0 6px; }
+.txt-ok { color: #059669; }
+.txt-bad { color: #dc2626; }
+.db-head { margin-bottom: 8px; }
 </style>

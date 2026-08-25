@@ -112,5 +112,4 @@ prometheus = { version = "0.13", default-features = false, features = ["process"
 sea-query = "0.32"
 sqlx = "0.8"
 
-# Internal crates
-xuanji-common-meta = { path = "platform/services/xuanji-common-meta" }
+# Internal cratesxuanji-common-meta = { path = "platform/services/xuanji-common-meta" }xuanji-graph-service = { path = "platform/services/xuanji-graph-service" }
