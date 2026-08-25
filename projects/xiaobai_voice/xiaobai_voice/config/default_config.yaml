@@ -1,4 +1,4 @@
-# xiaobai 默认配置（跨平台）。用户实际运行配置在 %APPDATA%/xuanji/xiaobai/config.yaml
+# xiaobai 默认配置（跨平台）。用户实际运行配置在 %APPDATA%/mox/xiaobai/config.yaml
 # 运行时会以本文件为基础，做 deep-merge 覆盖。
 voice:
   port: 3717

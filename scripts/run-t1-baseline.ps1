@@ -71,8 +71,8 @@ function Run-Cmd($name, $file, [string[]]$argList, $cdTo){
 
 $runs = @(
   @{ N='1_cargo_check_workspace_all_targets'; F='cargo'; A=@('check','--workspace','--all-targets','--message-format=short'); C=$Root },
-  @{ N='2_cargo_clippy_Dwarnings_16platform'; F='cargo'; A=@('clippy','-p','graph-algorithms','-p','xuanji-expert','-p','primiflow-fusion','-p','runtime','-p','xuanji-system','-p','operator-core','-p','operator-wasm','-p','optimizer','-p','flow-ai','-p','hermes-flow-bridge','-p','business-catalog','-p','ai-agent','-p','template-market','-p','primiflow-core','-p','kg-hub','-p','xuanji-common-meta','--all-targets','--','-D','warnings'); C=$Root },
-  @{ N='3_cargo_test_5core'; F='cargo'; A=@('test','-p','graph-algorithms','-p','xuanji-expert','-p','primiflow-fusion','-p','runtime','-p','xuanji-system','--lib','--tests','-q','--','--test-threads=4'); C=$Root },
+  @{ N='2_cargo_clippy_Dwarnings_16platform'; F='cargo'; A=@('clippy','-p','graph-algorithms','-p','mox-expert','-p','primiflow-fusion','-p','runtime','-p','mox-system','-p','operator-core','-p','operator-wasm','-p','optimizer','-p','flow-ai','-p','hermes-flow-bridge','-p','business-catalog','-p','ai-agent','-p','template-market','-p','primiflow-core','-p','kg-hub','-p','mox-common-meta','--all-targets','--','-D','warnings'); C=$Root },
+  @{ N='3_cargo_test_5core'; F='cargo'; A=@('test','-p','graph-algorithms','-p','mox-expert','-p','primiflow-fusion','-p','runtime','-p','mox-system','--lib','--tests','-q','--','--test-threads=4'); C=$Root },
   @{ N='4_reconcile_7x8'; F='node'; A=@('platform/services/graph-algorithms/scripts/reconcile_7x8.js'); C=$Root },
   @{ N='5_backend_node_mocha'; F='npm'; A=@('exec','--','mocha','test','--timeout','25000','--reporter','min'); C=(Join-Path $Root 'platform\backend-node') },
   @{ N='6_frontend_pnpm_build'; F='pnpm'; A=@('build'); C=(Join-Path $Root 'frontend-ui') }

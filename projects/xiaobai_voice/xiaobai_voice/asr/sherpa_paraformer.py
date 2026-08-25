@@ -92,7 +92,7 @@ class SherpaParaformerBackend(ASRBackend):
             exe_dir = os.path.dirname(os.path.abspath(__import__("sys").executable))
             candidates.append(os.path.join(exe_dir, "models"))
         home = os.path.expanduser("~")
-        candidates.append(os.path.join(home, ".xuanji", "models", "voice"))
+        candidates.append(os.path.join(home, ".mox", "models", "voice"))
         candidates.append(
             os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "models"))
         )

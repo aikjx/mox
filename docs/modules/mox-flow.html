@@ -1,0 +1,201 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>璇玑 · 全维分析需求业务处理流程图（企业级 · 归一化 V1.0）</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --card:#ffffff; --ink:#1f2a37; --muted:#64748b;
+    --line:#cbd5e1; --brand:#1e3a8a; --brand2:#2563eb;
+    --biz:#0e7490; --dev:#7c3aed; --gate:#e65100; --block:#b71c1c; --ok:#1b5e20;
+    --warn:#b45309; --soft:#eef2ff;
+    --shadow:0 1px 3px rgba(15,23,42,.08),0 1px 2px rgba(15,23,42,.04);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"PingFang SC","Microsoft YaHei",-apple-system,Segoe UI,Roboto,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.6;}
+  header{background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;padding:28px 32px;}
+  header h1{margin:0 0 6px;font-size:22px;letter-spacing:.5px;}
+  header .sub{opacity:.9;font-size:13px;}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px 20px 60px;}
+  section{background:var(--card);border:1px solid #e5e9f0;border-radius:12px;
+    padding:22px 24px;margin:18px 0;box-shadow:var(--shadow);}
+  section h2{margin:0 0 4px;font-size:17px;color:var(--brand);
+    border-left:4px solid var(--brand2);padding-left:10px;}
+  section .lead{color:var(--muted);font-size:13px;margin:0 0 16px;}
+  /* ---- main flow timeline ---- */
+  .flow{position:relative;margin-left:8px;padding-left:34px;}
+  .flow::before{content:"";position:absolute;left:13px;top:6px;bottom:6px;width:2px;background:var(--line);}
+  .step{position:relative;margin:14px 0;background:#fff;border:1px solid #e5e9f0;border-radius:10px;
+    padding:14px 16px;box-shadow:var(--shadow);}
+  .step::before{content:attr(data-n);position:absolute;left:-33px;top:14px;width:26px;height:26px;
+    border-radius:50%;background:var(--brand2);color:#fff;font-size:12px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 0 0 2px var(--brand2);}
+  .step h3{margin:0 0 4px;font-size:15px;}
+  .step p{margin:0;font-size:13px;color:var(--muted);}
+  .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;margin:4px 6px 0 0;font-weight:600;}
+  .t-biz{background:#e0f2fe;color:#0369a1;}
+  .t-gate{background:#fff3e0;color:var(--gate);}
+  .t-ok{background:#e8f5e9;color:var(--ok);}
+  .t-block{background:#fde7e9;color:var(--block);}
+  .rollback{font-size:12px;color:var(--block);background:#fde7e9;border:1px dashed #ef9a9a;
+    border-radius:8px;padding:8px 10px;margin-top:8px;}
+  .rollback b{color:var(--block);}
+  /* ---- 14 dim grid ---- */
+  .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;}
+  .dim{background:var(--soft);border:1px solid #dbe3ff;border-radius:9px;padding:10px;text-align:center;}
+  .dim .league{font-size:10px;letter-spacing:1px;font-weight:700;}
+  .dim.biz .league{color:var(--biz);} .dim.dev .league{color:var(--dev);}
+  .dim .name{font-size:13px;font-weight:700;margin:3px 0;}
+  .dim .exp{font-size:11px;color:var(--muted);}
+  .dim .pr{font-size:10px;color:#475569;margin-top:3px;}
+  .legend{font-size:12px;color:var(--muted);margin:10px 0;}
+  .legend span{display:inline-block;padding:2px 10px;border-radius:20px;font-weight:600;margin-right:8px;}
+  .lg-biz{background:#e0f7fa;color:var(--biz);} .lg-dev{background:#f3e8ff;color:var(--dev);}
+  /* ---- tables ---- */
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px;}
+  th,td{border:1px solid #e5e9f0;padding:9px 10px;text-align:left;vertical-align:top;}
+  th{background:#f1f5f9;color:#334155;font-weight:700;}
+  tr:nth-child(even) td{background:#fafbfc;}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:20px;}
+  .p-block{background:#fde7e9;color:var(--block);} .p-warn{background:#fff3e0;color:var(--warn);}
+  .p-ok{background:#e8f5e9;color:var(--ok);}
+  /* ---- guard cards ---- */
+  .guards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+  .guard{background:var(--soft);border:1px solid #dbe3ff;border-radius:10px;padding:12px;}
+  .guard .g{font-weight:800;color:var(--brand2);font-size:14px;}
+  .guard p{margin:6px 0 0;font-size:12px;color:var(--muted);}
+  .formula{background:#0f172a;color:#e2e8f0;font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:12.5px;padding:14px 16px;border-radius:10px;white-space:pre-wrap;margin-top:10px;}
+  .checkpoints{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+  .cp{background:#eef2ff;border:1px solid #c7d2fe;color:#3730a3;font-size:12px;
+    padding:4px 10px;border-radius:20px;}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media(max-width:920px){.grid{grid-template-columns:repeat(4,1fr);}.guards{grid-template-columns:repeat(2,1fr);}.two{grid-template-columns:1fr;}}
+  footer{text-align:center;color:var(--muted);font-size:12px;padding:20px;}
+  code{background:#eef2f7;padding:1px 5px;border-radius:4px;font-size:12px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>璇玑 · 全维分析需求业务处理流程图</h1>
+  <div class="sub">企业级规范 · 归一化整理版 V1.0 ｜ 主责：mox-expert（D04）＋ mox-system（D10）｜ 落点：pipeline / ir / verify / govern / reconcile / programming</div>
+</header>
+<div class="wrap">
+
+  <!-- 1. 主流程 -->
+  <section>
+    <h2>① → ⑩ 全维分析需求业务处理主流程</h2>
+    <p class="lead">编排器 <code>programming_pipeline</code> 包裹内核 <code>mox_optimize</code>。任一闸门失败按护栏 G‑E 回退最近安全点，三证（⑥verify ＋ ⑧一致 ＋ ⑨Approved）齐全方可出码。</p>
+    <div class="flow">
+      <div class="step" data-n="①"><h3>需求归一化 <span class="tag t-biz">护栏 G-A</span></h3>
+        <p>原始意图 / 大模型抽取 → <code>NormalizedRequirement</code>（可判定需求书：目标/输入/输出/约束/禁忌/署名）。草稿或未声明禁忌 → 禁止建模出码。</p>
+        <div class="rollback">↩ 回退点 <b>Normalized</b>：AI 草稿 / 模糊约束，止于此处不出码</div></div>
+      <div class="step" data-n="①.5"><h3>循环护栏 LoopGuard</h3>
+        <p>消费 <code>ctx.registry.loops</code>。无界 / 未登记循环默认否决；无界需 <code>safety_approver</code>，人在环需 <code>operator/approver</code>。</p>
+        <div class="rollback">↩ 回退点 <b>Modeled</b>：循环不安全，禁止出码</div></div>
+      <div class="step" data-n="②"><h3>流程图建模 FlowGraph</h3>
+        <p>业务/算法/权限/资源四图同体（同一 <code>FlowGraph</code>，维度仅作标签）。<code>auto_dimension</code> 完成维度着色，进入内核。</p></div>
+      <div class="step" data-n="③"><h3>七专家并行审查 <span class="tag t-biz">业务七维</span></h3>
+        <p>插件化运行时（Harness）瀑布扩展点驱动：algorithm / business / data / observability / permission / resource / security 并行产出 <code>ExpertOpinion</code>。开发七维经 <code>CodeIR</code> 同引擎分析。</p></div>
+      <div class="step" data-n="④"><h3>归一化裁决 reconcile <span class="tag t-biz">归一核心</span></h3>
+        <p>十四维观点 → 单一 <code>ReconciledPlan</code>：冲突预扫描（同级同类→Blocking 升级）、按优先级物化约束、合并租户配额、采纳建议（排除与硬串行冲突的 Parallelize）。</p></div>
+      <div class="step" data-n="⑤"><h3>flow-ai 最优求解</h3>
+        <p><code>apply_rules</code> 注入合规规则 → <code>optimize</code>：并行化 / 关键路径 / RCPSP 排程 / 冲突消解 / 代码生成。<code>model_routes</code> 并入算力路由。</p></div>
+      <div class="step" data-n="⑥"><h3>⛨ 璇玑验证网关 <span class="tag t-gate">最高权限</span></h3>
+        <p>5 检查（topology / data_dep / conflict 阻断级；gains / code_rt 仅告警）＋ 专家否决级风险 ＋ 裁决冲突升级 → <code>algo.vetoed</code>。任何 RBAC/合规不可覆盖。</p>
+        <div class="rollback">↩ 回退点 <b>Optimized</b>：vetoed → BLOCK，禁止出码</div></div>
+      <div class="step" data-n="⑦"><h3>出码 Emit <span class="tag t-ok">仅三证齐全</span></h3>
+        <p>独立调用 <code>codegen</code> 生成代码（必在 ⑥ 通过之后，封堵未过验证网关即出码红线）。有界循环 <code>max_iter</code> 桥接到 LoopStart 节点。</p></div>
+      <div class="step" data-n="⑧"><h3>双向映射校验 <span class="tag t-gate">护栏 G-C·二证</span></h3>
+        <p>节点级 def 齐全校验：每个可执行节点必须有对应 <code>def py_ident(id)(ctx:)</code>；<code>code.rejected</code> 直接判不一致（M2 硬红线）。</p>
+        <div class="rollback">↩ 回退点 <b>Emitted</b>：双向断裂，拒绝出码</div></div>
+      <div class="step" data-n="⑨"><h3>治理闸门 govern <span class="tag t-gate">护栏 G-C·三证</span></h3>
+        <p><code>approved = !algo_veto && status.can_emit() && blocking==0 && sla_ok && budget_ok</code>。尊重璇玑否决。</p>
+        <div class="rollback">↩ 回退点 <b>Governed</b>：未 Approved，禁止出码</div></div>
+      <div class="step" data-n="⑩"><h3>交付 + 审计闭环 <span class="tag t-ok">safe_to_emit</span></h3>
+        <p>产物：代码 + 治理报告（专家分/优化/璇玑/闸门）+ 防篡改审计哈希链 <code>AuditChain</code>。署名（G-D）贯穿全程。</p></div>
+    </div>
+  </section>
+
+  <!-- 2. 双璇玑十四维 -->
+  <section>
+    <h2>双璇玑十四维（归一化分析视角）</h2>
+    <p class="lead">同一 <code>Expert</code> 引擎并行分析；业务七维管「做什么/是否合规」，开发七维管「怎么做/是否优质」，非冗余互补。</p>
+    <div class="legend"><span class="lg-biz">业务七维</span><span class="lg-dev">开发七维</span></div>
+    <div class="grid">
+      <div class="dim biz"><div class="league">业务</div><div class="name">Business</div><div class="exp">流程图</div><div class="pr">优先级 中</div></div>
+      <div class="dim biz"><div class="league">业务</div><div class="name">Algorithm</div><div class="exp">LLM/推理</div><div class="pr">优先级 中</div></div>
+      <div class="dim biz"><div class="league">业务</div><div class="name">Permission</div><div class="exp">Guard/越权</div><div class="pr">优先级 最高</div></div>
+      <div class="dim biz"><div class="league">业务</div><div class="name">Resource</div><div class="exp">工具节点</div><div class="pr">优先级 中</div></div>
+      <div class="dim biz"><div class="league">业务</div><div class="name">Security</div><div class="exp">敏感数据</div><div class="pr">优先级 高</div></div>
+      <div class="dim biz"><div class="league">业务</div><div class="name">Data</div><div class="exp">读写集</div><div class="pr">优先级 中</div></div>
+      <div class="dim biz"><div class="league">业务</div><div class="name">Observability</div><div class="exp">审计/埋点</div><div class="pr">优先级 中</div></div>
+      <div class="dim dev"><div class="league">开发</div><div class="name">Architecture</div><div class="exp">CodeIR 模块</div><div class="pr">优先级 中</div></div>
+      <div class="dim dev"><div class="league">开发</div><div class="name">SecurityCode</div><div class="exp">注入/弱哈希</div><div class="pr">优先级 高</div></div>
+      <div class="dim dev"><div class="league">开发</div><div class="name">CodeQuality</div><div class="exp">圈复杂/重复</div><div class="pr">优先级 中</div></div>
+      <div class="dim dev"><div class="league">开发</div><div class="name">Performance</div><div class="exp">延迟/吞吐</div><div class="pr">优先级 中</div></div>
+      <div class="dim dev"><div class="league">开发</div><div class="name">Testing</div><div class="exp">覆盖/集成</div><div class="pr">优先级 中</div></div>
+      <div class="dim dev"><div class="league">开发</div><div class="name">Documentation</div><div class="exp">README/注释</div><div class="pr">优先级 低</div></div>
+      <div class="dim dev"><div class="league">开发</div><div class="name">Maintainability</div><div class="exp">耦合/过期依赖</div><div class="pr">优先级 中</div></div>
+    </div>
+  </section>
+
+  <!-- 3 + 4 两栏 -->
+  <div class="two">
+    <section>
+      <h2>③ 归一化裁决状态机</h2>
+      <p class="lead">只翻译约束为 flow-ai 可识别的边/规则，不求解。</p>
+      <table>
+        <tr><th>阶段</th><th>动作</th><th>输出</th></tr>
+        <tr><td>冲突预扫描</td><td>同级同类别→升级Blocking；互补→溯源；串行vs并行→语义相反</td><td><code>Reconcile</code></td></tr>
+        <tr><td>优先级物化</td><td>按 <code>priority()</code> 升序，高优先级覆盖低优先级软约束</td><td>图+边</td></tr>
+        <tr><td>约束落地</td><td>Guard插入/Mutex串行/Isolate/Audit/Cap/Compliance/Route</td><td>硬约束</td></tr>
+        <tr><td>配额合并</td><td>租户 <code>ResourcePool</code> 取 min</td><td>资源池</td></tr>
+        <tr><td>采纳建议</td><td>排除与硬串行冲突的 Parallelize，其余采纳</td><td><code>adopted_suggestions</code></td></tr>
+      </table>
+    </section>
+    <section>
+      <h2>⑥ ⛨ 璇玑验证网关 5 检查</h2>
+      <p class="lead">阻断级失败或汇集专家否决/冲突升级 → <code>algo.vetoed</code> → 治理必 BLOCK。</p>
+      <table>
+        <tr><th>检查</th><th>阻断级</th><th>守恒语义</th></tr>
+        <tr><td>5a topology</td><td><span class="pill p-block">阻断</span></td><td>节点全保留；真数据依赖可达性守恒</td></tr>
+        <tr><td>5b data_dep</td><td><span class="pill p-block">阻断</span></td><td>真依赖剪除须有路径保留</td></tr>
+        <tr><td>5c conflict</td><td><span class="pill p-block">阻断</span></td><td>0 阻塞冲突；异常边落点有效</td></tr>
+        <tr><td>5d gains</td><td><span class="pill p-warn">仅告警</span></td><td>speedup≥1 且并行不慢于串行</td></tr>
+        <tr><td>5e code_rt</td><td><span class="pill p-warn">仅告警</span></td><td>代码⇄流程图往返工具节点守恒</td></tr>
+      </table>
+    </section>
+  </div>
+
+  <!-- 5. 企业级治理 -->
+  <section>
+    <h2>企业级治理属性</h2>
+    <p class="lead">五护栏（不能「问了 AI 就处理」）＋ 回退点 ＋ 治理闸门公式。</p>
+    <div class="guards">
+      <div class="guard"><div class="g">G-A</div><p>AI 产出默认草稿·未确认，不得直接执行/出码</p></div>
+      <div class="guard"><div class="g">G-B</div><p>每个动作映射到已确认节点＋流程＋规范条款</p></div>
+      <div class="guard"><div class="g">G-C</div><p>verify＋⑧一致＋⑨Approved，三证不全禁止出码</p></div>
+      <div class="guard"><div class="g">G-D</div><p>AI 产出必须署名（模型/专家视角），禁止无来源</p></div>
+      <div class="guard"><div class="g">G-E</div><p>任一闸门失败回退最近安全点，禁止将错就错</p></div>
+    </div>
+    <h3 style="font-size:14px;margin:18px 0 0;color:var(--brand);">治理闸门判定</h3>
+    <div class="formula">approved = !algo_veto
+        &amp;&amp; status.can_emit()       // 仅 Approved 可出码
+        &amp;&amp; blocking == 0           // 无阻断级冲突
+        &amp;&amp; sla_ok                   // scheduled_ms ≤ quota.sla_ms
+        &amp;&amp; budget_ok;               // scheduled_ms ≤ quota.max_cost_budget*1000</div>
+    <h3 style="font-size:14px;margin:16px 0 0;color:var(--brand);">回退点 Checkpoint（护栏 G-E）</h3>
+    <div class="checkpoints">
+      <span class="cp">Intent</span><span class="cp">Normalized</span><span class="cp">Modeled</span>
+      <span class="cp">Optimized</span><span class="cp">Verified</span><span class="cp">Emitted</span><span class="cp">Governed</span>
+    </div>
+    <p class="lead" style="margin-top:12px;">RBAC（<code>Principal×Tenant</code>）· 防篡改审计哈希链（<code>AuditChain.verify()</code>）· 合规策略注入 Blocking 级 <code>ExpertRule</code>。</p>
+  </section>
+
+  <footer>璇玑 · 全维分析需求业务处理流程图（企业级 · 归一化 V1.0）｜ 与 GR-STD / PT-Primi 对齐 ｜ 落点 mox-expert/src</footer>
+</div>
+</body>
+</html>

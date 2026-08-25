@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mox-dr.fullname" . }}-primary
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "mox-dr.labels" . | nindent 4 }}
+    app.kubernetes.io/role: primary
+    dr.mox.io/region: {{ .Values.primaryRegion }}
+spec:
+  type: {{ .Values.service.type }}
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+    - name: graph
+      port: {{ .Values.service.primaryPort }}
+      targetPort: graph
+      protocol: TCP
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+    - name: raft
+      port: 8200
+      targetPort: raft
+      protocol: TCP
+  selector:
+    {{- include "mox-dr.primarySelectorLabels" . | nindent 4 }}

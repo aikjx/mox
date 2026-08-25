@@ -1,5 +1,5 @@
-// xuanji single-binary smoke validator.
-// Runs HTTP calls against xuanji-server --single-node (public-port 18080)
+// mox single-binary smoke validator.
+// Runs HTTP calls against mox-server --single-node (public-port 18080)
 // Verifies: health, metrics, PUT/GET CRC+ETag, fusion CDC->graph, audit chain, MPU 5 parts.
 const http = require('http');
 const crypto = require('crypto');
@@ -69,7 +69,7 @@ function push(name, ok, detail, want) {
 }
 
 (async () => {
-  console.log(`\n==== Xuanji single-node validation @ ${BASE} ====`);
+  console.log(`\n==== Mox single-node validation @ ${BASE} ====`);
 
   // SV2: health
   try {
@@ -92,7 +92,7 @@ function push(name, ok, detail, want) {
   } catch (e) { push('SV2 /metrics', false, String(e)); }
 
   // SV3: PUT payload -> GET roundtrip + CRC+ETag
-  const payload = Buffer.from('Hello Xuanji single-node deploy pipeline 🚀 \x00\x01\x02'.repeat(7));
+  const payload = Buffer.from('Hello Mox single-node deploy pipeline 🚀 \x00\x01\x02'.repeat(7));
   const bucket = 'demo';
   const key = 'hello/alpha.bin';
   let putEtag = '', putCrc = '';
@@ -101,7 +101,7 @@ function push(name, ok, detail, want) {
       headers: {
         'Content-Type': 'application/octet-stream',
         'x-amz-tagging': 'project=t21-deploy&owner=qa&dataset=smoke',
-        'x-xuanji-miji-level': '1',
+        'x-mox-miji-level': '1',
       },
       body: payload,
     });
@@ -177,21 +177,21 @@ function push(name, ok, detail, want) {
 
   // SV5 metrics: verify 10 base names present
   const TEN = [
-    'xuanji_obj_put_p50_p99_p999',
-    'xuanji_obj_get_p50_p99_p999',
-    'xuanji_ec_encode_us',
-    'xuanji_mpu_parts_total',
-    'xuanji_ec_shard_rebuild_total',
-    'xuanji_mountpath_faulty_total',
-    'xuanji_legalhold_active_objects',
-    'xuanji_miji_denied_read_total',
-    'xuanji_miji_denied_write_total',
-    'xuanji_crc_mismatch_total',
+    'mox_obj_put_p50_p99_p999',
+    'mox_obj_get_p50_p99_p999',
+    'mox_ec_encode_us',
+    'mox_mpu_parts_total',
+    'mox_ec_shard_rebuild_total',
+    'mox_mountpath_faulty_total',
+    'mox_legalhold_active_objects',
+    'mox_miji_denied_read_total',
+    'mox_miji_denied_write_total',
+    'mox_crc_mismatch_total',
   ];
   try {
     let found = 0;
     for (const name of TEN) if (metricsText.includes(name)) found++;
-    push('SV5.1 /metrics exposes all 10 Xuanji base metrics', found === TEN.length,
+    push('SV5.1 /metrics exposes all 10 Mox base metrics', found === TEN.length,
       `${found}/${TEN.length}; missing=${TEN.filter(n => !metricsText.includes(n)).join(',')}`);
   } catch (e) { push('SV5 metrics names', false, String(e)); }
 
@@ -242,7 +242,7 @@ function push(name, ok, detail, want) {
       `status=${rG.status} len=${rG.body.length} expected=${expected.length}`);
     if (rG.status === 200) {
       // server MPU fallback synthesized body from total_bytes unless header given -> all zeros
-      // We sent no x-xuanji-mpu-payload, so server fills 0s equal to total_bytes.
+      // We sent no x-mox-mpu-payload, so server fills 0s equal to total_bytes.
       // Compare length only + header CRC.
       push('SV6.6 GET MPU body length matches aggregate bytes',
         rG.body.length === expected.length,
@@ -270,11 +270,11 @@ function push(name, ok, detail, want) {
   fs.writeFileSync(outPath, JSON.stringify(out, null, 2), 'utf8');
   // Markdown
   const md = [
-    '# Xuanji v2.0 单二进制部署验证报告',
+    '# Mox v2.0 单二进制部署验证报告',
     '',
     `- 验证时间: ${out.ts}`,
     `- 目标端点: ${BASE}`,
-    `- 启动方式: xuanji-server.exe server --single-node --public-port 18080 --ctrl-port 19080 --data-port 19081`,
+    `- 启动方式: mox-server.exe server --single-node --public-port 18080 --ctrl-port 19080 --data-port 19081`,
     `- 总体通过率: **${pass}/${total}** (${(total ? pass*100/total : 0).toFixed(1)}%)`,
     '',
     '## 逐项结果',

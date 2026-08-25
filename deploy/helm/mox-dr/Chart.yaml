@@ -1,0 +1,23 @@
+apiVersion: v2
+name: mox-dr
+description: Mox Graph Platform Disaster Recovery (DR) Helm Chart
+type: application
+version: 3.0.0
+appVersion: "3.0.0"
+kubeVersion: ">=1.24.0-0"
+home: https://mox.infotopograph.io
+sources:
+  - https://gitcode.com/infotopograph/mox-dr
+maintainers:
+  - name: Mox DR Team
+    email: dr@infotopograph.io
+keywords:
+  - mox
+  - disaster-recovery
+  - dr
+  - graph-database
+  - multi-region
+annotations:
+  category: "Database"
+  dr-mode: "active-active"
+  regions: "cn-north-1,cn-south-1"

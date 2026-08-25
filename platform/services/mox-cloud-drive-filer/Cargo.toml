@@ -1,0 +1,24 @@
+[package]
+name = "mox-cloud-drive-filer"
+version = "3.0.0-ai-powered"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["Mox - 最高权限璇玑"]
+description = "Mox Cloud Drive M3 POSIX Filer - 3 Meta backends (SQLite / Postgres+Citus / Redis mock) + self-dev FUSE client. No JuiceFS / S3FS / Goofys third-party POSIX gateway used — FUSE logic 100% Mox self-dev."
+
+[lib]
+path = "src/lib.rs"
+
+[features]
+default = ["rusqlite_backend"]
+rusqlite_backend = ["dep:rusqlite"]
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+parking_lot = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+rusqlite = { workspace = true, features = ["bundled"], optional = true }

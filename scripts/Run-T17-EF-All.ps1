@@ -20,7 +20,7 @@ function wr($m) { $m | Tee-Object -FilePath $LOG -Append | Write-Host }
 $SW = [System.Diagnostics.Stopwatch]::StartNew()
 
 wr "============================================================"
-wr " XUANJI SDK + OPS  ALL-IN-ONE  RUN $RUN_ID"
+wr " MOX SDK + OPS  ALL-IN-ONE  RUN $RUN_ID"
 wr " T17 SDK (Rust/Node/Python 180 ex + >= 80 tests)"
 wr " E12 Helm DR   E13 信创+手册   E15 HA+容量+TCO"
 wr " E18 Trace 8st   E19 >= 706 全量回归   E20 一键 Helm + 灰度"
@@ -44,7 +44,7 @@ wr "T17 SDK exit=$($Phases.T17SDK)  => Score $SCORE_T17 Grade $GRADE_T17 Accept=
 
 # ---------------- PHASE 2: T12 Helm DR ----------------
 wr "--- [2/7] E12 Helm DR (chart + files) ---"
-$DR = Join-Path $ROOT "deploy\helm\xuanji-dr"
+$DR = Join-Path $ROOT "deploy\helm\mox-dr"
 $E12_FILES = (Get-ChildItem $DR -Recurse -File | Where-Object { $_.Name -match "\.(ya?ml|tpl|txt)$" }).Count
 # Helm lint if available:
 $HELM_EXE = Get-Command helm -ErrorAction SilentlyContinue
@@ -102,7 +102,7 @@ wr "--- [5/7] E18 8 阶段 Trace 埋点 Rust tests + dashboard ---"
 $E18_LOG = Join-Path $ART "e18_trace_tests.log"
 Push-Location $ROOT
 try {
-  cargo test -p xuanji-graph-service --lib trace_8stages 2>&1 | Tee-Object -FilePath $E18_LOG | Out-Null
+  cargo test -p mox-graph-service --lib trace_8stages 2>&1 | Tee-Object -FilePath $E18_LOG | Out-Null
   $E18_EXIT = $LASTEXITCODE
 } catch { $E18_EXIT = 1 }
 Pop-Location
@@ -141,7 +141,7 @@ wr "E19 total=$TOTAL_19 fail=$FAIL_19 rubric_ok=$R19_OK  score=$SCORE_E19"
 
 # ---------------- PHASE 7: E20 Umbrella Helm + Gray-Warmup ----------------
 wr "--- [7/7] E20 一键 Helm + 灰度 warmup 脚本 ---"
-$UMB = Join-Path $ROOT "deploy\helm\xuanji"
+$UMB = Join-Path $ROOT "deploy\helm\mox"
 $UMB_CHART_OK = Test-Path (Join-Path $UMB "Chart.yaml")
 $UMB_VAL_OK   = Test-Path (Join-Path $UMB "values.yaml")
 $GRAY = Join-Path $ROOT "scripts\Gray-Warmup.ps1"

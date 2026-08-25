@@ -103,7 +103,7 @@ check "编译模板"      GET  /api/caomei/templates 200
 check "需求编译"      POST /api/caomei/compile 200 '{"requirement":"用户登录后展示积分余额"}'
 
 # ── 全维融合 / 璇玑 ──
-check "璇玑健康"      GET  /api/xuanji/health 200
+check "璇玑健康"      GET  /api/mox/health 200
 check "治理台"        GET  /api/governance/dashboard 200
 
 # ── API 文档 ──

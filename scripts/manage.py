@@ -624,14 +624,14 @@ class ConfigManager:
 
     @property
     def admin_user(self) -> str:
-        u = os.environ.get("XUANJI_ADMIN_USER")
+        u = os.environ.get("MOX_ADMIN_USER")
         if u:
             return u
         return self.config.get("admin", {}).get("username", "admin")
 
     @property
     def admin_pass(self) -> str:
-        u = os.environ.get("XUANJI_ADMIN_PASS")
+        u = os.environ.get("MOX_ADMIN_PASS")
         if u:
             return u
         p = self.config.get("admin", {}).get("password")

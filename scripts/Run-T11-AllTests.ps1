@@ -19,7 +19,7 @@ New-Item -ItemType Junction -Path $LATEST -Target $ART | Out-Null
 
 $LOG = Join-Path $ART "run.log"
 function wr($m) { $m | Tee-Object -FilePath $LOG -Append | Write-Host }
-wr "=== XUANJI T11 R4 RELATIONSHIP GRAPH ONE-CLICK TEST & RUBRIC RUN $RUN_ID ==="
+wr "=== MOX T11 R4 RELATIONSHIP GRAPH ONE-CLICK TEST & RUBRIC RUN $RUN_ID ==="
 wr "Root : $ROOT"
 wr "Art  : $ART"
 wr ""
@@ -32,7 +32,7 @@ wr "--- [1/6] Rust unit tests (streams + spark + graph-service) ---"
 $RUST_LOG = Join-Path $ART "rust-tests.log"
 Push-Location $ROOT
 try {
-  cargo test -p xuanji-graph-streams -p xuanji-graph-spark -p xuanji-graph-service --lib 2>&1 |
+  cargo test -p mox-graph-streams -p mox-graph-spark -p mox-graph-service --lib 2>&1 |
     Tee-Object -FilePath $RUST_LOG | Out-Null
   $SUMMARY.RUST_EXIT = $LASTEXITCODE
 } catch { $SUMMARY.RUST_EXIT = 1 }
@@ -57,7 +57,7 @@ if (-not $SkipClippy) {
   $CLIPPY_LOG = Join-Path $ART "clippy.log"
   Push-Location $ROOT
   try {
-    cargo clippy -p xuanji-graph-streams -p xuanji-graph-spark -p xuanji-graph-service --all-targets -- -D warnings 2>&1 |
+    cargo clippy -p mox-graph-streams -p mox-graph-spark -p mox-graph-service --all-targets -- -D warnings 2>&1 |
       Tee-Object -FilePath $CLIPPY_LOG | Out-Null
     $SUMMARY.CLIPPY_EXIT = $LASTEXITCODE
   } catch { $SUMMARY.CLIPPY_EXIT = 1 }

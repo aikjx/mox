@@ -148,7 +148,7 @@
       "detail": "3"
     },
     {
-      "name": "SV5.1 /metrics exposes all 10 Xuanji base metrics",
+      "name": "SV5.1 /metrics exposes all 10 Mox base metrics",
       "ok": true,
       "detail": "10/10; missing="
     },

@@ -27,6 +27,6 @@ packages = [
     "template-market",
     "ai-agent",
     "hermes-flow-bridge",
-    "xuanji-system",
+    "mox-system",
     "operator-wasm",
 ]

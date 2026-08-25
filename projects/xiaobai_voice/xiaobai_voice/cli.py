@@ -30,12 +30,12 @@ def _open_diagnostic_stderr():
     s = system()
     if s == "Windows":
         base = os.environ.get("APPDATA") or str(Path.home() / "AppData" / "Roaming")
-        root = Path(base) / "xuanji" / "xiaobai" / "logs"
+        root = Path(base) / "mox" / "xiaobai" / "logs"
     elif s == "Darwin":
-        root = Path.home() / "Library" / "Logs" / "xuanji" / "xiaobai"
+        root = Path.home() / "Library" / "Logs" / "mox" / "xiaobai"
     else:
         xdg = os.environ.get("XDG_STATE_HOME") or str(Path.home() / ".local" / "state")
-        root = Path(xdg) / "xuanji" / "xiaobai" / "logs"
+        root = Path(xdg) / "mox" / "xiaobai" / "logs"
     root.mkdir(parents=True, exist_ok=True)
     p = root / f"windowed-{time.strftime('%Y%m%d-%H%M%S')}.log"
     fp = open(p, "a", encoding="utf-8", buffering=1)
@@ -77,6 +77,47 @@ def _sitepkgs_under_venv(venv: Path):
     return out
 
 
+def _versioned_sitepkgs_ok(p: Path) -> bool:
+    """site-packages 目录必须属于当前主版本 Python（避免 3.12 解释器加载 3.8 site-packages → typing/pydantic ABI 崩溃）。"""
+    try:
+        s = str(p.resolve()).lower()
+    except Exception:
+        s = str(p).lower()
+    target = "python%d%d" % (sys.version_info.major, sys.version_info.minor)
+    # 直接命中版本号片段（如 `Python312`、`python3.12`、`lib/python3.12`）
+    import re
+    loose = r"python[._\- ]?%d[._\- ]?%d" % (sys.version_info.major, sys.version_info.minor)
+    if re.search(loose, s):
+        return True
+    # 以 .../Lib/site-packages 结尾 → 检查其父链是否含当前版本前缀（当前 sys.prefix 所在路径无条件接受）。
+    try:
+        cur = Path(sys.prefix).resolve().lower()
+        if s.startswith(cur):
+            return True
+    except Exception:
+        pass
+    # 没有明确版本标记的通用路径（比如 ~/.mox/models/voice、自建 venv），不允许混用：
+    # 仅当父目录包含 PythonXX 子目录匹配当前版本，或显式 `.venv/pyvenv.cfg` 指定版本时才放行。
+    parent = p.parent
+    while parent != parent.parent:
+        pname = parent.name.lower()
+        if re.match(r"^python\d+$", pname) and pname != target.lower():
+            return False  # 明确其他版本（如 Python38）→ 拒绝
+        pyvenv = parent / "pyvenv.cfg"
+        if pyvenv.is_file():
+            try:
+                cfg_text = pyvenv.read_text(encoding="utf-8", errors="ignore")
+                if ("version_info = %d.%d" % (sys.version_info.major, sys.version_info.minor)) in cfg_text.replace(" ", ""):
+                    return True
+                # home= 行若包含 pythonXX 并且匹配当前解释器目录则放行
+            except Exception:
+                pass
+            # 任何其他 venv 一律拒绝，避免跨 ABI 混用。
+            return False
+        parent = parent.parent
+    return False
+
+
 def _discover_and_inject_sitepkgs() -> list:
     import site as _site
     hits: list = []
@@ -89,6 +130,12 @@ def _discover_and_inject_sitepkgs() -> list:
                 hits.append(s)
     except Exception:  # noqa: BLE001
         pass
+    # 当前解释器所在的 DLLs 目录一定兼容（仅注入同版本）；禁止混编注入其他 Python 版本 DLLs。
+    current_prefix = Path(getattr(sys, "prefix", sys.executable and os.path.dirname(sys.executable) or ""))
+    for sub in ("DLLs",):
+        cand = current_prefix / sub
+        if cand.is_dir():
+            hits.append(str(cand))
     if os.name == "nt":
         try:
             import subprocess
@@ -97,6 +144,11 @@ def _discover_and_inject_sitepkgs() -> list:
                 exe = line.strip('" ').strip()
                 if not exe or not Path(exe).is_file():
                     continue
+                # 跳过当前解释器自身：DLLs 已在上方单独加入；避免循环。
+                try:
+                    same = Path(exe).resolve() == Path(sys.executable).resolve()
+                except Exception:
+                    same = False
                 try:
                     r = subprocess.run(
                         [exe, "-c", "import site,sys; print('|'.join(site.getsitepackages()+[sys.prefix]))"],
@@ -108,8 +160,8 @@ def _discover_and_inject_sitepkgs() -> list:
                         pp = Path(p)
                         if pp.is_dir() and "site-packages" in p:
                             hits.append(p)
-                        elif pp.is_dir():
-                            hits.append(str(pp / "DLLs"))
+                        elif pp.is_dir() and same:
+                            # 仅当前解释器自身的 prefix 允许注入 DLLs（site-packages 下面已统一追加）。
                             hits.append(str(pp / "Lib/site-packages"))
                 except Exception:  # noqa: BLE001
                     continue
@@ -124,13 +176,27 @@ def _discover_and_inject_sitepkgs() -> list:
                     sp = env / "Lib" / "site-packages"
                     if sp.is_dir():
                         hits.append(str(sp))
-                    dlls = env / "DLLs"
-                    if dlls.is_dir():
-                        hits.append(str(dlls))
+                    # 不注入 env/DLLs：避免跨版本解释器 ABI 冲突（_socket / _ssl 等混版加载会直接崩溃）。
         except Exception:  # noqa: BLE001
             pass
     uniq = []
     for h in hits:
+        try:
+            pp = Path(h)
+            # DLLs 目录不属于 site-packages；只要是当前解释器 prefix 下的或显式 current_prefix/DLLs 就放行。
+            name = pp.name.lower()
+            if name == "dlls" or name == "scripts":
+                try:
+                    under_cur = Path(sys.prefix).resolve() in pp.resolve().parents
+                except Exception:
+                    under_cur = False
+                if not under_cur and pp.resolve() != (current_prefix / name).resolve():
+                    continue
+            elif "site-packages" in str(pp).lower():
+                if not _versioned_sitepkgs_ok(pp):
+                    continue
+        except Exception:
+            pass
         norm = str(Path(h).resolve()) if Path(h).exists() else str(h)
         if norm not in uniq:
             uniq.append(norm)
@@ -148,8 +214,16 @@ def _inject_dll_dirs() -> None:
     for sp in _discover_and_inject_sitepkgs():
         spp = Path(sp)
         roots.append(spp)
-        roots.append(spp.parent.parent / "DLLs")
-        roots.append(spp.parent.parent / "Scripts")
+        # 仅当 site-packages 父目录是当前解释器时，才追加其 DLLs/Scripts；
+        # 其它环境 site-packages 只用来找 numpy/.libs / torch/lib 这类第三方包独立 DLL。
+        try:
+            prefix_cand = spp.parent.parent
+            same_prefix = Path(sys.prefix).resolve() == prefix_cand.resolve()
+        except Exception:
+            same_prefix = False
+        if same_prefix:
+            roots.append(spp.parent.parent / "DLLs")
+            roots.append(spp.parent.parent / "Scripts")
     seen: set[str] = set()
     for root in roots:
         if not root.is_dir():
@@ -179,11 +253,11 @@ def _inject_dll_dirs() -> None:
 
 
 def _inject_env() -> None:
-    home_voice = str(Path.home() / ".xuanji" / "models" / "voice")
+    home_voice = str(Path.home() / ".mox" / "models" / "voice")
     for k, v in {
         "FISH_SPEECH_CKPT_DIR": home_voice,
         "COSYVOICE_CKPT_DIR": home_voice,
-        "XUANJI_VOICE_PORT": "3717",
+        "MOX_VOICE_PORT": "3717",
     }.items():
         os.environ.setdefault(k, v)
 
@@ -302,12 +376,12 @@ def main(argv=None) -> int:
 
     p = s.add_parser("serve")
     p.add_argument("--host", default="127.0.0.1")
-    p.add_argument("--port", type=int, default=int(os.environ.get("XUANJI_VOICE_PORT") or 3717))
+    p.add_argument("--port", type=int, default=int(os.environ.get("MOX_VOICE_PORT") or 3717))
     p.add_argument("--log-level", default="info", choices=["trace", "debug", "info", "warning", "error"])
 
     p = s.add_parser("desktop")
     p.add_argument("--skip-serve", action="store_true")
-    p.add_argument("--port", type=int, default=int(os.environ.get("XUANJI_VOICE_PORT") or 3717))
+    p.add_argument("--port", type=int, default=int(os.environ.get("MOX_VOICE_PORT") or 3717))
 
     p = s.add_parser("download")
     p.add_argument("--model-id", default=None)

@@ -21,12 +21,12 @@ function wr($m) { $m | Tee-Object -FilePath $LOG -Append | Write-Host }
 $SW = [System.Diagnostics.Stopwatch]::StartNew()
 $S = [ordered]@{}
 
-wr "=== XUANJI T17 OFFICIAL SDK ONE-CLICK RUN $RUN_ID ==="
+wr "=== MOX T17 OFFICIAL SDK ONE-CLICK RUN $RUN_ID ==="
 
 if ($SkipSlowTests) {
   # 尝试从最近一次 T17 run 读取 report.json，使用已验证的结果（仍需存在 SDK 相关文件）
   $PREV = Get-ChildItem -Path $ART_ROOT -Directory | Where-Object { $_.Name -ne "latest" -and (Test-Path (Join-Path $_.FullName "report.json")) } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-  $CLOUD_OK = Test-Path (Join-Path $ROOT "platform\sdk\rust\xuanji-sdk-cloud\src\lib.rs")
+  $CLOUD_OK = Test-Path (Join-Path $ROOT "platform\sdk\rust\mox-sdk-cloud\src\lib.rs")
   $GR_OK = Test-Path (Join-Path $ROOT "platform\sdk\nodejs\src\graph-client.js")
   $PY_OK = Test-Path (Join-Path $ROOT "platform\sdk\python\tests\test_graph.py")
   if ($PREV -and $CLOUD_OK -and $GR_OK -and $PY_OK) {
@@ -63,7 +63,7 @@ wr "--- [1/5] Rust SDK (cloud + graph) tests ---"
 $RLOG = Join-Path $ART "rust-sdk.log"
 Push-Location $ROOT
 try {
-  cargo test -p xuanji-sdk-cloud -p xuanji-sdk-graph --test '*' 2>&1 | Tee-Object -FilePath $RLOG | Out-Null
+  cargo test -p mox-sdk-cloud -p mox-sdk-graph --test '*' 2>&1 | Tee-Object -FilePath $RLOG | Out-Null
   $S.RUST_EXIT = $LASTEXITCODE
 } catch { $S.RUST_EXIT = 1 }
 Pop-Location
@@ -84,7 +84,7 @@ if (-not $SkipExamples) {
   $ELOG = Join-Path $ART "rust-examples-build.log"
   Push-Location $ROOT
   try {
-    cargo build -p xuanji-sdk-cloud -p xuanji-sdk-graph --examples --quiet 2>&1 | Tee-Object -FilePath $ELOG | Out-Null
+    cargo build -p mox-sdk-cloud -p mox-sdk-graph --examples --quiet 2>&1 | Tee-Object -FilePath $ELOG | Out-Null
     $S.RUST_EX_EXIT = $LASTEXITCODE
   } catch { $S.RUST_EX_EXIT = 1 }
   Pop-Location

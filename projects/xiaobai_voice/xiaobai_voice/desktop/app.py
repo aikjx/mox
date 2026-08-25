@@ -39,7 +39,7 @@ def run_desktop(args: Any) -> int | None:
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv[:0] if False else sys.argv)
     app.setQuitOnLastWindowClosed(False)
     app.setApplicationName("Xiaobai")
-    app.setOrganizationName("Xuanji")
+    app.setOrganizationName("Mox")
 
     # 主题（深空 φ 色系）
     _apply_qt_dark_theme(app)
@@ -90,7 +90,7 @@ def run_desktop(args: Any) -> int | None:
         except Exception:  # noqa: BLE001
             pass
         try:
-            stop_marker = Path(os.environ.get("TMP") or os.environ.get("TEMP") or "/tmp") / "xuanji_xiaobai_stop"
+            stop_marker = Path(os.environ.get("TMP") or os.environ.get("TEMP") or "/tmp") / "mox_xiaobai_stop"
             stop_marker.write_text(str(int(time.time())), encoding="utf-8")
         except Exception:  # noqa: BLE001
             pass

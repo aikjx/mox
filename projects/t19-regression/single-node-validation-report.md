@@ -1,8 +1,8 @@
-# Xuanji v2.0 单二进制部署验证报告
+# Mox v2.0 单二进制部署验证报告
 
 - 验证时间: 2026-08-24T15:08:14.428Z
 - 目标端点: http://127.0.0.1:18080
-- 启动方式: xuanji-server.exe server --single-node --public-port 18080 --ctrl-port 19080 --data-port 19081
+- 启动方式: mox-server.exe server --single-node --public-port 18080 --ctrl-port 19080 --data-port 19081
 - 总体通过率: **40/40** (100.0%)
 
 ## 逐项结果
@@ -37,7 +37,7 @@
 | 26 | SV4.10 /audit/chain returns 200 | ✅ PASS | 200 |
 | 27 | SV4.11 audit verified=true (WORM integrity) | ✅ PASS | verified=true len=3 last_block=2 |
 | 28 | SV4.12 audit len >= 2 (genesis + PUT + seed?) | ✅ PASS | 3 |
-| 29 | SV5.1 /metrics exposes all 10 Xuanji base metrics | ✅ PASS | 10/10; missing= |
+| 29 | SV5.1 /metrics exposes all 10 Mox base metrics | ✅ PASS | 10/10; missing= |
 | 30 | SV6.1 MPU create returns UploadId | ✅ PASS | {"bucket":"demo","key":"mpu/big.bin","ok":true,"owner":"api-user","upload_id":"e6d0c40b-94a5-4070-a411-12d96455cbaa-9090123b4533"} |
 | 31 | SV6.2 part 1 upload | ✅ PASS | part=1 status=200 etag=cb93bc2daed8e588 crc=cb93bc2daed8e588 |
 | 32 | SV6.2 part 2 upload | ✅ PASS | part=2 status=200 etag=9cce797ef8944842 crc=9cce797ef8944842 |

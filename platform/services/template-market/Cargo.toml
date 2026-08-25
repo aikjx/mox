@@ -7,7 +7,7 @@ authors.workspace = true
 description = "草莓多平台 - 系统模板市场：对话生成的系统模板可上传/下载/引用复用"
 
 [dependencies]
-xuanji-common-meta = { path = "../xuanji-common-meta" }
+mox-common-meta = { path = "../mox-common-meta" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }

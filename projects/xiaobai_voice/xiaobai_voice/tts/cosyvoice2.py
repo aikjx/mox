@@ -193,11 +193,22 @@ class CosyVoice2Backend(TTSBackend):
         self._resolved_spk_id: str | None = None
         self._model = None
         self._model_sr = 22050
-        self._ckpt_dir = self._resolve_model_dir(models_registry)
         try:
+            self._ckpt_dir = self._resolve_model_dir(models_registry)
             self._load_engine()
         except XiaobaiError:
             raise
+        except FileNotFoundError as exc:
+            missing = getattr(exc, "filename", None)
+            missing_text = f"（缺失路径：{missing}）" if missing else "（所有候选路径均未命中）"
+            raise XiaobaiError(
+                code=ErrorCode.MISSING_MODEL,
+                message=(
+                    "CosyVoice2 权重目录缺失。请下载 tts-cosyvoice2-0.5b 放入 "
+                    f"`~/.mox/models/voice/` 或 `projects/xiaobai_voice/models/`。{missing_text}"
+                ),
+                cause=exc,
+            ) from exc
         except ImportError as exc:
             raise XiaobaiError(
                 code=ErrorCode.MISSING_DEP,
@@ -205,12 +216,6 @@ class CosyVoice2Backend(TTSBackend):
                     "CosyVoice2 未安装。请执行：pip install cosyvoice>=0.2.0 （Apache2）。"
                     "或把 license_tier=apache2 切回 auto，允许浏览器 TTS 兜底。"
                 ),
-                cause=exc,
-            ) from exc
-        except FileNotFoundError as exc:
-            raise XiaobaiError(
-                code=ErrorCode.MISSING_MODEL,
-                message=f"CosyVoice2 权重目录缺失：{exc.filename or self._ckpt_dir}。请下载 tts-cosyvoice2-0.5b。",
                 cause=exc,
             ) from exc
         except OSError as exc:
@@ -230,7 +235,7 @@ class CosyVoice2Backend(TTSBackend):
 
         if getattr(sys, "frozen", False):
             candidates.append(os.path.join(os.path.dirname(sys.executable), "models", "tts-cosyvoice2-0.5b"))
-        candidates.append(os.path.join(os.path.expanduser("~"), ".xuanji", "models", "voice", "tts-cosyvoice2-0.5b"))
+        candidates.append(os.path.join(os.path.expanduser("~"), ".mox", "models", "voice", "tts-cosyvoice2-0.5b"))
         candidates.append(
             os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "models", "tts-cosyvoice2-0.5b"))
         )

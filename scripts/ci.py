@@ -151,7 +151,7 @@ def http_get_with_headers(url, headers, timeout=5):
 
 
 def serve_and_health(port):
-    step("端到端健康检查 /api/xuanji/*")
+    step("端到端健康检查 /api/mox/*")
     kill_server()
     log_out = os.path.join(ROOT, "ci_server.out")
     log_err = os.path.join(ROOT, "ci_server.err")
@@ -179,8 +179,8 @@ def serve_and_health(port):
             return False
         print("health: 200 OK")
 
-        status, body = http_get_with_headers(base + "/api/xuanji/health", auth_header)
-        print("xuanji health status=%s" % status)
+        status, body = http_get_with_headers(base + "/api/mox/health", auth_header)
+        print("mox health status=%s" % status)
         print(body[:500])
 
         import json
@@ -194,7 +194,7 @@ def serve_and_health(port):
         }).encode("utf-8")
         try:
             req_h = urllib.request.Request(
-                base + "/api/xuanji/optimize",
+                base + "/api/mox/optimize",
                 data=req,
                 headers={"Content-Type": "application/json", "Authorization": "Bearer ci-token-2026"},
                 method="POST",
@@ -209,7 +209,7 @@ def serve_and_health(port):
                 print("WARN: expert_scores < 14, 双璇玑十四维未完全生效")
             print("端到端全维度治理验证通过")
         except Exception as e:
-            print("xuanji optimize call failed: %s" % e)
+            print("mox optimize call failed: %s" % e)
             return False
         return True
     finally:
