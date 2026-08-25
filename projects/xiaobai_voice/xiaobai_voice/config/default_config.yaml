@@ -14,7 +14,15 @@ voice:
     channels: 1
 
   tts:
-    engine: auto                 # auto / fish_s2 / cosyvoice2 / browser
+    default_engine: cosyvoice2
+    engines:
+      cosyvoice2:
+        enabled: true
+        license: Apache-2.0
+      fish_s2_pro:
+        enabled: false
+        license: Research
+        note: "默认禁用。若需启用请设置环境变量 XIAOBAI_ACCEPT_RESEARCH_LICENSE=1"
     default_voice: xiaobai
     clone_reference: null        # voice_clips/<sha1>.wav 的 id
     emotion: neutral             # neutral | happy | sad | serious

@@ -31,6 +31,11 @@ tracing = { workspace = true }
 reqwest = { workspace = true, features = ["blocking"] }
 async-trait = { workspace = true }
 
+[features]
+default = ["rayon"]
+# 并行咨询（真并行）：关闭则退化为顺序单线程，API 不变
+rayon = []
+
 [[example]]
 name = "profile_deep_chain"
 path = "examples/profile_deep_chain.rs"

@@ -1,7 +1,12 @@
 """TTS backends: Fish-S2-Pro（Research 延迟 import）/ CosyVoice2（Apache2）/ BrowserFallback。"""
 from __future__ import annotations
 
+import logging
+import os
+
 from .base import TTSBackend, TTSOptions  # noqa: F401
+
+logger = logging.getLogger("xiaobai.tts")
 
 
 def build_tts_backend(
@@ -41,6 +46,18 @@ def build_tts_backend(
     for cand in candidates:
         try:
             if cand == "fish_s2":
+                # Research License 安全锁：必须显式接受 Research License 才能启用 fish_s2_pro
+                if os.environ.get("XIAOBAI_ACCEPT_RESEARCH_LICENSE", "0") != "1":
+                    logger.warning(
+                        "Fish-S2-Pro license is Research (non-commercial). "
+                        "Set XIAOBAI_ACCEPT_RESEARCH_LICENSE=1 to accept and enable."
+                    )
+                    # 抛 XiaobaiError 让 candidates 循环降级，不影响 cosyvoice2
+                    from ..errors import ErrorCode, XiaobaiError as _XE
+                    raise _XE(
+                        code=ErrorCode.RUNTIME,
+                        message="Fish-S2-Pro 需设置 XIAOBAI_ACCEPT_RESEARCH_LICENSE=1 接受 Research License 后方可启用。",
+                    )
                 from .fish_s2 import FishS2Backend  # 延迟 import 防 license 污染
 
                 return FishS2Backend(tts_cfg, models_registry)

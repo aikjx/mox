@@ -309,6 +309,9 @@ async fn main() -> anyhow::Result<()> {
         )
         .init();
 
+    // T8 FR-GW-05：启动时打印"已注册的子服务清单"到 stderr
+    subservers::print_subserver_registry();
+
     tracing::info!("🚀 启动算子统一系统 v3.0 - AI驱动全维突破平台...");
 
     // 生产级安全配置：API 访问令牌（缺失则仅开放只读/健康检查接口）
@@ -611,6 +614,12 @@ async fn main() -> anyhow::Result<()> {
     for (prefix, router) in subs.routers {
         app = app.nest(prefix, router);
     }
+
+    // ========== T7 FR-GW-04：Voice 代理 /voice/** → :3717 ==========
+    // 3717 不可达时自动回退到 browser_tts JSON（AC-22 标准），避免 502 炸前端。
+    app = app.merge(crate::routes::voice_proxy::voice_proxy_routes(
+        crate::routes::voice_proxy::VoiceProxyState::default(),
+    ));
 
     // 三层安全管线（从外到内）：
     //   ① CORS 受控来源

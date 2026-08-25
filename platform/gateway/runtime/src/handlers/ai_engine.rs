@@ -144,6 +144,35 @@ pub struct EngineMetricsResponse {
     pub degrade_hits: u64,
     pub sidecar: crate::sidecar::SidecarMetricsSnapshot,
     pub p95_latency_ms: BTreeMap<String, u64>,
+    /// T9 FR-GW-06：专家联盟指标扩展（下一版本接入真实 prometheus Counter）
+    pub alliance: AllianceMetrics,
+    /// T9 FR-GW-06：已注册子服务清单（供前端 & 运维运维面板查询）
+    pub subservers: serde_json::Value,
+}
+
+#[derive(Debug, Serialize, Clone)]
+// 说明：struct AllianceMetrics —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+// 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
+pub struct AllianceMetrics {
+    pub invocations_total: u64,
+    pub gate_a_rate_7d: f64,
+    pub gate_b_rate_7d: f64,
+    pub gate_c_rate_7d: f64,
+    pub gate_d_blocked_total: u64,
+    pub p99_latency_ms: u64,
+}
+
+impl Default for AllianceMetrics {
+    fn default() -> Self {
+        Self {
+            invocations_total: 0,
+            gate_a_rate_7d: 0.0,
+            gate_b_rate_7d: 0.0,
+            gate_c_rate_7d: 0.0,
+            gate_d_blocked_total: 0,
+            p99_latency_ms: 0,
+        }
+    }
 }
 
 // ================== 共享状态 ==================
@@ -532,6 +561,11 @@ pub async fn metrics_handler(
         degrade_hits: state.stats.degrade_hits.load(Ordering::Relaxed),
         sidecar,
         p95_latency_ms: p95,
+        // T9 FR-GW-06：专家联盟占位指标（下一版本接真实计数 + 7d 滑窗）
+        alliance: AllianceMetrics::default(),
+        // T9 FR-GW-06：注册表 → JSON 快照
+        subservers: serde_json::to_value(crate::subservers::registered_subservers())
+            .unwrap_or(serde_json::Value::Array(vec![])),
     };
     (StatusCode::OK, Json(r))
 }

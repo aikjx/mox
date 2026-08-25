@@ -11,7 +11,7 @@ xuanji-domain-abstractions = { path = "../xuanji-domain-abstractions" }
 tokio = { workspace = true }
 sha2 = { workspace = true }
 hmac = { workspace = true }
-hex = { workspace = true, optional = true }
+hex = { workspace = true }
 serde_json = { workspace = true }
 async-trait = { workspace = true }
 tracing = { workspace = true }
@@ -21,9 +21,11 @@ serde = { workspace = true, features = ["derive"] }
 parking_lot = { workspace = true }
 bytes = "1"
 rand = { workspace = true, optional = true }
+num-bigint = { version = "0.5.1", features = ["std"] }
+num-traits.workspace = true
 
 [features]
-gm-sm = ["dep:rand", "dep:hex"]
+gm-sm = ["dep:rand"]
 dual_chain = ["gm-sm"]
 
 [dev-dependencies]

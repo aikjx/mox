@@ -284,7 +284,9 @@ impl GraphWriter {
                     now,
                 ));
             }
-            self.apply_bridge_hook(uri, bucket, size, etag, miji_level, &norm_tags);
+            let snap = Self::make_bridge_snap(&s, uri, bucket, size, etag, miji_level, &norm_tags);
+            drop(s);
+            self.apply_bridge_snap(snap);
             return Ok(());
         }
         // If we were soft-deleted, treat the upsert as "revive": even with
@@ -306,7 +308,9 @@ impl GraphWriter {
                     now,
                 ));
             }
-            self.apply_bridge_hook(uri, bucket, size, etag, miji_level, &norm_tags);
+            let snap = Self::make_bridge_snap(&s, uri, bucket, size, etag, miji_level, &norm_tags);
+            drop(s);
+            self.apply_bridge_snap(snap);
             return Ok(());
         }
 
@@ -361,7 +365,9 @@ impl GraphWriter {
             ));
         }
 
-        self.apply_bridge_hook(uri, bucket, size, etag, miji_level, &norm_tags);
+        let snap = Self::make_bridge_snap(&s, uri, bucket, size, etag, miji_level, &norm_tags);
+        drop(s);
+        self.apply_bridge_snap(snap);
         Ok(())
     }
 
@@ -434,61 +440,71 @@ impl GraphWriter {
         self.inner.lock().objs.get(&obj_id_of(uri)).cloned()
     }
 
-    /// Mirror the current state of the given URI into the attached bridge
-    /// (no-op if no bridge is attached).  This acquires the state lock
-    /// briefly to snapshot tag k/v pairs and per-tag usage counts, then
-    /// releases it before locking the bridge (lock-order: state → bridge)
-    /// so the two locks never deadlock.
-    fn apply_bridge_hook(
-        &self,
+}
+
+// ------ helpers ------
+
+/// Snapshot for a bridge-hook mirror, prepared while holding GraphState and
+/// consumed **after** releasing the state lock to avoid recursive mutex
+/// deadlocks between the state Mutex and the projection-bridge Mutex.
+#[derive(Debug, Clone)]
+struct BridgeHookSnap {
+    uri: String,
+    meta: ObjectMeta,
+    tags: Vec<(String, String, u64)>,
+}
+
+impl GraphWriter {
+    fn make_bridge_snap(
+        s: &GraphState,
         uri: &str,
         bucket: &str,
         size: u64,
         etag: &str,
         miji_level: Option<u8>,
         norm_tags: &[crate::tag_parser::Tag],
-    ) {
+    ) -> BridgeHookSnap {
+        let meta = ObjectMeta {
+            bucket: bucket.to_string(),
+            key: uri.to_string(),
+            size_bytes: size,
+            etag: etag.to_string(),
+            crc64_ecma: 0,
+            miji_level,
+            hold_until_ms: None,
+        };
+        let mut tags = Vec::with_capacity(norm_tags.len());
+        for t in norm_tags {
+            let tid = tag_id_of(&t.k, &t.v);
+            let usage = s
+                .edges
+                .iter()
+                .filter(|(_, tag_id)| *tag_id == tid)
+                .count() as u64;
+            tags.push((t.k.clone(), t.v.clone(), usage));
+        }
+        BridgeHookSnap {
+            uri: uri.to_string(),
+            meta,
+            tags,
+        }
+    }
+
+    fn apply_bridge_snap(&self, snap: BridgeHookSnap) {
         let Some(bridge_arc) = &self.projection_bridge else {
             return;
         };
-        // Phase 1: lock state ONLY; snapshot k/v + usage counts.
-        let (meta, tag_snaps): (ObjectMeta, Vec<(String, String, u64)>) = {
-            let s = self.inner.lock();
-            let meta = ObjectMeta {
-                bucket: bucket.to_string(),
-                key: uri.to_string(),
-                size_bytes: size,
-                etag: etag.to_string(),
-                crc64_ecma: 0,
-                miji_level,
-                hold_until_ms: None,
-            };
-            let mut snaps = Vec::with_capacity(norm_tags.len());
-            for t in norm_tags {
-                let tid = tag_id_of(&t.k, &t.v);
-                let usage = s
-                    .edges
-                    .iter()
-                    .filter(|(_, tag_id)| *tag_id == tid)
-                    .count() as u64;
-                snaps.push((t.k.clone(), t.v.clone(), usage));
-            }
-            (meta, snaps)
-        };
-        // Phase 2: lock bridge ONLY; apply upserts + edges.
         let mut bridge = bridge_arc.lock();
-        bridge.upsert_object_vertex(uri, &meta);
-        for (k, v, usage) in &tag_snaps {
+        bridge.upsert_object_vertex(&snap.uri, &snap.meta);
+        for (k, v, usage) in &snap.tags {
             bridge.upsert_tag_vertex(k, v, *usage);
         }
-        for (k, v, _) in &tag_snaps {
+        for (k, v, _) in &snap.tags {
             let tag_uri = format!("tag://{k}:{v}");
-            bridge.add_has_tag_edge(uri, &tag_uri, "HAS_TAG");
+            bridge.add_has_tag_edge(&snap.uri, &tag_uri, "HAS_TAG");
         }
     }
 }
-
-// ------ helpers ------
 
 fn now_ms() -> i64 {
     use std::time::{SystemTime, UNIX_EPOCH};
