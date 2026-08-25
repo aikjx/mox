@@ -33,7 +33,7 @@ manage.py — 璇玑系统统一运维脚本（单文件整合版，stdlib-only�
   python scripts/manage.py restart [service_key|all]   [--strict]
   python scripts/manage.py status
   python scripts/manage.py logs    [service_key]       [--lines N]
-  python scripts/manage.py dashboard  [--host 0.0.0.0] [--port 3040] [--no-browser]
+  python scripts/manage.py dashboard  [--host 0.0.0.0] [--port 3999] [--no-browser]
   python scripts/manage.py verify            # 六大公理数学自洽性验证
   python scripts/manage.py init               # 创建 .runtime / .logs 目录
   python scripts/manage.py bootstrap [--strict] [--with-dashboard] [--no-browser] [--dry-run]
@@ -63,7 +63,7 @@ import subprocess
 import threading
 import time
 from datetime import datetime
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -75,7 +75,7 @@ CONFIG_PATH = PROJECT_ROOT / "platform_config.json"
 RUNTIME_DIR = PROJECT_ROOT / ".runtime"                        # pid 文件
 LOG_DIR = PROJECT_ROOT / ".logs"                               # 各服务输出日志
 
-DEFAULT_DASHBOARD_PORT = 3040
+DEFAULT_DASHBOARD_PORT = 3999
 SESSION_TIMEOUT = 30 * 60                                      # 会话 30 分钟过期
 
 # 默认服务配置（仅当 platform_config.json 缺失时回退使用；
@@ -98,7 +98,7 @@ DEFAULT_CONFIG = {
             "binary_requires": ["node", "npm"],
             "npm_deps": True,
             "is_admin_only": True,
-            "auto_start": True,
+            "auto_start": False,
             "restart_delay": 3,
             "wait_time": 8,
             "startup_order_hint": 10,
@@ -116,7 +116,7 @@ DEFAULT_CONFIG = {
             "binary_requires": ["node", "npm"],
             "npm_deps": True,
             "is_admin_only": False,
-            "auto_start": True,
+            "auto_start": False,
             "wait_time": 12,
             "startup_order_hint": 20,
             "depends_on": ["api"],
@@ -187,6 +187,32 @@ def clear_pid(key: str):
 def is_process_alive(pid: int) -> bool:
     if pid is None:
         return False
+    # Windows 上 os.kill(pid, 0) 在某些 Python 版本上会误判（PID 已退出但
+    # 内核句柄表还有残留就返回 True），导致陈旧 pidfile 被误判为「已在运行」，
+    # 进而跳过启动 → 页面上点启动按钮却"啥也没发生"。
+    # 所以 Windows 走子进程查询（wmic）作为可靠来源，os.kill 仅兜底。
+    if os.name == "nt":
+        try:
+            r = subprocess.run(
+                [
+                    "wmic",
+                    "process",
+                    "where",
+                    f"ProcessId={int(pid)}",
+                    "get",
+                    "ProcessId",
+                    "/value",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            blob = (r.stdout or "") + (r.stderr or "")
+            if "No Instance(s) Available" in blob or "ProcessId=" not in blob:
+                return False
+            return True
+        except Exception:
+            pass
     try:
         os.kill(pid, 0)
         return True
@@ -360,6 +386,10 @@ def _project_owned_pid(pid: int) -> bool:
     """杀进程白名单：进程可执行文件/cmdline 落在 PROJECT_ROOT 下（或常见解释器且 cwd 命中）才允许。
 
     信息不足时默认 True（允许进程级 pid 文件中记录的 pid 必然属于本项目）。
+
+    Windows 增强：相对路径启动（如 `python scripts/manage.py dashboard`）不会在 cmdline 中出现
+    PROJECT_ROOT，因此额外识别：命令行末尾/参数位置出现 scripts/manage.py、manage.py dashboard
+    这类签名时，视为本项目归属（避免明明是自己的 dashboard server 却被判成「第三方」而不敢杀）。
     """
     try:
         if os.name == "nt":
@@ -382,11 +412,20 @@ def _project_owned_pid(pid: int) -> bool:
             if not text or "No Instance(s) Available" in text:
                 return True  # 已不存在 → 视为可通过
             text_lower = text.lower()
-            root_lower = str(PROJECT_ROOT).lower()
-            if root_lower in text_lower:
+            # 归一化反斜杠后再比较路径
+            text_norm = text_lower.replace("\\", "/")
+            root_norm = str(PROJECT_ROOT).lower().replace("\\", "/")
+            if root_norm in text_norm:
                 return True
-            # node/python/npm 解释器路径不直接在项目下，但如果 cmdline 引用了 PROJECT_ROOT 下的脚本也放行
-            return root_lower.replace("\\", "/") in text.replace("\\", "/").lower()
+            # 启发式：识别本项目运维脚本的相对路径调用
+            for sig in (
+                "scripts/manage.py",
+                "manage.py dashboard",
+                "manage.py bootstrap",
+            ):
+                if sig in text_norm:
+                    return True
+            return False
         else:
             # Unix：读 /proc/<pid>/cmdline + cwd
             cmdline_p = Path(f"/proc/{pid}/cmdline")
@@ -403,7 +442,13 @@ def _project_owned_pid(pid: int) -> bool:
             except Exception:
                 pass
             blob = b" ".join(parts).decode("utf-8", "replace")
-            return str(PROJECT_ROOT) in blob
+            if str(PROJECT_ROOT) in blob:
+                return True
+            blob_norm = blob.lower().replace("\\", "/")
+            for sig in ("scripts/manage.py", "manage.py dashboard", "manage.py bootstrap"):
+                if sig in blob_norm:
+                    return True
+            return False
     except Exception:
         return True
 
@@ -814,30 +859,61 @@ class ServiceManager:
             return False
         installer = ["npm", "install"]
         if pnpm_lock.exists() and shutil.which("pnpm"):
+            # --frozen-lockfile 在本地开发经常因为 package.json 新增/升级依赖（但忘记重跑 pnpm i）而失败，
+            # 导致「页面上一键启动服务 → 服务静默挂掉」。改成宽容策略：先 --frozen-lockfile，
+            # 失败则自动降级到普通 pnpm install 自动更新 lockfile（仅本地 dev，CI 可显式用 `strict=true`
+            # 时仍会失败）。
             installer = ["pnpm", "install", "--frozen-lockfile"]
         elif lock.exists():
             installer = ["npm", "ci" if (nm.exists() is False) else "install"]
         log(f"[INFO] 安装 npm 依赖: {' '.join(installer)} (cwd={cwd})")
         try:
-            subprocess.run(
+            result = subprocess.run(
                 installer,
                 cwd=str(cwd),
-                check=True,
+                check=False,
                 shell=(os.name == "nt"),
                 stdout=None,
                 stderr=None,
             )
-            # 写 marker
-            try:
-                (nm / ".package-lock.json").write_text(
-                    str(int(time.time())), encoding="utf-8"
+            # pnpm frozen-lockfile 失败兜底：自动降级到无 frozen，重跑一次
+            if (
+                result.returncode != 0
+                and installer[:2] == ["pnpm", "install"]
+                and "--frozen-lockfile" in installer
+            ):
+                log(
+                    "[WARN] pnpm --frozen-lockfile 失败（常见于 package.json 增/改依赖后未更新 "
+                    "pnpm-lock.yaml），自动回退到 pnpm install（会更新 lockfile）…"
                 )
-            except Exception:
-                pass
-            return True
-        except subprocess.CalledProcessError as e:
-            log(f"[ERROR] 依赖安装失败: {e}；请手动在 {cwd} 执行 `npm install`")
+                result = subprocess.run(
+                    ["pnpm", "install"],
+                    cwd=str(cwd),
+                    check=False,
+                    shell=(os.name == "nt"),
+                    stdout=None,
+                    stderr=None,
+                )
+            if result.returncode != 0:
+                log(f"[ERROR] npm 依赖安装失败（rc={result.returncode}）；请手动在 {cwd} 执行安装命令")
+                return False
+        except Exception as e:
+            log(f"[ERROR] npm 依赖安装异常: {e}")
             return False
+        # 写 marker：下次判断是否需要重安装的依据
+        try:
+            (nm / ".package-lock.json").write_text(
+                str(int(time.time())), encoding="utf-8"
+            )
+        except Exception:
+            pass
+        try:
+            marker = nm / ".pnpm-store-marker"
+            if pnpm_lock.exists():
+                marker.write_text(str(int(time.time())), encoding="utf-8")
+        except Exception:
+            pass
+        return True
 
     def _preflight(self, key: str, svc: dict, cwd: Path) -> bool:
         """启动前统一预检：二进制 → 工作目录 → npm 依赖 → depends_on 健康。"""
@@ -1046,6 +1122,10 @@ class ServiceManager:
     def start_all_auto(self, strict: bool = False):
         self.start_all_sorted(auto_only=True, strict=strict)
 
+    def start_all_configured(self, strict: bool = False) -> bool:
+        """启动所有已配置服务（忽略 auto_start 标记）——用于管理面板『启动所有』按钮。"""
+        return self.start_all_sorted(auto_only=False, strict=strict)
+
     def stop_all_sorted(self, force: bool = False):
         for key in self.config.topo_stop_order():
             self.stop(key, force)
@@ -1054,10 +1134,49 @@ class ServiceManager:
         # 保持对老 API 的兼容；内部统一用拓扑顺序
         self.stop_all_sorted(force)
 
+    def clean_stale_pidfiles(self) -> dict:
+        """
+        只清理僵尸 pidfile（记录了 pid，但对应进程已死/端口没人占），不会杀掉任何真实运行中的服务。
+        返回 {"removed": [key, ...], "preserved_running": [key, ...]}。
+        用于 bootstrap 默认流程：重开面板时保留用户已启动的 api/frontend，仅纠正陈旧状态。
+        """
+        removed, preserved = [], []
+        for key in self.config.service_keys():
+            pid = read_pid(key)
+            if pid is None:
+                continue
+            st = self.get_status(key)
+            state = st.get("state")
+            # 状态已经 STOPPED，却还有 pidfile → 僵尸
+            if state == "STOPPED":
+                clear_pid(key)
+                removed.append(key)
+                log(f"[CLEAN] 清理僵尸 pidfile: '{key}'（标记已停止，旧 pid={pid}）")
+                continue
+            # 状态显示 RUNNING，但进程已死 / 端口不监听 → 僵尸
+            if state == "RUNNING":
+                real_alive = is_process_alive(pid)
+                port = self.config.services[key].get("port")
+                port_ok = port is not None and check_port(port, host="127.0.0.1", timeout=0.6)
+                if not real_alive or not port_ok:
+                    clear_pid(key)
+                    removed.append(key)
+                    log(f"[CLEAN] 清理僵尸 pidfile: '{key}'（pid={pid} alive={real_alive} :{port} listen={port_ok}）")
+                    continue
+                preserved.append(key)
+                # 仍然活着 → 保留（用户要"不要关闭旧的服务"，这里坚决不杀）
+        return {"removed": removed, "preserved_running": preserved}
+
     def restart_all(self, strict: bool = False):
         self.stop_all_sorted(force=True)
         time.sleep(2)
         self.start_all_sorted(auto_only=True, strict=strict)
+
+    def restart_all_configured(self, strict: bool = False) -> bool:
+        """重启所有已配置服务（忽略 auto_start 标记）——用于管理面板『重启所有』按钮。"""
+        self.stop_all_sorted(force=True)
+        time.sleep(1)
+        return self.start_all_sorted(auto_only=False, strict=strict)
 
     # --- 自检（bootstrap --dry-run） ---------------------------------------- #
     def dry_run_preflight(self) -> dict:
@@ -1214,6 +1333,29 @@ DASHBOARD_HTML = """<!DOCTYPE html>
  .bi{font-size:34px}
  .bt{font-size:20px;font-weight:700;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
  .ub{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:8px 16px}
+ .welcome{
+  background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(168,85,247,.15));
+  border:1px solid rgba(139,92,246,.35);
+  border-radius:18px;
+  padding:22px 26px;margin-bottom:22px;
+  display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;
+  animation:fadeIn .5s ease;
+ }
+ @keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+ .welcome .wl{flex:1;min-width:260px}
+ .welcome h2{font-size:18px;font-weight:600;margin-bottom:6px;background:linear-gradient(135deg,#a5b4fc,#c4b5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+ .welcome p{font-size:13px;color:#a5b4fc;line-height:1.6}
+ .welcome .steps{margin-top:10px;display:flex;gap:12px;flex-wrap:wrap}
+ .welcome .step{padding:6px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:999px;font-size:11px;color:#c7d2fe}
+ .welcome .step b{color:#fff}
+ .hero-btn{
+  padding:14px 28px;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;
+  color:#fff;background:linear-gradient(135deg,#10b981,#059669);
+  box-shadow:0 8px 24px rgba(16,185,129,.35);
+  display:inline-flex;align-items:center;gap:10px;transition:.25s;white-space:nowrap
+ }
+ .hero-btn:hover{filter:brightness(1.1);transform:translateY(-2px);box-shadow:0 12px 32px rgba(16,185,129,.45)}
+ .hero-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
  .op-bar{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 18px;margin-bottom:22px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
  .btn{padding:9px 16px;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.2s;white-space:nowrap}
  .btn-s{background:linear-gradient(135deg,#11998e,#38ef7d);color:#fff}
@@ -1261,33 +1403,69 @@ DASHBOARD_HTML = """<!DOCTYPE html>
  .lh{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
  .lx{background:none;border:none;color:#95a5a6;font-size:20px;cursor:pointer}
  .lb{flex:1;overflow:auto;background:#0d0d1a;border-radius:8px;padding:16px;font-family:Consolas,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap}
- .tst{position:fixed;bottom:24px;right:24px;background:rgba(30,30,46,.95);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 20px;font-size:13px;z-index:2000;display:none}
- .tst.show{display:block;animation:slideIn .3s}.tst.s{border-color:rgba(46,213,115,.5);color:#2ed573}.tst.e{border-color:rgba(231,76,60,.5);color:#e74c3c}.tst.i{border-color:rgba(102,126,234,.5);color:#667eea}
+ .tst{position:fixed;bottom:24px;right:24px;background:rgba(30,30,46,.97);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:14px 20px;font-size:13px;z-index:2000;display:none;max-width:420px;line-height:1.55;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+ .tst.show{display:block;animation:slideIn .3s}.tst.s{border-color:rgba(46,213,115,.6);color:#2ed573}.tst.e{border-color:rgba(231,76,60,.6);color:#e74c3c}.tst.i{border-color:rgba(102,126,234,.6);color:#667eea}.tst.w{border-color:rgba(245,158,11,.6);color:#fbbf24}
  @keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
  .pb{background:linear-gradient(135deg,rgba(155,89,182,.12),rgba(52,152,219,.12));border:1px solid rgba(155,89,182,.3);border-radius:12px;padding:12px 18px;display:flex;align-items:center;gap:10px;margin-bottom:22px;font-size:13px}
+ .count-bar{margin-left:auto;display:flex;gap:12px;font-size:12px;color:#94a3b8}
+ .count-bar b{font-size:16px;color:#fff;margin-right:3px}
+ .count-bar .ok b{color:#2ed573}.count-bar .bad b{color:#e74c3c}
 </style></head><body>
 <div class="c">
 <div class="hd"><div class="brand"><span class="bi">🌌</span><div class="bt" id="bt">璇玑系统管理平台</div></div>
 <div id="ub" class="ub"></div></div>
 <div id="pb" class="pb" style="display:none"></div>
+<div id="welcome" class="welcome" style="display:none">
+  <div class="wl">
+    <h2>✨ 欢迎使用璇玑系统 · 服务待启动</h2>
+    <p>项目服务 <b style="color:#fca5a5">未运行</b>。请点击右侧 <b style="color:#fff">▶ 一键启动所有</b> 按钮，按拓扑顺序拉起 API 后端服务 + 用户前端界面。
+       也可以在下方卡片单张启动，或使用顶部操作栏的批量按钮。</p>
+    <div class="steps">
+      <span class="step">① <b>启动</b>：▶ 一键启动所有服务</span>
+      <span class="step">② <b>等待</b>：API 就绪 → Frontend 自动代理</span>
+      <span class="step">③ <b>访问</b>：卡片「🚀 访问」按钮直达</span>
+    </div>
+  </div>
+  <button class="hero-btn" id="hero-start" onclick="batch('start_all')">▶ 一键启动所有服务</button>
+</div>
 <div class="op-bar" id="op-bar">
 <button class="btn btn-s" onclick="batch('start_all')" id="b-start">▶ 启动所有</button>
-<button class="btn btn-w" onclick="batch('restart_all')">🔄 重启所有</button>
-<button class="btn btn-d" onclick="batch('stop_all')">⏹ 停止所有</button>
+<button class="btn btn-w" onclick="batch('restart_all')" id="b-restart">🔄 重启所有</button>
+<button class="btn btn-d" onclick="batch('stop_all')" id="b-stop">⏹ 停止所有</button>
 <button class="btn btn-sec" onclick="refresh()">🔄 刷新</button>
+<div class="count-bar" id="count-bar"></div>
 </div>
 <div id="grid" class="grid"></div>
 <div id="lm" class="lm"><div class="lc"><div class="lh"><span id="lt" class="bt">日志</span><button class="lx" onclick="closeLogs()">✕</button></div><div id="lb" class="lb">加载中...</div></div></div>
 <div id="tst" class="tst"></div>
 </div>
 <script>
-let session=null,services=[],COLORS={api:'#3498db',frontend:'#2ecc71'},ICONS={api:'🔧',frontend:'🎨'};
+let session=null,services=[],busy=false,COLORS={api:'#3498db',frontend:'#2ecc71'},ICONS={api:'🔧',frontend:'🎨'};
 async function init(){await loadSession();await refresh();setInterval(refresh,5000)}
 async function loadSession(){try{const r=await fetch('/api/session');session=await r.json()}catch(e){session={user:'guest',is_admin:false}}renderUser()}
-function renderUser(){const ub=document.getElementById('ub');if(session.is_admin){ub.innerHTML='<span>🛡️ '+session.username+' · 管理员</span><button class="btn btn-sec" style="padding:5px 12px;font-size:12px" onclick="logout()">退出</button>';document.getElementById('pb').style.display='none'}else{ub.innerHTML='<span>👤 访客用户</span><button class="btn btn-s" style="padding:5px 14px;font-size:12px" onclick="location.href=\'/login\'">🔐 登录</button>';const pb=document.getElementById('pb');pb.style.display='flex';pb.innerHTML='🔒 <span>您以 <strong>普通用户</strong> 身份访问，启动/停止需管理员权限。</span>'}
- const bar=document.getElementById('op-bar');bar.querySelectorAll('.btn').forEach(b=>{if(b.textContent.includes('启动')||b.textContent.includes('停止')||b.textContent.includes('重启'))b.disabled=!session.is_admin})}
+function renderUser(){const ub=document.getElementById('ub');if(session.is_admin){ub.innerHTML='<span>🛡️ '+session.username+' · 管理员</span><button class="btn btn-sec" style="padding:5px 12px;font-size:12px" onclick="logout()">退出</button>';document.getElementById('pb').style.display='none'}else{ub.innerHTML='<span>👤 访客用户</span><button class="btn btn-s" style="padding:5px 14px;font-size:12px" onclick="location.href=\\'/login\\'">🔐 登录</button>';const pb=document.getElementById('pb');pb.style.display='flex';pb.innerHTML='🔒 <span>您以 <strong>普通用户</strong> 身份访问，启动/停止需管理员权限。</span>'}
+ const bar=document.getElementById('op-bar');bar.querySelectorAll('.btn').forEach(b=>{if(b.textContent.includes('启动')||b.textContent.includes('停止')||b.textContent.includes('重启'))b.disabled=!session.is_admin})
+ const hero=document.getElementById('hero-start');if(hero)hero.disabled=!session.is_admin||busy}
 async function refresh(){try{const r=await fetch('/api/status');services=await r.json();render()}catch(e){console.error(e)}}
-function render(){const g=document.getElementById('grid');g.innerHTML='';services.forEach(s=>g.appendChild(card(s)))}
+function render(){
+ const g=document.getElementById('grid');g.innerHTML='';
+ services.forEach(s=>g.appendChild(card(s)));
+ // 统计
+ const total=services.length,running=services.filter(s=>s.running).length,stopped=services.filter(s=>s.running===false).length;
+ const starting=services.filter(s=>s.running==null).length;
+ document.getElementById('count-bar').innerHTML=
+  '<span class="ok"><b>'+running+'</b>运行中</span>'+
+  '<span class="bad"><b>'+stopped+'</b>已停止</span>'+
+  (starting?'<span><b>'+starting+'</b>启动中</span>':'')+
+  '<span>共 <b>'+total+'</b> 服务</span>';
+ // 欢迎横幅：管理员 + 所有服务都停止 / 启动中但无运行
+ const allIdle=(running===0)&&session.is_admin;
+ const w=document.getElementById('welcome');
+ if(allIdle){w.style.display='flex';
+  const hb=document.getElementById('hero-start');
+  hb.disabled=busy;hb.innerHTML=busy?'<span class="spinner"></span>启动中...':'▶ 一键启动所有服务';
+ }else{w.style.display='none'}
+}
 function card(s){const adm=session.is_admin,r=s.running,locked=s.requires_auth&&!adm;
  const c=document.createElement('div');c.className='svc'+(locked?' locked':'');c.style.setProperty('--c',COLORS[s.key]||'#3498db');
  const tags=(s.tags||[]).map(t=>'<span class="tag'+(t.includes('受限')?' l':'')+'">'+t+'</span>').join('');
@@ -1307,35 +1485,114 @@ function card(s){const adm=session.is_admin,r=s.running,locked=s.requires_auth&&
  return c}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,s=b.dataset.s;if(a==='logs')return showLogs(s);if(!session.is_admin){toast('需要管理员权限','e');return}act(a,s,b)});
 async function act(a,s,btn){const M={start:['/api/start','启动'],stop:['/api/stop','停止'],restart:['/api/restart','重启']};const[ep,lab]=M[a];
- if(btn){btn.disabled=true;btn.innerHTML='<span class="spinner"></span>'+lab+'中...'}
- try{const r=await fetch(ep,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({service:s})});const d=await r.json();toast(d.message||lab+'完成',d.success?'s':'e')}catch(e){toast('请求失败','e')}finally{refresh()}}
+ if(btn){btn.disabled=true;const orig=btn.innerHTML;btn.innerHTML='<span class="spinner"></span>'+lab+'中...'
+  setTimeout(()=>{try{btn.innerHTML=orig;btn.disabled=false}catch(e){}},18000)}
+ try{const r=await fetch(ep,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({service:s})});const d=await r.json();toast(d.message||lab+' '+s+' 完成',d.success?'s':'e');if(a==='start'&&d.success){toast('服务启动中：等待端口监听，每 5 秒自动刷新状态…','i',4000)}}catch(e){toast('请求失败','e')}finally{refresh()}}
 async function batch(a){if(!session.is_admin){toast('需要管理员权限','e');return}
+ if(busy){toast('正在处理前一项操作，请稍候…','w');return}
  const M={start_all:['/api/start_all','启动所有'],stop_all:['/api/stop_all','停止所有'],restart_all:['/api/restart_all','重启所有']};const[ep,lab]=M[a];
- try{const r=await fetch(ep,{method:'POST',headers:{'Content-Type':'application/json'}});const d=await r.json();toast(lab+'完成','s')}catch(e){toast('请求失败','e')}refresh()}
+ busy=true;setBusy(true)
+ let done=false;const maxTicks=34;let ticks=0;const polling=setInterval(async()=>{
+  if(done){clearInterval(polling);return}
+  ticks++;
+  try{await refresh()}catch(e){/* 浏览器偶发断连（ConnectionAbortedError）不致命，用旧状态继续 */}
+  const any=Object.values(lastStatus||{}).some(s=>s.state==='STARTING');
+  const timeout=ticks>=maxTicks;
+  if(!any||timeout){
+   clearInterval(polling);
+   if(done)return;
+   done=true;busy=false;setBusy(false);try{refresh()}catch(_){}
+   toast(timeout?'⌛ 已到最长等待时间：可点 🔄 刷新 继续查看状态。':'✅ 状态已稳定，可继续操作。',timeout?'w':'s',timeout?5500:4000)
+  }
+ },2000);
+ try{const r=await fetch(ep,{method:'POST',headers:{'Content-Type':'application/json'}});const d=await r.json();
+  if(a==='start_all'){
+   toast('✅ 启动指令已提交：后台按拓扑顺序启动 API → Frontend（约 15–30 秒），页面每 2 秒自动刷新。','s',7000)
+  }else if(a==='stop_all'){
+    toast('⏹ 停止指令已提交：后台按反拓扑顺序终止，约 3–8 秒完成。','i',4500)
+  }else{
+    toast('🔄 重启指令已提交，稍后可点 🔄 刷新 查看。','s',5000)
+  }
+  if(d&&d.success===false)toast(d.message||'操作失败','e',6000)
+ }catch(e){toast('请求失败','e');clearInterval(polling);busy=false;setBusy(false)}}
+function setBusy(v){
+ const ids=['b-start','b-restart','b-stop','hero-start'];
+ ids.forEach(id=>{const el=document.getElementById(id);if(!el)return;el.disabled=v||!session.is_admin});
+ const opBar=document.getElementById('op-bar');
+ opBar.querySelectorAll('.btn').forEach(b=>{if(b.textContent.includes('启动')||b.textContent.includes('停止')||b.textContent.includes('重启'))b.disabled=v||!session.is_admin})
+ render()
+}
 async function logout(){await fetch('/api/logout',{method:'POST'});session={user:'guest',is_admin:false};renderUser();refresh()}
 async function showLogs(s){try{document.getElementById('lt').textContent=s+' 日志';document.getElementById('lm').classList.add('show');const r=await fetch('/api/logs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({service:s,lines:200})});const d=await r.json();document.getElementById('lb').textContent=d.logs||'暂无日志'}catch(e){document.getElementById('lb').textContent='加载失败'}}
 function closeLogs(){document.getElementById('lm').classList.remove('show')}
-function toast(m,t){const el=document.getElementById('tst');el.textContent=m;el.className='tst show '+(t||'');setTimeout(()=>el.classList.remove('show'),3000)}
+function toast(m,t,dur){const el=document.getElementById('tst');el.textContent=m;el.className='tst show '+(t||'');clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('show'),dur||3200)}
 init();
 </script></body></html>"""
 
 
 def run_dashboard(config: ConfigManager, manager: ServiceManager, host: str, port: int, open_browser: bool):
-    """启动 stdlib Web 管理面板（无 Flask 依赖）。"""
+    """启动 stdlib Web 管理面板（无 Flask 依赖）。
+
+    端口冲突策略（避免用户「启动了但打不开页面」）：
+      1. 先以 aggressive=False 释放，识别出「项目归属」占用则杀掉；
+      2. 若仍被占，再 aggressive=True 清一次（对真·第三方占用，_project_owned_pid 会拒杀，
+         因此不会误伤）；
+      3. 仍被占 → 自动回落到 [port, port+60] 区间内的空闲端口（优先选最接近原端口）；
+      4. 返回最终实际绑定的端口（调用方可据此打正确 URL / open_browser）。
+    """
+    def _find_free_port(start_port: int, span: int = 60) -> int:
+        """在 [start_port, start_port+span] 中找第一个空闲 TCP 端口；都占满时回退 0（OS 分配）。"""
+        for p in range(start_port, start_port + span + 1):
+            if not check_port(p):
+                return p
+        return 0
+
+    # ---- 阶段 A：优先使用原始端口；占用 → 先清理 ----
+    final_port = port
+    if check_port(port):
+        log(f"[WARN] dashboard 端口 {port} 被占用，尝试释放本项目残留进程...")
+        # round 1: gentle (只杀项目归属)
+        freed = free_port(port, aggressive=False)
+        if not freed and check_port(port):
+            # round 2: aggressive（实际还是走 _project_owned_pid 白名单，避免误杀第三方）
+            log(f"[WARN] 仍被占用；再做一轮 aggressive 回收（仅回收识别出的项目进程）...")
+            free_port(port, aggressive=True)
+            time.sleep(0.6)
+        if check_port(port):
+            # round 3: 自动回落端口
+            fallback = _find_free_port(port, span=60)
+            if fallback == 0:
+                log(f"[ERROR] dashboard 原始端口 {port} 仍被第三方占用，且 {port}~{port+60} 区间全部占满，无法启动。")
+                log(f"[HINT]  请手工 `scripts/manage.py dashboard --port <其他端口>` 指定空闲端口。")
+                return None
+            log(f"[INFO] 原始端口 {port} 仍被第三方占用；dashboard 自动回落到端口 {fallback}")
+            final_port = fallback
+
     auth = AuthManager(config.admin_user, config.admin_pass)
     admin_user = config.admin_user
 
     class Handler(BaseHTTPRequestHandler):
         def _resp(self, code, ct, body, sid=None):
-            self.send_response(code)
-            if sid:
-                self.send_header(
-                    "Set-Cookie", "session_id=%s; Path=/; HttpOnly; SameSite=Lax" % sid
-                )
-            self.send_header("Content-Type", ct)
-            self.end_headers()
-            data = body.encode("utf-8") if isinstance(body, str) else body
-            self.wfile.write(data)
+            try:
+                self.send_response(code)
+                if sid:
+                    self.send_header(
+                        "Set-Cookie", "session_id=%s; Path=/; HttpOnly; SameSite=Lax" % sid
+                    )
+                self.send_header("Content-Type", ct)
+                self.end_headers()
+                data = body.encode("utf-8") if isinstance(body, str) else body
+                self.wfile.write(data)
+            except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError):
+                # 浏览器轮询并发时，旧 TCP 连接会被客户端主动关闭（Chrome 取消请求 / 页面导航）。
+                # 这是正常现象，不需要在控制台打印整条 traceback。
+                try:
+                    self.close_connection = True
+                except Exception:
+                    pass
+            except Exception:
+                # 其他异常仍然抛出，便于真正的 bug 排查
+                raise
 
         def _session(self):
             cookie = self.headers.get("Cookie", "")
@@ -1387,12 +1644,18 @@ def run_dashboard(config: ConfigManager, manager: ServiceManager, host: str, por
             routes = {
                 "/api/login": lambda: self._api_login(data),
                 "/api/logout": lambda: self._api_logout(sid),
-                "/api/start": lambda: self._api_admin(sid, lambda: manager.start(data.get("service"))),
-                "/api/stop": lambda: self._api_admin(sid, lambda: manager.stop(data.get("service"))),
-                "/api/restart": lambda: self._api_admin(sid, lambda: manager.restart(data.get("service"))),
-                "/api/start_all": lambda: self._api_admin(sid, manager.start_all_auto),
-                "/api/stop_all": lambda: self._api_admin(sid, lambda: manager.stop_all()),
-                "/api/restart_all": lambda: self._api_admin(sid, manager.restart_all),
+                # 单服务 start/restart 最长 ~15 秒（含健康检查等待），也走后台异步避免阻塞
+                "/api/start": lambda: self._api_admin(
+                    sid, lambda: manager.start(data.get("service")), async_mode=True
+                ),
+                "/api/stop": lambda: self._api_admin(sid, lambda: manager.stop(data.get("service"), force=False)),
+                "/api/restart": lambda: self._api_admin(
+                    sid, lambda: manager.restart(data.get("service")), async_mode=True
+                ),
+                # 批量动作：全部放后台线程，立即返回 queued:true，前端 busy 锁通过"轮询刷新 + 全部服务非 STARTING"再解除
+                "/api/start_all": lambda: self._api_admin(sid, manager.start_all_configured, async_mode=True),
+                "/api/stop_all": lambda: self._api_admin(sid, lambda: manager.stop_all(force=True), async_mode=True),
+                "/api/restart_all": lambda: self._api_admin(sid, manager.restart_all_configured, async_mode=True),
                 "/api/logs": lambda: self._api_logs(data, sid),
             }
             handler = routes.get(path)
@@ -1404,9 +1667,28 @@ def run_dashboard(config: ConfigManager, manager: ServiceManager, host: str, por
         # --- 页面与 API ---------------------------------------------------- #
         def _serve_main(self, sid):
             if not self._is_admin(sid):
-                self._resp(302, "text/plain; charset=utf-8", "Redirect", sid)
-                self.send_header("Location", "/login")
-                self.end_headers()
+                # 302 跳转登录页：Location 必须在 end_headers 之前写入。
+                # 因此不走 _resp（_resp 会在内部 end_headers 并写 body）。
+                try:
+                    self.send_response(302)
+                    self.send_header(
+                        "Set-Cookie",
+                        "session_id=%s; Path=/; HttpOnly; SameSite=Lax" % sid,
+                    )
+                    self.send_header("Location", "/login")
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.end_headers()
+                    # 给一些浏览器（如 curl / 某些旧代理）一个兜底 body
+                    self.wfile.write(
+                        (
+                            '<html><head><meta charset="utf-8">'
+                            '<meta http-equiv="refresh" content="0; url=/login"></head>'
+                            '<body>Redirecting to <a href="/login">/login</a>...</body></html>'
+                        ).encode("utf-8")
+                    )
+                except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError):
+                    try: self.close_connection = True
+                    except Exception: pass
                 return
             self._resp(200, "text/html; charset=utf-8", DASHBOARD_HTML, sid)
 
@@ -1458,8 +1740,29 @@ def run_dashboard(config: ConfigManager, manager: ServiceManager, host: str, por
             new_sid = auth.create_session("guest")
             self._resp(200, "application/json; charset=utf-8", json.dumps({"success": True}), new_sid)
 
-        def _api_admin(self, sid, action):
+        def _api_admin(self, sid, action, async_mode: bool = False):
+            """管理员 API 执行入口。
+
+            async_mode=True 时：将 action 放到守护线程后台执行，立刻返回 {queued:true}
+            用于 start_all / restart_all / stop_all 等耗时 10~30 秒的操作：
+              1) 避免浏览器 AJAX 超时 → 断连 → Python BrokenPipeError 偶发
+                 触发"启动失败 → 回滚杀掉刚启动的子进程"的 bug；
+              2) 不阻塞其他轮询（/api/status、/api/logs）。
+            """
             if not self._require_admin(sid):
+                return
+            if async_mode:
+                t = threading.Thread(target=self._safe_run_action, args=(action,), daemon=True)
+                t.start()
+                self._resp(
+                    200,
+                    "application/json; charset=utf-8",
+                    json.dumps(
+                        {"success": True, "queued": True, "message": "已提交后台执行（约 15~30 秒，期间可点 🔄 刷新 查看进度）"},
+                        ensure_ascii=False,
+                    ),
+                    sid,
+                )
                 return
             try:
                 result = action()
@@ -1468,6 +1771,16 @@ def run_dashboard(config: ConfigManager, manager: ServiceManager, host: str, por
                 return
             msg = "操作完成" if result is None else ("成功" if result else "失败")
             self._resp(200, "application/json; charset=utf-8", json.dumps({"success": bool(result), "message": msg}, ensure_ascii=False), sid)
+
+        @staticmethod
+        def _safe_run_action(action):
+            try:
+                action()
+            except Exception as e:
+                try:
+                    log(f"[WARN] 后台管理动作异常: {e}")
+                except Exception:
+                    pass
 
         def _api_logs(self, data, sid):
             if not self._is_admin(sid):
@@ -1479,14 +1792,26 @@ def run_dashboard(config: ConfigManager, manager: ServiceManager, host: str, por
         def log_message(self, *args):
             pass
 
-    if check_port(port):
-        log(f"[WARN] dashboard 端口 {port} 被占用，尝试释放本项目残留进程...")
-        freed = free_port(port, aggressive=False)
-        if not freed and check_port(port):
-            log(f"[ERROR] dashboard 端口 {port} 仍被占用，无法启动。请改用 --port 指定其他端口，或使用 `stop --force` 清理。")
-            return
+    # 注：原始的「占用 → 直接报错退出」逻辑已被函数开头的增强处理取代（项目进程 auto-kill +
+    # 自动回落端口）。此处只保留一次兜底占用检查（极端情况下前序清理后立刻又被抢）。
+    if final_port and check_port(final_port):
+        fallback2 = _find_free_port(final_port, span=20)
+        if fallback2 == 0:
+            log(f"[ERROR] dashboard 端口 {final_port} 仍无法绑定，请手工指定 --port。")
+            return None
+        log(f"[WARN] 端口 {final_port} 被抢占，再退到 {fallback2}")
+        final_port = fallback2
 
-    server = HTTPServer((host, port), Handler)
+    try:
+        # 注意：使用 ThreadingHTTPServer 而非单线程 HTTPServer。
+        # 背景：start_all / restart_all 等批量动作可能耗时 15-30 秒，若用单线程 server，
+        # ① AJAX 会阻塞到浏览器默认 30s 超时后断连；② 并发的 status/logs/refresh 轮询会排队到批量动作结束才能响应；
+        # ③ 断连瞬间 Python handler 可能抛出 BrokenPipeError，易触发"启动失败→回滚杀死刚启动子进程"的悲剧。
+        server_cls = type("DashboardServer", (ThreadingHTTPServer,), {"daemon_threads": True})
+        server = server_cls((host, final_port), Handler)
+    except OSError as e:
+        log(f"[ERROR] dashboard 无法绑定 http://{host}:{final_port} （{e}）")
+        return None
 
     def cleanup():
         while True:
@@ -1495,13 +1820,13 @@ def run_dashboard(config: ConfigManager, manager: ServiceManager, host: str, por
 
     threading.Thread(target=cleanup, daemon=True).start()
 
-    log(f"[INFO] 启动 Web 管理面板: http://localhost:{port}  (Ctrl+C 退出)")
+    log(f"[INFO] 启动 Web 管理面板: http://localhost:{final_port}  (Ctrl+C 退出)")
     log(f"[INFO] 管理员账户: {config.admin_user} / {config.admin_pass}")
     if open_browser:
         try:
             import webbrowser
 
-            webbrowser.open(f"http://localhost:{port}")
+            webbrowser.open(f"http://localhost:{final_port}")
         except Exception:
             pass
     try:
@@ -1509,6 +1834,7 @@ def run_dashboard(config: ConfigManager, manager: ServiceManager, host: str, por
     except KeyboardInterrupt:
         log("[INFO] 面板已停止")
         server.shutdown()
+    return final_port
 
 
 # =========================================================================== #
@@ -1798,45 +2124,69 @@ def cmd_bootstrap(
     no_browser: bool,
     host: str,
     dashboard_port: int | None,
+    with_services: bool = False,
+    force_stop_old: bool = False,
 ):
     ensure_dirs()
     log("[BOOTSTRAP] 璇玑系统一键启动")
-    log(f"[BOOTSTRAP] 模式: {'DRY-RUN' if dry_run else 'RUN'} | strict={strict} | with_dashboard={with_dashboard}")
+    log(
+        "[BOOTSTRAP] 模式: "
+        f"{'DRY-RUN' if dry_run else 'RUN'} | strict={strict} | with_dashboard={with_dashboard} "
+        f"| with_services={with_services} | force_stop_old={force_stop_old}"
+    )
     if dry_run:
         report = manager.dry_run_preflight()
         print()
         log(f"[BOOTSTRAP] DRY-RUN 总结: {'✔ 全部通过' if report['ok'] else '✗ 存在问题，请按上方提示修复'}")
         return 0 if report["ok"] else 4
     # RUN 模式
-    log("[BOOTSTRAP] 阶段 1/4: 停止已有残留进程（force）")
-    manager.stop_all_sorted(force=True)
-    time.sleep(1)
-    log("[BOOTSTRAP] 阶段 2/4: 启动所有 auto_start 服务（按拓扑）")
-    ok = manager.start_all_sorted(auto_only=True, strict=strict)
-    if not ok:
-        log("[BOOTSTRAP] ✗ 启动失败，dump 最近 30 行日志：")
-        manager.dump_all_logs(30)
-        return 5
+    if force_stop_old:
+        log("[BOOTSTRAP] 阶段 1/4: 停止已有残留进程（force_stop_old=True → 关闭所有 api/frontend 服务）")
+        manager.stop_all_sorted(force=True)
+        time.sleep(1)
+    else:
+        log("[BOOTSTRAP] 阶段 1/4: 清理僵尸 pidfile（默认保留已运行的 api/frontend 服务不关闭）")
+        log("[BOOTSTRAP]            如需强制关闭所有服务重启干净环境，请追加 --force-stop-old 开关。")
+        res = manager.clean_stale_pidfiles()
+        if res["preserved_running"]:
+            log(
+                "[BOOTSTRAP]   ✔ 保留已在运行的服务: "
+                + ", ".join(f"{k}(pid={manager.get_status(k).get('pid')} port={manager.config.services[k].get('port')})"
+                           for k in res["preserved_running"])
+            )
+        if res["removed"]:
+            log(f"[BOOTSTRAP]   ✂ 已清理僵尸 pidfile: {', '.join(res['removed'])}")
+        time.sleep(0.3)
+    if with_services:
+        log("[BOOTSTRAP] 阶段 2/4: 启动所有 auto_start 服务（按拓扑）")
+        ok = manager.start_all_sorted(auto_only=True, strict=strict)
+        if not ok:
+            log("[BOOTSTRAP] ✗ 启动失败，dump 最近 30 行日志：")
+            manager.dump_all_logs(30)
+            return 5
+    else:
+        log("[BOOTSTRAP] 阶段 2/4: 跳过项目服务启动（默认仅启动管理面板 → 在页面上按需启停服务）")
+        log("[BOOTSTRAP]            如需与旧行为一致（同步启动 api/frontend），请追加 --with-services 开关。")
     log("[BOOTSTRAP] 阶段 3/4: 打印启动后状态")
     cmd_list(manager)
     ok_states = manager.all_status()
     for k, st in ok_states.items():
         if manager.config.services[k].get("auto_start"):
             log(f"  → {k}: state={st.get('state')} url={st.get('url')} pid={st.get('pid')}")
-    if strict:
+    if strict and with_services:
         bad = [k for k, s in ok_states.items() if s.get("state") != "RUNNING" and manager.config.services[k].get("auto_start")]
         if bad:
             log(f"[STRICT] 下列 auto_start 服务未进入 RUNNING: {bad}")
             manager.dump_all_logs(30)
             return 6
     if with_dashboard:
-        log("[BOOTSTRAP] 阶段 4/4: 启动管理面板")
+        log("[BOOTSTRAP] 阶段 4/4: 启动管理面板（登录后可在页面上 ▶ 启动服务）")
         port = dashboard_port or manager.config.dashboard_port
         run_dashboard(manager.config, manager, host, port, not no_browser)
     else:
         log("[BOOTSTRAP] 阶段 4/4: 跳过管理面板（可稍后运行 `python scripts/manage.py dashboard`）")
         # 保持"前台日志尾"体验：打印已启动服务状态 + 结束
-        log("[BOOTSTRAP] ✔ 一键启动流程完成。使用 `status/logs/stop` 管理。Ctrl+C 不会停服务；需显式 `stop all`。")
+        log("[BOOTSTRAP] ✔ 一键启动流程完成。未启动项目服务 → 请在管理面板 ▶ 启动 / `status/logs/stop` 管理。Ctrl+C 不会停服务；需显式 `stop all`。")
     return 0
 
 
@@ -1852,26 +2202,31 @@ def main():
             "list", "start", "stop", "restart", "status", "logs",
             "dashboard", "verify", "init", "bootstrap",
         ],
-        help="操作类型（省略时默认 bootstrap：一键启动全部服务并拉起 Web 管理面板）",
+        help="操作类型（省略时默认 bootstrap：拉起 Web 管理面板；项目服务需在页面上按需启动）",
     )
     parser.add_argument("service", nargs="?", default="", help="服务 key（如 api/frontend）；可省略表示全部")
     parser.add_argument("--host", default="0.0.0.0", help="dashboard 监听地址 (默认 0.0.0.0)")
     parser.add_argument("--port", type=int, default=None, help="dashboard 端口 (默认取配置 dashboard_port)")
     parser.add_argument("--force", "-f", action="store_true", help="stop 时强制终止")
     parser.add_argument("--lines", type=int, default=100, help="logs 行数 (默认 100)")
-    parser.add_argument("--no-browser", action="store_true", help="dashboard / bootstrap 时不自动打开浏览器")
+    parser.add_argument("--no-browser", action="store_true", help="dashboard / bootstrap 时不自动打开浏览器（仍会启动管理面板监听端口）")
     parser.add_argument("--strict", action="store_true",
                         help="严格模式：启动时端口/健康检查失败直接退出非零码；restart/bootstrap 同样生效")
     parser.add_argument("--dry-run", action="store_true",
                         help="仅用于 bootstrap：仅做预检 + 打印启动顺序，不实际启动任何进程")
-    parser.add_argument("--with-dashboard", action="store_true",
-                        help="仅用于 bootstrap：auto_start 全部启动后前台启动管理面板（默认不挂起）")
+    parser.add_argument("--with-dashboard", dest="with_dashboard", action="store_true", default=None,
+                        help="仅用于 bootstrap：一键流程最后前台挂起管理面板（默认 ON，除非显式 --no-dashboard）")
+    parser.add_argument("--no-dashboard", dest="with_dashboard", action="store_false",
+                        help="仅用于 bootstrap：一键流程**不**启动 Web 管理面板（适合容器/CI 纯后端模式）")
+    parser.add_argument("--with-services", action="store_true",
+                        help="仅用于 bootstrap：同步启动所有 auto_start=true 的项目服务（默认 False：仅开面板，在页面上按需启停）")
+    parser.add_argument("--force-stop-old", action="store_true",
+                        help="仅用于 bootstrap：在阶段 1 强制关闭所有已运行的 api/frontend 服务（默认 False：保留它们，只清理僵尸 pidfile，便于你反复重开管理面板不打断服务）")
     args = parser.parse_args()
 
-    # 零参数运行（仅脚本名）：默认 = 一键启动全部服务并拉起 Web 管理面板，
-    # 即等价于 `bootstrap --with-dashboard`。满足"默认启动服务 + 页面管理"。
-    if len(sys.argv) == 1:
-        args.action = "bootstrap"
+    # bootstrap 默认值：始终携带管理面板（除非命令行显式 --no-dashboard）。
+    # 注意：len(sys.argv)==1 的旧判断过于严格——当用户加了 --no-browser/--port 时也想要面板。
+    if args.action == "bootstrap" and args.with_dashboard is None:
         args.with_dashboard = True
 
     # verify 不依赖配置/服务，单独处理
@@ -1916,6 +2271,8 @@ def main():
             no_browser=args.no_browser,
             host=args.host,
             dashboard_port=args.port,
+            with_services=args.with_services,
+            force_stop_old=args.force_stop_old,
         )
         sys.exit(int(rc or 0))
 

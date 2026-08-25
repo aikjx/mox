@@ -826,6 +826,25 @@ const allianceRunning = ref(false)
 const alliancePhase = ref(null)
 const allianceTraceId = ref('')
 const allianceCapabilities = ref(null)
+// FR11 与 T11 桥接：6 阶段 alliance SSE → 驱动 5 段式 Chip（需求/架构/实现/测试/验收）
+// 解决：之前点击全维分析后 SSE 6 阶段完整跑完但 Chip 始终停在「需求」阶段的脱节问题。
+watch(alliancePhase, (p) => {
+  if (!p) return
+  requirementFlowMode.value = true
+  const idxMap = {
+    intent: 0,      // 需求
+    team: 1,        // 架构
+    debate: 1,      // 架构
+    synthesize: 2,  // 实现
+    gate: 3,        // 测试
+    learn: 4,       // 验收
+    done: 4,        // 验收
+  }
+  const idx = idxMap[p] ?? 0
+  if (idx >= currentStage.value) {
+    currentStage.value = idx
+  }
+})
 
 // T12 语音状态
 const voiceHealth = ref(null)

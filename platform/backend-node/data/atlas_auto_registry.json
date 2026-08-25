@@ -69,7 +69,8 @@
         "docs/enterprise/25-AI引擎真实基准评测报告-V1.0.md",
         "docs/enterprise/26-前端开发专家主控提示词与流程透明化最佳实践清单-V1.0.md",
         "docs/enterprise/27-企业级测试与评测主控提示词与全维自动化测试报告-V1.0.md",
-        "docs/enterprise/_data/test-report-20260824/t4-enterprise-test-report-20260824.md"
+        "docs/enterprise/_data/test-report-20260824/t4-enterprise-test-report-20260824.md",
+        "docs/modules/专家联盟-全维业务流程归一化手册-V1.0.md"
       ],
       "auto": true,
       "autoRegisteredAt": "2026-08-22T08:51:41.105Z"
@@ -486,6 +487,11 @@
     },
     {
       "file": "docs/enterprise/_data/test-report-20260824/t4-enterprise-test-report-20260824.md",
+      "domain": "atlas-auto",
+      "desc": "自动发现（self-sync）"
+    },
+    {
+      "file": "docs/modules/专家联盟-全维业务流程归一化手册-V1.0.md",
       "domain": "atlas-auto",
       "desc": "自动发现（self-sync）"
     }

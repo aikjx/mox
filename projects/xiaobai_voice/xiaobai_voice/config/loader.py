@@ -177,3 +177,10 @@ def _deep_merge(base: dict, override: dict) -> dict:
         else:
             out[k] = copy.deepcopy(v)
     return out
+
+
+# ==============================================
+# 对外公开别名（修复下游模块 import 契约不一致）：
+# 部分调用方按「公开名」导入，实际实现用 _ 前缀的私有名。
+# ==============================================
+default_voice_models_dirs = _default_voice_models_dirs

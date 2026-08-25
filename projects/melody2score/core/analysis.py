@@ -348,7 +348,7 @@ def _merge_short(notes: List[Dict], min_note_dur: float) -> List[Dict]:
 # 需要生成倍频簇 (bpm, 2*bpm, bpm/2, bpm/4...) 并按「与音符节奏拟合质量
 # + 音区间距合理性 + 流行分布先验」选簇内代表值。
 _BPM_MIN_SOFT: float = 50.0    # 软下界：低于此值的原始 BPM 会被强烈倾向翻倍
-_BPM_MAX_SOFT: float = 140.0   # 软上界：超过此值的原始 BPM 会被强烈倾向折半
+_BPM_MAX_SOFT: float = 160.0   # 软上界：超过此值的原始 BPM 会被强烈倾向折半
 _BPM_MIN_HARD: float = 40.0    # 硬下界：绝对不可能再低于它（极慢速除外）
 _BPM_MAX_HARD: float = 160.0   # 硬上界：绝对不可能再超过它（用户明确禁止176等极端值）
 
@@ -465,10 +465,11 @@ def _pick_cluster_representative(cluster: List[float],
                 dist_hi = abs(hi - 95.0)
                 dist_lo = abs(lo - 95.0)
                 # 对 2× 歧义对（hi ≈ 2·lo），差值 = 1.5·hi − 190；
-                # hi ≤ 142 时差 ≤ 23——这一整段都属于「折半误判风险区」，
-                # 统一取高值以消除 70↔140、66↔132、60↔120 等流行 BPM 常见误折半。
+                # hi ≤ 146 时差 ≤ 26——这一整段都属于「折半误判风险区」，
+                # 统一取高值以消除 70↔140、66↔132、60↔120、71↔143 等流行
+                # BPM 常见误折半（小星星实测 143 被旧阈值 23 漏放过，错选 71）。
                 # （对 hi < 90 的真·慢速组合不会走到「都在软区间」分支，安全。）
-                if abs(dist_hi - dist_lo) <= 23.0:
+                if abs(dist_hi - dist_lo) <= 26.0:
                     best_bpm = hi
                 elif dist_hi < dist_lo:
                     best_bpm = hi
@@ -484,21 +485,52 @@ def _bpm_from_note_durations(durs: List[float]) -> Tuple[Optional[float], float]
     """
     if not durs:
         return None, 0.0
-    # 候选一拍时长：观测时长在 [0.25, 1.5]s 的代表值（对应 BPM 40~240）
-    cands0 = sorted({round(d, 3) for d in durs if 0.25 <= d <= 1.5})
+    # 候选一拍时长：观测音符时长 d 可能是「N 拍」（N∈{0.5,1,1.5,2,3,4}），
+    # 故候选拍长 beat = d / N；同时允许边界检测 ±15% 误差（钢琴音包络常把
+    # 四分音符 0.5s 切成 0.42s），对 d 乘容差系数后再反推，避免把 0.42s 误
+    # 判成「拍长本身 → bpm=143 → 折半 71」的离谱结果（小星星真实 120 BPM）。
+    cands0 = set()
+    for d in durs:
+        for tol in (0.85, 1.0, 1.15):
+            dd = d * tol
+            for n_mult in (0.5, 1.0, 1.5, 2.0, 3.0, 4.0):
+                beat = dd / n_mult
+                if 0.25 <= beat <= 1.5:   # 拍长 [0.25,1.5]s → BPM [40,240]
+                    cands0.add(round(beat, 3))
+    cands0 = sorted(cands0)
     # 候选不足时用中位数等分补齐，避免空集
     if not cands0:
         md = float(np.median(durs)) if durs else 0.5
-        cands0 = sorted({round(md * k, 3) for k in (0.25, 0.5, 1.0, 2.0, 4.0)
-                         if 0.25 <= md * k <= 1.5})
+        cands0 = sorted({round(md / k, 3) for k in (0.5, 1.0, 1.5, 2.0, 3.0, 4.0)
+                         if 0.25 <= md / k <= 1.5})
     if not cands0:
         return None, 0.0
+
+    # 抗离群：检测器常把个别音符（尤其起音/收音边界）切短成 0.38s 等
+    # 偏离主体 0.42s 的离群值，直接主导 BPM 拟合会误选慢速（如小星星
+    # 0.38s 在 107BPM 下 0.68 拍拟合竟优于 143BPM 的 0.90 拍）。做法：
+    # 以众数时值为基准，把每个 dur 吸附到「基准的整数倍（0.5/1/1.5/2/3/4
+    # 拍）」最近的合法时长——0.38s 吸回 0.42s（四分音符），0.84s 本就是
+    # 2 倍基准（二分音符）保留，唯有真正的离群会被规整，确保 BPM 由
+    # 绝大多数正常音符决定。
+    durs_arr = np.asarray(durs, dtype=float)
+    if len(durs_arr) >= 3:
+        med = float(np.median(durs_arr))
+        base = med if med > 0 else 0.5
+        snapped = []
+        for d in durs_arr:
+            ratios = [0.5, 1.0, 1.5, 2.0, 3.0, 4.0]
+            best = min(ratios, key=lambda r: abs(d - base * r))
+            snapped.append(base * best)
+        clean = snapped
+    else:
+        clean = [float(x) for x in durs_arr]
 
     # Step 1：对每个候选拍长 beat，拟合音符得到「原始 BPM + 拟合质量」
     scored: List[Tuple[float, float, float]] = []  # (bpm, ongrid, q75_err)
     for beat in cands0:
         bpm0 = 60.0 / beat
-        avg_err, q75, ongrid = _fit_notes_to_bpm(durs, bpm0)
+        avg_err, q75, ongrid = _fit_notes_to_bpm(clean, bpm0)
         scored.append((bpm0, ongrid, q75))
 
     # Step 2：取 Top-N 原始 BPM（按 ongrid − 2×q75 得分），各扩成倍频簇
@@ -520,8 +552,9 @@ def _bpm_from_note_durations(durs: List[float]) -> Tuple[Optional[float], float]
     if not merged_clusters:
         return None, 0.0
 
-    # Step 4：对合并后的候选簇按「音符拟合 + 先验」选最佳
-    best = _pick_cluster_representative(merged_clusters, durs)
+    # Step 4：对合并后的候选簇按「音符拟合 + 先验」选最佳（用吸附后的
+    # clean 时长，避免切短离群音在最终 tie-break 里再次误导选慢速）
+    best = _pick_cluster_representative(merged_clusters, clean)
     if best is None:
         return None, 0.0
     final = best

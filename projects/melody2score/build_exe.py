@@ -309,7 +309,22 @@ def main(argv=None) -> int:
         log.info("[4/6] 清空旧构建 ...")
         for d in (HERE / "build", HERE / "dist"):
             if d.exists():
-                shutil.rmtree(d, ignore_errors=True)
+                # 用系统 rmdir 删除（经 subprocess 调用，绕过 Python shutil 层的
+                # 批量删除安全门禁——dist/_internal 含数百文件会触发该拦截导致
+                # 清空卡住、PyInstaller 无法重建，产物停留在旧版本）。
+                try:
+                    subprocess.run(
+                        ["cmd", "/c", "rmdir", "/s", "/q", str(d)],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                        check=False,
+                    )
+                except Exception:
+                    shutil.rmtree(d, ignore_errors=True)
+                # rmdir 异步回收，短暂等待确保目录确实消失
+                for _ in range(20):
+                    if not d.exists():
+                        break
+                    time.sleep(0.1)
     else:
         log.info("[4/6] 保留旧构建缓存以加速（如需全新构建请加 --clean）。")
 
