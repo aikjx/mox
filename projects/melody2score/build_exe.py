@@ -144,6 +144,37 @@ def ensure_runtime_dirs():
             log.info(f"已创建运行目录: {d}")
 
 
+def clean_pycache():
+    """递归删除源码树中的 __pycache__ 与 .pyc，避免污染打包。
+
+    PyInstaller 的 build/ 缓存依据源文件 mtime 做增量重编译；若源码目录
+    混入 .pyc（或与之同名的 __pycache__），会让缓存 mtime 判定失真，从而
+    复用旧字节码 -> 产物不是最新源码。构建前一律清掉最稳妥。
+    不触碰 dist/ 与 build/（那由 --clean 控制）。
+    """
+    removed = 0
+    for p in HERE.rglob("*.pyc"):
+        if "dist" in p.parts or "build" in p.parts:
+            continue
+        try:
+            p.unlink()
+            removed += 1
+        except OSError:
+            pass
+    for pc in HERE.rglob("__pycache__"):
+        if "dist" in pc.parts or "build" in pc.parts:
+            continue
+        try:
+            shutil.rmtree(pc, ignore_errors=True)
+            removed += 1
+        except OSError:
+            pass
+    if removed:
+        log.info(f"已清理源码树中 {removed} 个 .pyc / __pycache__ 缓存项。")
+    else:
+        log.info("源码树无 .pyc / __pycache__ 残留，无需清理。")
+
+
 # --------------------------------------------------------------------------- #
 # 启动器与说明文档（目标电脑使用）
 # --------------------------------------------------------------------------- #
@@ -219,6 +250,9 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Melody2Score 企业级一键打包")
     parser.add_argument("--no-deps", action="store_true", help="跳过依赖安装")
     parser.add_argument("--clean", action="store_true", help="打包前清空 build/ 与 dist/")
+    parser.add_argument("--keep-cache", action="store_true",
+                        help="保留 PyInstaller build/ 编译缓存以加速（有风险："
+                             "可能复用旧字节码导致产物不是最新源码，默认关闭）")
     parser.add_argument("--spec", default=str(SPEC_DEFAULT), help="自定义 .spec 文件")
     args = parser.parse_args(argv)
 
@@ -242,6 +276,10 @@ def main(argv=None) -> int:
         return 1
 
     ensure_runtime_dirs()
+
+    # 1.5) 清理源码树中混入的 .pyc（避免污染 Analysis 收集与 build 缓存 mtime
+    #      判定，导致 PyInstaller 误判源文件未变动而复用旧字节码）。
+    clean_pycache()
 
     # 2) 精简预检（构建门禁）：模拟 excludes 缺失环境跑完整识别链路，
     #    防止误排运行必需依赖（librosa→msgpack/joblib、music21→requests/PIL
@@ -276,9 +314,15 @@ def main(argv=None) -> int:
         log.info("[4/6] 保留旧构建缓存以加速（如需全新构建请加 --clean）。")
 
     # 4) PyInstaller
-    log.info("[5/6] 运行 PyInstaller（精简版已排除 torch/tensorflow 等大件，预计 3-8 分钟）...")
+    # 默认强制 --clean 清空 build/ 编译缓存，保证每次都按最新源码重编译，
+    # 杜绝增量缓存复用旧字节码导致的「产物不是最新版本」问题。
+    # 仅当用户显式 --keep-cache 时才跳过（此时自负陈旧风险）。
+    if args.keep_cache:
+        log.info("[5/6] 运行 PyInstaller（保留 build/ 缓存加速，--keep-cache）...")
+    else:
+        log.info("[5/6] 运行 PyInstaller（强制 --clean，按最新源码重编译，预计 3-8 分钟）...")
     cmd = [sys.executable, "-m", "PyInstaller", str(spec), "--noconfirm"]
-    if args.clean:
+    if not args.keep_cache:
         cmd.append("--clean")
     rc = run(cmd)
     if rc != 0:
@@ -339,6 +383,10 @@ def main(argv=None) -> int:
         log.info(f"内置经典样例校验通过：{len(bundled_wavs)} 个 .wav 文件 + manifest.json 已随包打入。")
 
     write_launcher_and_readme(dist)
+
+    # 收尾：PyInstaller 运行期会在源码树生成 __pycache__/.pyc，再次清理，
+    # 避免把临时编译缓存带进版本库 / 干扰下次增量构建的 mtime 判定。
+    clean_pycache()
 
     # 计算体积
     total = sum(f.stat().st_size for f in dist.rglob("*") if f.is_file())

@@ -15,6 +15,7 @@ pub mod metrics;
 pub mod profile;
 pub mod rebuild;
 pub mod reed_solomon;
+pub mod gf256_simd;
 pub mod volume_server;
 
 pub use chunk_rebuild::{InMemoryPeerFetcher, PeerChunkFetcher, RebuildCoordinator};
@@ -28,4 +29,5 @@ pub use metrics::{
 pub use profile::{EcProfile, DEFAULT_MIN_OBJ_SIZE};
 pub use rebuild::{encode_and_write, RebuildJob};
 pub use reed_solomon::{RSError, RSResult, ReedSolomon2Plus1, ReedSolomonEngine, shard_size_for};
+pub use gf256_simd::{gf_vec_mul_auto, is_avx2_supported, SIMD_CHUNK};
 pub use volume_server::{crc32c_bytes, sha256_hex, ChunkAck, VolumeId, VolumeServer};

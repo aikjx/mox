@@ -1,0 +1,126 @@
+{
+  "selftest": "Melody2Score 打包产物自检",
+  "mode": "full",
+  "frozen": false,
+  "sample": "audio/m00_instrument_piano.wav",
+  "title_zh": "小星星",
+  "note_count": 14,
+  "bpm": 142.9,
+  "backend": "pyin",
+  "jianpu_head": "1 1 5 5 6 6 5- 4 4 3 3 2 2 1-",
+  "elapsed_sec": 5.9,
+  "pass": true,
+  "full_chain": {
+    "MusicXML 导出": {
+      "pass": true,
+      "skip": false,
+      "detail": "5790 chars"
+    },
+    "标准歌谱 PNG 渲染": {
+      "pass": true,
+      "skip": false,
+      "detail": "png 24349 bytes（jianpu-ly + LilyPond）"
+    },
+    "钢琴合成（试听链路）": {
+      "pass": true,
+      "skip": false,
+      "detail": "3200 samples"
+    },
+    "钢琴播放冒烟（死锁回归）": {
+      "pass": true,
+      "skip": false,
+      "detail": "play 返回耗时 187ms，无死锁"
+    },
+    "mp3 解码": {
+      "pass": true,
+      "skip": false,
+      "detail": "decode 16000 samples（libsndfile 原生）"
+    },
+    "离线曲库匹配（DTW）": {
+      "pass": true,
+      "skip": false,
+      "detail": "命中《小星星》100%"
+    }
+  },
+  "regression": {
+    "samples": [
+      {
+        "title": "小星星",
+        "timbre": "piano",
+        "exact": true,
+        "tol": 1.0,
+        "pc": 1.0,
+        "notes": "14/14",
+        "bpm": 142.9
+      },
+      {
+        "title": "小星星",
+        "timbre": "human_voice",
+        "exact": true,
+        "tol": 1.0,
+        "pc": 1.0,
+        "notes": "14/14",
+        "bpm": 142.9
+      },
+      {
+        "title": "欢乐颂",
+        "timbre": "piano",
+        "exact": true,
+        "tol": 1.0,
+        "pc": 1.0,
+        "notes": "15/15",
+        "bpm": 157.9
+      },
+      {
+        "title": "欢乐颂",
+        "timbre": "flute",
+        "exact": true,
+        "tol": 1.0,
+        "pc": 1.0,
+        "notes": "15/15",
+        "bpm": 142.9
+      },
+      {
+        "title": "茉莉花",
+        "timbre": "guitar",
+        "exact": true,
+        "tol": 1.0,
+        "pc": 1.0,
+        "notes": "12/12",
+        "bpm": 157.9
+      },
+      {
+        "title": "两只老虎",
+        "timbre": "strings",
+        "exact": true,
+        "tol": 1.0,
+        "pc": 1.0,
+        "notes": "14/14",
+        "bpm": 157.9
+      },
+      {
+        "title": "致爱丽丝",
+        "timbre": "pure_sine",
+        "exact": true,
+        "tol": 1.0,
+        "pc": 1.0,
+        "notes": "13/13",
+        "bpm": 142.9
+      },
+      {
+        "title": "生日歌",
+        "timbre": "human_voice",
+        "exact": true,
+        "tol": 1.0,
+        "pc": 1.0,
+        "notes": "12/12",
+        "bpm": 142.9
+      }
+    ],
+    "n": 8,
+    "exact_hits": 8,
+    "avg_tol": 1.0,
+    "avg_pc": 1.0,
+    "pass": true
+  }
+}

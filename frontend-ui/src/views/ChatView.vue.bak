@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="chat">
     <SessionSidebar
       :sessions="sessions"
@@ -27,47 +27,6 @@
               />
             </el-select>
           </div>
-
-          <div class="ct-divider"></div>
-
-          <!-- FR11 严格顺序：新建 / 清空 / 导出 / 导入 / 转任务 / 创建项目 / 全维分析 -->
-          <el-tooltip content="新建对话" placement="bottom">
-            <el-button class="ct-btn ct-btn-new" text @click="newSession"><el-icon><DocumentAdd /></el-icon> 新建</el-button>
-          </el-tooltip>
-          <el-tooltip content="清空当前会话" placement="bottom">
-            <el-button class="ct-btn" text @click="clearChat"><el-icon><Delete /></el-icon> 清空</el-button>
-          </el-tooltip>
-          <el-tooltip content="导出对话+图谱迁移包" placement="bottom">
-            <el-button class="ct-btn" text @click="exportBundle"><el-icon><Download /></el-icon> 导出</el-button>
-          </el-tooltip>
-          <el-tooltip content="导入迁移包" placement="bottom">
-            <el-button class="ct-btn" text @click="pickImport"><el-icon><Upload /></el-icon> 导入</el-button>
-          </el-tooltip>
-          <el-tooltip content="从后端恢复会话历史" placement="bottom">
-            <el-button class="ct-btn" text @click="openBackendHistory"><el-icon><Clock /></el-icon></el-button>
-          </el-tooltip>
-          <el-tooltip content="将当前对话转换为任务" placement="bottom">
-            <el-button class="ct-btn" text type="primary" plain @click="convertToTask" :loading="convertingTask">
-              <el-icon><List /></el-icon> 转任务
-            </el-button>
-          </el-tooltip>
-          <el-tooltip content="基于对话一键创建项目" placement="bottom">
-            <el-button class="ct-btn" type="success" plain @click="openProjectDialog">
-              <el-icon><FolderAdd /></el-icon> 创建项目
-            </el-button>
-          </el-tooltip>
-
-          <!-- 全维分析 CTA · φ 主按钮 -->
-          <el-tooltip content="架构开发专家联盟 · 一键启动全维分析（需求→架构→实现→测试→验收）" placement="bottom">
-            <el-button class="ct-cta-full" @click="triggerFullAnalysis">
-              <el-icon><Promotion /></el-icon>
-              <span class="ct-cta-text">全维分析</span>
-              <span class="ct-cta-badge">φ</span>
-            </el-button>
-          </el-tooltip>
-
-          <div class="ct-divider"></div>
-
           <el-tooltip content="对话内容自动整理进知识图谱（全自动）" placement="bottom">
             <el-switch
               v-model="autoSync"
@@ -77,6 +36,25 @@
               @change="onToggleAutoSync"
             />
           </el-tooltip>
+          <el-tooltip content="从后端恢复会话历史（跨设备同步）" placement="bottom">
+            <el-button text @click="openBackendHistory"><el-icon><Clock /></el-icon></el-button>
+          </el-tooltip>
+          <el-tooltip content="导出对话+图谱迁移包" placement="bottom">
+            <el-button text @click="exportBundle"><el-icon><Download /></el-icon></el-button>
+          </el-tooltip>
+          <el-tooltip content="导入迁移包" placement="bottom">
+            <el-button text @click="pickImport"><el-icon><Upload /></el-icon></el-button>
+          </el-tooltip>
+          <el-tooltip content="将当前对话转换为任务" placement="bottom">
+            <el-button text type="primary" @click="convertToTask" :loading="convertingTask">
+              <el-icon><List /></el-icon> 转任务
+            </el-button>
+          </el-tooltip>
+          <el-tooltip content="🏗️ 基于对话一键创建项目：自动生成需求图谱+流程图+PRD+ERD+需求-库关联矩阵+产品专家联盟企业级流水线报告，并归档云盘" placement="bottom">
+            <el-button type="success" @click="openProjectDialog">
+              <el-icon><FolderAdd /></el-icon> 创建项目
+            </el-button>
+          </el-tooltip>
           <el-tooltip content="开启后：AI分析对话自动创建任务并执行" placement="bottom">
             <el-switch
               v-model="autoTaskMode"
@@ -84,6 +62,7 @@
               active-text="任务模式"
               inactive-text="对话模式"
               @change="onAutoTaskToggle"
+              style="margin-left: 8px"
             />
           </el-tooltip>
           <el-tooltip content="需求流程模式：选择问题，进入设计→分析→开发→测试→修复→优化流程" placement="bottom">
@@ -93,25 +72,11 @@
               active-text="流程模式"
               inactive-text=""
               @change="onRequirementFlowToggle"
+              style="margin-left: 8px"
             />
           </el-tooltip>
-
           <input ref="importInput" type="file" accept="application/json" hidden @change="onImportFile" />
-        </div>
-      </div>
-
-      <!-- 全维分析 · 5 阶段 Chip 指示器（FR11） -->
-      <div class="analysis-stages" aria-label="全维分析阶段">
-        <div
-          v-for="(stage, i) in ANALYSIS_STAGES"
-          :key="stage.key"
-          class="stage-chip"
-          :class="[{ active: currentStage >= i && requirementFlowMode }, `stage-${stage.key}`]"
-          @click="jumpAnalysisStage(i)"
-        >
-          <span class="stage-dot"></span>
-          <span class="stage-label">{{ stage.label }}</span>
-          <span v-if="i < 4" class="stage-arrow" aria-hidden="true">›</span>
+          <el-button text @click="clearChat"><el-icon><Delete /></el-icon> 清空</el-button>
         </div>
       </div>
 
@@ -133,7 +98,7 @@
       </el-dialog>
 
       <!-- 调试指示器（可删除） -->
-      <div v-if="requirementFlowMode" class="flow-mode-indicator">
+      <div v-if="requirementFlowMode" style="position: fixed; top: 10px; right: 10px; z-index: 9999; background: #7c3aed; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px;">
         流程模式已开启
       </div>
 
@@ -300,20 +265,8 @@
           <div class="empty-orb"><el-icon><ChatLineRound /></el-icon></div>
           <p>我是算子统一系统 AI 助手，可以帮你<b>分析算法</b>、<b>推荐算子</b>、<b>解释图谱</b>。</p>
           <p v-if="autoTaskMode" class="task-mode-hint">🚀 任务模式已开启：对话中将自动创建并执行任务</p>
-          <div class="suggestions-grid" aria-label="快捷问法">
-            <div
-              v-for="(q, i) in quickQuestionsFull"
-              :key="i"
-              class="qq-card"
-              @click="sendQuick(q.prompt)"
-            >
-              <div class="qq-icon" :class="`qq-icon-${i % 6}`">{{ q.icon }}</div>
-              <div class="qq-body">
-                <div class="qq-title">{{ q.title }}</div>
-                <div class="qq-desc">{{ q.desc }}</div>
-              </div>
-              <div class="qq-arrow" aria-hidden="true">→</div>
-            </div>
+          <div class="suggestions">
+            <el-tag v-for="q in quickQuestions" :key="q" class="q" @click="sendQuick(q)">{{ q }}</el-tag>
           </div>
         </div>
         <div v-else-if="messages.length && requirementFlowMode && currentIssue" class="flow-current-issue-bar">
@@ -329,13 +282,6 @@
             :key="i"
             :msg="m"
             @goto-task="goToTaskDetail"
-            @rate="(m2,r)=>onRate(m2,r)"
-            @share="m2=>onShare(m2)"
-            @regenerate="m2=>onRegenerate(m2)"
-            @to-doc="(m2,p)=>onToDoc(m2,p)"
-            @favorite="(m2,f)=>onFavorite(m2,f)"
-            @followup="(m2,prompt)=>onFollowup(m2,prompt)"
-            @feedback="(m2,payload)=>onFeedback(m2,payload)"
           />
         </template>
         <div v-if="thinking" class="typing">
@@ -478,7 +424,7 @@
               <el-table-column prop="comment" label="说明" />
               <el-table-column label="字段">
                 <template #default="{ row }">
-                  <div class="field-tags-row">
+                  <div style="display:flex; gap:4px; flex-wrap: wrap;">
                     <el-tag v-for="f in (row.fields||[])" :key="f" size="small" effect="plain">{{ f }}</el-tag>
                   </div>
                 </template>
@@ -736,7 +682,7 @@
 import { ref, nextTick, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { List, Loading, ArrowDown, Link, Document, FolderAdd, ChatDotRound, ChatLineRound, Delete, Upload, Download, Clock, Promotion, DocumentAdd } from '@element-plus/icons-vue'
+import { List, Loading, ArrowDown, Link, Document, FolderAdd } from '@element-plus/icons-vue'
 import MessageBubble from '@/components/MessageBubble.vue'
 import SessionSidebar from '@/components/SessionSidebar.vue'
 import ToolDock from '@/components/ToolDock.vue'
@@ -1534,25 +1480,6 @@ const quickQuestions = [
   '算法复杂度怎么分析？'
 ]
 
-// FR11 · 快捷问法（3×2 φ 卡片）：架构开发专家联盟 6 大高频场景
-const quickQuestionsFull = [
-  { icon: '📊', title: '算子推荐', desc: '帮我推荐一个归一化算子', prompt: '帮我推荐一个归一化算子，并比较几种方法的适用场景。' },
-  { icon: '🔗', title: '图谱中心性', desc: '解释一下知识图谱的中心性', prompt: '请系统解释知识图谱的度中心性、介数中心性、紧密中心性三种指标的计算方法与差异。' },
-  { icon: '🧵', title: '工作流编排', desc: '如何编排一个工作流链？', prompt: '如何编排一个包含数据预处理→算子执行→后处理的可靠工作流链？请给出架构与故障恢复方案。' },
-  { icon: '⏱️', title: '复杂度分析', desc: '算法复杂度怎么分析？', prompt: '请用大 O 记号系统解析排序/图遍历/矩阵运算三类算法的复杂度，并给出企业级算法选型决策树。' },
-  { icon: '🏗️', title: '全维架构设计', desc: '给我的系统做一次架构评估', prompt: '请对一个典型的分布式图谱+AI混合系统做全维架构评估：分层部署、数据流、SLA 指标、容灾与可观测性。' },
-  { icon: '🛰️', title: '图谱报告生成', desc: '生成一份完整分析报告', prompt: '基于「知识图谱关联关系系统」，请生成一份覆盖节点、边、中心性、社区检测、可视化建议的全维度分析报告（含 Mermaid 图）。' },
-]
-
-// FR11 · 全维分析 5 阶段指示器（与 FLOW_STAGES 6 阶段独立并行，用于顶栏概览跳转）
-const ANALYSIS_STAGES = [
-  { key: 'req',    label: '需求' },
-  { key: 'arch',   label: '架构' },
-  { key: 'impl',   label: '实现' },
-  { key: 'test',   label: '测试' },
-  { key: 'accept', label: '验收' },
-]
-
 const STORE_KEY = 'ous_sessions'
 const STATE_KEY = 'ous_chat_state'
 
@@ -1840,225 +1767,26 @@ async function onImportFile(e) {
     e.target.value = ''
   }
 }
-
-// ========== MessageBubble 新事件占位（8 emits · 父级处理） ==========
-function onRate(m, rating) {
-  const txt = rating === 'like' ? '👍 已点赞 感谢反馈' : rating === 'dislike' ? '👎 已点踩 我们会改进' : '已取消评分'
-  ElMessage.success({ message: txt, duration: 1500 })
-  // TODO: 后端埋点 POST /ai/chat/rating
-}
-function onShare(m) {
-  ElMessage.success({ message: '📤 分享已发送（埋点已记录）', duration: 1500 })
-  // TODO: 后端埋点 POST /ai/chat/share
-}
-async function onToDoc(m, payload) {
-  if (!payload || !payload.mode) return
-  if (payload.mode === 'create-kb') {
-    ElMessage.success('📁 已提交到云盘（占位），后续将自动创建知识库文档')
-    return
-  }
-  if (payload.mode === 'export-md') {
-    // 兜底剪贴板双写（MessageBubble 内已写过一次；此处仅 toast 确认）
-    ElMessage.success({ message: '✅ Markdown 已写入剪贴板（可直接粘贴到任意编辑器）', duration: 1800 })
-    return
-  }
-}
-function onFavorite(m, f) {
-  ElMessage({ message: f ? '⭐ 已加入收藏夹' : '已从收藏夹移除', type: 'success', duration: 1200, showClose: false })
-  // TODO: localStorage 集合已由 MessageBubble 维护；此处可同步后端
-}
-function onFeedback(m, payload) {
-  ElMessage.success({ message: '📮 反馈已提交，感谢助力专家联盟质量升级', duration: 2000 })
-  // TODO: 后端 POST /ai/chat/feedback
-}
-function onFollowup(m, prompt) {
-  // 回填前缀到 draft，空格隔开已有内容，自动聚焦 textarea
-  const cur = draft.value?.trim()
-  draft.value = cur ? (prompt + ' ' + cur) : prompt
-  persist()
-  // 聚焦输入框（无 ref 用 DOM 选择器兜底）
-  nextTick(() => {
-    try {
-      const ta = document.querySelector('.chat-input textarea')
-      if (ta) { ta.focus(); const len = ta.value?.length || 0; try { ta.setSelectionRange(len, len) } catch(_){} }
-    } catch(_) {}
-  })
-  ElMessage.info({ message: '💬 追问提示已写入输入框，可直接继续输入后发送', duration: 1800 })
-}
-async function onRegenerate(m) {
-  // 真·重生成：查找该条助手消息 index，移除（及之后可能的后续助手消息占位），复用最近一条用户消息 content 重跑 send
-  const idx = messages.value.findIndex(x => x === m)
-  if (idx <= 0) { ElMessage.warning('重生成失败：未找到对应上下文'); return }
-  // 往前找最近一条用户消息（作为重发 prompt）
-  let userIdx = -1
-  for (let i = idx - 1; i >= 0; i--) {
-    if (messages.value[i]?.role === 'user' && !messages.value[i].system) { userIdx = i; break }
-  }
-  if (userIdx < 0) { ElMessage.warning('重生成失败：没有可复读的用户提问'); return }
-  const userContent = messages.value[userIdx].content
-  // 从 idx 起清空之后的助手/系统占位消息（保留用户消息及之前）
-  const kept = messages.value.slice(0, idx)
-  setMessages(kept)
-  draft.value = userContent
-  ElMessage.success({ message: '♻️ 重新生成中…', duration: 1500 })
-  persist()
-  await send()
-}
-// ========== 顶栏：全维分析 CTA 触发 ==========
-function triggerFullAnalysis() {
-  if (!requirementFlowMode.value) {
-    requirementFlowMode.value = true
-    currentStage.value = 0
-    ElMessage.success({ message: '🎯 已开启全维分析流程模式', duration: 1500 })
-  }
-  // 无选中问题 → 自动选一个（需求图谱 primary）
-  if (!currentIssue.value) {
-    const primary = ISSUE_CATEGORIES.find(c => c.primary) || ISSUE_CATEGORIES[0]
-    selectedIssue.value = primary
-    currentIssue.value = primary
-    ElMessage.info({ message: `已选择问题域：${primary.label}`, duration: 1600 })
-  }
-  // 跳分析：如果没有任何用户消息 → 填默认 prompt 到 draft；否则直接跑 fullAnalysis
-  const hasUserMsg = messages.value.some(m => m.role === 'user' && !m.system)
-  if (!hasUserMsg) {
-    draft.value = `【${currentIssue.value.label}】请进行全维分析，覆盖：\n① 需求梳理与结构化\n② 架构方案（服务拆分、数据流、SLA）\n③ 实现要点（技术栈、关键算法）\n④ 测试策略（单测/集成/E2E）\n⑤ 验收标准与发布闸门`
-  } else {
-    fullAnalysis()
-  }
-  persist()
-}
-// ========== 分析阶段 Chip 点击跳转 ==========
-function jumpAnalysisStage(idx) {
-  if (idx == null || idx < 0 || idx >= ANALYSIS_STAGES.length) return
-  // 开启流程模式
-  if (!requirementFlowMode.value) {
-    requirementFlowMode.value = true
-    ElMessage.success({ message: '已进入流程模式：' + ANALYSIS_STAGES[idx].label, duration: 1400 })
-  }
-  // 映射到 FLOW_STAGES（6 段）：0→0 需求, 1→1 架构, 2→2~3 实现, 3→4 测试, 4→5 验收
-  const MAP = [0, 1, 2, 4, 5]
-  const target = MAP[idx] || 0
-  currentStage.value = Math.max(0, Math.min(FLOW_STAGES.length - 1, target))
-  // 推送一条系统提示
-  const stage = FLOW_STAGES[currentStage.value]
-  const ana = ANALYSIS_STAGES[idx]
-  messages.value.push({
-    role: 'system',
-    content: `📌 跳转到【${ana.label}】分析阶段\n当前阶段：${stage.label}\n${stage.hint}`,
-    timestamp: Date.now(),
-    system: true,
-  })
-  persist()
-  scroll()
-}
-
 onUnmounted(() => { if (streamTimer) clearInterval(streamTimer) })
 </script>
 
 <style scoped>
-/* ===== 外层布局容器 · 黄金比例深空设计 ===== */
 .chat {
   display: flex;
-  height: calc(100vh - var(--header-h) - 86px);
-  background: var(--bg-surface);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--border-ghost);
-  box-shadow: var(--shadow-md), var(--shadow-inset);
+  height: calc(100vh - var(--header-h) - 42px - 44px);
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
   flex-direction: row;
 }
-.chat-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
+.chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .chat-header {
-  height: 86px;
-  min-height: 86px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 26px;
-  border-bottom: 1px solid var(--border-ghost);
-  background:
-    linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-surface-2) 100%),
-    radial-gradient(800px 200px at 100% 0%, rgba(99,102,241,0.06), transparent 60%);
-  gap: 16px;
+  height: 56px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; border-bottom: 1px solid var(--border);
 }
-.chat-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--text-primary);
-}
-.chat-tools {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-.ct-divider {
-  width: 1px;
-  height: 22px;
-  background: var(--border-ghost);
-  margin: 0 4px;
-  align-self: center;
-  opacity: 0.85;
-}
-.ct-btn {
-  font-size: 13px !important;
-  padding: 6px 10px !important;
-  gap: 4px;
-  border-radius: 10px !important;
-  transition: all .2s var(--ease) !important;
-}
-.ct-btn:hover {
-  background: var(--brand-50) !important;
-  border-color: transparent !important;
-  transform: translateY(-1px);
-}
-.ct-btn-new { color: #6366f1 !important; font-weight: 600 !important; }
-.ct-cta-full {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 38px;
-  padding: 0 18px 0 16px;
-  border-radius: 19px;
-  font-weight: 650;
-  font-size: 13.5px;
-  letter-spacing: 0.2px;
-  color: #ffffff;
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 32%, #8b5cf6 68%, #a855f7 100%);
-  border: none;
-  box-shadow:
-    0 10px 26px -10px rgba(99,102,241,0.65),
-    0 2px 6px rgba(79,70,229,0.18),
-    inset 0 1px 0 rgba(255,255,255,0.18);
-  transition: all .25s var(--ease);
-}
-.ct-cta-full:hover {
-  transform: translateY(-1px);
-  box-shadow:
-    0 16px 36px -12px rgba(99,102,241,0.8),
-    0 4px 10px rgba(79,70,229,0.25),
-    inset 0 1px 0 rgba(255,255,255,0.22);
-}
-.ct-cta-text { position: relative; top: -0.5px; }
-.ct-cta-badge {
-  display: inline-grid;
-  place-items: center;
-  width: 18px; height: 18px;
-  border-radius: 50%;
-  font-size: 10px;
-  font-weight: 700;
-  color: #6366f1;
-  background: rgba(255,255,255,0.95);
-  box-shadow: 0 1px 3px rgba(15,23,42,0.12);
-  margin-left: 2px;
-}
+.chat-title { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; }
+.chat-tools { display: flex; align-items: center; gap: 4px; }
 .expert-selector {
   display: flex;
   align-items: center;
@@ -2067,605 +1795,211 @@ onUnmounted(() => { if (streamTimer) clearInterval(streamTimer) })
 }
 .expert-selector .muted {
   font-size: 12px;
-  color: var(--text-tertiary);
+  color: var(--text-3);
 }
-.chat-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: var(--space-5) var(--space-6);
-  background:
-    radial-gradient(1200px 400px at 8% -10%, rgba(99, 102, 241, 0.07), transparent 60%),
-    radial-gradient(1000px 500px at 100% 0%, rgba(6, 182, 212, 0.05), transparent 55%),
-    var(--bg-deep-sky);
-}
-.chat-body::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-.chat-body::-webkit-scrollbar-thumb {
-  background: #c7cfdc;
-  border-radius: 6px;
-}
-.chat-body::-webkit-scrollbar-thumb:hover {
-  background: #a8b0bf;
-}
-
-/* ===== 全维分析 · 5 阶段 Chip 指示器 ===== */
-.analysis-stages {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 26px;
-  min-height: 42px;
-  border-bottom: 1px solid var(--border-ghost);
-  background: linear-gradient(180deg, rgba(99,102,241,0.03) 0%, transparent 100%);
-  flex-wrap: wrap;
-}
-.stage-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 5px 14px 5px 12px;
-  border-radius: 999px;
-  font-size: 12.5px;
-  font-weight: 550;
-  color: var(--text-tertiary);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-soft);
-  cursor: pointer;
-  transition: all .2s var(--ease);
-  user-select: none;
-}
-.stage-chip:hover {
-  border-color: var(--border-focus);
-  color: var(--brand-700);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-ghost);
-}
-.stage-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: #cbd5e1;
-  transition: background .2s, box-shadow .2s;
-}
-.stage-chip.active {
-  color: #ffffff;
-  border-color: transparent;
-  box-shadow: 0 4px 14px -6px rgba(99,102,241,0.45), 0 1px 2px rgba(15,23,42,0.05);
-}
-.stage-chip.active .stage-dot {
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(255,255,255,0.2);
-}
-/* φ 色系递进 */
-.stage-chip.stage-req.active    { background: linear-gradient(135deg,#3b82f6,#2563eb); }
-.stage-chip.stage-arch.active   { background: linear-gradient(135deg,#6366f1,#8b5cf6); }
-.stage-chip.stage-impl.active   { background: linear-gradient(135deg,#10b981,#0ea5a4); }
-.stage-chip.stage-test.active   { background: linear-gradient(135deg,#f59e0b,#ef6c19); }
-.stage-chip.stage-accept.active { background: linear-gradient(135deg,#ef4444,#dc2626); }
-.stage-arrow {
-  color: #cbd5e1;
-  font-weight: 700;
-  font-size: 14px;
-  margin-left: 2px;
-  line-height: 1;
-}
-.stage-chip.active + .stage-chip .stage-arrow {
-  color: #c7d2fe;
-}
-
-/* chat-body 滚动内边距 · φ 呼吸 */
-.chat-body > :first-child { margin-top: 0; }
-.chat-body > :last-child  { margin-bottom: 20px; }
-
-/* ===== 空状态 · 黄金留白 ===== */
-.empty {
-  text-align: center;
-  color: var(--text-tertiary);
-  margin-top: var(--space-7);
-}
+.chat-body { flex: 1; overflow-y: auto; padding: 20px; background: #f8fafc; }
+.empty { text-align: center; color: var(--text-3); margin-top: 50px; }
 .empty-orb {
-  width: 110px;
-  height: 110px;
-  margin: 0 auto var(--space-4);
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-size: 38px;
-  color: #fff;
-  background: linear-gradient(135deg, #6366f1 0%, #0ea5e9 55%, #06b6d4 100%);
-  box-shadow:
-    0 14px 40px -10px rgba(99, 102, 241, 0.45),
-    0 0 0 6px rgba(99, 102, 241, 0.08);
+  width: 72px; height: 72px; margin: 0 auto 16px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 32px; color: #fff;
+  background: linear-gradient(135deg, var(--brand-light), var(--accent));
+  box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
 }
-.empty p {
-  max-width: 520px;
-  margin: 0 auto var(--space-4);
-  line-height: 1.75;
-  font-size: 14px;
-}
-.empty p:first-of-type {
-  color: var(--text-secondary);
-}
-.empty p:last-of-type {
-  color: var(--text-tertiary);
-}
+.empty p { max-width: 420px; margin: 0 auto 16px; line-height: 1.7; }
 .task-mode-hint {
-  background: linear-gradient(135deg, #fef3c7, #fde68a, #fcd34d 120%);
-  border: 1px solid rgba(245, 158, 11, 0.18);
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
   color: #92400e;
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-2xl);
+  padding: 8px 16px;
+  border-radius: 20px;
   font-size: 13px;
   font-weight: 600;
   display: inline-block;
-  margin: 0 auto var(--space-4);
+  margin: 0 auto 16px;
 }
-.suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  justify-content: center;
-}
-.q {
-  cursor: pointer;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-soft);
-  font-size: 13px;
-  color: var(--text-secondary);
-  transition: all var(--dur-2) var(--ease);
-}
-.q:hover {
-  background: var(--brand-50);
-  border-color: rgba(99, 102, 241, 0.25);
-  box-shadow: var(--shadow-ring);
-  color: var(--brand-700);
-}
+.suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.q { cursor: pointer; }
+.q:hover { background: var(--brand-soft); color: var(--brand-dark); }
 
-/* ===== 快捷问法 · 3×2 Grid φ 卡片（FR11） ===== */
-.suggestions-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  max-width: 680px;
-  margin: 26px auto 0;
-}
-@media (max-width: 960px) {
-  .suggestions-grid { grid-template-columns: repeat(2, 1fr); max-width: 560px; }
-}
-@media (max-width: 600px) {
-  .suggestions-grid { grid-template-columns: 1fr; max-width: 360px; }
-}
-.qq-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 18px;
-  height: 100%;
-  min-height: 84px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-surface-2) 100%);
-  border: 1px solid var(--border-ghost);
-  box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 4px 14px -10px rgba(15,23,42,0.12);
-  cursor: pointer;
-  transition: all .25s var(--ease);
-  position: relative;
-  overflow: hidden;
-}
-.qq-card::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: radial-gradient(400px 120px at 100% 0%, rgba(99,102,241,0.06), transparent 60%);
-  pointer-events: none;
-  opacity: 0.6;
-  transition: opacity .25s;
-}
-.qq-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(99,102,241,0.3);
-  box-shadow:
-    0 10px 28px -12px rgba(99,102,241,0.35),
-    0 4px 10px -4px rgba(15,23,42,0.1);
-}
-.qq-card:hover::before { opacity: 1; }
-.qq-icon {
-  width: 42px; height: 42px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  font-size: 20px;
-  flex-shrink: 0;
-  background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.08));
-  border: 1px solid rgba(99,102,241,0.15);
-}
-.qq-icon-0 { background: linear-gradient(135deg, rgba(59,130,246,0.10), rgba(37,99,235,0.10)); border-color: rgba(59,130,246,0.22); }
-.qq-icon-1 { background: linear-gradient(135deg, rgba(99,102,241,0.10), rgba(139,92,246,0.10)); border-color: rgba(99,102,241,0.22); }
-.qq-icon-2 { background: linear-gradient(135deg, rgba(16,185,129,0.10), rgba(14,165,164,0.10)); border-color: rgba(16,185,129,0.22); }
-.qq-icon-3 { background: linear-gradient(135deg, rgba(245,158,11,0.10), rgba(239,108,25,0.10)); border-color: rgba(245,158,11,0.22); }
-.qq-icon-4 { background: linear-gradient(135deg, rgba(124,58,237,0.10), rgba(139,92,246,0.10)); border-color: rgba(124,58,237,0.22); }
-.qq-icon-5 { background: linear-gradient(135deg, rgba(239,68,68,0.10), rgba(220,38,38,0.10)); border-color: rgba(239,68,68,0.22); }
-.qq-body { flex: 1 1 auto; min-width: 0; }
-.qq-title {
-  font-size: 13.5px;
-  font-weight: 650;
-  color: var(--text-primary);
-  margin-bottom: 3px;
-}
-.qq-desc {
-  font-size: 12px;
-  color: var(--text-tertiary);
-  line-height: 1.55;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-.qq-arrow {
-  width: 22px; height: 22px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-tertiary);
-  background: rgba(148,163,184,0.12);
-  flex-shrink: 0;
-  transition: all .2s;
-}
-.qq-card:hover .qq-arrow {
-  color: #ffffff;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  transform: translateX(2px);
-}
-
-/* ===== 思考中 typing ===== */
-.typing {
-  display: flex;
-  gap: 4px;
-  padding: var(--space-3) var(--space-4);
-  width: fit-content;
-  background: var(--bg-raised);
-  border-radius: var(--radius-lg);
-  margin-bottom: var(--space-4);
-  border: 1px solid var(--border-ghost);
-  box-shadow: var(--shadow-ghost);
-}
-.typing span {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--text-quaternary);
-  animation: blink 1.4s ease-in-out infinite;
-}
+.typing { display: flex; gap: 4px; padding: 12px 16px; width: fit-content; background: #fff; border-radius: 14px; margin-bottom: 14px; }
+.typing span { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); animation: blink 1.2s infinite; }
 .typing span:nth-child(2) { animation-delay: 0.2s; }
 .typing span:nth-child(3) { animation-delay: 0.4s; }
-@keyframes blink {
-  0%, 60%, 100% { opacity: 0.25; }
-  30% { opacity: 1; }
-}
+@keyframes blink { 0%, 60%, 100% { opacity: 0.3; } 30% { opacity: 1; } }
 
-/* ===== 输入区 · 黄金比例渐变 ===== */
-.chat-input {
-  display: flex;
-  gap: var(--space-3);
-  padding: 16px 26px 22px;
-  min-height: 164px;
-  border-top: 1px solid var(--border-ghost);
-  align-items: flex-end;
-  background:
-    linear-gradient(0deg, var(--bg-surface-2) 0%, var(--bg-surface) 100%),
-    radial-gradient(1000px 300px at 0% 100%, rgba(14,165,233,0.04), transparent 60%);
-}
-.chat-input :deep(.el-textarea) {
-  flex: 1;
-}
-.chat-input :deep(.el-textarea .el-textarea__inner) {
-  min-height: 100px !important;
-  padding: 14px 18px !important;
-  font-size: 14.5px !important;
-  line-height: 1.75 !important;
-  border-radius: 14px !important;
-  font-family: inherit !important;
-}
-.input-actions {
-  display: flex;
-  gap: var(--space-3);
-  align-items: flex-end;
-}
-
-/* ===== Web / Artifact toggle ===== */
+.chat-input { display: flex; gap: 10px; padding: 14px 18px; border-top: 1px solid var(--border); align-items: flex-end; }
+.chat-input :deep(.el-textarea) { flex: 1; }
+.input-actions { display: flex; gap: 10px; align-items: flex-end; }
 .web-toggle {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  height: 38px;
-  padding: 0 var(--space-4);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  user-select: none;
-  font-size: 13px;
-  color: var(--text-tertiary);
-  border: 1px solid var(--border-soft);
-  background: var(--bg-input);
-  transition: all var(--dur-2) var(--ease);
+  display: flex; align-items: center; gap: 5px;
+  height: 32px; padding: 0 12px; border-radius: 8px;
+  cursor: pointer; user-select: none;
+  font-size: 13px; color: var(--text-dim, #64748b);
+  border: 1px solid var(--border, #e2e8f0);
+  background: var(--bg-panel-2, #fff);
+  transition: all 0.18s ease;
 }
-.web-toggle:hover {
-  border-color: var(--border-focus);
-  color: var(--brand-700);
-  background: var(--brand-50);
-}
+.web-toggle:hover { border-color: rgba(6, 182, 212, 0.5); color: #0891b2; }
 .web-toggle.on {
-  color: #0e7490;
-  border-color: rgba(6, 182, 212, 0.35);
-  background: var(--accent-50);
-  box-shadow: inset 0 0 0 1px rgba(6, 182, 212, 0.10);
+  color: #0891b2;
+  border-color: rgba(6, 182, 212, 0.55);
+  background: rgba(6, 182, 212, 0.1);
+  box-shadow: 0 0 0 1px rgba(6, 182, 212, 0.15) inset;
 }
-.web-toggle.on .el-icon {
-  animation: web-pulse 2.4s ease-in-out infinite;
-}
+.web-toggle.on .el-icon { animation: web-pulse 2.4s ease-in-out infinite; }
 @keyframes web-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.55; }
 }
+/* 本地制品模式开关（文档/代码两态高亮） */
 .web-toggle.doc-on {
-  color: #047857;
-  border-color: rgba(22, 163, 74, 0.35);
-  background: var(--success-50);
-  box-shadow: inset 0 0 0 1px rgba(22, 163, 74, 0.10);
+  color: #16a34a;
+  border-color: rgba(22, 163, 74, 0.55);
+  background: rgba(22, 163, 74, 0.1);
+  box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.15) inset;
 }
-.web-toggle.doc-on .el-icon {
-  animation: web-pulse 2.4s ease-in-out infinite;
-}
+.web-toggle.doc-on .el-icon { animation: web-pulse 2.4s ease-in-out infinite; }
 .web-toggle.code-on {
-  color: #6d28d9;
-  border-color: rgba(124, 58, 237, 0.35);
-  background: var(--violet-50);
-  box-shadow: inset 0 0 0 1px rgba(124, 58, 237, 0.10);
+  color: #7c3aed;
+  border-color: rgba(124, 58, 237, 0.55);
+  background: rgba(124, 58, 237, 0.1);
+  box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.15) inset;
 }
-.web-toggle.code-on .el-icon {
-  animation: web-pulse 2.4s ease-in-out infinite;
-}
-
-/* ===== 历史恢复对话框 ===== */
+.web-toggle.code-on .el-icon { animation: web-pulse 2.4s ease-in-out infinite; }
 .hist-tip {
-  font-size: 12px;
-  color: var(--text-tertiary);
-  margin-bottom: var(--space-3);
-  line-height: 1.6;
+  font-size: 12px; color: var(--text-3); margin-bottom: 12px; line-height: 1.6;
 }
-.hist-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  max-height: 360px;
-  overflow-y: auto;
-}
+.hist-list { display: flex; flex-direction: column; gap: 8px; max-height: 360px; overflow-y: auto; }
 .hist-item {
-  border: 1px solid var(--border-ghost);
-  border-radius: var(--radius-md);
-  padding: var(--space-3) var(--space-3);
-  cursor: pointer;
-  transition: all var(--dur-2) var(--ease);
-  background: var(--bg-surface-2);
+  border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; cursor: pointer;
+  transition: all 0.2s;
 }
-.hist-item:hover {
-  border-color: rgba(79, 70, 229, 0.25);
-  background: var(--brand-50);
-  box-shadow: var(--shadow-ghost);
-}
-.hist-title {
-  font-weight: 700;
-  font-size: 14px;
-  color: var(--text-primary);
-  margin-bottom: var(--space-1);
-}
-.hist-meta {
-  font-size: 12px;
-  color: var(--text-quaternary);
-  font-family: var(--font-mono, Consolas, monospace);
-}
+.hist-item:hover { border-color: var(--brand); background: var(--brand-soft, #eef4ff); }
+.hist-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+.hist-meta { font-size: 12px; color: var(--text-3); font-family: var(--font-mono, monospace); }
 
-/* ===== 对话转任务 convert ===== */
 .convert-loading {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-5);
-  color: var(--text-tertiary);
+  gap: 12px;
+  padding: 20px;
+  color: var(--text-3);
 }
 .convert-loading .spin {
   font-size: 28px;
   animation: spin 1s linear infinite;
-  color: var(--brand-600);
+  color: var(--brand);
 }
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-.convert-result {
-  padding: var(--space-1) 0;
-}
-.result-section {
-  margin-bottom: var(--space-3);
-}
-.result-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-tertiary);
-  margin-bottom: var(--space-1);
-}
-.result-value {
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--text-primary);
-}
-.result-steps {
-  padding-left: var(--space-1);
-}
+@keyframes spin { to { transform: rotate(360deg); } }
+.convert-result { padding: 4px 0; }
+.result-section { margin-bottom: 12px; }
+.result-label { font-size: 12px; font-weight: 600; color: var(--text-3); margin-bottom: 4px; }
+.result-value { font-size: 14px; line-height: 1.6; color: var(--text-1); }
+.result-steps { padding-left: 4px; }
 .result-step {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) 0;
-  font-size: 13px;
-  color: var(--text-primary);
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 0; font-size: 13px; color: var(--text-1);
 }
 .result-step .step-num {
-  width: 22px;
-  height: 22px;
-  background: var(--brand-600);
-  color: #fff;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-size: 11px;
-  font-weight: 700;
+  width: 22px; height: 22px; background: var(--brand); color: #fff;
+  border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 700;
 }
-.result-meta {
-  display: flex;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--border-ghost);
-}
-.convert-empty {
-  padding: var(--space-5) 0;
-}
+.result-meta { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.convert-empty { padding: 20px 0; }
 
-/* ===== 需求流程模式 Flow ===== */
+/* ===== 需求流程模式 ===== */
 .flow-empty {
   text-align: center;
-  padding: var(--space-5) var(--space-4);
+  padding: 30px 20px;
 }
 .flow-empty-header {
-  margin-bottom: var(--space-5);
+  margin-bottom: 24px;
 }
 .flow-icon {
-  font-size: 56px;
-  margin-bottom: 14px;
+  font-size: 48px;
+  margin-bottom: 12px;
 }
 .flow-title {
-  font-size: 26px;
-  line-height: 31px;
+  font-size: 22px;
   font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: var(--space-2);
+  color: #0f172a;
+  margin-bottom: 8px;
 }
 .flow-desc {
   font-size: 14px;
-  color: var(--text-tertiary);
-  line-height: 1.75;
-  max-width: 640px;
-  margin: 0 auto;
+  color: #64748b;
+  line-height: 1.6;
 }
 .flow-desc b {
-  color: var(--violet);
+  color: #7c3aed;
 }
 .issue-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-4);
-  margin-bottom: var(--space-5);
-}
-@media (max-width: 960px) {
-  .issue-grid { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 640px) {
-  .issue-grid { grid-template-columns: 1fr; }
+  gap: 12px;
+  margin-bottom: 20px;
 }
 .issue-card {
-  padding: var(--space-4) var(--space-4) var(--space-4);
-  background: var(--bg-raised);
-  border: 1px solid var(--border-ghost);
-  border-radius: var(--radius-lg);
+  padding: 16px;
+  background: #fff;
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
   cursor: pointer;
-  transition: all var(--dur-3) var(--ease);
+  transition: all 0.2s;
   text-align: left;
-  position: relative;
 }
 .issue-card:hover {
-  border-color: rgba(124, 58, 237, 0.30);
-  transform: translateY(-3px);
-  box-shadow: 0 10px 28px -14px rgba(124, 58, 237, 0.28);
+  border-color: #7c3aed;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);
 }
 .issue-card.active {
-  border-color: rgba(124, 58, 237, 0.45);
-  background: linear-gradient(135deg, var(--violet-50), #faf5ff 120%);
-  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.14);
-}
-.issue-card.primary {
-  border-color: rgba(124, 58, 237, 0.30);
-  background: linear-gradient(135deg, #fdf4ff 0%, #eff6ff 100%);
+  border-color: #7c3aed;
+  background: #f5f3ff;
 }
 .issue-emoji {
-  font-size: 32px;
-  margin-bottom: 10px;
+  font-size: 28px;
+  margin-bottom: 8px;
 }
 .issue-name {
   font-size: 14px;
   font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 6px;
+  color: #0f172a;
+  margin-bottom: 4px;
 }
 .issue-desc {
   font-size: 12px;
-  color: var(--text-tertiary);
-  line-height: 1.55;
+  color: #64748b;
+  line-height: 1.4;
 }
-.issue-badge {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  font-size: 10px;
-  padding: 3px 8px;
-  background: linear-gradient(135deg, #7c3aed, #ec4899 110%);
-  color: #fff;
-  border-radius: var(--radius-2xl);
-  font-weight: 600;
-  box-shadow: 0 4px 10px -4px rgba(236, 72, 153, 0.35);
-}
-
-/* ===== 启动区 ===== */
 .flow-start-area {
-  padding: var(--space-4) var(--space-5);
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(124, 58, 237, 0.14);
-  background: linear-gradient(135deg, var(--violet-50), #eef2ff);
+  padding: 16px;
+  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+  border-radius: 14px;
+  border: 1px solid #ddd6fe;
 }
 .flow-summary {
   font-size: 14px;
-  color: var(--text-secondary);
-  margin-bottom: var(--space-3);
+  color: #334155;
+  margin-bottom: 12px;
 }
 .flow-summary b {
-  color: var(--violet);
-}
-.flow-start-actions {
-  display: flex;
-  gap: var(--space-3);
-  justify-content: center;
+  color: #7c3aed;
 }
 
-/* ===== 流程追踪器 ===== */
+/* 流程追踪器 */
 .flow-tracker {
-  background: var(--bg-raised);
-  border-radius: var(--radius-lg);
-  padding: var(--space-4) var(--space-5);
-  margin-bottom: var(--space-4);
-  border: 1px solid var(--border-ghost);
-  box-shadow: var(--shadow-ghost);
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid #e2e8f0;
 }
 .flow-tracker-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: var(--space-4);
+  margin-bottom: 14px;
 }
 .flow-track-icon {
   font-size: 20px;
@@ -2673,23 +2007,23 @@ onUnmounted(() => { if (streamTimer) clearInterval(streamTimer) })
 .flow-track-title {
   font-size: 15px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: #0f172a;
   flex: 1;
 }
 .flow-track-status {
   font-size: 12px;
-  color: #6d28d9;
+  color: #7c3aed;
   font-weight: 600;
-  padding: 4px 14px;
-  background: var(--violet-50);
-  border-radius: var(--radius-2xl);
+  padding: 2px 10px;
+  background: #ede9fe;
+  border-radius: 20px;
 }
 .flow-stages {
   display: flex;
   align-items: center;
   justify-content: space-between;
   position: relative;
-  margin-bottom: var(--space-3);
+  margin-bottom: 10px;
 }
 .stage-node {
   display: flex;
@@ -2698,31 +2032,31 @@ onUnmounted(() => { if (streamTimer) clearInterval(streamTimer) })
   z-index: 1;
 }
 .stage-circle {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: #e2e8f0;
-  color: var(--text-tertiary);
+  color: #64748b;
   display: grid;
   place-items: center;
   font-size: 12px;
   font-weight: 700;
   margin-bottom: 6px;
-  transition: all var(--dur-3) var(--ease);
+  transition: all 0.3s;
 }
 .stage-node.active .stage-circle {
   background: #7c3aed;
   color: #fff;
-  box-shadow: 0 0 0 5px rgba(124, 58, 237, 0.10);
-  transform: scale(1.12);
+  box-shadow: 0 0 0 4px #ede9fe;
+  transform: scale(1.1);
 }
 .stage-node.done .stage-circle {
   background: #10b981;
   color: #fff;
 }
 .stage-label {
-  font-size: 12px;
-  color: var(--text-tertiary);
+  font-size: 11px;
+  color: #64748b;
   font-weight: 500;
 }
 .stage-node.active .stage-label {
@@ -2738,100 +2072,127 @@ onUnmounted(() => { if (streamTimer) clearInterval(streamTimer) })
   background: #e2e8f0;
   margin: 0 4px;
   margin-bottom: 24px;
-  transition: background var(--dur-3) var(--ease);
+  transition: background 0.3s;
 }
 .stage-line.done {
-  background: linear-gradient(90deg, #10b981, #34d399);
+  background: #10b981;
 }
 .flow-stage-hint {
   font-size: 12px;
-  color: #6d28d9;
-  background: var(--violet-50);
+  color: #7c3aed;
+  background: #f5f3ff;
   padding: 8px 12px;
-  border-radius: var(--radius-md);
-  line-height: 1.6;
+  border-radius: 8px;
+  line-height: 1.5;
 }
 .flow-stage-actions {
   display: flex;
   justify-content: flex-end;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
+  gap: 8px;
+  margin-top: 10px;
 }
 
-/* ===== 自定义问题输入 ===== */
+/* 自定义问题输入 */
 .custom-issue-area {
-  margin-bottom: var(--space-5);
-  padding: var(--space-4);
-  background: var(--bg-surface-2);
-  border-radius: var(--radius-lg);
-  border: 1px dashed rgba(15, 23, 42, 0.14);
+  margin-bottom: 20px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px dashed #cbd5e1;
 }
 .custom-label {
   font-size: 13px;
-  color: var(--text-tertiary);
-  margin-bottom: var(--space-2);
+  color: #64748b;
+  margin-bottom: 8px;
   font-weight: 500;
 }
 .custom-input-row {
   display: flex;
-  gap: var(--space-2);
+  gap: 8px;
 }
 .custom-input-row .el-input {
   flex: 1;
 }
 
-/* ===== 快速操作按钮组 ===== */
+/* 推荐标签 */
+.issue-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 10px;
+  padding: 2px 6px;
+  background: linear-gradient(135deg, #7c3aed, #ec4899);
+  color: #fff;
+  border-radius: 10px;
+  font-weight: 600;
+}
+.issue-card {
+  position: relative;
+}
+.issue-card.primary {
+  border-color: #7c3aed;
+  background: linear-gradient(135deg, #f5f3ff, #fce7f3);
+}
+
+/* 启动按钮区 */
+.flow-start-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+/* 快速操作按钮组 */
 .flow-quick-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
-  padding: 12px 0 0;
-  border-top: 1px solid var(--border-ghost);
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
 }
 .flow-quick-actions .el-button {
   flex: 1;
-  min-width: 120px;
+  min-width: 80px;
 }
 
-/* ===== 成果展示区 ===== */
+/* 成果展示区 */
 .flow-results {
-  margin-bottom: var(--space-4);
-  background: linear-gradient(135deg, var(--bg-surface-2), #f1f5f9);
-  border-radius: var(--radius-lg);
-  padding: var(--space-4) var(--space-5);
-  border: 1px solid var(--border-ghost);
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  border-radius: 14px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
 }
 .results-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--space-3);
+  margin-bottom: 10px;
 }
 .results-title {
   font-size: 15px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: #0f172a;
 }
 .results-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 10px;
   max-height: 400px;
   overflow-y: auto;
 }
 .result-item {
   display: flex;
-  gap: var(--space-3);
-  padding: 14px;
-  background: var(--bg-raised);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-ghost);
-  transition: all var(--dur-2) var(--ease);
+  gap: 10px;
+  padding: 12px;
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s;
 }
 .result-item:hover {
-  border-color: rgba(124, 58, 237, 0.25);
-  box-shadow: 0 6px 18px -10px rgba(124, 58, 237, 0.20);
+  border-color: #7c3aed;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.1);
 }
 .result-item.analysis { border-left: 3px solid #3b82f6; }
 .result-item.doc { border-left: 3px solid #10b981; }
@@ -2851,12 +2212,12 @@ onUnmounted(() => { if (streamTimer) clearInterval(streamTimer) })
 .result-title {
   font-size: 13px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: #0f172a;
   margin-bottom: 4px;
 }
 .result-body {
   font-size: 12px;
-  color: var(--text-tertiary);
+  color: #64748b;
   line-height: 1.5;
 }
 .result-actions {
@@ -2867,38 +2228,36 @@ onUnmounted(() => { if (streamTimer) clearInterval(streamTimer) })
 /* 展开详情 */
 .result-item.expanded {
   flex-direction: column;
-  padding: 14px 16px;
 }
 .result-item.expanded .result-content {
-  padding-top: var(--space-2);
-  border-top: 1px dashed var(--border-soft);
+  padding-top: 8px;
+  border-top: 1px dashed #e2e8f0;
 }
 .result-detail {
-  margin-top: var(--space-3);
-  padding: var(--space-3);
-  background: var(--bg-surface-2);
-  border: 1px solid var(--border-ghost);
-  border-radius: var(--radius-md);
+  margin-top: 10px;
+  padding: 10px;
+  background: #f8fafc;
+  border-radius: 8px;
   font-size: 12px;
-  color: var(--text-secondary);
+  color: #334155;
   line-height: 1.6;
   white-space: pre-wrap;
   max-height: 300px;
   overflow-y: auto;
 }
 
-/* ===== 当前问题栏 ===== */
+/* 当前问题栏 */
 .flow-current-issue-bar {
-  background: linear-gradient(135deg, var(--violet-50), #e0e7ff);
-  border: 1px solid rgba(124, 58, 237, 0.18);
-  border-radius: var(--radius-lg);
-  padding: var(--space-3) var(--space-4);
-  margin-bottom: var(--space-4);
+  background: linear-gradient(135deg, #ede9fe, #e0e7ff);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  border: 1px solid #c7d2fe;
 }
 .flow-bar-content {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 10px;
 }
 .flow-bar-icon {
   font-size: 20px;
@@ -2909,184 +2268,72 @@ onUnmounted(() => { if (streamTimer) clearInterval(streamTimer) })
   color: #4c1d95;
   flex: 1;
 }
-
-/* ===== 流程模式指示器 · 取代 Line 101 inline ===== */
-.flow-mode-indicator {
-  position: fixed;
-  top: 80px;
-  right: 26px;
-  z-index: 2000;
-  background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
-  color: #fff;
-  padding: 6px 14px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  box-shadow:
-    0 6px 20px -6px rgba(124, 58, 237, 0.55),
-    0 0 0 3px rgba(255, 255, 255, 0.75);
-  letter-spacing: 0.02em;
-}
-
-/* ===== 字段标签行 · 取代 Line 427 inline ===== */
-.field-tags-row {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
 /* ========== 项目创建弹窗 ========== */
-.req-source {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-.dlg-tip {
-  margin: var(--space-2) calc(var(--space-1) * -1) 0;
-}
-.muted {
-  color: var(--text-tertiary);
-  font-size: 12px;
-}
-.mono {
-  font-family: var(--font-mono, Consolas, monospace);
-}
+.req-source { display: flex; flex-wrap: wrap; gap: 8px; }
+.dlg-tip { margin: 8px -4px 0; }
+.muted { color: var(--text-3); font-size: 12px; }
+.mono { font-family: var(--font-mono, monospace); }
 
-/* ========== 产物面板 artifact-panel ========== */
+/* ========== 产物面板 ========== */
 .artifact-panel {
-  margin: var(--space-4) var(--space-5) 0;
-  background: linear-gradient(180deg, #f0f7ff 0%, var(--bg-raised) 40%);
-  border: 1px solid rgba(59, 130, 246, 0.10);
-  border-radius: var(--radius-lg);
-  padding: var(--space-4) var(--space-5) var(--space-3);
-  box-shadow: 0 10px 28px -16px rgba(37, 99, 235, 0.20);
+  margin: 12px 16px 4px;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 40%);
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  padding: 14px 16px 8px;
+  box-shadow: 0 6px 20px -12px rgba(37, 99, 235, 0.25);
 }
 .art-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: var(--space-3);
-  padding-bottom: var(--space-3);
-  border-bottom: 1px dashed var(--border-soft);
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed #cbd5e1;
 }
-.art-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.art-emoji {
-  font-size: 22px;
-}
-.art-proj {
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--text-primary);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.art-meta {
-  margin-left: var(--space-1);
-}
-.art-meta b.hl {
-  color: #059669;
-}
-.art-actions {
-  display: flex;
-  gap: var(--space-2);
-  flex-shrink: 0;
-}
-.art-tabs {
-  margin-top: var(--space-2);
-}
-.art-tabs :deep(.el-tabs__item) {
-  padding: 0 var(--space-3);
-}
+.art-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.art-emoji { font-size: 22px; }
+.art-proj { font-weight: 700; font-size: 15px; color: #0f172a; display: inline-flex; align-items: center; gap: 6px; }
+.art-meta { margin-left: 4px; }
+.art-meta b.hl { color: #059669; }
+.art-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.art-tabs { margin-top: 8px; }
+.art-tabs :deep(.el-tabs__item) { padding: 0 10px; }
 
-/* ===== 总览 over-grid ===== */
-.over-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-3);
-}
-@media (max-width: 960px) {
-  .over-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
+/* 总览 */
+.over-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .over-card {
-  background: var(--bg-raised);
-  border: 1px solid var(--border-ghost);
-  border-radius: var(--radius-md);
-  padding: var(--space-3) var(--space-4);
-  transition: all var(--dur-2) var(--ease);
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 12px;
 }
-.over-card:hover {
-  box-shadow: var(--shadow-sm);
-}
-.over-k {
-  font-size: 12px;
-  color: var(--text-tertiary);
-}
-.over-v {
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-top: 2px;
-  word-break: break-all;
-}
+.over-k { font-size: 12px; color: #64748b; }
+.over-v { font-weight: 600; color: #0f172a; margin-top: 2px; word-break: break-all; }
+@media (max-width: 960px) { .over-grid { grid-template-columns: repeat(2, 1fr); } }
 
-/* ===== 云盘 KB 链接 ===== */
-.kb-links {
-  margin-top: var(--space-4);
-}
-.kb-title {
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-bottom: var(--space-2);
-}
-.kb-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
+.kb-links { margin-top: 14px; }
+.kb-title { font-size: 13px; color: #475569; margin-bottom: 6px; }
+.kb-list { display: flex; flex-wrap: wrap; gap: 6px; }
 .kb-item {
-  padding: 6px 14px;
-  background: linear-gradient(135deg, #f0f9ff, #ecfeff);
-  border: 1px solid rgba(14, 165, 233, 0.18);
-  border-radius: 999px;
+  padding: 6px 10px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 20px;
   font-size: 12px;
   cursor: pointer;
-  transition: all var(--dur-2) var(--ease);
+  transition: all .15s ease;
   display: inline-flex;
-  gap: var(--space-2);
+  gap: 6px;
   align-items: center;
 }
-.kb-item:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-ghost);
-}
-.kb-tag {
-  color: #0369a1;
-  font-weight: 600;
-}
-.kb-name {
-  color: var(--text-primary);
-}
+.kb-item:hover { background: #e0f2fe; transform: translateY(-1px); }
+.kb-tag { color: #0369a1; font-weight: 600; }
+.kb-name { color: #0f172a; }
 
-/* ===== 图谱 mini legend ===== */
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-bottom: var(--space-2);
-}
-.lg {
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  color: #fff;
-}
+/* 图谱 mini */
+.legend { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.lg { padding: 2px 8px; border-radius: 10px; font-size: 11px; color: #fff; }
 .lg-project { background: #4f46e5; }
 .lg-goal { background: #0ea5e9; }
 .lg-actor { background: #10b981; }
@@ -3094,13 +2341,7 @@ onUnmounted(() => { if (streamTimer) clearInterval(streamTimer) })
 .lg-decision { background: #ef4444; }
 .lg-data { background: #8b5cf6; }
 .lg-end { background: #64748b; }
-.nd {
-  color: #fff !important;
-  padding: 0 8px;
-  border-radius: var(--radius-sm);
-  font-size: 11px;
-  font-family: var(--font-mono, Consolas, monospace);
-}
+.nd { color: #fff !important; padding: 0 8px; border-radius: 6px; font-size: 11px; font-family: var(--font-mono, monospace); }
 .nd-project { background: #4f46e5; }
 .nd-goal { background: #0ea5e9; }
 .nd-actor { background: #10b981; color: #064e3b !important; }
@@ -3109,230 +2350,82 @@ onUnmounted(() => { if (streamTimer) clearInterval(streamTimer) })
 .nd-data { background: #8b5cf6; }
 .nd-end { background: #64748b; }
 .nd-default { background: #94a3b8; }
-.edges-box {
-  margin-top: var(--space-3);
-  background: var(--bg-surface-2);
-  border: 1px solid var(--border-ghost);
-  border-radius: var(--radius-md);
-  padding: var(--space-2) var(--space-3);
-  max-height: 240px;
-  overflow: auto;
-}
-.edges-title {
-  font-weight: 600;
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-bottom: var(--space-1);
-}
-.edge-row {
-  font-size: 12px;
-  padding: var(--space-1) 0;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-}
-.edge-type {
-  color: var(--brand-600);
-  background: var(--brand-50);
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-sm);
-  font-size: 11px;
-}
+.edges-box { margin-top: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; max-height: 240px; overflow: auto; }
+.edges-title { font-weight: 600; font-size: 12px; color: #334155; margin-bottom: 4px; }
+.edge-row { font-size: 12px; padding: 2px 0; color: #475569; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.edge-type { color: #6366f1; background: #eef2ff; padding: 0 6px; border-radius: 4px; font-size: 11px; }
 
-/* ===== Mermaid / Code / MD box · 深空配色 ===== */
-.mermaid-box,
-.md-box,
-.code-box {
-  padding: 16px;
-  border-radius: var(--radius-lg);
-  font-size: 13px;
-  line-height: 1.65;
+.mermaid-box, .md-box, .code-box {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.6;
   max-height: 520px;
   overflow: auto;
   white-space: pre-wrap;
   word-break: break-word;
-  font-family: var(--font-mono, Consolas, 'JetBrains Mono', monospace);
-  margin: var(--space-3) 0 var(--space-2);
+  font-family: var(--font-mono, Consolas, monospace);
+  margin: 8px 0 4px;
 }
-.mermaid-box,
-.code-box {
-  background: #0b1120;
-  color: #cbd5e1;
-  border: 1px solid #0b1120;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-}
-.md-box {
-  background: var(--bg-surface-2);
-  color: var(--text-primary);
-  border: 1px solid var(--border-ghost);
-  font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-}
-.erd-head h4 {
-  margin: var(--space-3) 0 var(--space-2);
-  font-size: 13px;
-  color: var(--text-primary);
-}
+.code-box { border: 1px solid #1e293b; }
+.md-box { background: #f8fafc; color: #0f172a; border: 1px solid #e2e8f0; }
+.erd-head h4 { margin: 10px 0 6px; font-size: 13px; color: #0f172a; }
 
-/* ========== 联盟 6 阶段 alliance-box ========== */
-.alliance-box {
-  padding: var(--space-1) var(--space-1);
-}
+/* 联盟 6 阶段 */
+.alliance-box { padding: 4px 2px; }
 .alliance-score-row {
-  display: flex;
-  gap: var(--space-5);
-  align-items: center;
-  background: linear-gradient(135deg, #eef2ff 0%, #ecfeff 60%, #faf5ff 100%);
-  padding: var(--space-5);
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(124, 58, 237, 0.10);
-  margin-bottom: var(--space-4);
+  display: flex; gap: 24px; align-items: center;
+  background: linear-gradient(135deg, #eef2ff 0%, #ecfeff 100%);
+  padding: 16px 20px;
+  border-radius: 14px;
+  border: 1px solid #c7d2fe;
+  margin-bottom: 14px;
 }
 .score-ring {
-  width: 110px;
-  height: 110px;
-  flex-shrink: 0;
+  width: 110px; height: 110px; flex-shrink: 0;
   border-radius: 50%;
-  background:
-    radial-gradient(circle, #fff 56%, transparent 57%),
-    conic-gradient(#6366f1 0 var(--sc, 80%), #e2e8f0 0);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 10px 26px -10px rgba(99, 102, 241, 0.45);
+  background: radial-gradient(circle, #fff 56%, transparent 57%), conic-gradient(#6366f1 0 var(--sc, 80%), #e2e8f0 0);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  box-shadow: 0 4px 18px -6px rgba(99, 102, 241, .35);
 }
-.score-value {
-  font-size: 28px;
-  font-weight: 800;
-  color: #4338ca;
-  line-height: 1.1;
-}
-.score-label {
-  font-size: 11px;
-  color: var(--text-tertiary);
-}
-.alliance-summary {
-  flex: 1;
-  min-width: 0;
-}
-.verdict-line {
-  font-weight: 600;
-  margin-bottom: var(--space-2);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--text-primary);
-}
+.score-value { font-size: 28px; font-weight: 800; color: #4338ca; line-height: 1.1; }
+.score-label { font-size: 11px; color: #64748b; }
+.alliance-summary { flex: 1; min-width: 0; }
+.verdict-line { font-weight: 600; margin-bottom: 6px; display: inline-flex; align-items: center; gap: 8px; }
 .alliance-stages {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-3);
-  margin-bottom: var(--space-3);
+  gap: 10px;
+  margin-bottom: 12px;
 }
-@media (max-width: 1100px) {
-  .alliance-stages { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 700px) {
-  .alliance-stages { grid-template-columns: 1fr; }
-}
+@media (max-width: 1100px) { .alliance-stages { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 700px) { .alliance-stages { grid-template-columns: 1fr; } }
 .stage-card {
-  background: var(--bg-raised);
-  border: 1px solid var(--border-ghost);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
-  transition: all var(--dur-2) var(--ease);
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  transition: all .15s ease;
 }
-.stage-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
-}
-.stage-card.pass {
-  border-color: rgba(16, 185, 129, 0.28);
-  box-shadow: 0 10px 24px -14px rgba(16, 185, 129, 0.45);
-}
-.stage-top {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-2);
-  flex-wrap: wrap;
-}
+.stage-card.pass { border-color: #86efac; box-shadow: 0 6px 14px -10px rgba(16, 185, 129, .4); }
+.stage-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
 .stage-no {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--brand-600);
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: #6366f1; color: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
 }
-.stage-card.pass .stage-no {
-  background: #10b981;
-}
-.stage-name {
-  font-weight: 700;
-  color: var(--text-primary);
-  flex: 1;
-  min-width: 70px;
-}
-.stage-score {
-  font-weight: 800;
-  color: #059669;
-  font-size: 14px;
-}
+.stage-card.pass .stage-no { background: #10b981; }
+.stage-name { font-weight: 700; color: #0f172a; flex: 1; min-width: 70px; }
+.stage-score { font-weight: 800; color: #059669; font-size: 14px; }
 .stage-score.low { color: #dc2626; }
-.stage-score .thr {
-  color: var(--text-quaternary);
-  font-weight: 500;
-  font-size: 12px;
-}
-.stage-summary {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-bottom: var(--space-2);
-  line-height: 1.5;
-}
-.stage-deliver {
-  font-size: 11px;
-  color: var(--text-tertiary);
-}
-.gates-title {
-  font-weight: 600;
-  color: #334155;
-  font-size: 13px;
-  margin: 16px 0 10px;
-}
+.stage-score .thr { color: #94a3b8; font-weight: 500; font-size: 12px; }
+.stage-summary { font-size: 12px; color: #475569; margin-bottom: 6px; line-height: 1.5; }
+.stage-deliver { font-size: 11px; }
+.gates-title { font-weight: 600; color: #334155; font-size: 13px; margin: 10px 0 6px; }
 .txt-ok { color: #059669; }
 .txt-bad { color: #dc2626; }
-.db-head {
-  margin-bottom: var(--space-2);
-}
-
-/* ===== Element Plus 组件覆盖（scoped 内） ===== */
-.chat :deep(.el-dialog) {
-  border-radius: var(--radius-xl) !important;
-  box-shadow: var(--shadow-lg) !important;
-}
-.chat :deep(.el-dialog__header) {
-  padding: 20px 24px;
-}
-.chat :deep(.el-dialog__body) {
-  padding: 10px 24px;
-}
-.chat :deep(.el-dialog__footer) {
-  padding: 14px 24px 20px;
-}
-.chat :deep(.el-table) {
-  --el-table-border-color: var(--border-ghost);
-  --el-table-header-bg-color: var(--bg-surface-2);
-  --el-table-row-hover-bg-color: var(--bg-surface-2);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 1px solid var(--border-ghost);
-}
+.db-head { margin-bottom: 8px; }
 </style>

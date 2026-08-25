@@ -28,7 +28,14 @@ if (Test-Path build) { Remove-Item -Recurse -Force build }
 if (Test-Path dist)  { Remove-Item -Recurse -Force dist }
 
 # 3) 执行 PyInstaller（onedir 模式）
-Write-Host "[3/4] 运行 PyInstaller（torch 较大，请耐心等待，约 5-15 分钟）..."
+Write-Host "[3/4] 运行 PyInstaller（精简版已排除 torch/tensorflow，请耐心等待，约 3-8 分钟）..."
+# 清理源码树中的 .pyc / __pycache__，避免 PyInstaller 增量缓存复用旧字节码
+Get-ChildItem -Path $root -Recurse -Include *.pyc -ErrorAction SilentlyContinue | ForEach-Object {
+    if ($_.FullName -notmatch '[\\/](dist|build)[\\/]') { Remove-Item $_.FullName -Force }
+}
+Get-ChildItem -Path $root -Recurse -Directory -Filter __pycache__ -ErrorAction SilentlyContinue | ForEach-Object {
+    if ($_.FullName -notmatch '[\\/](dist|build)[\\/]') { Remove-Item $_.FullName -Recurse -Force }
+}
 python -m PyInstaller build_exe.spec --noconfirm --clean
 if ($LASTEXITCODE -ne 0) {
     Write-Error "PyInstaller 打包失败，请查看上方报错。"

@@ -1,13 +1,7 @@
 {
-  "strategy": "weighted",
-  "providers": [
-    "llm_deepseek"
-  ],
+  "strategy": "priority",
+  "providers": [],
   "fallback": true,
-  "load_balance": true,
-  "weights": {
-    "llm_deepseek": 1
-  },
-  "applied_from": "run_1787367585949",
-  "applied_at": "2026-08-22T03:00:35.745Z"
+  "load_balance": false,
+  "weights": {}
 }

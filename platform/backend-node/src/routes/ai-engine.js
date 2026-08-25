@@ -1066,6 +1066,7 @@ ${document}
 
   // POST /ai/project-from-chat —— 对话 → 项目：创建项目 + 图谱 + 流程 + ERD + 云盘文档 + 联盟报告 一键编排
   reg('post', '/ai/project-from-chat', async (req, res) => {
+    const startAt = Date.now();
     const body = await readBody(req);
     const name = body.name || body.project_name || '未命名项目';
     const category = body.category || 'custom';

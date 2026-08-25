@@ -40,14 +40,14 @@ pub type RSResult<T> = Result<T, RSError>;
 // GF(2^8) – poly 0x11d, primitive element α = 2.
 // ---------------------------------------------------------------------------
 
-struct GfTables {
-    exp: [u8; 512],
-    log: [u8; 256],
+pub(crate) struct GfTables {
+    pub(crate) exp: [u8; 512],
+    pub(crate) log: [u8; 256],
 }
 
 static GF_TABLES: std::sync::OnceLock<GfTables> = std::sync::OnceLock::new();
 
-fn gf() -> &'static GfTables {
+pub(crate) fn gf() -> &'static GfTables {
     GF_TABLES.get_or_init(|| {
         let mut exp = [0u8; 512];
         let mut log = [0u8; 256];
@@ -84,6 +84,18 @@ pub(crate) fn gf_inv(a: u8) -> u8 {
     let t = gf();
     let la = t.log[a as usize] as usize;
     t.exp[255 - la]
+}
+
+// --- simd import / fallback (T22-1 x86_64 AVX2 GF(2^8) vec mul) ---
+#[cfg(feature = "simd")]
+pub(crate) use crate::gf256_simd::gf_vec_mul_auto;
+
+#[cfg(not(feature = "simd"))]
+pub(crate) fn gf_vec_mul_auto(coef: u8, src: &[u8], dst: &mut [u8]) {
+    assert_eq!(src.len(), dst.len(), "gf_vec_mul_auto: src/dst length mismatch");
+    for i in 0..src.len() {
+        dst[i] = gf_mul(coef, src[i]);
+    }
 }
 
 pub(crate) type Matrix = Vec<Vec<u8>>;
