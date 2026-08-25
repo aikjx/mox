@@ -392,11 +392,11 @@ function Invoke-ScoreTask($t) {
       $rustLog = $null
       Push-Location (Join-Path $PlatformRoot '..')
       try {
-        $logOut = Join-Path $OutDir 'cargo_xuanji_t5.log'
-        # 按 spec：先尝试精确测试名 `t5_2_persistence_provider`；若不存在，退化为 xuanji-system 全量测试
+        $logOut = Join-Path $OutDir 'cargo_mox_t5.log'
+        # 按 spec：先尝试精确测试名 `t5_2_persistence_provider`；若不存在，退化为 mox-system 全量测试
         $psi1 = New-Object System.Diagnostics.ProcessStartInfo
         $psi1.FileName = 'cargo'
-        $psi1.Arguments = "test -p xuanji-system --release t5_2_persistence_provider -- --nocapture"
+        $psi1.Arguments = "test -p mox-system --release t5_2_persistence_provider -- --nocapture"
         $psi1.WorkingDirectory = (Resolve-Path -LiteralPath (Join-Path $PlatformRoot '..')).Path
         $psi1.RedirectStandardOutput = $true
         $psi1.RedirectStandardError = $true
@@ -411,14 +411,14 @@ function Invoke-ScoreTask($t) {
           $rustPass = $true
           ($so1 + "`n" + $se1) | Set-Content -LiteralPath $logOut -Encoding UTF8
         } else {
-          # 精确过滤名若匹配不到（exit !=0 且 stdout 含 "0 passed"），退化：Run-RustCrateTest 'xuanji-system'
+          # 精确过滤名若匹配不到（exit !=0 且 stdout 含 "0 passed"），退化：Run-RustCrateTest 'mox-system'
           if (($so1 + "`n" + $se1) -match 'test result: ok') {
             $rustPass = $true
             ($so1 + "`n" + $se1) | Set-Content -LiteralPath $logOut -Encoding UTF8
           } else {
-            $rr = Run-RustCrateTest 'xuanji-system' 600
+            $rr = Run-RustCrateTest 'mox-system' 600
             $rustPass = [bool]$rr.pass
-            ($so1 + "`n--- fallback Run-RustCrateTest xuanji-system exit=$($rr.exit) ---`n" + $rr.stdout + "`n" + $rr.stderr) | Set-Content -LiteralPath $logOut -Encoding UTF8
+            ($so1 + "`n--- fallback Run-RustCrateTest mox-system exit=$($rr.exit) ---`n" + $rr.stdout + "`n" + $rr.stderr) | Set-Content -LiteralPath $logOut -Encoding UTF8
             if ([string]$rr.log) { $rustLog = "$rustLog ; $($rr.log)" }
           }
         }

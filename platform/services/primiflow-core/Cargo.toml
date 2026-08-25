@@ -7,14 +7,14 @@ authors.workspace = true
 description = "PrimiFlow 全域原语智能平台 · 关联图谱驱动的需求→代码/数据骨架生成层"
 
 [dependencies]
-xuanji-common-meta = { path = "../xuanji-common-meta" }
+mox-common-meta = { path = "../mox-common-meta" }
 flow-ai = { path = "../flow-ai" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 chrono = { workspace = true }
 uuid = { workspace = true }
-xuanji-system = { path = "../xuanji-system" }
+mox-system = { path = "../mox-system" }
 axum = { workspace = true }
 tokio = { workspace = true }
 

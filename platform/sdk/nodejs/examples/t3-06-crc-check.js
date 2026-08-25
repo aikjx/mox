@@ -1,4 +1,4 @@
-const { CloudClient, crc64_ecma } = require("../xuanji-sdk-cloud");
+const { CloudClient, crc64_ecma } = require("../mox-sdk-cloud");
 
 function main() {
   const KNOWN = 0x6C40DF5F0B497347n;

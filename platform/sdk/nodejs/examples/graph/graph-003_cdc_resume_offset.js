@@ -1,4 +1,4 @@
-const { GraphClient } = require("../../xuanji-sdk-graph");
+const { GraphClient } = require("../../mox-sdk-graph");
 const client = new GraphClient({ endpoint: "graph.local" });
 client.cdcNew("consumer-003");
 const result = client.cdcResumeOffset("consumer-003", 42);

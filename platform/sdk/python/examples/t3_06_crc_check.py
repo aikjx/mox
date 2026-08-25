@@ -1,6 +1,6 @@
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from xuanji_sdk_cloud import CloudClient, crc64_ecma
+from mox_sdk_cloud import CloudClient, crc64_ecma
 
 def main():
     KNOWN = 0x6C40DF5F0B497347

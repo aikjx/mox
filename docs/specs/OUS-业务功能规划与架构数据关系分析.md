@@ -28,13 +28,13 @@
 | 算子内核与执行 | operator-core / operator-wasm | 算子 trait、范畴论组合、高维状态、守恒律、WASM 沙箱 | ✅ 已实现（WASM 热加载名不副实，见 §2.5） |
 | 知识图谱 | operator-graph / ai-agent(dialogue_graph) | 加权有向图、PageRank、社区发现、激活传播、推荐、对话自动入图 | ✅ 已实现 |
 | 流程图优化 AI | flow-ai | 并行化、关键路径、冲突检测、资源排程、代码生成、κ‑τ 原语、六维关系网 | ✅ 已实现（内核完备） |
-| 全维治理 / 璇玑 | xuanji-expert | 十四维专家并行诊断、归一裁决、璇玑验证网关、RBAC、审计链、治理闸门 | ⚠️ 库已实现，HTTP 服务可独立跑；runtime 路由未挂载（见 §2.5） |
+| 全维治理 / 璇玑 | mox-expert | 十四维专家并行诊断、归一裁决、璇玑验证网关、RBAC、审计链、治理闸门 | ⚠️ 库已实现，HTTP 服务可独立跑；runtime 路由未挂载（见 §2.5） |
 | 业务全景目录 | business-catalog | 7 条业务建模为流程图 + 跨业务六维关系网，运行中持续优化 | ✅ 已实现 |
 | AI 智能体 | ai-agent | 对话/NLU、算法归一、资源管理、插件总线、工作流、LLM 网关、浏览器自动化、流程图引擎、需求编译、对话图谱 | ✅ 已实现（浏览器为 HTTP 抓取非真无头，见 §2.5） |
 | 算子商城 | runtime(market) | 需求+可编辑流程图算子包，上传/浏览/克隆/版本化/迁移 | ⚠️ 部分：额外路由为死代码（见 §2.5） |
 | AI 自动化中枢 | runtime(automation) | 对话→蓝图/代码/测试/RBAC→沙箱实跑→异常自动修复→回写 | ✅ 已实现 |
 | 外部流系统桥接 | hermes-flow-bridge | 把内核注入 Hermes Agent Ultra，录制/回放/否决 | ⚠️ 默认镜像桩，未真接 Hermes（见 §2.5） |
-| 璇玑系统 | xuanji-system | 成员/任务/权限/通信，独立 HTTP+WS 服务 | ✅ 已实现（独立二进制） |
+| 璇玑系统 | mox-system | 成员/任务/权限/通信，独立 HTTP+WS 服务 | ✅ 已实现（独立二进制） |
 | 模板市场（草莓多） | template-market / ai-agent(caomei) | 系统模板发布/复用/评分，自动生成电商 DDL+Vue | ✅ 已实现（孤立资产层，仅 dev 依赖） |
 | 可视化拓扑前端 | frontend（PrimiFlow 规格） | 拓扑画布、图谱、自动化、商城、璇玑融合等视图 | ✅ 前端已实现；PrimiFlow 规格为上层产品待开发 |
 
@@ -62,7 +62,7 @@
 - **κ‑τ 拓扑原语自涌现引擎**（`primitive.rs`，PrimiFlow 内核，见 §4）
 - 六维关系拓扑检索/级联影响（`topology.rs`）
 
-**D. 全维治理 / 璇玑（xuanji-expert）**
+**D. 全维治理 / 璇玑（mox-expert）**
 - 十四维专家并行诊断（业务7+开发7，`ir.rs:17`）
 - 归一化裁决→flow-ai 求解→治理闸门（`pipeline.rs:41`）
 - ⛨ 璇玑验证网关（最高权限，vetoed→BLOCK，`verify.rs:27`）
@@ -114,13 +114,13 @@
 | operator-graph | 加权有向知识图谱引擎 | operator-core |
 | optimizer | DAG 拓扑/关键路径/贪心调度 | operator-core |
 | flow-ai | 流程图优化 AI 内核（**含 κ‑τ primitive**） | —（零依赖，四方复用） |
-| xuanji-expert | 璇玑十四维专家+治理 | flow-ai |
-| hermes-flow-bridge | Hermes 零侵入注入插件 | flow-ai, xuanji-expert |
-| business-catalog | 7 业务建模+六维关系网 | flow-ai, xuanji-expert |
+| mox-expert | 璇玑十四维专家+治理 | flow-ai |
+| hermes-flow-bridge | Hermes 零侵入注入插件 | flow-ai, mox-expert |
+| business-catalog | 7 业务建模+六维关系网 | flow-ai, mox-expert |
 | ai-agent | AI 智能体八大能力 | operator-core, operator-graph（prod）；flow-ai, template-market（dev） |
 | template-market | 草莓系统模板市场 | —（孤立资产层） |
-| runtime | Axum 总入口+商城+自动化+Cordis | operator-core/graph/wasm, optimizer, ai-agent, business-catalog, xuanji-expert, flow-ai |
-| xuanji-system | 璇玑系统（独立） | —（完全独立） |
+| runtime | Axum 总入口+商城+自动化+Cordis | operator-core/graph/wasm, optimizer, ai-agent, business-catalog, mox-expert, flow-ai |
+| mox-system | 璇玑系统（独立） | —（完全独立） |
 
 **依赖图（mermaid）**
 
@@ -129,7 +129,7 @@ graph TD
   OC[operator-core] --> OW[operator-wasm]
   OC --> OG[operator-graph]
   OC --> OP[optimizer]
-  FA[flow-ai] --> EA[xuanji-expert]
+  FA[flow-ai] --> EA[mox-expert]
   FA --> HB[hermes-flow-bridge]
   FA --> BC[business-catalog]
   EA --> HB
@@ -146,7 +146,7 @@ graph TD
   BC --> RT
   EA --> RT
   FA --> RT
-  AS[xuanji-system] -.独立.-> RT
+  AS[mox-system] -.独立.-> RT
 ```
 
 ### 2.2 primiflow/ 产品规格层
@@ -165,27 +165,27 @@ graph TD
 | LLM SaaS（DeepSeek/OpenAI/Qwen/GLM/Ollama） | ai-agent provider（OpenAI 兼容，无 key 降级规则） | ✅ 可配 | `ai-agent/src/provider.rs` |
 | WASM 第三方算子 | operator-wasm 沙箱（ABI operator_apply） | ⚠️ plugins/ 当前为空 | `operator-wasm/src/lib.rs` |
 | 前端 Vue3 | 经 `/api` 全量对接，axios Bearer 注入 | ✅ | `frontend/src/api/index.js` |
-| xuanji-expert 独立服务 | HTTP /api/optimize /api/ingest（feature=live 推送） | ⚠️ 默认关闭 | `xuanji-expert/src/server.rs` |
-| xuanji-system 独立服务 | HTTP+WS（/api/members,/tasks,/ws…） | ✅ 独立二进制 | `xuanji-system/src/server.rs` |
-| SQLite（operator_dialogue.db / xuanji.db） | rusqlite 本地持久化 | ✅ | `ai-agent/dialogue_graph.rs`, `xuanji-system/store.rs` |
-| 审计 Sink（Syslog/S3/Kafka/NATS/RabbitMQ） | xuanji-expert audit 外部化 | ⚠️ 需额外配置 | `xuanji-expert/src/lib.rs` |
+| mox-expert 独立服务 | HTTP /api/optimize /api/ingest（feature=live 推送） | ⚠️ 默认关闭 | `mox-expert/src/server.rs` |
+| mox-system 独立服务 | HTTP+WS（/api/members,/tasks,/ws…） | ✅ 独立二进制 | `mox-system/src/server.rs` |
+| SQLite（operator_dialogue.db / mox.db） | rusqlite 本地持久化 | ✅ | `ai-agent/dialogue_graph.rs`, `mox-system/store.rs` |
+| 审计 Sink（Syslog/S3/Kafka/NATS/RabbitMQ） | mox-expert audit 外部化 | ⚠️ 需额外配置 | `mox-expert/src/lib.rs` |
 
 ### 2.4 分层架构映射（对齐 README 全业务流程图）
 
 ```
-接入层:  frontend(Vue3/Three.js) · REST(/api/*) · WS(仅 xuanji-system)
+接入层:  frontend(Vue3/Three.js) · REST(/api/*) · WS(仅 mox-system)
 运行时:  runtime(Axum) 鉴权/限流/观测/Cordis/MCP/OpenAPI
-编排层:  flow-ai(拓扑/DAG/CPM/冲突/排程/codegen) · xuanji-expert(多专家融合/治理) · ai-agent(工作流/对话)
+编排层:  flow-ai(拓扑/DAG/CPM/冲突/排程/codegen) · mox-expert(多专家融合/治理) · ai-agent(工作流/对话)
 内核层:  operator-core(公理) · operator-graph(图谱) · operator-wasm(沙箱) · optimizer(DAG)
 数据层:  business-catalog · template-market · SQLite · 外部 LLM/DB/消息
-旁路:    hermes-flow-bridge(外部注入) · xuanji-system(独立璇玑)
+旁路:    hermes-flow-bridge(外部注入) · mox-system(独立璇玑)
 ```
 
 ### 2.5 关键架构发现（后续开发清单的硬输入）
 
 1. **runtime 治理路由未挂载**：`handlers/governance.rs` 整组被注释（`runtime/src/lib.rs:16-21`），`routes/governance` 受 `feature="governance"` 门控且 runtime 未定义该 feature（`routes/mod.rs:6-11`）→ 运行时**不提供 /api/governance/\*** 任何端点（含 WS）。
 2. **商城死代码**：`routes/market.rs::extra_routes()`（download/export-all/import/tenant/owner）未被 `main.rs` 挂载；前端也未调用。
-3. **runtime 主路由无 WebSocket**：`/api/governance/ws` 已定义但未挂载；仅 xuanji-system 提供 WS。
+3. **runtime 主路由无 WebSocket**：`/api/governance/ws` 已定义但未挂载；仅 mox-system 提供 WS。
 4. **WASM “热加载”名不副实**：仅启动期 `load_all` 目录扫描，无文件监听/热重载；`plugins/` 为空；宿主不导入任何函数（强沙箱，但未配 wasmer Fuel 计量）。
 5. **Hermes 未真接**：默认 `hermes_mirror` 镜像桩，`hermes-agent` 路径依赖被注释。
 6. **浏览器自动化非无头**：实为 `reqwest` HTTP 抓取（默认 Bing 搜索+ExtractText），非 Playwright。
@@ -209,10 +209,10 @@ graph TD
 | AutomationAsset | runtime/src/automation_asset.rs:35 | 文件 | 自动化资产 |
 | Business | business-catalog/src/lib.rs:59 | 内存（build fn） | 业务定义 |
 | TopologyGraph | flow-ai/src/topology.rs:160 | 内存 | 六维关系网 |
-| GovernanceReport / AuditChain / AuditEvent | xuanji-expert/src/pipeline.rs:18, govern.rs:50,37 | 内存 + 可选外 Sink | 治理报告/审计链 |
+| GovernanceReport / AuditChain / AuditEvent | mox-expert/src/pipeline.rs:18, govern.rs:50,37 | 内存 + 可选外 Sink | 治理报告/审计链 |
 | VetoEvent / ExpertStatus / RbacConfig | runtime/src/handlers/governance.rs:157,200,280 | 内存（未挂载） | 治理台状态 |
 | SystemTemplate（DDL+Vue） | template-market/src/lib.rs:68 | templates/*.json | 模板市场资产 |
-| Xuanji 领域模型 | xuanji-system/src/model.rs | xuanji.db(SQLite) + 内存 | 成员/任务/通信 |
+| Mox 领域模型 | mox-system/src/model.rs | mox.db(SQLite) + 内存 | 成员/任务/通信 |
 
 ### 3.2 跨 crate 数据流（以 FlowGraph 为中枢）
 
@@ -224,7 +224,7 @@ AIAgent ──requirement_compiler──▶ SystemBlueprint
    │  blueprint_to_flow
    ▼
 FlowGraph(flow-ai) ◀──────────── 被 5 方共享
-   ├──▶ xuanji-expert::xuanji_optimize ──▶ GovernanceReport(AuditChain)
+   ├──▶ mox-expert::mox_optimize ──▶ GovernanceReport(AuditChain)
    ├──▶ business-catalog::Business::optimize ──▶ TopologyGraph(ingest_flow)
    ├──▶ hermes-flow-bridge::optimize_session ──▶ GateState(否决)
    ├──▶ runtime::automation ──▶ codegen ──▶ Python/schema.sql/App.vue
@@ -234,10 +234,10 @@ operator-core / operator-graph / optimizer 作为底层能力被上述各方调�
 
 ### 3.3 持久化方式汇总
 
-- **内存**：operator-core、operator-graph、flow-ai、xuanji-expert（AuditChain 内存哈希链）、runtime 治理台状态。
+- **内存**：operator-core、operator-graph、flow-ai、mox-expert（AuditChain 内存哈希链）、runtime 治理台状态。
 - **文件 JSON**：market 算子包（`$OUS_HOME/market`）、automation 资产、template-market（`templates/`）。
-- **SQLite**：`operator_dialogue.db`（对话+图谱）、`xuanji.db`（璇玑，write-through）。
-- **外部 Sink（可选）**：xuanji-expert audit → Syslog/S3/Kafka/NATS/RabbitMQ。
+- **SQLite**：`operator_dialogue.db`（对话+图谱）、`mox.db`（璇玑，write-through）。
+- **外部 Sink（可选）**：mox-expert audit → Syslog/S3/Kafka/NATS/RabbitMQ。
 
 ### 3.4 实体关系 ER 图（mermaid）
 
@@ -257,16 +257,16 @@ erDiagram
   KNOWLEDGEGRAPH ||--o{ FLOWNODE : "entities from"
   OPERATORPACKAGE ||--o{ FLOWGRAPH : "holds flow"
   SYSTEMTEMPLATE ||--o{ ARTIFACT : "has"
-  XUANJI ||--o{ MEMBER : has
-  XUANJI ||--o{ TASK : has
+  MOX ||--o{ MEMBER : has
+  MOX ||--o{ TASK : has
   MEMBER ||--o{ TASK : assigned
 ```
 
 ### 3.5 事件 / 消息总线
 
 - `ai-agent::plugin_bus`：进程内 pub-sub/p2p/事件（`plugin_bus.rs:18`）。
-- `xuanji-system::event`：领域事件总线 `EventBus`（`event.rs:80`），写后发布→`Reactor` 翻译为通知（`orchestrator.rs:325`）。
-- `xuanji-expert::executor`：`ExecEvent` 时间轴回放（`executor.rs:33`）。
+- `mox-system::event`：领域事件总线 `EventBus`（`event.rs:80`），写后发布→`Reactor` 翻译为通知（`orchestrator.rs:325`）。
+- `mox-expert::executor`：`ExecEvent` 时间轴回放（`executor.rs:33`）。
 - `runtime` 治理台：`broadcast::Sender` 双通道（veto/state），但因路由未挂载当前不生效。
 
 ---
@@ -315,14 +315,14 @@ erDiagram
 ### 5.1 标准一：编译 + 测试全绿（正确性基线）
 
 - 全量构建：`cargo build --workspace`（预期当前**不通过**，因 §2.5 的治理路由注释 + market 破碎代码）。
-- 单 crate 构建：`cargo build -p runtime -p flow-ai -p xuanji-expert`。
+- 单 crate 构建：`cargo build -p runtime -p flow-ai -p mox-expert`。
 - 测试：`cargo test --workspace`；重点：`tests/governance_api.rs`（11 用例）、`template-market` 的 `seed_mall_templates` 断言、各 crate 单元 doctest。
 - 验收线：0 编译错误、0 测试失败。当前已知阻塞需在开发阶段先修复（见 §2.5、§6）。
 
 ### 5.2 标准二：性能基准 + 覆盖率
 
 - 基准：`cargo bench`（benches/ 目录），针对 flow-ai 并行化/CPM、operator-graph PageRank、optimizer 调度建立基线指标。
-- 覆盖率：`cargo tarpaulin`（或 `cargo llvm-cov`），目标核心算法 crate（flow-ai / operator-core / xuanji-expert）≥ 阈值（建议 70%）。
+- 覆盖率：`cargo tarpaulin`（或 `cargo llvm-cov`），目标核心算法 crate（flow-ai / operator-core / mox-expert）≥ 阈值（建议 70%）。
 - 最优判定：关键路径计算耗时、PageRank 迭代收敛、调度延迟均有量化基线且回归不劣化。
 
 ### 5.3 标准三：PT‑Primi 合规校验
@@ -364,7 +364,7 @@ erDiagram
 
 | 术语 | 含义 |
 |------|------|
-| **璇玑 (Xuánjī)** | 归一化 IR 驱动的元调度诊断系统（`xuanji-expert` crate） |
+| **璇玑 (Xuánjī)** | 归一化 IR 驱动的元调度诊断系统（`mox-expert` crate） |
 | **关图 / GR-STD** | 信息关联关系图开发规范 V1.0，「一切皆是信息」 |
 | **AA-STD** | 璇玑-全维需求业务处理流程图-归一化企业级，融合域需求事实基准 |
 | **PT-Primi / PrimiFlow** | 全域拓扑原语架构（κ-τ 调度，守恒律 `C² = κ² + τ²`） |

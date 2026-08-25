@@ -14,7 +14,7 @@
 |---|---|---|---|
 | L2 Gateway | [gateway/runtime/src/routes/ai_engine.rs](file:///d:/a10/aikjx/gitcode/infotopograph/platform/gateway/runtime/src/routes/ai_engine.rs) | Sidecar 文件 proxy | ✅ SPEC-6 基线 |
 | L3 Orchestration | [backend-node/src/routes/atlas.js](file:///d:/a10/aikjx/gitcode/infotopograph/platform/backend-node/src/routes/atlas.js) | 路由 shell + 审计 hash_chain | ✅ SPEC-v4 GREEN |
-| L4 Services (新) | **待新建** `xuanji-cloud-drive` Rust crate | — | ❌ 本次自研重点 |
+| L4 Services (新) | **待新建** `mox-cloud-drive` Rust crate | — | ❌ 本次自研重点 |
 | L5 Domain | **抽自现有** `IChunkBackend` trait | 9 方法抽象（write/read/has/delete/list + MPU 4） | ✅ SPEC-2 GREEN |
 | L6 Kernel | **待新建** 纯运算（纠删码 Reed-Solomon / SHA-256 + CRC 校验矩阵 / 拓扑秩 / LRU 纯算法） | — | ❌ 本次自研重点 |
 | L7 Infra | [chunk-backend.js FSChunk / S3Chunk](file:///d:/a10/aikjx/gitcode/infotopograph/platform/backend-node/src/storage/chunk-backend.js) | 本地 FS + S3 兼容（MinIO/SeaweedFS/OSS）双实现 | ✅ SPEC-2 T2 4 GREEN |
@@ -78,7 +78,7 @@
 
 | 里程碑 | 日历周期 | 人·月 | 交付核心（对齐 AIS 7 层 + 参照最佳项目组件）| 验收清单 |
 |---|---|---|---|---|
-| **M0 基础骨架** | 第 1~3 周 | 2.5 | ① L5 新建 `xuanji-domain-abstractions`：`ObjectStorageProvider` / `MetaStorageProvider` / `ChunkManagerProvider` 三大 trait（JuiceFS Meta/Object 双抽象架构）；② 新建 Rust crate `xuanji-cloud-drive` L4；③ L6 kernel.rs 新建纠删码 Reed-Solomon 纯运算 + CRC32C/Adler32 纯校验 | SPEC TDD：三大 trait + 3 个 mock provider 各 5 GREEN；纠删码 RS(4,2) 恢复测试 5 GREEN |
+| **M0 基础骨架** | 第 1~3 周 | 2.5 | ① L5 新建 `mox-domain-abstractions`：`ObjectStorageProvider` / `MetaStorageProvider` / `ChunkManagerProvider` 三大 trait（JuiceFS Meta/Object 双抽象架构）；② 新建 Rust crate `mox-cloud-drive` L4；③ L6 kernel.rs 新建纠删码 Reed-Solomon 纯运算 + CRC32C/Adler32 纯校验 | SPEC TDD：三大 trait + 3 个 mock provider 各 5 GREEN；纠删码 RS(4,2) 恢复测试 5 GREEN |
 | **M1 Master-Volume 拓扑层**（SeaweedFS 核心分层）| 第 4~9 周 | 5.0 | ① Master（卷分配 · 心跳 · 副本因子 N=2/3）；② Volume Server（条带写入/读取 · 256MiB 卷文件 · 快照/恢复 · 心跳上报）；③ 磁盘 O(1) 寻址：FileID → VolumeID + Offset（SeaweedFS 机制，避免小文件 inode 爆炸）| Master 单节点 1k QPS；Volume 3 副本写后读一致性；10k 小文件写后读取 100% 正确 |
 | **M2 S3 兼容层 + MPU 强化** | 第 10~15 周 | 4.5 | ① Rust S3 Service 104 API（80% 最常⽤ 30 个：Put/Get/Delete/MultipartUpload/ListBuckets/Versions/Tagging/Policy）；② 多版本 + 桶生命周期（30 天过期）+ WORM；③ 服务端加密（SSE-C，企业增强） | s5cmd 或 mc 工具冒烟；5 GB 大文件 MPU ≥1.2GB/s（4 并发）；4 节点 kill-2 后读 100%（EC RS(6,3)）|
 | **M3 POSIX Filer 层**（JuiceFS/Filer 组件） | 第 16~21 周 | 5.0 | ① Filer POSIX：mkdir / symlink / rename / chmod / xattr；② Meta 后端 3 种适配器：SQLite（dev）/ Postgres+Citus（prod）/ Redis（cluster）；③ 客户端 libfuse（Linux）+ Dokan（Windows） | POSIX 测试套件 fio 100%（随机读写 4k / 顺序读 1M）；目录项 1M 不崩（两级哈希前缀）；元数据操作 P99 ≤ 20 ms |
@@ -122,7 +122,7 @@
 │ L3 L3 ORCH Node    workflow wf-file-upload-v1 (5 steps)              │
 │                     wf-cloud-tier-migration（冷热迁移 + 审计）        │
 ├────────────────────────────────────────────────────────────────────┤
-│ L4 RUST CRATE xuanji-cloud-drive  ───────────────────────────────────┤
+│ L4 RUST CRATE mox-cloud-drive  ───────────────────────────────────┤
 │   MasterService / VolumeService / FilerService / S3Service /         │
 │   TieringService / QuotaService / IamStsService                     │
 ├────────────────────────────────────────────────────────────────────┤
@@ -134,7 +134,7 @@
 │   reed_solomon_encode/decode  ·  lru_std_impl ·  sha256_chunk_id     │
 │   raft_log_binary_encode      ·  crc32c_watermark                   │
 ├────────────────────────────────────────────────────────────────────┤
-│ L7 INFRA（xuanji-system 单 crate 独有 rusqlite / remote）           │
+│ L7 INFRA（mox-system 单 crate 独有 rusqlite / remote）           │
 │   FSChunkBackend · S3ChunkBackend（SPEC-2 已有） · RocksDBVolumeStore │
 │   PostgresMetaStore · RedisClusterMetaStore                         │
 └────────────────────────────────────────────────────────────────────┘
@@ -151,8 +151,8 @@
 │                   每 step → workflow_step node + runs_on edge         │
 ├────────────────────────────────────────────────────────────────────┤
 │ L4 RUST CRATES  (已有 graph-algorithms 7 algo 单源 + 新增三 crate)  │
-│   xuanji-graph-meta（R1） ·  xuanji-graph-storage（R2 RocksDB+Raft）│
-│   xuanji-graph-engine（R3 nGQL + Optimizer）                        │
+│   mox-graph-meta（R1） ·  mox-graph-storage（R2 RocksDB+Raft）│
+│   mox-graph-engine（R3 nGQL + Optimizer）                        │
 ├────────────────────────────────────────────────────────────────────┤
 │ L5 DOMAIN 抽象 ── 永远先写 trait 再 impl ────────────────────────────┤
 │   GraphQueryProvider  ·  MetaKvProvider  ·  AlgorithmSingleProvider │
@@ -162,7 +162,7 @@
 │   7 算法纯结构 impl（operator-core） ·  raft_entry_encode / decode   │
 │   vid_hash_std      ·  wal_checksum                                  │
 ├────────────────────────────────────────────────────────────────────┤
-│ L7 INFRA  Xuanji-system ONLY：                                      │
+│ L7 INFRA  Mox-system ONLY：                                      │
 │   RemoteGraphDriver(Gremlin/Nebula) ·  NebulaAdapter CDC L1 Cache    │
 │   RocksDbStore(Nebula R2 参照) ·  PostgresCitusMeta + RedisCache    │
 └────────────────────────────────────────────────────────────────────┘
@@ -173,7 +173,7 @@
 #### 云盘 L5 `ObjectStorageProvider`（JuiceFS pkg/object/interface.go 思想 + 璇玑 IChunkBackend 扩展）
 
 ```rust
-// xuanji-domain-abstractions/src/object_storage.rs
+// mox-domain-abstractions/src/object_storage.rs
 #[async_trait]
 pub trait ObjectStorageProvider: Send + Sync {
     async fn put(&self, key: &str, data: Bytes) -> Result<()>;
@@ -194,7 +194,7 @@ pub trait ObjectStorageProvider: Send + Sync {
 #### 关系图 L5 `GraphQueryProvider`（Nebula GraphService 对外接口 最小子集）
 
 ```rust
-// xuanji-domain-abstractions/src/graph_query.rs
+// mox-domain-abstractions/src/graph_query.rs
 #[async_trait]
 pub trait GraphQueryProvider: Send + Sync {
     async fn insert_vertex(&self, space: &str, vid: i64, tags: Vec<TaggedProps>) -> Result<()>;
@@ -216,24 +216,24 @@ pub trait GraphQueryProvider: Send + Sync {
 
 | 类别 | 路径 | 动作 |
 |---|---|---|
-| Workspace Cargo 成员 | `Cargo.toml` | 追加 `platform/services/xuanji-cloud-drive` / `xuanji-domain-abstractions` |
-| L5 Trait 定义（关键 DIP）| `platform/services/xuanji-domain-abstractions/src/{object_storage,meta_storage,chunk_manager,quota,iam}.rs` | **新建**（JuiceFS 两大接口 + SeaweedFS Quota/IAM）|
+| Workspace Cargo 成员 | `Cargo.toml` | 追加 `platform/services/mox-cloud-drive` / `mox-domain-abstractions` |
+| L5 Trait 定义（关键 DIP）| `platform/services/mox-domain-abstractions/src/{object_storage,meta_storage,chunk_manager,quota,iam}.rs` | **新建**（JuiceFS 两大接口 + SeaweedFS Quota/IAM）|
 | L6 Kernel（纯 std）| `platform/services/operator-core/src/kernel.rs` 追加模块 ReedSolomon / Crc / Lru / RaftEntry | **修改**（不得 use serde 等外部 crate）|
 | L6 Wrapper | `operator-core/src/kernel_ext.rs` | **修改**（serde/nalgebra wrap，原实现已有）|
-| L4 业务 crate | `platform/services/xuanji-cloud-drive/src/{master,volume,filer,s3,tier,quota,iam}.rs` | **新建**（6 个子模块对齐 SeaweedFS/JuiceFS）|
+| L4 业务 crate | `platform/services/mox-cloud-drive/src/{master,volume,filer,s3,tier,quota,iam}.rs` | **新建**（6 个子模块对齐 SeaweedFS/JuiceFS）|
 | L2 Gateway Rust 路由 | `gateway/runtime/src/routes/cloud_drive.rs` + handlers 模块 | **新建**（S3 兼容 30 API 最常用）|
 | Node 编排 | `backend-node/src/workflow-engine.js` 追加 wf-cloud-tier-migration | **修改** |
-| 测试 | `services/xuanji-cloud-drive/tests/{m0_traits_red_green, m1_master_volume, m2_s3_mpu, m3_posix_filer, m4_tier_iam, m5_ha_recovery}.rs` | **新建 6 个套件**（TDD 每 milestone 一套 ≥ 10 GREEN）|
+| 测试 | `services/mox-cloud-drive/tests/{m0_traits_red_green, m1_master_volume, m2_s3_mpu, m3_posix_filer, m4_tier_iam, m5_ha_recovery}.rs` | **新建 6 个套件**（TDD 每 milestone 一套 ≥ 10 GREEN）|
 
 ### 5.2 关系图模块（R0~R5 路径列表）
 
 | 类别 | 路径 | 动作 |
 |---|---|---|
-| Workspace Cargo | `Cargo.toml` | 追加 `xuanji-graph-meta` / `xuanji-graph-storage` / `xuanji-graph-engine`（3 新 crate） + `rocksdb` workspace dep（Apache 2.0）|
-| L5 图抽象 | `xuanji-domain-abstractions/src/{graph_query, graph_meta, graph_algo, partition, cdc}.rs` | **新建**（Nebula 三大服务分层接口）|
+| Workspace Cargo | `Cargo.toml` | 追加 `mox-graph-meta` / `mox-graph-storage` / `mox-graph-engine`（3 新 crate） + `rocksdb` workspace dep（Apache 2.0）|
+| L5 图抽象 | `mox-domain-abstractions/src/{graph_query, graph_meta, graph_algo, partition, cdc}.rs` | **新建**（Nebula 三大服务分层接口）|
 | L4 Crate-Meta | 3 新 crate src/lib.rs 三常量（CRATE_ID/ENGINE/META） | **新建**（T2 规范）|
 | L6 Kernel | operator-core/kernel.rs 新增：raft_encode / vid_hash_std / wal_checksum | **修改**（纯 std 无 extern）|
-| L7 RocksDB impl | xuanji-graph-storage/src/kv_rocksdb.rs | **新建**（C binding rocksdb crate 安全封装）|
+| L7 RocksDB impl | mox-graph-storage/src/kv_rocksdb.rs | **新建**（C binding rocksdb crate 安全封装）|
 | Node 编排 | routes/workflow.js 图分片路由；routes/graph.js 追加 /graph/partition/balance | **修改**（S4 写后 Raft 校验自动幂等重试，SPEC-2 基线）|
 | 测试 | 6 套集成测试（r0_schema / r1_meta_raft / r2_storage_billion / r3_engine_ngql / r4_cdc_flink / r5_xinchuang_ha） | **新建** 每 ≥ 10 GREEN |
 
@@ -243,8 +243,8 @@ pub trait GraphQueryProvider: Send + Sync {
 
 ### 阶段 A：云盘（M0→M5）
 
-1. **M0**：先新建 `xuanji-domain-abstractions` crate → 5 大 trait + mock 实现 → 写测试 30 GREEN → 更新 SPEC 三注册表（T1 方法）→ README 8 节齐（T11 规范）
-2. **M1**：实现 `xuanji-cloud-drive/src/{master,volume}.rs`（Master/Volume 拓扑）→ 依赖注入 L5 trait；RocksDB（或本地 LMDB）存储卷元数据 → 10 GREEN
+1. **M0**：先新建 `mox-domain-abstractions` crate → 5 大 trait + mock 实现 → 写测试 30 GREEN → 更新 SPEC 三注册表（T1 方法）→ README 8 节齐（T11 规范）
+2. **M1**：实现 `mox-cloud-drive/src/{master,volume}.rs`（Master/Volume 拓扑）→ 依赖注入 L5 trait；RocksDB（或本地 LMDB）存储卷元数据 → 10 GREEN
 3. **M2**：S3 Service 30 API 最常用（80% 覆盖）→ Gateway 路由注册 → mc/s5cmd 冒烟测试 → ≥ 20 GREEN
 4. **M3**：Filer POSIX + 3 Meta 后端（SQLite/Postgres/Redis）→ fio 套件冒烟；≥ 25 GREEN
 5. **M4**：Quota/IAM/STS + 分层冷热迁移；审计 hash_chain 已存在，此处加调用
@@ -270,7 +270,7 @@ pub trait GraphQueryProvider: Send + Sync {
 ## 七、Dependencies & Considerations
 
 1. **Rust 生态依赖约束（版本统一 workspace 继承，T4 基线已 GREEN）**：
-   - `rocksdb` 0.22.x（Apache 2.0）仅在 xuanji-graph-storage（L7）引用；禁止进入 L4/L5/L6
+   - `rocksdb` 0.22.x（Apache 2.0）仅在 mox-graph-storage（L7）引用；禁止进入 L4/L5/L6
    - `async-raft` / `raft` 仅 Meta/Storage 服务端
    - `libfuse` / `fuser` 仅云盘 Filer 客户端；不得进 Kernel
    - **不得新增 AGPL 依赖**：避免 MinIO/Neo4j Community 协议感染

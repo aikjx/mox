@@ -1,6 +1,6 @@
 //! 业务全景目录 CLI：把系统所有业务建模为流程图 + 六维关系网，并演示"使用中不断优化"。
 //!
-//! DIP 版：本文件内不再直接引用 xuanji_expert 的 GovernanceReport/algo/gate 等 concrete 字段。
+//! DIP 版：本文件内不再直接引用 mox_expert 的 GovernanceReport/algo/gate 等 concrete 字段。
 //! 统一通过 business_catalog 对外的 ConsultReport（投影）类型展示结果。
 //!
 //! 用法：
@@ -8,7 +8,7 @@
 //!   cargo run -p business-catalog --bin catalog -- --simulate    # 模拟多轮使用后的权重衰减/复用
 
 use business_catalog::{all_businesses, build_topology};
-use xuanji_expert::types::ConsultReport;
+use mox_expert::types::ConsultReport;
 
 fn summarize(rep: &ConsultReport) -> (String, bool, f64) {
     // 从 steps/score/vetoed 提取摘要（旧版 GovernanceReport 的 algo/gate/optimization 已投影到 steps 文本）

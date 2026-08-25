@@ -22,7 +22,7 @@ const os = require('os');
 // (this test does NOT touch json-store, but graph-formulas transitively requires
 //  chunk-backend which tries to read DATA_DIR; we point it to tmp to avoid writes
 //  to production data directory).
-const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'xuanji-t2-algo-'));
+const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'mox-t2-algo-'));
 const DATA_DIR = path.join(TMP, 'data');
 fs.mkdirSync(DATA_DIR, { recursive: true });
 process.env.DB_PROVIDER = 'memory';

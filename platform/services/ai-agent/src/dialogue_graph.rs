@@ -15,8 +15,8 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
-use xuanji_system::persistence_provider::{PersistenceProvider, SqlValue};
-use xuanji_system::sqlite_provider::SqlitePersistence;
+use mox_system::persistence_provider::{PersistenceProvider, SqlValue};
+use mox_system::sqlite_provider::SqlitePersistence;
 
 use crate::llm_client::LLMClient;
 

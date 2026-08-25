@@ -3,7 +3,7 @@
 //! 闭环：Hermes 工具调用 → bridge 录制 FlowGraph → 后台 ExpertConsultant trait 调用（璇玑引擎）
 //!       → 算法验证否决位 → 否决时 ToolExecutionMiddleware 强制拦截。
 //!
-//! DIP 版：不再直接引用 xuanji_expert::pipeline / context / GovernanceReport 等 concrete 结构。
+//! DIP 版：不再直接引用 mox_expert::pipeline / context / GovernanceReport 等 concrete 结构。
 //! 所有引擎调用统一通过 `ExpertConsultant` trait 抽象，展示 `ConsultReport`（投影类型）。
 //!
 //! 运行：cargo run -p hermes-flow-bridge --bin bridge-demo
@@ -14,14 +14,14 @@ use hermes_flow_bridge::router::FlowTemplate;
 use hermes_flow_bridge::state::BridgeState;
 use serde_json::json;
 use std::collections::HashMap;
-use xuanji_expert::types::{ConsultQuery, ConsultReport};
+use mox_expert::types::{ConsultQuery, ConsultReport};
 
 fn main() {
     println!("=== hermes-flow-bridge 闭环演示（零侵入插件注入 · DIP 版）===\n");
 
     let st = BridgeState::new();
 
-    // 注册一张「政务 PII 归集」复用模板（来自 xuanji-expert 关系网最短路径挖掘）
+    // 注册一张「政务 PII 归集」复用模板（来自 mox-expert 关系网最短路径挖掘）
     st.router.register(FlowTemplate {
         id: "gov-pii".into(),
         tool_seq: vec![

@@ -14,7 +14,7 @@ const os = require('os');
 const assert = require('assert');
 
 // 准备临时 SQLite data 目录（二次被 dual-write 作为 secondary）
-const TMP_ROOT = fs.mkdtempSync(path.join(os.tmpdir(), 'xuanji-storage-greent1-'));
+const TMP_ROOT = fs.mkdtempSync(path.join(os.tmpdir(), 'mox-storage-greent1-'));
 const TMP_DATA = path.join(TMP_ROOT, 'data');
 fs.mkdirSync(TMP_DATA, { recursive: true });
 process.env.DB_PROVIDER = 'postgres';
@@ -36,8 +36,8 @@ config.storage.providers.sqlite.path = path.join(TMP_DATA, 'ous.db');
 config.storage.providers.postgresql = {
   host: 'localhost',
   port: 5432,
-  database: 'xuanji_test',
-  user: 'xuanji',
+  database: 'mox_test',
+  user: 'mox',
   password: '',
   options: { max: 4 }
 };

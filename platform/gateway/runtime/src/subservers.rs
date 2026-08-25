@@ -1,13 +1,13 @@
 //! 子服务聚合（Phase 1 收敛）
 //!
 //! 将此前并行的四套 axum server 收敛为库，由 operator-server（runtime）唯一对外暴露：
-//! - [`PREFIX_XUANJI_VIZ`]    ← xuanji-expert  治理可视化 + 一键闭环演示
-//! - [`PREFIX_XUANJI_SYSTEM`] ← xuanji-system  成员/任务/RBAC/审计/WebSocket 协同
+//! - [`PREFIX_MOX_VIZ`]    ← mox-expert  治理可视化 + 一键闭环演示
+//! - [`PREFIX_MOX_SYSTEM`] ← mox-system  成员/任务/RBAC/审计/WebSocket 协同
 //! - [`PREFIX_PRIMIFLOW`]     ← primiflow      六维溯源拓扑引擎（server feature）
 //! - [`PREFIX_FUSION`]        ← primiflow-fusion 融合合成/注册/落库/闸门
 //!
 //! 各子服务可用环境变量独立关闭（默认全部启用）：
-//! `OUS_ENABLE_XUANJI_SYSTEM` / `OUS_ENABLE_XUANJI_VIZ` / `OUS_ENABLE_PRIMIFLOW` / `OUS_ENABLE_FUSION`
+//! `OUS_ENABLE_MOX_SYSTEM` / `OUS_ENABLE_MOX_VIZ` / `OUS_ENABLE_PRIMIFLOW` / `OUS_ENABLE_FUSION`
 //! （取 `0`/`false`/`off`/`no` 时关闭）。
 //!
 //! 鉴权边界（与 `main::auth_middleware` 配合）：
@@ -20,15 +20,15 @@ use std::sync::Arc;
 use axum::Router;
 
 /// 挂载前缀（对外路径）
-pub const PREFIX_XUANJI_SYSTEM: &str = "/xuanji-system";
-pub const PREFIX_XUANJI_VIZ: &str = "/xuanji-viz";
+pub const PREFIX_MOX_SYSTEM: &str = "/mox-system";
+pub const PREFIX_MOX_VIZ: &str = "/mox-viz";
 pub const PREFIX_PRIMIFLOW: &str = "/primiflow";
 pub const PREFIX_FUSION: &str = "/fusion";
 
 /// 透传前缀：由子服务自带鉴权（成员令牌 RBAC）
-pub const PASSTHROUGH_PREFIXES: [&str; 1] = [PREFIX_XUANJI_SYSTEM];
+pub const PASSTHROUGH_PREFIXES: [&str; 1] = [PREFIX_MOX_SYSTEM];
 /// 网关保护前缀：由 `OUS_API_TOKEN` 统一鉴权
-pub const GATEWAY_PREFIXES: [&str; 3] = [PREFIX_XUANJI_VIZ, PREFIX_PRIMIFLOW, PREFIX_FUSION];
+pub const GATEWAY_PREFIXES: [&str; 3] = [PREFIX_MOX_VIZ, PREFIX_PRIMIFLOW, PREFIX_FUSION];
 
 /// 聚合结果
 pub struct SubServers {
@@ -55,51 +55,51 @@ pub async fn build() -> SubServers {
         notes: Vec::new(),
     };
 
-    // 1) xuanji-expert：治理可视化 + 一键闭环演示（原独立服务）
-    if sub_enabled("XUANJI_VIZ") {
-        let state = xuanji_expert::server::AppState::new_state();
+    // 1) mox-expert：治理可视化 + 一键闭环演示（原独立服务）
+    if sub_enabled("MOX_VIZ") {
+        let state = mox_expert::server::AppState::new_state();
         out.routers
-            .push((PREFIX_XUANJI_VIZ, xuanji_expert::server::router(state)));
+            .push((PREFIX_MOX_VIZ, mox_expert::server::router(state)));
         out.notes.push(format!(
-            "  [聚合] xuanji-viz → {PREFIX_XUANJI_VIZ}（治理可视化 + 闭环演示）"
+            "  [聚合] mox-viz → {PREFIX_MOX_VIZ}（治理可视化 + 闭环演示）"
         ));
     }
 
-    // 2) xuanji-system：成员/任务/RBAC/审计/WS 协同（原 :3000 独立服务）
-    if sub_enabled("XUANJI_SYSTEM") {
-        let cfg = xuanji_system::config::AppConfig::load();
-        match xuanji_system::XuanjiSystem::with_config(cfg).await {
+    // 2) mox-system：成员/任务/RBAC/审计/WS 协同（原 :3000 独立服务）
+    if sub_enabled("MOX_SYSTEM") {
+        let cfg = mox_system::config::AppConfig::load();
+        match mox_system::MoxSystem::with_config(cfg).await {
             Ok(sys) => {
                 let sys = Arc::new(sys);
-                if sys.store.xuanji_count().await == 0 {
+                if sys.store.mox_count().await == 0 {
                     match sys
-                        .bootstrap("默认璇玑", "系统管理员", "admin@xuanji.io")
+                        .bootstrap("默认璇玑", "系统管理员", "admin@mox.io")
                         .await
                     {
-                        Ok((xuanji, _admin, token)) => {
+                        Ok((mox, _admin, token)) => {
                             out.notes.push(format!(
-                                "  [聚合] xuanji-system 首次引导：璇玑「{}」id={}，管理员令牌={}",
-                                xuanji.name, xuanji.id, token
+                                "  [聚合] mox-system 首次引导：璇玑「{}」id={}，管理员令牌={}",
+                                mox.name, mox.id, token
                             ));
                         }
                         Err(e) => out
                             .notes
-                            .push(format!("  [聚合] xuanji-system 引导失败（跳过）: {e}")),
+                            .push(format!("  [聚合] mox-system 引导失败（跳过）: {e}")),
                     }
                 } else {
                     out.notes
-                        .push("  [聚合] xuanji-system 已有数据，跳过引导".into());
+                        .push("  [聚合] mox-system 已有数据，跳过引导".into());
                 }
                 let _reactor = sys.start_reactor();
                 out.routers
-                    .push((PREFIX_XUANJI_SYSTEM, xuanji_system::server::app(sys)));
+                    .push((PREFIX_MOX_SYSTEM, mox_system::server::app(sys)));
                 out.notes.push(format!(
-                    "  [聚合] xuanji-system → {PREFIX_XUANJI_SYSTEM}（成员/任务/RBAC/审计/WS）"
+                    "  [聚合] mox-system → {PREFIX_MOX_SYSTEM}（成员/任务/RBAC/审计/WS）"
                 ));
             }
             Err(e) => out
                 .notes
-                .push(format!("  [聚合] xuanji-system 启动失败（已跳过）: {e}")),
+                .push(format!("  [聚合] mox-system 启动失败（已跳过）: {e}")),
         }
     }
 
@@ -165,9 +165,9 @@ pub fn registered_subservers() -> Vec<Subserver> {
             timeout_ms: 1500,
         },
         Subserver {
-            name: "xuanji-expert-alliance",
+            name: "mox-expert-alliance",
             purpose: "专家联盟 6 阶段全维分析引擎（Rust crate，内嵌于本 runtime）",
-            url: "builtin://xuanji-expert/alliance".into(),
+            url: "builtin://mox-expert/alliance".into(),
             health: "/ai/engine/alliance/capabilities".into(),
             required: true,
             timeout_ms: 800,
@@ -212,7 +212,7 @@ mod tests {
         assert!(voice.health.starts_with("/voice/"));
         let alliance = list
             .iter()
-            .find(|s| s.name == "xuanji-expert-alliance")
+            .find(|s| s.name == "mox-expert-alliance")
             .expect("alliance必须注册");
         assert!(alliance.health.starts_with("/ai/engine/"));
     }

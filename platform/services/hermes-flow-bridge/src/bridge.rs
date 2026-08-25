@@ -1,12 +1,12 @@
-//! AIS-SPEC-9001：企业级统一契约头 —— 模块名 bridge.rs\n//! AIS-REV-1：自描述接口 · 幂等 · 可观测 · 零外部副作用（网络/IO 仅限封装函数）\n//! AIS-REV-2：公开项 pub fn/pub struct 必须具备 /// 文档注释与错误语义说明\n//! AIS-REV-3：遵循 XUANJI-AIS-通用 标准，禁止占位实现宏遗留\n\n//! Step 7：后台优化推送 + 算法否决拦截接线。
+//! AIS-SPEC-9001：企业级统一契约头 —— 模块名 bridge.rs\n//! AIS-REV-1：自描述接口 · 幂等 · 可观测 · 零外部副作用（网络/IO 仅限封装函数）\n//! AIS-REV-2：公开项 pub fn/pub struct 必须具备 /// 文档注释与错误语义说明\n//! AIS-REV-3：遵循 MOX-AIS-通用 标准，禁止占位实现宏遗留\n\n//! Step 7：后台优化推送 + 算法否决拦截接线。
 //!
-//! DIP 版：此文件**不再** `use xuanji_expert::xuanji_optimize` 等具体函数 / struct。
+//! DIP 版：此文件**不再** `use mox_expert::mox_optimize` 等具体函数 / struct。
 //! 全部璇玑引擎调用统一通过：
-//!   - `xuanji_expert::expert_traits::ExpertConsultant` trait 抽象
-//!   - `xuanji_expert::types::{ConsultQuery, ConsultReport}` 数据投影
+//!   - `mox_expert::expert_traits::ExpertConsultant` trait 抽象
+//!   - `mox_expert::types::{ConsultQuery, ConsultReport}` 数据投影
 //!   - 默认实现通过 `expert_traits::default_consultant()` 工厂注入（不出现 concrete struct 名字）。
 //!
-//! 真实集成时，可改为 HTTP 请求 xuanji-expert 独立服务（POST /api/optimize / verify）；
+//! 真实集成时，可改为 HTTP 请求 mox-expert 独立服务（POST /api/optimize / verify）；
 //! 只要实现 ExpertConsultant trait 即可，无需改业务代码（中间件、录制器、拦截位均不变）。
 //!
 //! 共享 `Arc<dyn ExpertConsultant>` 放在 `BridgeState.consultant`；独立 `optimize_session`
@@ -19,8 +19,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
-use xuanji_expert::expert_traits::ExpertConsultant;
-use xuanji_expert::types::{ConsultQuery, ConsultReport};
+use mox_expert::expert_traits::ExpertConsultant;
+use mox_expert::types::{ConsultQuery, ConsultReport};
 
 /// 把 FlowGraph 序列化为 JSON + 默认 Hermes 主体/租户参数，构造 ConsultQuery。
 ///
@@ -50,7 +50,7 @@ pub fn optimize_session(graph: &FlowGraph, gate: &GateState) -> ConsultReport {
     optimize_session_with(
         graph,
         gate,
-        xuanji_expert::expert_traits::default_consultant(),
+        mox_expert::expert_traits::default_consultant(),
     )
 }
 
@@ -88,7 +88,7 @@ pub fn spawn_optimizer(recorder: Recorder, gate: GateState) -> Arc<()> {
     spawn_optimizer_with(
         recorder,
         gate,
-        xuanji_expert::expert_traits::default_consultant(),
+        mox_expert::expert_traits::default_consultant(),
     )
 }
 
@@ -180,7 +180,7 @@ mod tests {
             },
         );
         let g = st.recorder.snapshot("default").unwrap();
-        // DIP 证据：通过 st.consultant trait object 调用，不直接出现 xuanji-expert 具体 struct。
+        // DIP 证据：通过 st.consultant trait object 调用，不直接出现 mox-expert 具体 struct。
         let rep = optimize_session_with(&g, &st.gate, st.consultant.clone());
         assert!(rep.score >= 0.0 && rep.score <= 1.0);
         // 简单合法图应通过（不触发否决）
@@ -193,7 +193,7 @@ mod tests {
 
     #[test]
     fn optimize_session_with_mock_trait_object() {
-        // DIP 证据：用一个最小 Mock 实现 ExpertConsultant（在 tests 内部，不依赖 xuanji concrete），
+        // DIP 证据：用一个最小 Mock 实现 ExpertConsultant（在 tests 内部，不依赖 mox concrete），
         // 证明 optimize_session_with 可脱离真实璇玑引擎运行。
         // 只覆写 consult_blocking（同步默认方法，不触发 tokio runtime）即可满足 sync 测试路径。
         use async_trait::async_trait;
@@ -201,19 +201,19 @@ mod tests {
         // 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
         struct MockHealthy;
         #[async_trait]
-        // 说明：impl xuanji_expert —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
+        // 说明：impl mox_expert —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
         // 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
-        impl xuanji_expert::expert_traits::ExpertConsultant for MockHealthy {
+        impl mox_expert::expert_traits::ExpertConsultant for MockHealthy {
             async fn consult(
                 &self,
                 _q: &ConsultQuery,
-            ) -> xuanji_expert::types::Result<ConsultReport> {
+            ) -> mox_expert::types::Result<ConsultReport> {
                 unreachable!("sync 测试路径使用 consult_blocking，不应走到 async consult")
             }
             fn consult_blocking(
                 &self,
                 q: &ConsultQuery,
-            ) -> xuanji_expert::types::Result<ConsultReport> {
+            ) -> mox_expert::types::Result<ConsultReport> {
                 Ok(ConsultReport {
                     report_id: q.id.clone(),
                     steps: vec!["mock".into()],

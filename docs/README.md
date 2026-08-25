@@ -20,19 +20,19 @@ docs/
 ├── specs/               # 🟢 企业级规范：PT-STD（Primi 架构）/ GR-STD（关图规范）/ OUS 业务规划
 ├── full-dimensional/    # 🟢 关图骨架 + 编号索引 + 治理台 API + 原始过程稿归档
 │   ├── guantu-skeleton.md                  # 🟢 GR-STD-V1.0 关图骨架（REQ 根 + 六维绑定 + 偏离检测）
-│   ├── xuanji-requirement-baseline.md      # 🟢 编号归一化收口（①-⑩ / C1-C8 → S1-S8）
+│   ├── mox-requirement-baseline.md      # 🟢 编号归一化收口（①-⑩ / C1-C8 → S1-S8）
 │   ├── GOVERNANCE_CONSOLE_API_READY_20260816.md  # 🟢 治理台 API 契约（RBAC/审计链）
-│   ├── xuanji-tracematrix.html             # 🟡 六维绑定可视化（与 full-dimensional 源同位）
+│   ├── mox-tracematrix.html             # 🟡 六维绑定可视化（与 full-dimensional 源同位）
 │   └── (原始文档已归一承载于 guantu-skeleton，已迁 `docs/_archive/2026-08-16/`)
-├── modules/             # 🟡 模块级设计 / 参考文档（market/automation/数学内核/业务流程/xuanji-expert 系列/设计蓝图）
+├── modules/             # 🟡 模块级设计 / 参考文档（market/automation/数学内核/业务流程/mox-expert 系列/设计蓝图）
 ├── graph/               # 关图机读产物：graph.json / graph.enterprise.json / guantu.req.json + requests/ 判重入口
 ├── ai-architecture/     # AI 架构专题：ai-unified-intelligent-system-architecture.html（AUS · L4 Agentic 闭环）
-├── _archive/2026-08-16/ # 🟡 过程稿 / 验证快照归档（PrimiFlow-*-20260816、xuanji-expert-验证总结-20260816，非权威）
+├── _archive/2026-08-16/ # 🟡 过程稿 / 验证快照归档（PrimiFlow-*-20260816、mox-expert-验证总结-20260816，非权威）
 ├── 璇玑-全维需求业务处理流程图-归一化企业级.md   # 🟢 AA-STD-V1.0 融合域唯一事实基准（位于 docs/ 根）
 ├── 璇玑-全维需求业务处理流程图-归一化企业级.html/.mmd  # 🟡 AA-STD 可视化（与 .md 同位）
 ├── 璇玑-璇玑验证子流程-归一化企业级.html     # 🟡 S6 验证网关子流程可视化（与 AA-STD 同位）
 ├── 璇玑-全维流水线.mmd                      # 🟡 全维流水线机读图（与 AA-STD 同位）
-├── xuanji-system-business-architecture.html # 🟡 全维度分层架构交互图（源 architecture.md，同位 root）
+├── mox-system-business-architecture.html # 🟡 全维度分层架构交互图（源 architecture.md，同位 root）
 ├── architecture.md       # 🟢 OUS 父系统总架构（v7.0 · L2 Rust 自研底座视角）
 ├── enterprise-architecture-analysis.md  # 🟢 双璇玑十四维能力矩阵
 ├── GLOSSARY.md           # 🟢 唯一术语事实源（DOC-GLOSSARY-V1.1 · 7 新术语已注册）
@@ -46,7 +46,7 @@ docs/
 
 ## 2. 编号归一化基准（唯一）
 
-全维分析流程**唯一阶段基准 = AA-STD 的 S1-S8**；闸门 **G0-G3**；护栏 **G-A~G-E**；规范 **GR-STD / PT-STD**。编码层 ①-⑩ 与旧 C1-C8 仅作对照，不独立使用。详见 `docs/full-dimensional/xuanji-requirement-baseline.md` §2 与 `docs/enterprise/00-INDEX.md` §1.2。
+全维分析流程**唯一阶段基准 = AA-STD 的 S1-S8**；闸门 **G0-G3**；护栏 **G-A~G-E**；规范 **GR-STD / PT-STD**。编码层 ①-⑩ 与旧 C1-C8 仅作对照，不独立使用。详见 `docs/full-dimensional/mox-requirement-baseline.md` §2 与 `docs/enterprise/00-INDEX.md` §1.2。
 
 ---
 

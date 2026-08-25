@@ -11,7 +11,7 @@
       "name": "T0-03 (T-工程-03): cargo fmt 0差异",
       "cmd": "cargo fmt --all -- --check",
       "exit_code": 1,
-      "stdout_trimmed": "Diff in platform/services/xuanji-system/tests/t6_dip_orchestrator.rs:527:\n-            \"子任务 id 必须以前缀+父 id 构成；实际：{} vs 父 id {}\", sub.id, parent.id\n+            \"子任务 id 必须以前缀+父 id 构成；实际：{} vs 父 id {}\",\n+            sub.id,\n+            parent.id\n         );\n         assert_eq!(sub.title, \"child-1\");\n     }\n     ...(略，总计涉及 persistence_provider_crud.rs 与 t6_dip_orchestrator.rs 多个片段，全部是格式换行/缩进差异)...\nDiff in persistence_provider_crud.rs:425: INSERT notifications 参数列表分多行；DELETE / query_one 链拆为多行\nEXITCODE=1",
+      "stdout_trimmed": "Diff in platform/services/mox-system/tests/t6_dip_orchestrator.rs:527:\n-            \"子任务 id 必须以前缀+父 id 构成；实际：{} vs 父 id {}\", sub.id, parent.id\n+            \"子任务 id 必须以前缀+父 id 构成；实际：{} vs 父 id {}\",\n+            sub.id,\n+            parent.id\n         );\n         assert_eq!(sub.title, \"child-1\");\n     }\n     ...(略，总计涉及 persistence_provider_crud.rs 与 t6_dip_orchestrator.rs 多个片段，全部是格式换行/缩进差异)...\nDiff in persistence_provider_crud.rs:425: INSERT notifications 参数列表分多行；DELETE / query_one 链拆为多行\nEXITCODE=1",
       "pass": false,
       "threshold": "exit_code=0",
       "so_t": "Rustfmt官方规范/20 D7 G1"
@@ -25,7 +25,7 @@
       "pass": false,
       "threshold": "exit_code=0 (0 warnings)",
       "so_t": "11 §6 棘轮基线 0 warn",
-      "stdout_trimmed": "    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments\n    = note: `-D clippy::too-many-arguments` implied by `-D warnings`\n    = help: to override `-D warnings` add `#[allow(clippy::too_many_arguments)]`\n\nerror: method `from_str` can be confused for the standard trait method `std::str::FromStr::from_str`\n  --> platform\\services\\xuanji-graph-meta\\src\\schema_store.rs:30:5\n   |\n30 | /     pub fn from_str(s: &str) -> Option<Self> {\n31 | |         Some(match s {\n32 | |             \"String\" | \"string\" => FieldType::String,\n33 | |             \"Int\" | \"int\" | \"integer\" => FieldType::Int,\n...  |\n38 | |         })\n39 | |     }\n   | |_____^\n   |\n   = help: consider implementing the trait `std::str::FromStr` or choosing a less ambiguous method name\n   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#should_implement_trait\n\nerror: could not compile `xuanji-graph-meta` (lib) due to 11 previous errors"
+      "stdout_trimmed": "    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments\n    = note: `-D clippy::too-many-arguments` implied by `-D warnings`\n    = help: to override `-D warnings` add `#[allow(clippy::too_many_arguments)]`\n\nerror: method `from_str` can be confused for the standard trait method `std::str::FromStr::from_str`\n  --> platform\\services\\mox-graph-meta\\src\\schema_store.rs:30:5\n   |\n30 | /     pub fn from_str(s: &str) -> Option<Self> {\n31 | |         Some(match s {\n32 | |             \"String\" | \"string\" => FieldType::String,\n33 | |             \"Int\" | \"int\" | \"integer\" => FieldType::Int,\n...  |\n38 | |         })\n39 | |     }\n   | |_____^\n   |\n   = help: consider implementing the trait `std::str::FromStr` or choosing a less ambiguous method name\n   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#should_implement_trait\n\nerror: could not compile `mox-graph-meta` (lib) due to 11 previous errors"
     },
     {
       "id": "T0-01_workspace_UT",
@@ -40,7 +40,7 @@
       "pass": false,
       "threshold": "passed>=649 AND failed=0",
       "so_t": "11 §6 棘轮基线 649+ / 0 failed",
-      "stdout_trimmed": "26 | pub use result_set::{ResultSet, PropValue};\n   |                                 ^^^^^^^^^ no `PropValue` in `result_set`\n   |\n   = help: consider importing this enum instead:\n           xuanji_graph_storage::PropValue\nhelp: a similar name exists in the module\n   |\n26 - pub use result_set::{ResultSet, PropValue};\n26 + pub use result_set::{ResultSet, PathValue};\n   |\n\nSome errors have detailed explanations: E0432, E0583.\nFor more information about an error, try `rustc --explain E0432`.\nerror: could not compile `xuanji-graph-service` (lib) due to 6 previous errors\nwarning: build failed, waiting for other jobs to finish...\nwarning: `xuanji-standards` (test \"t14_standards_matrix\") generated 2 warnings (run `cargo fix --test \"t14_standards_matrix\" -p xuanji-standards` to apply 2 suggestions)\nwarning: `xuanji-cloud-drive-s3` (lib) generated 1 warning\nwarning: `xuanji-graph-meta` (lib test) generated 3 warnings (3 duplicates)\nwarning: `xuanji-graph-storage` (lib) generated 2 warnings (run `cargo fix --lib -p xuanji-graph-storage` to apply 2 suggestions)\nwarning: `xuanji-graph-meta` (lib) generated 3 warnings (run `cargo fix --lib -p xuanji-graph-meta` to apply 1 suggestion)"
+      "stdout_trimmed": "26 | pub use result_set::{ResultSet, PropValue};\n   |                                 ^^^^^^^^^ no `PropValue` in `result_set`\n   |\n   = help: consider importing this enum instead:\n           mox_graph_storage::PropValue\nhelp: a similar name exists in the module\n   |\n26 - pub use result_set::{ResultSet, PropValue};\n26 + pub use result_set::{ResultSet, PathValue};\n   |\n\nSome errors have detailed explanations: E0432, E0583.\nFor more information about an error, try `rustc --explain E0432`.\nerror: could not compile `mox-graph-service` (lib) due to 6 previous errors\nwarning: build failed, waiting for other jobs to finish...\nwarning: `mox-standards` (test \"t14_standards_matrix\") generated 2 warnings (run `cargo fix --test \"t14_standards_matrix\" -p mox-standards` to apply 2 suggestions)\nwarning: `mox-cloud-drive-s3` (lib) generated 1 warning\nwarning: `mox-graph-meta` (lib test) generated 3 warnings (3 duplicates)\nwarning: `mox-graph-storage` (lib) generated 2 warnings (run `cargo fix --lib -p mox-graph-storage` to apply 2 suggestions)\nwarning: `mox-graph-meta` (lib) generated 3 warnings (run `cargo fix --lib -p mox-graph-meta` to apply 1 suggestion)"
     },
     {
       "id": "T0-09_dead_code_le8",
@@ -50,7 +50,7 @@
       "pass": false,
       "threshold": "<=8",
       "so_t": "13 §3 棘轮基线",
-      "stdout_trimmed": "DEAD_CODE_COUNT=62，Top样本：\nplatform/gateway/runtime/src/ai_router.rs:73,90,118,124,126 (5处)\nplatform/gateway/runtime/src/api_standard.rs:110-122 连续 7 处（#73开始）\nplatform/sdk/rust/xuanji-sdk-graph/src/lib.rs:2 (整crate级!)\nplatform/services/ai-agent/src/resource_manager.rs:52 等（共62处，见完整 dead_code 扫描记录）"
+      "stdout_trimmed": "DEAD_CODE_COUNT=62，Top样本：\nplatform/gateway/runtime/src/ai_router.rs:73,90,118,124,126 (5处)\nplatform/gateway/runtime/src/api_standard.rs:110-122 连续 7 处（#73开始）\nplatform/sdk/rust/mox-sdk-graph/src/lib.rs:2 (整crate级!)\nplatform/services/ai-agent/src/resource_manager.rs:52 等（共62处，见完整 dead_code 扫描记录）"
     },
     {
       "id": "T0-03_algo_reconcile_56",

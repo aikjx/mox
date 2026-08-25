@@ -3,7 +3,7 @@
 /**
  * validate-v21-features.js
  * ============================================================
- * Xuanji v2.1 Feature HTTP Integration Validator (Node.js v18+)
+ * Mox v2.1 Feature HTTP Integration Validator (Node.js v18+)
  *
  * Zero dependencies - only native: http(s), child_process, crypto, fs, path.
  *
@@ -88,9 +88,9 @@ function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 let serverChild = null;
 function startServer() {
     return new Promise((resolve, reject) => {
-        log('SERVER', 'Spawning xuanji-server via cargo run ...');
+        log('SERVER', 'Spawning mox-server via cargo run ...');
         const args = [
-            'run', '-p', 'xuanji-server',
+            'run', '-p', 'mox-server',
             '--features', 'simd,gm-sm,glacier',
             '--', '--single-node',
         ];
@@ -128,7 +128,7 @@ function startServer() {
                 resolved = true;
                 clearTimeout(safetyTimer);
                 reject(new Error(`Cargo exited before server ready (code=${code} sig=${sig}). `
-                    + `Please run "cargo build -p xuanji-server --features simd,gm-sm,glacier" first, or install Rust toolchain dependencies.`));
+                    + `Please run "cargo build -p mox-server --features simd,gm-sm,glacier" first, or install Rust toolchain dependencies.`));
             });
         } catch (e) {
             reject(e);
@@ -230,10 +230,10 @@ async function checkV4b() {
             addResult('V-4b-METRICS-SIMD', 'fail', `GET /metrics returned ${r.status}`);
             return;
         }
-        const hasSimd = /xuanji_ec_encode_avx2_bytes_total/.test(r.body);
+        const hasSimd = /mox_ec_encode_avx2_bytes_total/.test(r.body);
         // Accept presence OR fallback to OK if counter not emitted yet.
         if (hasSimd) {
-            addResult('V-4b-METRICS-SIMD', 'pass', 'Contains counter xuanji_ec_encode_avx2_bytes_total');
+            addResult('V-4b-METRICS-SIMD', 'pass', 'Contains counter mox_ec_encode_avx2_bytes_total');
         } else {
             addResult('V-4b-METRICS-SIMD', 'pass',
                 'GET /metrics returned 200 OK (SIMD counter name not found in body; 200 OK counts per fallback rule). Body length=' + r.body.length);
@@ -336,11 +336,11 @@ async function main() {
         } catch (e) {
             console.error('');
             console.error('==========================================================');
-            console.error('[FATAL] Could not start xuanji-server.');
+            console.error('[FATAL] Could not start mox-server.');
             console.error('Error: ' + e.message);
             console.error('');
             console.error('Please build first or install dependencies, e.g.:');
-            console.error('  cargo build -p xuanji-server --features simd,gm-sm,glacier');
+            console.error('  cargo build -p mox-server --features simd,gm-sm,glacier');
             console.error('  rustup toolchain install stable');
             console.error('==========================================================');
             process.exit(1);
@@ -405,7 +405,7 @@ function printSummary() {
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
         const jsonPath = path.join(dir, 'v21-feature-validation-summary.json');
         const payload = {
-            schema: 'xuanji-v21-feature-validation@1',
+            schema: 'mox-v21-feature-validation@1',
             timestamp_utc: new Date().toISOString(),
             target: SERVER_BASE,
             total: RESULTS.length,

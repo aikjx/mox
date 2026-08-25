@@ -110,8 +110,8 @@ pub struct AllianceCapabilities {
 pub async fn alliance_capabilities_handler(
     State(_state): State<Arc<AiEngineState>>,
 ) -> Json<AllianceCapabilities> {
-    use xuanji_expert::alliance::constants as c;
-    use xuanji_expert::ir::Dimension;
+    use mox_expert::alliance::constants as c;
+    use mox_expert::ir::Dimension;
 
     // 14 维 + 优先级
     let all_14 = [
@@ -132,7 +132,7 @@ pub async fn alliance_capabilities_handler(
     ];
     let dims: Vec<(&'static str, i32)> = all_14
         .iter()
-        .map(|(d, name)| (*name, xuanji_expert::dim_priority(*d)))
+        .map(|(d, name)| (*name, mox_expert::dim_priority(*d)))
         .collect();
 
     let mut hc = BTreeMap::new();
@@ -154,7 +154,7 @@ pub async fn alliance_capabilities_handler(
         intent_classes_7: c::INTENT_CLASSES,
         dimensions_14: dims,
         hc_params: hc,
-        audit_events_7: xuanji_expert::alliance::gate::AUDIT_EVENTS_7,
+        audit_events_7: mox_expert::alliance::gate::AUDIT_EVENTS_7,
         health: "GET /ai/engine/alliance/capabilities 返回 200 即健康",
     })
 }
@@ -164,7 +164,7 @@ pub async fn alliance_full_sse_handler(
     State(_state): State<Arc<AiEngineState>>,
     Json(req_in): Json<AllianceFullRequest>,
 ) -> Sse<impl futures::Stream<Item = Result<Event, Infallible>>> {
-    use xuanji_expert::alliance::{AllianceEngine, AllianceOptions, AllianceRequest};
+    use mox_expert::alliance::{AllianceEngine, AllianceOptions, AllianceRequest};
 
     let engine = AllianceEngine::new();
     let options = AllianceOptions {
@@ -240,7 +240,7 @@ pub async fn alliance_report_handler(
     State(_state): State<Arc<AiEngineState>>,
     Query(q): Query<ReportQuery>,
 ) -> Json<serde_json::Value> {
-    use xuanji_expert::alliance::constants as c;
+    use mox_expert::alliance::constants as c;
     let tid = q
         .trace_id
         .clone()

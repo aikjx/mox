@@ -17,7 +17,7 @@ function test(name, fn) {
   catch (e) { failed++; console.error('  FAIL ', name, '\n    ', (e && e.message) + '\n' + (e.stack || '').split('\n').slice(1, 5).join('\n')); }
 }
 
-const WORK_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'xuanji-t72-'));
+const WORK_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'mox-t72-'));
 process.env.DATA_DIR = WORK_DIR;
 process.env.STORAGE_PROVIDER = 'sqlite';
 

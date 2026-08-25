@@ -129,7 +129,7 @@ class FSChunkBackend extends IChunkBackend {
 class S3ChunkBackend extends IChunkBackend {
   constructor(options = {}) {
     super(options);
-    this.bucket = options.bucket || process.env.S3_CHUNKS_BUCKET || 'xuanji-chunks';
+    this.bucket = options.bucket || process.env.S3_CHUNKS_BUCKET || 'mox-chunks';
     this.region = options.region || process.env.AWS_REGION || 'us-east-1';
     this.endpoint = options.endpoint || process.env.S3_ENDPOINT || undefined;
     this.forcePathStyle = options.forcePathStyle !== undefined

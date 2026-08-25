@@ -7,9 +7,9 @@ authors.workspace = true
 description = "用璇玑架构把全部业务建模为流程图 + 六维关系网，并在使用中不断优化"
 
 [dependencies]
-xuanji-common-meta = { path = "../xuanji-common-meta" }
+mox-common-meta = { path = "../mox-common-meta" }
 flow-ai = { path = "../flow-ai" }
-xuanji-expert = { path = "../xuanji-expert" }
+mox-expert = { path = "../mox-expert" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 

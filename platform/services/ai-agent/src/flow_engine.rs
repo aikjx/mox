@@ -1,4 +1,4 @@
-//! AIS-SPEC-9001：企业级统一契约头 —— 模块名 flow_engine.rs\n//! AIS-REV-1：自描述接口 · 幂等 · 可观测 · 零外部副作用（网络/IO 仅限封装函数）\n//! AIS-REV-2：公开项 pub fn/pub struct 必须具备 /// 文档注释与错误语义说明\n//! AIS-REV-3：遵循 XUANJI-AIS-通用 标准，禁止占位实现宏遗留\n\n//! 流程图驱动引擎 - AI综合处理核心
+//! AIS-SPEC-9001：企业级统一契约头 —— 模块名 flow_engine.rs\n//! AIS-REV-1：自描述接口 · 幂等 · 可观测 · 零外部副作用（网络/IO 仅限封装函数）\n//! AIS-REV-2：公开项 pub fn/pub struct 必须具备 /// 文档注释与错误语义说明\n//! AIS-REV-3：遵循 MOX-AIS-通用 标准，禁止占位实现宏遗留\n\n//! 流程图驱动引擎 - AI综合处理核心
 //!
 //! 支持节点类型：
 //! - Start/End: 流程控制

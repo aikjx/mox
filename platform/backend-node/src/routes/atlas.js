@@ -413,15 +413,15 @@ module.exports = function registerAtlasRoutes(ctx) {
         pushCheck('ais_l6_std_only', true, `mock fallback green (ex: ${e.message})`);
       }
 
-      // ③ dip_traits_bound：Rust 侧 DIP 特征绑定——检查 common_meta traits 存在（xuanji_common_meta::DipBound 或读 lib.rs 模式）
+      // ③ dip_traits_bound：Rust 侧 DIP 特征绑定——检查 common_meta traits 存在（mox_common_meta::DipBound 或读 lib.rs 模式）
       try {
-        const metaRs = path.join(PROJECT_ROOT, 'crates', 'xuanji-common-meta', 'src', 'lib.rs');
+        const metaRs = path.join(PROJECT_ROOT, 'crates', 'mox-common-meta', 'src', 'lib.rs');
         const platformRs = [path.join(PROJECT_ROOT, 'platform', 'services', 'ai-agent', 'src', 'lib.rs'),
           path.join(PROJECT_ROOT, 'platform', 'gateway', 'runtime', 'src', 'lib.rs')];
         let found = fs.existsSync(metaRs);
         if (!found) {
           for (const fp of platformRs) {
-            if (fs.existsSync(fp)) { const s = fs.readFileSync(fp, 'utf-8'); if (/xuanji_common_meta|Dip|trait|CrateMeta/.test(s)) { found = true; break; } }
+            if (fs.existsSync(fp)) { const s = fs.readFileSync(fp, 'utf-8'); if (/mox_common_meta|Dip|trait|CrateMeta/.test(s)) { found = true; break; } }
           }
         }
         if (!found) {

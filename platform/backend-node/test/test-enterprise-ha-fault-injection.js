@@ -18,7 +18,7 @@ const crypto = require('crypto');
 let passed = 0, failed = 0;
 function test(name, fn) { try { fn(); passed++; console.log('  PASS ', name); } catch (e) { failed++; console.error('  FAIL ', name, '\n    ', e.message); } }
 
-const WORK_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'xuanji-t14-'));
+const WORK_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'mox-t14-'));
 process.env.DATA_DIR = WORK_DIR;
 process.env.STORAGE_PROVIDER = 'memory';
 const configPath = path.resolve(__dirname, '..', 'src', 'config.js');

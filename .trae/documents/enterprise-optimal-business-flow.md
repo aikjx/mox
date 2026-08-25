@@ -1,6 +1,6 @@
 # 璇玑 · 企业级最优业务处理流程（Best-Practice Business Flow · 100% 自研图谱驱动）v1.0
 
-> 配套文档：对比报告 `xuanji-vs-opensource-comparison-report.md`
+> 配套文档：对比报告 `mox-vs-opensource-comparison-report.md`
 > 验收脚本：`scripts/run-enterprise-final-acceptance.ps1`
 
 ## 0. 业务治理总原则
@@ -65,7 +65,7 @@
 ```
 
 ### 2.2 触发条件 → 调度层自动识别
-- **timer**：`xuanji-system` 的 scheduler service → 周期/日历触发。
+- **timer**：`mox-system` 的 scheduler service → 周期/日历触发。
 - **http**：`routes/*.js` 注册 → OUS_API_TOKEN 鉴权前置。
 - **mq**：`hermes-flow-bridge` live 推送带超时 + 指数退避。
 - **graph-event**：图谱节点写入 → `kg-hub` 发布 → 下游订阅联动。
@@ -92,15 +92,15 @@ Layer 4  Operator / operator-core / operator-wasm → 标准 IOperator 契约
   ↓ 依赖抽象接口
 Layer 3  Service  / 21 workspace service crate + Node 路由域
   ↓ 依赖抽象接口
-Layer 2  Abstractions / xuanji-domain-abstractions + xuanji-standards
+Layer 2  Abstractions / mox-domain-abstractions + mox-standards
   ↓ 依赖抽象接口
-Layer 1  Domain   / business-catalog / kg-hub / xuanji-common-meta 等业务域
+Layer 1  Domain   / business-catalog / kg-hub / mox-common-meta 等业务域
 ```
 
 ### 3.1 依赖倒置原则（DIP）校验
 - **高层模块不依赖底层实现**，只依赖抽象 trait。
 - `t6_dip_orchestrator.rs` 中 9 处 `unimplemented!()` → 全部替换为真实 Mock，验证 DIP 成立（11/11 绿）。
-- `xuanji-system/src/orchestrator.rs` 禁止直接 `use crate::services::*`，必须用 abstract trait。
+- `mox-system/src/orchestrator.rs` 禁止直接 `use crate::services::*`，必须用 abstract trait。
 
 ### 3.2 单源归一化（杜绝重复开发）
 以下功能仅允许存在 **一处** 真实实现，其他位置只能是薄封装：
@@ -108,7 +108,7 @@ Layer 1  Domain   / business-catalog / kg-hub / xuanji-common-meta 等业务域
 | 功能 | Source of Truth | 其他使用方 |
 |---|---|---|
 | 图算法 PageRank/Degree/Betweenness | `src/graph/graph-formulas.js` | `graph-algos.js` / Rust `graph-algorithms` crate / `ai-flow-graph.js` 薄封装 |
-| 意图识别 Intent Detect | `xuanji-common-meta/src/intent.rs` | xuanji-system / ai-agent / flow-ai 只调 intent 抽象接口 |
+| 意图识别 Intent Detect | `mox-common-meta/src/intent.rs` | mox-system / ai-agent / flow-ai 只调 intent 抽象接口 |
 | 日志双写 + 容量策略 | `src/lib/logger.js` LOG_CAPACITY=50000 | system.js /logs/append 复用 same constant + push 语义 |
 | JSON 存储读写 | `src/lib/json-store.js` writeJSON=磁盘优先、readJSON=存储优先 | 所有 ctx.readJSON/writeJSON 调用都走此 |
 | 模板引擎 | `ai-agent/src/engine/tools.rs` 单一 TemplateEngine 实例 | ai-agent 所有 tool 不允许重复实现 MiniJinja/Tera 引擎 |
@@ -131,20 +131,20 @@ Layer 1  Domain   / business-catalog / kg-hub / xuanji-common-meta 等业务域
 | `platform/services/flow-ai` | 数据流编排 |
 | `platform/services/primiflow-core` | 原生流程内核（示例模板 ≥ 15，已禁止 todo!()） |
 | `platform/services/primiflow-fusion` | 多流融合 |
-| `platform/services/xuanji-system` | 系统服务（DIP 严格、已通过 11 条 DIP 测试） |
-| `platform/services/xuanji-expert` | 专家联盟引擎 |
+| `platform/services/mox-system` | 系统服务（DIP 严格、已通过 11 条 DIP 测试） |
+| `platform/services/mox-expert` | 专家联盟引擎 |
 | `platform/services/hermes-flow-bridge` | 跨系统桥接（带 catch_unwind + 指数退避、超时） |
 | `platform/services/ai-agent` | Agent 调度（DatabaseTool 三级 fallback：file → memory → disabled） |
 | `platform/services/optimizer` | 无限优化器 |
 | `platform/services/business-catalog` | 业务目录 |
 | `platform/services/template-market` | 模板市场 |
 | `platform/services/kg-hub` | 知识图谱 Hub |
-| `platform/services/xuanji-common-meta` | 公共元（意图识别 Source of Truth） |
-| `platform/services/xuanji-domain-abstractions` | 业务域抽象（trait 定义层） |
-| `platform/services/xuanji-standards` | 标准（版本、契约、合规） |
-| `platform/services/xuanji-graph-meta` | 图谱元数据（与 registry 互查） |
-| `platform/services/xuanji-cloud-drive-master` | 云盘主节点 |
-| `platform/services/xuanji-cloud-drive-volume` | 云盘卷节点 |
+| `platform/services/mox-common-meta` | 公共元（意图识别 Source of Truth） |
+| `platform/services/mox-domain-abstractions` | 业务域抽象（trait 定义层） |
+| `platform/services/mox-standards` | 标准（版本、契约、合规） |
+| `platform/services/mox-graph-meta` | 图谱元数据（与 registry 互查） |
+| `platform/services/mox-cloud-drive-master` | 云盘主节点 |
+| `platform/services/mox-cloud-drive-volume` | 云盘卷节点 |
 | `platform/gateway/runtime` | Gateway runtime（handlers/ai_engine：stub → 真实 fallback summary） |
 
 ### 4.2 Rust 开发禁令
@@ -274,7 +274,7 @@ pwsh ./scripts/run-enterprise-final-acceptance.ps1
 ## 10. 交付物汇总（一次完整交付的清单）
 
 ```
-xuanji-release-v3/
+mox-release-v3/
 ├── Cargo.toml                        # 21 workspace 成员
 ├── platform/
 │   ├── services/                     # 20 service crates (src/lib.rs + tests/)
@@ -296,7 +296,7 @@ xuanji-release-v3/
 │   ├── logs.json                     # 审计日志（含种子事件）
 │   └── artifacts/tictactoe.html      # 可玩游戏模板（>3KB）
 └── .trae/documents/
-    ├── xuanji-vs-opensource-comparison-report.md   # 自研 vs 开源对比
+    ├── mox-vs-opensource-comparison-report.md   # 自研 vs 开源对比
     └── enterprise-optimal-business-flow.md          # 本文档
 ```
 

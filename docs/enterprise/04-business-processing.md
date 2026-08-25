@@ -5,7 +5,7 @@
 > **权威链**：🟢 L0 → [`18-全域顶层总设计-三联盟模式-V1.0.md`](18-全域顶层总设计-三联盟模式-V1.0.md)（TOP-MASTER §四：10 大标准业务流程）。本文为 L2 第三级（业务层）。
 > **主责联盟**：产品联盟（业务规则定义） + 开发联盟（流程实现） · 会签：算法联盟（BP-6/BP-9 算法落地）
 > **配套**：`01-requirements.md`、`02-architecture.md`、`03-design.md`
-> **权威来源**：`docs/modules/xuanji-expert-business-requirements.md`（BR-01…BR-21、GAP 清单）
+> **权威来源**：`docs/modules/mox-expert-business-requirements.md`（BR-01…BR-21、GAP 清单）
 >
 > **流程强制标准（对齐 18 §四.4 四归三连）**：每流程 6 字段必齐——①编号 ②主责联盟 ③前置条件 ④核心步骤 ⑤闸门规则 ⑥审计与产物。
 
@@ -62,16 +62,16 @@
 |--------|------|
 | **RA 主责联盟** | 产品联盟（发起） + 开发联盟（`orchestrator.bootstrap` 实现） |
 | **前置条件** | BP-9 判重通过；多租户命名在全局唯一；bootstrap 令牌一次性有效 |
-| **核心步骤** | 1.1 创建璇玑实体（多租户隔离单位）→ 1.2 创建首位管理员（状态 Active）→ 1.3 授 XuanjiAdmin@Global → 1.4 惰性创建「璇玑大厅」频道 → 1.5 签发访问令牌 |
+| **核心步骤** | 1.1 创建璇玑实体（多租户隔离单位）→ 1.2 创建首位管理员（状态 Active）→ 1.3 授 MoxAdmin@Global → 1.4 惰性创建「璇玑大厅」频道 → 1.5 签发访问令牌 |
 | **闸门规则** | BR-01 璇玑须先于成员/任务存在；命名全局冲突 → 拒绝；bootstrap 令牌过期/重复使用 → 拒绝；唯一无鉴权入口（bootstrap）限一次调用 |
-| **审计与产物** | DomainEvent=`XuanjiCreated`；首次令牌哈希入库；RBAC 绑定=1（首管理员）；产物=璇玑 ID + 大厅频道 ID |
+| **审计与产物** | DomainEvent=`MoxCreated`；首次令牌哈希入库；RBAC 绑定=1（首管理员）；产物=璇玑 ID + 大厅频道 ID |
 
 ### BP-2 专家入璇玑
 | 6 字段 | 内容 |
 |--------|------|
 | **RA 主责联盟** | 产品联盟（专家角色定义） + 开发联盟（`MemberService`） |
-| **前置条件** | BP-1 完成（璇玑存在）；调用者持 `member:invite@Xuanji`；被邀 email 经 BR-04 幂等检查 |
-| **核心步骤** | 2.1 鉴权 `member:invite@Xuanji`（BR-02）→ 2.2 创建成员（Invited）→ 2.3 授 **Expert@Xuanji（最小权限，BR-03 禁止授 Global）** → 2.4 发 `MemberInvited` → 通知+大厅播报 → 2.5 激活 `Invited→Active`（BR-05） |
+| **前置条件** | BP-1 完成（璇玑存在）；调用者持 `member:invite@Mox`；被邀 email 经 BR-04 幂等检查 |
+| **核心步骤** | 2.1 鉴权 `member:invite@Mox`（BR-02）→ 2.2 创建成员（Invited）→ 2.3 授 **Expert@Mox（最小权限，BR-03 禁止授 Global）** → 2.4 发 `MemberInvited` → 通知+大厅播报 → 2.5 激活 `Invited→Active`（BR-05） |
 | **闸门规则** | BR-03 不得越权授 Global；BR-04 同 email 重复 → Conflict；跨璇玑成员注入 → 三重校验 Forbidden |
 | **审计与产物** | DomainEvent=MemberInvited/MemberActivated；成员 Tier 档案初始化；璇玑成员列表增量；幂等冲突审计 |
 
@@ -79,8 +79,8 @@
 | 6 字段 | 内容 |
 |--------|------|
 | **RA 主责联盟** | 产品联盟（REQP → TSK 拆解） + 开发联盟（`TaskService::create`） |
-| **前置条件** | BP-9 判重登记（REQ 根在图上）；BP-2 专家激活；调用者持 `task:create@Xuanji`；`06-requirements-architecture-map.md` 已登记对应映射行（四归三连强制） |
-| **核心步骤** | 3.1 鉴权 `task:create@Xuanji` → 3.2 建任务（Draft，assignees=[]，**BR-06 立项不得自带分派**）→ 3.3 发 TaskCreated → 大厅播报 → 3.4 自动 Bind：REQ→FUN→BIZ→ALG→TSK（六维绑定 Chain 写入关图） |
+| **前置条件** | BP-9 判重登记（REQ 根在图上）；BP-2 专家激活；调用者持 `task:create@Mox`；`06-requirements-architecture-map.md` 已登记对应映射行（四归三连强制） |
+| **核心步骤** | 3.1 鉴权 `task:create@Mox` → 3.2 建任务（Draft，assignees=[]，**BR-06 立项不得自带分派**）→ 3.3 发 TaskCreated → 大厅播报 → 3.4 自动 Bind：REQ→FUN→BIZ→ALG→TSK（六维绑定 Chain 写入关图） |
 | **闸门规则** | assignees 非空 → 拒绝；REQ 根在关图不可达 → 偏离告警并阻断（GR-E6） |
 | **审计与产物** | DomainEvent=TaskCreated；关图新增 `TSK-*` 节点 + Bind 边 ×5；追踪矩阵导出行 |
 
@@ -88,7 +88,7 @@
 | 6 字段 | 内容 |
 |--------|------|
 | **RA 主责联盟** | 开发联盟（Coordinator 角色执行） · 产品联盟 C |
-| **前置条件** | BP-3 完成；调用者持 `task:assign@Xuanji` |
+| **前置条件** | BP-3 完成；调用者持 `task:assign@Mox` |
 | **核心步骤** | 4.1 鉴权 `task:assign` → 4.2 读当前状态 → 4.3 写 assignees，`Draft→Assigned`，**BR-07 分派身份三重校验（存在/同璇玑/Active，GAP-2 跨租户 P0 已闭环）** → 4.4 被分派者加入任务频道 → 4.5 发 `TaskAssigned` → 通知+系统消息 |
 | **闸门规则** | BR-07 任一不满足 → Forbidden/InvalidState；BR-08 全量覆盖语义；历史 assignees 未在新集合 → 自动退订通知 |
 | **审计与产物** | DomainEvent=TaskAssigned；RBAC assignee 写入审计；频道成员增量 |
@@ -107,7 +107,7 @@
 |--------|------|
 | **RA 主责联盟** | 算法联盟（14 维诊断 / 裁决 / CPM+RCPSP） + 开发联盟（流水线编排） |
 | **前置条件** | BP-5 InReview/Done；流程图唯一 FlowGraph（已归一化）；`06` 映射行存在 |
-| **核心步骤** | XuanjiFusionView → `POST /api/optimize` → `xuanji_optimize(raw, ctx)`：归一化 IR → 14 专家并行会诊 → reconcile 裁决 → flow-ai CPM+RCPSP 最优求解 → ⛨璇玑验证（G2） → 治理闸门（G3） |
+| **核心步骤** | MoxFusionView → `POST /api/optimize` → `mox_optimize(raw, ctx)`：归一化 IR → 14 专家并行会诊 → reconcile 裁决 → flow-ai CPM+RCPSP 最优求解 → ⛨璇玑验证（G2） → 治理闸门（G3） |
 | **闸门规则** | BR-13 治理一票否决（安全/合规专家 veto → Blocked）；BR-14 5 项不变式（真依赖不剪/真并行无数据竞争）；BR-15 加速比 ≥2.32×、省时 50%、算力压缩 52.9% 可解释 |
 | **审计与产物** | GovernanceReport（专家分 + 裁决 + ⛨结论 + G3 签名 + 哈希链）；优化前后关键路径对比可视化；产物可上传算子市场草稿态 |
 
@@ -116,7 +116,7 @@
 |--------|------|
 | **RA 主责联盟** | **三联盟会签**（产品=组织验收 · 算法=技术验收 · 开发=可观测性/可部署性） |
 | **前置条件** | BP-5 Done ∧ BP-6 GovernanceReport.approved=true |
-| **核心步骤** | 7.1 产品联盟确认「任务 Done、需求覆盖、合规口径」→ 7.2 算法联盟确认「⛨vetoed=false、无 Blocking 风险」→ 7.3 开发联盟确认「clippy 0 warning、测试全绿、可部署包就绪」→ 7.4 `POST /api/xuanji/publish` → 算子市场上架 |
+| **核心步骤** | 7.1 产品联盟确认「任务 Done、需求覆盖、合规口径」→ 7.2 算法联盟确认「⛨vetoed=false、无 Blocking 风险」→ 7.3 开发联盟确认「clippy 0 warning、测试全绿、可部署包就绪」→ 7.4 `POST /api/mox/publish` → 算子市场上架 |
 | **闸门规则** | **BR-16 双验收 AND**：组织 Done 为假 → 拒绝；融合 G2/G3 任一未过 → 拒绝；上架请求缺失 BR-17 元数据（璇玑/任务 ID、优化前后指标）→ 拒绝 |
 | **审计与产物** | Publish 事件 + 双验收签名；算子市场条目含来源追溯 ProvenanceMetrics；可一键回滚下架 |
 
@@ -187,7 +187,7 @@ Left → [*]: 终态不可复活 [BR-21]
 |------|------|:--:|------|:--:|
 | BR-01 | 完整性 | P1 | 璇玑须先于成员/任务存在 | ✅ |
 | BR-02 | 安全 | P0 | 写操作统一鉴权 | ✅ |
-| BR-03 | 安全 | P0 | 受邀成员最小权限 Expert@Xuanji | ✅ |
+| BR-03 | 安全 | P0 | 受邀成员最小权限 Expert@Mox | ✅ |
 | BR-04 | 一致性 | P1 | 邀请幂等（同 email） | ✅ |
 | BR-05 | 完整性 | P0 | 仅 Active 可承接任务 | ✅ |
 | BR-06 | 职责分离 | P1 | 立项不得自带分派 | ✅ |
@@ -238,7 +238,7 @@ Left → [*]: 终态不可复活 [BR-21]
 
 - 本文聚焦**协作治理域**业务处理（成员/任务/权限/通信）。
 - **企业级流程执行**（WorkflowEngine + 6 模板）见 `docs/modules/business-process-flows.md`；可视化见 `docs/modules/business-process-flowcharts.md`。
-- **融合优化链路**见 `docs/modules/xuanji-expert-alliance-fusion-flows.md`。
+- **融合优化链路**见 `docs/modules/mox-expert-alliance-fusion-flows.md`。
 
 ---
 

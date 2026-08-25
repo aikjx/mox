@@ -5,36 +5,47 @@ members = [
     "platform/services/graph-algorithms",
     "platform/services/optimizer",
     "platform/services/flow-ai",
-    "platform/services/xuanji-expert",
+    "platform/services/mox-expert",
     "platform/services/hermes-flow-bridge",
     "platform/services/business-catalog",
     "platform/services/ai-agent",
     "platform/services/template-market",
     "platform/gateway/runtime",
-    "platform/services/xuanji-system",
+    "platform/services/mox-system",
     "platform/services/primiflow-core",
     "platform/services/primiflow-fusion",
     "platform/services/kg-hub",
-    "platform/services/xuanji-common-meta",
-    "platform/services/xuanji-domain-abstractions",
-    "platform/services/xuanji-cloud-drive-master",
-    "platform/services/xuanji-cloud-drive-volume",
-    "platform/services/xuanji-standards",
-    "platform/services/xuanji-graph-meta",
-    "platform/services/xuanji-cloud-drive-s3",
-    "platform/services/xuanji-graph-storage",
-    "platform/sdk/rust/xuanji-sdk-cloud",
-    "platform/sdk/rust/xuanji-sdk-graph",
-    "platform/services/xuanji-cloud-drive-filer",
-    "platform/services/xuanji-graph-service",
-    "platform/services/xuanji-graph-streams",
-    "platform/services/xuanji-graph-spark",
-    "platform/services/xuanji-compliance",
-    "platform/services/xuanji-fusion",
-    "platform/services/xuanji-etl-wasm",
-    "platform/services/xuanji-data-plane",
-    "platform/services/xuanji-server",
-    "platform/services/xuanji-t21-harness",
+    "platform/services/mox-common-meta",
+    "platform/services/mox-domain-abstractions",
+    "platform/services/mox-cloud-drive-master",
+    "platform/services/mox-cloud-drive-volume",
+    "platform/services/mox-standards",
+    "platform/services/mox-graph-meta",
+    "platform/services/mox-cloud-drive-s3",
+    "platform/services/mox-graph-storage",
+    "platform/sdk/rust/mox-sdk-cloud",
+    "platform/sdk/rust/mox-sdk-graph",
+    "platform/services/mox-cloud-drive-filer",
+    "platform/services/mox-graph-service",
+    "platform/services/mox-graph-streams",
+    "platform/services/mox-graph-spark",
+    "platform/services/mox-compliance",
+    "platform/services/mox-fusion",
+    "platform/services/mox-etl-wasm",
+    "platform/services/mox-data-plane",
+    "platform/services/mox-server",
+    "platform/services/mox-t21-harness",
+    "platform/services/mox-ai-core",
+    # ===== MOX 计算密集核心（rust 最高性能算法权威单源） =====
+    "platform/crates/mox-formulas-core",
+    "platform/crates/mox-norm-core",
+    "platform/crates/mox-intent-core",
+    "platform/crates/xiaobai-dsp",
+    # ===== Node.js napi 绑定（按需单独构建：需 node/npm 环境；默认不随 workspace check 触发）
+    #   "platform/crates/bindings/mox-formulas-native",
+    #   "platform/crates/bindings/mox-norm-intent-native",
+    # ===== Python PyO3 扩展（按需单独构建：PYO3_PYTHON 必须指向 py39+；当前系统默认 py38 与 abi3-py39 冲突）
+    #   "platform/crates/bindings/xiaobai-dsp-py",
 ]
 resolver = "2"
 
@@ -42,7 +53,7 @@ resolver = "2"
 version = "3.0.0-ai-powered"
 edition = "2021"
 license = "MIT"
-authors = ["Xuanji - 最高权限璇玑"]
+authors = ["Mox - 最高权限璇玑"]
 description = "Unified Operator System - AI-Driven Full-Dimensional Breakthrough Platform"
 
 [workspace.dependencies]
@@ -105,16 +116,49 @@ tokio-tungstenite = "0.21"
 futures = "0.3"
 futures-util = "0.3"
 
-# CLI framework for single-binary xuanji server
+# CLI framework for single-binary mox server
 clap = { version = "4", features = ["derive", "env", "unicode", "wrap_help"] }
 
 # Observability
 prometheus = { version = "0.13", default-features = false, features = ["process"] }
 
-# Persistence: query builder & SQL drivers (xuanji-system uses backends at compile-time)
+# Persistence: query builder & SQL drivers (mox-system uses backends at compile-time)
 sea-query = "0.32"
 sqlx = "0.8"
 
 # Internal crates
-xuanji-common-meta = { path = "platform/services/xuanji-common-meta" }
-xuanji-graph-service = { path = "platform/services/xuanji-graph-service" }
+mox-common-meta = { path = "platform/services/mox-common-meta" }
+mox-graph-service = { path = "platform/services/mox-graph-service" }
+
+# ================================================================
+# MOX 计算密集核心（统一 workspace 依赖版本，避免 FFI 绑定版本漂移）
+# ================================================================
+# 高性能哈希（比 std HashMap 快 2~3×，用于归一化/意图/Aho-Corasick goto）
+hashbrown = { version = "0.15", features = ["rayon", "inline-more"] }
+ahash = { version = "0.8", features = ["compile-time-rng", "serde"] }
+
+# 数据结构辅助
+bstr = "1.10"
+indexmap = { version = "2.7", features = ["serde", "rayon"] }
+
+# 多模式字符串匹配：Aho-Corasick（Rust 最高性能实现，支持 leftmost-first）
+aho-corasick = "1.1"
+
+# 并行迭代（rayon 已在 Core deps 声明，此处确保 feature 完整）
+# SIMD f32 向量：f32x4（语音 DSP 响度归一/软限幅加速）
+wide = "0.8"
+
+# napi-rs 绑定（Node.js native，ABI-stable N-API）
+napi = { version = "2.16", default-features = false, features = ["async", "serde-json", "napi8"] }
+napi-derive = "2.16"
+
+# PyO3 扩展（Python ≥3.9，abi3-py39 稳定 ABI，兼容 xiaobai_voice py312）
+# numpy 数组互操作：pyo3 0.22 开始 numpy feature 移除，改用独立 numpy crate（0.22 对应 pyo3 0.22+）
+pyo3 = { version = "0.22", features = ["extension-module", "abi3-py39"] }
+numpy = "0.22"
+
+# 内部核心 crates 路径
+mox-formulas-core = { path = "platform/crates/mox-formulas-core" }
+mox-norm-core = { path = "platform/crates/mox-norm-core" }
+mox-intent-core = { path = "platform/crates/mox-intent-core" }
+xiaobai-dsp = { path = "platform/crates/xiaobai-dsp" }

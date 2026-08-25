@@ -12,10 +12,10 @@
 ## 0. AIS 分层索引
 
 ```
-L1 基础设施   ── xuanji-common-meta（AisLayer / CrateMeta · 所有 crate 只读依赖）
+L1 基础设施   ── mox-common-meta（AisLayer / CrateMeta · 所有 crate 只读依赖）
 L2 平台网关   ── runtime（HTTP / sidecar / 服务组装）
 L3 应用协同   ── primiflow-fusion（跨域流程组合）
-L4 领域服务   ── xuanji-system, xuanji-expert, ai-agent, hermes-flow-bridge,
+L4 领域服务   ── mox-system, mox-expert, ai-agent, hermes-flow-bridge,
 │                 business-catalog, template-market
 L5 抽象适配   ── flow-ai（FlowGraph 抽象，跨领域复用）
 L6 内核算子   ── operator-core, operator-wasm（纯算子，0 I/O）
@@ -27,7 +27,7 @@ L?            ── （L10 UX 暂由 Node.js frontend 承载，不属 Rust crat
 
 ---
 
-## 1. `xuanji-common-meta` (L1Infra · CRATE_ID: `a1c2b3d4-…`)
+## 1. `mox-common-meta` (L1Infra · CRATE_ID: `a1c2b3d4-…`)
 ```rust
 pub enum AisLayer { L1Infra, L2Platform, L3Application, L4Services, L5Abstraction, L6Kernel, L7Flow, L8Data, L9Algo, L10UX, Unknown }
 pub struct CrateMeta { pub id: &'static str, pub name: &'static str, pub version: &'static str, pub layer: AisLayer, pub owner: &'static str }
@@ -103,7 +103,7 @@ impl Catalog {
 pub trait ExpertTrait { fn advice(&self, cap: &CapId) -> Option<String>; } // DIP 抽象（不依赖 concrete）
 ```
 
-## 8. `xuanji-system` (L4Services · CRATE_ID: `2b3c4d5e-…`)
+## 8. `mox-system` (L4Services · CRATE_ID: `2b3c4d5e-…`)
 ```rust
 pub mod domain_traits;  pub mod business_rules;  pub mod sqlite_provider;  pub mod persistence_provider;
 // DIP 三大 trait（ARC-02/03）
@@ -119,7 +119,7 @@ pub fn tabu_search(problem: &Problem, cfg: OptimizerConfig) -> OptimizerResult;
 pub fn greedy_baseline(problem: &Problem) -> OptimizerResult;  // 与 T12 F1 对账
 ```
 
-## 10. `xuanji-expert` (L4Services · CRATE_ID: `4d5e6f7a-…`)
+## 10. `mox-expert` (L4Services · CRATE_ID: `4d5e6f7a-…`)
 ```rust
 pub mod expert_traits;  pub mod gov_engine;  pub mod viz;  pub mod http;  // feature=http 时
 pub struct VizBundle { pub svg: String, pub highlights: Vec<(NodeId, HlKind)> }

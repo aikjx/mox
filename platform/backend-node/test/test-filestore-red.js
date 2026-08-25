@@ -14,7 +14,7 @@ const os = require('os');
 const assert = require('assert');
 
 // ---- 环境隔离 ----
-const TMP_ROOT = fs.mkdtempSync(path.join(os.tmpdir(), 'xuanji-t2-red-'));
+const TMP_ROOT = fs.mkdtempSync(path.join(os.tmpdir(), 'mox-t2-red-'));
 const TMP_DATA = path.join(TMP_ROOT, 'data');
 fs.mkdirSync(TMP_DATA, { recursive: true });
 

@@ -29,7 +29,7 @@ info-graph dedup --graph graph.enterprise.json --spec docs/graph/requests/<你�
   "id": "REQ-2026-001",
   "name": "需求名称（支持中文）",
   "capabilities": [
-    { "kind": "CodeFile", "key": "crates/xuanji-system/src/lib.rs" }
+    { "kind": "CodeFile", "key": "crates/mox-system/src/lib.rs" }
   ],
   "edges": [
     { "from": "CodeFile:a.rs", "to": "CodeFile:b.rs", "kind": "Reference" }
@@ -49,7 +49,7 @@ info-graph dedup --graph graph.enterprise.json --spec docs/graph/requests/<你�
 
 ```bash
 info-graph build --root . --out graph.json
-info-graph query --graph graph.json --kind CodeFile --name xuanji
+info-graph query --graph graph.json --kind CodeFile --name mox
 ```
 
 ## 判定为 new 之后

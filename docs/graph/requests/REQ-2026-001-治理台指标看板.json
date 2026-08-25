@@ -2,14 +2,14 @@
   "id": "REQ-2026-001",
   "name": "治理台指标看板（复用璇玑既有诊断与指标能力）",
   "capabilities": [
-    { "kind": "CodeFile", "key": "crates/xuanji-system/src/lib.rs" },
-    { "kind": "CodeFile", "key": "crates/xuanji-system/src/metrics.rs" },
+    { "kind": "CodeFile", "key": "crates/mox-system/src/lib.rs" },
+    { "kind": "CodeFile", "key": "crates/mox-system/src/metrics.rs" },
     { "kind": "CodeFile", "key": "crates/runtime/src/handlers/governance.rs" }
   ],
   "edges": [
     {
-      "from": "CodeFile:crates/xuanji-system/src/lib.rs",
-      "to": "CodeFile:crates/xuanji-system/src/metrics.rs",
+      "from": "CodeFile:crates/mox-system/src/lib.rs",
+      "to": "CodeFile:crates/mox-system/src/metrics.rs",
       "kind": "Reference"
     }
   ]

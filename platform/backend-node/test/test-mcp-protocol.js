@@ -35,7 +35,7 @@ async function main() {
   check('JSON-RPC 2.0 响应结构', init.body.jsonrpc === '2.0' && init.body.id === 1);
   check('协议版本协商', init.body.result.protocolVersion === '2025-06-18', init.body.result.protocolVersion);
   check('声明 tools 能力', !!init.body.result.capabilities.tools);
-  check('serverInfo 正确', init.body.result.serverInfo.name === 'xuanji-expert-alliance');
+  check('serverInfo 正确', init.body.result.serverInfo.name === 'mox-expert-alliance');
 
   // ===== 2. notifications/initialized（通知：应 202 无 body）=====
   console.log('[2] notifications/initialized（通知语义）');

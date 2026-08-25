@@ -21,7 +21,7 @@
 │          │                                                         │
 │          │  (导出可见性: pub, 稳定, 不被 feature 开关)              │
 │          ▼                                                         │
-│  xuanji-common-meta：CrateMeta 枚举 AisLayer · single def          │
+│  mox-common-meta：CrateMeta 枚举 AisLayer · single def          │
 └──────────────────────────────────┬─────────────────────────────────┘
                                    │  (domain id 计算规则见 §3)
                                    ▼
@@ -36,7 +36,7 @@
                                    │  (T6 绑定校验：CRATE_ID 匹配)
                                    ▼
 ┌────────────────────────────────────────────────────────────────────┐
-│  KNOWLEDGE-GRAPH (xuanji · kg-hub + graph-algorithms)             │
+│  KNOWLEDGE-GRAPH (mox · kg-hub + graph-algorithms)             │
 │                                                                    │
 │  节点类型 = AtlasDomainNode · attrs: {                             │
 │    domainId, crateId, layer, owner, codePath, primaryImpl, ...    │
@@ -54,12 +54,12 @@
 ```rust
 pub const CRATE_ID: &str = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
 
-pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+pub const CRATE_META: mox_common_meta::CrateMeta = mox_common_meta::CrateMeta {
     id: CRATE_ID,
     name: env!("CARGO_PKG_NAME"),
     version: env!("CARGO_PKG_VERSION"),
-    layer: xuanji_common_meta::AisLayer::<LAYER_CONST>,
-    owner: "xuanji-core",
+    layer: mox_common_meta::AisLayer::<LAYER_CONST>,
+    owner: "mox-core",
 };
 ```
 
@@ -67,16 +67,16 @@ pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateM
 
 | # | Crate Dir            | Layer (CRATE_META.layer)   | CRATE_ID                                |
 |---|----------------------|----------------------------|-----------------------------------------|
-| 1 | xuanji-common-meta   | L1Infra                    | `a1c2b3d4-5e6f-4a1b-8c2d-1e3f5a7b9c0d`  |
+| 1 | mox-common-meta   | L1Infra                    | `a1c2b3d4-5e6f-4a1b-8c2d-1e3f5a7b9c0d`  |
 | 2 | operator-core        | L6Kernel                   | `b8e1f2a3-4c5d-4e6f-8a9b-0c1d2e3f4a5b`  |
 | 3 | graph-algorithms     | L9Algo                     | `cf1a2b3d-4e5f-4678-9abc-def012345678`  |
 | 4 | primiflow-core       | L7Flow                     | `d0a89172-3b4c-5d6e-7f89-0a1b2c3d4e5f`  |
 | 5 | kg-hub               | L8Data                     | `e92f1a3b-5c7d-4e8f-9a0b-1c2d3e4f5a6b`  |
 | 6 | flow-ai              | L5Abstraction              | `f5e4d3c2-b1a0-4f3e-8d7c-9b6a5f4e3d2c`  |
 | 7 | business-catalog     | L4Services                 | `1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d`  |
-| 8 | xuanji-system        | L4Services                 | `2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e`  |
+| 8 | mox-system        | L4Services                 | `2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e`  |
 | 9 | optimizer            | L9Algo                     | `3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f`  |
-|10 | xuanji-expert        | L4Services                 | `4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a`  |
+|10 | mox-expert        | L4Services                 | `4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a`  |
 |11 | primiflow-fusion     | L3Application              | `5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b`  |
 |12 | ai-agent             | L4Services                 | `6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c`  |
 |13 | template-market      | L4Services                 | `7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d`  |
@@ -109,7 +109,7 @@ domainId = "domain-rust-" + <crate 根目录名>
 | `id`                | `domain-rust-<dir_name>`                   | 见 3.1                    |
 | `name`              | `CRATE_META.name` + 中文职责后缀           | T5 nameNotEmpty           |
 | `codePath`          | `<crate 绝对路径>/src/lib.rs`              | T2 可打开                 |
-| `owner`             | `CRATE_META.owner` (固定 "xuanji-core")    | T4 ownership              |
+| `owner`             | `CRATE_META.owner` (固定 "mox-core")    | T4 ownership              |
 | `engines[]`         | 固定 `["rust-" + <dir_name>]`              | primary_impl=RUST         |
 | `meta.crate_id`     | `CRATE_ID`                                 | T6 绑定锚点               |
 | `meta.layer`        | `CRATE_META.layer`                         | AIS 分层标识              |
@@ -118,7 +118,7 @@ domainId = "domain-rust-" + <crate 根目录名>
 
 ### 3.4 自动注册校验（`rust_crate_bindings_e2e.js` 5 TR）
 - **TR-02**：每一个 `codePath` 指向的 lib.rs 磁盘真实存在且可读
-- **TR-04**：每一个 domain owner = "xuanji-core"（ownership 不漏人）
+- **TR-04**：每一个 domain owner = "mox-core"（ownership 不漏人）
 - **TR-05**：`name` 非空（含中文可读描述）
 - **TR-06**：`crate_id` 嵌入 CRATE_ID，与表 §2 匹配
 - **TR-07**：`domainId` × `CRATE_ID` × `codePath` × `engines` 绑定完整（4-tuple 非空）

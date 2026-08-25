@@ -245,11 +245,11 @@ const ENGINES = [
     capabilities: ['agent.dialogue', 'agent.tool_use', 'agent.multi_agent']
   },
   {
-    id: 'engine-rust-xuanji-expert',
+    id: 'engine-rust-mox-expert',
     name: 'Rust 璇玑专家引擎',
     category: 'collaboration',
     layer: '协作层（Rust）',
-    codePath: '../services/xuanji-expert/src/lib.rs',
+    codePath: '../services/mox-expert/src/lib.rs',
     keyFunctions: [
       '15 专家画像 + 15× 验证管线（experts/* + verify/*）',
       '六阶段流水线：RBAC 门禁 → 管线装载 → 执行器 → 拓扑/冲突/数据依赖/增益 验证',
@@ -258,11 +258,11 @@ const ENGINES = [
     capabilities: ['expert.audit', 'expert.pipeline', 'expert.validate']
   },
   {
-    id: 'engine-rust-xuanji-system',
+    id: 'engine-rust-mox-system',
     name: 'Rust 璇玑系统底座',
     category: 'infrastructure',
     layer: '基础设施（Rust）',
-    codePath: '../services/xuanji-system/src/lib.rs',
+    codePath: '../services/mox-system/src/lib.rs',
     keyFunctions: [
       '服务编排器 + 多后端存储（orchestrator.rs + repo/*）',
       'RBAC / 加密 / 限流（rbac/crypto/ratelimit）',
@@ -379,7 +379,7 @@ const ENGINES = [
   {
     id: 'engine::ai_agent',
     name: 'Rust 引擎 · AI Agent 对话图谱',
-    engineName: 'xuanji::ai_agent',
+    engineName: 'mox::ai_agent',
     kind: 'rust',
     category: 'intelligence',
     layer: '智能层（Rust crate）',
@@ -396,7 +396,7 @@ const ENGINES = [
   {
     id: 'engine::business_catalog',
     name: 'Rust 引擎 · 业务目录中心',
-    engineName: 'xuanji::business_catalog',
+    engineName: 'mox::business_catalog',
     kind: 'rust',
     category: 'knowledge',
     layer: '知识层（Rust crate）',
@@ -413,7 +413,7 @@ const ENGINES = [
   {
     id: 'engine::flow_ai',
     name: 'Rust 引擎 · FlowAI 流程智能',
-    engineName: 'xuanji::flow_ai',
+    engineName: 'mox::flow_ai',
     kind: 'rust',
     category: 'orchestration',
     layer: '编排层（Rust crate）',
@@ -430,7 +430,7 @@ const ENGINES = [
   {
     id: 'engine::graph_algorithms',
     name: 'Rust 引擎 · 图算法（生产级）',
-    engineName: 'xuanji::graph_algorithms',
+    engineName: 'mox::graph_algorithms',
     kind: 'rust',
     category: 'intelligence',
     layer: '智能层（Rust crate）',
@@ -447,7 +447,7 @@ const ENGINES = [
   {
     id: 'engine::hermes_flow_bridge',
     name: 'Rust 引擎 · Hermes 流程桥',
-    engineName: 'xuanji::hermes_flow_bridge',
+    engineName: 'mox::hermes_flow_bridge',
     kind: 'rust',
     category: 'orchestration',
     layer: '编排层（Rust crate）',
@@ -464,7 +464,7 @@ const ENGINES = [
   {
     id: 'engine::kg_hub',
     name: 'Rust 引擎 · 知识图谱中枢',
-    engineName: 'xuanji::kg_hub',
+    engineName: 'mox::kg_hub',
     kind: 'rust',
     category: 'knowledge',
     layer: '知识层（Rust crate）',
@@ -481,7 +481,7 @@ const ENGINES = [
   {
     id: 'engine::operator_core',
     name: 'Rust 引擎 · 算子核心',
-    engineName: 'xuanji::operator_core',
+    engineName: 'mox::operator_core',
     kind: 'rust',
     category: 'orchestration',
     layer: '编排层（Rust crate）',
@@ -498,7 +498,7 @@ const ENGINES = [
   {
     id: 'engine::operator_wasm',
     name: 'Rust 引擎 · 算子 WASM 沙箱',
-    engineName: 'xuanji::operator_wasm',
+    engineName: 'mox::operator_wasm',
     kind: 'rust',
     category: 'automation',
     layer: '自动化层（Rust crate）',
@@ -515,7 +515,7 @@ const ENGINES = [
   {
     id: 'engine::optimizer',
     name: 'Rust 引擎 · 算子优化器',
-    engineName: 'xuanji::optimizer',
+    engineName: 'mox::optimizer',
     kind: 'rust',
     category: 'optimization',
     layer: '优化层（Rust crate）',
@@ -532,7 +532,7 @@ const ENGINES = [
   {
     id: 'engine::primiflow_core',
     name: 'Rust 引擎 · PrimiFlow 核心',
-    engineName: 'xuanji::primiflow_core',
+    engineName: 'mox::primiflow_core',
     kind: 'rust',
     category: 'automation',
     layer: '自动化层（Rust crate）',
@@ -549,7 +549,7 @@ const ENGINES = [
   {
     id: 'engine::primiflow_fusion',
     name: 'Rust 引擎 · PrimiFlow 六维融合',
-    engineName: 'xuanji::primiflow_fusion',
+    engineName: 'mox::primiflow_fusion',
     kind: 'rust',
     category: 'automation',
     layer: '自动化层（Rust crate）',
@@ -566,7 +566,7 @@ const ENGINES = [
   {
     id: 'engine::template_market',
     name: 'Rust 引擎 · 模板市场',
-    engineName: 'xuanji::template_market',
+    engineName: 'mox::template_market',
     kind: 'rust',
     category: 'knowledge',
     layer: '知识层（Rust crate）',
@@ -581,14 +581,14 @@ const ENGINES = [
     capabilities: ['market.register', 'market.deploy', 'market.rating', 'market.search']
   },
   {
-    id: 'engine::xuanji_expert',
+    id: 'engine::mox_expert',
     name: 'Rust 引擎 · 璇玑专家平台',
-    engineName: 'xuanji::xuanji_expert',
+    engineName: 'mox::mox_expert',
     kind: 'rust',
     category: 'collaboration',
     layer: '协作层（Rust crate）',
     crateId: '50bb6200-04c5-5e4c-8354-4c6e1b230024',
-    codePath: 'services/xuanji-expert/src/lib.rs',
+    codePath: 'services/mox-expert/src/lib.rs',
     keyFunctions: [
       '15 专家画像 + 15× 验证管线（experts/* + verify/*）',
       '六阶段流水线：RBAC 门禁 → 管线装载 → 执行器 → 拓扑/冲突/数据依赖/增益 验证',
@@ -598,14 +598,14 @@ const ENGINES = [
     capabilities: ['expert.pipeline', 'expert.audit', 'expert.tenant', 'expert.validate']
   },
   {
-    id: 'engine::xuanji_system',
+    id: 'engine::mox_system',
     name: 'Rust 引擎 · 璇玑系统底座',
-    engineName: 'xuanji::xuanji_system',
+    engineName: 'mox::mox_system',
     kind: 'rust',
     category: 'infrastructure',
     layer: '基础设施（Rust crate）',
     crateId: 'b81eec75-22ff-5155-ac49-19edf6f6b5ab',
-    codePath: 'services/xuanji-system/src/lib.rs',
+    codePath: 'services/mox-system/src/lib.rs',
     keyFunctions: [
       '服务编排器：多后端存储（Postgres/SQLite/Sled）抽象（orchestrator.rs + repo/*）',
       'RBAC / 加密 / 限流：角色权限 + AES-256-GCM + 令牌桶（rbac/crypto/ratelimit）',
@@ -615,14 +615,14 @@ const ENGINES = [
     capabilities: ['system.storage', 'system.rbac_crypto', 'system.ratelimit', 'system.lifecycle']
   },
   {
-    id: 'engine::xuanji_common_meta',
+    id: 'engine::mox_common_meta',
     name: 'Rust 引擎 · 璇玑公共元数据',
-    engineName: 'xuanji::xuanji_common_meta',
+    engineName: 'mox::mox_common_meta',
     kind: 'rust',
     category: 'infrastructure',
     layer: '基础设施（Rust crate）',
     crateId: '34a20231-1a80-5426-b392-40d7a2ddd9f7',
-    codePath: 'services/xuanji-common-meta/src/lib.rs',
+    codePath: 'services/mox-common-meta/src/lib.rs',
     keyFunctions: [
       '共享类型：能力 ID / 能力矩阵 / 意图清单 常量定义（types/*.rs）',
       '统一格式：URN 解析 / 序列化 / 校验（urn.rs）',
@@ -634,7 +634,7 @@ const ENGINES = [
   {
     id: 'engine::runtime',
     name: 'Rust 引擎 · 网关运行时（Cordis）',
-    engineName: 'xuanji::runtime',
+    engineName: 'mox::runtime',
     kind: 'rust',
     category: 'infrastructure',
     layer: '基础设施（Rust crate）',

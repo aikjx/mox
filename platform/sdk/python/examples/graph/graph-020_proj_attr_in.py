@@ -1,6 +1,6 @@
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
-from xuanji_sdk_graph import GraphClient
+from mox_sdk_graph import GraphClient
 
 client = GraphClient({"endpoint": "graph.local"})
 result = client.projAttrIn("node-imp-1", {"score": 99, "level": "gold"})

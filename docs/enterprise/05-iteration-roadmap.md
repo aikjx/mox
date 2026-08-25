@@ -30,7 +30,7 @@
 | 功能完整性 | 🟢 高 | 成员/任务/权限/通信四大子系统落地 |
 | 安全闭合 | 🟢 高 | GAP-2 跨租户提权已闭环；鉴权留痕 |
 | 流程闭环 | 🟢 高 | 8 BP + 2 FSM + 21 BR，6 GAP 全固化 |
-| 测试回归 | 🟢 高 | xuanji-system 实测 **82 测试全绿**（bin 55 + lib/main/集成 27）；覆盖越权/事件/继承/持久化 |
+| 测试回归 | 🟢 高 | mox-system 实测 **82 测试全绿**（bin 55 + lib/main/集成 27）；覆盖越权/事件/继承/持久化 |
 | 持久化 | 🟢 高 | 多后端写透 + 启动重放（I-01/I-02 已落地，重启不丢、幂等）；SQLite 默认 + PostgreSQL/MySQL 可切（I-16），生产 fail-fast |
 | 可观测性 | 🟢 高 | Prometheus 指标 + 限流 + CORS 加固（I-04 已落地） |
 | 配额边界 | 🟢 高 | 成员/任务/分派/子任务/依赖深度上限可配可拒（I-03 已落地） |
@@ -48,7 +48,7 @@
 | I-01 | **持久化 Store**：SQLite 实现 `Store` trait，替换内存态 | NFR-03 | 重启后璇玑/成员/任务/事件不丢失；接口不变 | ✅ 已落地 |
 | I-02 | **审计链 WAL 持久化 + 重放**：`AuditChain` 落盘，支持事件重放 | BR-19/BR-20 | 进程重启后审计可查；重放幂等 | ✅ 已落地 |
 | I-03 | **配额约束**：成员数/任务数/依赖深度上限可配置 | NFR-09 | 超限返回 4xx；默认上限生效 | ✅ 已落地 |
-| I-16 | **多后端持久化 + 生产 fail-fast**：`trait Repository` 抽象 SQLite/PostgreSQL/MySQL，12-Factor 切换；`XUANJI_STRICT_PERSIST` 连库/建表失败即中止启动 | NFR-03 / ADR-07 | 三后端零代码切换、默认 SQLite；严格模式下连库失败启动中止而非静默回退内存 | ✅ 已落地 |
+| I-16 | **多后端持久化 + 生产 fail-fast**：`trait Repository` 抽象 SQLite/PostgreSQL/MySQL，12-Factor 切换；`MOX_STRICT_PERSIST` 连库/建表失败即中止启动 | NFR-03 / ADR-07 | 三后端零代码切换、默认 SQLite；严格模式下连库失败启动中止而非静默回退内存 | ✅ 已落地 |
 
 ### P1 — 企业级能力
 
@@ -153,16 +153,16 @@
 
 ## 8. 变更记录（Changelog）
 
-> 遵循「每次 PR 同步变更记录」治理：本表的实现项均已在 `crates/xuanji-system` 落地并经 `cargo test` 与 HTTP 端到端冒烟验证。
+> 遵循「每次 PR 同步变更记录」治理：本表的实现项均已在 `crates/mox-system` 落地并经 `cargo test` 与 HTTP 端到端冒烟验证。
 
 | 日期 | 版本 | 变更 | 关联 | 验证 |
 |------|------|------|------|------|
 | 2026-08-16 | v1.1 (ENT) | **I-01/I-02 持久化**：`store.rs` 增加 SQLite 写透 + 启动重放；令牌 SHA-256 仅存哈希；审计链落盘且计数与 `/metrics` 共享原子量 | NFR-03/BR-19/BR-20 | `persistence_survives_restart`、`store_persists_and_hashes_tokens` 通过；重启幂等、旧令牌仍有效 |
 | 2026-08-16 | v1.1 (ENT) | **I-03 配额**：`config.rs` 12-Factor 配额；`services.rs` 在 invite/create/assign/subtask/dependency 处强制上限 | NFR-09 | `quota_enforcement` + `nfr09_*` 系列通过；超限返回 4xx |
 | 2026-08-16 | v1.1 (ENT) | **I-04 可观测+加固**：`metrics.rs` Prometheus 文本指标；`ratelimit.rs` 固定窗口限流；`server.rs` CORS 默认拒绝+允许名单、`/metrics` 端点、`/health` 上报真实持久化态 | NFR-08 | HTTP 冒烟：限流 200/200/429、CORS 拒绝非白名单、指标可采集 |
-| 2026-08-16 | v1.1 (ENT) | **修复**：内存模式（`XUANJI_PERSIST=0`）曾忽略 `XUANJI_BIND/RATE_LIMIT/CORS`，改为统一走 `with_config(config)`，仅由 `persist` 决定是否落盘 | 配置一致性 | 内存态现正确绑定到指定端口并生效限流/CORS |
-| 2026-08-16 | v1.1 (ENT) | **测试**：`tests/integration.rs` 新增 3 项（持久化/令牌哈希/配额）；全量 19 测试通过 | 质量门禁 | `cargo test -p xuanji-system` 全绿 |
-| 2026-08-17 | v1.2 (ENT) | **I-16 多后端持久化**：`repo/` 抽象 `trait Repository`，`schema.rs` 按 `sea-query` 方言生成 DDL/upsert，落地 `sqlite.rs`/`postgres.rs`/`mysql.rs`；`XUANJI_BACKEND`+`XUANJI_DB_URL` 12-Factor 切换，默认 SQLite | NFR-03 / ADR-07 | `cargo check -p xuanji-system` 通过；三后端方言 upsert 分别生成 `INSERT OR REPLACE`/`ON CONFLICT`/`ON DUPLICATE KEY` |
-| 2026-08-17 | v1.2 (ENT) | **I-16 生产 fail-fast**：新增 `XUANJI_STRICT_PERSIST`；`build()` 改为返回 `Result` 使错误经 `with_config` 上浮至 `main`（规整致命信息 + 非零退出码，非 panic backtrace）；覆盖「连接失败」与「建表失败」两条路径 | NFR-03 / 可运维性 | 严格模式下连库失败启动中止；默认关闭保持演示/测试兼容 |
+| 2026-08-16 | v1.1 (ENT) | **修复**：内存模式（`MOX_PERSIST=0`）曾忽略 `MOX_BIND/RATE_LIMIT/CORS`，改为统一走 `with_config(config)`，仅由 `persist` 决定是否落盘 | 配置一致性 | 内存态现正确绑定到指定端口并生效限流/CORS |
+| 2026-08-16 | v1.1 (ENT) | **测试**：`tests/integration.rs` 新增 3 项（持久化/令牌哈希/配额）；全量 19 测试通过 | 质量门禁 | `cargo test -p mox-system` 全绿 |
+| 2026-08-17 | v1.2 (ENT) | **I-16 多后端持久化**：`repo/` 抽象 `trait Repository`，`schema.rs` 按 `sea-query` 方言生成 DDL/upsert，落地 `sqlite.rs`/`postgres.rs`/`mysql.rs`；`MOX_BACKEND`+`MOX_DB_URL` 12-Factor 切换，默认 SQLite | NFR-03 / ADR-07 | `cargo check -p mox-system` 通过；三后端方言 upsert 分别生成 `INSERT OR REPLACE`/`ON CONFLICT`/`ON DUPLICATE KEY` |
+| 2026-08-17 | v1.2 (ENT) | **I-16 生产 fail-fast**：新增 `MOX_STRICT_PERSIST`；`build()` 改为返回 `Result` 使错误经 `with_config` 上浮至 `main`（规整致命信息 + 非零退出码，非 panic backtrace）；覆盖「连接失败」与「建表失败」两条路径 | NFR-03 / 可运维性 | 严格模式下连库失败启动中止；默认关闭保持演示/测试兼容 |
 | 2026-08-17 | v1.2 (ENT) | **可观测性**：启动日志由硬编码「SQLite」改为如实回显 `backend` 与严格模式状态，避免运维误判实际生效后端 | NFR-08 | 日志输出 `持久化模式: 开启 (后端=Postgres, 严格模式=开(...))` |
-| 2026-08-17 | v1.2 (ENT) | **文档归一化**：持久化配置矩阵收口为 `02` §7.4 唯一权威基准，根 `README` 改为指针；同步修正 `00`§3 自查清单、`01`§3.2/NFR-03/假设 A-1（新增约束 C-3）、`02`§2.3/§7.3/ADR-03→ADR-07、`03` 设计取舍、`06` 映射表中「内存实现/仅 SQLite 可替」的陈旧陈述 | 文档治理 | 全仓 `XUANJI_*` 配置仅一处定义，无重复/矛盾源 |
+| 2026-08-17 | v1.2 (ENT) | **文档归一化**：持久化配置矩阵收口为 `02` §7.4 唯一权威基准，根 `README` 改为指针；同步修正 `00`§3 自查清单、`01`§3.2/NFR-03/假设 A-1（新增约束 C-3）、`02`§2.3/§7.3/ADR-03→ADR-07、`03` 设计取舍、`06` 映射表中「内存实现/仅 SQLite 可替」的陈旧陈述 | 文档治理 | 全仓 `MOX_*` 配置仅一处定义，无重复/矛盾源 |

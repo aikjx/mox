@@ -26,7 +26,7 @@ impl Router {
         Self::default()
     }
 
-    /// 注册一个可复用模板（来自 xuanji-expert 关系网的最短路径挖掘结果）。
+    /// 注册一个可复用模板（来自 mox-expert 关系网的最短路径挖掘结果）。
     pub fn register(&self, tpl: FlowTemplate) {
         let key = tpl.tool_seq.join("|");
         let mut idx = self.index.lock().unwrap();

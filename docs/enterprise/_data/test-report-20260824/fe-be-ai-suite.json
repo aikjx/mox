@@ -26,9 +26,9 @@
       "views_count": 39,
       "routes_count": 34,
       "admin_panel_exists": true,
-      "xuanji_fusion_view_exists": true,
+      "mox_fusion_view_exists": true,
       "pass": true,
-      "note": "views=39>=28, AdminView + Admin*Panels 存在, XuanjiFusionView 存在, 路由数=34 (含 redirect)"
+      "note": "views=39>=28, AdminView + Admin*Panels 存在, MoxFusionView 存在, 路由数=34 (含 redirect)"
     },
     "summary": {
       "pass": 2,

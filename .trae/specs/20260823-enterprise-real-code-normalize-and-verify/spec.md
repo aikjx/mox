@@ -17,7 +17,7 @@
 3. **P3 · 跨 crate 同名词双语义（API 歧义 + 重复实现风险）**：`flow_engine::apply_template` 使用 `{{{var}}}` 三括号，而 `workflow_engine::apply_template`（私有）使用 `${var}` shell 语法，均做"模板变量替换"，单 crate 内部两套模板语法，违反"归一化"，容易造成 `BusinessWorkflow` 与 `FlowDefinition` 在业务编排时模板不互通。
 4. **P4 · 图算法公式三处重复实现（违反经验 124174「禁止局部校验、要求单源」原则）**：`graph/graph-formulas.js`（单源设计）、`ai-flow-graph.js`（曾占位 0，现仍保留重复实现）、`lib/graph-algos.js`（老实现）。`api-server.js` / `routes/graph.js` 同时 import `lib/graph-algos.js:degreeCentrality` + `graph-formulas.js:degreeCentrality`，结果若一处修改另一处不同步 → 图谱结果不一致（本 spec 直接对应 EXP-124174 的"局部/全局查重"教训，扩展为"单源公式、禁止多处独立实现"）。
 5. **P5 · 意图检测三处独立实现，返回结构未对齐**：`expert-alliance/domain/intent-classifier.js` 导出 `{detectIntent, keywordMatches}` 返回 `{intent, confidence, matched}`；`ai-engine-core.js` 方法 `detectIntent` 返回 `{name, confidence}`；`orchestration-engine.js` 内 `_detectIntent(plan)` 返回意图枚举字符串。三者都是"意图识别"，但无法在 Node 侧做统一服务治理、灰度、监控。违反"禁止重复开发相同功能"。
-6. **P6 · 生成测试里 9 处 `unimplemented!()` 仍在可达 DIP Mock 分支**：`xuanji-system/tests/t6_dip_orchestrator.rs` 中 Mock 的 TaskServiceTrait / PermissionServiceTrait 方法全部 `unimplemented!()`，尽管 30/30 测试没走到这些分支，但企业级"所有代码都能被跑通"约束下，Mock 必须返回真实可断言的业务值，而非一踩就 panic。
+6. **P6 · 生成测试里 9 处 `unimplemented!()` 仍在可达 DIP Mock 分支**：`mox-system/tests/t6_dip_orchestrator.rs` 中 Mock 的 TaskServiceTrait / PermissionServiceTrait 方法全部 `unimplemented!()`，尽管 30/30 测试没走到这些分支，但企业级"所有代码都能被跑通"约束下，Mock 必须返回真实可断言的业务值，而非一踩就 panic。
 
 **非问题（不需改）**：`examples/out/` 目录不存在于构建目标之外的 runtime 真代码；red 测试 `test-storage-postgres-red.js` / `test-filestore-red.js` 是 TDD 红阶段专用，不作为"未实现"。
 
@@ -71,8 +71,8 @@
   证据：grep 结果为空；`ai_engine_handler::ai_summary` 在 agent=None / hybrid 分支返回非空字符串，且不含"stub"或"placeholder"。
 - **AC-02 (rule)**：`primiflow-core/examples/out/c_r*.rs` 全部 15 个文件中，`todo!(` 出现次数 = 0；`/* TODO: 业务字段 */` 注释被**真实可序列化字段**替换（至少 `id: String` + `created_at: String`）。
   证据：`cargo test --package primiflow-core --examples --no-run` 编译通过 + 对 4 个示例做 `cargo run --example` 实际执行退出码 0（不依赖外部 I/O）。
-- **AC-03 (rule)**：`xuanji-system/tests/t6_dip_orchestrator.rs` 中 `unimplemented!()` 出现次数 = 0。Mock 实现返回可断言的值（如 `TaskServiceTrait::add_subtask` 返回 `TaskId("sub_".to_string() + parent.as_ref())`；`effective_permissions` 对用户 u1 返回 `{roles:["viewer"], caps:["read"]}`）。
-  证据：`cargo test -p xuanji-system --test t6_dip_orchestrator` exit 0。
+- **AC-03 (rule)**：`mox-system/tests/t6_dip_orchestrator.rs` 中 `unimplemented!()` 出现次数 = 0。Mock 实现返回可断言的值（如 `TaskServiceTrait::add_subtask` 返回 `TaskId("sub_".to_string() + parent.as_ref())`；`effective_permissions` 对用户 u1 返回 `{roles:["viewer"], caps:["read"]}`）。
+  证据：`cargo test -p mox-system --test t6_dip_orchestrator` exit 0。
 
 ### 4.2 Normalize 归一化（P3 / P4 / P5）
 - **AC-04 (rule)**：`workflow_engine::apply_template` 的私有实现被删除；`workflow_engine.rs:264` 处的调用改为 `use crate::flow_engine::apply_template`；模板语法统一 `{{{var}}}`，并补充一处 `apply_template("${x}")` 的"未被替换"单元测试证明不会错误替换。

@@ -11,7 +11,7 @@
 3. **三流程端点真实可用**：graph_bulk / file_upload+link / ai_full_rag 三端点有独立 E2E 冒烟，28s 内返回非错误状态。
 4. **AI 四端点契约对齐**：Rust runtime 的 `/ai/engine/{process,analyze,capabilities,metrics}` 有路由存在断言与 AC-10 语义用例回归（router_semantics.rs 全绿）。
 5. **治理闸门真实生效**：primiflow-fusion full_gate 有 ≥50 个基准用例，通过率 ≥90%；六维绑定覆盖率 ≥90% 护栏不被击穿。
-6. **RBAC + 审计链闭环**：xuanji-expert 14 位专家阻断级检查 5/5 通过；审计三汇（内存 + 文件 + 可选 S3）签名可验证。
+6. **RBAC + 审计链闭环**：mox-expert 14 位专家阻断级检查 5/5 通过；审计三汇（内存 + 文件 + 可选 S3）签名可验证。
 7. **前端 28 视图 + 管理区 5 面板**：`npm run build`（或 pnpm build）0 error，所有路由对应文件存在。
 8. **Node 侧 70+ JS 测试套件**：backend-node test/*.js 全部绿；特别 T13 SLO / T14 HA / T12 reconcile / three-flows-trace 四条企业级用例全绿。
 9. **Melody2Score 打包级鲁棒性**：`tests/test_score_sheet.py`（模拟 `sys.stderr=None` 的 PyInstaller 打包环境）+ `tests/_run_frozen_selftest.py --selftest-full` 两条均 pass（无声卡时 PortAudioError 降级跳过）。
@@ -25,7 +25,7 @@
 - 不写 DB schema 外迁（SQLite 仍是默认；PG/MySQL 零代码切换保留，不新增迁移脚本族）。
 
 ## Background & Context
-- 工作空间 Cargo.toml 注册 16 members（含 runtime = gateway；15 主 crate + xuanji-common-meta）已在 `cargo check --workspace` 基线通过（exit 0；仅有 sqlx-postgres 0.8.0 future-incompat 告警，此为上游问题，不 block 企业级验收）。
+- 工作空间 Cargo.toml 注册 16 members（含 runtime = gateway；15 主 crate + mox-common-meta）已在 `cargo check --workspace` 基线通过（exit 0；仅有 sqlx-postgres 0.8.0 future-incompat 告警，此为上游问题，不 block 企业级验收）。
 - 7×8 对账 56/56 GREEN（baseline 已通过）。
 - docs/enterprise/18 TOP-MASTER 是 L0 最高权威，所有 AC 不得与 18 §二~§八冲突。
 - docs/enterprise/19 架构师主控提示词定义了 ⭕8 不可动，本 spec 严格继承。
@@ -38,9 +38,9 @@
   - `POST /api/ai/full_rag`（ai_full_rag）：发送 1 条中文用户查询 + 返回含 trace_id / provider_name / latency_ms / sources[] 的响应。
 - **FR-2 AI 四端点**：Rust runtime 必须 4 条路由真实存在并注册 handlers/ai_engine.rs：`process`（意图识别后路由）、`analyze`（显式能力执行）、`capabilities`（能力矩阵 JSON）、`metrics`（成功率/降级率/延迟 JSON array）。
 - **FR-3 算法侧真实输出**：graph-algorithms 必须暴露 `cnm_communities / brandes_betweenness / harmonic_closeness / pagerank_transpose / activation_spread` 公开函数，每个函数都有 2 个以上真实 `#[test]` 断言通过。
-- **FR-4 璇玑 verify 五条件阻断**：xuanji-expert verify 层 `topology / data_dep / conflict / gains / code_rt` 五项各自有 ≥1 条"应阻断"和 1 条"应通过"的单测，vetoed=true/false 可观察。
+- **FR-4 璇玑 verify 五条件阻断**：mox-expert verify 层 `topology / data_dep / conflict / gains / code_rt` 五项各自有 ≥1 条"应阻断"和 1 条"应通过"的单测，vetoed=true/false 可观察。
 - **FR-5 full_gate 八条件治理**：primiflow-fusion 的 G0/G1/G3 共 8 项，每个条件一条单测覆盖"开/关两种情况"，approved 五条件公式不可变。
-- **FR-6 RBAC 六角色矩阵**：xuanji-expert rbac 层 policy.rs 中 super_admin / enterprise_admin / project_admin / developer / viewer / auditor 六角色 × 11 探针 = 66 组合全部有确定性断言。
+- **FR-6 RBAC 六角色矩阵**：mox-expert rbac 层 policy.rs 中 super_admin / enterprise_admin / project_admin / developer / viewer / auditor 六角色 × 11 探针 = 66 组合全部有确定性断言。
 - **FR-7 前端 28 视图真实渲染**：frontend-ui/src/views 下 28 个 Vue 文件 + admin/panels 下 5 面板，全部有 `<template>` 根元素、`<script>` 存在、router/index.js 注册对应路径。
 - **FR-8 Melody2Score 打包鲁棒性回退**：PyInstaller console=False 环境模拟通过（test_score_sheet 对 stdin/stdout/stderr=None 场景输出正常）；音频播放无声卡时跳过（而非死锁 / AttributeError）。
 
@@ -122,7 +122,7 @@
 
 ### AC-6: 六维绑定覆盖率 ≥ 90% 护栏
 - **Type**: `rule`
-- **Given**: primiflow-fusion / kg-hub / xuanji-expert 已编译
+- **Given**: primiflow-fusion / kg-hub / mox-expert 已编译
 - **When**: `cargo test -p primiflow-fusion sixdim_coverage -- --nocapture` 或等价命令
 - **Then**: 输出 "sixdim_coverage = P%", P ≥ 90.0
 - **Pass Condition**: 覆盖率数字 ≥ 90.0%
@@ -130,16 +130,16 @@
 
 ### AC-7: 璇玑 verify 五阻断级检查双分支覆盖（通过/阻断各至少 1 例）
 - **Type**: `rule`
-- **Given**: xuanji-expert 已编译
-- **When**: `cargo test -p xuanji-expert verify -- --nocapture 2>&1`
+- **Given**: mox-expert 已编译
+- **When**: `cargo test -p mox-expert verify -- --nocapture 2>&1`
 - **Then**: "topology_pass=true / topology_block=true / data_dep_pass=true / data_dep_block=true / conflict_pass=true / conflict_block=true / gains_pass=true / gains_block=true / code_rt_pass=true / code_rt_block=true" 这 10 条日志/断言全部出现
 - **Pass Condition**: 10 条全部出现
 - **Evidence**: verify 测试输出截取
 
 ### AC-8: RBAC 六角色 × 11 探针 66 组合确定性断言
 - **Type**: `rule`
-- **Given**: xuanji-expert 已编译
-- **When**: `cargo test -p xuanji-expert rbac -- --nocapture 2>&1`
+- **Given**: mox-expert 已编译
+- **When**: `cargo test -p mox-expert rbac -- --nocapture 2>&1`
 - **Then**: rbac tests exit 0；显式统计 "66 cases, 0 violations"
 - **Pass Condition**: exit 0 + 66 cases, 0 violations
 - **Evidence**: rbac 测试尾部汇总
@@ -147,7 +147,7 @@
 ### AC-9: 三流程端点 E2E 冒烟（mock 后端接入）
 - **Type**: `rule`
 - **Given**: Rust runtime 能冷启动；sidecar Node 已 mock 或通过 feature 旁路
-- **When**: `cargo test -p runtime xuanji_e2e -- --nocapture 2>&1` 或等价三流程 smoke
+- **When**: `cargo test -p runtime mox_e2e -- --nocapture 2>&1` 或等价三流程 smoke
 - **Then**: 三条断言 "graph_bulk ok / file_upload_link ok / ai_full_rag ok" 全部出现；每条延迟 ≤ 28s
 - **Pass Condition**: 三条 ok + 每条 ≤ 28s
 - **Evidence**: E2E 输出中三条断言
@@ -186,8 +186,8 @@
 
 ### AC-14: 审计三汇 HMAC 可验证性
 - **Type**: `rule`
-- **Given**: xuanji-expert 已编译；默认使用文件 sink
-- **When**: `cargo test -p xuanji-expert audit_hmac -- --nocapture 2>&1`
+- **Given**: mox-expert 已编译；默认使用文件 sink
+- **When**: `cargo test -p mox-expert audit_hmac -- --nocapture 2>&1`
 - **Then**: 至少 1 条测试生成审计事件，并验证 HMAC(sha256, secret, payload) == signature 成功；篡改 1 byte 后验证失败
 - **Pass Condition**: 正向通过 + 篡改失败 两条断言全部命中
 - **Evidence**: audit_hmac 测试输出

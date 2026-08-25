@@ -3,7 +3,7 @@
     <!-- 欢迎横幅 -->
     <div class="welcome panel">
       <div class="welcome-left">
-        <div class="eyebrow">XUANJI GRAPH · 璇玑</div>
+        <div class="eyebrow">MOX GRAPH · 璇玑</div>
         <h1 class="page-title">欢迎回来，<span class="gradient-text">管理员</span></h1>
         <p class="page-subtitle">
           璇玑信息知识图谱关联关系系统 · AI 驱动全维突破平台 — 版本 v{{ APP_VERSION }}，全维度业务已就绪

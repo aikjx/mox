@@ -30,7 +30,7 @@
         "docs/_archive/2026-08-16/PrimiFlow-企业级验证-20260816.md",
         "docs/_archive/2026-08-16/PrimiFlow-全维分析-核心功能补全-20260816.md",
         "docs/_archive/2026-08-16/PrimiFlow-真实执行层开发-验证-20260816.md",
-        "docs/_archive/2026-08-16/xuanji-expert-验证总结-20260816.md",
+        "docs/_archive/2026-08-16/mox-expert-验证总结-20260816.md",
         "docs/_archive/2026-08-16/关图骨架定义.md",
         "docs/_archive/2026-08-16/璇玑-全维分析-TraceMatrix-六维绑定追溯.md",
         "docs/_archive/2026-08-16/璇玑-全维分析需求-测试分析验证报告.md",
@@ -52,10 +52,10 @@
         "docs/full-dimensional/00-README.md",
         "docs/full-dimensional/GOVERNANCE_CONSOLE_API_READY_20260816.md",
         "docs/full-dimensional/guantu-skeleton.md",
-        "docs/full-dimensional/xuanji-requirement-baseline.md",
+        "docs/full-dimensional/mox-requirement-baseline.md",
         "docs/graph/requests/README.md",
-        "docs/modules/xuanji-expert-business-requirements.md",
-        "docs/modules/xuanji-expert-product.md",
+        "docs/modules/mox-expert-business-requirements.md",
+        "docs/modules/mox-expert-product.md",
         "docs/modules/专家联盟AI对话需求文档-V1.0.md",
         "docs/璇玑-全维需求业务处理流程图-归一化企业级.md",
         "docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md",
@@ -65,7 +65,7 @@
         "docs/enterprise/22-全文档归一化总控卡与权威链单源映射表-V1.0.md",
         "docs/enterprise/23-竞品全维功能对比与可用性判定报告-V1.0.md",
         "docs/enterprise/24-全资源模块化与知识图谱贯通-企业级开发完成总控-V1.0.md",
-        "docs/xuanji-relgraph-product-handbook-v3.md",
+        "docs/mox-relgraph-product-handbook-v3.md",
         "docs/enterprise/25-AI引擎真实基准评测报告-V1.0.md",
         "docs/enterprise/26-前端开发专家主控提示词与流程透明化最佳实践清单-V1.0.md",
         "docs/enterprise/27-企业级测试与评测主控提示词与全维自动化测试报告-V1.0.md",
@@ -291,7 +291,7 @@
       "desc": "自动发现（self-sync）"
     },
     {
-      "file": "docs/_archive/2026-08-16/xuanji-expert-验证总结-20260816.md",
+      "file": "docs/_archive/2026-08-16/mox-expert-验证总结-20260816.md",
       "domain": "atlas-auto",
       "desc": "自动发现（self-sync）"
     },
@@ -401,7 +401,7 @@
       "desc": "自动发现（self-sync）"
     },
     {
-      "file": "docs/full-dimensional/xuanji-requirement-baseline.md",
+      "file": "docs/full-dimensional/mox-requirement-baseline.md",
       "domain": "atlas-auto",
       "desc": "自动发现（self-sync）"
     },
@@ -411,12 +411,12 @@
       "desc": "自动发现（self-sync）"
     },
     {
-      "file": "docs/modules/xuanji-expert-business-requirements.md",
+      "file": "docs/modules/mox-expert-business-requirements.md",
       "domain": "atlas-auto",
       "desc": "自动发现（self-sync）"
     },
     {
-      "file": "docs/modules/xuanji-expert-product.md",
+      "file": "docs/modules/mox-expert-product.md",
       "domain": "atlas-auto",
       "desc": "自动发现（self-sync）"
     },
@@ -466,7 +466,7 @@
       "desc": "自动发现（self-sync）"
     },
     {
-      "file": "docs/xuanji-relgraph-product-handbook-v3.md",
+      "file": "docs/mox-relgraph-product-handbook-v3.md",
       "domain": "atlas-auto",
       "desc": "自动发现（self-sync）"
     },

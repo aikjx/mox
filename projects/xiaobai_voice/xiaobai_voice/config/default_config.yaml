@@ -19,6 +19,18 @@ voice:
       cosyvoice2:
         enabled: true
         license: Apache-2.0
+        # CosyVoice2 0.5B 内置音色匹配："中文女" / "中文男" 是 SFT 权重 ckpt 默认注册
+        # 的 prompt_id（写死为 "中文女" 更贴近豆包柔和女声质感）。
+        # 如果你的权重包里有不同注册名（如 "Default" / "voice_0" / "女"），可在此覆盖。
+        preferred_spk_ids: ["中文女", "女", "voice_0", "Default"]
+        # 指令风格：豆包级拟人推荐 "warm_daily"（温暖日常）。可选项：
+        #   warm_daily / gentle_soft / anchor_premium / professional_calm / cute_lively
+        instruction_style: warm_daily
+        # 重采样质量：linear 线性插值（比 nearest 顺滑）。若已安装 librosa 可写 "kaiser_best"。
+        resample_quality: linear
+        # 动态范围压缩/软限幅：避免峰值削波失真 + 小音量智能提升（豆包响度一致性）。
+        limiter: true
+        loudness_target_dbfs: -18.0
       fish_s2_pro:
         enabled: false
         license: Research
@@ -26,8 +38,8 @@ voice:
     default_voice: xiaobai
     clone_reference: null        # voice_clips/<sha1>.wav 的 id
     emotion: neutral             # neutral | happy | sad | serious
-    speed: 1.0                   # 0.8 ~ 1.4
-    sample_rate: 24000           # fish 24k, cosyvoice 22.05k 运行时重采样
+    speed: 1.03                  # 0.8 ~ 1.4（豆包级日常语速）
+    sample_rate: 22050           # CosyVoice2 原生 22.05k（减少一次重采样失真）
     auto_read_assistant: true    # 助手返回后自动朗读
 
   temp_cleanup_minutes: 10       # 临时音频自动清理周期

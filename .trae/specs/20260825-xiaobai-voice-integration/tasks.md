@@ -102,7 +102,7 @@
 - `xiaobai_voice/models/downloader.py`：`httpx` Range + `tqdm`；重试 3 次指数退避；校验失败自动 `os.remove`。
 - `xiaobai_voice/config/models.yaml`：列出 FR10 4 条模型；文件头加版本号，sha256 锁定。
 - SSE 路由 `/voice/models/download/stream?id=…`：每 500 ms 推 `{progress_pct, speed_mbps, eta_s, state}`。
-- 模型查找优先级：`<exe同级>/models > %USERPROFILE%/.xuanji/models/voice > 仓库 projects/xiaobai_voice/models/`。
+- 模型查找优先级：`<exe同级>/models > %USERPROFILE%/.mox/models/voice > 仓库 projects/xiaobai_voice/models/`。
 
 **验收点：**
 - 单测：
@@ -115,7 +115,7 @@
 ### T6 配置中心（跨平台路径 + 热更新）
 **产出：**
 - `xiaobai_voice/config/loader.py`：
-  - 跨平台定位 `%APPDATA%/xuanji/xiaobai/config.yaml`（Windows）等；
+  - 跨平台定位 `%APPDATA%/mox/xiaobai/config.yaml`（Windows）等；
   - 默认值与合并；
   - 文件监听（watchdog 可选）修改：
     - `license_tier / tts.engine / asr.engine` → 触发优雅重启语音子进程（`SIGTERM` → 最多等待 3 s → kill）；
@@ -228,7 +228,7 @@
 - `xiaobai_voice/cli.py` 最前置 `_ensure_windowed_streams()`：
   - `sys.stdout/stderr=None → StringIO + 文件句柄`；
   - `os.add_dll_directory`：numpy/.libs、onnxruntime/capi、PySide6/Qt6/bin、sounddevice/_sounddevice_data 等；
-  - 设置环境变量 `FISH_SPEECH_CKPT_DIR / COSYVOICE_CKPT_DIR / XUANJI_VOICE_PORT / XUANJI_VOICE_CONFIG`。
+  - 设置环境变量 `FISH_SPEECH_CKPT_DIR / COSYVOICE_CKPT_DIR / MOX_VOICE_PORT / MOX_VOICE_CONFIG`。
 - `projects/xiaobai_voice/build_exe.ps1`：
   - 可选参数：`-UseCondaEnv <path>` / `-UseVenv <path>` 注入外部 venv site-packages 到 `sys.path`（复用 Experience 1304739 经验）；
   - PyInstaller `--noconfirm --windowed --name Xiaobai --specpath build --dist dist --add-data "xiaobai_voice/config;xiaobai_voice/config"`。
@@ -236,7 +236,7 @@
 
 **验收点：**
 - `Start-Process dist\Xiaobai.exe`（非控制台）启动后 30 s：
-  - 读 `%APPDATA%\xuanji\xiaobai\logs\xiaobai-YYYYMMDD.log` → **无 stderr=None AttributeError 栈**；
+  - 读 `%APPDATA%\mox\xiaobai\logs\xiaobai-YYYYMMDD.log` → **无 stderr=None AttributeError 栈**；
   - 有窗口（浮窗或主窗口）且截图可见；
 - `Start-Process dist\Xiaobai.exe -ArgumentList "--selftest-full"` → 退出 0，`selftest-report.jsonl` 含 `voice_playback_smoke_deadlock_regression` 记录（声卡缺失标记 SKIP_OK）。
 

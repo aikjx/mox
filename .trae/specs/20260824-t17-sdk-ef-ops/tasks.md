@@ -9,36 +9,36 @@
 
 ---
 
-## Task 1: Rust xuanji-sdk-cloud 30 示例骨架
+## Task 1: Rust mox-sdk-cloud 30 示例骨架
 
 - **Priority**: high
 - **Status**: pending
 - **AC**: AC-C-01
 - **Depends**: (none)
 - **Outputs**:
-  - `platform/sdk/rust/xuanji-sdk-cloud/Cargo.toml` (examples 配置)
-  - `platform/sdk/rust/xuanji-sdk-cloud/src/lib.rs` (facade traits + FakeClient)
-  - `platform/sdk/rust/xuanji-sdk-cloud/examples/cloud-001_*.rs` … `cloud-030_*.rs`
+  - `platform/sdk/rust/mox-sdk-cloud/Cargo.toml` (examples 配置)
+  - `platform/sdk/rust/mox-sdk-cloud/src/lib.rs` (facade traits + FakeClient)
+  - `platform/sdk/rust/mox-sdk-cloud/examples/cloud-001_*.rs` … `cloud-030_*.rs`
 - **Test Requirements**
-  - rule: `cargo build -p xuanji-sdk-cloud --examples` exit 0
+  - rule: `cargo build -p mox-sdk-cloud --examples` exit 0
   - rule: `cargo run --example cloud-001_*` … 抽 10 个 examples exit 0 + 打印 `XJ-OK`
   - rule: tests/test_sdk_cloud.rs (≥15 cases) 覆盖 30 示例 id 存在性 + facade trait 方法
   - rubric: 示例主题多样性 (0-10, 及格 7)：桶/对象/STS/IAM/Quota/WORM/Lifecycle/DBHC 8 大类中至少 7 类被覆盖
 
 ---
 
-## Task 2: Rust xuanji-sdk-graph 30 示例骨架
+## Task 2: Rust mox-sdk-graph 30 示例骨架
 
 - **Priority**: high
 - **Status**: pending
 - **AC**: AC-C-02
 - **Depends**: Task 1
 - **Outputs**:
-  - `platform/sdk/rust/xuanji-sdk-graph/Cargo.toml`
-  - `platform/sdk/rust/xuanji-sdk-graph/src/lib.rs` (GraphClient facade)
+  - `platform/sdk/rust/mox-sdk-graph/Cargo.toml`
+  - `platform/sdk/rust/mox-sdk-graph/src/lib.rs` (GraphClient facade)
   - 30 examples `graph-001_*` … `graph-030_*`
 - **Test Requirements**
-  - rule: `cargo build -p xuanji-sdk-graph --examples` exit 0
+  - rule: `cargo build -p mox-sdk-graph --examples` exit 0
   - rule: tests/test_sdk_graph.rs (≥15 cases) CDC/Spark/Projection/Faults 每类 ≥ 3
   - rule: 抽 10 个 examples run，stdout 包含 `XJ-OK`
 
@@ -51,7 +51,7 @@
 - **AC**: AC-C-03 / id对齐 C-05
 - **Depends**: Task 1
 - **Outputs**:
-  - `platform/sdk/nodejs/xuanji-sdk-cloud/package.json` (name=xuanji-cloud) + `index.js` (CloudClient 伪类)
+  - `platform/sdk/nodejs/mox-sdk-cloud/package.json` (name=mox-cloud) + `index.js` (CloudClient 伪类)
   - `platform/sdk/nodejs/examples/cloud/cloud-001_*.js` … `cloud-030_*.js`（与 Rust cloud IDs 一一对应）
   - `platform/sdk/nodejs/test/t17-node-cloud-15.test.js` (≥ 15 Mocha)
 - **Test Requirements**
@@ -68,7 +68,7 @@
 - **AC**: AC-C-03 / C-05
 - **Depends**: Task 2, Task 3
 - **Outputs**:
-  - `platform/sdk/nodejs/xuanji-sdk-graph/package.json` + `index.js` (GraphClient)
+  - `platform/sdk/nodejs/mox-sdk-graph/package.json` + `index.js` (GraphClient)
   - `examples/graph/graph-001_*` … `graph-030_*`（与 Rust graph IDs 对齐）
   - `test/t17-node-graph-15.test.js` (≥ 15 Mocha)
 - **Test Requirements**
@@ -85,7 +85,7 @@
 - **AC**: AC-C-04 / C-05
 - **Depends**: Task 3
 - **Outputs**:
-  - `platform/sdk/python/xuanji_sdk_cloud/__init__.py` (CloudClient 类)
+  - `platform/sdk/python/mox_sdk_cloud/__init__.py` (CloudClient 类)
   - `examples/cloud/cloud-001_*.py` … `cloud-030_*.py`（ID 对齐 Rust/Node）
   - `test/test_cloud_15.py` (≥ 15 pytest)
 - **Test Requirements**
@@ -102,7 +102,7 @@
 - **AC**: AC-C-04 / C-05
 - **Depends**: Task 4, Task 5
 - **Outputs**:
-  - `platform/sdk/python/xuanji_sdk_graph/__init__.py`
+  - `platform/sdk/python/mox_sdk_graph/__init__.py`
   - `examples/graph/graph-001_*` … `graph-030_*`（ID 对齐）
   - `test/test_graph_15.py` (≥ 15 pytest)
 - **Test Requirements**
@@ -135,7 +135,7 @@
 - **AC**: AC-E-12
 - **Depends**: (none)
 - **Outputs**:
-  - `deploy/helm/xuanji-dr/Chart.yaml` + `values.yaml`
+  - `deploy/helm/mox-dr/Chart.yaml` + `values.yaml`
   - `templates/deployment-primary.yaml`
   - `templates/deployment-secondary.yaml`
   - `templates/_helpers.tpl`
@@ -145,7 +145,7 @@
   - `templates/region-selector.yaml` (节点亲和)
   - `templates/NOTES.txt` (failover 说明)
 - **Test Requirements**
-  - rule: `helm lint deploy/helm/xuanji-dr` exit 0
+  - rule: `helm lint deploy/helm/mox-dr` exit 0
   - rule: helm template 输出中 deployment 数量 ≥ 2，PDB/HPA/Svc 各 ≥ 1
   - rule: AC-E-12 rubric 打分 ≥ 70
 
@@ -188,7 +188,7 @@
 - **AC**: AC-E-18
 - **Depends**: (none)
 - **Outputs**:
-  - `platform/services/xuanji-graph-service/src/trace_8stages.rs` (+ lib.rs mod)
+  - `platform/services/mox-graph-service/src/trace_8stages.rs` (+ lib.rs mod)
   - `deploy/docs/trace-8stages-dashboard.json` (12+ metrics)
 - **Test Requirements**
   - rule: TraceStage 枚举包含全部 8 阶段
@@ -205,12 +205,12 @@
 - **AC**: AC-E-20
 - **Depends**: Task 8
 - **Outputs**:
-  - `deploy/helm/xuanji/Chart.yaml` (umbrella: 依赖 xuanji-dr + xuanji-core + xuanji-observability)
-  - `deploy/helm/xuanji/values.yaml` (global.gray.enabled + stages: [1,10,50,100])
-  - `deploy/helm/xuanji/templates/_gray.tpl` (百分比/节点亲和)
+  - `deploy/helm/mox/Chart.yaml` (umbrella: 依赖 mox-dr + mox-core + mox-observability)
+  - `deploy/helm/mox/values.yaml` (global.gray.enabled + stages: [1,10,50,100])
+  - `deploy/helm/mox/templates/_gray.tpl` (百分比/节点亲和)
   - `scripts/Gray-Warmup.ps1`
 - **Test Requirements**
-  - rule: `helm lint deploy/helm/xuanji` exit 0
+  - rule: `helm lint deploy/helm/mox` exit 0
   - rule: Gray-Warmup.ps1 4 阶段，每阶段 health-check 模拟 ≥ 95% 通过，exit 0
   - rule: 强制 health-check 80% 时 exit 1 + 自动回滚日志
 

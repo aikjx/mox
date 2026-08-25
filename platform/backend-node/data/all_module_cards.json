@@ -3,8 +3,8 @@
   "count": 76,
   "entries": [
     {
-      "moduleId": "urn:xuanji:crate:34a20231-1a80-5426-b392-40d7a2ddd9f7",
-      "name": "Rust Crate · xuanji-common-meta",
+      "moduleId": "urn:mox:crate:34a20231-1a80-5426-b392-40d7a2ddd9f7",
+      "name": "Rust Crate · mox-common-meta",
       "aisLayer": "L0_SoT",
       "raci": {
         "R": "开发联盟",
@@ -17,7 +17,7 @@
         "downstream": []
       },
       "acceptanceGate": {
-        "unitTestPath": "cargo test -p xuanji-common-meta",
+        "unitTestPath": "cargo test -p mox-common-meta",
         "reconcileCmd": "TODO(Day1-Rust): 补真实对账命令",
         "governGate": true,
         "auditFields": [
@@ -30,7 +30,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:crate:00374bdd-cc60-55bf-8970-a879afbfe443",
+      "moduleId": "urn:mox:crate:00374bdd-cc60-55bf-8970-a879afbfe443",
       "name": "Rust Crate · ai-agent",
       "aisLayer": "L3_AlgorithmReasoning",
       "raci": {
@@ -57,7 +57,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:crate:62b2cca1-d98f-5e41-b26e-8d2a43966117",
+      "moduleId": "urn:mox:crate:62b2cca1-d98f-5e41-b26e-8d2a43966117",
       "name": "Rust Crate · business-catalog",
       "aisLayer": "L5_BusinessFlow",
       "raci": {
@@ -84,7 +84,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:crate:2fcd3eac-e894-5876-b007-fb33c56c0d65",
+      "moduleId": "urn:mox:crate:2fcd3eac-e894-5876-b007-fb33c56c0d65",
       "name": "Rust Crate · flow-ai",
       "aisLayer": "L3_AlgorithmReasoning",
       "raci": {
@@ -111,7 +111,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:crate:fbd31c6a-41cd-5274-be2f-2a28066eaf0a",
+      "moduleId": "urn:mox:crate:fbd31c6a-41cd-5274-be2f-2a28066eaf0a",
       "name": "Rust Crate · graph-algorithms",
       "aisLayer": "L4_GraphCore",
       "raci": {
@@ -138,7 +138,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:crate:9bfaf43b-385a-5a44-9fb2-65b4003ee80d",
+      "moduleId": "urn:mox:crate:9bfaf43b-385a-5a44-9fb2-65b4003ee80d",
       "name": "Rust Crate · hermes-flow-bridge",
       "aisLayer": "L5_BusinessFlow",
       "raci": {
@@ -165,7 +165,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:crate:cb909f06-c0df-55ec-b397-543623a8c349",
+      "moduleId": "urn:mox:crate:cb909f06-c0df-55ec-b397-543623a8c349",
       "name": "Rust Crate · kg-hub",
       "aisLayer": "L4_GraphCore",
       "raci": {
@@ -192,7 +192,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:crate:acf14283-3931-5528-adce-2c0cd3815363",
+      "moduleId": "urn:mox:crate:acf14283-3931-5528-adce-2c0cd3815363",
       "name": "Rust Crate · operator-core",
       "aisLayer": "L2_RustBase",
       "raci": {
@@ -219,7 +219,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:crate:5a1df407-b217-5340-a5ae-5f4535d1e6de",
+      "moduleId": "urn:mox:crate:5a1df407-b217-5340-a5ae-5f4535d1e6de",
       "name": "Rust Crate · operator-wasm",
       "aisLayer": "L2_RustBase",
       "raci": {
@@ -246,7 +246,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:crate:e56676c7-ec1f-5415-9587-ba8249d0178a",
+      "moduleId": "urn:mox:crate:e56676c7-ec1f-5415-9587-ba8249d0178a",
       "name": "Rust Crate · optimizer",
       "aisLayer": "L3_AlgorithmReasoning",
       "raci": {
@@ -273,7 +273,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:crate:8c8d2382-6f9f-5218-894e-a07a43aa9554",
+      "moduleId": "urn:mox:crate:8c8d2382-6f9f-5218-894e-a07a43aa9554",
       "name": "Rust Crate · primiflow-core",
       "aisLayer": "L5_BusinessFlow",
       "raci": {
@@ -300,7 +300,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "moduleId": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "name": "Rust Crate · primiflow-fusion",
       "aisLayer": "L4_GraphCore",
       "raci": {
@@ -327,7 +327,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:crate:4d2e50c1-9d64-525d-86cf-2d7d610a27b9",
+      "moduleId": "urn:mox:crate:4d2e50c1-9d64-525d-86cf-2d7d610a27b9",
       "name": "Rust Crate · template-market",
       "aisLayer": "L5_BusinessFlow",
       "raci": {
@@ -354,8 +354,8 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:crate:50bb6200-04c5-5e4c-8354-4c6e1b230024",
-      "name": "Rust Crate · xuanji-expert",
+      "moduleId": "urn:mox:crate:50bb6200-04c5-5e4c-8354-4c6e1b230024",
+      "name": "Rust Crate · mox-expert",
       "aisLayer": "L4_GraphCore",
       "raci": {
         "R": "开发联盟",
@@ -368,7 +368,7 @@
         "downstream": []
       },
       "acceptanceGate": {
-        "unitTestPath": "cargo test -p xuanji-expert",
+        "unitTestPath": "cargo test -p mox-expert",
         "reconcileCmd": "TODO(Day1-Rust): 补真实对账命令",
         "governGate": true,
         "auditFields": [
@@ -381,8 +381,8 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:crate:b81eec75-22ff-5155-ac49-19edf6f6b5ab",
-      "name": "Rust Crate · xuanji-system",
+      "moduleId": "urn:mox:crate:b81eec75-22ff-5155-ac49-19edf6f6b5ab",
+      "name": "Rust Crate · mox-system",
       "aisLayer": "L4_GraphCore",
       "raci": {
         "R": "开发联盟",
@@ -395,7 +395,7 @@
         "downstream": []
       },
       "acceptanceGate": {
-        "unitTestPath": "cargo test -p xuanji-system",
+        "unitTestPath": "cargo test -p mox-system",
         "reconcileCmd": "TODO(Day1-Rust): 补真实对账命令",
         "governGate": true,
         "auditFields": [
@@ -408,7 +408,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:crate:a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b",
+      "moduleId": "urn:mox:crate:a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b",
       "name": "Rust Crate · runtime",
       "aisLayer": "L6_ProductApp",
       "raci": {
@@ -435,7 +435,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000001",
+      "moduleId": "urn:mox:nmod:00000000-0000-0000-0000-000000000001",
       "name": "Node 域 · Graph 图谱域（算法+存储）",
       "aisLayer": "L4_GraphCore",
       "raci": {
@@ -462,7 +462,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000002",
+      "moduleId": "urn:mox:nmod:00000000-0000-0000-0000-000000000002",
       "name": "Node 域 · KB 知识库域（RAG+文档抽取）",
       "aisLayer": "L5_BusinessFlow",
       "raci": {
@@ -489,7 +489,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000003",
+      "moduleId": "urn:mox:nmod:00000000-0000-0000-0000-000000000003",
       "name": "Node 域 · Expert Alliance 专家联盟",
       "aisLayer": "L4_GraphCore",
       "raci": {
@@ -516,7 +516,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000004",
+      "moduleId": "urn:mox:nmod:00000000-0000-0000-0000-000000000004",
       "name": "Node 域 · Project Atlas 项目图谱（自同步）",
       "aisLayer": "L5_BusinessFlow",
       "raci": {
@@ -543,7 +543,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000005",
+      "moduleId": "urn:mox:nmod:00000000-0000-0000-0000-000000000005",
       "name": "Node 域 · AI Engine 4 端点统一",
       "aisLayer": "L6_ProductApp",
       "raci": {
@@ -570,7 +570,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000006",
+      "moduleId": "urn:mox:nmod:00000000-0000-0000-0000-000000000006",
       "name": "Node 域 · MCP 协议域",
       "aisLayer": "L6_ProductApp",
       "raci": {
@@ -597,7 +597,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000007",
+      "moduleId": "urn:mox:nmod:00000000-0000-0000-0000-000000000007",
       "name": "Node 域 · Security（RBAC + 审计 hash_chain）",
       "aisLayer": "L4_GraphCore",
       "raci": {
@@ -624,7 +624,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000008",
+      "moduleId": "urn:mox:nmod:00000000-0000-0000-0000-000000000008",
       "name": "Node 域 · Engine Universe 图查询",
       "aisLayer": "L4_GraphCore",
       "raci": {
@@ -651,7 +651,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000001",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000001",
       "name": "Frontend · fusion-1",
       "aisLayer": "L6_ProductApp",
       "raci": {
@@ -678,7 +678,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000002",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000002",
       "name": "Frontend · fusion-2",
       "aisLayer": "L6_ProductApp",
       "raci": {
@@ -705,7 +705,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000003",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000003",
       "name": "Frontend · fusion-3",
       "aisLayer": "L6_ProductApp",
       "raci": {
@@ -732,7 +732,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000004",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000004",
       "name": "Frontend · fusion-4",
       "aisLayer": "L6_ProductApp",
       "raci": {
@@ -759,7 +759,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000005",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000005",
       "name": "Frontend · fusion-5",
       "aisLayer": "L6_ProductApp",
       "raci": {
@@ -786,7 +786,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000006",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000006",
       "name": "Frontend · fusion-6",
       "aisLayer": "L6_ProductApp",
       "raci": {
@@ -813,7 +813,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000007",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000007",
       "name": "Frontend · fusion-7",
       "aisLayer": "L6_ProductApp",
       "raci": {
@@ -840,7 +840,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000008",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000008",
       "name": "Frontend · monitor-1",
       "aisLayer": "L6_ProductApp",
       "raci": {
@@ -867,7 +867,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000009",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000009",
       "name": "Frontend · monitor-2",
       "aisLayer": "L6_ProductApp",
       "raci": {
@@ -894,7 +894,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000010",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000010",
       "name": "Frontend · monitor-3",
       "aisLayer": "L6_ProductApp",
       "raci": {
@@ -921,7 +921,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000011",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000011",
       "name": "Frontend · monitor-4",
       "aisLayer": "L6_ProductApp",
       "raci": {
@@ -948,7 +948,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000012",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000012",
       "name": "Frontend · monitor-5",
       "aisLayer": "L6_ProductApp",
       "raci": {
@@ -975,7 +975,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000013",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000013",
       "name": "Frontend · admin-1",
       "aisLayer": "L6_ProductApp",
       "raci": {
@@ -1002,7 +1002,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000014",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000014",
       "name": "Frontend · admin-2",
       "aisLayer": "L6_ProductApp",
       "raci": {
@@ -1029,7 +1029,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000015",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000015",
       "name": "Frontend · admin-3",
       "aisLayer": "L6_ProductApp",
       "raci": {
@@ -1056,7 +1056,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000016",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000016",
       "name": "Frontend · admin-4",
       "aisLayer": "L6_ProductApp",
       "raci": {
@@ -1083,7 +1083,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000017",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000017",
       "name": "Frontend · admin-5",
       "aisLayer": "L6_ProductApp",
       "raci": {
@@ -1110,7 +1110,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000018",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000018",
       "name": "Frontend · market-1",
       "aisLayer": "L5_BusinessFlow",
       "raci": {
@@ -1137,7 +1137,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000019",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000019",
       "name": "Frontend · market-2",
       "aisLayer": "L5_BusinessFlow",
       "raci": {
@@ -1164,7 +1164,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000020",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000020",
       "name": "Frontend · market-3",
       "aisLayer": "L5_BusinessFlow",
       "raci": {
@@ -1191,7 +1191,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000021",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000021",
       "name": "Frontend · kb-1",
       "aisLayer": "L5_BusinessFlow",
       "raci": {
@@ -1218,7 +1218,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000022",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000022",
       "name": "Frontend · kb-2",
       "aisLayer": "L5_BusinessFlow",
       "raci": {
@@ -1245,7 +1245,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000023",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000023",
       "name": "Frontend · kb-3",
       "aisLayer": "L5_BusinessFlow",
       "raci": {
@@ -1272,7 +1272,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000024",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000024",
       "name": "Frontend · expert-1",
       "aisLayer": "L4_GraphCore",
       "raci": {
@@ -1299,7 +1299,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000025",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000025",
       "name": "Frontend · expert-2",
       "aisLayer": "L4_GraphCore",
       "raci": {
@@ -1326,7 +1326,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000026",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000026",
       "name": "Frontend · expert-3",
       "aisLayer": "L4_GraphCore",
       "raci": {
@@ -1353,7 +1353,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000027",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000027",
       "name": "Frontend · expert-4",
       "aisLayer": "L4_GraphCore",
       "raci": {
@@ -1380,7 +1380,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:feview:00000000-0000-0000-0000-000000000028",
+      "moduleId": "urn:mox:feview:00000000-0000-0000-0000-000000000028",
       "name": "Frontend · settings-1",
       "aisLayer": "L6_ProductApp",
       "raci": {
@@ -1407,7 +1407,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000000000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000000000",
       "name": "企业文档 · 00",
       "aisLayer": "L1_DeployOps",
       "raci": {
@@ -1434,7 +1434,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000010000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000010000",
       "name": "企业文档 · 01",
       "aisLayer": "L2_RustBase",
       "raci": {
@@ -1461,7 +1461,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000020000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000020000",
       "name": "企业文档 · 02",
       "aisLayer": "L2_RustBase",
       "raci": {
@@ -1488,7 +1488,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000030000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000030000",
       "name": "企业文档 · 03",
       "aisLayer": "L2_RustBase",
       "raci": {
@@ -1515,7 +1515,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000040000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000040000",
       "name": "企业文档 · 04",
       "aisLayer": "L2_RustBase",
       "raci": {
@@ -1542,7 +1542,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000050000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000050000",
       "name": "企业文档 · 05",
       "aisLayer": "L2_RustBase",
       "raci": {
@@ -1569,7 +1569,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000060000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000060000",
       "name": "企业文档 · 06",
       "aisLayer": "L2_RustBase",
       "raci": {
@@ -1596,7 +1596,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000070000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000070000",
       "name": "企业文档 · 07",
       "aisLayer": "L3_AlgorithmReasoning",
       "raci": {
@@ -1623,7 +1623,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000080000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000080000",
       "name": "企业文档 · 08",
       "aisLayer": "L3_AlgorithmReasoning",
       "raci": {
@@ -1650,7 +1650,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000090000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000090000",
       "name": "企业文档 · 09",
       "aisLayer": "L3_AlgorithmReasoning",
       "raci": {
@@ -1677,7 +1677,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000100000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000100000",
       "name": "企业文档 · 10",
       "aisLayer": "L3_AlgorithmReasoning",
       "raci": {
@@ -1704,7 +1704,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000110000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000110000",
       "name": "企业文档 · 11",
       "aisLayer": "L4_GraphCore",
       "raci": {
@@ -1731,7 +1731,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000120000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000120000",
       "name": "企业文档 · 12",
       "aisLayer": "L4_GraphCore",
       "raci": {
@@ -1758,7 +1758,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000130000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000130000",
       "name": "企业文档 · 13",
       "aisLayer": "L4_GraphCore",
       "raci": {
@@ -1785,7 +1785,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000140000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000140000",
       "name": "企业文档 · 14",
       "aisLayer": "L1_DeployOps",
       "raci": {
@@ -1812,7 +1812,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000150000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000150000",
       "name": "企业文档 · 15",
       "aisLayer": "L1_DeployOps",
       "raci": {
@@ -1839,7 +1839,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000160000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000160000",
       "name": "企业文档 · 16",
       "aisLayer": "L4_GraphCore",
       "raci": {
@@ -1866,7 +1866,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000170000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000170000",
       "name": "企业文档 · 17",
       "aisLayer": "L2_RustBase",
       "raci": {
@@ -1893,7 +1893,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000180000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000180000",
       "name": "企业文档 · 18",
       "aisLayer": "L0_SoT",
       "raci": {
@@ -1920,7 +1920,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000190000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000190000",
       "name": "企业文档 · 19",
       "aisLayer": "L1_DeployOps",
       "raci": {
@@ -1947,7 +1947,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000200000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000200000",
       "name": "企业文档 · 20",
       "aisLayer": "L1_DeployOps",
       "raci": {
@@ -1974,7 +1974,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000210000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000210000",
       "name": "企业文档 · 21",
       "aisLayer": "L2_RustBase",
       "raci": {
@@ -2001,7 +2001,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000220000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000220000",
       "name": "企业文档 · 22",
       "aisLayer": "L1_DeployOps",
       "raci": {
@@ -2028,7 +2028,7 @@
       }
     },
     {
-      "moduleId": "urn:xuanji:doc:00000000-0000-0000-0000-000000230000",
+      "moduleId": "urn:mox:doc:00000000-0000-0000-0000-000000230000",
       "name": "企业文档 · 23",
       "aisLayer": "L1_DeployOps",
       "raci": {

@@ -1,4 +1,4 @@
-const { CloudClient } = require("../xuanji-sdk-cloud");
+const { CloudClient } = require("../mox-sdk-cloud");
 
 function main() {
   const client = new CloudClient();

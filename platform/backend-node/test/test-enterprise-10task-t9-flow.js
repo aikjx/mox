@@ -17,7 +17,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'xuanji-t9-flow-'));
+const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'mox-t9-flow-'));
 process.env.DB_PROVIDER = 'memory';
 process.env.DATA_DIR = TMP;
 const configMod = require.resolve('../src/config');
@@ -112,7 +112,7 @@ describe('T9 Flow registry 契约校验', function () {
     });
   });
 
-  describe('标准锚点: ≥ 2 standards references (EAF-STD-001 / AIS-SPEC / XUANJI-*)', function () {
+  describe('标准锚点: ≥ 2 standards references (EAF-STD-001 / AIS-SPEC / MOX-*)', function () {
     it('standardsRef aggregate ≥ 2 refs across all flows', function () {
       const refs = new Set();
       for (const f of FLOWS) {
@@ -123,7 +123,7 @@ describe('T9 Flow registry 契约校验', function () {
         );
         for (const r of list) if (r) refs.add(String(r));
       }
-      const anchored = [...refs].filter(r => /(EAF-STD-\d+|AIS-SPEC|XUANJI-STD|ISO-|IEEE-)/.test(r));
+      const anchored = [...refs].filter(r => /(EAF-STD-\d+|AIS-SPEC|MOX-STD|ISO-|IEEE-)/.test(r));
       console.log(`    [standardsRefs] anchored=${anchored.length}: ${anchored.slice(0, 8).join(', ')}`);
       assert.ok(anchored.length >= 2, `标准锚点仅 ${anchored.length} 个，要求 ≥ 2`);
     });

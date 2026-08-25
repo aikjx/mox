@@ -15,18 +15,18 @@ name = "runtime"
 path = "src/lib.rs"
 
 [dependencies]
-xuanji-common-meta = { path = "../../services/xuanji-common-meta" }
+mox-common-meta = { path = "../../services/mox-common-meta" }
 operator-core = { path = "../../services/operator-core" }
 graph-algorithms = { path = "../../services/graph-algorithms" }
 operator-wasm = { path = "../../services/operator-wasm" }
 optimizer = { path = "../../services/optimizer" }
 ai-agent = { path = "../../services/ai-agent" }
 business-catalog = { path = "../../services/business-catalog" }
-xuanji-expert = { path = "../../services/xuanji-expert" }
+mox-expert = { path = "../../services/mox-expert" }
 flow-ai = { path = "../../services/flow-ai" }
 # 子服务聚合（Phase 1 收敛）：四套并行 server 以库方式挂载，由 runtime 唯一对外暴露。
 # 各自 bin 保留为独立部署选项，生产统一走 operator-server。
-xuanji-system = { path = "../../services/xuanji-system" }
+mox-system = { path = "../../services/mox-system" }
 primiflow-core = { path = "../../services/primiflow-core", features = ["server"] }
 primiflow-fusion = { path = "../../services/primiflow-fusion" }
 tokio = { workspace = true }

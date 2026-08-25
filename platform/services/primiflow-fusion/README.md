@@ -8,13 +8,13 @@
 
 ```rust
 pub const CRATE_ID: &str = "75238345-b48b-534b-818b-8d9abe083a41";
-pub const ENGINE_NAME: &str = "xuanji::primiflow_fusion";
-pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+pub const ENGINE_NAME: &str = "mox::primiflow_fusion";
+pub const CRATE_META: mox_common_meta::CrateMeta = mox_common_meta::CrateMeta {
     id: CRATE_ID,
     name: env!("CARGO_PKG_NAME"),
     version: env!("CARGO_PKG_VERSION"),
-    layer: xuanji_common_meta::AisLayer::L4Services,
-    owner: "xuanji-core",
+    layer: mox_common_meta::AisLayer::L4Services,
+    owner: "mox-core",
 };
 ```
 
@@ -25,7 +25,7 @@ pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateM
 | `src/config.rs` | 配置加载：TOML / ENV 双源合并 + schema 校验 |
 | `src/registry.rs` | `trait FusionRegistry`：服务注册/查询/列表；crate Plugin Manager |
 | `src/sixdim.rs` | 六维度量 SixDim：`完备性 / 正确性 / 可维护性 / 性能 / 安全 / 可观测性` 六家族 + fuse() 融合打分 |
-| `src/envelope.rs` | `trait Envelope`：请求/响应/事件 密封信封 + HMAC 签名（crypto 复用 xuanji-system） |
+| `src/envelope.rs` | `trait Envelope`：请求/响应/事件 密封信封 + HMAC 签名（crypto 复用 mox-system） |
 | `src/platform.rs` + `src/unified.rs` | `trait Platform` + 统一接口层（Platform→Registry→SixDim→Envelope 串联调度） |
 | `src/ptdoc.rs` | 10 PT 文档索引 + `data/fusion_docs/` 10 份文档（INDEX + 10 内容）加载器 |
 | `src/observability.rs` | tracing + metrics + log 三通道；OpenTelemetry 兼容 |

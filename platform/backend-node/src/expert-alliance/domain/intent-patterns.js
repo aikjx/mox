@@ -178,7 +178,7 @@ const INTENT_PATTERNS = [
       '融合', '璇玑', '治理', '全维', '双十四维', '归一化', '统一',
       '专家', '会诊', '联盟', '专家联盟', '多专家', '协作会商', '团队讨论', '组队',
       // 英文
-      'fusion', 'xuanji', 'governance', 'full dimension', 'normalization', 'unified',
+      'fusion', 'mox', 'governance', 'full dimension', 'normalization', 'unified',
       'integration', 'unification',
       'expert alliance', 'multi-expert', 'joint consultation', 'panel discussion'
     ]

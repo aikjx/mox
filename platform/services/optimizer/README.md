@@ -1,20 +1,20 @@
 # optimizer · 排程与多目标优化器
 
 ## §1 · 概述
-璇玑 L4Services 级通用优化工具箱：**CPM 关键路径、RCPSP 资源约束贪心调度、CEM 交叉熵多目标优化**三大优化器家族，服务 flow-ai（流程排程）、xuanji-expert（架构参数调优）、primiflow-core（执行器最优并行化）与 AI 引擎配置。
+璇玑 L4Services 级通用优化工具箱：**CPM 关键路径、RCPSP 资源约束贪心调度、CEM 交叉熵多目标优化**三大优化器家族，服务 flow-ai（流程排程）、mox-expert（架构参数调优）、primiflow-core（执行器最优并行化）与 AI 引擎配置。
 
 ## §2 · CRATE_ID / ENGINE_NAME / AIS 层级
 归属 **AIS Layer = L4Services**。
 
 ```rust
 pub const CRATE_ID: &str = "e56676c7-ec1f-5415-9587-ba8249d0178a";
-pub const ENGINE_NAME: &str = "xuanji::optimizer";
-pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+pub const ENGINE_NAME: &str = "mox::optimizer";
+pub const CRATE_META: mox_common_meta::CrateMeta = mox_common_meta::CrateMeta {
     id: CRATE_ID,
     name: env!("CARGO_PKG_NAME"),
     version: env!("CARGO_PKG_VERSION"),
-    layer: xuanji_common_meta::AisLayer::L4Services,
-    owner: "xuanji-core",
+    layer: mox_common_meta::AisLayer::L4Services,
+    owner: "mox-core",
 };
 ```
 （上为从 `src/lib.rs` 原样拷贝的三常量；与 T2 `all_crate_metas()[optimizer]` 条目完全一致）。

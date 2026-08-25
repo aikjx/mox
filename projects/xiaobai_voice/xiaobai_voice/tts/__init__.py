@@ -26,13 +26,20 @@ def build_tts_backend(
 
     voice = (config or {}).get("voice", {})
     tts_cfg = dict(voice.get("tts", {}) or {})
-    engine = (tts_cfg.get("engine") or "auto").strip().lower()
+    # 双字段兼容：default_engine 是配置文件默认项；engine 是旧版外部调用者字段；都为空则走 auto。
+    engine_raw = (
+        tts_cfg.get("default_engine")
+        or tts_cfg.get("engine")
+        or tts_cfg.get("active_engine")
+        or "auto"
+    )
+    engine = str(engine_raw).strip().lower()
 
     licence_ok_fish = license_tier in {"auto", "research"}
     candidates: list[str] = []
-    if engine == "fish_s2" and licence_ok_fish:
+    if engine in {"fish_s2", "fish_s2_pro", "fish", "fishes2pro"} and licence_ok_fish:
         candidates = ["fish_s2", "cosyvoice2", "browser"]
-    elif engine == "cosyvoice2":
+    elif engine in {"cosyvoice2", "cosy"}:
         candidates = ["cosyvoice2", "browser"]
     elif engine == "browser":
         candidates = ["browser"]

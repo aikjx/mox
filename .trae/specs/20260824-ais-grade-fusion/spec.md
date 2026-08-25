@@ -1,4 +1,4 @@
-# XUANJI v2.0 全维度融合架构规格（参考 NVIDIA AIS + 政企最佳实践）
+# MOX v2.0 全维度融合架构规格（参考 NVIDIA AIS + 政企最佳实践）
 
 ## 1. Problem / Users / Goals / Non-Goals
 
@@ -26,12 +26,12 @@
 1. **EC(n+k) 纠删码引擎**：支持 4+2 / 8+4 / 12+4，对象 > 64MB 自动分片，丢失 ≤ k 片可自修复；
 2. **传输层升级**：HTTP/3(QUIC) + S3 分片断点续传 UploadId（三语言 SDK 统一）+ 三网分离 listener（Public/IntraCtrl/IntraData）；
 3. **云盘×知识图谱零延迟融合**：PutObject → 标签/元数据 → CDC（CdcEvent ObjectTagged）→ 自动建 `tag://...` / `obj://...` 顶点 + `HAS_TAG` 边，反向 GraphQL 查询 obj.uri 可直接回源 S3 HEAD；
-4. **单二进制 xuanji-server**：Rust workspace member，包含 proxy+target+graph+trace+metric+WAL，`xuanji server --single-node` 零依赖启动；
+4. **单二进制 mox-server**：Rust workspace member，包含 proxy+target+graph+trace+metric+WAL，`mox server --single-node` 零依赖启动；
 5. **合规升级**：Legal Hold 法规锁（HoldUntil 不可删除覆盖 PUT）+ 密级 4 级（绝密/机密/秘密/内部）+ 访问裁决（Bell-LaPadula 无向上读、无向下写）；
 6. **P99 观测 + 取证仪表**：Prometheus 指标扩展（obj_put_p99 / ec_encode_us / fshc_disk_fail_count / tag2graph_lag_ms）+ 审计链 hash_chain 取证页；
 7. **三档性能基准**：1KB（小文件）≥ 60K ops/s · 1MB（对象）≥ 1.2 GB/s · 1GB（大文件）≥ 8 GB/s（单节点基准，含 JWT + 审计链 + 标签出图）；
 8. **ETL near-data 插件框架**：参考 AIS ETL，对象 GET/PUT 路径可注入 `WASM plugin` 完成压缩/指纹/特征提取/脱敏；
-9. **独立部署验证**：`xuanji server --single-node --data-dir ./x --graph-dir ./g --port 8080` + `helm install xuanji ./deploy/helm/xuanji --set standalone=true` 双路径；
+9. **独立部署验证**：`mox server --single-node --data-dir ./x --graph-dir ./g --port 8080` + `helm install mox ./deploy/helm/mox --set standalone=true` 双路径；
 10. **磁盘健康 FSHC + 挂载路径热插拔**：Mountpath enable/disable/attach/detach；坏盘检测自动触发 EC 自修复；
 11. **Read-after-Write 一致性 + 端到端 CRC64**：任何网关读返回 CRC 一致性校验；Client 提供 checksum 时进行端到端验证；
 12. **E2E 回归 ≥ 1000 tests**：T10(118)+T11(126)+T17(154)+T19(719) 既有 1117 + 新增 ≥ 120 = 实际 ≥ 1237 tests。
@@ -53,7 +53,7 @@
 - `Mountpath` 标记为 Faulty 时，触发 RebuildJob；完成后标记 Healthy。
 
 ### FR-2：HTTP/3(QUIC) + 三网分离 + Multipart UploadId
-- `xuanji server` 启动三 listener：
+- `mox server` 启动三 listener：
   - `:8080` public（SDK/CLI/JWT 入口）
   - `:9080` intra_ctrl（membership/health/metasync/xaction）
   - `:9081` intra_data（target→target 数据面）
@@ -63,39 +63,39 @@
 
 ### FR-3：PutObject → Tag → CDC → 知识图谱 自动融合
 - 写入管道新增阶段：AuditChain 之后 → `tag_cdc_graph_stage`。
-- 对 PUT 携带的 `x-xuanji-tag-{k}={v}`（或默认 contentType / size_bucket / mimeTypeCategory）→ 解析为 TagSet → 产生 `CdcEvent::ObjectTagged(obj_uri, tags[])`。
+- 对 PUT 携带的 `x-mox-tag-{k}={v}`（或默认 contentType / size_bucket / mimeTypeCategory）→ 解析为 TagSet → 产生 `CdcEvent::ObjectTagged(obj_uri, tags[])`。
 - Graph CDC 消费者收到后：UPSERT `obj:<sha256(uri)>`（props: uri, size, etag, bucket），UPSERT 每个 `tag:<k|v>` 顶点，UPSERT `(obj)-[:HAS_TAG]->(tag)` 边。
 - 反向：Graph 查询 `MATCH (o:obj)-[:HAS_TAG]->(t:tag {k:"project",v:"secretariat"}) RETURN o.uri LIMIT 100` → 返回后客户端可用 SDK `head_object(uri)` 回源元数据。
 
-### FR-4：单二进制 xuanji-server All-in-One
-- 新增 workspace member：`platform/services/xuanji-server/Cargo.toml`（bin name=`xuanji`）。
+### FR-4：单二进制 mox-server All-in-One
+- 新增 workspace member：`platform/services/mox-server/Cargo.toml`（bin name=`mox`）。
 - 子命令：
-  - `xuanji server --single-node [--data-dir D] [--graph-dir G] [--http3] [--port P] [--intra-ctrl-port CP] [--intra-data-port DP]`
-  - `xuanji ec profile add --bucket b1 --data 4 --parity 2`
-  - `xuanji mount attach /dev/sdb1  /mnt/x1`
-  - `xuanji legal-hold put --bucket b1 --key k1 --hold-until 2040-01-01`
-  - `xuanji bench 1KB|1MB|1GB --n 10000`
+  - `mox server --single-node [--data-dir D] [--graph-dir G] [--http3] [--port P] [--intra-ctrl-port CP] [--intra-data-port DP]`
+  - `mox ec profile add --bucket b1 --data 4 --parity 2`
+  - `mox mount attach /dev/sdb1  /mnt/x1`
+  - `mox legal-hold put --bucket b1 --key k1 --hold-until 2040-01-01`
+  - `mox bench 1KB|1MB|1GB --n 10000`
 - `--single-node`：内嵌 in-memory 成员管理 + 本地 mountpath；对外保持 S3/Graph/Trace/Metric 接口。
-- 启动后 JWT 默认开；配置文件 `xuanji.toml`。
+- 启动后 JWT 默认开；配置文件 `mox.toml`。
 
 ### FR-5：Legal Hold + 密级 4 级访问裁决
 - Object 元数据新增 `legal_hold: Option<LegalHold { placed_by, placed_at, hold_until }>`；
 - DELETE/PUT-overwrite：若 hold_until > now → 拒绝（412 Precondition Failed + 审计链 Record::LegalHoldDenied）。
 - 密级：UserClaims 带 `clearance: u8`；Object 带 `miji_level: u8`（绝密=4 机密=3 秘密=2 内部=1）。
 - **Bell-LaPadula**：`read allowed iff user.clearance >= obj.miji_level`（Simple Security）；`write allowed iff user.clearance <= obj.miji_level`（*-Property，禁止高密写入低密对象覆盖）。
-- CLI：`xuanji miji set --bucket b --key k --level 3`；审计链记录 `MijiAccessDenied` 原因码。
+- CLI：`mox miji set --bucket b --key k --level 3`；审计链记录 `MijiAccessDenied` 原因码。
 
 ### FR-6：P99 观测 + 审计链取证仪表
 - 新增指标（全局 Registry 共享）：
-  - `xuanji_obj_put_latency_us` Histogram(buckets 10..10M) + `_p99 / _p999` 聚合
-  - `xuanji_ec_encode_us` / `xuanji_ec_rebuild_count` / `xuanji_ec_shards_lost_total`
-  - `xuanji_fshc_disk_fail_count` / `xuanji_fshc_mountpath_disabled`
-  - `xuanji_tag2graph_lag_ms`（PUT→边落图延迟）
-  - `xuanji_miji_denied_total`（密级裁决拒绝） / `xuanji_legal_hold_blocked_total`
+  - `mox_obj_put_latency_us` Histogram(buckets 10..10M) + `_p99 / _p999` 聚合
+  - `mox_ec_encode_us` / `mox_ec_rebuild_count` / `mox_ec_shards_lost_total`
+  - `mox_fshc_disk_fail_count` / `mox_fshc_mountpath_disabled`
+  - `mox_tag2graph_lag_ms`（PUT→边落图延迟）
+  - `mox_miji_denied_total`（密级裁决拒绝） / `mox_legal_hold_blocked_total`
 - 审计链取证 UI 端点：`GET /ops/audit/chain?block_from=1000&block_to=2000&format=html`，返回 JSON 摘要 + 可导出 CSV，提供每个 block `(prev_hash, payload, signature, integrity)` 列。
 
 ### FR-7：三档性能基准 Bench（可脚本化）
-- CLI 子命令 `xuanji bench`：
+- CLI 子命令 `mox bench`：
   - `1KB --n 100000 --concurrency 128`：小文件并发 PUT + GET
   - `1MB --n 1000 --concurrency 64`：常规对象
   - `1GB --n 30 --concurrency 8`：大对象 + Multipart
@@ -103,24 +103,24 @@
 
 ### FR-8：Near-data WASM ETL 插件框架
 - 插件目录 `./etl-plugins/*.wasm`；
-- 注册：`xuanji etl register --name md5-sum --wasm ./md5.wasm --kind inline-get`；
+- 注册：`mox etl register --name md5-sum --wasm ./md5.wasm --kind inline-get`；
 - 类型：`inline-get`（读时触发）/ `inline-put`（写时触发）/ `offline`（后台异步 xaction）。
 - 插件 ABI：`fn transform(input: &[u8], ctx: &EtContext) -> Result<Vec<u8>>`；Context 提供 obj_uri/bucket/miji_level。
 - 支持 `GET /s3/b/k?etl=md5-sum` 直接返回处理结果。
 
 ### FR-9：磁盘健康 FSHC + Mountpath 热插拔
 - 每 60s 后台 `fshc_scan(mountpaths[])`：读 1MB 随机块 + write-then-verify 128KB；失败计数 ≥3 次 → 标记 Mountpath Faulty。
-- CLI：`xuanji mount list / attach / detach / enable / disable`，热插拔后自动 Rebalance → 触发 EC 重建。
-- 指标 `xuanji_fshc_mountpath_disabled{path="/mnt/x"} 1`。
+- CLI：`mox mount list / attach / detach / enable / disable`，热插拔后自动 Rebalance → 触发 EC 重建。
+- 指标 `mox_fshc_mountpath_disabled{path="/mnt/x"} 1`。
 
 ### FR-10：Read-after-Write + E2E CRC64
-- PUT 请求支持 `x-amz-checksum-crc64`（或 x-xuanji-crc64）；服务端计算 vs 客户端送值 mismatch → 拒绝写入（400 Bad Checksum）。
-- GET 返回 `x-xuanji-crc64`；SDK 默认校验开启；审计链 `ChecksumMismatch` 记录。
+- PUT 请求支持 `x-amz-checksum-crc64`（或 x-mox-crc64）；服务端计算 vs 客户端送值 mismatch → 拒绝写入（400 Bad Checksum）。
+- GET 返回 `x-mox-crc64`；SDK 默认校验开启；审计链 `ChecksumMismatch` 记录。
 - 任何 gateway 读同一对象返回同一 etag（强一致）。
 
 ### FR-11：独立部署双路径
-- **裸机/信创离线**：`./xuanji server --single-node --data-dir /data/x --port 8080 --no-k8s` → 默认 SQLite backend + in-memory 成员 + 单 mountpath；
-- **K8s/Helm**：`helm install xuanji ./deploy/helm/xuanji --set standalone=false --set replicaCount=6 --set ec.profile=8+4`；
+- **裸机/信创离线**：`./mox server --single-node --data-dir /data/x --port 8080 --no-k8s` → 默认 SQLite backend + in-memory 成员 + 单 mountpath；
+- **K8s/Helm**：`helm install mox ./deploy/helm/mox --set standalone=false --set replicaCount=6 --set ec.profile=8+4`；
 
 ### FR-12：E2E 回归 ≥ 1237 tests（既有 1117 + 新增 ≥ 120）
 - 新增模块单元测试：EC ≥ 16、HTTP3+Multipart ≥ 20、Tag-CDC-Graph ≥ 14、Single-Binary CLI ≥ 10、LegalHold+Miji ≥ 18、Bench ≥ 12、ETL-WASM ≥ 10、FSHC ≥ 10、Observability+CRC ≥ 10。
@@ -140,7 +140,7 @@
 | NFR-6 | 密级/LegalHold 零绕过 | 任何非法访问均 403 + 审计链记录（覆盖率 ≥ 99.99%） |
 | NFR-7 | FSHC 坏盘检测 | 3 次连续失败 → ≤ 3 分钟内标记 Faulty |
 | NFR-8 | HTTP/3 首字节 TTFB | 对比 HTTPS/1.1 降低 ≥ 30%（高丢包网络） |
-| NFR-9 | Helm 一键部署 | `helm install xuanji --set ...` 后 ≤ 3 min 所有 Pod Ready |
+| NFR-9 | Helm 一键部署 | `helm install mox --set ...` 后 ≤ 3 min 所有 Pod Ready |
 | NFR-10 | 等保三级兼容 | 新增审计链 `ChecksumMismatch / MijiDenied / LegalHoldBlocked / MountpathFault` 4 类 record |
 
 ---
@@ -154,11 +154,11 @@
 
 ### Dependencies
 - `reed-solomon-erasure`（或自研）、`quinn`（Rust QUIC/HTTP3）、`wasmtime`（WASM 运行时，可选 feature）、`crc64fast`、`clap`(CLI)。
-- 既存 crate：`xuanji-domain-abstractions`、`xuanji-graph-service`、`xuanji-standards`（hash_chain）。
+- 既存 crate：`mox-domain-abstractions`、`mox-graph-service`、`mox-standards`（hash_chain）。
 
 ### Assumptions
 - 单二进制 "单机模式" 下 mountpath = `<data-dir>/mount-0`，membership 1-node。
-- 政企密级裁决默认开启；可通过 `xuanji.toml [security] enforce_miji=false` 关闭（需审计链记录）。
+- 政企密级裁决默认开启；可通过 `mox.toml [security] enforce_miji=false` 关闭（需审计链记录）。
 
 ### Open Questions
 - 用户是否需要 **Rustls + 国密 SM2/SM4**（信创 TLS）？当前先按 Rustls 基础 TLS + 可选 feature="gm-sm" 预留。
@@ -172,17 +172,17 @@
 
 | ID | 类型 | 验收要求 | 通过阈值 | 证据来源 |
 |---|---|---|---|---|
-| AC-R1 | rule | EC-Engine：4+2 编码 / 丢失 2 片可恢复 / 丢失 3 片报错；16 场景 tests pass | cargo test -p xuanji-ec-engine `16/16` | EC crate 测试报告 |
+| AC-R1 | rule | EC-Engine：4+2 编码 / 丢失 2 片可恢复 / 丢失 3 片报错；16 场景 tests pass | cargo test -p mox-ec-engine `16/16` | EC crate 测试报告 |
 | AC-R2 | rule | Multipart UploadId：Rust/Node/Python SDK 各 7 场景（创建+5 上传+完成），合计 ≥ 21 tests pass | 21 / 21 + CRC 聚合验证 | 三语言 SDK 矩阵 |
 | AC-R3 | rule | Tag-CDC-Graph：PUT 5 标签对象 → 5 obj 顶点 + N tag 顶点 + N HAS_TAG 边；反向 obj→tags 查询匹配；14 tests pass | 14 / 14 | tag_cdc_graph tests |
-| AC-R4 | rule | 单二进制 CLI：`server --single-node` 启动 + 健康探针 + 5 子命令 ec/mount/legal-hold/miji/bench 存在；≥ 10 tests pass | 10 / 10 0 fail | xuanji-server integration tests |
+| AC-R4 | rule | 单二进制 CLI：`server --single-node` 启动 + 健康探针 + 5 子命令 ec/mount/legal-hold/miji/bench 存在；≥ 10 tests pass | 10 / 10 0 fail | mox-server integration tests |
 | AC-R5 | rule | LegalHold：持有期内 DELETE/PUT-overwrite 均返回 412；密级裁决：高密读低密 OK / 低密读高密 403 / 高密写低密 403；≥ 18 tests pass | 18 / 18 + 审计链 record 类型正确 | miji_legal_hold tests |
 | AC-R6 | rule | P99 指标暴露：GET /metrics 包含上述 9 个新指标；审计链取证端点返回 200 + block 完整性校验通过；≥ 10 tests pass | 10 / 10 | observability tests |
 | AC-R7 | rule | Bench 三档：1KB/1MB/1GB 各跑 10000/1000/20，输出 ops/s & p99；EC 4+2 对比 EC off 吞吐下降 ≤ 15%；≥ 12 tests pass | 12 / 12 且开销 ≤15% | bench harness |
 | AC-R8 | rule | ETL WASM：注册 md5 inline-get → GET 带 etl=md5 返回 md5；注册 off-line → xaction 后台跑新桶 10 对象完成；≥ 10 tests pass | 10 / 10 | etl_wasm tests |
 | AC-R9 | rule | FSHC：3 次失败 mountpath 标记 faulty；attach → Rebalance → EC 恢复计数+1；≥ 10 tests pass | 10 / 10 | fshc_mountpath tests |
 | AC-R10 | rule | Read-after-Write：并发 PUT 100 对象 → 10 线程 10 轮 GET → etag 100% 一致；端到端 CRC mismatch 拒绝；≥ 10 tests pass | 10 / 10 + 0 不一致 | raw_consistency tests |
-| AC-R11 | rule | 双部署：① single-node 启动后 GET `/health` 200；② helm lint xuanji/ + helm template --set standalone=false 12 资源渲染成功 | ①② 都成立 | deploy smoke |
+| AC-R11 | rule | 双部署：① single-node 启动后 GET `/health` 200；② helm lint mox/ + helm template --set standalone=false 12 资源渲染成功 | ①② 都成立 | deploy smoke |
 | AC-R12 | rule | E2E 回归 ≥ 1237 tests（Base 1117 + 新 120 = 1237，fail ≤ 2） | tests_total ≥ 1237 ∧ fail ≤ 2 | t21-e2e report.json |
 | AC-U1 | rubric | EC + 磁盘自修复整体工程质量（0-100）：S ≥ 92 / A ≥ 80 / B ≥ 70 | ≥ 92（S） | EC manifest + rebuild code review |
 | AC-U2 | rubric | HTTP3 + Multipart + 三网分离工程质量（0-100） | ≥ 90（S） | listener + SDK multipart 一致性 |

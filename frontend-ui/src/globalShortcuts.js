@@ -2,7 +2,7 @@
 // 设计要点：
 // ① 所有事件以 window.addEventListener('keydown') 绑定，onBeforeUnmount 时通过返回的 dispose 解绑
 // ② 快捷键避开浏览器默认：Ctrl+K（搜索框聚焦）、Ctrl+Shift+P（命令面板备用）、Ctrl+Shift+N（新建任务 Dialog）、Shift+?（帮助 Drawer）、Alt+1..9（跳 1-9 号模块）
-// ③ 全部使用 CustomEvent 通知视图层（例如 TaskView 监听到 'xuanji:open-create-task' 后自行打开 Dialog），避免跨组件强耦合
+// ③ 全部使用 CustomEvent 通知视图层（例如 TaskView 监听到 'mox:open-create-task' 后自行打开 Dialog），避免跨组件强耦合
 
 import { onBeforeUnmount } from 'vue'
 
@@ -52,7 +52,7 @@ export function useGlobalShortcuts(api) {
     // Ctrl + Shift + N → 全局派发「新建任务打开 Dialog」事件
     if (ctrlOrMeta && e.shiftKey && (e.key === 'n' || e.key === 'N')) {
       e.preventDefault()
-      window.dispatchEvent(new CustomEvent('xuanji:open-create-task'))
+      window.dispatchEvent(new CustomEvent('mox:open-create-task'))
       return
     }
 
@@ -80,7 +80,7 @@ export function mergeQuery(base, extra) {
 }
 
 // 搜索历史存取（前缀避免其他工程冲突）
-const HISTORY_PREFIX = 'xuanji_search_'
+const HISTORY_PREFIX = 'mox_search_'
 const HISTORY_LIMIT = 5
 
 export function getSearchHistory(key, limit = HISTORY_LIMIT) {

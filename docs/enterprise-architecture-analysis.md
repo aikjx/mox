@@ -2,7 +2,7 @@
 
 > 本文档是 `docs/architecture.md`(v7.0) 的**分析补充与演进追踪**，聚焦：
 > 1. 基于现网 `crates/` 代码事实的架构对齐校验（代码 vs 文档）；
-> 2. 双璇玑十四维维度模型（业务七维 + 开发七维）及其在 `xuanji-expert` 的落点；
+> 2. 双璇玑十四维维度模型（业务七维 + 开发七维）及其在 `mox-expert` 的落点；
 > 3. 全维度能力覆盖矩阵（所有功能明确化）；
 > 4. 持续优化项（P0/P1/P2/P3 已落地清单 + 后续优化建议）。
 >
@@ -23,7 +23,7 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 | crate | 角色 | 关键模块 |
 |-------|------|----------|
 | `ai-agent` | AI 主控：需求编译 + 会话编排 | `requirement_compiler.rs`（自然需求→`CodeIR`/规格）、`lib.rs` |
-| `xuanji-expert` | **决策内核**：双璇玑十四维专家 + 治理闸门 + 审计 | `experts/{algorithm,business,data,observability,permission,resource,security}.rs`、`govern.rs`、`context.rs`、`ir.rs`、`sensitivity.rs`、`reconcile.rs`、`pipeline.rs`、`harness.rs` |
+| `mox-expert` | **决策内核**：双璇玑十四维专家 + 治理闸门 + 审计 | `experts/{algorithm,business,data,observability,permission,resource,security}.rs`、`govern.rs`、`context.rs`、`ir.rs`、`sensitivity.rs`、`reconcile.rs`、`pipeline.rs`、`harness.rs` |
 | `flow-ai` | 最优求解：拓扑/调度/优化 | `pipeline::optimize`、`schedule::ModelRouting` |
 | `operator-core` | 算子本原：组合律/守恒律 | `lib.rs` |
 | `operator-graph` | 算子图（范畴态射图） | — |
@@ -39,7 +39,7 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 
 ### 1.2 决策内核校验（最关键）
 
-`xuanji-expert::experts::mod::all_experts()` 实测返回的专家（业务璇玑）：
+`mox-expert::experts::mod::all_experts()` 实测返回的专家（业务璇玑）：
 
 | # | 专家 | 维度枚举值 | 文件 |
 |---|------|-----------|------|
@@ -59,7 +59,7 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 
 ### 1.3 治理闸门与最高权限校验
 
-`govern.rs`：`apply_rules` / `govern` / `GateResult` / `AuditChain`；`verify.rs`：`verify` / `AlgoVerification`（**璇玑，最高权限，不可被治理覆盖**）。`pipeline.rs::xuanji_optimize` 输出 `GovernanceReport{expert_scores, optimization, algo, gate, audit, adopted_suggestions}`。
+`govern.rs`：`apply_rules` / `govern` / `GateResult` / `AuditChain`；`verify.rs`：`verify` / `AlgoVerification`（**璇玑，最高权限，不可被治理覆盖**）。`pipeline.rs::mox_optimize` 输出 `GovernanceReport{expert_scores, optimization, algo, gate, audit, adopted_suggestions}`。
 
 **结论**：与 `docs/architecture.md` 第 10.3、19 章一致；`adopted_suggestions` 已在 P1 中显式对外暴露（此前专家建议停留在 `ExpertOpinion` 不被消费，现已修复）。
 
@@ -131,7 +131,7 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 | 插件内核 | Profile/Bundle/Seam/事件域/瀑布扩展点 | `harness.rs`/`derive` | ✅ |
 | 运行时 | Turn/Agent/Step、会话日志溯源（SoT） | `runtime` | ✅ |
 | 隔离 | WASM 沙箱 + 能力令牌 | `operator-wasm` | ✅ |
-| 决策 | 双璇玑十四维 + 裁决 + 优化 | `xuanji-expert`/`flow-ai` | ✅ |
+| 决策 | 双璇玑十四维 + 裁决 + 优化 | `mox-expert`/`flow-ai` | ✅ |
 | 最高权限 | 璇玑算法校验 | `verify.rs` | ✅ |
 | 治理 | 闸门 + 审计链 + 策略谓词 | `govern.rs`/`context.rs` | ✅ |
 | 敏感 | SSOT 敏感字段/模式判定 | `sensitivity.rs` | ✅（新增） |
@@ -167,7 +167,7 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 
 ### 4.2 后续优化建议（建议排入路线图）
 
-1. ~~**维度治理可视化**：前端设计器应展示十四维健康分雷达图（直接消费 `GovernanceReport.expert_scores`）~~ → **已完成（2026-08-16）**：`runtime` 暴露 `/api/xuanji/health`、`/api/xuanji/optimize`，`MonitorView.vue` 以 ECharts 雷达展示双璇玑十四维健康分 + 采纳建议列表 + 蓝图载入治理。
+1. ~~**维度治理可视化**：前端设计器应展示十四维健康分雷达图（直接消费 `GovernanceReport.expert_scores`）~~ → **已完成（2026-08-16）**：`runtime` 暴露 `/api/mox/health`、`/api/mox/optimize`，`MonitorView.vue` 以 ECharts 雷达展示双璇玑十四维健康分 + 采纳建议列表 + 蓝图载入治理。
 2. **开发七维常驻化**：当前开发专家需 `CodeIR` 才并入；建议对"存量代码仓库治理"提供批量 `CodeIR` 提取器（AST 扫描），使开发璇玑可独立运行。
 3. **敏感判定误报治理**：`SENSITIVE_PATTERNS` 为静态正则，建议叠加语义识别（上下文相关字段）并支持租户自定义词表，避免脱敏过严/过松。
 4. **璇玑校验可解释**：`AlgoVerification` 应产出可读的"为何通过/拦截"报告，供审计与合规导出（对接 `docs/architecture.md` §24 Eval）。
@@ -182,10 +182,10 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 
 | 项 | 改动 | 文件 | 验证 |
 |----|------|------|------|
-| 双璇玑十四维接入主服务 | 新增 `/api/xuanji/health`、`/api/xuanji/optimize`，调用 `xuanji_optimize` | `crates/runtime/src/main.rs` | 编译通过 |
+| 双璇玑十四维接入主服务 | 新增 `/api/mox/health`、`/api/mox/optimize`，调用 `mox_optimize` | `crates/runtime/src/main.rs` | 编译通过 |
 | 前端可视化治理（十四维雷达） | MonitorView 消费治理报告，ECharts 雷达 + 采纳建议列表 + 蓝图载入 | `frontend/src/views/MonitorView.vue`、`frontend/src/api/index.js` | `npm run build` 通过 |
-| 双璇玑十四维契约测试 | 断言 expert_scores 恰为 14 维、分数∈[0,1]、璇玑/闸门明确、审计链非空 | `crates/xuanji-expert/src/pipeline.rs` | 146 passed（2026-08-18 复测） |
-| 敏感写安全护栏测试 | 公民敏感库越权写（无 authz/脱敏 Guard）必须被闸门拦截 | `crates/xuanji-expert/src/pipeline.rs` | passed |
+| 双璇玑十四维契约测试 | 断言 expert_scores 恰为 14 维、分数∈[0,1]、璇玑/闸门明确、审计链非空 | `crates/mox-expert/src/pipeline.rs` | 146 passed（2026-08-18 复测） |
+| 敏感写安全护栏测试 | 公民敏感库越权写（无 authz/脱敏 Guard）必须被闸门拦截 | `crates/mox-expert/src/pipeline.rs` | passed |
 | 条件求值 fail-closed | 未定义变量返回 `Ok(false)`（不 panic），语法错误仍报错 | `crates/ai-agent/src/workflow_engine.rs` | passed |
 | 修复缺失枚举 `SessionEntry` | 定义 `TurnStart/StepStart/TurnComplete` 三变体，修复 runtime lib 编译阻断 | `crates/runtime/src/cordis/context.rs` | runtime build/test 通过 |
 | 统一自动化脚本 | `scripts/ci.ps1`：build+test+前端构建+启服+端到端健康检查（璇玑 API） | `scripts/ci.ps1` | 一键执行 |
@@ -196,7 +196,7 @@ OUS 是一个以**范畴论/希尔伯特空间数学内核**为底座、以 **Ru
 cargo test --workspace  →  EXITCODE=0
   ai-agent        62 passed
   runtime          8 passed | 5 ignored（需服务器，CI 脚本覆盖）
-  xuanji-expert 146 passed（2026-08-18 复测，含双璇玑契约 + 敏感拦截）
+  mox-expert 146 passed（2026-08-18 复测，含双璇玑契约 + 敏感拦截）
   template-market  7 passed
   doc-tests        2 passed
 npm run build (frontend) → built in 22.79s
@@ -213,7 +213,7 @@ npm run build (frontend) → built in 22.79s
 
 OUS 已实现**全维度企业级闭环**：数学内核稳固、双璇玑十四维治理接入主服务与前端可视化、璇玑最高权限校验、WASM 沙箱隔离、统一自动化脚本一键 build+test+serve+e2e。所有单元/集成测试全绿，前端可构建。后续重点是把 📋 设计态能力（多模态/记忆/Eval/FinOps/灾备）落到代码，并强化开发七维常驻与敏感语义识别。
 
-> 配套文档：`docs/architecture.md`(总架构)、`docs/modules/mathematical-foundation.md`(数学内核)、`docs/modules/xuanji-expert-normalization.md`(归一化)、`docs/modules/xuanji-expert-product.md`(产品化)、`docs/modules/algorithm-verification.md`(璇玑校验)、`docs/modules/business-process-flows.md`(企业级业务处理流程)。
+> 配套文档：`docs/architecture.md`(总架构)、`docs/modules/mathematical-foundation.md`(数学内核)、`docs/modules/mox-expert-normalization.md`(归一化)、`docs/modules/mox-expert-product.md`(产品化)、`docs/modules/algorithm-verification.md`(璇玑校验)、`docs/modules/business-process-flows.md`(企业级业务处理流程)。
 
 ---
 
@@ -237,7 +237,7 @@ OUS 已实现**全维度企业级闭环**：数学内核稳固、双璇玑十四
 
 | 术语 | 含义 |
 |------|------|
-| **璇玑 (Xuánjī)** | 归一化 IR 驱动的元调度诊断系统（`xuanji-expert` crate） |
+| **璇玑 (Xuánjī)** | 归一化 IR 驱动的元调度诊断系统（`mox-expert` crate） |
 | **关图 / GR-STD** | 信息关联关系图开发规范 V1.0，「一切皆是信息」 |
 | **AA-STD** | 璇玑-全维需求业务处理流程图-归一化企业级，融合域需求事实基准 |
 | **PT-Primi / PrimiFlow** | 全域拓扑原语架构（κ-τ 调度，守恒律 `C² = κ² + τ²`） |

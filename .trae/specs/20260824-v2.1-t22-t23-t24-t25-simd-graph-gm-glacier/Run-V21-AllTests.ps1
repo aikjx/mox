@@ -1,6 +1,6 @@
 # Run-V21-AllTests.ps1
 # ============================================================
-# Xuanji v2.1 Validation Harness - Runs T22 / T23 / T24 / T25
+# Mox v2.1 Validation Harness - Runs T22 / T23 / T24 / T25
 # cargo lib tests, aggregates results, and emits summary.
 #
 # Run me from the repository root:
@@ -57,29 +57,29 @@ if (-not (Test-Path -LiteralPath $ProjectsRoot)) {
 $Phases = @(
     @{
         Key        = 'P1-T22'
-        Title      = 'T22 - SIMD AVX2 / NEON accelerated erasure coding (xuanji-cloud-drive-volume)'
-        Packages   = @('xuanji-cloud-drive-volume')
+        Title      = 'T22 - SIMD AVX2 / NEON accelerated erasure coding (mox-cloud-drive-volume)'
+        Packages   = @('mox-cloud-drive-volume')
         Features   = 'simd'
         BaselineSafe = $true
     },
     @{
         Key        = 'P2-T23'
-        Title      = 'T23 - Fusion CDC Tag-Graph 20 projection-list + Graph service (xuanji-fusion + xuanji-graph-service)'
-        Packages   = @('xuanji-fusion', 'xuanji-graph-service')
+        Title      = 'T23 - Fusion CDC Tag-Graph 20 projection-list + Graph service (mox-fusion + mox-graph-service)'
+        Packages   = @('mox-fusion', 'mox-graph-service')
         Features   = $null
         BaselineSafe = $true
     },
     @{
         Key        = 'P3-T24'
-        Title      = 'T24 - GM-SM 国密 & dual_chain hash-chain compliance (xuanji-standards)'
-        Packages   = @('xuanji-standards')
+        Title      = 'T24 - GM-SM 国密 & dual_chain hash-chain compliance (mox-standards)'
+        Packages   = @('mox-standards')
         Features   = 'gm-sm dual_chain'
         BaselineSafe = $false
     },
     @{
         Key        = 'P4-T25'
-        Title      = 'T25 - Glacier storage class + S3 gateway (xuanji-cloud-drive-s3)'
-        Packages   = @('xuanji-cloud-drive-s3')
+        Title      = 'T25 - Glacier storage class + S3 gateway (mox-cloud-drive-s3)'
+        Packages   = @('mox-cloud-drive-s3')
         Features   = 'glacier'
         BaselineSafe = $true
     }
@@ -317,7 +317,7 @@ $ts = (Get-Date).ToUniversalTime().ToString('o')
 $thresholdOk = $totalPassed -ge $Threshold
 
 $summaryJson = [ordered]@{
-    schema       = 'xuanji-v21-validation-summary@1'
+    schema       = 'mox-v21-validation-summary@1'
     timestamp_utc = $ts
     threshold    = $Threshold
     threshold_ok = [bool]$thresholdOk
@@ -334,7 +334,7 @@ Write-Host "  Wrote $jsonOut" -ForegroundColor Cyan
 
 # Markdown summary
 $sb = New-Object System.Text.StringBuilder
-[void]$sb.AppendLine("# Xuanji v2.1 Test Suite Aggregate Summary")
+[void]$sb.AppendLine("# Mox v2.1 Test Suite Aggregate Summary")
 [void]$sb.AppendLine("")
 [void]$sb.AppendLine(("- Generated (UTC): {0}" -f $ts))
 [void]$sb.AppendLine(("- Pass threshold (NFR7 door): **{0}**" -f $Threshold))

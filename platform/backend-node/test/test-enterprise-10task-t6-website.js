@@ -47,7 +47,7 @@ const MARKETING = `<!doctype html>
 </head>
 <body>
   <nav class="nav" aria-label="主导航 导航">
-    <strong>璇玑 · Xuanji Infotopograph</strong>
+    <strong>璇玑 · Mox Infotopograph</strong>
     <span>
       <a href="#features">产品特性</a>
       <a href="#architecture">架构</a>
@@ -81,11 +81,11 @@ const MARKETING = `<!doctype html>
       </div>
     </div>
     <h2 style="margin-top:28px;">架构示意 Architecture</h2>
-    <img id="architecture" src="https://via.placeholder.com/900x320.png?text=Xuanji+Architecture+Diagram" alt="璇玑平台总体架构图：网关 → 图谱内核 → 专家联盟 / 自动开发 / 内容治理 三大域" style="max-width:100%;border-radius:8px;border:1px solid #e5e7eb;" />
+    <img id="architecture" src="https://via.placeholder.com/900x320.png?text=Mox+Architecture+Diagram" alt="璇玑平台总体架构图：网关 → 图谱内核 → 专家联盟 / 自动开发 / 内容治理 三大域" style="max-width:100%;border-radius:8px;border:1px solid #e5e7eb;" />
     <img src="https://via.placeholder.com/900x200.png?text=Knowledge+Graph+Visualization" alt="全息知识图谱可视化节点关系截图" style="max-width:100%;margin-top:10px;border-radius:8px;border:1px solid #e5e7eb;" />
     <img src="https://via.placeholder.com/900x200.png?text=Auto+Dev+Pipeline" alt="自动开发流水线阶段示意：需求归一化 → 架构蓝图 → 代码渲染" style="max-width:100%;margin-top:10px;border-radius:8px;border:1px solid #e5e7eb;" />
   </div>
-  <footer>© 2026 璇玑信息图谱 Xuanji Infotopograph · All Rights Reserved</footer>
+  <footer>© 2026 璇玑信息图谱 Mox Infotopograph · All Rights Reserved</footer>
 <script>
   // marketing scroll highlight
   (function () {
@@ -146,7 +146,7 @@ const DASHBOARD = `<!doctype html>
 <body>
   <nav class="top" aria-label="顶部导航导航栏">
     <span class="brand">
-      <img class="brand-logo" src="https://via.placeholder.com/120x40.png?text=Xuanji" alt="璇玑系统 Logo 品牌标识" />
+      <img class="brand-logo" src="https://via.placeholder.com/120x40.png?text=Mox" alt="璇玑系统 Logo 品牌标识" />
     </span>
     <ul>
       <li><a href="#overview">概览 Overview</a></li>
@@ -208,7 +208,7 @@ const DASHBOARD = `<!doctype html>
   </div>
 
   <footer class="site-foot">
-    © 2026 璇玑信息图谱 Xuanji Dashboard · Powered by Infotopograph Platform v4.0
+    © 2026 璇玑信息图谱 Mox Dashboard · Powered by Infotopograph Platform v4.0
   </footer>
 
 <script>
@@ -272,7 +272,7 @@ const API_LANDING = `<!doctype html>
 </head>
 <body>
   <header class="hdr">
-    <h1>Xuanji API Landing · 开发者中心</h1>
+    <h1>Mox API Landing · 开发者中心</h1>
     <nav>
       <a href="#ref">Reference</a>
       <a href="#sdks">SDKs</a>
@@ -285,13 +285,13 @@ const API_LANDING = `<!doctype html>
       <div class="card">
         <h3>快速入门 Quick Start</h3>
 <pre><code># 生成一个带签名的 API 调用
-curl -X POST https://api.xuanji.local/v1/ai/engine/process \
-  -H "Authorization: Bearer $XUANJI_TOKEN" \
+curl -X POST https://api.mox.local/v1/ai/engine/process \
+  -H "Authorization: Bearer $MOX_TOKEN" \
   -H "X-CSRF-Token: t6-api-landing-csrf-qwerty09876" \
   -H "Content-Type: application/json" \
   -d '{"q":"请分析图谱结构"}'
 </code></pre>
-        <img src="https://via.placeholder.com/640x220.png?text=Xuanji+API+Request+Lifecycle" alt="API 请求生命周期图示：签名 → 鉴权 → 路由 → 引擎执行 → 审计落盘" style="max-width:100%;border-radius:6px;margin-top:8px;border:1px solid #1e293b;" />
+        <img src="https://via.placeholder.com/640x220.png?text=Mox+API+Request+Lifecycle" alt="API 请求生命周期图示：签名 → 鉴权 → 路由 → 引擎执行 → 审计落盘" style="max-width:100%;border-radius:6px;margin-top:8px;border:1px solid #1e293b;" />
       </div>
       <div class="card">
         <h3>鉴权模型 Authentication</h3>
@@ -325,7 +325,7 @@ curl -X POST https://api.xuanji.local/v1/ai/engine/process \
     </table>
     <img src="https://via.placeholder.com/1000x180.png?text=API+Latency+Chart" alt="API 调用延迟 P50 / P95 / P99 曲线图" style="max-width:100%;margin-top:18px;border-radius:6px;border:1px solid #1e293b;" />
   </div>
-  <footer class="foot">© Xuanji API v1 · 开发者文档最后更新：2026-08-23</footer>
+  <footer class="foot">© Mox API v1 · 开发者文档最后更新：2026-08-23</footer>
 <script>
   // syntax-highlight-ish subtle zebra for method rows
   (function () {

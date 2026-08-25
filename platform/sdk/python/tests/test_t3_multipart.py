@@ -1,6 +1,6 @@
 import sys, os, pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from xuanji_sdk_cloud import CloudClient, crc64_ecma
+from mox_sdk_cloud import CloudClient, crc64_ecma
 
 EXAMPLES_DIR = os.path.join(os.path.dirname(__file__), "..", "examples")
 T3_IDS = [

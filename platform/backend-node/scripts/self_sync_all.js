@@ -128,7 +128,7 @@ function validateSchema(card, schema, path = '$') {
  *  这里骨架：用 24 §2.1 表 16 条 内置，启动时 warn 请补真实 lib.rs 解析。 */
 function scanRustCrates() {
   const builtin = [
-    ['xuanji-common-meta', '34a20231-1a80-5426-b392-40d7a2ddd9f7', 'L0_SoT'],
+    ['mox-common-meta', '34a20231-1a80-5426-b392-40d7a2ddd9f7', 'L0_SoT'],
     ['ai-agent',           '00374bdd-cc60-55bf-8970-a879afbfe443', 'L3_AlgorithmReasoning'],
     ['business-catalog',   '62b2cca1-d98f-5e41-b26e-8d2a43966117', 'L5_BusinessFlow'],
     ['flow-ai',            '2fcd3eac-e894-5876-b007-fb33c56c0d65', 'L3_AlgorithmReasoning'],
@@ -141,15 +141,15 @@ function scanRustCrates() {
     ['primiflow-core',     '8c8d2382-6f9f-5218-894e-a07a43aa9554', 'L5_BusinessFlow'],
     ['primiflow-fusion',   '75238345-b48b-534b-818b-8d9abe083a41', 'L4_GraphCore'],
     ['template-market',    '4d2e50c1-9d64-525d-86cf-2d7d610a27b9', 'L5_BusinessFlow'],
-    ['xuanji-expert',      '50bb6200-04c5-5e4c-8354-4c6e1b230024', 'L4_GraphCore'],
-    ['xuanji-system',      'b81eec75-22ff-5155-ac49-19edf6f6b5ab', 'L4_GraphCore'],
+    ['mox-expert',      '50bb6200-04c5-5e4c-8354-4c6e1b230024', 'L4_GraphCore'],
+    ['mox-system',      'b81eec75-22ff-5155-ac49-19edf6f6b5ab', 'L4_GraphCore'],
     ['runtime',            'a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b', 'L6_ProductApp'],
   ];
   return builtin.map(([name, idShort, layer]) => {
     return {
       // 骨架阶段：先填 6 字段卡的**合法**占位，让 Schema 校验先过
       // 真实阶段用 lib.rs 解析替换
-      moduleId: `urn:xuanji:crate:${idShort}`,
+      moduleId: `urn:mox:crate:${idShort}`,
       name: `Rust Crate · ${name}`,
       aisLayer: layer,
       raci: { R: '开发联盟', A: '开发联盟', C: [], I: '总设计师' },
@@ -178,7 +178,7 @@ function scanNodeDomains() {
     ['Engine Universe 图查询',           '00000000-0000-0000-0000-000000000008', 'L4_GraphCore',       '算法联盟', '开发联盟'],
   ];
   return builtin.map(([name, id, layer, R, A]) => ({
-    moduleId: `urn:xuanji:nmod:${id}`,
+    moduleId: `urn:mox:nmod:${id}`,
     name: `Node 域 · ${name}`,
     aisLayer: layer,
     raci: { R, A, C: [], I: '总设计师' },
@@ -209,7 +209,7 @@ function scanFEViews() {
     for (let i = 1; i <= count; i++) {
       const id = String(n + 1).padStart(2, '0'); n++;
       cards.push({
-        moduleId: `urn:xuanji:feview:00000000-0000-0000-0000-${id.padStart(12, '0')}`,
+        moduleId: `urn:mox:feview:00000000-0000-0000-0000-${id.padStart(12, '0')}`,
         name: `Frontend · ${prefix}-${i}`,
         aisLayer: layer,
         raci: { R, A, C: [], I: '总设计师' },
@@ -251,7 +251,7 @@ function scanDocs() {
     const layer = LAYER_MAP[i] || 'L1_DeployOps';
     const docUuid = `00000000-0000-0000-0000-${id.padStart(8, '0')}0000`; // doc XX 编码到 UUID 最后 12 位，保证唯一
     cards.push({
-      moduleId: `urn:xuanji:doc:${docUuid}`,
+      moduleId: `urn:mox:doc:${docUuid}`,
       name: `企业文档 · ${id}`,
       aisLayer: layer.startsWith('L') ? layer : 'L1',
       raci: {
@@ -279,12 +279,12 @@ function expandEdges(cards) {
   const edges = [];
   for (const c of cards) {
     // belongs_to × 2（Layer + BP，这里默认给 BP-0x 占位）
-    edges.push({ from: c.moduleId, type: 'belongs_to', to: `urn:xuanji:bp:${c.aisLayer.substring(0,2)}`, __note: `归属 ${c.aisLayer} AIS Layer` });
-    edges.push({ from: c.moduleId, type: 'belongs_to', to: 'urn:xuanji:bp:00000000-0000-0000-0000-000000000006', __note: '默认挂到 BP-06 璇玑融合（Day2 实际替换）' });
+    edges.push({ from: c.moduleId, type: 'belongs_to', to: `urn:mox:bp:${c.aisLayer.substring(0,2)}`, __note: `归属 ${c.aisLayer} AIS Layer` });
+    edges.push({ from: c.moduleId, type: 'belongs_to', to: 'urn:mox:bp:00000000-0000-0000-0000-000000000006', __note: '默认挂到 BP-06 璇玑融合（Day2 实际替换）' });
     // governed_by × 1
-    edges.push({ from: c.moduleId, type: 'governed_by', to: 'urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41', __note: '受 primiflow-fusion G1-G8 治理闸门' });
+    edges.push({ from: c.moduleId, type: 'governed_by', to: 'urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41', __note: '受 primiflow-fusion G1-G8 治理闸门' });
     // version_of × 1
-    edges.push({ from: c.moduleId, type: 'version_of', to: 'urn:xuanji:bp:00000000-0000-0000-0000-000000000000', __note: 'M0 全域归一化（Day2 替换到具体 Mx）' });
+    edges.push({ from: c.moduleId, type: 'version_of', to: 'urn:mox:bp:00000000-0000-0000-0000-000000000000', __note: 'M0 全域归一化（Day2 替换到具体 Mx）' });
     // upstream → depends_on × N
     for (const u of (c.upstreamDownstream?.upstream || [])) {
       edges.push({ from: c.moduleId, type: 'depends_on', to: u });
@@ -292,11 +292,11 @@ function expandEdges(cards) {
     }
     // reconciled_with（算法类模块，检测名字含 graph-algo / flow-ai）
     if (/graph-algorithms|flow-ai|Graph.*|图谱.*|算法/i.test(c.name)) {
-      edges.push({ from: c.moduleId, type: 'reconciled_with', to: 'urn:xuanji:nmod:00000000-0000-0000-0000-000000000001', __note: '与 Node 图谱域 reconcile_7x8.js 对账 Δ≤1e-6' });
+      edges.push({ from: c.moduleId, type: 'reconciled_with', to: 'urn:mox:nmod:00000000-0000-0000-0000-000000000001', __note: '与 Node 图谱域 reconcile_7x8.js 对账 Δ≤1e-6' });
     }
     // rbac_granted_to（检测含 Admin / 写操作）
     if (/admin|audit|publish|optimize|settings|写/i.test(c.name)) {
-      edges.push({ from: c.moduleId, type: 'rbac_granted_to', to: 'urn:xuanji:role:Admin+Auditor', __note: '写操作模块需 Admin 或 Auditor 双写审计' });
+      edges.push({ from: c.moduleId, type: 'rbac_granted_to', to: 'urn:mox:role:Admin+Auditor', __note: '写操作模块需 Admin 或 Auditor 双写审计' });
     }
   }
   return edges;
@@ -353,7 +353,7 @@ function main() {
 
   // KG-Hub 实体节点化
   const entities = cards.map(c => {
-    const kind = (c.moduleId.match(/^urn:xuanji:([^:]+):/) || [, 'Unknown'])[1];
+    const kind = (c.moduleId.match(/^urn:mox:([^:]+):/) || [, 'Unknown'])[1];
     const props = Object.assign({}, c);
     delete props.__skeleton;
     return {

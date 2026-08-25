@@ -3105,7 +3105,7 @@
     "scannedAt": "2026-08-23T00:56:00.869Z"
   },
   {
-    "unitId": "proj-xuanji-core",
+    "unitId": "proj-mox-core",
     "kind": "project",
     "name": "璇玑核心平台",
     "codePath": "src/project-atlas/domain/project-registry.js",

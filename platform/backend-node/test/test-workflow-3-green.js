@@ -12,7 +12,7 @@ const path = require('path');
 const os = require('os');
 const http = require('http');
 
-const WORK_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'xuanji-t13-'));
+const WORK_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'mox-t13-'));
 process.env.DATA_DIR = WORK_DIR;
 process.env.STORAGE_PROVIDER = 'memory';
 process.env.USE_NEBULAGRAPH = 'false';

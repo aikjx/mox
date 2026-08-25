@@ -25,7 +25,7 @@
 1. 在仓库根目录创建 `test-tr-4-compliance.js` Node 脚本：
    - 扫描 17 个 Cargo.toml 文件路径（16 个 platform/services/* + 1 个 platform/gateway/runtime）；
    - 使用 `toml` 或正则解析（正则更轻，Node 内置足够）每个 Cargo.toml 的 `[dependencies]` / `[dev-dependencies]` 段；
-   - **TR 4.1 统计**：对 `[dependencies]` / `[dev-dependencies]` 下的每一个"外部 crate"依赖声明（排除 path 指向内部 crate：xuanji-common-meta / operator-core / operator-wasm / graph-algorithms / optimizer / ai-agent / business-catalog / xuanji-expert / flow-ai / xuanji-system / primiflow-core / primiflow-fusion / kg-hub / hermes-flow-bridge / template-market），检查是否包含 `workspace = true` / `.workspace = true`。如果没有，则计入 TR 4.1 计数；
+   - **TR 4.1 统计**：对 `[dependencies]` / `[dev-dependencies]` 下的每一个"外部 crate"依赖声明（排除 path 指向内部 crate：mox-common-meta / operator-core / operator-wasm / graph-algorithms / optimizer / ai-agent / business-catalog / mox-expert / flow-ai / mox-system / primiflow-core / primiflow-fusion / kg-hub / hermes-flow-bridge / template-market），检查是否包含 `workspace = true` / `.workspace = true`。如果没有，则计入 TR 4.1 计数；
    - **TR 4.2 检查**：调用 `cargo tree -p primiflow-core -i reqwest --prefix=depth`，用正则提取出现的 reqwest 版本号前缀，全部应为 `0.12.`；
    - **附加检查（辅助）**：
      - criterion 声明中是否仍含 `default-features`（应无）；
@@ -114,10 +114,10 @@
     - [package]：description 专用描述，保留；其他已继承。OK；
     - [dependencies]：使用 `serde.workspace = true` 的简写语法；统一到 `serde = { workspace = true }` 风格以保持一致性（治理一致性 AC-7）。
 
-13. `platform/services/xuanji-common-meta/Cargo.toml`
+13. `platform/services/mox-common-meta/Cargo.toml`
     - 已检查：全继承 + 外部全 workspace=true。保留。
 
-14. `platform/services/xuanji-expert/Cargo.toml`
+14. `platform/services/mox-expert/Cargo.toml`
     - [package]：
       - version `0.1.0` → version.workspace = true
       - edition `2021` → edition.workspace = true
@@ -126,7 +126,7 @@
       - description 专用描述，保留；
     - [dependencies]：外部全 workspace=true（reqwest 附加 features=["blocking"] 正常）。保留。
 
-15. `platform/services/xuanji-system/Cargo.toml`
+15. `platform/services/mox-system/Cargo.toml`
     - [package]：
       - version `0.1.0` → version.workspace = true
       - edition `2021` → edition.workspace = true
@@ -149,7 +149,7 @@
 
 - **TR-T2-1（rule）**：所有 17 个子包 [dependencies] / [dev-dependencies] 的外部依赖（非 path 内部）都包含 `workspace = true` 或 `.workspace = true`（脚本 TR 4.1 计数后，若 ≤1 则通过，否则继续修改）。
 - **TR-T2-2（rule）**：所有 criterion 声明无 `default-features` 键（脚本 criterion_default_features_remaining_count = 0）。
-- **TR-T2-3（rule）**：5 个 package 字段待修复的 crate（business-catalog / hermes-flow-bridge / primiflow-fusion / xuanji-expert / xuanji-system）全部改为 `*.workspace = true`（除 description 外）。
+- **TR-T2-3（rule）**：5 个 package 字段待修复的 crate（business-catalog / hermes-flow-bridge / primiflow-fusion / mox-expert / mox-system）全部改为 `*.workspace = true`（除 description 外）。
 - **TR-T2-4（rule）**：template-market 的依赖语法统一为 `dep = { workspace = true }` 表形式（不再使用 `dep.workspace = true` 简写，保持 crate 间一致）。
 - **TR-T2-5（rubric，0-2，阈值=2）**：治理一致性评分：2=所有写法在 crate 间无差异（外部依赖均使用表形式，features 附加大写/小写与原 workspace 一致），1=≤2 处差异但不影响构建，0=明显不一致。
 

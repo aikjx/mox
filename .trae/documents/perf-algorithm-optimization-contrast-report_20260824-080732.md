@@ -15,8 +15,8 @@
 | platform/backend-node/src/graph/graph-formulas.js | 常数优化（B2）：CLI 1 次探测 / JSON 1 次 / parsed cache / TTL 分级 / LEGACY 回滚 | 所有图算法 Node→Rust 调用路径 |
 | test/test-perf-algorithms.js（新） | TDD 基线：PR/Degree/PPR 正确性 + 性能预算 6 条 | 回归 + 性能门槛门禁 |
 | test/test-slo-performance.js（新） | TDD 基线：环形缓冲 append/snapshot/rolling/correctness 4 条 | 回归 + 性能门禁 |
-| .trae/documents/xuanji-expert-alliance-processing-mode.md（新） | 开发专家联盟 5 步法（定位→审计→对比→实施→验证）+ AIS 6 层 DIP 约束 | 流程归一化标准 |
-| .trae/documents/xuanji-algorithm-alliance-flow.md（新） | 算法联盟 6 步法（分类→渐近最优→工程化→基准→迭代→回滚）+ 最优下界对照表 | 算法归一化标准 |
+| .trae/documents/mox-expert-alliance-processing-mode.md（新） | 开发专家联盟 5 步法（定位→审计→对比→实施→验证）+ AIS 6 层 DIP 约束 | 流程归一化标准 |
+| .trae/documents/mox-algorithm-alliance-flow.md（新） | 算法联盟 6 步法（分类→渐近最优→工程化→基准→迭代→回滚）+ 最优下界对照表 | 算法归一化标准 |
 
 ---
 
@@ -60,7 +60,7 @@
 
 ### 3.3 Clippy（改动范围）
 - cargo clippy -p graph-algorithms --release -- -D warnings → **exit 0，0 ERROR**
-  （注：xuanji-graph-meta 等其他 crate 原有 clippy 未在本次改动范围，属独立 TechDebt）
+  （注：mox-graph-meta 等其他 crate 原有 clippy 未在本次改动范围，属独立 TechDebt）
 
 ### 3.4 D1-D6 交付级 36 TR 回归全绿
 `
@@ -92,10 +92,10 @@
 
 ## 五、专家联盟 × 算法联盟 流程归一化产出
 
-1. xuanji-expert-alliance-processing-mode.md
+1. mox-expert-alliance-processing-mode.md
    - 5 步法（定位→审计→对比→实施→验证）+ 反模式 8 条（经验 #1307001/#1498698 的企业固化）。
    - AIS 6 层 DIP 倒置表。
-2. xuanji-algorithm-alliance-flow.md
+2. mox-algorithm-alliance-flow.md
    - 6 步法（复杂度分类→渐近最优证明→工程化→基准→迭代→回滚）。
    - 7 大类算法最优下界对照表（团队公共基线）。
    - 本次 10 个优化点对照表（是否达到最优 + 实测提升倍数）。
@@ -103,7 +103,7 @@
 ---
 
 ## 六、遗留 TechDebt（非阻塞，可下一迭代）
-1. **全 workspace clippy**：xuanji-graph-meta 11 条、operator-core 少量 toomanyargs — 与本次性能无关，可安排归一化 lint 专项。
+1. **全 workspace clippy**：mox-graph-meta 11 条、operator-core 少量 toomanyargs — 与本次性能无关，可安排归一化 lint 专项。
 2. **近似分位数**：企业 SLO 目前用 exact 排序（预算满足）；若 QPS 再涨 10× 可开 DDSketch/HDR 进程开关。
 3. **N<500 PageRank dense fast-path**：当前 N 小图也走 CSR（构建常数很小无压力）；若有百万级极小图场景，可加小图 dense fast-path。
 

@@ -1022,7 +1022,7 @@ pub fn publish_unified(
     edges: Vec<flow_ai::model::FlowEdge>,
     tags: Vec<String>,
     // 来源璇玑全维治理报告（I-07 产物来源追溯）
-    report: Option<&xuanji_expert::pipeline::GovernanceReport>,
+    report: Option<&mox_expert::pipeline::GovernanceReport>,
     // 来源任务 ID（双璇玑任务闭环）
     task_id: Option<String>,
 ) -> std::io::Result<OperatorPackage> {
@@ -1098,7 +1098,7 @@ pub fn publish_unified(
         id: id.clone(),
         name,
         category: "unified".into(),
-        author: "xuanji-expert".into(),
+        author: "mox-expert".into(),
         version: default_version(),
         summary: description,
         requirement,
@@ -1112,7 +1112,7 @@ pub fn publish_unified(
         forked_from: None,
         tenant: default_tenant(),
         tenant_id: default_tenant(),
-        created_by: "xuanji-expert".into(),
+        created_by: "mox-expert".into(),
         permissions: vec![],
         source_flow_id,
         source_task_id: task_id,

@@ -39,11 +39,11 @@ const LIFECYCLE = {
  */
 const PROJECTS = [
   {
-    id: 'proj-xuanji-core', name: '璇玑核心平台', status: 'maintaining',
+    id: 'proj-mox-core', name: '璇玑核心平台', status: 'maintaining',
     vision: '系统底座：运行状态、服务管理、安全审计、模块装载与存储基础设施 + Rust 璇玑系统 / PrimiFlow 双核心',
     domains: ['system', 'services', 'internal', 'security', 'modules-admin', 'mod-storage', 'studio',
-      'domain-rust-xuanji-system', 'domain-rust-primiflow-core', 'domain-rust-primiflow-fusion',
-      'rust::xuanji-system', 'rust::primiflow-core', 'rust::primiflow-fusion', 'rust::xuanji-common-meta']
+      'domain-rust-mox-system', 'domain-rust-primiflow-core', 'domain-rust-primiflow-fusion',
+      'rust::mox-system', 'rust::primiflow-core', 'rust::primiflow-fusion', 'rust::mox-common-meta']
   },
   {
     id: 'proj-knowledge', name: '知识图谱与知识库', status: 'maintaining',
@@ -58,7 +58,7 @@ const PROJECTS = [
   {
     id: 'proj-expert-alliance', name: '专家联盟', status: 'maintaining',
     vision: '多专家协同咨询：意图识别、最优组队、辩论综合、质量门禁全链路（EAF-STD-001），MCP 协议标准对外暴露 + Rust 璇玑专家',
-    domains: ['expert-alliance', 'expert-graph', 'mcp', 'domain-rust-xuanji-expert', 'rust::xuanji-expert']
+    domains: ['expert-alliance', 'expert-graph', 'mcp', 'domain-rust-mox-expert', 'rust::mox-expert']
   },
   {
     id: 'proj-ai-engine', name: 'AI 引擎编排', status: 'maintaining',
@@ -72,7 +72,7 @@ const PROJECTS = [
     domains: ['ai-platform', 'browser-market', 'tasks', 'auto-tasks', 'mod-task']
   },
   {
-    id: 'proj-xuanji-platform', name: '璇玑平台运行时', status: 'maintaining',
+    id: 'proj-mox-platform', name: '璇玑平台运行时', status: 'maintaining',
     vision: '璇玑平台网关运行时（Cordis 插件内核 + HITL 审批 + 路由治理）——Rust 单项目承载',
     domains: ['atlas', 'domain-rust-runtime', 'rust::runtime']
   },

@@ -166,7 +166,7 @@
 
 ### AC-T7: 写数据库（Schema 设计 + 迁移 + CRUD 往返）
 - **Type**: `rule`
-- **Given**: Rust sqlite 与 Node storage 两套实现（`xuanji-system/tests/persistence_provider_crud.rs`、`primiflow-core/tests/mock_persistence.rs`、`backend-node/test-storage-postgres.js`）。
+- **Given**: Rust sqlite 与 Node storage 两套实现（`mox-system/tests/persistence_provider_crud.rs`、`primiflow-core/tests/mock_persistence.rs`、`backend-node/test-storage-postgres.js`）。
 - **When**: 统一走 5 模型（Member/Document/Resource/Task/Notification）×4 CRUD = 20 条，分别跑 SQLite / Mock（模拟多后端）。
 - **Then**: 20/20 CRUD 通过；schema 版本 ≥ 1；迁移 ID 不重复。
 - **Pass Condition**: 20/20 通过（至少 SQLite 与 Mock；有 Postgres 环境时额外 bonus 不扣）。

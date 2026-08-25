@@ -17,7 +17,7 @@ const fs = require('fs');
 const os = require('os');
 
 // 准备独立的临时 SQLite dir，避免污染默认 data/
-const TMP_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'xuanji-storage-pg-red-'));
+const TMP_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'mox-storage-pg-red-'));
 process.env.DB_PROVIDER = 'sqlite';
 
 const storagePath = path.resolve(__dirname, '..', 'src', 'storage', 'index.js');

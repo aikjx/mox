@@ -11,13 +11,13 @@
 //! 8. 流程图引擎 - 可视化AI流程编排与执行
 
 pub const CRATE_ID: &str = "00374bdd-cc60-55bf-8970-a879afbfe443";
-pub const ENGINE_NAME: &str = "xuanji::ai_agent";
-pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+pub const ENGINE_NAME: &str = "mox::ai_agent";
+pub const CRATE_META: mox_common_meta::CrateMeta = mox_common_meta::CrateMeta {
     id: CRATE_ID,
     name: env!("CARGO_PKG_NAME"),
     version: env!("CARGO_PKG_VERSION"),
-    layer: xuanji_common_meta::AisLayer::L4Services,
-    owner: "xuanji-core",
+    layer: mox_common_meta::AisLayer::L4Services,
+    owner: "mox-core",
 };
 
 pub mod algorithm;
@@ -64,7 +64,7 @@ use operator_core::{OperatorError, Result};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use xuanji_system::persistence_provider::SqlValue;
+use mox_system::persistence_provider::SqlValue;
 
 /// AI智能体主结构 - 统一系统大脑
 pub struct AIAgent {

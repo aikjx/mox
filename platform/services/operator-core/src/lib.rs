@@ -9,13 +9,13 @@
 //! 6. 扩展性闭包 - 算子代数运算
 
 pub const CRATE_ID: &str = "acf14283-3931-5528-adce-2c0cd3815363";
-pub const ENGINE_NAME: &str = "xuanji::operator_core";
-pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+pub const ENGINE_NAME: &str = "mox::operator_core";
+pub const CRATE_META: mox_common_meta::CrateMeta = mox_common_meta::CrateMeta {
     id: CRATE_ID,
     name: env!("CARGO_PKG_NAME"),
     version: env!("CARGO_PKG_VERSION"),
-    layer: xuanji_common_meta::AisLayer::L6Kernel,
-    owner: "xuanji-core",
+    layer: mox_common_meta::AisLayer::L6Kernel,
+    owner: "mox-core",
 };
 
 use std::any::TypeId;

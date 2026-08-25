@@ -8,13 +8,13 @@
 
 ```rust
 pub const CRATE_ID: &str = "acf14283-3931-5528-adce-2c0cd3815363";
-pub const ENGINE_NAME: &str = "xuanji::operator_core";
-pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+pub const ENGINE_NAME: &str = "mox::operator_core";
+pub const CRATE_META: mox_common_meta::CrateMeta = mox_common_meta::CrateMeta {
     id: CRATE_ID,
     name: env!("CARGO_PKG_NAME"),
     version: env!("CARGO_PKG_VERSION"),
-    layer: xuanji_common_meta::AisLayer::L6Kernel,
-    owner: "xuanji-core",
+    layer: mox_common_meta::AisLayer::L6Kernel,
+    owner: "mox-core",
 };
 ```
 
@@ -48,7 +48,7 @@ cargo test -p operator-core
 cargo test -p operator-core t7_kernel_zero_external_deps   # T7 零外部依赖契约
 cargo bench -p operator-core                             # P4 Criterion 性能基线
 ```
-断言覆盖：Monad 左右单位律 + 结合律、4 条守恒律各 3+ 反例均被拒绝、Registry ID 唯一性、T7：`pub deps` 扫描结果仅 `std + alloc + core + xuanji-common-meta`（禁止 serde 等重型依赖进入内核）。
+断言覆盖：Monad 左右单位律 + 结合律、4 条守恒律各 3+ 反例均被拒绝、Registry ID 唯一性、T7：`pub deps` 扫描结果仅 `std + alloc + core + mox-common-meta`（禁止 serde 等重型依赖进入内核）。
 
 ## §6 · 二次开发 / DIP 反转指引
 - **新增算子类型**：实现 `trait Operator for MyOp` → `Registry::global().register(Box::new(MyOp))`。严禁直接改 `engine.rs` `match` 分派。

@@ -13,7 +13,7 @@ const os = require('os');
 const crypto = require('crypto');
 const assert = require('assert');
 
-const TMP_ROOT = fs.mkdtempSync(path.join(os.tmpdir(), 'xuanji-t2-green-'));
+const TMP_ROOT = fs.mkdtempSync(path.join(os.tmpdir(), 'mox-t2-green-'));
 const TMP_DATA = path.join(TMP_ROOT, 'data');
 fs.mkdirSync(TMP_DATA, { recursive: true });
 

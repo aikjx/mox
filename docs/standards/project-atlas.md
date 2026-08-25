@@ -173,17 +173,17 @@ graph LR
 `src/lib.rs` 顶部**必须**顺序声明 3 个契约常量 + 1 个 meta 实例（顺序固定，图谱自同步脚本依赖 AST 顺序）：
 
 ```rust
-// ① CRATE_ID：UUID v5 生成（命名空间 = xuanji::DNS；名称 = crate 包名；脚本：uuid v5 或 reuse 已存在）
+// ① CRATE_ID：UUID v5 生成（命名空间 = mox::DNS；名称 = crate 包名；脚本：uuid v5 或 reuse 已存在）
 pub const CRATE_ID: &str = "xxxxxxxx-xxxx-5xxx-xxxx-xxxxxxxxxxxx";
-// ② ENGINE_NAME：固定 "xuanji::" + 包名的 snake_case 形式
-pub const ENGINE_NAME: &str = "xuanji::<snake_name>";
+// ② ENGINE_NAME：固定 "mox::" + 包名的 snake_case 形式
+pub const ENGINE_NAME: &str = "mox::<snake_name>";
 // ③ CRATE_META：结构化元数据（字段顺序必须与 CrateMeta 定义一致）
-pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+pub const CRATE_META: mox_common_meta::CrateMeta = mox_common_meta::CrateMeta {
     id: CRATE_ID,
     name: env!("CARGO_PKG_NAME"),   // 依赖 Cargo.toml package.name，禁止手写
     version: env!("CARGO_PKG_VERSION"),
-    layer: xuanji_common_meta::AisLayer::L4Services, // 按 AIS 分层选一个枚举值
-    owner: "xuanji-core",
+    layer: mox_common_meta::AisLayer::L4Services, // 按 AIS 分层选一个枚举值
+    owner: "mox-core",
 };
 ```
 
@@ -197,13 +197,13 @@ python3 -c "import uuid;print(uuid.uuid5(uuid.NAMESPACE_DNS, 'your-crate-name'))
 | 枚举 | 典型场景 |
 |------|----------|
 | L6Kernel | 算子内核/守恒律/纯数学内核（零业务依赖，如 operator-core） |
-| L5Domain | 元数据/枚举/纯领域模型（无网络 I/O，如 xuanji-common-meta） |
+| L5Domain | 元数据/枚举/纯领域模型（无网络 I/O，如 mox-common-meta） |
 | L4Services | 领域能力服务（**默认 12/16 归属此类**） |
 | L3Orchestration | 多 crate 聚合编排/路由（如 runtime） |
 | L2Gateway | 接入网关薄层（对外 HTTP/WebSocket 入口） |
-| L7Infrastructure | 持久化/数据库/多后端 Repository（如 xuanji-system） |
+| L7Infrastructure | 持久化/数据库/多后端 Repository（如 mox-system） |
 
-### Step 3 · Cargo.toml workspace 注册 + xuanji-common-meta 依赖（≈3 min）
+### Step 3 · Cargo.toml workspace 注册 + mox-common-meta 依赖（≈3 min）
 
 3a. 根 `Cargo.toml` `[workspace]` members 追加一行：`"platform/services/<crate-name>"`（顺序：与 16 行矩阵保持 AIS 分层序即可，后续不强制）。
 
@@ -218,11 +218,11 @@ authors.workspace = true
 description.workspace = true
 
 [dependencies]
-xuanji-common-meta = { workspace = true }   # 强制依赖（三常量类型来源）
+mox-common-meta = { workspace = true }   # 强制依赖（三常量类型来源）
 # 按需要再加其他 workspace 继承依赖（不要引入重型脚手架：axum/tracing/serde 允许）
 ```
 
-3c. 在 `xuanji-common-meta/src/lib.rs` **`all_crate_metas()` 函数** 中，按第 17 条位置追加一条 `CrateMeta { id, name, version, layer, owner }`（⚠️ 漏这步 = T2 16≠17 红）。同步 `extern crate` + 唯一性数组到 `platform/gateway/runtime/tests/_tmp_t2_crate_meta.rs`。
+3c. 在 `mox-common-meta/src/lib.rs` **`all_crate_metas()` 函数** 中，按第 17 条位置追加一条 `CrateMeta { id, name, version, layer, owner }`（⚠️ 漏这步 = T2 16≠17 红）。同步 `extern crate` + 唯一性数组到 `platform/gateway/runtime/tests/_tmp_t2_crate_meta.rs`。
 
 ### Step 4 · 三注册登记（≈5 min）
 
@@ -303,7 +303,7 @@ graph TB
 
 | 项目 | 状态 | 域 |
 |---|---|---|
-| proj-xuanji-core 璇玑核心平台 | maintaining | system/services/security/modules-admin/mod-storage |
+| proj-mox-core 璇玑核心平台 | maintaining | system/services/security/modules-admin/mod-storage |
 | proj-knowledge 知识图谱与知识库 | maintaining | graph/mod-graph/kb |
 | proj-ai-dialogue AI 对话协作 | delivered | chat/web-search/orchestration |
 | proj-expert-alliance 专家联盟 | maintaining | expert-alliance/expert-graph |

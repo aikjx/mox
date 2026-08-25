@@ -255,7 +255,7 @@ function play(e){
 <body>
 <header><h1>治理仪表盘</h1><p>全维度治理状态概览 · 由璇玑知识图谱自生成</p><nav><a href="#cards">查看卡片</a></nav></header>
 <section id="cards"></section>
-<footer><p>© Xuanji Atlas</p></footer>
+<footer><p>© Mox Atlas</p></footer>
 <script>
 const data = ${JSON.stringify(dash)};
 const cards = document.getElementById('cards');

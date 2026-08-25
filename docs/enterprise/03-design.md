@@ -2,7 +2,7 @@
 
 > **文档类型**：详细设计（模块 / 接口 / 算法 / 数据流）
 > **文档版本**：v1.0 (ENT) · 最后更新 2026-08-16
-> **代码基线**：`crates/xuanji-system/`（Rust，已 `cargo build/test` 通过）
+> **代码基线**：`crates/mox-system/`（Rust，已 `cargo build/test` 通过）
 > **配套**：`01-requirements.md`、`02-architecture.md`、`04-business-processing.md`
 
 ---
@@ -10,10 +10,10 @@
 ## 1. 模块总览
 
 ```
-crates/xuanji-system/src/
-├── lib.rs          导出模块 + XuanjiSystem 类型别名
+crates/mox-system/src/
+├── lib.rs          导出模块 + MoxSystem 类型别名
 ├── main.rs         CLI（--demo 端到端 / 启动 HTTP+WS 服务）
-├── model.rs        领域模型（Xuanji/Member/Task/Channel/Message/Notification/Audit/枚举）
+├── model.rs        领域模型（Mox/Member/Task/Channel/Message/Notification/Audit/枚举）
 ├── error.rs        AppError + IntoResponse（HTTP 映射）
 ├── rbac.rs         角色/权限/作用域/继承/所有权判定
 ├── event.rs        DomainEvent 枚举 + EventBus(broadcast)
@@ -29,7 +29,7 @@ crates/xuanji-system/src/
 ├── metrics.rs      Prometheus 文本指标（I-04）
 ├── ratelimit.rs    固定窗口限流（I-04）
 ├── services.rs     MemberService / TaskService / PermissionService / CommService
-├── orchestrator.rs XuanjiSystem 门面：require() 鉴权 + Reactor 事件反应器
+├── orchestrator.rs MoxSystem 门面：require() 鉴权 + Reactor 事件反应器
 └── server.rs       Axum REST + WebSocket + 鉴权中间件 + CORS + /metrics + /health
 tests/
 ├── integration.rs  端到端（越权拦截/事件→通知/角色继承/持久化/令牌哈希/配额）
@@ -47,14 +47,14 @@ tests/
 ```rust
 enum MemberStatus { Invited, Active, Suspended, Left }      // Left 为终态
 enum TaskStatus   { Draft, Assigned, InProgress, InReview, Done, Cancelled }
-enum Role         { XuanjiAdmin, Coordinator, Expert, Member, Auditor }
+enum Role         { MoxAdmin, Coordinator, Expert, Member, Auditor }
 enum Permission   { TaskCreate, TaskAssign, TaskEditAll, TaskEditOwn,
                     TaskViewAll, TaskViewAssigned, TaskComment,
                     TaskTransitionAll, TaskTransitionOwn,
                     MemberInvite, MemberManage,
-                    CommSendXuanji, CommSendTask, CommSendDirect, AuditView }
-enum Scope       { Global, Xuanji(String), Task(String) } // 权限生效边界
-enum ChannelKind { Xuanji, Task, Direct }
+                    CommSendMox, CommSendTask, CommSendDirect, AuditView }
+enum Scope       { Global, Mox(String), Task(String) } // 权限生效边界
+enum ChannelKind { Mox, Task, Direct }
 enum MessageKind { User, System, Notification }
 enum Tier        { Junior, Senior, Principal }              // 成员等级
 ```
@@ -62,15 +62,15 @@ enum Tier        { Junior, Senior, Principal }              // 成员等级
 ### 2.2 核心结构（节选）
 
 ```rust
-struct Xuanji { id, name, created_by, created_at }
-struct Member   { id, xuanji_id, name, email, status: MemberStatus,
+struct Mox { id, name, created_by, created_at }
+struct Member   { id, mox_id, name, email, status: MemberStatus,
                   tier: Tier, expertise: Vec<String>, invited_by }
-struct Task     { id, xuanji_id, title, desc, status: TaskStatus,
+struct Task     { id, mox_id, title, desc, status: TaskStatus,
                   assignees: Vec<String>, deps: Vec<String>,
                   subtasks: Vec<SubTask>, comments: Vec<Comment>,
                   created_by, created_at, updated_at }
 struct RoleBinding { member_id, role: Role, scope: Scope }
-struct Channel  { id, xuanji_id, kind: ChannelKind, name, members: Vec<String> }
+struct Channel  { id, mox_id, kind: ChannelKind, name, members: Vec<String> }
 struct Message  { id, channel_id, sender_id, body, kind, created_at }
 struct Notification { id, member_id, body, read: bool, created_at }
 struct AuditRecord  { id, member_id, action, permission: Option<Permission>,
@@ -96,7 +96,7 @@ struct AuditRecord  { id, member_id, action, permission: Option<Permission>,
 | task:transition:own | — | ↑ | ✓ | — | — |
 | member:invite | ✓ | ✓ | — | — | — |
 | member:manage | ✓ | — | — | — | — |
-| comm:send:xuanji | ✓ | ✓ | — | — | — |
+| comm:send:mox | ✓ | ✓ | — | — | — |
 | comm:send:task | ✓ | ✓ | ✓ | ✓ | — |
 | comm:send:direct | ✓ | ✓ | ✓ | ✓ | — |
 | audit:view | ✓ | ✓ | — | — | ✓ |
@@ -110,7 +110,7 @@ authorize(member_id, permission, ctx) -> Result<()>:
   1. 取该 member 全部 RoleBinding（跨作用域）
   2. 对每个 binding：
        a. 若 role 直接/继承拥有 permission → 进入作用域检查
-       b. 作用域匹配：Global 恒匹配；Xuanji(id) 需 ctx.xuanji_id==id；
+       b. 作用域匹配：Global 恒匹配；Mox(id) 需 ctx.mox_id==id；
           Task(id) 需 ctx.task==Some(id)
        c. 若 permission 为 *Own 类 → 额外要求 member_id ∈ task.assignees
   3. 任一 binding 满足即放行；否则 Forbidden
@@ -153,8 +153,8 @@ From \ To   │ Draft   │ Assigned │ InProgress │ InReview │ Done  │ C
 ### 4.3 依赖 DAG 约束（`add_dependency`，BR-11）
 
 ```
-拒绝：self-dependency(A→A) / direct cycle / indirect cycle / cross-xuanji
-      （用 reaches(from, to) 环检测 + xuanji_id 比对）
+拒绝：self-dependency(A→A) / direct cycle / indirect cycle / cross-mox
+      （用 reaches(from, to) 环检测 + mox_id 比对）
 幂等：重复依赖忽略
 ```
 
@@ -185,7 +185,7 @@ Left      --> [*]      : 终态，不可复活
 
 | 方法 | 行为 | 关键规则 |
 |------|------|----------|
-| invite(a,盟,受邀人) | 建 Member(Invited) + 授 Expert@Xuanji | 同 email 幂等→Conflict(BR-04)；最小权限(BR-03) |
+| invite(a,盟,受邀人) | 建 Member(Invited) + 授 Expert@Mox | 同 email 幂等→Conflict(BR-04)；最小权限(BR-03) |
 | activate(id) | Invited→Active | 状态机校验 |
 | set_status(id, s) | 改状态 | 状态机校验(BR-21) |
 | can_take_task(m) | bool | status==Active(BR-05) |
@@ -206,7 +206,7 @@ Left      --> [*]      : 终态，不可复活
 for each uid in assignees:
   m = store.get_member(uid)?
   if m is None                      → BadRequest("成员不存在")
-  if m.xuanji_id != task.xuanji_id → Forbidden("跨璇玑")
+  if m.mox_id != task.mox_id → Forbidden("跨璇玑")
   if m.status != Active             → InvalidState("非活跃")
   if uid 重复                        → BadRequest("重复分派")
 → 全部通过才写回 assignees（可信集合）
@@ -229,7 +229,7 @@ for each uid in assignees:
 
 ## 7. 编排层与事件反应器（`orchestrator.rs`）
 
-### 7.1 `XuanjiSystem` 门面
+### 7.1 `MoxSystem` 门面
 
 - 持有 `Arc<Store>` + 各 Service + `EventBus` + `Reactor`。
 - `require(actor, perm, ctx)`：**统一鉴权闸门**（FR-PERM-05）。失败时：
@@ -298,7 +298,7 @@ server ──▶ sys.assign_task(actor, id, list)
 | GET | `/api/ws?token=` | 已登录 | WebSocket 通知 |
 | GET | `/api/audit` | AuditView | 审计查询 |
 
-> 完整契约与请求/响应 schema 见 `crates/xuanji-system/src/server.rs`；融合端点见 `docs/modules/business-process-flowcharts.md` §8。
+> 完整契约与请求/响应 schema 见 `crates/mox-system/src/server.rs`；融合端点见 `docs/modules/business-process-flowcharts.md` §8。
 
 ---
 
@@ -328,4 +328,4 @@ server ──▶ sys.assign_task(actor, id, list)
 
 ---
 
-*本设计直接映射到 `crates/xuanji-system/src/*`；业务规则与流程见 `04-business-processing.md`，两者经 `01-requirements` 追踪矩阵闭环。*
+*本设计直接映射到 `crates/mox-system/src/*`；业务规则与流程见 `04-business-processing.md`，两者经 `01-requirements` 追踪矩阵闭环。*

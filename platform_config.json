@@ -45,6 +45,24 @@
       "startup_order_hint": 20,
       "depends_on": ["api"],
       "tags": ["前端", "用户界面", "Vite"]
+    },
+    "xiaobai_voice": {
+      "name": "小白语音服务（ASR + TTS）",
+      "description": "本地离线语音：Paraformer ASR / CosyVoice2 TTS（豆包级动听女声，Apache2）；端口 3717，供 Rust 网关 /voice/** 代理调用。AI 对话页面朗读第一层必命中；权重缺失时自动切浏览器拟人音兜底。",
+      "port": 3717,
+      "health_check": "/voice/health",
+      "cwd": "projects/xiaobai_voice",
+      "command": "python -m xiaobai_voice serve --host 0.0.0.0",
+      "args": ["python", "-m", "xiaobai_voice", "serve", "--host", "0.0.0.0"],
+      "binary_requires": ["python"],
+      "npm_deps": false,
+      "is_admin_only": false,
+      "auto_start": true,
+      "restart_delay": 3,
+      "wait_time": 12,
+      "startup_order_hint": 5,
+      "depends_on": [],
+      "tags": ["语音", "AI交互", "TTS", "ASR", "本地推理"]
     }
   }
 }

@@ -62,9 +62,9 @@ const DOMAINS = [
     // fallback: 静态 list（与 business-registry 保持同步：15 domain-rust-* + 8 mod-* = 23）
     ids = [
       'domain-rust-operator-core','domain-rust-operator-wasm','domain-rust-graph-algorithms',
-      'domain-rust-optimizer','domain-rust-flow-ai','domain-rust-xuanji-expert',
+      'domain-rust-optimizer','domain-rust-flow-ai','domain-rust-mox-expert',
       'domain-rust-hermes-flow-bridge','domain-rust-business-catalog','domain-rust-ai-agent',
-      'domain-rust-template-market','domain-rust-runtime','domain-rust-xuanji-system',
+      'domain-rust-template-market','domain-rust-runtime','domain-rust-mox-system',
       'domain-rust-primiflow-core','domain-rust-primiflow-fusion','domain-rust-kg-hub',
       'mod-graph','mod-task','mod-storage','mod-melody2score',
       'mod-rust-operator-wasm','mod-rust-hermes-flow-bridge','mod-rust-business-catalog',

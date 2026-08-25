@@ -1,4 +1,4 @@
-const { GraphClient } = require("../../xuanji-sdk-graph");
+const { GraphClient } = require("../../mox-sdk-graph");
 const client = new GraphClient({ endpoint: "graph.local" });
 const nodes = [{ id: "n1", label: "User" }, { id: "n2", label: "User" }];
 const edges = [{ id: "e1", src: "n1", dst: "n2", label: "KNOWS" }];

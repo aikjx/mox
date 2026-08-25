@@ -105,7 +105,7 @@
 ## Dependencies and Considerations
 - **Element Plus 样式副作用控制**：新增全局 `el-steps`、`el-progress` 等覆盖时，**严格使用 `页面根 class + :deep(...)` 精准选择器**，避免全局污染（经验 #216377）
 - **快捷键冲突**：`Ctrl+K/F/N` 等浏览器默认快捷键（Ctrl+K=Firefox 搜索、Ctrl+F 原生查找）。策略：`Ctrl+Shift+P` 也可用作 Cmd Palette 的备用绑定；帮助 Drawer 内写清「Ctrl+Shift+P」替代方案
-- **localStorage 前缀**：所有搜索历史加前缀 `xuanji_search_`，避免与其他工程冲突
+- **localStorage 前缀**：所有搜索历史加前缀 `mox_search_`，避免与其他工程冲突
 - **无后端分页时 fallback**：Phase C 第 11 步先用前端分页，后端上线后切后端无缝切换（前端保持 `page/size` 状态变量）
 
 ---

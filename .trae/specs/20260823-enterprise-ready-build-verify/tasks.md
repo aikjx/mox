@@ -1,6 +1,6 @@
 # 璇玑 RelGraph · 企业级真实可运行落地 + 全维自动化测试验收 — 实施计划（tasks.md）
 
-> **依赖图（总览）**：T1 基线盘点 → T2 clippy 修复 → T3 测试缺失补齐（graph-algorithms / xuanji-expert / primiflow-fusion / runtime）→ T4 前端构建 + T11 Node 并行 → T5 melody2score 桌面打包级回归 → T6 T4 依赖治理 rubric → T7 SLO 规模 rubric → T8 三流程端点 E2E → T9 汇总报告 + 独立 review。
+> **依赖图（总览）**：T1 基线盘点 → T2 clippy 修复 → T3 测试缺失补齐（graph-algorithms / mox-expert / primiflow-fusion / runtime）→ T4 前端构建 + T11 Node 并行 → T5 melody2score 桌面打包级回归 → T6 T4 依赖治理 rubric → T7 SLO 规模 rubric → T8 三流程端点 E2E → T9 汇总报告 + 独立 review。
 > **优先级图例**：H = high（阻断），M = medium（推进），L = low（锦上添花）。
 > **注意**：每任务至少 1 条 TR（rule 或 rubric）。完成必须附「Completion Evidence」。rubric TR 必须记录**分数 + 理由 + 证据**。
 
@@ -29,12 +29,12 @@
 - **Depends On**: T1
 - **Description**:
   - 根据 T1 基线报告的 clippy warnings 列表，在对应 crate 做定点修复；**禁止用 `#[allow(...)]` 批量压制**（All-04：你自验自验，不能用 allow 擦屁股）。
-  - 修复顺序：runtime / xuanji-expert / primiflow-fusion / xuanji-system / graph-algorithms 这 5 个高权重 crate 先。
+  - 修复顺序：runtime / mox-expert / primiflow-fusion / mox-system / graph-algorithms 这 5 个高权重 crate 先。
   - 外部 crate（ais/* 子仓）的 warnings 可由 `--exclude` 加白名单；不在企业验收主工作空间时不强求 0。
 - **Acceptance Criteria Addressed**: AC-1 (NFR-2)
 - **Test Requirements**:
   - `rule` TR-2.1: `cargo clippy --workspace --all-targets --exclude codex-rs --exclude claw-code --exclude hermes-agent --exclude cline --exclude openai-codex -- -D warnings 2>&1 | tee /tmp/clippy.log; rg -c "^warning: " /tmp/clippy.log` 输出 = 0 且 exit 0
-  - `rule` TR-2.2: 主 5 crate（runtime/xuanji-expert/primiflow-fusion/xuanji-system/graph-algorithms）在各自 `Cargo.toml` 中不得新增 `lints.workspace=false` 或 lints 覆盖块
+  - `rule` TR-2.2: 主 5 crate（runtime/mox-expert/primiflow-fusion/mox-system/graph-algorithms）在各自 `Cargo.toml` 中不得新增 `lints.workspace=false` 或 lints 覆盖块
   - `rubric` TR-2.3: 修复方式合理性；Scale 1-5；1 = 全部用 allow；3 = 一半 allow 一半真改；5 = 0 个 allow（或仅 allow 上游问题并显式注释 sqlx-postgres 那一条）；Threshold ≥ 4
 - **Notes**: sqlx-postgres future-incompat 属于上游，可用 `lints.clippy.xxx = allow` 单条精确注释并在 TR-2.3 评分时作为例外。
 
@@ -47,15 +47,15 @@
 - **Description**:
   分 4 个子任务，互不写对方源文件，可顺序执行：
   - **3A graph-algorithms**：AC-3 / AC-13。对 5 类算法（CNM / Brandes / Harmonic / PageRank+转置 / 激活扩散）每类至少补到 ≥2 条 `#[test]`；断言内容来自 reconcile_7x8.js 8 数据集的已知节点数/介数最大节点名；保证 Δ≤1e-6 的对账在 Rust 侧也有独立断言。
-  - **3B xuanji-expert verify + rbac + audit**：AC-7 / AC-8 / AC-14。verify 层 5 阻断级检查 = 至少 10 条 tests（5 通过 + 5 阻断）；rbac 66 组合至少 6 条表驱动 tests 覆盖 6×11=66；audit_hmac 至少 1 条伪造 payload 失败 + 1 条通过签名验证。
+  - **3B mox-expert verify + rbac + audit**：AC-7 / AC-8 / AC-14。verify 层 5 阻断级检查 = 至少 10 条 tests（5 通过 + 5 阻断）；rbac 66 组合至少 6 条表驱动 tests 覆盖 6×11=66；audit_hmac 至少 1 条伪造 payload 失败 + 1 条通过签名验证。
   - **3C primiflow-fusion full_gate + sixdim_coverage**：AC-5 / AC-6。补到 full_gate cases ≥ 50 且通过 ≥ 90%；SixDim 覆盖率统计命令输出 P ≥ 90.0%（如未达则修复悬空绑定，不允许造假报告）。
-  - **3D runtime AI 四端点 + AC-10 路由语义 + 三流程 E2E**：AC-4 / AC-9。补 router_semantics 的三条断言（静态优先/参数少/同参数长路径）；补 ai_engine routes 的存在；补 xuanji_e2e 三条（graph_bulk / file_upload_link / ai_full_rag） ≤ 28s。
+  - **3D runtime AI 四端点 + AC-10 路由语义 + 三流程 E2E**：AC-4 / AC-9。补 router_semantics 的三条断言（静态优先/参数少/同参数长路径）；补 ai_engine routes 的存在；补 mox_e2e 三条（graph_bulk / file_upload_link / ai_full_rag） ≤ 28s。
 - **Acceptance Criteria Addressed**: AC-3, AC-4, AC-5, AC-6, AC-7, AC-8, AC-9, AC-13, AC-14
 - **Test Requirements**:
   - `rule` TR-3A.1: `cargo test -p graph-algorithms` 0 failed；`--list` 输出中 5 类算法 test 名各 ≥2
-  - `rule` TR-3B.1: `cargo test -p xuanji-expert verify rbac audit_hmac` → 汇总 0 failed；10 条阻断分支、66 cases、HMAC 正+反全部命中
+  - `rule` TR-3B.1: `cargo test -p mox-expert verify rbac audit_hmac` → 汇总 0 failed；10 条阻断分支、66 cases、HMAC 正+反全部命中
   - `rule` TR-3C.1: `cargo test -p primiflow-fusion full_gate sixdim` → cases_total ≥ 50 且 pass_rate ≥ 90%；sixdim_coverage ≥ 90.0%
-  - `rule` TR-3D.1: `cargo test -p runtime router_semantics ai_engine_e2e xuanji_e2e` → 0 failed；三条路由语义断言 + 三流程端点断言全部出现
+  - `rule` TR-3D.1: `cargo test -p runtime router_semantics ai_engine_e2e mox_e2e` → 0 failed；三条路由语义断言 + 三流程端点断言全部出现
   - `rubric` TR-3.2: 测试断言质量（可证伪性 + 不依赖随机）；Scale 1-5；1 = 仅 assert!(true)；3 = 断言数量 ≥ 要求的 80%；5 = 每条断言用具体数值且与 reconcile_7x8.js 基线一致；Threshold ≥ 4
 
 ---

@@ -8,7 +8,7 @@
           <transition name="fade">
             <div v-show="!collapsed" class="logo-text">
               <div class="logo-title">璇玑系统</div>
-              <div class="logo-sub">Xuanji Graph System</div>
+              <div class="logo-sub">Mox Graph System</div>
             </div>
           </transition>
         </div>
@@ -309,17 +309,17 @@ onMounted(() => {
   })
   // /market?action=upload → 自动触发 MarketView 打开上传对话框（Query 驱动无状态化）
   if (route.path === '/market' && route.query?.action === 'upload') {
-    window.dispatchEvent(new CustomEvent('xuanji:open-market-upload'))
+    window.dispatchEvent(new CustomEvent('mox:open-market-upload'))
   }
 })
 watch(() => route.path, () => {
   refreshHealth()
   // 如果跳转到 /market?action=upload 或 /tasks?action=create
   if (route.path === '/market' && route.query?.action === 'upload') {
-    window.dispatchEvent(new CustomEvent('xuanji:open-market-upload'))
+    window.dispatchEvent(new CustomEvent('mox:open-market-upload'))
   }
   if (route.path === '/tasks' && route.query?.action === 'create') {
-    window.dispatchEvent(new CustomEvent('xuanji:open-create-task'))
+    window.dispatchEvent(new CustomEvent('mox:open-create-task'))
   }
 })
 let healthTimer = window.setInterval(refreshHealth, 30000)

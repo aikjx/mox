@@ -17,32 +17,56 @@
       </div>
       <!-- 系统消息底部动作（3 项） -->
       <div class="mb-actions mb-actions-system">
-        <el-dropdown trigger="click" @command="handleToolbarCopyCommand" :hide-on-click="true">
-          <el-button class="mb-action-btn mb-action-primary" circle size="small" aria-label="一键复制" title="一键复制">
+        <!-- 拆分式复制按钮：主按钮直接复制Markdown，下拉提供选项 -->
+        <div class="mb-copy-split-wrap">
+          <el-button class="mb-action-btn mb-action-primary mb-copy-main" circle size="small"
+            aria-label="一键复制（Markdown）" title="一键复制（默认 Markdown）"
+            @click="copyMarkdown()">
             <el-icon :size="14"><CopyDocument /></el-icon>
           </el-button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="md-all">
-                <el-icon><Document /></el-icon>
-                <span>整则 Markdown</span>
-                <el-tag class="mb-copy-default" size="small" type="info" effect="plain">默认</el-tag>
-              </el-dropdown-item>
-              <el-dropdown-item v-for="(m,i) in mermaidBlocks" :key="'mer-'+i" :command="'mer-'+i">
-                <el-icon><Picture /></el-icon>
-                <span>复制 Mermaid 源码（{{i+1}}）</span>
-              </el-dropdown-item>
-              <el-dropdown-item v-for="(f,i) in fenceBlocks" :key="'fen-'+i" :command="'fen-'+i">
-                <el-icon><DocumentCopy /></el-icon>
-                <span>复制代码：{{f.lang}}（{{f.lines}} 行）</span>
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
+          <el-dropdown trigger="click" @command="handleToolbarCopyCommand" :hide-on-click="true">
+            <el-button class="mb-action-btn mb-action-primary mb-copy-caret" circle size="small" title="复制选项">
+              <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu class="mb-dd-menu mb-dd-copy">
+                <el-dropdown-item command="md-all" class="mb-dd-item">
+                  <div class="mb-dd-row">
+                    <span class="mb-dd-ic"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
+                    <span class="mb-dd-text">整则 Markdown</span>
+                    <span class="mb-dd-tag">默认</span>
+                  </div>
+                </el-dropdown-item>
+                <el-dropdown-item command="plain-all" class="mb-dd-item">
+                  <div class="mb-dd-row">
+                    <span class="mb-dd-ic"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="14" y2="17"/></svg></span>
+                    <span class="mb-dd-text">整则纯文本</span>
+                    <span class="mb-dd-tag mb-dd-tag-muted">TXT</span>
+                  </div>
+                </el-dropdown-item>
+                <el-dropdown-item v-for="(m,i) in mermaidBlocks" :key="'mer-'+i" :command="'mer-'+i" divided class="mb-dd-item mb-dd-divider">
+                  <div class="mb-dd-row">
+                    <span class="mb-dd-ic"><el-icon :size="15"><Picture /></el-icon></span>
+                    <span class="mb-dd-text">Mermaid 源码 <span class="mb-dd-sub">（{{i+1}}）</span></span>
+                    <span class="mb-dd-tag mb-dd-tag-accent">SVG</span>
+                  </div>
+                </el-dropdown-item>
+                <el-dropdown-item v-for="(f,i) in fenceBlocks" :key="'fen-'+i" :command="'fen-'+i" class="mb-dd-item">
+                  <div class="mb-dd-row">
+                    <span class="mb-dd-ic"><el-icon :size="15"><DocumentCopy /></el-icon></span>
+                    <span class="mb-dd-text"><b class="mb-dd-lang">{{f.lang}}</b><span class="mb-dd-sub"> · {{f.lines}} 行</span></span>
+                    <span class="mb-dd-tag mb-dd-tag-code">代码</span>
+                  </div>
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
         <el-button class="mb-action-btn mb-tts" :class="{playing: speechState==='playing', paused: speechState==='paused'}" circle size="small"
           :title="speechState==='idle'?'朗读内容':(speechState==='playing'?'暂停朗读':'继续朗读')"
           @click="toggleSpeak">
-          <el-icon :size="14"><component :is="speechState==='idle'?Microphone:(speechState==='playing'?VideoPause:VideoPlay)" /></el-icon>
+          <svg v-if="speechState==='idle'" class="mb-ic-tts" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+          <el-icon v-else :size="14"><component :is="speechState==='playing'?VideoPause:VideoPlay" /></el-icon>
         </el-button>
         <el-button v-if="msg?.task_id" class="mb-action-btn" circle size="small" title="跳转任务" @click="jumpToTask">
           <el-icon :size="14"><Promotion /></el-icon>
@@ -68,29 +92,35 @@
           </el-tag>
         </div>
         <div class="mb-ops" :class="{ 'mb-ops-show': showOps }">
-          <el-dropdown trigger="click" @command="handleCopyCommand" :hide-on-click="true">
-            <el-button class="mb-op-btn" circle size="small" title="复制">
+          <!-- 拆分式：主按钮直接复制Markdown，下拉选择格式 -->
+          <div class="mb-ops-split">
+            <el-button class="mb-op-btn mb-ops-main" circle size="small" title="复制（默认 Markdown）" @click="copyMarkdown()">
               <el-icon :size="14"><CopyDocument /></el-icon>
             </el-button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="markdown">
-                  <el-icon><Document /></el-icon>
-                  <span>复制为 Markdown</span>
-                  <el-tag class="mb-copy-default" size="small" type="info" effect="plain">默认</el-tag>
-                </el-dropdown-item>
-                <el-dropdown-item command="plaintext">
-                  <el-icon><DocumentCopy /></el-icon>
-                  <span>复制为纯文本</span>
-                </el-dropdown-item>
-                <el-dropdown-item v-if="msg?.role === 'assistant'" command="html" :disabled="!supportsClipboardItem">
-                  <el-icon><Document /></el-icon>
-                  <span>复制为富文本</span>
-                  <span v-if="!supportsClipboardItem" class="mb-copy-hint">（浏览器不支持）</span>
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
+            <el-dropdown trigger="click" @command="handleCopyCommand" :hide-on-click="true">
+              <el-button class="mb-op-btn mb-ops-caret" circle size="small" title="复制选项">
+                <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu class="mb-dd-menu mb-dd-quick">
+                  <el-dropdown-item command="markdown" class="mb-dd-item">
+                    <div class="mb-dd-row">
+                      <span class="mb-dd-ic"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
+                      <span class="mb-dd-text">复制为 Markdown</span>
+                      <span class="mb-dd-tag">默认</span>
+                    </div>
+                  </el-dropdown-item>
+                  <el-dropdown-item command="plaintext" class="mb-dd-item">
+                    <div class="mb-dd-row">
+                      <span class="mb-dd-ic"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="14" y2="17"/></svg></span>
+                      <span class="mb-dd-text">复制为纯文本</span>
+                      <span class="mb-dd-tag mb-dd-tag-muted">TXT</span>
+                    </div>
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
         </div>
         <div class="mb-bubble-body md-body" v-html="renderedContent" />
         <div v-if="hasMeta" class="mb-meta">
@@ -160,49 +190,72 @@
         </div>
         <!-- 9 动作工具栏 -->
         <div class="mb-actions">
-          <!-- 1. 一键复制（主色组合下拉） -->
-          <el-dropdown trigger="click" @command="handleToolbarCopyCommand" :hide-on-click="true">
-            <el-button class="mb-action-btn mb-action-primary" circle size="small" aria-label="一键复制" title="一键复制">
+          <!-- 1. 一键复制（默认直接复制Markdown，下拉可选Markdown/文本/Mermaid/代码） -->
+          <div class="mb-copy-split-wrap">
+            <el-button class="mb-action-btn mb-action-primary mb-copy-main" circle size="small"
+              aria-label="一键复制（Markdown）" title="一键复制（默认 Markdown）"
+              @click="copyMarkdown()">
               <el-icon :size="14"><CopyDocument /></el-icon>
             </el-button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="md-all">
-                  <el-icon><Document /></el-icon>
-                  <span>整则 Markdown</span>
-                  <el-tag class="mb-copy-default" size="small" type="info" effect="plain">默认</el-tag>
-                </el-dropdown-item>
-                <el-dropdown-item v-for="(m,i) in mermaidBlocks" :key="'mer-'+i" :command="'mer-'+i">
-                  <el-icon><Picture /></el-icon>
-                  <span>复制 Mermaid 源码（{{i+1}}）</span>
-                </el-dropdown-item>
-                <el-dropdown-item v-for="(f,i) in fenceBlocks" :key="'fen-'+i" :command="'fen-'+i">
-                  <el-icon><DocumentCopy /></el-icon>
-                  <span>复制代码：{{f.lang}}（{{f.lines}} 行）</span>
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-          <!-- 2. 朗读 -->
+            <el-dropdown trigger="click" @command="handleToolbarCopyCommand" :hide-on-click="true">
+              <el-button class="mb-action-btn mb-action-primary mb-copy-caret" circle size="small" title="复制选项">
+                <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu class="mb-dd-menu mb-dd-copy">
+                  <el-dropdown-item command="md-all" class="mb-dd-item">
+                    <div class="mb-dd-row">
+                      <span class="mb-dd-ic"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
+                      <span class="mb-dd-text">整则 Markdown</span>
+                      <span class="mb-dd-tag">默认</span>
+                    </div>
+                  </el-dropdown-item>
+                  <el-dropdown-item command="plain-all" class="mb-dd-item">
+                    <div class="mb-dd-row">
+                      <span class="mb-dd-ic"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="14" y2="17"/></svg></span>
+                      <span class="mb-dd-text">整则纯文本</span>
+                      <span class="mb-dd-tag mb-dd-tag-muted">TXT</span>
+                    </div>
+                  </el-dropdown-item>
+                  <el-dropdown-item v-for="(m,i) in mermaidBlocks" :key="'mer-'+i" :command="'mer-'+i" divided class="mb-dd-item mb-dd-divider">
+                    <div class="mb-dd-row">
+                      <span class="mb-dd-ic"><el-icon :size="15"><Picture /></el-icon></span>
+                      <span class="mb-dd-text">Mermaid 源码 <span class="mb-dd-sub">（{{i+1}}）</span></span>
+                      <span class="mb-dd-tag mb-dd-tag-accent">SVG</span>
+                    </div>
+                  </el-dropdown-item>
+                  <el-dropdown-item v-for="(f,i) in fenceBlocks" :key="'fen-'+i" :command="'fen-'+i" class="mb-dd-item">
+                    <div class="mb-dd-row">
+                      <span class="mb-dd-ic"><el-icon :size="15"><DocumentCopy /></el-icon></span>
+                      <span class="mb-dd-text"><b class="mb-dd-lang">{{f.lang}}</b><span class="mb-dd-sub"> · {{f.lines}} 行</span></span>
+                      <span class="mb-dd-tag mb-dd-tag-code">代码</span>
+                    </div>
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
+          <!-- 2. 朗读（扬声器 SVG + Pause/Play） -->
           <el-button class="mb-action-btn mb-tts" :class="{playing: speechState==='playing', paused: speechState==='paused'}" circle size="small"
             :disabled="!supportsSpeechSynthesis"
             :title="speechState==='idle'?'朗读内容':(speechState==='playing'?'暂停朗读':'继续朗读')"
             @click="toggleSpeak">
-            <el-icon :size="14"><component :is="speechState==='idle'?Microphone:(speechState==='playing'?VideoPause:VideoPlay)" /></el-icon>
+            <svg v-if="speechState==='idle'" class="mb-ic-tts" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+            <el-icon v-else :size="14"><component :is="speechState==='playing'?VideoPause:VideoPlay" /></el-icon>
           </el-button>
-          <!-- 3. 喜欢（窄屏折叠） -->
+          <!-- 3. 喜欢 · 大拇指向上（窄屏折叠） -->
           <el-button class="mb-action-btn mb-rate-like mb-action-collapsible" :class="{active: rating==='like'}" circle size="small"
-            :aria-pressed="rating==='like'" title="喜欢" @click="toggleRating('like')">
-            <el-icon :size="14"><CircleCheckFilled /></el-icon>
+            :aria-pressed="rating==='like'" :title="rating==='like'?'取消喜欢':'喜欢'" @click="toggleRating('like')">
+            <svg class="mb-ic-thumb" viewBox="0 0 24 24" width="14" height="14" :fill="rating==='like'?'currentColor':'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l4.34-8.68A1.5 1.5 0 0 1 14 2a1 1 0 0 1 1 1Z"/></svg>
           </el-button>
-          <!-- 4. 不喜欢（窄屏折叠） -->
+          <!-- 4. 不喜欢 · 大拇指向下（窄屏折叠） -->
           <el-button class="mb-action-btn mb-rate-dislike mb-action-collapsible" :class="{active: rating==='dislike'}" circle size="small"
-            :aria-pressed="rating==='dislike'" title="不喜欢" @click="toggleRating('dislike')">
-            <el-icon :size="14"><CircleCloseFilled /></el-icon>
+            :aria-pressed="rating==='dislike'" :title="rating==='dislike'?'取消不喜欢':'不喜欢'" @click="toggleRating('dislike')">
+            <svg class="mb-ic-thumb" viewBox="0 0 24 24" width="14" height="14" :fill="rating==='dislike'?'currentColor':'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(180deg)"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l4.34-8.68A1.5 1.5 0 0 1 14 2a1 1 0 0 1 1 1Z"/></svg>
           </el-button>
-          <!-- 5. 分享 -->
-          <el-button class="mb-action-btn" circle size="small" title="分享" @click="doShare">
-            <el-icon :size="14"><Share /></el-icon>
+          <!-- 5. 分享 → 复制 URL（多选对话框） -->
+          <el-button class="mb-action-btn" circle size="small" title="分享 · 复制链接" @click="openShareDialog">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </el-button>
           <!-- 6. 重新生成（仅助手） -->
           <el-button v-if="msg.role==='assistant'" class="mb-action-btn mb-regen" :class="{'mb-regen-loading': regenLoading}"
@@ -232,21 +285,40 @@
               <el-icon :size="14"><More /></el-icon>
             </el-button>
             <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item @click="toggleRating('like')">
-                  <el-icon><CircleCheckFilled /></el-icon><span>{{ rating==='like'?'取消喜欢':'喜欢' }}</span>
+              <el-dropdown-menu class="mb-dd-menu mb-dd-more">
+                <el-dropdown-item @click="toggleRating('like')" class="mb-dd-item">
+                  <div class="mb-dd-row">
+                    <span class="mb-dd-ic" :style="{color: rating==='like'?'#22c55e':'inherit'}">
+                      <svg class="mb-ic-thumb" viewBox="0 0 24 24" width="15" height="15" :fill="rating==='like'?'currentColor':'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l4.34-8.68A1.5 1.5 0 0 1 14 2a1 1 0 0 1 1 1Z"/></svg>
+                    </span>
+                    <span class="mb-dd-text">{{ rating==='like'?'取消喜欢':'喜欢' }}</span>
+                  </div>
                 </el-dropdown-item>
-                <el-dropdown-item @click="toggleRating('dislike')">
-                  <el-icon><CircleCloseFilled /></el-icon><span>{{ rating==='dislike'?'取消不喜欢':'不喜欢' }}</span>
+                <el-dropdown-item @click="toggleRating('dislike')" class="mb-dd-item">
+                  <div class="mb-dd-row">
+                    <span class="mb-dd-ic" :style="{color: rating==='dislike'?'#ef4444':'inherit'}">
+                      <svg class="mb-ic-thumb" viewBox="0 0 24 24" width="15" height="15" :fill="rating==='dislike'?'currentColor':'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(180deg)"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l4.34-8.68A1.5 1.5 0 0 1 14 2a1 1 0 0 1 1 1Z"/></svg>
+                    </span>
+                    <span class="mb-dd-text">{{ rating==='dislike'?'取消不喜欢':'不喜欢' }}</span>
+                  </div>
                 </el-dropdown-item>
-                <el-dropdown-item @click="toggleFavorite">
-                  <el-icon><component :is="favorited?StarFilled:Star" /></el-icon><span>{{ favorited?'取消收藏':'收藏' }}</span>
+                <el-dropdown-item @click="toggleFavorite" class="mb-dd-item mb-dd-divider" divided>
+                  <div class="mb-dd-row">
+                    <span class="mb-dd-ic" :style="{color: favorited?'#f59e0b':'inherit'}"><el-icon :size="15"><component :is="favorited?StarFilled:Star" /></el-icon></span>
+                    <span class="mb-dd-text">{{ favorited?'取消收藏':'收藏' }}</span>
+                  </div>
                 </el-dropdown-item>
-                <el-dropdown-item @click="openDocDialog">
-                  <el-icon><DocumentAdd /></el-icon><span>转文档编辑</span>
+                <el-dropdown-item @click="openDocDialog" class="mb-dd-item">
+                  <div class="mb-dd-row">
+                    <span class="mb-dd-ic"><el-icon :size="15"><DocumentAdd /></el-icon></span>
+                    <span class="mb-dd-text">转文档编辑</span>
+                  </div>
                 </el-dropdown-item>
-                <el-dropdown-item @click="fbDlgOpen = true">
-                  <el-icon><Flag /></el-icon><span>反馈</span>
+                <el-dropdown-item @click="fbDlgOpen = true" class="mb-dd-item">
+                  <div class="mb-dd-row">
+                    <span class="mb-dd-ic"><el-icon :size="15"><Flag /></el-icon></span>
+                    <span class="mb-dd-text">反馈</span>
+                  </div>
                 </el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -307,6 +379,78 @@
         <el-button type="primary" @click="submitFeedback">提交反馈</el-button>
       </template>
     </el-dialog>
+
+    <!-- 分享对话框：复制URL，多选消息 -->
+    <el-dialog v-model="shareDlgOpen" title="分享 · 生成可访问链接" width="600px" class="mb-share-dialog" :close-on-click-modal="false" @closed="resetShareDlg">
+      <div class="share-scope-tip">
+        <el-alert :closable="false" type="info" show-icon size="small"
+          :title="'当前对话：仅分析当前消息 · 勾选下方多选可扩展范围'" />
+      </div>
+
+      <div class="share-list-head">
+        <div class="share-list-title">
+          <el-icon><ChatDotRound /></el-icon>
+          <span>选择要分享的消息</span>
+          <el-tag size="small" type="info" effect="plain" style="margin-left:8px">已选 {{ shareSelectedIds.size }} / {{ shareMessages.length }}</el-tag>
+        </div>
+        <div class="share-list-actions">
+          <el-button size="small" type="primary" link @click="selectAllShare">全选</el-button>
+          <el-button size="small" link @click="invertShareSelection">反选</el-button>
+          <el-button size="small" link @click="selectCurrentOnly">仅当前</el-button>
+        </div>
+      </div>
+
+      <div class="share-list-box">
+        <div v-if="!shareMessages.length" class="share-empty">
+          <el-empty description="暂无消息可分享" :image-size="60" />
+        </div>
+        <div v-else class="share-list">
+          <label v-for="sm in shareMessages" :key="sm.id" class="share-item"
+            :class="{ 'si-current': sm.id === shareCurrentId, 'si-selected': shareSelectedIds.has(sm.id) }">
+            <el-checkbox :model-value="shareSelectedIds.has(sm.id)"
+              @change="(v)=>toggleShareSelect(sm.id, v)" />
+            <div class="si-body">
+              <div class="si-head">
+                <el-tag size="small" :type="sm.role==='user'?'danger':(sm.role==='assistant'?'primary':'warning')" effect="light">
+                  {{ sm.role==='user'?'我':(sm.role==='assistant'?'AI 助手':'系统') }}
+                </el-tag>
+                <span v-if="sm.id === shareCurrentId" class="si-current-tag">当前对话</span>
+                <span class="si-time">{{ formatTime(sm.timestamp) }}</span>
+              </div>
+              <div class="si-preview">{{ sm.preview }}</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="share-link-section">
+        <div class="share-link-label">
+          <el-icon><Link /></el-icon>
+          <span>分享链接（可直接访问对话快照）</span>
+        </div>
+        <div class="share-link-row">
+          <el-input v-model="shareLinkUrl" readonly placeholder="请先勾选消息，生成链接..." />
+          <el-button type="primary" :disabled="!shareSelectedIds.size" @click="generateShareLink">
+            生成链接
+          </el-button>
+          <el-button :disabled="!shareLinkUrl" @click="copyShareLink">
+            <el-icon><CopyDocument /></el-icon>
+            复制
+          </el-button>
+        </div>
+        <div v-if="shareLinkCreated" class="share-link-hint">
+          ✅ 链接已生成 · 包含 {{ shareSelectedIds.size }} 条消息 · 可直接在浏览器访问查看快照
+        </div>
+      </div>
+
+      <template #footer>
+        <el-button @click="shareDlgOpen=false">关闭</el-button>
+        <el-button type="success" :disabled="!shareLinkUrl" @click="finishShare">
+          <el-icon><CopyDocument /></el-icon>
+          复制链接并完成
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 <script setup>
@@ -326,6 +470,8 @@ import { ALLIANCE_BASE, getVoiceHealth } from "../api/alliance";
 
 const props = defineProps({
   msg: { type: Object, required: true },
+  // 会话内全部消息（供分享多选），如不传则仅含当前消息
+  sessionMessages: { type: Array, default: () => [] },
 });
 const emit = defineEmits(['goto-task','rate','share','regenerate','to-doc','favorite','followup','feedback']);
 
@@ -350,6 +496,107 @@ const docContent = ref('');
 const fbDlgOpen = ref(false);
 const fbFormRef = ref(null);
 const fbForm = ref({ type: '', severity: '', description: '', includeContext: true });
+
+// ============ 分享对话框 ============
+const shareDlgOpen = ref(false);
+const shareCurrentId = ref('');
+const shareSelectedIds = ref(new Set());
+const shareLinkUrl = ref('');
+const shareLinkCreated = ref(false);
+const shareMessages = computed(() => {
+  const rawMsgs = (Array.isArray(props.sessionMessages) && props.sessionMessages.length)
+    ? props.sessionMessages
+    : [props.msg];
+  return rawMsgs.map((m, idx) => {
+    const id = m?.id != null ? String(m.id) : `idx-${idx}`;
+    const content = String(m?.content ?? '');
+    const preview = (content.length > 80 ? content.slice(0, 80) + '…' : content) || '（空消息）';
+    const role = m?.role || (m?.system ? 'system' : 'assistant');
+    return { id, raw: m, role, preview, timestamp: m?.timestamp };
+  });
+});
+
+function openShareDialog() {
+  const curId = stableMsgId(props.msg);
+  shareCurrentId.value = curId;
+  // 默认只选当前消息（符合"当前对话只分析当前的"）
+  shareSelectedIds.value = new Set([curId]);
+  shareLinkUrl.value = '';
+  shareLinkCreated.value = false;
+  shareDlgOpen.value = true;
+}
+function resetShareDlg() {
+  shareSelectedIds.value = new Set();
+  shareLinkUrl.value = '';
+  shareLinkCreated.value = false;
+  shareCurrentId.value = '';
+}
+function selectAllShare() {
+  const all = new Set(shareMessages.value.map(sm => sm.id));
+  shareSelectedIds.value = all;
+}
+function invertShareSelection() {
+  const inv = new Set();
+  shareMessages.value.forEach(sm => {
+    if (!shareSelectedIds.value.has(sm.id)) inv.add(sm.id);
+  });
+  shareSelectedIds.value = inv;
+}
+function selectCurrentOnly() {
+  shareSelectedIds.value = new Set([shareCurrentId.value]);
+}
+function toggleShareSelect(id, v) {
+  const ns = new Set(shareSelectedIds.value);
+  if (v) ns.add(id); else ns.delete(id);
+  shareSelectedIds.value = ns;
+}
+function generateShareLink() {
+  if (!shareSelectedIds.value.size) { ElMessage.warning('请至少选择一条消息'); return; }
+  // 选取被选中的消息
+  const selected = shareMessages.value.filter(sm => shareSelectedIds.value.has(sm.id));
+  const selectedRaw = selected.map(sm => sm.raw);
+  // 生成前端编码的分享 token（包含消息快照，可通过 URL hash 直接还原解析）
+  const snapshot = {
+    v: 1,
+    ts: Date.now(),
+    count: selectedRaw.length,
+    msgs: selectedRaw.map(m => ({
+      role: m?.role ?? (m?.system ? 'system' : 'assistant'),
+      content: String(m?.content ?? ''),
+      timestamp: m?.timestamp ?? Date.now(),
+      senderName: m?.senderName || undefined,
+      confidence: m?.confidence ?? undefined,
+      system: m?.system ? true : undefined,
+    })),
+  };
+  try {
+    const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(snapshot))));
+    const base = typeof location !== 'undefined'
+      ? `${location.origin}${location.pathname}${location.search}`
+      : '/';
+    const url = `${base}#/share/${b64}`;
+    shareLinkUrl.value = url;
+    shareLinkCreated.value = true;
+    ElMessage.success({ message: `已生成分享链接（含 ${selectedRaw.length} 条消息）`, duration: 1500, showClose: false });
+  } catch (e) {
+    console.warn('[share] encode failed', e);
+    // fallback：简单用当前 URL 加 hash
+    shareLinkUrl.value = typeof location !== 'undefined' ? location.href : '';
+    shareLinkCreated.value = true;
+    ElMessage.warning('生成器编码失败，已回退为当前页面链接');
+  }
+}
+async function copyShareLink() {
+  if (!shareLinkUrl.value) { ElMessage.warning('尚未生成链接'); return; }
+  const ok = await copyTextUniversal(shareLinkUrl.value, '', true);
+  if (ok) ElMessage.success({ message: '分享链接已复制', duration: 1600, showClose: false });
+  else ElMessage.error('复制失败，请手动复制');
+}
+async function finishShare() {
+  await copyShareLink();
+  shareDlgOpen.value = false;
+  emit('share', props.msg);
+}
 // fence/mermaid 聚合统计（由 fence renderer 写入、watch renderedContent nextTick 回读 DOM）
 const mermaidBlocks = ref([]);
 const fenceBlocks = ref([]);
@@ -777,6 +1024,7 @@ function stableMsgId(m) {
 // ============ 工具栏复制（整则 / Mermaid / 代码块） ============
 function handleToolbarCopyCommand(cmd) {
   if (cmd === 'md-all') return copyMarkdown();
+  if (cmd === 'plain-all') return copyPlainText();
   if (typeof cmd === 'string') {
     if (cmd.startsWith('mer-')) {
       const i = Number(cmd.slice(4));
@@ -804,55 +1052,123 @@ function handleToolbarCopyCommand(cmd) {
   }
   return handleCopyCommand(cmd);
 }
-// ============ TTS 朗读 · 三层回退（T14 / AC-11 / AC-22） ============
+// ============ TTS 朗读 · 三层回退（T14 / AC-11 / AC-22）· 豆包级动听版 ============
+/** 精选「豆包级拟人」中文音色。优先选微软/字节的高质量女声（晓晓/云希/云扬/晓伊），
+ *  刻意规避劣质男声/机器人质感音色（如 晓康、kang、yankang、robot）。 */
+const PREMIUM_ZH_VOICE = [
+  // Edge/Windows 在线高质量神经 TTS（微软 Azure Speech 同源，最接近豆包拟人）
+  'xiaoxiao', '晓晓', 'yunxi', '云希', 'xiaoyi', '晓伊', 'xiaohan', '晓涵',
+  'xiaomo', '晓墨', 'xiaoshuang', '晓双', 'xiaorou', '晓柔', 'yunjian', '云健',
+  'yunyang', '云扬', 'hiujaai', 'hiuji', 'hiusan',
+  // macOS/iOS 优质中文
+  'sinji', 'meijia', 'yaoyao', 'zhiyu',
+  // 字节豆包 App 内 TTS（若被注入到 speechSynthesis）
+  'doubao', 'bytedance',
+  // 系统级常见较好
+  'tingting', 'huihui',
+]
+/** 低质感黑名单：命中直接放弃该 voice */
+const BLACKLIST_ZH_VOICE = [
+  'xiaokang', '晓康', 'kang', 'robot', 'mechanical', 'tts_engine', 'default_speech',
+]
 function pickZhVoice() {
   try {
-    const vs = speechSynthesis.getVoices();
-    const zh = vs && vs.find(v => (v.lang || '').toLowerCase().startsWith('zh'));
-    return zh || (vs && vs[0]) || null;
-  } catch(_) { return null; }
+    const vs = speechSynthesis.getVoices ? speechSynthesis.getVoices() : []
+    if (!vs || !vs.length) return null
+    const list = Array.from(vs)
+    const lowered = (s) => String(s || '').toLowerCase().replace(/[\s_-]/g, '')
+    const zhOnly = list.filter(v => {
+      const lang = (v.lang || '').toLowerCase()
+      return lang.startsWith('zh') || lang.startsWith('yue') || lang.startsWith('cmn')
+    })
+    // 1) 优先命中 PREMIUM 白名单
+    for (const key of PREMIUM_ZH_VOICE) {
+      const k = lowered(key)
+      const hit = zhOnly.find(v => {
+        const n = lowered(v.name)
+        const u = lowered(v.voiceURI)
+        return (n.includes(k) || u.includes(k))
+          && !BLACKLIST_ZH_VOICE.some(b => n.includes(lowered(b)) || u.includes(lowered(b)))
+      })
+      if (hit) return hit
+    }
+    // 2) 去掉黑名单里的中文 voice
+    const safeZh = zhOnly.filter(v => {
+      const n = lowered(v.name)
+      const u = lowered(v.voiceURI)
+      return !BLACKLIST_ZH_VOICE.some(b => n.includes(lowered(b)) || u.includes(lowered(b)))
+    })
+    // 3) 优先 neural / online / natural / premium 字样（Edge 标签）
+    const prefer = ['neural', 'online', 'natural', 'premium', 'hd']
+    for (const tag of prefer) {
+      const h = safeZh.find(v => lowered(v.name).includes(tag) || lowered(v.voiceURI).includes(tag))
+      if (h) return h
+    }
+    // 4) 优先女声（中文女名字中常见「晓/云/婷/瑶/涵/希」）
+    const fem = safeZh.find(v => /晓|云|希|涵|瑶|婷|柔|双|伊/.test(v.name || ''))
+    if (fem) return fem
+    return safeZh[0] || zhOnly[0] || list[0] || null
+  } catch(_) { return null }
 }
 
-// ========== 朗读 · 三层回退（T14 / AC-11 / AC-22） ==========
+function _header(resp, name) {
+  try { return resp.headers.get(name) || '' } catch(_) { return '' }
+}
+
+// ========== 朗读 · 三层回退（T14 / AC-11 / AC-22）· 豆包级动听参数 ==========
 async function handleSpeakThreeLayer(text) {
   const cleanText = String(text || '').trim().slice(0, 4000)
   if (!cleanText) { ElMessage.warning('无可朗读内容'); return }
 
-  // --- 第一层：Rust 网关 voice/tts/stream（PCM / MP3 流 → 音频元素） ---
+  // --- 第一层：Rust 网关 GET /voice/tts/stream（WAV 流式 → Audio） ---
+  // 【关键修复】此前第一层用 POST + form-body 提交，但 FastAPI 路由是 GET + query params，
+  //  导致 405/404 必然失败，系统永远退到浏览器机械音。这里改为 GET + URLSearchParams
+  //  做 query string（与 voice/main.py 的 @r.get("/tts/stream") 对齐）。
   try {
     const h = await getVoiceHealth()
-    if (h.ok && h.tts?.ready && h.endpoints?.tts_stream) {
-      const url = `${ALLIANCE_BASE}${h.endpoints.tts_stream}`
-      const form = new URLSearchParams()
-      form.append('text', cleanText)
-      form.append('engine', h.tts.active || 'cosyvoice2')
-      const resp = await fetch(url, { method: 'POST', body: form })
-      if (resp.ok && resp.body) {
-        // 先停止之前任何浏览器朗读
+    const streamPath = (h && h.endpoints && h.endpoints.tts_stream) ? h.endpoints.tts_stream : '/voice/tts/stream'
+    const qs = new URLSearchParams()
+    qs.append('text', cleanText)
+    qs.append('voice', 'xiaobai')
+    qs.append('emotion', 'neutral')
+    qs.append('speed', '1.03') // 略快于 1.0，更接近豆包日常聊天语速
+    const base = ALLIANCE_BASE || ''
+    const url = `${base.replace(/\/$/, '')}${streamPath}?${qs.toString()}`
+    const resp = await fetch(url, { method: 'GET', headers: authHeaders({ Accept: 'audio/wav' }) })
+    if (resp.ok && resp.body) {
+      const fallback = String(_header(resp, 'X-TTS-Fallback') || '').toLowerCase()
+      if (fallback !== 'browser') {
         try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel() } catch(_) {}
         const blob = await resp.blob()
         const src = URL.createObjectURL(blob)
         const audio = new Audio(src)
+        audio.preload = 'auto'
         ;(window).__mbAudio = audio
         speechState.value = 'playing'
-        audio.onended = () => { URL.revokeObjectURL(src); speechState.value = 'idle' }
-        audio.onerror = () => { URL.revokeObjectURL(src); speechState.value = 'idle' }
+        audio.onended = () => { try { URL.revokeObjectURL(src) } catch(_){}; speechState.value = 'idle' }
+        audio.onerror = () => { try { URL.revokeObjectURL(src) } catch(_){}; speechState.value = 'idle' }
         audio.onpause = () => { if (!audio.ended) speechState.value = 'paused' }
-        await audio.play()
-        return
+        try {
+          await audio.play()
+          return
+        } catch(_playErr) {
+          try { URL.revokeObjectURL(src) } catch(_){}
+        }
       }
     }
-  } catch (e) { /* fall through */ }
+  } catch (_e) { /* fall through */ }
 
-  // --- 第二层：浏览器 Web Speech Synthesis（零依赖，广泛可用） ---
+  // --- 第二层：浏览器 Web Speech Synthesis · 豆包级拟人音精选 ---
   if ('speechSynthesis' in window) {
     try {
       window.speechSynthesis.cancel()
       const u = new SpeechSynthesisUtterance(cleanText)
-      const v = pickZhVoice(); if (v) { try { u.voice = v; } catch(_){} }
+      const v = pickZhVoice()
+      if (v) { try { u.voice = v; } catch(_){} }
       u.lang = 'zh-CN'
-      u.rate = 1.0
-      u.pitch = 1.0
+      // 豆包级参数：略快 1.02、轻微升调 1.01 让声音更轻盈自然
+      u.rate = 1.02
+      u.pitch = 1.01
       u.volume = 1.0
       u.onstart = () => { speechState.value = 'playing'; }
       u.onend = () => { speechState.value = 'idle'; speechUtterance = null; }
@@ -863,7 +1179,7 @@ async function handleSpeakThreeLayer(text) {
       window.speechSynthesis.speak(u)
       speechState.value = 'playing'
       return
-    } catch (e) { /* fall through */ }
+    } catch (_e) { /* fall through */ }
   }
 
   // --- 第三层：兜底（AC-22）——弹提示并写入剪贴板，给用户自己读 ---
@@ -1216,8 +1532,147 @@ function artifactIcon(a) {
 .mb-ops-show { opacity: 1; transform: translateY(0); pointer-events: auto; }
 .mb-op-btn { background: rgba(255, 255, 255, 0.92); border: 1px solid #e2e8f0 !important; box-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.1); backdrop-filter: blur(4px); }
 .mb-op-btn:hover { background: #6366f1 !important; border-color: #6366f1 !important; color: #fff !important; }
-.mb-copy-default { margin-left: 8px; padding: 0 5px !important; height: 18px !important; line-height: 16px !important; font-size: 10px !important; }
 .mb-copy-hint { font-size: 11px; color: #94a3b8; margin-left: 4px; }
+
+/* ========================================================
+   φ 黄金比例 下拉菜单系统 (φ ≈ 1.618)
+   基准：图标 15 → 行高 15×φ ≈ 24 视觉
+   内边距：上下 5 + 5 = 10，行高 34 （图标 15 / 0.447 ≈ 33.56 ≈ 34）
+   图标列 26 = 16×1.618，文本与图标 gap 10，右侧 badge 列 42
+   ======================================================== */
+:deep(.mb-dd-menu) {
+  --mb-dd-row-h: 34px;
+  --mb-dd-ic-w: 26px;
+  --mb-dd-tag-w: 44px;
+  --mb-dd-gap: 10px;
+  --mb-dd-radius: 10px;
+  min-width: 220px;
+  padding: 6px !important;
+  border: 1px solid rgba(99, 102, 241, 0.12) !important;
+  border-radius: var(--mb-dd-radius) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+  box-shadow:
+    0 24px 48px -16px rgba(15, 23, 42, 0.22),
+    0 8px 20px -10px rgba(99, 102, 241, 0.28),
+    inset 0 1px 0 rgba(255,255,255,0.8);
+  backdrop-filter: blur(14px);
+}
+:deep(.mb-dd-menu.mb-dd-quick) { min-width: 200px; }
+
+/* item 基础重置 */
+:deep(.mb-dd-menu .el-dropdown-menu__item) {
+  padding: 0 10px !important;
+  height: var(--mb-dd-row-h) !important;
+  line-height: var(--mb-dd-row-h) !important;
+  border-radius: 8px !important;
+  margin: 1px 0 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  transition: background 140ms ease, color 140ms ease, transform 140ms ease;
+}
+:deep(.mb-dd-menu .el-dropdown-menu__item:hover),
+:deep(.mb-dd-menu .el-dropdown-menu__item:focus-visible) {
+  background: linear-gradient(90deg, rgba(99,102,241,0.12) 0%, rgba(244,114,182,0.08) 100%) !important;
+  color: #4338ca !important;
+  transform: translateX(1px);
+}
+
+/* divider 控制：φ 分组分隔（仅前后 4px margin） */
+:deep(.mb-dd-menu .el-dropdown-menu__item.is-divided) {
+  margin-top: 4px !important;
+  padding-top: 0 !important;
+  border-top: 1px solid rgba(148,163,184,0.18) !important;
+  box-shadow: 0 -1px 0 rgba(255,255,255,0.6);
+  border-radius: 0 0 8px 8px !important;
+}
+/* 上一条紧贴分隔线的补齐圆角 */
+:deep(.mb-dd-menu .mb-dd-divider) {
+  border-radius: 0 0 8px 8px !important;
+}
+
+/* 内部三栏栅格：图标(26) → gap(10) → 文本(flex1) → gap(8) → badge(44) */
+.mb-dd-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  gap: var(--mb-dd-gap);
+  line-height: 1.2;
+}
+.mb-dd-ic {
+  flex: 0 0 var(--mb-dd-ic-w);
+  width: var(--mb-dd-ic-w);
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(148,163,184,0.08) 0%, rgba(148,163,184,0.03) 100%);
+  transition: background 140ms ease, color 140ms ease;
+}
+:deep(.el-dropdown-menu__item:hover) .mb-dd-ic {
+  background: linear-gradient(180deg, rgba(99,102,241,0.18) 0%, rgba(99,102,241,0.08) 100%);
+  color: #4338ca;
+}
+.mb-dd-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+}
+.mb-dd-sub {
+  color: #94a3b8;
+  font-weight: 400;
+  margin-left: 2px;
+}
+.mb-dd-lang {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 600;
+  color: #0f172a;
+  font-size: 12.5px;
+}
+
+/* 右侧徽章 · φ 紧凑 44×20 */
+.mb-dd-tag {
+  flex: 0 0 auto;
+  min-width: 38px;
+  padding: 0 7px;
+  height: 20px;
+  line-height: 18px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-align: center;
+  color: #4338ca;
+  background: linear-gradient(180deg, rgba(99,102,241,0.14) 0%, rgba(99,102,241,0.07) 100%);
+  border: 1px solid rgba(99,102,241,0.22);
+}
+.mb-dd-tag-muted {
+  color: #475569;
+  background: linear-gradient(180deg, rgba(148,163,184,0.14) 0%, rgba(148,163,184,0.06) 100%);
+  border-color: rgba(148,163,184,0.28);
+}
+.mb-dd-tag-accent {
+  color: #b45309;
+  background: linear-gradient(180deg, rgba(245,158,11,0.16) 0%, rgba(245,158,11,0.07) 100%);
+  border-color: rgba(245,158,11,0.30);
+}
+.mb-dd-tag-code {
+  color: #0e7490;
+  background: linear-gradient(180deg, rgba(6,182,212,0.16) 0%, rgba(6,182,212,0.06) 100%);
+  border-color: rgba(6,182,212,0.30);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* 禁用 hover 时拇指 SVG 变大 (下拉内保持 1:1) */
+:deep(.el-dropdown-menu__item) .mb-ic-thumb {
+  transform: none !important;
+}
 
 /* ===== 9 动作工具栏（深空 × φ） ===== */
 .mb-actions {
@@ -1651,6 +2106,284 @@ function artifactIcon(a) {
   white-space: nowrap; border: 0;
 }
 
+/* ===== 拆分式复制按钮（φ 比例：大按钮 26×26，caret 16×26 即 26/φ ≈ 16.07） ===== */
+.mb-copy-split-wrap {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0;
+  border-radius: 14px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.45) 0%, rgba(16,185,129,0.40) 100%);
+  box-shadow:
+    0 2px 6px -2px rgba(99,102,241,0.32),
+    0 0 0 1px rgba(255,255,255,0.28) inset;
+}
+.mb-copy-split-wrap .mb-copy-main {
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 12px 4px 4px 12px !important;
+  margin-right: -1px;
+  z-index: 1;
+  border: none !important;
+}
+.mb-copy-split-wrap .mb-copy-caret {
+  width: 16px !important;       /* 26 / φ ≈ 16.07 */
+  height: 26px !important;
+  border-radius: 4px 12px 12px 4px !important;
+  border-left: 1px solid rgba(255,255,255,0.30) !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  border-right: none !important;
+  min-width: 0;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.mb-copy-split-wrap .mb-copy-caret:hover {
+  filter: brightness(1.10);
+}
+
+/* 悬浮 mb-ops 区拆分复制（同样 φ 比例，浅色系） */
+.mb-ops-split {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0;
+  border-radius: 14px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(226,232,240,0.95) 0%, rgba(148,163,184,0.40) 100%);
+  box-shadow:
+    0 2px 6px -2px rgba(15,23,42,0.12),
+    0 0 0 1px rgba(255,255,255,0.80) inset;
+}
+.mb-ops-split .mb-ops-main {
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 12px 4px 4px 12px !important;
+  margin-right: -1px;
+  z-index: 1;
+  border: none !important;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.mb-ops-split .mb-ops-caret {
+  width: 16px !important;       /* 26 / φ ≈ 16.07 */
+  height: 26px !important;
+  border-radius: 4px 12px 12px 4px !important;
+  border-left: 1px solid rgba(148,163,184,0.38) !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  border-right: none !important;
+  min-width: 0;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.mb-ops-split .mb-ops-main:hover,
+.mb-ops-split .mb-ops-caret:hover {
+  filter: none;
+}
+.mb-ops-caret svg { display: block; }
+
+/* ===== 拇指 & 扬声器 SVG 图标 ===== */
+.mb-ic-thumb {
+  display: block;
+  transition: transform 0.18s cubic-bezier(.4,0,.2,1);
+}
+.mb-action-btn:hover .mb-ic-thumb {
+  transform: scale(1.08);
+}
+.mb-ic-tts {
+  display: block;
+}
+
+/* ===== 分享对话框样式（深空级 φ 美学） ===== */
+:deep(.mb-share-dialog .el-dialog) {
+  border-radius: 16px !important;
+  overflow: hidden;
+  box-shadow: 0 40px 80px -24px rgba(15,23,42,0.35), 0 10px 28px -14px rgba(99,102,241,0.35);
+  background: linear-gradient(180deg, #ffffff 0%, #fafbff 100%);
+}
+:deep(.mb-share-dialog .el-dialog__header) {
+  padding: 20px 26px 16px !important;
+  border-bottom: 1px solid #eef2ff;
+  margin-right: 0 !important;
+  background: linear-gradient(90deg, rgba(99,102,241,0.06) 0%, rgba(139,92,246,0.03) 50%, transparent 100%);
+}
+:deep(.mb-share-dialog .el-dialog__title) {
+  font-size: 16px !important;
+  font-weight: 650 !important;
+  background: linear-gradient(90deg, #4f46e5, #8b5cf6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+  letter-spacing: 0.2px;
+}
+:deep(.mb-share-dialog .el-dialog__body) {
+  padding: 18px 22px 8px !important;
+  color: #334155;
+}
+:deep(.mb-share-dialog .el-dialog__footer) {
+  padding: 14px 24px 20px !important;
+  border-top: 1px solid #eef2ff;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.share-scope-tip { margin-bottom: 14px; }
+:deep(.share-scope-tip .el-alert) {
+  border-radius: 10px;
+  background: linear-gradient(90deg, rgba(99,102,241,0.08) 0%, rgba(224,231,255,0.6) 100%);
+  border: 1px solid #e0e7ff;
+  color: #4338ca;
+}
+:deep(.share-scope-tip .el-alert__title) {
+  color: #4338ca;
+  font-weight: 500;
+  font-size: 12.5px;
+  letter-spacing: 0.1px;
+}
+
+.share-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding: 0 2px;
+}
+.share-list-title {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  letter-spacing: 0.1px;
+}
+.share-list-title .el-icon { color: #6366f1; margin-right: 5px; font-size: 15px; }
+.share-list-actions { display: inline-flex; gap: 2px; }
+
+.share-list-box {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 4px;
+  box-shadow: inset 0 2px 4px rgba(15,23,42,0.03);
+}
+.share-empty { padding: 30px 0; }
+.share-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.share-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 0.16s, border-color 0.16s;
+  border: 1px solid transparent;
+  position: relative;
+}
+.share-item:hover {
+  background: linear-gradient(90deg, rgba(99,102,241,0.05) 0%, rgba(139,92,246,0.03) 100%);
+  border-color: #e0e7ff;
+}
+.share-item.si-selected {
+  background: linear-gradient(135deg, rgba(99,102,241,0.09) 0%, rgba(139,92,246,0.07) 100%);
+  border-color: #c7d2fe;
+}
+.share-item.si-current {
+  background: linear-gradient(135deg, rgba(245,158,11,0.09) 0%, rgba(251,191,36,0.05) 100%);
+  border-color: #fde68a;
+}
+.share-item.si-current.si-selected {
+  background: linear-gradient(135deg, rgba(99,102,241,0.09) 0%, rgba(245,158,11,0.06) 100%);
+  border-color: #818cf8;
+}
+.share-item .el-checkbox { margin-right: 2px; margin-top: 2px; }
+.si-body { flex: 1 1 auto; min-width: 0; }
+.si-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+.si-head :deep(.el-tag) { height: 18px !important; line-height: 16px !important; padding: 0 7px !important; font-size: 10.5px !important; }
+.si-current-tag {
+  display: inline-block;
+  padding: 0 6px;
+  font-size: 10.5px;
+  background: linear-gradient(90deg, #f59e0b, #f97316);
+  color: #fff;
+  border-radius: 10px;
+  height: 18px;
+  line-height: 18px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+.si-time {
+  font-size: 11px;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+}
+.si-preview {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #475569;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-all;
+}
+
+.share-link-section {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 55%, #fdf4ff 100%);
+  border: 1px solid #e0e7ff;
+}
+.share-link-label {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #4338ca;
+  margin-bottom: 9px;
+  letter-spacing: 0.1px;
+}
+.share-link-label .el-icon { margin-right: 5px; color: #6366f1; }
+.share-link-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.share-link-row :deep(.el-input) { flex: 1 1 auto; }
+.share-link-row :deep(.el-input__wrapper) {
+  background: #fff !important;
+  border-radius: 9px !important;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.05) inset !important;
+}
+.share-link-hint {
+  margin-top: 9px;
+  font-size: 11.5px;
+  color: #4338ca;
+  padding: 5px 10px;
+  border-radius: 10px;
+  background: rgba(99,102,241,0.08);
+  font-weight: 500;
+}
+
 @media (max-width: 720px) {
   .mb-wrapper { margin: 12px 0; gap: 8px; }
   .mb-avatar { width: 34px; height: 34px; border-radius: 9px; }
@@ -1668,5 +2401,6 @@ function artifactIcon(a) {
   .mb-ops { top: 8px; right: 8px; }
   .mb-meta { margin-top: 12px; padding-top: 10px; }
   .mb-actions { gap: 8px; padding-top: 10px; }
+  .mb-copy-split-wrap .mb-copy-caret { width: 14px !important; height: 24px !important; }
 }
 </style>

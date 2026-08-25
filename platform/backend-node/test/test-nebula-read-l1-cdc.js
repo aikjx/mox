@@ -15,7 +15,7 @@ const path = require('path');
 const os = require('os');
 const assert = require('assert');
 
-const TMP_ROOT = fs.mkdtempSync(path.join(os.tmpdir(), 'xuanji-t3-green-'));
+const TMP_ROOT = fs.mkdtempSync(path.join(os.tmpdir(), 'mox-t3-green-'));
 const TMP_DATA = path.join(TMP_ROOT, 'data');
 fs.mkdirSync(TMP_DATA, { recursive: true });
 

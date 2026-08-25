@@ -3,19 +3,19 @@
 //! 提供可测试的中间件、工具函数和 OUS-Cordis 插件化运行时内核
 
 pub const CRATE_ID: &str = "a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b";
-pub const ENGINE_NAME: &str = "xuanji::runtime";
-pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+pub const ENGINE_NAME: &str = "mox::runtime";
+pub const CRATE_META: mox_common_meta::CrateMeta = mox_common_meta::CrateMeta {
     id: CRATE_ID,
     name: env!("CARGO_PKG_NAME"),
     version: env!("CARGO_PKG_VERSION"),
-    layer: xuanji_common_meta::AisLayer::L3Orchestration,
-    owner: "xuanji-core",
+    layer: mox_common_meta::AisLayer::L3Orchestration,
+    owner: "mox-core",
 };
 
 pub mod api_standard;
 pub mod openapi;
 pub mod rbac_middleware;
-/// 子服务聚合（xuanji-expert / xuanji-system / primiflow / primiflow-fusion）：
+/// 子服务聚合（mox-expert / mox-system / primiflow / primiflow-fusion）：
 /// 挂载前缀常量与聚合构建，供 main 与 rbac_middleware 共用鉴权边界定义。
 pub mod subservers;
 
@@ -28,7 +28,7 @@ pub mod market_migration;
 pub mod market_version;
 
 /// OUS 前端治理台 API（handlers::governance / routes::governance，对应 /api/governance/*）
-// 治理台状态自包含于 GovernanceState 并适配 xuanji-expert 当前 API（pipeline::GovernanceReport /
+// 治理台状态自包含于 GovernanceState 并适配 mox-expert 当前 API（pipeline::GovernanceReport /
 // govern::GateResult），随 governance feature（默认启用）编译并挂载。
 pub mod handlers;
 pub mod routes;

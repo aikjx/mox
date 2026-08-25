@@ -1,4 +1,4 @@
-const { GraphClient } = require("../../xuanji-sdk-graph");
+const { GraphClient } = require("../../mox-sdk-graph");
 const client = new GraphClient({ endpoint: "graph.local" });
 const result = client.sparkReaderPagedEdges(25, "0");
 if (!result.ok || result.edges.length !== 25) process.exit(1);

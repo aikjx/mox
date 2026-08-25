@@ -17,7 +17,7 @@ const DOMAINS = [
   {
     id: 'studio', name: '璇玑工作台', codePath: 'src/routes/studio.js',
     keyFeatures: ['豆包式场景卡片与全局搜索（零门槛直通）', 'JS 代码 vm 沙箱在线运行（3s 守卫零 IO）', 'API 游乐场与图谱体检项目看板'],
-    engines: ['project-atlas'], dataAssets: [], docs: ['docs/standards/xuanji-studio.md']
+    engines: ['project-atlas'], dataAssets: [], docs: ['docs/standards/mox-studio.md']
   },
   {
     id: 'graph', name: '知识图谱', codePath: 'src/routes/graph.js',
@@ -62,7 +62,7 @@ const DOMAINS = [
   {
     id: 'expert-alliance', name: '专家联盟', codePath: 'src/routes/expert-alliance.js',
     keyFeatures: ['专家全生命周期与咨询编排', '多专家辩论与会话链', '智能路由与指标反馈', '六阶段流水线（门禁重试/辩论降级/安全强制组队）', 'trace 审计回溯与学习技能沉淀'],
-    engines: ['expert-alliance', 'expert-alliance-engine', 'expert-dispatcher'], dataAssets: ['experts.json', 'expert_sessions.json', 'expert_chat_history.json', 'alliance_intent_priors.json', 'alliance_traces.jsonl', 'dispatcher_config.json', 'alliance_learned_skills.json'], docs: ['docs/modules/专家联盟AI对话需求文档-V2.0-架构优化版.md', 'docs/modules/xuanji-expert-alliance-fusion-flows.md']
+    engines: ['expert-alliance', 'expert-alliance-engine', 'expert-dispatcher'], dataAssets: ['experts.json', 'expert_sessions.json', 'expert_chat_history.json', 'alliance_intent_priors.json', 'alliance_traces.jsonl', 'dispatcher_config.json', 'alliance_learned_skills.json'], docs: ['docs/modules/专家联盟AI对话需求文档-V2.0-架构优化版.md', 'docs/modules/mox-expert-alliance-fusion-flows.md']
   },
   {
     id: 'mcp', name: 'MCP 协议服务', codePath: 'src/routes/mcp.js',
@@ -209,10 +209,10 @@ const DOMAINS = [
     dataAssets: [], docs: []
   },
   {
-    id: 'domain-rust-xuanji-expert', name: 'Rust/XuanjiExpert',
-    codePath: '../services/xuanji-expert/src',
+    id: 'domain-rust-mox-expert', name: 'Rust/MoxExpert',
+    codePath: '../services/mox-expert/src',
     keyFeatures: ['15 专家能力画像 + RBAC/审计（experts/ + audit/）', '六阶段流水线验证器（verify/ topology/conflict/data_dep）', '执行器与治理（executor.rs/govern.rs）+ 多租户策略'],
-    engines: ['engine-rust-xuanji-expert'], kind: 'rust-crate', scope: 'platform/services/xuanji-expert',
+    engines: ['engine-rust-mox-expert'], kind: 'rust-crate', scope: 'platform/services/mox-expert',
     module_ids: [], domain_owner: 'Rust 子项目', auto: true,
     dataAssets: [], docs: []
   },
@@ -257,10 +257,10 @@ const DOMAINS = [
     dataAssets: [], docs: []
   },
   {
-    id: 'domain-rust-xuanji-system', name: 'Rust/XuanjiSystem',
-    codePath: '../services/xuanji-system/src',
+    id: 'domain-rust-mox-system', name: 'Rust/MoxSystem',
+    codePath: '../services/mox-system/src',
     keyFeatures: ['服务编排器（orchestrator.rs）+ 多后端存储（repo/*：sqlite/mysql/postgres）', 'RBAC + 加密 + 限流（rbac/crypto/ratelimit）', '配置/错误/指标/事件 全栈底座（config/error/metrics/event）'],
-    engines: ['engine-rust-xuanji-system'], kind: 'rust-crate', scope: 'platform/services/xuanji-system',
+    engines: ['engine-rust-mox-system'], kind: 'rust-crate', scope: 'platform/services/mox-system',
     module_ids: [], domain_owner: 'Rust 子项目', auto: true,
     dataAssets: [], docs: []
   },
@@ -388,27 +388,27 @@ const DOMAINS = [
     crateId: '4d2e50c1-9d64-525d-86cf-2d7d610a27b9'
   },
   {
-    id: 'rust::xuanji-expert', kind: 'rust', auto: true,
-    codePath: 'platform/services/xuanji-expert',
-    owns_domain: ['xuanji-expert', '15 专家画像', 'RBAC', '审计', '六阶段管线'],
+    id: 'rust::mox-expert', kind: 'rust', auto: true,
+    codePath: 'platform/services/mox-expert',
+    owns_domain: ['mox-expert', '15 专家画像', 'RBAC', '审计', '六阶段管线'],
     version: '3.0.0-ai-powered',
     tags: ['rust', 'ais::L4Services'],
     crateId: '50bb6200-04c5-5e4c-8354-4c6e1b230024'
   },
   {
-    id: 'rust::xuanji-system', kind: 'rust', auto: true,
-    codePath: 'platform/services/xuanji-system',
-    owns_domain: ['xuanji-system', '服务编排', '多后端存储', 'RBAC', '加密', '限流', '持久化 Provider'],
+    id: 'rust::mox-system', kind: 'rust', auto: true,
+    codePath: 'platform/services/mox-system',
+    owns_domain: ['mox-system', '服务编排', '多后端存储', 'RBAC', '加密', '限流', '持久化 Provider'],
     version: '3.0.0-ai-powered',
     tags: ['rust', 'ais::L7Infrastructure'],
     crateId: 'b81eec75-22ff-5155-ac49-19edf6f6b5ab'
   },
   {
-    id: 'rust::xuanji-common-meta', kind: 'rust', auto: true,
-    codePath: 'platform/services/xuanji-common-meta',
-    owns_domain: ['xuanji-common-meta', 'CrateMeta', 'AIS 分层', 'CrateId 注册表'],
+    id: 'rust::mox-common-meta', kind: 'rust', auto: true,
+    codePath: 'platform/services/mox-common-meta',
+    owns_domain: ['mox-common-meta', 'CrateMeta', 'AIS 分层', 'CrateId 注册表'],
     keyFeatures: ['CrateMeta 元数据建模（crate_meta.rs 与分层标签）', '16 crate 全局注册表与 CrateId 校验（id_registry.rs）', 'AIS 架构分层 tag 统一（L3/L4/L5/L6/L7）'],
-    engines: ['engine::xuanji_common_meta'],
+    engines: ['engine::mox_common_meta'],
     version: '3.0.0-ai-powered',
     tags: ['rust', 'ais::L5Domain'],
     crateId: '34a20231-1a80-5426-b392-40d7a2ddd9f7'

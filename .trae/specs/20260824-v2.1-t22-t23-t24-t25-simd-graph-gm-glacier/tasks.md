@@ -1,4 +1,4 @@
-# XUANJI v2.1 (T22/T23/T24/T25) 任务切片
+# MOX v2.1 (T22/T23/T24/T25) 任务切片
 > 来源规格：`.trae/specs/20260824-v2.1-t22-t23-t24-t25-simd-graph-gm-glacier/spec.md`  
 > 版本：v1.0  切片计数：22 原子切片（含 2 总控/脚本）  
 > 依赖规则：先基础设施（SIMD/SM 算法/桥接），再引擎，再 HTTP / Helm / 验证脚本
@@ -22,7 +22,7 @@
 **Depends On**: 无  
 **Maps AC**: AC-T22-1, AC-T22-2, NFR2  
 **Scope**:
-- 新建 `xuanji-cloud-drive-volume/src/gf256_simd.rs`；
+- 新建 `mox-cloud-drive-volume/src/gf256_simd.rs`；
 - x86_64：`is_avx2_supported()` (CPUID.7.0.EBX[5]=AVX2)；
 - `gf_vec_mul_avx2(coef: u8, src: &[u8], dst: &mut [u8])`：使用 AVX2 `vpbroadcastb` 广播系数 → 并行 16 lane 做 log/exp 查表的等效 XOR + shift（或经典 precomp `MUL_TABLE_AVX2` 16×256）；
 - 对 `src.len() % 32 != 0` 尾部用 scalar fallback。
@@ -30,7 +30,7 @@
 **TR**：
 - TR (rule): `#[cfg(target_arch = "x86_64")]` 下 `t22_avx2_rand_1m()` 1_000_000 次随机 (coef, 32B block) 与 scalar `gf_mul` 结果位一致。
 - TR (rule): `t22_avx2_tail_1_through_63()` 对所有尾部长度 1..=63 位一致。
-- TR (rule): `cargo test -p xuanji-cloud-drive-volume --features simd -- t22_avx2` 全部通过 ≥ 6 tests exit=0。
+- TR (rule): `cargo test -p mox-cloud-drive-volume --features simd -- t22_avx2` 全部通过 ≥ 6 tests exit=0。
 
 ---
 
@@ -44,7 +44,7 @@
 - Windows ARM / macOS aarch64 交叉编译单元测试用 `cross` 或在 CI 上标记 skip，但 `is_neon_supported()` 必须返回 true（aarch64 Linux 强制有 NEON）。
 
 **TR**：
-- TR (rule): `cargo build --target aarch64-unknown-linux-gnu --features simd -p xuanji-cloud-drive-volume` exit=0。
+- TR (rule): `cargo build --target aarch64-unknown-linux-gnu --features simd -p mox-cloud-drive-volume` exit=0。
 - TR (rule): 使用 cross（若可用）跑 t22_neon_rand_1m 位一致；不可用时至少 `cfg(test) mod neon { compile_assert! }` 通过。
 - TR (rubric 0-2, 阈值 ≥ 1): aarch64 可执行产物 + 交叉编译证据。
 
@@ -74,12 +74,12 @@
 **Depends On**: T22-3  
 **Maps AC**: AC-T22-3, AC-T22-5  
 **Scope**:
-- 新增 bench harness：`xuanji-t21-harness/tests/a7_t22_ec_bench.rs` 或独立 `projects/t22-simd-artifacts/benches/ec.rs`（不在架构代码）；
+- 新增 bench harness：`mox-t21-harness/tests/a7_t22_ec_bench.rs` 或独立 `projects/t22-simd-artifacts/benches/ec.rs`（不在架构代码）；
 - 16MB payload × 12+4：100 次 encode 平均 (min + 2*p50 + p99)/4 作为吞吐；
-- `xuanji-server/o11y.rs` 加 3 个新 counter：`xuanji_ec_encode_avx2_bytes_total`, `xuanji_ec_encode_scalar_bytes_total`, `xuanji_ec_simd_enabled`.
+- `mox-server/o11y.rs` 加 3 个新 counter：`mox_ec_encode_avx2_bytes_total`, `mox_ec_encode_scalar_bytes_total`, `mox_ec_simd_enabled`.
 
 **TR**：
-- TR (rule): 单二进制在 `--single-node` 启动后 PUT 16 MB 对象一次，/metrics 中 `xuanji_ec_simd_enabled 1` 且 `avx2_bytes_total ≥ 16_777_216`。
+- TR (rule): 单二进制在 `--single-node` 启动后 PUT 16 MB 对象一次，/metrics 中 `mox_ec_simd_enabled 1` 且 `avx2_bytes_total ≥ 16_777_216`。
 - TR (rule): bench 报告 `bench_12plus4_16mb.json` 中 encode 吞吐 ≥ 2.7 GB/s 或 (baseline × 1.35)，二选较严；否则 task 保持 `in_progress`。
 - TR (rule): 3 次连续 bench run 的 CV (变异系数) ＜ 5%。
 
@@ -91,7 +91,7 @@
 **Depends On**: 无  
 **Maps AC**: FR-T23.1, FR-T23.4, AC-T23-2, AC-T23-4  
 **Scope**:
-- 新文件：`xuanji-fusion/src/graph_projection_bridge.rs`；
+- 新文件：`mox-fusion/src/graph_projection_bridge.rs`；
 - `struct ProjectionBridge { next_id: i64, s2i: BTreeMap<String,i64>, i2s: BTreeMap<i64,String>, graph: SimpleGraph }`；
 - `upsert_object_vertex(obj_uri, attrs)` / `upsert_tag_vertex(tag_key, tag_value)` / `add_has_tag_edge(obj_s, tag_s)` / `remove_object(obj_s)`；
 - 对现有 `GraphWriter` 增加 `on_after_upsert(&mut self, bridge: Option<&Mutex<ProjectionBridge>>)` hook 调用。
@@ -109,7 +109,7 @@
 **Depends On**: T23-1  
 **Maps AC**: FR-T23.2, FR-T23.3, FR-T23.5, AC-T23-1, AC-T23-3, AC-T23-5  
 **Scope**:
-- `xuanji-server/src/http_server.rs` 加 4 个新端点：
+- `mox-server/src/http_server.rs` 加 4 个新端点：
   - GET  `/graph/projection/list` → `projection_20::PROJECTION_OPERATORS` 序列化；
   - POST `/graph/projection/apply` body `{ seed_s|seed_i, operator_id, param }` → `ProjectionResult + vertex_attributes_by_s`；
   - POST `/graph/path/shortest` body `{ from_s, to_s, max_hops }` → BFS；
@@ -131,12 +131,12 @@
 **Depends On**: T23-1, T23-2  
 **Maps AC**: FR-T23.5, AC-T23-6, AC-COMP-1  
 **Scope**:
-- 在 `xuanji-graph-service/src/community_cnm.rs` 新建 CNM 凝聚模块度算法（避免标签传播 LPA，遵循项目 memory 中硬约束）；
+- 在 `mox-graph-service/src/community_cnm.rs` 新建 CNM 凝聚模块度算法（避免标签传播 LPA，遵循项目 memory 中硬约束）；
 - 每次 `detect(graph)` 返回 `community_id: Vec<i64>` + 模块度 Q；
 - `community_id[i]` 表示 vertex id=i 的归属社区；与 `SimpleGraph` 的 `Vertex.community` 字段对齐。
 
 **TR**：
-- TR (rule): 对 oracle_200 图运行，模块度 Q 与 xuanji-graph-service 既有 `t11_graph` oracle 预期 Q (如 0.32±0.05) 在 ε 内。
+- TR (rule): 对 oracle_200 图运行，模块度 Q 与 mox-graph-service 既有 `t11_graph` oracle 预期 Q (如 0.32±0.05) 在 ε 内。
 - TR (rule): 连续 10 次 detect 调用社区划分完全一致 (deterministic)。
 - TR (rule): 对空图 / 1 顶点图返回正确边界。
 
@@ -150,7 +150,7 @@
 **Depends On**: 无  
 **Maps AC**: AC-T24-1, NFR3, NFR7  
 **Scope**:
-- 新文件：`xuanji-standards/src/sm3_hash.rs`（纯 Rust，GM/T 0004-2012，256-bit 摘要；大端；初始 IV 固定 8×32bit=0x7380166F,0x4914B2B9,0x172442D7,0xDA8A0600,0xA96F30BC,0x163138AA,0xE38DEE4D,0xB0FB0E4E）；
+- 新文件：`mox-standards/src/sm3_hash.rs`（纯 Rust，GM/T 0004-2012，256-bit 摘要；大端；初始 IV 固定 8×32bit=0x7380166F,0x4914B2B9,0x172442D7,0xDA8A0600,0xA96F30BC,0x163138AA,0xE38DEE4D,0xB0FB0E4E）；
 - 暴露 `sm3_hex(data) -> String`，`hmac_sm3_hex(key, data) -> String`；
 - `HashChain` feature-gated：`feature = "gm-sm"` 使用 `block_hash=SM3`，`feature = "dual_chain"` 同时写 Sha256+SM3 两条链。
 
@@ -168,13 +168,13 @@
 **Depends On**: T24-1  
 **Maps AC**: AC-T24-2, NFR3  
 **Scope**:
-- 新文件：`xuanji-standards/src/sm2.rs`；
+- 新文件：`mox-standards/src/sm2.rs`；
 - 纯 Rust：有限域 GF(p)，p=0xFFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFF；阶 n；基点 G；
 - `KeyPair::random()`、`from_secret_key(d: [u8;32])`、`sign(message, [user_id: b"1234567812345678"])` → DER 或纯 (r,s) 64B hex；`verify(signature, message, pk)`；
 - 支持 Tongsuo CLI `openssl sm2utl -sign/-verify` 互操作。
 
 **TR**：
-- TR (rule): 对固定消息 `message = b"xuanji-v2.1"`，固定 d=附录 A 样例私钥，签名后 Tongsuo 外部工具 verify 成功（log 中记录 `Verification successful`）。
+- TR (rule): 对固定消息 `message = b"mox-v2.1"`，固定 d=附录 A 样例私钥，签名后 Tongsuo 外部工具 verify 成功（log 中记录 `Verification successful`）。
 - TR (rule): 代码内 verify 同签名通过；改 1 bit message 后 verify 返回 Err。
 - TR (rule): `t24_sm2_fuzz_1k` 1000 次随机 keypair + 随机消息 round-trip 通过。
 
@@ -186,17 +186,17 @@
 **Depends On**: T24-1  
 **Maps AC**: AC-T24-3, NFR3  
 **Scope**:
-- 新文件：`xuanji-standards/src/sm4_gcm.rs`；
+- 新文件：`mox-standards/src/sm4_gcm.rs`；
 - SM4 分组 (128-bit key, 32 轮) + GCM (GHASH + CTR 模式, 128-bit tag)；
 - `sm4_gcm_seal(key: [u8;16], nonce: [u8;12], aad: &[u8], pt: &[u8]) -> (ct: Vec<u8>, tag: [u8;16])`；
 - `sm4_gcm_open(key, nonce, aad, ct, tag) -> Result<Vec<u8>,_>`，tag 错则 Err；
-- object_meta 加 `encrypted_dek_hex` 和 `sm4_gcm_nonce_hex`，xuanji-server http PUT/GET 路径 feature-gated 调用。
+- object_meta 加 `encrypted_dek_hex` 和 `sm4_gcm_nonce_hex`，mox-server http PUT/GET 路径 feature-gated 调用。
 
 **TR**：
 - TR (rule): SM4 单块向量 GM/T 0002 附录 D 明文/密文位一致（ECB 128-bit key 0x01… 加 16×0x01 → 对应密文）。
 - TR (rule): `sm4_gcm_seal/open` 100 次随机 key/nonce/aad/pt 轮询 roundtrip 通过。
 - TR (rule): 改 1 bit tag → open 返回 Err；改 1 bit ciphertext → open 返回 Err。
-- TR (rule): xuanji-server 启用 `gm-sm` 后 PUT 带 `x-xuanji-gm-sm4-kid=kms-primary`，GET 返回原文 (SM4-GCM 还原位一致)。
+- TR (rule): mox-server 启用 `gm-sm` 后 PUT 带 `x-mox-gm-sm4-kid=kms-primary`，GET 返回原文 (SM4-GCM 还原位一致)。
 
 ---
 
@@ -237,14 +237,14 @@
 **Depends On**: T24-1, T24-2, T24-3, T24-4, T24-5  
 **Maps AC**: AC-T24-5, NFR4, AC-T24-6 rubric  
 **Scope**:
-- Helm：`deploy/helm/xuanji/values-3m3s.yaml` 新增 `replicaCount=6`，`statefulSets` 拆 masters(3) + followers(3)；
-- Kind 脚本：`deploy/helm/xuanji/kind-hook.ps1`（与 `kind-hook.sh` 对应）负责 `kind create cluster` / `load docker-image` / `helm install` / `helm test` / `teardown`；
+- Helm：`deploy/helm/mox/values-3m3s.yaml` 新增 `replicaCount=6`，`statefulSets` 拆 masters(3) + followers(3)；
+- Kind 脚本：`deploy/helm/mox/kind-hook.ps1`（与 `kind-hook.sh` 对应）负责 `kind create cluster` / `load docker-image` / `helm install` / `helm test` / `teardown`；
 - PodDisruptionBudget：`pdb-masters` minAvailable=2；`pdb-followers` minAvailable=2；
-- Leader Lease：xuanji-server 启动时在 etcd（此处用 K8s `Lease` coordination.k8s.io/v1 作为轻量方案）抢占；Leader 绑定 Service `xuanji-leader`。
+- Leader Lease：mox-server 启动时在 etcd（此处用 K8s `Lease` coordination.k8s.io/v1 作为轻量方案）抢占；Leader 绑定 Service `mox-leader`。
 
 **TR**：
-- TR (rule): `kind get clusters` 出现 `xuanji`；`kubectl get pods` 输出 `xuanji-master-0..2 Running` + `xuanji-follower-0..2 Running`（6 Running total）。
-- TR (rule): `kubectl delete pod xuanji-master-0` 后 `kubectl get lease xuanji-leader` 在 30 s 内 holderIdentity 变化。
+- TR (rule): `kind get clusters` 出现 `mox`；`kubectl get pods` 输出 `mox-master-0..2 Running` + `mox-follower-0..2 Running`（6 Running total）。
+- TR (rule): `kubectl delete pod mox-master-0` 后 `kubectl get lease mox-leader` 在 30 s 内 holderIdentity 变化。
 - TR (rule): 批量写入 10,000 个 1 KB 对象，删除主 Pod 过程中 HTTP 总 5xx count = 0（业务层自 retry 后最终 PUT 100% ok）。
 - TR (rule): PDB：`kubectl drain` 触发后，`kubectl get pdb` DESIRED MIN = 2 masters/2 followers, HEALTHY >=2。
 - TR (rubric 0-2, 阈值 ≥ 1): 真集群可重复 setup→test→teardown 无残留资源。
@@ -277,7 +277,7 @@
 **Depends On**: T25-1  
 **Maps AC**: AC-T25-3  
 **Scope**:
-- 新文件：`xuanji-cloud-drive-s3/src/s3_sigv4.rs`（Rust 纯实现，最小化：`authorization_header(ak, sk, region, service, method, uri, headers, signed_headers, payload_hash)`）；
+- 新文件：`mox-cloud-drive-s3/src/s3_sigv4.rs`（Rust 纯实现，最小化：`authorization_header(ak, sk, region, service, method, uri, headers, signed_headers, payload_hash)`）；
 - 支持 StringToSign 与 CanonicalRequest 构造；日期头 `X-Amz-Date`；
 
 **TR**：
@@ -292,7 +292,7 @@
 **Depends On**: T25-2  
 **Maps AC**: FR-T25.2, AC-T25-3  
 **Scope**:
-- 新文件：`xuanji-cloud-drive-s3/src/glacier_adapter.rs`，`struct GlacierAdapter { endpoint, region, ak, sk, client: reqwest::Client }`；
+- 新文件：`mox-cloud-drive-s3/src/glacier_adapter.rs`，`struct GlacierAdapter { endpoint, region, ak, sk, client: reqwest::Client }`；
 - `put_object(bucket, key, bytes) -> Result<(),String>`；
 - `initiate_restore(bucket, key, tier)` 返回 `job_id`；
 - `head_object(bucket, key)` → `(StorageClass, restore_state: Option<RestoreStatus>)`；
@@ -312,7 +312,7 @@
 **Depends On**: T25-1, T25-3  
 **Maps AC**: FR-T25.3, AC-T25-2, AC-T25-4  
 **Scope**:
-- 新文件：`xuanji-cloud-drive-s3/src/restore_tasks.rs`；
+- 新文件：`mox-cloud-drive-s3/src/restore_tasks.rs`；
 - `RestoreTask { id, bucket, key, tier, queued_at_ms, eta_ms, state }`；
 - 四态：Queued → InProgress → Available（保留 N 天） → Expired；失败 → Failed；
 - `LifecycleEngine` 内部 `glacier_restore_queue` + 每秒 tick：对 Queued → 根据 tier 设置 eta_ms；对 InProgress 到 eta 则变为 Available；超过 1 天后 Expired。
@@ -330,7 +330,7 @@
 **Depends On**: T25-4  
 **Maps AC**: AC-T25-4  
 **Scope**:
-- `xuanji-server/src/http_server.rs`：当 StorageClass=Glacier 且任务 != Available，GET 返回 status=445，body `{"restore_in_progress":true, "task_id":"..."}`，`Retry-After: {eta_ms/1000}`；
+- `mox-server/src/http_server.rs`：当 StorageClass=Glacier 且任务 != Available，GET 返回 status=445，body `{"restore_in_progress":true, "task_id":"..."}`，`Retry-After: {eta_ms/1000}`；
 - touch_and_restore_to_hot 触发时自动发 Standard tier restore 任务；Available 时再切回 COLD→HOT（两步跃迁）。
 
 **TR**：
@@ -350,11 +350,11 @@
 **Scope**:
 - 根 `Cargo.toml` [workspace.dependencies] 新增 `sm3 = { path = ... }` 或纯实现模块路径；`reqwest = { version = "0.12", default-features = false, features = ["rustls-tls","json"] }` 等；
 - 所有新引入的 `reqwest/bytes/serde_json` 等版本统一 pin 在 workspace level；
-- README 级文档：在 `projects/v21-features.md` 记录 `cargo build --features simd,gm-sm,glacier -p xuanji-server` 构建开关。
+- README 级文档：在 `projects/v21-features.md` 记录 `cargo build --features simd,gm-sm,glacier -p mox-server` 构建开关。
 
 **TR**：
-- TR (rule): `cargo tree -p xuanji-server --features simd,gm-sm,glacier` 中所有出现 2 次以上的 crate version 唯一；无重复版本冲突。
-- TR (rule): 默认 feature (无 feature flag) 构建 xuanji-server 体积与 v2.0 基线差 < ±1%（兼容）。
+- TR (rule): `cargo tree -p mox-server --features simd,gm-sm,glacier` 中所有出现 2 次以上的 crate version 唯一；无重复版本冲突。
+- TR (rule): 默认 feature (无 feature flag) 构建 mox-server 体积与 v2.0 基线差 < ±1%（兼容）。
 - TR (rule): 启用 3 个 feature 后 binary 体积增长 ≤ +35% (NFR8)。
 
 ---

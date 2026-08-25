@@ -1,7 +1,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { GraphClient } = require("../xuanji-sdk-graph");
+const { GraphClient } = require("../mox-sdk-graph");
 
 const EXAMPLES_DIR = path.join(__dirname, "..", "examples", "graph");
 

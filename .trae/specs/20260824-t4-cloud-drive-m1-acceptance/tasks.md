@@ -1,6 +1,6 @@
 # T4 云盘 M1 验收 (tasks.md Task 4 Section)
 
-> 对应委托任务：Implement T4 云盘 M1（xuanji-cloud-drive-master + xuanji-cloud-drive-volume 2 新 L4 crate，严格 TDD RED→GREEN）
+> 对应委托任务：Implement T4 云盘 M1（mox-cloud-drive-master + mox-cloud-drive-volume 2 新 L4 crate，严格 TDD RED→GREEN）
 > Workspace 根目录：`d:\a10\aikjx\gitcode\infotopograph`
 
 ---
@@ -9,9 +9,9 @@
 
 - **Status**: `completed` ✅
 - **Priority**: high
-- **Depends On**: T1 (xuanji-domain-abstractions GREEN 50 tests) + T2 (云盘 M0)
+- **Depends On**: T1 (mox-domain-abstractions GREEN 50 tests) + T2 (云盘 M0)
 - **Description**:
-  - 新建 2 个 L4 crate：`xuanji-cloud-drive-master` (控制面) + `xuanji-cloud-drive-volume` (数据面)；
+  - 新建 2 个 L4 crate：`mox-cloud-drive-master` (控制面) + `mox-cloud-drive-volume` (数据面)；
   - 协议白名单严格：仅 tokio/async-trait/sha2/hmac/parking_lot/hex/serde/serde_json/bytes/tracing/tracing-subscriber；额外 rand 0.8 (MIT)；volume 额外 crc32c 0.6 (MIT)；
   - 严禁引入任何成品存储系统（seaweed/juicefs/minio/ceph）以及 GPL RS 库；自研 2+1 XOR parity RS 实现；
   - **TDD 铁律**：先写 24 条 tests 全部 RED `todo!()` → 再实现 → GREEN 24/24。
@@ -21,8 +21,8 @@
 
 | # | TR 规则 | 结果 | 证据简述 |
 |---|---------|------|----------|
-| TR4.1 | `cargo check -p xuanji-cloud-drive-master` exit 0；源文件 4+1 件存在 | ✔️ PASS | `--frozen` 下 Checking → Finished exit 0；master_server/volume_allocator/volume_replica/snapshot/error 5 源文件 + lib.rs 齐全 |
-| TR4.2 | `cargo check -p xuanji-cloud-drive-volume` exit 0；源文件 4+1 件存在 | ✔️ PASS | 同上；volume_server/reed_solomon/chunk_rebuild/error 4 源文件 + lib.rs 齐全 |
+| TR4.1 | `cargo check -p mox-cloud-drive-master` exit 0；源文件 4+1 件存在 | ✔️ PASS | `--frozen` 下 Checking → Finished exit 0；master_server/volume_allocator/volume_replica/snapshot/error 5 源文件 + lib.rs 齐全 |
+| TR4.2 | `cargo check -p mox-cloud-drive-volume` exit 0；源文件 4+1 件存在 | ✔️ PASS | 同上；volume_server/reed_solomon/chunk_rebuild/error 4 源文件 + lib.rs 齐全 |
 | TR4.3 | 心跳 test_master_heartbeat_dead_detection：idB 停心跳 2s → Dead；`refill_count ≥ 1` | ✔️ PASS | t06 tokio multi-thread 测试通过；实际 refill=1>0；A/C 全程心跳；B 只发 3 次 → 超时 Dead |
 | TR4.4 | 副本一致性 test_master_replica_write_quorum 100 次迭代：写 3 副本 → 删 第 2 份 → 读仍返回原内容 | ✔️ PASS | t10 循环 0..=99 共 100 次；每次 v_a/v_c 仍存原数据；quorum=2/3 正常 |
 | TR4.5 | 快照 rollback：1000 chunk → snapshot → delete 前 200 → restore → 重读 sha256/md5 全匹配；RS encode/decode 三种丢失 (data0/data1/parity) + two-missing fail 共 4 项 | ✔️ PASS | t12 snapshot rollback sha256 200/200 对；t15/t16/t17/t18/t19 5 条 RS 子测试全过 |
@@ -106,17 +106,17 @@ test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fin
 ### C) `cargo check` exit 0 摘要 + grep 违规结果
 
 ```
-=== TR4.1/TR4.2 cargo check -p xuanji-cloud-drive-master -p xuanji-cloud-drive-volume --frozen ===
-    Checking xuanji-cloud-drive-volume v3.0.0-ai-powered
-    Checking xuanji-cloud-drive-master v3.0.0-ai-powered
+=== TR4.1/TR4.2 cargo check -p mox-cloud-drive-master -p mox-cloud-drive-volume --frozen ===
+    Checking mox-cloud-drive-volume v3.0.0-ai-powered
+    Checking mox-cloud-drive-master v3.0.0-ai-powered
     Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.79s
 [exitcode 0]
 - 验证文件数 master 侧：Cargo.toml + README.md + src/{lib,error,master_server,snapshot,volume_allocator,volume_replica}.rs + tests/t4_m1_cloud.rs = 10 件存在 ✓
 - 验证文件数 volume 侧：Cargo.toml + README.md + src/{lib,error,volume_server,reed_solomon,chunk_rebuild}.rs = 7 件存在 ✓
 
 === TR4.6 grep 违规 (seaweed|juicefs|minio|ceph|reed-solomon-erasure|reedsolomon-erasure|reedsolomon) ===
-scanning: platform/services/xuanji-cloud-drive-master/**/*.{rs,Cargo.toml}
-scanning: platform/services/xuanji-cloud-drive-volume/**/*.{rs,Cargo.toml}
+scanning: platform/services/mox-cloud-drive-master/**/*.{rs,Cargo.toml}
+scanning: platform/services/mox-cloud-drive-volume/**/*.{rs,Cargo.toml}
 TR4.6 grep total matches = 0 (must be 0)  ✓ PASS
 ```
 

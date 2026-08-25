@@ -1,6 +1,6 @@
 import sys, os, pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from xuanji_sdk_graph import GraphClient
+from mox_sdk_graph import GraphClient
 
 EXAMPLES_DIR = os.path.join(os.path.dirname(__file__), "..", "examples", "graph")
 

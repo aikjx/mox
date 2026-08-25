@@ -21,7 +21,7 @@ function test(name, fn) {
   catch (e) { failed++; console.error('  FAIL ', name, '\n    ', (e && e.message) + '\n' + (e.stack || '').split('\n').slice(1, 5).join('\n')); }
 }
 
-const WORK_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'xuanji-t81-'));
+const WORK_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'mox-t81-'));
 process.env.DATA_DIR = WORK_DIR;
 const configPath = path.resolve(__dirname, '..', 'src', 'config.js');
 const storagePath = path.resolve(__dirname, '..', 'src', 'storage', 'index.js');

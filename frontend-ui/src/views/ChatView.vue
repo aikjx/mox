@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="chat">
     <SessionSidebar
       :sessions="sessions"
@@ -350,6 +350,7 @@
             v-for="(m, i) in messages"
             :key="i"
             :msg="m"
+            :session-messages="messages"
             @goto-task="goToTaskDetail"
             @rate="(m2,r)=>onRate(m2,r)"
             @share="m2=>onShare(m2)"

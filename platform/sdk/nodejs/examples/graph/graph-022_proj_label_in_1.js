@@ -1,4 +1,4 @@
-const { GraphClient } = require("../../xuanji-sdk-graph");
+const { GraphClient } = require("../../mox-sdk-graph");
 const client = new GraphClient({ endpoint: "graph.local" });
 const result = client.projLabelIn1("node-multi", ["Employee", "Manager"]);
 if (!result.ok || result.labelsApplied.length !== 2) process.exit(1);

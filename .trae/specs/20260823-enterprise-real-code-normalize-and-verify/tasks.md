@@ -68,7 +68,7 @@ agent=None 与 hybrid 两个分支，`ai_summary` 长度 ≥ 20 字符、不含 
 - 优先级: high
 - 依赖: 无（可并发 Task 1/2）
 - 修改范围：
-  - `platform/services/xuanji-system/tests/t6_dip_orchestrator.rs`（L196-277 9 处 unimplemented，均在 `impl` block）
+  - `platform/services/mox-system/tests/t6_dip_orchestrator.rs`（L196-277 9 处 unimplemented，均在 `impl` block）
 - TR:
 
 ### TR-3.1 (rule)
@@ -84,7 +84,7 @@ agent=None 与 hybrid 两个分支，`ai_summary` 长度 ≥ 20 字符、不含 
 证据：新增测试 `mock_effective_permissions_user1_user2` 断言。
 
 ### TR-3.4 (rule)
-`cargo test -p xuanji-system --test t6_dip_orchestrator` 100% pass（相较现状"未触发分支未报错"，扩大到"触发也通过"）。
+`cargo test -p mox-system --test t6_dip_orchestrator` 100% pass（相较现状"未触发分支未报错"，扩大到"触发也通过"）。
 证据：cargo exit 0 且新增 2 个用例出现。
 
 ---

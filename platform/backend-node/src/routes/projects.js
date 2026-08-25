@@ -41,7 +41,7 @@ const RESOURCE_TYPES = [
   { key: 'loop', label: '循环体', route: '/automation' },
   { key: 'automation', label: '自动化流程', route: '/automation' },
   { key: 'workflow', label: '工作流', route: '/workflow' },
-  { key: 'flow', label: '流程图', route: '/xuanji-fusion' },
+  { key: 'flow', label: '流程图', route: '/mox-fusion' },
   { key: 'expert', label: '专家', route: '/expert-center' },
   { key: 'graph_node', label: '图谱节点', route: '/graph' },
   { key: 'task', label: '任务', route: '/tasks' },
