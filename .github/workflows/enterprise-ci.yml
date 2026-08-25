@@ -185,7 +185,7 @@ jobs:
           path: target/criterion/
 
   # ── 璇玑端到端测试 ──
-  xuanji-expert-e2e:
+  mox-expert-e2e:
     runs-on: ubuntu-latest
     needs: [test-unit]
     steps:
@@ -194,13 +194,13 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Run expert xuanji tests
-        run: cargo test -p xuanji-expert --lib -- --nocapture
+      - name: Run expert mox tests
+        run: cargo test -p mox-expert --lib -- --nocapture
 
       - name: Verify no vetoed flows
         run: |
-          cargo test -p xuanji-expert verify::tests::veto_when_blocking_conflict_remains -- --nocapture
-          cargo test -p xuanji-expert verify::tests::veto_when_data_dependency_broken -- --nocapture
+          cargo test -p mox-expert verify::tests::veto_when_blocking_conflict_remains -- --nocapture
+          cargo test -p mox-expert verify::tests::veto_when_data_dependency_broken -- --nocapture
 
   # ── 构建发布包 ──
   build-release:

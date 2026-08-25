@@ -52,7 +52,7 @@ check(`算法 ${ALGO_COUNT} 个（registry 动态统计）`, a.stats.byKind.algo
 check('数据资产 44 个（数据库全覆盖 + 自管理登记层 + 归一化三维度） — 实际动态计算',
   a.stats.byKind.data >= 44, String(a.stats.byKind.data));
 check('文档 ≥ 36 个（核心文档全域覆盖）', a.stats.byKind.doc >= 36, String(a.stats.byKind.doc));
-check('项目实体 9 个（"一切皆是项目"基线 8 + 新增 proj-xuanji-platform 平台运行时）', a.stats.byKind.project === 9, String(a.stats.byKind.project));
+check('项目实体 9 个（"一切皆是项目"基线 8 + 新增 proj-mox-platform 平台运行时）', a.stats.byKind.project === 9, String(a.stats.byKind.project));
 check('全部自研（零框架依赖声明）', a.stats.selfDeveloped === true && a.stats.frameworkDeps.length === 0);
 
 // ---------- ② 机器图谱关联本地代码 ----------

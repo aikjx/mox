@@ -1,7 +1,7 @@
 ﻿name: flow-bridge
 version: 0.1.0
-description: "注入 flow-ai + xuanji-expert 流程图/关系网优化内核（璇玑验证网关）"
-author: xuanji
+description: "注入 flow-ai + mox-expert 流程图/关系网优化内核（璇玑验证网关）"
+author: mox
 kind: plugin
 dependencies:
-  - xuanji-expert-server   # 独立常驻优化服务（POST /api/optimize, POST /api/verify）
+  - mox-expert-server   # 独立常驻优化服务（POST /api/optimize, POST /api/verify）

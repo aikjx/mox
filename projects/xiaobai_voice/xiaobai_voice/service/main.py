@@ -389,14 +389,93 @@ def _bind_routes(app: FastAPI, prefix: str) -> None:
         return JSONResponse(_dc2dict(res))
 
     @r.get("/tts/stream")
-    async def tts_stream(text: str = Query(..., min_length=1), voice: str = Query("xiaobai"), emotion: str = Query("neutral"), speed: float = Query(1.0, ge=0.5, le=2.0)):
+    async def tts_stream(
+        text: str = Query(..., min_length=1),
+        voice: str = Query("xiaobai"),
+        emotion: str = Query("neutral"),
+        speed: float = Query(1.0, ge=0.5, le=2.0),
+        _post_fallback: bool = False,
+    ):
+        return await _tts_stream_impl(text=text, voice=voice, emotion=emotion, speed=speed)
+
+    @r.post("/tts/stream")
+    async def tts_stream_post(
+        text: str = Query(None),
+        voice: str = Query("xiaobai"),
+        emotion: str = Query("neutral"),
+        speed: float = Query(1.0, ge=0.5, le=2.0),
+        body_req: Request | None = None,
+    ):
+        # 双保险：同时兼容 query string 与 form-body / JSON-body（旧版前端 POST form 提交不会 404/405）
+        text_q = text
+        voice_q = voice
+        emotion_q = emotion
+        speed_q = speed
+        try:
+            if body_req is not None:
+                ctype = (body_req.headers.get("content-type") or "").lower()
+                if "application/json" in ctype:
+                    try:
+                        payload = await body_req.json() or {}
+                    except Exception:  # noqa: BLE001
+                        payload = {}
+                    if isinstance(payload, dict):
+                        text_q = str(payload.get("text") or text_q or "")
+                        voice_q = str(payload.get("voice") or voice_q)
+                        emotion_q = str(payload.get("emotion") or emotion_q)
+                        try:
+                            speed_q = float(payload.get("speed") or speed_q)
+                        except Exception:  # noqa: BLE001
+                            pass
+                else:
+                    # form-urlencoded / multipart
+                    try:
+                        formdata = await body_req.form()
+                    except Exception:  # noqa: BLE001
+                        formdata = {}
+                    if hasattr(formdata, "get"):
+                        text_q = str(formdata.get("text") or text_q or "")
+                        voice_q = str(formdata.get("voice") or voice_q)
+                        emotion_q = str(formdata.get("emotion") or emotion_q)
+                        try:
+                            speed_q = float(formdata.get("speed") or speed_q)
+                        except Exception:  # noqa: BLE001
+                            pass
+        except Exception:  # noqa: BLE001
+            pass
+        return await _tts_stream_impl(text=text_q, voice=voice_q, emotion=emotion_q, speed=speed_q)
+
+    async def _tts_stream_impl(*, text: str, voice: str, emotion: str, speed: float):
         lc = get_lifecycle()
         if lc.tts is None:
             raise HTTPException(503, "TTS 后端未初始化。请下载 CosyVoice2 或切换 license_tier 允许 Fish。")
+        text_ok = str(text or "").strip()
+        if not text_ok:
+            raise HTTPException(400, "text 为空")
         emotion_ok = emotion if emotion in {"neutral", "happy", "sad", "serious"} else "neutral"
-        sr = int(((lc.loader.data.get("voice") or {}).get("tts") or {}).get("sample_rate") or 24000)
+        try:
+            speed_ok = float(speed or 1.0)
+        except Exception:  # noqa: BLE001
+            speed_ok = 1.0
+        speed_ok = max(0.5, min(2.0, speed_ok))
+        sr = int(((lc.loader.data.get("voice") or {}).get("tts") or {}).get("sample_rate") or 22050)
         clone_ref = (((lc.loader.data.get("voice") or {}).get("tts") or {}).get("clone_reference"))
-        opts = TTSOptions(text=text, voice=voice, emotion=emotion_ok, speed=max(0.5, min(2.0, speed)), sample_rate=sr, clone_reference=clone_ref)
+        # 尊重配置的默认 speed（default_config.yaml 里 voice.tts.speed = 1.03）
+        default_speed = ((lc.loader.data.get("voice") or {}).get("tts") or {}).get("speed")
+        try:
+            if default_speed is not None and abs(float(default_speed) - 1.0) > 1e-3 and abs(speed_ok - 1.0) < 1e-3:
+                # 前端/调用方未显式改 speed 时，使用配置默认值
+                speed_ok = max(0.5, min(2.0, float(default_speed)))
+        except Exception:  # noqa: BLE001
+            pass
+        opts = TTSOptions(
+            text=text_ok,
+            voice=str(voice or "xiaobai"),
+            emotion=emotion_ok,
+            speed=speed_ok,
+            sample_rate=sr,
+            clone_reference=clone_ref,
+        )
         headers: dict[str, str] = {"X-TTS-Engine": lc.tts.name}
         media_type = "audio/wav"
         if lc.tts.name == "browser":

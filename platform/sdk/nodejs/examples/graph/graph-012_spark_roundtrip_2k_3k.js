@@ -1,4 +1,4 @@
-const { GraphClient } = require("../../xuanji-sdk-graph");
+const { GraphClient } = require("../../mox-sdk-graph");
 const client = new GraphClient({ endpoint: "graph.local" });
 const result = client.sparkRoundtrip2k3k();
 if (!result.ok || result.consistency !== "verified") process.exit(1);

@@ -4030,8 +4030,8 @@
         "PASSTHROUGH_PREFIXES",
         "PREFIX_FUSION",
         "PREFIX_PRIMIFLOW",
-        "PREFIX_XUANJI_SYSTEM",
-        "PREFIX_XUANJI_VIZ"
+        "PREFIX_MOX_SYSTEM",
+        "PREFIX_MOX_VIZ"
       ],
       "files": [
         {
@@ -4605,8 +4605,8 @@
             "PASSTHROUGH_PREFIXES",
             "PREFIX_FUSION",
             "PREFIX_PRIMIFLOW",
-            "PREFIX_XUANJI_SYSTEM",
-            "PREFIX_XUANJI_VIZ"
+            "PREFIX_MOX_SYSTEM",
+            "PREFIX_MOX_VIZ"
           ]
         },
         {
@@ -4646,7 +4646,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/gateway/runtime/tests/xuanji_e2e.rs",
+          "filePath": "platform/gateway/runtime/tests/mox_e2e.rs",
           "fns": [],
           "structs": [],
           "consts": []
@@ -4713,7 +4713,7 @@
       ]
     },
     {
-      "crateName": "xuanji-common-meta",
+      "crateName": "mox-common-meta",
       "crateId": "34a20231-1a80-5426-b392-40d7a2ddd9f7",
       "fns": [
         "all_crate_metas",
@@ -4730,7 +4730,7 @@
       ],
       "files": [
         {
-          "filePath": "platform/services/xuanji-common-meta/src/lib.rs",
+          "filePath": "platform/services/mox-common-meta/src/lib.rs",
           "fns": [
             "all_crate_metas",
             "engine_name",
@@ -4746,13 +4746,13 @@
           ]
         },
         {
-          "filePath": "platform/services/xuanji-common-meta/tests/crate_id_unique.rs",
+          "filePath": "platform/services/mox-common-meta/tests/crate_id_unique.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-common-meta/tests/lookup.rs",
+          "filePath": "platform/services/mox-common-meta/tests/lookup.rs",
           "fns": [],
           "structs": [],
           "consts": []
@@ -4760,7 +4760,7 @@
       ]
     },
     {
-      "crateName": "xuanji-expert",
+      "crateName": "mox-expert",
       "crateId": "50bb6200-04c5-5e4c-8354-4c6e1b230024",
       "fns": [
         "actor",
@@ -4918,7 +4918,7 @@
         "with_session",
         "with_sink",
         "with_tenant",
-        "xuanji_optimize"
+        "mox_optimize"
       ],
       "structs": [
         "AlgoVerification",
@@ -5042,25 +5042,25 @@
       ],
       "files": [
         {
-          "filePath": "platform/services/xuanji-expert/examples/cem_probe.rs",
+          "filePath": "platform/services/mox-expert/examples/cem_probe.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/examples/profile_deep_chain.rs",
+          "filePath": "platform/services/mox-expert/examples/profile_deep_chain.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/audit/error.rs",
+          "filePath": "platform/services/mox-expert/src/audit/error.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/audit/event.rs",
+          "filePath": "platform/services/mox-expert/src/audit/event.rs",
           "fns": [
             "ai_agent",
             "flow",
@@ -5087,7 +5087,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/audit/integration.rs",
+          "filePath": "platform/services/mox-expert/src/audit/integration.rs",
           "fns": [
             "actor",
             "disable",
@@ -5111,13 +5111,13 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/audit/mod.rs",
+          "filePath": "platform/services/mox-expert/src/audit/mod.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/audit/s3.rs",
+          "filePath": "platform/services/mox-expert/src/audit/s3.rs",
           "fns": [
             "new",
             "with_credentials",
@@ -5131,7 +5131,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/audit/sink.rs",
+          "filePath": "platform/services/mox-expert/src/audit/sink.rs",
           "fns": [
             "new",
             "with_sink"
@@ -5143,7 +5143,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/audit/syslog.rs",
+          "filePath": "platform/services/mox-expert/src/audit/syslog.rs",
           "fns": [
             "new",
             "with_app_name",
@@ -5155,7 +5155,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/bench.rs",
+          "filePath": "platform/services/mox-expert/src/bench.rs",
           "fns": [
             "bench_csv",
             "bench_table",
@@ -5168,13 +5168,13 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/bin/xuanji.rs",
+          "filePath": "platform/services/mox-expert/src/bin/mox.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/context.rs",
+          "filePath": "platform/services/mox-expert/src/context.rs",
           "fns": [
             "apply_to_pools",
             "can",
@@ -5203,7 +5203,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/domain/mod.rs",
+          "filePath": "platform/services/mox-expert/src/domain/mod.rs",
           "fns": [],
           "structs": [
             "GovernVerdict",
@@ -5213,7 +5213,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/executor.rs",
+          "filePath": "platform/services/mox-expert/src/executor.rs",
           "fns": [
             "new",
             "run_report",
@@ -5227,7 +5227,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/expert.rs",
+          "filePath": "platform/services/mox-expert/src/expert.rs",
           "fns": [
             "dispatch",
             "empty",
@@ -5244,7 +5244,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/expert_traits.rs",
+          "filePath": "platform/services/mox-expert/src/expert_traits.rs",
           "fns": [
             "default_consultant",
             "default_orchestrator",
@@ -5254,7 +5254,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/experts/algorithm.rs",
+          "filePath": "platform/services/mox-expert/src/experts/algorithm.rs",
           "fns": [],
           "structs": [
             "AlgorithmExpert"
@@ -5262,7 +5262,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/experts/architecture.rs",
+          "filePath": "platform/services/mox-expert/src/experts/architecture.rs",
           "fns": [],
           "structs": [
             "ArchitectureExpert"
@@ -5270,7 +5270,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/experts/business.rs",
+          "filePath": "platform/services/mox-expert/src/experts/business.rs",
           "fns": [],
           "structs": [
             "BusinessExpert"
@@ -5278,7 +5278,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/experts/code_quality.rs",
+          "filePath": "platform/services/mox-expert/src/experts/code_quality.rs",
           "fns": [],
           "structs": [
             "CodeQualityExpert"
@@ -5286,7 +5286,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/experts/data.rs",
+          "filePath": "platform/services/mox-expert/src/experts/data.rs",
           "fns": [],
           "structs": [
             "DataExpert"
@@ -5294,7 +5294,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/experts/documentation.rs",
+          "filePath": "platform/services/mox-expert/src/experts/documentation.rs",
           "fns": [],
           "structs": [
             "DocumentationExpert"
@@ -5302,7 +5302,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/experts/maintainability.rs",
+          "filePath": "platform/services/mox-expert/src/experts/maintainability.rs",
           "fns": [],
           "structs": [
             "MaintainabilityExpert"
@@ -5310,7 +5310,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/experts/mod.rs",
+          "filePath": "platform/services/mox-expert/src/experts/mod.rs",
           "fns": [
             "all_experts",
             "business_experts",
@@ -5320,7 +5320,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/experts/observability.rs",
+          "filePath": "platform/services/mox-expert/src/experts/observability.rs",
           "fns": [],
           "structs": [
             "ObservabilityExpert"
@@ -5328,7 +5328,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/experts/performance.rs",
+          "filePath": "platform/services/mox-expert/src/experts/performance.rs",
           "fns": [],
           "structs": [
             "PerformanceExpert"
@@ -5336,7 +5336,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/experts/permission.rs",
+          "filePath": "platform/services/mox-expert/src/experts/permission.rs",
           "fns": [],
           "structs": [
             "PermissionExpert"
@@ -5344,7 +5344,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/experts/resource.rs",
+          "filePath": "platform/services/mox-expert/src/experts/resource.rs",
           "fns": [],
           "structs": [
             "ResourceExpert"
@@ -5352,7 +5352,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/experts/security.rs",
+          "filePath": "platform/services/mox-expert/src/experts/security.rs",
           "fns": [],
           "structs": [
             "SecurityExpert"
@@ -5360,7 +5360,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/experts/security_code.rs",
+          "filePath": "platform/services/mox-expert/src/experts/security_code.rs",
           "fns": [],
           "structs": [
             "SecurityCodeExpert"
@@ -5368,7 +5368,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/experts/testing.rs",
+          "filePath": "platform/services/mox-expert/src/experts/testing.rs",
           "fns": [],
           "structs": [
             "TestingExpert"
@@ -5376,7 +5376,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/flow_loader/mod.rs",
+          "filePath": "platform/services/mox-expert/src/flow_loader/mod.rs",
           "fns": [
             "list",
             "load",
@@ -5390,7 +5390,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/flow_loader/validate.rs",
+          "filePath": "platform/services/mox-expert/src/flow_loader/validate.rs",
           "fns": [
             "validate"
           ],
@@ -5398,7 +5398,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/flow_loader/yaml.rs",
+          "filePath": "platform/services/mox-expert/src/flow_loader/yaml.rs",
           "fns": [
             "parse",
             "serialize",
@@ -5414,7 +5414,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/govern.rs",
+          "filePath": "platform/services/mox-expert/src/govern.rs",
           "fns": [
             "append",
             "apply_rules",
@@ -5434,7 +5434,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/harness.rs",
+          "filePath": "platform/services/mox-expert/src/harness.rs",
           "fns": [
             "as_expert",
             "effect",
@@ -5465,7 +5465,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/ir.rs",
+          "filePath": "platform/services/mox-expert/src/ir.rs",
           "fns": [
             "auto_dimension",
             "dimensions_of",
@@ -5486,7 +5486,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/lib.rs",
+          "filePath": "platform/services/mox-expert/src/lib.rs",
           "fns": [
             "dim_priority",
             "dim_threshold"
@@ -5503,9 +5503,9 @@
           ]
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/pipeline.rs",
+          "filePath": "platform/services/mox-expert/src/pipeline.rs",
           "fns": [
-            "xuanji_optimize"
+            "mox_optimize"
           ],
           "structs": [
             "GovernanceReport"
@@ -5513,7 +5513,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/programming.rs",
+          "filePath": "platform/services/mox-expert/src/programming.rs",
           "fns": [
             "from_llm_extract",
             "is_confirmed",
@@ -5527,7 +5527,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/rbac/check.rs",
+          "filePath": "platform/services/mox-expert/src/rbac/check.rs",
           "fns": [
             "check",
             "check_with_audit",
@@ -5545,19 +5545,19 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/rbac/error.rs",
+          "filePath": "platform/services/mox-expert/src/rbac/error.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/rbac/mod.rs",
+          "filePath": "platform/services/mox-expert/src/rbac/mod.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/rbac/policy.rs",
+          "filePath": "platform/services/mox-expert/src/rbac/policy.rs",
           "fns": [
             "extends",
             "grant",
@@ -5575,7 +5575,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/reconcile.rs",
+          "filePath": "platform/services/mox-expert/src/reconcile.rs",
           "fns": [
             "escalated_same_priority",
             "reconcile",
@@ -5588,7 +5588,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/sensitivity.rs",
+          "filePath": "platform/services/mox-expert/src/sensitivity.rs",
           "fns": [
             "is_desensitized",
             "is_production",
@@ -5600,7 +5600,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/server.rs",
+          "filePath": "platform/services/mox-expert/src/server.rs",
           "fns": [
             "demo_topology",
             "new_state",
@@ -5627,7 +5627,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/services.rs",
+          "filePath": "platform/services/mox-expert/src/services.rs",
           "fns": [
             "consult_sync",
             "new",
@@ -5641,7 +5641,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/tenant_policy.rs",
+          "filePath": "platform/services/mox-expert/src/tenant_policy.rs",
           "fns": [
             "apply_gates",
             "code",
@@ -5660,7 +5660,7 @@
           ]
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/types.rs",
+          "filePath": "platform/services/mox-expert/src/types.rs",
           "fns": [
             "new",
             "with_capabilities"
@@ -5675,7 +5675,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/verify/cem.rs",
+          "filePath": "platform/services/mox-expert/src/verify/cem.rs",
           "fns": [
             "cem_deep_chain_with_defaults",
             "hits",
@@ -5697,7 +5697,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/verify/code_rt.rs",
+          "filePath": "platform/services/mox-expert/src/verify/code_rt.rs",
           "fns": [
             "code_roundtrip_invariant"
           ],
@@ -5705,7 +5705,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/verify/conflict.rs",
+          "filePath": "platform/services/mox-expert/src/verify/conflict.rs",
           "fns": [
             "conflict_invariant",
             "is_handler_name"
@@ -5714,7 +5714,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/verify/data_dep.rs",
+          "filePath": "platform/services/mox-expert/src/verify/data_dep.rs",
           "fns": [
             "data_dependency_invariant",
             "data_dependency_invariant_with_reach",
@@ -5724,7 +5724,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/verify/gains.rs",
+          "filePath": "platform/services/mox-expert/src/verify/gains.rs",
           "fns": [
             "credible_gains_invariant"
           ],
@@ -5732,7 +5732,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/verify/mod.rs",
+          "filePath": "platform/services/mox-expert/src/verify/mod.rs",
           "fns": [
             "check",
             "verify"
@@ -5744,13 +5744,13 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/verify/tests.rs",
+          "filePath": "platform/services/mox-expert/src/verify/tests.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/src/verify/topology.rs",
+          "filePath": "platform/services/mox-expert/src/verify/topology.rs",
           "fns": [
             "topology_invariant",
             "topology_invariant_with_reach"
@@ -5759,67 +5759,67 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/tests/debug_opt.rs",
+          "filePath": "platform/services/mox-expert/tests/debug_opt.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/tests/end_to_end.rs",
+          "filePath": "platform/services/mox-expert/tests/end_to_end.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/tests/enterprise_algorithm.rs",
+          "filePath": "platform/services/mox-expert/tests/enterprise_algorithm.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/tests/expert_unit_tests.rs",
+          "filePath": "platform/services/mox-expert/tests/expert_unit_tests.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/tests/gap_p1_audit_chain_continuity.rs",
+          "filePath": "platform/services/mox-expert/tests/gap_p1_audit_chain_continuity.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/tests/gap_p1_auto_repair_idempotency.rs",
+          "filePath": "platform/services/mox-expert/tests/gap_p1_auto_repair_idempotency.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/tests/gap_p1_multi_e1_permission_security_veto.rs",
+          "filePath": "platform/services/mox-expert/tests/gap_p1_multi_e1_permission_security_veto.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/tests/gap_p1_topology_route.rs",
+          "filePath": "platform/services/mox-expert/tests/gap_p1_topology_route.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/tests/gap_p2_perf_boundaries.rs",
+          "filePath": "platform/services/mox-expert/tests/gap_p2_perf_boundaries.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/tests/t8_dip_xuanji_expert_traits.rs",
+          "filePath": "platform/services/mox-expert/tests/t8_dip_mox_expert_traits.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-expert/tests/t9_deep_chain_p99.rs",
+          "filePath": "platform/services/mox-expert/tests/t9_deep_chain_p99.rs",
           "fns": [],
           "structs": [],
           "consts": []
@@ -5827,7 +5827,7 @@
       ]
     },
     {
-      "crateName": "xuanji-system",
+      "crateName": "mox-system",
       "crateId": "b81eec75-22ff-5155-ac49-19edf6f6b5ab",
       "fns": [
         "activate",
@@ -5861,10 +5861,10 @@
         "create_member",
         "create_tables_sql",
         "create_task",
-        "create_xuanji",
+        "create_mox",
         "db_path",
         "effective_permissions",
-        "ensure_xuanji_channel",
+        "ensure_mox_channel",
         "events_published",
         "file",
         "get",
@@ -5872,7 +5872,7 @@
         "get_channel",
         "get_member",
         "get_task",
-        "get_xuanji",
+        "get_mox",
         "global",
         "handle",
         "inc_audit",
@@ -5935,8 +5935,8 @@
         "watch_task",
         "with_config",
         "with_metrics",
-        "xuanji",
-        "xuanji_count"
+        "mox",
+        "mox_count"
       ],
       "structs": [
         "AppConfig",
@@ -5975,8 +5975,8 @@
         "TaskResource",
         "TaskService",
         "TransitionReq",
-        "Xuanji",
-        "XuanjiSystem"
+        "Mox",
+        "MoxSystem"
       ],
       "consts": [
         "CRATE_ID",
@@ -5986,7 +5986,7 @@
       ],
       "files": [
         {
-          "filePath": "platform/services/xuanji-system/src/config.rs",
+          "filePath": "platform/services/mox-system/src/config.rs",
           "fns": [
             "connection_url",
             "cors_enabled",
@@ -6001,7 +6001,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-system/src/crypto.rs",
+          "filePath": "platform/services/mox-system/src/crypto.rs",
           "fns": [
             "sha256",
             "sha256_hex"
@@ -6010,19 +6010,19 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-system/src/domain_traits.rs",
+          "filePath": "platform/services/mox-system/src/domain_traits.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-system/src/error.rs",
+          "filePath": "platform/services/mox-system/src/error.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-system/src/event.rs",
+          "filePath": "platform/services/mox-system/src/event.rs",
           "fns": [
             "events_published",
             "interested_members",
@@ -6037,7 +6037,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-system/src/lib.rs",
+          "filePath": "platform/services/mox-system/src/lib.rs",
           "fns": [],
           "structs": [],
           "consts": [
@@ -6047,13 +6047,13 @@
           ]
         },
         {
-          "filePath": "platform/services/xuanji-system/src/main.rs",
+          "filePath": "platform/services/mox-system/src/main.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-system/src/metrics.rs",
+          "filePath": "platform/services/mox-system/src/metrics.rs",
           "fns": [
             "add_latency_ms",
             "inc_audit",
@@ -6071,7 +6071,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-system/src/model.rs",
+          "filePath": "platform/services/mox-system/src/model.rs",
           "fns": [
             "as_str",
             "can_take_task",
@@ -6090,12 +6090,12 @@
             "Notification",
             "SubTask",
             "Task",
-            "Xuanji"
+            "Mox"
           ],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-system/src/orchestrator.rs",
+          "filePath": "platform/services/mox-system/src/orchestrator.rs",
           "fns": [
             "assign_task",
             "bootstrap",
@@ -6114,18 +6114,18 @@
           ],
           "structs": [
             "Reactor",
-            "XuanjiSystem"
+            "MoxSystem"
           ],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-system/src/persistence_provider.rs",
+          "filePath": "platform/services/mox-system/src/persistence_provider.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-system/src/ratelimit.rs",
+          "filePath": "platform/services/mox-system/src/ratelimit.rs",
           "fns": [
             "check",
             "new"
@@ -6136,7 +6136,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-system/src/rbac.rs",
+          "filePath": "platform/services/mox-system/src/rbac.rs",
           "fns": [
             "all",
             "all_count",
@@ -6147,7 +6147,7 @@
             "label",
             "requires_ownership",
             "task",
-            "xuanji"
+            "mox"
           ],
           "structs": [
             "ResourceCtx",
@@ -6157,13 +6157,13 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-system/src/repo/mod.rs",
+          "filePath": "platform/services/mox-system/src/repo/mod.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-system/src/repo/mysql.rs",
+          "filePath": "platform/services/mox-system/src/repo/mysql.rs",
           "fns": [
             "open"
           ],
@@ -6173,7 +6173,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-system/src/repo/postgres.rs",
+          "filePath": "platform/services/mox-system/src/repo/postgres.rs",
           "fns": [
             "open"
           ],
@@ -6183,7 +6183,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-system/src/repo/schema.rs",
+          "filePath": "platform/services/mox-system/src/repo/schema.rs",
           "fns": [
             "create_tables_sql",
             "select_all_sql",
@@ -6193,7 +6193,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-system/src/repo/sqlite.rs",
+          "filePath": "platform/services/mox-system/src/repo/sqlite.rs",
           "fns": [
             "open"
           ],
@@ -6203,7 +6203,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-system/src/server.rs",
+          "filePath": "platform/services/mox-system/src/server.rs",
           "fns": [
             "app"
           ],
@@ -6223,7 +6223,7 @@
           ]
         },
         {
-          "filePath": "platform/services/xuanji-system/src/services.rs",
+          "filePath": "platform/services/mox-system/src/services.rs",
           "fns": [
             "activate",
             "add_dependency",
@@ -6261,7 +6261,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-system/src/sqlite_provider.rs",
+          "filePath": "platform/services/mox-system/src/sqlite_provider.rs",
           "fns": [
             "as_shared",
             "file",
@@ -6274,7 +6274,7 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-system/src/store.rs",
+          "filePath": "platform/services/mox-system/src/store.rs",
           "fns": [
             "add_channel_member",
             "add_message",
@@ -6283,13 +6283,13 @@
             "create_channel",
             "create_member",
             "create_task",
-            "create_xuanji",
-            "ensure_xuanji_channel",
+            "create_mox",
+            "ensure_mox_channel",
             "get_bindings",
             "get_channel",
             "get_member",
             "get_task",
-            "get_xuanji",
+            "get_mox",
             "is_persistent",
             "list_audit",
             "list_audit_by_action",
@@ -6307,7 +6307,7 @@
             "task_channel",
             "update_member",
             "update_task",
-            "xuanji_count"
+            "mox_count"
           ],
           "structs": [
             "State",
@@ -6316,25 +6316,25 @@
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-system/tests/business_rules.rs",
+          "filePath": "platform/services/mox-system/tests/business_rules.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-system/tests/integration.rs",
+          "filePath": "platform/services/mox-system/tests/integration.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-system/tests/persistence_provider_crud.rs",
+          "filePath": "platform/services/mox-system/tests/persistence_provider_crud.rs",
           "fns": [],
           "structs": [],
           "consts": []
         },
         {
-          "filePath": "platform/services/xuanji-system/tests/t6_dip_orchestrator.rs",
+          "filePath": "platform/services/mox-system/tests/t6_dip_orchestrator.rs",
           "fns": [],
           "structs": [],
           "consts": []
@@ -6344,8 +6344,8 @@
   ],
   "generatedAt": "2026-08-23T14:13:04.431Z"
 ,
-  "xuanji_l5_registration": {
-    "crate": "xuanji-domain-abstractions",
+  "mox_l5_registration": {
+    "crate": "mox-domain-abstractions",
     "version": "3.0.0-ai-powered",
     "license": "MIT OR Apache-2.0",
     "layer": "L5",

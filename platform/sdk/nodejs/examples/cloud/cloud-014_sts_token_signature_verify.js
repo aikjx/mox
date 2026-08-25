@@ -1,4 +1,4 @@
-const { CloudClient } = require("../../xuanji-sdk-cloud");
+const { CloudClient } = require("../../mox-sdk-cloud");
 const client = new CloudClient({ region: "cn-east-1" });
 const token = "mytoken123";
 const signature = "sig-" + token;

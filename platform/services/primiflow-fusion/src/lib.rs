@@ -11,13 +11,13 @@
 //! - [`server`]：企业级 REST 服务层（Bearer 鉴权 / CORS / 六维溯源查询 / PT-DOC 自生成）。
 
 pub const CRATE_ID: &str = "75238345-b48b-534b-818b-8d9abe083a41";
-pub const ENGINE_NAME: &str = "xuanji::primiflow_fusion";
-pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+pub const ENGINE_NAME: &str = "mox::primiflow_fusion";
+pub const CRATE_META: mox_common_meta::CrateMeta = mox_common_meta::CrateMeta {
     id: CRATE_ID,
     name: env!("CARGO_PKG_NAME"),
     version: env!("CARGO_PKG_VERSION"),
-    layer: xuanji_common_meta::AisLayer::L4Services,
-    owner: "xuanji-core",
+    layer: mox_common_meta::AisLayer::L4Services,
+    owner: "mox-core",
 };
 
 pub mod config;

@@ -22,7 +22,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
-use xuanji_system::persistence_provider::{PersistenceProvider, SqlValue};
+use mox_system::persistence_provider::{PersistenceProvider, SqlValue};
 
 /// 喂给 LLM 的消息（与 llm_client::LLMChatMessage 同构，避免跨模块类型泄漏）
 #[derive(Debug, Clone)]
@@ -222,7 +222,7 @@ impl RequirementCompiler {
     /// 带持久化后端的编译器：蓝图落盘 SQLite，支持跨会话/重启复用。
     /// `new()` 仍保持纯内存（向后兼容，不创建任何文件）。
     pub fn with_storage(db_path: &str) -> Result<Self, OperatorError> {
-        use xuanji_system::sqlite_provider::SqlitePersistence;
+        use mox_system::sqlite_provider::SqlitePersistence;
         let pvd = SqlitePersistence::file(db_path)
             .map_err(|e| OperatorError::Other(anyhow::anyhow!("蓝图库打开失败: {}", e)))?;
         pvd.exec_batch(

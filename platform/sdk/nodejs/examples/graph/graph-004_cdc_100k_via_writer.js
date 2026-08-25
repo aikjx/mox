@@ -1,4 +1,4 @@
-const { GraphClient } = require("../../xuanji-sdk-graph");
+const { GraphClient } = require("../../mox-sdk-graph");
 const client = new GraphClient({ endpoint: "graph.local" });
 client.cdcNew("consumer-004");
 const result = client.cdc100kViaWriter("consumer-004", 5000);

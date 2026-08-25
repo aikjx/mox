@@ -70,8 +70,8 @@
 5. **打包输出**：桌面小白提供一键 PyInstaller 脚本（`projects/xiaobai_voice/build_exe.ps1` + `.spec`），产物必须包含：
    - `_ensure_windowed_streams()` 兜底 sys.stdout/stderr；
    - 外部 venv 加载；
-   - 模型路径优先 `<exe同级>/models/` 其次用户目录 `%USERPROFILE%/.xuanji/models/voice`；
-   - 启动失败时写结构化日志到 `%APPDATA%/xuanji/xiaobai/logs/`。
+   - 模型路径优先 `<exe同级>/models/` 其次用户目录 `%USERPROFILE%/.mox/models/voice`；
+   - 启动失败时写结构化日志到 `%APPDATA%/mox/xiaobai/logs/`。
 
 ### 5.2 依赖（必须可安装在 Windows 10/11 + Python 3.10/3.11）
 ```text
@@ -226,7 +226,7 @@ pytest>=8.0
 - 点击打开对话框：列出当前引擎、模型 ID、SHA256、License 全文超链接、License Tier 切换（Auto / Research / Apache2）。切换 Apache2 后若 Fish 已下载，则提示"已降级，但旧模型文件仍保留，可手动删除。"
 
 ### FR12 配置中心
-- 配置文件位置：`%APPDATA%/xuanji/xiaobai/config.yaml`（Windows）、`~/Library/Application Support/xuanji/xiaobai/config.yaml`（mac）、`$XDG_CONFIG_HOME/xuanji/xiaobai/config.yaml`（Linux）。
+- 配置文件位置：`%APPDATA%/mox/xiaobai/config.yaml`（Windows）、`~/Library/Application Support/mox/xiaobai/config.yaml`（mac）、`$XDG_CONFIG_HOME/mox/xiaobai/config.yaml`（Linux）。
 - 必填字段：
   ```yaml
   voice:
@@ -304,7 +304,7 @@ pytest>=8.0
 
 ### NFR4 安全与合规
 - License Tier 在 **apache2** 模式下：**禁止 import fish_speech**（否则即使未调用，也可能在打包发布时造成许可证污染）。启动自检写入启动日志。
-- 语音数据默认**不落地**：ASR/TTS 临时音频 10 min 内自动从 `%TEMP%/xuanji_voice/` 清掉；只有用户点击"保存录音"才写文件。
+- 语音数据默认**不落地**：ASR/TTS 临时音频 10 min 内自动从 `%TEMP%/mox_voice/` 清掉；只有用户点击"保存录音"才写文件。
 - 快捷键监听：不收集任何非目标键字符；只捕获组合键事件对象，**不 record 按键序列**。
 
 ### NFR5 可观测

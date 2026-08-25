@@ -87,7 +87,7 @@ test result: ok. 5 passed; 0 failed
 | 项 | 结果 |
 |----|------|
 | `cargo test --workspace --no-fail-fast` | **644 passed / 0 failed / 6 ignored**（58 测试二进制，日志 `logs/cargo_test_20260818_rbac.log`） |
-| `cargo test -p xuanji-expert` | 146 passed / 0 failed |
+| `cargo test -p mox-expert` | 146 passed / 0 failed |
 | `cargo test -p primiflow-fusion` | 44 passed / 0 failed |
 | `cargo clean -p runtime && cargo build -p runtime --bin operator-server` | 0 error / **0 本仓库告警**（仅第三方 sqlx-postgres future-incompat 提示） |
 | 前端 `npm run build` | 0 error / 0 warning（dist 已产出） |

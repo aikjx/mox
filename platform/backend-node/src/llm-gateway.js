@@ -1049,7 +1049,7 @@ class LLMGateway {
       monitor: /监控|日志|指标|报警|monitor|metric/.test(lower),
       security: /安全|权限|审计|security|permission/.test(lower),
       performance: /性能|优化|加速|快|performance|optimize/.test(lower),
-      fusion: /融合|璇玑|全维|治理|fusion|xuanji/.test(lower),
+      fusion: /融合|璇玑|全维|治理|fusion|mox/.test(lower),
       ai_chat: /你好|hello|hi|介绍|说明/.test(lower)
     };
 

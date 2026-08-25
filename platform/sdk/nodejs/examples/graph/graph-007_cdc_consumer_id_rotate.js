@@ -1,4 +1,4 @@
-const { GraphClient } = require("../../xuanji-sdk-graph");
+const { GraphClient } = require("../../mox-sdk-graph");
 const client = new GraphClient({ endpoint: "graph.local" });
 client.cdcNew("consumer-old-7");
 const result = client.cdcConsumerIdRotate("consumer-old-7", "consumer-new-7");

@@ -15,13 +15,13 @@ pub const CRATE_NAMES: &[&str] = &[
     "graph-algorithms",
     "optimizer",
     "flow-ai",
-    "xuanji-expert",
+    "mox-expert",
     "hermes-flow-bridge",
     "business-catalog",
     "ai-agent",
     "template-market",
     "runtime",
-    "xuanji-system",
+    "mox-system",
     "primiflow-core",
 ];
 
@@ -301,7 +301,7 @@ fn crate_caps(name: &str) -> (Layer, Vec<Cap>) {
                 ),
             ],
         ),
-        "xuanji-expert" => (
+        "mox-expert" => (
             Layer::Governance,
             vec![cap(
                 "cap:ea-govern",
@@ -363,10 +363,10 @@ fn crate_caps(name: &str) -> (Layer, Vec<Cap>) {
                 ),
             ],
         ),
-        "xuanji-system" => (
+        "mox-system" => (
             Layer::Governance,
             vec![cap(
-                "cap:xuanji-sys",
+                "cap:mox-sys",
                 "璇玑系统",
                 EntityKind::Function,
                 Layer::Governance,

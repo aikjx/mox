@@ -1,6 +1,6 @@
-# Xuanji 信创兼容性矩阵 (Xinchuang Compatibility Matrix)
+# Mox 信创兼容性矩阵 (Xinchuang Compatibility Matrix)
 
-版本：3.0.0 ｜ 更新日期：2026-08-24 ｜ 负责人：Xuanji Platform Team
+版本：3.0.0 ｜ 更新日期：2026-08-24 ｜ 负责人：Mox Platform Team
 
 **图例说明：**
 - ✅ `fully` — 完整通过全量 CI（60 条 nGQL + 20 条 Cypher + 7 算法 + 8 阶段 Trace）+ 24h soak 测试；可用于生产。
@@ -91,15 +91,15 @@ done
 ```
 
 ```bash
-# 3. Xuanji graph-service 健康端点 + 8 阶段 Trace 埋点可见性
+# 3. Mox graph-service 健康端点 + 8 阶段 Trace 埋点可见性
 curl -sf http://localhost:8080/healthz && echo " OK" && \
 curl -sf http://localhost:8080/readyz  | python3 -c "import sys,json;d=json.load(sys.stdin);print('trace_spans_collected=',d.get('trace_spans',0))"
 ```
 
 ```bash
-# 4. Rust nGQL 解析 + 最短路径算法冒烟（xuanji-graph-service 单测子集）
-cd /opt/xuanji/platform && \
-cargo test -p xuanji-graph-service --lib \
+# 4. Rust nGQL 解析 + 最短路径算法冒烟（mox-graph-service 单测子集）
+cd /opt/mox/platform && \
+cargo test -p mox-graph-service --lib \
   ngql_parser::tests:: smoke_ \
   algo_bridge::tests:: smoke_shortest_path \
   -- --nocapture --test-threads=1 2>&1 | tail -10

@@ -81,7 +81,7 @@ export const NAV_MODULES = [
   { key: 'caomei', label: '需求编译', icon: 'Tickets', path: '/caomei', color: '#16a34a', bg: '#dcfce7' },
   { key: 'algolab', label: '算法实验室', icon: 'TrendCharts', path: '/algolab', color: '#d97706', bg: '#fef3c7' },
   { key: 'infinite-optimizer', label: '无穷维度优化', icon: 'Compass', path: '/infinite-optimizer', color: '#0e7490', bg: '#ecfeff' },
-  { key: 'xuanji-fusion', label: '全维融合', icon: 'Aim', path: '/xuanji-fusion', color: '#7c3aed', bg: '#ede9fe' },
+  { key: 'mox-fusion', label: '全维融合', icon: 'Aim', path: '/mox-fusion', color: '#7c3aed', bg: '#ede9fe' },
   { key: 'knowledge-base', label: '云盘知识库', icon: 'Collection', path: '/knowledge-base', color: '#0d9488', bg: '#ccfbf1' },
   { key: 'llm-config', label: '大模型配置', icon: 'Setting', path: '/llm-config', color: '#6366f1', bg: '#eef2ff' },
   { key: 'expert-orchestrator', label: 'V2编排引擎', icon: 'Promotion', path: '/expert-orchestrator', color: '#ec4899', bg: '#fce7f3' },
@@ -93,13 +93,13 @@ export const NAV_GROUPS = [
   { key: 'workbench', label: '工作台', items: ['dashboard', 'projects', 'portal', 'business-hall'] },
   { key: 'graph-ai', label: '图谱与 AI', items: ['graph', 'operators', 'ai', 'knowledge-base', 'llm-config'] },
   { key: 'biz', label: '业务与协作', items: ['tasks', 'market', 'expert-center', 'expert-enterprise', 'expert-orchestrator', 'workflow', 'resources', 'plugins', 'mcp', 'automation'] },
-  { key: 'governance', label: '平台与治理', items: ['caomei', 'algolab', 'infinite-optimizer', 'xuanji-fusion', 'browser', 'monitor', 'docs', 'admin'] }
+  { key: 'governance', label: '平台与治理', items: ['caomei', 'algolab', 'infinite-optimizer', 'mox-fusion', 'browser', 'monitor', 'docs', 'admin'] }
 ]
 
 // 产品体验增强：顶栏⚡ 快捷「新建」菜单（最常用 4 项创建入口）
 // action 支持两种：'route' 跳转 / 'event' 发全局事件（TaskView/MarketView 监听后直接开 Dialog）
 export const QUICK_CREATE_COMMANDS = [
-  { key: 'task', label: '新建任务', icon: 'List', tip: 'Ctrl + Shift + N', action: 'event', event: 'xuanji:open-create-task' },
+  { key: 'task', label: '新建任务', icon: 'List', tip: 'Ctrl + Shift + N', action: 'event', event: 'mox:open-create-task' },
   { key: 'market', label: '上传算子包', icon: 'Shop', tip: '跳商城并打开表单', action: 'route', route: '/market', query: { action: 'upload' } },
   { key: 'ai-session', label: '新建 AI 对话', icon: 'ChatDotRound', tip: '新起一轮对话', action: 'route', route: '/ai', query: { fresh: '1' } },
   { key: 'workflow', label: '新建工作流', icon: 'Operation', tip: '编排新流程', action: 'route', route: '/workflow', query: { action: 'create' } }

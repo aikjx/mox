@@ -1,6 +1,6 @@
 # 璇玑校验设计（Algorithm Verification · AV）
 
-> 配套文档：`docs/architecture.md`(总架构) · `docs/modules/mathematical-foundation.md`(数学内核) · `docs/modules/xuanji-expert-normalization.md`(归一化) · `docs/modules/xuanji-expert-product.md`(产品化) · `docs/modules/business-process-flows.md`(企业级业务处理流程)
+> 配套文档：`docs/architecture.md`(总架构) · `docs/modules/mathematical-foundation.md`(数学内核) · `docs/modules/mox-expert-normalization.md`(归一化) · `docs/modules/mox-expert-product.md`(产品化) · `docs/modules/business-process-flows.md`(企业级业务处理流程)
 
 - 文档等级：🟢 权威（设计态 · modules/）
 - 编号：AV-STD-V1.0
@@ -47,7 +47,7 @@ AV 不负责"生成"，只负责"证明自洽"；其结论作为治理闸门（G
 - TraceMatrix：生成六维全链路溯源矩阵，写入全域知识库，支持"沿绑定链回溯至 REQ、前向传播影响分析"。
 
 ### 3.3 L3 璇玑治理闸门
-- ⛨璇玑验证网关为最高权限节点，汇聚 `xuanji_optimize` 的 `GovernanceReport(AuditChain)`，对守恒残差、绑定完整性、审计链完整性做最终裁决。
+- ⛨璇玑验证网关为最高权限节点，汇聚 `mox_optimize` 的 `GovernanceReport(AuditChain)`，对守恒残差、绑定完整性、审计链完整性做最终裁决。
 - 闸门双通道（veto / state）：否决则阻断出码/出图；通过则放行至治理闸门与交付。
 
 ### 3.4 L4 工程质量
@@ -78,7 +78,7 @@ AV 不负责"生成"，只负责"证明自洽"；其结论作为治理闸门（G
 | 守恒残差 | Conservation Residual (ε) | `ε = \|C − √(κ²+τ²)\|`，度量拓扑是否自洽 |
 | 六维绑定 | Six‑Dimensional Binding | REQ/FUN/BIZ/ALG/TSK/COD 一一映射 ID 绑定（公理 A4） |
 | TraceMatrix | Traceability Matrix | 六维全链路溯源矩阵，连通至 REQ |
-| 璇玑验证网关 | Xuanji Verification Gateway (⛨) | 最高权限治理节点，汇聚 GovernanceReport/AuditChain 做最终裁决 |
+| 璇玑验证网关 | Mox Verification Gateway (⛨) | 最高权限治理节点，汇聚 GovernanceReport/AuditChain 做最终裁决 |
 | 审计链 | AuditChain | 治理动作不可篡改的链式记录 |
 | 种子 | Seed | 保证涌现 `Emerge` 确定性的随机种子 |
 

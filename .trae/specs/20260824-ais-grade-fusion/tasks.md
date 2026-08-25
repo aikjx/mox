@@ -1,11 +1,11 @@
-# XUANJI v2.0 任务切片 — AC: rule(12) + rubric(8)
+# MOX v2.0 任务切片 — AC: rule(12) + rubric(8)
 
 ## 依赖图（串行 → 并行组）
 1. 骨架 → Task 1 (workspace skeleton + metric registry + WASM ABI stubs)
 2. 并行组 A（数据）：Task 2 (EC Engine) / Task 3 (Multipart UploadId)
 3. 并行组 B（融合 + 合规）：Task 4 (Tag-CDC-Graph) / Task 5 (LegalHold + Miji)
 4. 并行组 C（运维 + 部署）：Task 6 (FSHC + Mountpath) / Task 7 (ETL WASM)
-5. Task 8 (Single Binary xuanji-server CLI)
+5. Task 8 (Single Binary mox-server CLI)
 6. Task 9 (P99 Observability + CRC Read-after-Write)
 7. Task 10 (Bench 三档 + Deploy 双路径)
 8. Task 11 (T21 E2E ≥ 1237 tests 汇总 + Harness 700 参数化)
@@ -25,20 +25,20 @@
 | Unblock Condition | — |
 
 ### 产物
-- `platform/services/xuanji-ec-engine/Cargo.toml` + stub lib.rs
-- `platform/services/xuanji-data-plane/Cargo.toml`（HTTP3 listener + mountpath/fshc）
-- `platform/services/xuanji-fusion/Cargo.toml`（Tag-CDC-Graph）
-- `platform/services/xuanji-compliance/Cargo.toml`（LegalHold + Miji）
-- `platform/services/xuanji-etl-wasm/Cargo.toml`（WASM plugin 注册中心）
-- `platform/services/xuanji-server/Cargo.toml`（bin=`xuanji`；workspace workspace-hack 可选）
-- 修改 workspace `Cargo.toml`：`members += ["platform/services/xuanji-ec-engine", "..."]` 6 个新成员
-- `platform/services/xuanji-observability/src/registry_ext.rs`：注册 9 项新指标（histogram + counter）
+- `platform/services/mox-ec-engine/Cargo.toml` + stub lib.rs
+- `platform/services/mox-data-plane/Cargo.toml`（HTTP3 listener + mountpath/fshc）
+- `platform/services/mox-fusion/Cargo.toml`（Tag-CDC-Graph）
+- `platform/services/mox-compliance/Cargo.toml`（LegalHold + Miji）
+- `platform/services/mox-etl-wasm/Cargo.toml`（WASM plugin 注册中心）
+- `platform/services/mox-server/Cargo.toml`（bin=`mox`；workspace workspace-hack 可选）
+- 修改 workspace `Cargo.toml`：`members += ["platform/services/mox-ec-engine", "..."]` 6 个新成员
+- `platform/services/mox-observability/src/registry_ext.rs`：注册 9 项新指标（histogram + counter）
 
 ### Task-local Test Requirements (TR)
 | TR | 类型 | 内容 | 通过阈值 | 证据 |
 |---|---|---|---|---|
 | T1-TR1 | rule | 6 个新 crate `cargo check` 通过 0 error | 6/6 | cargo check 输出 |
-| T1-TR2 | rule | Metric Registry 注册后 `prometheus.gather()` 包含 `xuanji_obj_put_latency_us` 等 9 指标名 | metric name count = 9 | registry unit test |
+| T1-TR2 | rule | Metric Registry 注册后 `prometheus.gather()` 包含 `mox_obj_put_latency_us` 等 9 指标名 | metric name count = 9 | registry unit test |
 | T1-TR3 | rule | WASM ABI stub `EtContext::new()` 创建 + 空 transform 返回 Ok(Vec::new) | pass | etl abi unit test |
 | T1-TR4 | rubric | 依赖图解耦与目录布局工程质量（0-100） | ≥ 90 S | code review 结构评审 |
 
@@ -54,17 +54,17 @@ _（待实施时填写）_
 | Status | pending |
 | Priority | high |
 | AC 覆盖 | AC-R1, AC-U1 |
-| Dependencies | Task 1 (xuanji-ec-engine skeleton) |
+| Dependencies | Task 1 (mox-ec-engine skeleton) |
 | Blocked By | — |
 | Unblock Condition | — |
 
 ### 产物
-- `xuanji-ec-engine/src/profile.rs`：EcProfile { data, parity, min_obj_size }
-- `xuanji-ec-engine/src/encode.rs`：RSEncode::encode(data) -> Vec<Vec<u8>>
-- `xuanji-ec-engine/src/decode.rs`：RSDecode::reconstruct(shards, missing_idx) -> Result<Vec<u8>>
-- `xuanji-ec-engine/src/manifest.rs`：EcManifest { oid, bid, crc64, shards[], created_at, profile }
-- `xuanji-ec-engine/src/fs_layout.rs`：`<mountpath>/<bid>/<oid_prefix2>/<oid>/ec/shard_{i}.slice` + manifest.json
-- `xuanji-ec-engine/src/rebuild.rs`：RebuildJob（后台 async task，失败重试 + 指标更新）
+- `mox-ec-engine/src/profile.rs`：EcProfile { data, parity, min_obj_size }
+- `mox-ec-engine/src/encode.rs`：RSEncode::encode(data) -> Vec<Vec<u8>>
+- `mox-ec-engine/src/decode.rs`：RSDecode::reconstruct(shards, missing_idx) -> Result<Vec<u8>>
+- `mox-ec-engine/src/manifest.rs`：EcManifest { oid, bid, crc64, shards[], created_at, profile }
+- `mox-ec-engine/src/fs_layout.rs`：`<mountpath>/<bid>/<oid_prefix2>/<oid>/ec/shard_{i}.slice` + manifest.json
+- `mox-ec-engine/src/rebuild.rs`：RebuildJob（后台 async task，失败重试 + 指标更新）
 
 ### Task-local TR（≥ 16）
 | TR | 类型 | 内容 | 通过阈值 | 证据 |
@@ -80,10 +80,10 @@ _（待实施时填写）_
 | T2-TR9 | rule | min_obj_size：对象 < 64KB → 不进入 EC（3 副本）；≥64KB 进入 EC（2 场景） | 路径正确 2/2 | ec_threshold |
 | T2-TR10 | rule | CRC64 写时校验：manifest crc 错误 → decode 返回 IntegrityError | Err 正确 | ec_crc64_integrity |
 | T2-TR11 | rule | 并发 32 对象 4+2 编码 + 随机 2 片丢失 + 并行 recover + 最终 sha256 全匹配 | 32/32 match | ec_concurrency |
-| T2-TR12 | rule | xuanji_ec_encode_us 指标 encode 1000 次 histogram bucket 命中 ≥ 95% | histogram fill ≥ 95% | ec_metrics |
+| T2-TR12 | rule | mox_ec_encode_us 指标 encode 1000 次 histogram bucket 命中 ≥ 95% | histogram fill ≥ 95% | ec_metrics |
 | T2-TR13 | rule | profile.data=1 非法（RS 要求 data≥2） → new_profile 返回 Err | InvalidParams | ec_profile_valid |
 | T2-TR14 | rule | 支持 custom_galois_field=8（默认），兼容既有 AIS Reed-Solomon GF(2^8) | 互操作向量 8 对 8 | ec_interop |
-| T2-TR15 | rule | RebuildJob 指标 xuanji_ec_rebuild_count 增加 1 当且仅当成功 | counter delta=1 | ec_rebuild_counter |
+| T2-TR15 | rule | RebuildJob 指标 mox_ec_rebuild_count 增加 1 当且仅当成功 | counter delta=1 | ec_rebuild_counter |
 | T2-TR16 | rule | 冷热分层迁移：Lifecycle.move_to_cold 触发对象 EC manifest 带 tier=archive 标签；GET 返回 tier 正确 | tier 标签一致 | ec_lifecycle_cold |
 
 ### Completion Evidence
@@ -101,8 +101,8 @@ _（待实施时填写）_
 | Dependencies | Task 1 |
 
 ### 产物
-- `xuanji-data-plane/src/multipart.rs`：MultipartStore { upload_id, parts[]: Part, created_by, expires } + Create/Abort/Complete
-- `xuanji-data-plane/src/listeners.rs`：TripleListener { public, intra_ctrl, intra_data }；`--http3` 时 public 走 quinn endpoint
+- `mox-data-plane/src/multipart.rs`：MultipartStore { upload_id, parts[]: Part, created_by, expires } + Create/Abort/Complete
+- `mox-data-plane/src/listeners.rs`：TripleListener { public, intra_ctrl, intra_data }；`--http3` 时 public 走 quinn endpoint
 - Rust SDK：`Client::create_multipart_upload()` → `Uploader::upload_part(part_num, bytes)` → `complete()` → PartAggregate{crc64, etag, n}
 - Node.js SDK：`uploadMultipart(bucket, key, stream, {partSize: 8*1024*1024})` 统一 Promise API
 - Python SDK：`multipart_upload(bucket, key, iterable, part_size=8*1024*1024)` context manager
@@ -132,9 +132,9 @@ _（待实施时填写）_
 | Dependencies | Task 1 + T11 Graph service 既有 projection |
 
 ### 产物
-- `xuanji-fusion/src/tag_parser.rs`：TagSet.from_s3_headers(headers) + 默认 contentType/size_bucket/mimeCategory 标签
-- `xuanji-fusion/src/cdc_stage.rs`：`tag_cdc_graph_stage(obj, tags) -> [CdcEvent::ObjectTagged; 1]`
-- `xuanji-fusion/src/graph_writer.rs`：GraphWriter::upsert_obj_and_tags(obj, tags) → 落既有 xuanji-graph-service（mock+real）
+- `mox-fusion/src/tag_parser.rs`：TagSet.from_s3_headers(headers) + 默认 contentType/size_bucket/mimeCategory 标签
+- `mox-fusion/src/cdc_stage.rs`：`tag_cdc_graph_stage(obj, tags) -> [CdcEvent::ObjectTagged; 1]`
+- `mox-fusion/src/graph_writer.rs`：GraphWriter::upsert_obj_and_tags(obj, tags) → 落既有 mox-graph-service（mock+real）
 - GraphQL schema 新增 `type Obj { uri: String!, bucket: String!, size: Long!, tags: [Tag!]! }` + query `objectsByTag(k:"project", v:"p1"): [Obj!]!`
 
 ### Task-local TR（≥ 14）
@@ -146,7 +146,7 @@ _（待实施时填写）_
 | T4-TR4 | rule | Tag 顶点 `tag:contentType/application%2Fpdf` URL 编码 roundtrip 一致 | 一致 20 场景 | tag_url_encode |
 | T4-TR5 | rule | Graph Writer 失败（超时/熔断）→ CDC event 重试 3 次后写入 dead-letter-queue（队列可观测） | DLQ count=1 | graph_write_retry_dlq |
 | T4-TR6 | rule | 反向查询 GraphQL `objectsByTag(k:"project",v:"finance") LIMIT 20` → 返回 obj.uri 全部 S3 HEAD 200 | HEAD 20/20 200 | tag_reverse_s3_head |
-| T4-TR7 | rule | xuanji_tag2graph_lag_ms 指标：1000 次 PUT → P99 lag ≤ 500 ms（mock graph writer） | p99 ≤ 500 ms | tag2graph_latency |
+| T4-TR7 | rule | mox_tag2graph_lag_ms 指标：1000 次 PUT → P99 lag ≤ 500 ms（mock graph writer） | p99 ≤ 500 ms | tag2graph_latency |
 | T4-TR8 | rule | DELETE 对象 → obj 顶点 soft-deleted=1，HAS_TAG 边 archived_at=now | 2 属性正确 | obj_delete_archive |
 | T4-TR9 | rule | Tag key 大小写规范化（"Content-Type" → "content_type"）+ 非法字符过滤 | 规范化 15 场景 | tag_norm |
 | T4-TR10 | rule | 批量 PUT 1000 对象 + tags 总 3450 → Graph 写入 batch_size=64 幂等无重复 | edge count exact | tag_batch_put |
@@ -170,11 +170,11 @@ _（待实施时填写）_
 | Dependencies | Task 1 + 既有 hash_chain |
 
 ### 产物
-- `xuanji-compliance/src/legal_hold.rs`：LegalHold { placed_by, placed_at, hold_until } + 校验
-- `xuanji-compliance/src/miji.rs`：MijiLevel(u8) + Clearance(u8) + BellLaPadula judge_read / judge_write
-- Object 元数据扩展（通过 xuanji-domain-abstractions ObjectMeta trait）
+- `mox-compliance/src/legal_hold.rs`：LegalHold { placed_by, placed_at, hold_until } + 校验
+- `mox-compliance/src/miji.rs`：MijiLevel(u8) + Clearance(u8) + BellLaPadula judge_read / judge_write
+- Object 元数据扩展（通过 mox-domain-abstractions ObjectMeta trait）
 - 审计链 3 新 record 类型：LegalHoldDenied / MijiAccessDenied / LegalHoldPlaced
-- CLI：`xuanji legal-hold put|release` + `xuanji miji set|inspect`
+- CLI：`mox legal-hold put|release` + `mox miji set|inspect`
 
 ### Task-local TR（≥ 18）
 | TR | 类型 | 内容 | 通过阈值 | 证据 |
@@ -192,10 +192,10 @@ _（待实施时填写）_
 | T5-TR11 | rule | 批量 100 对象 × 4 miji 档 × 4 clearance 档 = 1600 裁决正确 | 1600/1600 | miji_matrix |
 | T5-TR12 | rule | LegalHold + Miji 联合：LH 对象即使 clearance 最高也不能删（LH 先于 miji 判定） | 412 优先级高 | lh_miji_union |
 | T5-TR13 | rule | 新 3 类 record 写入 hash_chain → 链式完整性校验通过（100 连续块） | integrity=ok 100 | compliance_audit_chain |
-| T5-TR14 | rule | 指标 xuanji_miji_denied_total / xuanji_legal_hold_blocked_total 每类拒绝 +1 | counters 正确 | compliance_metrics |
+| T5-TR14 | rule | 指标 mox_miji_denied_total / mox_legal_hold_blocked_total 每类拒绝 +1 | counters 正确 | compliance_metrics |
 | T5-TR15 | rule | CLI `legal-hold put --hold-until` 参数非法日期 → UsageError；合法 → placed=true 200 | cli 2 场景 | lh_cli |
 | T5-TR16 | rule | CLI `miji set --level 0` 非法（要求 1..4） → UsageError；set/get roundtrip 1..4 正确 | cli 4 场景 | miji_cli |
-| T5-TR17 | rule | 密级裁决拒绝时响应头 `X-Xuanji-Deny-Reason` 语义正确（不泄露对象是否存在） | reason 语义 | deny_reason_semantic |
+| T5-TR17 | rule | 密级裁决拒绝时响应头 `X-Mox-Deny-Reason` 语义正确（不泄露对象是否存在） | reason 语义 | deny_reason_semantic |
 | T5-TR18 | rule | STS AssumeRole 传递 clearance 到临时凭证：session_token 解码后 clearance ≤ 用户原始（防提权） | no_privilege_escalation | sts_clearance_flow |
 
 ### Completion Evidence
@@ -241,7 +241,7 @@ _（待实施时填写）_
 
 ---
 
-## Task 8: 单二进制 xuanji-server all-in-one CLI（clap）
+## Task 8: 单二进制 mox-server all-in-one CLI（clap）
 
 | 字段 | 值 |
 |---|---|
@@ -253,7 +253,7 @@ _（待实施时填写）_
 ### TR（≥ 10）
 | TR | 类型 | 内容 | 通过阈值 | 证据 |
 |---|---|---|---|---|
-| T8-TR1 | rule | `xuanji --help` 打印子命令列表 server/ec/mount/legal-hold/miji/bench/etl | 7 子命令存在 | cli help |
+| T8-TR1 | rule | `mox --help` 打印子命令列表 server/ec/mount/legal-hold/miji/bench/etl | 7 子命令存在 | cli help |
 | T8-TR2 | rule | `server --single-node --data-dir ./x --port 18080` 启动；GET /health 200；GET /metrics 含 9 新指标 | 200 OK + metrics | single-node smoke |
 | T8-TR3 | rule | `--single-node` 冷启动（到 health ready）< 2.5 s（CI 放宽到 4 s） | < 4 s | startup_latency |
 | T8-TR4 | rule | `ec profile add --bucket b1 --data 4 --parity 2` → list 列出；非法 data=1 → error | 增 + 校验 | ec CLI |
@@ -261,7 +261,7 @@ _（待实施时填写）_
 | T8-TR6 | rule | `legal-hold put --hold-until 2040-01-01` → inspect 返回 hold=true | 双向一致 | lh CLI |
 | T8-TR7 | rule | `miji set --level 3` → get 返回 3；非法 level 报错 | 双向 + 校验 | miji CLI |
 | T8-TR8 | rule | `bench 1KB --n 100 --concurrency 4` 跑通输出 JSON ops/s 字段 | exit 0 + json 字段 | bench smoke |
-| T8-TR9 | rule | xuanji.toml 配置文件读入（[server] port=18080，[storage] mountpaths=["/mnt/a"]）→ 启动生效 | 生效 | config_file |
+| T8-TR9 | rule | mox.toml 配置文件读入（[server] port=18080，[storage] mountpaths=["/mnt/a"]）→ 启动生效 | 生效 | config_file |
 | T8-TR10 | rule | SIGTERM/SIGINT 优雅关闭：WAL flush + metric persist + 指标 shutdown_time_us | graceful | graceful_shutdown |
 
 ### Completion Evidence
@@ -281,7 +281,7 @@ _（待实施时填写）_
 ### TR（≥ 20 组合 → 取 ≥ 10 rule）
 | TR | 类型 | 内容 | 通过阈值 | 证据 |
 |---|---|---|---|---|
-| T9-TR1..10 | rule ×10 | `GET /metrics` 9 指标名存在 + `xuanji_obj_put_latency_us` 100 次 PUT histogram >0；审计链取证端点 200；100 个 block 导出 CSV integrity=1；Read-after-Write 100 对象 10 线程 GET etag=；Client 端 crc64 错 → 400；服务端 crc64 返回头 header 存在；乱序 part multipart 完成后 CRC 聚合正确；deny reason header 不泄漏；`GET /ops/audit/chain?format=html` 页脚带 hash_chain signature | 10/10 | obs + crc suite |
+| T9-TR1..10 | rule ×10 | `GET /metrics` 9 指标名存在 + `mox_obj_put_latency_us` 100 次 PUT histogram >0；审计链取证端点 200；100 个 block 导出 CSV integrity=1；Read-after-Write 100 对象 10 线程 GET etag=；Client 端 crc64 错 → 400；服务端 crc64 返回头 header 存在；乱序 part multipart 完成后 CRC 聚合正确；deny reason header 不泄漏；`GET /ops/audit/chain?format=html` 页脚带 hash_chain signature | 10/10 | obs + crc suite |
 
 ### Completion Evidence
 _（待实施时填写）_
@@ -305,13 +305,13 @@ _（待实施时填写）_
 | T10-TR3 | rule | 1GB 档：n=20，p99(ms) 字段存在 | pass | bench_1g |
 | T10-TR4 | rule | 1MB 档 EC off vs EC 4+2 吞吐比：EC 吞吐 / EC_off 吞吐 ≥ 0.85（即开销 ≤15%） | ratio ≥ 0.85 | ec_overhead |
 | T10-TR5 | rule | benchmark JSON 报告写入 ./bench-report.json 字段齐全（9 字段） | 9/9 | bench_report_schema |
-| T10-TR6 | rule | deploy standalone：`xuanji server --single-node --no-k8s` + `/health` 200 | 200 | deploy_smoke_standalone |
-| T10-TR7 | rule | helm lint xuanji/（如无 helm CLI 则跳过当 pass）+ helm template --set standalone=false 至少 12 K8s 资源（Deployment/StatefulSet/Svc/Pdb/Hpa/Cm/Secret/SA/RBAC） | ≥ 12 kinds | helm_template |
+| T10-TR6 | rule | deploy standalone：`mox server --single-node --no-k8s` + `/health` 200 | 200 | deploy_smoke_standalone |
+| T10-TR7 | rule | helm lint mox/（如无 helm CLI 则跳过当 pass）+ helm template --set standalone=false 至少 12 K8s 资源（Deployment/StatefulSet/Svc/Pdb/Hpa/Cm/Secret/SA/RBAC） | ≥ 12 kinds | helm_template |
 | T10-TR8 | rule | 单机部署 + PUT/GET/Delete lifecycle 往返（对象 10 + 标签出图 + 审计链增长） | end-to-end pass | standalone_e2e |
 | T10-TR9 | rule | TLS enable：`--tls-cert ./c1.pem --tls-key ./k1.pem`（自签）启动 https → curl -k 200 | 200 | tls_smoke |
 | T10-TR10 | rule | 配置文件 + CLI 覆盖优先级：CLI > ENV > TOML file > 默认 | 3 级优先级正确 | config_priority |
 | T10-TR11 | rule | bench warmup 选项 `--warmup 5s`：warmup 不计入报告指标 | report≠warmup_count | bench_warmup |
-| T10-TR12 | rule | 文档 README-xuanji-server.md（嵌入 deploy docs）：含 "60 秒单机跑通" 步骤 + "helm 一键" 步骤；步骤能可重复 | smoke manual pass | deploy_docs |
+| T10-TR12 | rule | 文档 README-mox-server.md（嵌入 deploy docs）：含 "60 秒单机跑通" 步骤 + "helm 一键" 步骤；步骤能可重复 | smoke manual pass | deploy_docs |
 
 ### Completion Evidence
 _（待实施时填写）_

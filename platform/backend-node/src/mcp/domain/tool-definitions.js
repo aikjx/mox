@@ -8,7 +8,7 @@
  */
 
 const PROTOCOL_VERSION = '2025-06-18';
-const SERVER_INFO = { name: 'xuanji-expert-alliance', version: '1.0.0' };
+const SERVER_INFO = { name: 'mox-expert-alliance', version: '1.0.0' };
 
 const TOOLS = [
   {

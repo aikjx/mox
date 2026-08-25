@@ -4,13 +4,13 @@
 //! 基于DAG的算子调度，最小化资源消耗和执行时间
 
 pub const CRATE_ID: &str = "e56676c7-ec1f-5415-9587-ba8249d0178a";
-pub const ENGINE_NAME: &str = "xuanji::optimizer";
-pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+pub const ENGINE_NAME: &str = "mox::optimizer";
+pub const CRATE_META: mox_common_meta::CrateMeta = mox_common_meta::CrateMeta {
     id: CRATE_ID,
     name: env!("CARGO_PKG_NAME"),
     version: env!("CARGO_PKG_VERSION"),
-    layer: xuanji_common_meta::AisLayer::L4Services,
-    owner: "xuanji-core",
+    layer: mox_common_meta::AisLayer::L4Services,
+    owner: "mox-core",
 };
 
 use operator_core::operator::Operator;

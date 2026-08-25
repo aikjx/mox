@@ -4,7 +4,7 @@
       <div class="logo">🧠</div>
       <div class="brand-text">
         <div class="b-title">璇玑系统</div>
-        <div class="b-sub">Xuanji Graph System</div>
+        <div class="b-sub">Mox Graph System</div>
       </div>
     </div>
 

@@ -218,9 +218,9 @@ describe('USABILITY-5A：开发完成度（50 分制）', function () {
       if (domainCount < 23) d.deduct(2, `routes 装配域数量 ${domainCount} < 23`);
       else d.addNote(`routes 装配域 = ${domainCount} 个 ✔`);
     } catch (_) { d.deduct(2, 'routes/index.js 无法读取'); }
-    // xuanji-system DIP: effective_permissions/add_subtask/add_dependency/toggle_subtask 必须在整个 crate 源码中存在
+    // mox-system DIP: effective_permissions/add_subtask/add_dependency/toggle_subtask 必须在整个 crate 源码中存在
     try {
-      const sysDir = path.join(RUST_SERVICES, 'xuanji-system');
+      const sysDir = path.join(RUST_SERVICES, 'mox-system');
       const need = ['effective_permissions', 'add_subtask', 'add_dependency', 'toggle_subtask'];
       const foundAll = need.every(fn => {
         // 递归 grep 简单版：只查 src/ 与 tests/ 两层
@@ -236,9 +236,9 @@ describe('USABILITY-5A：开发完成度（50 分制）', function () {
         }
         return false;
       });
-      if (!foundAll) d.deduct(3, 'xuanji-system 部分 DIP trait 方法缺失');
-      else d.addNote('xuanji-system 4 个 DIP trait 方法在 src/tests 中均存在 ✔');
-    } catch (_) { d.deduct(2, 'xuanji-system DIP 扫描异常'); }
+      if (!foundAll) d.deduct(3, 'mox-system 部分 DIP trait 方法缺失');
+      else d.addNote('mox-system 4 个 DIP trait 方法在 src/tests 中均存在 ✔');
+    } catch (_) { d.deduct(2, 'mox-system DIP 扫描异常'); }
     assert.ok(d.score > 0, d.label + '：' + d.failures.join('；'));
   });
 
@@ -280,9 +280,9 @@ describe('USABILITY-5A：开发完成度（50 分制）', function () {
         else d.addNote('ai_engine.rs stub 计数 = 0 ✔');
       } catch (_) { d.deduct(1, 'ai_engine.rs 读取失败'); }
     }
-    // xuanji-system tests/t6_dip_orchestrator.rs 未调用 unimplemented!()（仅注释可接受）
+    // mox-system tests/t6_dip_orchestrator.rs 未调用 unimplemented!()（仅注释可接受）
     try {
-      const t6 = fs.readFileSync(path.join(RUST_SERVICES, 'xuanji-system', 'tests', 't6_dip_orchestrator.rs'), 'utf8');
+      const t6 = fs.readFileSync(path.join(RUST_SERVICES, 'mox-system', 'tests', 't6_dip_orchestrator.rs'), 'utf8');
       // 实际"调用" unimplemented!( 宏，非注释
       const calls = (t6.match(/^[^/]*unimplemented!\s*\(/gm) || []).length;
       if (calls > 0) d.deduct(3, `t6_dip_orchestrator 仍有 ${calls} 处 unimplemented!() 调用`);
@@ -355,7 +355,7 @@ describe('USABILITY-5B：功能可用度（50 分制）', function () {
     } else {
       // fallback: 源码内关键 HTML 文件长度 ≥ 2KB
       const files = [
-        path.join(ROOT, 'public', 'xuanji-studio.html'),
+        path.join(ROOT, 'public', 'mox-studio.html'),
         path.join(ROOT, 'public', 'service-manager.html'),
       ];
       const small = files.filter(f => fs.existsSync(f) && fs.statSync(f).size < 2048);
@@ -543,7 +543,7 @@ describe('USABILITY-5B：功能可用度（50 分制）', function () {
     const fa5 = DIMS.find(x => x.key === 'A5'); if (fa5 && fa5.failures.length) improvements.push({ level: 'MEDIUM', text: '完善 internal/system/业务域注册表三向一致性校验脚本' });
     const fb4 = DIMS.find(x => x.key === 'B4'); if (fb4 && fb4.failures.length) improvements.push({ level: 'HIGH', text: '对 hermes/ai-agent/运行时三条关键链路增加熔断 & 重试观测埋点（SLO 窗口）' });
     improvements.push({ level: 'LOW', text: '将 HTTP smoke 与前端页面验证接入 CI（GitHub Actions / 企业内流水线），每次 MR 自动跑' });
-    improvements.push({ level: 'LOW', text: '把 10 任务评分脚本产物推送至企业知识库（xuanji kb 域）做版本化沉淀' });
+    improvements.push({ level: 'LOW', text: '把 10 任务评分脚本产物推送至企业知识库（mox kb 域）做版本化沉淀' });
 
     improvements.forEach((it, i) => {
       const badge = it.level === 'HIGH' ? '🔴 HIGH' : (it.level === 'MEDIUM' ? '🟡 MEDIUM' : '🟢 LOW');

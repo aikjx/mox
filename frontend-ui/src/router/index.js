@@ -69,9 +69,9 @@ const routes = [
     meta: { title: '知识图谱' }
   },
   {
-    path: '/xuanji-fusion',
-    name: 'XuanjiFusion',
-    component: () => import('@/views/XuanjiFusionView.vue'),
+    path: '/mox-fusion',
+    name: 'MoxFusion',
+    component: () => import('@/views/MoxFusionView.vue'),
     meta: { title: '全维融合' }
   },
   {

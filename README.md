@@ -119,7 +119,7 @@
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                            编排与优化层 (Orchestration)                          │
 │  flow-ai: 拓扑/数据流/关键路径/冲突消解/调度 ──▶ optimizer: DAG 调度 & 资源约束   │
-│  ai-agent: 工作流引擎 / 对话 / 浏览器自动化 / 插件总线 ──▶ xuanji-expert: 多专家│
+│  ai-agent: 工作流引擎 / 对话 / 浏览器自动化 / 插件总线 ──▶ mox-expert: 多专家│
 └───────────────┬───────────────────────┬───────────────────────┬──────────────┘
                 │                        │                       │
                 ▼                        ▼                       ▼
@@ -177,8 +177,8 @@ infotopograph/  （= 璇玑 RelGraph 项目仓；根历史遗留 operator-unifie
 │   │   ├── optimizer/            #     CPM 关键路径分析 + RCPSP 资源约束调度（A8）
 │   │   ├── flow-ai/              #     流程 AI（9 模块：冒险/CPM/冲突/调度/拓扑/代码gen/流水线/原语/可视化）
 │   │   ├── ai-agent/             #     AI 智能体：对话/浏览器自动化/BPMN/MultiAgent/ProviderRegistry + A7 CEM 优化
-│   │   ├── xuanji-expert/        #     ⛨璇玑引擎：双璇玑十四维治理/归一化 IR/裁决/验证/审计三汇/RBAC（算法+开发联盟）
-│   │   ├── xuanji-system/        #     璇玑协作治理域：成员/任务/权限/通信/审计/RBAC/多后端 SQLite+PG+MySQL（开发联盟）
+│   │   ├── mox-expert/        #     ⛨璇玑引擎：双璇玑十四维治理/归一化 IR/裁决/验证/审计三汇/RBAC（算法+开发联盟）
+│   │   ├── mox-system/        #     璇玑协作治理域：成员/任务/权限/通信/审计/RBAC/多后端 SQLite+PG+MySQL（开发联盟）
 │   │   ├── hermes-flow-bridge/   #     Hermes Agent 桥接：normalize/recorder/router/拦截注入
 │   │   ├── business-catalog/     #     6 预置 FlowGraph + TopologyGraph（政务/财务/客服/ETL/MCP/螺旋）
 │   │   ├── template-market/      #     模板市场：发布/加载/评分/排序/Fork/2 种子
@@ -206,7 +206,7 @@ infotopograph/  （= 璇玑 RelGraph 项目仓；根历史遗留 operator-unifie
 │   │   ├── 05-iteration-roadmap.md  # M0~M8 9 里程碑 + L0/L1/L2 三级验收
 │   │   ├── 06-requirements-architecture-map.md  # 五向追溯 + §5 三联盟 RACI 矩阵
 │   │   ├── 07-全维需求明确书.md  # 四闸门 + 双收口 + All-01~04 三联盟四条铁规
-│   │   ├── 08-全维自动化处理明确书.md  # xuanji_optimize 8 步 + 每步主责联盟列
+│   │   ├── 08-全维自动化处理明确书.md  # mox_optimize 8 步 + 每步主责联盟列
 │   │   ├── 10-企业级交付清单.md  # 对外签署（三联盟 + 客户 + 审计五签）
 │   │   ├── 14-愿景总纲.md        # 北极星方法论总纲
 │   │   ├── 15-产品规范标准.md    # P1~P10 人人爱用十大原则
@@ -352,19 +352,19 @@ int operator_apply(double* input, double* output, int n);
 - **记忆一致性**：知识图谱 + 业务目录统一建模
 - **算子商城（资产复用）**：将"需求 + 可编辑业务流程图 + 功能点"作为算子包沉淀，支持随机浏览、克隆后继续编辑，形成"需求驱动 → 流程可快速改"的知识复利闭环（见 `docs/market-module.md`）
 - **多数据库后端（12-Factor 配置）**：璇玑系统可在 `SQLite / PostgreSQL / MySQL` 三种后端间**零代码切换**，默认 `SQLite`（开箱即用、零外部依赖）。方言差异（`INSERT OR REPLACE` / `ON CONFLICT DO UPDATE` / `ON DUPLICATE KEY UPDATE` 等）统一在 `repo/schema.rs` 按 `sea-query` 方言生成，业务层对后端无感知。
-- **生产级 fail-fast**：`XUANJI_STRICT_PERSIST=1` 下，若连不上配置的数据库（连接失败 **或** 建表失败）则**启动时直接中止**，杜绝"连不上库却照常起服务、数据只写进内存、进程一重启就丢"的静默故障。默认关闭、保持与演示/测试的兼容。
+- **生产级 fail-fast**：`MOX_STRICT_PERSIST=1` 下，若连不上配置的数据库（连接失败 **或** 建表失败）则**启动时直接中止**，杜绝"连不上库却照常起服务、数据只写进内存、进程一重启就丢"的静默故障。默认关闭、保持与演示/测试的兼容。
 
-### 数据库后端切换（璇玑系统 `xuanji-system`）
+### 数据库后端切换（璇玑系统 `mox-system`）
 
 ```powershell
 # 默认：SQLite，零配置开箱即用
-cargo run -p xuanji-system
+cargo run -p mox-system
 
 # PostgreSQL 生产（连不上库直接中止启动，而非带病运行）
-$env:XUANJI_PERSIST="true"; $env:XUANJI_STRICT_PERSIST="true"
-$env:XUANJI_BACKEND="postgres"
-$env:XUANJI_DB_URL="postgres://admin:***@db.internal:5432/xuanji"
-cargo run -p xuanji-system
+$env:MOX_PERSIST="true"; $env:MOX_STRICT_PERSIST="true"
+$env:MOX_BACKEND="postgres"
+$env:MOX_DB_URL="postgres://admin:***@db.internal:5432/mox"
+cargo run -p mox-system
 ```
 
 > 📖 **完整配置矩阵与语义（唯一权威基准）**：见 [`docs/enterprise/02-architecture.md` §7.4](docs/enterprise/02-architecture.md)。

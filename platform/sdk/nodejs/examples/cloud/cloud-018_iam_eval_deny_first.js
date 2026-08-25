@@ -1,4 +1,4 @@
-const { CloudClient } = require("../../xuanji-sdk-cloud");
+const { CloudClient } = require("../../mox-sdk-cloud");
 const client = new CloudClient({ region: "cn-east-1" });
 const result = client.iamEvalDenyFirst(["s3:ListBucket", "s3:DeleteBucket"], "arn::bucket/*");
 if (result.decision !== "DENY" || result.denied.length === 0) process.exit(1);

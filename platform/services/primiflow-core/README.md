@@ -8,13 +8,13 @@
 
 ```rust
 pub const CRATE_ID: &str = "8c8d2382-6f9f-5218-894e-a07a43aa9554";
-pub const ENGINE_NAME: &str = "xuanji::primiflow_core";
-pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+pub const ENGINE_NAME: &str = "mox::primiflow_core";
+pub const CRATE_META: mox_common_meta::CrateMeta = mox_common_meta::CrateMeta {
     id: CRATE_ID,
     name: env!("CARGO_PKG_NAME"),
     version: env!("CARGO_PKG_VERSION"),
-    layer: xuanji_common_meta::AisLayer::L4Services,
-    owner: "xuanji-core",
+    layer: mox_common_meta::AisLayer::L4Services,
+    owner: "mox-core",
 };
 ```
 

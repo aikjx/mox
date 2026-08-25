@@ -1,4 +1,4 @@
-const { GraphClient } = require("../../xuanji-sdk-graph");
+const { GraphClient } = require("../../mox-sdk-graph");
 const client = new GraphClient({ endpoint: "graph.local" });
 const result = client.projCommunityIn2("comm-002");
 if (!result.ok || result.tags.length === 0) process.exit(1);

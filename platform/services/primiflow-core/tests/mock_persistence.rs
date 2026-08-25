@@ -11,7 +11,7 @@
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use xuanji_system::persistence_provider::{PersistenceProvider, SqlRow, SqlValue};
+use mox_system::persistence_provider::{PersistenceProvider, SqlRow, SqlValue};
 
 type TableRows = Vec<(Vec<String>, Vec<SqlValue>)>;
 type StoreMap = HashMap<String, TableRows>;

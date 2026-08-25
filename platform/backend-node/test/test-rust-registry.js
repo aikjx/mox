@@ -36,7 +36,7 @@ describe('T1 · Rust 16 crates 三注册表 + self_sync', function () {
       'rust::ai-agent', 'rust::business-catalog', 'rust::flow-ai', 'rust::graph-algorithms',
       'rust::hermes-flow-bridge', 'rust::kg-hub', 'rust::operator-core', 'rust::operator-wasm',
       'rust::optimizer', 'rust::primiflow-core', 'rust::primiflow-fusion', 'rust::template-market',
-      'rust::xuanji-expert', 'rust::xuanji-system', 'rust::xuanji-common-meta', 'rust::runtime'
+      'rust::mox-expert', 'rust::mox-system', 'rust::mox-common-meta', 'rust::runtime'
     ].sort();
     assert.deepStrictEqual(ids, expected, '16 条 id 集合不匹配');
   });
@@ -48,7 +48,7 @@ describe('T1 · Rust 16 crates 三注册表 + self_sync', function () {
       `期望 16 条 engine:: 条目，实际 ${rust.length}。Ids: ${rust.map(r => r.id).join(', ')}`);
     for (const r of rust) {
       assert.strictEqual(r.kind, 'rust', `${r.id} .kind 必须为 rust`);
-      assert.ok(r.engineName && r.engineName.startsWith('xuanji::'), `${r.id} .engineName 必须 xuanji::xxx`);
+      assert.ok(r.engineName && r.engineName.startsWith('mox::'), `${r.id} .engineName 必须 mox::xxx`);
       assert.ok(r.crateId && r.crateId.length === 36, `${r.id} .crateId 非 UUIDv5`);
       assert.ok(r.path && /src\/lib\.rs$/.test(r.path), `${r.id} .path 需指向 .../src/lib.rs`);
     }

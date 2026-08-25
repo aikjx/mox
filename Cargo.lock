@@ -35,7 +35,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5a15f179cd60c4584b8a8c596927aadc462e27f2ca70c04e0071964a73ba7a75"
 dependencies = [
  "cfg-if",
+ "const-random",
+ "getrandom 0.3.4",
  "once_cell",
+ "serde",
  "version_check",
  "zerocopy",
 ]
@@ -59,6 +62,8 @@ dependencies = [
  "flow-ai",
  "graph-algorithms",
  "kg-hub",
+ "mox-common-meta",
+ "mox-system",
  "operator-core",
  "petgraph",
  "reqwest",
@@ -69,8 +74,6 @@ dependencies = [
  "tokio",
  "tracing",
  "uuid",
- "xuanji-common-meta",
- "xuanji-system",
 ]
 
 [[package]]
@@ -368,11 +371,11 @@ version = "3.0.0-ai-powered"
 dependencies = [
  "async-trait",
  "flow-ai",
+ "mox-common-meta",
+ "mox-expert",
  "serde",
  "serde_json",
  "tokio",
- "xuanji-common-meta",
- "xuanji-expert",
 ]
 
 [[package]]
@@ -581,6 +584,26 @@ name = "const-oid"
 version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2459377285ad874054d797f3ccebf984978aa39129f6eafde5cdc8315b612f8"
+
+[[package]]
+name = "const-random"
+version = "0.1.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "87e00182fe74b066627d63b85fd550ac2998d4b0bd86bfed477a0ae4c7c71359"
+dependencies = [
+ "const-random-macro",
+]
+
+[[package]]
+name = "const-random-macro"
+version = "0.1.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f9d839f2a20b0aee515dc581a6172f2321f96cab76c1a38a4c584a194955390e"
+dependencies = [
+ "getrandom 0.2.17",
+ "once_cell",
+ "tiny-keccak",
+]
 
 [[package]]
 name = "core-foundation-sys"
@@ -1088,9 +1111,9 @@ name = "flow-ai"
 version = "3.0.0-ai-powered"
 dependencies = [
  "anyhow",
+ "mox-common-meta",
  "serde",
  "serde_json",
- "xuanji-common-meta",
 ]
 
 [[package]]
@@ -1109,6 +1132,12 @@ name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
+
+[[package]]
+name = "foldhash"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
 
 [[package]]
 name = "form_urlencoded"
@@ -1269,6 +1298,18 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "899def5c37c4fd7b2664648c28120ecec138e4d395b459e5ca34f9cce2dd77fd"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "r-efi 5.3.0",
+ "wasip2",
+]
+
+[[package]]
+name = "getrandom"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "300e883d756b2e4ec94e02791f39b04b522276138852cfc41d9fb7e904106099"
@@ -1276,7 +1317,7 @@ dependencies = [
  "cfg-if",
  "js-sys",
  "libc",
- "r-efi",
+ "r-efi 6.0.0",
  "rand_core 0.10.1",
  "wasm-bindgen",
 ]
@@ -1310,12 +1351,12 @@ version = "3.0.0-ai-powered"
 dependencies = [
  "anyhow",
  "approx",
+ "mox-common-meta",
  "nalgebra",
  "operator-core",
  "petgraph",
  "serde",
  "serde_json",
- "xuanji-common-meta",
 ]
 
 [[package]]
@@ -1346,6 +1387,18 @@ checksum = "e5274423e17b7c9fc20b6e7e208532f9b19825d82dfd615708b70edd83df41f1"
 dependencies = [
  "ahash 0.8.12",
  "allocator-api2",
+]
+
+[[package]]
+name = "hashbrown"
+version = "0.15.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9229cfe53dfd69f0609a49f65461bd93001ea1ef889cd5529dd176593f5338a1"
+dependencies = [
+ "allocator-api2",
+ "equivalent",
+ "foldhash",
+ "rayon",
 ]
 
 [[package]]
@@ -1381,12 +1434,12 @@ version = "3.0.0-ai-powered"
 dependencies = [
  "async-trait",
  "flow-ai",
+ "mox-common-meta",
+ "mox-expert",
  "reqwest",
  "serde",
  "serde_json",
  "tokio",
- "xuanji-common-meta",
- "xuanji-expert",
 ]
 
 [[package]]
@@ -1701,6 +1754,9 @@ checksum = "d466e9454f08e4a911e14806c24e16fba1b4c121d1ea474396f396069cf949d9"
 dependencies = [
  "equivalent",
  "hashbrown 0.17.1",
+ "rayon",
+ "serde",
+ "serde_core",
 ]
 
 [[package]]
@@ -1780,13 +1836,13 @@ dependencies = [
  "anyhow",
  "axum",
  "graph-algorithms",
+ "mox-common-meta",
  "primiflow-fusion",
  "serde",
  "serde_json",
  "tokio",
  "tower-http 0.5.2",
  "tracing",
- "xuanji-common-meta",
 ]
 
 [[package]]
@@ -2048,6 +2104,480 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7843ec2de400bcbc6a6328c958dc38e5359da6e93e72e37bc5246bf1ae776389"
 
 [[package]]
+name = "mox-ai-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "mox-cloud-drive-filer"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "parking_lot",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "mox-cloud-drive-master"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "hex",
+ "hmac",
+ "mox-cloud-drive-volume",
+ "mox-domain-abstractions",
+ "parking_lot",
+ "rand 0.8.7",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "mox-cloud-drive-s3"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "axum",
+ "base64",
+ "bytes",
+ "chrono",
+ "hex",
+ "hmac",
+ "http",
+ "md-5",
+ "mox-cloud-drive-master",
+ "mox-cloud-drive-volume",
+ "mox-domain-abstractions",
+ "mox-standards",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "xml-rs",
+]
+
+[[package]]
+name = "mox-cloud-drive-volume"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "crc32c",
+ "hex",
+ "hmac",
+ "mox-domain-abstractions",
+ "parking_lot",
+ "rand 0.8.7",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "mox-common-meta"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "serde",
+ "serde_json",
+ "uuid",
+]
+
+[[package]]
+name = "mox-compliance"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "chrono",
+ "hex",
+ "parking_lot",
+ "rand 0.8.7",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "mox-data-plane"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "bytes",
+ "chrono",
+ "hex",
+ "parking_lot",
+ "rand 0.8.7",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
+name = "mox-domain-abstractions"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "hex",
+ "hmac",
+ "parking_lot",
+ "serde",
+ "sha2",
+]
+
+[[package]]
+name = "mox-etl-wasm"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "chrono",
+ "hex",
+ "parking_lot",
+ "rand 0.8.7",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 1.0.69",
+ "wasmer",
+ "wasmer-compiler-cranelift",
+]
+
+[[package]]
+name = "mox-expert"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "axum",
+ "chrono",
+ "flow-ai",
+ "hex",
+ "hmac",
+ "hostname",
+ "http",
+ "mox-common-meta",
+ "rayon",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2",
+ "thiserror 1.0.69",
+ "tokio",
+ "tower-http 0.5.2",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "mox-formulas-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "ahash 0.8.12",
+ "anyhow",
+ "approx",
+ "criterion",
+ "hashbrown 0.15.5",
+ "indexmap 2.14.0",
+ "mox-common-meta",
+ "num-traits",
+ "rayon",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "mox-fusion"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "chrono",
+ "hex",
+ "mox-graph-service",
+ "parking_lot",
+ "percent-encoding",
+ "rand 0.8.7",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 1.0.69",
+ "url",
+]
+
+[[package]]
+name = "mox-graph-meta"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-raft",
+ "async-trait",
+ "hex",
+ "hmac",
+ "mox-domain-abstractions",
+ "parking_lot",
+ "rand 0.8.7",
+ "rocksdb",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "mox-graph-service"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "criterion",
+ "graph-algorithms",
+ "hex",
+ "mox-domain-abstractions",
+ "mox-graph-meta",
+ "mox-graph-storage",
+ "nom",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "mox-graph-spark"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "parking_lot",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "mox-graph-storage"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-raft",
+ "async-trait",
+ "bytes",
+ "criterion",
+ "graph-algorithms",
+ "hex",
+ "mox-domain-abstractions",
+ "mox-graph-meta",
+ "parking_lot",
+ "rand 0.8.7",
+ "rocksdb",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "mox-graph-streams"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "mox-domain-abstractions",
+ "mox-graph-storage",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "mox-intent-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "ahash 0.8.12",
+ "aho-corasick",
+ "anyhow",
+ "criterion",
+ "hashbrown 0.15.5",
+ "indexmap 2.14.0",
+ "mox-common-meta",
+ "rayon",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "mox-norm-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "ahash 0.8.12",
+ "anyhow",
+ "criterion",
+ "hashbrown 0.15.5",
+ "indexmap 2.14.0",
+ "mox-common-meta",
+ "rayon",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "mox-sdk-cloud"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+]
+
+[[package]]
+name = "mox-sdk-graph"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+]
+
+[[package]]
+name = "mox-server"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "clap",
+ "hex",
+ "mox-cloud-drive-volume",
+ "mox-compliance",
+ "mox-data-plane",
+ "mox-etl-wasm",
+ "mox-fusion",
+ "mox-graph-service",
+ "mox-standards",
+ "parking_lot",
+ "prometheus",
+ "rand 0.8.7",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
+name = "mox-standards"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "base64",
+ "bytes",
+ "hex",
+ "hmac",
+ "mox-domain-abstractions",
+ "num-bigint",
+ "num-traits",
+ "parking_lot",
+ "rand 0.8.7",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "mox-system"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "axum",
+ "chrono",
+ "futures",
+ "mox-common-meta",
+ "rusqlite",
+ "sea-query",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "tower-http 0.5.2",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
+name = "mox-t21-harness"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "hex",
+ "mox-cloud-drive-volume",
+ "mox-compliance",
+ "mox-data-plane",
+ "mox-etl-wasm",
+ "mox-fusion",
+ "mox-server",
+ "parking_lot",
+ "rand 0.8.7",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "nalgebra"
 version = "0.32.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2216,6 +2746,7 @@ dependencies = [
  "anyhow",
  "approx",
  "criterion",
+ "mox-common-meta",
  "nalgebra",
  "ndarray",
  "num-traits",
@@ -2225,7 +2756,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
- "xuanji-common-meta",
 ]
 
 [[package]]
@@ -2233,6 +2763,7 @@ name = "operator-wasm"
 version = "3.0.0-ai-powered"
 dependencies = [
  "anyhow",
+ "mox-common-meta",
  "operator-core",
  "serde",
  "serde_json",
@@ -2240,7 +2771,6 @@ dependencies = [
  "tracing",
  "wasmer",
  "wasmer-compiler-cranelift",
- "xuanji-common-meta",
 ]
 
 [[package]]
@@ -2248,11 +2778,11 @@ name = "optimizer"
 version = "3.0.0-ai-powered"
 dependencies = [
  "anyhow",
+ "mox-common-meta",
  "operator-core",
  "petgraph",
  "serde",
  "serde_json",
- "xuanji-common-meta",
 ]
 
 [[package]]
@@ -2400,13 +2930,13 @@ dependencies = [
  "axum",
  "chrono",
  "flow-ai",
+ "mox-common-meta",
+ "mox-system",
  "reqwest",
  "serde",
  "serde_json",
  "tokio",
  "uuid",
- "xuanji-common-meta",
- "xuanji-system",
 ]
 
 [[package]]
@@ -2417,6 +2947,7 @@ dependencies = [
  "axum",
  "criterion",
  "flow-ai",
+ "mox-common-meta",
  "primiflow-core",
  "serde",
  "serde_json",
@@ -2426,7 +2957,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
- "xuanji-common-meta",
 ]
 
 [[package]]
@@ -2585,6 +3115,12 @@ checksum = "1fbf4db142a473a8d80c26bbf18454ed458bf8d26c8219c331daecfdbd079001"
 dependencies = [
  "proc-macro2",
 ]
+
+[[package]]
+name = "r-efi"
+version = "5.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "69cdb34c158ceb288df11e18b4bd39de994f6657d83847bdffdbd7f346754b0f"
 
 [[package]]
 name = "r-efi"
@@ -2936,6 +3472,9 @@ dependencies = [
  "hex",
  "hmac",
  "kg-hub",
+ "mox-common-meta",
+ "mox-expert",
+ "mox-system",
  "nalgebra",
  "operator-core",
  "operator-wasm",
@@ -2956,9 +3495,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
- "xuanji-common-meta",
- "xuanji-expert",
- "xuanji-system",
 ]
 
 [[package]]
@@ -3080,6 +3616,15 @@ name = "safe_arch"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "96b02de82ddbe1b636e6170c21be622223aea188ef2e139be0a5b219ec215323"
+dependencies = [
+ "bytemuck",
+]
+
+[[package]]
+name = "safe_arch"
+version = "0.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "629516c85c29fe757770fa03f2074cf1eac43d44c02a3de9fc2ef7b0e207dfdd"
 dependencies = [
  "bytemuck",
 ]
@@ -3314,7 +3859,7 @@ dependencies = [
  "num-complex",
  "num-traits",
  "paste",
- "wide",
+ "wide 0.7.33",
 ]
 
 [[package]]
@@ -3690,12 +4235,12 @@ version = "3.0.0-ai-powered"
 dependencies = [
  "anyhow",
  "chrono",
+ "mox-common-meta",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
  "tracing",
  "uuid",
- "xuanji-common-meta",
 ]
 
 [[package]]
@@ -3755,6 +4300,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ad99c4c6d32803332c548b1af0540b357b3f5fc0be8f6c6bfe8b2e6ae784070"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "tiny-keccak"
+version = "2.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c9d3793400a45f954c52e73d068316d76b6f4e36977e3fcebb13a2721e80237"
+dependencies = [
+ "crunchy",
 ]
 
 [[package]]
@@ -4253,6 +4807,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ccf3ec651a847eb01de73ccad15eb7d99f80485de043efb2f370cd654f4ea44b"
 
 [[package]]
+name = "wasip2"
+version = "1.0.4+wasi-0.2.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b67efb37e106e55ce722a510d6b5f9c17f083e5fc79afc2badeb12cc313d9487"
+dependencies = [
+ "wit-bindgen",
+]
+
+[[package]]
 name = "wasite"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4550,7 +5113,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ce5da8ecb62bcd8ec8b7ea19f69a51275e91299be594ea5cc6ef7819e16cd03"
 dependencies = [
  "bytemuck",
- "safe_arch",
+ "safe_arch 0.7.4",
+]
+
+[[package]]
+name = "wide"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "13ca908d26e4786149c48efcf6c0ea09ab0e06d1fe3c17dc1b4b0f1ca4a7e788"
+dependencies = [
+ "bytemuck",
+ "safe_arch 0.9.3",
 ]
 
 [[package]]
@@ -4844,6 +5417,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
 
 [[package]]
+name = "wit-bindgen"
+version = "0.57.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
+
+[[package]]
 name = "writeable"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4859,423 +5438,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "xiaobai-dsp"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "ahash 0.8.12",
+ "anyhow",
+ "approx",
+ "criterion",
+ "mox-common-meta",
+ "rayon",
+ "serde",
+ "thiserror 1.0.69",
+ "wide 0.8.3",
+]
+
+[[package]]
 name = "xml-rs"
 version = "0.8.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
-
-[[package]]
-name = "xuanji-cloud-drive-filer"
-version = "3.0.0-ai-powered"
-dependencies = [
- "async-trait",
- "parking_lot",
- "rusqlite",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "xuanji-cloud-drive-master"
-version = "3.0.0-ai-powered"
-dependencies = [
- "async-trait",
- "bytes",
- "hex",
- "hmac",
- "parking_lot",
- "rand 0.8.7",
- "serde",
- "serde_json",
- "sha2",
- "tempfile",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "xuanji-cloud-drive-volume",
- "xuanji-domain-abstractions",
-]
-
-[[package]]
-name = "xuanji-cloud-drive-s3"
-version = "3.0.0-ai-powered"
-dependencies = [
- "async-trait",
- "axum",
- "base64",
- "bytes",
- "chrono",
- "hex",
- "hmac",
- "http",
- "md-5",
- "parking_lot",
- "serde",
- "serde_json",
- "sha2",
- "tempfile",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "xml-rs",
- "xuanji-cloud-drive-master",
- "xuanji-cloud-drive-volume",
- "xuanji-domain-abstractions",
- "xuanji-standards",
-]
-
-[[package]]
-name = "xuanji-cloud-drive-volume"
-version = "3.0.0-ai-powered"
-dependencies = [
- "async-trait",
- "bytes",
- "crc32c",
- "hex",
- "hmac",
- "parking_lot",
- "rand 0.8.7",
- "serde",
- "serde_json",
- "sha2",
- "tempfile",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "xuanji-domain-abstractions",
-]
-
-[[package]]
-name = "xuanji-common-meta"
-version = "3.0.0-ai-powered"
-dependencies = [
- "serde",
- "serde_json",
- "uuid",
-]
-
-[[package]]
-name = "xuanji-compliance"
-version = "3.0.0-ai-powered"
-dependencies = [
- "chrono",
- "hex",
- "parking_lot",
- "rand 0.8.7",
- "serde",
- "serde_json",
- "sha2",
- "tempfile",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "xuanji-data-plane"
-version = "3.0.0-ai-powered"
-dependencies = [
- "bytes",
- "chrono",
- "hex",
- "parking_lot",
- "rand 0.8.7",
- "serde",
- "serde_json",
- "sha2",
- "tempfile",
- "thiserror 1.0.69",
- "tokio",
- "uuid",
-]
-
-[[package]]
-name = "xuanji-domain-abstractions"
-version = "3.0.0-ai-powered"
-dependencies = [
- "async-trait",
- "bytes",
- "hex",
- "hmac",
- "parking_lot",
- "serde",
- "sha2",
-]
-
-[[package]]
-name = "xuanji-etl-wasm"
-version = "3.0.0-ai-powered"
-dependencies = [
- "chrono",
- "hex",
- "parking_lot",
- "rand 0.8.7",
- "serde",
- "serde_json",
- "sha2",
- "tempfile",
- "thiserror 1.0.69",
- "wasmer",
- "wasmer-compiler-cranelift",
-]
-
-[[package]]
-name = "xuanji-expert"
-version = "3.0.0-ai-powered"
-dependencies = [
- "anyhow",
- "async-trait",
- "axum",
- "chrono",
- "flow-ai",
- "hex",
- "hmac",
- "hostname",
- "http",
- "rayon",
- "reqwest",
- "serde",
- "serde_json",
- "serde_yaml",
- "sha2",
- "thiserror 1.0.69",
- "tokio",
- "tower-http 0.5.2",
- "tracing",
- "uuid",
- "xuanji-common-meta",
-]
-
-[[package]]
-name = "xuanji-fusion"
-version = "3.0.0-ai-powered"
-dependencies = [
- "chrono",
- "hex",
- "parking_lot",
- "percent-encoding",
- "rand 0.8.7",
- "serde",
- "serde_json",
- "sha2",
- "tempfile",
- "thiserror 1.0.69",
- "url",
- "xuanji-graph-service",
-]
-
-[[package]]
-name = "xuanji-graph-meta"
-version = "3.0.0-ai-powered"
-dependencies = [
- "anyhow",
- "async-raft",
- "async-trait",
- "hex",
- "hmac",
- "parking_lot",
- "rand 0.8.7",
- "rocksdb",
- "serde",
- "serde_json",
- "sha2",
- "tempfile",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "xuanji-domain-abstractions",
-]
-
-[[package]]
-name = "xuanji-graph-service"
-version = "3.0.0-ai-powered"
-dependencies = [
- "async-trait",
- "bytes",
- "criterion",
- "graph-algorithms",
- "hex",
- "nom",
- "parking_lot",
- "serde",
- "serde_json",
- "sha2",
- "tempfile",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
- "xuanji-domain-abstractions",
- "xuanji-graph-meta",
- "xuanji-graph-storage",
-]
-
-[[package]]
-name = "xuanji-graph-spark"
-version = "3.0.0-ai-powered"
-dependencies = [
- "anyhow",
- "parking_lot",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "xuanji-graph-storage"
-version = "3.0.0-ai-powered"
-dependencies = [
- "async-raft",
- "async-trait",
- "bytes",
- "criterion",
- "graph-algorithms",
- "hex",
- "parking_lot",
- "rand 0.8.7",
- "rocksdb",
- "serde",
- "serde_json",
- "sha2",
- "tempfile",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "xuanji-domain-abstractions",
- "xuanji-graph-meta",
-]
-
-[[package]]
-name = "xuanji-graph-streams"
-version = "3.0.0-ai-powered"
-dependencies = [
- "anyhow",
- "parking_lot",
- "serde",
- "serde_json",
- "tokio",
- "xuanji-domain-abstractions",
- "xuanji-graph-storage",
-]
-
-[[package]]
-name = "xuanji-sdk-cloud"
-version = "3.0.0-ai-powered"
-dependencies = [
- "async-trait",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "tokio",
-]
-
-[[package]]
-name = "xuanji-sdk-graph"
-version = "3.0.0-ai-powered"
-dependencies = [
- "async-trait",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "tokio",
-]
-
-[[package]]
-name = "xuanji-server"
-version = "3.0.0-ai-powered"
-dependencies = [
- "anyhow",
- "chrono",
- "clap",
- "hex",
- "parking_lot",
- "prometheus",
- "rand 0.8.7",
- "serde",
- "serde_json",
- "serde_yaml",
- "sha2",
- "tempfile",
- "thiserror 1.0.69",
- "tokio",
- "uuid",
- "xuanji-cloud-drive-volume",
- "xuanji-compliance",
- "xuanji-data-plane",
- "xuanji-etl-wasm",
- "xuanji-fusion",
- "xuanji-graph-service",
- "xuanji-standards",
-]
-
-[[package]]
-name = "xuanji-standards"
-version = "3.0.0-ai-powered"
-dependencies = [
- "anyhow",
- "async-trait",
- "base64",
- "bytes",
- "hex",
- "hmac",
- "num-bigint",
- "num-traits",
- "parking_lot",
- "rand 0.8.7",
- "serde",
- "serde_json",
- "sha2",
- "tokio",
- "tracing",
- "xuanji-domain-abstractions",
-]
-
-[[package]]
-name = "xuanji-system"
-version = "3.0.0-ai-powered"
-dependencies = [
- "anyhow",
- "async-trait",
- "axum",
- "chrono",
- "futures",
- "rusqlite",
- "sea-query",
- "serde",
- "serde_json",
- "sqlx",
- "thiserror 1.0.69",
- "tokio",
- "tower-http 0.5.2",
- "tracing",
- "tracing-subscriber",
- "uuid",
- "xuanji-common-meta",
-]
-
-[[package]]
-name = "xuanji-t21-harness"
-version = "3.0.0-ai-powered"
-dependencies = [
- "anyhow",
- "chrono",
- "hex",
- "parking_lot",
- "rand 0.8.7",
- "serde",
- "serde_json",
- "sha2",
- "tempfile",
- "thiserror 1.0.69",
- "xuanji-cloud-drive-volume",
- "xuanji-compliance",
- "xuanji-data-plane",
- "xuanji-etl-wasm",
- "xuanji-fusion",
- "xuanji-server",
-]
 
 [[package]]
 name = "xxhash-rust"

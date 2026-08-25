@@ -2,7 +2,7 @@
 
 /**
  * 路由域：集成通道
- * /caomei 需求编译 / /mcp 协议 / /automation 自动化 / /xuanji 治理 / /llm/* 提供商管理
+ * /caomei 需求编译 / /mcp 协议 / /automation 自动化 / /mox 治理 / /llm/* 提供商管理
  */
 module.exports = function registerIntegrationRoutes(ctx) {
   const { path, url, gateway, config, uid, readJSON, writeJSON, ok, fail, readBody, appendLog, reg, pagerank } = ctx;
@@ -54,7 +54,7 @@ module.exports = function registerIntegrationRoutes(ctx) {
             { name: 'operators.list', desc: '算子列表' },
             { name: 'operators.register', desc: '注册算子' },
             { name: 'caomei.compile', desc: '需求编译' },
-            { name: 'xuanji.optimize', desc: '璇玑治理优化' }
+            { name: 'mox.optimize', desc: '璇玑治理优化' }
           ]
         }
       });
@@ -141,7 +141,7 @@ module.exports = function registerIntegrationRoutes(ctx) {
     ok(res, list[idx]);
   });
 
-  reg('get', '/xuanji/health', (req, res) => {
+  reg('get', '/mox/health', (req, res) => {
     const bizDims = ['需求', '设计', '研发', '测试', '运维', '安全', '体验'];
     const devDims = ['架构', '代码', '接口', '性能', '数据', '部署', '成本'];
     const makeDims = (names) => names.map((n) => ({ name: n, score: 60 + Math.floor(Math.random() * 40), weight: 1 }));
@@ -156,7 +156,7 @@ module.exports = function registerIntegrationRoutes(ctx) {
     });
   });
 
-  reg('post', '/xuanji/optimize', async (req, res) => {
+  reg('post', '/mox/optimize', async (req, res) => {
     const body = await readBody(req);
     ok(res, {
       optimized: true,
@@ -172,7 +172,7 @@ module.exports = function registerIntegrationRoutes(ctx) {
     });
   });
 
-  reg('post', '/xuanji/publish', async (req, res) => {
+  reg('post', '/mox/publish', async (req, res) => {
     const body = await readBody(req);
     ok(res, {
       published: true,

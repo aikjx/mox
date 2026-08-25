@@ -149,7 +149,7 @@ pub struct GovernanceState {
   ApiCompat | Performance | Maintainability | Testing | Style | Cost | Sensitive
 ```
 
-### 璇玑验证（Xuanji）最高权限
+### 璇玑验证（Mox）最高权限
 
 ⛨ 璇玑验证网关优先级最高，算法否决不可被任何 RBAC/权限覆盖：
 - `algo.vetoed = true` → 治理闸门强制 BLOCK

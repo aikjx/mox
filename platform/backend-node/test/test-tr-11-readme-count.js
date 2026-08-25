@@ -31,17 +31,17 @@ const CRATE_PATHS = [
   'platform/services/graph-algorithms',
   'platform/services/optimizer',
   'platform/services/flow-ai',
-  'platform/services/xuanji-expert',
+  'platform/services/mox-expert',
   'platform/services/hermes-flow-bridge',
   'platform/services/business-catalog',
   'platform/services/ai-agent',
   'platform/services/template-market',
   'platform/gateway/runtime',
-  'platform/services/xuanji-system',
+  'platform/services/mox-system',
   'platform/services/primiflow-core',
   'platform/services/primiflow-fusion',
   'platform/services/kg-hub',
-  'platform/services/xuanji-common-meta',
+  'platform/services/mox-common-meta',
 ];
 
 const STANDARD_SECTIONS = [

@@ -1,4 +1,4 @@
-# Xuanji V5 — License 合规配置 (T16)
+# Mox V5 — License 合规配置 (T16)
 # cargo-deny 0.20+ schema
 # 校验命令: `cargo deny -L error check licenses bans` (exit 0 为合规)
 # -------------------------------------------------------------------

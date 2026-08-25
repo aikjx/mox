@@ -135,7 +135,7 @@ C3：所有新增代码必须通过 Clippy `-D warnings`。
 C4：不得与 L0 TOP-MASTER 的 §二~§八声明冲突。
 
 ### 7.2 依赖（Dependencies）
-- 已存在：`wasmer` / `wasmer-compiler-cranelift`（operator-wasm）、`tokio`（runtime）、`rayon`（xuanji-expert）、`express`（backend-node）。
+- 已存在：`wasmer` / `wasmer-compiler-cranelift`（operator-wasm）、`tokio`（runtime）、`rayon`（mox-expert）、`express`（backend-node）。
 - 可能新增：独立 benchmark harness 仅使用 Node 原生 + 少量 Rust 基准（避免新增重型第三方依赖）。
 
 ### 7.3 假设（Assumptions）
@@ -160,7 +160,7 @@ A2：璇玑的对照 P0 维度得分以实跑证据（H1~H4 数据 + 代码审�
 | **AC-04** | H1 高并发 harness：代码存在（`test/bench_governance_concurrency.js` 或等价 Rust 基准），可独立运行 exit=0，生成 concurrency.csv | 文件存在 + 实跑 exit=0 |
 | **AC-05** | H2 LLM 路由 harness：代码存在（`test/bench_llm_routing_strategies.js`），运行 exit=0，生成 routing.csv，策略 ≥ 3 种（priority/fallback/latency-warm）| 文件存在 + 实跑 + CSV 行数 ≥ 3 × 统计指标行数 |
 | **AC-06** | H3 Wasm 沙箱 harness：代码存在（`platform/services/operator-wasm/tests/bench_sandbox.rs` 或等价），exit=0，生成 sandbox.csv，包含内存/延迟/错误率三指标 | 文件存在 + 实跑 + CSV 列检查 |
-| **AC-07** | H4 专家联盟并发 harness：代码存在（`platform/services/xuanji-expert/tests/bench_alliance_concurrency.rs` 或等价），exit=0，生成 alliance.csv | 文件存在 + 实跑 exit=0 |
+| **AC-07** | H4 专家联盟并发 harness：代码存在（`platform/services/mox-expert/tests/bench_alliance_concurrency.rs` 或等价），exit=0，生成 alliance.csv | 文件存在 + 实跑 exit=0 |
 | **AC-08** | O1 补丁：`llm-gateway.js` 新增 `LatencyWarm` 路由策略（含预热 + 滑动窗口 EWMA 延迟），并具备单元测试 GREEN | `git diff` 特征检查 + `mocha` 新用例 GREEN |
 | **AC-09** | O2 补丁：`security.js` 新增 **令牌桶（Token Bucket）** 限流，支持租户级 QPS 配额；`security._bench` 自测通过 | 新 class / 函数存在 + 自测 GREEN |
 | **AC-10** | O3 补丁：`operator-wasm` 新增 CPU 指令预算（fuel）+ 内存硬上限 trap，`#[test]` GREEN（含恶意字节码被终止 2 条） | `WasmOperator::with_fuel()` 或等价 + 2 条 test GREEN |

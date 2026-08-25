@@ -1,6 +1,6 @@
 # T17 官方 SDK + E/F 批次运维落地（规格书 v1.0）
 
-- **项目**: 玄机 XUANJI 信息图谱一体化平台
+- **项目**: 玄机 MOX 信息图谱一体化平台
 - **批次**: 批次 C (T17 官方 SDK) + 批次 E/F (运维落地 T12/T13→T15→T18→T19→T20)
 - **生成日期**: 2026-08-24
 - **语言**: 中文
@@ -40,7 +40,7 @@ T10（云盘 M4）与 T11（关系图 R4）的后端能力已落地，但 **缺�
 
 ### 2.1 批次 C / T17 官方 SDK
 
-#### AC-C-01 Rust xuanji-sdk-cloud（30 示例）
+#### AC-C-01 Rust mox-sdk-cloud（30 示例）
 rule: examples/cloud/*.rs 数量 == 30，覆盖：
 - 桶操作 (5): create/delete/list/head/acl-set
 - 对象上传下载 (6): put/get/delete/list-prefix/copy/multipart
@@ -51,7 +51,7 @@ rule: examples/cloud/*.rs 数量 == 30，覆盖：
 - Lifecycle 冷热分层 (4): HOT→WARM 30d、WARM→COLD 180d、COLD→HOT 回温 1h、bucket stats
 - DengBao HashChain (2): append 1k blocks & verify CLI verify
 
-#### AC-C-02 Rust xuanji-sdk-graph（30 示例）
+#### AC-C-02 Rust mox-sdk-graph（30 示例）
 rule: examples/graph/*.rs 数量 == 30，覆盖：
 - Flink CDC Source (7): new, next_blocking, resume(offset), 100k via Writer, dedup stats, lag monitor, consumer_id rotate
 - Spark Connector (7): Reader paged nodes/edges, Writer bulk, idempotent upsert, roundtrip 2k/3k, stats accumulate
@@ -61,13 +61,13 @@ rule: examples/graph/*.rs 数量 == 30，覆盖：
 #### AC-C-03 Node.js SDK 云盘 + 关系图（各 30 示例，共 60）
 rule: platform/sdk/nodejs/examples/cloud/ 30 .js, platform/sdk/nodejs/examples/graph/ 30 .js。
 每个示例是可执行脚本，打印 "XJ-OK: <name>" 到 stdout，返回 exit 0；无未捕获异常。
-npm package 骨架：xuanji-sdk-cloud/package.json (name=xuanji-cloud, version=3.0.0)，xuanji-sdk-graph/package.json。
+npm package 骨架：mox-sdk-cloud/package.json (name=mox-cloud, version=3.0.0)，mox-sdk-graph/package.json。
 Mocha 测试：platform/sdk/nodejs/test/ 下至少 30 个 passing cases（≥80% 覆盖率 180 示例名称抽样）。
 
 #### AC-C-04 Python SDK 云盘 + 关系图（各 30 示例，共 60）
 rule: platform/sdk/python/examples/cloud/ 30 .py, platform/sdk/python/examples/graph/ 30 .py。
 每个示例是 `if __name__ == "__main__": ...`，print("XJ-OK: <name>")，exit 0。
-pyproject 骨架：xuanji_sdk_cloud/ + xuanji_sdk_graph/ __init__.py 暴露 Client。
+pyproject 骨架：mox_sdk_cloud/ + mox_sdk_graph/ __init__.py 暴露 Client。
 pytest：platform/sdk/python/test/ 至少 30 passing cases（pytest -q 全绿）。
 
 #### AC-C-05 SDK 跨语言示例 ID 对齐
@@ -76,7 +76,7 @@ rule: 云盘 30 主题在 Rust/Node/Python 中共享 id 集 {cloud-001..cloud-03
 生成 projects/t17-sdk-examples/matrix.json 列出 6×30=180 示例 id × 语言 × 路径。
 
 #### AC-C-06 SDK 总测试 ≥80
-rule: `cargo test -p xuanji-sdk-cloud -p xuanji-sdk-graph --test '*'` +
+rule: `cargo test -p mox-sdk-cloud -p mox-sdk-graph --test '*'` +
 `npx mocha platform/sdk/nodejs/test/` + `pytest platform/sdk/python/test/ -q` 的
 **通过用例数之和 ≥ 80**，且 **0 failing**。
 
@@ -85,8 +85,8 @@ rule: `cargo test -p xuanji-sdk-cloud -p xuanji-sdk-graph --test '*'` +
 ### 2.2 批次 E/F 运维落地
 
 #### AC-E-12 Helm DR（双区域容灾）
-rule: deploy/helm/xuanji-dr/ 存在 Chart.yaml + values.yaml + templates/{primary,secondary,region-Selector,service,pdb,hpa}.yaml 共 ≥ 9 个 yaml。
-`helm lint deploy/helm/xuanji-dr` exit 0。values 中 `primaryRegion`, `failoverRegion`, `dr: enabled: true`。
+rule: deploy/helm/mox-dr/ 存在 Chart.yaml + values.yaml + templates/{primary,secondary,region-Selector,service,pdb,hpa}.yaml 共 ≥ 9 个 yaml。
+`helm lint deploy/helm/mox-dr` exit 0。values 中 `primaryRegion`, `failoverRegion`, `dr: enabled: true`。
 
 rubric: Helm DR 成熟度 (0-100，及格 70)
 - 维度：Chart 结构完整度(30) / values 可配置度(20) / 双活策略清晰(20) / PDB+HPA(15) / helm lint 通过(15)
@@ -107,7 +107,7 @@ rubric: HA 与 TCO (0-100，及格 70)
 
 #### AC-E-18 8 阶段 Trace 埋点
 rule: 8 阶段常量 TraceStage {Emit, CdcNext, Dedup, SparkWrite, Projection, Audit, CircuitBreaker, Sink}。
-platform/services/xuanji-graph-service/src/trace_8stages.rs：
+platform/services/mox-graph-service/src/trace_8stages.rs：
 - emit_span(stage, id, attrs) 函数，span_count_atomic 计数
 - OTel-compatible JSON export：vector of {trace_id, span_id, stage, start_ms, end_ms, attrs}
 - dashboard JSON：每阶段 p50/p95/p99、错误率、饱和度 (≥ 12 指标)
@@ -124,9 +124,9 @@ tests 覆盖矩阵：
 输出 projects/t19-regression/report.json：{total, pass, fail, suites, duration_ms, rubric_ok}。
 
 #### AC-E-20 Helm 一键 + 灰度 warmup
-rule: deploy/helm/xuanji/ 是 "一键伞图" Chart.yaml，依赖 xuanji-dr、xuanji-core、xuanji-observability。
+rule: deploy/helm/mox/ 是 "一键伞图" Chart.yaml，依赖 mox-dr、mox-core、mox-observability。
 values.yaml 字段：global.gray.enabled, global.gray.stages: [1,10,50,100]。
-`helm lint deploy/helm/xuanji` exit 0。
+`helm lint deploy/helm/mox` exit 0。
 scripts/Gray-Warmup.ps1：4 阶段脚本，每阶段 sleep + health-check URL，任何阶段 < 95% 健康自动回滚并 exit 1。
 
 ---

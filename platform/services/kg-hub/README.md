@@ -8,13 +8,13 @@ L4Services 级**全域关图中枢**：承载璇玑 RelGraph 的 8 层知识图�
 
 ```rust
 pub const CRATE_ID: &str = "cb909f06-c0df-55ec-b397-543623a8c349";
-pub const ENGINE_NAME: &str = "xuanji::kg_hub";
-pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+pub const ENGINE_NAME: &str = "mox::kg_hub";
+pub const CRATE_META: mox_common_meta::CrateMeta = mox_common_meta::CrateMeta {
     id: CRATE_ID,
     name: env!("CARGO_PKG_NAME"),
     version: env!("CARGO_PKG_VERSION"),
-    layer: xuanji_common_meta::AisLayer::L4Services,
-    owner: "xuanji-core",
+    layer: mox_common_meta::AisLayer::L4Services,
+    owner: "mox-core",
 };
 ```
 
@@ -23,7 +23,7 @@ pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateM
 |------|------|
 | `src/lib.rs` | 三常量 + 对外统一 API；9 个核心模块 glob 导出 |
 | `src/index.rs` | `HybridIndex` 主入口：符号索引 + 倒排 + 向量 HNSW 的混合查询 |
-| `src/urn.rs` | 全局统一资源名 URN：`urn:xuanji:<type>:<uuid>` 解析 + 稳定性保证 |
+| `src/urn.rs` | 全局统一资源名 URN：`urn:mox:<type>:<uuid>` 解析 + 稳定性保证 |
 | `src/ontology.rs` | 本体模型：类层次、属性约束、rdfs:subClassOf / domain / range 推理 |
 | `src/ingest.rs` | `trait Connector` + 5 种连接器（SQLite / JSON / HTTP / CSV / API），批式摄入管线 |
 | `src/reason.rs` | `trait Reasoner`：前向链规则 + OWL-Horst 子集 + 激活扩散推理 |

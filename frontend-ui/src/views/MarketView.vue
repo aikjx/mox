@@ -251,10 +251,10 @@ onMounted(() => {
   }
   if (route.query?.sort) sort.value = String(route.query.sort)
   // Query 驱动无状态化：/market?action=upload 自动开上传表单
-  window.addEventListener('xuanji:open-market-upload', _onMarketUploadCmd)
+  window.addEventListener('mox:open-market-upload', _onMarketUploadCmd)
 })
 onBeforeUnmount(() => {
-  window.removeEventListener('xuanji:open-market-upload', _onMarketUploadCmd)
+  window.removeEventListener('mox:open-market-upload', _onMarketUploadCmd)
 })
 function _onMarketUploadCmd() { showUpload.value = true }
 

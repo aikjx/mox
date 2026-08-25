@@ -8,13 +8,13 @@
 
 ```rust
 pub const CRATE_ID: &str = "a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b";
-pub const ENGINE_NAME: &str = "xuanji::runtime";
-pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+pub const ENGINE_NAME: &str = "mox::runtime";
+pub const CRATE_META: mox_common_meta::CrateMeta = mox_common_meta::CrateMeta {
     id: CRATE_ID,
     name: env!("CARGO_PKG_NAME"),
     version: env!("CARGO_PKG_VERSION"),
-    layer: xuanji_common_meta::AisLayer::L3Orchestration,
-    owner: "xuanji-core",
+    layer: mox_common_meta::AisLayer::L3Orchestration,
+    owner: "mox-core",
 };
 ```
 
@@ -32,7 +32,7 @@ pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateM
 | `src/api_standard.rs` + `src/openapi.rs` | `ProblemDetail` RFC 7807 标准错误 + OpenAPI v3 spec 自动生成（覆盖所有路由） |
 | `src/automation.rs` + `src/automation_asset.rs` + `src/subservers.rs` + `src/market.rs` | 自动化（自动开发/修复/蓝图）、自动化资产（生成代码+运行记录）、子 server（拆分端口）、market |
 | `src/sidecar/` (mod.rs + node_sidecar.rs) | Node.js sidecar：对 backend-node 启动/心跳/健康/降级管理（当 backend-node 挂，cordis life 优雅旁路） |
-| `tests/` (7 files) | `_tmp_t2_crate_meta`（T2 回归）+ `ai_engine_e2e` + `runtime_integration` + `router_semantics` + `market_version` + `sidecar_degrade` + `xuanji_e2e` |
+| `tests/` (7 files) | `_tmp_t2_crate_meta`（T2 回归）+ `ai_engine_e2e` + `runtime_integration` + `router_semantics` + `market_version` + `sidecar_degrade` + `mox_e2e` |
 
 ## §4 · 关键 Trait & Impl
 - **`pub trait Lifecycle`**（cordis/lifecycle.rs）：`fn startup / fn shutdown / fn before_handle / fn after_handle / fn profile`。

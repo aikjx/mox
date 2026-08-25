@@ -236,17 +236,17 @@ async function run() {
 
   // 9. 璇玑治理
   console.log('\n🔍 9. 璇玑治理端点');
-  await test('GET /xuanji/health', async () => {
-    const r = await request('GET', '/xuanji/health');
+  await test('GET /mox/health', async () => {
+    const r = await request('GET', '/mox/health');
     const d = getData(r);
     return r.status === 200 && d.business && d.development;
   });
-  await test('POST /xuanji/optimize', async () => {
-    const r = await request('POST', '/xuanji/optimize', {});
+  await test('POST /mox/optimize', async () => {
+    const r = await request('POST', '/mox/optimize', {});
     return r.status === 200 && getData(r).optimized;
   });
-  await test('POST /xuanji/publish', async () => {
-    const r = await request('POST', '/xuanji/publish', { target: 'staging' });
+  await test('POST /mox/publish', async () => {
+    const r = await request('POST', '/mox/publish', { target: 'staging' });
     return r.status === 200 && getData(r).published;
   });
 

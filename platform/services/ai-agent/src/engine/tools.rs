@@ -1,4 +1,4 @@
-//! AIS-SPEC-9001：企业级统一契约头 —— 模块名 tools.rs\n//! AIS-REV-1：自描述接口 · 幂等 · 可观测 · 零外部副作用（网络/IO 仅限封装函数）\n//! AIS-REV-2：公开项 pub fn/pub struct 必须具备 /// 文档注释与错误语义说明\n//! AIS-REV-3：遵循 XUANJI-AIS-通用 标准，禁止占位实现宏遗留\n\n//! 工具扩展模块 - 可扩展的工具注册表
+//! AIS-SPEC-9001：企业级统一契约头 —— 模块名 tools.rs\n//! AIS-REV-1：自描述接口 · 幂等 · 可观测 · 零外部副作用（网络/IO 仅限封装函数）\n//! AIS-REV-2：公开项 pub fn/pub struct 必须具备 /// 文档注释与错误语义说明\n//! AIS-REV-3：遵循 MOX-AIS-通用 标准，禁止占位实现宏遗留\n\n//! 工具扩展模块 - 可扩展的工具注册表
 //!
 //! 提供统一的工具调用接口，支持：
 //! - Tool trait: 定义所有工具的统一行为契约
@@ -129,7 +129,7 @@ impl ToolRegistry {
 pub struct DatabaseTool {
     db_path: String,
     /// Some = provider 可用；None = 已触发双重降级（所有 SQL 操作直接返回 ToolResult::err）。
-    provider: Option<Arc<dyn xuanji_system::persistence_provider::PersistenceProvider>>,
+    provider: Option<Arc<dyn mox_system::persistence_provider::PersistenceProvider>>,
     /// 非空表示当前处于降级模式（file→memory，或 file/memory→None），用于日志/可观测性。
     degraded_reason: Option<String>,
 }
@@ -140,10 +140,10 @@ impl DatabaseTool {
     fn build_provider(
         db_path: &str,
     ) -> (
-        Option<Arc<dyn xuanji_system::persistence_provider::PersistenceProvider>>,
+        Option<Arc<dyn mox_system::persistence_provider::PersistenceProvider>>,
         Option<String>,
     ) {
-        use xuanji_system::sqlite_provider::SqlitePersistence;
+        use mox_system::sqlite_provider::SqlitePersistence;
         // ① file
         match SqlitePersistence::file(db_path) {
             Ok(pvd) => (Some(Arc::new(pvd)), None),
@@ -205,8 +205,8 @@ impl DatabaseTool {
 
     fn params_to_refs(
         params: Option<&serde_json::Value>,
-    ) -> Vec<xuanji_system::persistence_provider::SqlValue> {
-        use xuanji_system::sqlite_provider::json_to_sql_value;
+    ) -> Vec<mox_system::persistence_provider::SqlValue> {
+        use mox_system::sqlite_provider::json_to_sql_value;
         if let Some(p) = params {
             if let Some(arr) = p.as_array() {
                 arr.iter().map(json_to_sql_value).collect()
@@ -221,7 +221,7 @@ impl DatabaseTool {
     }
 
     fn execute_query(&self, sql: &str, params: Option<&serde_json::Value>) -> ToolResult {
-        use xuanji_system::persistence_provider::SqlValue;
+        use mox_system::persistence_provider::SqlValue;
         let Some(ref provider) = self.provider else {
             let reason = self
                 .degraded_reason

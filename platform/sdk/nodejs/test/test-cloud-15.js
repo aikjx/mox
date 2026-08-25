@@ -1,7 +1,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { CloudClient } = require("../xuanji-sdk-cloud");
+const { CloudClient } = require("../mox-sdk-cloud");
 
 const EXAMPLES_DIR = path.join(__dirname, "..", "examples", "cloud");
 

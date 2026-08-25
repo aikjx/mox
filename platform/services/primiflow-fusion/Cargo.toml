@@ -7,7 +7,7 @@ authors.workspace = true
 description = "PrimiFlow 多维度融合归一化一体化架构层：把 13 crate 能力、关图 12 类实体、PT-Primi 六维绑定统一进一张守恒图"
 
 [dependencies]
-xuanji-common-meta = { path = "../xuanji-common-meta" }
+mox-common-meta = { path = "../mox-common-meta" }
 flow-ai = { path = "../flow-ai" }
 primiflow-core = { path = "../primiflow-core" }
 serde = { workspace = true }

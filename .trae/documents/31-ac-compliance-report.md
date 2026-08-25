@@ -15,13 +15,13 @@
 | 大类  | 条数 | AC 编号             | 验收标准 (简述)                                                                    | 结果  | 证据文件 / 备注                                                          |
 |-------|------|----------------------|-------------------------------------------------------------------------------------|-------|-------------------------------------------------------------------------|
 | ARC   | 1–6  | ARC-01               | AIS 分层约束：L6→L5→L4→L3→L2→L1 仅上层依赖下层（无反向）                            | PASS  | `scripts/validate_rust_workspace_deps.js` 输出无反向边 15 crate ✓        |
-| ARC   |      | ARC-02               | DIP 高模依赖抽象：xuanji-system orchestrator 依赖 domain_traits（不依赖 services::*）| PASS  | `tests/t6_dip_orchestrator.rs` 全绿；`orchestrator.rs` 无 `use crate::services::*` |
-| ARC   |      | ARC-03               | DIP：Permission / Task / Expert 三大服务 trait 全覆盖，业务逻辑 0 个 concrete 直用    | PASS  | `xuanji-system/src/domain_traits.rs` + `business_rules.rs` mock impl ✓  |
+| ARC   |      | ARC-02               | DIP 高模依赖抽象：mox-system orchestrator 依赖 domain_traits（不依赖 services::*）| PASS  | `tests/t6_dip_orchestrator.rs` 全绿；`orchestrator.rs` 无 `use crate::services::*` |
+| ARC   |      | ARC-03               | DIP：Permission / Task / Expert 三大服务 trait 全覆盖，业务逻辑 0 个 concrete 直用    | PASS  | `mox-system/src/domain_traits.rs` + `business_rules.rs` mock impl ✓  |
 | ARC   |      | ARC-04               | 15 Rust crate 全部 export `CRATE_ID` / `CRATE_META`（单源）                         | PASS  | `validate_rust_workspace_deps.js` + 15× `lib.rs` grep `pub const CRATE_ID` |
 | ARC   |      | ARC-05               | 图谱 ↔ 代码双向绑定：Atlas domainId ↔ CRATE_ID ↔ engines 4-tuple 完整                | PASS  | `rust_crate_bindings_e2e.js` TR-02/04/05/06/07 全通过                   |
 | ARC   |      | ARC-06               | 内部域注册：sidecar 调用 `/internal/*` 独立域注册（W1 路由 30=baselineNode+1）      | PASS  | `business-registry.js` `internal` 条目 + `test-project-atlas.js` 动态计数 |
 | ENG   | 7–18 | ENG-01               | `cargo build --workspace` 零 error                                                  | PASS  | `cargo check -p {15 crates}` 逐个 exit 0                                |
-| ENG   |      | ENG-02               | Clippy `-D warnings` 零 warning 通 master                                           | PASS  | 二轮修复 operator-core / flow-ai / xuanji-system / ai-agent / runtime / primiflow-core / xuanji-expert |
+| ENG   |      | ENG-02               | Clippy `-D warnings` 零 warning 通 master                                           | PASS  | 二轮修复 operator-core / flow-ai / mox-system / ai-agent / runtime / primiflow-core / mox-expert |
 | ENG   |      | ENG-03               | 15 crate README rubric-3（分层+职责+API+依赖+测试+图谱节点绑定）                    | PASS  | 15× README 全部存在，`LS services/*/README.md` = 14（含 2 原）+ gateway/runtime 1 |
 | ENG   |      | ENG-04               | ai-agent DatabaseTool 三级降级：file → memory → None（不 panic，主循环继续）          | PASS  | `ai-agent/src/engine/tools.rs` `build_provider` 三级 match ✓            |
 | ENG   |      | ENG-05               | hermes optimizer thread 永不 crash：`catch_unwind` + 指数退避                         | PASS  | `hermes-flow-bridge/src/bridge.rs:87-129` consec_panics + backoff 500ms→10s |
@@ -30,11 +30,11 @@
 | ENG   |      | ENG-08               | 无重度第三方 HTTP/ORM 框架直嵌（reqwest 仅 feature=live；sqlx 仅 runtime dev profile） | PASS  | 15 Cargo.toml 审阅：reqwest gated，serde/tokio 仅最小依赖集             |
 | ENG   |      | ENG-09               | hermes-flow-bridge integration 目录具备 `mod.rs`，feature=hermes 不触发默认构建     | PASS  | `hermes-flow-bridge/src/integration/mod.rs` 新建，默认构建 exit 0       |
 | ENG   |      | ENG-10               | DIP 缺失方法补齐：`effective_permissions / add_subtask / add_dependency / toggle_subtask` | PASS  | `domain_traits.rs` + mock impl 全部 exist；`business_rules.rs` 编译过 |
-| ENG   |      | ENG-11               | workflow 权限链路闭环：云中心登录 → findCommunityUser → 多系统权限列表生成（参考 EXP-1364171 降级模式）| PASS | 与 `xuanji-system PermissionServiceTrait.effective_permissions` 语义对齐；零阻断 |
+| ENG   |      | ENG-11               | workflow 权限链路闭环：云中心登录 → findCommunityUser → 多系统权限列表生成（参考 EXP-1364171 降级模式）| PASS | 与 `mox-system PermissionServiceTrait.effective_permissions` 语义对齐；零阻断 |
 | ENG   |      | ENG-12               | Rust 命名一致性：无 clippy `enum_variant_names / needless_return / redundant_closure` | PASS  | 二轮修复 clippy 全绿（见 ENG-02）                                      |
-| QA    |19–27 | QA-01                | xuanji-system unit: 30/30                                                            | PASS  | `cargo test -p xuanji-system` 退出 0                                    |
-| QA    |      | QA-02                | xuanji-system business_rules: 13/13                                                  | PASS  | 见 QA-01 log                                                             |
-| QA    |      | QA-03                | xuanji-system integration: 8+9+0=17/17                                               | PASS  | 见 QA-01 log（operator-core 8 / kg-hub 9 / 其他 0 ）                    |
+| QA    |19–27 | QA-01                | mox-system unit: 30/30                                                            | PASS  | `cargo test -p mox-system` 退出 0                                    |
+| QA    |      | QA-02                | mox-system business_rules: 13/13                                                  | PASS  | 见 QA-01 log                                                             |
+| QA    |      | QA-03                | mox-system integration: 8+9+0=17/17                                               | PASS  | 见 QA-01 log（operator-core 8 / kg-hub 9 / 其他 0 ）                    |
 | QA    |      | QA-04                | test-project-atlas.js: 40/40                                                         | PASS  | W1 动态 domain count 修复后稳定                                          |
 | QA    |      | QA-05                | rust_crate_bindings_e2e.js: 56/56 （含 5 TR）                                        | PASS  | `run_t12_integration_test.ps1` 末段输出                                 |
 | QA    |      | QA-06                | T12 Rust 算法对账：8/8 (F1-F8)                                                      | PASS  | 同 QA-05 输出；F1 拓扑验证…F8 意图检测全 PASS                            |

@@ -2,7 +2,7 @@
 
 > **Spec 路径**：`d:\a10\aikjx\gitcode\infotopograph\.trae\specs\20260825-rust-expert-alliance-platform\spec.md`  
 > **自然语言**：中文  
-> **说明**：按依赖拓扑排序：T1-T5（Rust 核心 xuanji-expert）→ T6-T9（网关 runtime 路由/代理）→ T10-T14（前端 ChatView/MessageBubble/API）→ T15（语音服务集成）→ T16（冒烟+E2E+独立评审）。所有 Rust 新代码必须先写 `#[test]` 再写实现（TDD，避免 HC 退化）。
+> **说明**：按依赖拓扑排序：T1-T5（Rust 核心 mox-expert）→ T6-T9（网关 runtime 路由/代理）→ T10-T14（前端 ChatView/MessageBubble/API）→ T15（语音服务集成）→ T16（冒烟+E2E+独立评审）。所有 Rust 新代码必须先写 `#[test]` 再写实现（TDD，避免 HC 退化）。
 
 ---
 
@@ -43,9 +43,9 @@ T1(P0) alliance 模块骨架 + 常量（HC-2/5/8 参数写死）
 - **对应 AC**: AC-07, AC-08, AC-09, AC-18, AC-R05
 - **覆盖 FR**: FR-CORE-01（部分）, HC-2/HC-8 硬约束常量定义
 - **产出文件**:
-  - 新增 `platform/services/xuanji-expert/src/alliance/mod.rs`（入口）
-  - 新增 `platform/services/xuanji-expert/src/alliance/constants.rs`（HC 锁死常量）
-  - 修改 `platform/services/xuanji-expert/src/lib.rs`（pub mod alliance）
+  - 新增 `platform/services/mox-expert/src/alliance/mod.rs`（入口）
+  - 新增 `platform/services/mox-expert/src/alliance/constants.rs`（HC 锁死常量）
+  - 修改 `platform/services/mox-expert/src/lib.rs`（pub mod alliance）
 - **实现要求（严格）**:
   1. `constants.rs` 必须用 `pub const` 锁死以下值（**禁止配置化**，违反 = HC Blocked）：
      - `SPREAD_METHOD: &str = "spread"`
@@ -69,8 +69,8 @@ T1(P0) alliance 模块骨架 + 常量（HC-2/5/8 参数写死）
 | TR | 类型 | 条件 | 证据来源 |
 |---|---|---|---|
 | TR-T1-01 | rule | constants.rs 中以上 12 个 const 全部存在且值完全一致 | rg `SPREAD_DAMPING\|GATE_THRESHOLD\|RRF_K\|INTENT_CLASSES` |
-| TR-T1-02 | rule | `cargo test -p xuanji-expert --lib alliance::constants --nocapture` 通过（写 1 个断言测试确认硬编码值） | cargo test 输出 |
-| TR-T1-03 | rule | `grep -rn "unsafe " platform/services/xuanji-expert/src/alliance/` = 0（AC-18） | grep |
+| TR-T1-02 | rule | `cargo test -p mox-expert --lib alliance::constants --nocapture` 通过（写 1 个断言测试确认硬编码值） | cargo test 输出 |
+| TR-T1-03 | rule | `grep -rn "unsafe " platform/services/mox-expert/src/alliance/` = 0（AC-18） | grep |
 | TR-T1-04 | rubric | pub fn 文档注释率：AC-R05（2=100%，1=≥90%） | 人工审阅 constants.rs/mod.rs 的 pub 项 |
 
 ---
@@ -83,8 +83,8 @@ T1(P0) alliance 模块骨架 + 常量（HC-2/5/8 参数写死）
 - **对应 AC**: AC-02, AC-07, AC-08, AC-09
 - **覆盖 FR**: FR-CORE-02, HC-2, HC-8 家族, HC-9
 - **产出文件**:
-  - 新增 `platform/services/xuanji-expert/src/alliance/intent.rs`
-  - 修改 `platform/services/xuanji-expert/Cargo.toml`（若需 graph-algorithms feature 激活扩散公开接口）
+  - 新增 `platform/services/mox-expert/src/alliance/intent.rs`
+  - 修改 `platform/services/mox-expert/Cargo.toml`（若需 graph-algorithms feature 激活扩散公开接口）
 - **实现要求**:
   1. `fn classify_intent(query: &str, ctx: &ExpertContext) -> IntentResult`：
      - 第一步关键词匹配（ms 级）：对 7 类做正则命中，返回 `keyword_scores: BTreeMap<&str, f64>`。
@@ -114,7 +114,7 @@ T1(P0) alliance 模块骨架 + 常量（HC-2/5/8 参数写死）
 - **Depends On**: T1, T2
 - **对应 AC**: AC-02, AC-04
 - **覆盖 FR**: FR-CORE-03
-- **产出文件**: 新增 `platform/services/xuanji-expert/src/alliance/team.rs`
+- **产出文件**: 新增 `platform/services/mox-expert/src/alliance/team.rs`
 - **实现要求**:
   1. 注册表：`build_expert_registry() -> BTreeMap<ExpertId, ExpertMeta>`，其中 ExpertMeta={ dimension: Dimension, supported_classes: [7 类子集], avg_latency_ms, gate_A_rate_30d, priority = dim_priority(dimension) }，14 位专家全部注册（Permission + Security + Resource + Data + Algorithm + Business + Observability + Architecture + SecurityCode + CodeQuality + Performance + Testing + Documentation + Maintainability）。
   2. 组队算法 `optimize_team(intent: &IntentResult, size: usize = 4) -> TeamResult`：
@@ -141,7 +141,7 @@ T1(P0) alliance 模块骨架 + 常量（HC-2/5/8 参数写死）
 - **对应 AC**: AC-02, AC-06
 - **覆盖 FR**: FR-CORE-04, FR-CORE-05
 - **产出文件**:
-  - 新增 `platform/services/xuanji-expert/src/alliance/debate.rs`
+  - 新增 `platform/services/mox-expert/src/alliance/debate.rs`
 - **实现要求**:
   1. `async fn parallel_consult(ctx: &ExpertContext, team: &[Box<dyn Expert>]) -> Vec<ExpertOpinion>`：
      - 内部 `expert::dispatch(ctx, team)`（rayon 并行已存在）。
@@ -170,9 +170,9 @@ T1(P0) alliance 模块骨架 + 常量（HC-2/5/8 参数写死）
 - **对应 AC**: AC-02, AC-06, AC-09, AC-16, AC-R01
 - **覆盖 FR**: FR-CORE-06, FR-CORE-07, FR-CORE-08, FR-CORE-09
 - **产出文件**:
-  - 新增 `platform/services/xuanji-expert/src/alliance/gate.rs`
-  - 新增 `platform/services/xuanji-expert/src/alliance/learn.rs`
-  - 新增 `platform/services/xuanji-expert/src/alliance/pipeline.rs`（把 T1-T4+本任务串成全 6 阶段管线，输出完整 SSE Stream）
+  - 新增 `platform/services/mox-expert/src/alliance/gate.rs`
+  - 新增 `platform/services/mox-expert/src/alliance/learn.rs`
+  - 新增 `platform/services/mox-expert/src/alliance/pipeline.rs`（把 T1-T4+本任务串成全 6 阶段管线，输出完整 SSE Stream）
 - **实现要求**:
   1. `gate.rs` 质量门禁（FR-CORE-06）：
      - `fn quality_gate(syn: &SynthesisResult, ctx: &ExpertContext) -> GateResult`：
@@ -213,7 +213,7 @@ T1(P0) alliance 模块骨架 + 常量（HC-2/5/8 参数写死）
   - 修改 `platform/gateway/runtime/src/routes/ai_engine.rs`（追加 alliance 静态长路径）
   - 修改 `platform/gateway/runtime/src/handlers/ai_engine.rs`（新增 handler + AiEngineState 字段扩展）
 - **实现要求**:
-  1. AiEngineState 新增字段：`alliance_engine: Arc<xuanji_expert::alliance::AllianceEngine>`、`alliance_metrics: Arc<AllianceMetrics>`（AtomicU64 包装：runs, gate_A, gate_B, gate_C, gate_D, …各阶段延迟）。
+  1. AiEngineState 新增字段：`alliance_engine: Arc<mox_expert::alliance::AllianceEngine>`、`alliance_metrics: Arc<AllianceMetrics>`（AtomicU64 包装：runs, gate_A, gate_B, gate_C, gate_D, …各阶段延迟）。
   2. 路由注册：
      ```rust
      Router::new()
@@ -501,11 +501,11 @@ T1(P0) alliance 模块骨架 + 常量（HC-2/5/8 参数写死）
 - **对应 AC**: 全部 AC-xx + AC-Rxx
 - **覆盖 FR**: 全部
 - **产出文件**:
-  - `platform/services/xuanji-expert/tests/alliance_e2e.rs`（新增 Rust 集成测试）
+  - `platform/services/mox-expert/tests/alliance_e2e.rs`（新增 Rust 集成测试）
   - `.trae/specs/20260825-rust-expert-alliance-platform/review.md`（Review 阶段独立评审员生成，本任务不写）
   - 前端 Playwright 用例追加到 `frontend-ui/tests/10-key-pages@P0.spec.js`（专家联盟全维分析场景）
 - **实现要求（冒烟清单）**:
-  1. **Rust 层**：`cargo test -p xuanji-expert alliance_ --nocapture` → 全通过；`cargo test -p runtime ai_engine_alliance_ --nocapture` → 全通过；`cargo test --workspace` 基线 passed 数 ≥ 640（AC-R07 ≥ 1）。
+  1. **Rust 层**：`cargo test -p mox-expert alliance_ --nocapture` → 全通过；`cargo test -p runtime ai_engine_alliance_ --nocapture` → 全通过；`cargo test --workspace` 基线 passed 数 ≥ 640（AC-R07 ≥ 1）。
   2. **Golang/HTTP 契约层**（curl 或脚本）：
      ```
      (a) POST /api/ai/engine/alliance/full SSE 7 事件齐全且有序（AC-05）

@@ -11,7 +11,7 @@ const os = require('os');
 
 const ROOT = path.join(__dirname, '..');
 const DATA_SRC = path.join(ROOT, 'data');
-const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'xuanji-t1-crud-'));
+const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'mox-t1-crud-'));
 const DATA_TMP = path.join(TMP, 'data');
 fs.mkdirSync(DATA_TMP, { recursive: true });
 

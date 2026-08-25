@@ -1,21 +1,21 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "urn:xuanji:schema:module-card-v1",
+  "$id": "urn:mox:schema:module-card-v1",
   "title": "璇玑 RelGraph · 模块标准卡（全资源模块化 SoT Schema）",
-  "description": "与 24 号企业文档 §2.0 严格一致；Rust xuanji_derive::ModuleCard 过程宏 / Node sidecar self_sync_all.js / kg-hub ModuleCardConnector 三者全用这个 Schema。任何改动必须走 22 号归一化总控卡 8 步裁决流程。",
+  "description": "与 24 号企业文档 §2.0 严格一致；Rust mox_derive::ModuleCard 过程宏 / Node sidecar self_sync_all.js / kg-hub ModuleCardConnector 三者全用这个 Schema。任何改动必须走 22 号归一化总控卡 8 步裁决流程。",
   "type": "object",
   "required": ["moduleId", "name", "aisLayer", "raci", "upstreamDownstream", "acceptanceGate"],
   "additionalProperties": false,
   "properties": {
     "moduleId": {
       "type": "string",
-      "pattern": "^urn:xuanji:(crate|nmod|feview|doc|bp|algofam|apikey|clibin):[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "pattern": "^urn:mox:(crate|nmod|feview|doc|bp|algofam|apikey|clibin):[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
       "description": "kg-hub URN 唯一 ID，图谱节点 1:1 对应。类型：crate=Rust Crate / nmod=Node 功能域 / feview=Frontend 视图 / doc=企业文档 / bp=业务流程 / algofam=算法家族 / apikey=对外 API / clibin=CLI 二进制",
       "examples": [
-        "urn:xuanji:crate:50bb6200-04c5-5e4c-8354-4c6e1b230024",
-        "urn:xuanji:nmod:00000000-0000-0000-0000-000000000001",
-        "urn:xuanji:feview:00000000-0000-0000-0000-000000000001",
-        "urn:xuanji:doc:00000000-0000-0000-0000-000000000000"
+        "urn:mox:crate:50bb6200-04c5-5e4c-8354-4c6e1b230024",
+        "urn:mox:nmod:00000000-0000-0000-0000-000000000001",
+        "urn:mox:feview:00000000-0000-0000-0000-000000000001",
+        "urn:mox:doc:00000000-0000-0000-0000-000000000000"
       ]
     },
     "name": {
@@ -26,7 +26,7 @@
     "aisLayer": {
       "type": "string",
       "enum": ["L6_ProductApp", "L5_BusinessFlow", "L4_GraphCore", "L3_AlgorithmReasoning", "L2_RustBase", "L1_DeployOps", "L0_SoT"],
-      "description": "18 号 TOP-MASTER §二 六层金字塔对应层级。L0_SoT = 真源（xuanji-common-meta / kg-hub URN / 本 Schema）。"
+      "description": "18 号 TOP-MASTER §二 六层金字塔对应层级。L0_SoT = 真源（mox-common-meta / kg-hub URN / 本 Schema）。"
     },
     "raci": {
       "type": "object",
@@ -68,7 +68,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^urn:xuanji:(crate|nmod|feview|doc|bp|algofam|apikey|clibin):[0-9a-f-]{36}$"
+            "pattern": "^urn:mox:(crate|nmod|feview|doc|bp|algofam|apikey|clibin):[0-9a-f-]{36}$"
           },
           "uniqueItems": true,
           "description": "我依赖谁 → 图谱边 depends_on，叶子模块（最底层基础库）可空数组"
@@ -77,7 +77,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^urn:xuanji:(crate|nmod|feview|doc|bp|algofam|apikey|clibin):[0-9a-f-]{36}$"
+            "pattern": "^urn:mox:(crate|nmod|feview|doc|bp|algofam|apikey|clibin):[0-9a-f-]{36}$"
           },
           "uniqueItems": true,
           "description": "谁调用我 → 图谱边 calls（与 depends_on 成对存在，禁止只记单向，因为关图路径查询要双向）"

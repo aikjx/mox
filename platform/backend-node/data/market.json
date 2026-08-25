@@ -1,11 +1,11 @@
 [
   {
-    "id": "m_xuanji_fusion",
+    "id": "m_mox_fusion",
     "name": "全维融合治理算子",
     "description": "双璇玑十四维治理融合产物，可直接上架",
     "requirement": "专家联盟全维分析需求业务处理",
     "tags": [
-      "xuanji",
+      "mox",
       "fusion"
     ],
     "tenant": "default",
@@ -226,7 +226,7 @@
     "nodes": 12,
     "edges": 14,
     "downloads": 128,
-    "author": "xuanji",
+    "author": "mox",
     "created_at": "2026-08-18T03:49:54.439Z"
   },
   {
@@ -293,7 +293,7 @@
     "description": "双璇玑十四维治理融合产物，可直接上架",
     "requirement": "专家联盟全维分析需求业务处理",
     "tags": [
-      "xuanji",
+      "mox",
       "fusion"
     ],
     "tenant": "default",
@@ -514,7 +514,7 @@
     "nodes": 12,
     "edges": 14,
     "downloads": 0,
-    "author": "xuanji",
+    "author": "mox",
     "created_at": "2026-08-18T03:49:54.439Z"
   },
   {

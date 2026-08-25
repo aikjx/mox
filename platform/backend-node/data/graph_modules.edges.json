@@ -3,1893 +3,1893 @@
   "count": 315,
   "edges": [
     {
-      "from": "urn:xuanji:crate:34a20231-1a80-5426-b392-40d7a2ddd9f7",
+      "from": "urn:mox:crate:34a20231-1a80-5426-b392-40d7a2ddd9f7",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L0",
+      "to": "urn:mox:bp:L0",
       "__note": "归属 L0_SoT AIS Layer"
     },
     {
-      "from": "urn:xuanji:crate:34a20231-1a80-5426-b392-40d7a2ddd9f7",
+      "from": "urn:mox:crate:34a20231-1a80-5426-b392-40d7a2ddd9f7",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:crate:34a20231-1a80-5426-b392-40d7a2ddd9f7",
+      "from": "urn:mox:crate:34a20231-1a80-5426-b392-40d7a2ddd9f7",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:crate:34a20231-1a80-5426-b392-40d7a2ddd9f7",
+      "from": "urn:mox:crate:34a20231-1a80-5426-b392-40d7a2ddd9f7",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:crate:00374bdd-cc60-55bf-8970-a879afbfe443",
+      "from": "urn:mox:crate:00374bdd-cc60-55bf-8970-a879afbfe443",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L3",
+      "to": "urn:mox:bp:L3",
       "__note": "归属 L3_AlgorithmReasoning AIS Layer"
     },
     {
-      "from": "urn:xuanji:crate:00374bdd-cc60-55bf-8970-a879afbfe443",
+      "from": "urn:mox:crate:00374bdd-cc60-55bf-8970-a879afbfe443",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:crate:00374bdd-cc60-55bf-8970-a879afbfe443",
+      "from": "urn:mox:crate:00374bdd-cc60-55bf-8970-a879afbfe443",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:crate:00374bdd-cc60-55bf-8970-a879afbfe443",
+      "from": "urn:mox:crate:00374bdd-cc60-55bf-8970-a879afbfe443",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:crate:62b2cca1-d98f-5e41-b26e-8d2a43966117",
+      "from": "urn:mox:crate:62b2cca1-d98f-5e41-b26e-8d2a43966117",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L5",
+      "to": "urn:mox:bp:L5",
       "__note": "归属 L5_BusinessFlow AIS Layer"
     },
     {
-      "from": "urn:xuanji:crate:62b2cca1-d98f-5e41-b26e-8d2a43966117",
+      "from": "urn:mox:crate:62b2cca1-d98f-5e41-b26e-8d2a43966117",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:crate:62b2cca1-d98f-5e41-b26e-8d2a43966117",
+      "from": "urn:mox:crate:62b2cca1-d98f-5e41-b26e-8d2a43966117",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:crate:62b2cca1-d98f-5e41-b26e-8d2a43966117",
+      "from": "urn:mox:crate:62b2cca1-d98f-5e41-b26e-8d2a43966117",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:crate:2fcd3eac-e894-5876-b007-fb33c56c0d65",
+      "from": "urn:mox:crate:2fcd3eac-e894-5876-b007-fb33c56c0d65",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L3",
+      "to": "urn:mox:bp:L3",
       "__note": "归属 L3_AlgorithmReasoning AIS Layer"
     },
     {
-      "from": "urn:xuanji:crate:2fcd3eac-e894-5876-b007-fb33c56c0d65",
+      "from": "urn:mox:crate:2fcd3eac-e894-5876-b007-fb33c56c0d65",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:crate:2fcd3eac-e894-5876-b007-fb33c56c0d65",
+      "from": "urn:mox:crate:2fcd3eac-e894-5876-b007-fb33c56c0d65",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:crate:2fcd3eac-e894-5876-b007-fb33c56c0d65",
+      "from": "urn:mox:crate:2fcd3eac-e894-5876-b007-fb33c56c0d65",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:crate:2fcd3eac-e894-5876-b007-fb33c56c0d65",
+      "from": "urn:mox:crate:2fcd3eac-e894-5876-b007-fb33c56c0d65",
       "type": "reconciled_with",
-      "to": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000001",
+      "to": "urn:mox:nmod:00000000-0000-0000-0000-000000000001",
       "__note": "与 Node 图谱域 reconcile_7x8.js 对账 Δ≤1e-6"
     },
     {
-      "from": "urn:xuanji:crate:fbd31c6a-41cd-5274-be2f-2a28066eaf0a",
+      "from": "urn:mox:crate:fbd31c6a-41cd-5274-be2f-2a28066eaf0a",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L4",
+      "to": "urn:mox:bp:L4",
       "__note": "归属 L4_GraphCore AIS Layer"
     },
     {
-      "from": "urn:xuanji:crate:fbd31c6a-41cd-5274-be2f-2a28066eaf0a",
+      "from": "urn:mox:crate:fbd31c6a-41cd-5274-be2f-2a28066eaf0a",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:crate:fbd31c6a-41cd-5274-be2f-2a28066eaf0a",
+      "from": "urn:mox:crate:fbd31c6a-41cd-5274-be2f-2a28066eaf0a",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:crate:fbd31c6a-41cd-5274-be2f-2a28066eaf0a",
+      "from": "urn:mox:crate:fbd31c6a-41cd-5274-be2f-2a28066eaf0a",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:crate:fbd31c6a-41cd-5274-be2f-2a28066eaf0a",
+      "from": "urn:mox:crate:fbd31c6a-41cd-5274-be2f-2a28066eaf0a",
       "type": "reconciled_with",
-      "to": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000001",
+      "to": "urn:mox:nmod:00000000-0000-0000-0000-000000000001",
       "__note": "与 Node 图谱域 reconcile_7x8.js 对账 Δ≤1e-6"
     },
     {
-      "from": "urn:xuanji:crate:9bfaf43b-385a-5a44-9fb2-65b4003ee80d",
+      "from": "urn:mox:crate:9bfaf43b-385a-5a44-9fb2-65b4003ee80d",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L5",
+      "to": "urn:mox:bp:L5",
       "__note": "归属 L5_BusinessFlow AIS Layer"
     },
     {
-      "from": "urn:xuanji:crate:9bfaf43b-385a-5a44-9fb2-65b4003ee80d",
+      "from": "urn:mox:crate:9bfaf43b-385a-5a44-9fb2-65b4003ee80d",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:crate:9bfaf43b-385a-5a44-9fb2-65b4003ee80d",
+      "from": "urn:mox:crate:9bfaf43b-385a-5a44-9fb2-65b4003ee80d",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:crate:9bfaf43b-385a-5a44-9fb2-65b4003ee80d",
+      "from": "urn:mox:crate:9bfaf43b-385a-5a44-9fb2-65b4003ee80d",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:crate:cb909f06-c0df-55ec-b397-543623a8c349",
+      "from": "urn:mox:crate:cb909f06-c0df-55ec-b397-543623a8c349",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L4",
+      "to": "urn:mox:bp:L4",
       "__note": "归属 L4_GraphCore AIS Layer"
     },
     {
-      "from": "urn:xuanji:crate:cb909f06-c0df-55ec-b397-543623a8c349",
+      "from": "urn:mox:crate:cb909f06-c0df-55ec-b397-543623a8c349",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:crate:cb909f06-c0df-55ec-b397-543623a8c349",
+      "from": "urn:mox:crate:cb909f06-c0df-55ec-b397-543623a8c349",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:crate:cb909f06-c0df-55ec-b397-543623a8c349",
+      "from": "urn:mox:crate:cb909f06-c0df-55ec-b397-543623a8c349",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:crate:acf14283-3931-5528-adce-2c0cd3815363",
+      "from": "urn:mox:crate:acf14283-3931-5528-adce-2c0cd3815363",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L2",
+      "to": "urn:mox:bp:L2",
       "__note": "归属 L2_RustBase AIS Layer"
     },
     {
-      "from": "urn:xuanji:crate:acf14283-3931-5528-adce-2c0cd3815363",
+      "from": "urn:mox:crate:acf14283-3931-5528-adce-2c0cd3815363",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:crate:acf14283-3931-5528-adce-2c0cd3815363",
+      "from": "urn:mox:crate:acf14283-3931-5528-adce-2c0cd3815363",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:crate:acf14283-3931-5528-adce-2c0cd3815363",
+      "from": "urn:mox:crate:acf14283-3931-5528-adce-2c0cd3815363",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:crate:5a1df407-b217-5340-a5ae-5f4535d1e6de",
+      "from": "urn:mox:crate:5a1df407-b217-5340-a5ae-5f4535d1e6de",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L2",
+      "to": "urn:mox:bp:L2",
       "__note": "归属 L2_RustBase AIS Layer"
     },
     {
-      "from": "urn:xuanji:crate:5a1df407-b217-5340-a5ae-5f4535d1e6de",
+      "from": "urn:mox:crate:5a1df407-b217-5340-a5ae-5f4535d1e6de",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:crate:5a1df407-b217-5340-a5ae-5f4535d1e6de",
+      "from": "urn:mox:crate:5a1df407-b217-5340-a5ae-5f4535d1e6de",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:crate:5a1df407-b217-5340-a5ae-5f4535d1e6de",
+      "from": "urn:mox:crate:5a1df407-b217-5340-a5ae-5f4535d1e6de",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:crate:e56676c7-ec1f-5415-9587-ba8249d0178a",
+      "from": "urn:mox:crate:e56676c7-ec1f-5415-9587-ba8249d0178a",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L3",
+      "to": "urn:mox:bp:L3",
       "__note": "归属 L3_AlgorithmReasoning AIS Layer"
     },
     {
-      "from": "urn:xuanji:crate:e56676c7-ec1f-5415-9587-ba8249d0178a",
+      "from": "urn:mox:crate:e56676c7-ec1f-5415-9587-ba8249d0178a",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:crate:e56676c7-ec1f-5415-9587-ba8249d0178a",
+      "from": "urn:mox:crate:e56676c7-ec1f-5415-9587-ba8249d0178a",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:crate:e56676c7-ec1f-5415-9587-ba8249d0178a",
+      "from": "urn:mox:crate:e56676c7-ec1f-5415-9587-ba8249d0178a",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:crate:e56676c7-ec1f-5415-9587-ba8249d0178a",
+      "from": "urn:mox:crate:e56676c7-ec1f-5415-9587-ba8249d0178a",
       "type": "rbac_granted_to",
-      "to": "urn:xuanji:role:Admin+Auditor",
+      "to": "urn:mox:role:Admin+Auditor",
       "__note": "写操作模块需 Admin 或 Auditor 双写审计"
     },
     {
-      "from": "urn:xuanji:crate:8c8d2382-6f9f-5218-894e-a07a43aa9554",
+      "from": "urn:mox:crate:8c8d2382-6f9f-5218-894e-a07a43aa9554",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L5",
+      "to": "urn:mox:bp:L5",
       "__note": "归属 L5_BusinessFlow AIS Layer"
     },
     {
-      "from": "urn:xuanji:crate:8c8d2382-6f9f-5218-894e-a07a43aa9554",
+      "from": "urn:mox:crate:8c8d2382-6f9f-5218-894e-a07a43aa9554",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:crate:8c8d2382-6f9f-5218-894e-a07a43aa9554",
+      "from": "urn:mox:crate:8c8d2382-6f9f-5218-894e-a07a43aa9554",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:crate:8c8d2382-6f9f-5218-894e-a07a43aa9554",
+      "from": "urn:mox:crate:8c8d2382-6f9f-5218-894e-a07a43aa9554",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "from": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L4",
+      "to": "urn:mox:bp:L4",
       "__note": "归属 L4_GraphCore AIS Layer"
     },
     {
-      "from": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "from": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "from": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "from": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:crate:4d2e50c1-9d64-525d-86cf-2d7d610a27b9",
+      "from": "urn:mox:crate:4d2e50c1-9d64-525d-86cf-2d7d610a27b9",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L5",
+      "to": "urn:mox:bp:L5",
       "__note": "归属 L5_BusinessFlow AIS Layer"
     },
     {
-      "from": "urn:xuanji:crate:4d2e50c1-9d64-525d-86cf-2d7d610a27b9",
+      "from": "urn:mox:crate:4d2e50c1-9d64-525d-86cf-2d7d610a27b9",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:crate:4d2e50c1-9d64-525d-86cf-2d7d610a27b9",
+      "from": "urn:mox:crate:4d2e50c1-9d64-525d-86cf-2d7d610a27b9",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:crate:4d2e50c1-9d64-525d-86cf-2d7d610a27b9",
+      "from": "urn:mox:crate:4d2e50c1-9d64-525d-86cf-2d7d610a27b9",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:crate:50bb6200-04c5-5e4c-8354-4c6e1b230024",
+      "from": "urn:mox:crate:50bb6200-04c5-5e4c-8354-4c6e1b230024",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L4",
+      "to": "urn:mox:bp:L4",
       "__note": "归属 L4_GraphCore AIS Layer"
     },
     {
-      "from": "urn:xuanji:crate:50bb6200-04c5-5e4c-8354-4c6e1b230024",
+      "from": "urn:mox:crate:50bb6200-04c5-5e4c-8354-4c6e1b230024",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:crate:50bb6200-04c5-5e4c-8354-4c6e1b230024",
+      "from": "urn:mox:crate:50bb6200-04c5-5e4c-8354-4c6e1b230024",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:crate:50bb6200-04c5-5e4c-8354-4c6e1b230024",
+      "from": "urn:mox:crate:50bb6200-04c5-5e4c-8354-4c6e1b230024",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:crate:b81eec75-22ff-5155-ac49-19edf6f6b5ab",
+      "from": "urn:mox:crate:b81eec75-22ff-5155-ac49-19edf6f6b5ab",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L4",
+      "to": "urn:mox:bp:L4",
       "__note": "归属 L4_GraphCore AIS Layer"
     },
     {
-      "from": "urn:xuanji:crate:b81eec75-22ff-5155-ac49-19edf6f6b5ab",
+      "from": "urn:mox:crate:b81eec75-22ff-5155-ac49-19edf6f6b5ab",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:crate:b81eec75-22ff-5155-ac49-19edf6f6b5ab",
+      "from": "urn:mox:crate:b81eec75-22ff-5155-ac49-19edf6f6b5ab",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:crate:b81eec75-22ff-5155-ac49-19edf6f6b5ab",
+      "from": "urn:mox:crate:b81eec75-22ff-5155-ac49-19edf6f6b5ab",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:crate:a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b",
+      "from": "urn:mox:crate:a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L6",
+      "to": "urn:mox:bp:L6",
       "__note": "归属 L6_ProductApp AIS Layer"
     },
     {
-      "from": "urn:xuanji:crate:a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b",
+      "from": "urn:mox:crate:a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:crate:a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b",
+      "from": "urn:mox:crate:a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:crate:a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b",
+      "from": "urn:mox:crate:a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000001",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000001",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L4",
+      "to": "urn:mox:bp:L4",
       "__note": "归属 L4_GraphCore AIS Layer"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000001",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000001",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000001",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000001",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000001",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000001",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000001",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000001",
       "type": "reconciled_with",
-      "to": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000001",
+      "to": "urn:mox:nmod:00000000-0000-0000-0000-000000000001",
       "__note": "与 Node 图谱域 reconcile_7x8.js 对账 Δ≤1e-6"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000002",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000002",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L5",
+      "to": "urn:mox:bp:L5",
       "__note": "归属 L5_BusinessFlow AIS Layer"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000002",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000002",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000002",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000002",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000002",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000002",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000003",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000003",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L4",
+      "to": "urn:mox:bp:L4",
       "__note": "归属 L4_GraphCore AIS Layer"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000003",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000003",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000003",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000003",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000003",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000003",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000004",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000004",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L5",
+      "to": "urn:mox:bp:L5",
       "__note": "归属 L5_BusinessFlow AIS Layer"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000004",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000004",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000004",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000004",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000004",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000004",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000004",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000004",
       "type": "reconciled_with",
-      "to": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000001",
+      "to": "urn:mox:nmod:00000000-0000-0000-0000-000000000001",
       "__note": "与 Node 图谱域 reconcile_7x8.js 对账 Δ≤1e-6"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000005",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000005",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L6",
+      "to": "urn:mox:bp:L6",
       "__note": "归属 L6_ProductApp AIS Layer"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000005",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000005",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000005",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000005",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000005",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000005",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000006",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000006",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L6",
+      "to": "urn:mox:bp:L6",
       "__note": "归属 L6_ProductApp AIS Layer"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000006",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000006",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000006",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000006",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000006",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000006",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000007",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000007",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L4",
+      "to": "urn:mox:bp:L4",
       "__note": "归属 L4_GraphCore AIS Layer"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000007",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000007",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000007",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000007",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000007",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000007",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000008",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000008",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L4",
+      "to": "urn:mox:bp:L4",
       "__note": "归属 L4_GraphCore AIS Layer"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000008",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000008",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000008",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000008",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:nmod:00000000-0000-0000-0000-000000000008",
+      "from": "urn:mox:nmod:00000000-0000-0000-0000-000000000008",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000001",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000001",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L6",
+      "to": "urn:mox:bp:L6",
       "__note": "归属 L6_ProductApp AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000001",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000001",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000001",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000001",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000001",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000001",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000002",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000002",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L6",
+      "to": "urn:mox:bp:L6",
       "__note": "归属 L6_ProductApp AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000002",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000002",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000002",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000002",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000002",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000002",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000003",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000003",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L6",
+      "to": "urn:mox:bp:L6",
       "__note": "归属 L6_ProductApp AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000003",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000003",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000003",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000003",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000003",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000003",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000004",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000004",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L6",
+      "to": "urn:mox:bp:L6",
       "__note": "归属 L6_ProductApp AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000004",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000004",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000004",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000004",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000004",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000004",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000005",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000005",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L6",
+      "to": "urn:mox:bp:L6",
       "__note": "归属 L6_ProductApp AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000005",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000005",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000005",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000005",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000005",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000005",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000006",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000006",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L6",
+      "to": "urn:mox:bp:L6",
       "__note": "归属 L6_ProductApp AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000006",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000006",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000006",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000006",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000006",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000006",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000007",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000007",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L6",
+      "to": "urn:mox:bp:L6",
       "__note": "归属 L6_ProductApp AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000007",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000007",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000007",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000007",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000007",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000007",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000008",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000008",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L6",
+      "to": "urn:mox:bp:L6",
       "__note": "归属 L6_ProductApp AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000008",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000008",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000008",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000008",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000008",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000008",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000009",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000009",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L6",
+      "to": "urn:mox:bp:L6",
       "__note": "归属 L6_ProductApp AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000009",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000009",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000009",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000009",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000009",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000009",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000010",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000010",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L6",
+      "to": "urn:mox:bp:L6",
       "__note": "归属 L6_ProductApp AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000010",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000010",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000010",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000010",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000010",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000010",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000011",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000011",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L6",
+      "to": "urn:mox:bp:L6",
       "__note": "归属 L6_ProductApp AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000011",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000011",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000011",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000011",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000011",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000011",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000012",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000012",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L6",
+      "to": "urn:mox:bp:L6",
       "__note": "归属 L6_ProductApp AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000012",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000012",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000012",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000012",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000012",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000012",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000013",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000013",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L6",
+      "to": "urn:mox:bp:L6",
       "__note": "归属 L6_ProductApp AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000013",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000013",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000013",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000013",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000013",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000013",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000013",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000013",
       "type": "rbac_granted_to",
-      "to": "urn:xuanji:role:Admin+Auditor",
+      "to": "urn:mox:role:Admin+Auditor",
       "__note": "写操作模块需 Admin 或 Auditor 双写审计"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000014",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000014",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L6",
+      "to": "urn:mox:bp:L6",
       "__note": "归属 L6_ProductApp AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000014",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000014",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000014",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000014",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000014",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000014",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000014",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000014",
       "type": "rbac_granted_to",
-      "to": "urn:xuanji:role:Admin+Auditor",
+      "to": "urn:mox:role:Admin+Auditor",
       "__note": "写操作模块需 Admin 或 Auditor 双写审计"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000015",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000015",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L6",
+      "to": "urn:mox:bp:L6",
       "__note": "归属 L6_ProductApp AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000015",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000015",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000015",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000015",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000015",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000015",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000015",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000015",
       "type": "rbac_granted_to",
-      "to": "urn:xuanji:role:Admin+Auditor",
+      "to": "urn:mox:role:Admin+Auditor",
       "__note": "写操作模块需 Admin 或 Auditor 双写审计"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000016",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000016",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L6",
+      "to": "urn:mox:bp:L6",
       "__note": "归属 L6_ProductApp AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000016",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000016",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000016",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000016",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000016",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000016",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000016",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000016",
       "type": "rbac_granted_to",
-      "to": "urn:xuanji:role:Admin+Auditor",
+      "to": "urn:mox:role:Admin+Auditor",
       "__note": "写操作模块需 Admin 或 Auditor 双写审计"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000017",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000017",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L6",
+      "to": "urn:mox:bp:L6",
       "__note": "归属 L6_ProductApp AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000017",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000017",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000017",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000017",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000017",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000017",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000017",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000017",
       "type": "rbac_granted_to",
-      "to": "urn:xuanji:role:Admin+Auditor",
+      "to": "urn:mox:role:Admin+Auditor",
       "__note": "写操作模块需 Admin 或 Auditor 双写审计"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000018",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000018",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L5",
+      "to": "urn:mox:bp:L5",
       "__note": "归属 L5_BusinessFlow AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000018",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000018",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000018",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000018",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000018",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000018",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000019",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000019",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L5",
+      "to": "urn:mox:bp:L5",
       "__note": "归属 L5_BusinessFlow AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000019",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000019",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000019",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000019",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000019",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000019",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000020",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000020",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L5",
+      "to": "urn:mox:bp:L5",
       "__note": "归属 L5_BusinessFlow AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000020",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000020",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000020",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000020",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000020",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000020",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000021",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000021",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L5",
+      "to": "urn:mox:bp:L5",
       "__note": "归属 L5_BusinessFlow AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000021",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000021",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000021",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000021",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000021",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000021",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000022",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000022",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L5",
+      "to": "urn:mox:bp:L5",
       "__note": "归属 L5_BusinessFlow AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000022",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000022",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000022",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000022",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000022",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000022",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000023",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000023",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L5",
+      "to": "urn:mox:bp:L5",
       "__note": "归属 L5_BusinessFlow AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000023",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000023",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000023",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000023",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000023",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000023",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000024",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000024",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L4",
+      "to": "urn:mox:bp:L4",
       "__note": "归属 L4_GraphCore AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000024",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000024",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000024",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000024",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000024",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000024",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000025",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000025",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L4",
+      "to": "urn:mox:bp:L4",
       "__note": "归属 L4_GraphCore AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000025",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000025",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000025",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000025",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000025",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000025",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000026",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000026",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L4",
+      "to": "urn:mox:bp:L4",
       "__note": "归属 L4_GraphCore AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000026",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000026",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000026",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000026",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000026",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000026",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000027",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000027",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L4",
+      "to": "urn:mox:bp:L4",
       "__note": "归属 L4_GraphCore AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000027",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000027",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000027",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000027",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000027",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000027",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000028",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000028",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L6",
+      "to": "urn:mox:bp:L6",
       "__note": "归属 L6_ProductApp AIS Layer"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000028",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000028",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000028",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000028",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000028",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000028",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:feview:00000000-0000-0000-0000-000000000028",
+      "from": "urn:mox:feview:00000000-0000-0000-0000-000000000028",
       "type": "rbac_granted_to",
-      "to": "urn:xuanji:role:Admin+Auditor",
+      "to": "urn:mox:role:Admin+Auditor",
       "__note": "写操作模块需 Admin 或 Auditor 双写审计"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000000000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000000000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L1",
+      "to": "urn:mox:bp:L1",
       "__note": "归属 L1_DeployOps AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000000000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000000000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000000000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000000000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000000000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000000000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000010000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000010000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L2",
+      "to": "urn:mox:bp:L2",
       "__note": "归属 L2_RustBase AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000010000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000010000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000010000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000010000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000010000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000010000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000020000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000020000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L2",
+      "to": "urn:mox:bp:L2",
       "__note": "归属 L2_RustBase AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000020000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000020000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000020000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000020000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000020000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000020000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000030000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000030000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L2",
+      "to": "urn:mox:bp:L2",
       "__note": "归属 L2_RustBase AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000030000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000030000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000030000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000030000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000030000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000030000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000040000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000040000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L2",
+      "to": "urn:mox:bp:L2",
       "__note": "归属 L2_RustBase AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000040000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000040000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000040000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000040000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000040000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000040000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000050000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000050000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L2",
+      "to": "urn:mox:bp:L2",
       "__note": "归属 L2_RustBase AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000050000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000050000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000050000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000050000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000050000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000050000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000060000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000060000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L2",
+      "to": "urn:mox:bp:L2",
       "__note": "归属 L2_RustBase AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000060000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000060000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000060000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000060000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000060000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000060000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000070000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000070000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L3",
+      "to": "urn:mox:bp:L3",
       "__note": "归属 L3_AlgorithmReasoning AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000070000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000070000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000070000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000070000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000070000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000070000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000080000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000080000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L3",
+      "to": "urn:mox:bp:L3",
       "__note": "归属 L3_AlgorithmReasoning AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000080000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000080000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000080000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000080000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000080000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000080000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000090000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000090000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L3",
+      "to": "urn:mox:bp:L3",
       "__note": "归属 L3_AlgorithmReasoning AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000090000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000090000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000090000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000090000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000090000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000090000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000100000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000100000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L3",
+      "to": "urn:mox:bp:L3",
       "__note": "归属 L3_AlgorithmReasoning AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000100000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000100000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000100000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000100000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000100000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000100000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000110000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000110000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L4",
+      "to": "urn:mox:bp:L4",
       "__note": "归属 L4_GraphCore AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000110000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000110000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000110000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000110000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000110000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000110000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000120000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000120000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L4",
+      "to": "urn:mox:bp:L4",
       "__note": "归属 L4_GraphCore AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000120000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000120000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000120000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000120000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000120000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000120000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000130000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000130000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L4",
+      "to": "urn:mox:bp:L4",
       "__note": "归属 L4_GraphCore AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000130000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000130000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000130000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000130000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000130000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000130000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000140000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000140000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L1",
+      "to": "urn:mox:bp:L1",
       "__note": "归属 L1_DeployOps AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000140000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000140000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000140000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000140000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000140000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000140000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000150000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000150000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L1",
+      "to": "urn:mox:bp:L1",
       "__note": "归属 L1_DeployOps AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000150000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000150000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000150000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000150000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000150000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000150000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000160000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000160000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L4",
+      "to": "urn:mox:bp:L4",
       "__note": "归属 L4_GraphCore AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000160000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000160000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000160000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000160000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000160000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000160000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000170000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000170000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L2",
+      "to": "urn:mox:bp:L2",
       "__note": "归属 L2_RustBase AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000170000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000170000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000170000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000170000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000170000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000170000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000180000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000180000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L0",
+      "to": "urn:mox:bp:L0",
       "__note": "归属 L0_SoT AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000180000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000180000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000180000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000180000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000180000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000180000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000190000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000190000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L1",
+      "to": "urn:mox:bp:L1",
       "__note": "归属 L1_DeployOps AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000190000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000190000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000190000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000190000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000190000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000190000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000200000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000200000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L1",
+      "to": "urn:mox:bp:L1",
       "__note": "归属 L1_DeployOps AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000200000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000200000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000200000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000200000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000200000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000200000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000210000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000210000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L2",
+      "to": "urn:mox:bp:L2",
       "__note": "归属 L2_RustBase AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000210000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000210000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000210000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000210000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000210000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000210000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000220000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000220000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L1",
+      "to": "urn:mox:bp:L1",
       "__note": "归属 L1_DeployOps AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000220000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000220000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000220000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000220000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000220000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000220000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000230000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000230000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:L1",
+      "to": "urn:mox:bp:L1",
       "__note": "归属 L1_DeployOps AIS Layer"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000230000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000230000",
       "type": "belongs_to",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000006",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000006",
       "__note": "默认挂到 BP-06 璇玑融合（Day2 实际替换）"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000230000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000230000",
       "type": "governed_by",
-      "to": "urn:xuanji:crate:75238345-b48b-534b-818b-8d9abe083a41",
+      "to": "urn:mox:crate:75238345-b48b-534b-818b-8d9abe083a41",
       "__note": "受 primiflow-fusion G1-G8 治理闸门"
     },
     {
-      "from": "urn:xuanji:doc:00000000-0000-0000-0000-000000230000",
+      "from": "urn:mox:doc:00000000-0000-0000-0000-000000230000",
       "type": "version_of",
-      "to": "urn:xuanji:bp:00000000-0000-0000-0000-000000000000",
+      "to": "urn:mox:bp:00000000-0000-0000-0000-000000000000",
       "__note": "M0 全域归一化（Day2 替换到具体 Mx）"
     }
   ]

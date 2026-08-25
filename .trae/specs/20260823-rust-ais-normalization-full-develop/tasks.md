@@ -12,10 +12,10 @@
 | **T2** | 16 crate 显式 CRATE_ID + CRATE_META 常量注册范式 | HIGH | - | AC-13/14 | pending |
 | **T3** | 7 条核心算法 singleSource 真实性修复（registry Rust 主实现声明 + co_impl 对账） | HIGH | T2 | AC-04/05 | pending |
 | **T4** | 依赖治理 100% workspace 继承（消除写死版本 + dev-deps 漂移） | HIGH | - | AC-09/10 | pending |
-| **T5** | rusqlite 框架依赖收拢到 xuanji-system（ai-agent / primiflow-core 移除）+ PersistenceProvider trait | HIGH | T2 (crate 元信息) | AC-11/26 | pending |
-| **T6** | DIP 反转：xuanji-system orchestrator 依赖 trait（Member/Task/Permission） | HIGH | - | AC-06 | pending |
+| **T5** | rusqlite 框架依赖收拢到 mox-system（ai-agent / primiflow-core 移除）+ PersistenceProvider trait | HIGH | T2 (crate 元信息) | AC-11/26 | pending |
+| **T6** | DIP 反转：mox-system orchestrator 依赖 trait（Member/Task/Permission） | HIGH | - | AC-06 | pending |
 | **T7** | DIP 反转：operator-core L6 kernel/kernel_ext 双层模块（std-only vs serde wrapper） | HIGH | - | AC-07 | pending |
-| **T8** | DIP 反转：hermes-flow-bridge / business-catalog 改依赖 xuanji-expert 抽象 trait（非 concrete struct） | HIGH | - | AC-08 | pending |
+| **T8** | DIP 反转：hermes-flow-bridge / business-catalog 改依赖 mox-expert 抽象 trait（非 concrete struct） | HIGH | - | AC-08 | pending |
 | **T9** | 500 深链性能修复（≤10s，拓扑剪枝/缓存） | HIGH | - | AC-18/19 | pending |
 | **T10** | 架构文档补齐：02-architecture.md §3.2 Rust 分层表 16 crate + §7.1 runtime 分层 + project-atlas.md Rust 绑定契约 | HIGH | T1/T2 | AC-15/16/17 | pending |
 | **T11** | 14 crate README 补全（16 crate 全项目化） | MEDIUM | T1/T2（node id / CRATE_ID 可用） | AC-12/28 | pending |
@@ -32,10 +32,10 @@
 - **Objective**: 把 16 Rust crate（按 workspace Cargo.toml 顺序）全部录入 project-atlas 的 business/engine/tech/auto 四通道，保证 `GET /atlas/verify` W1/W10 全绿。
 - **Scope**:
   - `src/project-atlas/domain/business-registry.js`：新增 16 DOMAIN 条目 kind="rust-crate"，顶层 scope=platform/services/<crate> 或 platform/gateway/runtime；codePath 绝对路径存在；domain_owner（归属 8 项目之一按 AIS 分层语义智能分配）。
-  - `src/project-atlas/domain/engine-registry.js`：对每个至少含 pub fn engine/engine 概念的 crate（ai-agent/xuanji-expert/primiflow-core/primiflow-fusion/kg-hub/graph-algorithms/flow-ai/optimizer/runtime/xuanji-system/operator-core）≥ 11 engine 节点；其余 crate（operator-wasm/hermes/business-catalog/template-market）若没有 engine 概念，则作为 module 节点登记。
+  - `src/project-atlas/domain/engine-registry.js`：对每个至少含 pub fn engine/engine 概念的 crate（ai-agent/mox-expert/primiflow-core/primiflow-fusion/kg-hub/graph-algorithms/flow-ai/optimizer/runtime/mox-system/operator-core）≥ 11 engine 节点；其余 crate（operator-wasm/hermes/business-catalog/template-market）若没有 engine 概念，则作为 module 节点登记。
   - `src/project-atlas/domain/tech-registry.js`：对 Rust graph-algorithms 的 7 条算法 + ai-agent provider 路由注册 + operator-core Conservation 等算法，登记 algorithm 节点 primary_impl_codePath 指 Rust。
   - `data/atlas_auto_registry.json` 动态层：新增 16 Rust crate 条目（scope="rust-crate" + scope=rust-engine + scope=rust-algorithm）。
-  - `src/project-atlas/domain/project-registry.js`：为 Rust crate 设置 owns_domain 边（P1-P8 智能归属，按 AIS 分层与业务域语义：如 runtime→P5 xuanji-platform；xuanji-expert→P4 expert-alliance；ai-agent→P3 ai-dialogue；graph-algorithms/operator-core/optimizer/flow-ai→P7 graph-infra + P2 ai-engine；xuanji-system/primiflow-*→P1 xuanji-core；kg-hub→P2 knowledge；hermes-flow-bridge/business-catalog/template-market/operator-wasm→P6 auto-dev 或 P7）。
+  - `src/project-atlas/domain/project-registry.js`：为 Rust crate 设置 owns_domain 边（P1-P8 智能归属，按 AIS 分层与业务域语义：如 runtime→P5 mox-platform；mox-expert→P4 expert-alliance；ai-agent→P3 ai-dialogue；graph-algorithms/operator-core/optimizer/flow-ai→P7 graph-infra + P2 ai-engine；mox-system/primiflow-*→P1 mox-core；kg-hub→P2 knowledge；hermes-flow-bridge/business-catalog/template-market/operator-wasm→P6 auto-dev 或 P7）。
 - **Dependencies**: None（其他任务都要用到绑定结果，因此最先做）。
 - **Deliverables**: 4 个 registry 文件 edit；`GET /atlas/verify` W1=30+16=46 DOMAINS 全 PASS。
 - **Test Requirements**:
@@ -102,11 +102,11 @@
 - **Priority**: HIGH
 - **Objective**: 16 crate Cargo.toml 所有 3rd-party 依赖版本 100% `workspace = true`（含 dev-deps）；消除版本漂移与显式版本字符串。
 - **Scope**:
-  - 遍历：xuanji-expert / hermes-flow-bridge / business-catalog 三 crate Cargo.toml → 把 serde / tokio / thiserror / anyhow / chrono / uuid / reqwest / tracing / serde_json 等全部替换为 `workspace = true`，features 保留即可。
+  - 遍历：mox-expert / hermes-flow-bridge / business-catalog 三 crate Cargo.toml → 把 serde / tokio / thiserror / anyhow / chrono / uuid / reqwest / tracing / serde_json 等全部替换为 `workspace = true`，features 保留即可。
   - primiflow-core dev-deps reqwest `version = "0.11"` → `workspace = true`，必要时代码小改造适配 0.12（如果有 breaking 差异）。
   - primiflow-fusion dev-deps criterion `default-features=false` 与 workspace criterion baseline 差异：在 workspace.dependencies.criterion 统一改为 default-features=false（如果不影响 operator-core），或在 fusion 里保留 features 但根版本用 workspace=true + 显式 features 覆盖。
-  - 把 xuanji-expert Cargo.toml dependencies 19 项里所有写死版本替换为 workspace=true。
-- **Deliverables**: 5 个 crate Cargo.toml 修改（xuanji-expert/hermes-flow-bridge/business-catalog/primiflow-core/primiflow-fusion）。
+  - 把 mox-expert Cargo.toml dependencies 19 项里所有写死版本替换为 workspace=true。
+- **Deliverables**: 5 个 crate Cargo.toml 修改（mox-expert/hermes-flow-bridge/business-catalog/primiflow-core/primiflow-fusion）。
 - **Test Requirements**:
   - **TR-04-01 (rule, AC-09)**: 写检查脚本 `scripts/validate_rust_workspace_deps.ps1`（或 inline Node 脚本）对 16 Cargo.toml，扫描除 workspace.dependencies = true / path = 外部 / git = 外的所有 `crate = ...` 配置中出现 `version = "x.y"` 字符串的总数 = 0（path 依赖、crate 本身内部 workspace = true 配置除外）。
   - **TR-04-02 (rule, AC-10)**: dev-deps 的 reqwest/criterion 检查同上，版本字符串数 = 0。
@@ -115,14 +115,14 @@
 
 ---
 
-## Task 5: rusqlite 框架依赖收拢到 xuanji-system（ai-agent + primiflow-core 移除）
+## Task 5: rusqlite 框架依赖收拢到 mox-system（ai-agent + primiflow-core 移除）
 
 - **Status**: pending
 - **Priority**: HIGH
 - **Depends**: T2（CRATE_META.data_tables_read/write 字段可用于契约定义）
-- **Objective**: 把 rusqlite 从 L3 ai-agent 和 L4 primiflow-core 两 crate 移除，全部改为 `xuanji-system` 层 PersistenceProvider trait 抽象 + 注入，保证 AIS 框架级依赖仅在 Infra 层。
+- **Objective**: 把 rusqlite 从 L3 ai-agent 和 L4 primiflow-core 两 crate 移除，全部改为 `mox-system` 层 PersistenceProvider trait 抽象 + 注入，保证 AIS 框架级依赖仅在 Infra 层。
 - **Scope**:
-  - 新增 `xuanji-system/src/persistence_traits.rs`：
+  - 新增 `mox-system/src/persistence_traits.rs`：
     ```rust
     pub trait SessionStore {
         fn save_dialogue_session(&self, id: &str, blob: &[u8]) -> Result<()>;
@@ -139,32 +139,32 @@
         pub templates: Arc<dyn TemplateStore + Send + Sync>,
     }
     ```
-  - xuanji-system 实现 default rusqlite-backed implementations（Repo 内已有 rusqlite）。
+  - mox-system 实现 default rusqlite-backed implementations（Repo 内已有 rusqlite）。
   - ai-agent Cargo.toml 删除 rusqlite workspace=true；ai-agent `src/dialogue_graph.rs` / `src/conversation.rs` 等把 `rusqlite::Connection::open(...)` 改为使用全局设置的 `Box<dyn SessionStore>`（通过 once_cell 或 constructor 参数传入）。
-  - primiflow-core Cargo.toml 删除 rusqlite workspace=true；`persistence.rs` 改为使用 TemplateStore 抽象；在 runtime 聚合时注入 xuanji-system 的 impl。
+  - primiflow-core Cargo.toml 删除 rusqlite workspace=true；`persistence.rs` 改为使用 TemplateStore 抽象；在 runtime 聚合时注入 mox-system 的 impl。
   - 兼容方案：如果 ai-agent / primiflow-core 有 standalone mode（没有 runtime 聚合），在该 mode 下可用 `InMemorySessionStore`（HashMap）或 `FileSessionStore`（serde_json + fs）替代，功能等价性不变。
-- **Deliverables**: 新增 xuanji-system persistence_traits.rs（1 file）；修改 ai-agent Cargo.toml + 2 源文件；修改 primiflow-core Cargo.toml + persistence.rs；runtime 聚合处把 xuanji-system SQLite 实现通过 feature/injection 传给两个 crate。
+- **Deliverables**: 新增 mox-system persistence_traits.rs（1 file）；修改 ai-agent Cargo.toml + 2 源文件；修改 primiflow-core Cargo.toml + persistence.rs；runtime 聚合处把 mox-system SQLite 实现通过 feature/injection 传给两个 crate。
 - **Test Requirements**:
-  - **TR-05-01 (rule, AC-11)**: 16 crate Cargo.toml grep rusqlite → 仅 xuanji-system 1 crate 出现
+  - **TR-05-01 (rule, AC-11)**: 16 crate Cargo.toml grep rusqlite → 仅 mox-system 1 crate 出现
   - **TR-05-02 (rule, AC-26)**: `cargo test -p ai-agent --test caomei_e2e` exit 0（功能回归）
   - **TR-05-03 (rule, AC-26)**: `cargo test -p primiflow-core` exit 0（功能回归）
   - **TR-05-04 (rubric, AC-31 NFR-RUST-05 复用)**: PersistenceProvider 抽象被 ≥ 2 处使用（ai-agent + primiflow-core）。score 0-2：2 = 用在 2 个 crate 以上；1 = 用在 1 crate；0 = 只定义不被使用。阈值 ≥1。
 
 ---
 
-## Task 6: DIP 反转 - xuanji-system orchestrator 依赖 trait（非 concrete services）
+## Task 6: DIP 反转 - mox-system orchestrator 依赖 trait（非 concrete services）
 
 - **Status**: pending
 - **Priority**: HIGH
-- **Objective**: 消除 xuanji-system A-01 违规：orchestrator 直接 use crate::services::*；改为 use 抽象 trait；services 实现这些 trait；保证 DIP 依赖反转。
+- **Objective**: 消除 mox-system A-01 违规：orchestrator 直接 use crate::services::*；改为 use 抽象 trait；services 实现这些 trait；保证 DIP 依赖反转。
 - **Scope**:
-  - `xuanji-system/src/domain_traits.rs`（新文件）：定义 `pub trait MemberService` / `pub trait TaskService` / `pub trait PermissionService` / `pub trait CommunicationService`。每个 trait 包含 orchestrator.rs 实际调用的方法签名（从 orchestrator 调用处反向采集）。
-  - `xuanji-system/src/services.rs` / `src/services/` 中的具体实现：impl MemberService for MemberService 等（or 新建 type wrapper for impl）。
-  - `xuanji-system/src/orchestrator.rs`：删除 `use crate::services::*;`，改为 `use crate::domain_traits::*;`；Orchestrator struct 持 `Arc<dyn MemberService + Send + Sync>` 等字段；在 constructor 中由 runtime 传入具体 impl。
+  - `mox-system/src/domain_traits.rs`（新文件）：定义 `pub trait MemberService` / `pub trait TaskService` / `pub trait PermissionService` / `pub trait CommunicationService`。每个 trait 包含 orchestrator.rs 实际调用的方法签名（从 orchestrator 调用处反向采集）。
+  - `mox-system/src/services.rs` / `src/services/` 中的具体实现：impl MemberService for MemberService 等（or 新建 type wrapper for impl）。
+  - `mox-system/src/orchestrator.rs`：删除 `use crate::services::*;`，改为 `use crate::domain_traits::*;`；Orchestrator struct 持 `Arc<dyn MemberService + Send + Sync>` 等字段；在 constructor 中由 runtime 传入具体 impl。
   - 兼容保证：对外 pub API 不变（如 Orchestrator::new() 默认参数仍可构造，需要 default 构造时使用默认的 concrete impl Arc 包装）。
 - **Test Requirements**:
   - **TR-06-01 (rule, AC-06)**: grep orchestrator.rs 无 `use crate::services::*;` 通配导入行
-  - **TR-06-02 (rule)**: `cargo test -p xuanji-system` exit 0（领域测试 suite 全过，服务功能回归）
+  - **TR-06-02 (rule)**: `cargo test -p mox-system` exit 0（领域测试 suite 全过，服务功能回归）
   - **TR-06-03 (rubric, AC-31 复用)**: 4 个 traits 被 orchestrator 使用，其中至少 2 个 trait 默认 impl 与 mock impl 可切换（用测试证明）。score 0-2：2 = 4 trait 都有 mock 测试；1 = 2 trait 有 mock；0 = 只有 real impl（无 mock 切换）。
 
 ---
@@ -192,38 +192,38 @@
 
 ---
 
-## Task 8: DIP 反转 - hermes-flow-bridge / business-catalog 对 xuanji-expert trait 化依赖
+## Task 8: DIP 反转 - hermes-flow-bridge / business-catalog 对 mox-expert trait 化依赖
 
 - **Status**: pending
 - **Priority**: HIGH
-- **Objective**: 消除 A-03：两 crate 直接 use xuanji_expert concrete struct（GovernContext / Principal / Tenant / xuanji_optimize fn）。改为 xuanji-expert 暴露抽象 traits，bridge/catalog 依赖 traits，在 runtime 聚合处做注入。
+- **Objective**: 消除 A-03：两 crate 直接 use mox_expert concrete struct（GovernContext / Principal / Tenant / mox_optimize fn）。改为 mox-expert 暴露抽象 traits，bridge/catalog 依赖 traits，在 runtime 聚合处做注入。
 - **Scope**:
-  - xuanji-expert 新增 `src/traits.rs`：
+  - mox-expert 新增 `src/traits.rs`：
     ```rust
     pub trait GovernContextRead {
       fn tenant_name(&self) -> &str;
       fn principal(&self) -> (&str, &str); // id + role
       fn sensitivity_flags(&self) -> &[String];
     }
-    pub trait XuanjiOptimize {
+    pub trait MoxOptimize {
       type Output;
       fn optimize(&self, ctx: &dyn GovernContextRead) -> Result<Self::Output>;
     }
     ```
-  - xuanji-expert 的现有 GovernContext / Principal / Tenant struct：impl GovernContextRead for GovernContext。
-  - hermes-flow-bridge Cargo.toml：**改为 `xuanji-expert = { workspace = true, default-features = false, features = ["traits-only"] }`**（新建 feature gate traits-only，仅编译 traits.rs 不编译全部专家引擎）。若 feature 不可行则 bridge 改成把需要的函数作为 function pointer（`pub fn register_xuanji_optimize(f: fn(...) -> ...) -> Result<()>`）回调钩子，避免 concrete crate 依赖。
+  - mox-expert 的现有 GovernContext / Principal / Tenant struct：impl GovernContextRead for GovernContext。
+  - hermes-flow-bridge Cargo.toml：**改为 `mox-expert = { workspace = true, default-features = false, features = ["traits-only"] }`**（新建 feature gate traits-only，仅编译 traits.rs 不编译全部专家引擎）。若 feature 不可行则 bridge 改成把需要的函数作为 function pointer（`pub fn register_mox_optimize(f: fn(...) -> ...) -> Result<()>`）回调钩子，避免 concrete crate 依赖。
   - business-catalog 同 pattern。
-  - runtime crate（聚合层）在 initialization 时 bridge/catalog 注册 concrete callbacks（把 xuanji_expert::xuanji_optimize 作为 fn 指针传入）。
+  - runtime crate（聚合层）在 initialization 时 bridge/catalog 注册 concrete callbacks（把 mox_expert::mox_optimize 作为 fn 指针传入）。
 - **Deliverables**: 1 新 traits.rs；2 crate Cargo.toml + 1 bridge.rs + 1 lib.rs 改造；runtime 聚合处新增 2 个 feature-gated injector。
 - **Test Requirements**:
-  - **TR-08-01 (rule, AC-08)**: `grep "xuanji_expert =" platform/services/hermes-flow-bridge/Cargo.toml business-catalog/Cargo.toml` → 2 处都为 `features = ["traits-only"]` 或不存在（改为 callback 钩子模式）。禁止直接默认 features 依赖。
-  - **TR-08-02 (rule, AC-08)**: 两 crate 源码中 `use xuanji_expert::context` 或 `use xuanji_expert::GovernContext` concrete struct import 0 条（允许 `use xuanji_expert::traits`）。
+  - **TR-08-01 (rule, AC-08)**: `grep "mox_expert =" platform/services/hermes-flow-bridge/Cargo.toml business-catalog/Cargo.toml` → 2 处都为 `features = ["traits-only"]` 或不存在（改为 callback 钩子模式）。禁止直接默认 features 依赖。
+  - **TR-08-02 (rule, AC-08)**: 两 crate 源码中 `use mox_expert::context` 或 `use mox_expert::GovernContext` concrete struct import 0 条（允许 `use mox_expert::traits`）。
   - **TR-08-03 (rule)**: `cargo test -p hermes-flow-bridge --test session_e2e` exit 0 + `cargo test -p business-catalog`（9 tests）exit 0
   - **TR-08-04 (rubric, AC-31 复用)**: GovernContextRead trait 同时被 bridge + catalog 两处使用。score 0-2：2=两处都通过抽象调用 + 注入；1=其中一处；0=依然 concrete struct。阈值 ≥1。
 
 ---
 
-## Task 9: 500 深链 xuanji_optimize 性能回退修复（≤10 s）
+## Task 9: 500 深链 mox_optimize 性能回退修复（≤10 s）
 
 - **Status**: pending
 - **Priority**: HIGH
@@ -236,9 +236,9 @@
     - (3) reconcile 冲突调和：每节点调和矩阵计算 O(experts²)，在 500×14×14 可做剪枝（无冲突节点跳过调和矩阵）。
     - (4) 审计 S3 WORM 签名（每节点写入可能触发 SigV4 大字符串计算）→ 批量缓存或 only 1 个锚点 per 50 节点。
   - 按序尝试 (1)→(2)→(3)→(4)：一旦 ≤10 s 就停（禁止"优化过度"引入复杂度）。
-- **Deliverables**: xuanji-expert/src/{verify/*, pipeline.rs, reconcile.rs, audit/*} 局部 patch；缓存结构体新增（cfg(test) 或实际可用均可，只要不破坏 prod 语义）。
+- **Deliverables**: mox-expert/src/{verify/*, pipeline.rs, reconcile.rs, audit/*} 局部 patch；缓存结构体新增（cfg(test) 或实际可用均可，只要不破坏 prod 语义）。
 - **Test Requirements**:
-  - **TR-09-01 (rule, AC-18)**: `cargo test -p xuanji-expert --test gap_p2_perf_boundaries boundary_ultra_deep_chain_with_data_deps -- --nocapture 2>&1 | Select-String "500.*耗时"` → 数字 ≤ 10,000
+  - **TR-09-01 (rule, AC-18)**: `cargo test -p mox-expert --test gap_p2_perf_boundaries boundary_ultra_deep_chain_with_data_deps -- --nocapture 2>&1 | Select-String "500.*耗时"` → 数字 ≤ 10,000
   - **TR-09-02 (rule, AC-19)**: 其余 9 gap_p2_perf 测试结果全部 PASS
   - **TR-09-03 (rubric)**: 性能增益比（old/new 相对加速）：≥594ms 加速（=10594→10000 的必要加速量）。0-2：2=加速 ≥2000 ms；1=594~2000；0=<594。阈值 ≥1。
 
@@ -272,7 +272,7 @@
 - **Depends**: T1（Rust domain/engine/algorithm 节点 id 可用）+ T2（CRATE_ID/CRATE_META 可用）
 - **Objective**: 为 14 个缺失 crate 新建根 README.md；16 个 crate README 质量达到 rubric 准入阈值 ≥2.5（≥12 个 crate 3 分，其余 ≥2）。
 - **Scope**:
-  - 缺失 crate 列表（SPEC-A5 结果）：`runtime`、`operator-core`、`operator-wasm`、`graph-algorithms`、`optimizer`、`xuanji-expert`、`hermes-flow-bridge`、`business-catalog`、`ai-agent`、`template-market`、`xuanji-system`、`primiflow-core`、`kg-hub`、`business-catalog/bin` 的 crate 根目录——列表共 14。
+  - 缺失 crate 列表（SPEC-A5 结果）：`runtime`、`operator-core`、`operator-wasm`、`graph-algorithms`、`optimizer`、`mox-expert`、`hermes-flow-bridge`、`business-catalog`、`ai-agent`、`template-market`、`mox-system`、`primiflow-core`、`kg-hub`、`business-catalog/bin` 的 crate 根目录——列表共 14。
   - README 标准模板（每文件都按 5 节）：
     1. **[crate-name] - 璇玑子项目**（标题 + AIS 分层归属徽章：`AIS Layer: L4-Core / L6-Kernel` 样式）
     2. **核心职责**（1-3 句）
@@ -388,7 +388,7 @@
 | T1 + T2 | ✅ 可并发 | T1 改 JS/JSON registry；T2 改 Rust lib.rs const。无文件重叠 |
 | T4 (deps) 与 T6/T7/T8 (各 crate DIP) | ✅ 可并发 | 4 组改不同 crate 文件，零重叠 |
 | T9 (perf) vs T10 (docs) vs T11 (README) vs T12 (对账脚本) | ✅ 可并发 4 路 | 4 组完全不同文件/语言 |
-| T5 (rusqlite removal) 与 T6 | ⚠️ 串行（都改 xuanji-system 源） | T5 加 persistence_traits.rs；T6 加 domain_traits.rs 都是 xuanji-system 新增不同文件 → 理论可并行但为保险串行 |
+| T5 (rusqlite removal) 与 T6 | ⚠️ 串行（都改 mox-system 源） | T5 加 persistence_traits.rs；T6 加 domain_traits.rs 都是 mox-system 新增不同文件 → 理论可并行但为保险串行 |
 | T3 (算法对账) | 等待 T2 完 | 依赖 CRATE_ID 前缀 |
 | T13 (全量回归) | 严格等待 T4-T9 | 依赖所有代码修复完成 |
 | T14 (举证汇总) | 最后 | 依赖所有 TR 执行结果 |

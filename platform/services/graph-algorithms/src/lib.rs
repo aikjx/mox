@@ -5,13 +5,13 @@
 //! 中心性分析、社区发现、最短路径、智能推荐等AI驱动功能
 
 pub const CRATE_ID: &str = "fbd31c6a-41cd-5274-be2f-2a28066eaf0a";
-pub const ENGINE_NAME: &str = "xuanji::graph_algorithms";
-pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+pub const ENGINE_NAME: &str = "mox::graph_algorithms";
+pub const CRATE_META: mox_common_meta::CrateMeta = mox_common_meta::CrateMeta {
     id: CRATE_ID,
     name: env!("CARGO_PKG_NAME"),
     version: env!("CARGO_PKG_VERSION"),
-    layer: xuanji_common_meta::AisLayer::L4Services,
-    owner: "xuanji-core",
+    layer: mox_common_meta::AisLayer::L4Services,
+    owner: "mox-core",
 };
 
 use nalgebra::DMatrix;

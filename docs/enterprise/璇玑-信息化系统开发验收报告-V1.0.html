@@ -139,14 +139,14 @@
 <div class="panel">
 <table>
   <tr><th>功能域</th><th>关键实现</th><th>落点</th></tr>
-  <tr><td>归一化 IR</td><td>单一 FlowGraph；MCP/Skill/Loop/LLM 归一化为 IR 第一类公民</td><td>flow-ai / xuanji-expert</td></tr>
-  <tr><td>双璇玑 14 维诊断</td><td>业务 7 维 + 开发 7 维并行诊断，硬/软约束标注与优先级仲裁</td><td>xuanji-expert::pipeline</td></tr>
-  <tr><td>⛨璇玑验证网关</td><td>5 项阻断检查（topology/data_dep/conflict/gains/code_rt）+ expert_veto/escalated_conflict 归约</td><td>xuanji-expert::verify</td></tr>
-  <tr><td>治理闸门</td><td>G1~G7 合规检查 + 版本状态机 + RBAC 四权分离</td><td>xuanji-expert::govern</td></tr>
+  <tr><td>归一化 IR</td><td>单一 FlowGraph；MCP/Skill/Loop/LLM 归一化为 IR 第一类公民</td><td>flow-ai / mox-expert</td></tr>
+  <tr><td>双璇玑 14 维诊断</td><td>业务 7 维 + 开发 7 维并行诊断，硬/软约束标注与优先级仲裁</td><td>mox-expert::pipeline</td></tr>
+  <tr><td>⛨璇玑验证网关</td><td>5 项阻断检查（topology/data_dep/conflict/gains/code_rt）+ expert_veto/escalated_conflict 归约</td><td>mox-expert::verify</td></tr>
+  <tr><td>治理闸门</td><td>G1~G7 合规检查 + 版本状态机 + RBAC 四权分离</td><td>mox-expert::govern</td></tr>
   <tr><td>拓扑路由 / 冲突仲裁</td><td>真数据依赖可达性守恒、并行层无 RAW 冒险、0 阻塞冲突</td><td>flow-ai::topology / conflict</td></tr>
-  <tr><td>审计链</td><td>否决/裁决写入哈希链，连续可验证</td><td>xuanji-expert::govern(AuditChain)</td></tr>
+  <tr><td>审计链</td><td>否决/裁决写入哈希链，连续可验证</td><td>mox-expert::govern(AuditChain)</td></tr>
   <tr><td>关图六维绑定</td><td>Bind 边 + TraceMatrix；G3 重复 id 检测（本轮修复）</td><td>primiflow-fusion::unified</td></tr>
-  <tr><td>企业级持久化</td><td>SQLite 持久化重放、令牌哈希、配额强制、限流（并行隔离，本轮修复）</td><td>xuanji-system::store</td></tr>
+  <tr><td>企业级持久化</td><td>SQLite 持久化重放、令牌哈希、配额强制、限流（并行隔离，本轮修复）</td><td>mox-system::store</td></tr>
 </table>
 </div>
 
@@ -164,10 +164,10 @@
 <div class="twocol">
   <div class="panel" style="margin:0;">
     <span class="tag fix">缺陷 A · 测试隔离</span>
-    <p><b>现象</b>：<code>xuanji-system/tests/integration.rs</code> 的 <code>store_persists_and_hashes_tokens</code> 在并行下偶发 <code>Store::open().unwrap()</code> 恐慌。</p>
-    <p><b>根因</b>：<code>temp_db()</code> 仅用 <code>process::id()</code> 作目录名 → 同二进制内所有测试线程共享同一 <code>xuanji.db</code>，并发 <code>remove_dir_all</code>/<code>Connection::open</code> 互相踩踏。</p>
+    <p><b>现象</b>：<code>mox-system/tests/integration.rs</code> 的 <code>store_persists_and_hashes_tokens</code> 在并行下偶发 <code>Store::open().unwrap()</code> 恐慌。</p>
+    <p><b>根因</b>：<code>temp_db()</code> 仅用 <code>process::id()</code> 作目录名 → 同二进制内所有测试线程共享同一 <code>mox.db</code>，并发 <code>remove_dir_all</code>/<code>Connection::open</code> 互相踩踏。</p>
     <p><b>修复</b>：改为进程内 <code>AtomicU64</code> 原子计数 + pid 的唯一目录，每次调用彻底隔离。</p>
-    <p><span class="tag pass">验证</span> <code>cargo test -p xuanji-system</code> → 22 项全过（3+13+6）。</p>
+    <p><span class="tag pass">验证</span> <code>cargo test -p mox-system</code> → 22 项全过（3+13+6）。</p>
   </div>
   <div class="panel" style="margin:0;">
     <span class="tag fix">缺陷 B · 架构功能</span>
@@ -199,7 +199,7 @@
   <li><b>覆盖深度</b>：本轮聚焦"可编译 + 全测试通过"。建议补充 S3 双璇玑十四维诊断、S7 治理闸门的子流程级测试，进一步抬高边界覆盖。</li>
   <li><b>六维绑定 TraceMatrix</b>：可把六维绑定接实际 <code>graph.enterprise.json</code> 做覆盖度校验，纳入 CI 报表。</li>
   <li><b>机读链路落地</b>：<code>璇玑-全维流水线.mmd</code> 可接入本仓库 <code>info-graph</code> 导出管线，生成可渲染/可编排产物。</li>
-  <li><b>并行安全</b>：缺陷 A 属测试隔离问题，生产路径（XuanjiSystem 单例）不受影响；已通过唯一目录隔离根治。</li>
+  <li><b>并行安全</b>：缺陷 A 属测试隔离问题，生产路径（MoxSystem 单例）不受影响；已通过唯一目录隔离根治。</li>
 </ul>
 </div>
 
@@ -211,7 +211,7 @@
   <tr><td>全维流程图</td><td><code>docs/璇玑-全维需求业务处理流程图-归一化企业级.html/.md</code></td></tr>
   <tr><td>璇玑子流程</td><td><code>docs/璇玑-璇玑验证子流程-归一化企业级.html</code></td></tr>
   <tr><td>机读流水线</td><td><code>docs/璇玑-全维流水线.mmd</code></td></tr>
-  <tr><td>代码修复</td><td><code>crates/xuanji-system/tests/integration.rs</code>(temp_db) ｜ <code>crates/primiflow-fusion/src/unified.rs</code>(node_dups/G3)</td></tr>
+  <tr><td>代码修复</td><td><code>crates/mox-system/tests/integration.rs</code>(temp_db) ｜ <code>crates/primiflow-fusion/src/unified.rs</code>(node_dups/G3)</td></tr>
 </table>
 </div>
 

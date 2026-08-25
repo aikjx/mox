@@ -12,7 +12,7 @@ description.workspace = true
 wasmer_fuel_backport = []
 
 [dependencies]
-xuanji-common-meta = { path = "../xuanji-common-meta" }
+mox-common-meta = { path = "../mox-common-meta" }
 operator-core = { path = "../operator-core" }
 wasmer = { workspace = true }
 wasmer-compiler-cranelift = { workspace = true }

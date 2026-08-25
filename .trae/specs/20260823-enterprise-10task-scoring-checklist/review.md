@@ -39,7 +39,7 @@
 - [x] CP-R6: T7 数据库 5 模型 × 4 CRUD ≥20/20 通过，schema_version≥1，事务 rollback 与并发 50 写均无异常
   - **Type**: `rule`
   - **Covers**: AC-T7, AC-T7-Index
-  - **Evidence**: Rust `cargo test -p xuanji-system --release t5_2_persistence_provider_crud` exit=0；Node `test-storage-postgres.js` + `test-storage-postgres-red.js` 双绿；storage RED 报告并发 50 写 0 冲突、rollback 原子语义正确。✅
+  - **Evidence**: Rust `cargo test -p mox-system --release t5_2_persistence_provider_crud` exit=0；Node `test-storage-postgres.js` + `test-storage-postgres-red.js` 双绿；storage RED 报告并发 50 写 0 冲突、rollback 原子语义正确。✅
 
 - [ ] CP-U1: 10 类任务评分结果的可复现性（同 commit 两次评分差 ≤ 1）
   - **Type**: `rubric`
@@ -83,7 +83,7 @@
 | AC-T5-Playability | rubric (≥4) | ✅ 5/5 PASS (计分/关卡/净化齐备) | t5-game.log |
 | AC-T6 (网站合规) | rule | ✅ 5/5 PASS（3/3 HTML5 ≥3 断点 仪表盘 4 件套 alt+label ≥80% CSRF） | t6-website.log |
 | AC-T6-SecUX | rubric (≥4) | ✅ 5/5 PASS (inline ≤3 页, a11y 指标到位) | t6-website.log |
-| AC-T7 (数据库 20 条 CRUD / Schema) | rule | ✅ 5/5 PASS (20/20 CRUD) | cargo_xuanji_t5.log + test-storage-postgres.log |
+| AC-T7 (数据库 20 条 CRUD / Schema) | rule | ✅ 5/5 PASS (20/20 CRUD) | cargo_mox_t5.log + test-storage-postgres.log |
 | AC-T7-Index | rubric (≥4) | ✅ 5/5 PASS (50 并发/rollback 原子) | test-storage-postgres-red.log |
 | AC-T8 (图谱 W1-W13/连通) | rule | ✅ 5/5 PASS (W1..W13 0 FAIL · 413 nodes · 975 edges · 连通 1 分量) | test-project-atlas.log (40/40 PASS) |
 | AC-T8-Governance | rubric (≥4) | ✅ 5/5 PASS (引用 100% self-sync 回填 三方一致 ≥99%) | test-atlas-self-sync.log |

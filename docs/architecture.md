@@ -95,7 +95,7 @@ DeepSeek Harness 的核心主张是"**一切皆插件**"——没有任何特权
 │  flow-ai: 拓扑/数据流/关键路径/冲突消解/调度/代码生成                             │
 │  optimizer: DAG 调度 & 资源约束 & 关键路径优化 (ctx.scheduler)                    │
 │  ai-agent: 工作流引擎/对话/浏览器自动化/插件总线 (ctx.workflow, ctx.browser)       │
-│  xuanji-expert: 多专家协同/IR/治理/验证 (ctx.experts, ctx.govern)               │
+│  mox-expert: 多专家协同/IR/治理/验证 (ctx.experts, ctx.govern)               │
 │  hermes-flow-bridge: 外部流系统对接/录制/回放 (ctx.bridge)                        │
 └───────────────┬───────────────────────┬───────────────────────┬──────────────┘
                 │                        │                       │
@@ -126,7 +126,7 @@ DeepSeek Harness 的核心主张是"**一切皆插件**"——没有任何特权
 | `flow-ai` | `orchestration/flow` | `ctx.flow` |
 | `optimizer` | `orchestration/scheduler` | `ctx.scheduler` |
 | `ai-agent` | `core/agent` + `core/agent-loop` + `agent/browser` | `ctx.agents` |
-| `xuanji-expert` | `core/experts` + `govern` | `ctx.experts` |
+| `mox-expert` | `core/experts` + `govern` | `ctx.experts` |
 | `business-catalog` | 算子注册表持久化实现（而非核心） | `ctx.catalog` |
 | `hermes-flow-bridge` | 外部流系统 Seam 适配 | `ctx.bridge` |
 
@@ -309,7 +309,7 @@ turn/start
 - `flow_engine`：可视化流程定义/校验/执行（对接前端 Three.js 流程图）。
 - `algorithm`：算法复杂度分析（`AlgorithmAnalyzer`）。
 
-### 6.4 Expert-Xuanji（多专家协同 / IR / 治理 / 验证）
+### 6.4 Expert-Mox（多专家协同 / IR / 治理 / 验证）
 
 - 多璇玑求解、信息检索管线、治理策略（`govern`）、结果验证。
 - 关键场景：专家间结论冲突时，由 `flow-ai::conflict` 消解 + `conservation` 校验收敛。
@@ -472,7 +472,7 @@ Pending ──▶ Running ──┬─▶ Completed
 
 #### P-10 专家协同流程
 - **触发**：多专家结论汇聚
-- **阶段**：① `xuanji-expert` 聚合 → ② `conflict` 消解 → ③ `conservation` 收敛校验 → ④ 加权边沉淀(§23)
+- **阶段**：① `mox-expert` 聚合 → ② `conflict` 消解 → ③ `conservation` 收敛校验 → ④ 加权边沉淀(§23)
 - **输出**：共识结论 + 图谱强化
 - **SLA**：<1s
 - **异常**：分歧超阈→`SUPER_EXPERT` 仲裁(§19)
@@ -539,7 +539,7 @@ Pending ──▶ Running ──┬─▶ Completed
 - `telemetry/*` Seam 统一导出；每 Turn 自动埋点 Waterfall 事件耗时。
 
 ### 10.2 治理与权限
-- `xuanji-expert::govern`：算子/插件白名单、租户配额、敏感算子审批。
+- `mox-expert::govern`：算子/插件白名单、租户配额、敏感算子审批。
 - 多租户：`agent.ctx` 作用域隔离 + 租户级 `cordis.patch.yml`。
 
 ### 10.3 安全
@@ -842,7 +842,7 @@ seam = "operator/*"
 
 ---
 
-## 19. 璇玑全维处理内核（Expert Xuanji — 最高权限全维模式）
+## 19. 璇玑全维处理内核（Expert Mox — 最高权限全维模式）
 
 > **设计定位**：这是 OUS 的"超级大脑"层——当用户以 `SUPER_EXPERT` 模式发起请求时，系统调度**璇玑 + 璇玑**，以**最高权限**跨全部子系统（算子内核 / 图谱 / 优化 / 编排 / 数据 / 外系统）进行全维处理，并受守恒律与治理接缝约束。对标 harness 的 `self-modification/`（agent 可改自身运行时）但更强：璇玑不仅能改运行时，还能改算子、改图谱、改调度策略。
 
@@ -851,7 +851,7 @@ seam = "operator/*"
 ```
                         ┌─────────────────────────────────┐
                         │   SUPER_EXPERT 调度中枢 (最高权限)  │
-                        │   ctx.xuanji.super            │
+                        │   ctx.mox.super            │
                         └───────────┬───────────┬─────────┘
                                     │           │
                   ┌─────────────────▼──┐   ┌─────▼──────────────────┐
@@ -869,7 +869,7 @@ seam = "operator/*"
               └─────────────────────────────────────────────┘
 ```
 
-> **实现对照（v7.1 起）**：代码层 `xuanji-expert` 已将该"超级大脑"落为**双璇玑十四维**模型（见 `enterprise-architecture-analysis.md` §2）。`experts::all_experts()` 常驻业务七维专家（Business/Algorithm/Permission/Resource/Security/Data/Observability）；`context::Dimension` 另含开发七维（ApiCompat/Perf/Maintain/Test/Style/Cost/Sensitive），当 `GovernContext.code_ir: Option<CodeIR>` 非空时由 `ai-agent::requirement_compiler` 注入、`sensitivity.rs` 提供 `Sensitive` 维度 SSOT 敏感判定，开发璇玑自动并入治理。最高权限校验由 `verify::AlgoVerification`（璇玑）把关，不被 `govern` 覆盖。
+> **实现对照（v7.1 起）**：代码层 `mox-expert` 已将该"超级大脑"落为**双璇玑十四维**模型（见 `enterprise-architecture-analysis.md` §2）。`experts::all_experts()` 常驻业务七维专家（Business/Algorithm/Permission/Resource/Security/Data/Observability）；`context::Dimension` 另含开发七维（ApiCompat/Perf/Maintain/Test/Style/Cost/Sensitive），当 `GovernContext.code_ir: Option<CodeIR>` 非空时由 `ai-agent::requirement_compiler` 注入、`sensitivity.rs` 提供 `Sensitive` 维度 SSOT 敏感判定，开发璇玑自动并入治理。最高权限校验由 `verify::AlgoVerification`（璇玑）把关，不被 `govern` 覆盖。
 
 ### 19.2 最高权限的边界与约束（不失控）
 
@@ -993,7 +993,7 @@ Claude Code ──(hook 桥接)──▶ deepseek-harness ──(范式吸收)�
 | 程序性(技能) | 算子/工作流 | `business-catalog` + `flow-ai` | 版本化 |
 | 元记忆(自省) | 专家结论边 | `operator-graph` 加权边（§19.5） | 知识复利 |
 
-- **检索增强（RAG）**：`xuanji-expert::ir` 管线从长期记忆检索相关状态向量/图谱子图，注入 `systemPrompt`（对标 harness `context-engineering/`）。
+- **检索增强（RAG）**：`mox-expert::ir` 管线从长期记忆检索相关状态向量/图谱子图，注入 `systemPrompt`（对标 harness `context-engineering/`）。
 - **遗忘与演进**：低频记忆经 PageRank 衰减降权；璇玑结论持续强化为加权边 → 系统越用越聪明。
 
 ## 24. 评测与回归（Eval & Regression）
@@ -1150,7 +1150,7 @@ operator-server \
 | 变换 | Transform / Script | 数据转换/自定义脚本 | P-09 |
 | 业务 | Workflow | 子流程(`BusinessWorkflow` 复用) | P-04 |
 | 算法 | Algorithm | `AlgorithmFlow`(复杂度分析+优化建议) | P-09/P-10 |
-| 专家 | Expert | `xuanji-expert` 节点(§19) | P-13 |
+| 专家 | Expert | `mox-expert` 节点(§19) | P-13 |
 
 > 每个节点声明 `in/out TypePair`（公理 4），连边时实时校验类型可组合；不兼容连线在画布红框提示（§28.4）。
 
@@ -1270,7 +1270,7 @@ python3 verify_axioms.py
 
 | 术语 | 含义 |
 |------|------|
-| **璇玑 (Xuánjī)** | 归一化 IR 驱动的元调度诊断系统（`xuanji-expert` crate） |
+| **璇玑 (Xuánjī)** | 归一化 IR 驱动的元调度诊断系统（`mox-expert` crate） |
 | **关图 / GR-STD** | 信息关联关系图开发规范 V1.0，「一切皆是信息」 |
 | **AA-STD** | 璇玑-全维需求业务处理流程图-归一化企业级，融合域需求事实基准 |
 | **PT-Primi / PrimiFlow** | 全域拓扑原语架构（κ-τ 调度，守恒律 `C² = κ² + τ²`） |

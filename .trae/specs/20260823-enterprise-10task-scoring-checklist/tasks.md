@@ -67,7 +67,7 @@
 - **Priority**: high
 - **Depends On**: T0 脚本底座
 - **Description**:
-  - 取 10 个已存在模块（operator-core resource/kernel_ext、xuanji-system orchestrator、flow-ai dataflow、primiflow-core generate、ai-agent tools/flow_engine、runtime ai_engine、hermes-flow-bridge bridge/live）的真实需求描述。
+  - 取 10 个已存在模块（operator-core resource/kernel_ext、mox-system orchestrator、flow-ai dataflow、primiflow-core generate、ai-agent tools/flow_engine、runtime ai_engine、hermes-flow-bridge bridge/live）的真实需求描述。
   - 由 requirement_compiler + run_engine_task 生成或再生成；跑 clippy/build/单测三级门。
   - 发现 FAIL → 修正 requirement_compiler/engine（真实代码）。
 - **Acceptance Criteria Addressed**: AC-T3, AC-T3-Quality
@@ -142,10 +142,10 @@
   - `rule` TR-7.2: schema_version ≥1；迁移 ID 唯一；rollback 原子性测试通过。
   - `rubric` TR-7.3: 索引覆盖、事务并发；维度: 数据库成熟度；0-5；阈值≥4。
 - **Completion Evidence**:
-  - Rust `cargo test -p xuanji-system --release` 82 tests 全绿（unit 30 / business_rules 13 / integration 8 / persistence_provider_crud 20 / t6_dip_orchestrator 11）。
+  - Rust `cargo test -p mox-system --release` 82 tests 全绿（unit 30 / business_rules 13 / integration 8 / persistence_provider_crud 20 / t6_dip_orchestrator 11）。
   - Node `test-storage-postgres.js` GREEN 4/4：Factory create、双 provider 等价、DualWrite 回填、switchDatabase 两次往返。
   - `test-storage-postgres-red.js` GREEN 6/6：PostgresProvider API 面齐全（23 methods）、migrateFromJSON 幂等、无 pg 驱动 Memory/Fake 降级 round-trip 语义一致、config.storage.dualWrite+readPref 暴露。
-  - 证据：`outputs/cargo_test_xuanji-system.log`、`outputs/test-storage-postgres.log`、`outputs/test-storage-postgres-red.log`；最终 t7 Rule=5/5 Rubric=5/5。
+  - 证据：`outputs/cargo_test_mox-system.log`、`outputs/test-storage-postgres.log`、`outputs/test-storage-postgres-red.log`；最终 t7 Rule=5/5 Rubric=5/5。
 
 ## Task 8: 写知识图谱（全息图谱 W1-W13 全绿 + 连通 1 分量 + 治理）
 - **Status**: `completed`

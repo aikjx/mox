@@ -11,13 +11,13 @@
 //!     可通过 O7 图谱 P99 上报链路对外暴露（T12 复用）。
 
 pub const CRATE_ID: &str = "5a1df407-b217-5340-a5ae-5f4535d1e6de";
-pub const ENGINE_NAME: &str = "xuanji::operator_wasm";
-pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+pub const ENGINE_NAME: &str = "mox::operator_wasm";
+pub const CRATE_META: mox_common_meta::CrateMeta = mox_common_meta::CrateMeta {
     id: CRATE_ID,
     name: env!("CARGO_PKG_NAME"),
     version: env!("CARGO_PKG_VERSION"),
-    layer: xuanji_common_meta::AisLayer::L4Services,
-    owner: "xuanji-core",
+    layer: mox_common_meta::AisLayer::L4Services,
+    owner: "mox-core",
 };
 
 use operator_core::operator::Operator;
@@ -530,7 +530,7 @@ mod tests {
             input_type: builtin::state_vector_type(),
             output_type: builtin::state_vector_type(),
             resource_cost: ResourceCost::default(),
-            author: "xuanji-core".into(),
+            author: "mox-core".into(),
             tags: vec!["test".into()],
         }
     }
@@ -595,7 +595,7 @@ mod tests {
     #[test]
     fn test_wasm_manager_creation() {
         let dir =
-            std::env::temp_dir().join(format!("xuanji-operator-wasm-ut-{}", std::process::id()));
+            std::env::temp_dir().join(format!("mox-operator-wasm-ut-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         let mut manager = WasmPluginManager::new(&dir);
         assert!(manager.load_all().is_ok(), "load_all empty dir ok");

@@ -67,7 +67,7 @@ function verifyCreds(secret, roleId, sessionName, creds) {
 }
 
 describe('T10/A3 STS TTL=900s (12)', function () {
-  const SECRET = Buffer.from('xuanji-sts-root-secret-0123456789abcdef0123456789abcdef');
+  const SECRET = Buffer.from('mox-sts-root-secret-0123456789abcdef0123456789abcdef');
   const ROLE = 'role/editor';
   const SESS = 'sess_abc123';
 

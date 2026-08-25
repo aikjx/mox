@@ -33,7 +33,7 @@ module.exports = function registerArtifactsRoutes(ctx) {
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<title>井字棋 · Xuanji T5 Game</title>
+<title>井字棋 · Mox T5 Game</title>
 <style>
   * { box-sizing: border-box; }
   body { font-family: system-ui, "PingFang SC", sans-serif; margin: 0; padding: 2em; text-align: center; background: linear-gradient(135deg,#1e293b,#334155); color: #f1f5f9; min-height: 100vh;}
@@ -122,14 +122,14 @@ module.exports = function registerArtifactsRoutes(ctx) {
       }
       // 登记到 artifacts 元数据（按 title 幂等）
       const store = readStore();
-      const exists = store.find(a => a.title === '井字棋 · Xuanji T5 Game');
+      const exists = store.find(a => a.title === '井字棋 · Mox T5 Game');
       if (!exists) {
         const htmlContent = fs.readFileSync(tpl, 'utf8');
         store.push({
           id: 't5-default-tictactoe-' + uidOf('tictactoe|t5|default'),
           kind: 'game',
-          title: '井字棋 · Xuanji T5 Game',
-          author: 'Xuanji Platform',
+          title: '井字棋 · Mox T5 Game',
+          author: 'Mox Platform',
           tags: ['game', 'tictactoe', 't5-default', 'zero-dependency'],
           description: '纯前端井字棋，可直接在浏览器中打开 /artifacts/html/tictactoe.html 游玩（T5 游戏生成参考落地实现）。',
           url: '/artifacts/html/tictactoe.html',

@@ -14,7 +14,7 @@
  * 输出：data/atlas_auto_registry_rust.json
  *   shape = { entries: [{ crateName, crateId, fns, structs, consts, files:[{filePath, fns, structs, consts}] }] }
  *
- * CRATE_ID 表来自 xuanji-common-meta all_crate_metas（与 T2 一致，静态内置以避免 Node 端调用 Rust）。
+ * CRATE_ID 表来自 mox-common-meta all_crate_metas（与 T2 一致，静态内置以避免 Node 端调用 Rust）。
  */
 
 const fs = require('fs');
@@ -24,7 +24,7 @@ const BACKEND = path.join(__dirname, '..', '..', '..');           // backend-nod
 const REPO = path.join(BACKEND, '..', '..');                       // repo root
 const OUT_JSON = path.join(BACKEND, 'data', 'atlas_auto_registry_rust.json');
 
-/** 16 crate 静态 CRATE_ID 表（与 xuanji-common-meta/src/lib.rs all_crate_metas 完全一致） */
+/** 16 crate 静态 CRATE_ID 表（与 mox-common-meta/src/lib.rs all_crate_metas 完全一致） */
 const CRATE_ID_TABLE = {
   'ai-agent':           '00374bdd-cc60-55bf-8970-a879afbfe443',
   'business-catalog':   '62b2cca1-d98f-5e41-b26e-8d2a43966117',
@@ -38,9 +38,9 @@ const CRATE_ID_TABLE = {
   'primiflow-core':     '8c8d2382-6f9f-5218-894e-a07a43aa9554',
   'primiflow-fusion':   '75238345-b48b-534b-818b-8d9abe083a41',
   'template-market':    '4d2e50c1-9d64-525d-86cf-2d7d610a27b9',
-  'xuanji-expert':      '50bb6200-04c5-5e4c-8354-4c6e1b230024',
-  'xuanji-system':      'b81eec75-22ff-5155-ac49-19edf6f6b5ab',
-  'xuanji-common-meta': '34a20231-1a80-5426-b392-40d7a2ddd9f7',
+  'mox-expert':      '50bb6200-04c5-5e4c-8354-4c6e1b230024',
+  'mox-system':      'b81eec75-22ff-5155-ac49-19edf6f6b5ab',
+  'mox-common-meta': '34a20231-1a80-5426-b392-40d7a2ddd9f7',
   'runtime':            'a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b'
 };
 

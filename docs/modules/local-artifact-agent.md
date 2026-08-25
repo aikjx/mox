@@ -1,7 +1,7 @@
 # 对话任务 × 本地制品引擎（文档/代码自动创建）— 归一化设计文档
 
 > 版本：V1.0 ｜ 日期：2026-08-22 ｜ 模块：`platform/backend-node/src/local-artifact-service.js` ｜ 前端：`ChatView.vue`（文档/代码模式开关）
-> 规范依据：`docs/modules/xuanji-expert-normalization.md`（三层收口 + 四条不变式）
+> 规范依据：`docs/modules/mox-expert-normalization.md`（三层收口 + 四条不变式）
 
 ---
 

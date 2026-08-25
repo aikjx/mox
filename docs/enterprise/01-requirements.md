@@ -5,11 +5,11 @@
 > **权威链**：🟢 L0 第一级 → [`18-全域顶层总设计-三联盟模式-V1.0.md`](18-全域顶层总设计-三联盟模式-V1.0.md)（TOP-MASTER）。本文为 L2 第三级（需求层），不得与 18 冲突。
 > **主责联盟**：产品联盟（收口需求） · 联合对齐：算法联盟 + 开发联盟
 > **适用范围（与代码事实一致 · 路径零老化）**：
-> - `platform/services/xuanji-system/`（协作治理域：成员 / 任务 / 权限 / 通信 / 多方言 repo fail-fast）
-> - `platform/services/xuanji-expert/`（璇玑融合引擎域：双璇玑十四维治理 / 归一化 / 裁决 / ⛨最高权限验证 / 审计三汇 / RBAC）
+> - `platform/services/mox-system/`（协作治理域：成员 / 任务 / 权限 / 通信 / 多方言 repo fail-fast）
+> - `platform/services/mox-expert/`（璇玑融合引擎域：双璇玑十四维治理 / 归一化 / 裁决 / ⛨最高权限验证 / 审计三汇 / RBAC）
 > - `platform/gateway/runtime/`（Rust 聚合网关：四端点 `/ai/engine/{process,analyze,capabilities,metrics}`、AC-10 路由语义、RBAC 中间件、Node Sidecar 通信）
 > - `frontend-ui/`（用户端单应用 + `/admin` 系统管理区 5 面板，共 28 视图）
-> **权威来源**：业务规则以 `docs/modules/xuanji-expert-business-requirements.md` 为基线；本文将其提升为结构化 SRS 并补充可度量 NFR、验收与文档级 ADR 注册。
+> **权威来源**：业务规则以 `docs/modules/mox-expert-business-requirements.md` 为基线；本文将其提升为结构化 SRS 并补充可度量 NFR、验收与文档级 ADR 注册。
 >
 > **编写原则**：每条需求**必须可验证**——要么映射到代码位置，要么标记 `GAP` 并附验收断言。新增需求须先过 18 TOP-MASTER 的三联盟铁律，再补本 SRS。
 
@@ -22,21 +22,21 @@
 定义「**璇玑 RelGraph**」（全域归一化知识图谱协同平台）的功能性与非功能性需求，作为架构设计、编码、测试与验收的唯一需求基准。系统承载**三联盟协同**的三条互补业务主线（见 18 TOP-MASTER §一~§四）：
 
 - **产品联盟 · 需求治理主线**：需求判重（P9 闸门） → 需求入图谱 Bind 六维 → 需求追踪矩阵发布。
-- **璇玑（协作治理）**：组建璇玑 → 专家入璇玑 → 任务派发 → 协同推进 → 全程留痕（`xuanji-system`）。
-- **璇玑融合（算子融合）**：归一化 → 十四维会诊 → 冲突消解 → 治理裁决 → 产出可复用优化算子并上架（`xuanji-expert`）。
+- **璇玑（协作治理）**：组建璇玑 → 专家入璇玑 → 任务派发 → 协同推进 → 全程留痕（`mox-system`）。
+- **璇玑融合（算子融合）**：归一化 → 十四维会诊 → 冲突消解 → 治理裁决 → 产出可复用优化算子并上架（`mox-expert`）。
 
 ### 1.2 术语
 
 | 术语 | 含义 |
 |------|------|
-| 璇玑（Xuanji） | 多租户隔离的协作单元，权限与作用域的最小边界 |
+| 璇玑（Mox） | 多租户隔离的协作单元，权限与作用域的最小边界 |
 | 成员（Member） | 璇玑内的参与者，持有角色绑定（RoleBinding） |
 | 任务（Task） | 受状态机约束的工作单元，可被分派给多名专家 |
 | 角色（Role） | Admin/Coordinator/Expert/Member/Auditor，含继承 |
-| 作用域（Scope） | 权限生效范围：Global / Xuanji / Task |
+| 作用域（Scope） | 权限生效范围：Global / Mox / Task |
 | 领域事件（DomainEvent） | 写操作产出的不可变事实，是审计与实时推送的唯一数据源 |
 | 反应器（Reactor） | 订阅事件总线、将事件转译为系统消息与通知的组件 |
-| 璇玑（Xuanji） | `xuanji-expert` 的算法最高权限校验，不可被治理覆盖 |
+| 璇玑（Mox） | `mox-expert` 的算法最高权限校验，不可被治理覆盖 |
 
 ---
 
@@ -44,7 +44,7 @@
 
 | 用户类 | 业务目标 | 关键关注 |
 |--------|----------|----------|
-| 璇玑管理员 XuanjiAdmin | 治理璇玑、任免、审计 | 全局管控、合规留痕 |
+| 璇玑管理员 MoxAdmin | 治理璇玑、任免、审计 | 全局管控、合规留痕 |
 | 协调员 Coordinator | 任务运营、邀请专家 | 高效派发、不越权管理成员 |
 | 专家 Expert | 承接并推进被分配的任务 | 最小权限、协作顺畅 |
 | 普通成员 Member | 受限参与、评论 | 只读自身相关、不被赋予越权 |
@@ -80,7 +80,7 @@
 | ID | 需求 | 优先级 | 状态 | 落点 |
 |----|------|:--:|:--:|------|
 | FR-MEM-01 | 创建璇玑并确立首位管理员（状态直接 Active） | P0 | ✅ | orchestrator.bootstrap |
-| FR-MEM-02 | 邀请专家入璇玑，默认授 `Expert@Xuanji`（最小权限） | P0 | ✅ | services.invite |
+| FR-MEM-02 | 邀请专家入璇玑，默认授 `Expert@Mox`（最小权限） | P0 | ✅ | services.invite |
 | FR-MEM-03 | 同璇玑同 email 邀请幂等（忽略大小写/空格）→ Conflict | P1 | ✅ | services.invite |
 | FR-MEM-04 | 成员激活 `Invited→Active` | P0 | ✅ | services.activate |
 | FR-MEM-05 | 成员生命周期受状态机约束（Left 终态不可复活） | P0 | ✅ | model.MemberStatus |
@@ -108,7 +108,7 @@
 |----|------|:--:|:--:|------|
 | FR-PERM-01 | 5 角色 + 继承链（Coordinator→Expert→Member） | P0 | ✅ | rbac.Role |
 | FR-PERM-02 | 14 原子权限，含 `*Own` 所有权权限 | P0 | ✅ | rbac.Permission |
-| FR-PERM-03 | 三级作用域 Global/Xuanji/Task | P0 | ✅ | rbac.Scope |
+| FR-PERM-03 | 三级作用域 Global/Mox/Task | P0 | ✅ | rbac.Scope |
 | FR-PERM-04 | 所有权权限要求调用者在 assignees 中 | P0 | ✅ | rbac.authorize |
 | FR-PERM-05 | 所有写操作先经统一 `require()` 鉴权 | P0 | ✅ | orchestrator.require |
 | FR-PERM-06 | 鉴权失败留痕（试探式鉴权不落审计，避免噪声） | P1 | ✅ | orchestrator.require + AuthzDenied |
@@ -137,7 +137,7 @@
 
 | ID | 需求 | 优先级 | 状态 | 落点 |
 |----|------|:--:|:--:|------|
-| FR-FUSE-01 | 双璇玑十四维治理（业务七维 + 开发七维 CodeIR 驱动） | P0 | ✅ | xuanji-expert |
+| FR-FUSE-01 | 双璇玑十四维治理（业务七维 + 开发七维 CodeIR 驱动） | P0 | ✅ | mox-expert |
 | FR-FUSE-02 | 归一化 IR → 七维会诊 → 冲突消解 → 治理裁决 | P0 | ✅ | pipeline |
 | FR-FUSE-03 | 璇玑最高权限校验（不可覆盖） | P0 | ✅ | verify.rs |
 | FR-FUSE-04 | 优化结果可解释（剪伪依赖数/加速比/算力压缩比） | P1 | ✅ | bench.rs |
@@ -157,7 +157,7 @@
 
 | ID | 类别 | 需求 | 目标值 | 现状 |
 |----|------|------|--------|------|
-| NFR-01 | 多租户隔离 | 所有查询按 xuanji_id 过滤；跨璇玑引用拒绝 | 100% 拦截 | 查询侧 ✅；写入侧已修 GAP-2 |
+| NFR-01 | 多租户隔离 | 所有查询按 mox_id 过滤；跨璇玑引用拒绝 | 100% 拦截 | 查询侧 ✅；写入侧已修 GAP-2 |
 | NFR-02 | 安全 | 最小权限：受邀成员仅 `Expert@单璇玑` | 默认满足 | ✅ |
 | NFR-03 | 可移植性 | 存储层接口/实现分离；`trait Repository` 支持 SQLite/PostgreSQL/MySQL 零代码切换 | 接口稳定 + 多后端可选 | ✅ 三后端已落地（`02` §7.4） |
 | NFR-04 | 解耦 | 领域动作与通信经事件总线解耦 | 全量覆盖 | ✅ |
@@ -176,8 +176,8 @@
 
 - **约束 C-1**：所有写操作必须经由 `require()` 鉴权（BR-02），bootstrap 为唯一例外。
 - **约束 C-2**：`assignees` 为可信集合（经 GAP-2 修复），所有权类权限前提成立。
-- **约束 C-3**：生产部署必须设 `XUANJI_PERSIST=true` 且 `XUANJI_STRICT_PERSIST=true`（fail-fast），否则连库失败会静默回退内存态导致数据不可恢复（见 `02` §7.4）。
-- **假设 A-1**：内存态（`XUANJI_PERSIST=false`）仅用于测试/演示，重启即失忆；生产依 NFR-03 使用 SQLite/PostgreSQL/MySQL 持久化。
+- **约束 C-3**：生产部署必须设 `MOX_PERSIST=true` 且 `MOX_STRICT_PERSIST=true`（fail-fast），否则连库失败会静默回退内存态导致数据不可恢复（见 `02` §7.4）。
+- **假设 A-1**：内存态（`MOX_PERSIST=false`）仅用于测试/演示，重启即失忆；生产依 NFR-03 使用 SQLite/PostgreSQL/MySQL 持久化。
 - **假设 A-2**：LLM 可选；未配置时企业流程 fail-closed 走拒绝路径（合规默认拒绝）。
 
 ---
@@ -193,17 +193,17 @@
 | FR-TASK-06 | `03-design` §DAG | `br11_dependency_graph_is_dag` | 自依赖/环/跨璇玑拒绝 |
 | FR-PERM-06 | `03-design` §审计 | `br18_authz_denial_is_audited` | 越权恰好 1 条记录；正常 0 条 |
 
-> 完整 21 条业务规则追踪见 `docs/modules/xuanji-expert-business-requirements.md` §6。
+> 完整 21 条业务规则追踪见 `docs/modules/mox-expert-business-requirements.md` §6。
 
 ---
 
 ## 8. 验收标准
 
 1. **功能验收**：FR-MEM/FR-TASK/FR-PERM/FR-COMM/FR-AUDIT 中标记为 ✅ 的项均有正向+负向测试。
-2. **回归验收**：`cargo test -p xuanji-system -p xuanji-expert -p flow-ai` 全绿。
+2. **回归验收**：`cargo test -p mox-system -p mox-expert -p flow-ai` 全绿。
 3. **静态验收**：相关 crate `cargo clippy` 零告警。
 4. **安全验收**：跨租户权限提升路径（GAP-2 攻击链）被阻断；鉴权失败可审计。
-5. **性能验收**：`xuanji bench` 加速比 ≥ 2.32×。
+5. **性能验收**：`mox bench` 加速比 ≥ 2.32×。
 
 ---
 
@@ -219,7 +219,7 @@
 | ADR-DOC-004 | **八层知识图谱（L0~L7）× 14 节点族 × 19 边族**作为统一图模型 | 原关图 GR-STD 仅 12 类节点/7 类边，不足以承载 REQ→FUN→BIZ→ALG→TSK→COD 的全链路 | 图谱统一分层：L0 需求根层 / L1 业务层 / L2 功能层 / L3 算法层 / L4 实现层 / L5 资源层 / L6 治理层 / L7 表现层 | 关图建模、kg-hub、graph-algorithms | 算法联盟 | ✅ 生效 |
 | ADR-DOC-005 | **前后端与路径统一**：frontend/ → frontend-ui/、crates/ → platform/services/、backend/ → edge-node（M0） | 路径老化：README 仍引用 frontend/、crates/、backend-node 命名含混 | M0 阶段完成三路径归一化：`frontend-ui/` 单应用（+ /admin 5 面板）、`platform/services/` 15 crate、`platform/edge-node/` 瘦身 4 文件 | 双 README、02 §3.2、00-INDEX §适用系统 | 开发联盟 | ✅ M0 执行中 |
 | ADR-DOC-006 | **10 大标准业务流程（BP-01~10）** 替换原 8 BP | 原 BP 缺少 P9 判重与文档治理两条标准链路 | 新增 BP-9「P9 先判重后立项 / 图谱注入」与 BP-10「文档同步归一 / ADR 治理」，共 10 BP，每 BP 强制 6 字段（编号/主责联盟/前置/核心步骤/闸门规则/审计产物） | 04-business-processing §3、06 映射 | 产品联盟 + 开发联盟 | ✅ 生效 |
-| ADR-DOC-007 | **八大算法家族标准化**：禁止自研等价实现 | 社区检测（CNM vs LPA）、介数（Brandes 2001 vs BFS 近似）等实现选择在文档中混用 | 算法家族固定：①CNM 社区检测 ②Brandes 2001 介数 ③Harmonic 紧密中心性 ④PageRank（含转置图）⑤激活扩散（个性化 PageRank d=0.85，30 轮）⑥RRF 结果融合 ⑦CEM 交叉熵优化 ⑧CPM·RCPSP 调度；其他实现一律废弃 | graph-algorithms / xuanji-expert / optimizer | 算法联盟 | ✅ 生效 |
+| ADR-DOC-007 | **八大算法家族标准化**：禁止自研等价实现 | 社区检测（CNM vs LPA）、介数（Brandes 2001 vs BFS 近似）等实现选择在文档中混用 | 算法家族固定：①CNM 社区检测 ②Brandes 2001 介数 ③Harmonic 紧密中心性 ④PageRank（含转置图）⑤激活扩散（个性化 PageRank d=0.85，30 轮）⑥RRF 结果融合 ⑦CEM 交叉熵优化 ⑧CPM·RCPSP 调度；其他实现一律废弃 | graph-algorithms / mox-expert / optimizer | 算法联盟 | ✅ 生效 |
 | ADR-DOC-008 | **9 里程碑（M0~M8）+ 三级验收 L0/L1/L2**作为统一排期口径 | 原路线图（05）中「迭代 1~4+」粒度不一致、无 L0/L1/L2 验收门槛 | M0 全域归一化 / M1 业务闭环 / M2 算法核 / M3 AI 编排统一 / M4 存储分布式 / M5 可观测 HA / M6 多云 / M7 生态 / M8 自治；三级验收：L0 单元全绿、L1 集成全过、L2 SLO 达标 | 05-iteration-roadmap §7+、18 §八 | 三联盟联合 | ✅ 生效 |
 | ADR-DOC-009 | **统一 AI 入口**：Rust Gateway 四端点 `/ai/engine/{process,analyze,capabilities,metrics}`，路由语义 AC-10 | 原 AI 查询散落在 Node sidecar、Caomei、ChatView 多处，语义不统一 | 所有 AI 能力路由至 Rust Gateway；process=自动意图识别→能力路由，analyze=显式执行，capabilities=能力矩阵自描述，metrics=成功率/降级率/延迟；AC-10：静态路由优先于参数化路由 | runtime（platform/gateway/runtime）、ai-agent | 开发联盟 + 算法联盟 | ✅ 生效 |
 | ADR-DOC-010 | **四归三连铁律**：所有改动必须经需求↔架构↔业务↔文档四归一，且联盟、流程、代码三连对应 | 历史存在代码改动未同步文档、联盟决策未落流程的缺口 | 改动前先补 06 映射行；改动后必过 08 自动化 8 步闭环；PR CI 强制勾选「四归三连完成」复选框 | CI 模板、PR checklist、07 §三联盟铁规 | 三联盟联合 | ✅ 生效 |
@@ -233,4 +233,4 @@
 | 版本 | 说明 |
 |------|------|
 | v1.1 (ENT) | **三联盟对齐升级**：标题 / 术语改为「璇玑 RelGraph」；权威链显式指向 18 TOP-MASTER；适用范围路径全部刷新（platform/services/、platform/gateway/runtime/、frontend-ui/）；新增「§9 文档级 ADR-DOC-001~012 决策注册」，与 18 §十二 ADR 治理一一对应。三联盟主责联盟字段全面引入。 |
-| v1.0 (ENT) | 首版企业级 SRS：结构化 FR/NFR、可度量目标、追踪矩阵、验收标准；与 `docs/modules/xuanji-expert-business-requirements.md` 对齐并提升格式标准。 |
+| v1.0 (ENT) | 首版企业级 SRS：结构化 FR/NFR、可度量目标、追踪矩阵、验收标准；与 `docs/modules/mox-expert-business-requirements.md` 对齐并提升格式标准。 |

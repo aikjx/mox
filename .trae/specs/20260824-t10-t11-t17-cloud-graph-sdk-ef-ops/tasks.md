@@ -43,11 +43,11 @@ Batch A         Batch B                Batch C
 - **工作内容**：
   1. 创建 `projects/t10-cloud-artifacts/`、`projects/t11-graph-artifacts/`、`projects/t17-sdk-examples/`、`projects/t19-regression-report/`、`projects/t20-canary-metrics/`
   2. 每个目录放一个 `.gitkeep` + `README.md`（说明目录用途、产出格式样例）
-  3. 创建 spec 交付物占位骨架目录：`deploy/helm/xuanji-dr/templates/`、`deploy/helm/xuanji/templates/`、`platform/sdk/nodejs/{xuanji-sdk-cloud,xuanji-sdk-graph,test,examples/cloud,examples/graph}`、`platform/sdk/python/{xuanji_sdk_cloud,xuanji_sdk_graph,test,examples/cloud,examples/graph}`
+  3. 创建 spec 交付物占位骨架目录：`deploy/helm/mox-dr/templates/`、`deploy/helm/mox/templates/`、`platform/sdk/nodejs/{mox-sdk-cloud,mox-sdk-graph,test,examples/cloud,examples/graph}`、`platform/sdk/python/{mox_sdk_cloud,mox_sdk_graph,test,examples/cloud,examples/graph}`
 - **本地 TR**：
   - **[rule] TR-1.1**：5 个 `projects/*` 目录均存在，`README.md` 文件可读
   - **[rule] TR-1.2**：`platform/sdk/nodejs/` 与 `python/` 子目录均存在（≥8 个叶子目录）
-  - **[rule] TR-1.3**：`ls deploy/helm/` 下 `xuanji-dr/` 与 `xuanji/` 均含 templates 子目录
+  - **[rule] TR-1.3**：`ls deploy/helm/` 下 `mox-dr/` 与 `mox/` 均含 templates 子目录
 - **Completion Evidence**：`tree projects deploy/helm platform/sdk/nodejs platform/sdk/python -L 3 > artifacts/setup_tree.txt` 内容校验
 
 ---
@@ -61,7 +61,7 @@ Batch A         Batch B                Batch C
 - **对应 AC**：AC-T10-1 / AC-T10-2 / AC-T10-20
 - **依赖**：Task 1
 - **工作内容**：
-  1. 在 `xuanji-cloud-drive-s3/src/lifecycle.rs` 实现 `HotWarmColdLifecycle`：HOT(0-30d) / WARM(30-90d) / COLD(90d+)
+  1. 在 `mox-cloud-drive-s3/src/lifecycle.rs` 实现 `HotWarmColdLifecycle`：HOT(0-30d) / WARM(30-90d) / COLD(90d+)
   2. `transition_scan(&self) -> Vec<TransitionPlan>`：每日 02:00 UTC 定时；WARM 读自动 `touch_and_restore_to_hot`
   3. 暴露 `CloudLifecycleStats` 结构 + JSON 序列化
 - **本地 TR**：
@@ -77,7 +77,7 @@ Batch A         Batch B                Batch C
 - **对应 AC**：AC-T10-3 / AC-T10-4 / AC-T10-21
 - **依赖**：Task 1
 - **工作内容**：
-  1. 新增 `xuanji-domain-abstractions/src/iam_standard_policies.rs`：10 条 `PolicyStatement` 常量数组 `STANDARD_10_POLICIES`
+  1. 新增 `mox-domain-abstractions/src/iam_standard_policies.rs`：10 条 `PolicyStatement` 常量数组 `STANDARD_10_POLICIES`
   2. 每条 SID 命名：P1 AdminFull / P2 BucketOwner / P3 EditorWrite / P4 ViewerRO / P5 GuestList / P6 PublicRead / P7 DenyNonMFA / P8 DenyIP / P9 TagConditional / P10 VPCOnly
   3. 扩展 `MockIamProvider::evaluate_policies(policies, principal, action, resource) -> Result<bool, _>`：**Deny 优先短路**
 - **本地 TR**：
@@ -92,7 +92,7 @@ Batch A         Batch B                Batch C
 - **对应 AC**：AC-T10-5 / AC-T10-6 / AC-T10-7
 - **依赖**：Task 1, A-2（复用 HMAC）
 - **工作内容**：
-  1. 新增 `xuanji-domain-abstractions/src/sts_ttl900.rs`：`assume_role(role_id, session_name, duration_secs=900) -> StsCredentials`
+  1. 新增 `mox-domain-abstractions/src/sts_ttl900.rs`：`assume_role(role_id, session_name, duration_secs=900) -> StsCredentials`
   2. duration != 900 → Err；`session_token = base64(HMAC-SHA256(secret, role_id||session_name||expiration))`
   3. 实现 `StsCredentials::verify(&self, secret) -> bool`；MockIamProvider 凭据过期校验
 - **本地 TR**：
@@ -125,7 +125,7 @@ Batch A         Batch B                Batch C
 - **对应 AC**：AC-T10-11 / AC-T10-12 / AC-T10-22
 - **依赖**：Task 1
 - **工作内容**：
-  1. 重写 `xuanji-standards/src/lib.rs`：`pub mod dengbao_hash_chain`（替换 skeleton）
+  1. 重写 `mox-standards/src/lib.rs`：`pub mod dengbao_hash_chain`（替换 skeleton）
   2. `HashChainBlock { idx, ts_ms, actor, action, resource, outcome, payload_hash, prev_hash, block_hash, hmac_signature }`
   3. 链式 hash：`block_hash = sha256(prev_hash || idx || ts_ms || actor || action || resource || outcome || payload_hash)`；`append` 原子；`verify` 全链校验返回 broken_at
   4. 示例 `examples/verify-hash-chain.rs`：读 JSON 文件 → 输出 `{blocks, integrity, broken_at?}`；exit 0 当且仅当 integrity=true
@@ -191,7 +191,7 @@ Batch A         Batch B                Batch C
 - **依赖**：A-1..A-8
 - **工作内容**：
   1. 运行 `mocha test-enterprise-10task-t10-cloud.js` → 基线
-  2. 运行 `cargo test -p xuanji-domain-abstractions --test t1_t2_t3_red_green` → 0 red
+  2. 运行 `cargo test -p mox-domain-abstractions --test t1_t2_t3_red_green` → 0 red
 - **TR**：
   - **[rule] A-9.1** t10 baseline 全部绿
   - **[rule] A-9.2** t1_t2_t3_red_green 0 red
@@ -202,7 +202,7 @@ Batch A         Batch B                Batch C
 - **Priority**：high
 - **对应 AC**：AC-T10-19
 - **依赖**：A-1..A-9
-- **TR**：**[rule] A-10.1** `cargo clippy -p xuanji-standards -p xuanji-cloud-drive-s3 -p xuanji-domain-abstractions -p xuanji-expert -- -D warnings` exit 0
+- **TR**：**[rule] A-10.1** `cargo clippy -p mox-standards -p mox-cloud-drive-s3 -p mox-domain-abstractions -p mox-expert -- -D warnings` exit 0
 
 ### Task A-11：T10 验收自测脚本（一键 run all 60 tests）
 
@@ -234,10 +234,10 @@ Batch A         Batch B                Batch C
 - **对应 AC**：AC-T11-1
 - **依赖**：Task 1
 - **工作内容**：
-  1. 创建 `platform/services/xuanji-graph-streams/`（Cargo.toml + src/lib.rs + src/flink_source.rs）
+  1. 创建 `platform/services/mox-graph-streams/`（Cargo.toml + src/lib.rs + src/flink_source.rs）
   2. `Cargo.toml` workspace member 注册；`FlinkCdcSource::new(Arc<CdcSource>)` + `next_blocking() + resume(offset)`
 - **TR**：
-  - **[rule] B-1.1** `cargo metadata --format-version=1` 中 `xuanji-graph-streams` 存在
+  - **[rule] B-1.1** `cargo metadata --format-version=1` 中 `mox-graph-streams` 存在
   - **[rule] B-1.2** 100 event 本地 emit → 100 个 next_blocking() 返回 Some，第 101 个 None（挂起）
 
 ### Task B-2：10 万事件无丢重 harness
@@ -261,7 +261,7 @@ Batch A         Batch B                Batch C
 - **对应 AC**：AC-T11-3 / AC-T11-4 / AC-T11-5 / AC-T11-17
 - **依赖**：Task 1
 - **工作内容**：
-  1. 新 crate `platform/services/xuanji-graph-spark/`：`src/graph_spark_reader.rs` / `graph_spark_writer.rs`
+  1. 新 crate `platform/services/mox-graph-spark/`：`src/graph_spark_reader.rs` / `graph_spark_writer.rs`
   2. `GraphSparkReader.paged_nodes(page,size) -> NodeFrame`；schema 含 `id:Long / label:String / type_:String / attr:Map`
   3. `GraphSparkWriter.bulk(df) -> Result<WrittenStats>`；幂等键 `(source,target,label)`
   4. Round-trip 测试写 2000/3000 再读回集合对称差为空
@@ -277,7 +277,7 @@ Batch A         Batch B                Batch C
 - **对应 AC**：AC-T11-5 / AC-T11-6 / AC-T11-7 / AC-T11-16
 - **依赖**：Task 1
 - **工作内容**：
-  1. `xuanji-graph-service/src/projection_20.rs`
+  1. `mox-graph-service/src/projection_20.rs`
   2. 20 具体函数命名 `proj_{filter_id}_{dir}_{hop}`：filter_id 5 类（type/community/attr/degree/label）× dir（in/out）× hop（1/2）= 20
   3. `PROJECTION_OPERATORS: [(&str, fn); 20]` 静态注册
   4. 200 节点手工 oracle 测试集
@@ -293,7 +293,7 @@ Batch A         Batch B                Batch C
 - **对应 AC**：AC-T11-8 / AC-T11-9 / AC-T11-18
 - **依赖**：B-1, B-4
 - **工作内容**：
-  1. `xuanji-graph-service/src/ac15_faults.rs`：`FaultInjector` + 14 故障枚举（F1-F14 对应 spec 命名）
+  1. `mox-graph-service/src/ac15_faults.rs`：`FaultInjector` + 14 故障枚举（F1-F14 对应 spec 命名）
   2. 每个故障可注入至 `emit, source.next, writer.write, projection.eval`
   3. 质量门：lost==0 或 circuit_breaker=true 且 audit ∈ chain
 - **TR**：
@@ -343,7 +343,7 @@ Batch A         Batch B                Batch C
 - **依赖**：B-1..B-8
 - **TR**：
   - **[rule] B-9.1** `mocha test/test-graph-formulas.js test/test-enterprise-10task-t2-algorithm.js` → 全绿
-  - **[rule] B-9.2** `cargo test -p xuanji-graph-storage -p xuanji-graph-service --test t7_r2_storage t9_r3_graph_service` → 0 失败
+  - **[rule] B-9.2** `cargo test -p mox-graph-storage -p mox-graph-service --test t7_r2_storage t9_r3_graph_service` → 0 失败
 
 ### Task B-10：T11 rubric 证据
 
@@ -372,8 +372,8 @@ Batch A         Batch B                Batch C
 - **对应 AC**：AC-T17-1 / AC-T17-12
 - **依赖**：Task 1
 - **工作内容**：
-  1. 重写 `xuanji-sdk-cloud/src/lib.rs`：`CloudClient { new(), list_buckets(), put/get/del, MPU, sts_assume_role, iam_evaluate, healthz }`
-  2. SigV4 签名复用 `xuanji-standards::sigv4`（或同算法 port 版，避免循环依赖）
+  1. 重写 `mox-sdk-cloud/src/lib.rs`：`CloudClient { new(), list_buckets(), put/get/del, MPU, sts_assume_role, iam_evaluate, healthz }`
+  2. SigV4 签名复用 `mox-standards::sigv4`（或同算法 port 版，避免循环依赖）
   3. `examples/ex_c1.rs` 到 `ex_c15.rs` 15 个示例
 - **TR**：
   - **[rule] C-1.1** pub fn 数 ≥ 10（非 trait）
@@ -387,7 +387,7 @@ Batch A         Batch B                Batch C
 - **对应 AC**：AC-T17-1 / AC-T17-12
 - **依赖**：Task 1
 - **工作内容**：
-  1. 重写 `xuanji-sdk-graph/src/lib.rs`：`GraphClient { get_graph, stats, centrality, communities, pagerank, bulk, project(...), cdc_stream, search }`
+  1. 重写 `mox-sdk-graph/src/lib.rs`：`GraphClient { get_graph, stats, centrality, communities, pagerank, bulk, project(...), cdc_stream, search }`
   2. `examples/ex_g1.rs` 到 `ex_g15.rs` 15 个示例
 - **TR**：
   - **[rule] C-2.1** pub fn ≥ 9
@@ -401,8 +401,8 @@ Batch A         Batch B                Batch C
 - **对应 AC**：AC-T17-2 / AC-T17-5 / AC-T17-9 / AC-T17-13
 - **依赖**：Task 1
 - **工作内容**：
-  1. `xuanji-sdk-cloud/`：index.js（class CloudClient，零外部 aws-sdk 依赖；纯 `https` + 自实现 SigV4）+ package.json
-  2. `xuanji-sdk-graph/`：同构 GraphClient
+  1. `mox-sdk-cloud/`：index.js（class CloudClient，零外部 aws-sdk 依赖；纯 `https` + 自实现 SigV4）+ package.json
+  2. `mox-sdk-graph/`：同构 GraphClient
   3. `examples/cloud/ex_c{1-15}.js`（15）+ `examples/graph/ex_g{1-15}.js`（15）
   4. `test/cloud/*.js` ≥15 + `test/graph/*.js` ≥15（nock 离线 mock）
 - **TR**：
@@ -417,12 +417,12 @@ Batch A         Batch B                Batch C
 - **对应 AC**：AC-T17-3 / AC-T17-6 / AC-T17-10 / AC-T17-14
 - **依赖**：Task 1
 - **工作内容**：
-  1. `xuanji_sdk_cloud/`：`client.py`（基于标准库 `urllib` + `hmac` + `hashlib`，零第三方依赖）+ `__init__.py` + `pyproject.toml`（setuptools）
-  2. `xuanji_sdk_graph/`：同构
+  1. `mox_sdk_cloud/`：`client.py`（基于标准库 `urllib` + `hmac` + `hashlib`，零第三方依赖）+ `__init__.py` + `pyproject.toml`（setuptools）
+  2. `mox_sdk_graph/`：同构
   3. `examples/cloud/ex_c{1-15}.py` 15 + `examples/graph/ex_g{1-15}.py` 15
   4. `test/test_cloud_*.py` ≥10 + `test/test_graph_*.py` ≥10（unittest + mock）
 - **TR**：
-  - **[rule] C-4.1** `python -c "import xuanji_sdk_cloud; print(xuanji_sdk_cloud.__version__)"` 成功
+  - **[rule] C-4.1** `python -c "import mox_sdk_cloud; print(mox_sdk_cloud.__version__)"` 成功
   - **[rule] C-4.2** 30 examples 存在
   - **[rule] C-4.3** `python -m unittest discover -s platform/sdk/python/test -v` → ≥ 20 passed
 
@@ -446,7 +446,7 @@ Batch A         Batch B                Batch C
 - **Priority**：high
 - **对应 AC**：AC-T17-12
 - **依赖**：C-1, C-2
-- **TR**：**[rule] C-6.1** `CARGO_NET_OFFLINE=1 cargo test -p xuanji-sdk-cloud -p xuanji-sdk-graph` passed ≥ 25
+- **TR**：**[rule] C-6.1** `CARGO_NET_OFFLINE=1 cargo test -p mox-sdk-cloud -p mox-sdk-graph` passed ≥ 25
 
 ### Task C-7：Python/Node 离线证明
 
@@ -488,7 +488,7 @@ Batch A         Batch B                Batch C
 - **Status**：pending
 - **Priority**：high
 - **依赖**：C-1, C-2
-- **TR**：**[rule] C-11.1** `cargo clippy -p xuanji-sdk-cloud -p xuanji-sdk-graph -- -D warnings` exit 0
+- **TR**：**[rule] C-11.1** `cargo clippy -p mox-sdk-cloud -p mox-sdk-graph -- -D warnings` exit 0
 
 ### Task C-12：全量测试汇总脚本
 
@@ -607,7 +607,7 @@ Batch A         Batch B                Batch C
 - **对应 AC**：AC-F-3 / AC-F-8
 - **依赖**：Task 1
 - **TR**：
-  - **[rule] F-3.1** `deploy/helm/xuanji/Chart.yaml` 存在
+  - **[rule] F-3.1** `deploy/helm/mox/Chart.yaml` 存在
   - **[rule] F-3.2** 渲染模板 YAML ≥10 Deployment + ≥1 Service + ≥1 ConfigMap
 
 ### Task F-4：T20 灰度脚本 4 阶段 + values 文件

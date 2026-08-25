@@ -1,4 +1,4 @@
-//! hermes-flow-bridge：零侵入插件，把 flow-ai + xuanji-expert 流程图/关系网优化内核
+//! hermes-flow-bridge：零侵入插件，把 flow-ai + mox-expert 流程图/关系网优化内核
 //! 注入 Hermes Agent Ultra。
 //!
 //! 模块：
@@ -8,13 +8,13 @@
 //! - `plugin`：实现 Hermes Plugin trait，注册两个中间件（含算法否决拦截）
 
 pub const CRATE_ID: &str = "9bfaf43b-385a-5a44-9fb2-65b4003ee80d";
-pub const ENGINE_NAME: &str = "xuanji::hermes_flow_bridge";
-pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+pub const ENGINE_NAME: &str = "mox::hermes_flow_bridge";
+pub const CRATE_META: mox_common_meta::CrateMeta = mox_common_meta::CrateMeta {
     id: CRATE_ID,
     name: env!("CARGO_PKG_NAME"),
     version: env!("CARGO_PKG_VERSION"),
-    layer: xuanji_common_meta::AisLayer::L4Services,
-    owner: "xuanji-core",
+    layer: mox_common_meta::AisLayer::L4Services,
+    owner: "mox-core",
 };
 
 pub mod bridge;

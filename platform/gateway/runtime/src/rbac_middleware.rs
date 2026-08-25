@@ -481,10 +481,10 @@ pub fn is_public_route(path: &str) -> bool {
         | "/" 
         | "/index.html"
         // 双璇玑十四维治理自检端点：只读、不改状态，供 CI 与前端治理台直接调用
-        | "/api/xuanji/health"
-        | "/api/xuanji/optimize"
+        | "/api/mox/health"
+        | "/api/mox/optimize"
     ) || path.starts_with("/static/")
-        || path.starts_with("/api/xuanji/")
+        || path.starts_with("/api/mox/")
 }
 
 /// 从 Token 提取角色（简化版，实际应用应从 JWT 解析）
@@ -531,7 +531,7 @@ pub fn extract_tenant_from_token(token: &str, default_tenant: &str) -> String {
 ///
 /// 行为契约：
 /// 1. 公开端点（健康检查 / 治理自检 / 前端静态资源）、非 `/api/` 路径、
-///    子服务透传前缀（`/xuanji-system/*` 自带成员令牌 RBAC）、公开 AI 对话
+///    子服务透传前缀（`/mox-system/*` 自带成员令牌 RBAC）、公开 AI 对话
 ///    与商城只读浏览：直接放行，不参与网关 RBAC；
 /// 2. 扩展中缺少认证主体（理论上不会发生，防御性处理）→ 401；
 /// 3. 路由 → 所需权限使用 [`required_permission`] 全覆盖兜底，不再产生假 404；

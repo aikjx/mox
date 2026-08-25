@@ -1,4 +1,4 @@
-const { GraphClient } = require("../../xuanji-sdk-graph");
+const { GraphClient } = require("../../mox-sdk-graph");
 const client = new GraphClient({ endpoint: "graph.local" });
 const result = client.projTypeOut2("node-xyz");
 if (!result.ok || result.schemaVersion !== 2) process.exit(1);

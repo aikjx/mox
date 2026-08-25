@@ -745,7 +745,7 @@
         <div class="edge-id">EB-ALL-10</div>
         <div class="edge-flow">BP-5 推进 <span class="edge-arrow">→</span> BP-6 融合</div>
         <div class="edge-sem">任务必须处于 InReview/Done 才能触发融合优化流程</div>
-        <div class="edge-rule">Task.status ∉ {InReview, Done} → /api/xuanji/optimize 412</div>
+        <div class="edge-rule">Task.status ∉ {InReview, Done} → /api/mox/optimize 412</div>
       </div>
       <div class="edge-card">
         <div class="edge-id">EB-ALL-11</div>
@@ -777,7 +777,7 @@
           <div class="anchor-name">AllianceEngine 6 阶段管线</div>
           <span class="anchor-domain">EAF-STD</span>
         </div>
-        <div class="anchor-item"><span class="anchor-label">Rust:</span><span class="code-path">xuanji-expert/src/alliance/mod.rs</span></div>
+        <div class="anchor-item"><span class="anchor-label">Rust:</span><span class="code-path">mox-expert/src/alliance/mod.rs</span></div>
         <div class="anchor-item"><span class="anchor-label">管线:</span><span class="anchor-value">gate::run_full_pipeline(req) → 7 事件</span></div>
         <div class="anchor-item"><span class="anchor-label">HTTP:</span><span class="http-path">POST /ai/engine/alliance/full (SSE)</span></div>
         <div class="anchor-item"><span class="anchor-label">前端:</span><span class="anchor-value">alliance.ts runAllianceFullSSE</span></div>
@@ -785,13 +785,13 @@
 
       <div class="anchor-card">
         <div class="anchor-head">
-          <div class="anchor-name">xuanji_optimize 8 步融合</div>
-          <span class="anchor-domain">XUANJI-V3</span>
+          <div class="anchor-name">mox_optimize 8 步融合</div>
+          <span class="anchor-domain">MOX-V3</span>
         </div>
-        <div class="anchor-item"><span class="anchor-label">Rust:</span><span class="code-path">xuanji-expert/src/pipeline.rs:42</span></div>
+        <div class="anchor-item"><span class="anchor-label">Rust:</span><span class="code-path">mox-expert/src/pipeline.rs:42</span></div>
         <div class="anchor-item"><span class="anchor-label">专家:</span><span class="code-path">experts/mod.rs all_experts() (14位)</span></div>
-        <div class="anchor-item"><span class="anchor-label">HTTP:</span><span class="http-path">POST /api/xuanji/optimize</span></div>
-        <div class="anchor-item"><span class="anchor-label">前端:</span><span class="anchor-value">XuanjiFusionView.vue 三栏</span></div>
+        <div class="anchor-item"><span class="anchor-label">HTTP:</span><span class="http-path">POST /api/mox/optimize</span></div>
+        <div class="anchor-item"><span class="anchor-label">前端:</span><span class="anchor-value">MoxFusionView.vue 三栏</span></div>
       </div>
 
       <div class="anchor-card">
@@ -799,7 +799,7 @@
           <div class="anchor-name">⛨璇玑验证 5 项</div>
           <span class="anchor-domain" style="background:rgba(232,106,124,0.1);color:var(--accent-red); border-color:rgba(232,106,124,0.25)">HIGH-AUTH</span>
         </div>
-        <div class="anchor-item"><span class="anchor-label">Rust:</span><span class="code-path">xuanji-expert/src/verify/mod.rs</span></div>
+        <div class="anchor-item"><span class="anchor-label">Rust:</span><span class="code-path">mox-expert/src/verify/mod.rs</span></div>
         <div class="anchor-item"><span class="anchor-label">5 项:</span><span class="anchor-value">topology / data_dep / conflict / gains / code_rt</span></div>
         <div class="anchor-item"><span class="anchor-label">不变:</span><span class="anchor-value" style="color:var(--accent-red)">vetoed=true 时治理绝对不可覆盖</span></div>
         <div class="anchor-item"><span class="anchor-label">调用:</span><span class="anchor-value">XOPT-6 阶段 · verify(base, opt)</span></div>
@@ -810,10 +810,10 @@
           <div class="anchor-name">璇玑协作 orchestrator</div>
           <span class="anchor-domain">BP-V4</span>
         </div>
-        <div class="anchor-item"><span class="anchor-label">Rust:</span><span class="code-path">xuanji-system/src/orchestrator.rs</span></div>
+        <div class="anchor-item"><span class="anchor-label">Rust:</span><span class="code-path">mox-system/src/orchestrator.rs</span></div>
         <div class="anchor-item"><span class="anchor-label">角色:</span><span class="code-path">rbac.rs（BR-07 三重校验）</span></div>
         <div class="anchor-item"><span class="anchor-label">FSM:</span><span class="code-path">services.rs + model.rs（成员 + 任务）</span></div>
-        <div class="anchor-item"><span class="anchor-label">HTTP:</span><span class="http-path">/api/xuanji/{bootstrap,invite,task,...}</span></div>
+        <div class="anchor-item"><span class="anchor-label">HTTP:</span><span class="http-path">/api/mox/{bootstrap,invite,task,...}</span></div>
       </div>
 
       <div class="anchor-card">
@@ -843,7 +843,7 @@
           <div class="anchor-name">审计三汇 + 哈希链</div>
           <span class="anchor-domain">AUDIT</span>
         </div>
-        <div class="anchor-item"><span class="anchor-label">Rust:</span><span class="code-path">xuanji-expert/src/audit/{sink,syslog,s3}.rs</span></div>
+        <div class="anchor-item"><span class="anchor-label">Rust:</span><span class="code-path">mox-expert/src/audit/{sink,syslog,s3}.rs</span></div>
         <div class="anchor-item"><span class="anchor-label">事件:</span><span class="anchor-value">9 类领域事件 + EventBus 反应器幂等</span></div>
         <div class="anchor-item"><span class="anchor-label">链:</span><span class="anchor-value">AuditChain prev_hash → hash（断裂→fail-fast）</span></div>
         <div class="anchor-item"><span class="anchor-label">查询:</span><span class="http-path">GET /api/audit?member_id=&action=&ts=</span></div>
@@ -854,7 +854,7 @@
           <div class="anchor-name">治理闸门 G1~G8</div>
           <span class="anchor-domain">GOVERN</span>
         </div>
-        <div class="anchor-item"><span class="anchor-label">Rust:</span><span class="code-path">xuanji-expert/src/{govern,tenant_policy}.rs</span></div>
+        <div class="anchor-item"><span class="anchor-label">Rust:</span><span class="code-path">mox-expert/src/{govern,tenant_policy}.rs</span></div>
         <div class="anchor-item"><span class="anchor-label">G1-G8:</span><span class="anchor-value">合规模板/璇玑/RBAC/SLA/预算/敏感度/合规/灾备</span></div>
         <div class="anchor-item"><span class="anchor-label">铁律:</span><span class="anchor-value" style="color:var(--accent-red)">algo.vetoed → FlowStatus::Blocked 无条件</span></div>
         <div class="anchor-item"><span class="anchor-label">钩子:</span><span class="anchor-value">PreGate/PostGate 瀑布 + 审计切面</span></div>

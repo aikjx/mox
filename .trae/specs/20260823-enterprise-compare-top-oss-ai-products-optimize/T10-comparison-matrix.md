@@ -53,7 +53,7 @@
 
 **P0 璇玑 Infotopograph（Aura）v3.0（94）**
 - 璇玑是业界少数做到 Rust（性能与安全骨架）+ Node（业务编排与 Web 友好）+ 前端 Vue（用户交互）+ Wasm（插件沙箱）的多语混合架构。16 Rust crates 覆盖高并发/安全/算法/沙箱/Agent 骨架；Node 层承载图谱注册中心/专家联盟/KB/MCP/LLM 网关与 32 条路由域；Wasm 承载未信算子字节码；三者通过 JSON RPC/wasmer import_object/项目全息 Atlas 统一绑定。相比纯 Python/纯 JS 产品既具备生产级性能，又保留开发灵活性。
-- Evidence: d:\a10\aikjx\gitcode\infotopograph\platform\services\xuanji-expert\src\expert.rs（rayon 并行）; d:\a10\aikjx\gitcode\infotopograph\frontend-ui\package.json; d:\a10\aikjx\gitcode\infotopograph\platform\services\operator-wasm\src\lib.rs
+- Evidence: d:\a10\aikjx\gitcode\infotopograph\platform\services\mox-expert\src\expert.rs（rayon 并行）; d:\a10\aikjx\gitcode\infotopograph\frontend-ui\package.json; d:\a10\aikjx\gitcode\infotopograph\platform\services\operator-wasm\src\lib.rs
 
 **P1 Dify v0.14+（langgenius/dify）（88）**
 - Dify 主要以 Python/TS/Next.js 为多语体系；持久化通过 SQLAlchemy + PG + Celery/Redis 队列，向量抽象 10+ 后端，工程成熟度高。
@@ -97,7 +97,7 @@
 
 **P0 璇玑 Infotopograph（Aura）v3.0（72）**
 - 多租户隔离：璇玑在 Node 侧有组织（org）、用户（user）、角色（RBAC Owner/Admin/Normal/DatasetOp 四种）与 workspace 概念雏形，并提供 6 维绑定（REQ-FUN-BIZ-ALG-TSK-COD）覆盖率审计，但核心业务表未统一携带 tenant_id 行级过滤键；Rust 侧 PersistenceProvider 目前为单租户 mock。RBAC 审计在 security.js 中有操作审计日志，但覆盖度与 Dify 的 Flask-Login + JWT + 行级 tenant_id 相比存在差距。本项为 High，对应优化建议在 T2。
-- Evidence: d:\a10\aikjx\gitcode\infotopograph\platform\backend-node\src\security.js; d:\a10\aikjx\gitcode\infotopograph\platform\services\xuanji-system\src\orchestrator.rs
+- Evidence: d:\a10\aikjx\gitcode\infotopograph\platform\backend-node\src\security.js; d:\a10\aikjx\gitcode\infotopograph\platform\services\mox-system\src\orchestrator.rs
 
 **P1 Dify v0.14+（langgenius/dify）（90）**
 - 行级 tenant_id 过滤 + JWT/SSO/LDAP + Owner/Admin/Normal/DatasetOp 四角色；邀请/配额/操作审计齐全。
@@ -185,7 +185,7 @@
 
 **P0 璇玑 Infotopograph（Aura）v3.0（92）**
 - Agent 协作模式：璇玑的专家联盟（Alliance）为差异化强项，内置开口-量尺-出手分工（All-01）、四归三连（All-03）、联盟交付=联盟验收（All-04），并以七专家并行 rayon 做辩论-合成，debate-synthesis.js、alliance-orchestrator.js 提供角色匹配/意图分类/辩论合成；含 HITL（gateway/hitl.rs）人类回圈。但缺少 Supervisor 模式、投票/判决数可配置。与 LangGraph/Dify 比协作模式数相当（≈6 种），且企业级联盟铁律有独特优势。
-- Evidence: d:\a10\aikjx\gitcode\infotopograph\platform\backend-node\src\expert-alliance\domain\debate-synthesis.js; d:\a10\aikjx\gitcode\infotopograph\platform\services\xuanji-expert\src\expert.rs; d:\a10\aikjx\gitcode\infotopograph\platform\gateway\runtime\src\handlers\hitl.rs
+- Evidence: d:\a10\aikjx\gitcode\infotopograph\platform\backend-node\src\expert-alliance\domain\debate-synthesis.js; d:\a10\aikjx\gitcode\infotopograph\platform\services\mox-expert\src\expert.rs; d:\a10\aikjx\gitcode\infotopograph\platform\gateway\runtime\src\handlers\hitl.rs
 
 **P1 Dify v0.14+（langgenius/dify）（92）**
 - Agent Node ReAct + Function Calling，并行扇出 + Supervisor 模式，可做多 Agent 分工与审查闭环，灵活性非常高。

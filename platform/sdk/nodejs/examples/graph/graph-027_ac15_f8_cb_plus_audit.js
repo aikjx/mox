@@ -1,4 +1,4 @@
-const { GraphClient } = require("../../xuanji-sdk-graph");
+const { GraphClient } = require("../../mox-sdk-graph");
 const client = new GraphClient({ endpoint: "graph.local" });
 const result = client.ac15F8CbPlusAudit();
 if (!result.passed || !result.callbackInvoked) process.exit(1);

@@ -1,21 +1,21 @@
-# Xuanji 3.0.0 运维手册 (Operations Manual)
+# Mox 3.0.0 运维手册 (Operations Manual)
 
 **版本：** 3.0.0
 **发布日期：** 2026-08-24
-**适用范围：** Xuanji Graph Platform（核心 + DR + Observability 伞图 Helm Chart）
-**维护者：** SRE & Xuanji Platform Team
+**适用范围：** Mox Graph Platform（核心 + DR + Observability 伞图 Helm Chart）
+**维护者：** SRE & Mox Platform Team
 
 ---
 
 ## 1. 架构概述
 
-Xuanji 采用云原生多区域部署架构，基于 Helm 伞图（`deploy/helm/xuanji`）一键拉起三大子系统：
+Mox 采用云原生多区域部署架构，基于 Helm 伞图（`deploy/helm/mox`）一键拉起三大子系统：
 
 | 子系统 | Chart | 职责 |
 |---|---|---|
-| xuanji-core-local | xuanji-core 3.0.0 | nGQL/openCypher 解析、查询优化、7 算法内嵌执行、存储引擎 |
-| xuanji-dr | xuanji-dr 3.0.0 | 双活多区域灾备（cn-north-1 主 / cn-south-1 备）、Raft 共识 |
-| xuanji-observability | xuanji-observability 3.0.0 | Prometheus + Grafana + OTLP Trace + 8 阶段 Trace 看板 |
+| mox-core-local | mox-core 3.0.0 | nGQL/openCypher 解析、查询优化、7 算法内嵌执行、存储引擎 |
+| mox-dr | mox-dr 3.0.0 | 双活多区域灾备（cn-north-1 主 / cn-south-1 备）、Raft 共识 |
+| mox-observability | mox-observability 3.0.0 | Prometheus + Grafana + OTLP Trace + 8 阶段 Trace 看板 |
 
 运行时组件最小 6 节点 HA 拓扑（3 主 3 从跨 AZ），详见 [ha-capacity-tco.md](./ha-capacity-tco.md)。
 
@@ -26,22 +26,22 @@ Xuanji 采用云原生多区域部署架构，基于 Helm 伞图（`deploy/helm/
 ### 2.1 首次部署（一键伞图）
 
 ```bash
-helm dependency build deploy/helm/xuanji
-helm install xuanji deploy/helm/xuanji \
-    --namespace xuanji-system --create-namespace \
+helm dependency build deploy/helm/mox
+helm install mox deploy/helm/mox \
+    --namespace mox-system --create-namespace \
     --values custom-values.yaml
 ```
 
 ### 2.2 升级流程（灰度 4 阶段）
 
-1. `helm upgrade xuanji ... --set global.gray.enabled=true --set canary.weight=1`
+1. `helm upgrade mox ... --set global.gray.enabled=true --set canary.weight=1`
 2. 运行 `scripts/Gray-Warmup.ps1` 自动推进 1→10→50→100 并执行健康检查。
-3. 任一阶段 <95% 健康，脚本写入 `rollback.log` 并退出 1，需执行 `helm rollback xuanji <REV>`。
+3. 任一阶段 <95% 健康，脚本写入 `rollback.log` 并退出 1，需执行 `helm rollback mox <REV>`。
 
 ### 2.3 补丁发布（非灰度紧急修复）
 
 ```bash
-helm upgrade xuanji deploy/helm/xuanji -n xuanji-system \
+helm upgrade mox deploy/helm/mox -n mox-system \
     --set global.gray.enabled=false \
     --set image.tag=3.0.0-p1 \
     --wait --timeout 10m
@@ -55,11 +55,11 @@ helm upgrade xuanji deploy/helm/xuanji -n xuanji-system \
 
 ```bash
 # 扩 core replicas 3 -> 6
-kubectl scale deploy xuanji-core-local -n xuanji-system --replicas=6
+kubectl scale deploy mox-core-local -n mox-system --replicas=6
 
 # HPA 自动扩缩容阈值调整
-helm upgrade xuanji deploy/helm/xuanji -n xuanji-system \
-    --set xuanji-dr.autoscaling.targetCPUUtilizationPercentage=70
+helm upgrade mox deploy/helm/mox -n mox-system \
+    --set mox-dr.autoscaling.targetCPUUtilizationPercentage=70
 ```
 
 ---
@@ -67,14 +67,14 @@ helm upgrade xuanji deploy/helm/xuanji -n xuanji-system \
 ## 4. 日常监控与告警
 
 默认 Grafana Dashboard：
-- `Xuanji/Overview` — QPS、P99 延迟、错误率、CPU/内存。
-- `Xuanji/8-Stage-Trace` — 每个 trace stage 的 p50/p95/p99、error_rate、saturation、span_count。
-- `Xuanji/DR-Replication` — 主/备 RPO、Raft commit lag、跨区域带宽。
+- `Mox/Overview` — QPS、P99 延迟、错误率、CPU/内存。
+- `Mox/8-Stage-Trace` — 每个 trace stage 的 p50/p95/p99、error_rate、saturation、span_count。
+- `Mox/DR-Replication` — 主/备 RPO、Raft commit lag、跨区域带宽。
 
 **Prometheus Rule 关键指标：**
-- `xuanji_query_p99 > 2000ms` → P1 告警（page oncall）。
-- `xuanji_dr_rpo_seconds > 30` → P1 灾备延迟异常。
-- `xuanji_stage_error_rate{CircuitBreaker="1"} > 0.01` → P2 熔断触发。
+- `mox_query_p99 > 2000ms` → P1 告警（page oncall）。
+- `mox_dr_rpo_seconds > 30` → P1 灾备延迟异常。
+- `mox_stage_error_rate{CircuitBreaker="1"} > 0.01` → P2 熔断触发。
 
 ---
 
@@ -83,19 +83,19 @@ helm upgrade xuanji deploy/helm/xuanji -n xuanji-system \
 ### 5.1 每日全量快照
 
 ```bash
-kubectl create job xuanji-snapshot-$(date +%Y%m%d) \
-    --from=cronjob/xuanji-daily-snapshot -n xuanji-system
+kubectl create job mox-snapshot-$(date +%Y%m%d) \
+    --from=cronjob/mox-daily-snapshot -n mox-system
 ```
 
 ### 5.2 恢复操作
 
 ```bash
 # 1. 停止写入
-kubectl scale deploy xuanji-core-local -n xuanji-system --replicas=0
+kubectl scale deploy mox-core-local -n mox-system --replicas=0
 # 2. 从快照恢复 PVC
-velero restore create --from-backup xuanji-backup-YYYYMMDD
+velero restore create --from-backup mox-backup-YYYYMMDD
 # 3. 重建索引并启动
-kubectl scale deploy xuanji-core-local -n xuanji-system --replicas=3
+kubectl scale deploy mox-core-local -n mox-system --replicas=3
 ```
 
 ### 5.3 RPO/RTO 目标
@@ -114,10 +114,10 @@ kubectl scale deploy xuanji-core-local -n xuanji-system --replicas=3
 
 ```bash
 # 1. 将主区域副本归零（模拟中断）
-kubectl scale deploy xuanji-xuanji-dr-primary -n xuanji-system --replicas=0
+kubectl scale deploy mox-mox-dr-primary -n mox-system --replicas=0
 # 2. 等待 failoverTimeoutSeconds（默认 120s）
 # 3. 观察 secondary 接管写入流量
-kubectl get svc xuanji-xuanji-dr-secondary -n xuanji-system -o wide
+kubectl get svc mox-mox-dr-secondary -n mox-system -o wide
 ```
 
 ### 6.2 真实故障切换
@@ -131,7 +131,7 @@ kubectl get svc xuanji-xuanji-dr-secondary -n xuanji-system -o wide
 ### 6.3 故障回切 (Failback)
 
 1. 修复 primary 区域。
-2. `helm upgrade xuanji ... --set xuanji-dr.enabled=true` 恢复双副本。
+2. `helm upgrade mox ... --set mox-dr.enabled=true` 恢复双副本。
 3. Raft 数据追平后，将 CNAME 指回 primary。
 
 ---
@@ -150,10 +150,10 @@ kubectl get svc xuanji-xuanji-dr-secondary -n xuanji-system -o wide
 
 | 现象 | 排查步骤 |
 |---|---|
-| 查询超时 P99 飙升 | ① 查看 `Xuanji/8-Stage-Trace` 哪个 stage 慢；② `kubectl top pod -n xuanji-system` 看热点；③ 调大 HPA maxReplicas |
-| DR RPO 不达标 | ① 检查跨区域带宽（`iftop`）；② `kubectl logs deploy/xuanji-xuanji-dr-primary -c xuanji \| grep REPL_LAG`；③ 调整 async batch 大小 |
-| 熔断 stage=CircuitBreaker 打开 | ① 查看 `trace_8stages` 的 error_rate；② 暂停非核心写入任务；③ `kubectl rollout restart deploy xuanji-core-local` |
-| HPA 不扩缩容 | ① `kubectl describe hpa xuanji-xuanji-dr`；② 检查 metrics-server 是否采集到 CPU；③ 查看 HPA behavior.stabilizationWindowSeconds |
+| 查询超时 P99 飙升 | ① 查看 `Mox/8-Stage-Trace` 哪个 stage 慢；② `kubectl top pod -n mox-system` 看热点；③ 调大 HPA maxReplicas |
+| DR RPO 不达标 | ① 检查跨区域带宽（`iftop`）；② `kubectl logs deploy/mox-mox-dr-primary -c mox \| grep REPL_LAG`；③ 调整 async batch 大小 |
+| 熔断 stage=CircuitBreaker 打开 | ① 查看 `trace_8stages` 的 error_rate；② 暂停非核心写入任务；③ `kubectl rollout restart deploy mox-core-local` |
+| HPA 不扩缩容 | ① `kubectl describe hpa mox-mox-dr`；② 检查 metrics-server 是否采集到 CPU；③ 查看 HPA behavior.stabilizationWindowSeconds |
 
 ---
 
@@ -171,13 +171,13 @@ kubectl get svc xuanji-xuanji-dr-secondary -n xuanji-system -o wide
 
 ## 10. 配置管理
 
-所有配置集中在 `deploy/helm/xuanji/values.yaml`，敏感字段使用 Helm Secrets + SOPS：
+所有配置集中在 `deploy/helm/mox/values.yaml`，敏感字段使用 Helm Secrets + SOPS：
 
 ```bash
 # 加密 secrets.yaml
 sops -e -i secrets.yaml
 # 部署时解密注入
-helm secrets upgrade xuanji deploy/helm/xuanji -n xuanji-system \
+helm secrets upgrade mox deploy/helm/mox -n mox-system \
     -f values.yaml -f secrets.yaml
 ```
 
@@ -186,7 +186,7 @@ helm secrets upgrade xuanji deploy/helm/xuanji -n xuanji-system \
 ## 11. 发布流程 (CI/CD)
 
 1. PR 合入 `release/3.0.x` → 触发 CI 构建 + 全量 60 条 nGQL 单测 + 信创烟雾。
-2. 镜像推送到 `registry.infotopograph.io/xuanji/graph-server:3.0.0-<SHA>`。
+2. 镜像推送到 `registry.infotopograph.io/mox/graph-server:3.0.0-<SHA>`。
 3. ArgoCD Image Updater 同步到 staging → 自动 Gray-Warmup.ps1。
 4. staging 通过后，手动 promote 到 prod（需要 2 人审批 Change Request）。
 
@@ -203,11 +203,11 @@ helm secrets upgrade xuanji deploy/helm/xuanji -n xuanji-system \
 
 ## 13. FAQ
 
-**Q1: Xuanji 支持哪些图查询语言？**
+**Q1: Mox 支持哪些图查询语言？**
 A: 内置 60 条 nGQL + 20 条 openCypher 覆盖；两种 parser 纯自研零第三方图 DB 依赖。
 
 **Q2: 怎么开启 8 阶段 Trace 埋点？**
-A: 3.0.0 默认开启；Rust crate `xuanji-graph-service` 暴露 `trace_8stages` 模块，配合 `deploy/docs/trace-8stages-dashboard.json` 导入 Grafana 即可。
+A: 3.0.0 默认开启；Rust crate `mox-graph-service` 暴露 `trace_8stages` 模块，配合 `deploy/docs/trace-8stages-dashboard.json` 导入 Grafana 即可。
 
 **Q3: 灰度脚本遇到 `exit 1 rollback.log 已生成` 怎么处理？**
 A: 先打开 rollback.log 确认触发阶段与分数；若为误报，重跑 `Gray-Warmup.ps1 -WarmupSeconds 1`；若为真实异常，执行 `helm rollback` 并提交 Incident。
@@ -218,8 +218,8 @@ A: 走 `deploy/docs/xinchuang-matrix.md` 最后 5 条 smoke 命令，最后一�
 **Q5: 最少 6 节点 HA 是否必须跨 AZ？**
 A: 是，SLA Gold 要求 3 主跨 AZ-A 与 AZ-B（2+1），3 从对称分布，详见 ha-capacity-tco.md 拓扑图。
 
-**Q6: helm dependency build 报 xuanji-core 目录不存在？**
-A: 伞图使用 `file://../xuanji-core` 作为本地 alias；CI 构建时会自动 `git clone xuanji-core` 到 `deploy/helm/` 下；本地开发可自行克隆或临时 `--set xuanji-core-local.enabled=false`。
+**Q6: helm dependency build 报 mox-core 目录不存在？**
+A: 伞图使用 `file://../mox-core` 作为本地 alias；CI 构建时会自动 `git clone mox-core` 到 `deploy/helm/` 下；本地开发可自行克隆或临时 `--set mox-core-local.enabled=false`。
 
 **Q7: TCO 3 年成本如何估算？**
 A: 见 [ha-capacity-tco.md](./ha-capacity-tco.md) 2027 / 2028 / 2029 分项合计与总计。

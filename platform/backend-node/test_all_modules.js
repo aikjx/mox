@@ -198,9 +198,9 @@ async function testAll() {
 
   // ==================== 16. 全维融合 ====================
   console.log('\n🔮 [16/16] 全维融合');
-  const xu1 = await req('GET', '/xuanji/health');
+  const xu1 = await req('GET', '/mox/health');
   check('璇玑健康', xu1.body?.success);
-  const xu2 = await req('POST', '/xuanji/optimize', {
+  const xu2 = await req('POST', '/mox/optimize', {
     dimension: 'performance', target: 'workflow'
   });
   check('璇玑优化', xu2.body?.success);

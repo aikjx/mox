@@ -21,7 +21,7 @@ const INFOTOPOGRAPH_ROOT = path.resolve(BACKEND_NODE, '..', '..');
 const TARGET_FILES = [
   'platform/services/operator-core/src/resource.rs',
   'platform/services/operator-core/src/kernel_ext.rs',
-  'platform/services/xuanji-system/src/orchestrator.rs',
+  'platform/services/mox-system/src/orchestrator.rs',
   'platform/services/flow-ai/src/dataflow.rs',
   'platform/services/primiflow-core/examples/generate.rs',
   'platform/services/ai-agent/src/engine/tools.rs',

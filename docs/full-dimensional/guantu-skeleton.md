@@ -56,13 +56,13 @@
 | D01 | 算子内核与执行 | operator-core / operator-wasm | done |
 | D02 | 知识图谱 | operator-graph / ai-agent | done |
 | D03 | 流程图优化 AI | flow-ai | done |
-| D04 | 全维治理/璇玑 | xuanji-expert | partial |
+| D04 | 全维治理/璇玑 | mox-expert | partial |
 | D05 | 业务全景目录 | business-catalog | done |
 | D06 | AI 智能体 | ai-agent | done |
 | D07 | 算子商城 | runtime(market) | partial |
 | D08 | AI 自动化中枢 | runtime(automation) | done |
 | D09 | 外部流系统桥接 | hermes-flow-bridge | partial |
-| D10 | 璇玑系统 | xuanji-system | done |
+| D10 | 璇玑系统 | mox-system | done |
 | D11 | 模板市场 | template-market | done |
 | D12 | 可视化拓扑前端 | frontend / primiflow | done |
 | D13 | 哼唱旋律转歌谱应用 | melody2score | done |
@@ -89,7 +89,7 @@
 以 **Bind 边** 将 REQ 根绑定到其主责 crate 入口代码节点（`crates/*/src/lib.rs` 或 `src/main.rs`），作为「需求→代码」首层可追溯链。后续 P3 在 `flow-ai::primitive` 之上建立完整 Registry，把 Bind 细化为 **REQ→FUN→BIZ→ALG→TSK→COD** 六维一一绑定，并导出 TraceMatrix。
 
 - **REQ（需求根）**：`Requirement:Dxx` 节点。
-- **FUN（功能）**：主责 crate 入口函数（如 `normalize_requirement` / `programming_pipeline` / `xuanji_optimize`）。
+- **FUN（功能）**：主责 crate 入口函数（如 `normalize_requirement` / `programming_pipeline` / `mox_optimize`）。
 - **BIZ（业务）**：业务七维专家对流程图并行分析。
 - **ALG（算法）**：flow-ai 求解（CPM+RCPSP+Dijkstra+冲突修复）+ reconcile 约束物化 + verify 守恒残差。
 - **TSK（任务）**：双璇玑十四维并行派发 + 回退点 Checkpoint。
@@ -97,7 +97,7 @@
 
 首版绑定锚点示例：`Requirement:D01 --Bind--> CodeFile:crates/operator-core/src/lib.rs`
 
-> D04 实例与六维绑定 TraceMatrix 见 AA-STD §3（`璇玑-全维需求业务处理流程图-归一化企业级.md`）与 PT-STD（`crates/primiflow-core/trace_matrix.md`）；文档归一化索引见 `docs/full-dimensional/xuanji-requirement-baseline.md`。
+> D04 实例与六维绑定 TraceMatrix 见 AA-STD §3（`璇玑-全维需求业务处理流程图-归一化企业级.md`）与 PT-STD（`crates/primiflow-core/trace_matrix.md`）；文档归一化索引见 `docs/full-dimensional/mox-requirement-baseline.md`。
 
 ---
 
@@ -112,7 +112,7 @@
 
 ### 首版偏离清单（22 项，供 P1/P2 清零）
 
-- 测试文件：`runtime/tests/runtime_integration.rs`、`xuanji-expert/tests/debug_opt.rs`、`xuanji-expert/tests/expert_unit_tests.rs`
+- 测试文件：`runtime/tests/runtime_integration.rs`、`mox-expert/tests/debug_opt.rs`、`mox-expert/tests/expert_unit_tests.rs`
 - CI/校验脚本：`scripts/ci.py`、`start.sh`、`verify_axioms.py`、`verify_tests.sh`、`verify_tests.ps1`、`snake.py`
 - 前端孤立：`frontend/vite.config.js`、`frontend/src/types.js`、`frontend/src/router/index.js`
 - 独立后端：`primiflow/backend/engine.py`、`primiflow/backend/main.py`、`docs/ai-architecture/agentic_loop_minimal.py`
@@ -167,7 +167,7 @@ tools/info-graph/target/release/info-graph export  --graph graph.enterprise.json
 
 | 术语 | 含义 |
 |------|------|
-| **璇玑 (Xuánjī)** | 归一化 IR 驱动的元调度诊断系统（`xuanji-expert` crate） |
+| **璇玑 (Xuánjī)** | 归一化 IR 驱动的元调度诊断系统（`mox-expert` crate） |
 | **关图 / GR-STD** | 信息关联关系图开发规范 V1.0，「一切皆是信息」 |
 | **AA-STD** | 璇玑-全维需求业务处理流程图-归一化企业级，融合域需求事实基准 |
 | **PT-Primi / PrimiFlow** | 全域拓扑原语架构（κ-τ 调度，守恒律 `C² = κ² + τ²`） |

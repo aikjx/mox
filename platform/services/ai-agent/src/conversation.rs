@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tracing;
 use uuid::Uuid;
-use xuanji_system::persistence_provider::{PersistenceProvider, SqlValue};
+use mox_system::persistence_provider::{PersistenceProvider, SqlValue};
 
 /// 对话引擎 - 智能交互核心
 pub struct ConversationEngine {
@@ -38,7 +38,7 @@ impl ConversationEngine {
     /// 带持久化后端的引擎：会话与消息落盘 SQLite，支持跨重启复用。
     /// `new()` 仍保持纯内存（向后兼容，不创建任何文件）。
     pub fn with_storage(db_path: &str) -> Result<Self> {
-        use xuanji_system::sqlite_provider::SqlitePersistence;
+        use mox_system::sqlite_provider::SqlitePersistence;
         let pvd = SqlitePersistence::file(db_path)
             .map_err(|e| OperatorError::Other(anyhow::anyhow!("会话库打开失败: {}", e)))?;
         pvd.exec_batch(

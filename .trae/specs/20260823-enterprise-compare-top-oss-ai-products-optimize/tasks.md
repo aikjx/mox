@@ -107,15 +107,15 @@
 **Priority:** medium
 **Dependency:** 无
 **Scope:**
-  - 编写 Rust 集成测试：`platform/services/xuanji-expert/tests/bench_alliance_concurrency.rs`。
+  - 编写 Rust 集成测试：`platform/services/mox-expert/tests/bench_alliance_concurrency.rs`。
   - 启动 4 个并发请求（用 `tokio::spawn`），每个请求内部触发"7 专家并行辩论（rayon par_iter）"。
   - 记录：每组 `throughput_req_per_sec, cpu_util_approx, p99_total_ms, peak_mem_kb, expert_wall_ms_sum`。
   - 生成 `.trae/specs/.../harness-data/h4_before.csv`，并用同一代码在 T11 after 再跑一次。
 **Deliverables:**
-  - `platform/services/xuanji-expert/tests/bench_alliance_concurrency.rs`
+  - `platform/services/mox-expert/tests/bench_alliance_concurrency.rs`
   - `.trae/specs/.../harness-data/h4_before.csv`
 **Test Requirements:**
-  - TR-6.1 (rule AC-07)：`cargo test -p xuanji-expert --test bench_alliance_concurrency -- --ignored`（基准默认 ignored，Harness 手动跑）exit=0，CSV 行数 ≥ 4。
+  - TR-6.1 (rule AC-07)：`cargo test -p mox-expert --test bench_alliance_concurrency -- --ignored`（基准默认 ignored，Harness 手动跑）exit=0，CSV 行数 ≥ 4。
   - TR-6.2 (rule)：4 组并发全部完成，无 panics / deadlocks。
 
 ---
@@ -172,7 +172,7 @@
     (1) 无限循环.wat（燃料=2 000 000 单位）必须 fuel trap 返回 `Err(WasmError::FuelExhausted)`；
     (2) 超大内存申请.wat（mem_pages_limit=4）必须 grow 失败，返回 `Err(WasmError::MemoryLimit)`。
   - Feature flag：在 `WasmOperator::new()` 中，如果 `DISABLE_OPTIM_O3_WASM_FUEL=1`，则不启用限制，保持向后兼容。
-  - Metric：`metrics.wasm_fuel_exhausted_count / wasm_mem_trap_count / wasm_call_avg_us`（写入 xuanji_system 的 metrics 或直接日志+JSON 导出）。
+  - Metric：`metrics.wasm_fuel_exhausted_count / wasm_mem_trap_count / wasm_call_avg_us`（写入 mox_system 的 metrics 或直接日志+JSON 导出）。
 **Test Requirements:**
   - TR-9.1 (rule AC-10)：2 条测试 GREEN。
   - TR-9.2 (rule NFR3 after)：H3 重跑，1000 恶意样本 trap 率 = 100%；宿主 RSS 增长 < 5%。

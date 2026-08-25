@@ -100,9 +100,9 @@ Criterion default-features 残留 = 0 / 0 → PASS
 | primiflow-core | ✔ workspace | ✔ workspace | ✔ workspace | ✔ workspace | 自定义保留（合理：PrimiFlow 生成层描述） |
 | primiflow-fusion | ✔ 已修复 | ✔ 已修复 | ✔ 已修复 | ✔ 已修复 | 自定义保留（合理：融合架构层描述） |
 | template-market | ✔ workspace | ✔ workspace | ✔ workspace | ✔ workspace | 自定义保留（合理：模板市场描述） |
-| xuanji-common-meta | ✔ workspace | ✔ workspace | ✔ workspace | ✔ workspace | 继承 workspace |
-| xuanji-expert | ✔ 已修复 | ✔ 已修复 | ✔ 已修复 | ✔ 已修复 | 自定义保留（合理：璇玑专家系统描述） |
-| xuanji-system | ✔ 已修复 | ✔ 已修复 | ✔ 已修复 | ✔ 已修复 | 自定义保留（合理：璇玑系统描述） |
+| mox-common-meta | ✔ workspace | ✔ workspace | ✔ workspace | ✔ workspace | 继承 workspace |
+| mox-expert | ✔ 已修复 | ✔ 已修复 | ✔ 已修复 | ✔ 已修复 | 自定义保留（合理：璇玑专家系统描述） |
+| mox-system | ✔ 已修复 | ✔ 已修复 | ✔ 已修复 | ✔ 已修复 | 自定义保留（合理：璇玑系统描述） |
 | runtime | ✔ workspace | ✔ workspace | ✔ workspace | ✔ workspace | 继承 workspace |
 
 **说明**: 6 个 crate description 仍为硬编码（非 workspace），这是 spec 允许的（每个 crate 有专用描述）。脚本的 `package_inheritance_defects` 只统计 version/edition/license/authors，不包含 description → 结果为 0，正确。
@@ -138,10 +138,10 @@ warning: the following packages contain code that will be rejected by a future v
 
 features 附加情况（不属于例外，spec 明确说明）：
 - operator-core / runtime: `nalgebra = { workspace = true, features = ["serde-serialize"] }`
-- xuanji-expert: `reqwest = { workspace = true, features = ["blocking"] }`
-- xuanji-system / runtime: `axum = { workspace = true, features = ["ws"] }`
-- xuanji-system: `sea-query = { workspace = true, features = ["backend-sqlite", "backend-postgres", "backend-mysql"] }`
-- xuanji-system: `sqlx = { workspace = true, features = ["runtime-tokio", "postgres", "mysql"] }`
+- mox-expert: `reqwest = { workspace = true, features = ["blocking"] }`
+- mox-system / runtime: `axum = { workspace = true, features = ["ws"] }`
+- mox-system: `sea-query = { workspace = true, features = ["backend-sqlite", "backend-postgres", "backend-mysql"] }`
+- mox-system: `sqlx = { workspace = true, features = ["runtime-tokio", "postgres", "mysql"] }`
 - hermes-flow-bridge: `reqwest = { workspace = true, optional = true }`
 - primiflow-fusion: `tower = { workspace = true, features = ["util"] }`
 - runtime: `primiflow-core = { path = ..., features = ["server"] }`（内部 path crate，不参与外部依赖统计）
@@ -159,7 +159,7 @@ features 附加情况（不属于例外，spec 明确说明）：
 **依据**:
 - 所有外部依赖在 17 个 crate 中统一使用表形式 `dep = { workspace = true [, features=[...]] [, optional = true] }`：
   - GREEN 阶段将 template-market 原 `dep.workspace = true` 简写统一为 `dep = { workspace = true }`；
-  - crate 之间对同一依赖的 features 附加合理（axum ws 只在 runtime 和 xuanji-system 开启，reqwest blocking 只在 xuanji-expert 开启等）；
+  - crate 之间对同一依赖的 features 附加合理（axum ws 只在 runtime 和 mox-system 开启，reqwest blocking 只在 mox-expert 开启等）；
 - criterion 所有声明一致：`criterion = { workspace = true }`；
 - [package] 继承写法一致：`version.workspace = true` 简写形式（与 crate 内原有的 ai-agent 等既存简写形式一致，非表形式的 `.workspace = true` 在 package 段是 Cargo 推荐语法，17 个 crate 全一致）；
 - 根 Cargo.toml 未改动 workspace.deps 版本，版本在全 workspace 保持一致；
@@ -175,7 +175,7 @@ features 附加情况（不属于例外，spec 明确说明）：
 
 | 轮次 | 错误数量 | 修复内容 |
 |------|----------|----------|
-| 第 0 轮（首次） | xuanji-system 15 个 E0599 + E0308 | 4 个 trait（Member/Permission/Task/Comm）补方法声明；services.rs 对应 impl 补齐；Member list 返回类型从 Result→Vec 对齐调用侧 |
+| 第 0 轮（首次） | mox-system 15 个 E0599 + E0308 | 4 个 trait（Member/Permission/Task/Comm）补方法声明；services.rs 对应 impl 补齐；Member list 返回类型从 Result→Vec 对齐调用侧 |
 | 第 1 轮 | 2 条 E0599（Member activate / list 返回类型）→ 修复后仍余 2 条（get/set_status 在 domain_traits.rs 自动出现的新增声明对应 impl 补齐）→ 最后一次只剩 activate（main.rs 调用） | domain_traits.rs + services.rs MemberServiceTrait activate/set_status/get 补全 |
 | 第 2 轮 | 1 条 E0046 TaskService 缺 get（仅缓存差异） | 已存在对应 impl，重跑 check 后消失（Windows 文件锁导致的缓存不一致）→ cargo check 成功 exit 0 |
 | 第 3 轮 | 未使用（build 直接成功 exit 0） | - |
@@ -186,7 +186,7 @@ features 附加情况（不属于例外，spec 明确说明）：
 
 ## 发现与建议（非阻塞 / Advisory）
 
-1. xuanji-system 的 `server.rs` 行 419 `s.members.values()` 与 domain_traits 中 MemberServiceTrait 方法定义的对齐属于**业务代码**范畴，本次 T4 治理通过 trait 补契约方式修复了暴露的 API 一致性问题；但建议后续对 domain_traits vs 调用侧做一次全面的 API 覆盖率 linter（已通过 cargo check 间接验证）。
+1. mox-system 的 `server.rs` 行 419 `s.members.values()` 与 domain_traits 中 MemberServiceTrait 方法定义的对齐属于**业务代码**范畴，本次 T4 治理通过 trait 补契约方式修复了暴露的 API 一致性问题；但建议后续对 domain_traits vs 调用侧做一次全面的 API 覆盖率 linter（已通过 cargo check 间接验证）。
 2. `cargo build` 的 Windows incremental session note 是环境问题，不会阻塞发布；若 CI 在 Windows 上可考虑禁用增量编译或设置 `CARGO_INCREMENTAL=0`。
 3. sqlx-postgres v0.8.0 的未来兼容 warning 不阻塞本次交付，但后续升级需关注。
 

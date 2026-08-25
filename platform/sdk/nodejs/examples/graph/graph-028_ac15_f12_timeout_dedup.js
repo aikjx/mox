@@ -1,4 +1,4 @@
-const { GraphClient } = require("../../xuanji-sdk-graph");
+const { GraphClient } = require("../../mox-sdk-graph");
 const client = new GraphClient({ endpoint: "graph.local" });
 const result = client.ac15F12TimeoutDedup(3000);
 if (!result.passed || result.duplicatesHandled < 1) process.exit(1);

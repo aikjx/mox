@@ -13,7 +13,7 @@
 //! |------|------|---------|------|
 //! | GET  | /ws/hitl | `hitl::hitl_ws_handler` | 人机协同审批 WebSocket（订阅 + APPROVE/DENY/MODIFY_APPROVE） |
 //!
-//! 治理台路由已适配 xuanji-expert 当前 API（pipeline::GovernanceReport / govern::GateResult），
+//! 治理台路由已适配 mox-expert 当前 API（pipeline::GovernanceReport / govern::GateResult），
 //! 随 `governance` feature（默认启用）一同编译并挂载，不再需要 feature 门控。
 pub mod agent;
 pub mod ai_engine;

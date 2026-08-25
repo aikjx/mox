@@ -21,13 +21,13 @@
 
 | AC | 独立重跑命令 | 结果 | 匹配报告？ |
 |---|---|---|---|
-| AC-2 | `cargo test --workspace` (exit=0) | ✅ (Doc-tests xuanji_expert audit ok, xuanji_e2e 2/2 ok) | ✅ |
+| AC-2 | `cargo test --workspace` (exit=0) | ✅ (Doc-tests mox_expert audit ok, mox_e2e 2/2 ok) | ✅ |
 | AC-3 | `node platform/services/graph-algorithms/scripts/reconcile_7x8.js` | `PASS: 56, FAIL: 0` | ✅ |
 | AC-4 | `cargo test -p runtime --test router_semantics` | `4 passed; 0 failed` | ✅ |
 | AC-5 | `cargo clippy --workspace --all-targets -- -D warnings` | STATUS=0 | ✅ |
 | AC-7 | `npx mocha test\mocha_{atlas_registry,graph_algorithms,alliance_and_flows_v2}.js --timeout 25000` | `126 passing` (9s) | ✅ |
 | AC-8 | `pnpm build` (frontend-ui) | `✓ built in 1m 28s; 41 chunks; EXIT=0` | ✅ |
-| AC-9 | `cargo test -p runtime --test xuanji_e2e` | `2 passed; 0 failed` | ✅ |
+| AC-9 | `cargo test -p runtime --test mox_e2e` | `2 passed; 0 failed` | ✅ |
 | AC-13 | `cargo test -p graph-algorithms --lib -- --list \|: test$\| wc` | 14 `: test` 行 | ✅ |
 | Node Mocha JSON 纯净提取 | `slice stdout from '{\"stats\":'` | `{passes:126,failures:0,suites:16,…}` JSON parse ok | ✅ |
 
@@ -37,7 +37,7 @@
 
 ### ✅ 通过项
 1. **`runtime/src/handlers/ai_engine.rs:450-459`**：将 `Some(&long_cn)` 放到 `None` 之后，确保 `long_cn:String` 生命周期覆盖 `cases:Vec<(&str, &str, Option<&str>)>` 构造 —— Rust 借用检查器视角正确。
-2. **`xuanji-system/tests/t6_dip_orchestrator.rs:193-229`**：`Member` 字段从 `user_id/display_name/role` 替换为 `name/email/title/expertise/tier`，Tier 变体统一为 `Senior/Lead/Associate` —— 契约与结构体一致，`cargo test -p xuanji-system` 通过。
+2. **`mox-system/tests/t6_dip_orchestrator.rs:193-229`**：`Member` 字段从 `user_id/display_name/role` 替换为 `name/email/title/expertise/tier`，Tier 变体统一为 `Senior/Lead/Associate` —— 契约与结构体一致，`cargo test -p mox-system` 通过。
 3. **`primiflow-core/src/generate.rs:136`**：`schemas={schemas_str}` 正确替代 Display 缺失的 `Vec<String>`，编译成功。
 4. **Clippy 清零补丁**：所有 16 crate + examples/tests/binaries 均零 `-D warnings`，`compare_with_node.rs` 的 `extra` 死代码允许、`primiflow-core` 类型别名抽取均为最佳实践级修复，不会引入回归。
 5. **Node 测试三套件断言校准**：`kind==='node'` 过滤 Atlas 注册表、度中心性与 RAW 双向展开对齐、ENGINES 注册表兼容 Rust 自动条目（`engineName/kind/path`）—— 断言严格对应真实实现形状而非期望形状。

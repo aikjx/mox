@@ -1,5 +1,5 @@
 //! 业务全景目录：把"系统所有业务"建模成流程图 + 六维关系网，
-//! 并用璇玑（xuanji-expert）在运行中不断优化架构。
+//! 并用璇玑（mox-expert）在运行中不断优化架构。
 //!
 //! 核心思想（与 Hermes / 璇玑架构一致）：
 //! - **流程图是唯一需求源与开发产物**：每个业务 = 一张 `flow_ai::FlowGraph`，
@@ -9,32 +9,32 @@
 //! - **使用中不断优化**：`record_hit`/`decay` 做动态权重学习；`impact_of` 做改一节点全链路
 //!   同步；`route`/`shortest_path` 做跨业务复用最短路径（命中历史 Skill → 跳过完整 ReAct）。
 //!
-//! 【DIP 改造】本 crate 生产代码路径不再直接 `use xuanji_expert::pipeline`
+//! 【DIP 改造】本 crate 生产代码路径不再直接 `use mox_expert::pipeline`
 //! （或 context/ir/... 等内部模块）。对外统一依赖：
-//! - `xuanji_expert::expert_traits::{ExpertConsultant, ExpertRegistry, AllianceOrchestrator, ...}` 抽象 trait
-//! - `xuanji_expert::types::{ConsultQuery, ConsultReport, ExpertMeta, ...}` 投影数据类型
+//! - `mox_expert::expert_traits::{ExpertConsultant, ExpertRegistry, AllianceOrchestrator, ...}` 抽象 trait
+//! - `mox_expert::types::{ConsultQuery, ConsultReport, ExpertMeta, ...}` 投影数据类型
 //! - 需要「查询专家清单 / 注册专家」处统一用 `Arc<dyn ExpertRegistry>`。
 //!
-//! 从而实现依赖方向反转：`business-catalog → trait ← xuanji concrete`。
+//! 从而实现依赖方向反转：`business-catalog → trait ← mox concrete`。
 
 pub const CRATE_ID: &str = "62b2cca1-d98f-5e41-b26e-8d2a43966117";
-pub const ENGINE_NAME: &str = "xuanji::business_catalog";
-pub const CRATE_META: xuanji_common_meta::CrateMeta = xuanji_common_meta::CrateMeta {
+pub const ENGINE_NAME: &str = "mox::business_catalog";
+pub const CRATE_META: mox_common_meta::CrateMeta = mox_common_meta::CrateMeta {
     id: CRATE_ID,
     name: env!("CARGO_PKG_NAME"),
     version: env!("CARGO_PKG_VERSION"),
-    layer: xuanji_common_meta::AisLayer::L4Services,
-    owner: "xuanji-core",
+    layer: mox_common_meta::AisLayer::L4Services,
+    owner: "mox-core",
 };
 
 // ============================================================================
-// DIP 依赖：仅引入 trait 与投影类型，不引入 xuanji_expert 内部 concrete struct。
+// DIP 依赖：仅引入 trait 与投影类型，不引入 mox_expert 内部 concrete struct。
 // ============================================================================
 
 use std::collections::HashMap;
 use std::sync::Arc;
-use xuanji_expert::expert_traits::{ExpertConsultant, ExpertRegistry};
-use xuanji_expert::types::{ConsultQuery, ConsultReport, ExpertMeta};
+use mox_expert::expert_traits::{ExpertConsultant, ExpertRegistry};
+use mox_expert::types::{ConsultQuery, ConsultReport, ExpertMeta};
 
 use flow_ai::model::{
     Access, ExpertRule, FlowEdge, FlowGraph, FlowNode, NodeKind, Severity, ToolKind,
@@ -46,7 +46,7 @@ pub mod spiral;
 
 /// 把业务配置（domain / regulated）编码成 ConsultQuery.ctx，供 ExpertServiceImpl 解析。
 ///
-/// ctx 键与 `xuanji_expert::services::ExpertServiceImpl::consult_sync` 约定一致。
+/// ctx 键与 `mox_expert::services::ExpertServiceImpl::consult_sync` 约定一致。
 fn build_query(biz: &Business) -> ConsultQuery {
     let raw = (biz.build)();
     let mut ctx: HashMap<String, String> = HashMap::new();
@@ -120,7 +120,7 @@ fn rule(id: &str, desc: &str, prefixes: &[&str]) -> ExpertRule {
 
 /// 一条业务 = (id, 名称, 域, 受监管?, 流程图构造器)
 ///
-/// DIP：优化入口 `optimize` / `optimize_with` 不再直接依赖 `xuanji_expert::pipeline::xuanji_optimize`，
+/// DIP：优化入口 `optimize` / `optimize_with` 不再直接依赖 `mox_expert::pipeline::mox_optimize`，
 /// 而是走 `Arc<dyn ExpertConsultant>` trait；默认实现通过 `default_consultant()` 工厂注入。
 pub struct Business {
     pub id: &'static str,
@@ -134,9 +134,9 @@ impl Business {
     /// 七维着色后交给璇玑优化（DIP 版：通过 ExpertConsultant trait，不出现 concrete struct）。
     ///
     /// 返回 `ConsultReport`（归一化投影报告：steps / score / vetoed），
-    /// 替代此前直接暴露 `xuanji_expert::pipeline::GovernanceReport` 这一内部 concrete 类型。
+    /// 替代此前直接暴露 `mox_expert::pipeline::GovernanceReport` 这一内部 concrete 类型。
     pub fn optimize(&self) -> ConsultReport {
-        self.optimize_with(xuanji_expert::expert_traits::default_consultant())
+        self.optimize_with(mox_expert::expert_traits::default_consultant())
     }
     /// 指定 consultant（DIP 证据：测试可替换 Mock 实现，无需真实璇玑引擎）。
     pub fn optimize_with(&self, consultant: Arc<dyn ExpertConsultant>) -> ConsultReport {
@@ -167,7 +167,7 @@ impl Business {
 /// 不再污染架构 business-catalog 源码。
 pub async fn register_business_experts(
     registry: Arc<dyn ExpertRegistry>,
-) -> xuanji_expert::types::Result<()> {
+) -> mox_expert::types::Result<()> {
     for b in all_businesses() {
         let meta = ExpertMeta {
             id: format!("biz-{}", b.id),
@@ -690,23 +690,23 @@ mod tests {
         }
     }
 
-    // —— DIP 证据：业务 optimize() 可换 MockExpert 运行（不依赖 xuanji-expert concrete）——
+    // —— DIP 证据：业务 optimize() 可换 MockExpert 运行（不依赖 mox-expert concrete）——
     #[test]
     fn business_optimize_uses_mock_consultant_via_trait() {
         use async_trait::async_trait;
         struct MockAlwaysApproved;
         #[async_trait]
-        impl xuanji_expert::expert_traits::ExpertConsultant for MockAlwaysApproved {
+        impl mox_expert::expert_traits::ExpertConsultant for MockAlwaysApproved {
             async fn consult(
                 &self,
                 _q: &ConsultQuery,
-            ) -> xuanji_expert::types::Result<ConsultReport> {
+            ) -> mox_expert::types::Result<ConsultReport> {
                 unreachable!("sync 路径不进入 async consult")
             }
             fn consult_blocking(
                 &self,
                 q: &ConsultQuery,
-            ) -> xuanji_expert::types::Result<ConsultReport> {
+            ) -> mox_expert::types::Result<ConsultReport> {
                 Ok(ConsultReport {
                     report_id: q.id.clone(),
                     steps: vec!["[Mock] 已批准（无璇玑引擎）".into()],
@@ -727,7 +727,7 @@ mod tests {
     async fn register_business_experts_runs_via_registry_trait() {
         // DIP 证据：生产路径 register_business_experts 只依赖 Arc<dyn ExpertRegistry>，
         // 使用默认注册表工厂（default_registry），不出现任何 concrete struct 名字。
-        let reg = xuanji_expert::expert_traits::default_registry();
+        let reg = mox_expert::expert_traits::default_registry();
         register_business_experts(reg.clone()).await.unwrap();
         let all = reg.list(Some("gov")).await.unwrap();
         assert!(!all.is_empty(), "应注册 gov 领域专家");

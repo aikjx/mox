@@ -18,7 +18,7 @@ const assert = require('assert');
 
 const ROOT = path.resolve(__dirname, '..', '..', '..');
 const SCRIPT = path.join(ROOT, 'scripts', 'run-enterprise-final-acceptance.ps1');
-const DOC_COMPARE = path.join(ROOT, '.trae', 'documents', 'xuanji-vs-opensource-comparison-report.md');
+const DOC_COMPARE = path.join(ROOT, '.trae', 'documents', 'mox-vs-opensource-comparison-report.md');
 const DOC_BUSFLOW = path.join(ROOT, '.trae', 'documents', 'enterprise-optimal-business-flow.md');
 
 function parseMdSections(f) {

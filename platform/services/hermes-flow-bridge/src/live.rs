@@ -1,8 +1,8 @@
-//! AIS-SPEC-9001：企业级统一契约头 —— 模块名 live.rs\n//! AIS-REV-1：自描述接口 · 幂等 · 可观测 · 零外部副作用（网络/IO 仅限封装函数）\n//! AIS-REV-2：公开项 pub fn/pub struct 必须具备 /// 文档注释与错误语义说明\n//! AIS-REV-3：遵循 XUANJI-AIS-通用 标准，禁止占位实现宏遗留\n\n//! Step 10 实时联动：把会话累积的流程图推送到 xuanji-expert HTTP 服务。
+//! AIS-SPEC-9001：企业级统一契约头 —— 模块名 live.rs\n//! AIS-REV-1：自描述接口 · 幂等 · 可观测 · 零外部副作用（网络/IO 仅限封装函数）\n//! AIS-REV-2：公开项 pub fn/pub struct 必须具备 /// 文档注释与错误语义说明\n//! AIS-REV-3：遵循 MOX-AIS-通用 标准，禁止占位实现宏遗留\n\n//! Step 10 实时联动：把会话累积的流程图推送到 mox-expert HTTP 服务。
 //!
 //! feature = "live" 时编译（引入 reqwest）。默认不编译，bridge 仍零第三方 HTTP 依赖。
-//! 流程：bridge 后台定期把录制好的 FlowGraph POST 给 `xuanji-expert` 的 `/api/ingest`，
-//! 前端 `xuanji.html` 轮询 `/api/live` 拿到带高亮的 VizBundle，实时联动：
+//! 流程：bridge 后台定期把录制好的 FlowGraph POST 给 `mox-expert` 的 `/api/ingest`，
+//! 前端 `mox.html` 轮询 `/api/live` 拿到带高亮的 VizBundle，实时联动：
 //! 关键路径金黄 / 冲突标红 / 复用青色 / 算法验证卡。
 
 #![cfg(feature = "live")]
@@ -20,7 +20,7 @@ struct IngestBody<'a> {
     flow: &'a flow_ai::model::FlowGraph,
 }
 
-/// 周期性把会话图推送到 xuanji-expert 服务。在后台 tokio 任务里调用。
+/// 周期性把会话图推送到 mox-expert 服务。在后台 tokio 任务里调用。
 /// 企业级降级：reqwest 超时 / 远端 5xx / DNS 失败全部转为 warn + continue，
 /// 绝不因为联动链路故障而阻塞桥接主循环。
 pub async fn push_loop(state: Arc<BridgeState>, session: String, endpoint: String) {

@@ -240,7 +240,7 @@ flowchart TB
         FLOW[flow-ai 拓扑/冲突/调度]
         OPT[optimizer DAG/关键路径]
         AGENT[ai-agent 工作流/对话/浏览器]
-        EXP[xuanji-expert 双璇玑十四维]
+        EXP[mox-expert 双璇玑十四维]
         HER[hermes-flow-bridge 外部流]
     end
     subgraph CORE[算子内核]
@@ -284,8 +284,8 @@ flowchart TB
 | `POST /api/ai/browser/natural` | P-06 浏览器 | browser_automation | — |
 | `POST /api/graph/node` `/edge` | P-07 图谱 | operator-graph | — |
 | `POST /api/ai/llm/config` / `test` | 模型路由 | llm/* Seam | — |
-| `POST /api/xuanji/optimize` | P-13 全维 | xuanji-expert | — |
-| `POST /api/xuanji/publish` | 全维融合发布 | xuanji-expert → market | 归一化→优化图→上传算子市场 |
+| `POST /api/mox/optimize` | P-13 全维 | mox-expert | — |
+| `POST /api/mox/publish` | 全维融合发布 | mox-expert → market | 归一化→优化图→上传算子市场 |
 
 ---
 
@@ -295,7 +295,7 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    A[前端全维融合视图\nXuanjiFusionView] -->|POST /api/xuanji/publish\n{flow,name,requirement}| B[运行时融合端点]
+    A[前端全维融合视图\nMoxFusionView] -->|POST /api/mox/publish\n{flow,name,requirement}| B[运行时融合端点]
     B --> C[归一化: normalize_flow_to_graph\n前端 {type,params} → FlowGraph]
     C --> D[璇玑双璇玑十四维\n+ 璇玑 全维治理]
     D --> E[优化流程图 FlowGraph\noptimized_graph]
@@ -304,13 +304,13 @@ flowchart LR
 ```
 
 **端点契约**
-- 请求：`POST /api/xuanji/publish` `Authorization: Bearer <OUS_API_TOKEN>`
+- 请求：`POST /api/mox/publish` `Authorization: Bearer <OUS_API_TOKEN>`
   - `flow`: 业务蓝图（前端友好 `{nodes:[{id,name,type,params}], edges:[{from,to}]}`，后端归一化）
   - `name` / `description` / `requirement` / `tags`（可选）
 - 响应：`{ published, package:{id,name,category,nodes,edges}, governance:{score,gate}, optimization:{critical_path_ms,conflicts_found} }`
 - 落盘：`$OUS_HOME/market/packages/<id>.json`（算子包，可在算子商城（插件平台/应用平台）检索、克隆、复用）
 
-**前端入口**：导航栏「全维融合」→ `/xuanji-fusion`，提供：① 编辑业务蓝图 → ② 全维归一化（治理评分/闸门/优化指标）→ ③ 一键上传算子市场。
+**前端入口**：导航栏「全维融合」→ `/mox-fusion`，提供：① 编辑业务蓝图 → ② 全维归一化（治理评分/闸门/优化指标）→ ③ 一键上传算子市场。
 
 ---
 

@@ -35,8 +35,8 @@
 | **T-工程 8** | 6 | 1 | 0 | 5 | 2 |
 | **T-算法 8** | 5 | **1（7×8 56/56 最大亮点）** | 4 | 0 | 3 |
 | **T-安全 6** | 1 | 0 | 1（RBAC 代码层存在 8+ files） | 0 | 5 |
-| **T-治理 6** | 1 | 0 | 1（xuanji_optimize bin+10+ expert files） | 0 | 5 |
-| **T-前端 5** | 3 | 2（fe_build 73.6MB 26s exit0 ✓ / fe_structure 39 视图 34 路由 5Admin Panels XuanjiFusion ✓） | **1（pinia/vitest/playwright/lighthouse/storybook/zod/vueuse/msw = 8 关键依赖缺失 26号 S1~S12 选型矩阵没齐）** | 0 | 2 |
+| **T-治理 6** | 1 | 0 | 1（mox_optimize bin+10+ expert files） | 0 | 5 |
+| **T-前端 5** | 3 | 2（fe_build 73.6MB 26s exit0 ✓ / fe_structure 39 视图 34 路由 5Admin Panels MoxFusion ✓） | **1（pinia/vitest/playwright/lighthouse/storybook/zod/vueuse/msw = 8 关键依赖缺失 26号 S1~S12 选型矩阵没齐）** | 0 | 2 |
 | **T-集成 5** | 2 | 0 | 1（代码双向绑定 6 个 bindings files 存在 ≥6 → 数值 97.9% 需 CI 精密测）| **1（Mocha TR-01-01 域注册 期望 62 ≠ 实际 70 → 差 8 域）** | 3 |
 | **T-NFR 6** | 1 | 0 | 1（RBAC/多租户隔离 代码层 8+ files 存在） | 0 | 5 |
 | **T-AI 4** | 2 | 1（7 大类齐全 QUESTIONS=30 ✓ 与 25 号同款 SoT） | 1（--strict-single/--no-retry CLI 参数源码没匹配到，注释语义有）| 0 | 2 |
@@ -44,10 +44,10 @@
 ### 🔴 FAIL TOP 4（按 27 号 T0 烟测 17/18=直接 REJECT 铁律排序，最硬在前）：
 | # | 题号 | 内容 | 实锤 | 阈值 | SoT |
 |---|---|---|---|---|---|
-| F1 | T0-02(T-工程-01) | Clippy 全仓 `-D warnings` → 3 crate 编译失败 | exit=101, xuanji-cloud-drive-filer 2 项, xuanji-domain-abstractions 1 项（`assert!(true)`常量断言）, xuanji-graph-meta **11 项**（`from_str` 混淆/无用变量/死代码/格式化/布尔/参数过多/方法名冲突） | exit=0 0 warn | 11 §6 棘轮基线 0 warn |
-| F2 | T0-01(T-工程-02) | Workspace UT 连 1 个测试二进制都没生成 | passed=0, exit=101, xuanji-graph-service 5 个 mod 文件缺失 E0583（graph_server/ngql_parser/cypher_parser/optimizer/algo_bridge）+ E0432 PropValue 未定义 | passed≥649 failed=0 | 11 §6 棘轮基线 649+/0 |
-| F3 | T0-03(T-工程-03) | cargo fmt --all --check xuanji-system/tests 2 文件大量格式换行差异 | exit=1，涉及 persistence_provider_crud.rs + t6_dip_orchestrator.rs 共 N 处（行 527…、notifications INSERT 多行） | exit=0 0 diff | Rustfmt 官方 + 20 D7 G1 闸门 |
-| F4 | T0-09(T-工程-04) | `#[allow(dead_code)]` 全仓 62 处（↑7.75× 阈值 8） | platform/** 扫描 = 62，top hotspots: gateway/runtime 20 处, xuanji-sdk-graph crate 级 `#![allow(dead_code)]` 整包, ai-agent 3 处 | ≤ 8 | 13 §3 死代码 8 棘轮 |
+| F1 | T0-02(T-工程-01) | Clippy 全仓 `-D warnings` → 3 crate 编译失败 | exit=101, mox-cloud-drive-filer 2 项, mox-domain-abstractions 1 项（`assert!(true)`常量断言）, mox-graph-meta **11 项**（`from_str` 混淆/无用变量/死代码/格式化/布尔/参数过多/方法名冲突） | exit=0 0 warn | 11 §6 棘轮基线 0 warn |
+| F2 | T0-01(T-工程-02) | Workspace UT 连 1 个测试二进制都没生成 | passed=0, exit=101, mox-graph-service 5 个 mod 文件缺失 E0583（graph_server/ngql_parser/cypher_parser/optimizer/algo_bridge）+ E0432 PropValue 未定义 | passed≥649 failed=0 | 11 §6 棘轮基线 649+/0 |
+| F3 | T0-03(T-工程-03) | cargo fmt --all --check mox-system/tests 2 文件大量格式换行差异 | exit=1，涉及 persistence_provider_crud.rs + t6_dip_orchestrator.rs 共 N 处（行 527…、notifications INSERT 多行） | exit=0 0 diff | Rustfmt 官方 + 20 D7 G1 闸门 |
+| F4 | T0-09(T-工程-04) | `#[allow(dead_code)]` 全仓 62 处（↑7.75× 阈值 8） | platform/** 扫描 = 62，top hotspots: gateway/runtime 20 处, mox-sdk-graph crate 级 `#![allow(dead_code)]` 整包, ai-agent 3 处 | ≤ 8 | 13 §3 死代码 8 棘轮 |
 
 ### ⚠ WARN TOP 5（修完 4 FAIL 再修 WARN，排名按对 L2 放行影响程度）：
 | # | 内容 | 根因方向 | SoT 阈值 |
@@ -56,7 +56,7 @@
 | W2 | AI 基准 `--strict-single --no-retry` CLI 参数源码没显式解析到（注释有语义，实际行为没开关） | 开发联盟后端 R 测试脚本工程化缺口 | 27 §三 铁律第 2 条：严格单次 + 零重试 + 零本地降级 |
 | W3 | T-算法 4 独立测试脚本没写（parallelism / pagerank.rs / activation_spread.rs / rcpsp_cpm.rs），lib 层有对应 test 但不符合 27 号 T-算法 05/03/07 独立集成测试规范 | 算法联盟 C 测试工程化缺口 | 27 §三 8 大类 T-算法 题卡要求独立 test 文件 + 1 行复现命令 |
 | W4 | 后端 Mocha TR-01-01 域注册 62 vs 实际 70 → 差 8 域，需确认"域注册期望常量"是否过期（22 表 2 六层 L2 是否新增了 8 个域） | 开发联盟后端 R / 产品联盟 C 22 号表 2 版本错位 | 27 §三 T-集成 5 题 双向绑定 97.9% |
-| W5 | dead_code 62 中 20 个在 gateway/runtime，整包 xuanji-sdk-graph 有 crate 级 `#![allow(dead_code)]` → SDK 整包放行死代码 = 棘轮退化最易反弹点 | 开发联盟 SDK 组 R 清理死代码或加 allow 的理由注释 | 13 §三 棘轮 ≤ 8 |
+| W5 | dead_code 62 中 20 个在 gateway/runtime，整包 mox-sdk-graph 有 crate 级 `#![allow(dead_code)]` → SDK 整包放行死代码 = 棘轮退化最易反弹点 | 开发联盟 SDK 组 R 清理死代码或加 allow 的理由注释 | 13 §三 棘轮 ≤ 8 |
 
 ### 🔴 **三选一最终结论（T6 §三 · 本页即可回答）**
 > # ❌ REJECT（拒绝放行 · 修复后重测）
@@ -91,11 +91,11 @@
 |---|---------|---------|----------|------------|---------|-----------------|
 | T0-01 | 工程① | 11 §6 棘轮 UT 649 | UT≥649 failed=0 | `cargo test --workspace --no-fail-fast --test-threads=8` | 🔴 **FAIL** 5 mod 缺失，passed=0 test_binaries=0 exit=101 | rust-test-suite.json sha 25c6557…9959c7 |
 | T0-02 | 工程② Clippy 0 | 11 §6 棘轮 clippy 0 warn | exit=0 -D warnings | `cargo clippy --workspace --all-targets -- -D warnings` | 🔴 **FAIL** 3 crate 编译失败 18 error 行 exit=101 | 同上 |
-| T0-03 | 工程③ fmt | 20 D7 G1 + Rustfmt | exit=0 0 diff | `cargo fmt --all -- --check` | 🔴 **FAIL** xuanji-system 2 测试文件多处格式换行差异 exit=1 | 同上 |
+| T0-03 | 工程③ fmt | 20 D7 G1 + Rustfmt | exit=0 0 diff | `cargo fmt --all -- --check` | 🔴 **FAIL** mox-system 2 测试文件多处格式换行差异 exit=1 | 同上 |
 | T0-04 | 算法① Schema 14×19 | 22 表 4/5 + 18 §三 14×19 | node≥14 edge≥19 orphan=0 | 读 `log/graph/graph.enterprise.json` 算 family | ⚠ WARN（文件存在 7×8 PASS 证明 Schema 存在，精确 family 数下次补） | fe-home structure 证据 sha A66EABC… |
 | T0-05 | 安全① RBAC 11/11 | 12 §3 11 探针 | 11/11 探针全绿 | 启动 rbac-engine + POST `/api/rbac/probe/11` | ⚠ WARN（代码层 8+ RBAC files 存在 ≥ 阈值证明结构对齐，精密实跑需 RBAC 服务） | GOV01 & NFR03 |
 | T0-06 | 安全② 审计链 6 字段 | 12 §3.2 审计链 | 6 字段 100% 可查询+哈希一致 | POST `/api/audit/search` 断言 | ⚠ WARN（结构层 audit pattern 存在） | 同上 |
-| T0-07 | 治理① Verify 14 | 08 §2 Verify 14 专家 | 14/14 PASS | `cargo run -p xuanji-expert --bin xuanji_optimize -- verify all` | ⚠ WARN（bin 定义存在 + 10+ expert.rs files ≥6 证明实现） | ENG suite GOV01 |
+| T0-07 | 治理① Verify 14 | 08 §2 Verify 14 专家 | 14/14 PASS | `cargo run -p mox-expert --bin mox_optimize -- verify all` | ⚠ WARN（bin 定义存在 + 10+ expert.rs files ≥6 证明实现） | ENG suite GOV01 |
 | T0-08 | 治理② P9 判重 0 新增缺陷 | 16 §3 P9 闸门 | 0 新增缺陷 exit=0 | `python tools/guantu_gate.py --strict` | ⏭ **SKIP**（Python 脚本卡住需要修依赖，下次重测补上 · 禁止当 PASS） | - |
 | T0-09 | 工程④ dead_code ≤8 | 13 §3 dead_code 棘轮 | count ≤8 | `Get-ChildItem platform -Recurse -Filter *.rs \| Select-String 'allow\\(dead_code\\)' \| Measure` | 🔴 **FAIL** 扫描=62（62/8=↑7.75× 超阈值） | rust-test-suite.json sha 25c655… |
 | T0-10 | 工程⑤ AIS 15 Crate 存在 | 22 表 2 六层 L2 + 02 §3.2 15 Crate SoT | 15/15 映射存在 | 目录检查 + 等价映射判定 | ✅ **PASS**（实际 platform/services 24 Crates + gateway/runtime + edge-node backend-node 兼容映射 15/15 全覆盖） | ENG suite T0-10 |
@@ -103,7 +103,7 @@
 | T0-12 | AI② 四端点路由 100% | AC-10 四端点命名（process/analyze/capabilities/metrics）| 4/4 路由 + 4xx/5xx=0 | 4 × POST/GET `/ai/engine/*` | ⏭ **SKIP**（Rust ai-engine 未启动 → 需拉起 operator-server 后精密实跑）| - |
 | T0-13 | 前端① Lighthouse 3 项≥90 | 26 号 F7 自验 + Google Lighthouse 官方 | Performance / Accessibility / BestPractices ≥ 90 each | `npx lighthouse http://localhost:4173 --output=json` | ⚠ **WARN**（依赖 lighthouse 缺失 W1，装完才能跑；结构 fe_build=PASS 证明可构建） | fe suite dep_check W1 |
 | T0-14 | 前端② Playwright P0 ≥15 条 | 26 号 F7 Playwright 官方 15 P0 用例 | 100% PASS 0 FAIL | `npx playwright test --project=chromium --grep @P0` | ⚠ **WARN**（@playwright/test 依赖缺失 W1，装完才能跑；fe_structure 39 视图 34 路由结构 PASS） | fe suite fe_structure PASS |
-| T0-15 | 集成① xuanji_optimize 8步 E2E 8/8 | 08 §8 步 + 06 四闸门 G3 | 8/8 PASS | `cargo run -p xuanji-expert --bin xuanji_optimize -- e2e --step 1..8` | ⏭ **SKIP**（xuanji-graph-service 编译失败 F2 → 先修 F2 才能启动 E2E）| - |
+| T0-15 | 集成① mox_optimize 8步 E2E 8/8 | 08 §8 步 + 06 四闸门 G3 | 8/8 PASS | `cargo run -p mox-expert --bin mox_optimize -- e2e --step 1..8` | ⏭ **SKIP**（mox-graph-service 编译失败 F2 → 先修 F2 才能启动 E2E）| - |
 | T0-16 | 集成② 四闸门 4/4 | 06 §2.2 G1/G2/G3/G4 40 子项 | G1 fmt G2 clippy-UT G3 E2E G4 AI 全 PASS | 逐项验 G1=fmt G2=UT/clippy G3=E2E G4=AI | 🔴 **FAIL**（实际 G1=F3 FAIL, G2=F1+F2 FAIL, G3 SKIP, G4 SKIP → 0/4 PASS · 破 T6 ⑤）| rust-test-suite.json F1/F2/F3 |
 | T0-17 | 版本① M0 气道 L0/L1/L2 三级 | 22 表 7 V1.0 气道里程碑门槛 | 三级门槛顺序通过（L0 → L1 → L2） | 按 22 表 7 3 级 门槛逐项对 | ⚠ WARN（当前 M0 L0 验证，T6=REJECT → L0 未过 → 顺序对齐，说明阶段判定准确）| 权威链 §3 表 7 对齐 |
 | T0-18 | NFR① API p50 ≤200ms | 22 表 8 NFR-01 硬阈值 | p50≤200ms p99≤1000ms | `ab -n 1000 -c 50 http://localhost:3778/api/health` | ⏭ **SKIP**（Rust operator-server 未起来 F2 → 先修 F1/F2/F3/F4 FAIL 才能真跑）| - |
@@ -121,7 +121,7 @@
 |------|-------------------|----------|------------|---------|------|--------|
 | 工程-01 Clippy 0 warn | 11 §6 棘轮 + Rust Clippy 官方 | 0 warning exit=0 -D | `cargo clippy --workspace --all-targets -- -D warnings` | 3 crate 编译失败 18 errors exit=101 | ❌ FAIL F1 | rust-json 25c655… |
 | 工程-02 UT ≥649 & failed=0 | 11 §6 649/0 基线 + llvm-cov 官方 | UT≥649 & failed=0 | `cargo test --workspace --no-fail-fast` | 0 test binary 5 mod 缺失 E0583/E0432 | ❌ FAIL F2 | 同上 |
-| 工程-03 fmt 0 diff | 20 D7 G1 闸门 + Rustfmt 官方 | 0 diff exit=0 | `cargo fmt --all -- --check` | 2 files in xuanji-system diffs exit=1 | ❌ FAIL F3 | 同上 |
+| 工程-03 fmt 0 diff | 20 D7 G1 闸门 + Rustfmt 官方 | 0 diff exit=0 | `cargo fmt --all -- --check` | 2 files in mox-system diffs exit=1 | ❌ FAIL F3 | 同上 |
 | 工程-04 dead_code ≤8 | 13 §3 dead_code 棘轮 8 | count ≤8 | `grep -r 'allow(dead_code)' platform/**/*.rs \| wc` | 62 处（gateway/runtime 20 处 + SDK 整包级 1） | ❌ FAIL F4 | 同上 |
 | 工程-05 rayon 真并行 speedup≥1.8 | 13 号 rayon 真并行 SoT | threads≥cores & speedup≥1.8 | `cargo test -p graph-algorithms --test parallelism` | parallelism.rs 文件不存在（lib 层 18 test PASS 但无独立集成测）| ⚠ WARN（未实现脚本，非代码坏）| rust-json test[5] |
 | 工程-06 Cargo 7 字段 | AIS 7 字段规范（workspace inheritance 合法）| 7/7 字段含继承模式 PASS | 解析 15 crate Cargo.toml（含 workspace.package 继承）| 严格显式写法=9/15 = 60%；AIS 继承 Rust 1.74 合法模式=15/15 100% | ✅ **PASS**（按企业级 AIS Rust 规范，workspace inheritance 合法） | ENG-06 JSON |
@@ -143,20 +143,20 @@
 ### 🟧 T-安全 6 题（实跑 1 · WARN=1 · FAIL=0 · SKIP=5）
 | 题 ID | SoT 来源/行号锚点 | PASS 阈值 | 1 行复现命令 | 实跑数据 | 判定 | SHA留痕 |
 |------|-------------------|----------|------------|---------|------|--------|
-| 安全-01 RBAC 11 探针 11/11 | 12 §3 RBAC 11 探针报告 | 11/11 全部 Green | `POST /api/rbac/probe/run-all` expect 11 green | 代码层 platform/services/xuanji-system src RBAC 相关 8 个 rs 文件存在（rbac/role/tenant/permission 关键词命中） | ⚠ WARN（结构对齐 ≥ 8 files 证明实现，精密实跑需启动服务 下次补） | NFR03 JSON |
+| 安全-01 RBAC 11 探针 11/11 | 12 §3 RBAC 11 探针报告 | 11/11 全部 Green | `POST /api/rbac/probe/run-all` expect 11 green | 代码层 platform/services/mox-system src RBAC 相关 8 个 rs 文件存在（rbac/role/tenant/permission 关键词命中） | ⚠ WARN（结构对齐 ≥ 8 files 证明实现，精密实跑需启动服务 下次补） | NFR03 JSON |
 | 安全-02 审计链 6 字段 100% 可查 + 哈希一致 | 12 §3.2 6 字段 (actor/action/resource/timestamp/hash/subject) 存在 | 6 字段查询 100% + 哈希链 Δ=0 | `POST /api/audit/search?from=0&to=9999 断言 6 字段 + hash链连续` | （代码层 audit 模式存在，见 NFR03 样本文件） | ⏭ SKIP（需 operator-server 启动，下次补） | - |
 | 安全-03 JWT RFC 7518 3 场景（过期/篡改/越权角色） | JWT RFC 7518 + 12 号 §4 | 3/3 全被拒绝 + 日志留痕 | `curl /api/x with bad jwt × 3` expect 401/403 | ⏭ SKIP（JWT 端点需启动服务） | - |
 | 安全-04 OWASP Top10 注入 50 经典 Payload × 10 关键 API | OWASP 公开 50 注入 Payload 清单 | 阻断率 100% + 日志 100% 留痕 | `payload-runner -p owasp-top10-50-injection.jsonl -e 10 endpoints.txt` | ⏭ SKIP（需启动网关 + OWASP 脚本，下次补 CI） | - |
-| 安全-05 多租户数据隔离 3 租户 0 泄漏 | NFR-03 多租户 0 泄漏 SoT | 3 租户 token × 跨租户查询 0 命中 | `tenantA/B/C tokens × 跨租户 GET endpoints` 断言空结果 | ⚠ WARN 结构对齐（RBAC tenant 关键词 xuanji-system 代码存在）| NFR03 JSON |
+| 安全-05 多租户数据隔离 3 租户 0 泄漏 | NFR-03 多租户 0 泄漏 SoT | 3 租户 token × 跨租户查询 0 命中 | `tenantA/B/C tokens × 跨租户 GET endpoints` 断言空结果 | ⚠ WARN 结构对齐（RBAC tenant 关键词 mox-system 代码存在）| NFR03 JSON |
 | 安全-06 依赖审计 0 高危 CVE（>=9.8 CVSS） | OWASP Top10 A06: Vuln Components | 0 Critical / 0 High（CVSS>=7.0 为 High） | `cargo audit + npm audit --audit-level high` | ⏭ SKIP（工具 `cargo audit` / `npm audit` 下次 CI 安装后补） | - |
 
 ### 🟧 T-治理 6 题（实跑 1 · WARN=1 · SKIP=5）
 | 题 ID | SoT 来源/行号锚点 | PASS 阈值 | 1 行复现命令 | 实跑数据 | 判定 | SHA留痕 |
 |------|-------------------|----------|------------|---------|------|--------|
-| 治理-01 Verify 14 专家 Verify 14/14 | 08 §2 Verify 14 专家定义 | 14/14 专家全绿 | `cargo run -p xuanji-expert --bin xuanji_optimize -- verify --all` | bin `xuanji_optimize` 定义存在（xuanji-expert Cargo.toml [[bin]] 匹配） + expert/verify 相关 rs 文件 10+ ≥ 6 结构阈值 | ⚠ WARN（结构实现证明，精密实跑需修 F2 graph-service 编译 下次补）| GOV01 JSON |
+| 治理-01 Verify 14 专家 Verify 14/14 | 08 §2 Verify 14 专家定义 | 14/14 专家全绿 | `cargo run -p mox-expert --bin mox_optimize -- verify --all` | bin `mox_optimize` 定义存在（mox-expert Cargo.toml [[bin]] 匹配） + expert/verify 相关 rs 文件 10+ ≥ 6 结构阈值 | ⚠ WARN（结构实现证明，精密实跑需修 F2 graph-service 编译 下次补）| GOV01 JSON |
 | 治理-02 P9 判重 0 新增缺陷 | 16 §3 P9 判重闸门 0 新增 | 0 新增 defect + exit=0 | `python tools/guantu_gate.py --strict` | ⏭ SKIP（本次 Python 脚本执行超时卡依赖，下次补环境） | - |
 | 治理-03 四闸门 40 子项逐项验 G1-G4 | 06 §2.2 四闸门 4×40=40 子项 | 40/40 子项全部通过 | `四闸门 G1-G4 逐项跑工具脚本` | G1/F3 FAIL fmt, G2/F1+F2 FAIL clippy+UT, G3/G4 SKIP | ❌ FAIL（四闸门 0/4 通过 < 4/4 要求） | F3/F1/F2 实锤 |
-| 治理-04 08 8 步 Verify/Reconcile/Govern | 08 号 8 步名实对齐 | 8 步结果每步输出 JSON | `cargo run -p xuanji-expert --bin xuanji_optimize -- step {1..8}` | ⏭ SKIP（需 graph-service 编译成功，下次补） | - |
+| 治理-04 08 8 步 Verify/Reconcile/Govern | 08 号 8 步名实对齐 | 8 步结果每步输出 JSON | `cargo run -p mox-expert --bin mox_optimize -- step {1..8}` | ⏭ SKIP（需 graph-service 编译成功，下次补） | - |
 | 治理-05 21 §十一 SRS 396 钩覆盖率 ≥95% | 21 §十一 396 钩对外承诺（95% 以下 T6=REJECT 不能对外签字） | SRS 覆盖率 ≥ 95% | `srs-coverage.py --against srs-hooks.md --against tests/*.rs --against *.vue` | ⏭ SKIP（大型覆盖率脚本精密执行，下次 CI 补） | - |
 | 治理-06 RACI 责任追溯 FAIL 全部认领 | 06 号 RACI 四角色 + 27 §五 T5 锚点关联 | FAIL 全部对应 R + 预计工时 + 重测计划 | 本报告 §6 FAIL & WARN 根因分析表（见下节）→ 100% FAIL 有 RACI 认领 | ✅ **PASS**（本报告 §6 已 100% 全 FAIL 有根因 + 责任方 + 修复建议 + 预计工时 + 重测计划） | 见下节 §6 |
 
@@ -174,14 +174,14 @@
 |------|-------------------|----------|------------|---------|------|--------|
 | 前端-01 Lighthouse 3 项 ≥ 90（Performance / Accessibility / BestPractices）| 26 F7 + Google Lighthouse 官方 | 每项 ≥ 90 | `npx lighthouse http://localhost:4173 --only-categories=performance,accessibility,best-practices --output json` | W1 `lighthouse` 依赖未装；fe_build 构建 PASS（dist=73,649 KB 26s）证明页面可构建 | ⚠ WARN（装完依赖 + vite preview 才能测，下次补） | fe suite W1 / build PASS |
 | 前端-02 Playwright P0 ≥ 15 条 100% PASS | 26 F7 Playwright 官方 15 P0 用例 | P0 100% PASS 0 FAIL | `npx playwright test --project=chromium --grep @P0` | W1 `@playwright/test` 依赖未装 | ⚠ WARN（装完依赖补） | W1 |
-| **前端-03 路由/视图结构达标 26 F1 交付清单** | 26 §三 F1 6 主视图 + 12 看板 + Admin 5 panels | views≥28, routes≥26, Admin panels≥5 + XuanjiFusionView 存在 | 扫描 `frontend-ui/src/views/**/*.vue` + router | **实际 views=39 ≥28, routes=34 ≥26, Admin panels=5, XuanjiFusionView.vue 存在** → 4 指标全过 | ✅ **PASS**（26 F1 前端架构结构达标） | fe suite fe_structure sha A66EA… |
+| **前端-03 路由/视图结构达标 26 F1 交付清单** | 26 §三 F1 6 主视图 + 12 看板 + Admin 5 panels | views≥28, routes≥26, Admin panels≥5 + MoxFusionView 存在 | 扫描 `frontend-ui/src/views/**/*.vue` + router | **实际 views=39 ≥28, routes=34 ≥26, Admin panels=5, MoxFusionView.vue 存在** → 4 指标全过 | ✅ **PASS**（26 F1 前端架构结构达标） | fe suite fe_structure sha A66EA… |
 | 前端-04 四尺寸视觉回归 ≤ 0.5% 像素差 + Tab 可达无死循环 | 26 F7 + WCAG AA A11y + 4 尺寸 (1280/1920/3840/375) | diff≤0.5% 四尺寸 + Tab 循环<100 + 移动端最小 44×44 ≥95% | `playwright visual-regression.spec + tab-reach.spec` | （结构 W1 缺 Playwright；但 fe-build PASS + dist73MB 证明可部署，移动尺寸快速核验：mobileCheck overflowX 正常，tab 可达 tabbable=正常）| ⚠ WARN（W1 缺依赖，需补精密视觉测） | fe suite mobile snapshot |
 | 前端-05 Element Plus 设计系统统一度 ≥ 95% | 26 设计规范统一色 + 低饱和深空色 + 圆角柔边 + 字号层级 | Element Plus 类覆盖率 ≥ 95% + 字号层级 6 档 齐全 | DOM 扫描 `el-*` / 字号 Set 大小 | 结构 dep_check element-plus true ✅ | ⏭ SKIP（精密 DOM 覆盖率需 Playwright 或 lighthouse 下次补） | - |
 
 ### 🟧 T-集成 5 题（实跑 2 · PASS=0 · WARN=1 · FAIL=1 · SKIP=3）
 | 题 ID | SoT 来源/行号锚点 | PASS 阈值 | 1 行复现命令 | 实跑数据 | 判定 | SHA留痕 |
 |------|-------------------|----------|------------|---------|------|--------|
-| 集成-01 08 8 步 E2E 8/8 PASS | 08 号 §8 步 1-8 名实一致 | 8 步全 PASS | `cargo run -p xuanji-expert --bin xuanji_optimize -- e2e --steps=1-8` | ⏭ SKIP（graph-service F2 编译失败）| - |
+| 集成-01 08 8 步 E2E 8/8 PASS | 08 号 §8 步 1-8 名实一致 | 8 步全 PASS | `cargo run -p mox-expert --bin mox_optimize -- e2e --steps=1-8` | ⏭ SKIP（graph-service F2 编译失败）| - |
 | **集成-02 四闸门 G1-G4 4/4 PASS** | 06 §2.2 四闸门 L2 放行硬条件 4/4 = T6 判定⑤ | G1/G2/G3/G4 4 PASS | 逐项汇总 G1=fmt G2=UT/clippy G3=E2E G4=AI | G1=FAIL(F3), G2=FAIL(F1+F2), G3=SKIP, G4=SKIP → **0/4** | ❌ **FAIL**（破 T6 判定⑤，四闸门<4=REJECT）| T0-16 实锤 |
 | 集成-03 代码双向绑定 ≥97.9%（孤儿节点≤50） | 21 §三 3.5 绑定率 97.9% SoT | ≥97.9% & 孤儿 ≤ 50 | `code-binder-cli --bind --orphan-threshold 50` | bindings 相关文件 6 个 ≥ 结构阈值 6 证明实现；Mocha TR-01-01 域注册 62 vs 实际=70 (差8) → 绑定率 ≈ 62/70=88.5% <97.9% | ⚠ WARN（结构存在但 W4 域常量错位） | INT03 JSON & mocha FAIL |
 | 集成-04 变更推演精度 ≥ 90% | 21 §五 5 推演精度 ≥90% 基线 | precision@10 ≥90% | `change-impact-analyzer -r 100 changes --against gold.csv` | ⏭ SKIP（推演脚本精密 CI 下次补） | - |
@@ -192,7 +192,7 @@
 |------|-------------------|----------|------------|---------|------|--------|
 | NFR-01 p50≤200ms p99≤1000ms (ab 1000次 50并发) | 22 表 8 NFR-01 p50≤200ms | p50≤200ms & p99≤1000ms | `ab -n 1000 -c 50 http://localhost:3778/api/health > perf.txt && parse_perf` | ⏭ SKIP（Rust operator 服务未启动，先修 F2/F3/F1） | - |
 | NFR-02 高可用单节点故障 RTO≤30s RPO=0 | 22 表 8 NFR-02 高可用 | kill one → RTO≤30s & RPO=0 | `chaos: kill operator-server-1, verify auto-recover within 30s` | ⏭ SKIP（集群+混沌工程 环境） | - |
-| NFR-03 多租户 3 租户 0 泄漏（RBAC 租户隔离）| 22 表 8 NFR-03 多租户隔离 + 12 §3 RBAC 6 角色 | 跨租户查询 = 空结果 × 3 租户 × 10 API | 跨租户 30 次请求结果为空 | 代码层 xuanji-system RBAC 8+ files 存在，tenant 关键字 | ⚠ WARN（结构证明） | NFR03 JSON |
+| NFR-03 多租户 3 租户 0 泄漏（RBAC 租户隔离）| 22 表 8 NFR-03 多租户隔离 + 12 §3 RBAC 6 角色 | 跨租户查询 = 空结果 × 3 租户 × 10 API | 跨租户 30 次请求结果为空 | 代码层 mox-system RBAC 8+ files 存在，tenant 关键字 | ⚠ WARN（结构证明） | NFR03 JSON |
 | NFR-04 并发吞吐 500QPS（稳定 5 分钟） | 22 表 8 NFR-04 吞吐基线 | wrk -c 100 -d 300s ≥ 500 | `wrk -t 8 -c 100 -d 300s http://localhost:3778/api/health` | ⏭ SKIP（需 Rust 服务 + wrk 安装） | - |
 | NFR-05 onboarding ≤ 2h 完成 80% 关键任务（10 新成员） | 22 表 8 NFR-05 易用性硬阈值 | `10 × Playwright 模拟新用户 / 关键任务成功率 ≥80% & time≤2h` | ⏭ SKIP（W1 缺 Playwright + 精密用例） | - |
 | NFR-06 安全 SLA ≥ 99.9%（月宕 ≤43m） | 22 表 8 NFR-06 SLA | 30 天监控 SLA ≥ 99.9% | `promtool query availability:sum_over_time(up[30d])` | ⏭ SKIP（需生产监控 30 天数据） | - |
@@ -207,10 +207,10 @@
 ### ❌ FAIL 6 条完整根因分析表（T5 锚点关联表 → FAIL 对应 SoT / 21 SRS / 22 9表 / 05 MxLx / RACI）
 | FAIL # | 位置 | 根因（5 Whys 深分析，不许写"不知道"）| RACI 责任方该谁修 | 修复建议（精确到文件/函数/类） | 预计工时（人天）| 重测计划（怎么证明修复了）|
 |--------|------|--------------------------------|------------------|-----------------------------|----------------|------------------------|
-| F1 Clippy 18 errors（xuanji-graph-meta 占 11） | platform/services/xuanji-graph-meta/src/schema_store.rs `from_str` 命名与标准 trait 冲突 / 11 个 lint + 2 个其他 crate lint | 5 Whys：①18 error=编译失败 ②-D warnings 触发 lint ③ 因为 xuanji-graph-meta 有 11 项 needless_bool_assign / useless_format / too_many_arguments / should_implement_trait(from_str) / dead_code ④ 开发时没跑 clippy，直接提交了 ⑤ 缺 CI G1-G2 闸门自动阻断（20 D7 四闸门 G1/G2 没装 pre-commit hook） | **开发联盟 R：graph 组 负责人**（xuanji-graph-meta + domain-abstractions + cloud-drive-filer） | (a) schema_store.rs 方法重命名 `from_str → try_from_str` 或实现 `impl std::str::FromStr for FieldType`；(b) 11 项 lint 逐条 fix（too_many_args 拆函数）；(c) domain-abstractions `assert!(true)` 删除（常量断言无意义）；(d) cloud-drive-filer 2 项 unnecessary_cast 修正；(e) 加 `.cargo/config.toml` 使 clippy 作为 pre-commit；(f) xuanji-system 2 个测试文件 format 化（修复 F3 同步做） | F1 1.5 人天 + F3 0.2 人天 = **1.7 人天** | 修完后 `cargo clippy --workspace -D warnings` exit=0 + `cargo fmt --all --check` exit=0 → 两项都 exit 0 证明 F1+F3 修复 |
-| F2 xuanji-graph-service 5 mod 缺失 0 UT | platform/services/xuanji-graph-service 5 mod (graph_server/ngql_parser/cypher_parser/optimizer/algo_bridge) 未在 lib.rs 声明 + result_set::PropValue 未导入 | 5 Whys：①UT 0 binary ② graph-service 编译失败 ③ 5 mod 文件存在（？）或 mod 声明缺失 ④ 最近重构 graph 服务时 lib.rs 声明漏提交 ⑤ 本地可能用 `--cfg` feature 开关但 CI 默认没开 → 导致 CI/默认 feature 下 mod 缺失 | **开发联盟 R：graph-service 组**（xuanji-graph-service 负责人） | (a) 打开 `xuanji-graph-service/src/lib.rs` 确认 5 mod 声明存在；若文件缺失 → 从 feature-gated 或备份中恢复；(b) 若 mod 有 feature gating → 在 Cargo.toml 默认 features 加入对应 feature；(c) PropValue 导入路径修正（E0432: use xuanji_graph_storage::result_set::PropValue;）；(d) 编译通过后，跑 `cargo test -p xuanji-graph-service` 至少 1 个 test bin；(e) 再跑 `cargo test --workspace` 全仓累计 UT 数。 | 复杂，可能有重构遗留代码缺失 → **2.5 人天**（若 5 mod 文件只缺声明 = 0.5 天；若文件本身丢失 = 2.5 天+） | 修完后 `cargo build -p xuanji-graph-service` exit=0 + `cargo test --workspace` passed ≥ 基线 649（若 UT 总量不够，补 graph-service 的 UT）|
-| F3 cargo fmt 2 文件格式差异 | platform/services/xuanji-system/tests/{persistence_provider_crud.rs, t6_dip_orchestrator.rs} 换行 / 缩进 vs rustfmt 规范 | 5 Whys：①fmt exit=1 ② 2 test files 有换行差异 ③ 最近提交改了字符串多行写法没 format ④ pre-commit fmt hook 没装 ⑤ 同 F1 根因 CI G1 闸门没自动阻断 | **开发联盟 R：system 组** | (a) `cargo fmt --all`（不是 check，直接 apply）；(b) git diff 确认只改了格式；(c) 同步安装 pre-commit 运行 cargo fmt（F1 修复 G1 闸门建议同步） | 极简，**0.2 人天**（可在 F1 修复里顺手做） | 见 F1 重测计划：`cargo fmt --all --check` exit=0 |
-| F4 dead_code 62 >> 阈值 8 | gateway/runtime 20 处 + xuanji-sdk-graph 整包 `#![allow(dead_code)]` + 其余 41 处散 | 5 Whys：①62 > 8 ② 全仓大量 allow(dead_code) ③ 开发期"先放过"写了 #[allow(dead_code)] 但发布前没清理 ④ SDK 整包放行太粗暴 ⑤ 缺 13 号死代码定期清理机制 | **开发联盟 R：SDK 组 + 网关组**（gateway/runtime + xuanji-sdk-graph 整包级） | (a) gateway/runtime 20 处逐条检查 → 真未调用直接删除 / 公共 API 移 public；(b) xuanji-sdk-graph `#![allow(dead_code)]` 移除 → 改成仅具体条目；(c) 其余 41 处逐条清理；(d) 最终 ≤8 才 PASS。 | 逐条清理 → **1.0 人天**（20+20+22=62 条） | 清理完后 `grep -r 'allow(dead_code)' platform/**/*.rs | wc -l ≤8` 证明修复 |
+| F1 Clippy 18 errors（mox-graph-meta 占 11） | platform/services/mox-graph-meta/src/schema_store.rs `from_str` 命名与标准 trait 冲突 / 11 个 lint + 2 个其他 crate lint | 5 Whys：①18 error=编译失败 ②-D warnings 触发 lint ③ 因为 mox-graph-meta 有 11 项 needless_bool_assign / useless_format / too_many_arguments / should_implement_trait(from_str) / dead_code ④ 开发时没跑 clippy，直接提交了 ⑤ 缺 CI G1-G2 闸门自动阻断（20 D7 四闸门 G1/G2 没装 pre-commit hook） | **开发联盟 R：graph 组 负责人**（mox-graph-meta + domain-abstractions + cloud-drive-filer） | (a) schema_store.rs 方法重命名 `from_str → try_from_str` 或实现 `impl std::str::FromStr for FieldType`；(b) 11 项 lint 逐条 fix（too_many_args 拆函数）；(c) domain-abstractions `assert!(true)` 删除（常量断言无意义）；(d) cloud-drive-filer 2 项 unnecessary_cast 修正；(e) 加 `.cargo/config.toml` 使 clippy 作为 pre-commit；(f) mox-system 2 个测试文件 format 化（修复 F3 同步做） | F1 1.5 人天 + F3 0.2 人天 = **1.7 人天** | 修完后 `cargo clippy --workspace -D warnings` exit=0 + `cargo fmt --all --check` exit=0 → 两项都 exit 0 证明 F1+F3 修复 |
+| F2 mox-graph-service 5 mod 缺失 0 UT | platform/services/mox-graph-service 5 mod (graph_server/ngql_parser/cypher_parser/optimizer/algo_bridge) 未在 lib.rs 声明 + result_set::PropValue 未导入 | 5 Whys：①UT 0 binary ② graph-service 编译失败 ③ 5 mod 文件存在（？）或 mod 声明缺失 ④ 最近重构 graph 服务时 lib.rs 声明漏提交 ⑤ 本地可能用 `--cfg` feature 开关但 CI 默认没开 → 导致 CI/默认 feature 下 mod 缺失 | **开发联盟 R：graph-service 组**（mox-graph-service 负责人） | (a) 打开 `mox-graph-service/src/lib.rs` 确认 5 mod 声明存在；若文件缺失 → 从 feature-gated 或备份中恢复；(b) 若 mod 有 feature gating → 在 Cargo.toml 默认 features 加入对应 feature；(c) PropValue 导入路径修正（E0432: use mox_graph_storage::result_set::PropValue;）；(d) 编译通过后，跑 `cargo test -p mox-graph-service` 至少 1 个 test bin；(e) 再跑 `cargo test --workspace` 全仓累计 UT 数。 | 复杂，可能有重构遗留代码缺失 → **2.5 人天**（若 5 mod 文件只缺声明 = 0.5 天；若文件本身丢失 = 2.5 天+） | 修完后 `cargo build -p mox-graph-service` exit=0 + `cargo test --workspace` passed ≥ 基线 649（若 UT 总量不够，补 graph-service 的 UT）|
+| F3 cargo fmt 2 文件格式差异 | platform/services/mox-system/tests/{persistence_provider_crud.rs, t6_dip_orchestrator.rs} 换行 / 缩进 vs rustfmt 规范 | 5 Whys：①fmt exit=1 ② 2 test files 有换行差异 ③ 最近提交改了字符串多行写法没 format ④ pre-commit fmt hook 没装 ⑤ 同 F1 根因 CI G1 闸门没自动阻断 | **开发联盟 R：system 组** | (a) `cargo fmt --all`（不是 check，直接 apply）；(b) git diff 确认只改了格式；(c) 同步安装 pre-commit 运行 cargo fmt（F1 修复 G1 闸门建议同步） | 极简，**0.2 人天**（可在 F1 修复里顺手做） | 见 F1 重测计划：`cargo fmt --all --check` exit=0 |
+| F4 dead_code 62 >> 阈值 8 | gateway/runtime 20 处 + mox-sdk-graph 整包 `#![allow(dead_code)]` + 其余 41 处散 | 5 Whys：①62 > 8 ② 全仓大量 allow(dead_code) ③ 开发期"先放过"写了 #[allow(dead_code)] 但发布前没清理 ④ SDK 整包放行太粗暴 ⑤ 缺 13 号死代码定期清理机制 | **开发联盟 R：SDK 组 + 网关组**（gateway/runtime + mox-sdk-graph 整包级） | (a) gateway/runtime 20 处逐条检查 → 真未调用直接删除 / 公共 API 移 public；(b) mox-sdk-graph `#![allow(dead_code)]` 移除 → 改成仅具体条目；(c) 其余 41 处逐条清理；(d) 最终 ≤8 才 PASS。 | 逐条清理 → **1.0 人天**（20+20+22=62 条） | 清理完后 `grep -r 'allow(dead_code)' platform/**/*.rs | wc -l ≤8` 证明修复 |
 | F5 集成 Mocha TR-01-01 域注册 62 vs 实际 70（8 域差） | platform/backend-node/tests/ 中 mocha 用例 `[TR-01-01] 业务域数 ===62`；actual=70 | 5 Whys：①mocha FAIL ②expect=62 actual=70 ③ 域注册代码新增了 8 个域 ④ 22 表 2 六层 L2 可能更新了 +10 域？→ 测试脚本的常量 `EXPECTED_DOMAIN_COUNT=62` 过期了没同步 ⑤ 缺 22 表 2 变更 → mocha 常量同步的机制 | **开发联盟 R（后端边缘 Node）+ 产品联盟 C（22 表 2 版本对齐 = C）** | (a) 先对 22 表 2 六层 L2 最新域数量；如果实际是 70 → 改测试常量 EXPECTED_DOMAIN_COUNT=70；如果 22 表 2 应该是 62 → 后端域注册代码多注册了 8 域 → 要移除；(b) 加注释 `// 对齐 22 表 2 六层 L2 V1.5 行数`；(c) 下次加 CHANGELOG。 | 0.5 人天（先判断 22 表 → 改常量或代码） | 改完后 `npm run mocha:full` failures=0 且 TR-01-01 PASS |
 | F6 四闸门 0/4 通过 < 4/4 要求 | G1=F3 FAIL, G2=F1+F2 FAIL, G3/G4 SKIP | 5 Whys：①四闸门 0/4 ② G1 fmt / G2 clippy+UT FAIL / G3/G4 依赖前者 ③ 根因 = F1/F2/F3/F4 四个 FAIL 叠加 ④ 缺 G1/G2 自动阻断 pre-commit ⑤ 发布前闸门流程没走 27 号 | **治理闸门 R = 开发联盟 R（代码先过） + 测试联盟 A（闸门判定）** | (a) 先修 F1/F2/F3/F4 → G1/G2 PASS；(b) G3 E2E（依赖 F2 graph-service 编译通过）才能跑；(c) G4 AI 30 题（需 Provider Key + W2 CLI 严格单次参数修完）；(d) 修完 G1-G2 → 重测四闸门。 | 依赖 F1~F4 + W2 → 累计工时分摊 | 修完 F1/F2/F3/F4 → G1 fmt=0 / G2 clippy 0+UT≥649 / G3 8/8 E2E / G4 30/30 = 4/4 PASS |
 
@@ -233,7 +233,7 @@
 |---------|-------|-------|-------------------|------|---------|
 | G1 · 治理闸门（格式化/规范/一致）| 格式 + 命名 + 规范 | 10 子项 | F3 cargo fmt FAIL（2 test file 格式差异）+ F4 dead_code 62 允许死代码 → G1 规范缺口严重 | ❌ **FAIL** | `cargo fmt --all --check`（实锤 exit=1 F3）|
 | G2 · 质量闸门（Clippy + UT 回归）| lint 0 warn + UT 649 不退化 | 10 子项 | F1 clippy FAIL 3 crate 18 errors + F2 UT 0 binary 编译失败（passed=0<649）→ 2 项棘轮退化严重（11 §6 基线），F1+F2 同时 FAIL → G2 质量爆 | ❌ **FAIL** | `cargo clippy -D warnings` + `cargo test --workspace`（F1/F2 双 FAIL）|
-| G3 · E2E 闸门（08 8 步 E2E / 玄铁 8 步） | xuanji_optimize 8 step E2E 8/8 全 PASS | 10 子项 | ⏭ SKIP（F2 graph-service 编译失败导致无法启动 xuanji_optimize step 1~8），**禁止当 PASS** → 实际不能判定通过 | ⏭ **SKIP** | `cargo run -p xuanji-expert --bin xuanji_optimize e2e --steps=1-8`（下次重测补）|
+| G3 · E2E 闸门（08 8 步 E2E / 玄铁 8 步） | mox_optimize 8 step E2E 8/8 全 PASS | 10 子项 | ⏭ SKIP（F2 graph-service 编译失败导致无法启动 mox_optimize step 1~8），**禁止当 PASS** → 实际不能判定通过 | ⏭ **SKIP** | `cargo run -p mox-expert --bin mox_optimize e2e --steps=1-8`（下次重测补）|
 | G4 · 对外 AI 承诺闸门（30/30 + SHA 99%） | 25 号 30 题同款严格单次 | 10 子项 | ⏭ SKIP（需 Provider API Key + W2 CLI 参数修完）→ 不能判定通过 | ⏭ **SKIP** | `node test/ai-engine-real-benchmark.js --strict-single --no-retry --answer-sha=25`（下次补）|
 | **合计 G1-G4 40 子项** |  | **40** | 0/4 闸门通过（2 FAIL / 2 SKIP） | ❌ **破 T6 判定⑤（0/4 < 4/4 PASS 要求 → REJECT 破防）** |
 
@@ -247,12 +247,12 @@
 | R-01 | Clippy lint | 11 §6：0 warning（-D warnings exit=0） | ❌ exit=101 3 crate 编译失败 18 errors | ↓ 从 0 warn 退化到编译失败 | **🔴 退化（破 T6 ④）** |
 | R-02 | Workspace UT 数量 | 11 §6：**649+ passed / 0 failed / 6 ignored** | ❌ passed=0 / failed=0 / test_binaries=0 | ↓ 649→0 崩溃式退化 | **🔴 退化（破 T6 ④）** |
 | R-03 | dead_code 数量 | 13 §3：dead_code ≤ 8 | ❌ 62（↑ 7.75×） | ↓ ↑越坏越大 | **🔴 退化（破 T6 ④）** |
-| R-04 | Cargo fmt 0 diff | 20 D7 G1 闸门：0 diff | ❌ xuanji-system 2 files 多处 diff | ↓ 退化 | 🔴 退化（虽棘轮写死但 fmt 也算 11 基线）|
+| R-04 | Cargo fmt 0 diff | 20 D7 G1 闸门：0 diff | ❌ mox-system 2 files 多处 diff | ↓ 退化 | 🔴 退化（虽棘轮写死但 fmt 也算 11 基线）|
 | R-05 | RBAC 11 探针 | 12 §3：11/11 探针绿 | ⚠ WARN 结构存在，精密实跑下次补 | ⚠ 相等（未发生退化证明） | ✅ 暂未发现退化（SKIP 不算退化，但也不算通过）|
 | R-06 | P9 判重 0 新增缺陷 | 16 §3：0 新增缺陷 | ⏭ SKIP（Python 卡依赖，下次补实跑） | - | ⚠ 相等 |
 | R-07 | AI 30/30 SHA 99% | 25 号报告：**30/30 严格单次 100%**（同款脚本）| ✅ QUESTIONS=30 + 7 大类齐全 对齐 25 号；W2 CLI 严格单次参数 WARN | ≈ 基本持平，工程化小缺口 WARN | ✅ 暂未发生退化 |
 | R-08 | 7×8 对账 56/56 0 RED | 22 表 6 Δ≤1e-6 棘轮 | ✅ 56/56 0 RED 全绿（最大亮点） | ✅ ↑ 完美持平 | ✅ **不退化（唯一完美棘轮）**|
-| R-09 | 前端视图数 ≥28 | 26 号 F1 结构：6 主视图 + 12 看板 | ✅ 实际 39 视图 + 34 路由 + Admin 5 Panels + XuanjiFusionView 存在 | ✅ ↑ 超基线 | ✅ 不退化 |
+| R-09 | 前端视图数 ≥28 | 26 号 F1 结构：6 主视图 + 12 看板 | ✅ 实际 39 视图 + 34 路由 + Admin 5 Panels + MoxFusionView 存在 | ✅ ↑ 超基线 | ✅ 不退化 |
 | **总退化检测**（0 条退化 = 通过，≥1 条退化 = REJECT） | | **要求 0 退化** | **3 条实锤退化（R-01/R-02/R-03 最关键 3 条全退化）** | | **🔴 🔴 🔴 破 T6 判定④（3 条退化 ≥1 条 → REJECT 破防）** |
 
 ---
@@ -447,22 +447,22 @@ cd d:\a10\aikjx\gitcode\infotopograph
 
 ## 🟥 P0 必须先修（= 必须先过 T0 18 烟测 + T6 破防 4 条先修掉 = 否则永远 REJECT）
 ### P0-1 · F1 + F3 修复（Clippy 0 warn + fmt 0 diff = G1 + G2 质量闸门）= **1.7 人天**
-- **根因**：xuanji-graph-meta 11 lint + domain-abstractions 1 assert!(true) + cloud-drive-filer 2 unnecessary_cast / xuanji-system 2 test files fmt 差异
+- **根因**：mox-graph-meta 11 lint + domain-abstractions 1 assert!(true) + cloud-drive-filer 2 unnecessary_cast / mox-system 2 test files fmt 差异
 - **具体操作清单**：
-  1. `platform/services/xuanji-graph-meta/src/schema_store.rs` 行 30 `pub fn from_str` → 要么实现 `impl std::str::FromStr for FieldType { type Err = anyhow::Error; ... }` 要么改成 `pub fn parse_from_str` 避免与标准 trait 命名冲突；
+  1. `platform/services/mox-graph-meta/src/schema_store.rs` 行 30 `pub fn from_str` → 要么实现 `impl std::str::FromStr for FieldType { type Err = anyhow::Error; ... }` 要么改成 `pub fn parse_from_str` 避免与标准 trait 命名冲突；
   2. 修 11 clippy errors：`too_many_arguments` 拆函数、`needless_bool_assign` 改直连、`useless_format` 去掉 format!()、`unused_variables` 加 `_` 前缀或去掉变量、`#[allow(dead_code)]` 清理对应条目；
-  3. `xuanji-domain-abstractions` 里 `assert!(true)`（常量断言）直接删除；
-  4. `xuanji-cloud-drive-filer` `unnecessary_cast` 去掉 `as`；
+  3. `mox-domain-abstractions` 里 `assert!(true)`（常量断言）直接删除；
+  4. `mox-cloud-drive-filer` `unnecessary_cast` 去掉 `as`；
   5. 直接执行 `cargo fmt --all` apply 格式差异（1 秒解决 F3）。
 - **验收标准**：`cargo clippy --workspace --all-targets -- -D warnings` exit=0 + `cargo fmt --all --check` exit=0。
 
-### P0-2 · F2 修复（xuanji-graph-service 5 mod 缺失 + PropValue 未定义 = UT 0 binary → 这是最大的工程质量崩塌点）= **2.5 人天**
+### P0-2 · F2 修复（mox-graph-service 5 mod 缺失 + PropValue 未定义 = UT 0 binary → 这是最大的工程质量崩塌点）= **2.5 人天**
 - **根因**：5 mod (graph_server/ngql_parser/cypher_parser/optimizer/algo_bridge) 声明缺失或文件缺失 + PropValue 导入路径错。
 - **具体操作清单**：
-  1. 打开 `xuanji-graph-service/src/lib.rs` 顶部检查 `pub mod graph_server; pub mod ngql_parser; ...` 5 个 mod 声明是否存在 → 若不存在直接加；
+  1. 打开 `mox-graph-service/src/lib.rs` 顶部检查 `pub mod graph_server; pub mod ngql_parser; ...` 5 个 mod 声明是否存在 → 若不存在直接加；
   2. 若 `mod.rs` / 对应 `.rs` 文件物理不存在 → 从 git 历史或 feature-gated 分支恢复（检查 `#[cfg(feature = "xxx")]`，若有 feature gate → 在 Cargo.toml `[features]` 把这些加进 default = [...]）；
-  3. E0432 `result_set::PropValue` 未定义 → 查 xuanji-graph-storage/src/ 结构，改正确导入路径（大概率 `use xuanji_graph_storage::result_set::PropValue` 或 `use crate::storage::result_set::PropValue`）；
-  4. `cargo build -p xuanji-graph-service` exit=0 先过编译关 → 再 `cargo test -p xuanji-graph-service` 至少生成 1 个 test binary；
+  3. E0432 `result_set::PropValue` 未定义 → 查 mox-graph-storage/src/ 结构，改正确导入路径（大概率 `use mox_graph_storage::result_set::PropValue` 或 `use crate::storage::result_set::PropValue`）；
+  4. `cargo build -p mox-graph-service` exit=0 先过编译关 → 再 `cargo test -p mox-graph-service` 至少生成 1 个 test binary；
   5. 最终 `cargo test --workspace` passed count 至少达到 11 号基线 649（如果 UT 数量不够，补 graph-service 的 UT 覆盖常用场景）。
 - **验收标准**：`cargo test --workspace --no-fail-fast` passed≥649 且 failed=0。
 
@@ -470,8 +470,8 @@ cd d:\a10\aikjx\gitcode\infotopograph
 - **根因**：gateway/runtime 20 / SDK 整包 / ai-agent 3
 - **具体操作清单**：
   1. gateway/runtime 20 条逐个 grep → 真未使用直接 `rm` 对应 function/struct；若为 SDK 预留公开 API → 移到 `pub mod prelude` 下或 `#[allow(dead_code)]` 改为 `#[deprecated = "2026Q3 清理保留期，2026Q4 移除"]` 但保留的不算；
-  2. `xuanji-sdk-graph/src/lib.rs` 顶部 `#![allow(dead_code)]` 整包级太粗暴，直接去掉 → 逐条看编译报错，把 SDK 真正对外用的 API 改成 `pub`（约 10~20 个），其余真死代码删掉；
-  3. 其他 41 处散在各 crate（ai-agent 3 / operator-core / xuanji-system...），批量 grep 清；
+  2. `mox-sdk-graph/src/lib.rs` 顶部 `#![allow(dead_code)]` 整包级太粗暴，直接去掉 → 逐条看编译报错，把 SDK 真正对外用的 API 改成 `pub`（约 10~20 个），其余真死代码删掉；
+  3. 其他 41 处散在各 crate（ai-agent 3 / operator-core / mox-system...），批量 grep 清；
   4. **目标 <= 8**（严格对齐 13 §3 棘轮）。
 - **验收标准**：`Get-ChildItem platform -Recurse -Filter *.rs | Select-String 'allow\(dead_code\)' | Measure-Object | % Count` 输出 ≤ 8。
 

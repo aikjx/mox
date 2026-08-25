@@ -2,7 +2,7 @@
 
 > 编号：**AA-TRACE-V1.0**
 > 承载：AA-STD-V1.0（流程基准）+ GR-STD-V1.0（关图六维）+ `guantu.req.json`（D04 Bind）
-> 落点：`crates/xuanji-expert/src/*` + `crates/primiflow-core/src/generate.rs`（导出 `trace_matrix.md`）+ `crates/primiflow-fusion/src/ptdoc.rs`（`doc01_trace_matrix`）
+> 落点：`crates/mox-expert/src/*` + `crates/primiflow-core/src/generate.rs`（导出 `trace_matrix.md`）+ `crates/primiflow-fusion/src/ptdoc.rs`（`doc01_trace_matrix`）
 > 目的：闭环 AA-STD-V1.0 §3「导出 TraceMatrix」；把「璇玑 = D04」落到真实代码节点；将两套流程编号（①-⑩ / S1-S8）归一为单一基准。
 
 ---
@@ -31,14 +31,14 @@
 来源：`guantu.req.json` 与《关图骨架定义》§3。D04 真实 Bind 边（实测）：
 
 ```json
-{"id":"D04","name":"全维治理/璇玑","domain":"xuanji-expert","status":"partial"}        // guantu.req.json:6
-{"req":"D04","to":"CodeFile:crates/xuanji-expert/src/lib.rs","label":"主责crate"}              // guantu.req.json:31
+{"id":"D04","name":"全维治理/璇玑","domain":"mox-expert","status":"partial"}        // guantu.req.json:6
+{"req":"D04","to":"CodeFile:crates/mox-expert/src/lib.rs","label":"主责crate"}              // guantu.req.json:31
 ```
 
 六维语义与落点：
 
 - **REQ（需求根）**：`Requirement:D04` —— 全维治理/璇玑
-- **FUN（功能）**：`crates/xuanji-expert/src/lib.rs` 入口函数（`normalize_requirement` / `programming_pipeline` / `xuanji_optimize`）
+- **FUN（功能）**：`crates/mox-expert/src/lib.rs` 入口函数（`normalize_requirement` / `programming_pipeline` / `mox_optimize`）
 - **BIZ（业务）**：业务七维专家（`business/algorithm/permission/resource/security/data/observability`）对流程图并行分析
 - **ALG（算法）**：`flow-ai` 求解（CPM+RCPSP+Dijkstra+冲突修复）+ `reconcile` 约束物化 + `verify` 守恒残差（topology/data_dep/conflict/gains/code_rt）
 - **TSK（任务）**：双璇玑十四维并行派发（`run_experts`）+ 回退点 `Checkpoint`（Normalized/Modeled/Optimized/Verified/Governed）
@@ -55,7 +55,7 @@
 | C1 接入·归一 | D04 | `normalize_requirement` · `auto_dimension` | business / permission(上下文) / data | DAG 拓扑着色（G0） | — | `FlowGraph(base)` |
 | C2 并行诊断 | D04 | `run_experts` | 全 14 维 `ExpertOpinion` | `Expert` 引擎并行 | 14 任务并行派发 | `ExpertOpinion[]` |
 | C3 归一裁决 | D04 | `reconcile` | permission/security（硬优先）· data · resource | 约束物化（CPM 前置） | — | `ReconciledPlan` |
-| C4 最优求解 | D04 | `xuanji_optimize` → flow-ai | algorithm（算力路由）· resource（排程） | CPM+RCPSP+Dijkstra+冲突修复 | — | `OptimizationReport` + 草稿码 |
+| C4 最优求解 | D04 | `mox_optimize` → flow-ai | algorithm（算力路由）· resource（排程） | CPM+RCPSP+Dijkstra+冲突修复 | — | `OptimizationReport` + 草稿码 |
 | C5 ⛨璇玑 | D04 | `verify` | （数学层，超专家） | topology/data_dep/conflict（阻断）+ gains/code_rt（告警） | — | `AlgoVerification(veto)` |
 | C6 治理闸门 | D04 | `govern` | （治理层，超专家） | SLA / 预算判定 | Checkpoint:Governed | `GateResult` + 治理报告 |
 | C7 出码·双向 | D04 | `emit` / `codegen` | — | 代码⇄图 roundtrip 一致（⑧） | — | 代码工程 + 拓扑 + 指标 |
@@ -69,7 +69,7 @@
 
 ```mermaid
 flowchart LR
-  D04([REQ:D04 全维治理/璇玑]) -->|Bind| LIB[FUN: xuanji-expert/src/lib.rs]
+  D04([REQ:D04 全维治理/璇玑]) -->|Bind| LIB[FUN: mox-expert/src/lib.rs]
   LIB --> C1[C1 归一化]
   C1 --> C2[C2 双璇玑14维并行]
   C2 --> C3[C3 归一裁决]

@@ -1,6 +1,6 @@
 //! Step 5 / Step 9：实现 Hermes `Plugin` trait，注册两个中间件。
 //!
-//! 设计铁律：两个中间件都是**同步**的，不在闭包内跑 `xuanji_optimize`（async + 重计算）。
+//! 设计铁律：两个中间件都是**同步**的，不在闭包内跑 `mox_optimize`（async + 重计算）。
 //! 重计算在 `BridgeState` 持有的后台任务里跑（见 bridge.rs），中间件只做：
 //!   1) ToolRequestMiddleware：累积流程图 + 轻量复用路由标注（调用 hooks::on_tool_request）
 //!   2) ToolExecutionMiddleware：读 `algo.vetoed` 共享状态，强制拦截（调用 hooks::on_tool_execution）

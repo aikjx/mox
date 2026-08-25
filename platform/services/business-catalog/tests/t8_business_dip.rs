@@ -9,15 +9,15 @@
 //!   证明 register_business_experts 仅依赖 Arc<dyn ExpertRegistry>，不出现 concrete。
 //! tr_b8_04_all_business_ids_covered_by_registry：每条业务注册后可在 registry
 //!   中按 id 查到（mock 内存实现）。
-//! tr_b8_05_no_xuanji_concrete_import：静态扫描 src，仅允许 use expert_traits/types/domain。
+//! tr_b8_05_no_mox_concrete_import：静态扫描 src，仅允许 use expert_traits/types/domain。
 
 use async_trait::async_trait;
 use business_catalog::{all_businesses, register_business_experts, Business};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::Mutex;
-use xuanji_expert::expert_traits::{ExpertConsultant, ExpertRegistry};
-use xuanji_expert::types::{ConsultQuery, ConsultReport, ExpertMeta, Result as ExpertResult};
+use mox_expert::expert_traits::{ExpertConsultant, ExpertRegistry};
+use mox_expert::types::{ConsultQuery, ConsultReport, ExpertMeta, Result as ExpertResult};
 
 // ---- Mock Always Approved ----
 struct MockApproved;
@@ -146,7 +146,7 @@ async fn tr_b8_04_all_businesses_can_be_found_via_trait_list() {
 }
 
 #[test]
-fn tr_b8_05_no_xuanji_concrete_import() {
+fn tr_b8_05_no_mox_concrete_import() {
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let src_dir = manifest.join("src");
     assert!(src_dir.is_dir());
@@ -175,17 +175,17 @@ fn tr_b8_05_no_xuanji_concrete_import() {
             if !(t.starts_with("use ") || t.starts_with("pub use ")) {
                 continue;
             }
-            let Some(rest_p) = t.find("xuanji_expert::") else {
+            let Some(rest_p) = t.find("mox_expert::") else {
                 continue;
             };
-            let after = &t[rest_p + "xuanji_expert::".len()..];
+            let after = &t[rest_p + "mox_expert::".len()..];
             let end = after
                 .find(|c: char| !(c.is_alphanumeric() || c == '_'))
                 .unwrap_or(after.len());
             let mod_name = &after[..end];
             if !allowed.contains(&mod_name) {
                 panic!(
-                    "tr_b8_05 FAIL: {}:{} use xuanji_expert::{}（仅允许 expert_traits/types/domain）;\n原行: {}",
+                    "tr_b8_05 FAIL: {}:{} use mox_expert::{}（仅允许 expert_traits/types/domain）;\n原行: {}",
                     f.display(), idx + 1, mod_name, line.trim()
                 );
             }

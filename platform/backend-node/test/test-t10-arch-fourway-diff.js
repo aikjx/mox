@@ -2,7 +2,7 @@
  * T10 四方对账测试 (AC-22 = 2 分)
  *
  *  对账四方 (Four-Way Diff):
- *   A. T2 真源：xuanji-common-meta/src/lib.rs 中 all_crate_metas() 返回的 16 条元数据
+ *   A. T2 真源：mox-common-meta/src/lib.rs 中 all_crate_metas() 返回的 16 条元数据
  *   B. 三注册表 engineName 列 (atlas_auto_registry.json 中 kind="rust-crate" 的 domains)
  *   C. 架构文档 docs/enterprise/02-architecture.md §3.2 Rust 分层矩阵（16 行）
  *   D. 每个 crate 的 src/lib.rs 中 pub const ENGINE_NAME / CRATE_ID 常量
@@ -27,9 +27,9 @@ function readSafe(p) {
   try { return fs.readFileSync(p, 'utf8'); } catch (_) { return null; }
 }
 
-// —————————————————— A. T2 真源：从 xuanji-common-meta/src/lib.rs 解析 all_crate_metas() ——————————————————
+// —————————————————— A. T2 真源：从 mox-common-meta/src/lib.rs 解析 all_crate_metas() ——————————————————
 function parseAllCrateMetas() {
-  const src = readSafe(path.join(REPO_ROOT, 'platform', 'services', 'xuanji-common-meta', 'src', 'lib.rs'));
+  const src = readSafe(path.join(REPO_ROOT, 'platform', 'services', 'mox-common-meta', 'src', 'lib.rs'));
   if (!src) return null;
   // 解析 16 个 CrateMeta { id, name, version, layer, owner } 字面量块
   const re = /CrateMeta\s*\{\s*id:\s*"([^"]+)",\s*name:\s*"([^"]+)",\s*version:\s*"([^"]+)",\s*layer:\s*AisLayer::(\w+),\s*owner:\s*"([^"]+)"\s*,?\s*\}/g;
@@ -225,11 +225,11 @@ assert(aEq, `(a) 文档 16 行 crate 名称 ↔ T2 all_crate_metas() 一致`,
   aEq ? '' : `${aMsg}. T2独:${JSON.stringify(aOnlyT2)} 文档独:${JSON.stringify(aOnlyArch)}`);
 
 // —— (b) 断言：三注册表 engineName ↔ CRATE_META.engine_name() ↔ 文档 ENGINE_NAME 一致
-// 计算 engine_name: "xuanji::" + name.replace('-', '_')
-const engineOf = (name) => `xuanji::${name.replace(/-/g, '_')}`;
+// 计算 engine_name: "mox::" + name.replace('-', '_')
+const engineOf = (name) => `mox::${name.replace(/-/g, '_')}`;
 const expectedEngines = t2Names.map(engineOf).sort();
 
-// (b-1) registry: 每个 registry 必须能通过 scope 映射到 engineName = xuanji::<scope_name_camel>
+// (b-1) registry: 每个 registry 必须能通过 scope 映射到 engineName = mox::<scope_name_camel>
 const regEngines = regNames.map(engineOf).sort();
 const [b1Eq, b1Msg, b1T, b1R] = setEq(expectedEngines, regEngines);
 assert(b1Eq, `(b1) 三注册表 scope → engineName() ↔ T2 期望 ENGINE_NAME 集合一致`,

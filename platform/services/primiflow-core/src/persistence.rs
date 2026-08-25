@@ -5,7 +5,7 @@
 //!
 //! 存储后端二选一（统一 `Persistence` 接口）：
 //! - `Memory`：进程内存储，零外部依赖，适合测试与嵌入式；
-//! - `Sqlite`：基于 `xuanji-system::PersistenceProvider`（底层通过 `SqlitePersistence` 落盘到文件），生产可用。
+//! - `Sqlite`：基于 `mox-system::PersistenceProvider`（底层通过 `SqlitePersistence` 落盘到文件），生产可用。
 //!
 //! `TopologyGraph` 与 `AssocGraph` 均 `derive(Serialize/Deserialize)`，因此可**精确**序列化 /
 //! 反序列化，重放后引擎状态与落库前逐字节一致。
@@ -17,8 +17,8 @@ use chrono::Utc;
 use flow_ai::primitive::{KnowledgeBase, PrimiEngine, StoredTopology};
 use flow_ai::topology::TopologyGraph;
 use serde::{Deserialize, Serialize};
-use xuanji_system::persistence_provider::{PersistenceProvider, SqlRow, SqlValue};
-use xuanji_system::sqlite_provider::SqlitePersistence;
+use mox_system::persistence_provider::{PersistenceProvider, SqlRow, SqlValue};
+use mox_system::sqlite_provider::SqlitePersistence;
 
 use crate::assoc::AssocGraph;
 use crate::runner::PipelineReport;
@@ -101,7 +101,7 @@ pub enum Persistence {
         trace_graph_json: Option<String>,
         projects: Vec<ProjectRecord>,
     },
-    /// 落盘 SQLite（通过 xuanji-system 的 PersistenceProvider trait，解耦 rusqlite driver）
+    /// 落盘 SQLite（通过 mox-system 的 PersistenceProvider trait，解耦 rusqlite driver）
     Sqlite {
         provider: Arc<dyn PersistenceProvider>,
         path: Option<String>,

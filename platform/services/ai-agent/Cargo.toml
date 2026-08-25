@@ -7,7 +7,7 @@ authors.workspace = true
 description = "AI Intelligent Agent with Conversation, Algorithm Normalization, and Workflow Automation"
 
 [dependencies]
-xuanji-common-meta = { path = "../xuanji-common-meta" }
+mox-common-meta = { path = "../mox-common-meta" }
 operator-core = { path = "../operator-core" }
 graph-algorithms = { path = "../graph-algorithms" }
 kg-hub = { path = "../kg-hub" }
@@ -22,7 +22,7 @@ chrono = { workspace = true }
 petgraph = { workspace = true }
 reqwest = { workspace = true }
 base64 = { workspace = true }
-xuanji-system = { path = "../xuanji-system" }
+mox-system = { path = "../mox-system" }
 
 [dev-dependencies]
 template-market = { path = "../template-market" }

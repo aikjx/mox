@@ -35,12 +35,12 @@
     </div>
 
     <div class="panel card-pad">
-      <div class="xuanji-head">
+      <div class="mox-head">
         <div>
           <h3 class="section-title">璇玑 · 双璇玑十四维治理</h3>
           <p class="page-subtitle">业务七维 + 开发七维全维健康分；粘贴流程蓝图实时治理评分（璇玑最高权限校验）</p>
         </div>
-        <div class="xuanji-actions">
+        <div class="mox-actions">
           <el-upload
             action="#"
             :auto-upload="false"
@@ -56,7 +56,7 @@
         </div>
       </div>
 
-      <div class="grid grid-2 xuanji-body">
+      <div class="grid grid-2 mox-body">
         <div>
           <div ref="radarEl" class="chart"></div>
           <el-input
@@ -72,7 +72,7 @@
             <span class="badge" :class="gateApproved ? 'success' : 'warning'">
               治理闸门：{{ gateApproved ? '通过' : (governed ? '拦截' : '待评') }}
             </span>
-            <span class="badge info">璇玑：{{ xuanji }}</span>
+            <span class="badge info">璇玑：{{ mox }}</span>
             <span class="badge info">采纳建议：{{ adopted.length }}</span>
           </div>
           <h4 class="sub">采纳的优化建议</h4>
@@ -107,7 +107,7 @@
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from '@/echarts'
 import { ElMessage } from 'element-plus'
-import { getStatus, getFullStatus, getLogs, getPlugins, xuanjiHealth, xuanjiOptimize } from '@/api'
+import { getStatus, getFullStatus, getLogs, getPlugins, moxHealth, moxOptimize } from '@/api'
 
 const loading = ref(false)
 const loadEl = ref(null)
@@ -120,7 +120,7 @@ const flowJson = ref('')
 const governing = ref(false)
 const governed = ref(false)
 const gateApproved = ref(false)
-const xuanji = ref('—')
+const mox = ref('—')
 const adopted = ref([])
 const dimList = ref([])
 const bizLeague = ref([])
@@ -261,13 +261,13 @@ function resize() {
 window.addEventListener('resize', resize)
 
 // ===== 璇玑治理逻辑 =====
-async function loadXuanjiHealth() {
-  const h = await xuanjiHealth().catch(() => null)
+async function loadMoxHealth() {
+  const h = await moxHealth().catch(() => null)
   if (!h) return
   dimList.value = h.dimensions || []
   bizLeague.value = h.business_league || []
   devLeague.value = h.dev_league || []
-  xuanji.value = 'algo-verification-supreme'
+  mox.value = 'algo-verification-supreme'
 }
 
 function onFlowFile(file) {
@@ -314,10 +314,10 @@ async function runGovernance() {
   }
   governing.value = true
   try {
-    const report = await xuanjiOptimize(flow)
+    const report = await moxOptimize(flow)
     governed.value = true
     gateApproved.value = !!(report.gate && report.gate.approved)
-    xuanji.value = report.algo && report.algo.passed ? '通过' : '未通过'
+    mox.value = report.algo && report.algo.passed ? '通过' : '未通过'
     adopted.value = (report.adopted_suggestions || []).map((s) => ({
       dimension: s.dimension || (s.dims && s.dims[0]) || '—',
       summary: s.summary || s.text || JSON.stringify(s)
@@ -333,7 +333,7 @@ async function runGovernance() {
 onMounted(async () => {
   await nextTick()
   loadAll()
-  loadXuanjiHealth()
+  loadMoxHealth()
 })
 onBeforeUnmount(() => {
   window.removeEventListener('resize', resize)
@@ -417,7 +417,7 @@ onBeforeUnmount(() => {
 }
 
 /* ===== 璇玑治理面板 ===== */
-.xuanji-head {
+.mox-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -425,11 +425,11 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   margin-bottom: 12px;
 }
-.xuanji-actions {
+.mox-actions {
   display: flex;
   gap: 8px;
 }
-.xuanji-body {
+.mox-body {
   align-items: start;
 }
 .flow-input {

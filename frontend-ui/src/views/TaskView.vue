@@ -663,7 +663,7 @@ function formatTime(iso) {
 }
 
 onMounted(async () => {
-  window.addEventListener('xuanji:open-create-task', onGlobalOpenTaskCreate)
+  window.addEventListener('mox:open-create-task', onGlobalOpenTaskCreate)
   await loadTasks()
   // 支持从AI对话跳转并自动打开任务
   if (route.query.task) {
@@ -697,7 +697,7 @@ watch(() => route.query.task, async (taskId) => {
 watch(() => route.query.action, (a) => { if (a === 'create') openCreate() })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('xuanji:open-create-task', onGlobalOpenTaskCreate)
+  window.removeEventListener('mox:open-create-task', onGlobalOpenTaskCreate)
 })
 
 function formatDate(d) {

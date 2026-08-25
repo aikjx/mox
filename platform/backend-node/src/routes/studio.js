@@ -25,7 +25,7 @@ module.exports = function registerStudioRoutes(ctx) {
 
   // 工作台页面（单文件 · 原生 JS · 黄金比例布局）
   reg('get', '/studio', (req, res) => {
-    const htmlPath = path.join(__dirname, '..', '..', 'public', 'xuanji-studio.html');
+    const htmlPath = path.join(__dirname, '..', '..', 'public', 'mox-studio.html');
     try {
       if (!fs.existsSync(htmlPath)) {
         res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' });

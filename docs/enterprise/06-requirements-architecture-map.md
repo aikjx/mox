@@ -6,7 +6,7 @@
 > **主责联盟**：三联盟联合（产品=需求侧映射 · 算法=图谱/算法侧映射 · 开发=代码侧映射）
 > **配套**：`00-INDEX`（治理）、`01-requirements`（需求）、`02-architecture`（架构）、`03-design`（设计）、`04-business-processing`（业务）
 > **权威需求基准**：
-> - 协作治理域需求 → `docs/modules/xuanji-expert-business-requirements.md`（BR-01…BR-21）
+> - 协作治理域需求 → `docs/modules/mox-expert-business-requirements.md`（BR-01…BR-21）
 > - 融合治理域全维需求 → `璇玑-全维需求业务处理流程图-归一化企业级.md`（**AA-STD-V1.0**，唯一归一化事实基准）
 >
 > **本文目的**：把散落在两套需求基准里的「企业级需求」，逐条映射到**架构视图 / 模块 / 代码落点 / 三联盟责任**，
@@ -20,8 +20,8 @@
 
 | 域 | 业务语义 | 需求基准 | 架构承载 | 关键文档 |
 |----|----------|----------|----------|----------|
-| **协作治理域** | 谁来做、做什么、是否通过（组织决策） | `docs/modules/xuanji-expert-business-requirements.md`（BR-01…BR-21） | `xuanji-system`（02-architecture 七视图） | 01/03/04 |
-| **融合治理域** | 怎么做得更快、是否可信（技术决策） | `璇玑-全维需求业务处理流程图-归一化企业级.md`（AA-STD-V1.0，8 阶段 / 4 闸门 / 双璇玑十四维） | `xuanji-expert` + `primiflow-fusion`（治理闸门） | 本文 §2 |
+| **协作治理域** | 谁来做、做什么、是否通过（组织决策） | `docs/modules/mox-expert-business-requirements.md`（BR-01…BR-21） | `mox-system`（02-architecture 七视图） | 01/03/04 |
+| **融合治理域** | 怎么做得更快、是否可信（技术决策） | `璇玑-全维需求业务处理流程图-归一化企业级.md`（AA-STD-V1.0，8 阶段 / 4 闸门 / 双璇玑十四维） | `mox-expert` + `primiflow-fusion`（治理闸门） | 本文 §2 |
 
 > **为什么分两套基准**：协作治理是"人—组织"的权限/状态/审计问题，用 BR 规则集描述；
 > 融合治理是"图—算法—治理"的归一化问题，用 AA-STD 的 8 阶段流程 + 4 闸门描述。二者在
@@ -33,7 +33,7 @@
 
 > 下列 FR 取自 `01-requirements.md` §4，逐条显式绑定到 `02-architecture.md` 的视图与 `03-design.md` 的模块。
 
-| 功能需求 | 架构视图落点（02） | 设计模块（03） | 业务规则 | 代码落点（`crates/xuanji-system/src/`） |
+| 功能需求 | 架构视图落点（02） | 设计模块（03） | 业务规则 | 代码落点（`crates/mox-system/src/`） |
 |----------|--------------------|----------------|----------|-------------------------------------------|
 | FR-MEM-01 建璇玑+首位管理员 | 业务视图 §1.1 / 安全视图 §5.2 | §6.1 MemberService | BR-01 | `orchestrator.rs` `bootstrap` |
 | FR-MEM-02 邀请专家(最小权限) | 安全视图 §5.2 | §6.1 `invite` | BR-03 | `services.rs::MemberService::invite` |
@@ -62,8 +62,8 @@
 | FR-COMM-05 WS 实时推送 | 集成视图 §6.1 | §6.5 `notify` | BR-20 | `server.rs::ws` |
 | FR-AUDIT-01 领域事件 | 集成视图 §6.2 | §7.2 | BR-19 | `event.rs` |
 | FR-AUDIT-02 审计查询 | 安全视图 §5.3 | §7.1 | BR-18 | `orchestrator.rs::query_audit` |
-| FR-AUDIT-03 一票否决 | 安全视图 §5.1 | §7（govern） | BR-13 | `crates/xuanji-expert/src/govern.rs` |
-| FR-AUDIT-04 不变式验证 | 安全视图 §5.1 | §7（verify） | BR-14 | `crates/xuanji-expert/src/verify.rs` |
+| FR-AUDIT-03 一票否决 | 安全视图 §5.1 | §7（govern） | BR-13 | `crates/mox-expert/src/govern.rs` |
+| FR-AUDIT-04 不变式验证 | 安全视图 §5.1 | §7（verify） | BR-14 | `crates/mox-expert/src/verify.rs` |
 
 **非功能需求 → 架构视图映射**（取自 02 §9 跨视图 NFR 落地表，补全景）
 
@@ -87,19 +87,19 @@
 ## 2. 融合治理域（全维需求 AA-STD-V1.0）：需求 → 架构 → 模块 映射
 
 > 权威基准：`璇玑-全维需求业务处理流程图-归一化企业级.md`（AA-STD-V1.0）。
-> 架构承载：`crates/xuanji-expert`（双璇玑十四维 / 归一化 / 裁决 / 璇玑）+ `crates/primiflow-fusion`（治理闸门 / 守恒 / 零孤儿）。
+> 架构承载：`crates/mox-expert`（双璇玑十四维 / 归一化 / 裁决 / 璇玑）+ `crates/primiflow-fusion`（治理闸门 / 守恒 / 零孤儿）。
 
 ### 2.1 八阶段需求 → 架构落点
 
 | 阶段 | 全维需求（AA-STD） | 架构落点 | 模块 / 代码 | 对应闸门 |
 |------|--------------------|----------|-------------|----------|
-| S1 需求接入 | REQ 根经 Bind 六维骨架接入，带租户/RBAC 上下文 | 02 业务视图 §1 / 安全视图 §5.2 | `flow-ai` 入口 / `xuanji-expert` | G0 |
-| S2 归一化 | 四类流程图→同一 `FlowGraph`；auto_dimension 着色；租户配额→ResourcePool | 02 信息视图 §2（统一图） | `xuanji-expert::normalize` | **G0 归一化闸门** |
-| S3 双璇玑并行诊断 | 14 位专家并行 `ExpertOpinion` | 02 应用视图 §3（插件化运行时） | `xuanji-expert::run_experts` | — |
-| S4 归一化裁决 | 按 DIM_PRIORITY 合并→`ReconciledPlan`（硬约束优先） | 02 应用视图 §3.1 / `lib.rs::DIM_PRIORITY` | `xuanji-expert::reconcile` | **G1 裁决闸门** |
+| S1 需求接入 | REQ 根经 Bind 六维骨架接入，带租户/RBAC 上下文 | 02 业务视图 §1 / 安全视图 §5.2 | `flow-ai` 入口 / `mox-expert` | G0 |
+| S2 归一化 | 四类流程图→同一 `FlowGraph`；auto_dimension 着色；租户配额→ResourcePool | 02 信息视图 §2（统一图） | `mox-expert::normalize` | **G0 归一化闸门** |
+| S3 双璇玑并行诊断 | 14 位专家并行 `ExpertOpinion` | 02 应用视图 §3（插件化运行时） | `mox-expert::run_experts` | — |
+| S4 归一化裁决 | 按 DIM_PRIORITY 合并→`ReconciledPlan`（硬约束优先） | 02 应用视图 §3.1 / `lib.rs::DIM_PRIORITY` | `mox-expert::reconcile` | **G1 裁决闸门** |
 | S5 flow-ai 最优求解 | CPM+RCPSP+伪依赖剪除+冲突修复+出码 | 02 技术视图 §4.1 | `flow-ai::optimize` | — |
-| S6 ⛨璇玑验证网关 | 5 项阻断级数学/语义检查，最高权限 | 02 安全视图 §5.1（STRIDE） | `xuanji-expert::verify` `govern.rs` | **G2 璇玑否决** |
-| S7 治理闸门 Govern | 审计哈希链+版本状态机+SLA+成本+RBAC 审批 | 02 安全视图 §5 / 部署 §7 | `xuanji-expert::govern` `primiflow-fusion::full_gate` | **G3 治理闸门** |
+| S6 ⛨璇玑验证网关 | 5 项阻断级数学/语义检查，最高权限 | 02 安全视图 §5.1（STRIDE） | `mox-expert::verify` `govern.rs` | **G2 璇玑否决** |
+| S7 治理闸门 Govern | 审计哈希链+版本状态机+SLA+成本+RBAC 审批 | 02 安全视图 §5 / 部署 §7 | `mox-expert::govern` `primiflow-fusion::full_gate` | **G3 治理闸门** |
 | S8 出码/出图 | 代码工程+拓扑+可视化+指标 | 02 集成视图 §6.3 | `emit` | — |
 
 ### 2.2 四道强制闸门 → 架构/模块 映射（需求闭环的控制点）
@@ -107,9 +107,9 @@
 | 闸门 | 全维需求（AA-STD） | 架构承载 | 模块/代码落点 | 拒绝后果 |
 |------|--------------------|----------|----------------|----------|
 | **G0 归一化闸门** | IR 可拓扑排序(DAG)；维度着色完整；孤儿/悬空边=0（对齐 GR-E1/E2） | 02 信息视图 §2.1 | `primiflow-fusion::unified` `binding_report` / `governance_report` | 阻断出码 |
-| **G1 裁决闸门** | 硬约束(Blocking) 优先于软约束；同优先级冲突升级 `Risk(Blocking)` | 02 应用视图 §3.1 | `xuanji-expert::reconcile` + `DIM_PRIORITY` | 阻断出码 |
-| **G2 ⛨璇玑否决** | 任一阻断级检查失败→`vetoed=true`→强制 `Blocked`，**任何 RBAC/合规不可覆盖** | 02 安全视图 §5.1 | `xuanji-expert::verify` `govern.rs::GateResult` | 强制 Blocked |
-| **G3 治理闸门** | `approved = !algorithm_veto ∧ status.can_emit() ∧ blocking==0 ∧ sla_ok ∧ budget_ok` | 02 部署 §7 / 安全 §5 | `xuanji-expert::govern` `primiflow-fusion::full_gate` | 拒，仅 dry-run |
+| **G1 裁决闸门** | 硬约束(Blocking) 优先于软约束；同优先级冲突升级 `Risk(Blocking)` | 02 应用视图 §3.1 | `mox-expert::reconcile` + `DIM_PRIORITY` | 阻断出码 |
+| **G2 ⛨璇玑否决** | 任一阻断级检查失败→`vetoed=true`→强制 `Blocked`，**任何 RBAC/合规不可覆盖** | 02 安全视图 §5.1 | `mox-expert::verify` `govern.rs::GateResult` | 强制 Blocked |
+| **G3 治理闸门** | `approved = !algorithm_veto ∧ status.can_emit() ∧ blocking==0 ∧ sla_ok ∧ budget_ok` | 02 部署 §7 / 安全 §5 | `mox-expert::govern` `primiflow-fusion::full_gate` | 拒，仅 dry-run |
 
 > **与协作治理的衔接点**：G3 治理闸门的 `status.can_emit()` 来自 `FlowStatus` 状态机（见 `govern.rs`），
 > 而 BP-7（BR-16）规定"任务 Done（组织验收）∧ 融合验证通过（技术验收）"才允许 `/publish`——
@@ -128,7 +128,7 @@
 | Algorithm 算法 | 业务 | 50 | 技术视图 §4.1 | 软 |
 | （开发七维） | 开发 | 参与同优先级仲裁 | 应用视图 §3（CodeIR 驱动） | 混合 |
 
-> 优先级数值取自 `crates/xuanji-expert/src/lib.rs::DIM_PRIORITY`，是"权限功能归一化"在裁决阶段落地的单一数据源。
+> 优先级数值取自 `crates/mox-expert/src/lib.rs::DIM_PRIORITY`，是"权限功能归一化"在裁决阶段落地的单一数据源。
 
 ---
 
@@ -159,15 +159,15 @@
 
 | 项 | 内容 | 架构/模块落点 |
 |----|------|----------------|
-| 入口 | 前端 `XuanjiFusionView.vue` 提交流程图 → `POST /api/optimize` | `crates/xuanji-expert/src/server.rs::run()` |
-| 流水线主体 | `xuanji_optimize(raw, ctx)`：归一化→14专家并行→裁决→flow-ai求解→璇玑验证→治理闸门→审计 | `crates/xuanji-expert/src/pipeline.rs` |
-| 归一化（G0 前） | 维度着色 + 唯一 `FlowGraph` | `xuanji_expert::ir::auto_dimension` |
+| 入口 | 前端 `MoxFusionView.vue` 提交流程图 → `POST /api/optimize` | `crates/mox-expert/src/server.rs::run()` |
+| 流水线主体 | `mox_optimize(raw, ctx)`：归一化→14专家并行→裁决→flow-ai求解→璇玑验证→治理闸门→审计 | `crates/mox-expert/src/pipeline.rs` |
+| 归一化（G0 前） | 维度着色 + 唯一 `FlowGraph` | `mox_expert::ir::auto_dimension` |
 | 全维分析验证 | 双璇玑十四维专家并行派发（插件化运行时） | `harness::run_experts` + `experts::all_experts()` |
 | 最优求解 | CPM/RCPSP/冲突修复/出码 | `flow_ai::pipeline::optimize` |
-| 璇玑否决（G2） | 5 项阻断级检查，最高权限 | `xuanji_expert::verify` |
-| 治理闸门（G3） | 审计链 + 状态机 + SLA + 成本 + RBAC | `xuanji_expert::govern` + `primiflow_fusion::full_gate` |
+| 璇玑否决（G2） | 5 项阻断级检查，最高权限 | `mox_expert::verify` |
+| 治理闸门（G3） | 审计链 + 状态机 + SLA + 成本 + RBAC | `mox_expert::govern` + `primiflow_fusion::full_gate` |
 | 闭环产物 | `GovernanceReport`（专家分 + 优化报告 + 璇玑 + 闸门 + 审计哈希） | `pipeline.rs::GovernanceReport` |
-| 端到端验证 | `xuanji_end_to_end_runs` / `xuanji_double_league_fourteen_dimensions` / 越权拦截测试 | `pipeline.rs` 测试模块 |
+| 端到端验证 | `mox_end_to_end_runs` / `mox_double_league_fourteen_dimensions` / 越权拦截测试 | `pipeline.rs` 测试模块 |
 
 **自动化闭环步骤（与 `07` §2 四闸门一一对应）**：
 

@@ -26,8 +26,8 @@ use operator_core::state::StateVector;
 use operator_core::ExecutionContext;
 use operator_wasm::WasmPluginManager;
 // 璇玑全维治理内核：双璇玑十四维 → 治理报告
-use xuanji_expert::context::GovernContext;
-use xuanji_expert::pipeline::xuanji_optimize;
+use mox_expert::context::GovernContext;
+use mox_expert::pipeline::mox_optimize;
 // OUS 前端治理台状态
 use crate::handlers::governance::GovernanceState;
 // HITL 人机协同审批状态
@@ -72,7 +72,7 @@ mod openapi;
 mod rbac_middleware;
 mod routes;
 mod sidecar;
-/// 子服务聚合（Phase 1 收敛）：xuanji-expert / xuanji-system / primiflow / primiflow-fusion
+/// 子服务聚合（Phase 1 收敛）：mox-expert / mox-system / primiflow / primiflow-fusion
 /// 以库方式挂载，由 runtime 唯一对外暴露
 mod subservers;
 
@@ -583,12 +583,12 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/status", get(get_status))
         .route("/api/status/full", get(get_full_status))
         // ========== 璇玑全维治理 API ==========
-        .route("/api/xuanji/health", get(xuanji_health))
-        .route("/api/xuanji/optimize", post(xuanji_optimize_handler))
-        .route("/api/xuanji/publish", post(xuanji_publish_handler))
+        .route("/api/mox/health", get(mox_health))
+        .route("/api/mox/optimize", post(mox_optimize_handler))
+        .route("/api/mox/publish", post(mox_publish_handler))
         // ========== OUS 前端治理台 API（/api/governance/*）==========
         // 全维治理：Dashboard / 专家状态 / 否决事件 / 审计日志 / RBAC 配置 / 专家配置 / WS 实时推送 / 治理评估。
-        // 状态自包含于 GovernanceState（handlers/governance.rs），已适配 xuanji-expert 当前 API。
+        // 状态自包含于 GovernanceState（handlers/governance.rs），已适配 mox-expert 当前 API。
         .nest("/api/governance", {
             let gov_state = state.governance.clone();
             crate::routes::governance::governance_routes().with_state(gov_state)
@@ -804,8 +804,8 @@ async fn auth_middleware(
 ) -> Result<Response, api_standard::ProblemDetail> {
     let path = req.uri().path().to_string();
     // 子服务聚合边界（见 subservers.rs）：
-    // - /xuanji-system/* 由子服务自带成员令牌 RBAC 鉴权 → 网关透传
-    // - /xuanji-viz /primiflow /fusion 无自带鉴权 → 网关令牌统一保护
+    // - /mox-system/* 由子服务自带成员令牌 RBAC 鉴权 → 网关透传
+    // - /mox-viz /primiflow /fusion 无自带鉴权 → 网关令牌统一保护
     let is_passthrough = subservers::PASSTHROUGH_PREFIXES
         .iter()
         .any(|p| path.starts_with(p));
@@ -1110,7 +1110,7 @@ async fn health() -> &'static str {
 
 /// 请求体：前端友好的任意流程蓝图（支持 {nodes,edges} 宽松结构，handler 内归一化为 FlowGraph）。
 #[derive(Debug, Clone, Deserialize)]
-struct XuanjiOptimizeRequest {
+struct MoxOptimizeRequest {
     flow: serde_json::Value,
     /// 租户策略分层（I-06）："gov"=强合规租户（政务/金融，强制脱敏/灾备闸门），
     /// 其它=普通商业租户。驱动治理 8 闸门按租户严格度差异化裁决。
@@ -1183,18 +1183,18 @@ fn normalize_flow_to_graph(v: &serde_json::Value) -> flow_ai::model::FlowGraph {
     }
     g
 }
-async fn xuanji_optimize_handler(
-    Json(req): Json<XuanjiOptimizeRequest>,
+async fn mox_optimize_handler(
+    Json(req): Json<MoxOptimizeRequest>,
 ) -> Json<serde_json::Value> {
     let tenant = match req.tenant.as_deref() {
-        Some("gov") => xuanji_expert::context::Tenant::new("gov", "gov-ns").regulated(true),
-        _ => xuanji_expert::context::Tenant::new("default", "default"),
+        Some("gov") => mox_expert::context::Tenant::new("gov", "gov-ns").regulated(true),
+        _ => mox_expert::context::Tenant::new("default", "default"),
     };
     let ctx = GovernContext::new(
         tenant,
-        xuanji_expert::context::Principal::new("designer").with_roles(vec!["editor".into()]),
+        mox_expert::context::Principal::new("designer").with_roles(vec!["editor".into()]),
     );
-    let report = xuanji_optimize(&normalize_flow_to_graph(&req.flow), &ctx);
+    let report = mox_optimize(&normalize_flow_to_graph(&req.flow), &ctx);
     // 契约适配层：在原 GovernanceReport 基础上注入前端友好字段
     // （governance.score/gate、optimization.metric/algorithm），不改动治理内核。
     let score: f64 = if report.expert_scores.is_empty() {
@@ -1230,13 +1230,13 @@ async fn xuanji_optimize_handler(
     Json(v)
 }
 
-async fn xuanji_publish_handler(Json(req): Json<XuanjiPublishRequest>) -> Json<serde_json::Value> {
-    use xuanji_expert::context::{GovernContext, Principal, Tenant};
+async fn mox_publish_handler(Json(req): Json<MoxPublishRequest>) -> Json<serde_json::Value> {
+    use mox_expert::context::{GovernContext, Principal, Tenant};
     let ctx = GovernContext::new(
         Tenant::new("default", "default"),
         Principal::new("designer").with_roles(vec!["editor".into()]),
     );
-    let report = xuanji_optimize(&normalize_flow_to_graph(&req.flow), &ctx);
+    let report = mox_optimize(&normalize_flow_to_graph(&req.flow), &ctx);
     let optimized = &report.optimization.optimized_graph;
     let score: f64 = if report.expert_scores.is_empty() {
         0.0
@@ -1258,7 +1258,7 @@ async fn xuanji_publish_handler(Json(req): Json<XuanjiPublishRequest>) -> Json<s
     // 需求侧任务 Done（req.task_done=true） ∧ 融合侧璇玑验证通过（algo 未否决且 gate 放行）
     // 二者同时满足才允许上架；任一方不达成则强制 blocked，原因写回前端审计链。
     let task_done = req.task_done.unwrap_or(false);
-    let dual_acceptance = xuanji_expert::tenant_policy::dual_acceptance(task_done, &report);
+    let dual_acceptance = mox_expert::tenant_policy::dual_acceptance(task_done, &report);
     if !dual_acceptance {
         let mut reasons: Vec<String> = Vec::new();
         if !task_done {
@@ -1304,7 +1304,7 @@ async fn xuanji_publish_handler(Json(req): Json<XuanjiPublishRequest>) -> Json<s
 
 /// 治理内核健康度：列出双璇玑十四维与各专家状态（供前端雷达图坐标）
 #[derive(Debug, Clone, Deserialize)]
-struct XuanjiPublishRequest {
+struct MoxPublishRequest {
     /// 业务蓝图（支持前端友好的 {type,params} 风格，handler 内归一化为 FlowGraph）
     flow: serde_json::Value,
     name: Option<String>,
@@ -1319,7 +1319,7 @@ struct XuanjiPublishRequest {
     task_id: Option<String>,
 }
 
-async fn xuanji_health() -> Json<serde_json::Value> {
+async fn mox_health() -> Json<serde_json::Value> {
     let dims: Vec<&str> = vec![
         "Business",
         "Algorithm",
@@ -1337,7 +1337,7 @@ async fn xuanji_health() -> Json<serde_json::Value> {
         "Sensitive",
     ];
     Json(json!({
-        "xuanji": "double-league-14-dim",
+        "mox": "double-league-14-dim",
         "verification": "algo-verification-supreme",
         "business_league": ["Business","Algorithm","Permission","Resource","Security","Data","Observability"],
         "dev_league": ["ApiCompat","Perf","Maintain","Test","Style","Cost","Sensitive"],

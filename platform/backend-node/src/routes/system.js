@@ -88,7 +88,7 @@ module.exports = function registerSystemRoutes(ctx) {
         ai:        { method: 'GET',  path: '/ai/status',         desc: 'AI 引擎状态' },
         llm:       { method: 'GET',  path: '/llm/health',        desc: 'LLM 网关健康检查' },
         experts:   { method: 'GET',  path: '/experts/overview',  desc: '专家联盟总览' },
-        xuanji:    { method: 'GET',  path: '/xuanji/health',     desc: '璇玑健康评分' },
+        mox:    { method: 'GET',  path: '/mox/health',     desc: '璇玑健康评分' },
         market:    { method: 'GET',  path: '/market',           desc: '市场资源列表' },
         kb:        { method: 'GET',  path: '/kb/documents',     desc: '知识库文档' },
         tasks:     { method: 'GET',  path: '/tasks',            desc: '任务列表' },

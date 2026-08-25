@@ -23,8 +23,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::{broadcast, Mutex, RwLock};
-use xuanji_expert::context::{GovernContext, Principal, Tenant};
-use xuanji_expert::govern::{AuditChain, AuditEvent, FlowStatus, GateResult};
+use mox_expert::context::{GovernContext, Principal, Tenant};
+use mox_expert::govern::{AuditChain, AuditEvent, FlowStatus, GateResult};
 
 // ============================================================================
 // 治理台共享状态
@@ -421,7 +421,7 @@ pub struct GovernanceReportSummary {
     pub gate_result: GateResultDto,
     pub adoption_count: usize,
     pub suggestion_count: usize,
-    pub xuanji_passed: bool,
+    pub mox_passed: bool,
     pub ts: i64,
 }
 
@@ -573,7 +573,7 @@ pub async fn experts_status_handler(
 
     Ok(Json(serde_json::json!({
         "timestamp": unix_ts(),
-        "xuanji": "double-league-14-dim",
+        "mox": "double-league-14-dim",
         "business_league": {
             "dimensions": business_league,
             "experts": business,
@@ -584,7 +584,7 @@ pub async fn experts_status_handler(
             "experts": dev,
             "average_health": avg_dev,
         },
-        "xuanji": "algo-verification-supreme",
+        "mox": "algo-verification-supreme",
     })))
 }
 
@@ -982,7 +982,7 @@ pub async fn trigger_governance(
     );
 
     // 调用璇玑 pipeline
-    let report = xuanji_expert::pipeline::xuanji_optimize(flow, &ctx);
+    let report = mox_expert::pipeline::mox_optimize(flow, &ctx);
 
     // 提取 GateResult
     let gate = &report.gate;
@@ -1038,7 +1038,7 @@ pub async fn trigger_governance(
     // 写入审计链
     let decision = if gate.approved { "approved" } else { "blocked" };
     let audit_ev = gs
-        .append_audit("governance-api", flow_id, "xuanji_optimize", decision)
+        .append_audit("governance-api", flow_id, "mox_optimize", decision)
         .await;
     let _ = audit_ev;
 
@@ -1101,7 +1101,7 @@ pub async fn trigger_governance(
         gate_result: GateResultDto::from(gate),
         adoption_count: report.adopted_suggestions.len(),
         suggestion_count: report.adopted_suggestions.len(),
-        xuanji_passed: report.algo.all_passed && !report.algo.vetoed,
+        mox_passed: report.algo.all_passed && !report.algo.vetoed,
         ts: unix_ts(),
     }
 }

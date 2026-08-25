@@ -2,7 +2,7 @@
 
 /**
  * T9 三语言 SDK 最小可用（Node/Python/Rust）+ 兼容测试
- *   TR-9.1: createXuanjiClient({base}) 返回 client.graph.list 与 client.ask 两方法，返回 { data, ai_summary? } 统一 shape；
+ *   TR-9.1: createMoxClient({base}) 返回 client.graph.list 与 client.ask 两方法，返回 { data, ai_summary? } 统一 shape；
  *   TR-9.2: SDK 内部 LRU(1K 1min) + max_latency_ms 熔断 + 429/503 指数退避；
  *   TR-9.3: Python SDK (api 签名) 与 Rust SDK (struct) 字段 1:1 对齐 Node SDK（契约测试，序列化等价）。
  * T11 灰度 + 就绪探针 + 预热
@@ -20,7 +20,7 @@ function test(name, fn) {
 }
 
 // ==================== T9: Node SDK mock ====================
-function createXuanjiClient({ base, defaultLatency = 500, cacheMax = 1000, cacheTtlMs = 60_000 }) {
+function createMoxClient({ base, defaultLatency = 500, cacheMax = 1000, cacheTtlMs = 60_000 }) {
   // LRU cache：简单 double map + ordered array (LRU)
   const cache = new Map();
   function cacheGet(k) {
@@ -122,7 +122,7 @@ function createXuanjiClient({ base, defaultLatency = 500, cacheMax = 1000, cache
 }
 
 test('TR-9.1: SDK graph.list() 与 ask() 两方法，返回 {data, ai_summary? } 统一 shape', () => {
-  const xj = createXuanjiClient({ base: 'http://example.local' });
+  const xj = createMoxClient({ base: 'http://example.local' });
   assert.strictEqual(typeof xj.graph.list, 'function');
   assert.strictEqual(typeof xj.ask, 'function');
   // 同步等待返回 shape（async 返回 Promise）
@@ -147,13 +147,13 @@ test('TR-9.3: 三语言契约对齐（Python/Rust/Node 序列化 schema 1:1）',
   // Python dataclass 等价字段清单 & Rust struct 字段清单
   const nodeSchema = ['graph.list', 'ask', 'options.base', 'options.max_latency_ms', 'options.cache'];
   const pythonFields = [
-    'XuanjiClient.graph.list(filter:dict) -> {"data": list}',
-    'XuanjiClient.ask(query:str, context:dict=None, options:dict=None) -> {"data": list, "ai_summary": Optional[str], "metrics": Optional[dict], "ok": bool}',
+    'MoxClient.graph.list(filter:dict) -> {"data": list}',
+    'MoxClient.ask(query:str, context:dict=None, options:dict=None) -> {"data": list, "ai_summary": Optional[str], "metrics": Optional[dict], "ok": bool}',
     'create_client(base, max_latency_ms=500, cache_ttl_ms=60000, cache_max=1000)',
   ];
   const rustFields = [
-    'XuanjiClient::new(base) -> Self',
-    'impl XuanjiClient { async fn graph_list(&self, filter: GraphFilter) -> Result<ListResponse> }',
+    'MoxClient::new(base) -> Self',
+    'impl MoxClient { async fn graph_list(&self, filter: GraphFilter) -> Result<ListResponse> }',
     'struct ListResponse { data: Vec<GraphNode>, timing_ms: Option<u64> }',
     'async fn ask(&self, query: &str, context: Value, options: AskOpts) -> Result<AskResponse>',
     'struct AskResponse { data: Value, ai_summary: Option<String>, metrics: Option<Metrics>, ok: bool }',
@@ -262,7 +262,7 @@ test('T12 交付矩阵：所有必选 AC（T1~T11）对应测试已全 GREEN', (
 // async driver: 保证上述 async test 真正执行 (Promise.all)
 (async () => {
   try {
-    const xj = createXuanjiClient({ base: 'http://x.local', cacheMax: 3, cacheTtlMs: 30 });
+    const xj = createMoxClient({ base: 'http://x.local', cacheMax: 3, cacheTtlMs: 30 });
     const r1 = await xj.graph.list({ kind: 'Project' });
     assert.ok(Array.isArray(r1.data), 'graph.list data 必须是数组');
     passed++; console.log('  PASS TR-9.1 exec: SDK graph.list data 为数组');

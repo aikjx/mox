@@ -72,7 +72,7 @@ function buildAtlasGraph({ DOMAINS, MODULES, ALGORITHMS, DATA_ASSETS, DOCS, ENGI
     });
   });
   // Rust crate 域（id 形如 rust::<kebab-crate>）→ engine::<snake_case_crate>（璇玑三注册表联动桥）
-  // 规则：rust::ai-agent → engine::ai_agent；rust::xuanji-common-meta → engine::xuanji_common_meta；engine::runtime → engine::runtime
+  // 规则：rust::ai-agent → engine::ai_agent；rust::mox-common-meta → engine::mox_common_meta；engine::runtime → engine::runtime
   DOMAINS.forEach(d => {
     if (typeof d.id !== 'string' || !d.id.startsWith('rust::')) return;
     const crateKebab = d.id.slice('rust::'.length);

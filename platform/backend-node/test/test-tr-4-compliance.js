@@ -33,7 +33,7 @@ const CHECK_DEPS = [
   'sha2', 'hmac', 'hex',
   'parking_lot', 'async-trait',
   'tokio-tungstenite', 'futures', 'futures-util',
-  'sea-query', 'sqlx', 'xuanji-common-meta'
+  'sea-query', 'sqlx', 'mox-common-meta'
 ];
 
 const MEMBERS = [
@@ -42,17 +42,17 @@ const MEMBERS = [
   'platform/services/graph-algorithms',
   'platform/services/optimizer',
   'platform/services/flow-ai',
-  'platform/services/xuanji-expert',
+  'platform/services/mox-expert',
   'platform/services/hermes-flow-bridge',
   'platform/services/business-catalog',
   'platform/services/ai-agent',
   'platform/services/template-market',
   'platform/gateway/runtime',
-  'platform/services/xuanji-system',
+  'platform/services/mox-system',
   'platform/services/primiflow-core',
   'platform/services/primiflow-fusion',
   'platform/services/kg-hub',
-  'platform/services/xuanji-common-meta',
+  'platform/services/mox-common-meta',
 ];
 
 // ===== 最小 TOML 解析器（仅限本脚本所需字段）=====
@@ -172,7 +172,7 @@ if (!IS_MOCHA && require.main === module) {
           if (rec.stringForm) { violations.push(`${rel}/${blockKey} ${name} 直接写字符串版本`); continue; }
           if (rec.version && !rec.workspace) { violations.push(`${rel}/${blockKey} ${name} version 字段未 workspace`); continue; }
           if (rec.workspace !== true && !('workspace' in rec)) {
-            if (rec.path && /xuanji-common-meta/.test(rec.path)) continue;
+            if (rec.path && /mox-common-meta/.test(rec.path)) continue;
             violations.push(`${rel}/${blockKey} ${name} 无 workspace=true`);
           }
         }
@@ -246,8 +246,8 @@ describe('T4 · 依赖治理归一化合规 (workspace = true)', function () {
           }
           if (rec.workspace !== true && !('workspace' in rec)) {
             // 可能是 path + features，但未声明 workspace=true
-            // 如果是内部 crate path 指向 workspace 成员也接受：xuanji-common-meta 例外
-            if (rec.path && /xuanji-common-meta/.test(rec.path)) continue;
+            // 如果是内部 crate path 指向 workspace 成员也接受：mox-common-meta 例外
+            if (rec.path && /mox-common-meta/.test(rec.path)) continue;
             violations.push(`${rel} [${blockKey}] ${name} 缺少 workspace=true 声明`);
           }
         }
