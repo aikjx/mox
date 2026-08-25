@@ -1,32 +1,47 @@
 # -*- coding: utf-8 -*-
-"""歌谱生成层：music21 生成 musicxml + 简谱数字串 + 标准歌谱图片。"""
+"""歌谱生成层：music21 生成 musicxml + 简谱数字串 + 标准歌谱图片。
+
+v2 改进：
+  - 所有量化走 core.quantize（柔性 1/8 拍吸附 + 保留附点/切分/三连）；
+  - 禁止粗暴等分（旧 0.25 拍 round / 整数拍 round），否则 BPM 一错
+    整条谱节奏跟着完全跑偏。
+"""
 from typing import Dict, List, Tuple
 
-import librosa
-
 from core import score_sheet
+from core.quantize import quantize_notes, quarter_length, jianpu_dur_tokens
 
 # 公开标准歌谱导出函数，方便从 core.score 一处入口调用
 export_score_sheet = score_sheet.export_score
 
 
 def to_musicxml(notes: List[Dict], bpm: float, key_name: Tuple[str, str], fp=None):
-    # music21 懒加载：其顶层导入耗时 1~2s，仅导出 musicxml 时才需要，
-    # 不应拖慢 to_jianpu / API / GUI 的常规识别路径。
+    """musicxml 导出（用柔性拍网格量化，保留附点/切分/三连音）。
+
+    旧版 bug 修复：
+      - 不再用「(end-start)*ql_per_sec / 0.25 → round → ×0.25」粗暴等分，
+        所有时值附点/切分会被吃掉；
+      - 相邻重叠音自动后推起始位，避免 music21 在并行单声部流里崩溃。
+    """
+    # music21 懒加载：其顶层导入耗时 1~2s，仅导出 musicxml 时才需要
     from music21 import note as m21note
     from music21 import stream, key as m21key, tempo as m21tempo
 
+    eff_bpm = bpm if (bpm and 30.0 <= bpm <= 300.0) else 120.0
+    qnotes = quantize_notes(notes, eff_bpm)
+
     s = stream.Stream()
     s.append(m21key.Key(key_name[0], key_name[1]))
-    # 防御 BPM=0：musicxml 元数据与量化都退化为 BPM=120
-    eff_bpm = bpm if (bpm and 30.0 <= bpm <= 300.0) else 120.0
     s.append(m21tempo.MetronomeMark(number=int(round(eff_bpm))))
 
-    ql_per_sec = eff_bpm / 60.0
-    for nt in notes:
-        ql = nt["end"] - nt["start"]
-        ql = max(0.25, round(ql * ql_per_sec / 0.25) * 0.25)  # 量化到 1/4 拍
-        n = m21note.Note(midi=nt["midi"])
+    for qn in qnotes:
+        ql = quarter_length(qn["dur_beat"])
+        # 休止（与上一音之间的间隙）以 Rest 插入——让 musicxml 节拍正确
+        if qn.get("rest_before_beat", 0) > 0.02:
+            r = m21note.Rest()
+            r.duration.quarterLength = quarter_length(qn["rest_before_beat"])
+            s.append(r)
+        n = m21note.Note(midi=int(qn["midi"]))
         n.duration.quarterLength = ql
         s.append(n)
 
@@ -36,18 +51,13 @@ def to_musicxml(notes: List[Dict], bpm: float, key_name: Tuple[str, str], fp=Non
 
 
 def to_jianpu(notes: List[Dict], key_name: Tuple[str, str], bpm: float = 120.0) -> str:
-    """转简谱：数字 1–7 表音级；高八度前加 '.'，低八度后加 '_'；'-' 表延音。
+    """转简谱 v2：量化到合法音乐时值，附点/半拍/三连音可视化表达。
 
-    八度基准自适应（修复哼唱/半频锁定满屏低音点）：
-      旧版固定以主音 4 八度（C→C4=60）为「1」——哼唱或检测器 halving 使
-      音域偏低时，简谱输出 1_ 6__ 4___ 等满屏低音点。简谱记录相对音级，
-      现以 adaptive_tonic_midi（中位音符所在八度的主音）为基准，八度点
-      分布居中；与 make_score_sheet 图片渲染共用同一基准。
-
-    离调音（修复就近映射 bug）：
-      旧版 dd=rel-s 带符号比较，负值恒小于正值 → 一律偏向 scale 末位
-      （F#/G# 全被记成 b7，音高差 4 半音）。现按绝对距离就近（等距取
-      下方），偏差记 '#'/b'，与 score_sheet._degree_accidental 一致。
+    旧版只会输出整数拍的 "-"，导致所有附点/切分都丢了。新版：
+      - 下划线 `__`（十六分）、`_`（八分）表达短于一拍；
+      - 右侧 `.` 表示附点（时值 × 1.5）；
+      - 右侧 `-` 表示延音（整数拍延续）；
+      - 前缀 `3` 表示三连音八分近似。
     """
     from core.score_sheet import adaptive_tonic_midi, _name_to_pitch_class, _scale_for
 
@@ -55,16 +65,19 @@ def to_jianpu(notes: List[Dict], key_name: Tuple[str, str], bpm: float = 120.0) 
     tonic_midi = adaptive_tonic_midi(notes, tonic_pc)
     scale = list(_scale_for(key_name[1]))
 
+    eff_bpm = bpm if (bpm and bpm > 0) else 120.0
+    qnotes = quantize_notes(notes, eff_bpm)
+
     out = []
-    for nt in notes:
-        m = int(nt["midi"])
+    for qn in qnotes:
+        m = int(qn["midi"])
         d = m - tonic_midi
         oct_shift = d // 12
         rel = d % 12
         if rel in scale:
             deg = str(scale.index(rel) + 1)
         else:
-            # 离调音：绝对距离就近映射（等距取下方音级，升下方音是记谱惯例）
+            # 离调音：绝对距离就近映射（等距取下方）
             best, best_dist, best_dev = scale[0], 99, 0
             for s in scale:
                 dev = (rel - s) % 12
@@ -73,15 +86,26 @@ def to_jianpu(notes: List[Dict], key_name: Tuple[str, str], bpm: float = 120.0) 
                     best_dist, best, best_dev = dist, s, dev
             acc = "#" if best_dev <= 2 else "b"
             deg = acc + str(scale.index(best) + 1)
+
+        # 八度点
         if oct_shift > 0:
             deg = "." * oct_shift + deg
         elif oct_shift < 0:
             deg = deg + "_" * (-oct_shift)
-        # BPM 不可靠（哼唱常检测为 0）时退化为按固定 0.25s/拍量化，避免除零崩溃
-        beat_dur = 60.0 / bpm if bpm and bpm > 0 else 0.25
-        # 时值量化：按拍数四舍五入到最近整数拍（文本简谱的 "-" 只能表达整数拍，
-        # 精确时值由 LilyPond 专业渲染负责）。旧公式 round(dur/beat/0.25)-1
-        # 会把 0.86 拍量化成 3 拍（"1--"），严重失真。
-        beats = max(1, int(round((nt["end"] - nt["start"]) / beat_dur)))
-        out.append(deg + "-" * (beats - 1))
+
+        # 时值修饰（v2：附点+半拍+三连 显式）
+        prefix, underscores, dots, dashes = jianpu_dur_tokens(qn["dur_beat"])
+        # 下划线：按简谱惯例写在数字下方（用 HTML <u> 标签，配合后续渲染；
+        # 若渲染层暂不支持 HTML，则在纯文本里用下划线字符前缀近似。
+        # 这里输出纯文本友好格式："__deg"（十六分）、"_deg"（八分），
+        # 与渲染层的 score_sheet 规则对齐）
+        core = deg
+        if underscores == 2:
+            core = "__" + core
+        elif underscores == 1:
+            core = "_" + core
+        core = prefix + core
+        core += "." * dots        # 附点
+        core += "-" * dashes      # 延音线
+        out.append(core)
     return " ".join(out)

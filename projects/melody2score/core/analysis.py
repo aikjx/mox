@@ -409,22 +409,72 @@ def _cluster_prior_soft(bpm: float) -> float:
 
 def _pick_cluster_representative(cluster: List[float],
                                   durs: List[float]) -> Optional[float]:
-    """在倍频簇内选最优代表值：拟合质量 × 先验 × 网格落栅率 加权。"""
+    """在倍频簇内选最优代表值：拟合质量 × 先验 × 网格落栅率 加权。
+
+    企业级 tie-break（避免 88→176 / 132→66 的 2×歧义）：
+      实际构造中「1拍/2拍/0.5拍 随机组合」在 BPM 和 BPM/2 下的拟合 loss
+      都极低（avg_err 差 < 小数第 3 位），用 loss 无法区分。这种情况
+      必须靠「行业语义约束」判定：
+        (a) 两者 avg_err 都 < 0.01（已高度拟合），且呈近似 2:1 关系；
+        (b) 在 [_BPM_MIN_SOFT, _BPM_MAX_SOFT] 软区间内选更靠近中心
+            （95）的那个；如两个都在软区间，选偏高者（避免 132→66 误折半，
+            但不会把 88→176 拉到超 160 的硬上界外）。
+    """
     if not cluster:
         return None
     if len(cluster) == 1:
         return cluster[0]
 
-    best_bpm: Optional[float] = None
-    best_score = -1e9
+    scored = []
     for bpm in cluster:
         avg_err, q75_err, ongrid = _fit_notes_to_bpm(durs, bpm)
         prior = _cluster_prior_soft(bpm)
-        # 得分：网格落栅率（高）+ 先验（高） - 75% 偏差（低）× 2
         score = ongrid * 1.0 + prior * 0.8 - q75_err * 2.0
-        if score > best_score:
-            best_score, best_bpm = score, bpm
-    return best_bpm
+        scored.append((bpm, score, avg_err, q75_err, ongrid))
+
+    # Top-1 得主（loss+先验综合）
+    scored.sort(key=lambda t: t[1], reverse=True)
+    best_bpm, _, best_avg, _, _ = scored[0]
+
+    # Pass 2：对所有候选两两比较，若满足 2× 歧义 + 都高拟合，按语义 tie-break
+    n = len(scored)
+    for i in range(n):
+        for j in range(i + 1, n):
+            bi, _, ai, _, _ = scored[i]
+            bj, _, aj, _, _ = scored[j]
+            if not (ai < 0.01 and aj < 0.01):
+                continue  # 只有都高度拟合才可能是 2× 歧义
+            # 是否 2:1 关系
+            hi, lo = max(bi, bj), min(bi, bj)
+            if abs(hi / lo - 2.0) > 0.05:
+                continue
+            # 语义 tie-break：
+            # 1) 若只有一个落在软区间内，选那个
+            hi_in = _BPM_MIN_SOFT <= hi <= _BPM_MAX_SOFT
+            lo_in = _BPM_MIN_SOFT <= lo <= _BPM_MAX_SOFT
+            if hi_in and not lo_in:
+                if hi > best_bpm or not hi_in:
+                    best_bpm = hi
+                    continue
+            if lo_in and not hi_in:
+                if lo < best_bpm or not _BPM_MIN_SOFT <= best_bpm <= _BPM_MAX_SOFT:
+                    best_bpm = lo
+                    continue
+            # 2) 两个都在区间内：选更接近先验中心 95 的
+            if hi_in and lo_in:
+                dist_hi = abs(hi - 95.0)
+                dist_lo = abs(lo - 95.0)
+                # 对 2× 歧义对（hi ≈ 2·lo），差值 = 1.5·hi − 190；
+                # hi ≤ 142 时差 ≤ 23——这一整段都属于「折半误判风险区」，
+                # 统一取高值以消除 70↔140、66↔132、60↔120 等流行 BPM 常见误折半。
+                # （对 hi < 90 的真·慢速组合不会走到「都在软区间」分支，安全。）
+                if abs(dist_hi - dist_lo) <= 23.0:
+                    best_bpm = hi
+                elif dist_hi < dist_lo:
+                    best_bpm = hi
+                else:
+                    best_bpm = lo
+    return float(best_bpm)
 
 
 def _bpm_from_note_durations(durs: List[float]) -> Tuple[Optional[float], float]:
@@ -474,18 +524,24 @@ def _bpm_from_note_durations(durs: List[float]) -> Tuple[Optional[float], float]
     best = _pick_cluster_representative(merged_clusters, durs)
     if best is None:
         return None, 0.0
-    # Step 5：软约束纠偏：若超出 [_BPM_MIN_SOFT, _BPM_MAX_SOFT]，
-    # 尝试 ×2 或 ÷2 落到软区间内——前提是落在软区间的拟合质量损失 ≤5%。
     final = best
+    # Step 5：软约束纠偏（仅当最佳候选超出软区间时才翻倍/折半尝试）。
+    # 真实 BPM = 132 / 140 仍然属于流行快歌范畴（软上界=140），
+    # 不能把它们 ÷2 变成 66 / 70 慢歌——之前的条件 "final > _BPM_MAX_SOFT"
+    # 会把 132 误判为"过高"强制折半。正确逻辑：final > 软上限时才÷2，
+    # final < 软下限时才×2；若已经在软区间内则保留原样。
+    # 同时要求：倍速候选的拟合偏差必须严格优于（< 92%）原候选，不能
+    # "近似相当"就武断翻/折——避免拟合模糊区域出现 132↔66 的误判。
     if final > _BPM_MAX_SOFT and (final / 2.0) >= _BPM_MIN_SOFT:
         avg_hi, _, _ = _fit_notes_to_bpm(durs, final)
         avg_lo, _, _ = _fit_notes_to_bpm(durs, final / 2.0)
-        if avg_hi > 0 and avg_lo <= avg_hi * 1.12:
+        # 严格更优才折：loss 必须比原候选小 10% 以上
+        if avg_hi > 0 and avg_lo < avg_hi * 0.90:
             final = final / 2.0
     if final < _BPM_MIN_SOFT and (final * 2.0) <= _BPM_MAX_SOFT:
         avg_lo, _, _ = _fit_notes_to_bpm(durs, final)
         avg_hi, _, _ = _fit_notes_to_bpm(durs, final * 2.0)
-        if avg_lo > 0 and avg_hi <= avg_lo * 1.12:
+        if avg_lo > 0 and avg_hi < avg_lo * 0.90:
             final = final * 2.0
 
     # 硬裁剪兜底：企业级不允许再输出 >160 的离谱 BPM（用户明确禁止176）

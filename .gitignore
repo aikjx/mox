@@ -9,14 +9,16 @@ target_regress
 
 my_projects
 
+
+
 *.err
 # Rust build artifacts
 /target
 **target**
 
 build
-
-melody2score/build
+projects/melody2score/app/exports
+projects/melody2score/build
 
 # Node / frontend build artifacts
 node_modules/

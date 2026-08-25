@@ -129,19 +129,24 @@ def fix_spurious_octave_jumps(notes: List[Dict]) -> Tuple[List[Dict], int]:
 
 
 def median_smooth_pitch(notes: List[Dict], win: int = 3) -> Tuple[List[Dict], int]:
-    """对 MIDI 音高做"时间加权中值平滑"（不跨大时间跳变）。
+    """对 MIDI 音高做"时间加权众数平滑"（不跨大时间跳变）。
 
-    仅对 3-近邻窗口内音高接近度投票，避免把真实跳音（do→sol）抹掉。
-    思路：对每个音符，取前后 win 个同时间段近邻，若多数票落在某个与
-    当前音相差 ≤2 半音的类，则替换为众数。否则保留原音。"""
+    修复 twinkle 过度平滑（69→67、64→65）：
+      众数机制在窗口 [67,67,69] 时，67 有 2 票 → 69 被错误抹成 67。
+      真实旋律的 5 度跳进（C→G）是常见音程，不可被"邻域投票"抹掉。
+
+    新规则（企业级稳健）：
+      1) 只对窗口内众数 ≥ 60% 才修正（避免 2/3 的轻微多数强推 3 度音程）；
+      2) 众数与原音差距必须 ≤ 1 半音（只修颤音抖动不修跳进音程）；
+         （≥2 半音就是真实旋律变化，不应"平滑"掉）；
+      3) 窗口仍限定在 1.5 秒内（跨长间隔不参与）。
+    """
     if len(notes) < 3 or win < 1:
         return [dict(n) for n in notes], 0
     corrected = 0
     out = [dict(n) for n in notes]
     n = len(out)
     for i in range(n):
-        # 窗口：[max(0,i-win), min(n-1,i+win)]，但排除离当前音符起始
-        # 差 > 1.5 秒的邻居（跨长间隔的音高不应平滑）
         t0 = float(out[i]["start"])
         neighbors: List[int] = []
         for j in range(max(0, i - win), min(n, i + win + 1)):
@@ -153,9 +158,13 @@ def median_smooth_pitch(notes: List[Dict], win: int = 3) -> Tuple[List[Dict], in
         counts: Dict[int, int] = {}
         for m in neighbors:
             counts[m] = counts.get(m, 0) + 1
+        total = len(neighbors)
         mode_m, mode_cnt = max(counts.items(), key=lambda kv: kv[1])
         cur = int(round(out[i]["midi"]))
-        if mode_cnt >= 2 and mode_m != cur and abs(mode_m - cur) <= 2:
+        # 双门槛：1) 众数占比 ≥ 60%；2) 与原音相差 ≤ 1 半音
+        if (mode_cnt * 10 >= 6 * total
+                and mode_m != cur
+                and abs(mode_m - cur) <= 1):
             out[i]["midi"] = mode_m
             corrected += 1
     return out, corrected

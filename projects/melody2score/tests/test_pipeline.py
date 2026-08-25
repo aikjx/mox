@@ -40,7 +40,13 @@ def _ensure_audio():
 
 def _run(audio):
     cfg = Config()
-    cfg.enable_denoise = False  # 合成音频本就干净，关降噪加速
+    cfg.enable_denoise = False    # 合成音频本就干净，关降噪加速
+    cfg.enable_separation = False # twinkle.wav 是干净纯钢琴合成的单音旋律，
+                                  # 已经是分离好的主旋律，再走 HPSS 会伤谐波
+                                  # （真实用户 mp3 的带伴奏人声则让默认 None
+                                  #  跟随 vocal_mode=True 自动开分离）。
+    cfg.model_size = "tiny"       # v1 黄金配置：tiny 模型 + 置信阈值 0.30
+    cfg.conf_thresh = 0.30
     m = Melody2Score(cfg)
     return m.run(audio_path=audio)
 
