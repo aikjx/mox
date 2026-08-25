@@ -83,7 +83,7 @@ tower-http = { version = "0.5", features = ["cors", "fs", "limit"] }
 tower = "0.4"
 
 # HTTP client for AI APIs and browser automation
-reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+reqwest = { version = "0.12", features = ["json", "rustls-tls", "stream"], default-features = false }
 base64 = "0.22"
 rusqlite = { version = "0.31", features = ["bundled"] }
 
@@ -92,6 +92,9 @@ sha2 = "0.10"
 hmac = "0.12"
 hex = "0.4"
 crc64fast = { version = "1", optional = false, default-features = false }
+
+# Randomness (unified across crates; T22 local volume + tests)
+rand = "0.8"
 
 # Concurrency utilities
 parking_lot = "0.12"
@@ -112,4 +115,6 @@ prometheus = { version = "0.13", default-features = false, features = ["process"
 sea-query = "0.32"
 sqlx = "0.8"
 
-# Internal cratesxuanji-common-meta = { path = "platform/services/xuanji-common-meta" }xuanji-graph-service = { path = "platform/services/xuanji-graph-service" }
+# Internal crates
+xuanji-common-meta = { path = "platform/services/xuanji-common-meta" }
+xuanji-graph-service = { path = "platform/services/xuanji-graph-service" }

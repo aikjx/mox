@@ -1012,6 +1012,12 @@ class MainWindow(QMainWindow):
         """
         if not self.sampleCombo.isEnabled():
             return
+        # V2+ 三播放器防抖：波形模式（试听/样例）播放中再点=停止
+        if is_playing() and not getattr(self, "_score_playing", False):
+            audio_stop()
+            self.btnPreview.setEnabled(True)
+            self.status.setText("已停止原曲播放。")
+            return
         file_rel = self.sampleCombo.currentData()
         item = self._sample_by_file(file_rel)
         if not item:
@@ -1195,6 +1201,17 @@ class MainWindow(QMainWindow):
         完成后自动播放；已解码则立刻 play_raw。V1 主线程同步 librosa.load
         → 点「试听原曲」后 GUI 冻结数秒（最常见的"卡顿"投诉来源）。
         """
+        # V2+ 三播放器防抖：波形模式播放中再点=停止
+        if is_playing() and not getattr(self, "_score_playing", False):
+            audio_stop()
+            self.btnPlaySample.setEnabled(True)
+            self.status.setText("已停止原曲播放。")
+            return
+        # V2+ 三播放器防抖：钢琴曲播放中 -> 先停钢琴曲再切波形模式
+        if getattr(self, "_score_playing", False):
+            audio_stop()
+            self._score_playing = False
+            self.btnPlayScore.setText("🎹 播放钢琴曲")
         raw = getattr(self, "_raw_y", None)
         if raw is not None:
             # 已解码 → 立即播放（零阻塞）
@@ -1262,6 +1279,9 @@ class MainWindow(QMainWindow):
             audio_stop()                          # teardown 会触发 on_done → 恢复按钮
             return
         try:
+            # V2+ 三播放器防抖：波形模式仍在播 -> 先停波形
+            if is_playing() and not getattr(self, "_score_playing", False):
+                audio_stop()
             self._score_playing = True
             self.btnPlayScore.setText("⏹ 停止播放")
             self.status.setText("🎹 合成并播放钢琴曲中…（流式合成，即点即响）")

@@ -12,6 +12,7 @@ use parking_lot::Mutex;
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use crate::graph_projection_bridge::ProjectionBridge;
 use thiserror::Error;
 
 use crate::audit_sync::{AuditEvent, AuditRecordKind};
@@ -30,6 +31,31 @@ pub enum Error {
 
 /// High-level `(objs, tags, edges)` tuple used by tests.
 pub type GraphWriterStats = (usize, usize, usize);
+
+/// Snapshot of an object-level metadata record, used as the input DTO for
+/// projection bridge upserts.  Fields mirror the S3 + compliance record
+/// shape: bucket/key identity, size + etag + crc64 for content verification,
+/// a `miji_level` for confidentiality tier and an optional legal-hold
+/// timestamp (`hold_until_ms`, epoch ms).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ObjectMeta {
+    pub bucket: String,
+    pub key: String,
+    pub size_bytes: u64,
+    pub etag: String,
+    pub crc64_ecma: u64,
+    pub miji_level: Option<u8>,
+    pub hold_until_ms: Option<i64>,
+}
+
+/// Tag-level metadata record (kept in lock-step with ObjectMeta for the
+/// projection bridge export surface; serialised alongside audit exports).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TagMeta {
+    pub k: String,
+    pub v: String,
+    pub usage_count: u64,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ObjV {
@@ -70,6 +96,11 @@ struct GraphState {
 #[derive(Debug, Clone)]
 pub struct GraphWriter {
     inner: Arc<Mutex<GraphState>>,
+    /// Optional live bridge to a projection 2.0 SimpleGraph.  When `Some`,
+    /// every successful `upsert_obj_and_tags` and `mark_deleted` call is
+    /// mirrored into the wrapped SimpleGraph via the bijection tables kept
+    /// inside `ProjectionBridge`.
+    pub projection_bridge: Option<Arc<Mutex<ProjectionBridge>>>,
 }
 
 impl Default for GraphWriter {
@@ -92,6 +123,7 @@ impl GraphWriter {
                 failure_total: 0,
                 truncation_audit: Vec::new(),
             })),
+            projection_bridge: None,
         }
     }
 
@@ -104,6 +136,23 @@ impl GraphWriter {
         let mut s = self.inner.lock();
         s.failure_remaining = n;
         s.failure_total = n;
+    }
+
+    /// Builder-style: attach a projection bridge and return the writer.
+    /// Every subsequent successful upsert or mark_deleted will be mirrored
+    /// into the wrapped `SimpleGraph`.
+    pub fn with_projection_bridge(
+        mut self,
+        b: ::std::sync::Arc<::parking_lot::Mutex<ProjectionBridge>>,
+    ) -> Self {
+        self.projection_bridge = Some(b);
+        self
+    }
+
+    /// Attach a projection bridge in-place.  Every subsequent successful
+    /// upsert or mark_deleted will be mirrored into the wrapped `SimpleGraph`.
+    pub fn set_bridge(&mut self, bridge: ::std::sync::Arc<::parking_lot::Mutex<ProjectionBridge>>) {
+        self.projection_bridge = Some(bridge);
     }
 
     /// Read the current DLQ snapshot.
@@ -235,6 +284,7 @@ impl GraphWriter {
                     now,
                 ));
             }
+            self.apply_bridge_hook(uri, bucket, size, etag, miji_level, &norm_tags);
             return Ok(());
         }
         // If we were soft-deleted, treat the upsert as "revive": even with
@@ -256,6 +306,7 @@ impl GraphWriter {
                     now,
                 ));
             }
+            self.apply_bridge_hook(uri, bucket, size, etag, miji_level, &norm_tags);
             return Ok(());
         }
 
@@ -310,6 +361,7 @@ impl GraphWriter {
             ));
         }
 
+        self.apply_bridge_hook(uri, bucket, size, etag, miji_level, &norm_tags);
         Ok(())
     }
 
@@ -350,6 +402,10 @@ impl GraphWriter {
             s.edges.remove(&key);
             s.archived_edges.insert(key, now);
         }
+        drop(s);
+        if let Some(bridge_arc) = &self.projection_bridge {
+            bridge_arc.lock().remove_object(uri);
+        }
     }
 
     /// `(objs, tags, edges)` counts.
@@ -376,6 +432,59 @@ impl GraphWriter {
     /// Read an object snapshot for test assertions (miji level / props).
     pub fn get_obj(&self, uri: &str) -> Option<ObjV> {
         self.inner.lock().objs.get(&obj_id_of(uri)).cloned()
+    }
+
+    /// Mirror the current state of the given URI into the attached bridge
+    /// (no-op if no bridge is attached).  This acquires the state lock
+    /// briefly to snapshot tag k/v pairs and per-tag usage counts, then
+    /// releases it before locking the bridge (lock-order: state → bridge)
+    /// so the two locks never deadlock.
+    fn apply_bridge_hook(
+        &self,
+        uri: &str,
+        bucket: &str,
+        size: u64,
+        etag: &str,
+        miji_level: Option<u8>,
+        norm_tags: &[crate::tag_parser::Tag],
+    ) {
+        let Some(bridge_arc) = &self.projection_bridge else {
+            return;
+        };
+        // Phase 1: lock state ONLY; snapshot k/v + usage counts.
+        let (meta, tag_snaps): (ObjectMeta, Vec<(String, String, u64)>) = {
+            let s = self.inner.lock();
+            let meta = ObjectMeta {
+                bucket: bucket.to_string(),
+                key: uri.to_string(),
+                size_bytes: size,
+                etag: etag.to_string(),
+                crc64_ecma: 0,
+                miji_level,
+                hold_until_ms: None,
+            };
+            let mut snaps = Vec::with_capacity(norm_tags.len());
+            for t in norm_tags {
+                let tid = tag_id_of(&t.k, &t.v);
+                let usage = s
+                    .edges
+                    .iter()
+                    .filter(|(_, tag_id)| *tag_id == tid)
+                    .count() as u64;
+                snaps.push((t.k.clone(), t.v.clone(), usage));
+            }
+            (meta, snaps)
+        };
+        // Phase 2: lock bridge ONLY; apply upserts + edges.
+        let mut bridge = bridge_arc.lock();
+        bridge.upsert_object_vertex(uri, &meta);
+        for (k, v, usage) in &tag_snaps {
+            bridge.upsert_tag_vertex(k, v, *usage);
+        }
+        for (k, v, _) in &tag_snaps {
+            let tag_uri = format!("tag://{k}:{v}");
+            bridge.add_has_tag_edge(uri, &tag_uri, "HAS_TAG");
+        }
     }
 }
 

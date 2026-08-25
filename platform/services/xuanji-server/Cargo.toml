@@ -34,8 +34,20 @@ xuanji-data-plane = { path = "../xuanji-data-plane" }
 xuanji-compliance = { path = "../xuanji-compliance" }
 xuanji-etl-wasm = { path = "../xuanji-etl-wasm" }
 xuanji-fusion = { path = "../xuanji-fusion" }
-xuanji-cloud-drive-volume = { path = "../xuanji-cloud-drive-volume" }
-xuanji-standards = { path = "../xuanji-standards" }
+xuanji-cloud-drive-volume = { path = "../xuanji-cloud-drive-volume", features = [] }
+xuanji-standards = { path = "../xuanji-standards", features = [] }
+
+[features]
+default = []
+# Enable SIMD AVX2 / NEON vectorised GF(2^8) multiply in EC volume path.
+simd = ["xuanji-cloud-drive-volume/simd"]
+# Enable GM SM-3 / SM-2 / SM-4-GCM ciphers for STS dual signing, audit
+# hash chain, and object payload encryption.
+gm-sm = ["xuanji-standards/gm-sm"]
+# Enable SM3 + SHA-256 dual audit chain for migration windows.
+dual_chain = ["xuanji-standards/dual_chain"]
+# Enable Glacier 4th storage class, adapter & restore state machine.
+glacier = []
 
 [dev-dependencies]
 tempfile = "3"

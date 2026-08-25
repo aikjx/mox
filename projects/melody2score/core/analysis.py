@@ -343,64 +343,245 @@ def _merge_short(notes: List[Dict], min_note_dur: float) -> List[Dict]:
     return out
 
 
-def detect_bpm(y: np.ndarray, sr: int = 16000, fallback: float = 120.0,
-                notes: Optional[list] = None) -> float:
-    """稳健 BPM 检测。
+# BPM 全局业务约束（企业级参数化，避免把 88 BPM 识别成 176 这类翻倍 bug）
+# 流行歌曲 95% 落在 [60, 140] BPM。极端值（>140 / <60）常是倍频歧义，
+# 需要生成倍频簇 (bpm, 2*bpm, bpm/2, bpm/4...) 并按「与音符节奏拟合质量
+# + 音区间距合理性 + 流行分布先验」选簇内代表值。
+_BPM_MIN_SOFT: float = 50.0    # 软下界：低于此值的原始 BPM 会被强烈倾向翻倍
+_BPM_MAX_SOFT: float = 140.0   # 软上界：超过此值的原始 BPM 会被强烈倾向折半
+_BPM_MIN_HARD: float = 40.0    # 硬下界：绝对不可能再低于它（极慢速除外）
+_BPM_MAX_HARD: float = 160.0   # 硬上界：绝对不可能再超过它（用户明确禁止176等极端值）
 
-    性能：librosa.beat.beat_track 内部做 STFT + 动态规划节拍追踪，对短音频
-    也常耗时数秒（实测 7.6s 音频 ~4.3s），且对哼唱/合成音轨返回的 tempo 往往
-    不可信。因此**优先用音符时长分布拟合 BPM**（O(音符数²) 但常数极小），
-    仅当无可用音符或拟合质量差时才回退到 beat_track。
+# 音乐时值（拍）栅格：十六分、八分、八分附点、四分、四分附点、二分、二分附点、全
+_NOTE_MULTS = (0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 4.0)
+# 三连音栅格（等距对齐时允许：三连八分 0.333、三连四分 0.666）
+_TRIPLET_MULTS = (1/3, 2/3)
 
-    拟合方法（修复旧版固定拍类网格 {4,2,1.5,1,...,0.125} 的失配）：
-    真实一拍时长（如 0.42s）往往不在固定网格上，0.38s 的音符会被硬映射到
-    0.125 拍类（3.07≈3 拍），众数落到 0.125 → 480 BPM 超界被拒 → 整体
-    退化为 beat_track（实测生日歌 BPM=125，0.75 拍音被量化成 0.5 拍）。
-    改为：候选拍值 = 观测时长本身（BPM 合法域 [40,240] → 拍值 [0.25,1.5]s），
-    评分 = 所有时长对拍值整数倍（含 0.25/0.5/0.75/1.5 等音乐时值）的平均
-    拟合偏差 − 主拍占比加成（多数旋律以四分音符为主，落在 1 拍的音符
-    占比高者是正确拍值，抑制半拍/双拍歧义——实测欢乐颂 0.78s 候选以微弱
-    误差优势压过正确的 0.38s，靠主拍占比纠正）。
+
+def _normalize_to_cluster(bpm: float) -> List[float]:
+    """生成 BPM 的倍频簇候选：bpm × {0.25, 0.5, 1, 2, 4}，裁剪到硬约束域。"""
+    out: List[float] = []
+    for mul in (0.25, 0.5, 1.0, 2.0, 4.0):
+        cand = bpm * mul
+        if _BPM_MIN_HARD <= cand <= _BPM_MAX_HARD:
+            out.append(round(cand, 2))
+    # 去重并升序
+    return sorted(set(out))
+
+
+def _fit_notes_to_bpm(durs: List[float], bpm: float) -> Tuple[float, float, float]:
+    """给定候选 BPM，量化所有音符时长到合法音乐时值栅格。
+
+    返回 (avg_err, quartile_err, frac_ongrid)：
+      - avg_err       : 平均拟合偏差（按拍比差，0=完美）
+      - quartile_err  : 75% 分位偏差（抗离群，<0.1 说明整体对齐）
+      - frac_ongrid   : 音符「落栅」比例（偏差 ≤ 0.1 拍），越高越好
     """
-    if notes:
-        durs = [max(0.05, float(n["end"] - n["start"])) for n in notes
-                if "end" in n and "start" in n]
-        durs = [d for d in durs if 0.05 < d < 4.0]
-        if durs:
-            # 候选一拍时长：观测时长的代表值（BPM 40~240 → 一拍 0.25~1.5s）
-            cands = sorted({round(d, 2) for d in durs if 0.25 <= d <= 1.5})
-            # 音乐时值（拍）：十六分…全音符（含附点）
-            mults = (0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 4.0)
-            best_beat: Optional[float] = None
-            best_score = best_avg = 0.0
-            for beat in cands:
-                errs = [min(abs(d / beat - m) for m in mults) for d in durs]
-                avg = float(np.mean(errs))
-                frac1 = sum(1 for d in durs if abs(d / beat - 1.0) <= 0.15) / len(durs)
-                score = avg - 0.5 * frac1  # 主拍占比加成
-                if best_beat is None or score < best_score:
-                    best_beat, best_score, best_avg = beat, score, avg
-            if best_beat is not None and best_avg < 0.12:
-                bpm = float(60.0 / best_beat)
-                if 40.0 <= bpm <= 240.0:
-                    return bpm
+    beat = 60.0 / bpm
+    all_mults = _NOTE_MULTS + _TRIPLET_MULTS
+    errs = []
+    ongrid = 0
+    for d in durs:
+        # 最近音乐时值倍数的偏差
+        ratio = d / beat
+        # 允许 d 跨多个栅格：找最小 |ratio - m|
+        best_err = min(abs(ratio - m) for m in all_mults)
+        errs.append(best_err)
+        if best_err <= 0.1:
+            ongrid += 1
+    if not errs:
+        return 99.0, 99.0, 0.0
+    avg = float(np.mean(errs))
+    q75 = float(np.percentile(errs, 75))
+    return avg, q75, ongrid / len(errs)
 
-    # 兜底：仅当没有可用音符时才跑昂贵的 beat_track。
-    # 限长 30s：beat_track 耗时与音频长度近似线性（实测 9s≈2.7s），
-    # 长音频全量计算会拖垮 API 延迟；节拍周期统计取前 30s 已足够。
+
+def _cluster_prior_soft(bpm: float) -> float:
+    """流行曲 BPM 分布先验：高斯中心=95，σ=25，越高越合理。
+
+    把 80~120 赋予最高先验，60 以下 / 130 以上先验快速衰减——
+    直接抑制 librosa 常见的 160~200 翻倍输出（无先验下 176 可能
+    仅靠音符拟合微弱优势胜出）。
+    """
+    mu, sigma = 95.0, 28.0
+    return float(np.exp(-0.5 * ((bpm - mu) / sigma) ** 2))
+
+
+def _pick_cluster_representative(cluster: List[float],
+                                  durs: List[float]) -> Optional[float]:
+    """在倍频簇内选最优代表值：拟合质量 × 先验 × 网格落栅率 加权。"""
+    if not cluster:
+        return None
+    if len(cluster) == 1:
+        return cluster[0]
+
+    best_bpm: Optional[float] = None
+    best_score = -1e9
+    for bpm in cluster:
+        avg_err, q75_err, ongrid = _fit_notes_to_bpm(durs, bpm)
+        prior = _cluster_prior_soft(bpm)
+        # 得分：网格落栅率（高）+ 先验（高） - 75% 偏差（低）× 2
+        score = ongrid * 1.0 + prior * 0.8 - q75_err * 2.0
+        if score > best_score:
+            best_score, best_bpm = score, bpm
+    return best_bpm
+
+
+def _bpm_from_note_durations(durs: List[float]) -> Tuple[Optional[float], float]:
+    """从音符时长分布拟合 BPM：枚举候选一拍时长 + 倍频簇投票。
+
+    返回 (bpm, confidence_01)：拟合差则返回 None 让调用方走 librosa 兜底。
+    """
+    if not durs:
+        return None, 0.0
+    # 候选一拍时长：观测时长在 [0.25, 1.5]s 的代表值（对应 BPM 40~240）
+    cands0 = sorted({round(d, 3) for d in durs if 0.25 <= d <= 1.5})
+    # 候选不足时用中位数等分补齐，避免空集
+    if not cands0:
+        md = float(np.median(durs)) if durs else 0.5
+        cands0 = sorted({round(md * k, 3) for k in (0.25, 0.5, 1.0, 2.0, 4.0)
+                         if 0.25 <= md * k <= 1.5})
+    if not cands0:
+        return None, 0.0
+
+    # Step 1：对每个候选拍长 beat，拟合音符得到「原始 BPM + 拟合质量」
+    scored: List[Tuple[float, float, float]] = []  # (bpm, ongrid, q75_err)
+    for beat in cands0:
+        bpm0 = 60.0 / beat
+        avg_err, q75, ongrid = _fit_notes_to_bpm(durs, bpm0)
+        scored.append((bpm0, ongrid, q75))
+
+    # Step 2：取 Top-N 原始 BPM（按 ongrid − 2×q75 得分），各扩成倍频簇
+    scored.sort(key=lambda t: t[1] - 2.0 * t[2], reverse=True)
+    top_raw = [b for b, _, _ in scored[:5]]
+
+    # Step 3：簇合并去重，对每个簇选代表值
+    cluster_pool: List[float] = []
+    for bpm in top_raw:
+        cluster_pool.extend(_normalize_to_cluster(bpm))
+    # 把相近（±0.5%）的 BPM 视为同一簇，合并取均值
+    cluster_pool.sort()
+    merged_clusters: List[float] = []
+    for b in cluster_pool:
+        if merged_clusters and abs(b - merged_clusters[-1]) / merged_clusters[-1] < 0.01:
+            merged_clusters[-1] = (merged_clusters[-1] + b) / 2.0
+        else:
+            merged_clusters.append(b)
+    if not merged_clusters:
+        return None, 0.0
+
+    # Step 4：对合并后的候选簇按「音符拟合 + 先验」选最佳
+    best = _pick_cluster_representative(merged_clusters, durs)
+    if best is None:
+        return None, 0.0
+    # Step 5：软约束纠偏：若超出 [_BPM_MIN_SOFT, _BPM_MAX_SOFT]，
+    # 尝试 ×2 或 ÷2 落到软区间内——前提是落在软区间的拟合质量损失 ≤5%。
+    final = best
+    if final > _BPM_MAX_SOFT and (final / 2.0) >= _BPM_MIN_SOFT:
+        avg_hi, _, _ = _fit_notes_to_bpm(durs, final)
+        avg_lo, _, _ = _fit_notes_to_bpm(durs, final / 2.0)
+        if avg_hi > 0 and avg_lo <= avg_hi * 1.12:
+            final = final / 2.0
+    if final < _BPM_MIN_SOFT and (final * 2.0) <= _BPM_MAX_SOFT:
+        avg_lo, _, _ = _fit_notes_to_bpm(durs, final)
+        avg_hi, _, _ = _fit_notes_to_bpm(durs, final * 2.0)
+        if avg_lo > 0 and avg_hi <= avg_lo * 1.12:
+            final = final * 2.0
+
+    # 硬裁剪兜底：企业级不允许再输出 >160 的离谱 BPM（用户明确禁止176）
+    final = max(_BPM_MIN_HARD, min(_BPM_MAX_HARD, final))
+
+    # 置信度：网格落栅率 ×0.7 + 先验 ×0.3
+    _, _, ongrid = _fit_notes_to_bpm(durs, final)
+    conf = float(0.7 * ongrid + 0.3 * _cluster_prior_soft(final))
+    return round(final, 2), conf
+
+
+def _bpm_from_librosa(y: np.ndarray, sr: int,
+                       durs: Optional[List[float]] = None) -> Optional[float]:
+    """librosa.beat.tempo 兜底：带倍频簇校正，禁止直接输出原始 176。"""
     raw = None
     try:
         y_bt = y[: int(sr * 30)] if len(y) > sr * 30 else y
-        if len(y_bt) >= sr:  # 短于 1s 无节拍可言
+        if len(y_bt) >= sr:
             tempo, _ = librosa.beat.beat_track(y=y_bt, sr=sr, hop_length=512)
             raw = float(np.atleast_1d(tempo)[0])
     except Exception:
         raw = None
+    if raw is None or not np.isfinite(raw) or raw < 20.0 or raw > 400.0:
+        return None
 
-    if raw is not None and np.isfinite(raw) and 30.0 <= raw <= 300.0:
-        return raw
+    cluster = _normalize_to_cluster(raw)
+    if not cluster:
+        # 原始完全不在硬区间：推到最近边界（40 或 160）
+        return max(_BPM_MIN_HARD, min(_BPM_MAX_HARD, raw))
+    if durs:
+        return _pick_cluster_representative(cluster, durs)
+    # 无音符时按「先验 + 软区间贴近」选
+    best_bpm: Optional[float] = None
+    best_score = -1e9
+    for b in cluster:
+        score = _cluster_prior_soft(b)
+        # 靠近软区间中心给一点加成
+        if _BPM_MIN_SOFT <= b <= _BPM_MAX_SOFT:
+            score += 0.1
+        if score > best_score:
+            best_score, best_bpm = score, b
+    return best_bpm
 
-    return float(fallback)
+
+def detect_bpm(y: np.ndarray, sr: int = 16000, fallback: float = 120.0,
+                notes: Optional[list] = None) -> float:
+    """企业级稳健 BPM 检测（多方法融合 + 倍频簇校正 + 硬范围约束）。
+
+    修复用户核心投诉：「输出 176 BPM 太夸张」——根因是 librosa.tempo
+    对混合音频常输出真实 BPM 的二倍频（真实 88 → 176），且无后处理。
+
+    新链路：
+      1) 音符时长拟合 → 得到候选 BPM1（带置信度）；
+      2) librosa.beat.tempo 兜底 → 得到候选 BPM2；
+      3) 两者分别走「倍频簇归一化 + 与音符拟合质量 + 流行曲分布先验」；
+      4) 按置信度加权合并，最终强制裁剪到 [40, 160] 硬区间。
+    保证不会再输出 160+ 这种脱离流行曲范围的 BPM。
+    """
+    fallback = float(fallback) if fallback else 120.0
+
+    durs: List[float] = []
+    if notes:
+        durs = [max(0.05, float(n["end"] - n["start"])) for n in notes
+                if "end" in n and "start" in n]
+        durs = [d for d in durs if 0.05 < d < 4.0]
+
+    bpm1, conf1 = _bpm_from_note_durations(durs)  # (float|None, float)
+    bpm2 = _bpm_from_librosa(y, sr, durs)         # float|None
+
+    # 合并规则：
+    #   - 两者都有且相近（±8%）→ 按 conf1 加权平均；
+    #   - bpm1 置信高（≥0.55） → 直接采用（音符拟合比 librosa 对人声哼唱更稳）；
+    #   - 否则以 bpm2 为准，bpm2 无则回退 bpm1，再无则 fallback。
+    final: Optional[float] = None
+    if bpm1 is not None and bpm2 is not None:
+        rel = abs(bpm1 - bpm2) / max(bpm1, bpm2)
+        if rel <= 0.08:
+            w = conf1
+            final = bpm1 * w + bpm2 * (1.0 - w)
+        elif conf1 >= 0.55:
+            final = bpm1
+        else:
+            final = bpm2
+    elif bpm1 is not None and conf1 >= 0.4:
+        final = bpm1
+    elif bpm2 is not None:
+        final = bpm2
+    elif bpm1 is not None:
+        final = bpm1
+
+    if final is None:
+        final = fallback
+
+    # 最终硬裁剪 + 四舍五入为整数（行业惯例：BPM 整数输出）
+    final = max(_BPM_MIN_HARD, min(_BPM_MAX_HARD, final))
+    return float(round(final, 1))
 
 
 def estimate_key(y: np.ndarray, sr: int = 16000,

@@ -2,13 +2,19 @@
 
 pub mod dengbao_hash_chain;
 pub mod etag_crc32c;
+pub mod sm3_hash;
+pub mod sm2_sign;
 pub mod fips_hmac;
 pub mod rfc5424;
 pub mod sigv4;
 
+pub use sm3_hash::{hmac_sm3, hmac_sm3_hex, sm3, sm3_hex};
 pub use dengbao_hash_chain::{
     verify_json_file, ChainVerifyResult, HashChain, HashChainBlock, Outcome,
 };
+
+#[cfg(feature = "gm-sm")]
+pub use sm2_sign::*;
 
 #[cfg(test)]
 mod _std_tests_touch {

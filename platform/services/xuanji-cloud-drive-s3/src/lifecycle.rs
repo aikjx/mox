@@ -1,15 +1,16 @@
-//! 云盘 M4：冷热分层引擎 (HOT / WARM / COLD 三级 Lifecycle)
+//! 云盘 M4：冷热分层引擎 (HOT / WARM / COLD / GLACIER 四级 Lifecycle, v2.1)
 //!
 //! # 存储类迁移规则
 //!
-//! | 类    | 时间窗口       | 典型场景          | 读取行为         |
-//! |-------|---------------|------------------|------------------|
-//! | HOT   | 0 ~ 30 天     | 业务活跃数据      | 直读              |
-//! | WARM  | 30 ~ 90 天    | 非频繁访问        | 读 → 自动回温到 HOT |
-//! | COLD  | 90 天以上      | 归档/合规留存     | 读 → 先 restore，再回温到 HOT |
+//! | 类      | 时间窗口        | 典型场景             | 读取行为               |
+//! |---------|----------------|----------------------|------------------------|
+//! | HOT     | 0 ~ 30 天      | 业务活跃数据          | 直读                   |
+//! | WARM    | 30 ~ 90 天     | 非频繁访问            | 读 → 自动回温到 HOT    |
+//! | COLD    | 90 ~ 365 天    | 归档/合规留存         | 读 → restore → HOT     |
+//! | GLACIER | 365 天以上     | 长期归档/监管封存     | 读 → restore(数小时) → HOT |
 //!
 //! 每日 UTC 02:00 由 `transition_scan()` 触发全量扫描并生成迁移计划；
-//! 任何对 WARM/COLD 对象的读都通过 `touch_and_restore_to_hot()` 回到 HOT。
+//! 任何对 WARM/COLD/GLACIER 对象的读都通过 `touch_and_restore_to_hot()` 回到 HOT。
 
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -22,6 +23,8 @@ pub enum StorageClass {
     Hot,
     Warm,
     Cold,
+    /// v2.1: 冷归档（AWS Glacier/阿里云归档-冷归档），取回需数小时
+    Glacier,
 }
 
 impl StorageClass {
@@ -30,6 +33,7 @@ impl StorageClass {
             StorageClass::Hot => "HOT",
             StorageClass::Warm => "WARM",
             StorageClass::Cold => "COLD",
+            StorageClass::Glacier => "GLACIER",
         }
     }
 }
@@ -60,10 +64,14 @@ pub struct LifecycleObjectMeta {
 pub enum TransitionAction {
     HotToWarm,
     WarmToCold,
+    /// v2.1: COLD → GLACIER（冷归档）
+    ColdToGlacier,
     /// 读回温
     WarmRestoreToHot,
     /// 归档 restore（慢速）+ 回温
     ColdRestoreToHot,
+    /// v2.1: Glacier restore（最慢，通常 3~12h）+ 回温
+    GlacierRestoreToHot,
 }
 
 /// 迁移计划项
@@ -84,9 +92,13 @@ pub struct CloudLifecycleStats {
     pub objects_hot: u64,
     pub objects_warm: u64,
     pub objects_cold: u64,
+    /// v2.1: GLACIER 层对象数
+    pub objects_glacier: u64,
     pub bytes_hot: u64,
     pub bytes_warm: u64,
     pub bytes_cold: u64,
+    /// v2.1: GLACIER 层字节数
+    pub bytes_glacier: u64,
     pub transitions_last_24h: u64,
     pub restores_last_24h: u64,
     pub scanned_at_ms: u64,
@@ -99,6 +111,8 @@ pub struct LifecycleThresholds {
     pub hot_to_warm_ms: u64,
     /// 创建/最后访问后多少 ms 进入 COLD，默认 90 天
     pub warm_to_cold_ms: u64,
+    /// v2.1: COLD 且 anchor 超过该 ms 后进入 GLACIER，默认 365 天
+    pub cold_to_glacier_ms: u64,
 }
 
 impl Default for LifecycleThresholds {
@@ -107,6 +121,7 @@ impl Default for LifecycleThresholds {
         Self {
             hot_to_warm_ms: 30 * DAY_MS,
             warm_to_cold_ms: 90 * DAY_MS,
+            cold_to_glacier_ms: 365 * DAY_MS,
         }
     }
 }
@@ -155,7 +170,7 @@ impl HotWarmColdLifecycle {
         self.objects.lock().remove(&(bucket.to_string(), key.to_string()));
     }
 
-    /// 读取：如果是 WARM/COLD → 自动回温到 HOT，返回 (新class, 是否发生restore)
+    /// 读取：如果是 WARM/COLD/GLACIER → 自动回温到 HOT，返回 (新class, 是否发生restore)
     pub fn touch_and_restore_to_hot(
         &self,
         bucket: &str,
@@ -180,6 +195,14 @@ impl HotWarmColdLifecycle {
                 Some((StorageClass::Hot, true))
             }
             StorageClass::Cold => {
+                meta.class = StorageClass::Hot;
+                meta.last_accessed_at_ms = now_ms;
+                meta.last_transition_ms = now_ms;
+                *self.restore_counter.lock() += 1;
+                *self.transition_counter.lock() += 1;
+                Some((StorageClass::Hot, true))
+            }
+            StorageClass::Glacier => {
                 meta.class = StorageClass::Hot;
                 meta.last_accessed_at_ms = now_ms;
                 meta.last_transition_ms = now_ms;
@@ -242,6 +265,26 @@ impl HotWarmColdLifecycle {
                     }
                     plans.push(plan);
                 }
+                StorageClass::Cold if age >= self.thresholds.cold_to_glacier_ms => {
+                    let plan = TransitionPlan {
+                        bucket: k.0.clone(),
+                        key: k.1.clone(),
+                        from: StorageClass::Cold,
+                        to: StorageClass::Glacier,
+                        action: TransitionAction::ColdToGlacier,
+                        scheduled_at_ms: now_ms,
+                        reason: format!(
+                            "age_ms={} >= cold_to_glacier_ms={}",
+                            age, self.thresholds.cold_to_glacier_ms
+                        ),
+                    };
+                    if apply {
+                        meta.class = StorageClass::Glacier;
+                        meta.last_transition_ms = now_ms;
+                        *self.transition_counter.lock() += 1;
+                    }
+                    plans.push(plan);
+                }
                 _ => {}
             }
         }
@@ -271,6 +314,10 @@ impl HotWarmColdLifecycle {
                     s.objects_cold += 1;
                     s.bytes_cold += meta.size_bytes;
                 }
+                StorageClass::Glacier => {
+                    s.objects_glacier += 1;
+                    s.bytes_glacier += meta.size_bytes;
+                }
             }
         }
         s
@@ -299,6 +346,9 @@ impl HotWarmColdLifecycle {
 
 /// 便捷：将 Arc 化引擎共享给并发系统
 pub type SharedLifecycle = Arc<HotWarmColdLifecycle>;
+
+/// v2.1 向后兼容别名：旧代码 `LifecycleEngine::default()` 可继续使用
+pub use HotWarmColdLifecycle as LifecycleEngine;
 
 #[cfg(test)]
 mod tests {
@@ -440,5 +490,97 @@ mod tests {
         let plans = lc.transition_scan(t0 + 31 * DAY_MS, true);
         assert_eq!(plans.len(), 0, "object accessed 2d ago should stay HOT");
         assert_eq!(lc.class_of("b", "k"), Some(StorageClass::Hot));
+    }
+
+    // ---------- T25-1 Glacier v2.1 tests (TDD RED phase) ----------
+    #[test]
+    fn t25_01_storage_class_glacier_exists_and_serializes() {
+        // Glacier enum variant 必须存在并序列化为 "GLACIER"
+        let sc = StorageClass::Glacier;
+        let j = serde_json::to_string(&sc).unwrap();
+        assert_eq!(j, "\"GLACIER\"");
+        assert_eq!(sc.as_str(), "GLACIER");
+    }
+
+    #[test]
+    fn t25_02_cold_to_glacier_transition_after_366d() {
+        // COLD 且 anchor 时间 ≥ cold_to_glacier_ms (默认 365d) → transition_scan 返回 ColdToGlacier plan
+        const YEAR_MS: u64 = 365 * DAY_MS;
+        let lc = HotWarmColdLifecycle::default();
+        let t0 = 1_700_000_000_000u64;
+        lc.upsert_object(make_meta("archive", "2023-finance.zip", t0, 10_000_000));
+        {
+            let mut objs = lc.objects.lock();
+            let m = objs
+                .get_mut(&("archive".to_string(), "2023-finance.zip".to_string()))
+                .unwrap();
+            m.class = StorageClass::Cold;
+            m.last_transition_ms = t0;
+            m.last_accessed_at_ms = t0;
+        }
+        // 366 天：超过 365d 阈值
+        let t366 = t0 + YEAR_MS + DAY_MS;
+        let plans = lc.transition_scan(t366, true);
+        assert!(
+            !plans.is_empty(),
+            "expect ColdToGlacier plan after 366d for COLD object"
+        );
+        // 有一条 ColdToGlacier
+        let glacier_plan = plans
+            .iter()
+            .find(|p| matches!(p.action, TransitionAction::ColdToGlacier));
+        assert!(glacier_plan.is_some(), "ColdToGlacier action missing; got actions: {:?}",
+            plans.iter().map(|p| format!("{:?}", p.action)).collect::<Vec<_>>());
+        let p = glacier_plan.unwrap();
+        assert_eq!(p.from, StorageClass::Cold);
+        assert_eq!(p.to, StorageClass::Glacier);
+        assert_eq!(lc.class_of("archive", "2023-finance.zip"), Some(StorageClass::Glacier));
+    }
+
+    #[test]
+    fn t25_03_cold_object_364d_stays_not_glacier() {
+        const YEAR_MS: u64 = 365 * DAY_MS;
+        let lc = HotWarmColdLifecycle::default();
+        let t0 = 1_700_000_000_000u64;
+        lc.upsert_object(make_meta("archive", "2023-finance.zip", t0, 1));
+        {
+            let mut objs = lc.objects.lock();
+            let m = objs
+                .get_mut(&("archive".to_string(), "2023-finance.zip".to_string()))
+                .unwrap();
+            m.class = StorageClass::Cold;
+            m.last_transition_ms = t0;
+            m.last_accessed_at_ms = t0;
+        }
+        let t364 = t0 + YEAR_MS - DAY_MS; // 364 天 < 365d 阈值
+        let plans = lc.transition_scan(t364, true);
+        let has_cold_glacier = plans
+            .iter()
+            .any(|p| matches!(p.action, TransitionAction::ColdToGlacier));
+        assert!(
+            !has_cold_glacier,
+            "364d COLD object must NOT generate ColdToGlacier; plans count={}",
+            plans.len()
+        );
+        assert_eq!(lc.class_of("archive", "2023-finance.zip"), Some(StorageClass::Cold));
+    }
+
+    #[test]
+    fn t25_04_lifecycleengine_backward_alias_compat() {
+        // 兼容别名：pub use HotWarmColdLifecycle as LifecycleEngine 必须存在
+        // 且所有 v2.0 既有 tests (stats/upsert_object/class_of) 行为一致
+        let lc = LifecycleEngine::default();
+        let t0 = 1_700_000_000_000u64;
+        lc.upsert_object(make_meta("compat", "k", t0, 42));
+        assert_eq!(lc.class_of("compat", "k"), Some(StorageClass::Hot));
+        let s = lc.stats(t0 + 1);
+        assert_eq!(s.objects_hot, 1);
+        assert_eq!(s.bytes_hot, 42);
+        // 默认阈值：hot_to_warm_ms=30d, warm_to_cold_ms=90d
+        let t = lc.thresholds();
+        assert_eq!(t.hot_to_warm_ms, 30 * DAY_MS);
+        assert_eq!(t.warm_to_cold_ms, 90 * DAY_MS);
+        // 新字段 cold_to_glacier_ms 默认 365 天
+        assert_eq!(t.cold_to_glacier_ms, 365 * DAY_MS);
     }
 }

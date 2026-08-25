@@ -312,11 +312,11 @@ def test_play_session_isolation_no_crosstalk(monkeypatch):
 # 6) V2 专项：预充水位 / 自适应 blocksize / 零转换管道 / 欠载细化
 # ---------------------------------------------------------------------------
 def test_adaptive_blocksize_stages():
-    """V2 P1-A：不同采样率落在正确 blocksize 档位。"""
+    """V2+ P1-A：不同采样率落在正确 blocksize 档位（22k 升档 8192 降欠载 P1）。"""
     assert _adaptive_blocksize(8000) == 4096
     assert _adaptive_blocksize(16000) == 4096
-    assert _adaptive_blocksize(22050) == 4096
-    assert _adaptive_blocksize(24000) == 4096
+    assert _adaptive_blocksize(22050) == 8192    # V2+: 22k 升档（欠载 P1）
+    assert _adaptive_blocksize(24000) == 8192
     assert _adaptive_blocksize(32000) == 8192
     assert _adaptive_blocksize(44100) == 8192
     assert _adaptive_blocksize(48000) == 8192
@@ -378,48 +378,59 @@ def test_pre_fill_ms_is_sane():
 
 
 def test_pre_fill_ring_at_play_return(monkeypatch):
-    """V2 P0-B（核心卡顿修复）：play() 返回时 ring 应已填充 ≥PRE_FILL_MS。
+    """V2+ P0-B（核心卡顿修复）：CUR 指针切换（接管声卡回调）前 ring 已预充 PRE_FILL_MS。
 
-    mock 声卡的 RawOutputStream.start() 啥也不做，但 play() 内部会
-    先启动生产者再等 ring 达到 pre_fill_bytes 再创建流。本测试通过
-    player._session.ring.readable() 验证预充水位达标。
+    长流池架构下 play() 立即返回，预充 → 原子 CUR 切换都在生产者线程内异步完成。
+    本测试 monkeypatch _STREAM_POOL.assign 记录切换瞬间的 ring.readable()，
+    验证此时读量 ≥ pre_fill_target 的 80%（首回调 0ms 接管零欠载）。
     """
     from app import audio_play
-    from app.audio_play import _ScorePlayer
+    from app.audio_play import _ScorePlayer, _STREAM_POOL
     monkeypatch.setattr(audio_play.sd, "RawOutputStream", _FakeStream)
     sr = 16000
     notes = [{"midi": 60 + i, "dur": 0.3} for i in range(20)]  # 6s 长曲
     player = _ScorePlayer()
-    # play_score 内部会走 _score_pcm_chunks → _synth_score_cached
-    # 然后 player.play(..., sr=sr)
     from app.audio_play import _score_pcm_chunks
     gen = _score_pcm_chunks(notes, 120.0, sr=sr)
+    # 记录每次 assign 时 session.ring 可读量
+    swap_readables = []
+    orig_assign = _STREAM_POOL.assign
+    def patched_assign(k, sess):
+        if sess is not None:
+            swap_readables.append((k, sess.ring.readable(), sess.pre_fill_bytes))
+        orig_assign(k, sess)
+    monkeypatch.setattr(_STREAM_POOL, "assign", patched_assign)
     player.play(gen, sr=sr)
     try:
         session = player._session
         assert session is not None
-        readable_bytes = session.ring.readable()
-        pre_fill_target = session.pre_fill_bytes
-        # play() 返回时 ring 应有预充量
-        assert readable_bytes >= pre_fill_target * 0.8, (
-            f"play() 返回时 ring 预充不足: "
-            f"got={readable_bytes}  target={pre_fill_target}")
-        # 或者如果整段 PCM 比 pre_fill 还小（极短音序），也应可读=整段
+        # 等 5s 内第一次 CUR 切换（异步）
+        deadline = time.time() + 5.0
+        while time.time() < deadline and not swap_readables:
+            time.sleep(0.01)
+        assert swap_readables, "5s 内未发生 CUR 指针切换（生产者线程未跑或卡住）"
+        k, got, target = swap_readables[0]
+        assert got >= target * 0.8, (
+            f"CUR 切换瞬间 ring 预充不足: got={got}  target={target}")
     finally:
         player.stop()
 
 
 def test_diagnostics_version_v2():
-    """diagnostics() 接口返回 V2 指标结构。"""
+    """diagnostics() 接口返回 V2+ 指标结构（长流池终极架构）。"""
     d = diagnostics()
-    assert d.get("version") == "V2"
+    assert d.get("version") in ("V2", "V2+")
     assert "pre_fill_ms" in d
     assert "ring_duration_sec" in d
     assert "synth_cache_max" in d
+    assert "wave_pcm_cache_entries" in d
+    assert "wave_pcm_cache_max" in d
+    assert "chunk_bytes" in d
     assert "current_session" in d
     sess = d["current_session"]
     assert "underrun_count" in sess
     assert "underrun_bytes" in sess
+    assert "last_session_underruns" in d
 
 
 def test_streaming_first_chunk_latency():
