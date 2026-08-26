@@ -13,7 +13,7 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 use uuid::Uuid;
 
-use super::anomaly::{AnomalyEvent, AnomalySeverity};
+use super::{AnomalyEvent, AnomalySeverity};
 use super::root_cause::RootCauseResult;
 use super::predictive_scaler::ScalingRecommendation;
 
@@ -229,7 +229,7 @@ impl AiopsDashboard {
                 suggestions.push(IntelligentSuggestion {
                     id: Uuid::new_v4().to_string(),
                     category: SuggestionCategory::Operational,
-                    title: "加强故障根因定位能力",
+                    title: "加强故障根因定位能力".to_string(),
                     description: format!("根因分析平均置信度 {:.0}%，建议完善依赖图和监控以提高定位精度", avg_confidence * 100.0),
                     priority: SuggestionPriority::Low,
                     estimated_impact: "提高 MTTR 改善效率".to_string(),
