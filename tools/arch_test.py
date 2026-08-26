@@ -175,8 +175,20 @@ def load_workspace(workspace_root: str) -> Tuple[Dict[str, List[str]], Set[str]]
     binary_crates = set()
     for pkg in data["packages"]:
         name = pkg["name"]
-        all_deps = [d["name"] for d in pkg["dependencies"]]
-        deps[name] = [d for d in all_deps if d in internal and d != name]
+        # 仅保留 normal 依赖，排除 dev-dependencies 和 build-dependencies
+        normal_deps = []
+        for d in pkg["dependencies"]:
+            dep_name = d["name"]
+            # dep_kinds 是列表，每个元素有 kind 字段（normal/dev/build）
+            # 如果所有 kind 都不是 normal，则跳过
+            kinds = d.get("dep_kinds", [])
+            if kinds:
+                is_normal = any(k.get("kind") == "normal" for k in kinds)
+                if not is_normal:
+                    continue
+            if dep_name in internal and dep_name != name:
+                normal_deps.append(dep_name)
+        deps[name] = normal_deps
         # 检测是否有 bin target
         for target in pkg.get("targets", []):
             if "bin" in target.get("kind", []):
