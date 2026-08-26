@@ -10,10 +10,8 @@ description = "Xiaobai · 小白语音桌面助手 Rust 权威核心：错误码
 mox-platform-foundation = { workspace = true }
 # 对齐 mox-system 的 5 角色枚举（Auditor/Member/Expert/Coordinator/MoxAdmin）
 mox-platform-system-core = { workspace = true }
-# 对齐 mox-expert 的 PII 钩子（is_sensitive_leak）—— file_operator PII-SAFE 强制升 L3
-mox-ai-expert-svc = { workspace = true, features = [] }
-# 对齐 operator-core 的 OperatorPipeline 抽象
-mox-flow-operator-core = { workspace = true }
+# PII 检测与 Operator 抽象已下沉到 voice 域自身（src/operator.rs），
+# 不再跨域依赖 ai-expert-svc / flow-operator-core
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }

@@ -3586,8 +3586,6 @@ dependencies = [
  "async-trait",
  "chrono",
  "indexmap 2.14.0",
- "mox-ai-expert-svc",
- "mox-flow-operator-core",
  "mox-platform-foundation",
  "mox-platform-system-core",
  "parking_lot",
