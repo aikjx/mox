@@ -1,0 +1,416 @@
+﻿{
+  "tool": "arch_test",
+  "version": "2.0",
+  "summary": {
+    "total_crates": 54,
+    "total_edges": 114,
+    "p0": 30,
+    "p1": 20,
+    "p2": 0,
+    "total_violations": 50,
+    "passed": false
+  },
+  "violations": [
+    {
+      "rule": "R2",
+      "level": "P1",
+      "crate": "mox-kg-hub-svc",
+      "dependency": "mox-flow-fusion-svc",
+      "description": "mox-kg-hub-svc(kg/svc) → mox-flow-fusion-svc(flow/svc): 跨域 svc 直连",
+      "fix_hint": "在 flow 域创建 sdk 层 crate（如 mox-flow-xxx-sdk），将 mox-flow-fusion-svc 的对外接口提取到 sdk，mox-kg-hub-svc 改为依赖 sdk"
+    },
+    {
+      "rule": "R2",
+      "level": "P1",
+      "crate": "mox-flow-fusion-svc",
+      "dependency": "mox-ai-flow-svc",
+      "description": "mox-flow-fusion-svc(flow/svc) → mox-ai-flow-svc(ai/svc): 跨域 svc 直连",
+      "fix_hint": "在 ai 域创建 sdk 层 crate（如 mox-ai-xxx-sdk），将 mox-ai-flow-svc 的对外接口提取到 sdk，mox-flow-fusion-svc 改为依赖 sdk"
+    },
+    {
+      "rule": "R2",
+      "level": "P1",
+      "crate": "mox-flow-primiflow-svc",
+      "dependency": "mox-ai-flow-svc",
+      "description": "mox-flow-primiflow-svc(flow/svc) → mox-ai-flow-svc(ai/svc): 跨域 svc 直连",
+      "fix_hint": "在 ai 域创建 sdk 层 crate（如 mox-ai-xxx-sdk），将 mox-ai-flow-svc 的对外接口提取到 sdk，mox-flow-primiflow-svc 改为依赖 sdk"
+    },
+    {
+      "rule": "R2",
+      "level": "P1",
+      "crate": "mox-ai-agent-svc",
+      "dependency": "mox-kg-hub-svc",
+      "description": "mox-ai-agent-svc(ai/svc) → mox-kg-hub-svc(kg/svc): 跨域 svc 直连",
+      "fix_hint": "在 kg 域创建 sdk 层 crate（如 mox-kg-xxx-sdk），将 mox-kg-hub-svc 的对外接口提取到 sdk，mox-ai-agent-svc 改为依赖 sdk"
+    },
+    {
+      "rule": "R2",
+      "level": "P1",
+      "crate": "mox-ai-agent-svc",
+      "dependency": "mox-market-template-svc",
+      "description": "mox-ai-agent-svc(ai/svc) → mox-market-template-svc(market/svc): 跨域 svc 直连",
+      "fix_hint": "在 market 域创建 sdk 层 crate（如 mox-market-xxx-sdk），将 mox-market-template-svc 的对外接口提取到 sdk，mox-ai-agent-svc 改为依赖 sdk"
+    },
+    {
+      "rule": "R2",
+      "level": "P1",
+      "crate": "mox-flow-bridge-svc",
+      "dependency": "mox-ai-expert-svc",
+      "description": "mox-flow-bridge-svc(flow/svc) → mox-ai-expert-svc(ai/svc): 跨域 svc 直连",
+      "fix_hint": "在 ai 域创建 sdk 层 crate（如 mox-ai-xxx-sdk），将 mox-ai-expert-svc 的对外接口提取到 sdk，mox-flow-bridge-svc 改为依赖 sdk"
+    },
+    {
+      "rule": "R2",
+      "level": "P1",
+      "crate": "mox-flow-bridge-svc",
+      "dependency": "mox-ai-flow-svc",
+      "description": "mox-flow-bridge-svc(flow/svc) → mox-ai-flow-svc(ai/svc): 跨域 svc 直连",
+      "fix_hint": "在 ai 域创建 sdk 层 crate（如 mox-ai-xxx-sdk），将 mox-ai-flow-svc 的对外接口提取到 sdk，mox-flow-bridge-svc 改为依赖 sdk"
+    },
+    {
+      "rule": "R2",
+      "level": "P1",
+      "crate": "mox-data-catalog-svc",
+      "dependency": "mox-ai-expert-svc",
+      "description": "mox-data-catalog-svc(data/svc) → mox-ai-expert-svc(ai/svc): 跨域 svc 直连",
+      "fix_hint": "在 ai 域创建 sdk 层 crate（如 mox-ai-xxx-sdk），将 mox-ai-expert-svc 的对外接口提取到 sdk，mox-data-catalog-svc 改为依赖 sdk"
+    },
+    {
+      "rule": "R2",
+      "level": "P1",
+      "crate": "mox-data-catalog-svc",
+      "dependency": "mox-ai-flow-svc",
+      "description": "mox-data-catalog-svc(data/svc) → mox-ai-flow-svc(ai/svc): 跨域 svc 直连",
+      "fix_hint": "在 ai 域创建 sdk 层 crate（如 mox-ai-xxx-sdk），将 mox-ai-flow-svc 的对外接口提取到 sdk，mox-data-catalog-svc 改为依赖 sdk"
+    },
+    {
+      "rule": "R2",
+      "level": "P1",
+      "crate": "mox-voice-core-svc",
+      "dependency": "mox-ai-expert-svc",
+      "description": "mox-voice-core-svc(voice/svc) → mox-ai-expert-svc(ai/svc): 跨域 svc 直连",
+      "fix_hint": "在 ai 域创建 sdk 层 crate（如 mox-ai-xxx-sdk），将 mox-ai-expert-svc 的对外接口提取到 sdk，mox-voice-core-svc 改为依赖 sdk"
+    },
+    {
+      "rule": "R2",
+      "level": "P1",
+      "crate": "mox-platform-orchestrator-svc",
+      "dependency": "mox-ai-agent-svc",
+      "description": "mox-platform-orchestrator-svc(platform/svc) → mox-ai-agent-svc(ai/svc): 跨域 svc 直连",
+      "fix_hint": "在 ai 域创建 sdk 层 crate（如 mox-ai-xxx-sdk），将 mox-ai-agent-svc 的对外接口提取到 sdk，mox-platform-orchestrator-svc 改为依赖 sdk"
+    },
+    {
+      "rule": "R2",
+      "level": "P1",
+      "crate": "mox-platform-orchestrator-svc",
+      "dependency": "mox-ai-expert-svc",
+      "description": "mox-platform-orchestrator-svc(platform/svc) → mox-ai-expert-svc(ai/svc): 跨域 svc 直连",
+      "fix_hint": "在 ai 域创建 sdk 层 crate（如 mox-ai-xxx-sdk），将 mox-ai-expert-svc 的对外接口提取到 sdk，mox-platform-orchestrator-svc 改为依赖 sdk"
+    },
+    {
+      "rule": "R2",
+      "level": "P1",
+      "crate": "mox-platform-orchestrator-svc",
+      "dependency": "mox-ai-flow-svc",
+      "description": "mox-platform-orchestrator-svc(platform/svc) → mox-ai-flow-svc(ai/svc): 跨域 svc 直连",
+      "fix_hint": "在 ai 域创建 sdk 层 crate（如 mox-ai-xxx-sdk），将 mox-ai-flow-svc 的对外接口提取到 sdk，mox-platform-orchestrator-svc 改为依赖 sdk"
+    },
+    {
+      "rule": "R2",
+      "level": "P1",
+      "crate": "mox-platform-orchestrator-svc",
+      "dependency": "mox-data-catalog-svc",
+      "description": "mox-platform-orchestrator-svc(platform/svc) → mox-data-catalog-svc(data/svc): 跨域 svc 直连",
+      "fix_hint": "在 data 域创建 sdk 层 crate（如 mox-data-xxx-sdk），将 mox-data-catalog-svc 的对外接口提取到 sdk，mox-platform-orchestrator-svc 改为依赖 sdk"
+    },
+    {
+      "rule": "R2",
+      "level": "P1",
+      "crate": "mox-platform-orchestrator-svc",
+      "dependency": "mox-flow-fusion-svc",
+      "description": "mox-platform-orchestrator-svc(platform/svc) → mox-flow-fusion-svc(flow/svc): 跨域 svc 直连",
+      "fix_hint": "在 flow 域创建 sdk 层 crate（如 mox-flow-xxx-sdk），将 mox-flow-fusion-svc 的对外接口提取到 sdk，mox-platform-orchestrator-svc 改为依赖 sdk"
+    },
+    {
+      "rule": "R2",
+      "level": "P1",
+      "crate": "mox-platform-orchestrator-svc",
+      "dependency": "mox-flow-operator-wasm-svc",
+      "description": "mox-platform-orchestrator-svc(platform/svc) → mox-flow-operator-wasm-svc(flow/svc): 跨域 svc 直连",
+      "fix_hint": "在 flow 域创建 sdk 层 crate（如 mox-flow-xxx-sdk），将 mox-flow-operator-wasm-svc 的对外接口提取到 sdk，mox-platform-orchestrator-svc 改为依赖 sdk"
+    },
+    {
+      "rule": "R2",
+      "level": "P1",
+      "crate": "mox-platform-orchestrator-svc",
+      "dependency": "mox-flow-primiflow-svc",
+      "description": "mox-platform-orchestrator-svc(platform/svc) → mox-flow-primiflow-svc(flow/svc): 跨域 svc 直连",
+      "fix_hint": "在 flow 域创建 sdk 层 crate（如 mox-flow-xxx-sdk），将 mox-flow-primiflow-svc 的对外接口提取到 sdk，mox-platform-orchestrator-svc 改为依赖 sdk"
+    },
+    {
+      "rule": "R2",
+      "level": "P1",
+      "crate": "mox-platform-orchestrator-svc",
+      "dependency": "mox-flow-bridge-svc",
+      "description": "mox-platform-orchestrator-svc(platform/svc) → mox-flow-bridge-svc(flow/svc): 跨域 svc 直连",
+      "fix_hint": "在 flow 域创建 sdk 层 crate（如 mox-flow-xxx-sdk），将 mox-flow-bridge-svc 的对外接口提取到 sdk，mox-platform-orchestrator-svc 改为依赖 sdk"
+    },
+    {
+      "rule": "R2",
+      "level": "P1",
+      "crate": "mox-platform-orchestrator-svc",
+      "dependency": "mox-kg-hub-svc",
+      "description": "mox-platform-orchestrator-svc(platform/svc) → mox-kg-hub-svc(kg/svc): 跨域 svc 直连",
+      "fix_hint": "在 kg 域创建 sdk 层 crate（如 mox-kg-xxx-sdk），将 mox-kg-hub-svc 的对外接口提取到 sdk，mox-platform-orchestrator-svc 改为依赖 sdk"
+    },
+    {
+      "rule": "R2",
+      "level": "P1",
+      "crate": "mox-platform-orchestrator-svc",
+      "dependency": "mox-market-template-svc",
+      "description": "mox-platform-orchestrator-svc(platform/svc) → mox-market-template-svc(market/svc): 跨域 svc 直连",
+      "fix_hint": "在 market 域创建 sdk 层 crate（如 mox-market-xxx-sdk），将 mox-market-template-svc 的对外接口提取到 sdk，mox-platform-orchestrator-svc 改为依赖 sdk"
+    },
+    {
+      "rule": "R3",
+      "level": "P0",
+      "crate": "mox-kg-algo-core",
+      "dependency": "mox-flow-operator-core",
+      "description": "mox-kg-algo-core(kg) → mox-flow-operator-core(flow): 域间逆向依赖（违反 DAG）",
+      "fix_hint": "重新审视职责划分：kg 不应依赖 flow。考虑将共享逻辑下沉到 platform/kg，或通过事件驱动解耦"
+    },
+    {
+      "rule": "R3",
+      "level": "P0",
+      "crate": "mox-kg-hub-svc",
+      "dependency": "mox-flow-fusion-svc",
+      "description": "mox-kg-hub-svc(kg) → mox-flow-fusion-svc(flow): 域间逆向依赖（违反 DAG）",
+      "fix_hint": "重新审视职责划分：kg 不应依赖 flow。考虑将共享逻辑下沉到 platform/kg，或通过事件驱动解耦"
+    },
+    {
+      "rule": "R3",
+      "level": "P0",
+      "crate": "mox-ai-agent-svc",
+      "dependency": "mox-flow-operator-core",
+      "description": "mox-ai-agent-svc(ai) → mox-flow-operator-core(flow): 域间逆向依赖（违反 DAG）",
+      "fix_hint": "重新审视职责划分：ai 不应依赖 flow。考虑将共享逻辑下沉到 platform/kg，或通过事件驱动解耦"
+    },
+    {
+      "rule": "R3",
+      "level": "P0",
+      "crate": "mox-ai-agent-svc",
+      "dependency": "mox-market-template-svc",
+      "description": "mox-ai-agent-svc(ai) → mox-market-template-svc(market): 域间逆向依赖（违反 DAG）",
+      "fix_hint": "重新审视职责划分：ai 不应依赖 market。考虑将共享逻辑下沉到 platform/kg，或通过事件驱动解耦"
+    },
+    {
+      "rule": "R3",
+      "level": "P0",
+      "crate": "mox-data-catalog-svc",
+      "dependency": "mox-ai-expert-svc",
+      "description": "mox-data-catalog-svc(data) → mox-ai-expert-svc(ai): 域间逆向依赖（违反 DAG）",
+      "fix_hint": "重新审视职责划分：data 不应依赖 ai。考虑将共享逻辑下沉到 platform/kg，或通过事件驱动解耦"
+    },
+    {
+      "rule": "R3",
+      "level": "P0",
+      "crate": "mox-data-catalog-svc",
+      "dependency": "mox-ai-flow-svc",
+      "description": "mox-data-catalog-svc(data) → mox-ai-flow-svc(ai): 域间逆向依赖（违反 DAG）",
+      "fix_hint": "重新审视职责划分：data 不应依赖 ai。考虑将共享逻辑下沉到 platform/kg，或通过事件驱动解耦"
+    },
+    {
+      "rule": "R3",
+      "level": "P0",
+      "crate": "mox-cloud-s3-svc",
+      "dependency": "mox-data-standards-core",
+      "description": "mox-cloud-s3-svc(cloud) → mox-data-standards-core(data): 域间逆向依赖（违反 DAG）",
+      "fix_hint": "重新审视职责划分：cloud 不应依赖 data。考虑将共享逻辑下沉到 platform/kg，或通过事件驱动解耦"
+    },
+    {
+      "rule": "R3",
+      "level": "P0",
+      "crate": "mox-voice-core-svc",
+      "dependency": "mox-ai-expert-svc",
+      "description": "mox-voice-core-svc(voice) → mox-ai-expert-svc(ai): 域间逆向依赖（违反 DAG）",
+      "fix_hint": "重新审视职责划分：voice 不应依赖 ai。考虑将共享逻辑下沉到 platform/kg，或通过事件驱动解耦"
+    },
+    {
+      "rule": "R3",
+      "level": "P0",
+      "crate": "mox-voice-core-svc",
+      "dependency": "mox-flow-operator-core",
+      "description": "mox-voice-core-svc(voice) → mox-flow-operator-core(flow): 域间逆向依赖（违反 DAG）",
+      "fix_hint": "重新审视职责划分：voice 不应依赖 flow。考虑将共享逻辑下沉到 platform/kg，或通过事件驱动解耦"
+    },
+    {
+      "rule": "R3",
+      "level": "P0",
+      "crate": "mox-platform-orchestrator-svc",
+      "dependency": "mox-ai-agent-svc",
+      "description": "mox-platform-orchestrator-svc(platform) → mox-ai-agent-svc(ai): 域间逆向依赖（违反 DAG）",
+      "fix_hint": "重新审视职责划分：platform 不应依赖 ai。考虑将共享逻辑下沉到 platform/kg，或通过事件驱动解耦"
+    },
+    {
+      "rule": "R3",
+      "level": "P0",
+      "crate": "mox-platform-orchestrator-svc",
+      "dependency": "mox-ai-expert-svc",
+      "description": "mox-platform-orchestrator-svc(platform) → mox-ai-expert-svc(ai): 域间逆向依赖（违反 DAG）",
+      "fix_hint": "重新审视职责划分：platform 不应依赖 ai。考虑将共享逻辑下沉到 platform/kg，或通过事件驱动解耦"
+    },
+    {
+      "rule": "R3",
+      "level": "P0",
+      "crate": "mox-platform-orchestrator-svc",
+      "dependency": "mox-ai-flow-svc",
+      "description": "mox-platform-orchestrator-svc(platform) → mox-ai-flow-svc(ai): 域间逆向依赖（违反 DAG）",
+      "fix_hint": "重新审视职责划分：platform 不应依赖 ai。考虑将共享逻辑下沉到 platform/kg，或通过事件驱动解耦"
+    },
+    {
+      "rule": "R3",
+      "level": "P0",
+      "crate": "mox-platform-orchestrator-svc",
+      "dependency": "mox-data-catalog-svc",
+      "description": "mox-platform-orchestrator-svc(platform) → mox-data-catalog-svc(data): 域间逆向依赖（违反 DAG）",
+      "fix_hint": "重新审视职责划分：platform 不应依赖 data。考虑将共享逻辑下沉到 platform/kg，或通过事件驱动解耦"
+    },
+    {
+      "rule": "R3",
+      "level": "P0",
+      "crate": "mox-platform-orchestrator-svc",
+      "dependency": "mox-flow-fusion-svc",
+      "description": "mox-platform-orchestrator-svc(platform) → mox-flow-fusion-svc(flow): 域间逆向依赖（违反 DAG）",
+      "fix_hint": "重新审视职责划分：platform 不应依赖 flow。考虑将共享逻辑下沉到 platform/kg，或通过事件驱动解耦"
+    },
+    {
+      "rule": "R3",
+      "level": "P0",
+      "crate": "mox-platform-orchestrator-svc",
+      "dependency": "mox-flow-operator-core",
+      "description": "mox-platform-orchestrator-svc(platform) → mox-flow-operator-core(flow): 域间逆向依赖（违反 DAG）",
+      "fix_hint": "重新审视职责划分：platform 不应依赖 flow。考虑将共享逻辑下沉到 platform/kg，或通过事件驱动解耦"
+    },
+    {
+      "rule": "R3",
+      "level": "P0",
+      "crate": "mox-platform-orchestrator-svc",
+      "dependency": "mox-flow-operator-wasm-svc",
+      "description": "mox-platform-orchestrator-svc(platform) → mox-flow-operator-wasm-svc(flow): 域间逆向依赖（违反 DAG）",
+      "fix_hint": "重新审视职责划分：platform 不应依赖 flow。考虑将共享逻辑下沉到 platform/kg，或通过事件驱动解耦"
+    },
+    {
+      "rule": "R3",
+      "level": "P0",
+      "crate": "mox-platform-orchestrator-svc",
+      "dependency": "mox-flow-optimizer-core",
+      "description": "mox-platform-orchestrator-svc(platform) → mox-flow-optimizer-core(flow): 域间逆向依赖（违反 DAG）",
+      "fix_hint": "重新审视职责划分：platform 不应依赖 flow。考虑将共享逻辑下沉到 platform/kg，或通过事件驱动解耦"
+    },
+    {
+      "rule": "R3",
+      "level": "P0",
+      "crate": "mox-platform-orchestrator-svc",
+      "dependency": "mox-flow-primiflow-svc",
+      "description": "mox-platform-orchestrator-svc(platform) → mox-flow-primiflow-svc(flow): 域间逆向依赖（违反 DAG）",
+      "fix_hint": "重新审视职责划分：platform 不应依赖 flow。考虑将共享逻辑下沉到 platform/kg，或通过事件驱动解耦"
+    },
+    {
+      "rule": "R3",
+      "level": "P0",
+      "crate": "mox-platform-orchestrator-svc",
+      "dependency": "mox-kg-algo-core",
+      "description": "mox-platform-orchestrator-svc(platform) → mox-kg-algo-core(kg): 域间逆向依赖（违反 DAG）",
+      "fix_hint": "重新审视职责划分：platform 不应依赖 kg。考虑将共享逻辑下沉到 platform/kg，或通过事件驱动解耦"
+    },
+    {
+      "rule": "R3",
+      "level": "P0",
+      "crate": "mox-platform-orchestrator-svc",
+      "dependency": "mox-flow-bridge-svc",
+      "description": "mox-platform-orchestrator-svc(platform) → mox-flow-bridge-svc(flow): 域间逆向依赖（违反 DAG）",
+      "fix_hint": "重新审视职责划分：platform 不应依赖 flow。考虑将共享逻辑下沉到 platform/kg，或通过事件驱动解耦"
+    },
+    {
+      "rule": "R3",
+      "level": "P0",
+      "crate": "mox-platform-orchestrator-svc",
+      "dependency": "mox-kg-hub-svc",
+      "description": "mox-platform-orchestrator-svc(platform) → mox-kg-hub-svc(kg): 域间逆向依赖（违反 DAG）",
+      "fix_hint": "重新审视职责划分：platform 不应依赖 kg。考虑将共享逻辑下沉到 platform/kg，或通过事件驱动解耦"
+    },
+    {
+      "rule": "R3",
+      "level": "P0",
+      "crate": "mox-platform-orchestrator-svc",
+      "dependency": "mox-market-template-svc",
+      "description": "mox-platform-orchestrator-svc(platform) → mox-market-template-svc(market): 域间逆向依赖（违反 DAG）",
+      "fix_hint": "重新审视职责划分：platform 不应依赖 market。考虑将共享逻辑下沉到 platform/kg，或通过事件驱动解耦"
+    },
+    {
+      "rule": "R3",
+      "level": "P0",
+      "crate": "mox-data-norm-intent-native",
+      "dependency": "mox-ai-intent-core",
+      "description": "mox-data-norm-intent-native(data) → mox-ai-intent-core(ai): 域间逆向依赖（违反 DAG）",
+      "fix_hint": "重新审视职责划分：data 不应依赖 ai。考虑将共享逻辑下沉到 platform/kg，或通过事件驱动解耦"
+    },
+    {
+      "rule": "R4",
+      "level": "P0",
+      "crate": "mox-platform-gateway-svc",
+      "dependency": "mox-cloud-volume-svc",
+      "description": "mox-platform-gateway-svc(gateway) → mox-cloud-volume-svc(cloud/svc): gateway 依赖业务逻辑",
+      "fix_hint": "将业务逻辑从 gateway 移除，改为通过 cloud 域的 sdk 调用，或在对应域的 api 层注册路由"
+    },
+    {
+      "rule": "R4",
+      "level": "P0",
+      "crate": "mox-platform-gateway-svc",
+      "dependency": "mox-data-compliance-svc",
+      "description": "mox-platform-gateway-svc(gateway) → mox-data-compliance-svc(data/svc): gateway 依赖业务逻辑",
+      "fix_hint": "将业务逻辑从 gateway 移除，改为通过 data 域的 sdk 调用，或在对应域的 api 层注册路由"
+    },
+    {
+      "rule": "R4",
+      "level": "P0",
+      "crate": "mox-platform-gateway-svc",
+      "dependency": "mox-data-etl-svc",
+      "description": "mox-platform-gateway-svc(gateway) → mox-data-etl-svc(data/svc): gateway 依赖业务逻辑",
+      "fix_hint": "将业务逻辑从 gateway 移除，改为通过 data 域的 sdk 调用，或在对应域的 api 层注册路由"
+    },
+    {
+      "rule": "R4",
+      "level": "P0",
+      "crate": "mox-platform-gateway-svc",
+      "dependency": "mox-data-plane-svc",
+      "description": "mox-platform-gateway-svc(gateway) → mox-data-plane-svc(data/svc): gateway 依赖业务逻辑",
+      "fix_hint": "将业务逻辑从 gateway 移除，改为通过 data 域的 sdk 调用，或在对应域的 api 层注册路由"
+    },
+    {
+      "rule": "R4",
+      "level": "P0",
+      "crate": "mox-platform-gateway-svc",
+      "dependency": "mox-data-standards-core",
+      "description": "mox-platform-gateway-svc(gateway) → mox-data-standards-core(data/core): gateway 依赖业务逻辑",
+      "fix_hint": "将业务逻辑从 gateway 移除，改为通过 data 域的 sdk 调用，或在对应域的 api 层注册路由"
+    },
+    {
+      "rule": "R4",
+      "level": "P0",
+      "crate": "mox-platform-gateway-svc",
+      "dependency": "mox-kg-fusion-svc",
+      "description": "mox-platform-gateway-svc(gateway) → mox-kg-fusion-svc(kg/svc): gateway 依赖业务逻辑",
+      "fix_hint": "将业务逻辑从 gateway 移除，改为通过 kg 域的 sdk 调用，或在对应域的 api 层注册路由"
+    },
+    {
+      "rule": "R4",
+      "level": "P0",
+      "crate": "mox-platform-gateway-svc",
+      "dependency": "mox-kg-service-svc",
+      "description": "mox-platform-gateway-svc(gateway) → mox-kg-service-svc(kg/svc): gateway 依赖业务逻辑",
+      "fix_hint": "将业务逻辑从 gateway 移除，改为通过 kg 域的 sdk 调用，或在对应域的 api 层注册路由"
+    }
+  ],
+  "unknown_crates": []
+}
