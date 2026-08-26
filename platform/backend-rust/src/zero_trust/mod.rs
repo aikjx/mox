@@ -60,8 +60,8 @@ pub struct ZeroTrustSession {
     pub spiffe_id: Option<String>,
     pub client_cert_fingerprint: Option<String>,
     pub device_id: Option<String>,
-    pub created_at: Instant,
-    pub last_activity: Instant,
+    pub created_at: String,
+    pub last_activity: String,
     pub risk_score: f64,
     pub permissions: Vec<String>,
     pub auth_methods: Vec<String>,
@@ -240,21 +240,22 @@ impl ZeroTrustMiddleware {
         for session in self.sessions.iter() {
             if session.subject == subject {
                 let mut s = session.clone();
-                s.last_activity = Instant::now();
+                s.last_activity = chrono::Utc::now().to_rfc3339();
                 self.sessions.insert(s.id.clone(), s.clone());
                 return s;
             }
         }
 
         // 创建新会话
+        let now = chrono::Utc::now().to_rfc3339();
         let session = ZeroTrustSession {
             id: Uuid::new_v4().to_string(),
             subject: subject.to_string(),
             spiffe_id,
             client_cert_fingerprint: request.client_cert_fingerprint.clone(),
             device_id: request.device_id.clone(),
-            created_at: Instant::now(),
-            last_activity: Instant::now(),
+            created_at: now.clone(),
+            last_activity: now,
             risk_score: 0.0,
             permissions: request.permissions.clone(),
             auth_methods: request.auth_methods.clone(),

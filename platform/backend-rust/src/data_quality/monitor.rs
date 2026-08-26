@@ -136,7 +136,8 @@ impl QualityMonitor {
             history.push(entry);
             // 保留最近 10000 条
             if history.len() > 10000 {
-                history.drain(0..history.len() - 10000);
+                let drain_count = history.len() - 10000;
+                history.drain(0..drain_count);
             }
         }
 

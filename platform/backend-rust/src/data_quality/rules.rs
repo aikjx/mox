@@ -14,7 +14,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use uuid::Uuid;
 
 /// 质量维度
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum QualityDimension {
     Completeness,
     Accuracy,
@@ -144,7 +144,7 @@ impl QualityRuleEngine {
         let id = rule.id.clone();
         let asset_id = rule.asset_id.clone();
         self.rules.insert(id.clone(), rule);
-        self.asset_rules.entry(asset_id).or_default().push(id);
+        self.asset_rules.entry(asset_id).or_default().push(id.clone());
         id
     }
 

@@ -259,7 +259,7 @@ impl SpiffeIdentity {
 
     /// 启用/禁用信任域
     pub fn set_trust_domain_enabled(&self, name: &str, enabled: bool) -> bool {
-        if let Some(domains) = self.trust_domains.write().as_mut() {
+        if let Ok(mut domains) = self.trust_domains.write() {
             if let Some(domain) = domains.iter_mut().find(|d| d.name == name) {
                 domain.enabled = enabled;
                 return true;
