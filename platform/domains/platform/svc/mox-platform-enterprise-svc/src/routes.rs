@@ -1,14 +1,7 @@
-//! Axum 路由定义：/health、/auth、/entities/define、/data/*
-//!
-//! 所有业务路由统一通过 Orchestrator，保证：
-//! - 每个写操作都有审计链
-//! - 版本计数自增
-//! - 指标（成功率/失败率）可观测
-
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
@@ -17,7 +10,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::app_state::AppState;
 use mox_platform_meta_core::{EnumOption, FieldDef, FieldType};
-use mox_platform_orchestrator_core::Orchestrator;
 
 pub fn health_routes() -> Router<Arc<AppState>> {
     Router::new()
@@ -50,35 +42,47 @@ async fn login_handler(
     State(state): State<Arc<AppState>>,
     Json(req): Json<LoginRequest>,
 ) -> Result<Json<LoginResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let tenant = state
-        .iam
-        .find_tenant_by_code(&req.tenant_code)
-        .ok_or_else(|| unauthorized("tenant not found"))?;
-    let user = state
-        .iam
-        .find_user_by_tenant_username(&tenant.id, &req.username)
-        .ok_or_else(|| unauthorized("user not found"))?;
+    let iam = state.iam.clone();
+    let tenant_code = req.tenant_code.clone();
+    let username = req.username.clone();
 
-    let roles = state.iam.user_roles(&user.id);
+    let (tenant, user, roles) = tokio::task::spawn_blocking(move || -> Result<_, anyhow::Error> {
+        let tenant = iam.find_tenant_by_code(&tenant_code)
+            .ok_or_else(|| anyhow::anyhow!("tenant not found"))?;
+        let user = iam.find_user_by_tenant_username(&tenant.tenant_id, &username)
+            .ok_or_else(|| anyhow::anyhow!("user not found"))?;
+        let roles = iam.user_roles(&user.user_id);
+        Ok((tenant, user, roles))
+    })
+    .await
+    .map_err(|e| internal_err(format!("join error: {}", e)))?
+    .map_err(|e| unauthorized(&e.to_string()))?;
+
     let role_codes: Vec<String> = roles.iter().map(|r| r.code.clone()).collect();
     let perms: Vec<String> = roles.iter().flat_map(|r| r.permissions.clone()).collect();
 
     let secret = std::env::var("AUTH_SECRET").unwrap_or_else(|_| "enterprise-dev-secret-change-me".to_string());
     let token = mox_framework::auth::generate_token(
         &secret,
-        &user.id,
-        &tenant.id,
+        &user.user_id,
+        &tenant.tenant_id,
         role_codes.clone(),
         perms,
         3600 * 24,
     )
     .map_err(|e| internal_err(e.to_string()))?;
 
+    let display_name = user
+        .nickname
+        .clone()
+        .or(user.real_name.clone())
+        .unwrap_or_else(|| user.username.clone());
+
     Ok(Json(LoginResponse {
         token,
-        user_id: user.id,
-        tenant_id: tenant.id,
-        display_name: user.display_name,
+        user_id: user.user_id,
+        tenant_id: tenant.tenant_id,
+        display_name,
         roles: role_codes,
     }))
 }
@@ -123,7 +127,7 @@ pub struct DefineEntityRequest {
 #[derive(Debug, Serialize)]
 pub struct DefineEntityResponse {
     pub entity_id: String,
-    pub slot_map: BTreeMap<String, String>,
+    pub slot_map: HashMap<String, String>,
 }
 
 fn parse_field_type(t: &str) -> FieldType {
@@ -168,12 +172,16 @@ async fn define_entity_handler(
         })
         .collect();
 
-    let (entity_id, slot_map) = Orchestrator::execute_with_tokio(move || {
-        state
-            .meta
-            .define_entity(req.tenant_id, req.entity_code, req.entity_name, fields)
+    let meta = state.meta.clone();
+    let tenant_id = req.tenant_id.clone();
+    let entity_code = req.entity_code.clone();
+    let entity_name = req.entity_name.clone();
+
+    let (entity_id, slot_map) = tokio::task::spawn_blocking(move || {
+        meta.define_entity(tenant_id, entity_code, entity_name, fields)
     })
     .await
+    .map_err(|e| internal_err(format!("join error: {}", e)))?
     .map_err(|e| internal_err(e.to_string()))?;
 
     Ok(Json(DefineEntityResponse { entity_id, slot_map }))
@@ -198,10 +206,11 @@ async fn create_data_handler(
     let entity_code_cloned = entity_code.clone();
     let tenant_id = req.tenant_id.clone();
     let data = req.data.clone();
-    let rec = Orchestrator::execute_with_tokio(move || {
+    let rec = tokio::task::spawn_blocking(move || {
         orch.create_sync(&entity_code_cloned, tenant_id, data, &actor)
     })
     .await
+    .map_err(|e| internal_err(format!("join error: {}", e)))?
     .map_err(|e| internal_err(e.to_string()))?;
 
     Ok(Json(serde_json::json!({
@@ -222,8 +231,11 @@ async fn update_data_handler(
     let actor = req.actor.clone().unwrap_or_else(|| "sys_actor".to_string());
     let biz_id_cloned = biz_id.clone();
     let patch = req.data.clone();
-    let rec = Orchestrator::execute_with_tokio(move || orch.update_sync(&biz_id_cloned, patch, &actor))
+    let rec = tokio::task::spawn_blocking(move || {
+        orch.update_sync(&biz_id_cloned, patch, &actor)
+    })
         .await
+        .map_err(|e| internal_err(format!("join error: {}", e)))?
         .map_err(|e| internal_err(e.to_string()))?;
 
     Ok(Json(serde_json::json!({
@@ -246,8 +258,11 @@ async fn delete_data_handler(
         .and_then(|r| r.actor.clone())
         .unwrap_or_else(|| "sys_actor".to_string());
     let biz_id_cloned = biz_id.clone();
-    Orchestrator::execute_with_tokio(move || orch.delete_sync(&biz_id_cloned, &actor))
+    tokio::task::spawn_blocking(move || {
+        orch.delete_sync(&biz_id_cloned, &actor)
+    })
         .await
+        .map_err(|e| internal_err(format!("join error: {}", e)))?
         .map_err(|e| internal_err(e.to_string()))?;
 
     Ok(Json(serde_json::json!({
@@ -263,13 +278,24 @@ async fn get_data_handler(
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
     let orch = state.orch.clone();
     let biz_id_cloned = biz_id.clone();
-    let rec = Orchestrator::execute_with_tokio(move || orch.get_sync(&biz_id_cloned))
+    let rec = tokio::task::spawn_blocking(move || -> Result<_, anyhow::Error> {
+        let rec = orch.get_sync(&biz_id_cloned)?;
+        Ok(rec)
+    })
         .await
+        .map_err(|e| internal_err(format!("join error: {}", e)))?
         .map_err(|e| internal_err(e.to_string()))?
         .ok_or_else(|| not_found("biz not found"))?;
 
-    let version_count = state.orch.version_count_sync(&biz_id);
-    let audit_chain = state.orch.audit_chain_sync(&biz_id);
+    let orch2 = state.orch.clone();
+    let biz_id_for_count = biz_id.clone();
+    let (version_count, audit_chain) = tokio::task::spawn_blocking(move || {
+        let vc = orch2.version_count_sync(&biz_id_for_count);
+        let ac = orch2.audit_chain_sync(&biz_id_for_count);
+        (vc, ac)
+    })
+    .await
+    .map_err(|e| internal_err(format!("join error: {}", e)))?;
 
     Ok(Json(serde_json::json!({
         "success": true,
@@ -282,26 +308,23 @@ async fn get_data_handler(
     })))
 }
 
-#[derive(Debug, Deserialize)]
-pub struct ListQuery {
-    pub tenant_id: Option<String>,
-}
-
 async fn list_data_handler(
     State(state): State<Arc<AppState>>,
     Path(entity_code): Path<String>,
-    axum::extract::Query(q): axum::extract::Query<ListQuery>,
+    Query(q): Query<HashMap<String, String>>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
     let orch = state.orch.clone();
     let entity_code_cloned = entity_code.clone();
-    let tid = q.tenant_id.clone();
-    let items = Orchestrator::execute_with_tokio(move || {
+    let tid = q.get("tenant_id").cloned();
+    let items = tokio::task::spawn_blocking(move || {
         orch.list_sync(&entity_code_cloned, tid.as_deref())
     })
     .await
+    .map_err(|e| internal_err(format!("join error: {}", e)))?
     .map_err(|e| internal_err(e.to_string()))?;
 
-    let metrics = state.orch.metrics.snapshot();
+    let metrics_total = state.orch.metrics.total();
+    let metrics_failed = state.orch.metrics.failed();
     let fail_rate = state.orch.metrics.fail_rate();
 
     Ok(Json(serde_json::json!({
@@ -309,7 +332,10 @@ async fn list_data_handler(
         "total": items.len(),
         "items": items,
         "entity_code": entity_code,
-        "metrics": metrics,
+        "metrics": {
+            "total_calls": metrics_total,
+            "failed_calls": metrics_failed,
+        },
         "failRate": fail_rate
     })))
 }
@@ -322,7 +348,7 @@ pub fn api_routes() -> Router<Arc<AppState>> {
         .route("/data/:entity_code/update/:biz_id", post(update_data_handler))
         .route("/data/:entity_code/delete/:biz_id", post(delete_data_handler))
         .route("/data/:entity_code/get/:biz_id", get(get_data_handler))
-        .route("/data/list/:entity_code", get(list_data_handler))
+        .route("/data/:entity_code/list", get(list_data_handler))
 }
 
 fn unauthorized(msg: &str) -> (StatusCode, Json<serde_json::Value>) {

@@ -1,4 +1,4 @@
-use std::sync::Mutex;
+use parking_lot::Mutex;
 
 pub struct TxManager {
     pub conn: std::sync::Arc<Mutex<rusqlite::Connection>>,
@@ -14,13 +14,13 @@ impl TxManager {
     }
 
     pub fn run<R>(&self, f: impl FnOnce() -> anyhow::Result<R>) -> anyhow::Result<R> {
-        let mut depth = self.depth.lock().unwrap();
+        let mut depth = self.depth.lock();
         let is_top = *depth == 0;
         let sp_name = format!("sp_{}", depth);
         *depth += 1;
         drop(depth);
 
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
 
         if is_top {
             conn.execute_batch("BEGIN IMMEDIATE")
@@ -33,12 +33,12 @@ impl TxManager {
 
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(f));
 
-        let mut depth = self.depth.lock().unwrap();
+        let mut depth = self.depth.lock();
         *depth -= 1;
         let is_top_after = *depth == 0;
         drop(depth);
 
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
 
         match result {
             Ok(Ok(r)) => {

@@ -254,6 +254,7 @@ dependencies = [
  "matchit",
  "memchr",
  "mime",
+ "multer",
  "percent-encoding",
  "pin-project-lite",
  "rustversion",
@@ -3145,6 +3146,7 @@ dependencies = [
  "metrics",
  "once_cell",
  "opentelemetry 0.24.0",
+ "parking_lot",
  "serde",
  "serde_json",
  "sha2",
@@ -3336,11 +3338,42 @@ dependencies = [
  "hex",
  "mox-platform-iam-core",
  "mox-platform-meta-core",
+ "parking_lot",
  "rusqlite",
  "serde",
  "serde_json",
  "sha2",
  "thiserror 1.0.69",
+ "uuid",
+]
+
+[[package]]
+name = "mox-platform-enterprise-svc"
+version = "1.0.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "chrono",
+ "dashmap 6.2.1",
+ "hmac",
+ "jsonwebtoken",
+ "mox-framework",
+ "mox-platform-datastore-core",
+ "mox-platform-iam-core",
+ "mox-platform-meta-core",
+ "mox-platform-orchestrator-core",
+ "once_cell",
+ "parking_lot",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror 1.0.69",
+ "tokio",
+ "tower 0.5.3",
+ "tower-http 0.5.2",
+ "tracing",
+ "tracing-subscriber",
  "uuid",
 ]
 
@@ -3390,6 +3423,7 @@ dependencies = [
  "dashmap 6.2.1",
  "hex",
  "hmac",
+ "parking_lot",
  "rusqlite",
  "serde",
  "serde_json",
@@ -3408,6 +3442,7 @@ dependencies = [
  "hex",
  "hmac",
  "once_cell",
+ "parking_lot",
  "regex",
  "rusqlite",
  "serde",
@@ -3426,6 +3461,7 @@ dependencies = [
  "dashmap 5.5.3",
  "mox-platform-datastore-core",
  "parking_lot",
+ "rusqlite",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -3675,6 +3711,23 @@ checksum = "bb85c154ba489f01b25c0d36ae69a87e4a1c73a72631fc6c0eb6dde34a73e44b"
 dependencies = [
  "num-traits",
  "pxfm",
+]
+
+[[package]]
+name = "multer"
+version = "3.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "83e87776546dc87511aa5ee218730c92b666d7264ab6ed41f9d215af9cd5224b"
+dependencies = [
+ "bytes",
+ "encoding_rs",
+ "futures-util",
+ "http",
+ "httparse",
+ "memchr",
+ "mime",
+ "spin",
+ "version_check",
 ]
 
 [[package]]

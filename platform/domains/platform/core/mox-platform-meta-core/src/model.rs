@@ -2,6 +2,47 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct EnumOption {
+    pub value: String,
+    pub label: String,
+    #[serde(default)]
+    pub color: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub enum FieldType {
+    String,
+    Int,
+    Decimal,
+    Boolean,
+    DateTime,
+    Enum,
+    Text,
+    Json,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct FieldDef {
+    pub code: String,
+    pub name: String,
+    pub r#type: FieldType,
+    #[serde(default)]
+    pub required: bool,
+    #[serde(default)]
+    pub indexed: bool,
+    #[serde(default)]
+    pub searchable: bool,
+    #[serde(default)]
+    pub sortable: bool,
+    #[serde(default)]
+    pub filterable: bool,
+    #[serde(default)]
+    pub ui_component: Option<String>,
+    #[serde(default)]
+    pub options_inline: Option<Vec<EnumOption>>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MetaIndustryPackage {
     pub package_id: String,
     pub package_code: String,

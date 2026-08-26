@@ -1,5 +1,6 @@
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use parking_lot::Mutex;
 use dashmap::DashMap;
 use rusqlite::{params, OptionalExtension, Row};
 use serde_json::{Map, Value};
@@ -47,15 +48,15 @@ impl UniversalBizDAO {
     }
 
     pub fn init_schema(&self) -> anyhow::Result<()> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         conn.execute_batch(DDL_SQL)
             .map_err(|e| anyhow::anyhow!("Init schema failed: {}", e))?;
         Ok(())
     }
 
-    fn get_cached_entity<R: MetaRepository>(
+    fn get_cached_entity(
         &self,
-        meta_repo: &R,
+        meta_repo: &dyn MetaRepository,
         tenant_id: &str,
         entity_code: &str,
     ) -> anyhow::Result<EntityWithFields> {
@@ -160,10 +161,10 @@ impl UniversalBizDAO {
         ToSqlOutput::Owned(RV::Null)
     }
 
-    pub fn create<R: MetaRepository, I: IamRepository>(
+    pub fn create(
         &self,
-        meta_repo: &R,
-        _iam_repo: &I,
+        meta_repo: &dyn MetaRepository,
+        _iam_repo: &dyn IamRepository,
         tenant_id: &str,
         entity_code: &str,
         user_id: &str,
@@ -273,7 +274,7 @@ impl UniversalBizDAO {
             param_placeholders.join(",")
         );
 
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         let refs: Vec<&dyn rusqlite::ToSql> = values.iter().map(|v| v as &dyn rusqlite::ToSql).collect();
         conn.execute(&sql, refs.as_slice())
             .map_err(|e| anyhow::anyhow!("INSERT biz_data failed: {}", e))?;
@@ -311,15 +312,15 @@ impl UniversalBizDAO {
         Ok((biz_id, biz_code, version))
     }
 
-    pub fn get<R: MetaRepository>(
+    pub fn get(
         &self,
-        meta_repo: &R,
+        meta_repo: &dyn MetaRepository,
         tenant_id: &str,
         entity_code: &str,
         biz_id: &str,
     ) -> anyhow::Result<Option<Value>> {
         let entity = self.get_cached_entity(meta_repo, tenant_id, entity_code)?;
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         let row = conn.query_row(
             "SELECT * FROM biz_data WHERE biz_id = ?1 AND tenant_id = ?2 AND deleted_at IS NULL",
             params![biz_id, tenant_id],
@@ -373,9 +374,9 @@ impl UniversalBizDAO {
         Ok(Value::Object(result))
     }
 
-    pub fn list<R: MetaRepository>(
+    pub fn list(
         &self,
-        meta_repo: &R,
+        meta_repo: &dyn MetaRepository,
         tenant_id: &str,
         entity_code: &str,
         filters: Vec<Filter>,
@@ -462,7 +463,7 @@ impl UniversalBizDAO {
         let limit = page_size.max(1);
         let offset = (page.max(1) - 1) * limit;
 
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         let total_sql = format!("SELECT COUNT(*) FROM biz_data {}", where_sql);
         let refs: Vec<&dyn rusqlite::ToSql> = args.iter().map(|v| v as &dyn rusqlite::ToSql).collect();
         let total: i64 = conn.query_row(&total_sql, refs.as_slice(), |r| r.get(0))
@@ -493,9 +494,9 @@ impl UniversalBizDAO {
         })
     }
 
-    pub fn update<R: MetaRepository>(
+    pub fn update(
         &self,
-        meta_repo: &R,
+        meta_repo: &dyn MetaRepository,
         tenant_id: &str,
         entity_code: &str,
         biz_id: &str,
@@ -506,7 +507,7 @@ impl UniversalBizDAO {
         let alloc = FieldSlotAllocator::allocate(entity_code, &entity.fields);
         let now = Utc::now().to_rfc3339();
 
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
 
         let (old_json, old_version, prev_hash): (Option<String>, i64, Option<String>) = conn.query_row(
             "SELECT dynamic_data, version, curr_hash FROM biz_data WHERE biz_id = ?1 AND tenant_id = ?2 AND deleted_at IS NULL",
@@ -635,7 +636,7 @@ impl UniversalBizDAO {
         change_note: Option<&str>,
     ) -> anyhow::Result<()> {
         let now = Utc::now().to_rfc3339();
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
 
         let (entity_id, version, prev_hash): (Option<String>, i64, Option<String>) = conn.query_row(
             "SELECT entity_id, version, curr_hash FROM biz_data WHERE biz_id = ?1 AND tenant_id = ?2 AND deleted_at IS NULL",

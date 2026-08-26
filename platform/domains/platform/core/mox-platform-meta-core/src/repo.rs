@@ -1,9 +1,11 @@
 use crate::model::*;
 use anyhow::{Context, Result};
 use chrono::Utc;
+use parking_lot::Mutex;
 use regex::Regex;
 use rusqlite::{params, Connection};
 use std::collections::HashMap;
+use std::sync::Arc;
 use uuid::Uuid;
 
 pub static DDL_SQL: &str = include_str!("ddl.sql");
@@ -24,6 +26,29 @@ fn field_weight(f: &FieldSpec) -> u32 {
     if f.is_filterable { w += 2; }
     if f.is_sortable { w += 1; }
     w
+}
+
+fn field_weight_def(f: &FieldDef) -> u32 {
+    let mut w: u32 = 0;
+    if f.required { w += 8; }
+    if f.indexed { w += 16; }
+    if f.searchable { w += 4; }
+    if f.filterable { w += 2; }
+    if f.sortable { w += 1; }
+    w
+}
+
+fn field_type_to_string(t: &FieldType) -> String {
+    match t {
+        FieldType::String => "string",
+        FieldType::Int => "integer",
+        FieldType::Decimal => "decimal",
+        FieldType::Boolean => "boolean",
+        FieldType::DateTime => "datetime",
+        FieldType::Enum => "enum",
+        FieldType::Text => "text",
+        FieldType::Json => "json",
+    }.to_string()
 }
 
 fn is_string_type(t: &str) -> bool {
@@ -55,23 +80,25 @@ fn is_bool_type(t: &str) -> bool {
     matches!(t, "boolean" | "toggle")
 }
 
+#[derive(Clone)]
 pub struct MetaRepository {
-    pub conn: Connection,
+    pub conn: Arc<Mutex<Connection>>,
 }
 
 impl MetaRepository {
-    pub fn new(conn: Connection) -> Self {
+    pub fn new(conn: Arc<Mutex<Connection>>) -> Self {
         Self { conn }
     }
 
     pub fn init_schema(&self) -> Result<()> {
+        let conn = self.conn.lock();
         let stmts: Vec<&str> = DDL_SQL
             .split(';')
             .map(|s| s.trim())
             .filter(|s| !s.is_empty())
             .collect();
         for stmt in stmts {
-            let res = self.conn.execute_batch(stmt);
+            let res = conn.execute_batch(stmt);
             if let Err(e) = res {
                 let msg = e.to_string().to_lowercase();
                 if msg.contains("already exists") || msg.contains("duplicate column") {
@@ -83,7 +110,7 @@ impl MetaRepository {
         Ok(())
     }
 
-    pub fn seed_industry(&self) -> Result<()> {
+    pub fn seed_industry(&self, _industries: &[&str]) -> Result<()> {
         let industries = [
             ("common", "通用基础包"),
             ("finance", "金融业务包"),
@@ -94,6 +121,7 @@ impl MetaRepository {
             ("retail", "智慧零售包"),
         ];
         let ts = now_iso();
+        let conn = self.conn.lock();
         for (code, name) in industries.iter() {
             let pkg = MetaIndustryPackage {
                 package_id: new_id(),
@@ -114,13 +142,13 @@ impl MetaRepository {
                 created_at: ts.clone(),
                 updated_at: ts.clone(),
             };
-            let _ = self.insert_industry_package(&pkg);
+            let _ = Self::insert_industry_package_inner(&conn, &pkg);
         }
         Ok(())
     }
 
-    fn insert_industry_package(&self, p: &MetaIndustryPackage) -> Result<()> {
-        self.conn.execute(
+    fn insert_industry_package_inner(conn: &Connection, p: &MetaIndustryPackage) -> Result<()> {
+        conn.execute(
             "INSERT INTO meta_industry_package (package_id,package_code,package_name,package_version,description,icon,banner,features,seed_entities,seed_workflows,seed_rules,compliance,is_official,status,metadata,created_at,updated_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17)",
             params![
                 p.package_id, p.package_code, p.package_name, p.package_version,
@@ -132,28 +160,33 @@ impl MetaRepository {
         Ok(())
     }
 
+    fn insert_industry_package(&self, p: &MetaIndustryPackage) -> Result<()> {
+        let conn = self.conn.lock();
+        Self::insert_industry_package_inner(&conn, p)
+    }
+
     pub fn define_entity(
         &self,
-        tenant_id: &str,
-        entity_code: &str,
-        entity_name: &str,
-        entity_category: Option<&str>,
-        fields: Vec<FieldSpec>,
+        tenant_id: Option<String>,
+        entity_code: String,
+        entity_name: String,
+        fields: Vec<FieldDef>,
     ) -> Result<(String, HashMap<String, String>)> {
+        let tenant_id = tenant_id.unwrap_or_else(|| "default".to_string());
         let ts = now_iso();
         let entity_id = new_id();
 
         let entity = MetaEntity {
             entity_id: entity_id.clone(),
-            tenant_id: tenant_id.to_string(),
-            entity_code: entity_code.to_string(),
-            entity_name: entity_name.to_string(),
+            tenant_id: tenant_id.clone(),
+            entity_code: entity_code.clone(),
+            entity_name: entity_name.clone(),
             entity_plural: None,
             table_name: None,
             description: None,
             icon: None,
             color: None,
-            entity_category: entity_category.unwrap_or("master").to_string(),
+            entity_category: "master".to_string(),
             storage_mode: "universal".to_string(),
             shard_key: None,
             history_strategy: "snapshot".to_string(),
@@ -176,7 +209,24 @@ impl MetaRepository {
             version: 1,
             _hash: None,
         };
-        self.conn.execute(
+
+        let field_specs: Vec<FieldSpec> = fields
+            .iter()
+            .map(|f| FieldSpec {
+                field_code: f.code.clone(),
+                field_name: f.name.clone(),
+                field_type: field_type_to_string(&f.r#type),
+                is_required: f.required,
+                is_indexed: f.indexed,
+                is_searchable: f.searchable,
+                is_sortable: f.sortable,
+                is_filterable: f.filterable,
+                description: None,
+            })
+            .collect();
+
+        let conn = self.conn.lock();
+        conn.execute(
             "INSERT INTO meta_entity (entity_id,tenant_id,entity_code,entity_name,entity_plural,table_name,description,icon,color,entity_category,storage_mode,shard_key,history_strategy,extends_entity_id,mixin_ids,tags,list_view_id,form_view_id,detail_view_id,workflow_id,is_system,status,metadata,created_at,updated_at,created_by,updated_by,deleted_at,deleted_by,version,_hash) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22,?23,?24,?25,?26,?27,?28,?29,?30,?31)",
             params![
                 entity.entity_id, entity.tenant_id, entity.entity_code, entity.entity_name,
@@ -190,11 +240,11 @@ impl MetaRepository {
             ],
         )?;
 
-        let mut indexed: Vec<(usize, &FieldSpec)> =
+        let mut indexed: Vec<(usize, &FieldDef)> =
             fields.iter().enumerate().collect();
         indexed.sort_by(|a, b| {
-            let wb = field_weight(b.1);
-            let wa = field_weight(a.1);
+            let wb = field_weight_def(b.1);
+            let wa = field_weight_def(a.1);
             wb.cmp(&wa).then(a.0.cmp(&b.0))
         });
 
@@ -204,52 +254,57 @@ impl MetaRepository {
         let mut date_slots: Vec<String> = (1..=3).map(|i| format!("ext_date_{:02}", i)).collect();
 
         let mut slot_map: HashMap<String, String> = HashMap::new();
-        let mut ordered_fields: Vec<(usize, FieldSpec)> = fields
+        let mut ordered_fields: Vec<(usize, FieldDef)> = fields
             .iter()
             .cloned()
             .enumerate()
             .map(|(i, f)| (i, f))
             .collect();
         ordered_fields.sort_by(|a, b| {
-            let wb = field_weight(&b.1);
-            let wa = field_weight(&a.1);
+            let wb = field_weight_def(&b.1);
+            let wa = field_weight_def(&a.1);
             wb.cmp(&wa).then(a.0.cmp(&b.0))
         });
 
         for (_, f) in ordered_fields.iter() {
-            let slot = if is_string_type(&f.field_type) {
+            let ft = field_type_to_string(&f.r#type);
+            let slot = if is_string_type(&ft) {
                 str_slots.pop()
-            } else if is_int_type(&f.field_type) || is_bool_type(&f.field_type) {
+            } else if is_int_type(&ft) || is_bool_type(&ft) {
                 int_slots.pop()
-            } else if is_decimal_type(&f.field_type) {
+            } else if is_decimal_type(&ft) {
                 dec_slots.pop()
-            } else if is_date_type(&f.field_type) {
+            } else if is_date_type(&ft) {
                 date_slots.pop()
             } else {
                 None
             };
             if let Some(s) = slot {
-                slot_map.insert(f.field_code.clone(), s);
+                slot_map.insert(f.code.clone(), s);
             } else {
-                slot_map.insert(f.field_code.clone(), "json_data".to_string());
+                slot_map.insert(f.code.clone(), "json_data".to_string());
             }
         }
 
         for (idx, f) in fields.iter().enumerate() {
-            let slot = slot_map.get(&f.field_code).cloned().unwrap_or_else(|| "json_data".to_string());
+            let ft = field_type_to_string(&f.r#type);
+            let slot = slot_map.get(&f.code).cloned().unwrap_or_else(|| "json_data".to_string());
+            let options_inline_str = f.options_inline.as_ref().and_then(|opts| {
+                serde_json::to_string(opts).ok()
+            });
             let mf = MetaField {
                 field_id: new_id(),
-                tenant_id: tenant_id.to_string(),
+                tenant_id: tenant_id.clone(),
                 entity_id: entity_id.clone(),
-                field_code: f.field_code.clone(),
-                field_name: f.field_name.clone(),
-                field_type: f.field_type.clone(),
-                is_required: if f.is_required { 1 } else { 0 },
+                field_code: f.code.clone(),
+                field_name: f.name.clone(),
+                field_type: ft,
+                is_required: if f.required { 1 } else { 0 },
                 is_unique: 0,
-                is_indexed: if f.is_indexed { 1 } else { 0 },
-                is_searchable: if f.is_searchable { 1 } else { 0 },
-                is_sortable: if f.is_sortable { 1 } else { 0 },
-                is_filterable: if f.is_filterable { 1 } else { 0 },
+                is_indexed: if f.indexed { 1 } else { 0 },
+                is_searchable: if f.searchable { 1 } else { 0 },
+                is_sortable: if f.sortable { 1 } else { 0 },
+                is_filterable: if f.filterable { 1 } else { 0 },
                 is_exportable: 1,
                 is_importable: 1,
                 is_readonly: 0,
@@ -266,7 +321,7 @@ impl MetaRepository {
                 currency_code: None,
                 unit: None,
                 options_source: "inline".to_string(),
-                options_inline: None,
+                options_inline: options_inline_str,
                 options_sql: None,
                 options_api: None,
                 options_dict_code: None,
@@ -274,7 +329,7 @@ impl MetaRepository {
                 validations: None,
                 formula_expr: None,
                 formula_deps: None,
-                ui_component: None,
+                ui_component: f.ui_component.clone(),
                 ui_props: None,
                 ui_placeholder: None,
                 ui_hint: None,
@@ -285,7 +340,7 @@ impl MetaRepository {
                 ui_dynamic_cond: None,
                 field_permission: None,
                 storage_slot: Some(slot),
-                description: f.description.clone(),
+                description: None,
                 tags: None,
                 status: "active".to_string(),
                 metadata: None,
@@ -298,7 +353,7 @@ impl MetaRepository {
                 version: 1,
                 _hash: None,
             };
-            self.conn.execute(
+            conn.execute(
                 "INSERT INTO meta_field (field_id,tenant_id,entity_id,field_code,field_name,field_type,is_required,is_unique,is_indexed,is_searchable,is_sortable,is_filterable,is_exportable,is_importable,is_readonly,is_hidden,is_system,default_value,default_expr,auto_fill_on,max_length,min_value,max_value,decimal_places,step,currency_code,unit,options_source,options_inline,options_sql,options_api,options_dict_code,relation_config,validations,formula_expr,formula_deps,ui_component,ui_props,ui_placeholder,ui_hint,ui_group,ui_sort_order,ui_span,ui_newline,ui_dynamic_cond,field_permission,storage_slot,description,tags,status,metadata,created_at,updated_at,created_by,updated_by,deleted_at,deleted_by,version,_hash) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22,?23,?24,?25,?26,?27,?28,?29,?30,?31,?32,?33,?34,?35,?36,?37,?38,?39,?40,?41,?42,?43,?44,?45,?46,?47,?48,?49,?50,?51,?52,?53,?54,?55,?56,?57,?58,?59)",
                 params![
                     mf.field_id, mf.tenant_id, mf.entity_id, mf.field_code, mf.field_name,
@@ -316,6 +371,8 @@ impl MetaRepository {
                 ],
             )?;
         }
+        drop(conn);
+        drop(field_specs);
 
         Ok((entity_id, slot_map))
     }
@@ -325,7 +382,8 @@ impl MetaRepository {
         tenant_id: &str,
         entity_code: &str,
     ) -> Result<Option<EntityWithFields>> {
-        let mut stmt = self.conn.prepare(
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
             "SELECT entity_id,tenant_id,entity_code,entity_name,entity_plural,table_name,description,icon,color,entity_category,storage_mode,shard_key,history_strategy,extends_entity_id,mixin_ids,tags,list_view_id,form_view_id,detail_view_id,workflow_id,is_system,status,metadata,created_at,updated_at,created_by,updated_by,deleted_at,deleted_by,version,_hash FROM meta_entity WHERE tenant_id=?1 AND entity_code=?2"
         )?;
         let mut rows = stmt.query(params![tenant_id, entity_code])?;
@@ -368,7 +426,7 @@ impl MetaRepository {
         drop(rows);
         drop(stmt);
 
-        let mut stmt_fields = self.conn.prepare(
+        let mut stmt_fields = conn.prepare(
             "SELECT field_id,tenant_id,entity_id,field_code,field_name,field_type,is_required,is_unique,is_indexed,is_searchable,is_sortable,is_filterable,is_exportable,is_importable,is_readonly,is_hidden,is_system,default_value,default_expr,auto_fill_on,max_length,min_value,max_value,decimal_places,step,currency_code,unit,options_source,options_inline,options_sql,options_api,options_dict_code,relation_config,validations,formula_expr,formula_deps,ui_component,ui_props,ui_placeholder,ui_hint,ui_group,ui_sort_order,ui_span,ui_newline,ui_dynamic_cond,field_permission,storage_slot,description,tags,status,metadata,created_at,updated_at,created_by,updated_by,deleted_at,deleted_by,version,_hash FROM meta_field WHERE tenant_id=?1 AND entity_id=?2 AND status='active' ORDER BY ui_sort_order ASC"
         )?;
         let fields: Vec<MetaField> = stmt_fields
@@ -493,7 +551,8 @@ impl MetaRepository {
             version: 1,
             _hash: None,
         };
-        self.conn.execute(
+        let conn = self.conn.lock();
+        conn.execute(
             "INSERT INTO meta_workflow (workflow_id,tenant_id,workflow_code,workflow_name,workflow_category,description,icon,entity_id,trigger_events,trigger_condition,workflow_version,version_tag,is_main_version,process_def,notification,start_roles,admin_roles,viewer_roles,is_draft,is_suspended,status,metadata,created_at,updated_at,created_by,updated_by,deleted_at,deleted_by,version,_hash) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22,?23,?24,?25,?26,?27,?28,?29,?30)",
             params![
                 wf.workflow_id, wf.tenant_id, wf.workflow_code, wf.workflow_name,
@@ -550,7 +609,8 @@ impl MetaRepository {
             created_at: ts.clone(),
             updated_at: ts,
         };
-        self.conn.execute(
+        let conn = self.conn.lock();
+        conn.execute(
             "INSERT INTO meta_workflow_instance (wfi_id,tenant_id,workflow_id,workflow_version,entity_id,biz_id,biz_code,biz_title,instance_status,current_node_id,current_task_ids,initiator_id,initiator_dept_id,admin_user_ids,cc_user_ids,started_at,ended_at,due_at,suspended_at,last_active_at,total_duration_ms,form_data,variables,context,final_decision,final_comment,completed_count,rejected_count,metadata,created_at,updated_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22,?23,?24,?25,?26,?27,?28,?29,?30,?31)",
             params![
                 inst.wfi_id, inst.tenant_id, inst.workflow_id, inst.workflow_version,
@@ -573,7 +633,8 @@ impl MetaRepository {
         fields_data: &HashMap<String, serde_json::Value>,
         action: &str,
     ) -> Result<RuleResult> {
-        let mut stmt = self.conn.prepare(
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
             "SELECT rule_code, rule_category, rule_body, trigger_condition FROM meta_rule r \
              JOIN meta_entity e ON r.entity_id = e.entity_id \
              WHERE r.tenant_id=?1 AND e.entity_code=?2 AND r.is_enabled=1 AND r.status='active'"

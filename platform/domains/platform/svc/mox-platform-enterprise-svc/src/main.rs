@@ -7,14 +7,10 @@
 //! - AUTH_SECRET        默认 off → 认证中间件关闭；"on" 或任意非空值开启并使用该 secret
 
 use std::sync::Arc;
-use std::time::Duration;
 
 use axum::Router;
 use tower::ServiceBuilder;
-use tower_http::compression::CompressionLayer;
 use tower_http::cors::{Any, CorsLayer};
-use tower_http::timeout::TimeoutLayer;
-use tower_http::trace::TraceLayer;
 
 use enterprise_svc_lib::app_state::AppState;
 use enterprise_svc_lib::routes::build_router;
@@ -25,7 +21,7 @@ fn env_or(key: &str, default: &str) -> String {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    mox_framework::init_logging();
+    enterprise_svc_lib::auth::init_logging();
 
     let listen_addr = env_or("LISTEN_ADDR", "0.0.0.0:3002");
     let db_path = env_or("DB_PATH", ":memory:");
@@ -57,26 +53,22 @@ async fn main() -> anyhow::Result<()> {
         AppState::open_memory_or_file(&db_path, &install_industries).await?,
     );
 
-    let auth_state = mox_framework::auth::AuthState::new(auth_secret, auth_enabled);
+    let auth_state = enterprise_svc_lib::auth::AuthState::new(auth_secret, auth_enabled);
 
     let api_router = build_router(app_state.clone());
 
-    let middleware = ServiceBuilder::new()
-        .layer(
-            CorsLayer::new()
-                .allow_origin(Any)
-                .allow_methods(Any)
-                .allow_headers(Any)
-                .expose_headers(Any),
-        )
-        .layer(CompressionLayer::new().gzip(true))
-        .layer(TimeoutLayer::new(Duration::from_secs(60)))
-        .layer(TraceLayer::new_for_http());
+    let middleware = ServiceBuilder::new().layer(
+        CorsLayer::new()
+            .allow_origin(Any)
+            .allow_methods(Any)
+            .allow_headers(Any)
+            .expose_headers(Any),
+    );
 
     let app: Router = if auth_enabled {
         let auth_mw = tower::ServiceBuilder::new().layer(axum::middleware::from_fn_with_state(
             auth_state,
-            mox_framework::auth::auth_middleware,
+            enterprise_svc_lib::auth::auth_middleware,
         ));
         Router::new()
             .merge(api_router)

@@ -14,25 +14,29 @@ path = "src/main.rs"
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-mox-framework = { path = "../../../../../framework" }
 mox-platform-iam-core = { path = "../../core/mox-platform-iam-core" }
 mox-platform-meta-core = { path = "../../core/mox-platform-meta-core" }
 mox-platform-datastore-core = { path = "../../core/mox-platform-datastore-core" }
 mox-platform-orchestrator-core = { path = "../../core/mox-platform-orchestrator-core" }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+mox-framework = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
 axum = { version = "0.7", features = ["json", "multipart"] }
 tower = "0.5"
 tower-http = { version = "0.5", features = ["cors", "trace", "compression-gzip", "timeout", "limit"] }
-rusqlite = { version = "0.32", features = ["bundled"] }
-uuid = { version = "1", features = ["v4", "v7", "serde"] }
-chrono = { version = "0.4", features = ["serde"] }
+rusqlite = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
 thiserror = "1"
 anyhow = "1"
 parking_lot = "0.12"
 dashmap = "6"
 once_cell = "1"
 tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+jsonwebtoken = "9"
+hmac = "0.12"
+sha2 = "0.10"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }

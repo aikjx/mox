@@ -48,6 +48,15 @@ pub trait MetaRepository: Send + Sync {
         &self,
         entity: &EntityWithFields,
         data: &serde_json::Map<String, serde_json::Value>,
+    ) -> anyhow::Result<()> {
+        self.evaluate_rules_inner(entity, data, false)
+    }
+
+    fn evaluate_rules_inner(
+        &self,
+        entity: &EntityWithFields,
+        data: &serde_json::Map<String, serde_json::Value>,
+        skip_required: bool,
     ) -> anyhow::Result<()>;
 }
 
@@ -133,13 +142,14 @@ impl MetaRepository for InMemoryMetaRepo {
             .ok_or_else(|| anyhow::anyhow!("Entity not found: {}", entity_code_or_id))
     }
 
-    fn evaluate_rules(
+    fn evaluate_rules_inner(
         &self,
         entity: &EntityWithFields,
         data: &serde_json::Map<String, serde_json::Value>,
+        skip_required: bool,
     ) -> anyhow::Result<()> {
         for field in &entity.fields {
-            if field.is_required {
+            if !skip_required && field.is_required {
                 let val = data.get(&field.field_code);
                 let is_empty = match val {
                     None => true,
@@ -284,6 +294,84 @@ impl IamRepository for InMemoryIamRepo {
     }
     fn write_audit_log(&self, entry: AuditLogEntry) -> anyhow::Result<()> {
         self.audit_logs.insert(entry.log_id.clone(), entry);
+        Ok(())
+    }
+}
+
+fn mf_to_port_field(mf: &mox_platform_meta_core::MetaField) -> FieldSpec {
+    let options_inline = mf.options_inline.as_ref().and_then(|s| {
+        serde_json::from_str::<Vec<mox_platform_meta_core::EnumOption>>(s).ok().map(|v| {
+            v.into_iter().map(|e| EnumOption {
+                code: e.value,
+                label: e.label,
+            }).collect()
+        })
+    });
+    FieldSpec {
+        field_code: mf.field_code.clone(),
+        field_type: mf.field_type.clone(),
+        is_required: mf.is_required != 0,
+        is_indexed: mf.is_indexed != 0,
+        is_searchable: mf.is_searchable != 0,
+        is_sortable: mf.is_sortable != 0,
+        is_filterable: mf.is_filterable != 0,
+        options_inline,
+    }
+}
+
+impl MetaRepository for mox_platform_meta_core::MetaRepository {
+    fn get_entity(&self, tenant_id: &str, entity_code_or_id: &str) -> anyhow::Result<EntityWithFields> {
+        let opt = self.get_entity(tenant_id, entity_code_or_id)?;
+        let me = opt.ok_or_else(|| anyhow::anyhow!("Entity not found: {}", entity_code_or_id))?;
+        let port_fields: Vec<FieldSpec> = me.fields.iter().map(mf_to_port_field).collect();
+        Ok(EntityWithFields {
+            entity_id: me.entity.entity_id,
+            entity_code: me.entity.entity_code,
+            fields: port_fields,
+            rules: vec![],
+        })
+    }
+
+    fn evaluate_rules_inner(
+        &self,
+        entity: &EntityWithFields,
+        data: &serde_json::Map<String, serde_json::Value>,
+        skip_required: bool,
+    ) -> anyhow::Result<()> {
+        for field in &entity.fields {
+            if !skip_required && field.is_required {
+                let val = data.get(&field.field_code);
+                let is_empty = match val {
+                    None => true,
+                    Some(serde_json::Value::Null) => true,
+                    Some(serde_json::Value::String(s)) => s.is_empty(),
+                    _ => false,
+                };
+                if is_empty {
+                    anyhow::bail!("Required field missing: {}", field.field_code);
+                }
+            }
+            if let Some(v) = data.get(&field.field_code) {
+                match field.field_type.as_str() {
+                    "int" | "integer" | "bigint" | "auto_increment" => {
+                        if !v.is_i64() && !v.is_u64() {
+                            anyhow::bail!("Field {} must be integer", field.field_code);
+                        }
+                    }
+                    "decimal" | "number" | "float" | "double" | "percentage" | "money" => {
+                        if !v.is_number() {
+                            anyhow::bail!("Field {} must be number", field.field_code);
+                        }
+                    }
+                    "bool" | "boolean" | "toggle" => {
+                        if !v.is_boolean() {
+                            anyhow::bail!("Field {} must be boolean", field.field_code);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
         Ok(())
     }
 }

@@ -1,4 +1,5 @@
 use std::time::Instant;
+use serde_json::{Map, Value};
 use dashmap::DashMap;
 
 use mox_platform_datastore_core::{UniversalBizDAO, TxManager, Filter, SortSpec, compute_hash};
@@ -223,7 +224,8 @@ impl Pipeline {
                         match meta_repo.get_entity(&ctx.tenant_id, &ctx.entity_code) {
                             Ok(entity) => {
                                 let d = ctx.request_data.clone().unwrap_or_default();
-                                match meta_repo.evaluate_rules(&entity, &d) {
+                                let skip_required = matches!(req.action, BizAction::Update);
+                                match meta_repo.evaluate_rules_inner(&entity, &d, skip_required) {
                                     Ok(()) => StepResult::Continue,
                                     Err(e) => StepResult::Stop(e),
                                 }

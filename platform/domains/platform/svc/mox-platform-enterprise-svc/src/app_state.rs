@@ -1,7 +1,3 @@
-//! 应用共享状态：持有 4 个核心仓储 + rusqlite 连接
-//!
-//! 构造流程：打开 SQLite → 各 repo init_schema + 种子数据 → 返回 Arc<AppState>。
-
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
@@ -43,12 +39,12 @@ impl AppState {
         let meta = Arc::new(MetaRepository::new(db_conn.clone()));
         let dao = Arc::new(UniversalBizDAO::new(db_conn.clone()));
 
-        let industries_ref: Vec<&str> = industries.iter().map(|s| s.as_str()).collect();
         let iam_cloned = iam.clone();
         let meta_cloned = meta.clone();
         let dao_cloned = dao.clone();
 
         tokio::task::spawn_blocking(move || -> Result<()> {
+            let industries_ref: Vec<&str> = industries.iter().map(|s| s.as_str()).collect();
             iam_cloned.init_schema().context("iam init_schema")?;
             iam_cloned.seed().context("iam seed")?;
             meta_cloned
@@ -63,8 +59,9 @@ impl AppState {
         .await
         .map_err(|e| anyhow::anyhow!("spawn_blocking join error: {}", e))??;
 
-        let orch = Arc::new(Orchestrator::new(meta.clone(), dao.clone()));
+        let mut orch = Orchestrator::new(meta.clone(), dao.clone());
         orch.register_pipeline("default");
+        let orch = Arc::new(orch);
 
         Ok(Self {
             iam,

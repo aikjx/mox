@@ -71,6 +71,7 @@ members = [
     "platform/domains/platform/core/mox-platform-meta-core",
     "platform/domains/platform/core/mox-platform-datastore-core",
     "platform/domains/platform/core/mox-platform-orchestrator-core",
+    "platform/domains/platform/svc/mox-platform-enterprise-svc",
 ]
 resolver = "2"
 
@@ -91,7 +92,7 @@ anyhow = "1.0"
 thiserror = "1.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-uuid = { version = "1.0", features = ["v4", "serde"] }
+uuid = { version = "1.0", features = ["v4", "v7", "serde"] }
 chrono = { version = "0.4", features = ["serde", "clock"] }
 rayon = "1.8"
 http = "1"

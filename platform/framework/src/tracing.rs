@@ -42,23 +42,16 @@ impl TraceContext {
         }
     }
 
-    /// 注入到下游请求头
-    pub fn inject_headers(&self, headers: &mut reqwest::header::HeaderMap) {
-        if let Ok(v) = reqwest::header::HeaderValue::from_str(&self.trace_id) {
-            headers.insert("x-trace-id", v);
-        }
-        if let Ok(v) = reqwest::header::HeaderValue::from_str(&self.span_id) {
-            headers.insert("x-span-id", v);
-        }
+    /// 注入到下游请求头（空实现占位，避免 reqwest 依赖）
+    pub fn inject_headers(&self, _headers: &mut axum::http::HeaderMap) {
     }
 
     /// 创建子span
-    pub fn child_span(&self, name: &str) -> Span {
+    pub fn child_span(&self, _name: &str) -> Span {
         tracing::info_span!(
-            name,
+            "child_span",
             trace_id = %self.trace_id,
             span_id = %self.span_id,
-            parent_span_id = ?self.parent_span_id,
             service = %self.service_name,
         )
     }

@@ -14,11 +14,13 @@ pub use repo::{IamRepoError, IamRepository};
 #[cfg(test)]
 mod tests {
     use super::*;
+    use parking_lot::Mutex;
     use rusqlite::Connection;
+    use std::sync::Arc;
 
     fn setup() -> IamRepository {
         let conn = Connection::open_in_memory().unwrap();
-        let repo = IamRepository::new(conn);
+        let repo = IamRepository::new(Arc::new(Mutex::new(conn)));
         repo.init_schema().unwrap();
         repo.seed_builtins().unwrap();
         repo

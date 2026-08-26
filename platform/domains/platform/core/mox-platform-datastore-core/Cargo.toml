@@ -19,5 +19,6 @@ anyhow = { workspace = true }
 sha2 = { workspace = true }
 hex = { workspace = true }
 dashmap = "5.5"
+parking_lot = { workspace = true }
 
 [dev-dependencies]

@@ -1,9 +1,10 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use parking_lot::Mutex;
 use serde_json::{Map, Value};
 use uuid::Uuid;
 
 use mox_platform_datastore_core::{UniversalBizDAO, FieldSlotAllocator, compute_hash, Filter, SortSpec, TxManager};
-use mox_platform_datastore_core::{FieldSpec, InMemoryMetaRepo, MetaRepository, InMemoryIamRepo};
+use mox_platform_datastore_core::{FieldSpec, InMemoryMetaRepo, InMemoryIamRepo};
 
 fn setup() -> (Arc<Mutex<rusqlite::Connection>>, UniversalBizDAO, InMemoryMetaRepo, InMemoryIamRepo, String, String) {
     let conn = Arc::new(Mutex::new(rusqlite::Connection::open_in_memory().unwrap()));

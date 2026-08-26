@@ -18,11 +18,12 @@ pub enum Severity {
 
 /// 框架统一错误
 #[derive(Debug, thiserror::Error)]
+#[error("[{code}] {message}")]
 pub struct FrameworkError {
     pub code: ErrorCode,
     pub message: String,
     pub severity: Severity,
-    pub source: Option<String>,
+    pub source_text: Option<String>,
     pub details: Option<serde_json::Value>,
 }
 
@@ -32,7 +33,7 @@ impl FrameworkError {
             code,
             message: message.into(),
             severity: Severity::Error,
-            source: None,
+            source_text: None,
             details: None,
         }
     }
@@ -43,7 +44,7 @@ impl FrameworkError {
     }
 
     pub fn with_source(mut self, source: impl Into<String>) -> Self {
-        self.source = Some(source.into());
+        self.source_text = Some(source.into());
         self
     }
 
@@ -70,11 +71,7 @@ impl FrameworkError {
     }
 }
 
-impl fmt::Display for FrameworkError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "[{}] {} (severity: {:?})", self.code, self.message, self.severity)
-    }
-}
+
 
 // 常用错误构造函数
 impl FrameworkError {

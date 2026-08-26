@@ -4,6 +4,7 @@ use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::Semaphore;
+use parking_lot::Mutex;
 
 /// 熔断器状态
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -18,7 +19,7 @@ pub struct CircuitBreaker {
     state: Arc<AtomicUsize>, // 0=Closed, 1=Open, 2=HalfOpen
     failure_count: Arc<AtomicU64>,
     success_count: Arc<AtomicU64>,
-    last_failure: Arc<parking_lot::Mutex<Option<Instant>>>,
+    last_failure: Arc<Mutex<Option<Instant>>>,
     threshold: f64,
     min_requests: u64,
     reset_timeout: Duration,
@@ -31,7 +32,7 @@ impl CircuitBreaker {
             state: Arc::new(AtomicUsize::new(0)),
             failure_count: Arc::new(AtomicU64::new(0)),
             success_count: Arc::new(AtomicU64::new(0)),
-            last_failure: Arc::new(parking_lot::Mutex::new(None)),
+            last_failure: Arc::new(Mutex::new(None)),
             threshold,
             min_requests,
             reset_timeout,
@@ -105,7 +106,7 @@ pub struct RateLimiter {
     tokens: Arc<AtomicU64>,
     capacity: u64,
     refill_per_sec: u64,
-    last_refill: Arc<parking_lot::Mutex<Instant>>,
+    last_refill: Arc<Mutex<Instant>>,
 }
 
 impl RateLimiter {
@@ -114,7 +115,7 @@ impl RateLimiter {
             tokens: Arc::new(AtomicU64::new(capacity)),
             capacity,
             refill_per_sec,
-            last_refill: Arc::new(parking_lot::Mutex::new(Instant::now())),
+            last_refill: Arc::new(Mutex::new(Instant::now())),
         }
     }
 

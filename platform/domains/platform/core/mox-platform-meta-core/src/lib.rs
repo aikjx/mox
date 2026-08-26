@@ -5,10 +5,11 @@ pub mod model;
 pub mod repo;
 
 pub use model::{
-    EntityWithFields, FieldSpec, MetaComponent, MetaEntity, MetaField, MetaFieldOptionDict,
-    MetaFieldOptionDictItem, MetaIndustryPackage, MetaPage, MetaRule, MetaTenantIndustry,
-    MetaView, MetaViewColumn, MetaWorkflow, MetaWorkflowInstance, MetaWorkflowInstanceState,
-    MetaWorkflowNode, MetaWorkflowTransition, RuleResult,
+    EntityWithFields, EnumOption, FieldDef, FieldSpec, FieldType, MetaComponent, MetaEntity,
+    MetaField, MetaFieldOptionDict, MetaFieldOptionDictItem, MetaIndustryPackage, MetaPage,
+    MetaRule, MetaTenantIndustry, MetaView, MetaViewColumn, MetaWorkflow,
+    MetaWorkflowInstance, MetaWorkflowInstanceState, MetaWorkflowNode, MetaWorkflowTransition,
+    RuleResult,
 };
 pub use repo::MetaRepository;
 
@@ -17,64 +18,69 @@ mod tests {
     use super::*;
     use rusqlite::Connection;
     use std::collections::HashMap;
+    use std::sync::Arc;
+    use parking_lot::Mutex;
 
     fn setup() -> MetaRepository {
         let conn = Connection::open_in_memory().unwrap();
-        let repo = MetaRepository::new(conn);
+        let repo = MetaRepository::new(Arc::new(Mutex::new(conn)));
         repo.init_schema().unwrap();
-        repo.seed_industry().unwrap();
+        repo.seed_industry(&["common"]).unwrap();
         repo
     }
 
     #[test]
     fn test_define_project_entity_and_slots() {
         let repo = setup();
-        let tenant_id = "t001";
+        let tenant_id = Some("t001".to_string());
 
         let fields = vec![
-            FieldSpec {
-                field_code: "project_code".to_string(),
-                field_name: "项目编号".to_string(),
-                field_type: "string".to_string(),
-                is_required: true,
-                is_indexed: true,
-                is_searchable: true,
-                is_sortable: true,
-                is_filterable: true,
-                description: Some("唯一项目编号".to_string()),
+            FieldDef {
+                code: "project_code".to_string(),
+                name: "项目编号".to_string(),
+                r#type: FieldType::String,
+                required: true,
+                indexed: true,
+                searchable: true,
+                sortable: true,
+                filterable: true,
+                ui_component: None,
+                options_inline: None,
             },
-            FieldSpec {
-                field_code: "project_name".to_string(),
-                field_name: "项目名称".to_string(),
-                field_type: "string".to_string(),
-                is_required: true,
-                is_indexed: false,
-                is_searchable: true,
-                is_sortable: true,
-                is_filterable: true,
-                description: None,
+            FieldDef {
+                code: "project_name".to_string(),
+                name: "项目名称".to_string(),
+                r#type: FieldType::String,
+                required: true,
+                indexed: false,
+                searchable: true,
+                sortable: true,
+                filterable: true,
+                ui_component: None,
+                options_inline: None,
             },
-            FieldSpec {
-                field_code: "budget".to_string(),
-                field_name: "项目预算".to_string(),
-                field_type: "decimal".to_string(),
-                is_required: false,
-                is_indexed: true,
-                is_searchable: false,
-                is_sortable: true,
-                is_filterable: true,
-                description: None,
+            FieldDef {
+                code: "budget".to_string(),
+                name: "项目预算".to_string(),
+                r#type: FieldType::Decimal,
+                required: false,
+                indexed: true,
+                searchable: false,
+                sortable: true,
+                filterable: true,
+                ui_component: None,
+                options_inline: None,
             },
         ];
 
         let (entity_id, slot_map) = repo
-            .define_entity(tenant_id, "project", "项目", Some("transaction"), fields)
+            .define_entity(tenant_id, "project".to_string(), "项目".to_string(), fields)
             .expect("define entity");
 
         assert!(!entity_id.is_empty(), "entity_id should not be empty");
 
         let fetched = repo
-            .get_entity(tenant_id, "project")
+            .get_entity("t001", "project")
             .expect("get entity")
             .expect("entity exists");
         assert_eq!(fetched.entity.entity_code, "project");
@@ -127,8 +133,8 @@ mod tests {
     #[test]
     fn test_industry_seed_count() {
         let repo = setup();
-        let mut stmt = repo
-            .conn
+        let conn = repo.conn.lock();
+        let mut stmt = conn
             .prepare("SELECT COUNT(*) FROM meta_industry_package WHERE status='active'")
             .unwrap();
         let cnt: i64 = stmt.query_row([], |r| r.get(0)).unwrap();

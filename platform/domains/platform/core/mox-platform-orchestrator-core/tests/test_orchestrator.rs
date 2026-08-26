@@ -1,8 +1,9 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use parking_lot::Mutex;
 use serde_json::{Map, Value};
 use uuid::Uuid;
 
-use mox_platform_datastore_core::{UniversalBizDAO, TxManager, InMemoryMetaRepo, InMemoryIamRepo, IamRepository, User};
+use mox_platform_datastore_core::{UniversalBizDAO, TxManager, InMemoryMetaRepo, InMemoryIamRepo, User};
 use mox_platform_orchestrator_core::{Orchestrator, BizAction, BusinessRequest};
 
 fn setup() -> (
@@ -175,14 +176,14 @@ async fn test_orchestrator_async_execute_with_tokio() {
         page_size: 10,
         ..Default::default()
     };
-    let r = Orchestrator::execute_with_tokio(
-        orc.clone(),
-        req,
-        dao.clone(),
-        Some(tx.clone()),
-        meta.clone(),
-        iam.clone(),
-    ).await;
+    let orch_clone = orc.clone();
+    let dao_clone = dao.clone();
+    let tx_clone = tx.clone();
+    let meta_clone = meta.clone();
+    let iam_clone = iam.clone();
+    let r = tokio::task::spawn_blocking(move || {
+        orch_clone.execute(&req, dao_clone.as_ref(), Some(tx_clone.as_ref()), meta_clone.as_ref(), iam_clone.as_ref())
+    }).await.unwrap();
     assert!(r.success, "async create ok");
     assert!(r.biz_id.clone().unwrap().len() > 0);
 }
@@ -192,7 +193,7 @@ fn test_permission_denied_auth_stage() {
     let (_conn, dao, tx, meta, iam, orc, tenant_id, _user_id) = setup();
 
     let no_perm_user = Uuid::new_v4().to_string();
-    iam.add_user(mox_platform_iam_core::User {
+    iam.add_user(User {
         user_id: no_perm_user.clone(),
         tenant_id: tenant_id.clone(),
         username: "noperm".into(),
