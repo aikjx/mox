@@ -1,0 +1,58 @@
+﻿cargo :    Compiling proc-macro2 v1.0.107
+At line:1 char:18164
++ ... LASTEXITCODE"; cargo build --release > build_release.txt 2>&1; echo " ...
++                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (   Compiling proc-macro2 v1.0.107:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.24
+   Compiling cfg-if v1.0.4
+   Compiling memchr v2.8.3
+   Compiling autocfg v1.5.1
+   Compiling once_cell v1.21.4
+   Compiling windows-link v0.2.1
+   Compiling pin-project-lite v0.2.17
+   Compiling smallvec v1.15.2
+   Compiling getrandom v0.4.3
+   Compiling libm v0.2.16
+   Compiling serde_core v1.0.229
+   Compiling shlex v2.0.1
+   Compiling futures-core v0.3.34
+   Compiling find-msvc-tools v0.1.11
+   Compiling parking_lot_core v0.9.12
+   Compiling windows-sys v0.61.2
+   Compiling futures-sink v0.3.34
+   Compiling bytes v1.12.1
+   Compiling num-traits v0.2.19
+   Compiling itoa v1.0.18
+   Compiling zerocopy v0.8.56
+   Compiling scopeguard v1.2.0
+   Compiling getrandom v0.2.17
+   Compiling futures-channel v0.3.34
+   Compiling futures-io v0.3.34
+   Compiling lock_api v0.4.14
+   Compiling slab v0.4.12
+   Compiling futures-task v0.3.34
+   Compiling version_check v0.9.5
+   Compiling serde v1.0.229
+   Compiling tracing-core v0.1.36
+   Compiling log v0.4.34
+   Compiling mio v1.2.2
+   Compiling socket2 v0.6.5
+   Compiling stable_deref_trait v1.2.1
+   Compiling hashbrown v0.17.1
+   Compiling equivalent v1.0.2
+   Compiling percent-encoding v2.3.2
+   Compiling jobserver v0.1.35
+   Compiling syn v1.0.109
+   Compiling http v1.5.0
+   Compiling hashbrown v0.15.5
+   Compiling parking_lot v0.12.5
+   Compiling litemap v0.8.3
+   Compiling writeable v0.6.4
+   Compiling ahash v0.8.12
+   Compiling rand_core v0.6.4
+   Compiling syn v3.0.4
+   Compiling syn v2.0.119
+   Compiling cc v1.4.4
