@@ -176,16 +176,13 @@ def load_workspace(workspace_root: str) -> Tuple[Dict[str, List[str]], Set[str]]
     for pkg in data["packages"]:
         name = pkg["name"]
         # 仅保留 normal 依赖，排除 dev-dependencies 和 build-dependencies
+        # cargo metadata 中 normal 依赖的 kind 为 None，dev 为 "dev"，build 为 "build"
         normal_deps = []
         for d in pkg["dependencies"]:
             dep_name = d["name"]
-            # dep_kinds 是列表，每个元素有 kind 字段（normal/dev/build）
-            # 如果所有 kind 都不是 normal，则跳过
-            kinds = d.get("dep_kinds", [])
-            if kinds:
-                is_normal = any(k.get("kind") == "normal" for k in kinds)
-                if not is_normal:
-                    continue
+            kind = d.get("kind")
+            if kind in ("dev", "build"):
+                continue
             if dep_name in internal and dep_name != name:
                 normal_deps.append(dep_name)
         deps[name] = normal_deps
