@@ -261,25 +261,55 @@ DomainEvent ──▶ EventBus(broadcast)
 > 🔍 **架构一致性校验**：`Cargo.toml` workspace members 必须与本节表格一致；任何新增/删除/重命名 crate 必须同步更新本节 + `mox-platform-meta-core::all_crate_metas()` + `ARCHITECTURE-MIGRATION.md`。
 > 📌 **路径铁律（v2.0）**：所有 crate 均位于 `platform/domains/{域}/{层}/` 或 `platform/{foundation,gateway,framework}/`；旧路径 `platform/services/`、`crates/` 已废弃，禁止在新代码/文档中使用。
 
-### 3.3 模块依赖
+### 3.3 模块依赖（6层8域 · 依赖方向）
 
 ```
-server.rs ──▶ orchestrator.rs(MoxSystem) ──▶ services.rs(Member/Task/Permission/Comm)
-                                                    │
-                                                    ▼
-                                              store.rs + event.rs(EventBus)
-mox-system ◀── POST /api/mox/* ── mox-expert(pipeline)
+                    ┌─────────────────────────────┐
+                    │  L1 Gateway (mox-platform-  │
+                    │  gateway-svc)                │
+                    └──────────┬──────────────────┘
+                               │ 路由分发
+          ┌────────────────────┼────────────────────┐
+          ▼                    ▼                    ▼
+   ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+   │ ai/svc      │    │ kg/svc      │    │ platform/svc│
+   │ (3 crate)   │    │ (6 crate)   │    │ (2 crate)   │
+   └──────┬──────┘    └──────┬──────┘    └──────┬──────┘
+          │ 依赖同域core       │ 依赖同域core       │ 依赖同域core
+          ▼                    ▼                    ▼
+   ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+   │ ai/core     │    │ kg/core     │    │ platform/core│
+   │ (2 crate)   │    │ (2 crate)   │    │ (5 crate)   │
+   └─────────────┘    └─────────────┘    └─────────────┘
+          │                    │                    │
+          └────────────────────┼────────────────────┘
+                               ▼
+                    ┌─────────────────────┐
+                    │ L0 Foundation        │
+                    │ (2 crate)            │
+                    └─────────────────────┘
 ```
 
-### 3.4 服务职责（单一职责）
+**跨域依赖规则（Phase 2 强制执行）**：
+1. svc 层只能依赖同域 core + 其他域的 core/sdk/api（**禁止直接依赖其他域的 svc**）
+2. core 层只能依赖 foundation + 其他域的 core/sdk（**禁止依赖任何 svc**）
+3. sdk 层只能依赖同域 core 的类型定义
+4. api 层（规划中）= 域间契约，只能依赖 core 的类型，定义 trait 供 svc 实现
+5. gateway 只能依赖各域的 svc（通过 api trait 或直接调用，Phase 2 后改为 api trait）
+6. 所有跨域调用必须通过 api 层 trait（依赖倒置），Phase 3 完成后强制执行
 
-| 服务 | 职责 | 不负责 |
-|------|------|--------|
-| MemberService | 成员生命周期、邀请幂等、状态机 | 任务逻辑 |
-| TaskService | 任务 FSM、分派校验、DoD、DAG、评论 | 权限判定（交由 orchestrator.require） |
-| PermissionService | 角色绑定增删、权限解析 | 请求上下文（交由 orchestrator） |
-| CommService | 频道/消息/通知的读写 | 事件产生（由领域动作产生） |
-| Orchestrator | 鉴权闸门 + 反应器编排 | 具体领域规则（下沉到 Service） |
+### 3.4 服务职责（按域 · 单一职责）
+
+| 域 | 核心职责 | 不负责 | 主责联盟 |
+|----|---------|--------|---------|
+| **ai** | AI意图识别、智能体编排、璇玑专家验证、流程AI代码生成 | 图谱存储、数据持久化、云基础设施 | 算法联盟 R + 开发联盟 C |
+| **kg** | 知识图谱存储/算法/服务/流处理/融合/枢纽、八大算法家族A1~A8 | AI推理、业务编排、用户界面 | 算法联盟 R + 开发联盟 C |
+| **flow** | 算子内核、WASM沙箱、优化器(CPM/RCPSP/CEM)、PrimiFlow解析/代码生成/融合、Hermes桥接 | 图谱算法、AI对话、数据ETL | 开发联盟 R + 算法联盟 C |
+| **data** | 公式引擎、数据归一化、数据标准、ETL、数据合规、业务目录 | 图谱存储、AI推理、算子执行 | 开发联盟 R |
+| **platform** | 系统核心(成员/任务/权限/通信)、IAM、元数据、数据存储(多后端)、编排器、企业服务 | 业务领域逻辑、AI算法、图谱算法 | 开发联盟 R |
+| **cloud** | 云主节点、卷管理、S3存储、文件器 | 业务逻辑、AI、图谱 | 开发联盟 R（运维） |
+| **market** | 模板市场(发布/加载/评分/Fork) | 业务流程执行、AI推理 | 产品联盟 R + 开发联盟 C |
+| **voice** | 语音DSP、ASR、意图、算子、桌面应用（**独立产品形态评估中**） | 核心平台业务、图谱、AI编排 | 开发联盟 R（独立团队） |
 
 ---
 
@@ -334,17 +364,24 @@ mox-system ◀── POST /api/mox/* ── mox-expert(pipeline)
 
 ## 6. 集成架构视图（Integration）
 
-### 6.1 对外接口
+### 6.1 对外接口（按域归属 · 网关统一路由）
 
-| 类别 | 端点 | 说明 |
-|------|------|------|
-| 健康检查 | `GET /api/health` | 探针 |
-| 身份 | `POST /api/bootstrap`、`GET /api/me` | 建璇玑/令牌解析 |
-| 成员 | `POST/GET /api/members` 等 | 邀请/列表/状态 |
-| 任务 | `POST/GET /api/tasks`、`POST /api/tasks/:id/transition` 等 | 全生命周期 |
-| 通信 | `GET /api/channels`、`POST /api/channels/:id/messages` | 频道消息 |
-| 实时 | `WS /api/ws?token=` | 通知推送 |
-| 融合 | `POST /api/mox/optimize`、`/publish` | 璇玑治理→上架 |
+| 类别 | 端点 | 归属域/svc | 说明 |
+|------|------|-----------|------|
+| 健康检查 | `GET /api/health` | gateway | 探针 |
+| 身份 | `POST /api/bootstrap`、`GET /api/me` | platform/enterprise-svc | 建璇玑/令牌解析 |
+| 成员 | `POST/GET /api/members` 等 | platform/enterprise-svc | 邀请/列表/状态 |
+| 任务 | `POST/GET /api/tasks`、`POST /api/tasks/:id/transition` 等 | platform/enterprise-svc | 全生命周期 |
+| 通信 | `GET /api/channels`、`POST /api/channels/:id/messages` | platform/enterprise-svc | 频道消息 |
+| 实时 | `WS /api/ws?token=` | gateway + platform | 通知推送 |
+| 融合 | `POST /api/mox/optimize`、`/publish` | ai/expert-svc + flow/fusion-svc | 璇玑治理→上架 |
+| 图谱 | `GET /api/graph`、`POST /api/graph/node`、`POST /api/graph/edge` | kg/hub-svc + kg/service-svc | 图谱CRUD/查询 |
+| 算子 | `GET /api/operators`、`POST /api/execute` | flow/operator-wasm-svc + flow/primiflow-svc | 算子列表/执行 |
+| 商城 | `GET /api/market/`、`POST /api/market/upload`、`POST /api/market/:id/clone` | market/template-svc | 算子商城 |
+| **AI统一入口** | `POST /ai/engine/process` | gateway → ai/agent-svc（A5意图路由） | 自动意图识别→能力路由 |
+| **AI统一入口** | `POST /ai/engine/analyze` | gateway → ai/agent-svc | 显式能力执行 |
+| **AI统一入口** | `GET /ai/engine/capabilities` | gateway → ai/agent-svc | 能力矩阵自描述 |
+| **AI统一入口** | `GET /ai/engine/metrics` | gateway → observability | 三联盟SLO指标 |
 
 ### 6.2 事件契约
 
@@ -365,19 +402,22 @@ mox-system ◀── POST /api/mox/* ── mox-expert(pipeline)
 - 单体进程：`cargo run -p mox-system` → `:3000`（REST+WS）；`--demo` 端到端演示。
 - 作为 OUS 子系统：由 `runtime` 主服务聚合各 crate 端点。
 
-#### 7.1.1 runtime crate 聚合内部架构（L1+L2 细项）
+#### 7.1.1 Gateway crate 聚合内部架构（L1 Gateway · v2.0）
 
-**L1 Ingress（路由+处理器薄层）：**
-- `src/routes/mod.rs` 路由总入口：agent.rs (AI 智能体端点) + governance.rs（治理台 HITL/审批/指标） + market.rs（算子市场 DSL/版本化/迁移）
-- `src/handlers/mod.rs` HTTP 处理器薄层：agent.rs / governance.rs / hitl.rs（纯 request→response 适配，不含业务算法）
-- `main.rs` 二进制入口 `operator-server`（axum server 启动 + 生命周期 + 优雅停机）
+**L1 Gateway（路由+横切中间件，仅做薄层）：**
+- `src/routes/mod.rs` 路由总入口：按域挂载子路由（ai/kg/flow/platform/data/market/cloud/voice）
+- `src/handlers/mod.rs` HTTP 处理器薄层：纯 request→response 适配，不含业务算法
+- `src/main.rs` 二进制入口 `operator-server`（axum server 启动 + 生命周期 + 优雅停机）
+- `src/middleware/`：RBAC鉴权、限流、CORS、日志、trace_id注入
+- `src/ws/`：WebSocket 握手 + 消息路由（HITL审批、实时通知）
+- `src/openapi.rs`：OpenAPI schema 生成（从各域svc的API定义聚合）
 
-**L2 Gateway（编排/中间件/聚合）：**
-- `src/cordis/mod.rs`（OUS-Cordis 插件内核 5 子模块）：profile + bundle + seam(SeamRegistry fs 注册) + event_bus(事件瀑布) + lifecycle(Start/Stop/Pause)
-- `src/rbac_middleware.rs`：RBAC 鉴权闸门（X-Auth-Token TokenRegistry → member_id + 角色校验）
-- `src/subservers.rs`：聚合 16 crate 的子服务（ai-agent/mox-expert 等）挂载编排
-- Feature gates: `market`（算子市场）/ `governance`（治理台）/ `openapi`（OpenAPI 生成） — 默认开启
-- `src/automation.rs` + `api_standard.rs` + `openapi.rs`：API 标准化响应 / OpenAPI schema 生成
+**与旧 runtime 的区别（v1.1→v2.0）**：
+- 旧 runtime 是"上帝crate"：聚合16子服务 + Cordis5插件内核 + RBAC + OpenAPI + 迁移引擎 + 治理
+- 新 gateway 仅做路由+横切中间件，业务聚合下沉到各域svc层
+- Cordis5 插件内核 → 迁移至 `mox-framework`（Framework层）
+- 迁移引擎 → 迁移至 `mox-platform-datastore-core`（platform域core层）
+- 治理逻辑 → 迁移至 `mox-ai-expert-svc`（ai域svc层）
 
 ### 7.2 可观测性（设计态 → 路线图）
 
@@ -414,7 +454,7 @@ mox-system ◀── POST /api/mox/* ── mox-expert(pipeline)
 | **PostgreSQL 生产** | `true` | **`true`** | `postgres` | `postgres://user:pass@host:5432/db` |
 | **MySQL 生产** | `true` | **`true`** | `mysql` | `mysql://user:pass@host:3306/db` |
 
-**方言归一化实现**：upsert 语义按后端生成——SQLite `INSERT OR REPLACE` + `?N`；PostgreSQL `ON CONFLICT DO UPDATE` + `$N`；MySQL `ON DUPLICATE KEY UPDATE` + `?`。落点 `crates/mox-system/src/repo/`（`schema.rs` 方言层 + `sqlite.rs`/`postgres.rs`/`mysql.rs` 驱动层）。
+**方言归一化实现**：upsert 语义按后端生成——SQLite `INSERT OR REPLACE` + `?N`；PostgreSQL `ON CONFLICT DO UPDATE` + `$N`；MySQL `ON DUPLICATE KEY UPDATE` + `?`。落点 `platform/domains/platform/core/mox-platform-datastore-core/src/`（`schema.rs` 方言层 + `sqlite.rs`/`postgres.rs`/`mysql.rs` 驱动层）；业务编排在 `platform/domains/platform/svc/mox-platform-enterprise-svc/`。
 
 **启动可观测性**：启动日志如实回显后端与严格模式，便于运维核对实际生效配置：
 
@@ -437,6 +477,11 @@ mox-system ◀── POST /api/mox/* ── mox-expert(pipeline)
 | ADR-04 | `*Own` 所有权权限依赖可信 `assignees` | 精细授权 | 分派必须校验（GAP-2 修复） |
 | ADR-05 | 两段式鉴权（试探不落审计） | 防审计噪声/权限探测 | 实现稍复杂；测试双向断言 |
 | ADR-06 | 融合治理与协作治理分离为两域 | 关注点分离 | 双验收联动待补（FR-FUSE-05） |
+| ADR-08 | **6层8域DDD矩阵架构迁移**（v2.0）：从旧15-crate扁平模型（platform/services/）迁移至新6层8域DDD矩阵（platform/domains/{8域}/{core,svc,sdk,api,svcapi} + foundation/gateway/framework） | 旧架构crate混合领域逻辑与基础设施，难以独立测试和复用；DDD分层实现依赖倒置，模块化单体支持未来微服务演进 | 所有文档需同步更新路径引用（Phase 1完成）；api层待填充（Phase 3）；跨域依赖规则待强制执行（Phase 2） |
+| ADR-09 | **跨域依赖规则**：svc禁止直接依赖其他域svc，必须通过api层trait（依赖倒置）；core禁止依赖任何svc | 防止"大泥球"反模式，保持域边界清晰，支持未来独立部署 | api层当前为空（0 crate），过渡期允许svc间直接依赖但需登记；Phase 3完成api层后强制执行arch test |
+| ADR-10 | **voice域定位决策**：voice域含桌面应用（mox-voice-desktop-app），与核心平台业务关联度低，评估独立为单独workspace或保留为"垂直能力插件" | 避免核心平台被语音产品的发布节奏和桌面GUI依赖（cpal/screenshots/enigo/global-hotkey）拖累 | 待Phase 3完成依赖分析后决策；若保留则明确voice域不参与核心平台发布周期 |
+| ADR-11 | **网关瘦身**：mox-platform-gateway-svc仅做路由+横切中间件（鉴权/限流/CORS/日志/WS），业务聚合下沉到各域svc层或BFF | 旧runtime是"上帝crate"（聚合16子服务+Cordis5+RBAC+OpenAPI+迁移+治理），职责过重难以维护 | Cordis5迁移至mox-framework；迁移引擎迁移至mox-platform-datastore-core；治理逻辑迁移至mox-ai-expert-svc |
+| ADR-12 | **可观测性体系化**：建立统一observability foundation（tracing+prometheus metrics+opentelemetry tracing），所有svc crate强制接入 | 旧架构指标未采集、跨crate追踪未实现，不符合企业级可观测性要求 | Phase 2完成；observability纳入mox-platform-foundation或独立crate |
 
 ---
 
