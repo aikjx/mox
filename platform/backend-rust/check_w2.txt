@@ -1,0 +1,36 @@
+﻿cargo :     Checking mox-enterprise-backend v2.0.0 (D:\a10\aikjx\gitcode\infotopograph\platform\backend-rust)
+At line:1 char:18087
++ ... latform\backend-rust; cargo check --tests > check_w2.txt 2>&1; echo " ...
++                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (    Checking mo...m\backend-rust):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+warning: fields `id` and `metadata` are never read
+  --> src\aiops\root_cause.rs:50:5
+   |
+49 | struct DependencyNode {
+   |        -------------- fields in this struct
+50 |     id: String,
+   |     ^^
+...
+54 |     metadata: HashMap<String, String>,
+   |     ^^^^^^^^
+   |
+   = note: `DependencyNode` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored d
+uring dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `timestamp` is never read
+  --> src\aiops\predictive_scaler.rs:90:5
+   |
+89 | struct LoadPoint {
+   |        --------- field in this struct
+90 |     timestamp: f64,
+   |     ^^^^^^^^^
+   |
+   = note: `LoadPoint` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during
+ dead code analysis
+
+warning: `mox-enterprise-backend` (lib) generated 2 warnings
+warning: `mox-enterprise-backend` (lib test) generated 2 warnings (2 duplicates)
+    Finished `dev` profile [optimized + debuginfo] target(s) in 24.36s
