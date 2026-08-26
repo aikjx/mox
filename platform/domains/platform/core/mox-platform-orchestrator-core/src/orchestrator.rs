@@ -212,7 +212,7 @@ impl Orchestrator {
             Some(d) => d,
             None => return Ok(None),
         };
-        Ok(Some(SyncRecord { biz_id: biz_id.to_string(), version, data }))
+        Ok(Some(SyncRecord { biz_id: biz_id.to_string(), entity_code, version, data }))
     }
 
     pub fn list_sync(

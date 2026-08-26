@@ -85,7 +85,7 @@ async fn t02_define_entity_project_fields_3() {
     assert!(slot_map.contains_key("amount"), "slot_map 必须包含 amount");
     assert!(slot_map.contains_key("status"), "slot_map 必须包含 status");
 
-    let ent = s.meta.get_entity_by_code(None, "project").expect("entity must exist");
+    let ent = s.meta.get_entity("default", "project").expect("entity must exist").expect("entity not None");
     assert_eq!(ent.fields.len(), 3, "entity fields 数量必须 = 3");
 }
 
@@ -94,25 +94,25 @@ async fn t03_seed_iam_tenant_dept_user_role() {
     // T3: 种子租户 T001 + 部门 + 用户 + 角色
     let s = build_state().await;
     let tnt = s.iam.find_tenant_by_code("T001").expect("T001 租户");
-    assert_eq!(tnt.code, "T001");
+    assert_eq!(tnt.tenant_code, "T001");
 
     // 部门存在（至少 1 个）
-    let depts: Vec<_> = s.iam.departments.iter().map(|d| d.value().clone()).collect();
+    let depts: Vec<_> = s.iam.list_departments(&tnt.tenant_id).expect("list departments");
     assert!(!depts.is_empty(), "至少 1 个部门（种子 D001）");
 
     // 用户 admin 存在
     let admin = s
         .iam
-        .find_user_by_tenant_username(&tnt.id, "admin")
+        .find_user_by_tenant_username(&tnt.tenant_id, "admin")
         .expect("admin 用户必须存在");
     assert_eq!(admin.username, "admin");
-    assert_eq!(admin.display_name, "系统管理员");
+    assert_eq!(admin.real_name.as_deref(), Some("系统管理员"));
 
     // 角色绑定：admin 具备 admin 角色
-    let roles = s.iam.user_roles(&admin.id);
+    let roles = s.iam.user_roles(&admin.user_id);
     assert!(!roles.is_empty(), "admin 必须至少有 1 个角色");
-    let admin_role = roles.iter().find(|r| r.code == "admin");
-    assert!(admin_role.is_some(), "admin 必须有 admin 角色");
+    let admin_role = roles.iter().find(|r| r.code == "tenant_admin");
+    assert!(admin_role.is_some(), "admin 必须有 tenant_admin 角色");
 }
 
 #[tokio::test]
@@ -289,28 +289,30 @@ async fn t10_audit_chain_continuous_3() {
     let chain = s.orch.audit_chain_sync(&biz_id);
     assert!(chain.len() >= 3, "审计链至少 3 条，实际 = {}", chain.len());
 
-    let mut prev_id: Option<String> = None;
+    let mut prev_curr: Option<String> = None;
     for (i, node) in chain.iter().enumerate() {
+        let prev_hash = node.get("prev_hash").and_then(|v| v.as_str()).filter(|s| !s.is_empty());
+        let curr_hash = node.get("curr_hash").and_then(|v| v.as_str()).unwrap_or("");
         if i == 0 {
-            assert!(node.prev_id.is_none(), "链首 prev_id 必须为 None");
+            // 链首可以无 prev_hash
         } else {
             assert!(
-                node.prev_id.is_some(),
-                "第 {} 条 prev_id 必须非空（实际 {:?}）",
+                prev_hash.is_some(),
+                "第 {} 条 prev_hash 必须非空（实际 {:?}）",
                 i,
-                node.prev_id
+                prev_hash
             );
             assert_eq!(
-                node.prev_id.as_deref(),
-                prev_id.as_deref(),
-                "第 {} 条 prev_id 必须等于前一条 curr_id，prev={:?} expect={:?}",
+                prev_hash,
+                prev_curr.as_deref(),
+                "第 {} 条 prev_hash 必须等于前一条 curr_hash，prev={:?} expect={:?}",
                 i,
-                node.prev_id,
-                prev_id
+                prev_hash,
+                prev_curr
             );
         }
-        assert!(!node.curr_id.is_empty(), "curr_id 必须非空");
-        prev_id = Some(node.curr_id.clone());
+        assert!(!curr_hash.is_empty(), "curr_hash 必须非空（第 {} 条）", i);
+        prev_curr = Some(curr_hash.to_string());
     }
 }
 

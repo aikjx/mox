@@ -181,6 +181,103 @@ impl IamRepository {
             }
         }
 
+        let t001_id = "t001-tenant".to_string();
+        let t001 = IamTenant {
+            tenant_id: t001_id.clone(),
+            tenant_code: "T001".to_string(),
+            tenant_name: "企业演示租户".to_string(),
+            tenant_mode: "logical".to_string(),
+            tenant_status: "active".to_string(),
+            tenant_plan: "enterprise".to_string(),
+            config_json: None,
+            settings: None,
+            created_at: ts.clone(),
+            updated_at: ts.clone(),
+            version: 1,
+        };
+        let _ = self.create_tenant_inner(&t001);
+
+        for (code, name, rtype, dscope) in builtin_roles.iter() {
+            let rid = new_id();
+            role_ids.insert(format!("T001:{}", code), rid.clone());
+            let role = IamRole {
+                role_id: rid,
+                tenant_id: t001_id.clone(),
+                role_code: code.to_string(),
+                role_name: name.to_string(),
+                role_type: rtype.to_string(),
+                parent_id: None,
+                inherit_path: None,
+                is_builtin: 1,
+                data_scope: dscope.to_string(),
+                description: None,
+                sort_order: Some(0),
+                status: "active".to_string(),
+                created_at: ts.clone(),
+                updated_at: ts.clone(),
+                version: 1,
+            };
+            let _ = self.create_role_inner(&role);
+        }
+
+        let d001_id = "d001-dept".to_string();
+        let d001 = IamDepartment {
+            dept_id: d001_id.clone(),
+            tenant_id: t001_id.clone(),
+            parent_id: None,
+            dept_code: "D001".to_string(),
+            dept_name: "总裁办".to_string(),
+            dept_type: "root".to_string(),
+            dept_level: 1,
+            dept_path: format!("/{}", d001_id),
+            sort_order: Some(1),
+            manager_user_id: None,
+            status: "active".to_string(),
+            created_at: ts.clone(),
+            updated_at: ts.clone(),
+            version: 1,
+        };
+        let _ = self.create_dept_inner(&d001);
+
+        let admin_id = "admin-user".to_string();
+        let admin = IamUser {
+            user_id: admin_id.clone(),
+            tenant_id: t001_id.clone(),
+            user_code: "U001".to_string(),
+            username: "admin".to_string(),
+            password_hash: None,
+            real_name: Some("系统管理员".to_string()),
+            nickname: Some("系统管理员".to_string()),
+            email: None,
+            phone: None,
+            avatar: None,
+            dept_id: Some(d001_id.clone()),
+            position: None,
+            user_status: "active".to_string(),
+            is_superuser: 1,
+            last_login_at: None,
+            last_login_ip: None,
+            created_at: ts.clone(),
+            updated_at: ts.clone(),
+            version: 1,
+        };
+        {
+            let conn = self.conn.lock();
+            let _ = conn.execute(
+                "INSERT INTO iam_user (user_id,tenant_id,user_code,username,password_hash,real_name,nickname,email,phone,avatar,dept_id,position,user_status,is_superuser,last_login_at,last_login_ip,created_at,updated_at,version) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19)",
+                params![
+                    admin.user_id, admin.tenant_id, admin.user_code, admin.username,
+                    admin.password_hash, admin.real_name, admin.nickname, admin.email,
+                    admin.phone, admin.avatar, admin.dept_id, admin.position,
+                    admin.user_status, admin.is_superuser, admin.last_login_at,
+                    admin.last_login_ip, admin.created_at, admin.updated_at, admin.version
+                ],
+            );
+        }
+
+        let ta_role_id = role_ids.get("T001:tenant_admin").unwrap();
+        let _ = self.assign_role_to_user(&t001_id, &admin_id, ta_role_id, None);
+
         Ok(())
     }
 
@@ -191,6 +288,46 @@ impl IamRepository {
             params![
                 t.tenant_id, t.tenant_code, t.tenant_name, t.tenant_mode, t.tenant_status,
                 t.tenant_plan, t.config_json, t.settings, t.created_at, t.updated_at, t.version
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn list_departments(&self, tenant_id: &str) -> Result<Vec<IamDepartment>> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT dept_id,tenant_id,parent_id,dept_code,dept_name,dept_type,dept_level,dept_path,sort_order,manager_user_id,status,created_at,updated_at,version \
+             FROM iam_department WHERE tenant_id=?1 ORDER BY sort_order ASC",
+        )?;
+        let rows = stmt.query_map(params![tenant_id], |r| {
+            Ok(IamDepartment {
+                dept_id: r.get(0)?,
+                tenant_id: r.get(1)?,
+                parent_id: r.get(2)?,
+                dept_code: r.get(3)?,
+                dept_name: r.get(4)?,
+                dept_type: r.get(5)?,
+                dept_level: r.get(6)?,
+                dept_path: r.get(7)?,
+                sort_order: r.get(8)?,
+                manager_user_id: r.get(9)?,
+                status: r.get(10)?,
+                created_at: r.get(11)?,
+                updated_at: r.get(12)?,
+                version: r.get(13)?,
+            })
+        })?;
+        Ok(rows.collect::<std::result::Result<Vec<_>, _>>()?)
+    }
+
+    fn create_dept_inner(&self, d: &IamDepartment) -> Result<()> {
+        let conn = self.conn.lock();
+        conn.execute(
+            "INSERT INTO iam_department (dept_id,tenant_id,parent_id,dept_code,dept_name,dept_type,dept_level,dept_path,sort_order,manager_user_id,status,created_at,updated_at,version) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14)",
+            params![
+                d.dept_id, d.tenant_id, d.parent_id, d.dept_code, d.dept_name,
+                d.dept_type, d.dept_level, d.dept_path, d.sort_order, d.manager_user_id,
+                d.status, d.created_at, d.updated_at, d.version
             ],
         )?;
         Ok(())
@@ -286,64 +423,72 @@ impl IamRepository {
     }
 
     pub fn user_roles(&self, user_id: &str) -> Vec<UserRole> {
-        let conn = self.conn.lock();
-        let mut stmt = match conn.prepare(
-            "SELECT tenant_id, role_id FROM iam_user_role WHERE user_id=?1",
-        ) {
-            Ok(s) => s,
-            Err(_) => return vec![],
-        };
-        let bindings: Vec<(String, String)> = match stmt
-            .query_map(params![user_id], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))
-        {
-            Ok(rows) => rows
-                .collect::<std::result::Result<Vec<_>, _>>()
-                .unwrap_or_default(),
-            Err(_) => return vec![],
-        };
-        let mut result = Vec::new();
-        for (tenant_id, role_id) in bindings {
-            let mut rstmt = match conn.prepare(
-                "SELECT role_id,tenant_id,role_code,role_name,role_type,parent_id,inherit_path,is_builtin,data_scope,description,sort_order,status,created_at,updated_at,version FROM iam_role WHERE tenant_id=?1 AND role_id=?2",
+        let roles_with_tenant: Vec<(String, IamRole)> = {
+            let conn = self.conn.lock();
+            let mut stmt = match conn.prepare(
+                "SELECT tenant_id, role_id FROM iam_user_role WHERE user_id=?1",
             ) {
                 Ok(s) => s,
-                Err(_) => continue,
+                Err(_) => return vec![],
             };
-            let role_opt: Option<IamRole> = rstmt
-                .query_map(params![tenant_id, role_id], |r| {
-                    Ok(IamRole {
-                        role_id: r.get(0)?,
-                        tenant_id: r.get(1)?,
-                        role_code: r.get(2)?,
-                        role_name: r.get(3)?,
-                        role_type: r.get(4)?,
-                        parent_id: r.get(5)?,
-                        inherit_path: r.get(6)?,
-                        is_builtin: r.get(7)?,
-                        data_scope: r.get(8)?,
-                        description: r.get(9)?,
-                        sort_order: r.get(10)?,
-                        status: r.get(11)?,
-                        created_at: r.get(12)?,
-                        updated_at: r.get(13)?,
-                        version: r.get(14)?,
-                    })
-                })
-                .ok()
-                .and_then(|rows| rows.collect::<std::result::Result<Vec<_>, _>>().ok())
-                .and_then(|v| v.into_iter().next());
-            if let Some(role) = role_opt {
-                let perms = match self.get_user_permissions(&tenant_id, user_id) {
-                    Ok(p) => p,
-                    Err(_) => vec![],
+            let bindings: Vec<(String, String)> = match stmt
+                .query_map(params![user_id], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))
+            {
+                Ok(rows) => rows
+                    .collect::<std::result::Result<Vec<_>, _>>()
+                    .unwrap_or_default(),
+                Err(_) => return vec![],
+            };
+            let mut result = Vec::new();
+            for (tenant_id, role_id) in bindings {
+                let mut rstmt = match conn.prepare(
+                    "SELECT role_id,tenant_id,role_code,role_name,role_type,parent_id,inherit_path,is_builtin,data_scope,description,sort_order,status,created_at,updated_at,version FROM iam_role WHERE tenant_id=?1 AND role_id=?2",
+                ) {
+                    Ok(s) => s,
+                    Err(_) => continue,
                 };
-                result.push(UserRole {
-                    id: role.role_id,
-                    code: role.role_code,
-                    name: role.role_name,
-                    permissions: perms,
-                });
+                let role_opt: Option<IamRole> = rstmt
+                    .query_map(params![tenant_id, role_id], |r| {
+                        Ok(IamRole {
+                            role_id: r.get(0)?,
+                            tenant_id: r.get(1)?,
+                            role_code: r.get(2)?,
+                            role_name: r.get(3)?,
+                            role_type: r.get(4)?,
+                            parent_id: r.get(5)?,
+                            inherit_path: r.get(6)?,
+                            is_builtin: r.get(7)?,
+                            data_scope: r.get(8)?,
+                            description: r.get(9)?,
+                            sort_order: r.get(10)?,
+                            status: r.get(11)?,
+                            created_at: r.get(12)?,
+                            updated_at: r.get(13)?,
+                            version: r.get(14)?,
+                        })
+                    })
+                    .ok()
+                    .and_then(|rows| rows.collect::<std::result::Result<Vec<_>, _>>().ok())
+                    .and_then(|v| v.into_iter().next());
+                if let Some(role) = role_opt {
+                    result.push((tenant_id, role));
+                }
             }
+            result
+        };
+
+        let mut result = Vec::new();
+        for (tenant_id, role) in roles_with_tenant {
+            let perms = match self.get_user_permissions(&tenant_id, user_id) {
+                Ok(p) => p,
+                Err(_) => vec![],
+            };
+            result.push(UserRole {
+                id: role.role_id,
+                code: role.role_code,
+                name: role.role_name,
+                permissions: perms,
+            });
         }
         result
     }
