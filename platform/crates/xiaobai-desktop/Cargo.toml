@@ -1,0 +1,35 @@
+[package]
+name = "xiaobai-desktop"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Xiaobai · 桌面小白助手 BallWidget（Slint 骨架 + 5 状态机）+ 启动 voice_proxy 3717 服务"
+
+[lib]
+name = "xiaobai_desktop"
+path = "src/lib.rs"
+
+[dependencies]
+xiaobai-core = { workspace = true }
+xiaobai-operators = { workspace = true, features = ["server-3717"] }
+xiaobai-asr = { workspace = true }
+xiaobai-intent = { workspace = true }
+mox-common-meta = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+async-trait = { workspace = true }
+tracing = { workspace = true }
+parking_lot = { workspace = true }
+indexmap = { workspace = true }
+ahash = { workspace = true }
+chrono = { workspace = true }
+
+# 全局热键（Alt+X 开始/停止录音，P2 实现）
+global-hotkey = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full"] }

@@ -79,6 +79,12 @@ class EngineLifecycle:
                 self.asr = None
                 log.warning("ASR 初始化失败 %s：%s", exc.code.value, exc.message)
                 self._append_smoke(dict(ts=time.time(), phase="asr_init", code=exc.code.value, message=exc.message))
+            except Exception as exc:  # noqa: BLE001
+                # 抽象类未实现 / TypeError / ImportError 等未分级错误，统一降级避免阻塞 TTS
+                self.asr = None
+                log.warning("ASR 初始化失败（非分级异常）%s：%s", type(exc).__name__, exc)
+                self._append_smoke(dict(ts=time.time(), phase="asr_init", code="ERR",
+                                        message=f"{type(exc).__name__}: {exc}"))
             try:
                 old = self.tts
                 self.tts = build_tts_backend(cfg, tier, self.registry)
@@ -92,6 +98,11 @@ class EngineLifecycle:
                 self.tts = None
                 log.warning("TTS 初始化失败 %s：%s", exc.code.value, exc.message)
                 self._append_smoke(dict(ts=time.time(), phase="tts_init", code=exc.code.value, message=exc.message))
+            except Exception as exc:  # noqa: BLE001
+                self.tts = None
+                log.warning("TTS 初始化失败（非分级异常）%s：%s", type(exc).__name__, exc)
+                self._append_smoke(dict(ts=time.time(), phase="tts_init", code="ERR",
+                                        message=f"{type(exc).__name__}: {exc}"))
         if prewarm:
             self._prewarm_smoke()
 
@@ -497,13 +508,27 @@ def _bind_routes(app: FastAPI, prefix: str) -> None:
         media_type = "audio/wav"
         if lc.tts.name == "browser":
             headers["X-TTS-Fallback"] = "browser"
+
         try:
-            agen = lc.tts.asynthesize(opts)
+            # 先做一次"同步探测"取出 DSP impl。注意：TTSBackend 提供的是生成器 API，
+            # synthesize_full 会完整跑完一次拿到 bytes；这里用 full 既简单又可靠，
+            # 可直接拿到整段 WAV bytes 并把 X-TTS-DSP-Impl 设到 headers。
             lc.stats["tts_req"] = lc.stats.get("tts_req", 0) + 1
-            return StreamingResponse(agen, media_type=media_type, headers=headers)
+            wav_bytes = await asyncio.to_thread(lc.tts.synthesize_full, opts)
+            dsp_impl = str(getattr(lc.tts, "_last_dsp_impl", "") or "")
+            if dsp_impl:
+                headers["X-TTS-DSP-Impl"] = dsp_impl
+            # RFC 7233: Content-Length 便于前端进度条与播放器缓冲估算
+            headers["Content-Length"] = str(len(wav_bytes))
+
+            async def _static():
+                yield wav_bytes
+
+            return StreamingResponse(_static(), media_type=media_type, headers=headers)
         except XiaobaiError as exc:
             raise HTTPException(500, detail=exc.to_dict()) from exc
         except Exception as exc:  # noqa: BLE001
+            log.exception("TTS 合成异常")
             raise HTTPException(500, str(exc)) from exc
 
     @r.post("/tts/clone")

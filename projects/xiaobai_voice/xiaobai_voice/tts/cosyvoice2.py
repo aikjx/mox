@@ -496,6 +496,9 @@ class CosyVoice2Backend(TTSBackend):
         """用 24kHz × 3 秒合成正弦淡入淡出提示音，做一次 zero-shot 克隆，得到默认 spk embedding。
         好处：无外部文件、音色柔和（正弦波基频 + 轻微颤音），后续 inference_sft 稳定工作。
         注意：prompt_wav 必须是真实 WAV 文件路径（新版 torchaudio 需要 torchcodec + soundfile），不再直接传 tensor。
+        关键：CosyVoice2 frontend_sft 依赖 spk2info[spk_id]['embedding']，而 add_zero_shot_spk 只写
+        llm_embedding / flow_embedding；因此无论走 add_zero_shot_spk 还是 fallback 路径，注册后都要显式
+        补齐 'embedding' 字段（取 llm_embedding）。
         """
         import os
         import tempfile
@@ -556,6 +559,21 @@ class CosyVoice2Backend(TTSBackend):
                 ok = True
             except Exception:  # noqa: BLE001
                 ok = False
+        # ---- 关键：无论哪种路径写入 spk2info[spk_id]，都要保证存在 'embedding' 键 ----
+        if ok and spk_id in frontend.spk2info:
+            entry = frontend.spk2info[spk_id]
+            if isinstance(entry, dict) and "embedding" not in entry:
+                if "llm_embedding" in entry:
+                    entry["embedding"] = entry["llm_embedding"]
+                else:
+                    try:
+                        entry["embedding"] = frontend._extract_spk_embedding(prompt_wav_path)  # noqa: SLF001
+                    except Exception as exc:  # noqa: BLE001
+                        log_extra = __import__("logging").getLogger("xiaobai.tts.cosyvoice2")
+                        log_extra.warning("默认音色注册后仍缺 embedding 字段，后续 SFT 路径禁用：%s", exc)
+                        # 回退：把 spk2info 清空，让 _do_infer_raw 走 zero-shot 直通
+                        frontend.spk2info.pop(spk_id, None)
+                        ok = False
         if ok:
             import torch
 
@@ -645,8 +663,13 @@ class CosyVoice2Backend(TTSBackend):
             except Exception as exc:  # noqa: BLE001
                 log = __import__("logging").getLogger("xiaobai.tts.cosyvoice2")
                 log.warning("instruct2 模式失败：%s；回退 zero-shot/sft。", exc)
-        # spk 已注册 → inference_sft
-        if spk and spk in registered_keys and hasattr(model, "inference_sft") and callable(model.inference_sft):
+        # spk 已注册 → inference_sft；前置条件：entry 必须含 'embedding' 键（frontend_sft 会读取它）
+        sft_ready = bool(spk) and spk in registered_keys
+        if sft_ready and frontend is not None and isinstance(getattr(frontend, "spk2info", None), dict):
+            entry = frontend.spk2info.get(spk)
+            if not (isinstance(entry, dict) and "embedding" in entry):
+                sft_ready = False
+        if sft_ready and hasattr(model, "inference_sft") and callable(model.inference_sft):
             yield from model.inference_sft(text, spk)
             return
         # zero-shot 直通（无预设音色时的标准路径，官方 CosyVoice2 最稳定）

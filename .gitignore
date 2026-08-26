@@ -98,3 +98,28 @@ guantu.req.json.tmp
 
 ci_target
 target_verify
+
+# ===== 运行时临时构建产物 / 一次性诊断文件 =====
+# Rust 增量编译 rlib 元数据（target/ 外溢出的孤立文件）
+*.rmeta
+# Rust/Cargo 依赖描述 .d 文件（含 NUL-/libmox_ 前缀的孤立残留）
+*.d
+NUL-*
+# 根目录临时 txt（保留 README* / LICENSE* / CLAUDE* / 基线 *.json）
+/*.txt
+!/README*.txt
+!/LICENSE*.txt
+!/CLAUDE*.txt
+# 前端 build 过程日志
+/frontend-ui/build_log*.txt
+/frontend-ui/*.log
+# melody2score 构建过程 PID 记录
+/projects/melody2score/build_run*.txt
+# 运行时 PID / socket 孤立文件
+*.pid
+*.sock
+# 临时 Python 安装构建日志
+tmp_pyinst_*.log
+# 运行时制品 / 第三方源码暂存（由工具链按需生成，不入库）
+/artifacts/
+/third_party/

@@ -1,0 +1,33 @@
+[package]
+name = "xiaobai-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Xiaobai · 小白语音桌面助手 Rust 权威核心：错误码、身份鉴权（对齐 mox-system RBAC）、Operator 抽象、OperatorEngine 三策略调度"
+
+[lib]
+name = "xiaobai_core"
+path = "src/lib.rs"
+
+[dependencies]
+mox-common-meta = { workspace = true }
+# 对齐 mox-system 的 5 角色枚举（Auditor/Member/Expert/Coordinator/MoxAdmin）
+mox-system = { path = "../../services/mox-system", default-features = false }
+# 对齐 mox-expert 的 PII 钩子（is_sensitive_leak）—— file_operator PII-SAFE 强制升 L3
+mox-expert = { path = "../../services/mox-expert", default-features = false, features = [] }
+# 对齐 operator-core 的 OperatorPipeline 抽象
+operator-core = { path = "../../services/operator-core", default-features = false }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+parking_lot = { workspace = true }
+indexmap = { workspace = true }
+ahash = { workspace = true }
+strsim = { workspace = true }

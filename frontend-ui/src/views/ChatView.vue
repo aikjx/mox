@@ -617,13 +617,18 @@
         </el-tabs>
       </div>
 
-      <div class="chat-input">
+      <div class="chat-input" :class="{ 'is-share': isShareMode }">
+        <div v-if="isShareMode" class="share-readonly-banner">
+          <el-icon><Link /></el-icon>
+          <span>分享对话 · 只读模式（如需续问，<b @click="forkShareSession">点此创建可编辑副本</b>）</span>
+        </div>
         <el-input
           v-model="draft"
           type="textarea"
           :rows="2"
           resize="none"
-          placeholder="输入消息，Enter 发送 / Shift+Enter 换行"
+          :disabled="isShareMode"
+          :placeholder="isShareMode ? '分享快照不可直接发送 · 点击上方「创建副本」继续对话' : '输入消息，Enter 发送 / Shift+Enter 换行'"
           @keydown.enter.exact.prevent="send"
         />
         <div class="input-actions">
@@ -660,7 +665,7 @@
               </span>
             </button>
           </div>
-          <el-button type="primary" :loading="thinking" @click="send">
+          <el-button type="primary" :loading="thinking" :disabled="isShareMode" @click="send">
             <el-icon><Promotion /></el-icon> 发送
           </el-button>
         </div>
@@ -779,7 +784,7 @@
 
 <script setup>
 import { ref, nextTick, onMounted, onUnmounted, watch, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { List, Loading, ArrowDown, Link, Document, FolderAdd, ChatDotRound, ChatLineRound, Delete, Upload, Download, Clock, Promotion, DocumentAdd, Microphone } from '@element-plus/icons-vue'
 import MessageBubble from '@/components/MessageBubble.vue'
@@ -861,6 +866,7 @@ let micRafId = 0
 let micStream = null
 
 const router = useRouter()
+const route = useRoute()
 
 const sessions = ref([])
 const currentSession = ref(null)
@@ -1719,7 +1725,35 @@ async function sendQuick(q) {
   await send()
 }
 
+async function forkShareSession() {
+  if (!currentSession.value || !messages.value.length) {
+    newSession(); return
+  }
+  const cur = messages.value.slice()
+  const oldId = currentSession.value
+  const oldS = sessions.value.find(x => x.id === oldId)
+  newSession()
+  const newId = currentSession.value
+  const cloned = cur.map((m, i) => ({
+    ...m,
+    id: 'fork-' + (m.id || ('m' + i)) + '-' + Date.now().toString(36).slice(-4),
+    share_snapshot: false,
+    timestamp: Number(m.timestamp) || (Date.now() + i),
+    raw: undefined,
+  }))
+  messagesMap.value[newId] = cloned
+  setMessages(cloned)
+  const ns = sessions.value.find(x => x.id === newId)
+  if (ns) ns.title = (oldS?.title ? oldS.title + ' · 副本' : '分享对话 · 副本')
+  persist()
+  nextTick(scroll)
+  ElMessage.success({ message: '已创建可编辑副本，可继续发送对话', duration: 1800 })
+}
 async function send() {
+  if (isShareMode.value) {
+    ElMessage.warning('分享快照为只读模式，如需续问请点击「创建可编辑副本」')
+    return
+  }
   const text = draft.value.trim()
   if (!text || thinking.value) return
   if (!currentSession.value) newSession()
@@ -1863,7 +1897,113 @@ async function scroll() {
   if (scrollEl.value) scrollEl.value.scrollTop = scrollEl.value.scrollHeight
 }
 
+// ==================== 分享链接：Base64 Token → 本地会话恢复 ====================
+const SHARE_TOKEN_KEY = 'share_session_token_v1'
+/** 把 snapshot.msgs 转成 MessageBubble 兼容的内部消息格式（role/content/timestamp/id/system） */
+function restoreMessagesFromSnapshot(msgs) {
+  if (!Array.isArray(msgs)) return []
+  return msgs
+    .filter(m => m && typeof m.content === 'string')
+    .map((m, i) => ({
+      id: 'share-' + (m.id || ('m' + i + '-' + Date.now().toString(36))),
+      role: ['user', 'assistant', 'system'].includes(m.role) ? m.role : (m.system ? 'system' : 'assistant'),
+      content: String(m.content || ''),
+      timestamp: Number(m.timestamp) || (Date.now() + i),
+      senderName: m.senderName || undefined,
+      confidence: m.confidence ?? undefined,
+      system: !!m.system,
+      raw: m,
+      share_snapshot: true, // 标记：只读快照，禁止发送续问（在输入框发送前判断）
+    }))
+}
+/** 从 route.params.token / route.query.share / hash 三路解析分享快照 */
+function resolveShareToken() {
+  // 1) /share/:token 路由参数（hash router，url 形如 #/share/eyJ...）
+  if (route.params?.token) return String(route.params.token)
+  // 2) 兼容：/ai?share=TOKEN 或 /ai?share_token=TOKEN
+  if (route.query?.share) return String(route.query.share)
+  if (route.query?.share_token) return String(route.query.share_token)
+  // 3) 兼容旧版本：hash 尾部 #share=TOKEN（search 里）
+  const search = typeof location !== 'undefined' ? location.search : ''
+  const m = search.match(/[?&]share(_token)?=([^&]+)/)
+  if (m) return m[2]
+  return null
+}
+/** 解码 token → snapshot（容错：null 表示无效） */
+function decodeShareToken(token) {
+  if (!token || typeof token !== 'string') return null
+  const t = token.trim().replace(/^[\s"'`]+|[\s"'`]+$/g, '')
+  if (!t) return null
+  try {
+    const json = decodeURIComponent(escape(atob(t)))
+    const snap = JSON.parse(json)
+    if (!snap || typeof snap !== 'object') return null
+    if (!Array.isArray(snap.msgs)) return null
+    if (!snap.v) snap.v = 1
+    if (!snap.ts) snap.ts = Date.now()
+    return snap
+  } catch (e) {
+    console.warn('[Share] token decode failed:', e?.message || e, 'token[:40]=', t.slice(0, 40))
+    return null
+  }
+}
+// 分享模式标记（只读：发送输入框禁用）
+const isShareMode = computed(() => !!route.meta?.shareMode || !!resolveShareToken())
+/** 把 snapshot 恢复为本地会话（加入左侧 sessions 列表，激活并显示） */
+function restoreSharedSnapshot(tokenParam) {
+  const token = tokenParam || resolveShareToken()
+  if (!token) return { ok: false, reason: 'no-token' }
+  const snap = decodeShareToken(token)
+  if (!snap) {
+    ElMessage.error('分享链接无效或已损坏，请重新生成')
+    return { ok: false, reason: 'bad-token' }
+  }
+  const msgs = restoreMessagesFromSnapshot(snap.msgs)
+  if (!msgs.length) {
+    ElMessage.warning('分享内容为空，无法恢复对话')
+    return { ok: false, reason: 'empty' }
+  }
+  // 幂等：如果该 snapshot 已经存在于 sessions（同一 token）则只切换不重复创建
+  const sessionId = 'share-' + (token.slice(-8) || Math.random().toString(36).slice(2, 8))
+  const title = (msgs[0].content || '').replace(/\s+/g, ' ').slice(0, 16) + '…分享'
+  let s = sessions.value.find((x) => x.id === sessionId)
+  if (!s) {
+    s = {
+      id: sessionId,
+      title: title || '分享对话',
+      time: new Date(snap.ts || Date.now()).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+      shareToken: token.slice(0, 20) + (token.length > 20 ? '…' : ''),
+      readOnly: true,
+    }
+    sessions.value.unshift(s)
+  }
+  messagesMap.value[sessionId] = msgs
+  currentSession.value = sessionId
+  setMessages(msgs)
+  persist()
+  nextTick(scroll)
+  ElMessage.success({
+    message: `已载入分享对话（共 ${msgs.length} 条消息，只读模式）`,
+    duration: 2200,
+    showClose: true,
+  })
+  return { ok: true, session: s, count: msgs.length }
+}
+
 watch(messages, persist, { deep: true })
+
+// 监听路由 token 变化（同一个 ChatView 组件，从 /ai → /share/xxx 不会重挂）
+watch(
+  () => [route.params?.token, route.query?.share, route.query?.share_token, route.path],
+  () => {
+    const token = resolveShareToken()
+    if (!token) return
+    // 避免 onMounted 已跑完但路由没触发；如果没有会话就是首次挂载，等 onMounted 处理
+    if (!sessions.value.length) return
+    restoreSharedSnapshot(token)
+  },
+  { flush: 'post' }
+)
 
 onMounted(async () => {
   loadStore()
@@ -1876,7 +2016,20 @@ onMounted(async () => {
     requirementFlowMode.value = true
     persist()
   }
-  if (!sessions.value.length) newSession()
+
+  // —— 分享快照优先：如 URL 带 token，优先恢复（不需要先有本地会话兜底）——
+  const tok = resolveShareToken()
+  if (tok) {
+    const r = restoreSharedSnapshot(tok)
+    if (r.ok) {
+      // 快照恢复成功，跳过默认新会话
+    } else if (!sessions.value.length) {
+      newSession()
+    }
+  } else if (!sessions.value.length) {
+    newSession()
+  }
+
   // 拉取后端全自动同步开关状态
   getAutoSyncStatus()
     .then((r) => { if (r) autoSync.value = !!(r.enabled ?? r.auto_sync ?? r.data?.auto_sync) })
@@ -2565,7 +2718,28 @@ onUnmounted(() => {
 }
 
 /* ===== 输入区 · 黄金比例渐变 ===== */
-.chat-input {
+.share-readonly-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(99,102,241,0.08), rgba(6,182,212,0.08));
+  border: 1px solid rgba(99,102,241,0.18);
+  color: #334155;
+  font-size: 12.5px;
+}
+.share-readonly-banner b { color: #4338ca; font-weight: 600; cursor: pointer; text-decoration: underline; }
+.share-readonly-banner b:hover { color: #6366f1; }
+.chat-input.is-share {
+  opacity: 0.96;
+}
+.chat-input.is-share .el-textarea :deep(textarea) {
+  background: #f8fafc;
+  color: #64748b;
+  cursor: not-allowed;
+}.chat-input {
   display: flex;
   gap: var(--space-3);
   padding: 16px 26px 22px;

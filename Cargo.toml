@@ -10,6 +10,11 @@ default-members = [
     "platform/crates/mox-norm-core",
     "platform/crates/mox-intent-core",
     "platform/crates/xiaobai-dsp",
+    # ===== 小白语音桌面全维 Rust 化：最小交付路径 4 个核心 crate =====
+    "platform/crates/xiaobai-core",
+    "platform/crates/xiaobai-operators",
+    "platform/crates/xiaobai-intent",
+    "platform/crates/xiaobai-asr",
 ]
 members = [
     "platform/services/operator-core",
@@ -53,6 +58,12 @@ members = [
     "platform/crates/mox-norm-core",
     "platform/crates/mox-intent-core",
     "platform/crates/xiaobai-dsp",
+    # ===== 小白语音桌面全维 Rust 化 5 个核心 crate（默认成员同步注册；xiaobai-desktop 单独显式编译需 Slint）
+    "platform/crates/xiaobai-core",
+    "platform/crates/xiaobai-operators",
+    "platform/crates/xiaobai-intent",
+    "platform/crates/xiaobai-asr",
+    "platform/crates/xiaobai-desktop",
     # ===== Node.js napi 绑定（cargo check -p 显式调用；不进 default-members 避免 cdylib 工具链要求）
     "platform/crates/bindings/mox-formulas-native",
     "platform/crates/bindings/mox-norm-intent-native",
@@ -176,3 +187,44 @@ mox-formulas-core = { path = "platform/crates/mox-formulas-core" }
 mox-norm-core = { path = "platform/crates/mox-norm-core" }
 mox-intent-core = { path = "platform/crates/mox-intent-core" }
 xiaobai-dsp = { path = "platform/crates/xiaobai-dsp" }
+# ===== 小白语音桌面全维 Rust 化：内部路径依赖（FR-13 + FR-5 最小闭环） =====
+xiaobai-core = { path = "platform/crates/xiaobai-core" }
+xiaobai-operators = { path = "platform/crates/xiaobai-operators" }
+xiaobai-intent = { path = "platform/crates/xiaobai-intent" }
+xiaobai-asr = { path = "platform/crates/xiaobai-asr" }
+
+# 小白专用：正则（PPR 路由、应用别名匹配、应用列表过滤）
+regex = "1.10"
+# 系统级热键（BallWidget 全局 Alt+X 录音）
+global-hotkey = "0.5"
+# 跨平台剪贴板（copy_to_clipboard、中文 type_text 粘贴回退）
+arboard = "3.4"
+# 跨平台键鼠输入（mouse_move/click、key_press、type_text ASCII 路径）
+enigo = { version = "0.2", default-features = false, features = ["serde"] }
+# Windows 原生 API（coreaudio 音量设置、win32 进程列表、shell 回收站移动）
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_System_Threading",
+    "Win32_System_ProcessStatus",
+    "Win32_Media_Audio",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_Graphics_Gdi",
+    "Win32_Storage_FileSystem",
+    "Win32_System_Com_StructuredStorage",
+    "Win32_System_Com",
+    "Win32_UI_Shell",
+    "Win32_System_Environment",
+] }
+# 跨平台音频 I/O（麦克风录音、TTS 播放；ASR 可用 alsa/pulseaudio/windows wasapi 回退）
+cpal = "0.15"
+# 跨平台截图（L3 screenshot 动作，mss 等价 Rust 实现；crates.io 最新 0.8.x）
+screenshots = "0.8"
+# 模糊匹配（FR-5 S3 post-hoc 热词编辑距离替换、中文热词近似纠错）
+strsim = "0.11"
+# HTTP body bytes 原语（axum 0.7 / http-body-util 0.1 配套）
+bytes = "1"
+# axum 0.7 Full 依赖的 body adapter（WS 握手/空 body）
+http-body-util = "0.1"
+# FR-5 S2 热词临时文件（NamedTempFile Drop 自动删除）
+tempfile = "3"

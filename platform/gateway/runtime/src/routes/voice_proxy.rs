@@ -27,7 +27,7 @@ impl Default for VoiceProxyState {
         Self {
             upstream_base: "http://127.0.0.1:3717".to_string(),
             client: reqwest::Client::builder()
-                .timeout(std::time::Duration::from_secs(5))
+                .timeout(std::time::Duration::from_secs(30))
                 .build()
                 .unwrap_or_default(),
         }
@@ -89,8 +89,18 @@ pub async fn voice_proxy_handler(
 
     let mut req_builder = state
         .client
-        .request(method, &upstream)
-        .timeout(std::time::Duration::from_secs(10));
+        .request(method, &upstream);
+    // 长操作路由（TTS 合成/流式、ASR 全量上传）超时用 10min，健康/列表 1min，其他 30s。
+    let is_long_op = path_and_query.starts_with("/voice/tts/")
+        || path_and_query.starts_with("/voice/asr/")
+        || path_and_query.starts_with("/voice/models/download");
+    let is_health = path_and_query.starts_with("/voice/health")
+        || path_and_query.starts_with("/voice/models")
+        || path_and_query.starts_with("/voice/hotwords")
+        || path_and_query.starts_with("/voice/license_tier")
+        || path_and_query.starts_with("/voice/metrics");
+    let timeout_secs = if is_long_op { 600 } else if is_health { 60 } else { 30 };
+    req_builder = req_builder.timeout(std::time::Duration::from_secs(timeout_secs));
     for (k, v) in headers.iter() {
         let ks = k.as_str().to_ascii_lowercase();
         if ks == "host" || ks == "content-length" {

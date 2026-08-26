@@ -388,7 +388,7 @@ class SherpaParaformerBackend(ASRBackend):
         for wlen in range(minw, maxw):
             for i in range(0, n - wlen + 1):
                 sub = text[i:i + wlen]
-                d = _levenshtein(sub, word)
+                d = SherpaParaformerBackend._levenshtein(sub, word)
                 if d <= max_edit:
                     key = (d, (i, i + wlen))
                     if best is None or key < best:
@@ -398,27 +398,28 @@ class SherpaParaformerBackend(ASRBackend):
         return best[1] if best is None else best[1]
 
 
-def _levenshtein(a: str, b: str) -> int:
-    """纯 Python Levenshtein，长度小 (<40) 足够快。"""
-    la, lb = len(a), len(b)
-    if la == 0:
-        return lb
-    if lb == 0:
-        return la
-    prev = list(range(lb + 1))
-    for i in range(1, la + 1):
-        cur = [i] + [0] * lb
-        ca = a[i - 1]
-        for j in range(1, lb + 1):
-            cost = 0 if ca == b[j - 1] else 1
-            cur[j] = min(
-                cur[j - 1] + 1,
-                prev[j] + 1,
-                prev[j - 1] + cost,
-            )
-        prev = cur
-    return prev[lb]
-
+    # ---- FR-5 S3 post-hoc biasing Levenshtein ----
+    @staticmethod
+    def _levenshtein(a: str, b: str) -> int:
+        """纯 Python Levenshtein，长度小 (<40) 足够快。"""
+        la, lb = len(a), len(b)
+        if la == 0:
+            return lb
+        if lb == 0:
+            return la
+        prev = list(range(lb + 1))
+        for i in range(1, la + 1):
+            cur = [i] + [0] * lb
+            ca = a[i - 1]
+            for j in range(1, lb + 1):
+                cost = 0 if ca == b[j - 1] else 1
+                cur[j] = min(
+                    cur[j - 1] + 1,
+                    prev[j] + 1,
+                    prev[j - 1] + cost,
+                )
+            prev = cur
+        return prev[lb]
 
     # ================================================================ lifecycle
     def prewarm(self) -> float:
@@ -456,7 +457,6 @@ def _levenshtein(a: str, b: str) -> int:
         import numpy as np
 
         last_text = ""
-        final_promise: asyncio.Future[ASRPartial | None] = asyncio.Future()
 
         def _feed_pcm(pcm16: bytes) -> str:
             nonlocal last_text
@@ -493,9 +493,9 @@ def _levenshtein(a: str, b: str) -> int:
             fixed, applied = self._post_hoc_fixup(final_text)
             conf = 0.95 if not applied else min(1.0, 0.95 + 0.01 * len(applied))
             partial = ASRPartial(text=fixed, is_final=True, confidence=conf)
-            # 把 applied 热词挂到 segments（对齐 FR-5 验证输出）
+            # 把 applied 热词挂到 __dict__（对齐 FR-5 验证输出）
             if applied:
-                partial.language = self._lang_mark()  # 复用字段不合适，改用 segments
+                partial.language = self._lang_mark()
                 partial.__dict__["hotwords_applied"] = applied
             yield partial
 

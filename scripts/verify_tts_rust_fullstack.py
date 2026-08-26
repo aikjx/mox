@@ -319,7 +319,6 @@ def case_e2b_backend_instantiate(results: list[CaseResult]) -> None:
             emotion="happy",
             speed=1.03,
             sample_rate=22050,
-            format="wav",
             stream_chunk_ms=200,
         )
         chunks = list(b.synthesize(opts))
