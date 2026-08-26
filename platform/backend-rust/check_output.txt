@@ -1,0 +1,676 @@
+﻿cargo :    Compiling ring v0.17.14
+At line:1 char:18087
++ ... ph\platform\backend-rust; cargo check > check_output.txt 2>&1; echo " ...
++                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (   Compiling ring v0.17.14:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+   Compiling zstd-sys v2.0.16+zstd.1.5.7
+    Checking icu_provider v2.3.1
+    Checking time v0.3.55
+    Checking miniz_oxide v0.8.9
+    Checking regex-automata v0.4.18
+    Checking brotli-decompressor v5.0.3
+   Compiling rustversion v1.0.23
+    Checking windows-sys v0.52.0
+   Compiling asn1-rs-derive v0.4.0
+   Compiling pest_meta v2.9.0
+    Checking safe_arch v0.7.4
+    Checking rusticata-macros v4.1.0
+   Compiling asn1-rs-impl v0.1.0
+    Checking futures-executor v0.3.34
+    Checking num-complex v0.4.6
+    Checking icu_normalizer v2.3.0
+    Checking icu_properties v2.3.0
+   Compiling indexmap v1.9.3
+   Compiling matrixmultiply v0.3.11
+   Compiling crossbeam-epoch v0.9.20
+    Checking atomic-waker v1.1.2
+   Compiling unicase v2.9.0
+    Checking cpufeatures v0.3.0
+   Compiling winapi v0.3.9
+    Checking h2 v0.4.19
+   Compiling pest_generator v2.9.0
+    Checking wide v0.7.33
+    Checking brotli v8.0.4
+    Checking chacha20 v0.10.1
+   Compiling mime_guess v2.0.5
+    Checking socket2 v0.5.10
+    Checking idna_adapter v1.2.2
+    Checking asn1-rs v0.5.2
+    Checking flate2 v1.1.9
+    Checking windows-targets v0.48.5
+   Compiling paste v1.0.15
+    Checking dlv-list v0.5.2
+    Checking h2 v0.3.27
+    Checking block-buffer v0.10.4
+    Checking crypto-common v0.1.7
+    Checking http-body v0.4.6
+    Checking num-rational v0.4.2
+    Checking http-body-util v0.1.5
+    Checking crossbeam-channel v0.5.16
+    Checking idna v1.1.0
+    Checking toml_datetime v0.6.11
+    Checking serde_spanned v0.6.9
+   Compiling pin-project-internal v1.1.13
+    Checking approx v0.5.1
+    Checking bitflags v2.13.1
+    Checking encoding_rs v0.8.35
+    Checking subtle v2.6.1
+    Checking hashbrown v0.12.3
+   Compiling crossbeam-deque v0.8.7
+    Checking toml_write v0.1.2
+    Checking winnow v0.7.15
+    Checking ucd-trie v0.1.7
+    Checking urlencoding v2.1.3
+   Compiling oid-registry v0.6.1
+    Checking compression-core v0.4.32
+    Checking rawpointer v0.2.1
+    Checking sync_wrapper v1.0.2
+    Checking byteorder v1.5.0
+    Checking hyper v1.11.0
+    Checking pest v2.9.0
+    Checking opentelemetry v0.21.0
+    Checking digest v0.10.7
+    Checking simba v0.6.0
+    Checking url v2.5.8
+    Checking toml_edit v0.22.27
+    Checking hdrhistogram v7.6.0
+    Checking pin-project v1.1.13
+    Checking ordered-multimap v0.7.3
+    Checking hyper v0.14.32
+    Checking windows-sys v0.48.0
+    Checking matchers v0.2.0
+   Compiling pest_derive v2.9.0
+    Checking rand v0.10.2
+    Checking sharded-slab v0.1.7
+    Checking serde_urlencoded v0.7.1
+    Checking hashlink v0.8.4
+    Checking rand_distr v0.4.3
+   Compiling nalgebra-macros v0.1.0
+    Checking tracing-serde v0.2.0
+    Checking ordered-float v4.6.0
+    Checking tracing-log v0.2.0
+    Checking nu-ansi-term v0.50.3
+   Compiling rustls v0.21.12
+    Checking thread_local v1.1.10
+    Checking glob v0.3.4
+   Compiling anyhow v1.0.104
+    Checking arraydeque v0.5.1
+    Checking unicode-segmentation v1.13.3
+    Checking tokio-retry v0.3.2
+    Checking json5 v0.4.1
+    Checking winreg v0.50.0
+    Checking socket2 v0.4.10
+    Checking toml v0.8.23
+    Checking rust-ini v0.20.0
+    Checking nalgebra v0.29.0
+    Checking tracing-subscriber v0.3.23
+    Checking opentelemetry_sdk v0.21.2
+    Checking yaml-rust2 v0.8.1
+    Checking convert_case v0.6.0
+    Checking hyper-util v0.1.20
+    Checking tower v0.4.13
+    Checking tower v0.5.3
+    Checking axum-core v0.4.5
+    Checking rustls-webpki v0.101.7
+    Checking sct v0.7.1
+    Checking ron v0.8.1
+    Checking der-parser v8.2.0
+    Checking arc-swap v1.9.2
+    Checking futures v0.3.34
+    Checking rustls-pemfile v1.0.4
+    Checking uuid v1.25.0
+    Checking crossbeam-queue v0.3.13
+    Checking combine v4.6.8
+    Checking num-iter v0.1.46
+   Compiling axum-macros v0.4.2
+    Checking serde_path_to_error v0.1.20
+    Checking iri-string v0.7.14
+    Checking cpufeatures v0.2.17
+    Checking ipnet v2.12.1
+    Checking sha1_smol v1.0.1
+    Checking matchit v0.7.3
+    Checking sync_wrapper v0.1.2
+    Checking unsafe-libyaml v0.2.11
+    Checking data-encoding v2.11.1
+    Checking http-range-header v0.4.2
+    Checking webpki-roots v0.25.4
+    Checking pathdiff v0.2.3
+    Checking sha2 v0.10.9
+    Checking num v0.4.3
+    Checking crossbeam v0.8.4
+    Checking tracing-opentelemetry v0.22.0
+    Checking x509-parser v0.15.1
+    Checking serde_yaml v0.9.34+deprecated
+    Checking hmac v0.12.1
+    Checking regex v1.13.1
+    Checking config v0.14.1
+    Checking dashmap v5.5.3
+    Checking chrono v0.4.45
+    Checking tokio-rustls v0.24.1
+    Checking statrs v0.16.1
+    Checking axum v0.7.9
+    Checking redis v0.24.1
+    Checking hyper-rustls v0.24.2
+    Checking reqwest v0.11.27
+   Compiling zstd-safe v7.2.4
+    Checking zstd v0.13.3
+    Checking compression-codecs v0.4.38
+    Checking async-compression v0.4.43
+    Checking tower-http v0.5.2
+    Checking mox-enterprise-backend v2.0.0 (D:\a10\aikjx\gitcode\infotopograph\platform\backend-rust)
+error[E0432]: unresolved import `super::anomaly`
+  --> src\aiops\dashboard.rs:16:12
+   |
+16 | use super::anomaly::{AnomalyEvent, AnomalySeverity};
+   |            ^^^^^^^ could not find `anomaly` in `super`
+
+error[E0603]: struct `Identity` is private
+   --> src\api_gateway\mod.rs:168:45
+    |
+168 |     pub fn into_layer(self) -> tower::util::Identity {
+    |                                             ^^^^^^^^ private struct
+    |
+note: the struct `Identity` is defined here
+   --> C:\Users\mo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tower-0.4.13\src\util\mod.rs:44:5
+    |
+ 44 | use crate::layer::util::Identity;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: consider importing this struct instead
+    |
+168 |     pub fn into_layer(self) -> tower::layer::util::Identity {
+    |                                       +++++++
+help: import `Identity` directly
+    |
+168 -     pub fn into_layer(self) -> tower::util::Identity {
+168 +     pub fn into_layer(self) -> tower_layer::identity::Identity {
+    |
+
+error[E0603]: struct `Identity` is private
+   --> src\api_gateway\mod.rs:169:22
+    |
+169 |         tower::util::Identity::new()
+    |                      ^^^^^^^^ private struct
+    |
+note: the struct `Identity` is defined here
+   --> C:\Users\mo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tower-0.4.13\src\util\mod.rs:44:5
+    |
+ 44 | use crate::layer::util::Identity;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: consider importing this struct instead
+    |
+169 |         tower::layer::util::Identity::new()
+    |                +++++++
+help: import `Identity` directly
+    |
+169 -         tower::util::Identity::new()
+169 +         tower_layer::identity::Identity()
+    |
+
+warning: unused import: `AtomicUsize`
+  --> src\api_gateway\circuit_breaker.rs:11:36
+   |
+11 | use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+   |                                    ^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `HeaderMap` and `Uri`
+  --> src\api_gateway\mod.rs:18:12
+   |
+18 |     http::{HeaderMap, StatusCode, Uri},
+   |            ^^^^^^^^^              ^^^
+
+warning: unused import: `tokio::sync::RwLock`
+  --> src\api_gateway\mod.rs:25:5
+   |
+25 | use tokio::sync::RwLock;
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `tower::ServiceExt`
+  --> src\api_gateway\mod.rs:26:5
+   |
+26 | use tower::ServiceExt;
+   |     ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> src\data_quality\mod.rs:15:5
+   |
+15 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused imports: `Duration` and `Instant`
+  --> src\zero_trust\mtls.rs:14:17
+   |
+14 | use std::time::{Duration, Instant};
+   |                 ^^^^^^^^  ^^^^^^^
+
+warning: unused import: `Deserialize`
+  --> src\aiops\root_cause.rs:10:13
+   |
+10 | use serde::{Deserialize, Serialize};
+   |             ^^^^^^^^^^^
+
+warning: unused import: `Duration`
+  --> src\aiops\predictive_scaler.rs:13:17
+   |
+13 | use std::time::{Duration, Instant};
+   |                 ^^^^^^^^
+
+error[E0716]: temporary value dropped while borrowed
+   --> src\api_gateway\rate_limiter.rs:118:25
+    |
+118 |           let mut state = self.token_buckets
+    |  _________________________^
+119 | |             .entry(key.to_string())
+120 | |             .or_insert_with(|| Mutex::new(TokenBucketState {
+121 | |                 tokens: self.config.burst_size as f64,
+122 | |                 last_refill: Instant::now(),
+123 | |             }))
+    | |_______________^ creates a temporary value which is freed while still in use
+124 |               .lock()
+125 |               .await;
+    |                     - temporary value is freed at the end of this statement
+...
+129 |           let elapsed = now.duration_since(state.last_refill).as_secs_f64();
+    |                                            ----- borrow later used here
+    |
+    = note: consider using a `let` binding to create a longer lived value
+
+error[E0716]: temporary value dropped while borrowed
+   --> src\api_gateway\rate_limiter.rs:144:25
+    |
+144 |           let mut state = self.sliding_windows
+    |  _________________________^
+145 | |             .entry(key.to_string())
+146 | |             .or_insert_with(|| Mutex::new(SlidingWindowState {
+147 | |                 requests: Vec::new(),
+148 | |             }))
+    | |_______________^ creates a temporary value which is freed while still in use
+149 |               .lock()
+150 |               .await;
+    |                     - temporary value is freed at the end of this statement
+...
+156 |           state.requests.retain(|t| now.duration_since(*t) < window);
+    |           ----- borrow later used here
+    |
+    = note: consider using a `let` binding to create a longer lived value
+
+error[E0600]: cannot apply unary operator `!` to type `impl futures::Future<Output = bool>`
+   --> src\api_gateway\mod.rs:192:24
+    |
+192 |                     if !cb.can_execute() {
+    |                        ^^^^^^^^^^^^^^^^^ cannot apply unary operator `!`
+
+error[E0308]: mismatched types
+    --> src\api_gateway\mod.rs:215:26
+     |
+ 215 |                 .request(req.method().clone(), &upstream_url)
+     |                  ------- ^^^^^^^^^^^^^^^^^^^^ expected `reqwest::Method`, found `axum::http::Method`
+     |                  |
+     |                  arguments to this method are incorrect
+     |
+note: there are multiple different versions of crate `http` in the dependency graph
+    --> C:\Users\mo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\http-0.2.12\src\method.rs:46:1
+     |
+  46 | pub struct Method(Inner);
+     | ^^^^^^^^^^^^^^^^^ this is the expected type
+     |
+    ::: C:\Users\mo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\http-1.5.0\src\method.rs:45:1
+     |
+  45 | pub struct Method(Inner);
+     | ----------------- this is the found type
+     = help: you can use `cargo tree` to explore your dependency tree
+note: method defined here
+    --> C:\Users\mo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reqwest-0.11.27\src\async_impl\client.rs:1785:
+12
+     |
+1785 |     pub fn request<U: IntoUrl>(&self, method: Method, url: U) -> RequestBuilder {
+     |            ^^^^^^^
+
+error[E0308]: mismatched types
+   --> src\api_gateway\mod.rs:216:26
+    |
+216 |                 .headers(req.headers().clone())
+    |                  ------- ^^^^^^^^^^^^^^^^^^^^^ expected `reqwest::header::HeaderMap`, found `axum::http::HeaderMa
+p`
+    |                  |
+    |                  arguments to this method are incorrect
+    |
+note: there are multiple different versions of crate `http` in the dependency graph
+   --> C:\Users\mo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\http-0.2.12\src\header\map.rs:45:1
+    |
+ 45 | pub struct HeaderMap<T = HeaderValue> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this is the expected type
+    |
+   ::: C:\Users\mo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\http-1.5.0\src\header\map.rs:81:1
+    |
+ 81 | pub struct HeaderMap<T = HeaderValue> {
+    | ------------------------------------- this is the found type
+    = help: you can use `cargo tree` to explore your dependency tree
+note: method defined here
+   --> C:\Users\mo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reqwest-0.11.27\src\async_impl\request.rs:234:1
+2
+    |
+234 |     pub fn headers(mut self, headers: crate::header::HeaderMap) -> RequestBuilder {
+    |            ^^^^^^^
+
+error[E0277]: the trait bound `reqwest::Body: From<&axum::body::Body>` is not satisfied
+   --> src\api_gateway\mod.rs:217:23
+    |
+217 |                 .body(req.body().clone())
+    |                  ---- ^^^^^^^^^^^^^^^^^^ the trait `From<&axum::body::Body>` is not implemented for `reqwest::Bod
+y`
+    |                  |
+    |                  required by a bound introduced by this call
+    |
+    = help: `reqwest::Body` implements trait `From<T>`:
+              From<&[u8]>
+              From<&str>
+              From<String>
+              From<Vec<u8>>
+              From<axum::body::Bytes>
+              From<hyper::body::body::Body>
+              From<reqwest::Response>
+              From<tokio::fs::File>
+    = note: required for `&axum::body::Body` to implement `Into<reqwest::Body>`
+note: required by a bound in `RequestBuilder::body`
+   --> C:\Users\mo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reqwest-0.11.27\src\async_impl\request.rs:274:2
+0
+    |
+274 |     pub fn body<T: Into<Body>>(mut self, body: T) -> RequestBuilder {
+    |                    ^^^^^^^^^^ required by this bound in `RequestBuilder::body`
+help: consider removing this method call, as the receiver has type `&axum::body::Body` and `&axum::body::Body: From<&ax
+um::body::Body>` trivially holds
+    |
+217 -                 .body(req.body().clone())
+217 +                 .body(req.body())
+    |
+
+error[E0277]: the trait bound `reqwest::Error: Clone` is not satisfied
+   --> src\api_gateway\mod.rs:213:40
+    |
+213 |         let result = self.retry_policy.execute(|| async {
+    |                                        ^^^^^^^ the trait `Clone` is not implemented for `reqwest::Error`
+    |
+note: required by a bound in `RetryPolicy::execute`
+   --> src\api_gateway\retry.rs:87:19
+    |
+ 82 |     pub async fn execute<F, Fut, T, E>(&self, f: F) -> Result<T, E>
+    |                  ------- required by a bound in this associated function
+...
+ 87 |         E: Send + Clone,
+    |                   ^^^^^ required by this bound in `RetryPolicy::execute`
+
+error[E0277]: the trait bound `reqwest::Error: Clone` is not satisfied
+   --> src\api_gateway\mod.rs:213:22
+    |
+213 |           let result = self.retry_policy.execute(|| async {
+    |  ______________________^
+214 | |             let upstream_req = client
+215 | |                 .request(req.method().clone(), &upstream_url)
+216 | |                 .headers(req.headers().clone())
+...   |
+219 | |             client.execute(upstream_req).await
+220 | |         }).await;
+    | |__________^ the trait `Clone` is not implemented for `reqwest::Error`
+    |
+note: required by a bound in `RetryPolicy::execute`
+   --> src\api_gateway\retry.rs:87:19
+    |
+ 82 |     pub async fn execute<F, Fut, T, E>(&self, f: F) -> Result<T, E>
+    |                  ------- required by a bound in this associated function
+...
+ 87 |         E: Send + Clone,
+    |                   ^^^^^ required by this bound in `RetryPolicy::execute`
+
+error[E0277]: the trait bound `reqwest::Error: Clone` is not satisfied
+   --> src\api_gateway\mod.rs:220:12
+    |
+220 |         }).await;
+    |            ^^^^^ the trait `Clone` is not implemented for `reqwest::Error`
+    |
+note: required by a bound in `RetryPolicy::execute`
+   --> src\api_gateway\retry.rs:87:19
+    |
+ 82 |     pub async fn execute<F, Fut, T, E>(&self, f: F) -> Result<T, E>
+    |                  ------- required by a bound in this associated function
+...
+ 87 |         E: Send + Clone,
+    |                   ^^^^^ required by this bound in `RetryPolicy::execute`
+
+error[E0277]: the trait bound `axum::http::StatusCode: From<reqwest::StatusCode>` is not satisfied
+   --> src\api_gateway\mod.rs:235:35
+    |
+235 |                 let mut builder = Response::builder().status(resp.status());
+    |                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `From<reqwest::StatusCode>`
+ is not implemented for `axum::http::StatusCode`
+    |
+help: the trait `From<reqwest::StatusCode>` is not implemented for `axum::http::StatusCode`
+      but trait `From<&axum::http::StatusCode>` is implemented for it
+   --> C:\Users\mo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\http-1.5.0\src\status.rs:266:1
+    |
+266 | impl From<&StatusCode> for StatusCode {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for that trait implementation, expected `&axum::http::StatusCode`, found `reqwest::StatusCode`
+    = note: there are multiple different versions of crate `http` in the dependency graph
+    = help: you can use `cargo tree` to explore your dependency tree
+    = note: required for `reqwest::StatusCode` to implement `Into<axum::http::StatusCode>`
+    = note: required for `axum::http::StatusCode` to implement `TryFrom<reqwest::StatusCode>`
+
+error[E0277]: the trait bound `axum::http::HeaderName: From<&reqwest::header::HeaderName>` is not satisfied
+    --> src\api_gateway\mod.rs:237:31
+     |
+ 237 |                     builder = builder.header(k, v);
+     |                               ^^^^^^^^^^^^^^^^^^^^ the trait `From<&reqwest::header::HeaderName>` is not impleme
+nted for `axum::http::HeaderName`
+     |
+help: `axum::http::HeaderName` implements trait `From<T>`
+    --> C:\Users\mo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\http-1.5.0\src\header\name.rs:1322:1
+     |
+1322 | impl From<&HeaderName> for HeaderName {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `From<&axum::http::HeaderName>`
+...
+1391 | impl From<StandardHeader> for HeaderName {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `From<axum::http::header::name::StandardHeader>`
+...
+1400 | impl From<Custom> for HeaderName {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `From<axum::http::header::name::Custom>`
+...
+1528 | impl<'a> From<HdrName<'a>> for HeaderName {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `From<axum::http::header::name::HdrName<'_>>`
+     = note: there are multiple different versions of crate `http` in the dependency graph
+     = help: you can use `cargo tree` to explore your dependency tree
+     = note: required for `&reqwest::header::HeaderName` to implement `Into<axum::http::HeaderName>`
+     = note: required for `axum::http::HeaderName` to implement `TryFrom<&reqwest::header::HeaderName>`
+
+error[E0277]: the trait bound `axum::http::HeaderValue: From<&reqwest::header::HeaderValue>` is not satisfied
+   --> src\api_gateway\mod.rs:237:31
+    |
+237 |                     builder = builder.header(k, v);
+    |                               ^^^^^^^^^^^^^^^^^^^^ the trait `From<&reqwest::header::HeaderValue>` is not impleme
+nted for `axum::http::HeaderValue`
+    |
+    = help: `axum::http::HeaderValue` implements trait `From<T>`:
+              From<&axum::http::HeaderValue>
+              From<axum::http::HeaderName>
+              From<i16>
+              From<i32>
+              From<i64>
+              From<isize>
+              From<u16>
+              From<u32>
+            and 2 others
+    = note: there are multiple different versions of crate `http` in the dependency graph
+    = help: you can use `cargo tree` to explore your dependency tree
+    = note: required for `&reqwest::header::HeaderValue` to implement `Into<axum::http::HeaderValue>`
+    = note: required for `axum::http::HeaderValue` to implement `TryFrom<&reqwest::header::HeaderValue>`
+
+error[E0599]: the method `clone` exists for struct `DashMap<String, Atomic<usize>>`, but its trait bounds were not sati
+sfied
+   --> src\api_gateway\mod.rs:342:61
+    |
+342 |             round_robin_counters: self.round_robin_counters.clone(),
+    |                                                             ^^^^^ method cannot be called on `DashMap<String, Ato
+mic<usize>>` due to unsatisfied trait bounds
+    |
+   ::: C:\Users\mo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\dashmap-5.5.3\src\lib.rs:88:1
+    |
+ 88 | pub struct DashMap<K, V, S = RandomState> {
+    | ----------------------------------------- doesn't satisfy `DashMap<String, Atomic<usize>>: Clone`
+    |
+   ::: C:\Users\mo\.rustup\toolchains\nightly-x86_64-pc-windows-msvc\lib/rustlib/src/rust\library\core\src\sync\atomic.
+rs:366:1
+    |
+366 | pub struct Atomic<T: AtomicPrimitive> {
+    | ------------------------------------- doesn't satisfy `Atomic<usize>: Clone`
+    |
+    = note: the following trait bounds were not satisfied:
+            `Atomic<usize>: Clone`
+            which is required by `DashMap<String, Atomic<usize>>: Clone`
+
+error[E0599]: the method `entry` exists for struct `HashMap<QualityDimension, Vec<f64>>`, but its trait bounds were not
+ satisfied
+   --> src\data_quality\rules.rs:233:30
+    |
+ 18 | pub enum QualityDimension {
+    | ------------------------- doesn't satisfy `QualityDimension: Eq`
+...
+233 |             dimension_scores.entry(result.dimension).or_default().push(result.score);
+    |                              ^^^^^ method cannot be called on `HashMap<QualityDimension, Vec<f64>>` due to unsati
+sfied trait bounds
+    |
+    = note: the following trait bounds were not satisfied:
+            `QualityDimension: Eq`
+help: consider annotating `QualityDimension` with `#[derive(Eq, PartialEq)]`
+    |
+ 18 + #[derive(Eq, PartialEq)]
+ 19 | pub enum QualityDimension {
+    |
+
+error[E0277]: the trait bound `QualityDimension: Eq` is not satisfied
+    --> src\data_quality\rules.rs:238:14
+     |
+ 238 |             .collect();
+     |              ^^^^^^^ the trait `Eq` is not implemented for `QualityDimension`
+     |
+help: the trait `FromIterator<(K, V)>` is implemented for `HashMap<K, V, S>`
+    --> C:\Users\mo\.rustup\toolchains\nightly-x86_64-pc-windows-msvc\lib/rustlib/src/rust\library\std\src\collections\
+hash\map.rs:2939:1
+     |
+2939 | / impl<K, V, S> FromIterator<(K, V)> for HashMap<K, V, S>
+2940 | | where
+2941 | |     K: Eq + Hash,
+2942 | |     S: BuildHasher + Default,
+     | |_____________________________^
+     = note: required for `HashMap<QualityDimension, f64>` to implement `FromIterator<(QualityDimension, f64)>`
+note: required by a bound in `collect`
+    --> C:\Users\mo\.rustup\toolchains\nightly-x86_64-pc-windows-msvc\lib/rustlib/src/rust\library\core\src\iter\traits
+\iterator.rs:2077:19
+     |
+2077 |     fn collect<B: FromIterator<Self::Item>>(self) -> B
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Iterator::collect`
+help: consider annotating `QualityDimension` with `#[derive(Eq)]`
+     |
+  18 + #[derive(Eq)]
+  19 | pub enum QualityDimension {
+     |
+
+error[E0308]: mismatched types
+   --> src\zero_trust\spiffe.rs:262:16
+    |
+262 |         if let Some(domains) = self.trust_domains.write().as_mut() {
+    |                ^^^^^^^^^^^^^   ----------------------------------- this expression has type `Result<&mut RwLockWr
+iteGuard<'_, Vec<TrustDomain>>, &mut ...>`
+    |                |
+    |                expected `Result<&mut ..., ...>`, found `Option<_>`
+    |
+    = note: expected enum `Result<&mut std::sync::RwLockWriteGuard<'_, Vec<TrustDomain>>, &mut PoisonError<std::sync::R
+wLockWriteGuard<'_, Vec<TrustDomain>>>>`
+               found enum `std::option::Option<_>`
+    = note: the full name for the type has been written to 'D:\a10\aikjx\gitcode\infotopograph\platform\backend-rust\ta
+rget\debug\deps\mox_enterprise_backend-3bae4469b167b4e1.long-type-17705362672288491071.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0277]: the trait bound `std::time::Instant: serde::Serialize` is not satisfied
+    --> src\zero_trust\mod.rs:56:24
+     |
+  56 | #[derive(Debug, Clone, Serialize)]
+     |                        ^^^^^^^^^ the trait `Serialize` is not implemented for `std::time::Instant`
+...
+  63 |     pub created_at: Instant,
+     |     ----------------------- required by a bound introduced by this call
+     |
+     = note: for local types consider adding `#[derive(serde::Serialize)]` to your `std::time::Instant` type
+     = note: for types from other crates check whether the crate offers a `serde` feature flag
+     = help: the following other types implement trait `Serialize`:
+               &'a T
+               &'a mut T
+               ()
+               (T,)
+               (T0, T1)
+               (T0, T1, T2)
+               (T0, T1, T2, T3)
+               (T0, T1, T2, T3, T4)
+             and 253 others
+note: required by a bound in `api_gateway::_::_serde::ser::SerializeStruct::serialize_field`
+    --> C:\Users\mo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_core-1.0.229\src\ser\mod.rs:1917:21
+     |
+1915 |     fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
+     |        --------------- required by a bound in this associated function
+1916 |     where
+1917 |         T: ?Sized + Serialize;
+     |                     ^^^^^^^^^ required by this bound in `SerializeStruct::serialize_field`
+     = note: this error originates in the derive macro `Serialize` (in Nightly builds, run with -Z macro-backtrace for 
+more info)
+
+error[E0308]: mismatched types
+   --> src\aiops\dashboard.rs:232:28
+    |
+232 |                     title: "加强故障根因定位能力",
+    |                            ^^^^^^^^^^^^^^^^^^^^^^ expected `String`, found `&str`
+    |
+help: try using a conversion method
+    |
+232 |                     title: "加强故障根因定位能力".to_string(),
+    |                                                  ++++++++++++
+
+error[E0382]: use of moved value: `id`
+   --> src\data_quality\rules.rs:148:9
+    |
+144 |         let id = rule.id.clone();
+    |             -- move occurs because `id` has type `String`, which does not implement the `Copy` trait
+...
+147 |         self.asset_rules.entry(asset_id).or_default().push(id);
+    |                                                            -- value moved here
+148 |         id
+    |         ^^ value used here after move
+    |
+help: consider cloning the value if the performance cost is acceptable
+    |
+147 |         self.asset_rules.entry(asset_id).or_default().push(id.clone());
+    |                                                              ++++++++
+
+error[E0502]: cannot borrow `history` as immutable because it is also borrowed as mutable
+   --> src\data_quality\monitor.rs:139:34
+    |
+139 |                 history.drain(0..history.len() - 10000);
+    |                 ------- -----    ^^^^^^^ immutable borrow occurs here
+    |                 |       |
+    |                 |       mutable borrow later used by call
+    |                 mutable borrow occurs here
+
+warning: unused variable: `config`
+   --> src\aiops\predictive_scaler.rs:205:45
+    |
+205 |     fn predict_arima(&self, values: &[f64], config: &PredictiveScalerConfig) -> f64 {
+    |                                             ^^^^^^ help: if this is intentional, prefix it with an underscore: `_
+config`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+Some errors have detailed explanations: E0277, E0308, E0382, E0432, E0502, E0599, E0600, E0603, E0716.
+For more information about an error, try `rustc --explain E0277`.
+warning: `mox-enterprise-backend` (lib) generated 9 warnings
+error: could not compile `mox-enterprise-backend` (lib) due to 23 previous errors; 9 warnings emitted
