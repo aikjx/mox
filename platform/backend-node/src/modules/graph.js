@@ -122,6 +122,66 @@ const routes = [
       const nodes = getStorage().searchEntities('graph_nodes', q);
       BaseModule.ok(res, { query: q, results: nodes, total: nodes.length });
     }
+  },
+  // Step4 · 开放给前端 Cytoscape 的 2 个 L3.5 中枢 API
+  //   GET /kg/neighborhood?ids=eq:a,eq:b&depth=2&limit=200
+  //   GET /kg/path?src=proj:A&dst=incident:B&maxDepth=6
+  {
+    method: 'get', path: '/kg/neighborhood',
+    handler: (req, res) => {
+      try {
+        const { query } = require('url').parse(req.url, true);
+        const ids = (query.ids || '').split(',').map(s => s.trim()).filter(Boolean);
+        if (!ids.length) return BaseModule.fail(res, 400, 'ids required (comma separated)');
+        const depth = Math.max(1, Math.min(5, parseInt(query.depth || '2', 10)));
+        const limit = Math.max(10, Math.min(1000, parseInt(query.limit || '200', 10)));
+        const s = getStorage();
+        const sub = typeof s.neighborhoodSubgraph === 'function'
+          ? s.neighborhoodSubgraph(ids, depth, limit)
+          : { nodes: [], edges: [], note: 'provider 暂未实现 neighborhoodSubgraph（升级 SQLite/PG 后可用）' };
+        // Cytoscape 直接消费格式：{ elements: { nodes, edges } }
+        BaseModule.ok(res, {
+          ids, depth, limit,
+          elements: {
+            nodes: (sub.nodes || []).map(n => ({ data: typeof n === 'object' ? (n.id ? n : { id: String(n) }) : { id: String(n) } })),
+            edges: (sub.edges || []).map(e => ({ data: { id: `${e.src}-${e.rel}-${e.dst}`, source: e.src, target: e.dst, rel: e.rel, props: e.props || null } }))
+          },
+          meta: { nodes: (sub.nodes || []).length, edges: (sub.edges || []).length }
+        });
+      } catch (e) {
+        return BaseModule.fail(res, 500, 'neighborhood error: ' + e.message);
+      }
+    }
+  },
+  {
+    method: 'get', path: '/kg/path',
+    handler: (req, res) => {
+      try {
+        const { query } = require('url').parse(req.url, true);
+        const src = String(query.src || '').trim();
+        const dst = String(query.dst || '').trim();
+        if (!src || !dst) return BaseModule.fail(res, 400, 'src & dst required');
+        const maxDepth = Math.max(1, Math.min(8, parseInt(query.maxDepth || '6', 10)));
+        const s = getStorage();
+        const path = typeof s.findPath === 'function'
+          ? s.findPath(src, dst, maxDepth) || []
+          : [];
+        // 金链覆盖校验（§5.5 红线 2）：任何 Project → Incident 必须非空，否则返回 warning 字段
+        const threeChainsWarn = path.length === 0 ? `空路径：若 src/dst 对应 §4.2 三条金链节点对（需求/根因/切换审计/组织进化），则 Stage 禁止推进，CR-003 需先补边` : null;
+        BaseModule.ok(res, {
+          src, dst, maxDepth,
+          hops: path.length,
+          edges: path.map(e => ({ source: e.src, target: e.dst, rel: e.rel, props: e.props || null })),
+          cytoscape_elements: {
+            nodes: Array.from(new Set([src, dst, ...path.map(e => [e.src, e.dst]).flat()])).map(id => ({ data: { id } })),
+            edges: path.map((e, i) => ({ data: { id: `hop${i}-${e.rel}`, source: e.src, target: e.dst, rel: e.rel } }))
+          },
+          warning: threeChainsWarn
+        });
+      } catch (e) {
+        return BaseModule.fail(res, 500, 'path error: ' + e.message);
+      }
+    }
   }
 ];
 
