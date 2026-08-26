@@ -681,10 +681,22 @@ ${JSON.stringify(report.byOperator, null, 2)}
     return { steps: results, extracted_data: {}, screenshots: 0 };
   }
 
-  async orchestratePlugins(plugins, pipeline, inputs = {}) {
+  async orchestratePlugins(plugins, pipeline, inputs = {}, { traceId } = {}) {
     const startTime = Date.now();
     const results = [];
     let currentData = inputs;
+    // Step3 · 轻量图谱落边 helper（失败内吞，entities 优先）
+    const storage = (() => { try { return require('./storage').getStorage(); } catch (_) { return null; } })();
+    const _kg = (idx, name, status, extra) => {
+      if (!storage) return;
+      try {
+        const phase = (['P4','P4a','P4b','P4c','P4d','P8','P8a'])[idx] || `P4s${idx}`; // P4=代码开发家族 + P8=发布家族
+        storage.addEdge(`plugin:${name}#${idx}`,
+          status === 'success' ? 'produces' : 'fails_in',
+          `run:${traceId || 'anon'}#step${idx}`,
+          Object.assign({ phase_code: phase, plugin: name, status, duration_ms: Date.now() - startTime }, extra || {}));
+      } catch (_) {}
+    };
 
     for (const stage of pipeline) {
       const plugin = plugins.find(p => p.id === stage.plugin || p.name === stage.plugin);
@@ -697,30 +709,36 @@ ${JSON.stringify(report.byOperator, null, 2)}
         if (this.gateway && this.gateway.activeProvider && stage.ai_enabled) {
           const aiResult = await this._aiPluginExecution(plugin, currentData, stage);
           currentData = aiResult.output;
-          results.push({
+          const r = {
             stage: stage.name,
             plugin: plugin.name,
             status: 'success',
             duration: aiResult.duration,
             ai_powerd: true
-          });
+          };
+          results.push(r);
+          _kg(results.length - 1, stage.name, 'success', r);
         } else {
           const result = plugin.execute ? await plugin.execute(currentData, stage.config) : { data: currentData };
           currentData = result.data || result;
-          results.push({
+          const r = {
             stage: stage.name,
             plugin: plugin.name,
             status: 'success',
             ai_powerd: false
-          });
+          };
+          results.push(r);
+          _kg(results.length - 1, stage.name, 'success', r);
         }
       } catch (error) {
-        results.push({
+        const r = {
           stage: stage.name,
           plugin: plugin.name,
           status: 'failed',
           error: error.message
-        });
+        };
+        results.push(r);
+        _kg(results.length - 1, stage.name, 'failed', r);
         if (stage.critical) {
           return { success: false, results, error: error.message, duration: Date.now() - startTime };
         }

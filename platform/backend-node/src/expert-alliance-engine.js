@@ -683,10 +683,38 @@ ${opinions.map(o => `[${o.expert}｜${o.type}｜置信度${o.confidence}] ${o.op
 
     // 阶段标记：at = 距起点的绝对时间点，duration_ms = 本阶段自身耗时（企业级审计需两者）
     let lastMark = t0;
+    // Step3 · 轻量知识图谱落边 helper（失败内吞不影响主流程，红线：entities 写链优先）
+    const storage = (() => { try { return require('./storage').getStorage(); } catch (_) { return null; } })();
+    const KG_P0_P12_PHASE_MAP = {
+      intent:     { code: 'P0',  rel: 'generates',       entity_type: 'Requirement' },
+      team:       { code: 'P1',  rel: 'analyzes',        entity_type: 'Analysis' },
+      deliberate: { code: 'P5',  rel: 'reviews',         entity_type: 'Review' },
+      synthesis:  { code: 'P11', rel: 'produces',        entity_type: 'Design' },
+      gate:       { code: 'P6',  rel: 'validates',       entity_type: 'TestReport' },
+      retry:      { code: 'P7',  rel: 'retries',         entity_type: 'IntegrationTest' },
+      learn:      { code: 'P12', rel: 'archives',        entity_type: 'Artifact' }
+    };
+    const _kg = (phase, data) => {
+      if (!storage) return;
+      try {
+        const m = KG_P0_P12_PHASE_MAP[phase] || { code: phase, rel: 'flows_to', entity_type: 'Stage' };
+        const src  = `trace:${traceId}#${m.code}`;
+        const dst  = `run:${traceId}#out#${phase}`;
+        storage.addEdge(src, m.rel, dst, Object.assign({
+          phase_code: m.code,
+          phase_name: phase,
+          entity_type: m.entity_type,
+          duration_ms: (data && data.duration_ms) || 0,
+          at_ms: Date.now() - t0
+        }, data || {}));
+      } catch (_) { /* 失败内吞：主流程可靠性 > 图谱索引 */ }
+    };
     const mark = (name, data) => {
       const now = Date.now();
-      trace.stages.push({ stage: name, at: now - t0, duration_ms: now - lastMark, ...data });
+      const duration = now - lastMark;
+      trace.stages.push({ stage: name, at: now - t0, duration_ms: duration, ...data });
       lastMark = now;
+      _kg(name, Object.assign({ at: now - t0, duration_ms: duration }, data || {}));
     };
 
     try {
