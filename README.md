@@ -158,50 +158,69 @@
 
 ---
 
-## 📁 项目结构（路径零老化 · 对齐 ADR-DOC-005 / GLOSSARY §5 · 三联盟责任标注）
+## 📁 项目结构（6层8域DDD矩阵 · 路径零老化 · 对齐 ADR-DOC-008 / GLOSSARY §5 · 三联盟责任标注）
+
+> **架构模型 v2.0**：6层8域DDD矩阵 — L0 Foundation（横切基础）/ L1 Gateway（网关）/ L2 Core（8域领域模型）/ L3 Svc（8域应用服务）/ L4 Sdk（8域对外类型）/ L5 Api（8域域间契约，规划中）。8域 = ai / cloud / data / flow / kg / market / platform / voice。
+> **旧→新迁移映射**：完整17旧crate→54新crate映射见 [`docs/enterprise/ARCHITECTURE-MIGRATION.md`](docs/enterprise/ARCHITECTURE-MIGRATION.md)。旧路径 `platform/services/`、`crates/` 已废弃。
 
 ```
 infotopograph/  （= 璇玑 RelGraph 项目仓；根历史遗留 operator-unified-system 名仅作为底层父系统 OUS 代号，对外产品名统一为璇玑 RelGraph）
-├── platform/                     # 🟢 平台服务层（后端核心 · Rust 15 crate + Gateway，开发联盟主责）
-│   ├── gateway/                  #   API 网关层（L2↔L6 聚合，ADR-DOC-009 统一 AI 入口四端点）
-│   │   └── runtime/              #     Rust 聚合网关：Web 服务器 / REST / WebSocket / 算子市场 / RBAC 中间件 / Cordis5 子模块 / 迁移 / 治理 / OpenAPI / operator-server
-│   │                            #     🎯 统一 AI 四端点（对齐 enterprise/02 §集成视图 §6）：
-│   │                            #       POST /ai/engine/process   自动意图识别→能力路由（A5 激活扩散）
-│   │                            #       POST /ai/engine/analyze   显式能力执行
-│   │                            #       GET  /ai/engine/capabilities  能力矩阵自描述
-│   │                            #       GET  /ai/engine/metrics       成功率 / 降级率 / 延迟指标
-│   ├── services/                 #   业务服务集群（15 独立子项目，对齐 enterprise/14 §3.3 模块表）
-│   │   ├── operator-core/        #     算子代数/守恒律/类型核心（L2 Rust 自研底座）
-│   │   ├── operator-wasm/        #     WASM 算子沙箱执行 / 热加载插件
-│   │   ├── graph-algorithms/     #     🔬 八大算法家族 A1~A8（算法联盟主责 · CNM Brandes Harmonic PageRank Spread RRF CPM/RCPSP）
-│   │   ├── optimizer/            #     CPM 关键路径分析 + RCPSP 资源约束调度（A8）
-│   │   ├── flow-ai/              #     流程 AI（9 模块：冒险/CPM/冲突/调度/拓扑/代码gen/流水线/原语/可视化）
-│   │   ├── ai-agent/             #     AI 智能体：对话/浏览器自动化/BPMN/MultiAgent/ProviderRegistry + A7 CEM 优化
-│   │   ├── mox-expert/        #     ⛨璇玑引擎：双璇玑十四维治理/归一化 IR/裁决/验证/审计三汇/RBAC（算法+开发联盟）
-│   │   ├── mox-system/        #     璇玑协作治理域：成员/任务/权限/通信/审计/RBAC/多后端 SQLite+PG+MySQL（开发联盟）
-│   │   ├── hermes-flow-bridge/   #     Hermes Agent 桥接：normalize/recorder/router/拦截注入
-│   │   ├── business-catalog/     #     6 预置 FlowGraph + TopologyGraph（政务/财务/客服/ETL/MCP/螺旋）
-│   │   ├── template-market/      #     模板市场：发布/加载/评分/排序/Fork/2 种子
-│   │   ├── primiflow-core/       #     PrimiFlow 解析/代码生成/8 类骨架模板/执行/持久化
-│   │   ├── primiflow-fusion/     #     PrimiFlow 六维融合/守恒闸门/Registry/平台编排/12Factor+可观测（对齐 GR-STD 8 闸门）
-│   │   └── kg-hub/               #     知识图谱枢纽：混合索引+URN+摄入/推理/治理/影响/热点/闭环 8 段 5 连接器（算法联盟图建模 R）
-│   └── backend-node/             #   Node.js 边缘兼容层（M0 规划更名为 edge-node 并瘦身至 4 文件；当前兼容模式）
+├── platform/                     # 🟢 平台服务层（后端核心 · Rust 73 crate workspace · 6层8域DDD矩阵 · 开发联盟主责）
+│   ├── foundation/               #   L0 横切基础层（通用类型/错误处理/配置/工具函数/云基础设施抽象）
+│   │   ├── mox-platform-foundation/    # 平台基础库
+│   │   └── mox-cloud-foundation/       # 云基础设施基础库
+│   ├── gateway/                  #   L1 网关层（仅路由+横切中间件：鉴权/限流/CORS/日志/WS/健康检查）
+│   │   └── mox-platform-gateway-svc/   # API网关 · operator-server 二进制入口
+│   ├── framework/                #   插件框架层（扩展点定义/插件注册 · mox-framework 库）
+│   └── domains/                  #   8域 × 5层矩阵（core/svc/sdk/api/svcapi）
+│       ├── ai/                   #   🟢 AI域（算法联盟R · 开发联盟C）
+│       │   ├── core/             #     L2 领域模型：mox-ai-core, mox-ai-intent-core
+│       │   ├── svc/              #     L3 应用服务：mox-ai-agent-svc(对话/浏览器自动化/MultiAgent), mox-ai-expert-svc(⛨璇玑14专家/验证/审计/RBAC), mox-ai-flow-svc(流程AI/代码生成)
+│       │   ├── sdk/              #     L4 对外类型（规划中）
+│       │   ├── api/              #     L5 域间契约（规划中 · Phase 3填充）
+│       │   └── svcapi/           #     服务API（规划中）
+│       ├── kg/                   #   🟢 知识图谱域（算法联盟R · 最大域 · 9 crate）
+│       │   ├── core/             #     L2：mox-kg-algo-core(八大算法A1~A8), mox-kg-meta-core(本体/Schema/14节点族×19边族)
+│       │   ├── svc/              #     L3：mox-kg-storage-svc, mox-kg-service-svc, mox-kg-streams-svc, mox-kg-spark-svc, mox-kg-hub-svc(混合索引+URN+8段5连接器), mox-kg-fusion-svc(RRF融合/实体对齐)
+│       │   └── sdk/              #     L4：mox-kg-sdk
+│       ├── flow/                 #   🟢 流程/算子域（开发联盟R · 算法联盟C）
+│       │   ├── core/             #     L2：mox-flow-operator-core(算子代数/守恒律/范畴论/单子), mox-flow-optimizer-core(CPM/RCPSP/CEM)
+│       │   ├── svc/              #     L3：mox-flow-operator-wasm-svc(WASM沙箱), mox-flow-primiflow-svc(解析/代码生成/8类骨架), mox-flow-fusion-svc(六维融合/守恒闸门), mox-flow-bridge-svc(Hermes桥接)
+│       │   └── sdk/              #     L4（规划中）
+│       ├── data/                 #   🟡 数据域（开发联盟R）
+│       │   ├── core/             #     L2：mox-data-formula-core(高精度公式), mox-data-norm-core(归一化IR), mox-data-standards-core(数据标准)
+│       │   ├── svc/              #     L3：mox-data-plane-svc, mox-data-etl-svc, mox-data-compliance-svc(PII/脱敏), mox-data-catalog-svc(6预置FlowGraph)
+│       │   └── sdk/              #     L4：mox-data-formula-native(napi), mox-data-norm-intent-native(napi)
+│       ├── platform/             #   🟡 平台横切域（开发联盟R）
+│       │   ├── core/             #     L2：mox-platform-system-core(成员/任务/权限/通信), mox-platform-iam-core(身份/令牌/访问控制), mox-platform-meta-core(AisLayer/CrateMeta/all_crate_metas), mox-platform-datastore-core(多后端SQLite/PG/MySQL), mox-platform-orchestrator-core(DAG编排/事件反应器)
+│       │   ├── svc/              #     L3：mox-platform-enterprise-svc(企业服务/多后端), mox-platform-orchestrator-svc(编排器服务)
+│       │   └── sdk/              #     L4：mox-platform-test-harness
+│       ├── cloud/                #   ⚪ 云基础设施域（开发联盟R·运维）
+│       │   ├── svc/              #     L3：mox-cloud-master-svc, mox-cloud-volume-svc, mox-cloud-s3-svc, mox-cloud-filer-svc
+│       │   └── sdk/              #     L4：mox-cloud-sdk
+│       ├── market/               #   ⚪ 模板市场域（产品联盟R · 开发联盟C）
+│       │   └── svc/              #     L3：mox-market-template-svc(发布/加载/评分/Fork/2种子)
+│       └── voice/                #   🔴 语音域（独立产品形态评估中 · 含桌面应用）
+│           ├── core/             #     L2：mox-voice-dsp-core(响度归一/软限幅/Aho-Corasick/SIMD)
+│           ├── svc/              #     L3：mox-voice-core-svc, mox-voice-asr-svc, mox-voice-intent-svc, mox-voice-operator-svc, mox-voice-desktop-app(全局热键/BallWidget/键鼠自动化)
+│           └── sdk/              #     L4：mox-voice-dsp-py(PyO3)
 ├── frontend-ui/                  # 🟢 用户端：Vue3 + Three.js + ECharts 前端单应用（28 视图 + /admin 5 面板，产品联盟主责）
 │   │                            #   管理区 5 面板：凭证 / 审计 / HITL（人机回环）/ 存储 / 总览
 │   │                            #   🔴 旧 frontend-admin-ui 目录已裁撤（ADR-DOC-005 M0）；管理入口：/admin?tab=<tab>
 ├── tools/
 │   ├── info-graph/               #     关图工具（含 P9 判重 dedup 子命令；对齐 BP-9 + enterprise/16 验收）
 │   └── guantu_gate.py            #     P9 CI 门禁脚本（阻断未判重立项；对齐 All-02 铁规）
-├── melody2score/                 # 旋律自动简谱/五线谱专题能力
 ├── shared/                       # 跨端共享资源：常量、Schema、配置
 ├── plugins/                      # WASM 插件目录
 ├── data/market/                  # 算子商城资产（运行态；生产应置于 $OUS_HOME/market，见 docs/architecture.md §27）
 ├── docs/                         # 🔶 企业级文档（专题分区；治理中心 = docs/enterprise/00-INDEX.md · 三联盟必读首件 = enterprise/18 TOP-MASTER）
-│   ├── enterprise/               # 🟢 企业级文档 00~18（共 19 份 · 分级权威 L0~L4）
+│   ├── enterprise/               # 🟢 企业级文档 00~28（共 29 份 · 分级权威 L0~L4）
 │   │   ├── 18-全域顶层总设计-三联盟模式-V1.0.md  # 🟢🟢 L0 第一级权威（TOP-MASTER，三联盟签署）
+│   │   ├── 28-全维架构分析与文档归一化报告-V1.0.md # 🟢 L1 治理枢纽（架构分析+优化+文档归一化 · 开发联盟R）
+│   │   ├── ARCHITECTURE-MIGRATION.md             # 🟢 L2 迁移基准（旧17crate→新54crate完整映射 · 路径替换速查表）
 │   │   ├── 00-INDEX.md                        # L1 治理索引 + RACI + 三联盟阅读路径
 │   │   ├── 01-requirements.md  # 需求规格 SRS + §9 ADR-DOC-001~012 决策注册
-│   │   ├── 02-architecture.md  # 七视图架构 + 六层金字塔锚点 + 八大算法家族 + 15 模块对账
+│   │   ├── 02-architecture.md  # 七视图架构 + 六层金字塔锚点 + 八大算法家族 + **6层8域54+crate矩阵**（v2.0）
 │   │   ├── 04-business-processing.md  # 10 大标准 BP-1~10（6 字段齐）
 │   │   ├── 05-iteration-roadmap.md  # M0~M8 9 里程碑 + L0/L1/L2 三级验收
 │   │   ├── 06-requirements-architecture-map.md  # 五向追溯 + §5 三联盟 RACI 矩阵
@@ -211,7 +230,8 @@ infotopograph/  （= 璇玑 RelGraph 项目仓；根历史遗留 operator-unifie
 │   │   ├── 14-愿景总纲.md        # 北极星方法论总纲
 │   │   ├── 15-产品规范标准.md    # P1~P10 人人爱用十大原则
 │   │   ├── 16-P9判重闸门验收.md  # P9 落地 + 关图治理 D1~D4 修复
-│   │   └── 其他 03设计/09归档/11~13 验收报告
+│   │   ├── 22-全文档归一化总控卡.md  # 单源映射总控卡（⚠️ 基于旧架构，待v2.0重写）
+│   │   └── 其他 03设计/09归档/11~13 验收报告/19~21/23~27
 │   ├── README.md                 # 关图/全维专题快捷导航（三联盟差异化入口 · docs/README）
 │   ├── GLOSSARY.md               # 🟢 唯一术语事实源（DOC-GLOSSARY-V1.1 · 7 新术语）
 │   ├── specs/                    # 🟢 企业级规范：PT-STD / GR-STD / OUS 业务规划
@@ -219,8 +239,8 @@ infotopograph/  （= 璇玑 RelGraph 项目仓；根历史遗留 operator-unifie
 │   ├── graph/                    # 关图机读产物（graph.json / graph.enterprise.json / guantu.req.json + requests/ 判重入口）
 │   ├── ai-architecture/          # AI 架构专题（AUS · L4 Agentic 闭环）
 │   ├── 璇玑-全维需求业务处理流程图-归一化企业级.md/.html/.mmd  # 🟢 AA-STD 融合域唯一事实基准
-│   ├── architecture.md           # 🟢 OUS 父系统总架构（v7.0 · L2 Rust 自研底座视角）
-│   ├── enterprise-architecture-analysis.md  # 🟢 双璇玑十四维能力矩阵
+│   ├── architecture.md           # 🟡 OUS 父系统总架构（v7.0 · 归档参考，以02-architecture.md v2.0为准）
+│   ├── enterprise-architecture-analysis.md  # 🟡 双璇玑十四维能力矩阵（归档参考）
 │   ├── modules/mathematical-foundation.md  # 六大数学公理 & 算法联盟对账基准
 │   └── *.html / *.mmd            # 🟡 可视化产物（以同名 .md 为源；同位存放）
 ├── benches/                      # 性能基准
@@ -232,7 +252,8 @@ infotopograph/  （= 璇玑 RelGraph 项目仓；根历史遗留 operator-unifie
 ```
 
 > 注：`target/`（Rust 构建产物）、`frontend-ui/dist/`、`node_modules/` 等**不纳入版本库**，请从源码构建。
-> **路径铁律（ADR-DOC-005 M0）**：`crates/` → 统一为 `platform/services/`；`frontend/` / `frontend-admin-ui/` → 统一为 `frontend-ui/`（单应用 + /admin 5 面板）；Node 边缘入口 `backend-node/` → M0 后更名为 `edge-node/`（瘦身 4 文件）。
+> **路径铁律（ADR-DOC-008 v2.0）**：所有 crate 均位于 `platform/domains/{域}/{层}/` 或 `platform/{foundation,gateway,framework}/`；旧路径 `platform/services/`（15 crate扁平模型）、`crates/`、`platform/gateway/runtime/` 已废弃，禁止在新代码/文档中使用。旧→新完整映射见 `docs/enterprise/ARCHITECTURE-MIGRATION.md`。
+> **Node 边缘入口**：`platform/backend-node/`（零依赖 Node）作为边缘入口占 `:3000`，托管 `frontend-ui/dist` 并将 `/api` 反向代理到 Rust 网关 `:3001`；M0 后规划更名为 `edge-node/` 并瘦身至 4 文件。
 
 ---
 

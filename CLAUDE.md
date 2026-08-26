@@ -4,31 +4,58 @@
 
 ## 项目概览
 
-关图（算子统一全维分析系统）是一套「需求 → 归一化 IR → 双璇玑十四维诊断 → 裁决 → flow-ai 求解 → ⛨验证网关 → 治理 8 闸门 → 出码/出图」的 AI 自动化中枢，面向企业级全维治理与合规出码。后端为 Rust（Axum + Tokio）单体聚合服务，前端为 Vue3 管理控制台。
+关图（算子统一全维分析系统）是一套「需求 → 归一化 IR → 双璇玑十四维诊断 → 裁决 → flow-ai 求解 → ⛨验证网关 → 治理 8 闸门 → 出码/出图」的 AI 自动化中枢，面向企业级全维治理与合规出码。后端为 Rust（Axum + Tokio）模块化单体（6层8域DDD矩阵 · 73 crate workspace），前端为 Vue3 管理控制台。
 
 技术栈：
-- 后端：Rust edition 2021，Axum（HTTP）、Tokio（异步）、Serde、Anyhow/Thiserror；`cargo` 工作区（15 个 crate）。
+- 后端：Rust edition 2021，Axum（HTTP）、Tokio（异步）、Serde、Anyhow/Thiserror；`cargo` 工作区（73 个 crate · 6层8域DDD矩阵）。
 - 前端：Vue 3.4 + Vite 5 + Element Plus 2.4 + vue-router 4.3 + Axios 1.6 + ECharts 5.4 + three / 3d-force-graph；包管理 npm。
-- 部署：后端 `runtime` crate 聚合为单一 `operator-server` 二进制（默认 `:3001`，可由 `--port` 覆盖）；`platform/backend-node/`（零依赖 Node）作为边缘入口占 `:3000`，托管 `frontend-ui/dist` 并将 `/api` 反向代理到 Rust；前端 Vite 代理 `/api` → `http://localhost:3000`（即 Node 边缘入口）。Node 不再实现任何领域逻辑，出码统一经 Rust ⛨验证网关 + 治理 8 闸门。
+- 部署：后端 `mox-platform-gateway-svc` crate 聚合为单一 `operator-server` 二进制（默认 `:3001`，可由 `--port` 覆盖）；`platform/backend-node/`（零依赖 Node）作为边缘入口占 `:3000`，托管 `frontend-ui/dist` 并将 `/api` 反向代理到 Rust；前端 Vite 代理 `/api` → `http://localhost:3000`（即 Node 边缘入口）。Node 不再实现任何领域逻辑，出码统一经 Rust ⛨验证网关 + 治理 8 闸门。
+- 架构模型 v2.0：6层8域DDD矩阵 — L0 Foundation（横切基础）/ L1 Gateway（网关）/ L2 Core（8域领域模型）/ L3 Svc（8域应用服务）/ L4 Sdk（8域对外类型）/ L5 Api（8域域间契约，规划中）。8域 = ai / cloud / data / flow / kg / market / platform / voice。旧 `platform/services/` 15-crate扁平模型已废弃，旧→新映射见 `docs/enterprise/ARCHITECTURE-MIGRATION.md`。
 
 ## 目录结构与模块职责
 
 > 写职责，不贴完整文件树。后端按「分层」理解，前端按「功能切片」理解。
 
-### 后端（`platform/`，Spring-Boot 风格分层 + 微服务）
+### 后端（`platform/`，6层8域DDD矩阵 · 模块化单体）
 
-- `gateway/runtime/`：**控制层（Controller）**。Axum `Router` 聚合四套子服务；`routes/`（路由表）、`handlers/`（处理器）、`api_standard.rs`（统一 REST 错误体）、`rbac_middleware.rs`（鉴权中间件）、`openapi.rs`（OpenAPI/Swagger）、`subservers.rs`（服务聚合边界）。**这是唯一允许直接碰 HTTP 的层**。
-- `services/mox-system/`：**服务层 + 仓储层**。业务编排（`services.rs`/`orchestrator.rs`）、领域错误（`error.rs`/加密 `crypto.rs`/事件 `event.rs`/限流 `ratelimit.rs`/指标 `metrics.rs`）、RBAC（`rbac.rs`）；持久化在 `repo/`（mysql/postgres/sqlite/schema）与 `store.rs`。
-- `services/mox-expert/`：**璇玑治理与验证引擎**。`verify/`（⛨验证网关 S6/G2 五项数学/语义检查）、`rbac/`（策略与判定）、`audit/`（nats/rabbitmq/s3/syslog 多汇，已脱敏）、`sensitivity.rs`（敏感拦截）、`tenant_policy.rs`（租户分层：default / gov）、`govern.rs`/`reconcile.rs`。
-- `services/primiflow-fusion/`：**治理 8 闸门融合层（GR-STD）**。`unified.rs::full_gate` 实现 G1–G8、`sixdim.rs`（六维）、`ptdoc.rs`（归一化文档）、`platform.rs`（注册/落库）、`server.rs`（对外 REST，离线可 `oneshot` 驱动）。
-- `services/primiflow-core/`：六维溯源拓扑引擎——`executor.rs`/`runner.rs`/`server.rs`/`persistence.rs`（固化）。
-- `services/flow-ai/`：需求→代码自动生成——`codegen.rs`/`pipeline.rs`/`topology.rs`/`schedule.rs`/`conflict.rs`。
-- `services/ai-agent/`：对话/工作流/LLM 编排——`conversation.rs`/`workflow_engine.rs`/`llm_client.rs`/`dialogue_graph.rs`/`requirement_compiler.rs`。
-- `services/kg-hub/`：知识图谱中枢——`ingest.rs`/`ontology.rs`/`reason.rs`/`loop_engine.rs`/`govern.rs`（含 `api.rs`）。
-- `services/operator-core/`：算子引擎内核——`engine.rs`/`conservation.rs`（守恒）/`monad.rs`/`resource.rs`/`state.rs`。
-- `services/hermes-flow-bridge/`：外部流程集成桥——`bridge.rs`/`router.rs`/`integration/`（外部适配）。
-- `services/backend-node/`：Node.js 兼容层，逐步迁移至 Rust。
-- 其余：`business-catalog`（螺旋业务目录）、`template-market`（模板市场）、`optimizer`（优化器）、`operator-graph`/`operator-wasm`（算子图 / WASM 适配）。
+**横切层（L0 Foundation + L1 Gateway + Framework）：**
+- `foundation/mox-platform-foundation/`：平台基础库 — 通用类型、错误处理（thiserror/anyhow统一）、配置、工具函数、tracing初始化。
+- `foundation/mox-cloud-foundation/`：云基础设施基础库 — 云存储抽象、卷管理、S3适配、文件器接口。
+- `gateway/mox-platform-gateway-svc/`：**控制层（Controller）**。Axum `Router` 按域挂载子路由；`routes/`（路由表）、`handlers/`（处理器薄层）、`middleware/`（RBAC鉴权/限流/CORS/日志）、`ws/`（WebSocket）、`openapi.rs`（OpenAPI/Swagger）。**这是唯一允许直接碰 HTTP 的层；仅做路由+横切中间件，业务聚合下沉到各域svc层**。
+- `framework/`（mox-framework）：插件框架层 — 扩展点定义、插件注册（库）。
+
+**8域 × L2 Core（领域模型 · 纯业务逻辑 · 无I/O依赖）：**
+- `domains/ai/core/`：`mox-ai-core`（AI统一内核/LLM客户端抽象）、`mox-ai-intent-core`（意图识别/A5激活扩散路由核心）
+- `domains/kg/core/`：`mox-kg-algo-core`（八大算法A1~A8：CNM/Brandes/Harmonic/PageRank/激活扩散/RRF/CEM/CPM）、`mox-kg-meta-core`（本体/Schema/14节点族×19边族）
+- `domains/flow/core/`：`mox-flow-operator-core`（算子代数/守恒律/范畴论/单子/Registry）、`mox-flow-optimizer-core`（CPM关键路径/RCPSP资源约束/CEM交叉熵）
+- `domains/data/core/`：`mox-data-formula-core`（高精度公式引擎）、`mox-data-norm-core`（归一化IR/六维绑定）、`mox-data-standards-core`（数据标准/Schema）
+- `domains/platform/core/`：`mox-platform-system-core`（成员/任务/权限/通信领域模型/Store接口/EventBus/RBAC）、`mox-platform-iam-core`（身份认证/令牌/访问控制）、`mox-platform-meta-core`（AisLayer枚举/CrateMeta/all_crate_metas）、`mox-platform-datastore-core`（多后端SQLite/PG/MySQL抽象/方言归一化/迁移）、`mox-platform-orchestrator-core`（DAG编排/事件反应器/鉴权闸门require()）
+- `domains/voice/core/`：`mox-voice-dsp-core`（响度归一/软限幅/Aho-Corasick热词/SIMD f32x4）
+
+**8域 × L3 Svc（应用服务 · HTTP handler/业务编排/DB repo/外部API client）：**
+- `domains/ai/svc/`：`mox-ai-agent-svc`（对话/浏览器自动化/MultiAgent/ProviderRegistry/A7 CEM）、`mox-ai-expert-svc`（⛨璇玑14专家/归一化IR/裁决/验证5项/审计三汇/RBAC/租户分层）、`mox-ai-flow-svc`（流程AI 9模块/代码生成）
+- `domains/kg/svc/`：`mox-kg-storage-svc`、`mox-kg-service-svc`、`mox-kg-streams-svc`、`mox-kg-spark-svc`、`mox-kg-hub-svc`（混合索引+URN+8段5连接器）、`mox-kg-fusion-svc`（RRF融合/实体对齐）
+- `domains/flow/svc/`：`mox-flow-operator-wasm-svc`（WASM沙箱/wasmer/热加载）、`mox-flow-primiflow-svc`（解析/代码生成/8类骨架）、`mox-flow-fusion-svc`（六维融合/守恒闸门/Registry）、`mox-flow-bridge-svc`（Hermes桥接/normalize/recorder）
+- `domains/data/svc/`：`mox-data-plane-svc`、`mox-data-etl-svc`、`mox-data-compliance-svc`（PII检测/脱敏）、`mox-data-catalog-svc`（6预置FlowGraph）
+- `domains/platform/svc/`：`mox-platform-enterprise-svc`（企业服务/成员任务权限通信编排/多后端）、`mox-platform-orchestrator-svc`（编排器服务）
+- `domains/cloud/svc/`：`mox-cloud-master-svc`、`mox-cloud-volume-svc`、`mox-cloud-s3-svc`、`mox-cloud-filer-svc`
+- `domains/market/svc/`：`mox-market-template-svc`（发布/加载/评分/Fork/2种子）
+- `domains/voice/svc/`：`mox-voice-core-svc`、`mox-voice-asr-svc`、`mox-voice-intent-svc`、`mox-voice-operator-svc`、`mox-voice-desktop-app`（**独立产品形态·全局热键/BallWidget/键鼠自动化**）
+
+**8域 × L4 Sdk（对外类型 · FFI绑定 · 客户端库）：**
+- `domains/kg/sdk/mox-kg-sdk`、`domains/cloud/sdk/mox-cloud-sdk`、`domains/platform/sdk/mox-platform-test-harness`
+- `domains/data/sdk/mox-data-formula-native`（napi-rs Node.js FFI）、`mox-data-norm-intent-native`（napi-rs）
+- `domains/voice/sdk/mox-voice-dsp-py`（PyO3 abi3-py39 Python绑定）
+
+**8域 × L5 Api（域间契约 · 规划中 · 0 crate · Phase 3填充）：**
+- 每个域的 `api/` 和 `svcapi/` 目录已创建但零crate。设计意图：定义域间通信的trait/interface/DTO，实现依赖倒置。Phase 3优先填充kg/ai/flow三个核心域。
+
+**跨域依赖规则（强制 · ADR-09）：**
+1. svc层只能依赖同域core + 其他域的core/sdk/api（**禁止直接依赖其他域的svc**）
+2. core层只能依赖foundation + 其他域的core/sdk（**禁止依赖任何svc**）
+3. sdk层只能依赖同域core的类型定义
+4. api层只能依赖core的类型，定义trait供svc实现
+5. 所有跨域调用必须通过api层trait（依赖倒置），Phase 3完成后强制执行arch test
 
 ### 前端（`frontend-ui/src/`，用户端 + 系统管理区）
 
