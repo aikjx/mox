@@ -40,6 +40,23 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_logs_type ON logs(log_type);
   CREATE INDEX IF NOT EXISTS idx_logs_time ON logs(created_at);
+
+  -- L3.5 知识图谱中枢：统一 Node 走 entities 表；Edge 走本 graph_edges 表
+  -- 图谱治理红线 MUST：Edge 永不物理删，只走 tombstone 标记并写 reason
+  CREATE TABLE IF NOT EXISTS graph_edges (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    src   TEXT NOT NULL,
+    rel   TEXT NOT NULL,
+    dst   TEXT NOT NULL,
+    props TEXT,
+    tombstone INTEGER DEFAULT 0,
+    reason TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(src, rel, dst)
+  );
+  CREATE INDEX IF NOT EXISTS idx_edges_src ON graph_edges(src);
+  CREATE INDEX IF NOT EXISTS idx_edges_dst ON graph_edges(dst);
+  CREATE INDEX IF NOT EXISTS idx_edges_rel ON graph_edges(rel);
 `);
 
 const stmts = {

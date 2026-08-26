@@ -26,6 +26,14 @@ class StorageProvider {
   getLogs(type, limit) { throw new Error('not implemented'); }
   clearLogs() { throw new Error('not implemented'); }
   migrateFromJSON(jsonDir) { throw new Error('not implemented'); }
+
+  // === L3.5 知识图谱中枢：6 个统一接口（SQLite/PG/Memory/Dual 必须全部实现同构行为）===
+  addEdge(src, rel, dst, props) { throw new Error('not implemented'); }
+  removeEdge(src, rel, dst, reason) { throw new Error('not implemented'); } // MUST tombstone 不物理删
+  neighbors(nodeId, dir) { throw new Error('not implemented'); } // dir: both|in|out
+  neighborhoodSubgraph(seedIds, hops, maxNodes) { throw new Error('not implemented'); } // 返回 {nodes:[{id}], edges:[{src,rel,dst}]}
+  findPath(fromId, toId, maxHops) { throw new Error('not implemented'); } // 返回最短路径 edges 数组或 null
+  pageRank(relFilter) { throw new Error('not implemented'); } // 返回 Map<id, score>
 }
 
 class SQLiteProvider extends StorageProvider {
@@ -76,6 +84,22 @@ class SQLiteProvider extends StorageProvider {
       );
       CREATE INDEX IF NOT EXISTS idx_logs_type ON logs(log_type);
       CREATE INDEX IF NOT EXISTS idx_logs_time ON logs(created_at);
+
+      -- L3.5 知识图谱中枢 Edge 表（与归一化总纲 §5.2 唯一 DDL 严格对齐）
+      CREATE TABLE IF NOT EXISTS graph_edges (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        src   TEXT NOT NULL,
+        rel   TEXT NOT NULL,
+        dst   TEXT NOT NULL,
+        props TEXT,
+        tombstone INTEGER DEFAULT 0,
+        reason TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        UNIQUE(src, rel, dst)
+      );
+      CREATE INDEX IF NOT EXISTS idx_edges_src ON graph_edges(src);
+      CREATE INDEX IF NOT EXISTS idx_edges_dst ON graph_edges(dst);
+      CREATE INDEX IF NOT EXISTS idx_edges_rel ON graph_edges(rel);
     `);
 
     this.stmts = {
@@ -95,7 +119,22 @@ class SQLiteProvider extends StorageProvider {
       insertLog: this.db.prepare('INSERT INTO logs (log_type, message, data) VALUES (?, ?, ?)'),
       getLogs: this.db.prepare('SELECT * FROM logs ORDER BY id DESC LIMIT ?'),
       getLogsByType: this.db.prepare('SELECT * FROM logs WHERE log_type = ? ORDER BY id DESC LIMIT ?'),
-      clearLogs: this.db.prepare('DELETE FROM logs')
+      clearLogs: this.db.prepare('DELETE FROM logs'),
+      // L3.5 graph stmts：Edge 永不物理删除，removeEdge 只改 tombstone+reason（红线）
+      edgeUpsert: this.db.prepare(`
+        INSERT INTO graph_edges (src, rel, dst, props, tombstone, reason)
+        VALUES (@src, @rel, @dst, @props, 0, NULL)
+        ON CONFLICT(src, rel, dst) DO UPDATE SET
+          props = excluded.props,
+          tombstone = 0,
+          reason = NULL
+      `),
+      edgeTombstone: this.db.prepare(`
+        UPDATE graph_edges SET tombstone = 1, reason = @reason WHERE src = @src AND rel = @rel AND dst = @dst
+      `),
+      edgesBySrc: this.db.prepare(`SELECT src, rel, dst, props FROM graph_edges WHERE src = ? AND tombstone = 0`),
+      edgesByDst: this.db.prepare(`SELECT src, rel, dst, props FROM graph_edges WHERE dst = ? AND tombstone = 0`),
+      edgesAllLive: this.db.prepare(`SELECT src, rel, dst, props FROM graph_edges WHERE tombstone = 0`)
     };
 
     console.log(`[storage] SQLite 已连接: ${this.dbConfig.path}`);
@@ -245,6 +284,141 @@ class SQLiteProvider extends StorageProvider {
     console.log(`[storage] 迁移完成: ${migrated} 条记录`);
     return migrated;
   }
+
+  // ========== L3.5 图谱中枢 6 接口（SQLiteProvider 同步实现）==========
+  addEdge(src, rel, dst, props = null) {
+    this.stmts.edgeUpsert.run({
+      src: String(src),
+      rel: String(rel),
+      dst: String(dst),
+      props: props === null || props === undefined ? null : JSON.stringify(props)
+    });
+    return { src: String(src), rel: String(rel), dst: String(dst), props };
+  }
+
+  removeEdge(src, rel, dst, reason = '') {
+    // 🔴 图谱红线 3：绝不物理删。始终 tombstone+reason 标记，审计可回放
+    this.stmts.edgeTombstone.run({
+      src: String(src),
+      rel: String(rel),
+      dst: String(dst),
+      reason: String(reason || '')
+    });
+    return true;
+  }
+
+  _rowToEdge(row) {
+    return {
+      src: row.src,
+      rel: row.rel,
+      dst: row.dst,
+      props: row.props ? JSON.parse(row.props) : null
+    };
+  }
+
+  neighbors(nodeId, dir = 'both') {
+    const id = String(nodeId);
+    const out = dir === 'both' || dir === 'out' ? this.stmts.edgesBySrc.all(id).map(r => this._rowToEdge(r)) : [];
+    const inn = dir === 'both' || dir === 'in'  ? this.stmts.edgesByDst.all(id).map(r => this._rowToEdge(r)) : [];
+    return out.concat(inn);
+  }
+
+  neighborhoodSubgraph(seedIds, hops = 3, maxNodes = 5000) {
+    const seenNodes = new Set((seedIds || []).map(String));
+    const edges = [];
+    let frontier = Array.from(seenNodes);
+    for (let h = 0; h < hops && frontier.length && seenNodes.size < maxNodes; h++) {
+      const next = new Set();
+      for (const n of frontier) {
+        const nb = this.neighbors(n, 'both');
+        for (const e of nb) {
+          edges.push(e);
+          const other = e.src === n ? e.dst : e.src;
+          if (!seenNodes.has(other)) {
+            if (seenNodes.size >= maxNodes) break;
+            seenNodes.add(other);
+            next.add(other);
+          }
+        }
+      }
+      frontier = Array.from(next);
+    }
+    // 去重 edges（按 src|rel|dst）
+    const edgeKey = (e) => `${e.src}||${e.rel}||${e.dst}`;
+    const uniq = new Map();
+    for (const e of edges) uniq.set(edgeKey(e), e);
+    return {
+      nodes: Array.from(seenNodes).map(id => ({ id })),
+      edges: Array.from(uniq.values())
+    };
+  }
+
+  findPath(fromId, toId, maxHops = 6) {
+    const from = String(fromId), to = String(toId);
+    if (from === to) return [];
+    // BFS：记录 {node, viaEdgeFromParent}
+    const prev = new Map(); // node -> {prevNode, edge}
+    prev.set(from, null);
+    let queue = [from];
+    for (let h = 0; h < maxHops && queue.length; h++) {
+      const next = [];
+      for (const n of queue) {
+        const outs = this.stmts.edgesBySrc.all(n).map(r => this._rowToEdge(r));
+        for (const e of outs) {
+          if (!prev.has(e.dst)) {
+            prev.set(e.dst, { prevNode: n, edge: e });
+            if (e.dst === to) {
+              // reconstruct
+              const path = [];
+              let cur = to;
+              while (prev.get(cur)) {
+                const { prevNode, edge } = prev.get(cur);
+                path.push(edge);
+                cur = prevNode;
+              }
+              return path.reverse();
+            }
+            next.push(e.dst);
+          }
+        }
+      }
+      queue = next;
+    }
+    return null;
+  }
+
+  pageRank(relFilter = null) {
+    // 20 次迭代近似 PageRank，d=0.85
+    const allEdges = this.stmts.edgesAllLive.all().map(r => this._rowToEdge(r)).filter(e => relFilter ? e.rel === relFilter : true);
+    const nodes = new Set();
+    const outCount = new Map(); // node -> out degree
+    const inEdges = new Map(); // node -> incoming edge list [{src}]
+    for (const e of allEdges) {
+      nodes.add(e.src); nodes.add(e.dst);
+      outCount.set(e.src, (outCount.get(e.src) || 0) + 1);
+      if (!inEdges.has(e.dst)) inEdges.set(e.dst, []);
+      inEdges.get(e.dst).push({ src: e.src });
+    }
+    const arr = Array.from(nodes);
+    let score = new Map();
+    for (const n of arr) score.set(n, 1 / arr.length);
+    const d = 0.85;
+    for (let i = 0; i < 20; i++) {
+      const next = new Map();
+      const base = (1 - d) / arr.length;
+      for (const n of arr) {
+        let s = base;
+        const ins = inEdges.get(n) || [];
+        for (const { src } of ins) {
+          const od = outCount.get(src) || 0;
+          if (od > 0) s += d * (score.get(src) || 0) / od;
+        }
+        next.set(n, s);
+      }
+      score = next;
+    }
+    return score; // Map<nodeId, score>
+  }
 }
 
 class MemoryProvider extends StorageProvider {
@@ -254,6 +428,7 @@ class MemoryProvider extends StorageProvider {
     this.entities = new Map();
     this.kv = new Map();
     this.logs = [];
+    this.edges = new Map(); // key `${src}||${rel}||${dst}` -> {src,rel,dst,props,tombstone,reason,created_at}
   }
 
   connect() { console.log('[storage] 内存存储已连接'); }
@@ -361,6 +536,132 @@ class MemoryProvider extends StorageProvider {
     console.log(`[storage] 内存迁移: ${migrated} 条`);
     return migrated;
   }
+
+  // ========== L3.5 图谱中枢 6 接口（MemoryProvider 同构实现）==========
+  _ek(src, rel, dst) { return `${String(src)}||${String(rel)}||${String(dst)}`; }
+
+  addEdge(src, rel, dst, props = null) {
+    const k = this._ek(src, rel, dst);
+    this.edges.set(k, {
+      src: String(src), rel: String(rel), dst: String(dst),
+      props: props === undefined ? null : props,
+      tombstone: 0, reason: '',
+      created_at: new Date().toISOString()
+    });
+    return { src: String(src), rel: String(rel), dst: String(dst), props };
+  }
+
+  removeEdge(src, rel, dst, reason = '') {
+    const k = this._ek(src, rel, dst);
+    const e = this.edges.get(k) || { src: String(src), rel: String(rel), dst: String(dst), props: null, created_at: new Date().toISOString() };
+    e.tombstone = 1;
+    e.reason = String(reason || '');
+    this.edges.set(k, e);
+    return true;
+  }
+
+  _liveEdges() { return Array.from(this.edges.values()).filter(e => !e.tombstone); }
+
+  neighbors(nodeId, dir = 'both') {
+    const id = String(nodeId);
+    const all = this._liveEdges();
+    const out = (dir === 'both' || dir === 'out') ? all.filter(e => e.src === id) : [];
+    const inn = (dir === 'both' || dir === 'in')  ? all.filter(e => e.dst === id) : [];
+    return out.concat(inn).map(e => ({ src: e.src, rel: e.rel, dst: e.dst, props: e.props }));
+  }
+
+  neighborhoodSubgraph(seedIds, hops = 3, maxNodes = 5000) {
+    const seenNodes = new Set((seedIds || []).map(String));
+    const edges = [];
+    let frontier = Array.from(seenNodes);
+    for (let h = 0; h < hops && frontier.length && seenNodes.size < maxNodes; h++) {
+      const next = new Set();
+      for (const n of frontier) {
+        const nb = this.neighbors(n, 'both');
+        for (const e of nb) {
+          edges.push(e);
+          const other = e.src === n ? e.dst : e.src;
+          if (!seenNodes.has(other)) {
+            if (seenNodes.size >= maxNodes) break;
+            seenNodes.add(other);
+            next.add(other);
+          }
+        }
+      }
+      frontier = Array.from(next);
+    }
+    const edgeKey = (e) => `${e.src}||${e.rel}||${e.dst}`;
+    const uniq = new Map();
+    for (const e of edges) uniq.set(edgeKey(e), e);
+    return {
+      nodes: Array.from(seenNodes).map(id => ({ id })),
+      edges: Array.from(uniq.values())
+    };
+  }
+
+  findPath(fromId, toId, maxHops = 6) {
+    const from = String(fromId), to = String(toId);
+    if (from === to) return [];
+    const prev = new Map();
+    prev.set(from, null);
+    let queue = [from];
+    for (let h = 0; h < maxHops && queue.length; h++) {
+      const next = [];
+      for (const n of queue) {
+        const outs = this.neighbors(n, 'out');
+        for (const e of outs) {
+          if (!prev.has(e.dst)) {
+            prev.set(e.dst, { prevNode: n, edge: e });
+            if (e.dst === to) {
+              const path = [];
+              let cur = to;
+              while (prev.get(cur)) {
+                const { prevNode, edge } = prev.get(cur);
+                path.push(edge);
+                cur = prevNode;
+              }
+              return path.reverse();
+            }
+            next.push(e.dst);
+          }
+        }
+      }
+      queue = next;
+    }
+    return null;
+  }
+
+  pageRank(relFilter = null) {
+    const all = this._liveEdges().filter(e => relFilter ? e.rel === relFilter : true);
+    const nodes = new Set();
+    const outCount = new Map();
+    const inEdges = new Map();
+    for (const e of all) {
+      nodes.add(e.src); nodes.add(e.dst);
+      outCount.set(e.src, (outCount.get(e.src) || 0) + 1);
+      if (!inEdges.has(e.dst)) inEdges.set(e.dst, []);
+      inEdges.get(e.dst).push({ src: e.src });
+    }
+    const arr = Array.from(nodes);
+    let score = new Map();
+    for (const n of arr) score.set(n, arr.length ? 1 / arr.length : 0);
+    const d = 0.85;
+    for (let i = 0; i < 20; i++) {
+      const next = new Map();
+      const base = arr.length ? (1 - d) / arr.length : 0;
+      for (const n of arr) {
+        let s = base;
+        const ins = inEdges.get(n) || [];
+        for (const { src } of ins) {
+          const od = outCount.get(src) || 0;
+          if (od > 0) s += d * (score.get(src) || 0) / od;
+        }
+        next.set(n, s);
+      }
+      score = next;
+    }
+    return score;
+  }
 }
 
 class PostgresProvider extends StorageProvider {
@@ -422,7 +723,22 @@ class PostgresProvider extends StorageProvider {
          created_at TIMESTAMPTZ NOT NULL DEFAULT now()
        )`,
       `CREATE INDEX IF NOT EXISTS idx_logs_type ON logs(log_type)`,
-      `CREATE INDEX IF NOT EXISTS idx_logs_time ON logs(created_at)`
+      `CREATE INDEX IF NOT EXISTS idx_logs_time ON logs(created_at)`,
+      // L3.5 图谱中枢 Edge 表 PG 版（与 SQLite 结构一字段对齐）
+      `CREATE TABLE IF NOT EXISTS graph_edges (
+         id SERIAL PRIMARY KEY,
+         src   TEXT NOT NULL,
+         rel   TEXT NOT NULL,
+         dst   TEXT NOT NULL,
+         props JSONB,
+         tombstone INTEGER DEFAULT 0,
+         reason TEXT,
+         created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+         UNIQUE(src, rel, dst)
+       )`,
+      `CREATE INDEX IF NOT EXISTS idx_edges_src ON graph_edges(src)`,
+      `CREATE INDEX IF NOT EXISTS idx_edges_dst ON graph_edges(dst)`,
+      `CREATE INDEX IF NOT EXISTS idx_edges_rel ON graph_edges(rel)`
     ];
     return Promise.all(init.map(q => this.pool.query(q))).then(() => {
       this._prepare();
@@ -598,6 +914,39 @@ class PostgresProvider extends StorageProvider {
     // 此处在未启用真实 pg 时，等价于 SQLite 的同步镜像迁移，幂等护栏在 MemoryProvider 里已有。
   }
 
+  // ========== L3.5 图谱中枢 6 接口（PostgresProvider 同构实现：同步走镜像，真实 PG 异步持久化）==========
+  addEdge(src, rel, dst, props = null) {
+    const m = this._mirror().addEdge(src, rel, dst, props);
+    if (this.pool) {
+      this._persistAsync(this.pool.query(
+        `INSERT INTO graph_edges (src, rel, dst, props, tombstone, reason, created_at)
+         VALUES ($1, $2, $3, $4::jsonb, 0, NULL, now())
+         ON CONFLICT (src, rel, dst) DO UPDATE SET
+           props = EXCLUDED.props,
+           tombstone = 0,
+           reason = NULL`,
+        [String(src), String(rel), String(dst), props === null || props === undefined ? null : JSON.stringify(props)]
+      ));
+    }
+    return m;
+  }
+
+  removeEdge(src, rel, dst, reason = '') {
+    const m = this._mirror().removeEdge(src, rel, dst, reason);
+    if (this.pool) {
+      this._persistAsync(this.pool.query(
+        `UPDATE graph_edges SET tombstone = 1, reason = $4 WHERE src = $1 AND rel = $2 AND dst = $3`,
+        [String(src), String(rel), String(dst), String(reason || '')]
+      ));
+    }
+    return m;
+  }
+
+  neighbors(nodeId, dir = 'both') { return this._mirror().neighbors(nodeId, dir); }
+  neighborhoodSubgraph(seedIds, hops = 3, maxNodes = 5000) { return this._mirror().neighborhoodSubgraph(seedIds, hops, maxNodes); }
+  findPath(fromId, toId, maxHops = 6) { return this._mirror().findPath(fromId, toId, maxHops); }
+  pageRank(relFilter = null) { return this._mirror().pageRank(relFilter); }
+
   disconnect() {
     if (this.pool) { try { this.pool.end().catch(() => {}); } finally { this.pool = null; } }
     if (this._fallbackMemory) { this._fallbackMemory.disconnect(); this._fallbackMemory = null; }
@@ -728,6 +1077,58 @@ class DualWriteStorage extends StorageProvider {
     return fallback;
   }
   getLogs(type, limit = 200) { return this._try(p => p.getLogs(type, limit), v => Array.isArray(v) && v.length > 0) || []; }
+
+  // ========== L3.5 图谱中枢 6 接口（DualWriteStorage：双写 + auto 空读回填）==========
+  addEdge()    { return this._writeBoth('addEdge', arguments); }
+  removeEdge() { return this._writeBoth('removeEdge', arguments); }
+
+  neighbors(nodeId, dir = 'both') {
+    const pref = this.readPref || 'auto';
+    if (pref === 'secondary') return this.secondary.neighbors(nodeId, dir);
+    const got = this.primary.neighbors(nodeId, dir);
+    if (Array.isArray(got) && got.length) return got;
+    if (pref !== 'auto') return got;
+    const fall = this.secondary.neighbors(nodeId, dir);
+    if (Array.isArray(fall) && fall.length) {
+      for (const e of fall) try { this.primary.addEdge(e.src, e.rel, e.dst, e.props); } catch {}
+    }
+    return fall;
+  }
+
+  neighborhoodSubgraph(seedIds, hops = 3, maxNodes = 5000) {
+    const pref = this.readPref || 'auto';
+    if (pref === 'secondary') return this.secondary.neighborhoodSubgraph(seedIds, hops, maxNodes);
+    const got = this.primary.neighborhoodSubgraph(seedIds, hops, maxNodes);
+    if (got && Array.isArray(got.nodes) && got.nodes.length > 1) return got;
+    if (pref !== 'auto') return got;
+    const fall = this.secondary.neighborhoodSubgraph(seedIds, hops, maxNodes);
+    if (fall && Array.isArray(fall.edges)) {
+      for (const e of fall.edges) try { this.primary.addEdge(e.src, e.rel, e.dst, e.props); } catch {}
+    }
+    return fall;
+  }
+
+  findPath(fromId, toId, maxHops = 6) {
+    const pref = this.readPref || 'auto';
+    if (pref === 'secondary') return this.secondary.findPath(fromId, toId, maxHops);
+    const got = this.primary.findPath(fromId, toId, maxHops);
+    if (Array.isArray(got)) return got;
+    if (pref !== 'auto') return got;
+    const fall = this.secondary.findPath(fromId, toId, maxHops);
+    if (Array.isArray(fall)) {
+      for (const e of fall) try { this.primary.addEdge(e.src, e.rel, e.dst, e.props); } catch {}
+    }
+    return fall;
+  }
+
+  pageRank(relFilter = null) {
+    const pref = this.readPref || 'auto';
+    if (pref === 'secondary') return this.secondary.pageRank(relFilter);
+    const got = this.primary.pageRank(relFilter);
+    if (got && got.size > 0) return got;
+    if (pref !== 'auto') return got;
+    return this.secondary.pageRank(relFilter);
+  }
 }
 
 class StorageFactory {
