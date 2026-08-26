@@ -126,19 +126,26 @@
 ## 常用命令
 
 ### 开发
-- `cargo run -p runtime`：启动聚合后端（默认 `:3001`，含四套子服务；边缘入口 `platform/backend-node/` 占 `:3000` 并反代 `/api` 至此）
+- `cargo run -p mox-platform-gateway-svc`：启动聚合后端（默认 `:3001`，按域挂载子服务；边缘入口 `platform/backend-node/` 占 `:3000` 并反代 `/api` 至此）
 - `cd frontend-ui && npm run dev`：用户端前端开发（Vite，`/api` 代理到 `:3000`；系统管理区 `/admin`，HITL `/ws` 代理至 Rust 网关 `:3001`）
 - `cd frontend-ui && npm run build`：用户端生产构建 → `dist/`
 
 ### 构建 / 校验
 - `cargo build --workspace`：全量构建（沙箱须 `run_in_background`）
-- `cargo clippy --workspace --all-targets`：静态检查（目标零告警）
+- `cargo clippy --workspace --all-targets`：静态检查（目标零告警，已达成 188→0）
 - `cargo test --workspace`：全量测试（背景运行，退出码 0 = 全绿）
 
-### 测试（按 crate）
-- `cargo test -p mox-expert`：验证网关与敏感拦截
-- `cargo test -p primiflow-fusion`：治理 8 闸门
-- `cargo test -p mox-system`：成员/任务/RBAC/审计 + 多方言 repo
+### 测试（按域/crate）
+- `cargo test -p mox-ai-expert-svc`：验证网关与敏感拦截（旧 mox-expert）
+- `cargo test -p mox-flow-fusion-svc`：治理 8 闸门（旧 primiflow-fusion）
+- `cargo test -p mox-platform-enterprise-svc`：成员/任务/RBAC/审计 + 多方言 repo（旧 mox-system）
+- `cargo test -p mox-kg-algo-core`：八大算法 A1~A8 对账（旧 graph-algorithms）
+- `cargo test -p mox-flow-operator-core`：算子内核/守恒律/范畴论（旧 operator-core）
+
+### 架构一致性校验
+- `cargo metadata --format-version 1 | jq '.packages | length'`：验证 workspace crate 数量（应为73）
+- 对照 `docs/enterprise/02-architecture.md` §3.2 的 6层8域crate矩阵表，确认路径一致
+- 对照 `docs/enterprise/ARCHITECTURE-MIGRATION.md`，确认无旧路径 `platform/services/` 残留
 
 ## 上下文别名（项目黑话翻译）
 
