@@ -45,10 +45,10 @@ DOMAIN_DEP_MATRIX = {
 }
 
 # 层顺序（规则1）：数字越小越底层，只能高层依赖低层
-LAYER_ORDER = {"foundation": 0, "framework": 0, "gateway": 0, "runtime": 0, "test-harness": 0, "core": 1, "sdk": 2, "svc": 3, "api": 4, "unknown": 99}
+LAYER_ORDER = {"foundation": 0, "framework": 0, "gateway": 0, "runtime": 0, "binding": 0, "test-harness": 0, "core": 1, "sdk": 2, "svc": 3, "api": 4, "unknown": 99}
 
 # 横切层（不在 domains/ 下，被所有层依赖，不参与域间依赖检查）
-CROSS_CUTTING = {"foundation", "framework", "gateway", "runtime", "test-harness"}
+CROSS_CUTTING = {"foundation", "framework", "gateway", "runtime", "binding", "test-harness"}
 
 # ============================================================
 # crate 名 → (域, 层) 解析
@@ -74,7 +74,6 @@ CRATE_OVERRIDE = {
     # 特殊 crate
     "info-graph": ("kg", "svc"),  # 图谱 CLI 工具
     "mox-voice-desktop-app": ("voice", "api"),  # 桌面应用视为 api 层
-    "mox-voice-dsp-py": ("voice", "sdk"),  # Python 绑定
     "mox-common-meta": ("platform", "core"),  # 遗留命名
     "mox-domain-abstractions": ("platform", "core"),
     "mox-standards": ("platform", "core"),
@@ -82,14 +81,14 @@ CRATE_OVERRIDE = {
     # 历史遗留命名修正：data-standards-core 实际是通用标准库(SigV4/CRC32C/HMAC/RFC5424/FIPS)
     # 不是数据域特定，应归 platform 域。TODO: 后续重命名为 mox-platform-standards-core
     "mox-data-standards-core": ("platform", "core"),
-    # data-norm-intent-native 是 native 绑定，依赖 ai-intent-core 是因为意图识别的 native 实现
-    # 这是合理的跨域依赖（native 绑定层），标记为 sdk 层以豁免 R3 域间检查
-    "mox-data-norm-intent-native": ("data", "sdk"),
+    # data-norm-intent-native 是 napi-rs 原生绑定层(cdylib)，组合多域 core 是合理的
+    # 标记为 binding 横切层，豁免 R3 域间依赖检查
+    "mox-data-norm-intent-native": ("foundation", "binding"),
+    "mox-data-formula-native": ("foundation", "binding"),
+    "mox-voice-dsp-py": ("foundation", "binding"),
     # SDK 层（无 -sdk 后缀的遗留命名）
     "mox-cloud-sdk": ("cloud", "sdk"),
     "mox-kg-sdk": ("kg", "sdk"),
-    "mox-data-formula-native": ("data", "sdk"),  # native 绑定视为 sdk
-    "mox-data-norm-intent-native": ("data", "sdk"),
 }
 
 # crate 名后缀 → 层

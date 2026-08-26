@@ -1,323 +1,184 @@
-//! MOX Enterprise 性能基准测试
+//! MOX 企业级后端性能基准测试
 //!
-//! 覆盖：限流器 QPS、熔断器切换、异常检测吞吐量、数据血缘遍历
+//! 使用 criterion 进行微基准测试，覆盖核心模块的性能特征。
+//!
+//! 运行方式：cargo bench
 
-use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
-use mox_enterprise_backend::api_gateway::*;
-use mox_enterprise_backend::aiops::*;
-use mox_enterprise_backend::data_quality::*;
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use mox_enterprise_backend::aiops::{AnomalyConfig, AnomalyDetector, PredictiveScaler};
+use mox_enterprise_backend::aiops::predictive_scaler::PredictiveScalerConfig;
+use mox_enterprise_backend::api_gateway::circuit_breaker::{CircuitBreaker, CircuitConfig};
+use mox_enterprise_backend::api_gateway::rate_limiter::{RateLimiter, RateLimitConfig, RateLimitAlgorithm};
 use std::time::Duration;
 
-// ==================== 限流器基准测试 ====================
+fn rt() -> tokio::runtime::Runtime {
+    tokio::runtime::Runtime::new().unwrap()
+}
 
-fn benchmark_rate_limiter(c: &mut Criterion) {
-    let mut group = c.benchmark_group("rate_limiter");
-    group.sample_size(100);
-    group.measurement_time(Duration::from_secs(10));
+// ============================================================================
+// 限流器基准
+// ============================================================================
 
-    // 令牌桶单 key 高并发
-    let limiter = RateLimiter::new(RateLimitConfig {
+fn bench_rate_limiter_token_bucket(c: &mut Criterion) {
+    let config = RateLimitConfig {
         algorithm: RateLimitAlgorithm::TokenBucket,
         tokens_per_second: 100000,
-        burst_size: 100000,
-        window_seconds: 60,
-        max_requests: 600000,
-    });
-
-    group.bench_function("token_bucket_single_key", |b| {
-        b.to_async(tokio::runtime::Runtime::new().unwrap())
-            .iter(|| async {
-                limiter.try_acquire("bench_key").await
-            })
-    });
-
-    // 滑动窗口
-    let sw_limiter = RateLimiter::new(RateLimitConfig {
-        algorithm: RateLimitAlgorithm::SlidingWindow,
-        tokens_per_second: 100000,
-        burst_size: 100000,
+        burst_size: 200000,
         window_seconds: 1,
         max_requests: 100000,
-    });
+    };
+    let limiter = RateLimiter::new(config);
+    let runtime = rt();
 
-    group.bench_function("sliding_window_single_key", |b| {
-        b.to_async(tokio::runtime::Runtime::new().unwrap())
-            .iter(|| async {
-                sw_limiter.try_acquire("bench_sw").await
-            })
+    c.bench_function("rate_limiter_token_bucket_try_acquire", |b| {
+        b.iter(|| {
+            runtime.block_on(async {
+                let _ = black_box(limiter.try_acquire("bench-client").await);
+            });
+        });
     });
+}
 
-    // 多 key 场景
-    let multi_limiter = RateLimiter::new(RateLimitConfig {
-        algorithm: RateLimitAlgorithm::TokenBucket,
+fn bench_rate_limiter_sliding_window(c: &mut Criterion) {
+    let config = RateLimitConfig {
+        algorithm: RateLimitAlgorithm::SlidingWindow,
         tokens_per_second: 100000,
-        burst_size: 100000,
-        window_seconds: 60,
-        max_requests: 600000,
+        burst_size: 200000,
+        window_seconds: 1,
+        max_requests: 100000,
+    };
+    let limiter = RateLimiter::new(config);
+    let runtime = rt();
+
+    c.bench_function("rate_limiter_sliding_window_try_acquire", |b| {
+        b.iter(|| {
+            runtime.block_on(async {
+                let _ = black_box(limiter.try_acquire("bench-client").await);
+            });
+        });
     });
-
-    let keys: Vec<String> = (0..100).map(|i| format!("key_{}", i)).collect();
-    let mut key_idx = 0usize;
-
-    group.bench_function("token_bucket_multi_key_100", |b| {
-        b.to_async(tokio::runtime::Runtime::new().unwrap())
-            .iter(|| async {
-                let key = &keys[key_idx % 100];
-                key_idx += 1;
-                multi_limiter.try_acquire(key).await
-            })
-    });
-
-    group.finish();
 }
 
-// ==================== 熔断器基准测试 ====================
+// ============================================================================
+// 熔断器基准
+// ============================================================================
 
-fn benchmark_circuit_breaker(c: &mut Criterion) {
-    let mut group = c.benchmark_group("circuit_breaker");
-    group.sample_size(100);
-    group.measurement_time(Duration::from_secs(5));
-
-    let rt = tokio::runtime::Runtime::new().unwrap();
-
-    // Closed 状态 can_execute
-    let cb_closed = CircuitBreaker::new(CircuitConfig {
+fn bench_circuit_breaker_can_execute(c: &mut Criterion) {
+    let config = CircuitConfig {
         failure_threshold: 0.5,
-        minimum_requests: 100,
-        open_duration_ms: 10000,
-        half_open_max_requests: 10,
-        window_size_ms: 60000,
-    });
+        minimum_requests: 1000,
+        open_duration_ms: 30000,
+        half_open_max_requests: 5,
+        window_size_ms: 10000,
+    };
+    let cb = CircuitBreaker::new(config);
+    let runtime = rt();
 
-    group.bench_function("can_execute_closed", |b| {
-        b.to_async(&rt).iter(|| async {
-            cb_closed.can_execute().await
-        })
-    });
-
-    // record_success
-    group.bench_function("record_success", |b| {
-        b.to_async(&rt).iter(|| async {
-            cb_closed.record_success().await
-        })
-    });
-
-    // record_failure
-    group.bench_function("record_failure", |b| {
-        b.to_async(&rt).iter(|| async {
-            cb_closed.record_failure().await
-        })
-    });
-
-    group.finish();
-}
-
-// ==================== 异常检测基准测试 ====================
-
-fn benchmark_anomaly_detector(c: &mut Criterion) {
-    let mut group = c.benchmark_group("anomaly_detector");
-    group.sample_size(100);
-    group.measurement_time(Duration::from_secs(10));
-
-    // 3σ 算法
-    let detector = AnomalyDetector::new(AnomalyConfig {
-        algorithm: AnomalyAlgorithm::ThreeSigma,
-        window_size: 100,
-        threshold: 3.0,
-        sensitivity: 1.0,
-        min_data_points: 10,
-    });
-
-    // 预热数据
-    for i in 0..50 {
-        detector.detect("metric", 50.0 + (i as f64 * 0.1), None);
-    }
-
-    group.bench_function("three_sigma_detection", |b| {
-        let mut val = 50.0f64;
+    c.bench_function("circuit_breaker_can_execute_closed", |b| {
         b.iter(|| {
-            val += 0.01;
-            detector.detect("metric", val, None)
-        })
-    });
-
-    // EWMA 算法
-    let ewma_detector = AnomalyDetector::new(AnomalyConfig {
-        algorithm: AnomalyAlgorithm::EWMA,
-        window_size: 100,
-        threshold: 3.0,
-        sensitivity: 1.0,
-        min_data_points: 10,
-    });
-
-    for i in 0..50 {
-        ewma_detector.detect("metric", 50.0 + (i as f64 * 0.1), None);
-    }
-
-    group.bench_function("ewma_detection", |b| {
-        let mut val = 50.0f64;
-        b.iter(|| {
-            val += 0.01;
-            ewma_detector.detect("metric", val, None)
-        })
-    });
-
-    // 多指标并发
-    let multi_detector = AnomalyDetector::new(AnomalyConfig {
-        algorithm: AnomalyAlgorithm::ThreeSigma,
-        window_size: 100,
-        threshold: 3.0,
-        sensitivity: 1.0,
-        min_data_points: 10,
-    });
-
-    for m in 0..10 {
-        for i in 0..50 {
-            multi_detector.detect(&format!("metric_{}", m), 50.0 + (i as f64 * 0.1), None);
-        }
-    }
-
-    group.bench_function("multi_metric_10_detection", |b| {
-        let mut idx = 0usize;
-        b.iter(|| {
-            idx += 1;
-            let metric = format!("metric_{}", idx % 10);
-            multi_detector.detect(&metric, 50.5, None)
-        })
-    });
-
-    group.finish();
-}
-
-// ==================== 预测性扩缩容基准测试 ====================
-
-fn benchmark_predictive_scaler(c: &mut Criterion) {
-    let mut group = c.benchmark_group("predictive_scaler");
-    group.sample_size(50);
-    group.measurement_time(Duration::from_secs(5));
-
-    let scaler = PredictiveScaler::new(PredictiveScalerConfig {
-        algorithm: PredictionAlgorithm::Combined,
-        window_size: 100,
-        prediction_horizon_seconds: 300,
-        scale_up_threshold: 0.7,
-        scale_down_threshold: 0.3,
-        min_replicas: 1,
-        max_replicas: 100,
-        cooldown_seconds: 0,
-        target_utilization: 0.6,
-        safety_margin: 0.2,
-        moving_average_window: 10,
-        exponential_alpha: 0.3,
-    });
-
-    // 预热数据
-    for i in 0..80 {
-        scaler.record_load("service", 0.5 + (i as f64 * 0.005), None);
-    }
-    scaler.set_current_replicas("service", 5);
-
-    // 负载预测
-    group.bench_function("predict_load_combined", |b| {
-        b.iter(|| scaler.predict_load("service"))
-    });
-
-    // 扩缩容评估
-    group.bench_function("evaluate_scaling", |b| {
-        b.iter(|| scaler.evaluate("service"))
-    });
-
-    // 单算法对比
-    for algo in [PredictionAlgorithm::MovingAverage, PredictionAlgorithm::ExponentialSmoothing, PredictionAlgorithm::LinearRegression] {
-        let s = PredictiveScaler::new(PredictiveScalerConfig {
-            algorithm: algo,
-            window_size: 100,
-            prediction_horizon_seconds: 300,
-            scale_up_threshold: 0.7,
-            scale_down_threshold: 0.3,
-            min_replicas: 1,
-            max_replicas: 100,
-            cooldown_seconds: 0,
-            target_utilization: 0.6,
-            safety_margin: 0.2,
-            moving_average_window: 10,
-            exponential_alpha: 0.3,
+            runtime.block_on(async {
+                let _ = black_box(cb.can_execute().await);
+            });
         });
-        for i in 0..80 {
-            s.record_load("svc", 0.5 + (i as f64 * 0.005), None);
-        }
-
-        let name = format!("predict_{:?}", algo);
-        group.bench_with_input(BenchmarkId::from_parameter(name), &s, |b, s| {
-            b.iter(|| s.predict_load("svc"))
-        });
-    }
-
-    group.finish();
+    });
 }
 
-// ==================== 数据质量规则引擎基准测试 ====================
+fn bench_circuit_breaker_record_success(c: &mut Criterion) {
+    let config = CircuitConfig {
+        failure_threshold: 0.5,
+        minimum_requests: 100000,
+        open_duration_ms: 30000,
+        half_open_max_requests: 5,
+        window_size_ms: 10000,
+    };
+    let cb = CircuitBreaker::new(config);
+    let runtime = rt();
 
-fn benchmark_quality_engine(c: &mut Criterion) {
-    let mut group = c.benchmark_group("quality_engine");
-    group.sample_size(50);
-    group.measurement_time(Duration::from_secs(5));
+    c.bench_function("circuit_breaker_record_success", |b| {
+        b.iter(|| {
+            runtime.block_on(async {
+                black_box(cb.record_success().await);
+            });
+        });
+    });
+}
 
-    let engine = QualityRuleEngine::new();
+// ============================================================================
+// 异常检测基准
+// ============================================================================
 
-    // 添加 100 条规则
+fn bench_anomaly_detector_detect_normal(c: &mut Criterion) {
+    let detector = AnomalyDetector::new(AnomalyConfig::default());
+
+    // 预热：添加历史数据
     for i in 0..100 {
-        engine.add_rule(QualityRule {
-            id: String::new(),
-            name: format!("rule_{}", i),
-            description: String::new(),
-            asset_id: format!("asset_{}", i % 10),
-            dimension: QualityDimension::all()[i % 6],
-            rule_type: QualityRuleType::NotNull,
-            field_name: None,
-            expression: None,
-            threshold: 0.9,
-            severity: QualitySeverity::Medium,
-            enabled: true,
-            created_at: String::new(),
-            updated_at: String::new(),
-        });
+        detector.add_metric("bench-metric", 50.0 + (i as f64 * 0.01), None);
     }
 
-    // 按资产查询
-    group.bench_function("get_rules_by_asset", |b| {
-        b.iter(|| engine.get_rules_by_asset("asset_5"))
+    c.bench_function("anomaly_detector_detect_normal", |b| {
+        b.iter(|| {
+            let _ = black_box(detector.detect("bench-metric", 51.0));
+        });
     });
-
-    // 按维度查询
-    group.bench_function("get_rules_by_dimension", |b| {
-        b.iter(|| engine.get_rules_by_dimension(QualityDimension::Completeness))
-    });
-
-    // 生成报告
-    let results: Vec<QualityResult> = (0..50).map(|i| QualityResult {
-        rule_id: format!("r{}", i),
-        asset_id: "asset_0".to_string(),
-        dimension: QualityDimension::all()[i % 6],
-        score: 0.8 + (i as f64 * 0.003),
-        passed: i % 5 != 0,
-        details: String::new(),
-        evaluated_at: String::new(),
-    }).collect();
-
-    group.bench_function("generate_report_50_rules", |b| {
-        b.iter(|| engine.generate_report("asset_0", &results))
-    });
-
-    group.finish();
 }
+
+fn bench_anomaly_detector_add_metric(c: &mut Criterion) {
+    let detector = AnomalyDetector::new(AnomalyConfig::default());
+
+    c.bench_function("anomaly_detector_add_metric", |b| {
+        let mut i = 0u64;
+        b.iter(|| {
+            i += 1;
+            black_box(detector.add_metric("bench-metric", 50.0, Some(i as f64)));
+        });
+    });
+}
+
+// ============================================================================
+// 预测性扩缩容基准
+// ============================================================================
+
+fn bench_predictive_scaler_evaluate(c: &mut Criterion) {
+    let scaler = PredictiveScaler::new(PredictiveScalerConfig::default());
+
+    // 预热：添加历史负载
+    for i in 0..50 {
+        scaler.record_load("bench-service", 0.5 + (i as f64 * 0.001), None);
+    }
+
+    c.bench_function("predictive_scaler_evaluate", |b| {
+        b.iter(|| {
+            let _ = black_box(scaler.evaluate("bench-service"));
+        });
+    });
+}
+
+// ============================================================================
+// 基准组配置
+// ============================================================================
 
 criterion_group!(
-    benches,
-    benchmark_rate_limiter,
-    benchmark_circuit_breaker,
-    benchmark_anomaly_detector,
-    benchmark_predictive_scaler,
-    benchmark_quality_engine,
+    name = rate_limiter;
+    config = Criterion::default().measurement_time(Duration::from_secs(3));
+    targets = bench_rate_limiter_token_bucket, bench_rate_limiter_sliding_window
 );
-criterion_main!(benches);
+
+criterion_group!(
+    name = circuit_breaker;
+    config = Criterion::default().measurement_time(Duration::from_secs(3));
+    targets = bench_circuit_breaker_can_execute, bench_circuit_breaker_record_success
+);
+
+criterion_group!(
+    name = anomaly_detector;
+    config = Criterion::default().measurement_time(Duration::from_secs(3));
+    targets = bench_anomaly_detector_detect_normal, bench_anomaly_detector_add_metric
+);
+
+criterion_group!(
+    name = predictive_scaler;
+    config = Criterion::default().measurement_time(Duration::from_secs(3));
+    targets = bench_predictive_scaler_evaluate
+);
+
+criterion_main!(rate_limiter, circuit_breaker, anomaly_detector, predictive_scaler);
