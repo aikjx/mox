@@ -123,58 +123,143 @@ DomainEvent ──▶ EventBus(broadcast)
 
 ## 3. 应用/服务架构视图（Application）
 
-### 3.1 分层映射（对齐 OUS 五层，见 `docs/architecture.md` §2）
+### 3.1 分层映射（6层8域DDD矩阵 · 对齐 OUS 六层金字塔）
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ 接入层 Ingress   Vue3/Three.js · REST · WebSocket(SSE)        │
-├─────────────────────────────────────────────────────────────┤
-│ 运行时 Runtime   令牌↔成员解析 · RBAC 鉴权闸门(middleware)     │
-├─────────────────────────────────────────────────────────────┤
-│ 编排层 Orchestration  MoxSystem 门面                     │
-│                  ├─ require() 统一鉴权                        │
-│                  └─ Reactor 事件→通信 反应器                  │
-├─────────────────────────────────────────────────────────────┤
-│ 核心域 Core Domain   MemberService · TaskService             │
-│                    PermissionService · CommService           │
-├─────────────────────────────────────────────────────────────┤
-│ 数据层 Data         Store(接口) · EventBus(broadcast)         │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│ 接入层 Ingress   Vue3/Three.js · REST · WebSocket(SSE) · /admin 5面板  │
+├─────────────────────────────────────────────────────────────────────┤
+│ L1 Gateway   mox-platform-gateway-svc：路由·鉴权·限流·CORS·WS·健康检查  │
+│              （仅横切中间件，业务聚合下沉到各域svc层）                      │
+├─────────────────────────────────────────────────────────────────────┤
+│ L3 Svc（8域应用服务）  ai/cloud/data/flow/kg/market/platform/voice       │
+│        29 crate：HTTP handler · 业务编排 · DB repo · 外部API client      │
+├─────────────────────────────────────────────────────────────────────┤
+│ L2 Core（8域领域模型）  15 crate：纯业务逻辑 · trait定义 · 无I/O依赖      │
+│        算子内核 · 图算法 · 优化器 · IAM · 数据存储 · 编排器 · 语音DSP     │
+├─────────────────────────────────────────────────────────────────────┤
+│ L4 Sdk（8域对外类型）  6 crate：客户端类型 · FFI绑定(napi/PyO3) · 测试工具 │
+├─────────────────────────────────────────────────────────────────────┤
+│ L5 Api（8域域间契约）  规划中（0 crate）：trait/interface/DTO · 依赖倒置  │
+├─────────────────────────────────────────────────────────────────────┤
+│ L0 Foundation（横切基础）  mox-platform-foundation + mox-cloud-foundation │
+│        通用类型 · 错误处理 · 配置 · 工具函数 · 云基础设施抽象              │
+├─────────────────────────────────────────────────────────────────────┤
+│ Framework（插件框架）  mox-framework：扩展点定义 · 插件注册              │
+└─────────────────────────────────────────────────────────────────────┘
         ▲ 融合治理旁路
         │
-   mox-expert（双璇玑十四维 · 璇玑）
+   mox-ai-expert-svc（双璇玑十四维 · ⛨璇玑验证网关 · 14专家）
 ```
 
-### §3.2 Rust 分层矩阵 · 16 Crate × 12 列（T2 真源 ↔ 三注册表 ↔ 文档 ↔ lib.rs 常量 四方对账 AC-22 基准）
+**依赖方向（强制）**：`L0 → L2 → L3 → L1 → Ingress`（自底向上）；`L4/L5` 横切，可被 L2/L3 引用；**禁止 L2 依赖 L3，禁止跨域直接依赖其他域的 L3 svc（必须通过 L5 api 契约）**。
+
+### §3.2 Rust 分层矩阵 · 6层8域DDD矩阵 × 54+ Crate（v2.0 · 对齐 ARCHITECTURE-MIGRATION.md）
 
 > **权威等级**：L2 架构文档（第三级），与 TOP-MASTER `18-全域顶层总设计` §二六层金字塔严格对齐。
-> **真源链**：`mox-common-meta::all_crate_metas()` (T2 表) → 各 crate `src/lib.rs` `pub const CRATE_ID/ENGINE_NAME` → 三注册表 `atlas_auto_registry.json` `domain-rust-*` → 本节表格 → `docs/standards/project-atlas.md` §7 SOP。五者不一致即触发 `GET /atlas/verify` W 系列破窗告警。
-> **列顺序契约（12 列，测试 test-t10-arch-fourway-diff.js 依赖）**：`Crate 目录 · package.name · CRATE_ID · ENGINE_NAME · AIS Layer · Owner · 关键 Traits · 关键 Impl · 三注册 bind · README 链接 · 版本 · CI Status`。
-> **行序契约（16 行）**：严格按 `mox_common_meta::all_crate_metas()` 返回顺序（T2 向量序），禁止擅自调整顺序（测试按名称集合比对，但人读顺序需与 T2 一致）。
+> **架构模型**：6层8域DDD矩阵 — L0 Foundation（横切基础）/ L1 Gateway（网关）/ L2 Core（领域模型，8域）/ L3 Svc（应用服务，8域）/ L4 Sdk（对外类型，8域）/ L5 Api（域间契约，8域，规划中）。
+> **真源链**：`Cargo.toml` workspace members（73 member，含FFI绑定/测试harness）→ 各 crate `src/lib.rs` `pub const CRATE_ID/ENGINE_NAME` → 本节表格 → `mox-platform-meta-core::all_crate_metas()`。五者不一致即触发架构告警。
+> **旧→新映射**：完整17旧crate→54新crate映射见 [`ARCHITECTURE-MIGRATION.md`](ARCHITECTURE-MIGRATION.md)。
 
-| # | Crate 目录 | package.name | CRATE_ID (UUIDv5) | ENGINE_NAME | AIS Layer | Owner | 关键 Traits | 关键 Impl | 三注册 bind (domain;engine;code_graph) | README 链接 | 版本 | CI Status |
-|---|-----------|--------------|-------------------|-------------|-----------|-------|-------------|-----------|---------------------------------------|-------------|------|-----------|
-| 1 | platform/services/ai-agent | ai-agent | `00374bdd-cc60-55bf-8970-a879afbfe443` | `mox::ai_agent` | **L4Services** | mox-core | `trait LLMProvider`; `trait HttpProvider`; `trait Guard` (engine/guards.rs); `trait AgentTool` (engine/tools.rs) | `struct AIAgent`; `impl AIAgent { chat, configure_llm, compile_requirement, create_flow, run_engine_task, spawn_agent }`; `ConversationEngine`; `BrowserAutomationEngine`; `WorkflowEngine`; `FlowEngine`; `RequirementCompiler`; `MultiAgent`; `PluginBus` | `domain=domain-rust-ai-agent`;`engine=engine-rust-ai-agent`;`code_graph_unit=ai-agent` | [ai-agent/README.md](../../platform/services/ai-agent/README.md) | 3.0.0-ai-powered | 🟢 enterprise-ci |
-| 2 | platform/services/business-catalog | business-catalog | `62b2cca1-d98f-5e41-b26e-8d2a43966117` | `mox::business_catalog` | **L4Services** | mox-core | `trait CatalogProvider` | `struct Business`; `struct SpiralParams`; `struct SpiralKinematics`; `struct SpiralAnalysisReport`; `impl Catalog { list_topologies, list_flowgraphs, spiral_analysis }`; bin `catalog.rs` CLI | `domain=domain-rust-business-catalog`;`engine=module-rust-business-catalog`;`code_graph_unit=business-catalog` | [business-catalog/README.md](../../platform/services/business-catalog/README.md) | 0.1.0 | 🟢 enterprise-ci |
-| 3 | platform/services/flow-ai | flow-ai | `2fcd3eac-e894-5876-b007-fb33c56c0d65` | `mox::flow_ai` | **L4Services** | mox-core | `trait Primitive`; `trait Scheduler` | `struct ConflictReport`; `struct CodeBundle`; `struct TopologyGraph`; `struct Schedule`; `struct Pipeline`; `impl Pipeline { build, validate, execute, schedule, detect_conflicts }`; bin `flowopt.rs` | `domain=domain-rust-flow-ai`;`engine=engine-rust-flow-ai`;`code_graph_unit=flow-ai` | [flow-ai/README.md](../../platform/services/flow-ai/README.md) | 3.0.0-ai-powered | 🟢 enterprise-ci |
-| 4 | platform/services/graph-algorithms | graph-algorithms | `fbd31c6a-41cd-5274-be2f-2a28066eaf0a` | `mox::graph_algorithms` | **L4Services** | mox-core | `trait GraphAlgorithm` | `struct KnowledgeGraph`; `struct KnowledgeNode`; `struct CentralityMetrics`; `struct Community`; `struct KnowledgeGraphBuilder`; `impl { pagerank, cnm_community, brandes_betweenness, harmonic_closeness, activation_spread, density, modularity, rrf_rank_fuse }` | `domain=domain-rust-graph-algorithms`;`engine=engine-rust-graph-algorithms`;`code_graph_unit=graph-algorithms` | [graph-algorithms/README.md](../../platform/services/graph-algorithms/README.md) | 3.0.0-ai-powered | 🟢 enterprise-ci |
-| 5 | platform/services/hermes-flow-bridge | hermes-flow-bridge | `9bfaf43b-385a-5a44-9fb2-65b4003ee80d` | `mox::hermes_flow_bridge` | **L4Services** | mox-core | `trait BridgePlugin`; `trait Hook`; `trait SessionRecorder` | `struct HermesBridge`; `struct Router`; `struct MiniHermes`; `struct Normalizer`; `struct PluginRegistry`; `impl Bridge { route, apply_plugins, record_session, normalize_input }`; bin `bridge_demo.rs` | `domain=domain-rust-hermes-flow-bridge`;`engine=module-rust-hermes-flow-bridge`;`code_graph_unit=hermes-flow-bridge` | [hermes-flow-bridge/README.md](../../platform/services/hermes-flow-bridge/README.md) | 0.1.0 | 🟢 enterprise-ci |
-| 6 | platform/services/kg-hub | kg-hub | `cb909f06-c0df-55ec-b397-543623a8c349` | `mox::kg_hub` | **L4Services** | mox-core | `trait Connector`; `trait IngestPipeline`; `trait Reasoner` | `struct HybridIndex`; `struct Consolidator`; `struct URN`; `struct Ontology`; `struct LoopEngine`; `struct GovPolicy`; `impl { ingest, reason, govern, impact, hotspots, consolidate, loop_stage }`; 5 Connectors (SQLite/JSON/HTTP/CSV/API) | `domain=domain-rust-kg-hub`;`engine=engine-rust-kg-hub`;`code_graph_unit=kg-hub` | [kg-hub/README.md](../../platform/services/kg-hub/README.md) | 3.0.0-ai-powered | 🟢 enterprise-ci |
-| 7 | platform/services/operator-core | operator-core | `acf14283-3931-5528-adce-2c0cd3815363` | `mox::operator_core` | **L6Kernel** | mox-core | `trait Operator` (operator.rs); `trait Kernel` (kernel.rs); `trait ResourceContainer`; `trait ConservationLaw` (conservation.rs); `trait KernelExt` (kernel_ext.rs) | `struct OperatorError`; `struct State`; `struct Category`; `struct Registry`; `struct Resource`; `impl Monad for Result<T, OperatorError>`; `impl conservation::validate()`; `Registry::register/query/list()`; 4+ conservation 守恒律闸门 | `domain=domain-rust-operator-core`;`engine=engine-rust-operator-core`;`code_graph_unit=operator-core` | [operator-core/README.md](../../platform/services/operator-core/README.md) | 3.0.0-ai-powered | 🟢 enterprise-ci |
-| 8 | platform/services/operator-wasm | operator-wasm | `5a1df407-b217-5340-a5ae-5f4535d1e6de` | `mox::operator_wasm` | **L4Services** | mox-core | `trait WasmHost` | `struct WasmOperator`; `struct WasmModule`; `struct Instance`; `impl WasmOperator::call(wasmer::Instance) -> Result<Value>`; WASM Sandbox (wasmer + cranelift compiler) | `domain=domain-rust-operator-wasm`;`engine=module-rust-operator-wasm`;`code_graph_unit=operator-wasm` | [operator-wasm/README.md](../../platform/services/operator-wasm/README.md) | 3.0.0-ai-powered | 🟢 enterprise-ci |
-| 9 | platform/services/optimizer | optimizer | `e56676c7-ec1f-5415-9587-ba8249d0178a` | `mox::optimizer` | **L4Services** | mox-core | `trait Objective`; `trait Schedule` | `impl cpm_critical_path()`; `impl rcpsp_greedy()`; `impl multi_objective_eval_cem()`（CEM 交叉熵优化器，配置调参/多目标权重） | `domain=domain-rust-optimizer`;`engine=engine-rust-optimizer`;`code_graph_unit=optimizer` | [optimizer/README.md](../../platform/services/optimizer/README.md) | 3.0.0-ai-powered | 🟢 enterprise-ci |
-| 10 | platform/services/primiflow-core | primiflow-core | `8c8d2382-6f9f-5218-894e-a07a43aa9554` | `mox::primiflow_core` | **L4Services** | mox-core | `trait Executor`; `trait Store`; `trait Generator` | `struct Parse`; `struct Persistence`; `struct Runner`; `struct Server`; `mod gen { c1..c8 DDL 骨架模板 }`; `impl execute / persist / generate_code / parse_ddl` | `domain=domain-rust-primiflow-core`;`engine=engine-rust-primiflow-core`;`code_graph_unit=primiflow-core` | [primiflow-core/README.md](../../platform/services/primiflow-core/README.md) | 3.0.0-ai-powered | 🟢 enterprise-ci |
-| 11 | platform/services/primiflow-fusion | primiflow-fusion | `75238345-b48b-534b-818b-8d9abe083a41` | `mox::primiflow_fusion` | **L4Services** | mox-core | `trait Platform`; `trait Envelope`; `trait FusionRegistry` | `struct Sixdim` (六维度量); `struct Observability`; `struct PTDoc`; `struct Config`; `struct Server`; `struct Registry`; `impl fuse / register_service / sixdim_score / conservation_gate / version_migrate` | `domain=domain-rust-primiflow-fusion`;`engine=engine-rust-primiflow-fusion`;`code_graph_unit=primiflow-fusion` | [primiflow-fusion/README.md](../../platform/services/primiflow-fusion/README.md) | 0.1.0 | 🟢 enterprise-ci |
-| 12 | platform/services/template-market | template-market | `4d2e50c1-9d64-525d-86cf-2d7d610a27b9` | `mox::template_market` | **L4Services** | mox-core | `trait MarketProvider` | `struct Template`; `struct MarketSeed`; `struct Rating`; `impl { list, publish, load, fork, sort_by_score }`; 2 商城种子（政务流程模板 + ETL 模板） | `domain=domain-rust-template-market`;`engine=module-rust-template-market`;`code_graph_unit=template-market` | [template-market/README.md](../../platform/services/template-market/README.md) | 3.0.0-ai-powered | 🟢 enterprise-ci |
-| 13 | platform/services/mox-expert | mox-expert | `50bb6200-04c5-5e4c-8354-4c6e1b230024` | `mox::mox_expert` | **L4Services** | mox-core | `trait Expert` (expert_traits.rs); `trait Verify` (verify/mod.rs); `trait AuditSink` (audit/sink.rs); `trait DomainRule` (domain/mod.rs); `trait ExpertHarness` (harness.rs) | 14 专家 `struct {Algorithm,Architecture,Business,CodeQuality,Data,Documentation,Maintainability,Observability,Performance,Permission,Resource,Security,SecurityCode,Testing}Expert`; `impl Expert::evaluate()`; `impl Audit::emit_to_s3_kafka_syslog()`; `Verify::{cem,topology,data_dep,conflict,gains,code_rt}`; RBAC `policy / check`; bin `mox.rs` | `domain=domain-rust-mox-expert`;`engine=engine-rust-mox-expert`;`code_graph_unit=mox-expert` | [mox-expert/README.md](../../platform/services/mox-expert/README.md) | 0.1.0 | 🟢 enterprise-ci |
-| 14 | platform/services/mox-system | mox-system | `b81eec75-22ff-5155-ac49-19edf6f6b5ab` | `mox::mox_system` | **L7Infrastructure** | mox-core | `trait Repository` (repo/mod.rs); `trait PersistenceProvider` (persistence_provider.rs); `trait DomainService` (domain_traits.rs) | `struct Orchestrator`; 4 Services `{Member,Task,Permission,Comm}Service`; `struct Store`; `struct RBAC`; `struct Metrics`; `struct RateLimiter`; `struct Crypto`; `impl Repository for SqliteRepo + PostgresRepo + MysqlRepo`; `impl orchestrator.require()` 鉴权闸门 + 反应器编排 | `domain=domain-rust-mox-system`;`engine=engine-rust-mox-system`;`code_graph_unit=mox-system` | [mox-system/README.md](../../platform/services/mox-system/README.md) | 0.1.0 | 🟢 enterprise-ci |
-| 15 | platform/gateway/runtime | runtime | `a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b` | `mox::runtime` | **L3Orchestration** | mox-core | `trait Lifecycle` (cordis/lifecycle.rs); `trait CordisBundle` (cordis/bundle.rs); `trait AiRouter` (ai_router.rs); `trait RbacPolicy` (rbac_middleware.rs) | `struct RouterTable`; `struct CapabilityRouter`; `struct MarketDSL`; `struct MigrationEngine`; `struct Governance`; `struct Sidecar`; `impl axum routes/{agent,ai_engine,governance,market}`; Cordis5 生命周期 {startup/shutdown/before_handle/after_handle/profile}; OpenAPI spec; operator-server 二进制入口 | `domain=domain-rust-runtime`;`engine=engine-rust-runtime`;`code_graph_unit=runtime` | [runtime/README.md](../../platform/gateway/runtime/README.md) | 3.0.0-ai-powered | 🟢 enterprise-ci |
-| 16 | platform/services/mox-common-meta | mox-common-meta | `34a20231-1a80-5426-b392-40d7a2ddd9f7` | `mox::mox_common_meta` | **L5Domain** | mox-core | (纯数据元 crate，无对外 trait) | `pub enum AisLayer { L2Gateway, L3Orchestration, L4Services, L5Domain, L6Kernel, L6KernelExt, L7Infrastructure }`; `pub struct CrateMeta { id,name,version,layer,owner }`; `impl CrateMeta::engine_name()`; `pub fn all_crate_metas() -> Vec<CrateMeta>` (16 行硬编码真源); `pub fn lookup_meta_by_engine(name) -> Option<CrateMeta>` | `domain=domain-rust-mox-common-meta`;`engine=module-rust-mox-common-meta`;`code_graph_unit=mox-common-meta` | [mox-common-meta/README.md](../../platform/services/mox-common-meta/README.md) | 3.0.0-ai-powered | 🟢 enterprise-ci |
+#### §3.2.1 横切层（L0 Foundation + L1 Gateway + Framework）
 
-**行数量校验**：16/16（12 L4Services + 1 L3Orchestration runtime + 1 L6Kernel operator-core + 1 L7Infrastructure mox-system + 1 L5Domain mox-common-meta）。
+| # | Crate 目录 | package.name | 层级 | Owner | 关键职责 | 版本 |
+|---|-----------|--------------|------|-------|---------|------|
+| F1 | platform/foundation/mox-platform-foundation | mox-platform-foundation | L0 Foundation | 开发联盟 | 平台基础库：通用类型、错误处理（thiserror/anyhow统一）、配置、工具函数、tracing初始化 | 3.0.0 |
+| F2 | platform/foundation/mox-cloud-foundation | mox-cloud-foundation | L0 Foundation | 开发联盟 | 云基础设施基础库：云存储抽象、卷管理、S3适配、文件器接口 | 3.0.0 |
+| G1 | platform/gateway/mox-platform-gateway-svc | mox-platform-gateway-svc | L1 Gateway | 开发联盟 | API网关：路由、鉴权、限流、CORS、WebSocket、健康检查、OpenAPI。**仅做横切中间件，业务聚合下沉到各域svc层** | 3.0.0 |
+| FW1 | platform/framework/ | mox-framework | Framework | 开发联盟 | 框架层：插件框架/扩展点定义（库） | 3.0.0 |
 
-> 🔍 **AC-22 四方对账自动化**：`node platform/backend-node/test/test-t10-arch-fourway-diff.js` 每次改动本表后必须运行；任何不一致都会 exit 1。
-> 📌 **路径零老化约定**：所有 Crate 目录列均为相对仓库根的真实存在路径（`platform/services/*` 15 个 + `platform/gateway/runtime` 1 个）；不得再使用旧别名 `crates/`。
+#### §3.2.2 8域 × Core层（L2 · 领域模型 · 15 crate）
+
+| 域 | Crate 目录 | package.name | 关键 Trait / 类型 | 关键实现 |
+|----|-----------|--------------|-------------------|---------|
+| **ai** | domains/ai/core/mox-ai-core | mox-ai-core | `trait AIKernel` | AI统一内核：LLM客户端抽象、对话状态、ProviderRegistry |
+| **ai** | domains/ai/core/mox-ai-intent-core | mox-ai-intent-core | `trait IntentClassifier` | 意图识别领域模型：A5激活扩散意图路由核心、意图分类器、能力路由打分 |
+| **data** | domains/data/core/mox-data-formula-core | mox-data-formula-core | `trait FormulaEngine` | 公式引擎核心：高精度计算、表达式解析、变量绑定 |
+| **data** | domains/data/core/mox-data-norm-core | mox-data-norm-core | `trait Normalizer` | 数据归一化核心：归一化IR、六维绑定、守恒闸门 |
+| **data** | domains/data/core/mox-data-standards-core | mox-data-standards-core | `trait DataStandard` | 数据标准核心：Schema定义、数据质量规则、标准注册 |
+| **flow** | domains/flow/core/mox-flow-operator-core | mox-flow-operator-core | `trait Operator`; `trait Kernel`; `trait ConservationLaw`; `trait ResourceContainer` | 算子代数内核：State/Category/Registry/Resource、守恒律闸门4+、Monad三定律、范畴论态射规则 |
+| **flow** | domains/flow/core/mox-flow-optimizer-core | mox-flow-optimizer-core | `trait Objective`; `trait Schedule` | 优化器核心：CPM关键路径、RCPSP资源约束调度、CEM交叉熵优化器 |
+| **kg** | domains/kg/core/mox-kg-algo-core | mox-kg-algo-core | `trait GraphAlgorithm` | 八大算法家族A1~A8：CNM社区/Brandes介数/Harmonic紧密/PageRank/激活扩散/RRF/CEM/CPM |
+| **kg** | domains/kg/core/mox-kg-meta-core | mox-kg-meta-core | `trait Ontology`; `trait SchemaManager` | 图谱元数据核心：本体管理、Schema版本化、14节点族×19边族定义 |
+| **platform** | domains/platform/core/mox-platform-system-core | mox-platform-system-core | `trait Repository`; `trait DomainService` | 璇玑系统核心：成员/任务/权限/通信领域模型、Store接口、EventBus、RBAC策略 |
+| **platform** | domains/platform/core/mox-platform-iam-core | mox-platform-iam-core | `trait IdentityProvider`; `trait AccessController` | IAM核心：身份认证、令牌管理、访问控制、API Key |
+| **platform** | domains/platform/core/mox-platform-meta-core | mox-platform-meta-core | `pub enum AisLayer`; `pub struct CrateMeta` | 元数据核心：AisLayer枚举（L0~L5）、CrateMeta结构体、all_crate_metas()（**需更新为54+ crate列表**） |
+| **platform** | domains/platform/core/mox-platform-datastore-core | mox-platform-datastore-core | `trait Datastore`; `trait Migration` | 数据存储核心：多后端抽象（SQLite/PG/MySQL）、方言归一化、迁移引擎 |
+| **platform** | domains/platform/core/mox-platform-orchestrator-core | mox-platform-orchestrator-core | `trait Orchestrator`; `trait Reactor` | 编排器核心：DAG编排、事件反应器、鉴权闸门require() |
+| **voice** | domains/voice/core/mox-voice-dsp-core | mox-voice-dsp-core | `trait DSPProcessor` | 语音DSP核心：响度归一、软限幅、Aho-Corasick热词、SIMD f32x4加速 |
+
+#### §3.2.3 8域 × Svc层（L3 · 应用服务 · 29 crate）
+
+| 域 | Crate 目录 | package.name | 关键职责 |
+|----|-----------|--------------|---------|
+| **ai** | domains/ai/svc/mox-ai-agent-svc | mox-ai-agent-svc | AI智能体服务：对话/浏览器自动化/BPMN/MultiAgent/ProviderRegistry + A7 CEM优化 |
+| **ai** | domains/ai/svc/mox-ai-expert-svc | mox-ai-expert-svc | ⛨璇玑引擎服务：双璇玑十四维治理/归一化IR/裁决/验证5项/审计三汇/RBAC/租户分层 |
+| **ai** | domains/ai/svc/mox-ai-flow-svc | mox-ai-flow-svc | 流程AI服务：9模块（冒险/CPM/冲突/调度/拓扑/代码gen/流水线/原语/可视化） |
+| **cloud** | domains/cloud/svc/mox-cloud-master-svc | mox-cloud-master-svc | 云主节点服务：集群管理、节点调度 |
+| **cloud** | domains/cloud/svc/mox-cloud-volume-svc | mox-cloud-volume-svc | 云卷管理服务：卷创建/挂载/快照 |
+| **cloud** | domains/cloud/svc/mox-cloud-s3-svc | mox-cloud-s3-svc | S3兼容存储服务：对象存储、预签名URL |
+| **cloud** | domains/cloud/svc/mox-cloud-filer-svc | mox-cloud-filer-svc | 文件器服务：文件共享、NFS/SMB适配 |
+| **data** | domains/data/svc/mox-data-plane-svc | mox-data-plane-svc | 数据平面服务：数据接入、路由、分发 |
+| **data** | domains/data/svc/mox-data-etl-svc | mox-data-etl-svc | ETL服务：抽取/转换/加载、数据管道 |
+| **data** | domains/data/svc/mox-data-compliance-svc | mox-data-compliance-svc | 数据合规服务：PII检测、脱敏、合规审计 |
+| **data** | domains/data/svc/mox-data-catalog-svc | mox-data-catalog-svc | 业务目录服务：6预置FlowGraph+TopologyGraph（政务/财务/客服/ETL/MCP/螺旋） |
+| **flow** | domains/flow/svc/mox-flow-operator-wasm-svc | mox-flow-operator-wasm-svc | WASM算子沙箱服务：wasmer执行、热加载插件、沙箱隔离 |
+| **flow** | domains/flow/svc/mox-flow-primiflow-svc | mox-flow-primiflow-svc | PrimiFlow服务：解析/代码生成/8类骨架模板/执行/持久化 |
+| **flow** | domains/flow/svc/mox-flow-fusion-svc | mox-flow-fusion-svc | PrimiFlow融合服务：六维融合/守恒闸门/Registry/平台编排/12Factor+可观测 |
+| **flow** | domains/flow/svc/mox-flow-bridge-svc | mox-flow-bridge-svc | Hermes桥接服务：normalize/recorder/router/拦截注入 |
+| **kg** | domains/kg/svc/mox-kg-storage-svc | mox-kg-storage-svc | 图谱存储服务：持久化、索引、事务 |
+| **kg** | domains/kg/svc/mox-kg-service-svc | mox-kg-service-svc | 图谱服务：CRUD、查询、遍历 |
+| **kg** | domains/kg/svc/mox-kg-streams-svc | mox-kg-streams-svc | 图谱流处理服务：变更流、实时同步、CDC |
+| **kg** | domains/kg/svc/mox-kg-spark-svc | mox-kg-spark-svc | 图谱Spark集成服务：大规模图计算、批处理 |
+| **kg** | domains/kg/svc/mox-kg-hub-svc | mox-kg-hub-svc | 图谱枢纽服务：混合索引+URN+摄入/推理/治理/影响/热点/闭环 8段 5连接器 |
+| **kg** | domains/kg/svc/mox-kg-fusion-svc | mox-kg-fusion-svc | 图谱融合服务：多源图谱融合、RRF结果融合、实体对齐 |
+| **market** | domains/market/svc/mox-market-template-svc | mox-market-template-svc | 模板市场服务：发布/加载/评分/排序/Fork/2种子 |
+| **platform** | domains/platform/svc/mox-platform-enterprise-svc | mox-platform-enterprise-svc | 企业服务：成员/任务/权限/通信业务编排、多后端SQLite+PG+MySQL |
+| **platform** | domains/platform/svc/mox-platform-orchestrator-svc | mox-platform-orchestrator-svc | 编排器服务：DAG调度、事件驱动、跨域编排 |
+| **voice** | domains/voice/svc/mox-voice-core-svc | mox-voice-core-svc | 语音核心服务：语音会话管理、状态机 |
+| **voice** | domains/voice/svc/mox-voice-asr-svc | mox-voice-asr-svc | 语音ASR服务：语音识别、热词编辑、后处理 |
+| **voice** | domains/voice/svc/mox-voice-intent-svc | mox-voice-intent-svc | 语音意图服务：语音指令解析、意图路由 |
+| **voice** | domains/voice/svc/mox-voice-operator-svc | mox-voice-operator-svc | 语音算子服务：语音驱动的算子执行、自动化操作 |
+| **voice** | domains/voice/svc/mox-voice-desktop-app | mox-voice-desktop-app | **语音桌面应用**（独立产品形态）：全局热键录音、BallWidget、剪贴板/键鼠自动化 |
+
+#### §3.2.4 8域 × Sdk层（L4 · 对外类型 · 6 crate）
+
+| 域 | Crate 目录 | package.name | 关键职责 |
+|----|-----------|--------------|---------|
+| cloud | domains/cloud/sdk/mox-cloud-sdk | mox-cloud-sdk | 云服务SDK：客户端类型、API绑定 |
+| data | domains/data/sdk/mox-data-formula-native | mox-data-formula-native | 公式引擎原生绑定（napi-rs / Node.js FFI） |
+| data | domains/data/sdk/mox-data-norm-intent-native | mox-data-norm-intent-native | 归一化意图原生绑定（napi-rs / Node.js FFI） |
+| kg | domains/kg/sdk/mox-kg-sdk | mox-kg-sdk | 图谱SDK：客户端类型、查询构建器 |
+| platform | domains/platform/sdk/mox-platform-test-harness | mox-platform-test-harness | 测试框架SDK：集成测试工具、mock、测试断言 |
+| voice | domains/voice/sdk/mox-voice-dsp-py | mox-voice-dsp-py | 语音DSP Python绑定（PyO3 abi3-py39） |
+
+#### §3.2.5 8域 × Api层（L5 · 域间契约 · 规划中，0 crate）
+
+> **状态**：8个域的 `api/` 和 `svcapi/` 目录已创建，但**零crate**。这是Phase 3的核心任务——填充域间契约，实现依赖倒置。
+> **设计意图**：api层定义域间通信的trait/interface/DTO，svc层实现这些trait，其他域通过api层trait调用而非直接依赖svc实现。
+> **优先级**：kg/ai/flow 三个核心域先行（Phase 3-1），其余域后续填充。
+
+#### §3.2.6 crate 分布统计
+
+| 层 | crate数 | 占比 | 状态 |
+|----|:-------:|:----:|------|
+| L0 Foundation | 2 | 4% | ✅ 已实现 |
+| L1 Gateway | 1 | 2% | ✅ 已实现（待瘦身） |
+| L2 Core（8域） | 15 | 28% | ✅ 已实现 |
+| L3 Svc（8域） | 29 | 54% | ✅ 已实现 |
+| L4 Sdk（8域） | 6 | 11% | ✅ 已实现 |
+| L5 Api（8域） | 0 | 0% | 🔴 规划中（Phase 3） |
+| Framework | 1 | 2% | ✅ 已实现（库） |
+| **合计** | **54** | **100%** | |
+
+> 注：Cargo.toml workspace 共73 member，含 FFI 绑定（napi/PyO3）、测试 harness、桌面应用等非核心业务 crate。上表统计核心业务 crate 54 个。
+
+**行数量校验**：54/54（Foundation 2 + Gateway 1 + Core 15 + Svc 29 + Sdk 6 + Api 0 + Framework 1）。
+
+> 🔍 **架构一致性校验**：`Cargo.toml` workspace members 必须与本节表格一致；任何新增/删除/重命名 crate 必须同步更新本节 + `mox-platform-meta-core::all_crate_metas()` + `ARCHITECTURE-MIGRATION.md`。
+> 📌 **路径铁律（v2.0）**：所有 crate 均位于 `platform/domains/{域}/{层}/` 或 `platform/{foundation,gateway,framework}/`；旧路径 `platform/services/`、`crates/` 已废弃，禁止在新代码/文档中使用。
 
 ### 3.3 模块依赖
 
