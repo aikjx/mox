@@ -15,15 +15,13 @@ pub mod retry;
 use axum::{
     body::Body,
     extract::{Path, Request},
-    http::{HeaderMap, StatusCode, Uri},
+    http::StatusCode,
     response::Response,
 };
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tokio::sync::RwLock;
-use tower::ServiceExt;
 use uuid::Uuid;
 
 pub use rate_limiter::{RateLimiter, RateLimitAlgorithm, RateLimitConfig};
