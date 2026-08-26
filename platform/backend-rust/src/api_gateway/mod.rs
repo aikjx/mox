@@ -83,7 +83,7 @@ pub struct ApiGateway {
     rate_limiter: Arc<RateLimiter>,
     circuit_breakers: DashMap<String, Arc<CircuitBreaker>>,
     retry_policy: Arc<RetryPolicy>,
-    round_robin_counters: DashMap<String, std::sync::atomic::AtomicUsize>,
+    round_robin_counters: Arc<DashMap<String, std::sync::atomic::AtomicUsize>>,
     request_count: std::sync::atomic::AtomicU64,
     error_count: std::sync::atomic::AtomicU64,
 }
@@ -132,7 +132,7 @@ impl ApiGateway {
             rate_limiter,
             circuit_breakers,
             retry_policy,
-            round_robin_counters: DashMap::new(),
+            round_robin_counters: Arc::new(DashMap::new()),
             request_count: std::sync::atomic::AtomicU64::new(0),
             error_count: std::sync::atomic::AtomicU64::new(0),
         }
