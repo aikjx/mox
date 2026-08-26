@@ -1,0 +1,2039 @@
+﻿cargo :    Compiling cfg-if v1.0.4
+At line:1 char:18087
++ ... opograph\platform\backend-rust; cargo test --lib --tests 2>&1 | Tee-O ...
++                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (   Compiling cfg-if v1.0.4:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+   Compiling memchr v2.8.3
+   Compiling windows-link v0.2.1
+   Compiling once_cell v1.21.4
+   Compiling pin-project-lite v0.2.17
+   Compiling smallvec v1.15.2
+   Compiling futures-core v0.3.34
+   Compiling zerocopy v0.8.56
+   Compiling bytes v1.12.1
+   Compiling libm v0.2.16
+   Compiling serde_core v1.0.229
+   Compiling itoa v1.0.18
+   Compiling zerocopy-derive v0.8.56
+   Compiling scopeguard v1.2.0
+   Compiling futures-sink v0.3.34
+   Compiling serde v1.0.229
+   Compiling getrandom v0.2.17
+   Compiling windows-sys v0.61.2
+   Compiling futures-io v0.3.34
+   Compiling parking_lot_core v0.9.12
+   Compiling slab v0.4.12
+   Compiling futures-task v0.3.34
+   Compiling lock_api v0.4.14
+   Compiling futures-channel v0.3.34
+   Compiling zerofrom v0.1.8
+   Compiling tracing-core v0.1.36
+   Compiling stable_deref_trait v1.2.1
+   Compiling parking_lot v0.12.5
+   Compiling log v0.4.34
+   Compiling equivalent v1.0.2
+   Compiling yoke v0.8.3
+   Compiling hashbrown v0.17.1
+   Compiling futures-util v0.3.34
+   Compiling crossbeam-utils v0.8.22
+   Compiling percent-encoding v2.3.2
+   Compiling num-traits v0.2.19
+   Compiling zerovec v0.11.8
+   Compiling tracing v0.1.44
+   Compiling indexmap v2.14.0
+   Compiling http v1.5.0
+   Compiling hashbrown v0.15.5
+   Compiling writeable v0.6.4
+   Compiling socket2 v0.6.5
+   Compiling mio v1.2.2
+   Compiling tinystr v0.8.4
+   Compiling litemap v0.8.3
+   Compiling potential_utf v0.1.6
+   Compiling zerotrie v0.2.5
+   Compiling rand_core v0.6.4
+   Compiling tower-service v0.3.3
+   Compiling utf8_iter v1.0.4
+   Compiling tokio v1.53.1
+   Compiling icu_locale_core v2.3.0
+   Compiling http-body v1.1.0
+   Compiling untrusted v0.9.0
+   Compiling icu_collections v2.3.0
+   Compiling zmij v1.0.23
+   Compiling num-integer v0.1.47
+   Compiling typenum v1.20.1
+   Compiling ring v0.17.14
+   Compiling thiserror v1.0.69
+   Compiling icu_normalizer_data v2.3.0
+   Compiling serde_json v1.0.151
+   Compiling icu_properties_data v2.3.0
+   Compiling minimal-lexical v0.2.1
+   Compiling tower-layer v0.3.3
+   Compiling subtle v2.6.1
+   Compiling rand_core v0.10.1
+   Compiling allocator-api2 v0.2.21
+   Compiling icu_provider v2.3.1
+   Compiling zeroize v1.9.0
+   Compiling nom v7.1.3
+   Compiling num-bigint v0.4.8
+   Compiling form_urlencoded v1.2.2
+   Compiling aho-corasick v1.1.5
+   Compiling rustls-pki-types v1.15.1
+   Compiling fnv v1.0.7
+   Compiling try-lock v0.2.5
+   Compiling crossbeam-deque v0.8.7
+   Compiling icu_normalizer v2.3.0
+   Compiling icu_properties v2.3.0
+   Compiling atomic-waker v1.1.2
+   Compiling alloc-no-stdlib v2.0.4
+   Compiling regex-syntax v0.8.11
+   Compiling ppv-lite86 v0.2.21
+   Compiling ahash v0.8.12
+   Compiling httpdate v1.0.3
+   Compiling alloc-stdlib v0.2.4
+   Compiling rand_chacha v0.3.1
+   Compiling hashbrown v0.14.5
+   Compiling want v0.3.1
+   Compiling generic-array v0.14.7
+   Compiling crossbeam-epoch v0.9.20
+   Compiling rand v0.8.8
+   Compiling idna_adapter v1.2.2
+   Compiling httparse v1.10.1
+   Compiling getrandom v0.4.3
+   Compiling regex-automata v0.4.18
+   Compiling tokio-util v0.7.19
+   Compiling zstd-sys v2.0.16+zstd.1.5.7
+   Compiling bitflags v2.13.1
+   Compiling sync_wrapper v1.0.2
+   Compiling simd-adler32 v0.3.10
+   Compiling deranged v0.5.8
+   Compiling ryu v1.0.23
+   Compiling bytemuck v1.25.2
+   Compiling time-core v0.1.9
+   Compiling powerfmt v0.2.0
+   Compiling num-conv v0.2.2
+   Compiling lazy_static v1.5.0
+   Compiling adler2 v2.0.1
+   Compiling safe_arch v0.7.4
+   Compiling zstd-safe v7.2.4
+   Compiling idna v1.1.0
+   Compiling libc v0.2.189
+   Compiling miniz_oxide v0.8.9
+   Compiling crc32fast v1.5.1
+   Compiling rusticata-macros v4.1.0
+   Compiling time v0.3.55
+   Compiling brotli-decompressor v5.0.3
+   Compiling const-random v0.1.18
+   Compiling rustls-webpki v0.103.15
+   Compiling h2 v0.4.19
+   Compiling futures-executor v0.3.34
+   Compiling http-body-util v0.1.5
+   Compiling num-complex v0.4.6
+   Compiling cpufeatures v0.3.0
+   Compiling base64 v0.22.1
+   Compiling ipnet v2.12.1
+   Compiling base64 v0.21.7
+   Compiling mime v0.3.17
+   Compiling chacha20 v0.10.1
+   Compiling rustls v0.23.43
+   Compiling asn1-rs v0.5.2
+   Compiling brotli v8.0.4
+   Compiling dlv-list v0.5.2
+   Compiling flate2 v1.1.9
+   Compiling url v2.5.8
+   Compiling wide v0.7.33
+   Compiling zstd v0.13.3
+   Compiling tower v0.5.3
+   Compiling crypto-common v0.1.7
+   Compiling block-buffer v0.10.4
+   Compiling num-rational v0.4.2
+   Compiling hyper v1.11.0
+   Compiling crossbeam-channel v0.5.16
+   Compiling toml_datetime v0.6.11
+   Compiling serde_spanned v0.6.9
+   Compiling approx v0.5.1
+   Compiling hashbrown v0.12.3
+   Compiling toml_write v0.1.2
+   Compiling rawpointer v0.2.1
+   Compiling byteorder v1.5.0
+   Compiling winnow v0.7.15
+   Compiling urlencoding v2.1.3
+   Compiling compression-core v0.4.32
+   Compiling ucd-trie v0.1.7
+   Compiling indexmap v1.9.3
+   Compiling hdrhistogram v7.6.0
+   Compiling compression-codecs v0.4.38
+   Compiling pest v2.9.0
+   Compiling opentelemetry v0.21.0
+   Compiling matrixmultiply v0.3.11
+   Compiling simba v0.6.0
+   Compiling pin-project v1.1.13
+   Compiling tokio-rustls v0.26.4
+   Compiling hyper-util v0.1.20
+   Compiling digest v0.10.7
+   Compiling ordered-multimap v0.7.3
+   Compiling rand v0.10.2
+   Compiling toml_edit v0.22.27
+   Compiling winapi v0.3.9
+   Compiling matchers v0.2.0
+   Compiling sharded-slab v0.1.7
+   Compiling serde_urlencoded v0.7.1
+   Compiling rand_distr v0.4.3
+   Compiling hashlink v0.8.4
+   Compiling webpki-roots v1.0.9
+   Compiling tracing-serde v0.2.0
+   Compiling ordered-float v4.6.0
+   Compiling nu-ansi-term v0.50.3
+   Compiling tracing-log v0.2.0
+   Compiling encoding_rs v0.8.35
+   Compiling thread_local v1.1.10
+   Compiling glob v0.3.4
+   Compiling arraydeque v0.5.1
+   Compiling unicase v2.9.0
+   Compiling rayon-core v1.13.0
+   Compiling either v1.18.0
+   Compiling unicode-segmentation v1.13.3
+   Compiling opentelemetry_sdk v0.21.2
+   Compiling mime_guess v2.0.5
+   Compiling yaml-rust2 v0.8.1
+   Compiling tracing-subscriber v0.3.23
+   Compiling convert_case v0.6.0
+   Compiling nalgebra v0.29.0
+   Compiling toml v0.8.23
+   Compiling hyper-rustls v0.27.9
+   Compiling socket2 v0.4.10
+   Compiling tokio-retry v0.3.2
+   Compiling rust-ini v0.20.0
+   Compiling json5 v0.4.1
+   Compiling tower v0.4.13
+   Compiling async-compression v0.4.43
+   Compiling oid-registry v0.6.1
+   Compiling tower-http v0.6.11
+   Compiling der-parser v8.2.0
+   Compiling ron v0.8.1
+   Compiling axum-core v0.4.5
+   Compiling regex v1.13.1
+   Compiling futures v0.3.34
+   Compiling combine v4.6.8
+   Compiling arc-swap v1.9.2
+   Compiling uuid v1.25.0
+   Compiling sct v0.7.1
+   Compiling rustls-webpki v0.101.7
+   Compiling half v2.7.1
+   Compiling num-iter v0.1.46
+   Compiling crossbeam-queue v0.3.13
+   Compiling winapi-util v0.1.11
+   Compiling serde_path_to_error v0.1.20
+   Compiling ciborium-io v0.2.2
+   Compiling iri-string v0.7.14
+   Compiling matchit v0.7.3
+   Compiling plotters-backend v0.3.7
+   Compiling data-encoding v2.11.1
+   Compiling http-range-header v0.4.2
+   Compiling cpufeatures v0.2.17
+   Compiling clap_lex v1.1.0
+   Compiling sha1_smol v1.0.1
+   Compiling unsafe-libyaml v0.2.11
+   Compiling anstyle v1.0.14
+   Compiling pathdiff v0.2.3
+   Compiling x509-parser v0.15.1
+   Compiling sha2 v0.10.9
+   Compiling plotters-svg v0.3.7
+   Compiling config v0.14.1
+   Compiling clap_builder v4.6.6
+   Compiling serde_yaml v0.9.34+deprecated
+   Compiling tower-http v0.5.2
+   Compiling axum v0.7.9
+   Compiling redis v0.24.1
+   Compiling ciborium-ll v0.2.2
+   Compiling statrs v0.16.1
+   Compiling same-file v1.0.6
+   Compiling num v0.4.3
+   Compiling crossbeam v0.8.4
+   Compiling rustls v0.21.12
+   Compiling reqwest v0.12.28
+   Compiling tracing-opentelemetry v0.22.0
+   Compiling anyhow v1.0.104
+   Compiling itertools v0.10.5
+   Compiling hmac v0.12.1
+   Compiling rustls-pemfile v1.0.4
+   Compiling dashmap v5.5.3
+   Compiling chrono v0.4.45
+   Compiling cast v0.3.0
+   Compiling rayon v1.12.0
+   Compiling walkdir v2.5.0
+   Compiling ciborium v0.2.2
+   Compiling clap v4.6.6
+   Compiling criterion-plot v0.5.0
+   Compiling plotters v0.3.7
+   Compiling tokio-stream v0.1.19
+   Compiling tinytemplate v1.2.1
+   Compiling is-terminal v0.4.17
+   Compiling oorandom v11.1.5
+   Compiling anes v0.1.6
+   Compiling mox-enterprise-backend v2.0.0 (D:\a10\aikjx\gitcode\infotopograph\platform\backend-rust)
+   Compiling tokio-test v0.4.5
+   Compiling criterion v0.5.1
+warning: unused import: `AtomicUsize`
+  --> src\api_gateway\circuit_breaker.rs:11:36
+   |
+11 | use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+   |                                    ^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `std::sync::Arc`
+  --> src\data_quality\mod.rs:15:5
+   |
+15 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused imports: `Duration` and `Instant`
+  --> src\zero_trust\mtls.rs:14:17
+   |
+14 | use std::time::{Duration, Instant};
+   |                 ^^^^^^^^  ^^^^^^^
+
+warning: unused imports: `Duration` and `Instant`
+  --> src\zero_trust\mod.rs:18:17
+   |
+18 | use std::time::{Duration, Instant};
+   |                 ^^^^^^^^  ^^^^^^^
+
+warning: unused import: `Deserialize`
+  --> src\aiops\root_cause.rs:10:13
+   |
+10 | use serde::{Deserialize, Serialize};
+   |             ^^^^^^^^^^^
+
+warning: unused import: `Duration`
+  --> src\aiops\predictive_scaler.rs:13:17
+   |
+13 | use std::time::{Duration, Instant};
+   |                 ^^^^^^^^
+
+warning: unused variable: `config`
+   --> src\aiops\predictive_scaler.rs:205:45
+    |
+205 |     fn predict_arima(&self, values: &[f64], config: &PredictiveScalerConfig) -> f64 {
+    |                                             ^^^^^^ help: if this is intentional, prefix it with an underscore: `_
+config`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `id` and `metadata` are never read
+  --> src\aiops\root_cause.rs:50:5
+   |
+49 | struct DependencyNode {
+   |        -------------- fields in this struct
+50 |     id: String,
+   |     ^^
+...
+54 |     metadata: HashMap<String, String>,
+   |     ^^^^^^^^
+   |
+   = note: `DependencyNode` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored d
+uring dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `timestamp` is never read
+  --> src\aiops\predictive_scaler.rs:90:5
+   |
+89 | struct LoadPoint {
+   |        --------- field in this struct
+90 |     timestamp: f64,
+   |     ^^^^^^^^^
+   |
+   = note: `LoadPoint` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during
+ dead code analysis
+
+warning: unused implementer of `std::future::Future` that must be used
+   --> src\api_gateway\mod.rs:250:25
+    |
+250 |                         cb.record_failure();
+    |                         ^^^^^^^^^^^^^^^^^^^
+    |
+    = note: futures do nothing unless you `.await` or poll them
+    = note: `#[warn(unused_must_use)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused implementer of `std::future::Future` that must be used
+   --> src\api_gateway\mod.rs:252:25
+    |
+252 |                         cb.record_success();
+    |                         ^^^^^^^^^^^^^^^^^^^
+    |
+    = note: futures do nothing unless you `.await` or poll them
+
+warning: unused implementer of `std::future::Future` that must be used
+   --> src\api_gateway\mod.rs:281:21
+    |
+281 |                     cb.record_failure();
+    |                     ^^^^^^^^^^^^^^^^^^^
+    |
+    = note: futures do nothing unless you `.await` or poll them
+
+warning: `mox-enterprise-backend` (lib) generated 12 warnings (run `cargo fix --lib -p mox-enterprise-backend` to apply
+ 7 suggestions)
+error[E0594]: cannot assign to `attempts`, as it is a captured variable in a `Fn` closure
+   --> src\api_gateway\retry.rs:216:13
+    |
+ 82 |       pub async fn execute<F, Fut, T, E>(&self, f: F) -> Result<T, E>
+    |                                                    - change this to accept `FnMut` instead of `Fn`
+...
+213 |           let mut attempts = 0;
+    |               ------------ `attempts` declared here, outside the closure
+214 |
+215 |           let result: Result<i32, String> = policy.execute(|| {
+    |                                                    -       -- in this closure
+    |  __________________________________________________|
+    | |
+216 | |             attempts += 1;
+    | |             ^^^^^^^^^^^^^ cannot assign
+217 | |             async move {
+218 | |                 if attempts < 3 {
+...   |
+224 | |         }).await;
+    | |__________- expects `Fn` instead of `FnMut`
+
+warning: unused import: `error`
+ --> src\main.rs:9:21
+  |
+9 | use tracing::{info, error};
+  |                     ^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0624]: method `match_upstream` is private
+   --> tests\api_gateway_tests.rs:286:23
+    |
+286 |     let svc = gateway.match_upstream("/test/path").unwrap();
+    |                       ^^^^^^^^^^^^^^ private method
+    |
+   ::: src\api_gateway\mod.rs:295:5
+    |
+295 |     fn match_upstream(&self, path: &str) -> Option<UpstreamService> {
+    |     --------------------------------------------------------------- private method defined here
+
+error[E0624]: method `select_target` is private
+   --> tests\api_gateway_tests.rs:289:22
+    |
+289 |     let t1 = gateway.select_target(&svc);
+    |                      ^^^^^^^^^^^^^ private method
+    |
+   ::: src\api_gateway\mod.rs:301:5
+    |
+301 |     fn select_target(&self, svc: &UpstreamService) -> String {
+    |     -------------------------------------------------------- private method defined here
+
+error[E0624]: method `select_target` is private
+   --> tests\api_gateway_tests.rs:290:22
+    |
+290 |     let t2 = gateway.select_target(&svc);
+    |                      ^^^^^^^^^^^^^ private method
+    |
+   ::: src\api_gateway\mod.rs:301:5
+    |
+301 |     fn select_target(&self, svc: &UpstreamService) -> String {
+    |     -------------------------------------------------------- private method defined here
+
+error[E0624]: method `select_target` is private
+   --> tests\api_gateway_tests.rs:291:22
+    |
+291 |     let t3 = gateway.select_target(&svc);
+    |                      ^^^^^^^^^^^^^ private method
+    |
+   ::: src\api_gateway\mod.rs:301:5
+    |
+301 |     fn select_target(&self, svc: &UpstreamService) -> String {
+    |     -------------------------------------------------------- private method defined here
+
+error[E0624]: method `select_target` is private
+   --> tests\api_gateway_tests.rs:292:22
+    |
+292 |     let t4 = gateway.select_target(&svc);
+    |                      ^^^^^^^^^^^^^ private method
+    |
+   ::: src\api_gateway\mod.rs:301:5
+    |
+301 |     fn select_target(&self, svc: &UpstreamService) -> String {
+    |     -------------------------------------------------------- private method defined here
+
+error[E0624]: method `match_upstream` is private
+   --> tests\api_gateway_tests.rs:330:24
+    |
+330 |     assert_eq!(gateway.match_upstream("/api/storage/file").unwrap().name, "storage");
+    |                        ^^^^^^^^^^^^^^ private method
+    |
+   ::: src\api_gateway\mod.rs:295:5
+    |
+295 |     fn match_upstream(&self, path: &str) -> Option<UpstreamService> {
+    |     --------------------------------------------------------------- private method defined here
+
+error[E0624]: method `match_upstream` is private
+   --> tests\api_gateway_tests.rs:331:24
+    |
+331 |     assert_eq!(gateway.match_upstream("/api/metadata/search").unwrap().name, "metadata");
+    |                        ^^^^^^^^^^^^^^ private method
+    |
+   ::: src\api_gateway\mod.rs:295:5
+    |
+295 |     fn match_upstream(&self, path: &str) -> Option<UpstreamService> {
+    |     --------------------------------------------------------------- private method defined here
+
+error[E0624]: method `match_upstream` is private
+   --> tests\api_gateway_tests.rs:332:21
+    |
+332 |     assert!(gateway.match_upstream("/api/other/path").is_none(), "未匹配的路径应该返回 None");
+    |                     ^^^^^^^^^^^^^^ private method
+    |
+   ::: src\api_gateway\mod.rs:295:5
+    |
+295 |     fn match_upstream(&self, path: &str) -> Option<UpstreamService> {
+    |     --------------------------------------------------------------- private method defined here
+
+error[E0594]: cannot assign to `call_count`, as it is a captured variable in a `Fn` closure
+   --> tests\api_gateway_tests.rs:192:9
+    |
+190 |       let mut call_count = 0;
+    |           -------------- `call_count` declared here, outside the closure
+191 |       let result: Result<i32, String> = policy.execute(|| {
+    |                                                -       -- in this closure
+    |  ______________________________________________|
+    | |
+192 | |         call_count += 1;
+    | |         ^^^^^^^^^^^^^^^ cannot assign
+193 | |         async { Ok(42) }
+194 | |     }).await;
+    | |______- expects `Fn` instead of `FnMut`
+
+Some errors have detailed explanations: E0594, E0624.
+For more information about an error, try `rustc --explain E0594`.
+error: could not compile `mox-enterprise-backend` (test "api_gateway_tests") due to 9 previous errors
+warning: build failed, waiting for other jobs to finish...
+warning: `mox-enterprise-backend` (bin "mox-gateway" test) generated 1 warning (run `cargo fix --bin "mox-gateway" -p m
+ox-enterprise-backend --tests` to apply 1 suggestion)
+For more information about this error, try `rustc --explain E0594`.
+warning: `mox-enterprise-backend` (lib test) generated 7 warnings (7 duplicates)
+error: could not compile `mox-enterprise-backend` (lib test) due to 1 previous error; 7 warnings emitted
+error[E0422]: cannot find struct, variant or union type `PredictiveScalerConfig` in this scope
+   --> tests\integration_tests.rs:212:40
+    |
+212 |     let scaler = PredictiveScaler::new(PredictiveScalerConfig {
+    |                                        ^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: src\aiops\predictive_scaler.rs:95:1
+    |
+ 95 | pub struct PredictiveScaler {
+    | --------------------------- similarly named struct `PredictiveScaler` defined here
+    |
+help: a struct with a similar name exists
+    |
+212 -     let scaler = PredictiveScaler::new(PredictiveScalerConfig {
+212 +     let scaler = PredictiveScaler::new(PredictiveScaler {
+    |
+help: consider importing one of these structs
+    |
+  5 + use crate::predictive_scaler::PredictiveScalerConfig;
+    |
+  5 + use mox_enterprise_backend::aiops::predictive_scaler::PredictiveScalerConfig;
+    |
+
+error[E0433]: cannot find type `PredictionAlgorithm` in this scope
+   --> tests\integration_tests.rs:213:20
+    |
+213 |         algorithm: PredictionAlgorithm::Combined,
+    |                    ^^^^^^^^^^^^^^^^^^^ use of undeclared type `PredictionAlgorithm`
+    |
+help: consider importing one of these enums
+    |
+  5 + use crate::predictive_scaler::PredictionAlgorithm;
+    |
+  5 + use mox_enterprise_backend::aiops::predictive_scaler::PredictionAlgorithm;
+    |
+
+error[E0422]: cannot find struct, variant or union type `QualityResult` in this scope
+   --> tests\integration_tests.rs:328:9
+    |
+328 |         QualityResult {
+    |         ^^^^^^^^^^^^^
+    |
+   ::: src\data_quality\monitor.rs:54:1
+    |
+ 54 | pub struct QualityReport {
+    | ------------------------ similarly named struct `QualityReport` defined here
+    |
+help: a struct with a similar name exists
+    |
+328 -         QualityResult {
+328 +         QualityReport {
+    |
+
+error[E0422]: cannot find struct, variant or union type `QualityResult` in this scope
+   --> tests\integration_tests.rs:337:9
+    |
+337 |         QualityResult {
+    |         ^^^^^^^^^^^^^
+    |
+   ::: src\data_quality\monitor.rs:54:1
+    |
+ 54 | pub struct QualityReport {
+    | ------------------------ similarly named struct `QualityReport` defined here
+    |
+help: a struct with a similar name exists
+    |
+337 -         QualityResult {
+337 +         QualityReport {
+    |
+
+warning: unused import: `std::time::Duration`
+ --> tests\integration_tests.rs:9:5
+  |
+9 | use std::time::Duration;
+  |     ^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0624]: method `match_upstream` is private
+   --> tests\integration_tests.rs:42:28
+    |
+ 42 |     let upstream = gateway.match_upstream("/api/test/resource");
+    |                            ^^^^^^^^^^^^^^ private method
+    |
+   ::: src\api_gateway\mod.rs:295:5
+    |
+295 |     fn match_upstream(&self, path: &str) -> Option<UpstreamService> {
+    |     --------------------------------------------------------------- private method defined here
+
+error[E0624]: method `match_upstream` is private
+   --> tests\integration_tests.rs:47:21
+    |
+ 47 |     assert!(gateway.match_upstream("/api/other").is_none());
+    |                     ^^^^^^^^^^^^^^ private method
+    |
+   ::: src\api_gateway\mod.rs:295:5
+    |
+295 |     fn match_upstream(&self, path: &str) -> Option<UpstreamService> {
+    |     --------------------------------------------------------------- private method defined here
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustPolicy` has no field named `default_action`
+  --> tests\integration_tests.rs:93:9
+   |
+93 |         default_action: AuthAction::Deny,
+   |         ^^^^^^^^^^^^^^ `mox_enterprise_backend::zero_trust::ZeroTrustPolicy` does not have this field
+   |
+   = note: available fields are: `require_spiffe_id`, `require_device_health`, `require_step_up_auth`, `allowed_trust_d
+omains`, `risk_based_access`
+
+error[E0433]: cannot find type `AuthAction` in this scope
+  --> tests\integration_tests.rs:93:25
+   |
+93 |         default_action: AuthAction::Deny,
+   |                         ^^^^^^^^^^ use of undeclared type `AuthAction`
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustPolicy` has no field named `require_spiffe`
+  --> tests\integration_tests.rs:95:9
+   |
+95 |         require_spiffe: true,
+   |         ^^^^^^^^^^^^^^ unknown field
+   |
+help: a field with a similar name exists
+   |
+95 |         require_spiffe_id: true,
+   |                       +++
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustPolicy` has no field named `step_up_risk_threshold`
+  --> tests\integration_tests.rs:99:9
+   |
+99 |         step_up_risk_threshold: 0.5,
+   |         ^^^^^^^^^^^^^^^^^^^^^^ `mox_enterprise_backend::zero_trust::ZeroTrustPolicy` does not have this field
+   |
+   = note: available fields are: `require_spiffe_id`, `require_device_health`, `require_step_up_auth`, `allowed_trust_d
+omains`, `risk_based_access`
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustPolicy` has no field named `audit_enabled`
+   --> tests\integration_tests.rs:100:9
+    |
+100 |         audit_enabled: true,
+    |         ^^^^^^^^^^^^^ `mox_enterprise_backend::zero_trust::ZeroTrustPolicy` does not have this field
+    |
+    = note: available fields are: `require_spiffe_id`, `require_device_health`, `require_step_up_auth`, `allowed_trust_
+domains`, `risk_based_access`
+
+error[E0061]: this function takes 3 arguments but 1 argument was supplied
+   --> tests\integration_tests.rs:92:14
+    |
+ 92 |       let zt = ZeroTrustMiddleware::new(ZeroTrustPolicy {
+    |  ______________^^^^^^^^^^^^^^^^^^^^^^^^-
+ 93 | |         default_action: AuthAction::Deny,
+ 94 | |         require_mtls: true,
+ 95 | |         require_spiffe: true,
+...   |
+100 | |         audit_enabled: true,
+101 | |     });
+    | |______- two arguments of type `Arc<MtlsManager>` and `Arc<SpiffeIdentity>` are missing
+    |
+note: associated function defined here
+   --> src\zero_trust\mod.rs:96:12
+    |
+ 96 |     pub fn new(policy: ZeroTrustPolicy, mtls_manager: Arc<MtlsManager>, spiffe_identity: Arc<SpiffeIdentity>) -> 
+Self {
+    |            ^^^
+help: provide the arguments
+    |
+ 92 |     let zt = ZeroTrustMiddleware::new(ZeroTrustPolicy {
+...
+100 |         audit_enabled: true,
+101 ~     }, /* Arc<MtlsManager> */, /* Arc<SpiffeIdentity> */);
+    |
+
+error[E0599]: no method named `add_trust_domain` found for struct `mox_enterprise_backend::ZeroTrustMiddleware` in the 
+current scope
+   --> tests\integration_tests.rs:104:8
+    |
+104 |     zt.add_trust_domain("cluster.local", true);
+    |        ^^^^^^^^^^^^^^^^ method not found in `mox_enterprise_backend::ZeroTrustMiddleware`
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustRequest` has no field named `destination`
+   --> tests\integration_tests.rs:109:9
+    |
+109 |         destination: "/api/secret".to_string(),
+    |         ^^^^^^^^^^^ `mox_enterprise_backend::zero_trust::ZeroTrustRequest` does not have this field
+    |
+    = note: available fields are: `client_certificate`, `svid`, `device_health`, `geo_anomaly`, `off_hours_access` ... 
+and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustRequest` has no field named `method`
+   --> tests\integration_tests.rs:110:9
+    |
+110 |         method: "GET".to_string(),
+    |         ^^^^^^ `mox_enterprise_backend::zero_trust::ZeroTrustRequest` does not have this field
+    |
+    = note: available fields are: `client_certificate`, `svid`, `device_health`, `geo_anomaly`, `off_hours_access` ... 
+and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustRequest` has no field named `spiffe_id`
+   --> tests\integration_tests.rs:112:9
+    |
+112 |         spiffe_id: None,
+    |         ^^^^^^^^^ `mox_enterprise_backend::zero_trust::ZeroTrustRequest` does not have this field
+    |
+    = note: available fields are: `client_certificate`, `svid`, `device_health`, `geo_anomaly`, `off_hours_access` ... 
+and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustRequest` has no field named `headers`
+   --> tests\integration_tests.rs:118:9
+    |
+118 |         headers: Default::default(),
+    |         ^^^^^^^ `mox_enterprise_backend::zero_trust::ZeroTrustRequest` does not have this field
+    |
+    = note: available fields are: `client_certificate`, `svid`, `device_health`, `geo_anomaly`, `off_hours_access` ... 
+and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustRequest` has no field named `destination`
+   --> tests\integration_tests.rs:128:9
+    |
+128 |         destination: "/api/public".to_string(),
+    |         ^^^^^^^^^^^ `mox_enterprise_backend::zero_trust::ZeroTrustRequest` does not have this field
+    |
+    = note: available fields are: `client_certificate`, `svid`, `device_health`, `geo_anomaly`, `off_hours_access` ... 
+and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustRequest` has no field named `method`
+   --> tests\integration_tests.rs:129:9
+    |
+129 |         method: "GET".to_string(),
+    |         ^^^^^^ `mox_enterprise_backend::zero_trust::ZeroTrustRequest` does not have this field
+    |
+    = note: available fields are: `client_certificate`, `svid`, `device_health`, `geo_anomaly`, `off_hours_access` ... 
+and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustRequest` has no field named `spiffe_id`
+   --> tests\integration_tests.rs:131:9
+    |
+131 |         spiffe_id: Some("spiffe://cluster.local/ns/default/sa/service1".to_string()),
+    |         ^^^^^^^^^ `mox_enterprise_backend::zero_trust::ZeroTrustRequest` does not have this field
+    |
+    = note: available fields are: `client_certificate`, `svid`, `device_health`, `geo_anomaly`, `off_hours_access` ... 
+and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustRequest` has no field named `headers`
+   --> tests\integration_tests.rs:137:9
+    |
+137 |         headers: Default::default(),
+    |         ^^^^^^^ `mox_enterprise_backend::zero_trust::ZeroTrustRequest` does not have this field
+    |
+    = note: available fields are: `client_certificate`, `svid`, `device_health`, `geo_anomaly`, `off_hours_access` ... 
+and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustPolicy` has no field named `default_action`
+   --> tests\integration_tests.rs:148:9
+    |
+148 |         default_action: AuthAction::Deny,
+    |         ^^^^^^^^^^^^^^ `mox_enterprise_backend::zero_trust::ZeroTrustPolicy` does not have this field
+    |
+    = note: available fields are: `require_spiffe_id`, `require_device_health`, `require_step_up_auth`, `allowed_trust_
+domains`, `risk_based_access`
+
+error[E0433]: cannot find type `AuthAction` in this scope
+   --> tests\integration_tests.rs:148:25
+    |
+148 |         default_action: AuthAction::Deny,
+    |                         ^^^^^^^^^^ use of undeclared type `AuthAction`
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustPolicy` has no field named `require_spiffe`
+   --> tests\integration_tests.rs:150:9
+    |
+150 |         require_spiffe: false,
+    |         ^^^^^^^^^^^^^^ unknown field
+    |
+help: a field with a similar name exists
+    |
+150 |         require_spiffe_id: false,
+    |                       +++
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustPolicy` has no field named `step_up_risk_threshold`
+   --> tests\integration_tests.rs:154:9
+    |
+154 |         step_up_risk_threshold: 0.3,
+    |         ^^^^^^^^^^^^^^^^^^^^^^ `mox_enterprise_backend::zero_trust::ZeroTrustPolicy` does not have this field
+    |
+    = note: available fields are: `require_spiffe_id`, `require_device_health`, `require_step_up_auth`, `allowed_trust_
+domains`, `risk_based_access`
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustPolicy` has no field named `audit_enabled`
+   --> tests\integration_tests.rs:155:9
+    |
+155 |         audit_enabled: true,
+    |         ^^^^^^^^^^^^^ `mox_enterprise_backend::zero_trust::ZeroTrustPolicy` does not have this field
+    |
+    = note: available fields are: `require_spiffe_id`, `require_device_health`, `require_step_up_auth`, `allowed_trust_
+domains`, `risk_based_access`
+
+error[E0061]: this function takes 3 arguments but 1 argument was supplied
+   --> tests\integration_tests.rs:147:14
+    |
+147 |       let zt = ZeroTrustMiddleware::new(ZeroTrustPolicy {
+    |  ______________^^^^^^^^^^^^^^^^^^^^^^^^-
+148 | |         default_action: AuthAction::Deny,
+149 | |         require_mtls: false,
+150 | |         require_spiffe: false,
+...   |
+155 | |         audit_enabled: true,
+156 | |     });
+    | |______- two arguments of type `Arc<MtlsManager>` and `Arc<SpiffeIdentity>` are missing
+    |
+note: associated function defined here
+   --> src\zero_trust\mod.rs:96:12
+    |
+ 96 |     pub fn new(policy: ZeroTrustPolicy, mtls_manager: Arc<MtlsManager>, spiffe_identity: Arc<SpiffeIdentity>) -> 
+Self {
+    |            ^^^
+help: provide the arguments
+    |
+147 |     let zt = ZeroTrustMiddleware::new(ZeroTrustPolicy {
+...
+155 |         audit_enabled: true,
+156 ~     }, /* Arc<MtlsManager> */, /* Arc<SpiffeIdentity> */);
+    |
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustRequest` has no field named `destination`
+   --> tests\integration_tests.rs:161:9
+    |
+161 |         destination: "/api/public/data".to_string(),
+    |         ^^^^^^^^^^^ `mox_enterprise_backend::zero_trust::ZeroTrustRequest` does not have this field
+    |
+    = note: available fields are: `client_certificate`, `svid`, `device_health`, `geo_anomaly`, `off_hours_access` ... 
+and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustRequest` has no field named `method`
+   --> tests\integration_tests.rs:162:9
+    |
+162 |         method: "GET".to_string(),
+    |         ^^^^^^ `mox_enterprise_backend::zero_trust::ZeroTrustRequest` does not have this field
+    |
+    = note: available fields are: `client_certificate`, `svid`, `device_health`, `geo_anomaly`, `off_hours_access` ... 
+and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustRequest` has no field named `spiffe_id`
+   --> tests\integration_tests.rs:164:9
+    |
+164 |         spiffe_id: None,
+    |         ^^^^^^^^^ `mox_enterprise_backend::zero_trust::ZeroTrustRequest` does not have this field
+    |
+    = note: available fields are: `client_certificate`, `svid`, `device_health`, `geo_anomaly`, `off_hours_access` ... 
+and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustRequest` has no field named `headers`
+   --> tests\integration_tests.rs:170:9
+    |
+170 |         headers: Default::default(),
+    |         ^^^^^^^ `mox_enterprise_backend::zero_trust::ZeroTrustRequest` does not have this field
+    |
+    = note: available fields are: `client_certificate`, `svid`, `device_health`, `geo_anomaly`, `off_hours_access` ... 
+and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustRequest` has no field named `destination`
+   --> tests\integration_tests.rs:179:9
+    |
+179 |         destination: "/api/admin/secret".to_string(),
+    |         ^^^^^^^^^^^ `mox_enterprise_backend::zero_trust::ZeroTrustRequest` does not have this field
+    |
+    = note: available fields are: `client_certificate`, `svid`, `device_health`, `geo_anomaly`, `off_hours_access` ... 
+and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustRequest` has no field named `method`
+   --> tests\integration_tests.rs:180:9
+    |
+180 |         method: "POST".to_string(),
+    |         ^^^^^^ `mox_enterprise_backend::zero_trust::ZeroTrustRequest` does not have this field
+    |
+    = note: available fields are: `client_certificate`, `svid`, `device_health`, `geo_anomaly`, `off_hours_access` ... 
+and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustRequest` has no field named `spiffe_id`
+   --> tests\integration_tests.rs:182:9
+    |
+182 |         spiffe_id: None,
+    |         ^^^^^^^^^ `mox_enterprise_backend::zero_trust::ZeroTrustRequest` does not have this field
+    |
+    = note: available fields are: `client_certificate`, `svid`, `device_health`, `geo_anomaly`, `off_hours_access` ... 
+and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::zero_trust::ZeroTrustRequest` has no field named `headers`
+   --> tests\integration_tests.rs:188:9
+    |
+188 |         headers: Default::default(),
+    |         ^^^^^^^ `mox_enterprise_backend::zero_trust::ZeroTrustRequest` does not have this field
+    |
+    = note: available fields are: `client_certificate`, `svid`, `device_health`, `geo_anomaly`, `off_hours_access` ... 
+and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::aiops::AnomalyConfig` has no field named `threshold`
+   --> tests\integration_tests.rs:203:9
+    |
+203 |         threshold: 3.0,
+    |         ^^^^^^^^^ `mox_enterprise_backend::aiops::AnomalyConfig` does not have this field
+    |
+    = note: available fields are: `sigma_threshold`, `ewma_alpha`, `iqr_multiplier`, `min_history_points`, `cooldown_se
+conds` ... and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::aiops::AnomalyConfig` has no field named `sensitivity`
+   --> tests\integration_tests.rs:204:9
+    |
+204 |         sensitivity: 1.0,
+    |         ^^^^^^^^^^^ `mox_enterprise_backend::aiops::AnomalyConfig` does not have this field
+    |
+    = note: available fields are: `sigma_threshold`, `ewma_alpha`, `iqr_multiplier`, `min_history_points`, `cooldown_se
+conds` ... and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::aiops::AnomalyConfig` has no field named `min_data_points`
+   --> tests\integration_tests.rs:205:9
+    |
+205 |         min_data_points: 10,
+    |         ^^^^^^^^^^^^^^^ `mox_enterprise_backend::aiops::AnomalyConfig` does not have this field
+    |
+    = note: available fields are: `sigma_threshold`, `ewma_alpha`, `iqr_multiplier`, `min_history_points`, `cooldown_se
+conds` ... and 3 others
+
+error[E0061]: this method takes 2 arguments but 3 arguments were supplied
+   --> tests\integration_tests.rs:229:18
+    |
+229 |         detector.detect("cpu_usage", 45.0 + (i as f64 * 0.5), None);
+    |                  ^^^^^^                                       ---- unexpected argument #3 of type `Option<_>`
+    |
+note: method defined here
+   --> src\aiops\mod.rs:149:12
+    |
+149 |     pub fn detect(&self, metric_name: &str, value: f64) -> Option<AnomalyEvent> {
+    |            ^^^^^^
+help: remove the extra argument
+    |
+229 -         detector.detect("cpu_usage", 45.0 + (i as f64 * 0.5), None);
+229 +         detector.detect("cpu_usage", 45.0 + (i as f64 * 0.5));
+    |
+
+error[E0061]: this method takes 2 arguments but 3 arguments were supplied
+   --> tests\integration_tests.rs:234:28
+    |
+234 |     let anomaly = detector.detect("cpu_usage", 95.0, None);
+    |                            ^^^^^^                    ---- unexpected argument #3 of type `Option<_>`
+    |
+note: method defined here
+   --> src\aiops\mod.rs:149:12
+    |
+149 |     pub fn detect(&self, metric_name: &str, value: f64) -> Option<AnomalyEvent> {
+    |            ^^^^^^
+help: remove the extra argument
+    |
+234 -     let anomaly = detector.detect("cpu_usage", 95.0, None);
+234 +     let anomaly = detector.detect("cpu_usage", 95.0);
+    |
+
+error[E0609]: no field `is_anomaly` on type `Option<AnomalyEvent>`
+   --> tests\integration_tests.rs:235:21
+    |
+235 |     assert!(anomaly.is_anomaly, "CPU 95% 应该被检测为异常");
+    |                     ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `id`, `metric_name`, `timestamp`, `value`, `expected_value` ... and 9 others
+
+error[E0609]: no field `severity` on type `Option<AnomalyEvent>`
+   --> tests\integration_tests.rs:236:24
+    |
+236 |     assert_eq!(anomaly.severity, AnomalySeverity::Critical);
+    |                        ^^^^^^^^ unknown field
+    |
+help: one of the expressions' fields has a field of the same name
+    |
+236 |     assert_eq!(anomaly.unwrap().severity, AnomalySeverity::Critical);
+    |                        +++++++++
+
+error[E0599]: no method named `add_anomaly` found for struct `mox_enterprise_backend::RootCauseAnalyzer` in the current
+ scope
+   --> tests\integration_tests.rs:239:9
+    |
+239 |     rca.add_anomaly(&anomaly);
+    |         ^^^^^^^^^^^ method not found in `mox_enterprise_backend::RootCauseAnalyzer`
+
+error[E0599]: no method named `add_dependency` found for struct `mox_enterprise_backend::RootCauseAnalyzer` in the curr
+ent scope
+   --> tests\integration_tests.rs:242:9
+    |
+242 |     rca.add_dependency("database", "api-server", "data_source");
+    |         ^^^^^^^^^^^^^^ method not found in `mox_enterprise_backend::RootCauseAnalyzer`
+
+error[E0599]: no method named `add_dependency` found for struct `mox_enterprise_backend::RootCauseAnalyzer` in the curr
+ent scope
+   --> tests\integration_tests.rs:243:9
+    |
+243 |     rca.add_dependency("api-server", "web-service", "backend");
+    |         ^^^^^^^^^^^^^^ method not found in `mox_enterprise_backend::RootCauseAnalyzer`
+
+error[E0599]: no method named `add_dependency` found for struct `mox_enterprise_backend::RootCauseAnalyzer` in the curr
+ent scope
+   --> tests\integration_tests.rs:244:9
+    |
+244 |     rca.add_dependency("cache", "api-server", "cache_layer");
+    |         ^^^^^^^^^^^^^^ method not found in `mox_enterprise_backend::RootCauseAnalyzer`
+
+error[E0061]: this method takes 1 argument but 2 arguments were supplied
+   --> tests\integration_tests.rs:247:22
+    |
+247 |     let result = rca.analyze("cpu_usage", None);
+    |                      ^^^^^^^              ---- unexpected argument #2 of type `Option<_>`
+    |
+note: method defined here
+   --> src\aiops\root_cause.rs:106:12
+    |
+106 |     pub fn analyze(&self, anomaly_node: &str) -> RootCauseResult {
+    |            ^^^^^^^
+help: remove the extra argument
+    |
+247 -     let result = rca.analyze("cpu_usage", None);
+247 +     let result = rca.analyze("cpu_usage");
+    |
+
+error[E0063]: missing fields `last_queried_at`, `properties`, `quality_score` and 2 other fields in initializer of `mox
+_enterprise_backend::data_quality::DataAsset`
+   --> tests\integration_tests.rs:271:34
+    |
+271 |     let asset = catalog.register(DataAsset {
+    |                                  ^^^^^^^^^ missing `last_queried_at`, `properties`, `quality_score` and 2 other f
+ields
+
+error[E0609]: no field `id` on type `String`
+   --> tests\integration_tests.rs:284:20
+    |
+284 |     assert!(!asset.id.is_empty());
+    |                    ^^ unknown field
+
+error[E0599]: no method named `add_rule` found for struct `mox_enterprise_backend::QualityRuleEngine` in the current sc
+ope
+   --> tests\integration_tests.rs:290:12
+    |
+290 |     engine.add_rule(QualityRule {
+    |     -------^^^^^^^^ method not found in `mox_enterprise_backend::QualityRuleEngine`
+
+error[E0609]: no field `id` on type `String`
+   --> tests\integration_tests.rs:294:25
+    |
+294 |         asset_id: asset.id.clone(),
+    |                         ^^ unknown field
+
+error[E0433]: cannot find type `QualityRuleType` in this scope
+   --> tests\integration_tests.rs:296:20
+    |
+296 |         rule_type: QualityRuleType::NotNull,
+    |                    ^^^^^^^^^^^^^^^ use of undeclared type `QualityRuleType`
+    |
+help: a struct with a similar name exists
+    |
+296 -         rule_type: QualityRuleType::NotNull,
+296 +         rule_type: QualityRule::NotNull,
+    |
+
+error[E0560]: struct `mox_enterprise_backend::data_quality::QualityRule` has no field named `field_name`
+   --> tests\integration_tests.rs:297:9
+    |
+297 |         field_name: Some("email".to_string()),
+    |         ^^^^^^^^^^ `mox_enterprise_backend::data_quality::QualityRule` does not have this field
+    |
+    = note: available fields are: `column_name`, `last_run_at`, `last_result`
+
+error[E0560]: struct `mox_enterprise_backend::data_quality::QualityRule` has no field named `expression`
+   --> tests\integration_tests.rs:298:9
+    |
+298 |         expression: None,
+    |         ^^^^^^^^^^ `mox_enterprise_backend::data_quality::QualityRule` does not have this field
+    |
+    = note: available fields are: `column_name`, `last_run_at`, `last_result`
+
+error[E0433]: cannot find type `QualitySeverity` in this scope
+   --> tests\integration_tests.rs:300:19
+    |
+300 |         severity: QualitySeverity::High,
+    |                   ^^^^^^^^^^^^^^^ use of undeclared type `QualitySeverity`
+    |
+help: a struct with a similar name exists
+    |
+300 -         severity: QualitySeverity::High,
+300 +         severity: QualityAlert::High,
+    |
+
+error[E0560]: struct `mox_enterprise_backend::data_quality::QualityRule` has no field named `updated_at`
+   --> tests\integration_tests.rs:303:9
+    |
+303 |         updated_at: String::new(),
+    |         ^^^^^^^^^^ `mox_enterprise_backend::data_quality::QualityRule` does not have this field
+    |
+    = note: available fields are: `column_name`, `last_run_at`, `last_result`
+
+error[E0599]: no method named `add_rule` found for struct `mox_enterprise_backend::QualityRuleEngine` in the current sc
+ope
+   --> tests\integration_tests.rs:306:12
+    |
+306 |     engine.add_rule(QualityRule {
+    |     -------^^^^^^^^ method not found in `mox_enterprise_backend::QualityRuleEngine`
+
+error[E0609]: no field `id` on type `String`
+   --> tests\integration_tests.rs:310:25
+    |
+310 |         asset_id: asset.id.clone(),
+    |                         ^^ unknown field
+
+error[E0433]: cannot find type `QualityRuleType` in this scope
+   --> tests\integration_tests.rs:312:20
+    |
+312 |         rule_type: QualityRuleType::Regex,
+    |                    ^^^^^^^^^^^^^^^ use of undeclared type `QualityRuleType`
+    |
+help: a struct with a similar name exists
+    |
+312 -         rule_type: QualityRuleType::Regex,
+312 +         rule_type: QualityRule::Regex,
+    |
+
+error[E0560]: struct `mox_enterprise_backend::data_quality::QualityRule` has no field named `field_name`
+   --> tests\integration_tests.rs:313:9
+    |
+313 |         field_name: Some("email".to_string()),
+    |         ^^^^^^^^^^ `mox_enterprise_backend::data_quality::QualityRule` does not have this field
+    |
+    = note: available fields are: `column_name`, `last_run_at`, `last_result`
+
+error[E0560]: struct `mox_enterprise_backend::data_quality::QualityRule` has no field named `expression`
+   --> tests\integration_tests.rs:314:9
+    |
+314 |         expression: Some(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$".to_string()),
+    |         ^^^^^^^^^^ `mox_enterprise_backend::data_quality::QualityRule` does not have this field
+    |
+    = note: available fields are: `column_name`, `last_run_at`, `last_result`
+
+error[E0433]: cannot find type `QualitySeverity` in this scope
+   --> tests\integration_tests.rs:316:19
+    |
+316 |         severity: QualitySeverity::Medium,
+    |                   ^^^^^^^^^^^^^^^ use of undeclared type `QualitySeverity`
+    |
+help: a struct with a similar name exists
+    |
+316 -         severity: QualitySeverity::Medium,
+316 +         severity: QualityAlert::Medium,
+    |
+
+error[E0560]: struct `mox_enterprise_backend::data_quality::QualityRule` has no field named `updated_at`
+   --> tests\integration_tests.rs:319:9
+    |
+319 |         updated_at: String::new(),
+    |         ^^^^^^^^^^ `mox_enterprise_backend::data_quality::QualityRule` does not have this field
+    |
+    = note: available fields are: `column_name`, `last_run_at`, `last_result`
+
+error[E0599]: no method named `get_rules_by_asset` found for struct `mox_enterprise_backend::QualityRuleEngine` in the 
+current scope
+   --> tests\integration_tests.rs:323:24
+    |
+323 |     let rules = engine.get_rules_by_asset(&asset.id);
+    |                        ^^^^^^^^^^^^^^^^^^
+    |
+help: there is a method `get_rules_by_dimension` with a similar name
+    |
+323 -     let rules = engine.get_rules_by_asset(&asset.id);
+323 +     let rules = engine.get_rules_by_dimension(&asset.id);
+    |
+
+error[E0609]: no field `id` on type `String`
+   --> tests\integration_tests.rs:323:50
+    |
+323 |     let rules = engine.get_rules_by_asset(&asset.id);
+    |                                                  ^^ unknown field
+
+error[E0609]: no field `id` on type `String`
+   --> tests\integration_tests.rs:330:29
+    |
+330 |             asset_id: asset.id.clone(),
+    |                             ^^ unknown field
+
+error[E0609]: no field `id` on type `String`
+   --> tests\integration_tests.rs:339:29
+    |
+339 |             asset_id: asset.id.clone(),
+    |                             ^^ unknown field
+
+error[E0599]: no method named `generate_report` found for struct `mox_enterprise_backend::QualityRuleEngine` in the cur
+rent scope
+   --> tests\integration_tests.rs:349:25
+    |
+349 |     let report = engine.generate_report(&asset.id, &results);
+    |                         ^^^^^^^^^^^^^^^ method not found in `mox_enterprise_backend::QualityRuleEngine`
+
+error[E0609]: no field `id` on type `String`
+   --> tests\integration_tests.rs:349:48
+    |
+349 |     let report = engine.generate_report(&asset.id, &results);
+    |                                                ^^ unknown field
+
+error[E0609]: no field `id` on type `String`
+   --> tests\integration_tests.rs:350:39
+    |
+350 |     assert_eq!(report.asset_id, asset.id);
+    |                                       ^^ unknown field
+
+Some errors have detailed explanations: E0061, E0063, E0422, E0433, E0560, E0599, E0609, E0624.
+For more information about an error, try `rustc --explain E0061`.
+warning: `mox-enterprise-backend` (test "integration_tests") generated 1 warning
+error: could not compile `mox-enterprise-backend` (test "integration_tests") due to 70 previous errors; 1 warning emitt
+ed
+error[E0422]: cannot find struct, variant or union type `QualityResult` in this scope
+   --> tests\data_quality_aiops_tests.rs:115:9
+    |
+115 |         QualityResult {
+    |         ^^^^^^^^^^^^^
+    |
+   ::: src\data_quality\monitor.rs:54:1
+    |
+ 54 | pub struct QualityReport {
+    | ------------------------ similarly named struct `QualityReport` defined here
+    |
+help: a struct with a similar name exists
+    |
+115 -         QualityResult {
+115 +         QualityReport {
+    |
+
+error[E0422]: cannot find struct, variant or union type `QualityResult` in this scope
+   --> tests\data_quality_aiops_tests.rs:124:9
+    |
+124 |         QualityResult {
+    |         ^^^^^^^^^^^^^
+    |
+   ::: src\data_quality\monitor.rs:54:1
+    |
+ 54 | pub struct QualityReport {
+    | ------------------------ similarly named struct `QualityReport` defined here
+    |
+help: a struct with a similar name exists
+    |
+124 -         QualityResult {
+124 +         QualityReport {
+    |
+
+error[E0422]: cannot find struct, variant or union type `DataNode` in this scope
+   --> tests\data_quality_aiops_tests.rs:147:22
+    |
+147 |     lineage.add_node(DataNode {
+    |                      ^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `DataNode` in this scope
+   --> tests\data_quality_aiops_tests.rs:154:22
+    |
+154 |     lineage.add_node(DataNode {
+    |                      ^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `DataNode` in this scope
+   --> tests\data_quality_aiops_tests.rs:174:22
+    |
+174 |     lineage.add_node(DataNode {
+    |                      ^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `DataNode` in this scope
+   --> tests\data_quality_aiops_tests.rs:180:22
+    |
+180 |     lineage.add_node(DataNode {
+    |                      ^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `DataNode` in this scope
+   --> tests\data_quality_aiops_tests.rs:186:22
+    |
+186 |     lineage.add_node(DataNode {
+    |                      ^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `PredictiveScalerConfig` in this scope
+   --> tests\data_quality_aiops_tests.rs:277:40
+    |
+277 |     let scaler = PredictiveScaler::new(PredictiveScalerConfig {
+    |                                        ^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: src\aiops\predictive_scaler.rs:95:1
+    |
+ 95 | pub struct PredictiveScaler {
+    | --------------------------- similarly named struct `PredictiveScaler` defined here
+    |
+help: a struct with a similar name exists
+    |
+277 -     let scaler = PredictiveScaler::new(PredictiveScalerConfig {
+277 +     let scaler = PredictiveScaler::new(PredictiveScaler {
+    |
+help: consider importing one of these structs
+    |
+  3 + use crate::predictive_scaler::PredictiveScalerConfig;
+    |
+  3 + use mox_enterprise_backend::aiops::predictive_scaler::PredictiveScalerConfig;
+    |
+
+error[E0433]: cannot find type `PredictionAlgorithm` in this scope
+   --> tests\data_quality_aiops_tests.rs:278:20
+    |
+278 |         algorithm: PredictionAlgorithm::MovingAverage,
+    |                    ^^^^^^^^^^^^^^^^^^^ use of undeclared type `PredictionAlgorithm`
+    |
+help: consider importing one of these enums
+    |
+  3 + use crate::predictive_scaler::PredictionAlgorithm;
+    |
+  3 + use mox_enterprise_backend::aiops::predictive_scaler::PredictionAlgorithm;
+    |
+
+error[E0422]: cannot find struct, variant or union type `PredictiveScalerConfig` in this scope
+   --> tests\data_quality_aiops_tests.rs:305:40
+    |
+305 |     let scaler = PredictiveScaler::new(PredictiveScalerConfig {
+    |                                        ^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: src\aiops\predictive_scaler.rs:95:1
+    |
+ 95 | pub struct PredictiveScaler {
+    | --------------------------- similarly named struct `PredictiveScaler` defined here
+    |
+help: a struct with a similar name exists
+    |
+305 -     let scaler = PredictiveScaler::new(PredictiveScalerConfig {
+305 +     let scaler = PredictiveScaler::new(PredictiveScaler {
+    |
+help: consider importing one of these structs
+    |
+  3 + use crate::predictive_scaler::PredictiveScalerConfig;
+    |
+  3 + use mox_enterprise_backend::aiops::predictive_scaler::PredictiveScalerConfig;
+    |
+
+error[E0433]: cannot find type `PredictionAlgorithm` in this scope
+   --> tests\data_quality_aiops_tests.rs:306:20
+    |
+306 |         algorithm: PredictionAlgorithm::MovingAverage,
+    |                    ^^^^^^^^^^^^^^^^^^^ use of undeclared type `PredictionAlgorithm`
+    |
+help: consider importing one of these enums
+    |
+  3 + use crate::predictive_scaler::PredictionAlgorithm;
+    |
+  3 + use mox_enterprise_backend::aiops::predictive_scaler::PredictionAlgorithm;
+    |
+
+error[E0422]: cannot find struct, variant or union type `PredictiveScalerConfig` in this scope
+   --> tests\data_quality_aiops_tests.rs:334:40
+    |
+334 |     let scaler = PredictiveScaler::new(PredictiveScalerConfig {
+    |                                        ^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: src\aiops\predictive_scaler.rs:95:1
+    |
+ 95 | pub struct PredictiveScaler {
+    | --------------------------- similarly named struct `PredictiveScaler` defined here
+    |
+help: a struct with a similar name exists
+    |
+334 -     let scaler = PredictiveScaler::new(PredictiveScalerConfig {
+334 +     let scaler = PredictiveScaler::new(PredictiveScaler {
+    |
+help: consider importing one of these structs
+    |
+  3 + use crate::predictive_scaler::PredictiveScalerConfig;
+    |
+  3 + use mox_enterprise_backend::aiops::predictive_scaler::PredictiveScalerConfig;
+    |
+
+error[E0433]: cannot find type `PredictionAlgorithm` in this scope
+   --> tests\data_quality_aiops_tests.rs:335:20
+    |
+335 |         algorithm: PredictionAlgorithm::MovingAverage,
+    |                    ^^^^^^^^^^^^^^^^^^^ use of undeclared type `PredictionAlgorithm`
+    |
+help: consider importing one of these enums
+    |
+  3 + use crate::predictive_scaler::PredictionAlgorithm;
+    |
+  3 + use mox_enterprise_backend::aiops::predictive_scaler::PredictionAlgorithm;
+    |
+
+error[E0422]: cannot find struct, variant or union type `PredictiveScalerConfig` in this scope
+   --> tests\data_quality_aiops_tests.rs:363:40
+    |
+363 |     let scaler = PredictiveScaler::new(PredictiveScalerConfig {
+    |                                        ^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: src\aiops\predictive_scaler.rs:95:1
+    |
+ 95 | pub struct PredictiveScaler {
+    | --------------------------- similarly named struct `PredictiveScaler` defined here
+    |
+help: a struct with a similar name exists
+    |
+363 -     let scaler = PredictiveScaler::new(PredictiveScalerConfig {
+363 +     let scaler = PredictiveScaler::new(PredictiveScaler {
+    |
+help: consider importing one of these structs
+    |
+  3 + use crate::predictive_scaler::PredictiveScalerConfig;
+    |
+  3 + use mox_enterprise_backend::aiops::predictive_scaler::PredictiveScalerConfig;
+    |
+
+error[E0433]: cannot find type `PredictionAlgorithm` in this scope
+   --> tests\data_quality_aiops_tests.rs:364:20
+    |
+364 |         algorithm: PredictionAlgorithm::MovingAverage,
+    |                    ^^^^^^^^^^^^^^^^^^^ use of undeclared type `PredictionAlgorithm`
+    |
+help: consider importing one of these enums
+    |
+  3 + use crate::predictive_scaler::PredictionAlgorithm;
+    |
+  3 + use mox_enterprise_backend::aiops::predictive_scaler::PredictionAlgorithm;
+    |
+
+error[E0433]: cannot find type `QualityRuleType` in this scope
+  --> tests\data_quality_aiops_tests.rs:18:20
+   |
+18 |         rule_type: QualityRuleType::NotNull,
+   |                    ^^^^^^^^^^^^^^^ use of undeclared type `QualityRuleType`
+   |
+help: a struct with a similar name exists
+   |
+18 -         rule_type: QualityRuleType::NotNull,
+18 +         rule_type: QualityRule::NotNull,
+   |
+
+error[E0560]: struct `mox_enterprise_backend::data_quality::QualityRule` has no field named `field_name`
+  --> tests\data_quality_aiops_tests.rs:19:9
+   |
+19 |         field_name: Some("email".to_string()),
+   |         ^^^^^^^^^^ `mox_enterprise_backend::data_quality::QualityRule` does not have this field
+   |
+   = note: available fields are: `column_name`, `last_run_at`, `last_result`
+
+error[E0560]: struct `mox_enterprise_backend::data_quality::QualityRule` has no field named `expression`
+  --> tests\data_quality_aiops_tests.rs:20:9
+   |
+20 |         expression: None,
+   |         ^^^^^^^^^^ `mox_enterprise_backend::data_quality::QualityRule` does not have this field
+   |
+   = note: available fields are: `column_name`, `last_run_at`, `last_result`
+
+error[E0433]: cannot find type `QualitySeverity` in this scope
+  --> tests\data_quality_aiops_tests.rs:22:19
+   |
+22 |         severity: QualitySeverity::High,
+   |                   ^^^^^^^^^^^^^^^ use of undeclared type `QualitySeverity`
+   |
+help: a struct with a similar name exists
+   |
+22 -         severity: QualitySeverity::High,
+22 +         severity: QualityAlert::High,
+   |
+
+error[E0560]: struct `mox_enterprise_backend::data_quality::QualityRule` has no field named `updated_at`
+  --> tests\data_quality_aiops_tests.rs:25:9
+   |
+25 |         updated_at: String::new(),
+   |         ^^^^^^^^^^ `mox_enterprise_backend::data_quality::QualityRule` does not have this field
+   |
+   = note: available fields are: `column_name`, `last_run_at`, `last_result`
+
+error[E0599]: no method named `add_rule` found for struct `mox_enterprise_backend::QualityRuleEngine` in the current sc
+ope
+  --> tests\data_quality_aiops_tests.rs:28:21
+   |
+28 |     let id = engine.add_rule(rule);
+   |                     ^^^^^^^^ method not found in `mox_enterprise_backend::QualityRuleEngine`
+
+error[E0599]: no method named `add_rule` found for struct `mox_enterprise_backend::QualityRuleEngine` in the current sc
+ope
+  --> tests\data_quality_aiops_tests.rs:41:16
+   |
+41 |         engine.add_rule(QualityRule {
+   |         -------^^^^^^^^ method not found in `mox_enterprise_backend::QualityRuleEngine`
+
+error[E0433]: cannot find type `QualityRuleType` in this scope
+  --> tests\data_quality_aiops_tests.rs:47:24
+   |
+47 |             rule_type: QualityRuleType::Range,
+   |                        ^^^^^^^^^^^^^^^ use of undeclared type `QualityRuleType`
+   |
+help: a struct with a similar name exists
+   |
+47 -             rule_type: QualityRuleType::Range,
+47 +             rule_type: QualityRule::Range,
+   |
+
+error[E0560]: struct `mox_enterprise_backend::data_quality::QualityRule` has no field named `field_name`
+  --> tests\data_quality_aiops_tests.rs:48:13
+   |
+48 |             field_name: None,
+   |             ^^^^^^^^^^ `mox_enterprise_backend::data_quality::QualityRule` does not have this field
+   |
+   = note: available fields are: `column_name`, `last_run_at`, `last_result`
+
+error[E0560]: struct `mox_enterprise_backend::data_quality::QualityRule` has no field named `expression`
+  --> tests\data_quality_aiops_tests.rs:49:13
+   |
+49 |             expression: None,
+   |             ^^^^^^^^^^ `mox_enterprise_backend::data_quality::QualityRule` does not have this field
+   |
+   = note: available fields are: `column_name`, `last_run_at`, `last_result`
+
+error[E0433]: cannot find type `QualitySeverity` in this scope
+  --> tests\data_quality_aiops_tests.rs:51:23
+   |
+51 |             severity: QualitySeverity::Medium,
+   |                       ^^^^^^^^^^^^^^^ use of undeclared type `QualitySeverity`
+   |
+help: a struct with a similar name exists
+   |
+51 -             severity: QualitySeverity::Medium,
+51 +             severity: QualityAlert::Medium,
+   |
+
+error[E0560]: struct `mox_enterprise_backend::data_quality::QualityRule` has no field named `updated_at`
+  --> tests\data_quality_aiops_tests.rs:54:13
+   |
+54 |             updated_at: String::new(),
+   |             ^^^^^^^^^^ `mox_enterprise_backend::data_quality::QualityRule` does not have this field
+   |
+   = note: available fields are: `column_name`, `last_run_at`, `last_result`
+
+error[E0599]: no method named `add_rule` found for struct `mox_enterprise_backend::QualityRuleEngine` in the current sc
+ope
+  --> tests\data_quality_aiops_tests.rs:58:12
+   |
+58 |     engine.add_rule(QualityRule {
+   |     -------^^^^^^^^ method not found in `mox_enterprise_backend::QualityRuleEngine`
+
+error[E0433]: cannot find type `QualityRuleType` in this scope
+  --> tests\data_quality_aiops_tests.rs:64:20
+   |
+64 |         rule_type: QualityRuleType::Unique,
+   |                    ^^^^^^^^^^^^^^^ use of undeclared type `QualityRuleType`
+   |
+help: a struct with a similar name exists
+   |
+64 -         rule_type: QualityRuleType::Unique,
+64 +         rule_type: QualityRule::Unique,
+   |
+
+error[E0560]: struct `mox_enterprise_backend::data_quality::QualityRule` has no field named `field_name`
+  --> tests\data_quality_aiops_tests.rs:65:9
+   |
+65 |         field_name: None,
+   |         ^^^^^^^^^^ `mox_enterprise_backend::data_quality::QualityRule` does not have this field
+   |
+   = note: available fields are: `column_name`, `last_run_at`, `last_result`
+
+error[E0560]: struct `mox_enterprise_backend::data_quality::QualityRule` has no field named `expression`
+  --> tests\data_quality_aiops_tests.rs:66:9
+   |
+66 |         expression: None,
+   |         ^^^^^^^^^^ `mox_enterprise_backend::data_quality::QualityRule` does not have this field
+   |
+   = note: available fields are: `column_name`, `last_run_at`, `last_result`
+
+error[E0433]: cannot find type `QualitySeverity` in this scope
+  --> tests\data_quality_aiops_tests.rs:68:19
+   |
+68 |         severity: QualitySeverity::Low,
+   |                   ^^^^^^^^^^^^^^^ use of undeclared type `QualitySeverity`
+   |
+help: a struct with a similar name exists
+   |
+68 -         severity: QualitySeverity::Low,
+68 +         severity: QualityAlert::Low,
+   |
+
+error[E0560]: struct `mox_enterprise_backend::data_quality::QualityRule` has no field named `updated_at`
+  --> tests\data_quality_aiops_tests.rs:71:9
+   |
+71 |         updated_at: String::new(),
+   |         ^^^^^^^^^^ `mox_enterprise_backend::data_quality::QualityRule` does not have this field
+   |
+   = note: available fields are: `column_name`, `last_run_at`, `last_result`
+
+error[E0599]: no method named `get_rules_by_asset` found for struct `mox_enterprise_backend::QualityRuleEngine` in the 
+current scope
+  --> tests\data_quality_aiops_tests.rs:74:26
+   |
+74 |     let rules_a = engine.get_rules_by_asset("asset_a");
+   |                          ^^^^^^^^^^^^^^^^^^
+   |
+help: there is a method `get_rules_by_dimension` with a similar name
+   |
+74 -     let rules_a = engine.get_rules_by_asset("asset_a");
+74 +     let rules_a = engine.get_rules_by_dimension("asset_a");
+   |
+
+error[E0599]: no method named `get_rules_by_asset` found for struct `mox_enterprise_backend::QualityRuleEngine` in the 
+current scope
+  --> tests\data_quality_aiops_tests.rs:75:26
+   |
+75 |     let rules_b = engine.get_rules_by_asset("asset_b");
+   |                          ^^^^^^^^^^^^^^^^^^
+   |
+help: there is a method `get_rules_by_dimension` with a similar name
+   |
+75 -     let rules_b = engine.get_rules_by_asset("asset_b");
+75 +     let rules_b = engine.get_rules_by_dimension("asset_b");
+   |
+
+error[E0599]: no method named `add_rule` found for struct `mox_enterprise_backend::QualityRuleEngine` in the current sc
+ope
+  --> tests\data_quality_aiops_tests.rs:96:16
+   |
+96 |         engine.add_rule(QualityRule {
+   |         -------^^^^^^^^ method not found in `mox_enterprise_backend::QualityRuleEngine`
+
+error[E0433]: cannot find type `QualityRuleType` in this scope
+   --> tests\data_quality_aiops_tests.rs:102:24
+    |
+102 |             rule_type: QualityRuleType::NotNull,
+    |                        ^^^^^^^^^^^^^^^ use of undeclared type `QualityRuleType`
+    |
+help: a struct with a similar name exists
+    |
+102 -             rule_type: QualityRuleType::NotNull,
+102 +             rule_type: QualityRule::NotNull,
+    |
+
+error[E0560]: struct `mox_enterprise_backend::data_quality::QualityRule` has no field named `field_name`
+   --> tests\data_quality_aiops_tests.rs:103:13
+    |
+103 |             field_name: None,
+    |             ^^^^^^^^^^ `mox_enterprise_backend::data_quality::QualityRule` does not have this field
+    |
+    = note: available fields are: `column_name`, `last_run_at`, `last_result`
+
+error[E0560]: struct `mox_enterprise_backend::data_quality::QualityRule` has no field named `expression`
+   --> tests\data_quality_aiops_tests.rs:104:13
+    |
+104 |             expression: None,
+    |             ^^^^^^^^^^ `mox_enterprise_backend::data_quality::QualityRule` does not have this field
+    |
+    = note: available fields are: `column_name`, `last_run_at`, `last_result`
+
+error[E0433]: cannot find type `QualitySeverity` in this scope
+   --> tests\data_quality_aiops_tests.rs:106:23
+    |
+106 |             severity: QualitySeverity::Medium,
+    |                       ^^^^^^^^^^^^^^^ use of undeclared type `QualitySeverity`
+    |
+help: a struct with a similar name exists
+    |
+106 -             severity: QualitySeverity::Medium,
+106 +             severity: QualityAlert::Medium,
+    |
+
+error[E0560]: struct `mox_enterprise_backend::data_quality::QualityRule` has no field named `updated_at`
+   --> tests\data_quality_aiops_tests.rs:109:13
+    |
+109 |             updated_at: String::new(),
+    |             ^^^^^^^^^^ `mox_enterprise_backend::data_quality::QualityRule` does not have this field
+    |
+    = note: available fields are: `column_name`, `last_run_at`, `last_result`
+
+error[E0599]: no method named `generate_report` found for struct `mox_enterprise_backend::QualityRuleEngine` in the cur
+rent scope
+   --> tests\data_quality_aiops_tests.rs:135:25
+    |
+135 |     let report = engine.generate_report("test_asset", &results);
+    |                         ^^^^^^^^^^^^^^^ method not found in `mox_enterprise_backend::QualityRuleEngine`
+
+error[E0433]: cannot find type `NodeType` in this scope
+   --> tests\data_quality_aiops_tests.rs:150:20
+    |
+150 |         node_type: NodeType::Table,
+    |                    ^^^^^^^^ use of undeclared type `NodeType`
+
+error[E0433]: cannot find type `NodeType` in this scope
+   --> tests\data_quality_aiops_tests.rs:157:20
+    |
+157 |         node_type: NodeType::Table,
+    |                    ^^^^^^^^ use of undeclared type `NodeType`
+
+error[E0308]: mismatched types
+   --> tests\data_quality_aiops_tests.rs:161:54
+    |
+161 |     lineage.add_edge("source_table", "target_table", "ETL转换", "transform_job");
+    |             --------                                 ^^^^^^^^^ expected `TransformType`, found `&str`
+    |             |
+    |             arguments to this method are incorrect
+    |
+note: method defined here
+   --> src\data_quality\lineage.rs:88:12
+    |
+ 88 |     pub fn add_edge(&mut self, source: &str, target: &str, transform_type: TransformType, description: &str) {
+    |            ^^^^^^^^
+
+error[E0433]: cannot find type `NodeType` in this scope
+   --> tests\data_quality_aiops_tests.rs:177:20
+    |
+177 |         node_type: NodeType::Table,
+    |                    ^^^^^^^^ use of undeclared type `NodeType`
+
+error[E0433]: cannot find type `NodeType` in this scope
+   --> tests\data_quality_aiops_tests.rs:183:20
+    |
+183 |         node_type: NodeType::Table,
+    |                    ^^^^^^^^ use of undeclared type `NodeType`
+
+error[E0433]: cannot find type `NodeType` in this scope
+   --> tests\data_quality_aiops_tests.rs:189:20
+    |
+189 |         node_type: NodeType::Table,
+    |                    ^^^^^^^^ use of undeclared type `NodeType`
+
+error[E0308]: mismatched types
+   --> tests\data_quality_aiops_tests.rs:193:32
+    |
+193 |     lineage.add_edge("a", "b", "transform", "job1");
+    |             --------           ^^^^^^^^^^^ expected `TransformType`, found `&str`
+    |             |
+    |             arguments to this method are incorrect
+    |
+note: method defined here
+   --> src\data_quality\lineage.rs:88:12
+    |
+ 88 |     pub fn add_edge(&mut self, source: &str, target: &str, transform_type: TransformType, description: &str) {
+    |            ^^^^^^^^
+
+error[E0308]: mismatched types
+   --> tests\data_quality_aiops_tests.rs:194:32
+    |
+194 |     lineage.add_edge("b", "c", "transform", "job2");
+    |             --------           ^^^^^^^^^^^ expected `TransformType`, found `&str`
+    |             |
+    |             arguments to this method are incorrect
+    |
+note: method defined here
+   --> src\data_quality\lineage.rs:88:12
+    |
+ 88 |     pub fn add_edge(&mut self, source: &str, target: &str, transform_type: TransformType, description: &str) {
+    |            ^^^^^^^^
+
+error[E0599]: no method named `has_cycle` found for struct `mox_enterprise_backend::DataLineage` in the current scope
+   --> tests\data_quality_aiops_tests.rs:197:22
+    |
+197 |     assert!(!lineage.has_cycle(), "A->B->C 不应该有环");
+    |                      ^^^^^^^^^ method not found in `mox_enterprise_backend::DataLineage`
+
+error[E0308]: mismatched types
+   --> tests\data_quality_aiops_tests.rs:200:32
+    |
+200 |     lineage.add_edge("c", "a", "transform", "job3");
+    |             --------           ^^^^^^^^^^^ expected `TransformType`, found `&str`
+    |             |
+    |             arguments to this method are incorrect
+    |
+note: method defined here
+   --> src\data_quality\lineage.rs:88:12
+    |
+ 88 |     pub fn add_edge(&mut self, source: &str, target: &str, transform_type: TransformType, description: &str) {
+    |            ^^^^^^^^
+
+error[E0599]: no method named `has_cycle` found for struct `mox_enterprise_backend::DataLineage` in the current scope
+   --> tests\data_quality_aiops_tests.rs:201:21
+    |
+201 |     assert!(lineage.has_cycle(), "C->A 应该形成环");
+    |                     ^^^^^^^^^ method not found in `mox_enterprise_backend::DataLineage`
+
+error[E0560]: struct `mox_enterprise_backend::aiops::AnomalyConfig` has no field named `threshold`
+   --> tests\data_quality_aiops_tests.rs:211:9
+    |
+211 |         threshold: 3.0,
+    |         ^^^^^^^^^ `mox_enterprise_backend::aiops::AnomalyConfig` does not have this field
+    |
+    = note: available fields are: `sigma_threshold`, `ewma_alpha`, `iqr_multiplier`, `min_history_points`, `cooldown_se
+conds` ... and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::aiops::AnomalyConfig` has no field named `sensitivity`
+   --> tests\data_quality_aiops_tests.rs:212:9
+    |
+212 |         sensitivity: 1.0,
+    |         ^^^^^^^^^^^ `mox_enterprise_backend::aiops::AnomalyConfig` does not have this field
+    |
+    = note: available fields are: `sigma_threshold`, `ewma_alpha`, `iqr_multiplier`, `min_history_points`, `cooldown_se
+conds` ... and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::aiops::AnomalyConfig` has no field named `min_data_points`
+   --> tests\data_quality_aiops_tests.rs:213:9
+    |
+213 |         min_data_points: 5,
+    |         ^^^^^^^^^^^^^^^ `mox_enterprise_backend::aiops::AnomalyConfig` does not have this field
+    |
+    = note: available fields are: `sigma_threshold`, `ewma_alpha`, `iqr_multiplier`, `min_history_points`, `cooldown_se
+conds` ... and 3 others
+
+error[E0061]: this method takes 2 arguments but 3 arguments were supplied
+   --> tests\data_quality_aiops_tests.rs:221:31
+    |
+221 |         let result = detector.detect("metric1", v, None);
+    |                               ^^^^^^               ---- unexpected argument #3 of type `Option<_>`
+    |
+note: method defined here
+   --> src\aiops\mod.rs:149:12
+    |
+149 |     pub fn detect(&self, metric_name: &str, value: f64) -> Option<AnomalyEvent> {
+    |            ^^^^^^
+help: remove the extra argument
+    |
+221 -         let result = detector.detect("metric1", v, None);
+221 +         let result = detector.detect("metric1", v);
+    |
+
+error[E0609]: no field `is_anomaly` on type `Option<AnomalyEvent>`
+   --> tests\data_quality_aiops_tests.rs:222:25
+    |
+222 |         assert!(!result.is_anomaly, "正常值 {} 不应该报警", v);
+    |                         ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `id`, `metric_name`, `timestamp`, `value`, `expected_value` ... and 9 others
+
+error[E0061]: this method takes 2 arguments but 3 arguments were supplied
+   --> tests\data_quality_aiops_tests.rs:226:27
+    |
+226 |     let result = detector.detect("metric1", 200.0, None);
+    |                           ^^^^^^                   ---- unexpected argument #3 of type `Option<_>`
+    |
+note: method defined here
+   --> src\aiops\mod.rs:149:12
+    |
+149 |     pub fn detect(&self, metric_name: &str, value: f64) -> Option<AnomalyEvent> {
+    |            ^^^^^^
+help: remove the extra argument
+    |
+226 -     let result = detector.detect("metric1", 200.0, None);
+226 +     let result = detector.detect("metric1", 200.0);
+    |
+
+error[E0609]: no field `is_anomaly` on type `Option<AnomalyEvent>`
+   --> tests\data_quality_aiops_tests.rs:227:20
+    |
+227 |     assert!(result.is_anomaly, "异常值 200 应该报警");
+    |                    ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `id`, `metric_name`, `timestamp`, `value`, `expected_value` ... and 9 others
+
+error[E0609]: no field `severity` on type `Option<AnomalyEvent>`
+   --> tests\data_quality_aiops_tests.rs:228:23
+    |
+228 |     assert_eq!(result.severity, AnomalySeverity::Critical);
+    |                       ^^^^^^^^ unknown field
+    |
+help: one of the expressions' fields has a field of the same name
+    |
+228 |     assert_eq!(result.unwrap().severity, AnomalySeverity::Critical);
+    |                       +++++++++
+
+error[E0560]: struct `mox_enterprise_backend::aiops::AnomalyConfig` has no field named `threshold`
+   --> tests\data_quality_aiops_tests.rs:236:9
+    |
+236 |         threshold: 3.0,
+    |         ^^^^^^^^^ `mox_enterprise_backend::aiops::AnomalyConfig` does not have this field
+    |
+    = note: available fields are: `sigma_threshold`, `ewma_alpha`, `iqr_multiplier`, `min_history_points`, `cooldown_se
+conds` ... and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::aiops::AnomalyConfig` has no field named `sensitivity`
+   --> tests\data_quality_aiops_tests.rs:237:9
+    |
+237 |         sensitivity: 1.0,
+    |         ^^^^^^^^^^^ `mox_enterprise_backend::aiops::AnomalyConfig` does not have this field
+    |
+    = note: available fields are: `sigma_threshold`, `ewma_alpha`, `iqr_multiplier`, `min_history_points`, `cooldown_se
+conds` ... and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::aiops::AnomalyConfig` has no field named `min_data_points`
+   --> tests\data_quality_aiops_tests.rs:238:9
+    |
+238 |         min_data_points: 10,
+    |         ^^^^^^^^^^^^^^^ `mox_enterprise_backend::aiops::AnomalyConfig` does not have this field
+    |
+    = note: available fields are: `sigma_threshold`, `ewma_alpha`, `iqr_multiplier`, `min_history_points`, `cooldown_se
+conds` ... and 3 others
+
+error[E0061]: this method takes 2 arguments but 3 arguments were supplied
+   --> tests\data_quality_aiops_tests.rs:243:31
+    |
+243 |         let result = detector.detect("metric2", i as f64, None);
+    |                               ^^^^^^                      ---- unexpected argument #3 of type `Option<_>`
+    |
+note: method defined here
+   --> src\aiops\mod.rs:149:12
+    |
+149 |     pub fn detect(&self, metric_name: &str, value: f64) -> Option<AnomalyEvent> {
+    |            ^^^^^^
+help: remove the extra argument
+    |
+243 -         let result = detector.detect("metric2", i as f64, None);
+243 +         let result = detector.detect("metric2", i as f64);
+    |
+
+error[E0609]: no field `is_anomaly` on type `Option<AnomalyEvent>`
+   --> tests\data_quality_aiops_tests.rs:244:25
+    |
+244 |         assert!(!result.is_anomaly, "数据不足时不应该报警");
+    |                         ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `id`, `metric_name`, `timestamp`, `value`, `expected_value` ... and 9 others
+
+error[E0560]: struct `mox_enterprise_backend::aiops::AnomalyConfig` has no field named `threshold`
+   --> tests\data_quality_aiops_tests.rs:253:9
+    |
+253 |         threshold: 3.0,
+    |         ^^^^^^^^^ `mox_enterprise_backend::aiops::AnomalyConfig` does not have this field
+    |
+    = note: available fields are: `sigma_threshold`, `ewma_alpha`, `iqr_multiplier`, `min_history_points`, `cooldown_se
+conds` ... and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::aiops::AnomalyConfig` has no field named `sensitivity`
+   --> tests\data_quality_aiops_tests.rs:254:9
+    |
+254 |         sensitivity: 1.0,
+    |         ^^^^^^^^^^^ `mox_enterprise_backend::aiops::AnomalyConfig` does not have this field
+    |
+    = note: available fields are: `sigma_threshold`, `ewma_alpha`, `iqr_multiplier`, `min_history_points`, `cooldown_se
+conds` ... and 3 others
+
+error[E0560]: struct `mox_enterprise_backend::aiops::AnomalyConfig` has no field named `min_data_points`
+   --> tests\data_quality_aiops_tests.rs:255:9
+    |
+255 |         min_data_points: 10,
+    |         ^^^^^^^^^^^^^^^ `mox_enterprise_backend::aiops::AnomalyConfig` does not have this field
+    |
+    = note: available fields are: `sigma_threshold`, `ewma_alpha`, `iqr_multiplier`, `min_history_points`, `cooldown_se
+conds` ... and 3 others
+
+error[E0061]: this method takes 2 arguments but 3 arguments were supplied
+   --> tests\data_quality_aiops_tests.rs:260:18
+    |
+260 |         detector.detect("metric3", 100.0 + (i as f64 * 0.01), None);
+    |                  ^^^^^^                                       ---- unexpected argument #3 of type `Option<_>`
+    |
+note: method defined here
+   --> src\aiops\mod.rs:149:12
+    |
+149 |     pub fn detect(&self, metric_name: &str, value: f64) -> Option<AnomalyEvent> {
+    |            ^^^^^^
+help: remove the extra argument
+    |
+260 -         detector.detect("metric3", 100.0 + (i as f64 * 0.01), None);
+260 +         detector.detect("metric3", 100.0 + (i as f64 * 0.01));
+    |
+
+error[E0061]: this method takes 2 arguments but 3 arguments were supplied
+   --> tests\data_quality_aiops_tests.rs:264:25
+    |
+264 |     let mild = detector.detect("metric3", 130.0, None);
+    |                         ^^^^^^                   ---- unexpected argument #3 of type `Option<_>`
+    |
+note: method defined here
+   --> src\aiops\mod.rs:149:12
+    |
+149 |     pub fn detect(&self, metric_name: &str, value: f64) -> Option<AnomalyEvent> {
+    |            ^^^^^^
+help: remove the extra argument
+    |
+264 -     let mild = detector.detect("metric3", 130.0, None);
+264 +     let mild = detector.detect("metric3", 130.0);
+    |
+
+error[E0061]: this method takes 2 arguments but 3 arguments were supplied
+   --> tests\data_quality_aiops_tests.rs:265:27
+    |
+265 |     let severe = detector.detect("metric3", 200.0, None);
+    |                           ^^^^^^                   ---- unexpected argument #3 of type `Option<_>`
+    |
+note: method defined here
+   --> src\aiops\mod.rs:149:12
+    |
+149 |     pub fn detect(&self, metric_name: &str, value: f64) -> Option<AnomalyEvent> {
+    |            ^^^^^^
+help: remove the extra argument
+    |
+265 -     let severe = detector.detect("metric3", 200.0, None);
+265 +     let severe = detector.detect("metric3", 200.0);
+    |
+
+error[E0609]: no field `is_anomaly` on type `Option<AnomalyEvent>`
+   --> tests\data_quality_aiops_tests.rs:267:18
+    |
+267 |     assert!(mild.is_anomaly);
+    |                  ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `id`, `metric_name`, `timestamp`, `value`, `expected_value` ... and 9 others
+
+error[E0609]: no field `is_anomaly` on type `Option<AnomalyEvent>`
+   --> tests\data_quality_aiops_tests.rs:268:20
+    |
+268 |     assert!(severe.is_anomaly);
+    |                    ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `id`, `metric_name`, `timestamp`, `value`, `expected_value` ... and 9 others
+
+error[E0609]: no field `z_score` on type `Option<AnomalyEvent>`
+   --> tests\data_quality_aiops_tests.rs:270:20
+    |
+270 |     assert!(severe.z_score.abs() > mild.z_score.abs());
+    |                    ^^^^^^^ unknown field
+    |
+    = note: available fields are: `id`, `metric_name`, `timestamp`, `value`, `expected_value` ... and 9 others
+
+error[E0609]: no field `z_score` on type `Option<AnomalyEvent>`
+   --> tests\data_quality_aiops_tests.rs:270:41
+    |
+270 |     assert!(severe.z_score.abs() > mild.z_score.abs());
+    |                                         ^^^^^^^ unknown field
+    |
+    = note: available fields are: `id`, `metric_name`, `timestamp`, `value`, `expected_value` ... and 9 others
+
+Some errors have detailed explanations: E0061, E0308, E0422, E0433, E0560, E0599, E0609.
+error: could not compile `mox-enterprise-backend` (test "data_quality_aiops_tests") due to 76 previous errors
+warning: `mox-enterprise-backend` (bin "mox-gateway") generated 1 warning (1 duplicate)

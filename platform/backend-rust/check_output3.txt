@@ -1,0 +1,142 @@
+﻿cargo :     Checking mox-enterprise-backend v2.0.0 (D:\a10\aikjx\gitcode\infotopograph\platform\backend-rust)
+At line:1 char:18087
++ ... h\platform\backend-rust; cargo check > check_output3.txt 2>&1; echo " ...
++                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (    Checking mo...m\backend-rust):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+warning: unused import: `AtomicUsize`
+  --> src\api_gateway\circuit_breaker.rs:11:36
+   |
+11 | use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+   |                                    ^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `std::sync::Arc`
+  --> src\data_quality\mod.rs:15:5
+   |
+15 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused imports: `Duration` and `Instant`
+  --> src\zero_trust\mtls.rs:14:17
+   |
+14 | use std::time::{Duration, Instant};
+   |                 ^^^^^^^^  ^^^^^^^
+
+warning: unused imports: `Duration` and `Instant`
+  --> src\zero_trust\mod.rs:18:17
+   |
+18 | use std::time::{Duration, Instant};
+   |                 ^^^^^^^^  ^^^^^^^
+
+warning: unused import: `Deserialize`
+  --> src\aiops\root_cause.rs:10:13
+   |
+10 | use serde::{Deserialize, Serialize};
+   |             ^^^^^^^^^^^
+
+warning: unused import: `Duration`
+  --> src\aiops\predictive_scaler.rs:13:17
+   |
+13 | use std::time::{Duration, Instant};
+   |                 ^^^^^^^^
+
+warning: unused variable: `config`
+   --> src\aiops\predictive_scaler.rs:205:45
+    |
+205 |     fn predict_arima(&self, values: &[f64], config: &PredictiveScalerConfig) -> f64 {
+    |                                             ^^^^^^ help: if this is intentional, prefix it with an underscore: `_
+config`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `id` and `metadata` are never read
+  --> src\aiops\root_cause.rs:50:5
+   |
+49 | struct DependencyNode {
+   |        -------------- fields in this struct
+50 |     id: String,
+   |     ^^
+...
+54 |     metadata: HashMap<String, String>,
+   |     ^^^^^^^^
+   |
+   = note: `DependencyNode` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored d
+uring dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `timestamp` is never read
+  --> src\aiops\predictive_scaler.rs:90:5
+   |
+89 | struct LoadPoint {
+   |        --------- field in this struct
+90 |     timestamp: f64,
+   |     ^^^^^^^^^
+   |
+   = note: `LoadPoint` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during
+ dead code analysis
+
+warning: unused implementer of `std::future::Future` that must be used
+   --> src\api_gateway\mod.rs:250:25
+    |
+250 |                         cb.record_failure();
+    |                         ^^^^^^^^^^^^^^^^^^^
+    |
+    = note: futures do nothing unless you `.await` or poll them
+    = note: `#[warn(unused_must_use)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused implementer of `std::future::Future` that must be used
+   --> src\api_gateway\mod.rs:252:25
+    |
+252 |                         cb.record_success();
+    |                         ^^^^^^^^^^^^^^^^^^^
+    |
+    = note: futures do nothing unless you `.await` or poll them
+
+warning: unused implementer of `std::future::Future` that must be used
+   --> src\api_gateway\mod.rs:281:21
+    |
+281 |                     cb.record_failure();
+    |                     ^^^^^^^^^^^^^^^^^^^
+    |
+    = note: futures do nothing unless you `.await` or poll them
+
+warning: `mox-enterprise-backend` (lib) generated 12 warnings (run `cargo fix --lib -p mox-enterprise-backend` to apply
+ 7 suggestions)
+warning: unused import: `error`
+ --> src\main.rs:9:21
+  |
+9 | use tracing::{info, error};
+  |                     ^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0599]: no method named `into_layer` found for struct `ApiGateway` in the current scope
+  --> src\main.rs:41:24
+   |
+41 |         .layer(gateway.into_layer());
+   |                        ^^^^^^^^^^
+   |
+help: there is a method `into_raw` with a similar name
+   |
+41 -         .layer(gateway.into_layer());
+41 +         .layer(gateway.into_raw());
+   |
+
+error[E0277]: `?` couldn't convert the error: `String: std::error::Error` is not satisfied
+  --> src\main.rs:31:17
+   |
+31 |         .build()?;
+   |          -------^ the trait `std::error::Error` is not implemented for `String`
+   |          |
+   |          this has type `Result<_, String>`
+   |
+   = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+   = note: required for `anyhow::Error` to implement `From<String>`
+
+Some errors have detailed explanations: E0277, E0599.
+For more information about an error, try `rustc --explain E0277`.
+warning: `mox-enterprise-backend` (bin "mox-gateway") generated 1 warning
+error: could not compile `mox-enterprise-backend` (bin "mox-gateway") due to 2 previous errors; 1 warning emitted
