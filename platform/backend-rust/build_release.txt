@@ -287,3 +287,4 @@ At line:1 char:18164
    Compiling redis v0.24.1
    Compiling tower-http v0.5.2
    Compiling mox-enterprise-backend v2.0.0 (D:\a10\aikjx\gitcode\infotopograph\platform\backend-rust)
+    Finished `release` profile [optimized] target(s) in 7m 30s

@@ -1,0 +1,88 @@
+﻿cargo :    Compiling mox-enterprise-backend v2.0.0 (D:\a10\aikjx\gitcode\infotopograph\platform\backend-rust)
+At line:1 char:18087
++ ... m\backend-rust; cargo bench --no-run > bench_compile.txt 2>&1; echo " ...
++                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (   Compiling mo...m\backend-rust):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+error[E0432]: unresolved import `mox_enterprise_backend::aiops::PredictiveScalerConfig`
+ --> benches\performance_benchmarks.rs:8:87
+  |
+8 | use mox_enterprise_backend::aiops::{AnomalyConfig, AnomalyDetector, PredictiveScaler, PredictiveScalerConfig};
+  |                                                                                       ^^^^^^^^^^^^^^^^^^^^^^ no `Pr
+edictiveScalerConfig` in `aiops`
+  |
+  = help: consider importing this struct instead:
+          mox_enterprise_backend::aiops::predictive_scaler::PredictiveScalerConfig
+help: a similar name exists in the module
+  |
+8 - use mox_enterprise_backend::aiops::{AnomalyConfig, AnomalyDetector, PredictiveScaler, PredictiveScalerConfig};
+8 + use mox_enterprise_backend::aiops::{AnomalyConfig, AnomalyDetector, PredictiveScaler, PredictiveScaler};
+  |
+
+error[E0432]: unresolved import `mox_enterprise_backend::api_gateway::circuit_breaker::CircuitBreakerConfig`
+ --> benches\performance_benchmarks.rs:9:76
+  |
+9 | use mox_enterprise_backend::api_gateway::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig};
+  |                                                                            ^^^^^^^^^^^^^^^^^^^^ no `CircuitBreakerC
+onfig` in `api_gateway::circuit_breaker`
+  |
+help: a similar name exists in the module
+  |
+9 - use mox_enterprise_backend::api_gateway::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig};
+9 + use mox_enterprise_backend::api_gateway::circuit_breaker::{CircuitBreaker, CircuitBreaker};
+  |
+
+error[E0599]: no method named `check` found for struct `RateLimiter` in the current scope
+  --> benches\performance_benchmarks.rs:29:39
+   |
+29 |             let _ = black_box(limiter.check("bench-client"));
+   |                                       ^^^^^ method not found in `RateLimiter`
+
+error[E0599]: no method named `check` found for struct `RateLimiter` in the current scope
+  --> benches\performance_benchmarks.rs:46:39
+   |
+46 |             let _ = black_box(limiter.check("bench-client"));
+   |                                       ^^^^^ method not found in `RateLimiter`
+
+error[E0061]: this function takes 1 argument but 2 arguments were supplied
+  --> benches\performance_benchmarks.rs:62:14
+   |
+62 |     let cb = CircuitBreaker::new("bench-service", config);
+   |              ^^^^^^^^^^^^^^^^^^^ ---------------  ------ unexpected argument #2
+   |                                  |
+   |                                  expected `CircuitConfig`, found `&str`
+   |
+note: associated function defined here
+  --> src\api_gateway\circuit_breaker.rs:74:12
+   |
+74 |     pub fn new(config: CircuitConfig) -> Self {
+   |            ^^^
+help: remove the extra argument
+   |
+62 -     let cb = CircuitBreaker::new("bench-service", config);
+62 +     let cb = CircuitBreaker::new(/* CircuitConfig */);
+   |
+
+error[E0061]: this function takes 1 argument but 2 arguments were supplied
+  --> benches\performance_benchmarks.rs:81:14
+   |
+81 |     let cb = CircuitBreaker::new("bench-service", config);
+   |              ^^^^^^^^^^^^^^^^^^^ ---------------  ------ unexpected argument #2
+   |                                  |
+   |                                  expected `CircuitConfig`, found `&str`
+   |
+note: associated function defined here
+  --> src\api_gateway\circuit_breaker.rs:74:12
+   |
+74 |     pub fn new(config: CircuitConfig) -> Self {
+   |            ^^^
+help: remove the extra argument
+   |
+81 -     let cb = CircuitBreaker::new("bench-service", config);
+81 +     let cb = CircuitBreaker::new(/* CircuitConfig */);
+   |
+
+Some errors have detailed explanations: E0061, E0432, E0599.
+For more information about an error, try `rustc --explain E0061`.
+error: could not compile `mox-enterprise-backend` (bench "performance_benchmarks") due to 6 previous errors
