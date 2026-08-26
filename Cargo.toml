@@ -18,6 +18,7 @@ default-members = [
 members = [
     "platform/foundation/mox-platform-foundation",
     "platform/foundation/mox-cloud-foundation",
+    "platform/foundation/mox-platform-observability",
     "platform/domains/data/core/mox-data-formula-core",
     "platform/domains/data/core/mox-data-norm-core",
     "platform/domains/ai/core/mox-ai-intent-core",
@@ -155,6 +156,7 @@ sqlx = "0.8"
 # Foundation 层
 mox-platform-foundation = { path = "platform/foundation/mox-platform-foundation" }
 mox-cloud-foundation = { path = "platform/foundation/mox-cloud-foundation" }
+mox-platform-observability = { path = "platform/foundation/mox-platform-observability" }
 # Core 层
 mox-data-formula-core = { path = "platform/domains/data/core/mox-data-formula-core" }
 mox-data-norm-core = { path = "platform/domains/data/core/mox-data-norm-core" }

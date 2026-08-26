@@ -3453,6 +3453,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-platform-observability"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "axum",
+ "bytes",
+ "chrono",
+ "http",
+ "parking_lot",
+ "prometheus",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
 name = "mox-platform-operator-core"
 version = "3.0.0-ai-powered"
 dependencies = [

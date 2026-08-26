@@ -1,0 +1,21 @@
+[package]
+name = "mox-platform-observability"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Unified observability foundation: structured logging, Prometheus metrics, and distributed tracing for all MOX services"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tokio = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+parking_lot = { workspace = true }
+prometheus = { workspace = true }
+http = { workspace = true }
+axum = { workspace = true }
+bytes = { workspace = true }
