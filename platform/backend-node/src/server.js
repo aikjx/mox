@@ -17,6 +17,7 @@ const path = require('path')
 const PORT = parseInt(process.env.PORT || '3000', 10)
 const DIST = path.resolve(__dirname, '..', '..', 'frontend', 'dist')
 const UPSTREAM = (process.env.OPERATOR_SERVER_URL || 'http://localhost:3001').replace(/\/+$/, '')
+const RUST_ENTERPRISE_URL = (process.env.RUST_ENTERPRISE_URL || 'http://localhost:3002').replace(/\/+$/, '')
 const LOGS = []
 const startTime = Date.now()
 
@@ -72,9 +73,9 @@ function serveStatic(req, res, pathname) {
   })
 }
 
-// ---------- 反向代理到 Rust operator-server ----------
-function proxy(req, res, pathname, search) {
-  const u = new URL(pathname + search, UPSTREAM)
+// ---------- 反向代理（通用） ----------
+function proxyTo(req, res, pathname, search, target) {
+  const u = new URL(pathname + search, target)
   const headers = {}
   for (const [k, v] of Object.entries(req.headers)) headers[k.toLowerCase()] = v
   headers.host = u.host
@@ -96,7 +97,7 @@ function proxy(req, res, pathname, search) {
   upstream.on('error', (e) => {
     if (!res.headersSent) {
       res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' })
-      res.end(JSON.stringify({ error: '上游 Rust 服务不可达: ' + e.message, upstream: UPSTREAM }))
+      res.end(JSON.stringify({ error: '上游 Rust 服务不可达: ' + e.message, upstream: target }))
     } else {
       res.destroy()
     }
@@ -109,6 +110,11 @@ function proxy(req, res, pathname, search) {
   }
 }
 
+// 为旧调用保留 alias（proxy → UPSTREAM）
+function proxy(req, res, pathname, search) {
+  proxyTo(req, res, pathname, search, UPSTREAM)
+}
+
 // ---------- 请求处理器 ----------
 function requestHandler(req, res) {
   const url = new URL(req.url, 'http://localhost')
@@ -118,7 +124,13 @@ function requestHandler(req, res) {
   LOGS.push(`[${new Date().toISOString()}] ${req.method} ${pathname}`)
   if (LOGS.length > 500) LOGS.shift()
 
-  // 所有 /api 请求转发到 Rust（含 OPTIONS 预检，由 Rust CORS 层处理）
+  // 双反代：/api/enterprise 精确前缀先匹配到企业级 Rust 真源（端口3002），
+  // pathRewrite: ^/api/enterprise -> /api/enterprise/v1
+  if (pathname === '/api/enterprise' || pathname.startsWith('/api/enterprise/')) {
+    const rewritten = '/api/enterprise/v1' + pathname.slice('/api/enterprise'.length)
+    return proxyTo(req, res, rewritten, search, RUST_ENTERPRISE_URL)
+  }
+  // 其余 /api 请求转发到 Rust operator-server（含 OPTIONS 预检，由 Rust CORS 层处理）
   if (pathname === '/api' || pathname.startsWith('/api/')) {
     return proxy(req, res, pathname, search)
   }
@@ -136,11 +148,14 @@ const server = createServer()
 // 仅当直接运行 `node src/server.js` 时自动监听；被 require 时不占端口（测试隔离）
 if (require.main === module) {
   server.listen(PORT, () => {
-    console.log(`[ous-backend] 边缘入口 http://localhost:${PORT}  →  代理 ${UPSTREAM}  (静态=${DIST})`)
+    console.log(`[ous-backend] 边缘入口 http://localhost:${PORT}`)
+    console.log(`  · /api/enterprise  →  企业级 Rust ${RUST_ENTERPRISE_URL} (pathRewrite -> /api/enterprise/v1)`)
+    console.log(`  · /api/*          →  Rust operator ${UPSTREAM}`)
+    console.log(`  · 静态/SPA         →  ${DIST}`)
   })
 }
 
-module.exports = { server, createServer, requestHandler, UPSTREAM }
+module.exports = { server, createServer, requestHandler, UPSTREAM, RUST_ENTERPRISE_URL, proxyTo }
 
 // ---------- 优雅关闭 ----------
 function shutdown(signal) {

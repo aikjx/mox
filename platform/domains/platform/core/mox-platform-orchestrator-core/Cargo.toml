@@ -1,0 +1,22 @@
+[package]
+name = "mox-platform-orchestrator-core"
+version = "1.0.0"
+edition = "2021"
+license = "MIT"
+authors = ["Mox - 最高权限璇玑"]
+description = "MOX 平台业务编排核心：10阶段 Pipeline + BizModule行业包 + 事件总线 + 指标"
+
+[dependencies]
+mox-platform-datastore-core = { path = "../mox-platform-datastore-core" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+dashmap = "5.5"
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+uuid = { version = "1.0", features = ["v4", "v7", "serde"] }
+chrono = { workspace = true }
+parking_lot = "0.12"
+tokio = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros"] }

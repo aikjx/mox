@@ -1,0 +1,23 @@
+[package]
+name = "mox-platform-datastore-core"
+version = "1.0.0"
+edition = "2021"
+license = "MIT"
+authors = ["Mox - 最高权限璇玑"]
+description = "MOX 平台通用数据存储核心：万能 biz_data 单表 + 槽位映射 DAO + 版本链 + 嵌套事务"
+
+[dependencies]
+mox-platform-meta-core = { path = "../mox-platform-meta-core" }
+mox-platform-iam-core = { path = "../mox-platform-iam-core" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+rusqlite = { workspace = true }
+uuid = { version = "1.0", features = ["v4", "v7", "serde"] }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+dashmap = "5.5"
+
+[dev-dependencies]

@@ -1112,6 +1112,19 @@ dependencies = [
 
 [[package]]
 name = "dashmap"
+version = "5.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "978747c1d849a7d2ee5e8adc0159961c48fb7e5db2f06af6723b80123bb53856"
+dependencies = [
+ "cfg-if",
+ "hashbrown 0.14.5",
+ "lock_api",
+ "once_cell",
+ "parking_lot_core",
+]
+
+[[package]]
+name = "dashmap"
 version = "6.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6361d5c062261c78a176addb82d4c821ae42bed6089de0e12603cd25de2059c"
@@ -3125,7 +3138,7 @@ dependencies = [
  "axum",
  "chrono",
  "config",
- "dashmap",
+ "dashmap 6.2.1",
  "futures",
  "hmac",
  "jsonwebtoken",
@@ -3314,6 +3327,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-platform-datastore-core"
+version = "1.0.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "dashmap 5.5.3",
+ "hex",
+ "mox-platform-iam-core",
+ "mox-platform-meta-core",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror 1.0.69",
+ "uuid",
+]
+
+[[package]]
 name = "mox-platform-foundation"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -3345,6 +3376,58 @@ dependencies = [
  "serde_yaml",
  "sha2",
  "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
+name = "mox-platform-iam-core"
+version = "1.0.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "dashmap 6.2.1",
+ "hex",
+ "hmac",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror 1.0.69",
+ "uuid",
+]
+
+[[package]]
+name = "mox-platform-meta-core"
+version = "1.0.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "dashmap 6.2.1",
+ "hex",
+ "hmac",
+ "once_cell",
+ "regex",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror 1.0.69",
+ "uuid",
+]
+
+[[package]]
+name = "mox-platform-orchestrator-core"
+version = "1.0.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "dashmap 5.5.3",
+ "mox-platform-datastore-core",
+ "parking_lot",
+ "serde",
+ "serde_json",
  "thiserror 1.0.69",
  "tokio",
  "uuid",
@@ -6631,7 +6714,7 @@ dependencies = [
  "cfg-if",
  "corosensei",
  "crossbeam-queue",
- "dashmap",
+ "dashmap 6.2.1",
  "derivative",
  "enum-iterator",
  "fnv",

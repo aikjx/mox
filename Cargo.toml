@@ -28,6 +28,8 @@ members = [
     "platform/domains/kg/core/mox-kg-meta-core",
     "platform/domains/data/core/mox-data-standards-core",
     "platform/domains/platform/core/mox-platform-system-core",
+    "platform/domains/platform/core/mox-platform-iam-core",
+    "platform/domains/platform/core/mox-platform-meta-core",
     "platform/domains/ai/core/mox-ai-core",
     "platform/domains/kg/svc/mox-kg-storage-svc",
     "platform/domains/kg/svc/mox-kg-service-svc",
@@ -65,6 +67,10 @@ members = [
     "platform/domains/data/sdk/mox-data-norm-intent-native",
     "platform/domains/voice/sdk/mox-voice-dsp-py",
     "platform/framework",
+    "platform/domains/platform/core/mox-platform-iam-core",
+    "platform/domains/platform/core/mox-platform-meta-core",
+    "platform/domains/platform/core/mox-platform-datastore-core",
+    "platform/domains/platform/core/mox-platform-orchestrator-core",
 ]
 resolver = "2"
 
