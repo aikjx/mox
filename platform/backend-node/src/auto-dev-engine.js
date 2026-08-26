@@ -24,6 +24,19 @@ const path = require('path');
 const { getGateway } = require('./llm-gateway');
 const { getLocalArtifactService } = require('./local-artifact-service');
 
+// Step3 · 轻量知识图谱落边 helper（失败内吞，主流程可靠性优先）
+const _kg = (project, phase_code, rel, data) => {
+  try {
+    const s = require('./storage').getStorage();
+    s.addEdge(
+      `project:site-${project}#${phase_code}`,
+      rel,
+      `req:${String(project).slice(0,12)}#out#${phase_code}`,
+      Object.assign({ phase_code, project: `site-${project}`, at: Date.now() }, data || {})
+    );
+  } catch (_) {}
+};
+
 const DATA_DIR = path.join(__dirname, '..', 'data');
 
 const SECTION_TYPES = ['hero', 'features', 'about', 'text', 'cta', 'contact'];
@@ -118,13 +131,16 @@ class AutoDevEngine {
 
     // ---- ① 架构图谱生成 ----
     const arch = await this._generateArchitecture(requirement);
+    _kg(project, 'P2', 'designs', { nodes: (arch.pages || []).length + (arch.entities || []).length, rel: 'architecture_generated' });
 
     // ---- ② 图谱校验归一化 ----
     const normalized = this._validateAndNormalize(arch, project);
     if (!normalized.pages.length) throw new Error('架构图谱校验失败：无有效页面');
+    _kg(project, 'P3', 'normalizes', { pages: normalized.pages.length, nav: (normalized.nav || []).length });
 
     // ---- ③ 确定性代码渲染 ----
     const files = this._renderSite(normalized);
+    _kg(project, 'P4a', 'renders', { files: files.length, deterministic: true });
 
     // ---- ④ 安全落盘（复用制品服务闸门） ----
     const written = [];
@@ -143,9 +159,11 @@ class AutoDevEngine {
     if (!written.length) {
       throw new Error('全部文件落盘失败：' + (skipped[0] ? skipped[0].reason : '未知原因'));
     }
+    _kg(project, 'P8', 'persists', { written: written.length, skipped: skipped.length });
 
     // ---- ⑤ 架构图谱入图（可在图谱 UI 查看） ----
     const graphMerge = this._storeArchitectureGraph(normalized, project, requirement);
+    _kg(project, 'P10a', 'merges', graphMerge || {});
 
     return {
       project: `site-${project}`,

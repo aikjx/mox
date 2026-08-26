@@ -1128,6 +1128,16 @@ class MultiAgentOrchestrator {
           durationMs: Date.now() - stageStart,
           success: true
         });
+        // Step3 · 每个阶段完成 1 行 addEdge（内吞失败，主链路优先）
+        try {
+          const s = require('./storage').getStorage();
+          const phase = (['P6','P6a','P6b','P7','P7a','P9','P9a'])[i] || `P6s${i}`; // P6 单测家族 + P7 集成 + P9 运维
+          s.addEdge(`agent:${agent.id}#${stage.id}`, 'completes',
+            `pipeline:${pipelineId}#${phase}`, {
+              phase_code: phase, stage: stage.name, agent: agent.name,
+              duration_ms: Date.now() - stageStart, success: true
+            });
+        } catch (_) {}
 
         if (stage.outputKey) {
           context.input = stageResult;
@@ -1138,6 +1148,16 @@ class MultiAgentOrchestrator {
           agent: agent.name,
           error: error.message
         });
+        // Step3 · 失败边（审计/根因可回放，不破坏主流程）
+        try {
+          const s = require('./storage').getStorage();
+          const phase = (['P6','P6a','P6b','P7','P7a','P9','P9a'])[i] || `P6s${i}`;
+          s.addEdge(`agent:${agent.id}#${stage.id}`, 'fails_in',
+            `pipeline:${pipelineId}#${phase}`, {
+              phase_code: phase, stage: stage.name, agent: agent.name,
+              error: error.message, success: false
+            });
+        } catch (_) {}
 
         if (stage.critical) {
           return {
