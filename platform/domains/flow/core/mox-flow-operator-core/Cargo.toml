@@ -8,6 +8,7 @@ description.workspace = true
 
 [dependencies]
 mox-platform-foundation = { workspace = true }
+mox-platform-operator-core = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 nalgebra = { workspace = true, features = ["serde-serialize"] }

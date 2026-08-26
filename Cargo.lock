@@ -3075,6 +3075,7 @@ dependencies = [
  "approx",
  "criterion",
  "mox-platform-foundation",
+ "mox-platform-operator-core",
  "nalgebra",
  "ndarray",
  "num-traits",
@@ -3448,6 +3449,22 @@ dependencies = [
  "serde_json",
  "sha2",
  "thiserror 1.0.69",
+ "uuid",
+]
+
+[[package]]
+name = "mox-platform-operator-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "mox-platform-foundation",
+ "nalgebra",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
  "uuid",
 ]
 

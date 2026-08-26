@@ -1,0 +1,21 @@
+[package]
+name = "mox-platform-operator-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "MOX 平台算子核心抽象：Operator trait、StateVector、ExecutionContext、TypeCheck 等跨域通用算子模型。从 flow-operator-core 下沉，供 ai/voice/kg/flow 等多域共享。"
+
+[dependencies]
+mox-platform-foundation = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+uuid = { workspace = true }
+parking_lot = { workspace = true }
+tracing = { workspace = true }
+nalgebra = { workspace = true, features = ["serde-serialize"] }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros"] }

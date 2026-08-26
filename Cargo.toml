@@ -61,6 +61,7 @@ members = [
     "platform/domains/platform/svc/mox-platform-enterprise-svc",
     "platform/domains/platform/core/mox-platform-datastore-core",
     "platform/domains/platform/core/mox-platform-orchestrator-core",
+    "platform/domains/platform/core/mox-platform-operator-core",
     "platform/gateway/mox-platform-gateway-svc",
     "platform/domains/platform/sdk/mox-platform-test-harness",
     "platform/domains/voice/svc/mox-voice-desktop-app",
@@ -167,6 +168,7 @@ mox-kg-algo-core = { path = "platform/domains/kg/core/mox-kg-algo-core" }
 mox-kg-meta-core = { path = "platform/domains/kg/core/mox-kg-meta-core" }
 mox-platform-system-core = { path = "platform/domains/platform/core/mox-platform-system-core" }
 mox-platform-iam-core = { path = "platform/domains/platform/core/mox-platform-iam-core" }
+mox-platform-operator-core = { path = "platform/domains/platform/core/mox-platform-operator-core" }
 mox-platform-meta-core = { path = "platform/domains/platform/core/mox-platform-meta-core" }
 mox-platform-datastore-core = { path = "platform/domains/platform/core/mox-platform-datastore-core" }
 mox-platform-orchestrator-core = { path = "platform/domains/platform/core/mox-platform-orchestrator-core" }
