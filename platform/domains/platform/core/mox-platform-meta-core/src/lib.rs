@@ -7,19 +7,18 @@ pub mod repo;
 pub use model::{
     EntityWithFields, EnumOption, FieldDef, FieldSpec, FieldType, MetaComponent, MetaEntity,
     MetaField, MetaFieldOptionDict, MetaFieldOptionDictItem, MetaIndustryPackage, MetaPage,
-    MetaRule, MetaTenantIndustry, MetaView, MetaViewColumn, MetaWorkflow,
-    MetaWorkflowInstance, MetaWorkflowInstanceState, MetaWorkflowNode, MetaWorkflowTransition,
-    RuleResult,
+    MetaRule, MetaTenantIndustry, MetaView, MetaViewColumn, MetaWorkflow, MetaWorkflowInstance,
+    MetaWorkflowInstanceState, MetaWorkflowNode, MetaWorkflowTransition, RuleResult,
 };
 pub use repo::MetaRepository;
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use parking_lot::Mutex;
     use rusqlite::Connection;
     use std::collections::HashMap;
     use std::sync::Arc;
-    use parking_lot::Mutex;
 
     fn setup() -> MetaRepository {
         let conn = Connection::open_in_memory().unwrap();
@@ -138,6 +137,10 @@ mod tests {
             .prepare("SELECT COUNT(*) FROM meta_industry_package WHERE status='active'")
             .unwrap();
         let cnt: i64 = stmt.query_row([], |r| r.get(0)).unwrap();
-        assert!(cnt >= 7, "expected at least 7 industry packages, got {}", cnt);
+        assert!(
+            cnt >= 7,
+            "expected at least 7 industry packages, got {}",
+            cnt
+        );
     }
 }

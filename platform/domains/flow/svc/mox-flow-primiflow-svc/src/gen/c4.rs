@@ -1,7 +1,7 @@
 //! 代码骨架 · 由关联图谱自动生成（mox_flow_primiflow_svc::assoc::primiflow_seed）
 //! 溯源链路: R1 → F4 → B1 → A1 → T2 → C4
 //! 数据设计: S3(Topology)
-//! 说明: 需求结构化 + 拓扑涌现（复用 flow_ai κ‑τ 引擎 generate）。
+//! 说明: 需求结构化 + 拓扑涌现（复用 mox_ai_flow_svc κ‑τ 引擎 generate）。
 //! 规格: primiflow/SPEC.md（§7 模块 / §10 DoD）
 
 /// 依赖模块: C2

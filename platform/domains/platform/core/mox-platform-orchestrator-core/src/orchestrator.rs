@@ -1,13 +1,13 @@
-use std::collections::BTreeMap;
-use std::sync::Arc;
+use rusqlite::params;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
-use rusqlite::params;
+use std::collections::BTreeMap;
+use std::sync::Arc;
 
-use mox_platform_datastore_core::{UniversalBizDAO, TxManager, Filter, SortSpec};
-use mox_platform_datastore_core::MetaRepository;
 use mox_platform_datastore_core::IamRepository;
-use mox_platform_datastore_core::{User, AuditLogEntry};
+use mox_platform_datastore_core::MetaRepository;
+use mox_platform_datastore_core::{AuditLogEntry, User};
+use mox_platform_datastore_core::{Filter, SortSpec, TxManager, UniversalBizDAO};
 
 use crate::event::EventBus;
 use crate::metrics::Metrics;
@@ -136,10 +136,7 @@ impl Orchestrator {
         }
     }
 
-    pub fn new<M: MetaRepository + 'static>(
-        meta: Arc<M>,
-        dao: Arc<UniversalBizDAO>,
-    ) -> Self {
+    pub fn new<M: MetaRepository + 'static>(meta: Arc<M>, dao: Arc<UniversalBizDAO>) -> Self {
         let mut s = Self::enterprise_default();
         s.meta = Some(meta as Arc<dyn MetaRepository>);
         s.dao = Some(dao);
@@ -147,7 +144,8 @@ impl Orchestrator {
     }
 
     pub fn register_pipeline(&mut self, name: &str) {
-        self.pipelines.insert(name.to_string(), Pipeline::enterprise_default());
+        self.pipelines
+            .insert(name.to_string(), Pipeline::enterprise_default());
     }
 
     fn default_tenant(tenant_id: Option<&String>) -> String {
@@ -165,8 +163,14 @@ impl Orchestrator {
         data: BTreeMap<String, Value>,
         actor: &str,
     ) -> anyhow::Result<SyncRecord> {
-        let dao = self.dao.as_ref().ok_or_else(|| anyhow::anyhow!("DAO not set"))?;
-        let meta = self.meta.as_ref().ok_or_else(|| anyhow::anyhow!("Meta repo not set"))?;
+        let dao = self
+            .dao
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("DAO not set"))?;
+        let meta = self
+            .meta
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Meta repo not set"))?;
         let tid = Self::default_tenant(tenant_id.as_ref());
         let map: Map<String, Value> = data.into_iter().collect();
         let iam = noop_iam();
@@ -175,7 +179,12 @@ impl Orchestrator {
         let data = dao
             .get(&**meta, &tid, entity_code, &biz_id)?
             .unwrap_or(Value::Null);
-        Ok(SyncRecord { biz_id, entity_code: entity_code.to_string(), version, data })
+        Ok(SyncRecord {
+            biz_id,
+            entity_code: entity_code.to_string(),
+            version,
+            data,
+        })
     }
 
     pub fn update_sync(
@@ -184,26 +193,46 @@ impl Orchestrator {
         patch: BTreeMap<String, Value>,
         actor: &str,
     ) -> anyhow::Result<SyncRecord> {
-        let dao = self.dao.as_ref().ok_or_else(|| anyhow::anyhow!("DAO not set"))?;
-        let meta = self.meta.as_ref().ok_or_else(|| anyhow::anyhow!("Meta repo not set"))?;
+        let dao = self
+            .dao
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("DAO not set"))?;
+        let meta = self
+            .meta
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Meta repo not set"))?;
         let map: Map<String, Value> = patch.into_iter().collect();
         let (tid, entity_code) = Self::resolve_biz(dao, biz_id)?;
         let version = dao.update(&**meta, &tid, &entity_code, biz_id, actor, &map)?;
         let data = dao
             .get(&**meta, &tid, &entity_code, biz_id)?
             .unwrap_or(Value::Null);
-        Ok(SyncRecord { biz_id: biz_id.to_string(), entity_code, version, data })
+        Ok(SyncRecord {
+            biz_id: biz_id.to_string(),
+            entity_code,
+            version,
+            data,
+        })
     }
 
     pub fn delete_sync(&self, biz_id: &str, actor: &str) -> anyhow::Result<()> {
-        let dao = self.dao.as_ref().ok_or_else(|| anyhow::anyhow!("DAO not set"))?;
+        let dao = self
+            .dao
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("DAO not set"))?;
         let (tid, entity_code) = Self::resolve_biz(dao, biz_id)?;
         dao.delete(&tid, &entity_code, biz_id, actor, None)
     }
 
     pub fn get_sync(&self, biz_id: &str) -> anyhow::Result<Option<SyncRecord>> {
-        let dao = self.dao.as_ref().ok_or_else(|| anyhow::anyhow!("DAO not set"))?;
-        let meta = self.meta.as_ref().ok_or_else(|| anyhow::anyhow!("Meta repo not set"))?;
+        let dao = self
+            .dao
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("DAO not set"))?;
+        let meta = self
+            .meta
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Meta repo not set"))?;
         let (tid, entity_code, version) = match Self::resolve_biz_ver(dao, biz_id) {
             Ok(x) => x,
             Err(_) => return Ok(None),
@@ -212,7 +241,12 @@ impl Orchestrator {
             Some(d) => d,
             None => return Ok(None),
         };
-        Ok(Some(SyncRecord { biz_id: biz_id.to_string(), entity_code, version, data }))
+        Ok(Some(SyncRecord {
+            biz_id: biz_id.to_string(),
+            entity_code,
+            version,
+            data,
+        }))
     }
 
     pub fn list_sync(
@@ -220,9 +254,17 @@ impl Orchestrator {
         entity_code: &str,
         tenant_id: Option<&str>,
     ) -> anyhow::Result<Vec<Value>> {
-        let dao = self.dao.as_ref().ok_or_else(|| anyhow::anyhow!("DAO not set"))?;
-        let meta = self.meta.as_ref().ok_or_else(|| anyhow::anyhow!("Meta repo not set"))?;
-        let tid = tenant_id.map(|s| s.to_string()).unwrap_or_else(|| "default".to_string());
+        let dao = self
+            .dao
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("DAO not set"))?;
+        let meta = self
+            .meta
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Meta repo not set"))?;
+        let tid = tenant_id
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "default".to_string());
         let res = dao.list(
             &**meta,
             &tid,
@@ -281,7 +323,9 @@ impl Orchestrator {
         }
     }
 
-    pub fn blocking<F, R>(f: F) -> std::pin::Pin<Box<dyn std::future::Future<Output = anyhow::Result<R>> + Send>>
+    pub fn blocking<F, R>(
+        f: F,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = anyhow::Result<R>> + Send>>
     where
         F: FnOnce() -> anyhow::Result<R> + Send + 'static,
         R: Send + 'static,
@@ -295,21 +339,28 @@ impl Orchestrator {
 
     fn resolve_biz(dao: &UniversalBizDAO, biz_id: &str) -> anyhow::Result<(String, String)> {
         let conn = dao.conn.lock();
-        let (tid, ec): (String, String) = conn.query_row(
-            "SELECT tenant_id, biz_type FROM biz_data WHERE biz_id = ?1",
-            params![biz_id],
-            |r| Ok((r.get(0)?, r.get(1)?)),
-        ).map_err(|e| anyhow::anyhow!("resolve_biz failed: {}", e))?;
+        let (tid, ec): (String, String) = conn
+            .query_row(
+                "SELECT tenant_id, biz_type FROM biz_data WHERE biz_id = ?1",
+                params![biz_id],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .map_err(|e| anyhow::anyhow!("resolve_biz failed: {}", e))?;
         Ok((tid, ec))
     }
 
-    fn resolve_biz_ver(dao: &UniversalBizDAO, biz_id: &str) -> anyhow::Result<(String, String, i64)> {
+    fn resolve_biz_ver(
+        dao: &UniversalBizDAO,
+        biz_id: &str,
+    ) -> anyhow::Result<(String, String, i64)> {
         let conn = dao.conn.lock();
-        let (tid, ec, ver): (String, String, i64) = conn.query_row(
-            "SELECT tenant_id, biz_type, version FROM biz_data WHERE biz_id = ?1",
-            params![biz_id],
-            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
-        ).map_err(|e| anyhow::anyhow!("resolve_biz_ver failed: {}", e))?;
+        let (tid, ec, ver): (String, String, i64) = conn
+            .query_row(
+                "SELECT tenant_id, biz_type, version FROM biz_data WHERE biz_id = ?1",
+                params![biz_id],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+            )
+            .map_err(|e| anyhow::anyhow!("resolve_biz_ver failed: {}", e))?;
         Ok((tid, ec, ver))
     }
 
@@ -333,11 +384,12 @@ impl Orchestrator {
             iam_repo,
             req,
         );
-        let PipelineResult { success, error, stages_run } = result;
-        let stage_names = stages_run
-            .iter()
-            .map(|s| format!("{:?}", s))
-            .collect();
+        let PipelineResult {
+            success,
+            error,
+            stages_run,
+        } = result;
+        let stage_names = stages_run.iter().map(|s| format!("{:?}", s)).collect();
         OrchestratorResult {
             success,
             error,
@@ -364,7 +416,13 @@ impl Orchestrator {
         let orc = self.clone();
         let result = tokio::task::spawn_blocking(move || {
             let tx_ref: Option<&TxManager> = tx_manager.as_ref().map(|t| t.as_ref());
-            orc.execute(&req, dao.as_ref(), tx_ref, meta_repo.as_ref(), iam_repo.as_ref())
+            orc.execute(
+                &req,
+                dao.as_ref(),
+                tx_ref,
+                meta_repo.as_ref(),
+                iam_repo.as_ref(),
+            )
         })
         .await
         .unwrap_or_else(|e| OrchestratorResult {

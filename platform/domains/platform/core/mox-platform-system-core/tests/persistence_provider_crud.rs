@@ -5,9 +5,9 @@
 //! 操作：save / get / update / delete
 //!     提供方：SqlitePersistence::memory()（mox-system 独占 rusqlite）
 
-use std::sync::Arc;
 use mox_platform_system_core::persistence_provider::{PersistenceProvider, SqlRow, SqlValue};
 use mox_platform_system_core::sqlite_provider::SqlitePersistence;
+use std::sync::Arc;
 
 // ---- 小工具：把 SqlRow 中的 TEXT / INT 读出来 ----
 fn text(row: &SqlRow, col: &str) -> String {

@@ -2,7 +2,7 @@
 //!
 //! 本模块把「对话 → 业务处理流程图 + 功能逻辑细节 + 关联关系 + 权限 →
 //! 自动代码 → 自动测试 → 沙箱实跑异常自动修复 → 回写」闭环中**与运行时/
-//! 网络无关的核心算法**集中实现，便于单测与在 runtime 中复用。
+//! 网络无关的核心算法**集中实现，便于单测与在 mox_platform_orchestrator_svc 中复用。
 //!
 //! 组成：
 //! - [`RbacDeriver`]：从 `BusinessBlueprint` 功能点 + 数据流自动推导 RBAC 角色-权限映射；
@@ -276,7 +276,7 @@ impl ErrorCategory {
     }
 }
 
-/// 一次运行结果（由 runtime 沙箱填充后传入分析器）
+/// 一次运行结果（由 mox_platform_orchestrator_svc 沙箱填充后传入分析器）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RunResult {
     pub exit_code: i32,
@@ -293,7 +293,7 @@ pub struct FixProposal {
     pub fixed_code: Option<String>,
     /// 规则模式下的修复说明（改了哪里、为什么）
     pub note: String,
-    /// 给 LLM 的结构化提示词（runtime 调用 LLMClient 时使用）
+    /// 给 LLM 的结构化提示词（mox_platform_orchestrator_svc 调用 LLMClient 时使用）
     pub llm_prompt: String,
 }
 

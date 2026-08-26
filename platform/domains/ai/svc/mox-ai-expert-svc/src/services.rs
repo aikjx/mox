@@ -268,7 +268,7 @@ impl ExpertServiceImpl {
 #[async_trait]
 impl ExpertConsultant for ExpertServiceImpl {
     async fn consult(&self, query: &ConsultQuery) -> Result<ConsultReport> {
-        // 同步实现 + tokio::task::spawn_blocking 桥接，避免阻塞 async runtime
+        // 同步实现 + tokio::task::spawn_blocking 桥接，避免阻塞 async mox_platform_orchestrator_svc
         let q = query.clone();
         let self_arc = Arc::new(self.default_quota.clone());
         let owned_q = q.clone();
@@ -285,7 +285,7 @@ impl ExpertConsultant for ExpertServiceImpl {
         Ok(rep)
     }
 
-    /// 覆写默认实现：直接走原生 consult_sync（无 runtime 开销）。
+    /// 覆写默认实现：直接走原生 consult_sync（无 mox_platform_orchestrator_svc 开销）。
     fn consult_blocking(&self, query: &ConsultQuery) -> Result<ConsultReport> {
         self.consult_sync(query)
     }

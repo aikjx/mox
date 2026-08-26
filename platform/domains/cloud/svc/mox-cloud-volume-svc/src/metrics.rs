@@ -276,7 +276,7 @@ mod tests {
     }
 
     /// P2. AVX2 counter bumps correctly on Auto path (when host supports AVX2).
-    /// If runtime is scalar-only host, this test still passes (asserts scalar bumped OR avx2 bumped).
+    /// If mox_platform_orchestrator_svc is scalar-only host, this test still passes (asserts scalar bumped OR avx2 bumped).
     #[test]
     fn t22_metrics_avx2_or_scalar_bumped_after_auto() {
         let _g = TEST_GLOBAL_LOCK.lock();

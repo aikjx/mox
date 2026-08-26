@@ -6,10 +6,6 @@ license.workspace = true
 authors.workspace = true
 description = "Mox v2.0 AIS-grade fusion single-binary server: CLI, O11y, Bench/Deploy smoke tests"
 
-[lib]
-name = "mox_server"
-path = "src/lib.rs"
-
 [[bin]]
 name = "mox-server"
 path = "src/main.rs"

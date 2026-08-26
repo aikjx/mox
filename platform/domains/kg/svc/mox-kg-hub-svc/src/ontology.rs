@@ -50,7 +50,7 @@ pub fn map_node_type(s: &str) -> EntityKind {
         "dependency" | "dep" | "依赖" | "crate" | "package" => EntityKind::Dependency,
         "thirdparty" | "external" | "第三方" => EntityKind::ThirdParty,
         "doc" | "document" | "文档" | "markdown" | "wiki" => EntityKind::Doc,
-        "runtime" | "service" | "运行时" | "服务" => EntityKind::Runtime,
+        "mox_platform_orchestrator_svc" | "service" | "运行时" | "服务" => EntityKind::Runtime,
         "dataschema" | "schema" | "table" | "表" | "模型" => EntityKind::DataSchema,
         "datastore" | "store" | "database" | "db" | "存储" => EntityKind::DataStore,
         "loop" | "闭环" => EntityKind::Loop,

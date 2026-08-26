@@ -195,7 +195,7 @@ mod tests {
     fn optimize_session_with_mock_trait_object() {
         // DIP 证据：用一个最小 Mock 实现 ExpertConsultant（在 tests 内部，不依赖 mox concrete），
         // 证明 optimize_session_with 可脱离真实璇玑引擎运行。
-        // 只覆写 consult_blocking（同步默认方法，不触发 tokio runtime）即可满足 sync 测试路径。
+        // 只覆写 consult_blocking（同步默认方法，不触发 tokio mox_platform_orchestrator_svc）即可满足 sync 测试路径。
         use async_trait::async_trait;
         // 说明：struct MockHealthy —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
         // 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构

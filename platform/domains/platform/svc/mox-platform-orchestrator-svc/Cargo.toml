@@ -10,10 +10,6 @@ description.workspace = true
 name = "operator-server"
 path = "src/main.rs"
 
-[lib]
-name = "runtime"
-path = "src/lib.rs"
-
 [dependencies]
 mox-platform-foundation = { workspace = true }
 mox-flow-operator-core = { workspace = true }

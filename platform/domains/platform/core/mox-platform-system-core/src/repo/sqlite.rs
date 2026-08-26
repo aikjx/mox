@@ -138,31 +138,19 @@ impl Repository for SqliteRepository {
     async fn persist_member(&self, m: &Member) {
         self.exec(
             "INSERT OR REPLACE INTO members (id, mox_id, data) VALUES (?1, ?2, ?3)",
-            params![
-                m.id,
-                m.mox_id,
-                serde_json::to_string(m).unwrap_or_default()
-            ],
+            params![m.id, m.mox_id, serde_json::to_string(m).unwrap_or_default()],
         );
     }
     async fn persist_task(&self, t: &Task) {
         self.exec(
             "INSERT OR REPLACE INTO tasks (id, mox_id, data) VALUES (?1, ?2, ?3)",
-            params![
-                t.id,
-                t.mox_id,
-                serde_json::to_string(t).unwrap_or_default()
-            ],
+            params![t.id, t.mox_id, serde_json::to_string(t).unwrap_or_default()],
         );
     }
     async fn persist_channel(&self, c: &Channel) {
         self.exec(
             "INSERT OR REPLACE INTO channels (id, mox_id, data) VALUES (?1, ?2, ?3)",
-            params![
-                c.id,
-                c.mox_id,
-                serde_json::to_string(c).unwrap_or_default()
-            ],
+            params![c.id, c.mox_id, serde_json::to_string(c).unwrap_or_default()],
         );
     }
     async fn persist_message(&self, m: &Message) {

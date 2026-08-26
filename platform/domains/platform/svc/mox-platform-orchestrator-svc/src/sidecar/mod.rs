@@ -10,7 +10,7 @@
 
 pub mod node_sidecar;
 
-// 以下为 runtime crate 公开 SDK 的顶层 re-exports（GraphAlgoResp / SidecarError
+// 以下为 mox_platform_orchestrator_svc crate 公开 SDK 的顶层 re-exports（GraphAlgoResp / SidecarError
 // / SidecarMetrics 目前仅在 node_sidecar 内使用，不在顶层 re-export）
 #[allow(unused_imports)]
 pub use node_sidecar::{

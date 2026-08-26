@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use crate::port::FieldSpec;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SlotCategory {
@@ -24,27 +24,32 @@ pub struct SlotInfo {
 pub struct FieldSlotAllocator;
 
 impl FieldSlotAllocator {
-    pub fn allocate(
-        _entity_code: &str,
-        fields: &[FieldSpec],
-    ) -> HashMap<String, SlotInfo> {
+    pub fn allocate(_entity_code: &str, fields: &[FieldSpec]) -> HashMap<String, SlotInfo> {
         let mut scored: Vec<(u32, usize, FieldSpec)> = fields
             .iter()
             .enumerate()
             .map(|(i, f)| {
                 let mut score = 0u32;
-                if f.is_indexed { score += 32; }
-                if f.is_searchable { score += 16; }
-                if f.is_required { score += 8; }
-                if f.is_filterable { score += 4; }
-                if f.is_sortable { score += 2; }
+                if f.is_indexed {
+                    score += 32;
+                }
+                if f.is_searchable {
+                    score += 16;
+                }
+                if f.is_required {
+                    score += 8;
+                }
+                if f.is_filterable {
+                    score += 4;
+                }
+                if f.is_sortable {
+                    score += 2;
+                }
                 (score, i, f.clone())
             })
             .collect();
 
-        scored.sort_by(|a, b| {
-            b.0.cmp(&a.0).then_with(|| a.1.cmp(&b.1))
-        });
+        scored.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| a.1.cmp(&b.1)));
 
         let mut result = HashMap::new();
         let mut str_used = 0usize;
@@ -59,60 +64,91 @@ impl FieldSlotAllocator {
         for (score, _idx, f) in scored {
             let ft = f.field_type.to_ascii_lowercase();
             let (category, slot_opt): (SlotCategory, Option<String>) = match ft.as_str() {
-                "string" | "str" | "varchar" | "text" if ft == "string" || ft == "str" || ft == "varchar" => {
-                    (SlotCategory::String, if str_used < 12 {
-                        str_used += 1;
-                        Some(format!("ext_str_{:02}", str_used))
-                    } else { None })
+                "string" | "str" | "varchar" | "text"
+                    if ft == "string" || ft == "str" || ft == "varchar" =>
+                {
+                    (
+                        SlotCategory::String,
+                        if str_used < 12 {
+                            str_used += 1;
+                            Some(format!("ext_str_{:02}", str_used))
+                        } else {
+                            None
+                        },
+                    )
                 }
-                "text" | "clob" => {
-                    (SlotCategory::Text, if text_used < 2 {
+                "text" | "clob" => (
+                    SlotCategory::Text,
+                    if text_used < 2 {
                         text_used += 1;
                         Some(format!("ext_text_{:02}", text_used))
-                    } else { None })
-                }
-                "json" | "jsonb" | "object" => {
-                    (SlotCategory::Json, if json_used < 4 {
+                    } else {
+                        None
+                    },
+                ),
+                "json" | "jsonb" | "object" => (
+                    SlotCategory::Json,
+                    if json_used < 4 {
                         json_used += 1;
                         Some(format!("ext_json_{:02}", json_used))
-                    } else { None })
-                }
-                "int" | "integer" | "long" | "bigint" => {
-                    (SlotCategory::Int, if int_used < 5 {
+                    } else {
+                        None
+                    },
+                ),
+                "int" | "integer" | "long" | "bigint" => (
+                    SlotCategory::Int,
+                    if int_used < 5 {
                         int_used += 1;
                         Some(format!("ext_int_{:02}", int_used))
-                    } else { None })
-                }
-                "decimal" | "number" | "float" | "double" | "numeric" => {
-                    (SlotCategory::Decimal, if dec_used < 5 {
+                    } else {
+                        None
+                    },
+                ),
+                "decimal" | "number" | "float" | "double" | "numeric" => (
+                    SlotCategory::Decimal,
+                    if dec_used < 5 {
                         dec_used += 1;
                         Some(format!("ext_dec_{:02}", dec_used))
-                    } else { None })
-                }
-                "date" => {
-                    (SlotCategory::Date, if date_used < 1 {
+                    } else {
+                        None
+                    },
+                ),
+                "date" => (
+                    SlotCategory::Date,
+                    if date_used < 1 {
                         date_used += 1;
                         Some("ext_date_01".to_string())
-                    } else { None })
-                }
-                "datetime" | "timestamp" | "time" => {
-                    (SlotCategory::DateTime, if dt_used < 1 {
+                    } else {
+                        None
+                    },
+                ),
+                "datetime" | "timestamp" | "time" => (
+                    SlotCategory::DateTime,
+                    if dt_used < 1 {
                         dt_used += 1;
                         Some("ext_datetime_01".to_string())
-                    } else { None })
-                }
-                "bool" | "boolean" => {
-                    (SlotCategory::Bool, if bool_used < 3 {
+                    } else {
+                        None
+                    },
+                ),
+                "bool" | "boolean" => (
+                    SlotCategory::Bool,
+                    if bool_used < 3 {
                         bool_used += 1;
                         Some(format!("ext_bool_{:02}", bool_used))
-                    } else { None })
-                }
-                "enum" => {
-                    (SlotCategory::String, if str_used < 12 {
+                    } else {
+                        None
+                    },
+                ),
+                "enum" => (
+                    SlotCategory::String,
+                    if str_used < 12 {
                         str_used += 1;
                         Some(format!("ext_str_{:02}", str_used))
-                    } else { None })
-                }
+                    } else {
+                        None
+                    },
+                ),
                 _ => (SlotCategory::Overflow, None),
             };
 

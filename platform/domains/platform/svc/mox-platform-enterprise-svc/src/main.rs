@@ -12,8 +12,8 @@ use axum::Router;
 use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
 
-use enterprise_svc_lib::app_state::AppState;
-use enterprise_svc_lib::routes::build_router;
+use mox_platform_enterprise_svc::app_state::AppState;
+use mox_platform_enterprise_svc::routes::build_router;
 
 fn env_or(key: &str, default: &str) -> String {
     std::env::var(key).unwrap_or_else(|_| default.to_string())
@@ -21,7 +21,7 @@ fn env_or(key: &str, default: &str) -> String {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    enterprise_svc_lib::auth::init_logging();
+    mox_platform_enterprise_svc::auth::init_logging();
 
     let listen_addr = env_or("LISTEN_ADDR", "0.0.0.0:3002");
     let db_path = env_or("DB_PATH", ":memory:");
@@ -49,11 +49,9 @@ async fn main() -> anyhow::Result<()> {
         if auth_enabled { "on" } else { "off" }
     );
 
-    let app_state = Arc::new(
-        AppState::open_memory_or_file(&db_path, &install_industries).await?,
-    );
+    let app_state = Arc::new(AppState::open_memory_or_file(&db_path, &install_industries).await?);
 
-    let auth_state = enterprise_svc_lib::auth::AuthState::new(auth_secret, auth_enabled);
+    let auth_state = mox_platform_enterprise_svc::auth::AuthState::new(auth_secret, auth_enabled);
 
     let api_router = build_router(app_state.clone());
 
@@ -68,7 +66,7 @@ async fn main() -> anyhow::Result<()> {
     let app: Router = if auth_enabled {
         let auth_mw = tower::ServiceBuilder::new().layer(axum::middleware::from_fn_with_state(
             auth_state,
-            enterprise_svc_lib::auth::auth_middleware,
+            mox_platform_enterprise_svc::auth::auth_middleware,
         ));
         Router::new()
             .merge(api_router)

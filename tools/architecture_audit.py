@@ -10,6 +10,8 @@ infotopograph 架构算法验证工具
 """
 
 import json
+import os
+import re
 import subprocess
 import sys
 from collections import defaultdict, deque
@@ -23,71 +25,70 @@ INTERNAL_CRATES = set()
 class CrateInfo:
     name: str
     version: str
+    manifest_path: str = ""
     deps: List[str] = field(default_factory=list)  # 内部依赖
     internal_deps: List[str] = field(default_factory=list)
     reverse_deps: List[str] = field(default_factory=list)
     layer: str = "unknown"
     domain: str = "unknown"
 
-# 层级定义（从底层到顶层）
-LAYERS = {
-    "foundation": ["mox-common-meta", "mox-domain-abstractions"],
-    "core": [
-        "mox-formulas-core", "mox-norm-core", "mox-intent-core",
-        "operator-core", "graph-algorithms", "mox-standards", "mox-system",
-        "mox-ai-core", "mox-graph-meta",
-    ],
-    "engine": [
-        "operator-wasm", "optimizer", "mox-graph-storage", "mox-graph-algorithms",
-        "mox-formulas-native", "mox-norm-intent-native", "xiaobai-dsp",
-    ],
-    "service": [
-        "kg-hub", "ai-agent", "mox-expert", "flow-ai",
-        "primiflow-core", "primiflow-fusion",
-        "mox-graph-service", "mox-graph-streams", "mox-graph-spark",
-        "mox-cloud-drive-master", "mox-cloud-drive-volume", "mox-cloud-drive-s3", "mox-cloud-drive-filer",
-        "mox-data-plane", "mox-etl-wasm", "mox-compliance", "mox-fusion",
-        "mox-sdk-cloud", "mox-sdk-graph",
-    ],
-    "application": [
-        "runtime", "mox-server", "mox-t21-harness",
-        "xiaobai-core", "xiaobai-asr", "xiaobai-intent", "xiaobai-operators", "xiaobai-desktop",
-        "template-market", "business-catalog", "hermes-flow-bridge",
-        "xiaobai-dsp-py",
-    ],
+
+def detect_layer_domain(manifest_path: str) -> Tuple[str, str]:
+    """从 Cargo.toml 路径自动检测层级和业务域（按域组织目录结构）
+
+    路径模式:
+      platform/foundation/<crate>        → layer=foundation, domain=foundation
+      platform/framework/<crate>         → layer=framework,  domain=framework
+      platform/gateway/<crate>           → layer=gateway,    domain=gateway
+      platform/domains/<domain>/core/<crate>  → layer=core,    domain=<domain>
+      platform/domains/<domain>/svc/<crate>   → layer=service, domain=<domain>
+      platform/domains/<domain>/sdk/<crate>   → layer=sdk,     domain=<domain>
+      platform/domains/<domain>/api/<crate>   → layer=api,     domain=<domain>
+      platform/domains/<domain>/svcapi/<crate>→ layer=svcapi,  domain=<domain>
+      projects/<crate>                     → layer=project,   domain=project
+    """
+    path = manifest_path.replace("\\", "/")
+
+    # foundation 层
+    if "/platform/foundation/" in path:
+        return "foundation", "foundation"
+
+    # framework 层
+    if "/platform/framework" in path:
+        return "framework", "framework"
+
+    # gateway 层
+    if "/platform/gateway/" in path:
+        return "gateway", "gateway"
+
+    # domains 层 - 按域组织
+    m = re.search(r"/platform/domains/([^/]+)/(core|svc|sdk|api|svcapi)/", path)
+    if m:
+        domain = m.group(1)
+        layer_map = {"core": "core", "svc": "service", "sdk": "sdk",
+                     "api": "api", "svcapi": "svcapi"}
+        return layer_map.get(m.group(2), "unknown"), domain
+
+    # projects 层
+    if "/projects/" in path:
+        return "project", "project"
+
+    return "unknown", "unknown"
+
+
+# 层级定义（从底层到顶层）— 用于层违规检测
+LAYER_ORDER = {
+    "foundation": 0,
+    "framework": 1,
+    "core": 2,
+    "api": 3,
+    "svcapi": 3,
+    "sdk": 4,
+    "service": 5,
+    "gateway": 6,
+    "project": 7,
+    "unknown": 99,
 }
-
-# 业务域定义
-DOMAINS = {
-    "knowledge_graph": ["kg-hub", "mox-graph-storage", "mox-graph-service", "mox-graph-streams",
-                         "mox-graph-spark", "mox-graph-meta", "graph-algorithms", "mox-fusion"],
-    "ai_intelligent": ["ai-agent", "mox-ai-core", "mox-expert", "flow-ai", "mox-intent-core"],
-    "flow_automation": ["operator-core", "operator-wasm", "optimizer", "primiflow-core",
-                        "primiflow-fusion", "hermes-flow-bridge"],
-    "data_governance": ["mox-data-plane", "mox-etl-wasm", "mox-compliance", "mox-standards",
-                         "mox-norm-core", "mox-formulas-core", "business-catalog"],
-    "cloud_storage": ["mox-cloud-drive-master", "mox-cloud-drive-volume", "mox-cloud-drive-s3",
-                      "mox-cloud-drive-filer", "mox-domain-abstractions"],
-    "platform": ["mox-common-meta", "mox-system", "mox-server", "runtime", "mox-t21-harness"],
-    "xiaobai_voice": ["xiaobai-core", "xiaobai-asr", "xiaobai-intent", "xiaobai-operators",
-                      "xiaobai-desktop", "xiaobai-dsp", "xiaobai-dsp-py"],
-    "market": ["template-market"],
-    "sdk": ["mox-sdk-cloud", "mox-sdk-graph", "mox-formulas-native", "mox-norm-intent-native"],
-}
-
-
-def get_layer(name: str) -> str:
-    for layer, crates in LAYERS.items():
-        if name in crates:
-            return layer
-    return "unknown"
-
-
-def get_domain(name: str) -> str:
-    for domain, crates in DOMAINS.items():
-        if name in crates:
-            return domain
-    return "unknown"
 
 
 def load_workspace() -> Dict[str, CrateInfo]:
@@ -103,12 +104,15 @@ def load_workspace() -> Dict[str, CrateInfo]:
         name = pkg["name"]
         INTERNAL_CRATES.add(name)
         all_deps = [d["name"] for d in pkg["dependencies"]]
+        manifest_path = pkg.get("manifest_path", "")
+        layer, domain = detect_layer_domain(manifest_path)
         crates[name] = CrateInfo(
             name=name,
             version=pkg["version"],
+            manifest_path=manifest_path,
             deps=all_deps,
-            layer=get_layer(name),
-            domain=get_domain(name),
+            layer=layer,
+            domain=domain,
         )
 
     # 过滤内部依赖
@@ -194,16 +198,15 @@ def compute_metrics(crates: Dict[str, CrateInfo]):
 
 def detect_layer_violations(crates: Dict[str, CrateInfo]) -> List[Dict]:
     """检测层违规（底层依赖顶层）"""
-    layer_order = {"foundation": 0, "core": 1, "engine": 2, "service": 3, "application": 4, "unknown": 5}
     violations = []
 
     for name, info in crates.items():
-        src_layer = layer_order.get(info.layer, 5)
+        src_layer = LAYER_ORDER.get(info.layer, 99)
         for dep in info.internal_deps:
             if dep not in crates:
                 continue
-            dst_layer = layer_order.get(crates[dep].layer, 5)
-            if src_layer < dst_layer:  # 底层依赖顶层 = 违规
+            dst_layer = LAYER_ORDER.get(crates[dep].layer, 99)
+            if src_layer < dst_layer and src_layer != 99 and dst_layer != 99:
                 violations.append({
                     "crate": name,
                     "crate_layer": info.layer,
@@ -309,7 +312,8 @@ def generate_report(crates, cycles, metrics, layer_violations, domain_violations
         layer_stats[m["layer"]]["count"] += 1
         layer_stats[m["layer"]]["fan_out"] += m["fan_out"]
         layer_stats[m["layer"]]["fan_in"] += m["fan_in"]
-    for layer in ["foundation", "core", "engine", "service", "application", "unknown"]:
+    # 按层级顺序输出
+    for layer in sorted(layer_stats.keys(), key=lambda x: LAYER_ORDER.get(x, 99)):
         s = layer_stats[layer]
         report.append(f"  {layer:12s}: {s['count']:3d} crates, 扇出={s['fan_out']:3d}, 扇入={s['fan_in']:3d}")
     report.append("")

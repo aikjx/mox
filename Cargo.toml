@@ -58,6 +58,9 @@ members = [
     "platform/domains/voice/svc/mox-voice-operator-svc",
     "platform/domains/market/svc/mox-market-template-svc",
     "platform/domains/platform/svc/mox-platform-orchestrator-svc",
+    "platform/domains/platform/svc/mox-platform-enterprise-svc",
+    "platform/domains/platform/core/mox-platform-datastore-core",
+    "platform/domains/platform/core/mox-platform-orchestrator-core",
     "platform/gateway/mox-platform-gateway-svc",
     "platform/domains/platform/sdk/mox-platform-test-harness",
     "platform/domains/voice/svc/mox-voice-desktop-app",
@@ -67,11 +70,6 @@ members = [
     "platform/domains/data/sdk/mox-data-norm-intent-native",
     "platform/domains/voice/sdk/mox-voice-dsp-py",
     "platform/framework",
-    "platform/domains/platform/core/mox-platform-iam-core",
-    "platform/domains/platform/core/mox-platform-meta-core",
-    "platform/domains/platform/core/mox-platform-datastore-core",
-    "platform/domains/platform/core/mox-platform-orchestrator-core",
-    "platform/domains/platform/svc/mox-platform-enterprise-svc",
 ]
 resolver = "2"
 
@@ -168,6 +166,11 @@ mox-flow-optimizer-core = { path = "platform/domains/flow/core/mox-flow-optimize
 mox-kg-algo-core = { path = "platform/domains/kg/core/mox-kg-algo-core" }
 mox-kg-meta-core = { path = "platform/domains/kg/core/mox-kg-meta-core" }
 mox-platform-system-core = { path = "platform/domains/platform/core/mox-platform-system-core" }
+mox-platform-iam-core = { path = "platform/domains/platform/core/mox-platform-iam-core" }
+mox-platform-meta-core = { path = "platform/domains/platform/core/mox-platform-meta-core" }
+mox-platform-datastore-core = { path = "platform/domains/platform/core/mox-platform-datastore-core" }
+mox-platform-orchestrator-core = { path = "platform/domains/platform/core/mox-platform-orchestrator-core" }
+mox-platform-enterprise-svc = { path = "platform/domains/platform/svc/mox-platform-enterprise-svc" }
 # Service 层 (kg)
 mox-kg-storage-svc = { path = "platform/domains/kg/svc/mox-kg-storage-svc" }
 mox-kg-service-svc = { path = "platform/domains/kg/svc/mox-kg-service-svc" }

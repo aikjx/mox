@@ -6,10 +6,6 @@ license.workspace = true
 authors.workspace = true
 description = "Mox Fusion: PutObject -> Tag -> CDC -> Graph auto link (zero-latency Object-Tag Graph Fusion)"
 
-[lib]
-name = "mox_fusion"
-path = "src/lib.rs"
-
 [dependencies]
 serde = { workspace = true }
 serde_json = { workspace = true }

@@ -6,10 +6,6 @@ license.workspace = true
 authors.workspace = true
 description = "Xiaobai · FR-5 热词三层注入 Rust 实现：S1 ContextConfig 探测 + S2 热词临时文件 + S3 Levenshtein post-hoc"
 
-[lib]
-name = "xiaobai_asr"
-path = "src/lib.rs"
-
 [dependencies]
 mox-voice-core-svc = { workspace = true }
 mox-platform-foundation = { workspace = true }

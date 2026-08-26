@@ -1,5 +1,5 @@
-use sha2::{Sha256, Digest};
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 
 pub fn compute_hash(
     prev_hash: Option<&str>,

@@ -6,10 +6,6 @@ license.workspace = true
 authors.workspace = true
 description = "Xiaobai · PPR 意图路由 Rust 实现：20+ 中文规则 + 40 应用别名 + 歧义阈值（Engine 回调）"
 
-[lib]
-name = "xiaobai_intent"
-path = "src/lib.rs"
-
 [dependencies]
 mox-voice-core-svc = { workspace = true }
 mox-platform-foundation = { workspace = true }

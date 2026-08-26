@@ -23,7 +23,10 @@ pub struct AuthState {
 }
 impl AuthState {
     pub fn new(secret: impl Into<String>, enabled: bool) -> Self {
-        Self { jwt_secret: secret.into(), enabled }
+        Self {
+            jwt_secret: secret.into(),
+            enabled,
+        }
     }
 }
 
@@ -44,11 +47,19 @@ pub fn generate_token(
         exp: now + expiry_secs as usize,
         iat: now,
     };
-    encode(&Header::default(), &claims, &EncodingKey::from_secret(secret.as_bytes()))
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(secret.as_bytes()),
+    )
 }
 
 pub fn verify_token(secret: &str, token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
-    let d = decode::<Claims>(token, &DecodingKey::from_secret(secret.as_bytes()), &Validation::default())?;
+    let d = decode::<Claims>(
+        token,
+        &DecodingKey::from_secret(secret.as_bytes()),
+        &Validation::default(),
+    )?;
     Ok(d.claims)
 }
 
@@ -65,7 +76,9 @@ pub async fn auth_middleware(
         .get("authorization")
         .and_then(|v| v.to_str().ok())
         .ok_or(StatusCode::UNAUTHORIZED)?;
-    let token = auth_header.strip_prefix("Bearer ").ok_or(StatusCode::UNAUTHORIZED)?;
+    let token = auth_header
+        .strip_prefix("Bearer ")
+        .ok_or(StatusCode::UNAUTHORIZED)?;
     let claims = verify_token(&state.jwt_secret, token).map_err(|_| StatusCode::UNAUTHORIZED)?;
     req.extensions_mut().insert(claims);
     Ok(next.run(req).await)
@@ -79,7 +92,10 @@ pub fn extract_claims(req: &Request) -> Option<&Claims> {
 pub fn init_logging() {
     use tracing_subscriber::{fmt, EnvFilter};
     let _ = fmt()
-        .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info,enterprise_svc_lib=debug")))
+        .with_env_filter(
+            EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| EnvFilter::new("info,mox_platform_enterprise_svc=debug")),
+        )
         .with_target(true)
         .try_init();
 }

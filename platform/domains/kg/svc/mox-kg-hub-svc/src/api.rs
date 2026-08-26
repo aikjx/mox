@@ -1,6 +1,6 @@
 //! HTTP 接口层：把中枢能力暴露为 `/api/kg/*`，供治理台与前端消费。
 //!
-//! 挂载方式（在 `crates/runtime` 的 Router 上合并）：
+//! 挂载方式（在 `crates/mox_platform_orchestrator_svc` 的 Router 上合并）：
 //! ```ignore
 //! let hub = mox_kg_hub_svc::api::shared(mox_kg_hub_svc::KgHub::new("default"));
 //! let app = Router::new().merge(mox_kg_hub_svc::api::routes(hub));

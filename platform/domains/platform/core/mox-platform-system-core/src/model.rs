@@ -176,7 +176,7 @@ pub struct Task {
 /// 通信频道类型
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ChannelKind {
-    Mox,              // 璇玑公开频道
+    Mox,                 // 璇玑公开频道
     Task(String),        // 任务协作频道（与任务 1:1 绑定）
     Direct(Vec<String>), // 私信频道
 }

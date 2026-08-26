@@ -20,7 +20,7 @@ pub const CRATE_NAMES: &[&str] = &[
     "business-catalog",
     "ai-agent",
     "template-market",
-    "runtime",
+    "mox_platform_orchestrator_svc",
     "mox-system",
     "primiflow-core",
 ];
@@ -346,7 +346,7 @@ fn crate_caps(name: &str) -> (Layer, Vec<Cap>) {
                 Layer::AssetPrecipitation,
             )],
         ),
-        "runtime" => (
+        "mox_platform_orchestrator_svc" => (
             Layer::Orchestration,
             vec![
                 cap(

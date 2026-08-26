@@ -507,7 +507,7 @@ fn extract_code_block(text: &str) -> Option<String> {
     Some(after[..end].trim().to_string())
 }
 
-/// 流程图 → Mermaid（独立实现，避免与 flow_ai 内部 model 类型耦合）
+/// 流程图 → Mermaid（独立实现，避免与 mox_ai_flow_svc 内部 model 类型耦合）
 pub fn flow_definition_to_mermaid(flow: &mox_ai_agent_svc::flow_engine::FlowDefinition) -> String {
     use mox_ai_agent_svc::flow_engine::NodeType;
     let mut s = String::from("flowchart TD\n");

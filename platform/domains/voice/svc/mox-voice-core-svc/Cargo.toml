@@ -6,10 +6,6 @@ license.workspace = true
 authors.workspace = true
 description = "Xiaobai · 小白语音桌面助手 Rust 权威核心：错误码、身份鉴权（对齐 mox-system RBAC）、Operator 抽象、OperatorEngine 三策略调度"
 
-[lib]
-name = "xiaobai_core"
-path = "src/lib.rs"
-
 [dependencies]
 mox-platform-foundation = { workspace = true }
 # 对齐 mox-system 的 5 角色枚举（Auditor/Member/Expert/Coordinator/MoxAdmin）

@@ -83,12 +83,7 @@ macro_rules! ddl {
             Table::create()
                 .table(Moxs::Table)
                 .if_not_exists()
-                .col(
-                    ColumnDef::new(Moxs::Id)
-                        .string()
-                        .not_null()
-                        .primary_key(),
-                )
+                .col(ColumnDef::new(Moxs::Id).string().not_null().primary_key())
                 .col(ColumnDef::new(Moxs::Data).text().not_null())
                 .build($b),
             Table::create()

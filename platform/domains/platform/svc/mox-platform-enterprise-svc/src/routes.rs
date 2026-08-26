@@ -47,9 +47,11 @@ async fn login_handler(
     let username = req.username.clone();
 
     let (tenant, user, roles) = tokio::task::spawn_blocking(move || -> Result<_, anyhow::Error> {
-        let tenant = iam.find_tenant_by_code(&tenant_code)
+        let tenant = iam
+            .find_tenant_by_code(&tenant_code)
             .ok_or_else(|| anyhow::anyhow!("tenant not found"))?;
-        let user = iam.find_user_by_tenant_username(&tenant.tenant_id, &username)
+        let user = iam
+            .find_user_by_tenant_username(&tenant.tenant_id, &username)
             .ok_or_else(|| anyhow::anyhow!("user not found"))?;
         let roles = iam.user_roles(&user.user_id);
         Ok((tenant, user, roles))
@@ -61,8 +63,9 @@ async fn login_handler(
     let role_codes: Vec<String> = roles.iter().map(|r| r.code.clone()).collect();
     let perms: Vec<String> = roles.iter().flat_map(|r| r.permissions.clone()).collect();
 
-    let secret = std::env::var("AUTH_SECRET").unwrap_or_else(|_| "enterprise-dev-secret-change-me".to_string());
-    let token = mox_framework::auth::generate_token(
+    let secret = std::env::var("AUTH_SECRET")
+        .unwrap_or_else(|_| "enterprise-dev-secret-change-me".to_string());
+    let token = crate::auth::generate_token(
         &secret,
         &user.user_id,
         &tenant.tenant_id,
@@ -184,7 +187,10 @@ async fn define_entity_handler(
     .map_err(|e| internal_err(format!("join error: {}", e)))?
     .map_err(|e| internal_err(e.to_string()))?;
 
-    Ok(Json(DefineEntityResponse { entity_id, slot_map }))
+    Ok(Json(DefineEntityResponse {
+        entity_id,
+        slot_map,
+    }))
 }
 
 #[derive(Debug, Deserialize)]
@@ -231,9 +237,7 @@ async fn update_data_handler(
     let actor = req.actor.clone().unwrap_or_else(|| "sys_actor".to_string());
     let biz_id_cloned = biz_id.clone();
     let patch = req.data.clone();
-    let rec = tokio::task::spawn_blocking(move || {
-        orch.update_sync(&biz_id_cloned, patch, &actor)
-    })
+    let rec = tokio::task::spawn_blocking(move || orch.update_sync(&biz_id_cloned, patch, &actor))
         .await
         .map_err(|e| internal_err(format!("join error: {}", e)))?
         .map_err(|e| internal_err(e.to_string()))?;
@@ -258,9 +262,7 @@ async fn delete_data_handler(
         .and_then(|r| r.actor.clone())
         .unwrap_or_else(|| "sys_actor".to_string());
     let biz_id_cloned = biz_id.clone();
-    tokio::task::spawn_blocking(move || {
-        orch.delete_sync(&biz_id_cloned, &actor)
-    })
+    tokio::task::spawn_blocking(move || orch.delete_sync(&biz_id_cloned, &actor))
         .await
         .map_err(|e| internal_err(format!("join error: {}", e)))?
         .map_err(|e| internal_err(e.to_string()))?;
@@ -282,10 +284,10 @@ async fn get_data_handler(
         let rec = orch.get_sync(&biz_id_cloned)?;
         Ok(rec)
     })
-        .await
-        .map_err(|e| internal_err(format!("join error: {}", e)))?
-        .map_err(|e| internal_err(e.to_string()))?
-        .ok_or_else(|| not_found("biz not found"))?;
+    .await
+    .map_err(|e| internal_err(format!("join error: {}", e)))?
+    .map_err(|e| internal_err(e.to_string()))?
+    .ok_or_else(|| not_found("biz not found"))?;
 
     let orch2 = state.orch.clone();
     let biz_id_for_count = biz_id.clone();
@@ -316,12 +318,11 @@ async fn list_data_handler(
     let orch = state.orch.clone();
     let entity_code_cloned = entity_code.clone();
     let tid = q.get("tenant_id").cloned();
-    let items = tokio::task::spawn_blocking(move || {
-        orch.list_sync(&entity_code_cloned, tid.as_deref())
-    })
-    .await
-    .map_err(|e| internal_err(format!("join error: {}", e)))?
-    .map_err(|e| internal_err(e.to_string()))?;
+    let items =
+        tokio::task::spawn_blocking(move || orch.list_sync(&entity_code_cloned, tid.as_deref()))
+            .await
+            .map_err(|e| internal_err(format!("join error: {}", e)))?
+            .map_err(|e| internal_err(e.to_string()))?;
 
     let metrics_total = state.orch.metrics.total();
     let metrics_failed = state.orch.metrics.failed();
@@ -345,8 +346,14 @@ pub fn api_routes() -> Router<Arc<AppState>> {
         .route("/auth/login", post(login_handler))
         .route("/entities/define", post(define_entity_handler))
         .route("/data/:entity_code/create", post(create_data_handler))
-        .route("/data/:entity_code/update/:biz_id", post(update_data_handler))
-        .route("/data/:entity_code/delete/:biz_id", post(delete_data_handler))
+        .route(
+            "/data/:entity_code/update/:biz_id",
+            post(update_data_handler),
+        )
+        .route(
+            "/data/:entity_code/delete/:biz_id",
+            post(delete_data_handler),
+        )
         .route("/data/:entity_code/get/:biz_id", get(get_data_handler))
         .route("/data/:entity_code/list", get(list_data_handler))
 }

@@ -35,7 +35,7 @@ pub trait OfflineXaction: Send + Sync {
     }
 }
 
-/// Built-in pure-Rust plugins (no wasm-runtime required) — useful for unit tests and the default registry.
+/// Built-in pure-Rust plugins (no wasm-mox_platform_orchestrator_svc required) — useful for unit tests and the default registry.
 pub struct Md5Sum;
 impl InlineGet for Md5Sum {
     fn name(&self) -> &str { "md5" }
@@ -45,7 +45,7 @@ impl InlineGet for Md5Sum {
         h.update(input);
         let d = h.finalize();
         // 16-byte fingerprint preserves etag-compat in tests; production uses
-        // real md5sum via wasm plugin or native when wasm-runtime is disabled.
+        // real md5sum via wasm plugin or native when wasm-mox_platform_orchestrator_svc is disabled.
         Ok(d[..16].to_vec())
     }
 }

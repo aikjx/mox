@@ -17,7 +17,7 @@ use mox_cloud_volume_svc::profile::EcProfile;
 use mox_cloud_volume_svc::reed_solomon::ReedSolomonEngine;
 use mox_data_plane_svc::multipart;
 
-/// Inline CRC64/ECMA (compatible with mox_data_plane multipart module).
+/// Inline CRC64/ECMA (compatible with mox_data_plane_svc multipart module).
 /// We use the multipart manager approach: upload the data as a single part
 /// and extract the resulting CRC64 field. This ensures parity with the
 /// manifest-level checksums used in the rest of the platform.

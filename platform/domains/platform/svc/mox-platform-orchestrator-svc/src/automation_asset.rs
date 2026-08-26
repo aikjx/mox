@@ -1,7 +1,7 @@
 //! # AI 自动化中枢：共享资产模型与持久化
 //!
 //! 独立模块，避免 `automation`（编排+API）与 `market`（算子商城）形成循环依赖。
-//! 本模块只定义数据结构与文件存储（不引用任何其它 runtime 子模块），
+//! 本模块只定义数据结构与文件存储（不引用任何其它 mox_platform_orchestrator_svc 子模块），
 //! 由 `automation` 与 `main` 单向引用。
 
 use mox_ai_agent_svc::requirement_compiler::SystemBlueprint;

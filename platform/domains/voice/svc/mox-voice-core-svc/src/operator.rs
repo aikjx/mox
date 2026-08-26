@@ -146,10 +146,10 @@ pub struct ActionSignature {
     pub params: Option<BTreeMap<&'static str, &'static str>>,
 }
 
-/// 系统算子异步 trait（`async_trait` 给 tokio runtime 用）
+/// 系统算子异步 trait（`async_trait` 给 tokio mox_platform_orchestrator_svc 用）
 ///
 /// 实现方需保证：`execute()` 内部的 Win32 / filesystem / coreaudio 阻塞调用
-/// 统一在 `tokio::task::spawn_blocking` 内执行，不要阻塞 async runtime 线程。
+/// 统一在 `tokio::task::spawn_blocking` 内执行，不要阻塞 async mox_platform_orchestrator_svc 线程。
 #[async_trait]
 pub trait SystemOperator: Send + Sync {
     /// 算子唯一 ID（snake_case，如 "app_operator_v1"）

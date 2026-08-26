@@ -97,10 +97,10 @@ pub trait GovernExpert: Send + Sync {
 
     /// 同步便捷：当前线程 block_on govern()。适合同步下游 / 测试。
     fn govern_blocking(&self, graph: &FlowGraph, ctx: &dyn GovernContext) -> GovernVerdict {
-        let rt = tokio::mox_platform_orchestrator_svc::Builder::new_current_thread()
+        let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
-            .expect("govern_blocking: tokio runtime 构造失败");
+            .expect("govern_blocking: tokio mox_platform_orchestrator_svc 构造失败");
         rt.block_on(self.govern(graph, ctx))
     }
 }

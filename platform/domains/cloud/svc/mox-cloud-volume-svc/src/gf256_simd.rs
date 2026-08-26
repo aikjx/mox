@@ -390,10 +390,10 @@ pub unsafe fn gf_vec_mul_neon(coef: u8, src: &[u8], dst: &mut [u8]) {
     neon_impl::gf_vec_mul_neon_inner(coef, src, dst)
 }
 
-/// Safe, runtime-dispatching vector multiply.
+/// Safe, mox_platform_orchestrator_svc-dispatching vector multiply.
 ///
 /// Dispatch order (first match wins):
-///   1. `feature = "simd"` AND AVX2 detected at runtime (x86_64) → 32-byte
+///   1. `feature = "simd"` AND AVX2 detected at mox_platform_orchestrator_svc (x86_64) → 32-byte
 ///      AVX2 chunks + scalar tail for the last 0..=31 bytes.
 ///   2. `feature = "simd"` AND NEON available (aarch64) → 32-byte NEON chunks
 ///      + scalar tail for the last 0..=31 bytes.
@@ -457,7 +457,7 @@ pub fn gf_vec_mul_auto(coef: u8, src: &[u8], dst: &mut [u8]) {
     }
 }
 
-/// Safe, runtime-dispatching vector fused multiply-XOR:
+/// Safe, mox_platform_orchestrator_svc-dispatching vector fused multiply-XOR:
 /// `dst[i] ^= GF(2^8)::mul(coef, src[i])` for all `i`.
 ///
 /// Uses the same dispatch tree as [`gf_vec_mul_auto`] but avoids a

@@ -65,12 +65,20 @@ impl Metrics {
 
     pub fn percentile(&self, p: f64) -> Option<u64> {
         let v = self.sorted_latencies();
-        if v.is_empty() { return None; }
+        if v.is_empty() {
+            return None;
+        }
         let idx = ((v.len() as f64 - 1.0) * p).round() as usize;
         Some(v[idx])
     }
 
-    pub fn p50(&self) -> Option<u64> { self.percentile(0.5) }
-    pub fn p90(&self) -> Option<u64> { self.percentile(0.9) }
-    pub fn p99(&self) -> Option<u64> { self.percentile(0.99) }
+    pub fn p50(&self) -> Option<u64> {
+        self.percentile(0.5)
+    }
+    pub fn p90(&self) -> Option<u64> {
+        self.percentile(0.9)
+    }
+    pub fn p99(&self) -> Option<u64> {
+        self.percentile(0.99)
+    }
 }

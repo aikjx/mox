@@ -1,7 +1,7 @@
 //! Mox v2.0 AIS-grade fusion single-binary entry point.
 //!
 //! Parses argv via `clap` derive. When invoked as `mox-server server
-//! --single-node` the binary starts a tokio runtime and binds the single-node
+//! --single-node` the binary starts a tokio mox_platform_orchestrator_svc and binds the single-node
 //! HTTP server (S3 + Graph + Metrics + Audit endpoints). All other
 //! subcommands execute against the in-memory [`CliState`] and print the JSON
 //! summary produced by [`mox_platform_gateway_svc::cli_run`].
@@ -33,16 +33,16 @@ fn main() -> ExitCode {
     }
 }
 
-/// Build tokio current-thread runtime, construct shared [`ServerState`] and
+/// Build tokio current-thread mox_platform_orchestrator_svc, construct shared [`ServerState`] and
 /// run [`serve_forever`] until Ctrl-C or binding error.
 fn run_server_forever(args: ServerArgs) -> ExitCode {
-    let rt = match tokio::mox_platform_orchestrator_svc::Builder::new_current_thread()
+    let rt = match tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
     {
         Ok(rt) => rt,
         Err(e) => {
-            eprintln!("mox-server: tokio runtime build error: {e}");
+            eprintln!("mox-server: tokio mox_platform_orchestrator_svc build error: {e}");
             return ExitCode::from(1);
         }
     };

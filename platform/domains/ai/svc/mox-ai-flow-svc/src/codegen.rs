@@ -69,7 +69,7 @@ fn tool_module(t: ToolKind) -> &'static str {
     }
 }
 
-/// 全栈生成别名（供 runtime / 草莓多平台调用）：等价于 `generate`
+/// 全栈生成别名（供 mox_platform_orchestrator_svc / 草莓多平台调用）：等价于 `generate`
 ///
 /// 返回的 `CodeBundle` 现包含后端骨架（tools/tasks/errors/scheduler/main）+
 /// 数据库 DDL（`schema.sql`）+ 前端 Vue 骨架（`App.vue`），即对一张流程图

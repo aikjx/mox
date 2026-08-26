@@ -5,7 +5,7 @@
 //! - `ExpertConsultant`：单次咨询接口（替代直接依赖 `mox_optimize` / `GovernanceReport`）。
 //! - `AllianceOrchestrator`：联盟编排 / 任务路由（替代直接依赖裁决、路由等内部实现）。
 //!
-//! 所有 trait 都要求 `Send + Sync`，并使用 `async_trait` 以便 `Arc<dyn Trait>` 在多线程 runtime 中共享。
+//! 所有 trait 都要求 `Send + Sync`，并使用 `async_trait` 以便 `Arc<dyn Trait>` 在多线程 mox_platform_orchestrator_svc 中共享。
 //! 下游（hermes-flow-bridge / business-catalog）改依赖 `Arc<dyn ExpertConsultant>` 等后，
 //! 即可通过 Mock 实现脱离 mox-expert concrete 做独立测试，完成 DIP。
 
@@ -51,16 +51,16 @@ pub trait ExpertConsultant: Send + Sync {
 
     /// 同步便捷：对同步调用者（如 std 线程、同步测试）包装 consult()。
     ///
-    /// 默认实现：创建当前线程 tokio runtime 并 block_on 异步 consult()。
+    /// 默认实现：创建当前线程 tokio mox_platform_orchestrator_svc 并 block_on 异步 consult()。
     /// 具体实现（如 `ExpertServiceImpl`）可覆写，使用原生同步 consult_sync
-    /// 以省去 runtime 开销。
+    /// 以省去 mox_platform_orchestrator_svc 开销。
     fn consult_blocking(&self, query: &ConsultQuery) -> Result<ConsultReport> {
-        // 创建一个最小的 current-thread runtime（一次性开销），用于桥接同步调用。
-        // 真实生产环境建议直接用异步 consult() 共享 runtime。
-        let rt = tokio::mox_platform_orchestrator_svc::Builder::new_current_thread()
+        // 创建一个最小的 current-thread mox_platform_orchestrator_svc（一次性开销），用于桥接同步调用。
+        // 真实生产环境建议直接用异步 consult() 共享 mox_platform_orchestrator_svc。
+        let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
-            .map_err(|e| anyhow::anyhow!("启动 tokio runtime 失败: {}", e))?;
+            .map_err(|e| anyhow::anyhow!("启动 tokio mox_platform_orchestrator_svc 失败: {}", e))?;
         rt.block_on(self.consult(query))
     }
 }

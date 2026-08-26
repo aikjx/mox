@@ -253,7 +253,7 @@ fn cmd_serve(args: &[String]) -> anyhow::Result<()> {
         i += 1;
     }
 
-    let rt = tokio::mox_platform_orchestrator_svc::Runtime::new()?;
+    let rt = tokio::runtime::Runtime::new()?;
     rt.block_on(async move {
         let topo = demo_topology();
         let state = mox_ai_expert_svc::server::AppState {

@@ -6,8 +6,8 @@
 //! - 审计日志记录
 //! - 错误响应格式（RFC 9457）
 //!
-//! 说明：端到端需先启动服务器（`cargo run -p runtime`，默认 3000 端口），
-//! 再用 `cargo test --package runtime --test runtime_integration -- --ignored` 运行。
+//! 说明：端到端需先启动服务器（`cargo run -p mox_platform_orchestrator_svc`，默认 3000 端口），
+//! 再用 `cargo test --package mox_platform_orchestrator_svc --test runtime_integration -- --ignored` 运行。
 //! 一键端到端脚本见仓库根 `scripts/ci.py`（build + test + fe build + 启服 + 健康检查）。
 //! 2026-08-18 已在本机实测：5/5 全部通过（健康检查 / RBAC 越权 403 / admin 全权限 /
 //! 审计留痕 / RFC 9457 错误格式）。

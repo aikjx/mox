@@ -3,7 +3,9 @@
 //! 与 `docs/mox-expert-business-requirements.md` 的业务规则编号一一对应。
 //! 每条规则至少覆盖一条正向路径与一条负向路径。
 use mox_platform_system_core::config::{AppConfig, Quotas};
-use mox_platform_system_core::model::{AuditAction, InviteInput, MemberStatus, Priority, TaskStatus, Tier};
+use mox_platform_system_core::model::{
+    AuditAction, InviteInput, MemberStatus, Priority, TaskStatus, Tier,
+};
 use mox_platform_system_core::orchestrator::MoxSystem;
 
 /// 便捷：组建璇玑并返回 (系统, 璇玑ID, 管理员ID)
@@ -59,7 +61,10 @@ async fn br04_invite_is_idempotent_per_email() {
     // 负向：同 email 重复邀请被拒，且成员数不增
     let again = sys.invite_member(&admin, &input).await;
     assert!(
-        matches!(again, Err(mox_platform_system_core::error::AppError::Conflict(_))),
+        matches!(
+            again,
+            Err(mox_platform_system_core::error::AppError::Conflict(_))
+        ),
         "同璇玑同 email 重复邀请应返回 Conflict，实际: {again:?}"
     );
     assert_eq!(
@@ -96,7 +101,10 @@ async fn br07_assign_validates_assignee_identity() {
         .assign_task(&admin, &task.id, vec!["mem_ghost".into()])
         .await;
     assert!(
-        matches!(r, Err(mox_platform_system_core::error::AppError::BadRequest(_))),
+        matches!(
+            r,
+            Err(mox_platform_system_core::error::AppError::BadRequest(_))
+        ),
         "分派不存在成员应 BadRequest，实际: {r:?}"
     );
 
@@ -110,7 +118,10 @@ async fn br07_assign_validates_assignee_identity() {
         .assign_task(&admin, &task.id, vec![outsider.clone()])
         .await;
     assert!(
-        matches!(r, Err(mox_platform_system_core::error::AppError::Forbidden(_))),
+        matches!(
+            r,
+            Err(mox_platform_system_core::error::AppError::Forbidden(_))
+        ),
         "跨璇玑分派应 Forbidden，实际: {r:?}"
     );
 
@@ -133,7 +144,10 @@ async fn br07_assign_validates_assignee_identity() {
         .assign_task(&admin, &task.id, vec![invited.id.clone()])
         .await;
     assert!(
-        matches!(r, Err(mox_platform_system_core::error::AppError::InvalidState(_))),
+        matches!(
+            r,
+            Err(mox_platform_system_core::error::AppError::InvalidState(_))
+        ),
         "分派 Invited 成员应 InvalidState，实际: {r:?}"
     );
 
@@ -146,7 +160,10 @@ async fn br07_assign_validates_assignee_identity() {
         .assign_task(&admin, &task.id, vec![expert.clone()])
         .await;
     assert!(
-        matches!(r, Err(mox_platform_system_core::error::AppError::InvalidState(_))),
+        matches!(
+            r,
+            Err(mox_platform_system_core::error::AppError::InvalidState(_))
+        ),
         "分派 Suspended 成员应 InvalidState，实际: {r:?}"
     );
 
@@ -218,7 +235,10 @@ async fn br10_done_gate_blocks_incomplete_work() {
         .transition_task(&admin, &main.id, TaskStatus::Done)
         .await;
     assert!(
-        matches!(r, Err(mox_platform_system_core::error::AppError::InvalidState(_))),
+        matches!(
+            r,
+            Err(mox_platform_system_core::error::AppError::InvalidState(_))
+        ),
         "存在未完成子任务时不得进入 Done，实际: {r:?}"
     );
 
@@ -230,7 +250,10 @@ async fn br10_done_gate_blocks_incomplete_work() {
         .transition_task(&admin, &main.id, TaskStatus::Done)
         .await;
     assert!(
-        matches!(r, Err(mox_platform_system_core::error::AppError::InvalidState(_))),
+        matches!(
+            r,
+            Err(mox_platform_system_core::error::AppError::InvalidState(_))
+        ),
         "前置依赖未完成时不得进入 Done，实际: {r:?}"
     );
 
@@ -314,7 +337,10 @@ async fn br11_dependency_graph_is_dag() {
     sys.store.create_task(other.clone()).await; // 搬入本地存储，模拟持有合法任务 ID
     let r = sys.task.add_dependency(&t1.id, &other.id).await;
     assert!(
-        matches!(r, Err(mox_platform_system_core::error::AppError::Forbidden(_))),
+        matches!(
+            r,
+            Err(mox_platform_system_core::error::AppError::Forbidden(_))
+        ),
         "跨璇玑依赖应 Forbidden，实际: {r:?}"
     );
 }
@@ -372,7 +398,10 @@ async fn br21_member_status_machine_enforced() {
     // 负向①：Invited 不得跳级到 Suspended（必须先激活）
     let r = sys.member.set_status(&m.id, MemberStatus::Suspended).await;
     assert!(
-        matches!(r, Err(mox_platform_system_core::error::AppError::InvalidState(_))),
+        matches!(
+            r,
+            Err(mox_platform_system_core::error::AppError::InvalidState(_))
+        ),
         "Invited → Suspended 应被拒，实际: {r:?}"
     );
 
@@ -409,7 +438,10 @@ async fn br21_member_status_machine_enforced() {
     // 负向②：Left 是终态，不得复活
     let r = sys.member.set_status(&m.id, MemberStatus::Active).await;
     assert!(
-        matches!(r, Err(mox_platform_system_core::error::AppError::InvalidState(_))),
+        matches!(
+            r,
+            Err(mox_platform_system_core::error::AppError::InvalidState(_))
+        ),
         "Left → Active 应被拒（终态不可复活），实际: {r:?}"
     );
     let r = sys.member.set_status(&m.id, MemberStatus::Suspended).await;
@@ -566,7 +598,10 @@ async fn nfr09_max_members_enforced() {
         )
         .await;
     assert!(
-        matches!(r, Err(mox_platform_system_core::error::AppError::Conflict(_))),
+        matches!(
+            r,
+            Err(mox_platform_system_core::error::AppError::Conflict(_))
+        ),
         "达到成员上限应 Conflict，实际: {r:?}"
     );
     assert_eq!(sys.member.list(&aln).await.len(), 2, "触顶后成员数不得增长");
@@ -591,7 +626,10 @@ async fn nfr09_max_tasks_enforced() {
         .create_task(&admin, &aln, "T2", "d", Priority::Low)
         .await;
     assert!(
-        matches!(r, Err(mox_platform_system_core::error::AppError::Conflict(_))),
+        matches!(
+            r,
+            Err(mox_platform_system_core::error::AppError::Conflict(_))
+        ),
         "达到任务上限应 Conflict，实际: {r:?}"
     );
 }
@@ -615,7 +653,10 @@ async fn nfr09_max_assignees_enforced() {
         .unwrap();
     let r = sys.assign_task(&admin, &t.id, vec![e1, e2]).await;
     assert!(
-        matches!(r, Err(mox_platform_system_core::error::AppError::BadRequest(_))),
+        matches!(
+            r,
+            Err(mox_platform_system_core::error::AppError::BadRequest(_))
+        ),
         "超过分派人数上限应 BadRequest，实际: {r:?}"
     );
 }
@@ -638,7 +679,10 @@ async fn nfr09_max_subtasks_enforced() {
     let _ = sys.task.add_subtask(&t.id, "s1").await.unwrap();
     let r = sys.task.add_subtask(&t.id, "s2").await;
     assert!(
-        matches!(r, Err(mox_platform_system_core::error::AppError::BadRequest(_))),
+        matches!(
+            r,
+            Err(mox_platform_system_core::error::AppError::BadRequest(_))
+        ),
         "超过子任务上限应 BadRequest，实际: {r:?}"
     );
 }
@@ -665,7 +709,10 @@ async fn nfr09_max_dependency_depth_enforced() {
     // 深度 = dep_depth(t1) + 1 = 1 + 1 = 2 > 上限 1 → 拒绝
     let r = sys.task.add_dependency(&t2.id, &t1.id).await;
     assert!(
-        matches!(r, Err(mox_platform_system_core::error::AppError::BadRequest(_))),
+        matches!(
+            r,
+            Err(mox_platform_system_core::error::AppError::BadRequest(_))
+        ),
         "超过依赖深度上限应 BadRequest，实际: {r:?}"
     );
 }
@@ -697,7 +744,10 @@ async fn nfr09_max_watchers_enforced() {
     // 负向：达上限后第二位关注者被拒
     let r = sys.watch_task(&e2, &t.id).await;
     assert!(
-        matches!(r, Err(mox_platform_system_core::error::AppError::BadRequest(_))),
+        matches!(
+            r,
+            Err(mox_platform_system_core::error::AppError::BadRequest(_))
+        ),
         "超过关注者上限应 BadRequest，实际: {r:?}"
     );
     // 幂等：重复关注同一人不得报错也不得导致上限误判

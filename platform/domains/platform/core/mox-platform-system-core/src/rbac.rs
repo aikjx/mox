@@ -22,7 +22,7 @@ pub enum Permission {
     TaskTransitionOwn, // 推进自己被分派任务的状态（专家）
     MemberInvite,      // 邀请成员
     MemberManage,      // 管理成员（暂停/移除/改级）
-    CommSendMox,    // 在璇玑频道发言
+    CommSendMox,       // 在璇玑频道发言
     CommSendTask,      // 在任务频道发言
     CommSendDirect,    // 发起私信
     AuditView,         // 查看审计/通知
@@ -61,7 +61,7 @@ impl Permission {
 /// 角色
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum Role {
-    MoxAdmin, // 璇玑管理员：所有权限
+    MoxAdmin,    // 璇玑管理员：所有权限
     Coordinator, // 协调员：任务与成员运营
     Expert,      // 专家：参与任务协作
     Member,      // 普通成员：受限参与
@@ -161,9 +161,9 @@ impl Role {
 /// 权限作用域：限制角色生效的资源边界
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Scope {
-    Global,         // 全局生效
-    Mox(String), // 仅指定璇玑
-    Task(String),   // 仅指定任务
+    Global,       // 全局生效
+    Mox(String),  // 仅指定璇玑
+    Task(String), // 仅指定任务
 }
 
 /// 角色绑定：将某角色（带作用域）授予某成员

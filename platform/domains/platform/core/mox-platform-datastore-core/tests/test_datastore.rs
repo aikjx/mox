@@ -1,12 +1,21 @@
-use std::sync::Arc;
 use parking_lot::Mutex;
 use serde_json::{Map, Value};
+use std::sync::Arc;
 use uuid::Uuid;
 
-use mox_platform_datastore_core::{UniversalBizDAO, FieldSlotAllocator, compute_hash, Filter, SortSpec, TxManager};
-use mox_platform_datastore_core::{FieldSpec, InMemoryMetaRepo, InMemoryIamRepo};
+use mox_platform_datastore_core::{
+    compute_hash, FieldSlotAllocator, Filter, SortSpec, TxManager, UniversalBizDAO,
+};
+use mox_platform_datastore_core::{FieldSpec, InMemoryIamRepo, InMemoryMetaRepo};
 
-fn setup() -> (Arc<Mutex<rusqlite::Connection>>, UniversalBizDAO, InMemoryMetaRepo, InMemoryIamRepo, String, String) {
+fn setup() -> (
+    Arc<Mutex<rusqlite::Connection>>,
+    UniversalBizDAO,
+    InMemoryMetaRepo,
+    InMemoryIamRepo,
+    String,
+    String,
+) {
     let conn = Arc::new(Mutex::new(rusqlite::Connection::open_in_memory().unwrap()));
     let dao = UniversalBizDAO::new(conn.clone());
     dao.init_schema().unwrap();
@@ -67,7 +76,9 @@ fn test_create_get_update_list_delete() {
     data.insert("status".into(), Value::String("draft".into()));
 
     let (biz_id, biz_code, version) = dao
-        .create(&meta, &iam, &tenant_id, "project", &user_id, &data, None, None)
+        .create(
+            &meta, &iam, &tenant_id, "project", &user_id, &data, None, None,
+        )
         .expect("create success");
 
     assert!(!biz_id.is_empty(), "biz_id 非空");
@@ -97,13 +108,24 @@ fn test_create_get_update_list_delete() {
         .expect("update success");
     assert_eq!(new_version, 2, "更新后版本号=2");
 
-    let get_after = dao.get(&meta, &tenant_id, "project", &biz_id).unwrap().unwrap();
+    let get_after = dao
+        .get(&meta, &tenant_id, "project", &biz_id)
+        .unwrap()
+        .unwrap();
     let obj_after = get_after.as_object().unwrap();
     assert_eq!(obj_after.get("version").unwrap().as_i64(), Some(2));
 
     // 4) LIST → total=1
     let list = dao
-        .list(&meta, &tenant_id, "project", vec![], SortSpec::default(), 1, 10)
+        .list(
+            &meta,
+            &tenant_id,
+            "project",
+            vec![],
+            SortSpec::default(),
+            1,
+            10,
+        )
         .expect("list success");
     assert_eq!(list.total, 1, "list total=1");
     assert_eq!(list.items.len(), 1, "items len=1");
@@ -115,17 +137,39 @@ fn test_create_get_update_list_delete() {
         value: Value::String("active".into()),
     }];
     let list_filtered = dao
-        .list(&meta, &tenant_id, "project", filters, SortSpec::default(), 1, 10)
+        .list(
+            &meta,
+            &tenant_id,
+            "project",
+            filters,
+            SortSpec::default(),
+            1,
+            10,
+        )
         .expect("filtered list success");
     assert_eq!(list_filtered.total, 1, "filtered total=1");
 
     // 6) DELETE (软删)
-    dao.delete(&tenant_id, "project", &biz_id, &user_id, Some("test delete"))
-        .expect("delete success");
+    dao.delete(
+        &tenant_id,
+        "project",
+        &biz_id,
+        &user_id,
+        Some("test delete"),
+    )
+    .expect("delete success");
 
     // 7) LIST after delete → total=0
     let list_after_del = dao
-        .list(&meta, &tenant_id, "project", vec![], SortSpec::default(), 1, 10)
+        .list(
+            &meta,
+            &tenant_id,
+            "project",
+            vec![],
+            SortSpec::default(),
+            1,
+            10,
+        )
         .expect("list after delete");
     assert_eq!(list_after_del.total, 0, "软删后 list total=0");
 
@@ -168,7 +212,9 @@ fn test_nested_transaction_with_savepoint() {
         let mut data = Map::new();
         data.insert("title".into(), Value::String("tx-test".into()));
         data.insert("amount".into(), Value::from(100.0));
-        dao.create(&meta, &iam, &tenant_id, "project", &user_id, &data, None, None)
+        dao.create(
+            &meta, &iam, &tenant_id, "project", &user_id, &data, None, None,
+        )
     });
     let (bid, _, _) = result.unwrap();
 
@@ -181,7 +227,13 @@ fn test_nested_transaction_with_savepoint() {
     });
     assert!(inner_rollback.is_err(), "内层事务失败");
 
-    let got = dao.get(&meta, &tenant_id, "project", &bid).unwrap().unwrap();
+    let got = dao
+        .get(&meta, &tenant_id, "project", &bid)
+        .unwrap()
+        .unwrap();
     // 外层未提交或回滚,内层 SAVEPOINT 回滚后 version 应仍为 1
-    assert_eq!(got.as_object().unwrap().get("version").unwrap().as_i64(), Some(1));
+    assert_eq!(
+        got.as_object().unwrap().get("version").unwrap().as_i64(),
+        Some(1)
+    );
 }

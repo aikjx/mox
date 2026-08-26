@@ -15,7 +15,7 @@
 //!
 //! This module intentionally uses the standard library + tokio TCP accept loop
 //! with a manual HTTP/1.1 line parser so the binary remains truly
-//! single-file without extra runtime dependencies (no hyper, no axum).
+//! single-file without extra mox_platform_orchestrator_svc dependencies (no hyper, no axum).
 
 use std::collections::HashMap;
 use std::sync::Arc;

@@ -1,0 +1,381 @@
+# MOX Enterprise · Istio 服务网格配置
+# ====================================
+# 千亿亿级企业级平台的服务网格完整配置
+# 包含：Gateway、VirtualService、DestinationRule、AuthorizationPolicy、PeerAuthentication
+
+---
+# Istio Gateway - 入口网关
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: mox-gateway
+  namespace: mox-prod
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      tls:
+        mode: MUTUAL
+        credentialName: mox-gateway-tls
+        minProtocolVersion: TLSV1_3
+      hosts:
+        - "api.infotopograph.io"
+        - "*.infotopograph.io"
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      tls:
+        httpsRedirect: true
+      hosts:
+        - "api.infotopograph.io"
+
+---
+# VirtualService - API 网关路由
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: mox-api-virtualservice
+  namespace: mox-prod
+spec:
+  hosts:
+    - "api.infotopograph.io"
+  gateways:
+    - mox-gateway
+  http:
+    # 存储服务
+    - name: storage-routes
+      match:
+        - uri:
+            prefix: "/api/v1/storage"
+      route:
+        - destination:
+            host: storage-service.mox-prod.svc.cluster.local
+            port:
+              number: 8080
+            subset: v2
+          weight: 90
+        - destination:
+            host: storage-service.mox-prod.svc.cluster.local
+            port:
+              number: 8080
+            subset: v1
+          weight: 10
+      retries:
+        attempts: 3
+        perTryTimeout: 5s
+        retryOn: 5xx,reset,connect-failure
+      timeout: 15s
+
+    # 元数据服务
+    - name: metadata-routes
+      match:
+        - uri:
+            prefix: "/api/v1/metadata"
+      route:
+        - destination:
+            host: metadata-service.mox-prod.svc.cluster.local
+            port:
+              number: 8080
+      retries:
+        attempts: 2
+        perTryTimeout: 3s
+      timeout: 10s
+
+    # 计算服务
+    - name: compute-routes
+      match:
+        - uri:
+            prefix: "/api/v1/compute"
+      route:
+        - destination:
+            host: compute-service.mox-prod.svc.cluster.local
+            port:
+              number: 8080
+      retries:
+        attempts: 2
+        perTryTimeout: 30s
+      timeout: 60s
+
+    # 多租户服务
+    - name: tenant-routes
+      match:
+        - uri:
+            prefix: "/api/v1/tenants"
+      route:
+        - destination:
+            host: tenant-service.mox-prod.svc.cluster.local
+            port:
+              number: 8080
+      retries:
+        attempts: 3
+        perTryTimeout: 5s
+      timeout: 15s
+
+    # 健康检查
+    - name: health-routes
+      match:
+        - uri:
+            exact: "/health"
+        - uri:
+            exact: "/ready"
+      route:
+        - destination:
+            host: api-gateway.mox-prod.svc.cluster.local
+            port:
+              number: 8080
+      retries:
+        attempts: 1
+      timeout: 5s
+
+    # 默认路由
+    - name: default-route
+      route:
+        - destination:
+            host: api-gateway.mox-prod.svc.cluster.local
+            port:
+              number: 8080
+      retries:
+        attempts: 2
+        perTryTimeout: 5s
+      timeout: 30s
+
+---
+# DestinationRule - 存储服务（金丝雀发布）
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: storage-destinationrule
+  namespace: mox-prod
+spec:
+  host: storage-service.mox-prod.svc.cluster.local
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 1000
+        connectTimeout: 5s
+      http:
+        http1MaxPendingRequests: 1000
+        maxRequestsPerConnection: 100
+        maxRetries: 3
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 60s
+      maxEjectionPercent: 50
+    loadBalancer:
+      simple: LEAST_REQUEST
+    tls:
+      mode: ISTIO_MUTUAL
+  subsets:
+    - name: v1
+      labels:
+        version: v1
+    - name: v2
+      labels:
+        version: v2
+      trafficPolicy:
+        connectionPool:
+          http:
+            maxRequestsPerConnection: 200
+
+---
+# DestinationRule - 元数据服务
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: metadata-destinationrule
+  namespace: mox-prod
+spec:
+  host: metadata-service.mox-prod.svc.cluster.local
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 500
+      http:
+        http1MaxPendingRequests: 500
+        maxRequestsPerConnection: 50
+    outlierDetection:
+      consecutive5xxErrors: 3
+      interval: 15s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 30
+    loadBalancer:
+      simple: ROUND_ROBIN
+    tls:
+      mode: ISTIO_MUTUAL
+
+---
+# PeerAuthentication - 全局 mTLS（零信任）
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: mox-prod
+spec:
+  mtls:
+    mode: STRICT
+
+---
+# AuthorizationPolicy - 零信任授权策略（默认拒绝）
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: default-deny
+  namespace: mox-prod
+spec:
+  selector:
+    matchLabels:
+      app: mox
+  action: DENY
+  rules:
+    - {}
+
+---
+# AuthorizationPolicy - 允许 API 网关访问所有服务
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-api-gateway
+  namespace: mox-prod
+spec:
+  selector:
+    matchLabels:
+      app: mox
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/mox-prod/sa/api-gateway"
+      to:
+        - operation:
+            methods: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+
+---
+# AuthorizationPolicy - 存储服务访问控制
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: storage-access-control
+  namespace: mox-prod
+spec:
+  selector:
+    matchLabels:
+      app: storage-service
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/mox-prod/sa/api-gateway"
+              - "cluster.local/ns/mox-prod/sa/compute-service"
+      to:
+        - operation:
+            methods: ["GET", "POST", "PUT", "DELETE"]
+            paths: ["/api/v1/storage/*"]
+
+---
+# RequestAuthentication - JWT 认证
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: jwt-authentication
+  namespace: mox-prod
+spec:
+  selector:
+    matchLabels:
+      app: mox
+  jwtRules:
+    - issuer: "https://auth.infotopograph.io"
+      jwksUri: "https://auth.infotopograph.io/.well-known/jwks.json"
+      audiences:
+        - "mox-api"
+      forwardOriginalToken: true
+      outputPayloadToHeader: "x-jwt-payload"
+
+---
+# Sidecar - 限制 Sidecar 配置范围（性能优化）
+apiVersion: networking.istio.io/v1beta1
+kind: Sidecar
+metadata:
+  name: default
+  namespace: mox-prod
+spec:
+  egress:
+    - hosts:
+        - "mox-prod/*"
+        - "istio-system/*"
+  outboundTrafficPolicy:
+    mode: REGISTRY_ONLY
+
+---
+# EnvoyFilter - 自定义限流（基于 Redis 的全局限流）
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: mox-rate-limit
+  namespace: mox-prod
+spec:
+  workloadSelector:
+    labels:
+      app: api-gateway
+  configPatches:
+    - applyTo: HTTP_FILTER
+      match:
+        context: SIDECAR_INBOUND
+        listener:
+          filterChain:
+            filter:
+              name: "envoy.filters.network.http_connection_manager"
+      patch:
+        operation: INSERT_BEFORE
+        value:
+          name: envoy.filters.http.ratelimit
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
+            domain: mox-api
+            failure_mode_deny: false
+            rate_limit_service:
+              grpc_service:
+                envoy_grpc:
+                  cluster_name: rate_limit_service
+                timeout: 0.25s
+
+---
+# Telemetry - 可观测性配置
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: mox-telemetry
+  namespace: mox-prod
+spec:
+  metrics:
+    - providers:
+        - name: prometheus
+      overrides:
+        - match:
+            metric: REQUEST_COUNT
+          disabled: false
+        - match:
+            metric: REQUEST_DURATION
+          disabled: false
+        - match:
+            metric: REQUEST_SIZE
+          disabled: true
+        - match:
+            metric: RESPONSE_SIZE
+          disabled: true
+  tracing:
+    - providers:
+        - name: jaeger
+      randomSamplingPercentage: 10.0
+  accessLogs:
+    - providers:
+        - name: envoy
+      filter:
+        expression: "response.code >= 400"

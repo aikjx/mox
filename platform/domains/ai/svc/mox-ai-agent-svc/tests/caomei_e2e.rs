@@ -1,6 +1,6 @@
 //! 草莓多平台 · 端到端集成测试
 //!
-//! 验证完整链路（库层面，不依赖未完工的 runtime HTTP 层）：
+//! 验证完整链路（库层面，不依赖未完工的 mox_platform_orchestrator_svc HTTP 层）：
 //!   对话需求 → ai-agent 编译蓝图 → flow-ai 生成后端+DB+前端代码
 //!            → template-market 落盘为可复用系统模板 → 重新加载
 //!

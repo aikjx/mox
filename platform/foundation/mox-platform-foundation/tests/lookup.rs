@@ -4,7 +4,7 @@ use mox_platform_foundation::{all_crate_metas, lookup_meta_by_engine};
 const EXPECTED_ENGINE_NAMES: &[&str] = &[
     "mox::ai_agent",
     "mox::business_catalog",
-    "mox::flow_ai",
+    "mox::mox_ai_flow_svc",
     "mox::graph_algorithms",
     "mox::hermes_flow_bridge",
     "mox::kg_hub",
@@ -16,7 +16,7 @@ const EXPECTED_ENGINE_NAMES: &[&str] = &[
     "mox::template_market",
     "mox::mox_expert",
     "mox::mox_system",
-    "mox::runtime",
+    "mox::mox_platform_orchestrator_svc",
     "mox::mox_common_meta",
 ];
 

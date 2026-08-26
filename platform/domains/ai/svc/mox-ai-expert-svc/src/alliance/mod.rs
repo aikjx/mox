@@ -127,7 +127,7 @@ fn default_team_size_4() -> usize { 4 }
 
 /// 专家联盟全维分析引擎（对外入口结构体）
 ///
-/// 生产环境由 runtime 网关的 AiEngineState 持 Arc<AllianceEngine>。
+/// 生产环境由 mox_platform_orchestrator_svc 网关的 AiEngineState 持 Arc<AllianceEngine>。
 /// 字段会在 Task 2~5 逐步追加（intent_classifier, expert_registry, harness_ctx, audit_sink 等）。
 #[derive(Debug, Default, Clone)]
 pub struct AllianceEngine {

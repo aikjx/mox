@@ -481,7 +481,7 @@ mod tests {
 
     #[test]
     fn test_sub_agent_execute() {
-        let rt = tokio::mox_platform_orchestrator_svc::Runtime::new().unwrap();
+        let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
             let engine = Engine::new();
             let mut agent = SubAgent::new("test-agent".to_string(), AgentRole::Researcher, engine);
@@ -493,7 +493,7 @@ mod tests {
 
     #[test]
     fn test_multi_agent_sequential() {
-        let rt = tokio::mox_platform_orchestrator_svc::Runtime::new().unwrap();
+        let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
             let mut orchestrator = MultiAgentOrchestrator::new();
             let id1 = orchestrator.spawn_agent(AgentRole::Researcher);
@@ -512,7 +512,7 @@ mod tests {
 
     #[test]
     fn test_multi_agent_parallel() {
-        let rt = tokio::mox_platform_orchestrator_svc::Runtime::new().unwrap();
+        let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
             let mut orchestrator = MultiAgentOrchestrator::new();
             let id1 = orchestrator.spawn_agent(AgentRole::Researcher);

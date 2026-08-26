@@ -1,12 +1,12 @@
 //! 端到端集成测试：成员管理 / 任务协作 / 权限分配 / 通信机制
 //! + 企业级能力：SQLite 持久化重放、令牌哈希、配额强制、限流
-use std::sync::Arc;
 use mox_platform_system_core::config::{AppConfig, Backend};
 use mox_platform_system_core::event::DomainEvent;
 use mox_platform_system_core::model::{InviteInput, Priority, TaskStatus, Tier};
-use mox_platform_system_core::orchestrator::{Reactor, MoxSystem};
+use mox_platform_system_core::orchestrator::{MoxSystem, Reactor};
 use mox_platform_system_core::rbac::{Permission, ResourceCtx, Role, RoleBinding, Scope};
 use mox_platform_system_core::store::Store;
+use std::sync::Arc;
 
 /// 分配一个临时 SQLite 数据库路径。
 ///
@@ -47,9 +47,15 @@ async fn full_lifecycle_and_rbac() {
         )
         .await
         .unwrap();
-    assert_eq!(e1.status, mox_platform_system_core::model::MemberStatus::Invited);
+    assert_eq!(
+        e1.status,
+        mox_platform_system_core::model::MemberStatus::Invited
+    );
     let e1 = sys.member.activate(&e1.id, &admin.id).await.unwrap();
-    assert_eq!(e1.status, mox_platform_system_core::model::MemberStatus::Active);
+    assert_eq!(
+        e1.status,
+        mox_platform_system_core::model::MemberStatus::Active
+    );
 
     // 创建任务
     let t = sys

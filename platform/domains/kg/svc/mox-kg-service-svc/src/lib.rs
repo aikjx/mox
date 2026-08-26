@@ -33,7 +33,7 @@ pub use cypher_parser::CypherParser;
 pub use error::{GraphError, GraphResult};
 pub use graph_server::{Direction, EdgeRow, GraphServer, Neighbor, StorageEngine};
 pub use ngql_parser::{NgqlParser, PlanNode};
-pub use mox_flow_optimizer_core::{Optimizer, PlanOutput};
+pub use crate::optimizer::{Optimizer, PlanOutput};
 pub use projection_20::{projection_20_matrix, PROJECTION_OPERATORS, ProjectionContext, ProjectionOperator, ProjectionResult};
 pub use result_set::{PropValue, ResultSet};
 

@@ -1,13 +1,14 @@
-# 璇玑 RelGraph · 企业级架构文档（多视图 · 对齐六层金字塔）
+# 璇玑 RelGraph · 企业级架构文档 v2.0（6层8域DDD矩阵 · 多视图 · 对齐六层金字塔）
 
 > **文档类型**：企业架构（Enterprise Architecture，多视图 / TOGAF 风格切面 · 显式 L 层级标注）
-> **文档版本**：v1.1 (ENT) · 最后更新 2026-08-23
-> **权威链**：🟢 L0 第一级 → [`18-全域顶层总设计-三联盟模式-V1.0.md`](18-全域顶层总设计-三联盟模式-V1.0.md)（TOP-MASTER §二：六层金字塔 · §三：八层知识图谱建模）。本文为 L2 第三级（架构层），所有声明不得与 18 冲突。
+> **文档版本**：v2.0 (ENT) · 最后更新 2026-08-26（v1.1→v2.0：架构从旧15-crate扁平模型迁移至新6层8域DDD矩阵，全量路径与crate映射更新）
+> **权威链**：🟢 L0 第一级 → [`18-全域顶层总设计-三联盟模式-V1.0.md`](18-全域顶层总设计-三联盟模式-V1.0.md)（TOP-MASTER §二：六层金字塔 · §三：八层知识图谱建模）。本文为 L2 第三级（架构层），所有声明不得与 18 冲突。架构迁移基准见 [`ARCHITECTURE-MIGRATION.md`](ARCHITECTURE-MIGRATION.md)。
 > **主责联盟**：算法联盟（图算法/图谱） + 开发联盟（分层/工程落地） · 联合签署：产品联盟（需求一致性）
-> **配套**：`01-requirements.md`（需求）、`03-design.md`（设计）、`04-business-processing.md`（业务处理）、`docs/architecture.md`（OUS 父总架构 · L2 Rust 自研底座视角）
+> **配套**：`01-requirements.md`（需求）、`03-design.md`（设计）、`04-business-processing.md`（业务处理）、`docs/architecture.md`（OUS 父总架构 · 归档参考）、`ARCHITECTURE-MIGRATION.md`（旧→新crate完整映射）
 >
 > 本文以「璇玑 RelGraph」为切面，沿 **业务 / 信息 / 应用 / 技术 / 安全 / 集成 / 部署** 七视图展开，并附
 > **架构锚点（与 18 TOP-MASTER 六层金字塔的 L 层级对应表）**、**架构决策记录（ADR）** 与 **跨视图 NFR 落地表**。
+> **架构模型**：6层8域DDD矩阵 — foundation（L0）/ gateway（L1）/ domains×core（L2）/ domains×svc（L3）/ domains×sdk（L4）/ domains×api（L5，规划中）；8域 = ai / cloud / data / flow / kg / market / platform / voice。
 
 ---
 
@@ -22,28 +23,28 @@
 
 > 18 TOP-MASTER §二「六层金字塔」架构是跨文档、跨联盟的唯一锚点。本表把 TOGAF 七视图显式映射到六个 L 层级，任何七视图新增段落须在右侧标注其所属层级。
 
-| TOGAF 七视图 | 对应 L 层级（六层金字塔） | 核心承载模块（路径零老化） | 三联盟责任 |
-|--------------|--------------------------|----------------------------|:--:|
-| ① 业务 Business | **L5 业务流程层**（协作/融合/判重/文档治理 10 BP） | `platform/services/mox-system` + `frontend-ui` 28 视图 | 产品联盟 R，开发/算法 C |
-| ② 信息 Information | **L4 知识图谱核心层**（八层图谱 L0~L7 · 14 节点族 · 19 边族） | `platform/services/kg-hub` · `docs/graph/graph.enterprise.json`（372 节点 / 751 边） | 算法联盟 R，开发 C |
-| ③ 应用 Application | **L3 算法推理层** + **L6 产品应用层**（前端视图） | L3: graph-algorithms / optimizer / flow-ai / mox-expert；L6: frontend-ui（28 views） | 算法联盟 + 产品联盟 |
-| ④ 技术 Technology | **L2 Rust 自研工程底座**（15 crate · workspace 统一治理 · 零重型脚手架依赖） | `platform/services/*`（15） + `platform/gateway/runtime/`（聚合网关） | 开发联盟 R，算法 C |
-| ⑤ 安全 Security | 横切 **L1 部署运维层** · L2 · L3 · L5 | `auth_middleware` + `rbac_audit_middleware` + ⛨璇玑验证网关（G2） | 开发联盟 · 安全组 R |
-| ⑥ 集成 Integration | 横切 **L6 ↔ L2 ↔ 外部**（Rust Gateway AC-10 路由语义） | `platform/gateway/runtime/` 四端点 `/ai/engine/{process,analyze,capabilities,metrics}` | 开发联盟 R，算法 C |
+| TOGAF 七视图 | 对应 L 层级（六层金字塔） | 核心承载模块（路径零老化 · 6层8域DDD矩阵） | 三联盟责任 |
+|--------------|--------------------------|-----------------------------------------------|:--:|
+| ① 业务 Business | **L5 业务流程层**（协作/融合/判重/文档治理 10 BP） | `platform/domains/platform/svc/mox-platform-enterprise-svc` + `frontend-ui` 28 视图 | 产品联盟 R，开发/算法 C |
+| ② 信息 Information | **L4 知识图谱核心层**（八层图谱 L0~L7 · 14 节点族 · 19 边族） | `platform/domains/kg/svc/mox-kg-hub-svc` · `docs/graph/graph.enterprise.json`（372 节点 / 751 边） | 算法联盟 R，开发 C |
+| ③ 应用 Application | **L3 算法推理层** + **L6 产品应用层**（前端视图） | L3: `mox-kg-algo-core` / `mox-flow-optimizer-core` / `mox-ai-flow-svc` / `mox-ai-expert-svc`；L6: frontend-ui（28 views） | 算法联盟 + 产品联盟 |
+| ④ 技术 Technology | **L2 Rust 自研工程底座**（6层8域DDD矩阵 · 50+ crate · workspace 统一治理 · 零重型脚手架依赖） | `platform/domains/{8域}/{core,svc,sdk}`（50+） + `platform/foundation/`（2） + `platform/gateway/mox-platform-gateway-svc` | 开发联盟 R，算法 C |
+| ⑤ 安全 Security | 横切 **L1 部署运维层** · L2 · L3 · L5 | `mox-platform-iam-core` + `mox-ai-expert-svc`（⛨璇玑验证网关 G2） + gateway RBAC 中间件 | 开发联盟 · 安全组 R |
+| ⑥ 集成 Integration | 横切 **L6 ↔ L2 ↔ 外部**（Rust Gateway AC-10 路由语义） | `platform/gateway/mox-platform-gateway-svc` 四端点 `/ai/engine/{process,analyze,capabilities,metrics}` | 开发联盟 R，算法 C |
 | ⑦ 部署 Deployment | **L1 部署运维层**（9 里程碑 M0~M8 · 三级验收 L0/L1/L2） | 部署目录规划 + CI 模板（见 18 §八） | 开发联盟 · 运维 R |
 
 ### §0.2 八大算法家族（对齐 18 TOP-MASTER §五 · 全部禁止自研等价实现）
 
-| # | 算法家族 | 关键论文/方法 | 代码落点（L3 算法推理层） | 适用业务场景 |
-|---|----------|---------------|--------------------------|--------------|
-| A1 | **CNM 社区检测**（模块度贪心凝聚） | Clauset-Newman-Moore 2004 | `graph-algorithms::community::cnm` | 社区归属、模块化拆分、业务聚类 |
-| A2 | **Brandes 2001 介数中心性** | Brandes 2001（含向图双 BFS 版本） | `graph-algorithms::centrality::brandes_betweenness` | 关键节点识别、瓶颈分析、故障根因 |
-| A3 | **Harmonic 紧密中心性** | Rochat 2009（调和平均，解不可达） | `graph-algorithms::centrality::harmonic_closeness` | 传播能力、信息可达性 |
-| A4 | **PageRank（含转置图处理）** | Page 1999；质量沿出边方向正确传播（入边权重→转置图保证） | `graph-algorithms::centrality::pagerank` | 节点重要性、SEO 排序、图谱热度 |
-| A5 | **激活扩散（Activation Spread · 个性化 PageRank）** | Haveliwala 2002；个性化 PageRank 特例，d=0.85，30 轮收敛 | `graph-algorithms::spread::activation_spread` | **意图识别**（统一 AI 路由）、影响面分析、推荐召回 |
-| A6 | **RRF 结果融合（Reciprocal Rank Fusion）** | Cormack et al. 2009；k=60 | `kg-hub::fusion::rrf_rank_fuse` | 多路搜索融合、检索混合、跨域召回 |
-| A7 | **CEM 交叉熵优化（Cross-Entropy Method）** | Rubinstein 1999；AI Engine 高维配置优化 | `ai-agent::optimizer::cem` · `mox-expert::pipeline` | AI 引擎参数、架构配置、多目标优化 |
-| A8 | **CPM 关键路径 + RCPSP 资源约束调度** | Kelley-Walker CPM；RCPSP 贪心 | `optimizer::cpm` · `flow-ai::scheduling` | 任务排程、项目计划、并行调度 |
+| # | 算法家族 | 关键论文/方法 | 代码落点（L3 算法推理层 · 6层8域） | 适用业务场景 |
+|---|----------|---------------|-------------------------------------|--------------|
+| A1 | **CNM 社区检测**（模块度贪心凝聚） | Clauset-Newman-Moore 2004 | `mox-kg-algo-core::community::cnm` | 社区归属、模块化拆分、业务聚类 |
+| A2 | **Brandes 2001 介数中心性** | Brandes 2001（含向图双 BFS 版本） | `mox-kg-algo-core::centrality::brandes_betweenness` | 关键节点识别、瓶颈分析、故障根因 |
+| A3 | **Harmonic 紧密中心性** | Rochat 2009（调和平均，解不可达） | `mox-kg-algo-core::centrality::harmonic_closeness` | 传播能力、信息可达性 |
+| A4 | **PageRank（含转置图处理）** | Page 1999；质量沿出边方向正确传播（入边权重→转置图保证） | `mox-kg-algo-core::centrality::pagerank` | 节点重要性、SEO 排序、图谱热度 |
+| A5 | **激活扩散（Activation Spread · 个性化 PageRank）** | Haveliwala 2002；个性化 PageRank 特例，d=0.85，30 轮收敛 | `mox-kg-algo-core::spread::activation_spread` | **意图识别**（统一 AI 路由）、影响面分析、推荐召回 |
+| A6 | **RRF 结果融合（Reciprocal Rank Fusion）** | Cormack et al. 2009；k=60 | `mox-kg-fusion-svc::rrf_rank_fuse` | 多路搜索融合、检索混合、跨域召回 |
+| A7 | **CEM 交叉熵优化（Cross-Entropy Method）** | Rubinstein 1999；AI Engine 高维配置优化 | `mox-ai-agent-svc::optimizer::cem` · `mox-ai-expert-svc::pipeline` | AI 引擎参数、架构配置、多目标优化 |
+| A8 | **CPM 关键路径 + RCPSP 资源约束调度** | Kelley-Walker CPM；RCPSP 贪心 | `mox-flow-optimizer-core::cpm` · `mox-ai-flow-svc::scheduling` | 任务排程、项目计划、并行调度 |
 
 > 硬约束（来自 project_memory）：A1 社区检测禁止标签传播 LPA；A2 介数必须 Brandes 算法；A3 紧密中心性须 Harmonic；A4 PageRank 必须包含转置图处理；A5 激活扩散须用个性化 PR d=0.85 30 轮；公式库保留全精度禁止 toFixed；密度指标必须附带人读解读文案；RAW 边输入在库内展开（非用户传双份）以避免度中心性错误。
 

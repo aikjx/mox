@@ -21,19 +21,20 @@ impl AppState {
         let path = path.to_string();
         let industries: Vec<String> = install_industries.iter().map(|s| s.to_string()).collect();
 
-        let db_conn = tokio::task::spawn_blocking(move || -> Result<Arc<Mutex<rusqlite::Connection>>> {
-            let conn = if path == ":memory:" {
-                rusqlite::Connection::open_in_memory()
-            } else {
-                rusqlite::Connection::open(&path)
-            }
-            .with_context(|| format!("open sqlite {} failed", path))?;
-            conn.pragma_update(None, "journal_mode", "WAL").ok();
-            conn.pragma_update(None, "foreign_keys", "ON").ok();
-            Ok(Arc::new(Mutex::new(conn)))
-        })
-        .await
-        .map_err(|e| anyhow::anyhow!("spawn_blocking join error: {}", e))??;
+        let db_conn =
+            tokio::task::spawn_blocking(move || -> Result<Arc<Mutex<rusqlite::Connection>>> {
+                let conn = if path == ":memory:" {
+                    rusqlite::Connection::open_in_memory()
+                } else {
+                    rusqlite::Connection::open(&path)
+                }
+                .with_context(|| format!("open sqlite {} failed", path))?;
+                conn.pragma_update(None, "journal_mode", "WAL").ok();
+                conn.pragma_update(None, "foreign_keys", "ON").ok();
+                Ok(Arc::new(Mutex::new(conn)))
+            })
+            .await
+            .map_err(|e| anyhow::anyhow!("spawn_blocking join error: {}", e))??;
 
         let iam = Arc::new(IamRepository::new(db_conn.clone()));
         let meta = Arc::new(MetaRepository::new(db_conn.clone()));
@@ -47,9 +48,7 @@ impl AppState {
             let industries_ref: Vec<&str> = industries.iter().map(|s| s.as_str()).collect();
             iam_cloned.init_schema().context("iam init_schema")?;
             iam_cloned.seed().context("iam seed")?;
-            meta_cloned
-                .init_schema()
-                .context("meta init_schema")?;
+            meta_cloned.init_schema().context("meta init_schema")?;
             meta_cloned
                 .seed_industry(&industries_ref)
                 .context("meta seed_industry")?;

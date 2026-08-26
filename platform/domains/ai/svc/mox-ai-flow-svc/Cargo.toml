@@ -6,10 +6,6 @@ license.workspace = true
 authors.workspace = true
 description = "AI core algorithms for business flowchart optimization: dataflow parallelization, CPM, conflict detection, resource-constrained scheduling, six-dimension relation topology, flow<->code bidirectional mapping"
 
-[lib]
-name = "flow_ai"
-path = "src/lib.rs"
-
 [[bin]]
 name = "flowopt"
 path = "src/bin/flowopt.rs"

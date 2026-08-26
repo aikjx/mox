@@ -6,10 +6,6 @@ license.workspace = true
 authors.workspace = true
 description = "Mox data plane: triple listener (public/intra_ctrl/intra_data), multipart upload manager, FSHC, mountpath lifecycle, optional HTTP3/QUIC."
 
-[lib]
-name = "mox_data_plane"
-path = "src/lib.rs"
-
 [dependencies]
 serde = { workspace = true }
 serde_json = { workspace = true }

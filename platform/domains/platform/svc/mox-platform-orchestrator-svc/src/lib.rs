@@ -3,7 +3,7 @@
 //! 提供可测试的中间件、工具函数和 OUS-Cordis 插件化运行时内核
 
 pub const CRATE_ID: &str = "a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b";
-pub const ENGINE_NAME: &str = "mox::runtime";
+pub const ENGINE_NAME: &str = "mox::mox_platform_orchestrator_svc";
 pub const CRATE_META: mox_platform_foundation::CrateMeta = mox_platform_foundation::CrateMeta {
     id: CRATE_ID,
     name: env!("CARGO_PKG_NAME"),

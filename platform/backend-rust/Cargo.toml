@@ -1,0 +1,93 @@
+[package]
+name = "mox-enterprise-backend"
+version = "2.0.0"
+edition = "2021"
+description = "MOX 千亿亿级企业级分布式平台 - Rust 后端"
+license = "MIT"
+
+# 独立 workspace，不加入根 workspace
+[workspace]
+
+[[bin]]
+name = "mox-gateway"
+path = "src/main.rs"
+
+[dependencies]
+# 异步运行时
+tokio = { version = "1.35", features = ["full"] }
+tokio-util = { version = "0.7", features = ["full"] }
+futures = "0.3"
+
+# Web 框架
+axum = { version = "0.7", features = ["macros"] }
+tower = { version = "0.4", features = ["full"] }
+tower-http = { version = "0.5", features = ["full"] }
+hyper = { version = "1.0", features = ["full"] }
+
+# HTTP 客户端
+reqwest = { version = "0.11", features = ["json", "stream", "rustls-tls"], default-features = false }
+
+# 序列化
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+toml = "0.8"
+
+# 日志与追踪
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tracing-opentelemetry = "0.22"
+
+# 时间
+chrono = { version = "0.4", features = ["serde"] }
+
+# 随机数
+rand = "0.8"
+
+# Redis（分布式限流）
+redis = { version = "0.24", features = ["tokio-comp", "connection-manager"] }
+
+# 配置
+config = "0.14"
+
+# 错误处理
+thiserror = "1.0"
+anyhow = "1.0"
+
+# 统计与数学
+statrs = "0.16"
+num = "0.4"
+
+# 加密（零信任/mTLS）
+rustls = { version = "0.21", features = ["dangerous_configuration"] }
+rustls-pemfile = "1.0"
+x509-parser = "0.15"
+ring = "0.17"
+base64 = "0.21"
+sha2 = "0.10"
+hmac = "0.12"
+
+# 数据结构
+dashmap = "5.5"
+parking_lot = "0.12"
+crossbeam = "0.8"
+
+# UUID
+uuid = { version = "1.6", features = ["v4", "serde"] }
+
+# 正则
+regex = "1.10"
+
+[dev-dependencies]
+tokio-test = "0.4"
+criterion = "0.5"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.dev]
+opt-level = 1

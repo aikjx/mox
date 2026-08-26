@@ -5,7 +5,7 @@
 //!   - InlinePut: preprocess bytes during PUT before they land storage (compress, mask PII, fingerprint)
 //!   - Offline: background xaction applied to every object inside a bucket
 //!
-//! Without feature "wasm-runtime", only pure-Rust mock transforms are supported (unit tests + SDK stubs).
+//! Without feature "wasm-mox_platform_orchestrator_svc", only pure-Rust mock transforms are supported (unit tests + SDK stubs).
 
 pub mod abi;
 pub mod registry;

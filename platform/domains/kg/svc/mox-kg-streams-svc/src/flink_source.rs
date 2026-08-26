@@ -1,6 +1,6 @@
 //! Flink-compatible CDC source adapter around `mox-graph-storage::CdcSource`.
 //!
-//! - Thread-safe blocking `next_blocking(timeout)` for callers without a tokio runtime.
+//! - Thread-safe blocking `next_blocking(timeout)` for callers without a tokio mox_platform_orchestrator_svc.
 //! - `resume(offset)` drops prior position, repositions consumer at offset exclusive.
 //! - `IdempotentWriter` upserts by raft_index key; returns report with integrity diagnostics.
 

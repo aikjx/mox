@@ -1332,7 +1332,7 @@ mod tests {
     #[test]
     fn test_execute_action_without_session_errors() {
         let mut engine = BrowserAutomationEngine::new();
-        let rt = tokio::mox_platform_orchestrator_svc::Runtime::new().unwrap();
+        let rt = tokio::runtime::Runtime::new().unwrap();
         let r = rt.block_on(engine.execute_action("ghost", BrowserAction::GetTitle));
         assert!(r.is_err());
     }
@@ -1341,7 +1341,7 @@ mod tests {
     fn test_execute_action_click_and_type_are_ok() {
         let mut engine = BrowserAutomationEngine::new();
         let sid = engine.create_session();
-        let rt = tokio::mox_platform_orchestrator_svc::Runtime::new().unwrap();
+        let rt = tokio::runtime::Runtime::new().unwrap();
         let click = rt
             .block_on(engine.execute_action(
                 &sid,

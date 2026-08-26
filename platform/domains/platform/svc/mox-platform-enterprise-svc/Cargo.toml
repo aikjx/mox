@@ -4,10 +4,6 @@ version = "1.0.0"
 edition = "2021"
 description = "企业级 axum HTTP 真源服务：IAM + Meta + 通用 CRUD + 编排器"
 
-[lib]
-name = "enterprise_svc_lib"
-path = "src/lib.rs"
-
 [[bin]]
 name = "enterprise-svc"
 path = "src/main.rs"
@@ -18,11 +14,10 @@ mox-platform-iam-core = { path = "../../core/mox-platform-iam-core" }
 mox-platform-meta-core = { path = "../../core/mox-platform-meta-core" }
 mox-platform-datastore-core = { path = "../../core/mox-platform-datastore-core" }
 mox-platform-orchestrator-core = { path = "../../core/mox-platform-orchestrator-core" }
-mox-framework = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 axum = { version = "0.7", features = ["json", "multipart"] }
-tower = "0.5"
+tower = { workspace = true }
 tower-http = { version = "0.5", features = ["cors", "trace", "compression-gzip", "timeout", "limit"] }
 rusqlite = { workspace = true }
 uuid = { workspace = true }

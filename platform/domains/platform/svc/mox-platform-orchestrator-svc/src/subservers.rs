@@ -1,6 +1,6 @@
 //! 子服务聚合（Phase 1 收敛）
 //!
-//! 将此前并行的四套 axum server 收敛为库，由 operator-server（runtime）唯一对外暴露：
+//! 将此前并行的四套 axum server 收敛为库，由 operator-server（mox_platform_orchestrator_svc）唯一对外暴露：
 //! - [`PREFIX_MOX_VIZ`]    ← mox-expert  治理可视化 + 一键闭环演示
 //! - [`PREFIX_MOX_SYSTEM`] ← mox-system  成员/任务/RBAC/审计/WebSocket 协同
 //! - [`PREFIX_PRIMIFLOW`]     ← primiflow      六维溯源拓扑引擎（server feature）
@@ -48,7 +48,7 @@ fn sub_enabled(name: &str) -> bool {
     }
 }
 
-/// 构建并初始化全部已启用的子服务（初始化失败的服务会跳过并记录说明，不阻断 runtime）
+/// 构建并初始化全部已启用的子服务（初始化失败的服务会跳过并记录说明，不阻断 mox_platform_orchestrator_svc）
 pub async fn build() -> SubServers {
     let mut out = SubServers {
         routers: Vec::new(),
@@ -166,7 +166,7 @@ pub fn registered_subservers() -> Vec<Subserver> {
         },
         Subserver {
             name: "mox-expert-alliance",
-            purpose: "专家联盟 6 阶段全维分析引擎（Rust crate，内嵌于本 runtime）",
+            purpose: "专家联盟 6 阶段全维分析引擎（Rust crate，内嵌于本 mox_platform_orchestrator_svc）",
             url: "builtin://mox-expert/alliance".into(),
             health: "/ai/engine/alliance/capabilities".into(),
             required: true,

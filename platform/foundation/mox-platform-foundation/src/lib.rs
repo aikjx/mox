@@ -137,7 +137,7 @@ pub fn all_crate_metas() -> Vec<CrateMeta> {
         },
         CrateMeta {
             id: "a6f7ad5c-dbc8-5c27-837f-d8332fd6f27b",
-            name: "runtime",
+            name: "mox_platform_orchestrator_svc",
             version: "3.0.0-ai-powered",
             layer: AisLayer::L3Orchestration,
             owner: "mox-core",

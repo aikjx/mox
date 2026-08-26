@@ -20,21 +20,41 @@ fn new_id() -> String {
 
 fn field_weight(f: &FieldSpec) -> u32 {
     let mut w: u32 = 0;
-    if f.is_required { w += 8; }
-    if f.is_indexed { w += 16; }
-    if f.is_searchable { w += 4; }
-    if f.is_filterable { w += 2; }
-    if f.is_sortable { w += 1; }
+    if f.is_required {
+        w += 8;
+    }
+    if f.is_indexed {
+        w += 16;
+    }
+    if f.is_searchable {
+        w += 4;
+    }
+    if f.is_filterable {
+        w += 2;
+    }
+    if f.is_sortable {
+        w += 1;
+    }
     w
 }
 
 fn field_weight_def(f: &FieldDef) -> u32 {
     let mut w: u32 = 0;
-    if f.required { w += 8; }
-    if f.indexed { w += 16; }
-    if f.searchable { w += 4; }
-    if f.filterable { w += 2; }
-    if f.sortable { w += 1; }
+    if f.required {
+        w += 8;
+    }
+    if f.indexed {
+        w += 16;
+    }
+    if f.searchable {
+        w += 4;
+    }
+    if f.filterable {
+        w += 2;
+    }
+    if f.sortable {
+        w += 1;
+    }
     w
 }
 
@@ -48,16 +68,39 @@ fn field_type_to_string(t: &FieldType) -> String {
         FieldType::Enum => "enum",
         FieldType::Text => "text",
         FieldType::Json => "json",
-    }.to_string()
+    }
+    .to_string()
 }
 
 fn is_string_type(t: &str) -> bool {
     matches!(
         t,
-        "string" | "text" | "rich_text" | "html" | "markdown" | "keyword"
-            | "phone" | "email" | "url" | "id_card" | "bank_card" | "domain" | "ip"
-            | "avatar" | "signature" | "user" | "dept" | "tenant" | "location" | "address"
-            | "enum" | "rating" | "stars" | "relation" | "lookup" | "reference"
+        "string"
+            | "text"
+            | "rich_text"
+            | "html"
+            | "markdown"
+            | "keyword"
+            | "phone"
+            | "email"
+            | "url"
+            | "id_card"
+            | "bank_card"
+            | "domain"
+            | "ip"
+            | "avatar"
+            | "signature"
+            | "user"
+            | "dept"
+            | "tenant"
+            | "location"
+            | "address"
+            | "enum"
+            | "rating"
+            | "stars"
+            | "relation"
+            | "lookup"
+            | "reference"
     )
 }
 
@@ -240,8 +283,7 @@ impl MetaRepository {
             ],
         )?;
 
-        let mut indexed: Vec<(usize, &FieldDef)> =
-            fields.iter().enumerate().collect();
+        let mut indexed: Vec<(usize, &FieldDef)> = fields.iter().enumerate().collect();
         indexed.sort_by(|a, b| {
             let wb = field_weight_def(b.1);
             let wa = field_weight_def(a.1);
@@ -288,10 +330,14 @@ impl MetaRepository {
 
         for (idx, f) in fields.iter().enumerate() {
             let ft = field_type_to_string(&f.r#type);
-            let slot = slot_map.get(&f.code).cloned().unwrap_or_else(|| "json_data".to_string());
-            let options_inline_str = f.options_inline.as_ref().and_then(|opts| {
-                serde_json::to_string(opts).ok()
-            });
+            let slot = slot_map
+                .get(&f.code)
+                .cloned()
+                .unwrap_or_else(|| "json_data".to_string());
+            let options_inline_str = f
+                .options_inline
+                .as_ref()
+                .and_then(|opts| serde_json::to_string(opts).ok());
             let mf = MetaField {
                 field_id: new_id(),
                 tenant_id: tenant_id.clone(),
@@ -637,7 +683,7 @@ impl MetaRepository {
         let mut stmt = conn.prepare(
             "SELECT rule_code, rule_category, rule_body, trigger_condition FROM meta_rule r \
              JOIN meta_entity e ON r.entity_id = e.entity_id \
-             WHERE r.tenant_id=?1 AND e.entity_code=?2 AND r.is_enabled=1 AND r.status='active'"
+             WHERE r.tenant_id=?1 AND e.entity_code=?2 AND r.is_enabled=1 AND r.status='active'",
         )?;
         let rows = stmt.query_map(params![tenant_id, entity_code], |r| {
             Ok((
@@ -682,10 +728,9 @@ impl MetaRepository {
                                     };
                                     if empty {
                                         result.passed = false;
-                                        result.errors.push(format!(
-                                            "{}: 字段 {} 必填",
-                                            code, field
-                                        ));
+                                        result
+                                            .errors
+                                            .push(format!("{}: 字段 {} 必填", code, field));
                                     }
                                 }
                             }
@@ -716,12 +761,13 @@ impl MetaRepository {
                                         resolved = resolved.replace(&cap[0], &substitute);
                                     }
                                 }
-                                if let Ok(r2) = Regex::new(r"^(\d+(\.\d+)?)\s*([+\-*/])\s*(\d+(\.\d+)?)$") {
+                                if let Ok(r2) =
+                                    Regex::new(r"^(\d+(\.\d+)?)\s*([+\-*/])\s*(\d+(\.\d+)?)$")
+                                {
                                     if let Some(caps) = r2.captures(&resolved) {
-                                        if let (Ok(a), Ok(b)) = (
-                                            caps[1].parse::<f64>(),
-                                            caps[4].parse::<f64>(),
-                                        ) {
+                                        if let (Ok(a), Ok(b)) =
+                                            (caps[1].parse::<f64>(), caps[4].parse::<f64>())
+                                        {
                                             let op = &caps[3];
                                             let computed = match op {
                                                 "+" => a + b,
@@ -730,9 +776,10 @@ impl MetaRepository {
                                                 "/" if b != 0.0 => a / b,
                                                 _ => 0.0,
                                             };
-                                            result
-                                                .computed_fields
-                                                .insert(target.to_string(), serde_json::json!(computed));
+                                            result.computed_fields.insert(
+                                                target.to_string(),
+                                                serde_json::json!(computed),
+                                            );
                                         }
                                     }
                                 }

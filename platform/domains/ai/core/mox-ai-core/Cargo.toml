@@ -6,10 +6,6 @@ license.workspace = true
 authors.workspace = true
 description = "Mox AI Core: multi-provider LLM abstraction (OpenAI/Anthropic/Local), conversation session management, graph-aware reasoning, and core graph data structures"
 
-[lib]
-name = "mox_ai_core"
-path = "src/lib.rs"
-
 [dependencies]
 serde = { workspace = true }
 serde_json = { workspace = true }

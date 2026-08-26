@@ -1,11 +1,11 @@
 //! T2 回归验证（新契约版）：16 个 crate 的 CRATE_ID / ENGINE_NAME / CRATE_META 常量声明 + 唯一性契约 + UUIDv5 格式 + AIS 分层合规。
 //!
 //! 运行方式（仓库根执行）：
-//!   cargo test -p runtime --test _tmp_t2_crate_meta
+//!   cargo test -p mox_platform_orchestrator_svc --test _tmp_t2_crate_meta
 
 use std::collections::HashSet;
 
-// 16 个 crate 逐一 extern 引入（用别名 c_ 前缀规避保留字歧义；共 16 = 14 services + runtime + mox-common-meta）
+// 16 个 crate 逐一 extern 引入（用别名 c_ 前缀规避保留字歧义；共 16 = 14 services + mox_platform_orchestrator_svc + mox-common-meta）
 extern crate mox_ai_agent_svc as c_ai_agent;
 extern crate mox_data_catalog_svc as c_business_catalog;
 extern crate mox_ai_flow_svc as c_flow_ai;
@@ -98,7 +98,7 @@ fn sixteen_crates_have_valid_crate_id_engine_name_and_crate_meta() {
     }
     // --------- flow-ai (L4Services) ---------
     {
-        assert_eq!(c_flow_ai::ENGINE_NAME, "mox::flow_ai");
+        assert_eq!(c_flow_ai::ENGINE_NAME, "mox::mox_ai_flow_svc");
         assert!(is_uuid_v5(c_flow_ai::CRATE_ID));
         let m = &c_flow_ai::CRATE_META;
         assert_eq!(m.id, c_flow_ai::CRATE_ID);
@@ -159,13 +159,13 @@ fn sixteen_crates_have_valid_crate_id_engine_name_and_crate_meta() {
         assert_eq!(m.owner, "mox-core");
         assert!(matches!(m.layer, mox_platform_foundation::AisLayer::L4Services));
     }
-    // --------- runtime (L3Orchestration) ---------
+    // --------- mox_platform_orchestrator_svc (L3Orchestration) ---------
     {
-        assert_eq!(c_runtime::ENGINE_NAME, "mox::runtime");
+        assert_eq!(c_runtime::ENGINE_NAME, "mox::mox_platform_orchestrator_svc");
         assert!(is_uuid_v5(c_runtime::CRATE_ID));
         let m = &c_runtime::CRATE_META;
         assert_eq!(m.id, c_runtime::CRATE_ID);
-        assert_eq!(m.name, "runtime");
+        assert_eq!(m.name, "mox_platform_orchestrator_svc");
         assert_eq!(m.owner, "mox-core");
         assert!(matches!(
             m.layer,
@@ -346,7 +346,7 @@ fn sixteen_crates_have_valid_crate_id_engine_name_and_crate_meta() {
         .count();
     assert_eq!(
         l3_count, 1,
-        "L3Orchestration 应有 1 个 (runtime)，实际 {}",
+        "L3Orchestration 应有 1 个 (mox_platform_orchestrator_svc)，实际 {}",
         l3_count
     );
 }

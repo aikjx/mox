@@ -26,15 +26,15 @@ fn force_red() {
 // TR5.2 Raft 3 节点选举（3 轮，每轮 ≤ 5s）
 // ============================================================
 
-fn rt() -> tokio::mox_platform_orchestrator_svc::Runtime {
-    tokio::mox_platform_orchestrator_svc::Builder::new_current_thread()
+fn rt() -> tokio::runtime::Runtime {
+    tokio::runtime::Builder::new_current_thread()
         .enable_time()
         .build()
         .unwrap()
 }
 
 /// 辅助：创建 3 节点集群，强制建 admin 用户（方便后续用 admin 调用鉴权 API）
-fn bootstrap_3node_admin() -> (tokio::mox_platform_orchestrator_svc::Runtime, MetaServer, String) {
+fn bootstrap_3node_admin() -> (tokio::runtime::Runtime, MetaServer, String) {
     let rt = rt();
     let cluster = rt.block_on(async { MetaCluster::launch_3_nodes().await.unwrap() });
     let srv = MetaServer::with_cluster(cluster);

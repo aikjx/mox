@@ -1,10 +1,10 @@
-use std::time::Instant;
-use serde_json::{Map, Value};
 use dashmap::DashMap;
+use serde_json::{Map, Value};
+use std::time::Instant;
 
-use mox_platform_datastore_core::{UniversalBizDAO, TxManager, Filter, SortSpec, compute_hash};
-use mox_platform_datastore_core::MetaRepository;
 use mox_platform_datastore_core::IamRepository;
+use mox_platform_datastore_core::MetaRepository;
+use mox_platform_datastore_core::{compute_hash, Filter, SortSpec, TxManager, UniversalBizDAO};
 
 use crate::event::{BusinessEvent, EventBus};
 use crate::metrics::Metrics;
@@ -122,7 +122,10 @@ impl Pipeline {
                     let orc = orc_ptr.as_ref().and_then(|v| v.get("iam_meta").cloned());
                     // 校验逻辑由 orchestrator 的闭包注入；此处以 extra 中 permission 检查结果为准
                     if let Some(perm_err) = ctx.extra.get("__auth_error") {
-                        return StepResult::Stop(anyhow::anyhow!("{}", perm_err.as_str().unwrap_or("auth error")));
+                        return StepResult::Stop(anyhow::anyhow!(
+                            "{}",
+                            perm_err.as_str().unwrap_or("auth error")
+                        ));
                     }
                     let _ = orc;
                     StepResult::Continue
@@ -132,7 +135,10 @@ impl Pipeline {
                 id: StageId::Validate,
                 f: Box::new(|ctx| {
                     if let Some(err) = ctx.extra.get("__validate_error") {
-                        return StepResult::Stop(anyhow::anyhow!("{}", err.as_str().unwrap_or("validate error")));
+                        return StepResult::Stop(anyhow::anyhow!(
+                            "{}",
+                            err.as_str().unwrap_or("validate error")
+                        ));
                     }
                     StepResult::Continue
                 }),
@@ -141,7 +147,10 @@ impl Pipeline {
                 id: StageId::Before,
                 f: Box::new(|ctx| {
                     if let Some(err) = ctx.extra.get("__before_error") {
-                        return StepResult::Stop(anyhow::anyhow!("{}", err.as_str().unwrap_or("before hook error")));
+                        return StepResult::Stop(anyhow::anyhow!(
+                            "{}",
+                            err.as_str().unwrap_or("before hook error")
+                        ));
                     }
                     StepResult::Continue
                 }),
@@ -158,7 +167,10 @@ impl Pipeline {
                 id: StageId::After,
                 f: Box::new(|ctx| {
                     if let Some(err) = ctx.extra.get("__after_error") {
-                        return StepResult::Stop(anyhow::anyhow!("{}", err.as_str().unwrap_or("after hook error")));
+                        return StepResult::Stop(anyhow::anyhow!(
+                            "{}",
+                            err.as_str().unwrap_or("after hook error")
+                        ));
                     }
                     StepResult::Continue
                 }),
@@ -214,7 +226,12 @@ impl Pipeline {
                         BizAction::Get => "read",
                         BizAction::List => "list",
                     };
-                    match iam_repo.check_permission(&ctx.tenant_id, &ctx.user_id, &ctx.entity_code, perm_action) {
+                    match iam_repo.check_permission(
+                        &ctx.tenant_id,
+                        &ctx.user_id,
+                        &ctx.entity_code,
+                        perm_action,
+                    ) {
                         Ok(()) => StepResult::Continue,
                         Err(e) => StepResult::Stop(e),
                     }
@@ -237,8 +254,8 @@ impl Pipeline {
                     }
                 }
                 StageId::Before => {
-                    let industry_opt = registry
-                        .find_by_entity(&ctx.entity_code, meta_repo, &ctx.tenant_id);
+                    let industry_opt =
+                        registry.find_by_entity(&ctx.entity_code, meta_repo, &ctx.tenant_id);
                     let mut r = StepResult::Continue;
                     if let Some(ind) = industry_opt {
                         if let Some(m) = registry.mods.get(&ind) {
@@ -314,67 +331,70 @@ impl Pipeline {
                         StepResult::Continue
                     }
                 }
-                StageId::Main => {
-                    match req.action {
-                        BizAction::Get => {
-                            match dao.get(meta_repo, &ctx.tenant_id, &ctx.entity_code, ctx.biz_id.as_deref().unwrap()) {
-                                Ok(Some(v)) => {
-                                    if let Some(obj) = v.as_object() {
-                                        if let Some(h) = obj.get("curr_hash").and_then(|x| x.as_str()) {
-                                            ctx.curr_hash = Some(h.to_string());
-                                        }
-                                        if let Some(vv) = obj.get("version").and_then(|x| x.as_i64()) {
-                                            ctx.version = Some(vv);
-                                        }
+                StageId::Main => match req.action {
+                    BizAction::Get => {
+                        match dao.get(
+                            meta_repo,
+                            &ctx.tenant_id,
+                            &ctx.entity_code,
+                            ctx.biz_id.as_deref().unwrap(),
+                        ) {
+                            Ok(Some(v)) => {
+                                if let Some(obj) = v.as_object() {
+                                    if let Some(h) = obj.get("curr_hash").and_then(|x| x.as_str()) {
+                                        ctx.curr_hash = Some(h.to_string());
                                     }
-                                    ctx.response_data = Some(v);
-                                    StepResult::Continue
+                                    if let Some(vv) = obj.get("version").and_then(|x| x.as_i64()) {
+                                        ctx.version = Some(vv);
+                                    }
                                 }
-                                Ok(None) => StepResult::Stop(anyhow::anyhow!("not found")),
-                                Err(e) => StepResult::Stop(e),
+                                ctx.response_data = Some(v);
+                                StepResult::Continue
                             }
-                        }
-                        BizAction::List => {
-                            match dao.list(
-                                meta_repo,
-                                &ctx.tenant_id,
-                                &ctx.entity_code,
-                                ctx.filters.clone(),
-                                ctx.sort.clone(),
-                                ctx.page,
-                                ctx.page_size,
-                            ) {
-                                Ok(lr) => {
-                                    ctx.response_list_total = Some(lr.total);
-                                    ctx.response_data = Some(Value::Array(lr.items));
-                                    StepResult::Continue
-                                }
-                                Err(e) => StepResult::Stop(e),
-                            }
-                        }
-                        BizAction::Create => {
-                            if let Some(bid) = ctx.biz_id.clone() {
-                                ctx.response_data = Some(serde_json::json!({
-                                    "biz_id": bid,
-                                    "biz_code": ctx.biz_code.clone().unwrap_or_default(),
-                                    "version": ctx.version,
-                                }));
-                            }
-                            StepResult::Continue
-                        }
-                        BizAction::Update => {
-                            ctx.response_data = Some(serde_json::json!({"version": ctx.version}));
-                            StepResult::Continue
-                        }
-                        BizAction::Delete => {
-                            ctx.response_data = Some(serde_json::json!({"deleted": true}));
-                            StepResult::Continue
+                            Ok(None) => StepResult::Stop(anyhow::anyhow!("not found")),
+                            Err(e) => StepResult::Stop(e),
                         }
                     }
-                }
+                    BizAction::List => {
+                        match dao.list(
+                            meta_repo,
+                            &ctx.tenant_id,
+                            &ctx.entity_code,
+                            ctx.filters.clone(),
+                            ctx.sort.clone(),
+                            ctx.page,
+                            ctx.page_size,
+                        ) {
+                            Ok(lr) => {
+                                ctx.response_list_total = Some(lr.total);
+                                ctx.response_data = Some(Value::Array(lr.items));
+                                StepResult::Continue
+                            }
+                            Err(e) => StepResult::Stop(e),
+                        }
+                    }
+                    BizAction::Create => {
+                        if let Some(bid) = ctx.biz_id.clone() {
+                            ctx.response_data = Some(serde_json::json!({
+                                "biz_id": bid,
+                                "biz_code": ctx.biz_code.clone().unwrap_or_default(),
+                                "version": ctx.version,
+                            }));
+                        }
+                        StepResult::Continue
+                    }
+                    BizAction::Update => {
+                        ctx.response_data = Some(serde_json::json!({"version": ctx.version}));
+                        StepResult::Continue
+                    }
+                    BizAction::Delete => {
+                        ctx.response_data = Some(serde_json::json!({"deleted": true}));
+                        StepResult::Continue
+                    }
+                },
                 StageId::After => {
-                    let industry_opt = registry
-                        .find_by_entity(&ctx.entity_code, meta_repo, &ctx.tenant_id);
+                    let industry_opt =
+                        registry.find_by_entity(&ctx.entity_code, meta_repo, &ctx.tenant_id);
                     let mut r = StepResult::Continue;
                     if let Some(m) = registry.mods.get("common") {
                         let r2 = m.hook_after(ctx);
@@ -404,10 +424,8 @@ impl Pipeline {
                 StageId::Notify => {
                     // workflow_instance_id 存在时标记状态推进
                     if ctx.workflow_instance_id.is_some() {
-                        ctx.extra.insert(
-                            "workflow_pushed".into(),
-                            Value::Bool(true),
-                        );
+                        ctx.extra
+                            .insert("workflow_pushed".into(), Value::Bool(true));
                     }
                     StepResult::Continue
                 }
@@ -441,9 +459,7 @@ impl Pipeline {
                 StageId::Audit => {
                     let detail = format!(
                         "action={} entity={} biz_id={:?}",
-                        action_str,
-                        ctx.entity_code,
-                        ctx.biz_id
+                        action_str, ctx.entity_code, ctx.biz_id
                     );
                     // 写入审计日志
                     let _ = iam_repo.write_audit_log(mox_platform_datastore_core::AuditLogEntry {
@@ -461,17 +477,12 @@ impl Pipeline {
                     if let (Some(bid), Some(ver), Some(data_v), Some(created_at)) = (
                         ctx.biz_id.as_deref(),
                         ctx.version,
-                        ctx.snapshot_after.clone().or_else(|| ctx.response_data.clone()),
+                        ctx.snapshot_after
+                            .clone()
+                            .or_else(|| ctx.response_data.clone()),
                         Some(chrono::Utc::now().to_rfc3339().as_str().to_string()),
                     ) {
-                        let _ = compute_hash(
-                            None,
-                            bid,
-                            ver,
-                            &data_v,
-                            &ctx.user_id,
-                            &created_at,
-                        );
+                        let _ = compute_hash(None, bid, ver, &data_v, &ctx.user_id, &created_at);
                     }
                     StepResult::Continue
                 }
@@ -489,10 +500,14 @@ impl Pipeline {
         }
 
         let elapsed_ns = start.elapsed().as_nanos() as u64;
-        metrics.total_calls.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        metrics
+            .total_calls
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let ok = first_error.is_none();
         if !ok {
-            metrics.failed_calls.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            metrics
+                .failed_calls
+                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         }
         if let Ok(mut guard) = metrics.latencies_ns.lock() {
             guard.push(elapsed_ns);
@@ -510,9 +525,16 @@ impl Pipeline {
         if let Some(obj) = r.as_object_mut() {
             for f in fields {
                 if let Some(opts) = &f.options_inline {
-                    if let Some(code_v) = obj.get(&f.field_code).and_then(|x| x.as_str()).map(|s| s.to_string()) {
+                    if let Some(code_v) = obj
+                        .get(&f.field_code)
+                        .and_then(|x| x.as_str())
+                        .map(|s| s.to_string())
+                    {
                         if let Some(lbl) = opts.iter().find(|o| o.code == code_v) {
-                            obj.insert(format!("{}_label", f.field_code), Value::String(lbl.label.clone()));
+                            obj.insert(
+                                format!("{}_label", f.field_code),
+                                Value::String(lbl.label.clone()),
+                            );
                         }
                     }
                 }

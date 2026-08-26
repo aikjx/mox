@@ -22,7 +22,7 @@ enum PluginHolder {
     InlineGet(Arc<dyn InlineGet>),
     InlinePut(Arc<dyn InlinePut>),
     Offline(Arc<dyn OfflineXaction>),
-    /// Reserved for wasm-runtime feature: uncompiled wasm bytes path registered
+    /// Reserved for wasm-mox_platform_orchestrator_svc feature: uncompiled wasm bytes path registered
     WasmBytes { kind: PluginKind, wasm_path: std::path::PathBuf },
 }
 

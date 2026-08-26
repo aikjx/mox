@@ -6,10 +6,6 @@ license.workspace = true
 authors.workspace = true
 description = "Mox v2.0 T21 E2E Harness (>=700 integration tests) + Task12 Rubric Grade Calculator"
 
-[lib]
-name = "mox_t21_harness"
-path = "src/lib.rs"
-
 [dependencies]
 # Internal mox path crates
 mox-cloud-volume-svc = { workspace = true }

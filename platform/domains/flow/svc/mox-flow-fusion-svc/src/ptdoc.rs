@@ -371,7 +371,7 @@ fn crate_layer(name: &str) -> (&'static str, &'static str) {
         "business-catalog" => ("L1 需求语义", "业务全景目录"),
         "ai-agent" => ("L5 执行运行时", "AI 智能体闭环"),
         "template-market" => ("L6 资产沉淀", "模板市场"),
-        "runtime" => ("L4 调度编排", "AI 自动化中枢 / 算子商城"),
+        "mox_platform_orchestrator_svc" => ("L4 调度编排", "AI 自动化中枢 / 算子商城"),
         "mox-system" => ("L7 治理合规", "璇玑系统"),
         "primiflow" => ("L1/L4/L7", "全域原语编排 / 融合归一化 / 可视化画布"),
         _ => ("L5 执行运行时", ""),

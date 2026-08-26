@@ -178,7 +178,7 @@ fn decide_auto_simd(hint: usize) -> bool {
         return true;
     }
     if !crate::gf256_simd::is_avx2_supported() {
-        // No vector ISA available at runtime, use scalar.
+        // No vector ISA available at mox_platform_orchestrator_svc, use scalar.
         return false;
     }
     // AVX2 available: run a 64 KiB microbench comparing SIMD fused vs scalar
@@ -354,7 +354,7 @@ impl ReedSolomonEngine {
     }
 
     /// Encode with explicit SIMD/scalar path choice.  Useful for benchmarks
-    /// and platforms where runtime feature-detection heuristic is wrong.
+    /// and platforms where mox_platform_orchestrator_svc feature-detection heuristic is wrong.
     pub fn encode_with_path(
         &self,
         profile: &EcProfile,

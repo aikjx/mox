@@ -1,4 +1,4 @@
-//! 归一化 IR 扩展：在 `flow_ai` 的 FlowGraph 之上叠加「维度」着色。
+//! 归一化 IR 扩展：在 `mox_ai_flow_svc` 的 FlowGraph 之上叠加「维度」着色。
 //!
 //! 设计铁律：四种流程图（业务/算法/权限/资源）在内存里是**同一个 FlowGraph**，
 //! 维度只是节点/边上的标签。物理节点唯一，因此「改一处，全维同步」天然成立。
@@ -151,7 +151,7 @@ pub struct DimensionTag {
     pub weight: f64,
 }
 
-/// 扩展后的流程图：持有原始 flow_ai 图 + 维度标注
+/// 扩展后的流程图：持有原始 mox_ai_flow_svc 图 + 维度标注
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DimensionedFlow {
     pub base: FlowGraph,

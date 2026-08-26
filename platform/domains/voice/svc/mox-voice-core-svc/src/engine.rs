@@ -294,18 +294,18 @@ impl OperatorEngine {
         // op_clone 已在 S2 从 reg_snapshot 里 clone 出来（Arc，引用计数 +1），直接 move 进闭包
         let execute_result = tokio::task::spawn_blocking(move || {
             // execute 本身是 async，spawn_blocking 里不能直接 await；
-            // 解决方式：建一个 mini tokio current_thread runtime 在阻塞线程内跑
-            let rt = tokio::mox_platform_orchestrator_svc::Handle::try_current().ok();
+            // 解决方式：建一个 mini tokio current_thread mox_platform_orchestrator_svc 在阻塞线程内跑
+            let rt = tokio::runtime::Handle::try_current().ok();
             match rt {
                 Some(handle) => handle.block_on(op_clone.execute(&action, param, &id)),
                 None => {
-                    let mini = tokio::mox_platform_orchestrator_svc::Builder::new_current_thread()
+                    let mini = tokio::runtime::Builder::new_current_thread()
                         .enable_all()
                         .build()
                         .map_err(|e| XiaobaiError::ExecutionError {
                             category: category_for_err.as_str().into(),
                             action: action.clone(),
-                            detail: format!("failed to build mini tokio runtime: {e}"),
+                            detail: format!("failed to build mini tokio mox_platform_orchestrator_svc: {e}"),
                         })?;
                     mini.block_on(op_clone.execute(&action, param, &id))
                 }

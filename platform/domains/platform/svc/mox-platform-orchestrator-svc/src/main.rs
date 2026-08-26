@@ -73,7 +73,7 @@ mod rbac_middleware;
 mod routes;
 mod sidecar;
 /// 子服务聚合（Phase 1 收敛）：mox-expert / mox-system / primiflow / primiflow-fusion
-/// 以库方式挂载，由 runtime 唯一对外暴露
+/// 以库方式挂载，由 mox_platform_orchestrator_svc 唯一对外暴露
 mod subservers;
 
 /// 应用状态 - AI全维系统核心
@@ -391,7 +391,7 @@ async fn main() -> anyhow::Result<()> {
         let mut bus_guard = bus.write().await;
         // WASM插件管理器作为插件注册
         let _ = bus_guard.register(PluginInfo {
-            id: "wasm-runtime".to_string(),
+            id: "wasm-mox_platform_orchestrator_svc".to_string(),
             name: "WASM插件运行时".to_string(),
             version: "1.0.0".to_string(),
             plugin_type: PluginType::Builtin,

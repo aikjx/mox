@@ -1,4 +1,4 @@
-//! PyO3 扩展：xiaobai-dsp → Python `xiaobai_dsp_native`
+//! PyO3 扩展：xiaobai-dsp → Python `mox_voice_dsp_py`
 //!
 //! 目标：被 xiaobai_voice TTS 生产链路直接 import 使用，
 //!       替换 Python 侧纯 _apply_limiter_and_loudness / resample_linear / time_stretch_sola / wav.encode。
@@ -49,7 +49,7 @@ fn to_numpy_or_list(py: Python<'_>, data: Vec<f32>) -> PyResult<Py<PyAny>> {
 }
 
 #[pymodule]
-fn xiaobai_dsp_native(m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn mox_voice_dsp_py(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
 
     // ----- 1. 线性插值重采样 -----

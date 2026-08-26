@@ -4,7 +4,7 @@
 use crate::cypher_parser::CypherParser;
 use crate::error::{GraphError, GraphResult};
 use crate::ngql_parser::{NgqlParser, PlanNode};
-use crate::mox_flow_optimizer_core::{Optimizer, PlanOutput};
+use crate::optimizer::{Optimizer, PlanOutput};
 use crate::result_set::{PropValue, ResultSet};
 use std::collections::BTreeMap;
 use std::sync::Arc;

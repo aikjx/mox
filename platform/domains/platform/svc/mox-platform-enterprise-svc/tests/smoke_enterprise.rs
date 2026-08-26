@@ -6,7 +6,7 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use enterprise_svc_lib::app_state::AppState;
+use mox_platform_enterprise_svc::app_state::AppState;
 use mox_platform_meta_core::{EnumOption, FieldDef, FieldType};
 
 async fn build_state() -> Arc<AppState> {
@@ -22,7 +22,10 @@ async fn t01_app_state_start_ok() {
     // T1: 启动 OK：AppState 构建成功，4 个核心仓储非空指针 + 预置管道注册
     let s = build_state().await;
     assert!(Arc::strong_count(&s) >= 1);
-    assert!(s.iam.find_tenant_by_code("T001").is_some(), "IAM 种子租户 T001 必须存在");
+    assert!(
+        s.iam.find_tenant_by_code("T001").is_some(),
+        "IAM 种子租户 T001 必须存在"
+    );
     let pipelines = s.orch.list_pipelines();
     assert!(!pipelines.is_empty(), "默认 pipeline 必须注册");
 }
@@ -67,9 +70,21 @@ async fn t02_define_entity_project_fields_3() {
             filterable: true,
             ui_component: Some("Select".to_string()),
             options_inline: Some(vec![
-                EnumOption { value: "draft".to_string(), label: "草稿".to_string(), color: Some("#999".to_string()) },
-                EnumOption { value: "doing".to_string(), label: "进行中".to_string(), color: Some("#1677ff".to_string()) },
-                EnumOption { value: "done".to_string(), label: "已完成".to_string(), color: Some("#52c41a".to_string()) },
+                EnumOption {
+                    value: "draft".to_string(),
+                    label: "草稿".to_string(),
+                    color: Some("#999".to_string()),
+                },
+                EnumOption {
+                    value: "doing".to_string(),
+                    label: "进行中".to_string(),
+                    color: Some("#1677ff".to_string()),
+                },
+                EnumOption {
+                    value: "done".to_string(),
+                    label: "已完成".to_string(),
+                    color: Some("#52c41a".to_string()),
+                },
             ]),
         },
     ];
@@ -85,7 +100,11 @@ async fn t02_define_entity_project_fields_3() {
     assert!(slot_map.contains_key("amount"), "slot_map 必须包含 amount");
     assert!(slot_map.contains_key("status"), "slot_map 必须包含 status");
 
-    let ent = s.meta.get_entity("default", "project").expect("entity must exist").expect("entity not None");
+    let ent = s
+        .meta
+        .get_entity("default", "project")
+        .expect("entity must exist")
+        .expect("entity not None");
     assert_eq!(ent.fields.len(), 3, "entity fields 数量必须 = 3");
 }
 
@@ -97,7 +116,10 @@ async fn t03_seed_iam_tenant_dept_user_role() {
     assert_eq!(tnt.tenant_code, "T001");
 
     // 部门存在（至少 1 个）
-    let depts: Vec<_> = s.iam.list_departments(&tnt.tenant_id).expect("list departments");
+    let depts: Vec<_> = s
+        .iam
+        .list_departments(&tnt.tenant_id)
+        .expect("list departments");
     assert!(!depts.is_empty(), "至少 1 个部门（种子 D001）");
 
     // 用户 admin 存在
@@ -121,30 +143,61 @@ async fn t04_create_project_success() {
     let s = build_state().await;
     let fields = vec![
         FieldDef {
-            code: "title".to_string(), name: "项目标题".to_string(),
-            r#type: FieldType::String, required: true, indexed: true,
-            searchable: true, sortable: true, filterable: true,
-            ui_component: None, options_inline: None,
+            code: "title".to_string(),
+            name: "项目标题".to_string(),
+            r#type: FieldType::String,
+            required: true,
+            indexed: true,
+            searchable: true,
+            sortable: true,
+            filterable: true,
+            ui_component: None,
+            options_inline: None,
         },
         FieldDef {
-            code: "amount".to_string(), name: "项目金额".to_string(),
-            r#type: FieldType::Decimal, required: false, indexed: false,
-            searchable: false, sortable: true, filterable: true,
-            ui_component: None, options_inline: None,
+            code: "amount".to_string(),
+            name: "项目金额".to_string(),
+            r#type: FieldType::Decimal,
+            required: false,
+            indexed: false,
+            searchable: false,
+            sortable: true,
+            filterable: true,
+            ui_component: None,
+            options_inline: None,
         },
         FieldDef {
-            code: "status".to_string(), name: "项目状态".to_string(),
-            r#type: FieldType::Enum, required: false, indexed: true,
-            searchable: false, sortable: true, filterable: true,
+            code: "status".to_string(),
+            name: "项目状态".to_string(),
+            r#type: FieldType::Enum,
+            required: false,
+            indexed: true,
+            searchable: false,
+            sortable: true,
+            filterable: true,
             ui_component: None,
             options_inline: Some(vec![
-                EnumOption { value: "draft".to_string(), label: "草稿".to_string(), color: None },
-                EnumOption { value: "doing".to_string(), label: "进行中".to_string(), color: None },
-                EnumOption { value: "done".to_string(), label: "已完成".to_string(), color: None },
+                EnumOption {
+                    value: "draft".to_string(),
+                    label: "草稿".to_string(),
+                    color: None,
+                },
+                EnumOption {
+                    value: "doing".to_string(),
+                    label: "进行中".to_string(),
+                    color: None,
+                },
+                EnumOption {
+                    value: "done".to_string(),
+                    label: "已完成".to_string(),
+                    color: None,
+                },
             ]),
         },
     ];
-    s.meta.define_entity(None, "project".to_string(), "项目".to_string(), fields).unwrap();
+    s.meta
+        .define_entity(None, "project".to_string(), "项目".to_string(), fields)
+        .unwrap();
 
     let mut data: BTreeMap<String, serde_json::Value> = BTreeMap::new();
     data.insert("title".to_string(), serde_json::json!("XX产业园信息化建设"));
@@ -170,7 +223,9 @@ async fn t05_list_project_total_eq_1() {
     // T5: list total=1
     let s = build_state().await;
     seed_project_entity(&s);
-    s.orch.create_sync("project", None, sample_data(), "tester").unwrap();
+    s.orch
+        .create_sync("project", None, sample_data(), "tester")
+        .unwrap();
 
     let list = s.orch.list_sync("project", None).expect("list project");
     assert_eq!(list.len(), 1, "list total 必须 = 1");
@@ -181,7 +236,10 @@ async fn t06_update_amount_and_status_version_up() {
     // T6: update 修改 amount=9999999.99 + status done → version up
     let s = build_state().await;
     seed_project_entity(&s);
-    let rec = s.orch.create_sync("project", None, sample_data(), "tester").unwrap();
+    let rec = s
+        .orch
+        .create_sync("project", None, sample_data(), "tester")
+        .unwrap();
     let biz_id = rec.biz_id.clone();
     let old_version = rec.version;
 
@@ -212,7 +270,10 @@ async fn t07_get_title_and_new_amount_status_label() {
     // T7: get → title 与新 amount/status label
     let s = build_state().await;
     seed_project_entity(&s);
-    let rec = s.orch.create_sync("project", None, sample_data(), "tester").unwrap();
+    let rec = s
+        .orch
+        .create_sync("project", None, sample_data(), "tester")
+        .unwrap();
     let biz_id = rec.biz_id.clone();
 
     let mut patch: BTreeMap<String, serde_json::Value> = BTreeMap::new();
@@ -243,7 +304,10 @@ async fn t08_version_count_ge_2() {
     // T8: version count >= 2（create + update）
     let s = build_state().await;
     seed_project_entity(&s);
-    let rec = s.orch.create_sync("project", None, sample_data(), "tester").unwrap();
+    let rec = s
+        .orch
+        .create_sync("project", None, sample_data(), "tester")
+        .unwrap();
     let biz_id = rec.biz_id.clone();
 
     let mut patch: BTreeMap<String, serde_json::Value> = BTreeMap::new();
@@ -259,7 +323,9 @@ async fn t09_metrics_fail_rate_eq_0() {
     // T9: metrics failRate=0
     let s = build_state().await;
     seed_project_entity(&s);
-    s.orch.create_sync("project", None, sample_data(), "tester").unwrap();
+    s.orch
+        .create_sync("project", None, sample_data(), "tester")
+        .unwrap();
     let list = s.orch.list_sync("project", None).expect("list");
     assert!(!list.is_empty());
 
@@ -275,7 +341,10 @@ async fn t10_audit_chain_continuous_3() {
     // T10: audit_chain 连续至少 3 条 prev->curr 非 null
     let s = build_state().await;
     seed_project_entity(&s);
-    let rec = s.orch.create_sync("project", None, sample_data(), "tester").unwrap();
+    let rec = s
+        .orch
+        .create_sync("project", None, sample_data(), "tester")
+        .unwrap();
     let biz_id = rec.biz_id.clone();
 
     let mut p1: BTreeMap<String, serde_json::Value> = BTreeMap::new();
@@ -291,7 +360,10 @@ async fn t10_audit_chain_continuous_3() {
 
     let mut prev_curr: Option<String> = None;
     for (i, node) in chain.iter().enumerate() {
-        let prev_hash = node.get("prev_hash").and_then(|v| v.as_str()).filter(|s| !s.is_empty());
+        let prev_hash = node
+            .get("prev_hash")
+            .and_then(|v| v.as_str())
+            .filter(|s| !s.is_empty());
         let curr_hash = node.get("curr_hash").and_then(|v| v.as_str()).unwrap_or("");
         if i == 0 {
             // 链首可以无 prev_hash
@@ -321,7 +393,10 @@ async fn t11_delete_and_list_total_eq_0() {
     // T11: delete + list total=0
     let s = build_state().await;
     seed_project_entity(&s);
-    let rec = s.orch.create_sync("project", None, sample_data(), "tester").unwrap();
+    let rec = s
+        .orch
+        .create_sync("project", None, sample_data(), "tester")
+        .unwrap();
     let biz_id = rec.biz_id.clone();
 
     let before = s.orch.list_sync("project", None).unwrap();
@@ -339,26 +414,55 @@ async fn t11_delete_and_list_total_eq_0() {
 fn seed_project_entity(s: &Arc<AppState>) {
     let fields = vec![
         FieldDef {
-            code: "title".to_string(), name: "项目标题".to_string(),
-            r#type: FieldType::String, required: true, indexed: true,
-            searchable: true, sortable: true, filterable: true,
-            ui_component: None, options_inline: None,
+            code: "title".to_string(),
+            name: "项目标题".to_string(),
+            r#type: FieldType::String,
+            required: true,
+            indexed: true,
+            searchable: true,
+            sortable: true,
+            filterable: true,
+            ui_component: None,
+            options_inline: None,
         },
         FieldDef {
-            code: "amount".to_string(), name: "项目金额".to_string(),
-            r#type: FieldType::Decimal, required: false, indexed: false,
-            searchable: false, sortable: true, filterable: true,
-            ui_component: None, options_inline: None,
+            code: "amount".to_string(),
+            name: "项目金额".to_string(),
+            r#type: FieldType::Decimal,
+            required: false,
+            indexed: false,
+            searchable: false,
+            sortable: true,
+            filterable: true,
+            ui_component: None,
+            options_inline: None,
         },
         FieldDef {
-            code: "status".to_string(), name: "项目状态".to_string(),
-            r#type: FieldType::Enum, required: false, indexed: true,
-            searchable: false, sortable: true, filterable: true,
+            code: "status".to_string(),
+            name: "项目状态".to_string(),
+            r#type: FieldType::Enum,
+            required: false,
+            indexed: true,
+            searchable: false,
+            sortable: true,
+            filterable: true,
             ui_component: None,
             options_inline: Some(vec![
-                EnumOption { value: "draft".to_string(), label: "草稿".to_string(), color: None },
-                EnumOption { value: "doing".to_string(), label: "进行中".to_string(), color: None },
-                EnumOption { value: "done".to_string(), label: "已完成".to_string(), color: None },
+                EnumOption {
+                    value: "draft".to_string(),
+                    label: "草稿".to_string(),
+                    color: None,
+                },
+                EnumOption {
+                    value: "doing".to_string(),
+                    label: "进行中".to_string(),
+                    color: None,
+                },
+                EnumOption {
+                    value: "done".to_string(),
+                    label: "已完成".to_string(),
+                    color: None,
+                },
             ]),
         },
     ];

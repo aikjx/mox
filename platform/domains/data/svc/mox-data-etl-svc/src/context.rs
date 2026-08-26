@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-/// Immutable runtime context delivered to every transform.
+/// Immutable mox_platform_orchestrator_svc context delivered to every transform.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub struct EtContext {
     pub uri: String,

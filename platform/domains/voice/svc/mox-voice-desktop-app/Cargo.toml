@@ -6,10 +6,6 @@ license.workspace = true
 authors.workspace = true
 description = "Xiaobai · 桌面小白助手 BallWidget（Slint 骨架 + 5 状态机）+ 启动 voice_proxy 3717 服务"
 
-[lib]
-name = "xiaobai_desktop"
-path = "src/lib.rs"
-
 [dependencies]
 mox-voice-core-svc = { workspace = true }
 mox-voice-operator-svc = { workspace = true, features = ["server-3717"] }

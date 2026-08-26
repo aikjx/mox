@@ -1,169 +1,378 @@
 {
-  "total_crates": 48,
+  "total_crates": 54,
   "cycles": [],
   "layer_violations": [
     {
-      "crate": "ai-agent",
-      "crate_layer": "service",
-      "depends_on": "template-market",
-      "dep_layer": "application",
+      "crate": "mox-platform-test-harness",
+      "crate_layer": "sdk",
+      "depends_on": "mox-cloud-volume-svc",
+      "dep_layer": "service",
       "severity": "MEDIUM"
+    },
+    {
+      "crate": "mox-platform-test-harness",
+      "crate_layer": "sdk",
+      "depends_on": "mox-data-compliance-svc",
+      "dep_layer": "service",
+      "severity": "MEDIUM"
+    },
+    {
+      "crate": "mox-platform-test-harness",
+      "crate_layer": "sdk",
+      "depends_on": "mox-data-etl-svc",
+      "dep_layer": "service",
+      "severity": "MEDIUM"
+    },
+    {
+      "crate": "mox-platform-test-harness",
+      "crate_layer": "sdk",
+      "depends_on": "mox-data-plane-svc",
+      "dep_layer": "service",
+      "severity": "MEDIUM"
+    },
+    {
+      "crate": "mox-platform-test-harness",
+      "crate_layer": "sdk",
+      "depends_on": "mox-kg-fusion-svc",
+      "dep_layer": "service",
+      "severity": "MEDIUM"
+    },
+    {
+      "crate": "mox-platform-test-harness",
+      "crate_layer": "sdk",
+      "depends_on": "mox-platform-gateway-svc",
+      "dep_layer": "gateway",
+      "severity": "HIGH"
     }
   ],
   "domain_violations": [
     {
-      "crate": "graph-algorithms",
-      "crate_domain": "knowledge_graph",
-      "depends_on": "operator-core",
-      "dep_domain": "flow_automation"
+      "crate": "mox-data-formula-core",
+      "crate_domain": "data",
+      "depends_on": "mox-platform-foundation",
+      "dep_domain": "foundation"
     },
     {
-      "crate": "hermes-flow-bridge",
-      "crate_domain": "flow_automation",
-      "depends_on": "flow-ai",
-      "dep_domain": "ai_intelligent"
+      "crate": "mox-data-norm-core",
+      "crate_domain": "data",
+      "depends_on": "mox-platform-foundation",
+      "dep_domain": "foundation"
     },
     {
-      "crate": "hermes-flow-bridge",
-      "crate_domain": "flow_automation",
-      "depends_on": "mox-expert",
-      "dep_domain": "ai_intelligent"
+      "crate": "mox-ai-intent-core",
+      "crate_domain": "ai",
+      "depends_on": "mox-platform-foundation",
+      "dep_domain": "foundation"
     },
     {
-      "crate": "business-catalog",
-      "crate_domain": "data_governance",
-      "depends_on": "flow-ai",
-      "dep_domain": "ai_intelligent"
+      "crate": "mox-voice-dsp-core",
+      "crate_domain": "voice",
+      "depends_on": "mox-platform-foundation",
+      "dep_domain": "foundation"
     },
     {
-      "crate": "business-catalog",
-      "crate_domain": "data_governance",
-      "depends_on": "mox-expert",
-      "dep_domain": "ai_intelligent"
+      "crate": "mox-flow-operator-core",
+      "crate_domain": "flow",
+      "depends_on": "mox-platform-foundation",
+      "dep_domain": "foundation"
     },
     {
-      "crate": "ai-agent",
-      "crate_domain": "ai_intelligent",
-      "depends_on": "graph-algorithms",
-      "dep_domain": "knowledge_graph"
+      "crate": "mox-flow-optimizer-core",
+      "crate_domain": "flow",
+      "depends_on": "mox-platform-foundation",
+      "dep_domain": "foundation"
     },
     {
-      "crate": "ai-agent",
-      "crate_domain": "ai_intelligent",
-      "depends_on": "kg-hub",
-      "dep_domain": "knowledge_graph"
+      "crate": "mox-kg-algo-core",
+      "crate_domain": "kg",
+      "depends_on": "mox-flow-operator-core",
+      "dep_domain": "flow"
     },
     {
-      "crate": "ai-agent",
-      "crate_domain": "ai_intelligent",
-      "depends_on": "operator-core",
-      "dep_domain": "flow_automation"
+      "crate": "mox-kg-algo-core",
+      "crate_domain": "kg",
+      "depends_on": "mox-platform-foundation",
+      "dep_domain": "foundation"
     },
     {
-      "crate": "ai-agent",
-      "crate_domain": "ai_intelligent",
-      "depends_on": "template-market",
+      "crate": "mox-kg-meta-core",
+      "crate_domain": "kg",
+      "depends_on": "mox-cloud-foundation",
+      "dep_domain": "foundation"
+    },
+    {
+      "crate": "mox-data-standards-core",
+      "crate_domain": "data",
+      "depends_on": "mox-cloud-foundation",
+      "dep_domain": "foundation"
+    },
+    {
+      "crate": "mox-kg-storage-svc",
+      "crate_domain": "kg",
+      "depends_on": "mox-cloud-foundation",
+      "dep_domain": "foundation"
+    },
+    {
+      "crate": "mox-kg-service-svc",
+      "crate_domain": "kg",
+      "depends_on": "mox-cloud-foundation",
+      "dep_domain": "foundation"
+    },
+    {
+      "crate": "mox-kg-streams-svc",
+      "crate_domain": "kg",
+      "depends_on": "mox-cloud-foundation",
+      "dep_domain": "foundation"
+    },
+    {
+      "crate": "mox-kg-hub-svc",
+      "crate_domain": "kg",
+      "depends_on": "mox-flow-fusion-svc",
+      "dep_domain": "flow"
+    },
+    {
+      "crate": "mox-kg-hub-svc",
+      "crate_domain": "kg",
+      "depends_on": "mox-platform-foundation",
+      "dep_domain": "foundation"
+    },
+    {
+      "crate": "mox-flow-fusion-svc",
+      "crate_domain": "flow",
+      "depends_on": "mox-ai-flow-svc",
+      "dep_domain": "ai"
+    },
+    {
+      "crate": "mox-flow-fusion-svc",
+      "crate_domain": "flow",
+      "depends_on": "mox-platform-foundation",
+      "dep_domain": "foundation"
+    },
+    {
+      "crate": "mox-ai-flow-svc",
+      "crate_domain": "ai",
+      "depends_on": "mox-platform-foundation",
+      "dep_domain": "foundation"
+    },
+    {
+      "crate": "mox-flow-primiflow-svc",
+      "crate_domain": "flow",
+      "depends_on": "mox-ai-flow-svc",
+      "dep_domain": "ai"
+    },
+    {
+      "crate": "mox-flow-primiflow-svc",
+      "crate_domain": "flow",
+      "depends_on": "mox-platform-foundation",
+      "dep_domain": "foundation"
+    },
+    {
+      "crate": "mox-ai-expert-svc",
+      "crate_domain": "ai",
+      "depends_on": "mox-platform-foundation",
+      "dep_domain": "foundation"
+    },
+    {
+      "crate": "mox-ai-agent-svc",
+      "crate_domain": "ai",
+      "depends_on": "mox-flow-operator-core",
+      "dep_domain": "flow"
+    },
+    {
+      "crate": "mox-ai-agent-svc",
+      "crate_domain": "ai",
+      "depends_on": "mox-kg-algo-core",
+      "dep_domain": "kg"
+    },
+    {
+      "crate": "mox-ai-agent-svc",
+      "crate_domain": "ai",
+      "depends_on": "mox-kg-hub-svc",
+      "dep_domain": "kg"
+    },
+    {
+      "crate": "mox-ai-agent-svc",
+      "crate_domain": "ai",
+      "depends_on": "mox-platform-foundation",
+      "dep_domain": "foundation"
+    },
+    {
+      "crate": "mox-ai-agent-svc",
+      "crate_domain": "ai",
+      "depends_on": "mox-market-template-svc",
       "dep_domain": "market"
     },
     {
-      "crate": "kg-hub",
-      "crate_domain": "knowledge_graph",
-      "depends_on": "primiflow-fusion",
-      "dep_domain": "flow_automation"
+      "crate": "mox-market-template-svc",
+      "crate_domain": "market",
+      "depends_on": "mox-platform-foundation",
+      "dep_domain": "foundation"
     },
     {
-      "crate": "primiflow-fusion",
-      "crate_domain": "flow_automation",
-      "depends_on": "flow-ai",
-      "dep_domain": "ai_intelligent"
+      "crate": "mox-flow-operator-wasm-svc",
+      "crate_domain": "flow",
+      "depends_on": "mox-platform-foundation",
+      "dep_domain": "foundation"
     },
     {
-      "crate": "primiflow-core",
-      "crate_domain": "flow_automation",
-      "depends_on": "flow-ai",
-      "dep_domain": "ai_intelligent"
+      "crate": "mox-flow-bridge-svc",
+      "crate_domain": "flow",
+      "depends_on": "mox-ai-expert-svc",
+      "dep_domain": "ai"
     },
     {
-      "crate": "mox-standards",
-      "crate_domain": "data_governance",
-      "depends_on": "mox-domain-abstractions",
-      "dep_domain": "cloud_storage"
+      "crate": "mox-flow-bridge-svc",
+      "crate_domain": "flow",
+      "depends_on": "mox-ai-flow-svc",
+      "dep_domain": "ai"
     },
     {
-      "crate": "mox-graph-meta",
-      "crate_domain": "knowledge_graph",
-      "depends_on": "mox-domain-abstractions",
-      "dep_domain": "cloud_storage"
+      "crate": "mox-flow-bridge-svc",
+      "crate_domain": "flow",
+      "depends_on": "mox-platform-foundation",
+      "dep_domain": "foundation"
     },
     {
-      "crate": "mox-cloud-drive-s3",
-      "crate_domain": "cloud_storage",
-      "depends_on": "mox-standards",
-      "dep_domain": "data_governance"
+      "crate": "mox-data-catalog-svc",
+      "crate_domain": "data",
+      "depends_on": "mox-ai-expert-svc",
+      "dep_domain": "ai"
     },
     {
-      "crate": "mox-graph-storage",
-      "crate_domain": "knowledge_graph",
-      "depends_on": "mox-domain-abstractions",
-      "dep_domain": "cloud_storage"
+      "crate": "mox-data-catalog-svc",
+      "crate_domain": "data",
+      "depends_on": "mox-ai-flow-svc",
+      "dep_domain": "ai"
     },
     {
-      "crate": "mox-graph-service",
-      "crate_domain": "knowledge_graph",
-      "depends_on": "mox-domain-abstractions",
-      "dep_domain": "cloud_storage"
+      "crate": "mox-data-catalog-svc",
+      "crate_domain": "data",
+      "depends_on": "mox-platform-foundation",
+      "dep_domain": "foundation"
     },
     {
-      "crate": "mox-graph-streams",
-      "crate_domain": "knowledge_graph",
-      "depends_on": "mox-domain-abstractions",
-      "dep_domain": "cloud_storage"
+      "crate": "mox-cloud-master-svc",
+      "crate_domain": "cloud",
+      "depends_on": "mox-cloud-foundation",
+      "dep_domain": "foundation"
     },
     {
-      "crate": "xiaobai-core",
-      "crate_domain": "xiaobai_voice",
-      "depends_on": "mox-expert",
-      "dep_domain": "ai_intelligent"
+      "crate": "mox-cloud-volume-svc",
+      "crate_domain": "cloud",
+      "depends_on": "mox-cloud-foundation",
+      "dep_domain": "foundation"
     },
     {
-      "crate": "xiaobai-core",
-      "crate_domain": "xiaobai_voice",
-      "depends_on": "operator-core",
-      "dep_domain": "flow_automation"
+      "crate": "mox-cloud-s3-svc",
+      "crate_domain": "cloud",
+      "depends_on": "mox-cloud-foundation",
+      "dep_domain": "foundation"
     },
     {
-      "crate": "mox-formulas-native",
-      "crate_domain": "sdk",
-      "depends_on": "mox-formulas-core",
-      "dep_domain": "data_governance"
+      "crate": "mox-cloud-s3-svc",
+      "crate_domain": "cloud",
+      "depends_on": "mox-data-standards-core",
+      "dep_domain": "data"
     },
     {
-      "crate": "mox-norm-intent-native",
-      "crate_domain": "sdk",
-      "depends_on": "mox-formulas-core",
-      "dep_domain": "data_governance"
+      "crate": "mox-voice-core-svc",
+      "crate_domain": "voice",
+      "depends_on": "mox-ai-expert-svc",
+      "dep_domain": "ai"
     },
     {
-      "crate": "mox-norm-intent-native",
-      "crate_domain": "sdk",
-      "depends_on": "mox-intent-core",
-      "dep_domain": "ai_intelligent"
+      "crate": "mox-voice-core-svc",
+      "crate_domain": "voice",
+      "depends_on": "mox-flow-operator-core",
+      "dep_domain": "flow"
     },
     {
-      "crate": "mox-norm-intent-native",
-      "crate_domain": "sdk",
-      "depends_on": "mox-norm-core",
-      "dep_domain": "data_governance"
+      "crate": "mox-voice-core-svc",
+      "crate_domain": "voice",
+      "depends_on": "mox-platform-foundation",
+      "dep_domain": "foundation"
+    },
+    {
+      "crate": "mox-voice-asr-svc",
+      "crate_domain": "voice",
+      "depends_on": "mox-platform-foundation",
+      "dep_domain": "foundation"
+    },
+    {
+      "crate": "mox-voice-intent-svc",
+      "crate_domain": "voice",
+      "depends_on": "mox-platform-foundation",
+      "dep_domain": "foundation"
+    },
+    {
+      "crate": "mox-voice-operator-svc",
+      "crate_domain": "voice",
+      "depends_on": "mox-platform-foundation",
+      "dep_domain": "foundation"
+    },
+    {
+      "crate": "mox-platform-gateway-svc",
+      "crate_domain": "gateway",
+      "depends_on": "mox-cloud-volume-svc",
+      "dep_domain": "cloud"
+    },
+    {
+      "crate": "mox-platform-gateway-svc",
+      "crate_domain": "gateway",
+      "depends_on": "mox-data-compliance-svc",
+      "dep_domain": "data"
+    },
+    {
+      "crate": "mox-platform-gateway-svc",
+      "crate_domain": "gateway",
+      "depends_on": "mox-data-etl-svc",
+      "dep_domain": "data"
+    },
+    {
+      "crate": "mox-platform-gateway-svc",
+      "crate_domain": "gateway",
+      "depends_on": "mox-data-plane-svc",
+      "dep_domain": "data"
+    },
+    {
+      "crate": "mox-platform-gateway-svc",
+      "crate_domain": "gateway",
+      "depends_on": "mox-data-standards-core",
+      "dep_domain": "data"
+    },
+    {
+      "crate": "mox-platform-gateway-svc",
+      "crate_domain": "gateway",
+      "depends_on": "mox-kg-fusion-svc",
+      "dep_domain": "kg"
+    },
+    {
+      "crate": "mox-platform-gateway-svc",
+      "crate_domain": "gateway",
+      "depends_on": "mox-kg-service-svc",
+      "dep_domain": "kg"
+    },
+    {
+      "crate": "mox-voice-desktop-app",
+      "crate_domain": "voice",
+      "depends_on": "mox-platform-foundation",
+      "dep_domain": "foundation"
+    },
+    {
+      "crate": "mox-data-norm-intent-native",
+      "crate_domain": "data",
+      "depends_on": "mox-ai-intent-core",
+      "dep_domain": "ai"
     }
   ],
   "god_modules": [
-    "runtime"
+    "mox-platform-orchestrator-svc"
   ],
   "metrics": [
     {
-      "name": "mox-common-meta",
+      "name": "mox-platform-foundation",
       "layer": "foundation",
-      "domain": "platform",
+      "domain": "foundation",
       "fan_out": 0,
       "fan_in": 24,
       "total_deps": 24,
@@ -172,35 +381,35 @@
       "instability": 0.0,
       "deps": [],
       "reverse_deps": [
-        "operator-core",
-        "operator-wasm",
-        "graph-algorithms",
-        "optimizer",
-        "flow-ai",
-        "mox-expert",
-        "hermes-flow-bridge",
-        "business-catalog",
-        "ai-agent",
-        "kg-hub",
-        "primiflow-fusion",
-        "primiflow-core",
-        "mox-system",
-        "template-market",
-        "runtime",
-        "mox-formulas-core",
-        "mox-norm-core",
-        "mox-intent-core",
-        "xiaobai-dsp",
-        "xiaobai-core",
-        "xiaobai-operators",
-        "xiaobai-asr",
-        "xiaobai-intent",
-        "xiaobai-desktop"
+        "mox-data-formula-core",
+        "mox-data-norm-core",
+        "mox-ai-intent-core",
+        "mox-voice-dsp-core",
+        "mox-flow-operator-core",
+        "mox-flow-optimizer-core",
+        "mox-kg-algo-core",
+        "mox-platform-system-core",
+        "mox-kg-hub-svc",
+        "mox-flow-fusion-svc",
+        "mox-ai-flow-svc",
+        "mox-flow-primiflow-svc",
+        "mox-ai-expert-svc",
+        "mox-ai-agent-svc",
+        "mox-market-template-svc",
+        "mox-flow-operator-wasm-svc",
+        "mox-flow-bridge-svc",
+        "mox-data-catalog-svc",
+        "mox-voice-core-svc",
+        "mox-voice-asr-svc",
+        "mox-voice-intent-svc",
+        "mox-voice-operator-svc",
+        "mox-platform-orchestrator-svc",
+        "mox-voice-desktop-app"
       ]
     },
     {
-      "name": "runtime",
-      "layer": "application",
+      "name": "mox-platform-orchestrator-svc",
+      "layer": "service",
       "domain": "platform",
       "fan_out": 15,
       "fan_in": 0,
@@ -209,74 +418,28 @@
       "coupling": 45,
       "instability": 1.0,
       "deps": [
-        "ai-agent",
-        "business-catalog",
-        "flow-ai",
-        "graph-algorithms",
-        "mox-common-meta",
-        "mox-expert",
-        "mox-system",
-        "operator-core",
-        "operator-wasm",
-        "optimizer",
-        "primiflow-core",
-        "primiflow-fusion",
-        "hermes-flow-bridge",
-        "kg-hub",
-        "template-market"
+        "mox-ai-agent-svc",
+        "mox-ai-expert-svc",
+        "mox-ai-flow-svc",
+        "mox-data-catalog-svc",
+        "mox-flow-fusion-svc",
+        "mox-flow-operator-core",
+        "mox-flow-operator-wasm-svc",
+        "mox-flow-optimizer-core",
+        "mox-flow-primiflow-svc",
+        "mox-kg-algo-core",
+        "mox-platform-foundation",
+        "mox-platform-system-core",
+        "mox-flow-bridge-svc",
+        "mox-kg-hub-svc",
+        "mox-market-template-svc"
       ],
       "reverse_deps": []
     },
     {
-      "name": "flow-ai",
-      "layer": "service",
-      "domain": "ai_intelligent",
-      "fan_out": 1,
-      "fan_in": 7,
-      "total_deps": 8,
-      "independence": 81,
-      "coupling": 24,
-      "instability": 0.125,
-      "deps": [
-        "mox-common-meta"
-      ],
-      "reverse_deps": [
-        "mox-expert",
-        "hermes-flow-bridge",
-        "business-catalog",
-        "ai-agent",
-        "primiflow-fusion",
-        "primiflow-core",
-        "runtime"
-      ]
-    },
-    {
-      "name": "ai-agent",
-      "layer": "service",
-      "domain": "ai_intelligent",
-      "fan_out": 7,
-      "fan_in": 1,
-      "total_deps": 8,
-      "independence": 63,
-      "coupling": 24,
-      "instability": 0.875,
-      "deps": [
-        "graph-algorithms",
-        "kg-hub",
-        "mox-common-meta",
-        "mox-system",
-        "operator-core",
-        "flow-ai",
-        "template-market"
-      ],
-      "reverse_deps": [
-        "runtime"
-      ]
-    },
-    {
-      "name": "mox-domain-abstractions",
+      "name": "mox-cloud-foundation",
       "layer": "foundation",
-      "domain": "cloud_storage",
+      "domain": "foundation",
       "fan_out": 0,
       "fan_in": 8,
       "total_deps": 8,
@@ -285,20 +448,43 @@
       "instability": 0.0,
       "deps": [],
       "reverse_deps": [
-        "mox-cloud-drive-master",
-        "mox-cloud-drive-volume",
-        "mox-standards",
-        "mox-graph-meta",
-        "mox-cloud-drive-s3",
-        "mox-graph-storage",
-        "mox-graph-service",
-        "mox-graph-streams"
+        "mox-kg-meta-core",
+        "mox-data-standards-core",
+        "mox-kg-storage-svc",
+        "mox-kg-service-svc",
+        "mox-kg-streams-svc",
+        "mox-cloud-master-svc",
+        "mox-cloud-volume-svc",
+        "mox-cloud-s3-svc"
       ]
     },
     {
-      "name": "mox-server",
-      "layer": "application",
-      "domain": "platform",
+      "name": "mox-ai-flow-svc",
+      "layer": "service",
+      "domain": "ai",
+      "fan_out": 1,
+      "fan_in": 7,
+      "total_deps": 8,
+      "independence": 81,
+      "coupling": 24,
+      "instability": 0.125,
+      "deps": [
+        "mox-platform-foundation"
+      ],
+      "reverse_deps": [
+        "mox-flow-fusion-svc",
+        "mox-flow-primiflow-svc",
+        "mox-ai-expert-svc",
+        "mox-ai-agent-svc",
+        "mox-flow-bridge-svc",
+        "mox-data-catalog-svc",
+        "mox-platform-orchestrator-svc"
+      ]
+    },
+    {
+      "name": "mox-ai-agent-svc",
+      "layer": "service",
+      "domain": "ai",
       "fan_out": 7,
       "fan_in": 1,
       "total_deps": 8,
@@ -306,22 +492,22 @@
       "coupling": 24,
       "instability": 0.875,
       "deps": [
-        "mox-cloud-drive-volume",
-        "mox-compliance",
-        "mox-data-plane",
-        "mox-etl-wasm",
-        "mox-fusion",
-        "mox-graph-service",
-        "mox-standards"
+        "mox-flow-operator-core",
+        "mox-kg-algo-core",
+        "mox-kg-hub-svc",
+        "mox-platform-foundation",
+        "mox-platform-system-core",
+        "mox-ai-flow-svc",
+        "mox-market-template-svc"
       ],
       "reverse_deps": [
-        "mox-t21-harness"
+        "mox-platform-orchestrator-svc"
       ]
     },
     {
-      "name": "xiaobai-core",
-      "layer": "application",
-      "domain": "xiaobai_voice",
+      "name": "mox-voice-core-svc",
+      "layer": "service",
+      "domain": "voice",
       "fan_out": 4,
       "fan_in": 4,
       "total_deps": 8,
@@ -329,22 +515,45 @@
       "coupling": 24,
       "instability": 0.5,
       "deps": [
-        "mox-common-meta",
-        "mox-expert",
-        "mox-system",
-        "operator-core"
+        "mox-ai-expert-svc",
+        "mox-flow-operator-core",
+        "mox-platform-foundation",
+        "mox-platform-system-core"
       ],
       "reverse_deps": [
-        "xiaobai-operators",
-        "xiaobai-asr",
-        "xiaobai-intent",
-        "xiaobai-desktop"
+        "mox-voice-asr-svc",
+        "mox-voice-intent-svc",
+        "mox-voice-operator-svc",
+        "mox-voice-desktop-app"
       ]
     },
     {
-      "name": "operator-core",
+      "name": "mox-platform-gateway-svc",
+      "layer": "gateway",
+      "domain": "gateway",
+      "fan_out": 7,
+      "fan_in": 1,
+      "total_deps": 8,
+      "independence": 63,
+      "coupling": 24,
+      "instability": 0.875,
+      "deps": [
+        "mox-cloud-volume-svc",
+        "mox-data-compliance-svc",
+        "mox-data-etl-svc",
+        "mox-data-plane-svc",
+        "mox-data-standards-core",
+        "mox-kg-fusion-svc",
+        "mox-kg-service-svc"
+      ],
+      "reverse_deps": [
+        "mox-platform-test-harness"
+      ]
+    },
+    {
+      "name": "mox-flow-operator-core",
       "layer": "core",
-      "domain": "flow_automation",
+      "domain": "flow",
       "fan_out": 1,
       "fan_in": 6,
       "total_deps": 7,
@@ -352,21 +561,21 @@
       "coupling": 21,
       "instability": 0.143,
       "deps": [
-        "mox-common-meta"
+        "mox-platform-foundation"
       ],
       "reverse_deps": [
-        "operator-wasm",
-        "graph-algorithms",
-        "optimizer",
-        "ai-agent",
-        "runtime",
-        "xiaobai-core"
+        "mox-flow-optimizer-core",
+        "mox-kg-algo-core",
+        "mox-ai-agent-svc",
+        "mox-flow-operator-wasm-svc",
+        "mox-voice-core-svc",
+        "mox-platform-orchestrator-svc"
       ]
     },
     {
-      "name": "graph-algorithms",
+      "name": "mox-kg-algo-core",
       "layer": "core",
-      "domain": "knowledge_graph",
+      "domain": "kg",
       "fan_out": 2,
       "fan_in": 5,
       "total_deps": 7,
@@ -374,42 +583,21 @@
       "coupling": 21,
       "instability": 0.286,
       "deps": [
-        "mox-common-meta",
-        "operator-core"
+        "mox-flow-operator-core",
+        "mox-platform-foundation"
       ],
       "reverse_deps": [
-        "ai-agent",
-        "kg-hub",
-        "runtime",
-        "mox-graph-storage",
-        "mox-graph-service"
+        "mox-kg-storage-svc",
+        "mox-kg-service-svc",
+        "mox-kg-hub-svc",
+        "mox-ai-agent-svc",
+        "mox-platform-orchestrator-svc"
       ]
     },
     {
-      "name": "mox-expert",
+      "name": "mox-kg-service-svc",
       "layer": "service",
-      "domain": "ai_intelligent",
-      "fan_out": 2,
-      "fan_in": 4,
-      "total_deps": 6,
-      "independence": 82,
-      "coupling": 18,
-      "instability": 0.333,
-      "deps": [
-        "flow-ai",
-        "mox-common-meta"
-      ],
-      "reverse_deps": [
-        "hermes-flow-bridge",
-        "business-catalog",
-        "runtime",
-        "xiaobai-core"
-      ]
-    },
-    {
-      "name": "mox-graph-service",
-      "layer": "service",
-      "domain": "knowledge_graph",
+      "domain": "kg",
       "fan_out": 4,
       "fan_in": 2,
       "total_deps": 6,
@@ -417,19 +605,40 @@
       "coupling": 18,
       "instability": 0.667,
       "deps": [
-        "graph-algorithms",
-        "mox-domain-abstractions",
-        "mox-graph-meta",
-        "mox-graph-storage"
+        "mox-cloud-foundation",
+        "mox-kg-algo-core",
+        "mox-kg-meta-core",
+        "mox-kg-storage-svc"
       ],
       "reverse_deps": [
-        "mox-fusion",
-        "mox-server"
+        "mox-kg-fusion-svc",
+        "mox-platform-gateway-svc"
       ]
     },
     {
-      "name": "mox-t21-harness",
-      "layer": "application",
+      "name": "mox-ai-expert-svc",
+      "layer": "service",
+      "domain": "ai",
+      "fan_out": 2,
+      "fan_in": 4,
+      "total_deps": 6,
+      "independence": 82,
+      "coupling": 18,
+      "instability": 0.333,
+      "deps": [
+        "mox-ai-flow-svc",
+        "mox-platform-foundation"
+      ],
+      "reverse_deps": [
+        "mox-flow-bridge-svc",
+        "mox-data-catalog-svc",
+        "mox-voice-core-svc",
+        "mox-platform-orchestrator-svc"
+      ]
+    },
+    {
+      "name": "mox-platform-test-harness",
+      "layer": "sdk",
       "domain": "platform",
       "fan_out": 6,
       "fan_in": 0,
@@ -438,77 +647,17 @@
       "coupling": 18,
       "instability": 1.0,
       "deps": [
-        "mox-cloud-drive-volume",
-        "mox-compliance",
-        "mox-data-plane",
-        "mox-etl-wasm",
-        "mox-fusion",
-        "mox-server"
+        "mox-cloud-volume-svc",
+        "mox-data-compliance-svc",
+        "mox-data-etl-svc",
+        "mox-data-plane-svc",
+        "mox-kg-fusion-svc",
+        "mox-platform-gateway-svc"
       ],
       "reverse_deps": []
     },
     {
-      "name": "kg-hub",
-      "layer": "service",
-      "domain": "knowledge_graph",
-      "fan_out": 3,
-      "fan_in": 2,
-      "total_deps": 5,
-      "independence": 81,
-      "coupling": 15,
-      "instability": 0.6,
-      "deps": [
-        "graph-algorithms",
-        "mox-common-meta",
-        "primiflow-fusion"
-      ],
-      "reverse_deps": [
-        "ai-agent",
-        "runtime"
-      ]
-    },
-    {
-      "name": "primiflow-fusion",
-      "layer": "service",
-      "domain": "flow_automation",
-      "fan_out": 3,
-      "fan_in": 2,
-      "total_deps": 5,
-      "independence": 81,
-      "coupling": 15,
-      "instability": 0.6,
-      "deps": [
-        "flow-ai",
-        "mox-common-meta",
-        "primiflow-core"
-      ],
-      "reverse_deps": [
-        "kg-hub",
-        "runtime"
-      ]
-    },
-    {
-      "name": "primiflow-core",
-      "layer": "service",
-      "domain": "flow_automation",
-      "fan_out": 3,
-      "fan_in": 2,
-      "total_deps": 5,
-      "independence": 81,
-      "coupling": 15,
-      "instability": 0.6,
-      "deps": [
-        "flow-ai",
-        "mox-common-meta",
-        "mox-system"
-      ],
-      "reverse_deps": [
-        "primiflow-fusion",
-        "runtime"
-      ]
-    },
-    {
-      "name": "mox-system",
+      "name": "mox-platform-system-core",
       "layer": "core",
       "domain": "platform",
       "fan_out": 1,
@@ -518,39 +667,19 @@
       "coupling": 15,
       "instability": 0.2,
       "deps": [
-        "mox-common-meta"
+        "mox-platform-foundation"
       ],
       "reverse_deps": [
-        "ai-agent",
-        "primiflow-core",
-        "runtime",
-        "xiaobai-core"
+        "mox-flow-primiflow-svc",
+        "mox-ai-agent-svc",
+        "mox-voice-core-svc",
+        "mox-platform-orchestrator-svc"
       ]
     },
     {
-      "name": "mox-cloud-drive-volume",
+      "name": "mox-kg-storage-svc",
       "layer": "service",
-      "domain": "cloud_storage",
-      "fan_out": 1,
-      "fan_in": 4,
-      "total_deps": 5,
-      "independence": 87,
-      "coupling": 15,
-      "instability": 0.2,
-      "deps": [
-        "mox-domain-abstractions"
-      ],
-      "reverse_deps": [
-        "mox-cloud-drive-master",
-        "mox-cloud-drive-s3",
-        "mox-server",
-        "mox-t21-harness"
-      ]
-    },
-    {
-      "name": "mox-graph-storage",
-      "layer": "engine",
-      "domain": "knowledge_graph",
+      "domain": "kg",
       "fan_out": 3,
       "fan_in": 2,
       "total_deps": 5,
@@ -558,19 +687,99 @@
       "coupling": 15,
       "instability": 0.6,
       "deps": [
-        "graph-algorithms",
-        "mox-domain-abstractions",
-        "mox-graph-meta"
+        "mox-cloud-foundation",
+        "mox-kg-algo-core",
+        "mox-kg-meta-core"
       ],
       "reverse_deps": [
-        "mox-graph-service",
-        "mox-graph-streams"
+        "mox-kg-service-svc",
+        "mox-kg-streams-svc"
       ]
     },
     {
-      "name": "xiaobai-operators",
-      "layer": "application",
-      "domain": "xiaobai_voice",
+      "name": "mox-kg-hub-svc",
+      "layer": "service",
+      "domain": "kg",
+      "fan_out": 3,
+      "fan_in": 2,
+      "total_deps": 5,
+      "independence": 81,
+      "coupling": 15,
+      "instability": 0.6,
+      "deps": [
+        "mox-flow-fusion-svc",
+        "mox-kg-algo-core",
+        "mox-platform-foundation"
+      ],
+      "reverse_deps": [
+        "mox-ai-agent-svc",
+        "mox-platform-orchestrator-svc"
+      ]
+    },
+    {
+      "name": "mox-flow-fusion-svc",
+      "layer": "service",
+      "domain": "flow",
+      "fan_out": 3,
+      "fan_in": 2,
+      "total_deps": 5,
+      "independence": 81,
+      "coupling": 15,
+      "instability": 0.6,
+      "deps": [
+        "mox-ai-flow-svc",
+        "mox-flow-primiflow-svc",
+        "mox-platform-foundation"
+      ],
+      "reverse_deps": [
+        "mox-kg-hub-svc",
+        "mox-platform-orchestrator-svc"
+      ]
+    },
+    {
+      "name": "mox-flow-primiflow-svc",
+      "layer": "service",
+      "domain": "flow",
+      "fan_out": 3,
+      "fan_in": 2,
+      "total_deps": 5,
+      "independence": 81,
+      "coupling": 15,
+      "instability": 0.6,
+      "deps": [
+        "mox-ai-flow-svc",
+        "mox-platform-foundation",
+        "mox-platform-system-core"
+      ],
+      "reverse_deps": [
+        "mox-flow-fusion-svc",
+        "mox-platform-orchestrator-svc"
+      ]
+    },
+    {
+      "name": "mox-cloud-volume-svc",
+      "layer": "service",
+      "domain": "cloud",
+      "fan_out": 1,
+      "fan_in": 4,
+      "total_deps": 5,
+      "independence": 87,
+      "coupling": 15,
+      "instability": 0.2,
+      "deps": [
+        "mox-cloud-foundation"
+      ],
+      "reverse_deps": [
+        "mox-cloud-master-svc",
+        "mox-cloud-s3-svc",
+        "mox-platform-gateway-svc",
+        "mox-platform-test-harness"
+      ]
+    },
+    {
+      "name": "mox-voice-operator-svc",
+      "layer": "service",
+      "domain": "voice",
       "fan_out": 4,
       "fan_in": 1,
       "total_deps": 5,
@@ -578,19 +787,19 @@
       "coupling": 15,
       "instability": 0.8,
       "deps": [
-        "mox-common-meta",
-        "xiaobai-asr",
-        "xiaobai-core",
-        "xiaobai-intent"
+        "mox-platform-foundation",
+        "mox-voice-asr-svc",
+        "mox-voice-core-svc",
+        "mox-voice-intent-svc"
       ],
       "reverse_deps": [
-        "xiaobai-desktop"
+        "mox-voice-desktop-app"
       ]
     },
     {
-      "name": "xiaobai-desktop",
-      "layer": "application",
-      "domain": "xiaobai_voice",
+      "name": "mox-voice-desktop-app",
+      "layer": "service",
+      "domain": "voice",
       "fan_out": 5,
       "fan_in": 0,
       "total_deps": 5,
@@ -598,56 +807,56 @@
       "coupling": 15,
       "instability": 1.0,
       "deps": [
-        "mox-common-meta",
-        "xiaobai-asr",
-        "xiaobai-core",
-        "xiaobai-intent",
-        "xiaobai-operators"
+        "mox-platform-foundation",
+        "mox-voice-asr-svc",
+        "mox-voice-core-svc",
+        "mox-voice-intent-svc",
+        "mox-voice-operator-svc"
       ],
       "reverse_deps": []
     },
     {
-      "name": "hermes-flow-bridge",
-      "layer": "application",
-      "domain": "flow_automation",
-      "fan_out": 3,
-      "fan_in": 1,
-      "total_deps": 4,
-      "independence": 83,
-      "coupling": 12,
-      "instability": 0.75,
-      "deps": [
-        "flow-ai",
-        "mox-common-meta",
-        "mox-expert"
-      ],
-      "reverse_deps": [
-        "runtime"
-      ]
-    },
-    {
-      "name": "business-catalog",
-      "layer": "application",
-      "domain": "data_governance",
-      "fan_out": 3,
-      "fan_in": 1,
-      "total_deps": 4,
-      "independence": 83,
-      "coupling": 12,
-      "instability": 0.75,
-      "deps": [
-        "flow-ai",
-        "mox-common-meta",
-        "mox-expert"
-      ],
-      "reverse_deps": [
-        "runtime"
-      ]
-    },
-    {
-      "name": "mox-cloud-drive-s3",
+      "name": "mox-flow-bridge-svc",
       "layer": "service",
-      "domain": "cloud_storage",
+      "domain": "flow",
+      "fan_out": 3,
+      "fan_in": 1,
+      "total_deps": 4,
+      "independence": 83,
+      "coupling": 12,
+      "instability": 0.75,
+      "deps": [
+        "mox-ai-expert-svc",
+        "mox-ai-flow-svc",
+        "mox-platform-foundation"
+      ],
+      "reverse_deps": [
+        "mox-platform-orchestrator-svc"
+      ]
+    },
+    {
+      "name": "mox-data-catalog-svc",
+      "layer": "service",
+      "domain": "data",
+      "fan_out": 3,
+      "fan_in": 1,
+      "total_deps": 4,
+      "independence": 83,
+      "coupling": 12,
+      "instability": 0.75,
+      "deps": [
+        "mox-ai-expert-svc",
+        "mox-ai-flow-svc",
+        "mox-platform-foundation"
+      ],
+      "reverse_deps": [
+        "mox-platform-orchestrator-svc"
+      ]
+    },
+    {
+      "name": "mox-cloud-s3-svc",
+      "layer": "service",
+      "domain": "cloud",
       "fan_out": 4,
       "fan_in": 0,
       "total_deps": 4,
@@ -655,17 +864,17 @@
       "coupling": 12,
       "instability": 1.0,
       "deps": [
-        "mox-cloud-drive-master",
-        "mox-cloud-drive-volume",
-        "mox-domain-abstractions",
-        "mox-standards"
+        "mox-cloud-foundation",
+        "mox-cloud-master-svc",
+        "mox-cloud-volume-svc",
+        "mox-data-standards-core"
       ],
       "reverse_deps": []
     },
     {
-      "name": "xiaobai-asr",
-      "layer": "application",
-      "domain": "xiaobai_voice",
+      "name": "mox-voice-asr-svc",
+      "layer": "service",
+      "domain": "voice",
       "fan_out": 2,
       "fan_in": 2,
       "total_deps": 4,
@@ -673,18 +882,18 @@
       "coupling": 12,
       "instability": 0.5,
       "deps": [
-        "mox-common-meta",
-        "xiaobai-core"
+        "mox-platform-foundation",
+        "mox-voice-core-svc"
       ],
       "reverse_deps": [
-        "xiaobai-operators",
-        "xiaobai-desktop"
+        "mox-voice-operator-svc",
+        "mox-voice-desktop-app"
       ]
     },
     {
-      "name": "xiaobai-intent",
-      "layer": "application",
-      "domain": "xiaobai_voice",
+      "name": "mox-voice-intent-svc",
+      "layer": "service",
+      "domain": "voice",
       "fan_out": 2,
       "fan_in": 2,
       "total_deps": 4,
@@ -692,18 +901,73 @@
       "coupling": 12,
       "instability": 0.5,
       "deps": [
-        "mox-common-meta",
-        "xiaobai-core"
+        "mox-platform-foundation",
+        "mox-voice-core-svc"
       ],
       "reverse_deps": [
-        "xiaobai-operators",
-        "xiaobai-desktop"
+        "mox-voice-operator-svc",
+        "mox-voice-desktop-app"
       ]
     },
     {
-      "name": "operator-wasm",
-      "layer": "engine",
-      "domain": "flow_automation",
+      "name": "mox-platform-enterprise-svc",
+      "layer": "service",
+      "domain": "platform",
+      "fan_out": 4,
+      "fan_in": 0,
+      "total_deps": 4,
+      "independence": 80,
+      "coupling": 12,
+      "instability": 1.0,
+      "deps": [
+        "mox-platform-datastore-core",
+        "mox-platform-iam-core",
+        "mox-platform-meta-core",
+        "mox-platform-orchestrator-core"
+      ],
+      "reverse_deps": []
+    },
+    {
+      "name": "mox-platform-datastore-core",
+      "layer": "core",
+      "domain": "platform",
+      "fan_out": 2,
+      "fan_in": 2,
+      "total_deps": 4,
+      "independence": 86,
+      "coupling": 12,
+      "instability": 0.5,
+      "deps": [
+        "mox-platform-iam-core",
+        "mox-platform-meta-core"
+      ],
+      "reverse_deps": [
+        "mox-platform-enterprise-svc",
+        "mox-platform-orchestrator-core"
+      ]
+    },
+    {
+      "name": "mox-data-formula-core",
+      "layer": "core",
+      "domain": "data",
+      "fan_out": 1,
+      "fan_in": 2,
+      "total_deps": 3,
+      "independence": 91,
+      "coupling": 9,
+      "instability": 0.333,
+      "deps": [
+        "mox-platform-foundation"
+      ],
+      "reverse_deps": [
+        "mox-data-formula-native",
+        "mox-data-norm-intent-native"
+      ]
+    },
+    {
+      "name": "mox-flow-optimizer-core",
+      "layer": "core",
+      "domain": "flow",
       "fan_out": 2,
       "fan_in": 1,
       "total_deps": 3,
@@ -711,34 +975,70 @@
       "coupling": 9,
       "instability": 0.667,
       "deps": [
-        "mox-common-meta",
-        "operator-core"
+        "mox-flow-operator-core",
+        "mox-platform-foundation"
       ],
       "reverse_deps": [
-        "runtime"
+        "mox-platform-orchestrator-svc"
       ]
     },
     {
-      "name": "optimizer",
-      "layer": "engine",
-      "domain": "flow_automation",
-      "fan_out": 2,
-      "fan_in": 1,
+      "name": "mox-kg-meta-core",
+      "layer": "core",
+      "domain": "kg",
+      "fan_out": 1,
+      "fan_in": 2,
       "total_deps": 3,
-      "independence": 88,
+      "independence": 91,
       "coupling": 9,
-      "instability": 0.667,
+      "instability": 0.333,
       "deps": [
-        "mox-common-meta",
-        "operator-core"
+        "mox-cloud-foundation"
       ],
       "reverse_deps": [
-        "runtime"
+        "mox-kg-storage-svc",
+        "mox-kg-service-svc"
       ]
     },
     {
-      "name": "template-market",
-      "layer": "application",
+      "name": "mox-data-standards-core",
+      "layer": "core",
+      "domain": "data",
+      "fan_out": 1,
+      "fan_in": 2,
+      "total_deps": 3,
+      "independence": 91,
+      "coupling": 9,
+      "instability": 0.333,
+      "deps": [
+        "mox-cloud-foundation"
+      ],
+      "reverse_deps": [
+        "mox-cloud-s3-svc",
+        "mox-platform-gateway-svc"
+      ]
+    },
+    {
+      "name": "mox-kg-fusion-svc",
+      "layer": "service",
+      "domain": "kg",
+      "fan_out": 1,
+      "fan_in": 2,
+      "total_deps": 3,
+      "independence": 91,
+      "coupling": 9,
+      "instability": 0.333,
+      "deps": [
+        "mox-kg-service-svc"
+      ],
+      "reverse_deps": [
+        "mox-platform-gateway-svc",
+        "mox-platform-test-harness"
+      ]
+    },
+    {
+      "name": "mox-market-template-svc",
+      "layer": "service",
       "domain": "market",
       "fan_out": 1,
       "fan_in": 2,
@@ -747,17 +1047,17 @@
       "coupling": 9,
       "instability": 0.333,
       "deps": [
-        "mox-common-meta"
+        "mox-platform-foundation"
       ],
       "reverse_deps": [
-        "ai-agent",
-        "runtime"
+        "mox-ai-agent-svc",
+        "mox-platform-orchestrator-svc"
       ]
     },
     {
-      "name": "mox-cloud-drive-master",
+      "name": "mox-flow-operator-wasm-svc",
       "layer": "service",
-      "domain": "cloud_storage",
+      "domain": "flow",
       "fan_out": 2,
       "fan_in": 1,
       "total_deps": 3,
@@ -765,89 +1065,35 @@
       "coupling": 9,
       "instability": 0.667,
       "deps": [
-        "mox-domain-abstractions",
-        "mox-cloud-drive-volume"
+        "mox-flow-operator-core",
+        "mox-platform-foundation"
       ],
       "reverse_deps": [
-        "mox-cloud-drive-s3"
+        "mox-platform-orchestrator-svc"
       ]
     },
     {
-      "name": "mox-standards",
-      "layer": "core",
-      "domain": "data_governance",
-      "fan_out": 1,
-      "fan_in": 2,
-      "total_deps": 3,
-      "independence": 91,
-      "coupling": 9,
-      "instability": 0.333,
-      "deps": [
-        "mox-domain-abstractions"
-      ],
-      "reverse_deps": [
-        "mox-cloud-drive-s3",
-        "mox-server"
-      ]
-    },
-    {
-      "name": "mox-graph-meta",
-      "layer": "core",
-      "domain": "knowledge_graph",
-      "fan_out": 1,
-      "fan_in": 2,
-      "total_deps": 3,
-      "independence": 91,
-      "coupling": 9,
-      "instability": 0.333,
-      "deps": [
-        "mox-domain-abstractions"
-      ],
-      "reverse_deps": [
-        "mox-graph-storage",
-        "mox-graph-service"
-      ]
-    },
-    {
-      "name": "mox-fusion",
+      "name": "mox-cloud-master-svc",
       "layer": "service",
-      "domain": "knowledge_graph",
-      "fan_out": 1,
-      "fan_in": 2,
+      "domain": "cloud",
+      "fan_out": 2,
+      "fan_in": 1,
       "total_deps": 3,
-      "independence": 91,
+      "independence": 88,
       "coupling": 9,
-      "instability": 0.333,
+      "instability": 0.667,
       "deps": [
-        "mox-graph-service"
+        "mox-cloud-foundation",
+        "mox-cloud-volume-svc"
       ],
       "reverse_deps": [
-        "mox-server",
-        "mox-t21-harness"
+        "mox-cloud-s3-svc"
       ]
     },
     {
-      "name": "mox-formulas-core",
-      "layer": "core",
-      "domain": "data_governance",
-      "fan_out": 1,
-      "fan_in": 2,
-      "total_deps": 3,
-      "independence": 91,
-      "coupling": 9,
-      "instability": 0.333,
-      "deps": [
-        "mox-common-meta"
-      ],
-      "reverse_deps": [
-        "mox-formulas-native",
-        "mox-norm-intent-native"
-      ]
-    },
-    {
-      "name": "mox-norm-intent-native",
-      "layer": "engine",
-      "domain": "sdk",
+      "name": "mox-data-norm-intent-native",
+      "layer": "sdk",
+      "domain": "data",
       "fan_out": 3,
       "fan_in": 0,
       "total_deps": 3,
@@ -855,16 +1101,99 @@
       "coupling": 9,
       "instability": 1.0,
       "deps": [
-        "mox-formulas-core",
-        "mox-intent-core",
-        "mox-norm-core"
+        "mox-ai-intent-core",
+        "mox-data-formula-core",
+        "mox-data-norm-core"
       ],
       "reverse_deps": []
     },
     {
-      "name": "mox-graph-streams",
+      "name": "mox-data-norm-core",
+      "layer": "core",
+      "domain": "data",
+      "fan_out": 1,
+      "fan_in": 1,
+      "total_deps": 2,
+      "independence": 93,
+      "coupling": 6,
+      "instability": 0.5,
+      "deps": [
+        "mox-platform-foundation"
+      ],
+      "reverse_deps": [
+        "mox-data-norm-intent-native"
+      ]
+    },
+    {
+      "name": "mox-ai-intent-core",
+      "layer": "core",
+      "domain": "ai",
+      "fan_out": 1,
+      "fan_in": 1,
+      "total_deps": 2,
+      "independence": 93,
+      "coupling": 6,
+      "instability": 0.5,
+      "deps": [
+        "mox-platform-foundation"
+      ],
+      "reverse_deps": [
+        "mox-data-norm-intent-native"
+      ]
+    },
+    {
+      "name": "mox-voice-dsp-core",
+      "layer": "core",
+      "domain": "voice",
+      "fan_out": 1,
+      "fan_in": 1,
+      "total_deps": 2,
+      "independence": 93,
+      "coupling": 6,
+      "instability": 0.5,
+      "deps": [
+        "mox-platform-foundation"
+      ],
+      "reverse_deps": [
+        "mox-voice-dsp-py"
+      ]
+    },
+    {
+      "name": "mox-platform-iam-core",
+      "layer": "core",
+      "domain": "platform",
+      "fan_out": 0,
+      "fan_in": 2,
+      "total_deps": 2,
+      "independence": 96,
+      "coupling": 6,
+      "instability": 0.0,
+      "deps": [],
+      "reverse_deps": [
+        "mox-platform-enterprise-svc",
+        "mox-platform-datastore-core"
+      ]
+    },
+    {
+      "name": "mox-platform-meta-core",
+      "layer": "core",
+      "domain": "platform",
+      "fan_out": 0,
+      "fan_in": 2,
+      "total_deps": 2,
+      "independence": 96,
+      "coupling": 6,
+      "instability": 0.0,
+      "deps": [],
+      "reverse_deps": [
+        "mox-platform-enterprise-svc",
+        "mox-platform-datastore-core"
+      ]
+    },
+    {
+      "name": "mox-kg-streams-svc",
       "layer": "service",
-      "domain": "knowledge_graph",
+      "domain": "kg",
       "fan_out": 2,
       "fan_in": 0,
       "total_deps": 2,
@@ -872,15 +1201,15 @@
       "coupling": 6,
       "instability": 1.0,
       "deps": [
-        "mox-domain-abstractions",
-        "mox-graph-storage"
+        "mox-cloud-foundation",
+        "mox-kg-storage-svc"
       ],
       "reverse_deps": []
     },
     {
-      "name": "mox-compliance",
+      "name": "mox-data-plane-svc",
       "layer": "service",
-      "domain": "data_governance",
+      "domain": "data",
       "fan_out": 0,
       "fan_in": 2,
       "total_deps": 2,
@@ -889,14 +1218,14 @@
       "instability": 0.0,
       "deps": [],
       "reverse_deps": [
-        "mox-server",
-        "mox-t21-harness"
+        "mox-platform-gateway-svc",
+        "mox-platform-test-harness"
       ]
     },
     {
-      "name": "mox-etl-wasm",
+      "name": "mox-data-etl-svc",
       "layer": "service",
-      "domain": "data_governance",
+      "domain": "data",
       "fan_out": 0,
       "fan_in": 2,
       "total_deps": 2,
@@ -905,14 +1234,14 @@
       "instability": 0.0,
       "deps": [],
       "reverse_deps": [
-        "mox-server",
-        "mox-t21-harness"
+        "mox-platform-gateway-svc",
+        "mox-platform-test-harness"
       ]
     },
     {
-      "name": "mox-data-plane",
+      "name": "mox-data-compliance-svc",
       "layer": "service",
-      "domain": "data_governance",
+      "domain": "data",
       "fan_out": 0,
       "fan_in": 2,
       "total_deps": 2,
@@ -921,14 +1250,14 @@
       "instability": 0.0,
       "deps": [],
       "reverse_deps": [
-        "mox-server",
-        "mox-t21-harness"
+        "mox-platform-gateway-svc",
+        "mox-platform-test-harness"
       ]
     },
     {
-      "name": "mox-norm-core",
+      "name": "mox-platform-orchestrator-core",
       "layer": "core",
-      "domain": "data_governance",
+      "domain": "platform",
       "fan_out": 1,
       "fan_in": 1,
       "total_deps": 2,
@@ -936,50 +1265,16 @@
       "coupling": 6,
       "instability": 0.5,
       "deps": [
-        "mox-common-meta"
+        "mox-platform-datastore-core"
       ],
       "reverse_deps": [
-        "mox-norm-intent-native"
+        "mox-platform-enterprise-svc"
       ]
     },
     {
-      "name": "mox-intent-core",
-      "layer": "core",
-      "domain": "ai_intelligent",
-      "fan_out": 1,
-      "fan_in": 1,
-      "total_deps": 2,
-      "independence": 93,
-      "coupling": 6,
-      "instability": 0.5,
-      "deps": [
-        "mox-common-meta"
-      ],
-      "reverse_deps": [
-        "mox-norm-intent-native"
-      ]
-    },
-    {
-      "name": "xiaobai-dsp",
-      "layer": "engine",
-      "domain": "xiaobai_voice",
-      "fan_out": 1,
-      "fan_in": 1,
-      "total_deps": 2,
-      "independence": 93,
-      "coupling": 6,
-      "instability": 0.5,
-      "deps": [
-        "mox-common-meta"
-      ],
-      "reverse_deps": [
-        "xiaobai-dsp-py"
-      ]
-    },
-    {
-      "name": "mox-formulas-native",
-      "layer": "engine",
-      "domain": "sdk",
+      "name": "mox-data-formula-native",
+      "layer": "sdk",
+      "domain": "data",
       "fan_out": 1,
       "fan_in": 0,
       "total_deps": 1,
@@ -987,14 +1282,14 @@
       "coupling": 3,
       "instability": 1.0,
       "deps": [
-        "mox-formulas-core"
+        "mox-data-formula-core"
       ],
       "reverse_deps": []
     },
     {
-      "name": "xiaobai-dsp-py",
-      "layer": "application",
-      "domain": "xiaobai_voice",
+      "name": "mox-voice-dsp-py",
+      "layer": "sdk",
+      "domain": "voice",
       "fan_out": 1,
       "fan_in": 0,
       "total_deps": 1,
@@ -1002,66 +1297,79 @@
       "coupling": 3,
       "instability": 1.0,
       "deps": [
-        "xiaobai-dsp"
+        "mox-voice-dsp-core"
       ],
-      "reverse_deps": []
-    },
-    {
-      "name": "mox-sdk-cloud",
-      "layer": "service",
-      "domain": "sdk",
-      "fan_out": 0,
-      "fan_in": 0,
-      "total_deps": 0,
-      "independence": 100,
-      "coupling": 0,
-      "instability": 0,
-      "deps": [],
-      "reverse_deps": []
-    },
-    {
-      "name": "mox-sdk-graph",
-      "layer": "service",
-      "domain": "sdk",
-      "fan_out": 0,
-      "fan_in": 0,
-      "total_deps": 0,
-      "independence": 100,
-      "coupling": 0,
-      "instability": 0,
-      "deps": [],
-      "reverse_deps": []
-    },
-    {
-      "name": "mox-cloud-drive-filer",
-      "layer": "service",
-      "domain": "cloud_storage",
-      "fan_out": 0,
-      "fan_in": 0,
-      "total_deps": 0,
-      "independence": 100,
-      "coupling": 0,
-      "instability": 0,
-      "deps": [],
-      "reverse_deps": []
-    },
-    {
-      "name": "mox-graph-spark",
-      "layer": "service",
-      "domain": "knowledge_graph",
-      "fan_out": 0,
-      "fan_in": 0,
-      "total_deps": 0,
-      "independence": 100,
-      "coupling": 0,
-      "instability": 0,
-      "deps": [],
       "reverse_deps": []
     },
     {
       "name": "mox-ai-core",
       "layer": "core",
-      "domain": "ai_intelligent",
+      "domain": "ai",
+      "fan_out": 0,
+      "fan_in": 0,
+      "total_deps": 0,
+      "independence": 100,
+      "coupling": 0,
+      "instability": 0,
+      "deps": [],
+      "reverse_deps": []
+    },
+    {
+      "name": "mox-kg-spark-svc",
+      "layer": "service",
+      "domain": "kg",
+      "fan_out": 0,
+      "fan_in": 0,
+      "total_deps": 0,
+      "independence": 100,
+      "coupling": 0,
+      "instability": 0,
+      "deps": [],
+      "reverse_deps": []
+    },
+    {
+      "name": "mox-cloud-filer-svc",
+      "layer": "service",
+      "domain": "cloud",
+      "fan_out": 0,
+      "fan_in": 0,
+      "total_deps": 0,
+      "independence": 100,
+      "coupling": 0,
+      "instability": 0,
+      "deps": [],
+      "reverse_deps": []
+    },
+    {
+      "name": "mox-cloud-sdk",
+      "layer": "sdk",
+      "domain": "cloud",
+      "fan_out": 0,
+      "fan_in": 0,
+      "total_deps": 0,
+      "independence": 100,
+      "coupling": 0,
+      "instability": 0,
+      "deps": [],
+      "reverse_deps": []
+    },
+    {
+      "name": "mox-kg-sdk",
+      "layer": "sdk",
+      "domain": "kg",
+      "fan_out": 0,
+      "fan_in": 0,
+      "total_deps": 0,
+      "independence": 100,
+      "coupling": 0,
+      "instability": 0,
+      "deps": [],
+      "reverse_deps": []
+    },
+    {
+      "name": "mox-framework",
+      "layer": "framework",
+      "domain": "framework",
       "fan_out": 0,
       "fan_in": 0,
       "total_deps": 0,

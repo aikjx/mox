@@ -1028,7 +1028,7 @@ pub fn publish_unified(
 ) -> std::io::Result<OperatorPackage> {
     let id = gen_id();
     let ts = now_rfc3339();
-    // flow_ai 模型 -> 算子商城展示模型（字段结构不同，做归一化映射）
+    // mox_ai_flow_svc 模型 -> 算子商城展示模型（字段结构不同，做归一化映射）
     let market_nodes: Vec<FlowNode> = nodes
         .into_iter()
         .enumerate()

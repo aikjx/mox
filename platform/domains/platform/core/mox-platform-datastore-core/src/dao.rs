@@ -1,14 +1,14 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-use parking_lot::Mutex;
+use chrono::Utc;
 use dashmap::DashMap;
+use parking_lot::Mutex;
 use rusqlite::{params, OptionalExtension, Row};
 use serde_json::{Map, Value};
+use std::collections::HashMap;
+use std::sync::Arc;
 use uuid::Uuid;
-use chrono::Utc;
 
-use crate::port::{EntityWithFields, MetaRepository, IamRepository};
 use crate::audit_chain::compute_hash;
+use crate::port::{EntityWithFields, IamRepository, MetaRepository};
 use crate::slot_allocator::{FieldSlotAllocator, SlotCategory};
 
 pub const DDL_SQL: &str = include_str!("ddl.sql");
@@ -72,18 +72,17 @@ impl UniversalBizDAO {
     fn map_value_to_slot(
         val: &Value,
         cat: SlotCategory,
-    ) -> (
-        Option<String>,
-        Option<i64>,
-        Option<f64>,
-    ) {
+    ) -> (Option<String>, Option<i64>, Option<f64>) {
         match cat {
             SlotCategory::Bool => {
                 let b = val.as_bool().unwrap_or(false);
                 (None, Some(if b { 1 } else { 0 }), None)
             }
             SlotCategory::Int => {
-                let i = val.as_i64().or_else(|| val.as_f64().map(|f| f as i64)).unwrap_or(0);
+                let i = val
+                    .as_i64()
+                    .or_else(|| val.as_f64().map(|f| f as i64))
+                    .unwrap_or(0);
                 (None, Some(i), None)
             }
             SlotCategory::Decimal => {
@@ -94,7 +93,10 @@ impl UniversalBizDAO {
                 let s = serde_json::to_string(val).unwrap_or_default();
                 (Some(s), None, None)
             }
-            SlotCategory::Date | SlotCategory::DateTime | SlotCategory::Text | SlotCategory::String => {
+            SlotCategory::Date
+            | SlotCategory::DateTime
+            | SlotCategory::Text
+            | SlotCategory::String => {
                 let s = match val {
                     Value::String(s) => s.clone(),
                     other => serde_json::to_string(other).unwrap_or_default(),
@@ -176,12 +178,25 @@ impl UniversalBizDAO {
         let alloc = FieldSlotAllocator::allocate(entity_code, &entity.fields);
 
         let mut cols: Vec<String> = vec![
-            "biz_id".into(), "tenant_id".into(), "entity_id".into(), "biz_code".into(),
-            "biz_type".into(), "biz_status".into(), "dynamic_data".into(),
-            "creator_user_id".into(), "owner_user_id".into(), "created_at".into(),
-            "updated_at".into(), "created_by".into(), "updated_by".into(),
-            "version".into(), "trace_id".into(), "curr_hash".into(), "version_group_id".into(),
-            "workflow_instance_id".into(), "workflow_status".into(),
+            "biz_id".into(),
+            "tenant_id".into(),
+            "entity_id".into(),
+            "biz_code".into(),
+            "biz_type".into(),
+            "biz_status".into(),
+            "dynamic_data".into(),
+            "creator_user_id".into(),
+            "owner_user_id".into(),
+            "created_at".into(),
+            "updated_at".into(),
+            "created_by".into(),
+            "updated_by".into(),
+            "version".into(),
+            "trace_id".into(),
+            "curr_hash".into(),
+            "version_group_id".into(),
+            "workflow_instance_id".into(),
+            "workflow_status".into(),
         ];
         let mut values: Vec<rusqlite::types::ToSqlOutput<'static>> = Vec::new();
         let mut param_placeholders: Vec<String> = Vec::new();
@@ -195,7 +210,8 @@ impl UniversalBizDAO {
         let trace_id = Uuid::new_v4().to_string();
         let version_group_id = Uuid::now_v7().to_string();
 
-        let mut slot_values: HashMap<String, (Option<String>, Option<i64>, Option<f64>)> = HashMap::new();
+        let mut slot_values: HashMap<String, (Option<String>, Option<i64>, Option<f64>)> =
+            HashMap::new();
         let mut dynamic_data_map: Map<String, Value> = Map::new();
 
         for (field_code, val) in data.iter() {
@@ -216,52 +232,102 @@ impl UniversalBizDAO {
 
         for c in cols.iter() {
             match c.as_str() {
-                "biz_id" => { values.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(biz_id.clone()))); }
-                "tenant_id" => { values.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(tenant_id.to_string()))); }
-                "entity_id" => { values.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(entity.entity_id.clone()))); }
-                "biz_code" => { values.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(biz_code.clone()))); }
-                "biz_type" => { values.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(entity_code.to_string()))); }
+                "biz_id" => {
+                    values.push(rusqlite::types::ToSqlOutput::Owned(
+                        rusqlite::types::Value::Text(biz_id.clone()),
+                    ));
+                }
+                "tenant_id" => {
+                    values.push(rusqlite::types::ToSqlOutput::Owned(
+                        rusqlite::types::Value::Text(tenant_id.to_string()),
+                    ));
+                }
+                "entity_id" => {
+                    values.push(rusqlite::types::ToSqlOutput::Owned(
+                        rusqlite::types::Value::Text(entity.entity_id.clone()),
+                    ));
+                }
+                "biz_code" => {
+                    values.push(rusqlite::types::ToSqlOutput::Owned(
+                        rusqlite::types::Value::Text(biz_code.clone()),
+                    ));
+                }
+                "biz_type" => {
+                    values.push(rusqlite::types::ToSqlOutput::Owned(
+                        rusqlite::types::Value::Text(entity_code.to_string()),
+                    ));
+                }
                 "biz_status" => {
-                    let status = data.get("status").and_then(|v| v.as_str()).unwrap_or("active").to_string();
-                    values.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(status)));
+                    let status = data
+                        .get("status")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("active")
+                        .to_string();
+                    values.push(rusqlite::types::ToSqlOutput::Owned(
+                        rusqlite::types::Value::Text(status),
+                    ));
                 }
                 "dynamic_data" => {
-                    let s = serde_json::to_string(&Value::Object(dynamic_data_map.clone())).unwrap_or_default();
-                    values.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(s)));
+                    let s = serde_json::to_string(&Value::Object(dynamic_data_map.clone()))
+                        .unwrap_or_default();
+                    values.push(rusqlite::types::ToSqlOutput::Owned(
+                        rusqlite::types::Value::Text(s),
+                    ));
                 }
                 "creator_user_id" | "owner_user_id" => {
-                    values.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(user_id.to_string())));
+                    values.push(rusqlite::types::ToSqlOutput::Owned(
+                        rusqlite::types::Value::Text(user_id.to_string()),
+                    ));
                 }
                 "created_at" | "updated_at" => {
-                    values.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(now.clone())));
+                    values.push(rusqlite::types::ToSqlOutput::Owned(
+                        rusqlite::types::Value::Text(now.clone()),
+                    ));
                 }
                 "created_by" | "updated_by" => {
-                    values.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(user_id.to_string())));
+                    values.push(rusqlite::types::ToSqlOutput::Owned(
+                        rusqlite::types::Value::Text(user_id.to_string()),
+                    ));
                 }
                 "version" => {
-                    values.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Integer(version)));
+                    values.push(rusqlite::types::ToSqlOutput::Owned(
+                        rusqlite::types::Value::Integer(version),
+                    ));
                 }
                 "trace_id" => {
-                    values.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(trace_id.clone())));
+                    values.push(rusqlite::types::ToSqlOutput::Owned(
+                        rusqlite::types::Value::Text(trace_id.clone()),
+                    ));
                 }
                 "curr_hash" => {
-                    values.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Null));
+                    values.push(rusqlite::types::ToSqlOutput::Owned(
+                        rusqlite::types::Value::Null,
+                    ));
                 }
                 "version_group_id" => {
-                    values.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(version_group_id.clone())));
+                    values.push(rusqlite::types::ToSqlOutput::Owned(
+                        rusqlite::types::Value::Text(version_group_id.clone()),
+                    ));
                 }
                 "workflow_instance_id" => {
                     let v = workflow_instance_id.map(|s| s.to_string());
                     values.push(match v {
-                        Some(s) => rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(s)),
+                        Some(s) => {
+                            rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(s))
+                        }
                         None => rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Null),
                     });
                 }
                 "workflow_status" => {
-                    values.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Null));
+                    values.push(rusqlite::types::ToSqlOutput::Owned(
+                        rusqlite::types::Value::Null,
+                    ));
                 }
                 other => {
-                    let sv = slot_values.get(other).cloned().unwrap_or((None, None, None));
+                    let sv = slot_values
+                        .get(other)
+                        .cloned()
+                        .unwrap_or((None, None, None));
                     values.push(Self::slot_value_for_sql(other, &sv.0, &sv.1, &sv.2));
                 }
             }
@@ -275,7 +341,8 @@ impl UniversalBizDAO {
         );
 
         let conn = self.conn.lock();
-        let refs: Vec<&dyn rusqlite::ToSql> = values.iter().map(|v| v as &dyn rusqlite::ToSql).collect();
+        let refs: Vec<&dyn rusqlite::ToSql> =
+            values.iter().map(|v| v as &dyn rusqlite::ToSql).collect();
         conn.execute(&sql, refs.as_slice())
             .map_err(|e| anyhow::anyhow!("INSERT biz_data failed: {}", e))?;
 
@@ -285,7 +352,8 @@ impl UniversalBizDAO {
         conn.execute(
             "UPDATE biz_data SET curr_hash = ?1 WHERE biz_id = ?2",
             params![curr_hash.clone(), biz_id],
-        ).ok();
+        )
+        .ok();
 
         let version_id = Uuid::now_v7().to_string();
         let changed_fields: Vec<String> = data.keys().cloned().collect();
@@ -337,19 +405,33 @@ impl UniversalBizDAO {
         let biz_id: String = row.get("biz_id")?;
         result.insert("biz_id".to_string(), Value::String(biz_id));
         let biz_code: Option<String> = row.get("biz_code").ok();
-        if let Some(bc) = biz_code { result.insert("biz_code".to_string(), Value::String(bc)); }
+        if let Some(bc) = biz_code {
+            result.insert("biz_code".to_string(), Value::String(bc));
+        }
         let version: Option<i64> = row.get("version").ok();
-        if let Some(v) = version { result.insert("version".to_string(), Value::from(v)); }
+        if let Some(v) = version {
+            result.insert("version".to_string(), Value::from(v));
+        }
         let status: Option<String> = row.get("biz_status").ok();
-        if let Some(s) = status { result.insert("biz_status".to_string(), Value::String(s)); }
+        if let Some(s) = status {
+            result.insert("biz_status".to_string(), Value::String(s));
+        }
         let wf: Option<String> = row.get("workflow_instance_id").ok();
-        if let Some(w) = wf { result.insert("workflow_instance_id".to_string(), Value::String(w)); }
+        if let Some(w) = wf {
+            result.insert("workflow_instance_id".to_string(), Value::String(w));
+        }
         let created_at: Option<String> = row.get("created_at").ok();
-        if let Some(s) = created_at { result.insert("created_at".to_string(), Value::String(s)); }
+        if let Some(s) = created_at {
+            result.insert("created_at".to_string(), Value::String(s));
+        }
         let updated_at: Option<String> = row.get("updated_at").ok();
-        if let Some(s) = updated_at { result.insert("updated_at".to_string(), Value::String(s)); }
+        if let Some(s) = updated_at {
+            result.insert("updated_at".to_string(), Value::String(s));
+        }
         let hash: Option<String> = row.get("curr_hash").ok();
-        if let Some(h) = hash { result.insert("curr_hash".to_string(), Value::String(h)); }
+        if let Some(h) = hash {
+            result.insert("curr_hash".to_string(), Value::String(h));
+        }
 
         for field in &entity.fields {
             if let Some(slot) = alloc.get(&field.field_code) {
@@ -393,8 +475,12 @@ impl UniversalBizDAO {
             "deleted_at IS NULL".to_string(),
         ];
         let mut args: Vec<rusqlite::types::ToSqlOutput<'static>> = vec![
-            rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(tenant_id.to_string())),
-            rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(entity.entity_id.clone())),
+            rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(
+                tenant_id.to_string(),
+            )),
+            rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(
+                entity.entity_id.clone(),
+            )),
         ];
 
         for f in filters {
@@ -431,7 +517,9 @@ impl UniversalBizDAO {
                 }
             }
             let av = match f.value {
-                Value::String(s) => rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(s)),
+                Value::String(s) => {
+                    rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(s))
+                }
                 Value::Number(n) => {
                     if let Some(i) = n.as_i64() {
                         rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Integer(i))
@@ -441,7 +529,13 @@ impl UniversalBizDAO {
                         rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Null)
                     }
                 }
-                Value::Bool(b) => rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Integer(if b { 1 } else { 0 })),
+                Value::Bool(b) => {
+                    rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Integer(if b {
+                        1
+                    } else {
+                        0
+                    }))
+                }
                 _ => rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Null),
             };
             args.push(av);
@@ -455,7 +549,11 @@ impl UniversalBizDAO {
                 Some(s) if s.slot_name != "dynamic_data" => s.slot_name.clone(),
                 _ => format!("json_extract(dynamic_data, '$.{}')", fc),
             };
-            format!("ORDER BY {} {}", col, if sort.desc { "DESC" } else { "ASC" })
+            format!(
+                "ORDER BY {} {}",
+                col,
+                if sort.desc { "DESC" } else { "ASC" }
+            )
         } else {
             "ORDER BY created_at DESC".to_string()
         };
@@ -465,20 +563,32 @@ impl UniversalBizDAO {
 
         let conn = self.conn.lock();
         let total_sql = format!("SELECT COUNT(*) FROM biz_data {}", where_sql);
-        let refs: Vec<&dyn rusqlite::ToSql> = args.iter().map(|v| v as &dyn rusqlite::ToSql).collect();
-        let total: i64 = conn.query_row(&total_sql, refs.as_slice(), |r| r.get(0))
+        let refs: Vec<&dyn rusqlite::ToSql> =
+            args.iter().map(|v| v as &dyn rusqlite::ToSql).collect();
+        let total: i64 = conn
+            .query_row(&total_sql, refs.as_slice(), |r| r.get(0))
             .map_err(|e| anyhow::anyhow!("COUNT failed: {}", e))?;
 
-        let select_sql = format!("SELECT * FROM biz_data {} {} LIMIT ? OFFSET ?", where_sql, order_sql);
-        let mut stmt = conn.prepare(&select_sql)
+        let select_sql = format!(
+            "SELECT * FROM biz_data {} {} LIMIT ? OFFSET ?",
+            where_sql, order_sql
+        );
+        let mut stmt = conn
+            .prepare(&select_sql)
             .map_err(|e| anyhow::anyhow!("PREPARE list failed: {}", e))?;
 
         let mut all_args: Vec<rusqlite::types::ToSqlOutput<'static>> = args.clone();
-        all_args.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Integer(limit)));
-        all_args.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Integer(offset)));
-        let refs2: Vec<&dyn rusqlite::ToSql> = all_args.iter().map(|v| v as &dyn rusqlite::ToSql).collect();
+        all_args.push(rusqlite::types::ToSqlOutput::Owned(
+            rusqlite::types::Value::Integer(limit),
+        ));
+        all_args.push(rusqlite::types::ToSqlOutput::Owned(
+            rusqlite::types::Value::Integer(offset),
+        ));
+        let refs2: Vec<&dyn rusqlite::ToSql> =
+            all_args.iter().map(|v| v as &dyn rusqlite::ToSql).collect();
 
-        let rows = stmt.query_map(refs2.as_slice(), |row| self.row_to_map(row, &entity))
+        let rows = stmt
+            .query_map(refs2.as_slice(), |row| self.row_to_map(row, &entity))
             .map_err(|e| anyhow::anyhow!("QUERY list failed: {}", e))?;
 
         let mut items: Vec<Value> = Vec::new();
@@ -555,29 +665,43 @@ impl UniversalBizDAO {
 
         if !new_dyn.is_empty() {
             set_parts.push(format!("dynamic_data = ?{}", args.len() + 1));
-            args.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(
-                serde_json::to_string(&Value::Object(new_dyn.clone())).unwrap_or_default()
-            )));
+            args.push(rusqlite::types::ToSqlOutput::Owned(
+                rusqlite::types::Value::Text(
+                    serde_json::to_string(&Value::Object(new_dyn.clone())).unwrap_or_default(),
+                ),
+            ));
         }
 
         set_parts.push(format!("version = ?{}", args.len() + 1));
-        args.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Integer(new_version)));
+        args.push(rusqlite::types::ToSqlOutput::Owned(
+            rusqlite::types::Value::Integer(new_version),
+        ));
 
         set_parts.push(format!("updated_at = ?{}", args.len() + 1));
-        args.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(now.clone())));
+        args.push(rusqlite::types::ToSqlOutput::Owned(
+            rusqlite::types::Value::Text(now.clone()),
+        ));
 
         set_parts.push(format!("updated_by = ?{}", args.len() + 1));
-        args.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(user_id.to_string())));
+        args.push(rusqlite::types::ToSqlOutput::Owned(
+            rusqlite::types::Value::Text(user_id.to_string()),
+        ));
 
         if let Some(status_v) = patch.get("status") {
             if let Some(status) = status_v.as_str() {
                 set_parts.push(format!("biz_status = ?{}", args.len() + 1));
-                args.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(status.to_string())));
+                args.push(rusqlite::types::ToSqlOutput::Owned(
+                    rusqlite::types::Value::Text(status.to_string()),
+                ));
             }
         }
 
-        args.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(biz_id.to_string())));
-        args.push(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(tenant_id.to_string())));
+        args.push(rusqlite::types::ToSqlOutput::Owned(
+            rusqlite::types::Value::Text(biz_id.to_string()),
+        ));
+        args.push(rusqlite::types::ToSqlOutput::Owned(
+            rusqlite::types::Value::Text(tenant_id.to_string()),
+        ));
 
         let sql = format!(
             "UPDATE biz_data SET {} WHERE biz_id = ?{} AND tenant_id = ?{} AND deleted_at IS NULL",
@@ -586,8 +710,10 @@ impl UniversalBizDAO {
             args.len()
         );
 
-        let refs: Vec<&dyn rusqlite::ToSql> = args.iter().map(|v| v as &dyn rusqlite::ToSql).collect();
-        let affected = conn.execute(&sql, refs.as_slice())
+        let refs: Vec<&dyn rusqlite::ToSql> =
+            args.iter().map(|v| v as &dyn rusqlite::ToSql).collect();
+        let affected = conn
+            .execute(&sql, refs.as_slice())
             .map_err(|e| anyhow::anyhow!("UPDATE failed: {}", e))?;
         if affected == 0 {
             anyhow::bail!("Update failed: no rows affected for biz_id={}", biz_id);
@@ -595,12 +721,20 @@ impl UniversalBizDAO {
 
         let snapshot_before: Value = Value::Object(existing_dyn);
         let snapshot_after: Value = Value::Object(new_dyn);
-        let curr_hash = compute_hash(prev_hash.as_deref(), biz_id, new_version, &snapshot_after, user_id, &now);
+        let curr_hash = compute_hash(
+            prev_hash.as_deref(),
+            biz_id,
+            new_version,
+            &snapshot_after,
+            user_id,
+            &now,
+        );
 
         conn.execute(
             "UPDATE biz_data SET curr_hash = ?1 WHERE biz_id = ?2",
             params![curr_hash.clone(), biz_id],
-        ).ok();
+        )
+        .ok();
 
         let changed_fields: Vec<String> = patch.keys().cloned().collect();
         let version_id = Uuid::now_v7().to_string();
@@ -656,7 +790,14 @@ impl UniversalBizDAO {
 
         let version_id = Uuid::now_v7().to_string();
         let snapshot_after = serde_json::json!({"deleted": true});
-        let curr_hash = compute_hash(prev_hash.as_deref(), biz_id, new_version, &snapshot_after, user_id, &now);
+        let curr_hash = compute_hash(
+            prev_hash.as_deref(),
+            biz_id,
+            new_version,
+            &snapshot_after,
+            user_id,
+            &now,
+        );
 
         conn.execute(
             "INSERT INTO biz_data_version (version_id, biz_id, tenant_id, entity_id, version_num, snapshot_before, snapshot_after, changed_fields, change_note, operation_type, operator_user_id, prev_hash, curr_hash, created_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14)",

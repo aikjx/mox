@@ -327,14 +327,14 @@ pub async fn serve(config: VoiceServiceConfig) -> XiaobaiResult<()> {
     Ok(())
 }
 
-/// 同步阻塞启动（给 BallWidget spawn 线程用；内部创建 current_thread runtime）
+/// 同步阻塞启动（给 BallWidget spawn 线程用；内部创建 current_thread mox_platform_orchestrator_svc）
 pub fn run_service_blocking(config: VoiceServiceConfig) -> XiaobaiResult<()> {
-    let rt = tokio::mox_platform_orchestrator_svc::Builder::new_current_thread()
+    let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .map_err(|e| XiaobaiError::ExecutionError {
             category: "server".into(), action: "run_service_blocking".into(),
-            detail: format!("创建 tokio runtime 失败：{e}"),
+            detail: format!("创建 tokio mox_platform_orchestrator_svc 失败：{e}"),
         })?;
     rt.block_on(serve(config))
 }

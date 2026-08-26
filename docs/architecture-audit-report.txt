@@ -3,95 +3,132 @@ infotopograph 架构算法验证报告
 ================================================================================
 
 ## 1. 概览
-- 总 crate 数: 48
-- 内部依赖边数: 107
+- 总 crate 数: 54
+- 内部依赖边数: 114
 - 循环依赖: 0 个
-- 层违规: 1 个
-- 跨域依赖: 24 个
+- 层违规: 6 个
+- 跨域依赖: 53 个
 - God Module: 1 个
 
 ## 2. 循环依赖检测
   ✅ 无循环依赖
 
 ## 3. God Module 识别 (扇出 >= 10)
-  🔴 runtime (层:application, 域:platform)
+  🔴 mox-platform-orchestrator-svc (层:service, 域:platform)
      扇出: 15, 扇入: 0, 耦合度: 45
-     依赖: ai-agent, business-catalog, flow-ai, graph-algorithms, mox-common-meta, mox-expert, mox-system, operator-core, operator-wasm, optimizer...
+     依赖: mox-ai-agent-svc, mox-ai-expert-svc, mox-ai-flow-svc, mox-data-catalog-svc, mox-flow-fusion-svc, mox-flow-operator-core, mox-flow-operator-wasm-svc, mox-flow-optimizer-core, mox-flow-primiflow-svc, mox-kg-algo-core...
 
 ## 4. 层违规检测 (底层依赖顶层)
-  🟡 [MEDIUM] ai-agent(service) → template-market(application)
+  🟡 [MEDIUM] mox-platform-test-harness(sdk) → mox-cloud-volume-svc(service)
+  🟡 [MEDIUM] mox-platform-test-harness(sdk) → mox-data-compliance-svc(service)
+  🟡 [MEDIUM] mox-platform-test-harness(sdk) → mox-data-etl-svc(service)
+  🟡 [MEDIUM] mox-platform-test-harness(sdk) → mox-data-plane-svc(service)
+  🟡 [MEDIUM] mox-platform-test-harness(sdk) → mox-kg-fusion-svc(service)
+  🔴 [HIGH] mox-platform-test-harness(sdk) → mox-platform-gateway-svc(gateway)
 
 ## 5. 跨域依赖检测
-  🟡 graph-algorithms(knowledge_graph) → operator-core(flow_automation)
-  🟡 hermes-flow-bridge(flow_automation) → flow-ai(ai_intelligent)
-  🟡 hermes-flow-bridge(flow_automation) → mox-expert(ai_intelligent)
-  🟡 business-catalog(data_governance) → flow-ai(ai_intelligent)
-  🟡 business-catalog(data_governance) → mox-expert(ai_intelligent)
-  🟡 ai-agent(ai_intelligent) → graph-algorithms(knowledge_graph)
-  🟡 ai-agent(ai_intelligent) → kg-hub(knowledge_graph)
-  🟡 ai-agent(ai_intelligent) → operator-core(flow_automation)
-  🟡 ai-agent(ai_intelligent) → template-market(market)
-  🟡 kg-hub(knowledge_graph) → primiflow-fusion(flow_automation)
-  🟡 primiflow-fusion(flow_automation) → flow-ai(ai_intelligent)
-  🟡 primiflow-core(flow_automation) → flow-ai(ai_intelligent)
-  🟡 mox-standards(data_governance) → mox-domain-abstractions(cloud_storage)
-  🟡 mox-graph-meta(knowledge_graph) → mox-domain-abstractions(cloud_storage)
-  🟡 mox-cloud-drive-s3(cloud_storage) → mox-standards(data_governance)
-  🟡 mox-graph-storage(knowledge_graph) → mox-domain-abstractions(cloud_storage)
-  🟡 mox-graph-service(knowledge_graph) → mox-domain-abstractions(cloud_storage)
-  🟡 mox-graph-streams(knowledge_graph) → mox-domain-abstractions(cloud_storage)
-  🟡 xiaobai-core(xiaobai_voice) → mox-expert(ai_intelligent)
-  🟡 xiaobai-core(xiaobai_voice) → operator-core(flow_automation)
-  🟡 mox-formulas-native(sdk) → mox-formulas-core(data_governance)
-  🟡 mox-norm-intent-native(sdk) → mox-formulas-core(data_governance)
-  🟡 mox-norm-intent-native(sdk) → mox-intent-core(ai_intelligent)
-  🟡 mox-norm-intent-native(sdk) → mox-norm-core(data_governance)
+  🟡 mox-data-formula-core(data) → mox-platform-foundation(foundation)
+  🟡 mox-data-norm-core(data) → mox-platform-foundation(foundation)
+  🟡 mox-ai-intent-core(ai) → mox-platform-foundation(foundation)
+  🟡 mox-voice-dsp-core(voice) → mox-platform-foundation(foundation)
+  🟡 mox-flow-operator-core(flow) → mox-platform-foundation(foundation)
+  🟡 mox-flow-optimizer-core(flow) → mox-platform-foundation(foundation)
+  🟡 mox-kg-algo-core(kg) → mox-flow-operator-core(flow)
+  🟡 mox-kg-algo-core(kg) → mox-platform-foundation(foundation)
+  🟡 mox-kg-meta-core(kg) → mox-cloud-foundation(foundation)
+  🟡 mox-data-standards-core(data) → mox-cloud-foundation(foundation)
+  🟡 mox-kg-storage-svc(kg) → mox-cloud-foundation(foundation)
+  🟡 mox-kg-service-svc(kg) → mox-cloud-foundation(foundation)
+  🟡 mox-kg-streams-svc(kg) → mox-cloud-foundation(foundation)
+  🟡 mox-kg-hub-svc(kg) → mox-flow-fusion-svc(flow)
+  🟡 mox-kg-hub-svc(kg) → mox-platform-foundation(foundation)
+  🟡 mox-flow-fusion-svc(flow) → mox-ai-flow-svc(ai)
+  🟡 mox-flow-fusion-svc(flow) → mox-platform-foundation(foundation)
+  🟡 mox-ai-flow-svc(ai) → mox-platform-foundation(foundation)
+  🟡 mox-flow-primiflow-svc(flow) → mox-ai-flow-svc(ai)
+  🟡 mox-flow-primiflow-svc(flow) → mox-platform-foundation(foundation)
+  🟡 mox-ai-expert-svc(ai) → mox-platform-foundation(foundation)
+  🟡 mox-ai-agent-svc(ai) → mox-flow-operator-core(flow)
+  🟡 mox-ai-agent-svc(ai) → mox-kg-algo-core(kg)
+  🟡 mox-ai-agent-svc(ai) → mox-kg-hub-svc(kg)
+  🟡 mox-ai-agent-svc(ai) → mox-platform-foundation(foundation)
+  🟡 mox-ai-agent-svc(ai) → mox-market-template-svc(market)
+  🟡 mox-market-template-svc(market) → mox-platform-foundation(foundation)
+  🟡 mox-flow-operator-wasm-svc(flow) → mox-platform-foundation(foundation)
+  🟡 mox-flow-bridge-svc(flow) → mox-ai-expert-svc(ai)
+  🟡 mox-flow-bridge-svc(flow) → mox-ai-flow-svc(ai)
+  🟡 mox-flow-bridge-svc(flow) → mox-platform-foundation(foundation)
+  🟡 mox-data-catalog-svc(data) → mox-ai-expert-svc(ai)
+  🟡 mox-data-catalog-svc(data) → mox-ai-flow-svc(ai)
+  🟡 mox-data-catalog-svc(data) → mox-platform-foundation(foundation)
+  🟡 mox-cloud-master-svc(cloud) → mox-cloud-foundation(foundation)
+  🟡 mox-cloud-volume-svc(cloud) → mox-cloud-foundation(foundation)
+  🟡 mox-cloud-s3-svc(cloud) → mox-cloud-foundation(foundation)
+  🟡 mox-cloud-s3-svc(cloud) → mox-data-standards-core(data)
+  🟡 mox-voice-core-svc(voice) → mox-ai-expert-svc(ai)
+  🟡 mox-voice-core-svc(voice) → mox-flow-operator-core(flow)
+  🟡 mox-voice-core-svc(voice) → mox-platform-foundation(foundation)
+  🟡 mox-voice-asr-svc(voice) → mox-platform-foundation(foundation)
+  🟡 mox-voice-intent-svc(voice) → mox-platform-foundation(foundation)
+  🟡 mox-voice-operator-svc(voice) → mox-platform-foundation(foundation)
+  🟡 mox-platform-gateway-svc(gateway) → mox-cloud-volume-svc(cloud)
+  🟡 mox-platform-gateway-svc(gateway) → mox-data-compliance-svc(data)
+  🟡 mox-platform-gateway-svc(gateway) → mox-data-etl-svc(data)
+  🟡 mox-platform-gateway-svc(gateway) → mox-data-plane-svc(data)
+  🟡 mox-platform-gateway-svc(gateway) → mox-data-standards-core(data)
+  🟡 mox-platform-gateway-svc(gateway) → mox-kg-fusion-svc(kg)
+  🟡 mox-platform-gateway-svc(gateway) → mox-kg-service-svc(kg)
+  🟡 mox-voice-desktop-app(voice) → mox-platform-foundation(foundation)
+  🟡 mox-data-norm-intent-native(data) → mox-ai-intent-core(ai)
 
 ## 6. 模块独立性评分 (Top 10 最差)
-   25 █████░░░░░░░░░░░░░░░ runtime (扇出:15, 扇入:0)
-   52 ██████████░░░░░░░░░░ mox-common-meta (扇出:0, 扇入:24)
-   63 ████████████░░░░░░░░ ai-agent (扇出:7, 扇入:1)
-   63 ████████████░░░░░░░░ mox-server (扇出:7, 扇入:1)
-   70 ██████████████░░░░░░ mox-t21-harness (扇出:6, 扇入:0)
-   72 ██████████████░░░░░░ xiaobai-core (扇出:4, 扇入:4)
-   75 ███████████████░░░░░ xiaobai-desktop (扇出:5, 扇入:0)
-   76 ███████████████░░░░░ mox-graph-service (扇出:4, 扇入:2)
-   78 ███████████████░░░░░ xiaobai-operators (扇出:4, 扇入:1)
-   80 ████████████████░░░░ graph-algorithms (扇出:2, 扇入:5)
+   25 █████░░░░░░░░░░░░░░░ mox-platform-orchestrator-svc (扇出:15, 扇入:0)
+   52 ██████████░░░░░░░░░░ mox-platform-foundation (扇出:0, 扇入:24)
+   63 ████████████░░░░░░░░ mox-ai-agent-svc (扇出:7, 扇入:1)
+   63 ████████████░░░░░░░░ mox-platform-gateway-svc (扇出:7, 扇入:1)
+   70 ██████████████░░░░░░ mox-platform-test-harness (扇出:6, 扇入:0)
+   72 ██████████████░░░░░░ mox-voice-core-svc (扇出:4, 扇入:4)
+   75 ███████████████░░░░░ mox-voice-desktop-app (扇出:5, 扇入:0)
+   76 ███████████████░░░░░ mox-kg-service-svc (扇出:4, 扇入:2)
+   78 ███████████████░░░░░ mox-voice-operator-svc (扇出:4, 扇入:1)
+   80 ████████████████░░░░ mox-kg-algo-core (扇出:2, 扇入:5)
 
 ## 7. 按层级统计
   foundation  :   2 crates, 扇出=  0, 扇入= 32
-  core        :   9 crates, 扇出=  9, 扇入= 23
-  engine      :   6 crates, 扇出= 12, 扇入=  5
-  service     :  19 crates, 扇出= 33, 扇入= 33
-  application :  12 crates, 扇出= 53, 扇入= 14
-  unknown     :   0 crates, 扇出=  0, 扇入=  0
+  framework   :   1 crates, 扇出=  0, 扇入=  0
+  core        :  15 crates, 扇出= 15, 扇入= 32
+  sdk         :   6 crates, 扇出= 11, 扇入=  0
+  service     :  29 crates, 扇出= 81, 扇入= 49
+  gateway     :   1 crates, 扇出=  7, 扇入=  1
 
 ## 8. 按业务域统计
-  knowledge_graph     :   8 crates, 扇出= 16, 扇入= 15
-  xiaobai_voice       :   7 crates, 扇出= 19, 扇入= 10
-  data_governance     :   7 crates, 扇出=  6, 扇入= 12
-  flow_automation     :   6 crates, 扇出= 14, 扇入= 13
-  platform            :   5 crates, 扇出= 29, 扇入= 29
-  ai_intelligent      :   5 crates, 扇出= 11, 扇入= 13
-  cloud_storage       :   5 crates, 扇出=  7, 扇入= 13
-  sdk                 :   4 crates, 扇出=  4, 扇入=  0
+  kg                  :   9 crates, 扇出= 16, 扇入= 15
+  data                :   9 crates, 扇出= 10, 扇入= 12
+  platform            :   8 crates, 扇出= 29, 扇入= 11
+  voice               :   7 crates, 扇出= 19, 扇入= 10
+  flow                :   6 crates, 扇出= 14, 扇入= 13
+  ai                  :   5 crates, 扇出= 11, 扇入= 13
+  cloud               :   5 crates, 扇出=  7, 扇入=  5
+  foundation          :   2 crates, 扇出=  0, 扇入= 32
+  gateway             :   1 crates, 扇出=  7, 扇入=  1
   market              :   1 crates, 扇出=  1, 扇入=  2
+  framework           :   1 crates, 扇出=  0, 扇入=  0
 
 ## 9. 优化建议
 
 ### 9.1 紧急 (P0)
 - 🔴 拆分 God Module:
-  - runtime: 按业务域拆分为独立服务
+  - mox-platform-orchestrator-svc: 按业务域拆分为独立服务
 - 🔴 修复层违规:
+  - mox-platform-test-harness → mox-platform-gateway-svc: 通过接口抽象/事件解耦
 
 ### 9.2 高优 (P1)
 - 🟡 减少跨域依赖:
-  - graph-algorithms(knowledge_graph) → operator-core(flow_automation): 考虑通过平台层中转
-  - hermes-flow-bridge(flow_automation) → flow-ai(ai_intelligent): 考虑通过平台层中转
-  - hermes-flow-bridge(flow_automation) → mox-expert(ai_intelligent): 考虑通过平台层中转
-  - business-catalog(data_governance) → flow-ai(ai_intelligent): 考虑通过平台层中转
-  - business-catalog(data_governance) → mox-expert(ai_intelligent): 考虑通过平台层中转
+  - mox-data-formula-core(data) → mox-platform-foundation(foundation): 考虑通过平台层中转
+  - mox-data-norm-core(data) → mox-platform-foundation(foundation): 考虑通过平台层中转
+  - mox-ai-intent-core(ai) → mox-platform-foundation(foundation): 考虑通过平台层中转
+  - mox-voice-dsp-core(voice) → mox-platform-foundation(foundation): 考虑通过平台层中转
+  - mox-flow-operator-core(flow) → mox-platform-foundation(foundation): 考虑通过平台层中转
 - 🟡 建设 mox-framework 基础框架层: 统一认证/租户/调度/通知/可观测
 - 🟡 三层分离: 每个服务拆为 api / service-api / service
 

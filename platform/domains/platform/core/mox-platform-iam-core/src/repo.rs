@@ -117,8 +117,16 @@ impl IamRepository {
         }
 
         let resources = [
-            "user", "dept", "role", "menu", "permission", "tenant", "resource",
-            "audit", "meta", "workflow",
+            "user",
+            "dept",
+            "role",
+            "menu",
+            "permission",
+            "tenant",
+            "resource",
+            "audit",
+            "meta",
+            "workflow",
         ];
         let actions = [
             "view", "create", "edit", "delete", "export", "import", "manage",
@@ -357,11 +365,7 @@ impl IamRepository {
         })
     }
 
-    pub fn find_user_by_tenant_username(
-        &self,
-        tenant_id: &str,
-        username: &str,
-    ) -> Option<IamUser> {
+    pub fn find_user_by_tenant_username(&self, tenant_id: &str, username: &str) -> Option<IamUser> {
         let conn = self.conn.lock();
         let mut stmt = conn
             .prepare(
@@ -425,15 +429,15 @@ impl IamRepository {
     pub fn user_roles(&self, user_id: &str) -> Vec<UserRole> {
         let roles_with_tenant: Vec<(String, IamRole)> = {
             let conn = self.conn.lock();
-            let mut stmt = match conn.prepare(
-                "SELECT tenant_id, role_id FROM iam_user_role WHERE user_id=?1",
-            ) {
+            let mut stmt = match conn
+                .prepare("SELECT tenant_id, role_id FROM iam_user_role WHERE user_id=?1")
+            {
                 Ok(s) => s,
                 Err(_) => return vec![],
             };
-            let bindings: Vec<(String, String)> = match stmt
-                .query_map(params![user_id], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))
-            {
+            let bindings: Vec<(String, String)> = match stmt.query_map(params![user_id], |r| {
+                Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?))
+            }) {
                 Ok(rows) => rows
                     .collect::<std::result::Result<Vec<_>, _>>()
                     .unwrap_or_default(),
@@ -499,9 +503,8 @@ impl IamRepository {
             return Ok(cached.value().clone());
         }
         let conn = self.conn.lock();
-        let mut stmt = conn.prepare(
-            "SELECT role_id FROM iam_user_role WHERE tenant_id=?1 AND user_id=?2",
-        )?;
+        let mut stmt =
+            conn.prepare("SELECT role_id FROM iam_user_role WHERE tenant_id=?1 AND user_id=?2")?;
         let direct_role_ids: Vec<String> = stmt
             .query_map(params![tenant_id, user_id], |r| r.get(0))?
             .collect::<std::result::Result<Vec<_>, _>>()?;
@@ -531,7 +534,8 @@ impl IamRepository {
             return Ok(perms);
         }
 
-        let all_role_ids = self.collect_parent_role_ids_inner(tenant_id, &direct_role_ids, &conn)?;
+        let all_role_ids =
+            self.collect_parent_role_ids_inner(tenant_id, &direct_role_ids, &conn)?;
 
         let mut perms: HashSet<String> = HashSet::new();
         if !all_role_ids.is_empty() {
@@ -819,12 +823,7 @@ impl IamRepository {
         self.assign_perm_to_role_inner(tenant_id, role_id, perm_id, created_by)
     }
 
-    pub fn check_permission(
-        &self,
-        tenant_id: &str,
-        user_id: &str,
-        perm_code: &str,
-    ) -> bool {
+    pub fn check_permission(&self, tenant_id: &str, user_id: &str, perm_code: &str) -> bool {
         match self.get_user_permissions(tenant_id, user_id) {
             Ok(perms) => perms.iter().any(|p| p == perm_code),
             Err(_) => false,
@@ -833,13 +832,13 @@ impl IamRepository {
 
     pub fn list_user_menus(&self, tenant_id: &str, user_id: &str) -> Result<Vec<IamMenu>> {
         let conn = self.conn.lock();
-        let mut stmt = conn.prepare(
-            "SELECT role_id FROM iam_user_role WHERE tenant_id=?1 AND user_id=?2"
-        )?;
+        let mut stmt =
+            conn.prepare("SELECT role_id FROM iam_user_role WHERE tenant_id=?1 AND user_id=?2")?;
         let direct_role_ids: Vec<String> = stmt
             .query_map(params![tenant_id, user_id], |r| r.get(0))?
             .collect::<std::result::Result<Vec<_>, _>>()?;
-        let all_role_ids = self.collect_parent_role_ids_inner(tenant_id, &direct_role_ids, &conn)?;
+        let all_role_ids =
+            self.collect_parent_role_ids_inner(tenant_id, &direct_role_ids, &conn)?;
 
         let mut menu_ids: HashSet<String> = HashSet::new();
         if !all_role_ids.is_empty() {
@@ -861,9 +860,8 @@ impl IamRepository {
             }
         }
 
-        let mut stmt_um = conn.prepare(
-            "SELECT menu_id FROM iam_user_menu WHERE tenant_id=?1 AND user_id=?2"
-        )?;
+        let mut stmt_um =
+            conn.prepare("SELECT menu_id FROM iam_user_menu WHERE tenant_id=?1 AND user_id=?2")?;
         let rows_um = stmt_um.query_map(params![tenant_id, user_id], |r| r.get::<_, String>(0))?;
         for mid in rows_um {
             menu_ids.insert(mid?);
@@ -880,7 +878,8 @@ impl IamRepository {
             placeholders.join(",")
         );
         let mut stmt = conn.prepare(&sql)?;
-        let params_vec: Vec<&dyn rusqlite::ToSql> = ids_vec.iter().map(|s| s as &dyn rusqlite::ToSql).collect();
+        let params_vec: Vec<&dyn rusqlite::ToSql> =
+            ids_vec.iter().map(|s| s as &dyn rusqlite::ToSql).collect();
         let rows = stmt.query_map(rusqlite::params_from_iter(params_vec.iter()), |r| {
             Ok(IamMenu {
                 menu_id: r.get(0)?,
@@ -920,9 +919,8 @@ impl IamRepository {
         resource_code: &str,
     ) -> Result<ScopeRule> {
         let conn = self.conn.lock();
-        let mut stmt = conn.prepare(
-            "SELECT role_id, dept_id FROM iam_user WHERE tenant_id=?1 AND user_id=?2"
-        )?;
+        let mut stmt = conn
+            .prepare("SELECT role_id, dept_id FROM iam_user WHERE tenant_id=?1 AND user_id=?2")?;
         let mut user_rows = stmt.query(params![tenant_id, user_id])?;
         let mut user_dept: Option<String> = None;
         if let Some(row) = user_rows.next()? {
@@ -930,13 +928,13 @@ impl IamRepository {
         }
         drop(user_rows);
 
-        let mut stmt2 = conn.prepare(
-            "SELECT role_id FROM iam_user_role WHERE tenant_id=?1 AND user_id=?2"
-        )?;
+        let mut stmt2 =
+            conn.prepare("SELECT role_id FROM iam_user_role WHERE tenant_id=?1 AND user_id=?2")?;
         let direct_role_ids: Vec<String> = stmt2
             .query_map(params![tenant_id, user_id], |r| r.get(0))?
             .collect::<std::result::Result<Vec<_>, _>>()?;
-        let all_role_ids = self.collect_parent_role_ids_inner(tenant_id, &direct_role_ids, &conn)?;
+        let all_role_ids =
+            self.collect_parent_role_ids_inner(tenant_id, &direct_role_ids, &conn)?;
 
         let mut scope_type = "self".to_string();
         let mut expression: Option<String> = None;

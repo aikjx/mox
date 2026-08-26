@@ -476,12 +476,12 @@ impl HttpRequestTool {
             Err(e) => return ToolResult::err(e),
         };
 
-        let runtime = match tokio::mox_platform_orchestrator_svc::Runtime::new() {
+        let mox_platform_orchestrator_svc = match tokio::runtime::Runtime::new() {
             Ok(rt) => rt,
             Err(e) => return ToolResult::err(format!("运行时创建失败: {}", e)),
         };
 
-        runtime.block_on(async {
+        mox_platform_orchestrator_svc.block_on(async {
             match builder.send().await {
                 Ok(resp) => {
                     let status = resp.status();

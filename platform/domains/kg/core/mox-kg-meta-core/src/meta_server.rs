@@ -361,18 +361,18 @@ impl MetaServer {
 
     fn propose_log(&self, log: RaftLog) -> MetaResult<()> {
         if let Some(c) = &self.inner.cluster {
-            match tokio::mox_platform_orchestrator_svc::Handle::try_current() {
+            match tokio::runtime::Handle::try_current() {
                 Ok(rt) => rt.block_on(async { c.leader_propose(log).await.map(|_| ()) }),
                 Err(_) => {
-                    // 进程内集群可同步 propose —— 简化实现：直接运行时借用进程全局 runtime。
+                    // 进程内集群可同步 propose —— 简化实现：直接运行时借用进程全局 mox_platform_orchestrator_svc。
                     // 用一次 futures::executor::block_on 太重，改为借助 std::thread::spawn + tokio current_thread。
-                    // 为了避免依赖，这里通过 once_cell 建一个独立 runtime。
+                    // 为了避免依赖，这里通过 once_cell 建一个独立 mox_platform_orchestrator_svc。
                     use std::sync::OnceLock;
-                    static RT: OnceLock<std::sync::Mutex<Option<tokio::mox_platform_orchestrator_svc::Runtime>>> =
+                    static RT: OnceLock<std::sync::Mutex<Option<tokio::runtime::Runtime>>> =
                         OnceLock::new();
                     let rt_guard = RT.get_or_init(|| {
                         std::sync::Mutex::new(
-                            tokio::mox_platform_orchestrator_svc::Builder::new_current_thread()
+                            tokio::runtime::Builder::new_current_thread()
                                 .enable_all()
                                 .build()
                                 .ok(),
@@ -382,14 +382,14 @@ impl MetaServer {
                         .lock()
                         .map_err(|_| MetaError::RaftError("rt lock".into()))?;
                     if g.is_none() {
-                        *g = tokio::mox_platform_orchestrator_svc::Builder::new_current_thread()
+                        *g = tokio::runtime::Builder::new_current_thread()
                             .enable_all()
                             .build()
                             .ok();
                     }
                     let rt = g
                         .as_ref()
-                        .ok_or_else(|| MetaError::RaftError("no runtime".into()))?;
+                        .ok_or_else(|| MetaError::RaftError("no mox_platform_orchestrator_svc".into()))?;
                     rt.block_on(async { c.leader_propose(log).await.map(|_| ()) })
                 }
             }

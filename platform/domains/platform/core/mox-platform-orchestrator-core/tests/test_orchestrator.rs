@@ -1,10 +1,12 @@
-use std::sync::Arc;
 use parking_lot::Mutex;
 use serde_json::{Map, Value};
+use std::sync::Arc;
 use uuid::Uuid;
 
-use mox_platform_datastore_core::{UniversalBizDAO, TxManager, InMemoryMetaRepo, InMemoryIamRepo, User};
-use mox_platform_orchestrator_core::{Orchestrator, BizAction, BusinessRequest};
+use mox_platform_datastore_core::{
+    InMemoryIamRepo, InMemoryMetaRepo, TxManager, UniversalBizDAO, User,
+};
+use mox_platform_orchestrator_core::{BizAction, BusinessRequest, Orchestrator};
 
 fn setup() -> (
     Arc<Mutex<rusqlite::Connection>>,
@@ -56,7 +58,13 @@ fn test_orchestrator_create_get_update_list_delete() {
         page: 1,
         page_size: 10,
     };
-    let create_res = orc.execute(&create_req, dao.as_ref(), Some(tx.as_ref()), meta.as_ref(), iam.as_ref());
+    let create_res = orc.execute(
+        &create_req,
+        dao.as_ref(),
+        Some(tx.as_ref()),
+        meta.as_ref(),
+        iam.as_ref(),
+    );
 
     assert!(create_res.success, "Create 成功: {:?}", create_res.error);
     let biz_id = create_res.biz_id.clone().expect("biz_id 非空");
@@ -78,7 +86,10 @@ fn test_orchestrator_create_get_update_list_delete() {
     let obj_map = obj.as_object().unwrap();
     assert_eq!(obj_map.get("title").unwrap().as_str(), Some("Alpha 项目"));
     // enrich 字典翻译 status_label
-    assert!(obj_map.contains_key("status_label"), "存在 status_label 字典翻译");
+    assert!(
+        obj_map.contains_key("status_label"),
+        "存在 status_label 字典翻译"
+    );
     assert_eq!(obj_map.get("status_label").unwrap().as_str(), Some("草稿"));
 
     // 3. UPDATE amount/status, expect version=2
@@ -95,7 +106,13 @@ fn test_orchestrator_create_get_update_list_delete() {
         data: Some(patch),
         ..Default::default()
     };
-    let update_res = orc.execute(&update_req, dao.as_ref(), Some(tx.as_ref()), meta.as_ref(), iam.as_ref());
+    let update_res = orc.execute(
+        &update_req,
+        dao.as_ref(),
+        Some(tx.as_ref()),
+        meta.as_ref(),
+        iam.as_ref(),
+    );
     assert!(update_res.success, "Update 成功: {:?}", update_res.error);
     assert_eq!(update_res.version, Some(2), "Update version=2");
 
@@ -131,7 +148,13 @@ fn test_orchestrator_create_get_update_list_delete() {
         biz_id: Some(biz_id.clone()),
         ..Default::default()
     };
-    let del_res = orc.execute(&del_req, dao.as_ref(), Some(tx.as_ref()), meta.as_ref(), iam.as_ref());
+    let del_res = orc.execute(
+        &del_req,
+        dao.as_ref(),
+        Some(tx.as_ref()),
+        meta.as_ref(),
+        iam.as_ref(),
+    );
     assert!(del_res.success, "Delete 成功");
 
     // 6. LIST after delete → total=0
@@ -154,7 +177,10 @@ fn test_orchestrator_create_get_update_list_delete() {
 
     // 10. 审计日志条目数
     let audit_count = iam.audit_logs.len();
-    assert!(audit_count >= 6, "审计日志 >= 6 条（6次 orchestrator 调用）");
+    assert!(
+        audit_count >= 6,
+        "审计日志 >= 6 条（6次 orchestrator 调用）"
+    );
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -182,8 +208,16 @@ async fn test_orchestrator_async_execute_with_tokio() {
     let meta_clone = meta.clone();
     let iam_clone = iam.clone();
     let r = tokio::task::spawn_blocking(move || {
-        orch_clone.execute(&req, dao_clone.as_ref(), Some(tx_clone.as_ref()), meta_clone.as_ref(), iam_clone.as_ref())
-    }).await.unwrap();
+        orch_clone.execute(
+            &req,
+            dao_clone.as_ref(),
+            Some(tx_clone.as_ref()),
+            meta_clone.as_ref(),
+            iam_clone.as_ref(),
+        )
+    })
+    .await
+    .unwrap();
     assert!(r.success, "async create ok");
     assert!(r.biz_id.clone().unwrap().len() > 0);
 }
@@ -213,8 +247,17 @@ fn test_permission_denied_auth_stage() {
         }),
         ..Default::default()
     };
-    let r = orc.execute(&req, dao.as_ref(), Some(tx.as_ref()), meta.as_ref(), iam.as_ref());
+    let r = orc.execute(
+        &req,
+        dao.as_ref(),
+        Some(tx.as_ref()),
+        meta.as_ref(),
+        iam.as_ref(),
+    );
     assert!(!r.success, "无权限用户创建失败");
     let err = r.error.unwrap();
-    assert!(err.contains("Permission denied"), "错误信息包含 Permission denied");
+    assert!(
+        err.contains("Permission denied"),
+        "错误信息包含 Permission denied"
+    );
 }

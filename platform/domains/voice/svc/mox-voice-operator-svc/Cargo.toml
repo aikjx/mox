@@ -6,10 +6,6 @@ license.workspace = true
 authors.workspace = true
 description = "Xiaobai · FR-13 系统算子 8 大类 Rust 实现：app/file/volume/input × network/display/browser/notify + 跨平台回退链（windows-rs / CoreAudio / enigo / arboard / screenshots / PowerShell / osascript / xrandr / gsettings 等）"
 
-[lib]
-name = "xiaobai_operators"
-path = "src/lib.rs"
-
 [dependencies]
 mox-voice-core-svc = { workspace = true }
 mox-platform-foundation = { workspace = true }

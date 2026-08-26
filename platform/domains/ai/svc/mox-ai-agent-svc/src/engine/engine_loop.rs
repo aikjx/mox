@@ -939,8 +939,8 @@ mod tests {
     use super::*;
     use crate::llm_client::LLMConfig;
 
-    fn rt() -> tokio::mox_platform_orchestrator_svc::Runtime {
-        tokio::mox_platform_orchestrator_svc::Runtime::new().unwrap()
+    fn rt() -> tokio::runtime::Runtime {
+        tokio::runtime::Runtime::new().unwrap()
     }
 
     #[test]

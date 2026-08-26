@@ -23,7 +23,9 @@ pub struct ModuleRegistry {
 
 impl ModuleRegistry {
     pub fn new() -> Self {
-        let r = Self { mods: DashMap::new() };
+        let r = Self {
+            mods: DashMap::new(),
+        };
         r.register(Box::new(CommonModule));
         r.register(Box::new(FinanceModule));
         r.register(Box::new(MedicalModule));
@@ -56,7 +58,9 @@ impl Default for ModuleRegistry {
 
 pub struct CommonModule;
 impl BizModule for CommonModule {
-    fn industry_code(&self) -> &'static str { "common" }
+    fn industry_code(&self) -> &'static str {
+        "common"
+    }
     fn hook_before(&self, ctx: &mut PipelineCtx) -> StepResult {
         if let Some(data) = &ctx.request_data {
             if let Some(title) = data.get("title").and_then(|v| v.as_str()) {
@@ -71,7 +75,9 @@ impl BizModule for CommonModule {
 
 pub struct FinanceModule;
 impl BizModule for FinanceModule {
-    fn industry_code(&self) -> &'static str { "finance" }
+    fn industry_code(&self) -> &'static str {
+        "finance"
+    }
     fn hook_before(&self, ctx: &mut PipelineCtx) -> StepResult {
         if let Some(data) = &ctx.request_data {
             if let Some(amount) = data.get("amount").and_then(|v| v.as_f64()) {
@@ -86,7 +92,9 @@ impl BizModule for FinanceModule {
 
 pub struct MedicalModule;
 impl BizModule for MedicalModule {
-    fn industry_code(&self) -> &'static str { "medical" }
+    fn industry_code(&self) -> &'static str {
+        "medical"
+    }
     fn hook_before(&self, ctx: &mut PipelineCtx) -> StepResult {
         if let Some(data) = &ctx.request_data {
             if data.contains_key("patient_id") {
@@ -103,7 +111,9 @@ impl BizModule for MedicalModule {
 
 pub struct ManufacturingModule;
 impl BizModule for ManufacturingModule {
-    fn industry_code(&self) -> &'static str { "manufacturing" }
+    fn industry_code(&self) -> &'static str {
+        "manufacturing"
+    }
     fn hook_before(&self, ctx: &mut PipelineCtx) -> StepResult {
         if let Some(data) = &ctx.request_data {
             if let Some(qty) = data.get("quantity").and_then(|v| v.as_i64()) {
@@ -118,7 +128,9 @@ impl BizModule for ManufacturingModule {
 
 pub struct GovernmentModule;
 impl BizModule for GovernmentModule {
-    fn industry_code(&self) -> &'static str { "government" }
+    fn industry_code(&self) -> &'static str {
+        "government"
+    }
     fn hook_before(&self, ctx: &mut PipelineCtx) -> StepResult {
         if let Some(data) = &ctx.request_data {
             if data.contains_key("classification_level") {
@@ -136,7 +148,9 @@ impl BizModule for GovernmentModule {
 
 pub struct EducationModule;
 impl BizModule for EducationModule {
-    fn industry_code(&self) -> &'static str { "education" }
+    fn industry_code(&self) -> &'static str {
+        "education"
+    }
     fn hook_before(&self, ctx: &mut PipelineCtx) -> StepResult {
         if let Some(data) = &ctx.request_data {
             if let Some(score) = data.get("score").and_then(|v| v.as_f64()) {
@@ -151,7 +165,9 @@ impl BizModule for EducationModule {
 
 pub struct RetailModule;
 impl BizModule for RetailModule {
-    fn industry_code(&self) -> &'static str { "retail" }
+    fn industry_code(&self) -> &'static str {
+        "retail"
+    }
     fn hook_before(&self, ctx: &mut PipelineCtx) -> StepResult {
         if let Some(data) = &ctx.request_data {
             if let Some(sku) = data.get("sku").and_then(|v| v.as_str()) {

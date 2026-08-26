@@ -66,7 +66,9 @@ pub struct InMemoryMetaRepo {
 
 impl InMemoryMetaRepo {
     pub fn new() -> Self {
-        Self { entities: DashMap::new() }
+        Self {
+            entities: DashMap::new(),
+        }
     }
 
     pub fn register_entity(&self, tenant_id: &str, entity: EntityWithFields) {
@@ -107,9 +109,18 @@ impl InMemoryMetaRepo {
                 is_sortable: true,
                 is_filterable: true,
                 options_inline: Some(vec![
-                    EnumOption { code: "draft".into(), label: "草稿".into() },
-                    EnumOption { code: "active".into(), label: "进行中".into() },
-                    EnumOption { code: "done".into(), label: "已完成".into() },
+                    EnumOption {
+                        code: "draft".into(),
+                        label: "草稿".into(),
+                    },
+                    EnumOption {
+                        code: "active".into(),
+                        label: "进行中".into(),
+                    },
+                    EnumOption {
+                        code: "done".into(),
+                        label: "已完成".into(),
+                    },
                 ]),
             },
         ];
@@ -126,7 +137,9 @@ impl InMemoryMetaRepo {
 }
 
 impl Default for InMemoryMetaRepo {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl MetaRepository for InMemoryMetaRepo {
@@ -193,11 +206,15 @@ impl MetaRepository for InMemoryMetaRepo {
                 "in" => {
                     if let (Some(a), Some(arr)) = (actual, rule.expected.as_array()) {
                         arr.contains(a)
-                    } else { false }
+                    } else {
+                        false
+                    }
                 }
                 _ => true,
             };
-            if !matched { anyhow::bail!("{}", rule.message); }
+            if !matched {
+                anyhow::bail!("{}", rule.message);
+            }
         }
         Ok(())
     }
@@ -254,9 +271,20 @@ impl InMemoryIamRepo {
     pub fn add_user(&self, user: User) {
         self.users.insert(user.user_id.clone(), user);
     }
-    pub fn grant_permission(&self, tenant_id: &str, user_id: &str, entity_code: &str, action: &str) {
+    pub fn grant_permission(
+        &self,
+        tenant_id: &str,
+        user_id: &str,
+        entity_code: &str,
+        action: &str,
+    ) {
         self.permissions.insert(
-            (tenant_id.into(), user_id.into(), entity_code.into(), action.into()),
+            (
+                tenant_id.into(),
+                user_id.into(),
+                entity_code.into(),
+                action.into(),
+            ),
             true,
         );
     }
@@ -274,22 +302,44 @@ impl InMemoryIamRepo {
 }
 
 impl Default for InMemoryIamRepo {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl IamRepository for InMemoryIamRepo {
-    fn check_permission(&self, tenant_id: &str, user_id: &str, entity_code: &str, action: &str) -> anyhow::Result<()> {
+    fn check_permission(
+        &self,
+        tenant_id: &str,
+        user_id: &str,
+        entity_code: &str,
+        action: &str,
+    ) -> anyhow::Result<()> {
         let k_any = (tenant_id.into(), user_id.into(), "*".into(), action.into());
-        if self.permissions.get(&k_any).is_some() { return Ok(()); }
-        let k = (tenant_id.into(), user_id.into(), entity_code.into(), action.into());
-        if self.permissions.get(&k).is_some() { return Ok(()); }
+        if self.permissions.get(&k_any).is_some() {
+            return Ok(());
+        }
+        let k = (
+            tenant_id.into(),
+            user_id.into(),
+            entity_code.into(),
+            action.into(),
+        );
+        if self.permissions.get(&k).is_some() {
+            return Ok(());
+        }
         anyhow::bail!(
             "Permission denied: user={} action={} entity={} tenant={}",
-            user_id, action, entity_code, tenant_id
+            user_id,
+            action,
+            entity_code,
+            tenant_id
         )
     }
     fn get_user(&self, user_id: &str) -> anyhow::Result<User> {
-        self.users.get(user_id).map(|u| u.clone())
+        self.users
+            .get(user_id)
+            .map(|u| u.clone())
             .ok_or_else(|| anyhow::anyhow!("User not found: {}", user_id))
     }
     fn write_audit_log(&self, entry: AuditLogEntry) -> anyhow::Result<()> {
@@ -300,12 +350,16 @@ impl IamRepository for InMemoryIamRepo {
 
 fn mf_to_port_field(mf: &mox_platform_meta_core::MetaField) -> FieldSpec {
     let options_inline = mf.options_inline.as_ref().and_then(|s| {
-        serde_json::from_str::<Vec<mox_platform_meta_core::EnumOption>>(s).ok().map(|v| {
-            v.into_iter().map(|e| EnumOption {
-                code: e.value,
-                label: e.label,
-            }).collect()
-        })
+        serde_json::from_str::<Vec<mox_platform_meta_core::EnumOption>>(s)
+            .ok()
+            .map(|v| {
+                v.into_iter()
+                    .map(|e| EnumOption {
+                        code: e.value,
+                        label: e.label,
+                    })
+                    .collect()
+            })
     });
     FieldSpec {
         field_code: mf.field_code.clone(),
@@ -320,7 +374,11 @@ fn mf_to_port_field(mf: &mox_platform_meta_core::MetaField) -> FieldSpec {
 }
 
 impl MetaRepository for mox_platform_meta_core::MetaRepository {
-    fn get_entity(&self, tenant_id: &str, entity_code_or_id: &str) -> anyhow::Result<EntityWithFields> {
+    fn get_entity(
+        &self,
+        tenant_id: &str,
+        entity_code_or_id: &str,
+    ) -> anyhow::Result<EntityWithFields> {
         let opt = self.get_entity(tenant_id, entity_code_or_id)?;
         let me = opt.ok_or_else(|| anyhow::anyhow!("Entity not found: {}", entity_code_or_id))?;
         let port_fields: Vec<FieldSpec> = me.fields.iter().map(mf_to_port_field).collect();

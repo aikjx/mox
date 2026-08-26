@@ -395,7 +395,7 @@ impl WorkflowEngine {
                 parameters,
             } => {
                 tracing::info!("执行算子: {} with params: {:?}", operator_id, parameters);
-                // 通过 HTTP 调用已注册算子的真实端点（与 runtime 服务同源）
+                // 通过 HTTP 调用已注册算子的真实端点（与 mox_platform_orchestrator_svc 服务同源）
                 let base = std::env::var("OPERATOR_API_BASE")
                     .unwrap_or_else(|_| "http://127.0.0.1:3998".to_string());
                 let url = format!("{}/operators/{}", base, operator_id);

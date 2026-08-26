@@ -6,10 +6,6 @@ license.workspace = true
 authors.workspace = true
 description = "Mox ETL near-data plugin framework (WASM ABI: inline-get/inline-put/offline xaction)"
 
-[lib]
-name = "mox_etl_wasm"
-path = "src/lib.rs"
-
 [dependencies]
 serde = { workspace = true }
 serde_json = { workspace = true }
