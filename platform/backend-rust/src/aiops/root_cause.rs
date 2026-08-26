@@ -46,6 +46,7 @@ pub struct FaultPropagationPath {
 
 /// 依赖图节点
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct DependencyNode {
     id: String,
     name: String,

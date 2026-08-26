@@ -86,6 +86,7 @@ impl Default for PredictiveScalerConfig {
 
 /// 负载数据点
 #[derive(Debug, Clone, Copy)]
+#[allow(dead_code)]
 struct LoadPoint {
     timestamp: f64,
     value: f64,

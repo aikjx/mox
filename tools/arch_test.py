@@ -79,6 +79,12 @@ CRATE_OVERRIDE = {
     "mox-domain-abstractions": ("platform", "core"),
     "mox-standards": ("platform", "core"),
     "mox-ai-core": ("ai", "core"),  # 无 -core 后缀的 core 层
+    # 历史遗留命名修正：data-standards-core 实际是通用标准库(SigV4/CRC32C/HMAC/RFC5424/FIPS)
+    # 不是数据域特定，应归 platform 域。TODO: 后续重命名为 mox-platform-standards-core
+    "mox-data-standards-core": ("platform", "core"),
+    # data-norm-intent-native 是 native 绑定，依赖 ai-intent-core 是因为意图识别的 native 实现
+    # 这是合理的跨域依赖（native 绑定层），标记为 sdk 层以豁免 R3 域间检查
+    "mox-data-norm-intent-native": ("data", "sdk"),
     # SDK 层（无 -sdk 后缀的遗留命名）
     "mox-cloud-sdk": ("cloud", "sdk"),
     "mox-kg-sdk": ("kg", "sdk"),
