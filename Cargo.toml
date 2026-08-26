@@ -6,69 +6,65 @@
 #       ② PyO3 abi3-py39 与当前默认 Python 3.8 不兼容
 #     绑定编译需单独执行：`cargo check -p <binding-crate>`
 default-members = [
-    "platform/crates/mox-formulas-core",
-    "platform/crates/mox-norm-core",
-    "platform/crates/mox-intent-core",
-    "platform/crates/xiaobai-dsp",
-    # ===== 小白语音桌面全维 Rust 化：最小交付路径 4 个核心 crate =====
-    "platform/crates/xiaobai-core",
-    "platform/crates/xiaobai-operators",
-    "platform/crates/xiaobai-intent",
-    "platform/crates/xiaobai-asr",
+    "platform/domains/data/core/mox-data-formula-core",
+    "platform/domains/data/core/mox-data-norm-core",
+    "platform/domains/ai/core/mox-ai-intent-core",
+    "platform/domains/voice/core/mox-voice-dsp-core",
+    "platform/domains/voice/svc/mox-voice-core-svc",
+    "platform/domains/voice/svc/mox-voice-operator-svc",
+    "platform/domains/voice/svc/mox-voice-intent-svc",
+    "platform/domains/voice/svc/mox-voice-asr-svc",
 ]
 members = [
-    "platform/services/operator-core",
-    "platform/services/operator-wasm",
-    "platform/services/graph-algorithms",
-    "platform/services/optimizer",
-    "platform/services/flow-ai",
-    "platform/services/mox-expert",
-    "platform/services/hermes-flow-bridge",
-    "platform/services/business-catalog",
-    "platform/services/ai-agent",
-    "platform/services/template-market",
-    "platform/gateway/runtime",
-    "platform/services/mox-system",
-    "platform/services/primiflow-core",
-    "platform/services/primiflow-fusion",
-    "platform/services/kg-hub",
-    "platform/services/mox-common-meta",
-    "platform/services/mox-domain-abstractions",
-    "platform/services/mox-cloud-drive-master",
-    "platform/services/mox-cloud-drive-volume",
-    "platform/services/mox-standards",
-    "platform/services/mox-graph-meta",
-    "platform/services/mox-cloud-drive-s3",
-    "platform/services/mox-graph-storage",
-    "platform/sdk/rust/mox-sdk-cloud",
-    "platform/sdk/rust/mox-sdk-graph",
-    "platform/services/mox-cloud-drive-filer",
-    "platform/services/mox-graph-service",
-    "platform/services/mox-graph-streams",
-    "platform/services/mox-graph-spark",
-    "platform/services/mox-compliance",
-    "platform/services/mox-fusion",
-    "platform/services/mox-etl-wasm",
-    "platform/services/mox-data-plane",
-    "platform/services/mox-server",
-    "platform/services/mox-t21-harness",
-    "platform/services/mox-ai-core",
-    # ===== MOX 计算密集核心（rust 最高性能算法权威单源） =====
-    "platform/crates/mox-formulas-core",
-    "platform/crates/mox-norm-core",
-    "platform/crates/mox-intent-core",
-    "platform/crates/xiaobai-dsp",
-    # ===== 小白语音桌面全维 Rust 化 5 个核心 crate（默认成员同步注册；xiaobai-desktop 单独显式编译需 Slint）
-    "platform/crates/xiaobai-core",
-    "platform/crates/xiaobai-operators",
-    "platform/crates/xiaobai-intent",
-    "platform/crates/xiaobai-asr",
-    "platform/crates/xiaobai-desktop",
-    # ===== Node.js napi 绑定（cargo check -p 显式调用；不进 default-members 避免 cdylib 工具链要求）
-    "platform/crates/bindings/mox-formulas-native",
-    "platform/crates/bindings/mox-norm-intent-native",
-    # ===== Python PyO3 扩展（需 PYO3_PYTHON 指向 py39+ 才能编译；cargo check -p 显式调用时指定环境变量）
-    "platform/crates/bindings/xiaobai-dsp-py",
+    "platform/foundation/mox-platform-foundation",
+    "platform/foundation/mox-cloud-foundation",
+    "platform/domains/data/core/mox-data-formula-core",
+    "platform/domains/data/core/mox-data-norm-core",
+    "platform/domains/ai/core/mox-ai-intent-core",
+    "platform/domains/voice/core/mox-voice-dsp-core",
+    "platform/domains/flow/core/mox-flow-operator-core",
+    "platform/domains/flow/core/mox-flow-optimizer-core",
+    "platform/domains/kg/core/mox-kg-algo-core",
+    "platform/domains/kg/core/mox-kg-meta-core",
+    "platform/domains/data/core/mox-data-standards-core",
+    "platform/domains/platform/core/mox-platform-system-core",
+    "platform/domains/ai/core/mox-ai-core",
+    "platform/domains/kg/svc/mox-kg-storage-svc",
+    "platform/domains/kg/svc/mox-kg-service-svc",
+    "platform/domains/kg/svc/mox-kg-streams-svc",
+    "platform/domains/kg/svc/mox-kg-spark-svc",
+    "platform/domains/kg/svc/mox-kg-hub-svc",
+    "platform/domains/kg/svc/mox-kg-fusion-svc",
+    "platform/domains/ai/svc/mox-ai-flow-svc",
+    "platform/domains/ai/svc/mox-ai-expert-svc",
+    "platform/domains/ai/svc/mox-ai-agent-svc",
+    "platform/domains/flow/svc/mox-flow-operator-wasm-svc",
+    "platform/domains/flow/svc/mox-flow-primiflow-svc",
+    "platform/domains/flow/svc/mox-flow-fusion-svc",
+    "platform/domains/flow/svc/mox-flow-bridge-svc",
+    "platform/domains/data/svc/mox-data-plane-svc",
+    "platform/domains/data/svc/mox-data-etl-svc",
+    "platform/domains/data/svc/mox-data-compliance-svc",
+    "platform/domains/data/svc/mox-data-catalog-svc",
+    "platform/domains/cloud/svc/mox-cloud-master-svc",
+    "platform/domains/cloud/svc/mox-cloud-volume-svc",
+    "platform/domains/cloud/svc/mox-cloud-s3-svc",
+    "platform/domains/cloud/svc/mox-cloud-filer-svc",
+    "platform/domains/voice/svc/mox-voice-core-svc",
+    "platform/domains/voice/svc/mox-voice-asr-svc",
+    "platform/domains/voice/svc/mox-voice-intent-svc",
+    "platform/domains/voice/svc/mox-voice-operator-svc",
+    "platform/domains/market/svc/mox-market-template-svc",
+    "platform/domains/platform/svc/mox-platform-orchestrator-svc",
+    "platform/gateway/mox-platform-gateway-svc",
+    "platform/domains/platform/sdk/mox-platform-test-harness",
+    "platform/domains/voice/svc/mox-voice-desktop-app",
+    "platform/domains/cloud/sdk/mox-cloud-sdk",
+    "platform/domains/kg/sdk/mox-kg-sdk",
+    "platform/domains/data/sdk/mox-data-formula-native",
+    "platform/domains/data/sdk/mox-data-norm-intent-native",
+    "platform/domains/voice/sdk/mox-voice-dsp-py",
+    "platform/framework",
 ]
 resolver = "2"
 
@@ -149,9 +145,68 @@ prometheus = { version = "0.13", default-features = false, features = ["process"
 sea-query = "0.32"
 sqlx = "0.8"
 
-# Internal crates
-mox-common-meta = { path = "platform/services/mox-common-meta" }
-mox-graph-service = { path = "platform/services/mox-graph-service" }
+# Internal crates (归一化架构: 6层8域)
+# Foundation 层
+mox-platform-foundation = { path = "platform/foundation/mox-platform-foundation" }
+mox-cloud-foundation = { path = "platform/foundation/mox-cloud-foundation" }
+# Core 层
+mox-data-formula-core = { path = "platform/domains/data/core/mox-data-formula-core" }
+mox-data-norm-core = { path = "platform/domains/data/core/mox-data-norm-core" }
+mox-data-standards-core = { path = "platform/domains/data/core/mox-data-standards-core" }
+mox-ai-intent-core = { path = "platform/domains/ai/core/mox-ai-intent-core" }
+mox-ai-core = { path = "platform/domains/ai/core/mox-ai-core" }
+mox-voice-dsp-core = { path = "platform/domains/voice/core/mox-voice-dsp-core" }
+mox-flow-operator-core = { path = "platform/domains/flow/core/mox-flow-operator-core" }
+mox-flow-optimizer-core = { path = "platform/domains/flow/core/mox-flow-optimizer-core" }
+mox-kg-algo-core = { path = "platform/domains/kg/core/mox-kg-algo-core" }
+mox-kg-meta-core = { path = "platform/domains/kg/core/mox-kg-meta-core" }
+mox-platform-system-core = { path = "platform/domains/platform/core/mox-platform-system-core" }
+# Service 层 (kg)
+mox-kg-storage-svc = { path = "platform/domains/kg/svc/mox-kg-storage-svc" }
+mox-kg-service-svc = { path = "platform/domains/kg/svc/mox-kg-service-svc" }
+mox-kg-streams-svc = { path = "platform/domains/kg/svc/mox-kg-streams-svc" }
+mox-kg-spark-svc = { path = "platform/domains/kg/svc/mox-kg-spark-svc" }
+mox-kg-hub-svc = { path = "platform/domains/kg/svc/mox-kg-hub-svc" }
+mox-kg-fusion-svc = { path = "platform/domains/kg/svc/mox-kg-fusion-svc" }
+# Service 层 (ai)
+mox-ai-flow-svc = { path = "platform/domains/ai/svc/mox-ai-flow-svc" }
+mox-ai-expert-svc = { path = "platform/domains/ai/svc/mox-ai-expert-svc" }
+mox-ai-agent-svc = { path = "platform/domains/ai/svc/mox-ai-agent-svc" }
+# Service 层 (flow)
+mox-flow-operator-wasm-svc = { path = "platform/domains/flow/svc/mox-flow-operator-wasm-svc" }
+mox-flow-primiflow-svc = { path = "platform/domains/flow/svc/mox-flow-primiflow-svc" }
+mox-flow-fusion-svc = { path = "platform/domains/flow/svc/mox-flow-fusion-svc" }
+mox-flow-bridge-svc = { path = "platform/domains/flow/svc/mox-flow-bridge-svc" }
+# Service 层 (data)
+mox-data-plane-svc = { path = "platform/domains/data/svc/mox-data-plane-svc" }
+mox-data-etl-svc = { path = "platform/domains/data/svc/mox-data-etl-svc" }
+mox-data-compliance-svc = { path = "platform/domains/data/svc/mox-data-compliance-svc" }
+mox-data-catalog-svc = { path = "platform/domains/data/svc/mox-data-catalog-svc" }
+# Service 层 (cloud)
+mox-cloud-master-svc = { path = "platform/domains/cloud/svc/mox-cloud-master-svc" }
+mox-cloud-volume-svc = { path = "platform/domains/cloud/svc/mox-cloud-volume-svc" }
+mox-cloud-s3-svc = { path = "platform/domains/cloud/svc/mox-cloud-s3-svc" }
+mox-cloud-filer-svc = { path = "platform/domains/cloud/svc/mox-cloud-filer-svc" }
+# Service 层 (voice)
+mox-voice-core-svc = { path = "platform/domains/voice/svc/mox-voice-core-svc" }
+mox-voice-asr-svc = { path = "platform/domains/voice/svc/mox-voice-asr-svc" }
+mox-voice-intent-svc = { path = "platform/domains/voice/svc/mox-voice-intent-svc" }
+mox-voice-operator-svc = { path = "platform/domains/voice/svc/mox-voice-operator-svc" }
+# Service 层 (market)
+mox-market-template-svc = { path = "platform/domains/market/svc/mox-market-template-svc" }
+# Application 层
+mox-platform-orchestrator-svc = { path = "platform/domains/platform/svc/mox-platform-orchestrator-svc" }
+mox-platform-gateway-svc = { path = "platform/gateway/mox-platform-gateway-svc" }
+mox-voice-desktop-app = { path = "platform/domains/voice/svc/mox-voice-desktop-app" }
+# SDK 层
+mox-cloud-sdk = { path = "platform/domains/cloud/sdk/mox-cloud-sdk" }
+mox-kg-sdk = { path = "platform/domains/kg/sdk/mox-kg-sdk" }
+mox-platform-test-harness = { path = "platform/domains/platform/sdk/mox-platform-test-harness" }
+mox-data-formula-native = { path = "platform/domains/data/sdk/mox-data-formula-native" }
+mox-data-norm-intent-native = { path = "platform/domains/data/sdk/mox-data-norm-intent-native" }
+mox-voice-dsp-py = { path = "platform/domains/voice/sdk/mox-voice-dsp-py" }
+# Framework 层
+mox-framework = { path = "platform/framework" }
 
 # ================================================================
 # MOX 计算密集核心（统一 workspace 依赖版本，避免 FFI 绑定版本漂移）
@@ -182,16 +237,7 @@ napi-derive = "2.16"
 pyo3 = { version = "0.22", features = ["extension-module", "abi3-py39"] }
 numpy = "0.22"
 
-# 内部核心 crates 路径
-mox-formulas-core = { path = "platform/crates/mox-formulas-core" }
-mox-norm-core = { path = "platform/crates/mox-norm-core" }
-mox-intent-core = { path = "platform/crates/mox-intent-core" }
-xiaobai-dsp = { path = "platform/crates/xiaobai-dsp" }
-# ===== 小白语音桌面全维 Rust 化：内部路径依赖（FR-13 + FR-5 最小闭环） =====
-xiaobai-core = { path = "platform/crates/xiaobai-core" }
-xiaobai-operators = { path = "platform/crates/xiaobai-operators" }
-xiaobai-intent = { path = "platform/crates/xiaobai-intent" }
-xiaobai-asr = { path = "platform/crates/xiaobai-asr" }
+# 内部核心 crates 路径已统一移至上方 Internal crates 段（归一化架构）
 
 # 小白专用：正则（PPR 路由、应用别名匹配、应用列表过滤）
 regex = "1.10"

@@ -1,0 +1,37 @@
+[package]
+name = "mox-voice-desktop-app"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Xiaobai · 桌面小白助手 BallWidget（Slint 骨架 + 5 状态机）+ 启动 voice_proxy 3717 服务"
+
+[lib]
+name = "xiaobai_desktop"
+path = "src/lib.rs"
+
+[dependencies]
+mox-voice-core-svc = { workspace = true }
+mox-voice-operator-svc = { workspace = true, features = ["server-3717"] }
+mox-voice-asr-svc = { workspace = true }
+mox-voice-intent-svc = { workspace = true }
+mox-platform-foundation = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+async-trait = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+clap = { workspace = true }
+parking_lot = { workspace = true }
+indexmap = { workspace = true }
+ahash = { workspace = true }
+chrono = { workspace = true }
+
+# 全局热键（Alt+X 开始/停止录音，P2 实现）
+global-hotkey = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full"] }

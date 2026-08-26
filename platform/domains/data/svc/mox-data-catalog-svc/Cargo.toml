@@ -1,0 +1,18 @@
+[package]
+name = "mox-data-catalog-svc"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "用璇玑架构把全部业务建模为流程图 + 六维关系网，并在使用中不断优化"
+
+[dependencies]
+mox-platform-foundation = { workspace = true }
+mox-ai-flow-svc = { workspace = true }
+mox-ai-expert-svc = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+async-trait = { workspace = true }
+tokio = { workspace = true }

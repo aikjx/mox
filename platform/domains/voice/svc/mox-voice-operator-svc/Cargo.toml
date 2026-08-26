@@ -1,0 +1,69 @@
+[package]
+name = "mox-voice-operator-svc"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Xiaobai · FR-13 系统算子 8 大类 Rust 实现：app/file/volume/input × network/display/browser/notify + 跨平台回退链（windows-rs / CoreAudio / enigo / arboard / screenshots / PowerShell / osascript / xrandr / gsettings 等）"
+
+[lib]
+name = "xiaobai_operators"
+path = "src/lib.rs"
+
+[dependencies]
+mox-voice-core-svc = { workspace = true }
+mox-platform-foundation = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+tracing = { workspace = true }
+parking_lot = { workspace = true }
+indexmap = { workspace = true }
+ahash = { workspace = true }
+chrono = { workspace = true }
+
+# 跨平台剪贴板（copy_to_clipboard / 中文 type_text 粘贴回退）
+arboard = { workspace = true }
+# 跨平台键鼠（ASCII type_text / click / mouse_move / press_key）
+enigo = { workspace = true }
+# 跨平台截图（L3 screenshot 动作）
+screenshots = { workspace = true }
+# 截屏 image buffer → PNG 编码 + 像素类型扩展
+image = { version = "0.25", default-features = false, features = ["png"] }
+# 截屏 PNG → base64（复用 workspace 已有 base64 = 0.22）
+base64 = { workspace = true }
+
+# --- voice_proxy 3717 服务（feature gate，避免非服务端程序拉 axum/ws）
+axum = { workspace = true, optional = true }
+futures-util = { workspace = true, optional = true }
+tokio-tungstenite = { workspace = true, optional = true }
+bytes = { workspace = true, optional = true }
+http-body-util = { workspace = true, optional = true }
+tower-http = { workspace = true, optional = true }
+# 3717 服务依赖 xiaobai-intent（PPR 路由）和 xiaobai-asr（FR-5 热词注入）
+mox-voice-intent-svc = { workspace = true, optional = true }
+mox-voice-asr-svc = { workspace = true, optional = true }
+
+[features]
+default = []
+server-3717 = [
+    "dep:axum",
+    "dep:futures-util",
+    "dep:tokio-tungstenite",
+    "dep:bytes",
+    "dep:http-body-util",
+    "dep:tower-http",
+    "dep:mox-voice-intent-svc",
+    "dep:mox-voice-asr-svc",
+    "tokio/full",
+]
+
+# Windows 原生：进程列表 / CoreAudio 音量 / shell 回收站
+[target.'cfg(windows)'.dependencies]
+windows = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full"] }

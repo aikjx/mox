@@ -1,0 +1,20 @@
+[package]
+name = "mox-kg-streams-svc"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Mox Graph Streams — Flink-compatible CDC source with blocking next, resume offsets, and 100k idempotent harness"
+
+[dependencies]
+mox-kg-storage-svc = { workspace = true }
+mox-cloud-foundation = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+parking_lot = { workspace = true }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+
+[[bin]]
+name = "cdc_100k_harness"
+path = "src/bin/cdc_100k_harness.rs"

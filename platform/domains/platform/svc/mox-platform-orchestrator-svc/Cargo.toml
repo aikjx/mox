@@ -1,0 +1,68 @@
+[package]
+name = "mox-platform-orchestrator-svc"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description.workspace = true
+
+[[bin]]
+name = "operator-server"
+path = "src/main.rs"
+
+[lib]
+name = "runtime"
+path = "src/lib.rs"
+
+[dependencies]
+mox-platform-foundation = { workspace = true }
+mox-flow-operator-core = { workspace = true }
+mox-kg-algo-core = { workspace = true }
+mox-flow-operator-wasm-svc = { workspace = true }
+mox-flow-optimizer-core = { workspace = true }
+mox-ai-agent-svc = { workspace = true }
+mox-data-catalog-svc = { workspace = true }
+mox-ai-expert-svc = { workspace = true }
+mox-ai-flow-svc = { workspace = true }
+# 子服务聚合（Phase 1 收敛）：四套并行 server 以库方式挂载，由 runtime 唯一对外暴露。
+# 各自 bin 保留为独立部署选项，生产统一走 operator-server。
+mox-platform-system-core = { workspace = true }
+mox-flow-primiflow-svc = { workspace = true, features = ["server"] }
+mox-flow-fusion-svc = { workspace = true }
+tokio = { workspace = true }
+axum = { workspace = true, features = ["ws"] }
+futures = { workspace = true }
+tower-http = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+nalgebra = { workspace = true, features = ["serde-serialize"] }
+sha2 = { workspace = true }
+hmac = { workspace = true }
+hex = { workspace = true }
+base64 = { workspace = true }
+parking_lot = { workspace = true }
+async-trait = { workspace = true }
+tokio-tungstenite = { workspace = true }
+futures-util = { workspace = true }
+reqwest = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
+reqwest = { workspace = true }
+# T2 跨 crate 常量一致性测试：runtime 的集成测试需要能 extern crate 全部 15 个 workspace 成员。
+mox-flow-bridge-svc = { workspace = true }
+mox-market-template-svc = { workspace = true }
+mox-kg-hub-svc = { workspace = true }
+
+[features]
+# 治理台 API（/api/governance/*）：挂载 OUS 前端治理台的全部 REST + WebSocket 端点。
+# 默认启用，使治理台随运行时二进制一同编译与暴露。
+default = ["governance"]
+governance = []

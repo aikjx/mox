@@ -1,0 +1,29 @@
+[package]
+name = "mox-flow-fusion-svc"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "PrimiFlow 多维度融合归一化一体化架构层：把 13 crate 能力、关图 12 类实体、PT-Primi 六维绑定统一进一张守恒图"
+
+[dependencies]
+mox-platform-foundation = { workspace = true }
+mox-ai-flow-svc = { workspace = true }
+mox-flow-primiflow-svc = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+uuid = { workspace = true }
+axum = { workspace = true }
+tokio = { workspace = true }
+tower-http = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+tower = { workspace = true, features = ["util"] }
+
+[[bench]]
+name = "development_experts"
+harness = false

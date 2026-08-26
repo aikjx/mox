@@ -1,0 +1,28 @@
+[package]
+name = "mox-flow-operator-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description.workspace = true
+
+[dependencies]
+mox-platform-foundation = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+nalgebra = { workspace = true, features = ["serde-serialize"] }
+ndarray = { workspace = true }
+num-traits = { workspace = true }
+approx = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+
+[[bench]]
+name = "operator_benches"
+harness = false

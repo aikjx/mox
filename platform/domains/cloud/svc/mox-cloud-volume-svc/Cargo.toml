@@ -1,0 +1,31 @@
+[package]
+name = "mox-cloud-volume-svc"
+version.workspace = true
+edition.workspace = true
+license = "MIT OR Apache-2.0"
+authors.workspace = true
+description = "Mox Cloud Drive L4 Volume (Data Plane) - self-implemented Reed-Solomon 2+1 XOR"
+
+[dependencies]
+mox-cloud-foundation = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+parking_lot = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+hmac = { workspace = true }
+hex = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+rand = { workspace = true }
+bytes = "1"
+crc32c = { version = "0.6", default-features = false }
+tempfile = "3"
+
+[dev-dependencies]
+tempfile = "3"
+
+[features]
+simd = []
+

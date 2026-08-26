@@ -1,0 +1,34 @@
+[package]
+name = "mox-flow-bridge-svc"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "零侵入插件：将 flow-ai + mox-expert 流程图/关系网优化内核注入 Hermes Agent Ultra"
+
+[dependencies]
+mox-platform-foundation = { workspace = true }
+# 已验证的优化内核
+mox-ai-flow-svc = { workspace = true }
+mox-ai-expert-svc = { workspace = true }
+
+# 序列化 / 异步
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+
+# 实时联动推送（feature=live 时启用，可选；默认不引第三方 HTTP 客户端）
+reqwest = { workspace = true, optional = true }
+
+# Hermes 宿主侧依赖（仅 feature=hermes 编译时需要；实际集成时由用户指向本机 Hermes checkout）
+# hermes-agent = { path = "../../../hermes-agent-ultra/crates/hermes-agent" }
+
+[features]
+# 真实 Hermes 接入：打开后用 hermes_agent::plugins 替换 hermes_mirror（见 integration/hermes_shim.rs）
+default = []
+hermes = []
+# 实时联动：把会话流程图推送到 mox-expert 服务做实时高亮
+live = ["dep:reqwest"]
+
+[dev-dependencies]
+async-trait = { workspace = true }

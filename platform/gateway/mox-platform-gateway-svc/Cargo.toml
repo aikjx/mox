@@ -1,0 +1,55 @@
+[package]
+name = "mox-platform-gateway-svc"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Mox v2.0 AIS-grade fusion single-binary server: CLI, O11y, Bench/Deploy smoke tests"
+
+[lib]
+name = "mox_server"
+path = "src/lib.rs"
+
+[[bin]]
+name = "mox-server"
+path = "src/main.rs"
+
+[dependencies]
+clap = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+chrono = { workspace = true }
+tokio = { workspace = true }
+prometheus = { workspace = true }
+parking_lot = { workspace = true }
+uuid = { workspace = true }
+hex = { workspace = true }
+sha2 = { workspace = true }
+
+# Workspace path crates
+mox-data-plane-svc = { workspace = true }
+mox-data-compliance-svc = { workspace = true }
+mox-data-etl-svc = { workspace = true }
+mox-kg-fusion-svc = { workspace = true }
+mox-kg-service-svc = { workspace = true }
+mox-cloud-volume-svc = { workspace = true, features = [] }
+mox-data-standards-core = { workspace = true, features = [] }
+
+[features]
+default = []
+# Enable SIMD AVX2 / NEON vectorised GF(2^8) multiply in EC volume path.
+simd = ["mox-cloud-volume-svc/simd"]
+# Enable GM SM-3 / SM-2 / SM-4-GCM ciphers for STS dual signing, audit
+# hash chain, and object payload encryption.
+gm-sm = ["mox-data-standards-core/gm-sm"]
+# Enable SM3 + SHA-256 dual audit chain for migration windows.
+dual_chain = ["mox-data-standards-core/dual_chain"]
+# Enable Glacier 4th storage class, adapter & restore state machine.
+glacier = []
+
+[dev-dependencies]
+tempfile = "3"
+rand = "0.8"

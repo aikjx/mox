@@ -1,0 +1,27 @@
+[package]
+name = "mox-data-plane-svc"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Mox data plane: triple listener (public/intra_ctrl/intra_data), multipart upload manager, FSHC, mountpath lifecycle, optional HTTP3/QUIC."
+
+[lib]
+name = "mox_data_plane"
+path = "src/lib.rs"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+parking_lot = { workspace = true }
+chrono = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+tokio = { workspace = true }
+uuid = { workspace = true }
+bytes = "1"
+
+[dev-dependencies]
+tempfile = "3"
+rand = "0.8"

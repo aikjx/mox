@@ -1,0 +1,25 @@
+[package]
+name = "mox-ai-intent-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "MOX · 意图分类 + 专家联盟打分权威单源：Aho-Corasick 多模匹配、等级评分、TOP-K 排序、AllianceScore SIMD 聚合"
+
+[lib]
+crate-type = ["rlib", "cdylib", "staticlib"]
+
+[dependencies]
+mox-platform-foundation = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+rayon = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+hashbrown = { workspace = true }
+ahash = { workspace = true }
+aho-corasick = { workspace = true }
+indexmap = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }

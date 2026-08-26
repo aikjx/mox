@@ -1,0 +1,30 @@
+[package]
+name = "mox-ai-agent-svc"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "AI Intelligent Agent with Conversation, Algorithm Normalization, and Workflow Automation"
+
+[dependencies]
+mox-platform-foundation = { workspace = true }
+mox-flow-operator-core = { workspace = true }
+mox-kg-algo-core = { workspace = true }
+mox-kg-hub-svc = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+petgraph = { workspace = true }
+reqwest = { workspace = true }
+base64 = { workspace = true }
+mox-platform-system-core = { workspace = true }
+
+[dev-dependencies]
+mox-market-template-svc = { workspace = true }
+mox-ai-flow-svc = { workspace = true }
+tokio = { workspace = true }

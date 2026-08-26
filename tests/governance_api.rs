@@ -22,14 +22,14 @@ use std::sync::Arc;
 // ---------------------------------------------------------------------------
 
 /// 从 mox-expert 引入核心类型
-use mox_expert::{
+use mox_ai_expert_svc::{
     audit::AuditContext,
     context::{GovernContext, Principal, Tenant},
     govern::{AuditChain, FlowStatus, GateResult, GovernanceReport as EaGovernanceReport},
     pipeline::mox_optimize,
 };
-use flow_ai::model::{FlowEdge, FlowGraph, FlowNode, NodeKind, ToolKind};
-use runtime::handlers::governance::{
+use mox_ai_flow_svc::model::{FlowEdge, FlowGraph, FlowNode, NodeKind, ToolKind};
+use mox_platform_orchestrator_svc::handlers::governance::{
     assess_handler, audit_logs_handler, dashboard_handler,
     experts_status_handler,
     get_expert_config_handler, get_rbac_config_handler,
@@ -477,7 +477,7 @@ async fn governance_sensitive_flow_blocked() {
     sensitive_flow.add_node(FlowNode::new("s", "开始", NodeKind::Start));
     sensitive_flow.add_node(
         FlowNode::task("write_db", "明文落库", ToolKind::Database, 100)
-            .with_access(flow_ai::model::Access::write("db:citizen_info")),
+            .with_access(mox_ai_flow_svc::model::Access::write("db:citizen_info")),
     );
     sensitive_flow.add_node(FlowNode::new("e", "结束", NodeKind::End));
     let _ = sensitive_flow.add_edge(FlowEdge::seq("s", "write_db"));
