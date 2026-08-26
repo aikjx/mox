@@ -3335,16 +3335,13 @@ version = "1.0.0"
 dependencies = [
  "anyhow",
  "chrono",
- "dashmap 5.5.3",
- "hex",
- "mox-platform-iam-core",
- "mox-platform-meta-core",
  "parking_lot",
  "rusqlite",
+ "sea-query",
  "serde",
  "serde_json",
- "sha2",
  "thiserror 1.0.69",
+ "tracing",
  "uuid",
 ]
 
