@@ -10,7 +10,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::sync::RwLock;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use uuid::Uuid;
 
 /// 扩缩容决策
@@ -202,7 +202,7 @@ impl PredictiveScaler {
         intercept + slope * n
     }
 
-    fn predict_arima(&self, values: &[f64], config: &PredictiveScalerConfig) -> f64 {
+    fn predict_arima(&self, values: &[f64], _config: &PredictiveScalerConfig) -> f64 {
         // 简化的 ARIMA(1,1,1) 实现
         if values.len() < 3 {
             return values.last().copied().unwrap_or(0.0);

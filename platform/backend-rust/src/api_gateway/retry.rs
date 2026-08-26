@@ -210,12 +210,13 @@ mod tests {
     #[tokio::test]
     async fn test_retry_success() {
         let policy = RetryPolicy::new(RetryConfig::default());
-        let mut attempts = 0;
+        let attempts = std::sync::Arc::new(std::sync::atomic::AtomicI32::new(0));
+        let attempts_clone = attempts.clone();
 
-        let result: Result<i32, String> = policy.execute(|| {
-            attempts += 1;
+        let result: Result<i32, String> = policy.execute(move || {
+            let count = attempts_clone.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
             async move {
-                if attempts < 3 {
+                if count < 2 {
                     Err("transient error".to_string())
                 } else {
                     Ok(42)
@@ -224,7 +225,7 @@ mod tests {
         }).await;
 
         assert_eq!(result.unwrap(), 42);
-        assert_eq!(attempts, 3);
+        assert_eq!(attempts.load(std::sync::atomic::Ordering::SeqCst), 3);
     }
 
     #[tokio::test]

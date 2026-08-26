@@ -8,7 +8,7 @@
 //! 基于滑动窗口统计失败率
 
 use serde::{Deserialize, Serialize};
-use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 
@@ -119,7 +119,12 @@ impl CircuitBreaker {
                 }
             }
             CircuitState::HalfOpen => {
-                inner.half_open_requests < self.config.half_open_max_requests
+                if inner.half_open_requests < self.config.half_open_max_requests {
+                    inner.half_open_requests += 1;
+                    true
+                } else {
+                    false
+                }
             }
         }
     }

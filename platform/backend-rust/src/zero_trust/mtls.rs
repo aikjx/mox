@@ -11,7 +11,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::sync::RwLock;
-use std::time::{Duration, Instant};
 use uuid::Uuid;
 
 /// 证书状态

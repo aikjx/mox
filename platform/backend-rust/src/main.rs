@@ -6,7 +6,7 @@ use axum::{routing::any, Router};
 use mox_enterprise_backend::api_gateway::ApiGateway;
 use std::net::SocketAddr;
 use tokio::signal;
-use tracing::{info, error};
+use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
@@ -28,7 +28,7 @@ async fn main() -> anyhow::Result<()> {
         .retry_attempts(3)
         .rate_limit_per_second(1000)
         .circuit_breaker_threshold(0.5)
-        .build()?;
+        .build().map_err(|e| anyhow::anyhow!(e))?;
 
     info!("网关配置完成: 监听 {}, 限流 {} QPS, 重试 {} 次",
         gateway.listen_addr(), gateway.rate_limit(), gateway.retry_attempts());
@@ -37,8 +37,7 @@ async fn main() -> anyhow::Result<()> {
     let app = Router::new()
         .route("/health", any(health_handler))
         .route("/ready", any(ready_handler))
-        .route("/api/{*path}", any(gateway.proxy_handler()))
-        .layer(gateway.into_layer());
+        .route("/api/{*path}", any(gateway.proxy_handler()));
 
     // 启动服务
     let addr: SocketAddr = gateway.listen_addr().parse()?;

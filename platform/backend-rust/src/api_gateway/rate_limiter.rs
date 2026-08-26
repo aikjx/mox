@@ -115,14 +115,13 @@ impl RateLimiter {
     }
 
     async fn try_acquire_token_bucket(&self, key: &str) -> bool {
-        let mut state = self.token_buckets
+        let mutex = self.token_buckets
             .entry(key.to_string())
             .or_insert_with(|| Mutex::new(TokenBucketState {
                 tokens: self.config.burst_size as f64,
                 last_refill: Instant::now(),
-            }))
-            .lock()
-            .await;
+            }));
+        let mut state = mutex.lock().await;
 
         // 补充令牌
         let now = Instant::now();
@@ -141,13 +140,12 @@ impl RateLimiter {
     }
 
     async fn try_acquire_sliding_window(&self, key: &str) -> bool {
-        let mut state = self.sliding_windows
+        let mutex = self.sliding_windows
             .entry(key.to_string())
             .or_insert_with(|| Mutex::new(SlidingWindowState {
                 requests: Vec::new(),
-            }))
-            .lock()
-            .await;
+            }));
+        let mut state = mutex.lock().await;
 
         let now = Instant::now();
         let window = Duration::from_secs(self.config.window_seconds);

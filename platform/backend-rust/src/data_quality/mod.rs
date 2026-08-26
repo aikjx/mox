@@ -12,7 +12,6 @@ pub mod monitor;
 
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 use uuid::Uuid;
 
 pub use lineage::{DataLineage, LineageNode, LineageEdge, LineageImpact};

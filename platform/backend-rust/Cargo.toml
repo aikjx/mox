@@ -12,6 +12,11 @@ license = "MIT"
 name = "mox-gateway"
 path = "src/main.rs"
 
+[[bench]]
+name = "performance_benchmarks"
+path = "benches/performance_benchmarks.rs"
+harness = false
+
 [dependencies]
 # 异步运行时
 tokio = { version = "1.35", features = ["full"] }

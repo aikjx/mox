@@ -162,11 +162,6 @@ impl ApiGateway {
         })
     }
 
-    /// 转换为 tower Layer
-    pub fn into_layer(self) -> tower::util::Identity {
-        tower::util::Identity::new()
-    }
-
     /// 代理请求
     async fn proxy(&self, path: String, req: Request) -> Response<Body> {
         let request_id = Uuid::new_v4().to_string();
@@ -187,7 +182,7 @@ impl ApiGateway {
             Some(svc) => {
                 // 熔断器检查
                 if let Some(cb) = self.circuit_breakers.get(&svc.name) {
-                    if !cb.can_execute() {
+                    if !cb.can_execute().await {
                         return self.circuit_open_response(&request_id, &svc.name);
                     }
                 }
@@ -202,19 +197,47 @@ impl ApiGateway {
         // 构建上游 URL
         let upstream_url = format!("{}/{}", target.trim_end_matches('/'), path);
 
-        // 执行请求（带重试）
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_millis(self.config.default_timeout_ms))
-            .build()
-            .unwrap();
+        // 转换请求方法
+        let method = reqwest::Method::from_bytes(req.method().as_str().as_bytes())
+            .unwrap_or(reqwest::Method::GET);
 
-        let result = self.retry_policy.execute(|| async {
-            let upstream_req = client
-                .request(req.method().clone(), &upstream_url)
-                .headers(req.headers().clone())
-                .body(req.body().clone())
-                .build()?;
-            client.execute(upstream_req).await
+        // 转换请求头
+        let mut headers = reqwest::header::HeaderMap::new();
+        for (k, v) in req.headers() {
+            if let Ok(name) = reqwest::header::HeaderName::from_bytes(k.as_str().as_bytes()) {
+                if let Ok(val) = reqwest::header::HeaderValue::from_bytes(v.as_bytes()) {
+                    headers.insert(name, val);
+                }
+            }
+        }
+
+        // 收集请求体
+        let body_bytes = axum::body::to_bytes(req.into_body(), usize::MAX)
+            .await
+            .unwrap_or_default();
+
+        // 执行请求（带重试）
+        let upstream_url_clone = upstream_url.clone();
+        let body_vec = body_bytes.to_vec();
+        let headers_clone = headers.clone();
+        let method_clone = method.clone();
+
+        let result = self.retry_policy.execute_http(move || {
+            let url = upstream_url_clone.clone();
+            let body = body_vec.clone();
+            let hdrs = headers_clone.clone();
+            let mthd = method_clone.clone();
+            async move {
+                let client = reqwest::Client::builder()
+                    .timeout(Duration::from_millis(30000))
+                    .build()
+                    .unwrap();
+                client.request(mthd, &url)
+                    .headers(hdrs)
+                    .body(body)
+                    .send()
+                    .await
+            }
         }).await;
 
         let duration = start.elapsed();
@@ -224,15 +247,25 @@ impl ApiGateway {
                 // 记录熔断器结果
                 if let Some(cb) = self.circuit_breakers.get(&svc_name) {
                     if resp.status().is_server_error() {
-                        cb.record_failure();
+                        cb.record_failure().await;
                     } else {
-                        cb.record_success();
+                        cb.record_success().await;
                     }
                 }
 
-                let mut builder = Response::builder().status(resp.status());
+                // 转换状态码
+                let status = StatusCode::from_u16(resp.status().as_u16())
+                    .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+
+                let mut builder = Response::builder().status(status);
+
+                // 转换响应头
                 for (k, v) in resp.headers() {
-                    builder = builder.header(k, v);
+                    if let Ok(name) = axum::http::HeaderName::from_bytes(k.as_str().as_bytes()) {
+                        if let Ok(val) = axum::http::HeaderValue::from_bytes(v.as_bytes()) {
+                            builder = builder.header(name, val);
+                        }
+                    }
                 }
                 builder = builder.header("X-Request-ID", request_id);
                 builder = builder.header("X-Duration-Ms", duration.as_millis().to_string());
@@ -245,11 +278,11 @@ impl ApiGateway {
             Err(e) => {
                 self.error_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 if let Some(cb) = self.circuit_breakers.get(&svc_name) {
-                    cb.record_failure();
+                    cb.record_failure().await;
                 }
                 Response::builder()
                     .status(StatusCode::BAD_GATEWAY)
-                    .header("X-Request-ID", request_id)
+                    .header("X-Request-ID", &request_id)
                     .body(Body::from(format!(
                         r#"{{"error":"bad_gateway","message":"{}","request_id":"{}"}}"#,
                         e, request_id
@@ -259,13 +292,13 @@ impl ApiGateway {
         }
     }
 
-    fn match_upstream(&self, path: &str) -> Option<UpstreamService> {
+    pub fn match_upstream(&self, path: &str) -> Option<UpstreamService> {
         self.config.upstream_services.iter()
             .find(|svc| path.starts_with(&svc.path_prefix))
             .cloned()
     }
 
-    fn select_target(&self, svc: &UpstreamService) -> String {
+    pub fn select_target(&self, svc: &UpstreamService) -> String {
         match svc.load_balance {
             LoadBalanceStrategy::RoundRobin => {
                 let counter = self.round_robin_counters

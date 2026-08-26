@@ -7,7 +7,7 @@
 //! - 故障传播时间线重建
 //! - 根因置信度计算
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::collections::{HashMap, HashSet, VecDeque};
 use uuid::Uuid;
 

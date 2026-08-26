@@ -13,9 +13,6 @@ pub mod spiffe;
 pub mod network_policy;
 
 use dashmap::DashMap;
-use serde::{Deserialize, Serialize};
-use std::sync::Arc;
-use std::time::{Duration, Instant};
 use uuid::Uuid;
 
 pub use mtls::{MtlsManager, CertificateInfo, CertificateStatus};
@@ -175,15 +172,21 @@ impl ZeroTrustMiddleware {
         let session = self.get_or_create_session(&subject, spiffe_id.clone(), request);
 
         // 6. 检查会话超时
-        if session.last_activity.elapsed() > Duration::from_secs(self.policy.session_timeout_seconds) {
-            self.sessions.remove(&session.id);
-            return self.deny("会话已超时", spiffe_id.clone());
+        if let Ok(last_activity) = chrono::DateTime::parse_from_rfc3339(&session.last_activity) {
+            let elapsed = chrono::Utc::now() - last_activity.with_timezone(&chrono::Utc);
+            if elapsed > chrono::Duration::seconds(self.policy.session_timeout_seconds as i64) {
+                self.sessions.remove(&session.id);
+                return self.deny("会话已超时", spiffe_id.clone());
+            }
         }
 
         // 7. 检查最大会话时长
-        if session.created_at.elapsed() > Duration::from_secs(self.policy.max_session_duration_seconds) {
-            self.sessions.remove(&session.id);
-            return self.deny("会话已达到最大持续时间", spiffe_id.clone());
+        if let Ok(created_at) = chrono::DateTime::parse_from_rfc3339(&session.created_at) {
+            let elapsed = chrono::Utc::now() - created_at.with_timezone(&chrono::Utc);
+            if elapsed > chrono::Duration::seconds(self.policy.max_session_duration_seconds as i64) {
+                self.sessions.remove(&session.id);
+                return self.deny("会话已达到最大持续时间", spiffe_id.clone());
+            }
         }
 
         self.authenticated_requests.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
