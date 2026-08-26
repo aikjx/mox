@@ -1,0 +1,248 @@
+// ============================================================
+// Expert Alliance v3 — Agent 运行时服务 (expert_agent.proto)
+// 服务名: ExpertAgentService
+// 职责: Agent 运行时 / ReAct 循环 / 工具调用 / AI 推理
+// 对应: Node alliance-orchestrator (consult) + Rust harness.rs
+// 特性: 无状态化，Agent 会话状态外部化到 Redis
+// ReAct 5 步: 理解→规划→执行→观察→审核，≤3 轮迭代
+// ============================================================
+
+syntax = "proto3";
+
+package expert_alliance.v1;
+
+import "expert-alliance/v1/common.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "expert-alliance/v1;v1";
+
+// ──────────────────────────────────────────────
+// Agent 服务
+// ──────────────────────────────────────────────
+service ExpertAgentService {
+  // 运行 Agent — 标准 ReAct 循环，流式返回事件
+  rpc RunAgent(RunAgentRequest) returns (stream AgentEvent);
+
+  // 单步工具调用 — 同步调用专家工具
+  rpc CallTool(CallToolRequest) returns (CallToolResponse);
+
+  // 获取 Agent 状态
+  rpc GetAgentStatus(GetAgentStatusRequest) returns (AgentStatus);
+
+  // 暂停 Agent
+  rpc PauseAgent(PauseAgentRequest) returns (PauseAgentResponse);
+
+  // 恢复 Agent
+  rpc ResumeAgent(ResumeAgentRequest) returns (ResumeAgentResponse);
+
+  // 取消 Agent
+  rpc CancelAgent(CancelAgentRequest) returns (CancelAgentResponse);
+
+  // 人工干预 — 注入人工决策到 Agent 循环
+  rpc HumanIntervention(HumanInterventionRequest) returns (HumanInterventionResponse);
+
+  // Agent 健康检查
+  rpc Health(google.protobuf.Empty) returns (AgentHealth);
+}
+
+// ──────────────────────────────────────────────
+// ReAct 步骤枚举
+// ──────────────────────────────────────────────
+enum ReActStep {
+  RE_ACT_STEP_UNSPECIFIED = 0;
+  RE_ACT_STEP_UNDERSTAND = 1;   // 理解：解析任务，提取关键信息
+  RE_ACT_STEP_PLAN = 2;          // 规划：制定执行计划，选择工具
+  RE_ACT_STEP_EXECUTE = 3;       // 执行：调用工具/专家
+  RE_ACT_STEP_OBSERVE = 4;       // 观察：分析执行结果
+  RE_ACT_STEP_REVIEW = 5;        // 审核：质量检查，决定是否继续
+}
+
+// ──────────────────────────────────────────────
+// RunAgent
+// ──────────────────────────────────────────────
+message RunAgentRequest {
+  string agent_id = 1;             // Agent 实例 ID（可空，自动生成）
+  string task_id = 2;
+  string expert_id = 3;             // 运行的专家 ID
+  string query = 4;                 // 任务查询
+  google.protobuf.Struct context = 5;  // 上下文
+  repeated string available_tools = 6;  // 可用工具 ID 列表
+  int32 max_iterations = 7;          // 最大迭代轮数（默认 3）
+  int32 timeout_seconds = 8;          // 总超时（默认 120）
+  string llm_model = 9;               // LLM 模型（可空，使用默认）
+  double temperature = 10;             // 温度（默认 0.3）
+  string tenant_id = 11;
+  map<string, string> metadata = 12;
+}
+
+// ──────────────────────────────────────────────
+// Agent 事件（流式）
+// ──────────────────────────────────────────────
+message AgentEvent {
+  string event_id = 1;
+  string agent_id = 2;
+  string task_id = 3;
+  AgentEventType event_type = 4;
+  ReActStep step = 5;
+  int32 iteration = 6;                // 当前迭代轮数
+  google.protobuf.Struct payload = 7;
+  string thought = 8;                  // Agent 思考过程（可解释性）
+  string action = 9;                   // 采取的行动
+  string observation = 10;             // 观察结果
+  int32 progress_percent = 11;
+  int64 latency_ms = 12;
+  google.protobuf.Timestamp timestamp = 13;
+  string trace_id = 14;
+}
+
+enum AgentEventType {
+  AGENT_EVENT_TYPE_UNSPECIFIED = 0;
+  AGENT_EVENT_TYPE_STARTED = 1;
+  AGENT_EVENT_TYPE_STEP_STARTED = 2;
+  AGENT_EVENT_TYPE_STEP_COMPLETED = 3;
+  AGENT_EVENT_TYPE_THINKING = 4;
+  AGENT_EVENT_TYPE_TOOL_CALLING = 5;
+  AGENT_EVENT_TYPE_TOOL_RESULT = 6;
+  AGENT_EVENT_TYPE_ITERATION_COMPLETED = 7;
+  AGENT_EVENT_TYPE_REVIEWING = 8;
+  AGENT_EVENT_TYPE_COMPLETED = 9;
+  AGENT_EVENT_TYPE_FAILED = 10;
+  AGENT_EVENT_TYPE_PAUSED = 11;
+  AGENT_EVENT_TYPE_HUMAN_INTERVENTION = 12;
+  AGENT_EVENT_TYPE_CANCELLED = 13;
+}
+
+// ──────────────────────────────────────────────
+// CallTool — 同步工具调用
+// ──────────────────────────────────────────────
+message CallToolRequest {
+  string tool_id = 1;
+  string expert_id = 2;
+  string task_id = 3;
+  google.protobuf.Struct arguments = 4;  // 工具参数
+  int32 timeout_ms = 5;                    // 超时（默认 30000）
+  int32 max_retries = 6;                    // 重试次数（默认 1）
+  string tenant_id = 7;
+}
+
+message CallToolResponse {
+  string tool_id = 1;
+  bool success = 2;
+  google.protobuf.Struct result = 3;
+  string error = 4;
+  int64 latency_ms = 5;
+  int32 retry_count = 6;
+  // 三保护指标
+  bool timeout_triggered = 7;
+  bool retry_triggered = 8;
+  bool circuit_broken = 9;    // 熔断触发（后续调用应降级）
+}
+
+// ──────────────────────────────────────────────
+// GetAgentStatus
+// ──────────────────────────────────────────────
+message GetAgentStatusRequest {
+  string agent_id = 1;
+}
+
+message AgentStatus {
+  string agent_id = 1;
+  string task_id = 2;
+  string expert_id = 3;
+  AgentState state = 4;
+  ReActStep current_step = 5;
+  int32 current_iteration = 6;
+  int32 max_iterations = 7;
+  int32 progress_percent = 8;
+  repeated AgentEvent recent_events = 9;   // 最近 10 条事件
+  google.protobuf.Struct accumulated_context = 10;  // 累积上下文
+  int64 elapsed_ms = 11;
+  google.protobuf.Timestamp started_at = 12;
+  google.protobuf.Timestamp updated_at = 13;
+  string error_message = 14;
+}
+
+enum AgentState {
+  AGENT_STATE_UNSPECIFIED = 0;
+  AGENT_STATE_IDLE = 1;
+  AGENT_STATE_RUNNING = 2;
+  AGENT_STATE_PAUSED = 3;
+  AGENT_STATE_WAITING_HUMAN = 4;   // 等待人工干预
+  AGENT_STATE_COMPLETED = 5;
+  AGENT_STATE_FAILED = 6;
+  AGENT_STATE_CANCELLED = 7;
+}
+
+// ──────────────────────────────────────────────
+// Pause / Resume / Cancel
+// ──────────────────────────────────────────────
+message PauseAgentRequest {
+  string agent_id = 1;
+  string reason = 2;
+}
+
+message PauseAgentResponse {
+  bool paused = 1;
+  AgentStatus status = 2;
+}
+
+message ResumeAgentRequest {
+  string agent_id = 1;
+}
+
+message ResumeAgentResponse {
+  bool resumed = 1;
+  AgentStatus status = 2;
+}
+
+message CancelAgentRequest {
+  string agent_id = 1;
+  string reason = 2;
+}
+
+message CancelAgentResponse {
+  bool cancelled = 1;
+  AgentStatus status = 2;
+}
+
+// ──────────────────────────────────────────────
+// HumanIntervention — 人工干预
+// ──────────────────────────────────────────────
+message HumanInterventionRequest {
+  string agent_id = 1;
+  HumanInterventionType intervention_type = 2;
+  string instruction = 3;           // 人工指令（注入到 Agent 上下文）
+  google.protobuf.Struct data = 4;  // 人工提供的数据
+  string operator_id = 5;
+}
+
+enum HumanInterventionType {
+  HUMAN_INTERVENTION_TYPE_UNSPECIFIED = 0;
+  HUMAN_INTERVENTION_TYPE_APPROVE = 1;     // 批准当前计划
+  HUMAN_INTERVENTION_TYPE_REJECT = 2;       // 拒绝，要求重新规划
+  HUMAN_INTERVENTION_TYPE_MODIFY = 3;       // 修改计划
+  HUMAN_INTERVENTION_TYPE_PROVIDE_INFO = 4; // 提供补充信息
+  HUMAN_INTERVENTION_TYPE_TERMINATE = 5;    // 终止执行
+}
+
+message HumanInterventionResponse {
+  bool accepted = 1;
+  AgentStatus status = 2;
+}
+
+// ──────────────────────────────────────────────
+// Agent 健康状态
+// ──────────────────────────────────────────────
+message AgentHealth {
+  bool healthy = 1;
+  string version = 2;
+  int64 running_agents = 3;
+  int64 total_agents_run = 4;
+  double success_rate = 5;
+  int64 avg_iterations = 6;
+  int64 avg_duration_ms = 7;
+  bool llm_gateway_available = 8;
+  bool redis_available = 9;
+  google.protobuf.Timestamp started_at = 10;
+}

@@ -1,0 +1,262 @@
+// ============================================================
+// Expert Alliance v3 — 执行服务 (alliance_executor.proto)
+// 服务名: AllianceExecutorService
+// 职责: DAG 执行引擎 / 节点调度 / 进度推送(SSE/NATS) / 人工干预
+// 对应 Rust: alliance/gate.rs (run_full_pipeline) + Node ai-integration-engine
+// 特性: 无状态化，节点状态持久化到 PG，进度通过 NATS 广播
+// ============================================================
+
+syntax = "proto3";
+
+package expert_alliance.v1;
+
+import "expert-alliance/v1/common.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "expert-alliance/v1;v1";
+
+// ──────────────────────────────────────────────
+// 执行服务
+// ──────────────────────────────────────────────
+service AllianceExecutorService {
+  // 启动执行 — 基于 Plan 启动 DAG 执行，返回流式事件（SSE 友好）
+  rpc StartExecution(StartExecutionRequest) returns (stream ExecutionEvent);
+
+  // 查询执行状态
+  rpc GetExecutionStatus(GetExecutionStatusRequest) returns (ExecutionStatus);
+
+  // 暂停执行（人工干预）
+  rpc PauseExecution(PauseExecutionRequest) returns (PauseExecutionResponse);
+
+  // 恢复执行
+  rpc ResumeExecution(ResumeExecutionRequest) returns (ResumeExecutionResponse);
+
+  // 取消执行
+  rpc CancelExecution(CancelExecutionRequest) returns (CancelExecutionResponse);
+
+  // 重试失败节点
+  rpc RetryNode(RetryNodeRequest) returns (RetryNodeResponse);
+
+  // 替换专家（人工干预：某专家失败时替换）
+  rpc ReplaceExpert(ReplaceExpertRequest) returns (ReplaceExpertResponse);
+
+  // 获取节点执行详情
+  rpc GetNodeDetail(GetNodeDetailRequest) returns (NodeDetail);
+
+  // 执行器健康检查
+  rpc Health(google.protobuf.Empty) returns (ExecutorHealth);
+}
+
+// ──────────────────────────────────────────────
+// 节点状态枚举
+// ──────────────────────────────────────────────
+enum NodeStatus {
+  NODE_STATUS_UNSPECIFIED = 0;
+  NODE_STATUS_PENDING = 1;       // 等待依赖
+  NODE_STATUS_READY = 2;         // 依赖满足，等待调度
+  NODE_STATUS_RUNNING = 3;       // 执行中
+  NODE_STATUS_COMPLETED = 4;     // 成功
+  NODE_STATUS_FAILED = 5;         // 失败
+  NODE_STATUS_SKIPPED = 6;        // 跳过（条件不满足）
+  NODE_STATUS_CANCELLED = 7;      // 取消
+}
+
+// ──────────────────────────────────────────────
+// StartExecution
+// ──────────────────────────────────────────────
+message StartExecutionRequest {
+  oneof exec_ref {
+    string task_id = 1;       // 已调度的任务 ID（从 PG 读取 Plan）
+    Plan plan = 2;             // 直接传入 Plan
+  }
+  // 是否 dry-run（仅验证 DAG，不实际执行，默认 false）
+  bool dry_run = 3;
+  // 节点超时覆盖（毫秒，0=使用默认）
+  int64 node_timeout_ms = 4;
+}
+
+// ──────────────────────────────────────────────
+// 执行事件（流式推送，对应 SSE 帧）
+// 与 Rust AllianceEvent 对齐，但增加 DAG 节点粒度
+// ──────────────────────────────────────────────
+message ExecutionEvent {
+  string event_id = 1;                          // 事件唯一 ID
+  string task_id = 2;
+  string execution_id = 3;                       // 执行实例 ID
+  ExecutionEventType event_type = 4;             // 事件类型
+  PipelinePhase phase = 5;                       // 当前管线阶段
+  string node_id = 6;                            // 相关 DAG 节点（可空）
+  NodeStatus node_status = 7;                    // 节点状态（可空）
+  google.protobuf.Struct payload = 8;            // 事件负载（IntentResult / ExpertOpinion / FusionResult 等）
+  int32 progress_percent = 9;                     // 总进度
+  int64 latency_ms = 10;                          // 该事件距执行开始的耗时
+  google.protobuf.Timestamp timestamp = 11;
+  string trace_id = 12;                           // 全链路 trace ID
+  bool degraded = 13;                             // 是否降级模式
+  string degrade_reason = 14;
+}
+
+// ──────────────────────────────────────────────
+// 执行事件类型
+// ──────────────────────────────────────────────
+enum ExecutionEventType {
+  EXECUTION_EVENT_TYPE_UNSPECIFIED = 0;
+  EXECUTION_EVENT_TYPE_STARTED = 1;           // 执行开始
+  EXECUTION_EVENT_TYPE_PHASE_STARTED = 2;     // 阶段开始
+  EXECUTION_EVENT_TYPE_PHASE_COMPLETED = 3;   // 阶段完成
+  EXECUTION_EVENT_TYPE_NODE_STARTED = 4;       // 节点开始
+  EXECUTION_EVENT_TYPE_NODE_PROGRESS = 5;      // 节点进度
+  EXECUTION_EVENT_TYPE_NODE_COMPLETED = 6;     // 节点完成
+  EXECUTION_EVENT_TYPE_NODE_FAILED = 7;         // 节点失败
+  EXECUTION_EVENT_TYPE_RETRYING = 8;            // 重试中
+  EXECUTION_EVENT_TYPE_EXPERT_REPLACED = 9;     // 专家已替换
+  EXECUTION_EVENT_TYPE_PAUSED = 10;             // 已暂停
+  EXECUTION_EVENT_TYPE_RESUMED = 11;            // 已恢复
+  EXECUTION_EVENT_TYPE_COMPLETED = 12;          // 执行完成
+  EXECUTION_EVENT_TYPE_FAILED = 13;              // 执行失败
+  EXECUTION_EVENT_TYPE_CANCELLED = 14;           // 已取消
+}
+
+// ──────────────────────────────────────────────
+// GetExecutionStatus
+// ──────────────────────────────────────────────
+message GetExecutionStatusRequest {
+  string task_id = 1;
+}
+
+message ExecutionStatus {
+  string task_id = 1;
+  string execution_id = 2;
+  TaskStatus status = 3;
+  PipelinePhase current_phase = 4;
+  int32 progress_percent = 5;
+  int32 total_nodes = 6;
+  int32 completed_nodes = 7;
+  int32 failed_nodes = 8;
+  int32 running_nodes = 9;
+  repeated NodeStatusSnapshot nodes = 10;
+  int64 elapsed_ms = 11;
+  google.protobuf.Timestamp started_at = 12;
+  google.protobuf.Timestamp updated_at = 13;
+  string error_message = 14;
+}
+
+message NodeStatusSnapshot {
+  string node_id = 1;
+  string name = 2;
+  NodeStatus status = 3;
+  string expert_id = 4;
+  int64 started_at_ms = 5;
+  int64 completed_at_ms = 6;
+  int64 duration_ms = 7;
+  string error = 8;
+  int32 retry_count = 9;
+}
+
+// ──────────────────────────────────────────────
+// Pause / Resume / Cancel
+// ──────────────────────────────────────────────
+message PauseExecutionRequest {
+  string task_id = 1;
+  string reason = 2;
+}
+
+message PauseExecutionResponse {
+  bool paused = 1;
+  ExecutionStatus status = 2;
+}
+
+message ResumeExecutionRequest {
+  string task_id = 1;
+}
+
+message ResumeExecutionResponse {
+  bool resumed = 1;
+  ExecutionStatus status = 2;
+}
+
+message CancelExecutionRequest {
+  string task_id = 1;
+  string reason = 2;
+}
+
+message CancelExecutionResponse {
+  bool cancelled = 1;
+  ExecutionStatus status = 2;
+}
+
+// ──────────────────────────────────────────────
+// RetryNode
+// ──────────────────────────────────────────────
+message RetryNodeRequest {
+  string task_id = 1;
+  string node_id = 2;
+  int32 max_retries = 3;    // 最大重试次数（默认 1）
+}
+
+message RetryNodeResponse {
+  bool retried = 1;
+  NodeStatus status = 2;
+}
+
+// ──────────────────────────────────────────────
+// ReplaceExpert
+// ──────────────────────────────────────────────
+message ReplaceExpertRequest {
+  string task_id = 1;
+  string node_id = 2;
+  string old_expert_id = 3;
+  string new_expert_id = 4;   // 可空，为空则由 scheduler 自动推荐
+  string reason = 5;
+}
+
+message ReplaceExpertResponse {
+  bool replaced = 1;
+  string old_expert_id = 2;
+  string new_expert_id = 3;
+  NodeStatus status = 4;
+}
+
+// ──────────────────────────────────────────────
+// GetNodeDetail
+// ──────────────────────────────────────────────
+message GetNodeDetailRequest {
+  string task_id = 1;
+  string node_id = 2;
+}
+
+message NodeDetail {
+  string node_id = 1;
+  string task_id = 2;
+  string name = 3;
+  PipelinePhase phase = 4;
+  string expert_id = 5;
+  NodeStatus status = 6;
+  repeated string depends_on = 7;
+  google.protobuf.Struct input = 8;          // 节点输入
+  google.protobuf.Struct output = 9;         // 节点输出
+  repeated ExecutionEvent events = 10;       // 该节点的事件历史
+  int64 started_at_ms = 11;
+  int64 completed_at_ms = 12;
+  int64 duration_ms = 13;
+  string error = 14;
+  int32 retry_count = 15;
+  map<string, string> metadata = 16;
+}
+
+// ──────────────────────────────────────────────
+// 执行器健康状态
+// ──────────────────────────────────────────────
+message ExecutorHealth {
+  bool healthy = 1;
+  string version = 2;
+  int64 running_executions = 3;
+  int64 queued_executions = 4;
+  int64 total_nodes_executed = 5;
+  double success_rate = 6;
+  int64 avg_node_duration_ms = 7;
+  bool database_available = 8;    // PG 是否可用
+  bool nats_available = 9;        // NATS 是否可用
+  google.protobuf.Timestamp started_at = 10;
+}

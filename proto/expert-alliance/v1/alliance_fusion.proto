@@ -1,0 +1,116 @@
+// ============================================================
+// Expert Alliance v3 — 融合服务 (alliance_fusion.proto)
+// 服务名: AllianceFusionService
+// 职责: 6 种融合策略 / 质量评估 / 迭代精炼
+// 对应 Rust: alliance/debate.rs (synthesize_opinions) + Node debate-synthesis.js
+// ============================================================
+
+syntax = "proto3";
+
+package expert_alliance.v1;
+
+import "expert-alliance/v1/common.proto";
+import "google/protobuf/empty.proto";
+
+option go_package = "expert-alliance/v1;v1";
+
+// ──────────────────────────────────────────────
+// 融合服务
+// ──────────────────────────────────────────────
+service AllianceFusionService {
+  // 融合多专家结果 — 6 种策略可选
+  rpc FuseResults(FuseResultsRequest) returns (FusionResult);
+
+  // 质量评估 — 4 维度打分 + 等级判定
+  rpc EvaluateQuality(EvaluateQualityRequest) returns (QualityScore);
+
+  // 迭代精炼 — 基于质量反馈进行最多 N 轮优化
+  rpc RefineResult(RefineResultRequest) returns (RefineResultResponse);
+
+  // 获取融合历史
+  rpc GetFusionHistory(GetFusionHistoryRequest) returns (GetFusionHistoryResponse);
+
+  // 融合器健康检查
+  rpc Health(google.protobuf.Empty) returns (FusionHealth);
+}
+
+// ──────────────────────────────────────────────
+// FuseResults
+// ──────────────────────────────────────────────
+message FuseResultsRequest {
+  string task_id = 1;
+  repeated ExpertOpinion opinions = 2;       // 专家意见列表
+  FusionStrategy strategy = 3;                // 融合策略
+  map<string, double> expert_weights = 4;      // 专家权重覆盖（可空，使用默认）
+  bool enable_quality_gate = 5;                // 是否自动质量门禁（默认 true）
+  string tenant_id = 6;
+}
+
+// ──────────────────────────────────────────────
+// EvaluateQuality
+// ──────────────────────────────────────────────
+message EvaluateQualityRequest {
+  string content = 1;                          // 待评估内容
+  string task_id = 2;
+  repeated string source_expert_ids = 3;
+  map<string, string> context = 4;             // 评估上下文（原始 query、预期目标等）
+  string tenant_id = 5;
+}
+
+// ──────────────────────────────────────────────
+// RefineResult — 迭代精炼
+// ──────────────────────────────────────────────
+message RefineResultRequest {
+  string task_id = 1;
+  FusionResult current_result = 2;             // 当前融合结果
+  QualityScore current_quality = 3;            // 当前质量分
+  int32 max_iterations = 4;                     // 最大迭代轮数（默认 3）
+  double target_quality = 5;                    // 目标质量分（默认 0.8）
+  repeated string refinement_directives = 6;    // 精炼指令（可空，AI 自动判断）
+  string tenant_id = 7;
+}
+
+message RefineIteration {
+  int32 iteration = 1;
+  string before_content = 2;
+  string after_content = 3;
+  QualityScore before_quality = 4;
+  QualityScore after_quality = 5;
+  string change_summary = 6;
+  int64 duration_ms = 7;
+}
+
+message RefineResultResponse {
+  FusionResult refined_result = 1;
+  QualityScore final_quality = 2;
+  repeated RefineIteration iterations = 3;
+  bool target_reached = 4;
+  int32 total_iterations = 5;
+  int64 total_duration_ms = 6;
+}
+
+// ──────────────────────────────────────────────
+// GetFusionHistory
+// ──────────────────────────────────────────────
+message GetFusionHistoryRequest {
+  string task_id = 1;
+  PageRequest page = 2;
+}
+
+message GetFusionHistoryResponse {
+  repeated FusionResult results = 1;
+  PageResponse page = 2;
+}
+
+// ──────────────────────────────────────────────
+// 融合器健康状态
+// ──────────────────────────────────────────────
+message FusionHealth {
+  bool healthy = 1;
+  string version = 2;
+  int64 total_fusions = 3;
+  double avg_quality_score = 4;
+  map<string, int64> strategy_usage = 5;      // 各策略使用次数
+  bool llm_available = 6;                       // LLM 合成策略是否可用
+  google.protobuf.Timestamp started_at = 7;
+}

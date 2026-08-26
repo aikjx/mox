@@ -1,7 +1,9 @@
-//! 跨平台辅助函数（屏蔽 cfg 细节给四大算子用）
+//! 跨平台辅助函数（屏蔽 cfg 细节给 8 大算子用）
 
 use serde_json::{json, Value};
 use std::process::Command;
+use xiaobai_core::errors::{XiaobaiError, XiaobaiResult};
+use xiaobai_core::operator::OperatorCategory;
 
 /// 稳定平台标签（给 XB-007 OperatorUnsupported 用，不随 cfg(target_os) 文案漂移）
 pub fn platform_tag() -> &'static str {
@@ -30,6 +32,38 @@ pub fn run_command(cmd: &str, args: &[&str]) -> Result<(String, String, i32), st
     let stderr = String::from_utf8_lossy(&out.stderr).to_string();
     let code = out.status.code().unwrap_or(-1);
     Ok((stdout, stderr, code))
+}
+
+
+/// 算子友好版 run_command：自动把 io::Error 转换为 XiaobaiError::ExecutionError，
+/// 带上正确的 category/action，避免每个调用方 map_err 样板
+pub fn run_command_xb(
+    cmd: &str,
+    args: &[&str],
+    category: OperatorCategory,
+    action: &str,
+) -> XiaobaiResult<(String, String, i32)> {
+    run_command(cmd, args).map_err(|e| XiaobaiError::ExecutionError {
+        category: category.as_str().to_string(),
+        action: action.to_string(),
+        detail: format!("{cmd} {} failed: {e}", args_display(args)),
+    })
+}
+
+fn args_display(args: &[&str]) -> String {
+    use std::fmt::Write;
+    let mut out = String::new();
+    out.push('[');
+    for (i, a) in args.iter().enumerate() {
+        if i > 0 { out.push(' '); }
+        if a.contains(char::is_whitespace) || a.is_empty() {
+            let _ = write!(out, "{a:?}");
+        } else {
+            out.push_str(a);
+        }
+    }
+    out.push(']');
+    out
 }
 
 /// 截断长文本头部，避免 OperatorOutput.payload 写进审计时过大

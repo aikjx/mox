@@ -1,0 +1,59 @@
+[workspace]
+members = [".", "mox-dualrpc-macro", "examples/hello-world"]
+resolver = "2"
+
+[package]
+name = "mox-dualrpc"
+version = "0.1.0"
+edition = "2021"
+description = "Enterprise-grade dual-protocol RPC framework: gRPC + JSON-RPC with zero-config auto-transcoding"
+license = "MIT"
+
+[dependencies]
+mox-dualrpc-macro = { path = "mox-dualrpc-macro" }
+
+# gRPC
+tonic = { version = "0.12", features = ["tls"] }
+prost = "0.13"
+prost-types = "0.13"
+
+# JSON-RPC (lightweight custom, no heavy dependency)
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+tokio-stream = "0.1"
+
+# Web framework for JSON-RPC HTTP transport
+axum = { version = "0.7", features = ["json"] }
+tower = "0.5"
+tower-http = { version = "0.5", features = ["cors", "trace", "compression-gzip"] }
+
+# Observability
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+metrics = "0.23"
+
+# Caching (L1 response cache)
+moka = { version = "0.12", features = ["future", "sync"] }
+
+# Error handling
+thiserror = "2"
+anyhow = "1"
+async-trait = "0.1"
+
+# Utilities
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+dashmap = "6"
+once_cell = "1"
+
+[dev-dependencies]
+tonic-build = "0.12"
+prost-build = "0.13"
+reqwest = { version = "0.12", features = ["json"] }
+tokio-test = "0.4"
+
+[build-dependencies]
+tonic-build = "0.12"

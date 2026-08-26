@@ -1,0 +1,271 @@
+// ============================================================
+// Expert Alliance v3 — 记忆服务 (expert_memory.proto)
+// 服务名: ExpertMemoryService
+// 职责: 统一记忆抽象 / 案例库 / 图谱学习 / 边权重更新
+// 对应: Node MetricsStore + SessionChainStore + Rust gate.rs learn_metrics
+// v3 P0 缺口最大：当前记忆 3 处分散，需统一门面
+// 存储分层: 工作记忆→Redis / 会话→Redis / 长期→PG / 案例→图谱
+// ============================================================
+
+syntax = "proto3";
+
+package expert_alliance.v1;
+
+import "expert-alliance/v1/common.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "expert-alliance/v1;v1";
+
+// ──────────────────────────────────────────────
+// 记忆服务
+// ──────────────────────────────────────────────
+service ExpertMemoryService {
+  // 写入记忆 — 统一入口，自动分层存储
+  rpc PutMemory(PutMemoryRequest) returns (PutMemoryResponse);
+
+  // 读取记忆
+  rpc GetMemory(GetMemoryRequest) returns (GetMemoryResponse);
+
+  // 搜索记忆 — 语义+关键词混合检索
+  rpc SearchMemory(SearchMemoryRequest) returns (SearchMemoryResponse);
+
+  // 删除记忆
+  rpc DeleteMemory(DeleteMemoryRequest) returns (DeleteMemoryResponse);
+
+  // 从任务中学习 — 异步更新图谱边权重 + 案例入库
+  rpc LearnFromTask(LearnFromTaskRequest) returns (LearnFromTaskResponse);
+
+  // 获取案例
+  rpc GetCase(GetCaseRequest) returns (CaseItem);
+
+  // 列出案例（分页 + 过滤）
+  rpc ListCases(ListCasesRequest) returns (ListCasesResponse);
+
+  // 获取专家指标（MetricsStore 外部化）
+  rpc GetExpertMetrics(GetExpertMetricsRequest) returns (ExpertMetrics);
+
+  // 更新专家指标
+  rpc UpdateExpertMetrics(UpdateExpertMetricsRequest) returns (ExpertMetrics);
+
+  // 记忆服务健康检查
+  rpc Health(google.protobuf.Empty) returns (MemoryHealth);
+}
+
+// ──────────────────────────────────────────────
+// 记忆类型枚举
+// ──────────────────────────────────────────────
+enum MemoryType {
+  MEMORY_TYPE_UNSPECIFIED = 0;
+  MEMORY_TYPE_WORKING = 1;     // 工作记忆（短期，Redis，TTL 短）
+  MEMORY_TYPE_SESSION = 2;     // 会话记忆（Redis，TTL=24h）
+  MEMORY_TYPE_LONG_TERM = 3;   // 长期记忆（PG，持久化）
+  MEMORY_TYPE_CASE = 4;         // 案例记忆（图谱，高质量任务沉淀）
+  MEMORY_TYPE_EPISODIC = 5;     // 情景记忆（完整任务执行轨迹）
+}
+
+// ──────────────────────────────────────────────
+// 记忆条目
+// ──────────────────────────────────────────────
+message MemoryItem {
+  string memory_id = 1;
+  MemoryType memory_type = 2;
+  string key = 3;                          // 记忆键（如 "task:{id}:context"）
+  google.protobuf.Struct value = 4;        // 记忆值
+  string session_id = 5;
+  string task_id = 6;
+  string expert_id = 7;
+  string tenant_id = 8;
+  map<string, string> tags = 9;            // 标签（用于检索过滤）
+  double importance = 10;                   // 重要度 0..1（影响 TTL 和案例入库阈值）
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp expires_at = 12; // 过期时间（可空=永不过期）
+  int64 access_count = 13;
+  google.protobuf.Timestamp last_accessed_at = 14;
+}
+
+// ──────────────────────────────────────────────
+// PutMemory
+// ──────────────────────────────────────────────
+message PutMemoryRequest {
+  MemoryType memory_type = 1;
+  string key = 2;
+  google.protobuf.Struct value = 3;
+  string session_id = 4;
+  string task_id = 5;
+  string expert_id = 6;
+  string tenant_id = 7;
+  map<string, string> tags = 8;
+  double importance = 9;
+  int64 ttl_seconds = 10;    // 自定义 TTL（0=使用默认，-1=永不过期）
+}
+
+message PutMemoryResponse {
+  string memory_id = 1;
+  bool stored = 2;
+  MemoryType actual_type = 3;  // 实际存储类型（可能因重要度自动升级）
+  google.protobuf.Timestamp expires_at = 4;
+}
+
+// ──────────────────────────────────────────────
+// GetMemory
+// ──────────────────────────────────────────────
+message GetMemoryRequest {
+  oneof memory_ref {
+    string memory_id = 1;
+    string key = 2;           // 按 key 查找（精确匹配）
+  }
+  string session_id = 3;
+  string tenant_id = 4;
+}
+
+message GetMemoryResponse {
+  MemoryItem memory = 1;
+  bool found = 2;
+}
+
+// ──────────────────────────────────────────────
+// SearchMemory
+// ──────────────────────────────────────────────
+message SearchMemoryRequest {
+  string query = 1;                       // 搜索文本
+  MemoryType memory_type = 2;             // 按类型过滤（UNSPECIFIED=全部）
+  string session_id = 3;
+  string task_id = 4;
+  string expert_id = 5;
+  string tenant_id = 6;
+  map<string, string> tag_filter = 7;     // 标签过滤
+  int32 top_k = 8;                         // 返回数量（默认 10）
+  double min_similarity = 9;               // 最低相似度（默认 0.5）
+  PageRequest page = 10;
+}
+
+message MemorySearchHit {
+  MemoryItem memory = 1;
+  double similarity = 2;
+  string matched_by = 3;    // "keyword" / "vector" / "hybrid"
+}
+
+message SearchMemoryResponse {
+  repeated MemorySearchHit hits = 1;
+  PageResponse page = 2;
+  int64 latency_ms = 3;
+}
+
+// ──────────────────────────────────────────────
+// DeleteMemory
+// ──────────────────────────────────────────────
+message DeleteMemoryRequest {
+  oneof memory_ref {
+    string memory_id = 1;
+    string key_prefix = 2;    // 按 key 前缀批量删除
+  }
+  string session_id = 3;
+  string tenant_id = 4;
+}
+
+message DeleteMemoryResponse {
+  int32 deleted_count = 1;
+}
+
+// ──────────────────────────────────────────────
+// LearnFromTask — 异步学习（核心 P0）
+// 任务完成后调用：
+//   1. 更新专家指标（成功率/延迟/错误率）
+//   2. 质量≥A 自动案例入库
+//   3. 异步 Worker 批量更新图谱边权重
+//      (has_capability.proficiency / collaborates_with.success_rate)
+// ──────────────────────────────────────────────
+message LearnFromTaskRequest {
+  string task_id = 1;
+  string query = 2;
+  IntentResult intent = 3;
+  TeamResult team = 4;
+  FusionResult result = 5;
+  QualityScore quality = 6;
+  repeated string expert_ids = 7;
+  map<string, ExpertPerf> expert_performances = 8;  // 各专家本次表现
+  int64 total_duration_ms = 9;
+  string tenant_id = 10;
+}
+
+message ExpertPerf {
+  string expert_id = 1;
+  bool success = 2;
+  int64 latency_ms = 3;
+  double contribution_score = 4;   // 对最终结果的贡献度 0..1
+  string error = 5;
+}
+
+message LearnFromTaskResponse {
+  bool accepted = 1;
+  string learn_job_id = 2;          // 异步学习任务 ID
+  bool case_promoted = 3;           // 是否升级为案例（质量≥A）
+  string case_id = 4;                // 案例 ID（若升级）
+  repeated string updated_experts = 5;  // 更新了指标的专家
+  int32 graph_edges_updated = 6;     // 更新的图谱边数（异步，可能为预估）
+}
+
+// ──────────────────────────────────────────────
+// GetCase / ListCases
+// ──────────────────────────────────────────────
+message GetCaseRequest {
+  string case_id = 1;
+}
+
+message ListCasesRequest {
+  PageRequest page = 1;
+  string intent_id = 2;
+  repeated string dimensions = 3;
+  double min_quality = 4;
+  string tenant_id = 5;
+}
+
+message ListCasesResponse {
+  repeated CaseItem cases = 1;
+  PageResponse page = 2;
+}
+
+// ──────────────────────────────────────────────
+// ExpertMetrics — 专家指标（MetricsStore 外部化）
+// ──────────────────────────────────────────────
+message ExpertMetrics {
+  string expert_id = 1;
+  int64 total_tasks = 2;
+  int64 successful_tasks = 3;
+  int64 failed_tasks = 4;
+  double success_rate = 5;
+  int64 avg_latency_ms = 6;
+  int64 p95_latency_ms = 7;
+  double avg_contribution = 8;
+  double gate_a_rate = 9;
+  map<string, int64> intent_distribution = 10;  // 各意图类任务数
+  google.protobuf.Timestamp last_updated = 11;
+  google.protobuf.Timestamp first_seen = 12;
+}
+
+message GetExpertMetricsRequest {
+  string expert_id = 1;
+  string tenant_id = 2;
+}
+
+message UpdateExpertMetricsRequest {
+  string expert_id = 1;
+  ExpertPerf perf = 2;
+  string tenant_id = 3;
+}
+
+// ──────────────────────────────────────────────
+// 记忆服务健康状态
+// ──────────────────────────────────────────────
+message MemoryHealth {
+  bool healthy = 1;
+  string version = 2;
+  bool redis_available = 3;
+  bool postgres_available = 4;
+  bool graph_available = 5;
+  int64 total_memories = 6;
+  int64 total_cases = 7;
+  int64 pending_learn_jobs = 8;
+  google.protobuf.Timestamp started_at = 9;
+}

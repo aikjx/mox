@@ -1,0 +1,192 @@
+// ============================================================
+// Expert Alliance v3 — 调度服务 (alliance_scheduler.proto)
+// 服务名: AllianceSchedulerService
+// 职责: 任务创建 / 意图识别 / 专家组队(合并图谱) / 计划生成 / 案例检索
+// 对应 Rust: alliance/intent.rs + alliance/team.rs + kg-hub Connector
+// 端口: gRPC :50051 (内部)
+// ============================================================
+
+syntax = "proto3";
+
+package expert_alliance.v1;
+
+import "expert-alliance/v1/common.proto";
+import "google/protobuf/empty.proto";
+
+option go_package = "expert-alliance/v1;v1";
+
+// ──────────────────────────────────────────────
+// 调度服务
+// ──────────────────────────────────────────────
+service AllianceSchedulerService {
+  // 创建任务（入口）— 接收用户 query，返回 Task（状态=PENDING）
+  rpc CreateTask(CreateTaskRequest) returns (Task);
+
+  // 执行调度全流程 — 意图识别→专家组队→计划生成，返回 Plan（M1 核心验收点）
+  rpc ScheduleTask(ScheduleTaskRequest) returns (ScheduleTaskResponse);
+
+  // 仅意图识别 — 7 类分类 + RRF 融合
+  rpc ClassifyIntent(ClassifyIntentRequest) returns (IntentResult);
+
+  // 仅专家组队 — 基于意图 + 图谱匹配，返回 TeamResult
+  rpc MatchExperts(MatchExpertsRequest) returns (TeamResult);
+
+  // 仅生成执行计划 — DAG 节点 + 依赖关系
+  rpc GeneratePlan(GeneratePlanRequest) returns (Plan);
+
+  // 查询任务
+  rpc GetTask(GetTaskRequest) returns (Task);
+
+  // 列出任务（分页 + 过滤）
+  rpc ListTasks(ListTasksRequest) returns (ListTasksResponse);
+
+  // 取消任务
+  rpc CancelTask(CancelTaskRequest) returns (CancelTaskResponse);
+
+  // 检索相似案例（基于 kg-hub 图谱）
+  rpc SearchCases(SearchCasesRequest) returns (SearchCasesResponse);
+
+  // 调度器健康检查
+  rpc Health(google.protobuf.Empty) returns (SchedulerHealth);
+}
+
+// ──────────────────────────────────────────────
+// CreateTask
+// ──────────────────────────────────────────────
+message CreateTaskRequest {
+  string query = 1;                           // 必填，非空
+  string session_id = 2;
+  string idempotency_key = 3;
+  map<string, string> context = 4;
+  TaskOptions options = 5;
+  string tenant_id = 6;
+  string created_by = 7;
+}
+
+// ──────────────────────────────────────────────
+// ScheduleTask — M1 核心：端到端调度
+// 输入 task_id 或 query，输出完整调度结果（意图+组队+计划）
+// 验收: 150ms 内返回计划预览
+// ──────────────────────────────────────────────
+message ScheduleTaskRequest {
+  oneof task_ref {
+    string task_id = 1;       // 已创建的任务 ID
+    CreateTaskRequest new_task = 2;  // 直接创建并调度
+  }
+  // 是否跳过图谱扩散（性能模式，默认 false）
+  bool skip_graph_spread = 3;
+  // 是否仅返回计划预览（不启动执行，默认 true）
+  bool preview_only = 4;
+}
+
+message ScheduleTaskResponse {
+  Task task = 1;                    // 更新后的任务（状态=SCHEDULING 或 EXECUTING）
+  IntentResult intent = 2;           // 意图识别结果
+  TeamResult team = 3;               // 专家组队结果
+  Plan plan = 4;                     // 执行计划
+  int64 scheduling_latency_ms = 5;   // 调度总耗时（验收指标）
+  bool graph_used = 6;                // 是否使用了图谱增强
+  repeated string case_refs = 7;      // 相似案例引用（可空）
+}
+
+// ──────────────────────────────────────────────
+// ClassifyIntent
+// ──────────────────────────────────────────────
+message ClassifyIntentRequest {
+  string query = 1;
+  bool enable_spread = 2;    // 是否启用图谱激活扩散（默认 true）
+  string tenant_id = 3;
+}
+
+// ──────────────────────────────────────────────
+// MatchExperts
+// ──────────────────────────────────────────────
+message MatchExpertsRequest {
+  IntentResult intent = 1;          // 意图识别结果
+  int32 team_size = 2;               // 目标组队大小（3..7）
+  bool sensitive = 3;                 // 是否敏感场景（EAF-4.2）
+  bool use_graph_ranking = 4;        // 是否使用图谱 PageRank 增强排序（默认 true）
+  string tenant_id = 5;
+}
+
+// ──────────────────────────────────────────────
+// GeneratePlan
+// ──────────────────────────────────────────────
+message GeneratePlanRequest {
+  string task_id = 1;
+  IntentResult intent = 2;
+  TeamResult team = 3;
+  TaskOptions options = 4;
+}
+
+// ──────────────────────────────────────────────
+// GetTask / ListTasks / CancelTask
+// ──────────────────────────────────────────────
+message GetTaskRequest {
+  string task_id = 1;
+}
+
+message ListTasksRequest {
+  PageRequest page = 1;
+  string tenant_id = 2;
+  TaskStatus status_filter = 3;     // 按状态过滤（UNSPECIFIED=全部）
+  string session_id = 4;             // 按会话过滤
+  google.protobuf.Timestamp created_after = 5;
+  google.protobuf.Timestamp created_before = 6;
+}
+
+message ListTasksResponse {
+  repeated Task tasks = 1;
+  PageResponse page = 2;
+}
+
+message CancelTaskRequest {
+  string task_id = 1;
+  string reason = 2;
+}
+
+message CancelTaskResponse {
+  bool cancelled = 1;
+  Task task = 2;
+}
+
+// ──────────────────────────────────────────────
+// SearchCases — 基于 kg-hub 图谱的相似案例检索
+// ──────────────────────────────────────────────
+message SearchCasesRequest {
+  string query = 1;
+  int32 top_k = 2;                   // 返回数量（默认 5）
+  string intent_id = 3;              // 按意图过滤（可空）
+  repeated string dimensions = 4;     // 按维度过滤（可空）
+  double min_quality = 5;             // 最低质量分（默认 0.7）
+  string tenant_id = 6;
+}
+
+message CaseItem {
+  string case_id = 1;
+  string query = 2;
+  string intent_id = 3;
+  repeated string expert_ids = 4;
+  double quality_score = 5;
+  string summary = 6;
+  google.protobuf.Timestamp created_at = 7;
+  double similarity = 8;              // 与查询的相似度
+}
+
+message SearchCasesResponse {
+  repeated CaseItem cases = 1;
+  int64 latency_ms = 2;
+}
+
+// ──────────────────────────────────────────────
+// 调度器健康状态
+// ──────────────────────────────────────────────
+message SchedulerHealth {
+  bool healthy = 1;
+  string version = 2;
+  int64 pending_tasks = 3;
+  int64 total_experts = 4;
+  bool graph_available = 5;           // kg-hub 是否可用
+  int64 avg_scheduling_ms = 6;        // 平均调度耗时
+  google.protobuf.Timestamp started_at = 7;
+}

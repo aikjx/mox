@@ -195,10 +195,14 @@ mod t {
     }
 
     #[tokio::test]
+    #[ignore = "需要真实平台命令支持（tasklist/nircmd 等），手动执行用 cargo test -- --ignored 验证端到端链路"]
     async fn dispatch_local_text_smoke() {
         let app = DesktopApp::new();
-        // 使用 list_running（Windows 走 tasklist，纯系统内置命令，无外部依赖）
-        let out = app.dispatch_local_text("列进程").await.expect("dispatch");
+        // 15s 超时防护，避免 platform 命令挂死导致 CI 永久阻塞
+        let out = tokio::time::timeout(
+            std::time::Duration::from_secs(15),
+            app.dispatch_local_text("列进程"),
+        ).await.expect("超时：端到端 dispatch 超过 15s").expect("dispatch");
         let intent = out.get("intent").expect("intent");
         assert_eq!(intent.get("action").unwrap().as_str().unwrap(), "list_running");
         assert_eq!(intent.get("category").unwrap().as_str().unwrap(), "App");

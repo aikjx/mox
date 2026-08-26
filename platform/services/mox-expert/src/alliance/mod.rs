@@ -10,6 +10,7 @@ pub mod constants;
 pub mod debate;
 pub mod gate;
 pub mod intent;
+pub mod kg_connector;
 pub mod team;
 
 use self::constants::{PHASE_NAMES, QUALITY_FORMULA};

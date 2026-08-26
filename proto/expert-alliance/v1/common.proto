@@ -1,0 +1,270 @@
+// ============================================================
+// Expert Alliance v3 — 共享类型定义 (common.proto)
+// 包名: expert_alliance.v1
+// 所有 7 服务共享的消息类型，避免重复定义
+// 与 Rust mox-expert alliance 模块的类型一一对应
+// ============================================================
+
+syntax = "proto3";
+
+package expert_alliance.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "expert-alliance/v1;v1";
+option java_multiple_files = true;
+option java_package = "com.mox.expertalliance.v1";
+
+// ──────────────────────────────────────────────
+// 任务状态枚举（与 AlliancePhase 对齐，但更粗粒度）
+// ──────────────────────────────────────────────
+enum TaskStatus {
+  TASK_STATUS_UNSPECIFIED = 0;
+  TASK_STATUS_PENDING = 1;       // 已创建，等待调度
+  TASK_STATUS_SCHEDULING = 2;    // 调度中（意图识别+专家组队+计划生成）
+  TASK_STATUS_EXECUTING = 3;     // 执行中（DAG 节点运行）
+  TASK_STATUS_FUSING = 4;        // 融合中（多专家结果合成+质量评估）
+  TASK_STATUS_COMPLETED = 5;     // 已完成
+  TASK_STATUS_FAILED = 6;         // 失败
+  TASK_STATUS_CANCELLED = 7;      // 已取消
+  TASK_STATUS_PAUSED = 8;         // 已暂停（人工干预）
+}
+
+// ──────────────────────────────────────────────
+// 管线阶段（与 Rust AlliancePhase 严格对应，0..=6）
+// ──────────────────────────────────────────────
+enum PipelinePhase {
+  PIPELINE_PHASE_UNSPECIFIED = 0;
+  PIPELINE_PHASE_INTENT = 1;      // 意图识别
+  PIPELINE_PHASE_TEAM = 2;        // 专家组队
+  PIPELINE_PHASE_DEBATE = 3;      // 并行咨询+辩论
+  PIPELINE_PHASE_SYNTHESIZE = 4;  // 归一合成
+  PIPELINE_PHASE_GATE = 5;        // 质量门禁
+  PIPELINE_PHASE_LEARN = 6;        // 指标学习
+  PIPELINE_PHASE_DONE = 7;         // 完成
+}
+
+// ──────────────────────────────────────────────
+// 质量等级（EAF-STD 门禁）
+// ──────────────────────────────────────────────
+enum QualityGrade {
+  QUALITY_GRADE_UNSPECIFIED = 0;
+  QUALITY_GRADE_A = 1;   // 优秀，直接通过
+  QUALITY_GRADE_B = 2;   // 良好，通过
+  QUALITY_GRADE_C = 3;   // 及格，触发单次重试
+  QUALITY_GRADE_D = 4;   // 不合格，阻断
+}
+
+// ──────────────────────────────────────────────
+// 协作模式（6 种）
+// ──────────────────────────────────────────────
+enum CollaborationMode {
+  COLLABORATION_MODE_UNSPECIFIED = 0;
+  COLLABORATION_MODE_PARALLEL = 1;      // 并行咨询
+  COLLABORATION_MODE_DEBATE = 2;          // 辩论对抗
+  COLLABORATION_MODE_HIERARCHICAL = 3;    // 分层审批
+  COLLABORATION_MODE_PIPELINE = 4;        // 流水线接力
+  COLLABORATION_MODE_CONSENSUS = 5;       // 共识投票
+  COLLABORATION_MODE_MAJORITY_VOTE = 6;   // 多数投票
+}
+
+// ──────────────────────────────────────────────
+// 融合策略（6 种）
+// ──────────────────────────────────────────────
+enum FusionStrategy {
+  FUSION_STRATEGY_UNSPECIFIED = 0;
+  FUSION_STRATEGY_WEIGHTED_VOTE = 1;     // 加权投票（默认）
+  FUSION_STRATEGY_MAJORITY_VOTE = 2;      // 多数投票
+  FUSION_STRATEGY_CONCATENATE = 3;         // 拼接合并
+  FUSION_STRATEGY_BEST_PICK = 4;           // 择优选择
+  FUSION_STRATEGY_DEBATE_ARBITRATION = 5; // 辩论仲裁
+  FUSION_STRATEGY_LLM_SYNTHESIS = 6;       // LLM 合成
+}
+
+// ──────────────────────────────────────────────
+// 任务（Task）— 调度与执行的核心载体
+// 对应 Rust AllianceRequest + 运行时状态
+// ──────────────────────────────────────────────
+message Task {
+  string task_id = 1;                          // UUID v4
+  string query = 2;                             // 用户原始查询
+  string session_id = 3;                        // 会话 ID（可空）
+  string idempotency_key = 4;                   // 幂等键（可空）
+  TaskStatus status = 5;                         // 当前状态
+  google.protobuf.Timestamp created_at = 6;     // 创建时间
+  google.protobuf.Timestamp updated_at = 7;     // 最后更新时间
+  map<string, string> context = 8;              // 自由上下文（project_id, domain 等）
+  TaskOptions options = 9;                       // 运行选项
+  string tenant_id = 10;                         // 租户 ID（多租户隔离）
+  string created_by = 11;                        // 创建者
+  int32 progress_percent = 12;                   // 进度百分比 0..100
+  string error_message = 13;                     // 失败原因（仅 status=FAILED）
+}
+
+// ──────────────────────────────────────────────
+// 任务运行选项（对应 Rust AllianceOptions）
+// ──────────────────────────────────────────────
+message TaskOptions {
+  bool enable_llm_debate = 1;           // 是否启用 LLM 真实辩论（默认 false）
+  bool retry_on_c = 2;                    // C 级是否触发重试（默认 true）
+  int32 team_size = 3;                    // 组队专家数 3..7（默认 4）
+  bool enable_spread = 4;                 // 是否启用图谱激活扩散（默认 true）
+  CollaborationMode collaboration_mode = 5; // 协作模式（默认 PARALLEL）
+  FusionStrategy fusion_strategy = 6;     // 融合策略（默认 WEIGHTED_VOTE）
+  int32 max_iterations = 7;               // Agent 最大迭代轮数（默认 3）
+  int32 timeout_seconds = 8;               // 总超时秒数（默认 300）
+  bool sensitive = 9;                      // 是否敏感场景（触发 EAF-4.2 强制替换）
+}
+
+// ──────────────────────────────────────────────
+// 专家元信息（对应 Rust ExpertMeta）
+// ──────────────────────────────────────────────
+message Expert {
+  string expert_id = 1;                    // 唯一 ID（如 "permission", "security"）
+  string dimension = 2;                     // 维度名（14 维之一）
+  repeated string supported_classes = 3;    // 支持的 7 类意图子集
+  int64 avg_latency_ms = 4;                 // 平均单次分析延迟
+  double gate_a_rate_30d = 5;               // 近 30 日 A 级通过率
+  int32 priority = 6;                        // 维度优先级（100 最高）
+  string description = 7;                    // 描述
+  bool healthy = 8;                          // 健康状态
+  google.protobuf.Timestamp registered_at = 9; // 注册时间
+  map<string, string> metadata = 10;         // 自由元数据
+  repeated ToolDefinition tools = 11;        // 该专家可调用的工具列表
+}
+
+// ──────────────────────────────────────────────
+// 工具定义（专家可调用的外部能力）
+// ──────────────────────────────────────────────
+message ToolDefinition {
+  string tool_id = 1;
+  string name = 2;
+  string description = 3;
+  google.protobuf.Struct input_schema = 4;  // JSON Schema
+  string endpoint = 5;                        // gRPC 方法名或 HTTP URL
+  int32 timeout_ms = 6;
+}
+
+// ──────────────────────────────────────────────
+// 意图识别结果（对应 Rust IntentResult）
+// ──────────────────────────────────────────────
+message IntentResult {
+  string intent_id = 1;                      // 胜出意图（7 类之一）
+  double confidence = 2;                      // 置信度 0..1
+  map<string, double> keyword_scores = 3;    // 7 类关键词得分
+  map<string, double> spread_scores = 4;     // 7 类激活扩散得分
+  map<string, double> rrf_scores = 5;        // 7 类 RRF 融合得分
+  bool degraded = 6;                           // 是否降级（图谱不可用）
+  string degrade_reason = 7;                   // 降级原因
+  repeated string seeds_hit = 8;               // 命中的关键词模式
+  string trace_log = 9;                         // 可解释 trace
+  string diagnose_id = 10;                      // 诊断 ID
+}
+
+// ──────────────────────────────────────────────
+// 组队结果（对应 Rust TeamResult）
+// ──────────────────────────────────────────────
+message TeamResult {
+  repeated string team_ids = 1;               // 入选专家 ID 列表
+  repeated string forced_replacements = 2;     // EAF-4.2 强制替换说明
+  map<string, ScoreBreakdown> reasoning_matrix = 3; // 每位专家打分拆解
+  string diagnose_id = 4;
+}
+
+// ──────────────────────────────────────────────
+// 单专家打分拆解（对应 Rust ScoreBreakdown）
+// ──────────────────────────────────────────────
+message ScoreBreakdown {
+  double class_match = 1;
+  double gate_a_rate = 2;
+  double priority_score = 3;
+  double latency_reward = 4;
+  double total = 5;
+}
+
+// ──────────────────────────────────────────────
+// 执行计划（Plan）
+// ──────────────────────────────────────────────
+message Plan {
+  string task_id = 1;
+  string plan_id = 2;                          // UUID
+  repeated string expert_ids = 3;              // 参与专家
+  repeated PlanStage stages = 4;                // 计划阶段（DAG 节点）
+  int64 estimated_total_ms = 5;                 // 预估总耗时
+  CollaborationMode collaboration_mode = 6;
+  FusionStrategy fusion_strategy = 7;
+  google.protobuf.Timestamp generated_at = 8;
+}
+
+// ──────────────────────────────────────────────
+// 计划阶段（DAG 节点）
+// ──────────────────────────────────────────────
+message PlanStage {
+  string stage_id = 1;
+  string name = 2;
+  PipelinePhase phase = 3;
+  string expert_id = 4;                         // 负责专家（可空，如融合阶段）
+  repeated string depends_on = 5;               // 依赖的 stage_id（DAG 边）
+  int64 estimated_ms = 6;
+  map<string, string> config = 7;
+}
+
+// ──────────────────────────────────────────────
+// 质量评分（对应 Rust QUALITY_FORMULA）
+// ──────────────────────────────────────────────
+message QualityScore {
+  double overall = 1;          // 总分 = 0.55*Q + 0.20*S + 0.10*T + 0.15*St
+  double quality = 2;          // 质量分
+  double speed = 3;            // 速度分
+  double token_efficiency = 4; // Token 效率
+  double stability = 5;        // 稳定性
+  QualityGrade grade = 6;      // 等级
+  string formula = 7;          // 公式原文（可追溯）
+}
+
+// ──────────────────────────────────────────────
+// 专家咨询意见（Debate 阶段产出）
+// ──────────────────────────────────────────────
+message ExpertOpinion {
+  string expert_id = 1;
+  string dimension = 2;
+  string content = 3;                          // 意见正文（Markdown）
+  double confidence = 4;
+  repeated string agreements = 5;              // 同意的其他专家 ID
+  repeated string disagreements = 6;           // 反对的其他专家 ID
+  map<string, string> evidence = 7;            // 证据
+  int64 latency_ms = 8;
+}
+
+// ──────────────────────────────────────────────
+// 融合结果
+// ──────────────────────────────────────────────
+message FusionResult {
+  string task_id = 1;
+  string fusion_id = 2;
+  FusionStrategy strategy = 3;
+  string content = 4;                           // 融合后正文
+  QualityScore quality = 5;
+  repeated string source_expert_ids = 6;
+  map<string, double> expert_weights = 7;       // 各专家权重
+  string consensus_summary = 8;                  // 共识摘要
+  string divergence_summary = 9;                 // 分歧摘要
+  google.protobuf.Timestamp created_at = 10;
+}
+
+// ──────────────────────────────────────────────
+// 分页请求
+// ──────────────────────────────────────────────
+message PageRequest {
+  int32 page_size = 1;    // 每页数量（默认 20，最大 100）
+  string page_token = 2;   // 分页令牌（首次为空）
+}
+
+// ──────────────────────────────────────────────
+// 分页响应
+// ──────────────────────────────────────────────
+message PageResponse {
+  string next_page_token = 1;  // 下一页令牌（空=无更多）
+  int32 total_count = 2;        // 总数
+}

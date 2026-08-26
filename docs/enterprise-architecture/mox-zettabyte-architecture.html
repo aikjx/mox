@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOX × 千亿亿级 企业级分布式架构</title>
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --bg-card: #111827;
+    --bg-card-hover: #1a2332;
+    --border: #1e293b;
+    --border-glow: #334155;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --text-muted: #64748b;
+    --accent: #3b82f6;
+    --accent-glow: rgba(59,130,246,0.3);
+    --green: #10b981;
+    --green-glow: rgba(16,185,129,0.3);
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --purple: #8b5cf6;
+    --cyan: #06b6d4;
+    --pink: #ec4899;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 40px 20px;
+  }
+  .container { max-width: 1400px; margin: 0 auto; }
+  .header { text-align: center; margin-bottom: 60px; }
+  .header .badge {
+    display: inline-block;
+    padding: 6px 16px;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+  }
+  .header h1 {
+    font-size: 42px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 12px;
+  }
+  .header .subtitle { font-size: 18px; color: var(--text-dim); }
+  .header .stats {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 30px;
+    flex-wrap: wrap;
+  }
+  .header .stat { text-align: center; }
+  .header .stat .num { font-size: 32px; font-weight: 800; color: var(--accent); }
+  .header .stat .label { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+  .section { margin-bottom: 70px; }
+  .section-title {
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-title .icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .section-desc { color: var(--text-dim); margin-bottom: 30px; font-size: 15px; }
+  .arch-stack { display: flex; flex-direction: column; gap: 2px; }
+  .arch-layer {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 24px;
+    align-items: center;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .arch-layer::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+  }
+  .arch-layer:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border-glow);
+    transform: translateX(4px);
+  }
+  .layer-info .layer-num { font-size: 11px; color: var(--text-muted); letter-spacing: 2px; margin-bottom: 4px; }
+  .layer-info .layer-name { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .layer-info .layer-zh { font-size: 12px; color: var(--text-muted); }
+  .layer-components { display: flex; flex-wrap: wrap; gap: 8px; }
+  .comp-tag {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .comp-tag.core {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+    color: #93c5fd;
+  }
+  .layer-1::before { background: var(--cyan); }
+  .layer-1 .layer-name { color: var(--cyan); }
+  .layer-2::before { background: var(--accent); }
+  .layer-2 .layer-name { color: var(--accent); }
+  .layer-3::before { background: var(--purple); }
+  .layer-3 .layer-name { color: var(--purple); }
+  .layer-4::before { background: var(--green); }
+  .layer-4 .layer-name { color: var(--green); }
+  .layer-5::before { background: var(--amber); }
+  .layer-5 .layer-name { color: var(--amber); }
+  .layer-6::before { background: var(--pink); }
+  .layer-6 .layer-name { color: var(--pink); }
+  .arch-arrow { text-align: center; color: var(--text-muted); font-size: 20px; padding: 2px 0; }
+  .matrix-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--bg-card);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .matrix-table th {
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    padding: 16px 14px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dim);
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+  }
+  .matrix-table th.tier-col { font-size: 15px; }
+  .matrix-table td {
+    padding: 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text);
+    vertical-align: top;
+  }
+  .matrix-table tr:last-child td { border-bottom: none; }
+  .matrix-table tr:hover td { background: rgba(59,130,246,0.05); }
+  .tier-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .tier-t0 { background: rgba(6,182,212,0.15); color: var(--cyan); border: 1px solid var(--cyan); }
+  .tier-t1 { background: rgba(59,130,246,0.15); color: var(--accent); border: 1px solid var(--accent); }
+  .tier-t2 { background: rgba(139,92,246,0.15); color: var(--purple); border: 1px solid var(--purple); }
+  .tier-t3 { background: rgba(236,72,153,0.15); color: var(--pink); border: 1px solid var(--pink); }
+  .patterns-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+  }
+  .pattern-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px;
+    transition: all 0.3s;
+  }
+  .pattern-card:hover {
+    border-color: var(--border-glow);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  }
+  .pattern-card .p-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 800;
+    margin-bottom: 12px;
+  }
+  .pattern-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+  .pattern-card p { font-size: 13px; color: var(--text-dim); line-height: 1.7; }
+  .pattern-card .key-point {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .evolution-path {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    position: relative;
+  }
+  .evo-step {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 24px;
+    position: relative;
+  }
+  .evo-step:first-child { border-radius: 12px 0 0 12px; }
+  .evo-step:last-child { border-radius: 0 12px 12px 0; }
+  .evo-step:not(:last-child)::after {
+    content: '→';
+    position: absolute;
+    right: -14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px; height: 28px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--accent);
+    z-index: 2;
+  }
+  .evo-step .step-phase { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 6px; }
+  .evo-step .step-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .evo-step .step-time {
+    display: inline-block;
+    padding: 2px 10px;
+    background: var(--accent-glow);
+    color: var(--accent);
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .evo-step ul { list-style: none; font-size: 12px; color: var(--text-dim); }
+  .evo-step ul li { padding: 3px 0; padding-left: 16px; position: relative; }
+  .evo-step ul li::before { content: '▸'; position: absolute; left: 0; color: var(--accent); }
+  .footer {
+    text-align: center;
+    padding: 40px 0 20px;
+    color: var(--text-muted);
+    font-size: 13px;
+    border-top: 1px solid var(--border);
+    margin-top: 60px;
+  }
+  .footer .quote {
+    font-size: 15px;
+    color: var(--text-dim);
+    font-style: italic;
+    max-width: 800px;
+    margin: 0 auto 20px;
+    line-height: 1.8;
+  }
+  @media (max-width: 900px) {
+    .arch-layer { grid-template-columns: 1fr; }
+    .evolution-path { grid-template-columns: 1fr; }
+    .evo-step:first-child, .evo-step:last-child { border-radius: 12px; }
+    .evo-step:not(:last-child)::after { display: none; }
+    .header h1 { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="badge">ENTERPRISE ARCHITECTURE · ZETTABYTE SCALE</div>
+    <h1>MOX × 千亿亿级 企业级分布式架构</h1>
+    <p class="subtitle">从 SQLite+FS 到 10²⁰ 对象全球多活 — 6 层架构 · 4 档演进 · 8 大处理模式</p>
+    <div class="stats">
+      <div class="stat"><div class="num">10²⁰</div><div class="label">对象规模（垓级）</div></div>
+      <div class="stat"><div class="num">99.99%</div><div class="label">SLA 可用性</div></div>
+      <div class="stat"><div class="num">1.33×</div><div class="label">EC 12+4 存储开销</div></div>
+      <div class="stat"><div class="num">¥0.035</div><div class="label">加权成本 /GB·月</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">
+      <span class="icon" style="background:var(--accent-glow);color:var(--accent);">🏗</span>
+      6 层企业级架构总览
+    </div>
+    <p class="section-desc">自上而下：接入层接收请求 → 计算层批流一体 → 元数据层分片路由 → 存储层冷热分级 → 容错层 EC 多活 → 可观测层全链路追踪。每一层均可独立水平扩展。</p>
+    <div class="arch-stack">
+      <div class="arch-layer layer-1">
+        <div class="layer-info">
+          <div class="layer-num">LAYER 01</div>
+          <div class="layer-name">接入层</div>
+          <div class="layer-zh">Access / Gateway</div>
+        </div>
+        <div class="layer-components">
+          <span class="comp-tag core">GeoDNS 全球路由</span>
+          <span class="comp-tag core">API Gateway (Kong/APISIX)</span>
+          <span class="comp-tag">CDN 边缘缓存</span>
+          <span class="comp-tag">WAF 安全防护</span>
+          <span class="comp-tag">限流熔断 (Sentinel)</span>
+          <span class="comp-tag">mTLS 双向认证</span>
+        </div>
+      </div>
+      <div class="arch-arrow">⬇</div>
+      <div class="arch-layer layer-2">
+        <div class="layer-info">
+          <div class="layer-num">LAYER 02</div>
+          <div class="layer-name">计算层</div>
+          <div class="layer-zh">Compute / Processing</div>
+        </div>
+        <div class="layer-components">
+          <span class="comp-tag core">Spark 万核批处理</span>
+          <span class="comp-tag core">Flink 流处理 exactly-once</span>
+          <span class="comp-tag core">Ray 分布式 AI 计算</span>
+          <span class="comp-tag">S3 Select 计算下沉</span>
+          <span class="comp-tag">MapReduce Job 调度</span>
+          <span class="comp-tag">Kubernetes 容器编排</span>
+          <span class="comp-tag">Shuffle 本地化优化</span>
+        </div>
+      </div>
+      <div class="arch-arrow">⬇</div>
+      <div class="arch-layer layer-3">
+        <div class="layer-info">
+          <div class="layer-num">LAYER 03</div>
+          <div class="layer-name">元数据层</div>
+          <div class="layer-zh">Metadata / Catalog</div>
+        </div>
+        <div class="layer-components">
+          <span class="comp-tag core">TiKV 分布式 KV (256 分片)</span>
+          <span class="comp-tag core">一致性哈希 1024 vnode</span>
+          <span class="comp-tag">Raft 多副本共识</span>
+          <span class="comp-tag">Catalog 路由表</span>
+          <span class="comp-tag">引用计数 GC</span>
+          <span class="comp-tag">Redis 热点缓存</span>
+          <span class="comp-tag">Elasticsearch 全文索引</span>
+        </div>
+      </div>
+      <div class="arch-arrow">⬇</div>
+      <div class="arch-layer layer-4">
+        <div class="layer-info">
+          <div class="layer-num">LAYER 04</div>
+          <div class="layer-name">存储层</div>
+          <div class="layer-zh">Storage / Object Store</div>
+        </div>
+        <div class="layer-components">
+          <span class="comp-tag core">S3 兼容对象存储 (多 Region)</span>
+          <span class="comp-tag core">三级冷热分层 (热/温/冷)</span>
+          <span class="comp-tag core">SHA-256 全局去重</span>
+          <span class="comp-tag">Zstd 端侧压缩</span>
+          <span class="comp-tag">Parquet 列存 + Iceberg</span>
+          <span class="comp-tag">磁带归档 (Glacier)</span>
+          <span class="comp-tag">Lifecycle 自动降级</span>
+        </div>
+      </div>
+      <div class="arch-arrow">⬇</div>
+      <div class="arch-layer layer-5">
+        <div class="layer-info">
+          <div class="layer-num">LAYER 05</div>
+          <div class="layer-name">容错层</div>
+          <div class="layer-zh">Fault Tolerance / HA</div>
+        </div>
+        <div class="layer-components">
+          <span class="comp-tag core">EC 12+4 纠删码</span>
+          <span class="comp-tag core">跨 AZ / Region 多活</span>
+          <span class="comp-tag core">CRR 异步复制</span>
+          <span class="comp-tag">RPO=0 双写</span>
+          <span class="comp-tag">故障自愈 (自动修复)</span>
+          <span class="comp-tag">混沌工程演练</span>
+          <span class="comp-tag">三副本热数据兜底</span>
+        </div>
+      </div>
+      <div class="arch-arrow">⬇</div>
+      <div class="arch-layer layer-6">
+        <div class="layer-info">
+          <div class="layer-num">LAYER 06</div>
+          <div class="layer-name">可观测层</div>
+          <div class="layer-zh">Observability / SRE</div>
+        </div>
+        <div class="layer-components">
+          <span class="comp-tag core">Prometheus + Thanos 全局联邦</span>
+          <span class="comp-tag core">OpenTelemetry 全链路 Tracing</span>
+          <span class="comp-tag core">37 项 SLO 指标体系</span>
+          <span class="comp-tag">ClickHouse 日志分析</span>
+          <span class="comp-tag">Grafana 可视化大盘</span>
+          <span class="comp-tag">AlertManager 告警路由</span>
+          <span class="comp-tag">审计日志 (不可篡改)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">
+      <span class="icon" style="background:var(--green-glow);color:var(--green);">📊</span>
+      4 档数据量级能力矩阵
+    </div>
+    <p class="section-desc">从千万级到千亿亿级，每一档对应不同的架构组件、成本模型和 SLA 承诺。MOX 现有代码位于 T0，按 4 步平滑叠加升级，无需推翻重写。</p>
+    <table class="matrix-table">
+      <thead>
+        <tr>
+          <th class="tier-col">维度</th>
+          <th>T0 · 千万级</th>
+          <th>T1 · 十亿级</th>
+          <th>T2 · 千亿级</th>
+          <th>T3 · 千亿亿级</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>数据规模</strong></td><td>≤ 10⁷ 对象 / TB级</td><td>10⁸–10¹⁰ / PB级</td><td>10¹¹–10¹⁴ / EB级</td><td>10¹⁵–10²⁰ / ZB级</td></tr>
+        <tr><td><strong>存储后端</strong></td><td><span class="tier-badge tier-t0">FS 本地</span></td><td><span class="tier-badge tier-t1">S3 单 Region</span></td><td><span class="tier-badge tier-t2">S3 多 Region + EC</span></td><td><span class="tier-badge tier-t3">全球多活 + 三级冷热 + 磁带</span></td></tr>
+        <tr><td><strong>元数据</strong></td><td>SQLite 单文件</td><td>PostgreSQL 分库</td><td>TiDB/TiKV 256 分片</td><td>分布式 KV + 一致性哈希 1024 vnode</td></tr>
+        <tr><td><strong>计算模式</strong></td><td>Node.js 单进程</td><td>多进程 + 队列</td><td>Spark 批处理 + 并行 GC</td><td>批流一体 + 计算下沉存储端</td></tr>
+        <tr><td><strong>容错策略</strong></td><td>单机备份</td><td>三副本</td><td>EC 4+2 / 8+3</td><td>EC 12+4 跨 AZ + 混沌演练</td></tr>
+        <tr><td><strong>存储成本</strong></td><td>¥0.1/GB·月</td><td>¥0.08/GB·月</td><td>¥0.05/GB·月</td><td><strong>≤ ¥0.035/GB·月</strong></td></tr>
+        <tr><td><strong>SLA</strong></td><td>99.5%</td><td>99.9%</td><td>99.95%</td><td><strong>99.99%</strong></td></tr>
+        <tr><td><strong>集群规模</strong></td><td>1–3 节点</td><td>10–50 节点</td><td>500–2000 节点</td><td>10000+ 节点 / 多 Region</td></tr>
+        <tr><td><strong>MOX 状态</strong></td><td><span style="color:var(--green)">✓ 当前已具备</span></td><td>1–2 周切换</td><td>2–3 月建设</td><td>6–12 月全球部署</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">
+      <span class="icon" style="background:rgba(139,92,246,0.2);color:var(--purple);">⚙</span>
+      8 大核心处理模式
+    </div>
+    <p class="section-desc">每一条都对齐 MOX 现有代码能力，Key 同构 / SHA-256 去重 / 引用计数 GC / Provider 抽象四个地基锚点可直接复用放大。</p>
+    <div class="patterns-grid">
+      <div class="pattern-card">
+        <div class="p-num" style="background:rgba(6,182,212,0.15);color:var(--cyan);">01</div>
+        <h3>三级冷热存储 + 全局去重</h3>
+        <p>热(0-30天)SSD EC 4+2 / 温(30-365天)HDD EC 8+3 / 冷(>365天)磁带归档。Key = hash.slice(0,2)+'/'+hash 从 FS→S3→全球多 Region 一字不改。SHA-256 跨租户全局只存 1 份。</p>
+        <div class="key-point">MOX 锚点：chunk-backend.js Key 同构 + file-store.js 引用计数</div>
+      </div>
+      <div class="pattern-card">
+        <div class="p-num" style="background:rgba(59,130,246,0.15);color:var(--accent);">02</div>
+        <h3>256 哈希分片元数据</h3>
+        <p>路由表：bucket + hash[0:2] → shard_id(0..255) → TiKV Region leader。一致性哈希 1024 vnode，扩容只移动 1/N 数据。绝不回源对象存储做 List，全靠 Catalog 索引层回答。</p>
+        <div class="key-point">禁忌：按 user_id 连续分片会头部热点 99% 压 1 片</div>
+      </div>
+      <div class="pattern-card">
+        <div class="p-num" style="background:rgba(139,92,246,0.15);color:var(--purple);">03</div>
+        <h3>批流一体 + 计算下沉</h3>
+        <p>Spark 万核并行批处理 + Flink exactly-once 流处理。100TB 全表扫描：传统拉到计算节点要 1000 分钟+占满出口；改 S3 Select 存储端过滤掉 99% 行再走网络，同结果成本 1/100。</p>
+        <div class="key-point">MOX 的 /file/analyze、/chunk/verify 必须改写成 MR Job</div>
+      </div>
+      <div class="pattern-card">
+        <div class="p-num" style="background:rgba(16,185,129,0.15);color:var(--green);">04</div>
+        <h3>一致性哈希 1024 虚拟节点</h3>
+        <p>新增物理节点 → 只迁移 1/N 的 vnode hash 段 → 对象桶不改名 → 只在 Catalog 改 shard 归属指向。再均衡速度：每 1PB ≤ 24h，期间双写旧+新，读写完全不受影响。</p>
+        <div class="key-point">分片偏差必须 ≤15%，>25% 立刻补 vnode/加节点</div>
+      </div>
+      <div class="pattern-card">
+        <div class="p-num" style="background:rgba(245,158,11,0.15);color:var(--amber);">05</div>
+        <h3>EC 12+4 跨 AZ 容错</h3>
+        <p>三副本 3× 成本 vs EC 12+4 仅 1.33×，容忍任意 4 盘/2 节点/1 AZ 故障。10ZB 规模下省 16.7ZB 物理盘 = 省 50 亿人民币。故障是常态不是例外，每周混沌演练断 AZ/拔盘/断专线。</p>
+        <div class="key-point">RPO=0 双写热数据 + EC 温冷数据 = 成本与安全最优解</div>
+      </div>
+      <div class="pattern-card">
+        <div class="p-num" style="background:rgba(236,72,153,0.15);color:var(--pink);">06</div>
+        <h3>去重压缩 + 行列混存</h3>
+        <p>端侧 Zstd level 3 压缩率≈2.5×，省 60% 存储费。元数据/报表/分析类数据用 Parquet + Zstd + Iceberg 列存，相比纯 JSON 同样 1PB 体积缩小 8-12×，查询加速 50×+。</p>
+        <div class="key-point">MOX 锚点：chunk-hash 层已实现内容寻址去重</div>
+      </div>
+      <div class="pattern-card">
+        <div class="p-num" style="background:rgba(239,68,68,0.15);color:var(--red);">07</div>
+        <h3>生命周期成本铁律</h3>
+        <p>写入即标级(预期寿命/访问频率/敏感度 3 tag) → 30天IA / 365天归档 / 7年磁带自动降级。冷数据解档要 12h 且收费，禁止习惯性全表扫冷层——一次 10PB 解档账单百万级。</p>
+        <div class="key-point">T3 加权平均成本必须 ≤ ¥0.035/GB·月，高于此数说明策略错了</div>
+      </div>
+      <div class="pattern-card">
+        <div class="p-num" style="background:rgba(139,92,246,0.15);color:var(--purple);">08</div>
+        <h3>37 项 SLO 全链路可观测</h3>
+        <p>Metrics(Prometheus+Thanos)：吞吐/p50/p95/p999延迟/分片偏差/EC修复队列/跨域延迟。Logs(ClickHouse 30天热+S3冷)：每次操作留 req_id/sha256/size/shard_id/region/status/latency。Traces(OTel+Jaeger)：p999 慢请求一眼定位瓶颈层。</p>
+        <div class="key-point">每一个操作都可问责、可追溯、可审计</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">
+      <span class="icon" style="background:rgba(245,158,11,0.2);color:var(--amber);">🚀</span>
+      MOX 平滑演进四步走
+    </div>
+    <p class="section-desc">每一步都不要求重写业务代码，只切换 getStorage() / getChunkBackend() 的 provider 并加一层分库分片路由。叠加式升级，不会走弯路。</p>
+    <div class="evolution-path">
+      <div class="evo-step">
+        <div class="step-phase">PHASE 01</div>
+        <div class="step-title" style="color:var(--cyan);">T0 → T1</div>
+        <div class="step-time">1–2 周</div>
+        <ul>
+          <li>SQLite → PostgreSQL 分库</li>
+          <li>FILE_BACKEND=fs → =s3</li>
+          <li>数据迁移工具上线</li>
+          <li>双写验证 + 灰度切流</li>
+          <li>9 日切换运维节奏</li>
+        </ul>
+      </div>
+      <div class="evo-step">
+        <div class="step-phase">PHASE 02</div>
+        <div class="step-title" style="color:var(--accent);">T1 → T2</div>
+        <div class="step-time">2–3 月</div>
+        <ul>
+          <li>PG 单库 → TiDB/TiKV 256 分片</li>
+          <li>单桶 → 分 Region 多桶</li>
+          <li>GC / verify 改 Spark 并行</li>
+          <li>一致性哈希路由上线</li>
+          <li>EC 4+2 替换部分三副本</li>
+        </ul>
+      </div>
+      <div class="evo-step">
+        <div class="step-phase">PHASE 03</div>
+        <div class="step-title" style="color:var(--purple);">T2 → T3 冷层</div>
+        <div class="step-time">1–2 月</div>
+        <ul>
+          <li>挂磁带/归档对象层</li>
+          <li>Lifecycle 策略上线</li>
+          <li>EC 12+4 全面替换三副本</li>
+          <li>Zstd 端侧压缩全量启用</li>
+          <li>Parquet+Iceberg 数据湖接入</li>
+          <li>节省 60% 存储成本</li>
+        </ul>
+      </div>
+      <div class="evo-step">
+        <div class="step-phase">PHASE 04</div>
+        <div class="step-title" style="color:var(--pink);">T3 全球多活</div>
+        <div class="step-time">3–6 月</div>
+        <ul>
+          <li>3 Region × 3 AZ 上线</li>
+          <li>GeoDNS 全球智能路由</li>
+          <li>CRR 同步双写 + 异步回放</li>
+          <li>每周混沌演练达标</li>
+          <li>SLA 99.99% 签名承诺</li>
+          <li>37 项 SLO 全链路监控</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p class="quote">"千亿亿级不是'用更牛逼的单机存下它'，而是接受故障随时会发生，用数学（哈希/纠删码/一致性）、用分层（冷热/计算下沉）、用自动化（SLO/自愈/混沌）把 10²⁰ 个对象的不确定性，收敛成 SLA 99.99% 的确定性承诺。"</p>
+    <p>MOX × 千亿亿级企业级分布式架构 · 架构设计说明书 v1.0</p>
+  </div>
+</div>
+</body>
+</html>

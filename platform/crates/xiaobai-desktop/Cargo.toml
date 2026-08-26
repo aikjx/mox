@@ -23,6 +23,8 @@ anyhow = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 async-trait = { workspace = true }
 tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+clap = { workspace = true }
 parking_lot = { workspace = true }
 indexmap = { workspace = true }
 ahash = { workspace = true }

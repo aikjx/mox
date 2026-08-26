@@ -22,6 +22,7 @@ const DOMAINS = [
   ['browser-market', '浏览器与市场', require('./browser-market')],
   ['integration', '集成通道', require('./integration')],
   ['expert-alliance', '专家联盟', require('./expert-alliance')],
+  ['expert-alliance-v3', '专家联盟 v3（7服务架构）', require('./expert-alliance-v3')],
   ['expert-graph', '专家图谱', require('./expert-graph')],
   ['mcp', 'MCP 协议服务', require('./mcp')],
   ['orchestration', '编排协作', require('./orchestration')],

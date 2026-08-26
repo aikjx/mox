@@ -1,0 +1,103 @@
+global:
+  resolve_timeout: 5m
+  http_config:
+    follow_redirects: true
+
+# ─── 告警路由树 ───
+route:
+  receiver: default
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    # P0: 电话 + 短信 + 钉钉 + 邮件
+    - matchers:
+        - severity = "P0"
+      receiver: p0-oncall
+      group_wait: 0s
+      repeat_interval: 1h
+      continue: true
+
+    # P1: 钉钉 + 邮件
+    - matchers:
+        - severity = "P1"
+      receiver: p1-team
+      group_wait: 30s
+      repeat_interval: 2h
+
+    # P2: 钉钉群消息
+    - matchers:
+        - severity = "P2"
+      receiver: p2-channel
+      group_wait: 1m
+      repeat_interval: 8h
+
+    # 按类别路由
+    - matchers:
+        - category = "integrity"
+      receiver: data-team
+      continue: true
+
+# ─── 接收者定义 ───
+receivers:
+  - name: default
+    email_configs:
+      - to: 'dev-team@infotopograph.io'
+        send_resolved: true
+
+  - name: p0-oncall
+    # 电话告警（通过 PagerDuty / 阿里云语音）
+    pagerduty_configs:
+      - service_key: '${PAGERDUTY_SERVICE_KEY}'
+        severity: critical
+        send_resolved: true
+    # 短信
+    webhook_configs:
+      - url: 'https://sms-gateway.infotopograph.io/api/alert'
+        send_resolved: true
+        max_alerts: 5
+    # 钉钉机器人 @所有人
+    webhook_configs:
+      - url: '${DINGTALK_P0_WEBHOOK}'
+        send_resolved: true
+        http_config:
+          authorization:
+            credentials: '${DINGTALK_SECRET}'
+    email_configs:
+      - to: 'oncall@infotopograph.io'
+        send_resolved: true
+
+  - name: p1-team
+    webhook_configs:
+      - url: '${DINGTALK_P1_WEBHOOK}'
+        send_resolved: true
+    email_configs:
+      - to: 'sre-team@infotopograph.io'
+        send_resolved: true
+
+  - name: p2-channel
+    webhook_configs:
+      - url: '${DINGTALK_P2_WEBHOOK}'
+        send_resolved: false
+
+  - name: data-team
+    email_configs:
+      - to: 'data-integrity@infotopograph.io'
+        send_resolved: true
+
+# ─── 告警抑制规则 ───
+inhibit_rules:
+  # P0 告警抑制同服务的 P1/P2 告警
+  - source_matchers:
+      - severity = "P0"
+    target_matchers:
+      - severity =~ "P1|P2"
+    equal: ['alertname', 'cluster', 'service']
+
+  # 服务不可用抑制该服务的所有其他告警
+  - source_matchers:
+      - alertname = "MOXServiceDown"
+    target_matchers:
+      - service = "mox-api"
+    equal: ['cluster', 'instance']

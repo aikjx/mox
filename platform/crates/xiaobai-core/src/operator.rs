@@ -1,16 +1,16 @@
 //! 系统算子抽象层：替代 Python `operator/base.Operator` + `OperatorEngine` 抽象
 //!
-//! 8 大类算子（先交付 4 大类；剩余 network/display/browser/notify 是 P2/P3 长尾）：
+//! 8 大类算子（FR-13 企业级，当前全部 Rust 化交付）：
 //! | 类别 | Rust 枚举 | 动作数 | 典型 L0/L1/L2/L3 动作 |
 //! | ---- | --------- | ------ | ------------------- |
 //! | 应用 | App | 5 | list_running(L0) / open_app(L1) / open_file_with_app(L1) / close_app(L3) / shell_exec(L3) |
 //! | 文件 | File | 6 | file_exists(L0) / read_text_head(L0) / open_file_with_app(L1) / copy_to_clipboard(L2) / move_to_trash(L3, Own) / hard_delete(L3) |
 //! | 音量 | Volume | 6 | get_volume(L0) / list_devices(L0) / set_volume(L1, mute 0 强制 L3) / mute/unmute(L1) / toggle_mute(L1) |
 //! | 键鼠 | Input | 12 | mouse_position(L0) / mouse_move(L2) / click(L2) / double_click(L2) / type_text(L1 ASCII, L2 中文) / press_key(L2) / hotkey(L2) / key_sequence(L2) / mouse_drag(L3) / screenshot(L3) / scroll_wheel(L2) / move_cursor_to_center(L2) |
-//! | 网络（P2）| Network | 4 | ping(L0) / ifconfig(L0) / set_proxy(L3) / flush_dns(L3) |
-//! | 显示（P2）| Display | 5 | list_displays(L0) / set_resolution(L2) / set_brightness(L1) / screenshot_primary(L3) / arrange(L2) |
-//! | 浏览器（P3）| Browser | 6 | list_tabs(L1) / open_url(L1) / close_tab(L2) / set_url(L2) / take_tab_screenshot(L3) / execute_js(L3) |
-//! | 通知（P3）| Notify | 3 | notify_info(L1) / notify_warn(L2) / notify_error(L2) |
+//! | 网络 | Network | 6 | ping(L0) / dns_lookup(L0) / traffic_usage(L0) / netstat(L0) / disable_iface(L3) / enable_iface(L3) |
+//! | 显示 | Display | 5 | list_displays(L0) / set_resolution(L2) / set_brightness(L1) / screenshot_capture_region(L3, Own) / display_on_off(L2) |
+//! | 浏览器 | Browser | 5 | open_url(L1) / search_query(L1) / list_tabs(L1, Own) / close_tab(L2) / bookmark_add(L2) |
+//! | 通知 | Notify | 5 | toast_notify(L1) / balloon_notify(L1) / set_wallpaper(L2) / flash_taskbar(L2, Win-only) / lock_workstation(L3, Own) |
 
 use std::collections::BTreeMap;
 

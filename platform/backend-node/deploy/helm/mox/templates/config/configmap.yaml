@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mox.fullname" . }}-config
+  labels:
+    {{- include "mox.labels" . | nindent 4 }}
+data:
+  # ─── 应用配置 ───
+  APP_NAME: "璇玑信息知识图谱关联关系系统"
+  APP_ENV: {{ .Values.global.environment | quote }}
+  APP_REGION: {{ .Values.global.region | quote }}
+
+  # ─── 存储配置 ───
+  STORAGE_BACKEND: {{ .Values.storage.backend | quote }}
+  STORAGE_S3_BUCKET: {{ .Values.storage.s3.bucket | quote }}
+  STORAGE_S3_REGION: {{ .Values.storage.s3.region | quote }}
+  STORAGE_S3_FORCE_PATH_STYLE: {{ .Values.storage.s3.forcePathStyle | quote }}
+  STORAGE_COMPRESSION_ENABLED: {{ .Values.storage.compression.enabled | quote }}
+  STORAGE_COMPRESSION_ALGORITHM: {{ .Values.storage.compression.algorithm | quote }}
+  STORAGE_COMPRESSION_LEVEL: {{ .Values.storage.compression.level | quote }}
+  STORAGE_DEDUP_ENABLED: {{ .Values.storage.dedup.enabled | quote }}
+  STORAGE_DEDUP_ALGORITHM: {{ .Values.storage.dedup.algorithm | quote }}
+
+  # ─── 生命周期配置 ───
+  LIFECYCLE_HOT_DAYS: {{ .Values.storage.lifecycle.hotDays | quote }}
+  LIFECYCLE_WARM_DAYS: {{ .Values.storage.lifecycle.warmDays | quote }}
+  LIFECYCLE_COLD_ARCHIVE: {{ .Values.storage.lifecycle.coldArchive | quote }}
+
+  # ─── 容错配置 ───
+  FT_EC_PROFILE: {{ .Values.faultTolerance.ecProfile | quote }}
+  FT_REPLICATION_FACTOR: {{ .Values.faultTolerance.replicationFactor | quote }}
+  FT_HOT_DATA_REPLICATION: {{ .Values.faultTolerance.hotDataReplication | quote }}
+  FT_CROSS_AZ: {{ .Values.faultTolerance.crossAZ | quote }}
+  FT_CROSS_REGION_ENABLED: {{ .Values.faultTolerance.crossRegion.enabled | quote }}
+  FT_CROSS_REGION_RPO_MINUTES: {{ .Values.faultTolerance.crossRegion.rpoMinutes | quote }}
+
+  # ─── 元数据配置 ───
+  META_SHARD_COUNT: {{ .Values.metadata.tikv.shardCount | quote }}
+  META_VNODE_COUNT: {{ .Values.metadata.tikv.vnodeCount | quote }}
+
+  # ─── 可观测配置 ───
+  OBSERVABILITY_PROMETHEUS_ENABLED: {{ .Values.observability.prometheus.enabled | quote }}
+  OBSERVABILITY_PROMETHEUS_SCRAPE_INTERVAL: {{ .Values.observability.prometheus.scrapeInterval | quote }}
+  OBSERVABILITY_TRACING_ENABLED: {{ .Values.observability.tracing.enabled | quote }}
+  OBSERVABILITY_TRACING_EXPORTER: {{ .Values.observability.tracing.exporter | quote }}
+  OBSERVABILITY_TRACING_ENDPOINT: {{ .Values.observability.tracing.endpoint | quote }}
+  OBSERVABILITY_TRACING_SAMPLE_RATE: {{ .Values.observability.tracing.sampleRate | quote }}
+  OBSERVABILITY_LOGS_LEVEL: {{ .Values.observability.logs.level | quote }}
+  OBSERVABILITY_LOGS_FORMAT: {{ .Values.observability.logs.format | quote }}
+
+  # ─── 安全配置 ───
+  SECURITY_RBAC_ENABLED: {{ .Values.security.rbac.enabled | quote }}
+  SECURITY_TLS_ENABLED: {{ .Values.security.tls.enabled | quote }}
+  SECURITY_AUDIT_LOG_ENABLED: {{ .Values.security.auditLog.enabled | quote }}
+  SECURITY_AUDIT_LOG_RETENTION_DAYS: {{ .Values.security.auditLog.retentionDays | quote }}
+  SECURITY_ENCRYPTION_AT_REST: {{ .Values.security.encryption.atRest | quote }}
+  SECURITY_ENCRYPTION_IN_TRANSIT: {{ .Values.security.encryption.inTransit | quote }}
+  SECURITY_ENCRYPTION_ALGORITHM: {{ .Values.security.encryption.algorithm | quote }}
