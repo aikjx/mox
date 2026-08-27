@@ -87,11 +87,10 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           configure: mkAuthOnlyConfigure('ws'),
         },
-        // ========== Node 后端（:3010）—— 保留原入口，优先级低于上面的精确前缀 ==========
+        // ========== Rust 后端网关（:8080）—— 原 Node :3010 已迁移 ==========
         '/api': {
-          target: 'http://localhost:3010',
+          target: 'http://localhost:8080',
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, '')
         },
       }
     })()

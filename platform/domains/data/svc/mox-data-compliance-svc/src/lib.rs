@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // 项目仓库: https://gitcode.com/aikjx/mox
 
@@ -69,7 +69,7 @@ impl PiiType {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum PiiSeverity { Low, Medium, High, Critical }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -178,7 +178,7 @@ impl PiiDetector {
             }
         }
         // Sort by start position, then by severity (higher first)
-        matches.sort_by(|a, b| a.start.cmp(&b.start).then(b.severity as u8.cmp(&(a.severity as u8))));
+        matches.sort_by(|a, b| a.start.cmp(&b.start).then((b.severity as u8).cmp(&(a.severity as u8))));
 
         let mut severity_summary = HashMap::new();
         let mut type_summary = HashMap::new();

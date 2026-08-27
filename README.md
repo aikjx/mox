@@ -466,6 +466,7 @@ int operator_apply(double* input, double* output, int n);
 - **算子商城（资产复用）**：将"需求 + 可编辑业务流程图 + 功能点"作为算子包沉淀，支持随机浏览、克隆后继续编辑，形成"需求驱动 → 流程可快速改"的知识复利闭环（见 `docs/market-module.md`）
 - **多数据库后端（12-Factor 配置）**：璇玑系统可在 `SQLite / PostgreSQL / MySQL` 三种后端间**零代码切换**，默认 `SQLite`（开箱即用、零外部依赖）。方言差异（`INSERT OR REPLACE` / `ON CONFLICT DO UPDATE` / `ON DUPLICATE KEY UPDATE` 等）统一在 `repo/schema.rs` 按 `sea-query` 方言生成，业务层对后端无感知。
 - **生产级 fail-fast**：`MOX_STRICT_PERSIST=1` 下，若连不上配置的数据库（连接失败 **或** 建表失败）则**启动时直接中止**，杜绝"连不上库却照常起服务、数据只写进内存、进程一重启就丢"的静默故障。默认关闭、保持与演示/测试的兼容。
+- **企业级6层架构 + 零改动扩展**：L1基础/L2平台核心/L3领域服务/L4对接能力(AI/插件/政企/连接器)/L5统一集成/L6接入，所有扩展通过 **Trait + Factory + 配置** 实现，核心代码零改动。详见 [`ARCHITECTURE.md`](ARCHITECTURE.md) 和 [`docs/architecture/`](docs/architecture/README.md)。
 
 ### 数据库后端切换（璇玑系统 `mox-system`）
 

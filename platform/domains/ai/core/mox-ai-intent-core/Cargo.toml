@@ -20,6 +20,7 @@ hashbrown = { workspace = true }
 ahash = { workspace = true }
 aho-corasick = { workspace = true }
 indexmap = { workspace = true }
+uuid = { version = "1.0", features = ["v4", "v7", "serde"] }
 
 [dev-dependencies]
 criterion = { workspace = true }

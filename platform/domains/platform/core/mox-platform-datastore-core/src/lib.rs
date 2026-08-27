@@ -26,7 +26,7 @@ pub mod tx;
 pub use dao::UniversalBizDAO;
 pub use field::{FieldSlotAllocator, FieldSpec, SlotAllocation, SlotType};
 pub use hash::compute_hash;
-pub use memory_repos::{InMemoryIamRepo, InMemoryMetaRepo};
+pub use memory_repos::{AuditLog, InMemoryIamRepo, InMemoryMetaRepo, User};
 pub use query::{Filter, ListResult, SortOrder, SortSpec};
 pub use tx::TxManager;
 

@@ -1,6 +1,6 @@
 # 开发专家联盟 · 云盘模块 × 关系图模块 自研 全维分析 + 架构/设计文档计划
 
-> 文档路径：`.trae/documents/20260823_cloud_drive_and_relgraph_selfdev_plan.md`
+> 文档路径：`.trae/documents/20260823_cloud_drive_and_mox_selfdev_plan.md`
 > 方法论：璇玑 AIS 七层层抽象 + 最优开源参照（SeaweedFS/JuiceFS/NebulaGraph）× 璇玑现有代码基线（SPEC-1~SPEC-v4 S-review）
 > 产出形式：专家联盟分析报告 + 里程碑 M0~M6 + 模块矩阵 + 核心接口 + 风险规避 + 验收/验证清单
 

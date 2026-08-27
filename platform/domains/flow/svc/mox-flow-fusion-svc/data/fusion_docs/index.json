@@ -1,6 +1,6 @@
 [
   {
-    "body": "# PT-DOC-01 需求六维溯源矩阵\n\n| 需求 | 状态 | 需求(REQ) | 功能(FUN) | 业务(BIZ) | 算法(ALG) | 任务(TSK) | 代码(COD) | κ | τ | C | Q |\n|---|---|---|---|---|---|---|---|---|---|---|---|\n| 抓取销售数据生成月度经营分析报告 | Completed | REQ:20c7d3e8-26c2-4a98-8564-4781702bf01c | FUN:20c7d3e8-26c2-4a98-8564-4781702bf01c | BIZ:20c7d3e8-26c2-4a98-8564-4781702bf01c | ALG:20c7d3e8-26c2-4a98-8564-4781702bf01c | TSK:20c7d3e8-26c2-4a98-8564-4781702bf01c | COD:20c7d3e8-26c2-4a98-8564-4781702bf01c | 7.071 | 7.071 | 10.000 | 0.0 |\n",
+    "body": "# PT-DOC-01 需求六维溯源矩阵\n\n| 需求 | 状态 | 需求(REQ) | 功能(FUN) | 业务(BIZ) | 算法(ALG) | 任务(TSK) | 代码(COD) | κ | τ | C | Q |\n|---|---|---|---|---|---|---|---|---|---|---|---|\n| 生成一份上线发布检查清单 | Completed | REQ:bf798874-e56f-4785-9165-0decca44d500 | FUN:bf798874-e56f-4785-9165-0decca44d500 | BIZ:bf798874-e56f-4785-9165-0decca44d500 | ALG:bf798874-e56f-4785-9165-0decca44d500 | TSK:bf798874-e56f-4785-9165-0decca44d500 | COD:bf798874-e56f-4785-9165-0decca44d500 | 7.071 | 7.071 | 10.000 | 0.0 |\n",
     "code": "PT-DOC-01",
     "title": "需求六维溯源矩阵"
   },
@@ -20,7 +20,7 @@
     "title": "关图治理闸门报告"
   },
   {
-    "body": "# PT-DOC-05 能力融合清单 (GR-STD × PT-Primi)\n\n融合 crate 数：**13**\n\n| # | crate | 主责层 | 代表性能力 |\n|---|---|---|---|\n| 1 | `operator-core` | L5 执行运行时 | （见融合统一图 crate:operator-core 节点）|\n| 2 | `operator-wasm` | L5 执行运行时 | （见融合统一图 crate:operator-wasm 节点）|\n| 3 | `graph-algorithms` | L6 资产沉淀 | （见融合统一图 crate:graph-algorithms 节点）|\n| 4 | `optimizer` | L3 拓扑涌现 | （见融合统一图 crate:optimizer 节点）|\n| 5 | `flow-ai` | L2 原语映射 | （见融合统一图 crate:flow-ai 节点）|\n| 6 | `mox-expert` | L7 治理合规 | （见融合统一图 crate:mox-expert 节点）|\n| 7 | `hermes-flow-bridge` | L5 执行运行时 | （见融合统一图 crate:hermes-flow-bridge 节点）|\n| 8 | `business-catalog` | L1 需求语义 | （见融合统一图 crate:business-catalog 节点）|\n| 9 | `ai-agent` | L5 执行运行时 | （见融合统一图 crate:ai-agent 节点）|\n| 10 | `template-market` | L6 资产沉淀 | （见融合统一图 crate:template-market 节点）|\n| 11 | `runtime` | L4 调度编排 | （见融合统一图 crate:runtime 节点）|\n| 12 | `mox-system` | L7 治理合规 | （见融合统一图 crate:mox-system 节点）|\n| 13 | `primiflow-core` | L5 执行运行时 | （见融合统一图 crate:primiflow-core 节点）|\n\n> 12 类关图节点 + 7 类边 + PT-Primi 六维 + L1-L7 七层已归一为一张统一图。\n",
+    "body": "# PT-DOC-05 能力融合清单 (GR-STD × PT-Primi)\n\n融合 crate 数：**13**\n\n| # | crate | 主责层 | 代表性能力 |\n|---|---|---|---|\n| 1 | `operator-core` | L5 执行运行时 | （见融合统一图 crate:operator-core 节点）|\n| 2 | `operator-wasm` | L5 执行运行时 | （见融合统一图 crate:operator-wasm 节点）|\n| 3 | `graph-algorithms` | L6 资产沉淀 | （见融合统一图 crate:graph-algorithms 节点）|\n| 4 | `optimizer` | L3 拓扑涌现 | （见融合统一图 crate:optimizer 节点）|\n| 5 | `flow-ai` | L2 原语映射 | （见融合统一图 crate:flow-ai 节点）|\n| 6 | `mox-expert` | L7 治理合规 | （见融合统一图 crate:mox-expert 节点）|\n| 7 | `hermes-flow-bridge` | L5 执行运行时 | （见融合统一图 crate:hermes-flow-bridge 节点）|\n| 8 | `business-catalog` | L1 需求语义 | （见融合统一图 crate:business-catalog 节点）|\n| 9 | `ai-agent` | L5 执行运行时 | （见融合统一图 crate:ai-agent 节点）|\n| 10 | `template-market` | L6 资产沉淀 | （见融合统一图 crate:template-market 节点）|\n| 11 | `mox_platform_orchestrator_svc` | L4 调度编排 | （见融合统一图 crate:mox_platform_orchestrator_svc 节点）|\n| 12 | `mox-system` | L7 治理合规 | （见融合统一图 crate:mox-system 节点）|\n| 13 | `primiflow-core` | L5 执行运行时 | （见融合统一图 crate:primiflow-core 节点）|\n\n> 12 类关图节点 + 7 类边 + PT-Primi 六维 + L1-L7 七层已归一为一张统一图。\n",
     "code": "PT-DOC-05",
     "title": "能力融合清单"
   },
@@ -40,7 +40,7 @@
     "title": "PT-Primi 合规声明"
   },
   {
-    "body": "# PT-DOC-09 κ 复用与资产沉淀\n\n- 成功链路数：1\n- 固化拓扑荷 ΣQ = 0.00（资产库可复用基数）\n\n> κ 复用：第二次同类需求经 `AssetService::search` 命中历史资产，知识越用越厚（PT-Primi §6）。\n\n| 需求 | 拓扑荷 Q | 算法实体 |\n|---|---|---|\n| 抓取销售数据生成月度经营分析报告 | 0.0 | ALG:20c7d3e8-26c2-4a98-8564-4781702bf01c |\n",
+    "body": "# PT-DOC-09 κ 复用与资产沉淀\n\n- 成功链路数：1\n- 固化拓扑荷 ΣQ = 0.00（资产库可复用基数）\n\n> κ 复用：第二次同类需求经 `AssetService::search` 命中历史资产，知识越用越厚（PT-Primi §6）。\n\n| 需求 | 拓扑荷 Q | 算法实体 |\n|---|---|---|\n| 生成一份上线发布检查清单 | 0.0 | ALG:bf798874-e56f-4785-9165-0decca44d500 |\n",
     "code": "PT-DOC-09",
     "title": "κ 复用与资产沉淀"
   },

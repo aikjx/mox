@@ -1,4 +1,4 @@
-# 璇玑 RelGraph（P0）vs Dify/LangGraph/Flowise/AutoGen 架构对照矩阵
+# 璇玑 mox（P0）vs Dify/LangGraph/Flowise/AutoGen 架构对照矩阵
 
 > 生成：2026-08-23 · 方法：P0 真实代码审计 + P1~P4 官方公开文档审计 · 评分 0~100（50 原型，80 成熟，100 标杆）
 

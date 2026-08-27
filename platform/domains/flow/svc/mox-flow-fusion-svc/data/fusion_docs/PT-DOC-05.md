@@ -14,7 +14,7 @@
 | 8 | `business-catalog` | L1 需求语义 | （见融合统一图 crate:business-catalog 节点）|
 | 9 | `ai-agent` | L5 执行运行时 | （见融合统一图 crate:ai-agent 节点）|
 | 10 | `template-market` | L6 资产沉淀 | （见融合统一图 crate:template-market 节点）|
-| 11 | `runtime` | L4 调度编排 | （见融合统一图 crate:runtime 节点）|
+| 11 | `mox_platform_orchestrator_svc` | L4 调度编排 | （见融合统一图 crate:mox_platform_orchestrator_svc 节点）|
 | 12 | `mox-system` | L7 治理合规 | （见融合统一图 crate:mox-system 节点）|
 | 13 | `primiflow-core` | L5 执行运行时 | （见融合统一图 crate:primiflow-core 节点）|
 

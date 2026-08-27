@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // 项目仓库: https://gitcode.com/aikjx/mox
 
@@ -16,6 +16,13 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Arc;
 use thiserror::Error;
 use uuid::Uuid;
+
+/// 企业级业务编排器（10阶段Pipeline + 指标 + 事件总线）
+pub mod orchestrator;
+pub use orchestrator::{
+    BizAction, BusinessEvent, BusinessRequest, BusinessResponse, EventBus, Metrics,
+    Orchestrator, PipelineStage, StageStatus,
+};
 
 #[derive(Debug, Error)]
 pub enum OrchestratorError {
@@ -51,6 +58,7 @@ impl NodeState {
             (self, target),
             (NodeState::Pending, NodeState::Ready)
                 | (NodeState::Ready, NodeState::Running)
+                | (NodeState::Ready, NodeState::Completed)
                 | (NodeState::Running, NodeState::Completed)
                 | (NodeState::Running, NodeState::Failed)
                 | (NodeState::Pending, NodeState::Skipped)
@@ -326,6 +334,11 @@ impl OrchestratorEngine {
         wf
     }
 
+    /// 保存/更新 workflow 到 engine（修改本地 workflow 后需调用此方法写回）
+    pub fn save_workflow(&self, wf: &Workflow) {
+        self.workflows.lock().insert(wf.id.clone(), wf.clone());
+    }
+
     pub fn get_workflow(&self, id: &str) -> Option<Workflow> {
         self.workflows.lock().get(id).cloned()
     }
@@ -424,6 +437,7 @@ mod tests {
         let eng = OrchestratorEngine::new();
         let mut wf = eng.create_workflow("test");
         wf.add_node(WorkflowNode::new("n1", "N1", "op"));
+        eng.save_workflow(&wf);
         let wf = eng.start_workflow(&wf.id).unwrap();
         assert_eq!(wf.state, WorkflowState::Running);
         let wf = eng.complete_node(&wf.id, "n1", None).unwrap();

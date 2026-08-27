@@ -1,43 +1,57 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
-// Licensed under the MIT License.
-// 项目仓库: https://gitcode.com/aikjx/mox
+//! 企业级业务编排器（Orchestrator）
+//!
+//! 10阶段Pipeline：接收→鉴权→校验→元数据解析→字典翻译→业务执行→结果enrich→审计→事件发布→响应构建
+//! 集成 UniversalBizDAO + TxManager + InMemoryMetaRepo + InMemoryIamRepo
 
-use rusqlite::params;
+use mox_platform_datastore_core::{
+    AuditLog, FieldSpec, Filter, InMemoryIamRepo, InMemoryMetaRepo, SortSpec, TxManager,
+    UniversalBizDAO,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
-use std::collections::BTreeMap;
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::Mutex;
+use std::time::Instant;
 
-use mox_platform_datastore_core::IamRepository;
-use mox_platform_datastore_core::MetaRepository;
-use mox_platform_datastore_core::{AuditLogEntry, User};
-use mox_platform_datastore_core::{Filter, SortSpec, TxManager, UniversalBizDAO};
-
-use crate::event::EventBus;
-use crate::metrics::Metrics;
-use crate::module::ModuleRegistry;
-use crate::pipeline::{Pipeline, PipelineCtx, PipelineResult};
+// ═══════════════════════════════════════════════════════════════
+// 业务动作枚举
+// ═══════════════════════════════════════════════════════════════
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BizAction {
     Create,
-    Update,
-    Delete,
     Get,
+    Update,
     List,
+    Delete,
 }
 
 impl BizAction {
     pub fn as_str(&self) -> &'static str {
         match self {
             BizAction::Create => "create",
-            BizAction::Update => "update",
-            BizAction::Delete => "delete",
             BizAction::Get => "get",
+            BizAction::Update => "update",
             BizAction::List => "list",
+            BizAction::Delete => "delete",
+        }
+    }
+
+    /// 所需权限
+    pub fn required_permission(&self) -> &'static str {
+        match self {
+            BizAction::Create => "biz:create",
+            BizAction::Get => "biz:read",
+            BizAction::Update => "biz:update",
+            BizAction::List => "biz:list",
+            BizAction::Delete => "biz:delete",
         }
     }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 业务请求
+// ═══════════════════════════════════════════════════════════════
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BusinessRequest {
@@ -74,371 +88,502 @@ impl Default for BusinessRequest {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// Pipeline 阶段
+// ═══════════════════════════════════════════════════════════════
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OrchestratorResult {
+pub struct PipelineStage {
+    pub name: String,
+    pub status: StageStatus,
+    pub duration_ms: u64,
+    pub detail: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum StageStatus {
+    Success,
+    Failed,
+    Skipped,
+}
+
+impl PipelineStage {
+    fn success(name: &str, duration_ms: u64) -> Self {
+        Self { name: name.to_string(), status: StageStatus::Success, duration_ms, detail: None }
+    }
+    fn failed(name: &str, duration_ms: u64, detail: &str) -> Self {
+        Self { name: name.to_string(), status: StageStatus::Failed, duration_ms, detail: Some(detail.to_string()) }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 业务响应
+// ═══════════════════════════════════════════════════════════════
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BusinessResponse {
     pub success: bool,
-    pub error: Option<String>,
+    pub biz_id: Option<String>,
+    pub biz_code: Option<String>,
+    pub version: Option<i64>,
     pub data: Option<Value>,
     pub total: Option<i64>,
-    pub biz_id: Option<String>,
-    pub version: Option<i64>,
-    pub pipeline_stages: Vec<String>,
+    pub error: Option<String>,
+    pub pipeline_stages: Vec<PipelineStage>,
+}
+
+impl BusinessResponse {
+    fn fail(error: impl Into<String>, stages: Vec<PipelineStage>) -> Self {
+        Self {
+            success: false,
+            biz_id: None,
+            biz_code: None,
+            version: None,
+            data: None,
+            total: None,
+            error: Some(error.into()),
+            pipeline_stages: stages,
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 指标收集器
+// ═══════════════════════════════════════════════════════════════
+
+#[derive(Debug, Default, Clone)]
+pub struct Metrics {
+    inner: std::sync::Arc<Mutex<MetricsInner>>,
+}
+
+#[derive(Debug, Default)]
+struct MetricsInner {
+    total: u64,
+    success: u64,
+    failed: u64,
+    durations_ms: Vec<u64>,
+}
+
+impl Metrics {
+    pub fn record(&self, success: bool, duration_ms: u64) {
+        let mut inner = self.inner.lock().unwrap();
+        inner.total += 1;
+        if success { inner.success += 1; } else { inner.failed += 1; }
+        inner.durations_ms.push(duration_ms);
+    }
+
+    pub fn total(&self) -> u64 {
+        self.inner.lock().unwrap().total
+    }
+
+    pub fn fail_rate(&self) -> f64 {
+        let inner = self.inner.lock().unwrap();
+        if inner.total == 0 { 0.0 } else { inner.failed as f64 / inner.total as f64 }
+    }
+
+    pub fn p50(&self) -> Option<u64> {
+        let inner = self.inner.lock().unwrap();
+        if inner.durations_ms.is_empty() { return None; }
+        let mut sorted = inner.durations_ms.clone();
+        sorted.sort();
+        let idx = sorted.len() / 2;
+        Some(sorted[idx])
+    }
+
+    pub fn p99(&self) -> Option<u64> {
+        let inner = self.inner.lock().unwrap();
+        if inner.durations_ms.is_empty() { return None; }
+        let mut sorted = inner.durations_ms.clone();
+        sorted.sort();
+        let idx = (sorted.len() as f64 * 0.99) as usize;
+        Some(sorted[idx.min(sorted.len() - 1)])
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 事件总线
+// ═══════════════════════════════════════════════════════════════
+
+#[derive(Debug, Clone)]
+pub struct EventBus {
+    queue: std::sync::Arc<Mutex<Vec<BusinessEvent>>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SyncRecord {
-    pub biz_id: String,
+pub struct BusinessEvent {
+    pub event_type: String,
+    pub tenant_id: String,
     pub entity_code: String,
-    pub version: i64,
-    pub data: Value,
+    pub biz_id: Option<String>,
+    pub timestamp: String,
+    pub payload: Value,
 }
 
-struct NoopIam;
+impl EventBus {
+    pub fn new() -> Self {
+        Self { queue: std::sync::Arc::new(Mutex::new(Vec::new())) }
+    }
 
-impl IamRepository for NoopIam {
-    fn check_permission(
-        &self,
-        _tenant_id: &str,
-        _user_id: &str,
-        _entity_code: &str,
-        _action: &str,
-    ) -> anyhow::Result<()> {
-        Ok(())
+    pub fn publish(&self, event: BusinessEvent) {
+        let mut queue = self.queue.lock().unwrap();
+        queue.push(event);
     }
-    fn get_user(&self, _user_id: &str) -> anyhow::Result<User> {
-        anyhow::bail!("noop iam")
+
+    pub fn queue_len(&self) -> usize {
+        self.queue.lock().unwrap().len()
     }
-    fn write_audit_log(&self, _entry: AuditLogEntry) -> anyhow::Result<()> {
-        Ok(())
+
+    pub fn drain(&self) -> Vec<BusinessEvent> {
+        let mut queue = self.queue.lock().unwrap();
+        std::mem::take(&mut *queue)
     }
 }
 
-fn noop_iam() -> NoopIam {
-    NoopIam
+impl Default for EventBus {
+    fn default() -> Self { Self::new() }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 字典翻译表
+// ═══════════════════════════════════════════════════════════════
+
+fn status_dict_label(status: &str) -> Option<&'static str> {
+    match status {
+        "draft" => Some("草稿"),
+        "active" => Some("进行中"),
+        "closed" => Some("已关闭"),
+        "pending" => Some("待处理"),
+        "approved" => Some("已批准"),
+        "rejected" => Some("已拒绝"),
+        _ => None,
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 企业级业务编排器
+// ═══════════════════════════════════════════════════════════════
+
+#[derive(Clone)]
 pub struct Orchestrator {
-    pub pipeline: Pipeline,
-    pub registry: ModuleRegistry,
-    pub event_bus: EventBus,
     pub metrics: Metrics,
-    pub meta: Option<Arc<dyn MetaRepository>>,
-    pub dao: Option<Arc<UniversalBizDAO>>,
-    pub pipelines: std::collections::HashMap<String, Pipeline>,
+    pub event_bus: EventBus,
+    dict_cache: HashMap<String, HashMap<String, String>>,
 }
 
 impl Orchestrator {
+    /// 企业级默认配置
     pub fn enterprise_default() -> Self {
+        let mut dict_cache = HashMap::new();
+        // 预置 status 字典
+        let mut status_dict = HashMap::new();
+        status_dict.insert("draft".to_string(), "草稿".to_string());
+        status_dict.insert("active".to_string(), "进行中".to_string());
+        status_dict.insert("closed".to_string(), "已关闭".to_string());
+        dict_cache.insert("status".to_string(), status_dict);
+
         Self {
-            pipeline: Pipeline::enterprise_default(),
-            registry: ModuleRegistry::new(),
+            metrics: Metrics::default(),
             event_bus: EventBus::new(),
-            metrics: Metrics::new(),
-            meta: None,
-            dao: None,
-            pipelines: std::collections::HashMap::new(),
+            dict_cache,
         }
     }
 
-    pub fn new<M: MetaRepository + 'static>(meta: Arc<M>, dao: Arc<UniversalBizDAO>) -> Self {
-        let mut s = Self::enterprise_default();
-        s.meta = Some(meta as Arc<dyn MetaRepository>);
-        s.dao = Some(dao);
-        s
-    }
-
-    pub fn register_pipeline(&mut self, name: &str) {
-        self.pipelines
-            .insert(name.to_string(), Pipeline::enterprise_default());
-    }
-
-    fn default_tenant(tenant_id: Option<&String>) -> String {
-        tenant_id.cloned().unwrap_or_else(|| "default".to_string())
-    }
-
-    pub fn list_pipelines(&self) -> Vec<String> {
-        self.pipelines.keys().cloned().collect()
-    }
-
-    pub fn create_sync(
-        &self,
-        entity_code: &str,
-        tenant_id: Option<String>,
-        data: BTreeMap<String, Value>,
-        actor: &str,
-    ) -> anyhow::Result<SyncRecord> {
-        let dao = self
-            .dao
-            .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("DAO not set"))?;
-        let meta = self
-            .meta
-            .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("Meta repo not set"))?;
-        let tid = Self::default_tenant(tenant_id.as_ref());
-        let map: Map<String, Value> = data.into_iter().collect();
-        let iam = noop_iam();
-        let (biz_id, _biz_code, version) =
-            dao.create(&**meta, &iam, &tid, entity_code, actor, &map, None, None)?;
-        let data = dao
-            .get(&**meta, &tid, entity_code, &biz_id)?
-            .unwrap_or(Value::Null);
-        Ok(SyncRecord {
-            biz_id,
-            entity_code: entity_code.to_string(),
-            version,
-            data,
-        })
-    }
-
-    pub fn update_sync(
-        &self,
-        biz_id: &str,
-        patch: BTreeMap<String, Value>,
-        actor: &str,
-    ) -> anyhow::Result<SyncRecord> {
-        let dao = self
-            .dao
-            .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("DAO not set"))?;
-        let meta = self
-            .meta
-            .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("Meta repo not set"))?;
-        let map: Map<String, Value> = patch.into_iter().collect();
-        let (tid, entity_code) = Self::resolve_biz(dao, biz_id)?;
-        let version = dao.update(&**meta, &tid, &entity_code, biz_id, actor, &map)?;
-        let data = dao
-            .get(&**meta, &tid, &entity_code, biz_id)?
-            .unwrap_or(Value::Null);
-        Ok(SyncRecord {
-            biz_id: biz_id.to_string(),
-            entity_code,
-            version,
-            data,
-        })
-    }
-
-    pub fn delete_sync(&self, biz_id: &str, actor: &str) -> anyhow::Result<()> {
-        let dao = self
-            .dao
-            .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("DAO not set"))?;
-        let (tid, entity_code) = Self::resolve_biz(dao, biz_id)?;
-        dao.delete(&tid, &entity_code, biz_id, actor, None)
-    }
-
-    pub fn get_sync(&self, biz_id: &str) -> anyhow::Result<Option<SyncRecord>> {
-        let dao = self
-            .dao
-            .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("DAO not set"))?;
-        let meta = self
-            .meta
-            .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("Meta repo not set"))?;
-        let (tid, entity_code, version) = match Self::resolve_biz_ver(dao, biz_id) {
-            Ok(x) => x,
-            Err(_) => return Ok(None),
-        };
-        let data = match dao.get(&**meta, &tid, &entity_code, biz_id)? {
-            Some(d) => d,
-            None => return Ok(None),
-        };
-        Ok(Some(SyncRecord {
-            biz_id: biz_id.to_string(),
-            entity_code,
-            version,
-            data,
-        }))
-    }
-
-    pub fn list_sync(
-        &self,
-        entity_code: &str,
-        tenant_id: Option<&str>,
-    ) -> anyhow::Result<Vec<Value>> {
-        let dao = self
-            .dao
-            .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("DAO not set"))?;
-        let meta = self
-            .meta
-            .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("Meta repo not set"))?;
-        let tid = tenant_id
-            .map(|s| s.to_string())
-            .unwrap_or_else(|| "default".to_string());
-        let res = dao.list(
-            &**meta,
-            &tid,
-            entity_code,
-            vec![],
-            SortSpec::default(),
-            1,
-            1000,
-        )?;
-        Ok(res.items)
-    }
-
-    pub fn version_count_sync(&self, biz_id: &str) -> i64 {
-        let dao = match self.dao.as_ref() {
-            Some(d) => d,
-            None => return 0,
-        };
-        let conn = dao.conn.lock();
-        let cnt: Result<i64, _> = conn.query_row(
-            "SELECT COUNT(*) FROM biz_data_version WHERE biz_id = ?1",
-            params![biz_id],
-            |r| r.get(0),
-        );
-        cnt.unwrap_or(0)
-    }
-
-    pub fn audit_chain_sync(&self, biz_id: &str) -> Vec<Value> {
-        let dao = match self.dao.as_ref() {
-            Some(d) => d,
-            None => return vec![],
-        };
-        let conn = dao.conn.lock();
-        let mut stmt = match conn.prepare(
-            "SELECT version_id, biz_id, version_num, changed_fields, operation_type, operator_user_id, prev_hash, curr_hash, created_at \
-             FROM biz_data_version WHERE biz_id = ?1 ORDER BY version_num ASC",
-        ) {
-            Ok(s) => s,
-            Err(_) => return vec![],
-        };
-        let rows = stmt.query_map(params![biz_id], |r| {
-            Ok(serde_json::json!({
-                "version_id": r.get::<_, String>(0).ok(),
-                "biz_id": r.get::<_, String>(1).ok(),
-                "version_num": r.get::<_, i64>(2).ok(),
-                "changed_fields": r.get::<_, String>(3).ok(),
-                "operation_type": r.get::<_, String>(4).ok(),
-                "operator_user_id": r.get::<_, String>(5).ok(),
-                "prev_hash": r.get::<_, String>(6).ok(),
-                "curr_hash": r.get::<_, String>(7).ok(),
-                "created_at": r.get::<_, String>(8).ok(),
-            }))
-        });
-        match rows {
-            Ok(iter) => iter.filter_map(|v| v.ok()).collect(),
-            Err(_) => vec![],
-        }
-    }
-
-    pub fn blocking<F, R>(
-        f: F,
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = anyhow::Result<R>> + Send>>
-    where
-        F: FnOnce() -> anyhow::Result<R> + Send + 'static,
-        R: Send + 'static,
-    {
-        Box::pin(async move {
-            tokio::task::spawn_blocking(f)
-                .await
-                .map_err(|e| anyhow::anyhow!("join error: {}", e))?
-        })
-    }
-
-    fn resolve_biz(dao: &UniversalBizDAO, biz_id: &str) -> anyhow::Result<(String, String)> {
-        let conn = dao.conn.lock();
-        let (tid, ec): (String, String) = conn
-            .query_row(
-                "SELECT tenant_id, biz_type FROM biz_data WHERE biz_id = ?1",
-                params![biz_id],
-                |r| Ok((r.get(0)?, r.get(1)?)),
-            )
-            .map_err(|e| anyhow::anyhow!("resolve_biz failed: {}", e))?;
-        Ok((tid, ec))
-    }
-
-    fn resolve_biz_ver(
-        dao: &UniversalBizDAO,
-        biz_id: &str,
-    ) -> anyhow::Result<(String, String, i64)> {
-        let conn = dao.conn.lock();
-        let (tid, ec, ver): (String, String, i64) = conn
-            .query_row(
-                "SELECT tenant_id, biz_type, version FROM biz_data WHERE biz_id = ?1",
-                params![biz_id],
-                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
-            )
-            .map_err(|e| anyhow::anyhow!("resolve_biz_ver failed: {}", e))?;
-        Ok((tid, ec, ver))
-    }
-
-    pub fn execute<M: MetaRepository, I: IamRepository>(
+    /// 执行业务请求（10阶段Pipeline）
+    pub fn execute(
         &self,
         req: &BusinessRequest,
         dao: &UniversalBizDAO,
-        tx_manager: Option<&TxManager>,
-        meta_repo: &M,
-        iam_repo: &I,
-    ) -> OrchestratorResult {
-        let mut ctx = PipelineCtx::new(req);
-        let result = self.pipeline.run(
-            &mut ctx,
-            dao,
-            tx_manager,
-            &self.registry,
-            &self.event_bus,
-            &self.metrics,
-            meta_repo,
-            iam_repo,
-            req,
-        );
-        let PipelineResult {
-            success,
-            error,
-            stages_run,
-        } = result;
-        let stage_names = stages_run.iter().map(|s| format!("{:?}", s)).collect();
-        OrchestratorResult {
-            success,
-            error,
-            data: ctx.response_data.clone(),
-            total: ctx.response_list_total,
-            biz_id: ctx.biz_id.clone(),
-            version: ctx.version,
-            pipeline_stages: stage_names,
+        tx: Option<&TxManager>,
+        meta: &InMemoryMetaRepo,
+        iam: &InMemoryIamRepo,
+    ) -> BusinessResponse {
+        let start = Instant::now();
+        let mut stages: Vec<PipelineStage> = Vec::with_capacity(10);
+        let mut stage_start = Instant::now();
+
+        // Stage 1: 接收请求
+        stages.push(PipelineStage::success("receive", stage_start.elapsed().as_millis() as u64));
+        stage_start = Instant::now();
+
+        // Stage 2: 鉴权
+        let perm = req.action.required_permission();
+        if !iam.has_permission(&req.tenant_id, &req.user_id, perm) {
+            stages.push(PipelineStage::failed(
+                "auth",
+                stage_start.elapsed().as_millis() as u64,
+                &format!("Permission denied: user {} lacks {}", req.user_id, perm),
+            ));
+            let resp = BusinessResponse::fail(
+                format!("Permission denied: user {} lacks {}", req.user_id, perm),
+                stages,
+            );
+            self.metrics.record(false, start.elapsed().as_millis() as u64);
+            return resp;
+        }
+        stages.push(PipelineStage::success("auth", stage_start.elapsed().as_millis() as u64));
+        stage_start = Instant::now();
+
+        // Stage 3: 校验
+        if req.entity_code.is_empty() {
+            stages.push(PipelineStage::failed("validate", 0, "entity_code is empty"));
+            let resp = BusinessResponse::fail("entity_code is empty", stages);
+            self.metrics.record(false, start.elapsed().as_millis() as u64);
+            return resp;
+        }
+        if matches!(req.action, BizAction::Get | BizAction::Update | BizAction::Delete) && req.biz_id.is_none() {
+            stages.push(PipelineStage::failed("validate", 0, "biz_id is required for this action"));
+            let resp = BusinessResponse::fail("biz_id is required", stages);
+            self.metrics.record(false, start.elapsed().as_millis() as u64);
+            return resp;
+        }
+        stages.push(PipelineStage::success("validate", stage_start.elapsed().as_millis() as u64));
+        stage_start = Instant::now();
+
+        // Stage 4: 元数据解析
+        let fields = meta.get_entity_fields(&req.tenant_id, &req.entity_code);
+        stages.push(PipelineStage::success(
+            "meta_resolve",
+            stage_start.elapsed().as_millis() as u64,
+        ));
+        stage_start = Instant::now();
+
+        // Stage 5: 字典翻译（准备）
+        stages.push(PipelineStage::success("dict_translate", stage_start.elapsed().as_millis() as u64));
+        stage_start = Instant::now();
+
+        // Stage 6: 业务执行
+        let exec_result = self.execute_business_action(req, dao, tx, meta, iam, &fields);
+        let exec_duration = stage_start.elapsed().as_millis() as u64;
+
+        match &exec_result {
+            Ok(_) => stages.push(PipelineStage::success("execute", exec_duration)),
+            Err(e) => {
+                stages.push(PipelineStage::failed("execute", exec_duration, e));
+                let resp = BusinessResponse::fail(e.clone(), stages);
+                self.metrics.record(false, start.elapsed().as_millis() as u64);
+                return resp;
+            }
+        }
+        stage_start = Instant::now();
+
+        // Stage 7: 结果 enrich（字典翻译）
+        let exec_data = exec_result.unwrap();
+        let enriched = self.enrich_result(&exec_data, &fields);
+        stages.push(PipelineStage::success("enrich", stage_start.elapsed().as_millis() as u64));
+        stage_start = Instant::now();
+
+        // Stage 8: 审计记录
+        let audit = AuditLog {
+            timestamp: chrono::Utc::now().to_rfc3339(),
+            tenant_id: req.tenant_id.clone(),
+            user_id: req.user_id.clone(),
+            action: req.action.as_str().to_string(),
+            entity_code: req.entity_code.clone(),
+            biz_id: req.biz_id.clone().or_else(|| enriched.biz_id.clone()),
+            success: true,
+            detail: format!("entity={}, action={}", req.entity_code, req.action.as_str()),
+        };
+        iam.append_audit(audit);
+        stages.push(PipelineStage::success("audit", stage_start.elapsed().as_millis() as u64));
+        stage_start = Instant::now();
+
+        // Stage 9: 事件发布
+        let event = BusinessEvent {
+            event_type: format!("biz.{}", req.action.as_str()),
+            tenant_id: req.tenant_id.clone(),
+            entity_code: req.entity_code.clone(),
+            biz_id: req.biz_id.clone().or_else(|| enriched.biz_id.clone()),
+            timestamp: chrono::Utc::now().to_rfc3339(),
+            payload: enriched.data.clone().unwrap_or(Value::Null),
+        };
+        self.event_bus.publish(event);
+        stages.push(PipelineStage::success("event_publish", stage_start.elapsed().as_millis() as u64));
+        stage_start = Instant::now();
+
+        // Stage 10: 响应构建
+        stages.push(PipelineStage::success("response", stage_start.elapsed().as_millis() as u64));
+
+        let total_duration = start.elapsed().as_millis() as u64;
+        self.metrics.record(true, total_duration);
+
+        BusinessResponse {
+            success: true,
+            biz_id: enriched.biz_id,
+            biz_code: enriched.biz_code,
+            version: enriched.version,
+            data: enriched.data,
+            total: enriched.total,
+            error: None,
+            pipeline_stages: stages,
         }
     }
 
-    pub async fn execute_async<M, I>(
-        self: Arc<Self>,
-        req: BusinessRequest,
-        dao: Arc<UniversalBizDAO>,
-        tx_manager: Option<Arc<TxManager>>,
-        meta_repo: Arc<M>,
-        iam_repo: Arc<I>,
-    ) -> OrchestratorResult
-    where
-        M: MetaRepository + 'static,
-        I: IamRepository + 'static,
-    {
-        let orc = self.clone();
-        let result = tokio::task::spawn_blocking(move || {
-            let tx_ref: Option<&TxManager> = tx_manager.as_ref().map(|t| t.as_ref());
-            orc.execute(
-                &req,
-                dao.as_ref(),
-                tx_ref,
-                meta_repo.as_ref(),
-                iam_repo.as_ref(),
-            )
-        })
-        .await
-        .unwrap_or_else(|e| OrchestratorResult {
-            success: false,
-            error: Some(format!("spawn_blocking panic: {}", e)),
-            data: None,
-            total: None,
-            biz_id: None,
-            version: None,
-            pipeline_stages: vec![],
-        });
+    // ═══════════════════════════════════════════════════════════
+    // 内部：业务动作执行
+    // ═══════════════════════════════════════════════════════════
 
-        result
+    fn execute_business_action(
+        &self,
+        req: &BusinessRequest,
+        dao: &UniversalBizDAO,
+        tx: Option<&TxManager>,
+        meta: &InMemoryMetaRepo,
+        iam: &InMemoryIamRepo,
+        _fields: &[FieldSpec],
+    ) -> Result<ExecOutput, String> {
+        match req.action {
+            BizAction::Create => {
+                let data = req.data.as_ref().ok_or("data is required for create")?;
+                let do_create = || {
+                    dao.create(
+                        meta,
+                        iam,
+                        &req.tenant_id,
+                        &req.entity_code,
+                        &req.user_id,
+                        data,
+                        req.biz_code.as_deref(),
+                        req.workflow_instance_id.as_deref(),
+                    )
+                };
+
+                let result = if let Some(tx_mgr) = tx {
+                    tx_mgr.run(do_create).map_err(|e| e.to_string())?
+                } else {
+                    do_create().map_err(|e| e.to_string())?
+                };
+
+                Ok(ExecOutput {
+                    biz_id: Some(result.0),
+                    biz_code: Some(result.1),
+                    version: Some(result.2),
+                    data: None,
+                    total: None,
+                })
+            }
+            BizAction::Get => {
+                let biz_id = req.biz_id.as_ref().ok_or("biz_id required")?;
+                let val = dao.get(meta, &req.tenant_id, &req.entity_code, biz_id)
+                    .map_err(|e| e.to_string())?;
+                Ok(ExecOutput {
+                    biz_id: Some(biz_id.clone()),
+                    biz_code: None,
+                    version: None,
+                    data: val,
+                    total: None,
+                })
+            }
+            BizAction::Update => {
+                let biz_id = req.biz_id.as_ref().ok_or("biz_id required")?;
+                let patch = req.data.as_ref().ok_or("data(patch) is required for update")?;
+                let do_update = || {
+                    dao.update(meta, &req.tenant_id, &req.entity_code, biz_id, &req.user_id, patch)
+                };
+                let version = if let Some(tx_mgr) = tx {
+                    tx_mgr.run(do_update).map_err(|e| e.to_string())?
+                } else {
+                    do_update().map_err(|e| e.to_string())?
+                };
+                Ok(ExecOutput {
+                    biz_id: Some(biz_id.clone()),
+                    biz_code: None,
+                    version: Some(version),
+                    data: None,
+                    total: None,
+                })
+            }
+            BizAction::List => {
+                let list_result = dao.list(
+                    meta,
+                    &req.tenant_id,
+                    &req.entity_code,
+                    req.filters.clone(),
+                    req.sort.clone(),
+                    req.page,
+                    req.page_size,
+                ).map_err(|e| e.to_string())?;
+                Ok(ExecOutput {
+                    biz_id: None,
+                    biz_code: None,
+                    version: None,
+                    data: Some(Value::Array(list_result.items)),
+                    total: Some(list_result.total),
+                })
+            }
+            BizAction::Delete => {
+                let biz_id = req.biz_id.as_ref().ok_or("biz_id required")?;
+                let do_delete = || {
+                    dao.delete(&req.tenant_id, &req.entity_code, biz_id, &req.user_id, Some("orchestrator delete"))
+                };
+                if let Some(tx_mgr) = tx {
+                    tx_mgr.run(do_delete).map_err(|e| e.to_string())?;
+                } else {
+                    do_delete().map_err(|e| e.to_string())?;
+                }
+                Ok(ExecOutput {
+                    biz_id: Some(biz_id.clone()),
+                    biz_code: None,
+                    version: None,
+                    data: None,
+                    total: None,
+                })
+            }
+        }
     }
+
+    // ═══════════════════════════════════════════════════════════
+    // 内部：结果 enrich（字典翻译）
+    // ═══════════════════════════════════════════════════════════
+
+    fn enrich_result(&self, output: &ExecOutput, _fields: &[FieldSpec]) -> ExecOutput {
+        let enriched_data = match &output.data {
+            Some(Value::Object(map)) => {
+                let mut new_map = map.clone();
+                // status 字典翻译
+                if let Some(Value::String(status)) = map.get("status") {
+                    if let Some(label) = status_dict_label(status) {
+                        new_map.insert("status_label".to_string(), Value::String(label.to_string()));
+                    }
+                }
+                Some(Value::Object(new_map))
+            }
+            Some(Value::Array(items)) => {
+                let enriched_items: Vec<Value> = items.iter().map(|item| {
+                    if let Value::Object(map) = item {
+                        let mut new_map = map.clone();
+                        if let Some(Value::String(status)) = map.get("status") {
+                            if let Some(label) = status_dict_label(status) {
+                                new_map.insert("status_label".to_string(), Value::String(label.to_string()));
+                            }
+                        }
+                        Value::Object(new_map)
+                    } else {
+                        item.clone()
+                    }
+                }).collect();
+                Some(Value::Array(enriched_items))
+            }
+            other => other.clone(),
+        };
+
+        ExecOutput {
+            biz_id: output.biz_id.clone(),
+            biz_code: output.biz_code.clone(),
+            version: output.version,
+            data: enriched_data,
+            total: output.total,
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 内部类型
+// ═══════════════════════════════════════════════════════════════
+
+struct ExecOutput {
+    biz_id: Option<String>,
+    biz_code: Option<String>,
+    version: Option<i64>,
+    data: Option<Value>,
+    total: Option<i64>,
 }

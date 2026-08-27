@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // 项目仓库: https://gitcode.com/aikjx/mox
 
@@ -180,7 +180,7 @@ fn test_orchestrator_create_get_update_list_delete() {
     assert_eq!(first_success_stages.len(), 10, "成功路径跑满 10 阶段");
 
     // 10. 审计日志条目数
-    let audit_count = iam.audit_logs.len();
+    let audit_count = iam.audit_logs.lock().unwrap().len();
     assert!(
         audit_count >= 6,
         "审计日志 >= 6 条（6次 orchestrator 调用）"

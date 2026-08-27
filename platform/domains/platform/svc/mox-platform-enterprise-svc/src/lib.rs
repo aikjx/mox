@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // 项目仓库: https://gitcode.com/aikjx/mox
 
@@ -12,6 +12,13 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use thiserror::Error;
 use uuid::Uuid;
+
+/// 应用状态模块
+pub mod app_state;
+/// 认证模块
+pub mod auth;
+/// 路由模块
+pub mod routes;
 
 #[derive(Debug, Error)]
 pub enum EnterpriseError {

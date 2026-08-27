@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // 项目仓库: https://gitcode.com/aikjx/mox
 
@@ -15,6 +15,14 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use thiserror::Error;
+
+/// 专家联盟打分模块
+pub mod alliance;
+/// 意图分类模块
+pub mod classifier;
+
+pub use alliance::{score_alliance_candidates, AllianceScorer, ExpertCandidate, ScoreBreakdown, ScoredExpert};
+pub use classifier::{classify_intent, intent_to_capability, IntentClassifier, IntentPattern, IntentResult};
 
 #[derive(Debug, Error)]
 pub enum IntentError {

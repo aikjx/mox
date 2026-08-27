@@ -3,8 +3,31 @@
 //! 用于测试和轻量级部署场景，提供 MetaRepo 和 IamRepo 的内存实现。
 
 use crate::field::FieldSpec;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Mutex;
+
+/// 用户实体
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct User {
+    pub user_id: String,
+    pub tenant_id: String,
+    pub username: String,
+    pub dept_id: String,
+}
+
+/// 审计日志条目
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AuditLog {
+    pub timestamp: String,
+    pub tenant_id: String,
+    pub user_id: String,
+    pub action: String,
+    pub entity_code: String,
+    pub biz_id: Option<String>,
+    pub success: bool,
+    pub detail: String,
+}
 
 /// 内存元数据仓库
 ///
@@ -121,6 +144,10 @@ impl Default for InMemoryMetaRepo {
 #[derive(Clone)]
 pub struct InMemoryIamRepo {
     inner: std::sync::Arc<Mutex<IamState>>,
+    /// 审计日志（公共可访问，用于编排器审计追踪）
+    pub audit_logs: std::sync::Arc<Mutex<Vec<AuditLog>>>,
+    /// 用户注册表（user_id -> User）
+    users: std::sync::Arc<Mutex<HashMap<String, User>>>,
 }
 
 struct IamState {
@@ -140,7 +167,33 @@ impl InMemoryIamRepo {
                 user_roles: HashMap::new(),
                 user_permissions: HashMap::new(),
             })),
+            audit_logs: std::sync::Arc::new(Mutex::new(Vec::new())),
+            users: std::sync::Arc::new(Mutex::new(HashMap::new())),
         }
+    }
+
+    /// 添加用户（无权限，用于权限拒绝测试）
+    pub fn add_user(&self, user: User) {
+        let mut users = self.users.lock().unwrap();
+        users.insert(user.user_id.clone(), user.clone());
+
+        let mut state = self.inner.lock().unwrap();
+        state
+            .tenant_users
+            .entry(user.tenant_id.clone())
+            .or_default()
+            .push(user.user_id.clone());
+        state.user_roles.insert(
+            user.user_id.clone(),
+            (user.tenant_id.clone(), vec!["guest".to_string()]),
+        );
+        // 不分配任何 biz:* 权限
+    }
+
+    /// 追加审计日志
+    pub fn append_audit(&self, log: AuditLog) {
+        let mut logs = self.audit_logs.lock().unwrap();
+        logs.push(log);
     }
 
     /// 初始化标准用户（为指定租户创建标准用户，赋予基础权限）

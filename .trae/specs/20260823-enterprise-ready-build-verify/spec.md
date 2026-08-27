@@ -1,4 +1,4 @@
-# 璇玑 RelGraph · 企业级真实可运行落地 + 全维自动化测试验收（V1.0）
+# 璇玑 mox · 企业级真实可运行落地 + 全维自动化测试验收（V1.0）
 
 ## Overview
 - **Summary**：把 `璇玑 RelGraph` 仓库当前的 Rust 16 crate 工作空间 + Node backend-node + 前端 frontend-ui + melody2score Python 桌面端 + 7×8 算法对账 + 三流程端点（graph_bulk / file_upload+link / ai_full_rag）+ AI 四端点（process/analyze/capabilities/metrics）从「文档声明完成」推进到「每一条声明都能通过一条可重复执行的自动化命令独立验证通过」，并修复所有验证暴露的编译/运行/对账/覆盖率缺口，形成企业级 SLO：**cargo test 全绿、clippy 零告警、前端构建 0 错误、Node test suite 70+ 全绿、RBAC 11 探针全过、7×8 对账 Δ≤1e-6、SixDim 绑定 ≥90% 护栏、full_gate 通过率 ≥90%**。

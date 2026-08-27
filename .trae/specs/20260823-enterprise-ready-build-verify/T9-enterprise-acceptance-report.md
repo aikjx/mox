@@ -1,4 +1,4 @@
-# 企业级验收总报告 · 璇玑 RelGraph Infotopograph v3.0.0-enterprise
+# 企业级验收总报告 · 璇玑 mox Infotopograph v3.0.0-enterprise
 > 生成时间：2026-08-23 UTC+8 | 报告类型：企业级 T9 汇总证据包（All-04 联盟交付 = 联盟验收）
 > 权威文档：`docs/enterprise/18 TOP-MASTER / 09-企业级全维度完成归档.md`（L0 最高权威）
 

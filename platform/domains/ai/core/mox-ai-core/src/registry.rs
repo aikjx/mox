@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // 项目仓库: https://gitcode.com/aikjx/mox
 
@@ -93,7 +93,7 @@ mod tests {
         async fn chat(&self, _req: &crate::providers::dto::ChatRequest) -> AiResult<crate::providers::dto::ChatResponse> {
             Err(AiError::Other("mock".into()))
         }
-        async fn chat_stream(&self, _req: &crate::providers::dto::ChatRequest) -> AiResult<futures::stream::BoxStream<'_, AiResult<crate::providers::dto::StreamChunk>>> {
+        async fn chat_stream(&self, _req: &crate::providers::dto::ChatRequest) -> AiResult<futures::stream::BoxStream<'static, AiResult<crate::providers::dto::StreamChunk>>> {
             Err(AiError::Other("mock".into()))
         }
         async fn health_check(&self) -> crate::providers::dto::HealthStatus {

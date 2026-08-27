@@ -1,4 +1,4 @@
-# 璇玑 RelGraph · 企业级真实可运行落地 + 全维自动化测试验收 — 实施计划（tasks.md）
+# 璇玑 mox · 企业级真实可运行落地 + 全维自动化测试验收 — 实施计划（tasks.md）
 
 > **依赖图（总览）**：T1 基线盘点 → T2 clippy 修复 → T3 测试缺失补齐（graph-algorithms / mox-expert / primiflow-fusion / runtime）→ T4 前端构建 + T11 Node 并行 → T5 melody2score 桌面打包级回归 → T6 T4 依赖治理 rubric → T7 SLO 规模 rubric → T8 三流程端点 E2E → T9 汇总报告 + 独立 review。
 > **优先级图例**：H = high（阻断），M = medium（推进），L = low（锦上添花）。
