@@ -1,6 +1,7 @@
 ﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
-// 项目仓库: https://gitcode.com/aikjx/mox
+// GitHub 主仓: https://github.com/aikjx/mox.git
+// GitCode 镜像: https://gitcode.com/aikjx/mox
 
 //! 示例：六维绑定 Registry（R06）+ PT-DOC 自生成（R08）端到端演示
 //!

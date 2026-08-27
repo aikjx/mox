@@ -1,6 +1,7 @@
 ﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
-// 项目仓库: https://gitcode.com/aikjx/mox
+// GitHub 主仓: https://github.com/aikjx/mox.git
+// GitCode 镜像: https://gitcode.com/aikjx/mox
 
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
@@ -215,7 +216,13 @@ async fn create_data_handler(
     let actor = req.actor.clone().unwrap_or_else(|| "sys_actor".to_string());
     let entity_code_cloned = entity_code.clone();
     let tenant_id = req.tenant_id.clone();
-    let data = req.data.clone();
+    let data = if req.data.is_empty() {
+        None
+    } else {
+        Some(serde_json::Value::Object(
+            req.data.into_iter().collect()
+        ))
+    };
     let rec = tokio::task::spawn_blocking(move || {
         orch.create_sync(&entity_code_cloned, tenant_id, data, &actor)
     })
@@ -240,7 +247,13 @@ async fn update_data_handler(
     let orch = state.orch.clone();
     let actor = req.actor.clone().unwrap_or_else(|| "sys_actor".to_string());
     let biz_id_cloned = biz_id.clone();
-    let patch = req.data.clone();
+    let patch = if req.data.is_empty() {
+        None
+    } else {
+        Some(serde_json::Value::Object(
+            req.data.into_iter().collect()
+        ))
+    };
     let rec = tokio::task::spawn_blocking(move || orch.update_sync(&biz_id_cloned, patch, &actor))
         .await
         .map_err(|e| internal_err(format!("join error: {}", e)))?

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
-// 项目仓库: https://gitcode.com/aikjx/mox
+// GitHub 主仓: https://github.com/aikjx/mox.git
+// GitCode 镜像: https://gitcode.com/aikjx/mox
 
 //! 意图识别（FR-CORE-02）：
 //! 双路 RRF 融合 = 关键词匹配（ms 级）+ 激活扩散（HC-2 method=spread d=0.85 rounds=30, 图谱可用时）

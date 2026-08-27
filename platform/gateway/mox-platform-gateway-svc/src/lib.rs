@@ -1,6 +1,7 @@
 ﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
-// 项目仓库: https://gitcode.com/aikjx/mox
+// GitHub 主仓: https://github.com/aikjx/mox.git
+// GitCode 镜像: https://gitcode.com/aikjx/mox
 
 //! MOX L1 企业级网关库（Rust 纯代码，无 Node.js 依赖）
 //!
@@ -14,6 +15,9 @@
 //! → 总计 10 + 2 = 12 个真实接口，端口 0.0.0.0:8080
 
 pub use mox_kg_service_svc::http_adapter;
+
+/// 可观测性模块（占位实现，待迁移）
+pub mod o11y;
 
 use axum::{Json, Router, routing::get};
 use serde_json::json;

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
-// 项目仓库: https://gitcode.com/aikjx/mox
+// GitHub 主仓: https://github.com/aikjx/mox.git
+// GitCode 镜像: https://gitcode.com/aikjx/mox
 
 //! HTTP 服务：把全维治理报告转为前端可视化 DTO，供 Three.js 力导向图实时联动高亮
 //!

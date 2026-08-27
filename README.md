@@ -37,15 +37,15 @@
 
 | 平台 | URL |
 |---|---|
-| **GitCode（主仓）** | <https://gitcode.com/aikjx/mox> |
-| **GitHub（镜像）** | <https://github.com/aikjx/mox.git> |
+| **GitHub（主仓）** | <https://github.com/aikjx/mox.git> |
+| **GitCode（镜像）** | <https://gitcode.com/aikjx/mox> |
 
 ```bash
 # 克隆主仓
-git clone https://gitcode.com/aikjx/mox.git infotopograph
+git clone https://github.com/aikjx/mox.git infotopograph
 
 # 或克隆镜像
-git clone https://github.com/aikjx/mox.git infotopograph
+git clone https://gitcode.com/aikjx/mox.git infotopograph
 ```
 
 ---

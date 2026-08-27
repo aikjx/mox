@@ -24,6 +24,7 @@ anyhow = { workspace = true }
 parking_lot = { workspace = true }
 hex = { workspace = true }
 sha2 = { workspace = true }
+petgraph = { workspace = true }
 
 [dev-dependencies]
 rand = "0.8"

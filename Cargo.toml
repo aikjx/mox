@@ -79,6 +79,7 @@ members = [
     "platform/domains/market/svc/mox-market-template-svc",
     "platform/domains/platform/svc/mox-platform-orchestrator-svc",
     "platform/domains/platform/svc/mox-platform-enterprise-svc",
+    "platform/domains/platform/svc/mox-content-publisher",
     "platform/domains/platform/core/mox-platform-datastore-core",
     "platform/domains/platform/core/mox-platform-orchestrator-core",
     "platform/domains/platform/core/mox-plugin-core",
@@ -204,6 +205,7 @@ mox-enterprise-core = { path = "platform/domains/platform/core/mox-enterprise-co
 mox-connector-core = { path = "platform/domains/platform/core/mox-connector-core" }
 mox-platform-integration-core = { path = "platform/domains/platform/core/mox-platform-integration-core" }
 mox-platform-enterprise-svc = { path = "platform/domains/platform/svc/mox-platform-enterprise-svc" }
+mox-content-publisher = { path = "platform/domains/platform/svc/mox-content-publisher" }
 # Service 灞?(kg)
 mox-kg-storage-svc = { path = "platform/domains/kg/svc/mox-kg-storage-svc" }
 mox-kg-service-svc = { path = "platform/domains/kg/svc/mox-kg-service-svc" }

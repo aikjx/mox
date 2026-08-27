@@ -1,6 +1,7 @@
 ﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
-// 项目仓库: https://gitcode.com/aikjx/mox
+// GitHub 主仓: https://github.com/aikjx/mox.git
+// GitCode 镜像: https://gitcode.com/aikjx/mox
 
 //! T2 回归验证（新契约版）：16 个 crate 的 CRATE_ID / ENGINE_NAME / CRATE_META 常量声明 + 唯一性契约 + UUIDv5 格式 + AIS 分层合规。
 //!

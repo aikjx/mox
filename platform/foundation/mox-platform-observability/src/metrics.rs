@@ -1,6 +1,7 @@
 ﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
-// 项目仓库: https://gitcode.com/aikjx/mox
+// GitHub 主仓: https://github.com/aikjx/mox.git
+// GitCode 镜像: https://gitcode.com/aikjx/mox
 
 //! Prometheus metrics registry and standard metric definitions.
 //!
@@ -90,6 +91,10 @@ pub struct ServiceMetrics {
     pub operations_total: IntCounterVec,
     pub operation_errors: IntCounterVec,
     pub operation_duration_seconds: prometheus::Histogram,
+    custom_counters: Arc<parking_lot::Mutex<HashMap<String, IntCounter>>>,
+}
+
+impl ServiceMetrics {
     /// Register a custom counter metric and return it for direct use.
     pub fn register_custom_counter(
         &self,
@@ -103,10 +108,6 @@ pub struct ServiceMetrics {
         counter
     }
 
-    custom_counters: Arc<parking_lot::Mutex<HashMap<String, IntCounter>>>,
-}
-
-impl ServiceMetrics {
     fn new(registry: &Registry, service: &str) -> Self {
         let operations_total = IntCounterVec::new(
             Opts::new(

@@ -956,8 +956,14 @@ class ServiceManager:
             stderr=subprocess.STDOUT,
         )
         if os.name == "nt":
-            kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+            # CREATE_NO_WINDOW(0x08000000): 有控制台但不显示窗口
+            # CREATE_NEW_PROCESS_GROUP(0x200): CTRL+C 隔离
+            # 注意：不能加 CREATE_BREAKAWAY_FROM_JOB，受限环境下会报"拒绝访问"
+            kwargs["creationflags"] = 0x08000000 | 0x00000200
         if isinstance(args, list) and args:
+            # Windows: shell=False 时相对路径需转为绝对路径，否则 WinError 2
+            if os.name == "nt" and args and not Path(args[0]).is_absolute():
+                args = [str((cwd / args[0]).resolve())] + args[1:]
             try:
                 return subprocess.Popen(args, shell=False, **kwargs)
             except FileNotFoundError as e:

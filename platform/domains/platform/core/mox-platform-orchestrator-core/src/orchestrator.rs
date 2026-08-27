@@ -7,6 +7,8 @@ use mox_platform_datastore_core::{
     AuditLog, FieldSpec, Filter, InMemoryIamRepo, InMemoryMetaRepo, SortSpec, TxManager,
     UniversalBizDAO,
 };
+use mox_platform_iam_core::IamRepository;
+use mox_platform_meta_core::MetaRepository;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
@@ -268,6 +270,14 @@ pub struct Orchestrator {
     pub metrics: Metrics,
     pub event_bus: EventBus,
     dict_cache: HashMap<String, HashMap<String, String>>,
+    /// 企业级 SQLite 后端元数据仓库（可选）
+    meta: Option<std::sync::Arc<MetaRepository>>,
+    /// 企业级通用 DAO（可选）
+    dao: Option<std::sync::Arc<UniversalBizDAO>>,
+    /// 企业级 IAM 仓库（可选）
+    iam: Option<std::sync::Arc<IamRepository>>,
+    /// 已注册的 pipeline 名称
+    pipelines: std::sync::Arc<parking_lot::Mutex<Vec<String>>>,
 }
 
 impl Orchestrator {
@@ -285,7 +295,30 @@ impl Orchestrator {
             metrics: Metrics::default(),
             event_bus: EventBus::new(),
             dict_cache,
+            meta: None,
+            dao: None,
+            iam: None,
+            pipelines: std::sync::Arc::new(parking_lot::Mutex::new(Vec::new())),
         }
+    }
+
+    /// 企业级构造函数（SQLite 后端）
+    pub fn new(meta: std::sync::Arc<MetaRepository>, dao: std::sync::Arc<UniversalBizDAO>) -> Self {
+        let mut orch = Self::enterprise_default();
+        orch.meta = Some(meta);
+        orch.dao = Some(dao);
+        orch
+    }
+
+    /// 设置 IAM 仓库
+    pub fn with_iam(mut self, iam: std::sync::Arc<IamRepository>) -> Self {
+        self.iam = Some(iam);
+        self
+    }
+
+    /// 注册 pipeline
+    pub fn register_pipeline(&mut self, name: &str) {
+        self.pipelines.lock().push(name.to_string());
     }
 
     /// 执行业务请求（10阶段Pipeline）
@@ -586,4 +619,218 @@ struct ExecOutput {
     version: Option<i64>,
     data: Option<Value>,
     total: Option<i64>,
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 企业级便捷同步方法（SQLite 后端，enterprise-svc 使用）
+// ═══════════════════════════════════════════════════════════════
+
+/// 业务记录（便捷方法返回类型）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BizRecord {
+    pub biz_id: String,
+    pub biz_code: Option<String>,
+    pub version: Option<i64>,
+    pub data: Option<Value>,
+    pub entity_code: Option<String>,
+    pub tenant_id: Option<String>,
+    pub status: Option<String>,
+}
+
+impl Orchestrator {
+    /// 确保 dao 已设置
+    fn require_dao(&self) -> anyhow::Result<&UniversalBizDAO> {
+        self.dao.as_deref().ok_or_else(|| anyhow::anyhow!("Orchestrator dao not configured"))
+    }
+
+    /// 创建业务记录（同步）
+    pub fn create_sync(
+        &self,
+        entity_code: &str,
+        tenant_id: Option<String>,
+        data: Option<Value>,
+        actor: &str,
+    ) -> anyhow::Result<BizRecord> {
+        let dao = self.require_dao()?;
+        let conn = dao.conn().lock();
+        let tenant = tenant_id.unwrap_or_else(|| "default".to_string());
+        let biz_id = uuid::Uuid::new_v4().to_string();
+        let biz_code = format!("{}-{}", entity_code, &biz_id[..8.min(biz_id.len())]);
+        let version: i64 = 1;
+        let now = chrono::Utc::now().to_rfc3339();
+        let data_json = data.map(|d| serde_json::to_string(&d).unwrap_or_default()).unwrap_or_default();
+
+        conn.execute(
+            "INSERT INTO biz_data (biz_id, tenant_id, biz_type, biz_code, version, status, data, created_by, created_at, updated_by, updated_at, is_deleted)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 0)",
+            rusqlite::params![biz_id, tenant, entity_code, biz_code, version, "active", data_json, actor, now, actor, now],
+        )?;
+
+        self.metrics.record(true, 0);
+        Ok(BizRecord {
+            biz_id,
+            biz_code: Some(biz_code),
+            version: Some(version),
+            data: Some(Value::String(data_json)),
+            entity_code: Some(entity_code.to_string()),
+            tenant_id: Some(tenant),
+            status: Some("active".to_string()),
+        })
+    }
+
+    /// 更新业务记录（同步）
+    pub fn update_sync(
+        &self,
+        biz_id: &str,
+        patch: Option<Value>,
+        actor: &str,
+    ) -> anyhow::Result<BizRecord> {
+        let dao = self.require_dao()?;
+        let conn = dao.conn().lock();
+        let now = chrono::Utc::now().to_rfc3339();
+
+        // 获取当前版本
+        let current_version: i64 = conn.query_row(
+            "SELECT version FROM biz_data WHERE biz_id = ?1 AND is_deleted = 0",
+            [biz_id],
+            |row| row.get(0),
+        )?;
+        let new_version = current_version + 1;
+
+        // 合并数据
+        if let Some(patch_value) = patch {
+            let current_data: String = conn.query_row(
+                "SELECT data FROM biz_data WHERE biz_id = ?1",
+                [biz_id],
+                |row| row.get(0),
+            ).unwrap_or_default();
+            let mut current: Map<String, Value> = serde_json::from_str(&current_data).unwrap_or_default();
+            if let Value::Object(patch_map) = patch_value {
+                for (k, v) in patch_map {
+                    current.insert(k, v);
+                }
+            }
+            let new_data = serde_json::to_string(&current).unwrap_or_default();
+            conn.execute(
+                "UPDATE biz_data SET data = ?1, version = ?2, updated_by = ?3, updated_at = ?4 WHERE biz_id = ?5",
+                rusqlite::params![new_data, new_version, actor, now, biz_id],
+            )?;
+        } else {
+            conn.execute(
+                "UPDATE biz_data SET version = ?1, updated_by = ?2, updated_at = ?3 WHERE biz_id = ?4",
+                rusqlite::params![new_version, actor, now, biz_id],
+            )?;
+        }
+
+        self.metrics.record(true, 0);
+        Ok(BizRecord {
+            biz_id: biz_id.to_string(),
+            biz_code: None,
+            version: Some(new_version),
+            data: None,
+            entity_code: None,
+            tenant_id: None,
+            status: None,
+        })
+    }
+
+    /// 删除业务记录（同步，软删除）
+    pub fn delete_sync(&self, biz_id: &str, actor: &str) -> anyhow::Result<()> {
+        let dao = self.require_dao()?;
+        let conn = dao.conn().lock();
+        let now = chrono::Utc::now().to_rfc3339();
+        conn.execute(
+            "UPDATE biz_data SET is_deleted = 1, status = 'deleted', updated_by = ?1, updated_at = ?2 WHERE biz_id = ?3",
+            rusqlite::params![actor, now, biz_id],
+        )?;
+        self.metrics.record(true, 0);
+        Ok(())
+    }
+
+    /// 获取业务记录（同步）
+    pub fn get_sync(&self, biz_id: &str) -> anyhow::Result<Option<BizRecord>> {
+        let dao = self.require_dao()?;
+        let conn = dao.conn().lock();
+        let result = conn.query_row(
+            "SELECT biz_id, biz_code, version, data, biz_type, tenant_id, status FROM biz_data WHERE biz_id = ?1 AND is_deleted = 0",
+            [biz_id],
+            |row| {
+                let data_str: String = row.get(3)?;
+                let data_val: Value = serde_json::from_str(&data_str).unwrap_or(Value::Null);
+                Ok(BizRecord {
+                    biz_id: row.get(0)?,
+                    biz_code: row.get(1)?,
+                    version: row.get(2)?,
+                    data: Some(data_val),
+                    entity_code: row.get(4)?,
+                    tenant_id: row.get(5)?,
+                    status: row.get(6)?,
+                })
+            },
+        );
+        match result {
+            Ok(rec) => Ok(Some(rec)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(anyhow::anyhow!(e)),
+        }
+    }
+
+    /// 列出业务记录（同步）
+    pub fn list_sync(&self, entity_code: &str, tenant_id: Option<&str>) -> anyhow::Result<Vec<BizRecord>> {
+        let dao = self.require_dao()?;
+        let conn = dao.conn().lock();
+        let mut sql = "SELECT biz_id, biz_code, version, data, biz_type, tenant_id, status FROM biz_data WHERE is_deleted = 0 AND biz_type = ?1".to_string();
+        let mut params: Vec<String> = vec![entity_code.to_string()];
+        if let Some(tid) = tenant_id {
+            sql.push_str(" AND tenant_id = ?2");
+            params.push(tid.to_string());
+        }
+        sql.push_str(" ORDER BY created_at DESC LIMIT 100");
+
+        let mut stmt = conn.prepare(&sql)?;
+        let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p as &dyn rusqlite::ToSql).collect();
+        let rows = stmt.query_map(param_refs.as_slice(), |row| {
+            let data_str: String = row.get(3)?;
+            let data_val: Value = serde_json::from_str(&data_str).unwrap_or(Value::Null);
+            Ok(BizRecord {
+                biz_id: row.get(0)?,
+                biz_code: row.get(1)?,
+                version: row.get(2)?,
+                data: Some(data_val),
+                entity_code: row.get(4)?,
+                tenant_id: row.get(5)?,
+                status: row.get(6)?,
+            })
+        })?;
+        let mut results = Vec::new();
+        for row in rows {
+            results.push(row?);
+        }
+        Ok(results)
+    }
+
+    /// 获取版本数量（同步）
+    pub fn version_count_sync(&self, biz_id: &str) -> usize {
+        let dao = match self.require_dao() { Ok(d) => d, Err(_) => return 0 };
+        let conn = dao.conn().lock();
+        conn.query_row(
+            "SELECT version FROM biz_data WHERE biz_id = ?1",
+            [biz_id],
+            |row| row.get::<_, i64>(0),
+        ).unwrap_or(0) as usize
+    }
+
+    /// 获取审计链（同步）
+    pub fn audit_chain_sync(&self, biz_id: &str) -> Vec<Value> {
+        // 简化实现：返回空数组，实际应从审计日志表查询
+        let _ = biz_id;
+        Vec::new()
+    }
+}
+
+// Metrics 补充 failed 方法
+impl Metrics {
+    pub fn failed(&self) -> u64 {
+        self.inner.lock().unwrap().failed
+    }
 }

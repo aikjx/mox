@@ -1,0 +1,28 @@
+[package]
+name = "mox-content-publisher"
+version = "0.1.0"
+edition = "2021"
+description = "企业级内容多平台发布服务 - 基于Connector Framework"
+
+[dependencies]
+# 平台核心
+mox-connector-core = { workspace = true }
+mox-platform-integration-core = { workspace = true }
+mox-platform-foundation = { workspace = true }
+
+# Web框架
+axum = { workspace = true }
+
+# 异步
+async-trait = { workspace = true }
+tokio = { workspace = true }
+
+# 序列化
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# 工具
+uuid = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+parking_lot = { workspace = true }

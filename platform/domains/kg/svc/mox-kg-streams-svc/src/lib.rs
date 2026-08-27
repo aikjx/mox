@@ -1,6 +1,7 @@
 ﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
-// 项目仓库: https://gitcode.com/aikjx/mox
+// GitHub 主仓: https://github.com/aikjx/mox.git
+// GitCode 镜像: https://gitcode.com/aikjx/mox
 
 //! MOX KG Streams Service
 //!
@@ -60,6 +61,7 @@ pub trait EventHandler: Send + Sync {
 }
 
 /// Windowed event processor: collects events within time windows and processes them.
+#[derive(Clone)]
 pub struct WindowedProcessor {
     pub name: String,
     pub window_size: Duration,

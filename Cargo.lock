@@ -2987,6 +2987,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-content-publisher"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "axum",
+ "chrono",
+ "mox-connector-core",
+ "mox-platform-foundation",
+ "mox-platform-integration-core",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "mox-data-api"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -3438,8 +3456,11 @@ version = "3.0.0-ai-powered"
 dependencies = [
  "anyhow",
  "parking_lot",
+ "petgraph",
+ "rand 0.8.7",
  "serde",
  "serde_json",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -3475,12 +3496,15 @@ name = "mox-kg-streams-svc"
 version = "3.0.0-ai-powered"
 dependencies = [
  "anyhow",
+ "chrono",
  "mox-cloud-foundation",
  "mox-kg-storage-svc",
  "parking_lot",
  "serde",
  "serde_json",
+ "thiserror 1.0.69",
  "tokio",
+ "uuid",
 ]
 
 [[package]]
@@ -3705,6 +3729,8 @@ dependencies = [
  "chrono",
  "dashmap 5.5.3",
  "mox-platform-datastore-core",
+ "mox-platform-iam-core",
+ "mox-platform-meta-core",
  "parking_lot",
  "rusqlite",
  "serde",
@@ -3804,6 +3830,7 @@ dependencies = [
  "mox-kg-fusion-svc",
  "mox-platform-gateway-svc",
  "parking_lot",
+ "petgraph",
  "rand 0.8.7",
  "serde",
  "serde_json",

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
-// 项目仓库: https://gitcode.com/aikjx/mox
+// GitHub 主仓: https://github.com/aikjx/mox.git
+// GitCode 镜像: https://gitcode.com/aikjx/mox
 
 //! 多场景 Benchmark：用真实 `mox_optimize` 引擎跑政务/数据/财务/客服等场景，
 //! 量化「加速比 / 剪伪依赖 / 冲突自愈 / LLM 调用削减」——用户原方案核心收益的可复现证据。

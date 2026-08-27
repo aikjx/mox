@@ -228,26 +228,173 @@ pageRank(relFilter?)                     // 复用 graphEngine.computePersonaliz
 
 ## 附录 A · 代码锚点唯一索引（按文件路径排序，正文已只标一次，此处备查）
 
-1. [config.js 存储/云盘默认值](file:///d:/a10/aikjx/gitcode/infotopograph/platform/backend-node/src/config.js) —— §3.1 / §3.3
-2. [db.js ous.db WAL schema](file:///d:/a10/aikjx/gitcode/infotopograph/platform/backend-node/src/db.js#L11-L43) —— §3.1 / §5.2
-3. [storage/index.js Provider 抽象+SQLiteProvider](file:///d:/a10/aikjx/gitcode/infotopograph/platform/backend-node/src/storage/index.js#L5-L29) —— §3.1 / §5.2 / §5.4
-4. [chunk-backend.js Key 同构（FS L62 ↔ S3 L164）](file:///d:/a10/aikjx/gitcode/infotopograph/platform/backend-node/src/storage/chunk-backend.js#L62) —— §3.4（唯一处）
-5. [file-store.js 索引 / 引用计数 GC / 秒级版本恢复](file:///d:/a10/aikjx/gitcode/infotopograph/platform/backend-node/src/file-store.js#L111) —— §3.5
-6. [expert-alliance-engine.js 原子写 JSON 正确实现](file:///d:/a10/aikjx/gitcode/infotopograph/platform/backend-node/src/expert-alliance-engine.js#L40-L48) —— §3.6（§3.6 要抄的正确写法）
-7. [ai-engine.js analyzeGraph + pageRank 复用实现](file:///d:/a10/aikjx/gitcode/infotopograph/platform/backend-node/src/ai-engine.js#L189-L215) —— §5.4
+> **2026-08-27 更新**：原 `backend-node/src/*.js` 7 个锚点（A1-A7）对应的 Node.js 目录已退役清空，现归档为**历史参考**。所有新开发必须使用下方 Rust 代码锚点（A8-A19）。
 
-## 附录 B · 子规范索引（正文不展开，避免重复）
+### A1-A7（历史参考 · backend-node 已清空，Git 历史可追溯）
 
-| 编号 | 子规范路径 | 摘要 | 正文引用章节 |
-|---|---|---|---|
-| B-01 | `deploy/docs/FS-S3-full-lifecycle-ops-guide.md` | 图谱 5 步 / 云盘 4 步 / 9 日上云节奏 / 回滚 / F1-F14 Runbook | §2.3 / §4.3 |
-| B-02 | `deploy/docs/storage-cloud-switch-sop.md` | 图谱切换 API 详解 + dualWrite 启动/关闭/空读回填 | §3.1 / §4.3 |
-| B-03 | `deploy/docs/filesystem-backend-structure-sop.md` | FS DATA_DIR 全景目录树 + 同构规则说明 + Key 自检脚本 | §3.4 |
-| B-04 | `deploy/docs/ha-capacity-tco.md` | 多活、容量规划、FinOps ¥0.035/GB·月 基线计算过程 | §3.2 / §6 |
-| B-05 | `deploy/docs/xinchuang-matrix.md` | 信创适配矩阵（国密 SM2/SM4/国产库兼容列表） | §2.1 L5 |
-| B-06 | `deploy/docs/ops-manual.md` | 日常运维操作手册（巡检 / 备份 / 恢复） | §6 L1 |
-| B-07 | `deploy/docs/trace-8stages-dashboard.json` | OTel 链路看板的 Grafana Dashboard JSON 模板 | §6 L1 |
+1. `platform/backend-node/src/config.js` 存储/云盘默认值 —— §3.1 / §3.3（历史）
+2. `platform/backend-node/src/db.js` L11-L43 ous.db WAL schema —— §3.1 / §5.2（历史）
+3. `platform/backend-node/src/storage/index.js` L5-L29 Provider 抽象 —— §3.1 / §5.2 / §5.4（历史）
+4. `platform/backend-node/src/storage/chunk-backend.js` L62 Key 同构 FS↔S3 —— §3.4（历史）
+5. `platform/backend-node/src/file-store.js` L111 索引+引用计数 GC —— §3.5（历史）
+6. `platform/backend-node/src/expert-alliance-engine.js` L40-L48 原子写 —— §3.6（历史）
+7. `platform/backend-node/src/ai-engine.js` L189-L215 图谱+pagerank —— §5.4（历史）
+
+### A8-A19（当前生产真相源 · 纯 Rust 6 层架构）
+
+8. [Gateway 主入口 build_gateway_router](file:///d:/a10/aikjx/gitcode/infotopograph/platform/gateway/mox-platform-gateway-svc/src/lib.rs#L23-L51) —— **L1 网关层唯一路由入口**，12 端点（/health · 6 KG · 4 AI · /api/v1/status）
+9. [Gateway CLI 入口 + 端口绑定](file:///d:/a10/aikjx/gitcode/infotopograph/platform/gateway/mox-platform-gateway-svc/src/main.rs#L16-L66) —— 默认 `0.0.0.0:8080`，替换 3000/3001/3002
+10. [31 域模块化路由注册表 routes.rs](file:///d:/a10/aikjx/gitcode/infotopograph/platform/gateway/mox-platform-gateway-svc/src/routes.rs) —— 每域 `(prefix, name, status, owner)` 四要素
+11. [KG/AI HTTP 适配层 10 接口](file:///d:/a10/aikjx/gitcode/infotopograph/platform/domains/kg/svc/mox-kg-service-svc/src/http_adapter.rs) —— 6 KG + 4 AI 业务响应
+12. [KG 算法核心 11 项数学红线实现](file:///d:/a10/aikjx/gitcode/infotopograph/platform/domains/kg/core/mox-kg-algo-core/src/lib.rs) —— Brandes/harmonic/CNM/PageRank 18/18 tests
+13. [框架统一错误 + axum IntoResponse](file:///d:/a10/aikjx/gitcode/infotopograph/platform/framework/src/error.rs) —— 任何层抛出 FrameworkError → 统一 JSON 响应
+14. [架构守护测试 7 条不变量](file:///d:/a10/aikjx/gitcode/infotopograph/platform/arch-test/src/lib.rs#L157-L427) —— 分层依赖/跨域 API/循环依赖/API 纯净/架构-数据分离/硬编码路径/插件三方分离
+15. [图谱实体表 graph_edges DDL](file:///d:/a10/aikjx/gitcode/infotopograph/deploy/sql/mox-step1-graph-edges.sql) —— SQLite/PG 双方言幂等，4 索引+tombstone
+16. [云盘 FS Layout + Reed-Solomon Volume](file:///d:/a10/aikjx/gitcode/infotopograph/platform/domains/cloud/svc/mox-cloud-volume-svc/src/fs_layout.rs) —— ADR-001 §3.4 两级散列 SHA-256 实现
+17. [Cloud S3 Server S3 兼容协议层](file:///d:/a10/aikjx/gitcode/infotopograph/platform/domains/cloud/svc/mox-cloud-s3-svc/src/s3_server.rs) —— MinIO/AWS SDK 零改直接访问
+18. [Enterprise JWT 签发 + 动态实体 CRUD](file:///d:/a10/aikjx/gitcode/infotopograph/platform/domains/platform/svc/mox-platform-enterprise-svc/) —— 3002 端口 JWT 登录+审计链+hash 链完整性
+19. [AI 意图识别 classify_intent + 专家打分](file:///d:/a10/aikjx/gitcode/infotopograph/platform/domains/ai/core/mox-ai-intent-core/src/lib.rs#L305-L410) —— 激活扩散 A5 算法 + IntentPattern/ExpertCandidate 类型
 
 ---
 
-> **文档生效声明：** 本总纲为 MOX v2.0 唯一企业级规范。任何与子规范冲突的地方，以本总纲为准；任何概念重复定义的地方，以「本总纲中对应编号章节」的定义为唯一真源。严禁新增不在 §5.3 Schema 里的 entity_type / rel，违者 CR 直接打回。
+## 附录 B · 子规范索引（正文不展开，once-defined 原则）
+
+> **2026-08-27 更新**：B-02/B-03 两份子手册内容已完整合并入 B-01（v2.0.0），并执行物理删除避免概念漂移。任何引用使用「详见 B-01 §x」格式。
+
+| 编号 | 子规范路径 | 摘要 | 正文引用章节 |
+|---|---|---|---|
+| B-01 | `deploy/docs/FS-S3-full-lifecycle-ops-guide.md` | **唯一的**图谱切换 + 云盘切换 SOP（5+4 步·9 日节奏·回滚·F1-F14 Runbook）【合并原 B-02/B-03】 | §2.3 / §3.1 / §3.4 / §4.3 |
+| B-04 | `deploy/docs/ha-capacity-tco.md` | 多活 HA 拓扑 · 容量规划公式 · FinOps ¥0.035/GB·月 基线计算过程 | §3.2 / §6 |
+| B-05 | `deploy/docs/xinchuang-matrix.md` | 信创适配矩阵（国密 SM2/SM3/SM4 · 国产库 OS/DB/CPU 兼容列表） | §2.1 L5 |
+| B-06 | `deploy/docs/ops-manual.md` | 日常运维操作手册（巡检脚本 / 备份 / 恢复 / 变更窗口） | §6 L1 |
+| B-07 | `deploy/docs/trace-8stages-dashboard.json` | OTel 链路看板 Grafana Dashboard JSON 模板（8 阶段端到端） | §6 L1 |
+| B-08 | `deploy/docs/MOX-Fullstack-Auto-Delivery-Plan-v2.0.md` | **唯一的** 12 周全自动开发交付计划（W1-W12 Gate + 回滚机制） | §8 |
+| B-09 | `deploy/docs/MOX-Architecture-Decision-Records-v1.0.md` | **唯一的**架构决策记录（ADR-001 到 ADR-006 + 待办列表） | §2.1 / §2.2 |
+| B-10 | `deploy/docs/MOX-NodeToRust-Migration-Handover-v1.0.md` | **唯一的** Node→Rust 迁移覆盖矩阵 + P0-P3 缺口 20 项 + 证据链 | 本附录 C/D/E |
+| B-11 | `deploy/docs/DOCUMENT-INDEX.md` | 文档索引总图（deploy/docs 11 份文档 + 45 份 crate README 索引） | 阅读入口 |
+
+---
+
+## 附录 C · Rust Gateway 8080 全面接管说明（2026-08-27 生效）
+
+### C.1 端口对照表（单二进制收敛）
+
+| 端口 | 原承载技术 | 原服务 | 新地址（统一入口） | 状态 |
+|---|---|---|---|---|
+| 3000 | Node.js HTTP | backend-node 主 HTTP（32 路由 + 静态） | `http://0.0.0.0:8080` Gateway | **RETIRED 已停用** |
+| 3001 | Rust (旧) | 原 operator HTTP | `http://0.0.0.0:8080` Gateway | **RETIRED 已停用** |
+| 3002 | Rust (过渡) | mox-platform-enterprise-svc（IAM/动态实体 CRUD/JWT） | 保留，Week 2 前合并入 8080（ADR-007） | **TEMP 过渡端口** |
+| **8080** | **Rust axum（新）** | **mox-server 单二进制** · 6 层架构唯一对外入口 | **8080** | **ACTIVE 生产入口** |
+
+### C.2 当前 12 个已就绪接口（12/12 冒烟测试 2026-08-27 通过）
+
+```http
+### L0 通用
+GET  /health                                    → ok=true, gateway=rust-axum, bind=0.0.0.0:8080
+GET  /api/v1/status                             → domains_ready, stub_count=28, endpoints_ready=12
+
+### L2 KG（6）
+GET  /kg/v1/stats                               → 图谱统计（nodes/edges/density+文案）
+GET  /kg/v1/neighborhood?center=&depth=&limit=  → 邻域子图 Cytoscape 兼容
+GET  /kg/v1/path?src=&dst=&k=                   → K 路径查找
+GET  /kg/v1/shortest-path?src=&dst=             → 最短路径（Dijkstra）
+GET  /kg/v1/centrality?method=&top=             → betweenness Brandes / harmonic closeness / pagerank
+GET  /kg/v1/communities?method=cnm              → CNM 模块度贪心凝聚社区
+
+### L3 AI Engine（4）
+POST /ai/engine/process      + JSON body        → 自动意图识别→能力路由
+POST /ai/engine/analyze      + JSON body        → 显式能力执行
+GET  /ai/engine/capabilities                    → 能力矩阵自描述
+GET  /ai/engine/metrics                         → 成功率/降级率/延迟 P50/P99
+```
+
+### C.3 启动命令（唯一入口）
+
+```bash
+cargo run -p mox-platform-gateway-svc
+# 或自定义：
+cargo run -p mox-platform-gateway-svc -- --bind 127.0.0.1 --port 9000
+```
+
+### C.4 31 域状态分布（routes.rs 注册表）
+
+| 状态 | 域数 | 代表 |
+|---|---|---|
+| READY | 2 域 | kg/v1, ai/engine |
+| STUB（占位，返回含 `note` 的结构化 JSON） | 28 域 | chat, kb, mcp, cloud, atlas, auto-dev, tasks, optimizer, security, ... |
+| RETIRING | 1 域 | backend-node（已停用） |
+
+---
+
+## 附录 D · Node.js → Rust 迁移覆盖矩阵（2026-08-27 快照）
+
+详细完整 32 模块逐行矩阵见 **B-10** `MOX-NodeToRust-Migration-Handover-v1.0.md` §2。此处给出 once-defined 唯一的顶层汇总（不复制 32 行避免重复）：
+
+```
+总加权覆盖度：约 23%
+  就绪（80-100%）：   3 / 32 （KG · AI · Gateway）
+  部分（30-79%）：  13 / 32 （Cloud 55% / Enterprise 35% / Flow 50% / Atlas-AutoDev 32% / Expert 38% / Data 48%）
+  待迁移（0-29%）：  16 / 32 （Chat/KB/MCP/WebSearch/Artifacts/RBAC/Optimizer/Modules/...）
+```
+
+按 8 大域加权汇总表：
+
+| 域 | 覆盖度 | 核心 ready 子项 | 最大缺口 |
+|---|---|---|---|
+| KG 知识图谱 | 85% | algo-core 18/18 tests · HTTP 6/6 | demo→真实数据桥接（P0-2） |
+| AI 智能引擎 | 60% | 4 路由 HTTP OK · IntentPattern | LLM provider 路由上线 |
+| Cloud 云存储 | 55% | S3/FS/Volume 4 crate 就绪（含 tests） | HTTP 路由挂 Gateway |
+| Flow/Workflow | 50% | 6 个 core-svc crate 建立 | 全 HTTP 路由 |
+| Expert Alliance | 38% | mox-ai-expert-svc 大模块 70% 实现 | http_adapter 20+ 路由 |
+| Atlas + AutoDev | 32% | orchestrator + operator core | P0-P12 管道 HTTP |
+| Enterprise 底座 | 35% | 3002 动态实体+JWT 通过 | RBAC + 多租户/FinOps |
+| 其他 17 路由 | 15% | crate 部分空壳 | 新建对应 Rust 模块 |
+
+---
+
+## 附录 E · 功能缺口 P0-P3 待补清单（20 项唯一真源）
+
+详细每项的「影响/建议目标/验收标准」见 **B-10** `MOX-NodeToRust-Migration-Handover-v1.0.md` §3-§4。此处只列出排期（不重复细节）：
+
+| 优先级 | 项数 | 代表条目 | 完成窗口 |
+|---|---|---|---|
+| **P0**（阻断生产） | 3 项 | P0-1 RBAC AuthLayer · P0-2 KG 实桥接 · P0-3 3002→8080 合并 | **Week 1 - Week 2** |
+| **P1**（关键业务） | 5 项 | P1-1 Cloud HTTP · P1-2 Chat · P1-3 KB · P1-4 Expert HTTP · P1-5 Orchestrator P0-P12 | **Week 3 - Week 4** |
+| **P2**（重要可降级） | 7 项 | Flow WASM · CEM 算法 · MCP Bridge · Audit Log · Marketplace · Data ETL HTTP · backend-rust 迁入（ADR-002 3 月窗口） | **Month 2 - Month 3** |
+| **P3**（按需/半年内） | 4 项 | Web Search · Artifacts · Plugin Admin · Engine Kernel/Universe 迁移 | **Q4 2026** |
+| **合计** | **19 项**（不含 P3-4 子项） | | |
+
+---
+
+## 附录 F · 架构去重决策与演进路线（2026-08-27 生效）
+
+### F.1 三套历史后端 → 唯一 6 层架构的去重结论
+
+| 项目 | 当前状态 | 去重决策（ADR-001 + ADR-002） | 完成日期 |
+|---|---|---|---|
+| `platform/backend-node/` | 已清空（0 files / 0 dirs），残留空壳（句柄锁） | **立即退役** · Git 历史保留 30 天审计 · 数据迁到 `projects/` · 空壳重启后删除 | 2026-08-27 内容已删 |
+| `platform/backend-rust/` | 独立 workspace · Q/R/S/T 4 模块成熟 + istio 配置 | **不硬删 · 逐模块迁入 6 层架构**（详见 ADR-002 迁入映射表），3 个月窗口，2026-11-27 前未迁出即判定不需要后整删 | 2026-11-27（3 个月） |
+| `platform/{gateway,domains,foundation,framework,shared,scripts,arch-test}` | ACTIVE · 60+ crates · 12 接口冒烟通过 | **生产唯一真路径** · 所有新开发必须落在 6 层定位中 · `arch-test` 守护测试 CI 必须过 | **ACTIVE**（立即） |
+
+### F.2 文档去重结论（ADR-006 once-defined）
+
+| 文档 | 状态 | 决策 | 生效日期 |
+|---|---|---|---|
+| `filesystem-backend-structure-sop.md` | 存在·重复 | **已物理删除**。内容完整合并到 `FS-S3-full-lifecycle-ops-guide.md` v2.0.0 §1-§2 | 2026-08-27 |
+| `storage-cloud-switch-sop.md` | 存在·重复 | **已物理删除**。内容完整合并到 `FS-S3-full-lifecycle-ops-guide.md` v2.0.0 §3-§10 | 2026-08-27 |
+| backend-rust/*.txt（21 个构建日志） | 存在·垃圾 | **已清理**（159,969 bytes 临时输出） | 2026-08-27 |
+| 45 份 crate 内 README/DESIGN/tasks.md | 存在·crate 自描述 | **保留**。Rust crate README 不重复定义全局概念，仅描述 crate API；全局规则引用本总纲/ADR 节号；索引入口见 **B-11 DOCUMENT-INDEX.md** | 保留 |
+
+### F.3 架构演进路线图（唯一排期）
+
+```
+2026 Q3 (现在)  ████████  单二进制 Gateway 8080 + Node 退役 + 文档归一化 (今日完成)
+2026 Q3 W3-W4  ████████  P0 三项 + P1 五项 = 企业可用生产版本
+2026 Q4        ████████  P2 全部 + backend-rust 4 模块迁入 + ADR-007~010 决策落地
+2027 Q1        ████████  P3 全部 + AIS 6 层 31 域 100% Ready (Stubs=0)
+2027 Q2+       ████████  T2 分库分存上线 → T3 多 Region 双活 (总纲 §8)
+```
+
+---
+
+> **文档生效声明（2026-08-27 更新）：** 本总纲为 MOX v2.0 唯一企业级规范。任何与子规范（附录 B 11 份）冲突的地方，以本总纲为准；任何概念重复定义的地方，以「本总纲中对应编号章节」的定义为唯一真源。严禁新增不在 §5.3 Schema 里的 entity_type / rel，违者 CR 直接打回。严禁绕过 6 层架构新增独立监听端口的后端服务（ADR-004 单二进制原则），违者 CR 直接打回。

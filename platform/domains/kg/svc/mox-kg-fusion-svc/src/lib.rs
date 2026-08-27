@@ -1,6 +1,7 @@
 ﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
-// 项目仓库: https://gitcode.com/aikjx/mox
+// GitHub 主仓: https://github.com/aikjx/mox.git
+// GitCode 镜像: https://gitcode.com/aikjx/mox
 
 //! MOX KG Fusion Service
 //!
@@ -155,15 +156,15 @@ impl EntityAligner {
     }
 
     /// Get canonical ID for an entity.
-    pub fn canonical(&self, id: &str) -> &str {
-        self.aliases.get(id).map(|s| s.as_str()).unwrap_or(id)
+    pub fn canonical(&self, id: &str) -> String {
+        self.aliases.get(id).cloned().unwrap_or_else(|| id.to_string())
     }
 
     /// Align a result set: map all IDs to canonical, merge duplicates.
     pub fn align(&self, results: Vec<SourceResult>) -> Vec<SourceResult> {
         let mut merged: HashMap<String, SourceResult> = HashMap::new();
         for mut r in results {
-            let canon = self.canonical(&r.id).to_string();
+            let canon = self.canonical(&r.id);
             r.id = canon.clone();
             if let Some(existing) = merged.get_mut(&canon) {
                 existing.score = existing.score.max(r.score);

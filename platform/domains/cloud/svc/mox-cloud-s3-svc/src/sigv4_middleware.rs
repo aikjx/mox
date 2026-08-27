@@ -1,6 +1,7 @@
 ﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
-// 项目仓库: https://gitcode.com/aikjx/mox
+// GitHub 主仓: https://github.com/aikjx/mox.git
+// GitCode 镜像: https://gitcode.com/aikjx/mox
 
 //! SigV4 鉴权中间件：对每个请求验证 Authorization: AWS4-HMAC-SHA256 ... 签名。
 //! 调用 mox_data_standards_core::sigv4::sigv4_auth_header 生成预期签名再比对。

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
-// 项目仓库: https://gitcode.com/aikjx/mox
+// GitHub 主仓: https://github.com/aikjx/mox.git
+// GitCode 镜像: https://gitcode.com/aikjx/mox
 
 //! MOX Data Plane Service
 //!
@@ -11,6 +12,11 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use thiserror::Error;
+
+pub mod fshc;
+pub mod listeners;
+pub mod mountpath;
+pub mod multipart;
 
 #[derive(Debug, Error)]
 pub enum DataPlaneError {

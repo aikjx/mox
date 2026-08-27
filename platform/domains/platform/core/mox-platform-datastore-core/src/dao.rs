@@ -45,6 +45,11 @@ impl UniversalBizDAO {
         Self { conn }
     }
 
+    /// 获取底层数据库连接（企业级编排器便捷方法使用）
+    pub fn conn(&self) -> &Arc<Mutex<Connection>> {
+        &self.conn
+    }
+
     /// 初始化数据库 schema（biz_data 表 + 扩展槽位列 + 索引）
     pub fn init_schema(&self) -> anyhow::Result<()> {
         let conn = self.conn.lock();

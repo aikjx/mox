@@ -1,6 +1,7 @@
-// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
-// 项目仓库: https://gitcode.com/aikjx/mox
+// GitHub 主仓: https://github.com/aikjx/mox.git
+// GitCode 镜像: https://gitcode.com/aikjx/mox
 
 //! MOX Platform Orchestrator Core
 //!
@@ -20,7 +21,7 @@ use uuid::Uuid;
 /// 企业级业务编排器（10阶段Pipeline + 指标 + 事件总线）
 pub mod orchestrator;
 pub use orchestrator::{
-    BizAction, BusinessEvent, BusinessRequest, BusinessResponse, EventBus, Metrics,
+    BizAction, BizRecord, BusinessEvent, BusinessRequest, BusinessResponse, EventBus, Metrics,
     Orchestrator, PipelineStage, StageStatus,
 };
 

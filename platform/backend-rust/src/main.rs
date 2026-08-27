@@ -1,6 +1,7 @@
-// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
-// 项目仓库: https://gitcode.com/aikjx/mox
+// GitHub 主仓: https://github.com/aikjx/mox.git
+// GitCode 镜像: https://gitcode.com/aikjx/mox
 
 //! MOX Enterprise · API 网关入口
 //!
@@ -41,7 +42,7 @@ async fn main() -> anyhow::Result<()> {
     let app = Router::new()
         .route("/health", any(health_handler))
         .route("/ready", any(ready_handler))
-        .route("/{*path}", any(gateway.proxy_handler()));
+        .fallback(any(gateway.proxy_handler()));
 
     // 启动服务
     let addr: SocketAddr = gateway.listen_addr().parse()?;

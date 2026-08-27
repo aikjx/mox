@@ -8,6 +8,8 @@ description = "MOX 平台业务编排核心：10阶段 Pipeline + BizModule行�
 
 [dependencies]
 mox-platform-datastore-core = { path = "../mox-platform-datastore-core" }
+mox-platform-meta-core = { path = "../mox-platform-meta-core" }
+mox-platform-iam-core = { path = "../mox-platform-iam-core" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 dashmap = "5.5"

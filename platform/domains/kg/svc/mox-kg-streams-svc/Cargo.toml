@@ -14,7 +14,12 @@ serde_json = { workspace = true }
 parking_lot = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }
+thiserror = { workspace = true }
+uuid = { version = "1.0", features = ["v4", "v7", "serde"] }
+chrono = { workspace = true }
 
-[[bin]]
-name = "cdc_100k_harness"
-path = "src/bin/cdc_100k_harness.rs"
+# [[bin]]
+# name = "cdc_100k_harness"
+# path = "src/bin/cdc_100k_harness.rs"
+# 注意：此 harness 依赖 FlinkCdcSource/IdempotentWriter/cdc_source 等待实现类型，
+# 暂不编译，待相关模块实现后启用。
