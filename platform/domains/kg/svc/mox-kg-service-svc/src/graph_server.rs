@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! GraphServer：R3 Graph Service 对外入口；内嵌 StorageEngine trait，
 //! 与 T7 storage_server 的 7 API 保持同签名。
 

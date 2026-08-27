@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! TR-6.1: 四端点 HTTP=200 且 schema 校验通过
 //!
 //! 策略：在同一测试进程内，启动 axum 服务器挂载 ai_engine_routes，

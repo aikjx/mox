@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Network 算子：网络与代理（ping / dns_lookup / traffic_usage / netstat / disable_iface / enable_iface）
 //!
 //! 跨平台回退链：

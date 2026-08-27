@@ -1,0 +1,12 @@
+[package]
+name = "mox-platform-paths"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "MOX Platform Paths: centralized path management ensuring architecture-code / data-config / third-party-plugins strict separation"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }

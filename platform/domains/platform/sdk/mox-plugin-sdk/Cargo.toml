@@ -1,0 +1,14 @@
+[package]
+name = "mox-plugin-sdk"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Mox Plugin SDK — development toolkit for building WASM plugins (host API bindings, manifest generator, plugin macros, test utilities)"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
+uuid = { workspace = true }

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # AI Gateway —— 组件化、可插拔的 LLM Provider 抽象层
 //!
 //! 设计目标（贴合企业级诉求）：

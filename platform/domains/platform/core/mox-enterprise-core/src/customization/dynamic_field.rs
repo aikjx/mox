@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 动态字段 — 政企自定义业务字段扩展
 //!
 //! 允许政企在不修改代码的情况下，为业务实体添加自定义字段。

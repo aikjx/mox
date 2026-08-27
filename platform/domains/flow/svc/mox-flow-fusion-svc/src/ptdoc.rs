@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! PT-Primi 标准文档自生成（规范缺口 R08）
 //!
 //! 把平台运行累积的事实源（六维绑定注册表 + 融合统一图 + 全局闸门）自动生成

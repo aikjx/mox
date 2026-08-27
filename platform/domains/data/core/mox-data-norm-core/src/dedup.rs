@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 去重：ahash 指纹 + 二级属性比对。
 //!
 //! - 指纹 = ahash64(id) XOR ahash64(主要属性 keys 拼接)；

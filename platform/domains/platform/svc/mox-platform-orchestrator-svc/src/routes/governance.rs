@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # 治理台 API 路由
 //!
 //! 挂载 `/api/governance/*` 下的全部 REST + WebSocket 端点。

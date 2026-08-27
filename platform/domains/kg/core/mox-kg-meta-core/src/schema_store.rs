@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! SchemaStore：Space / Tag / EdgeType 定义。
 //!
 //! - Space：space_id(String) + partition_num(u16，默认 16，必须 2^n 且 ≥4）+ replica_factor(u8≤3)

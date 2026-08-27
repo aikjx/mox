@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! HTTP / WebSocket 运行时（接入层 + 鉴权中间件 + 实时通信 + 企业级加固）
 use std::collections::HashMap;
 use std::sync::Arc;

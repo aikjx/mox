@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! MultipartUpload 控制器：Create → UploadPart → Complete → Abort。
 //! Complete 时使用 mox_data_standards_core::etag_crc32c::etag_multipart 算最终 ETag。
 

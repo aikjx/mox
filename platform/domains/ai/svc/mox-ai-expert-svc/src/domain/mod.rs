@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 治理领域对外抽象 trait（DIP 层）。
 //!
 //! 下游（hermes / business-catalog / mox-expert L3 服务）仅依赖本文件 trait 抽象，

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 弹性容错 — 限流/熔断/降级/重试/超时/舱壁，零配置默认启用
 
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};

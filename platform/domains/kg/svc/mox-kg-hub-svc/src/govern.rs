@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 治理层：全域偏离检测 + 三重闸门（守恒 / 六维零孤儿 / GR-STD 合规）。
 //!
 //! 复用 `primiflow-fusion` 已认证的 `full_gate()`（R07 守恒残差、A4 零孤儿、GR-STD 8 闸门），

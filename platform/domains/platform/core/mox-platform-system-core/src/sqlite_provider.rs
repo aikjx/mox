@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Mox-System 独占的 rusqlite PersistenceProvider 实现（L5-Infra 层）
 //!
 //! 本文件是仓库中**唯一**被允许直接 `use rusqlite` 的 provider 实现；

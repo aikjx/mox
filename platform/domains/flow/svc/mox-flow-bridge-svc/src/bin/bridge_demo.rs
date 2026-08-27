@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! bridge-demo —— 模拟「真实 Hermes 多轮会话」走完整 bridge 闭环并出报告。
 //!
 //! 闭环：Hermes 工具调用 → bridge 录制 FlowGraph → 后台 ExpertConsultant trait 调用（璇玑引擎）

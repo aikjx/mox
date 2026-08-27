@@ -3524,11 +3524,13 @@ version = "1.0.0"
 dependencies = [
  "anyhow",
  "chrono",
+ "hex",
  "parking_lot",
  "rusqlite",
  "sea-query",
  "serde",
  "serde_json",
+ "sha2",
  "thiserror 1.0.69",
  "tracing",
  "uuid",
@@ -3614,6 +3616,29 @@ dependencies = [
  "serde_json",
  "sha2",
  "thiserror 1.0.69",
+ "uuid",
+]
+
+[[package]]
+name = "mox-platform-integration-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "futures",
+ "mox-ai-core",
+ "mox-connector-core",
+ "mox-enterprise-core",
+ "mox-framework",
+ "mox-plugin-core",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
  "uuid",
 ]
 
@@ -3733,6 +3758,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-platform-paths"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "mox-platform-system-core"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -3785,9 +3819,12 @@ dependencies = [
  "async-trait",
  "chrono",
  "flume",
+ "hex",
  "parking_lot",
+ "reqwest",
  "serde",
  "serde_json",
+ "sha2",
  "thiserror 1.0.69",
  "tokio",
  "tracing",
@@ -3795,6 +3832,17 @@ dependencies = [
  "walkdir",
  "wasmer",
  "wasmer-compiler-cranelift",
+]
+
+[[package]]
+name = "mox-plugin-sdk"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "uuid",
 ]
 
 [[package]]

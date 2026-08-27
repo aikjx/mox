@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 认证授权 — JWT + RBAC + API Key，零配置默认启用
 
 use axum::{extract::Request, http::StatusCode, middleware::Next, response::Response};

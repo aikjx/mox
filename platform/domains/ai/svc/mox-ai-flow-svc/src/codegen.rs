@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 流程图 ⇄ 代码 双向映射
 //!
 //! 正向：优化后的 FlowGraph → 分层 Python 工程（调度层 / 业务层 / 工具层 / 异常层）

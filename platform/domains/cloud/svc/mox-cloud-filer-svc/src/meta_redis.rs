@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Redis Mock 后端（假 SET / GET / EXPIRE / SMEMBERS）。
 //!
 //! 键空间约定：

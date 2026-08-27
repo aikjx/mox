@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 业务全景目录 CLI：把系统所有业务建模为流程图 + 六维关系网，并演示"使用中不断优化"。
 //!
 //! DIP 版：本文件内不再直接引用 mox_expert 的 GovernanceReport/algo/gate 等 concrete 字段。

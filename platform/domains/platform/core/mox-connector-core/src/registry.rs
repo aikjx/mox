@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 连接器注册表 — 管理所有已注册的连接器
 
 use crate::traits::{Connector, ConnectorError, ConnectorResult, ConnectorType};

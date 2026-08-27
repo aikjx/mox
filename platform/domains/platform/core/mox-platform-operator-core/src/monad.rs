@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # 单子模式实现（monad）
 //!
 //! 实现公理6：扩展性闭包。使用单子模式封装副作用，支持算子的纯函数式组合。

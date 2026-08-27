@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! MOX Enterprise · Rust 后端库
 //!
 //! 千亿亿级企业级分布式平台的 Rust 实现，覆盖：

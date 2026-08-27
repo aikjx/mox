@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! nGQL Parser：解析 60 条标准 nGQL 语句为 PlanNode。
 //!
 //! 简易分词 + 关键字匹配。每条语句对应一个 PlanNode 变体，便于 Optimizer/Executor 分派。

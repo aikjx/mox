@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Rust 侧 7 条核心算法对账导出工具（对应 Node 侧 ai-flow-graph.js 的 7 算法 + 8 个标准数据集 T1..T8）
 //!
 //! 用法：

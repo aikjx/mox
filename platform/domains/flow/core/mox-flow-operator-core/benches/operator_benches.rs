@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! operator-core 性能基线（关图骨架定义 §6 P4：benches 基线）。
 //!
 //! `Cargo.toml` 早已声明 `[[bench]] operator_benches`，但基准文件缺失，

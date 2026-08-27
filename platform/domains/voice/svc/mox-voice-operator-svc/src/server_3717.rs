@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # voice_proxy Rust 版 3717 服务（Feature = server-3717）
 //!
 //! 提供 Python `service/app.py FastAPI` 在 `:3717` 的等价 1:1 HTTP + WS 端点，

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 限流器（I-04 安全防护）：固定窗口计数器
 //!
 //! 以「令牌 / 匿名 IP」为键，在滑动窗口内累计请求数，超过阈值即拒绝。

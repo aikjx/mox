@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 本体归一：把三套来源图各自的类型词汇映射到唯一本体（`EntityKind`/`RelKind`/`Layer`）。
 //!
 //! - 静态关图 `tools/info-graph`：13 类 `InfoKind` 字符串（`CodeFile`/`Doc`/...）

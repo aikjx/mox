@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 统一配置管理 — 支持 YAML/JSON/TOML/环境变量，零配置默认值
 
 use serde::{Deserialize, Serialize};

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Writer side: bulk upsert, idempotent key, WrittenStats with symmetric_diff helper.
 
 use crate::graph_spark_reader::{EdgeRow, GraphSparkReader, NodeRow};

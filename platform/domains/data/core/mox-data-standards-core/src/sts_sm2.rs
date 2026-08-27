@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! T24-4 STS SM2 双签名封装（`gm-sm` feature 下可用）。
 //!
 //! 在不修改 `mox-domain-abstractions` 的前提下（避免 crate 循环依赖），

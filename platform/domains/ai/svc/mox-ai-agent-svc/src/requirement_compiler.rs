@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # 草莓多平台 · 需求编译器（Requirement Compiler）
 //!
 //! 把用户的**自然语言需求**编译成一个完整的**系统模板蓝图**：

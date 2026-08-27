@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 能力融合 Registry（规范缺口 R06 六维绑定 Registry + R08 文档/数据挂接）
 //!
 //! 把全工程 13 个 crate 的能力、关图 12 类实体、PT-Primi 六维绑定，**融合**进一张

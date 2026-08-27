@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 开发专家视角性能基线（P4 · benches 基线）
 //!
 //! 覆盖 PrimiFlow 融合归一化层四条最热路径：

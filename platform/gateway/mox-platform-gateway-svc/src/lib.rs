@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! MOX L1 企业级网关库（Rust 纯代码，无 Node.js 依赖）
 //!
 //! 本版本采用"最小可运行 + 真实业务挂接"的保守策略：

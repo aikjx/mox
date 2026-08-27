@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! URN 身份规范：企业知识中枢的全局唯一标识。
 //!
 //! 形如 `urn:kg:<tenant>:<layer>:<kind>:<key>`，例如

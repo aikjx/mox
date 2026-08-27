@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! T9 —— 500 级深链 CEM 搜索的 P99 性能预算验收（SPEC-7 T9）
 //!
 //! 场景：与 `gap_p2_perf_boundaries::boundary_ultra_deep_chain_with_data_deps`

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! ETag 生成工具：小对象直接 MD5 + CRC32C；大对象复用 mox-standards。
 //!
 //! S3 约定：

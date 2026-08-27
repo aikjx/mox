@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! /ai/engine/* 路由树挂载
 //!
 //! AC-10 语义（项目记忆）：静态路径优先于参数化路径。

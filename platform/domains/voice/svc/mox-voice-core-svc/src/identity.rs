@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 操作人身份：与 mox-system Role 枚举精确映射（5 角色 → 4 级 clearance）
 //!
 //! | mox-system::Role | 本模块 clearance | 说明 |

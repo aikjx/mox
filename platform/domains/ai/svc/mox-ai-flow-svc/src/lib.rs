@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # flow-ai —— 业务流程图优化 AI 核心算法库
 //!
 //! 面向「流程图 + 关系网」双载体的 Agent 内核，用 Rust 实现全部核心算法：

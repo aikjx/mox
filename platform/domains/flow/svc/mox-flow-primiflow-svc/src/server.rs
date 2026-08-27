@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 层3 · API 服务层（κ‑τ 引擎对外 HTTP 服务）
 //!
 //! 实现 `gen/c5.rs` 定义的 REST 契约，把 κ‑τ 引擎、六维溯源、真实持久化层

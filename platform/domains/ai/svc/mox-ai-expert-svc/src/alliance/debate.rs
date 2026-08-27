@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 并行咨询 + 辩论合成（FR-CORE-04/05）：
 //!   - 每位专家 rayon 并行观点产出，60s 超时隔离（EXPERT_TIMEOUT_SECS=60）
 //!   - 900 token 上限（DEBATE_MAX_TOKENS_PER_ROUND）

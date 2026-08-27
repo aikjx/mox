@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 端到端集成测试：政务场景 + MCP/Skills/Loops/LLM 兼容性
 
 use mox_ai_flow_svc::model::FlowGraph;

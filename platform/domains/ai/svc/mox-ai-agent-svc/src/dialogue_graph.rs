@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # 对话知识图谱自动整理模块
 //!
 //! 实现"对话内容自动通过知识图谱整理、优化布局"的全自动流水线：

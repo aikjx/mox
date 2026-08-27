@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 宿主API — 插件可调用的平台能力绑定
 //!
 //! 插件通过WASM导入函数调用宿主API，宿主API在此定义和注册。

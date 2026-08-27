@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! FR-5 热词结构与格式校验（与 Python asr.sherpa_paraformer.Hotword 1:1 对齐）
 //!
 //! - 字段：`word` 非空、`score` ∈ [0,100]、`category` 可选分类（用于 S6 按类别加权学习）

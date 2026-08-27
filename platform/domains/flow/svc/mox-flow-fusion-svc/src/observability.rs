@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 企业级可观测性：结构化日志初始化与请求追踪
 //!
 //! - 日志级别由 [`crate::config::Config::log_level`] 控制；

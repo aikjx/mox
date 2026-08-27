@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 企业级 REST 服务层集成测试
 //!
 //! 采用 `tower::ServiceExt::oneshot` 直接驱动 `build_router` 返回的 `Router`，

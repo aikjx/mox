@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 标准 ResultSet（列名 / 行值数组）。
 //!
 //! Spec 要求：columns: Vec<String>, rows: Vec<Vec<PropValue>>，并提供 Display、ok_or_err。

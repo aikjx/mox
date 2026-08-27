@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # kernel.rs（已迁移至 mox-platform-operator-core）
 //!
 //! 本模块原定义 L6 纯内核类型（TypeIdentifier/TypeCheck/ResourceCost/守恒律等）。

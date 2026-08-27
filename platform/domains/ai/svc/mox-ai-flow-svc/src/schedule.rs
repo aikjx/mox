@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 资源受限调度 (RCPSP)
 //!
 //! 关键路径给出的是**无限资源**下的理论下界；真实场景中浏览器只有 1 个实例、

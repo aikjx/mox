@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 缺口 P1.3 —— AuditChain 跨版本连续性测试
 //!
 //! 目的：验证不可篡改审计哈希链在多「版本」事件交错追加时仍保持：

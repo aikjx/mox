@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 常量归一化（FR-14 SSOT）—— Python 版 10+ 文件硬编码常量根治
 //!
 //! 所有"阈值 / 协议版本 / 扣分权重 / 维度优先级 / 热词长度 / S6 学习周期"统一收口于此。

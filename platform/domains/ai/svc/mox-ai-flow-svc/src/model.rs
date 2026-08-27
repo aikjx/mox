@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 业务流程图中间表示 (Flow IR)
 //!
 //! 这是「流程图 + 关系网」双载体的统一数据模型。

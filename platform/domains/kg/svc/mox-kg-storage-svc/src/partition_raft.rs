@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 分片 Raft：
 //! - 分片数默认 16（2 的幂）。
 //! - 每个 shard 归属一个 RaftGroup (Leader/Follower)，最小实现：在单进程内保留 shard 状态、

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! A7 – Rubric grade calculator (12 individual tests).
 //!
 //! Covers: default_s → S, exactly 90 → S, 89 → A, single 0 → D, invalid

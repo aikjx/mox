@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! FFI 探测：运行时判断是否链接了 sherpa-rs / libsherpa-onnx.so / dll 并暴露 ContextConfig
 //!
 //! 默认实现：**永远返回 Ok(false)**（未启用真实链接时，降级 S1→S2+S3，这是允许的设计，

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 执行态可视化监控闭环（Phase 3）
 //!
 //! 把「可预测」优化报告变成「可观察」执行轨迹：

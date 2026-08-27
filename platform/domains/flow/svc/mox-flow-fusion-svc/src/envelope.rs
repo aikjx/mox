@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! `PTEnvelope` 归一化跨层消息（PT-Primi §4 接口契约）
 //!
 //! 相邻层（L1-L7）之间仅通过标准消息体通信，六维绑定 ID 随消息全程透传，

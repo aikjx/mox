@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # 标准接口契约（RFC 9457 Problem+JSON）
 //!
 //! 本模块提供算子统一系统对外 HTTP 接口的**最规范标准错误契约**：

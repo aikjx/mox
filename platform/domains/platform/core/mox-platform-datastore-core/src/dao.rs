@@ -1,824 +1,538 @@
-use chrono::Utc;
-use dashmap::DashMap;
+//! 通用业务数据访问对象（UniversalBizDAO）
+//!
+//! 企业级通用数据层：一张 biz_data 表 + 预定义扩展槽位列 + 版本链哈希 + 软删除，
+//! 支持任意业务实体的 CRUD、过滤、排序、分页，无需为每种实体建表。
+
+use crate::field::{FieldSlotAllocator, FieldSpec, SlotAllocation, SlotType};
+use crate::hash::compute_hash;
+use crate::memory_repos::{InMemoryIamRepo, InMemoryMetaRepo};
+use crate::query::{Filter, ListResult, SortSpec};
 use parking_lot::Mutex;
-use rusqlite::{params, OptionalExtension, Row};
+use rusqlite::{params, types::Value as SqlValue, Connection, OptionalExtension};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::audit_chain::compute_hash;
-use crate::port::{EntityWithFields, IamRepository, MetaRepository};
-use crate::slot_allocator::{FieldSlotAllocator, SlotCategory};
-
-pub const DDL_SQL: &str = include_str!("ddl.sql");
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct Filter {
-    pub field_code: String,
-    pub operator: String,
-    pub value: Value,
+/// 将 serde_json::Value 转换为 rusqlite::types::Value
+fn json_to_sql(value: &Value) -> SqlValue {
+    match value {
+        Value::Null => SqlValue::Null,
+        Value::Bool(b) => SqlValue::Integer(if *b { 1 } else { 0 }),
+        Value::Number(n) => {
+            if let Some(i) = n.as_i64() {
+                SqlValue::Integer(i)
+            } else if let Some(f) = n.as_f64() {
+                SqlValue::Real(f)
+            } else {
+                SqlValue::Null
+            }
+        }
+        Value::String(s) => SqlValue::Text(s.clone()),
+        Value::Array(_) | Value::Object(_) => SqlValue::Text(value.to_string()),
+    }
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-pub struct SortSpec {
-    pub field_code: Option<String>,
-    pub desc: bool,
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct ListResult<T> {
-    pub items: Vec<T>,
-    pub total: i64,
-    pub page: i64,
-    pub page_size: i64,
-}
-
+/// 通用业务数据访问对象
+#[derive(Clone)]
 pub struct UniversalBizDAO {
-    pub conn: Arc<Mutex<rusqlite::Connection>>,
-    pub meta_cache: DashMap<(String, String), EntityWithFields>,
+    conn: Arc<Mutex<Connection>>,
 }
 
 impl UniversalBizDAO {
-    pub fn new(conn: Arc<Mutex<rusqlite::Connection>>) -> Self {
-        Self {
-            conn,
-            meta_cache: DashMap::new(),
-        }
+    /// 创建新的 DAO 实例
+    pub fn new(conn: Arc<Mutex<Connection>>) -> Self {
+        Self { conn }
     }
 
+    /// 初始化数据库 schema（biz_data 表 + 扩展槽位列 + 索引）
     pub fn init_schema(&self) -> anyhow::Result<()> {
         let conn = self.conn.lock();
-        conn.execute_batch(DDL_SQL)
-            .map_err(|e| anyhow::anyhow!("Init schema failed: {}", e))?;
+
+        // 构建扩展槽位列定义
+        let mut slot_columns = Vec::new();
+        for i in 0..SlotType::Str.count() {
+            slot_columns.push(format!("ext_str_{} TEXT", i));
+        }
+        for i in 0..SlotType::Int.count() {
+            slot_columns.push(format!("ext_int_{} INTEGER", i));
+        }
+        for i in 0..SlotType::Dec.count() {
+            slot_columns.push(format!("ext_dec_{} REAL", i));
+        }
+        for i in 0..SlotType::Bool.count() {
+            slot_columns.push(format!("ext_bool_{} INTEGER", i));
+        }
+        for i in 0..SlotType::Ts.count() {
+            slot_columns.push(format!("ext_ts_{} TEXT", i));
+        }
+
+        let create_sql = format!(
+            r#"CREATE TABLE IF NOT EXISTS biz_data (
+                id TEXT PRIMARY KEY,
+                tenant_id TEXT NOT NULL,
+                biz_type TEXT NOT NULL,
+                biz_code TEXT NOT NULL,
+                version INTEGER NOT NULL DEFAULT 1,
+                prev_hash TEXT,
+                curr_hash TEXT NOT NULL,
+                data_json TEXT NOT NULL DEFAULT '{{}}',
+                created_by TEXT,
+                updated_by TEXT,
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+                is_deleted INTEGER NOT NULL DEFAULT 0,
+                deleted_by TEXT,
+                deleted_at TEXT,
+                delete_reason TEXT,
+                {}
+            )"#,
+            slot_columns.join(",\n                ")
+        );
+        conn.execute_batch(&create_sql)?;
+
+        // 创建索引
+        conn.execute_batch(
+            r#"CREATE INDEX IF NOT EXISTS idx_biz_tenant_type ON biz_data(tenant_id, biz_type, is_deleted);
+               CREATE INDEX IF NOT EXISTS idx_biz_code ON biz_data(tenant_id, biz_type, biz_code);
+               CREATE INDEX IF NOT EXISTS idx_biz_created ON biz_data(tenant_id, biz_type, created_at DESC);
+               CREATE INDEX IF NOT EXISTS idx_biz_str_0 ON biz_data(ext_str_0);
+               CREATE INDEX IF NOT EXISTS idx_biz_str_1 ON biz_data(ext_str_1);
+               CREATE INDEX IF NOT EXISTS idx_biz_int_0 ON biz_data(ext_int_0);
+               CREATE INDEX IF NOT EXISTS idx_biz_dec_0 ON biz_data(ext_dec_0);"#,
+        )?;
+
         Ok(())
     }
 
-    fn get_cached_entity(
-        &self,
-        meta_repo: &dyn MetaRepository,
-        tenant_id: &str,
-        entity_code: &str,
-    ) -> anyhow::Result<EntityWithFields> {
-        let key = (tenant_id.to_string(), entity_code.to_string());
-        if let Some(e) = self.meta_cache.get(&key) {
-            return Ok(e.clone());
-        }
-        let entity = meta_repo.get_entity(tenant_id, entity_code)?;
-        self.meta_cache.insert(key.clone(), entity.clone());
-        Ok(entity)
-    }
-
-    fn map_value_to_slot(
-        val: &Value,
-        cat: SlotCategory,
-    ) -> (Option<String>, Option<i64>, Option<f64>) {
-        match cat {
-            SlotCategory::Bool => {
-                let b = val.as_bool().unwrap_or(false);
-                (None, Some(if b { 1 } else { 0 }), None)
-            }
-            SlotCategory::Int => {
-                let i = val
-                    .as_i64()
-                    .or_else(|| val.as_f64().map(|f| f as i64))
-                    .unwrap_or(0);
-                (None, Some(i), None)
-            }
-            SlotCategory::Decimal => {
-                let d = val.as_f64().unwrap_or(0.0);
-                (None, None, Some(d))
-            }
-            SlotCategory::Json | SlotCategory::Overflow => {
-                let s = serde_json::to_string(val).unwrap_or_default();
-                (Some(s), None, None)
-            }
-            SlotCategory::Date
-            | SlotCategory::DateTime
-            | SlotCategory::Text
-            | SlotCategory::String => {
-                let s = match val {
-                    Value::String(s) => s.clone(),
-                    other => serde_json::to_string(other).unwrap_or_default(),
-                };
-                (Some(s), None, None)
-            }
-        }
-    }
-
-    fn slot_from_row(slot: &str, row: &Row) -> anyhow::Result<Option<Value>> {
-        let prefix: String = slot.chars().take(8).collect();
-        match prefix.as_str() {
-            "ext_str_" | "ext_text" | "ext_json" | "ext_date" | "ext_da" => {
-                let v: Option<String> = row.get(slot).ok();
-                if let Some(ref s) = v {
-                    if slot.starts_with("ext_json") {
-                        if let Ok(jv) = serde_json::from_str::<Value>(s) {
-                            return Ok(Some(jv));
-                        }
-                    }
-                }
-                Ok(v.map(Value::String))
-            }
-            "ext_int_" => {
-                let v: Option<i64> = row.get(slot).ok();
-                Ok(v.map(Value::from))
-            }
-            "ext_dec_" => {
-                let v: Option<f64> = row.get(slot).ok();
-                Ok(v.map(Value::from))
-            }
-            "ext_bool" => {
-                let v: Option<i64> = row.get(slot).ok();
-                Ok(v.map(|n| Value::Bool(n != 0)))
-            }
-            _ => Ok(None),
-        }
-    }
-
-    fn slot_value_for_sql(
-        slot: &str,
-        s: &Option<String>,
-        i: &Option<i64>,
-        d: &Option<f64>,
-    ) -> rusqlite::types::ToSqlOutput<'static> {
-        use rusqlite::types::{ToSqlOutput, Value as RV};
-        if slot.starts_with("ext_int") {
-            if let Some(n) = i {
-                return ToSqlOutput::Owned(RV::Integer(*n));
-            }
-        } else if slot.starts_with("ext_dec") {
-            if let Some(n) = d {
-                return ToSqlOutput::Owned(RV::Real(*n));
-            }
-        } else if slot.starts_with("ext_bool") {
-            if let Some(n) = i {
-                return ToSqlOutput::Owned(RV::Integer(*n));
-            }
-        } else {
-            if let Some(ref ss) = s {
-                return ToSqlOutput::Owned(RV::Text(ss.clone()));
-            }
-        }
-        ToSqlOutput::Owned(RV::Null)
-    }
-
+    /// 创建业务记录
+    ///
+    /// 返回 (biz_id, biz_code, version)
     pub fn create(
         &self,
-        meta_repo: &dyn MetaRepository,
-        _iam_repo: &dyn IamRepository,
+        meta: &InMemoryMetaRepo,
+        iam: &InMemoryIamRepo,
         tenant_id: &str,
-        entity_code: &str,
+        biz_type: &str,
         user_id: &str,
         data: &Map<String, Value>,
-        workflow_instance_id: Option<&str>,
-        biz_code_input: Option<&str>,
+        _biz_code_hint: Option<&str>,
+        _parent_id: Option<&str>,
     ) -> anyhow::Result<(String, String, i64)> {
-        let entity = self.get_cached_entity(meta_repo, tenant_id, entity_code)?;
-        let alloc = FieldSlotAllocator::allocate(entity_code, &entity.fields);
+        // 权限检查
+        if !iam.has_permission(tenant_id, user_id, "biz:create") {
+            anyhow::bail!("permission denied: user {} lacks biz:create", user_id);
+        }
 
-        let mut cols: Vec<String> = vec![
-            "biz_id".into(),
-            "tenant_id".into(),
-            "entity_id".into(),
-            "biz_code".into(),
-            "biz_type".into(),
-            "biz_status".into(),
-            "dynamic_data".into(),
-            "creator_user_id".into(),
-            "owner_user_id".into(),
-            "created_at".into(),
-            "updated_at".into(),
-            "created_by".into(),
-            "updated_by".into(),
-            "version".into(),
-            "trace_id".into(),
-            "curr_hash".into(),
-            "version_group_id".into(),
-            "workflow_instance_id".into(),
-            "workflow_status".into(),
-        ];
-        let mut values: Vec<rusqlite::types::ToSqlOutput<'static>> = Vec::new();
-        let mut param_placeholders: Vec<String> = Vec::new();
-
-        let biz_id = Uuid::now_v7().to_string();
+        let biz_id = Uuid::new_v4().to_string();
+        let biz_code = format!("{}-{}", biz_type, Uuid::new_v4().simple().to_string().get(..8).unwrap_or("00000000"));
         let version: i64 = 1;
-        let now = Utc::now().to_rfc3339();
-        let biz_code = biz_code_input
-            .map(|s| s.to_string())
-            .unwrap_or_else(|| format!("{}-{}", entity_code, Uuid::now_v7().simple()));
-        let trace_id = Uuid::new_v4().to_string();
-        let version_group_id = Uuid::now_v7().to_string();
+        let now = chrono::Utc::now().to_rfc3339();
 
-        let mut slot_values: HashMap<String, (Option<String>, Option<i64>, Option<f64>)> =
-            HashMap::new();
-        let mut dynamic_data_map: Map<String, Value> = Map::new();
+        // 获取字段规格并分配槽位
+        let fields = meta.get_entity_fields(tenant_id, biz_type);
+        let slot_map = FieldSlotAllocator::allocate(biz_type, &fields);
 
-        for (field_code, val) in data.iter() {
-            if let Some(slot) = alloc.get(field_code) {
-                let (s, i, d) = Self::map_value_to_slot(val, slot.category);
-                if slot.slot_name == "dynamic_data" {
-                    dynamic_data_map.insert(field_code.clone(), val.clone());
-                } else {
-                    slot_values.insert(slot.slot_name.clone(), (s, i, d));
-                    if !cols.iter().any(|c| c == &slot.slot_name) {
-                        cols.push(slot.slot_name.clone());
-                    }
-                }
-            } else {
-                dynamic_data_map.insert(field_code.clone(), val.clone());
-            }
+        // 分离槽位字段和 JSON 扩展字段
+        let (slot_values, json_data) = Self::split_data_to_slots(data, &slot_map, &fields);
+
+        // 计算哈希
+        let data_value = Value::Object(json_data.clone());
+        let curr_hash = compute_hash(None, &biz_id, version, &data_value, user_id, &now);
+
+        // 构建 INSERT SQL
+        let mut columns = vec![
+            "id", "tenant_id", "biz_type", "biz_code", "version",
+            "prev_hash", "curr_hash", "data_json", "created_by", "updated_by",
+            "created_at", "updated_at",
+        ];
+        let mut values: Vec<SqlValue> = vec![
+            SqlValue::Text(biz_id.clone()),
+            SqlValue::Text(tenant_id.to_string()),
+            SqlValue::Text(biz_type.to_string()),
+            SqlValue::Text(biz_code.clone()),
+            SqlValue::Integer(version),
+            SqlValue::Null,
+            SqlValue::Text(curr_hash),
+            SqlValue::Text(serde_json::to_string(&data_value)?),
+            SqlValue::Text(user_id.to_string()),
+            SqlValue::Text(user_id.to_string()),
+            SqlValue::Text(now.clone()),
+            SqlValue::Text(now.clone()),
+        ];
+
+        for (slot_name, slot_value) in &slot_values {
+            columns.push(slot_name.as_str());
+            values.push(json_to_sql(slot_value));
         }
 
-        for c in cols.iter() {
-            match c.as_str() {
-                "biz_id" => {
-                    values.push(rusqlite::types::ToSqlOutput::Owned(
-                        rusqlite::types::Value::Text(biz_id.clone()),
-                    ));
-                }
-                "tenant_id" => {
-                    values.push(rusqlite::types::ToSqlOutput::Owned(
-                        rusqlite::types::Value::Text(tenant_id.to_string()),
-                    ));
-                }
-                "entity_id" => {
-                    values.push(rusqlite::types::ToSqlOutput::Owned(
-                        rusqlite::types::Value::Text(entity.entity_id.clone()),
-                    ));
-                }
-                "biz_code" => {
-                    values.push(rusqlite::types::ToSqlOutput::Owned(
-                        rusqlite::types::Value::Text(biz_code.clone()),
-                    ));
-                }
-                "biz_type" => {
-                    values.push(rusqlite::types::ToSqlOutput::Owned(
-                        rusqlite::types::Value::Text(entity_code.to_string()),
-                    ));
-                }
-                "biz_status" => {
-                    let status = data
-                        .get("status")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("active")
-                        .to_string();
-                    values.push(rusqlite::types::ToSqlOutput::Owned(
-                        rusqlite::types::Value::Text(status),
-                    ));
-                }
-                "dynamic_data" => {
-                    let s = serde_json::to_string(&Value::Object(dynamic_data_map.clone()))
-                        .unwrap_or_default();
-                    values.push(rusqlite::types::ToSqlOutput::Owned(
-                        rusqlite::types::Value::Text(s),
-                    ));
-                }
-                "creator_user_id" | "owner_user_id" => {
-                    values.push(rusqlite::types::ToSqlOutput::Owned(
-                        rusqlite::types::Value::Text(user_id.to_string()),
-                    ));
-                }
-                "created_at" | "updated_at" => {
-                    values.push(rusqlite::types::ToSqlOutput::Owned(
-                        rusqlite::types::Value::Text(now.clone()),
-                    ));
-                }
-                "created_by" | "updated_by" => {
-                    values.push(rusqlite::types::ToSqlOutput::Owned(
-                        rusqlite::types::Value::Text(user_id.to_string()),
-                    ));
-                }
-                "version" => {
-                    values.push(rusqlite::types::ToSqlOutput::Owned(
-                        rusqlite::types::Value::Integer(version),
-                    ));
-                }
-                "trace_id" => {
-                    values.push(rusqlite::types::ToSqlOutput::Owned(
-                        rusqlite::types::Value::Text(trace_id.clone()),
-                    ));
-                }
-                "curr_hash" => {
-                    values.push(rusqlite::types::ToSqlOutput::Owned(
-                        rusqlite::types::Value::Null,
-                    ));
-                }
-                "version_group_id" => {
-                    values.push(rusqlite::types::ToSqlOutput::Owned(
-                        rusqlite::types::Value::Text(version_group_id.clone()),
-                    ));
-                }
-                "workflow_instance_id" => {
-                    let v = workflow_instance_id.map(|s| s.to_string());
-                    values.push(match v {
-                        Some(s) => {
-                            rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(s))
-                        }
-                        None => rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Null),
-                    });
-                }
-                "workflow_status" => {
-                    values.push(rusqlite::types::ToSqlOutput::Owned(
-                        rusqlite::types::Value::Null,
-                    ));
-                }
-                other => {
-                    let sv = slot_values
-                        .get(other)
-                        .cloned()
-                        .unwrap_or((None, None, None));
-                    values.push(Self::slot_value_for_sql(other, &sv.0, &sv.1, &sv.2));
-                }
-            }
-            param_placeholders.push("?".to_string());
-        }
-
+        let placeholders: Vec<String> = (0..values.len()).map(|i| format!("?{}", i + 1)).collect();
         let sql = format!(
-            "INSERT OR IGNORE INTO biz_data ({}) VALUES ({})",
-            cols.join(","),
-            param_placeholders.join(",")
+            "INSERT INTO biz_data ({}) VALUES ({})",
+            columns.join(", "),
+            placeholders.join(", ")
         );
 
         let conn = self.conn.lock();
-        let refs: Vec<&dyn rusqlite::ToSql> =
-            values.iter().map(|v| v as &dyn rusqlite::ToSql).collect();
-        conn.execute(&sql, refs.as_slice())
-            .map_err(|e| anyhow::anyhow!("INSERT biz_data failed: {}", e))?;
-
-        let snapshot_after: Value = Value::Object(data.clone());
-        let curr_hash = compute_hash(None, &biz_id, version, &snapshot_after, user_id, &now);
-
-        conn.execute(
-            "UPDATE biz_data SET curr_hash = ?1 WHERE biz_id = ?2",
-            params![curr_hash.clone(), biz_id],
-        )
-        .ok();
-
-        let version_id = Uuid::now_v7().to_string();
-        let changed_fields: Vec<String> = data.keys().cloned().collect();
-        conn.execute(
-            "INSERT INTO biz_data_version (version_id, biz_id, tenant_id, entity_id, version_num, snapshot_before, snapshot_after, changed_fields, change_note, operation_type, operator_user_id, prev_hash, curr_hash, created_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14)",
-            params![
-                version_id,
-                biz_id,
-                tenant_id,
-                entity.entity_id,
-                version,
-                "",
-                serde_json::to_string(&snapshot_after).unwrap_or_default(),
-                serde_json::to_string(&changed_fields).unwrap_or_default(),
-                "create",
-                "CREATE",
-                user_id,
-                "",
-                curr_hash,
-                now,
-            ],
-        ).map_err(|e| anyhow::anyhow!("INSERT version failed: {}", e))?;
+        let params_ref: Vec<&dyn rusqlite::ToSql> = values.iter().map(|v| v as &dyn rusqlite::ToSql).collect();
+        conn.execute(&sql, params_ref.as_slice())?;
 
         Ok((biz_id, biz_code, version))
     }
 
+    /// 获取业务记录
     pub fn get(
         &self,
-        meta_repo: &dyn MetaRepository,
+        meta: &InMemoryMetaRepo,
         tenant_id: &str,
-        entity_code: &str,
+        biz_type: &str,
         biz_id: &str,
     ) -> anyhow::Result<Option<Value>> {
-        let entity = self.get_cached_entity(meta_repo, tenant_id, entity_code)?;
         let conn = self.conn.lock();
-        let row = conn.query_row(
-            "SELECT * FROM biz_data WHERE biz_id = ?1 AND tenant_id = ?2 AND deleted_at IS NULL",
-            params![biz_id, tenant_id],
-            |row| self.row_to_map(row, &entity),
-        ).optional().map_err(|e| anyhow::anyhow!("SELECT failed: {}", e))?;
 
-        Ok(row)
-    }
+        let fields = meta.get_entity_fields(tenant_id, biz_type);
+        let slot_map = FieldSlotAllocator::allocate(biz_type, &fields);
 
-    fn row_to_map(&self, row: &Row, entity: &EntityWithFields) -> Result<Value, rusqlite::Error> {
-        let alloc = FieldSlotAllocator::allocate(&entity.entity_code, &entity.fields);
-        let mut result = Map::new();
-
-        let biz_id: String = row.get("biz_id")?;
-        result.insert("biz_id".to_string(), Value::String(biz_id));
-        let biz_code: Option<String> = row.get("biz_code").ok();
-        if let Some(bc) = biz_code {
-            result.insert("biz_code".to_string(), Value::String(bc));
-        }
-        let version: Option<i64> = row.get("version").ok();
-        if let Some(v) = version {
-            result.insert("version".to_string(), Value::from(v));
-        }
-        let status: Option<String> = row.get("biz_status").ok();
-        if let Some(s) = status {
-            result.insert("biz_status".to_string(), Value::String(s));
-        }
-        let wf: Option<String> = row.get("workflow_instance_id").ok();
-        if let Some(w) = wf {
-            result.insert("workflow_instance_id".to_string(), Value::String(w));
-        }
-        let created_at: Option<String> = row.get("created_at").ok();
-        if let Some(s) = created_at {
-            result.insert("created_at".to_string(), Value::String(s));
-        }
-        let updated_at: Option<String> = row.get("updated_at").ok();
-        if let Some(s) = updated_at {
-            result.insert("updated_at".to_string(), Value::String(s));
-        }
-        let hash: Option<String> = row.get("curr_hash").ok();
-        if let Some(h) = hash {
-            result.insert("curr_hash".to_string(), Value::String(h));
-        }
-
-        for field in &entity.fields {
-            if let Some(slot) = alloc.get(&field.field_code) {
-                if slot.slot_name == "dynamic_data" {
-                    continue;
-                }
-                if let Ok(Some(v)) = Self::slot_from_row(&slot.slot_name, row) {
-                    result.insert(field.field_code.clone(), v);
-                }
-            }
-        }
-
-        let dyn_text: Option<String> = row.get("dynamic_data").ok();
-        if let Some(ref dt) = dyn_text {
-            if let Ok(Value::Object(dyn_map)) = serde_json::from_str::<Value>(dt) {
-                for (k, v) in dyn_map {
-                    result.insert(k, v);
-                }
-            }
-        }
-
-        Ok(Value::Object(result))
-    }
-
-    pub fn list(
-        &self,
-        meta_repo: &dyn MetaRepository,
-        tenant_id: &str,
-        entity_code: &str,
-        filters: Vec<Filter>,
-        sort: SortSpec,
-        page: i64,
-        page_size: i64,
-    ) -> anyhow::Result<ListResult<Value>> {
-        let entity = self.get_cached_entity(meta_repo, tenant_id, entity_code)?;
-        let alloc = FieldSlotAllocator::allocate(entity_code, &entity.fields);
-
-        let mut where_clauses: Vec<String> = vec![
-            "tenant_id = ?".to_string(),
-            "entity_id = ?".to_string(),
-            "deleted_at IS NULL".to_string(),
+        // 构建查询列
+        let mut select_cols = vec![
+            "id", "tenant_id", "biz_type", "biz_code", "version",
+            "prev_hash", "curr_hash", "data_json", "created_by", "updated_by",
+            "created_at", "updated_at", "is_deleted",
         ];
-        let mut args: Vec<rusqlite::types::ToSqlOutput<'static>> = vec![
-            rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(
-                tenant_id.to_string(),
-            )),
-            rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(
-                entity.entity_id.clone(),
-            )),
-        ];
-
-        for f in filters {
-            let slot = alloc.get(&f.field_code);
-            let col = match slot {
-                Some(s) if s.slot_name != "dynamic_data" => s.slot_name.clone(),
-                _ => format!("json_extract(dynamic_data, '$.{}')", f.field_code),
-            };
-            let placeholder_idx = args.len() + 1;
-            match f.operator.as_str() {
-                "eq" | "=" => {
-                    where_clauses.push(format!("{} = ?{}", col, placeholder_idx));
-                }
-                "ne" | "!=" => {
-                    where_clauses.push(format!("{} != ?{}", col, placeholder_idx));
-                }
-                "gt" => {
-                    where_clauses.push(format!("{} > ?{}", col, placeholder_idx));
-                }
-                "gte" => {
-                    where_clauses.push(format!("{} >= ?{}", col, placeholder_idx));
-                }
-                "lt" => {
-                    where_clauses.push(format!("{} < ?{}", col, placeholder_idx));
-                }
-                "lte" => {
-                    where_clauses.push(format!("{} <= ?{}", col, placeholder_idx));
-                }
-                "like" => {
-                    where_clauses.push(format!("{} LIKE ?{}", col, placeholder_idx));
-                }
-                _ => {
-                    where_clauses.push(format!("{} = ?{}", col, placeholder_idx));
-                }
+        for slot in slot_map.values() {
+            if !slot.slot_name.contains("_overflow_") {
+                select_cols.push(slot.slot_name.as_str());
             }
-            let av = match f.value {
-                Value::String(s) => {
-                    rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(s))
-                }
-                Value::Number(n) => {
-                    if let Some(i) = n.as_i64() {
-                        rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Integer(i))
-                    } else if let Some(fv) = n.as_f64() {
-                        rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Real(fv))
-                    } else {
-                        rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Null)
-                    }
-                }
-                Value::Bool(b) => {
-                    rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Integer(if b {
-                        1
-                    } else {
-                        0
-                    }))
-                }
-                _ => rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Null),
-            };
-            args.push(av);
         }
 
-        let where_sql = format!("WHERE {}", where_clauses.join(" AND "));
-
-        let order_sql = if let Some(ref fc) = sort.field_code {
-            let slot = alloc.get(fc);
-            let col = match slot {
-                Some(s) if s.slot_name != "dynamic_data" => s.slot_name.clone(),
-                _ => format!("json_extract(dynamic_data, '$.{}')", fc),
-            };
-            format!(
-                "ORDER BY {} {}",
-                col,
-                if sort.desc { "DESC" } else { "ASC" }
-            )
-        } else {
-            "ORDER BY created_at DESC".to_string()
-        };
-
-        let limit = page_size.max(1);
-        let offset = (page.max(1) - 1) * limit;
-
-        let conn = self.conn.lock();
-        let total_sql = format!("SELECT COUNT(*) FROM biz_data {}", where_sql);
-        let refs: Vec<&dyn rusqlite::ToSql> =
-            args.iter().map(|v| v as &dyn rusqlite::ToSql).collect();
-        let total: i64 = conn
-            .query_row(&total_sql, refs.as_slice(), |r| r.get(0))
-            .map_err(|e| anyhow::anyhow!("COUNT failed: {}", e))?;
-
-        let select_sql = format!(
-            "SELECT * FROM biz_data {} {} LIMIT ? OFFSET ?",
-            where_sql, order_sql
+        let sql = format!(
+            "SELECT {} FROM biz_data WHERE tenant_id = ?1 AND biz_type = ?2 AND id = ?3 AND is_deleted = 0",
+            select_cols.join(", ")
         );
-        let mut stmt = conn
-            .prepare(&select_sql)
-            .map_err(|e| anyhow::anyhow!("PREPARE list failed: {}", e))?;
 
-        let mut all_args: Vec<rusqlite::types::ToSqlOutput<'static>> = args.clone();
-        all_args.push(rusqlite::types::ToSqlOutput::Owned(
-            rusqlite::types::Value::Integer(limit),
-        ));
-        all_args.push(rusqlite::types::ToSqlOutput::Owned(
-            rusqlite::types::Value::Integer(offset),
-        ));
-        let refs2: Vec<&dyn rusqlite::ToSql> =
-            all_args.iter().map(|v| v as &dyn rusqlite::ToSql).collect();
+        let result = conn
+            .query_row(&sql, params![tenant_id, biz_type, biz_id], |row| {
+                Self::row_to_value(row, &select_cols, &slot_map, &fields)
+            })
+            .optional()?;
 
-        let rows = stmt
-            .query_map(refs2.as_slice(), |row| self.row_to_map(row, &entity))
-            .map_err(|e| anyhow::anyhow!("QUERY list failed: {}", e))?;
-
-        let mut items: Vec<Value> = Vec::new();
-        for r in rows {
-            items.push(r.map_err(|e| anyhow::anyhow!("row error: {}", e))?);
-        }
-
-        Ok(ListResult {
-            items,
-            total,
-            page: page.max(1),
-            page_size: limit,
-        })
+        Ok(result)
     }
 
+    /// 更新业务记录（返回新版本号）
     pub fn update(
         &self,
-        meta_repo: &dyn MetaRepository,
+        meta: &InMemoryMetaRepo,
         tenant_id: &str,
-        entity_code: &str,
+        biz_type: &str,
         biz_id: &str,
         user_id: &str,
         patch: &Map<String, Value>,
     ) -> anyhow::Result<i64> {
-        let entity = self.get_cached_entity(meta_repo, tenant_id, entity_code)?;
-        let alloc = FieldSlotAllocator::allocate(entity_code, &entity.fields);
-        let now = Utc::now().to_rfc3339();
-
         let conn = self.conn.lock();
 
-        let (old_json, old_version, prev_hash): (Option<String>, i64, Option<String>) = conn.query_row(
-            "SELECT dynamic_data, version, curr_hash FROM biz_data WHERE biz_id = ?1 AND tenant_id = ?2 AND deleted_at IS NULL",
-            params![biz_id, tenant_id],
-            |r| Ok((r.get("dynamic_data").ok(), r.get::<_, i64>("version").unwrap_or(0), r.get("curr_hash").ok())),
-        ).map_err(|e| anyhow::anyhow!("Fetch before update failed: {}", e))?;
+        // 获取当前记录
+        let current: Option<(i64, String, String)> = conn
+            .query_row(
+                "SELECT version, curr_hash, data_json FROM biz_data WHERE tenant_id = ?1 AND biz_type = ?2 AND id = ?3 AND is_deleted = 0",
+                params![tenant_id, biz_type, biz_id],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )
+            .optional()?;
+
+        let (old_version, old_hash, old_data_json) = match current {
+            Some(v) => v,
+            None => anyhow::bail!("record not found: {}/{}", biz_type, biz_id),
+        };
 
         let new_version = old_version + 1;
+        let now = chrono::Utc::now().to_rfc3339();
 
-        let mut set_parts: Vec<String> = Vec::new();
-        let mut args: Vec<rusqlite::types::ToSqlOutput<'static>> = Vec::new();
-
-        let slot_vals: HashMap<String, (Option<String>, Option<i64>, Option<f64>)> = HashMap::new();
-        let _ = slot_vals;
-
-        for (fc, val) in patch.iter() {
-            if let Some(slot) = alloc.get(fc) {
-                if slot.slot_name != "dynamic_data" {
-                    let (s, i, d) = Self::map_value_to_slot(val, slot.category);
-                    set_parts.push(format!("{} = ?{}", slot.slot_name, args.len() + 1));
-                    args.push(Self::slot_value_for_sql(&slot.slot_name, &s, &i, &d));
-                }
-            }
+        // 合并 patch 到旧数据
+        let mut merged: Map<String, Value> = serde_json::from_str(&old_data_json)?;
+        for (k, v) in patch {
+            merged.insert(k.clone(), v.clone());
         }
 
-        let existing_dyn: Map<String, Value> = old_json
-            .and_then(|s| serde_json::from_str::<Value>(&s).ok())
-            .and_then(|v| match v {
-                Value::Object(m) => Some(m),
-                _ => None,
-            })
-            .unwrap_or_default();
+        // 获取字段规格和槽位映射
+        let fields = meta.get_entity_fields(tenant_id, biz_type);
+        let slot_map = FieldSlotAllocator::allocate(biz_type, &fields);
 
-        let mut new_dyn = existing_dyn.clone();
-        for (fc, val) in patch.iter() {
-            let should_dyn = if let Some(slot) = alloc.get(fc) {
-                slot.slot_name == "dynamic_data"
-            } else {
-                true
-            };
-            if should_dyn {
-                new_dyn.insert(fc.clone(), val.clone());
-            }
+        // 分离槽位字段和 JSON 字段
+        let (slot_values, json_data) = Self::split_data_to_slots(&merged, &slot_map, &fields);
+
+        // 计算新哈希
+        let data_value = Value::Object(json_data);
+        let new_hash = compute_hash(Some(&old_hash), biz_id, new_version, &data_value, user_id, &now);
+
+        // 构建 UPDATE SQL
+        let mut set_clauses = vec![
+            "version = ?".to_string(),
+            "prev_hash = ?".to_string(),
+            "curr_hash = ?".to_string(),
+            "data_json = ?".to_string(),
+            "updated_by = ?".to_string(),
+            "updated_at = ?".to_string(),
+        ];
+        let mut values: Vec<SqlValue> = vec![
+            SqlValue::Integer(new_version),
+            SqlValue::Text(old_hash),
+            SqlValue::Text(new_hash),
+            SqlValue::Text(serde_json::to_string(&data_value)?),
+            SqlValue::Text(user_id.to_string()),
+            SqlValue::Text(now),
+        ];
+
+        for (slot_name, slot_value) in &slot_values {
+            set_clauses.push(format!("{} = ?", slot_name));
+            values.push(json_to_sql(slot_value));
         }
 
-        if !new_dyn.is_empty() {
-            set_parts.push(format!("dynamic_data = ?{}", args.len() + 1));
-            args.push(rusqlite::types::ToSqlOutput::Owned(
-                rusqlite::types::Value::Text(
-                    serde_json::to_string(&Value::Object(new_dyn.clone())).unwrap_or_default(),
-                ),
-            ));
-        }
-
-        set_parts.push(format!("version = ?{}", args.len() + 1));
-        args.push(rusqlite::types::ToSqlOutput::Owned(
-            rusqlite::types::Value::Integer(new_version),
-        ));
-
-        set_parts.push(format!("updated_at = ?{}", args.len() + 1));
-        args.push(rusqlite::types::ToSqlOutput::Owned(
-            rusqlite::types::Value::Text(now.clone()),
-        ));
-
-        set_parts.push(format!("updated_by = ?{}", args.len() + 1));
-        args.push(rusqlite::types::ToSqlOutput::Owned(
-            rusqlite::types::Value::Text(user_id.to_string()),
-        ));
-
-        if let Some(status_v) = patch.get("status") {
-            if let Some(status) = status_v.as_str() {
-                set_parts.push(format!("biz_status = ?{}", args.len() + 1));
-                args.push(rusqlite::types::ToSqlOutput::Owned(
-                    rusqlite::types::Value::Text(status.to_string()),
-                ));
-            }
-        }
-
-        args.push(rusqlite::types::ToSqlOutput::Owned(
-            rusqlite::types::Value::Text(biz_id.to_string()),
-        ));
-        args.push(rusqlite::types::ToSqlOutput::Owned(
-            rusqlite::types::Value::Text(tenant_id.to_string()),
-        ));
+        values.push(SqlValue::Text(tenant_id.to_string()));
+        values.push(SqlValue::Text(biz_type.to_string()));
+        values.push(SqlValue::Text(biz_id.to_string()));
 
         let sql = format!(
-            "UPDATE biz_data SET {} WHERE biz_id = ?{} AND tenant_id = ?{} AND deleted_at IS NULL",
-            set_parts.join(","),
-            args.len() - 1,
-            args.len()
+            "UPDATE biz_data SET {} WHERE tenant_id = ? AND biz_type = ? AND id = ? AND is_deleted = 0",
+            set_clauses.join(", ")
         );
 
-        let refs: Vec<&dyn rusqlite::ToSql> =
-            args.iter().map(|v| v as &dyn rusqlite::ToSql).collect();
-        let affected = conn
-            .execute(&sql, refs.as_slice())
-            .map_err(|e| anyhow::anyhow!("UPDATE failed: {}", e))?;
-        if affected == 0 {
-            anyhow::bail!("Update failed: no rows affected for biz_id={}", biz_id);
-        }
-
-        let snapshot_before: Value = Value::Object(existing_dyn);
-        let snapshot_after: Value = Value::Object(new_dyn);
-        let curr_hash = compute_hash(
-            prev_hash.as_deref(),
-            biz_id,
-            new_version,
-            &snapshot_after,
-            user_id,
-            &now,
-        );
-
-        conn.execute(
-            "UPDATE biz_data SET curr_hash = ?1 WHERE biz_id = ?2",
-            params![curr_hash.clone(), biz_id],
-        )
-        .ok();
-
-        let changed_fields: Vec<String> = patch.keys().cloned().collect();
-        let version_id = Uuid::now_v7().to_string();
-        conn.execute(
-            "INSERT INTO biz_data_version (version_id, biz_id, tenant_id, entity_id, version_num, snapshot_before, snapshot_after, changed_fields, change_note, operation_type, operator_user_id, prev_hash, curr_hash, created_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14)",
-            params![
-                version_id,
-                biz_id,
-                tenant_id,
-                entity.entity_id,
-                new_version,
-                serde_json::to_string(&snapshot_before).unwrap_or_default(),
-                serde_json::to_string(&snapshot_after).unwrap_or_default(),
-                serde_json::to_string(&changed_fields).unwrap_or_default(),
-                "update",
-                "UPDATE",
-                user_id,
-                prev_hash.unwrap_or_default(),
-                curr_hash,
-                now,
-            ],
-        ).map_err(|e| anyhow::anyhow!("INSERT version (update) failed: {}", e))?;
+        let params_ref: Vec<&dyn rusqlite::ToSql> = values.iter().map(|v| v as &dyn rusqlite::ToSql).collect();
+        conn.execute(&sql, params_ref.as_slice())?;
 
         Ok(new_version)
     }
 
+    /// 列表查询（支持过滤、排序、分页）
+    pub fn list(
+        &self,
+        meta: &InMemoryMetaRepo,
+        tenant_id: &str,
+        biz_type: &str,
+        filters: Vec<Filter>,
+        sort: SortSpec,
+        page: i64,
+        page_size: i64,
+    ) -> anyhow::Result<ListResult> {
+        let conn = self.conn.lock();
+
+        let fields = meta.get_entity_fields(tenant_id, biz_type);
+        let slot_map = FieldSlotAllocator::allocate(biz_type, &fields);
+
+        // 构建查询列
+        let mut select_cols = vec![
+            "id", "tenant_id", "biz_type", "biz_code", "version",
+            "prev_hash", "curr_hash", "data_json", "created_by", "updated_by",
+            "created_at", "updated_at", "is_deleted",
+        ];
+        for slot in slot_map.values() {
+            if !slot.slot_name.contains("_overflow_") {
+                select_cols.push(slot.slot_name.as_str());
+            }
+        }
+
+        // 构建 WHERE 子句
+        let mut where_clauses = vec!["tenant_id = ?".to_string(), "biz_type = ?".to_string(), "is_deleted = 0".to_string()];
+        let mut param_values: Vec<SqlValue> = vec![
+            SqlValue::Text(tenant_id.to_string()),
+            SqlValue::Text(biz_type.to_string()),
+        ];
+
+        for filter in &filters {
+            if let Some(slot) = slot_map.get(&filter.field_code) {
+                if !slot.slot_name.contains("_overflow_") {
+                    let (sql_frag, val) = filter.to_sql(&slot.slot_name);
+                    where_clauses.push(sql_frag);
+                    if let Some(v) = val {
+                        param_values.push(SqlValue::Text(v));
+                    }
+                }
+            }
+        }
+
+        // 排序
+        let sort_col = sort.field.as_ref().and_then(|f| slot_map.get(f)).map(|s| s.slot_name.clone());
+        let order_sql = sort.to_sql(sort_col.as_deref());
+
+        // 分页
+        let offset = (page - 1) * page_size;
+
+        // COUNT 查询
+        let count_sql = format!(
+            "SELECT COUNT(*) FROM biz_data WHERE {}",
+            where_clauses.join(" AND ")
+        );
+        let count_params: Vec<&dyn rusqlite::ToSql> = param_values.iter().map(|v| v as &dyn rusqlite::ToSql).collect();
+        let total: i64 = conn.query_row(&count_sql, count_params.as_slice(), |r| r.get(0))?;
+
+        // 数据查询
+        let data_sql = format!(
+            "SELECT {} FROM biz_data WHERE {} {} LIMIT ? OFFSET ?",
+            select_cols.join(", "),
+            where_clauses.join(" AND "),
+            order_sql
+        );
+        let mut data_params = param_values.clone();
+        data_params.push(SqlValue::Integer(page_size));
+        data_params.push(SqlValue::Integer(offset));
+        let data_params_ref: Vec<&dyn rusqlite::ToSql> = data_params.iter().map(|v| v as &dyn rusqlite::ToSql).collect();
+
+        let mut stmt = conn.prepare(&data_sql)?;
+        let items: Vec<Value> = stmt
+            .query_map(data_params_ref.as_slice(), |row| {
+                Self::row_to_value(row, &select_cols, &slot_map, &fields)
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(ListResult { total, items, page, page_size })
+    }
+
+    /// 软删除业务记录
     pub fn delete(
         &self,
         tenant_id: &str,
-        _entity_code: &str,
+        biz_type: &str,
         biz_id: &str,
         user_id: &str,
-        change_note: Option<&str>,
+        reason: Option<&str>,
     ) -> anyhow::Result<()> {
-        let now = Utc::now().to_rfc3339();
         let conn = self.conn.lock();
-
-        let (entity_id, version, prev_hash): (Option<String>, i64, Option<String>) = conn.query_row(
-            "SELECT entity_id, version, curr_hash FROM biz_data WHERE biz_id = ?1 AND tenant_id = ?2 AND deleted_at IS NULL",
-            params![biz_id, tenant_id],
-            |r| Ok((r.get("entity_id").ok(), r.get::<_, i64>("version").unwrap_or(0), r.get("curr_hash").ok())),
-        ).map_err(|e| anyhow::anyhow!("Fetch before delete failed: {}", e))?;
-
-        let new_version = version + 1;
+        let now = chrono::Utc::now().to_rfc3339();
 
         let affected = conn.execute(
-            "UPDATE biz_data SET deleted_at = ?1, deleted_by = ?2, updated_at = ?1, updated_by = ?2, version = ?3 WHERE biz_id = ?4 AND tenant_id = ?5 AND deleted_at IS NULL",
-            params![now, user_id, new_version, biz_id, tenant_id],
-        ).map_err(|e| anyhow::anyhow!("DELETE (soft) failed: {}", e))?;
+            "UPDATE biz_data SET is_deleted = 1, deleted_by = ?, deleted_at = ?, delete_reason = ?, updated_at = ? WHERE tenant_id = ? AND biz_type = ? AND id = ? AND is_deleted = 0",
+            params![user_id, now, reason, now, tenant_id, biz_type, biz_id],
+        )?;
+
         if affected == 0 {
-            anyhow::bail!("Delete failed: no rows affected");
+            anyhow::bail!("record not found or already deleted: {}/{}", biz_type, biz_id);
         }
 
-        let version_id = Uuid::now_v7().to_string();
-        let snapshot_after = serde_json::json!({"deleted": true});
-        let curr_hash = compute_hash(
-            prev_hash.as_deref(),
-            biz_id,
-            new_version,
-            &snapshot_after,
-            user_id,
-            &now,
-        );
-
-        conn.execute(
-            "INSERT INTO biz_data_version (version_id, biz_id, tenant_id, entity_id, version_num, snapshot_before, snapshot_after, changed_fields, change_note, operation_type, operator_user_id, prev_hash, curr_hash, created_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14)",
-            params![
-                version_id,
-                biz_id,
-                tenant_id,
-                entity_id.unwrap_or_default(),
-                new_version,
-                "",
-                serde_json::to_string(&snapshot_after).unwrap_or_default(),
-                "[\"deleted_at\"]",
-                change_note.unwrap_or("soft delete"),
-                "DELETE",
-                user_id,
-                prev_hash.unwrap_or_default(),
-                curr_hash,
-                now,
-            ],
-        ).ok();
-
         Ok(())
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 内部辅助方法
+    // ═══════════════════════════════════════════════════════════════
+
+    /// 将数据 Map 分离为槽位列值和 JSON 扩展字段
+    fn split_data_to_slots(
+        data: &Map<String, Value>,
+        slot_map: &HashMap<String, SlotAllocation>,
+        _fields: &[FieldSpec],
+    ) -> (HashMap<String, Value>, Map<String, Value>) {
+        let mut slot_values = HashMap::new();
+        let mut json_data = Map::new();
+
+        for (key, value) in data {
+            if let Some(slot) = slot_map.get(key) {
+                if slot.slot_name.contains("_overflow_") {
+                    // 溢出槽位放入 JSON
+                    json_data.insert(key.clone(), value.clone());
+                } else {
+                    // 根据槽位类型转换值
+                    let converted = match slot.slot_type {
+                        SlotType::Bool => match value {
+                            Value::Bool(b) => Value::Number(if *b { 1.into() } else { 0.into() }),
+                            Value::Number(n) => Value::Number(n.clone()),
+                            _ => Value::Null,
+                        },
+                        SlotType::Int => match value {
+                            Value::Number(n) => Value::Number(n.clone()),
+                            Value::String(s) => s.parse::<i64>().ok().map(|n| Value::Number(n.into())).unwrap_or(Value::Null),
+                            _ => Value::Null,
+                        },
+                        SlotType::Dec => match value {
+                            Value::Number(n) => Value::Number(n.clone()),
+                            Value::String(s) => s.parse::<f64>().ok().and_then(serde_json::Number::from_f64).map(Value::Number).unwrap_or(Value::Null),
+                            _ => Value::Null,
+                        },
+                        _ => value.clone(),
+                    };
+                    slot_values.insert(slot.slot_name.clone(), converted);
+                }
+            } else {
+                // 未分配槽位的字段放入 JSON
+                json_data.insert(key.clone(), value.clone());
+            }
+        }
+
+        (slot_values, json_data)
+    }
+
+    /// 将数据库行转换为 JSON Value（合并槽位列和 JSON 字段）
+    fn row_to_value(
+        row: &rusqlite::Row,
+        select_cols: &[&str],
+        slot_map: &HashMap<String, SlotAllocation>,
+        _fields: &[FieldSpec],
+    ) -> rusqlite::Result<Value> {
+        let mut obj = Map::new();
+
+        // 读取基础字段
+        for (idx, col) in select_cols.iter().enumerate() {
+            match *col {
+                "id" => { obj.insert("id".to_string(), Value::String(row.get(idx)?)); }
+                "tenant_id" => { obj.insert("tenant_id".to_string(), Value::String(row.get(idx)?)); }
+                "biz_type" => { obj.insert("biz_type".to_string(), Value::String(row.get(idx)?)); }
+                "biz_code" => { obj.insert("biz_code".to_string(), Value::String(row.get(idx)?)); }
+                "version" => {
+                    let v: i64 = row.get(idx)?;
+                    obj.insert("version".to_string(), Value::Number(v.into()));
+                }
+                "prev_hash" => {
+                    let v: Option<String> = row.get(idx)?;
+                    obj.insert("prev_hash".to_string(), v.map(Value::String).unwrap_or(Value::Null));
+                }
+                "curr_hash" => { obj.insert("curr_hash".to_string(), Value::String(row.get(idx)?)); }
+                "data_json" => {
+                    let json_str: String = row.get(idx)?;
+                    if let Ok(parsed) = serde_json::from_str::<Value>(&json_str) {
+                        if let Value::Object(map) = parsed {
+                            for (k, v) in map { obj.insert(k, v); }
+                        }
+                    }
+                }
+                "created_by" => { obj.insert("created_by".to_string(), Value::String(row.get(idx)?)); }
+                "updated_by" => { obj.insert("updated_by".to_string(), Value::String(row.get(idx)?)); }
+                "created_at" => { obj.insert("created_at".to_string(), Value::String(row.get(idx)?)); }
+                "updated_at" => { obj.insert("updated_at".to_string(), Value::String(row.get(idx)?)); }
+                "is_deleted" => {
+                    let v: i64 = row.get(idx)?;
+                    obj.insert("is_deleted".to_string(), Value::Bool(v != 0));
+                }
+                _ => {
+                    // 槽位列：反查 field_code
+                    if let Some(field_code) = slot_map.iter().find(|(_, s)| s.slot_name == *col).map(|(k, _)| k.clone()) {
+                        let slot = slot_map.get(&field_code).unwrap();
+                        let val: Value = match slot.slot_type {
+                            SlotType::Str => {
+                                let v: Option<String> = row.get(idx)?;
+                                v.map(Value::String).unwrap_or(Value::Null)
+                            }
+                            SlotType::Int => {
+                                let v: Option<i64> = row.get(idx)?;
+                                v.map(|n| Value::Number(n.into())).unwrap_or(Value::Null)
+                            }
+                            SlotType::Dec => {
+                                let v: Option<f64> = row.get(idx)?;
+                                v.and_then(serde_json::Number::from_f64).map(Value::Number).unwrap_or(Value::Null)
+                            }
+                            SlotType::Bool => {
+                                let v: Option<i64> = row.get(idx)?;
+                                v.map(|n| Value::Bool(n != 0)).unwrap_or(Value::Null)
+                            }
+                            SlotType::Ts => {
+                                let v: Option<String> = row.get(idx)?;
+                                v.map(Value::String).unwrap_or(Value::Null)
+                            }
+                        };
+                        obj.insert(field_code, val);
+                    }
+                }
+            }
+        }
+
+        Ok(Value::Object(obj))
     }
 }

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! S3 Sink — 写入 S3 兼容对象存储（WORM 合规存储，不可篡改）
 //!
 //! 适用：SOC2 Type II / HIPAA / GDPR 数据处理活动记录

@@ -29,6 +29,7 @@ members = [
     "platform/foundation/mox-platform-foundation",
     "platform/foundation/mox-cloud-foundation",
     "platform/foundation/mox-platform-observability",
+    "platform/foundation/mox-platform-paths",
     "platform/domains/data/api",
     "platform/domains/ai/api",
     "platform/domains/kg/api",
@@ -83,9 +84,11 @@ members = [
     "platform/domains/platform/core/mox-plugin-core",
     "platform/domains/platform/core/mox-enterprise-core",
     "platform/domains/platform/core/mox-connector-core",
+    "platform/domains/platform/core/mox-platform-integration-core",
     "platform/domains/platform/core/mox-platform-operator-core",
     "platform/gateway/mox-platform-gateway-svc",
     "platform/domains/platform/sdk/mox-platform-test-harness",
+    "platform/domains/platform/sdk/mox-plugin-sdk",
     "platform/domains/voice/svc/mox-voice-desktop-app",
     "platform/domains/cloud/sdk/mox-cloud-sdk",
     "platform/domains/kg/sdk/mox-kg-sdk",
@@ -178,6 +181,7 @@ sqlx = "0.8"
 mox-platform-foundation = { path = "platform/foundation/mox-platform-foundation" }
 mox-cloud-foundation = { path = "platform/foundation/mox-cloud-foundation" }
 mox-platform-observability = { path = "platform/foundation/mox-platform-observability" }
+mox-platform-paths = { path = "platform/foundation/mox-platform-paths" }
 # Core 灞?
 mox-data-formula-core = { path = "platform/domains/data/core/mox-data-formula-core" }
 mox-data-norm-core = { path = "platform/domains/data/core/mox-data-norm-core" }
@@ -198,6 +202,7 @@ mox-platform-orchestrator-core = { path = "platform/domains/platform/core/mox-pl
 mox-plugin-core = { path = "platform/domains/platform/core/mox-plugin-core" }
 mox-enterprise-core = { path = "platform/domains/platform/core/mox-enterprise-core" }
 mox-connector-core = { path = "platform/domains/platform/core/mox-connector-core" }
+mox-platform-integration-core = { path = "platform/domains/platform/core/mox-platform-integration-core" }
 mox-platform-enterprise-svc = { path = "platform/domains/platform/svc/mox-platform-enterprise-svc" }
 # Service 灞?(kg)
 mox-kg-storage-svc = { path = "platform/domains/kg/svc/mox-kg-storage-svc" }
@@ -249,6 +254,7 @@ mox-voice-desktop-app = { path = "platform/domains/voice/svc/mox-voice-desktop-a
 mox-cloud-sdk = { path = "platform/domains/cloud/sdk/mox-cloud-sdk" }
 mox-kg-sdk = { path = "platform/domains/kg/sdk/mox-kg-sdk" }
 mox-platform-test-harness = { path = "platform/domains/platform/sdk/mox-platform-test-harness" }
+mox-plugin-sdk = { path = "platform/domains/platform/sdk/mox-plugin-sdk" }
 mox-data-formula-native = { path = "platform/domains/data/sdk/mox-data-formula-native" }
 mox-data-norm-intent-native = { path = "platform/domains/data/sdk/mox-data-norm-intent-native" }
 mox-voice-dsp-py = { path = "platform/domains/voice/sdk/mox-voice-dsp-py" }

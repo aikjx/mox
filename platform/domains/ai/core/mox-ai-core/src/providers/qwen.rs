@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 通义千问 Provider（政企AI示例，OpenAI兼容API）
 //!
 //! 阿里云通义千问兼容OpenAI API格式，只需改base_url和api_key。

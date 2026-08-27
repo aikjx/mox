@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 方言无关 SQL 构建层（等价 Spring Boot 的方言抽象）
 //!
 //! 当前用 `sea-query` 生成**建表语句**，按 `Backend` 选择 `SqliteQueryBuilder` /

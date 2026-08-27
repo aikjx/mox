@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 端到端验证：需求 → κτ 涌现 → **真实执行算子** → 注荷 → 落盘。
 //! 证明 `run_pipeline` 不再模拟成功，而是真跑每条子任务并把质量回灌引擎。
 

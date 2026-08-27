@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! KG/AI HTTP 适配层（Rust 纯实现，挂接网关 8080）
 //!
 //! 当前阶段：**先跑通 10 个端点**，保证 Rust Gateway 8080 全面接管 backend-node。

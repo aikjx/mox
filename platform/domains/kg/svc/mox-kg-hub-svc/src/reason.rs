@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 智能推理层：在统一图上做影响面分析、需求溯源与图智能计算。
 //!
 //! 关键设计——`to_knowledge_graph` 桥接器：

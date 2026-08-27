@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # xiaobai-operators · FR-13 8 大类系统算子 Rust 权威实现
 //!
 //! - 与 Python `operator/{app,file,volume,input,network,display,browser,notify}_operator.py` 1:1 对齐

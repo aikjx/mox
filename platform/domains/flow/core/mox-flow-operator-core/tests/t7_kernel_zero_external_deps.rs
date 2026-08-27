@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! T7 验收：kernel 零外部依赖 + cargo test 回归通过。
 //!
 //! 【AC-04 规范】L6 kernel.rs 仅允许 use std/alloc/core；以下 7 个 crate 必须为 0 命中：

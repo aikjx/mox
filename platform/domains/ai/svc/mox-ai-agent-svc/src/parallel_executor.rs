@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! AIS-SPEC-9001：企业级统一契约头 —— 模块名 parallel_executor.rs
 //! AIS-REV-1：自描述接口 · 幂等 · 可观测 · 零外部副作用
 //! AIS-REV-2：公开项 pub fn/pub struct 必须具备 /// 文档注释与错误语义说明

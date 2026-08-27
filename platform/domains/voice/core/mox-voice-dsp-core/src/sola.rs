@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! SOLA-like 时域缩放（不改变音高）。与 Python `_time_stretch_sola` 等价。
 //!
 //! - 小幅变速（speed 0.8~1.3 是 90% 场景，±30%）

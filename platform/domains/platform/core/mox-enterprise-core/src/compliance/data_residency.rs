@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 数据主权 — 数据地域存储约束（政企合规）
 //!
 //! 支持按租户/数据类型配置存储地域，确保数据不出境/不出域。

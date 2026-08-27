@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 引擎守卫 - 安全边界与质量关卡检查
 //!
 //! Guards 在关键阶段（ACT、REFLECT）执行检查，防止引擎失控：

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 数据脱敏 — 敏感数据脱敏处理
 //!
 //! 支持：手机号、身份证、邮箱、银行卡、姓名、地址、自定义正则

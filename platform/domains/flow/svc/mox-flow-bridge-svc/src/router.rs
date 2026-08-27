@@ -1,4 +1,8 @@
-﻿//! Step 4：复用模板路由（本地缓存版最短路径点亮）。
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
+//! Step 4：复用模板路由（本地缓存版最短路径点亮）。
 //!
 //! 设计：把历史「工具序列模板」存为键，新调用若匹配则标记 `source="flow-template:<id>"`，
 //! Hermes 上游读到该注解即可走轻量执行、跳过完整 ReAct（由 Hermes 侧读取注解实现；

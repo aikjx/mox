@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 12-Factor 应用配置（企业级可运维基线）
 //!
 //! 所有配置项均可通过环境变量（`MOX_*` 前缀）覆盖，便于容器化部署与多环境切换，

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! PrimiFlow 企业级端到端运行器
 //!
 //! 把 `flow-ai` 的 κ‑τ 自涌现引擎（大脑）与 `primiflow` 的六维溯源图谱（唯一事实源）打通，

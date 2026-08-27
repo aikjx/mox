@@ -1,0 +1,30 @@
+[package]
+name = "mox-platform-integration-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Mox Platform Integration Core — unified integration layer: extension point registry, bootstrap assembly, health checks, cross-capability coordination (AI/Plugin/Enterprise/Connector)"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+tokio = { workspace = true }
+parking_lot = { workspace = true }
+futures = { workspace = true }
+
+# 4大对接能力层
+mox-ai-core = { workspace = true }
+mox-plugin-core = { workspace = true }
+mox-enterprise-core = { workspace = true }
+mox-connector-core = { workspace = true }
+
+# 框架
+mox-framework = { workspace = true }

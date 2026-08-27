@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 纯 Rust SHA-256 实现（零依赖，FIPS 180-4）
 //!
 //! 仅用于**不可逆令牌存储**与完整性校验，避免引入外部加密依赖带来的供应链风险。

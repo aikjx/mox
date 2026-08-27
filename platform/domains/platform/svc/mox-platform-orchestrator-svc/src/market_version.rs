@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # 算子商城：版本化管理
 //!
 //! - **semver**：版本号遵循 `主.次.补[-预发布]` 语义化版本（内置实现，零依赖），

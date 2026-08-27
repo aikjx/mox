@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 性能专家（开发维度）：审查代码性能、资源使用
 //!
 //! 分析基于 `CodeUnit` 的**预分析真字段**（执行耗时 / 内存 / N+1），

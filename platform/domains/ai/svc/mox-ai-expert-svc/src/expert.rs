@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 专家 trait 与观点类型
 //!
 //! 每位专家无状态、只读分析，输出 `ExpertOpinion`，由裁决器归一合并。

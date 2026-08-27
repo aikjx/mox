@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 全局热键占位（P2 实现：Alt+X 录音开始/停止、Alt+S 静音切换、Alt+Q 隐藏悬浮球）
 //!
 //! 使用 global-hotkey crate（跨平台 Win/macOS/Linux）。P1 只提供 bind 定义 + 探测，

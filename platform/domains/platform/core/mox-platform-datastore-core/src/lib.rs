@@ -1,3 +1,7 @@
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! MOX Platform Datastore Core
 //!
 //! Multi-backend data store abstraction: SQLite (default), PostgreSQL, MySQL.
@@ -8,6 +12,23 @@ use std::sync::Arc;
 use thiserror::Error;
 
 pub use sea_query;
+
+// ═══════════════════════════════════════════════════════════════
+// 企业级通用数据层模块
+// ═══════════════════════════════════════════════════════════════
+pub mod dao;
+pub mod field;
+pub mod hash;
+pub mod memory_repos;
+pub mod query;
+pub mod tx;
+
+pub use dao::UniversalBizDAO;
+pub use field::{FieldSlotAllocator, FieldSpec, SlotAllocation, SlotType};
+pub use hash::compute_hash;
+pub use memory_repos::{InMemoryIamRepo, InMemoryMetaRepo};
+pub use query::{Filter, ListResult, SortOrder, SortSpec};
+pub use tx::TxManager;
 
 #[derive(Debug, Error)]
 pub enum DatastoreError {
@@ -100,7 +121,7 @@ pub struct DatastoreConnection {
 }
 
 enum DatastoreInner {
-    Sqlite(rusqlite::Connection),
+    Sqlite(parking_lot::Mutex<rusqlite::Connection>),
     Postgres,
     Mysql,
 }
@@ -115,7 +136,7 @@ impl DatastoreConnection {
                     .map_err(|e| DatastoreError::Connection(e.to_string()))?;
                 conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA synchronous=NORMAL;")
                     .map_err(|e| DatastoreError::Connection(e.to_string()))?;
-                DatastoreInner::Sqlite(conn)
+                DatastoreInner::Sqlite(parking_lot::Mutex::new(conn))
             }
             DatabaseBackend::Postgres => { if config.strict_persist { return Err(DatastoreError::UnsupportedBackend("PostgreSQL requires sqlx feature (planned)".into())); } DatastoreInner::Postgres }
             DatabaseBackend::Mysql => { if config.strict_persist { return Err(DatastoreError::UnsupportedBackend("MySQL requires sqlx feature (planned)".into())); } DatastoreInner::Mysql }
@@ -127,7 +148,7 @@ impl DatastoreConnection {
 
     pub fn execute(&self, sql: &str, params: &[&dyn rusqlite::ToSql]) -> Result<usize, DatastoreError> {
         match &*self.inner {
-            DatastoreInner::Sqlite(conn) => conn.execute(sql, params).map_err(|e| DatastoreError::Query(e.to_string())),
+            DatastoreInner::Sqlite(conn) => conn.lock().execute(sql, params).map_err(|e| DatastoreError::Query(e.to_string())),
             _ => Err(DatastoreError::UnsupportedBackend("execute requires SQLite".into())),
         }
     }
@@ -136,7 +157,8 @@ impl DatastoreConnection {
     where F: Fn(&rusqlite::Row<'_>) -> rusqlite::Result<T> {
         match &*self.inner {
             DatastoreInner::Sqlite(conn) => {
-                let mut stmt = conn.prepare(sql).map_err(|e| DatastoreError::Query(e.to_string()))?;
+                let guard = conn.lock();
+                let mut stmt = guard.prepare(sql).map_err(|e| DatastoreError::Query(e.to_string()))?;
                 let rows = stmt.query_map(params, mapper).map_err(|e| DatastoreError::Query(e.to_string()))?;
                 rows.collect::<Result<Vec<_>, _>>().map_err(|e| DatastoreError::Query(e.to_string()))
             }
@@ -164,8 +186,8 @@ impl DatastoreConnection {
     where F: FnOnce(&TransactionCtx<'_>) -> Result<T, DatastoreError> {
         match &*self.inner {
             DatastoreInner::Sqlite(conn) => {
-                let mut conn = conn.lock();
-                let tx = conn.transaction().map_err(|e| DatastoreError::Query(e.to_string()))?;
+                let mut guard = conn.lock();
+                let tx = guard.transaction().map_err(|e| DatastoreError::Query(e.to_string()))?;
                 let ctx = TransactionCtx { tx: &tx };
                 let result = f(&ctx)?;
                 tx.commit().map_err(|e| DatastoreError::Query(e.to_string()))?;

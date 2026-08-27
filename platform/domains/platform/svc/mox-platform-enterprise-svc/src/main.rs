@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! enterprise-svc 二进制入口：监听 0.0.0.0:3002，提供企业级 HTTP 真源
 //!
 //! 启动参数（env）：

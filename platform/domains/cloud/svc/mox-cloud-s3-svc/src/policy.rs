@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Bucket Policy JSON 解析 + evaluate（Principal/Effect/Action/Resource 核心子集）。
 
 use serde::{Deserialize, Serialize};

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 算法专家：关键路径瓶颈、复杂度、缓存与算力路由提议
 
 use crate::context::ExpertContext;

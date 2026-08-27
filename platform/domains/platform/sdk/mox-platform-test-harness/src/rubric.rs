@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Task 12 – Rubric Grade Calculator (AIS-grade fusion "S" grade rubric).
 //!
 //! Provides the 8-dimension weighted score used by Mox v2.0 AIS-grade

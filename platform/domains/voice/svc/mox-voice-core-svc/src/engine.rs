@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! OperatorEngine：算子注册表 + 三策略 dispatch_intent 主调度（对齐 Python operator.base.OperatorEngine）
 //!
 //! 流水线（对应 alliance-fr13-fr5-integration.md §2 S1→S4→S5）：

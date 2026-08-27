@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 璇玑全维融合端到端集成测试（I-05 / I-06 / I-07 闭环验收）
 //!
 //! 不依赖服务器进程，纯库级串联：

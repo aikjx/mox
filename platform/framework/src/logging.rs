@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 结构化日志初始化 — JSON格式，可对接Loki/ELK，零配置
 
 use tracing_subscriber::{fmt, EnvFilter};

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! App 算子：应用控制（list_running / open_app / open_file_with_app / close_app / shell_exec）
 //!
 //! 跨平台回退链：

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! MySQL 后端实现（sqlx 连接池，全异步）
 //!
 //! 等价 Spring Boot 的 JPA Repository：连接串形如

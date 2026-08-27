@@ -1,4 +1,8 @@
-﻿//! 领域事件与事件总线（数据流核心）
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
+//! 领域事件与事件总线（数据流核心）
 //!
 //! 所有写操作在执行后发出领域事件；编排层的反应器（reactor）订阅总线，
 //! 将事件转换为系统消息与成员通知，实现「任务变更 → 通信」的自动数据流。

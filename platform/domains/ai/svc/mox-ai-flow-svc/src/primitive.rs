@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # κ‑τ 拓扑原语自涌现调度引擎（PrimiFlow 核心内核）
 //!
 //! 守恒公理：

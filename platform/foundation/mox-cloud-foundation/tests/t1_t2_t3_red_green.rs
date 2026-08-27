@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! TDD RED-GREEN: L5 mox-domain-abstractions 10 traits * 5 = 50 tests.
 //!
 //! RED Evidence: 2026-08-23 cargo test 时 50 tests failing。

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! T10 M4：10 条 IAM 标准 Policy + Deny 优先 evaluate 引擎
 //!
 //! 10 条 Policy SID 命名（与 tasks.md A-2 对齐）：

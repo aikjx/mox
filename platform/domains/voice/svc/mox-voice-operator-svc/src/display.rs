@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Display 算子：显示与分辨率（list_displays / set_resolution / set_brightness / screenshot_capture_region / display_on_off）
 //!
 //! 跨平台回退链：

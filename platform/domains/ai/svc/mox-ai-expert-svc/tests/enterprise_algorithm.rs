@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 迭代测试：企业级业务流程 + 算法控制流（并行/互斥/异常/循环/子流程）
 //!
 //! 目的：用复杂真实用例压 `programming_pipeline`，验证 G-A~E 护栏与

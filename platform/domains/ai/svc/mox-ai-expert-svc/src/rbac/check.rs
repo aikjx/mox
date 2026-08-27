@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! RBAC 权限检查 — 资源级粒度，拒绝含具体缺失路径
 
 use crate::audit::integration::AuditContext;

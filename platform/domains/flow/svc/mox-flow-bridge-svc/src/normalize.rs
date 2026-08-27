@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Step 2：Hermes 工具调用 ↔ mox_ai_flow_svc::FlowNode 规范化映射。
 //!
 //! 设计：bridge 只认 Hermes 中间件上下文里的 `tool_name` + `args`（均为 serde_json::Value），

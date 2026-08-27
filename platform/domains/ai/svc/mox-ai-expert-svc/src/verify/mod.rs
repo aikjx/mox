@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! ⛨ 璇玑验证网关（最高权限）
 //!
 //! 在 flow-ai 求解之后、治理闸门之前插入。所有检查均为**数学/语义正确性**判定，

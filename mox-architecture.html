@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOX 控制中心 · 专家联盟子代理架构</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0e1a; --card: #111827; --border: #1e293b;
+    --accent: #38bdf8; --accent2: #a78bfa; --accent3: #34d399; --accent4: #fbbf24;
+    --text: #e2e8f0; --muted: #94a3b8;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 40px 20px; }
+  .container { max-width: 1400px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 48px; padding: 40px; background: linear-gradient(135deg, rgba(56,189,248,0.08), rgba(167,139,250,0.08)); border: 1px solid var(--border); border-radius: 16px; }
+  header h1 { font-size: 2.2em; background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 12px; }
+  header p { color: var(--muted); font-size: 1.05em; }
+  .section { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 32px; margin-bottom: 32px; }
+  .section h2 { font-size: 1.4em; color: var(--accent); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+  .section h2::before { content: ''; width: 4px; height: 24px; background: linear-gradient(180deg, var(--accent), var(--accent2)); border-radius: 2px; }
+  .section .subtitle { color: var(--muted); margin-bottom: 24px; font-size: 0.95em; }
+  .mermaid { background: #0d1117; border-radius: 10px; padding: 24px; overflow-x: auto; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+  .layer-card { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+  .layer-card h3 { font-size: 1.05em; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .layer-card .tag { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.75em; font-weight: 600; }
+  .tag-core { background: rgba(56,189,248,0.15); color: var(--accent); }
+  .tag-expert { background: rgba(167,139,250,0.15); color: var(--accent2); }
+  .tag-cap { background: rgba(52,211,153,0.15); color: var(--accent3); }
+  .tag-user { background: rgba(251,191,36,0.15); color: var(--accent4); }
+  .layer-card ul { list-style: none; padding: 0; }
+  .layer-card li { padding: 6px 0; color: var(--muted); font-size: 0.9em; display: flex; align-items: center; gap: 8px; }
+  .layer-card li::before { content: '▸'; color: var(--accent); font-size: 0.8em; }
+  .flow-steps { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+  .flow-step { flex: 1; min-width: 140px; background: rgba(56,189,248,0.06); border: 1px solid rgba(56,189,248,0.2); border-radius: 8px; padding: 14px; text-align: center; }
+  .flow-step .num { font-size: 1.5em; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+  .flow-step .label { font-size: 0.85em; color: var(--text); }
+  footer { text-align: center; color: var(--muted); font-size: 0.85em; padding: 24px; margin-top: 16px; }
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <h1>MOX 控制中心 · 专家联盟子代理架构</h1>
+  <p>Master Orchestrator eXecutive — 所有第三方能力即插即用为子代理，MOX 统一调度、全维分析、布局优化</p>
+</header>
+
+<div class="section">
+  <h2>一、四层架构总览</h2>
+  <p class="subtitle">MOX 为顶层控制中枢，向下统管专家联盟子代理集群，子代理按需调用第三方能力层，形成"决策—协作—执行"三级闭环。</p>
+  <div class="mermaid">
+graph TB
+    subgraph L0["① 用户接入层"]
+        direction LR
+        U1[Web/API 接入]
+        U2[CLI/SDK 接入]
+        U3[消息/事件接入]
+    end
+    subgraph L1["② MOX 控制中心（核心调度层）"]
+        direction TB
+        M1[意图解析与任务建模]
+        M2[全维分析引擎<br/>能力评估·资源布局·风险识别]
+        M3[子代理路由与调度器]
+        M4[上下文与状态管理器]
+        M5[结果聚合与质量管控]
+        M6[反馈学习与布局优化]
+        M1 --> M2 --> M3
+        M3 --> M4
+        M4 --> M5
+        M5 --> M6
+        M6 -.动态调优.-> M3
+    end
+    subgraph L2["③ 专家联盟子代理层"]
+        direction LR
+        E1[架构设计专家]
+        E2[代码开发专家]
+        E3[运维部署专家]
+        E4[数据分析专家]
+        E5[安全合规专家]
+        E6[产品设计专家]
+        E7[测试质检专家]
+        E8[文档撰写专家]
+    end
+    subgraph L3["④ 第三方能力层（即插即用子代理）"]
+        direction LR
+        C1[大模型 API<br/>GPT/Claude/文心/通义]
+        C2[工具 API<br/>搜索/计算/文件/爬虫]
+        C3[数据源<br/>DB/知识库/向量库/API]
+        C4[基础设施<br/>云服务/容器/CI-CD/监控]
+    end
+    L0 --> M1
+    M3 --> E1 & E2 & E3 & E4 & E5 & E6 & E7 & E8
+    E1 & E2 & E3 & E4 & E5 & E6 & E7 & E8 --> C1 & C2 & C3 & C4
+    C1 & C2 & C3 & C4 -.执行结果.-> E1 & E2 & E3 & E4 & E5 & E6 & E7 & E8
+    E1 & E2 & E3 & E4 & E5 & E6 & E7 & E8 -.中间产物.-> M5
+    M5 --> L0
+    style L1 fill:#0c4a6e,stroke:#38bdf8,stroke-width:2px
+    style L2 fill:#3b0764,stroke:#a78bfa,stroke-width:2px
+    style L3 fill:#064e3b,stroke:#34d399,stroke-width:2px
+    style L0 fill:#78350f,stroke:#fbbf24,stroke-width:2px
+  </div>
+</div>
+
+<div class="section">
+  <h2>二、MOX 控制中心核心模块拆解</h2>
+  <p class="subtitle">六大模块构成控制闭环：从意图理解到调度执行，再到质量校验与持续优化。</p>
+  <div class="grid-2">
+    <div class="layer-card">
+      <h3><span class="tag tag-core">CORE</span> 意图解析与任务建模</h3>
+      <ul>
+        <li>自然语言意图识别与实体抽取</li>
+        <li>任务类型分类（开发/分析/运维/创作）</li>
+        <li>目标拆解与依赖关系建模（DAG）</li>
+        <li>约束条件提取（时间/资源/质量标准）</li>
+      </ul>
+    </div>
+    <div class="layer-card">
+      <h3><span class="tag tag-core">CORE</span> 全维分析引擎</h3>
+      <ul>
+        <li>能力评估：匹配子代理技能矩阵与任务需求</li>
+        <li>资源布局：算力/配额/并发度最优分配</li>
+        <li>风险识别：依赖风险/安全风险/成本风险</li>
+        <li>路径规划：串行/并行/混合执行策略选择</li>
+      </ul>
+    </div>
+    <div class="layer-card">
+      <h3><span class="tag tag-core">CORE</span> 子代理路由与调度器</h3>
+      <ul>
+        <li>动态选型：基于能力评分+负载+成本的最优代理选择</li>
+        <li>任务派发：原子任务下发与参数注入</li>
+        <li>并发控制：信号量/队列/优先级调度</li>
+        <li>故障转移：代理异常自动降级与重试路由</li>
+      </ul>
+    </div>
+    <div class="layer-card">
+      <h3><span class="tag tag-core">CORE</span> 上下文与状态管理器</h3>
+      <ul>
+        <li>全局会话上下文维护（Memory）</li>
+        <li>子代理间共享状态与中间产物传递</li>
+        <li>长任务断点续跑与状态快照</li>
+        <li>上下文窗口智能压缩与摘要</li>
+      </ul>
+    </div>
+    <div class="layer-card">
+      <h3><span class="tag tag-core">CORE</span> 结果聚合与质量管控</h3>
+      <ul>
+        <li>多代理结果融合与冲突消解</li>
+        <li>交叉验证：多代理互审机制</li>
+        <li>质量门控：格式/准确性/完整性校验</li>
+        <li>不达标自动回退重派</li>
+      </ul>
+    </div>
+    <div class="layer-card">
+      <h3><span class="tag tag-core">CORE</span> 反馈学习与布局优化</h3>
+      <ul>
+        <li>执行效果数据采集与归因分析</li>
+        <li>子代理能力评分动态更新</li>
+        <li>调度策略在线优化（强化学习/规则进化）</li>
+        <li>布局调优：代理组合/并行度/资源配比持续进化</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>三、业务处理全流程图</h2>
+  <p class="subtitle">从用户请求接入到最终交付的完整闭环，含全维分析、子代理协作、质量管控与反馈优化九大阶段。</p>
+  <div class="mermaid">
+flowchart TD
+    A([用户请求接入]) --> B[MOX 意图解析<br/>任务建模·约束提取]
+    B --> C{全维分析引擎}
+    C --> C1[能力评估<br/>匹配专家代理]
+    C --> C2[资源布局<br/>算力·配额·并发]
+    C --> C3[风险识别<br/>依赖·安全·成本]
+    C1 & C2 & C3 --> D[任务分解与 DAG 构建<br/>原子任务·依赖关系]
+    D --> E[子代理路由与调度<br/>动态选型·并发派发]
+    E --> F1[架构设计专家]
+    E --> F2[代码开发专家]
+    E --> F3[运维部署专家]
+    E --> F4[数据分析专家]
+    E --> F5[安全合规专家]
+    E --> F6[测试质检专家]
+    F1 & F2 & F3 & F4 & F5 & F6 --> G[第三方能力调用层<br/>模型API·工具API·数据源·基础设施]
+    G --> H[中间产物汇聚<br/>上下文同步·状态更新]
+    H --> I{质量门控}
+    I -->|不达标| J[回退重派<br/>调整代理/参数/策略]
+    J --> E
+    I -->|达标| K[结果整合与交叉验证<br/>多代理互审·冲突消解]
+    K --> L[布局优化评估<br/>执行效果归因·策略调优]
+    L --> M([输出交付<br/>用户反馈闭环])
+    M -.反馈数据.-> N[代理能力评分更新]
+    N -.-> E
+    style A fill:#fbbf24,stroke:#f59e0b,color:#000
+    style M fill:#fbbf24,stroke:#f59e0b,color:#000
+    style C fill:#0c4a6e,stroke:#38bdf8,stroke-width:2px
+    style E fill:#0c4a6e,stroke:#38bdf8,stroke-width:2px
+    style I fill:#7f1d1d,stroke:#ef4444,stroke-width:2px
+    style K fill:#064e3b,stroke:#34d399,stroke-width:2px
+    style L fill:#3b0764,stroke:#a78bfa,stroke-width:2px
+  </div>
+</div>
+
+<div class="section">
+  <h2>四、专家联盟子代理协作模式</h2>
+  <p class="subtitle">三种协作模式按需切换，MOX 调度器根据任务 DAG 自动选择最优组合。</p>
+  <div class="mermaid">
+graph LR
+    subgraph 串行流水线["模式一：串行流水线（强依赖任务）"]
+        S1[需求分析] --> S2[架构设计] --> S3[编码实现] --> S4[测试验证] --> S5[部署上线]
+    end
+    subgraph 并行扇出["模式二：并行扇出（独立子任务）"]
+        P0[任务分发器] --> P1[前端开发]
+        P0 --> P2[后端开发]
+        P0 --> P3[数据库设计]
+        P0 --> P4[文档编写]
+        P1 & P2 & P3 & P4 --> P5[结果汇聚]
+    end
+    subgraph 混合协作["模式三：混合协作（复杂项目）"]
+        H1[架构设计] --> H2[并行开发组]
+        H2 --> H2a[模块A]
+        H2 --> H2b[模块B]
+        H2 --> H2c[模块C]
+        H2a & H2b & H2c --> H3[集成测试]
+        H3 --> H4[安全审计]
+        H4 --> H5[交付部署]
+    end
+    style 串行流水线 fill:#1e293b,stroke:#475569
+    style 并行扇出 fill:#1e293b,stroke:#475569
+    style 混合协作 fill:#1e293b,stroke:#475569
+  </div>
+</div>
+
+<div class="section">
+  <h2>五、核心流程九阶段速览</h2>
+  <div class="flow-steps">
+    <div class="flow-step"><div class="num">01</div><div class="label">请求接入</div></div>
+    <div class="flow-step"><div class="num">02</div><div class="label">意图解析</div></div>
+    <div class="flow-step"><div class="num">03</div><div class="label">全维分析</div></div>
+    <div class="flow-step"><div class="num">04</div><div class="label">任务分解</div></div>
+    <div class="flow-step"><div class="num">05</div><div class="label">代理调度</div></div>
+    <div class="flow-step"><div class="num">06</div><div class="label">协作执行</div></div>
+    <div class="flow-step"><div class="num">07</div><div class="label">质量门控</div></div>
+    <div class="flow-step"><div class="num">08</div><div class="label">布局优化</div></div>
+    <div class="flow-step"><div class="num">09</div><div class="label">交付闭环</div></div>
+  </div>
+</div>
+
+<footer>MOX Control Center · Expert Alliance Sub-Agent Architecture · 全维分析 · 布局优化 · 即插即用</footer>
+</div>
+<script>
+  mermaid.initialize({
+    startOnLoad: true, theme: 'dark',
+    themeVariables: {
+      primaryColor: '#1e293b', primaryTextColor: '#e2e8f0', primaryBorderColor: '#38bdf8',
+      lineColor: '#64748b', secondaryColor: '#3b0764', tertiaryColor: '#0d1117',
+      fontFamily: '-apple-system, "PingFang SC", "Microsoft YaHei", sans-serif'
+    },
+    flowchart: { curve: 'basis', padding: 20, nodeSpacing: 50, rankSpacing: 60 }
+  });
+</script>
+</body>
+</html>

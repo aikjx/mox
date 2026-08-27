@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Volume 算子：get/set 音量、静音、设备枚举（跨平台）
 //!
 //! 回退链（与 Python volume_operator 一致，减少平台差 bug）：

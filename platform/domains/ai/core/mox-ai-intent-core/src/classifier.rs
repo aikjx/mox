@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 意图分类：Aho-Corasick 多模匹配（leftmost-first） + 等级评分 + TOP-K。
 //!
 //! ## API 契约（与 Node intent-classifier.js 完全一致）

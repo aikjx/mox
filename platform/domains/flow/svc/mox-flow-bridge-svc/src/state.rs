@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 共享运行状态（bridge 单一事实源）。
 //!
 //! - `BridgeState`：持有会话流程图录制器、复用模板路由器、算法否决闸门、以及

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! MOX Architecture Tests
 //!
 //! Enforces cross-domain dependency rules and layering constraints:
@@ -291,6 +295,133 @@ fn test_api_crates_are_pure() {
 
     if !violations.is_empty() {
         panic!("API purity violations found ({}):\n{}",
+            violations.len(), violations.join("\n"));
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 架构-数据分离不变量测试
+// ═══════════════════════════════════════════════════════════════════
+
+fn workspace_root() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent().unwrap()
+        .parent().unwrap()
+        .to_path_buf()
+}
+
+/// 验证 platform/ 目录下无运行时数据文件（.db/.sqlite/.log 等）
+#[test]
+fn test_architecture_data_separation() {
+    let root = workspace_root();
+    let platform_dir = root.join("platform");
+    let data_extensions = [".db", ".sqlite", ".sqlite3", ".log", ".pid", ".sock", ".lock"];
+    let mut violations = Vec::new();
+
+    for entry in WalkDir::new(&platform_dir).into_iter().filter_map(|e| e.ok()) {
+        if entry.file_type().is_file() {
+            let name = entry.file_name().to_string_lossy();
+            for ext in &data_extensions {
+                if name.ends_with(ext) {
+                    violations.push(format!("  {}", entry.path().display()));
+                }
+            }
+        }
+    }
+
+    if !violations.is_empty() {
+        panic!("Architecture-data separation violations: data files found in platform/ ({}):\n{}",
+            violations.len(), violations.join("\n"));
+    }
+}
+
+/// 验证代码中无硬编码的相对数据路径（必须通过 mox-platform-paths 管理）
+#[test]
+fn test_no_hardcoded_data_paths() {
+    let root = workspace_root();
+    let platform_dir = root.join("platform");
+    // 禁止的硬编码相对路径模式
+    let forbidden_patterns = [
+        r#""./data/"#,
+        r#""./config/"#,
+        r#""./plugins/"#,
+        r#""./storage/"#,
+        r#""./third_party/"#,
+        r#""./.runtime/"#,
+    ];
+    let mut violations = Vec::new();
+
+    for entry in WalkDir::new(&platform_dir).into_iter().filter_map(|e| e.ok()) {
+        if entry.file_type().is_file() && entry.path().extension().map_or(false, |e| e == "rs") {
+            if let Ok(content) = std::fs::read_to_string(entry.path()) {
+                for (line_num, line) in content.lines().enumerate() {
+                    for pattern in &forbidden_patterns {
+                        if line.contains(pattern) {
+                            // 允许在注释中出现（以 // 开头）
+                            let trimmed = line.trim_start();
+                            if !trimmed.starts_with("//") && !trimmed.starts_with("*") {
+                                violations.push(format!(
+                                    "  {}:{}  {}",
+                                    entry.path().display(), line_num + 1, trimmed
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if !violations.is_empty() {
+        panic!("Hardcoded data path violations found ({}): use mox-platform-paths instead\n{}",
+            violations.len(), violations.join("\n"));
+    }
+}
+
+/// 验证所有插件文件位于 plugins/ 目录，不在 platform/ 内
+#[test]
+fn test_plugins_outside_platform() {
+    let root = workspace_root();
+    let platform_dir = root.join("platform");
+    let plugin_extensions = [".wasm", ".so", ".dll", ".dylib"];
+    let mut violations = Vec::new();
+
+    for entry in WalkDir::new(&platform_dir).into_iter().filter_map(|e| e.ok()) {
+        if entry.file_type().is_file() {
+            let name = entry.file_name().to_string_lossy();
+            for ext in &plugin_extensions {
+                if name.ends_with(ext) {
+                    violations.push(format!("  {}", entry.path().display()));
+                }
+            }
+        }
+    }
+
+    if !violations.is_empty() {
+        panic!("Plugin separation violations: plugin files found in platform/ ({}):\n{}",
+            violations.len(), violations.join("\n"));
+    }
+}
+
+/// 验证第三方源码/模型位于 third_party/，不在 platform/ 内
+#[test]
+fn test_third_party_outside_platform() {
+    let root = workspace_root();
+    let platform_dir = root.join("platform");
+    // 检查 platform/ 下是否有 third_party 或 vendor 目录
+    let mut violations = Vec::new();
+
+    for entry in WalkDir::new(&platform_dir).max_depth(3).into_iter().filter_map(|e| e.ok()) {
+        if entry.file_type().is_dir() {
+            let name = entry.file_name().to_string_lossy().to_lowercase();
+            if name == "third_party" || name == "vendor" || name == "external" {
+                violations.push(format!("  {}", entry.path().display()));
+            }
+        }
+    }
+
+    if !violations.is_empty() {
+        panic!("Third-party separation violations: third_party/vendor dirs found in platform/ ({}):\n{}",
             violations.len(), violations.join("\n"));
     }
 }

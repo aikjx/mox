@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! AI Providers 模块入口
 //!
 //! 新增Provider：在此文件添加 `pub mod xxx;` 和重导出，

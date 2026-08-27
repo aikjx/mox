@@ -1,0 +1,41 @@
+# MOX Platform Configuration
+# 架构-数据分离规范：所有配置文件位于 config/，代码通过 mox-platform-paths 读取
+
+# ─── Gateway 配置 ───
+gateway:
+  host: "0.0.0.0"
+  port: 8080
+  workers: 4
+
+# ─── 认证配置 ───
+auth:
+  jwt_secret: "${MOX_JWT_SECRET}"
+  jwt_expiry_secs: 3600
+  api_key_header: "X-API-Key"
+
+# ─── 限流配置 ───
+rate_limit:
+  enabled: true
+  requests_per_minute: 60
+  burst: 10
+
+# ─── 数据库配置 ───
+database:
+  # 路径通过 mox-platform-paths 解析为 data/storage/{domain}.db
+  backend: "sqlite"
+  pool_size: 10
+  timeout_secs: 30
+
+# ─── 日志配置 ───
+logging:
+  level: "info"
+  format: "json"
+  # 日志文件通过 mox-platform-paths 解析为 data/logs/
+  file_enabled: true
+
+# ─── 插件配置 ───
+plugins:
+  # 插件目录通过 mox-platform-paths 解析为 plugins/
+  enabled: true
+  auto_load: true
+  allowed_domains: ["data", "ai", "kg", "flow"]

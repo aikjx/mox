@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Business-catalog DIP 验收：`optimize_with` / `register_business_experts`
 //! 只依赖 Arc<dyn ExpertConsultant> / Arc<dyn ExpertRegistry> trait 对象。
 //!

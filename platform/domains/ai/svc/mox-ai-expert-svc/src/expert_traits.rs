@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! L3 领域层对外抽象 trait（DIP 反转：下游只依赖这些 trait 抽象，不依赖具体实现）。
 //!
 //! 设计：

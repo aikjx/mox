@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # 算子商城：路径迁移 / 备份 / 审计 / 存储 IO
 //!
 //! 统一收敛 market 模块的磁盘布局与 IO 侧支撑能力：

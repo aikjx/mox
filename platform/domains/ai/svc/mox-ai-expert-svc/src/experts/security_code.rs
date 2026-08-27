@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 代码安全专家（开发维度）：审查代码安全漏洞、注入风险、敏感数据处理
 //!
 //! 分析基于 `CodeUnit` 的**预分析真字段**（`hardcoded_secret` / `sql_injection_risk` /

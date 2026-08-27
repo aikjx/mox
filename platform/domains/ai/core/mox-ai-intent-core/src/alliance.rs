@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 专家联盟打分：matchExperts + scoreExperts 的 Rust 高性能权威实现。
 //!
 //! - 使用 aho-corasick 对专家 capabilities 做批量关键词匹配（替代 O(expert·cap) 字符串 contains）。

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! S3 Multipart ETag 与 CRC32C 校验和 — 纯 Rust 实现，无外部额外依赖。
 //!
 //! AWS S3 分片上传 ETag 规则：

@@ -21,6 +21,35 @@
 
 ---
 
+## 📋 项目元信息（Project Metadata）
+
+| 项 | 内容 |
+|---|---|
+| **对外产品名** | 璇玑 RelGraph |
+| **底层父系统** | OUS（Operator Unified System · 算子统一系统） |
+| **仓库代号** | infotopograph（关图） |
+| **开发周期** | 2026-08-06 起 · 持续迭代中（最新提交 2026-08-27） |
+| **治理组织** | 三联盟模式（产品联盟 / 算法联盟 / 开发联盟） |
+| **开源协议** | MIT License（详见 [LICENSE](LICENSE)） |
+| **版权所有** | © 2026 璇玑 RelGraph · 算子统一系统（OUS）· 三联盟 |
+
+### 📦 Git 仓库地址
+
+| 平台 | URL |
+|---|---|
+| **GitCode（主仓）** | <https://gitcode.com/aikjx/mox> |
+| **GitHub（镜像）** | <https://github.com/aikjx/mox.git> |
+
+```bash
+# 克隆主仓
+git clone https://gitcode.com/aikjx/mox.git infotopograph
+
+# 或克隆镜像
+git clone https://github.com/aikjx/mox.git infotopograph
+```
+
+---
+
 ## 🌟 项目定位
 
 算子统一系统（OUS）是一套 **企业级通用计算与编排底座**（技术父系统代号），其上承载的对外产品「璇玑 RelGraph」实现：
@@ -160,25 +189,28 @@
 
 ## 📁 项目结构（6层8域DDD矩阵 · 路径零老化 · 对齐 ADR-DOC-008 / GLOSSARY §5 · 三联盟责任标注）
 
-> **架构模型 v2.0**：6层8域DDD矩阵 — L0 Foundation（横切基础）/ L1 Gateway（网关）/ L2 Core（8域领域模型）/ L3 Svc（8域应用服务）/ L4 Sdk（8域对外类型）/ L5 Api（8域域间契约，规划中）。8域 = ai / cloud / data / flow / kg / market / platform / voice。
+> **架构模型 v3.0**：6层8域DDD矩阵 — **L0 Foundation**（横切基础：类型/错误/配置/路径管理/可观测）/ **L1 Gateway**（网关：路由+鉴权+限流，仅依赖 L0+L2）/ **L2 API**（8域域间 trait 契约，纯接口仅依赖 L0）/ **L3 Core**（8域领域模型）/ **L4 Svc**（8域应用服务）/ **L5 SDK**（8域对外 FFI 绑定）。8域 = ai / cloud / data / flow / kg / market / platform / voice。
 > **旧→新迁移映射**：完整17旧crate→54新crate映射见 [`docs/enterprise/ARCHITECTURE-MIGRATION.md`](docs/enterprise/ARCHITECTURE-MIGRATION.md)。旧路径 `platform/services/`、`crates/` 已废弃。
+> **架构-数据分离**：`platform/` 为纯代码只读边界，运行时数据/插件/第三方模型统一放在 `data/`/`plugins/`/`third_party/`，通过 `mox-platform-paths` 统一管理，详见 [`docs/standards/architecture-data-separation.md`](docs/standards/architecture-data-separation.md)。
 
 ```
 infotopograph/  （= 璇玑 RelGraph 项目仓；根历史遗留 operator-unified-system 名仅作为底层父系统 OUS 代号，对外产品名统一为璇玑 RelGraph）
-├── platform/                     # 🟢 平台服务层（后端核心 · Rust 73 crate workspace · 6层8域DDD矩阵 · 开发联盟主责）
-│   ├── foundation/               #   L0 横切基础层（通用类型/错误处理/配置/工具函数/云基础设施抽象）
+├── platform/                     # 🟢 平台服务层（后端核心 · Rust 73 crate workspace · 6层8域DDD矩阵 · 开发联盟主责）│   ├── foundation/               #   L0 横切基础层（通用类型/错误处理/配置/路径管理/可观测/云基础设施抽象）
 │   │   ├── mox-platform-foundation/    # 平台基础库
-│   │   └── mox-cloud-foundation/       # 云基础设施基础库
-│   ├── gateway/                  #   L1 网关层（仅路由+横切中间件：鉴权/限流/CORS/日志/WS/健康检查）
+│   │   ├── mox-cloud-foundation/       # 云基础设施基础库
+│   │   ├── mox-platform-observability/ # 可观测性（日志/指标/追踪）
+│   │   └── mox-platform-paths/         # 🆕 统一路径管理（架构-数据分离铁律）
+│   ├── gateway/                  #   L1 网关层（模块化：路由/鉴权/限流分离，仅依赖 L0+L2 API）
 │   │   └── mox-platform-gateway-svc/   # API网关 · operator-server 二进制入口
+│   ├── arch-test/                #   🆕 架构测试（分层规则/跨域依赖/环检测/API纯度/架构-数据分离 8项不变量）
+│   │   └── mox-arch-test/
 │   ├── framework/                #   插件框架层（扩展点定义/插件注册 · mox-framework 库）
 │   └── domains/                  #   8域 × 5层矩阵（core/svc/sdk/api/svcapi）
 │       ├── ai/                   #   🟢 AI域（算法联盟R · 开发联盟C）
-│       │   ├── core/             #     L2 领域模型：mox-ai-core, mox-ai-intent-core
-│       │   ├── svc/              #     L3 应用服务：mox-ai-agent-svc(对话/浏览器自动化/MultiAgent), mox-ai-expert-svc(⛨璇玑14专家/验证/审计/RBAC), mox-ai-flow-svc(流程AI/代码生成)
-│       │   ├── sdk/              #     L4 对外类型（规划中）
-│       │   ├── api/              #     L5 域间契约（规划中 · Phase 3填充）
-│       │   └── svcapi/           #     服务API（规划中）
+│       │   ├── api/              #     🆕 L2 域间契约：IntentRouter/CapabilityRegistry/ActivationDiffusion（纯trait）
+│       │   ├── core/             #     L3 领域模型：mox-ai-core, mox-ai-intent-core
+│       │   ├── svc/              #     L4 应用服务：mox-ai-agent-svc(对话/浏览器自动化/MultiAgent), mox-ai-expert-svc(⛨璇玑14专家/验证/审计/RBAC), mox-ai-flow-svc(流程AI/代码生成)
+│       │   └── sdk/              #     L5 对外类型（规划中）
 │       ├── kg/                   #   🟢 知识图谱域（算法联盟R · 最大域 · 9 crate）
 │       │   ├── core/             #     L2：mox-kg-algo-core(八大算法A1~A8), mox-kg-meta-core(本体/Schema/14节点族×19边族)
 │       │   ├── svc/              #     L3：mox-kg-storage-svc, mox-kg-service-svc, mox-kg-streams-svc, mox-kg-spark-svc, mox-kg-hub-svc(混合索引+URN+8段5连接器), mox-kg-fusion-svc(RRF融合/实体对齐)
@@ -204,6 +236,12 @@ infotopograph/  （= 璇玑 RelGraph 项目仓；根历史遗留 operator-unifie
 │           ├── core/             #     L2：mox-voice-dsp-core(响度归一/软限幅/Aho-Corasick/SIMD)
 │           ├── svc/              #     L3：mox-voice-core-svc, mox-voice-asr-svc, mox-voice-intent-svc, mox-voice-operator-svc, mox-voice-desktop-app(全局热键/BallWidget/键鼠自动化)
 │           └── sdk/              #     L4：mox-voice-dsp-py(PyO3)
+├── config/                       # 🆕 📁 配置文件（Git追踪：gateway.yaml/paths.env.example，模板化）
+├── data/                         # 🆕 💾 运行时数据（.gitignore：storage/cache/logs/uploads/exports）
+├── plugins/                      # 🔌 第三方插件（.gitignore：wasm/scripts/extensions，按需加载）
+├── third_party/                  # 📦 第三方源码/模型（.gitignore或submodule：CosyVoice/models）
+├── .runtime/                     # 🆕 ⚡ 运行时状态（.gitignore：pid/sock/lock）
+├── shared/                       # 跨端共享资源：常量、Schema、配置
 ├── frontend-ui/                  # 🟢 用户端：Vue3 + Three.js + ECharts 前端单应用（28 视图 + /admin 5 面板，产品联盟主责）
 │   │                            #   管理区 5 面板：凭证 / 审计 / HITL（人机回环）/ 存储 / 总览
 │   │                            #   🔴 旧 frontend-admin-ui 目录已裁撤（ADR-DOC-005 M0）；管理入口：/admin?tab=<tab>
@@ -211,8 +249,6 @@ infotopograph/  （= 璇玑 RelGraph 项目仓；根历史遗留 operator-unifie
 │   ├── info-graph/               #     关图工具（含 P9 判重 dedup 子命令；对齐 BP-9 + enterprise/16 验收）
 │   └── guantu_gate.py            #     P9 CI 门禁脚本（阻断未判重立项；对齐 All-02 铁规）
 ├── shared/                       # 跨端共享资源：常量、Schema、配置
-├── plugins/                      # WASM 插件目录
-├── data/market/                  # 算子商城资产（运行态；生产应置于 $OUS_HOME/market，见 docs/architecture.md §27）
 ├── docs/                         # 🔶 企业级文档（专题分区；治理中心 = docs/enterprise/00-INDEX.md · 三联盟必读首件 = enterprise/18 TOP-MASTER）
 │   ├── enterprise/               # 🟢 企业级文档 00~28（共 29 份 · 分级权威 L0~L4）
 │   │   ├── 18-全域顶层总设计-三联盟模式-V1.0.md  # 🟢🟢 L0 第一级权威（TOP-MASTER，三联盟签署）
@@ -235,6 +271,7 @@ infotopograph/  （= 璇玑 RelGraph 项目仓；根历史遗留 operator-unifie
 │   ├── README.md                 # 关图/全维专题快捷导航（三联盟差异化入口 · docs/README）
 │   ├── GLOSSARY.md               # 🟢 唯一术语事实源（DOC-GLOSSARY-V1.1 · 7 新术语）
 │   ├── specs/                    # 🟢 企业级规范：PT-STD / GR-STD / OUS 业务规划
+│   ├── standards/                # 🆕 🟢 架构标准：architecture-data-separation.md（架构-数据分离铁律）
 │   ├── full-dimensional/         # 🟡 全维分析专题：AA-STD / 关图骨架 / 治理台 API / 文档归档
 │   ├── graph/                    # 关图机读产物（graph.json / graph.enterprise.json / guantu.req.json + requests/ 判重入口）
 │   ├── ai-architecture/          # AI 架构专题（AUS · L4 Agentic 闭环）
@@ -254,6 +291,61 @@ infotopograph/  （= 璇玑 RelGraph 项目仓；根历史遗留 operator-unifie
 > 注：`target/`（Rust 构建产物）、`frontend-ui/dist/`、`node_modules/` 等**不纳入版本库**，请从源码构建。
 > **路径铁律（ADR-DOC-008 v2.0）**：所有 crate 均位于 `platform/domains/{域}/{层}/` 或 `platform/{foundation,gateway,framework}/`；旧路径 `platform/services/`（15 crate扁平模型）、`crates/`、`platform/gateway/runtime/` 已废弃，禁止在新代码/文档中使用。旧→新完整映射见 `docs/enterprise/ARCHITECTURE-MIGRATION.md`。
 > **Node 边缘入口**：`platform/backend-node/`（零依赖 Node）作为边缘入口占 `:3000`，托管 `frontend-ui/dist` 并将 `/api` 反向代理到 Rust 网关 `:3001`；M0 后规划更名为 `edge-node/` 并瘦身至 4 文件。
+
+---
+
+## 🔒 架构-数据分离（铁律 · CI 强制执行）
+
+> 完整规范见 [`docs/standards/architecture-data-separation.md`](docs/standards/architecture-data-separation.md)
+
+### 三层分离模型
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  架构代码层  platform/          ← Git 追踪，只读边界    │
+│  配置文件层  config/            ← Git 追踪，模板化      │
+│  运行时数据层  data/plugins/    ← .gitignore，不入库    │
+└─────────────────────────────────────────────────────────┘
+```
+
+### 四条铁律
+
+1. **`platform/` 是纯代码只读边界**，禁止存放任何运行时数据（`.db`/`.sqlite`/`.log`/`.pid` 等）
+2. **代码禁止硬编码相对路径**（如 `"./data/"`、`"./config/"`），必须通过 `mox-platform-paths` crate 管理
+3. **所有路径可通过环境变量覆盖**：`MOX_DATA_DIR` / `MOX_PLUGINS_DIR` / `MOX_THIRD_PARTY_DIR` / `MOX_RUNTIME_DIR` / `MOX_CONFIG_DIR`
+4. **第三方插件/模型/源码必须在 `platform/` 之外**
+
+### 统一路径管理（`mox-platform-paths`）
+
+```rust
+use mox_platform_paths::ProjectRoot;
+
+let root = ProjectRoot::detect();       // 自动定位项目根
+root.verify_separation()?;               // 验证架构-数据不重叠
+root.ensure_all_dirs()?;                 // 创建 data/plugins/.runtime 目录
+
+let db_path = root.domain_db_path("kg"); // data/storage/kg.db
+let log_dir = root.logs_dir();           // data/logs/
+let plugin_dir = root.wasm_plugins_dir();// plugins/wasm/
+```
+
+### 架构测试（CI 必过）
+
+```bash
+# 8 项架构不变量测试（分层规则/跨域依赖/环检测/API纯度/架构-数据分离）
+cargo test -p mox-arch-test
+```
+
+| 测试 | 验证内容 |
+|---|---|
+| `test_layering_rules` | L0~L5 分层依赖约束 |
+| `test_cross_domain_dependencies_go_through_api` | 跨域依赖必须经 L2 API 层 |
+| `test_no_circular_dependencies` | DFS 环检测 |
+| `test_api_crates_are_pure` | L2 API crate 仅依赖 L0 |
+| `test_architecture_data_separation` | `platform/` 下无数据文件 |
+| `test_no_hardcoded_data_paths` | 代码无硬编码相对路径 |
+| `test_plugins_outside_platform` | 插件文件不在 `platform/` 内 |
+| `test_third_party_outside_platform` | 第三方目录不在 `platform/` 内 |
 
 ---
 

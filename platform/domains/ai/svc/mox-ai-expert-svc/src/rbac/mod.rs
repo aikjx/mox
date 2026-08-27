@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! RBAC 引擎 — 资源级权限控制
 //!
 //! 相比原有 `roles: Vec<String>` 的角色白名单，RBAC Engine 提供：

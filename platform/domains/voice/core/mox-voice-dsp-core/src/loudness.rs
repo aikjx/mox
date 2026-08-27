@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 响度归一化 + 软限幅。与 Python `_apply_limiter_and_loudness` 等价。
 //!
 //! - RMS → dBFS：db = 20·log10(rms)；目标响度 -18 dBFS

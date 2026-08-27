@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 子服务聚合（Phase 1 收敛）
 //!
 //! 将此前并行的四套 axum server 收敛为库，由 operator-server（mox_platform_orchestrator_svc）唯一对外暴露：

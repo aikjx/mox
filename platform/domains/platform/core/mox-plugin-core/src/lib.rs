@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # Mox Plugin Core — WASM插件框架
 //!
 //! 企业级插件系统，支持WASM沙箱、热重载、权限控制、宿主API、生命周期管理。
@@ -51,6 +55,7 @@ pub mod host_api;
 pub mod lifecycle;
 pub mod loader;
 pub mod manifest;
+pub mod market;
 pub mod registry;
 
 // ─── 统一重导出 ──────────────────────────────────────────────────────────────
@@ -74,6 +79,14 @@ pub use loader::PluginLoader;
 pub use host_api::{
     AiChatDelegate, AiChatHostApi, EventPublishHostApi, HostApi, HostApiContext,
     HostApiError, HostApiRegistry, HostApiResult,
+};
+
+// Market (插件市场：远程发现/安装/版本管理)
+pub use market::{
+    client::MarketClient,
+    installer::{InstallResult, InstalledPluginInfo, PluginInstaller, UninstallResult},
+    remote_registry::{ListQuery, RemoteDependency, RemotePluginInfo, RemotePluginRegistry, RemotePluginVersion},
+    version::{DependencyStatus, SemVer, VersionLockFile, VersionManager, VersionUpdateInfo, classify_update, is_version_greater, version_matches_constraint},
 };
 
 /// 便捷预导入

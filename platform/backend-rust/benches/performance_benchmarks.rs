@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! MOX 企业级后端性能基准测试
 //!
 //! 使用 criterion 进行微基准测试，覆盖核心模块的性能特征。

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! FlowLoader — YAML 流程外部化引擎
 //!
 //! 将业务工作流从硬编码 Rust 解放出来，业务人员可用 YAML 增删改流程。

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Mox Cloud Drive S3 Compatible Service — 100% 自研，零成品存储系统。
 //!
 //! 兼容 S3 v20060301，34 API 全自研：

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! SSO 单点登录 — 统一抽象 + 多协议实现
 //!
 //! 支持：OAuth2/OIDC、SAML 2.0、CAS、钉钉、企业微信、飞书

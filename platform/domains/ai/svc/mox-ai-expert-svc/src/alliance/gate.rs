@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 质量门禁（FR-CORE-06 HC-8 公式）+ 指标学习 + 审计事件（FR-CORE-07 7 类）
 //!
 //! HC-8 统一评分公式（锁死在 constants.rs 的 QUALITY_FORMULA）：

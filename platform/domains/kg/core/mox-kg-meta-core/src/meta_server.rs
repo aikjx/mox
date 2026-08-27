@@ -1,3 +1,7 @@
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! MetaServer：对外服务入口。3 节点 Raft 集群（进程内模拟）+ Schema/Auth/Partition 操作。
 use parking_lot::RwLock;
 use std::collections::BTreeMap;
@@ -724,8 +728,8 @@ pub fn build_raft_config() -> String {
 }
 
 #[allow(dead_code)]
-fn _keep_storage_host(_h: StorageHost) -> StorageHost {
-    unimplemented!()
+fn _keep_storage_host(h: StorageHost) -> StorageHost {
+    h
 }
 
 pub use mox_cloud_foundation::GraphMetaProvider;

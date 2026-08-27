@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Glacier S3-compatible HTTP Adapter
 //!
 //! Minimal S3-like client over std::net::TcpStream for talking to a

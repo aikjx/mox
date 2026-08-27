@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # MOX Formulas Core · 图公式权威单源（T3 / TR-4.2 精度护栏）
 //!
 //! 单一真相源，严禁 Node/Python 独立实现等价算法（需经本 crate 提供的绑定接入）。

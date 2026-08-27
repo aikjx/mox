@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 引擎主循环 - 串联感知→规划→执行→观察→反思→生成→巩固完整链路
 //!
 //! 核心设计：

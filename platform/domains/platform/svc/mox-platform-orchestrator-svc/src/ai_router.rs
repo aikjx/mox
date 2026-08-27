@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 路由决策语义：企业级路由匹配 + intent→capability 路由表
 //!
 //! 路由匹配原则（项目记忆硬性，AC-10）：

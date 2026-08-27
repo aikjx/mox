@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 企业治理（Phase 1 最小实现）：审计日志 + 版本状态机 + SLA 闸门
 
 use crate::context::ResourceQuota;

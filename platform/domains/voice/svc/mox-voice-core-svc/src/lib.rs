@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # xiaobai-core · 小白语音桌面助手 Rust 权威单源
 //!
 //! 与 Python xiaobai_voice.errors / operator.base 1:1 对齐，同时对接 mox 原生

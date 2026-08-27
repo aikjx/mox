@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! FIPS 140-3 合规 HMAC-SHA256 实现。
 //!
 //! 对照 RFC 4231 测试向量验证。该实现仅依赖 `sha2` + `hmac` crate（均为纯 Rust 实现，

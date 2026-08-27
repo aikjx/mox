@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 冲突融合 / 增量合并：按策略合并来自多 source 的同 id 记录。
 //!
 //! MergeStrategy:

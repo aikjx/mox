@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! RBAC 4 级 clearance 与三策略调度模式（替代 Python require_level 装饰器）
 //!
 //! 注意：本模块是 **过程宏前的函数式实现**，不使用 proc_macro crate——

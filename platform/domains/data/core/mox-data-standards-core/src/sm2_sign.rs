@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! SM2 digital signature algorithm — pure Rust implementation.
 //!
 //! Follows GM/T 0003.2-2012 (256-bit recommended curve sm2p256v1).  Big-integer

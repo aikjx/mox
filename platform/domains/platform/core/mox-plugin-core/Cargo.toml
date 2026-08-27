@@ -24,3 +24,7 @@ wasmer-compiler-cranelift = { workspace = true }
 walkdir = "2.5"
 # 事件总线
 flume = "0.11"
+# 插件市场（远程发现/安装/版本管理）
+reqwest = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }

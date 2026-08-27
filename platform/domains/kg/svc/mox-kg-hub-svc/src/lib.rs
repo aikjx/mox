@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # KG-Hub：智能自动化信息知识图谱关联关系平台（关图中枢）
 //!
 //! 企业**全部知识库的唯一中心**。它解决本工程此前最根本的架构断点：

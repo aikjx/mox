@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # mox-graph-meta（璇玑关系图 R1 Meta Service）
 //!
 //! **AIS L4 自研模块**：提供关系图元数据服务（Schema 管理、权限鉴权、分区路由），

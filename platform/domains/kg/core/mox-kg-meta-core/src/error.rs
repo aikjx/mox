@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 璇玑 R1 Meta Service 统一错误枚举。
 //!
 //! AIS L4 自研：只依赖本 crate 与标准库，不含任何成品图数据库。

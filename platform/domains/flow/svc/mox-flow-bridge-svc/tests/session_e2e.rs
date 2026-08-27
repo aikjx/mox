@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 端到端会话级集成测试：模拟 Hermes 多轮工具调用，走完整 bridge 链路。
 //!
 //! 覆盖：录制→复用路由→后台优化(mox_optimize)→算法网关；以及否决拦截接线。

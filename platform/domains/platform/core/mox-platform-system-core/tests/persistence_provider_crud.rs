@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! T5.3: mox-system PersistenceProvider 集成测试：5 模型 × 4 CRUD = 20 条 GREEN
 //!
 //! 模型：Member / Task / Document / Resource / Notification

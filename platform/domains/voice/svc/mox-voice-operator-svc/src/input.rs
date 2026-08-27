@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Input 算子：鼠标/键盘/输入（mouse_position / mouse_move / click / double_click / type_text / press_key / hotkey / key_sequence / mouse_drag / screenshot / scroll_wheel / move_cursor_to_center）
 //!
 //! 回退链：

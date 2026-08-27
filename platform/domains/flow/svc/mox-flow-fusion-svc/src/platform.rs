@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! PrimiPlatform 一体化编排层（融合 + 归一化 + 一体化的最终出口）
 //!
 //! 把已落地的 `primiflow` 八模块主链路（`Orchestrator`）与「多维度融合统一图」

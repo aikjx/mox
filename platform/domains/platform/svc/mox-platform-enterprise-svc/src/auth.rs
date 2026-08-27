@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 企业级真源服务 — JWT 自实现（200 行内，零 framework 依赖）：
 //! Claims = {sub,tenant_id,roles,permissions,exp,iat}
 //! 使用 jsonwebtoken 9，默认 HS256

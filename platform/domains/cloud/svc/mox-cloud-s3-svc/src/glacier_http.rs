@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Glacier HTTP 445 semantics (T25-5).
 //!
 //! Pure handler semantics: given a storage class and optional restore status,

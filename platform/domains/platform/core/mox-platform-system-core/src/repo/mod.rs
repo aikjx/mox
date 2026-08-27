@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 持久化仓库抽象层（等价 Spring Boot 的 Repository / JpaRepository）
 //!
 //! 设计目标：把"落盘后端"从 `Store` 中解耦，`Store` 只关心内存热缓存 + 调用仓库接口。

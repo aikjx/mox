@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # 核心图谱数据结构
 //!
 //! 从 mox 单体原型整合的轻量图谱实现，为 AI 对话上下文注入和推理提供数据基础。

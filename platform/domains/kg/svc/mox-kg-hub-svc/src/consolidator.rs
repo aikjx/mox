@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 轨迹固化器 — 将引擎执行轨迹转化为长期知识
 //!
 //! 三段固化流程，对应认知科学中记忆固化的三个层次：

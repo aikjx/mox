@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! A2 — Miji 密级 4 级 × Bell-LaPadula 裁决矩阵 (64 tests)
 //!
 //! 4 user clearances × 4 object levels × 2 read/write × 2 enforce modes = 64

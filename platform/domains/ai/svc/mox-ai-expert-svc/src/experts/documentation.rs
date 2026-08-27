@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 文档专家（开发维度）：审查 API/代码文档完整性
 //!
 //! 分析基于 `CodeUnit` 的**预分析真字段**（`has_doc` / `comment_lines`），

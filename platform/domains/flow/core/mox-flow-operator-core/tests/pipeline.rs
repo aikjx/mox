@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 算子流水线执行引擎 —— 端到端集成测试
 //!
 //! 覆盖：串联执行 + 资源累计、概率守恒校验、严格闸门中断、非严格残差记录。

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # AI 流程图谱引擎（Rust 版）
 //!
 //! 与 Node 层 `ai-flow-graph.js` 跨语言对齐的实现。

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 缺口 P1.1 —— Multi-expert 交互测试（Permission + Security 双专家同时触发 veto）
 //!
 //! 目的：验证当同一份流程图同时违反「权限专家的生产/敏感数据越权写」与

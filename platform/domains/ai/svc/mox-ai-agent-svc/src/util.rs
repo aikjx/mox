@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 公共工具：跨模块复用的小工具。
 
 /// 从可能包裹 markdown 代码块或前后缀文字的文本中，容错抽取 JSON 对象片段。

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # 空间光速螺旋模型分析算子
 //!
 //! 把「空间光速螺旋模型」报告里的数学内核（Frenet 螺旋运动学）与物理推论

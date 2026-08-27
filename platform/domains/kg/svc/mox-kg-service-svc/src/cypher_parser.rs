@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! openCypher Parser：20 条语句模式匹配 → PlanNode（复用 ngql_parser::PlanNode 的 cypher 变体）。
 //!
 //! 识别优先级：更具体的子句优先于通用开头（如 MATCH…DELETE 需要识别 DELETE 非 CypherMatch）。

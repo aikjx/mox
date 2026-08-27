@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! SIMD-accelerated GF(2^8) vector multiplication for x86_64 AVX2 and
 //! aarch64 NEON, with safe cross-architecture scalar stubs.
 //!

@@ -1,4 +1,8 @@
-﻿//! MOX Data Compliance Service
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
+//! MOX Data Compliance Service
 //!
 //! PII (Personally Identifiable Information) detection, classification, and redaction.
 //! Supports regex-based detection, named entity recognition, and configurable policies.

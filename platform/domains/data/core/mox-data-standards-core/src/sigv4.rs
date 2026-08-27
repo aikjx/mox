@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! S3 SigV4 签名算法 — 纯自研实现，不依赖 aws-sig-auth。
 //!
 //! 严格遵循 AWS Signature Version 4 规范：

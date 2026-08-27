@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Voice 代理（T7）：/voice/** → http://localhost:3717/voice/**
 //!
 //! 核心实现注意（避免 404 / 405）：

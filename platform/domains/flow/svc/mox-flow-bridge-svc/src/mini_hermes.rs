@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Mini Hermes：可运行 agent-loop 原型 + LLM 调用计数器。
 //!
 //! 证明「录制即优化 + 复用路由」能真实削减 LLM 调用次数（用户原方案核心收益：LLM 调用减半）。

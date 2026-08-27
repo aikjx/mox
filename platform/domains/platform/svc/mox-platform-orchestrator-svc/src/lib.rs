@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Runtime 库模块
 //
 //! 提供可测试的中间件、工具函数和 OUS-Cordis 插件化运行时内核

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! HTTP 服务：把全维治理报告转为前端可视化 DTO，供 Three.js 力导向图实时联动高亮
 //!
 //! 设计：本服务完全独立，仅依赖 `mox-expert` + `flow-ai`，不触碰已失败的 mox_platform_orchestrator_svc/ai-agent。

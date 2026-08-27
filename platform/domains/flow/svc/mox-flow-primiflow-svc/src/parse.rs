@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 层2 · 需求解析与结构化建模服务
 //!
 //! 输入：用户自然语言业务描述（一句话或多段）。

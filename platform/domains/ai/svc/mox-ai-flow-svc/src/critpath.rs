@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 关键路径法 (CPM) —— 完整前向/后向遍历 + 浮动时间
 //!
 //! 相比原 `optimizer` crate 的简化实现，本模块：

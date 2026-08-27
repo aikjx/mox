@@ -1,3 +1,7 @@
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # Mox Enterprise Core — 政企适配层
 //!
 //! 三大能力：
@@ -10,11 +14,20 @@
 pub mod compliance;
 pub mod customization;
 pub mod sso;
+pub mod traits;
 
 // 重导出
 pub use sso::{SsoManager, SsoProvider, SsoType, SsoUser, SsoConfig};
 pub use compliance::{AuditChain, DataMasker, DataResidencyPolicy};
 pub use customization::{WhitelabelConfig, ThemeConfig, DynamicFieldSchema};
+
+// 合规层Trait抽象（可替换实现）
+pub use traits::{
+    AuditEvent, AuditLogger, AuditQueryFilter, AuditResult, AuditSeverity,
+    DataClassification, DataMasker as DataMaskerTrait, DataResidencyController,
+    DataResidencyPolicy as DataResidencyPolicyTrait, MaskLevel, MaskResult,
+    ResidencyRegion, ResidencyResult,
+};
 
 /// 便捷预导入
 pub mod prelude {

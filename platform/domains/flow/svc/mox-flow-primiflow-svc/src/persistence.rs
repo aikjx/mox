@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 层6 · 真实持久化层（数据层）
 //!
 //! 把 κ‑τ 引擎的**[知识库（拓扑荷 Q 沉淀资产）]** 与 **[六维溯源主图]** 真实落库，

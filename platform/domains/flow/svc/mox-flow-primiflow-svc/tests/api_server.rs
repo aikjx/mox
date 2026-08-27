@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 层3 API 服务层 · 企业级分步验证（L5）
 //!
 //! 用 `reqwest` 真正启动 HTTP 服务并驱动 REST 契约全链路：

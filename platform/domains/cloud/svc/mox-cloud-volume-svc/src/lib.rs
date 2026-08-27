@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Cloud Drive L4 Volume (All self-implemented, no external storage system)
 //!
 //! Mox Cloud Drive Volume — 数据面 (Data Plane)

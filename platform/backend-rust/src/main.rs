@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! MOX Enterprise · API 网关入口
 //!
 //! 启动 API 网关，集成限流、熔断、重试、路由、零信任认证

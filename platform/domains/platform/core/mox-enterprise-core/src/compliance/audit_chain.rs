@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 审计哈希链 — 不可篡改的审计日志链
 //!
 //! 每条审计记录包含前一条记录的哈希，形成链式结构。

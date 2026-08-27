@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Optimizer：三条规则：
 //! 1. 投影下推：仅保留所需列
 //! 2. 5-hop 空剪枝：GO 5 STEPS / GoSteps(5) 时标记 pruned=true，并将预估行数缩小

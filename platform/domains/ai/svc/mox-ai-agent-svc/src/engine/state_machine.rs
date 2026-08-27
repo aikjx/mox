@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 引擎状态机 - 定义核心状态与事件流转规则
 //!
 //! 采用有限状态机（FSM）模式管理引擎生命周期，确保状态转移的合法性与可追溯性。

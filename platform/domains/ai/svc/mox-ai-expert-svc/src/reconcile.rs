@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 归一化裁决：把七位专家的观点合并为可喂给 flow-ai 的图
 //!
 //! 铁律：裁决器只翻译约束为 flow-ai 能识别的边/规则，**不求解**。

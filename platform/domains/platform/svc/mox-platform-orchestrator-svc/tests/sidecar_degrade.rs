@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! TR-6.3: sidecar 不可用 → 可诊断错误 + sidecar_fail 指标增加
 //!
 //! 覆盖：NodeSidecarClient 的 fallback 路径、错误结构、metrics 计数。

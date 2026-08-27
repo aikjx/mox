@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 智能层：混合检索索引。
 //!
 //! 企业知识中枢的检索不能只靠关键词，也不能只靠向量：

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Flink-compatible CDC source adapter around `mox-graph-storage::CdcSource`.
 //!
 //! - Thread-safe blocking `next_blocking(timeout)` for callers without a tokio mox_platform_orchestrator_svc.

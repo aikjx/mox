@@ -120,6 +120,26 @@ NUL-*
 *.sock
 # 临时 Python 安装构建日志
 tmp_pyinst_*.log
+# ===== 架构-数据分离（MOX Platform Paths 规范）=====
+# 运行时数据目录（绝不入库：storage/cache/logs/uploads/exports）
+/data/
+# 第三方插件目录（绝不入库：wasm/scripts/extensions）
+/plugins/
+# 运行时状态目录（绝不入库：pid/sock/lock）
+/.runtime/
+# SQLite 数据库文件
+*.sqlite
+*.sqlite3
+# AI 模型权重（大文件不入库）
+*.bin
+*.safetensors
+*.gguf
+*.onnx
+*.pt
+*.pth
+# 构建中间目录
+/build/
+
 # 运行时制品 / 第三方源码暂存（由工具链按需生成，不入库）
 /artifacts/
 /third_party/

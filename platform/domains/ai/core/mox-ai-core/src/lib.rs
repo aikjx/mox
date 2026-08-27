@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # Mox AI Core — AI Provider Gateway
 //!
 //! 多Provider LLM抽象层，支持注册表、路由器、自动降级、熔断。

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # AI 自动化中枢：共享资产模型与持久化
 //!
 //! 独立模块，避免 `automation`（编排+API）与 `market`（算子商城）形成循环依赖。

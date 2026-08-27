@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 冲突检测与前置拦截
 //!
 //! 覆盖需求中列出的四类冲突 + 结构缺陷 + 合规规则：

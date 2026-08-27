@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! PrimiFlow 全域原语智能平台 · 关联图谱驱动的需求→代码/数据骨架生成层
 //!
 //! 设计哲学：以 [`assoc::AssocGraph`] 作为唯一事实源（对应 `primiflow/SPEC.md` 的六维溯源

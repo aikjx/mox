@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 专家联盟 6 阶段管线 · 硬约束常量（HC-2, HC-5, HC-8, HC-9）
 //!
 //! 本文件所有值为项目记忆 + TOP-MASTER 企业级基线锁死常量。

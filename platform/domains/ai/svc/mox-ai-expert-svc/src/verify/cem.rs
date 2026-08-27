@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! T9 多目标 CEM（Cross-Entropy Method）搜索 —— 带性能优化的默认实现。
 //!
 //! 对璇玑的"子图/约束/目标"三元组搜索场景，落地三条 T9 优化：

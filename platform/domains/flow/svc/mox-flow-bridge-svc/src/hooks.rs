@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 框架无关的核心钩子（单一事实源）。
 //!
 //! 设计：本模块**不依赖任何 Hermes 类型**，只认 `(tool_name, args_json, turn)` 这种最小投影。

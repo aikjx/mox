@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! cdc_100k_harness: generate 100k CDC events (70k Vertex + 30k Edge),
 //! stream through FlinkCdcSource next_blocking(), then IdempotentWriter.
 //!

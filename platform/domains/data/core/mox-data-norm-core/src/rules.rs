@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 规则引擎：属性条件 + 动作（设置 / 映射 / 重命名）。
 //!
 //! 条件：`field OP value`，OP ∈ {==, !=, >, >=, <, <=, contains, regex, in}。

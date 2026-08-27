@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 // tests/lookup.rs - T2 RED step 1: assert all_crate_metas().len() == 16 and 16 ENGINE_NAME lookup
 use mox_platform_foundation::{all_crate_metas, lookup_meta_by_engine};
 

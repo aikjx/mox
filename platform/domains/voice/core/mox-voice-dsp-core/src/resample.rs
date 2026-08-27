@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 线性插值重采样：O(n)，与 Python cosyvoice2._resample_linear 等价。
 //!
 //! 采样位置：旧区间 [0, len-1] → 新区间 [0, n-1] 的均匀映射，

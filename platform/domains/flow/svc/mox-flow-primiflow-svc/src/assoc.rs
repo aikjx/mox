@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 关联图谱（需求→功能→业务→算法→任务→代码→数据设计→数据存储）
 //!
 //! 这是 PrimiFlow 的**唯一事实源**：所有功能、代码、数据都从这张带类型边的图谱派生。

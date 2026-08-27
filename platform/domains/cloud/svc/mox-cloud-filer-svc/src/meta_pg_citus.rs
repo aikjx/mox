@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Postgres + Citus Mock 后端。
 //!
 //! 真实实现用 tokio-postgres + citus coordinator；测试模拟用内存 BTreeMap。

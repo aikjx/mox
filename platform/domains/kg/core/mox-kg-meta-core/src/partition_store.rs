@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! PartitionStore：VID 哈希分片 + shard → storage host 映射。
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};

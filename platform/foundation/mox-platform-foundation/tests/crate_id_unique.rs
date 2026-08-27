@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 // tests/crate_id_unique.rs - T2 Step 3 RED-2: check 16 CRATE_ID are all unique
 use std::collections::HashSet;
 use mox_platform_foundation::all_crate_metas;

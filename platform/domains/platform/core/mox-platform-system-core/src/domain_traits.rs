@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 领域层 Trait 抽象（DIP 依赖反转）。
 //!
 //! 供 L2 编排层（orchestrator/server）依赖的**稳定服务抽象契约**，禁止反向依赖具体服务实现。

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 租户策略分层 + 治理 8 闸门全量门禁（I-06 / G3·G6·G8 补全）
 //!
 //! 企业级多租户：不同租户（政务/金融强合规、普通商业）对十四维策略的严格度不同。

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 六维绑定 Registry（规范缺口 R06 的最终落地）
 //!
 //! `registry::fuse_all()` 只做「一次性演示融合」；本模块提供**可累积、可查询、

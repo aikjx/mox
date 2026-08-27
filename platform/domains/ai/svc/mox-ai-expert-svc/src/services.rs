@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Concrete 服务实现：把 mox-expert 现有函数引擎包装为对外 domain trait 的实现。
 //!
 //! DIP 关系：

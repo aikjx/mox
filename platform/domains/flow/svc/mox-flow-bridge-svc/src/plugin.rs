@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! Step 5 / Step 9：实现 Hermes `Plugin` trait，注册两个中间件。
 //!
 //! 设计铁律：两个中间件都是**同步**的，不在闭包内跑 `mox_optimize`（async + 重计算）。

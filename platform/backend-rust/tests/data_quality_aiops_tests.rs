@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 数据质量 + AIOps 单元测试（简化版，API 对齐）
 
 use mox_enterprise_backend::aiops::*;

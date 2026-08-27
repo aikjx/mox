@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # 草莓多平台 · 系统模板市场（Template Market）
 //!
 //! 这是"对话驱动全栈生成式开发平台"的**资产中枢**：

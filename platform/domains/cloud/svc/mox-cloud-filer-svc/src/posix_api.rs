@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! POSIX API：Filer 结构体，包装 MetaStorageProvider 暴露标准 POSIX 文件操作。
 //!
 //! 覆盖 pjd-fstest 的 10 个高层操作：

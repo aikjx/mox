@@ -1,4 +1,8 @@
-﻿//! 可观测性：进程内指标聚合 + Prometheus 文本格式导出（I-04）
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
+//! 可观测性：进程内指标聚合 + Prometheus 文本格式导出（I-04）
 //!
 //! 指标是「可运维、可治理」企业级系统的硬性要求（NFR-08）。
 //! 此处用进程内原子计数器实现，零外部依赖；导出为 Prometheus 拉取格式，

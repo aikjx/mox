@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! CDC Source：批量聚合 Raft apply → CdcEvent；UnboundedReceiver 订阅。
 //!
 //! - 批量聚合：每 200 ms flush；同一 Raft apply 的 vertex/edge 事件聚合成一批写入 buffer。

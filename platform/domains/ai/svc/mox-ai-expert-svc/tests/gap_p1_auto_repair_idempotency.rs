@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 缺口 P1.2 —— auto_repair 幂等性测试（多次修复同一冲突）
 //!
 //! 目的：验证 `mox_ai_flow_svc::conflict::auto_repair` 对同一冲突反复应用是**幂等**的：

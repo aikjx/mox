@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 算子真实执行层（离线确定性，可运行可验证）
 //!
 //! 平台闭环此前在 [`crate::runner::run_pipeline`] 中只「模拟」成功注荷；本层补齐真实执行：

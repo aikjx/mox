@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 专家组队优化（FR-CORE-03）：
 //!   专家注册表（14 维 × 7 类基准能力） →
 //!   按"7 类匹配分 × gate_A 率 × dim_priority 权重"综合排序 →

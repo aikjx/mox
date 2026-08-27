@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 外部审计 Sink 模块
 //!
 //! AuditChain（内存哈希链）是内部自验工具，不是合规证据。

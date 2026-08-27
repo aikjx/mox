@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! # xiaobai-asr · FR-5 热词三层注入 Rust 实现
 //!
 //! 设计目标 1:1 对齐 Python `asr/hotwords.py`：

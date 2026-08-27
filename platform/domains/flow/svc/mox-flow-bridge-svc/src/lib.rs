@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! hermes-flow-bridge：零侵入插件，把 flow-ai + mox-expert 流程图/关系网优化内核
 //! 注入 Hermes Agent Ultra。
 //!

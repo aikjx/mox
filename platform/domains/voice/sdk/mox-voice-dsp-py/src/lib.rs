@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! PyO3 扩展：xiaobai-dsp → Python `mox_voice_dsp_py`
 //!
 //! 目标：被 xiaobai_voice TTS 生产链路直接 import 使用，

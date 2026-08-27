@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! 接入层：企业知识库连接器 + 三图归一。
 //!
 //! 本模块解决工程的核心断点——三套图彼此零引用、各自都自称"唯一事实源"：

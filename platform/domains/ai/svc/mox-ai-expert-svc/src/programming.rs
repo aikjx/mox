@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Licensed under the MIT License.
+// 项目仓库: https://gitcode.com/aikjx/mox
+
 //! AI 大模型辅助编程 · 全维处理算法（Phase 1 落地）
 //!
 //! 把设计文档《ai_programming_algorithm_design》的 10 步流程图落成可执行流水线：
