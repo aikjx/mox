@@ -123,3 +123,5 @@ tmp_pyinst_*.log
 # 运行时制品 / 第三方源码暂存（由工具链按需生成，不入库）
 /artifacts/
 /third_party/
+# 语音模型权重（大文件不入库，历史已清理）
+/projects/xiaobai_voice/models/
