@@ -31,22 +31,30 @@
 
           <div class="ct-divider"></div>
 
-          <!-- FR11 严格顺序：新建 / 清空 / 导出 / 导入 / 转任务 / 创建项目 / 全维分析 -->
+          <!-- 分组1：会话管理 -->
           <el-tooltip content="新建对话" placement="bottom">
             <el-button class="ct-btn ct-btn-new" text @click="newSession"><el-icon><DocumentAdd /></el-icon> 新建</el-button>
           </el-tooltip>
           <el-tooltip content="清空当前会话" placement="bottom">
             <el-button class="ct-btn" text @click="clearChat"><el-icon><Delete /></el-icon> 清空</el-button>
           </el-tooltip>
+          <el-tooltip content="从后端恢复会话历史" placement="bottom">
+            <el-button class="ct-btn" text @click="openBackendHistory"><el-icon><Clock /></el-icon> 历史</el-button>
+          </el-tooltip>
+
+          <div class="ct-divider"></div>
+
+          <!-- 分组2：数据管理 -->
           <el-tooltip content="导出对话+图谱迁移包" placement="bottom">
             <el-button class="ct-btn" text @click="exportBundle"><el-icon><Download /></el-icon> 导出</el-button>
           </el-tooltip>
           <el-tooltip content="导入迁移包" placement="bottom">
             <el-button class="ct-btn" text @click="pickImport"><el-icon><Upload /></el-icon> 导入</el-button>
           </el-tooltip>
-          <el-tooltip content="从后端恢复会话历史" placement="bottom">
-            <el-button class="ct-btn" text @click="openBackendHistory"><el-icon><Clock /></el-icon></el-button>
-          </el-tooltip>
+
+          <div class="ct-divider"></div>
+
+          <!-- 分组3：流程联动 -->
           <el-tooltip content="将当前对话转换为任务" placement="bottom">
             <el-button class="ct-btn" text type="primary" plain @click="convertToTask" :loading="convertingTask">
               <el-icon><List /></el-icon> 转任务
@@ -58,12 +66,13 @@
             </el-button>
           </el-tooltip>
 
-          <!-- 全维分析 CTA · φ 主按钮 -->
+          <div class="ct-divider"></div>
+
+          <!-- 分组4：核心功能 · 全维分析 CTA 主按钮 -->
           <el-tooltip content="架构开发专家联盟 · 一键启动全维分析（需求→架构→实现→测试→验收）" placement="bottom">
             <el-button class="ct-cta-full" @click="() => { triggerFullAnalysis(); triggerAlliance(); }">
               <el-icon><Promotion /></el-icon>
-              <span class="ct-cta-text">全维分析</span>
-              <span class="ct-cta-badge">φ</span>
+              <span>全维分析</span>
             </el-button>
           </el-tooltip>
 
@@ -783,7 +792,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted, onUnmounted, watch, computed } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted, onBeforeUnmount, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { List, Loading, ArrowDown, Link, Document, FolderAdd, ChatDotRound, ChatLineRound, Delete, Upload, Download, Clock, Promotion, DocumentAdd, Microphone } from '@element-plus/icons-vue'
@@ -2165,6 +2174,7 @@ function triggerFullAnalysis() {
   const hasUserMsg = messages.value.some(m => m.role === 'user' && !m.system)
   if (!hasUserMsg) {
     draft.value = `【${currentIssue.value.label}】请进行全维分析，覆盖：\n① 需求梳理与结构化\n② 架构方案（服务拆分、数据流、SLA）\n③ 实现要点（技术栈、关键算法）\n④ 测试策略（单测/集成/E2E）\n⑤ 验收标准与发布闸门`
+    ElMessage.success({ message: '✅ 全维分析框架已生成，点击「发送」即可执行', duration: 2500 })
   } else {
     fullAnalysis()
   }
@@ -2310,15 +2320,10 @@ onUnmounted(() => {
   const { onChange: _onProjectChange, ensureProjectContext: _ensureProject } = useProject()
   let _offPj = null
   onMounted(async () => {
-    _offPj = _onProjectChange(async () => { null })
+    _offPj = _onProjectChange(async () => {})
     await _ensureProject().catch(() => {})
-    null
   })
-  const _ob$ = onBeforeUnmount == null ? null : onBeforeUnmount(() => { _offPj && _offPj() })
-  // 若脚本未引入 onBeforeUnmount，退化为 window beforeunload 兜底（页面关闭）
-  if (typeof onBeforeUnmount === 'undefined') {
-    // 不操作：Vue 路由离开时组件 destroy，本作用域已销毁
-  }
+  onBeforeUnmount(() => { _offPj && _offPj() })
 }
 </script>
 

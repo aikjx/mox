@@ -1,0 +1,26 @@
+[package]
+name = "mox-dsql-core"
+version = "1.0.0"
+edition = "2021"
+license = "MIT"
+authors = ["Mox - 璇玑 RelGraph"]
+description = "动态SQL管理核心：SQL定义存储在数据库中，动态配置执行，支持模板渲染、多级缓存、多数据源"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+rusqlite = { workspace = true, features = ["bundled"] }
+sea-query = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+parking_lot = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+async-trait = { workspace = true }
+tokio = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"

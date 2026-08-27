@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -19,7 +19,7 @@ pub mod retry;
 
 use axum::{
     body::Body,
-    extract::{Path, Request},
+    extract::Request,
     http::StatusCode,
     response::Response,
 };
@@ -159,11 +159,16 @@ impl ApiGateway {
     }
 
     /// 代理请求处理器
+    /// 注意：fallback 路由不提供路径参数，不能用 Path<String> 提取器（否则 500），
+    /// 改为从 req.uri().path() 直接取请求路径。
     pub fn proxy_handler(&self) -> axum::routing::MethodRouter {
         let gateway = Arc::new(Clone::clone(self));
-        axum::routing::any(move |path: Path<String>, req: Request| {
+        axum::routing::any(move |req: Request| {
             let gw = gateway.clone();
-            async move { gw.proxy(path.0, req).await }
+            async move {
+                let path = req.uri().path().trim_start_matches('/').to_string();
+                gw.proxy(path, req).await
+            }
         })
     }
 

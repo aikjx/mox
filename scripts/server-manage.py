@@ -28,6 +28,8 @@ manage.py — 璇玑系统统一运维脚本（单文件整合版，stdlib-only�
 用法:
   python scripts/manage.py                    # 默认：一键启动全部服务 + 拉起 Web 管理面板（= bootstrap --with-dashboard）
   python scripts/manage.py list
+  python scripts/manage.py list-projects      # 展示全量项目目录清单（project_registry）
+  python scripts/manage.py scripts            # 展示 scripts/ 目录分类索引
   python scripts/manage.py start   [service_key|all]  [--strict]
   python scripts/manage.py stop    [service_key|all]   [--force]
   python scripts/manage.py restart [service_key|all]   [--strict]
@@ -121,6 +123,60 @@ DEFAULT_CONFIG = {
             "startup_order_hint": 20,
             "depends_on": ["api"],
             "tags": ["前端", "用户界面", "Vite"],
+        },
+        "xiaobai_voice": {
+            "name": "小白语音服务（ASR + TTS）",
+            "description": "本地离线语音：Paraformer ASR / CosyVoice2 TTS；端口 3717",
+            "port": 3717,
+            "health_check": "/voice/health",
+            "cwd": "projects/xiaobai_voice",
+            "command": "python -m xiaobai_voice serve --host 0.0.0.0",
+            "args": ["python", "-m", "xiaobai_voice", "serve", "--host", "0.0.0.0"],
+            "binary_requires": ["python"],
+            "npm_deps": False,
+            "is_admin_only": False,
+            "auto_start": True,
+            "restart_delay": 3,
+            "wait_time": 12,
+            "startup_order_hint": 5,
+            "depends_on": [],
+            "tags": ["语音", "AI交互", "TTS", "ASR", "本地推理"],
+        },
+        "melody2score": {
+            "name": "旋律转谱服务（Melody2Score WebUI）",
+            "description": "企业级可视化音频转谱：FastAPI 后端 + 静态前端，端口 8012",
+            "port": 8012,
+            "health_check": "/",
+            "cwd": "projects/melody2score",
+            "command": "python app/webui.py",
+            "args": ["python", "app/webui.py"],
+            "binary_requires": ["python"],
+            "npm_deps": False,
+            "is_admin_only": False,
+            "auto_start": False,
+            "restart_delay": 3,
+            "wait_time": 10,
+            "startup_order_hint": 30,
+            "depends_on": [],
+            "tags": ["音频", "转谱", "AI", "FastAPI", "WebUI"],
+        },
+        "primiflow": {
+            "name": "PrimiFlow 低代码拓扑引擎",
+            "description": "MVP 低代码拓扑生成引擎：FastAPI 单服务（端口 8000），自动托管静态页",
+            "port": 8000,
+            "health_check": "/",
+            "cwd": "projects/primiflow/backend",
+            "command": "python -m uvicorn main:app --host 0.0.0.0 --port 8000",
+            "args": ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"],
+            "binary_requires": ["python"],
+            "npm_deps": False,
+            "is_admin_only": False,
+            "auto_start": False,
+            "restart_delay": 3,
+            "wait_time": 8,
+            "startup_order_hint": 40,
+            "depends_on": [],
+            "tags": ["低代码", "拓扑", "FastAPI", "引擎"],
         },
     },
 }
@@ -2196,6 +2252,62 @@ def cmd_bootstrap(
     return 0
 
 
+def cmd_list_projects(manager: ServiceManager):
+    """展示全量项目目录清单（project_registry）。"""
+    registry = manager.config.config.get("project_registry", {})
+    if not registry:
+        log("[WARN] 配置中无 project_registry 字段")
+        return
+    type_cn = {
+        "service": "🟢 可启动服务",
+        "library": "📦 库/SDK",
+        "artifact": "📁 测试产物",
+        "task": "⚡ 一次性任务",
+    }
+    status_cn = {
+        "active": "✅ 活跃",
+        "archived": "📦 已归档",
+        "deprecated": "⚠ 已弃用",
+    }
+    print(f"\n=== {manager.config.project_name} 项目目录清单（共 {len([k for k in registry if not k.startswith('_')])} 项）===")
+    for key, info in registry.items():
+        if key.startswith("_"):
+            continue
+        t = info.get("type", "unknown")
+        s = info.get("status", "unknown")
+        t_label = type_cn.get(t, f"❓ {t}")
+        s_label = status_cn.get(s, s)
+        svc_key = info.get("service_key")
+        svc_str = f"  → service: {svc_key}" if svc_key else ""
+        path = info.get("path", "")
+        desc = info.get("description", "")
+        print(f"  [{t_label:12s}] {key:24s} [{s_label}]  {path}")
+        print(f"      {desc}{svc_str}")
+    print()
+
+
+def cmd_scripts(manager: ServiceManager):
+    """展示 scripts/ 目录分类索引（script_catalog）。"""
+    catalog = manager.config.config.get("script_catalog", {})
+    if not catalog:
+        log("[WARN] 配置中无 script_catalog 字段")
+        return
+    print(f"\n=== {manager.config.project_name} 脚本目录索引 ===")
+    print(f"  主入口: scripts/manage.py（本脚本）")
+    print()
+    for key, info in catalog.items():
+        if key.startswith("_") or key == "core":
+            continue
+        path = info.get("path", "")
+        desc = info.get("description", "")
+        files = info.get("files", [])
+        print(f"  📂 {key:12s} {path}")
+        print(f"      {desc}")
+        if files:
+            print(f"      文件: {', '.join(files)}")
+        print()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="璇玑系统统一运维脚本（整合 service_manager / service_monitor / platform_manager / verify_axioms）"
@@ -2207,6 +2319,7 @@ def main():
         choices=[
             "list", "start", "stop", "restart", "status", "logs",
             "dashboard", "verify", "init", "bootstrap",
+            "list-projects", "scripts",
         ],
         help="操作类型（省略时默认 bootstrap：拉起 Web 管理面板；项目服务需在页面上按需启动）",
     )
@@ -2255,6 +2368,10 @@ def main():
         return
     if args.action == "list":
         cmd_list(manager)
+    elif args.action == "list-projects":
+        cmd_list_projects(manager)
+    elif args.action == "scripts":
+        cmd_scripts(manager)
     elif args.action == "status":
         cmd_status(manager)
     elif args.action == "logs":

@@ -1,6 +1,9 @@
 <template>
-  <div class="tool-dock">
-    <div class="dock-scroll">
+  <div class="tool-dock" :class="{ collapsed: isCollapsed }">
+    <div class="dock-toggle" @click="toggleCollapse" :title="isCollapsed ? '展开工具面板' : '收起工具面板'">
+      <el-icon :size="14"><component :is="isCollapsed ? Expand : Fold" /></el-icon>
+    </div>
+    <div class="dock-scroll" v-show="!isCollapsed">
       <div
         v-for="tool in tools"
         :key="tool.key"
@@ -19,12 +22,27 @@
 </template>
 
 <script setup>
-import { Odometer, Share, List, Collection, Cpu, Operation, Coin, Monitor, Connection, Briefcase } from '@element-plus/icons-vue'
+import { ref, onMounted } from 'vue'
+import { Odometer, Share, List, Collection, Cpu, Operation, Coin, Monitor, Connection, Briefcase, Fold, Expand } from '@element-plus/icons-vue'
 
 defineProps({
   activeTool: { type: String, default: '' }
 })
 defineEmits(['select'])
+
+const isCollapsed = ref(false)
+
+function toggleCollapse() {
+  isCollapsed.value = !isCollapsed.value
+  try { localStorage.setItem('ous_tool_dock_collapsed', isCollapsed.value ? '1' : '0') } catch {}
+}
+
+onMounted(() => {
+  try {
+    const saved = localStorage.getItem('ous_tool_dock_collapsed')
+    if (saved === '1') isCollapsed.value = true
+  } catch {}
+})
 
 const tools = [
   { key: 'project', label: '项目', icon: Briefcase, color: '#7c3aed', bg: '#ede9fe' },
@@ -48,8 +66,36 @@ const tools = [
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 12px 0;
+  padding: 8px 0;
   flex-shrink: 0;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tool-dock.collapsed {
+  width: 32px;
+  padding: 8px 0;
+}
+
+.dock-toggle {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: #94a3b8;
+  margin-bottom: 6px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.dock-toggle:hover {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+}
+
+.tool-dock.collapsed .dock-toggle {
+  margin-bottom: 0;
 }
 
 .dock-scroll {

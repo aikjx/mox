@@ -3167,6 +3167,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-dsql-core"
+version = "1.0.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "hex",
+ "parking_lot",
+ "rusqlite",
+ "sea-query",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "mox-enterprise-core"
 version = "3.0.0-ai-powered"
 dependencies = [

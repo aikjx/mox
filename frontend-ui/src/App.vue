@@ -319,7 +319,7 @@ function goHome() { router.push('/dashboard') }
 async function refreshHealth() {
   try {
     const r = await getHealth()
-    const ok = r.status === 'ok' || r.status === 'running'
+    const ok = r.status === 'ok' || r.status === 'running' || r.status === 'healthy'
     health.value = { status: ok ? 'ok' : 'down', label: ok ? '服务正常' : '服务异常' }
   } catch {
     health.value = { status: 'down', label: '连接失败' }

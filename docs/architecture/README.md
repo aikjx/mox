@@ -13,6 +13,9 @@
 | RPC快速对接手册 | [`06-rpc-integration-guide.md`](./06-rpc-integration-guide.md) | 新系统RPC/gRPC/REST快速对接详细手册（内容发布场景） |
 | 错误码参考手册 | [`04-error-code-reference.md`](./04-error-code-reference.md) | 6位错误码体系完整参考 |
 | 归一化检查清单 | [`05-normalization-checklist.md`](./05-normalization-checklist.md) | 架构归一化验证清单（10大类） |
+| KG驱动动态SQL架构 | [`07-KG-DYNAMIC-SQL-ARCHITECTURE.md`](./07-KG-DYNAMIC-SQL-ARCHITECTURE.md) | 知识图谱+动态SQL配置平台，字段级权限，全维架构设计 |
+| 全维低代码架构 | [`08-FULL-DIMENSION-LOWCODE-ARCHITECTURE.md`](./08-FULL-DIMENSION-LOWCODE-ARCHITECTURE.md) | 全维低代码模块，自研KG融合，九层架构，企业级全链路 |
+| RocksDB性能优化 | [`09-ROCKSDB-PERFORMANCE-OPTIMIZATION.md`](./09-ROCKSDB-PERFORMANCE-OPTIMIZATION.md) | rust-rocksdb FFI开销全维分析与优化，生产级配置 |
 
 ---
 
@@ -61,6 +64,38 @@
 - 测试归一化
 - 安全归一化
 - 性能归一化
+
+### 5. KG驱动动态SQL架构 (07-KG-DYNAMIC-SQL-ARCHITECTURE.md)
+- 七层架构模型（智能层/行业层/扩展层/配置层/编排层/缓存层/执行层/适配层/元数据层）
+- 自研KG深度集成（12类节点/18类关系/4大核心能力）
+- 字段级权限控制体系（三层模型/5种权限类型/8种脱敏函数）
+- 自定义权限配置引擎（4种策略类型/冲突解决/仿真测试）
+- 动态执行引擎（AOT编译+多级缓存+超越写死SQL）
+- 企业级全链路处理流程（配置/执行/运维）
+- 实施路线图（3阶段11周）
+
+### 6. 全维低代码架构 (08-FULL-DIMENSION-LOWCODE-ARCHITECTURE.md)
+- 主流低代码平台全维分析（Mendix/OutSystems/Appian/宜搭/微搭/明道云/简道云）
+- 八大共性问题与解决方案矩阵
+- 九层架构模型
+- 自研KG深度集成（复用mox-kg-storage-svc/hub/algo等8个模块）
+- 元数据驱动的全维建模（8层颗粒度）
+- 动态执行引擎（超越写死SQL的五大策略）
+- 全维处理中心（4大处理通道）
+- 企业级全链路处理流程
+- 无限扩展机制（12类SPI扩展点+插件运行时+动态Schema）
+- 行业融合引擎（行业包体系+多包自动融合）
+- 实施路线图（4阶段18周）
+- 可行性全维评估
+
+### 7. RocksDB性能优化 (09-ROCKSDB-PERFORMANCE-OPTIMIZATION.md)
+- rust-rocksdb vs 原生C++ RocksDB性能真相
+- FFI开销量级分析（6类场景）
+- 已实施的优化措施（Release LTO/生产级Options/CF缓存/MultiGet等12项）
+- 待实施优化建议（Rust侧内存缓存/避免回调/批量写入等）
+- 性能预期对比表
+- 快速部署指南（编译/环境变量/系统调优）
+- 选型结论
 
 ---
 

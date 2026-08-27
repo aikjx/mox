@@ -81,6 +81,7 @@ members = [
     "platform/domains/platform/svc/mox-platform-enterprise-svc",
     "platform/domains/platform/svc/mox-content-publisher",
     "platform/domains/platform/core/mox-platform-datastore-core",
+    "platform/domains/platform/core/mox-dsql-core",
     "platform/domains/platform/core/mox-platform-orchestrator-core",
     "platform/domains/platform/core/mox-plugin-core",
     "platform/domains/platform/core/mox-enterprise-core",
@@ -199,6 +200,7 @@ mox-platform-iam-core = { path = "platform/domains/platform/core/mox-platform-ia
 mox-platform-operator-core = { path = "platform/domains/platform/core/mox-platform-operator-core" }
 mox-platform-meta-core = { path = "platform/domains/platform/core/mox-platform-meta-core" }
 mox-platform-datastore-core = { path = "platform/domains/platform/core/mox-platform-datastore-core" }
+mox-dsql-core = { path = "platform/domains/platform/core/mox-dsql-core" }
 mox-platform-orchestrator-core = { path = "platform/domains/platform/core/mox-platform-orchestrator-core" }
 mox-plugin-core = { path = "platform/domains/platform/core/mox-plugin-core" }
 mox-enterprise-core = { path = "platform/domains/platform/core/mox-enterprise-core" }
@@ -329,3 +331,29 @@ bytes = "1"
 http-body-util = "0.1"
 # FR-5 S2 鐑瘝涓存椂鏂囦欢锛圢amedTempFile Drop 鑷姩鍒犻櫎锛?
 tempfile = "3"
+
+# ================================================================
+# Release Performance Optimization (workspace-wide)
+# LTO + codegen-units=1 + opt-level=3 for maximum runtime performance
+# Critical for rust-rocksdb FFI: reduces Rust-side call overhead, inlines hot functions
+# ================================================================
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+incremental = false
+
+# Fast release profile: faster compile, <5 perf loss
+[profile.release-fast]
+inherits = "release"
+lto = "thin"
+codegen-units = 4
+
+# Bench profile
+[profile.bench]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+debug = true

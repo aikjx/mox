@@ -1,6 +1,6 @@
 {
-  "version": "2.1",
-  "project_name": "璇玑系统",
+  "version": "3.0",
+  "project_name": "璇玑系统 · 全维数字孪生中台",
   "dashboard_port": 3999,
   "log_rolling": {
     "max_bytes": 5242880,
@@ -11,6 +11,24 @@
     "password": "admin123"
   },
   "services": {
+    "xiaobai_voice": {
+      "name": "小白语音服务（ASR + TTS）",
+      "description": "本地离线语音：Paraformer ASR / CosyVoice2 TTS（豆包级动听女声，Apache2）；端口 3717，供 Rust 网关 /voice/** 代理调用。AI 对话页面朗读第一层必命中；权重缺失时自动切浏览器拟人音兜底。",
+      "port": 3717,
+      "health_check": "/voice/health",
+      "cwd": "projects/xiaobai_voice",
+      "command": "python -m xiaobai_voice serve --host 0.0.0.0",
+      "args": ["python", "-m", "xiaobai_voice", "serve", "--host", "0.0.0.0"],
+      "binary_requires": ["python"],
+      "npm_deps": false,
+      "is_admin_only": false,
+      "auto_start": true,
+      "restart_delay": 3,
+      "wait_time": 12,
+      "startup_order_hint": 5,
+      "depends_on": [],
+      "tags": ["语音", "AI交互", "TTS", "ASR", "本地推理"]
+    },
     "api": {
       "name": "API 后端服务（Rust mox-gateway）",
       "description": "璇玑系统核心 API 网关（Rust axum，原 Node 后端已迁移）；监听 8080，/health 健康检查，/api/* 路由代理",
@@ -31,7 +49,7 @@
     },
     "frontend": {
       "name": "用户前端界面",
-      "description": "Vite + Vue3 前台；通过 /api 代理到 api 服务 :3010",
+      "description": "Vite + Vue3 前台；通过 /api 代理到 api 服务 :8080",
       "port": 3020,
       "health_check": "/",
       "cwd": "frontend-ui",
@@ -46,23 +64,216 @@
       "depends_on": ["api"],
       "tags": ["前端", "用户界面", "Vite"]
     },
-    "xiaobai_voice": {
-      "name": "小白语音服务（ASR + TTS）",
-      "description": "本地离线语音：Paraformer ASR / CosyVoice2 TTS（豆包级动听女声，Apache2）；端口 3717，供 Rust 网关 /voice/** 代理调用。AI 对话页面朗读第一层必命中；权重缺失时自动切浏览器拟人音兜底。",
-      "port": 3717,
-      "health_check": "/voice/health",
-      "cwd": "projects/xiaobai_voice",
-      "command": "python -m xiaobai_voice serve --host 0.0.0.0",
-      "args": ["python", "-m", "xiaobai_voice", "serve", "--host", "0.0.0.0"],
+    "melody2score": {
+      "name": "旋律转谱服务（Melody2Score WebUI）",
+      "description": "企业级可视化音频转谱：采集→预处理→音高检测→解析→歌谱；FastAPI 后端 + 静态前端，端口 8012，支持录音识别、文件上传、Markdown 导出",
+      "port": 8012,
+      "health_check": "/",
+      "cwd": "projects/melody2score",
+      "command": "python app/webui.py",
+      "args": ["python", "app/webui.py"],
       "binary_requires": ["python"],
       "npm_deps": false,
       "is_admin_only": false,
-      "auto_start": true,
+      "auto_start": false,
       "restart_delay": 3,
-      "wait_time": 12,
-      "startup_order_hint": 5,
+      "wait_time": 10,
+      "startup_order_hint": 30,
       "depends_on": [],
-      "tags": ["语音", "AI交互", "TTS", "ASR", "本地推理"]
+      "tags": ["音频", "转谱", "AI", "FastAPI", "WebUI"]
+    },
+    "primiflow": {
+      "name": "PrimiFlow 低代码拓扑引擎",
+      "description": "MVP 低代码拓扑生成引擎：FastAPI 单服务（端口 8000），内置拓扑构建、Trace 生成、文档导出，自动托管 web/index.html 静态页",
+      "port": 8000,
+      "health_check": "/",
+      "cwd": "projects/primiflow/backend",
+      "command": "python -m uvicorn main:app --host 0.0.0.0 --port 8000",
+      "args": ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"],
+      "binary_requires": ["python"],
+      "npm_deps": false,
+      "is_admin_only": false,
+      "auto_start": false,
+      "restart_delay": 3,
+      "wait_time": 8,
+      "startup_order_hint": 40,
+      "depends_on": [],
+      "tags": ["低代码", "拓扑", "FastAPI", "引擎"]
+    }
+  },
+  "project_registry": {
+    "_comment": "全量项目目录清单，供 manage.py list-projects / dashboard 展示；type: service(可启动服务)|library(库/SDK)|artifact(测试产物)|task(一次性任务)",
+    "core_platform": {
+      "type": "service",
+      "path": "platform/backend-rust",
+      "description": "璇玑核心平台 Rust 后端（mox-gateway 网关 + domains 领域服务）",
+      "service_key": "api",
+      "status": "active"
+    },
+    "frontend_ui": {
+      "type": "service",
+      "path": "frontend-ui",
+      "description": "Vite + Vue3 用户前端界面",
+      "service_key": "frontend",
+      "status": "active"
+    },
+    "xiaobai_voice": {
+      "type": "service",
+      "path": "projects/xiaobai_voice",
+      "description": "小白离线语音服务（ASR + TTS）",
+      "service_key": "xiaobai_voice",
+      "status": "active"
+    },
+    "melody2score": {
+      "type": "service",
+      "path": "projects/melody2score",
+      "description": "旋律转谱（音频→简谱/五线谱），含 WebUI 和桌面 GUI",
+      "service_key": "melody2score",
+      "status": "active"
+    },
+    "primiflow": {
+      "type": "service",
+      "path": "projects/primiflow",
+      "description": "低代码拓扑生成引擎（FastAPI + 静态前端）",
+      "service_key": "primiflow",
+      "status": "active"
+    },
+    "mox_dualrpc": {
+      "type": "library",
+      "path": "projects/mox-dualrpc",
+      "description": "Rust 双协议 RPC 框架（宏 + 运行时），支持 HTTP/gRPC 双栈",
+      "service_key": null,
+      "status": "active"
+    },
+    "business_court_docs": {
+      "type": "library",
+      "path": "my_projects/business-court-docs",
+      "description": "政务法院文书 Rust 库（文书生成/模板/流程）",
+      "service_key": null,
+      "status": "active"
+    },
+    "market_games": {
+      "type": "artifact",
+      "path": "projects/market-games",
+      "description": "市场博弈实验产物目录",
+      "service_key": null,
+      "status": "archived"
+    },
+    "t10_cloud_artifacts": {
+      "type": "artifact",
+      "path": "projects/t10-cloud-artifacts",
+      "description": "T10 云原生测试产物",
+      "service_key": null,
+      "status": "archived"
+    },
+    "t11_graph_artifacts": {
+      "type": "artifact",
+      "path": "projects/t11-graph-artifacts",
+      "description": "T11 图谱测试产物",
+      "service_key": null,
+      "status": "archived"
+    },
+    "t17_ef_runs": {
+      "type": "artifact",
+      "path": "projects/t17-ef-runs",
+      "description": "T17 Entity Framework 测试运行产物",
+      "service_key": null,
+      "status": "archived"
+    },
+    "t17_sdk_examples": {
+      "type": "artifact",
+      "path": "projects/t17-sdk-examples",
+      "description": "T17 SDK 示例代码",
+      "service_key": null,
+      "status": "archived"
+    },
+    "t19_regression": {
+      "type": "artifact",
+      "path": "projects/t19-regression",
+      "description": "T19 回归测试产物",
+      "service_key": null,
+      "status": "archived"
+    },
+    "t19_regression_report": {
+      "type": "artifact",
+      "path": "projects/t19-regression-report",
+      "description": "T19 回归测试报告",
+      "service_key": null,
+      "status": "archived"
+    },
+    "t20_canary_metrics": {
+      "type": "artifact",
+      "path": "projects/t20-canary-metrics",
+      "description": "T20 金丝雀发布指标",
+      "service_key": null,
+      "status": "archived"
+    },
+    "t22_simd_artifacts": {
+      "type": "artifact",
+      "path": "projects/t22-simd-artifacts",
+      "description": "T22 SIMD 优化测试产物",
+      "service_key": null,
+      "status": "archived"
+    },
+    "t23_projection_artifacts": {
+      "type": "artifact",
+      "path": "projects/t23-projection-artifacts",
+      "description": "T23 投影算法测试产物",
+      "service_key": null,
+      "status": "archived"
+    },
+    "t24_gm_artifacts": {
+      "type": "artifact",
+      "path": "projects/t24-gm-artifacts",
+      "description": "T24 几何建模测试产物",
+      "service_key": null,
+      "status": "archived"
+    },
+    "t25_glacier_artifacts": {
+      "type": "artifact",
+      "path": "projects/t25-glacier-artifacts",
+      "description": "T25 冰川存储测试产物",
+      "service_key": null,
+      "status": "archived"
+    },
+    "vendor_eval": {
+      "type": "artifact",
+      "path": "projects/vendor-eval",
+      "description": "供应商评估产物",
+      "service_key": null,
+      "status": "archived"
+    }
+  },
+  "script_catalog": {
+    "_comment": "scripts/ 目录分类索引，供 manage.py scripts 子命令展示",
+    "core": {
+      "path": "scripts/manage.py",
+      "description": "统一运维入口（服务生命周期 + Web 面板 + 公理验证）"
+    },
+    "ci": {
+      "path": "scripts/ci/",
+      "description": "CI/CD 脚本（ci.py, git_create_tag_auto.py）",
+      "files": ["ci.py", "git_create_tag_auto.py"]
+    },
+    "deploy": {
+      "path": "scripts/deploy/",
+      "description": "部署/启动脚本（start.ps1, smoke_test.sh, deploy-kg-storage.ps1, Gray-Warmup.ps1）",
+      "files": ["start.ps1", "smoke_test.sh", "deploy-kg-storage.ps1", "Gray-Warmup.ps1"]
+    },
+    "tests": {
+      "path": "scripts/tests/",
+      "description": "测试执行脚本（T10/T11/T17/T19 全量测试、企业验收、7门门禁）",
+      "files": ["Run-T10-AllTests.ps1", "Run-T11-AllTests.ps1", "Run-T17-EF-All.ps1", "Run-T17-SDK-All.ps1", "Run-T19-Regression-706.ps1", "run-t1-baseline.ps1", "run-enterprise-final-acceptance.ps1", "run_enterprise_7gates.ps1", "verify_tests.ps1", "verify_tests.sh", "parse_test_report.py"]
+    },
+    "validation": {
+      "path": "scripts/validation/",
+      "description": "验证/校验脚本（Rust 依赖校验、单节点验证、TTS 全栈验证、DSP 回归）",
+      "files": ["validate-single-node.js", "validate_rust_workspace_deps.js", "verify_tts_rust_fullstack.py", "tts_rust_vs_py_dsp_regression.py", "fix_pass2.py"]
+    },
+    "temp": {
+      "path": "scripts/temp/",
+      "description": "临时/探测脚本（CosyVoice 权重下载、环境检查、端口探测、一次性运行）",
+      "files": ["_auto_dl_cosy2_weights.py", "_check_cosy_env.py", "_probe3717.py", "_run_e2b.py", "_run_e4.py", "_tmp_t10_doc_check.js"]
     }
   }
 }

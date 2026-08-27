@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -12,6 +12,7 @@
 //! - T: AIOps 智能运维（异常检测/根因分析/预测扩缩）
 
 pub mod api_gateway;
+pub mod api;
 pub mod data_quality;
 pub mod zero_trust;
 pub mod aiops;

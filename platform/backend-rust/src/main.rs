@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -8,6 +8,7 @@
 //! 启动 API 网关，集成限流、熔断、重试、路由、零信任认证
 
 use axum::{routing::any, Router};
+use mox_enterprise_backend::api::{api_router, AppState};
 use mox_enterprise_backend::api_gateway::ApiGateway;
 use std::net::SocketAddr;
 use tokio::signal;
@@ -39,9 +40,11 @@ async fn main() -> anyhow::Result<()> {
         gateway.listen_addr(), gateway.rate_limit(), gateway.retry_attempts());
 
     // 构建路由
+    let app_state = AppState::default();
     let app = Router::new()
         .route("/health", any(health_handler))
         .route("/ready", any(ready_handler))
+        .nest("/api", api_router(app_state))
         .fallback(any(gateway.proxy_handler()));
 
     // 启动服务
