@@ -1,4 +1,4 @@
-# 璇玑 MOX · SaaS / 私有化双模架构总览
+﻿# 璇玑 MOX · SaaS / 私有化双模架构总览
 
 > **版本**: v1.0 · 2026-08-26 · 架构文档锚点（最后更新：TTS Rust DSP 全链路打通 + Rust 核心 4 crate / 3 绑定落地）
 
@@ -58,7 +58,7 @@
 | LLM 权重 | CosyVoice2-0.5B 目录（iic/CosyVoice2-0.5B） | `projects/xiaobai_voice/models/tts-cosyvoice2-0.5b/`（3.6GB，Apache-2.0） |
 | 规则 / 模型 | 默认配置 + 用户 patch | `projects/xiaobai_voice/xiaobai_voice/config/default_config.yaml`（`voice.tts.speed=1.03`） |
 | 存储 | S3 / 本地磁盘 / SQLite / Postgres | SaaS 推荐云端对象存储 + Postgres；私有化本地磁盘 + SQLite 可行 |
-| 知识资产 | 云盘知识库 / 图谱节点 · 边 / 算子定义 | `projects/mox-cloud-drive-*` · `platform/services/kg-hub` · `platform/services/mox-graph-storage` |
+| 知识资产 | 云盘知识库 / 图谱节点 · 边 / 算子定义 | `projects/mox-cloud-drive-*` · `platform/domains/kg-hub` · `platform/domains/mox-graph-storage` |
 
 ---
 

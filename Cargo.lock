@@ -53,6 +53,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "alloc-no-stdlib"
+version = "2.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cc7bb162ec39d46ab1ca8c77bf72e890535becd1751bb45f64c597edb4c8c6b3"
+
+[[package]]
+name = "alloc-stdlib"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0e76a019e91224d279006ff972f1e984179a6e9feb050adba6ce8274aef23195"
+dependencies = [
+ "alloc-no-stdlib",
+]
+
+[[package]]
 name = "allocator-api2"
 version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -412,6 +427,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "brotli"
+version = "8.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5cc91aac060a7a1e25823bdccbfb6af1875b88f17c6daac97894eed8207166b3"
+dependencies = [
+ "alloc-no-stdlib",
+ "alloc-stdlib",
+ "brotli-decompressor",
+]
+
+[[package]]
+name = "brotli-decompressor"
+version = "5.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a32acac15fe1967bc3986b2a6347dffc965602354ea6f450ad07e8bfd253583"
+dependencies = [
+ "alloc-no-stdlib",
+ "alloc-stdlib",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -675,9 +711,12 @@ version = "0.4.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce2548391e9c1929c21bf6aa2680af86fe4c1b33e6cea9ac1cfeec0bd11218cf"
 dependencies = [
+ "brotli",
  "compression-core",
  "flate2",
  "memchr",
+ "zstd",
+ "zstd-safe",
 ]
 
 [[package]]
@@ -1477,6 +1516,7 @@ checksum = "da0e4dd2a88388a1f4ccc7c9ce104604dab68d9f408dc34cd45823d5a9069095"
 dependencies = [
  "futures-core",
  "futures-sink",
+ "nanorand",
  "spin",
 ]
 
@@ -2714,11 +2754,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-ai-api"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "mox-ai-core"
 version = "3.0.0-ai-powered"
 dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "futures",
+ "futures-util",
+ "parking_lot",
+ "reqwest",
  "serde",
  "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
  "tracing",
  "uuid",
 ]
@@ -2775,6 +2834,28 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "mox-arch-test"
+version = "1.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "toml",
+ "walkdir",
+]
+
+[[package]]
+name = "mox-cloud-api"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "uuid",
 ]
 
 [[package]]
@@ -2887,6 +2968,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-connector-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "futures",
+ "parking_lot",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "mox-data-api"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "uuid",
+]
+
+[[package]]
 name = "mox-data-catalog-svc"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -2907,11 +3018,13 @@ dependencies = [
  "hex",
  "parking_lot",
  "rand 0.8.7",
+ "regex",
  "serde",
  "serde_json",
  "sha2",
  "tempfile",
  "thiserror 1.0.69",
+ "uuid",
 ]
 
 [[package]]
@@ -2927,6 +3040,7 @@ dependencies = [
  "sha2",
  "tempfile",
  "thiserror 1.0.69",
+ "uuid",
  "wasmer",
  "wasmer-compiler-cranelift",
 ]
@@ -3031,6 +3145,41 @@ dependencies = [
  "sha2",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "mox-enterprise-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "hex",
+ "hmac",
+ "mox-framework",
+ "parking_lot",
+ "regex",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_urlencoded",
+ "sha2",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "mox-flow-api"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "uuid",
 ]
 
 [[package]]
@@ -3177,6 +3326,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-kg-api"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+]
+
+[[package]]
 name = "mox-kg-fusion-svc"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -3249,10 +3409,13 @@ name = "mox-kg-service-svc"
 version = "3.0.0-ai-powered"
 dependencies = [
  "async-trait",
+ "axum",
  "bytes",
+ "chrono",
  "criterion",
  "hex",
  "mox-cloud-foundation",
+ "mox-framework",
  "mox-kg-algo-core",
  "mox-kg-meta-core",
  "mox-kg-storage-svc",
@@ -3260,6 +3423,7 @@ dependencies = [
  "parking_lot",
  "serde",
  "serde_json",
+ "serde_qs",
  "sha2",
  "tempfile",
  "thiserror 1.0.69",
@@ -3284,14 +3448,17 @@ dependencies = [
  "async-raft",
  "async-trait",
  "bytes",
+ "chrono",
  "criterion",
  "hex",
  "mox-cloud-foundation",
  "mox-kg-algo-core",
  "mox-kg-meta-core",
  "parking_lot",
+ "petgraph",
  "rand 0.8.7",
  "rocksdb",
+ "rusqlite",
  "serde",
  "serde_json",
  "sha2",
@@ -3316,6 +3483,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-market-api"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "mox-market-template-svc"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -3326,6 +3503,18 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "mox-platform-api"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
  "uuid",
 ]
 
@@ -3388,16 +3577,13 @@ name = "mox-platform-gateway-svc"
 version = "3.0.0-ai-powered"
 dependencies = [
  "anyhow",
+ "axum",
  "chrono",
  "clap",
  "hex",
- "mox-cloud-volume-svc",
- "mox-data-compliance-svc",
- "mox-data-etl-svc",
- "mox-data-plane-svc",
- "mox-data-standards-core",
- "mox-kg-fusion-svc",
+ "mox-framework",
  "mox-kg-service-svc",
+ "mox-platform-foundation",
  "parking_lot",
  "prometheus",
  "rand 0.8.7",
@@ -3408,6 +3594,8 @@ dependencies = [
  "tempfile",
  "thiserror 1.0.69",
  "tokio",
+ "tower 0.4.13",
+ "tower-http 0.5.2",
  "uuid",
 ]
 
@@ -3587,6 +3775,37 @@ dependencies = [
  "sha2",
  "tempfile",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "mox-plugin-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "flume",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid",
+ "walkdir",
+ "wasmer",
+ "wasmer-compiler-cranelift",
+]
+
+[[package]]
+name = "mox-voice-api"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
 ]
 
 [[package]]
@@ -3785,6 +4004,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.119",
+]
+
+[[package]]
+name = "nanorand"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a51313c5820b0b02bd422f4b44776fbf47961755c74ce64afc73bfad10226c3"
+dependencies = [
+ "getrandom 0.2.17",
 ]
 
 [[package]]
@@ -5369,6 +5597,17 @@ dependencies = [
  "itoa",
  "serde",
  "serde_core",
+]
+
+[[package]]
+name = "serde_qs"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0431a35568651e363364210c91983c1da5eb29404d9f0928b67d4ebcfa7d330c"
+dependencies = [
+ "percent-encoding",
+ "serde",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -7652,6 +7891,24 @@ name = "zmij"
 version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "29666d0abbfad1e3dc4dcf6144730dd3a3ab225bbbdac83319345b1b44ccfc1b"
+
+[[package]]
+name = "zstd"
+version = "0.13.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e91ee311a569c327171651566e07972200e76fcfe2242a4fa446149a3881c08a"
+dependencies = [
+ "zstd-safe",
+]
+
+[[package]]
+name = "zstd-safe"
+version = "7.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8f49c4d5f0abb602a93fb8736af2a4f4dd9512e36f7f570d66e65ff867ed3b9d"
+dependencies = [
+ "zstd-sys",
+]
 
 [[package]]
 name = "zstd-sys"

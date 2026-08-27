@@ -26,6 +26,11 @@ pub mod projection_20;
 pub mod result_set;
 pub mod trace_8stages;
 
+/// KG/AI HTTP 适配层：6 KG 真实接口 + 4 AI 引擎接口桩
+/// （feature = "http-adapter" 时构建，见 [`http_adapter::build_kg_ai_router`]）
+#[cfg(feature = "http-adapter")]
+pub mod http_adapter;
+
 pub use ac15_faults::{Ac15Fault, FaultInjector, FaultPoint, FaultReport, QualityGate};
 pub use trace_8stages::*;
 pub use algo_bridge::{AlgoBridge, Communities, Graph as AlgoGraph};

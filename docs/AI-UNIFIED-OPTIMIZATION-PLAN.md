@@ -1,4 +1,4 @@
-# 算子统一系统（OUS）架构优化方案：引入 L4 Agentic 闭环与形式化状态机
+﻿# 算子统一系统（OUS）架构优化方案：引入 L4 Agentic 闭环与形式化状态机
 
 > **版本**：v1.0  
 > **日期**：2026-08-21  
@@ -57,7 +57,7 @@ AUS 的核心突破在于**将 L4 编排层具象化为一个可审计、可中�
 
 ### 2.1 引入 `OUS-Engine Loop` (Agentic 闭环)
 
-我们将在 `platform/services/ai-agent/src/` 中引入一个新的核心组件 `OUS-Engine`，作为系统的“心脏”。它将接管原本分散的 `ai-agent` 和 `mox-expert` 调度逻辑，形成一个统一的、受守卫保护的 Agentic 闭环。
+我们将在 `platform/domains/ai-agent/src/` 中引入一个新的核心组件 `OUS-Engine`，作为系统的“心脏”。它将接管原本分散的 `ai-agent` 和 `mox-expert` 调度逻辑，形成一个统一的、受守卫保护的 Agentic 闭环。
 
 #### 2.1.1 形式化状态机（FSM）
 
@@ -215,7 +215,7 @@ impl TraceConsolidator {
 ## 3. 代码落地计划
 
 ### Phase 1: 状态机与守卫 (Runtime Upgrade)
-*   **文件**: `platform/services/ai-agent/src/engine/`
+*   **文件**: `platform/domains/ai-agent/src/engine/`
 *   **任务**:
     *   [ ] 创建 `state_machine.rs`: 定义 `EngineState` 和 `EngineGuard`。
     *   [ ] 创建 `engine_loop.rs`: 实现 `run()` 主循环，串联感知-规划-执行-反思。
@@ -228,7 +228,7 @@ impl TraceConsolidator {
     *   [x] 更新 `frontend-ui` 系统管理区: 增加“HITL 审核”面板（`/admin?tab=hitl`，原 frontend-admin-ui 已裁撤并入）。
 
 ### Phase 3: 记忆巩固闭环
-*   **文件**: `platform/services/kg-hub/src/consolidator.rs`
+*   **文件**: `platform/domains/kg-hub/src/consolidator.rs`
 *   **任务**:
     *   [ ] 实现 `TraceConsolidator`。
     *   [ ] 对接 `ai-agent` 的 Trace 输出。

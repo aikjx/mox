@@ -1,4 +1,4 @@
-# AI 流程图谱化设计 — 业务流程与算法流程统一承载于图谱引擎
+﻿# AI 流程图谱化设计 — 业务流程与算法流程统一承载于图谱引擎
 
 > 版本：v1.0（2026-08-22）
 > 上游文档：[ai-engine-master-analysis.md](./ai-engine-master-analysis.md)（统一编排核心设计）
@@ -174,7 +174,7 @@ node test/test-graph-formulas.js
 
 ### 10.1 Rust 版流程图谱引擎
 
-新增 `platform/services/graph-algorithms/src/flow_graph.rs`（与 Node 层 `ai-flow-graph.js` 跨语言对齐）：
+新增 `platform/domains/graph-algorithms/src/flow_graph.rs`（与 Node 层 `ai-flow-graph.js` 跨语言对齐）：
 
 - `AIFlowGraph::build(rules, capabilities)`：两阶段构建（先全部节点、后全部边）——单阶段边建边加会因 `add_edge` 要求两端节点存在而静默失败（实测边数 4/31）；
 - `detect_intent_by_spread(question)`：激活扩散意图识别（F8），委托修复后的 `pagerank_personalized` 单源实现，平局取字典序最小（确定性）；
@@ -196,7 +196,7 @@ node test/test-graph-formulas.js
 ### 10.3 Rust 公式测试：14/14 通过（跨语言一致）
 
 ```
-cargo test（platform/services/graph-algorithms）
+cargo test（platform/domains/graph-algorithms）
 test flow_graph::tests::t1_star_graph_formulas ... ok    # F2 度 1.0/0.25；F4 介数 1.0/0；F5 紧密 1.0/0.625
 test flow_graph::tests::t2_chain_graph_formulas ... ok   # F3 ΣPR=1 且 e 最高；F4 b=0.25/c=1/3；F5 a=25/48/e=0
 test flow_graph::tests::t3_two_cliques_communities ... ok # F6 CNM 恰好 2 社区 {a,b,c}+{d,e,f}

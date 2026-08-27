@@ -10,6 +10,8 @@ description = "Mox Compliance: LegalHold + Miji Bell-LaPadula + Audit Chain Reco
 serde = { workspace = true }
 serde_json = { workspace = true }
 chrono = { workspace = true }
+uuid = { workspace = true }
+regex = "1"
 thiserror = { workspace = true }
 parking_lot = { workspace = true }
 sha2 = { workspace = true }

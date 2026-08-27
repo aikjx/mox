@@ -9,6 +9,7 @@ description = "Mox ETL near-data plugin framework (WASM ABI: inline-get/inline-p
 [dependencies]
 serde = { workspace = true }
 serde_json = { workspace = true }
+uuid = { workspace = true }
 thiserror = { workspace = true }
 parking_lot = { workspace = true }
 chrono = { workspace = true }

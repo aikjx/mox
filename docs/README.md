@@ -1,4 +1,4 @@
-# 璇玑 RelGraph · 信息关联关系图 · 全维分析文档导航（统一命名版）
+﻿# 璇玑 RelGraph · 信息关联关系图 · 全维分析文档导航（统一命名版）
 
 > 编号：**DOC-INDEX-V1.2**
 > **权威治理中心**：企业级文档以 `docs/enterprise/00-INDEX.md` 为**唯一治理入口**与权威等级定义（文档集 `00`~`18` 共 19 份）。本文仅作**关图 / 全维专题的快捷分区索引**，不与 `00-INDEX` 重复，所有权威等级以 `00-INDEX` §1.2 为准。
@@ -58,12 +58,12 @@ docs/
 | --- | --- | --- | --- |
 | 企业级文档总入口 / 权威等级 / RACI / 三联盟阅读路径 | **`docs/enterprise/00-INDEX.md`** → 权威链 L0→L4 表 | **`docs/enterprise/00-INDEX.md`** | **`docs/enterprise/00-INDEX.md`** → §1 表主责联盟列 |
 | **🟢 最高级权威 L0（三联盟必读首件）** | [`enterprise/18-全域顶层总设计-三联盟模式-V1.0.md`](enterprise/18-全域顶层总设计-三联盟模式-V1.0.md) TOP-MASTER 12 章 | 同左（§二六层金字塔 / §三八层图谱 / §四 10BP / §五八大算法 / §八 9 里程碑） | 同左（§六工程标准 / §七目录优化 / §九测试体系） |
-| 规范术语表（唯一事实源 · 7 新术语） | **`docs/GLOSSARY.md`**（DOC-GLOSSARY-V1.1）· 三联盟术语 | 同左 · 图谱/算法 7 大新术语 | 同左 · 路径格式（`platform/services/` / `frontend-ui/`） |
+| 规范术语表（唯一事实源 · 7 新术语） | **`docs/GLOSSARY.md`**（DOC-GLOSSARY-V1.1）· 三联盟术语 | 同左 · 图谱/算法 7 大新术语 | 同左 · 路径格式（`platform/domains/` / `frontend-ui/`） |
 | 需求铁律（四闸门 + 三联盟四条铁规 All-01~04） | `docs/enterprise/07-全维需求明确书.md` · **首读** | 同左 · All-02 判重铁规 | 同左 · All-03/04 四归三连 & 自证自验 |
 | 自动化流水线 8 步 + 每步主责联盟 | `docs/enterprise/08-全维自动化处理明确书.md` | 同左 · ②③④⑤⑥ 步责任 | 同左 · ①⑦⑧ 步责任 |
 | 三联盟 RACI 矩阵（18 行映射） | `docs/enterprise/06-requirements-architecture-map.md` §5 | 同左 · A1~A8 & 图谱建模 R 行 | 同左 · 工程/安全/运维/前端 R 行 |
 | 融合域流程基准（S1-S8 / G0-G3） | `docs/璇玑-全维需求业务处理流程图-归一化企业级.md`（AA-STD） | `docs/enterprise/02-architecture.md` §0.2 八大算法家族 | 同左 · 08 自动流水线每步落点 |
-| 六维绑定（REQ→…→COD） | AA-STD §3 + `docs/modules/algorithm-verification.md` 对账（AV-STD） | `docs/enterprise/02` §二 八层图谱 L0~L7 | `platform/services/primiflow-fusion` sixdim 注册表 |
+| 六维绑定（REQ→…→COD） | AA-STD §3 + `docs/modules/algorithm-verification.md` 对账（AV-STD） | `docs/enterprise/02` §二 八层图谱 L0~L7 | `platform/domains/primiflow-fusion` sixdim 注册表 |
 | 关图骨架 / REQ 根 / 偏离检测（GR-E6） | `docs/full-dimensional/guantu-skeleton.md` | 同左 · CNM 社区 & 偏离 BFS | `tools/guantu_gate.py` CI 闸门 |
 | 关图机读产物 / 新需求 P9 判重入口（先判重后立项） | `docs/graph/requests/README.md` · 判重报告归档 | `tools/info-graph dedup` 子图匹配 A1+A5 | 同左 · guantu_gate.py |
 | 关图 / Primi / OUS 规范 | `docs/specs/`（GR-STD / PT-STD / OUS）· BP-10 文档治理 | 同左 · GR-STD 12 节点 / 7 边 → 八层图谱扩集对齐 | 同左 · ADR-DOC-004/005 执行 |

@@ -164,6 +164,7 @@ impl DatastoreConnection {
     where F: FnOnce(&TransactionCtx<'_>) -> Result<T, DatastoreError> {
         match &*self.inner {
             DatastoreInner::Sqlite(conn) => {
+                let mut conn = conn.lock();
                 let tx = conn.transaction().map_err(|e| DatastoreError::Query(e.to_string()))?;
                 let ctx = TransactionCtx { tx: &tx };
                 let result = f(&ctx)?;

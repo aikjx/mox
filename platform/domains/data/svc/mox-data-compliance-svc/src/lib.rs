@@ -1,4 +1,4 @@
-//! MOX Data Compliance Service
+﻿//! MOX Data Compliance Service
 //!
 //! PII (Personally Identifiable Information) detection, classification, and redaction.
 //! Supports regex-based detection, named entity recognition, and configurable policies.
@@ -19,7 +19,7 @@ pub enum ComplianceError {
     PolicyNotFound(String),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum PiiType {
     Email,
     Phone,

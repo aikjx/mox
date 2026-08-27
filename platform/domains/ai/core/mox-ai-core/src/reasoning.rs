@@ -16,7 +16,7 @@
 //! | 持久化 | 上层存储 | 图谱 + 对话历史 |
 
 use crate::graph::{GraphEdge, GraphNode, NodeId, RelationId, MoxGraph};
-use crate::providers::{AiProvider, AiProviderError, ChatMessage, ModelConfig};
+use crate::providers::{AiError, AiProvider, ChatMessage, ChatRequest, ModelConfig};
 use serde::{Deserialize, Serialize};
 
 /// 推理能力类型
@@ -100,25 +100,26 @@ impl AiReasoner {
         }
     }
 
-    /// 执行推理
-    pub fn reason(&self, req: &ReasoningRequest) -> Result<ReasoningResult, AiProviderError> {
+    /// 执行推理（async）
+    pub async fn reason(&self, req: &ReasoningRequest) -> Result<ReasoningResult, AiError> {
         let start = std::time::Instant::now();
         let prompt = build_reasoning_prompt(req);
         let messages = vec![
             ChatMessage::system(REASONING_SYSTEM_PROMPT),
             ChatMessage::user(prompt),
         ];
-        let response = self.provider.chat_sync(
-            &messages,
-            &ModelConfig {
+        let chat_req = ChatRequest {
+            messages,
+            config: ModelConfig {
                 model: self.model.clone(),
                 max_tokens: 2048,
-                temperature: 0.3, // 低温度保证抽取准确性
+                temperature: 0.3,
                 ..Default::default()
             },
-        )?;
+        };
+        let response = self.provider.chat(&chat_req).await?;
         let latency_ms = start.elapsed().as_millis() as u64;
-        parse_reasoning_result(&response, req.capability, latency_ms)
+        parse_reasoning_result(&response.content, req.capability, latency_ms)
     }
 
     pub fn model(&self) -> &str {
@@ -165,7 +166,7 @@ fn parse_reasoning_result(
     response: &str,
     capability: ReasoningCapability,
     latency_ms: u64,
-) -> Result<ReasoningResult, AiProviderError> {
+) -> Result<ReasoningResult, AiError> {
     // 尝试提取 JSON 代码块
     let json_str = response
         .trim()
@@ -178,7 +179,7 @@ fn parse_reasoning_result(
     let json: serde_json::Value = serde_json::from_str(json_str)
         .or_else(|_| serde_json::from_str(response))
         .map_err(|e| {
-            AiProviderError::Other(format!("JSON解析失败: {} | 原始响应: {}", e, response))
+            AiError::Other(format!("JSON解析失败: {} | 原始响应: {}", e, response))
         })?;
 
     let explanation = json
@@ -250,20 +251,20 @@ impl GraphAwareReasoner {
         }
     }
 
-    /// 语义搜索：基于描述找最相关的图谱节点
-    pub fn semantic_search(
+    /// 语义搜索：基于描述找最相关的图谱节点（async）
+    pub async fn semantic_search(
         &self,
         graph: &MoxGraph,
         query: &str,
         max_results: usize,
-    ) -> Result<Vec<SemanticMatch>, AiProviderError> {
+    ) -> Result<Vec<SemanticMatch>, AiError> {
         let req = ReasoningRequest {
             capability: ReasoningCapability::SemanticSearch,
             query: query.into(),
             focus_nodes: graph.nodes.keys().map(|k| k.0.clone()).collect(),
             max_results,
         };
-        let result = self.ai.reason(&req)?;
+        let result = self.ai.reason(&req).await?;
 
         // 将 AI 返回的节点描述与图谱匹配
         let matches: Vec<SemanticMatch> = result
@@ -284,19 +285,19 @@ impl GraphAwareReasoner {
         Ok(matches)
     }
 
-    /// 从对话中提取新知识并注入图谱
-    pub fn extract_and_inject(
+    /// 从对话中提取新知识并注入图谱（async）
+    pub async fn extract_and_inject(
         &self,
         graph: &mut MoxGraph,
         user_input: &str,
-    ) -> Result<ExtractionSummary, AiProviderError> {
+    ) -> Result<ExtractionSummary, AiError> {
         let req = ReasoningRequest {
             capability: ReasoningCapability::KnowledgeExtraction,
             query: user_input.into(),
             focus_nodes: vec![],
             max_results: 20,
         };
-        let result = self.ai.reason(&req)?;
+        let result = self.ai.reason(&req).await?;
 
         let mut injected_nodes = 0;
         let mut injected_edges = 0;
@@ -334,13 +335,13 @@ impl GraphAwareReasoner {
         })
     }
 
-    /// AI 辅助因果推理：给定起点，推理可能因果路径
-    pub fn causal_analysis(
+    /// AI 辅助因果推理：给定起点，推理可能因果路径（async）
+    pub async fn causal_analysis(
         &self,
         graph: &MoxGraph,
         start_id: &str,
         target_hint: Option<&str>,
-    ) -> Result<CausalAnalysisResult, AiProviderError> {
+    ) -> Result<CausalAnalysisResult, AiError> {
         let node_desc = graph
             .nodes
             .get(&NodeId(start_id.into()))
@@ -360,7 +361,7 @@ impl GraphAwareReasoner {
             max_results: 10,
         };
 
-        let result = self.ai.reason(&req)?;
+        let result = self.ai.reason(&req).await?;
 
         Ok(CausalAnalysisResult {
             start_node: start_id.into(),

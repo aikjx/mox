@@ -1,4 +1,4 @@
-# 璇玑·开发专家联盟 — 架构诊断与 SaaS AI 平台化最优方案 V1.0
+﻿# 璇玑·开发专家联盟 — 架构诊断与 SaaS AI 平台化最优方案 V1.0
 
 > **文档定位**：基于真实源码（2026-08-26 现场取证）的架构评估 + 可落地优化路线图，区别于纯行业最佳实践。
 > **取证范围**：ExpertCenterView.vue / ProjectPicker.vue / projectContext.js / types.js / Cargo.toml / .gitignore / projects.js 路由 / platform_config.json / 根目录与数据目录审计。
@@ -15,7 +15,7 @@
 | 1 | 根目录严重污染，工程卫生极差 | ✅ 根目录 47 个垃圾文件（*.log / *.txt / NUL-*.d / *.rmeta），总计 ~850KB。但 .gitignore **已经正确写入**了 `*.log`、`graph.json`、`graph.enterprise.json`、`__pycache__`、`my_projects`、`workspace/artifacts`、`*.db` 等规则——问题是**历史遗留文件未清理 + 规则未强制执行**，而非"没有规范"。 | 部分属实，程度中等 |
 | 2 | 功能重叠目录并存（projects/my_projects/workspace） | ✅ 三个目录确实都存在，但**语义边界其实清晰**：<br>• `projects/` = 平台级项目案例（melody2score / market-games），已入仓<br>• `my_projects/` = 用户本地 Rust crate 实验区（business-court-docs），.gitignore 已忽略整目录<br>• `workspace/` = AI 自动开发引擎运行时产物（artifacts + screenshots），.gitignore 已忽略子目录<br>**问题不是语义混乱，而是命名不够表达语义，新人读不懂三个目录的区别。** | 属实但根因错判 |
 | 3 | 大文件直接入库（graph.json 87MB / graph.enterprise.json 86MB） | ✅ 两个合计 ~173MB 的 JSON 确实在根目录。.gitignore 已写 `graph.json` / `graph.enterprise.json`，但**大概率是 `git add -f` 强加入库**或 ignore 规则晚于提交。实际危害：clone 慢 2-3 分钟、GitHub Release 包膨胀。 | 属实，严重 |
-| 4 | Monorepo 结构缺失，多语言边界模糊 | ❌ **严重误判**：`Cargo.toml` workspace 注册了 **42 个 Rust crates**，分层清晰：<br>• `platform/crates/` = 4 个计算核心 + 3 个 FFI 绑定（napi/PyO3）<br>• `platform/services/` = 26 个领域服务（mox-expert / ai-agent / kg-hub / flow-ai …）<br>• `platform/gateway/runtime` = Rust 网关（axum + 多路由域）<br>• `platform/sdk/` = Rust/Node/Python 三语 SDK<br>• `platform/backend-node/` = Node API 层（23 路由域 + JSON Store）<br>• `frontend-ui/` = Vue3 前端（25 视图 + 组件库）<br>**Rust 侧的 Monorepo 管理是项目最强项之一，远超行业平均水平。** 缺失的是：前端/Node/Python 没接入 pnpm/npm workspace，三语构建没统一入口脚本。 | 大误判，需修正 |
+| 4 | Monorepo 结构缺失，多语言边界模糊 | ❌ **严重误判**：`Cargo.toml` workspace 注册了 **42 个 Rust crates**，分层清晰：<br>• `platform/crates/` = 4 个计算核心 + 3 个 FFI 绑定（napi/PyO3）<br>• `platform/domains/` = 26 个领域服务（mox-expert / ai-agent / kg-hub / flow-ai …）<br>• `platform/gateway/runtime` = Rust 网关（axum + 多路由域）<br>• `platform/sdk/` = Rust/Node/Python 三语 SDK<br>• `platform/backend-node/` = Node API 层（23 路由域 + JSON Store）<br>• `frontend-ui/` = Vue3 前端（25 视图 + 组件库）<br>**Rust 侧的 Monorepo 管理是项目最强项之一，远超行业平均水平。** 缺失的是：前端/Node/Python 没接入 pnpm/npm workspace，三语构建没统一入口脚本。 | 大误判，需修正 |
 | 5 | SaaS 多租户架构无迹可寻 | ✅ **最致命的真实短板**：<br>• `platform_config.json` = 单实例（admin/admin123 硬编码）<br>• 所有后端 JSON Store（projects.json / experts.json / tasks.json）无 `tenant_id` 字段<br>• `projectContext.js` 的 HTTP 注入只挂 `project_id`，无 `tenant_id` / `org_id`<br>• RBAC 仅在 `mox-expert` crate 中有审计+S3 模块，无租户级 RLS<br>• `docs/enterprise/12-RBAC审计全链路闭环验收报告.md` 仅覆盖单租户 | 属实，致命 P0 |
 | 6 | 运行时数据与源代码混杂 | ✅ `platform/backend-node/data/` 下 **68 个 JSON/SQLite 文件**（15.4MB），包含：<br>• `alliance_traces.jsonl` = 3.4MB 对话迹线<br>• `ous.db-wal` = 7.3MB SQLite WAL<br>• `ous.db` = 3.3MB<br>• `audit_log.json` / `llm_usage.json` 等运行时数据<br>虽 .gitignore 写了 `*.db`、`backend/data/tasks.json` 等，但漏了大量 JSON（projects.json、experts.json 等是种子数据还是运行时数据边界模糊）。 | 属实，中高 |
 
@@ -816,7 +816,7 @@ infotopograph/
 │   ├── mox-mq/                         # ★ 消息队列抽象（nats/kafka）
 │   └── mox-db/                         # 数据库访问（sqlx 封装，从各服务抽取）
 │
-├── services/                           # ★ 业务服务层（原 platform/services/，重组命名）
+├── services/                           # ★ 业务服务层（原 platform/domains/，重组命名）
 │   ├── gateway/                        # API 网关（原 platform/gateway/runtime/）
 │   ├── system/                         # 系统管理（原 mox-system）
 │   ├── tenant/                         # ★ 租户管理（新增）

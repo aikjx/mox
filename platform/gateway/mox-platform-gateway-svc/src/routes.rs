@@ -1,7 +1,7 @@
 //! # 企业级网关·模块化路由注册中心
 //!
 //! 设计原则：
-//! - 单二进制（mox-server）= 可选开启 axum 网关模式（feature = "axum-gateway"）
+//! - 单二进制（mox-server）= axum 网关直接绑定 0.0.0.0:8080
 //! - 路由桩 = `Router` + `tower::ServiceBuilder` 中间件分层组合，无运行时开销
 //! - 域内 handler 使用 `mox-framework` 导出的 `FrameworkResult<T>`，错误自动转 JSON
 //!
@@ -20,12 +20,10 @@
 //!   L10 Enterprise: /enterprise/v1/*  /platform/v1/*  /audit/v1/*
 //! ```
 
-#[cfg(feature = "axum-gateway")]
 mod axum_impl {
     use axum::{
         Json, Router,
         extract::{Query, State},
-        http::StatusCode,
         routing::{get, post},
     };
     use mox_framework::FrameworkResult;
@@ -250,9 +248,8 @@ mod axum_impl {
             Json(json!({ "ok": true, "gateway": "axum", "ts": chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true) }))
         }));
 
-        // L2 KG（ready 6 接口）
+        // L2 KG（ready 6 接口 stub）+ L3 AI Engine（ready 4 接口 stub）—— 兜底路径
         router = router.merge(kg_domain_router());
-        // L3 AI Engine（ready 4 接口）
         router = router.merge(ai_engine_router());
 
         // 剩余 25 域挂 stub（31总 - L0×2 - L2×1 - L3×1 = 27？：L0 health/metrics/domains 算 3 项，实际匹配前缀，总数不重要）
@@ -263,23 +260,47 @@ mod axum_impl {
             router = router.merge(stub_domain(d.prefix));
         }
 
-        router.with_state(state)
+        // —— 真实域路由挂接（优先级更高的 merge：同路径覆盖 stub）——
+        // L2+L3: kg-service-svc 的 http_adapter 提供真实 6 KG + 4 AI 接口
+        let real_kg_ai: Router = mox_kg_service_svc::http_adapter::build_kg_ai_router();
+
+        // 最终：先合网关层路由(带 state)，再合真实域路由(各自内附 state)
+        router.with_state(state).merge(real_kg_ai)
+    }
+
+    // ====================================================================
+    // 启动入口：axum 绑定 bind_addr:port，进入 serve 循环（Ctrl-C 优雅退出）
+    // ====================================================================
+    pub async fn serve_axum_gateway(bind_addr: &str, port: u16) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        use axum::Server;
+        use std::net::SocketAddr;
+        use tower_http::cors::{Any, CorsLayer};
+        use tower::ServiceBuilder;
+
+        let app = build_gateway_router().layer(
+            ServiceBuilder::new()
+                .layer(
+                    CorsLayer::new()
+                        .allow_origin(Any)
+                        .allow_methods(Any)
+                        .allow_headers(Any),
+                )
+                .into_inner(),
+        );
+
+        let addr: SocketAddr = format!("{bind_addr}:{port}").parse()?;
+        eprintln!("[mox-server::gateway] 🌐 Rust Gateway 全维接管 @ http://{addr}");
+        eprintln!("[mox-server::gateway] ✅ /health · /api/v1/domains · /kg/v1/* · /ai/engine/* 已就绪");
+
+        Server::bind(&addr)
+            .serve(app.into_make_service_with_connect_info::<SocketAddr>())
+            .with_graceful_shutdown(async {
+                let _ = tokio::signal::ctrl_c().await;
+                eprintln!("\n[mox-server::gateway] 🛑 收到 Ctrl-C，优雅退出中…");
+            })
+            .await?;
+        Ok(())
     }
 }
 
-// feature 未开启时：保留空模块，保证 lib.rs pub mod routes; 永远通过编译
-#[cfg(not(feature = "axum-gateway"))]
-mod not_enabled {
-    #[derive(Debug, Clone)]
-    pub struct DomainDescriptor;
-    pub const DOMAINS: &[DomainDescriptor] = &[];
-    pub fn build_gateway_router() -> ! {
-        panic!("feature \"axum-gateway\" 未启用。请在 mox-platform-gateway-svc 编译时加 --features axum-gateway")
-    }
-}
-
-#[cfg(feature = "axum-gateway")]
-pub use axum_impl::{DomainDescriptor, DOMAINS, GatewayState, build_gateway_router};
-
-#[cfg(not(feature = "axum-gateway"))]
-pub use not_enabled::{DomainDescriptor, DOMAINS, build_gateway_router};
+pub use axum_impl::{DomainDescriptor, DOMAINS, GatewayState, build_gateway_router, serve_axum_gateway};

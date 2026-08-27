@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
 use crate::graph::MoxGraph;
-use crate::providers::{AiProvider, AiProviderError, ChatMessage, ModelConfig, Role};
+use crate::providers::{AiError, AiProvider, ChatMessage, ChatRequest, ModelConfig, Role};
 
 /// 单条消息
 #[derive(Debug, Clone)]
@@ -185,12 +185,12 @@ impl ChatSession {
         self.history.append_graph_context(context.to_string());
     }
 
-    /// 发送用户消息，返回助手回复
-    pub fn send<P: AiProvider + ?Sized>(
+    /// 发送用户消息，返回助手回复（async）
+    pub async fn send<P: AiProvider + ?Sized>(
         &mut self,
         provider: &P,
         model: &str,
-    ) -> Result<String, AiProviderError> {
+    ) -> Result<String, AiError> {
         let messages = self.history.to_provider_messages();
         let config = ModelConfig {
             model: model.into(),
@@ -198,21 +198,23 @@ impl ChatSession {
             temperature: 0.7,
             ..Default::default()
         };
-        let response = provider.chat_sync(&messages, &config)?;
-        self.history.push_assistant(response.clone());
-        Ok(response)
+        let req = ChatRequest { messages, config };
+        let response = provider.chat(&req).await?;
+        self.history.push_assistant(response.content.clone());
+        Ok(response.content)
     }
 
-    /// 发送消息（自定义配置）
-    pub fn send_with<P: AiProvider + ?Sized>(
+    /// 发送消息（自定义配置，async）
+    pub async fn send_with<P: AiProvider + ?Sized>(
         &mut self,
         provider: &P,
         config: &ModelConfig,
-    ) -> Result<String, AiProviderError> {
+    ) -> Result<String, AiError> {
         let messages = self.history.to_provider_messages();
-        let response = provider.chat_sync(&messages, config)?;
-        self.history.push_assistant(response.clone());
-        Ok(response)
+        let req = ChatRequest { messages, config: config.clone() };
+        let response = provider.chat(&req).await?;
+        self.history.push_assistant(response.content.clone());
+        Ok(response.content)
     }
 
     pub fn history(&self) -> &ChatHistory {

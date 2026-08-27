@@ -1,4 +1,4 @@
-# 璇玑·开发专家联盟 — 架构诊断与 SaaS AI 平台化最优方案 V1.1（补充修订版）
+﻿# 璇玑·开发专家联盟 — 架构诊断与 SaaS AI 平台化最优方案 V1.1（补充修订版）
 
 > **文档性质**：V1.0 的补充与修订版。基于**第二轮源码深挖**（RBAC policy.rs / AI 编排完整 5 步流水线 / security.js 配额框架 / plugins.json 现状 / service-manager 双源冲突），**修正了 V1.0 对 5 大模块的低估**，并补充：落地执行矩阵（逐文件逐改动点）、风险缓解策略（16 项风险 × 概率 × 影响 × 缓解措施）、ROI 测算表（四阶段投入 vs SaaS 化 MRR 回收）、30 天快速里程碑（D1-D30 按天拆）。
 >
@@ -13,14 +13,14 @@
 ### 11.1 ✅ RBAC 角色体系已完整（mox-expert / rbac/policy.rs）
 V1.0 原判断：「RBAC 仅在 mox-expert crate 中有审计+S3 模块，无租户级 RLS」——**只对了一半**。
 
-真实状态：`platform/services/mox-expert/src/rbac/policy.rs` 已实现：
+真实状态：`platform/domains/mox-expert/src/rbac/policy.rs` 已实现：
 
 | 能力 | 状态 | 代码位置 |
 |------|------|---------|
-| 6 内置角色 | ✅ 完成 | [policy.rs#L133-L158](file:///d:/a10/aikjx/gitcode/infotopograph/platform/services/mox-expert/src/rbac/policy.rs#L133-L158)：admin→editor→viewer 继承链 + safety_approver(仅审批生产) + operator(运维) + auditor(审计只读) |
-| 资源级权限（通配符） | ✅ 完成 | [Permission.matches()](file:///d:/a10/aikjx/gitcode/infotopograph/platform/services/mox-expert/src/rbac/policy.rs#L33-L48)：`write:db:prod/*` 匹配 `db:prod/citizen_info`，支持 `/*` 尾缀通配 + `*` 全匹配 |
-| 继承链展开（防循环） | ✅ 完成 | [BuiltinRoles::resolve_impl()](file:///d:/a10/aikjx/gitcode/infotopograph/platform/services/mox-expert/src/rbac/policy.rs#L93-L119)：visited HashSet 防循环继承 DAG |
-| 失败自动审计 | ✅ 完成 | [rbac/mod.rs#L12](file:///d:/a10/aikjx/gitcode/infotopograph/platform/services/mox-expert/src/rbac/mod.rs#L12)：`check_with_audit` 失败自动打审计 |
+| 6 内置角色 | ✅ 完成 | [policy.rs#L133-L158](file:///d:/a10/aikjx/gitcode/infotopograph/platform/domains/mox-expert/src/rbac/policy.rs#L133-L158)：admin→editor→viewer 继承链 + safety_approver(仅审批生产) + operator(运维) + auditor(审计只读) |
+| 资源级权限（通配符） | ✅ 完成 | [Permission.matches()](file:///d:/a10/aikjx/gitcode/infotopograph/platform/domains/mox-expert/src/rbac/policy.rs#L33-L48)：`write:db:prod/*` 匹配 `db:prod/citizen_info`，支持 `/*` 尾缀通配 + `*` 全匹配 |
+| 继承链展开（防循环） | ✅ 完成 | [BuiltinRoles::resolve_impl()](file:///d:/a10/aikjx/gitcode/infotopograph/platform/domains/mox-expert/src/rbac/policy.rs#L93-L119)：visited HashSet 防循环继承 DAG |
+| 失败自动审计 | ✅ 完成 | [rbac/mod.rs#L12](file:///d:/a10/aikjx/gitcode/infotopograph/platform/domains/mox-expert/src/rbac/mod.rs#L12)：`check_with_audit` 失败自动打审计 |
 | 全局单例策略 | ✅ 完成 | `pub static POLICY: LazyLock<RwLock<RbacPolicy>>` 一次初始化 |
 
 **SaaS 化补量：只需 3 处改动**

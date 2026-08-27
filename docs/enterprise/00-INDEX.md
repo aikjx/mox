@@ -1,4 +1,4 @@
-# 璇玑 RelGraph · 企业级文档总目录（Documentation Master Index）
+﻿# 璇玑 RelGraph · 企业级文档总目录（Documentation Master Index）
 
 > **文档定位**：本目录是「**璇玑 RelGraph** · 企业级全域归一化知识图谱系统」企业级文档的**唯一入口与治理中心**（第二级权威）。
 > 它将散落在 `docs/` 各处的需求、架构、设计、业务处理文档统一收敛为一套**可迭代、可追踪、可追溯**的标准化文档集，
@@ -8,8 +8,8 @@
 > 对其任何修改变更**必须走 ADR 申请流程**（参见 18 §十二），本文档（00-INDEX）是其下方的治理索引入口，不得与 18 声明冲突。
 >
 > **适用系统（与代码事实一致 · 路径零老化）**：
-> - `platform/services/mox-system/`（协作治理域：成员 / 任务 / 权限 / 通信 / 多方言 repo fail-fast）
-> - `platform/services/mox-expert/`（璇玑融合引擎域：双璇玑十四维治理 / 归一化 / 裁决 / ⛨最高权限验证 / 审计三汇 / RBAC）
+> - `platform/domains/mox-system/`（协作治理域：成员 / 任务 / 权限 / 通信 / 多方言 repo fail-fast）
+> - `platform/domains/mox-expert/`（璇玑融合引擎域：双璇玑十四维治理 / 归一化 / 裁决 / ⛨最高权限验证 / 审计三汇 / RBAC）
 > - `platform/gateway/runtime/`（Rust 聚合网关：四端点 `/ai/engine/{process,analyze,capabilities,metrics}`、AC-10 路由语义、RBAC 中间件、Node Sidecar 通信）
 > - `platform/backend-node/`（现状：边缘入口 Node；ADR-DOC-005 规划 M0 更名为 `platform/edge-node/` 并瘦身至 4 文件）
 > - `frontend-ui/`（用户端单应用 + /admin 系统管理区 5 面板：融合工作台 MoxFusionView、监控台 MonitorView 等 28 视图）

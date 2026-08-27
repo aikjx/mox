@@ -1,0 +1,30 @@
+[package]
+name = "mox-enterprise-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Mox Enterprise Core — SSO (OAuth2/SAML/CAS/DingTalk/WeCom/Feishu), compliance (audit chain/data masking/residency), customization (whitelabel/theme/dynamic fields)"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+tokio = { workspace = true }
+parking_lot = { workspace = true }
+reqwest = { workspace = true }
+# 加密（审计哈希链）
+sha2 = { workspace = true }
+hmac = { workspace = true }
+hex = { workspace = true }
+# URL编码（SSO授权URL）
+serde_urlencoded = "0.7"
+# 正则（数据脱敏自动识别）
+regex = "1.10"
+# 框架依赖
+mox-framework = { workspace = true }

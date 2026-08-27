@@ -1,4 +1,4 @@
-# 璇玑 RelGraph · 迭代与优化路线图（9 里程碑 M0~M8 · 三级验收版）
+﻿# 璇玑 RelGraph · 迭代与优化路线图（9 里程碑 M0~M8 · 三级验收版）
 
 > **文档类型**：持续改进路线图 / Backlog / 企业级 DoD / KPI / 风险登记 · **9 里程碑 M0~M8 统一口径**
 > **文档版本**：v1.2 (ENT) · 最后更新 2026-08-23
@@ -132,7 +132,7 @@
 
 | 里程碑 | 名称（对齐 18 §八） | 主责联盟 | 核心交付物（必须可验证） | L0 验收 | L1 验收 | L2 验收 | 现状 |
 |--------|---------------------|:--:|--------------------------|:--:|:--:|:--:|:--:|
-| **M0** | **全域归一化**（术语/路径/命名/文档/目录/算法/架构/治理 八归） | 三联盟联合（开发 R，产品/算法 C） | frontend-ui 单应用（+ /admin 5 面板）；platform/services 15 crate；18 TOP-MASTER 发布；01 §9 ADR-DOC-001~012 注册；GLOSSARY 7 新术语；双 README 统一；路径 `crates/`→`platform/services/` 零残留；前端 admin-ui 裁撤 | workspace 649+ 全绿；clippy 0；前端 build 0 错 | 19 份权威链全部回指 18；路径搜索 `crates/` 命中=0 | BP-10 文档同步治理 CI 通过（PR 卡点）；P9 判重闸门在 3 条真实需求上复用率 60%+ | 🟢 **进行中（本轮完成）** |
+| **M0** | **全域归一化**（术语/路径/命名/文档/目录/算法/架构/治理 八归） | 三联盟联合（开发 R，产品/算法 C） | frontend-ui 单应用（+ /admin 5 面板）；platform/services 15 crate；18 TOP-MASTER 发布；01 §9 ADR-DOC-001~012 注册；GLOSSARY 7 新术语；双 README 统一；路径 `crates/`→`platform/domains/` 零残留；前端 admin-ui 裁撤 | workspace 649+ 全绿；clippy 0；前端 build 0 错 | 19 份权威链全部回指 18；路径搜索 `crates/` 命中=0 | BP-10 文档同步治理 CI 通过（PR 卡点）；P9 判重闸门在 3 条真实需求上复用率 60%+ | 🟢 **进行中（本轮完成）** |
 | **M1** | **业务闭环增强**（10 BP 全部 L2 达标） | 产品联盟 R + 开发联盟 | BP-1~10 全部有独立 E2E；BR-16/17 全量从「部分」→「完成」；双验收联动发布端全链路闭环；ABAC 属性权限、敏感语义识别、璇玑可解释报告 3 项交付 | L0 + 新增 20 条 BP 用例；I-08/09/10/11 对应测试 | 10 BP × 至少 1 冒烟全过；RBAC ABAC 双模式兼容 11 探针；双验收流程「组织未 Done → 拒绝」实锤 | 真实客户 1 家试点流程 0 阻断；DoD 门禁误拦截率 < 1%；判重复用率提升 20pp | 🟡 下一阶段 |
 | **M2** | **算法核落地**（八大算法家族单测 + 对照基准 + 线上路由） | 算法联盟 R + 开发联盟 | A1 CNM / A2 Brandes / A3 Harmonic / A4 PageRank / A5 激活扩散 / A6 RRF / A7 CEM / A8 CPM·RCPSP 8 × 至少 5 组对照基准；Node ↔ Rust 算法 Δ≤1e-6 7×8 对账矩阵；激活扩散接入统一 AI 路由意图识别 | graph-algorithms crate 单测全绿；基准 Δ 全部达标；无 LPA/近似介数残留实现 | 意图识别 A/B 测试：Top-1 准确率 ≥ 85%；RRF 融合 5 路召回 MRR 提升 | 真实线上 AI 请求 σ̄ < 0.06（CEM 收敛）；算法家族单测覆盖率 ≥ 90% | 🟡 下一阶段 |
 | **M3** | **统一 AI 编排**（Rust Gateway 四端点 + AC-10 路由语义） | 开发联盟（Rust Gateway 组）R + 算法联盟（A5/A7） | `/ai/engine/{process,analyze,capabilities,metrics}` 四端点全上线；AC-10 静态路由优先语义（参数段少者优先、同参数数时保留长路径）单元测试；Caomei 旧 AI 路由全部下线，全量走 Gateway；统一协议（请求 intent → 响应 capability.route + metrics.latency_ms） | Gateway 单测全绿；路由语义测试集 ≥ 30 条（静态/参数/混合）全部 pass；`/metrics` 报告 | 28 视图中 5 个 AI 视图（Chat/Caomei/AlgoLab/InfiniteOptimizer/LLM）全部改为 Gateway 调用；E2E 5 条全过 | 路由成功率 ≥ 99.5%；P95 AI 查询延迟 ≤ 1000ms；降级率 < 2% | 🟡 M2 后启动 |

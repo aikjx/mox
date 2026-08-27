@@ -1,6 +1,6 @@
-# 璇玑 RelGraph · 架构迁移映射表（旧15-crate → 新6层8域DDD矩阵）
+﻿# 璇玑 RelGraph · 架构迁移映射表（旧15-crate → 新6层8域DDD矩阵）
 
-> **文档身份**：旧架构（platform/services/ 15 crate + gateway/runtime）到新架构（platform/domains/ 8域×core/svc/sdk + foundation/gateway/framework）的**唯一权威映射基准**。所有文档对齐、代码引用修正、路径更新必须以此表为准。
+> **文档身份**：旧架构（platform/domains/ 15 crate + gateway/runtime）到新架构（platform/domains/ 8域×core/svc/sdk + foundation/gateway/framework）的**唯一权威映射基准**。所有文档对齐、代码引用修正、路径更新必须以此表为准。
 > **版本**：v1.0 ENT · 编制日期：2026-08-26
 > **权威链**：L1 治理枢纽（28号全维架构分析报告）> 本迁移表（L2 执行基准）> 各下游文档
 > **主责联盟**：开发联盟 R（架构·代码·迁移）
@@ -11,7 +11,7 @@
 
 | 维度 | 旧架构 | 新架构 |
 |------|--------|--------|
-| 组织方式 | 扁平15 crate（platform/services/） | 8域×5层矩阵（platform/domains/{域}/{层}/） |
+| 组织方式 | 扁平15 crate（platform/domains/） | 8域×5层矩阵（platform/domains/{域}/{层}/） |
 | crate 数量 | 15（services）+ 1（gateway/runtime）+ 1（mox-common-meta）= 17 | 50+（domains内）+ 2（foundation）+ 1（gateway）+ 1（framework）= ~54 |
 | 分层模型 | 无显式分层（crate混合领域逻辑与基础设施） | core（领域模型）/ svc（应用服务）/ sdk（对外类型）/ api（域间契约）/ svcapi（服务API） |
 | 域划分 | 无（扁平） | 8域：ai / cloud / data / flow / kg / market / platform / voice |
@@ -25,7 +25,7 @@
 
 ### 2.1 核心业务 crate 映射
 
-| # | 旧 crate（platform/services/） | 旧 CRATE_ID | 新 crate（platform/domains/） | 新层级 | 迁移类型 | 说明 |
+| # | 旧 crate（platform/domains/） | 旧 CRATE_ID | 新 crate（platform/domains/） | 新层级 | 迁移类型 | 说明 |
 |---|-------------------------------|-------------|-------------------------------|--------|---------|------|
 | 1 | operator-core | `acf14283-...` | flow/core/mox-flow-operator-core | core | ✅ 直接迁移 | 算子代数/守恒律/类型核心，从services移入flow域core层 |
 | 2 | operator-wasm | `5a1df407-...` | flow/svc/mox-flow-operator-wasm-svc | svc | ✅ 直接迁移 | WASM算子沙箱执行/热加载插件 |
@@ -99,21 +99,21 @@
 
 | 旧路径字符串 | 新路径字符串 | 出现频率 |
 |-------------|-------------|---------|
-| `platform/services/operator-core` | `platform/domains/flow/core/mox-flow-operator-core` | 高 |
-| `platform/services/operator-wasm` | `platform/domains/flow/svc/mox-flow-operator-wasm-svc` | 中 |
-| `platform/services/graph-algorithms` | `platform/domains/kg/core/mox-kg-algo-core` | 高 |
-| `platform/services/kg-hub` | `platform/domains/kg/svc/mox-kg-hub-svc` | 高 |
-| `platform/services/optimizer` | `platform/domains/flow/core/mox-flow-optimizer-core` | 中 |
-| `platform/services/flow-ai` | `platform/domains/ai/svc/mox-ai-flow-svc` | 中 |
-| `platform/services/ai-agent` | `platform/domains/ai/svc/mox-ai-agent-svc` | 高 |
-| `platform/services/mox-expert` | `platform/domains/ai/svc/mox-ai-expert-svc` | 高 |
-| `platform/services/mox-system` | `platform/domains/platform/core/mox-platform-system-core`（核心）/ `platform/domains/platform/svc/mox-platform-enterprise-svc`（服务） | 高 |
-| `platform/services/mox-common-meta` | `platform/domains/platform/core/mox-platform-meta-core` | 中 |
-| `platform/services/primiflow-core` | `platform/domains/flow/svc/mox-flow-primiflow-svc` | 中 |
-| `platform/services/primiflow-fusion` | `platform/domains/flow/svc/mox-flow-fusion-svc` | 中 |
-| `platform/services/business-catalog` | `platform/domains/data/svc/mox-data-catalog-svc` | 低 |
-| `platform/services/template-market` | `platform/domains/market/svc/mox-market-template-svc` | 低 |
-| `platform/services/hermes-flow-bridge` | `platform/domains/flow/svc/mox-flow-bridge-svc` | 低 |
+| `platform/domains/operator-core` | `platform/domains/flow/core/mox-flow-operator-core` | 高 |
+| `platform/domains/operator-wasm` | `platform/domains/flow/svc/mox-flow-operator-wasm-svc` | 中 |
+| `platform/domains/graph-algorithms` | `platform/domains/kg/core/mox-kg-algo-core` | 高 |
+| `platform/domains/kg-hub` | `platform/domains/kg/svc/mox-kg-hub-svc` | 高 |
+| `platform/domains/optimizer` | `platform/domains/flow/core/mox-flow-optimizer-core` | 中 |
+| `platform/domains/flow-ai` | `platform/domains/ai/svc/mox-ai-flow-svc` | 中 |
+| `platform/domains/ai-agent` | `platform/domains/ai/svc/mox-ai-agent-svc` | 高 |
+| `platform/domains/mox-expert` | `platform/domains/ai/svc/mox-ai-expert-svc` | 高 |
+| `platform/domains/mox-system` | `platform/domains/platform/core/mox-platform-system-core`（核心）/ `platform/domains/platform/svc/mox-platform-enterprise-svc`（服务） | 高 |
+| `platform/domains/mox-common-meta` | `platform/domains/platform/core/mox-platform-meta-core` | 中 |
+| `platform/domains/primiflow-core` | `platform/domains/flow/svc/mox-flow-primiflow-svc` | 中 |
+| `platform/domains/primiflow-fusion` | `platform/domains/flow/svc/mox-flow-fusion-svc` | 中 |
+| `platform/domains/business-catalog` | `platform/domains/data/svc/mox-data-catalog-svc` | 低 |
+| `platform/domains/template-market` | `platform/domains/market/svc/mox-market-template-svc` | 低 |
+| `platform/domains/hermes-flow-bridge` | `platform/domains/flow/svc/mox-flow-bridge-svc` | 低 |
 | `platform/gateway/runtime` | `platform/gateway/mox-platform-gateway-svc` | 高 |
 | `crates/`（旧别名） | `platform/domains/`（新规范） | 中 |
 
@@ -178,12 +178,12 @@
 
 ## 七、迁移验证检查清单
 
-- [ ] 所有 `platform/services/` 路径引用已替换为 `platform/domains/` 对应路径
+- [ ] 所有 `platform/domains/` 路径引用已替换为 `platform/domains/` 对应路径
 - [ ] 所有旧 package.name（operator-core, graph-algorithms, etc.）已替换
 - [ ] `mox-platform-meta-core::all_crate_metas()` 已更新为新50+ crate列表
 - [ ] 各 crate `src/lib.rs` 中 `CRATE_ID` / `ENGINE_NAME` 常量已验证
 - [ ] `Cargo.toml` workspace members 与实际目录一致（已确认73 member）
-- [ ] `platform/services/` 目录已确认不存在（0子目录，已验证）
+- [ ] `platform/domains/` 目录已确认不存在（0子目录，已验证）
 - [ ] 文档中"15 Crate" / "16 Crate" 表述已更新为"50+ Crate / 8域矩阵"
 - [ ] 旧→新映射表（本文档）已被02架构文档、README、CLAUDE、22号总控卡引用
 - [ ] `tools/info-graph dedup` 判重工具中的路径配置已更新

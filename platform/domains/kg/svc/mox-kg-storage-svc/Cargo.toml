@@ -30,6 +30,9 @@ async-trait = { workspace = true }
 rand = "0.8"
 thiserror = { workspace = true }
 bytes = "1"
+chrono = { workspace = true }
+petgraph = { workspace = true }
+rusqlite = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3"

@@ -1,0 +1,14 @@
+[package]
+name = "mox-kg-api"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "MOX Knowledge Graph Domain API: trait contracts for Graph Storage, Analytics, Fusion, Streams"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }

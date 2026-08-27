@@ -4,10 +4,25 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
-description = "Mox AI Core: multi-provider LLM abstraction (OpenAI/Anthropic/Local), conversation session management, graph-aware reasoning, and core graph data structures"
+description = "Mox AI Core: AI Provider Gateway — multi-provider LLM abstraction with registry, router, fallback (OpenAI/Anthropic/Qwen/Wenxin/GLM/Ollama)"
 
 [dependencies]
 serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
 uuid = { workspace = true }
+# HTTP客户端（修复HTTPS致命bug）
+reqwest = { workspace = true }
+parking_lot = { workspace = true }
+# 异步trait
+async-trait = { workspace = true }
+# 流处理
+futures = { workspace = true }
+futures-util = { workspace = true }
+# 异步通道（流式响应）
+tokio = { workspace = true }
+# 错误
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+# 时间
+chrono = { workspace = true }

@@ -1,11 +1,19 @@
 [workspace]
-# default-members：`cargo check / cargo build / cargo test` 默认只触发这些 crate
-#   - 4 个 MOX 计算核心
-#   - 3 个 FFI 绑定（napi/PyO3）不放默认，避免：
-#       ① napi cdylib 需要本地 napi-rs CLI 预构建 + node-gyp 工具链
-#       ② PyO3 abi3-py39 与当前默认 Python 3.8 不兼容
-#     绑定编译需单独执行：`cargo check -p <binding-crate>`
+# default-members锛歚cargo check / cargo build / cargo test` 榛樿鍙Е鍙戣繖浜?crate
+#   - 4 涓?MOX 璁＄畻鏍稿績
+#   - 3 涓?FFI 缁戝畾锛坣api/PyO3锛変笉鏀鹃粯璁わ紝閬垮厤锛?
+#       鈶?napi cdylib 闇€瑕佹湰鍦?napi-rs CLI 棰勬瀯寤?+ node-gyp 宸ュ叿閾?
+#       鈶?PyO3 abi3-py39 涓庡綋鍓嶉粯璁?Python 3.8 涓嶅吋瀹?
+#     缁戝畾缂栬瘧闇€鍗曠嫭鎵ц锛歚cargo check -p <binding-crate>`
 default-members = [
+    "platform/domains/data/api",
+    "platform/domains/ai/api",
+    "platform/domains/kg/api",
+    "platform/domains/cloud/api",
+    "platform/domains/platform/api",
+    "platform/domains/voice/api",
+    "platform/domains/flow/api",
+    "platform/domains/market/api",
     "platform/domains/data/core/mox-data-formula-core",
     "platform/domains/data/core/mox-data-norm-core",
     "platform/domains/ai/core/mox-ai-intent-core",
@@ -16,9 +24,19 @@ default-members = [
     "platform/domains/voice/svc/mox-voice-asr-svc",
 ]
 members = [
+    "platform/arch-test",
+    "platform/gateway/mox-platform-gateway-svc",
     "platform/foundation/mox-platform-foundation",
     "platform/foundation/mox-cloud-foundation",
     "platform/foundation/mox-platform-observability",
+    "platform/domains/data/api",
+    "platform/domains/ai/api",
+    "platform/domains/kg/api",
+    "platform/domains/cloud/api",
+    "platform/domains/platform/api",
+    "platform/domains/voice/api",
+    "platform/domains/flow/api",
+    "platform/domains/market/api",
     "platform/domains/data/core/mox-data-formula-core",
     "platform/domains/data/core/mox-data-norm-core",
     "platform/domains/ai/core/mox-ai-intent-core",
@@ -62,6 +80,9 @@ members = [
     "platform/domains/platform/svc/mox-platform-enterprise-svc",
     "platform/domains/platform/core/mox-platform-datastore-core",
     "platform/domains/platform/core/mox-platform-orchestrator-core",
+    "platform/domains/platform/core/mox-plugin-core",
+    "platform/domains/platform/core/mox-enterprise-core",
+    "platform/domains/platform/core/mox-connector-core",
     "platform/domains/platform/core/mox-platform-operator-core",
     "platform/gateway/mox-platform-gateway-svc",
     "platform/domains/platform/sdk/mox-platform-test-harness",
@@ -79,7 +100,7 @@ resolver = "2"
 version = "3.0.0-ai-powered"
 edition = "2021"
 license = "MIT"
-authors = ["Mox - 最高权限璇玑"]
+authors = ["Mox"]
 description = "Unified Operator System - AI-Driven Full-Dimensional Breakthrough Platform"
 
 [workspace.dependencies]
@@ -104,7 +125,7 @@ ndarray = "0.15"
 num-traits = "0.2"
 approx = "0.5"
 
-# Benchmarks (P4 性能基线) - uniform default-features=false so operator-core & primiflow-fusion both inherit cleanly
+# Benchmarks (P4 鎬ц兘鍩虹嚎) - uniform default-features=false so operator-core & primiflow-fusion both inherit cleanly
 criterion = { version = "0.5", default-features = false }
 
 # WASM dependencies
@@ -152,12 +173,12 @@ prometheus = { version = "0.13", default-features = false, features = ["process"
 sea-query = "0.32"
 sqlx = "0.8"
 
-# Internal crates (归一化架构: 6层8域)
-# Foundation 层
+# Internal crates (褰掍竴鍖栨灦鏋? 6灞?鍩?
+# Foundation 灞?
 mox-platform-foundation = { path = "platform/foundation/mox-platform-foundation" }
 mox-cloud-foundation = { path = "platform/foundation/mox-cloud-foundation" }
 mox-platform-observability = { path = "platform/foundation/mox-platform-observability" }
-# Core 层
+# Core 灞?
 mox-data-formula-core = { path = "platform/domains/data/core/mox-data-formula-core" }
 mox-data-norm-core = { path = "platform/domains/data/core/mox-data-norm-core" }
 mox-data-standards-core = { path = "platform/domains/data/core/mox-data-standards-core" }
@@ -174,94 +195,106 @@ mox-platform-operator-core = { path = "platform/domains/platform/core/mox-platfo
 mox-platform-meta-core = { path = "platform/domains/platform/core/mox-platform-meta-core" }
 mox-platform-datastore-core = { path = "platform/domains/platform/core/mox-platform-datastore-core" }
 mox-platform-orchestrator-core = { path = "platform/domains/platform/core/mox-platform-orchestrator-core" }
+mox-plugin-core = { path = "platform/domains/platform/core/mox-plugin-core" }
+mox-enterprise-core = { path = "platform/domains/platform/core/mox-enterprise-core" }
+mox-connector-core = { path = "platform/domains/platform/core/mox-connector-core" }
 mox-platform-enterprise-svc = { path = "platform/domains/platform/svc/mox-platform-enterprise-svc" }
-# Service 层 (kg)
+# Service 灞?(kg)
 mox-kg-storage-svc = { path = "platform/domains/kg/svc/mox-kg-storage-svc" }
 mox-kg-service-svc = { path = "platform/domains/kg/svc/mox-kg-service-svc" }
 mox-kg-streams-svc = { path = "platform/domains/kg/svc/mox-kg-streams-svc" }
 mox-kg-spark-svc = { path = "platform/domains/kg/svc/mox-kg-spark-svc" }
 mox-kg-hub-svc = { path = "platform/domains/kg/svc/mox-kg-hub-svc" }
 mox-kg-fusion-svc = { path = "platform/domains/kg/svc/mox-kg-fusion-svc" }
-# Service 层 (ai)
+# Service 灞?(ai)
 mox-ai-flow-svc = { path = "platform/domains/ai/svc/mox-ai-flow-svc" }
 mox-ai-expert-svc = { path = "platform/domains/ai/svc/mox-ai-expert-svc" }
 mox-ai-agent-svc = { path = "platform/domains/ai/svc/mox-ai-agent-svc" }
-# Service 层 (flow)
+# Service 灞?(flow)
 mox-flow-operator-wasm-svc = { path = "platform/domains/flow/svc/mox-flow-operator-wasm-svc" }
 mox-flow-primiflow-svc = { path = "platform/domains/flow/svc/mox-flow-primiflow-svc" }
 mox-flow-fusion-svc = { path = "platform/domains/flow/svc/mox-flow-fusion-svc" }
 mox-flow-bridge-svc = { path = "platform/domains/flow/svc/mox-flow-bridge-svc" }
-# Service 层 (data)
+# Service 灞?(data)
 mox-data-plane-svc = { path = "platform/domains/data/svc/mox-data-plane-svc" }
 mox-data-etl-svc = { path = "platform/domains/data/svc/mox-data-etl-svc" }
 mox-data-compliance-svc = { path = "platform/domains/data/svc/mox-data-compliance-svc" }
 mox-data-catalog-svc = { path = "platform/domains/data/svc/mox-data-catalog-svc" }
-# Service 层 (cloud)
+# Service 灞?(cloud)
 mox-cloud-master-svc = { path = "platform/domains/cloud/svc/mox-cloud-master-svc" }
 mox-cloud-volume-svc = { path = "platform/domains/cloud/svc/mox-cloud-volume-svc" }
 mox-cloud-s3-svc = { path = "platform/domains/cloud/svc/mox-cloud-s3-svc" }
 mox-cloud-filer-svc = { path = "platform/domains/cloud/svc/mox-cloud-filer-svc" }
-# Service 层 (voice)
+# Service 灞?(voice)
 mox-voice-core-svc = { path = "platform/domains/voice/svc/mox-voice-core-svc" }
 mox-voice-asr-svc = { path = "platform/domains/voice/svc/mox-voice-asr-svc" }
 mox-voice-intent-svc = { path = "platform/domains/voice/svc/mox-voice-intent-svc" }
 mox-voice-operator-svc = { path = "platform/domains/voice/svc/mox-voice-operator-svc" }
-# Service 层 (market)
+# Service 灞?(market)
 mox-market-template-svc = { path = "platform/domains/market/svc/mox-market-template-svc" }
-# Application 层
+# Application 灞?
 mox-platform-orchestrator-svc = { path = "platform/domains/platform/svc/mox-platform-orchestrator-svc" }
 mox-platform-gateway-svc = { path = "platform/gateway/mox-platform-gateway-svc" }
+
+mox-data-api = { path = "platform/domains/data/api" }
+mox-ai-api = { path = "platform/domains/ai/api" }
+mox-kg-api = { path = "platform/domains/kg/api" }
+mox-cloud-api = { path = "platform/domains/cloud/api" }
+mox-platform-api = { path = "platform/domains/platform/api" }
+mox-voice-api = { path = "platform/domains/voice/api" }
+mox-flow-api = { path = "platform/domains/flow/api" }
+mox-market-api = { path = "platform/domains/market/api" }
 mox-voice-desktop-app = { path = "platform/domains/voice/svc/mox-voice-desktop-app" }
-# SDK 层
+# SDK 灞?
 mox-cloud-sdk = { path = "platform/domains/cloud/sdk/mox-cloud-sdk" }
 mox-kg-sdk = { path = "platform/domains/kg/sdk/mox-kg-sdk" }
 mox-platform-test-harness = { path = "platform/domains/platform/sdk/mox-platform-test-harness" }
 mox-data-formula-native = { path = "platform/domains/data/sdk/mox-data-formula-native" }
 mox-data-norm-intent-native = { path = "platform/domains/data/sdk/mox-data-norm-intent-native" }
 mox-voice-dsp-py = { path = "platform/domains/voice/sdk/mox-voice-dsp-py" }
-# Framework 层
+# Framework 灞?
 mox-framework = { path = "platform/framework" }
 
 # ================================================================
-# MOX 计算密集核心（统一 workspace 依赖版本，避免 FFI 绑定版本漂移）
+# MOX 璁＄畻瀵嗛泦鏍稿績锛堢粺涓€ workspace 渚濊禆鐗堟湰锛岄伩鍏?FFI 缁戝畾鐗堟湰婕傜Щ锛?
 # ================================================================
-# 高性能哈希（比 std HashMap 快 2~3×，用于归一化/意图/Aho-Corasick goto）
-# 版本锁定 0.17：与 indexmap 2.7 / serde_json 内建 hashbrown 依赖一致，避免双版本冲突
-# serde feature：使 hashbrown::HashMap<K, V, S> 直接支持 Serialize/Deserialize（无需手动远程 impl）
+# 楂樻€ц兘鍝堝笇锛堟瘮 std HashMap 蹇?2~3脳锛岀敤浜庡綊涓€鍖?鎰忓浘/Aho-Corasick goto锛?
+# 鐗堟湰閿佸畾 0.17锛氫笌 indexmap 2.7 / serde_json 鍐呭缓 hashbrown 渚濊禆涓€鑷达紝閬垮厤鍙岀増鏈啿绐?
+# serde feature锛氫娇 hashbrown::HashMap<K, V, S> 鐩存帴鏀寔 Serialize/Deserialize锛堟棤闇€鎵嬪姩杩滅▼ impl锛?
 hashbrown = { version = "0.17", features = ["rayon", "inline-more", "serde"] }
 ahash = { version = "0.8", features = ["compile-time-rng", "serde"] }
 
-# 数据结构辅助
+# 鏁版嵁缁撴瀯杈呭姪
 bstr = "1.10"
 indexmap = { version = "2.7", features = ["serde", "rayon"] }
 
-# 多模式字符串匹配：Aho-Corasick（Rust 最高性能实现，支持 leftmost-first）
+# 澶氭ā寮忓瓧绗︿覆鍖归厤锛欰ho-Corasick锛圧ust 鏈€楂樻€ц兘瀹炵幇锛屾敮鎸?leftmost-first锛?
 aho-corasick = "1.1"
 
-# 并行迭代（rayon 已在 Core deps 声明，此处确保 feature 完整）
-# SIMD f32 向量：f32x4（语音 DSP 响度归一/软限幅加速）
+# 骞惰杩唬锛坮ayon 宸插湪 Core deps 澹版槑锛屾澶勭‘淇?feature 瀹屾暣锛?
+# SIMD f32 鍚戦噺锛歠32x4锛堣闊?DSP 鍝嶅害褰掍竴/杞檺骞呭姞閫燂級
 wide = "0.8"
 
-# napi-rs 绑定（Node.js native，ABI-stable N-API）
+# napi-rs 缁戝畾锛圢ode.js native锛孉BI-stable N-API锛?
 napi = { version = "2.16", default-features = false, features = ["async", "serde-json", "napi8"] }
 napi-derive = "2.16"
 
-# PyO3 扩展（Python ≥3.9，abi3-py39 稳定 ABI，兼容 xiaobai_voice py312）
-# numpy 数组互操作：pyo3 0.22 开始 numpy feature 移除，改用独立 numpy crate（0.22 对应 pyo3 0.22+）
+# PyO3 鎵╁睍锛圥ython 鈮?.9锛宎bi3-py39 绋冲畾 ABI锛屽吋瀹?xiaobai_voice py312锛?
+# numpy 鏁扮粍浜掓搷浣滐細pyo3 0.22 寮€濮?numpy feature 绉婚櫎锛屾敼鐢ㄧ嫭绔?numpy crate锛?.22 瀵瑰簲 pyo3 0.22+锛?
 pyo3 = { version = "0.22", features = ["extension-module", "abi3-py39"] }
 numpy = "0.22"
 
-# 内部核心 crates 路径已统一移至上方 Internal crates 段（归一化架构）
+# 鍐呴儴鏍稿績 crates 璺緞宸茬粺涓€绉昏嚦涓婃柟 Internal crates 娈碉紙褰掍竴鍖栨灦鏋勶級
 
-# 小白专用：正则（PPR 路由、应用别名匹配、应用列表过滤）
+# 灏忕櫧涓撶敤锛氭鍒欙紙PPR 璺敱銆佸簲鐢ㄥ埆鍚嶅尮閰嶃€佸簲鐢ㄥ垪琛ㄨ繃婊わ級
 regex = "1.10"
-# 系统级热键（BallWidget 全局 Alt+X 录音）
+# 绯荤粺绾х儹閿紙BallWidget 鍏ㄥ眬 Alt+X 褰曢煶锛?
 global-hotkey = "0.5"
-# 跨平台剪贴板（copy_to_clipboard、中文 type_text 粘贴回退）
+# 璺ㄥ钩鍙板壀璐存澘锛坈opy_to_clipboard銆佷腑鏂?type_text 绮樿创鍥為€€锛?
 arboard = "3.4"
-# 跨平台键鼠输入（mouse_move/click、key_press、type_text ASCII 路径）
+# 璺ㄥ钩鍙伴敭榧犺緭鍏ワ紙mouse_move/click銆乲ey_press銆乼ype_text ASCII 璺緞锛?
 enigo = { version = "0.2", default-features = false, features = ["serde"] }
-# Windows 原生 API（coreaudio 音量设置、win32 进程列表、shell 回收站移动）
+# Windows 鍘熺敓 API锛坈oreaudio 闊抽噺璁剧疆銆亀in32 杩涚▼鍒楄〃銆乻hell 鍥炴敹绔欑Щ鍔級
 windows = { version = "0.58", features = [
     "Win32_Foundation",
     "Win32_System_Threading",
@@ -276,15 +309,15 @@ windows = { version = "0.58", features = [
     "Win32_UI_Shell",
     "Win32_System_Environment",
 ] }
-# 跨平台音频 I/O（麦克风录音、TTS 播放；ASR 可用 alsa/pulseaudio/windows wasapi 回退）
+# 璺ㄥ钩鍙伴煶棰?I/O锛堥害鍏嬮褰曢煶銆乀TS 鎾斁锛汚SR 鍙敤 alsa/pulseaudio/windows wasapi 鍥為€€锛?
 cpal = "0.15"
-# 跨平台截图（L3 screenshot 动作，mss 等价 Rust 实现；crates.io 最新 0.8.x）
+# 璺ㄥ钩鍙版埅鍥撅紙L3 screenshot 鍔ㄤ綔锛宮ss 绛変环 Rust 瀹炵幇锛沜rates.io 鏈€鏂?0.8.x锛?
 screenshots = "0.8"
-# 模糊匹配（FR-5 S3 post-hoc 热词编辑距离替换、中文热词近似纠错）
+# 妯＄硦鍖归厤锛團R-5 S3 post-hoc 鐑瘝缂栬緫璺濈鏇挎崲銆佷腑鏂囩儹璇嶈繎浼肩籂閿欙級
 strsim = "0.11"
-# HTTP body bytes 原语（axum 0.7 / http-body-util 0.1 配套）
+# HTTP body bytes 鍘熻锛坅xum 0.7 / http-body-util 0.1 閰嶅锛?
 bytes = "1"
-# axum 0.7 Full 依赖的 body adapter（WS 握手/空 body）
+# axum 0.7 Full 渚濊禆鐨?body adapter锛圵S 鎻℃墜/绌?body锛?
 http-body-util = "0.1"
-# FR-5 S2 热词临时文件（NamedTempFile Drop 自动删除）
+# FR-5 S2 鐑瘝涓存椂鏂囦欢锛圢amedTempFile Drop 鑷姩鍒犻櫎锛?
 tempfile = "3"

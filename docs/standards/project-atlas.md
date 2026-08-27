@@ -1,4 +1,4 @@
-# 项目全息图谱（Project Atlas）
+﻿# 项目全息图谱（Project Atlas）
 
 > 整个项目机器图谱化的唯一权威文档 · AINA-STD-001 §10
 > 实现：`platform/backend-node/src/project-atlas/` · API：`/atlas/*`
@@ -163,7 +163,7 @@ graph LR
 
 ### Step 1 · 新建 crate 目录（≈2 min）
 
-在 `platform/services/<crate-kebab-name>/` 或聚合层 `platform/gateway/<name>/` 创建目录，必须满足：
+在 `platform/domains/<crate-kebab-name>/` 或聚合层 `platform/gateway/<name>/` 创建目录，必须满足：
 - **名称规范**：kebab-case，与后续 `package.name`、`CRATE_META.name`、workspace `members` 完全一致（禁止混用 kebab / snake）。
 - **最小骨架**：必须创建 `Cargo.toml` + `src/lib.rs` + `tests/`（可为空占位，避免无测试目录）。
 - **二进制可选**：如需 CLI，再建 `src/bin/<name>.rs`，但 `lib.rs` 必须**始终存在**（三常量 + pub 对外 API 的唯一稳定暴露点）。
@@ -205,7 +205,7 @@ python3 -c "import uuid;print(uuid.uuid5(uuid.NAMESPACE_DNS, 'your-crate-name'))
 
 ### Step 3 · Cargo.toml workspace 注册 + mox-common-meta 依赖（≈3 min）
 
-3a. 根 `Cargo.toml` `[workspace]` members 追加一行：`"platform/services/<crate-name>"`（顺序：与 16 行矩阵保持 AIS 分层序即可，后续不强制）。
+3a. 根 `Cargo.toml` `[workspace]` members 追加一行：`"platform/domains/<crate-name>"`（顺序：与 16 行矩阵保持 AIS 分层序即可，后续不强制）。
 
 3b. 新 crate 的 `Cargo.toml` **必须**以 workspace 继承风格声明：
 ```toml

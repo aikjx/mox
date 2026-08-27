@@ -1,6 +1,6 @@
-# AI 引擎全维分析与统一编排核心 — 设计文档
+﻿# AI 引擎全维分析与统一编排核心 — 设计文档
 
-> 版本：V1.0 ｜ 日期：2026-08-22 ｜ 范围：`platform/backend-node/src`（Node 层）+ `platform/services/ai-agent`、`platform/gateway/runtime`（Rust 层）
+> 版本：V1.0 ｜ 日期：2026-08-22 ｜ 范围：`platform/backend-node/src`（Node 层）+ `platform/domains/ai-agent`、`platform/gateway/runtime`（Rust 层）
 > 交付物：全维算法分析 → 缺陷清单 → 归一化设计 → 统一编排核心 `ai-engine-core.js`
 
 ---

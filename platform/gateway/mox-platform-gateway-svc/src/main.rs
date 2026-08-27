@@ -1,69 +1,64 @@
-//! Mox v2.0 AIS-grade fusion single-binary entry point.
+//! MOX 企业级单二进制入口（mox-server.exe）
 //!
-//! Parses argv via `clap` derive. When invoked as `mox-server server
-//! --single-node` the binary starts a tokio mox_platform_orchestrator_svc and binds the single-node
-//! HTTP server (S3 + Graph + Metrics + Audit endpoints). All other
-//! subcommands execute against the in-memory [`CliState`] and print the JSON
-//! summary produced by [`mox_platform_gateway_svc::cli_run`].
+//! # 用法
+//! ```powershell
+//! # 默认 0.0.0.0:8080
+//! cargo run -p mox-platform-gateway-svc
+//! # 或自定义端口
+//! ./target/release/mox-server --bind 127.0.0.1 --port 9000
+//! ```
+//!
+//! Ctrl-C 优雅退出。
 
-use clap::Parser;
+use mox_platform_gateway_svc::serve_forever;
 use std::process::ExitCode;
-use std::sync::Arc;
 
-use parking_lot::Mutex;
-use mox_platform_gateway_svc::{cli_run, Cli, CliState, Command, ServerArgs, ServerState, serve_forever};
-
-fn main() -> ExitCode {
-    let cli = Cli::parse();
-    match &cli.command {
-        Command::Server(args) if args.single_node => run_server_forever(args.clone()),
-        _other => {
-            let state = CliState::new();
-            match cli_run(&cli, &state) {
-                Ok(v) => {
-                    println!("{}", serde_json::to_string_pretty(&v).expect("json format"));
-                    ExitCode::from(0)
-                }
-                Err(e) => {
-                    eprintln!("mox-server: error: {e}");
-                    ExitCode::from(1)
+fn parse_args() -> (String, u16) {
+    let mut bind = "0.0.0.0".to_string();
+    let mut port: u16 = 8080;
+    let mut args = std::env::args().skip(1);
+    while let Some(a) = args.next() {
+        match a.as_str() {
+            "--bind" | "-b" => {
+                if let Some(v) = args.next() { bind = v; }
+            }
+            "--port" | "-p" => {
+                if let Some(v) = args.next() {
+                    if let Ok(n) = v.parse::<u16>() { port = n; }
                 }
             }
+            "--single-node" | "server" => { /* 兼容历史 CLI 子命令 */ }
+            "-h" | "--help" => {
+                println!("Usage: mox-server [--bind ADDR] [--port PORT]\n\
+                          Default: 0.0.0.0:8080 (全面接管 backend-node 3000/3001/3002)");
+                std::process::exit(0);
+            }
+            other => eprintln!("[mox-server] ⚠️  忽略未知参数: {other} (用 --help 查看用法)"),
         }
     }
+    (bind, port)
 }
 
-/// Build tokio current-thread mox_platform_orchestrator_svc, construct shared [`ServerState`] and
-/// run [`serve_forever`] until Ctrl-C or binding error.
-fn run_server_forever(args: ServerArgs) -> ExitCode {
-    let rt = match tokio::runtime::Builder::new_current_thread()
+fn main() -> ExitCode {
+    let (bind, port) = parse_args();
+
+    let rt = match tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4))
         .enable_all()
         .build()
     {
         Ok(rt) => rt,
         Err(e) => {
-            eprintln!("mox-server: tokio mox_platform_orchestrator_svc build error: {e}");
+            eprintln!("mox-server: tokio runtime 构建失败: {e}");
             return ExitCode::from(1);
         }
     };
-    let state: Arc<Mutex<ServerState>> = Arc::new(Mutex::new(ServerState::new()));
-    let public = args.public_port;
-    let ctrl = args.ctrl_port;
-    let data = args.data_port;
-    let ctrl_bind = format!("{}:{}", args.bind_addr, args.ctrl_port);
-    let data_bind = format!("{}:{}", args.bind_addr, args.data_port);
-    eprintln!(
-        "[mox-server] 🚀 entering single-node mode: public={public} ctrl={ctrl} data={data}"
-    );
-    eprintln!(
-        "[mox-server] 🔌 ctrl & data endpoints piggyback on public listener in this build. \
-         Reserved bind addresses: ctrl={ctrl_bind} data={data_bind}"
-    );
+
     rt.block_on(async move {
-        match serve_forever(args, state).await {
+        match serve_forever(&bind, port).await {
             Ok(()) => ExitCode::from(0),
             Err(e) => {
-                eprintln!("mox-server: fatal: {e}");
+                eprintln!("mox-server: 致命错误: {e}");
                 ExitCode::from(1)
             }
         }

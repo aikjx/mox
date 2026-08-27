@@ -139,8 +139,14 @@ impl GraphStore {
         let mut type_idx = self.type_index.write();
 
         let ni = *idx.get(id).ok_or_else(|| StorageError::NodeNotFound(id.into()))?;
-        // Remove connected edges
-        let edges: Vec<EdgeIndex> = graph.edges_directed(ni, petgraph::Direction::Both).map(|e| e.id()).collect();
+        // Remove connected edges (petgraph Direction 只有 Incoming/Outgoing；双向 = 两者相并)
+        let mut edges: Vec<EdgeIndex> = graph
+            .edges_directed(ni, petgraph::Direction::Outgoing)
+            .map(|e| e.id())
+            .collect();
+        edges.extend(graph.edges_directed(ni, petgraph::Direction::Incoming).map(|e| e.id()));
+        edges.sort_unstable();
+        edges.dedup();
         for ei in edges {
             if let Some(edge) = graph.edge_weight(ei) {
                 edge_idx.remove(&edge.id);
@@ -330,7 +336,7 @@ impl PersistentGraphStore {
 
     pub fn persist(&self) -> Result<(), StorageError> {
         let Some(path) = &self.db_path else { return Ok(()); };
-        let conn = rusqlite::Connection::open(path).map_err(|e| StorageError::Persistence(e.to_string()))?;
+        let mut conn = rusqlite::Connection::open(path).map_err(|e| StorageError::Persistence(e.to_string()))?;
         let tx = conn.transaction().map_err(|e| StorageError::Persistence(e.to_string()))?;
         tx.execute("DELETE FROM kg_edges", []).map_err(|e| StorageError::Persistence(e.to_string()))?;
         tx.execute("DELETE FROM kg_nodes", []).map_err(|e| StorageError::Persistence(e.to_string()))?;

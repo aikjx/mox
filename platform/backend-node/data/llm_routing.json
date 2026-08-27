@@ -1,7 +1,0 @@
-{
-  "strategy": "priority",
-  "providers": [],
-  "fallback": true,
-  "load_balance": false,
-  "weights": {}
-}

@@ -1,4 +1,4 @@
-# 璇玑 RelGraph · 企业级架构文档 v2.0（6层8域DDD矩阵 · 多视图 · 对齐六层金字塔）
+﻿# 璇玑 RelGraph · 企业级架构文档 v2.0（6层8域DDD矩阵 · 多视图 · 对齐六层金字塔）
 
 > **文档类型**：企业架构（Enterprise Architecture，多视图 / TOGAF 风格切面 · 显式 L 层级标注）
 > **文档版本**：v2.0 (ENT) · 最后更新 2026-08-26（v1.1→v2.0：架构从旧15-crate扁平模型迁移至新6层8域DDD矩阵，全量路径与crate映射更新）
@@ -259,7 +259,7 @@ DomainEvent ──▶ EventBus(broadcast)
 **行数量校验**：54/54（Foundation 2 + Gateway 1 + Core 15 + Svc 29 + Sdk 6 + Api 0 + Framework 1）。
 
 > 🔍 **架构一致性校验**：`Cargo.toml` workspace members 必须与本节表格一致；任何新增/删除/重命名 crate 必须同步更新本节 + `mox-platform-meta-core::all_crate_metas()` + `ARCHITECTURE-MIGRATION.md`。
-> 📌 **路径铁律（v2.0）**：所有 crate 均位于 `platform/domains/{域}/{层}/` 或 `platform/{foundation,gateway,framework}/`；旧路径 `platform/services/`、`crates/` 已废弃，禁止在新代码/文档中使用。
+> 📌 **路径铁律（v2.0）**：所有 crate 均位于 `platform/domains/{域}/{层}/` 或 `platform/{foundation,gateway,framework}/`；旧路径 `platform/domains/`、`crates/` 已废弃，禁止在新代码/文档中使用。
 
 ### 3.3 模块依赖（6层8域 · 依赖方向）
 
@@ -477,7 +477,7 @@ DomainEvent ──▶ EventBus(broadcast)
 | ADR-04 | `*Own` 所有权权限依赖可信 `assignees` | 精细授权 | 分派必须校验（GAP-2 修复） |
 | ADR-05 | 两段式鉴权（试探不落审计） | 防审计噪声/权限探测 | 实现稍复杂；测试双向断言 |
 | ADR-06 | 融合治理与协作治理分离为两域 | 关注点分离 | 双验收联动待补（FR-FUSE-05） |
-| ADR-08 | **6层8域DDD矩阵架构迁移**（v2.0）：从旧15-crate扁平模型（platform/services/）迁移至新6层8域DDD矩阵（platform/domains/{8域}/{core,svc,sdk,api,svcapi} + foundation/gateway/framework） | 旧架构crate混合领域逻辑与基础设施，难以独立测试和复用；DDD分层实现依赖倒置，模块化单体支持未来微服务演进 | 所有文档需同步更新路径引用（Phase 1完成）；api层待填充（Phase 3）；跨域依赖规则待强制执行（Phase 2） |
+| ADR-08 | **6层8域DDD矩阵架构迁移**（v2.0）：从旧15-crate扁平模型（platform/domains/）迁移至新6层8域DDD矩阵（platform/domains/{8域}/{core,svc,sdk,api,svcapi} + foundation/gateway/framework） | 旧架构crate混合领域逻辑与基础设施，难以独立测试和复用；DDD分层实现依赖倒置，模块化单体支持未来微服务演进 | 所有文档需同步更新路径引用（Phase 1完成）；api层待填充（Phase 3）；跨域依赖规则待强制执行（Phase 2） |
 | ADR-09 | **跨域依赖规则**：svc禁止直接依赖其他域svc，必须通过api层trait（依赖倒置）；core禁止依赖任何svc | 防止"大泥球"反模式，保持域边界清晰，支持未来独立部署 | api层当前为空（0 crate），过渡期允许svc间直接依赖但需登记；Phase 3完成api层后强制执行arch test |
 | ADR-10 | **voice域定位决策**：voice域含桌面应用（mox-voice-desktop-app），与核心平台业务关联度低，评估独立为单独workspace或保留为"垂直能力插件" | 避免核心平台被语音产品的发布节奏和桌面GUI依赖（cpal/screenshots/enigo/global-hotkey）拖累 | 待Phase 3完成依赖分析后决策；若保留则明确voice域不参与核心平台发布周期 |
 | ADR-11 | **网关瘦身**：mox-platform-gateway-svc仅做路由+横切中间件（鉴权/限流/CORS/日志/WS），业务聚合下沉到各域svc层或BFF | 旧runtime是"上帝crate"（聚合16子服务+Cordis5+RBAC+OpenAPI+迁移+治理），职责过重难以维护 | Cordis5迁移至mox-framework；迁移引擎迁移至mox-platform-datastore-core；治理逻辑迁移至mox-ai-expert-svc |
