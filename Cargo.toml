@@ -82,6 +82,7 @@ members = [
     "platform/domains/platform/svc/mox-content-publisher",
     "platform/domains/platform/core/mox-platform-datastore-core",
     "platform/domains/platform/core/mox-dsql-core",
+    "platform/domains/platform/core/mox-kg-core",
     "platform/domains/platform/core/mox-platform-orchestrator-core",
     "platform/domains/platform/core/mox-plugin-core",
     "platform/domains/platform/core/mox-enterprise-core",
@@ -201,6 +202,7 @@ mox-platform-operator-core = { path = "platform/domains/platform/core/mox-platfo
 mox-platform-meta-core = { path = "platform/domains/platform/core/mox-platform-meta-core" }
 mox-platform-datastore-core = { path = "platform/domains/platform/core/mox-platform-datastore-core" }
 mox-dsql-core = { path = "platform/domains/platform/core/mox-dsql-core" }
+mox-kg-core = { path = "platform/domains/platform/core/mox-kg-core" }
 mox-platform-orchestrator-core = { path = "platform/domains/platform/core/mox-platform-orchestrator-core" }
 mox-plugin-core = { path = "platform/domains/platform/core/mox-plugin-core" }
 mox-enterprise-core = { path = "platform/domains/platform/core/mox-enterprise-core" }

@@ -2039,9 +2039,12 @@ onMounted(async () => {
     newSession()
   }
 
-  // 拉取后端全自动同步开关状态
+  // 拉取后端全自动同步开关状态 + 探测后端连接状态
   getAutoSyncStatus()
-    .then((r) => { if (r) autoSync.value = !!(r.enabled ?? r.auto_sync ?? r.data?.auto_sync) })
+    .then((r) => {
+      if (r) autoSync.value = !!(r.enabled ?? r.auto_sync ?? r.data?.auto_sync)
+      online.value = true
+    })
     .catch(() => {})
 })
 

@@ -88,8 +88,9 @@ impl SqlEngine {
         }
         match def.data_type.as_str() {
             "STRING" => {
-                if !value.is_string() {
-                    return Err(DsqlError::InvalidParam(format!("{} must be string", def.name)));
+                // STRING类型接受任意标量值（字符串/数字/布尔），SQLite会自动转换
+                if value.is_object() || value.is_array() {
+                    return Err(DsqlError::InvalidParam(format!("{} cannot be object/array", def.name)));
                 }
             }
             "INT" | "LONG" => {

@@ -129,7 +129,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Cpu, Right } from '@element-plus/icons-vue'
 import ProjectChip from '@/components/ProjectChip.vue'
@@ -219,10 +219,14 @@ onMounted(loadTypes)
 {
   const { onChange: _onProjectChange, ensureProjectContext: _ensureProject } = useProject()
   let _offPj = null
+  let _loaded = false
   onMounted(async () => {
     _offPj = _onProjectChange(async () => { loadTypes() })
     await _ensureProject().catch(() => {})
-    loadTypes()
+    if (!_loaded) {
+      _loaded = true
+      loadTypes()
+    }
   })
   const _ob$ = onBeforeUnmount == null ? null : onBeforeUnmount(() => { _offPj && _offPj() })
   // 若脚本未引入 onBeforeUnmount，退化为 window beforeunload 兜底（页面关闭）

@@ -348,10 +348,14 @@ onBeforeUnmount(() => {
 {
   const { onChange: _onProjectChange, ensureProjectContext: _ensureProject } = useProject()
   let _offPj = null
+  let _loaded = false
   onMounted(async () => {
     _offPj = _onProjectChange(async () => { loadAll() })
     await _ensureProject().catch(() => {})
-    loadAll()
+    if (!_loaded) {
+      _loaded = true
+      loadAll()
+    }
   })
   const _ob$ = onBeforeUnmount == null ? null : onBeforeUnmount(() => { _offPj && _offPj() })
   // 若脚本未引入 onBeforeUnmount，退化为 window beforeunload 兜底（页面关闭）

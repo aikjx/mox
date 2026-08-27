@@ -9,7 +9,7 @@
         <el-button @click="loadAll" :loading="loading">
           <el-icon><Refresh /></el-icon> 全量刷新
         </el-button>
-        <el-button type="primary" @click="activeTab = 'overview'">
+        <el-button type="primary" @click="runDiagnostic" :loading="diagnosticLoading">
           <el-icon><DataAnalysis /></el-icon> 系统诊断
         </el-button>
       </div>
@@ -424,6 +424,44 @@
         </el-row>
       </el-tab-pane>
     </el-tabs>
+
+    <!-- 企业级系统诊断结果 -->
+    <el-dialog v-model="diagnosticVisible" title="企业级系统诊断报告" width="560px" :close-on-click-modal="false">
+      <div v-if="diagnosticLoading" class="diag-loading">
+        <el-icon class="is-loading" :size="28"><Refresh /></el-icon>
+        <span>正在执行全维度健康检查…</span>
+      </div>
+      <div v-else class="diag-body">
+        <div class="diag-time">诊断时间：{{ diagnosticTime }} · 覆盖 会话 / 图谱 / 调度 三维度</div>
+        <div class="diag-items">
+          <div v-for="item in diagnosticItems" :key="item.label" class="diag-item">
+            <span class="diag-icon" :class="item.level">
+              <el-icon :size="16">
+                <component :is="item.level === 'ok' ? CircleCheckFilled : (item.level === 'warn' ? WarningFilled : CircleCloseFilled)" />
+              </el-icon>
+            </span>
+            <div class="diag-content">
+              <div class="diag-title">
+                <span>{{ item.label }}</span>
+                <span class="diag-value">{{ item.value }}</span>
+              </div>
+              <div class="diag-desc">{{ item.desc }}</div>
+            </div>
+            <span class="diag-level" :class="item.level">{{ item.levelText }}</span>
+          </div>
+        </div>
+        <div class="diag-summary" :class="diagSummaryLevel">
+          <el-icon :size="16">
+            <component :is="diagSummaryLevel === 'ok' ? CircleCheckFilled : (diagSummaryLevel === 'warn' ? WarningFilled : CircleCloseFilled)" />
+          </el-icon>
+          <span>{{ diagSummary }}</span>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="diagnosticVisible = false">关闭</el-button>
+        <el-button type="primary" :loading="diagnosticLoading" @click="runDiagnostic">重新诊断</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -431,7 +469,8 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, markRaw } from 'vue'
 import * as echarts from '@/echarts'
 import {
-  DataAnalysis, Refresh, Plus, Search, User, Connection, ChatDotRound
+  DataAnalysis, Refresh, Plus, Search, User, Connection, ChatDotRound,
+  CircleCheckFilled, WarningFilled, CircleCloseFilled
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import * as api from '../api'
@@ -453,6 +492,14 @@ const selectedCollaborators = ref([])
 const enterpriseForm = ref({ question: '', mode: 'smart', strategy: 'content_aware', tags: [] })
 const enterpriseResult = ref(null)
 const enterpriseLoading = ref(false)
+
+// ===== 企业级系统诊断 =====
+const diagnosticVisible = ref(false)
+const diagnosticLoading = ref(false)
+const diagnosticTime = ref('')
+const diagnosticItems = ref([])
+const diagnosticSummary = ref('')
+const diagnosticSummaryLevel = ref('ok')
 
 // ===== 流程编排 tab 状态 =====
 const flowGraphData = ref(null)
@@ -604,6 +651,87 @@ async function loadAll() {
     ElMessage.error('加载失败: ' + e.message)
   } finally {
     loading.value = false
+  }
+}
+
+// ===== 企业级系统诊断：聚合会话/图谱/调度三维度健康状态 =====
+async function runDiagnostic() {
+  diagnosticVisible.value = true
+  diagnosticLoading.value = true
+  try {
+    const now = new Date()
+    diagnosticTime.value = now.toLocaleString('zh-CN')
+    // 并行采集三组实时状态
+    const [sessionRes, graphRes, dispRes] = await Promise.all([
+      api.listExpertSessions({}),
+      api.getExpertGraphStats(),
+      api.getDispatcherStatus()
+    ])
+    const sessList = Array.isArray(sessionRes) ? sessionRes : []
+    const graph = graphRes || {}
+    const disp = dispRes || {}
+
+    // 维度1：会话体系
+    const totalSessions = sessList.length
+    const activeSessions = sessList.filter((s) => (s.status || 'active') !== 'archived').length
+    const sessionLevel = totalSessions > 0 ? 'ok' : 'warn'
+    const sessionItem = {
+      label: '会话体系',
+      value: `${totalSessions} 总 / ${activeSessions} 活跃`,
+      desc: totalSessions > 0 ? '会话持久化正常，历史会话可检索' : '暂无会话记录，可前往会话中心新建',
+      level: sessionLevel,
+      levelText: sessionLevel === 'ok' ? '正常' : '待激活'
+    }
+
+    // 维度2：专家能力图谱
+    const totalNodes = graph.total_nodes || 0
+    const density = graph.density || 0
+    const graphLevel = totalNodes > 0 ? 'ok' : 'warn'
+    const graphItem = {
+      label: '能力图谱',
+      value: `${totalNodes} 节点 / 密度 ${(density * 100).toFixed(1)}%`,
+      desc: totalNodes > 0 ? `已沉淀 ${graph.total_edges || 0} 条协作关系` : '图谱无专家节点，请先注册或重建图谱',
+      level: graphLevel,
+      levelText: graphLevel === 'ok' ? '正常' : '待构建'
+    }
+
+    // 维度3：调度引擎与熔断器
+    const cbStates = disp.circuit_breaker?.states || []
+    const openCbs = cbStates.filter((c) => c.status === 'open' || c.status === 'half_open')
+    const dispatchCount = disp.dispatcher?.recent_dispatches?.length || 0
+    const dispLevel = openCbs.length > 0 ? 'warn' : 'ok'
+    const dispItem = {
+      label: '调度引擎',
+      value: `${cbStates.length} 专家 · 熔断 ${openCbs.length}`,
+      desc: openCbs.length > 0
+        ? `⚠ ${openCbs.map((c) => c.key).join('、')} 处于熔断/半开状态，需关注`
+        : (dispatchCount > 0 ? `最近 ${dispatchCount} 次调度运行正常` : '无熔断异常，最近暂无调度记录'),
+      level: dispLevel,
+      levelText: dispLevel === 'ok' ? '正常' : '需关注'
+    }
+
+    // 汇总
+    const levels = [sessionItem, graphItem, dispItem].map((i) => i.level)
+    const hasWarn = levels.includes('warn')
+    const allOk = levels.every((l) => l === 'ok')
+    diagnosticSummaryLevel.value = allOk ? 'ok' : (hasWarn ? 'warn' : 'err')
+    diagnosticSummary.value = allOk
+      ? '全维度健康：会话、图谱、调度引擎运行状态良好'
+      : '存在需关注项：请查看下列维度详情并采取对应措施'
+
+    diagnosticItems.value = [sessionItem, graphItem, dispItem]
+  } catch (e) {
+    diagnosticItems.value = [{
+      label: '诊断执行',
+      value: '失败',
+      desc: '无法连接专家服务端点：' + (e.message || '网络异常'),
+      level: 'err',
+      levelText: '异常'
+    }]
+    diagnosticSummaryLevel.value = 'err'
+    diagnosticSummary.value = '诊断执行失败，请确认后端专家服务已启动'
+  } finally {
+    diagnosticLoading.value = false
   }
 }
 
@@ -1092,4 +1220,41 @@ onBeforeUnmount(() => {
   overflow-x: auto; white-space: nowrap;
 }
 .formula-note { font-size: 11px; color: #94a3b8; margin-top: 6px; line-height: 1.5; }
+
+/* ===== 企业级系统诊断弹窗 ===== */
+.diag-loading {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; padding: 40px 0; color: #64748b; font-size: 14px;
+}
+.diag-body { padding: 4px 0; }
+.diag-time { font-size: 12px; color: #94a3b8; margin-bottom: 14px; }
+.diag-items { display: flex; flex-direction: column; gap: 10px; }
+.diag-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 14px; border-radius: 10px;
+  background: #f8fafc; border: 1px solid rgba(15,23,42,0.06);
+}
+.diag-icon { flex-shrink: 0; margin-top: 1px; }
+.diag-icon.ok { color: #10b981; }
+.diag-icon.warn { color: #f59e0b; }
+.diag-icon.err { color: #ef4444; }
+.diag-content { flex: 1; min-width: 0; }
+.diag-title { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
+.diag-value { font-size: 12px; color: #6366f1; font-weight: 700; }
+.diag-desc { font-size: 12px; color: #64748b; margin-top: 3px; line-height: 1.5; }
+.diag-level {
+  flex-shrink: 0; font-size: 11px; font-weight: 600;
+  padding: 2px 8px; border-radius: 999px;
+}
+.diag-level.ok { background: #ecfdf5; color: #047857; }
+.diag-level.warn { background: #fffbeb; color: #92400e; }
+.diag-level.err { background: #fef2f2; color: #b91c1c; }
+.diag-summary {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 14px; padding: 12px 14px; border-radius: 10px;
+  font-size: 13px; font-weight: 600;
+}
+.diag-summary.ok { background: #ecfdf5; color: #047857; }
+.diag-summary.warn { background: #fffbeb; color: #92400e; }
+.diag-summary.err { background: #fef2f2; color: #b91c1c; }
 </style>

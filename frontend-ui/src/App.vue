@@ -483,10 +483,21 @@ onBeforeUnmount(() => {
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 20px; box-shadow: var(--shadow-sm); z-index: 5;
 }
-.topbar-left { display: flex; align-items: center; gap: 16px; }
-.collapse-btn { font-size: 20px; cursor: pointer; color: var(--text-2); }
+.topbar-left { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.collapse-btn { font-size: 20px; cursor: pointer; color: var(--text-2); flex-shrink: 0; }
 .collapse-btn:hover { color: var(--brand); }
 .crumb-extra { color: var(--brand-dark); font-weight: 600; }
+/* 面包屑防截断：不换行、不压缩、文字溢出时省略 */
+.topbar-left :deep(.el-breadcrumb) {
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+.topbar-left :deep(.el-breadcrumb__item) {
+  white-space: nowrap;
+}
 .topbar-right { display: flex; align-items: center; gap: 10px; }
 .top-action {
   width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center;

@@ -1,0 +1,8 @@
+fastapi>=0.110
+uvicorn>=0.27
+# 可选：切换 redis 缓存
+# redis>=5.0
+# 可选：接入 MySQL / PostgreSQL / DuckDB 数据源（修改中间层即可支持所有数据库）
+# pymysql>=1.1
+# psycopg2-binary>=2.9
+# duckdb>=1.0

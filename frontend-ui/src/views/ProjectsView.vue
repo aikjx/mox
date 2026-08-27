@@ -242,7 +242,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import ProjectChip from '@/components/ProjectChip.vue'
 import { useProject } from '@/composables/projectContext.js'
@@ -317,12 +317,12 @@ const isBound = (type, id) => (current.value?.resources || []).some((r) => r.res
 // ===== 加载 =====
 async function loadAll() {
   const [ps, ts, cat, st] = await Promise.all([getProjects(), getProjectTypes(), getProjectCatalog(), getProjectStats()])
-  projects.value = ps
-  categories.value = ts.categories || []
-  resourceTypes.value = ts.resource_types || []
-  catalogGroups.value = cat.groups || []
-  stats.value = st
-  binder.value.openGroups = (cat.groups || []).slice(0, 3).map((g) => g.type)
+  projects.value = ps || []
+  categories.value = (ts && ts.categories) || []
+  resourceTypes.value = (ts && ts.resource_types) || []
+  catalogGroups.value = (cat && cat.groups) || []
+  stats.value = st || {}
+  binder.value.openGroups = (catalogGroups.value).slice(0, 3).map((g) => g.type)
 }
 
 async function selectProject(id) {
@@ -414,16 +414,18 @@ async function saveNote() {
   await refreshCurrent()
 }
 
-onMounted(loadAll)
-
 // ===== 璇玑：以项目为核心的联动 =====
 {
   const { onChange: _onProjectChange, ensureProjectContext: _ensureProject } = useProject()
   let _offPj = null
+  let _loaded = false
   onMounted(async () => {
     _offPj = _onProjectChange(async () => { loadAll() })
     await _ensureProject().catch(() => {})
-    loadAll()
+    if (!_loaded) {
+      _loaded = true
+      loadAll()
+    }
   })
   const _ob$ = onBeforeUnmount == null ? null : onBeforeUnmount(() => { _offPj && _offPj() })
   // 若脚本未引入 onBeforeUnmount，退化为 window beforeunload 兜底（页面关闭）

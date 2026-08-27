@@ -136,7 +136,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus'
 import { MagicStick, Right } from '@element-plus/icons-vue'
 import ProjectChip from '@/components/ProjectChip.vue'

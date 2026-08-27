@@ -1,4 +1,4 @@
-﻿// ================================================================
+// ================================================================
 // mox-dsql-core 全维测试验证
 // 覆盖：动态配置 / 版本管理 / 模板渲染 / 参数校验 / 缓存 / 审计 / 分页 / 错误处理 / 性能
 // ================================================================
@@ -29,15 +29,42 @@ fn setup() -> DsqlManager {
     manager
 }
 
-/// 测试辅助：创建一个标准SQL定义
+/// 测试辅助：创建一个标准SQL定义（自动从模板提取参数）
 fn create_test_sql(manager: &DsqlManager, code: &str, template: &str) -> SqlDefinition {
+    // 自动从模板提取 {{param}} 参数名
+    let mut param_defs = vec![];
+    let mut chars = template.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c == '{' && chars.peek() == Some(&'{') {
+            chars.next();
+            let mut name = String::new();
+            while let Some(&nc) = chars.peek() {
+                if nc == '}' { break; }
+                name.push(nc);
+                chars.next();
+            }
+            if chars.peek() == Some(&'}') { chars.next(); }
+            let name = name.trim().to_string();
+            if !name.is_empty() && !param_defs.iter().any(|p: &ParamDef| p.name == name) {
+                param_defs.push(ParamDef {
+                    name,
+                    data_type: "STRING".to_string(),
+                    required: false,
+                    default_value: None,
+                    description: None,
+                    validation: None,
+                });
+            }
+        }
+    }
+
     manager.create_sql(&CreateSqlRequest {
         sql_code: code.to_string(),
         sql_name: format!("测试SQL-{code}"),
         description: Some("全维测试用".to_string()),
         datasource_code: "default".to_string(),
         sql_template: template.to_string(),
-        param_defs: vec![],
+        param_defs,
         result_type: ResultType::List,
         operation_type: OperationType::Read,
         cache_enabled: Some(false),
@@ -386,7 +413,7 @@ fn test_param_default_value() {
     }).unwrap();
     let data = result.data.unwrap();
     let items = data.as_array().unwrap();
-    assert_eq!(items.len(), 3); // iPhone(100) + AirPods(200) + Apple Watch(80)
+    assert_eq!(items.len(), 4); // iPhone(100) + MacBook(50) + AirPods(200) + Apple Watch(80)
 }
 
 // ================================================================

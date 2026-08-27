@@ -3377,6 +3377,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-kg-core"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "hex",
+ "log",
+ "parking_lot",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "mox-kg-fusion-svc"
 version = "3.0.0-ai-powered"
 dependencies = [

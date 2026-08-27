@@ -214,7 +214,26 @@ const routes = [
 
 const router = createRouter({
   history: createWebHashHistory(),
-  routes
+  routes,
+  scrollBehavior() {
+    // 路由切换时滚动到顶部，避免残留滚动位置
+    return { top: 0 }
+  }
+})
+
+// ===== 企业级路由守卫 =====
+const DEFAULT_TITLE = '璇玑系统 · Mox Graph System'
+
+router.beforeEach((to, from, next) => {
+  // 动态设置页面标题
+  const pageTitle = to.meta?.title
+  document.title = pageTitle ? `${pageTitle} · 璇玑系统` : DEFAULT_TITLE
+  next()
+})
+
+router.afterEach((to) => {
+  // 路由切换后清理可能残留的全局加载状态
+  window.dispatchEvent(new CustomEvent('router:changed', { detail: { path: to.path } }))
 })
 
 export default router

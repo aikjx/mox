@@ -342,3 +342,48 @@ a {
 .el-tag {
   border-radius: var(--radius-sm) !important;
 }
+
+/* ===== 企业级可访问性 ===== */
+/* 尊重用户减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 键盘导航焦点可见性 */
+:focus-visible {
+  outline: 2px solid var(--brand-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* 品牌化文字选中 */
+::selection {
+  background: rgba(99, 102, 241, 0.18);
+  color: var(--text-primary);
+}
+
+/* 禁用状态通用样式 */
+[disabled],
+[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* 加载中骨架屏通用动画 */
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-surface-2) 25%, var(--bg-input) 50%, var(--bg-surface-2) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
