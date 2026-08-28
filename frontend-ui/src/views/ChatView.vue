@@ -330,7 +330,24 @@
 
         <div v-if="!messages.length && !requirementFlowMode" class="empty">
           <div class="empty-orb"><el-icon><ChatLineRound /></el-icon></div>
-          <p>我是算子统一系统 AI 助手，可以帮你<b>分析算法</b>、<b>推荐算子</b>、<b>解释图谱</b>。</p>
+          <p class="empty-title">我是璇玑 AI 助手，帮你从需求到交付全链路搞定</p>
+          <!-- 操作引导：3步快速上手 -->
+          <div class="quick-steps">
+            <div class="qs-item">
+              <div class="qs-num">1</div>
+              <div class="qs-text">选择专家模式<br><span>通用/算法/架构/算子等8种</span></div>
+            </div>
+            <div class="qs-arrow">→</div>
+            <div class="qs-item">
+              <div class="qs-num">2</div>
+              <div class="qs-text">输入问题或点快捷问法<br><span>支持联网搜索/语音输入</span></div>
+            </div>
+            <div class="qs-arrow">→</div>
+            <div class="qs-item">
+              <div class="qs-num">3</div>
+              <div class="qs-text">用全维操作沉淀成果<br><span>转任务/建项目/生成文档/流程图</span></div>
+            </div>
+          </div>
           <p v-if="autoTaskMode" class="task-mode-hint">🚀 任务模式已开启：对话中将自动创建并执行任务</p>
           <div class="suggestions-grid" aria-label="快捷问法">
             <div
@@ -2553,6 +2570,64 @@ onUnmounted(() => {
   box-shadow:
     0 14px 40px -10px rgba(99, 102, 241, 0.45),
     0 0 0 6px rgba(99, 102, 241, 0.08);
+}
+.empty-title {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: var(--text-primary) !important;
+  margin-bottom: 20px !important;
+}
+/* 3步快速上手引导 */
+.quick-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 auto 24px;
+  max-width: 680px;
+  flex-wrap: wrap;
+}
+.qs-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.06), rgba(14,165,233,0.04));
+  border: 1px solid rgba(99,102,241,0.12);
+  border-radius: 10px;
+  flex: 1;
+  min-width: 180px;
+}
+.qs-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #0ea5e9);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.qs-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+  text-align: left;
+}
+.qs-text span {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+.qs-arrow {
+  color: #6366f1;
+  font-size: 16px;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 .empty p {
   max-width: 520px;

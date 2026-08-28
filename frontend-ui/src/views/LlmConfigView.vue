@@ -584,7 +584,7 @@ async function loadAll() {
     providers.value = providersRes || []
     presets.value = (presetsRes || []).map((p) => ({ ...p, models: Array.isArray(p.models) ? p.models : [] }))
     health.value = healthRes || {}
-    stats.value = statsRes || { total_tokens: 0, total_requests: 0, success_rate: 0, providers: 0, recent: [] }
+    stats.value = { total_tokens: 0, total_requests: 0, success_rate: 0, providers: 0, recent: [], ...(statsRes || {}) }
     usage.value = usageRes || {}
     logs.value = logsRes || []
   } catch (e) {

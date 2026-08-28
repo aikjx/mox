@@ -14,6 +14,17 @@
       </el-button>
     </div>
 
+    <!-- 操作引导：4步用好项目中心 -->
+    <div class="flow-guide">
+      <div class="fg-item"><span class="fg-num">1</span><span>新建项目</span><small>填写名称/类型/描述</small></div>
+      <div class="fg-arrow">→</div>
+      <div class="fg-item"><span class="fg-num">2</span><span>顶栏选择</span><small>自动注入全页上下文</small></div>
+      <div class="fg-arrow">→</div>
+      <div class="fg-item"><span class="fg-num">3</span><span>绑定资源</span><small>会话/任务/图谱/算子全归类</small></div>
+      <div class="fg-arrow">→</div>
+      <div class="fg-item"><span class="fg-num">4</span><span>查看统计</span><small>项目进度/资源分布一目了然</small></div>
+    </div>
+
     <!-- 统计卡 -->
     <div class="grid grid-4 stat-grid">
       <div class="panel stat-card">
@@ -102,6 +113,31 @@
             </el-button>
             <el-button size="small" type="danger" plain @click="removeProject">
               <el-icon><Delete /></el-icon> 删除
+            </el-button>
+          </div>
+        </div>
+
+        <!-- 快速操作：一键跳转到相关模块，自动带上项目上下文 -->
+        <div class="quick-actions">
+          <div class="qa-label">快速操作</div>
+          <div class="qa-buttons">
+            <el-button size="small" @click="goModule('ai')">
+              <el-icon><ChatDotRound /></el-icon> AI对话
+            </el-button>
+            <el-button size="small" @click="goModule('tasks')">
+              <el-icon><List /></el-icon> 任务管理
+            </el-button>
+            <el-button size="small" @click="goModule('graph')">
+              <el-icon><Share /></el-icon> 知识图谱
+            </el-button>
+            <el-button size="small" @click="goModule('workflow')">
+              <el-icon><Connection /></el-icon> 工作流
+            </el-button>
+            <el-button size="small" @click="goModule('expert-center')">
+              <el-icon><User /></el-icon> 专家联盟
+            </el-button>
+            <el-button size="small" @click="goModule('knowledge-base')">
+              <el-icon><Folder /></el-icon> 知识库
             </el-button>
           </div>
         </div>
@@ -243,6 +279,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import ProjectChip from '@/components/ProjectChip.vue'
 import { useProject } from '@/composables/projectContext.js'
@@ -251,6 +288,8 @@ import {
   getProject, createProject, updateProject, deleteProject,
   bindProjectResources, unbindProjectResource, updateProjectResourceNote
 } from '@/api'
+
+const router = useRouter()
 
 // ===== 状态 =====
 const projects = ref([])
@@ -327,6 +366,14 @@ async function loadAll() {
 
 async function selectProject(id) {
   current.value = await getProject(id)
+}
+
+// 快速跳转到相关模块，自动带上项目上下文
+function goModule(path) {
+  if (!current.value) return
+  // 项目上下文已通过全局 provide 注入，跳转后目标页面自动使用当前项目
+  router.push(`/${path}`)
+  ElMessage.info(`已进入「${current.value.name}」项目上下文`)
 }
 
 // ===== 项目 CRUD =====
@@ -436,6 +483,55 @@ async function saveNote() {
 </script>
 
 <style scoped>
+/* 操作引导条 */
+.flow-guide {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(16,185,129,0.06), rgba(6,182,212,0.04));
+  border: 1px solid rgba(16,185,129,0.15);
+  border-radius: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.fg-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 140px;
+}
+.fg-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10b981, #06b6d4);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.fg-item span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.fg-item small {
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: block;
+  margin-top: 1px;
+}
+.fg-arrow {
+  color: #10b981;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
 .stat-grid { margin-bottom: 14px; }
 .stat-card { padding: 18px 20px; text-align: center; }
 .stat-num { font-size: 28px; font-weight: 800; line-height: 1.2; }
@@ -474,6 +570,34 @@ async function saveNote() {
 .detail-title { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; }
 .detail-sub { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 13px; }
 .detail-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+/* 快速操作区 */
+.quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  margin: 14px 0;
+  background: linear-gradient(135deg, rgba(99,102,241,0.05), rgba(14,165,233,0.04));
+  border: 1px solid rgba(99,102,241,0.12);
+  border-radius: 10px;
+}
+.qa-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6366f1;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.qa-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+.qa-buttons .el-button {
+  border-radius: 7px;
+}
 
 .res-head { display: flex; justify-content: space-between; align-items: center; margin: 16px 0 10px; }
 .res-group { margin-bottom: 14px; }

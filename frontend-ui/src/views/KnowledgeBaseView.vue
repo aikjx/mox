@@ -1592,11 +1592,11 @@ watch(detailVisible, (v) => {
   let _offPj = null
   let _loaded = false
   onMounted(async () => {
-    _offPj = _onProjectChange(async () => { loadAll() })
+    _offPj = _onProjectChange(async () => { fetchDocuments() })
     await _ensureProject().catch(() => {})
     if (!_loaded) {
       _loaded = true
-      loadAll()
+      fetchDocuments()
     }
   })
   const _ob$ = onBeforeUnmount == null ? null : onBeforeUnmount(() => { _offPj && _offPj() })

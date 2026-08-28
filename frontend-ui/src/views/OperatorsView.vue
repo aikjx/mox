@@ -10,6 +10,44 @@
       </el-button>
     </div>
 
+    <!-- 操作流程引导：4步完成算子编排 -->
+    <div class="flow-guide">
+      <div class="flow-step" :class="{ active: currentStep >= 1, done: currentStep > 1 }">
+        <div class="step-num">1</div>
+        <div class="step-info">
+          <div class="step-title">选择算子</div>
+          <div class="step-desc">从左侧算子库点击加入</div>
+        </div>
+      </div>
+      <div class="step-arrow" :class="{ active: currentStep > 1 }">→</div>
+      <div class="flow-step" :class="{ active: currentStep >= 2, done: currentStep > 2 }">
+        <div class="step-num">2</div>
+        <div class="step-info">
+          <div class="step-title">编排链路</div>
+          <div class="step-desc">调整顺序，点击×移除</div>
+        </div>
+      </div>
+      <div class="step-arrow" :class="{ active: currentStep > 2 }">→</div>
+      <div class="flow-step" :class="{ active: currentStep >= 3, done: currentStep > 3 }">
+        <div class="step-num">3</div>
+        <div class="step-info">
+          <div class="step-title">配置参数</div>
+          <div class="step-desc">输入向量与缩放因子</div>
+        </div>
+      </div>
+      <div class="step-arrow" :class="{ active: currentStep > 3 }">→</div>
+      <div class="flow-step" :class="{ active: currentStep >= 4, done: currentStep > 4 }">
+        <div class="step-num">4</div>
+        <div class="step-info">
+          <div class="step-title">执行查看</div>
+          <div class="step-desc">点击执行，查看结果</div>
+        </div>
+      </div>
+      <el-button v-if="!selectedOrder.length" size="small" type="primary" plain @click="loadDemo" class="demo-btn">
+        ⚡ 一键示例
+      </el-button>
+    </div>
+
     <div class="grid grid-2 main-grid">
       <!-- 算子库 -->
       <div class="panel card-pad">
@@ -66,7 +104,13 @@
               <span v-if="i < selectedOrder.length - 1" class="arrow">→</span>
             </span>
           </template>
-          <span v-else class="muted">请从左侧选择算子</span>
+          <template v-else>
+            <div class="empty-guide">
+              <div class="empty-icon">👆</div>
+              <div class="empty-text">点击左侧算子卡片，加入执行链路</div>
+              <div class="empty-hint">或点击上方「⚡ 一键示例」快速体验</div>
+            </div>
+          </template>
         </div>
 
         <el-form label-width="92px" class="exec-form">
@@ -194,6 +238,29 @@ const filtered = computed(() => {
   })
 })
 
+// 操作流程当前步骤：根据用户操作自动判断
+const currentStep = computed(() => {
+  if (result.value) return 4
+  if (selectedOrder.value.length > 0 && inputVec.value.trim()) return 3
+  if (selectedOrder.value.length > 0) return 2
+  return 1
+})
+
+// 一键加载示例链路
+function loadDemo() {
+  const demoOps = operators.value.slice(0, 3)
+  demoOps.forEach((op) => {
+    if (!selected.value.has(op.id)) {
+      selected.value.add(op.id)
+      selectedOrder.value.push(op.id)
+    }
+  })
+  selected.value = new Set(selected.value)
+  inputVec.value = '1,2,3,4'
+  scale.value = 2.0
+  ElMessage.success('已加载示例链路，点击「执行工作流」查看效果')
+}
+
 function nameOf(id) {
   return operators.value.find((o) => o.id === id)?.name || id
 }
@@ -319,6 +386,96 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+/* 操作流程引导 */
+.flow-guide {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, rgba(79,70,229,0.06), rgba(124,58,237,0.04));
+  border: 1px solid rgba(79,70,229,0.15);
+  border-radius: 12px;
+  flex-wrap: wrap;
+}
+.flow-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  opacity: 0.45;
+  transition: all 0.25s;
+}
+.flow-step.active {
+  opacity: 1;
+  background: rgba(79,70,229,0.1);
+}
+.flow-step.done {
+  opacity: 0.75;
+}
+.step-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.flow-step.active .step-num {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(79,70,229,0.35);
+}
+.flow-step.done .step-num {
+  background: #10b981;
+  color: #fff;
+}
+.step-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.step-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 1px;
+}
+.step-arrow {
+  color: #ccc;
+  font-size: 14px;
+  font-weight: 700;
+}
+.step-arrow.active {
+  color: #4f46e5;
+}
+.demo-btn {
+  margin-left: auto;
+}
+/* 空状态引导 */
+.empty-guide {
+  text-align: center;
+  padding: 28px 16px;
+  color: var(--text-secondary);
+}
+.empty-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+.empty-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.empty-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 .card-pad {
   padding: 20px 22px;

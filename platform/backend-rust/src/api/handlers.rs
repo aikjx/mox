@@ -139,32 +139,106 @@ pub async fn graph_get(State(state): State<AppState>) -> Response {
 }
 
 pub async fn graph_stats(State(state): State<AppState>) -> Response {
+    let n = state.graph_nodes.len();
+    let m = state.graph_edges.len();
+    let density = if n > 1 { 2.0 * m as f64 / (n as f64 * (n - 1) as f64) } else { 0.0 };
     ok(serde_json::json!({
-        "nodes": state.graph_nodes.len(),
-        "edges": state.graph_edges.len(),
-        "density": 0.0,
+        "nodes": n,
+        "edges": m,
+        "density": (density * 1000.0).round() / 1000.0,
         "components": 1
     }))
 }
 
-pub async fn graph_centrality() -> Response { ok(serde_json::json!({})) }
-pub async fn graph_communities() -> Response { ok(serde_json::json!([])) }
-pub async fn graph_pagerank() -> Response { ok(serde_json::json!({})) }
-
-pub async fn graph_neighbors(Path(id): Path<String>) -> Response {
-    ok(serde_json::json!({ "node_id": id, "neighbors": [] }))
+pub async fn graph_centrality(State(state): State<AppState>) -> Response {
+    let adj = super::graph_algo::adjacency_from_state(&state);
+    let deg = super::graph_algo::degree_centrality(&adj);
+    let bt = super::graph_algo::betweenness(&adj);
+    let degree = serde_json::to_value(
+        deg.iter()
+            .map(|(id, (d, norm))| {
+                (id.clone(), serde_json::json!({ "degree": d, "normalized": norm }))
+            })
+            .collect::<serde_json::Map<String, Value>>(),
+    )
+    .unwrap_or(Value::Null);
+    let betweenness = serde_json::to_value(bt).unwrap_or(Value::Null);
+    ok(serde_json::json!({ "degree": degree, "betweenness": betweenness }))
 }
 
-pub async fn graph_shortest_path(Query(params): Query<HashMap<String, String>>) -> Response {
+pub async fn graph_communities(State(state): State<AppState>) -> Response {
+    let adj = super::graph_algo::adjacency_from_state(&state);
+    let groups = super::graph_algo::label_propagation(&adj);
+    let communities: Vec<Value> = groups
+        .into_iter()
+        .enumerate()
+        .map(|(i, (_label, members))| {
+            serde_json::json!({ "id": i, "members": members, "size": members.len() })
+        })
+        .collect();
+    ok(serde_json::json!({ "communities": communities }))
+}
+
+pub async fn graph_pagerank(State(state): State<AppState>) -> Response {
+    let adj = super::graph_algo::adjacency_from_state(&state);
+    let pr = super::graph_algo::pagerank(&adj, 0.85, 100);
+    let rounded = pr
+        .into_iter()
+        .map(|(k, v)| (k, serde_json::json!((v * 1e4).round() / 1e4)))
+        .collect::<serde_json::Map<String, Value>>();
+    ok(serde_json::json!({ "pagerank": rounded }))
+}
+
+pub async fn graph_neighbors(State(state): State<AppState>, Path(id): Path<String>) -> Response {
+    let adj = super::graph_algo::adjacency_from_state(&state);
+    let nbs = super::graph_algo::neighbors(&adj, &id);
+    let arr: Vec<Value> = nbs
+        .into_iter()
+        .map(|(n, w)| serde_json::json!([n, (w * 100.0).round() / 100.0]))
+        .collect();
+    ok(arr)
+}
+
+pub async fn graph_shortest_path(
+    State(state): State<AppState>,
+    Query(params): Query<HashMap<String, String>>,
+) -> Response {
+    let source = params.get("source").cloned().unwrap_or_default();
+    let target = params.get("target").cloned().unwrap_or_default();
+    let adj = super::graph_algo::adjacency_from_state(&state);
+    let (path, total_weight) = super::graph_algo::shortest_path(&adj, &source, &target);
     ok(serde_json::json!({
-        "source": params.get("source").cloned().unwrap_or_default(),
-        "target": params.get("target").cloned().unwrap_or_default(),
-        "path": [], "distance": 0
+        "source": source,
+        "target": target,
+        "path": path,
+        "length": path.len(),
+        "total_weight": (total_weight * 100.0).round() / 100.0
     }))
 }
 
-pub async fn graph_recommend(Json(_payload): Json<Value>) -> Response {
-    ok(serde_json::json!([]))
+pub async fn graph_recommend(
+    State(state): State<AppState>,
+    Json(payload): Json<Value>,
+) -> Response {
+    let ctx: Vec<String> = payload
+        .get("context_nodes")
+        .and_then(|v| v.as_array())
+        .map(|a| {
+            a.iter()
+                .filter_map(|x| x.as_str().map(|s| s.to_string()))
+                .collect()
+        })
+        .unwrap_or_default();
+    let limit = payload.get("limit").and_then(|v| v.as_u64()).unwrap_or(8) as usize;
+    let adj = super::graph_algo::adjacency_from_state(&state);
+    let recs = super::graph_algo::recommend(&adj, &ctx, limit.max(1));
+    let arr: Vec<Value> = recs
+        .into_iter()
+        .map(|(node_id, score)| {
+            serde_json::json!({ "node_id": node_id, "score": (score * 100.0).round() / 100.0 })
+        })
+        .collect();
+    ok(arr)
 }
 
 pub async fn graph_add_node(State(state): State<AppState>, Json(payload): Json<Value>) -> Response {
@@ -181,13 +255,69 @@ pub async fn graph_add_edge(State(state): State<AppState>, Json(payload): Json<V
     ok(serde_json::json!({ "id": id, "status": "added" }))
 }
 
-pub async fn graph_activate(Json(_payload): Json<Value>) -> Response {
-    ok(serde_json::json!({ "activations": {}, "iterations": 10 }))
+pub async fn graph_activate(
+    State(state): State<AppState>,
+    Json(payload): Json<Value>,
+) -> Response {
+    let seeds: Vec<String> = payload
+        .get("seed")
+        .and_then(|v| v.as_array())
+        .map(|a| {
+            a.iter()
+                .filter_map(|x| x.as_str().map(|s| s.to_string()))
+                .collect()
+        })
+        .unwrap_or_default();
+    let iterations = payload.get("iterations").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
+    let adj = super::graph_algo::adjacency_from_state(&state);
+    let energy = super::graph_algo::activation_spread(&adj, &seeds, iterations.max(1).min(50));
+    let rounded = energy
+        .into_iter()
+        .map(|(k, v)| (k, serde_json::json!((v * 1e4).round() / 1e4)))
+        .collect::<serde_json::Map<String, Value>>();
+    ok(serde_json::json!({ "activations": rounded, "iterations": iterations }))
 }
 
-pub async fn graph_search(Query(params): Query<HashMap<String, String>>) -> Response {
+pub async fn graph_search(
+    State(state): State<AppState>,
+    Query(params): Query<HashMap<String, String>>,
+) -> Response {
     let q = params.get("q").cloned().unwrap_or_default();
-    ok(serde_json::json!({ "query": q, "results": [], "total": 0 }))
+    let ql = q.to_lowercase();
+    let mut graph_nodes: Vec<Value> = Vec::new();
+    let mut dialogues: Vec<Value> = Vec::new();
+
+    if !ql.is_empty() {
+        for e in state.graph_nodes.iter() {
+            let v = e.value();
+            let id = v.get("id").and_then(|x| x.as_str()).unwrap_or("");
+            let label = v.get("label").and_then(|x| x.as_str()).unwrap_or(id);
+            let node_type = v.get("node_type").and_then(|x| x.as_str()).unwrap_or("custom");
+            let summary = v.get("summary").and_then(|x| x.as_str()).unwrap_or("");
+            let hay = format!("{} {} {}", id, label, summary).to_lowercase();
+            if hay.contains(&ql) {
+                graph_nodes.push(serde_json::json!({
+                    "id": id,
+                    "title": label,
+                    "node_type": node_type,
+                    "snippet": if summary.is_empty() { label.to_string() } else { format!("{} · {}", label, summary) },
+                }));
+            }
+        }
+        for e in state.sessions.iter() {
+            let v = e.value();
+            let title = v.get("title").and_then(|x| x.as_str()).unwrap_or("");
+            let hay = format!("{} {}", e.key(), title).to_lowercase();
+            if hay.contains(&ql) {
+                dialogues.push(serde_json::json!({
+                    "id": e.key(),
+                    "snippet": title,
+                }));
+            }
+        }
+    }
+    let total = graph_nodes.len() + dialogues.len();
+    ok(serde_json::json!({ "query": q, "dialogues": dialogues, "graph_nodes": graph_nodes, "total": total }))
 }
 
 pub async fn graph_auto_sync_toggle(Json(payload): Json<Value>) -> Response {
@@ -539,9 +669,131 @@ pub async fn market_ai_search(Json(_p): Json<Value>) -> Response { ok(serde_json
 // ============================================================================
 // Caomei
 // ============================================================================
+// 需求编译（Caomei）：从自然语言需求生成「实体 / 功能点 / 流程图」蓝图
+// ============================================================================
 
-pub async fn caomei_compile(Json(_p): Json<Value>) -> Response { ok(serde_json::json!({ "blueprint": { "nodes": [], "edges": [] }, "status": "compiled" })) }
-pub async fn caomei_refine(Json(_p): Json<Value>) -> Response { ok(serde_json::json!({ "blueprint": { "nodes": [], "edges": [] }, "status": "refined" })) }
+/// 常见业务实体词典
+const CAOMEI_ENTITIES: &[&str] = &[
+    "客户", "会员", "订单", "商品", "合同", "项目", "任务", "员工", "部门", "库存",
+    "设备", "数据", "文档", "报表", "流程", "审批", "渠道", "账号", "角色", "权限",
+    "工单", "投诉", "回访", "跟进", "发票", "供应商", "仓库", "门店", "课程", "学员",
+];
+
+/// 常见功能动词
+const CAOMEI_VERBS: &[&str] = &[
+    "管理", "查询", "录入", "统计", "分析", "导出", "审核", "提醒", "生成", "分配",
+    "跟进", "分类", "跟踪", "监控", "汇总", "检索", "订阅", "发布", "配置", "维护",
+];
+
+/// 从需求文本提取实体（去重、保序、上限 12）
+fn extract_entities(text: &str) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for ent in CAOMEI_ENTITIES {
+        if text.contains(ent) && !out.contains(&ent.to_string()) {
+            out.push(ent.to_string());
+            if out.len() >= 12 {
+                break;
+            }
+        }
+    }
+    out
+}
+
+/// 从需求文本提取功能点（按动词 + 邻近实体组句，上限 10）
+fn extract_features(text: &str, entities: &[String]) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for verb in CAOMEI_VERBS {
+        if text.contains(verb) {
+            let vpos = text.find(verb).unwrap_or(usize::MAX);
+            let target = entities
+                .iter()
+                .find(|e| text.find(e.as_str()).is_some_and(|epos| epos < vpos))
+                .cloned()
+                .or_else(|| entities.first().cloned())
+                .unwrap_or_else(|| "数据".to_string());
+            let feat = format!("{}{}", verb, target);
+            if !out.contains(&feat) {
+                out.push(feat);
+                if out.len() >= 10 {
+                    break;
+                }
+            }
+        }
+    }
+    if out.is_empty() {
+        out.push("需求分析".to_string());
+        out.push("方案设计".to_string());
+    }
+    out
+}
+
+/// 构建蓝图 JSON（实体 / 功能点 / 流程图）
+fn build_caomei_blueprint(requirement: &str, bp_id: &str) -> Value {
+    let entities = extract_entities(requirement);
+    let features = extract_features(requirement, &entities);
+    // 流程：开始 → 录入 → 各功能点(process) → 决策 → 结束
+    let mut flow_nodes: Vec<Value> = Vec::new();
+    let mut flow_edges: Vec<Value> = Vec::new();
+    flow_nodes.push(serde_json::json!({ "id": "start", "kind": "start", "name": "开始" }));
+    flow_nodes.push(serde_json::json!({ "id": "input", "kind": "task", "name": "需求录入", "tool": "form" }));
+    flow_edges.push(serde_json::json!({ "from": "start", "to": "input" }));
+    let mut prev = "input".to_string();
+    for (i, f) in features.iter().enumerate() {
+        let nid = format!("proc{}", i + 1);
+        flow_nodes.push(serde_json::json!({ "id": nid, "kind": "process", "name": f }));
+        flow_edges.push(serde_json::json!({ "from": prev, "to": nid }));
+        prev = nid;
+    }
+    flow_nodes.push(serde_json::json!({ "id": "decision", "kind": "decision", "name": "结果校验" }));
+    flow_nodes.push(serde_json::json!({ "id": "end", "kind": "end", "name": "结束" }));
+    flow_edges.push(serde_json::json!({ "from": prev, "to": "decision" }));
+    flow_edges.push(serde_json::json!({ "from": "decision", "to": "end" }));
+
+    serde_json::json!({
+        "blueprint_id": bp_id,
+        "name": format!("{}-蓝图", &requirement.chars().take(12).collect::<String>()),
+        "feature_count": features.len(),
+        "entities": entities,
+        "features": features,
+        "flow": { "nodes": flow_nodes, "edges": flow_edges }
+    })
+}
+
+pub async fn caomei_compile(Json(p): Json<Value>) -> Response {
+    let requirement = p
+        .get("requirement")
+        .or_else(|| p.get("text"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    if requirement.is_empty() {
+        return err(StatusCode::BAD_REQUEST, "EMPTY_REQUIREMENT", "需求描述不能为空");
+    }
+    let blueprint = build_caomei_blueprint(&requirement, &new_id("bp"));
+    ok(serde_json::json!({ "blueprint": blueprint, "status": "compiled" }))
+}
+
+pub async fn caomei_refine(Json(p): Json<Value>) -> Response {
+    let addition = p
+        .get("addition")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim();
+    // 精化：把追加描述并入功能点（简化：作为新功能点返回）
+    let mut extra: Vec<String> = Vec::new();
+    if !addition.is_empty() {
+        extra.push(addition.chars().take(16).collect::<String>());
+    }
+    let prev_count = p.get("feature_count").and_then(|v| v.as_u64()).unwrap_or(2) as usize;
+    let features: Vec<Value> = extra.into_iter().map(|f| Value::String(f)).collect();
+    ok(serde_json::json!({
+        "feature_count": prev_count + features.len(),
+        "flow": serde_json::json!({ "nodes": [], "edges": [] }),
+        "added_features": features,
+        "status": "refined"
+    }))
+}
 pub async fn caomei_templates() -> Response { ok(serde_json::json!([])) }
 pub async fn caomei_ai_parse(Json(_p): Json<Value>) -> Response { ok(serde_json::json!({ "parsed": {}, "status": "completed" })) }
 

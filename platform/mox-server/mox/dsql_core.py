@@ -201,14 +201,19 @@ class DsqlEngine:
             else:
                 self._def_cache.clear()
 
-    def list_defs(self) -> list[dict]:
-        return self._meta.query(
-            "SELECT code,name,datasource,cache_ttl,status,version,description,updated_at "
-            "FROM dsql_sqls ORDER BY updated_at DESC")
+    def list_defs(self, app_key: Optional[str] = None) -> list[dict]:
+        sql = ("SELECT code,app_key,name,datasource,cache_ttl,status,version,description,updated_at "
+               "FROM dsql_sqls")
+        params: list = []
+        if app_key:
+            sql += " WHERE app_key=?"
+            params.append(app_key)
+        sql += " ORDER BY updated_at DESC"
+        return self._meta.query(sql, params)
 
     def upsert_def(self, code: str, name: str, template: str, datasource: str,
                    cache_ttl: int = 0, status: str = "draft", version: int = None,
-                   description: str = "") -> dict:
+                   description: str = "", app_key: str = "mox") -> dict:
         # 发布前先做语法校验 + 安全校验，保证入库即可用
         SqlTemplate(template).validate()  # 语法校验（不要求参数存在）
         sanitize_sql(template)            # 只读白名单校验
@@ -216,20 +221,20 @@ class DsqlEngine:
         if rows:
             new_version = (rows[0]["version"] or 0) + 1 if version is None else version
             self._meta.execute(
-                "UPDATE dsql_sqls SET name=?, template=?, datasource=?, cache_ttl=?, "
+                "UPDATE dsql_sqls SET app_key=?, name=?, template=?, datasource=?, cache_ttl=?, "
                 "status=?, version=?, description=?, updated_at=? WHERE code=?",
-                [name, template, datasource, int(cache_ttl), status, new_version,
-                 description, int(time.time()), code])
+                [app_key, name, template, datasource, int(cache_ttl),
+                 status, new_version, description, int(time.time()), code])
             saved_version = new_version
         else:
             saved_version = version or 1
             self._meta.execute(
-                "INSERT INTO dsql_sqls(code,name,template,datasource,cache_ttl,status,"
-                "version,description,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
-                [code, name, template, datasource, int(cache_ttl), status, saved_version,
+                "INSERT INTO dsql_sqls(code,app_key,name,template,datasource,cache_ttl,status,"
+                "version,description,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                [code, app_key, name, template, datasource, int(cache_ttl), status, saved_version,
                  description, int(time.time()), int(time.time())])
         self.invalidate_def(code)
-        return {"code": code, "version": saved_version, "status": status}
+        return {"code": code, "app_key": app_key, "version": saved_version, "status": status}
 
     def set_status(self, code: str, status: str) -> dict:
         self._meta.execute("UPDATE dsql_sqls SET status=?, updated_at=? WHERE code=?",

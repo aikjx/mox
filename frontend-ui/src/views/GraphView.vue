@@ -306,7 +306,15 @@ async function doSearch() {
   if (!q) return
   try {
     const res = await graphSearch(q, 30)
-    searchResult.value = res
+    // 归一化后端返回，兼容 {dialogues, graph_nodes} 与 {results} 两种契约，避免 undefined.length 崩溃
+    const src = (res && typeof res === 'object') ? res : {}
+    const results = Array.isArray(src.results) ? src.results : []
+    searchResult.value = {
+      dialogues: Array.isArray(src.dialogues) ? src.dialogues
+        : results.filter(r => String(r.type || r.kind || '').includes('dialogue')),
+      graph_nodes: Array.isArray(src.graph_nodes) ? src.graph_nodes
+        : results.filter(r => !String(r.type || r.kind || '').includes('dialogue')),
+    }
   } catch (e) {
     ElMessage.error('搜索失败：' + e.message)
   }

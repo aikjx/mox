@@ -1,5 +1,5 @@
 <template>
-  <div class="project-chip" :class="{ 'is-empty': !currentProject }">
+  <div class="project-chip" :class="{ 'is-empty': !currentProject }" @click="goProjects" title="点击管理项目 / 切换项目">
     <div class="pc-icon">
       <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
         <path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6z"
@@ -12,17 +12,21 @@
       <div class="pc-label">跟进项目</div>
       <div class="pc-name">
         <template v-if="currentProject">{{ currentProject.name }}</template>
-        <template v-else>未选择 · 点击顶栏 <b>选择项目</b> 创建/切换</template>
+        <template v-else>未选择 · 点击创建/切换</template>
       </div>
     </div>
     <span v-if="currentProject?.status" class="pc-status" :class="statusCls">{{ statusLabel }}</span>
+    <el-icon class="pc-arrow"><ArrowRight /></el-icon>
   </div>
 </template>
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { ArrowRight } from '@element-plus/icons-vue'
 import { useProject } from '@/composables/projectContext.js'
 
+const router = useRouter()
 const { currentProject, onChange, ensureProjectContext } = useProject()
 
 const tick = ref(0)
@@ -33,6 +37,10 @@ onMounted(async () => {
   try { await ensureProjectContext() } catch {}
   bump()
 })
+
+function goProjects() {
+  router.push('/projects')
+}
 
 const statusCls = computed(() => {
   const s = String(currentProject.value?.status || '').toLowerCase()
@@ -60,8 +68,28 @@ const statusLabel = computed(() => {
   border: 1px solid #e2e8f0;
   box-shadow: 0 1px 2px -1px rgba(15,23,42,0.05);
   margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.project-chip:hover {
+  border-color: #6366f1;
+  box-shadow: 0 4px 12px -4px rgba(99,102,241,0.25);
+  transform: translateY(-1px);
+}
+.project-chip:active {
+  transform: translateY(0);
 }
 .project-chip.is-empty { opacity: 0.88; }
+.pc-arrow {
+  color: #cbd5e1;
+  font-size: 14px;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+.project-chip:hover .pc-arrow {
+  color: #6366f1;
+  transform: translateX(2px);
+}
 .pc-icon {
   width: 28px; height: 28px;
   display: flex; align-items: center; justify-content: center;

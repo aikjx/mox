@@ -31,6 +31,9 @@ from .db_adapters import build_adapter
 from .dsql_core import DsqlEngine
 from .kg_core import KnowledgeGraph
 from .seed_data import reset_and_seed, META_DB
+from .apps_core import AppManager
+from .ai_core import assistant as ai_assistant
+from .process import get_process_flow
 
 app = FastAPI(title="mox-server 低代码平台运行服务", version="2.0.0")
 
@@ -62,6 +65,7 @@ class MetaStore:
 _RAW_META, _RAW_BUSINESS = reset_and_seed()
 META = MetaStore(_RAW_META)
 BUSINESS = _RAW_BUSINESS
+BUSINESS_STORE = MetaStore(_RAW_BUSINESS)
 CACHE = build_cache(driver="memory")  # 改 "redis" 即可切换 redis 缓存
 
 # 数据源适配器注册表（中间层）：按元库 datasources 表动态构建
@@ -84,6 +88,7 @@ def refresh_adapters():
 refresh_adapters()
 DSQL = DsqlEngine(meta=META, cache=CACHE, adapters=ADAPTERS)
 KG = KnowledgeGraph(meta=META)
+APPS = AppManager(META)
 _LOCK = threading.RLock()
 
 
@@ -117,14 +122,17 @@ def _err(message: str, status: int = 400) -> JSONResponse:
 async def dsql_execute(req: Request):
     body = await req.json()
     code = body.get("sql_code") or body.get("code")
+    app_key = body.get("app_key") or "mox"
     if not code:
         return _err("缺少 sql_code")
     try:
         res = DSQL.execute(code, body.get("params") or {},
                            role=body.get("role", "anonymous"),
                            use_cache=body.get("use_cache", True))
+        res["app_key"] = app_key
         _audit(body.get("actor", "api"), f"dsql.execute:{code}",
-               {"params": body.get("params") or {}, "role": body.get("role")}, res["trace_id"])
+               {"params": body.get("params") or {}, "role": body.get("role"), "app_key": app_key},
+               res["trace_id"])
         return res
     except KeyError as e:
         return _err(str(e), 404)
@@ -170,8 +178,8 @@ async def dsql_execute_batch(req: Request):
 #  SQL 定义管理
 # ================================================================
 @app.get("/api/admin/sqls")
-async def admin_sqls():
-    return _ok(DSQL.list_defs(), trace_id=_trace())
+async def admin_sqls(app_key: Optional[str] = None):
+    return _ok(DSQL.list_defs(app_key), trace_id=_trace())
 
 
 @app.post("/api/admin/sqls")
@@ -185,7 +193,8 @@ async def admin_sql_create(req: Request):
                             datasource=b.get("datasource", "default"),
                             cache_ttl=b.get("cache_ttl", 0),
                             status=b.get("status", "published"),
-                            description=b.get("description", ""))
+                            description=b.get("description", ""),
+                            app_key=b.get("app_key", "mox"))
         _audit("admin", "sql.upsert", r, _trace())
         return _ok(r, message="SQL 定义已保存")
     except ValueError as e:
@@ -200,7 +209,8 @@ async def admin_sql_update(code: str, req: Request):
                             datasource=b.get("datasource", "default"),
                             cache_ttl=b.get("cache_ttl", 0),
                             status=b.get("status", "published"),
-                            description=b.get("description", ""))
+                            description=b.get("description", ""),
+                            app_key=b.get("app_key", "mox"))
         _audit("admin", "sql.update", {"code": code}, _trace())
         return _ok(r, message="SQL 定义已更新")
     except ValueError as e:
@@ -327,22 +337,25 @@ async def kg_graph(domain: Optional[str] = None):
 
 @app.post("/api/kg/query")
 async def kg_query(req: Request):
+    import re as _re
     b = await req.json()
     dsl = b.get("dsl") or ""
     try:
         if dsl == "graph":
             data = KG.graph_data(b.get("domain"))
         elif dsl.startswith("neighbors:"):
-            vid = dsl.split(":", 1)[1]
+            vid = dsl[len("neighbors:"):]
             data = {"neighbors": KG.neighbors(vid, b.get("direction", "out"))}
-        elif dsl.startswith("reachable:"):
-            parts = dsl.split(":")
-            vid = parts[1]
-            hops = int(parts[2]) if len(parts) > 2 else 2
+        elif _re.match(r"^reachable:.+:\d+$", dsl):
+            # reachable:<vid>:<hops>   （vid 可含冒号）
+            m = _re.match(r"^reachable:(.+):(\d+)$", dsl)
+            vid, hops = m.group(1), int(m.group(2))
             data = {"reachable": KG.reachable(vid, hops, b.get("direction", "out"))}
-        elif dsl.startswith("path:"):
-            _, s, t = dsl.split(":")
-            data = {"path": KG.shortest_path(s, t)}
+        elif _re.match(r"^path:.+\|.+$", dsl):
+            # path:<start>|<end>  （用 | 分隔两个可含冒号的 vid）
+            _, rest = dsl.split(":", 1)
+            s, t = rest.split("|", 1)
+            data = {"path": KG.shortest_path(s.strip(), t.strip())}
         elif dsl == "stats":
             data = KG.stats()
         else:
@@ -449,7 +462,7 @@ async def website_consultation(req: Request):
 async def api_stats():
     sql_count = META.query("SELECT COUNT(*) c FROM dsql_sqls")[0]["c"]
     kg = KG.stats()
-    msgs = META.query("SELECT COUNT(*) c FROM messages")[0]["c"]
+    msgs = BUSINESS_STORE.query("SELECT COUNT(*) c FROM messages")[0]["c"]
     return _ok({
         "dsql_sqls": sql_count,
         "datasources": list(ADAPTERS.keys()),
@@ -474,4 +487,112 @@ async def api_audit(limit: int = 50):
 
 @app.get("/api/health")
 async def api_health():
-    return _ok({"status": "healthy", "engine": "mox-dsql-core + mox-kg-core", "version": "2.0.0"})
+    return _ok({"status": "healthy", "engine": "mox-dsql-core + mox-kg-core + mox-ai + mox-apps", "version": "2.1.0"})
+
+
+# ================================================================
+#  无限发布系统 · 应用管理中心
+# ================================================================
+@app.get("/api/apps")
+async def apps_list():
+    apps = [APPS.enrich(a) for a in APPS.list_apps()]
+    return _ok(apps, trace_id=_trace())
+
+
+@app.post("/api/apps")
+async def apps_create(req: Request):
+    b = await req.json()
+    try:
+        app = APPS.create_app(b.get("app_key", ""), b.get("name", ""),
+                              app_type=b.get("type", "website"),
+                              domain=b.get("domain", ""), config=b.get("config") or {})
+        _audit("admin", "app.create", {"app_key": app["app_key"]}, _trace())
+        return _ok(APPS.enrich(app), message="应用已创建（草稿）")
+    except (ValueError, KeyError) as e:
+        return _err(str(e), 422)
+
+
+@app.get("/api/apps/{app_key}")
+async def apps_get(app_key: str):
+    app = APPS.get_app(app_key)
+    if not app:
+        return _err(f"应用不存在: {app_key}", 404)
+    return _ok(APPS.enrich(app), trace_id=_trace())
+
+
+@app.put("/api/apps/{app_key}")
+async def apps_update(app_key: str, req: Request):
+    b = await req.json()
+    try:
+        app = APPS.update_app(app_key, name=b.get("name"), domain=b.get("domain"),
+                              config=b.get("config"))
+        return _ok(APPS.enrich(app), message="应用已更新")
+    except (ValueError, KeyError) as e:
+        return _err(str(e), 422)
+
+
+@app.delete("/api/apps/{app_key}")
+async def apps_delete(app_key: str):
+    try:
+        APPS.delete_app(app_key)
+        return _ok(message="应用已删除")
+    except ValueError as e:
+        return _err(str(e), 422)
+
+
+@app.post("/api/apps/{app_key}/transition")
+async def apps_transition(app_key: str, req: Request):
+    b = await req.json()
+    target = b.get("target")
+    operator = b.get("operator", "admin")
+    try:
+        app = APPS.transition(app_key, target, operator)
+        _audit(operator, "app.transition", {"app_key": app_key, "to": target,
+                                            "version": app["publish_version"]}, _trace())
+        return _ok(APPS.enrich(app), message=f"应用已流转：{target}（v{app['publish_version']}）")
+    except (ValueError, KeyError) as e:
+        return _err(str(e), 422)
+
+
+@app.get("/api/apps/{app_key}/logs")
+async def apps_logs(app_key: str):
+    return _ok(APPS.publish_logs(app_key), trace_id=_trace())
+
+
+# ================================================================
+#  业务流程引擎（无限发布系统全链路）
+# ================================================================
+@app.get("/api/process/flow")
+async def process_flow():
+    return _ok(get_process_flow(), trace_id=_trace())
+
+
+# ================================================================
+#  AI 智能助手
+# ================================================================
+@app.post("/api/ai/assistant")
+async def ai_assistant_api(req: Request):
+    b = await req.json()
+    message = (b.get("message") or "").strip()
+    app_key = b.get("app_key") or "mox"
+    if not message:
+        return _err("缺少 message")
+    try:
+        r = ai_assistant(message, app_key)
+        r["trace_id"] = _trace()
+        META.execute(
+            "INSERT INTO ai_requests(ts,app_key,user_message,reply,engine,trace_id,duration_ms) "
+            "VALUES(?,?,?,?,?,?,?)",
+            [int(time.time()), app_key, message[:500], r["reply"][:2000], r.get("engine", "rule"),
+             r["trace_id"], r.get("duration_ms", 0)])
+        return _ok(r, message="ai ok", trace_id=r["trace_id"])
+    except Exception as e:  # noqa: BLE001
+        traceback.print_exc()
+        return _err(f"AI 处理失败: {e}", 500)
+
+
+@app.get("/api/ai/requests")
+async def ai_requests(limit: int = 20):
+    rows = META.query("SELECT ts,app_key,user_message,reply,engine,trace_id,duration_ms "
+                      "FROM ai_requests ORDER BY id DESC LIMIT ?", [min(limit, 200)])
+    return _ok(rows, trace_id=_trace())

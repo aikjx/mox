@@ -15,19 +15,54 @@
         <span class="pp-dot" :style="{ background: color || '#64748b' }"></span>
       </template>
       <template #default>
-        <el-option-group label="最近">
+        <el-option-group label="进行中">
           <el-option
-            v-for="p in recentProjects"
+            v-for="p in activeProjects"
             :key="p.id"
             :label="p.name"
             :value="p.id"
           >
             <div class="pp-opt">
               <span class="pp-dot" :style="{ background: p.color || '#64748b' }"></span>
-              <span class="pp-opt-name">{{ p.name }}</span>
-              <el-tag size="small" effect="plain" :type="statusTagType(p.status)">
-                {{ statusLabel(p.status) }}
-              </el-tag>
+              <div class="pp-opt-body">
+                <span class="pp-opt-name">{{ p.name }}</span>
+                <span class="pp-opt-desc" v-if="p.description">{{ p.description }}</span>
+              </div>
+              <el-tag size="small" effect="plain" type="success">进行中</el-tag>
+            </div>
+          </el-option>
+        </el-option-group>
+        <el-option-group label="规划中" v-if="planningProjects.length">
+          <el-option
+            v-for="p in planningProjects"
+            :key="p.id"
+            :label="p.name"
+            :value="p.id"
+          >
+            <div class="pp-opt">
+              <span class="pp-dot" :style="{ background: p.color || '#64748b' }"></span>
+              <div class="pp-opt-body">
+                <span class="pp-opt-name">{{ p.name }}</span>
+                <span class="pp-opt-desc" v-if="p.description">{{ p.description }}</span>
+              </div>
+              <el-tag size="small" effect="plain" type="warning">规划中</el-tag>
+            </div>
+          </el-option>
+        </el-option-group>
+        <el-option-group label="已完成" v-if="doneProjects.length">
+          <el-option
+            v-for="p in doneProjects"
+            :key="p.id"
+            :label="p.name"
+            :value="p.id"
+          >
+            <div class="pp-opt">
+              <span class="pp-dot" :style="{ background: p.color || '#64748b' }"></span>
+              <div class="pp-opt-body">
+                <span class="pp-opt-name">{{ p.name }}</span>
+                <span class="pp-opt-desc" v-if="p.description">{{ p.description }}</span>
+              </div>
+              <el-tag size="small" effect="plain" type="info">已完成</el-tag>
             </div>
           </el-option>
         </el-option-group>
@@ -45,6 +80,10 @@
 
     <el-button class="pp-new" circle size="small" @click="openCreate" title="新建项目">
       <el-icon :size="13"><Plus /></el-icon>
+    </el-button>
+
+    <el-button class="pp-manage" circle size="small" @click="goProjects" title="管理项目">
+      <el-icon :size="13"><Setting /></el-icon>
     </el-button>
 
     <!-- 新建对话框 -->
@@ -81,11 +120,13 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { Plus, Folder, FolderOpened, Cpu, MagicStick, Share, Shop, Link, Connection, Monitor, User, DataBoard, DataAnalysis, Setting, Aim } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useProject } from '@/composables/projectContext.js'
 import { getProjectTypes } from '@/api'
 
+const router = useRouter()
 const { currentProject, projectList, listLoading, setCurrentProject, createAndSelect } = useProject()
 
 const currentId = computed(() => currentProject.value?.id || null)
@@ -98,17 +139,10 @@ const dlg = ref({
 })
 const typeOptions = ref([])
 
-const recentProjects = computed(() => {
-  const all = [...(projectList.value || [])]
-  // 优先 active，再按名称（稳定排序）
-  all.sort((a, b) => {
-    const order = (s) => ({ active: 0, planning: 1, done: 2, archived: 3 }[s] ?? 9)
-    const d = order(a.status) - order(b.status)
-    if (d) return d
-    return (a.name || '').localeCompare(b.name || '')
-  })
-  return all
-})
+// 按状态分组
+const activeProjects = computed(() => (projectList.value || []).filter(p => p.status === 'active').sort((a,b) => (a.name||'').localeCompare(b.name||'')))
+const planningProjects = computed(() => (projectList.value || []).filter(p => p.status === 'planning').sort((a,b) => (a.name||'').localeCompare(b.name||'')))
+const doneProjects = computed(() => (projectList.value || []).filter(p => ['done','completed','archived'].includes(p.status)).sort((a,b) => (a.name||'').localeCompare(b.name||'')))
 
 function statusLabel(s) {
   return { active: '进行中', planning: '规划中', done: '已完成', archived: '已归档' }[s] || s || '进行中'
@@ -117,16 +151,23 @@ function statusTagType(s) {
   return { active: 'success', planning: 'warning', done: 'info', archived: '' }[s] || 'info'
 }
 
-function onChange(id) { setCurrentProject(id) }
+async function onChange(id) {
+  const p = (projectList.value || []).find(x => x.id === id)
+  await setCurrentProject(id)
+  if (p) {
+    ElMessage.success(`已切换到项目「${p.name}」`)
+  }
+}
 function onVisible(v) { if (v) { /* 打开时无需刷新，全局 provide 已预加载 */ } }
 function openCreate() { dlg.value = { open: true, saving: false, form: { name: '', category: typeOptions.value[0]?.key || 'platform', status: 'active', description: '' } } }
+function goProjects() { router.push('/projects') }
 async function doCreate() {
   const f = dlg.value.form
   if (!f.name?.trim()) return ElMessage.warning('请输入项目名称')
   dlg.value.saving = true
   try {
     await createAndSelect(f)
-    ElMessage.success(`已切换到项目「${f.name}」`)
+    ElMessage.success(`已创建并切换到项目「${f.name}」`)
     dlg.value.open = false
   } finally {
     dlg.value.saving = false
@@ -218,7 +259,24 @@ onMounted(async () => {
   width: 100%;
   line-height: 1.2;
 }
-.pp-opt-name { flex: 1; font-weight: 500; }
+.pp-opt-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pp-opt-name { font-weight: 500; font-size: 13px; color: #0f172a; }
+.pp-opt-desc { font-size: 11px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+
+.pp-manage {
+  width: 36px !important;
+  height: 36px !important;
+  background: #fff;
+  border: 1px solid #e2e8f0 !important;
+  color: #64748b;
+  border-radius: 10px !important;
+  transition: all 150ms ease;
+}
+.pp-manage:hover {
+  border-color: #6366f1 !important;
+  color: #4f46e5 !important;
+  background: #eef2ff !important;
+}
 
 .pp-empty { padding: 10px 4px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 

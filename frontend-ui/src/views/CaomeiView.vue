@@ -169,12 +169,28 @@ async function doCompile() {
       tags: tagInput.value.length ? tagInput.value : undefined,
     })
     if (d.success === false) throw new Error(d.error || '编译失败')
-    blueprint.value = d
-    ElMessage.success(`蓝图已生成：${d.feature_count} 个功能点`)
+    blueprint.value = normalizeBlueprint(d)
+    ElMessage.success(`蓝图已生成：${blueprint.value.feature_count} 个功能点`)
   } catch (e) {
     ElMessage.error('编译失败：' + e.message)
   } finally {
     compiling.value = false
+  }
+}
+
+// 归一化后端蓝图结构：兼容 {blueprint:{...}} 与直接 {...} 两种契约，并兜底默认字段，避免 undefined.length 崩溃
+function normalizeBlueprint(d) {
+  const bp = (d && typeof d === 'object' && d.blueprint && typeof d.blueprint === 'object') ? d.blueprint : (d || {})
+  return {
+    name: bp.name || '未命名蓝图',
+    blueprint_id: bp.blueprint_id || 'bp-未分配',
+    feature_count: Number(bp.feature_count ?? 0) || 0,
+    entities: Array.isArray(bp.entities) ? bp.entities : [],
+    features: Array.isArray(bp.features) ? bp.features : [],
+    flow: {
+      nodes: Array.isArray(bp.flow?.nodes) ? bp.flow.nodes : [],
+      edges: Array.isArray(bp.flow?.edges) ? bp.flow.edges : [],
+    },
   }
 }
 
@@ -194,14 +210,17 @@ async function doRefine() {
       addition: addition.value,
     })
     if (d.success === false) throw new Error(d.error || '精化失败')
+    const prev = blueprint.value || {}
     blueprint.value = {
-      ...blueprint.value,
-      feature_count: d.feature_count,
-      flow: d.flow,
+      ...prev,
+      feature_count: Number(d.feature_count ?? prev.feature_count) || 0,
+      features: [...(Array.isArray(prev.features) ? prev.features : []), ...(Array.isArray(d.added_features) ? d.added_features : [])],
+      // 保留原流程图，仅当后端明确返回新 flow 且非空时才替换
+      flow: (d.flow && Array.isArray(d.flow.nodes) && d.flow.nodes.length) ? d.flow : (prev.flow || { nodes: [], edges: [] }),
     }
     addition.value = ''
     refiningOpen.value = false
-    ElMessage.success(`精化完成，现共 ${d.feature_count} 个功能点`)
+    ElMessage.success(`精化完成，现共 ${blueprint.value.feature_count} 个功能点`)
   } catch (e) {
     ElMessage.error('精化失败：' + e.message)
   } finally {

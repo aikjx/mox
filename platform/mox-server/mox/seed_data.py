@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+import time
 from typing import Any
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -34,6 +35,7 @@ META_SCHEMA = [
     """CREATE TABLE IF NOT EXISTS dsql_sqls(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         code TEXT UNIQUE NOT NULL,
+        app_key TEXT DEFAULT 'mox',
         name TEXT, template TEXT NOT NULL,
         datasource TEXT DEFAULT 'default',
         cache_ttl INTEGER DEFAULT 0,
@@ -41,6 +43,28 @@ META_SCHEMA = [
         version INTEGER DEFAULT 1,
         description TEXT,
         created_at INTEGER, updated_at INTEGER
+    )""",
+    """CREATE TABLE IF NOT EXISTS apps(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        app_key TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        type TEXT DEFAULT 'website',
+        domain TEXT, status TEXT DEFAULT 'draft',
+        config_json TEXT DEFAULT '{}',
+        publish_version INTEGER DEFAULT 0,
+        created_at INTEGER, updated_at INTEGER
+    )""",
+    """CREATE TABLE IF NOT EXISTS publish_logs(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        app_key TEXT NOT NULL,
+        action TEXT NOT NULL,
+        version INTEGER, operator TEXT, detail TEXT,
+        created_at INTEGER
+    )""",
+    """CREATE TABLE IF NOT EXISTS ai_requests(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts INTEGER, app_key TEXT, user_message TEXT, reply TEXT,
+        engine TEXT, trace_id TEXT, duration_ms INTEGER
     )""",
     """CREATE TABLE IF NOT EXISTS kg_vertices(
         vid TEXT PRIMARY KEY,
@@ -71,16 +95,15 @@ META_SCHEMA = [
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         ts INTEGER, trace_id TEXT, actor TEXT, action TEXT, detail TEXT
     )""",
-    """CREATE TABLE IF NOT EXISTS messages(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT, phone TEXT, email TEXT, company TEXT, content TEXT,
-        status TEXT DEFAULT '待处理', created_at INTEGER
-    )""",
 ]
 
 
 # ---------------- 业务库 schema + 官网数据 ----------------
 BUSINESS_SCHEMA = [
+    """CREATE TABLE IF NOT EXISTS banners(
+        id INTEGER PRIMARY KEY, title TEXT, subtitle TEXT,
+        image TEXT, link TEXT, enabled INTEGER DEFAULT 1, sort INTEGER DEFAULT 0
+    )""",
     """CREATE TABLE IF NOT EXISTS products(
         id INTEGER PRIMARY KEY, name TEXT, category TEXT, price REAL,
         image TEXT, summary TEXT, specs_json TEXT, hot INTEGER, recommend INTEGER
@@ -97,10 +120,14 @@ BUSINESS_SCHEMA = [
     """CREATE TABLE IF NOT EXISTS team(
         id INTEGER PRIMARY KEY, name TEXT, role TEXT, bio TEXT, avatar TEXT
     )""",
+    """CREATE TABLE IF NOT EXISTS messages(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT, phone TEXT, email TEXT, company TEXT, content TEXT,
+        status TEXT DEFAULT '待处理', created_at INTEGER
+    )""",
 ]
 
-PRODUCTS = [
-    (1, "墨行智能终端 MX-T1", "智能硬件", 18999, "https://aka.doubaocdn.com/s/9JrzVnyYCT",
+PRODUCTS = [    (1, "墨行智能终端 MX-T1", "智能硬件", 18999, "https://aka.doubaocdn.com/s/9JrzVnyYCT",
      "面向企业的一体化智能终端，融合高性能计算与极致显示。",
      json.dumps({"处理器": "国产八核处理器", "内存": "32GB DDR5", "存储": "1TB NVMe SSD",
                  "显示": "27英寸 4K 广色域", "系统": "UOS / 麒麟 双系统", "安全": "TCM安全芯片"},
@@ -190,6 +217,8 @@ TEAM = [
 # ---------------- DSQL SQL 定义种子（对应官网 sql_code） ----------------
 DSQL_SQLS = [
     ("home_banner_list", "首页Banner", "SELECT id,title,subtitle,image,link FROM banners WHERE enabled=1 ORDER BY sort ASC", "default", 60, "published", "首页轮播"),
+    ("home_latest_news", "首页最新新闻", "SELECT id,title,category,date,views,image,summary FROM news ORDER BY date DESC LIMIT 3", "default", 60, "published", "首页新闻"),
+    ("home_recommend_cases", "首页推荐案例", "SELECT id,title,customer,industry,image,summary FROM cases ORDER BY id ASC LIMIT 3", "default", 60, "published", "首页案例"),
     ("product_categories", "产品分类", "SELECT DISTINCT category AS name FROM products ORDER BY category", "default", 300, "published", "产品分类去重"),
     ("home_recommend_products", "首页推荐产品", "SELECT id,name,category,price,image,summary,hot,recommend FROM products WHERE recommend=1 ORDER BY id ASC LIMIT 3", "default", 60, "published", "首页推荐"),
     ("product_list", "产品列表(分类/关键字)", "SELECT id,name,category,price,image,summary,hot FROM products WHERE 1=1 {% if category %} AND category={{category}} {% endif %} {% if keyword %} AND (name LIKE {{keyword}} OR summary LIKE {{keyword}}) {% endif %} ORDER BY id ASC", "default", 30, "published", "产品列表动态筛选"),
@@ -264,6 +293,12 @@ FIELD_PERMISSIONS = [
     ("product_detail", "guest", "id,name,category,image,summary"),
 ]
 
+# ---------------- 应用种子（无限发布系统） ----------------
+APPS = [
+    ("mox", "墨行科技官网", "website", "mox.tech", "running", {}, 3),
+    ("corp_demo", "演示企业官网", "website", "demo.mox.tech", "published", {"template": "standard"}, 1),
+]
+
 
 # ---------------- 初始化函数 ----------------
 def init_meta() -> "sqlite3.Connection":
@@ -272,6 +307,10 @@ def init_meta() -> "sqlite3.Connection":
     conn.row_factory = sqlite3.Row
     for ddl in META_SCHEMA:
         conn.execute(ddl)
+    # 迁移：为已有库补充 app_key 列
+    cols = [r["name"] for r in conn.execute("PRAGMA table_info(dsql_sqls)")]
+    if "app_key" not in cols:
+        conn.execute("ALTER TABLE dsql_sqls ADD COLUMN app_key TEXT DEFAULT 'mox'")
     conn.commit()
     return conn
 
@@ -282,6 +321,11 @@ def init_business() -> "sqlite3.Connection":
     for ddl in BUSINESS_SCHEMA:
         conn.execute(ddl)
     # 幂等填充
+    if conn.execute("SELECT COUNT(*) c FROM banners").fetchone()["c"] == 0:
+        conn.executemany(
+            "INSERT INTO banners(id,title,subtitle,image,link,enabled,sort) VALUES(?,?,?,?,?,?,?)",
+            [(1, "以数据为墨 · 绘智能未来", "企业级智能技术平台",
+              "https://aka.doubaocdn.com/s/kbmWAw4cYr", "#/products", 1, 0)])
     if conn.execute("SELECT COUNT(*) c FROM products").fetchone()["c"] == 0:
         conn.executemany(
             "INSERT INTO products(id,name,category,price,image,summary,specs_json,hot,recommend) "
@@ -297,6 +341,12 @@ def init_business() -> "sqlite3.Connection":
     if conn.execute("SELECT COUNT(*) c FROM team").fetchone()["c"] == 0:
         conn.executemany(
             "INSERT INTO team(id,name,role,bio,avatar) VALUES(?,?,?,?,?)", TEAM)
+    if conn.execute("SELECT COUNT(*) c FROM messages").fetchone()["c"] == 0:
+        conn.executemany(
+            "INSERT INTO messages(name,phone,email,company,content,status,created_at) VALUES(?,?,?,?,?,?,?)",
+            [("演示客户", "13900000001", "demo@mox.tech", "演示企业",
+              "这是一条官网留言演示数据，用于验证留言全链路（官网提交→SQL 查询→后台处理）。",
+              "已联系", int(time.time()) - 86400)])
     conn.commit()
     return conn
 
@@ -337,6 +387,14 @@ def seed_all(meta: "sqlite3.Connection", business: "sqlite3.Connection") -> None
         meta.executemany(
             "INSERT INTO field_permissions(resource,role,allowed_fields) VALUES(?,?,?)",
             FIELD_PERMISSIONS)
+    # 应用（无限发布系统）
+    if meta.execute("SELECT COUNT(*) c FROM apps").fetchone()["c"] == 0:
+        ts = int(__import__("time").time())
+        meta.executemany(
+            "INSERT INTO apps(app_key,name,type,domain,status,config_json,publish_version,created_at,updated_at) "
+            "VALUES(?,?,?,?,?,?,?,?,?)",
+            [(a[0], a[1], a[2], a[3], a[4], __import__("json").dumps(a[5], ensure_ascii=False),
+              a[6], ts, ts) for a in APPS])
     meta.commit()
 
 

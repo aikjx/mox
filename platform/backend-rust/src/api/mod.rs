@@ -1,4 +1,4 @@
-// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 
 //! MOX Enterprise · 全功能 API 处理层
@@ -6,6 +6,7 @@
 //! 对接前端所有 /api/* 端点，内存存储 + 模拟响应，确保零 404。
 
 pub mod handlers;
+pub mod graph_algo;
 
 use axum::{
     body::Body,
@@ -130,6 +131,52 @@ impl AppState {
                 self.llm_providers.insert(id.to_string(), l);
             }
         }
+
+        // 全维知识图谱：注入璇玑平台核心节点与关系，确保图谱页/搜索/路径分析首屏可用
+        let demo_graph_nodes = vec![
+            serde_json::json!({"id":"mox-core","label":"璇玑内核","node_type":"core","category":"平台底座","summary":"全维统一内核与运行时"}),
+            serde_json::json!({"id":"dsql-engine","label":"DSQL引擎","node_type":"graph","category":"数据层","summary":"动态SQL低代码查询引擎"}),
+            serde_json::json!({"id":"kg-engine","label":"知识图谱引擎","node_type":"graph","category":"数据层","summary":"自研图谱存储与图算法"}),
+            serde_json::json!({"id":"kb-store","label":"云盘知识库","node_type":"data","category":"数据层","summary":"文档/知识沉淀与检索"}),
+            serde_json::json!({"id":"ds-core","label":"数据源中心","node_type":"data","category":"数据层","summary":"多数据源适配与治理"}),
+            serde_json::json!({"id":"llm-gateway","label":"大模型网关","node_type":"ai","category":"智能层","summary":"多Provider路由与统一接入"}),
+            serde_json::json!({"id":"expert-alliance","label":"专家联盟","node_type":"ai","category":"智能层","summary":"多专家协同与编排"}),
+            serde_json::json!({"id":"op-engine","label":"算子引擎","node_type":"graph","category":"智能层","summary":"算子统一系统(OUS)执行"}),
+            serde_json::json!({"id":"flow-engine","label":"流程引擎","node_type":"core","category":"运行层","summary":"工作流编排与实例调度"}),
+            serde_json::json!({"id":"mcp-gateway","label":"MCP网关","node_type":"core","category":"运行层","summary":"Model Context Protocol 兼容层"}),
+            serde_json::json!({"id":"mox-fusion","label":"全维融合","node_type":"activation","category":"运行层","summary":"多源数据融合与编排"}),
+            serde_json::json!({"id":"inf-optimizer","label":"无穷维度优化","node_type":"optimizer","category":"智能层","summary":"多维参数寻优引擎"}),
+            serde_json::json!({"id":"algo-lab","label":"算法实验室","node_type":"math","category":"科研层","summary":"算法分析/仿真/归一化"}),
+            serde_json::json!({"id":"monitor","label":"实时监控","node_type":"signal","category":"观测层","summary":"运行观测与AI诊断"}),
+        ];
+        for n in &demo_graph_nodes {
+            if let Some(id) = n.get("id").and_then(|v| v.as_str()) {
+                self.graph_nodes.insert(id.to_string(), n.clone());
+            }
+        }
+        let demo_graph_edges = vec![
+            serde_json::json!({"id":"e1","source":"mox-fusion","target":"kg-engine","relation":"integrate","weight":0.9}),
+            serde_json::json!({"id":"e2","source":"mox-fusion","target":"dsql-engine","relation":"integrate","weight":0.8}),
+            serde_json::json!({"id":"e3","source":"kg-engine","target":"kb-store","relation":"read","weight":0.7}),
+            serde_json::json!({"id":"e4","source":"kg-engine","target":"dsql-engine","relation":"query","weight":0.6}),
+            serde_json::json!({"id":"e5","source":"dsql-engine","target":"ds-core","relation":"use","weight":0.8}),
+            serde_json::json!({"id":"e6","source":"op-engine","target":"mox-fusion","relation":"execute","weight":0.7}),
+            serde_json::json!({"id":"e7","source":"flow-engine","target":"op-engine","relation":"schedule","weight":0.8}),
+            serde_json::json!({"id":"e8","source":"flow-engine","target":"mcp-gateway","relation":"call","weight":0.6}),
+            serde_json::json!({"id":"e9","source":"llm-gateway","target":"expert-alliance","relation":"route","weight":0.7}),
+            serde_json::json!({"id":"e10","source":"expert-alliance","target":"kg-engine","relation":"reason","weight":0.6}),
+            serde_json::json!({"id":"e11","source":"inf-optimizer","target":"flow-engine","relation":"optimize","weight":0.5}),
+            serde_json::json!({"id":"e12","source":"inf-optimizer","target":"llm-gateway","relation":"tune","weight":0.5}),
+            serde_json::json!({"id":"e13","source":"mox-core","target":"dsql-engine","relation":"host","weight":0.9}),
+            serde_json::json!({"id":"e14","source":"mox-core","target":"flow-engine","relation":"host","weight":0.9}),
+            serde_json::json!({"id":"e15","source":"algo-lab","target":"inf-optimizer","relation":"feed","weight":0.5}),
+            serde_json::json!({"id":"e16","source":"monitor","target":"mox-core","relation":"observe","weight":0.4}),
+        ];
+        for e in &demo_graph_edges {
+            if let Some(id) = e.get("id").and_then(|v| v.as_str()) {
+                self.graph_edges.insert(id.to_string(), e.clone());
+            }
+        }
     }
 }
 
@@ -210,7 +257,7 @@ pub fn api_router(state: AppState) -> Router {
         .route("/graph/centrality", get(graph_centrality))
         .route("/graph/communities", get(graph_communities))
         .route("/graph/pagerank", get(graph_pagerank))
-        .route("/graph/neighbors/{id}", get(graph_neighbors))
+        .route("/graph/neighbors/:id", get(graph_neighbors))
         .route("/graph/path", get(graph_shortest_path))
         .route("/graph/recommend", post(graph_recommend))
         .route("/graph/node", post(graph_add_node))
@@ -228,7 +275,7 @@ pub fn api_router(state: AppState) -> Router {
 
         // ===== AI 对话 =====
         .route("/ai/chat", post(ai_chat))
-        .route("/ai/chat/history/{session}", get(ai_chat_history))
+        .route("/ai/chat/history/:session", get(ai_chat_history))
         .route("/ai/analyze-algorithm", post(ai_analyze_algorithm))
         .route("/ai/algorithm-types", get(ai_algorithm_types))
         .route("/ai/expert-chat", post(ai_expert_chat))
@@ -281,8 +328,8 @@ pub fn api_router(state: AppState) -> Router {
         // ===== 流程图 =====
         .route("/ai/flows", get(flows_list))
         .route("/ai/flows", post(flow_create))
-        .route("/ai/flows/{id}", get(flow_get))
-        .route("/ai/flows/{id}", delete(flow_delete))
+        .route("/ai/flows/:id", get(flow_get))
+        .route("/ai/flows/:id", delete(flow_delete))
         .route("/ai/flows/validate", post(flow_validate))
         .route("/ai/flows/execute", post(flow_execute))
         .route("/ai/flows/node-types", get(flow_node_types))
@@ -295,8 +342,8 @@ pub fn api_router(state: AppState) -> Router {
         // ===== 浏览器自动化 =====
         .route("/ai/browser/templates", get(browser_templates))
         .route("/ai/browser/sessions", get(browser_sessions))
-        .route("/ai/browser/sessions/{id}", get(browser_session_get))
-        .route("/ai/browser/sessions/{id}", delete(browser_session_close))
+        .route("/ai/browser/sessions/:id", get(browser_session_get))
+        .route("/ai/browser/sessions/:id", delete(browser_session_close))
         .route("/ai/browser/execute-task", post(browser_execute_task))
         .route("/ai/browser/execute-steps", post(browser_execute_steps))
         .route("/ai/browser/execute-action", post(browser_execute_action))
@@ -311,12 +358,12 @@ pub fn api_router(state: AppState) -> Router {
         // ===== 算子商城 =====
         .route("/market", get(market_list))
         .route("/market/random", get(market_random))
-        .route("/market/{id}", get(market_get))
+        .route("/market/:id", get(market_get))
         .route("/market/upload", post(market_upload))
-        .route("/market/{id}", post(market_update))
-        .route("/market/{id}", delete(market_delete))
-        .route("/market/{id}/clone", post(market_clone))
-        .route("/market/{id}/export", get(market_export))
+        .route("/market/:id", post(market_update))
+        .route("/market/:id", delete(market_delete))
+        .route("/market/:id/clone", post(market_clone))
+        .route("/market/:id/export", get(market_export))
         .route("/market/ai-search", post(market_ai_search))
 
         // ===== Caomei =====
@@ -332,10 +379,10 @@ pub fn api_router(state: AppState) -> Router {
         // ===== AI 自动化中枢 =====
         .route("/automation", get(automation_list))
         .route("/automation/chat", post(automation_chat))
-        .route("/automation/{id}/refine", post(automation_refine))
-        .route("/automation/{id}/run", post(automation_run))
-        .route("/automation/{id}/permissions", get(automation_permissions))
-        .route("/automation/{id}", put(automation_update))
+        .route("/automation/:id/refine", post(automation_refine))
+        .route("/automation/:id/run", post(automation_run))
+        .route("/automation/:id/permissions", get(automation_permissions))
+        .route("/automation/:id", put(automation_update))
         .route("/automation/ai-execute", post(automation_ai_execute))
 
         // ===== 璇玑全维治理 =====
@@ -346,15 +393,15 @@ pub fn api_router(state: AppState) -> Router {
         // ===== LLM 网关 =====
         .route("/llm/providers", get(llm_providers_list))
         .route("/llm/providers/presets", get(llm_provider_presets))
-        .route("/llm/providers/{id}", get(llm_provider_get))
+        .route("/llm/providers/:id", get(llm_provider_get))
         .route("/llm/providers/active", post(llm_set_active))
         .route("/llm/providers", post(llm_provider_add))
-        .route("/llm/providers/{id}", put(llm_provider_update))
-        .route("/llm/providers/{id}", delete(llm_provider_remove))
-        .route("/llm/providers/{id}/enable", post(llm_provider_enable))
-        .route("/llm/providers/{id}/disable", post(llm_provider_disable))
-        .route("/llm/providers/{id}/test", post(llm_provider_test))
-        .route("/llm/providers/{id}/discover", post(llm_provider_discover))
+        .route("/llm/providers/:id", put(llm_provider_update))
+        .route("/llm/providers/:id", delete(llm_provider_remove))
+        .route("/llm/providers/:id/enable", post(llm_provider_enable))
+        .route("/llm/providers/:id/disable", post(llm_provider_disable))
+        .route("/llm/providers/:id/test", post(llm_provider_test))
+        .route("/llm/providers/:id/discover", post(llm_provider_discover))
         .route("/llm/health", get(llm_health))
         .route("/llm/routing", get(llm_routing_get))
         .route("/llm/routing", put(llm_routing_update))
@@ -380,24 +427,24 @@ pub fn api_router(state: AppState) -> Router {
         .route("/experts/orchestration/stats", get(orchestration_stats))
         .route("/experts/orchestration/plugins", get(orchestration_plugins))
         .route("/experts/orchestration/history", get(orchestration_history))
-        .route("/experts/{id}", get(experts_get))
+        .route("/experts/:id", get(experts_get))
         .route("/experts", post(experts_register))
-        .route("/experts/{id}", put(experts_update))
-        .route("/experts/{id}", delete(experts_remove))
-        .route("/experts/{id}/consult", post(experts_consult))
-        .route("/experts/{id}/metrics", get(experts_single_metrics))
+        .route("/experts/:id", put(experts_update))
+        .route("/experts/:id", delete(experts_remove))
+        .route("/experts/:id/consult", post(experts_consult))
+        .route("/experts/:id/metrics", get(experts_single_metrics))
 
         // ===== 专家会话 =====
         .route("/experts/sessions", get(expert_sessions_list))
         .route("/experts/sessions/stats", get(expert_sessions_stats))
         .route("/experts/sessions", post(expert_session_create))
-        .route("/experts/sessions/{id}", get(expert_session_get))
-        .route("/experts/sessions/{id}", put(expert_session_update))
-        .route("/experts/sessions/{id}", delete(expert_session_delete))
-        .route("/experts/sessions/{id}/messages", post(expert_session_append_message))
-        .route("/experts/sessions/{id}/similar-search", post(expert_session_similar_search))
-        .route("/experts/sessions/{id}/export", get(expert_session_export))
-        .route("/experts/sessions/{id}/archive", post(expert_session_archive))
+        .route("/experts/sessions/:id", get(expert_session_get))
+        .route("/experts/sessions/:id", put(expert_session_update))
+        .route("/experts/sessions/:id", delete(expert_session_delete))
+        .route("/experts/sessions/:id/messages", post(expert_session_append_message))
+        .route("/experts/sessions/:id/similar-search", post(expert_session_similar_search))
+        .route("/experts/sessions/:id/export", get(expert_session_export))
+        .route("/experts/sessions/:id/archive", post(expert_session_archive))
         .route("/experts/semantic-search", post(expert_semantic_search))
 
         // ===== 调度策略 =====
@@ -407,15 +454,15 @@ pub fn api_router(state: AppState) -> Router {
         .route("/experts/dispatcher/dispatch", post(dispatcher_dispatch))
         .route("/experts/dispatcher/consult", post(dispatcher_consult))
         .route("/experts/dispatcher/multi-consult", post(dispatcher_multi_consult))
-        .route("/experts/dispatcher/reset/{id}", post(dispatcher_reset_expert))
+        .route("/experts/dispatcher/reset/:id", post(dispatcher_reset_expert))
         .route("/experts/dispatcher/reset-all", post(dispatcher_reset_all))
 
         // ===== 专家图谱 =====
         .route("/expert-graph", get(expert_graph_get))
         .route("/expert-graph/stats", get(expert_graph_stats))
-        .route("/expert-graph/neighbors/{id}", get(expert_graph_neighbors))
-        .route("/expert-graph/collaborators/{id}", get(expert_graph_collaborators))
-        .route("/expert-graph/path/{source}/{target}", get(expert_graph_path))
+        .route("/expert-graph/neighbors/:id", get(expert_graph_neighbors))
+        .route("/expert-graph/collaborators/:id", get(expert_graph_collaborators))
+        .route("/expert-graph/path/:source/:target", get(expert_graph_path))
         .route("/expert-graph/communities", get(expert_graph_communities))
         .route("/expert-graph/optimal-team", post(expert_graph_optimal_team))
         .route("/expert-graph/rebuild", post(expert_graph_rebuild))
@@ -424,12 +471,12 @@ pub fn api_router(state: AppState) -> Router {
         .route("/tasks", get(tasks_list))
         .route("/tasks/auto", post(tasks_auto_create))
         .route("/tasks/from-chat", post(tasks_from_chat))
-        .route("/tasks/{id}", get(tasks_get))
+        .route("/tasks/:id", get(tasks_get))
         .route("/tasks", post(tasks_create))
-        .route("/tasks/{id}", put(tasks_update))
-        .route("/tasks/{id}", delete(tasks_delete))
-        .route("/tasks/{id}/to-chat", post(tasks_to_chat))
-        .route("/tasks/{id}/execute", post(tasks_execute))
+        .route("/tasks/:id", put(tasks_update))
+        .route("/tasks/:id", delete(tasks_delete))
+        .route("/tasks/:id/to-chat", post(tasks_to_chat))
+        .route("/tasks/:id/execute", post(tasks_execute))
 
         // ===== 项目中心 =====
         .route("/projects", get(projects_list))
@@ -437,13 +484,13 @@ pub fn api_router(state: AppState) -> Router {
         .route("/projects/catalog", get(projects_catalog))
         .route("/projects/stats", get(projects_stats))
         .route("/projects/by-resource", get(projects_by_resource))
-        .route("/projects/{id}", get(projects_get))
+        .route("/projects/:id", get(projects_get))
         .route("/projects", post(projects_create))
-        .route("/projects/{id}", put(projects_update))
-        .route("/projects/{id}", delete(projects_delete))
-        .route("/projects/{id}/resources", post(projects_bind_resources))
-        .route("/projects/{id}/resources/{rid}", delete(projects_unbind_resource))
-        .route("/projects/{id}/resources/{rid}", put(projects_update_resource_note))
+        .route("/projects/:id", put(projects_update))
+        .route("/projects/:id", delete(projects_delete))
+        .route("/projects/:id/resources", post(projects_bind_resources))
+        .route("/projects/:id/resources/:rid", delete(projects_unbind_resource))
+        .route("/projects/:id/resources/:rid", put(projects_update_resource_note))
 
         // ===== 16模块 AI 增强 =====
         .route("/workbench/ai-overview", get(workbench_ai_overview))
@@ -459,22 +506,22 @@ pub fn api_router(state: AppState) -> Router {
         // ===== 云盘知识库 =====
         .route("/kb/documents", get(kb_documents_list))
         .route("/kb/documents", post(kb_document_create))
-        .route("/kb/documents/{id}", get(kb_document_get))
-        .route("/kb/documents/{id}", put(kb_document_update))
-        .route("/kb/documents/{id}", delete(kb_document_delete))
-        .route("/kb/documents/{id}/analyze", post(kb_document_analyze))
+        .route("/kb/documents/:id", get(kb_document_get))
+        .route("/kb/documents/:id", put(kb_document_update))
+        .route("/kb/documents/:id", delete(kb_document_delete))
+        .route("/kb/documents/:id/analyze", post(kb_document_analyze))
         .route("/kb/batch-analyze", post(kb_batch_analyze))
         .route("/kb/categories", get(kb_categories))
         .route("/kb/tags", get(kb_tags))
         .route("/kb/search", post(kb_search))
-        .route("/kb/documents/{id}/versions", get(kb_doc_versions))
-        .route("/kb/documents/{id}/versions/{ver}", get(kb_doc_version))
-        .route("/kb/documents/{id}/versions", post(kb_doc_create_version))
-        .route("/kb/documents/{id}/versions/compare", post(kb_doc_compare_versions))
-        .route("/kb/documents/{id}/versions/revert", post(kb_doc_revert_version))
-        .route("/kb/documents/{id}/entities", get(kb_doc_entities))
-        .route("/kb/documents/{id}/graph-link", post(kb_doc_graph_link))
-        .route("/kb/documents/{id}/history", get(kb_doc_history))
+        .route("/kb/documents/:id/versions", get(kb_doc_versions))
+        .route("/kb/documents/:id/versions/:ver", get(kb_doc_version))
+        .route("/kb/documents/:id/versions", post(kb_doc_create_version))
+        .route("/kb/documents/:id/versions/compare", post(kb_doc_compare_versions))
+        .route("/kb/documents/:id/versions/revert", post(kb_doc_revert_version))
+        .route("/kb/documents/:id/entities", get(kb_doc_entities))
+        .route("/kb/documents/:id/graph-link", post(kb_doc_graph_link))
+        .route("/kb/documents/:id/history", get(kb_doc_history))
         .route("/kb/stats", get(kb_stats))
         .route("/kb/history", get(kb_history))
 
@@ -492,7 +539,7 @@ pub fn api_router(state: AppState) -> Router {
         .route("/security/status", get(security_status))
         .route("/security/api-keys", get(security_api_keys))
         .route("/security/api-keys", post(security_create_api_key))
-        .route("/security/api-keys/{id}", delete(security_revoke_api_key))
+        .route("/security/api-keys/:id", delete(security_revoke_api_key))
         .route("/security/validate", post(security_validate))
         .route("/security/audit-log", get(security_audit_log))
 

@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mox 低代码配置台 · DSQL + KG</title>
+<link rel="preconnect" href="https://miaoda.feishu.cn">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap">
+<style>
+:root{
+  --ink-950:#0a0e12; --ink-900:#0e1418; --ink-800:#131b21; --ink-700:#1a242c; --ink-600:#23313b;
+  --gold:#c9a15a; --gold-soft:#d9bc85; --gold-deep:#a8823f;
+  --mist:#f2ede2; --mist-dim:#cfc8b8; --steel:#8a9aa6; --steel-dim:#5d6b76;
+  --ok:#6f9e7a; --danger:#c05b5b; --line:rgba(201,161,90,.16); --line-soft:rgba(242,237,226,.08);
+  --font-display:"Noto Serif SC","Songti SC","SimSun",serif;
+  --font-body:"Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font-body);background:var(--ink-950);color:var(--mist);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--gold);color:var(--ink-950)}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-track{background:var(--ink-950)}
+::-webkit-scrollbar-thumb{background:var(--ink-600);border-radius:4px}::-webkit-scrollbar-thumb:hover{background:var(--gold-deep)}
+a{color:inherit;text-decoration:none}button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,textarea,select{font-family:inherit;color:inherit}
+
+/* 布局 */
+.shell{display:flex;min-height:100vh}
+.side{width:236px;flex:none;border-right:1px solid var(--line);background:var(--ink-900);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:12px;padding:22px 24px;border-bottom:1px solid var(--line)}
+.brand .mark{width:38px;height:38px;border:1px solid var(--gold);display:grid;place-items:center;position:relative;flex:none}
+.brand .mark::before,.brand .mark::after{content:"";position:absolute;background:var(--gold)}
+.brand .mark::before{left:7px;right:7px;top:50%;height:1px}.brand .mark::after{top:7px;bottom:7px;left:50%;width:1px}
+.brand .mark i{width:8px;height:8px;background:var(--gold);border-radius:50%;position:relative;z-index:2}
+.brand .t{font-family:var(--font-display);font-weight:700;letter-spacing:.1em}
+.brand .t span{color:var(--gold)}
+.brand .s{font-size:10px;letter-spacing:.2em;color:var(--steel)}
+.nav{flex:1;padding:16px 0;overflow-y:auto}
+.nav a{display:flex;align-items:center;gap:12px;padding:11px 26px;color:var(--mist-dim);font-size:13.5px;letter-spacing:.04em;transition:all .2s;border-left:2px solid transparent;cursor:pointer}
+.nav a:hover{color:var(--gold-soft);background:rgba(201,161,90,.05)}
+.nav a.active{color:var(--gold);border-left-color:var(--gold);background:rgba(201,161,90,.07);font-weight:600}
+.nav a .ic{width:16px;height:16px;flex:none;opacity:.8}
+.side-foot{padding:18px 24px;border-top:1px solid var(--line);font-size:11px;color:var(--steel);line-height:1.8}
+.side-foot b{color:var(--ok);font-weight:600}
+.side-app{padding:14px 20px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.side-app .sa-l{font-size:10px;letter-spacing:.14em;color:var(--steel)}
+.side-app select{background:var(--ink-900);border:1px solid var(--line);color:var(--mist);padding:8px 10px;font-size:12.5px;font-family:Consolas,Menlo,monospace;width:100%}
+.side-app select:focus{outline:none;border-color:var(--gold)}
+.ai-msg{max-width:86%;padding:11px 14px;font-size:13px;line-height:1.7;border-radius:4px;white-space:pre-wrap;word-break:break-word}
+.ai-me{align-self:flex-end;background:var(--ink-900);border:1px solid var(--gold);color:var(--mist)}
+.ai-ai{align-self:flex-start;background:var(--ink-950);border:1px solid var(--line);color:var(--mist)}
+.ai-us{align-self:flex-start;background:var(--ink-950);border:1px dashed var(--line);color:var(--steel);font-size:12.5px}
+.flow-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.flow-node{background:var(--ink-950);border:1px solid var(--line);padding:12px;cursor:pointer;transition:border-color .2s}
+.flow-node:hover{border-color:var(--gold)}
+.fn-phase{font-size:10px;letter-spacing:.14em;color:var(--gold);margin-bottom:4px}
+.fn-code{font-family:Consolas,Menlo,monospace;font-size:10.5px;color:var(--steel)}
+.fn-name{font-size:12.5px;color:var(--mist);margin:4px 0}
+.fn-comp{font-size:10.5px;color:var(--steel-dim)}
+
+.main{flex:1;min-width:0;padding:28px 34px 60px}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px;flex-wrap:wrap;gap:14px}
+.topbar .pt{display:flex;align-items:center;gap:14px}
+.topbar h1{font-family:var(--font-display);font-size:24px;font-weight:700}
+.topbar .sub{font-size:12px;color:var(--steel);letter-spacing:.06em;margin-top:4px}
+.badge{display:inline-flex;align-items:center;gap:7px;font-size:12px;padding:6px 14px;border:1px solid var(--line);color:var(--mist-dim)}
+.badge .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.badge.warn .dot{background:var(--gold)}
+.endpoint{font-size:12px;color:var(--steel)}
+.endpoint b{color:var(--gold-soft);font-weight:600}
+
+/* 面板 */
+.panel{background:var(--ink-800);border:1px solid var(--line);margin-bottom:20px}
+.panel-h{display:flex;justify-content:space-between;align-items:center;padding:15px 22px;border-bottom:1px solid var(--line-soft);flex-wrap:wrap;gap:10px}
+.panel-h h2{font-size:15px;font-weight:700;font-family:var(--font-display);letter-spacing:.03em}
+.panel-h .hint{font-size:11px;color:var(--steel);letter-spacing:.06em}
+.panel-b{padding:22px}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+.kpi{background:var(--ink-800);border:1px solid var(--line);padding:20px 22px}
+.kpi .n{font-family:var(--font-display);font-size:30px;font-weight:700;color:var(--gold-soft)}
+.kpi .l{font-size:11px;letter-spacing:.16em;color:var(--steel);margin-top:5px}
+.kpi .d{font-size:12px;color:var(--mist-dim);margin-top:6px}
+
+/* 表格 */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--ink-700);padding:11px 14px;text-align:left;font-size:11px;letter-spacing:.1em;color:var(--gold-soft);font-weight:600;white-space:nowrap}
+td{padding:11px 14px;border-top:1px solid var(--line-soft);color:var(--mist-dim);vertical-align:middle}
+tr:hover td{background:rgba(201,161,90,.03)}
+.mono{font-family:Consolas,Menlo,monospace;font-size:12px}
+.tag{display:inline-block;padding:2px 9px;font-size:11px;letter-spacing:.05em;border:1px solid var(--line);color:var(--steel)}
+.tag.on{color:var(--ok);border-color:rgba(111,158,122,.4)}
+.tag.draft{color:var(--gold);border-color:rgba(201,161,90,.4)}
+.tag.off{color:var(--steel-dim)}
+
+/* 表单 */
+.f-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.f-grid .full{grid-column:1/-1}
+.field{display:flex;flex-direction:column;gap:7px}
+.field label{font-size:11px;letter-spacing:.12em;color:var(--steel)}
+.field label em{color:var(--gold);font-style:normal}
+.field input,.field select,.field textarea{background:var(--ink-900);border:1px solid var(--line);padding:11px 14px;font-size:13.5px;transition:border-color .2s;width:100%;color:var(--mist)}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gold)}
+.field textarea{resize:vertical;font-family:Consolas,Menlo,monospace;font-size:12.5px;line-height:1.7}
+.field .err{font-size:11px;color:var(--danger);display:none}
+.field.invalid input,.field.invalid textarea{border-color:var(--danger)}
+.field.invalid .err{display:block}
+
+/* 按钮 */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 20px;font-size:13px;letter-spacing:.06em;border:1px solid var(--gold);transition:all .2s;color:var(--gold-soft)}
+.btn:hover{border-color:var(--gold-soft);color:var(--gold-soft)}
+.btn.pri{background:var(--gold);color:var(--ink-950);font-weight:700}
+.btn.pri:hover{background:var(--gold-soft);color:var(--ink-950)}
+.btn.ghost{border-color:var(--steel-dim);color:var(--mist-dim)}
+.btn.ghost:hover{border-color:var(--gold);color:var(--gold-soft)}
+.btn.danger{border-color:rgba(192,91,91,.5);color:var(--danger)}
+.btn.danger:hover{border-color:var(--danger);color:var(--danger)}
+.btn.sm{padding:5px 12px;font-size:12px}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap}
+
+/* 代码块 */
+.code{background:var(--ink-950);border:1px solid var(--line);padding:14px 16px;font-family:Consolas,Menlo,monospace;font-size:12.5px;line-height:1.7;color:var(--mist-dim);white-space:pre-wrap;word-break:break-all;max-height:340px;overflow:auto}
+.code.ok{color:var(--ok)}.code.err{color:var(--danger)}
+.json-pre{max-height:320px;overflow:auto}
+
+/* 图谱 */
+.kg-canvas{background:var(--ink-950);border:1px solid var(--line);height:460px;position:relative;overflow:hidden}
+.kg-canvas svg{width:100%;height:100%}
+.kg-node{cursor:pointer}
+.kg-node text{font-size:11px;fill:var(--mist-dim);text-anchor:middle;pointer-events:none}
+.kg-legend{position:absolute;bottom:12px;left:16px;display:flex;gap:14px;font-size:11px;color:var(--steel)}
+.kg-legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
+
+/* toast */
+.toast-wrap{position:fixed;top:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:10px}
+.toast{background:var(--ink-700);border:1px solid var(--gold);padding:12px 20px;font-size:13.5px;box-shadow:0 14px 40px rgba(0,0,0,.5);display:flex;gap:10px;align-items:center;animation:tin .25s}
+.toast .d{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
+.toast.err .d{background:var(--danger)}
+@keyframes tin{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+.hidden{display:none!important}
+
+/* 状态行 */
+.stat-row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--steel)}
+.stat-row b{color:var(--mist)}
+.spin{width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:rot 0.8s linear infinite;display:inline-block;vertical-align:-2px}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+@media(max-width:900px){
+  .shell{flex-direction:column}
+  .side{width:100%;height:auto;position:static;flex-direction:row;align-items:center;overflow-x:auto}
+  .side .brand{flex:none;border-bottom:none;border-right:1px solid var(--line)}
+  .nav{display:flex;padding:0}.nav a{border-left:none;border-bottom:2px solid transparent;padding:14px 16px;white-space:nowrap}
+  .nav a.active{border-bottom-color:var(--gold)}
+  .side-foot{display:none}
+  .main{padding:20px 16px 50px}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .f-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <!-- 侧栏 -->
+  <aside class="side">
+    <div class="brand">
+      <span class="mark"><i></i></span>
+      <span>
+        <div class="t">mox <span>配置台</span></div>
+        <div class="s">LOWCODE CONSOLE</div>
+      </span>
+    </div>
+    <nav class="nav" id="nav">
+      <a data-tab="overview" class="active"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg>平台概览</a>
+      <a data-tab="sql"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>SQL 定义管理</a>
+      <a data-tab="perm"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>字段级权限</a>
+      <a data-tab="ds"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>数据源管理</a>
+      <a data-tab="kg"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="7" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8 7l7.5-.5M7 8l4 8M16 9l-3 7"/></svg>知识图谱</a>
+      <a data-tab="cache"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>缓存与审计</a>
+      <a data-tab="apps"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>应用管理</a>
+      <a data-tab="ai"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg>AI 智能助手</a>
+      <a data-tab="flow"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h6M14 18h6"/><circle cx="16" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="12" cy="18" r="2"/></svg>业务流程</a>
+    </nav>
+    <div class="side-app">
+      <div class="sa-l">当前应用</div>
+      <select id="appSel" onchange="switchApp(this.value)"><option value="mox">mox</option></select>
+    </div>
+    <div class="side-foot">
+      <div>引擎状态：<b id="footState">连接中…</b></div>
+      <div>DSQL + KG + AI · v2.1.0</div>
+    </div>
+  </aside>
+
+  <!-- 主区 -->
+  <main class="main" id="main"></main>
+</div>
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+/* ============================================================
+   mox 低代码配置台
+   ============================================================ */
+const API = 'http://127.0.0.1:8600';
+let tab = 'overview';
+let sqlPage = 1;
+let currentApp = 'mox';
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function toast(msg,err){const w=document.getElementById('toasts');const el=document.createElement('div');el.className='toast'+(err?' err':'');el.innerHTML='<span class="d"></span><span>'+esc(msg)+'</span>';w.appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300)},3200);}
+async function api(method,path,body){
+  const opt={method,headers:{'Content-Type':'application/json'}};
+  if(body!==undefined)opt.body=JSON.stringify(body);
+  const res=await fetch(API+path,opt);
+  const j=await res.json().catch(()=>({success:false,message:res.statusText}));
+  if(!res.ok&&!j.success){throw new Error(j.message||('HTTP '+res.status));}
+  return j;
+}
+function fmtDuration(ms){return ms<1?'<1ms':ms.toFixed(1)+'ms';}
+function timeStr(ts){if(!ts)return'';return new Date(ts*1000).toLocaleString('zh-CN',{hour12:false});}
+
+/* ---- 路由 ---- */
+function switchTab(t){
+  tab=t;
+  document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('active',a.dataset.tab===t));
+  render();
+}
+async function render(){
+  const main=document.getElementById('main');
+  const m={overview:rOverview,sql:rSql,perm:rPerm,ds:rDs,kg:rKg,cache:rCache,apps:rApps,ai:rAI,flow:rFlow};
+  main.innerHTML='<div style="padding:40px;text-align:center;color:var(--steel)"><span class="spin"></span> 加载中…</div>';
+  try{await m[tab](main);}catch(e){main.innerHTML='<div class="panel"><div class="panel-b" style="color:var(--danger)">加载失败：'+esc(e.message)+'</div></div>';}
+}
+function switchApp(key){
+  currentApp=key||'mox';
+  render();
+}
+function topbar(title,sub){
+  return '<div class="topbar"><div class="pt"><h1>'+title+'</h1><div><div class="sub">'+sub+'</div></div></div>'+
+    '<div class="badge"><span class="dot"></span> mox-server 运行中</div></div>';
+}
+
+/* ---- 概览 ---- */
+async function rOverview(main){
+  const st=await api('GET','/api/stats');
+  const d=st.data;
+  main.innerHTML=topbar('平台概览','mox 低代码平台 · DSQL 动态SQL引擎 + 自研知识图谱');
+  main.innerHTML+='<div class="kpi-grid">'+
+    '<div class="kpi"><div class="n">'+d.dsql_sqls+'</div><div class="l">SQL 定义</div><div class="d">数据库管理的动态 SQL</div></div>'+
+    '<div class="kpi"><div class="n">'+d.datasources.length+'</div><div class="l">数据源</div><div class="d">'+d.datasources.join(' / ')+'</div></div>'+
+    '<div class="kpi"><div class="n">'+d.kg.vertices+'</div><div class="l">图谱顶点</div><div class="d">'+d.kg.edges+' 条关系 · '+Object.keys(d.kg.types).length+' 类实体</div></div>'+
+    '<div class="kpi"><div class="n">'+Math.round((d.cache.hit_rate||0)*100)+'%</div><div class="l">缓存命中</div><div class="d">'+d.cache.hits+' hits / '+d.cache.misses+' misses</div></div></div>';
+  // 最近审计
+  const au=await api('GET','/api/audit?limit=8');
+  main.innerHTML+='<div class="panel"><div class="panel-h"><h2>最近操作审计</h2><span class="hint">全链路可观测 · trace_id 追踪</span></div><div class="panel-b" style="padding:0"><table><thead><tr><th>时间</th><th>操作</th><th>trace_id</th><th>详情</th></tr></thead><tbody>'+
+    (au.data.map(r=>'<tr><td>'+timeStr(r.ts)+'</td><td><span class="tag">'+esc(r.action)+'</span></td><td class="mono">'+esc(r.trace_id)+'</td><td class="mono" style="max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(JSON.stringify(r.detail||''))+ '</td></tr>').join('')||'<tr><td colspan="4" style="text-align:center;color:var(--steel)">暂无审计记录</td></tr>')+
+    '</tbody></table></div></div>';
+  // 引擎说明
+  main.innerHTML+='<div class="panel"><div class="panel-h"><h2>架构要点</h2></div><div class="panel-b"><div class="stat-row" style="line-height:2.2">'+
+    '<div><b>① 数据库管理 SQL：</b>所有业务 SQL 以定义存于元数据库，动态配置 / 发布 / 版本化，零代码改动。</div>'+
+    '<div><b>② 缓存加速：</b>sql_code+参数+角色维度缓存，命中即返回，快于硬编码查询。</div>'+
+    '<div><b>③ 多数据库：</b>中间层适配器驱动（SQLite/MySQL/PostgreSQL/DuckDB），改配置即可切换。</div>'+
+    '<div><b>④ 字段级权限：</b>按角色配置可见字段白名单，结果集过滤 + 敏感脱敏。</div>'+
+    '<div><b>⑤ 自研知识图谱：</b>实体关系可视化、多跳遍历、最短路径，跨行业融合无限扩展。</div></div></div></div>';
+}
+
+/* ---- SQL 管理 ---- */
+let selCode=null, sqlTestOutput='';
+async function rSql(main){
+  const list=await api('GET','/api/admin/sqls');
+  if(!selCode&&list.data.length)selCode=list.data[0].code;
+  main.innerHTML=topbar('SQL 定义管理','所有业务 SQL 在数据库中动态配置 · 模板渲染 + 参数绑定 + 缓存 + 权限');
+  main.innerHTML+='<div class="panel"><div class="panel-h"><h2>SQL 定义列表</h2><div class="btn-row"><button class="btn pri sm" onclick="newSql()">+ 新建定义</button><button class="btn ghost sm" onclick="refreshSql()">刷新</button></div></div>'+
+    '<div class="panel-b" style="padding:0"><table><thead><tr><th>code</th><th>名称</th><th>数据源</th><th>缓存TTL</th><th>状态</th><th>版本</th><th>操作</th></tr></thead><tbody>'+
+    list.data.map(s=>{
+      const stt=s.status==='published'?'on':(s.status==='draft'?'draft':'off');
+      return '<tr'+(selCode===s.code?' style="background:rgba(201,161,90,.06)"':'')+'><td class="mono" style="color:var(--gold-soft)">'+esc(s.code)+'</td><td>'+esc(s.name||'')+'</td><td>'+esc(s.datasource)+'</td><td>'+s.cache_ttl+'s</td><td><span class="tag '+stt+'">'+s.status+'</span></td><td>v'+s.version+'</td>'+
+      '<td><button class="btn sm ghost" onclick="openSql(\''+esc(s.code)+'\')">编辑</button> <button class="btn sm ghost" onclick="testSql(\''+esc(s.code)+'\')">测试</button> <button class="btn sm danger" onclick="delSql(\''+esc(s.code)+'\')">删除</button></td></tr>';
+    }).join('')+'</tbody></table></div></div>';
+  // 编辑区
+  main.innerHTML+='<div id="sqlEditor"></div>';
+  if(selCode)await loadSqlEditor();
+}
+function refreshSql(){render();}
+function newSql(){
+  selCode='__new__';
+  document.getElementById('sqlEditor').innerHTML='';
+  document.getElementById('sqlEditor').innerHTML=sqlEditorHtml({code:'',name:'',template:'SELECT {{id}} AS id',datasource:'default',cache_ttl:0,status:'published',version:1,description:''});
+  document.getElementById('edCode').focus();
+  document.getElementById('sqlEditor').scrollIntoView({behavior:'smooth'});
+}
+async function openSql(code){selCode=code;await loadSqlEditor();}
+async function loadSqlEditor(){
+  const list=await api('GET','/api/admin/sqls');
+  const s=list.data.find(x=>x.code===selCode)||{code:'',name:'',template:'',datasource:'default',cache_ttl:0,status:'published',version:1,description:''};
+  document.getElementById('sqlEditor').innerHTML=sqlEditorHtml(s);
+}
+function sqlEditorHtml(s){
+  return '<div class="panel"><div class="panel-h"><h2>定义编辑器 · <span class="mono">'+esc(selCode)+'</span></h2><span class="hint">模板语法：{{param}} 参数占位 · {% if param %}条件片段{% endif %} · {{limit}} 整数</span></div>'+
+  '<div class="panel-b"><div class="f-grid">'+
+    '<div class="field"><label>SQL 编码 code <em>*</em></label><input id="edCode" value="'+esc(s.code||'')+'" placeholder="唯一标识，如 product_list"></div>'+
+    '<div class="field"><label>名称</label><input id="edName" value="'+esc(s.name||'')+'" placeholder="业务名称"></div>'+
+    '<div class="field"><label>数据源</label><input id="edDs" value="'+esc(s.datasource||'default')+'" placeholder="default"></div>'+
+    '<div class="field"><label>缓存 TTL（秒，0=不缓存）</label><input id="edTtl" type="number" value="'+s.cache_ttl+'" min="0"></div>'+
+    '<div class="field full"><label>SQL 模板 <em>*</em></label><textarea id="edTemplate" rows="7" placeholder="SELECT ... FROM ... WHERE ...">'+esc(s.template||'')+'</textarea></div>'+
+    '<div class="field full"><label>描述</label><input id="edDesc" value="'+esc(s.description||'')+'" placeholder="用途说明"></div>'+
+    '<div class="field full"><label>状态</label><select id="edStatus"><option value="published"'+(s.status==='published'?' selected':'')+'>published（发布）</option><option value="draft"'+(s.status==='draft'?' selected':'')+'>draft（草稿）</option><option value="disabled"'+(s.status==='disabled'?' selected':'')+'>disabled（禁用）</option></select></div>'+
+    '<div class="full btn-row"><button class="btn pri" onclick="saveSql()">保存定义</button>'+
+    '<button class="btn ghost" onclick="runTest(\''+esc(selCode)+'\')">运行测试</button>'+
+    '<button class="btn ghost" onclick="explainSql(\''+esc(selCode)+'\')">查看渲染SQL</button>'+
+    '<button class="btn ghost" onclick="refreshSql()">取消</button></div>'+
+    '<div class="full"><div class="field"><label>测试参数（JSON）</label><input id="edParams" value=\'{}\' placeholder=\'{"category":"软件平台"}\'></div></div>'+
+    '<div class="full"><div id="sqlTestOut"></div></div>'+
+  '</div></div></div>';
+}
+async function saveSql(){
+  const code=document.getElementById('edCode').value.trim();
+  const name=document.getElementById('edName').value.trim();
+  const template=document.getElementById('edTemplate').value;
+  if(!code||!template){toast('code 与模板必填','err');return;}
+  try{
+    const r=await api('POST','/api/admin/sqls',{code,name,template,datasource:document.getElementById('edDs').value.trim()||'default',cache_ttl:parseInt(document.getElementById('edTtl').value||'0'),status:document.getElementById('edStatus').value,description:document.getElementById('edDesc').value.trim()});
+    selCode=r.data.code;toast('SQL 定义已保存 (v'+r.data.version+')');render();
+  }catch(e){toast(e.message,'err');}
+}
+async function delSql(code){
+  if(!confirm('确认删除 SQL 定义 '+code+' ？'))return;
+  try{await api('DELETE','/api/admin/sqls/'+encodeURIComponent(code));toast('已删除 '+code);if(selCode===code)selCode=null;render();}catch(e){toast(e.message,'err');}
+}
+async function runTest(code){
+  const params=parseParams();
+  const out=document.getElementById('sqlTestOut');
+  out.innerHTML='<span class="spin"></span> 执行中…';
+  try{
+    const defs=await api('GET','/api/admin/sqls');
+    const s=defs.data.find(x=>x.code===code)||{name:'',template:'',datasource:'default'};
+    // 先保存当前编辑器内容（作为草稿再测试，避免污染正式定义）
+    const template=document.getElementById('edTemplate')?document.getElementById('edTemplate').value:s.template;
+    // 用服务器 explain 拿渲染SQL，再用临时定义执行
+    const ex=await api('POST','/api/dsql/explain',{sql_code:code,params});
+    await api('POST','/api/admin/sqls',{code,name:s.name||code,template,datasource:s.datasource||'default',cache_ttl:0,status:'published',description:'test'});
+    const res=await api('POST','/api/dsql/execute',{sql_code:code,params,role:'admin',use_cache:false});
+    out.innerHTML='<div class="stat-row" style="margin-bottom:10px"><span>渲染SQL</span><code class="mono" style="color:var(--gold-soft)">'+esc(ex.data.rendered_sql)+'</code></div>'+
+      '<div class="stat-row" style="margin-bottom:10px">'+res.data.length+' 行 · '+fmtDuration(res.duration_ms)+' · trace <span class="mono">'+esc(res.trace_id)+'</span></div>'+
+      '<pre class="code ok">'+esc(JSON.stringify(res.data,null,2)).slice(0,4000)+'</pre>';
+    sqlTestOutput=JSON.stringify(res.data,null,2);
+  }catch(e){out.innerHTML='<pre class="code err">'+esc(e.message)+'</pre>';}
+}
+async function explainSql(code){
+  const params=parseParams();
+  const out=document.getElementById('sqlTestOut');
+  try{
+    const ex=await api('POST','/api/dsql/explain',{sql_code:code,params});
+    out.innerHTML='<div class="stat-row" style="margin-bottom:10px">渲染SQL（未执行）</div><pre class="code">'+esc(ex.data.rendered_sql)+'</pre>'+
+      '<div class="stat-row" style="margin-top:10px">绑定参数：<span class="mono">'+esc(JSON.stringify(ex.data.bind_params))+'</span> · TTL '+ex.data.cache_ttl+'s</div>';
+  }catch(e){out.innerHTML='<pre class="code err">'+esc(e.message)+'</pre>';}
+}
+function parseParams(){
+  const el=document.getElementById('edParams');
+  try{const v=JSON.parse(el.value||'{}');return v;}catch(e){toast('参数 JSON 格式错误','err');return{};}
+}
+
+/* ---- 字段级权限 ---- */
+async function rPerm(main){
+  const perms=await api('GET','/api/admin/permissions');
+  const sqls=await api('GET','/api/admin/sqls');
+  const roles=await api('GET','/api/admin/roles');
+  main.innerHTML=topbar('字段级权限','按 资源(SQL) × 角色 配置可见字段白名单 · 结果集过滤 + 敏感脱敏');
+  main.innerHTML+='<div class="panel"><div class="panel-h"><h2>新增 / 修改权限</h2><span class="hint">allowed_fields 为空表示全部字段可见</span></div><div class="panel-b"><div class="f-grid">'+
+    '<div class="field"><label>资源（SQL code）<em>*</em></label><select id="pmRes">'+sqls.data.map(s=>'<option value="'+esc(s.code)+'">'+esc(s.code)+'</option>').join('')+'</select></div>'+
+    '<div class="field"><label>角色 <em>*</em></label><select id="pmRole">'+roles.data.map(r=>'<option value="'+esc(r.name)+'">'+esc(r.name)+'（'+esc(r.description||'')+'）</option>').join('')+'</select></div>'+
+    '<div class="field full"><label>允许字段（逗号分隔，留空=全部）</label><input id="pmFields" placeholder="id,name,category,image,summary,hot"></div>'+
+    '<div class="full btn-row"><button class="btn pri" onclick="savePerm()">保存权限</button><button class="btn ghost" onclick="clearPerm()">删除该权限</button></div>'+
+  '</div></div></div>';
+  main.innerHTML+='<div class="panel"><div class="panel-h"><h2>已配置权限</h2></div><div class="panel-b" style="padding:0"><table><thead><tr><th>资源</th><th>角色</th><th>允许字段</th></tr></thead><tbody>'+
+    (perms.data.map(p=>'<tr><td class="mono" style="color:var(--gold-soft)">'+esc(p.resource)+'</td><td><span class="tag">'+esc(p.role)+'</span></td><td class="mono">'+esc(p.allowed_fields||'<全部>')+'</td></tr>').join('')||'<tr><td colspan="3" style="text-align:center;color:var(--steel)">暂无配置（默认全部可见）</td></tr>')+
+  '</tbody></table></div></div>';
+}
+async function savePerm(){
+  const resource=document.getElementById('pmRes').value;
+  const role=document.getElementById('pmRole').value;
+  const fields=document.getElementById('pmFields').value.trim();
+  try{await api('POST','/api/admin/permissions',{resource,role,allowed_fields:fields||null});toast('权限已保存：'+role+'@'+resource);render();}catch(e){toast(e.message,'err');}
+}
+async function clearPerm(){
+  const resource=document.getElementById('pmRes').value;
+  const role=document.getElementById('pmRole').value;
+  try{await api('DELETE','/api/admin/permissions',{resource,role});toast('权限已删除');render();}catch(e){toast(e.message,'err');}
+}
+
+/* ---- 数据源 ---- */
+async function rDs(main){
+  const list=await api('GET','/api/admin/datasources');
+  main.innerHTML=topbar('数据源管理','中间层适配器驱动 · 修改配置即可支持所有数据库');
+  main.innerHTML+='<div class="panel"><div class="panel-h"><h2>新增数据源</h2><span class="hint">driver: sqlite / mysql / postgres / duckdb</span></div><div class="panel-b"><div class="f-grid">'+
+    '<div class="field"><label>名称 <em>*</em></label><input id="dsName" placeholder="如 erp_prod"></div>'+
+    '<div class="field"><label>驱动 <em>*</em></label><select id="dsDriver"><option value="sqlite">sqlite</option><option value="mysql">mysql</option><option value="postgres">postgres</option><option value="duckdb">duckdb</option></select></div>'+
+    '<div class="field full"><label>配置（JSON）</label><textarea id="dsCfg" rows="4" placeholder=\'{"dsn":"D:/data/mox.db"}\'></textarea></div>'+
+    '<div class="full btn-row"><button class="btn pri" onclick="addDs()">创建数据源</button></div></div></div></div>';
+  main.innerHTML+='<div class="panel"><div class="panel-h"><h2>数据源列表</h2></div><div class="panel-b" style="padding:0"><table><thead><tr><th>名称</th><th>驱动</th><th>配置</th><th>状态</th><th>操作</th></tr></thead><tbody>'+
+    list.data.map(d=>'<tr><td class="mono" style="color:var(--gold-soft)">'+esc(d.name)+'</td><td><span class="tag">'+esc(d.driver)+'</span></td><td class="mono">'+esc(d.config_json)+'</td><td><span class="tag '+(d.enabled?'on':'off')+'">'+(d.enabled?'启用':'停用')+'</span></td><td><button class="btn sm ghost" onclick="reloadDs(\''+esc(d.name)+'\')">重载</button></td></tr>').join('')+
+  '</tbody></table></div></div>';
+}
+async function addDs(){
+  const name=document.getElementById('dsName').value.trim();
+  const driver=document.getElementById('dsDriver').value;
+  let config={};
+  try{config=JSON.parse(document.getElementById('dsCfg').value||'{}');}catch(e){toast('配置 JSON 格式错误','err');return;}
+  if(!name){toast('名称必填','err');return;}
+  try{await api('POST','/api/admin/datasources',{name,driver,config});toast('数据源已创建：'+name);render();}catch(e){toast(e.message,'err');}
+}
+async function reloadDs(name){
+  try{const r=await api('POST','/api/admin/datasources/'+encodeURIComponent(name)+'/reload');toast('已重载 '+name);}catch(e){toast(e.message,'err');}
+}
+
+/* ---- 知识图谱 ---- */
+let kgSelVid='product:3';
+async function rKg(main){
+  main.innerHTML=topbar('自研知识图谱','mox-kg-core · 实体关系可视化 · 多跳遍历 · 跨行业融合');
+  main.innerHTML+='<div class="panel"><div class="panel-h"><h2>图谱可视化</h2><div class="btn-row"><button class="btn ghost sm" onclick="kgQuery()">刷新</button></div></div><div class="panel-b" style="padding:0"><div class="kg-canvas" id="kgCanvas"><svg id="kgSvg"></svg><div class="kg-legend"><span><i style="background:#c9a15a"></i>产品</span><span><i style="background:#6f9e7a"></i>案例</span><span><i style="background:#5d8aa8"></i>分类/新闻</span></div></div></div></div>';
+  main.innerHTML+='<div class="panel"><div class="panel-h"><h2>图谱查询</h2><span class="hint">DSL: graph · neighbors:&lt;vid&gt; · reachable:&lt;vid&gt;:&lt;hops&gt; · path:&lt;a&gt;|&lt;b&gt;</span></div><div class="panel-b"><div class="stat-row" style="margin-bottom:14px"><span>顶点</span><input id="kgVid" value="'+esc(kgSelVid)+'" class="mono" style="background:var(--ink-900);border:1px solid var(--line);padding:8px 12px;width:220px">'+
+    '<span>方向</span><select id="kgDir" style="background:var(--ink-900);border:1px solid var(--line);padding:8px 12px"><option value="out">out</option><option value="both" selected>both</option><option value="in">in</option></select>'+
+    '<button class="btn sm pri" onclick="kgNeighbors()">邻接遍历</button><button class="btn sm ghost" onclick="kgReach()">多跳可达</button></div>'+
+    '<div id="kgOut"></div></div></div>';
+  main.innerHTML+='<div class="panel"><div class="panel-h"><h2>顶点 / 关系管理</h2></div><div class="panel-b"><div class="f-grid">'+
+    '<div class="field"><label>顶点ID <em>*</em></label><input id="kvId" placeholder="product:6"></div>'+
+    '<div class="field"><label>类型 <em>*</em></label><input id="kvType" placeholder="product"></div>'+
+    '<div class="field"><label>名称 <em>*</em></label><input id="kvLabel" placeholder="标签"></div>'+
+    '<div class="field"><label>行业域 domain</label><input id="kvDomain" placeholder="default"></div>'+
+    '<div class="field full"><label>属性 JSON</label><input id="kvProps" placeholder=\'{"category":"软件平台"}\'></div>'+
+    '<div class="full btn-row"><button class="btn pri" onclick="kgAddV()">保存顶点</button><button class="btn danger" onclick="kgDelV()">删除顶点</button></div>'+
+  '</div></div></div>';
+  await kgDraw();
+}
+async function kgDraw(){
+  const g=await api('GET','/api/kg/graph');
+  const svg=document.getElementById('kgSvg');if(!svg)return;
+  const nodes=g.data.nodes,edges=g.data.edges;
+  const W=940,H=450,cx=W/2,cy=H/2;
+  const colorOf=t=>t==='product'?'#c9a15a':t==='case'?'#6f9e7a':'#5d8aa8';
+  const center=nodes.find(n=>n.type==='product'&&n.props&&n.props.category==='软件平台')||nodes[0];
+  const rest=nodes.filter(n=>n!==center);
+  const pos={};pos[center.vid]={x:cx,y:cy};
+  rest.forEach((n,i)=>{const a=i/rest.length*Math.PI*2-Math.PI/2;pos[n.vid]={x:cx+Math.cos(a)*165,y:cy+Math.sin(a)*150};});
+  let s='';
+  edges.forEach(e=>{const p1=pos[e.source],p2=pos[e.target];if(p1&&p2)s+='<line stroke="rgba(201,161,90,.3)" stroke-width="1" x1="'+p1.x+'" y1="'+p1.y+'" x2="'+p2.x+'" y2="'+p2.y+'"/>';});
+  nodes.forEach(n=>{const p=pos[n.vid];if(!p)return;const c=n.vid===center.vid;const sz=c?24:16;
+    s+='<g class="kg-node" onclick="kgPick(\''+n.vid+'\')"><circle cx="'+p.x+'" cy="'+p.y+'" r="'+sz+'" fill="'+colorOf(n.type)+'" fill-opacity="'+(c?.9:.6)+'" stroke="rgba(201,161,90,.6)"/><text x="'+p.x+'" y="'+(p.y+sz+14)+'">'+esc(n.label)+'</text></g>';});
+  svg.innerHTML=s;svg.setAttribute('viewBox','0 0 '+W+' '+H);
+}
+function kgPick(vid){kgSelVid=vid;const el=document.getElementById('kgVid');if(el)el.value=vid;kgNeighbors();}
+async function kgNeighbors(){
+  const vid=document.getElementById('kgVid').value.trim();
+  const dir=document.getElementById('kgDir').value;
+  const out=document.getElementById('kgOut');
+  try{
+    const r=await api('POST','/api/kg/traverse',{vertex_id:vid,direction:dir});
+    out.innerHTML='<pre class="code ok">'+esc(JSON.stringify(r.data.neighbors,null,2)).slice(0,3000)+'</pre>';
+  }catch(e){out.innerHTML='<pre class="code err">'+esc(e.message)+'</pre>';}
+}
+async function kgReach(){
+  const vid=document.getElementById('kgVid').value.trim();
+  const dir=document.getElementById('kgDir').value;
+  const out=document.getElementById('kgOut');
+  try{
+    const r=await api('POST','/api/kg/query',{dsl:'reachable:'+vid+':2',direction:dir});
+    const rows=r.data.reachable;
+    out.innerHTML='<div class="stat-row" style="margin-bottom:8px">2跳可达 '+rows.length+' 个实体</div><pre class="code ok">'+esc(JSON.stringify(rows.map(x=>x.vid+' ['+x.hops+'跳 via '+x.via+']'),null,2)).slice(0,3000)+'</pre>';
+  }catch(e){out.innerHTML='<pre class="code err">'+esc(e.message)+'</pre>';}
+}
+async function kgQuery(){await kgDraw();toast('图谱已刷新');}
+async function kgAddV(){
+  const vid=document.getElementById('kvId').value.trim();
+  const type=document.getElementById('kvType').value.trim();
+  const label=document.getElementById('kvLabel').value.trim();
+  let props={};try{props=JSON.parse(document.getElementById('kvProps').value||'{}');}catch(e){toast('属性JSON错误','err');return;}
+  if(!vid||!type||!label){toast('顶点ID/类型/名称必填','err');return;}
+  try{await api('POST','/api/admin/kg/vertices',{vid,type,label,props,domain:document.getElementById('kvDomain').value.trim()||'default'});toast('顶点已保存：'+vid);kgDraw();}catch(e){toast(e.message,'err');}
+}
+async function kgDelV(){
+  const vid=document.getElementById('kvId').value.trim();
+  if(!vid||!confirm('确认删除顶点 '+vid+' 及其关系？'))return;
+  try{await api('DELETE','/api/admin/kg/vertices/'+encodeURIComponent(vid));toast('顶点已删除');kgDraw();}catch(e){toast(e.message,'err');}
+}
+
+/* ---- 缓存与审计 ---- */
+async function rCache(main){
+  const st=await api('GET','/api/cache/stats');
+  const au=await api('GET','/api/audit?limit=20');
+  main.innerHTML=topbar('缓存与审计','多级缓存加速 + 全链路可观测');
+  main.innerHTML+='<div class="kpi-grid">'+
+    '<div class="kpi"><div class="n">'+st.data.size+'</div><div class="l">缓存条目</div><div class="d">容量 '+st.data.capacity+'</div></div>'+
+    '<div class="kpi"><div class="n">'+st.data.hits+'</div><div class="l">命中次数</div><div class="d">driver: '+st.data.driver+'</div></div>'+
+    '<div class="kpi"><div class="n">'+st.data.misses+'</div><div class="l">未命中</div><div class="d">TTL '+st.data.default_ttl+'s</div></div>'+
+    '<div class="kpi"><div class="n">'+Math.round(st.data.hit_rate*100)+'%</div><div class="l">命中率</div><div class="d">查询缓存维度：code+params+role</div></div></div>';
+  main.innerHTML+='<div class="panel"><div class="panel-h"><h2>缓存控制</h2></div><div class="panel-b"><div class="btn-row"><button class="btn ghost" onclick="clearCache()">清空全部缓存</button><button class="btn ghost" onclick="render()">刷新</button></div></div></div>';
+  main.innerHTML+='<div class="panel"><div class="panel-h"><h2>审计日志</h2><span class="hint">trace_id 全链路追踪</span></div><div class="panel-b" style="padding:0"><table><thead><tr><th>时间</th><th>操作者</th><th>操作</th><th>trace_id</th><th>详情</th></tr></thead><tbody>'+
+    au.data.map(r=>'<tr><td>'+timeStr(r.ts)+'</td><td>'+esc(r.actor||'-')+'</td><td><span class="tag">'+esc(r.action)+'</span></td><td class="mono">'+esc(r.trace_id)+'</td><td class="mono" style="max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(JSON.stringify(r.detail||''))+ '</td></tr>').join('')+
+  '</tbody></table></div></div>';
+}
+async function clearCache(){
+  try{const r=await api('POST','/api/cache/clear');toast('已清理 '+r.data.cleared+' 条缓存');render();}catch(e){toast(e.message,'err');}
+}
+
+/* ---- 无限发布系统 · 应用管理 ---- */
+function appTag(st){const m={draft:'草稿',prepared:'就绪',published:'已发布',running:'运行中',offline:'已下线'};return '<span class="tag">'+esc(m[st]||st)+'</span>';}
+function appNext(st){const m={draft:['prepared'],prepared:['published','draft'],published:['running','prepared'],running:['offline','prepared'],offline:['draft']};return m[st]||[];}
+async function rApps(main){
+  const apps=await api('GET','/api/apps');
+  const logs=await api('GET','/api/apps/'+currentApp+'/logs');
+  const sel=document.getElementById('appSel');
+  if(sel&&sel.options.length<=1){apps.data.forEach(a=>{const o=document.createElement('option');o.value=a.app_key;o.textContent=a.app_key+' · '+a.name;sel.appendChild(o);});}
+  if(sel){sel.value=currentApp;if(!sel.value)sel.value='mox';}
+  main.innerHTML=topbar('应用管理','无限发布系统 · 多应用创建/发布/下线全生命周期');
+  main.innerHTML+='<div class="panel"><div class="panel-h"><h2>新建应用</h2><span class="hint">app_key 全局唯一，发布后拥有独立 SQL 集与访问入口</span></div><div class="panel-b"><div class="f-grid">'+
+    '<div class="field"><label>应用标识 <em>app_key</em></label><input id="app_key" placeholder="corp_bank / corp_shop"></div>'+
+    '<div class="field"><label>应用名称</label><input id="app_name" placeholder="某某企业官网"></div>'+
+    '<div class="field"><label>类型</label><select id="app_type"><option value="website">企业官网</option><option value="portal">业务门户</option><option value="system">业务系统</option></select></div>'+
+    '<div class="field"><label>域名</label><input id="app_domain" placeholder="www.example.com"></div>'+
+    '<div class="field full"><button class="btn pri" onclick="createApp()">创建应用（草稿）</button></div></div></div></div>';
+  main.innerHTML+='<div class="panel"><div class="panel-h"><h2>应用列表</h2><span class="hint">点击「发布」进入正式运行，发布版本自增并写入审计</span></div><div class="panel-b" style="padding:0"><table><thead><tr><th>应用</th><th>类型</th><th>域名</th><th>状态</th><th>版本</th><th>SQL 数</th><th>操作</th></tr></thead><tbody>'+
+    apps.data.map(a=>'<tr><td><b>'+esc(a.app_key)+'</b><div style="font-size:11px;color:var(--steel)">'+esc(a.name)+'</div></td><td>'+esc(a.type)+'</td><td class="mono">'+esc(a.domain||'-')+'</td><td>'+appTag(a.status)+'</td><td>v'+a.publish_version+'</td><td>'+a.sql_count+'</td><td><div class="btn-row">'+
+      appNext(a.status).map(t=>'<button class="btn sm '+(t==='running'?'pri':'ghost')+'" onclick="appTrans(\''+a.app_key+'\',\''+t+'\')">'+(t==='running'?'发布':'→'+({draft:'草稿',prepared:'就绪',published:'发布',offline:'下线'}[t]||t))+'</button>').join('')+
+      (a.app_key!=='mox'?'<button class="btn sm danger" onclick="delApp(\''+a.app_key+'\')">删除</button>':'')+
+    '</div></td></tr>').join('')+
+  '</tbody></table></div></div>';
+  main.innerHTML+='<div class="panel"><div class="panel-h"><h2>发布日志 · '+esc(currentApp)+'</h2><span class="hint">每次状态流转/发布留痕</span></div><div class="panel-b" style="padding:0"><table><thead><tr><th>时间</th><th>操作</th><th>版本</th><th>操作者</th><th>详情</th></tr></thead><tbody>'+
+    (logs.data.map(l=>'<tr><td>'+timeStr(l.created_at)+'</td><td><span class="tag">'+esc(l.action)+'</span></td><td>v'+l.version+'</td><td>'+esc(l.operator||'-')+'</td><td>'+esc(l.detail||'')+'</td></tr>').join('')||'<tr><td colspan="5" style="text-align:center;color:var(--steel)">暂无发布记录</td></tr>')+
+  '</tbody></table></div></div>';
+}
+async function createApp(){
+  const body={app_key:document.getElementById('app_key').value.trim(),name:document.getElementById('app_name').value.trim(),type:document.getElementById('app_type').value,domain:document.getElementById('app_domain').value.trim()};
+  if(!body.app_key||!body.name){toast('app_key 与名称必填','err');return;}
+  try{await api('POST','/api/apps',body);toast('应用已创建（草稿）');render();}catch(e){toast(e.message,'err');}
+}
+async function appTrans(key,target){
+  try{const r=await api('POST','/api/apps/'+encodeURIComponent(key)+'/transition',{target,operator:'admin'});toast(r.message);render();}catch(e){toast(e.message,'err');}
+}
+async function delApp(key){
+  try{await api('DELETE','/api/apps/'+encodeURIComponent(key));toast('应用已删除');render();}catch(e){toast(e.message,'err');}
+}
+
+/* ---- AI 智能助手 ---- */
+let aiMsgs=[];
+async function rAI(main){
+  main.innerHTML=topbar('AI 智能助手','自然语言 → 动态 SQL · SQL 解释 · 优化建议 · 可一键试运行');
+  main.innerHTML+='<div class="panel"><div class="panel-h"><h2>与 AI 对话</h2><span class="hint">输入业务需求，AI 生成可落库的 DSQL 模板；内置规则引擎零依赖，配置 MOX_LLM_URL 可切换大模型</span></div><div class="panel-b">'+
+    '<div id="aiChat" style="display:flex;flex-direction:column;gap:10px;max-height:300px;overflow:auto;margin-bottom:14px">'+
+      '<div class="ai-msg ai-us">你好，我是 mox 智能助手。试试：<br>· 查询所有产品<br>· 最新新闻前3条<br>· 按行业查案例<br>· 统计产品数量<br>· 解释 SELECT ...<br>· 优化 SELECT * FROM products</div>'+
+    '</div>'+
+    '<div class="btn-row"><input id="aiInput" style="flex:1;background:var(--ink-900);border:1px solid var(--line);padding:11px 14px;color:var(--mist);font-size:13.5px" placeholder="用自然语言描述业务查询，或输入 解释/优化 + SQL" onkeydown="if(event.key===\'Enter\')aiSend()"><button class="btn pri" onclick="aiSend()">发送</button></div></div></div>';
+  main.innerHTML+='<div class="panel"><div class="panel-h"><h2>最近 AI 请求</h2><span class="hint">请求落库可审计</span></div><div class="panel-b" style="padding:0"><table><thead><tr><th>时间</th><th>引擎</th><th>用户输入</th><th>耗时</th></tr></thead><tbody id="aiLogs"></tbody></table></div></div>';
+  try{
+    const logs=await api('GET','/api/ai/requests?limit=6');
+    document.getElementById('aiLogs').innerHTML=logs.data.map(l=>'<tr><td>'+timeStr(l.ts)+'</td><td><span class="tag">'+esc(l.engine)+'</span></td><td class="mono" style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(l.user_message)+'</td><td>'+fmtDuration(l.duration_ms)+'</td></tr>').join('')||'<tr><td colspan="4" style="text-align:center;color:var(--steel)">暂无</td></tr>';
+  }catch(e){}
+}
+function aiPush(cls,html){const c=document.getElementById('aiChat');const d=document.createElement('div');d.className='ai-msg '+cls;d.innerHTML=html;c.appendChild(d);c.scrollTop=c.scrollHeight;}
+async function aiSend(){
+  const inp=document.getElementById('aiInput');
+  const msg=inp.value.trim();if(!msg)return;
+  inp.value='';aiPush('ai-me',esc(msg));
+  try{
+    const r=await api('POST','/api/ai/assistant',{message:msg,app_key:currentApp});
+    const d=r.data;let html='';
+    if(d.sql){html+='<div style="margin:4px 0 2px;color:var(--gold);font-size:11px;letter-spacing:.1em">生成 SQL 模板</div><pre class="code" style="max-height:180px">'+esc(d.sql)+'</pre>';}
+    if(d.sql_explain)html+='<div style="margin:6px 0 2px;color:var(--steel);font-size:11px">'+esc(d.sql_explain)+'</div>';
+    if(d.suggestions&&d.suggestions.length){html+='<div style="margin:6px 0 2px;color:var(--gold);font-size:11px;letter-spacing:.1em">优化建议</div>'+d.suggestions.map(s=>'<div style="font-size:12px;color:var(--mist)">· ['+esc(s.level)+'] '+esc(s.title)+' — '+esc(s.reason)+'</div>').join('');}
+    html+='<div style="margin-top:8px;color:var(--mist);line-height:1.7">'+esc(d.reply)+'</div>';
+    if(d.actions&&d.actions.length){html+='<div class="btn-row" style="margin-top:8px">'+d.actions.map((a,i)=>'<button class="btn sm pri" onclick="aiRun(\''+i+'\',this)">'+esc(a.label)+'</button>').join('')+'</div>';aiRun.__last=d.actions;}
+    aiPush('ai-ai',html);
+  }catch(e){aiPush('ai-ai','<span style="color:var(--danger)">'+esc(e.message)+'</span>');}
+}
+async function aiRun(i,btn){
+  const acts=aiRun.__last||[];const a=acts[i];if(!a)return;
+  btn.disabled=true;
+  try{
+    const r=await api('POST','/api/dsql/execute',{sql_code:a.sql_code,params:a.params||{},app_key:currentApp,role:'admin'});
+    const rows=r.data||[];btn.disabled=false;
+    aiPush('ai-ai','<div style="color:var(--ok);font-size:12px">试运行成功：返回 '+rows.length+' 行 · '+fmtDuration(r.duration_ms)+' · 缓存命中 '+r.cache_hit+'</div>'+
+      '<pre class="code json-pre" style="max-height:200px">'+esc(JSON.stringify(rows.slice(0,5),null,2))+ '</pre>');
+  }catch(e){btn.disabled=false;aiPush('ai-ai','<span style="color:var(--danger)">试运行失败：'+esc(e.message)+'</span>');}
+}
+
+/* ---- 业务流程 ---- */
+async function rFlow(main){
+  const f=await api('GET','/api/process/flow');
+  const d=f.data;
+  main.innerHTML=topbar('业务流程','无限发布系统 · 需求→发布→运行→下线 全链路（9 阶段，输入/处理/输出明确）');
+  main.innerHTML+='<div class="panel"><div class="panel-h"><h2>应用状态机</h2><span class="hint">draft → prepared → published → running → offline</span></div><div class="panel-b"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'+
+    d.app_states.map((s,i)=>'<span class="tag" style="padding:7px 14px">'+esc(s)+'</span>'+(i<d.app_states.length-1?'<span style="color:var(--gold)">→</span>':'')).join('')+
+  '</div></div></div>';
+  main.innerHTML+='<div class="panel"><div class="panel-h"><h2>全链路业务处理流程</h2><span class="hint">每一步：输入 → 处理逻辑 → 输出 → 验收标准</span></div><div class="panel-b">'+
+    '<div class="flow-row">'+d.flow.map(n=>'<div class="flow-node" onclick="flowSel('+n.step+')"><div class="fn-phase">'+esc(n.phase)+'</div><div class="fn-code">'+esc(n.code)+'</div><div class="fn-name">'+esc(n.name)+'</div><div class="fn-comp">'+esc(n.component)+'</div></div>').join('')+'</div>'+
+    '<div id="flowDetail" class="code" style="margin-top:16px">点击上方节点查看处理逻辑明细</div></div></div>';
+}
+function flowSel(step){
+  const f=window.__flow;if(!f)return;
+  const n=f.flow[step];
+  document.getElementById('flowDetail').innerHTML=
+    '【'+esc(n.name)+'】<br><br>阶段：'+esc(n.phase)+'<br>组件：'+esc(n.component)+'<br><br>输入：'+esc(n.input)+'<br><br>处理逻辑：'+esc(n.process)+'<br><br>输出：'+esc(n.output)+'<br><br>验收标准：'+esc(n.check);
+}
+/* 加载流程数据供前端详情 */
+function loadFlowForSel(){
+  api('GET','/api/process/flow').then(f=>{window.__flow=f.data;}).catch(()=>{});
+}
+loadFlowForSel();
+
+/* ---- 启动 ---- */
+document.getElementById('nav').addEventListener('click',e=>{const a=e.target.closest('a');if(a)switchTab(a.dataset.tab);});
+async function init(){
+  try{
+    await api('GET','/api/health');
+    document.getElementById('footState').textContent='运行中';
+    document.getElementById('footState').style.color='var(--ok)';
+  }catch(e){
+    document.getElementById('footState').textContent='未连接';
+    document.getElementById('footState').style.color='var(--danger)';
+  }
+  render();
+}
+init();
+</script>
+</body>
+</html>
