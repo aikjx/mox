@@ -39,8 +39,14 @@ async function loadCurrentById(id, { force = false } = {}) {
     const p = await getProject(id)
     currentProject.value = p
   } catch {
+    // 已保存的项目失效（被删除/不存在）→ 兜底自动选第一个进行中项目，避免落入「无项目」空态
     currentProject.value = null
     try { localStorage.removeItem(STORAGE_KEY) } catch {}
+    const fallback = (projectList.value || []).find((p) => p.status === 'active') || projectList.value[0]
+    if (fallback) {
+      currentProject.value = fallback
+      try { localStorage.setItem(STORAGE_KEY, String(fallback.id)) } catch {}
+    }
   }
   projectReady.value = true
 }

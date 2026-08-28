@@ -81,7 +81,7 @@
           >
             <div class="proj-item-head">
               <span class="proj-dot" :style="{ background: p.color || '#64748b' }"></span>
-              <span class="proj-name">{{ p.name }}</span>
+              <span class="proj-name">{{ p.name || '未命名项目' }}</span>
               <span class="badge" :class="statusClass(p.status)">{{ statusLabel(p.status) }}</span>
             </div>
             <div class="proj-item-meta">
@@ -99,7 +99,7 @@
           <div class="detail-title-wrap">
             <div class="detail-title">
               <span class="proj-dot lg" :style="{ background: current.color }"></span>
-              {{ current.name }}
+              {{ current.name || '未命名项目' }}
               <span class="badge" :class="statusClass(current.status)">{{ statusLabel(current.status) }}</span>
             </div>
             <div class="detail-sub">
@@ -378,7 +378,7 @@ function goModule(path) {
   if (!current.value) return
   // 项目上下文已通过全局 provide 注入，跳转后目标页面自动使用当前项目
   router.push(`/${path}`)
-  ElMessage.info(`已进入「${current.value.name}」项目上下文`)
+  ElMessage.info(`已进入「${current.value.name || '未命名项目'}」项目上下文`)
 }
 
 // ===== 项目 CRUD =====
@@ -409,7 +409,7 @@ async function saveProject() {
   }
 }
 async function removeProject() {
-  await ElMessageBox.confirm(`确定删除项目「${current.value.name}」？资源本身不受影响，仅解除归类。`, '删除项目', { type: 'warning' })
+  await ElMessageBox.confirm(`确定删除项目「${current.value.name || '未命名项目'}」？资源本身不受影响，仅解除归类。`, '删除项目', { type: 'warning' })
   await deleteProject(current.value.id)
   ElMessage.success('已删除')
   current.value = null

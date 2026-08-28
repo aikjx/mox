@@ -10,7 +10,13 @@
       </div>
     </div>
 
-    <div class="page-content">
+    <!-- Tab 切换 -->
+    <el-tabs v-model="activeTab" class="res-tabs" @tab-change="onTabChange">
+      <el-tab-pane label="资源概览" name="overview" />
+      <el-tab-pane label="知识库" name="knowledge" />
+    </el-tabs>
+
+    <div class="page-content" v-show="activeTab === 'overview'">
 
     <div class="grid grid-4 kpi-row">
       <div class="panel kpi" v-for="k in kpis" :key="k.label">
@@ -59,13 +65,32 @@
       </el-table>
     </div>
     </div>
+
+    <!-- 知识库 Tab -->
+    <div v-show="activeTab === 'knowledge'" class="tab-panel">
+      <KnowledgeBasePanel />
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import * as echarts from '@/echarts'
 import { getResources, getResourceHealth } from '@/api'
+import KnowledgeBasePanel from '@/components/KnowledgeBasePanel.vue'
+
+const router = useRouter()
+const route = useRoute()
+
+// Tab 切换
+const activeTab = ref(route.query.tab || 'overview')
+watch(() => route.query.tab, (t) => {
+  if (t) activeTab.value = t
+})
+function onTabChange(tab) {
+  router.replace({ query: { ...route.query, tab } })
+}
 
 const gaugeEl = ref(null)
 const healthEl = ref(null)
@@ -226,6 +251,29 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+/* Tab 样式 */
+.res-tabs {
+  margin: 0 -2px;
+}
+:deep(.res-tabs .el-tabs__header) {
+  margin-bottom: 0;
+  padding: 0 6px;
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border-1);
+}
+:deep(.res-tabs .el-tabs__nav-wrap::after) {
+  display: none;
+}
+:deep(.res-tabs .el-tabs__item) {
+  font-weight: 600;
+  font-size: 14px;
+  height: 44px;
+  line-height: 44px;
+}
+.tab-panel {
+  width: 100%;
 }
 .head {
   display: flex;

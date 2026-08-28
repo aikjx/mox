@@ -32,7 +32,51 @@ python -m xiaobai_voice desktop
 python -m xiaobai_voice selftest
 ```
 
-## 二、打包发布（windowed，零控制台闪退）
+## 二、Rust 核心扩展（xiaobai_core）
+
+核心性能模块由 Rust 实现（PyO3 + abi3 稳定 ABI，兼容 Python 3.9+），纯 Python 实现作为自动回退。
+
+### 2.1 构建
+
+```powershell
+cd projects\xiaobai_voice\xiaobai_core
+cargo build --release
+# 产物：target\release\xiaobai_core.dll
+# 复制到 Python 包目录并重命名为 .pyd：
+copy target\release\xiaobai_core.dll ..\xiaobai_voice\xiaobai_core.pyd
+```
+
+或使用一键构建脚本（自动复制到包目录）：
+
+```powershell
+cd projects\xiaobai_voice
+.\build_rust_core.ps1
+```
+
+### 2.2 覆盖模块
+
+| 模块 | Rust 实现 | Python 回退 | 性能提升 |
+|------|-----------|-------------|---------|
+| `dsp` | 重采样 / SOLA 语速 / 响度归一 / 软限幅 / WAV 编解码 | numpy 实现 | ~5-10× |
+| `config` | YAML deep-merge / 跨平台路径 / 原子写入 | PyYAML | ~2× |
+| `intent` | 正则规则路由 / RBAC 置信度衰减 | Python regex | ~3× |
+| `operators` | 音量 / 应用 / 文件 / 输入算子 + 4 级 RBAC 引擎 | Python 系统调用 | ~1.5× |
+| `models` | 模型注册表 / SHA256 校验 / 本地路径解析 | Python | ~2× |
+
+### 2.3 验证
+
+```python
+from xiaobai_voice.core import dsp, RUST_AVAILABLE, RUST_VERSION
+print(f"Rust available: {RUST_AVAILABLE}, version: {RUST_VERSION}")
+
+# DSP 流水线测试
+samples = [0.0] * 22050  # 1 秒静音
+processed = dsp.process_tts_audio(samples, 22050, 16000, speed=1.0,
+                                    loudness_target_dbfs=-18.0, limiter=True)
+print(f"Output length: {len(processed)}")
+```
+
+## 三、打包发布（windowed，零控制台闪退）
 
 ```powershell
 .\build_exe.ps1 -UseVenv ".\.venv"

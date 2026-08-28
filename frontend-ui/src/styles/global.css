@@ -428,3 +428,99 @@ a {
   animation: skeleton-loading 1.5s ease-in-out infinite;
   border-radius: var(--radius-md);
 }
+
+/* ===== 暗色主题 · 深空夜模式 ===== */
+html.dark {
+  color-scheme: dark;
+
+  /* 品牌色保持不变，但提亮一些 */
+  --brand: #818cf8;
+  --brand-500: #6366f1;
+  --brand-600: #4f46e5;
+  --brand-700: #4338ca;
+  --brand-50: rgba(99, 102, 241, 0.15);
+  --brand-100: rgba(99, 102, 241, 0.25);
+  --brand-accent: #a5b4fc;
+
+  /* 背景 · 深空夜色 */
+  --bg-deep-sky: #0a0e1a;
+  --bg-surface:  #111827;
+  --bg-surface-2:#0f172a;
+  --bg-raised:   #1e293b;
+  --bg-sidebar:  #050912;
+  --bg-sidebar-active: #101827;
+  --bg-sidebar-hover: #0c1424;
+  --bg-input:  #1e293b;
+  --bg-input-focus: #1a2234;
+
+  /* 文本 · 四级灰度 */
+  --text-primary:   #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-tertiary:  #94a3b8;
+  --text-quaternary:#64748b;
+  --text-on-brand:  #ffffff;
+
+  /* 边界 */
+  --border-ghost:   rgba(148, 163, 184, 0.08);
+  --border-soft:    rgba(148, 163, 184, 0.12);
+  --border-normal:  rgba(148, 163, 184, 0.18);
+  --border-focus:   rgba(129, 140, 248, 0.4);
+
+  /* 阴影 · 暗色减弱 */
+  --shadow-ghost:  0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.2);
+  --shadow-sm:     0 1px 2px rgba(0, 0, 0, 0.4),  0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-md:     0 2px 6px rgba(0, 0, 0, 0.4),  0 10px 28px rgba(0, 0, 0, 0.5);
+  --shadow-lg:     0 6px 18px rgba(0, 0, 0, 0.5), 0 24px 56px rgba(0, 0, 0, 0.6);
+  --shadow-ring:   0 0 0 4px rgba(99, 102, 241, 0.15);
+  --shadow-focus:  0 0 0 4px rgba(99, 102, 241, 0.2),  0 2px 8px rgba(99, 102, 241, 0.25);
+  --shadow-inset:  inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+  /* Element Plus 暗色变量覆盖（核心） */
+  --el-bg-color: #111827;
+  --el-bg-color-page: #0a0e1a;
+  --el-bg-color-overlay: #1e293b;
+  --el-text-primary: #f1f5f9;
+  --el-text-regular: #cbd5e1;
+  --el-text-secondary: #94a3b8;
+  --el-text-placeholder: #64748b;
+  --el-border-color: rgba(148, 163, 184, 0.18);
+  --el-border-color-light: rgba(148, 163, 184, 0.12);
+  --el-border-color-lighter: rgba(148, 163, 184, 0.08);
+  --el-border-color-extra-light: rgba(148, 163, 184, 0.05);
+  --el-fill-color: #1e293b;
+  --el-fill-color-light: #1a2234;
+  --el-fill-color-lighter: #151c2c;
+  --el-fill-color-extra-light: #101726;
+  --el-color-primary: #818cf8;
+  --el-color-primary-light-3: #a5b4fc;
+  --el-color-primary-light-5: #c7d2fe;
+  --el-color-primary-light-7: #e0e7ff;
+  --el-color-primary-light-8: #eef2ff;
+  --el-color-primary-light-9: #f5f3ff;
+  --el-color-primary-dark-2: #6366f1;
+  --el-color-success: #34d399;
+  --el-color-warning: #fbbf24;
+  --el-color-danger: #f87171;
+  --el-color-info: #60a5fa;
+  --el-mask-color: rgba(0, 0, 0, 0.6);
+  --el-box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 10px 28px rgba(0, 0, 0, 0.5);
+  --el-box-shadow-light: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
+  --el-header-bg-color: #111827;
+  --el-menu-bg-color: #111827;
+  --el-menu-hover-bg-color: rgba(129, 140, 248, 0.1);
+  --el-menu-active-color: #818cf8;
+}
+
+/* 暗色模式下滚动条 */
+html.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* 暗色模式下骨架屏 */
+html.dark .skeleton {
+  background: linear-gradient(90deg, #1e293b 25%, #273449 50%, #1e293b 75%);
+  background-size: 200% 100%;
+}

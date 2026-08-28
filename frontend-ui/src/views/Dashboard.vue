@@ -3,20 +3,23 @@
     <!-- 欢迎横幅 -->
     <div class="welcome panel">
       <div class="welcome-left">
-        <div class="eyebrow">MOX GRAPH · 璇玑</div>
-        <h1 class="page-title">欢迎回来，<span class="gradient-text">管理员</span></h1>
+        <div class="eyebrow">{{ projectEyebrow }}</div>
+        <h1 class="page-title">
+          <span class="gradient-text">{{ projectName }}</span>
+          <span class="page-sub-title">项目工作台</span>
+        </h1>
         <p class="page-subtitle">
-          璇玑信息知识图谱关联关系系统 · AI 驱动全维突破平台 — 版本 v{{ APP_VERSION }}，全维度业务已就绪
+          {{ projectDesc }}
         </p>
         <div class="quick">
-          <el-button type="primary" @click="go('/operators')">
-            <el-icon><Cpu /></el-icon> 算子执行
+          <el-button type="primary" @click="go('/ai')">
+            <el-icon><ChatDotRound /></el-icon> AI 对话
           </el-button>
           <el-button @click="go('/graph')">
             <el-icon><Share /></el-icon> 图谱探索
           </el-button>
-          <el-button @click="go('/ai')">
-            <el-icon><ChatDotRound /></el-icon> AI 对话
+          <el-button @click="go('/operators')">
+            <el-icon><Cpu /></el-icon> 算子执行
           </el-button>
           <el-button @click="go('/workflow')">
             <el-icon><Operation /></el-icon> 工作流
@@ -24,11 +27,52 @@
         </div>
       </div>
       <div class="welcome-right">
-        <div class="orbit">
-          <div class="orbit-core"><el-icon><MagicStick /></el-icon></div>
-          <span class="orbit-ring r1"></span>
-          <span class="orbit-ring r2"></span>
-          <span class="orbit-ring r3"></span>
+        <!-- AI 快速对话卡片 -->
+        <div class="ai-quick-card">
+          <div class="aiqc-header">
+            <div class="aiqc-title">
+              <div class="aiqc-avatar"><el-icon><MagicStick /></el-icon></div>
+              <div>
+                <div class="aiqc-name">AI 助手</div>
+                <div class="aiqc-status">
+                  <span class="aiqc-dot"></span>
+                  在线 · 随时为您服务
+                </div>
+              </div>
+            </div>
+            <el-button size="small" text type="primary" @click="go('/ai')">完整对话 →</el-button>
+          </div>
+          <div class="aiqc-body">
+            <div class="aiqc-msg ai-msg">
+              <div class="msg-bubble">
+                你好！我是你的 AI 助手 👋<br/>
+                当前是「{{ projectName }}」项目，有什么可以帮你的吗？
+              </div>
+            </div>
+          </div>
+          <div class="aiqc-suggestions">
+            <div
+              v-for="(q, i) in aiQuickSuggestions"
+              :key="i"
+              class="aiqc-sug"
+              @click="sendQuickMsg(q)"
+            >
+              <span class="aiqc-sug-icon">{{ q.icon }}</span>
+              <span class="aiqc-sug-text">{{ q.title }}</span>
+            </div>
+          </div>
+          <div class="aiqc-input">
+            <el-input
+              v-model="aiInput"
+              placeholder="输入你的问题，回车发送…"
+              @keyup.enter="sendAIMsg"
+              clearable
+            >
+              <template #append>
+                <el-button type="primary" :icon="Promotion" @click="sendAIMsg">发送</el-button>
+              </template>
+            </el-input>
+          </div>
         </div>
       </div>
     </div>
@@ -48,6 +92,40 @@
           </div>
         </div>
         <div class="spark" ref="sparkEls"></div>
+      </div>
+    </div>
+
+    <!-- 项目进度 -->
+    <div class="panel card-pad progress-panel">
+      <div class="section-head">
+        <h3 class="section-title">项目进度</h3>
+        <el-button size="small" text type="primary" @click="go('/tasks')">查看全部任务 →</el-button>
+      </div>
+      <div class="phase-progress">
+        <div
+          v-for="(p, i) in projectPhases"
+          :key="p.key"
+          class="phase-item"
+          :class="{ active: p.status === 'active', done: p.status === 'done' }"
+        >
+          <div class="phase-step">
+            <div class="phase-dot" :style="{ background: p.status === 'done' ? '#10b981' : p.status === 'active' ? p.color : '#cbd5e1' }">
+              <el-icon v-if="p.status === 'done'"><Select /></el-icon>
+              <span v-else>{{ i + 1 }}</span>
+            </div>
+            <div class="phase-line" v-if="i < projectPhases.length - 1" :class="p.status === 'done' ? 'done' : ''"></div>
+          </div>
+          <div class="phase-info">
+            <div class="phase-name">{{ p.label }}</div>
+            <div class="phase-desc">{{ p.desc }}</div>
+            <div class="phase-bar-wrap">
+              <div class="phase-bar-bg">
+                <div class="phase-bar-fill" :style="{ width: p.progress + '%', background: p.color }"></div>
+              </div>
+              <span class="phase-pct">{{ p.progress }}%</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -101,13 +179,92 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { Select, CaretTop, CaretBottom, MagicStick, Cpu, Share, ChatDotRound, Operation, List, VideoPlay, TrendCharts, CloseBold, Promotion } from '@element-plus/icons-vue'
 import * as echarts from '@/echarts'
 import { APP_VERSION, NAV_MODULES } from '@/types'
 import { getStatus, getLogs, getHealth } from '@/api'
+import { useProject } from '@/composables/projectContext.js'
 
+const { currentProject } = useProject()
 const router = useRouter()
+
+// 项目上下文
+const projectName = computed(() => currentProject.value?.name || '我的项目')
+const projectEyebrow = computed(() => {
+  const statusMap = { active: '进行中', planning: '规划中', done: '已完成', archived: '已归档' }
+  const status = statusMap[currentProject.value?.status] || '进行中'
+  return `${status} · 璇玑系统 v${APP_VERSION}`
+})
+const projectDesc = computed(() => {
+  if (currentProject.value?.description) return currentProject.value.description
+  return '以项目为根，AI 驱动的知识图谱与全维业务处理平台 — 需求 → 架构 → 开发 → 发布 全流程贯通'
+})
+
+// 项目阶段进度
+const projectPhases = computed(() => {
+  const phase = currentProject.value?.phase || 'requirement'
+  const phases = [
+    { key: 'requirement', label: '需求阶段', desc: '需求采集与分析', color: '#6366f1', progress: 0, status: 'pending' },
+    { key: 'architecture', label: '架构阶段', desc: '知识图谱构建', color: '#06b6d4', progress: 0, status: 'pending' },
+    { key: 'develop', label: '开发阶段', desc: '算子与工作流', color: '#10b981', progress: 0, status: 'pending' },
+    { key: 'release', label: '发布阶段', desc: '监控与优化', color: '#f59e0b', progress: 0, status: 'pending' }
+  ]
+  // 根据当前阶段模拟进度
+  const phaseOrder = ['requirement', 'architecture', 'develop', 'release']
+  const curIdx = phaseOrder.indexOf(phase)
+  return phases.map((p, i) => {
+    if (i < curIdx) {
+      return { ...p, progress: 100, status: 'done' }
+    } else if (i === curIdx) {
+      return { ...p, progress: 65, status: 'active' }
+    }
+    return p
+  })
+})
+
+// AI 快速对话
+const aiInput = ref('')
+const aiQuickSuggestions = computed(() => {
+  const phase = currentProject.value?.phase || 'default'
+  const suggestions = {
+    requirement: [
+      { icon: '📋', title: '帮我梳理需求', prompt: '请帮我系统梳理当前项目的需求，从功能需求、非功能需求、约束条件三个维度进行结构化分析。' },
+      { icon: '🎯', title: '分析用户画像', prompt: '请帮我分析这个项目的目标用户群体，构建用户画像。' },
+      { icon: '🏗️', title: '推荐技术架构', prompt: '基于当前项目的需求特点，请推荐一套合适的技术架构方案。' }
+    ],
+    architecture: [
+      { icon: '🔗', title: '设计图谱Schema', prompt: '请帮我设计知识图谱的Schema，包括实体类型、关系类型和属性定义。' },
+      { icon: '📐', title: '系统架构设计', prompt: '请设计一个完整的系统架构方案，包括分层架构、模块划分和数据流。' },
+      { icon: '🧵', title: '工作流设计', prompt: '请帮我设计核心业务的工作流编排方案。' }
+    ],
+    develop: [
+      { icon: '📊', title: '推荐算子', prompt: '请根据当前项目特点，推荐适合的图计算算子和数据处理算子。' },
+      { icon: '🔗', title: '中心性分析', prompt: '请系统解释知识图谱的度中心性、介数中心性、紧密中心性三种指标。' },
+      { icon: '🧵', title: '编排工作流', prompt: '请帮我编排一个完整的数据处理工作流。' }
+    ],
+    release: [
+      { icon: '📈', title: '性能监控方案', prompt: '请设计系统的监控方案，包括应用性能、业务指标和基础设施监控。' },
+      { icon: '🚀', title: '部署方案', prompt: '请设计生产环境的部署方案，包括容器化、CI/CD和灰度发布。' },
+      { icon: '📝', title: '迭代规划', prompt: '基于当前项目完成情况，请规划下一阶段的迭代重点。' }
+    ]
+  }
+  return suggestions[phase] || suggestions.requirement
+})
+
+function sendQuickMsg(q) {
+  // 跳转到 AI 助手并带上预设问题
+  router.push({ path: '/ai', query: { prompt: encodeURIComponent(q.prompt), from: 'dashboard' } })
+}
+
+function sendAIMsg() {
+  const msg = aiInput.value.trim()
+  if (!msg) return
+  router.push({ path: '/ai', query: { prompt: encodeURIComponent(msg), from: 'dashboard' } })
+  aiInput.value = ''
+}
+
 const stats = ref([
   { label: '算子总数', value: '—', unit: '', icon: 'Cpu', color: '#4f46e5', bg: '#eef2ff', up: true, trend: '8.2%' },
   { label: '知识节点', value: '—', unit: '', icon: 'Share', color: '#06b6d4', bg: '#ecfeff', up: true, trend: '3.1%' },
@@ -320,6 +477,12 @@ onBeforeUnmount(() => {
 .page-subtitle {
   color: rgba(255, 255, 255, 0.88);
 }
+.page-sub-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  margin-left: 10px;
+}
 .quick {
   margin-top: 18px;
   display: flex;
@@ -364,6 +527,144 @@ onBeforeUnmount(() => {
   to { transform: rotate(360deg); }
 }
 
+/* AI 快速对话卡片 */
+.ai-quick-card {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 16px;
+  padding: 16px;
+  width: 340px;
+  color: #fff;
+}
+.aiqc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.aiqc-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.aiqc-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  color: #fff;
+}
+.aiqc-name {
+  font-weight: 700;
+  font-size: 14px;
+}
+.aiqc-status {
+  font-size: 11px;
+  opacity: 0.8;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+}
+.aiqc-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 6px #34d399;
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.aiqc-header .el-button {
+  color: rgba(255, 255, 255, 0.9);
+}
+.aiqc-header .el-button:hover {
+  color: #fff;
+}
+.aiqc-body {
+  margin-bottom: 12px;
+}
+.aiqc-msg {
+  display: flex;
+}
+.aiqc-msg.ai-msg {
+  justify-content: flex-start;
+}
+.msg-bubble {
+  max-width: 100%;
+  padding: 10px 14px;
+  border-radius: 12px 12px 12px 4px;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.aiqc-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.aiqc-sug {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+.aiqc-sug:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateX(2px);
+}
+.aiqc-sug-icon {
+  font-size: 14px;
+}
+.aiqc-sug-text {
+  flex: 1;
+}
+.aiqc-input :deep(.el-input__wrapper) {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  box-shadow: none;
+}
+.aiqc-input :deep(.el-input__inner) {
+  color: #fff;
+}
+.aiqc-input :deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.5);
+}
+.aiqc-input :deep(.el-input-group__append) {
+  background: transparent;
+  border: none;
+  padding: 0 4px 0 0;
+}
+.aiqc-input :deep(.el-button) {
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  border: none;
+  color: #fff;
+}
+.aiqc-input :deep(.el-button:hover) {
+  opacity: 0.9;
+}
+
+/* 响应式：小屏隐藏AI卡片 */
+@media (max-width: 900px) {
+  .welcome-right { display: none; }
+}
+
 .stat {
   display: flex;
   align-items: center;
@@ -406,6 +707,94 @@ onBeforeUnmount(() => {
 }
 .stat-trend.up { color: var(--success); }
 .stat-trend.down { color: var(--danger); }
+
+/* 项目进度 */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.progress-panel {
+  margin-bottom: 0;
+}
+.phase-progress {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .phase-progress { grid-template-columns: repeat(2, 1fr); }
+}
+.phase-item {
+  display: flex;
+  gap: 12px;
+}
+.phase-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+.phase-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+}
+.phase-line {
+  width: 2px;
+  flex: 1;
+  min-height: 20px;
+  background: #e2e8f0;
+  margin-top: 4px;
+}
+.phase-line.done {
+  background: #10b981;
+}
+.phase-info {
+  flex: 1;
+  min-width: 0;
+}
+.phase-name {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-1);
+}
+.phase-desc {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+.phase-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.phase-bar-bg {
+  flex: 1;
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.phase-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+.phase-pct {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  min-width: 32px;
+  text-align: right;
+}
 
 .chart-row { align-items: stretch; }
 .span2 { grid-column: span 2; }

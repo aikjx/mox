@@ -31,6 +31,14 @@
     background: transparent;
     cursor: pointer;
   }
+  /* ===== Q版小白形象层（形象模型 render_mode=xiaobai） ===== */
+  canvas#avatar2d {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    display: none;
+    background: transparent;
+    pointer-events: none;
+  }
   /* ===== 悬浮球 HUD ===== */
   #hud {
     position: absolute; inset: 0;
@@ -186,6 +194,7 @@
 <body>
   <div id="view">
     <canvas id="gl"></canvas>
+    <canvas id="avatar2d"></canvas>
     <div id="hud">
       <div id="stateLabel">待 机</div>
     </div>
@@ -720,6 +729,221 @@ window.__speakFallback = function (text) {
     showToast("浏览器朗读不可用");
   }
 };
+
+/* =====================================================================
+ * 形象模型（AIS-FR14）：视觉参数驱动 + Q版小白小人渲染
+ * Rust 通过 window.__applyAvatar(visual) 推送模型视觉配置
+ * render_mode=xiaobai → 2D Q版小人（头/身体/四肢/发光眼，五状态光晕）
+ * render_mode=topo   → 保持 WebGL 拓扑球
+ * ===================================================================== */
+const c2 = document.getElementById("avatar2d");
+const ctx2 = c2.getContext("2d");
+let AV = null;          // 当前形象视觉配置
+let running2d = false;
+
+window.__applyAvatar = function (visual) {
+  AV = visual || {};
+  const mode = AV.render_mode || "topo";
+  const use2d = mode === "xiaobai";
+  document.getElementById("gl").style.display = use2d ? "none" : "block";
+  c2.style.display = use2d ? "block" : "none";
+  if (use2d) start2dLoop();
+};
+
+function start2dLoop() {
+  if (running2d) return;
+  running2d = true;
+  function frame(t) {
+    if (!AV || (AV.render_mode || "topo") !== "xiaobai") { running2d = false; return; }
+    drawXiaobai(t / 1000);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+/* 颜色工具：#rrggbb → rgba() */
+function hexA(hex, a) {
+  const h = String(hex || "#888888").replace("#", "");
+  const n = parseInt(h.length >= 6 ? h.slice(0, 6) : h + h, 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return `rgba(${r},${g},${b},${a})`;
+}
+function parseHex(hex) {
+  const h = String(hex || "#888888").replace("#", "");
+  const n = parseInt(h.length >= 6 ? h.slice(0, 6) : h + h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function mixHex(h1, h2, k) {
+  const a = parseHex(h1), b = parseHex(h2);
+  return `rgb(${Math.round(a[0] + (b[0] - a[0]) * k)},${Math.round(a[1] + (b[1] - a[1]) * k)},${Math.round(a[2] + (b[2] - a[2]) * k)})`;
+}
+
+/* 绘制 Q版小白小人（三视图设定：大头/短四肢/球形手脚/无嘴/发光眼） */
+function drawXiaobai(t) {
+  const W = c2.width, H = c2.height;
+  if (!W || !H) return;
+  ctx2.clearRect(0, 0, W, H);
+  const v = AV || {};
+  const body = v.body_color || "#f4f4f4";
+  const acc = v.accent || ["#4fa3ff", "#7b5cd6"];
+  const a1 = acc[0] || "#4fa3ff", a2 = acc[1] || "#7b5cd6";
+  const eye = v.eye_glow || "#ffffff";
+  const sc = v.state_colors || {};
+  const stateKey = (cur && cur.mode) || "idle";
+  const stateHex = sc[stateKey] || (STATES[stateKey] ? "#7fd4c1" : "#7fd4c1");
+  const mat = v.material || "matte";
+  const scale = (v.scale || 1) * (1 + 0.025 * Math.sin(t * 2.1));
+  const cx = W / 2, cy = H * 0.52;
+  const R = Math.min(W, H) * 0.175 * scale;      // 头半径
+  const talking = stateKey === "speak";
+  const listening = stateKey === "listen";
+  const breathe = 1 + 0.03 * Math.sin(t * 2.1);
+
+  // 背景粒子轨道（accent 双色）
+  const nP = Math.min(v.particle_count || 120, 300);
+  for (let i = 0; i < nP; i++) {
+    const ph = (i * 2.39996 + t * 0.14) % (Math.PI * 2);
+    const rr = R * (1.7 + 0.5 * Math.sin(i * 1.7 + t * 0.6));
+    const px = cx + Math.cos(ph) * rr, py = cy + Math.sin(ph) * rr * 0.75;
+    const col = i % 2 === 0 ? a1 : a2;
+    ctx2.beginPath();
+    ctx2.arc(px, py, R * 0.028, 0, Math.PI * 2);
+    ctx2.fillStyle = hexA(col, 0.55);
+    ctx2.fill();
+  }
+
+  // 地面阴影
+  ctx2.beginPath();
+  ctx2.ellipse(cx, cy + R * 2.15, R * 1.05, R * 0.2, 0, 0, Math.PI * 2);
+  ctx2.fillStyle = "rgba(0,0,0,0.16)";
+  ctx2.fill();
+
+  // 状态光晕（外圈）
+  const glowR = R * (1.5 + 0.08 * Math.sin(t * 2.5));
+  let g = ctx2.createRadialGradient(cx, cy - R * 0.1, R * 0.4, cx, cy - R * 0.1, glowR);
+  g.addColorStop(0, hexA(stateHex, 0.30));
+  g.addColorStop(1, hexA(stateHex, 0));
+  ctx2.beginPath();
+  ctx2.arc(cx, cy - R * 0.1, glowR, 0, Math.PI * 2);
+  ctx2.fillStyle = g;
+  ctx2.fill();
+
+  ctx2.save();
+  ctx2.translate(cx, cy + R * 1.05 * (1 - 0.02 * breathe));  // 身体中心基准
+  ctx2.scale(breathe, 1 / breathe * 0.97);
+
+  /* 腿（两条短腿） */
+  ctx2.fillStyle = mixHex(body, "#000000", 0.06);
+  roundRect2(ctx2, -R * 0.55, R * 0.95, R * 0.42, R * 0.5, R * 0.18); ctx2.fill();
+  roundRect2(ctx2, R * 0.13, R * 0.95, R * 0.42, R * 0.5, R * 0.18); ctx2.fill();
+  /* 脚球 */
+  ctx2.fillStyle = mixHex(body, "#000000", 0.05);
+  ctx2.beginPath(); ctx2.arc(-R * 0.34, R * 1.42, R * 0.22, 0, Math.PI * 2); ctx2.fill();
+  ctx2.beginPath(); ctx2.arc(R * 0.34, R * 1.42, R * 0.22, 0, Math.PI * 2); ctx2.fill();
+
+  /* 手臂（短手臂 + 球形手，轻微摆动） */
+  const armSwing = Math.sin(t * 1.6) * 0.06;
+  ctx2.fillStyle = mixHex(body, "#000000", 0.04);
+  // 左臂
+  ctx2.save();
+  ctx2.translate(-R * 0.72, R * 0.3);
+  ctx2.rotate(-0.5 + armSwing);
+  roundRect2(ctx2, 0, -R * 0.13, R * 0.42, R * 0.26, R * 0.13); ctx2.fill();
+  ctx2.beginPath(); ctx2.arc(R * 0.4, 0, R * 0.17, 0, Math.PI * 2); ctx2.fill();
+  ctx2.restore();
+  // 右臂
+  ctx2.save();
+  ctx2.translate(R * 0.72, R * 0.3);
+  ctx2.rotate(0.5 - armSwing);
+  roundRect2(ctx2, 0, -R * 0.13, R * 0.42, R * 0.26, R * 0.13); ctx2.fill();
+  ctx2.beginPath(); ctx2.arc(-R * 0.4, 0, R * 0.17, 0, Math.PI * 2); ctx2.fill();
+  ctx2.restore();
+
+  /* 身体（短胖椭圆，渐变 body→accent1 柔边） */
+  let bg = ctx2.createLinearGradient(0, -R * 0.1, 0, R * 1.1);
+  bg.addColorStop(0, mixHex(body, "#ffffff", 0.12));
+  bg.addColorStop(1, mixHex(body, "#000000", 0.12));
+  ctx2.beginPath();
+  ctx2.ellipse(0, R * 0.52, R * 0.78, R * 0.62, 0, 0, Math.PI * 2);
+  ctx2.fillStyle = bg;
+  ctx2.fill();
+
+  /* 头（大头圆球） */
+  const headY = -R * 0.98;
+  let hg = ctx2.createRadialGradient(-R * 0.3, headY - R * 0.35, R * 0.1, 0, headY, R * 1.05);
+  hg.addColorStop(0, mixHex(body, "#ffffff", mat === "gloss" ? 0.28 : 0.14));
+  hg.addColorStop(1, mixHex(body, "#000000", mat === "matte" ? 0.06 : 0.1));
+  ctx2.beginPath();
+  ctx2.arc(0, headY, R, 0, Math.PI * 2);
+  ctx2.fillStyle = hg;
+  ctx2.fill();
+  // 细黑描边（设定图边缘描线）
+  ctx2.lineWidth = Math.max(1, R * 0.018);
+  ctx2.strokeStyle = "rgba(0,0,0,0.22)";
+  ctx2.stroke();
+
+  /* 眼睛（两个圆形凹陷 + 内发光，listen 时放大） */
+  const eyeR = R * (listening ? 0.22 : 0.17);
+  const eyeY = headY - R * 0.02;
+  const eyeDX = R * 0.34;
+  const pulseEye = eyeR * (1 + (talking ? 0.12 * Math.sin(t * 9) : 0.04 * Math.sin(t * 2.2)));
+  for (const s of [-1, 1]) {
+    // 凹陷底色
+    ctx2.beginPath();
+    ctx2.arc(s * eyeDX, eyeY, pulseEye * 1.18, 0, Math.PI * 2);
+    ctx2.fillStyle = mixHex(body, "#000000", 0.16);
+    ctx2.fill();
+    // 发光瞳孔
+    ctx2.shadowBlur = R * 0.22;
+    ctx2.shadowColor = eye;
+    ctx2.beginPath();
+    ctx2.arc(s * eyeDX, eyeY, pulseEye, 0, Math.PI * 2);
+    ctx2.fillStyle = eye;
+    ctx2.fill();
+    ctx2.shadowBlur = 0;
+  }
+
+  /* 高光（材质：gloss 强 / frost 柔 / matte 弱） */
+  const hl = mat === "gloss" ? 0.65 : (mat === "frost" ? 0.4 : 0.22);
+  ctx2.beginPath();
+  ctx2.ellipse(-R * 0.36, headY - R * 0.42, R * 0.26, R * 0.14, -0.6, 0, Math.PI * 2);
+  ctx2.fillStyle = `rgba(255,255,255,${hl})`;
+  ctx2.fill();
+
+  /* 说话波纹（speak 状态，头侧） */
+  if (talking) {
+    ctx2.strokeStyle = hexA(stateHex, 0.75);
+    ctx2.lineWidth = R * 0.04;
+    ctx2.lineCap = "round";
+    for (let i = 0; i < 3; i++) {
+      const wv = R * (0.22 + i * 0.12) * (0.6 + 0.4 * Math.abs(Math.sin(t * 9 - i)));
+      ctx2.beginPath();
+      ctx2.arc(0, headY + R * 0.55, wv, -0.5, 0.5);
+      ctx2.stroke();
+    }
+  }
+
+  ctx2.restore();
+}
+
+/* 圆角矩形路径 */
+function roundRect2(c, x, y, w, h, r) {
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+
+/* avatar2d 尺寸跟随窗口 */
+function resize2d() {
+  c2.width = c2.clientWidth || window.innerWidth;
+  c2.height = c2.clientHeight || window.innerHeight;
+}
+window.addEventListener("resize", resize2d);
+resize2d();
 
 try { window.ipc.postMessage("ready"); } catch (e) {}
 </script>

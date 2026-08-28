@@ -27,7 +27,7 @@
             <div class="pp-opt">
               <span class="pp-dot" :style="{ background: p.color || '#64748b' }"></span>
               <div class="pp-opt-body">
-                <span class="pp-opt-name">{{ p.name }}</span>
+                <span class="pp-opt-name">{{ p.name || '未命名项目' }}</span>
                 <span class="pp-opt-desc" v-if="p.description">{{ p.description }}</span>
               </div>
               <el-tag size="small" effect="plain" type="success">进行中</el-tag>
@@ -44,7 +44,7 @@
             <div class="pp-opt">
               <span class="pp-dot" :style="{ background: p.color || '#64748b' }"></span>
               <div class="pp-opt-body">
-                <span class="pp-opt-name">{{ p.name }}</span>
+                <span class="pp-opt-name">{{ p.name || '未命名项目' }}</span>
                 <span class="pp-opt-desc" v-if="p.description">{{ p.description }}</span>
               </div>
               <el-tag size="small" effect="plain" type="warning">规划中</el-tag>
@@ -61,7 +61,7 @@
             <div class="pp-opt">
               <span class="pp-dot" :style="{ background: p.color || '#64748b' }"></span>
               <div class="pp-opt-body">
-                <span class="pp-opt-name">{{ p.name }}</span>
+                <span class="pp-opt-name">{{ p.name || '未命名项目' }}</span>
                 <span class="pp-opt-desc" v-if="p.description">{{ p.description }}</span>
               </div>
               <el-tag size="small" effect="plain" type="info">已完成</el-tag>
@@ -100,9 +100,9 @@
         :teleported="true"
       >
         <template #reference>
-          <button class="pp-sb-trigger" :title="currentProject?.name || '选择项目…'">
+          <button class="pp-sb-trigger" :title="currentProject ? (currentProject.name || '未命名项目') : '选择项目…'">
             <span class="pp-dot" :style="{ background: color || '#64748b' }"></span>
-            <span v-if="!collapsed" class="pp-sb-name">{{ currentProject?.name || '选择项目' }}</span>
+            <span v-if="!collapsed" class="pp-sb-name">{{ currentProject ? (currentProject.name || '未命名项目') : '选择项目' }}</span>
             <el-icon v-if="!collapsed" class="pp-sb-caret"><ArrowDown /></el-icon>
           </button>
         </template>
@@ -127,7 +127,7 @@
               >
                 <span class="pp-dot" :style="{ background: p.color || '#64748b' }"></span>
                 <div class="pp-sb-opt-body">
-                  <span class="pp-sb-opt-name">{{ p.name }}</span>
+                  <span class="pp-sb-opt-name">{{ p.name || '未命名项目' }}</span>
                   <span v-if="p.description" class="pp-sb-opt-desc">{{ p.description }}</span>
                 </div>
                 <el-tag size="small" :type="statusTagType(p.status)">{{ statusLabel(p.status) }}</el-tag>
@@ -146,11 +146,47 @@
     </template>
 
     <!-- 新建对话框 -->
-    <el-dialog v-model="dlg.open" title="新建项目" width="460px" class="pp-new-dialog" :close-on-click-modal="false">
+    <el-dialog v-model="dlg.open" title="新建项目" width="520px" class="pp-new-dialog" :close-on-click-modal="false">
       <el-form :model="dlg.form" label-width="80px" size="default">
         <el-form-item label="项目名称" required>
-          <el-input v-model="dlg.form.name" placeholder="例如：公司官网需求图谱" maxlength="48" show-word-limit />
+          <el-input
+            v-model="dlg.form.name"
+            placeholder="例如：公司官网需求图谱"
+            maxlength="48"
+            show-word-limit
+            @input="onNameInput"
+          >
+            <template #append>
+              <el-button :loading="aiLoading" @click="aiRecommend" :disabled="!dlg.form.name.trim()">
+                <el-icon><MagicStick /></el-icon> AI 推荐
+              </el-button>
+            </template>
+          </el-input>
         </el-form-item>
+
+        <!-- AI 推荐结果预览 -->
+        <div v-if="aiSuggestion" class="ai-suggestion">
+          <div class="ai-sug-header">
+            <el-icon style="color:#8b5cf6"><MagicStick /></el-icon>
+            <span>AI 推荐配置</span>
+            <el-button size="small" text @click="applyAiSuggestion">应用全部</el-button>
+          </div>
+          <div class="ai-sug-body">
+            <div class="ai-sug-item">
+              <span class="ai-sug-label">项目类型</span>
+              <span class="ai-sug-value">{{ aiSuggestion.categoryLabel }}</span>
+            </div>
+            <div class="ai-sug-item">
+              <span class="ai-sug-label">起始阶段</span>
+              <span class="ai-sug-value">{{ aiSuggestion.phaseLabel }}</span>
+            </div>
+            <div class="ai-sug-item">
+              <span class="ai-sug-label">技术栈</span>
+              <span class="ai-sug-value">{{ aiSuggestion.techStack }}</span>
+            </div>
+          </div>
+        </div>
+
         <el-form-item label="项目类型">
           <el-select v-model="dlg.form.category" style="width: 100%">
             <el-option v-for="c in typeOptions" :key="c.key" :label="c.label" :value="c.key">
@@ -158,12 +194,23 @@
             </el-option>
           </el-select>
         </el-form-item>
+        <el-form-item label="当前阶段">
+          <el-radio-group v-model="dlg.form.phase">
+            <el-radio-button value="requirement">需求</el-radio-button>
+            <el-radio-button value="architecture">架构</el-radio-button>
+            <el-radio-button value="develop">开发</el-radio-button>
+            <el-radio-button value="release">发布</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
         <el-form-item label="状态">
           <el-radio-group v-model="dlg.form.status">
             <el-radio-button value="active">进行中</el-radio-button>
             <el-radio-button value="planning">规划中</el-radio-button>
             <el-radio-button value="done">已完成</el-radio-button>
           </el-radio-group>
+        </el-form-item>
+        <el-form-item label="技术栈">
+          <el-input v-model="dlg.form.tech_stack" placeholder="如：Vue3+SpringBoot+MySQL+Redis" />
         </el-form-item>
         <el-form-item label="描述">
           <el-input v-model="dlg.form.description" type="textarea" :rows="2" maxlength="200" placeholder="一句话说明项目目标…" />
@@ -214,9 +261,58 @@ const color = computed(() => currentProject.value?.color || null)
 const dlg = ref({
   open: false,
   saving: false,
-  form: { name: '', category: 'platform', status: 'active', description: '' }
+  form: { name: '', category: 'platform', status: 'active', phase: 'requirement', description: '', tech_stack: '' }
 })
 const typeOptions = ref([])
+const aiLoading = ref(false)
+const aiSuggestion = ref(null)
+
+// AI 智能推荐：根据项目名推断类型/阶段/技术栈
+const AI_RULES = [
+  { pattern: /知识|图谱|graph|知识图谱|关联/i, category: 'knowledge', phase: 'architecture', tech: 'Neo4j+Elasticsearch+Python+Vue3' },
+  { pattern: /电商|商城|购物|订单|商品/i, category: 'business', phase: 'develop', tech: 'Vue3+SpringBoot+MySQL+Redis+RabbitMQ' },
+  { pattern: /官网|门户|展示|企业站/i, category: 'platform', phase: 'requirement', tech: 'Vue3+Nuxt+Node.js+MySQL' },
+  { pattern: /AI|智能|大模型|llm|gpt|对话/i, category: 'ai', phase: 'develop', tech: 'Python+LangChain+FastAPI+Vue3+向量数据库' },
+  { pattern: /数据|分析|bi|报表|可视化/i, category: 'data', phase: 'architecture', tech: 'Python+Pandas+ECharts+MySQL+ClickHouse' },
+  { pattern: /运维|监控|devops|部署/i, category: 'devops', phase: 'release', tech: 'K8s+Prometheus+Grafana+Jenkins+Docker' },
+  { pattern: /社交|社区|论坛|用户/i, category: 'social', phase: 'requirement', tech: 'Vue3+Node.js+MongoDB+Redis+WebSocket' },
+  { pattern: /教育|学习|课程|培训/i, category: 'education', phase: 'requirement', tech: 'Vue3+SpringBoot+MySQL+Redis+WebRTC' },
+  { pattern: /金融|银行|支付|交易/i, category: 'finance', phase: 'architecture', tech: 'Java+SpringCloud+MySQL+Redis+Kafka' },
+  { pattern: /医疗|医院|健康/i, category: 'medical', phase: 'requirement', tech: 'Vue3+SpringBoot+MySQL+HIS集成' }
+]
+
+function onNameInput() {
+  aiSuggestion.value = null
+}
+
+async function aiRecommend() {
+  const name = dlg.value.form.name.trim()
+  if (!name) return
+  aiLoading.value = true
+  // 模拟 AI 推理延迟
+  await new Promise(r => setTimeout(r, 600))
+  // 规则匹配（前端模拟 AI 推荐）
+  let matched = AI_RULES.find(r => r.pattern.test(name))
+  if (!matched) matched = { category: 'platform', phase: 'requirement', tech: 'Vue3+SpringBoot+MySQL+Redis' }
+  const catLabel = typeOptions.value.find(c => c.key === matched.category)?.label || matched.category
+  const phaseLabels = { requirement: '需求阶段', architecture: '架构阶段', develop: '开发阶段', release: '发布阶段' }
+  aiSuggestion.value = {
+    category: matched.category,
+    categoryLabel: catLabel,
+    phase: matched.phase,
+    phaseLabel: phaseLabels[matched.phase],
+    techStack: matched.tech
+  }
+  aiLoading.value = false
+}
+
+function applyAiSuggestion() {
+  if (!aiSuggestion.value) return
+  dlg.value.form.category = aiSuggestion.value.category
+  dlg.value.form.phase = aiSuggestion.value.phase
+  dlg.value.form.tech_stack = aiSuggestion.value.techStack
+  aiSuggestion.value = null
+}
 
 // 按状态分组
 const activeProjects = computed(() => (projectList.value || []).filter(p => p.status === 'active').sort((a,b) => (a.name||'').localeCompare(b.name||'')))
@@ -234,7 +330,7 @@ async function onChange(id) {
   const p = (projectList.value || []).find(x => x.id === id)
   await setCurrentProject(id)
   if (p) {
-    ElMessage.success(`已切换到项目「${p.name}」`)
+    ElMessage.success(`已切换到项目「${p.name || '未命名项目'}」`)
   }
 }
 function onVisible(v) { if (v) { /* 打开时无需刷新，全局 provide 已预加载 */ } }
@@ -411,6 +507,46 @@ onMounted(async () => {
   border-radius: 14px;
   overflow: hidden;
   box-shadow: 0 28px 64px -20px rgba(15,23,42,0.22), 0 8px 20px -10px rgba(99,102,241,0.22);
+}
+
+/* AI 推荐卡片 */
+.ai-suggestion {
+  margin-bottom: 18px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(99, 102, 241, 0.06));
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.ai-sug-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 13px;
+  color: #7c3aed;
+  margin-bottom: 10px;
+}
+.ai-sug-header .el-button {
+  margin-left: auto;
+  font-size: 12px;
+}
+.ai-sug-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ai-sug-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+}
+.ai-sug-label {
+  color: var(--text-3);
+}
+.ai-sug-value {
+  font-weight: 600;
+  color: var(--text-1);
 }
 </style>
 

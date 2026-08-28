@@ -16,7 +16,15 @@
       </div>
     </div>
 
-    <div class="page-content">
+    <!-- 外层 Tab：编排 / 插件 / MCP / 自动化 -->
+    <el-tabs v-model="outerTab" class="wf-outer-tabs" @tab-change="onOuterTabChange">
+      <el-tab-pane label="流程编排" name="flows" />
+      <el-tab-pane label="插件中心" name="plugins" />
+      <el-tab-pane label="MCP 兼容" name="mcp" />
+      <el-tab-pane label="自动化" name="automation" />
+    </el-tabs>
+
+    <div class="page-content" v-show="outerTab === 'flows'">
 
     <el-tabs v-model="tab">
       <el-tab-pane label="流程图" name="flows">
@@ -168,12 +176,27 @@
       :flow-detail="flowDetail"
       :initial-panel="detailPanel"
     />
+
+    <!-- 插件中心 Tab -->
+    <div v-show="outerTab === 'plugins'" class="tab-panel">
+      <PluginsPanel />
+    </div>
+
+    <!-- MCP 兼容 Tab -->
+    <div v-show="outerTab === 'mcp'" class="tab-panel">
+      <McpPanel />
+    </div>
+
+    <!-- 自动化 Tab -->
+    <div v-show="outerTab === 'automation'" class="tab-panel">
+      <AutomationPanel />
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onBeforeUnmount, watch, defineAsyncComponent } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { VideoCamera, Document, Promotion } from '@element-plus/icons-vue'
 import { useProject } from '@/composables/projectContext.js'
@@ -194,6 +217,21 @@ import {
 import FlowDetailDialog from '@/components/FlowDetailDialog.vue'
 
 const router = useRouter()
+const route = useRoute()
+
+// 外层大 Tab：编排 / 插件 / MCP / 自动化
+const outerTab = ref(route.query.tab || 'flows')
+watch(() => route.query.tab, (t) => {
+  if (t) outerTab.value = t
+})
+function onOuterTabChange(tab) {
+  router.replace({ query: { ...route.query, tab } })
+}
+
+// 懒加载子面板
+const PluginsPanel = defineAsyncComponent(() => import('@/components/PluginsPanel.vue'))
+const McpPanel = defineAsyncComponent(() => import('@/components/McpPanel.vue'))
+const AutomationPanel = defineAsyncComponent(() => import('@/components/AutomationPanel.vue'))
 
 // AI生成工作流：跳转到AI助手，带上工作流上下文
 function goAIGenerate() {
@@ -411,6 +449,29 @@ onMounted(loadAll)
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+/* 外层 Tab 样式 */
+.wf-outer-tabs {
+  margin: 0 -2px;
+}
+:deep(.wf-outer-tabs .el-tabs__header) {
+  margin-bottom: 0;
+  padding: 0 6px;
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border-1);
+}
+:deep(.wf-outer-tabs .el-tabs__nav-wrap::after) {
+  display: none;
+}
+:deep(.wf-outer-tabs .el-tabs__item) {
+  font-weight: 600;
+  font-size: 14px;
+  height: 44px;
+  line-height: 44px;
+}
+.tab-panel {
+  width: 100%;
 }
 .head {
   display: flex;

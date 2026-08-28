@@ -60,57 +60,83 @@ export const AI_CAPABILITIES = [
   { key: 'bpmn_engine', label: 'BPMN 引擎' }
 ]
 
-// 顶部菜单模块（以知识图谱为核心，算子为辅助工具）
+// 一级导航模块（核心域 · 约 10 项 · 3 组）
+// 设计原则：80% 用户 80% 时间用的功能放侧边栏
+// 二级/三级功能通过页面内 Tabs 和全局搜索(Ctrl+K) 访问
 export const NAV_MODULES = [
-  { key: 'dashboard', label: '璇玑门户', icon: 'Odometer', path: '/dashboard', color: '#4f46e5', bg: '#eef2ff' },
-  { key: 'projects', label: '项目中心', icon: 'Folder', path: '/projects', color: '#0d9488', bg: '#ccfbf1' },
-  { key: 'graph', label: '璇玑图谱', icon: 'Share', path: '/graph', color: '#06b6d4', bg: '#ecfeff' },
-  { key: 'operators', label: '算子引擎', icon: 'Cpu', path: '/operators', color: '#6366f1', bg: '#eef2ff' },
-  { key: 'expert-center', label: '专家联盟', icon: 'User', path: '/expert-center', color: '#7c3aed', bg: '#ede9fe' },
-  { key: 'ai', label: 'AI 助手', icon: 'ChatDotRound', path: '/ai', color: '#ec4899', bg: '#fce7f3' },
+  // —— 项目域 ——
+  { key: 'dashboard', label: '项目工作台', icon: 'Odometer', path: '/dashboard', color: '#4f46e5', bg: '#eef2ff' },
   { key: 'tasks', label: '任务管理', icon: 'List', path: '/tasks', color: '#0ea5e9', bg: '#e0f2fe' },
   { key: 'resources', label: '资源管理', icon: 'Coin', path: '/resources', color: '#10b981', bg: '#ecfdf5' },
-  { key: 'workflow', label: '工作流编排', icon: 'Operation', path: '/workflow', color: '#f59e0b', bg: '#fffbeb' },
-  { key: 'plugins', label: 'AI 插件', icon: 'Connection', path: '/plugins', color: '#8b5cf6', bg: '#f3e8ff' },
-  { key: 'browser', label: '浏览器自动化', icon: 'Monitor', path: '/browser', color: '#0ea5e9', bg: '#e0f2fe' },
-  { key: 'monitor', label: '系统监控', icon: 'DataLine', path: '/monitor', color: '#ef4444', bg: '#fef2f2' },
-  { key: 'docs', label: 'API 文档', icon: 'Document', path: '/docs', color: '#14b8a6', bg: '#ccfbf1' },
+  // —— 核心能力 ——
+  { key: 'ai', label: 'AI 助手', icon: 'ChatDotRound', path: '/ai', color: '#ec4899', bg: '#fce7f3' },
+  { key: 'graph', label: '知识图谱', icon: 'Share', path: '/graph', color: '#06b6d4', bg: '#ecfeff' },
+  { key: 'operators', label: '算子引擎', icon: 'Cpu', path: '/operators', color: '#6366f1', bg: '#eef2ff' },
+  { key: 'workflow', label: '工作流', icon: 'Operation', path: '/workflow', color: '#f59e0b', bg: '#fffbeb' },
+  // —— 扩展 ——
+  { key: 'expert-center', label: '专家联盟', icon: 'User', path: '/expert-center', color: '#7c3aed', bg: '#ede9fe' },
   { key: 'market', label: '算子商城', icon: 'Shop', path: '/market', color: '#f43f5e', bg: '#ffe4e6' },
-  { key: 'mcp', label: 'MCP 兼容', icon: 'Link', path: '/mcp', color: '#8b5cf6', bg: '#f3e8ff' },
-  { key: 'automation', label: 'AI 自动化', icon: 'MagicStick', path: '/automation', color: '#f97316', bg: '#ffedd5' },
-  { key: 'caomei', label: '需求编译', icon: 'Tickets', path: '/caomei', color: '#16a34a', bg: '#dcfce7' },
-  { key: 'algolab', label: '算法实验室', icon: 'TrendCharts', path: '/algolab', color: '#d97706', bg: '#fef3c7' },
-  { key: 'infinite-optimizer', label: '无穷维度优化', icon: 'Compass', path: '/infinite-optimizer', color: '#0e7490', bg: '#ecfeff' },
-  { key: 'mox-fusion', label: '全维融合', icon: 'Aim', path: '/mox-fusion', color: '#7c3aed', bg: '#ede9fe' },
-  { key: 'knowledge-base', label: '云盘知识库', icon: 'Collection', path: '/knowledge-base', color: '#0d9488', bg: '#ccfbf1' },
-  { key: 'llm-config', label: '大模型配置', icon: 'Setting', path: '/llm-config', color: '#6366f1', bg: '#eef2ff' },
-  { key: 'expert-orchestrator', label: 'V2编排引擎', icon: 'Promotion', path: '/expert-orchestrator', color: '#ec4899', bg: '#fce7f3' },
-  { key: 'admin', label: '系统管理', icon: 'Lock', path: '/admin', color: '#475569', bg: '#f1f5f9' }
+  { key: 'admin', label: '系统设置', icon: 'Setting', path: '/admin', color: '#475569', bg: '#f1f5f9' }
 ]
 
-// 璇玑专家联盟 5 阶段生命周期导航（以项目为根 · 按项目开发流程分组）
-// ┌─ 📌 项目总览 ────────────────────────────────────────────────┐
-// │ dashboard · projects · tasks · resources                     │
-// ├─ 📋 需求阶段（S1）───────────────────────────────────────────┤
-// │ ai(项目对话) · caomei(需求编译) · knowledge-base(知识库)    │
-// │ llm-config(大模型配置)                                        │
-// ├─ 🏗️ 架构阶段（S2）───────────────────────────────────────────┤
-// │ graph(知识图谱) · expert-center(专家联盟) · mox-fusion(融合)│
-// │ expert-enterprise(企业专家) · expert-orchestrator(V2编排)   │
-// ├─ ⚙️ 开发阶段（S3-S4）────────────────────────────────────────┤
-// │ operators(算子) · workflow(工作流) · plugins(插件) · mcp    │
-// │ automation(自动化) · browser(浏览器自动化) · algolab(算法)  │
-// │ infinite-optimizer(无穷优化) · botCenter(机器人)             │
-// ├─ 🚀 发布阶段（S5）───────────────────────────────────────────┤
-// │ monitor(监控) · docs(API文档) · admin(系统管理)              │
-// └───────────────────────────────────────────────────────────────┘
+// 侧边栏导航分组（3 大域）
 export const NAV_GROUPS = [
-  { key: 'overview',   label: '📌 项目总览',   order: 0, items: ['dashboard', 'projects', 'tasks', 'resources'] },
-  { key: 's1-require', label: '📋 需求阶段',   order: 1, items: ['ai', 'caomei', 'knowledge-base', 'llm-config'] },
-  { key: 's2-arch',    label: '🏗️ 架构阶段',   order: 2, items: ['graph', 'expert-center', 'mox-fusion', 'expert-enterprise', 'expert-orchestrator'] },
-  { key: 's3-dev',     label: '⚙️ 开发阶段',   order: 3, items: ['operators', 'workflow', 'plugins', 'mcp', 'automation', 'browser', 'algolab', 'infinite-optimizer', 'botCenter'] },
-  { key: 's4-release', label: '🚀 发布阶段',   order: 4, items: ['monitor', 'docs', 'admin'] },
-  { key: 'market',     label: '🛒 资源商城',   order: 5, items: ['market'] }
+  { key: 'project',  label: '项目域',   order: 0, items: ['dashboard', 'tasks', 'resources'] },
+  { key: 'core',     label: '核心能力', order: 1, items: ['ai', 'graph', 'operators', 'workflow'] },
+  { key: 'extend',   label: '扩展',     order: 2, items: ['expert-center', 'market', 'admin'] }
+]
+
+// 二级子模块映射（一级模块 → 页面内 Tabs 子模块）
+// 这些模块不再出现在侧边栏，但可以通过页面内 Tabs 或全局搜索访问
+export const SUB_MODULES = {
+  // 项目工作台内的子视图
+  dashboard: [
+    { key: 'overview', label: '概览', path: '/dashboard' },
+    { key: 'projects', label: '项目列表', path: '/projects' }
+  ],
+  // AI 助手内的子功能
+  ai: [
+    { key: 'chat', label: '对话', path: '/ai' },
+    { key: 'caomei', label: '需求编译', path: '/caomei' }
+  ],
+  // 知识图谱内的子功能
+  graph: [
+    { key: 'explorer', label: '图谱探索', path: '/graph' },
+    { key: 'fusion', label: '全维融合', path: '/mox-fusion' }
+  ],
+  // 工作流内的子功能
+  workflow: [
+    { key: 'editor', label: '编排', path: '/workflow' },
+    { key: 'plugins', label: '插件', path: '/plugins' },
+    { key: 'mcp', label: 'MCP', path: '/mcp' },
+    { key: 'automation', label: '自动化', path: '/automation' }
+  ],
+  // 专家联盟内的子功能
+  'expert-center': [
+    { key: 'experts', label: '专家列表', path: '/expert-center' },
+    { key: 'enterprise', label: '企业管理', path: '/expert-enterprise' },
+    { key: 'orchestrator', label: '编排引擎', path: '/expert-orchestrator' }
+  ],
+  // 资源管理内的子功能
+  resources: [
+    { key: 'all', label: '全部资源', path: '/resources' },
+    { key: 'knowledge', label: '知识库', path: '/knowledge-base' }
+  ],
+  // 系统设置内的子功能
+  admin: [
+    { key: 'system', label: '系统管理', path: '/admin' },
+    { key: 'monitor', label: '系统监控', path: '/monitor' },
+    { key: 'docs', label: 'API 文档', path: '/docs' },
+    { key: 'llm', label: '大模型配置', path: '/llm-config' }
+  ]
+}
+
+// 三级功能（高级/低频，仅通过全局搜索和 AI 对话访问）
+export const HIDDEN_MODULES = [
+  { key: 'browser', label: '浏览器自动化', icon: 'Monitor', path: '/browser', color: '#0ea5e9', bg: '#e0f2fe' },
+  { key: 'algolab', label: '算法实验室', icon: 'TrendCharts', path: '/algolab', color: '#d97706', bg: '#fef3c7' },
+  { key: 'infinite-optimizer', label: '无穷维度优化', icon: 'Compass', path: '/infinite-optimizer', color: '#0e7490', bg: '#ecfeff' },
+  { key: 'botCenter', label: '机器人中心', icon: 'Cpu', path: '/botCenter', color: '#8b5cf6', bg: '#f3e8ff' }
 ]
 
 // 5 阶段流程（与 PhasePipeline 对齐 · 按项目开发流程）

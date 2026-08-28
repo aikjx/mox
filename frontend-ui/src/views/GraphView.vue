@@ -34,6 +34,42 @@
       </div>
     </div>
 
+    <!-- 快捷分析入口 -->
+    <div class="quick-actions">
+      <div class="qa-card" @click="runQuickAnalysis('centrality')">
+        <div class="qa-icon" style="background:#eef2ff;color:#4f46e5">🎯</div>
+        <div class="qa-info">
+          <div class="qa-title">中心性分析</div>
+          <div class="qa-desc">识别关键节点</div>
+        </div>
+        <el-icon class="qa-arrow"><ArrowRight /></el-icon>
+      </div>
+      <div class="qa-card" @click="runQuickAnalysis('community')">
+        <div class="qa-icon" style="background:#ecfeff;color:#06b6d4">🧩</div>
+        <div class="qa-info">
+          <div class="qa-title">社区发现</div>
+          <div class="qa-desc">自动聚类分组</div>
+        </div>
+        <el-icon class="qa-arrow"><ArrowRight /></el-icon>
+      </div>
+      <div class="qa-card" @click="runQuickAnalysis('path')">
+        <div class="qa-icon" style="background:#ecfdf5;color:#10b981">🛤️</div>
+        <div class="qa-info">
+          <div class="qa-title">最短路径</div>
+          <div class="qa-desc">两节点关联分析</div>
+        </div>
+        <el-icon class="qa-arrow"><ArrowRight /></el-icon>
+      </div>
+      <div class="qa-card" @click="goAIAnalysis">
+        <div class="qa-icon" style="background:#fce7f3;color:#ec4899">🤖</div>
+        <div class="qa-info">
+          <div class="qa-title">AI 深度分析</div>
+          <div class="qa-desc">生成完整报告</div>
+        </div>
+        <el-icon class="qa-arrow"><ArrowRight /></el-icon>
+      </div>
+    </div>
+
     <div class="grid graph-grid">
       <div class="panel graph-box">
         <h3 class="section-title">
@@ -249,6 +285,16 @@ const router = useRouter()
 // AI分析图谱：跳转到AI助手，带上图谱上下文
 function goAIAnalysis() {
   router.push({ path: '/ai', query: { source: 'graph', action: 'analyze' } })
+}
+
+// 快捷分析入口
+function runQuickAnalysis(type) {
+  const actions = {
+    centrality: '请对当前知识图谱进行中心性分析，包括度中心性、介数中心性、紧密中心性，并识别Top 10关键节点。',
+    community: '请对当前知识图谱进行社区发现分析，识别主要社群、各社区的核心节点和特征，并给出可视化建议。',
+    path: '请帮我分析图谱中两个节点之间的最短路径和关联关系。（请先选择起始节点和目标节点）'
+  }
+  router.push({ path: '/ai', query: { source: 'graph', action: type, prompt: encodeURIComponent(actions[type]) } })
 }
 
 let fg = null
@@ -591,6 +637,65 @@ onBeforeUnmount(() => {
 .stat-value {
   font-size: 22px;
   font-weight: 700;
+}
+
+/* 快捷分析入口 */
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+@media (max-width: 900px) {
+  .quick-actions { grid-template-columns: repeat(2, 1fr); }
+}
+.qa-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-1);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.qa-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+  border-color: var(--brand);
+}
+.qa-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.qa-info {
+  flex: 1;
+  min-width: 0;
+}
+.qa-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-1);
+}
+.qa-desc {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+.qa-arrow {
+  color: var(--text-3);
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: transform var(--transition);
+}
+.qa-card:hover .qa-arrow {
+  color: var(--brand);
+  transform: translateX(3px);
 }
 .stat-label {
   font-size: 13px;

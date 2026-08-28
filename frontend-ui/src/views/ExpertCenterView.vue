@@ -52,7 +52,14 @@
       </div>
     </div>
 
-    <div class="page-content">
+    <!-- Tab 切换 -->
+    <el-tabs v-model="activeTab" class="expert-tabs" @tab-change="onTabChange">
+      <el-tab-pane label="联盟总览" name="overview" />
+      <el-tab-pane label="企业管理" name="enterprise" />
+      <el-tab-pane label="编排引擎" name="orchestrator" />
+    </el-tabs>
+
+    <div class="page-content" v-show="activeTab === 'overview'">
     <!-- 联盟 φ 三栏布局（左·中·右）· 黄金比例 0.382 : 0.618 ，中再分 0.618 vs 右 0.382 -->
     <div class="phi-shell">
 
@@ -697,12 +704,22 @@
         <el-button type="primary" :loading="registering" @click="doRegister">注册</el-button>
       </template>
     </el-dialog>
+
+    <!-- 企业管理 Tab -->
+    <div v-show="activeTab === 'enterprise'" class="tab-panel">
+      <ExpertEnterprisePanel />
+    </div>
+
+    <!-- 编排引擎 Tab -->
+    <div v-show="activeTab === 'orchestrator'" class="tab-panel">
+      <ExpertOrchestratorPanel />
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   Plus, Refresh, Close, Promotion, ChatDotRound, MagicStick,
@@ -714,8 +731,20 @@ import {
   getExpertMetrics, getExpertOverview
 } from '@/api'
 import { useProject } from '@/composables/projectContext.js'
+import ExpertEnterprisePanel from '@/components/ExpertEnterprisePanel.vue'
+import ExpertOrchestratorPanel from '@/components/ExpertOrchestratorPanel.vue'
 
 const router = useRouter()
+const route = useRoute()
+
+// Tab 切换：联盟总览 / 企业管理 / 编排引擎
+const activeTab = ref(route.query.tab || 'overview')
+watch(() => route.query.tab, (t) => {
+  if (t) activeTab.value = t
+})
+function onTabChange(tab) {
+  router.replace({ query: { ...route.query, tab } })
+}
 // 项目上下文（来自顶栏 ProjectPicker，共享状态）
 const { currentProject, ensureProjectContext, createAndSelect } = useProject()
 
@@ -1567,6 +1596,29 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 14px;
   height: 100%;
+}
+/* Tab 样式 */
+.expert-tabs {
+  margin: 0 -2px;
+}
+:deep(.expert-tabs .el-tabs__header) {
+  margin-bottom: 0;
+  padding: 0 6px;
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border-1);
+}
+:deep(.expert-tabs .el-tabs__nav-wrap::after) {
+  display: none;
+}
+:deep(.expert-tabs .el-tabs__item) {
+  font-weight: 600;
+  font-size: 14px;
+  height: 44px;
+  line-height: 44px;
+}
+.tab-panel {
+  width: 100%;
 }
 .head {
   display: flex;

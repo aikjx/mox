@@ -5,6 +5,11 @@
         <h2 class="page-title">算法分析实验室 · AlgoLab</h2>
         <p class="page-subtitle">粘贴代码 → 自动识别算法类型并生成结构化流程图；另附算法类型目录与空间光速螺旋模型分析</p>
       </div>
+      <div class="page-header-actions">
+        <el-button type="primary" @click="goAIOptimize">
+          <el-icon><Promotion /></el-icon> AI优化算法
+        </el-button>
+      </div>
     </div>
 
     <div class="page-content">
@@ -132,10 +137,18 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Cpu, Right } from '@element-plus/icons-vue'
+import { Cpu, Right, Promotion } from '@element-plus/icons-vue'
 import { useProject } from '@/composables/projectContext.js'
 import { analyzeAlgorithm, getAlgorithmTypes, analyzeSpiral } from '@/api'
+
+const router = useRouter()
+
+// AI优化算法：跳转到AI助手，带上算法上下文
+function goAIOptimize() {
+  router.push({ path: '/ai', query: { source: 'algolab', action: 'optimize' } })
+}
 
 const tab = ref('analyze')
 const code = ref('')

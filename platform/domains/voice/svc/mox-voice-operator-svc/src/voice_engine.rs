@@ -168,7 +168,7 @@ fn resample_to_i16(input: &[f32], from_rate: u32, to_rate: u32) -> Vec<i16> {
 pub struct VoiceEngine {
     recognizer: sherpa_onnx::OnlineRecognizer,
     tts: sherpa_onnx::OfflineTts,
-    tts_sid: i32,
+    tts_sid: std::sync::atomic::AtomicI32,
     /// 模型根目录
     pub model_root: PathBuf,
 }
@@ -261,8 +261,8 @@ impl VoiceEngine {
         };
 
         // 中文女声 sid：zf_xiaobei=45 / xiaoni=46 / xiaoxiao=47 / xiaoyi=48（kokoro-multi-lang 官方映射）。
-        // 默认 45（小北，温柔女声）；可用环境变量 XIAOBAI_TTS_SID 覆盖。
-        let tts_sid: i32 = std::env::var("XIAOBAI_TTS_SID")
+        // 默认 45（小北，温柔女声）；可用环境变量 XIAOBAI_TTS_SID 覆盖；可被形象模型运行时切换。
+        let tts_sid = std::env::var("XIAOBAI_TTS_SID")
             .ok()
             .and_then(|v| v.parse().ok())
             .unwrap_or(45);
@@ -270,9 +270,21 @@ impl VoiceEngine {
         Ok(Self {
             recognizer,
             tts,
-            tts_sid,
+            tts_sid: std::sync::atomic::AtomicI32::new(tts_sid),
             model_root: models_dir.to_path_buf(),
         })
+    }
+
+    /// 运行时切换 TTS 音色（形象模型联动）。sid 越界时回退 0。
+    pub fn set_tts_sid(&self, sid: i32) {
+        let n = self.tts.num_speakers();
+        let s = if n > 0 && (sid < 0 || sid >= n) { 0 } else { sid };
+        self.tts_sid.store(s, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// 当前 TTS 音色 id。
+    pub fn tts_sid(&self) -> i32 {
+        self.tts_sid.load(std::sync::atomic::Ordering::Relaxed)
     }
 
     /// 读 WAV 文件并识别（自动重采样到 16k）。用于无麦克风的确定性 ASR 验证。
@@ -332,7 +344,7 @@ impl VoiceEngine {
             bail!("合成文本为空");
         }
         let cfg = sherpa_onnx::GenerationConfig {
-            sid: self.tts_sid,
+            sid: self.tts_sid(),
             speed: 1.0,
             ..Default::default()
         };

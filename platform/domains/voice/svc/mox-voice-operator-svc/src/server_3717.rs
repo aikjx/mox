@@ -46,6 +46,8 @@ pub struct VoiceServiceConfig {
     pub bind: SocketAddr,
     pub default_identity: OperatorIdentity,
     pub default_mode: DispatchMode,
+    /// 形象模型目录（models/avatars/），缺省时服务端自动探测
+    pub avatar_dir: Option<std::path::PathBuf>,
 }
 
 impl Default for VoiceServiceConfig {
@@ -54,17 +56,20 @@ impl Default for VoiceServiceConfig {
             bind: "127.0.0.1:3717".parse().unwrap(),
             default_identity: OperatorIdentity::new("voice_user_3717", RoleTag::Member, false),
             default_mode: DispatchMode::LocalFirst,
+            avatar_dir: None,
         }
     }
 }
 
-/// 组合 Service（Engine + HotwordInjector + 可选语音引擎）
+/// 组合 Service（Engine + HotwordInjector + 可选语音引擎 + 形象模型注册表）
 pub struct XiaobaiVoiceService {
     pub engine: Arc<OperatorEngine>,
     pub hotwords: Arc<HotwordInjector>,
     pub config: VoiceServiceConfig,
     #[cfg(feature = "voice-engine")]
     pub voice: parking_lot::RwLock<Option<Arc<crate::voice_engine::VoiceEngine>>>,
+    /// 形象模型注册表（全维：视觉/语音/性格）
+    pub avatars: Arc<crate::avatar::AvatarRegistry>,
 }
 
 impl XiaobaiVoiceService {
@@ -79,12 +84,28 @@ impl XiaobaiVoiceService {
         engine_config.audit_fn = log_audit;
         let engine = Arc::new(OperatorEngine::new(engine_config, router));
         register_all_defaults(&engine);
+        // 形象模型目录：优先配置 > 常规多路径探测
+        let avatar_dir = config
+            .avatar_dir
+            .clone()
+            .unwrap_or_else(crate::avatar::locate_avatar_dir);
+        let avatars = Arc::new(
+            crate::avatar::AvatarRegistry::load_dir(&avatar_dir)
+                .map_err(|e| XiaobaiError::ExecutionError {
+                    category: "avatar".into(),
+                    action: "load".into(),
+                    detail: e,
+                })?,
+        );
+        info!(target: "xiaobai_avatar", "形象模型已加载 {} 个，当前: {}",
+            avatars.list().len(), avatars.current().name);
         Ok(Self {
             engine,
             hotwords: Arc::new(HotwordInjector::new()),
             config,
             #[cfg(feature = "voice-engine")]
             voice: parking_lot::RwLock::new(None),
+            avatars,
         })
     }
 
@@ -437,6 +458,37 @@ async fn asr_handler(
     }
 }
 
+// ===== 形象模型（Avatar）接口 =====
+
+/// GET /v1/avatar/list — 全部形象模型
+async fn avatar_list(State(svc): State<Arc<XiaobaiVoiceService>>) -> Response {
+    AxumJson(json!({ "ok": true, "count": svc.avatars.list().len(), "avatars": svc.avatars.list() })).into_response()
+}
+
+/// GET /v1/avatar/current — 当前形象模型（全量含视觉/语音/性格）
+async fn avatar_current(State(svc): State<Arc<XiaobaiVoiceService>>) -> Response {
+    AxumJson(json!({ "ok": true, "avatar": svc.avatars.current() })).into_response()
+}
+
+/// POST /v1/avatar/switch — 切换形象模型 {"id":"xxx"}，联动 TTS 音色 + 性格措辞
+async fn avatar_switch(
+    State(svc): State<Arc<XiaobaiVoiceService>>,
+    AxumJson(req): AxumJson<Value>,
+) -> Response {
+    let id = req.get("id").and_then(|v| v.as_str()).unwrap_or("");
+    match svc.avatars.switch(id) {
+        Ok(avatar) => {
+            // 语音通道联动：切换 TTS 音色
+            #[cfg(feature = "voice-engine")]
+            if let Some(ve) = svc.voice.read().as_ref() {
+                svc.avatars.apply_voice(ve);
+            }
+            AxumJson(json!({ "ok": true, "avatar": avatar, "message": format!("已切换为「{}」", avatar.name) })).into_response()
+        }
+        Err(e) => (StatusCode::NOT_FOUND, AxumJson(json!({ "ok": false, "error": e }))).into_response(),
+    }
+}
+
 pub fn build_router(svc: Arc<XiaobaiVoiceService>) -> Router {
     Router::new()
         .route("/health", get(health))
@@ -446,6 +498,9 @@ pub fn build_router(svc: Arc<XiaobaiVoiceService>) -> Router {
         .route("/ws", get(ws_handler))
         .route("/v1/tts", post(tts_handler))
         .route("/v1/asr", post(asr_handler))
+        .route("/v1/avatar/list", get(avatar_list))
+        .route("/v1/avatar/current", get(avatar_current))
+        .route("/v1/avatar/switch", post(avatar_switch))
         .with_state(svc)
 }
 

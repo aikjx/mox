@@ -9,7 +9,7 @@ target_regress
 
 my_projects
 
-
+.trae-html-share-packages
 
 *.err
 # Rust build artifacts

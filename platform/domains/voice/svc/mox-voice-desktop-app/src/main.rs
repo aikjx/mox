@@ -107,6 +107,48 @@ struct Args {
     no_server: bool,
 }
 
+/// 形象模型切换命令解析：`切换模型 X / 切换成 X / 变成 X / 换装 X / 换形象 X / 使用 X`。
+/// 命中返回新形象模型（已切换），否则 None（交给算子 dispatch）。
+fn try_switch_avatar(
+    text: &str,
+    avatars: &Arc<mox_voice_operator_svc::avatar::AvatarRegistry>,
+) -> Option<mox_voice_operator_svc::avatar::Avatar> {
+    let t = text.trim();
+    let prefixes = [
+        "切换模型", "切换为", "切换成", "切换到", "切换", "变成", "换成", "换装", "换形象", "换肤", "使用",
+    ];
+    let target = prefixes
+        .iter()
+        .find_map(|p| {
+            if let Some(rest) = t.strip_prefix(p) {
+                let r = rest
+                    .trim()
+                    .trim_matches(['"', '“', '”', '「', '」', '《', '》', ' ', '。', '！', '？', '，', '.']);
+                if !r.is_empty() {
+                    return Some(r.to_string());
+                }
+            }
+            None
+        })
+        .unwrap_or_default();
+    if target.is_empty() {
+        return None;
+    }
+    // 精确 / 包含匹配 id 或 name
+    for meta in avatars.list() {
+        if meta.id == target
+            || meta.name == target
+            || meta.name.contains(&target)
+            || target.contains(&meta.id)
+        {
+            if avatars.switch(&meta.id).is_ok() {
+                return Some(avatars.current().clone());
+            }
+        }
+    }
+    None
+}
+
 // =============================== 对话分发（线程内） ===============================
 /// 从 dispatch_text 的 JSON 结果中提取可朗读文本。
 fn extract_speak_text(v: &serde_json::Value) -> String {
@@ -216,10 +258,11 @@ fn run_voice_test(secs: f64, out_path: &str) -> anyhow::Result<()> {
 }
 
 /// 在独立线程执行一次文本分发，关键节点向主线程推送状态。
-/// 完成后对回答做第一层本地 TTS 朗读；失败/无权重则回退浏览器拟人音兜底。
+/// 完成后对回答做第一层本地 TTS 朗读（套用形象模型性格措辞）；失败/无权重则回退浏览器拟人音兜底。
 fn run_dispatch(
     text: String,
     engine: Option<Arc<mox_voice_desktop_app::VoiceEngine>>,
+    avatars: Arc<mox_voice_operator_svc::avatar::AvatarRegistry>,
     proxy: EventLoopProxy<UserEvent>,
     state: Arc<mox_voice_desktop_app::ball_widget::StateController>,
 ) {
@@ -259,10 +302,11 @@ fn run_dispatch(
         // ---- 回答朗读：第一层本地 TTS，失败/无权重 → 浏览器拟人音兜底 ----
         let speak_text = extract_speak_text(&serde_json::from_str::<serde_json::Value>(&json).unwrap_or_default());
         if !speak_text.trim().is_empty() {
+            let decorated = avatars.decorate(&speak_text); // 性格措辞（前缀/后缀/语气）
             state.transition(BallWidgetState::Speak);
             let _ = proxy.send_event(UserEvent::SetState(BallWidgetState::Speak as u8));
             let ok = match &engine {
-                Some(eng) => match eng.speak(&speak_text) {
+                Some(eng) => match eng.speak(&decorated) {
                     Ok(()) => true,
                     Err(e) => {
                         tracing::warn!(target: "xiaobai_voice", "本地 TTS 朗读失败，切浏览器兜底: {e:#}");
@@ -275,7 +319,7 @@ fn run_dispatch(
                 }
             };
             if !ok {
-                let _ = proxy.send_event(UserEvent::SpeakFallback(speak_text));
+                let _ = proxy.send_event(UserEvent::SpeakFallback(decorated));
             }
         }
 
@@ -289,6 +333,7 @@ fn run_dispatch(
 fn run_voice_loop(
     engine: Arc<mox_voice_desktop_app::VoiceEngine>,
     pcm: Vec<i16>,
+    avatars: Arc<mox_voice_operator_svc::avatar::AvatarRegistry>,
     proxy: EventLoopProxy<UserEvent>,
     state: Arc<mox_voice_desktop_app::ball_widget::StateController>,
 ) {
@@ -337,13 +382,14 @@ fn run_voice_loop(
         let speak_text = extract_speak_text(&json);
         let _ = proxy.send_event(UserEvent::ChatResult(json.to_string()));
 
-        // ---- 3. TTS 朗读（第一层本地；失败 → 浏览器拟人音兜底）----
+        // ---- 3. TTS 朗读（第一层本地；失败 → 浏览器拟人音兜底；套性格措辞）----
         if !speak_text.trim().is_empty() {
+            let decorated = avatars.decorate(&speak_text);
             state.transition(BallWidgetState::Speak);
             let _ = proxy.send_event(UserEvent::SetState(BallWidgetState::Speak as u8));
-            if let Err(e) = engine.speak(&speak_text) {
+            if let Err(e) = engine.speak(&decorated) {
                 tracing::warn!(target: "xiaobai_voice", "本地 TTS 朗读失败，切浏览器兜底: {e:#}");
-                let _ = proxy.send_event(UserEvent::SpeakFallback(speak_text));
+                let _ = proxy.send_event(UserEvent::SpeakFallback(decorated));
             }
         }
 
@@ -425,6 +471,23 @@ fn run_gui(args: Args) -> anyhow::Result<()> {
         }
     };
 
+    // ---- 形象模型注册表（AIS-FR14：视觉/语音/性格 三维一体，可无限切换）----
+    let avatars = Arc::new(
+        mox_voice_operator_svc::avatar::AvatarRegistry::load_dir(
+            &mox_voice_operator_svc::avatar::locate_avatar_dir(),
+        )
+        .expect("形象模型注册表加载失败"),
+    );
+    // 语音通道：应用当前模型音色
+    if let Some(eng) = &engine {
+        avatars.apply_voice(eng);
+    }
+    tracing::info!(target: "xiaobai_avatar", "形象模型注册表就绪（{} 个），当前: {}",
+        avatars.list().len(), avatars.current().name);
+    // 视觉通道：把当前形象参数推给 UI
+    let cur_visual = serde_json::to_string(&avatars.current().visual).unwrap_or_else(|_| "{}".into());
+    let _ = webview.evaluate_script(&format!("window.__applyAvatar({cur_visual})"));
+
     // ---- voice_proxy :3717 后台启动（供 Rust 网关 /voice/** 代理，注入语音引擎）----
     if !args.no_server {
         let cfg = mox_voice_operator_svc::server_3717::VoiceServiceConfig::default();
@@ -497,7 +560,42 @@ fn run_gui(args: Args) -> anyhow::Result<()> {
             Event::UserEvent(ev) => match ev {
                 UserEvent::Ipc(msg) => {
                     if let Some(rest) = msg.strip_prefix("chat:") {
-                        run_dispatch(rest.to_string(), engine.clone(), proxy.clone(), state.clone());
+                        let text = rest.to_string();
+                        // 形象模型切换命令（全维联动：语音 + 性格 + 视觉）
+                        if let Some(avatar) = try_switch_avatar(&text, &avatars) {
+                            if let Some(eng) = &engine {
+                                avatars.apply_voice(eng);
+                            }
+                            let visual = serde_json::to_string(&avatar.visual).unwrap_or_else(|_| "{}".into());
+                            let _ = webview.evaluate_script(&format!("window.__applyAvatar({visual})"));
+                            let out = format!(
+                                "已切换为「{}」· {}\n语音音色 sid={} · 性格「{}」",
+                                avatar.name, avatar.desc, avatar.voice.tts_sid, avatar.persona.style
+                            );
+                            let resp = serde_json::json!({
+                                "intent": { "action": "switch_avatar", "category": "Avatar", "verdict": "avatar_switched" },
+                                "execution": { "ok": true, "output": out },
+                                "avatar": avatar
+                            });
+                            let _ = webview.evaluate_script(&format!(
+                                "window.__chatResponse({:?})",
+                                resp.to_string()
+                            ));
+                            // 朗读问候（性格措辞）
+                            if !avatar.persona.greeting.trim().is_empty() {
+                                match &engine {
+                                    Some(eng) => {
+                                        let _ = eng.speak(&avatar.persona.greeting);
+                                    }
+                                    None => {
+                                        let _ = proxy
+                                            .send_event(UserEvent::SpeakFallback(avatar.persona.greeting.clone()));
+                                    }
+                                }
+                            }
+                        } else {
+                            run_dispatch(text, engine.clone(), avatars.clone(), proxy.clone(), state.clone());
+                        }
                     } else {
                         match msg.as_str() {
                             "open-panel" => {
@@ -553,7 +651,7 @@ fn run_gui(args: Args) -> anyhow::Result<()> {
                         match &engine {
                             Some(eng) => {
                                 let eng = eng.clone();
-                                run_voice_loop(eng, pcm, proxy.clone(), state.clone());
+                                run_voice_loop(eng, pcm, avatars.clone(), proxy.clone(), state.clone());
                             }
                             None => {
                                 state.transition(BallWidgetState::Idle);

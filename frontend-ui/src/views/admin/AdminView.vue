@@ -34,7 +34,10 @@ const PANELS = {
   access: defineAsyncComponent(() => import('./panels/AdminAccess.vue')),
   audit: defineAsyncComponent(() => import('./panels/AdminAudit.vue')),
   storage: defineAsyncComponent(() => import('./panels/AdminStorage.vue')),
-  hitl: defineAsyncComponent(() => import('./panels/AdminHitl.vue'))
+  hitl: defineAsyncComponent(() => import('./panels/AdminHitl.vue')),
+  monitor: defineAsyncComponent(() => import('./panels/AdminMonitor.vue')),
+  docs: defineAsyncComponent(() => import('./panels/AdminDocs.vue')),
+  llm: defineAsyncComponent(() => import('./panels/AdminLlm.vue'))
 }
 
 const TABS = [
@@ -42,7 +45,10 @@ const TABS = [
   { key: 'access', label: '访问凭证', icon: 'Key' },
   { key: 'audit', label: '审计日志', icon: 'List' },
   { key: 'storage', label: '存储与模块', icon: 'Coin' },
-  { key: 'hitl', label: 'HITL 审批', icon: 'Clock' }
+  { key: 'hitl', label: 'HITL 审批', icon: 'Clock' },
+  { key: 'monitor', label: '系统监控', icon: 'DataAnalysis' },
+  { key: 'llm', label: '大模型配置', icon: 'Cpu' },
+  { key: 'docs', label: 'API 文档', icon: 'Document' }
 ]
 
 const route = useRoute()

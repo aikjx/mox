@@ -32,6 +32,9 @@ pub mod server_3717;
 #[cfg(feature = "voice-engine")]
 pub mod voice_engine;
 
+#[cfg(feature = "voice-engine")]
+pub mod avatar;
+
 pub use app::AppOperator;
 pub use file::FileOperator;
 pub use volume::VolumeOperator;
@@ -44,6 +47,9 @@ pub use helpers::platform_tag;
 
 #[cfg(feature = "voice-engine")]
 pub use voice_engine::{Recorder, VoiceEngine};
+
+#[cfg(feature = "voice-engine")]
+pub use avatar::{Avatar, AvatarMeta, AvatarRegistry, PersonaConf, VisualConf, VoiceConf};
 
 #[cfg(feature = "server-3717")]
 pub use server_3717::{XiaobaiVoiceService, VoiceServiceConfig, serve, build_router, run_service_blocking};

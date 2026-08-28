@@ -179,17 +179,35 @@ def _apply_limiter_and_loudness(audio, target_dbfs: float = -18.0, enable: bool 
 
 
 # ================================================================= Rust DSP 接入
-# 优先 Rust xiaobai-dsp-py（5× 吞吐 / 低内存峰值）。任何原因加载失败 → 自动回退纯 Python 实现。
+# 优先 Rust xiaobai_core.dsp（统一核心库：重采样+SOLA+响度归一+软限幅+WAV编码）。
+# 其次尝试旧版 xiaobai_dsp_native（兼容已有 .pyd）。
+# 任何原因加载失败 → 自动回退纯 Python 实现。
 # 环境变量 `XIAOBAI_VOICE_FORCE_PY_DSP=1` 可强制走 Python（便于 AB 对照）。
 _RUST_DSP = None
+_RUST_DSP_KIND: str | None = None  # "xiaobai_core" | "xiaobai_dsp_native" | None
 _RUST_DSP_ERROR: str | None = None
 try:
     import os as _os
 
     if not _os.environ.get("XIAOBAI_VOICE_FORCE_PY_DSP"):
-        import xiaobai_dsp_native  # type: ignore
+        # 1) 优先 xiaobai_core（新统一 Rust 核心）
+        try:
+            from xiaobai_voice.core import dsp as _core_dsp
 
-        _RUST_DSP = xiaobai_dsp_native
+            if _core_dsp and getattr(_core_dsp, "_rust_available", True):
+                _RUST_DSP = _core_dsp
+                _RUST_DSP_KIND = "xiaobai_core"
+        except Exception:
+            pass
+        # 2) 备选旧版 xiaobai_dsp_native
+        if _RUST_DSP is None:
+            try:
+                import xiaobai_dsp_native  # type: ignore
+
+                _RUST_DSP = xiaobai_dsp_native
+                _RUST_DSP_KIND = "xiaobai_dsp_native"
+            except Exception:
+                pass
 except Exception as _exc:  # noqa: BLE001
     _RUST_DSP_ERROR = f"{type(_exc).__name__}: {_exc}"
 
@@ -753,7 +771,8 @@ class CosyVoice2Backend(TTSBackend):
         audio = np.concatenate(audio_chunks, axis=0) if len(audio_chunks) > 1 else audio_chunks[0]
 
         # ---------------------------------------------------------------- DSP
-        # 优先 Rust xiaobai-dsp：一次性重采样+SOLA+响度归一+WAV PCM16 编码。
+        # 优先 Rust：一次性重采样+SOLA+响度归一+软限幅+WAV PCM16 编码。
+        # 支持 xiaobai_core.dsp（新统一核心）和 xiaobai_dsp_native（旧版）两种后端。
         # Rust 模块不可用/抛错 → 自动 fallback 原 Python 流水线。
         dsp_impl = "Rust"
         wav_bytes: bytes | None = None
@@ -763,20 +782,34 @@ class CosyVoice2Backend(TTSBackend):
 
                 _audio_arr = _np.asarray(audio, dtype=np.float32).reshape(-1)
                 _sig = _audio_arr.tolist()
-                res = _RUST_DSP.apply_dsp_pipeline(
-                    _sig,
-                    {
-                        "orig_sr": int(sample_rate_out),
-                        "target_sr": int(sr),
-                        "speed": float(speed),
-                        "target_dbfs": float(self._loudness_target_dbfs),
-                        "enable_loudness": bool(self._limiter),
-                        "encode_wav": True,
-                        "channels": 1,
-                    },
-                )
-                if isinstance(res, (bytes, bytearray)):
-                    wav_bytes = bytes(res)
+
+                if _RUST_DSP_KIND == "xiaobai_core":
+                    # 新统一核心：process_tts_audio → wav_encode
+                    processed = _RUST_DSP.process_tts_audio(
+                        _sig,
+                        input_sr=int(sample_rate_out),
+                        target_sr=int(sr),
+                        speed=float(speed),
+                        loudness_target_dbfs=float(self._loudness_target_dbfs),
+                        limiter=bool(self._limiter),
+                    )
+                    wav_bytes = bytes(_RUST_DSP.wav_encode(processed, int(sr)))
+                else:
+                    # 旧版 xiaobai_dsp_native：apply_dsp_pipeline（直接输出 WAV bytes）
+                    res = _RUST_DSP.apply_dsp_pipeline(
+                        _sig,
+                        {
+                            "orig_sr": int(sample_rate_out),
+                            "target_sr": int(sr),
+                            "speed": float(speed),
+                            "target_dbfs": float(self._loudness_target_dbfs),
+                            "enable_loudness": bool(self._limiter),
+                            "encode_wav": True,
+                            "channels": 1,
+                        },
+                    )
+                    if isinstance(res, (bytes, bytearray)):
+                        wav_bytes = bytes(res)
             except Exception:  # noqa: BLE001
                 wav_bytes = None
                 dsp_impl = "Python(FallbackFromRustError)"

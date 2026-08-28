@@ -13,24 +13,31 @@
           </transition>
         </div>
 
-        <!-- 当前项目选择器（移入侧边栏 · 以项目为根，释放顶栏空间） -->
-        <ProjectPicker variant="sidebar" :collapsed="collapsed" />
+        <!-- 侧边栏导航（精简后约 10 项 · 3 大域） -->
+
 
         <el-scrollbar class="nav-scroll">
           <nav class="nav">
             <template v-for="g in NAV_GROUPS" :key="g.key">
               <div class="nav-group" v-show="!collapsed">{{ g.label }}</div>
-              <router-link
+              <el-tooltip
                 v-for="m in modulesByGroup(g.key)"
                 :key="m.key"
-                :to="m.path"
-                class="nav-item"
-                :class="{ active: isActive(m.path) }"
+                :content="m.label"
+                placement="right"
+                :disabled="!collapsed"
+                :show-after="300"
               >
-                <span class="nav-bar"></span>
-                <el-icon class="nav-icon"><component :is="m.icon" /></el-icon>
-                <span v-show="!collapsed" class="nav-label">{{ m.label }}</span>
-              </router-link>
+                <router-link
+                  :to="m.path"
+                  class="nav-item"
+                  :class="{ active: isActive(m.path) }"
+                >
+                  <span class="nav-bar"></span>
+                  <el-icon class="nav-icon"><component :is="m.icon" /></el-icon>
+                  <span v-show="!collapsed" class="nav-label">{{ m.label }}</span>
+                </router-link>
+              </el-tooltip>
             </template>
           </nav>
         </el-scrollbar>
@@ -54,28 +61,106 @@
               <Expand v-else />
             </el-icon>
 
-            <el-breadcrumb separator="/">
-              <el-breadcrumb-item :to="{ path: '/dashboard' }">首页</el-breadcrumb-item>
-              <el-breadcrumb-item v-for="b in crumbs" :key="b.path">{{ b.label }}</el-breadcrumb-item>
+            <!-- 项目切换器（顶栏核心位置 · 以项目为根） -->
+            <ProjectPicker variant="top" class="topbar-project-picker" />
+
+            <el-breadcrumb separator="/" class="crumb-nav">
+              <el-breadcrumb-item :to="{ path: '/dashboard' }">
+                <el-icon style="margin-right:4px"><HomeFilled /></el-icon>工作台
+              </el-breadcrumb-item>
+              <el-breadcrumb-item v-for="b in crumbs" :key="b.path">
+                <el-dropdown trigger="click" @command="(p) => router.push(p)" class="crumb-dropdown">
+                  <span class="crumb-clickable">{{ b.label }}<el-icon style="margin-left:2px"><ArrowDown /></el-icon></span>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item
+                        v-for="sib in siblingModules(b.key)"
+                        :key="sib.path"
+                        :command="sib.path"
+                        :class="{ 'is-active': sib.path === b.path }"
+                      >
+                        <el-icon style="margin-right:6px;color:var(--brand-dark)"><component :is="sib.icon" /></el-icon>
+                        {{ sib.label }}
+                      </el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </el-breadcrumb-item>
               <el-breadcrumb-item v-if="crumbsExtra" class="crumb-extra">{{ crumbsExtra }}</el-breadcrumb-item>
             </el-breadcrumb>
           </div>
 
           <div class="topbar-right">
             <!-- 全局搜索输入框（企业级「命令面板」入口，Ctrl+K / Ctrl+Shift+P 聚焦） -->
-            <div class="global-search" :class="{ focused: searchFocused }" @click="focusSearch">
+            <div class="global-search" :class="{ focused: searchFocused }">
               <el-icon class="search-icon"><Search /></el-icon>
               <input
                 ref="searchInputRef"
                 v-model="searchText"
                 class="search-input"
-                placeholder="搜索 36 模块 / 任务 / 算子…（Ctrl/⌘ + K）"
-                @focus="searchFocused = true"
-                @blur="searchFocused = false"
-                @keyup.enter="doGlobalSearch"
-                @keydown.esc="searchFocused = false; searchText = ''; $event.target.blur()"
+                placeholder="搜索模块 / 任务 / 算子…（Ctrl/⌘ + K）"
+                @focus="onSearchFocus"
+                @blur="onSearchBlur"
+                @input="onSearchInput"
+                @keydown.enter="doGlobalSearch"
+                @keydown.esc="closeSearchPanel"
+                @keydown.down.prevent="selectNextCmd"
+                @keydown.up.prevent="selectPrevCmd"
               />
               <kbd v-if="!searchFocused" class="kbd">Ctrl + K</kbd>
+
+              <!-- 命令面板下拉 -->
+              <div v-if="showCmdPanel" class="cmd-panel" @mousedown.prevent>
+                <!-- 分组：快速操作（无输入时显示） -->
+                <div v-if="!searchText" class="cmd-section">
+                  <div class="cmd-section-title">⚡ 快速操作</div>
+                  <div
+                    v-for="(cmd, i) in quickCommands"
+                    :key="'q-'+i"
+                    class="cmd-item"
+                    :class="{ active: cmdIdx === i }"
+                    @click="executeCmd(cmd)"
+                    @mouseenter="cmdIdx = i"
+                  >
+                    <div class="cmd-icon" :style="{ background: cmd.bg, color: cmd.color }">
+                      <el-icon><component :is="cmd.icon" /></el-icon>
+                    </div>
+                    <div class="cmd-body">
+                      <div class="cmd-title">{{ cmd.label }}</div>
+                      <div class="cmd-desc">{{ cmd.desc }}</div>
+                    </div>
+                    <kbd v-if="cmd.shortcut" class="cmd-kbd">{{ cmd.shortcut }}</kbd>
+                  </div>
+                </div>
+
+                <!-- 分组：模块跳转 -->
+                <div v-if="filteredModules.length" class="cmd-section">
+                  <div class="cmd-section-title">📦 模块</div>
+                  <div
+                    v-for="(mod, i) in filteredModules.slice(0, 6)"
+                    :key="'m-'+mod.key"
+                    class="cmd-item"
+                    :class="{ active: cmdIdx === (searchText ? 0 : quickCommands.length) + i }"
+                    @click="goModule(mod)"
+                    @mouseenter="cmdIdx = (searchText ? 0 : quickCommands.length) + i"
+                  >
+                    <div class="cmd-icon" :style="{ background: mod.bg, color: mod.color }">
+                      <el-icon><component :is="mod.icon" /></el-icon>
+                    </div>
+                    <div class="cmd-body">
+                      <div class="cmd-title">{{ mod.label }}</div>
+                      <div class="cmd-desc">跳转到 {{ mod.label }} 页面</div>
+                    </div>
+                    <span class="cmd-action">跳转 →</span>
+                  </div>
+                </div>
+
+                <!-- 搜索提示 -->
+                <div v-if="searchText && !filteredModules.length" class="cmd-empty">
+                  <el-icon><Search /></el-icon>
+                  <span>按 Enter 在任务中搜索「{{ searchText }}」</span>
+                </div>
+              </div>
             </div>
 
             <!-- 快捷新建下拉（4 项最常用入口） -->
@@ -97,6 +182,9 @@
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
+
+            <!-- 通知中心 -->
+            <NotificationCenter />
 
             <el-tooltip content="快捷键帮助（Shift + ?）" placement="bottom">
               <div class="top-action" @click="helpDrawerOpen = true">
@@ -160,7 +248,7 @@
         <!-- 内容 -->
         <main class="content" :class="{ 'content--withphase': showPipeline }">
           <router-view v-slot="{ Component }">
-            <transition name="fade" mode="out-in">
+            <transition name="page-slide" mode="out-in">
               <component :is="Component" />
             </transition>
           </router-view>
@@ -193,6 +281,9 @@
         </div>
         <div class="help-footer">提示：在输入框/表格内编辑时，Ctrl+K / Ctrl+⇧+N 等全局快捷键自动暂停（避免误触）；按 Esc 取消当前编辑并返回全局模式。</div>
       </el-drawer>
+
+      <!-- 新手引导（首次访问自动弹出） -->
+      <OnboardingGuide v-model="onboardingVisible" />
     </div>
   </el-config-provider>
 </template>
@@ -202,15 +293,17 @@ import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import {
-  Fold, Expand, Refresh, Document, ArrowDown, Close, Search, QuestionFilled, Lightning
+  Fold, Expand, Refresh, Document, ArrowDown, Close, Search, QuestionFilled, Lightning, Moon, Sunny
 } from '@element-plus/icons-vue'
 import {
-  NAV_MODULES, APP_VERSION, NAV_GROUPS, QUICK_CREATE_COMMANDS, HOTKEY_GROUPS, PROJECT_PHASES
+  NAV_MODULES, APP_VERSION, NAV_GROUPS, QUICK_CREATE_COMMANDS, HOTKEY_GROUPS, PROJECT_PHASES, SUB_MODULES, HIDDEN_MODULES
 } from '@/types'
 import { getHealth } from '@/api'
 import { useGlobalShortcuts } from '@/globalShortcuts'
 import { provideProjectContext, useProject } from '@/composables/projectContext.js'
 import ProjectPicker from '@/components/ProjectPicker.vue'
+import OnboardingGuide from '@/components/OnboardingGuide.vue'
+import NotificationCenter from '@/components/NotificationCenter.vue'
 import PhasePipeline from '@/components/PhasePipeline.vue'
 
 // 全局项目上下文注入（ provide + 单例共享，任意视图可用 useProject() 读取）
@@ -225,7 +318,30 @@ const health = ref({ status: 'pending', label: '连接中…' })
 const searchInputRef = ref(null)
 const searchText = ref('')
 const searchFocused = ref(false)
+const showCmdPanel = ref(false)
+const cmdIdx = ref(0)
+
+// 快速操作命令
+const quickCommands = computed(() => [
+  { key: 'new-project', label: '新建项目', desc: '创建一个新项目', icon: 'FolderAdd', color: '#4f46e5', bg: '#eef2ff', action: 'event', event: 'open-create-project', shortcut: 'N' },
+  { key: 'new-chat', label: '新建对话', desc: '打开 AI 助手新对话', icon: 'ChatDotRound', color: '#ec4899', bg: '#fce7f3', action: 'route', route: '/ai', shortcut: 'C' },
+  { key: 'new-flow', label: '新建工作流', desc: '创建新的工作流编排', icon: 'Operation', color: '#f59e0b', bg: '#fffbeb', action: 'event', event: 'open-create-flow', shortcut: 'F' },
+  { key: 'toggle-theme', label: '切换主题', desc: '切换明暗主题', icon: 'Moon', color: '#6366f1', bg: '#eef2ff', action: 'toggle-theme', shortcut: 'T' },
+  { key: 'projects', label: '项目列表', desc: '查看所有项目', icon: 'List', color: '#0ea5e9', bg: '#e0f2fe', action: 'route', route: '/projects', shortcut: 'P' },
+  { key: 'settings', label: '系统设置', desc: '打开系统设置', icon: 'Setting', color: '#475569', bg: '#f1f5f9', action: 'route', route: '/admin', shortcut: 'S' }
+])
+
+// 过滤后的模块
+const filteredModules = computed(() => {
+  const t = String(searchText.value || '').trim().toLowerCase()
+  if (!t) return []
+  return ALL_MODULES.value.filter(m =>
+    m.label.toLowerCase().includes(t) ||
+    (m.key && m.key.toLowerCase().includes(t))
+  )
+})
 const helpDrawerOpen = ref(false)
+const onboardingVisible = ref(false)
 let disposeShortcuts = null
 
 // 当前项目阶段：按路由自动推断；用户点击流程条可切换
@@ -282,12 +398,11 @@ function onPhaseChange(p) {
   // 跳阶段 → 跳对应默认路由
   const ph = PROJECT_PHASES.find((x) => x.key === p.key)
   if (!ph) return
-  // 路由规则：requirement 去 AI 助手（联盟入口）；其他跳到阶段首模块
+  // 路由规则：按阶段跳对应默认模块
   const defaults = {
-    requirement: '/ai',
-    graph: '/graph',
-    design: '/workflow',
-    develop: '/algolab',
+    requirement: '/dashboard',
+    architecture: '/graph',
+    develop: '/operators',
     release: '/monitor'
   }
   const target = defaults[ph.key]
@@ -298,13 +413,31 @@ function onPhaseChange(p) {
 const crumbsExtra = computed(() => route.meta?.subLabel || null)
 
 const currentPath = computed(() => route.path)
+// 构建完整的模块索引（一级 + 二级子模块 + 三级隐藏模块）
+const ALL_MODULES = computed(() => {
+  const list = [...NAV_MODULES]
+  // 添加二级子模块
+  Object.values(SUB_MODULES).forEach(subs => {
+    subs.forEach(s => {
+      if (!list.find(m => m.path === s.path)) {
+        list.push({ key: s.key, label: s.label, path: s.path, color: '#6366f1', bg: '#eef2ff' })
+      }
+    })
+  })
+  // 添加三级隐藏模块
+  HIDDEN_MODULES.forEach(m => {
+    if (!list.find(x => x.path === m.path)) list.push(m)
+  })
+  return list
+})
+
 const crumbs = computed(() => {
-  const m = NAV_MODULES.find((x) => route.path.startsWith(x.path))
-  return m ? [{ path: m.path, label: m.label }] : []
+  const m = ALL_MODULES.value.find((x) => route.path.startsWith(x.path) && x.path !== '/')
+  return m ? [{ path: m.path, label: m.label, key: m.key, icon: m.icon }] : []
 })
 const tabs = computed(() => {
   const list = [{ path: '/dashboard', label: '工作台', closable: false }]
-  const m = NAV_MODULES.find((x) => x.path === route.path)
+  const m = ALL_MODULES.value.find((x) => x.path === route.path)
   if (m && m.path !== '/dashboard') list.push({ path: m.path, label: m.label, closable: true })
   return list
 })
@@ -313,6 +446,17 @@ function modulesByGroup(gKey) {
   if (!g) return []
   const set = new Set(g.items)
   return NAV_MODULES.filter((m) => set.has(m.key))
+}
+// 获取同组模块（面包屑下拉快速切换）
+function siblingModules(modKey) {
+  const mod = NAV_MODULES.find(m => m.key === modKey)
+  if (!mod) return NAV_MODULES
+  for (const g of NAV_GROUPS) {
+    if (g.items.includes(modKey)) {
+      return modulesByGroup(g.key)
+    }
+  }
+  return NAV_MODULES
 }
 function isActive(path) {
   return route.path === path || (path !== '/dashboard' && route.path.startsWith(path))
@@ -354,17 +498,68 @@ function focusSearch() {
     }
   }, 0)
 }
+function onSearchFocus() {
+  searchFocused.value = true
+  showCmdPanel.value = true
+  cmdIdx.value = 0
+}
+function onSearchBlur() {
+  searchFocused.value = false
+  setTimeout(() => { showCmdPanel.value = false }, 150)
+}
+function onSearchInput() {
+  cmdIdx.value = 0
+}
+function closeSearchPanel() {
+  showCmdPanel.value = false
+  searchText.value = ''
+  searchInputRef.value?.blur()
+}
+function selectNextCmd() {
+  const total = getCmdTotal()
+  cmdIdx.value = (cmdIdx.value + 1) % total
+}
+function selectPrevCmd() {
+  const total = getCmdTotal()
+  cmdIdx.value = (cmdIdx.value - 1 + total) % total
+}
+function getCmdTotal() {
+  const t = String(searchText.value || '').trim()
+  if (!t) return quickCommands.value.length + Math.min(filteredModules.value.length, 6)
+  return Math.min(filteredModules.value.length, 6) || 1 // 1 = 搜索提示
+}
+function goModule(mod) {
+  router.push(mod.path)
+  closeSearchPanel()
+}
+function executeCmd(cmd) {
+  if (cmd.action === 'route') {
+    router.push(cmd.route)
+  } else if (cmd.action === 'event') {
+    window.dispatchEvent(new CustomEvent(cmd.event, { detail: { from: 'command-palette' } }))
+  } else if (cmd.action === 'toggle-theme') {
+    toggleTheme()
+  }
+  closeSearchPanel()
+}
 function doGlobalSearch() {
   const t = String(searchText.value || '').trim()
-  if (!t) return
-  // 命中 1：NAV_MODULES 精确匹配 label/key → 直接跳
-  const mod = NAV_MODULES.find((m) => m.label.includes(t) || m.key.toLowerCase().includes(t.toLowerCase()))
-  if (mod) {
-    router.push(mod.path)
-    return
+  // 有选中项时执行选中项
+  if (!t) {
+    if (quickCommands.value[cmdIdx.value]) {
+      executeCmd(quickCommands.value[cmdIdx.value])
+      return
+    }
+  } else {
+    // 输入了内容：如果有匹配模块且选中了，跳模块
+    if (filteredModules.value.length && cmdIdx.value < Math.min(filteredModules.value.length, 6)) {
+      goModule(filteredModules.value[cmdIdx.value])
+      return
+    }
+    // 否则跳任务搜索
+    router.push({ path: '/tasks', query: { q: t } })
+    closeSearchPanel()
   }
-  // 命中 2：搜索任务 → 跳 /tasks?q=xxx
-  router.push({ path: '/tasks', query: { q: t } })
 }
 
 // === 顶栏「⚡ 新建」下拉 ===
@@ -380,8 +575,37 @@ function onQuickCreate(q) {
   }
 }
 
+// === 主题切换 ===
+function toggleTheme() {
+  const isDark = document.documentElement.classList.toggle('dark')
+  localStorage.setItem('theme', isDark ? 'dark' : 'light')
+  // 同步命令面板图标
+  const cmd = quickCommands.value.find(c => c.key === 'toggle-theme')
+  if (cmd) {
+    cmd.icon = isDark ? 'Sunny' : 'Moon'
+    cmd.label = isDark ? '浅色模式' : '深色模式'
+  }
+}
+function initTheme() {
+  const saved = localStorage.getItem('theme')
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+  const isDark = saved ? saved === 'dark' : prefersDark
+  if (isDark) {
+    document.documentElement.classList.add('dark')
+  }
+  // 同步命令面板图标
+  setTimeout(() => {
+    const cmd = quickCommands.value.find(c => c.key === 'toggle-theme')
+    if (cmd) {
+      cmd.icon = isDark ? 'Sunny' : 'Moon'
+      cmd.label = isDark ? '浅色模式' : '深色模式'
+    }
+  }, 0)
+}
+
 // === 全局快捷键绑定 ===
 onMounted(() => {
+  initTheme()
   refreshHealth()
   disposeShortcuts = useGlobalShortcuts({
     focusSearch,
@@ -491,7 +715,48 @@ onBeforeUnmount(() => {
 .topbar-left { display: flex; align-items: center; gap: 16px; min-width: 0; }
 .collapse-btn { font-size: 20px; cursor: pointer; color: var(--text-2); flex-shrink: 0; }
 .collapse-btn:hover { color: var(--brand); }
+
+/* 顶栏项目选择器 */
+.topbar-project-picker {
+  margin-left: 4px;
+}
+:deep(.topbar-project-picker .pp-select) {
+  width: 260px;
+  height: 36px;
+}
+:deep(.topbar-project-picker .pp-select .el-select__wrapper) {
+  background: var(--brand-soft);
+  border-color: transparent;
+  height: 36px;
+  min-height: 36px;
+  border-radius: 10px;
+  font-weight: 600;
+  color: var(--brand-dark);
+}
+:deep(.topbar-project-picker .pp-select:hover .el-select__wrapper),
+:deep(.topbar-project-picker .pp-select.is-focused .el-select__wrapper) {
+  background: #fff;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
 .crumb-extra { color: var(--brand-dark); font-weight: 600; }
+.crumb-clickable {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+.crumb-clickable:hover {
+  background: var(--brand-soft);
+  color: var(--brand-dark);
+}
+.crumb-dropdown :deep(.el-dropdown-menu__item.is-active) {
+  color: var(--brand);
+  font-weight: 600;
+  background: var(--brand-soft);
+}
 /* 面包屑防截断：不换行、不压缩、文字溢出时省略 */
 .topbar-left :deep(.el-breadcrumb) {
   flex-shrink: 0;
@@ -534,6 +799,102 @@ onBeforeUnmount(() => {
   font-size: 13px; color: var(--text-1);
 }
 .search-input::placeholder { color: var(--text-3); }
+
+/* 命令面板下拉 */
+.global-search {
+  position: relative;
+}
+.cmd-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--border-1);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  max-height: 420px;
+  overflow-y: auto;
+  z-index: 1000;
+  padding: 6px;
+}
+.cmd-section {
+  margin-bottom: 4px;
+}
+.cmd-section:last-child {
+  margin-bottom: 0;
+}
+.cmd-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+  padding: 8px 10px 6px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.cmd-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cmd-item:hover, .cmd-item.active {
+  background: var(--brand-soft);
+}
+.cmd-item.active {
+  background: linear-gradient(90deg, rgba(79, 70, 229, 0.12), rgba(99, 102, 241, 0.08));
+}
+.cmd-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.cmd-body {
+  flex: 1;
+  min-width: 0;
+}
+.cmd-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-1);
+}
+.cmd-desc {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 1px;
+}
+.cmd-action {
+  font-size: 11px;
+  color: var(--brand);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.cmd-kbd {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--text-2);
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.cmd-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 10px;
+  color: var(--text-3);
+  font-size: 12px;
+}
+.cmd-empty .el-icon {
+  color: var(--brand);
+}
 
 /* 快捷新建按钮 */
 .quick-create-btn { height: 36px; border-radius: 10px; padding: 0 14px; font-weight: 600; }
@@ -578,6 +939,24 @@ onBeforeUnmount(() => {
     var(--bg-page);
 }
 
+/* 页面切换过渡动画 */
+.page-slide-enter-active,
+.page-slide-leave-active {
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.page-slide-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+}
+.page-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+.page-slide-leave-active {
+  position: absolute;
+  width: 100%;
+}
+
 /* 全局帮助 Drawer 样式 */
 .help-group { margin-bottom: 18px; }
 .help-group-title {
@@ -597,5 +976,59 @@ onBeforeUnmount(() => {
   margin-top: 20px; padding: 12px 14px; border-radius: 10px;
   background: var(--brand-soft); color: var(--brand-dark);
   font-size: 12px; line-height: 1.7;
+}
+
+/* ===== 响应式适配 ===== */
+/* 平板：≤1024px */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 60px;
+    transform: translateX(0);
+  }
+  .main-wrap {
+    margin-left: 60px;
+  }
+  .collapse-btn { display: none; }
+  .nav-group { display: none; }
+  .global-search { width: 180px; }
+  .global-search.focused, .global-search:hover { width: 280px; }
+  .topbar-project-picker :deep(.pp-select) { width: 200px; }
+  .user-name { display: none; }
+  .content { padding: 16px; }
+}
+
+/* 手机：≤768px */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+  .main-wrap {
+    margin-left: 0;
+  }
+  .collapse-btn { display: block; }
+  .topbar-left { gap: 8px; }
+  .topbar-project-picker :deep(.pp-select) { width: 140px; height: 32px; }
+  .topbar-project-picker :deep(.pp-select .el-select__wrapper) { height: 32px; min-height: 32px; border-radius: 8px; }
+  .global-search { display: none; }
+  .quick-create-btn { padding: 0 10px; font-size: 12px; }
+  .quick-create-btn .el-icon { margin-right: 4px; }
+  .top-action { width: 32px; height: 32px; }
+  .content { padding: 12px; }
+  .page-container { padding: 16px; }
+  .tabs { display: none; }
+}
+
+/* 小屏手机：≤480px */
+@media (max-width: 480px) {
+  .topbar-project-picker :deep(.pp-select) { width: 110px; }
+  .quick-create-btn span:not(.el-icon) { display: none; }
+  .quick-create-btn { padding: 0 8px; }
+  .notification-center { display: none; }
 }
 </style>

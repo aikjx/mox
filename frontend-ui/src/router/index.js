@@ -28,15 +28,11 @@ const routes = [
   },
   {
     path: '/expert-enterprise',
-    name: 'ExpertEnterprise',
-    component: () => import('@/views/ExpertEnterpriseView.vue'),
-    meta: { title: '企业级专家管理' }
+    redirect: '/expert-center?tab=enterprise'
   },
   {
     path: '/expert-orchestrator',
-    name: 'ExpertOrchestrator',
-    component: () => import('@/views/ExpertOrchestratorView.vue'),
-    meta: { title: 'V2编排引擎' }
+    redirect: '/expert-center?tab=orchestrator'
   },
   {
     path: '/portal',
@@ -112,9 +108,7 @@ const routes = [
   },
   {
     path: '/plugins',
-    name: 'Plugins',
-    component: () => import('@/views/PluginsView.vue'),
-    meta: { title: 'AI 插件' }
+    redirect: '/workflow?tab=plugins'
   },
   {
     path: '/browser',
@@ -124,15 +118,11 @@ const routes = [
   },
   {
     path: '/monitor',
-    name: 'Monitor',
-    component: () => import('@/views/MonitorView.vue'),
-    meta: { title: '系统监控' }
+    redirect: '/admin?tab=monitor'
   },
   {
     path: '/docs',
-    name: 'Docs',
-    component: () => import('@/views/DocsView.vue'),
-    meta: { title: 'API 文档' }
+    redirect: '/admin?tab=docs'
   },
   {
     path: '/market',
@@ -148,15 +138,11 @@ const routes = [
   },
   {
     path: '/mcp',
-    name: 'Mcp',
-    component: () => import('@/views/McpView.vue'),
-    meta: { title: 'MCP 兼容中心' }
+    redirect: '/workflow?tab=mcp'
   },
   {
     path: '/automation',
-    name: 'Automation',
-    component: () => import('@/views/AutomationView.vue'),
-    meta: { title: 'AI 自动化' }
+    redirect: '/workflow?tab=automation'
   },
   {
     path: '/caomei',
@@ -184,15 +170,11 @@ const routes = [
   },
   {
     path: '/knowledge-base',
-    name: 'KnowledgeBase',
-    component: () => import('@/views/KnowledgeBaseView.vue'),
-    meta: { title: '云盘知识库' }
+    redirect: '/resources?tab=knowledge'
   },
   {
     path: '/llm-config',
-    name: 'LlmConfig',
-    component: () => import('@/views/LlmConfigView.vue'),
-    meta: { title: '大模型配置' }
+    redirect: '/admin?tab=llm'
   },
   {
     path: '/melody2score',

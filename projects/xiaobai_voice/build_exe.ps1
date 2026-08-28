@@ -9,7 +9,8 @@ param(
     [string]$UseCondaEnv = "",
     [string]$BuildDir = (Join-Path $PSScriptRoot "build"),
     [string]$DistDir  = (Join-Path $PSScriptRoot "dist"),
-    [switch]$SkipBuild = $false
+    [switch]$SkipBuild = $false,
+    [switch]$SkipRust = $false
 )
 
 $ErrorActionPreference = "Stop"
@@ -40,6 +41,33 @@ if (-not $SkipBuild) {
         & $PyExe -m pip install -e ".[build]" --no-cache-dir 2>&1 | Select-Object -Last 20
     } finally {
         Pop-Location
+    }
+}
+
+# --- 1a) Build Rust core extension (xiaobai_core) ---------------------------
+if (-not $SkipRust) {
+    $RustDir = Join-Path $Root "xiaobai_core"
+    if (Test-Path (Join-Path $RustDir "Cargo.toml")) {
+        Write-Host "==> Build Rust core extension (xiaobai_core)" -ForegroundColor Cyan
+        Push-Location $RustDir
+        try {
+            & cargo build --release 2>&1 | Select-Object -Last 10
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "Rust build failed (exit $LASTEXITCODE). Continuing with pure-Python fallback."
+            } else {
+                # Copy .pyd to package directory
+                $PydSrc = Join-Path $RustDir "target\release\xiaobai_core.dll"
+                $PydDst = Join-Path $Root "xiaobai_voice\xiaobai_core.pyd"
+                if (Test-Path $PydSrc) {
+                    Copy-Item -Force $PydSrc $PydDst
+                    Write-Host "[OK] xiaobai_core.pyd copied to package" -ForegroundColor Green
+                }
+            }
+        } finally {
+            Pop-Location
+        }
+    } else {
+        Write-Host "[skip] xiaobai_core/Cargo.toml not found, skipping Rust build" -ForegroundColor DarkGray
     }
 }
 

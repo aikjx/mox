@@ -8,6 +8,9 @@
         </p>
       </div>
       <div class="page-header-actions">
+        <el-button type="primary" @click="goAIDeepOptimize">
+          <el-icon><Promotion /></el-icon> AI深度优化
+        </el-button>
         <span class="badge">DeepSeek</span>
         <span class="badge">OpenAI</span>
         <span class="badge">Claude</span>
@@ -251,9 +254,17 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { VideoPlay, Check, DataAnalysis } from '@element-plus/icons-vue'
+import { VideoPlay, Check, DataAnalysis, Promotion } from '@element-plus/icons-vue'
 import * as api from '@/api'
+
+const router = useRouter()
+
+// AI深度优化：跳转到AI助手，带上优化上下文
+function goAIDeepOptimize() {
+  router.push({ path: '/ai', query: { source: 'infinite-optimizer', action: 'deep-optimize' } })
+}
 
 const form = ref({ iterations: 6, population: 5, evaluation_mode: 'fast' })
 const autoConverge = ref(true)
