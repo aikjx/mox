@@ -1,0 +1,19 @@
+[Unit]
+Description=MOX Lowcode Platform Server
+After=network.target redis.service
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/mox/platform/mox-server
+ExecStart=/usr/bin/python3 run.py 8600
+Restart=always
+RestartSec=3
+Environment=MOX_HOST=0.0.0.0
+Environment=MOX_PORT=8600
+Environment=MOX_REDIS=redis://localhost:6379/0
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

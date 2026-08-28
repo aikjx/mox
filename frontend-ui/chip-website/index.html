@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>芯擎科技 XinEngine — 国产高性能芯片设计</title>
+<style>
+:root{
+  --bg:#050810;--bg2:#0a1020;--bg3:#0f1830;--card:#111a2e;--card2:#162040;
+  --line:#1e2d4a;--line2:#2a3d5e;
+  --cyan:#00e5ff;--cyan-dim:#00a8bd;--blue:#3b82f6;--blue-dim:#2563eb;
+  --text:#e8f0ff;--dim:#7a8ba8;--dim2:#5a6b88;
+  --green:#10b981;--orange:#f59e0b;--red:#ef4444;
+  --radius:10px;--radius-lg:16px;
+  --glow:0 0 20px rgba(0,229,255,.15);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;font-family:inherit;border:none;background:none;color:inherit}
+img{max-width:100%;display:block}
+
+/* ===== 导航 ===== */
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(5,8,16,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.nav-inner{max-width:1280px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:800;letter-spacing:.02em}
+.logo-mark{width:32px;height:32px;background:linear-gradient(135deg,var(--cyan),var(--blue));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:var(--bg);position:relative}
+.logo-mark::after{content:'';position:absolute;inset:-2px;border-radius:10px;background:linear-gradient(135deg,var(--cyan),var(--blue));opacity:.3;z-index:-1;filter:blur(4px)}
+.logo-text span{color:var(--cyan)}
+.nav-links{display:flex;align-items:center;gap:2px}
+.nav-links a{padding:8px 14px;border-radius:6px;font-size:14px;color:var(--dim);transition:.2s;position:relative}
+.nav-links a:hover,.nav-links a.active{color:var(--cyan);background:rgba(0,229,255,.06)}
+.nav-cta{padding:8px 20px;background:linear-gradient(135deg,var(--cyan),var(--blue));color:var(--bg)!important;font-weight:700;border-radius:6px;font-size:14px}
+.nav-cta:hover{opacity:.9!important;background:linear-gradient(135deg,var(--cyan),var(--blue))!important}
+.nav-toggle{display:none;flex-direction:column;gap:5px;padding:8px}
+.nav-toggle span{width:22px;height:2px;background:var(--text);border-radius:2px;transition:.3s}
+
+/* ===== 通用 ===== */
+.container{max-width:1280px;margin:0 auto;padding:0 24px}
+.section{padding:80px 0}
+.section-title{text-align:center;margin-bottom:48px}
+.section-tag{display:inline-block;padding:4px 14px;background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.2);border-radius:20px;font-size:12px;color:var(--cyan);margin-bottom:16px;letter-spacing:.05em}
+.section-title h2{font-size:36px;font-weight:800;margin-bottom:12px;background:linear-gradient(135deg,#fff,var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.section-title p{color:var(--dim);font-size:16px;max-width:600px;margin:0 auto}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:600;transition:.25s;cursor:pointer}
+.btn-primary{background:linear-gradient(135deg,var(--cyan),var(--blue));color:var(--bg)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,229,255,.3)}
+.btn-outline{border:1px solid var(--line2);color:var(--text)}
+.btn-outline:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,229,255,.04)}
+.grid{display:grid;gap:24px}
+.grid-2{grid-template-columns:repeat(2,1fr)}
+.grid-3{grid-template-columns:repeat(3,1fr)}
+.grid-4{grid-template-columns:repeat(4,1fr)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:28px;transition:.3s}
+.card:hover{border-color:var(--cyan-dim);box-shadow:var(--glow);transform:translateY(-4px)}
+
+/* ===== Hero ===== */
+.hero{min-height:100vh;display:flex;align-items:center;position:relative;overflow:hidden;padding-top:64px}
+.hero-bg{position:absolute;inset:0;z-index:0}
+.hero-bg::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,rgba(0,229,255,.08),transparent 60%),radial-gradient(ellipse at 70% 30%,rgba(59,130,246,.06),transparent 50%)}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,229,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.03) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 70%)}
+.hero-content{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;width:100%}
+.hero-text h1{font-size:52px;font-weight:900;line-height:1.15;margin-bottom:24px;letter-spacing:-.02em}
+.hero-text h1 .hl{background:linear-gradient(135deg,var(--cyan),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero-text p{font-size:18px;color:var(--dim);margin-bottom:36px;line-height:1.8}
+.hero-btns{display:flex;gap:16px;flex-wrap:wrap}
+.hero-stats{display:flex;gap:40px;margin-top:48px}
+.hero-stat .num{font-size:32px;font-weight:800;color:var(--cyan)}
+.hero-stat .label{font-size:13px;color:var(--dim);margin-top:4px}
+.hero-visual{position:relative;height:480px;display:flex;align-items:center;justify-content:center}
+.chip-3d{width:320px;height:320px;position:relative;animation:chipFloat 6s ease-in-out infinite}
+@keyframes chipFloat{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-20px) rotate(2deg)}}
+.chip-body{width:100%;height:100%;background:linear-gradient(135deg,#0a1530,#0d1f3c);border:2px solid var(--cyan-dim);border-radius:24px;position:relative;box-shadow:0 0 60px rgba(0,229,255,.2),inset 0 0 40px rgba(0,229,255,.05)}
+.chip-core{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:140px;height:140px;background:linear-gradient(135deg,var(--cyan),var(--blue));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:var(--bg);box-shadow:0 0 30px rgba(0,229,255,.5)}
+.chip-pins{position:absolute;inset:-20px;display:grid;grid-template-columns:repeat(8,1fr);gap:4px;pointer-events:none}
+.chip-pin{background:var(--cyan-dim);border-radius:2px;opacity:.6}
+.chip-pin.top,.chip-pin.bottom{height:8px}
+.chip-pin.left,.chip-pin.right{width:8px}
+.chip-lines{position:absolute;inset:30px;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(6,1fr);gap:2px;opacity:.3}
+.chip-line{background:var(--cyan);border-radius:1px}
+.chip-glow{position:absolute;inset:-40px;background:radial-gradient(circle,rgba(0,229,255,.15),transparent 70%);animation:pulse 3s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.1)}}
+
+/* ===== 产品 ===== */
+.product-card{position:relative;overflow:hidden}
+.product-card .badge{position:absolute;top:16px;right:16px;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:700}
+.badge-new{background:rgba(16,185,129,.15);color:var(--green)}
+.badge-hot{background:rgba(239,68,68,.15);color:var(--red)}
+.badge-pro{background:rgba(245,158,11,.15);color:var(--orange)}
+.product-icon{width:56px;height:56px;background:linear-gradient(135deg,rgba(0,229,255,.15),rgba(59,130,246,.15));border:1px solid var(--cyan-dim);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:20px}
+.product-card h3{font-size:20px;font-weight:700;margin-bottom:8px}
+.product-card .spec{font-size:13px;color:var(--cyan);margin-bottom:12px;font-weight:600}
+.product-card p{color:var(--dim);font-size:14px;margin-bottom:16px;line-height:1.7}
+.product-features{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px}
+.product-features span{padding:3px 10px;background:var(--bg3);border-radius:4px;font-size:11px;color:var(--dim)}
+.product-link{color:var(--cyan);font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+.product-link:hover{gap:8px}
+
+/* ===== 技术 ===== */
+.tech-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+.tech-visual{height:400px;position:relative;display:flex;align-items:center;justify-content:center}
+.tech-ring{position:absolute;border:1px solid var(--cyan-dim);border-radius:50%;opacity:.3}
+.tech-ring:nth-child(1){width:300px;height:300px;animation:rotate 20s linear infinite}
+.tech-ring:nth-child(2){width:220px;height:220px;animation:rotate 15s linear infinite reverse}
+.tech-ring:nth-child(3){width:140px;height:140px;animation:rotate 10s linear infinite}
+@keyframes rotate{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.tech-center{width:80px;height:80px;background:linear-gradient(135deg,var(--cyan),var(--blue));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 0 40px rgba(0,229,255,.4);z-index:1}
+.tech-item{margin-bottom:28px}
+.tech-item h4{font-size:18px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.tech-item h4 .dot{width:8px;height:8px;background:var(--cyan);border-radius:50%;box-shadow:0 0 8px var(--cyan)}
+.tech-item p{color:var(--dim);font-size:14px;line-height:1.7}
+
+/* ===== 数据/指标 ===== */
+.metrics{background:linear-gradient(180deg,var(--bg2),var(--bg));padding:60px 0}
+.metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;text-align:center}
+.metric-card{padding:32px 20px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius)}
+.metric-card .num{font-size:40px;font-weight:900;background:linear-gradient(135deg,var(--cyan),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.metric-card .label{color:var(--dim);font-size:14px}
+
+/* ===== 新闻 ===== */
+.news-card{display:flex;flex-direction:column}
+.news-card .news-img{height:160px;background:linear-gradient(135deg,var(--bg3),var(--card2));border-radius:8px;margin-bottom:16px;display:flex;align-items:center;justify-content:center;font-size:40px;position:relative;overflow:hidden}
+.news-card .news-img::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent,rgba(0,229,255,.1))}
+.news-meta{display:flex;gap:12px;font-size:12px;color:var(--dim);margin-bottom:10px}
+.news-meta .cat{color:var(--cyan);font-weight:600}
+.news-card h3{font-size:17px;font-weight:700;margin-bottom:10px;line-height:1.4}
+.news-card p{color:var(--dim);font-size:13px;line-height:1.7;flex:1}
+.news-card .read-more{margin-top:16px;color:var(--cyan);font-size:13px;font-weight:600}
+
+/* ===== 案例 ===== */
+.case-card{position:relative;overflow:hidden;min-height:280px;display:flex;flex-direction:column;justify-content:flex-end}
+.case-bg{position:absolute;inset:0;background:linear-gradient(135deg,var(--bg3),var(--card2));z-index:0}
+.case-bg::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 80% 20%,rgba(0,229,255,.1),transparent 50%)}
+.case-content{position:relative;z-index:1;padding:24px}
+.case-industry{display:inline-block;padding:3px 10px;background:rgba(0,229,255,.1);border-radius:4px;font-size:11px;color:var(--cyan);margin-bottom:12px;font-weight:600}
+.case-card h3{font-size:18px;font-weight:700;margin-bottom:8px}
+.case-card p{color:var(--dim);font-size:13px;line-height:1.6}
+
+/* ===== 关于 ===== */
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+.about-text h2{font-size:32px;font-weight:800;margin-bottom:20px}
+.about-text p{color:var(--dim);margin-bottom:16px;line-height:1.8}
+.about-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
+.about-tags span{padding:6px 14px;background:var(--card);border:1px solid var(--line);border-radius:6px;font-size:13px;color:var(--dim)}
+.about-visual{height:360px;position:relative}
+.timeline{position:relative;padding-left:30px}
+.timeline::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:2px;background:linear-gradient(180deg,var(--cyan),var(--blue),transparent)}
+.timeline-item{position:relative;margin-bottom:24px}
+.timeline-item::before{content:'';position:absolute;left:-26px;top:6px;width:12px;height:12px;background:var(--cyan);border-radius:50%;box-shadow:0 0 10px var(--cyan)}
+.timeline-item .year{font-size:14px;font-weight:700;color:var(--cyan);margin-bottom:4px}
+.timeline-item .event{font-size:14px;color:var(--dim)}
+
+/* ===== 联系 ===== */
+.contact-grid{display:grid;grid-template-columns:1fr 1.2fr;gap:48px}
+.contact-info h2{font-size:28px;font-weight:800;margin-bottom:16px}
+.contact-info p{color:var(--dim);margin-bottom:32px;line-height:1.8}
+.contact-item{display:flex;gap:16px;margin-bottom:24px}
+.contact-icon{width:44px;height:44px;background:rgba(0,229,255,.08);border:1px solid var(--cyan-dim);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.contact-item .label{font-size:12px;color:var(--dim);margin-bottom:2px}
+.contact-item .value{font-size:15px;font-weight:600}
+.contact-form{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-lg);padding:32px}
+.form-group{margin-bottom:20px}
+.form-group label{display:block;font-size:13px;color:var(--dim);margin-bottom:8px;font-weight:600}
+.form-group input,.form-group textarea,.form-group select{width:100%;padding:12px 16px;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:14px;font-family:inherit;transition:.2s}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,229,255,.1)}
+.form-group textarea{resize:vertical;min-height:100px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* ===== 页脚 ===== */
+.footer{background:var(--bg2);border-top:1px solid var(--line);padding:60px 0 24px}
+.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px}
+.footer-brand p{color:var(--dim);font-size:14px;margin-top:16px;line-height:1.7}
+.footer-col h4{font-size:14px;font-weight:700;margin-bottom:16px;color:var(--text)}
+.footer-col a{display:block;font-size:13px;color:var(--dim);padding:4px 0;transition:.2s}
+.footer-col a:hover{color:var(--cyan)}
+.footer-bottom{border-top:1px solid var(--line);padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.footer-bottom p{font-size:12px;color:var(--dim2)}
+.footer-bottom a{color:var(--dim2);font-size:12px}
+.footer-bottom a:hover{color:var(--cyan)}
+
+/* ===== 管理后台入口 ===== */
+.admin-banner{background:linear-gradient(135deg,rgba(0,229,255,.05),rgba(59,130,246,.05));border:1px solid var(--line);border-radius:var(--radius);padding:32px;text-align:center;margin-bottom:32px}
+.admin-banner h3{font-size:20px;margin-bottom:8px}
+.admin-banner p{color:var(--dim);font-size:14px;margin-bottom:20px}
+
+/* ===== 响应式 ===== */
+@media(max-width:1024px){
+  .grid-4{grid-template-columns:repeat(2,1fr)}
+  .metrics-grid{grid-template-columns:repeat(2,1fr)}
+  .footer-grid{grid-template-columns:1fr 1fr}
+  .hero-content{grid-template-columns:1fr;text-align:center}
+  .hero-visual{height:360px}
+  .hero-stats{justify-content:center}
+  .tech-grid,.about-grid,.contact-grid{grid-template-columns:1fr}
+}
+@media(max-width:768px){
+  .nav-links{display:none;position:absolute;top:64px;left:0;right:0;background:var(--bg2);border-bottom:1px solid var(--line);flex-direction:column;padding:16px;gap:4px}
+  .nav-links.open{display:flex}
+  .nav-links a{padding:12px 16px}
+  .nav-toggle{display:flex}
+  .section{padding:48px 0}
+  .section-title h2{font-size:26px}
+  .hero-text h1{font-size:34px}
+  .grid-2,.grid-3{grid-template-columns:1fr}
+  .form-row{grid-template-columns:1fr}
+  .footer-grid{grid-template-columns:1fr}
+  .chip-3d{width:240px;height:240px}
+}
+
+/* ===== 动画 ===== */
+.fade-in{opacity:0;transform:translateY(20px);transition:.6s ease}
+.fade-in.visible{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- 导航 -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="#/home" class="logo">
+      <div class="logo-mark">芯</div>
+      <div class="logo-text">芯擎<span>科技</span></div>
+    </a>
+    <div class="nav-links" id="navLinks">
+      <a href="#/home" data-route="home">首页</a>
+      <a href="#/products" data-route="products">产品中心</a>
+      <a href="#/technology" data-route="technology">技术实力</a>
+      <a href="#/news" data-route="news">新闻动态</a>
+      <a href="#/cases" data-route="cases">应用案例</a>
+      <a href="#/graph" data-route="graph">知识图谱</a>
+      <a href="#/about" data-route="about">关于我们</a>
+      <a href="#/contact" data-route="contact">联系我们</a>
+      <a href="#/admin" data-route="admin" class="nav-cta">管理中心</a>
+    </div>
+    <button class="nav-toggle" id="navToggle" aria-label="菜单"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<!-- 首页 -->
+<div id="page-home" class="page">
+  <section class="hero">
+    <div class="hero-bg"><div class="hero-grid"></div></div>
+    <div class="hero-content">
+      <div class="hero-text">
+        <div class="section-tag" style="margin-bottom:20px">国产高性能芯片设计</div>
+        <h1>以<span class="hl">芯</span>为引擎<br>驱动智能未来</h1>
+        <p>芯擎科技专注于高性能、低功耗芯片设计，覆盖AI计算、智能终端、汽车电子、物联网四大领域，以自研架构助力千行百业智能化升级。</p>
+        <div class="hero-btns">
+          <a href="#/products" class="btn btn-primary">探索产品 →</a>
+          <a href="#/contact" class="btn btn-outline">联系合作</a>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat"><div class="num">7nm</div><div class="label">先进制程</div></div>
+          <div class="hero-stat"><div class="num">200+</div><div class="label">专利技术</div></div>
+          <div class="hero-stat"><div class="num">50+</div><div class="label">行业客户</div></div>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="chip-3d">
+          <div class="chip-glow"></div>
+          <div class="chip-body">
+            <div class="chip-lines" id="chipLines"></div>
+            <div class="chip-core">XE-N1</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 核心产品 -->
+  <section class="section">
+    <div class="container">
+      <div class="section-title">
+        <div class="section-tag">PRODUCT LINES</div>
+        <h2>核心产品矩阵</h2>
+        <p>从AI算力到边缘智能，从汽车电子到物联网，全场景芯片解决方案</p>
+      </div>
+      <div class="grid grid-3" id="homeProducts"></div>
+    </div>
+  </section>
+
+  <!-- 技术实力 -->
+  <section class="section" style="background:var(--bg2)">
+    <div class="container">
+      <div class="tech-grid">
+        <div class="tech-visual">
+          <div class="tech-ring"></div>
+          <div class="tech-ring"></div>
+          <div class="tech-ring"></div>
+          <div class="tech-center">⚡</div>
+        </div>
+        <div>
+          <div class="section-tag">TECHNOLOGY</div>
+          <h2 style="font-size:32px;font-weight:800;margin-bottom:24px">自研核心技术</h2>
+          <div class="tech-item"><h4><span class="dot"></span>自研CPU/GPU架构</h4><p>基于RISC-V指令集自主研发多核CPU架构，兼容主流生态，性能功耗比领先行业20%。</p></div>
+          <div class="tech-item"><h4><span class="dot"></span>先进制程设计</h4><p>7nm/5nm先进制程设计能力，后端物理设计全流程自研，良率达到业界一流水平。</p></div>
+          <div class="tech-item"><h4><span class="dot"></span>AI加速引擎</h4><p>自研NPU张量加速引擎，支持INT8/FP16混合精度，算力密度达到业界领先水平。</p></div>
+          <div class="tech-item"><h4><span class="dot"></span>低功耗设计</h4><p>多电压域、动态频率调节、细粒度电源门控，待机功耗低至mW级，适用于电池供电场景。</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 指标 -->
+  <section class="metrics">
+    <div class="container">
+      <div class="metrics-grid">
+        <div class="metric-card"><div class="num">7nm</div><div class="label">最先进制程</div></div>
+        <div class="metric-card"><div class="num">256TOPS</div><div class="label">AI峰值算力</div></div>
+        <div class="metric-card"><div class="num">5mW</div><div class="label">待机功耗</div></div>
+        <div class="metric-card"><div class="num">99.9%</div><div class="label">产品良率</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 新闻 -->
+  <section class="section">
+    <div class="container">
+      <div class="section-title">
+        <div class="section-tag">NEWS & INSIGHTS</div>
+        <h2>新闻动态</h2>
+        <p>了解芯擎最新产品发布、技术突破与行业洞察</p>
+      </div>
+      <div class="grid grid-3" id="homeNews"></div>
+      <div style="text-align:center;margin-top:32px"><a href="#/news" class="btn btn-outline">查看更多新闻 →</a></div>
+    </div>
+  </section>
+
+  <!-- 案例 -->
+  <section class="section" style="background:var(--bg2)">
+    <div class="container">
+      <div class="section-title">
+        <div class="section-tag">CASES</div>
+        <h2>应用案例</h2>
+        <p>真实落地场景，验证芯片技术价值</p>
+      </div>
+      <div class="grid grid-3" id="homeCases"></div>
+    </div>
+  </section>
+</div>
+
+<!-- 产品中心 -->
+<div id="page-products" class="page" style="display:none;padding-top:100px">
+  <div class="container">
+    <div class="section-title">
+      <div class="section-tag">PRODUCTS</div>
+      <h2>产品中心</h2>
+      <p>四大产品线，覆盖AI计算、智能终端、汽车电子、物联网全场景</p>
+    </div>
+    <div class="grid grid-3" id="allProducts"></div>
+  </div>
+</div>
+
+<!-- 技术实力 -->
+<div id="page-technology" class="page" style="display:none;padding-top:100px">
+  <div class="container">
+    <div class="section-title">
+      <div class="section-tag">TECHNOLOGY</div>
+      <h2>技术实力</h2>
+      <p>全栈自研，从架构到物理设计，从软件生态到系统验证</p>
+    </div>
+    <div class="grid grid-2" style="margin-bottom:48px">
+      <div class="card"><div class="product-icon">🏗️</div><h3 style="margin-bottom:12px">架构设计</h3><p style="color:var(--dim);font-size:14px;line-height:1.8">基于RISC-V指令集自主研发CPU/GPU/NPU架构，支持多核异构、一致性互联，兼容主流软件生态。</p></div>
+      <div class="card"><div class="product-icon">🔬</div><h3 style="margin-bottom:12px">物理设计</h3><p style="color:var(--dim);font-size:14px;line-height:1.8">7nm/5nm先进制程后端设计能力，全流程自研EDA流程，时序收敛、功耗优化、良率提升。</p></div>
+      <div class="card"><div class="product-icon">⚡</div><h3 style="margin-bottom:12px">AI加速</h3><p style="color:var(--dim);font-size:14px;line-height:1.8">自研张量加速引擎NPU，支持INT8/FP16/FP32混合精度，稀疏计算，算力密度业界领先。</p></div>
+      <div class="card"><div class="product-icon">🔋</div><h3 style="margin-bottom:12px">低功耗技术</h3><p style="color:var(--dim);font-size:14px;line-height:1.8">多电压域、DVFS动态频率调节、细粒度电源门控、时钟门控，待机功耗低至mW级。</p></div>
+      <div class="card"><div class="product-icon">🔐</div><h3 style="margin-bottom:12px">安全引擎</h3><p style="color:var(--dim);font-size:14px;line-height:1.8">内置硬件安全模块HSM，支持国密SM2/SM3/SM4、AES、RSA、ECC，安全启动、可信执行环境TEE。</p></div>
+      <div class="card"><div class="product-icon">🧩</div><h3 style="margin-bottom:12px">软件生态</h3><p style="color:var(--dim);font-size:14px;line-height:1.8">完整SDK工具链，支持Linux/Android/RTOS，AI框架兼容TensorFlow/PyTorch/ONNX，开发文档完善。</p></div>
+    </div>
+    <div class="section-title"><h2 style="font-size:28px">研发流程</h2></div>
+    <div class="grid grid-4">
+      <div class="card" style="text-align:center"><div style="font-size:32px;margin-bottom:12px">📐</div><h4 style="margin-bottom:8px">规格定义</h4><p style="color:var(--dim);font-size:13px">需求分析、架构设计、规格书</p></div>
+      <div class="card" style="text-align:center"><div style="font-size:32px;margin-bottom:12px">💻</div><h4 style="margin-bottom:8px">前端设计</h4><p style="color:var(--dim);font-size:13px">RTL编码、验证、综合</p></div>
+      <div class="card" style="text-align:center"><div style="font-size:32px;margin-bottom:12px">🔧</div><h4 style="margin-bottom:8px">后端设计</h4><p style="color:var(--dim);font-size:13px">布局布线、时序收敛、签核</p></div>
+      <div class="card" style="text-align:center"><div style="font-size:32px;margin-bottom:12px">🏭</div><h4 style="margin-bottom:8px">流片量产</h4><p style="color:var(--dim);font-size:13px">GDSII交付、晶圆制造、封装测试</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- 新闻 -->
+<div id="page-news" class="page" style="display:none;padding-top:100px">
+  <div class="container">
+    <div class="section-title">
+      <div class="section-tag">NEWS</div>
+      <h2>新闻动态</h2>
+      <p>产品发布、技术突破、行业洞察</p>
+    </div>
+    <div class="grid grid-3" id="allNews"></div>
+  </div>
+</div>
+
+<!-- 案例 -->
+<div id="page-cases" class="page" style="display:none;padding-top:100px">
+  <div class="container">
+    <div class="section-title">
+      <div class="section-tag">CASES</div>
+      <h2>应用案例</h2>
+      <p>覆盖AI计算、智能驾驶、智慧城市、工业物联网等领域</p>
+    </div>
+    <div class="grid grid-3" id="allCases"></div>
+  </div>
+</div>
+
+<!-- 关于 -->
+<div id="page-about" class="page" style="display:none;padding-top:100px">
+  <div class="container">
+    <div class="about-grid" style="margin-bottom:64px">
+      <div class="about-text">
+        <div class="section-tag">ABOUT US</div>
+        <h2>关于芯擎科技</h2>
+        <p>芯擎科技成立于2018年，总部位于广州，是一家专注于高性能、低功耗芯片设计的高新技术企业。我们坚持自研核心架构，构建了覆盖AI计算、智能终端、汽车电子、物联网的全栈芯片能力。</p>
+        <p>公司拥有200+项专利技术，研发团队占比超过70%，核心成员来自国内外顶尖芯片设计公司。我们以"让中国芯更智能"为使命，致力于成为全球领先的芯片设计企业。</p>
+        <div class="about-tags">
+          <span>国家高新技术企业</span><span>专精特新"小巨人"</span><span>集成电路设计企业</span><span>ISO 9001认证</span><span>ISO 27001认证</span><span>AEC-Q100车规认证</span>
+        </div>
+      </div>
+      <div class="about-visual">
+        <div class="timeline">
+          <div class="timeline-item"><div class="year">2018</div><div class="event">芯擎科技成立，获天使轮融资</div></div>
+          <div class="timeline-item"><div class="year">2019</div><div class="event">首款IoT芯片XE-I1流片成功</div></div>
+          <div class="timeline-item"><div class="year">2020</div><div class="event">AI加速芯片XE-A1发布，算力达64TOPS</div></div>
+          <div class="timeline-item"><div class="year">2021</div><div class="event">车规级芯片XE-V1通过AEC-Q100认证</div></div>
+          <div class="timeline-item"><div class="year">2022</div><div class="event">7nm先进制程芯片XE-N1流片成功</div></div>
+          <div class="timeline-item"><div class="year">2023</div><div class="event">获C轮融资，估值超50亿</div></div>
+          <div class="timeline-item"><div class="year">2024</div><div class="event">5nm AI芯片XE-A2量产，算力256TOPS</div></div>
+          <div class="timeline-item"><div class="year">2025</div><div class="event">全产品线出货量突破1亿颗</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="section-title"><h2 style="font-size:28px">核心团队</h2></div>
+    <div class="grid grid-3" id="teamList"></div>
+  </div>
+</div>
+
+<!-- 联系 -->
+<div id="page-contact" class="page" style="display:none;padding-top:100px">
+  <div class="container">
+    <div class="contact-grid">
+      <div class="contact-info">
+        <div class="section-tag">CONTACT</div>
+        <h2>联系我们</h2>
+        <p>无论是产品咨询、技术合作还是商务洽谈，我们都期待与您沟通。</p>
+        <div class="contact-item"><div class="contact-icon">📍</div><div><div class="label">公司地址</div><div class="value">广州市黄埔区科学城芯擎大厦</div></div></div>
+        <div class="contact-item"><div class="contact-icon">📞</div><div><div class="label">商务热线</div><div class="value">400-888-6688</div></div></div>
+        <div class="contact-item"><div class="contact-icon">✉️</div><div><div class="label">商务邮箱</div><div class="value">business@xinengine.com</div></div></div>
+        <div class="contact-item"><div class="contact-icon">🔧</div><div><div class="label">技术支持</div><div class="value">support@xinengine.com</div></div></div>
+        <div class="contact-item"><div class="contact-icon">💼</div><div><div class="label">招聘邮箱</div><div class="value">hr@xinengine.com</div></div></div>
+      </div>
+      <div class="contact-form">
+        <h3 style="margin-bottom:24px;font-size:20px">在线咨询</h3>
+        <form id="contactForm" onsubmit="submitContact(event)">
+          <div class="form-row">
+            <div class="form-group"><label>姓名 *</label><input type="text" name="name" required placeholder="请输入您的姓名"></div>
+            <div class="form-group"><label>公司</label><input type="text" name="company" placeholder="请输入公司名称"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>电话 *</label><input type="tel" name="phone" required placeholder="请输入联系电话"></div>
+            <div class="form-group"><label>邮箱</label><input type="email" name="email" placeholder="请输入邮箱地址"></div>
+          </div>
+          <div class="form-group"><label>咨询类型</label>
+            <select name="type">
+              <option value="product">产品咨询</option>
+              <option value="tech">技术合作</option>
+              <option value="business">商务洽谈</option>
+              <option value="support">技术支持</option>
+              <option value="other">其他</option>
+            </select>
+          </div>
+          <div class="form-group"><label>留言内容 *</label><textarea name="message" required placeholder="请详细描述您的需求..."></textarea></div>
+          <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">提交咨询</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 知识图谱 -->
+<div id="page-graph" class="page" style="display:none;padding-top:100px">
+  <div class="container">
+    <div class="section-title">
+      <div class="section-tag">KNOWLEDGE GRAPH</div>
+      <h2>芯擎知识图谱</h2>
+      <p>产品·技术·行业·场景·客户 全维关联，点击节点探索关系网络</p>
+    </div>
+    <div style="display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+      <div id="graphFilters" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button class="btn btn-outline" style="padding:8px 16px;font-size:13px" onclick="resetGraph()">重置视图</button>
+        <button class="btn btn-outline" style="padding:8px 16px;font-size:13px" onclick="expandGraph()">展开全部</button>
+      </div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden;position:relative;height:600px">
+      <canvas id="kgCanvas" style="width:100%;height:100%;display:block;cursor:grab"></canvas>
+      <div id="kgLegend" style="position:absolute;bottom:16px;left:16px;background:rgba(5,8,16,.85);border:1px solid var(--line);border-radius:8px;padding:12px 16px;font-size:12px"></div>
+      <div id="kgInfo" style="position:absolute;top:16px;right:16px;background:rgba(5,8,16,.85);border:1px solid var(--line);border-radius:8px;padding:16px;max-width:280px;display:none"></div>
+      <div id="kgLoading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(5,8,16,.8);color:var(--dim)">加载知识图谱中...</div>
+    </div>
+    <div style="margin-top:24px;display:grid;grid-template-columns:repeat(5,1fr);gap:16px" id="kgStats"></div>
+  </div>
+</div>
+
+<!-- 管理中心 -->
+<div id="page-admin" class="page" style="display:none;padding-top:100px">
+  <div class="container" style="max-width:900px">
+    <div class="admin-banner">
+      <h3>芯擎科技 — 内容管理中心</h3>
+      <p>基于MOX低代码平台，动态管理产品、新闻、案例、团队等所有内容</p>
+      <a href="../../mox-console/index.html" target="_blank" class="btn btn-primary">进入管理控制台 →</a>
+    </div>
+    <div class="grid grid-2">
+      <div class="card"><h4 style="margin-bottom:12px">📦 产品管理</h4><p style="color:var(--dim);font-size:14px">芯片产品信息、规格参数、技术文档的增删改查</p></div>
+      <div class="card"><h4 style="margin-bottom:12px">📰 新闻管理</h4><p style="color:var(--dim);font-size:14px">公司新闻、产品发布、行业资讯的发布与管理</p></div>
+      <div class="card"><h4 style="margin-bottom:12px">🏆 案例管理</h4><p style="color:var(--dim);font-size:14px">客户案例、应用场景、成功故事的维护</p></div>
+      <div class="card"><h4 style="margin-bottom:12px">👥 团队管理</h4><p style="color:var(--dim);font-size:14px">核心团队介绍、高管信息管理</p></div>
+      <div class="card"><h4 style="margin-bottom:12px">💬 留言管理</h4><p style="color:var(--dim);font-size:14px">客户咨询留言查看、回复、导出</p></div>
+      <div class="card"><h4 style="margin-bottom:12px">⚙️ SQL管理</h4><p style="color:var(--dim);font-size:14px">动态SQL模板配置、多数据源管理、AI生成SQL</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- 页脚 -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="#/home" class="logo"><div class="logo-mark">芯</div><div class="logo-text">芯擎<span>科技</span></div></a>
+        <p>以芯为引擎，驱动智能未来。芯擎科技专注高性能、低功耗芯片设计，助力千行百业智能化升级。</p>
+      </div>
+      <div class="footer-col">
+        <h4>产品中心</h4>
+        <a href="#/products">AI计算芯片</a>
+        <a href="#/products">智能终端芯片</a>
+        <a href="#/products">汽车电子芯片</a>
+        <a href="#/products">物联网芯片</a>
+      </div>
+      <div class="footer-col">
+        <h4>关于我们</h4>
+        <a href="#/about">公司简介</a>
+        <a href="#/about">发展历程</a>
+        <a href="#/technology">技术实力</a>
+        <a href="#/cases">应用案例</a>
+      </div>
+      <div class="footer-col">
+        <h4>支持与联系</h4>
+        <a href="#/contact">联系我们</a>
+        <a href="#/news">新闻动态</a>
+        <a href="#/admin">管理中心</a>
+        <a href="#/contact">技术支持</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 芯擎科技（广州）有限公司 版权所有 | 粤ICP备XXXXXXXX号</p>
+      <div style="display:flex;gap:16px">
+        <a href="#">隐私政策</a>
+        <a href="#">用户协议</a>
+        <a href="https://beian.miit.gov.cn" target="_blank">工信部备案</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ===== API 配置 =====
+const API_BASE = location.protocol.startsWith('http') ? '/api' : 'http://127.0.0.1:8600/api';
+const APP_KEY = 'xinengine';
+
+// ===== 模拟数据（无后端时使用） =====
+const MOCK = {
+  products: [
+    {id:1,name:'XE-A2 智算芯片',category:'AI计算',spec:'5nm / 256TOPS / 120W',icon:'🧠',badge:'hot',desc:'面向AI推理与训练的高性能计算芯片，自研NPU架构，支持大模型部署。',features:['5nm制程','256TOPS','INT8/FP16','PCIe 5.0']},
+    {id:2,name:'XE-N1 边缘AI芯片',category:'AI计算',spec:'7nm / 64TOPS / 15W',icon:'⚡',badge:'new',desc:'边缘计算场景专用AI芯片，低功耗高性能，适用于智能摄像头、机器人等。',features:['7nm制程','64TOPS','15W功耗','多路视频编解码']},
+    {id:3,name:'XE-T1 智能终端SoC',category:'智能终端',spec:'12nm / 8核CPU / GPU',icon:'📱',badge:'pro',desc:'面向智能平板、学习机、工业终端的高性能SoC，集成CPU/GPU/NPU/ISP。',features:['8核CPU','Mali GPU','5TOPS NPU','4K显示']},
+    {id:4,name:'XE-V1 车规级芯片',category:'汽车电子',spec:'16nm / AEC-Q100 / -40~125℃',icon:'🚗',badge:'pro',desc:'通过AEC-Q100车规认证，适用于智能座舱、ADAS辅助驾驶、车载网关。',features:['AEC-Q100','功能安全ASIL-B','车载以太网','多路CAN FD']},
+    {id:5,name:'XE-I1 物联网芯片',category:'物联网',spec:'22nm / 双核 / 5mW待机',icon:'📡',badge:'hot',desc:'超低功耗物联网芯片，支持WiFi6/BLE5.2/Zigbee，适用于智能家居、传感器网络。',features:['5mW待机','WiFi6','BLE5.2','多种传感器接口']},
+    {id:6,name:'XE-S1 安全芯片',category:'物联网',spec:'28nm / 国密 / HSM',icon:'🔐',badge:'new',desc:'内置硬件安全模块，支持国密SM2/SM3/SM4，适用于金融、政务、身份认证场景。',features:['国密算法','HSM硬件安全','安全启动','真随机数']}
+  ],
+  news: [
+    {id:1,title:'芯擎科技发布5nm AI芯片XE-A2，算力达256TOPS',category:'产品发布',date:'2025-08-20',icon:'🚀',desc:'全新一代AI计算芯片XE-A2正式量产，采用5nm先进制程，峰值算力256TOPS，性能功耗比提升40%。'},
+    {id:2,title:'芯擎车规芯片XE-V1通过AEC-Q100 Grade 2认证',category:'公司动态',date:'2025-07-15',icon:'🏆',desc:'XE-V1车规级芯片正式通过AEC-Q100 Grade 2认证，工作温度范围-40℃~105℃，可用于智能座舱与ADAS。'},
+    {id:3,title:'2025边缘AI芯片趋势：低功耗与大模型成为核心竞争力',category:'行业洞察',date:'2025-06-28',icon:'📊',desc:'边缘AI芯片正从单纯算力竞争转向"算力+功耗+生态"综合竞争，端侧大模型部署成为新热点。'},
+    {id:4,title:'芯擎科技与某头部车企达成战略合作',category:'公司动态',date:'2025-06-10',icon:'🤝',desc:'双方将在智能座舱、ADAS辅助驾驶领域展开深度合作，芯擎XE-V1芯片将搭载于下一代车型。'},
+    {id:5,title:'XE-I1物联网芯片出货量突破5000万颗',category:'产品发布',date:'2025-05-20',icon:'📈',desc:'XE-I1超低功耗物联网芯片累计出货量突破5000万颗，广泛应用于智能家居、工业传感等领域。'},
+    {id:6,title:'RISC-V架构在高性能计算领域的机遇与挑战',category:'行业洞察',date:'2025-05-08',icon:'🔬',desc:'RISC-V开源指令集正从嵌入式向高性能计算渗透，生态完善和软件兼容是关键挑战。'}
+  ],
+  cases: [
+    {id:1,industry:'AI计算',title:'某云服务商AI推理集群',icon:'☁️',desc:'采用XE-A2芯片构建AI推理集群，支撑千万级日活用户的智能推荐与内容审核，TCO降低35%。'},
+    {id:2,industry:'智能驾驶',title:'某新能源车企智能座舱',icon:'🚙',desc:'XE-V1车规芯片搭载于智能座舱系统，支持多屏互动、语音交互、驾驶员监测，体验流畅。'},
+    {id:3,industry:'智慧城市',title:'某城市智慧安防项目',icon:'🏙️',desc:'XE-N1边缘AI芯片部署于2万路智能摄像头，实现实时人脸识别、行为分析、异常预警。'},
+    {id:4,industry:'工业物联网',title:'某制造集团智能工厂',icon:'🏭',desc:'XE-I1物联网芯片部署于5000+工业传感器，实现设备状态实时监测，故障率降低40%。'},
+    {id:5,industry:'智能家居',title:'某头部家电品牌智能终端',icon:'🏠',desc:'XE-T1智能终端SoC搭载于智能屏产品，支持语音交互、家庭中枢、多设备联动。'},
+    {id:6,industry:'金融科技',title:'某银行安全认证系统',icon:'🏦',desc:'XE-S1安全芯片用于银行U盾与身份认证终端，支持国密算法，通过金融级安全认证。'}
+  ],
+  team: [
+    {id:1,name:'陈志远',title:'创始人 & CEO',desc:'前国际顶尖芯片公司首席架构师，20年芯片设计经验，主导过多款亿级出货量芯片。'},
+    {id:2,name:'林思琪',title:'CTO & 联合创始人',desc:'前知名半导体公司技术副总裁，专注CPU/GPU架构设计，拥有50+项芯片架构专利。'},
+    {id:3,name:'王浩然',title:'副总裁 · 汽车电子',desc:'前车规芯片产品线负责人，15年汽车电子经验，主导过多款通过AEC-Q100认证的车规芯片。'}
+  ]
+};
+
+// ===== 数据获取（MOX DSQL引擎 POST方式，失败用模拟数据） =====
+const SQL_CODES = {
+  products: 'chip_products_list',
+  news: 'chip_news_list',
+  cases: 'chip_cases_list',
+  team: 'chip_team_list'
+};
+
+// 后端数据归一化为前端格式
+function normalizeRow(type, row) {
+  if (type === 'products') {
+    let specs = {};
+    try { specs = typeof row.specs_json === 'string' ? JSON.parse(row.specs_json) : (row.specs_json || {}); } catch(e) {}
+    const specStr = Object.entries(specs).map(([k,v])=>`${k}:${v}`).join(' / ');
+    return {
+      id: row.id, name: row.name, category: row.category,
+      spec: specStr || row.category, icon: '🔧',
+      badge: row.hot ? 'hot' : (row.recommend ? 'pro' : ''),
+      desc: row.summary || '', features: Object.values(specs).slice(0,4)
+    };
+  }
+  if (type === 'news') {
+    return {id:row.id, title:row.title, category:row.category, date:row.date, icon:'📰', desc:row.summary||''};
+  }
+  if (type === 'cases') {
+    return {id:row.id, industry:row.industry, title:row.title, icon:'🏢', desc:row.summary||''};
+  }
+  if (type === 'team') {
+    return {id:row.id, name:row.name, title:row.role, desc:row.bio||''};
+  }
+  return row;
+}
+
+async function fetchData(type) {
+  const code = SQL_CODES[type];
+  if (!code) return MOCK[type] || [];
+  try {
+    const res = await fetch(`${API_BASE}/dsql/execute`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({sql_code: code, params: {}})
+    });
+    const data = await res.json();
+    if (data.success && data.data && data.data.length) {
+      return data.data.map(row => normalizeRow(type, row));
+    }
+  } catch(e) {}
+  return MOCK[type] || [];
+}
+
+// ===== 渲染函数 =====
+function renderProductCard(p) {
+  const badgeMap = {hot:'badge-hot',new:'badge-new',pro:'badge-pro'};
+  const badgeText = {hot:'热销',new:'新品',pro:'旗舰'};
+  return `<div class="card product-card">
+    ${p.badge?`<span class="badge ${badgeMap[p.badge]}">${badgeText[p.badge]}</span>`:''}
+    <div class="product-icon">${p.icon||'🔧'}</div>
+    <h3>${p.name}</h3>
+    <div class="spec">${p.spec||p.category}</div>
+    <p>${p.desc||p.description||''}</p>
+    <div class="product-features">${(p.features||[]).map(f=>`<span>${f}</span>`).join('')}</div>
+    <a href="#/contact" class="product-link">咨询详情 →</a>
+  </div>`;
+}
+
+function renderNewsCard(n) {
+  return `<div class="card news-card">
+    <div class="news-img">${n.icon||'📰'}</div>
+    <div class="news-meta"><span class="cat">${n.category}</span><span>${n.date}</span></div>
+    <h3>${n.title}</h3>
+    <p>${n.desc||n.summary||''}</p>
+    <a href="#/news" class="read-more">阅读全文 →</a>
+  </div>`;
+}
+
+function renderCaseCard(c) {
+  return `<div class="card case-card">
+    <div class="case-bg"></div>
+    <div class="case-content">
+      <span class="case-industry">${c.industry}</span>
+      <h3>${c.title}</h3>
+      <p>${c.desc||c.description||''}</p>
+    </div>
+  </div>`;
+}
+
+function renderTeamCard(t) {
+  return `<div class="card" style="text-align:center">
+    <div style="width:80px;height:80px;margin:0 auto 16px;background:linear-gradient(135deg,var(--cyan),var(--blue));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px">${t.icon||'👤'}</div>
+    <h3 style="margin-bottom:4px">${t.name}</h3>
+    <div style="color:var(--cyan);font-size:13px;font-weight:600;margin-bottom:12px">${t.title}</div>
+    <p style="color:var(--dim);font-size:13px;line-height:1.7">${t.desc||t.description||''}</p>
+  </div>`;
+}
+
+// ===== 页面初始化 =====
+async function initPage() {
+  const [products, news, cases, team] = await Promise.all([
+    fetchData('products'), fetchData('news'), fetchData('cases'), fetchData('team')
+  ]);
+
+  // 首页
+  document.getElementById('homeProducts').innerHTML = products.slice(0,3).map(renderProductCard).join('');
+  document.getElementById('homeNews').innerHTML = news.slice(0,3).map(renderNewsCard).join('');
+  document.getElementById('homeCases').innerHTML = cases.slice(0,3).map(renderCaseCard).join('');
+
+  // 产品页
+  document.getElementById('allProducts').innerHTML = products.map(renderProductCard).join('');
+
+  // 新闻页
+  document.getElementById('allNews').innerHTML = news.map(renderNewsCard).join('');
+
+  // 案例页
+  document.getElementById('allCases').innerHTML = cases.map(renderCaseCard).join('');
+
+  // 团队
+  document.getElementById('teamList').innerHTML = team.map(renderTeamCard).join('');
+
+  // 芯片线路动画
+  const lines = document.getElementById('chipLines');
+  if (lines) {
+    let html = '';
+    for (let i = 0; i < 36; i++) {
+      if (Math.random() > 0.5) html += '<div class="chip-line"></div>';
+      else html += '<div></div>';
+    }
+    lines.innerHTML = html;
+  }
+}
+
+// ===== 路由 =====
+function navigate(route) {
+  document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+  const page = document.getElementById('page-' + route);
+  if (page) page.style.display = 'block';
+  document.querySelectorAll('.nav-links a[data-route]').forEach(a => {
+    a.classList.toggle('active', a.dataset.route === route);
+  });
+  window.scrollTo({top:0, behavior:'smooth'});
+  document.getElementById('navLinks').classList.remove('open');
+}
+
+function getRoute() {
+  const hash = location.hash.replace('#/', '');
+  const valid = ['home','products','technology','news','cases','about','contact','admin'];
+  return valid.includes(hash) ? hash : 'home';
+}
+
+window.addEventListener('hashchange', () => navigate(getRoute()));
+
+// ===== 移动端菜单 =====
+document.getElementById('navToggle').addEventListener('click', () => {
+  document.getElementById('navLinks').classList.toggle('open');
+});
+
+// ===== 联系表单 =====
+function submitContact(e) {
+  e.preventDefault();
+  const form = e.target;
+  const data = Object.fromEntries(new FormData(form));
+  // 提交到MOX官网留言接口
+  fetch(`${API_BASE}/website/message`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(data)
+  }).catch(()=>{});
+  alert('感谢您的咨询！我们会在24小时内与您联系。');
+  form.reset();
+}
+
+// ===== 知识图谱 =====
+const KG_COLORS = {
+  product: '#00e5ff', technology: '#3b82f6', industry: '#10b981',
+  scenario: '#f59e0b', customer: '#ef4444'
+};
+const KG_LABELS = {
+  product: '产品', technology: '技术', industry: '行业', scenario: '场景', customer: '客户'
+};
+const RELATION_LABELS = {
+  adopts: '采用', applied_to: '应用于', belongs_to: '属于',
+  evolved_from: '演进自', integrates: '集成', used_in: '应用于', uses: '使用'
+};
+let kgNodes = [], kgEdges = [], kgCanvas, kgCtx, kgAnimId, kgSelected = null, kgDragging = null;
+let kgFilters = {product:true, technology:true, industry:true, scenario:true, customer:true};
+let kgOffset = {x:0, y:0}, kgScale = 1, kgLastPan = null;
+
+async function loadKnowledgeGraph() {
+  document.getElementById('kgLoading').style.display = 'flex';
+  let nodes = [], edges = [];
+  try {
+    const res = await fetch(`${API_BASE}/kg/graph`);
+    const data = await res.json();
+    if (data.success && data.data && data.data.nodes) {
+      nodes = data.data.nodes;
+      edges = data.data.edges || [];
+    }
+  } catch(e) {}
+  // 模拟数据（无后端时）
+  if (!nodes.length) {
+    nodes = [
+      ...MOCK.products.map(p=>({vid:'p'+p.id,type:'product',label:p.name,props:{spec:p.spec}})),
+      {vid:'t1',type:'technology',label:'RISC-V CPU架构'},{vid:'t2',type:'technology',label:'自研NPU张量引擎'},
+      {vid:'t3',type:'technology',label:'7nm先进制程'},{vid:'t4',type:'technology',label:'5nm先进制程'},
+      {vid:'t5',type:'technology',label:'低功耗设计'},{vid:'t6',type:'technology',label:'国密算法引擎'},
+      {vid:'t7',type:'technology',label:'车载功能安全'},{vid:'t8',type:'technology',label:'多模态视频编解码'},
+      {vid:'i1',type:'industry',label:'AI云计算'},{vid:'i2',type:'industry',label:'智能驾驶'},
+      {vid:'i3',type:'industry',label:'智慧城市'},{vid:'i4',type:'industry',label:'工业物联网'},
+      {vid:'i5',type:'industry',label:'智能家居'},{vid:'i6',type:'industry',label:'金融科技'},
+      {vid:'s1',type:'scenario',label:'AI推理集群'},{vid:'s2',type:'scenario',label:'智能座舱'},
+      {vid:'s3',type:'scenario',label:'智能安防摄像头'},{vid:'s4',type:'scenario',label:'工业传感器网络'},
+      {vid:'s5',type:'scenario',label:'家庭智能中控'},{vid:'s6',type:'scenario',label:'金融身份认证'},
+      {vid:'c1',type:'customer',label:'某头部云服务商'},{vid:'c2',type:'customer',label:'某新能源车企'},
+      {vid:'c3',type:'customer',label:'某一线城市公安'},{vid:'c4',type:'customer',label:'某制造集团'},
+      {vid:'c5',type:'customer',label:'某头部家电品牌'},{vid:'c6',type:'customer',label:'某国有银行'},
+    ];
+    edges = [];
+    MOCK.products.forEach((p,i) => {
+      const pid = 'p'+p.id;
+      if(i<2){edges.push({source:pid,relation:'adopts',target:i===0?'t4':'t3'});edges.push({source:pid,relation:'adopts',target:'t2'});}
+      edges.push({source:pid,relation:'applied_to',target:'i'+(i+1)});
+      edges.push({source:pid,relation:'used_in',target:'s'+(i+1)});
+      edges.push({source:'c'+(i+1),relation:'uses',target:pid});
+      edges.push({source:'c'+(i+1),relation:'belongs_to',target:'i'+(i+1)});
+      edges.push({source:'s'+(i+1),relation:'belongs_to',target:'i'+(i+1)});
+    });
+  }
+  initGraph(nodes, edges);
+  document.getElementById('kgLoading').style.display = 'none';
+}
+
+function initGraph(vertices, edges) {
+  const idMap = {};
+  kgNodes = vertices.map(v => {
+    const props = v.props ? (typeof v.props==='string'?JSON.parse(v.props):v.props) : {};
+    const node = {id:v.vid, type:v.type, name:v.label, props, x:0, y:0, vx:0, vy:0, radius: v.type==='product'?28:22};
+    idMap[v.vid] = node;
+    return node;
+  });
+  kgEdges = edges.map(e => ({
+    source: idMap[e.source] || e.source,
+    target: idMap[e.target] || e.target,
+    type: e.relation
+  })).filter(e => e.source && e.target && typeof e.source==='object' && typeof e.target==='object');
+
+  // 初始位置：圆形布局
+  const cx = 400, cy = 300, radius = 200;
+  kgNodes.forEach((n,i) => {
+    const angle = (i/kgNodes.length)*Math.PI*2;
+    n.x = cx + Math.cos(angle)*radius;
+    n.y = cy + Math.sin(angle)*radius;
+  });
+
+  renderFilters();
+  renderStats();
+  renderLegend();
+  initCanvas();
+  startSimulation();
+}
+
+function renderFilters() {
+  const el = document.getElementById('graphFilters');
+  el.innerHTML = Object.keys(KG_COLORS).map(type =>
+    `<button class="filter-chip${kgFilters[type]?' active':''}" style="border-color:${kgFilters[type]?KG_COLORS[type]:'var(--line)'};color:${kgFilters[type]?KG_COLORS[type]:'var(--dim)'}" onclick="toggleFilter('${type}')">${KG_LABELS[type]}</button>`
+  ).join('');
+}
+
+function toggleFilter(type) {
+  kgFilters[type] = !kgFilters[type];
+  renderFilters();
+}
+
+function renderStats() {
+  const el = document.getElementById('kgStats');
+  const counts = {};
+  kgNodes.forEach(n => counts[n.type] = (counts[n.type]||0)+1);
+  el.innerHTML = Object.keys(KG_COLORS).map(type =>
+    `<div class="card" style="text-align:center;padding:16px"><div style="font-size:24px;font-weight:800;color:${KG_COLORS[type]}">${counts[type]||0}</div><div style="font-size:12px;color:var(--dim)">${KG_LABELS[type]}</div></div>`
+  ).join('');
+}
+
+function renderLegend() {
+  const el = document.getElementById('kgLegend');
+  el.innerHTML = Object.keys(KG_COLORS).map(type =>
+    `<div style="display:flex;align-items:center;gap:6px;margin:3px 0"><span style="width:10px;height:10px;border-radius:50%;background:${KG_COLORS[type]};display:inline-block"></span><span style="color:var(--dim)">${KG_LABELS[type]}</span></div>`
+  ).join('');
+}
+
+function initCanvas() {
+  kgCanvas = document.getElementById('kgCanvas');
+  const rect = kgCanvas.parentElement.getBoundingClientRect();
+  kgCanvas.width = rect.width * devicePixelRatio;
+  kgCanvas.height = rect.height * devicePixelRatio;
+  kgCanvas.style.width = rect.width + 'px';
+  kgCanvas.style.height = rect.height + 'px';
+  kgCtx = kgCanvas.getContext('2d');
+  kgCtx.scale(devicePixelRatio, devicePixelRatio);
+
+  kgCanvas.addEventListener('mousedown', e => {
+    const rect = kgCanvas.getBoundingClientRect();
+    const mx = (e.clientX-rect.left-kgOffset.x)/kgScale, my = (e.clientY-rect.top-kgOffset.y)/kgScale;
+    const hit = kgNodes.find(n => Math.hypot(n.x-mx,n.y-my)<n.radius+5);
+    if (hit) { kgDragging = hit; kgCanvas.style.cursor='grabbing'; }
+    else { kgLastPan = {x:e.clientX, y:e.clientY}; kgCanvas.style.cursor='grabbing'; }
+  });
+  kgCanvas.addEventListener('mousemove', e => {
+    const rect = kgCanvas.getBoundingClientRect();
+    if (kgDragging) {
+      kgDragging.x = (e.clientX-rect.left-kgOffset.x)/kgScale;
+      kgDragging.y = (e.clientY-rect.top-kgOffset.y)/kgScale;
+      kgDragging.vx = 0; kgDragging.vy = 0;
+    } else if (kgLastPan) {
+      kgOffset.x += e.clientX-kgLastPan.x;
+      kgOffset.y += e.clientY-kgLastPan.y;
+      kgLastPan = {x:e.clientX, y:e.clientY};
+    } else {
+      const mx = (e.clientX-rect.left-kgOffset.x)/kgScale, my = (e.clientY-rect.top-kgOffset.y)/kgScale;
+      const hit = kgNodes.find(n => Math.hypot(n.x-mx,n.y-my)<n.radius+5);
+      kgCanvas.style.cursor = hit ? 'pointer' : 'grab';
+    }
+  });
+  kgCanvas.addEventListener('mouseup', e => {
+    if (kgDragging) {
+      const rect = kgCanvas.getBoundingClientRect();
+      const mx = (e.clientX-rect.left-kgOffset.x)/kgScale, my = (e.clientY-rect.top-kgOffset.y)/kgScale;
+      const hit = kgNodes.find(n => Math.hypot(n.x-mx,n.y-my)<n.radius+5);
+      if (hit === kgDragging) selectNode(hit);
+    }
+    kgDragging = null; kgLastPan = null; kgCanvas.style.cursor='grab';
+  });
+  kgCanvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    kgScale = Math.max(0.3, Math.min(3, kgScale*delta));
+  }, {passive:false});
+}
+
+function startSimulation() {
+  if (kgAnimId) cancelAnimationFrame(kgAnimId);
+  function tick() {
+    // 力导向：斥力+引力+中心引力
+    for (let i=0;i<kgNodes.length;i++) {
+      for (let j=i+1;j<kgNodes.length;j++) {
+        const a=kgNodes[i], b=kgNodes[j];
+        const dx=b.x-a.x, dy=b.y-a.y, dist=Math.max(20,Math.hypot(dx,dy));
+        const force=3000/(dist*dist);
+        a.vx -= dx/dist*force; a.vy -= dy/dist*force;
+        b.vx += dx/dist*force; b.vy += dy/dist*force;
+      }
+    }
+    kgEdges.forEach(e => {
+      const dx=e.target.x-e.source.x, dy=e.target.y-e.source.y, dist=Math.hypot(dx,dy);
+      const force=(dist-120)*0.02;
+      e.source.vx += dx/dist*force; e.source.vy += dy/dist*force;
+      e.target.vx -= dx/dist*force; e.target.vy -= dy/dist*force;
+    });
+    kgNodes.forEach(n => {
+      if (n===kgDragging) return;
+      n.vx += (400-n.x)*0.001; n.vy += (300-n.y)*0.001;
+      n.vx *= 0.85; n.vy *= 0.85;
+      n.x += n.vx; n.y += n.vy;
+    });
+    drawGraph();
+    kgAnimId = requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+function drawGraph() {
+  if (!kgCtx) return;
+  const w = kgCanvas.width/devicePixelRatio, h = kgCanvas.height/devicePixelRatio;
+  kgCtx.clearRect(0,0,w,h);
+  kgCtx.save();
+  kgCtx.translate(kgOffset.x, kgOffset.y);
+  kgCtx.scale(kgScale, kgScale);
+
+  // 边
+  kgEdges.forEach(e => {
+    if (!kgFilters[e.source.type] || !kgFilters[e.target.type]) return;
+    const isHighlight = kgSelected && (e.source===kgSelected || e.target===kgSelected);
+    kgCtx.beginPath();
+    kgCtx.moveTo(e.source.x, e.source.y);
+    kgCtx.lineTo(e.target.x, e.target.y);
+    kgCtx.strokeStyle = isHighlight ? KG_COLORS[kgSelected.type] : 'rgba(122,139,168,0.2)';
+    kgCtx.lineWidth = isHighlight ? 2 : 1;
+    kgCtx.stroke();
+  });
+
+  // 节点
+  kgNodes.forEach(n => {
+    if (!kgFilters[n.type]) return;
+    const isSelected = n===kgSelected;
+    const isNeighbor = kgSelected && kgEdges.some(e => (e.source===kgSelected&&e.target===n)||(e.target===kgSelected&&e.source===n));
+    const dim = kgSelected && !isSelected && !isNeighbor;
+    // 光晕
+    if (isSelected) {
+      kgCtx.beginPath();
+      kgCtx.arc(n.x, n.y, n.radius+8, 0, Math.PI*2);
+      kgCtx.fillStyle = KG_COLORS[n.type]+'30';
+      kgCtx.fill();
+    }
+    // 圆
+    kgCtx.beginPath();
+    kgCtx.arc(n.x, n.y, n.radius, 0, Math.PI*2);
+    kgCtx.fillStyle = dim ? 'rgba(30,45,74,0.5)' : KG_COLORS[n.type];
+    kgCtx.globalAlpha = dim ? 0.4 : 1;
+    kgCtx.fill();
+    kgCtx.strokeStyle = isSelected ? '#fff' : KG_COLORS[n.type]+'80';
+    kgCtx.lineWidth = isSelected ? 2 : 1;
+    kgCtx.stroke();
+    kgCtx.globalAlpha = 1;
+    // 文字
+    kgCtx.fillStyle = dim ? 'rgba(122,139,168,0.4)' : '#e8f0ff';
+    kgCtx.font = `${n.type==='product'?'bold ':''}11px -apple-system,sans-serif`;
+    kgCtx.textAlign = 'center';
+    kgCtx.textBaseline = 'middle';
+    const maxW = n.radius*2.5;
+    let text = n.name;
+    if (kgCtx.measureText(text).width > maxW) {
+      while (text.length>2 && kgCtx.measureText(text+'…').width>maxW) text=text.slice(0,-1);
+      text+='…';
+    }
+    kgCtx.fillText(text, n.x, n.y);
+  });
+  kgCtx.restore();
+}
+
+function selectNode(node) {
+  kgSelected = node;
+  const info = document.getElementById('kgInfo');
+  const neighbors = kgEdges.filter(e => e.source===node||e.target===node).map(e => {
+    const other = e.source===node ? e.target : e.source;
+    return {name:other.name, type:other.entity_type||other.type, relation:RELATION_LABELS[e.type]||e.type, direction:e.source===node?'→':'←'};
+  });
+  info.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <span style="width:12px;height:12px;border-radius:50%;background:${KG_COLORS[node.type]}"></span>
+      <strong style="font-size:16px">${node.name}</strong>
+    </div>
+    <div style="font-size:12px;color:var(--dim);margin-bottom:12px">${KG_LABELS[node.type]}${node.props?.spec? ' · '+node.props.spec:''}</div>
+    <div style="font-size:12px;color:var(--dim);margin-bottom:6px">关联关系 (${neighbors.length})</div>
+    <div style="max-height:200px;overflow-y:auto">${neighbors.map(n=>`<div style="padding:4px 0;border-bottom:1px solid var(--line);font-size:12px"><span style="color:${KG_COLORS[n.type]}">${n.direction} ${n.relation}</span> <span style="color:var(--text)">${n.name}</span></div>`).join('')}</div>
+    <button class="btn btn-outline" style="margin-top:12px;padding:6px 12px;font-size:12px;width:100%" onclick="kgSelected=null;document.getElementById('kgInfo').style.display='none'">关闭</button>
+  `;
+  info.style.display = 'block';
+}
+
+function resetGraph() {
+  kgOffset = {x:0,y:0}; kgScale = 1; kgSelected = null;
+  document.getElementById('kgInfo').style.display = 'none';
+  const cx=400, cy=300, radius=200;
+  kgNodes.forEach((n,i) => {
+    const angle=(i/kgNodes.length)*Math.PI*2;
+    n.x=cx+Math.cos(angle)*radius; n.y=cy+Math.sin(angle)*radius;
+    n.vx=0; n.vy=0;
+  });
+}
+
+function expandGraph() {
+  Object.keys(kgFilters).forEach(k => kgFilters[k]=true);
+  renderFilters();
+}
+
+// 路由中增加graph
+const _origNavigate = navigate;
+navigate = function(route) {
+  document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+  const page = document.getElementById('page-' + route);
+  if (page) page.style.display = 'block';
+  document.querySelectorAll('.nav-links a[data-route]').forEach(a => {
+    a.classList.toggle('active', a.dataset.route === route);
+  });
+  window.scrollTo({top:0, behavior:'smooth'});
+  document.getElementById('navLinks').classList.remove('open');
+  if (route === 'graph' && !kgNodes.length) {
+    setTimeout(loadKnowledgeGraph, 100);
+  }
+};
+const _origGetRoute = getRoute;
+getRoute = function() {
+  const hash = location.hash.replace('#/', '');
+  const valid = ['home','products','technology','news','cases','graph','about','contact','admin'];
+  return valid.includes(hash) ? hash : 'home';
+};
+
+// ===== 启动 =====
+initPage();
+navigate(getRoute());
+</script>
+</body>
+</html>

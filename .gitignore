@@ -16,6 +16,8 @@ my_projects
 /target
 **target**
 
+release-pkg
+
 build
 projects/melody2score/app/exports
 projects/melody2score/build

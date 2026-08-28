@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOX 应用商店 — 企业级低代码应用市场</title>
+<style>
+:root{--bg:#0a0e17;--bg2:#111827;--card:#1a2332;--line:#2a3548;--gold:#c9a15a;--gold-soft:#e8d5a8;--text:#e8e6e1;--dim:#8b95a7;--green:#6f9e7a;--blue:#5d8aa8;--red:#c75c5c;--radius:12px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;font-family:inherit}
+.header{position:sticky;top:0;z-index:100;background:rgba(10,14,23,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.header-inner{max-width:1280px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800;letter-spacing:.05em}
+.logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--gold),#8b6914);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#0a0e17}
+.nav{display:flex;gap:4px}
+.nav a{padding:8px 16px;border-radius:8px;font-size:14px;color:var(--dim);transition:.2s}
+.nav a:hover,.nav a.active{color:var(--gold);background:rgba(201,161,90,.08)}
+.search-box{display:flex;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px;width:280px}
+.search-box input{background:none;border:none;outline:none;color:var(--text);flex:1;font-size:14px}
+.main{max-width:1280px;margin:0 auto;padding:32px 24px 60px}
+.hero{text-align:center;padding:40px 0 32px}
+.hero h1{font-size:36px;font-weight:900;margin-bottom:12px;background:linear-gradient(135deg,var(--gold),var(--gold-soft));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{color:var(--dim);font-size:16px;max-width:600px;margin:0 auto}
+.stats{display:flex;justify-content:center;gap:40px;margin-top:24px}
+.stat{text-align:center}
+.stat-num{font-size:28px;font-weight:800;color:var(--gold)}
+.stat-label{font-size:12px;color:var(--dim);margin-top:4px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;align-items:center}
+.filter-chip{padding:6px 16px;border-radius:20px;background:var(--card);border:1px solid var(--line);color:var(--dim);font-size:13px;transition:.2s;white-space:nowrap}
+.filter-chip:hover{border-color:var(--gold);color:var(--gold)}
+.filter-chip.active{background:var(--gold);color:#0a0e17;border-color:var(--gold);font-weight:600}
+.sort-select{margin-left:auto;background:var(--card);border:1px solid var(--line);color:var(--text);padding:6px 12px;border-radius:8px;font-size:13px;outline:none}
+.app-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px}
+.app-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;transition:.25s;cursor:pointer;position:relative;overflow:hidden}
+.app-card:hover{border-color:var(--gold);transform:translateY(-3px);box-shadow:0 12px 32px rgba(0,0,0,.3)}
+.app-card-header{display:flex;gap:14px;align-items:flex-start;margin-bottom:14px}
+.app-icon{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--gold),#8b6914);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#0a0e17;flex-shrink:0}
+.app-info{flex:1;min-width:0}
+.app-name{font-size:16px;font-weight:700;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-category{font-size:11px;color:var(--gold);background:rgba(201,161,90,.1);padding:2px 8px;border-radius:4px;display:inline-block}
+.app-desc{font-size:13px;color:var(--dim);line-height:1.6;margin-bottom:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.app-meta{display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--line)}
+.app-rating{display:flex;align-items:center;gap:4px;font-size:13px}
+.star{color:var(--gold)}
+.app-installs{font-size:12px;color:var(--dim)}
+.app-badge{position:absolute;top:12px;right:12px;font-size:10px;padding:3px 8px;border-radius:4px;font-weight:600}
+.badge-hot{background:rgba(199,92,92,.15);color:var(--red)}
+.badge-new{background:rgba(111,158,122,.15);color:var(--green)}
+.badge-free{background:rgba(93,138,168,.15);color:var(--blue)}
+.modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-mask.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--line);border-radius:16px;max-width:640px;width:100%;max-height:85vh;overflow-y:auto}
+.modal-header{padding:24px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start}
+.modal-close{background:none;border:none;color:var(--dim);font-size:24px;cursor:pointer;line-height:1}
+.modal-body{padding:24px}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--line);display:flex;gap:12px;justify-content:flex-end}
+.btn{padding:10px 24px;border-radius:8px;font-size:14px;font-weight:600;border:none;transition:.2s}
+.btn-primary{background:var(--gold);color:#0a0e17}
+.btn-primary:hover{background:var(--gold-soft)}
+.btn-outline{background:transparent;border:1px solid var(--line);color:var(--text)}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+.my-apps-list{display:flex;flex-direction:column;gap:12px}
+.my-app-item{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;display:flex;align-items:center;gap:16px}
+.my-app-icon{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--gold),#8b6914);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#0a0e17}
+.my-app-info{flex:1}
+.my-app-name{font-size:15px;font-weight:600;margin-bottom:2px}
+.my-app-ver{font-size:12px;color:var(--dim)}
+.my-app-status{font-size:11px;padding:3px 10px;border-radius:4px;font-weight:600}
+.status-running{background:rgba(111,158,122,.15);color:var(--green)}
+.empty{text-align:center;padding:60px 20px;color:var(--dim)}
+.empty-icon{font-size:48px;margin-bottom:16px;opacity:.5}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--gold);color:var(--text);padding:12px 24px;border-radius:8px;font-size:14px;z-index:300;display:none}
+.toast.show{display:block;animation:toastIn .3s ease}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@media(max-width:768px){.nav{display:none}.search-box{width:180px}.hero h1{font-size:26px}.stats{gap:20px}.app-grid{grid-template-columns:1fr}.main{padding:20px 16px 40px}}
+</style>
+</head>
+<body>
+<header class="header"><div class="header-inner">
+<a href="#/" class="logo"><div class="logo-icon">M</div>MOX 应用商店</a>
+<nav class="nav"><a href="#/" class="active" data-view="browse">浏览</a><a href="#/my" data-view="my">我的应用</a><a href="#/publish" data-view="publish">发布</a></nav>
+<div class="search-box"><input type="text" id="searchInput" placeholder="搜索应用..." oninput="searchApps(this.value)"></div>
+</div></header>
+<main class="main">
+<div id="view-browse">
+<div class="hero"><h1>企业级低代码应用市场</h1><p>一键安装，开箱即用。人人都有自己的系统，企业快速发布业务应用</p>
+<div class="stats"><div class="stat"><div class="stat-num" id="statApps">0</div><div class="stat-label">应用总数</div></div><div class="stat"><div class="stat-num" id="statInstalls">0</div><div class="stat-label">累计安装</div></div><div class="stat"><div class="stat-num" id="statRatings">0</div><div class="stat-label">用户评分</div></div></div></div>
+<div class="filters" id="categoryFilters"></div>
+<div class="app-grid" id="appGrid"></div>
+</div>
+<div id="view-my" style="display:none"><h2 style="font-size:24px;margin-bottom:24px">我的应用</h2><div class="my-apps-list" id="myAppsList"></div></div>
+<div id="view-publish" style="display:none"><h2 style="font-size:24px;margin-bottom:24px">发布应用</h2>
+<div style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:32px;max-width:600px">
+<p style="color:var(--dim);margin-bottom:20px;line-height:1.8">使用 CLI 工具一键发布你的应用到 MOX 应用商店：</p>
+<pre style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:16px;font-size:13px;line-height:1.8;overflow-x:auto;color:var(--gold-soft)">python tools/publish_app.py \
+  --app-dir ./my-app \
+  --app-key my-crm \
+  --name "客户关系管理" \
+  --version 1.0.0 \
+  --author "你的公司" \
+  --category "办公协同" \
+  --upload --publish</pre>
+<p style="color:var(--dim);margin-top:20px;font-size:13px">应用包格式 MXAP，包含前端、数据、配置和数字签名。发布后自动审核上架。</p>
+</div></div>
+</main>
+<div class="modal-mask" id="appModal"><div class="modal">
+<div class="modal-header"><div style="display:flex;gap:14px;align-items:center"><div class="app-icon" id="modalIcon" style="width:56px;height:56px;font-size:24px">M</div><div><h2 id="modalName" style="font-size:20px;margin-bottom:4px"></h2><span class="app-category" id="modalCategory"></span></div></div><button class="modal-close" onclick="closeModal()">&times;</button></div>
+<div class="modal-body"><p id="modalDesc" style="color:var(--dim);line-height:1.8;margin-bottom:20px"></p>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px">
+<div style="text-align:center;padding:12px;background:var(--bg);border-radius:8px"><div style="font-size:20px;font-weight:700;color:var(--gold)" id="modalVersion"></div><div style="font-size:11px;color:var(--dim)">版本</div></div>
+<div style="text-align:center;padding:12px;background:var(--bg);border-radius:8px"><div style="font-size:20px;font-weight:700;color:var(--gold)" id="modalInstalls"></div><div style="font-size:11px;color:var(--dim)">安装量</div></div>
+<div style="text-align:center;padding:12px;background:var(--bg);border-radius:8px"><div style="font-size:20px;font-weight:700;color:var(--gold)" id="modalRating"></div><div style="font-size:11px;color:var(--dim)">评分</div></div></div>
+<div style="font-size:13px;color:var(--dim)"><div style="margin-bottom:8px"><strong style="color:var(--text)">作者：</strong><span id="modalAuthor"></span></div><div style="margin-bottom:8px"><strong style="color:var(--text)">类型：</strong><span id="modalType"></span></div><div><strong style="color:var(--text)">价格：</strong><span id="modalPrice"></span></div></div></div>
+<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">关闭</button><button class="btn btn-primary" id="modalInstallBtn" onclick="installApp()">安装应用</button></div>
+</div></div>
+<div class="toast" id="toast"></div>
+<script>
+const STORE_URL='http://localhost:8601';
+let allApps=[],currentCategory='全部',currentApp=null;
+async function api(path,opts={}){try{const res=await fetch(STORE_URL+path,opts);return await res.json();}catch(e){return{success:false,message:'商店服务未启动，请运行: python platform/mox-store/store_server.py',data:[]};}}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+async function loadApps(){const res=await api('/api/store/apps?size=50');allApps=res.data?.items||[];document.getElementById('statApps').textContent=res.data?.total||allApps.length;document.getElementById('statInstalls').textContent=allApps.reduce((s,a)=>s+(a.install_count||0),0);document.getElementById('statRatings').textContent=(allApps.reduce((s,a)=>s+(a.rating_avg||0),0)/Math.max(allApps.length,1)).toFixed(1);renderCategories();renderApps();}
+function renderCategories(){const cats=['全部',...new Set(allApps.map(a=>a.category).filter(Boolean))];const el=document.getElementById('categoryFilters');el.innerHTML=cats.map(c=>`<button class="filter-chip${c===currentCategory?' active':''}" onclick="filterCategory('${c}')">${c}</button>`).join('')+`<select class="sort-select" onchange="sortApps(this.value)"><option value="hot">热门优先</option><option value="new">最新上架</option><option value="rating">评分最高</option><option value="name">名称排序</option></select>`;}
+function filterCategory(cat){currentCategory=cat;renderCategories();renderApps();}
+function sortApps(sort){const s=[...allApps];if(sort==='hot')s.sort((a,b)=>(b.install_count||0)-(a.install_count||0));else if(sort==='new')s.sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));else if(sort==='rating')s.sort((a,b)=>(b.rating_avg||0)-(a.rating_avg||0));else if(sort==='name')s.sort((a,b)=>(a.app_name||'').localeCompare(b.app_name||''));allApps=s;renderApps();}
+function searchApps(kw){kw=kw.toLowerCase();const f=kw?allApps.filter(a=>(a.app_name||'').toLowerCase().includes(kw)||(a.description||'').toLowerCase().includes(kw)):allApps;renderAppGrid(f);}
+function renderApps(){let list=currentCategory==='全部'?allApps:allApps.filter(a=>a.category===currentCategory);renderAppGrid(list);}
+function renderAppGrid(list){const el=document.getElementById('appGrid');if(!list.length){el.innerHTML='<div class="empty"><div class="empty-icon">📦</div>暂无应用</div>';return;}el.innerHTML=list.map(a=>{const badge=a.install_count>50?'badge-hot':a.rating_avg>=4.5?'badge-new':'badge-free';const bt=a.install_count>50?'热门':a.rating_avg>=4.5?'精选':'免费';return `<div class="app-card" onclick="openModal('${a.app_key}')"><span class="app-badge ${badge}">${bt}</span><div class="app-card-header"><div class="app-icon">${(a.app_name||'M')[0].toUpperCase()}</div><div class="app-info"><div class="app-name">${a.app_name||a.app_key}</div><span class="app-category">${a.category||'其他'}</span></div></div><div class="app-desc">${a.description||'暂无描述'}</div><div class="app-meta"><span class="app-rating"><span class="star">★</span>${(a.rating_avg||0).toFixed(1)}</span><span class="app-installs">${a.install_count||0} 安装</span></div></div>`;}).join('');}
+function openModal(ak){const app=allApps.find(a=>a.app_key===ak);if(!app)return;currentApp=app;document.getElementById('modalIcon').textContent=(app.app_name||'M')[0].toUpperCase();document.getElementById('modalName').textContent=app.app_name||app.app_key;document.getElementById('modalCategory').textContent=app.category||'其他';document.getElementById('modalDesc').textContent=app.long_description||app.description||'暂无描述';document.getElementById('modalVersion').textContent=app.version||'1.0.0';document.getElementById('modalInstalls').textContent=app.install_count||0;document.getElementById('modalRating').textContent=(app.rating_avg||0).toFixed(1);document.getElementById('modalAuthor').textContent=app.author||'未知';document.getElementById('modalType').textContent=app.app_type||'subsystem';document.getElementById('modalPrice').textContent=app.price||'free';document.getElementById('appModal').classList.add('open');}
+function closeModal(){document.getElementById('appModal').classList.remove('open');currentApp=null;}
+async function installApp(){if(!currentApp)return;const btn=document.getElementById('modalInstallBtn');btn.disabled=true;btn.textContent='安装中...';const res=await api('/api/store/install/'+currentApp.app_key,{method:'POST'});if(res.success){showToast('安装成功: '+currentApp.app_name);loadMyApps();}else{showToast('安装失败: '+res.message);}btn.disabled=false;btn.textContent='安装应用';closeModal();}
+async function loadMyApps(){const res=await api('/api/store/installed');const list=res.data||[];const el=document.getElementById('myAppsList');if(!list.length){el.innerHTML='<div class="empty"><div class="empty-icon">📱</div>暂无已安装应用，去<a href="#/" style="color:var(--gold)">浏览应用</a></div>';return;}el.innerHTML=list.map(a=>`<div class="my-app-item"><div class="my-app-icon">${(a.app_name||'M')[0].toUpperCase()}</div><div class="my-app-info"><div class="my-app-name">${a.app_name}</div><div class="my-app-ver">v${a.version} · ${a.app_key}</div></div><span class="my-app-status status-${a.status}">${a.status==='running'?'运行中':'已停止'}</span><button class="btn btn-outline" style="padding:6px 16px;font-size:12px" onclick="uninstallApp('${a.app_key}')">卸载</button></div>`).join('');}
+async function uninstallApp(ak){if(!confirm('确认卸载该应用？'))return;const res=await api('/api/store/install/'+ak,{method:'DELETE'});if(res.success){showToast('卸载成功');loadMyApps();}else{showToast('卸载失败: '+res.message);}}
+function showView(v){['browse','my','publish'].forEach(x=>{document.getElementById('view-'+x).style.display=x===v?'block':'none';});document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('active',a.dataset.view===v));if(v==='my')loadMyApps();}
+window.addEventListener('hashchange',()=>{const h=location.hash;if(h==='#/my')showView('my');else if(h==='#/publish')showView('publish');else showView('browse');});
+loadApps();if(location.hash==='#/my')showView('my');else if(location.hash==='#/publish')showView('publish');
+</script>
+</body>
+</html>

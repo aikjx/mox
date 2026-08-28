@@ -531,6 +531,7 @@ input,select,textarea{font-family:inherit;color:inherit}
       <a href="#/about" data-nav="about">关于我们</a>
       <a href="#/contact" data-nav="contact">联系我们</a>
       <a href="#/jobs" data-nav="jobs">加入我们</a>
+      <a href="#/store" data-nav="store">应用商店</a>
       <a href="#/admin" data-nav="admin">管理中心</a>
       <a class="nav-cta" href="#/contact">获取方案</a>
     </nav>
@@ -607,7 +608,7 @@ input,select,textarea{font-family:inherit;color:inherit}
       <div>
         <div class="kicker" style="font-size:12px;letter-spacing:.3em;color:var(--gold);margin-bottom:12px">WHY MOX</div>
         <h2 style="font-family:var(--font-display);font-size:32px;font-weight:700;line-height:1.4" id="aboutBriefTitle">以自研核心技术<br>成就企业数字化</h2>
-        <p style="color:var(--mist-dim);margin-top:18px;font-size:15px;line-height:1.9" id="aboutBrief">墨行科技成立于2018年，总部位于佛山，是一家专注企业级智能技术与数据服务的高新技术企业。我们坚持自研核心引擎，构建了覆盖智能终端、数据引擎、AI计算的全栈能力。</p>
+        <p style="color:var(--mist-dim);margin-top:18px;font-size:15px;line-height:1.9" id="aboutBrief">墨行科技成立于2018年，总部位于广州，是一家专注企业级智能技术与数据服务的高新技术企业。我们坚持自研核心引擎，构建了覆盖智能终端、数据引擎、AI计算的全栈能力。</p>
         <div style="display:flex;gap:12px;margin-top:28px;flex-wrap:wrap">
           <a class="btn btn-ghost" href="#/about">了解墨行</a>
           <a class="btn btn-ghost" href="#/faq">常见问题</a>
@@ -1025,7 +1026,7 @@ input,select,textarea{font-family:inherit;color:inherit}
       </div>
     </div>
     <div class="footer-bottom">
-      <span>© 2026 墨行科技（佛山）有限公司 版权所有</span>
+      <span>© 2026 墨行科技（广州）有限公司 版权所有</span>
       <span><a href="https://beian.miit.gov.cn" target="_blank" rel="noopener">粤ICP备2026000000号</a></span>
     </div>
   </div>
@@ -1081,9 +1082,9 @@ const DATA = {
     { id:3, title:'某电商平台数据中台建设', customer:'某头部电商平台', industry:'电商', image:'https://aka.doubaocdn.com/s/PAOM8rdPFQ', summary:'以墨行数据引擎构建电商数据中台，支撑千万级用户画像与实时推荐。', background:'业务高速增长，数据量爆发式增长，原有架构无法支撑实时分析与智能推荐。', solution:'采用墨行数据引擎MX-Data构建实时数仓，结合AI算力芯片实现毫秒级用户画像与推荐服务。', results:[{label:'实时计算延迟',value:'<50ms'},{label:'推荐转化提升',value:'18%'},{label:'数据规模',value:'PB级'}] }
   ],
   team: [
-    { id:1, name:'莫国子', role:'创始人 & CEO', bio:'深耕企业级软件与数据领域十余年，主导多项核心系统架构设计。', avatar:'https://aka.doubaocdn.com/s/JRt0jlNQnX' },
-    { id:2, name:'林语棠', role:'产品总监', bio:'曾主导多款企业级产品的从0到1，专注用户体验与业务价值。', avatar:'https://aka.doubaocdn.com/s/OUCiBUbqSJ' },
-    { id:3, name:'周彦辰', role:'技术架构师', bio:'资深全栈架构师，精通分布式系统、数据引擎与AI工程化。', avatar:'https://aka.doubaocdn.com/s/BhIdk7xkmZ' }
+    { id:1, name:'林浩然', role:'创始人 & CEO', bio:'深耕企业级软件与数据领域十余年，主导多项核心系统架构设计。', avatar:'https://aka.doubaocdn.com/s/JRt0jlNQnX' },
+    { id:2, name:'苏晓雯', role:'产品总监', bio:'曾主导多款企业级产品的从0到1，专注用户体验与业务价值。', avatar:'https://aka.doubaocdn.com/s/OUCiBUbqSJ' },
+    { id:3, name:'黄志强', role:'技术架构师', bio:'资深全栈架构师，精通分布式系统、数据引擎与AI工程化。', avatar:'https://aka.doubaocdn.com/s/BhIdk7xkmZ' }
   ],
   honors: [
     { id:1, name:'国家高新技术企业', year:'2022' },
@@ -1092,7 +1093,7 @@ const DATA = {
     { id:4, name:'广东省专精特新中小企业', year:'2025' }
   ],
   history: [
-    { year:'2018', title:'墨行科技成立', desc:'公司成立于佛山，专注企业级软件与数据服务。' },
+    { year:'2018', title:'墨行科技成立', desc:'公司成立于广州，专注企业级软件与数据服务。' },
     { year:'2019', title:'发布首款企业数据平台', desc:'MX-Data原型落地，服务首批客户。' },
     { year:'2021', title:'获得高新技术企业认定', desc:'核心自研引擎成熟，业务进入快速增长期。' },
     { year:'2023', title:'发布企业平台MX-Cloud', desc:'低代码+微服务一体化平台发布。' },
@@ -1105,24 +1106,24 @@ const DATA = {
     { id:3, q:'是否支持私有化部署？', a:'支持。墨行所有平台产品均支持私有化部署与混合云部署，并全面适配国产化环境（UOS、麒麟、鲲鹏、飞腾等）。' },
     { id:4, q:'如何对接已有系统？', a:'墨行企业平台内置300+标准连接器，并支持通过OpenAPI、消息队列等方式与现有系统灵活集成，最短一周内完成对接。' },
     { id:5, q:'是否有售后服务？', a:'我们提供7×24小时技术支持、定期巡检与专属客户成功经理服务，确保系统稳定运行与持续优化。' },
-    { id:6, q:'如何加入墨行科技？', a:'欢迎访问"加入我们"页面查看在招岗位并在线投递简历，或发送简历至 hr@mox.tech。' }
+    { id:6, q:'如何加入墨行科技？', a:'欢迎访问"加入我们"页面查看在招岗位并在线投递简历，或发送简历至 hr@mox-tech.com。' }
   ],
   jobs: [
-    { id:1, title:'高级后端工程师（Rust）', dept:'研发中心', location:'佛山', salary:'25-40K', tags:['Rust','分布式','5年+'] },
-    { id:2, title:'前端工程师', dept:'研发中心', location:'佛山', salary:'18-30K', tags:['Vue/React','TypeScript','3年+'] },
-    { id:3, title:'数据工程师', dept:'数据平台', location:'佛山', salary:'20-35K', tags:['大数据','SQL','图谱'] },
-    { id:4, title:'测试开发工程师', dept:'质量保障', location:'佛山', salary:'15-25K', tags:['自动化','性能','3年+'] },
-    { id:5, title:'产品经理', dept:'产品部', location:'佛山', salary:'20-35K', tags:['企业级','数据','B端'] },
-    { id:6, title:'运维工程师', dept:'基础设施', location:'佛山', salary:'15-25K', tags:['K8s','信创','监控'] }
+    { id:1, title:'高级后端工程师（Rust）', dept:'研发中心', location:'广州', salary:'25-40K', tags:['Rust','分布式','5年+'] },
+    { id:2, title:'前端工程师', dept:'研发中心', location:'广州', salary:'18-30K', tags:['Vue/React','TypeScript','3年+'] },
+    { id:3, title:'数据工程师', dept:'数据平台', location:'广州', salary:'20-35K', tags:['大数据','SQL','图谱'] },
+    { id:4, title:'测试开发工程师', dept:'质量保障', location:'广州', salary:'15-25K', tags:['自动化','性能','3年+'] },
+    { id:5, title:'产品经理', dept:'产品部', location:'广州', salary:'20-35K', tags:['企业级','数据','B端'] },
+    { id:6, title:'运维工程师', dept:'基础设施', location:'广州', salary:'15-25K', tags:['K8s','信创','监控'] }
   ],
   contacts: [
     { type:'电话', icon:'phone', value:'400-888-0000', sub:'周一至周五 9:00-18:00' },
-    { type:'邮箱', icon:'mail', value:'contact@mox.tech', sub:'商务合作 / 产品咨询' },
-    { type:'地址', icon:'pin', value:'广东省佛山市南海区金融高新区', sub:'墨行科技大厦 18F' },
+    { type:'邮箱', icon:'mail', value:'contact@mox-tech.com', sub:'商务合作 / 产品咨询' },
+    { type:'地址', icon:'pin', value:'广州市天河区珠江新城冼村路11号', sub:'创新中心 18F' },
     { type:'微信公众号', icon:'chat', value:'墨行科技 MOX', sub:'扫码关注获取最新动态' }
   ],
   messages: [
-    { id:1, name:'张先生', phone:'138****6621', company:'某制造企业', content:'想了解边缘网关在产线数据采集中的应用方案', status:'已联系', date:'2026-08-22 14:30' },
+    { id:1, name:'王先生', phone:'139****8888', company:'某制造企业', content:'想了解边缘网关在产线数据采集中的应用方案', status:'已联系', date:'2026-08-22 14:30' },
     { id:2, name:'李女士', phone:'159****8834', company:'某金融机构', content:'咨询数据中台建设的整体方案与报价', status:'待处理', date:'2026-08-24 09:15' },
     { id:3, name:'王先生', phone:'136****2209', company:'某电商公司', content:'希望对接实时数仓与推荐引擎能力', status:'待处理', date:'2026-08-26 16:42' }
   ]
@@ -1134,7 +1135,8 @@ const DATA = {
    说明：当前使用模拟数据实现，接口契约与真实后端一致。
    对接真实后端时，仅需替换各方法的 fetch 实现与 BASE_URL。
    ---------------------------------------------------------------- */
-const API_BASE = 'http://127.0.0.1:8600'; // mox-server 运行服务（DSQL + KG）
+/* API_BASE 自动适配：本地 file:// 调试用 127.0.0.1:8600，部署到 http/https 域名时用相对路径 /api（Nginx 反向代理到后端，零跨域零代码修改） */
+const API_BASE = location.protocol === 'file:' ? 'http://127.0.0.1:8600' : '';
 let API_MODE = 'live'; // live=真实后端 / mock=后端离线时自动兜底
 /* 多应用发布：URL ?app=corp_demo 可切换访问对应应用的数据（默认 mox） */
 const APP_KEY = (new URLSearchParams(location.search).get('app') || 'mox');
@@ -1508,10 +1510,12 @@ let productPage = 1;
 async function renderProducts(query){
   document.title = '产品中心 — 墨行科技';
   const cats = await API.executeDsql('product_categories');
-  const activeCat = query.category || '全部产品';
-  document.getElementById('productFilter').innerHTML = cats.data.map(c =>
-    '<button class="filter-chip' + (c.name===activeCat?' active':'') + '" onclick="location.hash=\'#/products?category=' + encodeURIComponent(c.name) + '\'">' + esc(c.name) + '</button>'
-  ).join('');
+  const activeCat = query.category || '';
+  document.getElementById('productFilter').innerHTML =
+    '<button class="filter-chip' + (activeCat===''?' active':'') + '" onclick="location.hash=\'#/products\'">全部</button>' +
+    cats.data.map(c =>
+      '<button class="filter-chip' + (c.name===activeCat?' active':'') + '" onclick="location.hash=\'#/products?category=' + encodeURIComponent(c.name) + '\'">' + esc(c.name) + '</button>'
+    ).join('');
   const res = await API.executeDsql('product_list', { category: activeCat });
   document.getElementById('productList').innerHTML = res.data.map(productCard).join('') ||
     '<div class="search-empty">该分类下暂无产品</div>';
@@ -1554,10 +1558,12 @@ async function renderProductDetail(id){
    ================================================================ */
 async function renderNews(query){
   document.title = '新闻动态 — 墨行科技';
-  const activeCat = query.category || '全部';
-  document.getElementById('newsFilter').innerHTML = DATA.newsCategories.map(c =>
-    '<button class="filter-chip' + (c.name===activeCat?' active':'') + '" onclick="location.hash=\'#/news?category=' + encodeURIComponent(c.name) + '\'">' + esc(c.name) + '</button>'
-  ).join('');
+  const activeCat = query.category || '';
+  document.getElementById('newsFilter').innerHTML =
+    '<button class="filter-chip' + (activeCat===''?' active':'') + '" onclick="location.hash=\'#/news\'">全部</button>' +
+    DATA.newsCategories.filter(c => c.name !== '全部').map(c =>
+      '<button class="filter-chip' + (c.name===activeCat?' active':'') + '" onclick="location.hash=\'#/news?category=' + encodeURIComponent(c.name) + '\'">' + esc(c.name) + '</button>'
+    ).join('');
   const res = await API.executeDsql('news_list', { category: activeCat });
   document.getElementById('newsList').innerHTML = res.data.map(newsCard).join('') ||
     '<div class="search-empty">暂无新闻</div>';
@@ -1589,11 +1595,13 @@ async function renderNewsDetail(id){
    ================================================================ */
 async function renderCases(query){
   document.title = '客户案例 — 墨行科技';
-  const industries = ['全部', ...new Set(DATA.cases.map(c => c.industry))];
-  const active = query.industry || '全部';
-  document.getElementById('caseFilter').innerHTML = industries.map(i =>
-    '<button class="filter-chip' + (i===active?' active':'') + '" onclick="location.hash=\'#/cases?industry=' + encodeURIComponent(i) + '\'">' + esc(i) + '</button>'
-  ).join('');
+  const industries = [...new Set(DATA.cases.map(c => c.industry))];
+  const active = query.industry || '';
+  document.getElementById('caseFilter').innerHTML =
+    '<button class="filter-chip' + (active===''?' active':'') + '" onclick="location.hash=\'#/cases\'">全部</button>' +
+    industries.map(i =>
+      '<button class="filter-chip' + (i===active?' active':'') + '" onclick="location.hash=\'#/cases?industry=' + encodeURIComponent(i) + '\'">' + esc(i) + '</button>'
+    ).join('');
   const res = await API.executeDsql('case_list', { industry: active });
   document.getElementById('caseList').innerHTML = res.data.map(caseCard).join('') ||
     '<div class="search-empty">暂无案例</div>';
@@ -1635,7 +1643,7 @@ async function renderAbout(){
   document.getElementById('aboutIntro').innerHTML =
     '<div class="kicker" style="font-size:12px;letter-spacing:.3em;color:var(--gold);margin-bottom:14px">ABOUT MOX</div>' +
     '<h2 style="font-family:var(--font-display);font-size:32px;font-weight:700;line-height:1.5">以数据为墨 · 绘智能未来</h2>' +
-    '<p style="margin-top:20px;color:var(--mist-dim);font-size:15px;line-height:2.1">墨行科技（佛山）有限公司成立于2018年，是一家专注企业级智能技术与数据服务的高新技术企业。公司总部位于广东省佛山市南海区金融高新区，在北京、深圳设有分支机构。</p>' +
+    '<p style="margin-top:20px;color:var(--mist-dim);font-size:15px;line-height:2.1">墨行科技（广州）有限公司成立于2018年，是一家专注企业级智能技术与数据服务的高新技术企业。公司总部位于广州市天河区珠江新城冼村路11号，在北京、深圳设有分支机构。</p>' +
     '<p style="margin-top:16px;color:var(--mist-dim);font-size:15px;line-height:2.1">我们坚持自研核心引擎，构建了覆盖智能终端、软件平台、数据引擎与AI计算的全栈技术能力。公司核心产品已广泛应用于金融、制造、电商、政务等关键行业，服务企业客户超过1200家。</p>' +
     '<p style="margin-top:16px;color:var(--mist-dim);font-size:15px;line-height:2.1">墨行科技始终坚持"技术自主、数据安全、客户价值"的核心理念，以全栈信创适配能力与过硬的技术实力，助力中国企业的数字化与智能化转型。</p>';
   document.getElementById('historyTimeline').innerHTML = DATA.history.map(h =>

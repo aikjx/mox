@@ -302,6 +302,9 @@ numpy = "0.22"
 regex = "1.10"
 # 绯荤粺绾х儹閿紙BallWidget 鍏ㄥ眬 Alt+X 褰曢煶锛?
 global-hotkey = "0.5"
+# Desktop UI (Rust full-stack floating ball / WebView2 3D imaging)
+wry = "0.56"
+tao = "0.36"
 # 璺ㄥ钩鍙板壀璐存澘锛坈opy_to_clipboard銆佷腑鏂?type_text 绮樿创鍥為€€锛?
 arboard = "3.4"
 # 璺ㄥ钩鍙伴敭榧犺緭鍏ワ紙mouse_move/click銆乲ey_press銆乼ype_text ASCII 璺緞锛?

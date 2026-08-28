@@ -1,6 +1,5 @@
 <template>
   <div class="chat">
-    <ProjectChip class="p-chip" />
     <SessionSidebar
       :sessions="sessions"
       :active-id="currentSession"
@@ -132,6 +131,264 @@
         </div>
       </div>
 
+      <!-- 项目对话上下文 bar（跟进项目模式下显示） -->
+      <div v-if="chatMode === 'followup'" class="project-context-bar">
+        <div class="pcb-left">
+          <div class="pcb-project">
+            <span class="pcb-icon">📁</span>
+            <div class="pcb-info">
+              <div class="pcb-name">
+                <template v-if="currentProject">{{ currentProject.name }}</template>
+                <template v-else>未选择项目</template>
+                <el-tag v-if="currentProject" size="small" effect="plain" :type="projectStatusType">{{ projectStatusLabel }}</el-tag>
+              </div>
+              <div class="pcb-desc">{{ currentProject?.description || '选择项目后，以项目为中心进行全链路系统开发' }}</div>
+            </div>
+          </div>
+          <div class="pcb-actions">
+            <el-button v-if="currentProject" size="small" text @click="openEditProject">
+              <el-icon><Edit /></el-icon> 编辑
+            </el-button>
+            <el-button size="small" text @click="openCreateProject">
+              <el-icon><FolderAdd /></el-icon> 新建
+            </el-button>
+            <el-button v-if="currentProject" size="small" text @click="openResourcePanel">
+              <el-icon><Files /></el-icon> 资源
+            </el-button>
+          </div>
+          <el-button v-if="!currentProject" size="small" type="primary" @click="goProjects">
+            <el-icon><Plus /></el-icon> 选择项目
+          </el-button>
+        </div>
+
+        <div class="pcb-right">
+          <div class="pcb-agent">
+            <span class="pcb-label">推荐智能体：</span>
+            <el-tag size="small" type="success" effect="dark" class="agent-tag">
+              {{ recommendedExpert?.label || '通用助手' }}
+            </el-tag>
+            <span class="pcb-hint">{{ recommendedExpert?.hint || '通用问答' }}</span>
+          </div>
+          <div class="pcb-stages">
+            <span
+              v-for="(stage, i) in DEV_STAGES"
+              :key="stage.key"
+              class="pcb-stage"
+              :class="{ active: devStage === i, done: devStage > i }"
+              @click="devStage = i"
+            >{{ stage.label }}</span>
+          </div>
+          <el-button
+            v-if="currentProject"
+            size="small"
+            type="warning"
+            class="full-dev-btn"
+            :loading="fullDevRunning"
+            @click="startFullDev"
+          >
+            <el-icon><Promotion /></el-icon>
+            {{ fullDevRunning ? `开发中 ${fullDevStage+1}/5` : 'AI全维开发' }}
+          </el-button>
+        </div>
+      </div>
+
+      <!-- 新建/编辑项目对话框 -->
+      <el-dialog v-model="projectDlg.visible" :title="projectDlg.isEdit ? '编辑项目' : '新建项目'" width="560px">
+        <el-form label-width="80px">
+          <el-form-item label="项目名称">
+            <el-input v-model="projectDlg.form.name" placeholder="如：政务信创门户改造系统" maxlength="60" />
+          </el-form-item>
+          <el-form-item label="项目类型">
+            <div class="cat-picker">
+              <div
+                v-for="c in PROJECT_CATEGORIES"
+                :key="c.key"
+                class="cat-option"
+                :class="{ active: projectDlg.form.category === c.key }"
+                :style="projectDlg.form.category === c.key ? { borderColor: c.color, background: c.color + '14' } : {}"
+                @click="projectDlg.form.category = c.key"
+              >
+                <span class="cat-dot" :style="{ background: c.color }"></span>
+                <span>{{ c.label }}</span>
+              </div>
+            </div>
+            <div class="muted" style="margin-top:4px;font-size:12px;">{{ PROJECT_CATEGORIES.find(c=>c.key===projectDlg.form.category)?.desc }}</div>
+          </el-form-item>
+          <el-form-item label="状态">
+            <el-radio-group v-model="projectDlg.form.status">
+              <el-radio value="active">进行中</el-radio>
+              <el-radio value="done">已完成</el-radio>
+              <el-radio value="archived">已归档</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item label="代码路径">
+            <el-input v-model="projectDlg.form.code_path" placeholder="如：D:/projects/my-app 或 git@github.com:org/repo.git" />
+          </el-form-item>
+          <el-form-item label="技术栈">
+            <el-input v-model="projectDlg.form.tech_stack" placeholder="如：Vue3+SpringBoot+MySQL+Redis" />
+          </el-form-item>
+          <el-form-item label="项目描述">
+            <el-input v-model="projectDlg.form.description" type="textarea" :rows="3" placeholder="项目目标、范围、核心功能等说明" />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="projectDlg.visible = false">取消</el-button>
+          <el-button type="primary" :loading="projectDlg.submitting" @click="saveProjectFromChat">保存</el-button>
+        </template>
+      </el-dialog>
+
+      <!-- 项目资源面板抽屉 -->
+      <el-drawer v-model="resourcePanel.visible" title="项目资源总览" size="720px">
+        <template v-if="currentProject">
+          <div class="res-panel-head">
+            <div class="res-project-info">
+              <div class="res-pname">{{ currentProject.name }}</div>
+              <div class="res-pdesc">{{ currentProject.description || '暂无描述' }}</div>
+            </div>
+            <el-tag size="small" :type="projectStatusType">{{ projectStatusLabel }}</el-tag>
+          </div>
+
+          <el-tabs v-model="resourcePanel.activeTab" class="res-tabs">
+            <!-- 总览 -->
+            <el-tab-pane label="总览" name="overview">
+              <div class="res-overview">
+                <div class="res-stat-grid">
+                  <div class="res-stat-card" @click="resourcePanel.activeTab = 'graph'">
+                    <div class="res-stat-icon graph"><el-icon><Share /></el-icon></div>
+                    <div class="res-stat-num">{{ currentProject.resources?.filter(r => r.resource_type === 'graph').length || 0 }}</div>
+                    <div class="res-stat-label">知识图谱</div>
+                  </div>
+                  <div class="res-stat-card" @click="resourcePanel.activeTab = 'requirement'">
+                    <div class="res-stat-icon req"><el-icon><Document /></el-icon></div>
+                    <div class="res-stat-num">{{ currentProject.resources?.filter(r => r.resource_type === 'requirement').length || 0 }}</div>
+                    <div class="res-stat-label">需求文档</div>
+                  </div>
+                  <div class="res-stat-card" @click="resourcePanel.activeTab = 'data'">
+                    <div class="res-stat-icon data"><el-icon><DataLine /></el-icon></div>
+                    <div class="res-stat-num">{{ currentProject.resources?.filter(r => r.resource_type === 'data').length || 0 }}</div>
+                    <div class="res-stat-label">数据资源</div>
+                  </div>
+                  <div class="res-stat-card" @click="resourcePanel.activeTab = 'knowledge'">
+                    <div class="res-stat-icon kb"><el-icon><Files /></el-icon></div>
+                    <div class="res-stat-num">{{ currentProject.resources?.filter(r => r.resource_type === 'knowledge').length || 0 }}</div>
+                    <div class="res-stat-label">知识库</div>
+                  </div>
+                  <div class="res-stat-card" @click="resourcePanel.activeTab = 'code'">
+                    <div class="res-stat-icon code"><el-icon><Files /></el-icon></div>
+                    <div class="res-stat-num">{{ currentProject.code_path ? 1 : 0 }}</div>
+                    <div class="res-stat-label">代码路径</div>
+                  </div>
+                  <div class="res-stat-card" @click="resourcePanel.activeTab = 'task'">
+                    <div class="res-stat-icon task"><el-icon><List /></el-icon></div>
+                    <div class="res-stat-num">{{ currentProject.resources?.filter(r => r.resource_type === 'task').length || 0 }}</div>
+                    <div class="res-stat-label">任务</div>
+                  </div>
+                </div>
+                <div class="res-meta">
+                  <div class="res-meta-item"><span class="res-meta-label">项目类型：</span>{{ PROJECT_CATEGORIES.find(c => c.key === currentProject.category)?.label || currentProject.category || '未分类' }}</div>
+                  <div class="res-meta-item"><span class="res-meta-label">代码路径：</span>{{ currentProject.code_path || '未配置' }}</div>
+                  <div class="res-meta-item"><span class="res-meta-label">技术栈：</span>{{ currentProject.tech_stack || '未配置' }}</div>
+                  <div class="res-meta-item"><span class="res-meta-label">创建时间：</span>{{ currentProject.created_at || '-' }}</div>
+                </div>
+              </div>
+            </el-tab-pane>
+
+            <!-- 知识图谱 -->
+            <el-tab-pane label="知识图谱" name="graph">
+              <div class="res-list">
+                <div v-if="!currentProject.resources?.filter(r => r.resource_type === 'graph').length" class="res-empty">暂无知识图谱，AI对话中可生成</div>
+                <div v-for="r in currentProject.resources?.filter(r => r.resource_type === 'graph')" :key="r.id" class="res-item">
+                  <el-icon class="res-item-icon graph"><Share /></el-icon>
+                  <div class="res-item-info">
+                    <div class="res-item-name">{{ r.name || r.title || '未命名图谱' }}</div>
+                    <div class="res-item-meta">{{ r.resource_type }} · {{ r.created_at || '' }}</div>
+                  </div>
+                  <el-button size="small" text @click="router.push('/graph')">查看</el-button>
+                </div>
+              </div>
+            </el-tab-pane>
+
+            <!-- 需求文档 -->
+            <el-tab-pane label="需求" name="requirement">
+              <div class="res-list">
+                <div v-if="!currentProject.resources?.filter(r => r.resource_type === 'requirement').length" class="res-empty">暂无需求文档，AI对话中可生成</div>
+                <div v-for="r in currentProject.resources?.filter(r => r.resource_type === 'requirement')" :key="r.id" class="res-item">
+                  <el-icon class="res-item-icon req"><Document /></el-icon>
+                  <div class="res-item-info">
+                    <div class="res-item-name">{{ r.name || r.title || '未命名需求' }}</div>
+                    <div class="res-item-meta">{{ r.resource_type }} · {{ r.created_at || '' }}</div>
+                  </div>
+                  <el-button size="small" text @click="router.push('/caomei')">查看</el-button>
+                </div>
+              </div>
+            </el-tab-pane>
+
+            <!-- 数据资源 -->
+            <el-tab-pane label="数据" name="data">
+              <div class="res-list">
+                <div v-if="!currentProject.resources?.filter(r => r.resource_type === 'data').length" class="res-empty">暂无数据资源</div>
+                <div v-for="r in currentProject.resources?.filter(r => r.resource_type === 'data')" :key="r.id" class="res-item">
+                  <el-icon class="res-item-icon data"><DataLine /></el-icon>
+                  <div class="res-item-info">
+                    <div class="res-item-name">{{ r.name || r.title || '未命名数据' }}</div>
+                    <div class="res-item-meta">{{ r.resource_type }} · {{ r.created_at || '' }}</div>
+                  </div>
+                </div>
+              </div>
+            </el-tab-pane>
+
+            <!-- 知识库 -->
+            <el-tab-pane label="知识库" name="knowledge">
+              <div class="res-list">
+                <div v-if="!currentProject.resources?.filter(r => r.resource_type === 'knowledge').length" class="res-empty">暂无知识库文档</div>
+                <div v-for="r in currentProject.resources?.filter(r => r.resource_type === 'knowledge')" :key="r.id" class="res-item">
+                  <el-icon class="res-item-icon kb"><Files /></el-icon>
+                  <div class="res-item-info">
+                    <div class="res-item-name">{{ r.name || r.title || '未命名文档' }}</div>
+                    <div class="res-item-meta">{{ r.resource_type }} · {{ r.created_at || '' }}</div>
+                  </div>
+                  <el-button size="small" text @click="router.push('/knowledge-base')">查看</el-button>
+                </div>
+              </div>
+            </el-tab-pane>
+
+            <!-- 代码路径 -->
+            <el-tab-pane label="代码" name="code">
+              <div class="res-code">
+                <div class="res-code-item">
+                  <div class="res-code-label">代码仓库路径</div>
+                  <el-input v-model="currentProject.code_path" placeholder="如：D:/projects/my-app 或 git@github.com:org/repo.git" />
+                </div>
+                <div class="res-code-item">
+                  <div class="res-code-label">技术栈</div>
+                  <el-input v-model="currentProject.tech_stack" placeholder="如：Vue3+SpringBoot+MySQL+Redis" />
+                </div>
+                <div class="res-code-actions">
+                  <el-button type="primary" size="small" @click="saveProjectFromChat">保存配置</el-button>
+                  <el-button size="small" @click="ElMessage.info('正在打开代码编辑器...')">打开编辑器</el-button>
+                </div>
+              </div>
+            </el-tab-pane>
+
+            <!-- 任务 -->
+            <el-tab-pane label="任务" name="task">
+              <div class="res-list">
+                <div v-if="!currentProject.resources?.filter(r => r.resource_type === 'task').length" class="res-empty">暂无任务，AI对话中可「转任务」</div>
+                <div v-for="r in currentProject.resources?.filter(r => r.resource_type === 'task')" :key="r.id" class="res-item">
+                  <el-icon class="res-item-icon task"><List /></el-icon>
+                  <div class="res-item-info">
+                    <div class="res-item-name">{{ r.name || r.title || '未命名任务' }}</div>
+                    <div class="res-item-meta">{{ r.resource_type }} · {{ r.created_at || '' }}</div>
+                  </div>
+                  <el-button size="small" text @click="router.push('/tasks')">查看</el-button>
+                </div>
+              </div>
+            </el-tab-pane>
+          </el-tabs>
+        </template>
+        <el-empty v-else description="请先选择项目" />
+      </el-drawer>
+
       <!-- 全维分析 · 5 阶段 Chip 指示器（FR11） -->
       <div class="analysis-stages" aria-label="全维分析阶段">
         <div
@@ -170,56 +427,103 @@
       </div>
 
       <div ref="scrollEl" class="chat-body">
-        <!-- 需求流程模式：问题选择面板 -->
+        <!-- 需求流程模式：问题选择面板（重构版 · 分组卡片） -->
         <div v-if="requirementFlowMode && !currentIssue" class="flow-empty">
           <div class="flow-empty-header">
-            <div class="flow-icon">🎯</div>
-            <div class="flow-title">选择你的问题</div>
-            <div class="flow-desc">选择问题类型，通过对话完成全维分析、文档生成、流程设计、开发测试优化</div>
-          </div>
-          <div class="issue-grid">
-            <div
-              v-for="issue in ISSUE_CATEGORIES"
-              :key="issue.key"
-              class="issue-card"
-              :class="{ active: selectedIssue?.key === issue.key, primary: issue.primary }"
-              @click="selectIssue(issue)"
-            >
-              <div class="issue-emoji">{{ issue.emoji }}</div>
-              <div class="issue-name">{{ issue.label }}</div>
-              <div class="issue-desc">{{ issue.desc }}</div>
-              <div v-if="issue.primary" class="issue-badge">推荐</div>
+            <div class="flow-title-row">
+              <span class="flow-icon-badge">🎯</span>
+              <div>
+                <div class="flow-title">选择问题类型</div>
+                <div class="flow-desc">选一个方向，AI 帮你从需求到交付全链路搞定</div>
+              </div>
             </div>
           </div>
-          <div class="custom-issue-area">
-            <div class="custom-label">💡 自定义问题：</div>
-            <div class="custom-input-row">
-              <el-input
-                v-model="customIssueText"
-                placeholder="输入你的自定义问题，系统将全维分析处理..."
-                size="large"
-              />
-              <el-button
-                type="primary"
-                size="large"
-                :disabled="!customIssueText.trim()"
-                @click="createCustomIssue"
+
+          <!-- 分组：分析设计 -->
+          <div class="issue-group">
+            <div class="issue-group-title">
+              <span class="group-dot" style="background:#6366f1"></span>
+              分析设计
+            </div>
+            <div class="issue-grid">
+              <div
+                v-for="issue in issueGroups.analysis"
+                :key="issue.key"
+                class="issue-card"
+                :class="{ active: selectedIssue?.key === issue.key }"
+                @click="selectIssue(issue)"
               >
-                + 添加
-              </el-button>
+                <div class="issue-icon" :style="{ background: issue.color + '18', color: issue.color }">
+                  {{ issue.emoji }}
+                </div>
+                <div class="issue-info">
+                  <div class="issue-name">{{ issue.label }}</div>
+                  <div class="issue-desc">{{ issue.desc }}</div>
+                </div>
+                <div v-if="issue.primary" class="issue-badge">推荐</div>
+              </div>
             </div>
           </div>
-          <div v-if="selectedIssue" class="flow-start-area">
-            <div class="flow-summary">
-              已选择：<b>{{ selectedIssue.label }}</b> — {{ selectedIssue.desc }}
+
+          <!-- 分组：开发集成 -->
+          <div class="issue-group">
+            <div class="issue-group-title">
+              <span class="group-dot" style="background:#10b981"></span>
+              开发集成
+            </div>
+            <div class="issue-grid">
+              <div
+                v-for="issue in issueGroups.dev"
+                :key="issue.key"
+                class="issue-card"
+                :class="{ active: selectedIssue?.key === issue.key }"
+                @click="selectIssue(issue)"
+              >
+                <div class="issue-icon" :style="{ background: issue.color + '18', color: issue.color }">
+                  {{ issue.emoji }}
+                </div>
+                <div class="issue-info">
+                  <div class="issue-name">{{ issue.label }}</div>
+                  <div class="issue-desc">{{ issue.desc }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 自定义问题卡片 -->
+          <div class="custom-issue-card" :class="{ active: selectedIssue?.isCustom }">
+            <div class="custom-icon" style="background:#f59e0b18;color:#f59e0b">💡</div>
+            <div class="custom-info">
+              <div class="custom-name">自定义问题</div>
+              <div class="custom-input-row">
+                <el-input
+                  v-model="customIssueText"
+                  placeholder="输入你的问题，系统将全维分析处理..."
+                  size="default"
+                  @keyup.enter="createCustomIssue"
+                />
+                <el-button
+                  type="primary"
+                  :disabled="!customIssueText.trim()"
+                  @click="createCustomIssue"
+                >
+                  添加
+                </el-button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 启动栏（选中后显示） -->
+          <div v-if="selectedIssue" class="flow-start-bar">
+            <div class="flow-start-info">
+              <span class="start-icon">{{ selectedIssue.emoji }}</span>
+              <div class="start-text">
+                <div class="start-name">{{ selectedIssue.label }}</div>
+                <div class="start-desc">{{ selectedIssue.desc }}</div>
+              </div>
             </div>
             <div class="flow-start-actions">
-              <el-button type="primary" size="large" @click="startRequirementFlow">
-                🚀 启动全维流程
-              </el-button>
-              <el-button size="large" @click="quickAnalyze">
-                ⚡ 快速分析
-              </el-button>
+              <el-button type="primary" size="large" @click="startFlow">🚀 开始</el-button>
             </div>
           </div>
         </div>
@@ -230,23 +534,7 @@
             <span class="flow-track-icon">{{ currentIssue.emoji }}</span>
             <span class="flow-track-title">{{ currentIssue.label }}</span>
             <span class="flow-track-status">{{ FLOW_STAGES[currentStage].label }}</span>
-            <el-dropdown trigger="click" @command="handleFlowCommand">
-              <el-button size="small" type="primary">
-                🎨 全维操作 <el-icon class="el-icon--right"><ArrowDown /></el-icon>
-              </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="full_analysis">🔍 全维分析报告</el-dropdown-item>
-                  <el-dropdown-item command="gen_requirement_doc">📝 生成需求文档</el-dropdown-item>
-                  <el-dropdown-item command="optimize_doc">✨ 优化需求文档</el-dropdown-item>
-                  <el-dropdown-item command="gen_flow_diagram">🔄 生成业务流程图</el-dropdown-item>
-                  <el-dropdown-item command="gen_graph">📊 生成知识图谱</el-dropdown-item>
-                  <el-dropdown-item command="gen_arch_diagram">🏗️ 生成架构图</el-dropdown-item>
-                  <el-dropdown-item command="dev_test_fix">💻 开发测试修复</el-dropdown-item>
-                  <el-dropdown-item command="full_complete">🚀 一键全维完成</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
+            <el-button size="small" text @click="resetFlowIssue">🔄 更换问题</el-button>
           </div>
           <div class="flow-stages">
             <div
@@ -290,6 +578,7 @@
             <el-button size="small" @click="fullAnalysis" :loading="analyzing">🔍 全维分析</el-button>
             <el-button size="small" @click="generateRequirementDoc" :loading="generatingDoc">📝 需求文档</el-button>
             <el-button size="small" @click="generateFlowDiagram" :loading="generatingDiagram">🔄 流程图</el-button>
+            <el-button size="small" @click="generateRequirementGraph" :loading="generatingGraph">📊 知识图谱</el-button>
             <el-button size="small" type="primary" @click="doDevTestFix" :loading="devTesting">💻 开发测试</el-button>
           </div>
         </div>
@@ -643,6 +932,38 @@
         </el-tabs>
       </div>
 
+      <!-- 对话快捷操作栏：新建对话 / 新建项目 / 切换项目 / 管理项目 -->
+      <div class="chat-quick-bar">
+        <template v-if="chatMode === 'followup' && currentProject">
+          <div class="qb-current">
+            <span class="qb-icon">📂</span>
+            <span class="qb-name">{{ currentProject.name }}</span>
+            <el-tag size="small" effect="plain" :type="projectStatusType">{{ projectStatusLabel }}</el-tag>
+          </div>
+          <el-button size="small" text @click="exitFollowup">💬 退出对话</el-button>
+        </template>
+        <template v-else>
+          <el-button size="small" text @click="newSession">💬 新建对话</el-button>
+        </template>
+        <div class="qb-divider"></div>
+        <el-button size="small" text @click="openCreateProject">📁 新建项目</el-button>
+        <el-dropdown trigger="click" @command="switchToProject" :disabled="!projectList.length">
+          <el-button size="small" text :loading="projectListLoading">
+            🔄 切换项目 <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item v-for="p in projectList" :key="p.id" :command="p">
+                {{ p.name }}
+                <el-tag v-if="p.status === 'active'" size="small" type="success" effect="plain" style="margin-left:8px">进行中</el-tag>
+              </el-dropdown-item>
+              <el-dropdown-item v-if="!projectList.length && !projectListLoading" disabled>暂无项目</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+        <el-button size="small" text @click="goProjects">⚙️ 管理项目</el-button>
+      </div>
+
       <div class="chat-input" :class="{ 'is-share': isShareMode }">
         <div v-if="isShareMode" class="share-readonly-banner">
           <el-icon><Link /></el-icon>
@@ -812,13 +1133,12 @@
 import { ref, nextTick, onMounted, onUnmounted, onBeforeUnmount, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { List, Loading, ArrowDown, Link, Document, FolderAdd, ChatDotRound, ChatLineRound, Delete, Upload, Download, Clock, Promotion, DocumentAdd, Microphone } from '@element-plus/icons-vue'
+import { List, Loading, ArrowDown, Link, Document, FolderAdd, FolderOpened, ChatDotRound, ChatLineRound, Delete, Upload, Download, Clock, Promotion, DocumentAdd, Microphone, Plus, Edit, Files, Setting, DataLine, Connection } from '@element-plus/icons-vue'
 import MessageBubble from '@/components/MessageBubble.vue'
 import SessionSidebar from '@/components/SessionSidebar.vue'
 import ToolDock from '@/components/ToolDock.vue'
 import ToolDrawer from '@/components/ToolDrawer.vue'
 import { AI_EXPERT_PRESETS } from '@/types'
-import ProjectChip from '@/components/ProjectChip.vue'
 import { useProject } from '@/composables/projectContext.js'
 import {
   aiChat,
@@ -845,7 +1165,9 @@ import {
   aiGenerateErd,
   kbGetDocument,
   getProject,
-  createProject
+  createProject,
+  updateProject,
+  getProjects
 } from '@/api'
 
 // ===== T11 专家联盟 SSE =====
@@ -929,6 +1251,49 @@ const autoSync = ref(true)
 const importInput = ref(null)
 // 专家模式
 const selectedExpert = ref(AI_EXPERT_PRESETS[0])
+// 项目上下文
+const { currentProject } = useProject()
+// 项目列表（用于切换项目下拉）
+const projectList = ref([])
+const projectListLoading = ref(false)
+async function loadProjectList() {
+  projectListLoading.value = true
+  try {
+    const r = await getProjects()
+    projectList.value = Array.isArray(r) ? r : (r.projects || r.data || r.list || [])
+  } catch (e) {
+    projectList.value = []
+  } finally {
+    projectListLoading.value = false
+  }
+}
+function switchToProject(p) {
+  if (!p) return
+  chatMode.value = 'followup'
+  ElMessage.success(`已切换到项目：${p.name}`)
+  loadProjectList()
+}
+function exitFollowup() {
+  chatMode.value = 'default'
+  ElMessage.info('已退出跟进项目，回到默认对话')
+}
+// 对话模式：default 默认对话 / project 项目对话
+const chatMode = ref('default')
+// 项目对话开发阶段：0需求 1架构 2实现 3测试 4验收
+const devStage = ref(0)
+const DEV_STAGES = [
+  { key: 'req', label: '需求', expert: 'general', hint: '需求分析与业务建模' },
+  { key: 'arch', label: '架构', expert: 'architecture', hint: '系统架构设计与技术选型' },
+  { key: 'impl', label: '实现', expert: 'operator', hint: '代码实现与算子编排' },
+  { key: 'test', label: '测试', expert: 'automation', hint: '测试策略与自动化测试' },
+  { key: 'accept', label: '验收', expert: 'fusion', hint: '全维验收与发布准备' }
+]
+// 项目资源面板
+const resourcePanel = ref({ visible: false, activeTab: 'overview', loading: false })
+// AI全维开发状态
+const fullDevRunning = ref(false)
+const fullDevStage = ref(0)
+const FULL_DEV_STAGES = ['需求分析', '架构设计', '代码生成', '测试验证', '部署上线']
 // 流式打字定时器句柄：组件卸载时必须清理，避免泄漏
 let streamTimer = null
 
@@ -971,11 +1336,15 @@ const PROJECT_CATEGORIES = [
 ]
 const projectDlg = ref({
   visible: false,
+  isEdit: false,
   submitting: false,
   form: {
     name: '',
     category: 'platform',
+    status: 'active',
     description: '',
+    code_path: '',
+    tech_stack: '',
     owner: 'ai-alliance',
     useChatContext: true,
     autoPipeline: true,
@@ -1073,15 +1442,20 @@ const goToGraph = () => {
   router.push('/graph')
 }
 
-// 问题类别
+// 问题类别（按分组整理，每组有独立主题色）
 const ISSUE_CATEGORIES = [
-  { key: 'requirement_graph', label: '需求知识图谱', emoji: '📊', desc: '生成项目需求的结构化知识图谱', primary: true },
-  { key: 'business_process', label: '业务流程设计', emoji: '🔄', desc: '梳理和优化企业级业务流程' },
-  { key: 'system_arch', label: '系统架构设计', emoji: '🏗️', desc: '设计和评估系统架构方案' },
-  { key: 'plugin_dev', label: '插件开发', emoji: '🔌', desc: '开发和集成 AI 插件' },
-  { key: 'automation_flow', label: '自动化任务流程', emoji: '⚡', desc: '设计自动化执行流程' },
-  { key: 'mcp_integration', label: 'MCP 工具集成', emoji: '🔗', desc: '集成和配置 MCP 工具' }
+  { key: 'requirement_graph', label: '需求知识图谱', emoji: '📊', desc: '生成项目需求的结构化知识图谱', primary: true, group: 'analysis', color: '#6366f1' },
+  { key: 'business_process', label: '业务流程设计', emoji: '🔄', desc: '梳理和优化企业级业务流程', group: 'analysis', color: '#0ea5e9' },
+  { key: 'system_arch', label: '系统架构设计', emoji: '🏗️', desc: '设计和评估系统架构方案', group: 'analysis', color: '#8b5cf6' },
+  { key: 'plugin_dev', label: '插件开发', emoji: '🔌', desc: '开发和集成 AI 插件', group: 'dev', color: '#10b981' },
+  { key: 'automation_flow', label: '自动化任务流程', emoji: '⚡', desc: '设计自动化执行流程', group: 'dev', color: '#f59e0b' },
+  { key: 'mcp_integration', label: 'MCP 工具集成', emoji: '🔗', desc: '集成和配置 MCP 工具', group: 'dev', color: '#ef4444' }
 ]
+// 分组计算属性
+const issueGroups = computed(() => ({
+  analysis: ISSUE_CATEGORIES.filter(i => i.group === 'analysis'),
+  dev: ISSUE_CATEGORIES.filter(i => i.group === 'dev')
+}))
 
 // 6 阶段流程
 const FLOW_STAGES = [
@@ -1116,6 +1490,27 @@ function resetFlowIssue() {
 function selectIssue(issue) {
   selectedIssue.value = issue
   persist()
+}
+
+// 统一入口：开始流程（合并原"快速分析"和"启动全维流程"）
+async function startFlow() {
+  if (!selectedIssue.value) return
+  currentIssue.value = selectedIssue.value
+  currentStage.value = 0
+  const hasUserMsg = messages.value.some(m => m.role === 'user' && !m.system)
+  if (!hasUserMsg) {
+    // 无用户消息：自动触发全维分析
+    const initMsg = `【${currentIssue.value.label}】⚡ 开始全维分析\n\n将自动完成：全维分析 → 需求文档 → 流程图 → 知识图谱 → 开发测试，请稍候...`
+    draft.value = initMsg
+    await send()
+    setTimeout(() => fullAnalysis(), 2000)
+  } else {
+    // 有用户消息：进入对话引导
+    const stage = FLOW_STAGES[0]
+    const initMsg = `【${currentIssue.value.label}】进入${stage.label}阶段：${stage.hint}\n\n请详细描述你的需求背景、目标和关键约束，我将在此基础上进行设计分析。`
+    draft.value = initMsg
+    await send()
+  }
 }
 
 async function startRequirementFlow() {
@@ -2033,6 +2428,7 @@ watch(
 
 onMounted(async () => {
   loadStore()
+  loadProjectList()
   // 支持 URL 参数：?flow=1 开启流程模式（支持 hash 路由）
   const hash = window.location.hash
   const hashParams = new URLSearchParams(hash.split('?')[1] || '')
@@ -2335,6 +2731,135 @@ onUnmounted(() => {
   try { micStream?.getTracks().forEach(t => t.stop()) } catch(_) {}
 })
 
+// ===== 项目对话：推荐智能体与项目状态 =====
+const recommendedExpert = computed(() => {
+  const stage = DEV_STAGES[devStage.value]
+  const expert = AI_EXPERT_PRESETS.find(e => e.key === stage?.expert)
+  return expert ? { ...expert, hint: stage?.hint } : null
+})
+// 跟进项目模式：是否有进行中的项目（用于显示"进行中"标签）
+const isFollowupActive = computed(() => {
+  const s = String(currentProject.value?.status || '').toLowerCase()
+  return ['active', '进行中', 'in_progress'].includes(s)
+})
+const projectStatusType = computed(() => {
+  const s = String(currentProject.value?.status || '').toLowerCase()
+  if (['active', '进行中', 'in_progress'].includes(s)) return 'success'
+  if (['done', 'completed', '已完成'].includes(s)) return 'info'
+  if (['paused', 'blocked'].includes(s)) return 'warning'
+  return 'info'
+})
+const projectStatusLabel = computed(() => {
+  const s = String(currentProject.value?.status || '').toLowerCase()
+  return { active: '进行中', in_progress: '进行中', done: '已完成', completed: '已完成',
+    paused: '已暂停', blocked: '阻塞', planning: '规划中', pending: '待启动' }[s] || (currentProject.value?.status || '规划中')
+})
+function onChatModeChange(val) {
+  if (val === 'followup' && !currentProject.value) {
+    ElMessage.info('请先选择项目，进入跟进项目模式')
+  }
+  // 切换到跟进项目时，自动选择推荐专家
+  if (val === 'followup' && recommendedExpert.value) {
+    selectedExpert.value = recommendedExpert.value
+  }
+}
+function switchChatMode(mode) {
+  if (mode === 'create') {
+    // 创建项目：直接打开创建项目对话框
+    openCreateProject()
+    return
+  }
+  chatMode.value = mode
+  onChatModeChange(mode)
+}
+function goProjects() {
+  router.push('/projects')
+}
+// ===== 项目 CRUD（对话内创建/编辑） =====
+function openCreateProject() {
+  projectDlg.value = {
+    visible: true, isEdit: false, submitting: false,
+    form: { name: '', category: 'platform', status: 'active', description: '', code_path: '', tech_stack: '', owner: 'ai-alliance', useChatContext: true, autoPipeline: true }
+  }
+}
+function openEditProject() {
+  if (!currentProject.value) return
+  projectDlg.value = {
+    visible: true, isEdit: true, submitting: false,
+    form: {
+      name: currentProject.value.name || '',
+      category: currentProject.value.category || 'platform',
+      status: currentProject.value.status || 'active',
+      description: currentProject.value.description || '',
+      code_path: currentProject.value.code_path || '',
+      tech_stack: currentProject.value.tech_stack || '',
+      owner: currentProject.value.owner || 'ai-alliance',
+      useChatContext: true,
+      autoPipeline: true
+    }
+  }
+}
+async function saveProjectFromChat() {
+  const f = projectDlg.value.form
+  if (!f.name.trim()) return ElMessage.warning('请输入项目名称')
+  projectDlg.value.submitting = true
+  try {
+    if (projectDlg.value.isEdit) {
+      await updateProject(currentProject.value.id, f)
+      ElMessage.success('项目已更新')
+      // 刷新当前项目
+      const updated = await getProject(currentProject.value.id)
+      if (updated) Object.assign(currentProject.value, updated)
+    } else {
+      const created = await createProject(f)
+      ElMessage.success('项目已创建，自动进入跟进项目')
+      // 切换到跟进项目模式
+      chatMode.value = 'followup'
+    }
+    projectDlg.value.visible = false
+  } finally {
+    projectDlg.value.submitting = false
+  }
+}
+// ===== 项目资源面板 =====
+function openResourcePanel() {
+  resourcePanel.value.visible = true
+  resourcePanel.value.activeTab = 'overview'
+}
+// ===== AI全维自动开发 =====
+async function startFullDev() {
+  if (!currentProject.value) {
+    ElMessage.warning('请先选择或创建项目')
+    return
+  }
+  if (fullDevRunning.value) return
+  fullDevRunning.value = true
+  fullDevStage.value = 0
+  try {
+    // 阶段1：需求分析
+    draft.value = `请对项目「${currentProject.value.name}」进行全维需求分析，输出：1.业务目标 2.功能需求清单 3.非功能需求 4.用户角色 5.核心业务流程。项目描述：${currentProject.value.description || '暂无'}`
+    await send()
+    fullDevStage.value = 1
+    // 阶段2：架构设计
+    draft.value = '基于以上需求，进行系统架构设计：1.整体架构图 2.技术选型 3.模块划分 4.数据库设计 5.API接口设计'
+    await send()
+    fullDevStage.value = 2
+    // 阶段3：代码生成
+    draft.value = '基于架构设计，生成核心代码：1.项目结构 2.核心模块代码 3.配置文件 4.数据库脚本 5.部署脚本'
+    await send()
+    fullDevStage.value = 3
+    // 阶段4：测试验证
+    draft.value = '生成测试方案并执行：1.单元测试用例 2.集成测试方案 3.性能测试指标 4.安全检查清单 5.测试报告'
+    await send()
+    fullDevStage.value = 4
+    ElMessage.success('AI全维开发完成！项目已从需求到部署全链路生成')
+  } catch (e) {
+    ElMessage.error('全维开发中断：' + (e.message || '未知错误'))
+  } finally {
+    fullDevRunning.value = false
+  }
+}
+
 // ===== 璇玑：以项目为核心的联动 =====
 {
   const { onChange: _onProjectChange, ensureProjectContext: _ensureProject } = useProject()
@@ -2386,6 +2911,332 @@ onUnmounted(() => {
   font-size: 15px;
   color: var(--text-primary);
 }
+/* 对话模式切换 */
+.mode-switch {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 8px;
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 2px;
+}
+.mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.mode-btn:hover {
+  color: var(--brand);
+  background: var(--brand-50);
+}
+.mode-btn.active {
+  background: linear-gradient(135deg, #6366f1, #0ea5e9);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+}
+.mode-badge {
+  margin-left: 4px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  background: #10b981;
+  color: #fff;
+  border-radius: 999px;
+  line-height: 1.4;
+}
+.mode-btn.active .mode-badge {
+  background: rgba(255,255,255,0.25);
+  color: #fff;
+}
+
+/* 项目对话上下文 bar */
+.project-context-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 16px;
+  margin: 8px 0;
+  background: linear-gradient(135deg, rgba(99,102,241,0.06), rgba(14,165,233,0.04));
+  border: 1px solid rgba(99,102,241,0.15);
+  border-radius: 12px;
+}
+.pcb-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+.pcb-project {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+.pcb-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.pcb-info {
+  flex: 1;
+  min-width: 0;
+}
+.pcb-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.pcb-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pcb-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.pcb-agent {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pcb-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.agent-tag {
+  font-weight: 600;
+}
+.pcb-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.pcb-stages {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.pcb-stage {
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.pcb-stage:first-child { border-radius: 6px 0 0 6px; }
+.pcb-stage:last-child { border-radius: 0 6px 6px 0; }
+.pcb-stage:hover {
+  color: var(--brand);
+  border-color: var(--brand);
+}
+.pcb-stage.active {
+  background: linear-gradient(135deg, #6366f1, #0ea5e9);
+  color: #fff;
+  border-color: transparent;
+  font-weight: 600;
+}
+.pcb-stage.done {
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #a7f3d0;
+}
+.pcb-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.pcb-actions .el-button {
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+}
+.full-dev-btn {
+  margin-top: 6px;
+  font-weight: 600 !important;
+  background: linear-gradient(135deg, #f59e0b, #ef4444) !important;
+  border: none !important;
+  color: #fff !important;
+}
+.full-dev-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245,158,11,0.4);
+}
+
+/* 项目类型选择器 */
+.cat-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cat-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 13px;
+}
+.cat-option:hover {
+  border-color: var(--brand);
+}
+.cat-option.active {
+  font-weight: 600;
+}
+.cat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* 项目资源面板 */
+.res-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-page);
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+.res-project-info { flex: 1; min-width: 0; }
+.res-pname { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.res-pdesc { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+.res-tabs { margin-top: 8px; }
+
+/* 资源统计卡片 */
+.res-overview { padding: 8px 0; }
+.res-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.res-stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 12px;
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.res-stat-card:hover {
+  border-color: var(--brand);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99,102,241,0.15);
+}
+.res-stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+.res-stat-icon.graph { background: #ede9fe; color: #7c3aed; }
+.res-stat-icon.req { background: #dbeafe; color: #2563eb; }
+.res-stat-icon.data { background: #d1fae5; color: #059669; }
+.res-stat-icon.kb { background: #fef3c7; color: #d97706; }
+.res-stat-icon.code { background: #fce7f3; color: #db2777; }
+.res-stat-icon.task { background: #e0e7ff; color: #4f46e5; }
+.res-stat-num { font-size: 24px; font-weight: 700; color: var(--text-primary); }
+.res-stat-label { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+.res-meta {
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+.res-meta-item {
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 4px 0;
+}
+.res-meta-label { color: var(--text-dim); font-weight: 500; }
+
+/* 资源列表 */
+.res-list { padding: 8px 0; }
+.res-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+.res-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  transition: all 0.15s;
+}
+.res-item:hover {
+  border-color: var(--brand);
+  background: var(--brand-50);
+}
+.res-item-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.res-item-icon.graph { background: #ede9fe; color: #7c3aed; }
+.res-item-icon.req { background: #dbeafe; color: #2563eb; }
+.res-item-icon.data { background: #d1fae5; color: #059669; }
+.res-item-icon.kb { background: #fef3c7; color: #d97706; }
+.res-item-icon.task { background: #e0e7ff; color: #4f46e5; }
+.res-item-info { flex: 1; min-width: 0; }
+.res-item-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.res-item-meta { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+/* 代码配置 */
+.res-code { padding: 8px 0; }
+.res-code-item { margin-bottom: 16px; }
+.res-code-label { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; }
+.res-code-actions { display: flex; gap: 10px; margin-top: 20px; }
 .chat-tools {
   display: flex;
   align-items: center;
@@ -2815,6 +3666,51 @@ onUnmounted(() => {
 }
 .share-readonly-banner b { color: #4338ca; font-weight: 600; cursor: pointer; text-decoration: underline; }
 .share-readonly-banner b:hover { color: #6366f1; }
+
+/* ===== 对话快捷操作栏 ===== */
+.chat-quick-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 26px 2px;
+  border-top: 1px solid var(--border-ghost);
+  background: var(--bg-surface-2);
+  flex-wrap: wrap;
+}
+.chat-quick-bar .el-button {
+  font-size: 12px !important;
+  padding: 4px 10px !important;
+  height: auto !important;
+}
+.qb-current {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(14,165,233,0.06));
+  border: 1px solid rgba(99,102,241,0.18);
+  border-radius: 8px;
+  margin-right: 4px;
+}
+.qb-icon {
+  font-size: 14px;
+}
+.qb-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.qb-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--border-ghost);
+  margin: 0 6px;
+}
+
 .chat-input.is-share {
   opacity: 0.96;
 }
@@ -3009,118 +3905,218 @@ onUnmounted(() => {
   padding: var(--space-5) 0;
 }
 
-/* ===== 需求流程模式 Flow ===== */
+/* ===== 需求流程模式 · 问题选择面板（重构版 · 分组卡片） ===== */
 .flow-empty {
-  text-align: center;
-  padding: var(--space-5) var(--space-4);
-}
-.flow-empty-header {
-  margin-bottom: var(--space-5);
-}
-.flow-icon {
-  font-size: 56px;
-  margin-bottom: 14px;
-}
-.flow-title {
-  font-size: 26px;
-  line-height: 31px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: var(--space-2);
-}
-.flow-desc {
-  font-size: 14px;
-  color: var(--text-tertiary);
-  line-height: 1.75;
-  max-width: 640px;
+  padding: 24px 28px 20px;
+  max-width: 880px;
   margin: 0 auto;
 }
-.flow-desc b {
-  color: var(--violet);
+.flow-empty-header {
+  margin-bottom: 24px;
 }
+.flow-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.flow-icon-badge {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  background: linear-gradient(135deg, #ede9fe, #dbeafe);
+  flex-shrink: 0;
+}
+.flow-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+.flow-desc {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+}
+
+/* 分组 */
+.issue-group {
+  margin-bottom: 20px;
+}
+.issue-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  padding-left: 2px;
+}
+.group-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* 卡片网格 */
 .issue-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-4);
-  margin-bottom: var(--space-5);
+  gap: 12px;
 }
-@media (max-width: 960px) {
-  .issue-grid { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .issue-grid { grid-template-columns: 1fr; }
 }
+
+/* 问题卡片 */
 .issue-card {
-  padding: var(--space-4) var(--space-4) var(--space-4);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
   background: var(--bg-raised);
-  border: 1px solid var(--border-ghost);
-  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--border-ghost);
+  border-radius: 12px;
   cursor: pointer;
-  transition: all var(--dur-3) var(--ease);
-  text-align: left;
+  transition: all .2s ease;
   position: relative;
 }
 .issue-card:hover {
-  border-color: rgba(124, 58, 237, 0.30);
-  transform: translateY(-3px);
-  box-shadow: 0 10px 28px -14px rgba(124, 58, 237, 0.28);
+  border-color: rgba(99,102,241,0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -12px rgba(99,102,241,0.25);
 }
 .issue-card.active {
-  border-color: rgba(124, 58, 237, 0.45);
-  background: linear-gradient(135deg, var(--violet-50), #faf5ff 120%);
-  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.14);
+  border-color: #6366f1;
+  background: linear-gradient(135deg, #eef2ff, #faf5ff);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
 }
-.issue-card.primary {
-  border-color: rgba(124, 58, 237, 0.30);
-  background: linear-gradient(135deg, #fdf4ff 0%, #eff6ff 100%);
+.issue-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  flex-shrink: 0;
 }
-.issue-emoji {
-  font-size: 32px;
-  margin-bottom: 10px;
+.issue-info {
+  flex: 1;
+  min-width: 0;
 }
 .issue-name {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 13.5px;
+  font-weight: 650;
   color: var(--text-primary);
-  margin-bottom: 6px;
+  margin-bottom: 3px;
 }
 .issue-desc {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--text-tertiary);
-  line-height: 1.55;
+  line-height: 1.5;
 }
 .issue-badge {
   position: absolute;
-  top: 10px;
+  top: 8px;
   right: 10px;
   font-size: 10px;
-  padding: 3px 8px;
-  background: linear-gradient(135deg, #7c3aed, #ec4899 110%);
+  padding: 2px 7px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
   color: #fff;
-  border-radius: var(--radius-2xl);
+  border-radius: 999px;
   font-weight: 600;
-  box-shadow: 0 4px 10px -4px rgba(236, 72, 153, 0.35);
 }
 
-/* ===== 启动区 ===== */
-.flow-start-area {
-  padding: var(--space-4) var(--space-5);
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(124, 58, 237, 0.14);
-  background: linear-gradient(135deg, var(--violet-50), #eef2ff);
+/* 自定义问题卡片 */
+.custom-issue-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-surface-2);
+  border: 1.5px dashed rgba(245,158,11,0.3);
+  border-radius: 12px;
+  margin-bottom: 20px;
+  transition: all .2s ease;
 }
-.flow-summary {
+.custom-issue-card.active {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+.custom-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.custom-info {
+  flex: 1;
+  min-width: 0;
+}
+.custom-name {
+  font-size: 13.5px;
+  font-weight: 650;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+.custom-input-row {
+  display: flex;
+  gap: 8px;
+}
+.custom-input-row .el-input {
+  flex: 1;
+}
+
+/* 启动栏 */
+.flow-start-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #eef2ff, #f0f9ff);
+  border: 1px solid rgba(99,102,241,0.2);
+  border-radius: 12px;
+  position: sticky;
+  bottom: 0;
+}
+.flow-start-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+.start-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.start-text {
+  min-width: 0;
+}
+.start-name {
   font-size: 14px;
-  color: var(--text-secondary);
-  margin-bottom: var(--space-3);
+  font-weight: 700;
+  color: var(--text-primary);
 }
-.flow-summary b {
-  color: var(--violet);
+.start-desc {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .flow-start-actions {
   display: flex;
-  gap: var(--space-3);
-  justify-content: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 /* ===== 流程追踪器 ===== */
@@ -3227,28 +4223,6 @@ onUnmounted(() => {
   justify-content: flex-end;
   gap: var(--space-2);
   margin-top: var(--space-3);
-}
-
-/* ===== 自定义问题输入 ===== */
-.custom-issue-area {
-  margin-bottom: var(--space-5);
-  padding: var(--space-4);
-  background: var(--bg-surface-2);
-  border-radius: var(--radius-lg);
-  border: 1px dashed rgba(15, 23, 42, 0.14);
-}
-.custom-label {
-  font-size: 13px;
-  color: var(--text-tertiary);
-  margin-bottom: var(--space-2);
-  font-weight: 500;
-}
-.custom-input-row {
-  display: flex;
-  gap: var(--space-2);
-}
-.custom-input-row .el-input {
-  flex: 1;
 }
 
 /* ===== 快速操作按钮组 ===== */

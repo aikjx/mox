@@ -28,6 +28,10 @@ chrono = { workspace = true }
 
 # 全局热键（Alt+X 开始/停止录音，P2 实现）
 global-hotkey = { workspace = true }
+# Desktop UI (wry/tao / WebView2 3D floating ball)
+wry = { workspace = true }
+tao = { workspace = true }
+
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["full"] }

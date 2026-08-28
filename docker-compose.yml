@@ -1,0 +1,37 @@
+version: '3.8'
+services:
+  mox-server:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+    ports:
+      - "8600:8600"
+    volumes:
+      - mox-data:/app/data
+      - ./frontend-ui:/app/frontend:ro
+    environment:
+      - MOX_HOST=0.0.0.0
+      - MOX_PORT=8600
+      - MOX_REDIS=redis://redis:6379/0
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8600/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+volumes:
+  mox-data:
+  redis-data:

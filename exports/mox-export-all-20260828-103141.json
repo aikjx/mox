@@ -1,0 +1,835 @@
+{
+  "format": "MXDEF",
+  "version": "1.0",
+  "meta": {
+    "exported_at": "2026-08-28T10:31:41.791698+08:00",
+    "source_system": "mox-server",
+    "source_version": "1.0.0",
+    "app_key": "all",
+    "app_name": "墨行科技官网",
+    "database_architecture": "dual_db (meta + business)",
+    "layers": {
+      "kernel": true,
+      "business": true,
+      "runtime": false
+    },
+    "record_count": {
+      "kernel": 28,
+      "business": 19,
+      "knowledge_graph": 31
+    }
+  },
+  "kernel": {
+    "sql_templates": [
+      {
+        "id": 1,
+        "code": "home_banner_list",
+        "name": "首页Banner",
+        "template": "SELECT id,title,subtitle,image,link FROM banners WHERE enabled=1 ORDER BY sort ASC",
+        "datasource": "default",
+        "cache_ttl": 60,
+        "status": "published",
+        "version": 1,
+        "description": "首页轮播",
+        "created_at": 1787845524,
+        "updated_at": 1787845524,
+        "app_key": "mox"
+      },
+      {
+        "id": 2,
+        "code": "product_categories",
+        "name": "产品分类",
+        "template": "SELECT DISTINCT category AS name FROM products ORDER BY category",
+        "datasource": "default",
+        "cache_ttl": 300,
+        "status": "published",
+        "version": 1,
+        "description": "产品分类去重",
+        "created_at": 1787845524,
+        "updated_at": 1787845524,
+        "app_key": "mox"
+      },
+      {
+        "id": 3,
+        "code": "home_recommend_products",
+        "name": "首页推荐产品",
+        "template": "SELECT id,name,category,price,image,summary,hot,recommend FROM products WHERE recommend=1 ORDER BY id ASC LIMIT 3",
+        "datasource": "default",
+        "cache_ttl": 60,
+        "status": "published",
+        "version": 1,
+        "description": "首页推荐",
+        "created_at": 1787845524,
+        "updated_at": 1787845524,
+        "app_key": "mox"
+      },
+      {
+        "id": 4,
+        "code": "product_list",
+        "name": "产品列表(分类/关键字)",
+        "template": "SELECT id,name,category,price,image,summary,hot FROM products WHERE 1=1 {% if category %} AND category={{category}} {% endif %} {% if keyword %} AND (name LIKE {{keyword}} OR summary LIKE {{keyword}}) {% endif %} ORDER BY id ASC",
+        "datasource": "default",
+        "cache_ttl": 30,
+        "status": "published",
+        "version": 1,
+        "description": "产品列表动态筛选",
+        "created_at": 1787845524,
+        "updated_at": 1787845524,
+        "app_key": "mox"
+      },
+      {
+        "id": 5,
+        "code": "product_detail",
+        "name": "产品详情",
+        "template": "SELECT * FROM products WHERE id={{id}}",
+        "datasource": "default",
+        "cache_ttl": 30,
+        "status": "published",
+        "version": 1,
+        "description": "按ID查产品",
+        "created_at": 1787845524,
+        "updated_at": 1787845524,
+        "app_key": "mox"
+      },
+      {
+        "id": 6,
+        "code": "product_related",
+        "name": "相关产品",
+        "template": "SELECT id,name,category,price,image,summary FROM products WHERE id != {{id}} ORDER BY id ASC LIMIT 3",
+        "datasource": "default",
+        "cache_ttl": 60,
+        "status": "published",
+        "version": 1,
+        "description": "相关推荐",
+        "created_at": 1787845524,
+        "updated_at": 1787845524,
+        "app_key": "mox"
+      },
+      {
+        "id": 7,
+        "code": "news_list",
+        "name": "新闻列表(分类)",
+        "template": "SELECT id,title,category,date,views,image,summary FROM news WHERE 1=1 {% if category %} AND category={{category}} {% endif %} ORDER BY date DESC",
+        "datasource": "default",
+        "cache_ttl": 30,
+        "status": "published",
+        "version": 1,
+        "description": "新闻列表",
+        "created_at": 1787845524,
+        "updated_at": 1787845524,
+        "app_key": "mox"
+      },
+      {
+        "id": 8,
+        "code": "news_detail",
+        "name": "新闻详情",
+        "template": "SELECT id,title,category,date,views,image,summary,content FROM news WHERE id={{id}}",
+        "datasource": "default",
+        "cache_ttl": 30,
+        "status": "published",
+        "version": 1,
+        "description": "新闻详情",
+        "created_at": 1787845524,
+        "updated_at": 1787845524,
+        "app_key": "mox"
+      },
+      {
+        "id": 9,
+        "code": "case_list",
+        "name": "案例列表(行业)",
+        "template": "SELECT id,title,customer,industry,image,summary FROM cases WHERE 1=1 {% if industry %} AND industry={{industry}} {% endif %} ORDER BY id ASC",
+        "datasource": "default",
+        "cache_ttl": 60,
+        "status": "published",
+        "version": 1,
+        "description": "案例列表",
+        "created_at": 1787845524,
+        "updated_at": 1787845524,
+        "app_key": "mox"
+      },
+      {
+        "id": 10,
+        "code": "case_detail",
+        "name": "案例详情",
+        "template": "SELECT id,title,customer,industry,image,summary,background,solution,results_json AS results FROM cases WHERE id={{id}}",
+        "datasource": "default",
+        "cache_ttl": 60,
+        "status": "published",
+        "version": 1,
+        "description": "案例详情",
+        "created_at": 1787845524,
+        "updated_at": 1787845524,
+        "app_key": "mox"
+      },
+      {
+        "id": 11,
+        "code": "team_list",
+        "name": "核心团队",
+        "template": "SELECT id,name,role,bio,avatar FROM team ORDER BY id ASC",
+        "datasource": "default",
+        "cache_ttl": 300,
+        "status": "published",
+        "version": 1,
+        "description": "团队列表",
+        "created_at": 1787845524,
+        "updated_at": 1787845524,
+        "app_key": "mox"
+      },
+      {
+        "id": 12,
+        "code": "search_all",
+        "name": "全站搜索",
+        "template": "SELECT 'product' AS kind,id,name AS title,summary AS snippet FROM products WHERE name LIKE {{keyword}} OR summary LIKE {{keyword}} UNION ALL SELECT 'news',id,title,summary FROM news WHERE title LIKE {{keyword}} OR summary LIKE {{keyword}} UNION ALL SELECT 'case',id,title,summary FROM cases WHERE title LIKE {{keyword}} OR summary LIKE {{keyword}}",
+        "datasource": "default",
+        "cache_ttl": 10,
+        "status": "published",
+        "version": 1,
+        "description": "跨表联合搜索",
+        "created_at": 1787845524,
+        "updated_at": 1787845524,
+        "app_key": "mox"
+      },
+      {
+        "id": 13,
+        "code": "stats_dashboard",
+        "name": "管理看板统计",
+        "template": "SELECT (SELECT COUNT(*) FROM products) AS product_count, (SELECT COUNT(*) FROM news) AS news_count, (SELECT COUNT(*) FROM cases) AS case_count, (SELECT COUNT(*) FROM messages) AS message_count",
+        "datasource": "default",
+        "cache_ttl": 15,
+        "status": "published",
+        "version": 1,
+        "description": "看板KPI",
+        "created_at": 1787845524,
+        "updated_at": 1787845524,
+        "app_key": "mox"
+      },
+      {
+        "id": 14,
+        "code": "message_list",
+        "name": "留言列表",
+        "template": "SELECT id,name,phone,email,company,content,status,created_at FROM messages ORDER BY created_at DESC",
+        "datasource": "default",
+        "cache_ttl": 5,
+        "status": "published",
+        "version": 1,
+        "description": "留言管理",
+        "created_at": 1787845524,
+        "updated_at": 1787845524,
+        "app_key": "mox"
+      },
+      {
+        "id": 18,
+        "code": "home_latest_news",
+        "name": "首页最新新闻",
+        "template": "SELECT id,title,category,date,views,image,summary FROM news ORDER BY date DESC LIMIT 3",
+        "datasource": "default",
+        "cache_ttl": 60,
+        "status": "published",
+        "version": 1,
+        "description": "首页新闻",
+        "created_at": 1787846710,
+        "updated_at": 1787846710,
+        "app_key": "mox"
+      },
+      {
+        "id": 19,
+        "code": "home_recommend_cases",
+        "name": "首页推荐案例",
+        "template": "SELECT id,title,customer,industry,image,summary FROM cases ORDER BY id ASC LIMIT 3",
+        "datasource": "default",
+        "cache_ttl": 60,
+        "status": "published",
+        "version": 1,
+        "description": "首页案例",
+        "created_at": 1787846710,
+        "updated_at": 1787846710,
+        "app_key": "mox"
+      }
+    ],
+    "datasources": [
+      {
+        "id": 1,
+        "name": "default",
+        "driver": "sqlite",
+        "config_json": "{\"dsn\": \"D:\\\\a10\\\\aikjx\\\\gitcode\\\\infotopograph\\\\platform\\\\mox-server\\\\mox_business.db\"}",
+        "enabled": 1,
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "id": 2,
+        "name": "ds2",
+        "driver": "sqlite",
+        "config_json": "{}",
+        "enabled": 1,
+        "created_at": 1787846358,
+        "updated_at": 1787846358
+      }
+    ],
+    "apps": [
+      {
+        "id": 1,
+        "app_key": "mox",
+        "name": "墨行科技官网",
+        "type": "website",
+        "domain": "mox.tech",
+        "status": "running",
+        "config_json": "{}",
+        "publish_version": 3,
+        "created_at": 1787874569,
+        "updated_at": 1787874569
+      },
+      {
+        "id": 2,
+        "app_key": "corp_demo",
+        "name": "演示企业官网",
+        "type": "website",
+        "domain": "demo.mox.tech",
+        "status": "published",
+        "config_json": "{\"template\": \"standard\"}",
+        "publish_version": 1,
+        "created_at": 1787874569,
+        "updated_at": 1787874569
+      }
+    ],
+    "roles": [
+      {
+        "id": 1,
+        "name": "admin",
+        "description": "管理员：全部字段可见"
+      },
+      {
+        "id": 2,
+        "name": "staff",
+        "description": "运营人员：业务字段可见"
+      },
+      {
+        "id": 3,
+        "name": "guest",
+        "description": "访客：隐藏价格/联系方式等敏感字段"
+      }
+    ],
+    "field_permissions": [
+      {
+        "id": 1,
+        "resource": "product_list",
+        "role": "guest",
+        "allowed_fields": "id,name,category,image,summary,hot"
+      },
+      {
+        "id": 2,
+        "resource": "product_detail",
+        "role": "guest",
+        "allowed_fields": "id,name,category,image,summary"
+      }
+    ],
+    "users": [
+      {
+        "id": 1,
+        "username": "admin",
+        "role": "admin",
+        "display_name": "系统管理员"
+      },
+      {
+        "id": 2,
+        "username": "ops",
+        "role": "staff",
+        "display_name": "运营专员"
+      },
+      {
+        "id": 3,
+        "username": "visitor",
+        "role": "guest",
+        "display_name": "访客"
+      }
+    ]
+  },
+  "business": {
+    "products": [
+      {
+        "id": 1,
+        "name": "墨行智能终端 MX-T1",
+        "category": "智能硬件",
+        "price": 18999.0,
+        "image": "https://aka.doubaocdn.com/s/9JrzVnyYCT",
+        "summary": "面向企业的一体化智能终端，融合高性能计算与极致显示。",
+        "specs_json": "{\"处理器\": \"国产八核处理器\", \"内存\": \"32GB DDR5\", \"存储\": \"1TB NVMe SSD\", \"显示\": \"27英寸 4K 广色域\", \"系统\": \"UOS / 麒麟 双系统\", \"安全\": \"TCM安全芯片\"}",
+        "hot": 1,
+        "recommend": 1
+      },
+      {
+        "id": 2,
+        "name": "墨行企业平台 MX-Cloud",
+        "category": "软件平台",
+        "price": 0.0,
+        "image": "https://aka.doubaocdn.com/s/jIJ0W9Et3G",
+        "summary": "企业级低代码与微服务一体化平台，让业务上线以天计。",
+        "specs_json": "{\"架构\": \"微服务 + 服务网格\", \"部署\": \"私有化 / 混合云\", \"集成\": \"300+ 连接器\", \"低代码\": \"可视化编排\", \"高可用\": \"99.99%\", \"国产化\": \"全栈信创适配\"}",
+        "hot": 1,
+        "recommend": 1
+      },
+      {
+        "id": 3,
+        "name": "墨行数据引擎 MX-Data",
+        "category": "数据引擎",
+        "price": 0.0,
+        "image": "https://aka.doubaocdn.com/s/5AjjFy6J5q",
+        "summary": "PB级数据存储与实时分析引擎，支持图谱化智能查询。",
+        "specs_json": "{\"存储\": \"PB级分布式存储\", \"查询\": \"SQL + 知识图谱双引擎\", \"实时\": \"毫秒级流式计算\", \"性能\": \"百万级 QPS\", \"生态\": \"兼容主流数据源\", \"可视化\": \"全链路血缘追踪\"}",
+        "hot": 0,
+        "recommend": 1
+      },
+      {
+        "id": 4,
+        "name": "墨行AI加速芯片 MX-AI",
+        "category": "AI计算",
+        "price": 0.0,
+        "image": "https://aka.doubaocdn.com/s/UpTpzONWJU",
+        "summary": "自研AI算力芯片，为深度学习推理提供澎湃算力。",
+        "specs_json": "{\"算力\": \"128 TOPS\", \"能效\": \"8W 典型功耗\", \"接口\": \"PCIe 4.0\", \"框架\": \"支持主流推理框架\", \"场景\": \"边缘推理 / 数据中心\", \"国产\": \"全自主指令集\"}",
+        "hot": 0,
+        "recommend": 0
+      },
+      {
+        "id": 5,
+        "name": "墨行边缘网关 MX-Edge",
+        "category": "安全网关",
+        "price": 0.0,
+        "image": "https://aka.doubaocdn.com/s/8gRhtIYYza",
+        "summary": "工业级边缘计算网关，集连接、计算、安全于一体。",
+        "specs_json": "{\"接口\": \"双千兆 + 4G/5G\", \"协议\": \"50+ 工业协议\", \"计算\": \"边缘AI推理\", \"安全\": \"国密加密通道\", \"防护\": \"IP67 工业防护\", \"管理\": \"云边协同管理\"}",
+        "hot": 1,
+        "recommend": 0
+      }
+    ],
+    "news": [
+      {
+        "id": 1,
+        "title": "墨行科技发布新一代AI企业平台，低代码+知识图谱双引擎上线",
+        "category": "产品发布",
+        "date": "2026-08-20",
+        "views": 1280,
+        "image": "https://aka.doubaocdn.com/s/jIJ0W9Et3G",
+        "summary": "全新一代墨行企业平台MX-Cloud 3.0正式发布，融合动态SQL引擎与自研知识图谱。",
+        "content": "<p>墨行科技正式发布新一代AI企业平台MX-Cloud 3.0，深度融合动态SQL引擎与自研知识图谱，实现企业数据操作全维度可配置。</p><p>平台内置DSQL引擎将所有业务SQL纳入数据库管理，支持模板渲染、参数校验、多级缓存与版本回滚；自研知识图谱让实体关系可视化，支持多跳关联查询。</p>"
+      },
+      {
+        "id": 2,
+        "title": "墨行边缘网关通过信创产品认证，助力工业国产化",
+        "category": "公司动态",
+        "date": "2026-08-12",
+        "views": 860,
+        "image": "https://aka.doubaocdn.com/s/EGGKe1GqyV",
+        "summary": "墨行边缘计算网关MX-Edge正式通过信创产品认证，自主可控达到国家标准。",
+        "content": "<p>墨行科技自主研发的边缘计算网关MX-Edge近日通过信创产品认证。</p><p>MX-Edge内置国密加密通道与国产安全芯片，支持50余种工业协议接入，已广泛应用于智能制造、智慧能源等关键领域。</p>"
+      },
+      {
+        "id": 3,
+        "title": "2026企业数字化转型趋势：数据引擎成为核心竞争力",
+        "category": "行业洞察",
+        "date": "2026-08-05",
+        "views": 1520,
+        "image": "https://aka.doubaocdn.com/s/ssfJJNnkG0",
+        "summary": "从数据存储到数据价值，企业数据引擎正从辅助工具演进为核心生产力。",
+        "content": "<p>2026年，企业数字化转型进入深水区，数据引擎成为驱动业务决策的核心竞争力。</p><p>墨行数据引擎MX-Data以PB级分布式存储与实时流式计算为基础，结合SQL与知识图谱双引擎，帮助企业构建数据资产。</p>"
+      },
+      {
+        "id": 4,
+        "title": "墨行智慧城市大数据平台上线，服务城市治理现代化",
+        "category": "公司动态",
+        "date": "2026-07-28",
+        "views": 980,
+        "image": "https://aka.doubaocdn.com/s/7IFDJDNteE",
+        "summary": "墨行科技承建的某智慧城市大数据平台正式上线，以数据驱动城市治理现代化。",
+        "content": "<p>由墨行科技承建的大数据平台近日在某城市正式上线，实现城市运行一屏统览。</p><p>平台基于墨行数据引擎MX-Data构建，支撑亿级数据实时分析。</p>"
+      },
+      {
+        "id": 5,
+        "title": "墨行助力某大型银行完成核心系统国产化改造",
+        "category": "公司动态",
+        "date": "2026-07-15",
+        "views": 1130,
+        "image": "https://aka.doubaocdn.com/s/r5TOA4NSIv",
+        "summary": "墨行科技助力某大型银行完成核心业务系统国产化改造，实现全栈自主可控。",
+        "content": "<p>墨行科技助力某大型银行完成核心业务系统国产化改造项目。</p><p>项目覆盖数据库、中间件、应用层全栈，改造后系统运行稳定，性能与可用性均达预期。</p>"
+      },
+      {
+        "id": 6,
+        "title": "墨行数据引擎性能再创新高：百万级QPS实测",
+        "category": "产品发布",
+        "date": "2026-07-02",
+        "views": 2010,
+        "image": "https://aka.doubaocdn.com/s/5AjjFy6J5q",
+        "summary": "第三方机构实测中，墨行数据引擎MX-Data达到百万级QPS，刷新同类产品纪录。",
+        "content": "<p>墨行数据引擎MX-Data在独立第三方基准测试中，达到单机百万级QPS。</p><p>这得益于自研存储引擎、多级缓存与查询优化器。配合知识图谱引擎，复杂多跳关联查询保持毫秒级响应。</p>"
+      }
+    ],
+    "cases": [
+      {
+        "id": 1,
+        "title": "某大型银行数字化转型项目",
+        "customer": "某大型国有银行",
+        "industry": "金融",
+        "image": "https://aka.doubaocdn.com/s/r5TOA4NSIv",
+        "summary": "以墨行数据引擎为核心，帮助银行完成核心系统国产化改造与数据中台建设。",
+        "background": "客户面临核心系统受制于人、数据孤岛严重的双重挑战。",
+        "solution": "采用墨行数据引擎MX-Data搭建数据中台，结合知识图谱实现客户关系智能分析，并完成核心系统全栈国产化迁移。",
+        "results_json": "[{\"label\": \"查询性能提升\", \"value\": \"5倍\"}, {\"label\": \"数据接入\", \"value\": \"2000+\"}, {\"label\": \"系统可用性\", \"value\": \"99.99%\"}]"
+      },
+      {
+        "id": 2,
+        "title": "某制造企业智能工厂建设",
+        "customer": "某新能源制造集团",
+        "industry": "制造",
+        "image": "https://aka.doubaocdn.com/s/EGGKe1GqyV",
+        "summary": "基于墨行边缘计算网关与工业数据平台，打造人机料法环全要素数字化智能工厂。",
+        "background": "产线设备种类多、协议杂，数据采集困难，生产管理依赖人工经验。",
+        "solution": "部署墨行边缘网关MX-Edge实现产线设备统一接入，构建工业数据平台实现生产全流程可视、可控、可预测。",
+        "results_json": "[{\"label\": \"设备联网率\", \"value\": \"98%\"}, {\"label\": \"生产效率提升\", \"value\": \"32%\"}, {\"label\": \"停机时间下降\", \"value\": \"45%\"}]"
+      },
+      {
+        "id": 3,
+        "title": "某电商平台数据中台建设",
+        "customer": "某头部电商平台",
+        "industry": "电商",
+        "image": "https://aka.doubaocdn.com/s/PAOM8rdPFQ",
+        "summary": "以墨行数据引擎构建电商数据中台，支撑千万级用户画像与实时推荐。",
+        "background": "业务高速增长，原有架构无法支撑实时分析与智能推荐。",
+        "solution": "采用墨行数据引擎MX-Data构建实时数仓，结合AI算力芯片实现毫秒级用户画像与推荐服务。",
+        "results_json": "[{\"label\": \"实时计算延迟\", \"value\": \"<50ms\"}, {\"label\": \"推荐转化提升\", \"value\": \"18%\"}, {\"label\": \"数据规模\", \"value\": \"PB级\"}]"
+      }
+    ],
+    "team": [
+      {
+        "id": 1,
+        "name": "莫国子",
+        "role": "创始人 & CEO",
+        "bio": "深耕企业级软件与数据领域十余年，主导多项核心系统架构设计。",
+        "avatar": "https://aka.doubaocdn.com/s/JRt0jlNQnX"
+      },
+      {
+        "id": 2,
+        "name": "林语棠",
+        "role": "产品总监",
+        "bio": "曾主导多款企业级产品的从0到1，专注用户体验与业务价值。",
+        "avatar": "https://aka.doubaocdn.com/s/OUCiBUbqSJ"
+      },
+      {
+        "id": 3,
+        "name": "周彦辰",
+        "role": "技术架构师",
+        "bio": "资深全栈架构师，精通分布式系统、数据引擎与AI工程化。",
+        "avatar": "https://aka.doubaocdn.com/s/BhIdk7xkmZ"
+      }
+    ],
+    "banners": [
+      {
+        "id": 1,
+        "title": "以数据为墨 · 绘智能未来",
+        "subtitle": "企业级智能技术平台",
+        "image": "https://aka.doubaocdn.com/s/kbmWAw4cYr",
+        "link": "#/products",
+        "enabled": 1,
+        "sort": 0
+      }
+    ],
+    "messages": [
+      {
+        "id": 1,
+        "name": "演示客户",
+        "phone": "139****0001",
+        "email": "d***@mox.tech",
+        "company": "演示企业",
+        "content": "这是一条官网留言演示数据，用于验证留言全链路（官网提交→SQL 查询→后台处理）。",
+        "status": "已联系",
+        "created_at": 1787788409
+      }
+    ]
+  },
+  "knowledge_graph": {
+    "entities": [
+      {
+        "vid": "product:1",
+        "type": "product",
+        "label": "智能终端 MX-T1",
+        "props": "{\"category\": \"智能硬件\"}",
+        "domain": "hardware",
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "vid": "product:2",
+        "type": "product",
+        "label": "企业平台 MX-Cloud",
+        "props": "{\"category\": \"软件平台\"}",
+        "domain": "platform",
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "vid": "product:3",
+        "type": "product",
+        "label": "数据引擎 MX-Data",
+        "props": "{\"category\": \"数据引擎\"}",
+        "domain": "data",
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "vid": "product:4",
+        "type": "product",
+        "label": "AI芯片 MX-AI",
+        "props": "{\"category\": \"AI计算\"}",
+        "domain": "ai",
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "vid": "product:5",
+        "type": "product",
+        "label": "边缘网关 MX-Edge",
+        "props": "{\"category\": \"安全网关\"}",
+        "domain": "hardware",
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "vid": "category:1",
+        "type": "product_category",
+        "label": "智能硬件",
+        "props": "{}",
+        "domain": "default",
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "vid": "category:2",
+        "type": "product_category",
+        "label": "软件平台",
+        "props": "{}",
+        "domain": "default",
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "vid": "category:3",
+        "type": "product_category",
+        "label": "数据引擎",
+        "props": "{}",
+        "domain": "default",
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "vid": "category:4",
+        "type": "product_category",
+        "label": "AI计算",
+        "props": "{}",
+        "domain": "default",
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "vid": "category:5",
+        "type": "product_category",
+        "label": "安全网关",
+        "props": "{}",
+        "domain": "default",
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "vid": "case:1",
+        "type": "case",
+        "label": "银行数字化转型",
+        "props": "{\"industry\": \"金融\"}",
+        "domain": "finance",
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "vid": "case:2",
+        "type": "case",
+        "label": "制造智能工厂",
+        "props": "{\"industry\": \"制造\"}",
+        "domain": "manufacturing",
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "vid": "case:3",
+        "type": "case",
+        "label": "电商数据中台",
+        "props": "{\"industry\": \"电商\"}",
+        "domain": "ecommerce",
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "vid": "news:1",
+        "type": "news",
+        "label": "MX-Cloud 3.0 发布",
+        "props": "{}",
+        "domain": "platform",
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "vid": "news:2",
+        "type": "news",
+        "label": "信创认证通过",
+        "props": "{}",
+        "domain": "hardware",
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "vid": "news:3",
+        "type": "news",
+        "label": "数据引擎趋势报告",
+        "props": "{}",
+        "domain": "data",
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      }
+    ],
+    "relations": [
+      {
+        "id": 1,
+        "source": "product:1",
+        "relation": "belongs_to",
+        "target": "category:1",
+        "weight": 1.0,
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "id": 2,
+        "source": "product:2",
+        "relation": "belongs_to",
+        "target": "category:2",
+        "weight": 1.0,
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "id": 3,
+        "source": "product:3",
+        "relation": "belongs_to",
+        "target": "category:3",
+        "weight": 1.0,
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "id": 4,
+        "source": "product:4",
+        "relation": "belongs_to",
+        "target": "category:4",
+        "weight": 1.0,
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "id": 5,
+        "source": "product:5",
+        "relation": "belongs_to",
+        "target": "category:5",
+        "weight": 1.0,
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "id": 6,
+        "source": "case:1",
+        "relation": "uses",
+        "target": "product:3",
+        "weight": 1.0,
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "id": 7,
+        "source": "case:1",
+        "relation": "uses",
+        "target": "product:2",
+        "weight": 1.0,
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "id": 8,
+        "source": "case:2",
+        "relation": "uses",
+        "target": "product:5",
+        "weight": 1.0,
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "id": 9,
+        "source": "case:2",
+        "relation": "uses",
+        "target": "product:3",
+        "weight": 1.0,
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "id": 10,
+        "source": "case:3",
+        "relation": "uses",
+        "target": "product:3",
+        "weight": 1.0,
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "id": 11,
+        "source": "case:3",
+        "relation": "uses",
+        "target": "product:4",
+        "weight": 1.0,
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "id": 12,
+        "source": "news:1",
+        "relation": "related_to",
+        "target": "product:2",
+        "weight": 1.0,
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "id": 13,
+        "source": "news:2",
+        "relation": "related_to",
+        "target": "product:5",
+        "weight": 1.0,
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "id": 14,
+        "source": "news:3",
+        "relation": "related_to",
+        "target": "product:3",
+        "weight": 1.0,
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      },
+      {
+        "id": 15,
+        "source": "news:1",
+        "relation": "related_to",
+        "target": "case:1",
+        "weight": 1.0,
+        "created_at": 1787845524,
+        "updated_at": 1787845524
+      }
+    ]
+  },
+  "checksum": "sha256:d309b798cc13ef85fccd21303980bb0ee0111bc0a940054a07e96674cd58b0ec"
+}
