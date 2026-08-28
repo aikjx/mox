@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -16,3 +16,6 @@ pub mod global_hotkeys;
 
 pub use ball_widget::{BallWidgetState, DesktopApp, WidgetMode};
 pub use global_hotkeys::HotkeyBindings;
+// P2 语音引擎由 mox-voice-operator-svc::voice_engine 提供（feature voice-engine）
+pub use mox_voice_operator_svc::voice_engine;
+pub use mox_voice_operator_svc::voice_engine::{Recorder, VoiceEngine};

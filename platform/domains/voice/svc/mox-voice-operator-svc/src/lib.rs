@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -29,6 +29,9 @@ pub mod helpers;
 #[cfg(feature = "server-3717")]
 pub mod server_3717;
 
+#[cfg(feature = "voice-engine")]
+pub mod voice_engine;
+
 pub use app::AppOperator;
 pub use file::FileOperator;
 pub use volume::VolumeOperator;
@@ -38,6 +41,9 @@ pub use display::DisplayOperator;
 pub use browser::BrowserOperator;
 pub use notify::NotifyOperator;
 pub use helpers::platform_tag;
+
+#[cfg(feature = "voice-engine")]
+pub use voice_engine::{Recorder, VoiceEngine};
 
 #[cfg(feature = "server-3717")]
 pub use server_3717::{XiaobaiVoiceService, VoiceServiceConfig, serve, build_router, run_service_blocking};

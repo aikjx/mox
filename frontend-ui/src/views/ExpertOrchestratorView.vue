@@ -1,16 +1,18 @@
 <template>
-  <div class="expert-orchestrator">
-    <div class="head">
-      <div>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-header-left">
         <h2 class="page-title">V2 编排引擎控制台</h2>
         <p class="page-subtitle">插件化编排 · Plan/Act 双模式 · 学习闭环 · 事件驱动</p>
       </div>
-      <div class="head-actions">
+      <div class="page-header-actions">
         <el-button @click="loadAll" :loading="loading">
           <el-icon><Refresh /></el-icon> 刷新
         </el-button>
       </div>
     </div>
+
+    <div class="page-content">
 
     <el-tabs v-model="activeTab" type="border-card" class="main-tabs">
       <!-- 编排执行 -->
@@ -245,6 +247,7 @@
         </div>
       </el-tab-pane>
     </el-tabs>
+    </div>
   </div>
 </template>
 

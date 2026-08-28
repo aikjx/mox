@@ -1,5 +1,5 @@
-﻿<template>
-  <div class="fusion">
+<template>
+  <div class="page-container fusion">
     <el-row :gutter="16">
       <el-col :span="8">
         <el-card shadow="never" class="panel">

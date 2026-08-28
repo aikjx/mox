@@ -1,19 +1,21 @@
 <template>
-  <div class="pv">
-    <ProjectChip />
-    <div class="head">
-      <div>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-header-left">
         <h2 class="page-title">项目中心</h2>
         <p class="page-subtitle">
           全维项目化归类 · 平台系统 / MCP / 插件 / APP / PC / Skills / Loop / Graph Agents / 自动化 …
           覆盖璇玑全部 {{ stats.catalog_total || catalogTotal }} 项资源
         </p>
       </div>
-      <el-button type="primary" @click="openCreate">
-        <el-icon><Plus /></el-icon> 新建项目
-      </el-button>
+      <div class="page-header-actions">
+        <el-button type="primary" @click="openCreate">
+          <el-icon><Plus /></el-icon> 新建项目
+        </el-button>
+      </div>
     </div>
 
+    <div class="page-content">
     <!-- 操作引导：4步用好项目中心 -->
     <div class="flow-guide">
       <div class="fg-item"><span class="fg-num">1</span><span>新建项目</span><small>填写名称/类型/描述</small></div>
@@ -121,6 +123,9 @@
         <div class="quick-actions">
           <div class="qa-label">快速操作</div>
           <div class="qa-buttons">
+            <el-button size="small" type="primary" @click="goModule('ai')">
+              <el-icon><Promotion /></el-icon> AI全维开发
+            </el-button>
             <el-button size="small" @click="goModule('ai')">
               <el-icon><ChatDotRound /></el-icon> AI对话
             </el-button>
@@ -183,6 +188,7 @@
       <div class="panel detail empty-detail" v-else>
         <el-empty description="选择或新建一个项目，开始全维归类" :image-size="100" />
       </div>
+    </div>
     </div>
 
     <!-- 新建 / 编辑项目 -->
@@ -281,7 +287,6 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import ProjectChip from '@/components/ProjectChip.vue'
 import { useProject } from '@/composables/projectContext.js'
 import {
   getProjects, getProjectTypes, getProjectCatalog, getProjectStats,

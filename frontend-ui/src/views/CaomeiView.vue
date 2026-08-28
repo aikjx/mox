@@ -1,12 +1,11 @@
 <template>
-  <div class="caomei-page">
-    <ProjectChip />
-    <div class="page-head">
-      <div>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-header-left">
         <h2 class="page-title">需求编译 · Caomei</h2>
-        <p class="page-sub">一句话说清系统要做的事，自动编译为蓝图（实体 + 功能点 + 流程图），支持对话式增量精化</p>
+        <p class="page-subtitle">一句话说清系统要做的事，自动编译为蓝图（实体 + 功能点 + 流程图），支持对话式增量精化</p>
       </div>
-      <div class="page-actions">
+      <div class="page-header-actions">
         <el-input
           v-model="name"
           placeholder="系统名称（可选）"
@@ -18,6 +17,8 @@
         </el-select>
       </div>
     </div>
+
+    <div class="page-content">
 
     <!-- 编译输入 -->
     <div class="panel card-pad compile-panel">
@@ -132,6 +133,7 @@
         </div>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
@@ -139,7 +141,6 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus'
 import { MagicStick, Right } from '@element-plus/icons-vue'
-import ProjectChip from '@/components/ProjectChip.vue'
 import { useProject } from '@/composables/projectContext.js'
 import { caomeiCompile, caomeiRefine, caomeiTemplates, marketList } from '@/api'
 

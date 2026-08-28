@@ -1,13 +1,13 @@
 <template>
-  <div class="page infinite-optimizer">
-    <div class="page-head">
-      <div>
-        <h2>无穷维度优化实验室</h2>
-        <p class="sub">
+  <div class="page-container infinite-optimizer">
+    <div class="page-header">
+      <div class="page-header-left">
+        <h2 class="page-title">无穷维度优化实验室</h2>
+        <p class="page-subtitle">
           CEM 交叉熵进化策略 · 连续高维配置空间自动寻优 · 多引擎横向对比 · 收敛性科学验证
         </p>
       </div>
-      <div class="head-badges">
+      <div class="page-header-actions">
         <span class="badge">DeepSeek</span>
         <span class="badge">OpenAI</span>
         <span class="badge">Claude</span>
@@ -16,6 +16,8 @@
         <span class="badge">Kimi</span>
       </div>
     </div>
+
+    <div class="page-content">
 
     <!-- KPI -->
     <div class="kpi-grid">
@@ -242,6 +244,7 @@
           <template #default="{ row }">{{ (row.finished_at || row.started_at || '').replace('T', ' ').slice(0, 19) }}</template>
         </el-table-column>
       </el-table>
+    </div>
     </div>
   </div>
 </template>

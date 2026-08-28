@@ -1,11 +1,13 @@
 <template>
-  <div class="docs">
-    <div class="head">
-      <div>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-header-left">
         <h2 class="page-title">API 文档</h2>
         <p class="page-subtitle">璇玑系统运行时 REST 接口全集 · 点击「试一试」实时调用</p>
       </div>
     </div>
+
+    <div class="page-content">
 
     <el-input
       v-model="kw"
@@ -28,6 +30,7 @@
         </div>
         <pre v-if="a.show" class="res">{{ a.res || '调用中…' }}</pre>
       </div>
+    </div>
     </div>
   </div>
 </template>

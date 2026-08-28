@@ -1,17 +1,19 @@
 <template>
-  <div class="gv">
-    <ProjectChip />
-    <div class="head">
-      <div>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-header-left">
         <h2 class="page-title">知识图谱</h2>
         <p class="page-subtitle">算子关系网络可视化 · 中心性 / 社区发现 / 最短路径分析</p>
       </div>
-      <div class="head-actions">
+      <div class="page-header-actions">
+        <el-button type="primary" @click="goAIAnalysis">
+          <el-icon><Promotion /></el-icon> AI分析图谱
+        </el-button>
         <el-input
           v-model="searchQ"
           placeholder="搜索对话/图谱节点"
           clearable
-          style="width: 240px"
+          style="width: 200px"
           @keyup.enter="doSearch"
           @clear="clearSearch"
         >
@@ -22,6 +24,8 @@
         <el-button @click="reload"><el-icon><Refresh /></el-icon> 刷新</el-button>
       </div>
     </div>
+
+    <div class="page-content">
 
     <div class="grid grid-4 stat-row" v-if="stats">
       <div class="stat panel" v-for="s in statCards" :key="s.label">
@@ -212,15 +216,16 @@
         </div>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, computed, nextTick, shallowRef, markRaw } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 // [P1-1 渐进加载 · 先画布后力学] 静态仅依赖轻量类型/API；3D 重库 ForceGraph3D 改为动态 import 后按需拆分异步 chunk（≈1.2MB 单独下载，不阻塞首帧）
 import { NODE_TYPE_COLORS } from '@/types'
-import ProjectChip from '@/components/ProjectChip.vue'
 import { useProject } from '@/composables/projectContext.js'
 import {
   getGraph,
@@ -239,6 +244,13 @@ const graphEl = ref(null)
 const stats = ref(null)
 const nodeIds = ref([])
 // 用 shallowRef/markRaw 防止 Vue 递归代理 three.js/FG 对象（大对象深代理 = 严重卡顿 + 内存翻倍）
+const router = useRouter()
+
+// AI分析图谱：跳转到AI助手，带上图谱上下文
+function goAIAnalysis() {
+  router.push({ path: '/ai', query: { source: 'graph', action: 'analyze' } })
+}
+
 let fg = null
 let fgModule = null
 

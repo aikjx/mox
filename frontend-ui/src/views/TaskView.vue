@@ -1,13 +1,14 @@
 <template>
-  <div class="task-view">
-    <ProjectChip />
-    <div class="task-header">
-      <div class="task-title">
-        <el-icon><List /></el-icon>
-        <span>任务管理</span>
-        <span class="badge">对话↔任务 双向转换</span>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-header-left">
+        <div class="task-title">
+          <el-icon><List /></el-icon>
+          <span>任务管理</span>
+          <span class="badge">对话↔任务 双向转换</span>
+        </div>
       </div>
-      <div class="task-tools">
+      <div class="page-header-actions">
         <el-button type="primary" @click="openCreate">
           <el-icon><Plus /></el-icon> 新建任务
         </el-button>
@@ -17,7 +18,7 @@
       </div>
     </div>
 
-    <div class="task-filters">
+    <div class="page-toolbar">
       <el-input
         v-model="searchText"
         placeholder="搜索任务标题/描述…（最近 5 条）"
@@ -62,6 +63,7 @@
       <span class="filter-range">{{ pageFrom }}–{{ pageTo }} / {{ filteredTasks.length }} 条</span>
     </div>
 
+    <div class="page-content">
     <div class="stats-row">
       <div class="stat-card" v-for="s in stats" :key="s.key" :style="{ borderLeftColor: s.color }">
         <div class="stat-value" :style="{ color: s.color }">{{ s.value }}</div>
@@ -120,6 +122,7 @@
         layout="sizes, prev, pager, next, jumper, total"
         background
       />
+    </div>
     </div>
 
     <el-drawer
@@ -340,7 +343,6 @@ import {
   aiChat
 } from '@/api'
 import { getSearchHistory, pushSearchHistory } from '@/globalShortcuts'
-import ProjectChip from '@/components/ProjectChip.vue'
 import { useProject } from '@/composables/projectContext.js'
 
 const router = useRouter()
@@ -732,15 +734,6 @@ function formatDate(d) {
 </script>
 
 <style scoped>
-.task-view {
-  padding: 0;
-}
-.task-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
 .task-title {
   display: flex;
   align-items: center;
@@ -756,15 +749,8 @@ function formatDate(d) {
   color: #fff;
   border-radius: 12px;
 }
-.task-tools {
-  display: flex;
-  gap: 8px;
-}
-.task-filters {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
+.page-toolbar {
+  margin-bottom: 0;
 }
 .stats-row {
   display: grid;

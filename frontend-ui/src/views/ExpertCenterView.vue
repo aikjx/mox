@@ -1,8 +1,8 @@
 <template>
-  <div class="expert-center">
+  <div class="page-container expert-center">
     <!-- 页面头部：项目关联 + 全局操作 -->
-    <div class="head">
-      <div class="head-left">
+    <div class="page-header">
+      <div class="page-header-left">
         <div class="head-brand">
           <div class="brand-mark">
             <svg viewBox="0 0 32 32" class="bm-svg">
@@ -25,7 +25,7 @@
               <el-tag class="ver-tag-alt" effect="plain" round>以项目为根 · 全维 φ 流程</el-tag>
             </div>
             <p class="page-subtitle">
-              S1 需求架构 · S2 知识图谱 · S3 方案设计 · S4 开发执行 · S5 发布监控
+              📋 需求阶段 · 🏗️ 架构阶段 · ⚙️ 开发阶段 · 🚀 发布阶段
               <span v-if="currentProject">
                 · 当前跟进：<b class="hl-project">{{ currentProject.name }}</b>
                 <span v-if="currentProject.category" class="proj-cat">{{ currentProject.category }}</span>
@@ -35,7 +35,10 @@
           </div>
         </div>
       </div>
-      <div class="head-actions">
+      <div class="page-header-actions head-actions">
+        <el-button type="primary" @click="startFullDev" size="default">
+          <el-icon><Promotion /></el-icon> 启动全维开发
+        </el-button>
         <el-button @click="loadOverview" :loading="overviewLoading" size="default">
           <el-icon><DataAnalysis /></el-icon> 联盟概览
         </el-button>
@@ -43,12 +46,13 @@
           <el-icon><Plus /></el-icon> 注册专家
         </el-button>
         <el-button type="success" plain @click="ensureProject" size="default">
-          <el-icon><Promotion /></el-icon> 创建项目
+          <el-icon><FolderAdd /></el-icon> 创建项目
         </el-button>
         <el-button @click="loadAll" size="default"><el-icon><Refresh /></el-icon> 刷新</el-button>
       </div>
     </div>
 
+    <div class="page-content">
     <!-- 联盟 φ 三栏布局（左·中·右）· 黄金比例 0.382 : 0.618 ，中再分 0.618 vs 右 0.382 -->
     <div class="phi-shell">
 
@@ -659,6 +663,7 @@
           </el-table>
         </div>
       </section>
+    </div>
     </div>
 
     <!-- 注册弹窗 -->
@@ -1310,11 +1315,10 @@ const showMetricsFull = ref(false)
 const showMoreQuick = ref(false)
 
 const PHASES = [
-  { key: 'requirement', label: 'S1 · 需求架构', desc: '意图识别 / 需求知识图谱', color: '#6366f1' },
-  { key: 'graph',       label: 'S2 · 知识图谱', desc: '璇玑 Mox Graph 构建',   color: '#0ea5e9' },
-  { key: 'design',      label: 'S3 · 方案设计', desc: '架构 / 流程图 / 工作流', color: '#10b981' },
-  { key: 'develop',     label: 'S4 · 开发执行', desc: '算法联盟 / 浏览器 / 机器人', color: '#f59e0b' },
-  { key: 'release',     label: 'S5 · 发布监控', desc: '监控 / 验收 / 知识库',    color: '#8b5cf6' }
+  { key: 'requirement', label: '📋 需求阶段', desc: '项目对话 / 需求编译 / 知识库', color: '#6366f1' },
+  { key: 'architecture', label: '🏗️ 架构阶段', desc: '知识图谱 / 专家联盟 / 全维融合', color: '#06b6d4' },
+  { key: 'develop',     label: '⚙️ 开发阶段', desc: '算子 / 工作流 / 插件 / 自动化', color: '#10b981' },
+  { key: 'release',     label: '🚀 发布阶段', desc: '监控 / 文档 / 系统管理', color: '#f59e0b' }
 ]
 
 const FLOW_STAGES = [
@@ -1328,11 +1332,10 @@ const FLOW_STAGES = [
 const localPhase = ref('requirement')
 const currentStage = ref(0)
 const requirementFlowMode = ref(false)
-const phaseProgress = reactive({ requirement: 8, graph: 0, design: 0, develop: 0, release: 0 })
+const phaseProgress = reactive({ requirement: 8, architecture: 0, develop: 0, release: 0 })
 const phaseDone = computed(() => ({
   requirement: phaseProgress.requirement >= 100,
-  graph:       phaseProgress.graph >= 100,
-  design:      phaseProgress.design >= 100,
+  architecture: phaseProgress.architecture >= 100,
   develop:     phaseProgress.develop >= 100,
   release:     phaseProgress.release >= 100
 }))
@@ -1345,7 +1348,7 @@ const projectOverall = computed(() => {
 
 function selectPhase(key) {
   localPhase.value = key
-  const mapStage = { requirement: 0, graph: 1, design: 2, develop: 3, release: 4 }
+  const mapStage = { requirement: 0, architecture: 1, develop: 2, release: 3 }
   currentStage.value = mapStage[key] ?? 0
   // 同步通知顶部 PhasePipeline
   try {
@@ -1354,8 +1357,8 @@ function selectPhase(key) {
 }
 
 function advanceFlowStage() {
-  if (currentStage.value < 5) currentStage.value++
-  const key = ['requirement','graph','design','develop','release'][Math.min(4, currentStage.value)]
+  if (currentStage.value < 3) currentStage.value++
+  const key = ['requirement','architecture','develop','release'][Math.min(3, currentStage.value)]
   if (key) localPhase.value = key
   // 模拟推进
   phaseProgress[key] = Math.min(100, (phaseProgress[key] || 0) + 14)
@@ -1446,6 +1449,13 @@ function createProjectFromQuestion() {
 async function ensureProject() {
   ensureAndInjectProject()
 }
+
+// 启动全维开发：跳转到AI助手，带上项目上下文
+function startFullDev() {
+  ensureAndInjectProject()
+  router.push({ path: '/ai', query: { source: 'expert', action: 'full-dev' } })
+}
+
 function ensureAndInjectProject() {
   if (currentProject.value) {
     ElMessage.info(`当前项目：${currentProject.value.name}，可继续跟进。`)

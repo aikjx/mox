@@ -1,14 +1,21 @@
 <template>
-  <div class="pv">
-    <div class="head">
-      <div>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-header-left">
         <h2 class="page-title">AI 插件</h2>
         <p class="page-subtitle">插件互通总线 · 注册 / 发现 / 消息互通的插件生态</p>
       </div>
-      <el-button type="primary" @click="showReg = true">
-        <el-icon><Plus /></el-icon> 注册插件
-      </el-button>
+      <div class="page-header-actions">
+        <el-button type="primary" @click="goAIDevelop">
+          <el-icon><Promotion /></el-icon> AI开发插件
+        </el-button>
+        <el-button type="primary" plain @click="showReg = true">
+          <el-icon><Plus /></el-icon> 注册插件
+        </el-button>
+      </div>
     </div>
+
+    <div class="page-content">
 
     <div class="grid grid-3 plugin-grid">
       <div class="panel plugin-card" v-for="p in plugins" :key="p.id || p.name">
@@ -82,6 +89,7 @@
         </div>
       </div>
     </div>
+    </div>
 
     <el-dialog v-model="showReg" title="注册 AI 插件" width="460px">
       <el-form label-width="80px">
@@ -105,9 +113,17 @@
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Right } from '@element-plus/icons-vue'
+import { Right, Promotion } from '@element-plus/icons-vue'
 import { getAiPlugins, registerAiPlugin, sendPluginMessage, getPluginTopology } from '@/api'
+
+const router = useRouter()
+
+// AI开发插件：跳转到AI助手，带上插件上下文
+function goAIDevelop() {
+  router.push({ path: '/ai', query: { source: 'plugins', action: 'develop' } })
+}
 
 const plugins = ref([])
 const messages = ref([])

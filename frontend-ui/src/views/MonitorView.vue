@@ -1,13 +1,16 @@
 <template>
-  <div class="mv">
-    <ProjectChip />
-    <div class="head">
-      <div>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-header-left">
         <h2 class="page-title">系统监控</h2>
         <p class="page-subtitle">运行时健康度 · 执行日志 · 组件拓扑实时观测</p>
       </div>
-      <el-button :loading="loading" @click="loadAll"><el-icon><Refresh /></el-icon> 刷新</el-button>
+      <div class="page-header-actions">
+        <el-button :loading="loading" @click="loadAll"><el-icon><Refresh /></el-icon> 刷新</el-button>
+      </div>
     </div>
+
+    <div class="page-content">
 
     <div class="grid grid-4 kpi-row">
       <div class="panel kpi" v-for="k in kpis" :key="k.label">
@@ -101,6 +104,7 @@
         <el-table-column prop="dims" label="维度" min-width="120" />
       </el-table>
     </div>
+    </div>
   </div>
 </template>
 
@@ -109,7 +113,6 @@ import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from '@/echarts'
 import { ElMessage } from 'element-plus'
 import { getStatus, getFullStatus, getLogs, getPlugins, moxHealth, moxOptimize } from '@/api'
-import ProjectChip from '@/components/ProjectChip.vue'
 import { useProject } from '@/composables/projectContext.js'
 
 const loading = ref(false)

@@ -1,6 +1,8 @@
 <template>
-  <div class="pp-wrap">
-    <el-select
+  <div class="pp-wrap" :class="{ 'pp-sb-mode': variant === 'sidebar', 'pp-sb-collapsed': collapsed && variant === 'sidebar' }">
+    <!-- ===== 顶栏 / 快捷栏 横向变体 ===== -->
+    <template v-if="variant === 'top'">
+      <el-select
       :model-value="currentId"
       filterable
       size="default"
@@ -85,6 +87,63 @@
     <el-button class="pp-manage" circle size="small" @click="goProjects" title="管理项目">
       <el-icon :size="13"><Setting /></el-icon>
     </el-button>
+    </template>
+
+    <!-- ===== 侧边栏变体 ===== -->
+    <template v-else>
+      <el-popover
+        placement="right-start"
+        :width="340"
+        trigger="click"
+        popper-class="pp-sb-popper"
+        :show-arrow="false"
+        :teleported="true"
+      >
+        <template #reference>
+          <button class="pp-sb-trigger" :title="currentProject?.name || '选择项目…'">
+            <span class="pp-dot" :style="{ background: color || '#64748b' }"></span>
+            <span v-if="!collapsed" class="pp-sb-name">{{ currentProject?.name || '选择项目' }}</span>
+            <el-icon v-if="!collapsed" class="pp-sb-caret"><ArrowDown /></el-icon>
+          </button>
+        </template>
+
+        <div class="pp-sb-panel">
+          <el-input
+            v-model="filterText"
+            size="default"
+            placeholder="搜索项目…"
+            :prefix-icon="Search"
+            clearable
+          />
+          <div class="pp-sb-groups">
+            <div v-for="g in groups" :key="g.label" class="pp-sb-group" v-show="g.items.length">
+              <div class="pp-sb-group-label">{{ g.label }}</div>
+              <div
+                v-for="p in g.items"
+                :key="p.id"
+                class="pp-sb-opt"
+                :class="{ active: p.id === currentId }"
+                @click="pick(p)"
+              >
+                <span class="pp-dot" :style="{ background: p.color || '#64748b' }"></span>
+                <div class="pp-sb-opt-body">
+                  <span class="pp-sb-opt-name">{{ p.name }}</span>
+                  <span v-if="p.description" class="pp-sb-opt-desc">{{ p.description }}</span>
+                </div>
+                <el-tag size="small" :type="statusTagType(p.status)">{{ statusLabel(p.status) }}</el-tag>
+              </div>
+            </div>
+            <div v-if="!groups.some((g) => g.items.length)" class="pp-sb-empty">
+              <el-empty description="暂无项目" :image-size="44" />
+            </div>
+          </div>
+          <div class="pp-sb-footer">
+            <el-button size="small" type="primary" text :icon="Plus" @click="openCreate">新建项目</el-button>
+            <el-button size="small" text :icon="Setting" @click="goProjects">管理项目</el-button>
+          </div>
+        </div>
+      </el-popover>
+    </template>
 
     <!-- 新建对话框 -->
     <el-dialog v-model="dlg.open" title="新建项目" width="460px" class="pp-new-dialog" :close-on-click-modal="false">
@@ -121,13 +180,33 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Plus, Folder, FolderOpened, Cpu, MagicStick, Share, Shop, Link, Connection, Monitor, User, DataBoard, DataAnalysis, Setting, Aim } from '@element-plus/icons-vue'
+import { Plus, Folder, FolderOpened, Cpu, MagicStick, Share, Shop, Link, Connection, Monitor, User, DataBoard, DataAnalysis, Setting, Aim, ArrowDown, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useProject } from '@/composables/projectContext.js'
 import { getProjectTypes } from '@/api'
 
+const props = defineProps({
+  variant: { type: String, default: 'top' },   // 'top' 横向（顶栏/快捷栏） | 'sidebar' 侧边栏
+  collapsed: { type: Boolean, default: false } // 侧边栏折叠态（仅 sidebar 变体生效）
+})
+
 const router = useRouter()
 const { currentProject, projectList, listLoading, setCurrentProject, createAndSelect } = useProject()
+
+// —— 侧边栏变体：搜索 + 分组 ——
+const filterText = ref('')
+const groups = computed(() => {
+  const q = (filterText.value || '').trim().toLowerCase()
+  const match = (list) => list.filter((p) => !q
+    || (p.name || '').toLowerCase().includes(q)
+    || (p.description || '').toLowerCase().includes(q))
+  return [
+    { label: '进行中', items: match(activeProjects.value) },
+    { label: '规划中', items: match(planningProjects.value) },
+    { label: '已完成', items: match(doneProjects.value) }
+  ]
+})
+function pick(p) { onChange(p.id) }
 
 const currentId = computed(() => currentProject.value?.id || null)
 const color = computed(() => currentProject.value?.color || null)
@@ -282,10 +361,104 @@ onMounted(async () => {
 
 .pp-type-opt { display: inline-flex; align-items: center; gap: 8px; }
 
+/* ===== 侧边栏变体：触发器（位于 App 侧边栏内） ===== */
+.pp-sb-mode {
+  display: block;
+  width: 100%;
+  height: auto;
+  padding: 6px 12px 4px;
+  flex-shrink: 0;
+}
+.pp-sb-mode .pp-sb-trigger {
+  width: 100%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border-radius: 11px;
+  cursor: pointer;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  color: #e2e8f0;
+  transition: all 150ms ease;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+}
+.pp-sb-mode .pp-sb-trigger:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+.pp-sb-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pp-sb-caret { color: #64748b; font-size: 12px; flex-shrink: 0; }
+.pp-sb-mode.pp-sb-collapsed .pp-sb-trigger {
+  justify-content: center;
+  padding: 0;
+  width: 40px;
+  margin: 0 auto;
+}
+
 /* 对话框 */
 :deep(.pp-new-dialog .el-dialog) {
   border-radius: 14px;
   overflow: hidden;
   box-shadow: 0 28px 64px -20px rgba(15,23,42,0.22), 0 8px 20px -10px rgba(99,102,241,0.22);
+}
+</style>
+
+<style>
+/* 侧边栏项目选择器弹层：el-popover teleport 到 body，需全局样式 */
+.pp-sb-popper.el-popover {
+  padding: 10px;
+  border-radius: 14px;
+  box-shadow: 0 28px 64px -20px rgba(15, 23, 42, 0.25), 0 8px 20px -10px rgba(99, 102, 241, 0.18);
+}
+.pp-sb-panel { display: flex; flex-direction: column; gap: 8px; }
+.pp-sb-groups {
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 2px;
+}
+.pp-sb-group-label {
+  font-size: 11px;
+  color: #94a3b8;
+  letter-spacing: 0.06em;
+  padding: 6px 6px 2px;
+  font-weight: 600;
+}
+.pp-sb-opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 120ms ease;
+  line-height: 1.2;
+}
+.pp-sb-opt:hover { background: #f1f5f9; }
+.pp-sb-opt.active { background: #eef2ff; }
+.pp-sb-opt-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pp-sb-opt-name { font-weight: 500; font-size: 13px; color: #0f172a; }
+.pp-sb-opt-desc { font-size: 11px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pp-sb-empty { padding: 8px 0; }
+.pp-sb-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 8px;
+  margin-top: 4px;
 }
 </style>

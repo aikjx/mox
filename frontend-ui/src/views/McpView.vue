@@ -1,12 +1,19 @@
 <template>
-  <div class="mcp">
-    <div class="head">
-      <div>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-header-left">
         <h2 class="page-title">MCP 兼容中心</h2>
         <p class="page-subtitle">把系统内的算子与插件以标准 Model Context Protocol 暴露，兼容任意开源 MCP 客户端</p>
       </div>
-      <el-tag type="success" effect="dark" round><el-icon><CircleCheck /></el-icon>&nbsp;端点已就绪</el-tag>
+      <div class="page-header-actions">
+        <el-button type="primary" @click="goAIConfig">
+          <el-icon><Promotion /></el-icon> AI配置MCP
+        </el-button>
+        <el-tag type="success" effect="dark" round><el-icon><CircleCheck /></el-icon>&nbsp;端点已就绪</el-tag>
+      </div>
     </div>
+
+    <div class="page-content">
 
     <el-row :gutter="16">
       <!-- 左：端点 / 连接配置 -->
@@ -93,13 +100,23 @@
         </div>
       </el-col>
     </el-row>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Promotion } from '@element-plus/icons-vue'
 import { mcpListTools, mcpCall } from '@/api'
+
+const router = useRouter()
+
+// AI配置MCP：跳转到AI助手，带上MCP上下文
+function goAIConfig() {
+  router.push({ path: '/ai', query: { source: 'mcp', action: 'config' } })
+}
 
 const endpoint = window.location.origin + '/api/mcp'
 const cfgTab = ref('claude')

@@ -1,15 +1,17 @@
 <template>
-  <div class="llm-config">
-    <div class="head">
-      <div>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-header-left">
         <h2 class="page-title">大模型网关配置</h2>
         <p class="page-subtitle">多 Provider 统一管理 · 智能路由 · 一键连通性测试</p>
       </div>
-      <div class="head-actions">
+      <div class="page-header-actions">
         <el-button :loading="loading" @click="loadAll"><el-icon><Refresh /></el-icon> 刷新</el-button>
         <el-button type="primary" @click="openAddDialog"><el-icon><Plus /></el-icon> 添加渠道</el-button>
       </div>
     </div>
+
+    <div class="page-content">
 
     <div class="grid grid-4 kpi-row">
       <div class="panel kpi" v-for="k in kpis" :key="k.label">
@@ -308,6 +310,7 @@
           <el-empty description="暂无请求日志" :image-size="60" />
         </div>
       </div>
+    </div>
     </div>
 
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑渠道' : '添加渠道'" width="640px" destroy-on-close>

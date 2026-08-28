@@ -1,11 +1,11 @@
 <template>
-  <div class="expert-enterprise">
-    <div class="head">
-      <div>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-header-left">
         <h2 class="page-title">企业级专家管理控制台</h2>
         <p class="page-subtitle">会话持久化 · 调度策略 · 能力图谱 · 全维协作</p>
       </div>
-      <div class="head-actions">
+      <div class="page-header-actions">
         <el-button @click="loadAll" :loading="loading">
           <el-icon><Refresh /></el-icon> 全量刷新
         </el-button>
@@ -14,6 +14,8 @@
         </el-button>
       </div>
     </div>
+
+    <div class="page-content">
 
     <el-tabs v-model="activeTab" type="border-card" class="main-tabs">
       <!-- 总览仪表盘 -->
@@ -424,6 +426,7 @@
         </el-row>
       </el-tab-pane>
     </el-tabs>
+    </div>
 
     <!-- 企业级系统诊断结果 -->
     <el-dialog v-model="diagnosticVisible" title="企业级系统诊断报告" width="560px" :close-on-click-modal="false">

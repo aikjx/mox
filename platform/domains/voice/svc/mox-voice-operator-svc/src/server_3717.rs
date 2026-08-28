@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -58,11 +58,13 @@ impl Default for VoiceServiceConfig {
     }
 }
 
-/// 组合 Service（Engine + HotwordInjector）
+/// 组合 Service（Engine + HotwordInjector + 可选语音引擎）
 pub struct XiaobaiVoiceService {
     pub engine: Arc<OperatorEngine>,
     pub hotwords: Arc<HotwordInjector>,
     pub config: VoiceServiceConfig,
+    #[cfg(feature = "voice-engine")]
+    pub voice: parking_lot::RwLock<Option<Arc<crate::voice_engine::VoiceEngine>>>,
 }
 
 impl XiaobaiVoiceService {
@@ -77,7 +79,19 @@ impl XiaobaiVoiceService {
         engine_config.audit_fn = log_audit;
         let engine = Arc::new(OperatorEngine::new(engine_config, router));
         register_all_defaults(&engine);
-        Ok(Self { engine, hotwords: Arc::new(HotwordInjector::new()), config })
+        Ok(Self {
+            engine,
+            hotwords: Arc::new(HotwordInjector::new()),
+            config,
+            #[cfg(feature = "voice-engine")]
+            voice: parking_lot::RwLock::new(None),
+        })
+    }
+
+    /// 运行时挂载语音引擎（Paraformer ASR + Kokoro TTS），启用 /v1/tts、/v1/asr。
+    #[cfg(feature = "voice-engine")]
+    pub fn attach_voice(&self, voice: Arc<crate::voice_engine::VoiceEngine>) {
+        *self.voice.write() = Some(voice);
     }
 
     /// 文本端到端：热词 S3 修正 → Engine dispatch_intent（内部走 PPR 路由 + RBAC + 算子）
@@ -306,6 +320,123 @@ async fn ws_handler(ws: WebSocketUpgrade, State(svc): State<AppState>) -> Respon
 
 // ===== Router / Start =====
 
+/// 简易 WAV 编码（16-bit PCM mono），供 /v1/tts 返回 base64。
+#[cfg(feature = "voice-engine")]
+fn encode_wav_pcm16(samples: &[f32], sample_rate: i32) -> Vec<u8> {
+    fn push_u32(wav: &mut Vec<u8>, v: u32) {
+        wav.extend_from_slice(&v.to_le_bytes());
+    }
+    fn push_u16(wav: &mut Vec<u8>, v: u16) {
+        wav.extend_from_slice(&v.to_le_bytes());
+    }
+    let mut wav = Vec::with_capacity(44 + samples.len() * 2);
+    let data_len = (samples.len() * 2) as u32;
+    // RIFF header
+    wav.extend_from_slice(b"RIFF");
+    push_u32(&mut wav, 36 + data_len);
+    wav.extend_from_slice(b"WAVE");
+    wav.extend_from_slice(b"fmt ");
+    push_u32(&mut wav, 16);
+    push_u16(&mut wav, 1); // PCM
+    push_u16(&mut wav, 1); // mono
+    push_u32(&mut wav, sample_rate as u32);
+    push_u32(&mut wav, sample_rate as u32 * 2); // byte rate
+    push_u16(&mut wav, 2); // block align
+    push_u16(&mut wav, 16); // bits per sample
+    wav.extend_from_slice(b"data");
+    push_u32(&mut wav, data_len);
+    for s in samples {
+        let v = (s * 32767.0).clamp(-32768.0, 32767.0) as i16;
+        wav.extend_from_slice(&v.to_le_bytes());
+    }
+    wav
+}
+
+/// POST /v1/tts：text → Kokoro 合成 → 返回 base64 WAV
+#[cfg(feature = "voice-engine")]
+#[derive(Debug, serde::Deserialize)]
+struct TtsRequest {
+    text: String,
+    #[serde(default)]
+    to_wav_b64: bool,
+}
+
+#[cfg(feature = "voice-engine")]
+async fn tts_handler(
+    State(svc): State<AppState>,
+    AxumJson(req): AxumJson<TtsRequest>,
+) -> axum::response::Response {
+    use axum::response::IntoResponse;
+    use base64::Engine;
+    let voice = svc.voice.read().clone();
+    let Some(ve) = voice else {
+        return (
+            axum::http::StatusCode::SERVICE_UNAVAILABLE,
+            AxumJson(json!({ "ok": false, "error": "语音引擎未挂载（无模型权重或未启用 voice-engine feature）" })),
+        )
+            .into_response();
+    };
+    match ve.synthesize(&req.text) {
+        Ok((samples, sr)) => {
+            let wav = encode_wav_pcm16(&samples, sr);
+            let b64 = base64::engine::general_purpose::STANDARD.encode(&wav);
+            AxumJson(json!({
+                "ok": true,
+                "text": req.text,
+                "sample_rate": sr,
+                "num_samples": samples.len(),
+                "duration_s": samples.len() as f64 / sr as f64,
+                "wav_b64": b64,
+            }))
+            .into_response()
+        }
+        Err(e) => (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            AxumJson(json!({ "ok": false, "error": e.to_string() })),
+        )
+            .into_response(),
+    }
+}
+
+/// POST /v1/asr：base64 WAV → Paraformer 识别 → 返回文本
+#[cfg(feature = "voice-engine")]
+#[derive(Debug, serde::Deserialize)]
+struct AsrRequest {
+    wav_b64: String,
+    #[serde(default)]
+    sample_rate: Option<u32>,
+}
+
+#[cfg(feature = "voice-engine")]
+async fn asr_handler(
+    State(svc): State<AppState>,
+    AxumJson(req): AxumJson<AsrRequest>,
+) -> axum::response::Response {
+    use axum::response::IntoResponse;
+    use base64::Engine;
+    let voice = svc.voice.read().clone();
+    let Some(ve) = voice else {
+        return (
+            axum::http::StatusCode::SERVICE_UNAVAILABLE,
+            AxumJson(json!({ "ok": false, "error": "语音引擎未挂载（无模型权重或未启用 voice-engine feature）" })),
+        )
+            .into_response();
+    };
+    let bytes = match base64::engine::general_purpose::STANDARD.decode(&req.wav_b64) {
+        Ok(b) => b,
+        Err(e) => return (axum::http::StatusCode::BAD_REQUEST, AxumJson(json!({ "ok": false, "error": format!("base64 解码失败: {e}") }))).into_response(),
+    };
+    // 写临时 WAV 供 Wave::read（避免 bytes 直读 API 差异）
+    let tmp = std::env::temp_dir().join(format!("xiaobai_asr_{}.wav", std::process::id()));
+    if let Err(e) = std::fs::write(&tmp, &bytes) {
+        return (axum::http::StatusCode::INTERNAL_SERVER_ERROR, AxumJson(json!({ "ok": false, "error": format!("写临时文件失败: {e}") }))).into_response();
+    }
+    match ve.recognize_wav_file(&tmp) {
+        Ok(text) => AxumJson(json!({ "ok": true, "text": text })).into_response(),
+        Err(e) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, AxumJson(json!({ "ok": false, "error": e.to_string() }))).into_response(),
+    }
+}
+
 pub fn build_router(svc: Arc<XiaobaiVoiceService>) -> Router {
     Router::new()
         .route("/health", get(health))
@@ -313,6 +444,8 @@ pub fn build_router(svc: Arc<XiaobaiVoiceService>) -> Router {
         .route("/v1/hotwords", get(get_hotwords).post(set_hotwords))
         .route("/v1/hotwords/post_hoc", post(post_hoc))
         .route("/ws", get(ws_handler))
+        .route("/v1/tts", post(tts_handler))
+        .route("/v1/asr", post(asr_handler))
         .with_state(svc)
 }
 

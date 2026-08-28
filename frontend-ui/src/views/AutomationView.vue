@@ -1,5 +1,14 @@
 <template>
-  <div class="auto">
+  <div class="page-container auto">
+    <!-- 项目上下文：以项目为中心的AI自动化开发 -->
+    <div class="auto-project-bar">
+      <ProjectChip />
+      <div class="auto-project-hint">
+        <el-icon><InfoFilled /></el-icon>
+        <span>当前项目上下文将自动注入生成的自动化方案，实现以项目为中心的全链路开发</span>
+      </div>
+    </div>
+
     <!-- 左：需求对话 -->
     <div class="auto-left">
       <div class="auto-head">
@@ -148,6 +157,8 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
 import { ElMessage } from 'element-plus'
+import { InfoFilled } from '@element-plus/icons-vue'
+import ProjectChip from '@/components/ProjectChip.vue'
 import {
   automationChat,
   automationRefine,
@@ -301,11 +312,30 @@ async function saveCode() {
 </script>
 
 <style scoped>
+/* 项目上下文栏：以项目为中心的AI自动化开发 */
+.auto-project-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #eef2ff 0%, #ecfeff 100%);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  border: 1px solid #e0e7ff;
+}
+.auto-project-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #6366f1;
+  flex: 1;
+}
 .auto {
   display: grid;
   grid-template-columns: 420px 1fr;
   gap: 16px;
-  height: 100%;
+  height: calc(100% - 60px);
 }
 .auto-left {
   background: #fff;

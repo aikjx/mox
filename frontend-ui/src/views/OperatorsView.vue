@@ -1,14 +1,21 @@
 <template>
-  <div class="ops">
-    <div class="head">
-      <div>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-header-left">
         <h2 class="page-title">算子中心</h2>
         <p class="page-subtitle">管理标准算子与自定义算子，编排并执行算子工作流链</p>
       </div>
-      <el-button type="primary" @click="showRegister = true">
-        <el-icon><Plus /></el-icon> 注册算子
-      </el-button>
+      <div class="page-header-actions">
+        <el-button type="primary" @click="goAIGenerate">
+          <el-icon><Promotion /></el-icon> AI生成算子
+        </el-button>
+        <el-button type="primary" plain @click="showRegister = true">
+          <el-icon><Plus /></el-icon> 注册算子
+        </el-button>
+      </div>
     </div>
+
+    <div class="page-content">
 
     <!-- 操作流程引导：4步完成算子编排 -->
     <div class="flow-guide">
@@ -158,6 +165,7 @@
         </div>
       </div>
     </div>
+    </div>
 
     <!-- 算子详情抽屉 -->
     <el-drawer v-model="showDetail" :title="detail?.name || '算子详情'" size="420px">
@@ -204,11 +212,19 @@
 
 <script setup>
 import { ref, computed, onMounted, nextTick, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
 import * as echarts from '@/echarts'
 import { ElMessage } from 'element-plus'
-import { Search, Coordinate, InfoFilled, Plus } from '@element-plus/icons-vue'
+import { Search, Coordinate, InfoFilled, Plus, Promotion } from '@element-plus/icons-vue'
 import { OPERATOR_CATEGORIES } from '@/types'
 import { getOperators, registerOperator, executeWorkflow } from '@/api'
+
+const router = useRouter()
+
+// AI生成算子：跳转到AI助手，带上算子上下文
+function goAIGenerate() {
+  router.push({ path: '/ai', query: { source: 'operators', action: 'generate' } })
+}
 
 const operators = ref([])
 const kw = ref('')

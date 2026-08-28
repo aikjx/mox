@@ -326,6 +326,8 @@ windows = { version = "0.58", features = [
 ] }
 # 璺ㄥ钩鍙伴煶棰?I/O锛堥害鍏嬮褰曢煶銆乀TS 鎾斁锛汚SR 鍙敤 alsa/pulseaudio/windows wasapi 鍥為€€锛?
 cpal = "0.15"
+rodio = "0.20"
+sherpa-onnx = { version = "1.13", default-features = false, features = ["shared"] }
 # 璺ㄥ钩鍙版埅鍥撅紙L3 screenshot 鍔ㄤ綔锛宮ss 绛変环 Rust 瀹炵幇锛沜rates.io 鏈€鏂?0.8.x锛?
 screenshots = "0.8"
 # 妯＄硦鍖归厤锛團R-5 S3 post-hoc 鐑瘝缂栬緫璺濈鏇挎崲銆佷腑鏂囩儹璇嶈繎浼肩籂閿欙級

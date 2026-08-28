@@ -1,14 +1,16 @@
 <template>
-  <div class="bc">
-    <div class="head">
-      <div>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-header-left">
         <h2 class="page-title">机器人中心</h2>
         <p class="page-subtitle">RPA 流程管理 · 支持外部平台（如政数局）带 dId 跳转直达流程详情</p>
       </div>
-      <div class="head-actions">
+      <div class="page-header-actions">
         <el-button @click="loadAll"><el-icon><Refresh /></el-icon> 刷新</el-button>
       </div>
     </div>
+
+    <div class="page-content">
 
     <el-alert
       v-if="fromGov"
@@ -50,6 +52,7 @@
         </div>
       </div>
       <el-empty v-if="!flows.length" description="暂无流程" :image-size="70" />
+    </div>
     </div>
 
     <FlowDetailDialog

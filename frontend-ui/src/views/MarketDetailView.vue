@@ -1,7 +1,7 @@
 <template>
-  <div class="detail" v-loading="loading">
-    <div class="head">
-      <div>
+  <div class="page-container" v-loading="loading">
+    <div class="page-header">
+      <div class="page-header-left">
         <el-button text @click="$router.push('/market')"><el-icon><ArrowLeft /></el-icon> 返回商城</el-button>
         <h2 class="page-title">{{ pkg.name }}</h2>
         <div class="badges">
@@ -11,13 +11,15 @@
           <span class="muted">{{ pkg.author || '匿名' }} · 克隆 {{ pkg.clone_count }} · 更新 {{ shortTime(pkg.updated_at) }}</span>
         </div>
       </div>
-      <div class="head-actions">
+      <div class="page-header-actions">
         <el-button @click="clonePkg"><el-icon><CopyDocument /></el-icon> 克隆此包</el-button>
         <el-button @click="exportApp"><el-icon><Download /></el-icon> 导出应用包</el-button>
         <el-button type="primary" :loading="saving" @click="saveAll"><el-icon><Select /></el-icon> 保存修改</el-button>
         <el-button type="danger" plain @click="delPkg"><el-icon><Delete /></el-icon> 删除</el-button>
       </div>
     </div>
+
+    <div class="page-content">
 
     <div class="grid grid-2">
       <!-- 左：需求 + 功能点 -->
@@ -132,6 +134,7 @@
           连线模式：先点起点节点，再点终点节点即可建立连线
         </div>
       </div>
+    </div>
     </div>
   </div>
 </template>

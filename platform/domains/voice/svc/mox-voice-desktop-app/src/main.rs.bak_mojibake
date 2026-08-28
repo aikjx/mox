@@ -1,29 +1,23 @@
-// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+﻿// Copyright (c) 2026 鐠囩帒 RelGraph 路 绠楀瓙缁熶竴绯荤粺 (OUS) 路 涓夎仈鐩?
 // Licensed under the MIT License.
-// GitHub 主仓: https://github.com/aikjx/mox.git
-// GitCode 镜像: https://gitcode.com/aikjx/mox
+// GitHub 涓讳粨: https://github.com/aikjx/mox.git
+// GitCode 闀滃儚: https://gitcode.com/aikjx/mox
 
-//! 桌面小白助手 · 二进制入口（Rust 全栈 · WebView2 3D 悬浮球）
+//! 妗岄潰灏忕櫧鍔╂墜 路 浜岃繘鍒跺叆鍙ｏ紙Rust 鍏ㄦ爤 路 WebView2 3D 鎮诞鐞冿級
 //!
-//! 形态：无边框透明置顶悬浮球（WebGL2 活体拓扑几何球）：
-//!   - 点击悬浮球 → 展开对话面板，快速文本对话（8 类算子本地执行）
-//!   - 按住拖动 → 移动悬浮球
-//!   - 全局热键：Alt+X 录音开关（Listen 状态）/ Alt+Q 隐藏显示
-//!   - 后台启动 voice_proxy :3717，供 Rust 网关 /voice/** 代理
-//!
-//! P2 语音闭环（全离线）：
-//!   - Alt+X 真录音（cpal 16k）→ Paraformer ASR（sherpa-onnx）→ dispatch_text → Kokoro TTS 朗读
-//!   - `--tts "文本"` 合成 WAV；`--vtest` 录音→ASR 链路测试（headless）
+//! 褰㈡€侊細鏃犺竟妗嗛€忔槑缃《鎮诞鐞冿紙WebGL2 娲讳綋鎷撴墤鍑犱綍鐞冿級锛?
+//!   - 鐐瑰嚮鎮诞鐞?鈫?灞曞紑瀵硅瘽闈㈡澘锛屽揩閫熸枃鏈璇濓紙8 绫荤畻瀛愭湰鍦版墽琛岋級
+//!   - 鎸変綇鎷栧姩 鈫?绉诲姩鎮诞鐞?
+//!   - 鍏ㄥ眬鐑敭锛欰lt+X 褰曢煶寮€鍏筹紙Listen 鐘舵€侊級/ Alt+Q 闅愯棌鏄剧ず
+//!   - 鍚庡彴鍚姩 voice_proxy :3717锛屼緵 Rust 缃戝叧 /voice/** 浠ｇ悊
 //!
 //! ```bash
-//! # GUI（默认）
-//! cargo run -p mox-voice-desktop-app
-//! # 一次性执行：文字端到端（headless 调试）
-//! cargo run -p mox-voice-desktop-app -- --once "音量状态"
-//! # TTS 合成（headless）
-//! cargo run -p mox-voice-desktop-app -- --tts "你好，我是小白"
-//! # 录音 → ASR 链路（headless，需麦克风）
-//! cargo run -p mox-voice-desktop-app -- --vtest --vsecs 3
+//! # GUI锛堥粯璁わ級
+//! cargo run -p xiaobai-desktop
+//! # 涓€娆℃€ф墽琛岋細鏂囧瓧绔埌绔紙headless 璋冭瘯锛?
+//! cargo run -p xiaobai-desktop -- --once "闊抽噺鐘舵€?
+//! # REPL 浜や簰妯″紡
+//! cargo run -p xiaobai-desktop -- --repl
 //! ```
 
 use std::sync::Arc;
@@ -40,28 +34,26 @@ use tao::{
     event_loop::{ControlFlow, EventLoopBuilder, EventLoopProxy},
 };
 
-// =============================== 窗口尺寸 ===============================
+// =============================== 绐楀彛灏哄 ===============================
 const BALL_W: f64 = 150.0;
 const BALL_H: f64 = 150.0;
 const PANEL_W: f64 = 470.0;
 const PANEL_H: f64 = 690.0;
 
-// =============================== 用户事件 ===============================
+// =============================== 鐢ㄦ埛浜嬩欢 ===============================
 enum UserEvent {
-    /// JS → Rust 的原始 IPC 消息
+    /// JS 鈫?Rust 鐨勫師濮?IPC 娑堟伅
     Ipc(String),
-    /// 对话 dispatch 结果（JSON 字符串）
+    /// 瀵硅瘽 dispatch 缁撴灉锛圝SON 瀛楃涓诧級
     ChatResult(String),
-    /// 状态推送（BallWidgetState repr u8）
+    /// 鐘舵€佹帹閫侊紙BallWidgetState repr u8锛?
     SetState(u8),
-    /// 热键：录音开关
+    /// 鐑敭锛氬綍闊冲紑鍏?
     ToggleRecord,
-    /// 热键：隐藏/显示悬浮球
+    /// 鐑敭锛氶殣钘?鏄剧ず鎮诞鐞?
     ToggleWidget,
-    /// 悬浮球 toast 提示
+    /// 鎮诞鐞?toast 鎻愮ず
     Toast(String),
-    /// 本地 TTS 不可用/失败时，触发浏览器拟人音兜底朗读（speechSynthesis）
-    SpeakFallback(String),
 }
 
 // =============================== CLI ===============================
@@ -69,48 +61,42 @@ enum UserEvent {
 #[command(
     name = "xiaobai-desktop",
     version,
-    about = "🚀 桌面小白助手 · Rust 全栈 3D 悬浮球 + voice_proxy 3717 + 8 大类算子 + 语音闭环（Paraformer ASR / Kokoro TTS）",
+    about = "馃殌 妗岄潰灏忕櫧鍔╂墜 路 Rust 鍏ㄦ爤 3D 鎮诞鐞?+ voice_proxy 3717 + 8 澶х被绠楀瓙锛團R-13锛?,
 )]
 struct Args {
-    /// 默认用户 id（RBAC L0~L3）
+    /// 榛樿鐢ㄦ埛 id锛圧BAC L0~L3锛?
     #[arg(long, default_value = "desktop_user_001")]
     user_id: String,
-    /// 默认角色
+    /// 榛樿瑙掕壊
     #[arg(long, default_value = "member")]
     role: String,
-    /// 一次性执行：文本 → 执行 → 打印 JSON → 退出（headless）
+    /// 涓€娆℃€ф墽琛岋細鏂囨湰 鈫?鎵ц 鈫?鎵撳嵃 JSON 鈫?閫€鍑猴紙headless锛?
     #[arg(long)]
     once: Option<String>,
-    /// REPL 交互模式（headless）
+    /// REPL 浜や簰妯″紡锛坔eadless锛?
     #[arg(long)]
     repl: bool,
-    /// 语音 TTS 合成：合成文本为 WAV 输出到 --out（headless）
+    /// 璇煶 TTS 鍚堟垚锛氬悎鎴愭枃鏈负 WAV 杈撳嚭鍒?--out锛坔eadless锛?
     #[arg(long)]
     tts: Option<String>,
-    /// 语音链路测试：录音 N 秒 → ASR 转写 → 打印文本（headless）
+    /// 璇煶閾捐矾娴嬭瘯锛氬綍闊?N 绉?鈫?ASR 杞啓 鈫?鎵撳嵃鏂囨湰锛坔eadless锛?
     #[arg(long)]
     vtest: bool,
-    /// ASR 文件测试：读 WAV → 16k → 识别 → 打印文本（headless，无麦克风验证）
-    #[arg(long)]
-    asrfile: Option<String>,
-    /// --vtest 录音时长（秒）
+    /// --vtest 褰曢煶鏃堕暱锛堢锛?
     #[arg(long, default_value_t = 3.0)]
     vsecs: f64,
-    /// 输出 WAV 路径（--tts / --vtest 用）
+    /// 杈撳嚭 WAV 璺緞锛?-tts / --vtest 鐢級
     #[arg(long, default_value = "voice_out.wav")]
     out: String,
-    /// 诊断：在独立线程内做一次 TTS 合成（模拟 3717 跨线程调用）
-    #[arg(long)]
-    tts_thread: Option<String>,
-    /// 不 spawn :3717 HTTP 服务
+    /// 涓?spawn :3717 HTTP 鏈嶅姟
     #[arg(long)]
     no_server: bool,
 }
 
-// =============================== 对话分发（线程内） ===============================
-/// 从 dispatch_text 的 JSON 结果中提取可朗读文本。
+// =============================== 瀵硅瘽鍒嗗彂锛堢嚎绋嬪唴锛?===============================
+/// 浠?dispatch_text 鐨?JSON 缁撴灉涓彁鍙栧彲鏈楄鏂囨湰銆?
 fn extract_speak_text(v: &serde_json::Value) -> String {
-    // 1) execution.output（可能是 string / {output|text} / array）
+    // 1) execution.output锛堝彲鑳芥槸 string / {output|text} / array锛?
     if let Some(exec) = v.get("execution") {
         if let Some(out) = exec.get("output") {
             if let Some(s) = out.as_str() {
@@ -118,7 +104,7 @@ fn extract_speak_text(v: &serde_json::Value) -> String {
                     return s.trim().to_string();
                 }
             }
-            // 对象：取 output / text / message
+            // 瀵硅薄锛氬彇 output / text / message
             if let Some(s) = out
                 .get("output")
                 .or_else(|| out.get("text"))
@@ -136,7 +122,7 @@ fn extract_speak_text(v: &serde_json::Value) -> String {
             return msg.trim().to_string();
         }
     }
-    // 3) 顶层 message / text
+    // 3) 椤跺眰 message / text
     if let Some(s) = v.get("message").or_else(|| v.get("text")).and_then(|x| x.as_str()) {
         if !s.trim().is_empty() {
             return s.trim().to_string();
@@ -145,30 +131,29 @@ fn extract_speak_text(v: &serde_json::Value) -> String {
     v.to_string()
 }
 
-/// headless：文本 → dispatch → 提取回答 → TTS 合成 WAV
-async fn run_tts_pipeline(
+/// headless锛氭枃鏈?鈫?dispatch 鈫?鎻愬彇鍥炵瓟 鈫?TTS 鍚堟垚 WAV
+fn run_tts_pipeline(
     text: String,
     out_path: &str,
 ) -> anyhow::Result<()> {
     let models = mox_voice_desktop_app::voice_engine::locate_models_dir()
-        .ok_or_else(|| anyhow::anyhow!("未找到语音模型目录（models/voice）。"))?;
+        .ok_or_else(|| anyhow::anyhow!("鏈壘鍒拌闊虫ā鍨嬬洰褰曪紙models/voice锛夈€?))?;
     let engine = mox_voice_desktop_app::VoiceEngine::new(&models)?;
-    tracing::info!(target: "xiaobai_voice", "模型就绪：ASR+TTS，说话人数 {}", engine.speaker_count());
+    tracing::info!(target: "xiaobai_voice", "妯″瀷灏辩华锛欰SR+TTS锛岃璇濅汉 sid={}", engine.speaker_count());
 
-    use mox_voice_operator_svc::server_3717::{VoiceServiceConfig, XiaobaiVoiceService};
-    let svc = XiaobaiVoiceService::new(VoiceServiceConfig::default())?;
-    let answer = match svc.dispatch_text(&text, None, None).await {
-        Ok(v) => extract_speak_text(&v),
-        Err(e) => {
-            // dispatch 兜底：无法识别/执行时朗读用户输入本身（保证 TTS 链路可用）
-            tracing::warn!(target: "xiaobai_voice", "dispatch 失败，朗读原文本兜底: {e}");
-            text.clone()
-        }
-    };
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    let answer = rt.block_on(async {
+        use mox_voice_operator_svc::server_3717::{VoiceServiceConfig, XiaobaiVoiceService};
+        let svc = XiaobaiVoiceService::new(VoiceServiceConfig::default())?;
+        let v = svc.dispatch_text(&text, None, None).await?;
+        Ok::<String, anyhow::Error>(extract_speak_text(&v))
+    })?;
 
     let t0 = std::time::Instant::now();
     let sr = engine.synthesize_to_wav(&answer, std::path::Path::new(out_path))?;
-    tracing::info!(target: "xiaobai_voice", "TTS 合成完成：{out_path}（耗时 {}s）", t0.elapsed().as_secs_f32());
+    tracing::info!(target: "xiaobai_voice", "TTS 鍚堟垚瀹屾垚锛歿out_path}锛坽}s 璇嗗埆鏂囨湰={answer:?}锛?, t0.elapsed().as_secs_f32());
     println!("{}", serde_json::json!({
         "input_text": text,
         "answer": answer,
@@ -179,32 +164,32 @@ async fn run_tts_pipeline(
     Ok(())
 }
 
-/// headless：录音 N 秒 → ASR 转写 → 打印文本（可选合成）
+/// headless锛氬綍闊?N 绉?鈫?ASR 杞啓 鈫?鎵撳嵃鏂囨湰锛堝彲閫?dispatch + 鍚堟垚锛?
 fn run_voice_test(secs: f64, out_path: &str) -> anyhow::Result<()> {
     let models = mox_voice_desktop_app::voice_engine::locate_models_dir()
-        .ok_or_else(|| anyhow::anyhow!("未找到语音模型目录（models/voice）。"))?;
+        .ok_or_else(|| anyhow::anyhow!("鏈壘鍒拌闊虫ā鍨嬬洰褰曪紙models/voice锛夈€?))?;
     let engine = mox_voice_desktop_app::VoiceEngine::new(&models)?;
 
-    println!("🎙 开始录音 {secs}s …（请对着麦克风说话）");
+    println!("馃帣 寮€濮嬪綍闊?{secs}s 鈥︼紙璇峰鐫€楹﹀厠椋庤璇濓級");
     let rec = mox_voice_desktop_app::Recorder::start()?;
     std::thread::sleep(std::time::Duration::from_secs_f64(secs));
     let pcm = rec.stop(16000);
     let peak = mox_voice_desktop_app::voice_engine::peak_level(&pcm);
-    println!("录音结束：{} 样本，峰值 {:.3}", pcm.len(), peak);
+    println!("褰曢煶缁撴潫锛歿} 鏍锋湰锛屽嘲鍊?{:.3}", pcm.len(), peak);
     if mox_voice_desktop_app::voice_engine::is_silent(&pcm, 0.01) {
-        anyhow::bail!("录音基本为静音（峰值 {peak:.3} < 0.01），请检查麦克风");
+        anyhow::bail!("褰曢煶鍩烘湰涓洪潤闊筹紙宄板€?{peak:.3} < 0.01锛夛紝璇锋鏌ラ害鍏嬮");
     }
 
     let t0 = std::time::Instant::now();
     let text = engine.recognize(&pcm);
-    println!("[ASR] 识别结果（{}ms）：{:?}", t0.elapsed().as_millis(), text);
+    println!("[ASR] 璇嗗埆缁撴灉锛坽}ms锛夛細{:?}", t0.elapsed().as_millis(), text);
     if text.is_empty() {
-        anyhow::bail!("ASR 未识别到文本");
+        anyhow::bail!("ASR 鏈瘑鍒埌鏂囨湰");
     }
 
-    // 合成测试（读回识别文本，验证 TTS 闭环）
+    // 鍚堟垚娴嬭瘯锛堣鍥炶瘑鍒枃鏈紝楠岃瘉 TTS 闂幆锛?
     let sr = engine.synthesize_to_wav(&text, std::path::Path::new(out_path))?;
-    println!("[TTS] 已合成 {out_path}（sr={sr}）");
+    println!("[TTS] 宸插悎鎴?{out_path}锛坰r={sr}锛?);
     println!("{}", serde_json::json!({
         "asr_text": text,
         "peak": peak,
@@ -215,11 +200,9 @@ fn run_voice_test(secs: f64, out_path: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// 在独立线程执行一次文本分发，关键节点向主线程推送状态。
-/// 完成后对回答做第一层本地 TTS 朗读；失败/无权重则回退浏览器拟人音兜底。
+/// 鍦ㄧ嫭绔嬬嚎绋嬫墽琛屼竴娆℃枃鏈垎鍙戯紝鍏抽敭鑺傜偣鍚戜富绾跨▼鎺ㄩ€佺姸鎬併€?
 fn run_dispatch(
     text: String,
-    engine: Option<Arc<mox_voice_desktop_app::VoiceEngine>>,
     proxy: EventLoopProxy<UserEvent>,
     state: Arc<mox_voice_desktop_app::ball_widget::StateController>,
 ) {
@@ -252,40 +235,16 @@ fn run_dispatch(
                     Err(e) => json!({ "error": { "message": e.to_string() } }).to_string(),
                 }
             }
-            Err(e) => json!({ "error": { "message": format!("tokio 初始化失败: {e}") } }).to_string(),
+            Err(e) => json!({ "error": { "message": format!("tokio 鍒濆鍖栧け璐? {e}") } }).to_string(),
         };
-        let _ = proxy.send_event(UserEvent::ChatResult(json.clone()));
-
-        // ---- 回答朗读：第一层本地 TTS，失败/无权重 → 浏览器拟人音兜底 ----
-        let speak_text = extract_speak_text(&serde_json::from_str::<serde_json::Value>(&json).unwrap_or_default());
-        if !speak_text.trim().is_empty() {
-            state.transition(BallWidgetState::Speak);
-            let _ = proxy.send_event(UserEvent::SetState(BallWidgetState::Speak as u8));
-            let ok = match &engine {
-                Some(eng) => match eng.speak(&speak_text) {
-                    Ok(()) => true,
-                    Err(e) => {
-                        tracing::warn!(target: "xiaobai_voice", "本地 TTS 朗读失败，切浏览器兜底: {e:#}");
-                        false
-                    }
-                },
-                None => {
-                    tracing::warn!(target: "xiaobai_voice", "语音权重缺失，走浏览器拟人音兜底");
-                    false
-                }
-            };
-            if !ok {
-                let _ = proxy.send_event(UserEvent::SpeakFallback(speak_text));
-            }
-        }
-
+        let _ = proxy.send_event(UserEvent::ChatResult(json));
         state.transition(BallWidgetState::Idle);
         let _ = proxy.send_event(UserEvent::SetState(BallWidgetState::Idle as u8));
     });
 }
 
-/// 语音闭环：pcm → Paraformer ASR → dispatch_text → 回答 → Kokoro TTS → 播放。
-/// 后台线程执行，状态通过 proxy 回传主线程。
+/// 璇煶闂幆锛歱cm 鈫?Paraformer ASR 鈫?dispatch_text 鈫?鍥炵瓟 鈫?Kokoro TTS 鈫?鎾斁銆?
+/// 鍚庡彴绾跨▼鎵ц锛岀姸鎬侀€氳繃 proxy 鍥炰紶涓荤嚎绋嬨€?
 fn run_voice_loop(
     engine: Arc<mox_voice_desktop_app::VoiceEngine>,
     pcm: Vec<i16>,
@@ -300,11 +259,11 @@ fn run_voice_loop(
         if text.trim().is_empty() {
             state.transition(BallWidgetState::Idle);
             let _ = proxy.send_event(UserEvent::SetState(0));
-            let _ = proxy.send_event(UserEvent::Toast("未识别到语音，请再试一次".into()));
+            let _ = proxy.send_event(UserEvent::Toast("鏈瘑鍒埌璇煶锛岃鍐嶈瘯涓€娆?.into()));
             return;
         }
 
-        // ---- 2. dispatch（本地算子执行） ----
+        // ---- 2. dispatch锛堟湰鍦扮畻瀛愭墽琛岋級 ----
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build();
@@ -331,19 +290,19 @@ fn run_voice_loop(
                     Err(e) => json!({ "error": { "message": e.to_string() } }),
                 }
             }
-            Err(e) => json!({ "error": { "message": format!("tokio 初始化失败: {e}") } }),
+            Err(e) => json!({ "error": { "message": format!("tokio 鍒濆鍖栧け璐? {e}") } }),
         };
 
         let speak_text = extract_speak_text(&json);
         let _ = proxy.send_event(UserEvent::ChatResult(json.to_string()));
 
-        // ---- 3. TTS 朗读（第一层本地；失败 → 浏览器拟人音兜底）----
+        // ---- 3. TTS 鏈楄 ----
         if !speak_text.trim().is_empty() {
             state.transition(BallWidgetState::Speak);
             let _ = proxy.send_event(UserEvent::SetState(BallWidgetState::Speak as u8));
             if let Err(e) = engine.speak(&speak_text) {
-                tracing::warn!(target: "xiaobai_voice", "本地 TTS 朗读失败，切浏览器兜底: {e:#}");
-                let _ = proxy.send_event(UserEvent::SpeakFallback(speak_text));
+                tracing::warn!(target: "xiaobai_voice", "TTS 鏈楄澶辫触: {e:#}");
+                let _ = proxy.send_event(UserEvent::Toast(format!("鏈楄澶辫触: {e}")));
             }
         }
 
@@ -352,14 +311,14 @@ fn run_voice_loop(
     });
 }
 
-// =============================== GUI 主入口 ===============================
+// =============================== GUI 涓诲叆鍙?===============================
 fn run_gui(args: Args) -> anyhow::Result<()> {
     let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
     let proxy = event_loop.create_proxy();
 
-    // ---- 悬浮球窗口：无边框 · 透明 · 置顶 ----
+    // ---- 鎮诞鐞冪獥鍙ｏ細鏃犺竟妗?路 閫忔槑 路 缃《 ----
     let mut wb = tao::window::WindowBuilder::new()
-        .with_title("小白 · 璇玑伙伴")
+        .with_title("灏忕櫧 路 鐠囩帒浼欎即")
         .with_inner_size(LogicalSize::new(BALL_W, BALL_H))
         .with_decorations(false)
         .with_transparent(true)
@@ -372,7 +331,7 @@ fn run_gui(args: Args) -> anyhow::Result<()> {
     }
     let window = Arc::new(wb.build(&event_loop)?);
 
-    // ---- WebView：加载 3D 悬浮球 UI ----
+    // ---- WebView锛氬姞杞?3D 鎮诞鐞?UI ----
     let html = include_str!("../ui/index.html");
     let ipc_proxy = proxy.clone();
     let builder = wry::WebViewBuilder::new()
@@ -384,7 +343,7 @@ fn run_gui(args: Args) -> anyhow::Result<()> {
         });
     let webview = builder.build(&window)?;
 
-    // ---- 全局热键 ----
+    // ---- 鍏ㄥ眬鐑敭 ----
     let state = Arc::new(mox_voice_desktop_app::ball_widget::StateController::new());
     let hk_manager = global_hotkey::GlobalHotKeyManager::new().ok();
     let mut hotkeys: Vec<(global_hotkey::hotkey::HotKey, HotkeyAction)> = Vec::new();
@@ -402,74 +361,37 @@ fn run_gui(args: Args) -> anyhow::Result<()> {
         }
     }
 
-    // 初始推送状态
+    // 鍒濆鎺ㄩ€佺姸鎬?
     let _ = webview.evaluate_script("window.__setState(0)");
 
-    // ---- P2 语音引擎（启动时加载一次；模型缺失则录音时提示）----
+    // ---- P2 璇煶寮曟搸锛堝惎鍔ㄦ椂鍔犺浇涓€娆★紱妯″瀷缂哄け鍒欏綍闊虫椂鎻愮ず锛?---
     let engine = match mox_voice_desktop_app::voice_engine::locate_models_dir() {
         Some(dir) => match mox_voice_desktop_app::VoiceEngine::new(&dir) {
             Ok(e) => {
-                tracing::info!(target: "xiaobai_voice", "语音引擎就绪（模型: {dir:?}，说话人 {}）", e.speaker_count());
+                tracing::info!(target: "xiaobai_voice", "璇煶寮曟搸灏辩华锛堟ā鍨? {dir:?}锛岃璇濅汉 {}锛?, e.speaker_count());
                 Some(Arc::new(e))
             }
             Err(e) => {
-                tracing::warn!(target: "xiaobai_voice", "语音引擎初始化失败: {e:#}（Alt+X 将回退旧占位）");
-                let _ = webview.evaluate_script("window.__toast('语音引擎未加载，Alt+X 暂不可用')");
+                tracing::warn!(target: "xiaobai_voice", "璇煶寮曟搸鍒濆鍖栧け璐? {e:#}锛圓lt+X 灏嗗洖閫€鏃у崰浣嶏級");
+                let _ = webview.evaluate_script("window.__toast('璇煶寮曟搸鏈姞杞斤紝Alt+X 鏆備笉鍙敤')");
                 None
             }
         },
         None => {
-            tracing::warn!(target: "xiaobai_voice", "未找到语音模型目录，语音闭环禁用");
-            let _ = webview.evaluate_script("window.__toast('未找到语音模型，Alt+X 暂不可用')");
+            tracing::warn!(target: "xiaobai_voice", "鏈壘鍒拌闊虫ā鍨嬬洰褰曪紝璇煶闂幆绂佺敤");
+            let _ = webview.evaluate_script("window.__toast('鏈壘鍒拌闊虫ā鍨嬶紝Alt+X 鏆備笉鍙敤')");
             None
         }
     };
 
-    // ---- voice_proxy :3717 后台启动（供 Rust 网关 /voice/** 代理，注入语音引擎）----
-    if !args.no_server {
-        let cfg = mox_voice_operator_svc::server_3717::VoiceServiceConfig::default();
-        let addr = cfg.bind.to_string();
-        let addr_cb = addr.clone();
-        let eng_for_3717 = engine.clone();
-        std::thread::Builder::new()
-            .name("voice-3717".into())
-            .spawn(move || {
-                let rt = tokio::runtime::Builder::new_current_thread()
-                    .enable_all()
-                    .build()
-                    .expect("tokio runtime 创建失败");
-                rt.block_on(async move {
-                    use mox_voice_operator_svc::server_3717::{build_router, VoiceServiceConfig, XiaobaiVoiceService};
-                    let svc = Arc::new(XiaobaiVoiceService::new(cfg.clone()).expect("XiaobaiVoiceService 初始化失败"));
-                    if let Some(ve) = &eng_for_3717 {
-                        svc.attach_voice(ve.clone());
-                        tracing::info!(target: "xiaobai_voice", "3717 已挂载语音引擎（/v1/tts、/v1/asr 可用）");
-                    }
-                    let app = build_router(svc);
-                    let listener = tokio::net::TcpListener::bind(cfg.bind).await
-                        .expect("3717 bind 失败");
-                    tracing::info!(target: "xiaobai_cli", "voice_proxy :3717 后台启动 → {addr_cb}");
-                    if let Err(e) = axum::serve(
-                        listener,
-                        app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
-                    )
-                    .await
-                    {
-                        eprintln!("voice 3717 服务异常退出: {e:#}");
-                    }
-                });
-            })?;
-        tracing::info!(target: "xiaobai_cli", "voice_proxy :3717 线程已派发 → {addr}");
-    }
-
-    // ---- 事件循环 ----
+    // ---- 浜嬩欢寰幆 ----
     let mut widget_visible = true;
     let mut recording: Option<mox_voice_desktop_app::Recorder> = None;
 
     event_loop.run(move |event, _el, control_flow| {
         *control_flow = ControlFlow::Wait;
 
-        // 全局热键事件
+        // 鍏ㄥ眬鐑敭浜嬩欢
         if let Ok(ev) = global_hotkey::GlobalHotKeyEvent::receiver().try_recv() {
             if ev.state() == global_hotkey::HotKeyState::Pressed {
                 for (hk, action) in &hotkeys {
@@ -497,7 +419,7 @@ fn run_gui(args: Args) -> anyhow::Result<()> {
             Event::UserEvent(ev) => match ev {
                 UserEvent::Ipc(msg) => {
                     if let Some(rest) = msg.strip_prefix("chat:") {
-                        run_dispatch(rest.to_string(), engine.clone(), proxy.clone(), state.clone());
+                        run_dispatch(rest.to_string(), proxy.clone(), state.clone());
                     } else {
                         match msg.as_str() {
                             "open-panel" => {
@@ -525,18 +447,18 @@ fn run_gui(args: Args) -> anyhow::Result<()> {
                     let _ = webview.evaluate_script(&format!("window.__setState({n})"));
                 }
                 UserEvent::ToggleRecord => {
-                    // P2 真实闭环：首按开始录音（Listen），再按停止 → ASR → dispatch → TTS
+                    // P2 鐪熷疄闂幆锛氶鎸夊紑濮嬪綍闊筹紙Listen锛夛紝鍐嶆寜鍋滄 鈫?ASR 鈫?dispatch 鈫?TTS
                     if recording.is_none() {
                         match mox_voice_desktop_app::Recorder::start() {
                             Ok(rec) => {
                                 recording = Some(rec);
                                 state.transition(BallWidgetState::Listen);
                                 let _ = webview.evaluate_script("window.__setState(1)");
-                                let _ = webview.evaluate_script("window.__toast('🎙 录音中… 再按 Alt+X 结束')");
+                                let _ = webview.evaluate_script("window.__toast('馃帣 褰曢煶涓€?鍐嶆寜 Alt+X 缁撴潫')");
                             }
                             Err(e) => {
                                 let _ = webview
-                                    .evaluate_script(&format!("window.__toast('录音设备不可用: {e}')"));
+                                    .evaluate_script(&format!("window.__toast('褰曢煶璁惧涓嶅彲鐢? {e}')"));
                             }
                         }
                     } else {
@@ -547,7 +469,7 @@ fn run_gui(args: Args) -> anyhow::Result<()> {
                             state.transition(BallWidgetState::Idle);
                             let _ = webview.evaluate_script("window.__setState(0)");
                             let _ = webview.evaluate_script(&format!(
-                                "window.__toast('未听到声音（峰值 {peak:.2}），请再试')"
+                                "window.__toast('鏈惉鍒板０闊筹紙宄板€?{peak:.2}锛夛紝璇峰啀璇?)"
                             ));
                         }
                         match &engine {
@@ -558,7 +480,7 @@ fn run_gui(args: Args) -> anyhow::Result<()> {
                             None => {
                                 state.transition(BallWidgetState::Idle);
                                 let _ = webview.evaluate_script("window.__setState(0)");
-                                let _ = webview.evaluate_script("window.__toast('语音引擎未加载')");
+                                let _ = webview.evaluate_script("window.__toast('璇煶寮曟搸鏈姞杞?)");
                             }
                         }
                     }
@@ -570,10 +492,6 @@ fn run_gui(args: Args) -> anyhow::Result<()> {
                 UserEvent::Toast(msg) => {
                     let _ = webview.evaluate_script(&format!("window.__toast({msg:?})"));
                 }
-                UserEvent::SpeakFallback(text) => {
-                    // 本地 TTS 不可用/失败：切浏览器拟人音兜底朗读
-                    let _ = webview.evaluate_script(&format!("window.__speakFallback({text:?})"));
-                }
             },
 
             _ => {}
@@ -581,7 +499,7 @@ fn run_gui(args: Args) -> anyhow::Result<()> {
     });
 }
 
-// =============================== 热键组合解析 ===============================
+// =============================== 鐑敭缁勫悎瑙ｆ瀽 ===============================
 fn parse_combo(
     combo: &str,
 ) -> Option<(
@@ -607,7 +525,7 @@ fn parse_combo(
     code.map(|c| (c, mods))
 }
 
-// =============================== headless 调试 ===============================
+// =============================== headless 璋冭瘯 ===============================
 async fn run_once_debug(text: &str) -> Result<serde_json::Value, mox_voice_core_svc::errors::XiaobaiError> {
     use mox_voice_operator_svc::server_3717::{VoiceServiceConfig, XiaobaiVoiceService};
     let svc = XiaobaiVoiceService::new(VoiceServiceConfig::default())?;
@@ -627,52 +545,16 @@ async fn main() -> anyhow::Result<()> {
 
     let args = Args::parse();
 
-    // headless：TTS 合成
+    // headless锛歍TS 鍚堟垚
     if let Some(text) = args.tts {
-        return run_tts_pipeline(text, &args.out).await;
+        return run_tts_pipeline(text, &args.out);
     }
-    // 诊断：独立线程内 TTS 合成（模拟 3717 跨线程调用）
-    if let Some(text) = args.tts_thread {
-        let models = mox_voice_desktop_app::voice_engine::locate_models_dir()
-            .ok_or_else(|| anyhow::anyhow!("未找到语音模型目录（models/voice）。"))?;
-        let engine = Arc::new(mox_voice_desktop_app::VoiceEngine::new(&models)?);
-        let t = text.clone();
-        let handle = std::thread::spawn(move || {
-            let t0 = std::time::Instant::now();
-            match engine.synthesize(&t) {
-                Ok((samples, sr)) => {
-                    println!("线程内合成成功：{} 样本 sr={} 耗时{}ms", samples.len(), sr, t0.elapsed().as_millis());
-                    Ok(())
-                }
-                Err(e) => {
-                    eprintln!("线程内合成失败: {e:#}");
-                    Err::<(), anyhow::Error>(e)
-                }
-            }
-        });
-        handle.join().map_err(|_| anyhow::anyhow!("线程 panic"))??;
-        return Ok(());
-    }
-    // headless：WAV → ASR 识别
-    if let Some(wav) = args.asrfile {
-        let models = mox_voice_desktop_app::voice_engine::locate_models_dir()
-            .ok_or_else(|| anyhow::anyhow!("未找到语音模型目录（models/voice）。"))?;
-        let engine = mox_voice_desktop_app::VoiceEngine::new(&models)?;
-        let t0 = std::time::Instant::now();
-        let text = engine.recognize_wav_file(std::path::Path::new(&wav))?;
-        println!("{}", serde_json::json!({
-            "wav": wav,
-            "asr_text": text,
-            "elapsed_ms": t0.elapsed().as_millis(),
-        }));
-        return Ok(());
-    }
-    // headless：录音 → ASR 链路
+    // headless锛氬綍闊?鈫?ASR 閾捐矾
     if args.vtest {
         return run_voice_test(args.vsecs, &args.out);
     }
 
-    // headless 调试模式
+    // headless 璋冭瘯妯″紡
     if let Some(text) = args.once {
         let t0 = std::time::Instant::now();
         match run_once_debug(&text).await {
@@ -680,12 +562,12 @@ async fn main() -> anyhow::Result<()> {
                 println!("{}", serde_json::to_string_pretty(&v)?);
                 println!("elapsed: {:?}", t0.elapsed());
             }
-            Err(e) => eprintln!("XB 错误: {e:#}"),
+            Err(e) => eprintln!("XB 閿欒: {e:#}"),
         }
         return Ok(());
     }
     if args.repl {
-        println!("💬 REPL 模式（headless）：输入一行执行，空行退出。");
+        println!("馃挰 REPL 妯″紡锛坔eadless锛夛細杈撳叆涓€琛屾墽琛岋紝绌鸿閫€鍑恒€?);
         use std::io::BufRead;
         let stdin = std::io::stdin();
         for line in stdin.lock().lines() {
@@ -695,11 +577,24 @@ async fn main() -> anyhow::Result<()> {
             }
             match run_once_debug(&l).await {
                 Ok(v) => println!("{}", v),
-                Err(e) => eprintln!("XB 错误: {e:#}"),
+                Err(e) => eprintln!("XB 閿欒: {e:#}"),
             }
         }
         return Ok(());
     }
 
+    // GUI 榛樿锛氬厛鐢ㄤ富 tokio runtime 鍚庡彴鍚姩 voice_proxy :3717锛堜緵 Rust 缃戝叧 /voice/** 浠ｇ悊锛?
+    if !args.no_server {
+        let cfg = mox_voice_operator_svc::server_3717::VoiceServiceConfig::default();
+        let addr = cfg.bind.to_string();
+        tokio::spawn(async move {
+            if let Err(e) = mox_voice_operator_svc::server_3717::serve(cfg).await {
+                eprintln!("voice 3717 鏈嶅姟寮傚父閫€鍑? {e:#}");
+            }
+        });
+        tracing::info!(target: "xiaobai_cli", "voice_proxy :3717 鍚庡彴鍚姩 鈫?{addr}");
+    }
+
     run_gui(args)
 }
+

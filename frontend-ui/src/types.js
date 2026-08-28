@@ -88,38 +88,37 @@ export const NAV_MODULES = [
   { key: 'admin', label: '系统管理', icon: 'Lock', path: '/admin', color: '#475569', bg: '#f1f5f9' }
 ]
 
-// 璇玑专家联盟 5 阶段生命周期导航（以项目为根 · 侧边栏按 S1~S5 排序）
-// ┌─ 工作台 ──────────────────────────────────────────────────┐
-// │ dashboard · projects · workbench · tasks · resources      │
-// ├─ S1 需求架构 ─────────────────────────────────────────────┤
-// │ caomei(编译) · ai(AI助手X) · expert-center(联盟)          │
-// │ knowledge-base · llm-config                               │
-// ├─ S2 璇玑图谱 ─────────────────────────────────────────────┤
-// │ graph · mox-fusion · operators · expert-enterprise        │
-// │ expert-orchestrator(V2编排)                               │
-// ├─ S3 方案设计 ─────────────────────────────────────────────┤
-// │ workflow · automation · plugins · mcp · market(商城)      │
-// ├─ S4 开发运行 ─────────────────────────────────────────────┤
-// │ algolab · infinite-optimizer · botCenter · browser        │
-// ├─ S5 运行发布 ─────────────────────────────────────────────┤
-// │ monitor · docs · portal · business-hall · admin           │
-// └───────────────────────────────────────────────────────────┘
+// 璇玑专家联盟 5 阶段生命周期导航（以项目为根 · 按项目开发流程分组）
+// ┌─ 📌 项目总览 ────────────────────────────────────────────────┐
+// │ dashboard · projects · tasks · resources                     │
+// ├─ 📋 需求阶段（S1）───────────────────────────────────────────┤
+// │ ai(项目对话) · caomei(需求编译) · knowledge-base(知识库)    │
+// │ llm-config(大模型配置)                                        │
+// ├─ 🏗️ 架构阶段（S2）───────────────────────────────────────────┤
+// │ graph(知识图谱) · expert-center(专家联盟) · mox-fusion(融合)│
+// │ expert-enterprise(企业专家) · expert-orchestrator(V2编排)   │
+// ├─ ⚙️ 开发阶段（S3-S4）────────────────────────────────────────┤
+// │ operators(算子) · workflow(工作流) · plugins(插件) · mcp    │
+// │ automation(自动化) · browser(浏览器自动化) · algolab(算法)  │
+// │ infinite-optimizer(无穷优化) · botCenter(机器人)             │
+// ├─ 🚀 发布阶段（S5）───────────────────────────────────────────┤
+// │ monitor(监控) · docs(API文档) · admin(系统管理)              │
+// └───────────────────────────────────────────────────────────────┘
 export const NAV_GROUPS = [
-  { key: 'workbench',  label: '工作台',     order: 0, items: ['dashboard', 'projects', 'workbench', 'tasks', 'resources'] },
-  { key: 's1-require', label: 'S1 · 需求架构', order: 1, items: ['caomei', 'ai', 'expert-center', 'knowledge-base', 'llm-config'] },
-  { key: 's2-graph',   label: 'S2 · 璇玑图谱', order: 2, items: ['graph', 'mox-fusion', 'operators', 'expert-enterprise', 'expert-orchestrator'] },
-  { key: 's3-design',  label: 'S3 · 方案设计', order: 3, items: ['workflow', 'automation', 'plugins', 'mcp', 'market'] },
-  { key: 's4-develop', label: 'S4 · 开发运行', order: 4, items: ['algolab', 'infinite-optimizer', 'botCenter', 'browser'] },
-  { key: 's5-release', label: 'S5 · 运行发布', order: 5, items: ['monitor', 'docs', 'portal', 'business-hall', 'admin'] }
+  { key: 'overview',   label: '📌 项目总览',   order: 0, items: ['dashboard', 'projects', 'tasks', 'resources'] },
+  { key: 's1-require', label: '📋 需求阶段',   order: 1, items: ['ai', 'caomei', 'knowledge-base', 'llm-config'] },
+  { key: 's2-arch',    label: '🏗️ 架构阶段',   order: 2, items: ['graph', 'expert-center', 'mox-fusion', 'expert-enterprise', 'expert-orchestrator'] },
+  { key: 's3-dev',     label: '⚙️ 开发阶段',   order: 3, items: ['operators', 'workflow', 'plugins', 'mcp', 'automation', 'browser', 'algolab', 'infinite-optimizer', 'botCenter'] },
+  { key: 's4-release', label: '🚀 发布阶段',   order: 4, items: ['monitor', 'docs', 'admin'] },
+  { key: 'market',     label: '🛒 资源商城',   order: 5, items: ['market'] }
 ]
 
-// 5 阶段流程（与 PhasePipeline 对齐）
+// 5 阶段流程（与 PhasePipeline 对齐 · 按项目开发流程）
 export const PROJECT_PHASES = [
-  { key: 'requirement', label: '需求架构', desc: '编译 · 建模 · 拆解问题', color: '#6366f1', group: 's1-require' },
-  { key: 'graph',       label: '知识图谱', desc: '璇玑 · 关系 · 全维发现',   color: '#06b6d4', group: 's2-graph' },
-  { key: 'design',      label: '方案设计', desc: '架构 · 编排 · 资源绑定',   color: '#8b5cf6', group: 's3-design' },
-  { key: 'develop',     label: '开发运行', desc: '算子 · 代码 · 执行',       color: '#10b981', group: 's4-develop' },
-  { key: 'release',     label: '运行发布', desc: '发布 · 监控 · 交付',       color: '#f59e0b', group: 's5-release' }
+  { key: 'requirement', label: '需求阶段', desc: '项目对话 · 需求编译 · 知识库', color: '#6366f1', group: 's1-require' },
+  { key: 'architecture', label: '架构阶段', desc: '知识图谱 · 专家联盟 · 全维融合', color: '#06b6d4', group: 's2-arch' },
+  { key: 'develop', label: '开发阶段', desc: '算子 · 工作流 · 插件 · 自动化', color: '#10b981', group: 's3-dev' },
+  { key: 'release', label: '发布阶段', desc: '监控 · 文档 · 系统管理', color: '#f59e0b', group: 's4-release' }
 ]
 
 // 顶栏⚡新建命令（6 项，按 5 阶段顺序排）

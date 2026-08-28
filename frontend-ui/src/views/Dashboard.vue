@@ -1,5 +1,5 @@
 <template>
-  <div class="dashboard">
+  <div class="page-container dashboard">
     <!-- 欢迎横幅 -->
     <div class="welcome panel">
       <div class="welcome-left">

@@ -1,11 +1,11 @@
 <template>
-  <div class="market">
-    <div class="head">
-      <div>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-header-left">
         <h2 class="page-title">算子商城</h2>
         <p class="page-subtitle">把「需求 + 业务流程图」作为算子包沉淀下来，别人可随机浏览、克隆后继续编辑</p>
       </div>
-      <div class="head-actions">
+      <div class="page-header-actions">
         <el-button @click="randomOne" :loading="randoming">
           <el-icon><MagicStick /></el-icon> 随机一个
         </el-button>
@@ -15,8 +15,7 @@
       </div>
     </div>
 
-    <!-- 过滤条 -->
-    <div class="toolbar">
+    <div class="page-toolbar">
       <el-input
         v-model="kw"
         placeholder="搜索名称 / 简介…（最近 5 条）"
@@ -70,6 +69,7 @@
       </div>
     </div>
 
+    <div class="page-content">
     <!-- 空态 CTA -->
     <div v-if="!sortedFiltered.length && viewMode === 'card'" class="empty-cta">
       <el-empty description="商城还空着！上传第一个算子包，让同事一键克隆复用" :image-size="90">
@@ -147,6 +147,7 @@
         </template>
       </el-table-column>
     </el-table>
+    </div>
 
     <!-- 上传弹窗（3 步骤 = 企业最优：基础信息 → 详细需求 → 元信息） -->
     <el-dialog v-model="showUpload" title="上传算子包（3 步完成）" width="620px" :close-on-click-modal="false" @closed="resetForm" @open="uploadStep = 0">

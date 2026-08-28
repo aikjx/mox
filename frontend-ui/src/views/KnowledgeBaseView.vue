@@ -1,20 +1,19 @@
 <template>
-  <div class="kb-view">
-    <ProjectChip />
+  <div class="page-container kb-view">
     <!-- Header Section -->
-    <div class="kb-header">
+    <div class="page-header kb-header">
       <div class="header-bg">
         <div class="bg-orb orb-1"></div>
         <div class="bg-orb orb-2"></div>
         <div class="bg-orb orb-3"></div>
       </div>
       <div class="header-content">
-        <div class="header-left">
+        <div class="page-header-left header-left">
           <div class="eyebrow">KNOWLEDGE BASE · 云盘知识库</div>
           <h1 class="page-title">云盘知识库</h1>
           <p class="page-subtitle">AI+知识图谱 智能分类、版本管理、全维分析</p>
         </div>
-        <div class="header-right">
+        <div class="page-header-actions header-right">
           <div class="stat-card" v-for="s in statCards" :key="s.label">
             <div class="stat-icon" :style="{ background: s.bg, color: s.color }">
               <el-icon><component :is="s.icon" /></el-icon>
@@ -28,8 +27,7 @@
       </div>
     </div>
 
-    <!-- Main Content: Golden Ratio Layout 1:1.618 -->
-    <div class="kb-main">
+    <div class="page-content kb-main">
       <!-- Left Panel (38% ≈ 1 part) -->
       <aside class="kb-left">
         <!-- Search & Filters -->
@@ -782,7 +780,6 @@ import {
   List, Grid, Loading, PriceTag, Collection
 } from '@element-plus/icons-vue'
 import * as api from '@/api'
-import ProjectChip from '@/components/ProjectChip.vue'
 import { useProject } from '@/composables/projectContext.js'
 
 // ========== State ==========

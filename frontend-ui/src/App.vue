@@ -13,6 +13,9 @@
           </transition>
         </div>
 
+        <!-- 当前项目选择器（移入侧边栏 · 以项目为根，释放顶栏空间） -->
+        <ProjectPicker variant="sidebar" :collapsed="collapsed" />
+
         <el-scrollbar class="nav-scroll">
           <nav class="nav">
             <template v-for="g in NAV_GROUPS" :key="g.key">
@@ -50,9 +53,6 @@
               <Fold v-if="!collapsed" />
               <Expand v-else />
             </el-icon>
-
-            <!-- 全局项目选择器（璇玑专家联盟 · 以项目为根） -->
-            <ProjectPicker />
 
             <el-breadcrumb separator="/">
               <el-breadcrumb-item :to="{ path: '/dashboard' }">首页</el-breadcrumb-item>
@@ -242,27 +242,32 @@ const showPipeline = computed(() => PIPELINE_ROUTES.has(route.path) || route.pat
 // 根据路由推断阶段（也可由视图自定义事件 mox:set-phase 覆盖）
 const inferredPhase = computed(() => {
   const mapping = {
+    // 需求阶段
     '/caomei': 'requirement',
     '/ai': 'requirement',
-    '/expert-center': 'requirement',
     '/knowledge-base': 'requirement',
     '/llm-config': 'requirement',
-    '/graph': 'graph',
-    '/mox-fusion': 'graph',
-    '/operators': 'graph',
-    '/expert-enterprise': 'graph',
-    '/expert-orchestrator': 'graph',
-    '/workflow': 'design',
-    '/automation': 'design',
-    '/plugins': 'design',
-    '/mcp': 'design',
-    '/market': 'design',
+    // 架构阶段
+    '/graph': 'architecture',
+    '/mox-fusion': 'architecture',
+    '/expert-center': 'architecture',
+    '/expert-enterprise': 'architecture',
+    '/expert-orchestrator': 'architecture',
+    // 开发阶段
+    '/operators': 'develop',
+    '/workflow': 'develop',
+    '/plugins': 'develop',
+    '/mcp': 'develop',
+    '/automation': 'develop',
+    '/browser': 'develop',
     '/algolab': 'develop',
     '/infinite-optimizer': 'develop',
     '/botCenter': 'develop',
-    '/browser': 'develop',
+    '/market': 'develop',
+    // 发布阶段
     '/monitor': 'release',
-    '/docs': 'release'
+    '/docs': 'release',
+    '/admin': 'release'
   }
   return mapping[route.path] || 'requirement'
 })
@@ -413,7 +418,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 .sidebar {
-  width: var(--sidebar-w);
+  width: var(--sidebar-width);
   flex-shrink: 0;
   background: linear-gradient(180deg, #0f172a 0%, #111c34 100%);
   color: #cbd5e1;

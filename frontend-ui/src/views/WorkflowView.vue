@@ -1,18 +1,22 @@
 <template>
-  <div class="wf">
-    <ProjectChip />
-    <div class="head">
-      <div>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-header-left">
         <h2 class="page-title">工作流编排</h2>
         <p class="page-subtitle">基于 BPMN 引擎驱动 AI 执行 · 流程图设计 / 模板 / 实例</p>
       </div>
-      <div class="head-actions">
+      <div class="page-header-actions">
+        <el-button type="primary" @click="goAIGenerate">
+          <el-icon><Promotion /></el-icon> AI生成工作流
+        </el-button>
         <el-button @click="loadAll"><el-icon><Refresh /></el-icon> 刷新</el-button>
-        <el-button type="primary" @click="showCreate = true">
+        <el-button type="primary" plain @click="showCreate = true">
           <el-icon><Plus /></el-icon> 新建流程图
         </el-button>
       </div>
     </div>
+
+    <div class="page-content">
 
     <el-tabs v-model="tab">
       <el-tab-pane label="流程图" name="flows">
@@ -142,6 +146,7 @@
         </div>
       </el-tab-pane>
     </el-tabs>
+    </div>
 
     <el-dialog v-model="showCreate" title="新建流程图" width="460px">
       <el-form label-width="80px">
@@ -168,9 +173,9 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { VideoCamera, Document } from '@element-plus/icons-vue'
-import ProjectChip from '@/components/ProjectChip.vue'
+import { VideoCamera, Document, Promotion } from '@element-plus/icons-vue'
 import { useProject } from '@/composables/projectContext.js'
 import {
   getFlows,
@@ -187,6 +192,13 @@ import {
   executeWorkflowDef
 } from '@/api'
 import FlowDetailDialog from '@/components/FlowDetailDialog.vue'
+
+const router = useRouter()
+
+// AI生成工作流：跳转到AI助手，带上工作流上下文
+function goAIGenerate() {
+  router.push({ path: '/ai', query: { source: 'workflow', action: 'generate' } })
+}
 
 const tab = ref('flows')
 const flows = ref([])

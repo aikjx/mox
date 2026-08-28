@@ -1,12 +1,16 @@
 <template>
-  <div class="rv">
-    <div class="head">
-      <div>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-header-left">
         <h2 class="page-title">资源管理</h2>
         <p class="page-subtitle">CPU / 内存 / 插件 / 算子 / 工作流统一调度全景</p>
       </div>
-      <el-button @click="load"><el-icon><Refresh /></el-icon> 刷新</el-button>
+      <div class="page-header-actions">
+        <el-button @click="load"><el-icon><Refresh /></el-icon> 刷新</el-button>
+      </div>
     </div>
+
+    <div class="page-content">
 
     <div class="grid grid-4 kpi-row">
       <div class="panel kpi" v-for="k in kpis" :key="k.label">
@@ -53,6 +57,7 @@
         </el-table-column>
         <el-table-column prop="detail" label="详情" min-width="180" />
       </el-table>
+    </div>
     </div>
   </div>
 </template>

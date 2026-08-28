@@ -700,6 +700,27 @@ window.__panel = function (open) {
   panelOpen = open; panel.classList.toggle("open", open);
 };
 
+/* 本地 TTS 不可用/失败时的浏览器拟人音兜底朗读（Web Speech API） */
+window.__speakFallback = function (text) {
+  try {
+    if (!text) return;
+    if (!("speechSynthesis" in window)) { showToast("本机无朗读引擎（speechSynthesis 不可用）"); return; }
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(String(text));
+    u.lang = "zh-CN";
+    u.rate = 1.0;
+    u.pitch = 1.05;
+    const voices = window.speechSynthesis.getVoices();
+    if (voices && voices.length) {
+      const zh = voices.find(v => /zh|chinese|mandarin|中文/i.test((v.lang || "") + " " + (v.name || "")));
+      if (zh) u.voice = zh;
+    }
+    window.speechSynthesis.speak(u);
+  } catch (e) {
+    showToast("浏览器朗读不可用");
+  }
+};
+
 try { window.ipc.postMessage("ready"); } catch (e) {}
 </script>
 </body>

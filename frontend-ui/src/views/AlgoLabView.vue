@@ -1,12 +1,13 @@
 <template>
-  <div class="algo-page">
-    <ProjectChip />
-    <div class="page-head">
-      <div>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-header-left">
         <h2 class="page-title">算法分析实验室 · AlgoLab</h2>
-        <p class="page-sub">粘贴代码 → 自动识别算法类型并生成结构化流程图；另附算法类型目录与空间光速螺旋模型分析</p>
+        <p class="page-subtitle">粘贴代码 → 自动识别算法类型并生成结构化流程图；另附算法类型目录与空间光速螺旋模型分析</p>
       </div>
     </div>
+
+    <div class="page-content">
 
     <el-tabs v-model="tab" class="algo-tabs">
       <!-- 算法分析 -->
@@ -125,6 +126,7 @@
         </div>
       </el-tab-pane>
     </el-tabs>
+    </div>
   </div>
 </template>
 
@@ -132,7 +134,6 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Cpu, Right } from '@element-plus/icons-vue'
-import ProjectChip from '@/components/ProjectChip.vue'
 import { useProject } from '@/composables/projectContext.js'
 import { analyzeAlgorithm, getAlgorithmTypes, analyzeSpiral } from '@/api'
 

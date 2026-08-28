@@ -43,6 +43,11 @@ tower-http = { workspace = true, optional = true }
 mox-voice-intent-svc = { workspace = true, optional = true }
 mox-voice-asr-svc = { workspace = true, optional = true }
 
+# --- P2 语音引擎（Paraformer ASR / Kokoro TTS / 录音 / 播放）---
+cpal = { workspace = true, optional = true }
+rodio = { workspace = true, optional = true }
+sherpa-onnx = { workspace = true, optional = true }
+
 [features]
 default = []
 server-3717 = [
@@ -56,6 +61,7 @@ server-3717 = [
     "dep:mox-voice-asr-svc",
     "tokio/full",
 ]
+voice-engine = ["dep:cpal", "dep:rodio", "dep:sherpa-onnx"]
 
 # Windows 原生：进程列表 / CoreAudio 音量 / shell 回收站
 [target.'cfg(windows)'.dependencies]

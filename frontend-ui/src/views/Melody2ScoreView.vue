@@ -1,21 +1,23 @@
 <template>
-  <div class="melody2score">
+  <div class="page-container melody2score">
     <!-- 顶部状态栏 -->
-    <div class="m2s-header">
-      <div class="m2s-title">
-        <span class="m2s-icon">♪</span>
-        <span>Melody2Score 企业级转谱引擎</span>
-        <el-tag :type="pyStatus === 'online' ? 'success' : 'danger'" size="small" effect="dark">
-          {{ pyStatus === 'online' ? '引擎在线' : '引擎离线' }}
-        </el-tag>
+    <div class="page-header m2s-header">
+      <div class="page-header-left">
+        <div class="m2s-title">
+          <span class="m2s-icon">♪</span>
+          <span>Melody2Score 企业级转谱引擎</span>
+          <el-tag :type="pyStatus === 'online' ? 'success' : 'danger'" size="small" effect="dark">
+            {{ pyStatus === 'online' ? '引擎在线' : '引擎离线' }}
+          </el-tag>
+        </div>
       </div>
-      <div class="m2s-actions">
+      <div class="page-header-actions m2s-actions">
         <el-button size="small" @click="refreshSamples" :icon="'Refresh'">刷新样例</el-button>
         <el-button size="small" @click="checkHealth" :icon="'Monitor'">健康检查</el-button>
       </div>
     </div>
 
-    <div class="m2s-layout">
+    <div class="page-content m2s-layout">
       <!-- 左侧：输入区 -->
       <div class="m2s-left">
         <!-- 输入方式切换 -->

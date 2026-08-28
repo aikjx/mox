@@ -1,22 +1,26 @@
 <template>
-  <div class="graph-wrap">
-    <div class="graph-head">
-      <div class="title">
-        <el-icon><Share /></el-icon>
-        <span>业务流程图 · 知识图谱</span>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-header-left">
+        <div class="title">
+          <el-icon><Share /></el-icon>
+          <span>业务流程图 · 知识图谱</span>
+        </div>
+        <div class="legend">
+          <span v-for="(c, t) in legendTypes" :key="t" class="lg">
+            <i :style="{ background: c }"></i>{{ t }}
+          </span>
+        </div>
       </div>
-      <div class="legend">
-        <span v-for="(c, t) in legendTypes" :key="t" class="lg">
-          <i :style="{ background: c }"></i>{{ t }}
-        </span>
-      </div>
-      <div class="head-actions">
+      <div class="page-header-actions">
         <el-button size="small" @click="reload" :loading="loading">
           <el-icon><Refresh /></el-icon>刷新
         </el-button>
         <el-switch v-model="showRelation" active-text="关系连线" inline-prompt />
       </div>
     </div>
+
+    <div class="page-content">
 
     <div class="graph-body">
       <div ref="chart" class="chart"></div>
@@ -44,6 +48,7 @@
       <div v-if="!loading && !hasData" class="placeholder">
         暂无图谱数据，请在左侧对话中触发“展示知识图谱”或询问算子。
       </div>
+    </div>
     </div>
   </div>
 </template>

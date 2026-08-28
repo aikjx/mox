@@ -17,8 +17,7 @@
         </div>
         <div class="chat-tools">
           <div class="expert-selector">
-            <span class="muted">专家模式:</span>
-            <el-select v-model="selectedExpert" size="small" placeholder="选择专家">
+            <el-select v-model="selectedExpert" size="small" placeholder="选择专家" style="width: 110px;">
               <el-option
                 v-for="preset in AI_EXPERT_PRESETS"
                 :key="preset.key"
@@ -30,30 +29,10 @@
 
           <div class="ct-divider"></div>
 
-          <!-- 分组1：会话管理 -->
+          <!-- 核心操作：新建/全维分析/创建项目/转任务 -->
           <el-tooltip content="新建对话" placement="bottom">
             <el-button class="ct-btn ct-btn-new" text @click="newSession"><el-icon><DocumentAdd /></el-icon> 新建</el-button>
           </el-tooltip>
-          <el-tooltip content="清空当前会话" placement="bottom">
-            <el-button class="ct-btn" text @click="clearChat"><el-icon><Delete /></el-icon> 清空</el-button>
-          </el-tooltip>
-          <el-tooltip content="从后端恢复会话历史" placement="bottom">
-            <el-button class="ct-btn" text @click="openBackendHistory"><el-icon><Clock /></el-icon> 历史</el-button>
-          </el-tooltip>
-
-          <div class="ct-divider"></div>
-
-          <!-- 分组2：数据管理 -->
-          <el-tooltip content="导出对话+图谱迁移包" placement="bottom">
-            <el-button class="ct-btn" text @click="exportBundle"><el-icon><Download /></el-icon> 导出</el-button>
-          </el-tooltip>
-          <el-tooltip content="导入迁移包" placement="bottom">
-            <el-button class="ct-btn" text @click="pickImport"><el-icon><Upload /></el-icon> 导入</el-button>
-          </el-tooltip>
-
-          <div class="ct-divider"></div>
-
-          <!-- 分组3：流程联动 -->
           <el-tooltip content="将当前对话转换为任务" placement="bottom">
             <el-button class="ct-btn" text type="primary" plain @click="convertToTask" :loading="convertingTask">
               <el-icon><List /></el-icon> 转任务
@@ -64,16 +43,56 @@
               <el-icon><FolderAdd /></el-icon> 创建项目
             </el-button>
           </el-tooltip>
-
-          <div class="ct-divider"></div>
-
-          <!-- 分组4：核心功能 · 全维分析 CTA 主按钮 -->
-          <el-tooltip content="架构开发专家联盟 · 一键启动全维分析（需求→架构→实现→测试→验收）" placement="bottom">
+          <el-tooltip content="架构开发专家联盟 · 一键启动全维分析" placement="bottom">
             <el-button class="ct-cta-full" @click="() => { triggerFullAnalysis(); triggerAlliance(); }">
               <el-icon><Promotion /></el-icon>
               <span>全维分析</span>
             </el-button>
           </el-tooltip>
+
+          <div class="ct-divider"></div>
+
+          <!-- 更多操作下拉菜单 -->
+          <el-dropdown trigger="click" @command="onMoreCommand">
+            <el-button class="ct-btn" text>
+              <el-icon><MoreFilled /></el-icon> 更多
+              <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="clear">
+                  <el-icon><Delete /></el-icon> 清空当前会话
+                </el-dropdown-item>
+                <el-dropdown-item command="history">
+                  <el-icon><Clock /></el-icon> 从后端恢复会话历史
+                </el-dropdown-item>
+                <el-dropdown-item divided command="export">
+                  <el-icon><Download /></el-icon> 导出对话+图谱迁移包
+                </el-dropdown-item>
+                <el-dropdown-item command="import">
+                  <el-icon><Upload /></el-icon> 导入迁移包
+                </el-dropdown-item>
+                <el-dropdown-item divided>
+                  <div class="dropdown-switch-item" @click.stop>
+                    <span>自动入图</span>
+                    <el-switch v-model="autoSync" size="small" @change="onToggleAutoSync" />
+                  </div>
+                </el-dropdown-item>
+                <el-dropdown-item>
+                  <div class="dropdown-switch-item" @click.stop>
+                    <span>任务模式</span>
+                    <el-switch v-model="autoTaskMode" size="small" @change="onAutoTaskToggle" />
+                  </div>
+                </el-dropdown-item>
+                <el-dropdown-item>
+                  <div class="dropdown-switch-item" @click.stop>
+                    <span>流程模式</span>
+                    <el-switch v-model="requirementFlowMode" size="small" @change="onRequirementFlowToggle" />
+                  </div>
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
 
           <!-- T11: 专家联盟 5 阶段 Chip（AC-10） -->
           <div class="alliance-chips" v-if="allianceRunning || alliancePhase">
@@ -96,36 +115,6 @@
               }}</span>
             </div>
           </div>
-
-          <div class="ct-divider"></div>
-
-          <el-tooltip content="对话内容自动整理进知识图谱（全自动）" placement="bottom">
-            <el-switch
-              v-model="autoSync"
-              inline-prompt
-              active-text="自动入图"
-              inactive-text="手动"
-              @change="onToggleAutoSync"
-            />
-          </el-tooltip>
-          <el-tooltip content="开启后：AI分析对话自动创建任务并执行" placement="bottom">
-            <el-switch
-              v-model="autoTaskMode"
-              inline-prompt
-              active-text="任务模式"
-              inactive-text="对话模式"
-              @change="onAutoTaskToggle"
-            />
-          </el-tooltip>
-          <el-tooltip content="需求流程模式：选择问题，进入设计→分析→开发→测试→修复→优化流程" placement="bottom">
-            <el-switch
-              v-model="requirementFlowMode"
-              inline-prompt
-              active-text="流程模式"
-              inactive-text=""
-              @change="onRequirementFlowToggle"
-            />
-          </el-tooltip>
 
           <input ref="importInput" type="file" accept="application/json" hidden @change="onImportFile" />
         </div>
@@ -308,17 +297,66 @@
               </div>
             </el-tab-pane>
 
-            <!-- 需求文档 -->
+            <!-- 需求文档 · 结构化需求管理 -->
             <el-tab-pane label="需求" name="requirement">
-              <div class="res-list">
-                <div v-if="!currentProject.resources?.filter(r => r.resource_type === 'requirement').length" class="res-empty">暂无需求文档，AI对话中可生成</div>
-                <div v-for="r in currentProject.resources?.filter(r => r.resource_type === 'requirement')" :key="r.id" class="res-item">
-                  <el-icon class="res-item-icon req"><Document /></el-icon>
-                  <div class="res-item-info">
-                    <div class="res-item-name">{{ r.name || r.title || '未命名需求' }}</div>
-                    <div class="res-item-meta">{{ r.resource_type }} · {{ r.created_at || '' }}</div>
+              <div class="req-panel">
+                <!-- 需求统计概览 -->
+                <div class="req-stats">
+                  <div class="req-stat-item">
+                    <div class="req-stat-num">{{ reqStats.total }}</div>
+                    <div class="req-stat-label">总需求</div>
                   </div>
-                  <el-button size="small" text @click="router.push('/caomei')">查看</el-button>
+                  <div class="req-stat-divider"></div>
+                  <div class="req-stat-types">
+                    <div v-for="t in REQ_TYPES" :key="t.key" class="req-type-chip" :style="{ borderColor: t.color + '40', background: t.color + '10' }">
+                      <span class="req-type-level">{{ t.level }}</span>
+                      <span class="req-type-name">{{ t.label }}</span>
+                      <span class="req-type-count" :style="{ color: t.color }">{{ reqStats.byType[t.key] || 0 }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 筛选栏 -->
+                <div class="req-filter">
+                  <el-select v-model="reqFilter.type" size="small" placeholder="需求类型" clearable style="width:140px">
+                    <el-option v-for="t in REQ_TYPES" :key="t.key" :label="t.level + ' ' + t.label" :value="t.key" />
+                  </el-select>
+                  <el-select v-model="reqFilter.priority" size="small" placeholder="优先级" clearable style="width:100px">
+                    <el-option v-for="p in REQ_PRIORITIES" :key="p.key" :label="p.key + ' ' + p.label" :value="p.key" />
+                  </el-select>
+                  <el-select v-model="reqFilter.status" size="small" placeholder="状态" clearable style="width:110px">
+                    <el-option v-for="s in REQ_STATUSES" :key="s.key" :label="s.label" :value="s.key" />
+                  </el-select>
+                  <div class="req-filter-count">共 {{ filteredReqs.length }} 条</div>
+                  <el-button size="small" type="primary" :loading="reqGenerating" @click="generateStructuredReqs" class="req-gen-btn">
+                    <el-icon><Promotion /></el-icon> AI生成结构化需求
+                  </el-button>
+                </div>
+
+                <!-- 需求列表 -->
+                <div class="req-list">
+                  <div v-if="!filteredReqs.length" class="res-empty">
+                    暂无需求文档，点击「AI生成结构化需求」一键生成5层需求体系
+                  </div>
+                  <div v-for="r in filteredReqs" :key="r.id" class="req-item" @click="openReqDetail(r)">
+                    <div class="req-item-left">
+                      <span class="req-item-level" :style="{ background: getReqTypeInfo(r.type).color }">{{ getReqTypeInfo(r.type).level }}</span>
+                      <div class="req-item-info">
+                        <div class="req-item-title">
+                          <span class="req-item-id">{{ r.id || 'REQ-' + (r.name || '').slice(0,4) }}</span>
+                          <span class="req-item-name">{{ r.name || r.title || '未命名需求' }}</span>
+                        </div>
+                        <div class="req-item-desc">{{ r.description || r.content || '暂无描述' }}</div>
+                        <div class="req-item-meta">
+                          <el-tag size="small" effect="plain" :style="{ borderColor: getReqTypeInfo(r.type).color, color: getReqTypeInfo(r.type).color }">{{ getReqTypeInfo(r.type).label }}</el-tag>
+                          <el-tag size="small" effect="dark" :style="{ background: getReqPriorityInfo(r.priority).color }">{{ getReqPriorityInfo(r.priority).key }}</el-tag>
+                          <el-tag size="small" effect="plain" :style="{ borderColor: getReqStatusInfo(r.status).color, color: getReqStatusInfo(r.status).color }">{{ getReqStatusInfo(r.status).label }}</el-tag>
+                          <span class="req-item-time">{{ r.created_at || '' }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <el-icon class="req-item-arrow"><ArrowRight /></el-icon>
+                  </div>
                 </div>
               </div>
             </el-tab-pane>
@@ -388,6 +426,50 @@
         </template>
         <el-empty v-else description="请先选择项目" />
       </el-drawer>
+
+      <!-- 需求详情弹窗 -->
+      <el-dialog v-model="reqDetail" title="需求详情" width="640px" class="req-detail-dialog">
+        <template v-if="reqDetail">
+          <div class="req-detail-head">
+            <span class="req-detail-level" :style="{ background: getReqTypeInfo(reqDetail.type).color }">{{ getReqTypeInfo(reqDetail.type).level }}</span>
+            <span class="req-detail-id">{{ reqDetail.id || 'REQ-001' }}</span>
+            <el-tag size="small" effect="plain" :style="{ borderColor: getReqTypeInfo(reqDetail.type).color, color: getReqTypeInfo(reqDetail.type).color }">{{ getReqTypeInfo(reqDetail.type).label }}</el-tag>
+            <el-tag size="small" effect="dark" :style="{ background: getReqPriorityInfo(reqDetail.priority).color }">{{ getReqPriorityInfo(reqDetail.priority).key }} {{ getReqPriorityInfo(reqDetail.priority).label }}</el-tag>
+            <el-tag size="small" effect="plain" :style="{ borderColor: getReqStatusInfo(reqDetail.status).color, color: getReqStatusInfo(reqDetail.status).color }">{{ getReqStatusInfo(reqDetail.status).label }}</el-tag>
+          </div>
+          <div class="req-detail-title">{{ reqDetail.name || reqDetail.title || '需求标题' }}</div>
+          <div class="req-detail-section">
+            <div class="req-detail-label">需求描述</div>
+            <div class="req-detail-content">{{ reqDetail.description || reqDetail.content || '暂无描述' }}</div>
+          </div>
+          <div class="req-detail-section">
+            <div class="req-detail-label">验收标准</div>
+            <div class="req-detail-content">{{ reqDetail.acceptance || '1.功能正常运行\n2.性能达标\n3.通过测试用例' }}</div>
+          </div>
+          <div class="req-detail-grid">
+            <div class="req-detail-meta-item">
+              <span class="req-detail-meta-label">负责人</span>
+              <span class="req-detail-meta-value">{{ reqDetail.owner || '待分配' }}</span>
+            </div>
+            <div class="req-detail-meta-item">
+              <span class="req-detail-meta-label">创建时间</span>
+              <span class="req-detail-meta-value">{{ reqDetail.created_at || '-' }}</span>
+            </div>
+            <div class="req-detail-meta-item">
+              <span class="req-detail-meta-label">预计完成</span>
+              <span class="req-detail-meta-value">{{ reqDetail.due_date || '-' }}</span>
+            </div>
+            <div class="req-detail-meta-item">
+              <span class="req-detail-meta-label">关联任务</span>
+              <span class="req-detail-meta-value">{{ reqDetail.task_count || 0 }} 个</span>
+            </div>
+          </div>
+        </template>
+        <template #footer>
+          <el-button @click="reqDetail = null">关闭</el-button>
+          <el-button type="primary" @click="reqDetail = null; router.push('/caomei')">前往需求编译</el-button>
+        </template>
+      </el-dialog>
 
       <!-- 全维分析 · 5 阶段 Chip 指示器（FR11） -->
       <div class="analysis-stages" aria-label="全维分析阶段">
@@ -932,36 +1014,16 @@
         </el-tabs>
       </div>
 
-      <!-- 对话快捷操作栏：新建对话 / 新建项目 / 切换项目 / 管理项目 -->
+      <!-- 对话快捷操作栏：新建对话 + 全局项目选择器（切换/新建/管理三合一） -->
       <div class="chat-quick-bar">
         <template v-if="chatMode === 'followup' && currentProject">
-          <div class="qb-current">
-            <span class="qb-icon">📂</span>
-            <span class="qb-name">{{ currentProject.name }}</span>
-            <el-tag size="small" effect="plain" :type="projectStatusType">{{ projectStatusLabel }}</el-tag>
-          </div>
           <el-button size="small" text @click="exitFollowup">💬 退出对话</el-button>
         </template>
         <template v-else>
           <el-button size="small" text @click="newSession">💬 新建对话</el-button>
         </template>
         <div class="qb-divider"></div>
-        <el-button size="small" text @click="openCreateProject">📁 新建项目</el-button>
-        <el-dropdown trigger="click" @command="switchToProject" :disabled="!projectList.length">
-          <el-button size="small" text :loading="projectListLoading">
-            🔄 切换项目 <el-icon class="el-icon--right"><ArrowDown /></el-icon>
-          </el-button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item v-for="p in projectList" :key="p.id" :command="p">
-                {{ p.name }}
-                <el-tag v-if="p.status === 'active'" size="small" type="success" effect="plain" style="margin-left:8px">进行中</el-tag>
-              </el-dropdown-item>
-              <el-dropdown-item v-if="!projectList.length && !projectListLoading" disabled>暂无项目</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-        <el-button size="small" text @click="goProjects">⚙️ 管理项目</el-button>
+        <ProjectPicker />
       </div>
 
       <div class="chat-input" :class="{ 'is-share': isShareMode }">
@@ -1133,13 +1195,14 @@
 import { ref, nextTick, onMounted, onUnmounted, onBeforeUnmount, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { List, Loading, ArrowDown, Link, Document, FolderAdd, FolderOpened, ChatDotRound, ChatLineRound, Delete, Upload, Download, Clock, Promotion, DocumentAdd, Microphone, Plus, Edit, Files, Setting, DataLine, Connection } from '@element-plus/icons-vue'
+import { List, Loading, ArrowDown, ArrowRight, Link, Document, FolderAdd, FolderOpened, ChatDotRound, ChatLineRound, Delete, Upload, Download, Clock, Promotion, DocumentAdd, Microphone, Plus, Edit, Files, Setting, DataLine, Connection, MoreFilled } from '@element-plus/icons-vue'
 import MessageBubble from '@/components/MessageBubble.vue'
 import SessionSidebar from '@/components/SessionSidebar.vue'
 import ToolDock from '@/components/ToolDock.vue'
 import ToolDrawer from '@/components/ToolDrawer.vue'
 import { AI_EXPERT_PRESETS } from '@/types'
 import { useProject } from '@/composables/projectContext.js'
+import ProjectPicker from '@/components/ProjectPicker.vue'
 import {
   aiChat,
   aiExpertChat,
@@ -1253,26 +1316,6 @@ const importInput = ref(null)
 const selectedExpert = ref(AI_EXPERT_PRESETS[0])
 // 项目上下文
 const { currentProject } = useProject()
-// 项目列表（用于切换项目下拉）
-const projectList = ref([])
-const projectListLoading = ref(false)
-async function loadProjectList() {
-  projectListLoading.value = true
-  try {
-    const r = await getProjects()
-    projectList.value = Array.isArray(r) ? r : (r.projects || r.data || r.list || [])
-  } catch (e) {
-    projectList.value = []
-  } finally {
-    projectListLoading.value = false
-  }
-}
-function switchToProject(p) {
-  if (!p) return
-  chatMode.value = 'followup'
-  ElMessage.success(`已切换到项目：${p.name}`)
-  loadProjectList()
-}
 function exitFollowup() {
   chatMode.value = 'default'
   ElMessage.info('已退出跟进项目，回到默认对话')
@@ -1290,6 +1333,67 @@ const DEV_STAGES = [
 ]
 // 项目资源面板
 const resourcePanel = ref({ visible: false, activeTab: 'overview', loading: false })
+// ===== 需求结构化管理 =====
+const REQ_TYPES = [
+  { key: 'business', label: '业务需求', level: 'L1', color: '#6366f1', icon: 'TrendCharts' },
+  { key: 'user', label: '用户需求', level: 'L2', color: '#0ea5e9', icon: 'User' },
+  { key: 'functional', label: '功能需求', level: 'L3', color: '#10b981', icon: 'Grid' },
+  { key: 'nonfunctional', label: '非功能需求', level: 'L4', color: '#f59e0b', icon: 'Setting' },
+  { key: 'system', label: '系统需求', level: 'L5', color: '#8b5cf6', icon: 'Cpu' }
+]
+const REQ_PRIORITIES = [
+  { key: 'P0', label: '紧急', color: '#ef4444' },
+  { key: 'P1', label: '高', color: '#f97316' },
+  { key: 'P2', label: '中', color: '#eab308' },
+  { key: 'P3', label: '低', color: '#6b7280' }
+]
+const REQ_STATUSES = [
+  { key: 'draft', label: '待分析', color: '#94a3b8' },
+  { key: 'confirmed', label: '已确认', color: '#3b82f6' },
+  { key: 'developing', label: '开发中', color: '#f59e0b' },
+  { key: 'done', label: '已完成', color: '#10b981' },
+  { key: 'accepted', label: '已验收', color: '#059669' }
+]
+const reqFilter = ref({ type: '', priority: '', status: '' })
+const reqDetail = ref(null)
+const reqGenerating = ref(false)
+// 需求统计计算
+const reqStats = computed(() => {
+  const reqs = currentProject.value?.requirements || currentProject.value?.resources?.filter(r => r.resource_type === 'requirement') || []
+  const stats = { total: reqs.length, byType: {}, byPriority: {}, byStatus: {} }
+  for (const r of reqs) {
+    const t = r.type || 'functional'
+    const p = r.priority || 'P2'
+    const s = r.status || 'draft'
+    stats.byType[t] = (stats.byType[t] || 0) + 1
+    stats.byPriority[p] = (stats.byPriority[p] || 0) + 1
+    stats.byStatus[s] = (stats.byStatus[s] || 0) + 1
+  }
+  return stats
+})
+// 筛选后的需求列表
+const filteredReqs = computed(() => {
+  let reqs = currentProject.value?.requirements || currentProject.value?.resources?.filter(r => r.resource_type === 'requirement') || []
+  if (reqFilter.value.type) reqs = reqs.filter(r => (r.type || 'functional') === reqFilter.value.type)
+  if (reqFilter.value.priority) reqs = reqs.filter(r => (r.priority || 'P2') === reqFilter.value.priority)
+  if (reqFilter.value.status) reqs = reqs.filter(r => (r.status || 'draft') === reqFilter.value.status)
+  return reqs
+})
+function getReqTypeInfo(type) { return REQ_TYPES.find(t => t.key === type) || REQ_TYPES[2] }
+function getReqPriorityInfo(p) { return REQ_PRIORITIES.find(x => x.key === p) || REQ_PRIORITIES[2] }
+function getReqStatusInfo(s) { return REQ_STATUSES.find(x => x.key === s) || REQ_STATUSES[0] }
+function openReqDetail(r) { reqDetail.value = r }
+async function generateStructuredReqs() {
+  if (!currentProject.value) return ElMessage.warning('请先选择项目')
+  reqGenerating.value = true
+  try {
+    draft.value = `请对项目「${currentProject.value.name}」进行全维需求分析，按5层结构输出：\n1.业务需求（L1）：业务目标、场景、流程\n2.用户需求（L2）：角色、用户故事、使用场景\n3.功能需求（L3）：模块、功能点、输入输出、业务规则\n4.非功能需求（L4）：性能、安全、可用、可维护、兼容\n5.系统需求（L5）：架构、接口、数据、部署\n\n每个需求需包含：ID、标题、描述、优先级(P0-P3)、验收标准。项目描述：${currentProject.value.description || '暂无'}`
+    await send()
+    ElMessage.success('结构化需求生成中，请查看AI回复')
+  } finally {
+    reqGenerating.value = false
+  }
+}
 // AI全维开发状态
 const fullDevRunning = ref(false)
 const fullDevStage = ref(0)
@@ -1991,6 +2095,14 @@ function priorityTagType(p) {
   return { high: 'danger', medium: 'warning', low: 'info' }[p] || 'info'
 }
 
+// 更多操作下拉菜单命令处理
+function onMoreCommand(cmd) {
+  if (cmd === 'clear') clearChat()
+  else if (cmd === 'history') openBackendHistory()
+  else if (cmd === 'export') exportBundle()
+  else if (cmd === 'import') pickImport()
+}
+
 async function openBackendHistory() {
   historyOpen.value = true
   if (backendSessions.value.length) return
@@ -2428,7 +2540,6 @@ watch(
 
 onMounted(async () => {
   loadStore()
-  loadProjectList()
   // 支持 URL 参数：?flow=1 开启流程模式（支持 hash 路由）
   const hash = window.location.hash
   const hashParams = new URLSearchParams(hash.split('?')[1] || '')
@@ -3237,6 +3348,132 @@ async function startFullDev() {
 .res-code-item { margin-bottom: 16px; }
 .res-code-label { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; }
 .res-code-actions { display: flex; gap: 10px; margin-top: 20px; }
+
+/* ===== 结构化需求管理面板 ===== */
+.req-panel { padding: 4px 0; }
+.req-stats {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.06), rgba(14,165,233,0.04));
+  border: 1px solid rgba(99,102,241,0.12);
+  border-radius: 12px;
+  margin-bottom: 14px;
+}
+.req-stat-item { text-align: center; }
+.req-stat-num { font-size: 28px; font-weight: 700; color: var(--text-primary); line-height: 1; }
+.req-stat-label { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+.req-stat-divider { width: 1px; height: 40px; background: var(--border); }
+.req-stat-types { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+.req-type-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid;
+  border-radius: 8px;
+  font-size: 11px;
+}
+.req-type-level { font-weight: 700; font-size: 10px; }
+.req-type-name { color: var(--text-secondary); }
+.req-type-count { font-weight: 700; font-size: 13px; }
+
+.req-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.req-filter-count { font-size: 12px; color: var(--text-dim); margin-left: auto; }
+.req-gen-btn { margin-left: auto; }
+
+.req-list { max-height: 480px; overflow-y: auto; }
+.req-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.req-item:hover {
+  border-color: var(--brand);
+  background: var(--brand-50);
+  transform: translateX(2px);
+}
+.req-item-left { display: flex; align-items: flex-start; gap: 12px; flex: 1; min-width: 0; }
+.req-item-level {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.req-item-info { flex: 1; min-width: 0; }
+.req-item-title { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.req-item-id { font-size: 11px; color: var(--text-dim); font-family: monospace; }
+.req-item-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.req-item-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.req-item-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.req-item-time { font-size: 11px; color: var(--text-dim); margin-left: 4px; }
+.req-item-arrow { color: var(--text-dim); font-size: 14px; }
+
+/* 需求详情弹窗 */
+.req-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.req-detail-level {
+  padding: 4px 10px;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+.req-detail-id { font-size: 13px; color: var(--text-dim); font-family: monospace; }
+.req-detail-title { font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; }
+.req-detail-section { margin-bottom: 16px; }
+.req-detail-label { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
+.req-detail-content {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  padding: 10px 14px;
+  background: var(--bg-page);
+  border-radius: 8px;
+  white-space: pre-wrap;
+}
+.req-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.req-detail-meta-item { display: flex; flex-direction: column; gap: 4px; }
+.req-detail-meta-label { font-size: 11px; color: var(--text-dim); }
+.req-detail-meta-value { font-size: 13px; color: var(--text-primary); font-weight: 500; }
 .chat-tools {
   display: flex;
   align-items: center;
@@ -3250,6 +3487,17 @@ async function startFullDev() {
   align-self: center;
   opacity: 0.85;
 }
+/* 下拉菜单中的开关项 */
+.dropdown-switch-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 16px;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+.dropdown-switch-item:hover { background: transparent; }
 .ct-btn {
   font-size: 13px !important;
   padding: 6px 10px !important;
@@ -3672,7 +3920,7 @@ async function startFullDev() {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 6px 26px 2px;
+  padding: 6px 26px;
   border-top: 1px solid var(--border-ghost);
   background: var(--bg-surface-2);
   flex-wrap: wrap;
@@ -3682,31 +3930,9 @@ async function startFullDev() {
   padding: 4px 10px !important;
   height: auto !important;
 }
-.qb-current {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(14,165,233,0.06));
-  border: 1px solid rgba(99,102,241,0.18);
-  border-radius: 8px;
-  margin-right: 4px;
-}
-.qb-icon {
-  font-size: 14px;
-}
-.qb-name {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text-primary);
-  max-width: 160px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .qb-divider {
   width: 1px;
-  height: 16px;
+  height: 20px;
   background: var(--border-ghost);
   margin: 0 6px;
 }

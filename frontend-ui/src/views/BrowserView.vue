@@ -1,12 +1,19 @@
 <template>
-  <div class="bv">
-    <div class="head">
-      <div>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-header-left">
         <h2 class="page-title">浏览器自动化</h2>
         <p class="page-subtitle">自然语言驱动的可视化浏览器操作 · 模板 / 会话 / 实时执行</p>
       </div>
-      <el-button @click="loadAll"><el-icon><Refresh /></el-icon> 刷新</el-button>
+      <div class="page-header-actions">
+        <el-button type="primary" @click="goAIDrive">
+          <el-icon><Promotion /></el-icon> AI驱动浏览器
+        </el-button>
+        <el-button @click="loadAll"><el-icon><Refresh /></el-icon> 刷新</el-button>
+      </div>
     </div>
+
+    <div class="page-content">
 
     <div class="grid grid-4 kpi-row">
       <div class="panel kpi">
@@ -82,12 +89,15 @@
         </div>
       </el-tab-pane>
     </el-tabs>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Promotion } from '@element-plus/icons-vue'
 import {
   getBrowserTemplates,
   getBrowserSessions,
@@ -95,6 +105,13 @@ import {
   browserNatural,
   executeBrowserTask
 } from '@/api'
+
+const router = useRouter()
+
+// AI驱动浏览器：跳转到AI助手，带上浏览器自动化上下文
+function goAIDrive() {
+  router.push({ path: '/ai', query: { source: 'browser', action: 'drive' } })
+}
 
 const tab = ref('natural')
 const templates = ref([])
