@@ -7,6 +7,7 @@ import { ElMessage } from 'element-plus'
 import App from './App.vue'
 import router from './router'
 import './styles/global.css'
+import './styles/themes/index.css'  // 三大主题：dark / sky / cyberpunk
 
 const app = createApp(App)
 

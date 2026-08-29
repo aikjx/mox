@@ -1,0 +1,418 @@
+# ============================================================
+# MOX Agent Flow DSL · 对话驱动项目生成器
+# 对话 → 意图解析 → 项目匹配 → 动态编排 → 自动执行 → 项目归档
+# ============================================================
+version: 1.0
+name: chat-project-generator
+description: "AI 对话驱动的项目自动生成流水线：用户说一句话，系统自动匹配项目、编排 Agent 工作流并执行，最终归档到项目目录"
+
+# ============================================================
+# 触发条件
+# ============================================================
+trigger:
+  type: chat_message
+  conditions:
+    - intent_detected: true
+    - project_context: required
+    - min_confidence: 0.7
+
+# ============================================================
+# 项目上下文管理
+# ============================================================
+project_context:
+  match_strategy: semantic_similarity  # semantic_similarity | keyword | hybrid
+  match_threshold: 0.75
+  auto_create: true
+  auto_create_template:
+    name_template: "{intent_keyword}项目"
+    description_template: "自动创建：{intent_summary}"
+    category_detector: intent_classifier
+    color_palette: auto
+    icon: auto
+  archive_strategy: per_run_snapshot  # per_run_snapshot | incremental | versioned
+
+# ============================================================
+# Agent 定义（主流程）
+# ============================================================
+agents:
+  # ---- Agent 1: 意图解析 ----
+  - id: agent_intent
+    name: "意图解析"
+    role: "NLP 语义解析器"
+    description: "解析用户对话的核心意图、提取关键实体、识别任务类型"
+    input:
+      - type: chat_message
+        schema: "schema/chat_message.json"
+      - type: conversation_history
+        limit: 10
+    output:
+      - type: intent_result
+        fields:
+          - intent_type: string          # knowledge_graph | code_gen | doc_gen | data_analysis | ...
+          - intent_keyword: string       # 核心关键词，用于项目命名
+          - intent_summary: string       # 一句话摘要
+          - entities: array              # 提取的实体列表
+          - confidence: number           # 置信度 0-1
+          - task_complexity: string      # simple | medium | complex
+    tools:
+      - LLM Intent Classification
+      - Named Entity Recognition
+      - Semantic Similarity Matching
+      - Conversation State Tracker
+    retry:
+      max_attempts: 2
+      backoff: linear
+    on: done
+    next: agent_project_match
+    on_error: retry
+    on_error_max: agent_fallback
+
+  # ---- Agent 2: 项目匹配 ----
+  - id: agent_project_match
+    name: "项目匹配"
+    role: "项目上下文匹配器"
+    description: "根据解析出的意图，在现有项目中语义匹配，或自动创建新项目"
+    input:
+      - type: intent_result
+        from: agent_intent
+      - type: project_list
+        source: project_manager
+    output:
+      - type: project_context
+        fields:
+          - project_id: string
+          - project_name: string
+          - is_new: boolean
+          - match_score: number
+          - project_path: string
+          - project_metadata: object
+    tools:
+      - Semantic Search Engine
+      - Project Manager API
+      - Template Engine
+    retry:
+      max_attempts: 1
+      backoff: none
+    on: done
+    next: agent_orchestrator
+    on_error: agent_fallback
+
+  # ---- Agent 3: 动态编排 ----
+  - id: agent_orchestrator
+    name: "动态编排"
+    role: "工作流编排引擎"
+    description: "根据意图类型和项目上下文，动态选择并组装 Agent 工作流"
+    input:
+      - type: intent_result
+        from: agent_intent
+      - type: project_context
+        from: agent_project_match
+      - type: workflow_templates
+        source: template_registry
+    output:
+      - type: flow_dsl
+        description: "动态生成的子工作流 DSL"
+        fields:
+          - flow_id: string
+          - flow_name: string
+          - agents: array
+          - policy: object
+    tools:
+      - Workflow Template Registry
+      - Dynamic DSL Generator
+      - Dependency Resolver
+      - Resource Allocator
+    templates:
+      # 知识图谱构建流水线
+      knowledge_graph:
+        template: "templates/kg-pipeline.yaml"
+        entry_agent: agent_kg_collect
+      # 代码生成流水线
+      code_gen:
+        template: "templates/code-gen.yaml"
+        entry_agent: agent_code_design
+      # 文档生成流水线
+      doc_gen:
+        template: "templates/doc-gen.yaml"
+        entry_agent: agent_doc_outline
+      # 数据分析流水线
+      data_analysis:
+        template: "templates/data-analysis.yaml"
+        entry_agent: agent_data_explore
+    retry:
+      max_attempts: 2
+      backoff: exponential
+    on: done
+    next: agent_executor
+    on_error: retry
+    on_error_max: agent_fallback
+
+  # ---- Agent 4: 工作流执行 ----
+  - id: agent_executor
+    name: "工作流执行"
+    role: "子工作流执行引擎"
+    description: "执行动态编排生成的子工作流，管理各 Agent 的顺序/并行执行"
+    input:
+      - type: flow_dsl
+        from: agent_orchestrator
+      - type: project_context
+        from: agent_project_match
+    output:
+      - type: execution_result
+        fields:
+          - flow_id: string
+          - status: string           # success | partial | failed
+          - agent_results: array
+          - artifacts: array         # 生成的产物列表
+          - duration_ms: number
+    tools:
+      - Agent Runtime
+      - State Machine Engine
+      - Progress Tracker
+      - Error Handler
+    execution:
+      mode: sequential             # sequential | parallel | dag
+      max_parallel: 3
+      timeout_per_agent: 300000    # 5分钟
+      global_timeout: 3600000      # 1小时
+    retry:
+      max_attempts: 1
+      backoff: none
+    on: done
+    next: agent_archiver
+    on_error: agent_error_handler
+
+  # ---- Agent 5: 项目归档 ----
+  - id: agent_archiver
+    name: "项目归档"
+    role: "产物归档与版本管理"
+    description: "将执行结果归档到项目目录，建立版本快照，生成索引"
+    input:
+      - type: execution_result
+        from: agent_executor
+      - type: project_context
+        from: agent_project_match
+    output:
+      - type: archive_result
+        fields:
+          - project_id: string
+          - snapshot_id: string
+          - snapshot_path: string
+          - artifact_count: number
+          - version_tag: string
+    tools:
+      - File System Manager
+      - Version Control (Git-like)
+      - Index Builder
+      - Metadata Extractor
+    archive:
+      structure:
+        - "artifacts/"              # 生成的产物
+        - "logs/"                   # 执行日志
+        - "snapshots/"              # 版本快照
+        - "index.md"                # 项目索引
+      versioning:
+        strategy: semantic          # semantic | timestamp | commit_hash
+        auto_tag: true
+    retry:
+      max_attempts: 2
+      backoff: linear
+    on: done
+    next: agent_reporter
+    on_error: retry
+    on_error_max: agent_fallback
+
+  # ---- Agent 6: 结果报告 ----
+  - id: agent_reporter
+    name: "结果报告"
+    role: "结果汇总与呈现"
+    description: "汇总整个流程的执行结果，生成用户可读的报告，发送到对话界面"
+    input:
+      - type: archive_result
+        from: agent_archiver
+      - type: execution_result
+        from: agent_executor
+      - type: project_context
+        from: agent_project_match
+    output:
+      - type: chat_response
+        description: "发送给用户的最终回复消息"
+        fields:
+          - message_type: string     # success | warning | error
+          - summary: string          # 摘要
+          - details: object          # 详细信息
+          - actions: array           # 建议的后续操作
+    tools:
+      - Report Template Engine
+      - Markdown Renderer
+      - Chat Interface API
+    retry:
+      max_attempts: 1
+      backoff: none
+    on: done
+    next: null
+    on_error: agent_fallback
+
+  # ============================================================
+  # 辅助 Agent
+  # ============================================================
+  # 错误处理 Agent
+  - id: agent_error_handler
+    name: "错误处理"
+    role: "异常处理与恢复"
+    description: "处理执行中的错误，尝试恢复或降级执行"
+    input:
+      - type: error_context
+        fields:
+          - failed_agent: string
+          - error_message: string
+          - error_type: string
+          - partial_results: object
+    output:
+      - type: recovery_result
+        fields:
+          - recovered: boolean
+          - fallback_path: string
+          - error_report: object
+    strategies:
+      - retry_with_hint
+      - skip_and_continue
+      - use_fallback_agent
+      - escalate_to_human
+    on: done
+    next: agent_archiver
+
+  # 兜底 Agent
+  - id: agent_fallback
+    name: "兜底处理"
+    role: "降级处理与人机协作"
+    description: "当自动流程失败时，降级为人工辅助模式"
+    input:
+      - type: error_context
+      - type: intent_result
+        from: agent_intent
+    output:
+      - type: fallback_response
+        fields:
+          - message: string
+          - manual_steps: array
+          - suggestion: string
+    on: done
+    next: null
+
+# ============================================================
+# 全局策略
+# ============================================================
+policy:
+  human_in_the_loop: high_risk_only   # always | high_risk_only | never
+  high_risk_actions:
+    - project_deletion
+    - data_overwrite
+    - production_deployment
+
+  audit:
+    enabled: true
+    log_level: detailed               # minimal | standard | detailed
+    retention_days: 90
+
+  rollback_strategy: per_agent_snapshot
+  versioning: semantic
+
+  concurrency:
+    max_flows_per_project: 3
+    max_total_flows: 10
+    queue_strategy: fifo
+
+  resource_limits:
+    max_tokens_per_run: 100000
+    max_duration_minutes: 60
+    max_file_size_mb: 500
+
+# ============================================================
+# 事件与钩子
+# ============================================================
+events:
+  on_flow_start:
+    - action: update_project_status
+      params:
+        status: running
+    - action: notify_user
+      params:
+        message: "开始处理，已匹配项目「{project_name}」"
+
+  on_agent_start:
+    - action: update_agent_status
+      params:
+        status: running
+
+  on_agent_done:
+    - action: update_agent_status
+      params:
+        status: done
+    - action: save_snapshot
+      params:
+        scope: agent
+
+  on_flow_done:
+    - action: update_project_status
+      params:
+        status: completed
+    - action: notify_user
+      params:
+        message: "任务完成！共生成 {artifact_count} 个产物，已归档到项目「{project_name}」"
+
+  on_flow_error:
+    - action: update_project_status
+      params:
+        status: error
+    - action: notify_user
+      params:
+        message: "任务执行出错：{error_message}"
+
+# ============================================================
+# 模板注册表（子工作流模板索引）
+# ============================================================
+template_registry:
+  base_path: "templates/"
+  templates:
+    - id: kg-pipeline
+      name: "知识图谱构建流水线"
+      file: "kg-pipeline.yaml"
+      triggers:
+        - intent_type: knowledge_graph
+        - keywords: ["知识图谱", "图谱", "neo4j", "entity", "relation"]
+
+    - id: code-gen
+      name: "代码生成流水线"
+      file: "code-gen.yaml"
+      triggers:
+        - intent_type: code_gen
+        - keywords: ["代码", "开发", "函数", "组件", "API"]
+
+    - id: doc-gen
+      name: "文档生成流水线"
+      file: "doc-gen.yaml"
+      triggers:
+        - intent_type: doc_gen
+        - keywords: ["文档", "报告", "方案", "设计", "PRD"]
+
+    - id: data-analysis
+      name: "数据分析流水线"
+      file: "data-analysis.yaml"
+      triggers:
+        - intent_type: data_analysis
+        - keywords: ["分析", "统计", "报表", "可视化", "数据"]
+
+# ============================================================
+# 配置元数据
+# ============================================================
+meta:
+  author: "MOX AI Platform"
+  created_at: "2026-01-01"
+  updated_at: "2026-01-01"
+  version: "1.0.0"
+  tags:
+    - chat-driven
+    - project-generation
+    - auto-orchestration
+    - agent-flow

@@ -3558,9 +3558,32 @@ dependencies = [
  "indexmap 2.14.0",
  "mox-platform-foundation",
  "rayon",
+ "regex",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
+ "uuid",
+]
+
+[[package]]
+name = "mox-ai-intent-svc"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "axum",
+ "mox-ai-api",
+ "mox-ai-intent-core",
+ "mox-framework",
+ "mox-platform-foundation",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tower 0.4.13",
+ "tower-http 0.5.2",
+ "tracing",
+ "tracing-subscriber",
  "uuid",
 ]
 
@@ -4634,6 +4657,42 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 1.0.69",
+ "uuid",
+]
+
+[[package]]
+name = "mox-project-graph-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "mox-kg-core",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "mox-project-graph-svc"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "axum",
+ "mox-kg-core",
+ "mox-project-graph-core",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tower 0.4.13",
+ "tower-http 0.5.2",
+ "tracing",
+ "tracing-subscriber",
  "uuid",
 ]
 

@@ -1,0 +1,23 @@
+[package]
+name = "mox-project-graph-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "MOX 项目需求知识图谱核心引擎：项目/需求/任务/人员的图谱化管理与分析"
+
+[lib]
+name = "mox_project_graph_core"
+path = "src/lib.rs"
+
+[dependencies]
+mox-kg-core = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+async-trait = { workspace = true }
+tokio = { workspace = true }

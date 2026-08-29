@@ -22,6 +22,9 @@ default-members = [
     "platform/domains/voice/svc/mox-voice-operator-svc",
     "platform/domains/voice/svc/mox-voice-intent-svc",
     "platform/domains/voice/svc/mox-voice-asr-svc",
+    "platform/domains/ai/svc/mox-ai-intent-svc",
+    "platform/domains/project/core/mox-project-graph-core",
+    "platform/domains/project/svc/mox-project-graph-svc",
 ]
 members = [
     "platform/arch-test",
@@ -60,6 +63,9 @@ members = [
     "platform/domains/ai/svc/mox-ai-flow-svc",
     "platform/domains/ai/svc/mox-ai-expert-svc",
     "platform/domains/ai/svc/mox-ai-agent-svc",
+    "platform/domains/ai/svc/mox-ai-intent-svc",
+    "platform/domains/project/core/mox-project-graph-core",
+    "platform/domains/project/svc/mox-project-graph-svc",
     "platform/domains/flow/svc/mox-flow-operator-wasm-svc",
     "platform/domains/flow/svc/mox-flow-primiflow-svc",
     "platform/domains/flow/svc/mox-flow-fusion-svc",
@@ -221,6 +227,10 @@ mox-kg-fusion-svc = { path = "platform/domains/kg/svc/mox-kg-fusion-svc" }
 mox-ai-flow-svc = { path = "platform/domains/ai/svc/mox-ai-flow-svc" }
 mox-ai-expert-svc = { path = "platform/domains/ai/svc/mox-ai-expert-svc" }
 mox-ai-agent-svc = { path = "platform/domains/ai/svc/mox-ai-agent-svc" }
+mox-ai-intent-svc = { path = "platform/domains/ai/svc/mox-ai-intent-svc" }
+# Service 灞?(project)
+mox-project-graph-core = { path = "platform/domains/project/core/mox-project-graph-core" }
+mox-project-graph-svc = { path = "platform/domains/project/svc/mox-project-graph-svc" }
 # Service 灞?(flow)
 mox-flow-operator-wasm-svc = { path = "platform/domains/flow/svc/mox-flow-operator-wasm-svc" }
 mox-flow-primiflow-svc = { path = "platform/domains/flow/svc/mox-flow-primiflow-svc" }

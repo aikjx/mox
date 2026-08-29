@@ -1,0 +1,166 @@
+/* ================================================================
+ * MOX Theme · Sky 天蓝色科技
+ * 命名空间：html[data-theme="sky"]
+ * 基于现有 global.css 变量体系，100% 兼容无缝切换
+ * ================================================================ */
+
+html[data-theme="sky"] {
+  /* ===== 品牌 · 天蓝主色（科技蓝） ===== */
+  --brand: #0ea5e9;
+  --brand-500: #0ea5e9;
+  --brand-600: #0284c7;
+  --brand-700: #0369a1;
+  --brand-50: #f0f9ff;
+  --brand-100: #e0f2fe;
+  --brand-accent: #38bdf8;
+
+  /* 次级主色 · 冰青 */
+  --accent: #06b6d4;
+  --accent-50: #ecfeff;
+  --accent-100: #cffafe;
+
+  /* 语义色 · 天蓝系柔和版 */
+  --success: #10b981;
+  --success-50: #ecfdf5;
+  --warning: #f59e0b;
+  --warning-50: #fffbeb;
+  --danger: #ef4444;
+  --danger-50: #fef2f2;
+  --violet: #6366f1;
+  --violet-50: #eef2ff;
+
+  /* ===== 背景 · 天白云层 · 多层级 ===== */
+  --bg-deep-sky: #f0f9ff;               /* 最底层页面 - 淡天蓝 */
+  --bg-surface:  #ffffff;               /* 面板级 - 纯白 */
+  --bg-surface-2:#f8fafc;               /* 面板内次级背景 */
+  --bg-raised:   #ffffff;               /* 上浮卡片 */
+  --bg-sidebar:  #0c4a6e;               /* 导航侧栏 - 深天蓝 */
+  --bg-sidebar-active: #0369a1;
+  --bg-sidebar-hover: #075985;
+  --bg-input:  #f0f9ff;
+  --bg-input-focus: #ffffff;
+
+  /* ===== 文本 · 四级灰度（蓝天系） ===== */
+  --text-primary:   #0c4a6e;             /* 标题 - 深蓝 */
+  --text-secondary: #164e63;             /* 正文 - 靛青 */
+  --text-tertiary:  #0891b2;             /* 辅助 - 天蓝 */
+  --text-quaternary:#7dd3fc;             /* 占位/静音 - 淡蓝 */
+  --text-on-brand:  #ffffff;
+
+  /* ===== 边界 · 天蓝系 ===== */
+  --border-ghost:   rgba(14, 165, 233, 0.08);
+  --border-soft:    rgba(14, 165, 233, 0.12);
+  --border-normal:  rgba(14, 165, 233, 0.18);
+  --border-focus:   rgba(14, 165, 233, 0.35);
+
+  /* ===== 圆角 · 保持黄金渐变档 ===== */
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  16px;
+  --radius-xl:  26px;
+  --radius-2xl: 42px;
+
+  /* ===== 间距 · 黄金序列 ===== */
+  --space-1: 4px;
+  --space-2: 6px;
+  --space-3: 10px;
+  --space-4: 16px;
+  --space-5: 26px;
+  --space-6: 42px;
+  --space-7: 68px;
+  --space-8: 110px;
+
+  /* ===== 阴影 · 天蓝柔光 ===== */
+  --shadow-ghost:  0 1px 2px rgba(14, 165, 233, 0.04), 0 2px 6px rgba(14, 165, 233, 0.03);
+  --shadow-sm:     0 1px 2px rgba(14, 165, 233, 0.06), 0 4px 12px rgba(14, 165, 233, 0.05);
+  --shadow-md:     0 2px 6px rgba(14, 165, 233, 0.07), 0 10px 28px rgba(14, 165, 233, 0.08);
+  --shadow-lg:     0 6px 18px rgba(14, 165, 233, 0.09), 0 24px 56px rgba(14, 165, 233, 0.10);
+  --shadow-ring:   0 0 0 4px rgba(14, 165, 233, 0.10);
+  --shadow-focus:  0 0 0 4px rgba(14, 165, 233, 0.12), 0 2px 8px rgba(14, 165, 233, 0.18);
+  --shadow-inset:  inset 0 1px 0 rgba(255, 255, 255, 0.8);
+
+  /* ===== 布局关键尺寸 ===== */
+  --sidebar-width: 232px;
+  --header-h: 60px;
+  --chat-input-h: 96px;
+  --chat-header-h: 62px;
+
+  /* ===== 动效 · 柔和缓动 ===== */
+  --ease:     cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in:  cubic-bezier(0.55, 0, 0.68, 0.53);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-1: 120ms;
+  --dur-2: 220ms;
+  --dur-3: 360ms;
+  --dur-4: 580ms;
+
+  /* ===== 天蓝专属 · 渐变氛围 ===== */
+  --bg-gradient-soft: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
+  --bg-gradient-brand: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+
+  /* ===== 英雄区渐变 ===== */
+  --hero-gradient: linear-gradient(180deg, #e0f2fe 0%, #f0f9ff 30%, #ffffff 100%);
+
+  /* ===== Element Plus CSS 变量覆盖 ===== */
+  --el-color-primary: var(--brand-500);
+  --el-color-primary-light-3: var(--brand-400, var(--brand-500));
+  --el-color-primary-light-5: var(--brand-300, var(--brand-500));
+  --el-color-primary-light-7: var(--brand-200, var(--brand-100));
+  --el-color-primary-light-8: var(--brand-100);
+  --el-color-primary-light-9: var(--brand-50);
+  --el-color-primary-dark-2: var(--brand-600);
+  --el-bg-color: var(--bg-surface);
+  --el-bg-color-page: var(--bg-deep-sky);
+  --el-bg-color-overlay: var(--bg-raised);
+  --el-text-color-primary: var(--text-primary);
+  --el-text-color-regular: var(--text-secondary);
+  --el-text-color-secondary: var(--text-tertiary);
+  --el-text-color-placeholder: var(--text-quaternary);
+  --el-border-color: var(--border-soft);
+  --el-border-color-light: var(--border-ghost);
+  --el-border-color-lighter: var(--border-ghost);
+  --el-border-color-extra-light: var(--border-ghost);
+  --el-fill-color: var(--bg-surface-2);
+  --el-fill-color-light: var(--bg-surface-2);
+  --el-fill-color-lighter: var(--bg-input);
+  --el-fill-color-extra-light: var(--bg-input);
+  --el-box-shadow: var(--shadow-sm);
+  --el-box-shadow-light: var(--shadow-ghost);
+  --el-border-radius-base: var(--radius-md);
+  --el-border-radius-small: var(--radius-sm);
+  --el-border-radius-large: var(--radius-lg);
+}
+
+/* ===== 天蓝模式全局微调 ===== */
+html[data-theme="sky"] body {
+  background: var(--bg-deep-sky);
+  color: var(--text-primary);
+}
+
+html[data-theme="sky"] ::selection {
+  background: rgba(14, 165, 233, 0.25);
+  color: #0c4a6e;
+}
+
+/* 滚动条天蓝色 */
+html[data-theme="sky"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+html[data-theme="sky"] ::-webkit-scrollbar-track {
+  background: var(--bg-surface-2);
+}
+html[data-theme="sky"] ::-webkit-scrollbar-thumb {
+  background: #bae6fd;
+  border-radius: 4px;
+}
+html[data-theme="sky"] ::-webkit-scrollbar-thumb:hover {
+  background: #7dd3fc;
+}
+
+/* 按钮主色渐变 */
+html[data-theme="sky"] .btn-primary {
+  background: var(--bg-gradient-brand);
+  border: none;
+  box-shadow: 0 4px 14px rgba(14, 165, 233, 0.35);
+}

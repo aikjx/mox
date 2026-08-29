@@ -1,0 +1,238 @@
+/* ================================================================
+ * MOX Theme · Cyberpunk 赛博朋克科技
+ * 命名空间：html[data-theme="cyberpunk"]
+ * 基于现有 global.css 变量体系，100% 兼容无缝切换
+ * ================================================================ */
+
+html[data-theme="cyberpunk"] {
+  /* ===== 品牌 · 霓虹天蓝（赛博主色） ===== */
+  --brand: #00d4ff;
+  --brand-500: #00d4ff;
+  --brand-600: #00b8e6;
+  --brand-700: #0099cc;
+  --brand-50: #001a22;
+  --brand-100: #003344;
+  --brand-accent: #4de2ff;
+
+  /* 次级主色 · 霓虹紫 */
+  --accent: #b14aff;
+  --accent-50: #1a0a2e;
+  --accent-100: #331155;
+
+  /* 语义色 · 霓虹系 ===== */
+  --success: #00ffc8;
+  --success-50: #00221a;
+  --warning: #ffaa00;
+  --warning-50: #2a1a00;
+  --danger: #ff2d55;
+  --danger-50: #2a0010;
+  --violet: #b14aff;
+  --violet-50: #1a0a2e;
+
+  /* ===== 背景 · 赛博深空 · 多层级 ===== */
+  --bg-deep-sky: #050a14;               /* 最底层页面 - 极深黑 */
+  --bg-surface:  #0b1220;               /* 面板级 */
+  --bg-surface-2:#0f1a2e;               /* 面板内次级背景 */
+  --bg-raised:   #142138;               /* 上浮卡片 */
+  --bg-sidebar:  #03060d;               /* 导航侧栏 - 更深 */
+  --bg-sidebar-active: #0f1a2e;
+  --bg-sidebar-hover: #0b1220;
+  --bg-input:  #0f1a2e;
+  --bg-input-focus: #0b1220;
+
+  /* ===== 文本 · 霓虹白 ===== */
+  --text-primary:   #e8f4ff;             /* 标题 - 亮青白 */
+  --text-secondary: #b8d4e8;             /* 正文 - 淡青白 */
+  --text-tertiary:  #7a9bb8;             /* 辅助 - 钢蓝 */
+  --text-quaternary:#4a6478;             /* 占位/静音 - 暗钢蓝 */
+  --text-on-brand:  #050a14;
+
+  /* ===== 边界 · 霓虹边 ===== */
+  --border-ghost:   rgba(0, 212, 255, 0.08);
+  --border-soft:    rgba(0, 212, 255, 0.15);
+  --border-normal:  rgba(0, 212, 255, 0.25);
+  --border-focus:   rgba(0, 212, 255, 0.5);
+
+  /* ===== 圆角 · 赛博切角（小锐度） ===== */
+  --radius-sm:  2px;
+  --radius-md:  4px;
+  --radius-lg:  8px;
+  --radius-xl:  12px;
+  --radius-2xl: 16px;
+
+  /* ===== 间距 · 黄金序列 ===== */
+  --space-1: 4px;
+  --space-2: 6px;
+  --space-3: 10px;
+  --space-4: 16px;
+  --space-5: 26px;
+  --space-6: 42px;
+  --space-7: 68px;
+  --space-8: 110px;
+
+  /* ===== 阴影 · 霓虹发光 ===== */
+  --shadow-ghost:  0 1px 2px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.4);
+  --shadow-sm:     0 1px 3px rgba(0, 0, 0, 0.6), 0 4px 14px rgba(0, 0, 0, 0.5);
+  --shadow-md:     0 2px 8px rgba(0, 0, 0, 0.7), 0 12px 32px rgba(0, 0, 0, 0.6);
+  --shadow-lg:     0 8px 24px rgba(0, 0, 0, 0.8), 0 28px 64px rgba(0, 0, 0, 0.7);
+  --shadow-ring:   0 0 0 3px rgba(0, 212, 255, 0.2);
+  --shadow-focus:  0 0 0 3px rgba(0, 212, 255, 0.25), 0 0 20px rgba(0, 212, 255, 0.3);
+  --shadow-inset:  inset 0 1px 0 rgba(0, 212, 255, 0.1);
+
+  /* ===== 赛博专属 · 霓虹光晕 ===== */
+  --glow-cyan:   0 0 20px rgba(0, 212, 255, 0.4), 0 0 40px rgba(0, 212, 255, 0.15);
+  --glow-purple: 0 0 20px rgba(177, 74, 255, 0.4), 0 0 40px rgba(177, 74, 255, 0.15);
+  --glow-green:  0 0 20px rgba(0, 255, 200, 0.4), 0 0 40px rgba(0, 255, 200, 0.15);
+  --glow-text:   0 0 10px rgba(0, 212, 255, 0.6), 0 0 20px rgba(0, 212, 255, 0.3);
+
+  /* ===== 布局关键尺寸 ===== */
+  --sidebar-width: 240px;
+  --header-h: 60px;
+  --chat-input-h: 96px;
+  --chat-header-h: 62px;
+
+  /* ===== 动效 · 赛博快节奏 ===== */
+  --ease:     cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in:  cubic-bezier(0.55, 0, 0.68, 0.53);
+  --ease-out: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-1: 100ms;
+  --dur-2: 180ms;
+  --dur-3: 280ms;
+  --dur-4: 450ms;
+
+  /* ===== 赛博渐变 ===== */
+  --gradient-cyber:   linear-gradient(135deg, #00d4ff 0%, #b14aff 100%);
+  --gradient-brand:   linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+  --gradient-hero:    linear-gradient(180deg, #000d1a 0%, #050a14 50%, #0a1628 100%);
+
+  /* ===== 英雄区渐变 ===== */
+  --hero-gradient: radial-gradient(ellipse at top, rgba(0, 212, 255, 0.15) 0%, transparent 50%), radial-gradient(ellipse at bottom, rgba(177, 74, 255, 0.1) 0%, transparent 50%);
+
+  /* ===== Element Plus CSS 变量覆盖 ===== */
+  --el-color-primary: var(--brand-500);
+  --el-color-primary-light-3: var(--brand-400, var(--brand-500));
+  --el-color-primary-light-5: var(--brand-300, var(--brand-500));
+  --el-color-primary-light-7: var(--brand-200, var(--brand-100));
+  --el-color-primary-light-8: var(--brand-100);
+  --el-color-primary-light-9: var(--brand-50);
+  --el-color-primary-dark-2: var(--brand-600);
+  --el-bg-color: var(--bg-surface);
+  --el-bg-color-page: var(--bg-deep-sky);
+  --el-bg-color-overlay: var(--bg-raised);
+  --el-text-color-primary: var(--text-primary);
+  --el-text-color-regular: var(--text-secondary);
+  --el-text-color-secondary: var(--text-tertiary);
+  --el-text-color-placeholder: var(--text-quaternary);
+  --el-border-color: var(--border-soft);
+  --el-border-color-light: var(--border-ghost);
+  --el-border-color-lighter: var(--border-ghost);
+  --el-border-color-extra-light: var(--border-ghost);
+  --el-fill-color: var(--bg-surface-2);
+  --el-fill-color-light: var(--bg-surface-2);
+  --el-fill-color-lighter: var(--bg-input);
+  --el-fill-color-extra-light: var(--bg-input);
+  --el-box-shadow: var(--shadow-sm);
+  --el-box-shadow-light: var(--shadow-ghost);
+  --el-border-radius-base: var(--radius-md);
+  --el-border-radius-small: var(--radius-sm);
+  --el-border-radius-large: var(--radius-lg);
+}
+
+/* ===== 赛博朋克全局效果 ===== */
+html[data-theme="cyberpunk"] body {
+  background: var(--bg-deep-sky);
+  color: var(--text-primary);
+  font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+}
+
+/* 背景霓虹辉光 */
+html[data-theme="cyberpunk"] body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 800px 600px at 15% 0%, rgba(0, 212, 255, 0.08), transparent 60%),
+    radial-gradient(ellipse 600px 500px at 85% 20%, rgba(177, 74, 255, 0.07), transparent 60%),
+    radial-gradient(ellipse 900px 700px at 50% 110%, rgba(0, 255, 200, 0.05), transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 扫描线效果（微妙） */
+html[data-theme="cyberpunk"] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.06) 2px,
+    rgba(0, 0, 0, 0.06) 4px
+  );
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0.3;
+}
+
+/* 网格背景 */
+html[data-theme="cyberpunk"] #app::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0, 212, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.025) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+html[data-theme="cyberpunk"] ::selection {
+  background: rgba(0, 212, 255, 0.35);
+  color: #fff;
+}
+
+/* 滚动条霓虹色 */
+html[data-theme="cyberpunk"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+html[data-theme="cyberpunk"] ::-webkit-scrollbar-track {
+  background: var(--bg-surface-2);
+}
+html[data-theme="cyberpunk"] ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--brand), var(--accent));
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+}
+html[data-theme="cyberpunk"] ::-webkit-scrollbar-thumb:hover {
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.6);
+}
+
+/* 霓虹按钮 */
+html[data-theme="cyberpunk"] .btn-primary {
+  background: var(--gradient-brand);
+  border: 1px solid var(--brand);
+  color: var(--text-on-brand);
+  box-shadow: var(--glow-cyan);
+  transition: all var(--dur-2) var(--ease);
+}
+html[data-theme="cyberpunk"] .btn-primary:hover {
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.6), 0 0 60px rgba(0, 212, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+/* 霓虹文字效果（标题类） */
+html[data-theme="cyberpunk"] h1,
+html[data-theme="cyberpunk"] h2,
+html[data-theme="cyberpunk"] .neon-text {
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.5), 0 0 20px rgba(0, 212, 255, 0.2);
+}
+
+/* 卡片霓虹边框悬停 */
+html[data-theme="cyberpunk"] .card:hover,
+html[data-theme="cyberpunk"] .panel:hover {
+  border-color: rgba(0, 212, 255, 0.4);
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.15), var(--shadow-md);
+}

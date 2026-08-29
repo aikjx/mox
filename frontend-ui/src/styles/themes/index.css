@@ -1,0 +1,103 @@
+/* ================================================================
+ * MOX Themes · 三主题统一入口索引
+ * 用法：在 main.js 中 import '@/styles/themes/index.css'
+ * 或按需：import '@/styles/themes/theme-dark.css'
+ * ================================================================ */
+
+/* 三大主题（默认全部引入，通过 data-theme 属性切换） */
+@import './theme-dark.css';
+@import './theme-sky.css';
+@import './theme-cyberpunk.css';
+
+/* ================================================================
+ * 主题切换过渡动画
+ * 切换主题时所有颜色属性平滑过渡 300ms
+ * ================================================================ */
+html,
+body,
+*,
+*::before,
+*::after {
+  transition:
+    background-color 300ms ease,
+    color 300ms ease,
+    border-color 300ms ease,
+    box-shadow 300ms ease,
+    fill 300ms ease,
+    stroke 300ms ease;
+}
+
+/* 禁用过渡的工具类（性能优化用） */
+.theme-no-transition,
+.theme-no-transition *,
+.theme-no-transition *::before,
+.theme-no-transition *::after {
+  transition: none !important;
+}
+
+/* ================================================================
+ * 主题切换器组件样式
+ * 使用：<button class="theme-switcher" data-theme="dark">
+ * ================================================================ */
+.theme-switcher-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  background: var(--bg-surface-2, #f6f8fc);
+  border: 1px solid var(--border-soft, rgba(15, 23, 42, 0.09));
+  border-radius: 10px;
+}
+
+.theme-switcher {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 200ms ease;
+  position: relative;
+}
+
+.theme-switcher:hover {
+  background: var(--bg-surface, #fff);
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-switcher.active {
+  background: var(--bg-surface, #fff);
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-switcher.active::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--brand, #4f46e5);
+}
+
+/* 主题预览色点 */
+.theme-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--border-normal, rgba(15, 23, 42, 0.12));
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.theme-swatch.light   { background: linear-gradient(135deg, #f6f8fc, #e0e7ff); }
+.theme-swatch.dark    { background: linear-gradient(135deg, #0a0e1a, #1e293b); }
+.theme-swatch.sky     { background: linear-gradient(135deg, #0ea5e9, #06b6d4); }
+.theme-swatch.cyberpunk { background: linear-gradient(135deg, #00d4ff, #b14aff); }

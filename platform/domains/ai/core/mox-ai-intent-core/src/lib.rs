@@ -3,27 +3,97 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-//! MOX AI Intent Core
+//! MOX AI Intent Core — AI 对话意图核心引擎
 //!
-//! Intent recognition engine using A5 Activation Diffusion (personalized PageRank).
-//! Maps natural language intents to capability routes on the knowledge graph.
+//! ## 概述
+//! 全维低代码平台的 AI 意图理解中枢。用户输入一句自然语言，
+//! 本 crate 负责：**分类意图 → 抽取实体 → 拆解任务 → 匹配 Agent → 输出结构化结果**。
 //!
-//! Core algorithm:
-//! - A5 Activation Diffusion: d=0.85 damping, 30 iterations convergence
-//! - Personalized PageRank over capability graph
-//! - Threshold-based routing with fallback chain
+//! ## 模块结构
+//! ```text
+//! mox-ai-intent-core/
+//! ├── classifier.rs     — Aho-Corasick 多模意图分类器（现有）
+//! ├── alliance.rs       — 专家联盟打分 / Agent 匹配（现有）
+//! ├── entity.rs         — 实体提取器：时间/数字/参数/领域实体 ★P1新增
+//! ├── task_decomp.rs    — 任务拆解器：意图模板 → 执行步骤 DAG ★P1新增
+//! ├── builtins.rs       — 8 大 domain 内置意图注册表 ★P1新增
+//! ├── pipeline.rs       — 端到端意图理解管道 ★P1新增
+//! └── context.rs        — 对话上下文 / 会话管理 ★P1新增
+//! ```
+//!
+//! ## 快速开始
+//! ```rust,ignore
+//! use mox_ai_intent_core::IntentPipeline;
+//!
+//! let pipe = IntentPipeline::new();
+//! let result = pipe.process("帮我生成上个月的销售报告，做成PPT发给销售总监");
+//!
+//! println!("意图: {}", result.intent.primary);       // report_generate
+//! println!("置信度: {:.2}", result.confidence);       // 0.85
+//! println!("实体数: {}", result.entities.len());       // 3 (时间/格式/收件人)
+//! println!("步骤数: {}", result.task_plan.steps.len());// 4 (取数→分析→生成→发送)
+//! println!("风险: {}", result.collaboration.max_risk); // 高风险
+//! ```
+//!
+//! ## 设计原则
+//! - **纯规则零依赖**：P1 阶段不依赖 LLM，纯规则+词典，毫秒级响应
+//! - **可演进架构**：每阶段独立可替换，P2 可接入 LLM 语义增强
+//! - **与前端对齐**：输出四向弹框建议，直接驱动 UI 交互
+//! - **风险分级**：Low/Medium/High 三级风险，对应免确认/一次确认/二次确认
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use thiserror::Error;
+
+// ─── 模块声明 ────────────────────────────────────────────────────────────────
 
 /// 专家联盟打分模块
 pub mod alliance;
 /// 意图分类模块
 pub mod classifier;
+/// 实体提取模块 ★P1
+pub mod entity;
+/// 任务拆解模块 ★P1
+pub mod task_decomp;
+/// 内置意图注册表 ★P1
+pub mod builtins;
+/// 端到端意图理解管道 ★P1
+pub mod pipeline;
+/// 对话上下文管理 ★P1
+pub mod context;
 
-pub use alliance::{score_alliance_candidates, AllianceScorer, ExpertCandidate, ScoreBreakdown, ScoredExpert};
+// ─── 统一重导出 ──────────────────────────────────────────────────────────────
+
+// — classifier —
 pub use classifier::{classify_intent, intent_to_capability, IntentClassifier, IntentPattern, IntentResult};
+
+// — alliance —
+pub use alliance::{score_alliance_candidates, AllianceScorer, ExpertCandidate, ScoreBreakdown, ScoredExpert};
+
+// — entity ★P1 —
+pub use entity::{
+    extract_entities, Entity, EntityExtractor, EntityType,
+};
+
+// — task_decomp ★P1 —
+pub use task_decomp::{
+    RiskLevel, StepStatus, TaskDecomposer, TaskPlan, TaskStep, TaskStepTemplate,
+};
+
+// — builtins ★P1 —
+pub use builtins::{IntentDefinition, IntentRegistry};
+
+// — pipeline ★P1 —
+pub use pipeline::{
+    CollaborationSuggestion, InteractionMode, IntentPipeline, IntentUnderstanding,
+    PanelDirection, PipelineConfig, PipelineTiming,
+};
+
+// — context ★P1 —
+pub use context::{
+    ConversationContext, ConversationState, ConversationTurn, SessionManager,
+};
+
+// ─── 错误类型 ────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Error)]
 pub enum IntentError {
@@ -34,6 +104,10 @@ pub enum IntentError {
     #[error("convergence failed after {0} iterations")]
     ConvergenceFailed(usize),
 }
+
+// ─── 兼容旧类型（保留 ActivationDiffusionRouter / KeywordIntentClassifier） ──
+
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Capability {
@@ -90,12 +164,9 @@ pub struct RouteTrace {
     pub fallback_used: bool,
 }
 
-/// A5 Activation Diffusion intent router.
+/// A5 Activation Diffusion 意图路由（PageRank 算法）。
 ///
-/// Implements personalized PageRank over a capability graph:
-/// - Nodes = capabilities
-/// - Edges = semantic similarity / co-occurrence
-/// - Personalization = keyword activation from query
+/// 保留为兼容旧 API。新代码建议使用 [`IntentPipeline`]。
 #[derive(Clone)]
 pub struct ActivationDiffusionRouter {
     capabilities: HashMap<String, Capability>,
@@ -159,7 +230,6 @@ impl ActivationDiffusionRouter {
         if union == 0.0 { 0.0 } else { intersection / union }
     }
 
-    /// Compute activation scores using personalized PageRank.
     pub fn route(&self, request: &IntentRequest) -> Result<IntentResponse, IntentError> {
         let start = std::time::Instant::now();
         if request.intent.trim().is_empty() { return Err(IntentError::EmptyInput); }
@@ -168,7 +238,6 @@ impl ActivationDiffusionRouter {
         let query_lower = request.intent.to_lowercase();
         let query_tokens: Vec<&str> = query_lower.split_whitespace().collect();
 
-        // Personalization vector: activate capabilities with matching keywords
         let mut personalization: HashMap<String, f64> = HashMap::new();
         let mut total_activation = 0.0f64;
         for cap in self.capabilities.values() {
@@ -180,7 +249,6 @@ impl ActivationDiffusionRouter {
                     matched.push(kw.clone());
                 }
             }
-            // Description substring match
             for token in &query_tokens {
                 if cap.description.to_lowercase().contains(token) {
                     score += 0.3;
@@ -192,7 +260,6 @@ impl ActivationDiffusionRouter {
             }
         }
 
-        // If no keyword match, uniform personalization (fallback)
         let fallback_used = personalization.is_empty();
         if fallback_used {
             let n = self.capabilities.len() as f64;
@@ -202,12 +269,10 @@ impl ActivationDiffusionRouter {
             total_activation = 1.0;
         }
 
-        // Normalize personalization
         for v in personalization.values_mut() {
             *v /= total_activation;
         }
 
-        // Power iteration: PageRank with personalization
         let n = self.capabilities.len();
         let mut scores: HashMap<String, f64> = self.capabilities.keys().map(|k| (k.clone(), 1.0 / n as f64)).collect();
         let mut iterations = 0;
@@ -217,7 +282,6 @@ impl ActivationDiffusionRouter {
             let mut new_scores: HashMap<String, f64> = HashMap::new();
             let mut dangling_sum = 0.0;
 
-            // Compute dangling node contribution
             for (id, score) in &scores {
                 if self.adjacency.get(id).map(|v| v.is_empty()).unwrap_or(true) {
                     dangling_sum += score;
@@ -241,13 +305,11 @@ impl ActivationDiffusionRouter {
                 new_scores.insert(id.clone(), teleport + dangling + self.damping * incoming);
             }
 
-            // Check convergence
             let diff: f64 = scores.iter().map(|(k, v)| (v - new_scores.get(k).unwrap_or(&0.0)).abs()).sum();
             scores = new_scores;
             if diff < self.convergence_threshold { break; }
         }
 
-        // Sort by score
         let mut ranked: Vec<(String, f64)> = scores.into_iter().collect();
         ranked.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
@@ -296,9 +358,11 @@ impl Default for ActivationDiffusionRouter {
     fn default() -> Self { Self::new() }
 }
 
-/// Simple keyword-based intent classifier (fast path, no graph).
+/// 关键词意图分类器（快速路径，无图）。
+///
+/// 新代码建议使用 [`IntentPipeline`] 或 [`IntentClassifier`]。
 pub struct KeywordIntentClassifier {
-    patterns: Vec<(String, String)>, // (pattern, capability_id)
+    patterns: Vec<(String, String)>,
 }
 
 impl KeywordIntentClassifier {
@@ -315,6 +379,34 @@ impl KeywordIntentClassifier {
 impl Default for KeywordIntentClassifier {
     fn default() -> Self { Self::new() }
 }
+
+// ─── 便捷预导入 ──────────────────────────────────────────────────────────────
+
+pub mod prelude {
+    pub use super::{
+        // 核心管道
+        IntentPipeline, IntentUnderstanding, PipelineConfig,
+        // 意图分类
+        IntentClassifier, IntentPattern, IntentResult, classify_intent, intent_to_capability,
+        // 实体提取
+        Entity, EntityExtractor, EntityType, extract_entities,
+        // 任务拆解
+        TaskDecomposer, TaskPlan, TaskStep, RiskLevel, StepStatus,
+        // 内置意图
+        IntentRegistry, IntentDefinition,
+        // Agent 匹配
+        AllianceScorer, ExpertCandidate, ScoredExpert, ScoreBreakdown,
+        // 对话上下文
+        ConversationContext, ConversationState, SessionManager,
+        // 人机协同
+        CollaborationSuggestion, PanelDirection, InteractionMode,
+        // 兼容旧 API
+        ActivationDiffusionRouter, KeywordIntentClassifier,
+        IntentRequest, IntentResponse, IntentMatch, Capability,
+    };
+}
+
+// ─── 单元测试 ────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
@@ -387,5 +479,38 @@ mod tests {
     fn empty_input_rejected() {
         let router = ActivationDiffusionRouter::new();
         assert!(router.route(&IntentRequest { intent: "".into(), context: None, principal: None, top_k: None }).is_err());
+    }
+
+    // P1 新模块的集成测试
+    #[test]
+    fn pipeline_end_to_end_smoke() {
+        let pipe = IntentPipeline::new();
+        let result = pipe.process("帮我生成上个月的销售报告，做成PPT发给销售总监");
+        // 应有意图
+        assert!(!result.intent.primary.is_empty());
+        // 应有实体
+        assert!(!result.entities.is_empty());
+        // 应有任务计划
+        assert!(!result.task_plan.steps.is_empty());
+        // 应有人机协同建议
+        assert!(result.collaboration.max_risk.len() > 0);
+        // 耗时应合理
+        assert!(result.timing.total_ms < 1000);
+    }
+
+    #[test]
+    fn builtin_intents_available() {
+        let all = IntentRegistry::all();
+        assert!(all.len() >= 25);
+    }
+
+    #[test]
+    fn prelude_imports_work() {
+        // 验证 prelude 能正常 use（编译期检查）
+        use prelude::*;
+        let _ = IntentPipeline::new();
+        let _ = EntityExtractor::new();
+        let _ = TaskDecomposer::new();
+        let _ = SessionManager::new();
     }
 }

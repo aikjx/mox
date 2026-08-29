@@ -1,0 +1,234 @@
+# ============================================================
+# MOX Agent Flow DSL · 知识图谱数据处理工作流
+# version: 1.0
+# 从数据采集、清洗、建模、抽取、融合、推理、入库到质量评估的全链路
+# ============================================================
+
+version: 1.0
+name: knowledge-graph-pipeline
+description: "从数据采集到入库的完整知识图谱构建流水线"
+
+# ============================================================
+# Agent 定义
+# ============================================================
+agents:
+
+  # ---------- 数据接入层 ----------
+
+  - id: agent_1
+    name: "数据采集"
+    role: "数据采集引擎"
+    description: "多源异构数据接入与原始数据湖构建"
+    input:
+      - type: config
+        schema: "config/sources.yaml"
+    output:
+      - type: dataset
+        format: "raw_data_lake"
+    tools:
+      - Apache NiFi
+      - Airbyte
+      - Scrapy
+      - Playwright
+      - Kafka Connect
+    retry:
+      max_attempts: 3
+      backoff: exponential
+    on: done
+    next: agent_2
+    on_error: retry
+
+  - id: agent_2
+    name: "数据清洗"
+    role: "数据清洗引擎"
+    description: "去重、规范化、质量校验，输出干净数据集"
+    input:
+      - type: dataset
+        source: agent_1
+    output:
+      - type: dataset
+        format: "cleaned_data"
+    tools:
+      - Apache Spark
+      - Great Expectations
+      - Pandas/Polars
+      - Dedupe
+      - HanLP
+    quality_gate:
+      - completeness >= 0.95
+      - uniqueness >= 0.99
+    on: done
+    next: agent_3
+    on_error: retry
+
+  # ---------- 知识生产层 ----------
+
+  - id: agent_3
+    name: "知识建模"
+    role: "本体工程师"
+    description: "设计本体 Schema，定义实体/关系/属性约束"
+    input:
+      - type: dataset
+        source: agent_2
+      - type: requirements
+        description: "业务领域需求文档"
+    output:
+      - type: schema
+        format: "ontology_schema.yaml"
+    tools:
+      - Protégé
+      - WebVOWL
+      - SHACL
+      - schema.org
+    human_in_the_loop: true
+    on: done
+    next: agent_4
+    on_error: human_review
+
+  - id: agent_4
+    name: "知识抽取"
+    role: "NLP 抽取引擎"
+    description: "实体识别、关系抽取、属性抽取"
+    input:
+      - type: dataset
+        source: agent_2
+      - type: schema
+        source: agent_3
+    output:
+      - type: triples
+        format: "candidate_triples"
+    tools:
+      - spaCy
+      - HanLP
+      - DeepKE
+      - LLM Few-shot
+      - Doccano
+    metrics:
+      - precision >= 0.85
+      - recall >= 0.75
+    on: done
+    next: agent_5
+    on_error: retry
+
+  - id: agent_5
+    name: "知识融合"
+    role: "融合引擎"
+    description: "实体对齐、属性融合、冲突消解"
+    input:
+      - type: triples
+        source: agent_4
+      - type: schema
+        source: agent_3
+    output:
+      - type: triples
+        format: "fused_triples"
+    tools:
+      - Dedupe
+      - Silk
+      - LIMES
+      - OpenEA
+      - RecordLinkage
+    on: done
+    next: agent_6
+    on_error: retry
+
+  # ---------- 知识增强层 ----------
+
+  - id: agent_6
+    name: "知识推理"
+    role: "推理引擎"
+    description: "规则推理、图算法、KGE 链接预测"
+    input:
+      - type: triples
+        source: agent_5
+    output:
+      - type: triples
+        format: "enriched_triples"
+    tools:
+      - Neo4j GDS
+      - OpenKE
+      - DGL-KE
+      - Pellet
+    on: done
+    next: agent_7
+    on_error: continue
+
+  # ---------- 知识服务层 ----------
+
+  - id: agent_7
+    name: "知识入库"
+    role: "存储引擎"
+    description: "批量写入图数据库，建索引，版本管理"
+    input:
+      - type: triples
+        source: agent_6
+    output:
+      - type: graph_database
+        target: "Neo4j"
+    tools:
+      - Neo4j
+      - NebulaGraph
+      - neo4j-admin import
+    batch_size: 5000
+    on: done
+    next: agent_8
+    on_error: rollback
+
+  - id: agent_8
+    name: "质量评估"
+    role: "质量审计员"
+    description: "多维度质量评估，生成验收报告"
+    input:
+      - type: graph_database
+        source: agent_7
+    output:
+      - type: report
+        format: "quality_report.json"
+    tools:
+      - SHACL
+      - Neo4j GDS
+      - Great Expectations
+      - Allure
+    quality_gate:
+      - overall_score >= 80
+      - violation_count == 0
+    on: done
+    next: null
+    on_error: human_review
+
+# ============================================================
+# 全局策略
+# ============================================================
+policy:
+  human_in_the_loop: high_risk_only
+  audit: enabled
+  rollback_strategy: per_agent_snapshot
+  versioning: semantic
+  notification:
+    on_failure: slack
+    on_complete: email
+
+# ============================================================
+# DSL 语法说明
+# ============================================================
+# agent 字段说明：
+#   id:              Agent 唯一标识
+#   name:            Agent 名称
+#   role:            Agent 角色定位
+#   description:     Agent 功能描述
+#   input:           输入契约列表（type + source/schema）
+#   output:          输出契约列表（type + format/target）
+#   tools:           可用工具清单
+#   retry:           重试策略（max_attempts, backoff）
+#   quality_gate:    质量门条件表达式
+#   metrics:         关键指标阈值
+#   human_in_the_loop: 是否需要人工介入
+#   on:              触发条件（done / error / always）
+#   next:            下游 Agent ID（null 表示终点）
+#   on_error:        错误处理策略（retry/human_review/continue/rollback）
+#
+# on_error 策略：
+#   retry:        指数退避重试
+#   human_review: 暂停流水线，等待人工审核
+#   continue:     跳过当前节点，继续下游
+#   rollback:     回滚到上一版本快照

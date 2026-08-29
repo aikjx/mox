@@ -1,0 +1,172 @@
+/* ================================================================
+ * MOX Theme · Dark 深空暗黑
+ * 命名空间：html[data-theme="dark"]
+ * 基于现有 global.css 变量体系，100% 兼容无缝切换
+ * ================================================================ */
+
+html[data-theme="dark"] {
+  /* ===== 品牌 · 深空靛蓝（暗色提亮版） ===== */
+  --brand: #818cf8;
+  --brand-500: #818cf8;
+  --brand-600: #6366f1;
+  --brand-700: #4f46e5;
+  --brand-50: #1e1b4b;
+  --brand-100: #312e81;
+  --brand-accent: #a5b4fc;
+
+  /* 次级主色 · 晴空青（暗色增强饱和度） */
+  --accent: #22d3ee;
+  --accent-50: #083344;
+  --accent-100: #0e7490;
+
+  /* 语义色 · 暗色柔和版 */
+  --success: #34d399;
+  --success-50: #064e3b;
+  --warning: #fbbf24;
+  --warning-50: #451a03;
+  --danger: #f87171;
+  --danger-50: #450a0a;
+  --violet: #a78bfa;
+  --violet-50: #2e1065;
+
+  /* ===== 背景 · 深空暗黑 · 多层级 ===== */
+  --bg-deep-sky: #0a0e1a;               /* 最底层页面 */
+  --bg-surface:  #111827;               /* 面板级 */
+  --bg-surface-2:#0f172a;               /* 面板内次级背景 */
+  --bg-raised:   #1e293b;               /* 上浮卡片 */
+  --bg-sidebar:  #030712;               /* 导航深色侧栏（更深） */
+  --bg-sidebar-active: #1e293b;
+  --bg-sidebar-hover: #111827;
+  --bg-input:  #1e293b;
+  --bg-input-focus: #0f172a;
+
+  /* ===== 文本 · 四级灰度（暗白递减） ===== */
+  --text-primary:   #f1f5f9;             /* 标题 */
+  --text-secondary: #cbd5e1;             /* 正文 */
+  --text-tertiary:  #94a3b8;             /* 辅助 */
+  --text-quaternary:#64748b;             /* 占位/静音 */
+  --text-on-brand:  #0f172a;
+
+  /* ===== 边界 · 暗色系 ===== */
+  --border-ghost:   rgba(148, 163, 184, 0.08);
+  --border-soft:    rgba(148, 163, 184, 0.12);
+  --border-normal:  rgba(148, 163, 184, 0.18);
+  --border-focus:   rgba(129, 140, 248, 0.45);
+
+  /* ===== 圆角 · 保持黄金渐变档 ===== */
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  16px;
+  --radius-xl:  26px;
+  --radius-2xl: 42px;
+
+  /* ===== 间距 · 黄金序列 ===== */
+  --space-1: 4px;
+  --space-2: 6px;
+  --space-3: 10px;
+  --space-4: 16px;
+  --space-5: 26px;
+  --space-6: 42px;
+  --space-7: 68px;
+  --space-8: 110px;
+
+  /* ===== 阴影 · 暗色柔边 · 更深更沉 ===== */
+  --shadow-ghost:  0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.2);
+  --shadow-sm:     0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-md:     0 2px 6px rgba(0, 0, 0, 0.4), 0 10px 28px rgba(0, 0, 0, 0.4);
+  --shadow-lg:     0 6px 18px rgba(0, 0, 0, 0.5), 0 24px 56px rgba(0, 0, 0, 0.5);
+  --shadow-ring:   0 0 0 4px rgba(129, 140, 248, 0.15);
+  --shadow-focus:  0 0 0 4px rgba(129, 140, 248, 0.18), 0 2px 8px rgba(129, 140, 248, 0.25);
+  --shadow-inset:  inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+  /* ===== 布局关键尺寸 ===== */
+  --sidebar-width: 232px;
+  --header-h: 60px;
+  --chat-input-h: 96px;
+  --chat-header-h: 62px;
+
+  /* ===== 动效 · 柔和缓动 ===== */
+  --ease:     cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in:  cubic-bezier(0.55, 0, 0.68, 0.53);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-1: 120ms;
+  --dur-2: 220ms;
+  --dur-3: 360ms;
+  --dur-4: 580ms;
+
+  /* ===== 暗黑专属 · 微光背景氛围 ===== */
+  --bg-glow: radial-gradient(ellipse 800px 600px at 80% -10%, rgba(99, 102, 241, 0.08), transparent 60%),
+             radial-gradient(ellipse 600px 500px at 10% 110%, rgba(34, 211, 238, 0.06), transparent 60%);
+
+  /* ===== 英雄区渐变 ===== */
+  --hero-gradient: radial-gradient(ellipse at top, rgba(99, 102, 241, 0.15) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(34, 211, 238, 0.1) 0%, transparent 50%);
+
+  /* ===== Element Plus CSS 变量覆盖 ===== */
+  --el-color-primary: var(--brand-500);
+  --el-color-primary-light-3: var(--brand-400, var(--brand-500));
+  --el-color-primary-light-5: var(--brand-300, var(--brand-500));
+  --el-color-primary-light-7: var(--brand-200, var(--brand-100));
+  --el-color-primary-light-8: var(--brand-100);
+  --el-color-primary-light-9: var(--brand-50);
+  --el-color-primary-dark-2: var(--brand-600);
+  --el-bg-color: var(--bg-surface);
+  --el-bg-color-page: var(--bg-deep-sky);
+  --el-bg-color-overlay: var(--bg-raised);
+  --el-text-color-primary: var(--text-primary);
+  --el-text-color-regular: var(--text-secondary);
+  --el-text-color-secondary: var(--text-tertiary);
+  --el-text-color-placeholder: var(--text-quaternary);
+  --el-border-color: var(--border-soft);
+  --el-border-color-light: var(--border-ghost);
+  --el-border-color-lighter: var(--border-ghost);
+  --el-border-color-extra-light: var(--border-ghost);
+  --el-fill-color: var(--bg-surface-2);
+  --el-fill-color-light: var(--bg-surface-2);
+  --el-fill-color-lighter: var(--bg-input);
+  --el-fill-color-extra-light: var(--bg-input);
+  --el-box-shadow: var(--shadow-sm);
+  --el-box-shadow-light: var(--shadow-ghost);
+  --el-border-radius-base: var(--radius-md);
+  --el-border-radius-small: var(--radius-sm);
+  --el-border-radius-large: var(--radius-lg);
+}
+
+/* ===== 暗黑模式全局微调 ===== */
+html[data-theme="dark"] body {
+  background: var(--bg-deep-sky);
+  color: var(--text-primary);
+}
+
+html[data-theme="dark"] body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: var(--bg-glow);
+  pointer-events: none;
+  z-index: 0;
+}
+
+html[data-theme="dark"] img {
+  filter: brightness(0.9) contrast(1.05);
+}
+
+html[data-theme="dark"] ::selection {
+  background: rgba(129, 140, 248, 0.35);
+  color: #fff;
+}
+
+/* 滚动条暗色 */
+html[data-theme="dark"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+html[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: var(--bg-surface-2);
+}
+html[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: var(--border-normal);
+  border-radius: 4px;
+}
+html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--border-focus);
+}

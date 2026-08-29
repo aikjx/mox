@@ -1,8 +1,8 @@
 <template>
   <el-config-provider :locale="zhCn">
-    <div class="app-shell" :class="{ 'sidebar-collapsed': collapsed }">
+    <div class="app-shell" :class="{ 'sidebar-collapsed': collapsed, 'ai-fullscreen': isAIFullscreen }">
       <!-- 侧边栏 -->
-      <aside class="sidebar">
+      <aside class="sidebar" v-if="!isAIFullscreen">
         <div class="logo" @click="goHome">
           <div class="logo-mark">玄</div>
           <transition name="fade">
@@ -54,7 +54,7 @@
       <!-- 主区域 -->
       <div class="main">
         <!-- 顶栏 -->
-        <header class="topbar">
+        <header class="topbar" v-if="!isAIFullscreen">
           <div class="topbar-left">
             <el-icon class="collapse-btn" @click="collapsed = !collapsed">
               <Fold v-if="!collapsed" />
@@ -225,7 +225,7 @@
         </header>
 
         <!-- 多页签 -->
-        <div class="tabs">
+        <div class="tabs" v-if="!isAIFullscreen">
           <div
             v-for="t in tabs"
             :key="t.path"
@@ -413,6 +413,9 @@ function onPhaseChange(p) {
 const crumbsExtra = computed(() => route.meta?.subLabel || null)
 
 const currentPath = computed(() => route.path)
+
+// AI 页面全屏模式（隐藏侧边栏、顶栏、Tabs）
+const isAIFullscreen = computed(() => route.path.startsWith('/ai'))
 // 构建完整的模块索引（一级 + 二级子模块 + 三级隐藏模块）
 const ALL_MODULES = computed(() => {
   const list = [...NAV_MODULES]
@@ -605,7 +608,7 @@ function initTheme() {
 
 // === 全局快捷键绑定 ===
 onMounted(() => {
-  initTheme()
+  // initTheme() // 已迁移到 useTheme composable 统一管理
   refreshHealth()
   disposeShortcuts = useGlobalShortcuts({
     focusSearch,
@@ -937,6 +940,15 @@ onBeforeUnmount(() => {
     radial-gradient(1200px 400px at 100% 0%, rgba(99, 102, 241, 0.05), transparent),
     radial-gradient(900px 360px at 0% 100%, rgba(6, 182, 212, 0.05), transparent),
     var(--bg-page);
+}
+/* AI 全屏模式：去掉 padding 和背景 */
+.ai-fullscreen .main { margin-left: 0 !important; }
+.ai-fullscreen .content {
+  padding: 0;
+  background: var(--bg-deep-sky, #f8fafc);
+}
+.ai-fullscreen .content > * {
+  height: 100%;
 }
 
 /* 页面切换过渡动画 */

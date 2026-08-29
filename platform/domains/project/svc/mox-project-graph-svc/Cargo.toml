@@ -1,0 +1,31 @@
+[package]
+name = "mox-project-graph-svc"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "MOX 项目需求知识图谱服务：项目/需求/任务图谱化管理的 HTTP 接口"
+
+[[bin]]
+name = "mox-project-graph-svc"
+path = "src/main.rs"
+
+[lib]
+name = "mox_project_graph_svc"
+path = "src/lib.rs"
+
+[dependencies]
+mox-project-graph-core = { workspace = true }
+mox-kg-core = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+axum = { workspace = true }
+tower-http = { workspace = true }
+tower = { workspace = true }
+uuid = { workspace = true }
