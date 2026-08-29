@@ -33,6 +33,7 @@ members = [
     "platform/foundation/mox-cloud-foundation",
     "platform/foundation/mox-platform-observability",
     "platform/foundation/mox-platform-paths",
+    "platform/foundation/mox-error",
     "platform/domains/data/api",
     "platform/domains/ai/api",
     "platform/domains/kg/api",
@@ -186,11 +187,12 @@ sea-query = "0.32"
 sqlx = "0.8"
 
 # Internal crates (褰掍竴鍖栨灦鏋? 6灞?鍩?
-# Foundation 灞?
+# Foundation 层
 mox-platform-foundation = { path = "platform/foundation/mox-platform-foundation" }
 mox-cloud-foundation = { path = "platform/foundation/mox-cloud-foundation" }
 mox-platform-observability = { path = "platform/foundation/mox-platform-observability" }
 mox-platform-paths = { path = "platform/foundation/mox-platform-paths" }
+mox-error = { path = "platform/foundation/mox-error" }
 # Core 灞?
 mox-data-formula-core = { path = "platform/domains/data/core/mox-data-formula-core" }
 mox-data-norm-core = { path = "platform/domains/data/core/mox-data-norm-core" }

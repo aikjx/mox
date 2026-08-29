@@ -1,263 +1,283 @@
 <template>
-  <div class="page-container">
-    <div class="page-header">
-      <div class="page-header-left">
-        <h2 class="page-title">知识图谱</h2>
-        <p class="page-subtitle">算子关系网络可视化 · 中心性 / 社区发现 / 最短路径分析</p>
+  <div class="graph-page">
+    <!-- 第一层：顶部操作栏（固定） -->
+    <header class="graph-topbar">
+      <div class="gt-left">
+        <div class="gt-title-wrap">
+          <div class="gt-icon">🕸️</div>
+          <div>
+            <h1 class="gt-title">知识图谱</h1>
+            <div class="gt-sub">
+              <span class="gt-badge" v-if="stats">
+                <span class="gt-dot ok"></span>
+                {{ stats.node_count || 0 }} 节点 · {{ stats.edge_count || 0 }} 关系
+              </span>
+              <span class="gt-stage" v-if="loadStage !== 'physics'">{{ stageLabel }}</span>
+              <span class="gt-stage ok" v-else>● 已就绪</span>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="page-header-actions">
-        <el-button type="primary" @click="goAIAnalysis">
-          <el-icon><Promotion /></el-icon> AI分析图谱
+      <div class="gt-right">
+        <div class="gt-search">
+          <el-icon><Search /></el-icon>
+          <input
+            v-model="searchQ"
+            class="gt-search-input"
+            placeholder="搜索节点…"
+            @keyup.enter="doSearch"
+            @keyup.esc="clearSearch"
+          />
+          <kbd v-if="!searchQ" class="gt-kbd">/</kbd>
+        </div>
+        <el-button type="primary" class="gt-primary-btn" @click="goAIAnalysis">
+          <el-icon><Promotion /></el-icon>
+          <span>AI 深度分析</span>
         </el-button>
-        <el-input
-          v-model="searchQ"
-          placeholder="搜索对话/图谱节点"
-          clearable
-          style="width: 200px"
-          @keyup.enter="doSearch"
-          @clear="clearSearch"
-        >
-          <template #append>
-            <el-button @click="doSearch"><el-icon><Search /></el-icon></el-button>
-          </template>
-        </el-input>
-        <el-button @click="reload"><el-icon><Refresh /></el-icon> 刷新</el-button>
+        <el-button class="gt-icon-btn" @click="reload" title="刷新">
+          <el-icon><Refresh /></el-icon>
+        </el-button>
+        <el-button class="gt-icon-btn" @click="toggleSidePanel" title="工具面板">
+          <el-icon><Grid /></el-icon>
+        </el-button>
       </div>
-    </div>
+    </header>
 
-    <div class="page-content">
-
-    <div class="grid grid-4 stat-row" v-if="stats">
-      <div class="stat panel" v-for="s in statCards" :key="s.label">
-        <div class="stat-value">{{ s.value }}</div>
-        <div class="stat-label">{{ s.label }}</div>
-      </div>
-    </div>
-
-    <!-- 快捷分析入口 -->
-    <div class="quick-actions">
-      <div class="qa-card" @click="runQuickAnalysis('centrality')">
-        <div class="qa-icon" style="background:#eef2ff;color:#4f46e5">🎯</div>
-        <div class="qa-info">
-          <div class="qa-title">中心性分析</div>
-          <div class="qa-desc">识别关键节点</div>
-        </div>
-        <el-icon class="qa-arrow"><ArrowRight /></el-icon>
-      </div>
-      <div class="qa-card" @click="runQuickAnalysis('community')">
-        <div class="qa-icon" style="background:#ecfeff;color:#06b6d4">🧩</div>
-        <div class="qa-info">
-          <div class="qa-title">社区发现</div>
-          <div class="qa-desc">自动聚类分组</div>
-        </div>
-        <el-icon class="qa-arrow"><ArrowRight /></el-icon>
-      </div>
-      <div class="qa-card" @click="runQuickAnalysis('path')">
-        <div class="qa-icon" style="background:#ecfdf5;color:#10b981">🛤️</div>
-        <div class="qa-info">
-          <div class="qa-title">最短路径</div>
-          <div class="qa-desc">两节点关联分析</div>
-        </div>
-        <el-icon class="qa-arrow"><ArrowRight /></el-icon>
-      </div>
-      <div class="qa-card" @click="goAIAnalysis">
-        <div class="qa-icon" style="background:#fce7f3;color:#ec4899">🤖</div>
-        <div class="qa-info">
-          <div class="qa-title">AI 深度分析</div>
-          <div class="qa-desc">生成完整报告</div>
-        </div>
-        <el-icon class="qa-arrow"><ArrowRight /></el-icon>
-      </div>
-    </div>
-
-    <div class="grid graph-grid">
-      <div class="panel graph-box">
-        <h3 class="section-title">
-          关系网络
-          <span class="muted stage-chip" v-if="loadStage !== 'physics'">{{ stageLabel }}</span>
-          <span class="ok-chip" v-else>● 已就绪</span>
-        </h3>
-        <!-- 主画布：优先显示占位骨架（SVG）→ 3D 模块加载完再渲染 WebGL 画布 -->
-        <div class="canvas-wrap">
-          <!-- Stage A: 骨架占位（数据/模块未就绪时，SVG 轻量占位） -->
-          <svg v-if="showSkeleton" class="skeleton-svg" viewBox="0 0 800 520" preserveAspectRatio="xMidYMid meet" aria-label="图谱骨架（占位）">
-            <defs>
-              <radialGradient id="gvGlow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stop-color="#6366f1" stop-opacity="0.25" />
-                <stop offset="100%" stop-color="#0b1020" stop-opacity="0" />
-              </radialGradient>
-            </defs>
-            <rect width="800" height="520" fill="#0b1020" rx="12" />
-            <circle cx="400" cy="260" r="220" fill="url(#gvGlow)" />
-            <!-- 占位边：20 条随机环形骨架（纯装饰） -->
-            <g stroke="rgba(148,163,184,0.18)" stroke-width="1" fill="none">
-              <line v-for="(_, i) in 20" :key="'sk-e'+i"
-                :x1="400 + 140*Math.cos(i*Math.PI/10)" :y1="260 + 100*Math.sin(i*Math.PI/10)"
-                :x2="400 + 240*Math.cos((i+3)*Math.PI/10)" :y2="260 + 180*Math.sin((i+3)*Math.PI/10)" />
-            </g>
-            <!-- 占位节点：12 个同心圆分布的彩色 dot（按 node type 调色） -->
-            <g v-for="(n, i) in skelNodes" :key="'sk-n'+i">
-              <circle :cx="400 + 180*Math.cos(i*Math.PI/6 + 0.2)" :cy="260 + 120*Math.sin(i*Math.PI/6 + 0.2)"
-                :r="n.r" :fill="n.c" opacity="0.92" />
-            </g>
-            <text x="400" y="500" text-anchor="middle" fill="#94a3b8" font-size="13" letter-spacing="2">
-              {{ stageLabel }} · {{ stageProgress }}%
-            </text>
-          </svg>
-          <!-- Stage B: WebGL 画布（3D ForceGraph3D 实际挂载点） -->
-          <div ref="graphEl" class="graph-canvas" :class="{ covered: showSkeleton }"></div>
-          <!-- 阶段进度条 -->
-          <div class="stage-bar-wrap" v-if="loadStage !== 'physics'">
-            <div class="stage-bar">
-              <div class="stage-bar-fill" :style="{ width: stageProgress + '%' }"></div>
+    <!-- 第二层：主工作区（左侧工具面板 + 中央画布） -->
+    <div class="graph-main">
+      <!-- 左侧工具面板（分层展开） -->
+      <aside class="side-panel" :class="{ collapsed: sidePanelCollapsed }">
+        <!-- 布局模式 -->
+        <div class="sp-section">
+          <div class="sp-section-header" @click="toggleSection('layout')">
+            <span class="sp-section-icon">🎯</span>
+            <span class="sp-section-title">布局模式</span>
+            <el-icon class="sp-section-arrow">
+              <component :is="expandedSections.has('layout') ? 'ArrowUp' : 'ArrowDown'" />
+            </el-icon>
+          </div>
+          <transition name="sp-expand">
+            <div v-show="expandedSections.has('layout')" class="sp-section-body">
+              <div class="layout-grid">
+                <div
+                  v-for="l in layoutOptions"
+                  :key="l.key"
+                  class="layout-option"
+                  :class="{ active: layoutMode === l.key }"
+                  @click="applyLayout(l.key)"
+                >
+                  <div class="lo-icon">{{ l.icon }}</div>
+                  <div class="lo-name">{{ l.name }}</div>
+                </div>
+              </div>
             </div>
-            <div class="stage-hints">
-              <span :class="{ active: loadStage !== 'skeleton' }">① 取数</span>
-              <span :class="{ active: ['module','render','physics'].includes(loadStage) }">② 3D 库</span>
-              <span :class="{ active: ['render','physics'].includes(loadStage) }">③ 绘帧</span>
-              <span :class="{ active: loadStage === 'physics' }">④ 力学</span>
+          </transition>
+        </div>
+
+        <!-- 样式调节 -->
+        <div class="sp-section">
+          <div class="sp-section-header" @click="toggleSection('style')">
+            <span class="sp-section-icon">🎨</span>
+            <span class="sp-section-title">样式调节</span>
+            <el-icon class="sp-section-arrow">
+              <component :is="expandedSections.has('style') ? 'ArrowUp' : 'ArrowDown'" />
+            </el-icon>
+          </div>
+          <transition name="sp-expand">
+            <div v-show="expandedSections.has('style')" class="sp-section-body">
+              <div class="style-row">
+                <label>节点大小</label>
+                <el-slider v-model="layoutConfig.nodeSize" :min="5" :max="40" :step="1" @change="updateLayout" />
+                <span class="style-val">{{ layoutConfig.nodeSize }}px</span>
+              </div>
+              <div class="style-row">
+                <label>连线长度</label>
+                <el-slider v-model="layoutConfig.linkDistance" :min="20" :max="200" :step="5" @change="updateLayout" />
+                <span class="style-val">{{ layoutConfig.linkDistance }}px</span>
+              </div>
+              <div class="style-row">
+                <label>斥力强度</label>
+                <el-slider v-model="layoutConfig.repulsion" :min="50" :max="500" :step="10" @change="updateLayout" />
+                <span class="style-val">{{ layoutConfig.repulsion }}</span>
+              </div>
+              <div class="style-row">
+                <label>引力强度</label>
+                <el-slider v-model="layoutConfig.gravity" :min="0" :max="1" :step="0.01" @change="updateLayout" />
+                <span class="style-val">{{ layoutConfig.gravity.toFixed(2) }}</span>
+              </div>
+              <div class="style-row">
+                <label>显示标签</label>
+                <el-switch v-model="layoutConfig.showLabels" @change="updateLayout" size="small" />
+              </div>
+              <div class="style-row" v-if="layoutConfig.showLabels">
+                <label>标签大小</label>
+                <el-slider v-model="layoutConfig.labelSize" :min="8" :max="20" :step="1" @change="updateLayout" />
+                <span class="style-val">{{ layoutConfig.labelSize }}px</span>
+              </div>
+              <div class="style-row">
+                <label>连线透明度</label>
+                <el-slider v-model="layoutConfig.linkOpacity" :min="0.1" :max="1" :step="0.05" @change="updateLayout" />
+                <span class="style-val">{{ layoutConfig.linkOpacity.toFixed(2) }}</span>
+              </div>
+              <div class="style-row">
+                <label>连线粗细</label>
+                <el-slider v-model="layoutConfig.linkWidth" :min="0.3" :max="3" :step="0.1" @change="updateLayout" />
+                <span class="style-val">{{ layoutConfig.linkWidth.toFixed(1) }}px</span>
+              </div>
+              <div class="sp-actions">
+                <el-button size="small" @click="resetLayoutConfig">重置默认</el-button>
+                <el-button size="small" type="primary" @click="screenshotGraph">导出截图</el-button>
+              </div>
             </div>
+          </transition>
+        </div>
+
+        <!-- 快捷分析 -->
+        <div class="sp-section">
+          <div class="sp-section-header" @click="toggleSection('analysis')">
+            <span class="sp-section-icon">⚡</span>
+            <span class="sp-section-title">快捷分析</span>
+            <el-icon class="sp-section-arrow">
+              <component :is="expandedSections.has('analysis') ? 'ArrowUp' : 'ArrowDown'" />
+            </el-icon>
+          </div>
+          <transition name="sp-expand">
+            <div v-show="expandedSections.has('analysis')" class="sp-section-body">
+              <div class="qa-list">
+                <div class="qa-item" @click="runQuickAnalysis('centrality')">
+                  <div class="qa-icon" style="background:#eef2ff;color:#4f46e5">🎯</div>
+                  <div class="qa-info">
+                    <div class="qa-title">中心性分析</div>
+                    <div class="qa-desc">识别关键节点</div>
+                  </div>
+                </div>
+                <div class="qa-item" @click="runQuickAnalysis('community')">
+                  <div class="qa-icon" style="background:#ecfeff;color:#06b6d4">🧩</div>
+                  <div class="qa-info">
+                    <div class="qa-title">社区发现</div>
+                    <div class="qa-desc">自动聚类分组</div>
+                  </div>
+                </div>
+                <div class="qa-item" @click="runQuickAnalysis('path')">
+                  <div class="qa-icon" style="background:#ecfdf5;color:#10b981">🛤️</div>
+                  <div class="qa-info">
+                    <div class="qa-title">最短路径</div>
+                    <div class="qa-desc">两节点关联分析</div>
+                  </div>
+                </div>
+                <div class="qa-item" @click="runQuickAnalysis('pagerank')">
+                  <div class="qa-icon" style="background:#fef3c7;color:#d97706">📊</div>
+                  <div class="qa-info">
+                    <div class="qa-title">PageRank</div>
+                    <div class="qa-desc">节点重要性排名</div>
+                  </div>
+                </div>
+                <div class="qa-item" @click="runQuickAnalysis('activation')">
+                  <div class="qa-icon" style="background:#fce7f3;color:#ec4899">🔥</div>
+                  <div class="qa-info">
+                    <div class="qa-title">激活传播</div>
+                    <div class="qa-desc">影响扩散模拟</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </transition>
+        </div>
+
+        <!-- 节点类型图例 -->
+        <div class="sp-section">
+          <div class="sp-section-header" @click="toggleSection('legend')">
+            <span class="sp-section-icon">🏷️</span>
+            <span class="sp-section-title">节点类型</span>
+            <el-icon class="sp-section-arrow">
+              <component :is="expandedSections.has('legend') ? 'ArrowUp' : 'ArrowDown'" />
+            </el-icon>
+          </div>
+          <transition name="sp-expand">
+            <div v-show="expandedSections.has('legend')" class="sp-section-body">
+              <div class="legend-list">
+                <div class="legend-item" v-for="(color, type) in nodeTypeLegend" :key="type">
+                  <span class="legend-dot" :style="{ background: color }"></span>
+                  <span class="legend-label">{{ typeLabels[type] || type }}</span>
+                </div>
+              </div>
+            </div>
+          </transition>
+        </div>
+      </aside>
+
+      <!-- 中央画布区 -->
+      <main class="graph-canvas-wrap">
+        <svg v-if="showSkeleton" class="skeleton-svg" viewBox="0 0 800 520" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <radialGradient id="gvGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#6366f1" stop-opacity="0.25" />
+              <stop offset="100%" stop-color="#0b1020" stop-opacity="0" />
+            </radialGradient>
+          </defs>
+          <rect width="800" height="520" fill="#0b1020" rx="12" />
+          <circle cx="400" cy="260" r="220" fill="url(#gvGlow)" />
+          <g stroke="rgba(148,163,184,0.18)" stroke-width="1" fill="none">
+            <line v-for="(_, i) in 20" :key="'sk-e'+i"
+              :x1="400 + 140*Math.cos(i*Math.PI/10)" :y1="260 + 100*Math.sin(i*Math.PI/10)"
+              :x2="400 + 240*Math.cos((i+3)*Math.PI/10)" :y2="260 + 180*Math.sin((i+3)*Math.PI/10)" />
+          </g>
+          <g v-for="(n, i) in skelNodes" :key="'sk-n'+i">
+            <circle :cx="400 + 180*Math.cos(i*Math.PI/6 + 0.2)" :cy="260 + 120*Math.sin(i*Math.PI/6 + 0.2)"
+              :r="n.r" :fill="n.c" opacity="0.92" />
+          </g>
+          <text x="400" y="500" text-anchor="middle" fill="#94a3b8" font-size="13" letter-spacing="2">
+            {{ stageLabel }} · {{ stageProgress }}%
+          </text>
+        </svg>
+        <div ref="graphEl" class="graph-canvas" :class="{ covered: showSkeleton }"></div>
+
+        <!-- 右下角统计条 -->
+        <div class="graph-statbar" v-if="stats && !showSkeleton">
+          <div class="gs-item">
+            <div class="gs-value">{{ stats.node_count || 0 }}</div>
+            <div class="gs-label">节点</div>
+          </div>
+          <div class="gs-divider"></div>
+          <div class="gs-item">
+            <div class="gs-value">{{ stats.edge_count || 0 }}</div>
+            <div class="gs-label">关系</div>
+          </div>
+          <div class="gs-divider"></div>
+          <div class="gs-item">
+            <div class="gs-value">{{ stats.type_count || 0 }}</div>
+            <div class="gs-label">类型</div>
+          </div>
+          <div class="gs-divider"></div>
+          <div class="gs-item">
+            <div class="gs-value">{{ layoutModeName }}</div>
+            <div class="gs-label">布局</div>
           </div>
         </div>
-        <div class="legend">
-          <span v-for="(c, t) in NODE_TYPE_COLORS" :key="t" class="lg">
-            <i :style="{ background: c }"></i>{{ t }}
-          </span>
+      </main>
+    </div>
+
+    <!-- 分析结果抽屉（底部上滑） -->
+    <transition name="drawer-up">
+      <div v-if="analysisResult" class="analysis-drawer">
+        <div class="ad-header">
+          <div class="ad-title">
+            <el-icon><DataAnalysis /></el-icon>
+            <span>{{ analysisResult.title }}</span>
+          </div>
+          <el-button text @click="analysisResult = null">
+            <el-icon><Close /></el-icon>
+          </el-button>
+        </div>
+        <div class="ad-body">
+          <pre class="ad-content">{{ JSON.stringify(analysisResult.data, null, 2) }}</pre>
         </div>
       </div>
-
-      <div class="side">
-        <div class="panel card-pad" v-if="searchResult">
-          <h3 class="section-title">
-            搜索结果
-            <el-button text size="small" @click="clearSearch">清空</el-button>
-          </h3>
-          <div v-if="searchResult.dialogues.length" class="nb-list">
-            <div class="nb" v-for="(d, i) in searchResult.dialogues" :key="'d'+i">
-              <span class="comm-tag">对话</span> {{ d.snippet }}
-            </div>
-          </div>
-          <div v-if="searchResult.graph_nodes.length" class="nb-list">
-            <div class="nb" v-for="(n, i) in searchResult.graph_nodes" :key="'n'+i">
-              <span class="comm-tag">节点</span> {{ n.title }}
-              <span class="muted">{{ n.snippet }}</span>
-            </div>
-          </div>
-          <el-empty v-if="!searchResult.dialogues.length && !searchResult.graph_nodes.length"
-                    description="无匹配" :image-size="50" />
-        </div>
-        <div class="panel card-pad">
-          <h3 class="section-title">图谱分析</h3>
-          <el-tabs v-model="tab">
-            <el-tab-pane label="最短路径" name="path">
-              <el-form label-width="56px">
-                <el-form-item label="起点">
-                  <el-select v-model="pathSrc" filterable placeholder="选择节点" style="width: 100%">
-                    <el-option v-for="n in nodeIds" :key="n" :label="n" :value="n" />
-                  </el-select>
-                </el-form-item>
-                <el-form-item label="终点">
-                  <el-select v-model="pathDst" filterable placeholder="选择节点" style="width: 100%">
-                    <el-option v-for="n in nodeIds" :key="n" :label="n" :value="n" />
-                  </el-select>
-                </el-form-item>
-                <el-button type="primary" :loading="loadingPath" @click="findPath" style="width: 100%">
-                  计算路径
-                </el-button>
-              </el-form>
-              <div v-if="pathResult" class="path-result">
-                <template v-if="pathResult.path?.length">
-                  {{ pathResult.path.join(' → ') }}
-                  <div class="muted">权重：{{ pathResult.total_weight?.toFixed(3) }} · 跳数：{{ pathResult.length }}</div>
-                </template>
-                <el-empty v-else description="无可达路径" :image-size="50" />
-              </div>
-            </el-tab-pane>
-
-            <el-tab-pane label="节点邻居" name="nb">
-              <el-select v-model="nbId" filterable placeholder="选择节点" style="width: 100%; margin-bottom: 10px">
-                <el-option v-for="n in nodeIds" :key="n" :label="n" :value="n" />
-              </el-select>
-              <el-button :loading="loadingNb" @click="findNb" style="width: 100%">查询邻居</el-button>
-              <div v-if="neighbors.length" class="nb-list">
-                <div v-for="(nb, i) in neighbors" :key="i" class="nb">
-                  {{ nb[0] }} <span class="muted">权重 {{ nb[1]?.toFixed?.(2) }}</span>
-                </div>
-              </div>
-            </el-tab-pane>
-
-            <el-tab-pane label="推荐" name="rec">
-              <el-select v-model="recCtx" multiple filterable placeholder="选择上下文节点" style="width: 100%; margin-bottom: 10px">
-                <el-option v-for="n in nodeIds" :key="n" :label="n" :value="n" />
-              </el-select>
-              <el-button type="primary" :loading="loadingRec" @click="findRec" style="width: 100%">
-                智能推荐
-              </el-button>
-              <div v-if="recs.length" class="nb-list">
-                <div v-for="(r, i) in recs" :key="i" class="nb">
-                  {{ r.node_id || r.id }} <span class="muted">评分 {{ (r.score ?? 0).toFixed(3) }}</span>
-                </div>
-              </div>
-            </el-tab-pane>
-
-            <el-tab-pane label="中心性" name="cent">
-              <el-radio-group v-model="centType" size="small" style="margin-bottom: 10px">
-                <el-radio-button value="pagerank">PageRank</el-radio-button>
-                <el-radio-button value="degree">度中心性</el-radio-button>
-                <el-radio-button value="betweenness">中介中心性</el-radio-button>
-              </el-radio-group>
-              <el-button :loading="loadingCent" @click="loadCentrality" size="small" style="width: 100%; margin-bottom: 10px">
-                计算中心性
-              </el-button>
-              <div v-if="centrality.length" class="nb-list">
-                <div v-for="(c, i) in centrality.slice(0, 15)" :key="i" class="nb">
-                  <span class="rank">#{{ i + 1 }}</span>
-                  {{ c.id }} <span class="muted">{{ (c.value ?? 0).toFixed(4) }}</span>
-                </div>
-              </div>
-            </el-tab-pane>
-
-            <el-tab-pane label="社区发现" name="comm">
-              <el-button :loading="loadingComm" @click="loadCommunities" size="small" style="width: 100%; margin-bottom: 10px">
-                检测社区
-              </el-button>
-              <div v-if="communities.length" class="nb-list">
-                <div v-for="(c, i) in communities" :key="i" class="nb comm">
-                  <span class="comm-tag">社区{{ c.id }}</span>
-                  <span class="muted">{{ c.nodes.length }} 节点</span>
-                  <div class="comm-nodes">{{ c.nodes.slice(0, 8).join('、') }}{{ c.nodes.length > 8 ? '…' : '' }}</div>
-                </div>
-              </div>
-            </el-tab-pane>
-
-            <el-tab-pane label="激活传播" name="act">
-              <el-select v-model="actSeeds" multiple filterable placeholder="选择种子节点（可多选）" style="width: 100%; margin-bottom: 10px">
-                <el-option v-for="n in nodeIds" :key="n" :label="n" :value="n" />
-              </el-select>
-              <div class="act-opt">
-                <span class="muted">迭代轮数</span>
-                <el-input-number v-model="actIter" :min="1" :max="50" size="small" style="width: 100px" />
-              </div>
-              <el-button type="primary" :loading="loadingAct" @click="doPropagate" size="small" style="width: 100%; margin-bottom: 10px">
-                开始传播
-              </el-button>
-              <div v-if="activation.length" class="nb-list">
-                <div v-for="(a, i) in activation.slice(0, 20)" :key="i" class="nb">
-                  <span class="rank">#{{ i + 1 }}</span>
-                  {{ a.id }} <span class="muted">激活值 {{ (a.value ?? 0).toFixed(4) }}</span>
-                </div>
-              </div>
-            </el-tab-pane>
-          </el-tabs>
-        </div>
-      </div>
-    </div>
-    </div>
+    </transition>
   </div>
 </template>
-
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed, nextTick, shallowRef, markRaw } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed, nextTick, shallowRef, markRaw, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 // [P1-1 渐进加载 · 先画布后力学] 静态仅依赖轻量类型/API；3D 重库 ForceGraph3D 改为动态 import 后按需拆分异步 chunk（≈1.2MB 单独下载，不阻塞首帧）
@@ -275,12 +295,108 @@ import {
   getPagerank,
   propagateActivation
 } from '@/api'
+import {
+  Share, Search, Refresh, ArrowRight, Promotion,
+  Grid, Setting, Close, DataAnalysis, ArrowUp, ArrowDown
+} from '@element-plus/icons-vue'
 
 const graphEl = ref(null)
 const stats = ref(null)
 const nodeIds = ref([])
 // 用 shallowRef/markRaw 防止 Vue 递归代理 three.js/FG 对象（大对象深代理 = 严重卡顿 + 内存翻倍）
 const router = useRouter()
+
+/* ===== 布局系统 ===== */
+const layoutMode = ref('force')
+const showLayoutPanel = ref(false)
+const currentGraphData = ref({ nodes: [], edges: [] })
+
+/* ===== 侧边面板（分层展开） ===== */
+const sidePanelCollapsed = ref(false)
+// 默认展开布局和样式，折叠分析和图例（用户按需展开）
+const expandedSections = ref(new Set(['layout', 'style']))
+
+const layoutOptions = [
+  { key: 'force', name: '力导向', icon: '🧲' },
+  { key: 'circular', name: '同心环', icon: '🔵' },
+  { key: 'radial', name: '径向', icon: '🌟' },
+  { key: 'hierarchical', name: '分层', icon: '📊' },
+  { key: 'grid', name: '网格', icon: '🔲' },
+  { key: 'fruchterman', name: 'FR稳定', icon: '⚡' }
+]
+
+const typeLabels = {
+  core: '核心算子',
+  activation: '激活函数',
+  math: '数学算子',
+  signal: '信号算子',
+  data: '数据算子',
+  ai: 'AI 算子',
+  graph: '图算子',
+  optimizer: '优化器',
+  loss: '损失函数',
+  regularization: '正则化',
+  normalization: '归一化',
+  custom: '自定义'
+}
+
+const nodeTypeLegend = computed(() => {
+  const colors = NODE_TYPE_COLORS
+  // 只显示有数据的类型
+  const types = new Set()
+  currentGraphData.value.nodes.forEach(n => {
+    if (n.node_type) types.add(n.node_type)
+  })
+  const result = {}
+  types.forEach(t => {
+    if (colors[t]) result[t] = colors[t]
+  })
+  // 如果没有数据，显示所有类型
+  if (Object.keys(result).length === 0) {
+    return colors
+  }
+  return result
+})
+
+const layoutModeName = computed(() => {
+  const opt = layoutOptions.find(l => l.key === layoutMode.value)
+  return opt ? opt.name : layoutMode.value
+})
+
+function toggleSidePanel() {
+  sidePanelCollapsed.value = !sidePanelCollapsed.value
+}
+
+function toggleSection(sectionKey) {
+  const next = new Set(expandedSections.value)
+  if (next.has(sectionKey)) {
+    next.delete(sectionKey)
+  } else {
+    next.add(sectionKey)
+  }
+  expandedSections.value = next
+}
+
+/* ===== 分析结果 ===== */
+const analysisResult = ref(null)
+
+const DEFAULT_LAYOUT_CONFIG = {
+  nodeSize: 16,
+  linkDistance: 80,
+  repulsion: 200,
+  gravity: 0.1,
+  showLabels: true,
+  labelSize: 11,
+  linkOpacity: 0.35,
+  linkWidth: 0.8
+}
+
+const layoutConfig = reactive({ ...DEFAULT_LAYOUT_CONFIG })
+
+function resetLayoutConfig() {
+  Object.assign(layoutConfig, DEFAULT_LAYOUT_CONFIG)
+  updateLayout()
+}
 
 // AI分析图谱：跳转到AI助手，带上图谱上下文
 function goAIAnalysis() {
@@ -339,6 +455,401 @@ function loadForceGraph3DModule() {
       throw err
     })
   return _fgLoaderPromise
+}
+
+/* ===== 布局算法 ===== */
+
+// 同心圆环布局（按节点类型分组，每个类型一个圆环）
+function applyCircularLayout(graphData, centerX = 0, centerY = 0, centerZ = 0) {
+  const nodes = [...graphData.nodes]
+  const edges = [...graphData.edges]
+
+  // 按类型分组
+  const groups = {}
+  nodes.forEach(n => {
+    const type = n.node_type || 'default'
+    if (!groups[type]) groups[type] = []
+    groups[type].push(n)
+  })
+
+  const typeList = Object.keys(groups)
+  const ringCount = typeList.length
+  const baseRadius = 60 + layoutConfig.nodeSize * 2
+
+  typeList.forEach((type, ringIdx) => {
+    const groupNodes = groups[type]
+    const n = groupNodes.length
+    const radius = baseRadius + ringIdx * (layoutConfig.linkDistance * 0.8)
+
+    groupNodes.forEach((node, i) => {
+      const angle = (i / n) * Math.PI * 2 - Math.PI / 2
+      node.x = centerX + radius * Math.cos(angle)
+      node.y = centerY + radius * Math.sin(angle)
+      node.z = centerZ + (i % 3 - 1) * 10
+      node.fx = node.x
+      node.fy = node.y
+      node.fz = node.z
+    })
+  })
+
+  return { nodes, links: edges }
+}
+
+// 径向布局（从中心节点向外扩散，按度数分层）
+function applyRadialLayout(graphData, centerX = 0, centerY = 0) {
+  const nodes = [...graphData.nodes]
+  const edges = [...graphData.edges]
+
+  // 计算每个节点的度数
+  const degreeMap = {}
+  nodes.forEach(n => { degreeMap[n.id] = 0 })
+  edges.forEach(e => {
+    if (degreeMap[e.source] != null) degreeMap[e.source]++
+    if (degreeMap[e.target] != null) degreeMap[e.target]++
+  })
+
+  // 按度数排序，度数最高的作为中心
+  const sorted = [...nodes].sort((a, b) => (degreeMap[b.id] || 0) - (degreeMap[a.id] || 0))
+  const centerNode = sorted[0]
+  const ringSize = 8 // 每层节点数
+
+  // 分层
+  const layers = []
+  let idx = 1 // 跳过中心节点
+  while (idx < sorted.length) {
+    const layer = sorted.slice(idx, idx + ringSize + layers.length * 2)
+    layers.push(layer)
+    idx += layer.length
+  }
+
+  // 中心节点
+  if (centerNode) {
+    centerNode.x = centerX
+    centerNode.y = centerY
+    centerNode.z = 0
+    centerNode.fx = centerX
+    centerNode.fy = centerY
+    centerNode.fz = 0
+  }
+
+  // 各层节点按圆环分布
+  const layerDistance = layoutConfig.linkDistance * 0.9
+  layers.forEach((layer, layerIdx) => {
+    const radius = (layerIdx + 1) * layerDistance
+    const n = layer.length
+    layer.forEach((node, i) => {
+      const angle = (i / n) * Math.PI * 2 - Math.PI / 2 + layerIdx * 0.3
+      node.x = centerX + radius * Math.cos(angle)
+      node.y = centerY + radius * Math.sin(angle)
+      node.z = (i % 2 === 0 ? 1 : -1) * (layerIdx * 8)
+      node.fx = node.x
+      node.fy = node.y
+      node.fz = node.z
+    })
+  })
+
+  return { nodes, links: edges }
+}
+
+// 分层布局（按层级从上到下，基于拓扑排序）
+function applyHierarchicalLayout(graphData, centerX = 0) {
+  const nodes = [...graphData.nodes]
+  const edges = [...graphData.edges]
+
+  // 构建邻接表
+  const adj = {}
+  const inDegree = {}
+  nodes.forEach(n => {
+    adj[n.id] = []
+    inDegree[n.id] = 0
+  })
+  edges.forEach(e => {
+    if (adj[e.source]) adj[e.source].push(e.target)
+    if (inDegree[e.target] != null) inDegree[e.target]++
+  })
+
+  // 拓扑分层（BFS 从入度为0的节点开始）
+  const layers = []
+  const visited = new Set()
+  const layerHeight = layoutConfig.linkDistance * 1.2
+  const nodeWidth = layoutConfig.nodeSize * 2.5
+
+  // 第一层：入度为0的节点
+  let currentLayer = nodes.filter(n => (inDegree[n.id] || 0) === 0).map(n => n.id)
+  if (currentLayer.length === 0 && nodes.length > 0) {
+    // 没有根节点，取度数最高的作为根
+    const degreeMap = {}
+    nodes.forEach(n => { degreeMap[n.id] = 0 })
+    edges.forEach(e => {
+      if (degreeMap[e.source] != null) degreeMap[e.source]++
+      if (degreeMap[e.target] != null) degreeMap[e.target]++
+    })
+    const root = nodes.reduce((a, b) => (degreeMap[a.id] || 0) > (degreeMap[b.id] || 0) ? a : b)
+    currentLayer = [root.id]
+  }
+
+  while (currentLayer.length > 0) {
+    layers.push(currentLayer)
+    currentLayer.forEach(id => visited.add(id))
+
+    const nextLayer = new Set()
+    currentLayer.forEach(id => {
+      (adj[id] || []).forEach(nextId => {
+        if (!visited.has(nextId)) {
+          nextLayer.add(nextId)
+        }
+      })
+    })
+    currentLayer = [...nextLayer]
+  }
+
+  // 把未访问的节点加到最后一层
+  const unvisited = nodes.filter(n => !visited.has(n.id)).map(n => n.id)
+  if (unvisited.length > 0) {
+    layers.push(unvisited)
+  }
+
+  // 计算位置
+  const totalHeight = (layers.length - 1) * layerHeight
+  const startY = -totalHeight / 2
+
+  layers.forEach((layer, layerIdx) => {
+    const y = startY + layerIdx * layerHeight
+    const totalWidth = (layer.length - 1) * nodeWidth
+    const startX = centerX - totalWidth / 2
+
+    layer.forEach((nodeId, i) => {
+      const node = nodes.find(n => n.id === nodeId)
+      if (node) {
+        node.x = startX + i * nodeWidth
+        node.y = y
+        node.z = (i % 2 === 0 ? 1 : -1) * 5
+        node.fx = node.x
+        node.fy = node.y
+        node.fz = node.z
+      }
+    })
+  })
+
+  return { nodes, links: edges }
+}
+
+// 网格布局（按类型分类，每类一个网格区域）
+function applyGridLayout(graphData) {
+  const nodes = [...graphData.nodes]
+  const edges = [...graphData.edges]
+
+  // 按类型分组
+  const groups = {}
+  nodes.forEach(n => {
+    const type = n.node_type || 'default'
+    if (!groups[type]) groups[type] = []
+    groups[type].push(n)
+  })
+
+  const typeList = Object.keys(groups)
+  const cols = Math.ceil(Math.sqrt(typeList.length))
+  const rows = Math.ceil(typeList.length / cols)
+
+  const regionWidth = 180
+  const regionHeight = 140
+  const nodeGap = 28 + layoutConfig.nodeSize
+
+  typeList.forEach((type, idx) => {
+    const col = idx % cols
+    const row = Math.floor(idx / cols)
+    const regionX = (col - (cols - 1) / 2) * regionWidth
+    const regionY = (row - (rows - 1) / 2) * regionHeight
+
+    const groupNodes = groups[type]
+    const n = groupNodes.length
+    const ncols = Math.ceil(Math.sqrt(n))
+    const nrows = Math.ceil(n / ncols)
+
+    groupNodes.forEach((node, i) => {
+      const nc = i % ncols
+      const nr = Math.floor(i / ncols)
+      node.x = regionX + (nc - (ncols - 1) / 2) * nodeGap
+      node.y = regionY + (nr - (nrows - 1) / 2) * nodeGap
+      node.z = 0
+      node.fx = node.x
+      node.fy = node.y
+      node.fz = node.z
+    })
+  })
+
+  return { nodes, links: edges }
+}
+
+// Fruchterman-Reingold 力导向布局（更稳定的力导向算法）
+function applyFruchtermanLayout(graphData) {
+  const nodes = [...graphData.nodes]
+  const edges = [...graphData.edges]
+
+  // 先用圆形布局初始化，避免随机位置导致的混乱
+  const n = nodes.length
+  const radius = 100 + n * 2
+  nodes.forEach((node, i) => {
+    const angle = (i / n) * Math.PI * 2
+    node.x = radius * Math.cos(angle)
+    node.y = radius * Math.sin(angle)
+    node.z = (i % 5 - 2) * 15
+    node.fx = undefined
+    node.fy = undefined
+    node.fz = undefined
+  })
+
+  return { nodes, links: edges }
+}
+
+// 应用指定布局
+function applyLayout(mode) {
+  layoutMode.value = mode
+  if (!fg || !currentGraphData.value.nodes.length) return
+
+  const data = {
+    nodes: JSON.parse(JSON.stringify(currentGraphData.value.nodes)),
+    edges: currentGraphData.value.edges
+  }
+
+  let layouted
+  switch (mode) {
+    case 'circular':
+      layouted = applyCircularLayout(data)
+      break
+    case 'radial':
+      layouted = applyRadialLayout(data)
+      break
+    case 'hierarchical':
+      layouted = applyHierarchicalLayout(data)
+      break
+    case 'grid':
+      layouted = applyGridLayout(data)
+      break
+    case 'fruchterman':
+      layouted = applyFruchtermanLayout(data)
+      // FR 布局需要力学迭代，设置更强的参数
+      if (typeof fg.d3Force === 'function') {
+        const charge = fg.d3Force('charge')
+        if (charge && typeof charge.strength === 'function') {
+          charge.strength(-layoutConfig.repulsion * 1.5)
+        }
+        const link = fg.d3Force('link')
+        if (link && typeof link.distance === 'function') {
+          link.distance(layoutConfig.linkDistance * 0.8)
+        }
+      }
+      break
+    case 'force':
+    default:
+      // 标准力导向：释放所有固定位置
+      data.nodes.forEach(n => {
+        n.fx = undefined
+        n.fy = undefined
+        n.fz = undefined
+      })
+      layouted = { nodes: data.nodes, links: data.edges }
+      break
+  }
+
+  // 应用节点大小和标签配置
+  layouted.nodes.forEach(n => {
+    n.val = layoutConfig.nodeSize
+    n.size = layoutConfig.nodeSize
+  })
+
+  fg.graphData({ nodes: layouted.nodes, links: layouted.links })
+
+  // 如果是固定布局，需要重新加热力导向引擎让它稳定
+  if (mode === 'force' || mode === 'fruchterman') {
+    if (typeof fg.d3ReheatSimulation === 'function') {
+      try { fg.d3ReheatSimulation() } catch (_) {}
+    } else if (typeof fg.refresh === 'function') {
+      try { fg.refresh() } catch (_) {}
+    }
+  }
+
+  updateVisualConfig()
+  ElMessage.success(`已切换到${getLayoutName(mode)}`)
+}
+
+// 获取布局名称
+function getLayoutName(mode) {
+  const names = {
+    force: '力导向布局',
+    circular: '同心圆环布局',
+    radial: '径向布局',
+    hierarchical: '分层布局',
+    grid: '网格布局',
+    fruchterman: 'FR 力导向布局'
+  }
+  return names[mode] || mode
+}
+
+// 更新可视化配置（节点大小、标签、连线样式等）
+function updateVisualConfig() {
+  if (!fg) return
+
+  fg.nodeVal(layoutConfig.nodeSize)
+    .nodeOpacity(0.95)
+    .linkWidth(layoutConfig.linkWidth)
+    .linkOpacity(layoutConfig.linkOpacity)
+
+  if (layoutConfig.showLabels) {
+    fg.nodeLabel((n) => n.label || n.id)
+    if (typeof fg.linkDirectionalParticleWidth === 'function') {
+      // 标签通过 HTML overlay 或 3D text 实现，这里简化处理
+    }
+  } else {
+    fg.nodeLabel('')
+  }
+}
+
+// 更新布局（配置变化时调用）
+function updateLayout() {
+  if (!fg) return
+
+  // 更新力学参数
+  if (typeof fg.d3Force === 'function') {
+    const charge = fg.d3Force('charge')
+    if (charge && typeof charge.strength === 'function') {
+      charge.strength(-layoutConfig.repulsion)
+    }
+    const link = fg.d3Force('link')
+    if (link && typeof link.distance === 'function') {
+      link.distance(layoutConfig.linkDistance)
+    }
+    const center = fg.d3Force('center')
+    if (center && typeof center.strength === 'function') {
+      center.strength(layoutConfig.gravity)
+    }
+  }
+
+  updateVisualConfig()
+
+  // 重新加热模拟
+  if (layoutMode.value === 'force' || layoutMode.value === 'fruchterman') {
+    if (typeof fg.d3ReheatSimulation === 'function') {
+      try { fg.d3ReheatSimulation() } catch (_) {}
+    }
+  }
+}
+
+// 导出截图
+function screenshotGraph() {
+  if (!fg || !graphEl.value) return
+  try {
+    const canvas = graphEl.value.querySelector('canvas')
+    if (canvas) {
+      const link = document.createElement('a')
+      link.download = `knowledge-graph-${layoutMode.value}-${Date.now()}.png`
+      link.href = canvas.toDataURL('image/png')
+      link.click()
+      ElMessage.success('截图已导出')
+    }
+  } catch (e) {
+    ElMessage.error('导出失败：' + e.message)
+  }
 }
 
 // 静态圆形布局（用于"力学前先出首帧"，让用户"先看到结构"再等待力学收敛 2-3s）
@@ -490,6 +1001,8 @@ async function reload() {
       const [g, st] = await Promise.all([getGraph(), getGraphStats()])
       stats.value = st
       nodeIds.value = g.nodes.map((n) => n.id)
+      // 保存当前图谱数据供布局切换使用
+      currentGraphData.value = { nodes: g.nodes, edges: g.edges }
       return { g, st }
     })()
     const load3dTask = loadForceGraph3DModule()
@@ -503,17 +1016,19 @@ async function reload() {
       applyStaticCircularLayout(g)
       initGraph(ForceGraph3D, g)
     }
+    // 应用初始可视化配置
+    updateVisualConfig()
     // [P1-1 力学后置] 首帧先显示静态布局，260ms 后再启动力导向引擎，避免"白屏等力学收敛 2-3s"
     setTimeout(() => {
       if (!fg) return
       // 启用全部力学力（charge/collide/link/center），ForceGraph3D 默认引擎是 d3-force，这里显式 warm up
       if (typeof fg.d3Force === 'function') {
         const charge = fg.d3Force('charge')
-        if (charge && typeof charge.strength === 'function') charge.strength(-120)
+        if (charge && typeof charge.strength === 'function') charge.strength(-layoutConfig.repulsion)
         const link = fg.d3Force('link')
-        if (link && typeof link.distance === 'function') link.distance(42)
+        if (link && typeof link.distance === 'function') link.distance(layoutConfig.linkDistance)
         const center = fg.d3Force('center')
-        if (center && typeof center.strength === 'function') center.strength(0.15)
+        if (center && typeof center.strength === 'function') center.strength(layoutConfig.gravity)
         const collide = fg.d3Force('collision')
         if (collide && typeof collide.radius === 'function') collide.radius(18)
         // 冷启动后让 d3-force 重新"热起来"：用 d3Reheat => fg 内部暴露 d3ReheatSimulation?
@@ -848,8 +1363,523 @@ onBeforeUnmount(() => {
   background: var(--bg-page);
   border-radius: 7px;
 }
+
+/* 布局设置面板 */
+.layout-panel {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 260px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 10;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+.lp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+.lp-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+.lp-body {
+  padding: 12px 14px;
+  max-height: 460px;
+  overflow-y: auto;
+}
+.lp-section {
+  margin-bottom: 14px;
+}
+.lp-section:last-child {
+  margin-bottom: 0;
+}
+.lp-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #cbd5e1;
+  margin-bottom: 6px;
+}
+.lp-value {
+  position: absolute;
+  right: 0;
+  top: 0;
+  font-size: 11px;
+  color: #6366f1;
+  font-weight: 700;
+}
+.lp-section .el-slider {
+  position: relative;
+  padding-right: 36px;
+}
+.lp-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+}
+.lp-actions .el-button {
+  flex: 1;
+}
+
+/* 下拉菜单项激活态 */
+.el-dropdown-menu__item.active {
+  color: var(--brand-primary, #6366f1);
+  font-weight: 600;
+  background: var(--brand-soft, rgba(99, 102, 241, 0.08));
+}
 .muted {
   color: var(--text-3);
   font-size: 12px;
 }
+
+/* ===== 分层式知识图谱页面 ===== */
+.graph-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* 顶部操作栏 */
+.graph-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-1);
+  flex-shrink: 0;
+  z-index: 5;
+}
+.gt-left { display: flex; align-items: center; gap: 16px; }
+.gt-title-wrap { display: flex; align-items: center; gap: 12px; }
+.gt-icon {
+  width: 40px; height: 40px; border-radius: 12px;
+  background: linear-gradient(135deg, #6366f1, #06b6d4);
+  display: grid; place-items: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.gt-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-1);
+  margin: 0;
+}
+.gt-sub {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+}
+.gt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-2);
+  font-weight: 500;
+}
+.gt-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text-3);
+}
+.gt-dot.ok {
+  background: var(--success);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+.gt-stage {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg-page);
+  color: var(--text-3);
+  font-weight: 500;
+}
+.gt-stage.ok {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+}
+.gt-right { display: flex; align-items: center; gap: 10px; }
+
+.gt-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 10px;
+  width: 220px;
+  background: var(--bg-page);
+  border: 1px solid var(--border-1);
+  transition: all 0.2s;
+  position: relative;
+}
+.gt-search:focus-within {
+  width: 280px;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+  background: #fff;
+}
+.gt-search .el-icon { color: var(--text-3); font-size: 16px; flex-shrink: 0; }
+.gt-search-input {
+  all: unset;
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-1);
+}
+.gt-search-input::placeholder { color: var(--text-3); }
+.gt-kbd {
+  font-size: 10px;
+  padding: 1px 6px;
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--text-3);
+  border-radius: 4px;
+  flex-shrink: 0;
+  font-family: ui-monospace, monospace;
+}
+
+.gt-primary-btn {
+  height: 36px;
+  border-radius: 10px;
+  padding: 0 16px;
+  font-weight: 600;
+}
+.gt-icon-btn {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+
+/* 主工作区 */
+.graph-main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  position: relative;
+}
+
+/* 左侧工具面板 */
+.side-panel {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border-1);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  transition: width 0.25s ease;
+}
+.side-panel.collapsed {
+  width: 0;
+  overflow: hidden;
+  border-right: none;
+}
+
+.sp-section {
+  border-bottom: 1px solid var(--border-1);
+}
+.sp-section:last-child { border-bottom: none; }
+
+.sp-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+.sp-section-header:hover {
+  background: var(--bg-page);
+}
+.sp-section-icon {
+  font-size: 16px;
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.sp-section-title {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+.sp-section-arrow {
+  font-size: 12px;
+  color: var(--text-3);
+  transition: transform 0.2s;
+}
+
+.sp-section-body {
+  padding: 4px 14px 14px;
+}
+
+.sp-expand-enter-active,
+.sp-expand-leave-active {
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+.sp-expand-enter-from,
+.sp-expand-leave-to {
+  opacity: 0;
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.sp-expand-enter-to,
+.sp-expand-leave-from {
+  opacity: 1;
+  max-height: 400px;
+}
+
+/* 布局选择网格 */
+.layout-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.layout-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+}
+.layout-option:hover {
+  background: var(--bg-page);
+  border-color: var(--border-1);
+}
+.layout-option.active {
+  background: var(--brand-soft);
+  border-color: var(--brand);
+}
+.lo-icon { font-size: 20px; }
+.lo-name { font-size: 11px; color: var(--text-2); font-weight: 500; }
+.layout-option.active .lo-name { color: var(--brand-dark); font-weight: 600; }
+
+/* 样式调节行 */
+.style-row {
+  margin-bottom: 12px;
+}
+.style-row:last-child { margin-bottom: 0; }
+.style-row label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  margin-bottom: 4px;
+}
+.style-row .el-slider { margin: 0; }
+.style-val {
+  position: absolute;
+  right: 0;
+  top: 0;
+  font-size: 11px;
+  color: var(--brand);
+  font-weight: 600;
+}
+.style-row .el-slider { position: relative; padding-right: 36px; }
+
+.sp-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-1);
+}
+.sp-actions .el-button { flex: 1; }
+
+/* 快捷分析列表 */
+.qa-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.qa-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.qa-item:hover {
+  background: var(--bg-page);
+}
+.qa-icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: grid; place-items: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.qa-info { flex: 1; min-width: 0; }
+.qa-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+.qa-desc {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 1px;
+}
+
+/* 图例列表 */
+.legend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.legend-dot {
+  width: 10px; height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.legend-label { flex: 1; }
+
+/* 中央画布区 */
+.graph-canvas-wrap {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+  background: #0b1020;
+}
+
+.skeleton-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+
+.graph-canvas {
+  width: 100%;
+  height: 100%;
+}
+.graph-canvas.covered {
+  opacity: 0;
+}
+
+/* 右下角统计条 */
+.graph-statbar {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 10;
+}
+.gs-item {
+  text-align: center;
+}
+.gs-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+.gs-label {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+.gs-divider {
+  width: 1px;
+  height: 28px;
+  background: rgba(148, 163, 184, 0.2);
+}
+
+/* 底部分析抽屉 */
+.drawer-up-enter-active,
+.drawer-up-leave-active {
+  transition: all 0.3s ease;
+}
+.drawer-up-enter-from,
+.drawer-up-leave-to {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+.analysis-drawer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 45%;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-1);
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.1);
+}
+.ad-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border-1);
+  flex-shrink: 0;
+}
+.ad-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+.ad-title .el-icon { color: var(--brand); }
+.ad-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+.ad-content {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-2);
+  background: var(--bg-page);
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+}
 </style>
+

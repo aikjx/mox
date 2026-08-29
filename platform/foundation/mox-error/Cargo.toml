@@ -1,0 +1,23 @@
+[package]
+name = "mox-error"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "MOX 平台全局错误码系统 - 企业级统一错误管理"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+# 可选：Axum 集成（IntoResponse）
+axum = { workspace = true, optional = true }
+http = { workspace = true, optional = true }
+
+[features]
+default = ["axum-integration"]
+axum-integration = ["dep:axum", "dep:http"]

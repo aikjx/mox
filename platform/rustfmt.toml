@@ -1,0 +1,62 @@
+# =============================================================================
+# MOX 平台 - Rust 代码格式化配置
+# 统一全项目代码风格，避免 PR 中无谓的格式 diff
+# =============================================================================
+
+# 最大行宽（字符数）
+max_width = 100
+
+# 单行 if-else 控制
+use_small_heuristics = "Max"
+
+# 结构化字面量使用尾随逗号
+trailing_comma = "Vertical"
+
+# 缩进空格数
+tab_spaces = 4
+
+# 大括号换行风格：与同一行
+brace_style = "SameLineWhere"
+
+# 函数参数缩进样式
+fn_args_layout = "Tall"
+
+# 链式调用换行
+chain_width = 80
+
+# 单个表达式 if-let 合并
+merge_imports = true
+
+# reorder_imports: 按字母顺序重排 use 语句
+reorder_imports = true
+
+# reorder_modules: 按字母顺序重排 mod 声明
+reorder_modules = true
+
+# 移除未使用的 import
+remove_nested_parens = true
+
+# match 分支换行
+match_arm_blocks = true
+match_block_trailing_comma = true
+
+# 枚举变体布局
+enum_discrim_align_threshold = 0
+
+# 结构体字段对齐
+struct_field_align_threshold = 0
+
+# 溢出时的属性位置
+attrs_on_single_line = false
+
+# 文档注释格式
+format_code_in_doc_comments = false
+
+# 注释格式
+wrap_comments = false
+
+# 长行换行
+hard_tabs = false
+
+# 空行上限
+blank_lines_upper_bound = 2

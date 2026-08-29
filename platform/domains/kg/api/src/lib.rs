@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use thiserror::Error;
 
+// —— 兼容旧错误类型（逐步迁移到 mox-error）——
 #[derive(Debug, Error)]
 pub enum KgApiError {
     #[error("node not found: {0}")]
@@ -26,6 +27,7 @@ pub enum KgApiError {
 
 pub type KgApiResult<T> = Result<T, KgApiError>;
 
+/// 知识图谱节点
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GraphNode {
     pub id: String,
@@ -33,6 +35,7 @@ pub struct GraphNode {
     pub properties: serde_json::Value,
 }
 
+/// 知识图谱边（关系）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GraphEdge {
     pub id: String,

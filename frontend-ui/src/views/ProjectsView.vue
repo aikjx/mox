@@ -77,7 +77,7 @@
             :key="p.id"
             class="proj-item"
             :class="{ active: p.id === current?.id }"
-            @click="selectProject(p.id)"
+            @click="selectProjectAndExpand(p.id)"
           >
             <div class="proj-item-head">
               <span class="proj-dot" :style="{ background: p.color || '#64748b' }"></span>
@@ -93,7 +93,7 @@
         </el-scrollbar>
       </div>
 
-      <!-- 右：项目详情 -->
+      <!-- 右：项目详情（分层展开） -->
       <div class="panel detail" v-if="current">
         <div class="detail-head">
           <div class="detail-title-wrap">
@@ -119,71 +119,145 @@
           </div>
         </div>
 
-        <!-- 快速操作：一键跳转到相关模块，自动带上项目上下文 -->
-        <div class="quick-actions">
-          <div class="qa-label">快速操作</div>
-          <div class="qa-buttons">
-            <el-button size="small" type="primary" @click="goModule('ai')">
-              <el-icon><Promotion /></el-icon> AI全维开发
-            </el-button>
-            <el-button size="small" @click="goModule('ai')">
-              <el-icon><ChatDotRound /></el-icon> AI对话
-            </el-button>
-            <el-button size="small" @click="goModule('tasks')">
-              <el-icon><List /></el-icon> 任务管理
-            </el-button>
-            <el-button size="small" @click="goModule('graph')">
-              <el-icon><Share /></el-icon> 知识图谱
-            </el-button>
-            <el-button size="small" @click="goModule('workflow')">
-              <el-icon><Connection /></el-icon> 工作流
-            </el-button>
-            <el-button size="small" @click="goModule('expert-center')">
-              <el-icon><User /></el-icon> 专家联盟
-            </el-button>
-            <el-button size="small" @click="goModule('knowledge-base')">
-              <el-icon><Folder /></el-icon> 知识库
-            </el-button>
-          </div>
-        </div>
-
-        <!-- 资源归类区 -->
-        <div class="res-head">
-          <h3 class="section-title">资源归类 · {{ (current.resources || []).length }} 项</h3>
-          <el-button type="primary" size="small" @click="openBinder">
-            <el-icon><Plus /></el-icon> 归类资源
-          </el-button>
-        </div>
-
-        <div v-for="(group, type) in groupedResources" :key="type" class="res-group">
-          <div class="res-group-head">
-            <span class="res-type-badge">{{ typeLabel(type) }}</span>
-            <span class="muted">{{ group.length }} 项</span>
-            <el-button
-              v-if="resourceRoute(type)"
-              size="small" text type="primary"
-              @click="$router.push(resourceRoute(type))"
-            >
-              前往模块 <el-icon><ArrowRight /></el-icon>
-            </el-button>
-          </div>
-          <div v-for="r in group" :key="r.rid" class="res-row">
-            <div class="res-info">
-              <span class="res-name">{{ r.resource_name }}</span>
-              <span class="badge" :class="liveClass(r.live_status)">{{ liveLabel(r.live_status) }}</span>
-              <span class="muted res-desc">{{ r.live_desc || r.note || '' }}</span>
+        <div class="detail-sections">
+          <!-- 1. 项目概览 -->
+          <div class="dt-section">
+            <div class="dt-section-header" @click="toggleDetailSection('overview')">
+              <span class="dt-section-icon">📊</span>
+              <span class="dt-section-title">项目概览</span>
+              <el-icon class="dt-section-arrow">
+                <component :is="detailSections.has('overview') ? 'ArrowUp' : 'ArrowDown'" />
+              </el-icon>
             </div>
-            <div class="res-ops">
-              <el-button size="small" text @click="editNote(r)">备注</el-button>
-              <el-button size="small" text type="danger" @click="unbind(r)">移除</el-button>
+            <transition name="dt-expand">
+              <div v-show="detailSections.has('overview')" class="dt-section-body">
+                <div class="dt-stat-row">
+                  <div class="dt-stat">
+                    <div class="dt-stat-value">{{ (current.resources || []).length }}</div>
+                    <div class="dt-stat-label">资源总数</div>
+                  </div>
+                  <div class="dt-stat">
+                    <div class="dt-stat-value">{{ Object.keys(groupedResources).length }}</div>
+                    <div class="dt-stat-label">类型分布</div>
+                  </div>
+                  <div class="dt-stat">
+                    <div class="dt-stat-value ok">{{ statusLabel(current.status) }}</div>
+                    <div class="dt-stat-label">当前状态</div>
+                  </div>
+                </div>
+                <div class="dt-meta-grid">
+                  <div class="dt-meta-item">
+                    <span class="dt-meta-label">创建时间</span>
+                    <span class="dt-meta-value">{{ current.created_at || '—' }}</span>
+                  </div>
+                  <div class="dt-meta-item">
+                    <span class="dt-meta-label">项目类型</span>
+                    <span class="dt-meta-value">{{ categoryOf(current.category)?.label || '未分类' }}</span>
+                  </div>
+                </div>
+              </div>
+            </transition>
+          </div>
+
+          <!-- 2. 快速操作 -->
+          <div class="dt-section">
+            <div class="dt-section-header" @click="toggleDetailSection('actions')">
+              <span class="dt-section-icon">⚡</span>
+              <span class="dt-section-title">快速操作</span>
+              <el-icon class="dt-section-arrow">
+                <component :is="detailSections.has('actions') ? 'ArrowUp' : 'ArrowDown'" />
+              </el-icon>
             </div>
+            <transition name="dt-expand">
+              <div v-show="detailSections.has('actions')" class="dt-section-body">
+                <div class="qa-buttons grid-actions">
+                  <button class="qa-btn primary" @click="goModule('ai')">
+                    <el-icon><Promotion /></el-icon>
+                    <span>AI 全维开发</span>
+                  </button>
+                  <button class="qa-btn" @click="goModule('ai')">
+                    <el-icon><ChatDotRound /></el-icon>
+                    <span>AI 对话</span>
+                  </button>
+                  <button class="qa-btn" @click="goModule('tasks')">
+                    <el-icon><List /></el-icon>
+                    <span>任务管理</span>
+                  </button>
+                  <button class="qa-btn" @click="goModule('graph')">
+                    <el-icon><Share /></el-icon>
+                    <span>知识图谱</span>
+                  </button>
+                  <button class="qa-btn success" :class="{ loading: generatingGraph }" @click="generateGraph">
+                    <el-icon><MagicStick /></el-icon>
+                    <span>生成图谱</span>
+                  </button>
+                  <button class="qa-btn" @click="goModule('workflow')">
+                    <el-icon><Connection /></el-icon>
+                    <span>工作流</span>
+                  </button>
+                  <button class="qa-btn" @click="goModule('expert-center')">
+                    <el-icon><User /></el-icon>
+                    <span>专家联盟</span>
+                  </button>
+                  <button class="qa-btn" @click="goModule('resources')">
+                    <el-icon><Folder /></el-icon>
+                    <span>资源中心</span>
+                  </button>
+                </div>
+              </div>
+            </transition>
+          </div>
+
+          <!-- 3. 资源归类（按类型分组可展开） -->
+          <div class="dt-section">
+            <div class="dt-section-header" @click="toggleDetailSection('resources')">
+              <span class="dt-section-icon">📦</span>
+              <span class="dt-section-title">资源归类</span>
+              <span class="dt-section-badge">{{ (current.resources || []).length }} 项</span>
+              <el-button size="small" type="primary" link @click.stop="openBinder">
+                <el-icon><Plus /></el-icon> 归类
+              </el-button>
+              <el-icon class="dt-section-arrow">
+                <component :is="detailSections.has('resources') ? 'ArrowUp' : 'ArrowDown'" />
+              </el-icon>
+            </div>
+            <transition name="dt-expand">
+              <div v-show="detailSections.has('resources')" class="dt-section-body">
+                <template v-if="current.resources && current.resources.length">
+                  <div v-for="(group, type) in groupedResources" :key="type" class="res-sub-group">
+                    <div class="res-sub-head" @click="toggleResourceGroup(type)">
+                      <span class="res-type-badge">{{ typeLabel(type) }}</span>
+                      <span class="muted">{{ group.length }} 项</span>
+                      <el-icon class="res-sub-arrow">
+                        <component :is="expandedResGroups.has(type) ? 'ArrowDown' : 'ArrowRight'" />
+                      </el-icon>
+                    </div>
+                    <transition name="dt-expand">
+                      <div v-show="expandedResGroups.has(type)" class="res-sub-body">
+                        <div v-for="r in group" :key="r.rid" class="res-row">
+                          <div class="res-info">
+                            <span class="res-name">{{ r.resource_name }}</span>
+                            <span class="badge" :class="liveClass(r.live_status)">{{ liveLabel(r.live_status) }}</span>
+                            <span class="muted res-desc">{{ r.live_desc || r.note || '' }}</span>
+                          </div>
+                          <div class="res-ops">
+                            <el-button size="small" text @click="editNote(r)">备注</el-button>
+                            <el-button size="small" text type="danger" @click="unbind(r)">移除</el-button>
+                          </div>
+                        </div>
+                      </div>
+                    </transition>
+                  </div>
+                </template>
+                <el-empty
+                  v-else
+                  description="尚未归类任何资源，点击「归类」从全维目录选取"
+                  :image-size="60"
+                />
+              </div>
+            </transition>
           </div>
         </div>
-        <el-empty
-          v-if="!current.resources || !current.resources.length"
-          description="尚未归类任何资源，点击「归类资源」从全维目录选取"
-          :image-size="80"
-        />
       </div>
       <div class="panel detail empty-detail" v-else>
         <el-empty description="选择或新建一个项目，开始全维归类" :image-size="100" />
@@ -291,7 +365,8 @@ import { useProject } from '@/composables/projectContext.js'
 import {
   getProjects, getProjectTypes, getProjectCatalog, getProjectStats,
   getProject, createProject, updateProject, deleteProject,
-  bindProjectResources, unbindProjectResource, updateProjectResourceNote
+  bindProjectResources, unbindProjectResource, updateProjectResourceNote,
+  aiGenerateProjectGraph
 } from '@/api'
 
 const router = useRouter()
@@ -309,6 +384,43 @@ const filterCategory = ref('')
 const dlg = ref({ visible: false, isEdit: false, saving: false, form: { name: '', category: 'custom', status: 'active', description: '' } })
 const binder = ref({ visible: false, keyword: '', picked: new Map(), openGroups: [], binding: false })
 const noteDlg = ref({ visible: false, rid: '', note: '' })
+const generatingGraph = ref(false)
+
+/* ===== 详情面板分层展开 ===== */
+const detailSections = ref(new Set(['overview', 'actions', 'resources']))
+const expandedResGroups = ref(new Set())
+
+function toggleDetailSection(key) {
+  const next = new Set(detailSections.value)
+  if (next.has(key)) {
+    next.delete(key)
+  } else {
+    next.add(key)
+  }
+  detailSections.value = next
+}
+
+function toggleResourceGroup(type) {
+  const next = new Set(expandedResGroups.value)
+  if (next.has(type)) {
+    next.delete(type)
+  } else {
+    next.add(type)
+  }
+  expandedResGroups.value = next
+}
+
+// 选择项目时自动展开资源分类
+function selectProjectAndExpand(id) {
+  selectProject(id)
+  // 延迟到下一个 tick 展开资源组
+  setTimeout(() => {
+    if (current.value?.resources?.length) {
+      const types = Object.keys(groupedResources.value)
+      expandedResGroups.value = new Set(types.slice(0, 2)) // 默认展开前 2 个
+    }
+  }, 50)
+}
 
 // ===== 计算 =====
 const catalogTotal = computed(() => catalogGroups.value.reduce((n, g) => n + g.count, 0))
@@ -379,6 +491,28 @@ function goModule(path) {
   // 项目上下文已通过全局 provide 注入，跳转后目标页面自动使用当前项目
   router.push(`/${path}`)
   ElMessage.info(`已进入「${current.value.name || '未命名项目'}」项目上下文`)
+}
+
+// 一键生成项目知识图谱
+async function generateGraph() {
+  if (!current.value) return
+  generatingGraph.value = true
+  try {
+    const result = await aiGenerateProjectGraph({
+      project_id: current.value.id,
+      project_name: current.value.name,
+      description: current.value.description || ''
+    })
+    ElMessage.success('知识图谱生成成功！正在跳转…')
+    // 短暂延迟让用户看到成功提示
+    setTimeout(() => {
+      router.push('/graph')
+    }, 800)
+  } catch (e) {
+    ElMessage.error('生成失败：' + e.message)
+  } finally {
+    generatingGraph.value = false
+  }
 }
 
 // ===== 项目 CRUD =====
@@ -576,7 +710,207 @@ async function saveNote() {
 .detail-sub { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 13px; }
 .detail-actions { display: flex; gap: 8px; flex-shrink: 0; }
 
-/* 快速操作区 */
+/* ===== 详情分层展开 ===== */
+.detail-sections {
+  padding-top: 8px;
+}
+.dt-section {
+  border-bottom: 1px solid var(--border);
+}
+.dt-section:last-child {
+  border-bottom: none;
+}
+.dt-section-header {
+  padding: 14px 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+.dt-section-header:hover {
+  background: var(--bg-soft, #f8fafc);
+  margin: 0 -4px;
+  padding-left: 8px;
+  padding-right: 8px;
+  border-radius: 8px;
+}
+.dt-section-icon {
+  font-size: 16px;
+}
+.dt-section-title {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #0f172a);
+}
+.dt-section-badge {
+  font-size: 11px;
+  color: var(--text-secondary, #64748b);
+  background: var(--bg-soft, #f1f5f9);
+  padding: 2px 10px;
+  border-radius: 10px;
+}
+.dt-section-arrow {
+  font-size: 14px;
+  color: var(--text-tertiary, #94a3b8);
+  transition: transform 0.2s ease;
+}
+.dt-section-body {
+  padding: 0 4px 16px;
+  overflow: hidden;
+}
+.dt-expand-enter-active, .dt-expand-leave-active {
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.dt-expand-enter-from, .dt-expand-leave-to {
+  opacity: 0;
+  max-height: 0;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* 概览统计 */
+.dt-stat-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.dt-stat {
+  flex: 1;
+  text-align: center;
+  background: var(--bg-soft, #f8fafc);
+  border-radius: 10px;
+  padding: 14px 6px;
+}
+.dt-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+  line-height: 1.2;
+}
+.dt-stat-value.ok {
+  color: #10b981;
+  font-size: 14px;
+}
+.dt-stat-label {
+  font-size: 11px;
+  color: var(--text-secondary, #64748b);
+  margin-top: 6px;
+}
+.dt-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.dt-meta-item {
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid var(--border-soft, rgba(15,23,42,0.06));
+  border-radius: 8px;
+}
+.dt-meta-label {
+  font-size: 11px;
+  color: var(--text-secondary, #64748b);
+  display: block;
+  margin-bottom: 4px;
+}
+.dt-meta-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #0f172a);
+}
+
+/* 快速操作网格按钮 */
+.grid-actions {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+}
+.qa-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 6px;
+  background: #fff;
+  border: 1px solid var(--border-soft, rgba(15,23,42,0.08));
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 11px;
+  color: var(--text-secondary, #64748b);
+}
+.qa-btn:hover {
+  border-color: var(--brand, #6366f1);
+  color: var(--brand, #6366f1);
+  background: rgba(99,102,241,0.04);
+}
+.qa-btn .el-icon {
+  font-size: 20px;
+}
+.qa-btn.primary {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  border-color: transparent;
+}
+.qa-btn.primary:hover {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #fff;
+}
+.qa-btn.success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  border-color: transparent;
+}
+.qa-btn.success:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  color: #fff;
+}
+.qa-btn.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* 资源子分组 */
+.res-sub-group {
+  margin-bottom: 10px;
+  border: 1px solid var(--border-soft, rgba(15,23,42,0.06));
+  border-radius: 10px;
+  overflow: hidden;
+}
+.res-sub-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--bg-soft, #f8fafc);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+.res-sub-head:hover {
+  background: #eef2f7;
+}
+.res-sub-head .muted {
+  flex: 1;
+}
+.res-sub-arrow {
+  font-size: 12px;
+  color: var(--text-tertiary, #94a3b8);
+}
+.res-sub-body {
+  padding: 6px 10px;
+}
+
+/* 旧样式兼容（隐藏原来的快速操作样式） */
+.quick-actions, .qa-label, .res-head, .section-title, .res-group, .res-group-head {
+  /* 已被新的分层结构替代 */
+}
+
+
 .quick-actions {
   display: flex;
   align-items: center;

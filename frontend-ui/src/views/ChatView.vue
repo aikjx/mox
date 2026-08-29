@@ -31,12 +31,27 @@
         <el-icon v-if="!sidebarCollapsed" class="switch-icon"><ArrowRight /></el-icon>
       </div>
 
-      <!-- 新建任务按钮 -->
+      <!-- 新建任务 + 新建项目 双入口 -->
       <div class="ai-new-chat">
-        <el-button type="primary" class="new-task-btn" @click="newSession">
-          <el-icon><Plus /></el-icon>
-          <span v-if="!sidebarCollapsed">新建任务</span>
-        </el-button>
+        <div class="new-btns">
+          <el-button type="primary" class="new-task-btn" @click="newSession">
+            <el-icon><Plus /></el-icon>
+            <span v-if="!sidebarCollapsed">新建任务</span>
+          </el-button>
+          <el-button class="new-project-btn" @click="openCreateProject">
+            <el-icon><FolderAdd /></el-icon>
+            <span v-if="!sidebarCollapsed">新建项目</span>
+          </el-button>
+        </div>
+        <!-- 当前项目上下文 -->
+        <div v-if="!sidebarCollapsed" class="project-context" @click="showProjectPicker = true">
+          <div class="pc-dot" :style="{ background: currentProjectObj?.color || '#64748b' }"></div>
+          <div class="pc-info">
+            <div class="pc-name">{{ currentProjectObj?.name || '未绑定项目' }}</div>
+            <div class="pc-sub">{{ currentProjectObj ? '点击切换项目' : '点击选择项目' }}</div>
+          </div>
+          <el-icon class="pc-arrow"><ArrowRight /></el-icon>
+        </div>
       </div>
 
       <!-- 会话列表 -->
@@ -94,8 +109,9 @@
       </div>
     </div>
 
-    <!-- 中间：主工作区 -->
-    <div class="ai-main">
+    <!-- 中间：主工作区（对话区 + 右侧详情面板） -->
+    <div class="ai-main" :class="{ 'detail-open': detailPanelOpen }">
+      <div class="ai-main-center">
       <!-- 顶部状态栏 -->
       <div class="ai-topbar">
         <div class="topbar-left">
@@ -112,6 +128,11 @@
             <el-icon class="spin"><Loading /></el-icon>
             AI 执行中
           </el-tag>
+          <el-tooltip content="详情面板">
+            <el-button text class="icon-btn" :class="{ active: detailPanelOpen }" @click="detailPanelOpen = !detailPanelOpen">
+              <el-icon><DataBoard /></el-icon>
+            </el-button>
+          </el-tooltip>
           <el-tooltip content="切换主题">
             <el-button text class="icon-btn" @click.stop="showThemePanel = !showThemePanel">
               <el-icon><Brush /></el-icon>
@@ -338,6 +359,193 @@
           </div>
         </div>
       </div>
+
+      <!-- 右侧详情面板（分层展开） -->
+      <aside class="detail-panel" :class="{ open: detailPanelOpen }">
+        <div class="dp-header">
+          <span class="dp-title">任务详情</span>
+          <el-button text size="small" @click="detailPanelOpen = false">
+            <el-icon><Close /></el-icon>
+          </el-button>
+        </div>
+
+        <div class="dp-body">
+          <!-- 任务概览 -->
+          <div class="dp-section">
+            <div class="dp-section-header" @click="toggleDetailSection('overview')">
+              <span class="dp-section-icon">📋</span>
+              <span class="dp-section-title">任务概览</span>
+              <el-icon class="dp-section-arrow">
+                <component :is="detailSections.has('overview') ? 'ArrowUp' : 'ArrowDown'" />
+              </el-icon>
+            </div>
+            <transition name="dp-expand">
+              <div v-show="detailSections.has('overview')" class="dp-section-body">
+                <div class="dp-stat-row">
+                  <div class="dp-stat">
+                    <div class="dp-stat-value">{{ messages.length }}</div>
+                    <div class="dp-stat-label">对话轮数</div>
+                  </div>
+                  <div class="dp-stat">
+                    <div class="dp-stat-value">{{ flowAgents.length }}</div>
+                    <div class="dp-stat-label">Agent 数</div>
+                  </div>
+                  <div class="dp-stat">
+                    <div class="dp-stat-value">
+                      <span v-if="taskRunning" class="dp-dot running"></span>
+                      <span v-else class="dp-dot done"></span>
+                    </div>
+                    <div class="dp-stat-label">{{ taskRunning ? '执行中' : '就绪' }}</div>
+                  </div>
+                </div>
+                <div class="dp-info-item">
+                  <span class="dp-info-label">当前助手</span>
+                  <span class="dp-info-value">{{ currentAssistantObj.name }}</span>
+                </div>
+                <div class="dp-info-item">
+                  <span class="dp-info-label">任务标题</span>
+                  <span class="dp-info-value truncate">{{ currentTaskTitle || '未命名任务' }}</span>
+                </div>
+              </div>
+            </transition>
+          </div>
+
+          <!-- Agent 工作流 -->
+          <div class="dp-section">
+            <div class="dp-section-header" @click="toggleDetailSection('flow')">
+              <span class="dp-section-icon">⚡</span>
+              <span class="dp-section-title">Agent 工作流</span>
+              <span class="dp-section-badge" v-if="flowAgents.length">{{ flowAgents.filter(a=>a.status==='done').length }}/{{ flowAgents.length }}</span>
+              <el-icon class="dp-section-arrow">
+                <component :is="detailSections.has('flow') ? 'ArrowUp' : 'ArrowDown'" />
+              </el-icon>
+            </div>
+            <transition name="dp-expand">
+              <div v-show="detailSections.has('flow')" class="dp-section-body">
+                <div v-if="flowAgents.length === 0" class="dp-empty">
+                  <span>暂无 Agent 任务</span>
+                  <span class="dp-empty-sub">发送指令后自动生成工作流</span>
+                </div>
+                <div v-else class="dp-flow-list">
+                  <div
+                    v-for="(agent, idx) in flowAgents"
+                    :key="agent.id"
+                    class="dp-flow-item"
+                    :class="agent.status"
+                  >
+                    <div class="dp-flow-dot"></div>
+                    <div class="dp-flow-info">
+                      <div class="dp-flow-name">{{ agent.name }}</div>
+                      <div class="dp-flow-desc">{{ agent.role }}</div>
+                    </div>
+                    <div class="dp-flow-status">
+                      <el-icon v-if="agent.status === 'running'" class="spin"><Loading /></el-icon>
+                      <el-icon v-else-if="agent.status === 'done'"><CircleCheck /></el-icon>
+                      <span v-else>—</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </transition>
+          </div>
+
+          <!-- 项目上下文 -->
+          <div class="dp-section">
+            <div class="dp-section-header" @click="toggleDetailSection('project')">
+              <span class="dp-section-icon">📁</span>
+              <span class="dp-section-title">项目上下文</span>
+              <el-icon class="dp-section-arrow">
+                <component :is="detailSections.has('project') ? 'ArrowUp' : 'ArrowDown'" />
+              </el-icon>
+            </div>
+            <transition name="dp-expand">
+              <div v-show="detailSections.has('project')" class="dp-section-body">
+                <div v-if="currentProjectObj" class="dp-project-card" @click="showProjectPicker = true">
+                  <div class="dp-project-dot" :style="{ background: currentProjectObj.color }"></div>
+                  <div class="dp-project-info">
+                    <div class="dp-project-name">{{ currentProjectObj.name }}</div>
+                    <div class="dp-project-cat">{{ currentProjectObj.category || '未分类' }}</div>
+                  </div>
+                  <el-icon class="dp-project-arrow"><ArrowRight /></el-icon>
+                </div>
+                <div v-else class="dp-empty">
+                  <span>未绑定项目</span>
+                  <el-button size="small" type="primary" link @click="showProjectPicker = true">选择项目</el-button>
+                </div>
+              </div>
+            </transition>
+          </div>
+
+          <!-- 生成产物 -->
+          <div class="dp-section">
+            <div class="dp-section-header" @click="toggleDetailSection('artifacts')">
+              <span class="dp-section-icon">📦</span>
+              <span class="dp-section-title">生成产物</span>
+              <el-icon class="dp-section-arrow">
+                <component :is="detailSections.has('artifacts') ? 'ArrowUp' : 'ArrowDown'" />
+              </el-icon>
+            </div>
+            <transition name="dp-expand">
+              <div v-show="detailSections.has('artifacts')" class="dp-section-body">
+                <div v-if="artifacts.length === 0" class="dp-empty">
+                  <span>暂无产物</span>
+                  <span class="dp-empty-sub">任务完成后将展示生成的文件</span>
+                </div>
+                <div v-else class="dp-artifact-list">
+                  <div
+                    v-for="(art, idx) in artifacts"
+                    :key="idx"
+                    class="dp-artifact-item"
+                  >
+                    <div class="dp-art-icon">{{ getArtifactIcon(art.name) }}</div>
+                    <div class="dp-art-info">
+                      <div class="dp-art-name">{{ art.name }}</div>
+                      <div class="dp-art-from">{{ art.agentName || 'AI 生成' }}</div>
+                    </div>
+                    <el-button text size="small" class="dp-art-action">
+                      <el-icon><Download /></el-icon>
+                    </el-button>
+                  </div>
+                </div>
+              </div>
+            </transition>
+          </div>
+
+          <!-- 快捷操作 -->
+          <div class="dp-section">
+            <div class="dp-section-header" @click="toggleDetailSection('actions')">
+              <span class="dp-section-icon">🛠️</span>
+              <span class="dp-section-title">快捷操作</span>
+              <el-icon class="dp-section-arrow">
+                <component :is="detailSections.has('actions') ? 'ArrowUp' : 'ArrowDown'" />
+              </el-icon>
+            </div>
+            <transition name="dp-expand">
+              <div v-show="detailSections.has('actions')" class="dp-section-body">
+                <div class="dp-action-grid">
+                  <button class="dp-action-btn" @click="copyTask">
+                    <el-icon><CopyDocument /></el-icon>
+                    <span>复制内容</span>
+                  </button>
+                  <button class="dp-action-btn" @click="regenerate">
+                    <el-icon><Refresh /></el-icon>
+                    <span>重新生成</span>
+                  </button>
+                  <button class="dp-action-btn" @click="goGraph">
+                    <el-icon><Share /></el-icon>
+                    <span>查看图谱</span>
+                  </button>
+                  <button class="dp-action-btn" @click="goProject">
+                    <el-icon><Folder /></el-icon>
+                    <span>打开项目</span>
+                  </button>
+                </div>
+              </div>
+            </transition>
+          </div>
+        </div>
+      </aside>
+    </div>
     </div>
 
     <!-- 右侧：Agent 处理流程图 + 代码/DSL 双视图面板（对话联动 · 不切 TAB） -->
@@ -373,6 +581,72 @@
         </div>
       </div>
     </div>
+
+    <!-- 项目选择器弹窗 -->
+    <el-dialog v-model="showProjectPicker" title="选择项目" width="480px" class="project-picker-dlg">
+      <div class="picker-actions">
+        <el-input v-model="projectSearch" placeholder="搜索项目…" clearable size="small">
+          <template #prefix><el-icon><Search /></el-icon></template>
+        </el-input>
+        <el-button type="primary" size="small" @click="openCreateProject; showProjectPicker = false">
+          <el-icon><Plus /></el-icon> 新建项目
+        </el-button>
+      </div>
+      <div class="project-list-scroll">
+        <div
+          v-for="p in filteredProjectList"
+          :key="p.id"
+          class="project-picker-item"
+          :class="{ active: p.id === currentProjectId }"
+          @click="selectProject(p.id)"
+        >
+          <div class="ppi-dot" :style="{ background: p.color || '#64748b' }"></div>
+          <div class="ppi-info">
+            <div class="ppi-name">{{ p.name }}</div>
+            <div class="ppi-meta">
+              <span>{{ p.category || '未分类' }}</span>
+              <span class="ppi-count">{{ p.resource_count ?? 0 }} 项资源</span>
+            </div>
+          </div>
+          <el-icon v-if="p.id === currentProjectId" class="ppi-check"><CircleCheckFilled /></el-icon>
+        </div>
+        <el-empty v-if="!filteredProjectList.length" description="暂无项目，点击上方新建" :image-size="60" />
+      </div>
+      <div class="picker-footer">
+        <el-button text @click="clearProjectSelection">不绑定项目</el-button>
+      </div>
+    </el-dialog>
+
+    <!-- 新建项目弹窗 -->
+    <el-dialog v-model="showCreateProject" title="新建项目" width="500px">
+      <el-form label-width="76px">
+        <el-form-item label="项目名称">
+          <el-input v-model="newProjectForm.name" placeholder="如：医疗知识图谱项目" maxlength="60" />
+        </el-form-item>
+        <el-form-item label="项目类型">
+          <div class="cat-picker">
+            <div
+              v-for="c in projectCategories"
+              :key="c.key"
+              class="cat-option"
+              :class="{ active: newProjectForm.category === c.key }"
+              :style="newProjectForm.category === c.key ? { borderColor: c.color, background: c.color + '14' } : {}"
+              @click="newProjectForm.category = c.key"
+            >
+              <el-icon :style="{ color: c.color }"><component :is="c.icon" /></el-icon>
+              <span>{{ c.label }}</span>
+            </div>
+          </div>
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="newProjectForm.description" type="textarea" :rows="3" placeholder="项目说明（可选）" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showCreateProject = false">取消</el-button>
+        <el-button type="primary" :loading="creatingProject" @click="doCreateProject">创建并开始</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -382,17 +656,114 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   Cpu, Expand, Fold, Plus, ChatDotRound, Loading, CircleCheck,
   User, Menu, Brush, MagicStick, Promotion, Paperclip, Microphone,
-  Tools, CopyDocument, Refresh, Right, Close, ArrowRight
+  Tools, CopyDocument, Refresh, Right, Close, ArrowRight,
+  FolderAdd, Search, CircleCheckFilled, ArrowUp, ArrowDown,
+  DataBoard, Download, Folder
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import AgentTaskRunner from '@/components/AgentTaskRunner.vue'
 import AgentFlowPanel from '@/components/AgentFlowPanel.vue'
 import AssistantSelector from '@/components/AssistantSelector.vue'
 import { useTheme } from '@/composables/useTheme'
+import { useProject } from '@/composables/projectContext.js'
+import { getProjects, getProjectTypes, createProject } from '@/api'
 
 const route = useRoute()
 const router = useRouter()
 const { theme, setTheme } = useTheme()
+const { setCurrentProject: setGlobalProject, currentProjectId } = useProject()
+
+/* ===== 项目相关状态 ===== */
+const showProjectPicker = ref(false)
+const showCreateProject = ref(false)
+const creatingProject = ref(false)
+const projectSearch = ref('')
+const projectList = ref([])
+const projectCategories = ref([])
+const newProjectForm = ref({
+  name: '',
+  category: 'platform',
+  description: ''
+})
+
+const currentProjectObj = computed(() => {
+  return projectList.value.find(p => p.id === currentProjectId.value) || null
+})
+
+const filteredProjectList = computed(() => {
+  if (!projectSearch.value.trim()) return projectList.value
+  const k = projectSearch.value.trim().toLowerCase()
+  return projectList.value.filter(p =>
+    (p.name || '').toLowerCase().includes(k) ||
+    (p.description || '').toLowerCase().includes(k)
+  )
+})
+
+async function loadProjects() {
+  try {
+    const [ps, ts] = await Promise.all([getProjects(), getProjectTypes()])
+    projectList.value = ps || []
+    projectCategories.value = (ts && ts.categories) || []
+  } catch (e) {
+    console.warn('加载项目列表失败:', e.message)
+  }
+}
+
+function openCreateProject() {
+  newProjectForm.value = { name: '', category: 'knowledge_graph', description: '' }
+  // 如果项目类型里有 knowledge_graph，就默认选它
+  if (projectCategories.value.find(c => c.key === 'knowledge_graph')) {
+    newProjectForm.value.category = 'knowledge_graph'
+  } else if (projectCategories.value.length) {
+    newProjectForm.value.category = projectCategories.value[0].key
+  }
+  showCreateProject.value = true
+}
+
+async function doCreateProject() {
+  const f = newProjectForm.value
+  if (!f.name.trim()) {
+    ElMessage.warning('请输入项目名称')
+    return
+  }
+  creatingProject.value = true
+  try {
+    const created = await createProject({
+      name: f.name.trim(),
+      category: f.category,
+      status: 'active',
+      description: f.description
+    })
+    ElMessage.success('项目创建成功')
+    showCreateProject.value = false
+    // 刷新列表并选中
+    await loadProjects()
+    if (created?.id) {
+      selectProject(created.id)
+    }
+    // 自动开启新任务
+    newSession()
+  } catch (e) {
+    ElMessage.error('创建失败：' + e.message)
+  } finally {
+    creatingProject.value = false
+  }
+}
+
+function selectProject(id) {
+  setGlobalProject(id)
+  showProjectPicker.value = false
+  const proj = projectList.value.find(p => p.id === id)
+  if (proj) {
+    ElMessage.success(`已切换到「${proj.name}」项目`)
+  }
+}
+
+function clearProjectSelection() {
+  setGlobalProject(null)
+  showProjectPicker.value = false
+  ElMessage.info('已解除项目绑定')
+}
 
 /* ===== 状态 ===== */
 const sidebarCollapsed = ref(false)
@@ -406,6 +777,48 @@ const currentSession = ref('s1')
 const isTyping = ref(false)
 const taskRunning = ref(false)
 const messagesRef = ref(null)
+
+/* ===== 右侧详情面板（分层展开） ===== */
+const detailPanelOpen = ref(false)
+// 默认展开任务概览和 Agent 工作流
+const detailSections = ref(new Set(['overview', 'flow']))
+const artifacts = ref([])
+
+function toggleDetailSection(key) {
+  const next = new Set(detailSections.value)
+  if (next.has(key)) {
+    next.delete(key)
+  } else {
+    next.add(key)
+  }
+  detailSections.value = next
+}
+
+function getArtifactIcon(filename) {
+  const ext = filename.split('.').pop()?.toLowerCase()
+  const icons = {
+    md: '📄', txt: '📝', pdf: '📕', doc: '📘', docx: '📘',
+    js: '💛', ts: '💙', py: '🐍', json: '📋', yaml: '⚙️', yml: '⚙️',
+    csv: '📊', xlsx: '📊', png: '🖼️', jpg: '🖼️', jpeg: '🖼️', svg: '🎨',
+    zip: '📦', tar: '📦', gz: '📦'
+  }
+  return icons[ext] || '📄'
+}
+
+function copyTask() {
+  const text = messages.value.map(m => `${m.role === 'user' ? '用户' : 'AI'}: ${m.content}`).join('\n\n')
+  navigator.clipboard.writeText(text).then(() => {
+    ElMessage.success('已复制到剪贴板')
+  })
+}
+
+function goGraph() {
+  router.push('/graph')
+}
+
+function goProject() {
+  router.push('/projects')
+}
 
 /* ===== 当前 AI 助手 ===== */
 const currentAssistant = ref('general')
@@ -706,7 +1119,10 @@ function copyMsg(content) {
 
 function regenerate(msg) {
   const lastUserMsg = [...messages.value].reverse().find(m => m.role === 'user')
-  if (lastUserMsg) {
+  if (!lastUserMsg) return
+
+  // 消息操作"重新生成"（传入消息对象）：移除该条 AI 消息后模拟重新生成
+  if (msg && typeof msg === 'object' && typeof msg.id === 'number') {
     const msgIdx = messages.value.indexOf(msg)
     if (msgIdx > 0) messages.value.splice(msgIdx, 1)
     taskRunning.value = true
@@ -723,7 +1139,12 @@ function regenerate(msg) {
       scrollToBottom()
       animateTaskSteps(reactiveMsg)
     }, 500)
+    return
   }
+
+  // 快捷面板"重新生成"（无参数）：回填最后一条用户消息并重新发送
+  inputText.value = lastUserMsg.content
+  sendMessage()
 }
 
 function continueTask(msg) {
@@ -753,6 +1174,7 @@ function handleClickOutside(e) {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  loadProjects()
   if (route.query.prompt) {
     inputText.value = decodeURIComponent(route.query.prompt)
     setTimeout(() => sendMessage(), 300)
@@ -911,6 +1333,154 @@ onUnmounted(() => {
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
 }
+.new-btns {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.new-btns .el-button {
+  flex: 1;
+  height: 40px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 13px;
+}
+.new-project-btn {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #10b981;
+}
+.new-project-btn:hover {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
+  color: #10b981;
+}
+.project-context {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.project-context:hover {
+  border-color: rgba(99, 102, 241, 0.5);
+  background: rgba(99, 102, 241, 0.08);
+}
+.pc-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.pc-info {
+  flex: 1;
+  min-width: 0;
+}
+.pc-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e2e8f0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pc-sub {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+.pc-arrow {
+  color: #64748b;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* 项目选择器弹窗 */
+.project-picker-dlg :deep(.el-dialog__body) {
+  padding-top: 0;
+}
+.picker-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.picker-actions .el-input {
+  flex: 1;
+}
+.project-list-scroll {
+  max-height: 400px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.project-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+}
+.project-picker-item:hover {
+  background: var(--bg-page);
+  border-color: var(--border);
+}
+.project-picker-item.active {
+  background: var(--brand-soft);
+  border-color: var(--brand-light);
+}
+.ppi-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.ppi-info {
+  flex: 1;
+  min-width: 0;
+}
+.ppi-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+.ppi-meta {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.ppi-count {
+  color: var(--brand);
+  font-weight: 600;
+}
+.ppi-check {
+  color: var(--success);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.picker-footer {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+}
+.cat-picker { display: flex; flex-wrap: wrap; gap: 8px; }
+.cat-option {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px;
+  font-size: 12px; cursor: pointer; transition: all 0.15s;
+}
+.cat-option:hover { border-color: var(--brand); }
 
 /* 会话列表 */
 .ai-session-list {
@@ -1022,10 +1592,334 @@ onUnmounted(() => {
 .ai-main {
   flex: 1;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   overflow: hidden;
   position: relative;
   min-width: 0;
+}
+
+.ai-main-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* ===== 右侧详情面板（分层展开） ===== */
+.detail-panel {
+  width: 0;
+  background: #fff;
+  border-left: 1px solid var(--border-soft, rgba(15, 23, 42, 0.09));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  flex-shrink: 0;
+}
+.detail-panel.open {
+  width: 320px;
+}
+.dp-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-soft, rgba(15, 23, 42, 0.06));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.dp-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary, #0f172a);
+}
+.dp-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 0;
+}
+.dp-section {
+  border-bottom: 1px solid var(--border-soft, rgba(15, 23, 42, 0.04));
+}
+.dp-section:last-child {
+  border-bottom: none;
+}
+.dp-section-header {
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+.dp-section-header:hover {
+  background: var(--bg-soft, #f8fafc);
+}
+.dp-section-icon {
+  font-size: 16px;
+}
+.dp-section-title {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #0f172a);
+}
+.dp-section-badge {
+  font-size: 11px;
+  color: var(--text-secondary, #64748b);
+  background: var(--bg-soft, #f1f5f9);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.dp-section-arrow {
+  font-size: 14px;
+  color: var(--text-tertiary, #94a3b8);
+  transition: transform 0.2s ease;
+}
+.dp-section-body {
+  padding: 0 20px 16px;
+  overflow: hidden;
+}
+.dp-expand-enter-active, .dp-expand-leave-active {
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.dp-expand-enter-from, .dp-expand-leave-to {
+  opacity: 0;
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.dp-stat-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.dp-stat {
+  flex: 1;
+  text-align: center;
+  background: var(--bg-soft, #f8fafc);
+  border-radius: 10px;
+  padding: 10px 4px;
+}
+.dp-stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+  line-height: 1.2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.dp-stat-label {
+  font-size: 11px;
+  color: var(--text-secondary, #64748b);
+  margin-top: 4px;
+}
+.dp-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.dp-dot.running { background: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+.dp-dot.done { background: #10b981; }
+
+.dp-info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 12px;
+}
+.dp-info-label {
+  color: var(--text-secondary, #64748b);
+}
+.dp-info-value {
+  color: var(--text-primary, #0f172a);
+  font-weight: 500;
+  max-width: 60%;
+}
+.dp-info-value.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 工作流 */
+.dp-empty {
+  padding: 20px 0;
+  text-align: center;
+  color: var(--text-tertiary, #94a3b8);
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dp-empty-sub {
+  font-size: 11px;
+  color: var(--text-tertiary, #94a3b8);
+}
+.dp-flow-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dp-flow-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+.dp-flow-item:hover {
+  background: var(--bg-soft, #f8fafc);
+}
+.dp-flow-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  flex-shrink: 0;
+}
+.dp-flow-item.pending .dp-flow-dot { background: #cbd5e1; }
+.dp-flow-item.running .dp-flow-dot { background: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+.dp-flow-item.done .dp-flow-dot { background: #10b981; }
+.dp-flow-info {
+  flex: 1;
+  min-width: 0;
+}
+.dp-flow-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary, #0f172a);
+}
+.dp-flow-desc {
+  font-size: 11px;
+  color: var(--text-tertiary, #94a3b8);
+  margin-top: 2px;
+}
+.dp-flow-status {
+  font-size: 12px;
+  color: var(--text-secondary, #64748b);
+  flex-shrink: 0;
+}
+
+/* 项目卡片 */
+.dp-project-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg-soft, #f8fafc);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.dp-project-card:hover {
+  background: #eef2f7;
+}
+.dp-project-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dp-project-info {
+  flex: 1;
+  min-width: 0;
+}
+.dp-project-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #0f172a);
+}
+.dp-project-cat {
+  font-size: 11px;
+  color: var(--text-secondary, #64748b);
+  margin-top: 2px;
+}
+.dp-project-arrow {
+  color: var(--text-tertiary, #94a3b8);
+  font-size: 14px;
+}
+
+/* 产物列表 */
+.dp-artifact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dp-artifact-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+.dp-artifact-item:hover {
+  background: var(--bg-soft, #f8fafc);
+}
+.dp-art-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.dp-art-info {
+  flex: 1;
+  min-width: 0;
+}
+.dp-art-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary, #0f172a);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dp-art-from {
+  font-size: 10px;
+  color: var(--text-tertiary, #94a3b8);
+  margin-top: 2px;
+}
+.dp-art-action {
+  color: var(--text-secondary, #64748b);
+}
+
+/* 快捷操作 */
+.dp-action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.dp-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 4px;
+  background: var(--bg-soft, #f8fafc);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 11px;
+  color: var(--text-secondary, #64748b);
+}
+.dp-action-btn:hover {
+  background: #eef2f7;
+  color: var(--text-primary, #0f172a);
+}
+.dp-action-btn .el-icon {
+  font-size: 18px;
+}
+
+/* 顶部栏按钮激活态 */
+.icon-btn.active {
+  color: var(--el-color-primary, #4f46e5);
+  background: rgba(79, 70, 229, 0.08);
 }
 
 /* 顶部状态栏 · 黄金高度 56px */
