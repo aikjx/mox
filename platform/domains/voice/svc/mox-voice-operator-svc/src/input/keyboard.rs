@@ -14,7 +14,7 @@ use mox_voice_core_svc::operator::{ActionParam, OperatorCategory, OperatorOutput
 
 use crate::helpers::platform_tag;
 
-pub(crate) fn parse_modifier(s: &str) -> enigo::Key {
+pub fn parse_modifier(s: &str) -> enigo::Key {
     match s.trim().to_lowercase().as_str() {
         "ctrl" | "control" => enigo::Key::Control,
         "shift" => enigo::Key::Shift,
@@ -24,7 +24,7 @@ pub(crate) fn parse_modifier(s: &str) -> enigo::Key {
     }
 }
 
-pub(crate) fn parse_key(s: &str) -> enigo::Key {
+pub fn parse_key(s: &str) -> enigo::Key {
     use enigo::Key::*;
     let t = s.trim().to_lowercase();
     match t.as_str() {

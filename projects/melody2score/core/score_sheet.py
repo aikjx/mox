@@ -255,7 +255,7 @@ def export_score(
     time_sig: Tuple[int, int] = (4, 4),
     composer: str = "",
     tuning: str = "",
-    dpi: int = 150,
+    dpi: int = 200,
 ) -> str:
     """一站式导出：直接接受 pipeline notes 字典，生成标准歌谱图片。
 

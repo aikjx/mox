@@ -8,7 +8,7 @@
 use mox_voice_core_svc::errors::XiaobaiError;
 use mox_voice_core_svc::operator::ActionParam;
 
-pub(crate) fn require_int(p: &ActionParam, action: &str, k: &str) -> Result<i64, XiaobaiError> {
+pub fn require_int(p: &ActionParam, action: &str, k: &str) -> Result<i64, XiaobaiError> {
     p.get_i64(k).ok_or_else(|| XiaobaiError::InvalidArgument {
         action: action.into(),
         param: k.to_string(),
@@ -17,7 +17,7 @@ pub(crate) fn require_int(p: &ActionParam, action: &str, k: &str) -> Result<i64,
     })
 }
 
-pub(crate) fn enigo_check_ok() -> bool {
+pub fn enigo_check_ok() -> bool {
     // enigo 在无头 CI 里初始化会失败；这里提前探测（先 new 一下立即 drop）
     use enigo::*;
     Enigo::new(&Settings::default()).is_ok()

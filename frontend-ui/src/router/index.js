@@ -5,82 +5,81 @@ const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: () => import('@/views/Login.vue'),
+    component: () => import('@/views/misc/Login.vue'),
     meta: { title: '登录' }
-  },
-  {
-    path: '/dashboard',
-    name: 'Dashboard',
-    component: () => import('@/views/Dashboard.vue'),
-    meta: { title: '工作台' }
-  },
-  {
-    path: '/projects',
-    name: 'Projects',
-    component: () => import('@/views/ProjectsView.vue'),
-    meta: { title: '项目中心' }
-  },
-  {
-    path: '/expert-center',
-    name: 'ExpertCenter',
-    component: () => import('@/views/ExpertCenterView.vue'),
-    meta: { title: '专家联盟' }
-  },
-  {
-    path: '/expert-enterprise',
-    redirect: '/expert-center?tab=enterprise'
-  },
-  {
-    path: '/expert-orchestrator',
-    redirect: '/expert-center?tab=orchestrator'
   },
   {
     path: '/portal',
     name: 'Portal',
-    component: () => import('@/views/PortalHome.vue'),
+    component: () => import('@/views/misc/PortalHome.vue'),
     meta: { title: '门户' }
   },
   {
     path: '/hall',
     name: 'BusinessHall',
-    component: () => import('@/views/BusinessHall.vue'),
+    component: () => import('@/views/misc/BusinessHall.vue'),
     meta: { title: '业务大厅' }
+  },
+
+  // ===== 项目域 =====
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: () => import('@/views/project/Dashboard.vue'),
+    meta: { title: '工作台' }
+  },
+  {
+    path: '/projects',
+    name: 'Projects',
+    component: () => import('@/views/project/ProjectsView.vue'),
+    meta: { title: '项目中心' }
+  },
+  {
+    path: '/tasks',
+    name: 'Tasks',
+    component: () => import('@/views/project/TaskView.vue'),
+    meta: { title: '任务管理' }
+  },
+  {
+    path: '/resources',
+    component: () => import('@/views/project/ResourcesView.vue'),
+    meta: { title: '资源管理' },
+    redirect: '/resources/overview',
+    children: [
+      { path: '', redirect: '/resources/overview' },
+      {
+        path: 'overview',
+        name: 'ResourcesOverview',
+        component: () => import('@/views/project/panels/ResourcesOverviewPanel.vue'),
+        meta: { title: '资源概览' }
+      },
+      {
+        path: 'knowledge',
+        name: 'ResourcesKnowledge',
+        component: () => import('@/components/KnowledgeBasePanel.vue'),
+        meta: { title: '知识库' }
+      }
+    ]
   },
   {
     path: '/workbench',
     name: 'Workbench',
-    component: () => import('@/views/Workbench.vue'),
+    component: () => import('@/views/project/Workbench.vue'),
     meta: { title: '工作台执行' }
   },
-  {
-    path: '/operators',
-    name: 'Operators',
-    component: () => import('@/views/OperatorsView.vue'),
-    meta: { title: '算子中心' }
-  },
-  {
-    path: '/graph',
-    name: 'Graph',
-    component: () => import('@/views/GraphView.vue'),
-    meta: { title: '知识图谱' }
-  },
-  {
-    path: '/mox-fusion',
-    name: 'MoxFusion',
-    component: () => import('@/views/MoxFusionView.vue'),
-    meta: { title: '全维融合' }
-  },
+
+  // ===== AI 域 =====
   {
     path: '/ai',
     name: 'AI',
-    component: () => import('@/views/ChatView.vue'),
+    component: () => import('@/views/ai/ChatView.vue'),
     meta: { title: 'AI 助手' }
   },
   // 分享快照：#/share/<base64-snapshot> → 用 ChatView 渲染（解析 token 并恢复对话）
   {
     path: '/share/:token',
     name: 'ShareSnapshot',
-    component: () => import('@/views/ChatView.vue'),
+    component: () => import('@/views/ai/ChatView.vue'),
     meta: { title: '分享对话', shareMode: true }
   },
   // 兼容短链 /s/TOKEN
@@ -89,105 +88,220 @@ const routes = [
     redirect: to => `/share/${to.params.token}`
   },
   {
-    path: '/tasks',
-    name: 'Tasks',
-    component: () => import('@/views/TaskView.vue'),
-    meta: { title: '任务管理' }
-  },
-  {
-    path: '/resources',
-    name: 'Resources',
-    component: () => import('@/views/ResourcesView.vue'),
-    meta: { title: '资源管理' }
-  },
-  {
-    path: '/workflow',
-    name: 'Workflow',
-    component: () => import('@/views/WorkflowView.vue'),
-    meta: { title: '工作流编排' }
-  },
-  {
-    path: '/plugins',
-    redirect: '/workflow?tab=plugins'
-  },
-  {
-    path: '/browser',
-    name: 'Browser',
-    component: () => import('@/views/BrowserView.vue'),
-    meta: { title: '浏览器自动化' }
-  },
-  {
-    path: '/monitor',
-    redirect: '/admin?tab=monitor'
-  },
-  {
-    path: '/docs',
-    redirect: '/admin?tab=docs'
-  },
-  {
-    path: '/market',
-    name: 'Market',
-    component: () => import('@/views/MarketView.vue'),
-    meta: { title: '算子商城' }
-  },
-  {
-    path: '/market/:id',
-    name: 'MarketDetail',
-    component: () => import('@/views/MarketDetailView.vue'),
-    meta: { title: '算子详情' }
-  },
-  {
-    path: '/mcp',
-    redirect: '/workflow?tab=mcp'
-  },
-  {
-    path: '/automation',
-    redirect: '/workflow?tab=automation'
-  },
-  {
     path: '/caomei',
     name: 'Caomei',
-    component: () => import('@/views/CaomeiView.vue'),
+    component: () => import('@/views/ai/CaomeiView.vue'),
     meta: { title: '需求编译' }
   },
   {
     path: '/algolab',
     name: 'AlgoLab',
-    component: () => import('@/views/AlgoLabView.vue'),
+    component: () => import('@/views/ai/AlgoLabView.vue'),
     meta: { title: '算法实验室' }
   },
   {
     path: '/infinite-optimizer',
     name: 'InfiniteOptimizer',
-    component: () => import('@/views/InfiniteOptimizerView.vue'),
+    component: () => import('@/views/ai/InfiniteOptimizerView.vue'),
     meta: { title: '无穷维度优化' }
   },
   {
     path: '/botCenter',
     name: 'BotCenter',
-    component: () => import('@/views/BotCenterView.vue'),
+    component: () => import('@/views/ai/BotCenterView.vue'),
     meta: { title: '机器人中心' }
-  },
-  {
-    path: '/knowledge-base',
-    redirect: '/resources?tab=knowledge'
-  },
-  {
-    path: '/llm-config',
-    redirect: '/admin?tab=llm'
   },
   {
     path: '/melody2score',
     name: 'Melody2Score',
-    component: () => import('@/views/Melody2ScoreView.vue'),
+    component: () => import('@/views/ai/Melody2ScoreView.vue'),
     meta: { title: '旋律转谱' }
   },
+
+  // ===== 图谱域 =====
+  {
+    path: '/graph',
+    name: 'Graph',
+    component: () => import('@/views/graph/GraphView.vue'),
+    meta: { title: '知识图谱' }
+  },
+  {
+    path: '/mox-fusion',
+    name: 'MoxFusion',
+    component: () => import('@/views/graph/MoxFusionView.vue'),
+    meta: { title: '全维融合' }
+  },
+  {
+    path: '/flow-graph',
+    name: 'FlowGraph',
+    component: () => import('@/views/graph/FlowGraph.vue'),
+    meta: { title: '流程图' }
+  },
+
+  // ===== 工作流域（嵌套路由） =====
+  {
+    path: '/workflow',
+    component: () => import('@/views/workflow/WorkflowView.vue'),
+    meta: { title: '工作流编排' },
+    redirect: '/workflow/flows',
+    children: [
+      { path: '', redirect: '/workflow/flows' },
+      {
+        path: 'flows',
+        name: 'WorkflowFlows',
+        component: () => import('@/views/workflow/panels/WorkflowFlowsPanel.vue'),
+        meta: { title: '流程编排' }
+      },
+      {
+        path: 'plugins',
+        name: 'WorkflowPlugins',
+        component: () => import('@/components/PluginsPanel.vue'),
+        meta: { title: '插件中心' }
+      },
+      {
+        path: 'mcp',
+        name: 'WorkflowMcp',
+        component: () => import('@/components/McpPanel.vue'),
+        meta: { title: 'MCP 兼容' }
+      },
+      {
+        path: 'automation',
+        name: 'WorkflowAutomation',
+        component: () => import('@/components/AutomationPanel.vue'),
+        meta: { title: '自动化' }
+      }
+    ]
+  },
+  // 兼容旧路径
+  { path: '/plugins', redirect: '/workflow/plugins' },
+  { path: '/mcp', redirect: '/workflow/mcp' },
+  { path: '/automation', redirect: '/workflow/automation' },
+  {
+    path: '/browser',
+    name: 'Browser',
+    component: () => import('@/views/workflow/BrowserView.vue'),
+    meta: { title: '浏览器自动化' }
+  },
+
+  // ===== 专家联盟（嵌套路由） =====
+  {
+    path: '/expert-center',
+    component: () => import('@/views/expert/ExpertCenterView.vue'),
+    meta: { title: '专家联盟' },
+    redirect: '/expert-center/overview',
+    children: [
+      { path: '', redirect: '/expert-center/overview' },
+      {
+        path: 'overview',
+        name: 'ExpertOverview',
+        component: () => import('@/views/expert/panels/ExpertOverviewPanel.vue'),
+        meta: { title: '联盟总览' }
+      },
+      {
+        path: 'enterprise',
+        name: 'ExpertEnterprise',
+        component: () => import('@/components/ExpertEnterprisePanel.vue'),
+        meta: { title: '企业管理' }
+      },
+      {
+        path: 'orchestrator',
+        name: 'ExpertOrchestrator',
+        component: () => import('@/components/ExpertOrchestratorPanel.vue'),
+        meta: { title: '编排引擎' }
+      }
+    ]
+  },
+  // 兼容旧路径
+  { path: '/expert-enterprise', redirect: '/expert-center/enterprise' },
+  { path: '/expert-orchestrator', redirect: '/expert-center/orchestrator' },
+
+  // ===== 算子商城 =====
+  {
+    path: '/market',
+    name: 'Market',
+    component: () => import('@/views/market/MarketView.vue'),
+    meta: { title: '算子商城' }
+  },
+  {
+    path: '/market/:id',
+    name: 'MarketDetail',
+    component: () => import('@/views/market/MarketDetailView.vue'),
+    meta: { title: '算子详情' }
+  },
+
+  // ===== 算子中心 =====
+  {
+    path: '/operators',
+    name: 'Operators',
+    component: () => import('@/views/operators/OperatorsView.vue'),
+    meta: { title: '算子中心' }
+  },
+
+  // ===== 系统管理（嵌套路由） =====
   {
     path: '/admin',
-    name: 'Admin',
     component: () => import('@/views/admin/AdminView.vue'),
-    meta: { title: '系统管理' }
+    meta: { title: '系统管理' },
+    redirect: '/admin/overview',
+    children: [
+      { path: '', redirect: '/admin/overview' },
+      {
+        path: 'overview',
+        name: 'AdminOverview',
+        component: () => import('@/views/admin/panels/AdminOverview.vue'),
+        meta: { title: '管理总览' }
+      },
+      {
+        path: 'access',
+        name: 'AdminAccess',
+        component: () => import('@/views/admin/panels/AdminAccess.vue'),
+        meta: { title: '访问凭证' }
+      },
+      {
+        path: 'audit',
+        name: 'AdminAudit',
+        component: () => import('@/views/admin/panels/AdminAudit.vue'),
+        meta: { title: '审计日志' }
+      },
+      {
+        path: 'storage',
+        name: 'AdminStorage',
+        component: () => import('@/views/admin/panels/AdminStorage.vue'),
+        meta: { title: '存储与模块' }
+      },
+      {
+        path: 'hitl',
+        name: 'AdminHitl',
+        component: () => import('@/views/admin/panels/AdminHitl.vue'),
+        meta: { title: 'HITL 审批' }
+      },
+      {
+        path: 'monitor',
+        name: 'AdminMonitor',
+        component: () => import('@/views/admin/panels/AdminMonitor.vue'),
+        meta: { title: '系统监控' }
+      },
+      {
+        path: 'llm',
+        name: 'AdminLlm',
+        component: () => import('@/views/admin/panels/AdminLlm.vue'),
+        meta: { title: '大模型配置' }
+      },
+      {
+        path: 'docs',
+        name: 'AdminDocs',
+        component: () => import('@/views/admin/panels/AdminDocs.vue'),
+        meta: { title: 'API 文档' }
+      }
+    ]
   },
+  // 兼容旧路径
+  { path: '/monitor', redirect: '/admin/monitor' },
+  { path: '/docs', redirect: '/admin/docs' },
+  { path: '/llm-config', redirect: '/admin/llm' },
+  { path: '/knowledge-base', redirect: '/resources/knowledge' },
+
+  // 404 兜底
   {
     path: '/:pathMatch(.*)*',
     redirect: '/ai'

@@ -1,0 +1,114 @@
+// 导航配置 - 侧边栏模块、分组、子模块、阶段流程等
+
+// 一级导航模块（核心域 · 约 10 项 · 3 组）
+// 设计原则：80% 用户 80% 时间用的功能放侧边栏
+// 二级/三级功能通过页面内 Tabs 和全局搜索(Ctrl+K) 访问
+export const NAV_MODULES = [
+  // —— 项目域 ——
+  { key: 'dashboard', label: '项目工作台', icon: 'Odometer', path: '/dashboard', color: '#4f46e5', bg: '#eef2ff' },
+  { key: 'tasks', label: '任务管理', icon: 'List', path: '/tasks', color: '#0ea5e9', bg: '#e0f2fe' },
+  { key: 'resources', label: '资源管理', icon: 'Coin', path: '/resources', color: '#10b981', bg: '#ecfdf5' },
+  // —— 核心能力 ——
+  { key: 'ai', label: 'AI 助手', icon: 'ChatDotRound', path: '/ai', color: '#ec4899', bg: '#fce7f3' },
+  { key: 'graph', label: '知识图谱', icon: 'Share', path: '/graph', color: '#06b6d4', bg: '#ecfeff' },
+  { key: 'operators', label: '算子引擎', icon: 'Cpu', path: '/operators', color: '#6366f1', bg: '#eef2ff' },
+  { key: 'workflow', label: '工作流', icon: 'Operation', path: '/workflow', color: '#f59e0b', bg: '#fffbeb' },
+  // —— 扩展 ——
+  { key: 'expert-center', label: '专家联盟', icon: 'User', path: '/expert-center', color: '#7c3aed', bg: '#ede9fe' },
+  { key: 'market', label: '算子商城', icon: 'Shop', path: '/market', color: '#f43f5e', bg: '#ffe4e6' },
+  { key: 'admin', label: '系统设置', icon: 'Setting', path: '/admin', color: '#475569', bg: '#f1f5f9' }
+]
+
+// 侧边栏导航分组（3 大域）
+export const NAV_GROUPS = [
+  { key: 'project',  label: '项目域',   order: 0, items: ['dashboard', 'tasks', 'resources'] },
+  { key: 'core',     label: '核心能力', order: 1, items: ['ai', 'graph', 'operators', 'workflow'] },
+  { key: 'extend',   label: '扩展',     order: 2, items: ['expert-center', 'market', 'admin'] }
+]
+
+// 二级子模块映射（一级模块 → 页面内 Tabs 子模块）
+// 这些模块不再出现在侧边栏，但可以通过页面内 Tabs 或全局搜索访问
+export const SUB_MODULES = {
+  dashboard: [
+    { key: 'overview', label: '概览', path: '/dashboard' },
+    { key: 'projects', label: '项目列表', path: '/projects' }
+  ],
+  ai: [
+    { key: 'chat', label: '对话', path: '/ai' },
+    { key: 'caomei', label: '需求编译', path: '/caomei' }
+  ],
+  graph: [
+    { key: 'explorer', label: '图谱探索', path: '/graph' },
+    { key: 'fusion', label: '全维融合', path: '/mox-fusion' }
+  ],
+  workflow: [
+    { key: 'editor', label: '编排', path: '/workflow' },
+    { key: 'plugins', label: '插件', path: '/plugins' },
+    { key: 'mcp', label: 'MCP', path: '/mcp' },
+    { key: 'automation', label: '自动化', path: '/automation' }
+  ],
+  'expert-center': [
+    { key: 'experts', label: '专家列表', path: '/expert-center' },
+    { key: 'enterprise', label: '企业管理', path: '/expert-enterprise' },
+    { key: 'orchestrator', label: '编排引擎', path: '/expert-orchestrator' }
+  ],
+  resources: [
+    { key: 'all', label: '全部资源', path: '/resources' },
+    { key: 'knowledge', label: '知识库', path: '/knowledge-base' }
+  ],
+  admin: [
+    { key: 'system', label: '系统管理', path: '/admin' },
+    { key: 'monitor', label: '系统监控', path: '/monitor' },
+    { key: 'docs', label: 'API 文档', path: '/docs' },
+    { key: 'llm', label: '大模型配置', path: '/llm-config' }
+  ]
+}
+
+// 三级功能（高级/低频，仅通过全局搜索和 AI 对话访问）
+export const HIDDEN_MODULES = [
+  { key: 'browser', label: '浏览器自动化', icon: 'Monitor', path: '/browser', color: '#0ea5e9', bg: '#e0f2fe' },
+  { key: 'algolab', label: '算法实验室', icon: 'TrendCharts', path: '/algolab', color: '#d97706', bg: '#fef3c7' },
+  { key: 'infinite-optimizer', label: '无穷维度优化', icon: 'Compass', path: '/infinite-optimizer', color: '#0e7490', bg: '#ecfeff' },
+  { key: 'botCenter', label: '机器人中心', icon: 'Cpu', path: '/botCenter', color: '#8b5cf6', bg: '#f3e8ff' }
+]
+
+// 5 阶段流程（与 PhasePipeline 对齐 · 按项目开发流程）
+export const PROJECT_PHASES = [
+  { key: 'requirement', label: '需求阶段', desc: '项目对话 · 需求编译 · 知识库', color: '#6366f1', group: 's1-require' },
+  { key: 'architecture', label: '架构阶段', desc: '知识图谱 · 专家联盟 · 全维融合', color: '#06b6d4', group: 's2-arch' },
+  { key: 'develop', label: '开发阶段', desc: '算子 · 工作流 · 插件 · 自动化', color: '#10b981', group: 's3-dev' },
+  { key: 'release', label: '发布阶段', desc: '监控 · 文档 · 系统管理', color: '#f59e0b', group: 's4-release' }
+]
+
+// 顶栏⚡新建命令（6 项，按 5 阶段顺序排）
+export const QUICK_CREATE_COMMANDS = [
+  { key: 'project',    label: '新建项目',     icon: 'Folder',      tip: 'S0 启动跟进',         action: 'event', event: 'mox:open-create-project' },
+  { key: 'task',       label: '新建任务',     icon: 'List',        tip: 'Ctrl + Shift + N',    action: 'event', event: 'mox:open-create-task' },
+  { key: 'ai-session', label: '新建 AI 对话', icon: 'ChatDotRound',tip: 'AI助手X · φ模式',    action: 'route', route: '/ai', query: { fresh: '1' } },
+  { key: 'expert',     label: '注册专家',     icon: 'User',        tip: '专家联盟招募',        action: 'event', event: 'mox:open-register-expert' },
+  { key: 'workflow',   label: '新建工作流',   icon: 'Operation',   tip: 'S3 方案设计',         action: 'route', route: '/workflow', query: { action: 'create' } },
+  { key: 'market',     label: '上传算子包',   icon: 'Shop',        tip: 'S4 注册算子',         action: 'route', route: '/market', query: { action: 'upload' } }
+]
+
+// 快捷键分组（Shift + ? 弹 Drawer 展示给用户）
+export const HOTKEY_GROUPS = [
+  {
+    group: '全局',
+    items: [
+      { keys: ['Ctrl', 'K'], desc: '聚焦全局搜索（命令面板）' },
+      { keys: ['Ctrl', '⇧', 'P'], desc: '同上（命令面板，兼容 VS Code 用户）' },
+      { keys: ['Ctrl', '⇧', 'N'], desc: '弹出新建任务 Dialog（任何页面）' },
+      { keys: ['Shift', '?'], desc: '打开 / 关闭本快捷键帮助' },
+      { keys: ['Alt', '1..9'], desc: '按导航分组 1-9 顺序跳转到对应模块' }
+    ]
+  },
+  {
+    group: '表单与列表',
+    items: [
+      { keys: ['Esc'], desc: '关闭当前 Dialog / Drawer / 取消搜索' },
+      { keys: ['Enter'], desc: '提交聚焦中的表单 / 搜索（已在 10+ 页面启用）' },
+      { keys: ['Ctrl', 'Enter'], desc: 'AI 场景下提交长文本（Chat/Automation 中）' },
+      { keys: ['⌫ / Backspace'], desc: '在列表内清空筛选（需列表聚焦）' }
+    ]
+  }
+]

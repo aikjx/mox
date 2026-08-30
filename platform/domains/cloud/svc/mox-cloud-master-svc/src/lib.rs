@@ -12,6 +12,8 @@
 
 pub mod error;
 pub mod master_server;
+pub mod raft_master;
+pub mod scheduler;
 pub mod snapshot;
 pub mod volume_allocator;
 pub mod volume_replica;
@@ -20,6 +22,18 @@ pub use error::{MasterError, MasterResult};
 pub use master_server::{
     MasterConfig, MasterServer, Metrics, VolumeId, VolumeLoadReport, VolumeStatus,
     VolumeStatusState,
+};
+pub use raft_master::{
+    AppendEntriesRequest, AppendEntriesResponse, ConfigChangeLog, ConfigChangeType,
+    HeartbeatLog, InstallSnapshotRequest, InstallSnapshotResponse, RaftConfig, RaftLogEntry,
+    RaftLogType, RaftMaster, RaftMetrics, RaftNodeInfo, RaftRole, RaftSnapshotMeta,
+    RaftTickAction, RequestVoteRequest, RequestVoteResponse, ReplicaMigrationLog,
+    VolumeAllocationLog,
+};
+pub use scheduler::{
+    DataTemperature, DistributedScheduler, MigrationStatus, NodeLoad, NodeTopology,
+    PlacementStrategy, RebalancePlan, RecoveryPlan, RebuildTask, SchedulerNode,
+    SchedulerStats, SchedulerWeights, VolumeMigrationTask,
 };
 pub use snapshot::{SnapshotId, SnapshotManager, SnapshotMeta};
 pub use volume_allocator::{VolumeAllocation, VolumeAllocator, VolumeInfo};

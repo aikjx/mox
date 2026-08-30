@@ -11,6 +11,28 @@
 //! - Node/Edge CRUD with type-safe schemas
 //! - Batch operations and transaction support
 //! - Indexing by type, property, and full-text search
+//!
+//! ## 分布式存储架构（新增）
+//!
+//! - `kv_rocksdb` - RocksDB KV 存储引擎，6 列族设计，支持千亿级数据
+//! - `shard_raft` - 分片 Raft 共识层，每个分片独立 Raft 组
+//! - `storage_engine` - 分布式存储引擎门面，统一 API + 分片路由
+//! - `cdc_publisher` - CDC 变更数据捕获，消费者组 + offset 管理
+
+// ---- 现有模块 ----
+pub mod error;
+pub mod graph_codec;
+pub mod kv_engine;
+pub mod partition_raft;
+pub mod cdc_source;
+pub mod storage_api;
+pub mod storage_server;
+
+// ---- 分布式存储新模块 ----
+pub mod kv_rocksdb;
+pub mod shard_raft;
+pub mod storage_engine;
+pub mod cdc_publisher;
 
 use petgraph::graph::{DiGraph, NodeIndex, EdgeIndex};
 use petgraph::visit::EdgeRef;
@@ -391,6 +413,38 @@ impl PersistentGraphStore {
 impl Default for PersistentGraphStore {
     fn default() -> Self { Self::new() }
 }
+
+// ============================================================================
+// 分布式存储模块重导出
+// ============================================================================
+
+/// RocksDB KV 存储引擎重导出
+pub use kv_rocksdb::{
+    RocksDBStore, StoredNode, StoredEdge, WriteBatch, WriteOp, EdgeIndexEntry, EdgeIndexItem,
+    CF_NODES, CF_EDGES, CF_NODE_INDEX, CF_EDGE_INDEX, CF_TYPE_INDEX, CF_STATS,
+    node_key, node_prefix, edge_key, edge_src_prefix, edge_src_type_prefix,
+    out_index_key, out_index_prefix, in_index_key, in_index_prefix,
+    node_type_index_key, node_type_index_prefix, type_index_key, stats_key,
+    all_column_families,
+};
+
+/// 分片 Raft 共识层重导出
+pub use shard_raft::{
+    ShardRaft, RaftLogEntry, RaftGroup, NodeRole, ShardStats, ShardSnapshot,
+    vid_hash_shard, vid_hash_u64,
+};
+
+/// 分布式存储引擎重导出
+pub use storage_engine::{
+    StorageEngine, DistributedStorageEngine, Vertex, Edge, Neighbor,
+    Direction, TraversalOptions, BatchResult,
+    ReadConsistency, WriteConsistency,
+};
+
+/// CDC 发布者重导出
+pub use cdc_publisher::{
+    CdcPublisher, CdcEvent, CdcEventType, FlowControlPolicy,
+};
 
 #[cfg(test)]
 mod tests {

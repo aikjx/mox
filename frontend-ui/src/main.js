@@ -15,7 +15,23 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
 }
 
-// ===== 企业级全局错误处理 =====
+// ===== Pinia 状态管理 =====
+const pinia = createPinia()
+
+// Pinia DevTools 配置（开发环境自动启用，生产环境可关闭）
+pinia.use(({ store }) => {
+  // 在 DevTools 中显示 store 的自定义标签
+  store.$subscribe((mutation, state) => {
+    // 可在此处添加状态变更日志（开发调试用）
+    if (import.meta.env.DEV) {
+      console.debug(`[Pinia:${store.$id}]`, mutation.type, mutation.payload)
+    }
+  })
+})
+
+app.use(router)
+app.use(pinia)
+app.use(ElementPlus)
 app.config.errorHandler = (err, instance, info) => {
   console.error('[Vue Error]', err, info)
   // 避免在用户操作过程中频繁弹窗，只对非预期错误提示
@@ -33,7 +49,4 @@ window.addEventListener('unhandledrejection', (event) => {
   }
 })
 
-app.use(router)
-app.use(createPinia())
-app.use(ElementPlus)
 app.mount('#app')

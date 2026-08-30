@@ -1,0 +1,28 @@
+[package]
+name = "mox-cloud-rebalance-svc"
+version.workspace = true
+edition.workspace = true
+license = "MIT OR Apache-2.0"
+authors.workspace = true
+description = "Mox Cloud Drive L4 Rebalance Service - distributed data balancing and migration orchestration"
+
+[dependencies]
+mox-cloud-foundation = { workspace = true }
+mox-cloud-master-svc = { workspace = true }
+mox-cloud-volume-svc = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+parking_lot = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+rand = { workspace = true }
+bytes = "1"
+crc32c = { version = "0.6", default-features = false }
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }

@@ -3658,6 +3658,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-cloud-rebalance-svc"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "crc32c",
+ "hex",
+ "mox-cloud-foundation",
+ "mox-cloud-master-svc",
+ "mox-cloud-volume-svc",
+ "parking_lot",
+ "rand 0.8.7",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "mox-cloud-s3-svc"
 version = "3.0.0-ai-powered"
 dependencies = [

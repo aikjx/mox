@@ -253,3 +253,84 @@ def _jianpu_from_entry(entry: float) -> Tuple[str, int, int, int]:
     # 兜底：用 0.25 对齐的最近整拍近似
     dashes = int(round(entry)) - 1
     return ("", 0, 0, max(0, dashes))
+
+
+# ==========================
+# 节奏记谱优化（出版级规范）
+# ==========================
+
+# 同音短休止合并阈值（拍）：低于此值的同音间休止被视为"分割伪影"，
+# 前后同音合并为一个长音。0.125 = 八分音符的一半，足够包容
+# VAD/置信度边界抖动造成的短间隙，又不会吞掉真实的八分休止。
+_SAME_PITCH_REST_MERGE_THRESH = 0.125
+
+# 极短休止吸收阈值（拍）：低于此值的休止被吸收到前一个音符，
+# 避免谱面出现"一个十六分休止"这种几乎无音乐意义的细碎标记。
+_TINY_REST_ABSORB_THRESH = 0.0625
+
+
+def optimize_rhythm(notes: List[Dict]) -> Tuple[List[Dict], Dict]:
+    """节奏记谱优化：减少不必要的休止符分裂，让谱面更接近出版级规范。
+
+    优化项（按顺序执行，每项都不修改音高顺序与时值总量）：
+      1) 同音短休止合并：相同音高 + 短休止（<=阈值） → 合并为一个长音
+      2) 极短休止吸收：< 1/32 拍的微休止吸收到前一音符
+
+    返回 (优化后 notes, 统计信息)。不修改输入。
+    统计信息：{merged_rests: 合并的休止符数, absorbed_tiny_rests: 吸收的微休止数,
+              saved_rest_tokens: 减少的休止符 token 数（估算）}
+    """
+    if len(notes) < 2:
+        return [dict(n) for n in notes], {
+            "merged_rests": 0, "absorbed_tiny_rests": 0, "saved_rest_tokens": 0}
+
+    out: List[Dict] = [dict(notes[0])]
+    merged_rests = 0
+    absorbed_tiny = 0
+
+    for i in range(1, len(notes)):
+        prev = out[-1]
+        cur = dict(notes[i])
+        rest = float(cur.get("rest_before_beat", 0.0))
+
+        # 优化 1：同音短休止合并
+        same_pitch = int(round(prev.get("midi", 0))) == int(round(cur.get("midi", 0)))
+        if same_pitch and 0 < rest <= _SAME_PITCH_REST_MERGE_THRESH:
+            # 合并：把 prev 拉长到 cur 的结束，丢弃 cur（休止被吃掉）
+            new_end = float(cur["end_beat"])
+            prev["end_beat"] = round(new_end, 4)
+            prev["dur_beat"] = round(new_end - float(prev["start_beat"]), 4)
+            # 重新量化到合法时值（合并后可能是非标准拍数）
+            prev["dur_beat"] = round(_legal_dur(float(prev["dur_beat"])), 4)
+            prev["end_beat"] = round(float(prev["start_beat"]) + float(prev["dur_beat"]), 4)
+            merged_rests += 1
+            continue
+
+        # 优化 2：极短休止吸收到前一音符
+        if 0 < rest < _TINY_REST_ABSORB_THRESH:
+            # 把 prev 拉长，吸收掉微休止，cur 起始后移到 prev 结束
+            new_prev_end = float(prev["end_beat"]) + rest
+            prev["end_beat"] = round(new_prev_end, 4)
+            prev["dur_beat"] = round(new_prev_end - float(prev["start_beat"]), 4)
+            # prev 重新量化
+            prev["dur_beat"] = round(_legal_dur(float(prev["dur_beat"])), 4)
+            prev["end_beat"] = round(float(prev["start_beat"]) + float(prev["dur_beat"]), 4)
+            # cur 的 rest_before 变为 0（已被吸收）
+            cur["rest_before_beat"] = 0.0
+            cur["start_beat"] = round(float(prev["end_beat"]), 4)
+            cur["end_beat"] = round(float(cur["start_beat"]) + float(cur["dur_beat"]), 4)
+            absorbed_tiny += 1
+
+        out.append(cur)
+
+    # 重新计算 rest_before_beat（合并/吸收后可能变化）
+    for i in range(1, len(out)):
+        rest = float(out[i]["start_beat"]) - float(out[i - 1]["end_beat"])
+        out[i]["rest_before_beat"] = round(max(0.0, rest), 4)
+
+    stats = {
+        "merged_rests": merged_rests,
+        "absorbed_tiny_rests": absorbed_tiny,
+        "saved_rest_tokens": merged_rests + absorbed_tiny,
+    }
+    return out, stats

@@ -79,6 +79,7 @@ members = [
     "platform/domains/cloud/svc/mox-cloud-volume-svc",
     "platform/domains/cloud/svc/mox-cloud-s3-svc",
     "platform/domains/cloud/svc/mox-cloud-filer-svc",
+    "platform/domains/cloud/svc/mox-cloud-rebalance-svc",
     "platform/domains/voice/svc/mox-voice-core-svc",
     "platform/domains/voice/svc/mox-voice-asr-svc",
     "platform/domains/voice/svc/mox-voice-intent-svc",
@@ -246,6 +247,7 @@ mox-data-catalog-svc = { path = "platform/domains/data/svc/mox-data-catalog-svc"
 # Service 灞?(cloud)
 mox-cloud-master-svc = { path = "platform/domains/cloud/svc/mox-cloud-master-svc" }
 mox-cloud-volume-svc = { path = "platform/domains/cloud/svc/mox-cloud-volume-svc" }
+mox-cloud-rebalance-svc = { path = "platform/domains/cloud/svc/mox-cloud-rebalance-svc" }
 mox-cloud-s3-svc = { path = "platform/domains/cloud/svc/mox-cloud-s3-svc" }
 mox-cloud-filer-svc = { path = "platform/domains/cloud/svc/mox-cloud-filer-svc" }
 # Service 灞?(voice)

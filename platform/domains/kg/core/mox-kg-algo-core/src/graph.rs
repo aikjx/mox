@@ -5,6 +5,7 @@
 
 use crate::types::{KnowledgeEdge, KnowledgeNode};
 use petgraph::graph::{DiGraph, NodeIndex};
+use petgraph::visit::EdgeRef;
 use std::collections::HashMap;
 
 use crate::Result;

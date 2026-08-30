@@ -20,25 +20,17 @@
       </div>
     </div>
 
-    <component :is="activeComp" />
+    <router-view v-slot="{ Component }">
+      <transition name="fade" mode="out-in">
+        <component :is="Component" />
+      </transition>
+    </router-view>
   </div>
 </template>
 
 <script setup>
-import { computed, defineAsyncComponent } from 'vue'
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-
-// 管理区面板（懒加载，tab 切换时才载入）
-const PANELS = {
-  overview: defineAsyncComponent(() => import('./panels/AdminOverview.vue')),
-  access: defineAsyncComponent(() => import('./panels/AdminAccess.vue')),
-  audit: defineAsyncComponent(() => import('./panels/AdminAudit.vue')),
-  storage: defineAsyncComponent(() => import('./panels/AdminStorage.vue')),
-  hitl: defineAsyncComponent(() => import('./panels/AdminHitl.vue')),
-  monitor: defineAsyncComponent(() => import('./panels/AdminMonitor.vue')),
-  docs: defineAsyncComponent(() => import('./panels/AdminDocs.vue')),
-  llm: defineAsyncComponent(() => import('./panels/AdminLlm.vue'))
-}
 
 const TABS = [
   { key: 'overview', label: '管理总览', icon: 'Odometer' },
@@ -51,18 +43,22 @@ const TABS = [
   { key: 'docs', label: 'API 文档', icon: 'Document' }
 ]
 
+const TAB_KEYS = TABS.map(t => t.key)
+
 const route = useRoute()
 const router = useRouter()
 
 const activeTab = computed(() => {
-  const t = String(route.query.tab || 'overview')
-  return PANELS[t] ? t : 'overview'
+  // 优先从子路由名获取，其次从 query.tab 兼容旧链接
+  const name = route.name?.toString().replace('Admin', '').toLowerCase()
+  if (name && TAB_KEYS.includes(name)) return name
+  const q = String(route.query.tab || 'overview')
+  return TAB_KEYS.includes(q) ? q : 'overview'
 })
 
-const activeComp = computed(() => PANELS[activeTab.value])
-
 function switchTab(key) {
-  router.replace({ query: { ...route.query, tab: key === 'overview' ? undefined : key } })
+  const target = key === 'overview' ? '/admin' : `/admin/${key}`
+  router.push(target)
 }
 </script>
 

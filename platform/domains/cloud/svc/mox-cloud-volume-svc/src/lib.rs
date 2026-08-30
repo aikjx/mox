@@ -13,6 +13,7 @@
 //! fs_layout / rebuild / metrics 模块使用。
 
 pub mod chunk_rebuild;
+pub mod erasure_coding_ext;
 pub mod error;
 pub mod fs_layout;
 pub mod manifest;
@@ -20,10 +21,16 @@ pub mod metrics;
 pub mod profile;
 pub mod rebuild;
 pub mod reed_solomon;
+pub mod storage_tier;
 pub mod gf256_simd;
 pub mod volume_server;
 
 pub use chunk_rebuild::{InMemoryPeerFetcher, PeerChunkFetcher, RebuildCoordinator};
+pub use erasure_coding_ext::{
+    CauchyReedSolomon, ChecksumType, IncrementalEncoder, IncrementalUpdate,
+    IncrementalUpdateResult, IntegrityChecker, ProgressiveRebuildJob, ProgressiveRebuilder,
+    RebuildEngineType, RebuildPriority, RebuildStats, ShardChecksum,
+};
 pub use error::{VolumeError, VolumeResult};
 pub use fs_layout::{ec_object_dir, manifest_path, parse_shard_path, shard_path};
 pub use manifest::{crc64_ecma, crc64_ecma_update, EcManifest, StorageTier};
@@ -34,5 +41,10 @@ pub use metrics::{
 pub use profile::{EcProfile, DEFAULT_MIN_OBJ_SIZE};
 pub use rebuild::{encode_and_write, RebuildJob};
 pub use reed_solomon::{RSError, RSResult, ReedSolomon2Plus1, ReedSolomonEngine, shard_size_for};
+pub use storage_tier::{
+    MigrationStatus, MigrationScheduleWindow, ObjectAccessStats, StorageLayer,
+    StorageLayerConfig, StorageTierEngine, TierMigrationTask, TierStats, TieringPolicyConfig,
+    TieringPolicyType,
+};
 pub use gf256_simd::{gf_vec_mul_auto, is_avx2_supported, SIMD_CHUNK};
 pub use volume_server::{crc32c_bytes, sha256_hex, ChunkAck, VolumeId, VolumeServer};

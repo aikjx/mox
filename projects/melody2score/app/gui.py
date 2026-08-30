@@ -902,6 +902,10 @@ class MainWindow(QMainWindow):
         self.pending_file = path
         self.lblFile.setText(os.path.basename(path))
         self.btnPreview.setEnabled(True)
+        # 自动用文件名填充标题（去掉扩展名），比"未命名旋律"更有意义
+        base_name = os.path.splitext(os.path.basename(path))[0]
+        if base_name:
+            self.titleEdit.setText(base_name)
         # 只读取一次文件字节，识别与试听共用，避免 UI 线程重复 I/O 解码造成卡顿
         try:
             with open(path, "rb") as f:
@@ -997,6 +1001,10 @@ class MainWindow(QMainWindow):
             if os.path.exists(path):
                 self._pending_sample_path = path
                 self.btnPreview.setEnabled(True)
+            # 用样例曲名填充标题（优先用清单里的中文标题，没有就用文件名）
+            title = item.get("title_zh") or item.get("title") or os.path.splitext(os.path.basename(file_rel))[0]
+            if title:
+                self.titleEdit.setText(title)
         self._start({"kind": "sample", "name": file_rel, "cfg": self._cfg(),
                      "source": file_rel})
 

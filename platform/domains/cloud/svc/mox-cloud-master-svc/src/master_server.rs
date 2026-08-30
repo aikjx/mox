@@ -4,6 +4,8 @@
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
 use crate::error::{MasterError, MasterResult};
+use crate::raft_master::{RaftConfig, RaftMaster, RaftRole};
+use crate::scheduler::DistributedScheduler;
 use crate::snapshot::{now_millis, SnapshotId, SnapshotManager};
 use crate::volume_allocator::{VolumeAllocation, VolumeAllocator, VolumeInfo};
 use crate::volume_replica::{ReplicaHealth, ReplicaInfo, ReplicaSetManager};
@@ -128,6 +130,10 @@ pub struct MasterServer {
     pub replica_manager: ReplicaSetManager,
     pub snapshot_manager: SnapshotManager,
     pub metrics: Arc<Metrics>,
+    /// Raft 共识引擎（Master HA）
+    pub raft: RaftMaster,
+    /// 分布式调度器
+    pub scheduler: DistributedScheduler,
     last_heartbeat: parking_lot::Mutex<HashMap<VolumeId, u64>>,
     volume_capacities: parking_lot::Mutex<HashMap<VolumeId, u64>>,
     /// M1 简化：volume_id -> 最近 snapshot_manifest（用于 restore 查回）
@@ -139,12 +145,37 @@ pub struct MasterServer {
 
 impl MasterServer {
     pub fn new(config: MasterConfig) -> Self {
+        let hb_timeout = config.heartbeat_timeout_ms;
+        let raft_config = RaftConfig {
+            election_timeout_ms: hb_timeout * 2,
+            heartbeat_interval_ms: hb_timeout / 3,
+            ..RaftConfig::default()
+        };
         Self {
             config,
             allocator: VolumeAllocator::new(),
             replica_manager: ReplicaSetManager::new(),
             snapshot_manager: SnapshotManager::new(),
             metrics: Arc::new(Metrics::new()),
+            raft: RaftMaster::new(raft_config),
+            scheduler: DistributedScheduler::new(hb_timeout),
+            last_heartbeat: parking_lot::Mutex::new(HashMap::new()),
+            volume_capacities: parking_lot::Mutex::new(HashMap::new()),
+            snapshot_manifest_store: parking_lot::Mutex::new(HashMap::new()),
+        }
+    }
+
+    /// 使用指定 Raft 配置创建 MasterServer
+    pub fn with_raft_config(config: MasterConfig, raft_config: RaftConfig) -> Self {
+        let hb_timeout = config.heartbeat_timeout_ms;
+        Self {
+            config,
+            allocator: VolumeAllocator::new(),
+            replica_manager: ReplicaSetManager::new(),
+            snapshot_manager: SnapshotManager::new(),
+            metrics: Arc::new(Metrics::new()),
+            raft: RaftMaster::new(raft_config),
+            scheduler: DistributedScheduler::new(hb_timeout),
             last_heartbeat: parking_lot::Mutex::new(HashMap::new()),
             volume_capacities: parking_lot::Mutex::new(HashMap::new()),
             snapshot_manifest_store: parking_lot::Mutex::new(HashMap::new()),
@@ -403,7 +434,32 @@ impl MasterServer {
             "snapshots_taken".into(),
             self.snapshot_manager.snapshots_taken_count(),
         );
+        // Raft 指标
+        m.extend(self.raft.metrics().snapshot());
+        // 调度器指标
+        m.extend(self.scheduler.stats().snapshot());
         m
+    }
+
+    /// 检查当前节点是否为 Leader（用于写请求路由）
+    pub fn is_leader(&self) -> bool {
+        self.raft.role() == RaftRole::Leader
+    }
+
+    /// 检查当前节点是否为 Leader 且租约有效（可安全处理读请求）
+    pub fn is_leader_leased(&self) -> bool {
+        self.raft.is_leader_leased()
+    }
+
+    /// 获取当前 Leader 地址（用于转发请求）
+    pub fn leader_addr(&self) -> Option<String> {
+        let leader_id = self.raft.leader_id()?;
+        // 从节点列表中查找地址
+        let nodes = self.raft.list_nodes();
+        nodes
+            .iter()
+            .find(|n| n.node_id == leader_id)
+            .map(|n| n.addr.clone())
     }
 
     /// 返回 refill 触发总计数（metrics + replica_manager 合计）

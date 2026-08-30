@@ -9,7 +9,7 @@ v2 改进：
 from typing import Dict, List, Tuple
 
 from core import score_sheet
-from core.quantize import quantize_notes, quarter_length, jianpu_dur_tokens
+from core.quantize import quantize_notes, quarter_length, jianpu_dur_tokens, optimize_rhythm
 
 # 公开标准歌谱导出函数，方便从 core.score 一处入口调用
 export_score_sheet = score_sheet.export_score
@@ -29,6 +29,8 @@ def to_musicxml(notes: List[Dict], bpm: float, key_name: Tuple[str, str], fp=Non
 
     eff_bpm = bpm if (bpm and 30.0 <= bpm <= 300.0) else 120.0
     qnotes = quantize_notes(notes, eff_bpm)
+    # 节奏记谱优化：合并同音短休止、吸收微休止，减少谱面细碎感
+    qnotes, _ = optimize_rhythm(qnotes)
 
     s = stream.Stream()
     s.append(m21key.Key(key_name[0], key_name[1]))
@@ -50,7 +52,8 @@ def to_musicxml(notes: List[Dict], bpm: float, key_name: Tuple[str, str], fp=Non
     return s
 
 
-def to_jianpu(notes: List[Dict], key_name: Tuple[str, str], bpm: float = 120.0) -> str:
+def to_jianpu(notes: List[Dict], key_name: Tuple[str, str],
+               bpm: float = 120.0, unicode_octave: bool = False) -> str:
     """转简谱 v2：量化到合法音乐时值，附点/半拍/三连音可视化表达。
 
     旧版只会输出整数拍的 "-"，导致所有附点/切分都丢了。新版：
@@ -58,6 +61,12 @@ def to_jianpu(notes: List[Dict], key_name: Tuple[str, str], bpm: float = 120.0) 
       - 右侧 `.` 表示附点（时值 × 1.5）；
       - 右侧 `-` 表示延音（整数拍延续）；
       - 前缀 `3` 表示三连音八分近似。
+
+    v3 新增 unicode_octave 模式（出版级规范，解决高低音点与减时线混淆）：
+      - 高音点：Unicode 组合上点 U+0307（如 1̇ 2̇），写在数字上方
+      - 低音点：Unicode 组合下点 U+0323（如 1̣ 2̣），写在数字下方
+      - 减时线：仍用 `_` 前缀，与高低音点彻底区分
+      - 附点：仍用 `.` 后缀，在数字右侧，与高低音点不重叠
     """
     from core.score_sheet import adaptive_tonic_midi, _name_to_pitch_class, _scale_for
 
@@ -67,6 +76,8 @@ def to_jianpu(notes: List[Dict], key_name: Tuple[str, str], bpm: float = 120.0) 
 
     eff_bpm = bpm if (bpm and bpm > 0) else 120.0
     qnotes = quantize_notes(notes, eff_bpm)
+    # 节奏记谱优化：合并同音短休止、吸收微休止，减少谱面细碎感
+    qnotes, _ = optimize_rhythm(qnotes)
 
     out = []
     for qn in qnotes:
@@ -88,24 +99,32 @@ def to_jianpu(notes: List[Dict], key_name: Tuple[str, str], bpm: float = 120.0) 
             deg = acc + str(scale.index(best) + 1)
 
         # 八度点
-        if oct_shift > 0:
-            deg = "." * oct_shift + deg
-        elif oct_shift < 0:
-            deg = deg + "_" * (-oct_shift)
+        if unicode_octave:
+            # Unicode 规范模式：上点/下点组合字符，与减时线/附点彻底无歧义
+            if oct_shift > 0:
+                # 高音点：在数字后加组合上点（多个八度加多个点）
+                deg = deg + "\u0307" * oct_shift
+            elif oct_shift < 0:
+                # 低音点：在数字后加组合下点（多个八度加多个点）
+                deg = deg + "\u0323" * (-oct_shift)
+        else:
+            # 兼容模式：高音前缀 '.'，低音后缀 '_'
+            # （注意：'_' 同时用作减时线前缀，易混淆——推荐使用 unicode_octave=True）
+            if oct_shift > 0:
+                deg = "." * oct_shift + deg
+            elif oct_shift < 0:
+                deg = deg + "_" * (-oct_shift)
 
         # 时值修饰（v2：附点+半拍+三连 显式）
         prefix, underscores, dots, dashes = jianpu_dur_tokens(qn["dur_beat"])
-        # 下划线：按简谱惯例写在数字下方（用 HTML <u> 标签，配合后续渲染；
-        # 若渲染层暂不支持 HTML，则在纯文本里用下划线字符前缀近似。
-        # 这里输出纯文本友好格式："__deg"（十六分）、"_deg"（八分），
-        # 与渲染层的 score_sheet 规则对齐）
+        # 下划线（减时线）：统一放在最前面，与高低音点区分
         core = deg
         if underscores == 2:
             core = "__" + core
         elif underscores == 1:
             core = "_" + core
         core = prefix + core
-        core += "." * dots        # 附点
+        core += "." * dots        # 附点（数字右侧）
         core += "-" * dashes      # 延音线
         out.append(core)
     return " ".join(out)

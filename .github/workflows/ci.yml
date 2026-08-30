@@ -2,16 +2,14 @@
 # MOX 平台 - CI/CD 流水线
 # =============================================================================
 # 触发条件：
-#   - PR 到 main/master 分支
-#   - 直接 push 到 main/master 分支
-#   - 打 tag v* 时触发 release
+#   - PR 到 main/master/develop 分支
+#   - 直接 push 到 main/master/develop 分支
 #
 # 流水线阶段：
-#   1. Checkout & Setup  - 检出代码，准备环境
-#   2. Lint & Format     - 代码规范检查
-#   3. Test              - 单元测试 + 集成测试
-#   4. Build             - 构建验证
-#   5. Docs              - API 文档生成
+#   1. Check & Lint   - cargo check + rustfmt + clippy
+#   2. Test (matrix)  - 核心 crate 单元测试
+#   3. Build          - workspace 构建验证
+#   4. Frontend       - 前端 lint + test + build
 # =============================================================================
 
 name: MOX CI
@@ -23,29 +21,29 @@ on:
       - 'platform/**'
       - 'frontend-ui/**'
       - '.github/workflows/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
   pull_request:
     branches: [main, master, develop]
     paths:
       - 'platform/**'
       - 'frontend-ui/**'
       - '.github/workflows/**'
-  release:
-    types: [published]
+      - 'Cargo.toml'
+      - 'Cargo.lock'
 
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: short
+  CARGO_INCREMENTAL: 0
 
 jobs:
   # ===========================================================================
-  # 阶段 1: Rust 代码检查
+  # 阶段 1: Rust 检查 & Lint
   # ===========================================================================
-  rust-lint:
-    name: Rust Lint & Format
+  rust-check:
+    name: Rust Check & Lint
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: platform
 
     steps:
       - name: Checkout
@@ -56,42 +54,80 @@ jobs:
         with:
           components: rustfmt, clippy
 
-      - name: Cache cargo
+      - name: Cache cargo registry
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-lint-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-lint-
+            ${{ runner.os }}-cargo-registry-
 
-      - name: Check formatting (rustfmt)
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-check-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-check-
+            ${{ runner.os }}-cargo-build-
+
+      - name: cargo check (default members)
+        run: cargo check --workspace
+
+      - name: rustfmt check
         run: cargo fmt --workspace --all-targets -- --check
 
-      - name: Clippy check
+      - name: clippy check
         run: cargo clippy --workspace --all-targets -- -D warnings
 
   # ===========================================================================
-  # 阶段 2: Rust 测试
+  # 阶段 2: Rust 测试（矩阵并行）
   # ===========================================================================
   rust-test:
-    name: Rust Test
+    name: Test ${{ matrix.crate }}
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: platform
-    needs: rust-lint
+    needs: rust-check
 
     strategy:
+      fail-fast: false
       matrix:
         crate:
+          # Foundation 层
           - mox-error
+          - mox-framework
+          # Core 层
           - mox-kg-algo-core
+          - mox-kg-core
           - mox-flow-operator-core
           - mox-ai-intent-core
           - mox-data-standards-core
+          - mox-data-norm-core
+          - mox-data-formula-core
+          - mox-voice-dsp-core
+          - mox-platform-operator-core
+          - mox-platform-system-core
+          - mox-platform-iam-core
+          - mox-platform-meta-core
+          - mox-dsql-core
+          # Service 层
+          - mox-kg-service-svc
+          - mox-project-graph-core
+          - mox-project-graph-svc
+          - mox-voice-core-svc
+          - mox-voice-asr-svc
+          - mox-voice-intent-svc
+          - mox-voice-operator-svc
+          - mox-market-template-svc
+          - mox-data-catalog-svc
+          # Gateway
+          - mox-platform-gateway-svc
+          # API 层
+          - mox-voice-api
+          - mox-market-api
+          # SDK
+          - mox-cloud-sdk
 
     steps:
       - name: Checkout
@@ -100,17 +136,25 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache cargo
+      - name: Cache cargo registry
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            target
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
           key: ${{ runner.os }}-cargo-test-${{ matrix.crate }}-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-test-${{ matrix.crate }}-
-            ${{ runner.os }}-cargo-test-
+            ${{ runner.os }}-cargo-check-
+            ${{ runner.os }}-cargo-build-
 
       - name: Test ${{ matrix.crate }}
         run: cargo test -p ${{ matrix.crate }} --no-fail-fast
@@ -129,10 +173,7 @@ jobs:
   rust-build:
     name: Rust Build
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: platform
-    needs: rust-lint
+    needs: rust-check
 
     steps:
       - name: Checkout
@@ -141,28 +182,43 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache cargo
+      - name: Cache cargo registry
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            target
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
           key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-build-
+            ${{ runner.os }}-cargo-check-
 
-      - name: Build (debug)
+      - name: Build workspace (debug)
         run: cargo build --workspace
 
-      - name: Build (release) - gateway only
+      - name: Build gateway (release)
         run: cargo build --release -p mox-platform-gateway-svc
+
+      - name: Upload gateway binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: mox-gateway-binary
+          path: target/release/mox-platform-gateway-svc
+          if-no-files-found: ignore
 
   # ===========================================================================
   # 阶段 4: 前端检查
   # ===========================================================================
-  frontend-lint:
-    name: Frontend Lint & Test
+  frontend:
+    name: Frontend Lint & Test & Build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -188,72 +244,31 @@ jobs:
       - name: Unit tests
         run: npm run test:unit -- --run
 
-      - name: Type check (if available)
-        run: npx vue-tsc --noEmit || echo "Type check skipped (no vue-tsc config)"
-
       - name: Build
         run: npm run build
 
   # ===========================================================================
-  # 阶段 5: API 文档生成
-  # ===========================================================================
-  api-docs:
-    name: API Docs
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: platform
-    needs: rust-build
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-docs-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-docs-
-
-      - name: Generate rust docs
-        run: cargo doc --workspace --no-deps
-
-      - name: Upload docs
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: platform/target/doc
-
-  # ===========================================================================
-  # 汇总状态（用于 PR 合并检查）
+  # 汇总状态（PR 合并检查点）
   # ===========================================================================
   ci-summary:
     name: CI Summary
     runs-on: ubuntu-latest
-    needs: [rust-lint, rust-test, rust-build, frontend-lint]
+    needs: [rust-check, rust-test, rust-build, frontend]
     if: always()
     steps:
-      - name: Check all required jobs passed
+      - name: Verify all checks passed
         run: |
-          echo "Rust Lint: ${{ needs.rust-lint.result }}"
-          echo "Rust Test: ${{ needs.rust-test.result }}"
+          echo "Rust Check & Lint: ${{ needs.rust-check.result }}"
+          echo "Rust Test (matrix): ${{ needs.rust-test.result }}"
           echo "Rust Build: ${{ needs.rust-build.result }}"
-          echo "Frontend Lint: ${{ needs.frontend-lint.result }}"
-          
-          if [[ "${{ needs.rust-lint.result }}" != "success" ]] || \
+          echo "Frontend: ${{ needs.frontend.result }}"
+
+          if [[ "${{ needs.rust-check.result }}" != "success" ]] || \
              [[ "${{ needs.rust-test.result }}" != "success" ]] || \
              [[ "${{ needs.rust-build.result }}" != "success" ]] || \
-             [[ "${{ needs.frontend-lint.result }}" != "success" ]]; then
-            echo "CI FAILED"
+             [[ "${{ needs.frontend.result }}" != "success" ]]; then
+            echo "❌ CI FAILED"
             exit 1
           fi
-          
+
           echo "✅ All CI checks passed!"

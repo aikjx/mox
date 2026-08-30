@@ -16,7 +16,7 @@ use mox_voice_core_svc::operator::{ActionParam, OperatorCategory, OperatorOutput
 use crate::helpers::platform_tag;
 use super::common::require_int;
 
-pub(crate) fn parse_button(s: &str) -> enigo::Button {
+pub fn parse_button(s: &str) -> enigo::Button {
     match s.trim().to_lowercase().as_str() {
         "right" => enigo::Button::Right,
         "middle" => enigo::Button::Middle,

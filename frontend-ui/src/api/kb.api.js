@@ -1,0 +1,23 @@
+// 云盘知识库 API
+import http from './http'
+
+export const kbListDocuments = (params) => http.get('/kb/documents', { params })
+export const kbGetDocument = (id) => http.get(`/kb/documents/${encodeURIComponent(id)}`)
+export const kbCreateDocument = (payload) => http.post('/kb/documents', payload)
+export const kbUpdateDocument = (id, payload) => http.put(`/kb/documents/${encodeURIComponent(id)}`, payload)
+export const kbDeleteDocument = (id) => http.delete(`/kb/documents/${encodeURIComponent(id)}`)
+export const kbAnalyzeDocument = (id) => http.post(`/kb/documents/${encodeURIComponent(id)}/analyze`)
+export const kbBatchAnalyze = (payload) => http.post('/kb/batch-analyze', payload)
+export const kbGetCategories = () => http.get('/kb/categories')
+export const kbGetTags = () => http.get('/kb/tags')
+export const kbSearch = (payload) => http.post('/kb/search', payload)
+export const kbGetVersions = (id) => http.get(`/kb/documents/${encodeURIComponent(id)}/versions`)
+export const kbGetVersion = (id, ver) => http.get(`/kb/documents/${encodeURIComponent(id)}/versions/${encodeURIComponent(ver)}`)
+export const kbCreateVersion = (id, payload) => http.post(`/kb/documents/${encodeURIComponent(id)}/versions`, payload)
+export const kbCompareVersions = (id, payload) => http.post(`/kb/documents/${encodeURIComponent(id)}/versions/compare`, payload)
+export const kbRevertVersion = (id, payload) => http.post(`/kb/documents/${encodeURIComponent(id)}/versions/revert`, payload)
+export const kbGetEntities = (id) => http.get(`/kb/documents/${encodeURIComponent(id)}/entities`)
+export const kbGraphLink = (id, payload) => http.post(`/kb/documents/${encodeURIComponent(id)}/graph-link`, payload)
+export const kbGetStats = () => http.get('/kb/stats')
+export const kbGetDocHistory = (id) => http.get(`/kb/documents/${encodeURIComponent(id)}/history`)
+export const kbGetHistory = (params) => http.get('/kb/history', { params })

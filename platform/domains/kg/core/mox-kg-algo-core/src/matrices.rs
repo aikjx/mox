@@ -7,6 +7,7 @@ use crate::csr::CsrAdj;
 use crate::graph::KnowledgeGraph;
 use crate::Result;
 use nalgebra::DMatrix;
+use petgraph::visit::EdgeRef;
 
 impl KnowledgeGraph {
     /// 构建邻接矩阵
