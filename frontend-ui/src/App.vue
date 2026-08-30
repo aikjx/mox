@@ -282,7 +282,13 @@
 
         <!-- 5 阶段全维流程条（仅项目化视图展示 · φ 布局定位元素） -->
         <div v-if="showPipeline" class="phasebar-wrap">
-          <PhasePipeline v-model="currentPhase" compact @change="onPhaseChange" />
+          <PhasePipeline
+            v-model="currentPhase"
+            compact
+            :show-progress="true"
+            title="项目全维流程"
+            @change="onPhaseChange"
+          />
         </div>
 
         <!-- 内容 -->

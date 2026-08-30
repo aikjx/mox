@@ -35,6 +35,7 @@ tower-http = { workspace = true, features = ["cors", "trace", "compression-full"
 mox-framework = { workspace = true }
 mox-kg-service-svc = { workspace = true, features = ["http-adapter"] }
 mox-platform-foundation = { workspace = true }
+mox-platform-api = { workspace = true }
 
 [features]
 default = []

@@ -4412,6 +4412,7 @@ dependencies = [
  "hex",
  "mox-framework",
  "mox-kg-service-svc",
+ "mox-platform-api",
  "mox-platform-foundation",
  "parking_lot",
  "prometheus",

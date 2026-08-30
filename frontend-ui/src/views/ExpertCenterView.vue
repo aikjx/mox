@@ -25,12 +25,12 @@
               <el-tag class="ver-tag-alt" effect="plain" round>以项目为根 · 全维 φ 流程</el-tag>
             </div>
             <p class="page-subtitle">
-              📋 需求阶段 · 🏗️ 架构阶段 · ⚙️ 开发阶段 · 🚀 发布阶段
               <span v-if="currentProject">
-                · 当前跟进：<b class="hl-project">{{ currentProject.name }}</b>
+                当前项目：<b class="hl-project">{{ currentProject.name }}</b>
                 <span v-if="currentProject.category" class="proj-cat">{{ currentProject.category }}</span>
+                <span v-if="currentProject.status"> · {{ currentProject.status }}</span>
               </span>
-              <span v-else class="muted-plain">· 请在顶栏选择项目，或在此快速<u class="link-like" @click="ensureProject">创建一个</u></span>
+              <span v-else class="muted-plain">请在顶栏选择项目，或在此快速<u class="link-like" @click="ensureProject">创建一个</u></span>
             </p>
           </div>
         </div>
@@ -65,11 +65,11 @@
 
       <!-- ============ 左栏：5 阶段导航 + 专家库 ============ -->
       <aside class="col col-left">
-        <!-- S1~S5 阶段导航 · 可点击跳阶段 -->
+        <!-- S1~S4 阶段导航 · 点击切换查看对应阶段的专家与流程 -->
         <section class="card card-tight phase-nav">
           <div class="card-head">
-            <span class="card-title">项目全维流程</span>
-            <span class="card-sub">5 段式 φ 生命周期</span>
+            <span class="card-title">阶段导航</span>
+            <span class="card-sub">点击切换查看对应阶段</span>
           </div>
           <div class="phase-list">
             <div

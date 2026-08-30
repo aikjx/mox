@@ -12,6 +12,48 @@
 - 部署：后端 `mox-platform-gateway-svc` crate 聚合为单一 `operator-server` 二进制（默认 `:3001`，可由 `--port` 覆盖）；`platform/backend-node/`（零依赖 Node）作为边缘入口占 `:3000`，托管 `frontend-ui/dist` 并将 `/api` 反向代理到 Rust；前端 Vite 代理 `/api` → `http://localhost:3000`（即 Node 边缘入口）。Node 不再实现任何领域逻辑，出码统一经 Rust ⛨验证网关 + 治理 8 闸门。
 - 架构模型 v2.0：6层8域DDD矩阵 — L0 Foundation（横切基础）/ L1 Gateway（网关）/ L2 Core（8域领域模型）/ L3 Svc（8域应用服务）/ L4 Sdk（8域对外类型）/ L5 Api（8域域间契约，规划中）。8域 = ai / cloud / data / flow / kg / market / platform / voice。旧 `platform/services/` 15-crate扁平模型已废弃，旧→新映射见 `docs/enterprise/ARCHITECTURE-MIGRATION.md`。
 
+## 根目录总览
+
+> AI 操作前必读：明确文件该放到哪里，不要在根目录随意新建散落的目录/文件。
+
+```
+infotopograph/
+├── platform/          # 后端 Rust 代码（6层8域DDD矩阵 · 模块化单体）
+├── frontend-ui/       # 前端 Vue3 代码（用户端 + 管理控制台）
+├── docs/              # 文档：架构设计、需求规格、ADR、工作汇报等
+│   ├── enterprise/    # 企业级需求/架构/设计文档（最权威）
+│   ├── architecture/  # 架构设计文档
+│   ├── working-reports/ # 工作汇报/周报/专项报告
+│   └── ...            # 其他领域文档
+├── reports/           # 产出物：HTML报告、Markdown报告、数据文件
+│   ├── html/          # HTML 可视化报告（各报告子目录 + 公共 _shared/）
+│   ├── markdown/      # Markdown 格式报告
+│   ├── data/          # 报告的数据文件（JSON、日志等）
+│   └── _shared/       # HTML 报告共享资源（字体、echarts、mermaid）
+├── prototypes/        # HTML 原型/演示项目（非生产代码）
+│   ├── _shared/       # 原型共享资源（字体、echarts、mermaid）
+│   └── <各原型项目>/
+├── deploy/            # 部署配置（helm、docker、nginx、systemd、sql）
+├── data/              # 运行时数据（cache、storage、uploads、exports）
+├── plugins/           # 插件（extensions、scripts、wasm）
+├── projects/          # 子项目/实验性项目
+├── log/               # 日志文件
+├── .runtime/          # 运行时脚本
+├── .github/           # CI/CD 工作流
+├── CLAUDE.md          # ← 你正在读的 AI 编码上下文规范
+├── README.md          # 项目说明
+├── ARCHITECTURE.md    # 架构总览
+└── Cargo.toml         # Rust workspace 根
+```
+
+**放置规则（AI 必须遵守）：**
+- HTML 可视化报告 → `reports/html/<报告名>/`，共享资源用 `reports/_shared/`
+- Markdown 报告 → `reports/markdown/`，报告数据 → `reports/data/`
+- HTML 原型/演示 → `prototypes/<项目名>/`，共享资源用 `prototypes/_shared/`
+- 架构/需求/设计文档 → `docs/` 下对应子目录
+- 生产代码 → `platform/`（后端）或 `frontend-ui/`（前端）
+- **禁止在根目录新建散落的报告/原型目录**
+
 ## 目录结构与模块职责
 
 > 写职责，不贴完整文件树。后端按「分层」理解，前端按「功能切片」理解。

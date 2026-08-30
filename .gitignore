@@ -119,6 +119,9 @@ graph.json
 graph.enterprise.json
 guantu.req.json.tmp
 
+# ---- AI 计量运行时数据（B-3 / 敏感用量，不入库）----
+data/metering/
+
 # ---- 其他 ----
 *.mp4
 **/out

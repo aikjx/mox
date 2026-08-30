@@ -86,7 +86,7 @@ DEFAULT_CONFIG = {
     "version": "2.1",
     "project_name": "璇玑系统",
     "dashboard_port": DEFAULT_DASHBOARD_PORT,
-    "admin": {"username": "admin", "password": "admin123"},
+    "admin": {"username": "admin"},
     "log_rolling": {"max_bytes": 5 * 1024 * 1024, "backup": 3},
     "services": {
         "api": {

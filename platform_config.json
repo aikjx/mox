@@ -7,8 +7,7 @@
     "backup": 3
   },
   "admin": {
-    "username": "admin",
-    "password": "admin123"
+    "username": "admin"
   },
   "services": {
     "xiaobai_voice": {
@@ -18,8 +17,17 @@
       "health_check": "/voice/health",
       "cwd": "projects/xiaobai_voice",
       "command": "python -m xiaobai_voice serve --host 0.0.0.0",
-      "args": ["python", "-m", "xiaobai_voice", "serve", "--host", "0.0.0.0"],
-      "binary_requires": ["python"],
+      "args": [
+        "python",
+        "-m",
+        "xiaobai_voice",
+        "serve",
+        "--host",
+        "0.0.0.0"
+      ],
+      "binary_requires": [
+        "python"
+      ],
       "npm_deps": false,
       "is_admin_only": false,
       "auto_start": true,
@@ -27,7 +35,13 @@
       "wait_time": 12,
       "startup_order_hint": 5,
       "depends_on": [],
-      "tags": ["语音", "AI交互", "TTS", "ASR", "本地推理"]
+      "tags": [
+        "语音",
+        "AI交互",
+        "TTS",
+        "ASR",
+        "本地推理"
+      ]
     },
     "api": {
       "name": "API 后端服务（Rust mox-gateway）",
@@ -36,7 +50,9 @@
       "health_check": "/health",
       "cwd": "platform/backend-rust",
       "command": ".\\target\\release\\mox-gateway.exe",
-      "args": [".\\target\\release\\mox-gateway.exe"],
+      "args": [
+        ".\\target\\release\\mox-gateway.exe"
+      ],
       "binary_requires": [],
       "npm_deps": false,
       "is_admin_only": true,
@@ -45,7 +61,13 @@
       "wait_time": 8,
       "startup_order_hint": 10,
       "depends_on": [],
-      "tags": ["API", "后端", "核心", "Rust", "Gateway"]
+      "tags": [
+        "API",
+        "后端",
+        "核心",
+        "Rust",
+        "Gateway"
+      ]
     },
     "frontend": {
       "name": "用户前端界面",
@@ -54,15 +76,28 @@
       "health_check": "/",
       "cwd": "frontend-ui",
       "command": "npm run dev",
-      "args": ["npm", "run", "dev"],
-      "binary_requires": ["node", "npm"],
+      "args": [
+        "npm",
+        "run",
+        "dev"
+      ],
+      "binary_requires": [
+        "node",
+        "npm"
+      ],
       "npm_deps": true,
       "is_admin_only": false,
       "auto_start": false,
       "wait_time": 14,
       "startup_order_hint": 20,
-      "depends_on": ["api"],
-      "tags": ["前端", "用户界面", "Vite"]
+      "depends_on": [
+        "api"
+      ],
+      "tags": [
+        "前端",
+        "用户界面",
+        "Vite"
+      ]
     },
     "melody2score": {
       "name": "旋律转谱服务（Melody2Score WebUI）",
@@ -71,8 +106,13 @@
       "health_check": "/",
       "cwd": "projects/melody2score",
       "command": "python app/webui.py",
-      "args": ["python", "app/webui.py"],
-      "binary_requires": ["python"],
+      "args": [
+        "python",
+        "app/webui.py"
+      ],
+      "binary_requires": [
+        "python"
+      ],
       "npm_deps": false,
       "is_admin_only": false,
       "auto_start": false,
@@ -80,7 +120,13 @@
       "wait_time": 10,
       "startup_order_hint": 30,
       "depends_on": [],
-      "tags": ["音频", "转谱", "AI", "FastAPI", "WebUI"]
+      "tags": [
+        "音频",
+        "转谱",
+        "AI",
+        "FastAPI",
+        "WebUI"
+      ]
     },
     "primiflow": {
       "name": "PrimiFlow 低代码拓扑引擎",
@@ -89,8 +135,19 @@
       "health_check": "/",
       "cwd": "projects/primiflow/backend",
       "command": "python -m uvicorn main:app --host 0.0.0.0 --port 8000",
-      "args": ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"],
-      "binary_requires": ["python"],
+      "args": [
+        "python",
+        "-m",
+        "uvicorn",
+        "main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000"
+      ],
+      "binary_requires": [
+        "python"
+      ],
       "npm_deps": false,
       "is_admin_only": false,
       "auto_start": false,
@@ -98,7 +155,12 @@
       "wait_time": 8,
       "startup_order_hint": 40,
       "depends_on": [],
-      "tags": ["低代码", "拓扑", "FastAPI", "引擎"]
+      "tags": [
+        "低代码",
+        "拓扑",
+        "FastAPI",
+        "引擎"
+      ]
     }
   },
   "project_registry": {
@@ -253,27 +315,60 @@
     "ci": {
       "path": "scripts/ci/",
       "description": "CI/CD 脚本（ci.py, git_create_tag_auto.py）",
-      "files": ["ci.py", "git_create_tag_auto.py"]
+      "files": [
+        "ci.py",
+        "git_create_tag_auto.py"
+      ]
     },
     "deploy": {
       "path": "scripts/deploy/",
       "description": "部署/启动脚本（start.ps1, smoke_test.sh, deploy-kg-storage.ps1, Gray-Warmup.ps1）",
-      "files": ["start.ps1", "smoke_test.sh", "deploy-kg-storage.ps1", "Gray-Warmup.ps1"]
+      "files": [
+        "start.ps1",
+        "smoke_test.sh",
+        "deploy-kg-storage.ps1",
+        "Gray-Warmup.ps1"
+      ]
     },
     "tests": {
       "path": "scripts/tests/",
       "description": "测试执行脚本（T10/T11/T17/T19 全量测试、企业验收、7门门禁）",
-      "files": ["Run-T10-AllTests.ps1", "Run-T11-AllTests.ps1", "Run-T17-EF-All.ps1", "Run-T17-SDK-All.ps1", "Run-T19-Regression-706.ps1", "run-t1-baseline.ps1", "run-enterprise-final-acceptance.ps1", "run_enterprise_7gates.ps1", "verify_tests.ps1", "verify_tests.sh", "parse_test_report.py"]
+      "files": [
+        "Run-T10-AllTests.ps1",
+        "Run-T11-AllTests.ps1",
+        "Run-T17-EF-All.ps1",
+        "Run-T17-SDK-All.ps1",
+        "Run-T19-Regression-706.ps1",
+        "run-t1-baseline.ps1",
+        "run-enterprise-final-acceptance.ps1",
+        "run_enterprise_7gates.ps1",
+        "verify_tests.ps1",
+        "verify_tests.sh",
+        "parse_test_report.py"
+      ]
     },
     "validation": {
       "path": "scripts/validation/",
       "description": "验证/校验脚本（Rust 依赖校验、单节点验证、TTS 全栈验证、DSP 回归）",
-      "files": ["validate-single-node.js", "validate_rust_workspace_deps.js", "verify_tts_rust_fullstack.py", "tts_rust_vs_py_dsp_regression.py", "fix_pass2.py"]
+      "files": [
+        "validate-single-node.js",
+        "validate_rust_workspace_deps.js",
+        "verify_tts_rust_fullstack.py",
+        "tts_rust_vs_py_dsp_regression.py",
+        "fix_pass2.py"
+      ]
     },
     "temp": {
       "path": "scripts/temp/",
       "description": "临时/探测脚本（CosyVoice 权重下载、环境检查、端口探测、一次性运行）",
-      "files": ["_auto_dl_cosy2_weights.py", "_check_cosy_env.py", "_probe3717.py", "_run_e2b.py", "_run_e4.py", "_tmp_t10_doc_check.js"]
+      "files": [
+        "_auto_dl_cosy2_weights.py",
+        "_check_cosy_env.py",
+        "_probe3717.py",
+        "_run_e2b.py",
+        "_run_e4.py",
+        "_tmp_t10_doc_check.js"
+      ]
     }
   }
 }

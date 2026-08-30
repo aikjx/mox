@@ -18,8 +18,14 @@
 
 ## 共享资源
 
-各项目通过相对路径引用 `_shared/` 目录下的字体和 JS 库。
-如需新增共享资源，请放入各项目的 `_shared/` 目录。
+所有原型共享统一的 `prototypes/_shared/` 目录（字体、echarts、mermaid 等）。
+各原型 HTML 通过 `../_shared/` 相对路径引用共享资源。
+
+**新增共享资源规则：**
+- 公共字体 → 放入 `_shared/fonts/`
+- 公共 JS 库 → 放入 `_shared/js/`
+- 各原型独有的资源（如 assets/charts.js）→ 放在各自项目目录内，不要放入 `_shared/`
+- **不要在各原型目录内新建 `_shared/` 副本**，统一用根级 `_shared/`
 
 ## 维护规范
 
