@@ -8,11 +8,6 @@
         </el-icon>
       </button>
 
-      <div class="topbar-divider"></div>
-
-      <!-- 项目选择器 -->
-      <ProjectPicker variant="top" class="topbar-project-picker" />
-
       <!-- 面包屑 -->
       <el-breadcrumb separator="/" class="crumb-nav">
         <el-breadcrumb-item :to="{ path: '/dashboard' }">
@@ -164,7 +159,6 @@ import {
   Fold, Expand, Plus, Search, ArrowDown, QuestionFilled, Setting, SwitchButton
 } from '@element-plus/icons-vue'
 import { NAV_MODULES, NAV_GROUPS, QUICK_CREATE_COMMANDS, SUB_MODULES, HIDDEN_MODULES } from '@/constants'
-import ProjectPicker from '@/components/ProjectPicker.vue'
 import NotificationCenter from '@/components/NotificationCenter.vue'
 import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
 

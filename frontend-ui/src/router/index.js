@@ -183,6 +183,14 @@ const routes = [
     meta: { title: '浏览器自动化' }
   },
 
+  // ===== 专家联盟统一工作台 =====
+  {
+    path: '/expert-workspace',
+    name: 'ExpertWorkspace',
+    component: () => import('@/views/workspace/ExpertWorkspaceView.vue'),
+    meta: { title: '专家联盟工作台' }
+  },
+
   // ===== 专家联盟（嵌套路由） =====
   {
     path: '/expert-center',

@@ -1,0 +1,39 @@
+[package]
+name = "mox-unified-algo-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "统一算法核心库 · 跨域算法归一化：知识图谱 / 专家联盟 / 知识库云盘共享算法基础设施"
+
+[features]
+default = ["graph-algo", "similarity", "ranking", "clustering"]
+graph-algo = []
+similarity = []
+ranking = []
+clustering = []
+activation = []
+embedding = []
+stats = []
+full = ["graph-algo", "similarity", "ranking", "clustering", "activation", "embedding", "stats"]
+
+[dependencies]
+# 平台基础
+mox-platform-foundation = { workspace = true }
+mox-flow-operator-core = { workspace = true }
+
+# 数据结构
+petgraph = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+nalgebra = { workspace = true }
+anyhow = { workspace = true }
+approx = { workspace = true }
+
+# 性能
+rayon = { version = "1.8", optional = true }
+hashbrown = { version = "0.14", features = ["serde"] }
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+rand = "0.8"

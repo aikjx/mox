@@ -1,709 +1,38 @@
 <template>
   <div class="page-container expert-center">
-    <!-- 页面头部：项目关联 + 全局操作 -->
-    <div class="page-header">
-      <div class="page-header-left">
-        <div class="head-brand">
-          <div class="brand-mark">
-            <svg viewBox="0 0 32 32" class="bm-svg">
-              <defs>
-                <linearGradient id="bmG" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stop-color="#6366f1" />
-                  <stop offset="55%" stop-color="#0ea5e9" />
-                  <stop offset="100%" stop-color="#10b981" />
-                </linearGradient>
-              </defs>
-              <circle cx="16" cy="16" r="14" fill="none" stroke="url(#bmG)" stroke-width="2.4" />
-              <circle cx="16" cy="16" r="7" fill="url(#bmG)" opacity="0.92" />
-              <path d="M6 22 L13 10 L19 22 Z" fill="#ffffff" opacity="0.92" />
-            </svg>
-          </div>
-          <div class="head-titles">
-            <div class="head-title-row">
-              <h2 class="page-title">璇玑·专家联盟 X</h2>
-              <el-tag class="ver-tag" effect="dark" round>Mox 3.0 · MIT</el-tag>
-              <el-tag class="ver-tag-alt" effect="plain" round>以项目为根 · 全维 φ 流程</el-tag>
-            </div>
-            <p class="page-subtitle">
-              <span v-if="currentProject">
-                当前项目：<b class="hl-project">{{ currentProject.name }}</b>
-                <span v-if="currentProject.category" class="proj-cat">{{ currentProject.category }}</span>
-                <span v-if="currentProject.status"> · {{ currentProject.status }}</span>
-              </span>
-              <span v-else class="muted-plain">请在顶栏选择项目，或在此快速<u class="link-like" @click="ensureProject">创建一个</u></span>
-            </p>
-          </div>
+    <!-- 简洁页头 -->
+    <div class="page-header compact-header">
+      <div class="header-left">
+        <div class="brand-mini">
+          <div class="brand-dot"></div>
+          <span class="brand-name">专家联盟</span>
+          <el-tag v-if="currentProject" size="small" class="project-tag" effect="plain">
+            <el-icon><Folder /></el-icon>
+            {{ currentProject.name }}
+          </el-tag>
         </div>
       </div>
-      <div class="page-header-actions head-actions">
-        <el-button type="primary" @click="startFullDev" size="default">
-          <el-icon><Promotion /></el-icon> 启动全维开发
-        </el-button>
-        <el-button @click="loadOverview" :loading="overviewLoading" size="default">
-          <el-icon><DataAnalysis /></el-icon> 联盟概览
-        </el-button>
-        <el-button type="primary" plain @click="showRegister = true" size="default">
+      <div class="header-right">
+        <el-button size="small" type="primary" plain @click="showRegister = true">
           <el-icon><Plus /></el-icon> 注册专家
         </el-button>
-        <el-button type="success" plain @click="ensureProject" size="default">
-          <el-icon><FolderAdd /></el-icon> 创建项目
+        <el-button size="small" @click="ensureProject">
+          <el-icon><FolderAdd /></el-icon> 切换项目
         </el-button>
-        <el-button @click="loadAll" size="default"><el-icon><Refresh /></el-icon> 刷新</el-button>
       </div>
     </div>
 
     <!-- Tab 切换 -->
-    <el-tabs v-model="activeTab" class="expert-tabs" @tab-change="onTabChange">
+    <el-tabs v-model="activeTab" class="expert-tabs compact-tabs" @tab-change="onTabChange">
       <el-tab-pane label="联盟总览" name="overview" />
       <el-tab-pane label="企业管理" name="enterprise" />
       <el-tab-pane label="编排引擎" name="orchestrator" />
     </el-tabs>
 
-    <div class="page-content" v-show="activeTab === 'overview'">
-    <!-- 联盟 φ 三栏布局（左·中·右）· 黄金比例 0.382 : 0.618 ，中再分 0.618 vs 右 0.382 -->
-    <div class="phi-shell">
-
-      <!-- ============ 左栏：5 阶段导航 + 专家库 ============ -->
-      <aside class="col col-left">
-        <!-- S1~S4 阶段导航 · 点击切换查看对应阶段的专家与流程 -->
-        <section class="card card-tight phase-nav">
-          <div class="card-head">
-            <span class="card-title">阶段导航</span>
-            <span class="card-sub">点击切换查看对应阶段</span>
-          </div>
-          <div class="phase-list">
-            <div
-              v-for="(p, idx) in PHASES"
-              :key="p.key"
-              class="phase-row"
-              :class="{ active: localPhase === p.key, done: phaseDone[p.key] }"
-              @click="selectPhase(p.key)"
-            >
-              <div class="phase-idx" :style="{ background: p.color }">{{ idx + 1 }}</div>
-              <div class="phase-body">
-                <div class="phase-name">{{ p.label }}</div>
-                <div class="phase-desc">{{ p.desc }}</div>
-              </div>
-              <div v-if="phaseProgress[p.key]" class="phase-bar">
-                <div class="phase-bar-fill" :style="{ width: phaseProgress[p.key] + '%', background: p.color }"></div>
-              </div>
-              <div class="phase-chev">›</div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 专家库 · 筛选 + 选择 -->
-        <section class="card experts-card">
-          <div class="card-head between">
-            <div class="card-title-wrap">
-              <span class="card-title">算法 / 架构 · 专家联盟</span>
-              <span class="count-pill">{{ filteredExperts.length }}/{{ experts.length }}</span>
-            </div>
-            <el-switch v-model="smartMode" active-text="智能匹配" inactive-text="手动" size="small" />
-          </div>
-          <div class="filter-bar">
-            <el-select v-model="filterType" placeholder="专家类型" clearable size="small">
-              <el-option v-for="t in expertTypes" :key="t" :label="typeLabel(t)" :value="t" />
-            </el-select>
-            <el-input v-model="keyword" placeholder="搜索姓名、能力、描述..." clearable size="small" style="flex:1">
-              <template #prefix><el-icon><Search /></el-icon></template>
-            </el-input>
-          </div>
-          <el-scrollbar class="exp-scroll">
-            <div
-              v-for="exp in filteredExperts"
-              :key="exp.id"
-              class="expert-card"
-              :class="{ sel: isSelected(exp.id), offline: exp.status !== 'active' }"
-              @click="toggleSelect(exp)"
-            >
-              <div class="expert-avatar" :style="{ background: getColor(exp.type) }">
-                <el-icon><component :is="getIcon(exp.type)" /></el-icon>
-              </div>
-              <div class="expert-info">
-                <div class="expert-name-row">
-                  <span class="expert-name">{{ exp.name }}</span>
-                  <span v-if="exp.metrics?.total_consults" class="consult-count" title="累计咨询次数">
-                    {{ exp.metrics.total_consults }}
-                  </span>
-                </div>
-                <div class="expert-type">{{ typeLabel(exp.type) }} · {{ exp.status === 'active' ? '在线' : '离线' }}</div>
-                <div class="expert-stats" v-if="exp.metrics">
-                  <span class="stat-item" title="成功率">
-                    <el-icon><TrendCharts /></el-icon>
-                    {{ (exp.metrics.success_rate * 100).toFixed(0) }}%
-                  </span>
-                  <span class="stat-item" title="平均耗时">
-                    <el-icon><Timer /></el-icon>
-                    {{ Math.round(exp.metrics.avg_duration || 0) }}ms
-                  </span>
-                </div>
-                <div class="expert-caps">
-                  <el-tag
-                    v-for="cap in (exp.capabilities || []).slice(0, 3)"
-                    :key="cap"
-                    size="small"
-                    type="info"
-                    effect="plain"
-                  >{{ cap }}</el-tag>
-                </div>
-              </div>
-              <div v-if="isSelected(exp.id)" class="expert-check">✓</div>
-            </div>
-            <el-empty v-if="!filteredExperts.length" description="暂无匹配专家" :image-size="60" />
-          </el-scrollbar>
-
-          <!-- 已选专家摘要 -->
-          <div v-if="selectedCount()" class="sel-summary">
-            <div class="sel-head">
-              <span class="sel-title">已选 · {{ selectedCount() }} 位</span>
-              <el-button size="small" text type="primary" @click="selectedExpertIds = []">清空</el-button>
-            </div>
-            <div class="sel-chips">
-              <span
-                v-for="id in selectedExpertIds"
-                :key="id"
-                class="chip-sel"
-              >
-                <span class="chip-dot" :style="{ background: getColor(experts.find(e=>e.id===id)?.type || 'custom') }" />
-                {{ getExpertName(id) }}
-                <el-icon class="chip-x" @click.stop="removeExpert(id)"><Close /></el-icon>
-              </span>
-            </div>
-          </div>
-        </section>
-      </aside>
-
-      <!-- ============ 中栏：AI 助手 X · 全维 φ 对话 + 流程模式 ============ -->
-      <section class="col col-mid">
-        <!-- 工作栏头 -->
-        <div class="card card-tight mid-head">
-          <div class="mh-left">
-            <div class="mh-logo">
-              <svg viewBox="0 0 24 24" class="ai-logo-svg">
-                <defs>
-                  <linearGradient id="aiG" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stop-color="#6366f1" />
-                    <stop offset="100%" stop-color="#0ea5e9" />
-                  </linearGradient>
-                </defs>
-                <circle cx="12" cy="12" r="10.5" fill="none" stroke="url(#aiG)" stroke-width="1.5" />
-                <path d="M12 4 C15 4 17.5 6 18 9.5 C20 10 20 14 18 15 C17.5 18 15 19.5 12 20 C9 19.5 6.5 18 6 15 C4 14 4 10 6 9.5 C6.5 6 9 4 12 4 Z" fill="url(#aiG)" opacity="0.92" />
-                <circle cx="9.4" cy="11.5" r="1.4" fill="#fff" />
-                <circle cx="14.6" cy="11.5" r="1.4" fill="#fff" />
-                <path d="M9 15.3 C10 16.2 11.2 16.7 12 16.7 C12.8 16.7 14 16.2 15 15.3" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" />
-              </svg>
-            </div>
-            <div class="mh-text">
-              <div class="mh-title">AI 助手 X <span class="badge-ver">V3.0 · MIT</span></div>
-              <div class="mh-sub">
-                已选择：<span class="chip-selected">{{ selectedChip }}</span>
-                · <span class="muted-plain">输入自定义问题，系统将全维分析处理</span>
-              </div>
-            </div>
-          </div>
-          <div class="mh-right">
-            <!-- 模式开关 -->
-            <el-switch
-              v-model="requirementFlowMode"
-              inline-prompt
-              active-text="流程模式"
-              inactive-text="对话模式"
-              size="small"
-            />
-            <el-button size="small" @click="clearCurrentConversation">
-              <el-icon><Refresh /></el-icon> 清空
-            </el-button>
-            <el-button size="small" type="primary" plain @click="openNewChatView">
-              <el-icon><ChatDotRound /></el-icon> +新建对话
-            </el-button>
-          </div>
-        </div>
-
-        <!-- 快捷问法 Chips · 生成公司官网需求图谱 · 自定义问题... -->
-        <div class="card quick-q-card">
-          <div class="qq-title-row">
-            <span class="qq-label">🔥 快捷启动</span>
-            <el-button size="small" text @click="showMoreQuick = !showMoreQuick">{{ showMoreQuick ? '收起' : '展开' }}</el-button>
-          </div>
-          <div class="qq-grid">
-            <button
-              v-for="(q, i) in visibleQuickQuestions"
-              :key="i"
-              class="qq-btn"
-              :class="{ active: selectedChip === q.label }"
-              @click="pickQuick(q)"
-            >
-              <span class="qq-emoji">{{ q.icon }}</span>
-              <div class="qq-text">
-                <div class="qq-name">{{ q.label }}</div>
-                <div class="qq-desc">{{ q.hint }}</div>
-              </div>
-              <span class="qq-go">➜</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- 咨询工作台（中栏主内容） -->
-        <div class="card panel-col">
-          <div class="consult-header">
-            <div class="ch-left">
-              <h3 class="section-title">专家咨询 · {{ modeLabelMap[mode] }}</h3>
-              <span v-if="currentProject" class="proj-link">
-                项目 <b>{{ currentProject.name }}</b> · 全维跟进
-              </span>
-            </div>
-            <div class="mode-switch">
-              <el-radio-group v-model="mode" size="small">
-                <el-radio-button value="smart">🧠 智能路由</el-radio-button>
-                <el-radio-button value="single">单专家</el-radio-button>
-                <el-radio-button value="multi">多专家</el-radio-button>
-                <el-radio-button value="debate">🗣 辩论</el-radio-button>
-                <el-radio-button value="algorithm">⚙ 算法分析</el-radio-button>
-              </el-radio-group>
-            </div>
-          </div>
-
-          <!-- 输入区 · 流程模式头指示 -->
-          <div v-if="requirementFlowMode" class="flow-head-bar">
-            <div class="fh-label">
-              <span class="fh-idx">{{ currentStage + 1 }}</span>
-              <span class="fh-text">{{ FLOW_STAGES[currentStage].label }}</span>
-            </div>
-            <div class="fh-desc">{{ FLOW_STAGES[currentStage].hint }}</div>
-            <div class="fh-actions">
-              <el-button size="small" v-if="currentStage > 0" @click="currentStage--">← 上一阶段</el-button>
-              <el-button size="small" type="primary" v-if="currentStage < 5" @click="advanceFlowStage">下一阶段 →</el-button>
-              <el-button size="small" type="primary" plain @click="runFullFlow" :loading="consulting">🚀 启动全维流程</el-button>
-            </div>
-          </div>
-
-          <!-- 模式说明 + 输入 -->
-          <div v-if="mode === 'smart'" class="mode-block smart-mode">
-            <div class="mode-desc">
-              <el-icon><MagicStick /></el-icon>
-              <span>系统自动分析问题意图，智能匹配合适的专家，并选择最优协作模式（单专家/多专家/辩论）</span>
-            </div>
-            <el-input
-              v-model="question"
-              type="textarea"
-              :rows="3"
-              class="big-input"
-              :placeholder="customPlaceholder"
-            />
-            <div v-if="routingResult" class="routing-info">
-              <div class="routing-title">智能路由结果</div>
-              <div class="routing-detail">
-                <el-tag :type="routingResult.intent?.primary ? 'primary' : 'info'" effect="dark">
-                  意图：{{ routingResult.intent?.primary || '通用' }}
-                </el-tag>
-                <span class="muted">置信度 {{ (routingResult.intent?.confidence * 100 || 0).toFixed(0) }}%</span>
-                <div class="routing-experts">
-                  <span
-                    v-for="s in routingResult.selected?.slice(0, 3)"
-                    :key="s.expert.id"
-                    class="chip"
-                    :title="`匹配分: ${s.score.toFixed(1)}`"
-                  >
-                    {{ s.expert.name }}<span class="score">({{ s.score.toFixed(1) }})</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div class="action-row">
-              <el-button
-                type="primary"
-                class="act-cta"
-                :loading="consulting"
-                :disabled="!question.trim()"
-                @click="doSmartRoute"
-              >
-                <el-icon><Promotion /></el-icon> 启动全维流程
-              </el-button>
-              <el-button :disabled="!question.trim()" :loading="routingLoading" @click="doRouteOnly">
-                <el-icon><Guide /></el-icon> 仅路由分析
-              </el-button>
-              <el-button :disabled="!question.trim()" @click="askQuickAnalysis">
-                ⚡ 快速分析
-              </el-button>
-              <el-button :disabled="!question.trim()" @click="addFollowUp">
-                + 添加
-              </el-button>
-            </div>
-          </div>
-
-          <div v-else-if="mode === 'single'" class="mode-block single-consult">
-            <div class="selected-area">
-              <span class="muted">已选择：</span>
-              <template v-if="selectedCount()">
-                <span class="chip" v-for="id in selectedExpertIds" :key="id">
-                  {{ getExpertName(id) }}
-                  <el-icon class="chip-x" @click="removeExpert(id)"><Close /></el-icon>
-                </span>
-              </template>
-              <span v-else class="muted">请从左侧选择一位专家</span>
-            </div>
-            <el-input v-model="question" type="textarea" :rows="3" class="big-input" placeholder="请输入你的问题..." />
-            <div class="action-row">
-              <el-button type="primary" class="act-cta" :loading="consulting" :disabled="!selectedCount() || !question.trim()" @click="doConsult">
-                <el-icon><Promotion /></el-icon> 咨询专家
-              </el-button>
-              <el-button :disabled="!question.trim()" @click="convertQuestionToTask">📌 转任务</el-button>
-              <el-button :disabled="!question.trim()" @click="createProjectFromQuestion">🏗 创建项目</el-button>
-            </div>
-          </div>
-
-          <div v-else-if="mode === 'multi'" class="mode-block multi-consult">
-            <div class="selected-area">
-              <span class="muted">已选 {{ selectedCount() }} 位：</span>
-              <span class="chip" v-for="id in selectedExpertIds" :key="id">{{ getExpertName(id) }}</span>
-            </div>
-            <el-input v-model="question" type="textarea" :rows="3" class="big-input" placeholder="多位专家协同分析的问题..." />
-            <div class="action-row">
-              <el-button type="primary" class="act-cta" :loading="consulting" :disabled="selectedCount() < 2 || !question.trim()" @click="doMultiConsult">
-                <el-icon><ChatDotRound /></el-icon> 协同分析
-              </el-button>
-              <el-button :disabled="!question.trim()" @click="addFollowUp">+ 添加</el-button>
-            </div>
-          </div>
-
-          <div v-else-if="mode === 'debate'" class="mode-block debate-mode">
-            <div class="selected-area">
-              <span class="muted">已选 {{ selectedCount() }} 位参与辩论：</span>
-              <span class="chip" v-for="id in selectedExpertIds" :key="id">{{ getExpertName(id) }}</span>
-            </div>
-            <div class="debate-config">
-              <el-input-number v-model="rounds" :min="2" :max="5" label="辩论轮数" />
-              <el-select v-model="debateStrategy" style="width: 160px">
-                <el-option value="round_robin" label="轮流发言" />
-                <el-option value="cross_examine" label="交叉质询" />
-              </el-select>
-            </div>
-            <el-input v-model="question" type="textarea" :rows="3" class="big-input" placeholder="请输入辩论主题..." />
-            <div class="action-row">
-              <el-button type="primary" class="act-cta" :loading="consulting" :disabled="selectedCount() < 2 || !question.trim()" @click="doDebate">
-                <el-icon><MagicStick /></el-icon> 开始辩论
-              </el-button>
-            </div>
-          </div>
-
-          <div v-else-if="mode === 'algorithm'" class="mode-block algorithm-mode">
-            <div class="mode-desc">
-              <el-icon><Cpu /></el-icon>
-              <span>算法联盟调度算法 & 图谱专家，自动进行复杂度分析 / 算法推荐 / 数据结构选型</span>
-            </div>
-            <el-input v-model="question" type="textarea" :rows="3" class="big-input" placeholder="算法问题：图的最短路径、复杂度、排序优化、推荐算法选型…" />
-            <div class="graph-data-area">
-              <el-checkbox v-model="useGraphData">使用图谱数据分析</el-checkbox>
-              <el-input
-                v-if="useGraphData"
-                v-model="graphDataJson"
-                type="textarea"
-                :rows="3"
-                placeholder='{"nodes":[{"id":"n1"}],"edges":[{"source":"n1","target":"n2"}]}'
-              />
-            </div>
-            <div class="action-row">
-              <el-button type="primary" class="act-cta" :loading="consulting" :disabled="!question.trim()" @click="doAlgorithmAnalysis">
-                <el-icon><DataAnalysis /></el-icon> 算法分 · 开始分析
-              </el-button>
-              <el-button :disabled="!question.trim()" @click="importGraphData">📥 导入</el-button>
-            </div>
-          </div>
-
-          <!-- 结果区：咨询/路由/算法/辩论 -->
-          <div v-if="results.length || algorithmResult || debateSummary" class="results-block">
-            <div class="rb-head">
-              <h4 class="results-title">🏛 联盟输出</h4>
-              <div class="rb-tools">
-                <el-button size="small" text @click="exportConversation">📤 导出</el-button>
-                <el-button size="small" type="primary" text @click="openNewChatView(question)">💬 发送给 AI 助手 X</el-button>
-              </div>
-            </div>
-            <el-scrollbar class="results-scroll">
-              <div v-for="(r, i) in results" :key="i" class="result-item">
-                <div class="result-head">
-                  <span class="expert-badge" :style="{ background: getColorByType(r.expert?.type) }">
-                    {{ r.expert?.name || '专家' }}
-                  </span>
-                  <div class="result-meta">
-                    <span v-if="r.confidence" class="confidence">置信度 {{ (r.confidence * 100).toFixed(0) }}%</span>
-                    <span v-if="r.duration_ms" class="duration">{{ r.duration_ms }}ms</span>
-                    <el-tag v-if="r.round" size="small" type="warning">第{{ r.round }}轮</el-tag>
-                  </div>
-                </div>
-                <div class="result-content">{{ r.response }}</div>
-                <div class="result-ops">
-                  <el-button size="small" text @click="copyText(r.response)">📋 复制</el-button>
-                  <el-button size="small" text type="primary" @click="appendResultAsInput(r)">➕ 追加为问题</el-button>
-                </div>
-              </div>
-
-              <div v-if="algorithmResult" class="algorithm-result">
-                <div v-if="algorithmResult.analysis?.graph" class="algo-section">
-                  <h5>📈 图谱分析</h5>
-                  <div class="graph-stats">
-                    <span class="stat-chip">节点 {{ algorithmResult.analysis.graph.stats?.nodeCount || '-' }}</span>
-                    <span class="stat-chip">边 {{ algorithmResult.analysis.graph.stats?.edgeCount || '-' }}</span>
-                    <span class="stat-chip">密度 {{ algorithmResult.analysis.graph.stats?.density || '-' }}</span>
-                    <span class="stat-chip">平均度 {{ algorithmResult.analysis.graph.stats?.avgDegree || '-' }}</span>
-                  </div>
-                  <div v-if="algorithmResult.analysis.graph.topNodes?.length" class="top-nodes">
-                    <div class="top-nodes-title">Top 节点（PageRank）</div>
-                    <div class="node-list">
-                      <span v-for="n in algorithmResult.analysis.graph.topNodes.slice(0, 5)" :key="n.id" class="node-chip">
-                        #{{ n.rank }} {{ n.id }} ({{ n.pagerank }})
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div v-if="algorithmResult.analysis?.algorithm" class="algo-section">
-                  <h5>🧩 算法建议</h5>
-                  <div v-for="(a, i) in algorithmResult.analysis.algorithm.analyses" :key="i" class="algo-item">
-                    <div class="algo-name">{{ a.algorithm }}</div>
-                    <div class="algo-rec">{{ a.recommendation }}</div>
-                    <div class="algo-complexity">时间 {{ a.complexity.time }} · 空间 {{ a.complexity.space }}</div>
-                  </div>
-                </div>
-                <div v-if="algorithmResult.analysis?.ai_insight" class="ai-insight">
-                  <h5><el-icon><MagicStick /></el-icon> AI 深度洞察</h5>
-                  <div class="insight-content">{{ algorithmResult.analysis.ai_insight }}</div>
-                </div>
-              </div>
-
-              <div v-if="debateSummary" class="debate-summary">
-                <h4 class="results-title">🗂 辩论综合结论</h4>
-                <div class="debate-final">{{ debateSummary }}</div>
-              </div>
-            </el-scrollbar>
-          </div>
-
-          <div v-else class="conv-empty">
-            <div class="empty-orb">
-              <svg viewBox="0 0 40 40" class="eo-svg">
-                <defs>
-                  <linearGradient id="eoG" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stop-color="#6366f1" />
-                    <stop offset="60%" stop-color="#0ea5e9" />
-                    <stop offset="100%" stop-color="#10b981" />
-                  </linearGradient>
-                </defs>
-                <circle cx="20" cy="20" r="17" fill="none" stroke="url(#eoG)" stroke-width="1.6" stroke-dasharray="5 3" />
-                <circle cx="20" cy="20" r="9" fill="url(#eoG)" opacity="0.9" />
-              </svg>
-            </div>
-            <div class="empty-title">在上方输入你的 <b>自定义问题</b>，系统将全维分析处理...</div>
-            <div class="empty-sub">或从左侧选择专家，并在顶栏 <b>选择项目</b> 以开启全流程跟进（需求·图谱·设计·开发·发布）</div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ============ 右栏：璇玑 Mox Graph System · 需求/架构/算法图谱 + 项目进度 ============ -->
-      <section class="col col-right">
-        <!-- 璇玑系统 头部 -->
-        <div class="card card-tight right-head">
-          <div class="rh-left">
-            <div class="rh-logo">
-              <svg viewBox="0 0 24 24" class="rh-svg">
-                <defs>
-                  <linearGradient id="rhG" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stop-color="#10b981" />
-                    <stop offset="100%" stop-color="#6366f1" />
-                  </linearGradient>
-                </defs>
-                <circle cx="12" cy="12" r="10.5" fill="none" stroke="url(#rhG)" stroke-width="1.5" />
-                <circle cx="12" cy="12" r="3.4" fill="url(#rhG)" />
-                <circle cx="12" cy="3.5" r="1.6" fill="url(#rhG)" />
-                <circle cx="20" cy="8" r="1.6" fill="url(#rhG)" />
-                <circle cx="20" cy="16" r="1.6" fill="url(#rhG)" />
-                <circle cx="12" cy="20.5" r="1.6" fill="url(#rhG)" />
-                <circle cx="4" cy="16" r="1.6" fill="url(#rhG)" />
-                <circle cx="4" cy="8" r="1.6" fill="url(#rhG)" />
-                <g stroke="url(#rhG)" stroke-width="1" fill="none" opacity="0.7">
-                  <line x1="12" y1="12" x2="12" y2="5" />
-                  <line x1="12" y1="12" x2="18.5" y2="8" />
-                  <line x1="12" y1="12" x2="18.5" y2="16" />
-                  <line x1="12" y1="12" x2="12" y2="19" />
-                  <line x1="12" y1="12" x2="5.5" y2="16" />
-                  <line x1="12" y1="12" x2="5.5" y2="8" />
-                </g>
-              </svg>
-            </div>
-            <div class="rh-text">
-              <div class="rh-title">璇玑系统 · Mox Graph</div>
-              <div class="rh-sub">
-                {{ currentProject ? '项目知识图谱' : '示例·公司官网需求图谱' }}
-              </div>
-            </div>
-          </div>
-          <div class="rh-right">
-            <el-button size="small" plain @click="randomizeGraph">
-              <el-icon><Refresh /></el-icon> 刷新图谱
-            </el-button>
-            <el-button size="small" type="primary" plain @click="goToGraphPage">
-              <el-icon><Promotion /></el-icon> 查看大图
-            </el-button>
-          </div>
-        </div>
-
-        <!-- 图谱可视化 · Canvas 渲染 -->
-        <div class="card mox-canvas-card">
-          <div class="mc-legend">
-            <span class="lg lg-project">项目</span>
-            <span class="lg lg-goal">目标</span>
-            <span class="lg lg-actor">角色</span>
-            <span class="lg lg-usecase">用例</span>
-            <span class="lg lg-data">数据</span>
-            <span class="lg lg-tech">技术</span>
-            <span class="lg lg-end">验收</span>
-          </div>
-          <div class="mc-stage" ref="graphStageRef">
-            <canvas ref="graphCanvasRef"></canvas>
-          </div>
-          <div class="mc-stats">
-            <span class="stat-chip">节点 {{ graphStats.nodes }}</span>
-            <span class="stat-chip">关系 {{ graphStats.edges }}</span>
-            <span class="stat-chip">密度 {{ graphStats.density }}</span>
-          </div>
-        </div>
-
-        <!-- 项目进度 & 联盟指标 -->
-        <div class="card progress-card">
-          <div class="card-head between">
-            <span class="card-title">项目推进 · 联盟绩效</span>
-            <el-tag size="small" effect="plain">以当前项目为准</el-tag>
-          </div>
-
-          <!-- 项目总体进度环 -->
-          <div class="progress-top">
-            <el-progress
-              type="dashboard"
-              :percentage="projectOverall"
-              :width="120"
-              color="#6366f1"
-            />
-            <div class="pt-info">
-              <div class="pt-name">{{ currentProject ? currentProject.name : '示例项目 · 公司官网' }}</div>
-              <div class="pt-cat">{{ currentProject?.category || '官网 / 营销' }} · {{ currentProject?.status || '规划中' }}</div>
-              <div class="pt-rows">
-                <div class="pt-row">
-                  <span class="pt-k">阶段完成</span>
-                  <span class="pt-v">{{ phaseCompleteCount }}/5</span>
-                </div>
-                <div class="pt-row">
-                  <span class="pt-k">专家咨询</span>
-                  <span class="pt-v">{{ overview?.total_consults || 0 }} 次</span>
-                </div>
-                <div class="pt-row">
-                  <span class="pt-k">成功率</span>
-                  <span class="pt-v" :style="{ color: getSuccessColor(overview?.avg_success_rate) }">
-                    {{ ((overview?.avg_success_rate || 0) * 100).toFixed(0) }}%
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 5 阶段进度 -->
-          <div class="pgs">
-            <div v-for="p in PHASES" :key="p.key" class="pg-row">
-              <div class="pg-label"><span class="pg-dot" :style="{ background: p.color }"></span>{{ p.label }}</div>
-              <el-progress :percentage="phaseProgress[p.key] || 0" :stroke-width="8" :color="p.color" />
-            </div>
-          </div>
-
-          <!-- 概览小卡 -->
-          <div v-if="overview" class="ov-grid">
-            <div class="ov-cell">
-              <div class="ov-v">{{ overview.total_experts }}</div>
-              <div class="ov-k">专家总数</div>
-            </div>
-            <div class="ov-cell active">
-              <div class="ov-v">{{ overview.active_experts }}</div>
-              <div class="ov-k">在线专家</div>
-            </div>
-            <div class="ov-cell">
-              <div class="ov-v">{{ overview.expert_types?.length || 0 }}</div>
-              <div class="ov-k">专家类型</div>
-            </div>
-            <div class="ov-cell success">
-              <div class="ov-v">{{ overview.capabilities_count || 0 }}</div>
-              <div class="ov-k">能力标签</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 专家绩效 · 前 6 -->
-        <div class="card metrics-card">
-          <div class="card-head between">
-            <span class="card-title">专家绩效 Top</span>
-            <el-button size="small" text type="primary" @click="showMetricsFull = !showMetricsFull">
-              {{ showMetricsFull ? '收起' : '展开全部' }}
-            </el-button>
-          </div>
-          <el-table
-            :data="showMetricsFull ? metricsList : metricsList.slice(0, 5)"
-            stripe
-            size="small"
-            class="mini-table"
-            style="width: 100%"
-          >
-            <el-table-column label="专家" width="98">
-              <template #default="{ row }">
-                <span :style="{ color: getColorByType(row.expert?.type), fontWeight: 600, fontSize: 12 }">
-                  {{ row.expert?.name || '-' }}
-                </span>
-              </template>
-            </el-table-column>
-            <el-table-column label="成功" width="70">
-              <template #default="{ row }">
-                <el-progress
-                  :percentage="Math.round((row.metrics?.success_rate || 0) * 100)"
-                  :stroke-width="6"
-                  :color="getSuccessColor(row.metrics?.success_rate)"
-                />
-              </template>
-            </el-table-column>
-            <el-table-column prop="metrics.avg_duration" label="ms" width="52" sortable>
-              <template #default="{ row }">{{ Math.round(row.metrics?.avg_duration || 0) }}</template>
-            </el-table-column>
-          </el-table>
-        </div>
-      </section>
+    <!-- 总览 Tab → 新组件 -->
+    <div v-show="activeTab === 'overview'" class="tab-content">
+      <ExpertOverviewPanel />
     </div>
-    </div>
-
-    <!-- 注册弹窗 -->
-    <el-dialog v-model="showRegister" title="注册新专家" width="520px">
-      <el-form label-width="90px">
-        <el-form-item label="专家名称">
-          <el-input v-model="newExpert.name" placeholder="如：数据库专家" />
-        </el-form-item>
-        <el-form-item label="专家类型">
-          <el-select v-model="newExpert.type" style="width: 100%">
-            <el-option v-for="t in expertTypes" :key="t" :label="typeLabel(t)" :value="t" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="能力标签">
-          <el-input v-model="newExpert.capabilities_str" placeholder="用逗号分隔，如：性能优化,索引调优" />
-        </el-form-item>
-        <el-form-item label="专家描述">
-          <el-input v-model="newExpert.description" type="textarea" :rows="2" />
-        </el-form-item>
-        <el-form-item label="系统提示词">
-          <el-input
-            v-model="newExpert.systemPrompt"
-            type="textarea"
-            :rows="3"
-            placeholder="专家专属的 System Prompt，用于定义专家角色和行为"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showRegister = false">取消</el-button>
-        <el-button type="primary" :loading="registering" @click="doRegister">注册</el-button>
-      </template>
-    </el-dialog>
 
     <!-- 企业管理 / 编排引擎 Tab 内容（嵌套路由渲染） -->
     <router-view v-if="activeTab !== 'overview'" v-slot="{ Component }">
@@ -720,7 +49,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   Plus, Refresh, Close, Promotion, ChatDotRound, MagicStick,
-  DataAnalysis, Timer, TrendCharts, Cpu, Guide, Search
+  DataAnalysis, Timer, TrendCharts, Cpu, Guide, Search, Folder, FolderAdd
 } from '@element-plus/icons-vue'
 import {
   getExperts, registerExpert, consultExpert, multiExpertConsult, expertDebate,
@@ -728,6 +57,7 @@ import {
   getExpertMetrics, getExpertOverview
 } from '@/api'
 import { useProject } from '@/composables/projectContext.js'
+import ExpertOverviewPanel from './panels/ExpertOverviewPanel.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -1596,12 +926,59 @@ onBeforeUnmount(() => {
 .expert-center {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   height: 100%;
 }
+
+/* 简洁页头 */
+.compact-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  height: 48px;
+  min-height: 48px;
+}
+
+.header-left, .header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-mini {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #10b981);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.brand-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.project-tag {
+  margin-left: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 /* Tab 样式 */
-.expert-tabs {
-  margin: 0 -2px;
+.compact-tabs {
+  margin: 0;
 }
 :deep(.expert-tabs .el-tabs__header) {
   margin-bottom: 0;
@@ -1621,6 +998,12 @@ onBeforeUnmount(() => {
 }
 .tab-panel {
   width: 100%;
+}
+.tab-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 .head {
   display: flex;

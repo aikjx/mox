@@ -2469,6 +2469,7 @@ checksum = "e5274423e17b7c9fc20b6e7e208532f9b19825d82dfd615708b70edd83df41f1"
 dependencies = [
  "ahash 0.8.12",
  "allocator-api2",
+ "serde",
 ]
 
 [[package]]
@@ -4058,6 +4059,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-flow-ea-workspace-svc"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "mox-flow-unified-arch-core",
+ "mox-platform-foundation",
+ "mox-unified-algo-core",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "mox-flow-fusion-svc"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -4894,6 +4913,24 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
+]
+
+[[package]]
+name = "mox-unified-algo-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "approx",
+ "criterion",
+ "hashbrown 0.14.5",
+ "mox-flow-operator-core",
+ "mox-platform-foundation",
+ "nalgebra",
+ "petgraph",
+ "rand 0.8.7",
+ "rayon",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

@@ -81,6 +81,7 @@ members = [
     "platform/domains/flow/svc/mox-flow-primiflow-svc",
     "platform/domains/flow/svc/mox-flow-fusion-svc",
     "platform/domains/flow/svc/mox-flow-bridge-svc",
+    "platform/domains/flow/svc/mox-flow-ea-workspace-svc",
     "platform/domains/data/svc/mox-data-plane-svc",
     "platform/domains/data/svc/mox-data-etl-svc",
     "platform/domains/data/svc/mox-data-compliance-svc",
@@ -117,6 +118,7 @@ members = [
     "platform/domains/data/sdk/mox-data-norm-intent-native",
     "platform/domains/voice/sdk/mox-voice-dsp-py",
     "platform/framework",
+    "platform/shared/mox-unified-algo-core",
 ]
 resolver = "2"
 
@@ -259,6 +261,7 @@ mox-flow-operator-wasm-svc = { path = "platform/domains/flow/svc/mox-flow-operat
 mox-flow-primiflow-svc = { path = "platform/domains/flow/svc/mox-flow-primiflow-svc" }
 mox-flow-fusion-svc = { path = "platform/domains/flow/svc/mox-flow-fusion-svc" }
 mox-flow-bridge-svc = { path = "platform/domains/flow/svc/mox-flow-bridge-svc" }
+mox-flow-ea-workspace-svc = { path = "platform/domains/flow/svc/mox-flow-ea-workspace-svc" }
 # Service 灞?(data)
 mox-data-plane-svc = { path = "platform/domains/data/svc/mox-data-plane-svc" }
 mox-data-etl-svc = { path = "platform/domains/data/svc/mox-data-etl-svc" }

@@ -537,7 +537,7 @@ export const useAIStore = defineStore('ai', () => {
     saveToStorage()
   }
 
-  // 确保有会话
+  // 确保有会话（首次访问自动创建一个欢迎会话）
   function ensureSession() {
     if (!currentSessionId.value || sessions.value.length === 0) {
       newSession()
@@ -545,6 +545,58 @@ export const useAIStore = defineStore('ai', () => {
       loadMessages(currentSessionId.value)
     }
   }
+
+  // 从旧版本迁移数据（v1 → v2）
+  function migrateFromV1() {
+    try {
+      const oldKey = 'mox.ai.sessions.v1'
+      const oldCurrentKey = 'mox.ai.currentSession.v1'
+      const oldData = localStorage.getItem(oldKey)
+      if (!oldData) return false
+
+      const parsed = JSON.parse(oldData)
+      if (!parsed.sessions || parsed.sessions.length === 0) {
+        localStorage.removeItem(oldKey)
+        localStorage.removeItem(oldCurrentKey)
+        return false
+      }
+
+      // 迁移到 v2 global 作用域
+      const newKey = storageKey('global', null)
+      const newCurKey = currentKey('global', null)
+
+      // 如果 v2 已经有数据就不覆盖
+      if (localStorage.getItem(newKey)) return false
+
+      localStorage.setItem(newKey, JSON.stringify({ sessions: parsed.sessions }))
+      const oldCurrent = localStorage.getItem(oldCurrentKey)
+      if (oldCurrent) {
+        localStorage.setItem(newCurKey, oldCurrent)
+      }
+
+      // 迁移消息
+      parsed.sessions.forEach(s => {
+        const oldMsgKey = `mox.ai.messages.${s.id}`
+        const newMsgKey = `${STORAGE_PREFIX}.msgs.${s.id}`
+        const oldMsgs = localStorage.getItem(oldMsgKey)
+        if (oldMsgs && !localStorage.getItem(newMsgKey)) {
+          localStorage.setItem(newMsgKey, oldMsgs)
+        }
+      })
+
+      console.log('[AI] 已从 v1 迁移会话数据到 v2')
+      return true
+    } catch (e) {
+      console.warn('迁移旧会话数据失败:', e)
+      return false
+    }
+  }
+
+  // ===== 初始化 =====
+  // 先尝试迁移旧数据
+  migrateFromV1()
+  // 再加载当前作用域数据
+  loadFromStorage()
 
   return {
     // State

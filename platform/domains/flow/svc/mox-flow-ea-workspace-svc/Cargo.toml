@@ -1,0 +1,27 @@
+[package]
+name = "mox-flow-ea-workspace-svc"
+version = "0.1.0"
+edition = "2021"
+description = "专家联盟统一工作台聚合服务 · KG + Cloud + Expert 跨域集成"
+license = "MIT"
+
+[lib]
+name = "mox_flow_ea_workspace_svc"
+path = "src/lib.rs"
+
+[dependencies]
+mox-unified-algo-core = { path = "../../../../shared/mox-unified-algo-core", features = ["full"] }
+mox-flow-unified-arch-core = { path = "../../core/mox-flow-unified-arch-core" }
+mox-platform-foundation = { path = "../../../../foundation/mox-platform-foundation" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+parking_lot = "0.12"
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "1"
+tracing = "0.1"
+async-trait = "0.1"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full", "test-util"] }
