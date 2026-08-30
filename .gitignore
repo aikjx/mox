@@ -1,80 +1,102 @@
-*.mp4
+# ============================================================
+# MOX Platform .gitignore — 架构-数据分离规范
+# 原则：源码入库，运行时数据不入库；配置模板入库，密钥不入库
+# ============================================================
 
-**/out
-**/tmp
-**/tem
-**/temp
-outputs
-target_regress
+# ---- 运行时数据目录（架构-数据分离，绝不入库）----
+/data/              # 运行时数据：storage/cache/uploads/exports
+/plugins/           # 第三方插件：wasm/scripts/extensions
+/.runtime/          # 运行时状态：pid/sock/lock
+/artifacts/         # 运行时制品：构建/测试/语音生成产物
+/exports/           # 数据导出产物
+/third_party/       # 第三方源码暂存
 
-my_projects
-
-.trae-html-share-packages
-
+# ---- 日志与临时文件 ----
+*.log
+*.out
 *.err
-# Rust build artifacts
-/target
-**target**
+logs/
+/log/               # 标准产物归档目录（保留 .gitkeep 与 README）
+.logs/              # 隐藏日志目录（运行时产生）
+/*_log.txt
+/build_fe*.log
+tmp_pyinst_*.log
 
-release-pkg
+# ---- AI 助手与自动化运行时数据 ----
+.trae/              # Trae 工作区过程数据（任务完成后归档到 docs/）
+.workbuddy/         # WorkBuddy 记忆与状态
+.ous/               # OUS 自动化运行时数据
+.ous_smoke/         # OUS 冒烟测试运行时数据
 
-build
-projects/melody2score/app/exports
-projects/melody2score/build
+# ---- 备份与临时文件 ----
+*.bak
+*.tmp
+*.temp
+*.swp
+.DS_Store
+Thumbs.db
 
-# Node / frontend build artifacts
+# ---- 前端构建与测试产物 ----
 node_modules/
 frontend/dist/
 dist/
+frontend-ui/test-results/
+frontend-ui/playwright-report/
+/frontend-ui/build_log*.txt
+/frontend-ui/*.log
 
-ais
+# ---- Rust 构建产物 ----
+/target
+**target**
+*.rmeta
+*.d
+NUL-*
+ci_target
+target_verify
+release-pkg
+build
 
-# Python artifacts
+# ---- Python 产物 ----
 __pycache__/
 *.py[cod]
 .venv/
 venv/
 .pytest_cache/
-.mypy_cache/
+.mypy_cache
 
-# Logs / 标准输出捕获
-*.log
-*.out
-logs/
-# 标准产物归档目录（clippy/test/compliance/graph 输出，不入库；保留 .gitkeep 与 README）
-/log/
-# 临时分析/构建日志（一次性产物，不入库）
-/*_log.txt
-/build_fe*.log
-
-# 运行时数据库（不入库）
+# ---- 运行时数据库 ----
 *.db
 *.db-wal
 *.db-shm
+*.sqlite
+*.sqlite3
 primiflow_runtime/
 
-# 合成音频语料（由 gen_classic_melodies.py 生成）
+# ---- AI 模型权重（大文件不入库）----
+*.bin
+*.safetensors
+*.gguf
+*.onnx
+*.pt
+*.pth
+
+# ---- 语音相关 ----
 melody2score/audio/*.wav
-
-# 运行时导出产物（乐谱 PNG/MusicXML，按需在用户侧重新生成）
 melody2score/app/exports/
+/projects/xiaobai_voice/models/
 
-# 自动开发引擎/验证产生的运行时制品与截图（不入库）
+# ---- 工作区运行时制品 ----
 workspace/artifacts/
 workspace/screenshots/
 
-# OS / editor
-.DS_Store
-Thumbs.db
-*.swp
+# ---- OS / 编辑器 ----
 .idea/
 .vscode/
 
-# Local env / secrets
+# ---- 本地环境与密钥（严禁入库）----
 # 说明：大模型密钥与选型配置一律不得入库。
 # - 环境变量载体：.env / .env.local（含各家 API Key、BASE_URL、MODEL 等）
 # - 配置文件载体：backend/data/llm_config.json（承载 API Key 的供应商配置）
-# 二者均由「环境变量 / 配置文件」驱动对话内大模型选型，禁止提交到 git。
 .env
 .env.local
 .env.*.local
@@ -85,65 +107,42 @@ backend/data/llm_config.json
 !.env.example
 !backend/.env.example
 
-# 运行时用户态数据（含对话历史、任务、日志，可能含用户键入的敏感信息，不入库）
+# ---- 运行时用户态数据（含敏感信息，不入库）----
 backend/data/dialogue_sessions.json
 backend/data/logs.json
 backend/data/tasks.json
 backend/data/automation.json
 backend/data/workflows.json
 
-# 关图 CI 门禁生成物（每次运行重建，不入库；基线 .guantu_baseline.json 需入库）
+# ---- 关图 CI 门禁生成物 ----
 graph.json
 graph.enterprise.json
 guantu.req.json.tmp
 
+# ---- 其他 ----
+*.mp4
+**/out
+**/tmp
+**/tem
+**/temp
+outputs
+target_regress
+my_projects
+.trae-html-share-packages
+*.pid
+*.sock
 
-ci_target
-target_verify
-
-# ===== 运行时临时构建产物 / 一次性诊断文件 =====
-# Rust 增量编译 rlib 元数据（target/ 外溢出的孤立文件）
-*.rmeta
-# Rust/Cargo 依赖描述 .d 文件（含 NUL-/libmox_ 前缀的孤立残留）
-*.d
-NUL-*
-# 根目录临时 txt（保留 README* / LICENSE* / CLAUDE* / 基线 *.json）
+# ---- 根目录临时 txt（保留 README* / LICENSE* / CLAUDE* / 基线 *.json）----
 /*.txt
 !/README*.txt
 !/LICENSE*.txt
 !/CLAUDE*.txt
-# 前端 build 过程日志
-/frontend-ui/build_log*.txt
-/frontend-ui/*.log
-# melody2score 构建过程 PID 记录
-/projects/melody2score/build_run*.txt
-# 运行时 PID / socket 孤立文件
-*.pid
-*.sock
-# 临时 Python 安装构建日志
-tmp_pyinst_*.log
-# ===== 架构-数据分离（MOX Platform Paths 规范）=====
-# 运行时数据目录（绝不入库：storage/cache/logs/uploads/exports）
-/data/
-# 第三方插件目录（绝不入库：wasm/scripts/extensions）
-/plugins/
-# 运行时状态目录（绝不入库：pid/sock/lock）
-/.runtime/
-# SQLite 数据库文件
-*.sqlite
-*.sqlite3
-# AI 模型权重（大文件不入库）
-*.bin
-*.safetensors
-*.gguf
-*.onnx
-*.pt
-*.pth
-# 构建中间目录
-/build/
 
-# 运行时制品 / 第三方源码暂存（由工具链按需生成，不入库）
-/artifacts/
-/third_party/
-# 语音模型权重（大文件不入库，历史已清理）
-/projects/xiaobai_voice/models/
+# ---- melody2score 构建过程 ----
+/projects/melody2score/build_run*.txt
+projects/melody2score/app/exports
+projects/melody2score/build
+
+# ---- 第三方代码仓库（子模块或外部管理）----
+ais/*
+!ais/README.md
