@@ -24,7 +24,6 @@ use crate::error::{MasterError, MasterResult};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
-use std::time::Duration;
 
 /// Master 节点角色
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -239,7 +238,8 @@ struct PeerReplicationState {
     match_index: u64,
     /// 最近一次成功追加的时间戳
     last_append_time_ms: u64,
-    /// 是否正在进行快照传输
+    /// 是否正在进行快照传输（预留字段，用于未来快照同步优化）
+    #[allow(dead_code)]
     snapshot_in_progress: bool,
 }
 
@@ -1236,6 +1236,8 @@ mod tests {
     #[test]
     fn test_request_vote_already_voted() {
         let raft = make_raft("node2");
+        // 设置当前任期为 1，并已投票给 node3
+        *raft.current_term.lock() = 1;
         *raft.voted_for.lock() = Some("node3".to_string());
 
         let req = RequestVoteRequest {
@@ -1245,8 +1247,10 @@ mod tests {
             last_log_term: 0,
         };
 
+        // 同任期内，已经投给 node3，不应再投给 node1
         let resp = raft.handle_request_vote(req);
         assert!(!resp.vote_granted);
+        assert_eq!(resp.term, 1);
     }
 
     #[test]

@@ -23,6 +23,8 @@ pub enum FilerError {
     Fuse(String),
     #[error("invalid attribute")]
     AttrInvalid,
+    #[error("unsupported operation: {0}")]
+    Unsupported(String),
     #[error("{0}")]
     Other(String),
 }

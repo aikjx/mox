@@ -38,6 +38,14 @@ class Config:
     min_voiced_ms: int = 80         # VAD 最小有声段（短于该值的孤立段视为毛刺）
     robust: bool = True             # 稳健重识别：多次识别取音符级共识，抑制单次偶发错误
 
+    # ---- Onset 起音检测（同音连续音分割增强） ----
+    # 仅靠音高变化无法区分"1 1"这类同音连续音，
+    # 启用能量包络起音检测后，在能量上升处强制切分，识别准确率显著提升。
+    # 对纯正弦波/合成音效果极佳；对真实人声/乐器也有明显改善。
+    enable_onset: bool = True       # 启用起音检测辅助音符分割
+    onset_threshold_db: float = -30.0  # 起音能量噪声底（dB）
+    onset_min_gap_s: float = 0.08      # 最小起音间隔（秒），避免颤音伪起音
+
     # ---- MIDI 后处理纠错层（v2 新增，默认全开） ----
     enable_postprocess: bool = True # 音域/跳音/短音/长音/同音合并 全局纠错
 

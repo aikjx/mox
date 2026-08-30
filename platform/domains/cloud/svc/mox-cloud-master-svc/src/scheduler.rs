@@ -1268,14 +1268,16 @@ mod tests {
     fn test_rebalance_plan_unbalanced() {
         let scheduler = make_scheduler();
         let mut nodes = Vec::new();
-        // 一个几乎满的节点
-        nodes.push(make_volume("v1", 1000, 900, true));
-        // 一个几乎空的节点
-        nodes.push(make_volume("v2", 1000, 100, true));
+        let capacity = 100 * 1024 * 1024 * 1024; // 100 GB
+        // 一个几乎满的节点 (90% used = 90GB)
+        nodes.push(make_volume("v1", capacity, 90 * 1024 * 1024 * 1024, true));
+        // 一个几乎空的节点 (10% used = 10GB)
+        nodes.push(make_volume("v2", capacity, 10 * 1024 * 1024 * 1024, true));
 
         let plan = scheduler.generate_rebalance_plan(&nodes, 10);
-        // 两个节点差异很大，应该有迁移计划
+        // 两个节点差异很大（80%差，阈值10%），应该有迁移计划
         assert!(plan.total_bytes > 0);
+        assert!(!plan.migrations.is_empty());
     }
 
     #[test]

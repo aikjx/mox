@@ -112,9 +112,102 @@ def _median_filter(x: np.ndarray, win: int, hole_after=None) -> np.ndarray:
 _ISOLATED_FLOOR = 0.05
 
 
+def detect_onsets(y: np.ndarray, sr: int = 16000,
+                  frame_ms: int = 20, hop_ms: int = 10,
+                  threshold_db: float = -30.0,
+                  min_gap_s: float = 0.10) -> List[float]:
+    """基于能量包络的起音（Onset）检测，用于辅助同音连续音的分割。
+
+    原理：
+      1. 计算帧级 RMS 能量包络 → 转 dB
+      2. 计算能量的一阶差分（变化率）
+      3. 找差分的正峰值（能量上升最快的点 = 起音点）
+      4. 峰值需高于阈值 + 高于局部背景 + 最小间隔过滤
+
+    相比于简单的"能量 > 背景 + 6dB"，峰值检测更鲁棒：
+      - 不会在缓慢的淡入段产生连续多个伪起音
+      - 起音定位更精确（在 attack 的中点而非起点）
+      - 对平稳段的微小能量波动不敏感
+
+    Args:
+        y: 音频波形
+        sr: 采样率
+        frame_ms: 帧长（毫秒）
+        hop_ms: 跳变（毫秒）
+        threshold_db: 能量噪声底（低于此值不认为是有效起音）
+        min_gap_s: 最小起音间隔（秒），避免颤音/抖动产生伪起音
+
+    Returns:
+        起音时间点列表（秒），升序排列
+    """
+    if len(y) < int(sr * 0.05):
+        return []
+
+    frame_len = int(sr * frame_ms / 1000.0)
+    hop_len = int(sr * hop_ms / 1000.0)
+    if hop_len <= 0:
+        hop_len = frame_len // 2
+
+    # ---- 步骤1: 计算 RMS 能量包络 ----
+    n_frames = max(1, (len(y) - frame_len) // hop_len + 1)
+    rms = np.zeros(n_frames, dtype=np.float32)
+    for i in range(n_frames):
+        start = i * hop_len
+        end = start + frame_len
+        frame = y[start:end]
+        if len(frame) > 0:
+            rms[i] = np.sqrt(np.mean(frame ** 2))
+
+    # 转 dB
+    rms_db = np.full_like(rms, -100.0, dtype=np.float32)
+    valid = rms > 1e-8
+    rms_db[valid] = 20.0 * np.log10(rms[valid])
+
+    # ---- 步骤2: 计算能量变化率（一阶差分） ----
+    # diff[i] = rms_db[i] - rms_db[i-1]，正值表示能量上升
+    diff = np.diff(rms_db)
+    diff = np.concatenate(([0.0], diff))  # 对齐长度
+
+    # ---- 步骤3: 找正峰值（能量上升最快的点） ----
+    # 峰值定义：比左右邻居都大，且 > 0（上升）
+    onsets = []
+    last_onset_time = -10.0
+
+    # 峰值检测窗口（找局部最大值）
+    peak_win = max(1, int(0.03 / (hop_ms / 1000.0)))  # 30ms 内的峰值
+
+    for i in range(peak_win, n_frames - peak_win):
+        t = i * hop_len / sr
+
+        # 必须是局部峰值
+        if diff[i] <= 0:
+            continue
+        local_max = np.max(diff[i - peak_win:i + peak_win + 1])
+        if diff[i] < local_max - 1e-6:
+            continue
+
+        # 能量上升速度至少 1.5 dB/帧（过滤缓慢的渐强）
+        if diff[i] < 1.5:
+            continue
+
+        # 当前能量必须高于噪声底
+        if rms_db[i] < threshold_db:
+            continue
+
+        # 最小间隔过滤
+        if t - last_onset_time < min_gap_s:
+            continue
+
+        onsets.append(t)
+        last_onset_time = t
+
+    return onsets
+
+
 def segment_notes(pitch_points: List[Dict], min_note_dur: float = 0.1,
                   median_win: int = 5, vocal_mode: bool = False,
-                  vad_mask=None, vad_hop_ms: int = 10) -> List[Dict]:
+                  vad_mask=None, vad_hop_ms: int = 10,
+                  onset_times: Optional[List[float]] = None) -> List[Dict]:
     """把连续 pitch 点切分为音符，并过滤颤音/滑音毛刺。
 
     流程：
@@ -123,10 +216,16 @@ def segment_notes(pitch_points: List[Dict], min_note_dur: float = 0.1,
          窗口不跨静音/空洞边界（两侧帧属于不同音符）；
       2) 半音量化后按相同音高分段，并标记段间「静音边界」（sep_prev）：
          显性 NaN 空洞（VAD 判静音）+ 隐性帧缺失缝隙（置信度不足被丢弃）；
+      2.5)（可选）Onset 辅助切分 —— 在能量起音点强制切分同音连续音，
+         解决"1 1"被合并成"1-"的核心问题；
       3) VAD 切边回补 → 边界伪音清除 → 短段合并（静音边界感知，
          不跨静音合并）；
       4) 最终过滤：常规音符须 > min_note_dur；静音夹持的孤立短音放宽到
          _ISOLATED_FLOOR（弱起/跳音短于 min_note_dur 仍保留）。
+
+    Args:
+        onset_times: 起音时间点列表（秒），来自 detect_onsets()。
+            传入后会在每个起音点强制切分同音段，大幅改善同音连续音的识别。
     """
     if not pitch_points:
         return []
@@ -212,13 +311,63 @@ def segment_notes(pitch_points: List[Dict], min_note_dur: float = 0.1,
     if cur is not None:
         raw.append(cur)
 
+    # 2.5) Onset 辅助切分：在能量起音点强制切分同音连续音
+    #      这是解决"1 1"被合并成"1-"问题的核心手段。
+    #      仅对同音段生效：如果 onset 落在某个音符段内部，且 onset 前后
+    #      都有足够的 pitch 帧，则在 onset 处将该段一分为二。
+    if onset_times and len(onset_times) > 0 and len(raw) > 0:
+        onset_arr = np.array(onset_times)
+        new_raw: List[Dict] = []
+        for seg in raw:
+            seg_start = float(seg["start"])
+            seg_end = float(seg["end"])
+            seg_midi = int(seg["midi"])
+            # 找落在该段内部（且不靠近两端边缘）的 onset
+            # 排除边缘 10ms：避免与自然音高变化边界重复切分
+            margin = 0.01
+            inner_mask = (onset_arr > seg_start + margin) & (onset_arr < seg_end - margin)
+            inner_onsets = onset_arr[inner_mask]
+
+            if len(inner_onsets) == 0:
+                new_raw.append(seg)
+                continue
+
+            # 在每个 onset 处切分
+            cut_points = sorted(inner_onsets.tolist())
+            cur_start = seg_start
+            for ct in cut_points:
+                # 切出前一段：[cur_start, ct)
+                piece_dur = ct - cur_start
+                if piece_dur > 0.01:  # 至少 10ms，避免产生幻音
+                    new_raw.append({
+                        "midi": seg_midi,
+                        "start": cur_start,
+                        "end": ct,
+                        "sep_prev": bool(seg.get("sep_prev")) if cur_start == seg_start else False,
+                        "nfr": max(1, int(piece_dur / 0.01)),
+                    })
+                cur_start = ct
+            # 最后一段
+            last_dur = seg_end - cur_start
+            if last_dur > 0.01:
+                new_raw.append({
+                    "midi": seg_midi,
+                    "start": cur_start,
+                    "end": seg_end,
+                    "sep_prev": False,
+                    "nfr": max(1, int(last_dur / 0.01)),
+                })
+        raw = new_raw
+
     # VAD 切边回补（须在过滤之前）：VAD 以能量门限判有声，attack 爬升段
     # 与指数衰减尾系统性低于门限，且 pyin 帧中心落在静音区的边缘帧会被
     # 整帧判杀 → 音符边界两端被切（实测 0.42s → 0.27~0.32s，BPM 反推
-    # 随之落到错误拍类）。回补量取 30ms：足以找回边缘帧并让 0.25 拍
-    # 短音符存活，又不至于把边界毛刺养到超过过滤线；无 VAD 不回补。
+    # 随之落到错误拍类）。回补量取 50ms：足以找回边缘帧并让 0.25 拍
+    # 短音符存活，首音符的 attack 损失也能基本补回；
+    # 边界毛刺因两边对称回补后中点不变，时长不增 → 不会越过过滤线。
+    # 无 VAD 不回补。
     if vad_mask is not None and len(vad_mask) > 0:
-        raw = _pad_note_boundaries(raw, 0.03)
+        raw = _pad_note_boundaries(raw, 0.05)
     # 边界伪音清除：短音符夹在两个相同音高之间（A|B|A 且 B 短），
     # B 是帧窗口横跨 A|gap|A 解出的中间伪音高，截断两侧 A 的边界即可。
     raw = _drop_boundary_artifacts(raw, min_note_dur)
@@ -407,6 +556,53 @@ def _cluster_prior_soft(bpm: float) -> float:
     return float(np.exp(-0.5 * ((bpm - mu) / sigma) ** 2))
 
 
+def _rhythm_naturalness(durs: List[float], bpm: float) -> float:
+    """评估在给定 BPM 下音符时值分布的「音乐自然度」。
+
+    包含两个维度：
+    1) 时值简单度：大多数音符是否为「简单」时值（0.25/0.5/1/2/4 拍）？
+       全是 1.5/2.5 拍这种附点奇数拍 → BPM 很可能错了。
+    2) 拍位中心度：中位音符时值是否接近 1 拍（四分音符）？
+       大多数流行音乐中，最常见的是四分音符（1 拍）。
+       如果中位音符是 2 拍 → BPM 可能偏快一倍；
+       如果中位音符是 0.5 拍 → BPM 可能偏慢一倍。
+
+    返回 0~1，越高越自然。
+    """
+    if not durs:
+        return 0.5
+    beat = 60.0 / bpm
+    # ---- 1) 时值简单度 ----
+    simple_mults = {0.25, 0.5, 1.0, 2.0, 4.0}
+    simple_count = 0
+    for d in durs:
+        ratio = d / beat
+        all_mults = _NOTE_MULTS + _TRIPLET_MULTS
+        best_mult = min(all_mults, key=lambda m: abs(ratio - m))
+        if best_mult in simple_mults:
+            simple_count += 1
+    frac_simple = simple_count / len(durs)
+
+    # ---- 2) 拍位中心度：中位音符越接近 1 拍越自然 ----
+    median_dur = float(np.median(durs))
+    median_ratio = median_dur / beat
+    median_mult = min(_NOTE_MULTS + _TRIPLET_MULTS, key=lambda m: abs(median_ratio - m))
+    # 以 1 拍为中心的高斯：1.0→1.0，2.0→0.6，0.5→0.6，1.5→0.5
+    # 用 log2 距离：|log2(median_mult) - log2(1.0)| = |log2(median_mult)|
+    if median_mult <= 0:
+        beat_centric = 0.0
+    else:
+        log_dist = abs(np.log2(median_mult))
+        # sigma=1.0：每差一个 octave（翻倍/折半）降 39%
+        beat_centric = float(np.exp(-0.5 * (log_dist / 1.0) ** 2))
+
+    # 中位时值本身是否简单（也计入简单度）
+    median_is_simple = 1.0 if median_mult in simple_mults else 0.5
+
+    # 综合：40% 简单音符比例 + 40% 拍位中心度 + 20% 中位时值简单度
+    return float(0.4 * frac_simple + 0.4 * beat_centric + 0.2 * median_is_simple)
+
+
 def _pick_cluster_representative(cluster: List[float],
                                   durs: List[float]) -> Optional[float]:
     """在倍频簇内选最优代表值：拟合质量 × 先验 × 网格落栅率 加权。
@@ -429,21 +625,23 @@ def _pick_cluster_representative(cluster: List[float],
     for bpm in cluster:
         avg_err, q75_err, ongrid = _fit_notes_to_bpm(durs, bpm)
         prior = _cluster_prior_soft(bpm)
-        score = ongrid * 1.0 + prior * 0.8 - q75_err * 2.0
-        scored.append((bpm, score, avg_err, q75_err, ongrid))
+        natural = _rhythm_naturalness(durs, bpm)
+        score = ongrid * 1.0 + prior * 0.8 - q75_err * 2.0 + natural * 0.5
+        scored.append((bpm, score, avg_err, q75_err, ongrid, natural))
 
     # Top-1 得主（loss+先验综合）
     scored.sort(key=lambda t: t[1], reverse=True)
-    best_bpm, _, best_avg, _, _ = scored[0]
+    best_bpm, _, best_avg, _, _, _ = scored[0]
 
     # Pass 2：对所有候选两两比较，若满足 2× 歧义 + 都高拟合，按语义 tie-break
     n = len(scored)
     for i in range(n):
         for j in range(i + 1, n):
-            bi, _, ai, _, _ = scored[i]
-            bj, _, aj, _, _ = scored[j]
-            if not (ai < 0.01 and aj < 0.01):
-                continue  # 只有都高度拟合才可能是 2× 歧义
+            bi, _, ai, _, og_i, _ = scored[i]
+            bj, _, aj, _, og_j, _ = scored[j]
+            # 两者都有较好拟合（80% 以上音符落栅）才可能是 2× 歧义
+            if not (og_i > 0.8 and og_j > 0.8):
+                continue
             # 是否 2:1 关系
             hi, lo = max(bi, bj), min(bi, bj)
             if abs(hi / lo - 2.0) > 0.05:
@@ -460,21 +658,38 @@ def _pick_cluster_representative(cluster: List[float],
                 if lo < best_bpm or not _BPM_MIN_SOFT <= best_bpm <= _BPM_MAX_SOFT:
                     best_bpm = lo
                     continue
-            # 2) 两个都在区间内：选更接近先验中心 95 的
+            # 2) 两个都在区间内：基于「典型音符时值」+「距先验中心」综合决策
             if hi_in and lo_in:
-                dist_hi = abs(hi - 95.0)
-                dist_lo = abs(lo - 95.0)
-                # 对 2× 歧义对（hi ≈ 2·lo），差值 = 1.5·hi − 190；
-                # hi ≤ 146 时差 ≤ 26——这一整段都属于「折半误判风险区」，
-                # 统一取高值以消除 70↔140、66↔132、60↔120、71↔143 等流行
-                # BPM 常见误折半（小星星实测 143 被旧阈值 23 漏放过，错选 71）。
-                # （对 hi < 90 的真·慢速组合不会走到「都在软区间」分支，安全。）
-                if abs(dist_hi - dist_lo) <= 26.0:
-                    best_bpm = hi
-                elif dist_hi < dist_lo:
+                # 计算在两个候选 BPM 下的典型音符时值（中位数）
+                beat_hi = 60.0 / hi
+                beat_lo = 60.0 / lo
+                dur_median = float(np.median(durs))
+                median_beats_hi = dur_median / beat_hi   # hi BPM 下的中位拍数
+                median_beats_lo = dur_median / beat_lo   # lo BPM 下的中位拍数
+
+                # 音乐直觉：大部分流行/通俗音乐中，最常见的音符是八分~四分
+                # （0.5~1 拍）。如果 hi BPM 下中位音符 > 1.5 拍，说明
+                # hi 可能偏快了（把四分音符当成了二分+八分）。
+                # 反之如果 lo BPM 下中位音符 < 0.5 拍，说明 lo 偏慢。
+                hi_too_slow_feel = median_beats_hi > 1.5   # hi 下音符都太长 → hi 偏快
+                lo_too_fast_feel = median_beats_lo < 0.5   # lo 下音符都太短 → lo 偏慢
+
+                if hi_too_slow_feel and not lo_too_fast_feel:
+                    # hi 下音符普遍太长 → 选 lo（折半更合理）
+                    best_bpm = lo
+                elif lo_too_fast_feel and not hi_too_slow_feel:
+                    # lo 下音符普遍太短 → 选 hi（翻倍更合理）
                     best_bpm = hi
                 else:
-                    best_bpm = lo
+                    # 两者都正常或都异常 → 回退到原策略：距先验中心差值 ≤26 取高值
+                    dist_hi = abs(hi - 95.0)
+                    dist_lo = abs(lo - 95.0)
+                    if abs(dist_hi - dist_lo) <= 26.0:
+                        best_bpm = hi
+                    elif dist_hi < dist_lo:
+                        best_bpm = hi
+                    else:
+                        best_bpm = lo
     return float(best_bpm)
 
 
@@ -527,14 +742,17 @@ def _bpm_from_note_durations(durs: List[float]) -> Tuple[Optional[float], float]
         clean = [float(x) for x in durs_arr]
 
     # Step 1：对每个候选拍长 beat，拟合音符得到「原始 BPM + 拟合质量」
-    scored: List[Tuple[float, float, float]] = []  # (bpm, ongrid, q75_err)
+    scored: List[Tuple[float, float, float]] = []  # (bpm, score, q75_err)
     for beat in cands0:
         bpm0 = 60.0 / beat
         avg_err, q75, ongrid = _fit_notes_to_bpm(clean, bpm0)
-        scored.append((bpm0, ongrid, q75))
+        natural = _rhythm_naturalness(clean, bpm0)
+        # 评分：落栅率 ×1.0 + 自然度 ×0.6 − 75%误差 ×2.0
+        score = ongrid * 1.0 + natural * 0.6 - q75 * 2.0
+        scored.append((bpm0, score, q75))
 
-    # Step 2：取 Top-N 原始 BPM（按 ongrid − 2×q75 得分），各扩成倍频簇
-    scored.sort(key=lambda t: t[1] - 2.0 * t[2], reverse=True)
+    # Step 2：取 Top-N 原始 BPM（按 score 得分），各扩成倍频簇
+    scored.sort(key=lambda t: t[1], reverse=True)
     top_raw = [b for b, _, _ in scored[:5]]
 
     # Step 3：簇合并去重，对每个簇选代表值

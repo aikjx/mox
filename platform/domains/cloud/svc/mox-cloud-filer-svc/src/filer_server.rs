@@ -12,17 +12,29 @@ use parking_lot::Mutex;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+use crate::dir_entry_cache::DirEntryCache;
 use crate::error::{FilerError, FilerResult};
+use crate::file_lock::FileLockManager;
 use crate::meta_pg_citus::PgCitusMeta;
 use crate::meta_redis::RedisMeta;
 use crate::meta_sqlite::SqliteMeta;
 use crate::meta_trait::{MetaBackend, MetaStorageProvider, META_BACKENDS};
+use crate::quota_manager::QuotaManager;
+use crate::snapshot_filer::SnapshotManager;
 
 pub struct FilerServer {
     pub active: Mutex<Arc<dyn MetaStorageProvider>>,
     active_name: Mutex<String>,
     registry: Mutex<BTreeMap<String, Arc<dyn MetaStorageProvider>>>,
     pub object: Arc<dyn ObjectStorage>,
+    /// 目录项缓存
+    pub dir_cache: Arc<DirEntryCache>,
+    /// 文件锁管理器
+    pub file_locks: Arc<FileLockManager>,
+    /// 配额管理器
+    pub quota: Arc<QuotaManager>,
+    /// 快照管理器
+    pub snapshots: Arc<SnapshotManager>,
 }
 
 /// 简化的对象存储接口（S3 模拟）。
@@ -43,6 +55,10 @@ impl FilerServer {
             active_name: Mutex::new("sqlite".into()),
             registry: Mutex::new(reg),
             object: Arc::new(InMemoryObjectStorage::new()),
+            dir_cache: Arc::new(DirEntryCache::new()),
+            file_locks: Arc::new(FileLockManager::new()),
+            quota: Arc::new(QuotaManager::new()),
+            snapshots: Arc::new(SnapshotManager::new()),
         }
     }
 

@@ -1,0 +1,23 @@
+[package]
+name = "mox-flow-unified-arch-core"
+version = "0.1.0"
+edition = "2021"
+description = "统一架构核心 — 接入协议归一化、模型归一化、第三方系统对接标准"
+license = "MIT"
+
+[dependencies]
+mox-platform-foundation = { path = "../../../../foundation/mox-platform-foundation" }
+mox-flow-unified-storage-core = { path = "../mox-flow-unified-storage-core" }
+mox-flow-unified-meta-core = { path = "../mox-flow-unified-meta-core" }
+mox-flow-algo-alliance-core = { path = "../mox-flow-algo-alliance-core" }
+async-trait = "0.1"
+parking_lot = "0.12"
+indexmap = "2.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+
+[dev-dependencies]
+proptest = "1.0"

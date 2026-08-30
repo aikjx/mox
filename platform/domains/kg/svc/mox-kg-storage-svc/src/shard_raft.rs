@@ -133,7 +133,7 @@ pub enum NodeRole {
 }
 
 /// Raft 组信息
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct RaftGroup {
     /// 分片 ID
     pub shard_id: u16,
@@ -149,6 +149,20 @@ pub struct RaftGroup {
     pub peer_addrs: Vec<String>,
     /// Leader 地址
     pub leader_addr: Option<String>,
+}
+
+impl Clone for RaftGroup {
+    fn clone(&self) -> Self {
+        Self {
+            shard_id: self.shard_id,
+            role: self.role.clone(),
+            applied_index: AtomicU64::new(self.applied_index.load(Ordering::SeqCst)),
+            committed_index: AtomicU64::new(self.committed_index.load(Ordering::SeqCst)),
+            current_term: AtomicU64::new(self.current_term.load(Ordering::SeqCst)),
+            peer_addrs: self.peer_addrs.clone(),
+            leader_addr: self.leader_addr.clone(),
+        }
+    }
 }
 
 impl RaftGroup {

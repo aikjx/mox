@@ -1,0 +1,15 @@
+[package]
+name = "mox-flow-ai-assistant-core"
+version = "0.1.0"
+edition = "2021"
+description = "璇玑 RelGraph · AI对话全维自动化核心 (AI Assistant Core) - 意图理解+任务分解+多Agent协同+自主执行"
+license = "MIT"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+parking_lot = "0.12"
+uuid = { version = "1", features = ["v4", "serde"] }
+async-trait = "0.1"
+thiserror = "1"
+tokio = { version = "1", features = ["rt", "macros"] }

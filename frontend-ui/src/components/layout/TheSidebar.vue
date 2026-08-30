@@ -1,186 +1,95 @@
 <template>
-  <aside class="sidebar" v-if="!isAIFullscreen">
-    <div class="logo" @click="goHome">
-      <div class="logo-mark">玄</div>
-      <transition name="fade">
-        <div v-show="!collapsed" class="logo-text">
-          <div class="logo-title">璇玑系统</div>
-          <div class="logo-sub">Mox Graph System</div>
+  <aside class="sidebar" :class="{ collapsed: collapsed }">
+    <!-- Logo 区 -->
+    <div class="sidebar-brand" @click="goHome">
+      <div class="brand-mark">
+        <span class="brand-mark-inner">玄</span>
+      </div>
+      <transition name="fade-slide">
+        <div v-show="!collapsed" class="brand-text">
+          <div class="brand-title">璇玑系统</div>
+          <div class="brand-sub">Mox Graph System</div>
         </div>
       </transition>
     </div>
 
-    <!-- 侧边栏导航（分层展开式 · 3 大域 · 核心固定 + 展开折叠） -->
-    <el-scrollbar class="nav-scroll">
-      <nav class="nav">
+    <!-- 导航 -->
+    <el-scrollbar class="sidebar-nav-scroll">
+      <nav class="sidebar-nav">
         <template v-for="g in NAV_GROUPS" :key="g.key">
-          <!-- 分组标题 + 展开/折叠按钮 -->
-          <div
-            class="nav-group-header"
-            :class="{ collapsed: isGroupCollapsed(g.key) }"
-            @click="toggleGroup(g.key)"
-          >
-            <span class="nav-group-label">{{ g.label }}</span>
-            <el-icon class="nav-group-arrow">
-              <component :is="isGroupCollapsed(g.key) ? 'ArrowDown' : 'ArrowUp'" />
-            </el-icon>
+          <!-- 分组标题 -->
+          <div class="nav-section" v-show="!isGroupCollapsed(g.key) || collapsed">
+            <span
+              v-if="!collapsed"
+              class="nav-section-label"
+            >{{ g.label }}</span>
           </div>
 
-          <!-- 分组内模块：核心组（project/core）默认展开，扩展组可折叠 -->
-          <transition name="nav-expand">
-            <div v-show="!isGroupCollapsed(g.key)" class="nav-group-items">
+          <!-- 分组内导航项 -->
+          <div class="nav-items" :class="{ 'is-collapsed-group': isGroupCollapsed(g.key) && !collapsed }">
+            <template v-for="m in modulesByGroup(g.key)" :key="m.key">
               <el-tooltip
-                v-for="m in modulesByGroup(g.key)"
-                :key="m.key"
                 :content="m.label"
                 placement="right"
                 :disabled="!collapsed"
-                :show-after="300"
+                :show-after="400"
               >
                 <router-link
                   :to="m.path"
                   class="nav-item"
                   :class="{ active: isActive(m.path) }"
                 >
-                  <span class="nav-bar"></span>
-                  <div class="nav-icon-wrap" :style="{ background: m.bg, color: m.color }">
-                    <el-icon class="nav-icon"><component :is="m.icon" /></el-icon>
-                  </div>
-                  <span v-show="!collapsed" class="nav-label">{{ m.label }}</span>
-                  <!-- 有二级子模块时显示展开箭头 -->
-                  <el-icon
-                    v-if="!collapsed && hasSubModules(m.key)"
-                    class="nav-sub-arrow"
-                    @click.stop="toggleSubModule(m.key, $event)"
-                  >
-                    <component :is="expandedSubs.has(m.key) ? 'ArrowDown' : 'ArrowRight'" />
-                  </el-icon>
+                  <span class="nav-item-indicator" :class="{ active: isActive(m.path) }"></span>
+                  <el-icon class="nav-item-icon"><component :is="m.icon" /></el-icon>
+                  <span v-show="!collapsed" class="nav-item-label">{{ m.label }}</span>
                 </router-link>
               </el-tooltip>
-
-              <!-- 二级子模块（展开时显示） -->
-              <transition name="nav-sub-expand">
-                <div v-if="!collapsed && expandedSubs.has(g.key) && expandedSubs.get(g.key)?.length" class="nav-sub-items">
-                  <router-link
-                    v-for="s in getExpandedSubs(g.key)"
-                    :key="s.key"
-                    :to="s.path"
-                    class="nav-sub-item"
-                    :class="{ active: route.path === s.path }"
-                  >
-                    <span class="nav-sub-dot"></span>
-                    <span class="nav-sub-label">{{ s.label }}</span>
-                  </router-link>
-                </div>
-              </transition>
-            </div>
-          </transition>
+            </template>
+          </div>
         </template>
       </nav>
     </el-scrollbar>
 
-    <div class="sidebar-footer" v-show="!collapsed">
-      <div class="ver">v{{ APP_VERSION }}</div>
-      <div class="health">
-        <div class="dot" :class="health.status"></div>
-        <span>{{ health.label }}</span>
+    <!-- 底部：健康状态 + 折叠 -->
+    <div class="sidebar-footer">
+      <div v-show="!collapsed" class="footer-health">
+        <span class="health-dot" :class="health.status"></span>
+        <span class="health-text">{{ health.label }}</span>
       </div>
+      <button class="footer-collapse" @click="$emit('toggle-collapse')" :title="collapsed ? '展开侧边栏' : '收起侧边栏'">
+        <el-icon>
+          <component :is="collapsed ? 'ArrowRight' : 'ArrowLeft'" />
+        </el-icon>
+      </button>
     </div>
   </aside>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowUp, ArrowRight } from '@element-plus/icons-vue'
-import {
-  NAV_MODULES, APP_VERSION, NAV_GROUPS, SUB_MODULES, HIDDEN_MODULES
-} from '@/constants'
+import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
+import { NAV_MODULES, APP_VERSION, NAV_GROUPS } from '@/constants'
 import { getHealth } from '@/api'
 
-const props = defineProps({
+defineProps({
   collapsed: { type: Boolean, default: false },
   isAIFullscreen: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['update:collapsed', 'toggle-collapse'])
+defineEmits(['toggle-collapse'])
 
 const route = useRoute()
 const router = useRouter()
 
 const health = ref({ status: 'pending', label: '连接中…' })
 
-/* ===== 导航分组折叠状态 ===== */
-const collapsedGroups = ref(new Set(['extend']))
+/* ===== 导航分组折叠 ===== */
+const collapsedGroups = ref(new Set())
 
-function isGroupCollapsed(groupKey) {
-  return collapsedGroups.value.has(groupKey)
+function isGroupCollapsed(key) {
+  return collapsedGroups.value.has(key)
 }
-
-function toggleGroup(groupKey) {
-  const next = new Set(collapsedGroups.value)
-  if (next.has(groupKey)) {
-    next.delete(groupKey)
-  } else {
-    next.add(groupKey)
-  }
-  collapsedGroups.value = next
-  localStorage.setItem('nav_collapsed_groups', JSON.stringify([...next]))
-}
-
-function restoreNavState() {
-  try {
-    const saved = localStorage.getItem('nav_collapsed_groups')
-    if (saved) {
-      collapsedGroups.value = new Set(JSON.parse(saved))
-    }
-  } catch (_) { /* ignore */ }
-}
-
-/* ===== 二级子模块展开状态 ===== */
-const expandedSubs = ref(new Map())
-
-function hasSubModules(moduleKey) {
-  return !!(SUB_MODULES[moduleKey] && SUB_MODULES[moduleKey].length > 1)
-}
-
-function toggleSubModule(moduleKey, event) {
-  if (event) event.stopPropagation()
-  const next = new Map(expandedSubs.value)
-  if (next.has(moduleKey)) {
-    next.delete(moduleKey)
-  } else {
-    next.set(moduleKey, SUB_MODULES[moduleKey] || [])
-  }
-  expandedSubs.value = next
-}
-
-function getExpandedSubs(groupKey) {
-  const mods = modulesByGroup(groupKey)
-  const all = []
-  mods.forEach(m => {
-    if (expandedSubs.value.has(m.key)) {
-      all.push(...(expandedSubs.value.get(m.key) || []))
-    }
-  })
-  return all
-}
-
-// 构建完整的模块索引
-const ALL_MODULES = computed(() => {
-  const list = [...NAV_MODULES]
-  Object.values(SUB_MODULES).forEach(subs => {
-    subs.forEach(s => {
-      if (!list.find(m => m.path === s.path)) {
-        list.push({ key: s.key, label: s.label, path: s.path, color: '#6366f1', bg: '#eef2ff' })
-      }
-    })
-  })
-  HIDDEN_MODULES.forEach(m => {
-    if (!list.find(x => x.path === m.path)) list.push(m)
-  })
-  return list
-})
 
 function modulesByGroup(gKey) {
   const g = NAV_GROUPS.find((x) => x.key === gKey)
@@ -205,219 +114,258 @@ async function refreshHealth() {
   }
 }
 
-// 暴露方法给父组件
 defineExpose({ refreshHealth })
 
 onMounted(() => {
-  restoreNavState()
   refreshHealth()
 })
 </script>
 
 <style scoped>
 .sidebar {
-  width: var(--sidebar-width);
+  width: var(--sidebar-width, 240px);
   flex-shrink: 0;
-  background: linear-gradient(180deg, #0f172a 0%, #111c34 100%);
-  color: #cbd5e1;
+  background: var(--sidebar-bg, #0f172a);
+  border-right: 1px solid var(--sidebar-border, rgba(255, 255, 255, 0.06));
   display: flex;
   flex-direction: column;
-  transition: width var(--transition);
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   z-index: 10;
-  box-shadow: 4px 0 24px rgba(15, 23, 42, 0.4);
-}
-.sidebar-collapsed .sidebar { width: 68px; }
-.logo {
-  height: var(--header-h);
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 0 18px;
-  cursor: pointer;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-.logo-mark {
-  width: 34px; height: 34px; flex-shrink: 0; border-radius: 10px;
-  background: linear-gradient(135deg, var(--brand-light), var(--accent));
-  color: #fff; font-weight: 800; font-size: 18px; display: grid; place-items: center;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.6);
-}
-.logo-title { font-size: 15px; font-weight: 700; color: #fff; white-space: nowrap; }
-.logo-sub { font-size: 10px; color: #64748b; letter-spacing: 0.4px; white-space: nowrap; }
-.nav-scroll { flex: 1; padding: 10px 12px; }
-.nav { display: flex; flex-direction: column; gap: 4px; }
-
-/* 分组标题栏 */
-.nav-group-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px 6px;
-  cursor: pointer;
-  user-select: none;
-  transition: opacity 0.2s;
-}
-.nav-group-header:hover { opacity: 0.9; }
-.nav-group-header.collapsed .nav-group-label { opacity: 0.7; }
-.nav-group-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #64748b;
-  font-weight: 600;
-}
-.nav-group-arrow {
-  font-size: 12px;
-  color: #475569;
-  transition: transform 0.2s;
 }
 
-/* 分组内容过渡动画 */
-.nav-expand-enter-active,
-.nav-expand-leave-active {
-  transition: all 0.25s ease;
+.sidebar.collapsed {
+  width: 68px;
+}
+
+/* ===== Brand / Logo ===== */
+.sidebar-brand {
+  height: var(--header-h, 56px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--sidebar-border, rgba(255, 255, 255, 0.06));
+  flex-shrink: 0;
+}
+
+.brand-mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--brand, #6366f1), var(--accent, #06b6d4));
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.brand-mark-inner {
+  color: #fff;
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: -0.5px;
+}
+
+.brand-text {
+  min-width: 0;
   overflow: hidden;
 }
-.nav-expand-enter-from,
-.nav-expand-leave-to {
-  opacity: 0;
-  max-height: 0;
-}
-.nav-expand-enter-to,
-.nav-expand-leave-from {
-  opacity: 1;
-  max-height: 500px;
+
+.brand-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f1f5f9;
+  line-height: 1.2;
 }
 
-.nav-group-items {
+.brand-sub {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+  letter-spacing: 0.3px;
+}
+
+/* ===== Nav Scroll ===== */
+.sidebar-nav-scroll {
+  flex: 1;
+  padding: 8px 10px;
+}
+
+.sidebar-nav {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
+/* 分组标题 */
+.nav-section {
+  padding: 16px 14px 6px;
+}
+
+.nav-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.nav-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-items.is-collapsed-group {
+  display: none;
+}
+
+/* 导航项 */
 .nav-item {
-  display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 12px;
-  border-radius: 11px; color: #94a3b8; font-size: 14px; font-weight: 500;
-  transition: all 0.2s; position: relative; white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 9px;
+  color: #94a3b8;
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  position: relative;
+  white-space: nowrap;
+  text-decoration: none;
 }
-.nav-item:hover { background: rgba(255, 255, 255, 0.06); color: #e2e8f0; }
-.nav-item.active {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.95), rgba(67, 56, 202, 0.95));
-  color: #fff;
-  box-shadow: 0 8px 22px rgba(79, 70, 229, 0.45);
-}
-.nav-bar {
-  position: absolute; left: -12px; top: 50%; transform: translateY(-50%) scaleY(0);
-  width: 4px; height: 22px; border-radius: 0 4px 4px 0; background: var(--accent);
-  transition: transform 0.2s;
-}
-.nav-item.active .nav-bar { transform: translateY(-50%) scaleY(1); }
 
-/* 一级图标背景 */
-.nav-icon-wrap {
-  width: 28px; height: 28px; border-radius: 8px;
-  display: grid; place-items: center;
-  flex-shrink: 0;
-  transition: all 0.2s;
-}
-.nav-item.active .nav-icon-wrap {
-  background: rgba(255, 255, 255, 0.2) !important;
-  color: #fff !important;
-}
-.nav-icon { font-size: 16px; flex-shrink: 0; }
-
-/* 二级展开箭头 */
-.nav-sub-arrow {
-  margin-left: auto;
-  font-size: 12px;
-  color: #64748b;
-  padding: 4px;
-  border-radius: 4px;
-  transition: all 0.15s;
-}
-.nav-sub-arrow:hover {
-  background: rgba(255, 255, 255, 0.1);
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
   color: #e2e8f0;
 }
 
-/* 二级子菜单 */
-.nav-sub-expand-enter-active,
-.nav-sub-expand-leave-active {
-  transition: all 0.2s ease;
-  overflow: hidden;
-}
-.nav-sub-expand-enter-from,
-.nav-sub-expand-leave-to {
-  opacity: 0;
-  max-height: 0;
-}
-.nav-sub-expand-enter-to,
-.nav-sub-expand-leave-from {
-  opacity: 1;
-  max-height: 200px;
+.nav-item.active {
+  background: rgba(99, 102, 241, 0.12);
+  color: #a5b4fc;
 }
 
-.nav-sub-items {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding-left: 40px;
-  margin: 2px 0 4px;
+.nav-item-indicator {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%) scaleY(0);
+  width: 3px;
+  height: 18px;
+  border-radius: 0 3px 3px 0;
+  background: var(--brand, #6366f1);
+  transition: transform 0.2s ease;
 }
-.nav-sub-item {
+
+.nav-item-indicator.active {
+  transform: translateY(-50%) scaleY(1);
+}
+
+.nav-item-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.nav-item.active .nav-item-icon {
+  color: #818cf8;
+}
+
+.nav-item-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== Footer ===== */
+.sidebar-footer {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  border-top: 1px solid var(--sidebar-border, rgba(255, 255, 255, 0.06));
+  flex-shrink: 0;
+}
+
+.footer-health {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 34px;
-  padding: 0 12px;
-  border-radius: 7px;
-  font-size: 13px;
+  font-size: 12px;
   color: #64748b;
-  font-weight: 500;
-  transition: all 0.15s;
-  white-space: nowrap;
 }
-.nav-sub-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #cbd5e1;
-}
-.nav-sub-item.active {
-  color: #a5b4fc;
-  background: rgba(99, 102, 241, 0.12);
-}
-.nav-sub-dot {
-  width: 5px; height: 5px; border-radius: 50%;
-  background: #475569;
-  flex-shrink: 0;
-}
-.nav-sub-item.active .nav-sub-dot {
-  background: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-}
-.nav-sub-label { flex: 1; }
-.sidebar-footer {
-  height: 50px; display: flex; align-items: center; justify-content: space-between;
-  padding: 0 18px; border-top: 1px solid rgba(255, 255, 255, 0.06);
-  font-size: 12px; color: #64748b;
-}
-.health { display: flex; align-items: center; gap: 7px; }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warning); }
-.dot.ok { background: var(--success); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2); }
-.dot.down { background: var(--danger); box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2); }
 
-/* 响应式 */
-@media (max-width: 1024px) {
-  .sidebar { width: 60px; }
-  .nav-group { display: none; }
+.health-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f59e0b;
 }
+
+.health-dot.ok {
+  background: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+.health-dot.down {
+  background: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+.footer-collapse {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 0.15s;
+  margin-left: auto;
+}
+
+.footer-collapse:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+}
+
+.collapsed .footer-collapse {
+  margin: 0 auto;
+}
+
+/* ===== Transitions ===== */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.2s ease;
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateX(-8px);
+}
+
+/* ===== Responsive ===== */
 @media (max-width: 768px) {
   .sidebar {
     position: fixed;
     z-index: 200;
     transform: translateX(-100%);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  .sidebar.mobile-open { transform: translateX(0); }
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
 }
 </style>

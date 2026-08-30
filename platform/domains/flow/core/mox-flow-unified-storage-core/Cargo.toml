@@ -1,0 +1,20 @@
+[package]
+name = "mox-flow-unified-storage-core"
+version = "0.1.0"
+edition = "2021"
+description = "统一存储引擎 — 图存储与对象存储融合抽象"
+license = "MIT"
+
+[dependencies]
+mox-platform-foundation = { path = "../../../../foundation/mox-platform-foundation" }
+async-trait = "0.1"
+parking_lot = "0.12"
+indexmap = "2.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+bytes = "1.0"
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+
+[dev-dependencies]
+proptest = "1.0"

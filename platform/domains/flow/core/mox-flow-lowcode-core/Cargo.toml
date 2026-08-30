@@ -1,0 +1,15 @@
+[package]
+name = "mox-flow-lowcode-core"
+version = "0.1.0"
+edition = "2021"
+description = "璇玑 RelGraph · 低代码核心 (Low-Code Core) - 元数据驱动+表单引擎+页面引擎+脚本扩展"
+license = "MIT"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+parking_lot = "0.12"
+uuid = { version = "1", features = ["v4", "serde"] }
+async-trait = "0.1"
+thiserror = "1"
+tokio = { version = "1", features = ["rt", "macros"] }

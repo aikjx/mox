@@ -99,7 +99,18 @@ def adaptive_tonic_midi(notes: List[dict], tonic_pc: int) -> int:
     """
     if not notes:
         return 60 + (tonic_pc % 12)
-    mids = sorted(int(round(float(n.get("midi", 60)))) for n in notes)
+    mids = []
+    for n in notes:
+        if not n or not isinstance(n, dict):
+            continue
+        try:
+            midi_val = int(round(float(n.get("midi", 60))))
+            mids.append(midi_val)
+        except (TypeError, ValueError):
+            continue
+    if not mids:
+        return 60 + (tonic_pc % 12)
+    mids.sort()
     med = mids[len(mids) // 2]
     return med - ((med - tonic_pc) % 12)
 
@@ -152,31 +163,66 @@ def make_score_sheet(
     tuning: str = "",
 ) -> ScoreSheet:
     """把 pipeline 输出的 notes 转换为规范歌谱数据结构。"""
-    tonic = key.get("tonic", "C")
-    mode = key.get("mode", "major")
+    # ---- 输入验证与防御性默认值 ----
+    if not notes:
+        notes = []
+    if not key or not isinstance(key, dict):
+        key = {"tonic": "C", "mode": "major"}
+    tonic = key.get("tonic", "C") or "C"
+    mode = key.get("mode", "major") or "major"
+    # 防御：确保 time_sig 是合法二元组
+    try:
+        if not time_sig or len(time_sig) < 2:
+            time_sig = (4, 4)
+        beats_per_bar = int(time_sig[0])
+        beat_unit = int(time_sig[1])
+        if beats_per_bar <= 0 or beat_unit <= 0:
+            time_sig = (4, 4)
+            beats_per_bar = 4
+            beat_unit = 4
+    except (TypeError, ValueError, IndexError):
+        time_sig = (4, 4)
+        beats_per_bar = 4
+        beat_unit = 4
+
     tonic_pc = _name_to_pitch_class(tonic)
 
-    beats_per_bar = time_sig[0]
-    beat_unit = time_sig[1]
     # 稳健 beat_dur：
     #   1) bpm 可信(30-300) → 用 bpm；
     #   2) 否则用音符中位时长自洽推导（一拍 ≈ 一个中位时长音符）；
     #   3) 还不行（无 notes）→ 退到 0.5s/拍。
-    if bpm and 30.0 <= float(bpm) <= 300.0:
-        beat_dur = 60.0 / float(bpm)
+    try:
+        bpm_float = float(bpm) if bpm else 0.0
+    except (TypeError, ValueError):
+        bpm_float = 0.0
+    if bpm_float and 30.0 <= bpm_float <= 300.0:
+        beat_dur = 60.0 / bpm_float
     else:
-        durs = [float(n.get("dur", 0.0)) for n in notes]
-        durs = [d for d in durs if 0.05 < d < 4.0]
+        durs = []
+        for n in notes:
+            try:
+                d = float(n.get("dur", 0.0))
+                if 0.05 < d < 4.0:
+                    durs.append(d)
+            except (TypeError, ValueError):
+                continue
         beat_dur = float(np.median(durs)) if durs else 0.5
 
     render_notes: List[RenderNote] = []
     # 自适应 tonic 基准（循环外一次计算）：中位音符所在八度的主音为无点区
     base_midi = adaptive_tonic_midi(notes, tonic_pc)
     for n in notes:
-        start = float(n.get("start", 0.0))
-        dur = float(n.get("dur", 0.0))
-        midi = int(round(float(n.get("midi", 0))))
-        name = n.get("name", "")
+        # 防御：跳过 None 或非字典的异常元素
+        if not n or not isinstance(n, dict):
+            continue
+        try:
+            start = float(n.get("start", 0.0))
+            dur = float(n.get("dur", 0.0))
+            midi = int(round(float(n.get("midi", 0))))
+            name = n.get("name", "") or ""
+        except (TypeError, ValueError):
+            # 防御：跳过数据异常的音符
+            continue
         degree, accidental = _degree_accidental(midi, tonic_pc, mode)
 
         # 八度点：以「自适应 tonic 基准」（中位音符所在八度的主音）为无点
@@ -184,12 +230,12 @@ def make_score_sheet(
         # 旧版固定 C4 参考：哼唱/检测音域偏低时图片满屏低音点。
         octave_dot = (midi - base_midi) // 12  # floor：负数向下，数学正确
 
-        start_beat = start / beat_dur
-        dur_beats = max(0.05, dur / beat_dur)  # 下限保护，避免零长度黑块
-        bar_idx = int(start_beat // beats_per_bar)
+        start_beat = start / beat_dur if beat_dur > 0 else 0.0
+        dur_beats = max(0.05, dur / beat_dur) if beat_dur > 0 else 0.05  # 下限保护
+        bar_idx = int(start_beat // beats_per_bar) if beats_per_bar > 0 else 0
 
         render_notes.append(RenderNote(
-            name=name or "",
+            name=name,
             midi=midi,
             degree=degree,
             octave_dot=octave_dot,
@@ -197,18 +243,19 @@ def make_score_sheet(
             dur_beats=dur_beats,
             bar_idx=bar_idx,
             accidental=accidental,
+            lyric=n.get("lyric", "") or "",
         ))
 
     return ScoreSheet(
-        title=title,
+        title=title or "未命名旋律",
         key_tonic=tonic,
         key_mode=mode,
         time_sig=time_sig,
-        bpm=bpm,
+        bpm=bpm_float,
         beats_per_bar=beats_per_bar,
         notes=render_notes,
-        composer=composer,
-        tuning=tuning,
+        composer=composer or "",
+        tuning=tuning or "",
     )
 
 
@@ -262,15 +309,23 @@ def export_score(
     渲染后端使用规范第三方工具链（jianpu-ly 简谱记法 + LilyPond 排版），
     不自写渲染器。若 LilyPond/jianpu-ly 缺失则直接报错，提示安装。
     """
-    sheet = make_score_sheet(
-        notes=notes,
-        key=key,
-        bpm=bpm,
-        title=title,
-        time_sig=time_sig,
-        composer=composer,
-        tuning=tuning,
-    )
+    try:
+        sheet = make_score_sheet(
+            notes=notes,
+            key=key,
+            bpm=bpm,
+            title=title,
+            time_sig=time_sig,
+            composer=composer,
+            tuning=tuning,
+        )
+    except IndexError as e:
+        # 构建阶段索引越界：附上输入概览，便于定位
+        _n_notes = len(notes) if notes else 0
+        raise RuntimeError(
+            f"歌谱数据构建索引错误: {e}\n"
+            f"音符数: {_n_notes}, 调: {key}, BPM: {bpm}, 标题: {title}"
+        ) from e
     from . import jianpu_render
     return jianpu_render.render_score_sheet(
         sheet=sheet,

@@ -1,0 +1,15 @@
+[package]
+name = "mox-flow-unified-process-core"
+version = "0.1.0"
+edition = "2021"
+description = "璇玑 RelGraph · 流程算法归一化核心 (Unified Process & Algorithm Core) - 算法联盟+专家系统+流程编排深度融合"
+license = "MIT"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+parking_lot = "0.12"
+uuid = { version = "1", features = ["v4", "serde"] }
+async-trait = "0.1"
+thiserror = "1"
+tokio = { version = "1", features = ["rt", "macros"] }

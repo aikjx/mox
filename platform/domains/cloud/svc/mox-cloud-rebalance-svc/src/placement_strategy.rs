@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -16,7 +16,7 @@
 //! - 数据亲和策略：相关数据放在同一节点/机架
 
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 /// 节点信息（用于放置决策）
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -184,7 +184,7 @@ impl PlacementEngine {
 
     /// 创建带指定策略的引擎
     pub fn with_strategy(strategy: PlacementStrategyType) -> Self {
-        let mut engine = Self::new();
+        let engine = Self::new();
         engine.set_strategy(strategy);
         engine
     }
@@ -441,7 +441,7 @@ impl PlacementEngine {
             constraints.excluded_nodes.insert(id.clone());
         }
 
-        let mut ranked = self.rank_candidates(candidates, &constraints);
+        let ranked = self.rank_candidates(candidates, &constraints);
 
         // 从排名中选择 count 个，尽量分散在不同机架
         let mut selected = Vec::with_capacity(count);
@@ -561,7 +561,7 @@ impl PlacementEngine {
         let before = self.compute_cluster_balance(nodes);
 
         // 模拟迁移后的节点状态
-        let mut simulated: Vec<PlacementNode> = nodes
+        let simulated: Vec<PlacementNode> = nodes
             .iter()
             .map(|n| {
                 let mut n2 = n.clone();

@@ -16,7 +16,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
-use std::time::Duration;
 
 /// 存储层类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
@@ -363,7 +362,8 @@ pub struct StorageTierEngine {
     migration_tasks: parking_lot::Mutex<VecDeque<TierMigrationTask>>,
     /// 迁移调度窗口
     schedule_window: parking_lot::RwLock<MigrationScheduleWindow>,
-    /// 最大并发迁移数
+    /// 最大并发迁移数（预留配置，用于未来并发控制）
+    #[allow(dead_code)]
     max_concurrent_migrations: parking_lot::Mutex<usize>,
     /// 统计信息
     stats: Arc<TierStats>,

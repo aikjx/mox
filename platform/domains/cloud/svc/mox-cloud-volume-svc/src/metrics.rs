@@ -295,13 +295,20 @@ mod tests {
         let _ = eng.encode_with_path(&profile, &payload, PathChoice::Auto).unwrap();
         let isa = autodetect_isa();
         bump_encode_bytes(n as u64, isa);
-        let avx2 = ENCODE_AVX2_BYTES.load(Ordering::SeqCst);
         let scalar = ENCODE_SCALAR_BYTES.load(Ordering::SeqCst);
         let expected = n as u64;
-        assert!(
-            avx2 == expected || scalar == expected,
-            "auto path: avx2={avx2}, scalar={scalar}, expected either to be {expected}"
-        );
+        #[cfg(feature = "simd")]
+        {
+            let avx2 = ENCODE_AVX2_BYTES.load(Ordering::SeqCst);
+            assert!(
+                avx2 == expected || scalar == expected,
+                "auto path: avx2={avx2}, scalar={scalar}, expected either to be {expected}"
+            );
+        }
+        #[cfg(not(feature = "simd"))]
+        {
+            assert_eq!(scalar, expected, "scalar path should be used when simd feature disabled");
+        }
     }
 
     /// P3. /metrics text contains required counter line.

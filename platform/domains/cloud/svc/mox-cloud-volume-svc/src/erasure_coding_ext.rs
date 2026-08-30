@@ -16,12 +16,11 @@
 
 use crate::profile::EcProfile;
 use crate::reed_solomon::{
-    gf, gf_inv, gf_mul, invert_square, shard_size_for, Matrix, RSError, RSResult, PathChoice,
+    gf, gf_inv, invert_square, shard_size_for, Matrix, RSError, RSResult, PathChoice,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::Instant;
 
 // ---------------------------------------------------------------------------
 // Cauchy Reed-Solomon
@@ -46,9 +45,11 @@ pub struct CauchyReedSolomon {
     profile: EcProfile,
     /// 编码矩阵（total x data）
     encoding_matrix: Matrix,
-    /// Cauchy 矩阵的 x 值（data 个）
+    /// Cauchy 矩阵的 x 值（data 个），用于调试和扩展
+    #[allow(dead_code)]
     x_values: Vec<u8>,
-    /// Cauchy 矩阵的 y 值（parity 个）
+    /// Cauchy 矩阵的 y 值（parity 个），用于调试和扩展
+    #[allow(dead_code)]
     y_values: Vec<u8>,
 }
 
@@ -287,6 +288,8 @@ pub struct IncrementalUpdate {
 /// 增量编码结果
 #[derive(Debug, Clone)]
 pub struct IncrementalUpdateResult {
+    /// 数据分片内的更新偏移量
+    pub offset: usize,
     /// 需要更新的校验分片索引及增量数据
     pub parity_updates: Vec<(usize, Vec<u8>)>,
 }
@@ -368,17 +371,21 @@ impl IncrementalEncoder {
             parity_updates.push((data + p, parity_delta));
         }
 
-        Ok(IncrementalUpdateResult { parity_updates })
+        Ok(IncrementalUpdateResult {
+            offset: update.offset,
+            parity_updates,
+        })
     }
 
     /// 应用增量到校验分片
     ///
-    /// 将计算出的增量 XOR 到对应的校验分片上。
+    /// 将计算出的增量 XOR 到对应的校验分片的指定偏移位置。
     pub fn apply_update(
         &self,
         shards: &mut [Vec<u8>],
         result: &IncrementalUpdateResult,
     ) -> RSResult<()> {
+        let offset = result.offset;
         for (idx, delta) in &result.parity_updates {
             if *idx >= shards.len() {
                 return Err(RSError::InvalidInput(format!(
@@ -386,16 +393,18 @@ impl IncrementalEncoder {
                     idx
                 )));
             }
-            if shards[*idx].len() != delta.len() {
+            let end = offset + delta.len();
+            if end > shards[*idx].len() {
                 return Err(RSError::ShardSizeMismatch(format!(
-                    "shard {} len {} != delta len {}",
+                    "shard {} len {} < offset {} + delta len {}",
                     idx,
                     shards[*idx].len(),
+                    offset,
                     delta.len()
                 )));
             }
             for i in 0..delta.len() {
-                shards[*idx][i] ^= delta[i];
+                shards[*idx][offset + i] ^= delta[i];
             }
         }
         Ok(())
@@ -655,7 +664,8 @@ impl ProgressiveRebuilder {
             let mut best_idx = None;
             let mut best_priority = RebuildPriority::Low;
             for (i, job) in jobs.iter().enumerate() {
-                if job.result.is_some() {
+                // 跳过已完成的任务
+                if job.processed_bytes >= job.total_bytes.max(1) && job.result.is_some() {
                     continue;
                 }
                 if job.priority > best_priority || best_idx.is_none() {
@@ -741,10 +751,9 @@ impl ProgressiveRebuilder {
         if completed {
             *self.stats.jobs_completed.lock() += 1;
             *self.stats.bytes_rebuilt.lock() += shard_size as u64 * total as u64;
-        } else {
-            // 未完成，放回队列
-            self.jobs.lock().push(job);
         }
+        // 无论是否完成，都放回队列（完成的任务由 take_completed_jobs 取出）
+        self.jobs.lock().push(job);
 
         Ok(batch_len as u64)
     }

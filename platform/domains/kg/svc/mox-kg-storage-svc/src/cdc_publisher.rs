@@ -198,7 +198,7 @@ impl TopicState {
 /// 待刷新的批量事件
 #[derive(Default)]
 struct PendingBatch {
-    events: Vec<CdcEvent>,
+    events: Vec<(String, CdcEvent)>, // (topic, event)
     first_ts: Option<u64>,
 }
 
@@ -296,7 +296,7 @@ impl CdcPublisher {
         if pending.first_ts.is_none() {
             pending.first_ts = Some(ts_ms);
         }
-        pending.events.push(event);
+        pending.events.push((topic.to_string(), event));
 
         // 检查是否需要刷新
         let need_flush = match pending.first_ts {
@@ -328,8 +328,8 @@ impl CdcPublisher {
         let mut topics = self.topics.lock();
         let total = events.len();
 
-        for event in events {
-            let Some(state) = topics.get_mut(&event.topic_key()) else {
+        for (topic, event) in events {
+            let Some(state) = topics.get_mut(&topic) else {
                 continue;
             };
 
@@ -356,9 +356,7 @@ impl CdcPublisher {
                 }
             }
 
-            let mut event_with_offset = event.clone();
-            // 存储 offset 信息（通过 payload 传递不太好，这里用 raft_index 替代）
-            // 实际生产中事件结构体应该包含 offset 字段
+            let event_with_offset = event.clone();
             state.queue.push_back(event_with_offset);
 
             // 推送给所有消费者
@@ -966,11 +964,14 @@ mod tests {
     fn test_nonexistent_topic_operations() {
         let publisher = create_publisher();
 
-        // 订阅不存在的 topic 会返回错误
+        // 订阅不存在的 topic 会自动创建（通过 ensure_topic）
         let result = publisher.subscribe("nonexistent", "g1", 0, None);
-        // 不，subscribe 会自动创建 topic（通过 ensure_topic）
-        // 让我们测试其他操作
-        assert!(publisher.topic_event_count("nonexistent").is_err());
-        assert!(publisher.consumer_lag("nonexistent", "g1").is_err());
+        assert!(result.is_ok());
+        // 确认 topic 已被创建
+        assert!(publisher.topic_exists("nonexistent"));
+
+        // 真正不存在的 topic 操作应该返回错误
+        assert!(publisher.topic_event_count("truly_nonexistent").is_err());
+        assert!(publisher.consumer_lag("truly_nonexistent", "g1").is_err());
     }
 }

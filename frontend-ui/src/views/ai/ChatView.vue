@@ -133,11 +133,6 @@
               <el-icon><DataBoard /></el-icon>
             </el-button>
           </el-tooltip>
-          <el-tooltip content="切换主题">
-            <el-button text class="icon-btn" @click.stop="showThemePanel = !showThemePanel">
-              <el-icon><Brush /></el-icon>
-            </el-button>
-          </el-tooltip>
         </div>
       </div>
 
@@ -565,23 +560,6 @@
       </div>
     </div>
 
-    <!-- 主题切换面板 -->
-    <div v-if="showThemePanel" class="theme-panel-popover" @click.stop>
-      <div class="theme-panel-title">选择主题</div>
-      <div class="theme-options">
-        <div
-          v-for="t in themeOptions"
-          :key="t.key"
-          class="theme-option"
-          :class="{ active: currentTheme === t.key }"
-          @click="switchTheme(t.key)"
-        >
-          <div class="theme-preview" :style="{ background: t.preview }"></div>
-          <span class="theme-name">{{ t.name }}</span>
-        </div>
-      </div>
-    </div>
-
     <!-- 项目选择器弹窗 -->
     <el-dialog v-model="showProjectPicker" title="选择项目" width="480px" class="project-picker-dlg">
       <div class="picker-actions">
@@ -655,7 +633,7 @@ import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   Cpu, Expand, Fold, Plus, ChatDotRound, Loading, CircleCheck,
-  User, Menu, Brush, MagicStick, Promotion, Paperclip, Microphone,
+  User, Menu, MagicStick, Promotion, Paperclip, Microphone,
   Tools, CopyDocument, Refresh, Right, Close, ArrowRight,
   FolderAdd, Search, CircleCheckFilled, ArrowUp, ArrowDown,
   DataBoard, Download, Folder
@@ -664,13 +642,11 @@ import { ElMessage } from 'element-plus'
 import AgentTaskRunner from '@/components/AgentTaskRunner.vue'
 import AgentFlowPanel from '@/components/AgentFlowPanel.vue'
 import AssistantSelector from '@/components/AssistantSelector.vue'
-import { useTheme } from '@/composables/useTheme'
 import { useProject } from '@/composables/projectContext.js'
 import { getProjects, getProjectTypes, createProject } from '@/api'
 
 const route = useRoute()
 const router = useRouter()
-const { theme, setTheme } = useTheme()
 const { setCurrentProject: setGlobalProject, currentProject } = useProject()
 
 /* ===== 项目相关状态 ===== */
@@ -769,7 +745,6 @@ function clearProjectSelection() {
 const sidebarCollapsed = ref(false)
 const mobileSidebar = ref(false)
 const showAssistantPanel = ref(false)
-const showThemePanel = ref(false)
 const flowPanelVisible = ref(true)
 const flowAgents = ref([])
 const inputText = ref('')
@@ -898,20 +873,6 @@ const quickCommands = ref([
   '写技术方案文档',
   '代码 Review 建议'
 ])
-
-/* ===== 主题切换 ===== */
-const currentTheme = computed(() => theme.value)
-const themeOptions = [
-  { key: 'light', name: '浅色深空', preview: 'linear-gradient(135deg, #f6f8fc, #e0e7ff)' },
-  { key: 'dark', name: '暗黑模式', preview: 'linear-gradient(135deg, #0a0e1a, #1e293b)' },
-  { key: 'sky', name: '天蓝科技', preview: 'linear-gradient(135deg, #0ea5e9, #06b6d4)' },
-  { key: 'cyberpunk', name: '赛博朋克', preview: 'linear-gradient(135deg, #00d4ff, #b14aff)' }
-]
-
-function switchTheme(key) {
-  setTheme(key)
-  showThemePanel.value = false
-}
 
 /* ===== 消息 ===== */
 const messages = ref([])
@@ -1166,14 +1127,7 @@ function scrollToBottom() {
   })
 }
 
-function handleClickOutside(e) {
-  if (showThemePanel.value && !e.target.closest('.theme-panel-popover') && !e.target.closest('.icon-btn')) {
-    showThemePanel.value = false
-  }
-}
-
 onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
   loadProjects()
   if (route.query.prompt) {
     inputText.value = decodeURIComponent(route.query.prompt)
@@ -1182,7 +1136,6 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
@@ -2447,56 +2400,6 @@ onUnmounted(() => {
   font-weight: 800;
   color: var(--text-primary, #0b1120);
   letter-spacing: -0.3px;
-}
-
-/* ===== 主题切换面板 ===== */
-.theme-panel-popover {
-  position: absolute;
-  top: 56px;
-  right: 20px;
-  background: var(--bg-surface, #fff);
-  border: 1px solid var(--border-soft, rgba(15, 23, 42, 0.09));
-  border-radius: 12px;
-  padding: 14px;
-  box-shadow: var(--shadow-md, 0 4px 20px rgba(0, 0, 0, 0.08));
-  z-index: 100;
-  width: 210px;
-}
-.theme-panel-title {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-tertiary, #64748b);
-  margin-bottom: 12px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-.theme-options {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.theme-option {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.theme-option:hover { background: var(--bg-surface-2, #fafbfe); }
-.theme-option.active { background: var(--brand-50, #eef2ff); }
-.theme-preview {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  border: 2px solid var(--border-soft, rgba(15, 23, 42, 0.09));
-  flex-shrink: 0;
-}
-.theme-name {
-  font-size: 13px;
-  color: var(--text-primary, #0b1120);
-  font-weight: 600;
 }
 
 /* ===== 响应式 · 黄金断点 ===== */

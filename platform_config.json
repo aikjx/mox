@@ -2,47 +2,15 @@
   "version": "3.0",
   "project_name": "璇玑系统 · 全维数字孪生中台",
   "dashboard_port": 3999,
+  "admin": {
+    "username": "admin",
+    "password": "7J9qPZ-jDjFOXA"
+  },
   "log_rolling": {
     "max_bytes": 5242880,
     "backup": 3
   },
-  "admin": {
-    "username": "admin"
-  },
   "services": {
-    "xiaobai_voice": {
-      "name": "小白语音服务（ASR + TTS）",
-      "description": "本地离线语音：Paraformer ASR / CosyVoice2 TTS（豆包级动听女声，Apache2）；端口 3717，供 Rust 网关 /voice/** 代理调用。AI 对话页面朗读第一层必命中；权重缺失时自动切浏览器拟人音兜底。",
-      "port": 3717,
-      "health_check": "/voice/health",
-      "cwd": "projects/xiaobai_voice",
-      "command": "python -m xiaobai_voice serve --host 0.0.0.0",
-      "args": [
-        "python",
-        "-m",
-        "xiaobai_voice",
-        "serve",
-        "--host",
-        "0.0.0.0"
-      ],
-      "binary_requires": [
-        "python"
-      ],
-      "npm_deps": false,
-      "is_admin_only": false,
-      "auto_start": true,
-      "restart_delay": 3,
-      "wait_time": 12,
-      "startup_order_hint": 5,
-      "depends_on": [],
-      "tags": [
-        "语音",
-        "AI交互",
-        "TTS",
-        "ASR",
-        "本地推理"
-      ]
-    },
     "api": {
       "name": "API 后端服务（Rust mox-gateway）",
       "description": "璇玑系统核心 API 网关（Rust axum，原 Node 后端已迁移）；监听 8080，/health 健康检查，/api/* 路由代理",
@@ -97,6 +65,39 @@
         "前端",
         "用户界面",
         "Vite"
+      ]
+    },
+    "xiaobai_voice": {
+      "name": "小白语音服务（ASR + TTS）",
+      "description": "本地离线语音：Paraformer ASR / CosyVoice2 TTS（豆包级动听女声，Apache2）；端口 3717，供 Rust 网关 /voice/** 代理调用。AI 对话页面朗读第一层必命中；权重缺失时自动切浏览器拟人音兜底。",
+      "port": 3717,
+      "health_check": "/voice/health",
+      "cwd": "projects/xiaobai_voice",
+      "command": "python -m xiaobai_voice serve --host 0.0.0.0",
+      "args": [
+        "python",
+        "-m",
+        "xiaobai_voice",
+        "serve",
+        "--host",
+        "0.0.0.0"
+      ],
+      "binary_requires": [
+        "python"
+      ],
+      "npm_deps": false,
+      "is_admin_only": false,
+      "auto_start": true,
+      "restart_delay": 3,
+      "wait_time": 12,
+      "startup_order_hint": 5,
+      "depends_on": [],
+      "tags": [
+        "语音",
+        "AI交互",
+        "TTS",
+        "ASR",
+        "本地推理"
       ]
     },
     "melody2score": {

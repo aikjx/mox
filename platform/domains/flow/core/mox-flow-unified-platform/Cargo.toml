@@ -1,0 +1,28 @@
+[package]
+name = "mox-flow-unified-platform"
+version = "0.1.0"
+edition = "2021"
+description = "璇玑 RelGraph · 全维归一化统一平台 (Unified Platform) - 架构/权限/低代码/流程算法/前端/AI 六大归一化体系总入口"
+license = "MIT"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+parking_lot = "0.12"
+uuid = { version = "1", features = ["v4", "serde"] }
+async-trait = "0.1"
+thiserror = "1"
+tokio = { version = "1", features = ["rt", "macros"] }
+
+# 六大归一化体系
+mox-flow-unified-arch-core = { path = "../mox-flow-unified-arch-core" }
+mox-flow-unified-perm-core = { path = "../mox-flow-unified-perm-core" }
+mox-flow-lowcode-core = { path = "../mox-flow-lowcode-core" }
+mox-flow-unified-process-core = { path = "../mox-flow-unified-process-core" }
+mox-flow-unified-frontend-core = { path = "../mox-flow-unified-frontend-core" }
+mox-flow-ai-assistant-core = { path = "../mox-flow-ai-assistant-core" }
+
+# 基础支撑模块
+mox-flow-algo-alliance-core = { path = "../mox-flow-algo-alliance-core" }
+mox-flow-unified-storage-core = { path = "../mox-flow-unified-storage-core" }
+mox-flow-unified-meta-core = { path = "../mox-flow-unified-meta-core" }

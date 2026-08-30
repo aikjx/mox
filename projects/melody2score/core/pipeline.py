@@ -278,12 +278,13 @@ def _merge_adjacent_short_fragments(notes: List[Dict],
 
 
 def _segment_once(y, sr, cfg, k: int, det: "pitch.PitchDetector",
-                  vad_mask=None):
+                  vad_mask=None, onset_times=None):
     """单次识别：扰动置信阈值 → 检测 → 可选 VAD → 分割音符。
 
     修复：eff（扰动配置）此前构造后从未传入 detect —— 三次 run 完全相同，
     共识退化为 1 票，robust 模式形同虚设。现在把扰动阈值真正传进检测器。
     vad_mask 由调用方算好传入（robust 多次 run 复用同一掩码，免重复 STFT）。
+    onset_times 同理：能量起音只算一次，多次 run 复用，大幅改善同音连续音分割。
     """
     eff_conf = max(0.05, cfg.conf_thresh - 0.06 + 0.04 * k)
 
@@ -299,7 +300,7 @@ def _segment_once(y, sr, cfg, k: int, det: "pitch.PitchDetector",
     notes = analysis.segment_notes(
         pts, cfg.min_note_dur, cfg.median_win,
         vocal_mode=cfg.vocal_mode, vad_mask=vad_mask,
-        vad_hop_ms=cfg.hop)
+        vad_hop_ms=cfg.hop, onset_times=onset_times)
     return notes, pts
 
 
@@ -414,12 +415,22 @@ class Melody2Score:
                     centroid_min=cfg.vad_centroid_min, centroid_max=cfg.vad_centroid_max,
                     flatness_max=cfg.vad_flatness_max, hop_ms=cfg.hop,
                     min_voiced_ms=cfg.min_voiced_ms)
+
+            # Onset 检测：只算一次，多次 run 复用
+            # 核心作用：同音连续音（如"1 1"）的分割——仅凭音高变化无法区分
+            onset_times = None
+            if cfg.enable_onset:
+                onset_times = analysis.detect_onsets(
+                    y, sr,
+                    threshold_db=cfg.onset_threshold_db,
+                    min_gap_s=cfg.onset_min_gap_s)
+
             for k in range(n_runs):
                 if progress_cb:
                     progress_cb("pitch", f"音高检测 ({k+1}/{n_runs})…",
                                 0.16 + 0.68 * (k + 1) / n_runs)
                 t0 = time.time()
-                notes, pts = _segment_once(y, sr, cfg, k, det, vad_mask)
+                notes, pts = _segment_once(y, sr, cfg, k, det, vad_mask, onset_times)
                 t_pitch_total += time.time() - t0
                 used_backend = det.used_backend
                 last_pts = pts

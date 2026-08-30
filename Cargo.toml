@@ -48,6 +48,16 @@ members = [
     "platform/domains/voice/core/mox-voice-dsp-core",
     "platform/domains/flow/core/mox-flow-operator-core",
     "platform/domains/flow/core/mox-flow-optimizer-core",
+    "platform/domains/flow/core/mox-flow-algo-alliance-core",
+    "platform/domains/flow/core/mox-flow-unified-storage-core",
+    "platform/domains/flow/core/mox-flow-unified-meta-core",
+    "platform/domains/flow/core/mox-flow-unified-arch-core",
+    "platform/domains/flow/core/mox-flow-unified-perm-core",
+    "platform/domains/flow/core/mox-flow-lowcode-core",
+    "platform/domains/flow/core/mox-flow-unified-process-core",
+    "platform/domains/flow/core/mox-flow-unified-frontend-core",
+    "platform/domains/flow/core/mox-flow-ai-assistant-core",
+    "platform/domains/flow/core/mox-flow-unified-platform",
     "platform/domains/kg/core/mox-kg-algo-core",
     "platform/domains/kg/core/mox-kg-meta-core",
     "platform/domains/data/core/mox-data-standards-core",
@@ -203,6 +213,16 @@ mox-ai-core = { path = "platform/domains/ai/core/mox-ai-core" }
 mox-voice-dsp-core = { path = "platform/domains/voice/core/mox-voice-dsp-core" }
 mox-flow-operator-core = { path = "platform/domains/flow/core/mox-flow-operator-core" }
 mox-flow-optimizer-core = { path = "platform/domains/flow/core/mox-flow-optimizer-core" }
+mox-flow-algo-alliance-core = { path = "platform/domains/flow/core/mox-flow-algo-alliance-core" }
+mox-flow-unified-storage-core = { path = "platform/domains/flow/core/mox-flow-unified-storage-core" }
+mox-flow-unified-meta-core = { path = "platform/domains/flow/core/mox-flow-unified-meta-core" }
+mox-flow-unified-arch-core = { path = "platform/domains/flow/core/mox-flow-unified-arch-core" }
+mox-flow-unified-perm-core = { path = "platform/domains/flow/core/mox-flow-unified-perm-core" }
+mox-flow-lowcode-core = { path = "platform/domains/flow/core/mox-flow-lowcode-core" }
+mox-flow-unified-process-core = { path = "platform/domains/flow/core/mox-flow-unified-process-core" }
+mox-flow-unified-frontend-core = { path = "platform/domains/flow/core/mox-flow-unified-frontend-core" }
+mox-flow-ai-assistant-core = { path = "platform/domains/flow/core/mox-flow-ai-assistant-core" }
+mox-flow-unified-platform = { path = "platform/domains/flow/core/mox-flow-unified-platform" }
 mox-kg-algo-core = { path = "platform/domains/kg/core/mox-kg-algo-core" }
 mox-kg-meta-core = { path = "platform/domains/kg/core/mox-kg-meta-core" }
 mox-platform-system-core = { path = "platform/domains/platform/core/mox-platform-system-core" }

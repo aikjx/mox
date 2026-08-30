@@ -56,7 +56,7 @@ const routes = [
       {
         path: 'knowledge',
         name: 'ResourcesKnowledge',
-        component: () => import('@/components/KnowledgeBasePanel.vue'),
+        component: () => import('@/views/project/panels/KnowledgeBasePanel.vue'),
         meta: { title: '知识库' }
       }
     ]
@@ -155,19 +155,19 @@ const routes = [
       {
         path: 'plugins',
         name: 'WorkflowPlugins',
-        component: () => import('@/components/PluginsPanel.vue'),
+        component: () => import('@/views/workflow/panels/PluginsPanel.vue'),
         meta: { title: '插件中心' }
       },
       {
         path: 'mcp',
         name: 'WorkflowMcp',
-        component: () => import('@/components/McpPanel.vue'),
+        component: () => import('@/views/workflow/panels/McpPanel.vue'),
         meta: { title: 'MCP 兼容' }
       },
       {
         path: 'automation',
         name: 'WorkflowAutomation',
-        component: () => import('@/components/AutomationPanel.vue'),
+        component: () => import('@/views/workflow/panels/AutomationPanel.vue'),
         meta: { title: '自动化' }
       }
     ]
@@ -200,13 +200,13 @@ const routes = [
       {
         path: 'enterprise',
         name: 'ExpertEnterprise',
-        component: () => import('@/components/ExpertEnterprisePanel.vue'),
+        component: () => import('@/views/expert/panels/ExpertEnterprisePanel.vue'),
         meta: { title: '企业管理' }
       },
       {
         path: 'orchestrator',
         name: 'ExpertOrchestrator',
-        component: () => import('@/components/ExpertOrchestratorPanel.vue'),
+        component: () => import('@/views/expert/panels/ExpertOrchestratorPanel.vue'),
         meta: { title: '编排引擎' }
       }
     ]

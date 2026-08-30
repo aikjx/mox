@@ -12,10 +12,15 @@
 //! 响应严格遵循 AWS S3 v20060301 XML 格式。
 
 use crate::acl::CannedAcl;
+use crate::bucket_analytics::AnalyticsManager;
 use crate::cors::{CorsConfiguration, CorsRule};
 use crate::error::{S3Error, S3Result};
+use crate::inventory::InventoryManager;
+use crate::lifecycle::StorageClass;
 use crate::mpu::MultipartManager;
+use crate::object_batch_ops::BatchOperationManager;
 use crate::policy::BucketPolicy;
+use crate::replication::ReplicationManager;
 use crate::sigv4_middleware::{verify_request, CredentialStore};
 use crate::tagging::Tagging;
 use crate::versioning::{generate_version_id, VersioningManager, VersioningStatus};
@@ -43,6 +48,10 @@ struct AppState {
     versioning: Arc<VersioningManager>,
     mpu: Arc<MultipartManager>,
     vcounter: Arc<Mutex<BTreeMap<(String, String), u64>>>,
+    analytics: Arc<AnalyticsManager>,
+    batch_ops: Arc<BatchOperationManager>,
+    replication: Arc<ReplicationManager>,
+    inventory: Arc<InventoryManager>,
 }
 
 // ---------------- Storage State ----------------
@@ -118,6 +127,10 @@ pub struct S3Server {
     pub versioning: Arc<VersioningManager>,
     pub mpu: Arc<MultipartManager>,
     pub version_counter: Arc<Mutex<BTreeMap<(String, String), u64>>>, // (bucket,key) -> counter
+    pub analytics: Arc<AnalyticsManager>,
+    pub batch_ops: Arc<BatchOperationManager>,
+    pub replication: Arc<ReplicationManager>,
+    pub inventory: Arc<InventoryManager>,
 }
 
 impl S3Server {
@@ -130,6 +143,10 @@ impl S3Server {
             versioning: Arc::new(VersioningManager::new()),
             mpu: Arc::new(MultipartManager::new()),
             version_counter: Arc::new(Mutex::new(BTreeMap::new())),
+            analytics: Arc::new(AnalyticsManager::new()),
+            batch_ops: Arc::new(BatchOperationManager::new()),
+            replication: Arc::new(ReplicationManager::new()),
+            inventory: Arc::new(InventoryManager::new()),
         }
     }
 
@@ -178,6 +195,10 @@ impl S3Server {
             versioning: self.versioning.clone(),
             mpu: self.mpu.clone(),
             vcounter: self.version_counter.clone(),
+            analytics: self.analytics.clone(),
+            batch_ops: self.batch_ops.clone(),
+            replication: self.replication.clone(),
+            inventory: self.inventory.clone(),
         });
         let app = Router::new().fallback(any(axum_handler)).with_state(state);
         let listener = TcpListener::bind(addr)
@@ -197,6 +218,10 @@ async fn axum_handler(State(state): State<Arc<AppState>>, req: Request<Body>) ->
         state.versioning.clone(),
         state.mpu.clone(),
         state.vcounter.clone(),
+        state.analytics.clone(),
+        state.batch_ops.clone(),
+        state.replication.clone(),
+        state.inventory.clone(),
     )
     .await
 }
@@ -210,6 +235,10 @@ async fn dispatch(
     versioning: Arc<VersioningManager>,
     mpu: Arc<MultipartManager>,
     vcounter: Arc<Mutex<BTreeMap<(String, String), u64>>>,
+    analytics: Arc<AnalyticsManager>,
+    batch_ops: Arc<BatchOperationManager>,
+    replication: Arc<ReplicationManager>,
+    inventory: Arc<InventoryManager>,
 ) -> Response<Body> {
     let method = req.method().clone();
     let uri = req.uri().clone();
@@ -258,6 +287,7 @@ async fn dispatch(
 
     handle_s3_operation(
         &method, bucket, key, &query, &headers, body, storage, versioning, mpu, vcounter,
+        analytics, batch_ops, replication, inventory,
     )
     .await
 }
@@ -329,6 +359,10 @@ async fn handle_s3_operation(
     versioning: Arc<VersioningManager>,
     mpu: Arc<MultipartManager>,
     vcounter: Arc<Mutex<BTreeMap<(String, String), u64>>>,
+    _analytics: Arc<AnalyticsManager>,
+    _batch_ops: Arc<BatchOperationManager>,
+    _replication: Arc<ReplicationManager>,
+    _inventory: Arc<InventoryManager>,
 ) -> Response<Body> {
     // 无 bucket → 只有 ListBuckets
     if bucket.is_none() {

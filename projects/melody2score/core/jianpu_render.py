@@ -184,6 +184,9 @@ def _build_jianpu_text(sheet: ScoreSheet) -> str:
       6) 逐音符带歌词（`1你 2好`），字位严格对齐。
     """
     ts = sheet.time_sig
+    # 防御：确保 time_sig 至少有 2 个元素
+    if not ts or len(ts) < 2:
+        ts = (4, 4)
     tonic = sheet.key_tonic or "C"
     mode = (sheet.key_mode or "major").lower()
     # 简谱规范：大调用主音 1 唱名，小调用主音 6 唱名（首调记谱）。
@@ -192,8 +195,8 @@ def _build_jianpu_text(sheet: ScoreSheet) -> str:
     bpm_int = int(round(sheet.bpm)) if sheet.bpm else 0
     tempo_line = f"4={bpm_int}" if bpm_int else ""
 
-    beats_per_bar = sheet.beats_per_bar
-    notes = list(sheet.notes)
+    beats_per_bar = sheet.beats_per_bar or 4
+    notes = list(sheet.notes) if sheet.notes else []
     if not notes:
         # 空旋律：放一个全休止符小节，仍产出合法谱表
         lines = [f"{ts[0]}/{ts[1]}", key_line]
@@ -216,15 +219,23 @@ def _build_jianpu_text(sheet: ScoreSheet) -> str:
     events: List[tuple] = []          # (kind, start_u, len_u, note|None)
     cursor: Optional[int] = None      # 上一事件结束位置
     for n in grid_notes:
-        start_u = int(round(float(n.start_beat) * 4))
-        len_u = max(1, int(round(float(n.dur_beats) * 4)))
+        try:
+            start_u = int(round(float(n.start_beat) * 4))
+            len_u = max(1, int(round(float(n.dur_beats) * 4)))
+        except (TypeError, ValueError):
+            # 防御：音符数据异常时跳过，不中断整体渲染
+            continue
         if cursor is None:
             if start_u > 0:           # 弱起：首音前以休止符填充（规范记法）
                 events.append(("rest", 0, start_u, None))
         elif start_u > cursor:        # 音符间真实间隙 → 休止符事件
-            events.append(("rest", cursor, start_u - cursor, None))
+            gap = start_u - cursor
+            if gap > 0:
+                events.append(("rest", cursor, gap, None))
         # 重叠保护：start_u < cursor 时紧接上一事件（不产生负休止）
         eff = max(start_u, cursor) if cursor is not None else start_u
+        # 防御：确保 len_u 至少为 1
+        len_u = max(1, len_u)
         events.append(("note", eff, len_u, n))
         cursor = eff + len_u
 
@@ -234,12 +245,32 @@ def _build_jianpu_text(sheet: ScoreSheet) -> str:
     #   2) 极短休止吸收：1 单位（0.25 拍）以下的微休止吸收到前音
     events = _optimize_event_rhythm(events)
 
+    # 防御：优化后 events 为空（极端情况），兜底输出空谱
+    if not events:
+        lines = [f"{ts[0]}/{ts[1]}", key_line]
+        if tempo_line:
+            lines.append(tempo_line)
+        lines.append("0 - - -")
+        lines.append(r'\bar "|."')
+        return "\n".join(lines) + "\n"
+
     # 优化后重新计算总时长和小节数（合并可能改变末事件的结束位置）
-    if events:
-        last_s, last_l = events[-1][1], events[-1][2]
-        total_units = last_s + last_l
-    else:
-        total_units = 0
+    last_ev = events[-1]
+    last_s, last_l = last_ev[1], last_ev[2]
+    total_units = max(0, last_s + last_l)  # 防御：避免负值
+
+    # 防御：如果所有事件都在 0 时刻之前结束（如 BPM 估计严重错误导致
+    # 所有 start_beat 为负），兜底输出一个全休止小节，避免空谱崩溃
+    first_ev = events[0]
+    first_s = first_ev[1] if len(first_ev) > 1 else 0
+    if total_units <= 0 or (first_s + (first_ev[2] if len(first_ev) > 2 else 0)) <= 0:
+        lines = [f"{ts[0]}/{ts[1]}", key_line]
+        if tempo_line:
+            lines.append(tempo_line)
+        lines.append("0 - - -")
+        lines.append(r'\bar "|."')
+        return "\n".join(lines) + "\n"
+
     max_bar = max(0, (total_units - 1) // bar_units) if total_units > 0 else 0
 
     # ---- 按小节生成 token（小节拍数按构造精确满额，末小节除外） ----
@@ -247,7 +278,12 @@ def _build_jianpu_text(sheet: ScoreSheet) -> str:
     for b in range(max_bar + 1):
         bar_lo, bar_hi = b * bar_units, (b + 1) * bar_units
         tokens: List[str] = []
-        for kind, s, l, n in events:
+        for ev in events:
+            # 防御：确保事件元组至少有 3 个元素
+            if len(ev) < 3:
+                continue
+            kind, s, l = ev[0], ev[1], ev[2]
+            n = ev[3] if len(ev) > 3 else None
             if s >= bar_hi or s + l <= bar_lo:
                 continue
             seg_lo, seg_hi = max(s, bar_lo), min(s + l, bar_hi)
@@ -259,20 +295,30 @@ def _build_jianpu_text(sheet: ScoreSheet) -> str:
                     tokens.append(rt)
                 continue
             # 音符片段：跨小节 / 非规范总长 → 规范时值 tie 链
+            if n is None:
+                continue
             first_piece = (seg_lo == s)
             last_piece = (seg_hi == s + l)
             decomp = _decompose_units(seg)
             for i, u in enumerate(decomp):
-                tok = _dur_token_for(n.degree, _oct_marks(n), u / 4.0)
+                tok = _dur_token_for(n.degree, _oct_marks(n), u / 4.0,
+                                      getattr(n, "accidental", ""))
                 if i > 0 or not first_piece:
                     tok = f"~ {tok}"       # 接上一段同音（跨小节或小节内）
                 if i == len(decomp) - 1 and not last_piece:
                     tok = f"{tok} ~"       # 续下一段同音
-                if first_piece and i == 0 and n.lyric:
+                if first_piece and i == 0 and getattr(n, "lyric", ""):
                     tok = f"{tok}{n.lyric}"
                 if tok.strip():
                     tokens.append(tok)
         note_parts.append(" ".join(t for t in tokens if t.strip()))
+
+    # 防御：确保至少有一个小节内容
+    if not note_parts:
+        note_parts = ["0 - - -"]
+    # 防御：所有小节都是空的（极端情况），兜底放一个全休止
+    if not any(p.strip() for p in note_parts):
+        note_parts = ["0 - - -"]
 
     # 拍号行：始终用规范标准 "num/den"。
     # 弱起（首音不在强拍）不依赖 jianpu-ly 的 anacrusis 逗号语法（该语法要求弱起拍
@@ -310,17 +356,31 @@ def _optimize_event_rhythm(events: List[tuple]) -> List[tuple]:
     输入输出均为 [(kind, start_u, len_u, note|None), ...]，
     保证时间轴连续、不重叠、总时长不变。
     """
-    if len(events) < 3:
+    if not events or len(events) < 3:
         return events
+
+    # 防御：过滤掉结构不完整的事件
+    valid_events = []
+    for ev in events:
+        if len(ev) >= 3 and isinstance(ev[1], (int, float)) and isinstance(ev[2], (int, float)):
+            valid_events.append(ev)
+    if len(valid_events) < 3:
+        return valid_events
 
     # 同音短休止合并阈值（单位数）：1 单位 = 0.25 拍 = 十六分
     _SAME_PITCH_REST_MAX_UNITS = 1
 
     changed = True
-    cur = list(events)
+    cur = list(valid_events)
     while changed:
         changed = False
-        for i in range(1, len(cur) - 1):
+        n = len(cur)
+        if n < 3:
+            break
+        for i in range(1, n - 1):
+            # 防御：确保所有事件结构完整
+            if len(cur[i - 1]) < 4 or len(cur[i]) < 4 or len(cur[i + 1]) < 4:
+                continue
             prev_kind, prev_s, prev_l, prev_n = cur[i - 1]
             mid_kind, mid_s, mid_l, mid_n = cur[i]
             next_kind, next_s, next_l, next_n = cur[i + 1]
@@ -433,8 +493,8 @@ def _inject_lilypond_tweaks(ly_path: str, sheet: ScoreSheet) -> None:
             new_content = (paper_block + layout_block
                            + content[:insert_pos] + content[insert_pos:])
         else:
-            # 找不到 \score 就追加到末尾（兜底）
-            new_content = content + "\n" + header_block + layout_block + font_block
+            # 找不到 \score 就追加到末尾（兜底：只加 paper + layout）
+            new_content = content + "\n" + paper_block + layout_block
 
         with open(ly_path, "w", encoding="utf-8") as f:
             f.write(new_content)
@@ -489,6 +549,20 @@ def _run_jianpu_ly(txt_path: str, ly_path: str) -> str:
                     runpy.run_path(JIANPU_LY, run_name="__main__")
                 except SystemExit:
                     pass
+        except IndexError as e:
+            # jianpu-ly 内部或周边的索引越界：附加上下文便于排障
+            # 捕获放在外层以覆盖 runpy 之外的潜在索引操作
+            _input_preview = ""
+            try:
+                with open(txt_path, "r", encoding="utf-8") as _f:
+                    _input_preview = _f.read()[:500]
+            except Exception:
+                pass
+            raise RuntimeError(
+                f"jianpu-ly 渲染索引错误: {e}。"
+                f"\n输入文件: {txt_path}"
+                f"\n输入预览:\n{_input_preview}"
+            ) from e
         finally:
             _sys.argv = argv_backup
             _sys.stdout = stdout_backup
@@ -511,6 +585,28 @@ def render_score_sheet(
       - 注入 LilyPond 排版调优：增大音符间距、优化 beam 斜率、启用 anti-alias
       - 标题/作曲者信息自动写入页头
     """
+    try:
+        return _render_score_sheet_inner(sheet, output_path, dpi)
+    except IndexError as e:
+        # 全局兜底：任何索引越界都附加上下文，避免用户只看到
+        # "IndexError: list index out of range" 而无法定位
+        _ctx = (
+            f"音符数: {len(sheet.notes) if sheet.notes else 0}, "
+            f"调: {sheet.key_tonic} {sheet.key_mode}, "
+            f"拍: {sheet.time_sig}, BPM: {sheet.bpm}, "
+            f"标题: {sheet.title}"
+        )
+        raise RuntimeError(
+            f"标准歌谱渲染索引越界: {e}\n上下文: {_ctx}"
+        ) from e
+
+
+def _render_score_sheet_inner(
+    sheet: ScoreSheet,
+    output_path: str,
+    dpi: int = 200,
+) -> str:
+    """render_score_sheet 的内部实现（被外层 IndexError 兜底包裹）。"""
     lilypond = find_lilypond()
     if not lilypond or not os.path.exists(JIANPU_LY):
         raise RuntimeError(
@@ -523,6 +619,16 @@ def render_score_sheet(
         ext = "png"
 
     text = _build_jianpu_text(sheet)
+
+    # 防御：验证生成的简谱文本至少包含基本结构（拍号+调号+主体）
+    # 防止极端空输入导致 jianpu-ly 异常
+    if not text or not text.strip():
+        raise RuntimeError("生成的简谱文本为空，无法渲染。")
+    _lines = [l for l in text.strip().splitlines() if l.strip()]
+    if len(_lines) < 2:
+        raise RuntimeError(
+            f"生成的简谱文本结构不完整（仅 {len(_lines)} 行有效内容）。"
+            f"\n内容预览: {text[:200]}")
 
     tmp = tempfile.mkdtemp(prefix="jianpu_")
     try:

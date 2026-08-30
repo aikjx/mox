@@ -1,0 +1,13 @@
+[package]
+name = "mox-flow-unified-frontend-core"
+version = "0.1.0"
+edition = "2021"
+description = "璇玑 RelGraph · 前端功能归一化核心 (Unified Frontend Core) - 统一组件库+设计系统+功能模块重整"
+license = "MIT"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+parking_lot = "0.12"
+uuid = { version = "1", features = ["v4", "serde"] }
+thiserror = "1"

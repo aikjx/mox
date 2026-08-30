@@ -1,0 +1,24 @@
+[package]
+name = "mox-flow-algo-alliance-core"
+version = "0.1.0"
+edition = "2021"
+description = "Algorithm Alliance Core - 算法联盟最高权核心，统一编排图算法、编码算法、优化算法等所有算法能力"
+license = "MIT"
+
+[dependencies]
+mox-flow-operator-core = { path = "../mox-flow-operator-core" }
+mox-platform-foundation = { path = "../../../../foundation/mox-platform-foundation" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+parking_lot = "0.12"
+tokio = { version = "1", features = ["full"] }
+async-trait = "0.1"
+thiserror = "1"
+tracing = "0.1"
+indexmap = "2"
+rand = "0.8"
+num-traits = "0.2"
+
+[dev-dependencies]
+criterion = "0.5"
+proptest = "1"
