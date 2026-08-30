@@ -22,6 +22,11 @@ pub mod types;
 pub mod platform_facade;
 pub mod platform_lifecycle;
 pub mod platform_status;
+pub mod cross_orchestrator;
+pub mod event_bus;
+pub mod config_center;
+pub mod audit;
+pub mod circuit_breaker;
 
 // ========== 六大归一化体系重导出 ==========
 
@@ -57,3 +62,22 @@ pub use types::{
 pub use platform_facade::PlatformFacade;
 pub use platform_lifecycle::PlatformLifecycle;
 pub use platform_status::PlatformStatusMonitor;
+pub use cross_orchestrator::{
+    CrossOrchestrator, OrchestrationContext, OrchestrationResult,
+    OrchestrationStep, OrchestrationStepType, OrchestrationTemplate,
+    StepStatus, TemplateStep,
+};
+pub use event_bus::{
+    EventBus, PlatformEvent, EventType, EventHandleResult,
+};
+pub use config_center::{
+    UnifiedConfigCenter, ConfigItem, ConfigLevel, ConfigSchema, ConfigValueType,
+    ConfigChangeEvent,
+};
+pub use audit::{
+    AuditLogger, AuditLogEntry, AuditAction, AuditLevel, AuditQuery, AuditStats,
+};
+pub use circuit_breaker::{
+    TokenBucket, RateLimitResult, RateLimitManager,
+    CircuitBreaker, CircuitState, CircuitBreakerConfig,
+};

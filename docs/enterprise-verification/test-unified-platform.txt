@@ -1,0 +1,273 @@
+warning: method `len` is never used
+   --> platform\domains\flow\core\mox-flow-unified-storage-core\src\cache.rs:116:8
+    |
+ 40 | impl<K: Hash + Eq + Clone, V> LruCache<K, V> {
+    | -------------------------------------------- method in this implementation
+...
+116 |     fn len(&self) -> usize {
+    |        ^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `mox-flow-unified-storage-core` (lib) generated 1 warning
+warning: method `contains` is never used
+  --> platform\domains\flow\core\mox-flow-unified-meta-core\src\index.rs:80:8
+   |
+65 | impl PostingList {
+   | ---------------- method in this implementation
+...
+80 |     fn contains(&self, entity_id: &str) -> bool {
+   |        ^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `tool_registry` is never read
+   --> platform\domains\flow\core\mox-flow-ai-assistant-core\src\agent.rs:165:5
+    |
+155 | pub struct AgentRegistry {
+    |            ------------- field in this struct
+...
+165 |     tool_registry: Arc<ToolRegistry>,
+    |     ^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `tool_registry` is never read
+  --> platform\domains\flow\core\mox-flow-ai-assistant-core\src\executor.rs:34:5
+   |
+24 | pub struct TaskExecutor {
+   |            ------------ field in this struct
+...
+34 |     tool_registry: Arc<ToolRegistry>,
+   |     ^^^^^^^^^^^^^
+
+warning: `mox-flow-unified-meta-core` (lib) generated 1 warning
+warning: `mox-flow-ai-assistant-core` (lib) generated 2 warnings
+warning: fields `compute_engine` and `metrics` are never read
+   --> platform\domains\flow\core\mox-flow-algo-alliance-core\src\pipeline.rs:395:5
+    |
+386 | pub struct PipelineBuilder {
+    |            --------------- fields in this struct
+...
+395 |     compute_engine: Arc<ComputeEngine>,
+    |     ^^^^^^^^^^^^^^
+396 |     metrics: Arc<AlgoMetrics>,
+    |     ^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `num_cpus` is never used
+   --> platform\domains\flow\core\mox-flow-algo-alliance-core\src\compute_engine.rs:274:4
+    |
+274 | fn num_cpus() -> usize {
+    |    ^^^^^^^^
+
+warning: `mox-flow-algo-alliance-core` (lib) generated 2 warnings
+warning: field `initialized` is never read
+   --> platform\domains\flow\core\mox-flow-unified-arch-core\src\connector.rs:171:5
+    |
+168 | struct ConnectorInstance {
+    |        ----------------- field in this struct
+...
+171 |     initialized: bool,
+    |     ^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `mox-flow-unified-arch-core` (lib) generated 1 warning
+warning: unused import: `EventType`
+  --> platform\domains\flow\core\mox-flow-unified-platform\src\platform_facade.rs:18:34
+   |
+18 | use crate::event_bus::{EventBus, EventType, PlatformEvent};
+   |                                  ^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `PlatformError` and `PlatformResult`
+  --> platform\domains\flow\core\mox-flow-unified-platform\src\event_bus.rs:21:20
+   |
+21 | use crate::error::{PlatformError, PlatformResult};
+   |                    ^^^^^^^^^^^^^  ^^^^^^^^^^^^^^
+
+warning: unused import: `crate::error::PlatformResult`
+  --> platform\domains\flow\core\mox-flow-unified-platform\src\audit.rs:17:5
+   |
+17 | use crate::error::PlatformResult;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `PlatformError` and `PlatformResult`
+  --> platform\domains\flow\core\mox-flow-unified-platform\src\circuit_breaker.rs:17:20
+   |
+17 | use crate::error::{PlatformError, PlatformResult};
+   |                    ^^^^^^^^^^^^^  ^^^^^^^^^^^^^^
+
+warning: unused variable: `template_step`
+   --> platform\domains\flow\core\mox-flow-unified-platform\src\cross_orchestrator.rs:503:9
+    |
+503 |         template_step: &TemplateStep,
+    |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_template_step`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `id`, `event_type`, and `system` are never read
+   --> platform\domains\flow\core\mox-flow-unified-platform\src\event_bus.rs:182:5
+    |
+180 | struct Subscriber {
+    |        ---------- fields in this struct
+181 |     /// 订阅者 ID
+182 |     id: String,
+    |     ^^
+183 |     /// 订阅的事件类型
+184 |     event_type: EventType,
+    |     ^^^^^^^^^^
+185 |     /// 订阅者所属系统
+186 |     system: NormalizationSystem,
+    |     ^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `PlatformError` and `PlatformResult`
+  --> platform\domains\flow\core\mox-flow-unified-platform\src\event_bus.rs:21:20
+   |
+21 | use crate::error::{PlatformError, PlatformResult};
+   |                    ^^^^^^^^^^^^^  ^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `bus`
+   --> platform\domains\flow\core\mox-flow-unified-platform\src\event_bus.rs:651:13
+    |
+651 |         let bus = EventBus::new();
+    |             ^^^ help: if this is intentional, prefix it with an underscore: `_bus`
+
+warning: `mox-flow-unified-platform` (lib) generated 6 warnings (run `cargo fix --lib -p mox-flow-unified-platform` to apply 5 suggestions)
+warning: `mox-flow-unified-platform` (lib test) generated 6 warnings (4 duplicates) (run `cargo fix --lib -p mox-flow-unified-platform --tests` to apply 2 suggestions)
+   Compiling mox-flow-unified-platform v0.1.0 (D:\a10\aikjx\gitcode\infotopograph\platform\domains\flow\core\mox-flow-unified-platform)
+    Finished `release` profile [optimized] target(s) in 12.13s
+     Running unittests src\lib.rs (target\release\deps\mox_flow_unified_platform-af67ba66b3abe904.exe)
+
+running 94 tests
+test audit::tests::test_audit_entry_builder ... ok
+test audit::tests::test_clear ... ok
+test audit::tests::test_by_system_stats ... ok
+test audit::tests::test_query_by_level ... ok
+test audit::tests::test_log_create_update_delete ... ok
+test audit::tests::test_max_entries_eviction ... ok
+test audit::tests::test_disable_audit ... ok
+test audit::tests::test_query_by_action ... ok
+test audit::tests::test_failed_login ... ok
+test audit::tests::test_log_basic ... ok
+test audit::tests::test_query_by_tenant ... ok
+test audit::tests::test_query_limit ... ok
+test circuit_breaker::tests::test_circuit_breaker_closed_state ... ok
+test circuit_breaker::tests::test_circuit_breaker_min_requests ... ok
+test audit::tests::test_sensitive_operations ... ok
+test circuit_breaker::tests::test_circuit_breaker_open_rejects ... ok
+test circuit_breaker::tests::test_circuit_breaker_reset ... ok
+test circuit_breaker::tests::test_circuit_breaker_trips ... ok
+test circuit_breaker::tests::test_circuit_breaker_with_rate_limit ... ok
+test circuit_breaker::tests::test_rate_limit_manager_check_all ... ok
+test circuit_breaker::tests::test_rate_limit_manager_global ... ok
+test circuit_breaker::tests::test_rate_limit_manager_tenant ... ok
+test circuit_breaker::tests::test_rate_limit_manager_user ... ok
+test circuit_breaker::tests::test_set_custom_limits ... ok
+test circuit_breaker::tests::test_token_bucket_allow ... ok
+test config_center::tests::test_builtin_schemas ... ok
+test config_center::tests::test_config_change_listener ... ok
+test config_center::tests::test_config_version_increments ... ok
+test config_center::tests::test_get_nonexistent_config ... ok
+test config_center::tests::test_get_global_config ... ok
+test config_center::tests::test_list_keys ... ok
+test circuit_breaker::tests::test_token_bucket_throttle ... ok
+test config_center::tests::test_tenant_override ... ok
+test config_center::tests::test_set_global_config ... ok
+test config_center::tests::test_list_schemas_by_system ... ok
+test config_center::tests::test_user_override_tenant ... ok
+test config_center::tests::test_validation_range ... ok
+test config_center::tests::test_validation_enum ... ok
+test config_center::tests::test_validation_type ... ok
+test cross_orchestrator::tests::test_builtin_templates ... ok
+test cross_orchestrator::tests::test_execute_ai_query_only ... ok
+test cross_orchestrator::tests::test_execute_algo_analysis ... ok
+test cross_orchestrator::tests::test_execute_ai_business_request ... ok
+test cross_orchestrator::tests::test_duplicate_template_fails ... ok
+test cross_orchestrator::tests::test_list_templates ... ok
+test cross_orchestrator::tests::test_register_custom_template ... ok
+test cross_orchestrator::tests::test_step_system_mapping ... ok
+test cross_orchestrator::tests::test_topological_sort_with_deps ... ok
+test cross_orchestrator::tests::test_unknown_template ... ok
+test event_bus::tests::test_correlation_id ... ok
+test event_bus::tests::test_custom_event_type ... ok
+test event_bus::tests::test_event_type_source_system ... ok
+test event_bus::tests::test_event_chain_full_flow ... ok
+test event_bus::tests::test_event_history ... ok
+test event_bus::tests::test_multiple_subscribers ... ok
+test event_bus::tests::test_builtin_subscribers ... ok
+test event_bus::tests::test_permission_denied_chain ... ok
+test event_bus::tests::test_publish_and_subscribe ... ok
+test event_bus::tests::test_query_history_limit ... ok
+test platform_facade::tests::test_bootstrap_and_shutdown ... ok
+test platform_facade::tests::test_config_center_access ... ok
+test platform_facade::tests::test_config_get_and_set_via_facade ... ok
+test platform_facade::tests::test_config_per_system_schemas ... ok
+test platform_facade::tests::test_config_validation_via_facade ... ok
+test platform_facade::tests::test_double_bootstrap_fails ... ok
+test platform_facade::tests::test_full_event_chain_via_facade ... ok
+test platform_facade::tests::test_lifecycle_access ... ok
+test platform_facade::tests::test_metrics ... ok
+test platform_facade::tests::test_orchestrate_without_init_fails ... ok
+test platform_facade::tests::test_event_bus_builtin_subscribers ... ok
+test platform_facade::tests::test_orchestration_templates ... ok
+test platform_facade::tests::test_orchestrate_ai_business_request ... ok
+test platform_facade::tests::test_publish_event_via_facade ... ok
+test platform_lifecycle::tests::test_double_init_fails ... ok
+test platform_lifecycle::tests::test_get_modules_by_system ... ok
+test platform_lifecycle::tests::test_initialize_and_shutdown ... ok
+test platform_facade::tests::test_systems_overview ... ok
+test platform_lifecycle::tests::test_record_request ... ok
+test platform_status::tests::test_all_module_metrics ... ok
+test platform_status::tests::test_module_metrics ... ok
+test platform_status::tests::test_record_request ... ok
+test platform_lifecycle::tests::test_register_standard_modules ... ok
+test platform_lifecycle::tests::test_shutdown_without_init_fails ... ok
+test platform_status::tests::test_sessions ... ok
+test platform_status::tests::test_success_rate ... ok
+test types::tests::test_module_status_available ... ok
+test types::tests::test_module_status_healthy ... ok
+test types::tests::test_platform_health_score ... ok
+test types::tests::test_platform_module_creation ... ok
+test types::tests::test_six_systems ... ok
+test types::tests::test_system_names ... ok
+test circuit_breaker::tests::test_circuit_breaker_half_open_fails ... ok
+test circuit_breaker::tests::test_circuit_breaker_half_open_recovery ... ok
+test circuit_breaker::tests::test_token_bucket_refill ... ok
+
+test result: ok. 94 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests\integration_tests.rs (target\release\deps\integration_tests-cae4699d90ecb00d.exe)
+
+running 15 tests
+test integration_tests::test_event_history_tracing ... ok
+test integration_tests::test_event_driven_full_chain ... ok
+test integration_tests::test_ai_query_only_lightweight ... ok
+test integration_tests::test_full_platform_module_registry ... ok
+test integration_tests::test_algo_analysis_flow ... ok
+test integration_tests::test_config_hierarchical_override ... ok
+test integration_tests::test_all_systems_have_config ... ok
+test integration_tests::test_permission_denied_event_propagation ... ok
+test integration_tests::test_config_change_listener ... ok
+test integration_tests::test_config_validation_rules ... ok
+test integration_tests::test_ai_business_request_orchestration ... ok
+test integration_tests::test_mixed_orchestration_and_event ... ok
+test integration_tests::test_platform_bootstrap_health ... ok
+test integration_tests::test_orchestration_templates_coverage ... ok
+test integration_tests::test_platform_metrics_monitoring ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests mox_flow_unified_platform
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

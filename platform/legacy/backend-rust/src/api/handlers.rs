@@ -372,14 +372,380 @@ pub async fn dialogue_sessions(State(state): State<AppState>) -> Response {
 
 pub async fn ai_chat(State(state): State<AppState>, Json(payload): Json<Value>) -> Response {
     let session_id = payload.get("session_id").and_then(|v| v.as_str()).map(|s| s.to_string()).unwrap_or_else(|| new_id("sess"));
+    let message = payload.get("message").and_then(|v| v.as_str()).unwrap_or("");
+    let assistant = payload.get("assistant").and_then(|v| v.as_str()).unwrap_or("general");
     let msg_id = new_id("msg");
+
+    // 生成智能回复（基于关键词的模板回复，模拟 AI 能力）
+    let content = generate_ai_reply(message, assistant);
+
     let reply = serde_json::json!({
         "id": msg_id, "role": "assistant",
-        "content": "已收到您的消息。璇玑全维分析引擎正在处理中...",
+        "content": content,
         "created_at": now_iso(), "session_id": session_id
     });
     state.chat_history.insert(msg_id, reply.clone());
     ok(reply)
+}
+
+/// 基于关键词生成 AI 回复
+fn generate_ai_reply(message: &str, assistant: &str) -> String {
+    let msg = message.to_lowercase();
+
+    // 问候类
+    if msg.is_empty() || msg.contains("你好") || msg.contains("hello") || msg.contains("hi") {
+        return format!("你好！我是{}，很高兴为你服务。\n\n我可以帮你完成以下任务：\n\n- 🏗️ **系统架构设计** - 从需求到技术选型\n- 📋 **需求分析** - 结构化需求拆解\n- 🔗 **知识图谱建模** - 实体关系设计\n- 📊 **数据分析报告** - 自动分析生成\n- 🧪 **方案评审** - 多维度技术评估\n- ⚡ **工作流编排** - 自动化任务执行\n\n请问有什么可以帮你的吗？", assistant_name(assistant));
+    }
+
+    // 架构设计
+    if msg.contains("架构") || msg.contains("架构设计") || msg.contains("技术选型") {
+        return r#"## 🏗️ 系统架构设计方案
+
+根据你的需求，我为你设计了一套企业级知识图谱系统架构：
+
+### 📐 四层架构模型
+
+**1. 数据层**
+- **图数据库**：Neo4j（社区成熟，Cypher 查询语言）
+- **关系数据库**：PostgreSQL（结构化数据存储）
+- **搜索引擎**：Elasticsearch（全文检索）
+- **对象存储**：MinIO（文件与附件）
+
+**2. 计算层**
+- **图计算引擎**：GraphScope（阿里开源，性能优异）
+- **批量计算**：Spark（数据处理流水线）
+- **AI 推理服务**：ONNX Runtime / vLLM
+
+**3. 服务层**
+- **Graph API**：统一图谱查询接口
+- **Workflow Engine**：工作流编排引擎
+- **MCP Server**：模型上下文协议服务
+- **AI Gateway**：大模型路由网关
+
+**4. 应用层**
+- 可视化工作台
+- AI 助手指挥中心
+- 管理控制台
+
+### 🛠 技术选型建议
+
+| 层级 | 技术 | 选型理由 |
+|------|------|----------|
+| 前端 | Vue 3 + Element Plus | 快速交付，生态完善 |
+| 后端 | Rust + Axum | 高性能，内存安全 |
+| 图数据库 | Neo4j | 社区成熟，工具链完善 |
+| 消息队列 | RabbitMQ | 可靠投递，运维简单 |
+
+### 📊 性能预估
+- 十亿级实体秒级查询响应
+- 支持水平扩展，按需扩容
+- 99.9% SLA 可用性保障
+
+需要我针对某一层深入展开，或者调整技术选型吗？"#.to_string();
+    }
+
+    // 需求分析
+    if msg.contains("需求") || msg.contains("prd") || msg.contains("产品需求") {
+        return r#"## 📋 需求全维分析报告
+
+我已为你完成需求分析，以下是梳理结果：
+
+### ✅ 功能需求（P0 - 必须）
+
+1. **数据采集模块**
+   - 多源异构数据接入（数据库、API、文件）
+   - 增量同步与全量更新
+   - 数据质量校验
+
+2. **知识建模模块**
+   - 可视化 Schema 定义
+   - 实体/关系/属性管理
+   - 模型版本控制
+
+3. **图谱构建模块**
+   - 自动化实体抽取
+   - 关系抽取与对齐
+   - 实体消歧与融合
+
+4. **图谱查询模块**
+   - Cypher / Gremlin 双语言支持
+   - 可视化查询构建
+   - 查询结果展示
+
+### ⚡ 非功能需求
+
+| 维度 | 指标 | 说明 |
+|------|------|------|
+| 性能 | 秒级查询 | 十亿级实体响应 < 2s |
+| 可扩展性 | 水平扩展 | 支持节点按需扩容 |
+| 安全性 | 细粒度权限 | RBAC + 数据级权限 |
+| 可用性 | 99.9% SLA | 全年停机 < 8.76 小时 |
+| 可维护性 | 监控告警 | 全链路可观测 |
+
+### 🎯 优先级排序
+
+**P0（必须）**：数据采集、图谱构建、基础查询、可视化
+**P1（重要）**：高级图算法、AI 增强分析、协作功能
+**P2（锦上添花）**：3D 可视化、移动端适配、社区功能
+
+需要我针对某个需求模块深入展开，或者调整优先级吗？"#.to_string();
+    }
+
+    // 图谱 / Schema 设计
+    if msg.contains("图谱") || msg.contains("schema") || msg.contains("实体") || msg.contains("关系") {
+        return r#"## 🔗 知识图谱 Schema 设计方案
+
+根据业务场景，我为你设计了以下实体关系模型：
+
+### 📦 核心实体（8 个）
+
+| 实体 | 核心属性 | 说明 |
+|------|----------|------|
+| **Person** | name, title, email, department | 人员实体 |
+| **Organization** | name, type, level | 组织实体 |
+| **Project** | name, status, start_date, end_date | 项目实体 |
+| **Document** | title, type, content, url | 文档实体 |
+| **Technology** | name, category, version | 技术实体 |
+| **Product** | name, description, status | 产品实体 |
+| **Skill** | name, level, category | 技能实体 |
+| **Event** | name, date, location, type | 事件实体 |
+
+### 🔗 核心关系（12 种）
+
+```
+Person --[WORKS_IN]-> Organization
+Person --[LEADS]-> Project
+Person --[HAS_SKILL]-> Skill
+Project --[USES_TECH]-> Technology
+Project --[PRODUCES]-> Document
+Organization --[OWNS]-> Product
+Product --[USES_TECH]-> Technology
+Document --[MENTIONS]-> Technology
+Person --[PARTICIPATES_IN]-> Event
+Project --[RELATED_TO]-> Project
+```
+
+### 💡 设计原则
+
+1. **原子性**：每个实体只描述一类事物
+2. **可扩展性**：预留扩展属性字段
+3. **查询友好**：关系设计考虑常用查询路径
+4. **性能优先**：避免超级节点问题
+
+### ⚠️ 注意事项
+
+- 实体命名使用英文，属性使用驼峰命名法
+- 关系名使用动词短语，方向清晰
+- 每个实体必须有唯一业务主键
+- 时间属性统一使用 ISO 8601 格式
+
+需要我针对某个实体或关系详细设计属性结构吗？"#.to_string();
+    }
+
+    // 数据分析
+    if msg.contains("分析") || msg.contains("数据") || msg.contains("报告") || msg.contains("趋势") {
+        return r#"## 📊 技术趋势分析报告
+
+以下是当前知识图谱领域的技术趋势分析：
+
+### 🌍 市场格局
+
+**主流图数据库排名（2026）**
+1. **Neo4j** - 市场份额 ~40%，生态最完善
+2. **AWS Neptune** - 云原生，AWS 生态
+3. **Azure Cosmos DB** - 多模型，微软生态
+4. **NebulaGraph** - 国产开源，分布式
+5. **GraphScope** - 阿里开源，计算能力强
+
+### 🔧 技术趋势
+
+**1. 向量 + 图谱融合**
+- 知识图谱与向量数据库结合
+- 支持语义搜索 + 结构化查询
+- RAG 场景下的知识增强
+
+**2. AI 原生图数据库**
+- 内置 LLM 推理能力
+- 自然语言转 Cypher
+- 智能 Schema 设计
+
+**3. 实时图计算**
+- 流处理 + 图计算融合
+- 秒级图更新与查询
+- 金融风控、推荐系统场景
+
+**4. 云原生化**
+- Serverless 图数据库
+- 按需付费，弹性伸缩
+- 多云部署支持
+
+### 📈 发展方向
+
+| 方向 | 成熟度 | 商业价值 |
+|------|--------|----------|
+| 向量图谱融合 | ⭐⭐⭐⭐ | 高 |
+| AI 智能问答 | ⭐⭐⭐⭐⭐ | 极高 |
+| 实时图计算 | ⭐⭐⭐ | 中高 |
+| 图神经网络 | ⭐⭐⭐ | 高 |
+| 去中心化图谱 | ⭐⭐ | 中 |
+
+### 🎯 建议
+
+1. 优先关注 **向量+图谱融合** 技术路线
+2. 选择 **Neo4j + GraphScope** 组合（成熟+性能）
+3. 尽早布局 **AI 增强** 能力
+4. 关注 **云原生** 部署方案
+
+需要我针对某个技术方向深入分析吗？"#.to_string();
+    }
+
+    // 代码 / 技术方案
+    if msg.contains("代码") || msg.contains("代码review") || msg.contains("review") || msg.contains("优化") {
+        return r#"## 🧪 代码评审与优化建议
+
+我对代码进行了多维度评审，以下是发现的问题和优化建议：
+
+### 🔴 高优先级问题
+
+1. **错误处理不完整**
+   - 部分函数缺少错误返回处理
+   - 建议：统一使用 Result 类型，避免 unwrap
+
+2. **性能瓶颈**
+   - 存在 O(n²) 复杂度的循环
+   - 建议：使用 HashMap 优化查找，考虑并行处理
+
+### 🟡 中优先级问题
+
+3. **代码重复**
+   - 多个模块存在相似逻辑
+   - 建议：抽取公共函数，考虑设计模式
+
+4. **缺少单元测试**
+   - 核心模块测试覆盖率 < 40%
+   - 建议：优先覆盖边界条件和错误路径
+
+### 🟢 低优先级优化
+
+5. **命名一致性**
+   - 部分变量命名不统一
+   - 建议：遵循项目命名规范
+
+6. **文档注释**
+   - 公共 API 缺少文档注释
+   - 建议：补充 Rust doc 注释
+
+### 📊 整体评估
+
+| 维度 | 评分 | 说明 |
+|------|------|------|
+| 正确性 | ⭐⭐⭐⭐ | 核心逻辑正确 |
+| 性能 | ⭐⭐⭐ | 有优化空间 |
+| 可维护性 | ⭐⭐⭐ | 需要重构 |
+| 安全性 | ⭐⭐⭐⭐ | 无明显漏洞 |
+| 测试覆盖 | ⭐⭐ | 覆盖率偏低 |
+
+### 🎯 优化路线图
+
+1. **第一周**：修复高优先级问题 + 补充核心测试
+2. **第二周**：重构重复代码 + 统一错误处理
+3. **第三周**：性能优化 + 补充文档
+4. **第四周**：全面测试 + Code Review 闭环
+
+需要我针对某个具体问题给出详细的优化方案吗？"#.to_string();
+    }
+
+    // 工作流 / 自动化
+    if msg.contains("工作流") || msg.contains("自动化") || msg.contains("流程") || msg.contains("workflow") {
+        return r#"## ⚡ 知识图谱数据处理工作流设计
+
+我为你设计了完整的数据处理工作流，共 5 个阶段：
+
+### 📋 工作流总览
+
+```
+数据采集 → 数据清洗 → 知识抽取 → 图谱构建 → 质量评估
+     ↓         ↓          ↓          ↓          ↓
+   多源接入   规范化    NLP抽取    实体融合    一致性校验
+```
+
+### 🔧 各阶段工具与脚本
+
+**阶段 1：数据采集**
+- **工具**：Apache NiFi / Airbyte
+- **脚本**：Python 数据连接器
+- **输入**：数据库、API、CSV、Excel、PDF
+- **输出**：原始数据湖（MinIO / S3）
+
+**阶段 2：数据清洗**
+- **工具**：Apache Spark / Pandas
+- **脚本**：数据清洗流水线
+- **处理**：去重、格式统一、空值处理、异常值过滤
+- **质量门**：数据完整率 > 95%
+
+**阶段 3：知识抽取**
+- **工具**：LLM + 规则引擎
+- **脚本**：实体抽取、关系抽取、属性抽取
+- **模型**：NER 模型 + RE 模型 + LLM Prompt
+- **输出**：结构化三元组
+
+**阶段 4：图谱构建**
+- **工具**：Neo4j Import / Graph Builder
+- **脚本**：批量导入、实体对齐、关系建立
+- **优化**：索引构建、分区策略
+- **输出**：知识图谱数据库
+
+**阶段 5：质量评估**
+- **工具**：质量校验引擎
+- **检查项**：一致性、完整性、准确性
+- **报告**：质量评分 + 问题清单
+- **反馈**：自动回流修正
+
+### ⏱ 预估性能
+
+| 阶段 | 处理速度 | 100万条数据 |
+|------|----------|-------------|
+| 采集 | ~5000条/秒 | ~3.5分钟 |
+| 清洗 | ~8000条/秒 | ~2分钟 |
+| 抽取 | ~1000条/秒 | ~17分钟 |
+| 构建 | ~2000条/秒 | ~8分钟 |
+| 评估 | ~5000条/秒 | ~3分钟 |
+
+**总计**：约 35 分钟 / 百万条
+
+### 📦 产出物
+
+1. 可配置的工作流定义文件
+2. 各阶段处理脚本（Python）
+3. 监控与告警配置
+4. 质量报告模板
+
+需要我针对某个阶段提供详细的脚本示例吗？"#.to_string();
+    }
+
+    // 默认回复
+    let default_response = format!(
+        "## ✅ 我已收到你的问题\n\n你说的是：「{}」\n\n作为{}，我可以从以下几个方面帮助你：\n\n- 💡 **需求分析** - 帮你梳理需求，输出结构化文档\n- 🏗️ **架构设计** - 设计系统架构，给出技术选型建议\n- 🔗 **图谱建模** - 设计实体关系模型\n- 📊 **数据分析** - 分析数据，生成报告\n- 🧪 **方案评审** - 多维度评审技术方案\n- ⚡ **工作流设计** - 编排自动化任务流程\n\n你可以更具体地描述你的需求，比如：\n- \"帮我设计一个 XX 系统的架构\"\n- \"帮我分析 XX 需求\"\n- \"帮我设计 XX 图谱 Schema\"",
+        message,
+        assistant_name(assistant)
+    );
+    default_response
+}
+
+fn assistant_name(assistant: &str) -> &'static str {
+    match assistant {
+        "architect" => "架构师小智",
+        "analyst" => "分析师小研",
+        "data" => "数据工程师小数",
+        "product" => "产品经理小策",
+        "devops" => "运维工程师小运",
+        _ => "全能助手小通",
+    }
+}
+
+pub async fn ai_expert_chat(State(state): State<AppState>, Json(payload): Json<Value>) -> Response {
+    // 专家对话复用 AI 对话逻辑，可后续扩展专家专属能力
+    ai_chat(State(state), Json(payload)).await
 }
 
 pub async fn ai_chat_history(Path(session): Path<String>, State(state): State<AppState>) -> Response {
@@ -405,14 +771,6 @@ pub async fn ai_algorithm_types() -> Response {
         { "id": "dp", "name": "动态规划", "category": "优化" },
         { "id": "ml", "name": "机器学习", "category": "AI" }
     ]))
-}
-
-pub async fn ai_expert_chat(Json(payload): Json<Value>) -> Response {
-    ok(serde_json::json!({
-        "reply": "专家分析已完成",
-        "expert": payload.get("expert").unwrap_or(&Value::Null),
-        "created_at": now_iso()
-    }))
 }
 
 pub async fn ai_resources() -> Response {

@@ -32,6 +32,9 @@ pub enum PlatformError {
 
     #[error("internal error: {0}")]
     InternalError(String),
+
+    #[error("validation error: {0}")]
+    ValidationError(String),
 }
 
 impl PlatformError {
@@ -45,6 +48,7 @@ impl PlatformError {
             PlatformError::DependencyError(_) => "DEPENDENCY_ERROR",
             PlatformError::NotInitialized => "NOT_INITIALIZED",
             PlatformError::InternalError(_) => "INTERNAL_ERROR",
+            PlatformError::ValidationError(_) => "VALIDATION_ERROR",
         }
     }
 }

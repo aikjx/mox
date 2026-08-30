@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>专家联盟部署指南 v3.0</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans CJK SC', 'Microsoft YaHei', -apple-system, sans-serif;
+    background: #f8fafc;
+    color: #1e293b;
+    line-height: 1.75;
+    padding: 30px 20px;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  .cover {
+    background: linear-gradient(135deg, #064e3b 0%, #0f172a 50%, #134e4a 100%);
+    color: white;
+    padding: 80px 60px;
+    border-radius: 16px;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -100px;
+    right: -100px;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(16,185,129,0.15), transparent 70%);
+    border-radius: 50%;
+  }
+  .cover h1 {
+    font-size: 36px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .cover .subtitle {
+    font-size: 18px;
+    color: #94a3b8;
+    margin-bottom: 40px;
+    position: relative;
+  }
+  .cover .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    position: relative;
+  }
+  .cover .meta-item {
+    padding: 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+  }
+  .cover .meta-label {
+    font-size: 12px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .cover .meta-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: #e2e8f0;
+  }
+
+  .section {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 32px 36px;
+    margin-bottom: 24px;
+  }
+  .section h2 {
+    font-size: 24px;
+    color: #0f172a;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #10b981;
+    display: inline-block;
+  }
+  .section h3 {
+    font-size: 18px;
+    color: #1e293b;
+    margin: 24px 0 12px;
+    padding-left: 12px;
+    border-left: 4px solid #10b981;
+  }
+  .section h4 {
+    font-size: 15px;
+    color: #334155;
+    margin: 18px 0 8px;
+    font-weight: 600;
+  }
+  .section p { margin-bottom: 12px; color: #475569; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  table th {
+    background: #f1f5f9;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+  }
+  table td {
+    padding: 10px 14px;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    vertical-align: top;
+  }
+  table tr:hover td { background: #f8fafc; }
+
+  pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 16px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 12px 0;
+    font-family: 'Consolas', 'Monaco', monospace;
+  }
+  code {
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #dc2626;
+    font-family: 'Consolas', 'Monaco', monospace;
+  }
+  pre code { background: none; padding: 0; color: inherit; }
+
+  .note {
+    background: #ecfdf5;
+    border-left: 4px solid #10b981;
+    padding: 14px 18px;
+    margin: 16px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 14px;
+    color: #065f46;
+  }
+  .warning {
+    background: #fffbeb;
+    border-left: 4px solid #f59e0b;
+    padding: 14px 18px;
+    margin: 16px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 14px;
+    color: #92400e;
+  }
+  .danger {
+    background: #fef2f2;
+    border-left: 4px solid #ef4444;
+    padding: 14px 18px;
+    margin: 16px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 14px;
+    color: #991b1b;
+  }
+
+  ul, ol { margin: 10px 0 10px 24px; color: #475569; }
+  li { margin-bottom: 6px; }
+
+  .step-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .step-box .step-title {
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: #10b981;
+    color: white;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .toc {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin-bottom: 32px;
+  }
+  .toc h2 {
+    font-size: 18px;
+    margin-bottom: 16px;
+    color: #0f172a;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 8px;
+  }
+  .toc ol {
+    list-style: none;
+    counter-reset: toc-counter;
+  }
+  .toc ol li {
+    counter-increment: toc-counter;
+    padding: 6px 0;
+    border-bottom: 1px dashed #f1f5f9;
+  }
+  .toc ol li::before {
+    content: counter(toc-counter) ". ";
+    font-weight: 600;
+    color: #10b981;
+    margin-right: 8px;
+  }
+  .toc ol li a {
+    color: #334155;
+    text-decoration: none;
+    font-size: 14px;
+  }
+
+  .footer {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 13px;
+    padding: 30px 0;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 40px;
+  }
+
+  @media (max-width: 768px) {
+    .cover { padding: 40px 24px; }
+    .cover h1 { font-size: 26px; }
+    .cover .meta-grid { grid-template-columns: 1fr; }
+    .section { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- 封面 -->
+  <div class="cover">
+    <h1>🚀 专家联盟部署指南</h1>
+    <div class="subtitle">Expert Alliance Deployment Guide</div>
+    <div class="meta-grid">
+      <div class="meta-item">
+        <div class="meta-label">版本</div>
+        <div class="meta-value">v3.0.0</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">部署方式</div>
+        <div class="meta-value">Kubernetes / Helm</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">文档状态</div>
+        <div class="meta-value">正式发布</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">适用环境</div>
+        <div class="meta-value">K8s 1.24+</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">发布日期</div>
+        <div class="meta-value">2026-08-30</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">维护者</div>
+        <div class="meta-value">SRE Team</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 目录 -->
+  <div class="toc">
+    <h2>📑 目 录</h2>
+    <ol>
+      <li><a href="#ch1">部署前准备</a></li>
+      <li><a href="#ch2">资源要求</a></li>
+      <li><a href="#ch3">快速部署（Helm 一键部署）</a></li>
+      <li><a href="#ch4">分步部署详解</a></li>
+      <li><a href="#ch5">配置说明</a></li>
+      <li><a href="#ch6">高可用部署</a></li>
+      <li><a href="#ch7">升级与回滚</a></li>
+      <li><a href="#ch8">验证与验收</a></li>
+      <li><a href="#ch9">常见问题</a></li>
+    </ol>
+  </div>
+
+  <!-- 第1章 部署前准备 -->
+  <div class="section" id="ch1">
+    <h2>1. 部署前准备</h2>
+
+    <h3>1.1 软件版本要求</h3>
+    <table>
+      <thead>
+        <tr><th>组件</th><th>最低版本</th><th>推荐版本</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Kubernetes</td><td>1.24</td><td>1.28+</td><td>容器编排平台</td></tr>
+        <tr><td>Helm</td><td>3.9</td><td>3.13+</td><td>包管理工具</td></tr>
+        <tr><td>kubectl</td><td>1.24</td><td>与集群版本一致</td><td>K8s 命令行工具</td></tr>
+        <tr><td>PostgreSQL</td><td>14</td><td>15+</td><td>关系型数据库</td></tr>
+        <tr><td>Redis</td><td>6.2</td><td>7.0+</td><td>缓存与会话存储</td></tr>
+        <tr><td>NATS</td><td>2.9</td><td>2.10+</td><td>消息队列与事件总线</td></tr>
+        <tr><td>容器运行时</td><td>—</td><td>containerd 1.7+</td><td>Docker 也可，推荐 containerd</td></tr>
+      </tbody>
+    </table>
+
+    <h3>1.2 前置依赖检查</h3>
+    <div class="step-box">
+      <div class="step-title"><span class="step-num">1</span> 检查 Kubernetes 集群状态</div>
+      <pre><code># 检查集群状态
+kubectl cluster-info
+kubectl get nodes
+
+# 检查 Helm 版本
+helm version
+
+# 检查可用资源
+kubectl top nodes
+kubectl describe node &lt;node-name&gt; | grep -A 5 "Allocated resources"</code></pre>
+    </div>
+
+    <div class="step-box">
+      <div class="step-title"><span class="step-num">2</span> 创建命名空间</div>
+      <pre><code># 创建专家联盟专用命名空间
+kubectl create namespace expert-alliance
+
+# 设置为默认命名空间（可选）
+kubectl config set-context --current --namespace=expert-alliance</code></pre>
+    </div>
+
+    <div class="step-box">
+      <div class="step-title"><span class="step-num">3</span> 准备镜像仓库</div>
+      <p>确保集群可以访问镜像仓库。如果使用私有仓库，需配置 imagePullSecret：</p>
+      <pre><code>kubectl create secret docker-registry registry-secret \
+  --docker-server=registry.example.com \
+  --docker-username=your-username \
+  --docker-password=your-password \
+  -n expert-alliance</code></pre>
+    </div>
+  </div>
+
+  <!-- 第2章 资源要求 -->
+  <div class="section" id="ch2">
+    <h2>2. 资源要求</h2>
+
+    <h3>2.1 最小部署规格（开发/测试）</h3>
+    <p>适用于开发测试环境，单节点或 3 节点小集群：</p>
+    <table>
+      <thead>
+        <tr><th>服务</th><th>副本数</th><th>CPU (请求/限制)</th><th>内存 (请求/限制)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>gateway-http</td><td>1</td><td>100m / 500m</td><td>128Mi / 256Mi</td></tr>
+        <tr><td>gateway-grpc</td><td>1</td><td>100m / 500m</td><td>128Mi / 256Mi</td></tr>
+        <tr><td>alliance-scheduler</td><td>1</td><td>200m / 1000m</td><td>256Mi / 512Mi</td></tr>
+        <tr><td>alliance-executor</td><td>1</td><td>200m / 1000m</td><td>256Mi / 512Mi</td></tr>
+        <tr><td>alliance-fusion</td><td>1</td><td>100m / 500m</td><td>128Mi / 256Mi</td></tr>
+        <tr><td>expert-registry</td><td>1</td><td>50m / 200m</td><td>64Mi / 128Mi</td></tr>
+        <tr><td>expert-agent</td><td>1</td><td>200m / 1000m</td><td>512Mi / 1Gi</td></tr>
+        <tr><td>expert-memory</td><td>1</td><td>100m / 500m</td><td>128Mi / 256Mi</td></tr>
+        <tr><td><strong>合计（不含 Sidecar 和中间件）</strong></td><td><strong>8</strong></td><td><strong>1.05 / 5.2 CPU</strong></td><td><strong>1.6 / 3.6 GiB</strong></td></tr>
+      </tbody>
+    </table>
+
+    <h3>2.2 生产部署规格（高可用）</h3>
+    <p>适用于生产环境，多可用区部署：</p>
+    <table>
+      <thead>
+        <tr><th>服务</th><th>副本数</th><th>CPU (请求/限制)</th><th>内存 (请求/限制)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>gateway-http</td><td>3</td><td>500m / 2000m</td><td>512Mi / 1Gi</td></tr>
+        <tr><td>gateway-grpc</td><td>3</td><td>500m / 2000m</td><td>512Mi / 1Gi</td></tr>
+        <tr><td>alliance-scheduler</td><td>3</td><td>1000m / 4000m</td><td>1Gi / 2Gi</td></tr>
+        <tr><td>alliance-executor</td><td>4</td><td>1000m / 4000m</td><td>1Gi / 2Gi</td></tr>
+        <tr><td>alliance-fusion</td><td>3</td><td>500m / 2000m</td><td>512Mi / 1Gi</td></tr>
+        <tr><td>expert-registry</td><td>2</td><td>100m / 500m</td><td>128Mi / 256Mi</td></tr>
+        <tr><td>expert-agent</td><td>4</td><td>1000m / 4000m</td><td>1Gi / 2Gi</td></tr>
+        <tr><td>expert-memory</td><td>3</td><td>200m / 1000m</td><td>256Mi / 512Mi</td></tr>
+        <tr><td>ai-inference (Sidecar)</td><td>随 Agent</td><td>500m / 2000m</td><td>1Gi / 2Gi</td></tr>
+        <tr><td><strong>合计（含 Sidecar）</strong></td><td><strong>26 + 4 Sidecar</strong></td><td><strong>~13 / ~52 CPU</strong></td><td><strong>~17 / ~34 GiB</strong></td></tr>
+      </tbody>
+    </table>
+
+    <div class="note">
+      生产环境建议至少 3 个 Worker 节点，每个节点 16 核 32G 以上。中间件（PostgreSQL / Redis / NATS / 图数据库）需独立部署，资源另计。
+    </div>
+
+    <h3>2.3 中间件资源建议</h3>
+    <table>
+      <thead>
+        <tr><th>中间件</th><th>部署方式</th><th>CPU</th><th>内存</th><th>存储</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>PostgreSQL</td><td>主从 + 只读副本</td><td>4 核+</td><td>8 GiB+</td><td>100 GiB SSD</td></tr>
+        <tr><td>Redis</td><td>哨兵模式 / Cluster</td><td>2 核+</td><td>4 GiB+</td><td>持久化 20 GiB</td></tr>
+        <tr><td>NATS</td><td>3 节点集群 (JetStream)</td><td>2 核+</td><td>4 GiB+</td><td>50 GiB SSD</td></tr>
+        <tr><td>图数据库</td><td>3 节点集群</td><td>8 核+</td><td>16 GiB+</td><td>200 GiB SSD</td></tr>
+        <tr><td>对象存储</td><td>MinIO / S3</td><td>4 核+</td><td>8 GiB+</td><td>按需扩展</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 第3章 快速部署 -->
+  <div class="section" id="ch3">
+    <h2>3. 快速部署（Helm 一键部署）</h2>
+
+    <p>使用 Helm Chart 一键部署专家联盟系统到 Kubernetes 集群。</p>
+
+    <div class="step-box">
+      <div class="step-title"><span class="step-num">1</span> 添加 Helm 仓库</div>
+      <pre><code># 添加专家联盟 Helm 仓库
+helm repo add expert-alliance https://charts.example.com/expert-alliance
+helm repo update
+
+# 查看可用版本
+helm search repo expert-alliance --versions</code></pre>
+    </div>
+
+    <div class="step-box">
+      <div class="step-title"><span class="step-num">2</span> 准备自定义配置</div>
+      <p>创建 <code>custom-values.yaml</code> 文件，配置数据库、Redis 等外部依赖连接信息：</p>
+      <pre><code># custom-values.yaml
+global:
+  imageRegistry: registry.example.com
+  imagePullSecrets:
+    - name: registry-secret
+
+  database:
+    host: postgres-primary.db.svc.cluster.local
+    port: 5432
+    name: expert_alliance
+    user: expert_alliance
+    existingSecret: db-credentials
+    passwordKey: password
+
+  redis:
+    host: redis-master.cache.svc.cluster.local
+    port: 6379
+    existingSecret: redis-credentials
+    passwordKey: password
+
+  nats:
+    servers:
+      - nats://nats-0.nats-headless.mq.svc.cluster.local:4222
+      - nats://nats-1.nats-headless.mq.svc.cluster.local:4222
+
+  graphDb:
+    endpoint: http://graph-db.graph.svc.cluster.local:7687
+    existingSecret: graphdb-credentials
+
+gatewayHttp:
+  replicaCount: 2
+  service:
+    type: LoadBalancer
+
+allianceScheduler:
+  replicaCount: 2
+
+allianceExecutor:
+  replicaCount: 2
+
+allianceFusion:
+  replicaCount: 2</code></pre>
+    </div>
+
+    <div class="step-box">
+      <div class="step-title"><span class="step-num">3</span> 执行部署</div>
+      <pre><code># 安装（首次部署）
+helm install expert-alliance expert-alliance/expert-alliance \
+  --namespace expert-alliance \
+  --create-namespace \
+  --values custom-values.yaml \
+  --version 3.0.0
+
+# 等待部署完成
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/part-of=expert-alliance -n expert-alliance --timeout=300s
+
+# 查看部署状态
+helm status expert-alliance -n expert-alliance
+kubectl get pods -n expert-alliance
+kubectl get svc -n expert-alliance</code></pre>
+    </div>
+
+    <div class="note">
+      首次部署会执行数据库初始化（建表、索引、初始数据），约需 1-2 分钟。初始化 Job 完成后服务才会启动。
+    </div>
+  </div>
+
+  <!-- 第4章 分步部署 -->
+  <div class="section" id="ch4">
+    <h2>4. 分步部署详解</h2>
+
+    <h3>4.1 部署中间件</h3>
+    <p>如果中间件还未部署，可使用以下方式快速部署（开发测试环境）：</p>
+    <pre><code># PostgreSQL
+helm install postgres oci://registry-1.docker.io/bitnamicharts/postgresql \
+  -n expert-alliance --create-namespace \
+  --set auth.username=expert_alliance \
+  --set auth.password=change-me \
+  --set auth.database=expert_alliance
+
+# Redis
+helm install redis oci://registry-1.docker.io/bitnamicharts/redis \
+  -n expert-alliance \
+  --set auth.password=change-me
+
+# NATS
+helm install nats nats/nats -n expert-alliance \
+  --set nats.jetstream.enabled=true \
+  --set cluster.enabled=true \
+  --set cluster.replicas=3</code></pre>
+
+    <div class="warning">
+      生产环境请使用独立部署的高可用中间件集群，不建议使用 Helm 快速部署的单节点实例。
+    </div>
+
+    <h3>4.2 初始化数据库</h3>
+    <pre><code># 执行数据库初始化脚本
+kubectl run db-init \
+  --image=registry.example.com/expert-alliance/db-init:3.0.0 \
+  --env="DB_HOST=postgres-primary" \
+  --env="DB_USER=expert_alliance" \
+  --env="DB_PASSWORD=$(kubectl get secret postgres -o jsonpath='{.data.password}' | base64 -d)" \
+  --env="DB_NAME=expert_alliance" \
+  -n expert-alliance
+
+# 等待初始化完成
+kubectl wait --for=condition=complete job/db-init -n expert-alliance --timeout=120s
+
+# 检查初始化结果
+kubectl logs job/db-init -n expert-alliance | tail -20</code></pre>
+
+    <h3>4.3 部署核心服务</h3>
+    <p>按依赖顺序依次部署各服务：</p>
+    <ol>
+      <li>expert-registry — 专家注册中心（无外部依赖）</li>
+      <li>expert-memory — 记忆服务（依赖 PostgreSQL + Redis）</li>
+      <li>alliance-scheduler — 调度服务（依赖注册中心 + 图数据库）</li>
+      <li>expert-agent — Agent 运行时（依赖调度服务 + Sidecar）</li>
+      <li>alliance-executor — 执行服务（依赖调度服务 + Agent）</li>
+      <li>alliance-fusion — 融合服务（依赖执行服务）</li>
+      <li>gateway-http / gateway-grpc — 网关（依赖所有后端服务）</li>
+    </ol>
+
+    <div class="note">
+      使用 Helm 伞图部署时会自动处理依赖顺序，无需手动分步。
+    </div>
+
+    <h3>4.4 配置 Ingress</h3>
+    <pre><code># 示例：使用 Nginx Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: expert-alliance-gateway
+  namespace: expert-alliance
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - alliance.example.com
+      secretName: alliance-tls
+  rules:
+    - host: alliance.example.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: expert-alliance-gateway-http
+                port:
+                  number: 8080
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: expert-alliance-gateway-http
+                port:
+                  number: 8080</code></pre>
+  </div>
+
+  <!-- 第5章 配置说明 -->
+  <div class="section" id="ch5">
+    <h2>5. 配置说明</h2>
+
+    <h3>5.1 核心配置项</h3>
+    <table>
+      <thead>
+        <tr><th>配置项</th><th>默认值</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>global.logLevel</code></td><td>info</td><td>日志级别：debug / info / warn / error</td></tr>
+        <tr><td><code>global.tracing.enabled</code></td><td>false</td><td>是否启用分布式追踪</td></tr>
+        <tr><td><code>global.metrics.enabled</code></td><td>true</td><td>是否启用 Prometheus 指标</td></tr>
+        <tr><td><code>scheduler.matchThreshold</code></td><td>0.6</td><td>专家匹配阈值，低于此分数不入选</td></tr>
+        <tr><td><code>scheduler.maxExpertsPerTask</code></td><td>10</td><td>单任务最大专家数</td></tr>
+        <tr><td><code>executor.maxConcurrentTasks</code></td><td>1000</td><td>单实例最大并发任务数</td></tr>
+        <tr><td><code>executor.nodeTimeout</code></td><td>300s</td><td>单节点执行超时时间</td></tr>
+        <tr><td><code>executor.retry.maxRetries</code></td><td>3</td><td>节点失败最大重试次数</td></tr>
+        <tr><td><code>fusion.defaultStrategy</code></td><td>vote</td><td>默认融合策略</td></tr>
+        <tr><td><code>gateway.rateLimit.enabled</code></td><td>true</td><td>是否启用限流</td></tr>
+        <tr><td><code>gateway.rateLimit.qpsPerUser</code></td><td>100</td><td>每用户每秒请求数限制</td></tr>
+      </tbody>
+    </table>
+
+    <h3>5.2 环境变量列表</h3>
+    <p>每个服务支持通过环境变量覆盖配置，优先级：环境变量 &gt; 配置文件 &gt; 默认值。</p>
+    <pre><code># 通用环境变量
+LOG_LEVEL=info                    # 日志级别
+TRACING_ENABLED=false             # 链路追踪开关
+METRICS_ENABLED=true              # 指标开关
+POD_NAME=$(POD_NAME)              # Pod 名称（用于日志标识）
+POD_NAMESPACE=$(POD_NAMESPACE)    # 命名空间
+
+# 数据库
+DB_HOST=postgres-primary
+DB_PORT=5432
+DB_USER=expert_alliance
+DB_PASSWORD=***
+DB_NAME=expert_alliance
+DB_MAX_CONNECTIONS=100
+
+# Redis
+REDIS_HOST=redis-master
+REDIS_PORT=6379
+REDIS_PASSWORD=***
+REDIS_DB=0
+
+# NATS
+NATS_SERVERS=nats://nats:4222
+NATS_USER=***
+NATS_PASSWORD=***</code></pre>
+
+    <h3>5.3 配置热更新</h3>
+    <p>支持运行时动态调整的配置（通过配置中心 API）：</p>
+    <ul>
+      <li>限流阈值 — 即时生效</li>
+      <li>专家匹配权重 — 新任务生效</li>
+      <li>融合策略参数 — 新融合任务生效</li>
+      <li>日志级别 — 即时生效</li>
+    </ul>
+  </div>
+
+  <!-- 第6章 高可用部署 -->
+  <div class="section" id="ch6">
+    <h2>6. 高可用部署</h2>
+
+    <h3>6.1 多可用区部署</h3>
+    <p>生产环境建议跨可用区部署，每个服务的 Pod 分布在不同 AZ：</p>
+    <pre><code># Pod 反亲和性配置示例
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: alliance-scheduler
+          topologyKey: topology.kubernetes.io/zone
+
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: node-role.kubernetes.io/worker
+              operator: Exists</code></pre>
+
+    <h3>6.2 自动扩缩容 (HPA)</h3>
+    <pre><code># 执行服务 HPA 示例
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: alliance-executor-hpa
+  namespace: expert-alliance
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: expert-alliance-executor
+  minReplicas: 2
+  maxReplicas: 20
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Pods
+      pods:
+        metric:
+          name: alliance_active_tasks
+        target:
+          type: AverageValue
+          averageValue: "500"</code></pre>
+
+    <h3>6.3 健康检查</h3>
+    <p>所有服务均配置了启动探针、存活探针和就绪探针：</p>
+    <table>
+      <thead>
+        <tr><th>探针类型</th><th>端口</th><th>路径</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>启动探针</td><td>8080</td><td><code>/health/startup</code></td><td>服务初始化完成，最长等待 60s</td></tr>
+        <tr><td>存活探针</td><td>8080</td><td><code>/health/live</code></td><td>进程存活检查，失败会重启</td></tr>
+        <tr><td>就绪探针</td><td>8080</td><td><code>/health/ready</code></td><td>服务就绪检查，失败停止流量</td></tr>
+      </tbody>
+    </table>
+
+    <h3>6.4 优雅关闭</h3>
+    <p>服务支持优雅关闭，终止信号到达后：</p>
+    <ol>
+      <li>停止接收新请求（就绪探针失败）</li>
+      <li>等待正在执行的任务完成（最长 300s）</li>
+      <li>持久化状态到数据库</li>
+      <li>关闭连接，退出进程</li>
+    </ol>
+    <pre><code># terminationGracePeriod 设置
+terminationGracePeriodSeconds: 300
+
+lifecycle:
+  preStop:
+    exec:
+      command: ["/bin/sh", "-c", "sleep 15 && kill -TERM 1"]</code></pre>
+  </div>
+
+  <!-- 第7章 升级与回滚 -->
+  <div class="section" id="ch7">
+    <h2>7. 升级与回滚</h2>
+
+    <h3>7.1 版本升级流程</h3>
+    <p>使用 Helm 进行灰度升级，分四阶段逐步放量：</p>
+
+    <div class="step-box">
+      <div class="step-title"><span class="step-num">1</span> 备份数据</div>
+      <pre><code># 备份数据库
+kubectl exec -it postgres-primary-0 -- pg_dump -U expert_alliance expert_alliance > backup-$(date +%Y%m%d).sql
+
+# 备份 Redis
+kubectl exec -it redis-master-0 -- redis-cli BGSAVE</code></pre>
+    </div>
+
+    <div class="step-box">
+      <div class="step-title"><span class="step-num">2</span> 灰度发布（金丝雀）</div>
+      <pre><code># 1% 流量到新版本
+helm upgrade expert-alliance expert-alliance/expert-alliance \
+  --namespace expert-alliance \
+  --values custom-values.yaml \
+  --version 3.1.0 \
+  --set canary.enabled=true \
+  --set canary.weight=1
+
+# 观察 10 分钟，无异常则逐步放量
+# 10% → 50% → 100%
+helm upgrade ... --set canary.weight=10
+helm upgrade ... --set canary.weight=50
+helm upgrade ... --set canary.weight=100</code></pre>
+    </div>
+
+    <div class="step-box">
+      <div class="step-title"><span class="step-num">3</span> 全量发布</div>
+      <pre><code># 金丝雀验证通过后，正式全量升级
+helm upgrade expert-alliance expert-alliance/expert-alliance \
+  --namespace expert-alliance \
+  --values custom-values.yaml \
+  --version 3.1.0 \
+  --set canary.enabled=false
+
+# 确认升级完成
+kubectl rollout status deployment/expert-alliance-scheduler -n expert-alliance
+helm history expert-alliance -n expert-alliance</code></pre>
+    </div>
+
+    <h3>7.2 回滚流程</h3>
+    <div class="danger">
+      升级过程中如出现严重问题（错误率飙升、核心功能不可用），立即执行回滚。
+    </div>
+    <pre><code># 查看历史版本
+helm history expert-alliance -n expert-alliance
+
+# 回滚到上一个版本
+helm rollback expert-alliance -n expert-alliance
+
+# 回滚到指定版本
+helm rollback expert-alliance &lt;REVISION&gt; -n expert-alliance
+
+# 验证回滚结果
+helm status expert-alliance -n expert-alliance
+kubectl get pods -n expert-alliance</code></pre>
+
+    <h3>7.3 数据库迁移回滚</h3>
+    <p>如果升级涉及数据库 Schema 变更，需手动回滚数据：</p>
+    <pre><code># 从备份恢复数据库
+kubectl exec -i postgres-primary-0 -- psql -U expert_alliance expert_alliance < backup-YYYYMMDD.sql
+
+# 验证数据完整性
+kubectl exec -it postgres-primary-0 -- psql -U expert_alliance -c "SELECT count(*) FROM tasks;"</code></pre>
+  </div>
+
+  <!-- 第8章 验证与验收 -->
+  <div class="section" id="ch8">
+    <h2>8. 验证与验收</h2>
+
+    <h3>8.1 部署后检查清单</h3>
+    <table>
+      <thead>
+        <tr><th>检查项</th><th>命令 / 方法</th><th>预期结果</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Pod 状态</td><td><code>kubectl get pods</code></td><td>所有 Pod Running</td></tr>
+        <tr><td>服务发现</td><td><code>kubectl get svc</code></td><td>所有 Service 正常</td></tr>
+        <tr><td>健康检查</td><td>访问 <code>/health/ready</code></td><td>HTTP 200</td></tr>
+        <tr><td>数据库连接</td><td>查看 scheduler 日志</td><td>无连接错误</td></tr>
+        <tr><td>Redis 连接</td><td>查看 memory 服务日志</td><td>无连接错误</td></tr>
+        <tr><td>NATS 连接</td><td>查看各服务日志</td><td>connected 状态</td></tr>
+        <tr><td>API 连通性</td><td>调用 <code>/api/v1/health</code></td><td>返回正常</td></tr>
+        <tr><td>Metrics 端点</td><td>访问 <code>/metrics</code></td><td>Prometheus 格式</td></tr>
+      </tbody>
+    </table>
+
+    <h3>8.2 冒烟测试</h3>
+    <pre><code># 1. 注册测试专家
+curl -X POST http://alliance.example.com/api/v1/experts \
+  -H "Content-Type: application/json" \
+  -d '{
+    "expert_id": "test-expert-001",
+    "display_name": "测试专家",
+    "type": "TOOL",
+    "capabilities": ["text-classification", "sentiment-analysis"],
+    "endpoint": "http://test-expert:8080"
+  }'
+
+# 2. 创建测试任务
+curl -X POST http://alliance.example.com/api/v1/tasks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "测试任务",
+    "description": "测试联盟系统是否正常工作",
+    "priority": 5
+  }'
+
+# 3. 查询任务状态
+curl http://alliance.example.com/api/v1/tasks/&lt;task_id&gt;
+
+# 4. 专家列表
+curl http://alliance.example.com/api/v1/experts</code></pre>
+
+    <h3>8.3 性能测试（可选）</h3>
+    <p>生产环境建议部署后进行压测，验证性能是否达标：</p>
+    <ul>
+      <li>任务创建 QPS：使用 wrk/vegeta 压测创建任务接口</li>
+      <li>并发任务数：批量创建任务，观察系统承载能力</li>
+      <li>长稳测试：持续运行 24 小时，观察内存泄漏和资源趋势</li>
+    </ul>
+  </div>
+
+  <!-- 第9章 常见问题 -->
+  <div class="section" id="ch9">
+    <h2>9. 常见问题</h2>
+
+    <h3>9.1 Pod 启动失败</h3>
+    <p><strong>症状：</strong>Pod 状态为 CrashLoopBackOff</p>
+    <p><strong>排查步骤：</strong></p>
+    <ol>
+      <li>查看 Pod 事件：<code>kubectl describe pod &lt;pod-name&gt;</code></li>
+      <li>查看容器日志：<code>kubectl logs &lt;pod-name&gt; --previous</code></li>
+      <li>检查配置文件是否正确：<code>kubectl get configmap</code></li>
+      <li>检查 Secret 是否存在：<code>kubectl get secret</code></li>
+      <li>检查数据库连接是否可达</li>
+    </ol>
+
+    <h3>9.2 服务间通信失败</h3>
+    <p><strong>症状：</strong>日志显示 gRPC 连接错误、超时</p>
+    <p><strong>常见原因：</strong></p>
+    <ul>
+      <li>Service 名称解析失败 — 检查 DNS 和 Service 配置</li>
+      <li>网络策略拦截 — 检查 NetworkPolicy 是否放行</li>
+      <li>目标服务未就绪 — 检查对端 Pod 状态</li>
+      <li>mTLS 证书问题 — 检查证书有效期和挂载</li>
+    </ul>
+
+    <h3>9.3 任务一直 pending</h3>
+    <p><strong>症状：</strong>任务创建后长时间处于 pending 状态</p>
+    <p><strong>排查步骤：</strong></p>
+    <ol>
+      <li>检查 scheduler 服务是否正常</li>
+      <li>查看是否有匹配的在线专家</li>
+      <li>检查 executor 服务的并发数是否已满</li>
+      <li>查看 NATS 消息队列是否有堆积</li>
+    </ol>
+
+    <h3>9.4 数据库连接池耗尽</h3>
+    <p><strong>症状：</strong>日志报 "connection pool exhausted" 错误</p>
+    <p><strong>解决方法：</strong></p>
+    <ul>
+      <li>增大连接池大小：调整 <code>DB_MAX_CONNECTIONS</code> 环境变量</li>
+      <li>检查是否有连接泄漏：慢查询导致连接未释放</li>
+      <li>增加数据库 max_connections 配置</li>
+      <li>考虑引入读写分离，读请求走只读副本</li>
+    </ul>
+
+    <h3>9.5 Redis 连接失败</h3>
+    <p><strong>症状：</strong>i/o timeout / connection refused</p>
+    <p><strong>解决方法：</strong></p>
+    <ul>
+      <li>检查 Redis 服务是否正常运行</li>
+      <li>验证密码是否正确</li>
+      <li>检查网络连通性：<code>telnet redis-host 6379</code></li>
+      <li>确认 Redis 配置了持久化（否则重启后数据丢失）</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <p>专家联盟部署指南 v3.0.0 | 璇玑 RelGraph · 架构专家联盟出品</p>
+    <p>如需技术支持，请联系 SRE 团队</p>
+  </div>
+
+</div>
+</body>
+</html>

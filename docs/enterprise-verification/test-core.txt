@@ -1,0 +1,196 @@
+    Blocking waiting for file lock on build directory
+   Compiling tempfile v3.27.0
+   Compiling regex-automata v0.4.13
+   Compiling rand_chacha v0.9.0
+warning: method `len` is never used
+   --> platform\domains\flow\core\mox-flow-unified-storage-core\src\cache.rs:116:8
+    |
+ 40 | impl<K: Hash + Eq + Clone, V> LruCache<K, V> {
+    | -------------------------------------------- method in this implementation
+...
+116 |     fn len(&self) -> usize {
+    |        ^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `mox-flow-unified-storage-core` (lib) generated 1 warning
+warning: method `contains` is never used
+  --> platform\domains\flow\core\mox-flow-unified-meta-core\src\index.rs:80:8
+   |
+65 | impl PostingList {
+   | ---------------- method in this implementation
+...
+80 |     fn contains(&self, entity_id: &str) -> bool {
+   |        ^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `mox-flow-unified-meta-core` (lib) generated 1 warning
+   Compiling rusty-fork v0.3.1
+   Compiling proptest v1.11.0
+   Compiling matchers v0.2.0
+   Compiling tracing-subscriber v0.3.23
+   Compiling mox-flow-operator-core v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\domains\flow\core\mox-flow-operator-core)
+   Compiling mox-flow-algo-alliance-core v0.1.0 (D:\a10\aikjx\gitcode\infotopograph\platform\domains\flow\core\mox-flow-algo-alliance-core)
+warning: fields `compute_engine` and `metrics` are never read
+   --> platform\domains\flow\core\mox-flow-algo-alliance-core\src\pipeline.rs:395:5
+    |
+386 | pub struct PipelineBuilder {
+    |            --------------- fields in this struct
+...
+395 |     compute_engine: Arc<ComputeEngine>,
+    |     ^^^^^^^^^^^^^^
+396 |     metrics: Arc<AlgoMetrics>,
+    |     ^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `num_cpus` is never used
+   --> platform\domains\flow\core\mox-flow-algo-alliance-core\src\compute_engine.rs:274:4
+    |
+274 | fn num_cpus() -> usize {
+    |    ^^^^^^^^
+
+   Compiling mox-flow-unified-arch-core v0.1.0 (D:\a10\aikjx\gitcode\infotopograph\platform\domains\flow\core\mox-flow-unified-arch-core)
+warning: field `initialized` is never read
+   --> platform\domains\flow\core\mox-flow-unified-arch-core\src\connector.rs:171:5
+    |
+168 | struct ConnectorInstance {
+    |        ----------------- field in this struct
+...
+171 |     initialized: bool,
+    |     ^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `mox-flow-algo-alliance-core` (lib) generated 2 warnings
+   Compiling mox-flow-unified-storage-core v0.1.0 (D:\a10\aikjx\gitcode\infotopograph\platform\domains\flow\core\mox-flow-unified-storage-core)
+   Compiling mox-flow-unified-meta-core v0.1.0 (D:\a10\aikjx\gitcode\infotopograph\platform\domains\flow\core\mox-flow-unified-meta-core)
+warning: `mox-flow-unified-arch-core` (lib) generated 1 warning
+warning: `mox-flow-unified-meta-core` (lib test) generated 1 warning (1 duplicate)
+warning: `mox-flow-unified-storage-core` (lib test) generated 1 warning (1 duplicate)
+warning: `mox-flow-unified-arch-core` (lib test) generated 1 warning (1 duplicate)
+    Finished `release` profile [optimized] target(s) in 50.74s
+     Running unittests src\lib.rs (target\release\deps\mox_flow_unified_arch_core-440dae0a0645847e.exe)
+
+running 31 tests
+test adapter::tests::test_batch_conversion ... ok
+test adapter::tests::test_constant_mapping ... ok
+test adapter::tests::test_direct_mapping ... ok
+test adapter::tests::test_from_unified ... ok
+test adapter::tests::test_missing_id_field ... ok
+test adapter::tests::test_transform_mapping ... ok
+test adapter::tests::test_status_field ... ok
+test connector::tests::test_connector_registry ... ok
+test integration::tests::test_delete_integration ... ok
+test connector::tests::test_health_check ... ok
+test connector::tests::test_connector_execute ... ok
+test integration::tests::test_integration_status ... ok
+test integration::tests::test_create_integration ... ok
+test connector::tests::test_list_by_category ... ok
+test integration::tests::test_enable_disable ... ok
+test adapter::tests::test_template_mapping ... ok
+test protocol::tests::test_arch_error_codes ... ok
+test integration::tests::test_record_sync_result ... ok
+test protocol::tests::test_protocol_registry ... ok
+test connector::tests::test_unregister ... ok
+test protocol::tests::test_graphql_adapter ... ok
+test integration::tests::test_stats ... ok
+test unified_api::tests::test_gateway_register_route ... ok
+test protocol::tests::test_rest_adapter ... ok
+test unified_api::tests::test_handle_rest_request ... ok
+test protocol::tests::test_websocket_adapter ... ok
+test unified_api::tests::test_logging_middleware ... ok
+test unified_api::tests::test_handle_unknown_route ... ok
+test unified_api::tests::test_rate_limit_middleware ... ok
+test unified_api::tests::test_request_count ... ok
+test unified_api::tests::test_route_key ... ok
+
+test result: ok. 31 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\release\deps\mox_flow_unified_meta_core-e8b0ce465e4d7691.exe)
+
+running 39 tests
+test entity::tests::test_entity_kind_classification ... ok
+test entity::tests::test_entity_metadata ... ok
+test entity::tests::test_entity_new ... ok
+test entity::tests::test_entity_builder ... ok
+test index::tests::test_create_drop_index ... ok
+test entity::tests::test_entity_rename ... ok
+test entity::tests::test_entity_tags ... ok
+test index::tests::test_tag_index ... ok
+test entity::tests::test_system_metadata_protected ... ok
+test entity::tests::test_entity_with_id ... ok
+test index::tests::test_all_tags_with_counts ... ok
+test entity::tests::test_version_check ... ok
+test entity::tests::test_entity_status_transitions ... ok
+test index::tests::test_property_index ... ok
+test index::tests::test_property_range ... ok
+test index::tests::test_stats ... ok
+test index::tests::test_tag_index_remove ... ok
+test index::tests::test_tag_prefix ... ok
+test index::tests::test_tags_intersection ... ok
+test raft_meta::tests::test_append_entries_old_term ... ok
+test raft_meta::tests::test_become_leader ... ok
+test index::tests::test_tags_union ... ok
+test raft_meta::tests::test_raft_node_initial_state ... ok
+test raft_meta::tests::test_delete_command ... ok
+test raft_meta::tests::test_request_vote ... ok
+test raft_meta::tests::test_append_entries ... ok
+test raft_meta::tests::test_request_vote_old_term ... ok
+test raft_meta::tests::test_submit_command_as_leader ... ok
+test schema::tests::test_add_field ... ok
+test raft_meta::tests::test_submit_command_as_follower_fails ... ok
+test schema::tests::test_duplicate_field_error ... ok
+test schema::tests::test_enum_field_validation ... ok
+test schema::tests::test_indexable_fields ... ok
+test schema::tests::test_required_fields ... ok
+test schema::tests::test_remove_field ... ok
+test schema::tests::test_schema_builder ... ok
+test schema::tests::test_schema_validate_required ... ok
+test schema::tests::test_schema_validate_enum ... ok
+test schema::tests::test_schema_new ... ok
+
+test result: ok. 39 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\release\deps\mox_flow_unified_storage_core-acf63dcf51051710.exe)
+
+running 17 tests
+test unified_engine::tests::test_unified_engine_kv ... ok
+test cache::tests::test_node_cache ... ok
+test memory_backend::tests::test_kv_operations ... ok
+test memory_backend::tests::test_stats ... ok
+test memory_backend::tests::test_object_list ... ok
+test memory_backend::tests::test_clear ... ok
+test cache::tests::test_clear_cache ... ok
+test cache::tests::test_kv_cache ... ok
+test cache::tests::test_cache_invalidation_on_delete ... ok
+test unified_engine::tests::test_unified_engine_graph ... ok
+test memory_backend::tests::test_graph_operations ... ok
+test unified_engine::tests::test_memory_with_cache ... ok
+test unified_engine::tests::test_unified_engine_object ... ok
+test unified_engine::tests::test_unified_engine_cross_model ... ok
+test memory_backend::tests::test_object_operations ... ok
+test memory_backend::tests::test_kv_scan ... ok
+test unified_engine::tests::test_with_cache ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests mox_flow_unified_arch_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests mox_flow_unified_meta_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests mox_flow_unified_storage_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

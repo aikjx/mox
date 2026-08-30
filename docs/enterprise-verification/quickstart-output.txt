@@ -1,0 +1,210 @@
+warning: method `len` is never used
+   --> platform\domains\flow\core\mox-flow-unified-storage-core\src\cache.rs:116:8
+    |
+ 40 | impl<K: Hash + Eq + Clone, V> LruCache<K, V> {
+    | -------------------------------------------- method in this implementation
+...
+116 |     fn len(&self) -> usize {
+    |        ^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `mox-flow-unified-storage-core` (lib) generated 1 warning
+warning: method `contains` is never used
+  --> platform\domains\flow\core\mox-flow-unified-meta-core\src\index.rs:80:8
+   |
+65 | impl PostingList {
+   | ---------------- method in this implementation
+...
+80 |     fn contains(&self, entity_id: &str) -> bool {
+   |        ^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `tool_registry` is never read
+   --> platform\domains\flow\core\mox-flow-ai-assistant-core\src\agent.rs:165:5
+    |
+155 | pub struct AgentRegistry {
+    |            ------------- field in this struct
+...
+165 |     tool_registry: Arc<ToolRegistry>,
+    |     ^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `tool_registry` is never read
+  --> platform\domains\flow\core\mox-flow-ai-assistant-core\src\executor.rs:34:5
+   |
+24 | pub struct TaskExecutor {
+   |            ------------ field in this struct
+...
+34 |     tool_registry: Arc<ToolRegistry>,
+   |     ^^^^^^^^^^^^^
+
+warning: `mox-flow-unified-meta-core` (lib) generated 1 warning
+warning: `mox-flow-ai-assistant-core` (lib) generated 2 warnings
+warning: fields `compute_engine` and `metrics` are never read
+   --> platform\domains\flow\core\mox-flow-algo-alliance-core\src\pipeline.rs:395:5
+    |
+386 | pub struct PipelineBuilder {
+    |            --------------- fields in this struct
+...
+395 |     compute_engine: Arc<ComputeEngine>,
+    |     ^^^^^^^^^^^^^^
+396 |     metrics: Arc<AlgoMetrics>,
+    |     ^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `num_cpus` is never used
+   --> platform\domains\flow\core\mox-flow-algo-alliance-core\src\compute_engine.rs:274:4
+    |
+274 | fn num_cpus() -> usize {
+    |    ^^^^^^^^
+
+warning: `mox-flow-algo-alliance-core` (lib) generated 2 warnings
+warning: field `initialized` is never read
+   --> platform\domains\flow\core\mox-flow-unified-arch-core\src\connector.rs:171:5
+    |
+168 | struct ConnectorInstance {
+    |        ----------------- field in this struct
+...
+171 |     initialized: bool,
+    |     ^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `mox-flow-unified-arch-core` (lib) generated 1 warning
+warning: unused import: `EventType`
+  --> platform\domains\flow\core\mox-flow-unified-platform\src\platform_facade.rs:18:34
+   |
+18 | use crate::event_bus::{EventBus, EventType, PlatformEvent};
+   |                                  ^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `PlatformError` and `PlatformResult`
+  --> platform\domains\flow\core\mox-flow-unified-platform\src\event_bus.rs:21:20
+   |
+21 | use crate::error::{PlatformError, PlatformResult};
+   |                    ^^^^^^^^^^^^^  ^^^^^^^^^^^^^^
+
+warning: unused import: `crate::error::PlatformResult`
+  --> platform\domains\flow\core\mox-flow-unified-platform\src\audit.rs:17:5
+   |
+17 | use crate::error::PlatformResult;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `PlatformError` and `PlatformResult`
+  --> platform\domains\flow\core\mox-flow-unified-platform\src\circuit_breaker.rs:17:20
+   |
+17 | use crate::error::{PlatformError, PlatformResult};
+   |                    ^^^^^^^^^^^^^  ^^^^^^^^^^^^^^
+
+warning: unused variable: `template_step`
+   --> platform\domains\flow\core\mox-flow-unified-platform\src\cross_orchestrator.rs:503:9
+    |
+503 |         template_step: &TemplateStep,
+    |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_template_step`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `id`, `event_type`, and `system` are never read
+   --> platform\domains\flow\core\mox-flow-unified-platform\src\event_bus.rs:182:5
+    |
+180 | struct Subscriber {
+    |        ---------- fields in this struct
+181 |     /// 订阅者 ID
+182 |     id: String,
+    |     ^^
+183 |     /// 订阅的事件类型
+184 |     event_type: EventType,
+    |     ^^^^^^^^^^
+185 |     /// 订阅者所属系统
+186 |     system: NormalizationSystem,
+    |     ^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `mox-flow-unified-platform` (lib) generated 6 warnings (run `cargo fix --lib -p mox-flow-unified-platform` to apply 5 suggestions)
+    Finished `release` profile [optimized] target(s) in 1.20s
+     Running `D:\a10\aikjx\gitcode\infotopograph\target\release\examples\quickstart.exe`
+=== 璇玑 RelGraph · 全维归一化统一平台 快速启动 ===
+
+【1】启动统一平台...
+  ✓ 平台启动成功
+
+【2】平台健康状态：
+  整体状态: Running
+  健康模块: 9/9
+  健康得分: 100.0%
+
+  六大归一化体系概览：
+    [✓] 架构归一化 - 3/3 模块正常
+    [✓] 权限管理归一化 - 1/1 模块正常
+    [✓] 低代码平台 - 1/1 模块正常
+    [✓] 流程算法归一化 - 2/2 模块正常
+    [✓] 前端功能归一化 - 1/1 模块正常
+    [✓] AI对话全维自动化 - 1/1 模块正常
+
+【3】AI 驱动业务申请编排：
+  编排 ID: 3127c575-dbe8-4c36-916e-633169bfdc6c
+  执行结果: 成功
+  完成步骤: 6/6
+
+  执行步骤详情：
+    [✓] Step 1: 意图理解 (AI意图理解)
+    [✓] Step 2: 权限校验 (权限校验)
+    [✓] Step 3: 生成表单 (低代码生成)
+    [✓] Step 4: 启动流程 (流程执行)
+    [✓] Step 5: 前端渲染 (前端渲染)
+    [✓] Step 6: 协议输出 (架构输出)
+
+【4】事件驱动跨系统联动：
+  发布 IntentRecognized 事件 → 1 个订阅者响应
+    - perm-auto-check: 成功
+  发布 PermissionChecked 事件 → 1 个订阅者响应
+    - lowcode-auto-form: 成功
+  发布 FormSubmitted 事件 → 1 个订阅者响应
+    - process-auto-start: 成功
+  发布 ProcessCompleted 事件 → 2 个订阅者响应
+    - frontend-notify: 成功
+    - arch-sync-external: 成功
+
+  事件溯源：完整链路共 4 个事件
+
+【5】统一配置中心：
+  全局默认主题: "light"
+  全局请求超时: 30000ms
+  租户 tenant-acme 覆盖主题为 dark
+  租户 tenant-acme 当前主题: "dark"
+  用户 user-zhangsan 覆盖主题为 auto
+  用户 user-zhangsan 当前主题: "auto"
+  用户 user-lisi 当前主题: "dark" (继承租户)
+  设置非法主题值: "validation error: config 'frontend.theme' value String(\"blue\") not in allowed values"
+
+【6】平台运行指标：
+  总请求数: 0
+  成功率: 100.0%
+  事件发布总数: 4
+  可用编排模板: 3
+  内置配置项: 13
+
+【7】子系统直接访问：
+  权限系统 - RBAC + ABAC 混合模型
+    - 角色管理: perm::rbac::RoleManager
+    - 策略引擎: perm::policy_engine::PolicyEngine
+    - SSO 支持: perm::sso::SsoManager
+  低代码系统 - 元数据驱动开发
+    - 实体建模: lowcode::metadata::EntityMetadata
+    - 表单引擎: lowcode::form_engine::FormEngine
+    - 表达式求值: lowcode::expression::ExpressionEngine
+  流程系统 - 规则+流程+算法融合
+    - 规则引擎: process::rule_engine::RuleEngine
+    - 决策表: process::decision_table::DecisionTable
+    - 流程引擎: process::process_engine::ProcessEngine
+
+【8】优雅关闭平台...
+  ✓ 平台已关闭
+
+=== 快速启动演示完成 ===

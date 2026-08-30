@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>专家联盟系统架构设计文档 v3.0</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans CJK SC', 'Microsoft YaHei', -apple-system, sans-serif;
+    background: #f8fafc;
+    color: #1e293b;
+    line-height: 1.75;
+    padding: 30px 20px;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  /* 封面 */
+  .cover {
+    background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 50%, #1e293b 100%);
+    color: white;
+    padding: 80px 60px;
+    border-radius: 16px;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -100px;
+    right: -100px;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(59,130,246,0.15), transparent 70%);
+    border-radius: 50%;
+  }
+  .cover h1 {
+    font-size: 36px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .cover .subtitle {
+    font-size: 18px;
+    color: #94a3b8;
+    margin-bottom: 40px;
+    position: relative;
+  }
+  .cover .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    position: relative;
+  }
+  .cover .meta-item {
+    padding: 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+  }
+  .cover .meta-label {
+    font-size: 12px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .cover .meta-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: #e2e8f0;
+  }
+
+  /* 目录 */
+  .toc {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin-bottom: 32px;
+  }
+  .toc h2 {
+    font-size: 18px;
+    margin-bottom: 16px;
+    color: #0f172a;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 8px;
+  }
+  .toc ol {
+    list-style: none;
+    counter-reset: toc-counter;
+  }
+  .toc ol li {
+    counter-increment: toc-counter;
+    padding: 6px 0;
+    border-bottom: 1px dashed #f1f5f9;
+  }
+  .toc ol li::before {
+    content: counter(toc-counter) ". ";
+    font-weight: 600;
+    color: #3b82f6;
+    margin-right: 8px;
+  }
+  .toc ol li a {
+    color: #334155;
+    text-decoration: none;
+    font-size: 14px;
+  }
+  .toc ol li a:hover { color: #3b82f6; }
+  .toc ol li ul {
+    margin-left: 32px;
+    margin-top: 4px;
+  }
+  .toc ol li ul li {
+    border-bottom: none;
+    padding: 2px 0;
+    font-size: 13px;
+    color: #64748b;
+  }
+  .toc ol li ul li::before {
+    content: "—";
+    color: #cbd5e1;
+    font-weight: normal;
+  }
+
+  /* 章节 */
+  .section {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 32px 36px;
+    margin-bottom: 24px;
+  }
+  .section h2 {
+    font-size: 24px;
+    color: #0f172a;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #3b82f6;
+    display: inline-block;
+  }
+  .section h3 {
+    font-size: 18px;
+    color: #1e293b;
+    margin: 24px 0 12px;
+    padding-left: 12px;
+    border-left: 4px solid #3b82f6;
+  }
+  .section h4 {
+    font-size: 15px;
+    color: #334155;
+    margin: 18px 0 8px;
+    font-weight: 600;
+  }
+  .section p { margin-bottom: 12px; color: #475569; }
+
+  /* 表格 */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  table th {
+    background: #f1f5f9;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+  }
+  table td {
+    padding: 10px 14px;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    vertical-align: top;
+  }
+  table tr:hover td { background: #f8fafc; }
+
+  /* 代码块 */
+  pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 16px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 12px 0;
+    font-family: 'Consolas', 'Monaco', monospace;
+  }
+  code {
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #dc2626;
+    font-family: 'Consolas', 'Monaco', monospace;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+  }
+
+  /* 架构图 */
+  .arch-diagram {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 24px;
+    margin: 16px 0;
+    font-family: 'Consolas', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-x: auto;
+    white-space: pre;
+    color: #334155;
+  }
+
+  /* 提示框 */
+  .note {
+    background: #eff6ff;
+    border-left: 4px solid #3b82f6;
+    padding: 14px 18px;
+    margin: 16px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 14px;
+    color: #1e40af;
+  }
+  .warning {
+    background: #fffbeb;
+    border-left: 4px solid #f59e0b;
+    padding: 14px 18px;
+    margin: 16px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 14px;
+    color: #92400e;
+  }
+  .success {
+    background: #f0fdf4;
+    border-left: 4px solid #10b981;
+    padding: 14px 18px;
+    margin: 16px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 14px;
+    color: #065f46;
+  }
+
+  /* 列表 */
+  ul, ol { margin: 10px 0 10px 24px; color: #475569; }
+  li { margin-bottom: 6px; }
+
+  /* 页脚 */
+  .footer {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 13px;
+    padding: 30px 0;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 40px;
+  }
+
+  @media (max-width: 768px) {
+    .cover { padding: 40px 24px; }
+    .cover h1 { font-size: 26px; }
+    .cover .meta-grid { grid-template-columns: 1fr; }
+    .section { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- 封面 -->
+  <div class="cover">
+    <h1>🏛️ 专家联盟系统架构设计文档</h1>
+    <div class="subtitle">Expert Alliance System Architecture Design Specification</div>
+    <div class="meta-grid">
+      <div class="meta-item">
+        <div class="meta-label">版本</div>
+        <div class="meta-value">v3.0.0</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">发布日期</div>
+        <div class="meta-value">2026-08-30</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">文档状态</div>
+        <div class="meta-value">正式发布</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">技术栈</div>
+        <div class="meta-value">Rust + Python Sidecar</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">架构模式</div>
+        <div class="meta-value">微服务 + 事件驱动</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">服务数量</div>
+        <div class="meta-value">7 服务 + 1 Sidecar</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 目录 -->
+  <div class="toc">
+    <h2>📑 目 录</h2>
+    <ol>
+      <li><a href="#ch1">概述</a>
+        <ul>
+          <li>设计目标与原则</li>
+          <li>适用范围</li>
+          <li>术语定义</li>
+        </ul>
+      </li>
+      <li><a href="#ch2">总体架构设计</a>
+        <ul>
+          <li>架构分层</li>
+          <li>服务拆分策略</li>
+          <li>核心数据流</li>
+        </ul>
+      </li>
+      <li><a href="#ch3">接入层设计</a>
+        <ul>
+          <li>HTTP Gateway</li>
+          <li>gRPC Gateway</li>
+          <li>协议分流策略</li>
+        </ul>
+      </li>
+      <li><a href="#ch4">联盟核心层设计</a>
+        <ul>
+          <li>调度服务 (Scheduler)</li>
+          <li>执行服务 (Executor)</li>
+          <li>融合服务 (Fusion)</li>
+        </ul>
+      </li>
+      <li><a href="#ch5">能力服务层设计</a>
+        <ul>
+          <li>专家注册服务</li>
+          <li>Agent 运行时服务</li>
+          <li>记忆服务</li>
+          <li>AI 推理 Sidecar</li>
+        </ul>
+      </li>
+      <li><a href="#ch6">数据架构设计</a>
+        <ul>
+          <li>存储选型</li>
+          <li>核心数据模型</li>
+          <li>缓存策略</li>
+        </ul>
+      </li>
+      <li><a href="#ch7">接口设计规范</a>
+        <ul>
+          <li>REST API 规范</li>
+          <li>gRPC 服务定义</li>
+          <li>事件协议</li>
+        </ul>
+      </li>
+      <li><a href="#ch8">非功能性设计</a>
+        <ul>
+          <li>高可用设计</li>
+          <li>性能指标</li>
+          <li>安全设计</li>
+          <li>可观测性</li>
+        </ul>
+      </li>
+      <li><a href="#ch9">技术决策记录</a></li>
+    </ol>
+  </div>
+
+  <!-- 第1章 概述 -->
+  <div class="section" id="ch1">
+    <h2>1. 概述</h2>
+
+    <h3>1.1 设计目标</h3>
+    <p>专家联盟系统是一个多专家协作求解平台，通过将领域专家以服务化形式接入联盟，由调度引擎根据任务特征智能匹配最优专家组合，协同完成复杂问题求解。本架构设计的核心目标是：</p>
+    <ul>
+      <li><strong>高可扩展性</strong> — 支持专家服务的即插即用接入，联盟规模可从数专家扩展到数千专家</li>
+      <li><strong>高可用性</strong> — 核心服务无状态化，支持水平扩展，单节点故障不影响整体服务</li>
+      <li><strong>高性能</strong> — 任务调度延迟 P99 &lt; 200ms，单集群支持 10K 并发任务</li>
+      <li><strong>高可靠性</strong> — 任务执行状态持久化，支持断点续跑和故障恢复</li>
+      <li><strong>可观测性</strong> — 全链路 Trace、结构化日志、指标监控三位一体</li>
+    </ul>
+
+    <h3>1.2 设计原则</h3>
+    <table>
+      <thead>
+        <tr><th style="width: 20%">原则</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>单一职责</strong></td>
+          <td>每个服务只聚焦一件事，避免服务膨胀。调度、执行、融合三者分离，各自独立扩展。</td>
+        </tr>
+        <tr>
+          <td><strong>无状态优先</strong></td>
+          <td>所有业务服务无状态化，状态外部化到存储层（PostgreSQL / Redis / 图存储），支持水平扩容和优雅迁移。</td>
+        </tr>
+        <tr>
+          <td><strong>事件驱动</strong></td>
+          <td>服务间通过事件总线异步解耦，降低同步调用链深度，提升系统韧性。</td>
+        </tr>
+        <tr>
+          <td><strong>减少跳数</strong></td>
+          <td>需要紧密协作的模块合并部署，匹配与图谱推理合并到调度服务，减少 RPC 开销。</td>
+        </tr>
+        <tr>
+          <td><strong>协议分流</strong></td>
+          <td>对外 HTTP REST，内部 gRPC，网关层做协议转换，兼顾外部兼容性与内部性能。</td>
+        </tr>
+        <tr>
+          <td><strong>容错优先</strong></td>
+          <td>每个服务都设计熔断器、限流、降级策略，故障时自动隔离而非雪崩。</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>1.3 适用范围</h3>
+    <p>本文档适用于专家联盟系统 v3.0 版本的架构设计、开发实现、部署运维和技术评审。文档描述了从接入层到数据层的完整架构，包括服务拆分、接口协议、数据模型、非功能设计等核心内容。</p>
+
+    <h3>1.4 术语定义</h3>
+    <table>
+      <thead>
+        <tr><th style="width: 25%">术语</th><th>定义</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Expert</strong></td><td>专家，以服务化形式接入联盟的领域能力提供者，可通过工具、Agent、人工等形态存在。</td></tr>
+        <tr><td><strong>Task</strong></td><td>任务，用户提交的待求解问题，包含问题描述、约束条件、期望输出。</td>
+        </tr>
+        <tr><td><strong>Plan</strong></td><td>执行计划，调度器为任务生成的专家组合和执行 DAG 图。</td></tr>
+        <tr><td><strong>Fusion</strong></td><td>融合，多个专家结果的整合过程，支持投票、加权、辩论、迭代等多种策略。</td></tr>
+        <tr><td><strong>Memory</strong></td><td>记忆，跨任务和会话的知识沉淀，分为工作记忆、会话记忆、长期记忆三层。</td></tr>
+        <tr><td><strong>Sidecar</strong></td><td>边车，与主服务同 Pod 部署的辅助进程，本文指 Python AI 推理进程，通过 UDS 与 Rust 主进程通信。</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 第2章 总体架构 -->
+  <div class="section" id="ch2">
+    <h2>2. 总体架构设计</h2>
+
+    <h3>2.1 架构分层</h3>
+    <p>专家联盟 v3.0 采用四层架构设计，自上而下依次为接入层、联盟核心层、能力服务层和数据层。每层职责清晰，层间通过标准协议通信。</p>
+
+    <div class="arch-diagram">
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              接入层 (Access Layer)                           │
+│  ┌───────────────┐    ┌───────────────┐    ┌───────────────┐               │
+│  │  HTTP Gateway │    │  gRPC Gateway │    │  WS / MCP     │               │
+│  │  :8080        │    │  :50051       │    │  :8081        │               │
+│  │  REST/JSON-RPC│    │  服务间通信   │    │  实时推送      │               │
+│  └───────┬───────┘    └───────┬───────┘    └───────┬───────┘               │
+└──────────┼────────────────────┼────────────────────┼───────────────────────┘
+           │                    │                    │
+┌──────────┼────────────────────┼────────────────────┼───────────────────────┐
+│          ▼                    ▼                    ▼                       │
+│                        联盟核心层 (Core Layer)                              │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐            │
+│  │  alliance-sched │  │  alliance-exec  │  │  alliance-fusion │            │
+│  │  调度服务       │  │  执行服务       │  │  融合服务       │            │
+│  │  任务/匹配/计划 │  │  DAG/节点/状态  │  │  策略/质量/迭代 │            │
+│  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘            │
+└───────────┼─────────────────────┼─────────────────────┼─────────────────────┘
+            │                     │                     │
+┌───────────┼─────────────────────┼─────────────────────┼─────────────────────┐
+│           ▼                     ▼                     ▼                     │
+│                        能力服务层 (Capability Layer)                        │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐            │
+│  │ expert-registry │  │  expert-agent   │  │  expert-memory  │            │
+│  │  专家注册中心   │  │  Agent 运行时    │  │  统一记忆服务    │            │
+│  │  CRUD/健康检查  │  │  ReAct/工具调用 │  │  三层记忆/案例库 │            │
+│  └─────────────────┘  └────────┬────────┘  └─────────────────┘            │
+│                                │                                            │
+│                       ┌────────▼────────┐                                   │
+│                       │  ai-inference   │  Python Sidecar                   │
+│                       │  (UDS 通信)     │                                   │
+│                       └─────────────────┘                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+┌─────────────────────────────────────┼───────────────────────────────────────┐
+│                                     ▼                                       │
+│                        数据层 (Data Layer)                                  │
+│  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐            │
+│  │ PostgreSQL │  │  图存储    │  │   Redis    │  │   NATS     │            │
+│  │  元数据/   │  │  知识图谱/ │  │  缓存/会话 │  │  事件总线   │            │
+│  │  任务状态  │  │  专家关系  │  │  /限流计数 │  │  /消息队列  │            │
+│  └────────────┘  └────────────┘  └────────────┘  └────────────┘            │
+└─────────────────────────────────────────────────────────────────────────────┘</div>
+
+    <h3>2.2 服务拆分策略</h3>
+    <p>v3.0 将 v2.0 的 5 服务拆分为 7 服务 + 1 Sidecar，拆分依据是职责单一性和扩容独立性：</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>服务</th>
+          <th>职责</th>
+          <th>状态</th>
+          <th>扩缩依据</th>
+          <th>v2 对应</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>gateway-http</strong></td>
+          <td>HTTP 协议接入：REST / JSON-RPC / WebSocket / MCP，认证、限流、审计</td>
+          <td>无状态</td>
+          <td>QPS</td>
+          <td>gateway 拆分</td>
+        </tr>
+        <tr>
+          <td><strong>gateway-grpc</strong></td>
+          <td>gRPC 协议接入：服务间路由、负载均衡、服务发现</td>
+          <td>无状态</td>
+          <td>gRPC QPS</td>
+          <td>gateway 拆分</td>
+        </tr>
+        <tr>
+          <td><strong>alliance-scheduler</strong></td>
+          <td>任务管理、专家匹配（合并图谱推理）、计划生成、案例检索</td>
+          <td>无状态</td>
+          <td>任务创建 QPS</td>
+          <td>alliance + registry 合并</td>
+        </tr>
+        <tr>
+          <td><strong>alliance-executor</strong></td>
+          <td>DAG 执行引擎、节点调度、状态追踪、进度推送、人工干预</td>
+          <td>无状态</td>
+          <td>并发任务数</td>
+          <td>alliance 拆分</td>
+        </tr>
+        <tr>
+          <td><strong>alliance-fusion</strong></td>
+          <td>结果融合（6 种策略）、质量评估、迭代精炼</td>
+          <td>无状态</td>
+          <td>融合任务数</td>
+          <td>alliance 拆分</td>
+        </tr>
+        <tr>
+          <td><strong>expert-registry</strong></td>
+          <td>专家 CRUD、健康检查、工具自动发现、版本管理</td>
+          <td>无状态</td>
+          <td>注册请求量</td>
+          <td>registry（精简）</td>
+        </tr>
+        <tr>
+          <td><strong>expert-agent</strong></td>
+          <td>Agent 运行时：ReAct 循环、工具调用、多轮对话</td>
+          <td>无状态</td>
+          <td>Agent 并发数</td>
+          <td>agent（重构）</td>
+        </tr>
+        <tr>
+          <td><strong>expert-memory</strong></td>
+          <td>统一记忆抽象：工作记忆 / 会话记忆 / 长期记忆 / 案例库</td>
+          <td>无状态</td>
+          <td>记忆读写 QPS</td>
+          <td>新增（统一抽象）</td>
+        </tr>
+        <tr>
+          <td><strong>ai-inference</strong></td>
+          <td>Python Sidecar：LLM 推理、Embedding、RAG 检索</td>
+          <td>无状态</td>
+          <td>推理请求量</td>
+          <td>新增（Sidecar）</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>2.3 核心数据流</h3>
+    <p>用户任务从提交到最终结果返回的完整数据流如下：</p>
+
+    <div class="arch-diagram">
+用户提交任务
+    │
+    ▼
+[HTTP Gateway] ── 认证 / 限流 / 审计日志
+    │
+    ▼
+[alliance-scheduler]
+    ├─ 任务持久化（PostgreSQL）
+    ├─ 意图理解 ──► [ai-inference Sidecar]
+    ├─ 专家匹配 ──► [图存储] 图谱推理
+    ├─ 案例检索 ──► [expert-memory]
+    └─ 生成 DAG 计划
+    │
+    ▼
+[alliance-executor]
+    ├─ DAG 拓扑排序
+    ├─ 节点调度（并行/串行/条件分支）
+    ├─ 调用专家 ──► [expert-registry] 查找端点
+    │               └─► [expert-agent] 执行
+    │                     └─► [ai-inference] 推理
+    ├─ 状态更新（PostgreSQL + Redis）
+    └─ 进度事件 ──► [NATS]
+    │
+    ▼
+[alliance-fusion]
+    ├─ 收集多专家结果
+    ├─ 融合策略执行（投票/加权/辩论/迭代）
+    ├─ 质量评估
+    └─ 结果写入记忆 ──► [expert-memory]
+    │
+    ▼
+[HTTP Gateway] ──► WebSocket 推送结果 / 回调通知</div>
+
+    <div class="note">
+      关键设计：调度与执行分离使得调度服务可以用较少实例处理高 QPS 任务创建，执行服务可以按并发任务数独立扩容。融合服务独立部署，复杂融合计算不阻塞主执行链路。
+    </div>
+  </div>
+
+  <!-- 第3章 接入层 -->
+  <div class="section" id="ch3">
+    <h2>3. 接入层设计</h2>
+
+    <h3>3.1 HTTP Gateway</h3>
+    <p>HTTP Gateway 是联盟系统对外的统一入口，承载所有客户端流量，包括 REST API、JSON-RPC、WebSocket 和 MCP 协议。</p>
+
+    <h4>核心职责</h4>
+    <ul>
+      <li><strong>协议终结</strong> — 终结外部 HTTP/1.1、HTTP/2、WebSocket 连接，内部转 gRPC 调用</li>
+      <li><strong>认证鉴权</strong> — JWT Token 验证、API Key 校验、租户隔离</li>
+      <li><strong>流量控制</strong> — 令牌桶限流、并发数控制、熔断降级</li>
+      <li><strong>请求路由</strong> — 根据 URL Path 路由到后端服务</li>
+      <li><strong>协议转换</strong> — REST ↔ gRPC 转码，JSON ↔ Protobuf 序列化</li>
+      <li><strong>审计日志</strong> — 记录所有出入请求，用于合规审计</li>
+      <li><strong>统一错误处理</strong> — 标准化错误码和错误信息格式</li>
+    </ul>
+
+    <h4>路由表</h4>
+    <table>
+      <thead>
+        <tr><th>路径前缀</th><th>后端服务</th><th>协议</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>/api/v1/tasks</code></td><td>alliance-scheduler</td><td>REST</td><td>任务 CRUD</td></tr>
+        <tr><td><code>/api/v1/executions</code></td><td>alliance-executor</td><td>REST</td><td>执行控制</td></tr>
+        <tr><td><code>/api/v1/experts</code></td><td>expert-registry</td><td>REST</td><td>专家管理</td></tr>
+        <tr><td><code>/api/v1/memory</code></td><td>expert-memory</td><td>REST</td><td>记忆查询</td></tr>
+        <tr><td><code>/ws/v1/tasks</code></td><td>alliance-executor</td><td>WebSocket</td><td>进度推送</td></tr>
+        <tr><td><code>/mcp/v1</code></td><td>expert-agent</td><td>MCP</td><td>工具调用协议</td></tr>
+        <tr><td><code>/jsonrpc</code></td><td>alliance-scheduler</td><td>JSON-RPC</td><td>兼容旧版客户端</td></tr>
+      </tbody>
+    </table>
+
+    <h3>3.2 gRPC Gateway</h3>
+    <p>gRPC Gateway 是内部服务间通信的入口，提供服务发现、负载均衡、流量镜像等能力。</p>
+
+    <h4>核心职责</h4>
+    <ul>
+      <li><strong>服务发现</strong> — 基于 etcd / Kubernetes Service 的服务注册发现</li>
+      <li><strong>负载均衡</strong> — 支持轮询、加权轮询、一致性哈希等策略</li>
+      <li><strong>流量管理</strong> — 灰度发布、A/B 测试、流量镜像</li>
+      <li><strong>链路追踪</strong> — gRPC Interceptor 注入 Trace Context</li>
+    </ul>
+
+    <h3>3.3 协议分流策略</h3>
+    <p>v3.0 采用双网关协议分流方案，解决了 v2.0 单端口混合协议带来的 ALPN 协商复杂度问题：</p>
+
+    <table>
+      <thead>
+        <tr><th>维度</th><th>HTTP Gateway (:8080)</th><th>gRPC Gateway (:50051)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>使用场景</td><td>外部客户端、浏览器、第三方集成</td><td>内部服务间调用</td></tr>
+        <tr><td>协议</td><td>HTTP/1.1, HTTP/2, WebSocket</td><td>gRPC (HTTP/2)</td></tr>
+        <tr><td>序列化</td><td>JSON</td><td>Protobuf</td></tr>
+        <tr><td>性能</td><td>中等，适合外部低 QPS</td><td>高性能，适合内部高吞吐</td></tr>
+        <tr><td>认证方式</td><td>JWT / API Key / OAuth2</td><td>mTLS / Service Account</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 第4章 联盟核心层 -->
+  <div class="section" id="ch4">
+    <h2>4. 联盟核心层设计</h2>
+
+    <h3>4.1 调度服务 (alliance-scheduler)</h3>
+    <p>调度服务是联盟系统的"大脑"，负责任务的接收、解析、专家匹配和执行计划生成。</p>
+
+    <h4>核心模块</h4>
+    <table>
+      <thead>
+        <tr><th style="width: 25%">模块</th><th>职责</th><th>关键技术</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Task Manager</td>
+          <td>任务生命周期管理：创建、查询、取消、优先级调度</td>
+          <td>PostgreSQL 持久化 + Redis 队列</td>
+        </tr>
+        <tr>
+          <td>Intent Analyzer</td>
+          <td>任务意图理解：领域分类、复杂度评估、约束提取</td>
+          <td>LLM 分类 + 规则引擎</td>
+        </tr>
+        <tr>
+          <td>Expert Matcher</td>
+          <td>专家匹配：基于能力标签 + 图谱推理 + 历史表现的综合评分</td>
+          <td>图数据库 + 向量相似度 + 加权评分</td>
+        </tr>
+        <tr>
+          <td>Plan Generator</td>
+          <td>执行计划生成：DAG 拓扑、并行策略、依赖关系</td>
+          <td>拓扑排序 + 资源约束求解</td>
+        </tr>
+        <tr>
+          <td>Case Retriever</td>
+          <td>案例检索：相似历史任务查询、最佳实践推荐</td>
+          <td>向量检索 + 记忆服务</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>专家匹配算法</h4>
+    <p>匹配评分采用四维加权模型：</p>
+    <pre><code>score = w1 * capability_match    // 能力标签匹配度
+      + w2 * graph_proximity     // 图谱邻域关联度
+      + w3 * historical_perf     // 历史表现评分
+      + w4 * availability        // 当前可用性
+
+权重默认值：w1=0.35, w2=0.25, w3=0.25, w4=0.15
+阈值：score >= 0.6 进入候选池，Top-K 返回</code></pre>
+
+    <h3>4.2 执行服务 (alliance-executor)</h3>
+    <p>执行服务是联盟系统的"肌肉"，负责任务 DAG 的实际执行、节点调度和状态管理。</p>
+
+    <h4>核心模块</h4>
+    <table>
+      <thead>
+        <tr><th style="width: 25%">模块</th><th>职责</th><th>关键技术</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>DAG Engine</td>
+          <td>DAG 执行引擎：节点调度、依赖检查、并行控制</td>
+          <td>petgraph + tokio 异步</td>
+        </tr>
+        <tr>
+          <td>Node Executor</td>
+          <td>节点执行器：调用专家服务、超时控制、重试策略</td>
+          <td>gRPC 客户端 + 指数退避</td>
+        </tr>
+        <tr>
+          <td>State Tracker</td>
+          <td>状态追踪：执行状态持久化、断点续跑</td>
+          <td>PostgreSQL + Redis 缓存</td>
+        </tr>
+        <tr>
+          <td>Progress Pusher</td>
+          <td>进度推送：WebSocket 实时推送执行进度</td>
+          <td>WebSocket + NATS 广播</td>
+        </tr>
+        <tr>
+          <td>Human-in-the-loop</td>
+          <td>人工干预：暂停、恢复、人工审批节点</td>
+          <td>状态机 + 事件驱动</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>执行状态机</h4>
+    <div class="arch-diagram">
+                    ┌──────────┐
+                    │  Pending  │  等待调度
+                    └────┬─────┘
+                         │
+                         ▼
+                    ┌──────────┐
+              ┌────►│ Running  │ ────┐
+              │     └────┬─────┘     │
+              │          │           │
+              │          ▼           ▼
+         ┌────┴────┐ ┌────────┐ ┌────────┐
+         │ Paused  │ │ Success│ │ Failed │
+         └────┬────┘ └────────┘ └───┬────┘
+              │                      │
+              └──────────────────────┘
+                    人工恢复 / 自动重试
+
+补充状态：
+  - Scheduled：已入队，等待执行资源
+  - Skipped：条件分支跳过
+  - Timeout：执行超时
+  - Cancelled：用户取消</div>
+
+    <h3>4.3 融合服务 (alliance-fusion)</h3>
+    <p>融合服务负责多专家结果的整合与质量评估，是联盟系统产出最终答案的"裁判"。</p>
+
+    <h4>融合策略</h4>
+    <table>
+      <thead>
+        <tr><th style="width: 20%">策略</th><th>适用场景</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Vote</strong> 投票</td>
+          <td>分类、决策类问题</td>
+          <td>多数票决，可选加权投票</td>
+        </tr>
+        <tr>
+          <td><strong>Weighted Avg</strong> 加权平均</td>
+          <td>数值、评分类问题</td>
+          <td>按专家置信度加权求平均</td>
+        </tr>
+        <tr>
+          <td><strong>Debate</strong> 辩论</td>
+          <td>开放性、争议性问题</td>
+          <td>多轮交叉质疑，逐步收敛</td>
+        </tr>
+        <tr>
+          <td><strong>Iterative</strong> 迭代精炼</td>
+          <td>需要深度优化的问题</td>
+          <td>首轮结果输入下一轮，N 轮后输出</td>
+        </tr>
+        <tr>
+          <td><strong>Ensemble</strong> 集成</td>
+          <td>复杂多面问题</td>
+          <td>各专家负责不同维度，拼接成完整答案</td>
+        </tr>
+        <tr>
+          <td><strong>Best-of-N</strong> 选优</td>
+          <td>有客观评价标准的问题</td>
+          <td>用评估器打分，选最高分</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="note">
+      融合策略选择由调度器在计划生成阶段根据任务类型自动指定，用户也可在提交任务时手动指定。
+    </div>
+  </div>
+
+  <!-- 第5章 能力服务层 -->
+  <div class="section" id="ch5">
+    <h2>5. 能力服务层设计</h2>
+
+    <h3>5.1 专家注册服务 (expert-registry)</h3>
+    <p>专家注册服务是联盟的"花名册"，管理所有接入联盟的专家元数据。</p>
+
+    <h4>核心功能</h4>
+    <ul>
+      <li>专家注册与注销：支持 HTTP/gRPC 双协议注册</li>
+      <li>健康检查：心跳探活 + 主动探测，异常自动下线</li>
+      <li>能力标签管理：专家能力的标签化描述和检索</li>
+      <li>版本管理：专家多版本并存，灰度发布</li>
+      <li>工具自动发现：专家启动时自动上报支持的工具列表</li>
+    </ul>
+
+    <h4>专家注册协议</h4>
+    <pre><code>message ExpertRegistration {
+  string expert_id = 1;          // 专家唯一标识
+  string display_name = 2;       // 显示名称
+  string version = 3;            // 版本号
+  ExpertType type = 4;           // 类型: AGENT / TOOL / HUMAN
+  repeated string capabilities = 5; // 能力标签
+  Endpoint endpoint = 6;         // 服务端点
+  map&lt;string, string&gt; metadata = 7; // 扩展元数据
+  int32 weight = 8;              // 权重 (1-100)
+}
+
+message Heartbeat {
+  string expert_id = 1;
+  int64 timestamp = 2;
+  HealthStatus status = 3;       // HEALTHY / DEGRADED / UNHEALTHY
+  float load = 4;                // 当前负载 0-1
+}</code></pre>
+
+    <h3>5.2 Agent 运行时服务 (expert-agent)</h3>
+    <p>Agent 运行时服务承载 Agent 形态的专家执行，实现 ReAct 推理循环和工具调用。</p>
+
+    <h4>核心模块</h4>
+    <table>
+      <thead>
+        <tr><th style="width: 25%">模块</th><th>职责</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>ReAct Engine</td><td>推理-行动循环：Thought → Action → Observation → Reflection</td></tr>
+        <tr><td>Tool Router</td><td>工具路由：根据 Action 名称分发到对应工具执行器</td></tr>
+        <tr><td>Conversation Manager</td><td>会话管理：多轮对话上下文维护</td></tr>
+        <tr><td>Prompt Manager</td><td>提示词管理：模板化、版本化、A/B 测试</td></tr>
+      </tbody>
+    </table>
+
+    <h4>ReAct 循环</h4>
+    <div class="arch-diagram">
+  ┌─────────────────────────────────────────────────────┐
+  │                  ReAct Loop                         │
+  │                                                     │
+  │  User Input ──► Thought ──► Action ──► Observation │
+  │                       ▲                    │        │
+  │                       └──── Reflection ◄───┘        │
+  │                                  │                  │
+  │                       max_iter?  ├─► Final Answer  │
+  │                                  └─► 继续循环       │
+  └─────────────────────────────────────────────────────┘</div>
+
+    <h3>5.3 记忆服务 (expert-memory)</h3>
+    <p>记忆服务提供统一的记忆抽象，解决了 v2.0 记忆数据分散存储的问题。</p>
+
+    <h4>三层记忆模型</h4>
+    <table>
+      <thead>
+        <tr><th>层级</th><th>存储介质</th><th>生命周期</th><th>用途</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>工作记忆</strong></td>
+          <td>Redis</td>
+          <td>任务级，任务结束即失效</td>
+          <td>当前任务上下文、中间结果、执行状态</td>
+        </tr>
+        <tr>
+          <td><strong>会话记忆</strong></td>
+          <td>Redis + PostgreSQL</td>
+          <td>会话级，可配置 TTL</td>
+          <td>多轮对话历史、用户偏好、会话上下文</td>
+        </tr>
+        <tr>
+          <td><strong>长期记忆</strong></td>
+          <td>PostgreSQL + 向量库</td>
+          <td>永久，可被遗忘</td>
+          <td>案例库、知识沉淀、专家经验</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>5.4 AI 推理 Sidecar (ai-inference)</h3>
+    <p>AI 推理以 Python Sidecar 形式与 Agent 服务同 Pod 部署，通过 Unix Domain Socket 通信，避免网络开销。</p>
+
+    <h4>Sidecar 职责</h4>
+    <ul>
+      <li>LLM 推理：调用大模型生成文本</li>
+      <li>Embedding：文本向量化，用于检索和匹配</li>
+      <li>RAG 检索：向量检索 + 重排</li>
+      <li>函数调用解析：Tool Call 参数提取和校验</li>
+    </ul>
+
+    <div class="note">
+      为什么用 Sidecar 而不是独立服务？AI 推理与 Agent 逻辑紧密耦合，每一次 ReAct 循环都需要多次推理调用。Sidecar 模式将网络调用变为本地 IPC，延迟从 ms 级降到 μs 级，且避免了独立服务的服务发现和负载均衡复杂度。
+    </div>
+  </div>
+
+  <!-- 第6章 数据架构 -->
+  <div class="section" id="ch6">
+    <h2>6. 数据架构设计</h2>
+
+    <h3>6.1 存储选型</h3>
+    <table>
+      <thead>
+        <tr><th>存储系统</th><th>用途</th><th>选型理由</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>PostgreSQL</strong></td>
+          <td>任务元数据、专家注册、执行状态、审计日志</td>
+          <td>强一致、事务支持、成熟稳定，适合结构化数据</td>
+        </tr>
+        <tr>
+          <td><strong>图数据库</strong></td>
+          <td>知识图谱、专家关系网络、案例关联</td>
+          <td>原生图存储，支持复杂关系查询和图算法</td>
+        </tr>
+        <tr>
+          <td><strong>Redis</strong></td>
+          <td>缓存、会话、限流计数、工作记忆</td>
+          <td>超低延迟，丰富数据结构，支持过期和持久化</td>
+        </tr>
+        <tr>
+          <td><strong>NATS</strong></td>
+          <td>事件总线、消息队列、进度广播</td>
+          <td>轻量高性能，支持 Pub/Sub 和 JetStream 持久化</td>
+        </tr>
+        <tr>
+          <td><strong>对象存储 (S3/MinIO)</strong></td>
+          <td>大文件、任务产物、模型文件</td>
+          <td>无限扩展，低成本，适合非结构化大数据</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>6.2 核心数据模型</h3>
+
+    <h4>任务表 (tasks)</h4>
+    <pre><code>CREATE TABLE tasks (
+  id            UUID PRIMARY KEY,
+  tenant_id     UUID NOT NULL,
+  user_id       UUID NOT NULL,
+  title         VARCHAR(255) NOT NULL,
+  description   TEXT,
+  status        VARCHAR(32) NOT NULL,  -- pending/running/completed/failed/cancelled
+  priority      INT NOT NULL DEFAULT 5, -- 1-10
+  plan_id       UUID REFERENCES plans(id),
+  fusion_strategy VARCHAR(32) DEFAULT 'vote',
+  input_schema  JSONB,
+  output_schema JSONB,
+  tags          VARCHAR(64)[],
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  completed_at  TIMESTAMPTZ
+);
+
+CREATE INDEX idx_tasks_tenant_status ON tasks(tenant_id, status);
+CREATE INDEX idx_tasks_user_created ON tasks(user_id, created_at DESC);</code></pre>
+
+    <h4>执行节点表 (execution_nodes)</h4>
+    <pre><code>CREATE TABLE execution_nodes (
+  id            UUID PRIMARY KEY,
+  task_id       UUID NOT NULL REFERENCES tasks(id),
+  plan_node_id  UUID NOT NULL,
+  expert_id     VARCHAR(128) NOT NULL,
+  expert_version VARCHAR(32),
+  status        VARCHAR(32) NOT NULL,
+  input_data    JSONB,
+  output_data   JSONB,
+  error_message TEXT,
+  retry_count   INT NOT NULL DEFAULT 0,
+  started_at    TIMESTAMPTZ,
+  completed_at  TIMESTAMPTZ,
+  duration_ms   BIGINT
+);
+
+CREATE INDEX idx_nodes_task_status ON execution_nodes(task_id, status);</code></pre>
+
+    <h3>6.3 缓存策略</h3>
+    <table>
+      <thead>
+        <tr><th>数据类型</th><th>缓存介质</th><th>TTL</th><th>更新策略</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>专家元数据</td><td>Redis</td><td>5 分钟</td><td>写穿 + 主动失效</td></tr>
+        <tr><td>任务状态</td><td>Redis</td><td>任务结束 + 1h</td><td>写穿 + 事件更新</td></tr>
+        <tr><td>工作记忆</td><td>Redis</td><td>任务生命周期</td><td>直写直读</td></tr>
+        <tr><td>向量检索结果</td><td>Redis</td><td>1 小时</td><td>缓存失效</td></tr>
+        <tr><td>配置数据</td><td>本地内存 + Redis</td><td>10 分钟</td><td>版本号校验</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 第7章 接口设计 -->
+  <div class="section" id="ch7">
+    <h2>7. 接口设计规范</h2>
+
+    <h3>7.1 REST API 规范</h3>
+
+    <h4>通用约定</h4>
+    <ul>
+      <li>URL 前缀：<code>/api/v1/</code></li>
+      <li>请求体/响应体：JSON (application/json)</li>
+      <li>字符编码：UTF-8</li>
+      <li>时间格式：ISO 8601 (如 <code>2026-08-30T12:00:00Z</code>)</li>
+      <li>分页：<code>?page=1&amp;page_size=20</code>，响应含 <code>total</code> 字段</li>
+    </ul>
+
+    <h4>统一响应格式</h4>
+    <pre><code>{
+  "code": 0,              // 0 成功，非 0 错误码
+  "message": "success",   // 错误描述
+  "data": { ... },        // 响应数据
+  "request_id": "uuid",   // 请求追踪 ID
+  "timestamp": 1693368000 // 服务端时间戳
+}</code></pre>
+
+    <h4>核心接口列表</h4>
+    <table>
+      <thead>
+        <tr><th>方法</th><th>路径</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>POST</td><td><code>/api/v1/tasks</code></td><td>创建任务</td></tr>
+        <tr><td>GET</td><td><code>/api/v1/tasks/{id}</code></td><td>查询任务详情</td></tr>
+        <tr><td>GET</td><td><code>/api/v1/tasks</code></td><td>任务列表（分页+筛选）</td></tr>
+        <tr><td>POST</td><td><code>/api/v1/tasks/{id}/cancel</code></td><td>取消任务</td></tr>
+        <tr><td>GET</td><td><code>/api/v1/tasks/{id}/nodes</code></td><td>获取执行节点列表</td></tr>
+        <tr><td>GET</td><td><code>/api/v1/tasks/{id}/result</code></td><td>获取任务最终结果</td></tr>
+        <tr><td>POST</td><td><code>/api/v1/experts</code></td><td>注册专家</td></tr>
+        <tr><td>DELETE</td><td><code>/api/v1/experts/{id}</code></td><td>注销专家</td></tr>
+        <tr><td>GET</td><td><code>/api/v1/experts</code></td><td>专家列表</td></tr>
+        <tr><td>GET</td><td><code>/api/v1/experts/{id}/health</code></td><td>专家健康状态</td></tr>
+      </tbody>
+    </table>
+
+    <h3>7.2 gRPC 服务定义</h3>
+    <p>内部服务间通信使用 gRPC，定义在 <code>proto/</code> 目录下。核心服务：</p>
+
+    <pre><code>// 调度服务
+service SchedulerService {
+  rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse);
+  rpc GetTask(GetTaskRequest) returns (GetTaskResponse);
+  rpc CancelTask(CancelTaskRequest) returns (CancelTaskResponse);
+  rpc MatchExperts(MatchExpertsRequest) returns (MatchExpertsResponse);
+}
+
+// 执行服务
+service ExecutorService {
+  rpc StartExecution(StartExecutionRequest) returns (StartExecutionResponse);
+  rpc GetExecutionStatus(GetExecutionStatusRequest) returns (stream ExecutionStatus);
+  rpc PauseExecution(PauseExecutionRequest) returns (PauseExecutionResponse);
+  rpc ResumeExecution(ResumeExecutionRequest) returns (ResumeExecutionResponse);
+}
+
+// 专家注册服务
+service RegistryService {
+  rpc RegisterExpert(RegisterExpertRequest) returns (RegisterExpertResponse);
+  rpc UnregisterExpert(UnregisterExpertRequest) returns (UnregisterExpertResponse);
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+  rpc ListExperts(ListExpertsRequest) returns (ListExpertsResponse);
+}</code></pre>
+
+    <h3>7.3 事件协议</h3>
+    <p>服务间异步事件通过 NATS 发布订阅，事件格式统一为 CloudEvents 规范：</p>
+
+    <pre><code>{
+  "specversion": "1.0",
+  "type": "alliance.task.created",
+  "source": "alliance-scheduler",
+  "subject": "task-uuid",
+  "id": "event-uuid",
+  "time": "2026-08-30T12:00:00Z",
+  "datacontenttype": "application/json",
+  "data": {
+    "task_id": "uuid",
+    "tenant_id": "uuid",
+    "status": "pending",
+    ...
+  }
+}</code></pre>
+
+    <h4>核心事件列表</h4>
+    <table>
+      <thead>
+        <tr><th>事件类型</th><th>发布者</th><th>订阅者</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>alliance.task.created</code></td><td>scheduler</td><td>executor</td><td>新任务创建，触发执行</td></tr>
+        <tr><td><code>alliance.task.completed</code></td><td>executor</td><td>fusion, memory</td><td>任务执行完成，触发融合和记忆写入</td></tr>
+        <tr><td><code>alliance.node.started</code></td><td>executor</td><td>websocket</td><td>节点开始执行，推送进度</td></tr>
+        <tr><td><code>alliance.node.completed</code></td><td>executor</td><td>websocket, memory</td><td>节点执行完成</td></tr>
+        <tr><td><code>alliance.fusion.done</code></td><td>fusion</td><td>gateway</td><td>融合完成，推送最终结果</td></tr>
+        <tr><td><code>registry.expert.online</code></td><td>registry</td><td>scheduler</td><td>专家上线</td></tr>
+        <tr><td><code>registry.expert.offline</code></td><td>registry</td><td>scheduler</td><td>专家下线</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 第8章 非功能性设计 -->
+  <div class="section" id="ch8">
+    <h2>8. 非功能性设计</h2>
+
+    <h3>8.1 高可用设计</h3>
+
+    <h4>无状态服务</h4>
+    <p>所有业务服务均设计为无状态，状态外部化到存储层。支持水平扩展，节点故障时请求自动转移到健康节点。</p>
+
+    <h4>多副本部署</h4>
+    <table>
+      <thead>
+        <tr><th>服务</th><th>最小副本</th><th>推荐副本</th><th>扩缩策略</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>gateway-http</td><td>2</td><td>3+</td><td>CPU > 60% 自动扩容</td></tr>
+        <tr><td>gateway-grpc</td><td>2</td><td>3+</td><td>QPS 阈值扩容</td></tr>
+        <tr><td>alliance-scheduler</td><td>2</td><td>3</td><td>任务队列长度</td></tr>
+        <tr><td>alliance-executor</td><td>2</td><td>4+</td><td>并发任务数</td></tr>
+        <tr><td>alliance-fusion</td><td>2</td><td>3</td><td>融合队列长度</td></tr>
+        <tr><td>expert-registry</td><td>2</td><td>2</td><td>静态，按需扩容</td></tr>
+        <tr><td>expert-memory</td><td>2</td><td>3</td><td>QPS 阈值</td></tr>
+      </tbody>
+    </table>
+
+    <h4>熔断与降级</h4>
+    <ul>
+      <li><strong>熔断器</strong> — 每个下游依赖独立熔断器，错误率超阈值自动熔断，半开探测恢复</li>
+      <li><strong>降级策略</strong> — 非核心功能降级：如专家匹配失败时退化为随机分配 + 标签过滤</li>
+      <li><strong>限流</strong> — 令牌桶算法，按租户和用户维度限流，防止单一用户占满资源</li>
+      <li><strong>超时控制</strong> — 每层调用设置独立超时，全局超时链防止慢请求堆积</li>
+    </ul>
+
+    <h3>8.2 性能指标</h3>
+    <table>
+      <thead>
+        <tr><th>指标</th><th>目标值</th><th>测量方式</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>任务创建延迟 P99</td><td>&lt; 200ms</td><td>从请求进入到任务入队</td></tr>
+        <tr><td>专家匹配延迟 P99</td><td>&lt; 100ms</td><td>匹配 Top-10 专家</td></tr>
+        <tr><td>节点调度延迟 P99</td><td>&lt; 50ms</td><td>从就绪到开始执行</td></tr>
+        <tr><td>API 整体 P99</td><td>&lt; 500ms</td><td>不含长时执行任务</td></tr>
+        <tr><td>单集群并发任务</td><td>&gt; 10,000</td><td>同时运行的任务数</td></tr>
+        <tr><td>WebSocket 推送延迟</td><td>&lt; 100ms</td><td>事件产生到客户端收到</td></tr>
+        <tr><td>系统可用性</td><td>99.9%</td><td>月度统计</td></tr>
+      </tbody>
+    </table>
+
+    <h3>8.3 安全设计</h3>
+
+    <h4>认证与授权</h4>
+    <ul>
+      <li>外部调用：JWT Bearer Token + API Key 双模式</li>
+      <li>内部服务：mTLS + Service Account</li>
+      <li>租户隔离：所有数据行级租户隔离</li>
+      <li>RBAC + ABAC 混合权限模型</li>
+    </ul>
+
+    <h4>数据安全</h4>
+    <ul>
+      <li>传输加密：TLS 1.3，全链路 HTTPS/gRPC-TLS</li>
+      <li>存储加密：敏感字段 AES-256 加密，支持国密 SM4</li>
+      <li>数据脱敏：日志和监控中自动脱敏敏感信息</li>
+      <li>审计日志：所有操作留痕，不可篡改</li>
+    </ul>
+
+    <h3>8.4 可观测性</h3>
+    <p>三位一体的可观测性体系：</p>
+    <table>
+      <thead>
+        <tr><th>类型</th><th>工具</th><th>覆盖范围</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Metrics 指标</strong></td>
+          <td>Prometheus + Grafana</td>
+          <td>QPS、延迟、错误率、队列长度、资源使用率</td>
+        </tr>
+        <tr>
+          <td><strong>Logging 日志</strong></td>
+          <td>结构化日志 + Loki/ELK</td>
+          <td>全服务 JSON 结构化日志，统一 request_id 串联</td>
+        </tr>
+        <tr>
+          <td><strong>Tracing 链路</strong></td>
+          <td>OpenTelemetry + Jaeger</td>
+          <td>端到端分布式追踪，覆盖 8 个阶段</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 第9章 技术决策记录 -->
+  <div class="section" id="ch9">
+    <h2>9. 技术决策记录 (ADR)</h2>
+
+    <table>
+      <thead>
+        <tr><th style="width: 10%">编号</th><th style="width: 30%">决策</th><th>理由与影响</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>ADR-001</td>
+          <td>主语言选择 Rust，AI 推理用 Python Sidecar</td>
+          <td>Rust 提供内存安全和高性能，适合核心调度和执行引擎；Python 生态丰富适合 AI 推理。Sidecar 模式兼顾性能和生态。</td>
+        </tr>
+        <tr>
+          <td>ADR-002</td>
+          <td>微服务架构，7 服务拆分</td>
+          <td>v2.0 5 服务存在职责过重问题，v3.0 按职责单一原则拆分为 7 服务，各自独立扩容。代价是增加了部署复杂度和运维成本。</td>
+        </tr>
+        <tr>
+          <td>ADR-003</td>
+          <td>专家匹配与图谱推理合并到调度服务</td>
+          <td>匹配需要频繁调用图谱推理，合并部署减少一次 RPC 跳数，降低延迟约 30-50ms。代价是调度服务依赖图数据库。</td>
+        </tr>
+        <tr>
+          <td>ADR-004</td>
+          <td>事件驱动 + NATS 作为消息总线</td>
+          <td>服务间异步解耦，降低同步调用链深度，提升系统韧性。NATS 轻量高性能，JetStream 提供持久化保证。</td>
+        </tr>
+        <tr>
+          <td>ADR-005</td>
+          <td>双网关协议分流（HTTP + gRPC）</td>
+          <td>解决 v2.0 单端口混合协议的 ALPN 协商复杂度，外部兼容性与内部性能兼顾。</td>
+        </tr>
+        <tr>
+          <td>ADR-006</td>
+          <td>统一记忆服务，三层记忆抽象</td>
+          <td>解决 v2.0 记忆数据分散存储的问题，统一抽象降低查询和维护复杂度。</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    <p>专家联盟系统架构设计文档 v3.0.0 | 璇玑 RelGraph · 架构专家联盟出品</p>
+    <p>本文档为受控文档，未经授权不得外传</p>
+  </div>
+
+</div>
+</body>
+</html>

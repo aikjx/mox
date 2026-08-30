@@ -1,0 +1,178 @@
+    Blocking waiting for file lock on build directory
+   Compiling windows-sys v0.61.2
+   Compiling regex-syntax v0.8.10
+   Compiling syn v3.0.3
+   Compiling regex-automata v0.4.13
+   Compiling nu-ansi-term v0.50.3
+   Compiling winapi-util v0.1.11
+   Compiling is-terminal v0.4.17
+   Compiling same-file v1.0.6
+   Compiling walkdir v2.5.0
+   Compiling serde_derive v1.0.229
+   Compiling serde v1.0.229
+   Compiling matchers v0.2.0
+   Compiling regex v1.12.3
+   Compiling num-complex v0.4.6
+   Compiling tracing-serde v0.2.0
+   Compiling mox-platform-foundation v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\foundation\mox-platform-foundation)
+   Compiling tinytemplate v1.2.1
+   Compiling ciborium v0.2.2
+   Compiling tracing-subscriber v0.3.23
+   Compiling simba v0.8.1
+   Compiling ndarray v0.15.6
+   Compiling criterion v0.5.1
+   Compiling nalgebra v0.32.6
+   Compiling mox-platform-operator-core v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\domains\platform\core\mox-platform-operator-core)
+   Compiling mox-flow-operator-core v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\domains\flow\core\mox-flow-operator-core)
+   Compiling mox-flow-optimizer-core v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\domains\flow\core\mox-flow-optimizer-core)
+    Finished `release` profile [optimized] target(s) in 1m 46s
+     Running unittests src\lib.rs (target\release\deps\mox_flow_operator_core-1e59e86cfb0bd1c1.exe)
+
+running 41 tests
+test conservation::tests::test_guarded_graph_edge_check ... ok
+test conservation::tests::test_guarded_graph_report ... ok
+test category::tests::test_category_laws ... ok
+test category::tests::test_composed_operator ... ok
+test engine::tests::pipeline_respects_probability_conservation ... ok
+test conservation::tests::test_l1_conservation ... ok
+test category::tests::test_workflow ... ok
+test conservation::tests::test_residual_monitor ... ok
+test conservation::tests::test_l2_conservation ... ok
+test operator::tests::test_identity_operator ... ok
+test engine::tests::non_strict_reports_residual_without_failing ... ok
+test engine::tests::pipeline_chains_and_scales ... ok
+test engine::tests::strict_gating_blocks_conservation_violation ... ok
+test conservation::tests::test_guarded_graph_node_check ... ok
+test conservation::tests::test_conservation_checker ... ok
+test conservation::tests::test_conservation_law_ext_verify_returns_error ... ok
+test engine::tests::empty_pipeline_passthrough ... ok
+test operator::tests::test_linear_operator ... ok
+test registry::tests::test_deprecate ... ok
+test registry::tests::test_export_json ... ok
+test registry::tests::test_find_compatible ... ok
+test registry::tests::test_lineage ... ok
+test registry::tests::test_register_and_resolve ... ok
+test resource::tests::test_resource_cost_add ... ok
+test resource::tests::test_resource_usage_within_limits ... ok
+test resource::tests::test_resourcecost_serde_roundtrip ... ok
+test resource::tests::test_resourceusage_serde_roundtrip ... ok
+test state::tests::test_kernelstatevector_statevector_roundtrip ... ok
+test state::tests::test_state_vector_creation ... ok
+test state::tests::test_state_vector_dot ... ok
+test state::tests::test_state_vector_from_vec ... ok
+test state::tests::test_state_vector_norm ... ok
+test state::tests::test_state_vector_residual ... ok
+test state::tests::test_state_vector_normalize ... ok
+test state::tests::test_statevector_impl_vectorops_for_kernel_conservation ... ok
+test types::tests::test_builtin_unit_any_serde ... ok
+test types::tests::test_type_id ... ok
+test types::tests::test_type_pair_composition ... ok
+test types::tests::test_type_pair_composition_mismatch ... ok
+test types::tests::test_typeidentifier_serde_roundtrip_from_types ... ok
+test types::tests::test_typepair_serde_roundtrip_from_types ... ok
+
+test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\integration_full.rs (target\release\deps\integration_full-7faa392e398b9c93.exe)
+
+running 33 tests
+test conservation_l1_probability ... ok
+test conservation_residual_monitor_convergence ... ok
+test conservation_checker_multi_law ... ok
+test conservation_l2_energy ... ok
+test error_handling_all_paths ... ok
+test full_stack_registry_pipeline_conservation_graph ... ok
+test guarded_graph_custom_laws ... ok
+test guarded_graph_edge_conservation ... ok
+test pipeline_conservation_strict_vs_non_strict ... ok
+test guarded_graph_full_report ... ok
+test pipeline_error_propagation ... ok
+test guarded_graph_node_conservation_violation ... ok
+test metadata_types_are_type_identifier ... ok
+test operator_metadata_builder_pattern ... ok
+test pipeline_conservation_convergence ... ok
+test guarded_graph_empty_report ... ok
+test guarded_graph_node_conservation_ok ... ok
+test registry_lifecycle_deprecate ... ok
+test registry_capability_query ... ok
+test registry_export_and_reimport ... ok
+test registry_lineage_dependency ... ok
+test registry_pipeline_integration_full ... ok
+test state_vector_combine ... ok
+test state_vector_normalize_l1 ... ok
+test state_vector_residual ... ok
+test type_check_all_operators ... ok
+test type_check_compile_safety ... ok
+test state_vector_type_consistency ... ok
+test type_identifier_equality ... ok
+test type_pair_composition_complex ... ok
+test tensor_product_type_consistency ... ok
+test registry_query_performance ... ok
+test pipeline_throughput ... ok
+
+test result: ok. 33 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\pipeline.rs (target\release\deps\pipeline-b606b776dcf296c4.exe)
+
+running 5 tests
+test pipeline_non_strict_records_residual_without_failing ... ok
+test pipeline_propagates_operator_failure ... ok
+test pipeline_chains_operators_and_tracks_resources ... ok
+test pipeline_probability_conservation_ok_on_unit_vector ... ok
+test pipeline_strict_gating_blocks_violation ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\t7_kernel_zero_external_deps.rs (target\release\deps\t7_kernel_zero_external_deps-9599b93c97874a5d.exe)
+
+running 20 tests
+test sanity::derive_extracts_qualified_thiserror_error ... ok
+test sanity::extract_ndarray_indented ... ok
+test sanity::extract_crate_prefix ... ok
+test sanity::extract_serde ... ok
+test tr_07_02_cargo_test_operator_core ... ignored, 需要显式调用：cargo test -p operator-core --test t7_kernel_zero_external_deps tr_07_02 -- --ignored；避免全量递归
+test sanity::skip_non_use_lines ... ok
+test sanity::derive_extracts_serialize_and_deserialize ... ok
+test sanity::extract_std ... ok
+test tr_07_01_d_kernel_prefixes_only_std_family ... ok
+test tr_07_01_e_kernel_ext_contains_external_positive_control ... ok
+test tr_07_01_a_kernel_file_no_external_use ... ok
+test tr_07_01_b_kernel_no_forbidden_derive_attrs ... ok
+test tr_07_04_per_crate_nalgebra ... ok
+test tr_07_05_per_crate_ndarray ... ok
+test tr_07_01_c_kernel_no_cfg_attr_conditional_derive ... ok
+test tr_07_06_per_crate_thiserror ... ok
+test tr_07_03_per_crate_serde ... ok
+test tr_07_07_per_crate_anyhow ... ok
+test tr_07_08_per_crate_tracing ... ok
+test tr_07_09_per_crate_uuid ... ok
+
+test result: ok. 19 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\release\deps\mox_flow_optimizer_core-9e5ac06205f90a74.exe)
+
+running 8 tests
+test tests::test_add_dependency_unknown_operator_errors ... ok
+test tests::test_critical_path ... ok
+test tests::test_cycle_detection_back_edge_fails_toposort ... ok
+test tests::test_cycle_detection_self_loop_fails_toposort ... ok
+test tests::test_resource_cost_aggregation_and_within_limits ... ok
+test tests::test_multiple_dags_topological_order_with_diamond ... ok
+test tests::test_dag_topological_sort ... ok
+test tests::test_operator_resource_cost_aggregation ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests mox_flow_operator_core
+
+running 1 test
+test platform\domains\flow\core\mox-flow-operator-core\src\registry.rs - registry::OperatorRegistry (line 94) - compile ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.32s
+
+   Doc-tests mox_flow_optimizer_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

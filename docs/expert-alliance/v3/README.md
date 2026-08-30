@@ -25,11 +25,21 @@ v2 → v3 的关键改进：
 
 ## 文档导航
 
+### 架构设计文档（正式发布）
+
+| # | 文档 | 格式 | 核心内容 |
+|---|------|------|----------|
+| 01 | [系统架构设计文档](../architecture/system-architecture-design.html) | 🌐 HTML | 9章完整架构设计：分层架构/7服务设计/数据架构/接口规范/非功能设计/ADR |
+| 02 | [部署指南](../architecture/deployment-guide.html) | 🌐 HTML | 9章完整部署：资源要求/Helm一键部署/高可用配置/升级回滚/验证验收/FAQ |
+| 03 | [运维手册](../architecture/ops-manual.html) | 🌐 HTML | 8章运维全册：4级巡检/监控告警/备份恢复/7条Runbook/容量管理/安全运维 |
+
+### 架构优化分析（设计过程）
+
 | # | 文档 | 核心内容 |
 |---|------|----------|
-| 01 | [架构优化分析](./01-architecture-optimization.md) | v2问题全维审计/5大优化点详解/v2vs v3对比/性能预估 |
-| 02 | [架构需求矩阵](./02-requirements-matrix.md) | 42项功能需求/40项非功能需求/服务-需求映射/依赖矩阵/里程碑映射 |
-| 03 | [全维业务流程图](./03-business-flow-diagrams.md) | **16张Mermaid图**：架构图/主流程/匹配/计划/DAG执行/ReAct/融合/记忆/异常/干预/MCP/网关/时序图/图谱/部署/状态机 |
+| 01 | [架构优化分析](./01-architecture-optimization.md) | v2问题全维审计/5大优化点详解/v2 vs v3对比/性能预估 |
+| 02 | [架构需求矩阵](./02-requirements-matrix.md) | 42项功能需求/40项非功能需求/服务-需求映射/依赖矩阵 |
+| 03 | [全维业务流程图](./03-business-flow-diagrams.md) | **16张Mermaid图**：架构图/主流程/匹配/执行/ReAct/融合/部署/状态机 |
 
 ---
 

@@ -226,7 +226,7 @@ impl AgentRegistry {
             description: "数据处理与分析".to_string(),
             tools: vec!["data_query".to_string()],
             intents: vec![IntentType::DataAnalysis, IntentType::ReportGenerate],
-            confidence: 0.9,
+            confidence: 0.95,
         });
         self.register(analyst).unwrap();
 

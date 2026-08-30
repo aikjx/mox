@@ -1,0 +1,76 @@
+    Blocking waiting for file lock on build directory
+warning: fields `compute_engine` and `metrics` are never read
+   --> platform\domains\flow\core\mox-flow-algo-alliance-core\src\pipeline.rs:395:5
+    |
+386 | pub struct PipelineBuilder {
+    |            --------------- fields in this struct
+...
+395 |     compute_engine: Arc<ComputeEngine>,
+    |     ^^^^^^^^^^^^^^
+396 |     metrics: Arc<AlgoMetrics>,
+    |     ^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `num_cpus` is never used
+   --> platform\domains\flow\core\mox-flow-algo-alliance-core\src\compute_engine.rs:274:4
+    |
+274 | fn num_cpus() -> usize {
+    |    ^^^^^^^^
+
+warning: unused import: `ComputeModel`
+   --> platform\domains\flow\core\mox-flow-algo-alliance-core\src\registry.rs:184:24
+    |
+184 |     use crate::types::{ComputeModel, DataShape, ParamSpec, ParamValue};
+    |                        ^^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `mox-flow-algo-alliance-core` (lib) generated 2 warnings
+warning: `mox-flow-algo-alliance-core` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p mox-flow-algo-alliance-core --tests` to apply 1 suggestion)
+    Finished `release` profile [optimized] target(s) in 1m 45s
+     Running unittests src\lib.rs (target\release\deps\mox_flow_algo_alliance_core-70aa5aac1388e97a.exe)
+
+running 33 tests
+test adapter::tests::test_adapter_new ... ok
+test adapter::tests::test_graph_pagerank_adapter ... ok
+test adapter::tests::test_stats_vector_stats ... ok
+test adapter::tests::test_adapter_execute ... ok
+test compute_engine::tests::test_task_priority_ordering ... ok
+test auto_tuner::tests::test_cost_model_update ... ok
+test auto_tuner::tests::test_cost_model_registered ... ok
+test auto_tuner::tests::test_tuning_strategy ... ok
+test adapter::tests::test_vector_stats_execute ... ok
+test compute_engine::tests::test_execute_closure ... ok
+test auto_tuner::tests::test_tuning_strategy_as_str ... ok
+test compute_engine::tests::test_select_best_model ... ok
+test compute_engine::tests::test_compute_engine_new ... ok
+test adapter::tests::test_reed_solomon_adapter ... ok
+test metrics::tests::test_algorithm_metrics_success_rate ... ok
+test auto_tuner::tests::test_cost_model_basic ... ok
+test compute_engine::tests::test_submit_and_complete ... ok
+test metrics::tests::test_metrics_new ... ok
+test metrics::tests::test_multiple_executions ... ok
+test metrics::tests::test_record_execution ... ok
+test metrics::tests::test_reset ... ok
+test metrics::tests::test_snapshot ... ok
+test registry::tests::test_list_by_category ... ok
+test registry::tests::test_duplicate_register ... ok
+test registry::tests::test_register_and_get ... ok
+test registry::tests::test_search ... ok
+test registry::tests::test_unregister ... ok
+test unified_model::tests::test_as_conversions ... ok
+test tests::test_algo_alliance_new ... ok
+test unified_model::tests::test_estimated_size ... ok
+test unified_model::tests::test_value_types ... ok
+test unified_model::tests::test_graph_data ... ok
+test unified_model::tests::test_object_to_graph ... ok
+
+test result: ok. 33 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.00s
+
+   Doc-tests mox_flow_algo_alliance_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

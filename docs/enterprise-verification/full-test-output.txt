@@ -1,0 +1,274 @@
+   Compiling tracing-subscriber v0.3.23
+warning: method `len` is never used
+   --> platform\domains\flow\core\mox-flow-unified-storage-core\src\cache.rs:116:8
+    |
+ 40 | impl<K: Hash + Eq + Clone, V> LruCache<K, V> {
+    | -------------------------------------------- method in this implementation
+...
+116 |     fn len(&self) -> usize {
+    |        ^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `mox-flow-unified-storage-core` (lib) generated 1 warning
+warning: method `contains` is never used
+  --> platform\domains\flow\core\mox-flow-unified-meta-core\src\index.rs:80:8
+   |
+65 | impl PostingList {
+   | ---------------- method in this implementation
+...
+80 |     fn contains(&self, entity_id: &str) -> bool {
+   |        ^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `mox-flow-unified-meta-core` (lib) generated 1 warning
+   Compiling criterion v0.5.1
+   Compiling mox-flow-ai-assistant-core v0.1.0 (D:\a10\aikjx\gitcode\infotopograph\platform\domains\flow\core\mox-flow-ai-assistant-core)
+   Compiling mox-flow-unified-process-core v0.1.0 (D:\a10\aikjx\gitcode\infotopograph\platform\domains\flow\core\mox-flow-unified-process-core)
+   Compiling mox-flow-lowcode-core v0.1.0 (D:\a10\aikjx\gitcode\infotopograph\platform\domains\flow\core\mox-flow-lowcode-core)
+   Compiling mox-flow-unified-frontend-core v0.1.0 (D:\a10\aikjx\gitcode\infotopograph\platform\domains\flow\core\mox-flow-unified-frontend-core)
+warning: `mox-flow-unified-storage-core` (lib test) generated 1 warning (1 duplicate)
+warning: `mox-flow-unified-meta-core` (lib test) generated 1 warning (1 duplicate)
+   Compiling jsonwebtoken v9.3.1
+   Compiling petgraph v0.6.5
+warning: field `tool_registry` is never read
+   --> platform\domains\flow\core\mox-flow-ai-assistant-core\src\agent.rs:165:5
+    |
+155 | pub struct AgentRegistry {
+    |            ------------- field in this struct
+...
+165 |     tool_registry: Arc<ToolRegistry>,
+    |     ^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `tool_registry` is never read
+  --> platform\domains\flow\core\mox-flow-ai-assistant-core\src\executor.rs:34:5
+   |
+24 | pub struct TaskExecutor {
+   |            ------------ field in this struct
+...
+34 |     tool_registry: Arc<ToolRegistry>,
+   |     ^^^^^^^^^^^^^
+
+   Compiling mox-flow-unified-perm-core v0.1.0 (D:\a10\aikjx\gitcode\infotopograph\platform\domains\flow\core\mox-flow-unified-perm-core)
+   Compiling mox-flow-operator-core v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\domains\flow\core\mox-flow-operator-core)
+   Compiling mox-flow-algo-alliance-core v0.1.0 (D:\a10\aikjx\gitcode\infotopograph\platform\domains\flow\core\mox-flow-algo-alliance-core)
+   Compiling mox-flow-optimizer-core v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\domains\flow\core\mox-flow-optimizer-core)
+warning: fields `compute_engine` and `metrics` are never read
+   --> platform\domains\flow\core\mox-flow-algo-alliance-core\src\pipeline.rs:395:5
+    |
+386 | pub struct PipelineBuilder {
+    |            --------------- fields in this struct
+...
+395 |     compute_engine: Arc<ComputeEngine>,
+    |     ^^^^^^^^^^^^^^
+396 |     metrics: Arc<AlgoMetrics>,
+    |     ^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `num_cpus` is never used
+   --> platform\domains\flow\core\mox-flow-algo-alliance-core\src\compute_engine.rs:274:4
+    |
+274 | fn num_cpus() -> usize {
+    |    ^^^^^^^^
+
+   Compiling mox-flow-unified-arch-core v0.1.0 (D:\a10\aikjx\gitcode\infotopograph\platform\domains\flow\core\mox-flow-unified-arch-core)
+warning: `mox-flow-ai-assistant-core` (lib) generated 2 warnings
+warning: field `initialized` is never read
+   --> platform\domains\flow\core\mox-flow-unified-arch-core\src\connector.rs:171:5
+    |
+168 | struct ConnectorInstance {
+    |        ----------------- field in this struct
+...
+171 |     initialized: bool,
+    |     ^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+   Compiling mox-flow-unified-platform v0.1.0 (D:\a10\aikjx\gitcode\infotopograph\platform\domains\flow\core\mox-flow-unified-platform)
+warning: unused import: `EventType`
+  --> platform\domains\flow\core\mox-flow-unified-platform\src\platform_facade.rs:18:34
+   |
+18 | use crate::event_bus::{EventBus, EventType, PlatformEvent};
+   |                                  ^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `PlatformError` and `PlatformResult`
+  --> platform\domains\flow\core\mox-flow-unified-platform\src\event_bus.rs:21:20
+   |
+21 | use crate::error::{PlatformError, PlatformResult};
+   |                    ^^^^^^^^^^^^^  ^^^^^^^^^^^^^^
+
+warning: unused import: `crate::error::PlatformResult`
+  --> platform\domains\flow\core\mox-flow-unified-platform\src\audit.rs:17:5
+   |
+17 | use crate::error::PlatformResult;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `PlatformError` and `PlatformResult`
+  --> platform\domains\flow\core\mox-flow-unified-platform\src\circuit_breaker.rs:17:20
+   |
+17 | use crate::error::{PlatformError, PlatformResult};
+   |                    ^^^^^^^^^^^^^  ^^^^^^^^^^^^^^
+
+warning: unused variable: `template_step`
+   --> platform\domains\flow\core\mox-flow-unified-platform\src\cross_orchestrator.rs:503:9
+    |
+503 |         template_step: &TemplateStep,
+    |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_template_step`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `id`, `event_type`, and `system` are never read
+   --> platform\domains\flow\core\mox-flow-unified-platform\src\event_bus.rs:182:5
+    |
+180 | struct Subscriber {
+    |        ---------- fields in this struct
+181 |     /// 订阅者 ID
+182 |     id: String,
+    |     ^^
+183 |     /// 订阅的事件类型
+184 |     event_type: EventType,
+    |     ^^^^^^^^^^
+185 |     /// 订阅者所属系统
+186 |     system: NormalizationSystem,
+    |     ^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `mox-flow-algo-alliance-core` (lib) generated 2 warnings
+warning: `mox-flow-unified-arch-core` (lib) generated 1 warning
+warning: unused imports: `PlatformError` and `PlatformResult`
+  --> platform\domains\flow\core\mox-flow-unified-platform\src\event_bus.rs:21:20
+   |
+21 | use crate::error::{PlatformError, PlatformResult};
+   |                    ^^^^^^^^^^^^^  ^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `bus`
+   --> platform\domains\flow\core\mox-flow-unified-platform\src\event_bus.rs:651:13
+    |
+651 |         let bus = EventBus::new();
+    |             ^^^ help: if this is intentional, prefix it with an underscore: `_bus`
+
+warning: `mox-flow-unified-platform` (lib) generated 6 warnings (run `cargo fix --lib -p mox-flow-unified-platform` to apply 5 suggestions)
+warning: `mox-flow-ai-assistant-core` (lib test) generated 2 warnings (2 duplicates)
+warning: unused import: `ComputeModel`
+   --> platform\domains\flow\core\mox-flow-algo-alliance-core\src\registry.rs:184:24
+    |
+184 |     use crate::types::{ComputeModel, DataShape, ParamSpec, ParamValue};
+    |                        ^^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `mox-flow-unified-arch-core` (lib test) generated 1 warning (1 duplicate)
+warning: `mox-flow-unified-platform` (lib test) generated 6 warnings (4 duplicates) (run `cargo fix --lib -p mox-flow-unified-platform --tests` to apply 2 suggestions)
+warning: `mox-flow-algo-alliance-core` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p mox-flow-algo-alliance-core --tests` to apply 1 suggestion)
+    Finished `release` profile [optimized] target(s) in 1m 07s
+     Running unittests src\lib.rs (target\release\deps\mox_flow_ai_assistant_core-0b56ed957bb698b0.exe)
+
+running 56 tests
+test agent::tests::test_default_agents ... ok
+test agent::tests::test_get_by_name ... ok
+test agent::tests::test_list_online ... ok
+test agent::tests::test_broadcast_message ... ok
+test agent::tests::test_find_best_for_intent ... ok
+test dialogue_manager::tests::test_create_conversation ... ok
+test dialogue_manager::tests::test_add_task ... ok
+test agent::tests::test_agent_messages ... ok
+test agent::tests::test_get_by_role ... ok
+test dialogue_manager::tests::test_add_messages ... ok
+test agent::tests::test_intent_match_score ... ok
+test dialogue_manager::tests::test_recent_messages ... ok
+test dialogue_manager::tests::test_set_intent ... ok
+test dialogue_manager::tests::test_context_variables ... ok
+test dialogue_manager::tests::test_update_state ... ok
+test dialogue_manager::tests::test_update_title ... ok
+test dialogue_manager::tests::test_list_user_conversations ... ok
+test executor::tests::test_get_task ... ok
+test executor::tests::test_get_progress ... ok
+test executor::tests::test_list_by_status ... ok
+test executor::tests::test_list_tasks ... ok
+test executor::tests::test_process_data_analysis ... ok
+test executor::tests::test_process_graph_query ... ok
+test executor::tests::test_subtasks_assigned ... ok
+test intent::tests::test_custom_pattern ... ok
+test intent::tests::test_default_patterns ... ok
+test executor::tests::test_with_conversation_id ... ok
+test intent::tests::test_matched_keywords ... ok
+test intent::tests::test_recognize_data_analysis ... ok
+test intent::tests::test_multiple_intents ... ok
+test intent::tests::test_recognize_graph_query ... ok
+test intent::tests::test_recognize_knowledge_search ... ok
+test intent::tests::test_recognize_unknown ... ok
+test intent::tests::test_total_matches ... ok
+test task_decomposer::tests::test_decompose_algorithm ... ok
+test task_decomposer::tests::test_decompose_data_analysis ... ok
+test task_decomposer::tests::test_decompose_graph_query ... ok
+test task_decomposer::tests::test_default_templates ... ok
+test task_decomposer::tests::test_get_templates ... ok
+test task_decomposer::tests::test_task_progress_after_decompose ... ok
+test task_decomposer::tests::test_total_decompositions ... ok
+test tool_registry::tests::test_default_tools ... ok
+test tool_registry::tests::test_duplicate_register ... ok
+test tool_registry::tests::test_execute_missing_param ... ok
+test tool_registry::tests::test_execute_tool ... ok
+test tool_registry::tests::test_execute_unknown_tool ... ok
+test tool_registry::tests::test_get_by_category ... ok
+test tool_registry::tests::test_get_by_name ... ok
+test tool_registry::tests::test_search ... ok
+test tool_registry::tests::test_tool_call_count ... ok
+test types::tests::test_agent_role_descriptions ... ok
+test types::tests::test_conversation_message ... ok
+test types::tests::test_intent_descriptions ... ok
+test types::tests::test_subtask_creation ... ok
+test types::tests::test_task_creation ... ok
+test types::tests::test_task_progress ... ok
+
+test result: ok. 56 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src\lib.rs (target\release\deps\mox_flow_algo_alliance_core-52c51b93d61518c0.exe)
+
+running 37 tests
+test adapter::tests::test_adapter_new ... ok
+test adapter::tests::test_graph_pagerank_adapter ... ok
+test auto_tuner::tests::test_cost_model_registered ... ok
+test adapter::tests::test_adapter_execute ... ok
+test adapter::tests::test_stats_vector_stats ... ok
+test auto_tuner::tests::test_cost_model_basic ... ok
+test adapter::tests::test_reed_solomon_adapter ... ok
+test auto_tuner::tests::test_tuning_strategy ... ok
+test auto_tuner::tests::test_tuning_strategy_as_str ... ok
+test metrics::tests::test_algorithm_metrics_success_rate ... ok
+test metrics::tests::test_metrics_new ... ok
+test compute_engine::tests::test_submit_and_complete ... ok
+test compute_engine::tests::test_execute_closure ... ok
+test adapter::tests::test_vector_stats_execute ... ok
+test compute_engine::tests::test_task_priority_ordering ... ok
+test auto_tuner::tests::test_cost_model_update ... ok
+test compute_engine::tests::test_compute_engine_new ... ok
+test metrics::tests::test_multiple_executions ... ok
+test compute_engine::tests::test_select_best_model ... ok
+test metrics::tests::test_record_execution ... ok
+test metrics::tests::test_reset ... ok
+test metrics::tests::test_snapshot ... ok
+test pipeline::tests::test_pipeline_status_conversion ... ok
+test registry::tests::test_duplicate_register ... ok
+test registry::tests::test_list_by_category ... ok
+test registry::tests::test_unregister ... ok
+test pipeline::tests::test_pipeline_validate_missing_algo ... ok
+test registry::tests::test_search ... ok
+test registry::tests::test_register_and_get ... ok
+test tests::test_algo_alliance_new ... ok
+test unified_model::tests::test_as_conversions ... ok
+test unified_model::tests::test_estimated_size ... ok
+test unified_model::tests::test_graph_data ... ok
+test unified_model::tests::test_object_to_graph ... ok
+test unified_model::tests::test_value_types ... ok
+test pipeline::tests::test_pipeline_chain has been running for over 60 seconds
+test pipeline::tests::test_pipeline_single_node has been running for over 60 seconds

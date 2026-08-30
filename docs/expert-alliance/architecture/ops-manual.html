@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>专家联盟运维手册 v3.0</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans CJK SC', 'Microsoft YaHei', -apple-system, sans-serif;
+    background: #f8fafc;
+    color: #1e293b;
+    line-height: 1.75;
+    padding: 30px 20px;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  .cover {
+    background: linear-gradient(135deg, #7c2d12 0%, #0f172a 50%, #78350f 100%);
+    color: white;
+    padding: 80px 60px;
+    border-radius: 16px;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -100px;
+    right: -100px;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(249,115,22,0.15), transparent 70%);
+    border-radius: 50%;
+  }
+  .cover h1 {
+    font-size: 36px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .cover .subtitle {
+    font-size: 18px;
+    color: #94a3b8;
+    margin-bottom: 40px;
+    position: relative;
+  }
+  .cover .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    position: relative;
+  }
+  .cover .meta-item {
+    padding: 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+  }
+  .cover .meta-label {
+    font-size: 12px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .cover .meta-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: #e2e8f0;
+  }
+
+  .section {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 32px 36px;
+    margin-bottom: 24px;
+  }
+  .section h2 {
+    font-size: 24px;
+    color: #0f172a;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #f97316;
+    display: inline-block;
+  }
+  .section h3 {
+    font-size: 18px;
+    color: #1e293b;
+    margin: 24px 0 12px;
+    padding-left: 12px;
+    border-left: 4px solid #f97316;
+  }
+  .section h4 {
+    font-size: 15px;
+    color: #334155;
+    margin: 18px 0 8px;
+    font-weight: 600;
+  }
+  .section p { margin-bottom: 12px; color: #475569; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  table th {
+    background: #f1f5f9;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+  }
+  table td {
+    padding: 10px 14px;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    vertical-align: top;
+  }
+
+  pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 16px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 12px 0;
+    font-family: 'Consolas', 'Monaco', monospace;
+  }
+  code {
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #dc2626;
+    font-family: 'Consolas', 'Monaco', monospace;
+  }
+  pre code { background: none; padding: 0; color: inherit; }
+
+  .note {
+    background: #fff7ed;
+    border-left: 4px solid #f97316;
+    padding: 14px 18px;
+    margin: 16px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 14px;
+    color: #9a3412;
+  }
+  .warning {
+    background: #fffbeb;
+    border-left: 4px solid #f59e0b;
+    padding: 14px 18px;
+    margin: 16px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 14px;
+    color: #92400e;
+  }
+  .danger {
+    background: #fef2f2;
+    border-left: 4px solid #ef4444;
+    padding: 14px 18px;
+    margin: 16px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 14px;
+    color: #991b1b;
+  }
+  .success {
+    background: #f0fdf4;
+    border-left: 4px solid #10b981;
+    padding: 14px 18px;
+    margin: 16px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 14px;
+    color: #065f46;
+  }
+
+  ul, ol { margin: 10px 0 10px 24px; color: #475569; }
+  li { margin-bottom: 6px; }
+
+  .runbook {
+    background: #fffbeb;
+    border: 1px solid #fbbf24;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .runbook h4 {
+    color: #92400e;
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .runbook .severity {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .severity.p1 { background: #ef4444; color: white; }
+  .severity.p2 { background: #f59e0b; color: white; }
+  .severity.p3 { background: #3b82f6; color: white; }
+
+  .checklist {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .checklist h4 {
+    color: #065f46;
+    margin-top: 0;
+  }
+  .checklist ul {
+    list-style: none;
+    margin-left: 0;
+  }
+  .checklist li {
+    padding-left: 24px;
+    position: relative;
+  }
+  .checklist li::before {
+    content: "☐";
+    position: absolute;
+    left: 0;
+    color: #059669;
+  }
+
+  .footer {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 13px;
+    padding: 30px 0;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 40px;
+  }
+
+  @media (max-width: 768px) {
+    .cover { padding: 40px 24px; }
+    .cover h1 { font-size: 26px; }
+    .cover .meta-grid { grid-template-columns: 1fr; }
+    .section { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- 封面 -->
+  <div class="cover">
+    <h1>🔧 专家联盟运维手册</h1>
+    <div class="subtitle">Expert Alliance Operations Manual</div>
+    <div class="meta-grid">
+      <div class="meta-item">
+        <div class="meta-label">版本</div>
+        <div class="meta-value">v3.0.0</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">适用对象</div>
+        <div class="meta-value">SRE / On-call</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">文档状态</div>
+        <div class="meta-value">正式发布</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">发布日期</div>
+        <div class="meta-value">2026-08-30</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">RPO</div>
+        <div class="meta-value">&lt; 5 分钟</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">RTO</div>
+        <div class="meta-value">&lt; 30 分钟</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 第1章 日常巡检 -->
+  <div class="section">
+    <h2>1. 日常巡检</h2>
+
+    <h3>1.1 L1 巡检（每小时）</h3>
+    <p>自动化巡检，告警触发，无需人工介入：</p>
+    <div class="checklist">
+      <h4>✅ L1 自动巡检项</h4>
+      <ul>
+        <li>所有服务 Pod 状态正常（无 CrashLoopBackOff）</li>
+        <li>所有 Service Endpoints 数量正常</li>
+        <li>API 错误率 &lt; 1%</li>
+        <li>API P99 延迟 &lt; 500ms</li>
+        <li>CPU 使用率 &lt; 80%</li>
+        <li>内存使用率 &lt; 80%</li>
+        <li>数据库连接池使用率 &lt; 80%</li>
+        <li>NATS 消息无堆积</li>
+      </ul>
+    </div>
+
+    <h3>1.2 L2 巡检（每日）</h3>
+    <p>值班工程师每日检查：</p>
+    <div class="checklist">
+      <h4>📅 L2 每日巡检项</h4>
+      <ul>
+        <li>查看 Grafana Overview 大盘，确认 24h 趋势正常</li>
+        <li>检查各服务副本数是否符合预期</li>
+        <li>检查是否有异常重启的 Pod</li>
+        <li>检查慢查询（数据库 &gt; 1s 的查询）</li>
+        <li>检查 Redis 内存使用趋势</li>
+        <li>检查 NATS JetStream 消费者延迟</li>
+        <li>检查审计日志是否有异常操作</li>
+        <li>确认当日备份是否成功</li>
+      </ul>
+    </div>
+
+    <pre><code># 快速检查脚本
+echo "=== Pod 状态 ==="
+kubectl get pods -n expert-alliance -o wide
+
+echo -e "\n=== 资源使用 ==="
+kubectl top pods -n expert-alliance --sort-by=cpu
+
+echo -e "\n=== 重启次数 ==="
+kubectl get pods -n expert-alliance | awk '$4 > 0 {print $0}'
+
+echo -e "\n=== HPA 状态 ==="
+kubectl get hpa -n expert-alliance
+
+echo -e "\n=== 最近告警 ==="
+# 假设使用 Prometheus Alertmanager
+# amtool alert --alertmanager.url=http://alertmanager:9093</code></pre>
+
+    <h3>1.3 L3 巡检（每周）</h3>
+    <div class="checklist">
+      <h4>📆 L3 每周巡检项</h4>
+      <ul>
+        <li>容量趋势分析：CPU/内存/存储一周增长趋势</li>
+        <li>数据库表空间检查，预估下月增长</li>
+        <li>慢查询 TOP 20 分析</li>
+        <li>Redis 大 Key 分析</li>
+        <li>证书有效期检查（TLS / JWT）</li>
+        <li>备份恢复演练（抽样验证）</li>
+        <li>安全补丁检查</li>
+        <li>知识库更新与 Runbook 校准</li>
+      </ul>
+    </div>
+
+    <h3>1.4 L4 巡检（每月）</h3>
+    <div class="checklist">
+      <h4>🗓️ L4 每月巡检项</h4>
+      <ul>
+        <li>全链路压测（按需）</li>
+        <li>故障演练：模拟单节点故障、单 AZ 故障</li>
+        <li>DR 环境切换演练</li>
+        <li>安全审计</li>
+        <li>成本优化分析</li>
+        <li>SLA 达成情况复盘</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 第2章 监控与告警 -->
+  <div class="section">
+    <h2>2. 监控与告警</h2>
+
+    <h3>2.1 核心监控指标</h3>
+    <table>
+      <thead>
+        <tr><th>类别</th><th>指标名</th><th>说明</th><th>告警阈值</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td rowspan="4"><strong>API 指标</strong></td>
+          <td><code>alliance_http_requests_total</code></td>
+          <td>HTTP 请求总数</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><code>alliance_http_request_duration_seconds</code></td>
+          <td>HTTP 请求延迟分布</td>
+          <td>P99 &gt; 500ms (P2)</td>
+        </tr>
+        <tr>
+          <td><code>alliance_http_error_rate</code></td>
+          <td>HTTP 错误率 (5xx / 总请求)</td>
+          <td>&gt; 1% (P2) / &gt; 5% (P1)</td>
+        </tr>
+        <tr>
+          <td><code>alliance_rate_limit_blocked_total</code></td>
+          <td>被限流拦截的请求数</td>
+          <td>突增 3 倍 (P3)</td>
+        </tr>
+        <tr>
+          <td rowspan="3"><strong>任务指标</strong></td>
+          <td><code>alliance_active_tasks</code></td>
+          <td>当前活跃任务数</td>
+          <td>接近上限 80% (P2)</td>
+        </tr>
+        <tr>
+          <td><code>alliance_task_queue_depth</code></td>
+          <td>待调度任务队列深度</td>
+          <td>&gt; 100 持续 5min (P2)</td>
+        </tr>
+        <tr>
+          <td><code>alliance_task_failure_rate</code></td>
+          <td>任务失败率</td>
+          <td>&gt; 5% (P1)</td>
+        </tr>
+        <tr>
+          <td rowspan="3"><strong>系统指标</strong></td>
+          <td><code>alliance_circuit_breaker_open_total</code></td>
+          <td>熔断器打开次数</td>
+          <td>&gt; 0 (P2)</td>
+        </tr>
+        <tr>
+          <td><code>alliance_db_connection_pool_usage</code></td>
+          <td>数据库连接池使用率</td>
+          <td>&gt; 85% (P2)</td>
+        </tr>
+        <tr>
+          <td><code>alliance_nats_consumer_lag</code></td>
+          <td>NATS 消费者延迟</td>
+          <td>&gt; 1000 持续 5min (P2)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>2.2 告警分级</h3>
+    <table>
+      <thead>
+        <tr><th>级别</th><th>定义</th><th>响应时间</th><th>通知方式</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>P1 紧急</strong></td>
+          <td>核心功能不可用 / 大面积用户影响 / 数据丢失风险</td>
+          <td>5 分钟内响应</td>
+          <td>电话 + 短信 + IM @所有人</td>
+        </tr>
+        <tr>
+          <td><strong>P2 重要</strong></td>
+          <td>部分功能异常 / 性能降级 / 单点故障但服务可用</td>
+          <td>15 分钟内响应</td>
+          <td>IM @值班 + 短信</td>
+        </tr>
+        <tr>
+          <td><strong>P3 一般</strong></td>
+          <td>非核心功能异常 / 告警阈值触发但服务正常</td>
+          <td>2 小时内响应</td>
+          <td>IM 消息</td>
+        </tr>
+        <tr>
+          <td><strong>P4 提示</strong></td>
+          <td>信息类通知，无业务影响</td>
+          <td>次日处理</td>
+          <td>邮件 / 工单</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>2.3 Grafana 大盘</h3>
+    <p>默认提供 4 个核心 Dashboard：</p>
+    <ul>
+      <li><strong>Overview</strong> — 全局总览：QPS、延迟、错误率、资源使用</li>
+      <li><strong>Service Detail</strong> — 单服务详情：RED 指标、JVM/Go 状态</li>
+      <li><strong>Task Pipeline</strong> — 任务流水线：各阶段耗时、成功率、积压</li>
+      <li><strong>Infrastructure</strong> — 基础设施：节点资源、网络、存储</li>
+    </ul>
+  </div>
+
+  <!-- 第3章 备份与恢复 -->
+  <div class="section">
+    <h2>3. 备份与恢复</h2>
+
+    <h3>3.1 备份策略</h3>
+    <table>
+      <thead>
+        <tr><th>数据类型</th><th>备份方式</th><th>频率</th><th>保留周期</th><th>RPO</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>PostgreSQL</td>
+          <td>全量 + WAL 增量</td>
+          <td>每日全量 + 实时 WAL</td>
+          <td>30 天</td>
+          <td>&lt; 5 分钟</td>
+        </tr>
+        <tr>
+          <td>Redis</td>
+          <td>RDB + AOF</td>
+          <td>每小时 RDB + 实时 AOF</td>
+          <td>7 天</td>
+          <td>&lt; 1 秒</td>
+        </tr>
+        <tr>
+          <td>图数据库</td>
+          <td>全量快照</td>
+          <td>每日全量</td>
+          <td>30 天</td>
+          <td>&lt; 24 小时</td>
+        </tr>
+        <tr>
+          <td>对象存储</td>
+          <td>版本控制 + 跨区域复制</td>
+          <td>实时</td>
+          <td>90 天</td>
+          <td>0（版本回退）</td>
+        </tr>
+        <tr>
+          <td>NATS 消息</td>
+          <td>JetStream 持久化</td>
+          <td>实时</td>
+          <td>7 天</td>
+          <td>取决于 RPO 配置</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>3.2 PostgreSQL 备份</h3>
+    <pre><code># 手动触发全量备份
+kubectl exec -it postgres-primary-0 -n expert-alliance -- \
+  pg_basebackup -h localhost -U replicator -D /backup/$(date +%Y%m%d) -Ft -z -P
+
+# 查看备份列表
+kubectl exec -it postgres-primary-0 -n expert-alliance -- \
+  ls -lh /backup/
+
+# 自动备份（CronJob）
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+  namespace: expert-alliance
+spec:
+  schedule: "0 2 * * *"   # 每天凌晨 2 点
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: backup
+              image: postgres:15
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  pg_dump -h postgres-primary -U expert_alliance expert_alliance \
+                    | gzip > /backup/alliance-$(date +%Y%m%d-%H%M).sql.gz
+                  # 保留 30 天
+                  find /backup -name "alliance-*.sql.gz" -mtime +30 -delete</code></pre>
+
+    <h3>3.3 PostgreSQL 恢复</h3>
+    <div class="danger">
+      恢复操作会覆盖现有数据，操作前务必确认并做好当前数据备份！
+    </div>
+    <pre><code># 1. 停止应用写入（缩小服务副本数为 0）
+kubectl scale deployment -n expert-alliance \
+  --replicas=0 -l app.kubernetes.io/part-of=expert-alliance
+
+# 2. 备份当前数据（可选，但建议执行）
+kubectl exec -it postgres-primary-0 -- \
+  pg_dump -U expert_alliance expert_alliance | gzip > /backup/before-restore-$(date +%Y%m%d-%H%M).sql.gz
+
+# 3. 恢复指定备份
+gunzip -c /backup/alliance-YYYYMMDD-HHMM.sql.gz | \
+  kubectl exec -i postgres-primary-0 -- psql -U expert_alliance expert_alliance
+
+# 4. 验证数据
+kubectl exec -it postgres-primary-0 -- \
+  psql -U expert_alliance -c "SELECT count(*) FROM tasks;"
+
+# 5. 恢复应用服务
+kubectl scale deployment -n expert-alliance \
+  --replicas=3 -l app.kubernetes.io/part-of=expert-alliance</code></pre>
+
+    <h3>3.4 Redis 恢复</h3>
+    <pre><code># 从 RDB 文件恢复
+# 1. 停止 Redis
+kubectl scale statefulset redis-master -n expert-alliance --replicas=0
+
+# 2. 替换 dump.rdb 文件
+kubectl cp dump.rdb redis-master-0:/data/dump.rdb -n expert-alliance
+
+# 3. 启动 Redis
+kubectl scale statefulset redis-master -n expert-alliance --replicas=1
+
+# 4. 验证数据
+kubectl exec -it redis-master-0 -n expert-alliance -- redis-cli DBSIZE</code></pre>
+  </div>
+
+  <!-- 第4章 故障处理 Runbook -->
+  <div class="section">
+    <h2>4. 故障处理 Runbook</h2>
+
+    <div class="runbook">
+      <h4>🚨 RB-001: API 错误率飙升 <span class="severity p1">P1</span></h4>
+      <p><strong>触发条件：</strong>HTTP 5xx 错误率 &gt; 5% 持续 2 分钟</p>
+      <p><strong>处理步骤：</strong></p>
+      <ol>
+        <li>确认影响范围：查看哪个服务的错误率上升</li>
+        <li>查看该服务最近 5 分钟日志，定位错误类型</li>
+        <li>检查下游依赖（数据库、Redis、NATS）是否正常</li>
+        <li>如果是单服务问题，尝试重启该服务：<code>kubectl rollout restart deployment &lt;svc&gt;</code></li>
+        <li>如果是近期变更导致，立即回滚：<code>helm rollback expert-alliance</code></li>
+        <li>如果是数据库问题，参见 RB-003</li>
+        <li>记录时间线，故障恢复后复盘</li>
+      </ol>
+    </div>
+
+    <div class="runbook">
+      <h4>🚨 RB-002: 服务响应变慢 <span class="severity p2">P2</span></h4>
+      <p><strong>触发条件：</strong>API P99 延迟 &gt; 1s 持续 3 分钟</p>
+      <p><strong>处理步骤：</strong></p>
+      <ol>
+        <li>查看是全链路慢还是特定接口慢</li>
+        <li>检查 CPU / 内存使用率，判断是否资源不足</li>
+        <li>检查数据库慢查询：是否有锁等待、全表扫描</li>
+        <li>检查 Redis 命中率：<code>INFO stats</code> 看 hit_rate</li>
+        <li>检查 NATS 消费延迟：是否有消息堆积</li>
+        <li>如果是资源不足，手动扩容：<code>kubectl scale deployment &lt;svc&gt; --replicas=N</code></li>
+        <li>如果是慢查询导致，kill 慢查询或临时加索引</li>
+      </ol>
+    </div>
+
+    <div class="runbook">
+      <h4>🚨 RB-003: 数据库连接池耗尽 <span class="severity p1">P1</span></h4>
+      <p><strong>触发条件：</strong>数据库连接池使用率 &gt; 95% 持续 1 分钟</p>
+      <p><strong>处理步骤：</strong></p>
+      <ol>
+        <li>立即查看数据库活跃连接：<code>SELECT * FROM pg_stat_activity WHERE state = 'active';</code></li>
+        <li>识别长时间运行的查询：<code>WHERE now() - query_start &gt; interval '5 minutes'</code></li>
+        <li>终止慢查询：<code>SELECT pg_terminate_backend(pid);</code></li>
+        <li>临时增大连接池：调整服务的 <code>DB_MAX_CONNECTIONS</code> 并重启</li>
+        <li>如果是连接泄漏，重启对应服务释放连接</li>
+        <li>根本解决：优化慢查询、加索引、引入读写分离</li>
+      </ol>
+    </div>
+
+    <div class="runbook">
+      <h4>🚨 RB-004: 任务大量堆积 <span class="severity p2">P2</span></h4>
+      <p><strong>触发条件：</strong>待执行任务数 &gt; 1000 持续 5 分钟</p>
+      <p><strong>处理步骤：</strong></p>
+      <ol>
+        <li>检查 executor 服务副本数和资源使用率</li>
+        <li>查看是否是单任务占用了所有执行槽（大任务阻塞）</li>
+        <li>手动扩容 executor：<code>kubectl scale deployment alliance-executor --replicas=N</code></li>
+        <li>检查下游专家服务是否响应变慢导致执行时间变长</li>
+        <li>检查 NATS 队列是否有异常消息</li>
+        <li>必要时降级非核心任务，优先保证高优先级任务执行</li>
+      </ol>
+    </div>
+
+    <div class="runbook">
+      <h4>🚨 RB-005: Redis 故障 <span class="severity p2">P2</span></h4>
+      <p><strong>触发条件：</strong>Redis 连接失败持续 30 秒</p>
+      <p><strong>处理步骤：</strong></p>
+      <ol>
+        <li>确认 Redis Pod 状态：<code>kubectl get pods -l app=redis</code></li>
+        <li>如果 Pod Crash，查看日志定位原因（OOM / 配置错误 / 磁盘满）</li>
+        <li>主节点故障，哨兵模式下自动切换主从，检查切换是否完成</li>
+        <li>如果是 OOM，检查是否有大 Key，临时增大内存</li>
+        <li>Redis 短暂不可用时，服务会走降级逻辑（直查数据库）</li>
+        <li>恢复后监控缓存命中率回升情况</li>
+      </ol>
+    </div>
+
+    <div class="runbook">
+      <h4>🚨 RB-006: 专家批量下线 <span class="severity p2">P2</span></h4>
+      <p><strong>触发条件：</strong>5 分钟内专家下线数 &gt; 10 个</p>
+      <p><strong>处理步骤：</strong></p>
+      <ol>
+        <li>查看专家注册中心日志，确认下线原因</li>
+        <li>检查是否是网络分区导致心跳失败</li>
+        <li>检查专家服务所在基础设施是否有故障</li>
+        <li>如果是误报（网络闪断），专家会自动重连</li>
+        <li>如果是专家服务故障，通知对应团队排查</li>
+        <li>评估对任务成功率的影响，必要时降级</li>
+      </ol>
+    </div>
+
+    <div class="runbook">
+      <h4>🚨 RB-007: NATS 消息堆积 <span class="severity p2">P2</span></h4>
+      <p><strong>触发条件：</strong>消费者延迟 &gt; 10000 条持续 2 分钟</p>
+      <p><strong>处理步骤：</strong></p>
+      <ol>
+        <li>确认是哪个消费者延迟：<code>nats consumer info</code></li>
+        <li>检查对应消费服务是否正常运行</li>
+        <li>查看消费服务日志，是否有处理错误导致重试</li>
+        <li>如果是消费能力不足，扩容对应服务</li>
+        <li>如果是毒消息（处理必失败），跳过该消息：<code>nats consumer msg get --seq=N</code></li>
+        <li>堆积消化后监控延迟是否归零</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 第5章 容量管理 -->
+  <div class="section">
+    <h2>5. 容量管理</h2>
+
+    <h3>5.1 容量规划公式</h3>
+    <table>
+      <thead>
+        <tr><th>资源</th><th>计算公式</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>API Gateway 实例数</td>
+          <td><code>ceil(QPS / 2000)</code></td>
+          <td>单实例 2000 QPS，70% 水位</td>
+        </tr>
+        <tr>
+          <td>Scheduler 实例数</td>
+          <td><code>ceil(任务创建 QPS / 500)</code></td>
+          <td>单实例 500 任务/秒</td>
+        </tr>
+        <tr>
+          <td>Executor 实例数</td>
+          <td><code>ceil(并发任务数 / 500)</code></td>
+          <td>单实例 500 并发任务</td>
+        </tr>
+        <tr>
+          <td>Agent 实例数</td>
+          <td><code>ceil(并发 Agent 数 / 200)</code></td>
+          <td>单实例 200 并发 Agent</td>
+        </tr>
+        <tr>
+          <td>数据库连接数</td>
+          <td><code>服务数 × 每服务连接池大小</code></td>
+          <td>建议总连接 &lt; DB max_connections × 70%</td>
+        </tr>
+        <tr>
+          <td>Redis 内存</td>
+          <td><code>工作记忆 + 会话缓存 + 热点数据 × 2</code></td>
+          <td>预留 50% 余量防突增</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>5.2 扩容触发条件</h3>
+    <ul>
+      <li>CPU 使用率连续 10 分钟 &gt; 70% → 扩容 50%</li>
+      <li>内存使用率连续 10 分钟 &gt; 75% → 扩容 50%</li>
+      <li>任务队列深度 &gt; 100 持续 5 分钟 → executor +2</li>
+      <li>P99 延迟连续 5 分钟 &gt; 1s → 排查后按需扩容</li>
+      <li>数据库连接池 &gt; 80% → 增大连接池或读写分离</li>
+    </ul>
+
+    <h3>5.3 缩容触发条件</h3>
+    <ul>
+      <li>CPU 使用率连续 30 分钟 &lt; 30% → 缩容 25%</li>
+      <li>内存使用率连续 30 分钟 &lt; 40% → 缩容 25%</li>
+      <li>最低副本数不低于高可用要求（通常 ≥ 2）</li>
+    </ul>
+  </div>
+
+  <!-- 第6章 变更管理 -->
+  <div class="section">
+    <h2>6. 变更管理</h2>
+
+    <h3>6.1 变更类型</h3>
+    <table>
+      <thead>
+        <tr><th>类型</th><th>定义</th><th>审批要求</th><th>执行窗口</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>标准变更</strong></td>
+          <td>版本升级、配置调整、常规扩缩容</td>
+          <td>值班负责人审批</td>
+          <td>工作日 10:00-16:00</td>
+        </tr>
+        <tr>
+          <td><strong>紧急变更</strong></td>
+          <td>线上故障修复、安全补丁</td>
+          <td>SRE Lead 审批（可后补）</td>
+          <td>随时，执行前通知</td>
+        </tr>
+        <tr>
+          <td><strong>重大变更</strong></td>
+          <td>架构调整、数据库迁移、跨区域切换</td>
+          <td>架构委员会评审</td>
+          <td>提前预约窗口，通常凌晨</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>6.2 变更前检查</h3>
+    <div class="checklist">
+      <h4>变更前检查清单</h4>
+      <ul>
+        <li>变更内容和影响范围已明确</li>
+        <li>回滚方案已准备并验证可行</li>
+        <li>已通知相关干系人</li>
+        <li>选择了合适的变更窗口</li>
+        <li>监控告警已确认可用</li>
+        <li>备份已完成且验证可用</li>
+        <li>值班人员已到位</li>
+      </ul>
+    </div>
+
+    <h3>6.3 变更后验证</h3>
+    <ol>
+      <li>服务是否正常启动，所有 Pod Ready</li>
+      <li>核心接口冒烟测试通过</li>
+      <li>错误率、延迟等核心指标正常</li>
+      <li>日志无异常错误</li>
+      <li>观察 30 分钟，确认无异常趋势</li>
+      <li>记录变更结果到变更管理系统</li>
+    </ol>
+  </div>
+
+  <!-- 第7章 安全运维 -->
+  <div class="section">
+    <h2>7. 安全运维</h2>
+
+    <h3>7.1 证书管理</h3>
+    <ul>
+      <li>TLS 证书有效期：建议 90 天，自动续期</li>
+      <li>JWT 签名密钥：每 90 天轮换一次，支持双密钥过渡</li>
+      <li>数据库密码：每 90 天轮换，使用 Secret 管理</li>
+      <li>API Key：用户可自主吊销，定期审计活跃度</li>
+    </ul>
+
+    <h3>7.2 审计日志</h3>
+    <p>以下操作强制记录审计日志：</p>
+    <ul>
+      <li>用户登录 / 登出 / Token 刷新</li>
+      <li>专家注册 / 注销 / 配置变更</li>
+      <li>任务创建 / 取消 / 结果获取</li>
+      <li>管理后台操作（配置变更、用户管理）</li>
+      <li>权限变更 / 角色分配</li>
+    </ul>
+    <p>审计日志保留 180 天，不可删除不可修改，仅授权人员可查询。</p>
+
+    <h3>7.3 数据脱敏</h3>
+    <ul>
+      <li>日志中自动脱敏：手机号、邮箱、身份证号、Token</li>
+      <li>监控指标不含用户数据</li>
+      <li>链路追踪对用户输入做摘要处理</li>
+    </ul>
+  </div>
+
+  <!-- 第8章 常用命令速查 -->
+  <div class="section">
+    <h2>8. 常用命令速查</h2>
+
+    <h3>8.1 Kubectl 常用</h3>
+    <pre><code># 查看所有 Pod
+kubectl get pods -n expert-alliance -o wide
+
+# 查看资源使用
+kubectl top pods -n expert-alliance --sort-by=cpu
+kubectl top nodes
+
+# 查看日志
+kubectl logs -f &lt;pod-name&gt; -n expert-alliance
+kubectl logs -f deployment/alliance-scheduler -n expert-alliance
+kubectl logs &lt;pod-name&gt; --previous -n expert-alliance  # 查看崩溃前日志
+
+# 重启服务
+kubectl rollout restart deployment &lt;deployment-name&gt; -n expert-alliance
+
+# 进入容器
+kubectl exec -it &lt;pod-name&gt; -n expert-alliance -- /bin/sh
+
+# 查看事件
+kubectl get events -n expert-alliance --sort-by=.lastTimestamp
+
+# 查看 HPA
+kubectl get hpa -n expert-alliance</code></pre>
+
+    <h3>8.2 数据库操作</h3>
+    <pre><code># 连接数据库
+kubectl exec -it postgres-primary-0 -n expert-alliance -- psql -U expert_alliance
+
+# 查看活跃连接
+SELECT pid, state, query_start, query FROM pg_stat_activity WHERE state = 'active' ORDER BY query_start;
+
+# 终止慢查询
+SELECT pg_terminate_backend(pid);
+
+# 查看表大小
+SELECT relname, pg_size_pretty(pg_total_relation_size(relid)) AS size
+FROM pg_stat_user_tables ORDER BY pg_total_relation_size(relid) DESC LIMIT 10;
+
+# 查看索引命中率
+SELECT relname, idx_scan, seq_scan, round(100.0 * idx_scan / (idx_scan + seq_scan), 2) AS idx_hit_rate
+FROM pg_stat_user_tables WHERE (idx_scan + seq_scan) > 0 ORDER BY idx_hit_rate ASC;</code></pre>
+
+    <h3>8.3 Redis 操作</h3>
+    <pre><code># 连接 Redis
+kubectl exec -it redis-master-0 -n expert-alliance -- redis-cli -a $REDIS_PASSWORD
+
+# 常用信息
+INFO stats       # 统计信息
+INFO memory      # 内存使用
+INFO clients     # 客户端连接
+INFO keyspace    # 数据库大小
+
+# 大 Key 扫描
+redis-cli --bigkeys -i 0.1
+
+# 慢日志
+SLOWLOG GET 10</code></pre>
+
+    <h3>8.4 NATS 操作</h3>
+    <pre><code># 查看服务器状态
+nats server check connection -s nats://localhost:4222
+
+# 查看 Streams
+nats stream list
+
+# 查看消费者
+nats consumer list &lt;stream-name&gt;
+
+# 查看消息
+nats stream view &lt;stream-name&gt;
+
+# 消费者监控
+nats consumer monitor &lt;stream-name&gt; &lt;consumer-name&gt;</code></pre>
+  </div>
+
+  <div class="footer">
+    <p>专家联盟运维手册 v3.0.0 | 璇玑 RelGraph · 架构专家联盟出品</p>
+    <p>紧急联系：SRE On-call 值班电话 | 工单系统：ops-ticket.example.com</p>
+  </div>
+
+</div>
+</body>
+</html>
