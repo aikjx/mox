@@ -1,4 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
+import { ElMessage } from 'element-plus'
 
 const routes = [
   { path: '/', redirect: '/ai' },
@@ -379,16 +380,77 @@ const router = createRouter({
 // ===== 企业级路由守卫 =====
 const DEFAULT_TITLE = '璇玑系统 · Mox Graph System'
 
+// 不需要登录即可访问的页面白名单
+const WHITE_LIST = ['/login', '/portal', '/hall', '/share', '/s/']
+
+function isInWhiteList(path) {
+  return WHITE_LIST.some(p => path === p || path.startsWith(p))
+}
+
+function getToken() {
+  if (typeof localStorage === 'undefined') return ''
+  return localStorage.getItem('mox-token') ||
+         localStorage.getItem('ous_api_token') ||
+         localStorage.getItem('ous_token') || ''
+}
+
 router.beforeEach((to, from, next) => {
   // 动态设置页面标题
   const pageTitle = to.meta?.title
   document.title = pageTitle ? `${pageTitle} · 璇玑系统` : DEFAULT_TITLE
+
+  // 白名单页面直接放行
+  if (isInWhiteList(to.path)) {
+    next()
+    return
+  }
+
+  // 检查登录状态
+  const token = getToken()
+  if (!token) {
+    // 未登录，跳转到登录页，携带重定向地址
+    next({
+      path: '/login',
+      query: { redirect: to.fullPath }
+    })
+    return
+  }
+
+  // TODO: 可在此处添加权限校验（基于 roles/permissions）
+  // 例如：if (to.meta.requiresPermission && !hasPermission(to.meta.requiresPermission)) { ... }
+
   next()
 })
 
 router.afterEach((to) => {
+  // 路由切换后滚动到顶部
+  window.scrollTo?.(0, 0)
+
   // 路由切换后清理可能残留的全局加载状态
   window.dispatchEvent(new CustomEvent('router:changed', { detail: { path: to.path } }))
+
+  // 记录页面访问轨迹（用于用户行为分析）
+  try {
+    const history = JSON.parse(localStorage.getItem('mox_nav_history') || '[]')
+    history.unshift({
+      path: to.path,
+      title: to.meta?.title || '',
+      timestamp: Date.now()
+    })
+    // 只保留最近 20 条
+    localStorage.setItem('mox_nav_history', JSON.stringify(history.slice(0, 20)))
+  } catch {}
+})
+
+// 全局路由错误处理
+router.onError((err) => {
+  console.error('[Router Error]', err)
+  // 组件加载失败时（如网络中断），尝试刷新页面
+  if (err.message?.includes('Failed to fetch dynamically imported module') ||
+      err.message?.includes('Loading chunk')) {
+    ElMessage.warning('资源加载失败，正在重试...')
+    setTimeout(() => window.location.reload(), 1500)
+  }
 })
 
 export default router
