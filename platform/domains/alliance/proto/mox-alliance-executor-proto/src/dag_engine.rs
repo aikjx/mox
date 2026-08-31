@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::types::ExecutorConfig;
 
 /// 执行选项
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExecutionOptions {
     /// 最大重试次数
     pub max_retries: u32,

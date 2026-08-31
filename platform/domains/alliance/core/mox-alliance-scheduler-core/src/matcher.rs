@@ -34,6 +34,19 @@ impl RuleBasedExpertMatcher {
         }
     }
 
+    /// 使用共享的专家存储创建匹配器
+    ///
+    /// 用于与 `InMemoryExpertRegistry` 共享同一份专家数据，
+    /// 这样同步器写入 registry 后，匹配器可以直接读到最新数据。
+    pub fn with_shared_experts(experts: Arc<RwLock<HashMap<String, Expert>>>) -> Self {
+        Self { experts }
+    }
+
+    /// 获取内部专家存储的 Arc 引用（供 bridge 共享使用）
+    pub fn experts_arc(&self) -> Arc<RwLock<HashMap<String, Expert>>> {
+        self.experts.clone()
+    }
+
     /// 注册专家（用于测试和初始化）
     pub fn register_expert(&self, expert: Expert) {
         let mut experts = self.experts.write();

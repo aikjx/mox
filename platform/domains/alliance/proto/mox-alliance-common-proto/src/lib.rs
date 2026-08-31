@@ -29,8 +29,12 @@ pub mod types;
 
 // 核心类型
 pub use types::{
-    AllianceMode, Capability, CollaborationPlan, Domain, Expert, ExpertStatus, ExpertHealth,
-    FusionStrategy, Node, NodeStatus, Task, TaskPriority, TaskStatus, ToolBinding,
+    AllianceMode, ApiKeySource, Capability, CollaborationPlan, ConfigType, ConfigVersion, Domain, Expert,
+    ExpertModuleConfig, ExpertStatus, ExpertHealth, FusionStrategy,
+    GlobalLlmConfig, GraphConnectionConfig, GraphEngineType, GraphQueryConfig, GraphSchemaConfig,
+    LlmProviderOption, LlmRoutingStrategy,
+    MatchingWeights, MergedLlmConfig, ModelConfig, ModuleGraphConfig, ModuleLlmConfig,
+    Node, NodeStatus, Task, TaskPriority, TaskStatus, ToolBinding,
 };
 
 // 通用 trait

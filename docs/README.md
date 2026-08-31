@@ -27,11 +27,13 @@
 - [代码审计报告](enterprise/31-全维代码审计与验证报告-V1.0.md) · [可观测性体系设计](enterprise/31-可观测性体系设计文档-ADR-12.md)
 
 ### 🏛️ 架构设计
+- [🏛️ 架构文档中心](architecture-hub.html) 🌐 **（一站式索引）** · [架构文档索引](architecture/README.md)
 - [最优架构方案](architecture/OPTIMAL_ARCHITECTURE.md) · [归一化架构](architecture/NORMALIZED_ARCHITECTURE.md)
 - [扩展开发指南](architecture/02-extension-guide.md) · [错误码参考](architecture/04-error-code-reference.md)
 - [KG动态SQL架构](architecture/07-KG-DYNAMIC-SQL-ARCHITECTURE.md) · [全维低代码架构](architecture/08-FULL-DIMENSION-LOWCODE-ARCHITECTURE.md)
+- [微服务架构](microservices/README.md) · [元架构总纲](cosmic-architecture/00-COSMIC-META-ARCHITECTURE.md)
 - [代码库指南](architecture/13-PLATFORM-CODEBASE-GUIDE.md) · [仓库全地图](architecture/14-REPOSITORY-FULL-MAP.md)
-- [微服务架构原则](microservices/00-principles.md)
+- [ADR 架构决策记录](enterprise/29-跨域依赖规则与架构一致性治理-ADR-09.md) ~ [ADR-16](enterprise/35-模块化单体到微服务演进预案-ADR-16.md)
 
 ### 🧠 专家联盟
 - [综合索引](expert-alliance/00-INTEGRATED-INDEX.md) · [企业级优化](expert-alliance/01-ENTERPRISE-OPTIMIZATION.md)
@@ -80,9 +82,10 @@
 3. [架构总览](architecture.md) → 了解整体架构
 
 ### 🏗️ 架构师
-1. [企业级架构](enterprise/02-architecture.md) → 整体架构设计
-2. [最优架构方案](architecture/OPTIMAL_ARCHITECTURE.md) → 技术方案选型
-3. [ADR 决策记录](../deploy/docs/MOX-Architecture-Decision-Records-v1.0.md) → 历史决策
+1. [架构文档中心](architecture-hub.html) → 完整架构文档索引 🌐
+2. [企业级架构](enterprise/02-architecture.md) → 整体架构设计
+3. [最优架构方案](architecture/OPTIMAL_ARCHITECTURE.md) → 技术方案选型
+4. [ADR 决策记录](../deploy/docs/MOX-Architecture-Decision-Records-v1.0.md) → 历史决策
 
 ### 💻 开发者
 1. [Rust 企业开发指南](rust-enterprise/README.md) → 开发环境与规范

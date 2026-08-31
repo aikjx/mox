@@ -68,7 +68,8 @@ async fn test_e2e_task_submission() -> AllianceResult<()> {
         .await?;
 
     assert_eq!(resp.task.title, title);
-    assert_eq!(resp.task.status, TaskStatus::Pending);
+    assert!(matches!(resp.task.status, TaskStatus::Running | TaskStatus::Planning),
+        "Task should be in Running or Planning state after submission, got {:?}", resp.task.status);
 
     let task = scheduler.get_task(resp.task.task_id, Uuid::nil()).await?;
     assert_eq!(task.title, title);

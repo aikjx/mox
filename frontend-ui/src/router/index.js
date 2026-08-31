@@ -270,6 +270,12 @@ const routes = [
         name: 'ExpertOrchestrator',
         component: () => import('@/views/expert/panels/ExpertOrchestratorPanel.vue'),
         meta: { title: '编排引擎' }
+      },
+      {
+        path: 'tasks',
+        name: 'ExpertAllianceTasks',
+        component: () => import('@/views/expert/AllianceTaskView.vue'),
+        meta: { title: '联盟任务' }
       }
     ]
   },

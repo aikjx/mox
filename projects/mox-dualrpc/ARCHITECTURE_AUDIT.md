@@ -1,58 +1,14 @@
-# 全维架构审计报告
+# 本仓库架构审计报告
 
-> 对比三方架构：ymkj-server / infotopograph / mox-dualrpc+专家联盟
+> 聚焦本仓库架构：infotopograph / mox-dualrpc + 专家联盟
 >
 > 日期：2026-08-26 | 审计维度：架构最优性 / 服务对接 / 功能业务区分
 
 ---
 
-## 一、三方架构全景对比
+## 一、架构全景对比
 
-### 1.1 ymkj-server（Java 若依二次开发）
-
-```
-ymkj-server/
-├── ymkj-parent/                    # 基础框架层
-│   ├── ymkj-framework/            # 核心框架（三层分离）
-│   │   ├── framework-api/         #   对外 API 契约
-│   │   ├── framework-service-api/ #   服务间 RPC 契约
-│   │   └── framework-service/     #   业务实现
-│   ├── ymkj-system/               # 系统管理（用户/角色/权限/菜单）
-│   ├── ymkj-quartz/               # 定时任务调度
-│   ├── ymkj-socket/               # Netty 双协议（TCP+WebSocket）
-│   ├── ymkj-metadata/             # 元数据管理
-│   └── ymkj-sms/                  # 短信服务
-│
-└── ymkj-service/                   # 业务服务层
-    ├── ymkj-ai/                    # AI 服务（三层分离）
-    │   ├── ai-api/
-    │   ├── ai-service-api/
-    │   └── ai-service/
-    ├── ymkj-rpa/                   # RPA 机器人（混合架构）
-    │   ├── rpa-api/ rpa-service-api/ rpa-service/
-    │   ├── python-cli/             #   Python 客户端
-    │   ├── robot-platform/         #   机器人平台
-    │   ├── code/ doc/ docker/      #   工程化配套
-    │   └── sql/
-    ├── ymkj-hr/                    # 人力资源
-    ├── ymkj-sso/                   # 单点登录
-    ├── ymkj-sms/                   # 短信
-    ├── ymkj-fy/                    # 分佣/费用
-    ├── ymkj-nwdx/                  # 内网通信
-    ├── ymkj-view/                  # 视图层
-    └── ymkj-web/                   # Web 接入层
-```
-
-**核心特征**：
-- ✅ **三层分离**：每个模块 `*-api / *-service-api / *-service`
-- ✅ **业务域划分**：AI / RPA / HR / SSO / SMS / FY / NWDX
-- ✅ **基础框架层**：framework / system / quartz / socket / metadata
-- ✅ **RPA 混合架构**：Java 服务 + Python CLI + Docker + 机器人平台
-- ✅ **Dubbo RPC**：服务间通过 Dubbo 调用（service-api 层定义契约）
-- ⚠️ **单体部署**：所有模块打包在一个 JVM 运行
-- ⚠️ **Java 技术栈**：Spring Boot 2.7 + MyBatis + Netty
-
-### 1.2 infotopograph（Rust 全栈 AI 平台）
+### 1.1 infotopograph（Rust 全栈 AI 平台）
 
 ```
 infotopograph/
@@ -88,7 +44,7 @@ infotopograph/
 - ⚠️ **单体倾向**：mox-server single-binary
 - ⚠️ **基础框架缺失**：无统一的 framework/system/quartz 层
 
-### 1.3 mox-dualrpc + 专家联盟（新建）
+### 1.2 mox-dualrpc + 专家联盟（新建）
 
 ```
 projects/mox-dualrpc/               # 通信基础设施
@@ -128,13 +84,13 @@ projects/mox-dualrpc/               # 通信基础设施
 
 ### 差距1：三层分离 vs 单层耦合
 
-| 维度 | ymkj（优） | infotopograph/专家联盟（劣） |
-|------|-----------|------------------------------|
-| 接口契约 | `*-api` 独立模块，纯DTO+接口 | 接口与实现在同一 crate |
-| 服务间契约 | `*-service-api` 定义 Dubbo RPC | 无独立服务契约 |
-| 客户端依赖 | 只依赖 api 模块，零实现泄漏 | 依赖整个 service crate |
-| 独立编译 | api 层可独立编译发布 | 修改实现影响接口消费者 |
-| 版本管理 | api 层可独立版本化 | 无接口版本概念 |
+| 维度 | 现状（infotopograph/专家联盟） | 目标态（三层分离） |
+|------|------------------------------|-------------------|
+| 接口契约 | 接口与实现在同一 crate | `*-api` 独立模块，纯DTO+接口 |
+| 服务间契约 | 无独立服务契约 | `*-service-api` 定义 gRPC 契约 |
+| 客户端依赖 | 依赖整个 service crate | 只依赖 api 模块，零实现泄漏 |
+| 独立编译 | 修改实现影响接口消费者 | api 层可独立编译发布 |
+| 版本管理 | 无接口版本概念 | api 层可独立版本化 |
 
 **优化方案**：专家联盟每个服务拆为三层：
 ```
@@ -146,12 +102,12 @@ expert-alliance/
 
 ### 差距2：业务域划分 vs 技术域划分
 
-| 维度 | ymkj（优） | infotopograph（劣） |
-|------|-----------|---------------------|
-| 划分依据 | 业务域（AI/RPA/HR/SSO） | 技术能力（graph/ai/flow） |
-| 团队对齐 | 一个业务域 = 一个团队 | 技术域跨多个业务 |
-| 演进独立 | AI 业务可独立演进 | 图谱技术变更影响所有业务 |
-| 专家联盟 | 无（ymkj无此概念） | 按职责拆分（调度/执行/融合） |
+| 维度 | 现状（infotopograph 技术域） | 目标态（业务域） |
+|------|------------------------------|------------------|
+| 划分依据 | 技术能力（graph/ai/flow） | 业务域（按业务能力聚合） |
+| 团队对齐 | 技术域跨多个业务 | 一个业务域 = 一个团队 |
+| 演进独立 | 图谱技术变更影响所有业务 | 业务域可独立演进 |
+| 专家联盟 | 按职责拆分（调度/执行/融合） | 保持职责拆分，纳入业务域体系 |
 
 **优化方案**：infotopograph 应按业务域重组，而非技术域：
 ```
@@ -166,14 +122,14 @@ expert-alliance/
 
 ### 差距3：基础框架层缺失
 
-| ymkj 基础模块 | infotopograph 现状 | 差距 |
-|---------------|-------------------|------|
+| 基础模块 | infotopograph 现状 | 差距 |
+|----------|-------------------|------|
 | framework（核心框架） | 无统一框架，各服务自建 | 严重 |
 | system（用户/角色/权限） | mox-system 存在但简陋 | 中等 |
-| quartz（定时任务） | 无统一调度 | 严重 |
+| 定时任务 | 无统一调度 | 严重 |
 | socket（通信） | axum WebSocket，无统一框架 | 中等 |
 | metadata（元数据） | mox-common-meta 存在 | 轻微 |
-| sms（通知） | 无统一通知服务 | 中等 |
+| 通知 | 无统一通知服务 | 中等 |
 
 **优化方案**：建设 `mox-framework` 基础框架层：
 ```
@@ -192,13 +148,13 @@ mox-framework/
 
 ### 差距4：服务对接方式
 
-| 维度 | ymkj | infotopograph | mox-dualrpc |
-|------|------|---------------|-------------|
-| 服务间通信 | Dubbo RPC（TCP+Hessian2） | 直接函数调用（单体） | gRPC（tonic） |
-| 对外通信 | HTTP REST + WebSocket | axum REST | JSON-RPC + MCP + REST |
-| 协议转换 | 无（Dubbo专用） | 无 | 自动转码（JSON↔Protobuf） |
-| 跨语言 | Java only（Dubbo） | Rust only | gRPC 跨语言 + JSON-RPC 通用 |
-| 服务发现 | Dubbo 注册中心（Nacos/ZK） | 无（单体） | 待建设（K8s Service / Consul） |
+| 维度 | infotopograph | mox-dualrpc |
+|------|---------------|-------------|
+| 服务间通信 | 直接函数调用（单体） | gRPC（tonic） |
+| 对外通信 | axum REST | JSON-RPC + MCP + REST |
+| 协议转换 | 无 | 自动转码（JSON↔Protobuf） |
+| 跨语言 | Rust only | gRPC 跨语言 + JSON-RPC 通用 |
+| 服务发现 | 无（单体） | 待建设（K8s Service / Consul） |
 
 **优化方案**：以 mox-dualrpc 为通信底座，建立三层服务对接：
 
@@ -219,23 +175,23 @@ mox-framework/
 └─────────────────────────────────────────────────┘
 
 跨语言对接：
-├── Java/Dubbo 3.x → Triple协议 = gRPC，直接 tonic 调用
 ├── Python → gRPC (grpcio) 或 JSON-RPC
 ├── Node.js → gRPC (@grpc/grpc-js) 或 JSON-RPC
-└── Go → gRPC (google.golang.org/grpc)
+├── Go → gRPC (google.golang.org/grpc)
+└── 任意语言 → JSON-RPC 2.0（零依赖通用接入）
 ```
 
-### 差距5：RPA混合架构参考（AI推理 sidecar）
+### 差距5：AI 推理 sidecar 工程化配套
 
-| 维度 | ymkj-rpa | 专家联盟 AI sidecar |
-|------|----------|---------------------|
-| 主服务 | Java (rpa-service) | Rust (expert-agent) |
-| 执行端 | Python CLI + robot-platform | Python (ai-inference-sidecar) |
-| 通信 | HTTP REST | UDS (Unix Domain Socket) / gRPC |
-| 部署 | Docker 容器 | K8s Sidecar（同Pod） |
-| 工程化 | code/ doc/ docker/ 配套 | 待建设 |
+| 维度 | 专家联盟 AI sidecar |
+|------|---------------------|
+| 主服务 | Rust (expert-agent) |
+| 执行端 | Python (ai-inference-sidecar) |
+| 通信 | UDS (Unix Domain Socket) / gRPC |
+| 部署 | K8s Sidecar（同Pod） |
+| 工程化 | 待建设 |
 
-**优化方案**：参考 ymkj-rpa 的工程化配套，完善 AI sidecar：
+**优化方案**：完善 AI sidecar 工程化配套：
 ```
 ai-inference-sidecar/
 ├── python/                    # Python 推理服务
@@ -416,8 +372,6 @@ let response = client.list_experts(Request::new(req)).await?;
 
 | 对端语言/框架 | 对接方式 | 协议 | 说明 |
 |--------------|---------|------|------|
-| Java Dubbo 3.x | 直接 gRPC | Triple (=gRPC) | Dubbo 3.x Triple 协议 wire format 与 gRPC 完全一致 |
-| Java Dubbo 2.x | Java 桥接 sidecar | dubbo:// → gRPC | 遗留系统需协议转换 |
 | Python | gRPC (grpcio) | gRPC | AI 推理 sidecar |
 | Node.js | gRPC 或 JSON-RPC | gRPC/JSON | 前端 BFF 层 |
 | Go | gRPC | gRPC | 高性能中间件 |
@@ -497,7 +451,7 @@ while let Some(msg) = sub.next().await {
 2. ❌ 技术域划分而非业务域（边界模糊）
 3. ❌ 基础框架层缺失（认证/租户/调度/通知重复建设）
 4. ❌ 服务对接不统一（无 gRPC，单体函数调用）
-5. ❌ AI sidecar 工程化不足（参考 ymkj-rpa）
+5. ❌ AI sidecar 工程化不足
 
 ### 7.2 mox-dualrpc 是否最优？
 
@@ -515,7 +469,7 @@ while let Some(msg) = sub.next().await {
 2. **高优先级**：专家联盟服务三层分离（解决差距1）
 3. **中优先级**：业务域重组（解决差距2，渐进式）
 4. **中优先级**：mox-dualrpc v0.3 gRPC 实跑 + v0.4 流式
-5. **低优先级**：AI sidecar 工程化配套（参考 ymkj-rpa）
+5. **低优先级**：AI sidecar 工程化配套
 
 ---
 

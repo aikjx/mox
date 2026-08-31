@@ -25,6 +25,7 @@
     <!-- Tab 切换 -->
     <el-tabs v-model="activeTab" class="expert-tabs compact-tabs" @tab-change="onTabChange">
       <el-tab-pane label="联盟总览" name="overview" />
+      <el-tab-pane label="联盟任务" name="tasks" />
       <el-tab-pane label="企业管理" name="enterprise" />
       <el-tab-pane label="编排引擎" name="orchestrator" />
     </el-tabs>
@@ -66,15 +67,21 @@ const route = useRoute()
 // 使用嵌套路由驱动：从子路由名推断 activeTab
 const activeTab = computed(() => {
   const name = route.name?.toString() || 'ExpertOverview'
+  if (name.includes('Tasks')) return 'tasks'
   if (name.includes('Enterprise')) return 'enterprise'
   if (name.includes('Orchestrator')) return 'orchestrator'
   // 兼容旧的 query.tab 链接
   const q = route.query.tab
-  if (q === 'enterprise' || q === 'orchestrator') return q
+  if (q === 'tasks' || q === 'enterprise' || q === 'orchestrator') return q
   return 'overview'
 })
 function onTabChange(tab) {
-  const routes = { overview: '/expert-center', enterprise: '/expert-center/enterprise', orchestrator: '/expert-center/orchestrator' }
+  const routes = {
+    overview: '/expert-center/overview',
+    tasks: '/expert-center/tasks',
+    enterprise: '/expert-center/enterprise',
+    orchestrator: '/expert-center/orchestrator'
+  }
   router.push(routes[tab] || routes.overview)
 }
 // 项目上下文（来自顶栏 ProjectPicker，共享状态）

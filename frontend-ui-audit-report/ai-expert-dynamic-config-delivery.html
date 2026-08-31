@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全维动态配置 AI 能力专家 — 交付报告</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(135deg, #0a0f1e 0%, #1a1033 40%, #0d1b2a 100%);
+    color: #e2e8f0;
+    min-height: 100vh;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+  .container { max-width: 1280px; margin: 0 auto; padding: 40px 24px; }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 80px 0 60px;
+    position: relative;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -200px; left: 50%; transform: translateX(-50%);
+    width: 900px; height: 600px;
+    background: radial-gradient(ellipse, rgba(6,182,212,0.25) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    top: 50px; right: -50px;
+    width: 350px; height: 350px;
+    background: radial-gradient(circle, rgba(168,85,247,0.3) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .badge {
+    display: inline-block;
+    padding: 6px 18px;
+    background: linear-gradient(135deg, rgba(6,182,212,0.2), rgba(168,85,247,0.2));
+    border: 1px solid rgba(6,182,212,0.4);
+    border-radius: 999px;
+    font-size: 14px;
+    color: #67e8f9;
+    margin-bottom: 24px;
+    backdrop-filter: blur(10px);
+    font-weight: 500;
+  }
+  .hero h1 {
+    font-size: 52px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 20%, #7c3aed 50%, #a855f7 80%, #ec4899 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 20px;
+    letter-spacing: -1px;
+  }
+  .hero .subtitle {
+    font-size: 20px;
+    color: #94a3b8;
+    margin-bottom: 32px;
+    max-width: 750px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 56px;
+    flex-wrap: wrap;
+  }
+  .hero-stat { text-align: center; }
+  .hero-stat .num {
+    font-size: 40px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #22d3ee, #a855f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-stat .label {
+    font-size: 13px;
+    color: #64748b;
+    margin-top: 4px;
+  }
+
+  /* Section */
+  .section { margin-bottom: 72px; }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .section-icon {
+    width: 52px; height: 52px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    background: linear-gradient(135deg, rgba(6,182,212,0.2), rgba(168,85,247,0.2));
+    border: 1px solid rgba(6,182,212,0.3);
+  }
+  .section-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #f1f5f9;
+  }
+  .section-desc {
+    color: #64748b;
+    font-size: 14px;
+    margin-top: 4px;
+  }
+
+  /* Glass Card */
+  .glass-card {
+    background: rgba(30, 27, 75, 0.35);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(6, 182, 212, 0.15);
+    border-radius: 20px;
+    padding: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .glass-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #06b6d4, #a855f7, transparent);
+    opacity: 0.5;
+  }
+
+  /* Feature Grid */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 24px;
+  }
+  .feature-card {
+    background: rgba(30, 27, 75, 0.35);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(6, 182, 212, 0.12);
+    border-radius: 16px;
+    padding: 28px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .feature-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(6, 182, 212, 0.35);
+    box-shadow: 0 20px 40px rgba(6, 182, 212, 0.1);
+  }
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #06b6d4, #a855f7);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .feature-card:hover::before { opacity: 1; }
+  .feature-icon {
+    width: 52px; height: 52px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    margin-bottom: 16px;
+  }
+  .feature-card h3 {
+    font-size: 18px;
+    color: #f1f5f9;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .feature-card p {
+    font-size: 14px;
+    color: #94a3b8;
+    line-height: 1.7;
+  }
+  .feature-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 14px;
+  }
+  .feature-tag {
+    padding: 3px 10px;
+    background: rgba(6, 182, 212, 0.12);
+    border: 1px solid rgba(6, 182, 212, 0.25);
+    border-radius: 999px;
+    font-size: 12px;
+    color: #67e8f9;
+  }
+
+  /* Icon gradients */
+  .icon-cyan { background: linear-gradient(135deg, #06b6d4, #22d3ee); }
+  .icon-purple { background: linear-gradient(135deg, #7c3aed, #a855f7); }
+  .icon-green { background: linear-gradient(135deg, #10b981, #34d399); }
+  .icon-orange { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+  .icon-pink { background: linear-gradient(135deg, #ec4899, #f472b6); }
+  .icon-blue { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
+  .icon-red { background: linear-gradient(135deg, #ef4444, #f87171); }
+  .icon-yellow { background: linear-gradient(135deg, #eab308, #facc15); }
+
+  /* Architecture Diagram - 9 Dimensions */
+  .dim-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .dim-card {
+    padding: 20px;
+    border-radius: 14px;
+    text-align: center;
+    transition: all 0.3s;
+    border: 1px solid rgba(71, 85, 105, 0.3);
+    background: rgba(15, 23, 42, 0.5);
+  }
+  .dim-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(6, 182, 212, 0.4);
+    background: rgba(30, 27, 75, 0.5);
+  }
+  .dim-card .dim-icon { font-size: 32px; margin-bottom: 10px; }
+  .dim-card .dim-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin-bottom: 4px;
+  }
+  .dim-card .dim-sub {
+    font-size: 12px;
+    color: #64748b;
+  }
+
+  /* Module Table */
+  .module-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .module-table th {
+    text-align: left;
+    padding: 14px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #94a3b8;
+    background: rgba(15, 23, 42, 0.6);
+    border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+  }
+  .module-table td {
+    padding: 14px 16px;
+    font-size: 13px;
+    color: #cbd5e1;
+    border-bottom: 1px solid rgba(71, 85, 105, 0.15);
+  }
+  .module-table tr:hover td {
+    background: rgba(6, 182, 212, 0.04);
+  }
+  .module-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    font-size: 16px;
+    margin-right: 10px;
+    vertical-align: middle;
+  }
+  .priority-high { color: #f87171; font-weight: 600; }
+  .priority-mid { color: #fbbf24; font-weight: 600; }
+  .priority-low { color: #67e8f9; font-weight: 600; }
+
+  /* Status badges */
+  .status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .status-new { background: rgba(6, 182, 212, 0.15); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.3); }
+  .status-upgraded { background: rgba(168, 85, 247, 0.15); color: #c4b5fd; border: 1px solid rgba(168, 85, 247, 0.3); }
+  .status-done { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+  /* Orchestration Diagram */
+  .orch-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 32px;
+    flex-wrap: wrap;
+  }
+  .orch-step {
+    flex: 1;
+    min-width: 140px;
+    max-width: 180px;
+    padding: 20px 16px;
+    border-radius: 14px;
+    text-align: center;
+    background: rgba(30, 27, 75, 0.5);
+    border: 1px solid rgba(6, 182, 212, 0.25);
+    transition: all 0.3s;
+  }
+  .orch-step:hover {
+    transform: translateY(-3px);
+    border-color: rgba(168, 85, 247, 0.5);
+    box-shadow: 0 10px 30px rgba(6, 182, 212, 0.15);
+  }
+  .orch-step .step-icon { font-size: 28px; margin-bottom: 8px; }
+  .orch-step .step-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin-bottom: 4px;
+  }
+  .orch-step .step-desc {
+    font-size: 11px;
+    color: #64748b;
+  }
+  .orch-arrow {
+    font-size: 24px;
+    color: #475569;
+    flex-shrink: 0;
+  }
+
+  /* File list */
+  .file-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .file-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(71, 85, 105, 0.3);
+    border-radius: 12px;
+    transition: all 0.2s;
+  }
+  .file-item:hover {
+    border-color: rgba(6, 182, 212, 0.4);
+    background: rgba(30, 27, 75, 0.5);
+  }
+  .file-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .file-info { flex: 1; }
+  .file-name {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    color: #e2e8f0;
+    font-weight: 500;
+  }
+  .file-desc {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 2px;
+  }
+  .file-meta {
+    display: flex;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+  .file-meta .loc {
+    color: #22d3ee;
+    font-weight: 600;
+    font-size: 12px;
+  }
+
+  /* Highlight Box */
+  .highlight-box {
+    display: flex;
+    gap: 20px;
+    padding: 28px;
+    background: linear-gradient(135deg, rgba(6,182,212,0.08), rgba(168,85,247,0.08));
+    border: 1px solid rgba(6, 182, 212, 0.3);
+    border-radius: 16px;
+    margin-top: 24px;
+  }
+  .highlight-icon { font-size: 36px; flex-shrink: 0; }
+  .highlight-content h4 {
+    color: #a5f3fc;
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  .highlight-content p {
+    color: #94a3b8;
+    font-size: 14px;
+  }
+
+  /* 8 task status */
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  .status-item {
+    padding: 14px;
+    border-radius: 10px;
+    text-align: center;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(71, 85, 105, 0.3);
+  }
+  .status-item .icon { font-size: 24px; margin-bottom: 6px; }
+  .status-item .name { font-size: 12px; color: #e2e8f0; font-weight: 500; }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 40px 0;
+    color: #475569;
+    font-size: 13px;
+    border-top: 1px solid rgba(71, 85, 105, 0.2);
+    margin-top: 60px;
+  }
+  .footer .brand {
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 8px;
+  }
+  .footer .brand strong {
+    background: linear-gradient(135deg, #22d3ee, #a855f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  @media (max-width: 900px) {
+    .hero h1 { font-size: 32px; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .dim-grid { grid-template-columns: repeat(2, 1fr); }
+    .status-grid { grid-template-columns: repeat(2, 1fr); }
+    .orch-flow { flex-direction: column; }
+    .orch-arrow { transform: rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="badge">🧠 全维动态配置 · AI 能力专家系统</div>
+    <h1>每个专家独立配置 LLM & Graph</h1>
+    <p class="subtitle">9 大配置维度 × 10 个 AI 能力模块 × 智能任务分工——打造可配置、可编排、可协作的企业级 AI 专家矩阵</p>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="num">9</div><div class="label">配置维度</div></div>
+      <div class="hero-stat"><div class="num">10</div><div class="label">AI能力模块</div></div>
+      <div class="hero-stat"><div class="num">8</div><div class="label">任务状态</div></div>
+      <div class="hero-stat"><div class="num">5K+</div><div class="label">新增代码行</div></div>
+    </div>
+  </section>
+
+  <!-- 9大配置维度 -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-icon">🧩</div>
+      <div>
+        <div class="section-title">9 大全维配置维度</div>
+        <div class="section-desc">从基础画像到AI模块，每个专家完全独立可配置</div>
+      </div>
+    </div>
+    <div class="glass-card">
+      <div class="dim-grid">
+        <div class="dim-card">
+          <div class="dim-icon">🎨</div>
+          <div class="dim-name">基础画像</div>
+          <div class="dim-sub">人格 · 视觉 · 风格</div>
+        </div>
+        <div class="dim-card">
+          <div class="dim-icon">🔧</div>
+          <div class="dim-name">能力参数</div>
+          <div class="dim-sub">12项能力矩阵</div>
+        </div>
+        <div class="dim-card">
+          <div class="dim-icon">💬</div>
+          <div class="dim-name">提示词配置</div>
+          <div class="dim-sub">5场景 · 变量系统</div>
+        </div>
+        <div class="dim-card">
+          <div class="dim-icon">🔄</div>
+          <div class="dim-name">工作流配置</div>
+          <div class="dim-sub">5步骤 · 条件分支</div>
+        </div>
+        <div class="dim-card">
+          <div class="dim-icon">🎯</div>
+          <div class="dim-name">场景模板</div>
+          <div class="dim-sub">可增删改 · 导入导出</div>
+        </div>
+        <div class="dim-card">
+          <div class="dim-icon">📊</div>
+          <div class="dim-name">评估指标</div>
+          <div class="dim-sub">5维度 · 自动规则</div>
+        </div>
+        <div class="dim-card" style="border-color: rgba(6,182,212,0.4); background: rgba(6,182,212,0.08);">
+          <div class="dim-icon">🤖</div>
+          <div class="dim-name">LLM 模型配置</div>
+          <div class="dim-sub">主模型 · 备选 · 搜索</div>
+        </div>
+        <div class="dim-card" style="border-color: rgba(6,182,212,0.4); background: rgba(6,182,212,0.08);">
+          <div class="dim-icon">🕸️</div>
+          <div class="dim-name">Graph 引擎配置</div>
+          <div class="dim-sub">连接 · 查询 · AI洞察</div>
+        </div>
+        <div class="dim-card" style="border-color: rgba(168,85,247,0.4); background: rgba(168,85,247,0.08);">
+          <div class="dim-icon">🧩</div>
+          <div class="dim-name">AI 能力模块</div>
+          <div class="dim-sub">10模块 · 独立配置</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LLM 配置 -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-icon">🤖</div>
+      <div>
+        <div class="section-title">专家级独立 LLM 配置</div>
+        <div class="section-desc">每个专家可独立配置模型、参数、备选方案、联网搜索</div>
+      </div>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon icon-cyan">🎯</div>
+        <h3>主模型配置</h3>
+        <p>9 种 Provider 可选：OpenAI / Anthropic / Azure / 通义千问 / 文心一言 / 智谱AI / DeepSeek / 本地模型 / 自定义。支持 Base URL、API Key、API Version，一键测试连接。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">9 Provider</span>
+          <span class="feature-tag">测试连接</span>
+          <span class="feature-tag">7项参数</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-purple">🔄</div>
+        <h3>备选模型 & 负载均衡</h3>
+        <p>支持多备选模型配置，4 种路由策略：优先级 / 轮询 / 随机 / 按 Token 配额。主模型失败自动降级切换，保障服务高可用。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">多模型备选</span>
+          <span class="feature-tag">4种路由</span>
+          <span class="feature-tag">自动降级</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-green">🌐</div>
+        <h3>联网搜索配置</h3>
+        <p>5 种搜索 Provider：SerpAPI / Tavily / 百度 / 必应 / 自定义。可配置结果数量、搜索语言，为专家提供实时信息获取能力。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">5 Provider</span>
+          <span class="feature-tag">结果数量</span>
+          <span class="feature-tag">多语言</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-orange">📋</div>
+        <h3>模型预设</h3>
+        <p>4 种内置预设：创意模式（高 temperature）/ 平衡模式 / 精确模式（低 temperature）/ 代码模式。支持保存自定义预设。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">4种预设</span>
+          <span class="feature-tag">一键应用</span>
+          <span class="feature-tag">自定义保存</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Graph 配置 -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-icon">🕸️</div>
+      <div>
+        <div class="section-title">专家级独立 Graph 引擎配置</div>
+        <div class="section-desc">每个专家独立的图谱连接、查询、可视化、AI洞察配置</div>
+      </div>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon icon-cyan">🔌</div>
+        <h3>图谱连接配置</h3>
+        <p>5 种引擎类型：Neo4j / NebulaGraph / JanusGraph / 内置图谱 / 自定义。完整的连接配置（URI、用户名、密码、数据库），连接状态实时显示。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">5种引擎</span>
+          <span class="feature-tag">连接测试</span>
+          <span class="feature-tag">状态监控</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-purple">🔍</div>
+        <h3>查询 & 缓存</h3>
+        <p>3 种查询语言：Cypher / nGQL / Gremlin。可配置超时、最大返回节点/边数、分页大小。支持查询缓存，可配置 TTL。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">3种语言</span>
+          <span class="feature-tag">分页控制</span>
+          <span class="feature-tag">查询缓存</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-green">🎨</div>
+        <h3>可视化配置</h3>
+        <p>5 种布局算法：力导向 / 环形 / 树状 / 径向 / 网格。完整的力学参数调节：节点大小、连线距离、斥力、引力、标签样式。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">5种布局</span>
+          <span class="feature-tag">力学参数</span>
+          <span class="feature-tag">标签控制</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-pink">🧠</div>
+        <h3>AI 图谱洞察</h3>
+        <p>AI 驱动的图谱分析：3 级分析深度，4 种推荐算法（PageRank / 中心性 / 社区发现 / 激活传播），社区发现算法可选 Louvain / Label Propagation。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">AI洞察</span>
+          <span class="feature-tag">4种算法</span>
+          <span class="feature-tag">社区发现</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-orange">🔄</div>
+        <h3>图谱同步配置</h3>
+        <p>自动同步开关 + 可配置间隔，支持全量/增量同步。3 种冲突解决策略：以新为准 / 以旧为准 / 人工确认，保障数据一致性。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">自动同步</span>
+          <span class="feature-tag">全量/增量</span>
+          <span class="feature-tag">冲突解决</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI 能力模块 -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-icon">🧩</div>
+      <div>
+        <div class="section-title">10 大 AI 能力模块 · 独立配置</div>
+        <div class="section-desc">每个模块独立配置 LLM、Prompt、触发条件、输出格式</div>
+      </div>
+    </div>
+    <div class="glass-card">
+      <table class="module-table">
+        <thead>
+          <tr>
+            <th style="width: 35%;">模块</th>
+            <th>说明</th>
+            <th>推荐模型</th>
+            <th>优先级</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="module-icon" style="background: rgba(59,130,246,0.2);">💬</span>日常对话</td>
+            <td>普通聊天、问答交流</td>
+            <td>全局模型 / GPT-3.5</td>
+            <td class="priority-mid">中</td>
+          </tr>
+          <tr>
+            <td><span class="module-icon" style="background: rgba(124,58,237,0.2);">🔍</span>深度分析</td>
+            <td>复杂问题分析、推理</td>
+            <td>GPT-4o / Claude-3 Opus</td>
+            <td class="priority-high">高</td>
+          </tr>
+          <tr>
+            <td><span class="module-icon" style="background: rgba(16,185,129,0.2);">💻</span>代码专家</td>
+            <td>代码生成、审查、调试</td>
+            <td>GPT-4o / CodeLlama</td>
+            <td class="priority-high">高</td>
+          </tr>
+          <tr>
+            <td><span class="module-icon" style="background: rgba(245,158,11,0.2);">📝</span>文档写作</td>
+            <td>文档、报告、文章生成</td>
+            <td>Claude-3 Sonnet</td>
+            <td class="priority-mid">中</td>
+          </tr>
+          <tr>
+            <td><span class="module-icon" style="background: rgba(6,182,212,0.2);">🌐</span>多语翻译</td>
+            <td>多语言翻译与本地化</td>
+            <td>GPT-4o</td>
+            <td class="priority-high">高</td>
+          </tr>
+          <tr>
+            <td><span class="module-icon" style="background: rgba(168,85,247,0.2);">🧠</span>知识图谱</td>
+            <td>图谱分析、节点推荐</td>
+            <td>GPT-4o + 图谱增强</td>
+            <td class="priority-mid">中</td>
+          </tr>
+          <tr>
+            <td><span class="module-icon" style="background: rgba(236,72,153,0.2);">🎨</span>创意思考</td>
+            <td>创意、策划、头脑风暴</td>
+            <td>GPT-4o（高温度）</td>
+            <td class="priority-mid">中</td>
+          </tr>
+          <tr>
+            <td><span class="module-icon" style="background: rgba(239,68,68,0.2);">✅</span>质量审核</td>
+            <td>内容审核、质量检查</td>
+            <td>GPT-4o（低温度）</td>
+            <td class="priority-mid">中</td>
+          </tr>
+          <tr>
+            <td><span class="module-icon" style="background: rgba(234,179,8,0.2);">📊</span>数据分析</td>
+            <td>数据解读、统计分析</td>
+            <td>GPT-4o / CodeLlama</td>
+            <td class="priority-mid">中</td>
+          </tr>
+          <tr>
+            <td><span class="module-icon" style="background: rgba(249,115,22,0.2);">🔧</span>故障诊断</td>
+            <td>问题排查、根因分析</td>
+            <td>Claude-3 Opus</td>
+            <td class="priority-high">高</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight-box">
+        <div class="highlight-icon">💡</div>
+        <div class="highlight-content">
+          <h4>每个模块 5 大配置分组</h4>
+          <p>基本信息（名称/图标/颜色） · LLM 配置（全局继承或独立配置） · Prompt 配置（系统/前置/后置/变量） · 触发条件（关键词/任务类型/优先级） · 输出配置（格式/长度/后处理）</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 任务编排 -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-icon">⚡</div>
+      <div>
+        <div class="section-title">任务分工与协同编排</div>
+        <div class="section-desc">AI 智能拆解任务 → 专家分配 → 协同执行 → 汇总输出</div>
+      </div>
+    </div>
+
+    <div class="glass-card" style="margin-bottom: 24px;">
+      <div class="orch-flow">
+        <div class="orch-step">
+          <div class="step-icon">📝</div>
+          <div class="step-name">任务输入</div>
+          <div class="step-desc">描述原始需求</div>
+        </div>
+        <div class="orch-arrow">→</div>
+        <div class="orch-step">
+          <div class="step-icon">🧠</div>
+          <div class="step-name">智能拆解</div>
+          <div class="step-desc">AI 分解子任务</div>
+        </div>
+        <div class="orch-arrow">→</div>
+        <div class="orch-step">
+          <div class="step-icon">🎯</div>
+          <div class="step-name">专家匹配</div>
+          <div class="step-desc">智能分配专家</div>
+        </div>
+        <div class="orch-arrow">→</div>
+        <div class="orch-step">
+          <div class="step-icon">⚙️</div>
+          <div class="step-name">协同执行</div>
+          <div class="step-desc">并行/串行处理</div>
+        </div>
+        <div class="orch-arrow">→</div>
+        <div class="orch-step">
+          <div class="step-icon">📦</div>
+          <div class="step-name">汇总输出</div>
+          <div class="step-desc">生成最终报告</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon icon-cyan">✂️</div>
+        <h3>智能任务拆解</h3>
+        <p>输入任务描述后，AI 自动拆解为多个子任务，每个子任务包含：标题、描述、优先级、建议专家类型、前置依赖、预估耗时。支持手动编辑调整。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">AI 拆解</span>
+          <span class="feature-tag">依赖关系</span>
+          <span class="feature-tag">手动编辑</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-purple">🎯</div>
+        <h3>专家智能匹配</h3>
+        <p>匹配算法：专家类型匹配度 × 历史成功率 × 当前负载倒数。优先选择类型完全匹配且负载最低的专家，支持一键自动分配所有任务。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">智能匹配</span>
+          <span class="feature-tag">负载均衡</span>
+          <span class="feature-tag">拖拽分配</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-green">📊</div>
+        <h3>甘特图时间线</h3>
+        <p>可视化任务执行进度，甘特图+列表双视图切换。依赖关系连线，风险预警高亮，实时更新状态。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">甘特图</span>
+          <span class="feature-tag">时间线</span>
+          <span class="feature-tag">风险预警</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-orange">🤝</div>
+        <h3>协同执行引擎</h3>
+        <p>按依赖关系自动调度，串行/并行混合执行。任务失败自动重试或转派，全部完成后自动生成汇总报告。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">自动调度</span>
+          <span class="feature-tag">失败重试</span>
+          <span class="feature-tag">汇总报告</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass-card" style="margin-top: 24px;">
+      <h3 style="color: #e2e8f0; margin-bottom: 16px; font-size: 16px;">📋 8 种任务状态</h3>
+      <div class="status-grid">
+        <div class="status-item"><div class="icon">📋</div><div class="name">待分配</div></div>
+        <div class="status-item"><div class="icon">⏳</div><div class="name">等待中</div></div>
+        <div class="status-item"><div class="icon">🚀</div><div class="name">进行中</div></div>
+        <div class="status-item"><div class="icon">🔍</div><div class="name">审核中</div></div>
+        <div class="status-item"><div class="icon">✅</div><div class="name">已完成</div></div>
+        <div class="status-item"><div class="icon">⚠️</div><div class="name">有风险</div></div>
+        <div class="status-item"><div class="icon">❌</div><div class="name">失败</div></div>
+        <div class="status-item"><div class="icon">📦</div><div class="name">已归档</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 文件清单 -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-icon">📁</div>
+      <div>
+        <div class="section-title">文件清单</div>
+        <div class="section-desc">2 个核心文件升级 · 约 5000 行新增代码</div>
+      </div>
+    </div>
+    <div class="glass-card">
+      <div class="file-list">
+        <div class="file-item">
+          <div class="file-icon" style="background: linear-gradient(135deg, rgba(6,182,212,0.2), rgba(168,85,247,0.2));">⚙️</div>
+          <div class="file-info">
+            <div class="file-name">src/views/expert/ExpertConfigView.vue</div>
+            <div class="file-desc">专家配置引擎 · 新增 LLM/Graph/AI模块 三大配置维度（9 → 9 维度）</div>
+          </div>
+          <div class="file-meta">
+            <span class="status-badge status-upgraded">升级</span>
+            <span class="loc">+2644 行</span>
+          </div>
+        </div>
+        <div class="file-item">
+          <div class="file-icon" style="background: linear-gradient(135deg, rgba(168,85,247,0.2), rgba(236,72,153,0.2));">🎯</div>
+          <div class="file-info">
+            <div class="file-name">src/views/workspace/ExpertWorkspaceView.vue</div>
+            <div class="file-desc">专家工作台 · 新增任务编排模式（智能拆解+专家分配+甘特图）</div>
+          </div>
+          <div class="file-meta">
+            <span class="status-badge status-upgraded">升级</span>
+            <span class="loc">+2151 行</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 核心价值 -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-icon">💎</div>
+      <div>
+        <div class="section-title">核心价值</div>
+        <div class="section-desc">为什么全维动态配置如此重要</div>
+      </div>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon icon-cyan">🎯</div>
+        <h3>专业化分工</h3>
+        <p>不同领域的专家使用最适合的模型和参数。代码专家用 GPT-4o，创意思考用高温度模型，质量审核用低温度模型，各司其职。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-purple">⚡</div>
+        <h3>降本增效</h3>
+        <p>简单任务用小模型，复杂任务用大模型。通过智能路由和备选模型策略，在保证质量的同时最大化成本效益。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-green">🔒</div>
+        <h3>数据隔离</h3>
+        <p>每个专家独立配置 LLM 端点和图谱连接，企业级数据隔离。敏感数据走私有部署模型，普通任务用公有云。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-orange">🧩</div>
+        <h3>灵活扩展</h3>
+        <p>新增 AI 能力模块无需修改代码，配置即可。支持自定义模块、自定义 Prompt、自定义输出格式，低代码可扩展。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-pink">📈</div>
+        <h3>质量可控</h3>
+        <p>每个模块独立评估质量，自动规则 + 人工评分双轨制。质量问题可定位到具体模块，精准优化。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-blue">🏢</div>
+        <h3>企业级管理</h3>
+        <p>配置版本管理、发布审批、导入导出、权限控制。完整的企业级配置治理体系，保障系统稳定运行。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 快速访问 -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-icon">🔗</div>
+      <div>
+        <div class="section-title">快速访问</div>
+        <div class="section-desc">三大核心入口</div>
+      </div>
+    </div>
+    <div class="feature-grid" style="grid-template-columns: repeat(3, 1fr);">
+      <a href="#/expert-config" style="text-decoration: none; color: inherit;">
+        <div class="feature-card" style="height: 100%;">
+          <div class="feature-icon icon-cyan">⚙️</div>
+          <h3>专家配置引擎</h3>
+          <p>9 维全配置 · LLM独立 · Graph独立 · 10大模块</p>
+          <div class="feature-tags"><span class="feature-tag">#/expert-config</span></div>
+        </div>
+      </a>
+      <a href="#/expert-workspace" style="text-decoration: none; color: inherit;">
+        <div class="feature-card" style="height: 100%;">
+          <div class="feature-icon icon-purple">🎯</div>
+          <h3>专家工作台</h3>
+          <p>任务编排 · 智能拆解 · 协同执行 · 甘特图</p>
+          <div class="feature-tags"><span class="feature-tag">#/expert-workspace</span></div>
+        </div>
+      </a>
+      <a href="#/expert-plaza" style="text-decoration: none; color: inherit;">
+        <div class="feature-card" style="height: 100%;">
+          <div class="feature-icon icon-green">🏪</div>
+          <h3>专家广场</h3>
+          <p>发现专家 · 排行榜 · 预约 · 评价</p>
+          <div class="feature-tags"><span class="feature-tag">#/expert-plaza</span></div>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="brand">全维动态配置 <strong>AI 能力专家系统</strong> · 企业级专家联盟 2.0</div>
+    <div>每个专家独立配置 · 每个模块独立运行 · 全维度可编排可控制</div>
+  </div>
+
+</div>
+</body>
+</html>

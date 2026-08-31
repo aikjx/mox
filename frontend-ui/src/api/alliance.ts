@@ -788,3 +788,363 @@ export async function getSingleExpertMetrics(expertId: string): Promise<SingleEx
   }
   return data
 }
+
+// ============================================================================
+// 联盟任务 API（调度器 + 执行器）
+// ============================================================================
+
+/** 任务状态 */
+export type AllianceTaskStatus = 'pending' | 'planning' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled'
+
+/** 融合策略 */
+export type FusionStrategyType =
+  | 'weighted_voting'
+  | 'confidence_weighting'
+  | 'stacking'
+  | 'debate'
+  | 'map_reduce'
+  | 'iterative_refinement'
+
+/** 联盟任务 */
+export interface AllianceTask {
+  id: string
+  tenant_id: string
+  title: string
+  description: string
+  status: AllianceTaskStatus
+  strategy: FusionStrategyType
+  expert_count: number
+  progress: number
+  priority: 'low' | 'medium' | 'high' | 'critical'
+  created_at: string
+  started_at?: string
+  completed_at?: string
+  eta_seconds?: number
+  error_message?: string
+  tags?: string[]
+  created_by?: string
+}
+
+/** 创建任务请求 */
+export interface CreateAllianceTaskRequest {
+  title: string
+  description: string
+  strategy?: FusionStrategyType
+  expert_ids?: string[]
+  priority?: 'low' | 'medium' | 'high' | 'critical'
+  project_id?: string
+  context?: Record<string, any>
+}
+
+/** 创建任务响应 */
+export interface CreateAllianceTaskResponse {
+  task_id: string
+  status: AllianceTaskStatus
+  created_at: string
+  message?: string
+}
+
+/** 任务列表查询参数 */
+export interface TaskListParams {
+  page?: number
+  page_size?: number
+  status?: AllianceTaskStatus
+  keyword?: string
+  strategy?: FusionStrategyType
+  sort_by?: 'created_at' | 'priority' | 'progress'
+  sort_order?: 'asc' | 'desc'
+}
+
+/** 任务列表响应 */
+export interface TaskListResponse {
+  items: AllianceTask[]
+  total: number
+  page: number
+  page_size: number
+  has_more: boolean
+}
+
+/** 协作计划节点 */
+export interface CollaborationNode {
+  id: string
+  expert_id: string
+  expert_name: string
+  expert_domain: string
+  role: 'primary' | 'supporting' | 'reviewer' | 'fusion'
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped'
+  depends_on: string[]
+  result?: any
+  started_at?: string
+  completed_at?: string
+  duration_ms?: number
+}
+
+/** 协作计划 */
+export interface CollaborationPlan {
+  task_id: string
+  nodes: CollaborationNode[]
+  edges: Array<{ source: string; target: string; type: string }>
+  estimated_duration_ms: number
+  strategy: FusionStrategyType
+}
+
+/** 执行日志条目 */
+export interface ExecutionLogEntry {
+  id: string
+  task_id: string
+  node_id?: string
+  expert_name?: string
+  level: 'info' | 'warn' | 'error' | 'success' | 'debug'
+  phase: 'planning' | 'execution' | 'fusion' | 'complete'
+  message: string
+  timestamp: string
+  data?: any
+}
+
+/** 融合结果 */
+export interface FusionResultData {
+  task_id: string
+  strategy: FusionStrategyType
+  strategy_label: string
+  final_answer: string
+  confidence: number
+  consistency_score: number
+  coverage_score: number
+  expert_contributions: Array<{
+    expert_id: string
+    expert_name: string
+    weight: number
+    contribution_summary: string
+  }>
+  metrics: {
+    total_experts: number
+    active_experts: number
+    total_duration_ms: number
+    fusion_iterations: number
+  }
+}
+
+/** 全量融合结果对比 */
+export interface FusionComparison {
+  task_id: string
+  results: FusionResultData[]
+  recommended_strategy: FusionStrategyType
+  overall_best: FusionResultData
+}
+
+/** POST /alliance/tasks - 创建联盟任务 */
+export async function createAllianceTask(
+  payload: CreateAllianceTaskRequest
+): Promise<CreateAllianceTaskResponse> {
+  const r = await fetch(`${ALLIANCE_BASE}/alliance/tasks`, {
+    method: 'POST',
+    headers: authHeaders({
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    }),
+    body: JSON.stringify(payload),
+  })
+  if (!r.ok) throw new Error(`alliance/tasks HTTP ${r.status}`)
+  const data = await r.json()
+  if (data && typeof data === 'object' && 'success' in data) {
+    if (!data.success) throw new Error(data.error || data.message || '创建任务失败')
+    return data.data
+  }
+  return data
+}
+
+/** GET /alliance/tasks - 获取任务列表 */
+export async function getAllianceTasks(
+  params: TaskListParams = {}
+): Promise<TaskListResponse> {
+  const query = new URLSearchParams()
+  if (params.page != null) query.set('page', String(params.page))
+  if (params.page_size != null) query.set('page_size', String(params.page_size))
+  if (params.status) query.set('status', params.status)
+  if (params.keyword) query.set('keyword', params.keyword)
+  if (params.strategy) query.set('strategy', params.strategy)
+  if (params.sort_by) query.set('sort_by', params.sort_by)
+  if (params.sort_order) query.set('sort_order', params.sort_order)
+
+  const url = `${ALLIANCE_BASE}/alliance/tasks${query.toString() ? `?${query.toString()}` : ''}`
+  const r = await fetch(url, {
+    method: 'GET',
+    headers: authHeaders({ 'Accept': 'application/json' }),
+  })
+  if (!r.ok) throw new Error(`alliance/tasks/list HTTP ${r.status}`)
+  const data = await r.json()
+  if (data && typeof data === 'object' && 'success' in data) {
+    if (!data.success) throw new Error(data.error || data.message || '获取任务列表失败')
+    return data.data
+  }
+  return data
+}
+
+/** GET /alliance/tasks/{id} - 获取任务详情 */
+export async function getAllianceTask(taskId: string): Promise<AllianceTask> {
+  const r = await fetch(`${ALLIANCE_BASE}/alliance/tasks/${encodeURIComponent(taskId)}`, {
+    method: 'GET',
+    headers: authHeaders({ 'Accept': 'application/json' }),
+  })
+  if (!r.ok) throw new Error(`alliance/task HTTP ${r.status}`)
+  const data = await r.json()
+  if (data && typeof data === 'object' && 'success' in data) {
+    if (!data.success) throw new Error(data.error || data.message || '获取任务详情失败')
+    return data.data
+  }
+  return data
+}
+
+/** GET /alliance/tasks/{id}/plan - 获取协作计划 */
+export async function getCollaborationPlan(taskId: string): Promise<CollaborationPlan> {
+  const r = await fetch(`${ALLIANCE_BASE}/alliance/tasks/${encodeURIComponent(taskId)}/plan`, {
+    method: 'GET',
+    headers: authHeaders({ 'Accept': 'application/json' }),
+  })
+  if (!r.ok) throw new Error(`alliance/task/plan HTTP ${r.status}`)
+  const data = await r.json()
+  if (data && typeof data === 'object' && 'success' in data) {
+    if (!data.success) throw new Error(data.error || data.message || '获取协作计划失败')
+    return data.data
+  }
+  return data
+}
+
+/** GET /alliance/tasks/{id}/logs - 获取执行日志（SSE 流式） */
+export async function getExecutionLogsSSE(
+  taskId: string,
+  onLog: (entry: ExecutionLogEntry) => boolean | void
+): Promise<void> {
+  const resp = await fetch(`${ALLIANCE_BASE}/alliance/tasks/${encodeURIComponent(taskId)}/logs/stream`, {
+    method: 'GET',
+    headers: authHeaders({
+      'Accept': 'text/event-stream',
+    }),
+  })
+  if (!resp.ok) throw new Error(`alliance/task/logs HTTP ${resp.status}`)
+  const reader = resp.body?.getReader()
+  if (!reader) throw new Error('No readable stream')
+  const decoder = new TextDecoder('utf-8')
+  let buffer = ''
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    let idx: number
+    while ((idx = buffer.indexOf('\n\n')) >= 0) {
+      const rawEvent = buffer.slice(0, idx)
+      buffer = buffer.slice(idx + 2)
+      let data = ''
+      for (const line of rawEvent.split('\n')) {
+        if (line.startsWith('data:')) data += line.slice(5).trimStart()
+      }
+      if (!data) continue
+      if (data === '[DONE]') {
+        reader.releaseLock()
+        return
+      }
+      try {
+        const entry: ExecutionLogEntry = JSON.parse(data)
+        const cont = onLog(entry)
+        if (cont === false) {
+          reader.releaseLock()
+          return
+        }
+      } catch (e) {
+        console.warn('[alliance.logs] frame parse failed:', data, e)
+      }
+    }
+  }
+  reader.releaseLock()
+}
+
+/** GET /alliance/tasks/{id}/fusion - 获取融合结果 */
+export async function getFusionResults(taskId: string): Promise<FusionComparison> {
+  const r = await fetch(`${ALLIANCE_BASE}/alliance/tasks/${encodeURIComponent(taskId)}/fusion`, {
+    method: 'GET',
+    headers: authHeaders({ 'Accept': 'application/json' }),
+  })
+  if (!r.ok) throw new Error(`alliance/task/fusion HTTP ${r.status}`)
+  const data = await r.json()
+  if (data && typeof data === 'object' && 'success' in data) {
+    if (!data.success) throw new Error(data.error || data.message || '获取融合结果失败')
+    return data.data
+  }
+  return data
+}
+
+/** POST /alliance/tasks/{id}/pause - 暂停任务 */
+export async function pauseAllianceTask(taskId: string): Promise<{ success: boolean }> {
+  const r = await fetch(`${ALLIANCE_BASE}/alliance/tasks/${encodeURIComponent(taskId)}/pause`, {
+    method: 'POST',
+    headers: authHeaders({ 'Accept': 'application/json' }),
+  })
+  if (!r.ok) throw new Error(`alliance/task/pause HTTP ${r.status}`)
+  const data = await r.json()
+  if (data && typeof data === 'object' && 'success' in data) return data
+  return { success: true }
+}
+
+/** POST /alliance/tasks/{id}/resume - 恢复任务 */
+export async function resumeAllianceTask(taskId: string): Promise<{ success: boolean }> {
+  const r = await fetch(`${ALLIANCE_BASE}/alliance/tasks/${encodeURIComponent(taskId)}/resume`, {
+    method: 'POST',
+    headers: authHeaders({ 'Accept': 'application/json' }),
+  })
+  if (!r.ok) throw new Error(`alliance/task/resume HTTP ${r.status}`)
+  const data = await r.json()
+  if (data && typeof data === 'object' && 'success' in data) return data
+  return { success: true }
+}
+
+/** POST /alliance/tasks/{id}/cancel - 取消任务 */
+export async function cancelAllianceTask(taskId: string): Promise<{ success: boolean }> {
+  const r = await fetch(`${ALLIANCE_BASE}/alliance/tasks/${encodeURIComponent(taskId)}/cancel`, {
+    method: 'POST',
+    headers: authHeaders({ 'Accept': 'application/json' }),
+  })
+  if (!r.ok) throw new Error(`alliance/task/cancel HTTP ${r.status}`)
+  const data = await r.json()
+  if (data && typeof data === 'object' && 'success' in data) return data
+  return { success: true }
+}
+
+/** POST /alliance/tasks/{id}/retry - 重试任务 */
+export async function retryAllianceTask(taskId: string): Promise<{ success: boolean; task_id: string }> {
+  const r = await fetch(`${ALLIANCE_BASE}/alliance/tasks/${encodeURIComponent(taskId)}/retry`, {
+    method: 'POST',
+    headers: authHeaders({ 'Accept': 'application/json' }),
+  })
+  if (!r.ok) throw new Error(`alliance/task/retry HTTP ${r.status}`)
+  const data = await r.json()
+  if (data && typeof data === 'object' && 'success' in data) return data.data || data
+  return { success: true, task_id: taskId }
+}
+
+/** 联盟概览统计 */
+export interface AllianceStats {
+  total_tasks: number
+  running_tasks: number
+  completed_tasks: number
+  failed_tasks: number
+  total_experts: number
+  today_tasks: number
+  avg_duration_ms: number
+  success_rate: number
+}
+
+/** GET /alliance/stats - 获取联盟统计 */
+export async function getAllianceStats(): Promise<AllianceStats> {
+  const r = await fetch(`${ALLIANCE_BASE}/alliance/stats`, {
+    method: 'GET',
+    headers: authHeaders({ 'Accept': 'application/json' }),
+  })
+  if (!r.ok) throw new Error(`alliance/stats HTTP ${r.status}`)
+  const data = await r.json()
+  if (data && typeof data === 'object' && 'success' in data) {
+    if (!data.success) throw new Error(data.error || data.message || '获取联盟统计失败')
+    return data.data
+  }
+  return data
+}

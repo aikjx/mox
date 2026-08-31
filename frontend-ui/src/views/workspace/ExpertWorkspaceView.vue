@@ -442,6 +442,463 @@
           </div>
         </div>
 
+        <!-- ========== 任务编排模式视图 ========== -->
+        <div v-show="activeMode === 'orchestration'" class="task-orch-view">
+          <!-- 顶部：任务概览 + 控制栏 -->
+          <div class="orch-top-bar glass-card">
+            <div class="orch-progress-section">
+              <div class="orch-progress-header">
+                <span class="orch-progress-title">
+                  <span class="orch-title-icon">🎯</span>
+                  任务总览
+                </span>
+                <span class="orch-progress-stats">
+                  <el-tag size="small" type="success" effect="light">{{ orchProgress.completed }} 已完成</el-tag>
+                  <el-tag size="small" type="primary" effect="light">{{ orchProgress.inProgress }} 进行中</el-tag>
+                  <el-tag size="small" type="info" effect="light">{{ orchProgress.total - orchProgress.completed - orchProgress.inProgress }} 待处理</el-tag>
+                  <el-tag size="small" type="danger" effect="light" v-if="orchProgress.failed > 0">{{ orchProgress.failed }} 失败</el-tag>
+                </span>
+              </div>
+              <div class="orch-progress-bar-wrap">
+                <div class="orch-progress-bar">
+                  <div class="orch-progress-fill" :style="{ width: orchProgress.percentage + '%' }"></div>
+                  <div class="orch-progress-glow" :style="{ width: orchProgress.percentage + '%' }"></div>
+                </div>
+                <span class="orch-progress-text">{{ orchProgress.percentage }}%</span>
+              </div>
+            </div>
+            <div class="orch-control-section">
+              <el-select v-model="taskOrchestration.executionMode" size="small" class="orch-mode-select">
+                <el-option label="自动执行" value="auto" />
+                <el-option label="手动执行" value="manual" />
+              </el-select>
+              <el-button size="small" class="orch-btn-secondary" @click="resetAllTasks">
+                <el-icon><RefreshLeft /></el-icon>
+                重置
+              </el-button>
+              <el-button 
+                size="small" 
+                type="primary" 
+                class="gradient-btn orch-btn-primary"
+                @click="startTaskExecution"
+                :disabled="taskOrchestration.subtasks.length === 0 || orchIsRunning"
+                :loading="orchIsRunning"
+              >
+                <el-icon><Promotion /></el-icon>
+                {{ orchIsRunning ? '执行中...' : '开始执行' }}
+              </el-button>
+            </div>
+          </div>
+
+          <!-- 三栏工作区 -->
+          <div class="orch-main-area">
+            <!-- ---- 左栏：任务拆解面板 ---- -->
+            <div class="orch-panel orch-panel-left glass-card">
+              <div class="orch-panel-header">
+                <span class="orch-panel-title">
+                  <span class="orch-panel-icon">📋</span>
+                  任务拆解
+                </span>
+                <span class="orch-task-count">{{ taskOrchestration.subtasks.length }} 个子任务</span>
+              </div>
+
+              <!-- 原始任务输入 -->
+              <div class="orch-task-input-section">
+                <div class="orch-input-label">原始任务描述</div>
+                <el-input
+                  v-model="taskOrchestration.originalTask"
+                  type="textarea"
+                  :rows="3"
+                  placeholder="请输入需要完成的复杂任务描述，AI 将自动拆解为子任务…"
+                  resize="none"
+                  class="orch-task-input"
+                />
+                <div class="orch-input-actions">
+                  <el-button 
+                    type="primary" 
+                    class="gradient-btn orch-decompose-btn"
+                    @click="decomposeTask"
+                    :loading="decomposing"
+                    :disabled="!taskOrchestration.originalTask.trim()"
+                  >
+                    <el-icon><MagicStick /></el-icon>
+                    智能拆解
+                  </el-button>
+                  <el-button 
+                    class="orch-add-manual-btn"
+                    @click="addSubtaskManually"
+                  >
+                    <el-icon><Plus /></el-icon>
+                    手动添加
+                  </el-button>
+                </div>
+              </div>
+
+              <!-- 子任务列表 -->
+              <div class="orch-subtask-list">
+                <div class="orch-list-header">
+                  <span class="orch-list-title">子任务列表</span>
+                  <div class="orch-list-actions">
+                    <el-button size="small" text @click="collapseAllSubtasks">
+                      <el-icon><Fold /></el-icon>
+                      全部折叠
+                    </el-button>
+                  </div>
+                </div>
+                <el-scrollbar class="orch-subtask-scroll">
+                  <div
+                    v-for="(task, index) in taskOrchestration.subtasks"
+                    :key="task.id"
+                    class="orch-subtask-card"
+                    :class="{ 
+                      'is-selected': activeSubtaskId === task.id,
+                      'is-dragging': draggingTaskId === task.id,
+                      'drag-over': dragOverTaskId === task.id
+                    }"
+                    draggable="true"
+                    @dragstart="onTaskDragStart($event, task)"
+                    @dragend="onTaskDragEnd"
+                    @dragover.prevent="onTaskDragOver($event, task)"
+                    @drop="onTaskDrop($event, task)"
+                    @click="selectSubtask(task)"
+                  >
+                    <div class="subtask-card-header">
+                      <div class="subtask-index" :style="{ background: subtaskPriorityGradient(task.priority) }">
+                        {{ index + 1 }}
+                      </div>
+                      <div class="subtask-title-row">
+                        <span class="subtask-title">{{ task.title }}</span>
+                        <div class="subtask-status-badge" :class="'status-' + task.status">
+                          <span class="status-dot"></span>
+                          {{ subtaskStatusText(task.status) }}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="subtask-card-body">
+                      <p class="subtask-desc">{{ task.description }}</p>
+                      <div class="subtask-meta-row">
+                        <el-tag 
+                          size="small" 
+                          effect="light"
+                          :style="{ borderColor: expertColor(task.suggestedExpertType) + '50', color: expertColor(task.suggestedExpertType) }"
+                        >
+                          {{ expertEmoji(task.suggestedExpertType) }} {{ EXPERT_TYPES[task.suggestedExpertType] || task.suggestedExpertType }}
+                        </el-tag>
+                        <span class="subtask-time">
+                          <el-icon><Clock /></el-icon>
+                          {{ task.estimatedTime }}分钟
+                        </span>
+                      </div>
+                      <div v-if="task.dependencies && task.dependencies.length > 0" class="subtask-deps">
+                        <span class="deps-label">依赖:</span>
+                        <span 
+                          v-for="depId in task.dependencies" 
+                          :key="depId"
+                          class="dep-tag"
+                        >
+                          #{{ getSubtaskIndex(depId) + 1 }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="subtask-card-actions">
+                      <button class="subtask-action-btn" @click.stop="editSubtask(task)" title="编辑">
+                        <el-icon><Edit /></el-icon>
+                      </button>
+                      <button class="subtask-action-btn delete" @click.stop="deleteSubtask(task.id)" title="删除">
+                        <el-icon><Delete /></el-icon>
+                      </button>
+                      <button class="subtask-action-btn" @click.stop="toggleSubtaskExpand(task)" title="展开详情">
+                        <el-icon><component :is="task.expanded ? 'ArrowUp' : 'ArrowDown'" /></el-icon>
+                      </button>
+                    </div>
+
+                    <!-- 展开的详情 -->
+                    <div v-if="task.expanded" class="subtask-expanded-detail">
+                      <div class="detail-section">
+                        <div class="detail-label">分配专家</div>
+                        <div class="assigned-experts">
+                          <div
+                            v-for="expId in task.expertIds"
+                            :key="expId"
+                            class="assigned-expert-avatar"
+                            :style="{ background: expertGradient(getExpertById(expId)?.type) }"
+                            :title="getExpertById(expId)?.name"
+                          >
+                            {{ expertEmoji(getExpertById(expId)?.type) }}
+                          </div>
+                          <button v-if="task.expertIds.length === 0" class="add-expert-btn" @click.stop="openAssignDialog(task)">
+                            <el-icon><Plus /></el-icon>
+                            分配专家
+                          </button>
+                        </div>
+                      </div>
+                      <div v-if="task.result" class="detail-section">
+                        <div class="detail-label">执行结果</div>
+                        <div class="task-result-text">{{ task.result }}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <el-empty v-if="taskOrchestration.subtasks.length === 0" description="暂无子任务，请输入任务描述并点击智能拆解" :image-size="60">
+                    <template #description>
+                      <div class="orch-empty-hint">
+                        <p>输入任务描述后点击「智能拆解」</p>
+                        <p class="hint-sub">AI 将自动分析并拆分为可执行的子任务</p>
+                      </div>
+                    </template>
+                  </el-empty>
+                </el-scrollbar>
+              </div>
+            </div>
+
+            <!-- ---- 中栏：专家分配区域 ---- -->
+            <div class="orch-panel orch-panel-center glass-card">
+              <div class="orch-panel-header">
+                <span class="orch-panel-title">
+                  <span class="orch-panel-icon">👥</span>
+                  专家分配
+                </span>
+                <el-button size="small" text class="orch-auto-assign-btn" @click="autoAssignExperts" :disabled="taskOrchestration.subtasks.length === 0">
+                  <el-icon><MagicStick /></el-icon>
+                  智能分配
+                </el-button>
+              </div>
+
+              <!-- 专家池 -->
+              <div class="orch-expert-pool">
+                <div class="orch-pool-header">
+                  <span class="orch-pool-title">可用专家池</span>
+                  <span class="orch-pool-count">{{ availableExperts.length }} 位</span>
+                </div>
+                <div class="orch-expert-grid">
+                  <div
+                    v-for="expert in availableExperts"
+                    :key="expert.id"
+                    class="orch-expert-chip"
+                    :class="{ 'is-busy': expert.status === 'busy' }"
+                    draggable="true"
+                    @dragstart="onExpertDragStart($event, expert)"
+                    @dragend="onExpertDragEnd"
+                    :title="expert.name + ' - ' + (expert.capabilities?.join('、') || '')"
+                  >
+                    <div class="chip-avatar gradient-avatar" :style="{ background: expertGradient(expert.type) }">
+                      {{ expertEmoji(expert.type) }}
+                      <span class="chip-status-dot" :class="'dot-' + expert.status"></span>
+                    </div>
+                    <div class="chip-info">
+                      <span class="chip-name">{{ expert.name }}</span>
+                      <span class="chip-role">{{ EXPERT_TYPES[expert.type] }}</span>
+                    </div>
+                    <div class="chip-load" :title="'当前负载: ' + expertLoad(expert.id) + ' 个任务'">
+                      <div class="load-bar">
+                        <div class="load-fill" :style="{ width: Math.min(expertLoad(expert.id) * 25, 100) + '%' }"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 任务分配看板 -->
+              <div class="orch-assignment-board">
+                <div class="orch-board-header">
+                  <span class="orch-board-title">任务分配看板</span>
+                  <span class="orch-board-hint">拖拽专家到任务卡片上进行分配</span>
+                </div>
+                <el-scrollbar class="orch-board-scroll">
+                  <div
+                    v-for="(task, index) in taskOrchestration.subtasks"
+                    :key="task.id"
+                    class="orch-task-assign-card"
+                    :class="{ 
+                      'drag-over': expertDragOverTaskId === task.id,
+                      'status-' + task.status
+                    }"
+                    @dragover.prevent="onExpertDragOverTask($event, task)"
+                    @dragleave="onExpertDragLeaveTask"
+                    @drop="onExpertDropOnTask($event, task)"
+                    @click="selectSubtask(task)"
+                  >
+                    <div class="assign-card-left">
+                      <div class="assign-task-index" :style="{ background: subtaskPriorityGradient(task.priority) }">
+                        {{ index + 1 }}
+                      </div>
+                    </div>
+                    <div class="assign-card-body">
+                      <div class="assign-task-title-row">
+                        <span class="assign-task-title">{{ task.title }}</span>
+                        <el-tag size="small" :type="subtaskStatusTagType(task.status)" effect="light">
+                          {{ subtaskStatusText(task.status) }}
+                        </el-tag>
+                      </div>
+                      <p class="assign-task-desc">{{ task.description }}</p>
+                      <div class="assign-experts-row">
+                        <div class="assigned-experts-list">
+                          <div
+                            v-for="expId in task.expertIds"
+                            :key="expId"
+                            class="assigned-expert-chip"
+                            :style="{ borderColor: expertColor(getExpertById(expId)?.type) }"
+                          >
+                            <span class="chip-avatar-sm" :style="{ background: expertGradient(getExpertById(expId)?.type) }">
+                              {{ expertEmoji(getExpertById(expId)?.type) }}
+                            </span>
+                            <span class="chip-name-sm">{{ getExpertById(expId)?.name }}</span>
+                            <button class="chip-remove" @click.stop="unassignExpert(task.id, expId)">
+                              <el-icon><Close /></el-icon>
+                            </button>
+                          </div>
+                          <button 
+                            v-if="task.expertIds.length === 0" 
+                            class="add-expert-inline-btn"
+                            @click.stop="openAssignDialog(task)"
+                          >
+                            <el-icon><Plus /></el-icon>
+                            分配专家
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="assign-card-right">
+                      <div class="task-time-estimate">
+                        <el-icon><Clock /></el-icon>
+                        <span>{{ task.estimatedTime }}分钟</span>
+                      </div>
+                    </div>
+                  </div>
+                  <el-empty v-if="taskOrchestration.subtasks.length === 0" description="暂无待分配任务" :image-size="50" />
+                </el-scrollbar>
+              </div>
+            </div>
+
+            <!-- ---- 右栏：任务执行时间线 ---- -->
+            <div class="orch-panel orch-panel-right glass-card">
+              <div class="orch-panel-header">
+                <span class="orch-panel-title">
+                  <span class="orch-panel-icon">📊</span>
+                  执行时间线
+                </span>
+                <div class="orch-timeline-actions">
+                  <el-button-group size="small">
+                    <el-button :type="timelineView === 'gantt' ? 'primary' : ''" @click="timelineView = 'gantt'">甘特图</el-button>
+                    <el-button :type="timelineView === 'list' ? 'primary' : ''" @click="timelineView = 'list'">列表</el-button>
+                  </el-button-group>
+                </div>
+              </div>
+
+              <!-- 甘特图视图 -->
+              <div v-show="timelineView === 'gantt'" class="orch-gantt-container">
+                <div class="gantt-header">
+                  <div class="gantt-task-col">任务</div>
+                  <div class="gantt-time-col">
+                    <div class="gantt-time-scale">
+                      <span v-for="i in ganttTimeSlots" :key="i" class="time-slot">{{ i * ganttSlotMinutes }}分</span>
+                    </div>
+                  </div>
+                </div>
+                <el-scrollbar class="gantt-body-scroll">
+                  <div class="gantt-body">
+                    <div
+                      v-for="(task, index) in taskOrchestration.subtasks"
+                      :key="task.id"
+                      class="gantt-row"
+                      :class="{ 'is-selected': activeSubtaskId === task.id }"
+                      @click="selectSubtask(task)"
+                    >
+                      <div class="gantt-task-label">
+                        <span class="gantt-task-idx">{{ index + 1 }}.</span>
+                        <span class="gantt-task-name">{{ task.title }}</span>
+                      </div>
+                      <div class="gantt-bar-area">
+                        <!-- 背景网格 -->
+                        <div class="gantt-grid">
+                          <div v-for="i in ganttTimeSlots" :key="i" class="grid-line"></div>
+                        </div>
+                        <!-- 任务条 -->
+                        <div
+                          class="gantt-task-bar"
+                          :class="'status-' + task.status"
+                          :style="{
+                            left: (task.ganttOffset || 0) + '%',
+                            width: Math.max(task.ganttWidth || 15, 8) + '%'
+                          }"
+                        >
+                          <div class="gantt-bar-fill"></div>
+                          <div class="gantt-bar-glow"></div>
+                          <span class="gantt-bar-label">{{ task.estimatedTime }}分钟</span>
+                        </div>
+                        <!-- 依赖连线（SVG） -->
+                      </div>
+                    </div>
+                    <el-empty v-if="taskOrchestration.subtasks.length === 0" description="暂无任务时间线" :image-size="50" />
+                  </div>
+                </el-scrollbar>
+              </div>
+
+              <!-- 列表视图 -->
+              <div v-show="timelineView === 'list'" class="orch-timeline-list">
+                <el-scrollbar class="timeline-scroll">
+                  <div class="timeline-list-inner">
+                    <div
+                      v-for="(task, index) in taskOrchestration.subtasks"
+                      :key="task.id"
+                      class="timeline-item"
+                      :class="{ 'is-selected': activeSubtaskId === task.id }"
+                      @click="selectSubtask(task)"
+                    >
+                      <div class="timeline-dot" :class="'status-' + task.status">
+                        <el-icon v-if="task.status === 'completed'"><CircleCheckFilled /></el-icon>
+                        <span v-else>{{ index + 1 }}</span>
+                      </div>
+                      <div class="timeline-line" v-if="index < taskOrchestration.subtasks.length - 1"></div>
+                      <div class="timeline-content">
+                        <div class="timeline-task-title">{{ task.title }}</div>
+                        <div class="timeline-task-meta">
+                          <span class="timeline-status" :class="'status-' + task.status">
+                            {{ subtaskStatusText(task.status) }}
+                          </span>
+                          <span class="timeline-time">
+                            <el-icon><Clock /></el-icon>
+                            {{ task.estimatedTime }}分钟
+                          </span>
+                        </div>
+                        <div v-if="task.expertIds && task.expertIds.length > 0" class="timeline-experts">
+                          <div
+                            v-for="expId in task.expertIds.slice(0, 3)"
+                            :key="expId"
+                            class="timeline-expert-avatar"
+                            :style="{ background: expertGradient(getExpertById(expId)?.type) }"
+                            :title="getExpertById(expId)?.name"
+                          >
+                            {{ expertEmoji(getExpertById(expId)?.type) }}
+                          </div>
+                          <span v-if="task.expertIds.length > 3" class="timeline-more-experts">
+                            +{{ task.expertIds.length - 3 }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <el-empty v-if="taskOrchestration.subtasks.length === 0" description="暂无任务" :image-size="50" />
+                  </div>
+                </el-scrollbar>
+              </div>
+
+              <!-- 风险预警区 -->
+              <div v-if="riskTasks.length > 0" class="orch-risk-section">
+                <div class="risk-section-header">
+                  <span class="risk-icon">⚠️</span>
+                  <span class="risk-title">风险预警</span>
+                  <el-badge :value="riskTasks.length" class="risk-badge" />
+                </div>
+                <div class="risk-task-list">
+                  <div v-for="task in riskTasks" :key="task.id" class="risk-task-item" @click="selectSubtask(task)">
+                    <span class="risk-task-name">{{ task.title }}</span>
+                    <el-tag size="small" type="warning" effect="light">有风险</el-tag>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 底部协作对话栏（增强版） -->
         <div class="ws-collab-bar glass-card" :class="{ expanded: collabExpanded, 'is-running': allianceRunning, 'mode-transition': modeTransitioning }">
           <!-- 渐变装饰条 -->
@@ -2602,7 +3059,11 @@ function triggerDebate() {
 function triggerOrchestration() {
   activeMode.value = 'orchestration'
   collabExpanded.value = true
-  collabInput.value = '请编排以下任务的执行流程…'
+  collabMode.value = 'multi'
+  // 如果还没有任务，设置默认任务描述
+  if (taskOrchestration.subtasks.length === 0) {
+    taskOrchestration.originalTask = '设计并实现一个基于知识图谱的智能问答系统，要求支持多轮对话和上下文理解'
+  }
 }
 
 function triggerVoting() {
@@ -3519,6 +3980,529 @@ watch(selectedExpertIds, () => {
     activeSession.value.expert_count = selectedExpertIds.value.length
   }
 }, { deep: true })
+
+// ============================================================================
+// 任务编排模式 · Task Orchestration
+// ============================================================================
+
+// ---- 数据结构 ----
+const taskOrchestration = reactive({
+  originalTask: '',
+  subtasks: [],
+  executionMode: 'auto', // auto | manual
+  progress: { total: 0, completed: 0, inProgress: 0, failed: 0, percentage: 0 }
+})
+
+const decomposing = ref(false)
+const orchIsRunning = ref(false)
+const activeSubtaskId = ref(null)
+const timelineView = ref('gantt') // gantt | list
+const draggingTaskId = ref(null)
+const dragOverTaskId = ref(null)
+const draggingExpert = ref(null)
+const expertDragOverTaskId = ref(null)
+const showAssignDialog = ref(false)
+const assignTargetTask = ref(null)
+
+// ---- 任务状态常量 ----
+const SUBTASK_STATUS = {
+  PENDING: 'pending',           // 待分配
+  WAITING: 'waiting',           // 等待中（依赖未完成）
+  IN_PROGRESS: 'inProgress',    // 进行中
+  REVIEWING: 'reviewing',       // 审核中
+  COMPLETED: 'completed',       // 已完成
+  AT_RISK: 'atRisk',            // 有风险
+  FAILED: 'failed',             // 失败
+  ARCHIVED: 'archived'          // 已归档
+}
+
+const SUBTASK_STATUS_MAP = {
+  pending: { label: '待分配', icon: '📋', color: '#64748b' },
+  waiting: { label: '等待中', icon: '⏳', color: '#f59e0b' },
+  inProgress: { label: '进行中', icon: '🚀', color: '#3b82f6' },
+  reviewing: { label: '审核中', icon: '🔍', color: '#8b5cf6' },
+  completed: { label: '已完成', icon: '✅', color: '#10b981' },
+  atRisk: { label: '有风险', icon: '⚠️', color: '#f97316' },
+  failed: { label: '失败', icon: '❌', color: '#ef4444' },
+  archived: { label: '已归档', icon: '📦', color: '#64748b' }
+}
+
+function subtaskStatusText(status) {
+  return SUBTASK_STATUS_MAP[status]?.label || status
+}
+
+function subtaskStatusTagType(status) {
+  const map = {
+    pending: 'info', waiting: 'warning', inProgress: 'primary',
+    reviewing: 'warning', completed: 'success', atRisk: 'danger',
+    failed: 'danger', archived: 'info'
+  }
+  return map[status] || 'info'
+}
+
+// ---- 优先级渐变 ----
+function subtaskPriorityGradient(priority) {
+  const gradients = {
+    high: 'linear-gradient(135deg, #ef4444, #f97316)',
+    medium: 'linear-gradient(135deg, #f59e0b, #eab308)',
+    low: 'linear-gradient(135deg, #10b981, #14b8a6)'
+  }
+  return gradients[priority] || gradients.medium
+}
+
+// ---- 计算属性 ----
+const orchProgress = computed(() => {
+  const subtasks = taskOrchestration.subtasks
+  const total = subtasks.length
+  const completed = subtasks.filter(t => t.status === 'completed').length
+  const inProgress = subtasks.filter(t => t.status === 'inProgress' || t.status === 'reviewing').length
+  const failed = subtasks.filter(t => t.status === 'failed').length
+  const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
+  return { total, completed, inProgress, failed, percentage }
+})
+
+const availableExperts = computed(() => experts.value.filter(e => e.status !== 'offline'))
+
+const riskTasks = computed(() => taskOrchestration.subtasks.filter(t => t.status === 'atRisk'))
+
+const ganttSlotMinutes = ref(15)
+const ganttTimeSlots = computed(() => {
+  const totalMinutes = taskOrchestration.subtasks.reduce((sum, t) => sum + (t.estimatedTime || 0), 0)
+  return Math.max(Math.ceil(totalMinutes / ganttSlotMinutes.value), 4)
+})
+
+// ---- 辅助函数 ----
+function getExpertById(id) {
+  return experts.value.find(e => e.id === id)
+}
+
+function getSubtaskIndex(id) {
+  return taskOrchestration.subtasks.findIndex(t => t.id === id)
+}
+
+function expertLoad(expertId) {
+  return taskOrchestration.subtasks.filter(t => 
+    t.expertIds?.includes(expertId) && 
+    ['inProgress', 'reviewing', 'pending', 'waiting'].includes(t.status)
+  ).length
+}
+
+function generateTaskId() {
+  return 'task-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6)
+}
+
+// ---- 协作消息辅助 ----
+function addOrchMessage(msg) {
+  collabMessages.value.push({
+    id: Date.now() + Math.random(),
+    time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+    ...msg
+  })
+  // 滚动到底部（如果消息滚动组件存在）
+  if (messagesScrollRef.value) {
+    nextTick(() => {
+      messagesScrollRef.value.scrollTo?.({ top: 999999, behavior: 'smooth' })
+    })
+  }
+}
+
+// ---- 任务智能拆解 ----
+async function decomposeTask() {
+  if (!taskOrchestration.originalTask.trim()) {
+    ElMessage.warning('请先输入任务描述')
+    return
+  }
+  decomposing.value = true
+  try {
+    // 模拟 AI 拆解（实际应调用后端 API）
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    
+    const taskDesc = taskOrchestration.originalTask
+    const subtasks = generateMockSubtasks(taskDesc)
+    taskOrchestration.subtasks = subtasks
+    updateGanttLayout()
+    
+    ElMessage.success(`已智能拆解为 ${subtasks.length} 个子任务`)
+    addHistoryEvent('task', '任务智能拆解', `将「${taskDesc.substring(0, 20)}...」拆解为 ${subtasks.length} 个子任务`)
+  } catch (e) {
+    console.error('[orchestration] 任务拆解失败:', e)
+    ElMessage.error('任务拆解失败，请重试')
+  } finally {
+    decomposing.value = false
+  }
+}
+
+function generateMockSubtasks(taskDesc) {
+  // 基于常见任务模式生成模拟子任务
+  const templates = [
+    { title: '需求分析与定义', desc: '深入分析任务需求，明确目标、边界和验收标准', type: 'requirement', time: 15, priority: 'high' },
+    { title: '方案设计与架构规划', desc: '设计整体解决方案，规划技术架构和实现路径', type: 'architecture', time: 20, priority: 'high' },
+    { title: '核心算法/模型研发', desc: '研发核心算法或AI模型，实现关键功能', type: 'algorithm', time: 30, priority: 'high' },
+    { title: '数据处理与准备', desc: '数据采集、清洗、标注和预处理工作', type: 'data', time: 25, priority: 'medium' },
+    { title: '系统集成与联调', desc: '各模块集成开发，接口联调测试', type: 'architecture', time: 20, priority: 'medium' },
+    { title: '质量保障与测试', desc: '功能测试、性能测试、安全审计', type: 'security', time: 15, priority: 'medium' },
+    { title: '文档编写与交付', desc: '编写技术文档、用户手册，准备交付物', type: 'requirement', time: 10, priority: 'low' }
+  ]
+  
+  const numTasks = Math.min(Math.max(Math.floor(taskDesc.length / 30) + 3, 4), 7)
+  const selected = templates.slice(0, numTasks)
+  
+  return selected.map((tpl, idx) => ({
+    id: generateTaskId(),
+    title: tpl.title,
+    description: tpl.desc,
+    priority: tpl.priority,
+    status: idx === 0 ? 'pending' : 'waiting',
+    suggestedExpertType: tpl.type,
+    expertIds: [],
+    dependencies: idx === 0 ? [] : [selected[0].id || ''],
+    estimatedTime: tpl.time,
+    startTime: null,
+    endTime: null,
+    result: '',
+    messages: [],
+    expanded: false,
+    ganttOffset: 0,
+    ganttWidth: 0
+  })).map((task, idx, arr) => {
+    // 设置正确的依赖关系
+    if (idx > 0) {
+      task.dependencies = [arr[idx - 1].id]
+    }
+    return task
+  })
+}
+
+// ---- 甘特图布局计算 ----
+function updateGanttLayout() {
+  const subtasks = taskOrchestration.subtasks
+  if (subtasks.length === 0) return
+  
+  // 计算总时间和每个任务的位置
+  const totalMinutes = subtasks.reduce((sum, t) => sum + t.estimatedTime, 0)
+  let cumulativeTime = 0
+  
+  subtasks.forEach(task => {
+    task.ganttOffset = (cumulativeTime / totalMinutes) * 100
+    task.ganttWidth = (task.estimatedTime / totalMinutes) * 100
+    cumulativeTime += task.estimatedTime
+  })
+}
+
+// ---- 子任务 CRUD ----
+function addSubtaskManually() {
+  const newTask = {
+    id: generateTaskId(),
+    title: '新子任务',
+    description: '请编辑任务描述...',
+    priority: 'medium',
+    status: 'pending',
+    suggestedExpertType: 'custom',
+    expertIds: [],
+    dependencies: [],
+    estimatedTime: 15,
+    startTime: null,
+    endTime: null,
+    result: '',
+    messages: [],
+    expanded: true,
+    ganttOffset: 0,
+    ganttWidth: 0
+  }
+  taskOrchestration.subtasks.push(newTask)
+  updateGanttLayout()
+  activeSubtaskId.value = newTask.id
+}
+
+function editSubtask(task) {
+  activeSubtaskId.value = task.id
+  task.expanded = true
+  ElMessage.info('请在展开的详情中编辑任务信息')
+}
+
+function deleteSubtask(taskId) {
+  const idx = getSubtaskIndex(taskId)
+  if (idx >= 0) {
+    const task = taskOrchestration.subtasks[idx]
+    // 移除其他任务对该任务的依赖
+    taskOrchestration.subtasks.forEach(t => {
+      t.dependencies = t.dependencies.filter(d => d !== taskId)
+    })
+    taskOrchestration.subtasks.splice(idx, 1)
+    updateGanttLayout()
+    ElMessage.success('子任务已删除')
+  }
+}
+
+function toggleSubtaskExpand(task) {
+  task.expanded = !task.expanded
+}
+
+function collapseAllSubtasks() {
+  taskOrchestration.subtasks.forEach(t => t.expanded = false)
+}
+
+function selectSubtask(task) {
+  activeSubtaskId.value = task.id
+}
+
+// ---- 任务拖拽排序 ----
+function onTaskDragStart(e, task) {
+  draggingTaskId.value = task.id
+  e.dataTransfer.effectAllowed = 'move'
+  e.dataTransfer.setData('text/plain', task.id)
+}
+
+function onTaskDragEnd() {
+  draggingTaskId.value = null
+  dragOverTaskId.value = null
+}
+
+function onTaskDragOver(e, task) {
+  if (draggingTaskId.value && draggingTaskId.value !== task.id) {
+    dragOverTaskId.value = task.id
+  }
+}
+
+function onTaskDrop(e, targetTask) {
+  const draggedId = draggingTaskId.value
+  if (!draggedId || draggedId === targetTask.id) return
+  
+  const draggedIdx = getSubtaskIndex(draggedId)
+  const targetIdx = getSubtaskIndex(targetTask.id)
+  
+  if (draggedIdx >= 0 && targetIdx >= 0) {
+    const [removed] = taskOrchestration.subtasks.splice(draggedIdx, 1)
+    taskOrchestration.subtasks.splice(targetIdx, 0, removed)
+    updateGanttLayout()
+    ElMessage.success('任务顺序已调整')
+  }
+  
+  draggingTaskId.value = null
+  dragOverTaskId.value = null
+}
+
+// ---- 专家拖拽分配 ----
+function onExpertDragStart(e, expert) {
+  draggingExpert.value = expert
+  e.dataTransfer.effectAllowed = 'copy'
+  e.dataTransfer.setData('text/plain', expert.id)
+}
+
+function onExpertDragEnd() {
+  draggingExpert.value = null
+  expertDragOverTaskId.value = null
+}
+
+function onExpertDragOverTask(e, task) {
+  expertDragOverTaskId.value = task.id
+}
+
+function onExpertDragLeaveTask() {
+  expertDragOverTaskId.value = null
+}
+
+function onExpertDropOnTask(e, task) {
+  const expert = draggingExpert.value
+  if (!expert) return
+  
+  if (!task.expertIds.includes(expert.id)) {
+    task.expertIds.push(expert.id)
+    ElMessage.success(`已将 ${expert.name} 分配到「${task.title}」`)
+  } else {
+    ElMessage.info('该专家已分配到此任务')
+  }
+  
+  draggingExpert.value = null
+  expertDragOverTaskId.value = null
+}
+
+function unassignExpert(taskId, expertId) {
+  const task = taskOrchestration.subtasks.find(t => t.id === taskId)
+  if (task) {
+    task.expertIds = task.expertIds.filter(id => id !== expertId)
+    ElMessage.success('已取消专家分配')
+  }
+}
+
+// ---- 智能分配专家 ----
+async function autoAssignExperts() {
+  if (taskOrchestration.subtasks.length === 0) {
+    ElMessage.warning('请先创建子任务')
+    return
+  }
+  
+  try {
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    let assignedCount = 0
+    taskOrchestration.subtasks.forEach(task => {
+      // 根据任务类型匹配最合适的专家
+      const matchingExperts = experts.value.filter(e => 
+        e.type === task.suggestedExpertType && e.status !== 'offline'
+      )
+      
+      if (matchingExperts.length > 0) {
+        // 选择负载最低的专家
+        const bestExpert = matchingExperts.sort((a, b) => expertLoad(a.id) - expertLoad(b.id))[0]
+        if (!task.expertIds.includes(bestExpert.id)) {
+          task.expertIds = [bestExpert.id]
+          assignedCount++
+        }
+      } else {
+        // 没有完全匹配的，选负载最低的
+        const available = experts.value.filter(e => e.status !== 'offline')
+        if (available.length > 0) {
+          const bestExpert = available.sort((a, b) => expertLoad(a.id) - expertLoad(b.id))[0]
+          if (!task.expertIds.includes(bestExpert.id)) {
+            task.expertIds = [bestExpert.id]
+            assignedCount++
+          }
+        }
+      }
+    })
+    
+    ElMessage.success(`已智能分配 ${assignedCount} 个任务`)
+    addHistoryEvent('task', '专家智能分配', `为 ${assignedCount} 个子任务自动匹配了专家`)
+  } catch (e) {
+    console.error('[orchestration] 智能分配失败:', e)
+    ElMessage.error('智能分配失败，请重试')
+  }
+}
+
+function openAssignDialog(task) {
+  assignTargetTask.value = task
+  showAssignDialog.value = true
+}
+
+// ---- 任务执行协调 ----
+async function startTaskExecution() {
+  if (taskOrchestration.subtasks.length === 0) {
+    ElMessage.warning('请先创建子任务')
+    return
+  }
+  
+  // 检查是否所有任务都分配了专家
+  const unassigned = taskOrchestration.subtasks.filter(t => t.expertIds.length === 0)
+  if (unassigned.length > 0) {
+    ElMessage.warning(`有 ${unassigned.length} 个任务未分配专家，是否使用智能分配？`)
+    return
+  }
+  
+  orchIsRunning.value = true
+  ElMessage.success('任务执行已启动')
+  addHistoryEvent('task', '开始任务执行', '任务编排流程已启动')
+  
+  // 模拟任务执行（按依赖关系串行执行）
+  if (taskOrchestration.executionMode === 'auto') {
+    executeTasksAuto()
+  }
+}
+
+async function executeTasksAuto() {
+  const tasks = [...taskOrchestration.subtasks]
+  
+  for (const task of tasks) {
+    if (!orchIsRunning.value) break
+    
+    // 检查依赖是否已完成
+    const depsCompleted = task.dependencies.every(depId => {
+      const depTask = taskOrchestration.subtasks.find(t => t.id === depId)
+      return depTask?.status === 'completed'
+    })
+    
+    if (!depsCompleted) {
+      task.status = 'waiting'
+      continue
+    }
+    
+    // 开始执行
+    task.status = 'inProgress'
+    task.startTime = Date.now()
+    
+    const expert = getExpertById(task.expertIds[0])
+    addOrchMessage({
+      role: 'assistant',
+      name: expert?.name || 'AI专家',
+      avatar: expertEmoji(expert?.type) || '🤖',
+      color: expertColor(expert?.type) || '#6366f1',
+      text: `开始执行「${task.title}」...`,
+      status: 'thinking',
+      phase: 'orchestration'
+    })
+    
+    // 模拟执行时间
+    await new Promise(resolve => setTimeout(resolve, Math.min(task.estimatedTime * 50, 2000)))
+    
+    // 模拟结果（90%成功率）
+    const success = Math.random() > 0.1
+    if (success) {
+      task.status = 'completed'
+      task.endTime = Date.now()
+      task.result = `「${task.title}」执行完成，结果符合预期。\n核心产出：${task.description}的详细方案和实现代码。`
+      
+      addOrchMessage({
+        role: 'assistant',
+        name: expert?.name || 'AI专家',
+        avatar: expertEmoji(expert?.type) || '🤖',
+        color: expertColor(expert?.type) || '#6366f1',
+        text: `✅ **${task.title}** 执行完成\n\n${task.result}`,
+        status: 'done',
+        phase: 'orchestration'
+      })
+    } else {
+      task.status = 'failed'
+      task.result = '执行过程中遇到问题，需要人工介入。'
+      
+      addOrchMessage({
+        role: 'assistant',
+        name: expert?.name || 'AI专家',
+        avatar: expertEmoji(expert?.type) || '🤖',
+        color: '#ef4444',
+        text: `❌ **${task.title}** 执行失败\n\n执行过程中遇到异常，请检查任务配置或重新分配专家。`,
+        status: 'failed',
+        phase: 'orchestration'
+      })
+    }
+    
+    updateGanttLayout()
+  }
+  
+  // 检查是否全部完成
+  const allDone = taskOrchestration.subtasks.every(t => 
+    ['completed', 'failed', 'archived'].includes(t.status)
+  )
+  
+  if (allDone) {
+    orchIsRunning.value = false
+    const successCount = taskOrchestration.subtasks.filter(t => t.status === 'completed').length
+    ElMessage.success(`任务执行完成：${successCount}/${taskOrchestration.subtasks.length} 成功`)
+    
+    addOrchMessage({
+      role: 'system',
+      name: '系统',
+      avatar: '📊',
+      color: '#10b981',
+      text: `🎯 **任务编排完成**\n\n- 总任务数：${taskOrchestration.subtasks.length}\n- 成功完成：${successCount}\n- 失败：${taskOrchestration.subtasks.length - successCount}\n- 完成率：${orchProgress.value.percentage}%`,
+      status: 'done',
+      phase: 'orchestration'
+    })
+    
+    addHistoryEvent('task', '任务编排完成', `完成率 ${orchProgress.value.percentage}%`)
+  }
+}
+
+function resetAllTasks() {
+  taskOrchestration.subtasks.forEach(task => {
+    task.status = task.dependencies.length > 0 ? 'waiting' : 'pending'
+    task.startTime = null
+    task.endTime = null
+    task.result = ''
+  })
+  orchIsRunning.value = false
+  updateGanttLayout()
+  ElMessage.success('所有任务已重置')
+}
 </script>
 
 <style scoped>
@@ -6671,6 +7655,1132 @@ watch(selectedExpertIds, () => {
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ========== 任务编排模式 ========== */
+.task-orch-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.8), rgba(241, 245, 249, 0.9));
+}
+
+/* 顶部控制栏 */
+.orch-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-radius: 14px;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+.orch-top-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f59e0b, #ef4444, #8b5cf6);
+}
+
+.orch-progress-section {
+  flex: 1;
+  max-width: 60%;
+}
+.orch-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.orch-progress-title {
+  font-weight: 700;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #0f172a;
+}
+.orch-title-icon {
+  font-size: 18px;
+}
+.orch-progress-stats {
+  display: flex;
+  gap: 6px;
+}
+.orch-progress-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.orch-progress-bar {
+  flex: 1;
+  height: 8px;
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+}
+.orch-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #14b8a6, #06b6d4);
+  border-radius: 10px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+.orch-progress-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.4), transparent);
+  border-radius: 10px;
+  animation: progressGlow 2s ease-in-out infinite;
+}
+@keyframes progressGlow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+.orch-progress-text {
+  font-weight: 700;
+  font-size: 14px;
+  color: #10b981;
+  min-width: 45px;
+  text-align: right;
+}
+
+.orch-control-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.orch-mode-select {
+  width: 110px;
+}
+.orch-btn-secondary {
+  background: rgba(248, 250, 252, 0.8);
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  transition: all 0.2s;
+}
+.orch-btn-secondary:hover {
+  background: white;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+.orch-btn-primary {
+  min-width: 100px;
+}
+
+/* 三栏主区域 */
+.orch-main-area {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  gap: 12px;
+  min-height: 0;
+}
+
+.orch-panel {
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+}
+.orch-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.3), rgba(6, 182, 212, 0.3));
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.orch-panel:hover::before {
+  opacity: 1;
+}
+
+.orch-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  flex-shrink: 0;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.9), rgba(241, 245, 249, 0.5));
+}
+.orch-panel-title {
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #0f172a;
+}
+.orch-panel-icon {
+  font-size: 16px;
+}
+.orch-task-count {
+  font-size: 12px;
+  color: #64748b;
+  background: rgba(148, 163, 184, 0.15);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+/* 左栏：任务拆解 */
+.orch-task-input-section {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+  flex-shrink: 0;
+}
+.orch-input-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.orch-task-input :deep(.el-textarea__inner) {
+  border-radius: 10px;
+  border-color: #e2e8f0;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+.orch-task-input :deep(.el-textarea__inner:focus) {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+.orch-input-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.orch-decompose-btn {
+  flex: 1;
+}
+.orch-add-manual-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+}
+
+.orch-subtask-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.orch-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+}
+.orch-list-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+.orch-list-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.orch-subtask-scroll {
+  flex: 1;
+  padding: 0 12px 12px;
+}
+
+.orch-subtask-card {
+  background: white;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+.orch-subtask-card:hover {
+  border-color: #c4b5fd;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.1);
+  transform: translateY(-1px);
+}
+.orch-subtask-card.is-selected {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15), 0 4px 12px rgba(139, 92, 246, 0.1);
+}
+.orch-subtask-card.is-dragging {
+  opacity: 0.5;
+  transform: scale(0.98);
+}
+.orch-subtask-card.drag-over {
+  border-color: #10b981;
+  border-style: dashed;
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.subtask-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.subtask-index {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.subtask-title-row {
+  flex: 1;
+  min-width: 0;
+}
+.subtask-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: #0f172a;
+  display: block;
+  margin-bottom: 4px;
+}
+.subtask-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(148, 163, 184, 0.15);
+  color: #64748b;
+}
+.subtask-status-badge .status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #64748b;
+}
+.subtask-status-badge.status-pending { background: rgba(100, 116, 139, 0.15); color: #64748b; }
+.subtask-status-badge.status-pending .status-dot { background: #64748b; }
+.subtask-status-badge.status-waiting { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+.subtask-status-badge.status-waiting .status-dot { background: #f59e0b; }
+.subtask-status-badge.status-inProgress { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+.subtask-status-badge.status-inProgress .status-dot { background: #3b82f6; animation: statusPulse 1.5s ease-in-out infinite; }
+.subtask-status-badge.status-reviewing { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+.subtask-status-badge.status-reviewing .status-dot { background: #8b5cf6; }
+.subtask-status-badge.status-completed { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.subtask-status-badge.status-completed .status-dot { background: #10b981; }
+.subtask-status-badge.status-atRisk { background: rgba(249, 115, 22, 0.15); color: #f97316; }
+.subtask-status-badge.status-atRisk .status-dot { background: #f97316; animation: statusPulse 1s ease-in-out infinite; }
+.subtask-status-badge.status-failed { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+.subtask-status-badge.status-failed .status-dot { background: #ef4444; }
+.subtask-status-badge.status-archived { background: rgba(100, 116, 139, 0.15); color: #64748b; }
+.subtask-status-badge.status-archived .status-dot { background: #64748b; }
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.2); }
+}
+
+.subtask-card-body {
+  padding-left: 36px;
+}
+.subtask-desc {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0 0 8px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.subtask-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.subtask-time {
+  font-size: 11px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.subtask-deps {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.deps-label {
+  font-size: 11px;
+  color: #94a3b8;
+}
+.dep-tag {
+  font-size: 10px;
+  padding: 1px 6px;
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.subtask-card-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.orch-subtask-card:hover .subtask-card-actions {
+  opacity: 1;
+}
+.subtask-action-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: rgba(248, 250, 252, 0.9);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+.subtask-action-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+.subtask-action-btn.delete:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.subtask-expanded-detail {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #e2e8f0;
+  padding-left: 36px;
+}
+.detail-section {
+  margin-bottom: 10px;
+}
+.detail-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+.assigned-experts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.assigned-expert-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: white;
+  font-weight: 600;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.add-expert-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px dashed #cbd5e1;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 11px;
+  transition: all 0.2s;
+}
+.add-expert-btn:hover {
+  border-color: #8b5cf6;
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.05);
+}
+.task-result-text {
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.6;
+  padding: 8px 10px;
+  background: rgba(16, 185, 129, 0.05);
+  border-radius: 8px;
+  border-left: 3px solid #10b981;
+}
+
+.orch-empty-hint p {
+  margin: 4px 0;
+  color: #94a3b8;
+  font-size: 13px;
+}
+.orch-empty-hint .hint-sub {
+  font-size: 11px;
+  color: #cbd5e1;
+}
+
+/* 中栏：专家分配 */
+.orch-auto-assign-btn {
+  color: #8b5cf6;
+  font-weight: 600;
+}
+
+.orch-expert-pool {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+  flex-shrink: 0;
+}
+.orch-pool-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.orch-pool-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+.orch-pool-count {
+  font-size: 11px;
+  color: #94a3b8;
+}
+.orch-expert-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.orch-expert-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: white;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  cursor: grab;
+  transition: all 0.2s;
+  position: relative;
+}
+.orch-expert-chip:hover {
+  border-color: #c4b5fd;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.1);
+  transform: translateY(-1px);
+}
+.orch-expert-chip:active {
+  cursor: grabbing;
+}
+.orch-expert-chip.is-busy {
+  opacity: 0.6;
+}
+.chip-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  position: relative;
+}
+.chip-status-dot {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+.chip-status-dot.dot-active { background: #10b981; }
+.chip-status-dot.dot-busy { background: #f59e0b; }
+.chip-status-dot.dot-idle { background: #94a3b8; }
+.chip-status-dot.dot-offline { background: #cbd5e1; }
+
+.chip-info {
+  flex: 1;
+  min-width: 0;
+}
+.chip-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #0f172a;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chip-role {
+  font-size: 10px;
+  color: #94a3b8;
+  display: block;
+}
+.chip-load {
+  width: 30px;
+  flex-shrink: 0;
+}
+.load-bar {
+  height: 4px;
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.load-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #14b8a6);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+.orch-assignment-board {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.orch-board-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+}
+.orch-board-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+.orch-board-hint {
+  font-size: 10px;
+  color: #94a3b8;
+}
+.orch-board-scroll {
+  flex: 1;
+  padding: 0 12px 12px;
+}
+
+.orch-task-assign-card {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  padding: 12px;
+  background: white;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+.orch-task-assign-card:hover {
+  border-color: #c4b5fd;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.1);
+}
+.orch-task-assign-card.drag-over {
+  border-color: #10b981;
+  border-style: dashed;
+  background: rgba(16, 185, 129, 0.05);
+  transform: scale(1.01);
+}
+.orch-task-assign-card.status-completed {
+  border-left: 3px solid #10b981;
+}
+.orch-task-assign-card.status-inProgress {
+  border-left: 3px solid #3b82f6;
+}
+.orch-task-assign-card.status-failed {
+  border-left: 3px solid #ef4444;
+}
+.assign-card-left {
+  flex-shrink: 0;
+}
+.assign-task-index {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 12px;
+}
+.assign-card-body {
+  flex: 1;
+  min-width: 0;
+}
+.assign-task-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.assign-task-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: #0f172a;
+}
+.assign-task-desc {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+  margin: 0 0 8px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.assign-experts-row {
+  margin-top: auto;
+}
+.assigned-experts-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.assigned-expert-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 2px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+.chip-avatar-sm {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
+.chip-name-sm {
+  font-size: 11px;
+  font-weight: 500;
+  color: #475569;
+}
+.chip-remove {
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 10px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+.chip-remove:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+.add-expert-inline-btn {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border: 1px dashed #cbd5e1;
+  background: transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 11px;
+  color: #94a3b8;
+  transition: all 0.2s;
+}
+.add-expert-inline-btn:hover {
+  border-color: #8b5cf6;
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.05);
+}
+.assign-card-right {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.task-time-estimate {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* 右栏：时间线 */
+.orch-timeline-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.orch-gantt-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.gantt-header {
+  display: flex;
+  padding: 8px 16px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+  flex-shrink: 0;
+  background: rgba(248, 250, 252, 0.5);
+}
+.gantt-task-col {
+  width: 100px;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+}
+.gantt-time-col {
+  flex: 1;
+  min-width: 0;
+}
+.gantt-time-scale {
+  display: flex;
+  justify-content: space-between;
+}
+.time-slot {
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.gantt-body-scroll {
+  flex: 1;
+  padding: 4px 0 12px;
+}
+.gantt-body {
+  padding: 0 16px;
+}
+.gantt-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.4);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.gantt-row:hover {
+  background: rgba(139, 92, 246, 0.03);
+}
+.gantt-row.is-selected {
+  background: rgba(139, 92, 246, 0.08);
+}
+.gantt-task-label {
+  width: 100px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #475569;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.gantt-task-idx {
+  font-weight: 700;
+  color: #8b5cf6;
+}
+.gantt-task-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.gantt-bar-area {
+  flex: 1;
+  height: 28px;
+  position: relative;
+}
+.gantt-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+}
+.grid-line {
+  width: 1px;
+  height: 100%;
+  background: rgba(226, 232, 240, 0.6);
+}
+.gantt-task-bar {
+  position: absolute;
+  top: 4px;
+  height: 20px;
+  border-radius: 6px;
+  min-width: 40px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.gantt-bar-fill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #94a3b8, #64748b);
+  opacity: 0.8;
+}
+.gantt-bar-glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: ganttShimmer 2s ease-in-out infinite;
+}
+@keyframes ganttShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.gantt-bar-label {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: white;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+.gantt-task-bar.status-pending .gantt-bar-fill {
+  background: linear-gradient(135deg, #94a3b8, #64748b);
+}
+.gantt-task-bar.status-waiting .gantt-bar-fill {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+.gantt-task-bar.status-inProgress .gantt-bar-fill {
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+}
+.gantt-task-bar.status-reviewing .gantt-bar-fill {
+  background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+}
+.gantt-task-bar.status-completed .gantt-bar-fill {
+  background: linear-gradient(135deg, #34d399, #10b981);
+}
+.gantt-task-bar.status-atRisk .gantt-bar-fill {
+  background: linear-gradient(135deg, #fb923c, #f97316);
+}
+.gantt-task-bar.status-failed .gantt-bar-fill {
+  background: linear-gradient(135deg, #f87171, #ef4444);
+}
+
+/* 时间线列表视图 */
+.orch-timeline-list {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.timeline-scroll {
+  flex: 1;
+}
+.timeline-list-inner {
+  padding: 12px 16px;
+}
+.timeline-item {
+  display: flex;
+  gap: 12px;
+  position: relative;
+  padding-bottom: 16px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.timeline-item:hover {
+  opacity: 0.9;
+}
+.timeline-item.is-selected .timeline-dot {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.2);
+}
+.timeline-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  z-index: 1;
+  transition: all 0.25s;
+}
+.timeline-dot.status-pending { background: linear-gradient(135deg, #94a3b8, #64748b); }
+.timeline-dot.status-waiting { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+.timeline-dot.status-inProgress { 
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+  animation: timelinePulse 1.5s ease-in-out infinite;
+}
+.timeline-dot.status-reviewing { background: linear-gradient(135deg, #a78bfa, #8b5cf6); }
+.timeline-dot.status-completed { background: linear-gradient(135deg, #34d399, #10b981); }
+.timeline-dot.status-atRisk { background: linear-gradient(135deg, #fb923c, #f97316); }
+.timeline-dot.status-failed { background: linear-gradient(135deg, #f87171, #ef4444); }
+
+@keyframes timelinePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+}
+
+.timeline-line {
+  position: absolute;
+  left: 13px;
+  top: 28px;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, #e2e8f0, rgba(226, 232, 240, 0.3));
+}
+.timeline-content {
+  flex: 1;
+  padding-top: 4px;
+}
+.timeline-task-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+.timeline-task-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.timeline-status {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 1px 8px;
+  border-radius: 10px;
+}
+.timeline-status.status-pending { background: rgba(100, 116, 139, 0.15); color: #64748b; }
+.timeline-status.status-waiting { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+.timeline-status.status-inProgress { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+.timeline-status.status-reviewing { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+.timeline-status.status-completed { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.timeline-status.status-atRisk { background: rgba(249, 115, 22, 0.15); color: #f97316; }
+.timeline-status.status-failed { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+.timeline-time {
+  font-size: 11px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.timeline-experts {
+  display: flex;
+  align-items: center;
+  gap: -4px;
+}
+.timeline-expert-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: white;
+  border: 2px solid white;
+  margin-left: -4px;
+}
+.timeline-expert-avatar:first-child {
+  margin-left: 0;
+}
+.timeline-more-experts {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-left: 4px;
+}
+
+/* 风险预警区 */
+.orch-risk-section {
+  padding: 10px 16px;
+  border-top: 1px solid rgba(226, 232, 240, 0.6);
+  background: rgba(249, 115, 22, 0.03);
+  flex-shrink: 0;
+}
+.risk-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.risk-icon {
+  font-size: 14px;
+}
+.risk-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #f97316;
+}
+.risk-badge {
+  margin-left: auto;
+}
+.risk-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.risk-task-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: white;
+  border: 1px solid rgba(249, 115, 22, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.risk-task-item:hover {
+  background: rgba(249, 115, 22, 0.05);
+  border-color: #f97316;
+}
+.risk-task-name {
+  font-size: 12px;
+  color: #475569;
+}
+
 /* ========== 响应式优化 ========== */
 @media (max-width: 1200px) {
   .ws-kpi-card {
@@ -6683,6 +8793,47 @@ watch(selectedExpertIds, () => {
     width: 40px;
     height: 40px;
     font-size: 18px;
+  }
+}
+
+/* 任务编排模式响应式 */
+@media (max-width: 1400px) {
+  .orch-main-area {
+    grid-template-columns: 1fr 1fr;
+  }
+  .orch-panel-right {
+    grid-column: 1 / -1;
+    max-height: 250px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .orch-main-area {
+    grid-template-columns: 1fr;
+  }
+  .orch-expert-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .orch-progress-section {
+    max-width: 100%;
+  }
+  .orch-control-section {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 768px) {
+  .task-orch-view {
+    padding: 8px;
+    gap: 8px;
+  }
+  .orch-top-bar {
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+  }
+  .orch-expert-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 </style>

@@ -2,6 +2,10 @@
 // Licensed under the MIT License.
 
 //! HTTP 路由定义
+//!
+//! 提供两类 API：
+//! - 公共 API（/tasks/*）：供用户/前端调用
+//! - 内部 API（/internal/*）：供调度器服务调用
 
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
@@ -11,8 +15,8 @@ use axum::Router;
 use uuid::Uuid;
 
 use mox_alliance_api::dto::*;
-use mox_alliance_common_proto::{AllianceError, AllianceErrorCode};
-use mox_alliance_executor_proto::DagEngine;
+use mox_alliance_common_proto::{AllianceError, AllianceErrorCode, CollaborationPlan, Task};
+use mox_alliance_executor_proto::{DagEngine, ExecutionOptions};
 
 use crate::app_state::ExecutorAppState;
 
@@ -20,9 +24,15 @@ use crate::app_state::ExecutorAppState;
 pub fn build_router(state: ExecutorAppState) -> Router {
     Router::new()
         .route("/health", get(health_check))
+        // === 公共 API ===
         .route("/tasks/:task_id/status", get(get_execution_status))
         .route("/tasks/:task_id/nodes", get(list_nodes))
         .route("/tasks/:task_id/nodes/:node_id", get(get_node).post(skip_node))
+        // === 内部 API（供调度器调用）===
+        .route("/internal/executions", post(submit_execution))
+        .route("/tasks/:task_id/cancel", post(cancel_execution))
+        .route("/tasks/:task_id/pause", post(pause_execution))
+        .route("/tasks/:task_id/resume", post(resume_execution))
         .with_state(state)
 }
 
@@ -33,6 +43,8 @@ async fn health_check() -> impl IntoResponse {
         "service": "mox-alliance-executor"
     }))
 }
+
+// ─── 公共 API ──────────────────────────────────────────────────────────────
 
 /// 获取执行状态
 async fn get_execution_status(
@@ -142,6 +154,102 @@ async fn skip_node(
     }
 }
 
+// ─── 内部 API（供调度器调用）───────────────────────────────────────────────
+
+/// 提交执行请求（内部 API，供调度器调用）
+async fn submit_execution(
+    State(state): State<ExecutorAppState>,
+    Json(req): Json<SubmitExecutionRequest>,
+) -> impl IntoResponse {
+    let node_count = req.plan.nodes.len();
+    let task_id = req.task.task_id;
+
+    match state
+        .engine
+        .start_execution(&req.task, req.plan, req.options)
+        .await
+    {
+        Ok(_) => {
+            tracing::info!(
+                "Execution submitted: task_id={}, nodes={}",
+                task_id,
+                node_count
+            );
+            (StatusCode::OK, Json(SuccessResponse::default())).into_response()
+        }
+        Err(e) => error_response(e).into_response(),
+    }
+}
+
+/// 取消执行（供调度器调用）
+async fn cancel_execution(
+    State(state): State<ExecutorAppState>,
+    Path(task_id): Path<Uuid>,
+    Json(req): Json<CancelExecutionRequest>,
+) -> impl IntoResponse {
+    let tenant_id = Uuid::parse_str(&req.tenant_id).unwrap_or(Uuid::nil());
+
+    match state
+        .engine
+        .cancel_execution(task_id, tenant_id, req.reason)
+        .await
+    {
+        Ok(_) => (StatusCode::OK, Json(SuccessResponse::default())).into_response(),
+        Err(e) => error_response(e).into_response(),
+    }
+}
+
+/// 暂停执行（供调度器调用）
+async fn pause_execution(
+    State(state): State<ExecutorAppState>,
+    Path(task_id): Path<Uuid>,
+    Json(req): Json<PauseResumeRequest>,
+) -> impl IntoResponse {
+    let tenant_id = Uuid::parse_str(&req.tenant_id).unwrap_or(Uuid::nil());
+
+    match state.engine.pause_execution(task_id, tenant_id).await {
+        Ok(_) => (StatusCode::OK, Json(SuccessResponse::default())).into_response(),
+        Err(e) => error_response(e).into_response(),
+    }
+}
+
+/// 恢复执行（供调度器调用）
+async fn resume_execution(
+    State(state): State<ExecutorAppState>,
+    Path(task_id): Path<Uuid>,
+    Json(req): Json<PauseResumeRequest>,
+) -> impl IntoResponse {
+    let tenant_id = Uuid::parse_str(&req.tenant_id).unwrap_or(Uuid::nil());
+
+    match state.engine.resume_execution(task_id, tenant_id).await {
+        Ok(_) => (StatusCode::OK, Json(SuccessResponse::default())).into_response(),
+        Err(e) => error_response(e).into_response(),
+    }
+}
+
+/// 提交执行请求体（内部 API）
+#[derive(Debug, serde::Deserialize)]
+struct SubmitExecutionRequest {
+    task: Task,
+    plan: CollaborationPlan,
+    options: ExecutionOptions,
+}
+
+/// 取消执行请求体
+#[derive(Debug, serde::Deserialize)]
+struct CancelExecutionRequest {
+    tenant_id: String,
+    reason: Option<String>,
+}
+
+/// 暂停/恢复执行请求体
+#[derive(Debug, serde::Deserialize)]
+struct PauseResumeRequest {
+    tenant_id: String,
+}
+
+// ─── 通用错误响应 ──────────────────────────────────────────────────────────
+
 /// 统一错误响应
 fn error_response(err: AllianceError) -> (StatusCode, Json<ErrorResponse>) {
     let (code, status) = match &err {
@@ -154,6 +262,7 @@ fn error_response(err: AllianceError) -> (StatusCode, Json<ErrorResponse>) {
                 AllianceErrorCode::TenantMismatch => StatusCode::FORBIDDEN,
                 AllianceErrorCode::TaskAlreadyTerminal => StatusCode::CONFLICT,
                 AllianceErrorCode::InvalidTaskStatus => StatusCode::CONFLICT,
+                AllianceErrorCode::InvalidPlan => StatusCode::BAD_REQUEST,
                 _ => StatusCode::INTERNAL_SERVER_ERROR,
             },
         ),

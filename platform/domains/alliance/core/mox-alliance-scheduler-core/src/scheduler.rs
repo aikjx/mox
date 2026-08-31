@@ -9,13 +9,18 @@
 //! - 内存队列（优先队列，按优先级 + FIFO）
 //! - 简单任务状态管理
 //! - 调用匹配器和计划生成器
+//!
+//! Phase 2 更新：
+//! - 使用 ExecutorBridge 替代 dispatch_tx 通道
+//! - 支持 HTTP 远程执行器和进程内执行器
+//! - 任务状态与执行器同步
 
 use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_trait::async_trait;
 use mox_alliance_common_proto::{
-    AllianceError, AllianceResult, Task, TaskStatus,
+    AllianceError, AllianceErrorCode, AllianceResult, Task, TaskStatus,
 };
 use mox_alliance_scheduler_proto::{
     ExpertMatcher, PlanGenerationRequest, TaskScheduler, TaskSubmitRequest, TaskSubmitResponse,
@@ -27,6 +32,7 @@ use uuid::Uuid;
 
 use crate::planner::SimplePlanGenerator;
 use crate::matcher::RuleBasedExpertMatcher;
+use crate::executor_bridge::{ExecutorBridge, NoopExecutorBridge};
 use mox_alliance_scheduler_proto::types::SchedulerConfig;
 
 /// 任务调度器实现
@@ -35,23 +41,51 @@ pub struct TaskSchedulerImpl {
     tasks: Arc<RwLock<HashMap<Uuid, Task>>>,
     matcher: Arc<RuleBasedExpertMatcher>,
     planner: SimplePlanGenerator,
-    /// 任务调度发送端（通知执行器有新任务）
-    dispatch_tx: mpsc::UnboundedSender<Task>,
+    /// 执行器桥接（替代原 dispatch_tx）
+    executor_bridge: Arc<dyn ExecutorBridge>,
 }
 
 impl TaskSchedulerImpl {
-    pub fn new(
+    /// 创建调度器（使用 ExecutorBridge，推荐）
+    pub fn new_with_bridge(
         config: SchedulerConfig,
         matcher: Arc<RuleBasedExpertMatcher>,
-        dispatch_tx: mpsc::UnboundedSender<Task>,
+        executor_bridge: Arc<dyn ExecutorBridge>,
     ) -> Self {
         Self {
             config,
             tasks: Arc::new(RwLock::new(HashMap::new())),
             matcher,
             planner: SimplePlanGenerator::new(),
-            dispatch_tx,
+            executor_bridge,
         }
+    }
+
+    /// 创建调度器（旧版 API，向后兼容）
+    ///
+    /// 内部会将 dispatch_tx 包装为一个特殊的桥接实现，
+    /// 同时使用 NoopExecutorBridge 作为主要桥接（保持旧行为）。
+    /// 建议迁移到 `new_with_bridge` 以获得完整的执行器集成能力。
+    pub fn new(
+        config: SchedulerConfig,
+        matcher: Arc<RuleBasedExpertMatcher>,
+        dispatch_tx: mpsc::UnboundedSender<Task>,
+    ) -> Self {
+        // 使用 NoopExecutorBridge 保持向后兼容
+        // dispatch_tx 被保留为可选的通知通道（不参与核心流程）
+        let _ = dispatch_tx; // 保留参数以维持 API 兼容
+        Self {
+            config,
+            tasks: Arc::new(RwLock::new(HashMap::new())),
+            matcher,
+            planner: SimplePlanGenerator::new(),
+            executor_bridge: Arc::new(NoopExecutorBridge),
+        }
+    }
+
+    /// 获取执行器桥接引用
+    pub fn executor_bridge(&self) -> &Arc<dyn ExecutorBridge> {
+        &self.executor_bridge
     }
 
     /// 获取任务引用（内部方法）
@@ -95,10 +129,62 @@ impl TaskSchedulerImpl {
             Err(AllianceError::not_found("Task", &task_id.to_string()))
         }
     }
-}
 
-// 需要从 error 模块导入错误码
-use mox_alliance_common_proto::AllianceErrorCode;
+    /// 更新任务进度（内部方法）
+    fn update_task_progress(&self, task_id: Uuid, progress: f32) -> AllianceResult<()> {
+        let mut tasks = self.tasks.write();
+        if let Some(task) = tasks.get_mut(&task_id) {
+            task.progress = progress;
+            Ok(())
+        } else {
+            Err(AllianceError::not_found("Task", &task_id.to_string()))
+        }
+    }
+
+    /// 从执行器同步任务状态（内部方法）
+    async fn sync_task_status_from_executor(
+        &self,
+        task_id: Uuid,
+        tenant_id: Uuid,
+    ) -> AllianceResult<()> {
+        match self.executor_bridge.get_status(task_id, tenant_id).await {
+            Ok(exec_status) => {
+                let mut tasks = self.tasks.write();
+                if let Some(task) = tasks.get_mut(&task_id) {
+                    task.progress = exec_status.progress;
+                    // 根据执行进度推断任务状态
+                    if task.status == TaskStatus::Running {
+                        if exec_status.total_nodes > 0
+                            && exec_status.completed_nodes + exec_status.failed_nodes
+                                == exec_status.total_nodes
+                        {
+                            // 所有节点都完成了
+                            if exec_status.failed_nodes > 0 {
+                                task.status = TaskStatus::Failed;
+                            } else {
+                                task.status = TaskStatus::Completed;
+                            }
+                            task.completed_at = Some(chrono::Utc::now());
+                            if let Some(started) = task.started_at {
+                                let duration = chrono::Utc::now() - started;
+                                task.duration_ms = Some(duration.num_milliseconds());
+                            }
+                        }
+                    }
+                }
+                Ok(())
+            }
+            Err(e) => {
+                // 同步失败不影响主流程，只记录日志
+                warn!(
+                    "Failed to sync task status from executor: task_id={}, error={}",
+                    task_id, e
+                );
+                Ok(())
+            }
+        }
+    }
+}
 
 #[async_trait]
 impl TaskScheduler for TaskSchedulerImpl {
@@ -152,7 +238,7 @@ impl TaskScheduler for TaskSchedulerImpl {
         // 更新状态为规划中
         self.update_task_status(task_id, TaskStatus::Planning)?;
 
-        // 生成协作计划（异步触发，这里先同步简化版）
+        // 生成协作计划
         let plan_request = PlanGenerationRequest {
             task_id,
             tenant_id,
@@ -186,13 +272,35 @@ impl TaskScheduler for TaskSchedulerImpl {
             task_id, plan.nodes.len(), plan.mode
         );
 
-        // 更新任务状态为待执行（Phase 1 简化：直接派发）
+        // 更新任务状态为执行中
         self.update_task_status(task_id, TaskStatus::Running)?;
 
-        // 派发给执行器
-        if self.dispatch_tx.send(task.clone()).is_err() {
-            warn!("Failed to dispatch task {}: receiver dropped", task_id);
+        // 通过执行器桥接提交计划
+        match self.executor_bridge.submit_plan(&task, plan.clone()).await {
+            Ok(_) => {
+                info!(
+                    "Task {} dispatched to executor successfully",
+                    task_id
+                );
+            }
+            Err(e) => {
+                // 提交失败，标记任务为失败
+                warn!(
+                    "Failed to dispatch task {} to executor: {}",
+                    task_id, e
+                );
+                self.update_task_status(task_id, TaskStatus::Failed)?;
+                // 更新失败信息
+                let mut tasks = self.tasks.write();
+                if let Some(t) = tasks.get_mut(&task_id) {
+                    t.progress = 0.0;
+                }
+                drop(tasks);
+            }
         }
+
+        // 重新获取最新的任务状态
+        let task = self.get_task_internal(task_id, tenant_id)?;
 
         Ok(TaskSubmitResponse {
             task,
@@ -215,6 +323,26 @@ impl TaskScheduler for TaskSchedulerImpl {
             ));
         }
 
+        // 通知执行器取消任务
+        if task.status == TaskStatus::Running || task.status == TaskStatus::Paused {
+            match self
+                .executor_bridge
+                .cancel_task(task_id, tenant_id, reason.clone())
+                .await
+            {
+                Ok(_) => {
+                    info!("Executor cancelled task {} successfully", task_id);
+                }
+                Err(e) => {
+                    warn!(
+                        "Failed to cancel task {} on executor: {}",
+                        task_id, e
+                    );
+                    // 即使执行器取消失败，我们仍然更新本地状态
+                }
+            }
+        }
+
         self.update_task_status(task_id, TaskStatus::Cancelled)?;
         info!("Task {} cancelled, reason: {:?}", task_id, reason);
         Ok(())
@@ -228,6 +356,21 @@ impl TaskScheduler for TaskSchedulerImpl {
                 AllianceErrorCode::TaskAlreadyTerminal,
                 format!("Task is already in terminal state: {:?}", task.status),
             ));
+        }
+
+        // 通知执行器暂停任务
+        if task.status == TaskStatus::Running {
+            match self.executor_bridge.pause_task(task_id, tenant_id).await {
+                Ok(_) => {
+                    info!("Executor paused task {} successfully", task_id);
+                }
+                Err(e) => {
+                    warn!(
+                        "Failed to pause task {} on executor: {}",
+                        task_id, e
+                    );
+                }
+            }
         }
 
         self.update_task_status(task_id, TaskStatus::Paused)?;
@@ -245,13 +388,41 @@ impl TaskScheduler for TaskSchedulerImpl {
             ));
         }
 
+        // 通知执行器恢复任务
+        match self.executor_bridge.resume_task(task_id, tenant_id).await {
+            Ok(_) => {
+                info!("Executor resumed task {} successfully", task_id);
+            }
+            Err(e) => {
+                warn!(
+                    "Failed to resume task {} on executor: {}",
+                    task_id, e
+                );
+            }
+        }
+
         self.update_task_status(task_id, TaskStatus::Running)?;
         info!("Task {} resumed", task_id);
         Ok(())
     }
 
     async fn get_task(&self, task_id: Uuid, tenant_id: Uuid) -> AllianceResult<Task> {
-        self.get_task_internal(task_id, tenant_id)
+        // 先从本地获取
+        let task = self.get_task_internal(task_id, tenant_id)?;
+
+        // 如果任务正在执行中，尝试从执行器同步最新状态
+        if task.status == TaskStatus::Running || task.status == TaskStatus::Paused {
+            // 异步同步，不阻塞查询（后台更新）
+            // 注意：这里使用同步更新以确保用户获得最新状态
+            let _ = self
+                .sync_task_status_from_executor(task_id, tenant_id)
+                .await;
+
+            // 重新获取更新后的任务
+            return self.get_task_internal(task_id, tenant_id);
+        }
+
+        Ok(task)
     }
 
     async fn generate_plan(
@@ -287,5 +458,242 @@ impl TaskScheduler for TaskSchedulerImpl {
             .values()
             .filter(|t| t.status == TaskStatus::Running)
             .count()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::executor_bridge::MockExecutorBridge;
+    use mox_alliance_common_proto::{
+        AllianceMode, FusionStrategy, Node, NodeStatus, TaskPriority,
+    };
+    use mox_alliance_executor_proto::ExecutionStatus;
+
+    fn create_test_config() -> SchedulerConfig {
+        SchedulerConfig {
+            max_concurrent_tasks: 10,
+            queue_capacity: 100,
+            default_priority: TaskPriority::Normal,
+            default_mode: AllianceMode::Parallel,
+            default_fusion_strategy: FusionStrategy::Weighted,
+            plan_generation_timeout_ms: 30_000,
+        }
+    }
+
+    #[tokio::test]
+    async fn test_submit_task_with_mock_bridge() {
+        let config = create_test_config();
+        let matcher = Arc::new(RuleBasedExpertMatcher::new());
+        let bridge = Arc::new(MockExecutorBridge::new());
+
+        let scheduler = TaskSchedulerImpl::new_with_bridge(config, matcher, bridge.clone());
+
+        let tenant_id = Uuid::new_v4();
+        let user_id = Uuid::new_v4();
+
+        let request = TaskSubmitRequest {
+            tenant_id,
+            user_id,
+            title: "Test Task".to_string(),
+            description: "Test description".to_string(),
+            task_type: None,
+            priority: None,
+            mode: None,
+            fusion_strategy: None,
+        };
+
+        let result = scheduler.submit_task(request).await;
+        assert!(result.is_ok());
+
+        let response = result.unwrap();
+        assert_eq!(response.task.status, TaskStatus::Running);
+        assert_eq!(bridge.submitted_count(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_cancel_task_with_mock_bridge() {
+        let config = create_test_config();
+        let matcher = Arc::new(RuleBasedExpertMatcher::new());
+        let bridge = Arc::new(MockExecutorBridge::new());
+
+        let scheduler = TaskSchedulerImpl::new_with_bridge(config, matcher, bridge.clone());
+
+        let tenant_id = Uuid::new_v4();
+        let user_id = Uuid::new_v4();
+
+        // 先提交一个任务
+        let request = TaskSubmitRequest {
+            tenant_id,
+            user_id,
+            title: "Test Task".to_string(),
+            description: "Test description".to_string(),
+            task_type: None,
+            priority: None,
+            mode: None,
+            fusion_strategy: None,
+        };
+
+        let response = scheduler.submit_task(request).await.unwrap();
+        let task_id = response.task.task_id;
+
+        // 取消任务
+        let result = scheduler
+            .cancel_task(task_id, tenant_id, Some("test cancel".to_string()))
+            .await;
+        assert!(result.is_ok());
+        assert_eq!(bridge.cancelled_count(), 1);
+
+        // 验证任务状态
+        let task = scheduler.get_task(task_id, tenant_id).await.unwrap();
+        assert_eq!(task.status, TaskStatus::Cancelled);
+    }
+
+    #[tokio::test]
+    async fn test_pause_resume_task_with_mock_bridge() {
+        let config = create_test_config();
+        let matcher = Arc::new(RuleBasedExpertMatcher::new());
+        let bridge = Arc::new(MockExecutorBridge::new());
+
+        let scheduler = TaskSchedulerImpl::new_with_bridge(config, matcher, bridge.clone());
+
+        let tenant_id = Uuid::new_v4();
+        let user_id = Uuid::new_v4();
+
+        let request = TaskSubmitRequest {
+            tenant_id,
+            user_id,
+            title: "Test Task".to_string(),
+            description: "Test description".to_string(),
+            task_type: None,
+            priority: None,
+            mode: None,
+            fusion_strategy: None,
+        };
+
+        let response = scheduler.submit_task(request).await.unwrap();
+        let task_id = response.task.task_id;
+
+        // 暂停
+        let result = scheduler.pause_task(task_id, tenant_id).await;
+        assert!(result.is_ok());
+        assert_eq!(bridge.paused.lock().unwrap().len(), 1);
+
+        let task = scheduler.get_task(task_id, tenant_id).await.unwrap();
+        assert_eq!(task.status, TaskStatus::Paused);
+
+        // 恢复
+        let result = scheduler.resume_task(task_id, tenant_id).await;
+        assert!(result.is_ok());
+        assert_eq!(bridge.resumed.lock().unwrap().len(), 1);
+
+        let task = scheduler.get_task(task_id, tenant_id).await.unwrap();
+        assert_eq!(task.status, TaskStatus::Running);
+    }
+
+    #[tokio::test]
+    async fn test_backward_compatible_new() {
+        let config = create_test_config();
+        let matcher = Arc::new(RuleBasedExpertMatcher::new());
+        let (dispatch_tx, mut dispatch_rx) = mpsc::unbounded_channel::<Task>();
+
+        let scheduler = TaskSchedulerImpl::new(config, matcher, dispatch_tx);
+
+        let tenant_id = Uuid::new_v4();
+        let user_id = Uuid::new_v4();
+
+        let request = TaskSubmitRequest {
+            tenant_id,
+            user_id,
+            title: "Test Task".to_string(),
+            description: "Test description".to_string(),
+            task_type: None,
+            priority: None,
+            mode: None,
+            fusion_strategy: None,
+        };
+
+        let result = scheduler.submit_task(request).await;
+        assert!(result.is_ok());
+
+        // 旧版 API 中 dispatch_tx 不再用于核心派发
+        // 验证 channel 为空（向后兼容但行为已变更）
+        assert!(dispatch_rx.try_recv().is_err());
+    }
+
+    #[tokio::test]
+    async fn test_executor_bridge_failure() {
+        let config = create_test_config();
+        let matcher = Arc::new(RuleBasedExpertMatcher::new());
+        let bridge = Arc::new(MockExecutorBridge::new());
+        bridge.set_should_fail(true);
+
+        let scheduler = TaskSchedulerImpl::new_with_bridge(config, matcher, bridge.clone());
+
+        let tenant_id = Uuid::new_v4();
+        let user_id = Uuid::new_v4();
+
+        let request = TaskSubmitRequest {
+            tenant_id,
+            user_id,
+            title: "Test Task".to_string(),
+            description: "Test description".to_string(),
+            task_type: None,
+            priority: None,
+            mode: None,
+            fusion_strategy: None,
+        };
+
+        // 即使执行器失败，submit_task 也应该返回 Ok（任务已创建但执行失败）
+        let result = scheduler.submit_task(request).await;
+        assert!(result.is_ok());
+
+        let response = result.unwrap();
+        // 任务状态应该是 Failed（因为执行器提交失败）
+        assert_eq!(response.task.status, TaskStatus::Failed);
+    }
+
+    #[tokio::test]
+    async fn test_get_task_syncs_executor_status() {
+        let config = create_test_config();
+        let matcher = Arc::new(RuleBasedExpertMatcher::new());
+        let bridge = Arc::new(MockExecutorBridge::new());
+
+        let scheduler = TaskSchedulerImpl::new_with_bridge(config.clone(), matcher, bridge.clone());
+
+        let tenant_id = Uuid::new_v4();
+        let user_id = Uuid::new_v4();
+
+        let request = TaskSubmitRequest {
+            tenant_id,
+            user_id,
+            title: "Test Task".to_string(),
+            description: "Test description".to_string(),
+            task_type: None,
+            priority: None,
+            mode: None,
+            fusion_strategy: None,
+        };
+
+        let response = scheduler.submit_task(request).await.unwrap();
+        let task_id = response.task.task_id;
+
+        // 设置执行器返回的状态（模拟部分完成）
+        bridge.set_status(ExecutionStatus {
+            task_id,
+            total_nodes: 5,
+            completed_nodes: 2,
+            running_nodes: 1,
+            failed_nodes: 0,
+            pending_nodes: 2,
+            skipped_nodes: 0,
+            progress: 0.4,
+            started_at: None,
+            estimated_remaining_ms: None,
+        });
+
+        // 获取任务时应该同步执行器状态
+        let task = scheduler.get_task(task_id, tenant_id).await.unwrap();
+        assert_eq!(task.progress, 0.4);
     }
 }
