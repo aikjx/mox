@@ -23,6 +23,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::debug;
 
+use crate::matching::{description_overlap, tokenize};
+
 /// 模块化权重专家匹配器
 ///
 /// 使用模块化配置中的 `MatchingWeights` 来计算匹配分数，
@@ -152,26 +154,13 @@ impl ModularWeightMatcher {
         matched as f64 / query.required_capabilities.len() as f64
     }
 
-    /// 计算描述文本关键词匹配分 (0.0 - 1.0)
+    /// 计算描述文本匹配分 (0.0 - 1.0)
+    ///
+    /// 基于中英分词（字符 bigram + 英文词）的 token 重叠，
+    /// 修复原 `split_whitespace()` 对中文整句永不命中的缺陷。
     fn calculate_description_score(expert: &Expert, query: &ExpertMatchQuery) -> f64 {
-        let query_lower = query.task_description.to_lowercase();
-        let expert_lower = expert.description.to_lowercase();
-
-        let keywords: Vec<&str> = query_lower
-            .split_whitespace()
-            .filter(|w| w.len() > 2)
-            .collect();
-
-        if keywords.is_empty() {
-            return 0.3;
-        }
-
-        let matches = keywords
-            .iter()
-            .filter(|kw| expert_lower.contains(*kw))
-            .count();
-
-        (matches as f64 / keywords.len() as f64).min(1.0)
+        let query_tokens = tokenize(&query.task_description);
+        description_overlap(expert, &query_tokens).0
     }
 
     /// 计算健康状态分 (0.0 - 1.0)
@@ -361,6 +350,11 @@ impl ExpertMatcher for ModularWeightMatcher {
     async fn refresh_cache(&self) -> AllianceResult<()> {
         // 内存版权重直接读取，无需缓存刷新
         Ok(())
+    }
+
+    async fn infer_domains(&self, description: &str) -> Vec<String> {
+        let experts: Vec<Expert> = self.experts.read().values().cloned().collect();
+        crate::matching::infer_domains(description, &experts)
     }
 }
 

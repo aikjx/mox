@@ -34,12 +34,18 @@ use uuid::Uuid;
 
 use mox_alliance_executor_proto::types::ExecutorConfig;
 
+use crate::fusion::{FusionEngine, FusionInput, FusionItem, FusionOutput};
+
 /// 任务执行状态（内部完整状态）
 struct TaskExecutionState {
     task: Task,
     plan: CollaborationPlan,
     nodes: HashMap<String, Node>,
     options: ExecutionOptions,
+    /// 节点执行结果（node_id -> result，供融合与结果获取）
+    outputs: HashMap<String, NodeExecutionResult>,
+    /// DAG 尾部融合结论（全部节点成功完成后生成）
+    fusion_output: Option<FusionOutput>,
 }
 
 /// DAG 执行引擎实现
@@ -156,6 +162,8 @@ impl DagEngineImpl {
                     plan,
                     nodes: nodes_map,
                     options,
+                    outputs: HashMap::new(),
+                    fusion_output: None,
                 };
 
                 let mut states = states.write();
@@ -277,6 +285,10 @@ impl DagEngineImpl {
                 // 更新节点状态
                 let mut states = states_clone.write();
                 if let Some(state) = states.get_mut(&task_id) {
+                    // 持久化节点执行结果（供 DAG 尾部融合与结果获取）
+                    if let Ok(exec_result) = &result {
+                        state.outputs.insert(node_id.clone(), exec_result.clone());
+                    }
                     if let Some(n) = state.nodes.get_mut(&node_id) {
                         match result {
                             Ok(exec_result) => {
@@ -323,8 +335,7 @@ impl DagEngineImpl {
     }
 
     /// 检查任务是否完成
-    fn check_task_completion(state: &mut TaskExecutionState) {
-        let all_terminal = state.nodes.values().all(|n| n.status.is_terminal());
+    fn check_task_completion(state: &mut TaskExecutionState) {        let all_terminal = state.nodes.values().all(|n| n.status.is_terminal());
         let any_failed = state
             .nodes
             .values()
@@ -336,6 +347,8 @@ impl DagEngineImpl {
                 state.task.progress = 1.0;
                 warn!("Task {} completed with failures", state.task.task_id);
             } else {
+                // DAG 尾部融合：全部节点成功后，按 plan.fusion_strategy 执行融合
+                Self::run_fusion(state);
                 state.task.status = TaskStatus::Completed;
                 state.task.progress = 1.0;
                 info!("Task {} completed successfully", state.task.task_id);
@@ -357,9 +370,48 @@ impl DagEngineImpl {
         }
     }
 
+    /// 在 DAG 尾部执行结果融合，兑现 `plan.fusion_strategy`
+    ///
+    /// 收集全部成功节点的输出，构造 `FusionInput` 并调用融合引擎，
+    /// 结果写入 `state.fusion_output`（任务结构不含专有结果字段）。
+    fn run_fusion(state: &mut TaskExecutionState) {
+        let strategy = state.plan.fusion_strategy;
+        let mut items: Vec<FusionItem> = Vec::new();
+        for (node_id, result) in &state.outputs {
+            if let Some(node) = state.nodes.get(node_id) {
+                if let Some(item) = FusionItem::from_execution(node, result) {
+                    items.push(item);
+                }
+            }
+        }
+
+        let input = FusionInput {
+            items,
+            expert_weights: HashMap::new(),
+            strategy,
+            task_description: state.task.description.clone(),
+        };
+
+        match FusionEngine::new().fuse(input) {
+            Ok(output) => {
+                info!(
+                    "Fusion completed for task {} with strategy {:?}: {} experts, confidence {:.2}",
+                    state.task.task_id,
+                    strategy,
+                    output.expert_count,
+                    output.confidence
+                );
+                // 融合结果写入执行状态（任务结构不含专有结果字段）
+                state.fusion_output = Some(output);
+            }
+            Err(e) => {
+                warn!("Fusion failed for task {}: {}", state.task.task_id, e);
+            }
+        }
+    }
+
     /// 计算执行状态
-    fn compute_execution_status(state: &TaskExecutionState) -> ExecutionStatus {
-        let nodes: Vec<&Node> = state.nodes.values().collect();
+    fn compute_execution_status(state: &TaskExecutionState) -> ExecutionStatus {        let nodes: Vec<&Node> = state.nodes.values().collect();
         let total = nodes.len();
         let completed = nodes.iter().filter(|n| n.status == NodeStatus::Completed).count();
         let running = nodes.iter().filter(|n| n.status == NodeStatus::Running).count();
@@ -381,6 +433,25 @@ impl DagEngineImpl {
             started_at: state.task.started_at,
             estimated_remaining_ms: None,
         }
+    }
+
+    /// 获取任务的融合结果（DAG 尾部融合产出；未完成/无结果返回 Ok(None)）
+    pub fn get_fusion_output(
+        &self,
+        task_id: Uuid,
+        tenant_id: Uuid,
+    ) -> AllianceResult<Option<FusionOutput>> {
+        let states = self.states.read();
+        let state = states
+            .get(&task_id)
+            .ok_or_else(|| AllianceError::not_found("Task", &task_id.to_string()))?;
+        if state.task.tenant_id != tenant_id {
+            return Err(AllianceError::new(
+                AllianceErrorCode::TenantMismatch,
+                "Task does not belong to this tenant",
+            ));
+        }
+        Ok(state.fusion_output.clone())
     }
 }
 

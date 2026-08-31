@@ -7,7 +7,9 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use mox_alliance_common_proto::{Capability, Expert, ExpertHealth, ExpertModuleConfig, ExpertStatus};
-use mox_alliance_config_core::examples::domain_experts::build_domain_experts;
+use mox_alliance_config_core::examples::domain_experts::{
+    build_domain_experts, build_global_default_config,
+};
 use mox_alliance_config_core::{ConfigEngine, MemoryConfigStore};
 use mox_alliance_executor_proto::DagEngine;
 use mox_alliance_scheduler_core::{
@@ -115,11 +117,11 @@ impl SchedulerServer {
     ) -> anyhow::Result<Arc<dyn mox_alliance_scheduler_core::ExecutorBridge>> {
         match self.mode {
             SchedulerMode::Standalone => {
-                // 默认指向执行器服务（executor-svc 监听 8082），修复了原先指向自身 8081 的错配
+                // 默认指向执行器服务（executor-svc 监听 3200），修复了原先指向自身 3100 的错配
                 let base_url = self
                     .executor_url
                     .clone()
-                    .unwrap_or_else(|| "http://localhost:8082".to_string());
+                    .unwrap_or_else(|| "http://localhost:3200".to_string());
 
                 let config = HttpExecutorBridgeConfig {
                     base_url: base_url.clone(),
@@ -167,7 +169,11 @@ impl SchedulerServer {
             tenant_id: "system".to_string(),
             name: module.name.clone(),
             version: module.version.clone(),
-            description: module.name.clone(),
+            // 用模块的系统提示词模板承载领域能力词库（原实现只存 name，导致描述匹配失效）
+            description: match &module.llm_config.system_prompt_template {
+                Some(tpl) => format!("{}. {}", module.name, tpl),
+                None => module.name.clone(),
+            },
             domains: module.tags.clone(),
             capabilities,
             tools: vec![],
@@ -179,11 +185,18 @@ impl SchedulerServer {
         }
     }
 
-    /// 启动服务器
-    pub async fn run(&self) -> anyhow::Result<()> {
+    /// 构建应用（将构建逻辑与网络监听分离，便于测试注入与复用）
+    pub async fn build_app(&self) -> anyhow::Result<axum::Router> {
         // ── 构建模块化配置子系统（全链路接线）──
         // 1) 配置引擎（内存存储，可替换为持久化实现）
         let config_engine = Arc::new(ConfigEngine::new(Arc::new(MemoryConfigStore::new())));
+
+        // 1.1) 引导全局 LLM 默认配置（模块未显式声明的 provider 继承自此）
+        let global_config = build_global_default_config();
+        config_engine
+            .set_global_llm_config(global_config, "system", "bootstrap global llm config")
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to set global llm config: {}", e))?;
 
         // 2) 注册内置领域专家模块配置
         for module in build_domain_experts() {
@@ -242,7 +255,12 @@ impl SchedulerServer {
         );
 
         // 构建路由
-        let app = build_router(state);
+        Ok(build_router(state))
+    }
+
+    /// 启动服务器
+    pub async fn run(&self) -> anyhow::Result<()> {
+        let app = self.build_app().await?;
 
         info!(
             "Scheduler server starting on {} (mode: {:?})",

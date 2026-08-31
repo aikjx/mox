@@ -196,6 +196,7 @@ async fn test_e2e_dag_execution_sequential() -> AllianceResult<()> {
         started_at: None,
         completed_at: None,
         duration_ms: None,
+        fusion_result: None,
     };
 
     engine

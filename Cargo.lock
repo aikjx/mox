@@ -3670,6 +3670,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-alliance-boot-config"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "thiserror 1.0.69",
+ "tracing",
+]
+
+[[package]]
 name = "mox-alliance-common-proto"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -3772,9 +3784,11 @@ dependencies = [
  "axum",
  "chrono",
  "http",
+ "http-body-util",
  "mox-ai-expert-proto",
  "mox-ai-expert-svc",
  "mox-alliance-api",
+ "mox-alliance-boot-config",
  "mox-alliance-common-proto",
  "mox-alliance-core",
  "mox-alliance-executor-core",
@@ -3786,6 +3800,7 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "tokio",
+ "tower 0.4.13",
  "tower-http 0.5.2",
  "tracing",
  "tracing-subscriber",
@@ -3842,7 +3857,9 @@ dependencies = [
  "axum",
  "chrono",
  "http",
+ "http-body-util",
  "mox-alliance-api",
+ "mox-alliance-boot-config",
  "mox-alliance-common-proto",
  "mox-alliance-config-core",
  "mox-alliance-core",
@@ -3856,6 +3873,7 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "tokio",
+ "tower 0.4.13",
  "tower-http 0.5.2",
  "tracing",
  "tracing-subscriber",

@@ -101,7 +101,7 @@ impl TaskSchedulerImpl {
         let task = self
             .tasks
             .get(task_id)?
-            .ok_or_else(|| AllianceError::not_found("Task", &task_id.to_string()))?;
+            .ok_or_else(|| AllianceError::new(AllianceErrorCode::TaskNotFound, format!("Task {} not found", task_id)))?;
 
         if task.tenant_id != tenant_id {
             return Err(AllianceError::new(
@@ -118,7 +118,7 @@ impl TaskSchedulerImpl {
         let mut task = self
             .tasks
             .get(task_id)?
-            .ok_or_else(|| AllianceError::not_found("Task", &task_id.to_string()))?;
+            .ok_or_else(|| AllianceError::new(AllianceErrorCode::TaskNotFound, format!("Task {} not found", task_id)))?;
         task.status = status;
         match status {
             TaskStatus::Running => {
@@ -142,7 +142,7 @@ impl TaskSchedulerImpl {
         let mut task = self
             .tasks
             .get(task_id)?
-            .ok_or_else(|| AllianceError::not_found("Task", &task_id.to_string()))?;
+            .ok_or_else(|| AllianceError::new(AllianceErrorCode::TaskNotFound, format!("Task {} not found", task_id)))?;
         task.progress = progress;
         self.tasks.save(&task)?;
         Ok(())
@@ -275,11 +275,16 @@ impl TaskScheduler for TaskSchedulerImpl {
             fusion_strategy: task.fusion_strategy,
         };
 
-        // 匹配专家
+        // 匹配专家（自动识别：由任务描述推断领域并传入 required_domains）
+        let inferred_domains = self.matcher.infer_domains(&task.description).await;
+        debug!(
+            "Inferred domains for task {}: {:?}",
+            task_id, inferred_domains
+        );
         let match_query = mox_alliance_scheduler_proto::ExpertMatchQuery {
             tenant_id: tenant_id.to_string(),
             task_description: task.description.clone(),
-            required_domains: vec![],
+            required_domains: inferred_domains,
             required_capabilities: vec![],
             min_priority: 1,
             max_results: 5,
@@ -455,10 +460,16 @@ impl TaskScheduler for TaskSchedulerImpl {
         &self,
         request: PlanGenerationRequest,
     ) -> AllianceResult<mox_alliance_common_proto::CollaborationPlan> {
+        // 自动识别：由任务描述推断领域并传入 required_domains
+        let inferred_domains = self.matcher.infer_domains(&request.task_description).await;
+        debug!(
+            "Inferred domains for plan generation: {:?}",
+            inferred_domains
+        );
         let match_query = mox_alliance_scheduler_proto::ExpertMatchQuery {
             tenant_id: request.tenant_id.to_string(),
             task_description: request.task_description.clone(),
-            required_domains: vec![],
+            required_domains: inferred_domains,
             required_capabilities: vec![],
             min_priority: 1,
             max_results: 5,

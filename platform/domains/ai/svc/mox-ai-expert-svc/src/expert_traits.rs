@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -34,9 +34,25 @@ pub fn default_registry() -> Arc<dyn ExpertRegistry> {
     Arc::new(crate::services::RegistryImpl::new()) as Arc<dyn ExpertRegistry>
 }
 
-/// 默认咨询实现（包装真实 `mox_optimize`，同步快路径见 `ExpertServiceImpl::consult_sync`）。
-pub fn default_consultant() -> Arc<dyn ExpertConsultant> {
+/// 纯本地咨询实现（包装真实 `mox_optimize`，同步快路径见 `ExpertServiceImpl::consult_sync`）。
+/// 供 flow-bridge / data-catalog 等需要 mox_optimize 治理分析的调用方使用。
+pub fn local_consultant() -> Arc<dyn ExpertConsultant> {
     Arc::new(crate::services::ExpertServiceImpl::new()) as Arc<dyn ExpertConsultant>
+}
+
+/// 默认咨询实现（保持本地，向后兼容）。
+pub fn default_consultant() -> Arc<dyn ExpertConsultant> {
+    local_consultant()
+}
+
+/// 首选咨询实现：配置真实 LLM（MOX_LLM_API_KEY 等）时走真实 LLM（ReAct + 工具调用），
+/// 否则回退本地引擎；可用 MOX_LLM_ENABLED=false 显式禁用。
+/// 供 executor-svc 的 Expert 模式使用。
+pub fn llm_consultant() -> Arc<dyn ExpertConsultant> {
+    match crate::llm::consultant::llm_consultant_from_env() {
+        Some(c) => c,
+        None => local_consultant(),
+    }
 }
 
 /// 默认编排器（基于关键词匹配 + prefer_expert 约束短路）。接受注册表 trait object。

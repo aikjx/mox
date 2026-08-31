@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -35,6 +35,7 @@ pub mod govern;
 /// 插件化运行时：参考 DeepSeek Harness "Everything is a Plugin" 范式的共享上下文与瀑布扩展点
 pub mod harness;
 pub mod ir;
+pub mod llm;
 pub mod pipeline;
 pub mod programming;
 /// RBAC 引擎：资源级权限控制，多角色继承链，跨租户隔离

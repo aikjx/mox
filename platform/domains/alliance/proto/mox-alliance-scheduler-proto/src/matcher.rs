@@ -68,4 +68,11 @@ pub trait ExpertMatcher: Send + Sync {
 
     /// 刷新匹配缓存
     async fn refresh_cache(&self) -> AllianceResult<()>;
+
+    /// 从任务描述自动推断所属领域（默认不推断，由实现覆盖以启用「自动识别专家」）
+    ///
+    /// 返回的领域标签应传入 `ExpertMatchQuery.required_domains` 参与领域过滤。
+    async fn infer_domains(&self, _description: &str) -> Vec<String> {
+        Vec::new()
+    }
 }

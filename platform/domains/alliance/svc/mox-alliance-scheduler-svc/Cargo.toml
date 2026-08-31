@@ -13,6 +13,7 @@ mox-alliance-executor-proto = { path = "../../proto/mox-alliance-executor-proto"
 mox-alliance-core = { path = "../../core/mox-alliance-core" }
 mox-alliance-scheduler-core = { path = "../../core/mox-alliance-scheduler-core" }
 mox-alliance-config-core = { path = "../../core/mox-alliance-config-core" }
+mox-alliance-boot-config = { path = "../../core/mox-alliance-boot-config" }
 mox-alliance-api = { path = "../../api" }
 mox-platform-foundation = { workspace = true }
 mox-error = { workspace = true }
@@ -34,6 +35,10 @@ http = { workspace = true }
 [[bin]]
 name = "mox-alliance-scheduler"
 path = "src/bin/main.rs"
+
+[dev-dependencies]
+tower = { workspace = true, features = ["util"] }
+http-body-util = { workspace = true }
 
 [features]
 default = []

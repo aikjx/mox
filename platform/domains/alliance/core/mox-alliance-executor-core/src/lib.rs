@@ -14,10 +14,12 @@
 
 pub mod dag_engine;
 pub mod expert_executor;
+pub mod fusion;
 pub mod mock_executor;
 
 pub use dag_engine::DagEngineImpl;
 pub use expert_executor::{
     ExecutorStatsView, ExpertExecutorConfig, ExpertNodeExecutor,
 };
+pub use fusion::{FusionEngine, FusionInput, FusionItem, FusionOutput};
 pub use mock_executor::{MockExecutorConfig, MockNodeExecutor};

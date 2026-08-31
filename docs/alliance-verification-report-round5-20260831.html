@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>开发专家联盟 · 第五轮 P0 专项：匹配器修复 + 融合引擎接入 验证报告</title>
+<style>
+:root{--ink:#1a1b2e;--sub:#5b5f7a;--line:#e4e6f0;--bg:#f6f7fb;--card:#ffffff;--brand:#3a5ccc;--good:#2e9e6b;--warn:#d97706;--bad:#c0392b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--ink);line-height:1.7;padding:32px 20px;}
+.wrap{max-width:1040px;margin:0 auto;}
+h1{font-size:26px;font-weight:700;margin-bottom:6px;}
+.meta{color:var(--sub);font-size:13px;margin-bottom:22px;}
+.hero{background:linear-gradient(135deg,#14532d,#2e9e6b);color:#fff;border-radius:16px;padding:26px 30px;margin-bottom:24px;}
+.hero h2{font-size:20px;margin-bottom:10px;}
+.kpis{display:flex;gap:14px;flex-wrap:wrap;margin-top:16px;}
+.kpi{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:12px 18px;min-width:120px;}
+.kpi .n{font-size:26px;font-weight:800;}
+.kpi .l{font-size:12px;opacity:.9;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 26px;margin-bottom:20px;}
+.card h3{font-size:17px;margin-bottom:14px;border-left:4px solid var(--brand);padding-left:10px;}
+table{width:100%;border-collapse:collapse;font-size:13.5px;}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top;}
+th{background:#eef1fa;font-weight:600;white-space:nowrap;}
+tr:nth-child(even) td{background:#fafbfe;}
+.tag{display:inline-block;padding:1px 8px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap;}
+.good{background:#e6f6ee;color:var(--good);}
+.bad{background:#fdecea;color:var(--bad);}
+.warn{background:#fef3e2;color:var(--warn);}
+.brand{background:#e8edfb;color:var(--brand);}
+ul{margin:6px 0 6px 22px;}
+li{margin-bottom:4px;}
+code{background:#f0f2f8;border-radius:5px;padding:1px 6px;font-family:Consolas,monospace;font-size:12.5px;}
+.foot{color:var(--sub);font-size:12px;text-align:center;margin-top:26px;}
+.banner{background:#fef3e2;border:1px solid #f0c88a;border-radius:10px;padding:12px 16px;margin:10px 0;font-size:13.5px;}
+.banner-ok{background:#e6f6ee;border:1px solid #9fd8bb;border-radius:10px;padding:12px 16px;margin:10px 0;font-size:13.5px;}
+.banner-q{background:#e8edfb;border:1px solid #b9c6f0;border-radius:10px;padding:12px 16px;margin:10px 0;font-size:13.5px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>开发专家联盟 · 第五轮 P0 专项验证报告</h1>
+<div class="meta">mox-alliance · 2026-08-31 · 修复「专家自动识别」+ 把 FusionEngine 接入执行器 DAG 尾部 + 全量回归 + 真实进程端到端</div>
+
+<div class="hero">
+<h2>结论：本轮 3 项 P0 中前 2 项已完成并实测通过 —— 专家匹配器修复（中英文任务均能按领域自动识别专家）✅、FusionEngine 已接入执行器 DAG 尾部并兑现 fusion_strategy 参数 ✅。全量测试从 234 项提升到 251 项，0 失败。第 3 项「Expert 模式定位」需用户拍板后再定 ReAct/工具调用范围。</h2>
+<div class="kpis">
+<div class="kpi"><div class="n">251</div><div class="l">测试全部通过（+17）</div></div>
+<div class="kpi"><div class="n">2/3</div><div class="l">P0 已完成</div></div>
+<div class="kpi"><div class="n">11</div><div class="l">crate 编译通过</div></div>
+<div class="kpi"><div class="n">9</div><div class="l">融合策略全接入</div></div>
+<div class="kpi"><div class="n">13</div><div class="l">端到端领域用例</div></div>
+<div class="kpi"><div class="n">1</div><div class="l">待用户决策项</div></div>
+</div>
+</div>
+
+<div class="card">
+<h3>一、本轮改动文件清单（13 个）</h3>
+<table>
+<tr><th>#</th><th>文件</th><th>改动</th><th>状态</th></tr>
+<tr><td>1</td><td><code>scheduler-core/src/matching.rs</code>（新建）</td><td>tokenize（CJK 单字+二元 bigram、英文按字母数字词、统一停用词过滤）、expert_text、description_overlap、lexicon_match（领域词典 ~170 条中英关键词，ASCII 词干前缀+共享词根匹配）、infer_domains（证据≥2 才推断，最多 3 领域）</td><td><span class="tag good">编译+测试通过</span></td></tr>
+<tr><td>2</td><td><code>scheduler-core/src/lib.rs</code></td><td>注册 <code>pub mod matching</code></td><td><span class="tag good">通过</span></td></tr>
+<tr><td>3</td><td><code>scheduler-core/src/matcher.rs</code></td><td>描述打分改分词重叠；实现 infer_domains</td><td><span class="tag good">通过</span></td></tr>
+<tr><td>4</td><td><code>scheduler-core/src/modular_matcher.rs</code></td><td>同上 + 领域硬过滤（required_domains 非空时跳过无交集专家）</td><td><span class="tag good">通过</span></td></tr>
+<tr><td>5</td><td><code>scheduler-proto/src/matcher.rs</code></td><td>ExpertMatcher trait 增加默认 infer_domains（返回空，向后兼容）</td><td><span class="tag good">通过</span></td></tr>
+<tr><td>6</td><td><code>scheduler-core/src/scheduler.rs</code></td><td>submit_task / generate_plan 两处在构造 ExpertMatchQuery 前调用 infer_domains 并传入 required_domains</td><td><span class="tag good">通过</span></td></tr>
+<tr><td>7</td><td><code>scheduler-svc/src/server.rs</code></td><td>expert_from_module 的 description 恢复为 name + system_prompt_template（能力词库）</td><td><span class="tag good">通过</span></td></tr>
+<tr><td>8</td><td><code>executor-core/src/fusion.rs</code>（新建）</td><td>FusionEngine 适配执行器结果：FusionItem::from_execution、FusionInput/Output、9 策略全实现（委托 core 引擎），含 6 单测</td><td><span class="tag good">编译+测试通过</span></td></tr>
+<tr><td>9</td><td><code>executor-core/src/lib.rs</code></td><td>注册 fusion 模块 + re-export</td><td><span class="tag good">通过</span></td></tr>
+<tr><td>10</td><td><code>executor-core/src/dag_engine.rs</code></td><td>TaskExecutionState+outputs/fusion_output；节点完成持久化输出；全节点 terminal 且无失败时调 run_fusion；新增 get_fusion_output</td><td><span class="tag good">通过</span></td></tr>
+<tr><td>11</td><td><code>common-proto/src/types.rs</code></td><td>Task 增加 <code>fusion_result: Option&lt;Value&gt;</code>（serde default）</td><td><span class="tag good">通过</span></td></tr>
+<tr><td>12</td><td><code>executor-svc/src/routes.rs</code></td><td>新增 <code>GET /tasks/:task_id/result</code> 融合结果接口</td><td><span class="tag good">通过</span></td></tr>
+<tr><td>13</td><td><code>executor-core/tests/integration_e2e.rs</code></td><td>Task 字面量补 fusion_result 字段</td><td><span class="tag good">通过</span></td></tr>
+</table>
+<div class="banner-ok"><b>回归口径：</b>全量 <code>cargo test</code> 11 crate：core 120 · scheduler-core 74（+11 matching）· executor-core 23（+6 fusion）· config-core 12 · sdk 10 · scheduler-svc 7 · executor-svc 5 = <b>251 passed，0 failed</b>；api + 3 proto 为纯契约 crate（0 测试，正常）。</div>
+</div>
+
+<div class="card">
+<h3>二、P0#1 匹配器修复 —— 真实运行时验证（POST /tasks → 自动领域识别 → 专家分配）</h3>
+<p><b>修复前</b>（第四轮实测）：同一任务无论中英文都命中同一批 vision/medical/math/code/law 5 个专家，finance 等专家永不命中。<b>根因</b>：split_whitespace() 中文整句变一词；专家描述被丢弃；required_domains 恒为空。</p>
+<table>
+<tr><th>任务描述（中/英）</th><th>推断领域（运行时日志）</th><th>分配专家节点</th><th>判定</th></tr>
+<tr><td>分析2026年第二季度财务报表并给出投资建议</td><td>[finance, investment, academic]</td><td>finance-expert-001, research-expert-001</td><td><span class="tag good">精准</span></td></tr>
+<tr><td>Analyze Q2 2026 financial statements and recommend investments</td><td>[finance]</td><td>finance-expert-001</td><td><span class="tag good">精准（修复英文词形）</span></td></tr>
+<tr><td>Analyze revenue and earnings trends, then recommend stock allocation</td><td>[finance]</td><td>finance-expert-001</td><td><span class="tag good">精准</span></td></tr>
+<tr><td>用Rust写一个Web服务的登录接口并做单元测试</td><td>[code, programming]</td><td>code-expert-001</td><td><span class="tag good">精准</span></td></tr>
+<tr><td>我最近经常头痛失眠，需要看医生吗</td><td>[medical]</td><td>medical-expert-001</td><td><span class="tag good">精准（补症状词典后）</span></td></tr>
+<tr><td>I have a headache and cannot sleep, should I see a doctor</td><td>[medical]</td><td>medical-expert-001</td><td><span class="tag good">精准</span></td></tr>
+<tr><td>证明微积分基本定理并给出一个应用实例</td><td>[mathematics]</td><td>math-expert-001</td><td><span class="tag good">精准</span></td></tr>
+<tr><td>Review this employment contract for legal issues</td><td>[law]</td><td>law-expert-001</td><td><span class="tag good">精准</span></td></tr>
+<tr><td>把这篇英文文献翻译成中文</td><td>[translation, research]</td><td>translation-expert-001, research-expert-001</td><td><span class="tag good">合理</span></td></tr>
+<tr><td>Write a poem about spring for a brand campaign</td><td>[creative]</td><td>creative-expert-001</td><td><span class="tag good">精准</span></td></tr>
+<tr><td>帮我识别这张图片里的物体并描述画面</td><td>[vision]</td><td>vision-expert-001</td><td><span class="tag good">精准</span></td></tr>
+<tr><td>研究量子计算在金融风险评估中的应用并写一篇综述</td><td>[finance, research]</td><td>finance-expert-001, research-expert-001</td><td><span class="tag good">多域正确</span></td></tr>
+<tr><td>请帮我分析一下</td><td>[]（弱信号不推断）</td><td>按描述分排序（不误过滤）</td><td><span class="tag good">保守正确</span></td></tr>
+</table>
+<div class="banner-ok"><b>机制说明：</b>①中文分词：CJK 连续片段按「单字+二元 bigram」切分并滤停用词，整句可命中；②英文词形：ASCII 词做「真前缀 + 共享词根≥4」匹配（financial↔finance、investments↔investment、coding↔code）；③领域证据 = 描述重叠命中数（同领域取最大）+ 词典命中数，<b>证据≥2 才推断</b>，最多 3 领域，避免误过滤；④推断结果传入 required_domains，ModularWeightMatcher 硬过滤无交集专家。</div>
+</div>
+
+<div class="card">
+<h3>三、P0#2 FusionEngine 接入执行器 DAG 尾部 —— 真实运行时验证</h3>
+<p><b>接入点</b>：节点执行完成（无论成败）持久化结果到 TaskExecutionState.outputs；当 DAG 全节点 terminal 且无失败时，先执行 <code>run_fusion(state)</code>（按 Task.fusion_strategy 调 FusionEngine 融合所有成功节点输出），把结果写入 state.fusion_output 与 Task.fusion_result，再置任务 Completed。新增 <code>GET /tasks/:task_id/result</code> 暴露融合结论。</p>
+<table>
+<tr><th>验证项</th><th>实测结果</th><th>判定</th></tr>
+<tr><td>weighted 融合（中文金融，2 专家）</td><td>strategy=weighted, conf=0.5965 = (0.669+0.524)/2，contributions {finance:0.5, research:0.5}</td><td><span class="tag good">正确</span></td></tr>
+<tr><td>voting 融合（多域，2 专家）</td><td>strategy=voting, conf=0.5，summary「投票融合：2 位专家，胜出摘要置信度 50.0%」</td><td><span class="tag good">正确</span></td></tr>
+<tr><td>单专家任务融合</td><td>conf=0.669（直接取该专家 score），expert_count=1</td><td><span class="tag good">正确</span></td></tr>
+<tr><td>融合结果 JSON 结构</td><td>content(outputs[]/fused_confidence) + confidence + expert_count + strategy + contributions + summary，全部序列化</td><td><span class="tag good">正确</span></td></tr>
+<tr><td>接口 404 场景</td><td>不存在任务 → HTTP 404 + 错误码</td><td><span class="tag good">正确</span></td></tr>
+<tr><td>策略覆盖</td><td>executor-core fusion.rs 9 策略全实现：Voting/Weighted/ConfidenceWeighted/Concatenation/BestOf/Stacking/Debate/MapReduce/Iterative（标量类委托 core fuse_scalar、分类类委托 fuse_classification、BestOf 本地加权选优、Debate 前 N-1 辩手+末位裁判）</td><td><span class="tag good">6 单测通过</span></td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3>四、测试与质量门</h3>
+<table>
+<tr><th>检查项</th><th>结果</th></tr>
+<tr><td>全量编译（11 crate）</td><td><span class="tag good">EXITCODE=0</span>（仅既有 non_snake_case/unused 警告，无新错误）</td></tr>
+<tr><td>全量测试</td><td><span class="tag good">251 passed / 0 failed</span>（core 120 · sched-core 74 · exec-core 23 · config-core 12 · sdk 10 · sched-svc 7 · exec-svc 5）</td></tr>
+<tr><td>新增单测</td><td><span class="tag good">matching 11 项</span>（中文 bigram/英文词/混合/中文与英文 finance 推断/复数词形/词干重叠/医学症状/弱信号不推断等）+ <span class="tag good">fusion 6 项</span>（失败忽略/加权/投票/BestOf/全策略/空输入）</td></tr>
+<tr><td>服务真实启动 + 端到端</td><td><span class="tag good">双服务健康</span>，13 个领域任务全链路（创建→识别→DAG 执行→融合→查询）全部通过</td></tr>
+<tr><td>CRLF 文件修改</td><td>types.rs 为 CRLF，用 PowerShell 文本替换完成（Edit 工具对 CRLF 文件不可用）</td></tr>
+</table>
+</div>
+
+<div class="banner-q">
+<h3>五、待用户拍板（第 3 项 P0）：Expert 模式定位</h3>
+<p><b>现状（实测）</b>：Expert 模式下专家节点实际走的是<b>本地璇玑 <code>mox_optimize()</code></b>（14 专家诊断 + 治理闸门，mock 下节点 score=1.000/0ms），并非外部真实 LLM 流式推理。若预期「Expert 模式 = 真实 LLM 的 ReAct 推理 + 工具调用 + 流式输出」，则当前属<b>未实现</b>。</p>
+<p><b>两个方案供选择：</b><br>
+① <b>本地璇玑即终极 Expert</b>（推荐短期）：把 mox_optimize 的 14 维诊断结果作为节点产出继续用，融合结论即为「多专家 + 本地诊断」结论，本轮已跑通；无需外部 Key，成本 0，离线可用。<br>
+② <b>接入真实 LLM</b>：Expert 节点改为调用外部大模型（如豆包/OpenAI）做 ReAct + 工具调用（当前工具绑定能力 P0 也未接线）。需要 LLM API Key、成本与延迟预算，且 LlmRouter（626 行）现在 0 运行时调用点，需一并接通。</p>
+<p><b>请确认采用哪个方案</b>，再据此决定是否把 ReAct/工具调用纳入本域开发范围。</p>
+</div>
+
+<div class="card">
+<h3>六、仍存在的功能缺口（对照 V2.0 需求，非本轮范围）</h3>
+<p>匹配器缺陷（第四轮发现 #1）与 FusionEngine 未接入（#2）本轮已修复并验证。第四轮报告所列其余缺口仍在：协作记忆（工作/会话/长期记忆、案例库）4 项、知识图谱（六元图谱/图谱驱动匹配/图谱学习）3 项、多协议接入（gRPC/WebSocket）2 项、企业级（RBAC/审计/配额/限流熔断）4 项未实现；进度实时推送、结果导出、动态重编排/HITL/条件循环未实现；专家健康状态无心跳。</p>
+</div>
+
+<div class="foot">mox-alliance · 第五轮 P0 专项验证报告 · 2026-08-31 · 全量 251 项测试通过，2/3 P0 完成，1 项待用户决策</div>
+</div>
+</body>
+</html>

@@ -118,6 +118,57 @@ pub struct LlmRouter {
     pub circuit_break_duration: Duration,
     /// 半开状态探测次数（熔断后需要多少次成功才恢复健康）
     pub half_open_probes: u32,
+    /// API Key 解析器（DIP：隔离环境变量依赖，便于测试注入与密钥管理器接入）
+    api_key_resolver: Arc<dyn ApiKeyResolver>,
+}
+
+/// API Key 解析器抽象
+///
+/// 通过依赖注入将「API Key 从哪解析」与路由逻辑解耦：
+/// - 生产默认 `EnvApiKeyResolver`：读环境变量/明文
+/// - 测试注入 `FakeApiKeyResolver`：固定映射，不触碰全局环境变量（消除并行测试竞争）
+/// - 未来可无缝接入密钥管理服务（Vault/KMS），无须改动路由逻辑
+pub trait ApiKeyResolver: Send + Sync {
+    /// 解析指定来源的 API Key；无法解析返回 `None`
+    fn resolve(&self, source: &ApiKeySource) -> Option<String>;
+}
+
+/// 默认实现：委托 `ApiKeySource::resolve_api_key`（环境变量/明文）
+#[derive(Default, Clone, Copy)]
+pub struct EnvApiKeyResolver;
+
+impl ApiKeyResolver for EnvApiKeyResolver {
+    fn resolve(&self, source: &ApiKeySource) -> Option<String> {
+        source.resolve_api_key()
+    }
+}
+
+/// 测试实现：按环境变量名查固定映射，绝不触碰真实全局环境变量
+#[derive(Default, Clone)]
+pub struct FakeApiKeyResolver {
+    env_overrides: HashMap<String, String>,
+}
+
+impl FakeApiKeyResolver {
+    /// 从键值对构造（环境变量名 -> API Key）
+    pub fn with(entries: &[(&str, &str)]) -> Self {
+        Self {
+            env_overrides: entries
+                .iter()
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .collect(),
+        }
+    }
+}
+
+impl ApiKeyResolver for FakeApiKeyResolver {
+    fn resolve(&self, source: &ApiKeySource) -> Option<String> {
+        match source {
+            ApiKeySource::EnvVar { env_name } => self.env_overrides.get(env_name).cloned(),
+            ApiKeySource::PlainText { api_key } => Some(api_key.clone()),
+            ApiKeySource::SecretRef { .. } | ApiKeySource::Inherit => None,
+        }
+    }
 }
 
 impl LlmRouter {
@@ -128,6 +179,7 @@ impl LlmRouter {
             circuit_break_threshold: 5,
             circuit_break_duration: Duration::from_secs(60),
             half_open_probes: 3,
+            api_key_resolver: Arc::new(EnvApiKeyResolver),
         }
     }
 
@@ -142,7 +194,14 @@ impl LlmRouter {
             circuit_break_threshold,
             circuit_break_duration,
             half_open_probes,
+            api_key_resolver: Arc::new(EnvApiKeyResolver),
         }
+    }
+
+    /// 注入自定义 API Key 解析器（生产接密钥管理 / 测试隔离环境变量）
+    pub fn with_api_key_resolver(mut self, resolver: Arc<dyn ApiKeyResolver>) -> Self {
+        self.api_key_resolver = resolver;
+        self
     }
 
     /// 选择最佳的 LLM Provider
@@ -324,7 +383,7 @@ impl LlmRouter {
         RouterSelection {
             provider_id: provider.provider_id.clone(),
             model,
-            api_key: provider.api_key_source.resolve_api_key(),
+            api_key: self.api_key_resolver.resolve(&provider.api_key_source),
             base_url: provider.base_url.clone(),
             strategy: config.routing_strategy,
             is_fallback,
@@ -340,7 +399,7 @@ impl LlmRouter {
         // - EnvVar：环境变量必须已设置（修复"未设置也被视为可用"的缺陷）
         // - PlainText：恒可用
         // - Inherit / SecretRef（当前路由无本地密钥管理器）：视为不可用
-        if provider.api_key_source.resolve_api_key().is_none() {
+        if self.api_key_resolver.resolve(&provider.api_key_source).is_none() {
             return false;
         }
         // 检查运行时状态
@@ -452,9 +511,9 @@ impl LlmRouter {
         }
     }
 
-    /// 检查 API Key 是否已配置（能解析到）
-    pub fn has_usable_api_key(source: &ApiKeySource) -> bool {
-        source.resolve_api_key().is_some()
+    /// 检查 API Key 是否已配置（能通过注入的解析器解析到）
+    pub fn has_usable_api_key(&self, source: &ApiKeySource) -> bool {
+        self.api_key_resolver.resolve(source).is_some()
     }
 }
 
@@ -527,12 +586,12 @@ mod tests {
 
     #[test]
     fn test_router_selection_priority() {
-        let router = LlmRouter::new();
+        // 注入固定 Key 解析器，避免触碰全局环境变量（消除并行测试竞争）
+        let router = LlmRouter::new().with_api_key_resolver(Arc::new(FakeApiKeyResolver::with(&[
+            ("OPENAI_API_KEY", "test-key-openai"),
+            ("ANTHROPIC_API_KEY", "test-key-anthropic"),
+        ])));
         let config = make_test_config();
-
-        // 设置环境变量以便能解析 API Key
-        std::env::set_var("OPENAI_API_KEY", "test-key-openai");
-        std::env::set_var("ANTHROPIC_API_KEY", "test-key-anthropic");
 
         let selection = router.select_provider(&config).unwrap();
         assert_eq!(selection.provider_id, "openai");
@@ -543,11 +602,12 @@ mod tests {
 
     #[test]
     fn test_router_fallback_when_primary_unavailable() {
-        let router = LlmRouter::with_config(2, Duration::from_secs(60), 3);
+        let router = LlmRouter::with_config(2, Duration::from_secs(60), 3)
+            .with_api_key_resolver(Arc::new(FakeApiKeyResolver::with(&[
+                ("OPENAI_API_KEY", "test-key-openai"),
+                ("ANTHROPIC_API_KEY", "test-key-anthropic"),
+            ])));
         let config = make_test_config();
-
-        std::env::set_var("OPENAI_API_KEY", "test-key-openai");
-        std::env::set_var("ANTHROPIC_API_KEY", "test-key-anthropic");
 
         // 模拟 openai 连续失败达到熔断阈值
         router.record_failure("openai", 100.0);
@@ -561,13 +621,13 @@ mod tests {
 
     #[test]
     fn test_router_cost_priority() {
-        let router = LlmRouter::new();
+        let router = LlmRouter::new().with_api_key_resolver(Arc::new(FakeApiKeyResolver::with(&[
+            ("OPENAI_API_KEY", "test-key-openai"),
+            ("ANTHROPIC_API_KEY", "test-key-anthropic"),
+            ("DEEPSEEK_API_KEY", "test-key-deepseek"),
+        ])));
         let mut config = make_test_config();
         config.routing_strategy = LlmRoutingStrategy::CostPriority;
-
-        std::env::set_var("OPENAI_API_KEY", "test-key-openai");
-        std::env::set_var("ANTHROPIC_API_KEY", "test-key-anthropic");
-        std::env::set_var("DEEPSEEK_API_KEY", "test-key-deepseek");
 
         // deepseek 最便宜，应该被选中
         let selection = router.select_provider(&config).unwrap();
@@ -594,13 +654,9 @@ mod tests {
 
     #[test]
     fn test_no_available_provider() {
-        let router = LlmRouter::new();
+        // 空映射：所有 EnvVar 来源均无法解析 → 无可用 Provider（不依赖真实环境变量）
+        let router = LlmRouter::new().with_api_key_resolver(Arc::new(FakeApiKeyResolver::default()));
         let config = make_test_config();
-
-        // 不设置任何环境变量，所有 Provider 都没有可用 API Key
-        std::env::remove_var("OPENAI_API_KEY");
-        std::env::remove_var("ANTHROPIC_API_KEY");
-        std::env::remove_var("DEEPSEEK_API_KEY");
 
         let selection = router.select_provider(&config);
         assert!(selection.is_none());

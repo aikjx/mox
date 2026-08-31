@@ -223,7 +223,7 @@ impl ExpertRegistryBridge for InMemoryExpertRegistry {
 /// HTTP 专家注册桥接器配置
 #[derive(Debug, Clone)]
 pub struct HttpBridgeConfig {
-    /// AI 专家服务基地址，如 `http://localhost:8080`
+    /// AI 专家服务基地址，如 `http://localhost:3300`
     pub base_url: String,
     /// 请求超时（毫秒）
     pub timeout_ms: u64,
@@ -234,7 +234,7 @@ pub struct HttpBridgeConfig {
 impl Default for HttpBridgeConfig {
     fn default() -> Self {
         Self {
-            base_url: "http://localhost:8080".to_string(),
+            base_url: "http://localhost:3300".to_string(),
             timeout_ms: 5000,
             tenant_id: "system".to_string(),
         }

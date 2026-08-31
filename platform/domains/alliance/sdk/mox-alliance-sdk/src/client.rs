@@ -12,7 +12,7 @@ use uuid::Uuid;
 /// 联盟客户端配置
 #[derive(Debug, Clone)]
 pub struct AllianceClientConfig {
-    /// 调度器服务基地址（如 http://localhost:8081）
+    /// 调度器服务基地址（如 http://localhost:3100）
     pub scheduler_base_url: String,
     /// 请求超时（毫秒）
     pub timeout_ms: u64,
@@ -25,7 +25,7 @@ pub struct AllianceClientConfig {
 impl Default for AllianceClientConfig {
     fn default() -> Self {
         Self {
-            scheduler_base_url: "http://localhost:8081".to_string(),
+            scheduler_base_url: "http://localhost:3100".to_string(),
             timeout_ms: 30_000,
             tenant_id: None,
             user_id: None,

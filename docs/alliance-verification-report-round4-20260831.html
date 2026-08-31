@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>开发专家联盟 · 第四轮 全量功能开发完成度验证报告</title>
+<style>
+:root{--ink:#1a1b2e;--sub:#5b5f7a;--line:#e4e6f0;--bg:#f6f7fb;--card:#ffffff;--brand:#3a5ccc;--good:#2e9e6b;--warn:#d97706;--bad:#c0392b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--ink);line-height:1.7;padding:32px 20px;}
+.wrap{max-width:1020px;margin:0 auto;}
+h1{font-size:26px;font-weight:700;margin-bottom:6px;}
+.meta{color:var(--sub);font-size:13px;margin-bottom:22px;}
+.hero{background:linear-gradient(135deg,#2b3a8f,#3a5ccc);color:#fff;border-radius:16px;padding:26px 30px;margin-bottom:24px;}
+.hero h2{font-size:20px;margin-bottom:10px;}
+.kpis{display:flex;gap:14px;flex-wrap:wrap;margin-top:16px;}
+.kpi{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:12px 18px;min-width:120px;}
+.kpi .n{font-size:26px;font-weight:800;}
+.kpi .l{font-size:12px;opacity:.9;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 26px;margin-bottom:20px;}
+.card h3{font-size:17px;margin-bottom:14px;border-left:4px solid var(--brand);padding-left:10px;}
+table{width:100%;border-collapse:collapse;font-size:13.5px;}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top;}
+th{background:#eef1fa;font-weight:600;white-space:nowrap;}
+tr:nth-child(even) td{background:#fafbfe;}
+.tag{display:inline-block;padding:1px 8px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap;}
+.good{background:#e6f6ee;color:var(--good);}
+.bad{background:#fdecea;color:var(--bad);}
+.warn{background:#fef3e2;color:var(--warn);}
+.brand{background:#e8edfb;color:var(--brand);}
+ul{margin:6px 0 6px 22px;}
+li{margin-bottom:4px;}
+code{background:#f0f2f8;border-radius:5px;padding:1px 6px;font-family:Consolas,monospace;font-size:12.5px;}
+.foot{color:var(--sub);font-size:12px;text-align:center;margin-top:26px;}
+.banner{background:#fef3e2;border:1px solid #f0c88a;border-radius:10px;padding:12px 16px;margin:10px 0;font-size:13.5px;}
+.banner-ok{background:#e6f6ee;border:1px solid #9fd8bb;border-radius:10px;padding:12px 16px;margin:10px 0;font-size:13.5px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>开发专家联盟 · 全量功能开发完成度验证报告</h1>
+<div class="meta">mox-alliance · 2026-08-31 · 第四轮（全量编译 → 全量测试 → 未实现扫描 → 真实进程端到端 → 需求完成度对照）</div>
+
+<div class="hero">
+<h2>结论：基础框架已可用，但「所有功能」尚未全部开发好 —— 11 个 crate 全绿（234 项测试通过），真实服务端到端跑通；同时发现 3 处「已实现但未接线」的核心特性缺口、1 处关键匹配缺陷，以及对照 V2.0 需求仍有大量功能未落地。</h2>
+<div class="kpis">
+<div class="kpi"><div class="n">234</div><div class="l">测试全部通过</div></div>
+<div class="kpi"><div class="n">11</div><div class="l">crate 编译通过</div></div>
+<div class="kpi"><div class="n">0</div><div class="l">todo!/unimplemented!</div></div>
+<div class="kpi"><div class="n">2</div><div class="l">服务真实启动联调</div></div>
+<div class="kpi"><div class="n">3</div><div class="l">未接线功能缺口</div></div>
+<div class="kpi"><div class="n">1</div><div class="l">关键匹配缺陷</div></div>
+</div>
+</div>
+
+<div class="card">
+<h3>一、本轮验证方式与覆盖范围（全部实测，非估算）</h3>
+<table>
+<tr><th>验证项</th><th>方式</th><th>结果</th></tr>
+<tr><td>全量编译</td><td><code>cargo test -p mox-alliance-*（11 crate）</code> + <code>cargo build --bins</code></td><td><span class="tag good">通过</span> EXITCODE=0，二进制可执行</td></tr>
+<tr><td>全量测试</td><td>逐 crate 统计 <code>cargo test</code></td><td><span class="tag good">234 passed，0 failed</span></td></tr>
+<tr><td>未实现扫描</td><td>Grep <code>todo!/unimplemented!/TODO/占位/placeholder</code></td><td><span class="tag good">生产代码 0 处</span>（仅少量 unused import 警告）</td></tr>
+<tr><td>服务真实启动</td><td>编译可执行文件并启动 scheduler:3100 / executor:3200</td><td><span class="tag good">双服务健康</span>，10 模块权重同步成功，HTTP 桥接 + 文件仓库就绪</td></tr>
+<tr><td>端到端全链路</td><td>POST /tasks 创建 → 匹配 → 计划 → DAG 执行 → 状态/节点查询 → 取消</td><td><span class="tag good">5 节点并行全 completed，progress=1.0</span></td></tr>
+<tr><td>错误码一致性</td><td>终态取消 → 409；跨租户查询 → 403；错误码映射</td><td><span class="tag good">全部正确</span></td></tr>
+<tr><td>租户隔离</td><td>错租户查任务 / 列表过滤</td><td><span class="tag good">403 + 过滤生效</span></td></tr>
+<tr><td>专家搜索</td><td>POST /experts/search（按领域）</td><td><span class="tag good">领域硬过滤正确</span>（finance→finance-expert-001）</td></tr>
+<tr><td>Expert 模式启动</td><td>无 LLM Key 生产默认 Expert 模式启动</td><td><span class="tag good">启动成功、进程存活</span>（懒连接）</td></tr>
+<tr><td>需求完成度对照</td><td>对照 <code>docs/expert-alliance/v2/00-requirements.md</code> P0 清单逐项核对</td><td><span class="tag bad">约 24% 已实现，59% 未实现</span>（详见第三节）</td></tr>
+</table>
+<div class="banner-ok"><b>测试计数（实测口径）：</b>mox-alliance-core 120 · scheduler-core 63 · executor-core 17 · config-core 12 · sdk 10 · scheduler-svc 7 · executor-svc 5 = 234。api + 3 个 proto 为纯契约 crate（0 测试，正常）。<b>注意：</b>上一轮报告将 113 项归到 scheduler-core 系口径错误——该 113 项实属 mox-alliance-core（基础核心），本报告已纠正。</div>
+</div>
+
+<div class="card">
+<h3>二、已实现且实测通过的功能（基础框架 · 可用）</h3>
+<table>
+<tr><th>功能</th><th>说明</th><th>验证</th></tr>
+<tr><td>任务全生命周期</td><td>创建 / 查询 / 列表 / 取消 / 暂停 / 恢复</td><td><span class="tag good">端到端通过</span></td></tr>
+<tr><td>DAG 协作计划生成</td><td>parallel/sequential/hierarchical/debate/iterative/voting 6 种模式定义 + 依赖编排</td><td><span class="tag good">计划生成 + 校验</span></td></tr>
+<tr><td>DAG 执行引擎</td><td>拓扑调度、并行执行、依赖管理、状态追踪、失败统计</td><td><span class="tag good">5 节点并行全完成</span></td></tr>
+<tr><td>专家注册 / 搜索</td><td>10 个内置领域专家，按领域/能力/状态搜索（硬过滤正确）</td><td><span class="tag good">搜索正确</span></td></tr>
+<tr><td>配置引擎 + 同步</td><td>模块配置注册、全局 Provider 继承、权重同步（10 modules synced）、LLM/Graph 连通性探测</td><td><span class="tag good">启动日志 + 12 测试</span></td></tr>
+<tr><td>多租户隔离</td><td>X-Tenant-Id 贯通，错租户 403</td><td><span class="tag good">实测通过</span></td></tr>
+<tr><td>错误码体系</td><td>TaskNotFound(2000)/TenantMismatch/TaskAlreadyTerminal 等 + HTTP 映射</td><td><span class="tag good">实测通过</span></td></tr>
+<tr><td>持久化</td><td>任务仓库内存 + 文件快照（data/alliance_tasks.json），可插拔</td><td><span class="tag good">实测落盘</span></td></tr>
+<tr><td>SDK</td><td>REST 客户端全方法覆盖</td><td><span class="tag good">10 测试</span></td></tr>
+<tr><td>服务可测试性</td><td>build_app() 与 run() 分离，HTTP 集成可离线驱动</td><td><span class="tag good">7+5 集成测试</span></td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3>三、需求完成度对照（V2.0 P0 能力清单 · 29 项）</h3>
+<p>依据 <code>docs/expert-alliance/v2/00-requirements.md</code> §3.2 业务能力清单 P0 项，逐项审计当前实现。口径：<span class="tag good">已实现</span> = 代码存在且运行时可达；<span class="tag warn">部分/缺陷</span> = 实现存在但未接线或有功能性缺陷；<span class="tag bad">未实现</span> = 无实现或仅库级死代码。</p>
+<table>
+<tr><th>能力域（P0 项数）</th><th>已实现</th><th>部分/缺陷</th><th>未实现</th><th>要点</th></tr>
+<tr><td>专家管理（4）</td><td>1</td><td>2</td><td>1</td><td>内置注册✅；搜索/匹配有缺陷⚠️；健康状态无心跳⚠️；工具绑定❌</td></tr>
+<tr><td>任务管理（5）</td><td>3</td><td>0</td><td>2</td><td>创建/取消/查询✅；进度实时推送❌；结果导出❌</td></tr>
+<tr><td>协作编排（3）</td><td>1</td><td>1</td><td>1</td><td>DAG 计划生成✅；自动专家识别失效⚠️；动态重编排/HITL/条件循环❌</td></tr>
+<tr><td>结果融合（1）</td><td>0</td><td>1</td><td>0</td><td>6 策略库级实现但<u>未接入运行时</u>⚠️</td></tr>
+<tr><td>协作记忆（4）</td><td>0</td><td>0</td><td>4</td><td>工作/会话/长期记忆、案例库全部未实现</td></tr>
+<tr><td>知识图谱（3）</td><td>0</td><td>0</td><td>3</td><td>六元图谱、图谱驱动匹配、图谱学习全部未实现</td></tr>
+<tr><td>多协议接入（3）</td><td>1</td><td>0</td><td>2</td><td>REST✅；gRPC❌；WebSocket❌（JSON-RPC/MCP 为 P1）</td></tr>
+<tr><td>企业级（6）</td><td>1</td><td>1</td><td>4</td><td>多租户隔离✅；基础日志/健康检查⚠️；RBAC/审计/配额/限流熔断❌</td></tr>
+<tr><td><b>合计（29）</b></td><td><b>7（24%）</b></td><td><b>5（17%）</b></td><td><b>17（59%）</b></td><td>基础框架可用，主体能力待开发</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3>四、本轮关键发现（真实运行时暴露，非仅编译层面）</h3>
+<table>
+<tr><th>#</th><th>严重度</th><th>发现</th><th>证据</th><th>根因 / 说明</th></tr>
+<tr>
+<td>1</td><td><span class="tag bad">严重</span></td>
+<td><b>专家描述智能匹配失效</b>：无论中文还是英文描述，同一任务（金融/代码/医学）都匹配到同一批 vision/medical/math/code/law 5 个专家，finance 专家永不命中</td>
+<td>用中文「金融季度分析」与英文「financial statement analysis…」两个任务实测，<b>节点专家完全一致</b>（5/5 相同）</td>
+<td>① 两个匹配器 <code>calculate_description_score</code> 均用 <code>split_whitespace()</code> 切词——中文无空格导致整句变一个词，永不匹配；② 专家描述为中文，英文查询也子串不命中；③ 任务路径从不传 <code>required_domains</code>，领域硬过滤形同虚设。结果：所有专家分数打平，取 HashMap 迭代序前 5。上一轮报告「finance/creative/math/… 匹配」不可复现。</td>
+</tr>
+<tr>
+<td>2</td><td><span class="tag bad">严重</span></td>
+<td><b>结果融合未接入执行路径</b>：任务接受 <code>fusion_strategy</code> 参数，但执行完 5 个节点后直接标完成，从不执行融合</td>
+<td>executor 节点日志只到 <code>Task ... completed successfully</code>，无任何 <code>fuse()</code> 调用；svc 层 0 处引用 FusionEngine</td>
+<td>FusionEngine 仅存在于 scheduler-core 进程内 DAG 引擎（Embedded/测试用）与 mox-alliance-core 库。生产 Standalone 路径经 ExecutorBridge → 远程执行器，执行器 dag_engine 无融合步骤。<code>fusion_strategy</code> 存而不用。</td>
+</tr>
+<tr>
+<td>3</td><td><span class="tag warn">中</span></td>
+<td><b>LLM 多 Provider 路由未接线</b>：LlmRouter（优先级/轮询/延迟/成本策略 + 熔断降级，626 行）实现完整，但任务路径无任何调用点</td>
+<td>全量检索：<code>LlmRouter</code> 仅出现在 llm_router.rs 自身与 lib.rs 重导出，svc/core 运行路径 0 引用</td>
+<td>属「已实现未接线」死代码——多 Provider 智能路由、熔断保护在当前任务流中不生效。</td>
+</tr>
+<tr>
+<td>4</td><td><span class="tag warn">需确认</span></td>
+<td><b>Expert 模式 = 本地璇玑算法，非外部 LLM 推理</b>：无 LLM Key 时节点 0ms「成功」score=1.000</td>
+<td>executor-expert 日志：<code>Expert consult attempt 1/4</code> 后立即 <code>succeeded ... score=1.000, duration=0ms</code>；代码追踪到 <code>ExpertServiceImpl::consult_sync → mox_optimize()</code>（本地 CPU 算法）</td>
+<td>「真实专家执行」实际调用本地璇玑优化引擎（14 专家诊断 + 治理闸门），非外部 LLM。若产品预期是 LLM 推理（ReAct 循环/工具调用/AI 流式），则该项<u>未完成</u>，需确认设计意图。</td>
+</tr>
+</table>
+</div>
+
+<div class="card">
+<h3>五、遗留项与诚实声明</h3>
+<ul>
+<li><b>结论边界</b>：本文档的「功能完成度」口径 = 对照 V2.0 需求 P0 清单逐项审计；<code>docs/expert-alliance/v2/00-requirements.md</code> 已自声明为「目标架构 · 未落地」，当前实际实现为 11 crate / 2 HTTP 服务的轻量基础框架。</li>
+<li><b>未做项</b>：性能/并发压测（超本轮范围）；外部真实 LLM 调用端到端（需 LLM_API_KEY + 网络）；知识图谱、记忆、多协议（gRPC/MCP/WebSocket）均未实现，未纳入运行时验证。</li>
+<li><b>已知小问题</b>：<code>mox-alliance-executor-core/dag_engine.rs:27</code> unused import <code>NodeExecutionResult</code>；<code>mox-ai-expert-svc/alliance/intent.rs:16</code> unused import <code>BTreeSet</code>；mox-error crate 大量 snake_case 命名警告——均非功能性。</li>
+<li><b>所有数字可复现</b>：测试计数来自 <code>cargo test</code> 实际输出；运行时结论来自真实进程日志与 HTTP 响应；匹配缺陷用中/英文双任务对照实测证明。</li>
+</ul>
+</div>
+
+<div class="foot">开发专家联盟 · 全量功能开发完成度验证 · 2026-08-31 · 第四轮</div>
+</div>
+</body>
+</html>

@@ -22,7 +22,7 @@
 |------|---------------|-----------------|
 | 代码路径 | `platform/backend-node/` | `platform/domains/alliance/` |
 | 技术栈 | Node.js (Express) | Rust (Axum + Tokio) |
-| 监听端口 | `:3010` | `:8081`（scheduler-svc）/ `:8082`（executor-svc） |
+| 监听端口 | `:3010` | `:3100`（scheduler-svc）/ `:3200`（executor-svc） |
 | 业务域数量 | 23 个业务域 | 11 个 crate（proto×3 / core×4 / svc×2 / sdk×1 / api×1） |
 | 专家联盟实现 | 较早实现（`expert-alliance.js` / `expert-alliance-engine.js`） | 当前活跃开发（scheduler-core / executor-core） |
 | 定位 | 全业务统一入口，含AI引擎、知识图谱、专家联盟等23域 | 专家联盟专项模块化重构，聚焦调度与执行 |
@@ -74,11 +74,11 @@
 
 **当前为独立部署，无直接调用。**
 
-- Node.js 层（:3010）和 Rust alliance 域（:8081/:8082）各自独立启动、独立监听。
+- Node.js 层（:3010）和 Rust alliance 域（:3100/:3200）各自独立启动、独立监听。
 - 前端通过网关（`platform/gateway/runtime/`）路由到不同后端：
   - `/ai/engine/*`、`/experts/*`、`/ai/chat` → Node.js 层（:3010）
-  - `/api/v1/alliance/*`、`/api/v1/tasks`、`/api/v1/collaboration/*` → Rust scheduler-svc（:8081）
-  - `/api/v1/execute/*` → Rust executor-svc（:8082）
+  - `/api/v1/alliance/*`、`/api/v1/tasks`、`/api/v1/collaboration/*` → Rust scheduler-svc（:3100）
+  - `/api/v1/execute/*` → Rust executor-svc（:3200）
   - `/api/mox/*` → mox-expert 融合引擎（通过网关路由）
 - 两层之间**无内部 API 调用、无共享数据库、无消息队列通信**。
 
@@ -97,7 +97,7 @@
     ┌────┴────┬────────────┬─────────────┐
     ▼         ▼            ▼             ▼
  Node层    Rust调度     Rust执行      mox-expert
- (:3010)   (:8081)      (:8082)       (融合)
+ (:3010)   (:3100)      (:3200)       (融合)
  /ai/engine /api/v1/    /api/v1/      /api/mox/
  /experts   tasks        execute       optimize
  /ai/chat   collaboration

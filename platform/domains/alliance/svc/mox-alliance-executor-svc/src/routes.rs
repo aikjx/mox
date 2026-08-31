@@ -56,6 +56,7 @@ pub fn build_router(state: ExecutorAppState) -> Router {
         .route("/tasks/:task_id/status", get(get_execution_status))
         .route("/tasks/:task_id/nodes", get(list_nodes))
         .route("/tasks/:task_id/nodes/:node_id", get(get_node).post(skip_node))
+        .route("/tasks/:task_id/result", get(get_fusion_result))
         // === 内部 API（供调度器调用）===
         .route("/internal/executions", post(submit_execution))
         .route("/tasks/:task_id/cancel", post(cancel_execution))
@@ -184,6 +185,28 @@ async fn skip_node(
         .await
     {
         Ok(_) => (StatusCode::OK, Json(SuccessResponse::default())).into_response(),
+        Err(e) => error_response(e).into_response(),
+    }
+}
+
+/// 获取任务的融合结果（DAG 尾部按 fusion_strategy 融合后的结论）
+async fn get_fusion_result(
+    State(state): State<ExecutorAppState>,
+    headers: HeaderMap,
+    Path(task_id): Path<Uuid>,
+) -> impl IntoResponse {
+    let tenant_id = tenant_from_headers(&headers);
+
+    match state.engine.get_fusion_output(task_id, tenant_id) {
+        Ok(Some(output)) => (StatusCode::OK, Json(output)).into_response(),
+        Ok(None) => (
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse::new(
+                mox_alliance_common_proto::AllianceErrorCode::NotFound as u32,
+                "Task has no fusion result yet".to_string(),
+            )),
+        )
+            .into_response(),
         Err(e) => error_response(e).into_response(),
     }
 }

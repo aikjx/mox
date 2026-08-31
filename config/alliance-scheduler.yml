@@ -1,0 +1,38 @@
+# =============================================================
+# 开发专家联盟 · 调度器配置（scheduler-svc）
+# 规范依据：docs/standards/expert-alliance-port-norm.md（PORT-NORM-001）
+# 加载优先级：内置默认 < 本文件 < 环境变量（MOX_ALLIANCE_*）
+# 环境变量示例：
+#   MOX_ALLIANCE_SERVER_PORT=3100
+#   MOX_ALLIANCE_EXECUTOR_BRIDGE_BASE_URL=http://localhost:3200
+#   MOX_ALLIANCE_STORAGE_MODE=memory
+# =============================================================
+
+# 服务器监听（核心服务 3000-3999 段，31=编排）
+server:
+  host: 0.0.0.0
+  port: 3100
+
+# 调度器业务参数（对应 SchedulerConfig）
+scheduler:
+  max_concurrent_tasks: 100
+  queue_capacity: 1000
+  default_priority: normal          # normal | low | high | critical
+  default_mode: parallel            # parallel | sequential | consult | debate
+  default_fusion_strategy: weighted # weighted | voting | sequential | none
+  plan_generation_timeout_ms: 30000
+
+# 执行器桥接（scheduler -> executor-svc，32=执行）
+executor_bridge:
+  base_url: http://localhost:3200
+  timeout_ms: 30000
+
+# AI 专家服务（scheduler 内部桥接的专家服务，33=领域专家）
+expert_service:
+  base_url: http://localhost:3300
+  timeout_ms: 5000
+
+# 任务仓库存储
+storage:
+  mode: file                        # file（文件快照）| memory（纯内存）
+  path: data/alliance_tasks.json

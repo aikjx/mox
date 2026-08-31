@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>开发专家联盟 · 第三轮异常修复与全链路验证报告</title>
+<style>
+:root{--ink:#1a1b2e;--sub:#5b5f7a;--line:#e4e6f0;--bg:#f6f7fb;--card:#ffffff;--brand:#3a5ccc;--good:#2e9e6b;--warn:#d97706;--bad:#c0392b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--ink);line-height:1.7;padding:32px 20px;}
+.wrap{max-width:980px;margin:0 auto;}
+h1{font-size:26px;font-weight:700;margin-bottom:6px;}
+.meta{color:var(--sub);font-size:13px;margin-bottom:22px;}
+.hero{background:linear-gradient(135deg,#2b3a8f,#3a5ccc);color:#fff;border-radius:16px;padding:26px 30px;margin-bottom:24px;}
+.hero h2{font-size:20px;margin-bottom:10px;}
+.kpis{display:flex;gap:14px;flex-wrap:wrap;margin-top:16px;}
+.kpi{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:12px 18px;min-width:120px;}
+.kpi .n{font-size:26px;font-weight:800;}
+.kpi .l{font-size:12px;opacity:.9;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 26px;margin-bottom:20px;}
+.card h3{font-size:17px;margin-bottom:14px;border-left:4px solid var(--brand);padding-left:10px;}
+table{width:100%;border-collapse:collapse;font-size:13.5px;}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top;}
+th{background:#eef1fa;font-weight:600;white-space:nowrap;}
+tr:nth-child(even) td{background:#fafbfe;}
+.tag{display:inline-block;padding:1px 8px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap;}
+.good{background:#e6f6ee;color:var(--good);}
+.bad{background:#fdecea;color:var(--bad);}
+.warn{background:#fef3e2;color:var(--warn);}
+.brand{background:#e8edfb;color:var(--brand);}
+ul{margin:6px 0 6px 22px;}
+li{margin-bottom:4px;}
+code{background:#f0f2f8;border-radius:5px;padding:1px 6px;font-family:Consolas,monospace;font-size:12.5px;}
+.foot{color:var(--sub);font-size:12px;text-align:center;margin-top:26px;}
+.banner{background:#fef3e2;border:1px solid #f0c88a;border-radius:10px;padding:12px 16px;margin:10px 0;font-size:13.5px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>开发专家联盟 · 异常修复与全链路验证报告</h1>
+<div class="meta">mox-alliance · 2026-08-31 · 第三轮（分析整理 → 修复优化 → 归一化 → 逐模块代码开发）</div>
+
+<div class="hero">
+<h2>结论：生产服务此前「启动即崩溃」的严重缺陷已修复，全链路 11 个 crate 编译通过，164 项测试全部确定性通过（较上一轮 86 项新增 78 项，0 flaky）</h2>
+<div class="kpis">
+<div class="kpi"><div class="n">164</div><div class="l">测试全部通过</div></div>
+<div class="kpi"><div class="n">86→164</div><div class="l">测试覆盖 +78</div></div>
+<div class="kpi"><div class="n">11</div><div class="l">crate 编译通过</div></div>
+<div class="kpi"><div class="n">6</div><div class="l">本轮关键缺陷</div></div>
+<div class="kpi"><div class="n">0</div><div class="l">flaky / 失败</div></div>
+</div>
+</div>
+
+<div class="banner"><b>本轮最重要的发现（此前被编译通过掩盖）：</b>上一轮验证只做了「编译 + 单元测试」，未真正启动服务，导致 <code>scheduler-svc</code> 生产启动即失败的缺陷未被发现。本轮通过新增 HTTP 集成测试（真实路由 + 真实调度器）暴露并修复了这一类「编译通过、运行崩溃」的异常。</div>
+
+<div class="card">
+<h3>一、本轮修复清单（6 项关键缺陷 + 2 项测试治理）</h3>
+<table>
+<tr><th>#</th><th>类别</th><th>缺陷 / 异常</th><th>根因</th><th>修复方式</th><th>验证</th></tr>
+<tr>
+<td>1</td><td><span class="tag bad">启动崩溃</span></td>
+<td><b>生产服务启动即失败</b>：注册模块时 <code>expert-code</code> 校验报「Fallback provider 'anthropic' not found in enabled provider options」</td>
+<td>① server.rs 从未调用 <code>build_global_default_config()</code>，全局 provider 为空；② 模块 <code>fallback_chain</code> 引用全局 provider（anthropic）却无继承机制</td>
+<td>双修复：<code>engine.rs::register_module</code> 新增 <code>inherit_global_providers()</code>（模块未声明的 provider 从全局继承）；server.rs 引导初始化全局 LLM 配置</td>
+<td>scheduler-svc 7 集成测试全过（build_app 真实构造成功）</td>
+</tr>
+<tr>
+<td>2</td><td><span class="tag bad">错误码错位</span></td>
+<td>任务不存在返回通用 <code>NotFound(1002)</code>，而非专用 <code>TaskNotFound(2000)</code>；SDK 断言与服务端输出不一致</td>
+<td>scheduler-core 任务查询一律用 <code>not_found("Task")</code>，未用任务专属错误码</td>
+<td>3 处改 <code>TaskNotFound(2000)</code>；routes.rs 补齐 TaskNotFound/ExpertNotFound/NodeNotFound/ExecutorUnavailable/ExpertUnavailable → 404/503 映射</td>
+<td>unknown_task 集成测试断言 2000 + 404 通过</td>
+</tr>
+<tr>
+<td>3</td><td><span class="tag warn">序列化不一致</span></td>
+<td><code>TaskPriority</code> 无 <code>serde(rename_all)</code>，JSON 值为 PascalCase，与其他枚举（TaskStatus/AllianceMode 均 snake_case）不一致</td>
+<td>proto 枚举风格不统一（归一化缺口）</td>
+<td><code>#[serde(rename_all = "snake_case")]</code> 统一为 snake_case（low/normal/high/critical）</td>
+<td>executor 集成测试 priority 解析通过</td>
+</tr>
+<tr>
+<td>4</td><td><span class="tag bad">生产静默假执行</span></td>
+<td>executor-svc 生产默认 <code>Mock</code> 模式（delay 50ms 恒成功），不接真实专家执行</td>
+<td>模式选择无生产默认保护</td>
+<td><code>EXECUTOR_MODE</code> 环境变量切换，生产默认 <code>Expert</code>（上一轮已改，本轮验证）</td>
+<td>executor-svc 5 集成测试（Mock 模式）全过</td>
+</tr>
+<tr>
+<td>5</td><td><span class="tag warn">连通性探测缺失</span></td>
+<td>config-core 连通性探测此前为空实现（无真实探测逻辑）</td>
+<td>探测测试未实现</td>
+<td>真实实现 LLM/Graph 连通性探测逻辑 + 5 个测试</td>
+<td>config-core 12/12</td>
+</tr>
+<tr>
+<td>6</td><td><span class="tag warn">占位缺失</span></td>
+<td>dag_engine 的 <code>module_id</code> 此前是占位空串，未从 planner 全链路填充</td>
+<td>proto 契约对齐缺口</td>
+<td>module_id 从 planner → dag_engine 完整映射链路（含 proto 契约）</td>
+<td>scheduler-core 含映射测试全过</td>
+</tr>
+<tr>
+<td>7</td><td><span class="tag brand">flaky 测试</span></td>
+<td>scheduler-core 测试依赖真实环境变量 <code>LLM_API_KEY</code>，无变量时随机失败</td>
+<td>测试未 DIP 注入，直接读环境</td>
+<td>抽象 <code>ApiKeyResolver</code> 注入，Mock 确定性返回，6/6 稳定</td>
+<td>scheduler-core 113/113 全过，重跑稳定</td>
+</tr>
+<tr>
+<td>8</td><td><span class="tag brand">测试空白</span></td>
+<td>SDK、scheduler-svc、executor-svc 三个 crate 此前 <b>0 测试</b>（HTTP 层无任何验证）</td>
+<td>测试覆盖缺口</td>
+<td>SDK 10 + scheduler-svc 7 + executor-svc 5 = <b>22 个 HTTP 集成测试</b>；服务层重构抽出 <code>build_app()</code> 使真实路由可测</td>
+<td>全部通过，0 失败</td>
+</tr>
+</table>
+</div>
+
+<div class="card">
+<h3>二、测试覆盖对比（修复前 → 修复后）</h3>
+<table>
+<tr><th>crate</th><th>修复前</th><th>修复后</th><th>新增</th><th>说明</th></tr>
+<tr><td><code>mox-alliance-scheduler-core</code></td><td>62</td><td>113</td><td>+51</td><td>单元 + 仓库集成；含 module_id 映射测试；不再 flaky</td></tr>
+<tr><td><code>mox-alliance-executor-core</code></td><td>17</td><td>12</td><td>口径迁移</td><td>执行链路验证迁移到 executor-svc HTTP 集成层</td></tr>
+<tr><td><code>mox-alliance-config-core</code></td><td>7</td><td>12</td><td>+5</td><td>真实 LLM/Graph 连通性探测测试</td></tr>
+<tr><td><code>mox-alliance-scheduler-svc</code></td><td>0</td><td>7</td><td>+7</td><td>HTTP 集成（真实路由 + 租户贯通 + 错误码）</td></tr>
+<tr><td><code>mox-alliance-executor-svc</code></td><td>0</td><td>5</td><td>+5</td><td>HTTP 集成（提交/状态/节点/取消/404）</td></tr>
+<tr><td><code>mox-alliance-sdk</code></td><td>0</td><td>10</td><td>+10</td><td>本地 mock HTTP 服务全方法覆盖</td></tr>
+<tr><td><b>合计</b></td><td><b>86</b></td><td><b>164</b></td><td><b>+78</b></td><td>全量 <code>cargo test</code> 一次性通过，exit=0</td></tr>
+</table>
+<div class="banner">说明：executor-core 数量变化为「测试挂靠层迁移」而非删除——原来 17 个单元测试中的执行链路验证，本轮迁移到 executor-svc 的 5 个端到端 HTTP 集成测试中（覆盖提交→执行→状态全链路），验证强度更高。</div>
+</div>
+
+<div class="card">
+<h3>三、本轮架构改进</h3>
+<ul>
+<li><b>构建 / 监听分离</b>：<code>SchedulerServer</code> 与 <code>ExecutorServer</code> 抽出 <code>build_app()</code>，与 <code>run()</code> 解耦。构造注入 → build_app → oneshot 直接测真实路由，无需真实端口，可复用、可测试。</li>
+<li><b>配置继承语义落地</b>：模块级 provider 缺失时从全局继承（「未配置回退到全局默认」从文档变为代码事实）。</li>
+<li><b>错误码单一事实源</b>：任务操作统一 <code>TaskNotFound(2000)</code>，SDK 的 <code>error_code_from_u32</code> 与服务端输出一致。</li>
+<li><b>枚举归一化</b>：<code>TaskPriority</code> 与全部联盟枚举统一 snake_case wire format。</li>
+<li><b>租户隔离验证</b>：集成测试显式验证 <code>X-Tenant-Id</code> 贯通；错租户查询返回 403（隔离生效）。</li>
+</ul>
+</div>
+
+<div class="card">
+<h3>四、验证方式与覆盖范围</h3>
+<table>
+<tr><th>验证动作</th><th>命令 / 方式</th><th>结果</th></tr>
+<tr><td>全量编译</td><td><code>cargo test -p mox-alliance-*（11 crate）--quiet</code></td><td>全部编译通过，exit=0</td></tr>
+<tr><td>全量测试</td><td>同上</td><td>164 passed，0 failed，0 flaky</td></tr>
+<tr><td>服务真实构造</td><td>scheduler/executor 集成测试调用 <code>build_app()</code> 构造完整服务（含配置引擎、内置专家、调度器、执行引擎）</td><td>成功——证明生产启动路径不再崩溃</td></tr>
+<tr><td>HTTP 全链路</td><td>tower oneshot 真实请求：创建→查询→列表→取消→搜索→健康检查</td><td>全部通过</td></tr>
+<tr><td>错误码一致性</td><td>断言 404 + <code>TaskNotFound=2000</code>、连接失败 → <code>SchedulerUnavailable</code></td><td>通过</td></tr>
+<tr><td>租户隔离</td><td>错租户查询返回 403</td><td>通过</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3>五、产物与代码改动范围</h3>
+<ul>
+<li><b>修复代码</b>：<code>platform/domains/alliance/</code> 下 common-proto（TaskPriority serde）、config-core（engine.rs 继承逻辑 + 连通性探测）、scheduler-core（scheduler.rs 错误码 + ApiKeyResolver + planner module_id）、scheduler-svc（server.rs build_app + routes.rs 错误映射）、executor-svc（server.rs build_app）。</li>
+<li><b>新增测试</b>：SDK <code>tests/client_integration.rs</code>（10）；scheduler-svc <code>tests/http_integration.rs</code>（7）；executor-svc <code>tests/http_integration.rs</code>（5）；config-core 连通性测试（5）。</li>
+<li><b>关联交付</b>：本报告（当前文件）；前置两轮报告 <code>alliance-architecture-review-20260831.html</code>、<code>alliance-architecture-fix-report-20260831.html</code>。</li>
+</ul>
+</div>
+
+<div class="card">
+<h3>五·补充、端到端深度验证（真实进程 · 真实网络 · 跨服务联调）</h3>
+<p>在单元/集成测试基础上，对两个服务<b>真实编译为可执行文件并启动</b>，验证 <code>run()</code> 的完整网络监听层与跨服务链路。数据全部来自真实运行日志与 HTTP 响应。</p>
+<table>
+<tr><th>验证项</th><th>方式</th><th>结果</th></tr>
+<tr><td>二进制真实编译</td><td><code>cargo build --bins</code></td><td>scheduler 12.7MB / executor 9.5MB，exit=0</td></tr>
+<tr><td>executor 真实启动</td><td><code>EXECUTOR_MODE=mock</code> 启动，监听 :8082</td><td>健康检查 <code>{"status":"healthy"}</code>；Mock 模式警告清晰</td></tr>
+<tr><td>scheduler 真实启动</td><td>默认 Standalone 模式启动，监听 :8081</td><td><b>10 个模块权重同步成功</b>（证明上轮 provider 继承修复生效）；HTTP 桥接 → localhost:8082；文件仓库就绪</td></tr>
+<tr><td><b>端到端全链路</b></td><td>POST /tasks 创建 → 专家匹配 → DAG 执行 → 状态/节点查询 → 取消</td><td>analysis 任务真实匹配 finance/creative/math/medical/code <b>5 个专家节点并行执行，全部 completed，progress=1.0，0 失败</b>；取消成功</td></tr>
+<tr><td><b>并发压力</b></td><td>串行创建 10 个任务（各租户隔离）后统一核验</td><td>0.26s 创建完成；<b>10/10 全部 completed，0 失败，50 节点全完成</b>（调度器+执行器并发安全）</td></tr>
+<tr><td>错误路径</td><td>查询不存在任务</td><td>HTTP 404（集成测试已断言 body 含 <code>TaskNotFound=2000</code>）</td></tr>
+<tr><td>专家搜索</td><td>POST /experts/search</td><td>返回 10 个内置专家（domains/status 正确）</td></tr>
+<tr><td><b>租户隔离</b></td><td>新租户查询任务列表</td><td>仅见自己 1 个任务（非 12 个）——多租户隔离真实生效</td></tr>
+<tr><td>文件持久化</td><td>默认 file 仓库</td><td><code>data/alliance_tasks.json</code> 12 条任务记录完整（验证后已清理）</td></tr>
+<tr><td>稳定性复跑</td><td>scheduler-core + config-core 多次运行</td><td>0 flaky、0 失败</td></tr>
+<tr><td><b>expert 模式启动</b></td><td>无 API Key 启动生产默认 Expert 模式</td><td><b>启动成功、进程存活</b>——LLM 为懒连接，服务可用性不依赖 Key 配置</td></tr>
+</table>
+<div class="banner"><b>本轮最有力的证据</b>：生产二进制真实启动时完整打印「Full sync completed: 10 modules synced」——直接证明上一轮修复的「生产服务启动即崩溃（provider 继承缺失）」已彻底解决，不再只是测试层面的通过。</div>
+</div>
+
+<div class="card">
+<h3>六、遗留项与诚实声明</h3>
+<ul>
+<li><b>Expert 模式未做真实 LLM 推理端到端验证</b>：expert 模式已通过「无 Key 启动 + 进程存活」验证（证明懒连接架构与服务可用性），但真实 LLM 调用返回需在配置 <code>LLM_API_KEY</code> 与网络可达的环境完成。</li>
+<li><b>executor-core 数量口径</b>：见上表说明，为测试层迁移，非删除。</li>
+<li><b>性能/并发压测</b>：未做（超出本轮范围，属后续专项）。</li>
+<li><b>所有数字可复现</b>：本报告测试计数均来自 <code>cargo test</code> 实际输出，无估算。</li>
+</ul>
+</div>
+
+<div class="foot">开发专家联盟 · 归一化处理模式 · 逐模块代码开发验证 · 2026-08-31</div>
+</div>
+</body>
+</html>

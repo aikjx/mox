@@ -356,7 +356,7 @@ impl DagExecutionEngine {
                             node_id: node.node_id.clone(),
                             task_id,
                             expert_id: node.expert_id.clone(),
-                            module_id: None, // TODO: 从模块配置中映射
+                            module_id: node.module_id.clone(),
                             node_name: node.name.clone(),
                             description: node.description.clone(),
                             input_refs: node.input_refs.clone(),
@@ -751,6 +751,7 @@ mod tests {
                 node_id: format!("node-{}", i + 1),
                 task_id,
                 expert_id: format!("expert-{}", i + 1),
+                module_id: None,
                 name: format!("Node {}", i + 1),
                 description: None,
                 status: NodeStatus::Pending,
@@ -785,6 +786,7 @@ mod tests {
                 node_id: format!("node-{}", i + 1),
                 task_id,
                 expert_id: format!("expert-{}", i + 1),
+                module_id: None,
                 name: format!("Node {}", i + 1),
                 description: None,
                 status: NodeStatus::Pending,
@@ -940,6 +942,7 @@ mod tests {
                 node_id: format!("node-{}", i + 1),
                 task_id,
                 expert_id: format!("expert-{}", i + 1),
+                module_id: None,
                 name: format!("Node {}", i + 1),
                 description: None,
                 status: if i < 2 {

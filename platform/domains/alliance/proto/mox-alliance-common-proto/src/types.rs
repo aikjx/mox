@@ -45,6 +45,7 @@ impl TaskStatus {
 /// 任务优先级
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[repr(u8)]
+#[serde(rename_all = "snake_case")]
 pub enum TaskPriority {
     Low = 1,
     Normal = 5,
@@ -183,6 +184,11 @@ pub struct Task {
     pub started_at: Option<DateTime<Utc>>,
     pub completed_at: Option<DateTime<Utc>>,
     pub duration_ms: Option<i64>,
+
+    // === 结果 ===
+    /// 融合结果摘要（执行器 DAG 尾部融合后写入，JSON 序列化）
+    #[serde(default)]
+    pub fusion_result: Option<serde_json::Value>,
 }
 
 impl Task {
@@ -204,6 +210,7 @@ impl Task {
             started_at: None,
             completed_at: None,
             duration_ms: None,
+            fusion_result: None,
         }
     }
 }
@@ -238,6 +245,9 @@ pub struct Node {
     pub node_id: String,
     pub task_id: Uuid,
     pub expert_id: String,
+    /// 模块配置 ID（用于执行节点时获取模块化配置；无映射时为 None）
+    #[serde(default)]
+    pub module_id: Option<String>,
 
     pub name: String,
     pub description: Option<String>,

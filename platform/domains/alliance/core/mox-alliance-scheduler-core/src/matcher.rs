@@ -21,6 +21,8 @@ use std::sync::Arc;
 use parking_lot::RwLock;
 use tracing::debug;
 
+use crate::matching::{description_overlap, tokenize};
+
 /// 基于规则的专家匹配器
 pub struct RuleBasedExpertMatcher {
     /// 专家注册表（内存版，Phase 1 用）
@@ -94,27 +96,10 @@ impl RuleBasedExpertMatcher {
         matched as f64 / query.required_capabilities.len() as f64
     }
 
-    /// 描述文本相似度（简化版：关键词匹配）
+    /// 描述文本相似度（基于中英分词的 token 重叠，解决中文整句永不命中的问题）
     fn calculate_description_score(expert: &Expert, query: &ExpertMatchQuery) -> f64 {
-        let query_lower = query.task_description.to_lowercase();
-        let expert_lower = expert.description.to_lowercase();
-
-        let mut matches = 0;
-        let keywords: Vec<&str> = query_lower
-            .split_whitespace()
-            .filter(|w| w.len() > 2)
-            .collect();
-
-        for keyword in &keywords {
-            if expert_lower.contains(keyword) {
-                matches += 1;
-            }
-        }
-
-        if keywords.is_empty() {
-            return 0.3;
-        }
-        (matches as f64 / keywords.len() as f64).min(1.0)
+        let query_tokens = tokenize(&query.task_description);
+        description_overlap(expert, &query_tokens).0
     }
 
     /// 综合评分
@@ -240,6 +225,11 @@ impl ExpertMatcher for RuleBasedExpertMatcher {
     async fn refresh_cache(&self) -> AllianceResult<()> {
         // 内存版不需要刷新缓存
         Ok(())
+    }
+
+    async fn infer_domains(&self, description: &str) -> Vec<String> {
+        let experts: Vec<Expert> = self.experts.read().values().cloned().collect();
+        crate::matching::infer_domains(description, &experts)
     }
 }
 

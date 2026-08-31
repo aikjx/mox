@@ -16,16 +16,26 @@ use mox_alliance_common_proto::{
     AllianceError, AllianceErrorCode, AllianceMode, AllianceResult, CollaborationPlan, Expert,
     Node, NodeStatus,
 };
+use std::collections::HashMap;
 use uuid::Uuid;
 
 use mox_alliance_scheduler_proto::{MatchedExpert, PlanGenerationRequest};
 
 /// 简单计划生成器
-pub struct SimplePlanGenerator;
+pub struct SimplePlanGenerator {
+    /// 专家 ID → 模块配置 ID 的可选映射（用于为节点填充 module_id）
+    expert_to_module: Option<HashMap<String, String>>,
+}
 
 impl SimplePlanGenerator {
     pub fn new() -> Self {
-        Self
+        Self { expert_to_module: None }
+    }
+
+    /// 注入专家→模块配置映射（expert_id → module_id），节点将携带模块配置 ID
+    pub fn with_expert_to_module(mut self, map: HashMap<String, String>) -> Self {
+        self.expert_to_module = Some(map);
+        self
     }
 
     /// 生成协作计划
@@ -246,6 +256,7 @@ impl SimplePlanGenerator {
             node_id: node_id.to_string(),
             task_id,
             expert_id: expert.expert_id.clone(),
+            module_id: self.expert_to_module.as_ref().and_then(|m| m.get(&expert.expert_id).cloned()),
             name: expert.name.clone(),
             description: Some(description.to_string()),
             status: NodeStatus::Pending,
@@ -324,6 +335,37 @@ mod tests {
         assert!(plan.nodes[0].dependencies.is_empty());
         assert!(plan.nodes[1].dependencies.is_empty());
         assert!(plan.validate().is_ok());
+    }
+
+    #[test]
+    fn test_module_id_mapping_filled() {
+        // 注入 expert->module 映射后，节点应携带对应 module_id（消除硬编码 None）
+        let mut map = HashMap::new();
+        map.insert("e1".to_string(), "mod-e1".to_string());
+        map.insert("e2".to_string(), "mod-e2".to_string());
+        let gen = SimplePlanGenerator::new().with_expert_to_module(map);
+        let experts = vec![
+            make_matched_expert("e1", "Expert 1", vec!["code"]),
+            make_matched_expert("e2", "Expert 2", vec!["security"]),
+        ];
+        let request = PlanGenerationRequest {
+            task_id: Uuid::new_v4(),
+            tenant_id: Uuid::new_v4(),
+            task_description: "test".to_string(),
+            preferred_mode: Some(AllianceMode::Parallel),
+            preferred_experts: vec![],
+            constraints: serde_json::json!({}),
+            fusion_strategy: FusionStrategy::Weighted,
+        };
+
+        let plan = gen.generate(&request, &experts).unwrap();
+        assert_eq!(plan.nodes.len(), 2);
+        let mut found = std::collections::HashMap::new();
+        for node in &plan.nodes {
+            found.insert(node.expert_id.clone(), node.module_id.clone());
+        }
+        assert_eq!(found.get("e1").and_then(|m| m.as_deref()), Some("mod-e1"));
+        assert_eq!(found.get("e2").and_then(|m| m.as_deref()), Some("mod-e2"));
     }
 
     #[test]

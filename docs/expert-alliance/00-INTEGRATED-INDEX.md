@@ -108,6 +108,7 @@
 | 20 | EA-DOC-065 | `docs/alliance-architecture-review-20260831.html` | 架构评审报告 | 2026-08-31 | alliance域架构评审权威（⚠️修复前快照） |
 | 21 | EA-DOC-066 | `docs/modules/专家联盟-全维业务流程归一化手册-V1.0.md` | 全维业务流程归一化手册 | V1.0 | 专家联盟业务流程归一化唯一真相源 |
 | 22 | EA-DOC-058 | `docs/modules/business-process-flows.md` | 企业级业务处理流程 | — | 业务流程规范主文档 |
+| 23 | EA-NORM-002 | `docs/standards/expert-alliance-port-norm.md` | 核心服务端口规划规范 PORT-NORM-001 | V1.0 | 核心服务 3000-3999 / 插件小服务 30000+ 唯一权威 |
 
 ---
 
@@ -208,7 +209,7 @@
 
 | 子系统 | 技术栈 | 端口 | 专家数量 | 代码路径 | 权威文档 | 关系说明 |
 |--------|--------|:----:|:--------:|---------|---------|---------|
-| **Rust alliance域** | Rust (Axum) | :8081 / :8082 | **10个**内置领域专家 | `platform/domains/alliance/`（11 crate） | 修复报告、评审报告、EA-NORM-001§6 | 当前活跃开发的新架构，专家联盟核心实现 |
+| **Rust alliance域** | Rust (Axum) | :3100 / :3200 | **10个**内置领域专家 | `platform/domains/alliance/`（11 crate） | 修复报告、评审报告、EA-NORM-001§6 | 当前活跃开发的新架构，专家联盟核心实现 |
 | **Rust mox-expert域** | Rust | — | **7位**专家 | `platform/domains/mox-expert/`（或`platform/services/mox-expert/`） | mox-expert-product.md、mox-expert-normalization.md | 融合优化引擎，与alliance域并列，XOPT 8步管线 |
 | **Node.js平台层** | Node.js (Express) | :3010 | **15位**默认专家 | `platform/backend-node/`（23个业务域） | business-process-flowcharts.md第九章、集成对齐报告 | 较早实现，包含专家联盟、AI引擎、知识图谱等，与Rust层并存 |
 
@@ -241,7 +242,7 @@
 |------|--------|------|
 | **crate结构** | 11 crate（proto×3 / core×4 / svc×2 / sdk×1 / api×1） | `platform/domains/alliance/` |
 | **服务数量** | 2个svc（scheduler-svc / executor-svc） | 非"7服务"或"31微服务" |
-| **端口** | scheduler-svc **:8081** / executor-svc **:8082** | 非8701/8702（代码对齐报告中的错误值已修正） |
+| **端口** | scheduler-svc **:3100** / executor-svc **:3200** | 非8701/8702（代码对齐报告中的错误值已修正） |
 | **内置专家** | **10个**（expert-01~10） | 非"15+"或"16种"（那些是目标设计/扩展设计） |
 | **融合策略** | **6种**（weighted-average / voting / rrf / consensus / cascade / debate-convergence） | 已贯通到DAG执行引擎 |
 | **数据存储** | 内存 + 文件快照（`data/alliance_tasks.json`） | 非PostgreSQL+Redis+Kafka+MinIO（那些是v2目标设计） |
@@ -314,7 +315,7 @@
   - ✅ 索引权威等级与文档头部元信息一致
   - ✅ 引用格式0违规（0处`../`、0处`./`、0处`file:///`）
   - ✅ 归档文档无新增引用
-  - ✅ 代码-文档对齐声明与实际代码一致（11crate/2svc/:8081/:8082/10专家/6融合策略）
+  - ✅ 代码-文档对齐声明与实际代码一致（11crate/2svc/:3100/:3200/10专家/6融合策略）
 
 ---
 

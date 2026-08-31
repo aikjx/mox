@@ -234,6 +234,7 @@ mod tests {
             node_id: id.to_string(),
             task_id: uuid::Uuid::new_v4(),
             expert_id: "test-expert".to_string(),
+            module_id: None,
             name: id.to_string(),
             description: None,
             status: NodeStatus::Pending,

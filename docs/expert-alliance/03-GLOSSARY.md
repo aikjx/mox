@@ -142,7 +142,7 @@
 |------|------|
 | **中文名** | 双平台架构 |
 | **英文名/缩写** | Dual Platform Architecture |
-| **定义** | 专家联盟当前存在Node.js平台层（`platform/backend-node/`，端口3010）与Rust alliance域（`platform/domains/alliance/`，端口8081/8082）两套并行实现的架构状态。两层独立部署，通过网关路由协调，长期目标是逐步迁移至Rust层。 |
+| **定义** | 专家联盟当前存在Node.js平台层（`platform/backend-node/`，端口3010）与Rust alliance域（`platform/domains/alliance/`，端口3100/3200）两套并行实现的架构状态。两层独立部署，通过网关路由协调，长期目标是逐步迁移至Rust层。 |
 | **代码对应** | Node层：`platform/backend-node/`；Rust层：`platform/domains/alliance/`；网关：`platform/gateway/runtime/` |
 | **首次出现文档** | `docs/expert-alliance/02-DUAL-PLATFORM-RELATIONSHIP.md`（本文档同期新建） |
 

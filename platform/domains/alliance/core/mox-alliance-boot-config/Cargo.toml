@@ -1,0 +1,17 @@
+[package]
+name = "mox-alliance-boot-config"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "专家联盟 · 服务引导配置加载器（yml 文件 + 环境变量覆盖）"
+
+[dependencies]
+serde = { workspace = true }
+serde_yaml = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

@@ -32,6 +32,7 @@
 //! - [`config_sync`] — 配置同步器
 
 pub mod matcher;
+pub mod matching;
 pub mod modular_matcher;
 pub mod planner;
 pub mod scheduler;

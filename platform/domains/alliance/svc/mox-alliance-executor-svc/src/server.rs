@@ -10,7 +10,7 @@ use mox_alliance_executor_core::{
     DagEngineImpl, ExpertExecutorConfig, ExpertNodeExecutor, MockExecutorConfig, MockNodeExecutor,
 };
 use mox_alliance_executor_proto::types::ExecutorConfig;
-use mox_ai_expert_svc::expert_traits::default_consultant;
+use mox_ai_expert_svc::expert_traits::llm_consultant;
 use tracing::info;
 
 use crate::app_state::ExecutorAppState;
@@ -63,7 +63,7 @@ impl ExecutorServer {
             }
             ExecutorMode::Expert => {
                 // 真实专家执行器（调用 AI 专家服务）
-                let consultant = default_consultant();
+                let consultant = llm_consultant();
                 let expert_config = ExpertExecutorConfig {
                     timeout_ms: self.config.default_node_timeout_ms,
                     max_retries: self.config.default_max_retries,
@@ -74,13 +74,13 @@ impl ExecutorServer {
         }
     }
 
-    /// 启动服务器
-    pub async fn run(&self) -> anyhow::Result<()> {
+    /// 构建应用（将构建逻辑与网络监听分离，便于测试注入与复用）
+    pub async fn build_app(&self) -> anyhow::Result<axum::Router> {
         // 创建节点执行器
         let node_executor = self.create_node_executor();
 
         info!(
-            "Executor server starting with mode: {:?}, executor: {}",
+            "Executor building app with mode: {:?}, executor: {}",
             self.mode,
             node_executor.executor_name()
         );
@@ -92,7 +92,12 @@ impl ExecutorServer {
         let state = ExecutorAppState::new(self.config.clone(), engine);
 
         // 构建路由
-        let app = build_router(state);
+        Ok(build_router(state))
+    }
+
+    /// 启动服务器
+    pub async fn run(&self) -> anyhow::Result<()> {
+        let app = self.build_app().await?;
 
         info!(
             "Executor server starting on {}",

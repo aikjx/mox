@@ -58,7 +58,7 @@ pub trait ExecutorBridge: Send + Sync {
 /// HTTP 执行器桥接配置
 #[derive(Debug, Clone)]
 pub struct HttpExecutorBridgeConfig {
-    /// 执行器服务基地址（如 http://localhost:8081）
+    /// 执行器服务基地址（如 http://localhost:3200）
     pub base_url: String,
     /// 请求超时（毫秒）
     pub timeout_ms: u64,
@@ -67,7 +67,7 @@ pub struct HttpExecutorBridgeConfig {
 impl Default for HttpExecutorBridgeConfig {
     fn default() -> Self {
         Self {
-            base_url: "http://localhost:8082".to_string(),
+            base_url: "http://localhost:3200".to_string(),
             timeout_ms: 30_000,
         }
     }
@@ -674,6 +674,7 @@ pub mod tests {
                 node_id: "node-1".to_string(),
                 task_id,
                 expert_id: "expert-1".to_string(),
+                module_id: None,
                 name: "Test Node".to_string(),
                 description: None,
                 status: NodeStatus::Pending,
