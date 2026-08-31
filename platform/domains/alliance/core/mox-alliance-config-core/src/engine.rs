@@ -120,7 +120,7 @@ impl ConfigEngine {
         &self,
         module_id: &str,
     ) -> ConfigResult<Option<ExpertModuleConfig>> {
-        self.store.get_module_config(module).await
+        self.store.get_module_config(module_id).await
     }
 
     /// 列出所有模块配置

@@ -5,8 +5,8 @@
 
 use std::sync::Arc;
 
-use mox_alliance_scheduler_core::{RuleBasedExpertMatcher, TaskSchedulerImpl};
-use mox_alliance_scheduler_core::ExecutorBridge;
+use mox_alliance_scheduler_core::{TaskSchedulerImpl, ExecutorBridge};
+use mox_alliance_scheduler_proto::ExpertMatcher;
 use tokio::sync::mpsc;
 
 use mox_alliance_common_proto::Task;
@@ -17,7 +17,8 @@ use mox_alliance_scheduler_proto::types::SchedulerConfig;
 pub struct SchedulerAppState {
     pub config: SchedulerConfig,
     pub scheduler: Arc<TaskSchedulerImpl>,
-    pub matcher: Arc<RuleBasedExpertMatcher>,
+    /// 专家匹配器（trait 对象，可插拔：规则 / 模块化权重）
+    pub matcher: Arc<dyn ExpertMatcher>,
     /// 执行器桥接
     pub executor_bridge: Arc<dyn ExecutorBridge>,
     /// 任务派发通道（保留，向后兼容）
@@ -29,7 +30,7 @@ impl SchedulerAppState {
     pub fn new_with_bridge(
         config: SchedulerConfig,
         scheduler: Arc<TaskSchedulerImpl>,
-        matcher: Arc<RuleBasedExpertMatcher>,
+        matcher: Arc<dyn ExpertMatcher>,
         executor_bridge: Arc<dyn ExecutorBridge>,
     ) -> Self {
         // 创建一个空的 dispatch_tx 用于向后兼容
@@ -48,7 +49,7 @@ impl SchedulerAppState {
     pub fn new(
         config: SchedulerConfig,
         scheduler: Arc<TaskSchedulerImpl>,
-        matcher: Arc<RuleBasedExpertMatcher>,
+        matcher: Arc<dyn ExpertMatcher>,
         dispatch_tx: mpsc::UnboundedSender<Task>,
     ) -> Self {
         // 从 scheduler 获取 bridge（如果是旧版构造的，就是 NoopExecutorBridge）

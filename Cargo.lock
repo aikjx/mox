@@ -3687,6 +3687,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-alliance-config-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "mox-alliance-common-proto",
+ "mox-error",
+ "mox-platform-foundation",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "mox-alliance-core"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -3781,6 +3800,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "mox-alliance-common-proto",
+ "mox-alliance-config-core",
  "mox-alliance-core",
  "mox-alliance-executor-proto",
  "mox-alliance-scheduler-proto",
@@ -3824,6 +3844,7 @@ dependencies = [
  "http",
  "mox-alliance-api",
  "mox-alliance-common-proto",
+ "mox-alliance-config-core",
  "mox-alliance-core",
  "mox-alliance-executor-proto",
  "mox-alliance-scheduler-core",
@@ -3854,6 +3875,7 @@ dependencies = [
  "mox-alliance-scheduler-proto",
  "mox-error",
  "mox-platform-foundation",
+ "reqwest",
  "serde",
  "serde_json",
  "thiserror 1.0.69",

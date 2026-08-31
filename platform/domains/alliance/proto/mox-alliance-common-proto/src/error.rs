@@ -75,6 +75,8 @@ pub enum AllianceErrorCode {
     SchedulerFull = 7000,
     /// 任务排队超时
     QueueTimeout = 7001,
+    /// 调度器服务不可达（连接失败）
+    SchedulerUnavailable = 7002,
 }
 
 /// 联盟统一错误

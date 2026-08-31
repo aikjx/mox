@@ -66,6 +66,8 @@ pub struct NodeExecutionContext {
 pub struct NodeExecutionResult {
     /// 节点 ID
     pub node_id: String,
+    /// 执行该节点的专家 ID（用于按专家维度的结果融合）
+    pub expert_id: String,
     /// 是否成功
     pub success: bool,
     /// 输出数据引用
@@ -123,6 +125,7 @@ impl NodeExecutor for MockNodeExecutor {
 
         NodeExecutionResult {
             node_id: context.node_id.clone(),
+            expert_id: context.expert_id.clone(),
             success,
             output_ref: if success {
                 Some(format!("output-{}", context.node_id))
@@ -151,7 +154,8 @@ impl NodeExecutor for MockNodeExecutor {
 
 /// DAG 执行引擎
 ///
-/// 管理整个协作计划的执行生命周期，包括节点调度、状态追踪、结果收集。
+/// 管理整个协作计划的执行生命周期，包括节点调度、状态追踪、结果收集，
+/// 以及执行完成后的结果融合（全链路闭环）。
 pub struct DagExecutionEngine {
     /// 节点执行器
     executor: Arc<dyn NodeExecutor>,
@@ -161,6 +165,12 @@ pub struct DagExecutionEngine {
     max_concurrent_nodes: usize,
     /// 默认最大重试次数
     default_max_retries: u32,
+    /// 节点执行超时（毫秒），超时节点按失败处理
+    default_node_timeout_ms: u64,
+    /// 结果融合引擎
+    fusion: crate::fusion::FusionEngine,
+    /// 按专家 ID 配置的融合权重（运行时可热更新）
+    fusion_weights: Arc<RwLock<HashMap<String, f64>>>,
 }
 
 /// 单个任务的执行状态
@@ -175,6 +185,8 @@ struct ExecutionState {
     results: HashMap<String, NodeExecutionResult>,
     /// 当前并发执行的节点数
     running_count: usize,
+    /// 执行完成后的融合结果
+    fusion_output: Option<crate::fusion::FusionOutput>,
 }
 
 impl DagExecutionEngine {
@@ -185,6 +197,9 @@ impl DagExecutionEngine {
             executions: Arc::new(RwLock::new(HashMap::new())),
             max_concurrent_nodes: 10,
             default_max_retries: 2,
+            default_node_timeout_ms: 300_000,
+            fusion: crate::fusion::FusionEngine::new(),
+            fusion_weights: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -198,6 +213,33 @@ impl DagExecutionEngine {
     pub fn with_default_max_retries(mut self, retries: u32) -> Self {
         self.default_max_retries = retries;
         self
+    }
+
+    /// 配置节点执行超时（毫秒）
+    pub fn with_node_timeout_ms(mut self, timeout_ms: u64) -> Self {
+        self.default_node_timeout_ms = timeout_ms;
+        self
+    }
+
+    /// 配置默认融合策略
+    pub fn with_fusion_strategy(
+        mut self,
+        strategy: mox_alliance_common_proto::FusionStrategy,
+    ) -> Self {
+        self.fusion = self.fusion.with_default_strategy(strategy);
+        self
+    }
+
+    /// 设置按专家 ID 的融合权重（运行时热更新）
+    pub fn set_fusion_weights(&self, weights: HashMap<String, f64>) {
+        *self.fusion_weights.write() = weights;
+    }
+
+    /// 注册单个专家的融合权重
+    pub fn set_expert_fusion_weight(&self, expert_id: impl Into<String>, weight: f64) {
+        self.fusion_weights
+            .write()
+            .insert(expert_id.into(), weight);
     }
 
     /// 开始执行一个协作计划
@@ -216,6 +258,7 @@ impl DagExecutionEngine {
         })?;
 
         // 初始化执行状态
+        let node_count = plan.nodes.len();
         let mut nodes_map = HashMap::new();
         for node in &plan.nodes {
             nodes_map.insert(node.node_id.clone(), node.clone());
@@ -227,14 +270,14 @@ impl DagExecutionEngine {
             nodes: nodes_map,
             results: HashMap::new(),
             running_count: 0,
+            fusion_output: None,
         };
 
         self.executions.write().insert(task_id, state);
 
         info!(
             "Starting DAG execution for task {} with {} nodes",
-            task_id,
-            plan.nodes.len()
+            task_id, node_count
         );
 
         // 启动异步执行
@@ -242,6 +285,9 @@ impl DagExecutionEngine {
         let executor = self.executor.clone();
         let max_concurrent = self.max_concurrent_nodes;
         let max_retries = self.default_max_retries;
+        let node_timeout = self.default_node_timeout_ms;
+        let fusion = self.fusion.clone();
+        let fusion_weights = self.fusion_weights.clone();
 
         tokio::spawn(async move {
             if let Err(e) = Self::run_execution_loop(
@@ -250,6 +296,9 @@ impl DagExecutionEngine {
                 executor,
                 max_concurrent,
                 max_retries,
+                node_timeout,
+                fusion,
+                fusion_weights,
             )
             .await
             {
@@ -267,6 +316,9 @@ impl DagExecutionEngine {
         executor: Arc<dyn NodeExecutor>,
         max_concurrent: usize,
         max_retries: u32,
+        node_timeout: u64,
+        fusion: crate::fusion::FusionEngine,
+        fusion_weights: Arc<RwLock<HashMap<String, f64>>>,
     ) -> AllianceResult<()> {
         let (result_tx, mut result_rx) = mpsc::unbounded_channel::<NodeExecutionResult>();
 
@@ -315,9 +367,31 @@ impl DagExecutionEngine {
 
                         let exec = executor.clone();
                         let tx = result_tx.clone();
+                        let timeout_dur = std::time::Duration::from_millis(node_timeout);
 
                         tokio::spawn(async move {
-                            let result = exec.execute_node(ctx).await;
+                            // 节点级超时保护：超时视为失败，避免节点挂死导致任务永久卡住
+                            let node_id = ctx.node_id.clone();
+                            let expert_id = ctx.expert_id.clone();
+                            let result =
+                                match tokio::time::timeout(timeout_dur, exec.execute_node(ctx))
+                                    .await
+                                {
+                                    Ok(r) => r,
+                                    Err(_) => NodeExecutionResult {
+                                        node_id,
+                                        expert_id,
+                                        success: false,
+                                        output_ref: None,
+                                        duration_ms: node_timeout,
+                                        error_message: Some(format!(
+                                            "Node execution timed out after {}ms",
+                                            node_timeout
+                                        )),
+                                        output_summary: None,
+                                        confidence: None,
+                                    },
+                                };
                             let _ = tx.send(result);
                         });
                     }
@@ -351,8 +425,8 @@ impl DagExecutionEngine {
             }
         }
 
-        // 标记最终状态
-        Self::finalize_execution(task_id, &executions).await?;
+        // 标记最终状态并执行结果融合（全链路闭环）
+        Self::finalize_execution(task_id, &executions, &fusion, &fusion_weights).await?;
 
         Ok(())
     }
@@ -475,10 +549,12 @@ impl DagExecutionEngine {
         }
     }
 
-    /// 完成执行，计算最终状态
+    /// 完成执行，计算最终状态，并执行结果融合
     async fn finalize_execution(
         task_id: Uuid,
         executions: &Arc<RwLock<HashMap<Uuid, ExecutionState>>>,
+        fusion: &crate::fusion::FusionEngine,
+        fusion_weights: &Arc<RwLock<HashMap<String, f64>>>,
     ) -> AllianceResult<()> {
         let mut state = executions.write();
         let state = state
@@ -506,6 +582,30 @@ impl DagExecutionEngine {
             "DAG execution finished for task {}: {} total, {} completed, {} failed, {} skipped",
             task_id, total_nodes, completed, failed, skipped
         );
+
+        // 全链路闭环：对成功的节点结果执行融合
+        let strategy = state.plan.fusion_strategy;
+        let results: Vec<NodeExecutionResult> = state.results.values().cloned().collect();
+        let expert_weights = fusion_weights.read().clone();
+        let input = crate::fusion::FusionInput {
+            results,
+            expert_weights,
+            strategy,
+            task_description: state.task.description.clone(),
+        };
+
+        match fusion.fuse(input) {
+            Ok(output) => {
+                state.fusion_output = Some(output);
+                info!(
+                    "Fusion completed for task {} with strategy {:?}",
+                    task_id, strategy
+                );
+            }
+            Err(e) => {
+                warn!("Fusion failed for task {}: {}", task_id, e);
+            }
+        }
 
         Ok(())
     }
@@ -541,6 +641,11 @@ impl DagExecutionEngine {
             .values()
             .filter(|n| n.status == NodeStatus::Skipped)
             .count();
+        let cancelled = state
+            .nodes
+            .values()
+            .filter(|n| n.status == NodeStatus::Cancelled)
+            .count();
 
         let progress = if total_nodes > 0 {
             completed as f32 / total_nodes as f32
@@ -556,8 +661,11 @@ impl DagExecutionEngine {
             failed_nodes: failed,
             pending_nodes: pending,
             skipped_nodes: skipped,
+            cancelled_nodes: cancelled,
             progress,
-            is_complete: failed > 0 || completed + failed + skipped == total_nodes,
+            // 取消的节点视为终态，纳入完成判定（修复：取消后状态可见）
+            is_complete: failed > 0
+                || completed + failed + skipped + cancelled == total_nodes,
             has_failure: failed > 0,
         })
     }
@@ -567,6 +675,13 @@ impl DagExecutionEngine {
         let state = self.executions.read();
         let state = state.get(&task_id)?;
         state.nodes.get(node_id).cloned()
+    }
+
+    /// 获取任务执行完成后的融合结果
+    pub fn get_fusion_output(&self, task_id: Uuid) -> Option<crate::fusion::FusionOutput> {
+        let state = self.executions.read();
+        let state = state.get(&task_id)?;
+        state.fusion_output.clone()
     }
 
     /// 获取所有节点状态
@@ -603,6 +718,7 @@ pub struct ExecutionStatusView {
     pub failed_nodes: usize,
     pub pending_nodes: usize,
     pub skipped_nodes: usize,
+    pub cancelled_nodes: usize,
     pub progress: f32,
     pub is_complete: bool,
     pub has_failure: bool,
@@ -816,6 +932,7 @@ mod tests {
             nodes: HashMap::new(),
             results: HashMap::new(),
             running_count: 0,
+            fusion_output: None,
         };
 
         for i in 0..5 {

@@ -50,6 +50,7 @@ pub struct FusionOutput {
 }
 
 /// 结果融合引擎
+#[derive(Clone)]
 pub struct FusionEngine {
     /// 默认融合策略
     default_strategy: FusionStrategy,
@@ -139,7 +140,7 @@ impl FusionEngine {
 
         for result in results {
             let weight = weights
-                .get(&result.node_id)
+                .get(&result.expert_id)
                 .copied()
                 .unwrap_or(1.0);
             total_weight += weight;
@@ -195,7 +196,7 @@ impl FusionEngine {
 
         for result in results {
             let weight = weights
-                .get(&result.node_id)
+                .get(&result.expert_id)
                 .copied()
                 .unwrap_or(1.0);
             total_weight += weight;
@@ -245,14 +246,14 @@ impl FusionEngine {
 
         for result in results {
             let base_weight = base_weights
-                .get(&result.node_id)
+                .get(&result.expert_id)
                 .copied()
                 .unwrap_or(1.0);
             let confidence = result.confidence.unwrap_or(0.5);
 
             // 调整后的权重 = 基础权重 * 置信度
             let adjusted_weight = base_weight * confidence;
-            adjusted_weights.insert(result.node_id.clone(), adjusted_weight);
+            adjusted_weights.insert(result.expert_id.clone(), adjusted_weight);
 
             total_adjusted_weight += adjusted_weight;
             weighted_confidence += confidence * adjusted_weight;
@@ -298,9 +299,9 @@ impl FusionEngine {
             .iter()
             .max_by(|a, b| {
                 let score_a =
-                    a.confidence.unwrap_or(0.5) * weights.get(&a.node_id).copied().unwrap_or(1.0);
+                    a.confidence.unwrap_or(0.5) * weights.get(&a.expert_id).copied().unwrap_or(1.0);
                 let score_b =
-                    b.confidence.unwrap_or(0.5) * weights.get(&b.node_id).copied().unwrap_or(1.0);
+                    b.confidence.unwrap_or(0.5) * weights.get(&b.expert_id).copied().unwrap_or(1.0);
                 score_a
                     .partial_cmp(&score_b)
                     .unwrap_or(std::cmp::Ordering::Equal)
@@ -311,11 +312,11 @@ impl FusionEngine {
         let confidence = best.confidence.unwrap_or(0.5);
 
         let mut contributions = HashMap::new();
-        contributions.insert(best.node_id.clone(), 1.0);
+        contributions.insert(best.expert_id.clone(), 1.0);
 
         FusionOutput {
             content: serde_json::json!({
-                "best_expert": best.node_id,
+                "best_expert": best.expert_id,
                 "output": best.output_summary,
                 "confidence": confidence,
             }),
@@ -325,7 +326,7 @@ impl FusionEngine {
             contributions,
             summary: format!(
                 "Best-of fusion: selected {} with confidence {:.1}%",
-                best.node_id,
+                best.expert_id,
                 confidence * 100.0
             ),
         }
@@ -342,10 +343,10 @@ impl FusionEngine {
             .iter()
             .map(|r| {
                 serde_json::json!({
-                    "expert": r.node_id,
+                    "expert": r.expert_id,
                     "output": r.output_summary,
                     "confidence": r.confidence.unwrap_or(0.5),
-                    "weight": weights.get(&r.node_id).copied().unwrap_or(1.0),
+                    "weight": weights.get(&r.expert_id).copied().unwrap_or(1.0),
                 })
             })
             .collect();
@@ -524,14 +525,14 @@ impl FusionEngine {
 
         for result in results {
             let weight = weights
-                .get(&result.node_id)
+                .get(&result.expert_id)
                 .copied()
                 .unwrap_or(1.0);
             total_weight += weight;
             weighted_confidence += result.confidence.unwrap_or(0.5) * weight;
 
             base_predictions.push(serde_json::json!({
-                "expert": result.node_id,
+                "expert": result.expert_id,
                 "confidence": result.confidence.unwrap_or(0.5),
                 "weight": weight,
                 "output": result.output_summary,
@@ -573,13 +574,13 @@ impl FusionEngine {
     ) -> HashMap<String, f64> {
         let total_weight: f64 = results
             .iter()
-            .map(|r| weights.get(&r.node_id).copied().unwrap_or(1.0))
+            .map(|r| weights.get(&r.expert_id).copied().unwrap_or(1.0))
             .sum();
 
         let mut contributions = HashMap::new();
         for result in results {
             let weight = weights
-                .get(&result.node_id)
+                .get(&result.expert_id)
                 .copied()
                 .unwrap_or(1.0);
             let contribution = if total_weight > 0.0 {
@@ -587,7 +588,7 @@ impl FusionEngine {
             } else {
                 1.0 / results.len() as f64
             };
-            contributions.insert(result.node_id.clone(), contribution);
+            contributions.insert(result.expert_id.clone(), contribution);
         }
 
         contributions
@@ -611,6 +612,7 @@ mod tests {
     fn make_test_result(node_id: &str, confidence: f64, summary: &str) -> NodeExecutionResult {
         NodeExecutionResult {
             node_id: node_id.to_string(),
+            expert_id: node_id.to_string(),
             success: true,
             output_ref: Some(format!("output-{}", node_id)),
             duration_ms: 100,

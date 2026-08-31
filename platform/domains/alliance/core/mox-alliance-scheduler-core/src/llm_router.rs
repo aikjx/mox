@@ -336,7 +336,11 @@ impl LlmRouter {
         if !provider.enabled {
             return false;
         }
-        if !provider.has_api_key_configured() {
+        // 密钥必须实际可解析：
+        // - EnvVar：环境变量必须已设置（修复"未设置也被视为可用"的缺陷）
+        // - PlainText：恒可用
+        // - Inherit / SecretRef（当前路由无本地密钥管理器）：视为不可用
+        if provider.api_key_source.resolve_api_key().is_none() {
             return false;
         }
         // 检查运行时状态

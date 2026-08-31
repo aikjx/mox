@@ -14,7 +14,7 @@
 
 use mox_alliance_common_proto::{
     AllianceError, AllianceErrorCode, AllianceMode, AllianceResult, CollaborationPlan, Expert,
-    FusionStrategy, Node, NodeStatus,
+    Node, NodeStatus,
 };
 use uuid::Uuid;
 
@@ -48,7 +48,7 @@ impl SimplePlanGenerator {
         let plan = CollaborationPlan {
             task_id: request.task_id,
             mode,
-            fusion_strategy: FusionStrategy::Weighted,
+            fusion_strategy: request.fusion_strategy,
             nodes,
             version: 1,
             created_at: chrono::Utc::now(),
@@ -270,7 +270,7 @@ impl Default for SimplePlanGenerator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mox_alliance_common_proto::Expert;
+    use mox_alliance_common_proto::{Expert, FusionStrategy};
 
     fn make_matched_expert(id: &str, name: &str, domains: Vec<&str>) -> MatchedExpert {
         let expert = Expert {
@@ -316,6 +316,7 @@ mod tests {
             preferred_mode: Some(AllianceMode::Parallel),
             preferred_experts: vec![],
             constraints: serde_json::json!({}),
+            fusion_strategy: FusionStrategy::Weighted,
         };
 
         let plan = gen.generate(&request, &experts).unwrap();
@@ -340,6 +341,7 @@ mod tests {
             preferred_mode: Some(AllianceMode::Sequential),
             preferred_experts: vec![],
             constraints: serde_json::json!({}),
+            fusion_strategy: FusionStrategy::Weighted,
         };
 
         let plan = gen.generate(&request, &experts).unwrap();
@@ -365,6 +367,7 @@ mod tests {
             preferred_mode: Some(AllianceMode::Debate),
             preferred_experts: vec![],
             constraints: serde_json::json!({}),
+            fusion_strategy: FusionStrategy::Weighted,
         };
 
         let plan = gen.generate(&request, &experts).unwrap();

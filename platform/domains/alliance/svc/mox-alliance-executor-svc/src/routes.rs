@@ -8,17 +8,45 @@
 //! - 内部 API（/internal/*）：供调度器服务调用
 
 use axum::extract::{Path, State};
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Json};
 use axum::routing::{get, post};
 use axum::Router;
 use uuid::Uuid;
 
 use mox_alliance_api::dto::*;
-use mox_alliance_common_proto::{AllianceError, AllianceErrorCode, CollaborationPlan, Task};
-use mox_alliance_executor_proto::{DagEngine, ExecutionOptions};
+use mox_alliance_common_proto::{AllianceError, AllianceErrorCode, CollaborationPlan, Task, TaskStatus};
+use mox_alliance_executor_proto::{DagEngine, ExecutionOptions, ExecutionStatus};
 
 use crate::app_state::ExecutorAppState;
+
+/// 从请求头解析租户 ID（X-Tenant-Id），缺省为 nil
+fn tenant_from_headers(headers: &HeaderMap) -> Uuid {
+    headers
+        .get("X-Tenant-Id")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .unwrap_or_else(Uuid::nil)
+}
+
+/// 由执行计数推导任务整体状态（不再硬编码 Running）
+fn status_from_execution(status: &ExecutionStatus) -> TaskStatus {
+    if status.total_nodes == 0 {
+        return TaskStatus::Pending;
+    }
+    if status.failed_nodes > 0 {
+        return TaskStatus::Failed;
+    }
+    let finished =
+        status.completed_nodes + status.failed_nodes + status.skipped_nodes + status.cancelled_nodes;
+    if finished >= status.total_nodes {
+        TaskStatus::Completed
+    } else if status.running_nodes > 0 {
+        TaskStatus::Running
+    } else {
+        TaskStatus::Pending
+    }
+}
 
 /// 构建执行器 HTTP 路由
 pub fn build_router(state: ExecutorAppState) -> Router {
@@ -49,22 +77,25 @@ async fn health_check() -> impl IntoResponse {
 /// 获取执行状态
 async fn get_execution_status(
     State(state): State<ExecutorAppState>,
+    headers: HeaderMap,
     Path(task_id): Path<Uuid>,
 ) -> impl IntoResponse {
-    let tenant_id = Uuid::nil(); // Phase 1 简化
+    let tenant_id = tenant_from_headers(&headers);
 
     match state.engine.get_execution_status(task_id, tenant_id).await {
         Ok(status) => (
             StatusCode::OK,
             Json(ExecutionStatusResponse {
                 task_id: status.task_id,
-                status: mox_alliance_common_proto::TaskStatus::Running, // 简化
+                status: status_from_execution(&status),
                 progress: status.progress,
                 total_nodes: status.total_nodes,
                 completed_nodes: status.completed_nodes,
                 running_nodes: status.running_nodes,
                 failed_nodes: status.failed_nodes,
                 pending_nodes: status.pending_nodes,
+                skipped_nodes: status.skipped_nodes,
+                cancelled_nodes: status.cancelled_nodes,
             }),
         )
             .into_response(),
@@ -75,9 +106,10 @@ async fn get_execution_status(
 /// 获取节点列表
 async fn list_nodes(
     State(state): State<ExecutorAppState>,
+    headers: HeaderMap,
     Path(task_id): Path<Uuid>,
 ) -> impl IntoResponse {
-    let tenant_id = Uuid::nil();
+    let tenant_id = tenant_from_headers(&headers);
 
     match state.engine.get_nodes(task_id, tenant_id).await {
         Ok(nodes) => {
@@ -113,9 +145,10 @@ async fn list_nodes(
 /// 获取单个节点
 async fn get_node(
     State(state): State<ExecutorAppState>,
+    headers: HeaderMap,
     Path((task_id, node_id)): Path<(Uuid, String)>,
 ) -> impl IntoResponse {
-    let tenant_id = Uuid::nil();
+    let tenant_id = tenant_from_headers(&headers);
 
     match state.engine.get_node(task_id, &node_id, tenant_id).await {
         Ok(node) => (
@@ -140,9 +173,10 @@ async fn get_node(
 /// 跳过节点（人工干预）
 async fn skip_node(
     State(state): State<ExecutorAppState>,
+    headers: HeaderMap,
     Path((task_id, node_id)): Path<(Uuid, String)>,
 ) -> impl IntoResponse {
-    let tenant_id = Uuid::nil();
+    let tenant_id = tenant_from_headers(&headers);
 
     match state
         .engine

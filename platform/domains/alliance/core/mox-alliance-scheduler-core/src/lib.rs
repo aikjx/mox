@@ -42,6 +42,7 @@ pub mod executor_bridge;
 pub mod registry;
 pub mod synchronizer;
 pub mod config_sync;
+pub mod storage;
 
 pub use matcher::RuleBasedExpertMatcher;
 pub use modular_matcher::ModularWeightMatcher;
@@ -73,3 +74,6 @@ pub use synchronizer::{
 
 // 配置同步器重导出
 pub use config_sync::ConfigSynchronizer;
+
+// 存储抽象重导出
+pub use storage::{FileTaskRepository, InMemoryTaskRepository, TaskRepository, temp_file_repository};

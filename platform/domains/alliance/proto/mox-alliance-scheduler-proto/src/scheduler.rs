@@ -56,6 +56,9 @@ pub trait TaskScheduler: Send + Sync {
     /// 获取队列长度
     async fn queue_length(&self) -> usize;
 
+    /// 列出指定租户的任务（按创建时间倒序）
+    async fn list_tasks(&self, tenant_id: Uuid) -> AllianceResult<Vec<Task>>;
+
     /// 获取当前运行中任务数
     async fn running_count(&self) -> usize;
 }

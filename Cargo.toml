@@ -133,6 +133,7 @@ members = [
     "platform/domains/alliance/core/mox-alliance-core",
     "platform/domains/alliance/core/mox-alliance-scheduler-core",
     "platform/domains/alliance/core/mox-alliance-executor-core",
+    "platform/domains/alliance/core/mox-alliance-config-core",
     "platform/domains/alliance/svc/mox-alliance-scheduler-svc",
     "platform/domains/alliance/svc/mox-alliance-executor-svc",
     "platform/domains/alliance/sdk/mox-alliance-sdk",
@@ -234,6 +235,7 @@ mox-alliance-executor-proto = { path = "platform/domains/alliance/proto/mox-alli
 mox-alliance-core = { path = "platform/domains/alliance/core/mox-alliance-core" }
 mox-alliance-executor-core = { path = "platform/domains/alliance/core/mox-alliance-executor-core" }
 mox-alliance-scheduler-core = { path = "platform/domains/alliance/core/mox-alliance-scheduler-core" }
+mox-alliance-config-core = { path = "platform/domains/alliance/core/mox-alliance-config-core" }
 # Alliance api
 mox-alliance-api = { path = "platform/domains/alliance/api" }
 # Alliance svc

@@ -13,7 +13,7 @@
 
 use async_trait::async_trait;
 use mox_alliance_common_proto::{
-    AllianceResult, Expert, ExpertStatus, MatchingWeights,
+    AllianceError, AllianceResult, Expert, ExpertStatus, MatchingWeights,
 };
 use mox_alliance_scheduler_proto::{
     ExpertMatchQuery, ExpertMatchResult, ExpertMatcher, MatchScoreBreakdown, MatchedExpert,
@@ -260,6 +260,11 @@ impl ExpertMatcher for ModularWeightMatcher {
                 continue;
             }
 
+            // 优先级过滤
+            if expert.priority < query.min_priority {
+                continue;
+            }
+
             // 领域过滤（硬过滤：完全不匹配则跳过）
             if !query.required_domains.is_empty() {
                 let expert_domains: std::collections::HashSet<&str> =
@@ -282,7 +287,7 @@ impl ExpertMatcher for ModularWeightMatcher {
             let performance_score = Self::calculate_performance_score(expert);
 
             // 能力分包含描述分的加成
-            let capability_combined = (capability_score * 0.7 + description_score * 0.3);
+            let capability_combined = capability_score * 0.7 + description_score * 0.3;
 
             // 获取该专家的权重配置
             let expert_weights = weights
@@ -299,58 +304,63 @@ impl ExpertMatcher for ModularWeightMatcher {
 
             let total_score = Self::calculate_weighted_score(&breakdown, expert_weights);
 
-            // 置信度阈值过滤
-            if total_score < query.min_confidence as f64 {
+            // 分数下限过滤（过滤明显不相关的专家）
+            if total_score < 0.2 {
                 continue;
             }
 
             matched.push(MatchedExpert {
-                expert_id: expert.expert_id.clone(),
-                expert_name: expert.name.clone(),
-                match_score: total_score,
-                confidence: total_score,
-                breakdown,
+                expert: expert.clone(),
+                score: total_score,
                 match_reason: Self::generate_match_reason(&breakdown, expert_weights),
-                recommended_role: if total_score > 0.8 {
-                    "primary".to_string()
-                } else if total_score > 0.6 {
-                    "supporting".to_string()
-                } else {
-                    "reviewer".to_string()
-                },
+                score_breakdown: breakdown,
             });
         }
 
         // 按匹配分数降序排序
         matched.sort_by(|a, b| {
-            b.match_score
-                .partial_cmp(&a.match_score)
+            b.score
+                .partial_cmp(&a.score)
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
 
         // 截断到 max_results
         let total_available = matched.len();
-        if query.max_results > 0 && matched.len() > query.max_results as usize {
-            matched.truncate(query.max_results as usize);
+        if query.max_results > 0 && matched.len() > query.max_results {
+            matched.truncate(query.max_results);
         }
 
         let elapsed = start.elapsed();
+        let match_time_ms = elapsed.as_millis() as u64;
 
         debug!(
-            "Matched {} experts (from {} available) in {:?}, top score: {:.3}",
+            "Matched {} experts (from {} available) in {}ms, top score: {:.3}",
             matched.len(),
             total_available,
-            elapsed,
-            matched.first().map(|m| m.match_score).unwrap_or(0.0)
+            match_time_ms,
+            matched.first().map(|m| m.score).unwrap_or(0.0)
         );
 
         Ok(ExpertMatchResult {
-            query_id: query.query_id,
-            matched_experts: matched,
+            query,
+            matches: matched,
             total_available,
-            total_matched: total_available,
-            latency_ms: elapsed.as_millis() as u64,
+            match_time_ms,
         })
+    }
+
+    async fn get_expert(&self, expert_id: &str, tenant_id: &str) -> AllianceResult<Expert> {
+        let experts = self.experts.read();
+        experts
+            .get(expert_id)
+            .filter(|e| e.tenant_id == tenant_id || e.tenant_id == "system")
+            .cloned()
+            .ok_or_else(|| AllianceError::not_found("Expert", expert_id))
+    }
+
+    async fn refresh_cache(&self) -> AllianceResult<()> {
+        // 内存版权重直接读取，无需缓存刷新
+        Ok(())
     }
 }
 
@@ -440,6 +450,22 @@ mod tests {
         }
     }
 
+    fn make_query(
+        id: &str,
+        description: &str,
+        domains: Vec<&str>,
+        caps: Vec<&str>,
+    ) -> ExpertMatchQuery {
+        ExpertMatchQuery {
+            tenant_id: "system".to_string(),
+            task_description: description.to_string(),
+            required_domains: domains.into_iter().map(|s| s.to_string()).collect(),
+            required_capabilities: caps.into_iter().map(|s| s.to_string()).collect(),
+            min_priority: 1,
+            max_results: 10,
+        }
+    }
+
     #[tokio::test]
     async fn basic_matching_works() {
         let matcher = ModularWeightMatcher::new();
@@ -456,20 +482,17 @@ mod tests {
             vec!["算法设计", "复杂度分析"],
         ));
 
-        let query = ExpertMatchQuery {
-            query_id: "test-1".to_string(),
-            tenant_id: "system".to_string(),
-            task_description: "系统设计 微服务".to_string(),
-            required_domains: vec!["architecture".to_string()],
-            required_capabilities: vec!["系统设计".to_string()],
-            max_results: 5,
-            min_confidence: 0.0,
-        };
+        let query = make_query(
+            "test-1",
+            "系统设计 微服务",
+            vec!["architecture"],
+            vec!["系统设计"],
+        );
 
         let result = matcher.match_experts(query).await.unwrap();
-        assert!(!result.matched_experts.is_empty());
+        assert!(!result.matches.is_empty());
         // 架构专家应该排在前面
-        assert_eq!(result.matched_experts[0].expert_id, "arch");
+        assert_eq!(result.matches[0].expert.expert_id, "arch");
     }
 
     #[tokio::test]
@@ -497,15 +520,12 @@ mod tests {
         matcher.register_expert(expert_b);
 
         // 默认权重下：领域权重高，A 应该排前
-        let query = ExpertMatchQuery {
-            query_id: "test-2".to_string(),
-            tenant_id: "system".to_string(),
-            task_description: "系统设计 微服务 架构".to_string(),
-            required_domains: vec!["architecture".to_string()],
-            required_capabilities: vec!["系统设计".to_string(), "微服务".to_string()],
-            max_results: 5,
-            min_confidence: 0.0,
-        };
+        let query = make_query(
+            "test-2",
+            "系统设计 微服务 架构",
+            vec!["architecture"],
+            vec!["系统设计", "微服务"],
+        );
 
         let result_default = matcher.match_experts(query.clone()).await.unwrap();
 
@@ -521,19 +541,18 @@ mod tests {
 
         let result_custom = matcher.match_experts(query).await.unwrap();
 
-        // 在自定义权重下，B 的排名应该上升（因为它能力更全面）
-        // 验证 B 的分数有变化
+        // 在自定义权重下，B 的分数应该变化
         let b_default_score = result_default
-            .matched_experts
+            .matches
             .iter()
-            .find(|m| m.expert_id == "b")
-            .map(|m| m.match_score)
+            .find(|m| m.expert.expert_id == "b")
+            .map(|m| m.score)
             .unwrap_or(0.0);
         let b_custom_score = result_custom
-            .matched_experts
+            .matches
             .iter()
-            .find(|m| m.expert_id == "b")
-            .map(|m| m.match_score)
+            .find(|m| m.expert.expert_id == "b")
+            .map(|m| m.score)
             .unwrap_or(0.0);
 
         // 分数应该不同（因为权重变了）
@@ -556,19 +575,49 @@ mod tests {
         inactive.status = ExpertStatus::Inactive;
         matcher.register_expert(inactive);
 
+        let query = make_query("test-3", "test", vec!["test"], vec![]);
+
+        let result = matcher.match_experts(query).await.unwrap();
+        assert_eq!(result.matches.len(), 1);
+        assert_eq!(result.matches[0].expert.expert_id, "active");
+    }
+
+    #[tokio::test]
+    async fn min_priority_filter_applied() {
+        let matcher = ModularWeightMatcher::new();
+
+        let mut low = make_test_expert("low", "低优先级", vec!["test"], vec![]);
+        low.priority = 2;
+        matcher.register_expert(low);
+
+        let mut high = make_test_expert("high", "高优先级", vec!["test"], vec![]);
+        high.priority = 9;
+        matcher.register_expert(high);
+
         let query = ExpertMatchQuery {
-            query_id: "test-3".to_string(),
             tenant_id: "system".to_string(),
             task_description: "test".to_string(),
             required_domains: vec!["test".to_string()],
             required_capabilities: vec![],
+            min_priority: 5,
             max_results: 10,
-            min_confidence: 0.0,
         };
 
         let result = matcher.match_experts(query).await.unwrap();
-        assert_eq!(result.matched_experts.len(), 1);
-        assert_eq!(result.matched_experts[0].expert_id, "active");
+        assert_eq!(result.matches.len(), 1);
+        assert_eq!(result.matches[0].expert.expert_id, "high");
+    }
+
+    #[tokio::test]
+    async fn get_expert_works() {
+        let matcher = ModularWeightMatcher::new();
+        matcher.register_expert(make_test_expert("e1", "Test Expert", vec!["test"], vec![]));
+
+        let expert = matcher.get_expert("e1", "system").await.unwrap();
+        assert_eq!(expert.name, "Test Expert");
+
+        let result = matcher.get_expert("nonexistent", "system").await;
+        assert!(result.is_err());
     }
 
     #[test]

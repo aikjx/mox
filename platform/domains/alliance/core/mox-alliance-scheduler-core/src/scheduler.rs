@@ -15,7 +15,6 @@
 //! - 支持 HTTP 远程执行器和进程内执行器
 //! - 任务状态与执行器同步
 
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -25,21 +24,24 @@ use mox_alliance_common_proto::{
 use mox_alliance_scheduler_proto::{
     ExpertMatcher, PlanGenerationRequest, TaskScheduler, TaskSubmitRequest, TaskSubmitResponse,
 };
-use parking_lot::RwLock;
 use tokio::sync::mpsc;
 use tracing::{debug, info, warn};
 use uuid::Uuid;
 
 use crate::planner::SimplePlanGenerator;
-use crate::matcher::RuleBasedExpertMatcher;
 use crate::executor_bridge::{ExecutorBridge, NoopExecutorBridge};
+use crate::storage::{InMemoryTaskRepository, TaskRepository};
 use mox_alliance_scheduler_proto::types::SchedulerConfig;
 
 /// 任务调度器实现
+///
+/// 专家匹配器通过 trait 对象注入，支持规则匹配器 / 模块化权重匹配器
+/// 的运行时互换（可插拔架构）。
 pub struct TaskSchedulerImpl {
     config: SchedulerConfig,
-    tasks: Arc<RwLock<HashMap<Uuid, Task>>>,
-    matcher: Arc<RuleBasedExpertMatcher>,
+    /// 任务仓库（trait 对象，可插拔：内存 / 文件快照 / 数据库）
+    tasks: Arc<dyn TaskRepository>,
+    matcher: Arc<dyn ExpertMatcher>,
     planner: SimplePlanGenerator,
     /// 执行器桥接（替代原 dispatch_tx）
     executor_bridge: Arc<dyn ExecutorBridge>,
@@ -49,12 +51,12 @@ impl TaskSchedulerImpl {
     /// 创建调度器（使用 ExecutorBridge，推荐）
     pub fn new_with_bridge(
         config: SchedulerConfig,
-        matcher: Arc<RuleBasedExpertMatcher>,
+        matcher: Arc<dyn ExpertMatcher>,
         executor_bridge: Arc<dyn ExecutorBridge>,
     ) -> Self {
         Self {
             config,
-            tasks: Arc::new(RwLock::new(HashMap::new())),
+            tasks: Arc::new(InMemoryTaskRepository::new()),
             matcher,
             planner: SimplePlanGenerator::new(),
             executor_bridge,
@@ -68,7 +70,7 @@ impl TaskSchedulerImpl {
     /// 建议迁移到 `new_with_bridge` 以获得完整的执行器集成能力。
     pub fn new(
         config: SchedulerConfig,
-        matcher: Arc<RuleBasedExpertMatcher>,
+        matcher: Arc<dyn ExpertMatcher>,
         dispatch_tx: mpsc::UnboundedSender<Task>,
     ) -> Self {
         // 使用 NoopExecutorBridge 保持向后兼容
@@ -76,11 +78,17 @@ impl TaskSchedulerImpl {
         let _ = dispatch_tx; // 保留参数以维持 API 兼容
         Self {
             config,
-            tasks: Arc::new(RwLock::new(HashMap::new())),
+            tasks: Arc::new(InMemoryTaskRepository::new()),
             matcher,
             planner: SimplePlanGenerator::new(),
             executor_bridge: Arc::new(NoopExecutorBridge),
         }
+    }
+
+    /// 注入自定义任务仓库（持久化可插拔，企业级）
+    pub fn with_task_repository(mut self, repository: Arc<dyn TaskRepository>) -> Self {
+        self.tasks = repository;
+        self
     }
 
     /// 获取执行器桥接引用
@@ -90,10 +98,9 @@ impl TaskSchedulerImpl {
 
     /// 获取任务引用（内部方法）
     fn get_task_internal(&self, task_id: Uuid, tenant_id: Uuid) -> AllianceResult<Task> {
-        let tasks = self.tasks.read();
-        let task = tasks
-            .get(&task_id)
-            .cloned()
+        let task = self
+            .tasks
+            .get(task_id)?
             .ok_or_else(|| AllianceError::not_found("Task", &task_id.to_string()))?;
 
         if task.tenant_id != tenant_id {
@@ -108,37 +115,37 @@ impl TaskSchedulerImpl {
 
     /// 更新任务状态（内部方法）
     fn update_task_status(&self, task_id: Uuid, status: TaskStatus) -> AllianceResult<()> {
-        let mut tasks = self.tasks.write();
-        if let Some(task) = tasks.get_mut(&task_id) {
-            task.status = status;
-            match status {
-                TaskStatus::Running => {
-                    task.started_at = Some(chrono::Utc::now());
-                }
-                TaskStatus::Completed | TaskStatus::Failed | TaskStatus::Cancelled => {
-                    task.completed_at = Some(chrono::Utc::now());
-                    if let Some(started) = task.started_at {
-                        let duration = chrono::Utc::now() - started;
-                        task.duration_ms = Some(duration.num_milliseconds());
-                    }
-                }
-                _ => {}
+        let mut task = self
+            .tasks
+            .get(task_id)?
+            .ok_or_else(|| AllianceError::not_found("Task", &task_id.to_string()))?;
+        task.status = status;
+        match status {
+            TaskStatus::Running => {
+                task.started_at = Some(chrono::Utc::now());
             }
-            Ok(())
-        } else {
-            Err(AllianceError::not_found("Task", &task_id.to_string()))
+            TaskStatus::Completed | TaskStatus::Failed | TaskStatus::Cancelled => {
+                task.completed_at = Some(chrono::Utc::now());
+                if let Some(started) = task.started_at {
+                    let duration = chrono::Utc::now() - started;
+                    task.duration_ms = Some(duration.num_milliseconds());
+                }
+            }
+            _ => {}
         }
+        self.tasks.save(&task)?;
+        Ok(())
     }
 
     /// 更新任务进度（内部方法）
     fn update_task_progress(&self, task_id: Uuid, progress: f32) -> AllianceResult<()> {
-        let mut tasks = self.tasks.write();
-        if let Some(task) = tasks.get_mut(&task_id) {
-            task.progress = progress;
-            Ok(())
-        } else {
-            Err(AllianceError::not_found("Task", &task_id.to_string()))
-        }
+        let mut task = self
+            .tasks
+            .get(task_id)?
+            .ok_or_else(|| AllianceError::not_found("Task", &task_id.to_string()))?;
+        task.progress = progress;
+        self.tasks.save(&task)?;
+        Ok(())
     }
 
     /// 从执行器同步任务状态（内部方法）
@@ -149,29 +156,37 @@ impl TaskSchedulerImpl {
     ) -> AllianceResult<()> {
         match self.executor_bridge.get_status(task_id, tenant_id).await {
             Ok(exec_status) => {
-                let mut tasks = self.tasks.write();
-                if let Some(task) = tasks.get_mut(&task_id) {
-                    task.progress = exec_status.progress;
-                    // 根据执行进度推断任务状态
-                    if task.status == TaskStatus::Running {
-                        if exec_status.total_nodes > 0
-                            && exec_status.completed_nodes + exec_status.failed_nodes
-                                == exec_status.total_nodes
-                        {
-                            // 所有节点都完成了
-                            if exec_status.failed_nodes > 0 {
-                                task.status = TaskStatus::Failed;
-                            } else {
-                                task.status = TaskStatus::Completed;
-                            }
-                            task.completed_at = Some(chrono::Utc::now());
-                            if let Some(started) = task.started_at {
-                                let duration = chrono::Utc::now() - started;
-                                task.duration_ms = Some(duration.num_milliseconds());
-                            }
+                let mut task = match self.tasks.get(task_id)? {
+                    Some(t) => t,
+                    None => {
+                        warn!("Task {} not found while syncing from executor", task_id);
+                        return Ok(());
+                    }
+                };
+                if task.tenant_id != tenant_id {
+                    return Ok(());
+                }
+                task.progress = exec_status.progress;
+                // 根据执行进度推断任务状态
+                if task.status == TaskStatus::Running {
+                    if exec_status.total_nodes > 0
+                        && exec_status.completed_nodes + exec_status.failed_nodes
+                            == exec_status.total_nodes
+                    {
+                        // 所有节点都完成了
+                        if exec_status.failed_nodes > 0 {
+                            task.status = TaskStatus::Failed;
+                        } else {
+                            task.status = TaskStatus::Completed;
+                        }
+                        task.completed_at = Some(chrono::Utc::now());
+                        if let Some(started) = task.started_at {
+                            let duration = chrono::Utc::now() - started;
+                            task.duration_ms = Some(duration.num_milliseconds());
                         }
                     }
                 }
+                self.tasks.save(&task)?;
                 Ok(())
             }
             Err(e) => {
@@ -189,19 +204,33 @@ impl TaskSchedulerImpl {
 #[async_trait]
 impl TaskScheduler for TaskSchedulerImpl {
     async fn submit_task(&self, request: TaskSubmitRequest) -> AllianceResult<TaskSubmitResponse> {
-        // 检查队列容量
+        // 检查队列容量与并发上限
         {
-            let tasks = self.tasks.read();
+            let tasks = self.tasks.all()?;
             let pending_count = tasks
-                .values()
+                .iter()
                 .filter(|t| t.status == TaskStatus::Pending || t.status == TaskStatus::Planning)
                 .count();
+            let running_count = tasks
+                .iter()
+                .filter(|t| t.status == TaskStatus::Running)
+                .count();
+
             if pending_count >= self.config.queue_capacity {
                 return Err(AllianceError::new(
                     AllianceErrorCode::SchedulerFull,
                     format!(
                         "Task queue is full (capacity: {})",
                         self.config.queue_capacity
+                    ),
+                ));
+            }
+            if running_count >= self.config.max_concurrent_tasks {
+                return Err(AllianceError::new(
+                    AllianceErrorCode::SchedulerFull,
+                    format!(
+                        "Max concurrent tasks reached (limit: {})",
+                        self.config.max_concurrent_tasks
                     ),
                 ));
             }
@@ -230,10 +259,7 @@ impl TaskScheduler for TaskSchedulerImpl {
         );
 
         // 存入任务表
-        {
-            let mut tasks = self.tasks.write();
-            tasks.insert(task_id, task.clone());
-        }
+        self.tasks.save(&task)?;
 
         // 更新状态为规划中
         self.update_task_status(task_id, TaskStatus::Planning)?;
@@ -246,6 +272,7 @@ impl TaskScheduler for TaskSchedulerImpl {
             preferred_mode: Some(task.mode),
             preferred_experts: vec![],
             constraints: serde_json::json!({}),
+            fusion_strategy: task.fusion_strategy,
         };
 
         // 匹配专家
@@ -291,11 +318,10 @@ impl TaskScheduler for TaskSchedulerImpl {
                 );
                 self.update_task_status(task_id, TaskStatus::Failed)?;
                 // 更新失败信息
-                let mut tasks = self.tasks.write();
-                if let Some(t) = tasks.get_mut(&task_id) {
+                if let Some(mut t) = self.tasks.get(task_id)? {
                     t.progress = 0.0;
+                    self.tasks.save(&t)?;
                 }
-                drop(tasks);
             }
         }
 
@@ -445,19 +471,31 @@ impl TaskScheduler for TaskSchedulerImpl {
     }
 
     async fn queue_length(&self) -> usize {
-        let tasks = self.tasks.read();
-        tasks
-            .values()
-            .filter(|t| t.status == TaskStatus::Pending || t.status == TaskStatus::Planning)
-            .count()
+        match self.tasks.all() {
+            Ok(tasks) => tasks
+                .iter()
+                .filter(|t| t.status == TaskStatus::Pending || t.status == TaskStatus::Planning)
+                .count(),
+            Err(_) => 0,
+        }
+    }
+
+    async fn list_tasks(&self, tenant_id: Uuid) -> AllianceResult<Vec<Task>> {
+        let tasks = self.tasks.all()?;
+        let mut result: Vec<Task> = tasks
+            .into_iter()
+            .filter(|t| t.tenant_id == tenant_id)
+            .collect();
+        // 新任务优先展示
+        result.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        Ok(result)
     }
 
     async fn running_count(&self) -> usize {
-        let tasks = self.tasks.read();
-        tasks
-            .values()
-            .filter(|t| t.status == TaskStatus::Running)
-            .count()
+        match self.tasks.all() {
+            Ok(tasks) => tasks.iter().filter(|t| t.status == TaskStatus::Running).count(),
+            Err(_) => 0,
+        }
     }
 }
 
@@ -465,6 +503,7 @@ impl TaskScheduler for TaskSchedulerImpl {
 mod tests {
     use super::*;
     use crate::executor_bridge::MockExecutorBridge;
+    use crate::matcher::RuleBasedExpertMatcher;
     use mox_alliance_common_proto::{
         AllianceMode, FusionStrategy, Node, NodeStatus, TaskPriority,
     };
@@ -687,6 +726,7 @@ mod tests {
             failed_nodes: 0,
             pending_nodes: 2,
             skipped_nodes: 0,
+            cancelled_nodes: 0,
             progress: 0.4,
             started_at: None,
             estimated_remaining_ms: None,

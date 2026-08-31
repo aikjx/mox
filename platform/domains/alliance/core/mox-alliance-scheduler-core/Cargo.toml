@@ -11,6 +11,7 @@ mox-alliance-common-proto = { path = "../../proto/mox-alliance-common-proto" }
 mox-alliance-scheduler-proto = { path = "../../proto/mox-alliance-scheduler-proto" }
 mox-alliance-executor-proto = { path = "../../proto/mox-alliance-executor-proto" }
 mox-alliance-core = { path = "../mox-alliance-core" }
+mox-alliance-config-core = { path = "../mox-alliance-config-core" }
 mox-platform-foundation = { workspace = true }
 mox-error = { workspace = true }
 serde = { workspace = true }

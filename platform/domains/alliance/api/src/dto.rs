@@ -93,6 +93,8 @@ pub struct ExecutionStatusResponse {
     pub running_nodes: usize,
     pub failed_nodes: usize,
     pub pending_nodes: usize,
+    pub skipped_nodes: usize,
+    pub cancelled_nodes: usize,
 }
 
 /// 节点详情响应

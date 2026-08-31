@@ -12,8 +12,8 @@
 //! - 支持全量同步和增量同步
 //! - 配置变更后匹配算法立即生效
 
-use mox_alliance_common_proto::{AllianceResult, ExpertModuleConfig, MatchingWeights};
-use mox_alliance_config_core::{ConfigChangeEvent, ConfigChangeType, ConfigEngine, ConfigType};
+use mox_alliance_common_proto::AllianceResult;
+use mox_alliance_config_core::{ConfigChangeEvent, ConfigChangeType, ConfigEngine};
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -161,19 +161,8 @@ impl ConfigSynchronizer {
 
     /// 同步单个模块的配置到匹配器
     async fn sync_single_module(&self, module_id: &str) -> AllianceResult<()> {
-        let config = self
-            .config_engine
-            .get_module_config(module_id)
-            .await
-            .map_err(|e| {
-                mox_alliance_common_proto::AllianceError::internal(format!(
-                    "Failed to get module config: {}",
-                    e
-                ))
-            })?;
-
-        match config {
-            Some(module) => {
+        match self.config_engine.get_module_config(module_id).await {
+            Ok(module) => {
                 if module.enabled {
                     self.matcher
                         .set_expert_weights(&module.expert_id, module.matching_weights.clone());
@@ -190,8 +179,8 @@ impl ConfigSynchronizer {
                     self.remove_module_weights(module_id);
                 }
             }
-            None => {
-                warn!("Module config not found for sync: {}", module_id);
+            Err(e) => {
+                warn!("Module config not found for sync: {} ({})", module_id, e);
             }
         }
 
@@ -254,6 +243,7 @@ mod tests {
                 model_config: Default::default(),
                 provider_options: vec![],
                 system_prompt_template: None,
+                use_global_prompt_prefix: true,
                 version: 1,
                 updated_at: now,
             },

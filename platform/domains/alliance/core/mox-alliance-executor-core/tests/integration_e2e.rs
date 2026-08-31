@@ -128,6 +128,7 @@ async fn test_e2e_plan_generation() -> AllianceResult<()> {
         preferred_mode: Some(AllianceMode::Parallel),
         preferred_experts: vec![],
         constraints: serde_json::json!({}),
+        fusion_strategy: FusionStrategy::Weighted,
     };
 
     let plan = planner.generate(&req, &match_result.matches)?;
@@ -173,6 +174,7 @@ async fn test_e2e_dag_execution_sequential() -> AllianceResult<()> {
         preferred_mode: Some(AllianceMode::Sequential),
         preferred_experts: vec![],
         constraints: serde_json::json!({}),
+        fusion_strategy: FusionStrategy::Weighted,
     };
     let plan = planner.generate(&req, &match_result.matches)?;
     assert_eq!(plan.nodes.len(), 2);
@@ -284,6 +286,7 @@ async fn test_e2e_full_pipeline() -> AllianceResult<()> {
         preferred_mode: Some(AllianceMode::Parallel),
         preferred_experts: vec![],
         constraints: serde_json::json!({}),
+        fusion_strategy: FusionStrategy::Weighted,
     };
     let plan = planner.generate(&plan_req, &match_result.matches)?;
     assert!(plan.validate().is_ok());

@@ -6,13 +6,17 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use mox_alliance_common_proto::Task;
+use mox_alliance_common_proto::{Capability, Expert, ExpertHealth, ExpertModuleConfig, ExpertStatus};
+use mox_alliance_config_core::examples::domain_experts::build_domain_experts;
+use mox_alliance_config_core::{ConfigEngine, MemoryConfigStore};
+use mox_alliance_executor_proto::DagEngine;
 use mox_alliance_scheduler_core::{
-    HttpExecutorBridge, HttpExecutorBridgeConfig, RuleBasedExpertMatcher, TaskSchedulerImpl,
+    ConfigSynchronizer, HttpExecutorBridge, HttpExecutorBridgeConfig, InProcessExecutorBridge,
+    ModularWeightMatcher, TaskSchedulerImpl,
 };
 use mox_alliance_scheduler_proto::types::SchedulerConfig;
 use tokio::sync::mpsc;
-use tracing::{info, warn};
+use tracing::info;
 
 use crate::app_state::SchedulerAppState;
 use crate::routes::build_router;
@@ -33,6 +37,10 @@ pub struct SchedulerServer {
     mode: SchedulerMode,
     /// 执行器服务地址（Standalone 模式下使用）
     executor_url: Option<String>,
+    /// 进程内执行器引擎（Embedded 模式下使用，依赖注入）
+    embedded_engine: Option<Arc<dyn DagEngine>>,
+    /// 任务仓库（持久化可插拔；默认按环境变量决定）
+    task_repository: Option<Arc<dyn mox_alliance_scheduler_core::TaskRepository>>,
 }
 
 impl SchedulerServer {
@@ -42,6 +50,8 @@ impl SchedulerServer {
             listen_addr,
             mode: SchedulerMode::Standalone,
             executor_url: None,
+            embedded_engine: None,
+            task_repository: None,
         }
     }
 
@@ -57,16 +67,59 @@ impl SchedulerServer {
         self
     }
 
+    /// 注入进程内执行器引擎（Embedded 模式必需）
+    pub fn with_embedded_engine(mut self, engine: Arc<dyn DagEngine>) -> Self {
+        self.embedded_engine = Some(engine);
+        self
+    }
+
+    /// 注入自定义任务仓库（企业级持久化）
+    pub fn with_task_repository(
+        mut self,
+        repository: Arc<dyn mox_alliance_scheduler_core::TaskRepository>,
+    ) -> Self {
+        self.task_repository = Some(repository);
+        self
+    }
+
+    /// 解析任务仓库：显式注入优先，否则按环境变量 ALLIANCE_TASK_STORE
+    /// - "file"（或未设置时默认 "file"）：文件快照持久化到 ./data/alliance_tasks.json
+    /// - "memory"：纯内存
+    fn resolve_task_repository(
+        &self,
+    ) -> anyhow::Result<Arc<dyn mox_alliance_scheduler_core::TaskRepository>> {
+        if let Some(repo) = &self.task_repository {
+            return Ok(repo.clone());
+        }
+
+        let mode = std::env::var("ALLIANCE_TASK_STORE").unwrap_or_else(|_| "file".to_string());
+        match mode.as_str() {
+            "memory" => {
+                info!("Using in-memory task repository");
+                Ok(Arc::new(
+                    mox_alliance_scheduler_core::InMemoryTaskRepository::new(),
+                ))
+            }
+            _ => {
+                let path = std::path::Path::new("data").join("alliance_tasks.json");
+                let repo = mox_alliance_scheduler_core::FileTaskRepository::new(&path)?;
+                info!("Using file task repository at {}", path.display());
+                Ok(Arc::new(repo))
+            }
+        }
+    }
+
     /// 创建执行器桥接
     fn create_executor_bridge(
         &self,
     ) -> anyhow::Result<Arc<dyn mox_alliance_scheduler_core::ExecutorBridge>> {
         match self.mode {
             SchedulerMode::Standalone => {
+                // 默认指向执行器服务（executor-svc 监听 8082），修复了原先指向自身 8081 的错配
                 let base_url = self
                     .executor_url
                     .clone()
-                    .unwrap_or_else(|| "http://localhost:8081".to_string());
+                    .unwrap_or_else(|| "http://localhost:8082".to_string());
 
                 let config = HttpExecutorBridgeConfig {
                     base_url: base_url.clone(),
@@ -78,30 +131,107 @@ impl SchedulerServer {
                 Ok(Arc::new(bridge))
             }
             SchedulerMode::Embedded => {
-                // Embedded 模式需要外部传入 DagEngine
-                // 这里返回一个占位，实际使用时应该通过其他方式设置
-                warn!("Embedded mode requires in-process DagEngine, using Noop bridge as placeholder");
-                Ok(Arc::new(
-                    mox_alliance_scheduler_core::NoopExecutorBridge,
-                ))
+                let engine = self.embedded_engine.clone().ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "Embedded mode requires an in-process DagEngine. \
+                         Call with_embedded_engine() before run()"
+                    )
+                })?;
+                let bridge = InProcessExecutorBridge::new(engine);
+                info!("Using in-process executor bridge");
+                Ok(Arc::new(bridge))
             }
+        }
+    }
+
+    /// 由模块配置派生专家并注册到模块化匹配器
+    ///
+    /// 全链路接线：模块配置(ConfigEngine) → 专家注册(ModularWeightMatcher)
+    /// → 权重同步(ConfigSynchronizer) → 调度匹配。
+    fn expert_from_module(module: &ExpertModuleConfig) -> Expert {
+        let now = chrono::Utc::now();
+        let capabilities: Vec<Capability> = module
+            .capability_weights
+            .keys()
+            .map(|name| Capability {
+                capability_id: format!("{}-{}", module.module_id, name),
+                name: name.clone(),
+                description: name.clone(),
+                domain: "general".to_string(),
+                version: "1.0.0".to_string(),
+            })
+            .collect();
+
+        Expert {
+            expert_id: module.expert_id.clone(),
+            tenant_id: "system".to_string(),
+            name: module.name.clone(),
+            version: module.version.clone(),
+            description: module.name.clone(),
+            domains: module.tags.clone(),
+            capabilities,
+            tools: vec![],
+            status: ExpertStatus::Active,
+            health: ExpertHealth::default(),
+            priority: 5,
+            created_at: now,
+            updated_at: now,
         }
     }
 
     /// 启动服务器
     pub async fn run(&self) -> anyhow::Result<()> {
-        // 初始化专家匹配器
-        let matcher = Arc::new(RuleBasedExpertMatcher::new());
+        // ── 构建模块化配置子系统（全链路接线）──
+        // 1) 配置引擎（内存存储，可替换为持久化实现）
+        let config_engine = Arc::new(ConfigEngine::new(Arc::new(MemoryConfigStore::new())));
 
-        // 创建执行器桥接
+        // 2) 注册内置领域专家模块配置
+        for module in build_domain_experts() {
+            config_engine
+                .register_module(module.clone(), "system", "bootstrap builtin domain experts")
+                .await
+                .map_err(|e| anyhow::anyhow!("Failed to register module {}: {}", module.module_id, e))?;
+        }
+
+        // 3) 模块化权重匹配器：由模块配置派生专家并注册
+        let matcher = Arc::new(ModularWeightMatcher::new());
+        let modules = config_engine
+            .list_modules()
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to list modules: {}", e))?;
+        let experts: Vec<Expert> = modules
+            .iter()
+            .map(Self::expert_from_module)
+            .collect();
+        matcher.register_experts(experts);
+        info!(
+            "Registered {} builtin domain experts from module config",
+            modules.len()
+        );
+
+        // 4) 配置同步器：模块权重 → 匹配器（运行时可热更新）
+        let synchronizer = Arc::new(ConfigSynchronizer::new(config_engine.clone(), matcher.clone()));
+        let synced = synchronizer
+            .full_sync()
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to sync module config: {}", e))?;
+        info!("Config synchronizer synced {} module weights", synced);
+
+        // ── 创建执行器桥接 ──
         let executor_bridge = self.create_executor_bridge()?;
 
-        // 初始化调度器（使用新的 bridge 方式）
-        let scheduler = Arc::new(TaskSchedulerImpl::new_with_bridge(
-            self.config.clone(),
-            matcher.clone(),
-            executor_bridge.clone(),
-        ));
+        // ── 解析任务仓库（持久化可插拔）──
+        let task_repository = self.resolve_task_repository()?;
+
+        // ── 初始化调度器（使用模块化匹配器 + 可插拔存储）──
+        let scheduler = Arc::new(
+            TaskSchedulerImpl::new_with_bridge(
+                self.config.clone(),
+                matcher.clone(),
+                executor_bridge.clone(),
+            )
+            .with_task_repository(task_repository),
+        );
 
         // 构建应用状态
         let state = SchedulerAppState::new_with_bridge(
@@ -131,9 +261,13 @@ impl SchedulerServer {
 #[allow(dead_code)]
 fn _create_legacy_scheduler(
     config: SchedulerConfig,
-    matcher: Arc<RuleBasedExpertMatcher>,
-) -> (Arc<TaskSchedulerImpl>, mpsc::UnboundedSender<Task>) {
-    let (dispatch_tx, _dispatch_rx) = mpsc::unbounded_channel::<Task>();
-    let scheduler = Arc::new(TaskSchedulerImpl::new(config, matcher, dispatch_tx.clone()));
+    matcher: Arc<mox_alliance_scheduler_core::RuleBasedExpertMatcher>,
+) -> (Arc<TaskSchedulerImpl>, mpsc::UnboundedSender<mox_alliance_common_proto::Task>) {
+    let (dispatch_tx, _dispatch_rx) = mpsc::unbounded_channel::<mox_alliance_common_proto::Task>();
+    let scheduler = Arc::new(TaskSchedulerImpl::new(
+        config,
+        matcher,
+        dispatch_tx.clone(),
+    ));
     (scheduler, dispatch_tx)
 }

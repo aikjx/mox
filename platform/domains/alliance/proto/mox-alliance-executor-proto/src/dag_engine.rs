@@ -80,6 +80,7 @@ pub struct ExecutionStatus {
     pub failed_nodes: usize,
     pub pending_nodes: usize,
     pub skipped_nodes: usize,
+    pub cancelled_nodes: usize,
     pub progress: f32,
     pub started_at: Option<chrono::DateTime<chrono::Utc>>,
     pub estimated_remaining_ms: Option<u64>,

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>专家联盟架构修复报告 · 全维全链路 · 企业级模块化</title>
+<style>
+  :root {
+    --bg: #0f1420; --panel: #171e2e; --panel2: #1d2639;
+    --line: #2a3550; --txt: #dce3f0; --mut: #8a97b3;
+    --acc: #5aa7ff; --ok: #34d399; --warn: #fbbf24; --bad: #f87171;
+    --purple: #a78bfa;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--txt); font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; line-height: 1.65; padding: 32px 20px; }
+  .wrap { max-width: 1060px; margin: 0 auto; }
+  header.hero { background: linear-gradient(135deg, #16233f 0%, #1d1a3a 60%, #2a1633 100%); border: 1px solid var(--line); border-radius: 16px; padding: 36px 40px; margin-bottom: 28px; position: relative; overflow: hidden; }
+  header.hero::after { content: ""; position: absolute; right: -60px; top: -60px; width: 220px; height: 220px; border-radius: 50%; background: radial-gradient(circle, rgba(90,167,255,.22), transparent 70%); }
+  .kicker { color: var(--acc); font-size: 13px; letter-spacing: 3px; font-weight: 600; margin-bottom: 10px; }
+  h1 { font-size: 28px; font-weight: 800; letter-spacing: .5px; }
+  .sub { color: var(--mut); margin-top: 10px; font-size: 14px; }
+  .badges { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+  .badge { background: rgba(90,167,255,.12); border: 1px solid rgba(90,167,255,.35); color: var(--acc); padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+  .badge.green { background: rgba(52,211,153,.1); border-color: rgba(52,211,153,.35); color: var(--ok); }
+  .grid { display: grid; gap: 20px; margin-top: 24px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 24px 26px; }
+  .card h2 { font-size: 18px; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+  .card h2 .n { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; background: var(--acc); color: #0a1220; border-radius: 8px; font-size: 13px; font-weight: 800; }
+  .card .lead { color: var(--mut); font-size: 13.5px; margin-bottom: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; color: var(--mut); font-weight: 600; font-size: 12.5px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  td { padding: 9px 10px; border-bottom: 1px solid rgba(42,53,80,.55); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .tag { display: inline-block; padding: 2px 9px; border-radius: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .tag.ok { background: rgba(52,211,153,.12); color: var(--ok); }
+  .tag.done { background: rgba(90,167,255,.14); color: var(--acc); }
+  .tag.part { background: rgba(251,191,36,.12); color: var(--warn); }
+  .tag.next { background: rgba(167,139,250,.12); color: var(--purple); }
+  code { background: #0c1120; border: 1px solid var(--line); padding: 1px 6px; border-radius: 5px; font-family: "Cascadia Code", Consolas, monospace; font-size: 12.5px; color: #9fd0ff; }
+  .metric-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 8px; }
+  .metric { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+  .metric .v { font-size: 30px; font-weight: 800; color: var(--acc); }
+  .metric .v.green { color: var(--ok); }
+  .metric .l { color: var(--mut); font-size: 13px; margin-top: 4px; }
+  ul.tight { padding-left: 20px; }
+  ul.tight li { margin: 7px 0; font-size: 14px; }
+  ul.tight li b { color: var(--txt); }
+  .foot { color: var(--mut); font-size: 12.5px; text-align: center; margin-top: 30px; }
+  .col2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 800px) { .col2 { grid-template-columns: 1fr; } h1 { font-size: 22px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker">MOX ALLIANCE · ARCHITECTURE FIX REPORT</div>
+  <h1>专家联盟架构修复报告<br>全维 · 全链路 · 企业级 · 模块化</h1>
+  <div class="sub">2026-08-31 · 基于 rustc 1.98.0-nightly · 修复前 18 处编译错误 → 修复后 11 个 crate 全部编译通过、全部测试通过</div>
+  <div class="badges">
+    <span class="badge green">编译 ✅</span>
+    <span class="badge green">测试 ✅</span>
+    <span class="badge">全链路闭环</span>
+    <span class="badge">模块化可插拔</span>
+    <span class="badge">企业级增强</span>
+  </div>
+</header>
+
+<div class="metric-row">
+  <div class="metric"><div class="v green">11 / 11</div><div class="l">alliance 域 crate 编译通过</div></div>
+  <div class="metric"><div class="v green">86</div><div class="l">测试用例通过（0 失败）</div></div>
+  <div class="metric"><div class="v">18 → 0</div><div class="l">编译错误消除</div></div>
+  <div class="metric"><div class="v">15</div><div class="l">架构缺陷修复 / 改造项</div></div>
+</div>
+
+<div class="grid">
+  <!-- 1. 编译修复 -->
+  <div class="card">
+    <h2><span class="n">1</span>编译修复：从"无法编译"到"全部通过"</h2>
+    <div class="lead">修复前 scheduler-core 存在 18 处确认编译错误，阻塞 scheduler-svc；config-core 为孤儿 crate 未被收编。</div>
+    <table>
+      <tr><th style="width:38%">问题</th><th style="width:46%">修复</th><th>状态</th></tr>
+      <tr><td>config-core 不在 workspace，无法被依赖</td><td>根 Cargo.toml <code>members</code> + <code>workspace.dependencies</code> 收编</td><td><span class="tag done">已修复</span></td></tr>
+      <tr><td>engine.rs 使用未定义变量 <code>module</code></td><td>改为 <code>module_id</code></td><td><span class="tag done">已修复</span></td></tr>
+      <tr><td>domain_experts.rs 引用不存在的 <code>description</code> 字段</td><td>移除非法字段</td><td><span class="tag done">已修复</span></td></tr>
+      <tr><td>modular_matcher.rs 14 处 proto API 不匹配 + E0046 trait 缺实现</td><td>整体重写，对齐 <code>ExpertMatchResult / MatchedExpert</code> 契约，完整实现 <code>ExpertMatcher</code></td><td><span class="tag done">已修复</span></td></tr>
+      <tr><td>config_sync.rs 引用不存在的导入 / Option→Result 错配</td><td>清理导入，<code>get_module_config</code> 按 Result 处理</td><td><span class="tag done">已修复</span></td></tr>
+      <tr><td>svc 层依赖缺失（executor-core / config-core）</td><td>scheduler-svc Cargo.toml 补齐依赖</td><td><span class="tag done">已修复</span></td></tr>
+    </table>
+  </div>
+
+  <!-- 2. 全链路闭环 -->
+  <div class="card">
+    <h2><span class="n">2</span>全链路闭环：从"各模块独立"到"端到端打通"</h2>
+    <div class="lead">核心链路：提交任务 → 专家匹配 → 计划生成（融合策略贯通）→ 执行器执行 → 结果融合 → 状态回传。</div>
+    <table>
+      <tr><th style="width:38%">环节</th><th style="width:46%">改造</th><th>状态</th></tr>
+      <tr><td>融合策略贯通</td><td><code>PlanGenerationRequest</code> 新增 <code>fusion_strategy</code>，planner 不再恒用 Weighted，按请求下发</td><td><span class="tag done">已修复</span></td></tr>
+      <tr><td>融合权重语义</td><td>fusion.rs 权重键从 <code>node_id</code> 全部改为 <code>expert_id</code>（按专家维度融合，6 处）</td><td><span class="tag done">已修复</span></td></tr>
+      <tr><td>DAG 执行闭环</td><td><code>NodeExecutionResult</code> 增加 <code>expert_id</code>；执行完成后自动按策略融合，<code>get_fusion_output()</code> 可取结果</td><td><span class="tag done">已修复</span></td></tr>
+      <tr><td>执行器桥接</td><td>Embedded 模式用 <code>InProcessExecutorBridge</code> 替代 Noop 占位（依赖注入），Standalone 修复端口错配 8081→8082</td><td><span class="tag done">已修复</span></td></tr>
+      <tr><td>状态可见性</td><td>取消节点此前不可见、<code>is_complete</code> 恒 false；补齐 <code>cancelled_nodes</code> 并纳入完成判定（5 处）</td><td><span class="tag done">已修复</span></td></tr>
+      <tr><td>executor-svc 状态</td><td><code>get_execution_status</code> 不再恒返回 Running，按计数推导真实状态</td><td><span class="tag done">已修复</span></td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="grid">
+  <!-- 3. 模块化可插拔 -->
+  <div class="card">
+    <h2><span class="n">3</span>模块化可插拔：运行时互换，架构不写死</h2>
+    <div class="lead">关键组件全部抽象为 trait 对象，运行时注入不同实现。</div>
+    <ul class="tight">
+      <li><b>专家匹配器</b>：<code>Arc&lt;dyn ExpertMatcher&gt;</code>，规则匹配器 / 模块化权重匹配器运行时互换</li>
+      <li><b>任务存储</b>：新增 <code>TaskRepository</code> trait，内存 / 文件快照（JSON 原子落盘）/ 未来数据库插拔</li>
+      <li><b>执行器桥接</b>：<code>ExecutorBridge</code> trait，HTTP 远程 / 进程内 / Noop 三种实现</li>
+      <li><b>配置子系统</b>：<code>ConfigEngine</code> + <code>MemoryConfigStore</code> + 10 个内置领域专家 + <code>ConfigSynchronizer</code> 权重热同步，全部接入 server 装配</li>
+      <li><b>SDK</b>：从全 Stub 落地为真实 HTTP 客户端（任务 / 状态 / 专家搜索 / 健康检查）</li>
+    </ul>
+  </div>
+
+  <!-- 4. 企业级增强 -->
+  <div class="card">
+    <h2><span class="n">4</span>企业级增强：健壮性与可运维性</h2>
+    <ul class="tight">
+      <li><b>超时保护</b>：DAG 节点执行 <code>tokio::time::timeout</code>，超时按失败处理（防悬挂）</li>
+      <li><b>并发上限</b>：提交时校验队列容量 + <code>max_concurrent_tasks</code>，超限返回 <code>SchedulerFull</code></li>
+      <li><b>租户贯通</b>：scheduler/executor 路由均从 <code>X-Tenant-Id</code> 解析租户，替换硬编码 <code>Uuid::nil()</code></li>
+      <li><b>持久化</b>：任务状态文件快照，进程重启可恢复；环境变量 <code>ALLIANCE_TASK_STORE</code> 切换</li>
+      <li><b>LLM 密钥校验</b>：<code>is_provider_available</code> 改为按真实 API Key 判定，不再"未配置也视为可用"</li>
+      <li><b>错误码</b>：新增 <code>SchedulerUnavailable</code>，SDK 连接失败可识别</li>
+      <li><b>HTTP 超时</b>：SDK 客户端默认 30s 超时</li>
+    </ul>
+  </div>
+</div>
+
+<div class="grid">
+  <!-- 5. 验证矩阵 -->
+  <div class="card">
+    <h2><span class="n">5</span>验证矩阵：编译 + 测试全绿</h2>
+    <div class="lead">所有验证在 Windows + rustc 1.98.0-nightly 实际执行。测试覆盖：融合权重语义、专家匹配、DAG 取消/超时/重试、配置同步、存储持久化、集成端到端。</div>
+    <table>
+      <tr><th>Crate</th><th>cargo check</th><th>测试结果</th></tr>
+      <tr><td>mox-alliance-common-proto</td><td><span class="tag ok">OK</span></td><td>通过</td></tr>
+      <tr><td>mox-alliance-scheduler-proto</td><td><span class="tag ok">OK</span></td><td>通过</td></tr>
+      <tr><td>mox-alliance-executor-proto</td><td><span class="tag ok">OK</span></td><td>通过</td></tr>
+      <tr><td>mox-alliance-api</td><td><span class="tag ok">OK</span></td><td>—</td></tr>
+      <tr><td>mox-alliance-core</td><td><span class="tag ok">OK</span></td><td>—</td></tr>
+      <tr><td>mox-alliance-config-core</td><td><span class="tag ok">OK</span></td><td><b>7 passed</b></td></tr>
+      <tr><td>mox-alliance-scheduler-core</td><td><span class="tag ok">OK</span></td><td><b>62 passed</b>（含取消/存储/融合）</td></tr>
+      <tr><td>mox-alliance-executor-core</td><td><span class="tag ok">OK</span></td><td><b>17 passed</b>（含集成端到端）</td></tr>
+      <tr><td>mox-alliance-scheduler-svc</td><td><span class="tag ok">OK</span></td><td>—</td></tr>
+      <tr><td>mox-alliance-executor-svc</td><td><span class="tag ok">OK</span></td><td>—</td></tr>
+      <tr><td>mox-alliance-sdk</td><td><span class="tag ok">OK</span></td><td>—</td></tr>
+    </table>
+  </div>
+
+  <!-- 6. 剩余建议 -->
+  <div class="card">
+    <h2><span class="n">6</span>剩余建议（P2，不在本次范围）</h2>
+    <table>
+      <tr><th style="width:44%">建议项</th><th>说明</th></tr>
+      <tr><td>数据库存储实现</td><td><code>TaskRepository</code> 已抽象，可接 Postgres/Redis；文件快照为全量写，超高吞吐建议 DB</td></tr>
+      <tr><td>重试策略完善</td><td>执行器侧已有 <code>with_default_max_retries</code>，可接入退避策略与熔断</td></tr>
+      <tr><td>可观测性</td><td>接入 tracing 指标 / OpenTelemetry，任务耗时与队列水位上报</td></tr>
+      <tr><td>鉴权</td><td>路由已按租户贯通，可叠加 API Key / JWT 中间件</td></tr>
+      <tr><td>外部模块告警</td><td>workspace 中 kg / arch-test / ai-* 域存在既有编译错误，与 alliance 无关，建议另行处理</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="foot">专家联盟（MOX Alliance）· 架构修复报告 · 2026-08-31 · 全维全链路 / 企业级 / 模块化可插拔</div>
+</div>
+</body>
+</html>

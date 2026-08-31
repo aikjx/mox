@@ -46,6 +46,8 @@ pub struct PlanGenerationRequest {
     pub preferred_mode: Option<AllianceMode>,
     pub preferred_experts: Vec<String>,
     pub constraints: serde_json::Value,
+    /// 任务级融合策略（不再被计划生成器硬编码覆盖）
+    pub fusion_strategy: FusionStrategy,
 }
 
 /// 计划生成响应

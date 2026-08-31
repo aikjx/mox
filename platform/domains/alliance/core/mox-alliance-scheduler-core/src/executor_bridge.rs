@@ -67,7 +67,7 @@ pub struct HttpExecutorBridgeConfig {
 impl Default for HttpExecutorBridgeConfig {
     fn default() -> Self {
         Self {
-            base_url: "http://localhost:8081".to_string(),
+            base_url: "http://localhost:8082".to_string(),
             timeout_ms: 30_000,
         }
     }
@@ -254,6 +254,7 @@ impl ExecutorBridge for HttpExecutorBridge {
             failed_nodes: status_resp.failed_nodes,
             pending_nodes: status_resp.pending_nodes,
             skipped_nodes: status_resp.skipped_nodes.unwrap_or(0),
+            cancelled_nodes: status_resp.cancelled_nodes.unwrap_or(0),
             progress: status_resp.progress,
             started_at: status_resp.started_at,
             estimated_remaining_ms: None,
@@ -333,6 +334,7 @@ struct ExecutionStatusResponse {
     failed_nodes: usize,
     pending_nodes: usize,
     skipped_nodes: Option<usize>,
+    cancelled_nodes: Option<usize>,
     started_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
@@ -452,6 +454,7 @@ impl ExecutorBridge for NoopExecutorBridge {
             failed_nodes: 0,
             pending_nodes: 0,
             skipped_nodes: 0,
+            cancelled_nodes: 0,
             progress: 0.0,
             started_at: None,
             estimated_remaining_ms: None,
@@ -627,6 +630,7 @@ pub mod tests {
                 failed_nodes: 0,
                 pending_nodes: 0,
                 skipped_nodes: 0,
+                cancelled_nodes: 0,
                 progress: 0.0,
                 started_at: None,
                 estimated_remaining_ms: None,
@@ -723,6 +727,7 @@ pub mod tests {
             failed_nodes: 0,
             pending_nodes: 2,
             skipped_nodes: 0,
+            cancelled_nodes: 0,
             progress: 0.4,
             started_at: None,
             estimated_remaining_ms: None,

@@ -665,7 +665,7 @@ fn make_expert_config(
     module_id: &str,
     expert_id: &str,
     name: &str,
-    description: &str,
+    _description: &str,
     llm_config: ModuleLlmConfig,
     tags: Vec<String>,
 ) -> ExpertModuleConfig {
@@ -674,7 +674,6 @@ fn make_expert_config(
         expert_id: expert_id.to_string(),
         name: name.to_string(),
         version: "1.0.0".to_string(),
-        description: Some(description.to_string()),
         llm_config,
         graph_config: ModuleGraphConfig {
             module_id: module_id.to_string(),

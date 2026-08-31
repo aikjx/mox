@@ -366,6 +366,7 @@ impl DagEngineImpl {
         let failed = nodes.iter().filter(|n| n.status == NodeStatus::Failed).count();
         let pending = nodes.iter().filter(|n| n.status == NodeStatus::Pending || n.status == NodeStatus::Ready).count();
         let skipped = nodes.iter().filter(|n| n.status == NodeStatus::Skipped).count();
+        let cancelled = nodes.iter().filter(|n| n.status == NodeStatus::Cancelled).count();
 
         ExecutionStatus {
             task_id: state.task.task_id,
@@ -375,6 +376,7 @@ impl DagEngineImpl {
             failed_nodes: failed,
             pending_nodes: pending,
             skipped_nodes: skipped,
+            cancelled_nodes: cancelled,
             progress: state.task.progress,
             started_at: state.task.started_at,
             estimated_remaining_ms: None,
