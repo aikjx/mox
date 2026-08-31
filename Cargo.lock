@@ -3513,6 +3513,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-ai-expert-proto"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "mox-error",
+ "mox-platform-foundation",
+ "serde",
+ "serde_json",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "mox-ai-expert-svc"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -3525,6 +3540,7 @@ dependencies = [
  "hmac",
  "hostname",
  "http",
+ "mox-ai-expert-proto",
  "mox-ai-flow-svc",
  "mox-kg-sdk",
  "mox-platform-foundation",
@@ -3600,6 +3616,23 @@ dependencies = [
  "serde_json",
  "toml",
  "walkdir",
+]
+
+[[package]]
+name = "mox-audit"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "chrono",
+ "hex",
+ "hmac",
+ "mox-error",
+ "mox-platform-foundation",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]

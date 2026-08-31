@@ -1,0 +1,50 @@
+[package]
+name = "mox-ai-expert-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "璇玑 · 十四维专家引擎核心（P2 架构解耦阶段 4）：归一化 IR + 并行专家 + 裁决器 + 验证器 + 治理闸门 + 管线"
+
+[dependencies]
+# L5 领域协议层（DIP：core 依赖 proto，proto 不依赖 core）
+mox-ai-expert-proto = { workspace = true }
+# 流程引擎（FlowGraph 模型 + 优化求解器）
+mox-ai-flow-svc = { workspace = true }
+# 平台基础（CrateMeta / AisLayer 等）
+mox-platform-foundation = { workspace = true }
+# 统一错误
+mox-error = { workspace = true }
+# 统一审计（SHA-256 哈希链 + 多 Sink，替代原 AuditChain 的 DefaultHasher）
+mox-audit = { workspace = true }
+
+# 序列化
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# 错误处理
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# 并行计算（十四位专家真并行派发）
+rayon = { workspace = true }
+
+# 异步 trait（用于实现 proto 中的 async trait）
+async-trait = { workspace = true }
+
+# 时间
+chrono = { workspace = true }
+
+# UUID
+uuid = { workspace = true, features = ["serde", "v4"] }
+
+# tokio（proto trait 的 async 方法需要 runtime）
+tokio = { workspace = true }
+
+# 日志
+tracing = { workspace = true }
+
+[features]
+default = ["rayon"]
+# 并行咨询（真并行）：关闭则退化为顺序单线程，API 不变
+rayon = []

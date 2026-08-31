@@ -1,0 +1,22 @@
+[package]
+name = "mox-rbac-engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "MOX 平台级 RBAC 权限引擎 — 资源级粒度、角色继承链、审计集成"
+
+[dependencies]
+mox-error = { workspace = true, optional = true }
+mox-audit = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+tracing = { workspace = true, optional = true }
+
+[features]
+default = []
+# 集成 mox-error 统一错误码
+mox-error = ["dep:mox-error"]
+# 集成 mox-audit 审计（权限拒绝自动产生审计事件）
+audit = ["dep:mox-audit", "dep:tracing"]
+# 序列化支持
+serde = ["dep:serde"]

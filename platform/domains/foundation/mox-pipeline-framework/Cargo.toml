@@ -1,0 +1,27 @@
+[package]
+name = "mox-pipeline-framework"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "MOX 平台级管线框架 — 统一阶段编排、上下文流转、钩子机制、审计基础设施"
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+uuid = { workspace = true, features = ["v4", "serde"] }
+chrono = { workspace = true, features = ["serde", "clock"] }
+sha2 = { workspace = true }
+tracing = { workspace = true }
+mox-error = { workspace = true, optional = true }
+mox-audit = { workspace = true, optional = true }
+async-trait = { workspace = true, optional = true }
+
+[features]
+default = []
+# 集成 mox-error 统一错误码
+mox-error = ["dep:mox-error"]
+# 集成 mox-audit 审计（阶段事件自动审计 + 外部 Sink 桥接）
+audit = ["dep:mox-audit"]
+# 异步管线支持（默认同步，启用后可用 AsyncPipeline）
+async = ["dep:async-trait"]

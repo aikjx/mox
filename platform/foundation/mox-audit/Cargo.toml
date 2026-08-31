@@ -1,0 +1,26 @@
+[package]
+name = "mox-audit"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "MOX 平台级审计基础设施 — 统一审计事件模型、哈希链、多 Sink 分发（Syslog/S3）"
+
+[dependencies]
+mox-error = { workspace = true }
+mox-platform-foundation = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+hmac = { workspace = true }
+hex = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true, features = ["serde", "v4"] }
+tracing = { workspace = true }
+
+# S3 审计后端：真实 HTTP(S) 上传（SigV4 签名手写）
+reqwest = { workspace = true, features = ["blocking"], optional = true }
+
+[features]
+default = ["s3-sink"]
+s3-sink = ["dep:reqwest"]

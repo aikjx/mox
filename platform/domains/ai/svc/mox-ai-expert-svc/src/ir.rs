@@ -7,72 +7,24 @@
 //!
 //! 设计铁律：四种流程图（业务/算法/权限/资源）在内存里是**同一个 FlowGraph**，
 //! 维度只是节点/边上的标签。物理节点唯一，因此「改一处，全维同步」天然成立。
+//!
+//! P2 架构解耦 · 阶段 1.5：
+//! - `Dimension` / `DimensionTag` / `ExpertId` / `PolicyId` 已迁移至
+//!   `mox-ai-expert-proto`，本模块通过 re-export 保持对外 100% 兼容。
+//! - `DimensionedFlow` / `CodeIR` / `auto_dimension()` 等保留在本地
+//!   （依赖 FlowGraph，属引擎 IR 扩展层）。
+//! - 注意：`Dimension::priority()` 返回类型从 `u8` 调整为 `i32`（与 SSOT 常量对齐），
+//!   所有比较/排序用法不受影响；若有代码强依赖 `u8`，请改用 `as u8` 转换。
 
 use mox_ai_flow_svc::model::{FlowGraph, NodeKind, ToolKind};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-/// 七个优化维度（璇玑的七个镜头）
-///
-/// 业务七维（分析 FlowGraph）+ 开发七维（分析 CodeIR）= 共十四专家，
-/// 复用同一 `Expert` 引擎 / `reconcile` 裁决 / `verify` 验证 / `govern` 闸门 / SHA-256 审计链。
-/// 业务与开发璇玑**非冗余、互补**：前者管「做什么/是否合规」，后者管「怎么做/是否优质」。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Dimension {
-    // ---- 业务七维（分析流程图）----
-    Business,
-    Algorithm,
-    Permission,
-    Resource,
-    Security,
-    Data,
-    Observability,
-    // ---- 开发七维（分析代码）----
-    Architecture,
-    SecurityCode,
-    CodeQuality,
-    Performance,
-    Testing,
-    Documentation,
-    Maintainability,
-}
+// ---------------------------------------------------------------------------
+// 领域协议类型：从 mox-ai-expert-proto 重新导出（SSOT 单一真相源）
+// ---------------------------------------------------------------------------
 
-impl Dimension {
-    /// 全维裁决时的优先级权重：值越大越优先被采纳（权限/安全不可被性能绕过）。
-    /// 单一数据源：`crate::DIM_PRIORITY`（集中常量，避免散落魔法数字）。
-    pub fn priority(&self) -> u8 {
-        crate::dim_priority(*self) as u8
-    }
-
-    /// 是否为「开发璇玑」维度（分析代码，而非流程图）
-    pub fn is_code_dimension(&self) -> bool {
-        matches!(
-            self,
-            Dimension::Architecture
-                | Dimension::SecurityCode
-                | Dimension::CodeQuality
-                | Dimension::Performance
-                | Dimension::Testing
-                | Dimension::Documentation
-                | Dimension::Maintainability
-        )
-    }
-
-    /// 是否为「业务璇玑」维度（分析流程图）
-    pub fn is_business_dimension(&self) -> bool {
-        matches!(
-            self,
-            Dimension::Business
-                | Dimension::Algorithm
-                | Dimension::Permission
-                | Dimension::Resource
-                | Dimension::Security
-                | Dimension::Data
-                | Dimension::Observability
-        )
-    }
-}
+pub use mox_ai_expert_proto::{Dimension, DimensionTag, ExpertId, PolicyId};
 
 /// 代码中间表示：开发璇玑的分析对象（对应业务流程图的 FlowGraph）
 ///
@@ -146,16 +98,6 @@ impl CodeIR {
     }
 }
 
-/// 节点上的维度着色
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DimensionTag {
-    pub dimension: Dimension,
-    pub owner_expert: ExpertId,
-    pub policy_refs: Vec<PolicyId>,
-    /// 该维度在此节点的相对重要性 0..1
-    pub weight: f64,
-}
-
 /// 扩展后的流程图：持有原始 mox_ai_flow_svc 图 + 维度标注
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DimensionedFlow {
@@ -186,11 +128,6 @@ impl DimensionedFlow {
             .unwrap_or(&[])
     }
 }
-
-/// 专家标识
-pub type ExpertId = String;
-/// 策略标识
-pub type PolicyId = String;
 
 /// 把业务/算法/权限/资源四类图的语义标签挂到归一化图上。
 ///

@@ -34,6 +34,7 @@ members = [
     "platform/foundation/mox-platform-observability",
     "platform/foundation/mox-platform-paths",
     "platform/foundation/mox-error",
+    "platform/foundation/mox-audit",
     "platform/domains/data/api",
     "platform/domains/ai/api",
     "platform/domains/kg/api",
@@ -65,6 +66,7 @@ members = [
     "platform/domains/platform/core/mox-platform-iam-core",
     "platform/domains/platform/core/mox-platform-meta-core",
     "platform/domains/ai/core/mox-ai-core",
+    "platform/domains/ai/proto/mox-ai-expert-proto",
     "platform/domains/kg/svc/mox-kg-storage-svc",
     "platform/domains/kg/svc/mox-kg-service-svc",
     "platform/domains/kg/svc/mox-kg-streams-svc",
@@ -206,12 +208,14 @@ mox-cloud-foundation = { path = "platform/foundation/mox-cloud-foundation" }
 mox-platform-observability = { path = "platform/foundation/mox-platform-observability" }
 mox-platform-paths = { path = "platform/foundation/mox-platform-paths" }
 mox-error = { path = "platform/foundation/mox-error" }
-# Core 灞?
+mox-audit = { path = "platform/foundation/mox-audit" }
+# Core 层灞?
 mox-data-formula-core = { path = "platform/domains/data/core/mox-data-formula-core" }
 mox-data-norm-core = { path = "platform/domains/data/core/mox-data-norm-core" }
 mox-data-standards-core = { path = "platform/domains/data/core/mox-data-standards-core" }
 mox-ai-intent-core = { path = "platform/domains/ai/core/mox-ai-intent-core" }
 mox-ai-core = { path = "platform/domains/ai/core/mox-ai-core" }
+mox-ai-expert-proto = { path = "platform/domains/ai/proto/mox-ai-expert-proto" }
 mox-voice-dsp-core = { path = "platform/domains/voice/core/mox-voice-dsp-core" }
 mox-flow-operator-core = { path = "platform/domains/flow/core/mox-flow-operator-core" }
 mox-flow-optimizer-core = { path = "platform/domains/flow/core/mox-flow-optimizer-core" }

@@ -8,6 +8,7 @@ description = "璇玑 · 全维处理工具流程图：七位专家并行诊断 
 
 [dependencies]
 mox-platform-foundation = { workspace = true }
+mox-ai-expert-proto = { workspace = true }
 mox-ai-flow-svc = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

@@ -10,55 +10,12 @@
 //!
 //! 通过把 GovernContext + GovernExpert 抽成 trait，下游可在测试中用
 //! `MockGovernContext + MockGovernExpert` 脱离真实引擎做轻量 DIP 验证。
+//!
+//! 注：`GovernLevel` / `GovernVerdict` 等值类型已迁移至 `crate::types`，
+//! 本模块只保留 trait 抽象与最小/Mock 实现。
 
+use crate::types::{GovernLevel, GovernVerdict};
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
-use std::fmt;
-
-// ============================================================================
-// GovernLevel / GovernVerdict — 治理裁决值类型
-// ============================================================================
-
-/// 治理等级
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum GovernLevel {
-    Pass,
-    Warn,
-    Block,
-}
-
-/// 治理裁决：治理专家的输出值对象
-///
-/// 这是一个纯值类型，可以脱离 concrete 实现使用。
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GovernVerdict {
-    pub level: GovernLevel,
-    pub score: f64,
-    pub reasons: Vec<String>,
-    pub gate_id: String,
-}
-
-impl Default for GovernVerdict {
-    fn default() -> Self {
-        Self {
-            level: GovernLevel::Pass,
-            score: 1.0,
-            reasons: Vec::new(),
-            gate_id: "default".into(),
-        }
-    }
-}
-
-impl fmt::Display for GovernVerdict {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "[{:?}] score={:.3} gate={} reasons={}",
-            self.level, self.score, self.gate_id, self.reasons.len()
-        )
-    }
-}
 
 // ============================================================================
 // GovernContext — 治理上下文只读抽象
@@ -81,9 +38,9 @@ pub trait GovernContext: Send + Sync {
     fn is_regulated(&self) -> bool;
     /// 并行度上限（专家治理时约束算子并发）
     fn max_parallel(&self) -> u32;
-    /// 总费用预算（治理时否决超限方案）
+    /// 总费用预算（治理时否决超限方案）。
     fn cost_budget(&self) -> f64;
-    /// SLA 耗时上限（毫秒）
+    /// SLA 耗时上限（毫秒）。
     fn sla_ms(&self) -> u64;
 }
 
@@ -99,8 +56,8 @@ pub trait GovernContext: Send + Sync {
 /// trait 方法命名 `govern()` 与 concrete 函数同名，
 /// 但对外通过 trait 调用，避免下游反向依赖内部模块。
 ///
-/// 注意：这里用 `&dyn GovernContext` 而不是具体类型，
-/// 实现 DIP：GovernExpert 不依赖具体上下文实现。
+/// 注意：这里用 `&dyn std::any::Any` 而不是具体 FlowGraph 类型，
+/// 实现 DIP：GovernExpert 不依赖具体流程图实现。
 #[async_trait]
 pub trait GovernExpert: Send + Sync {
     async fn govern(&self, graph: &dyn std::any::Any, ctx: &dyn GovernContext) -> GovernVerdict;
@@ -218,13 +175,5 @@ mod tests {
         let verdict = expert.govern_blocking(&(), &MinimalGovernContext::default());
         assert_eq!(verdict.level, GovernLevel::Pass);
         assert!((verdict.score - 1.0).abs() < 1e-9);
-    }
-
-    #[test]
-    fn verdict_display_format() {
-        let v = GovernVerdict::default();
-        let s = format!("{}", v);
-        assert!(s.contains("Pass"));
-        assert!(s.contains("default"));
     }
 }

@@ -12,9 +12,11 @@
 //! - **零具体实现**：本 crate 只定义类型、trait 和常量，不含任何业务逻辑
 //!
 //! ## 模块结构
-//! - [`types`] — 领域值类型（Dimension, ExpertMeta, ConsultQuery...）
-//! - [`traits`] — 领域抽象 trait（ExpertRegistry, ExpertConsultant...）
-//! - [`domain`] — 治理领域抽象（GovernContext, GovernExpert, GovernVerdict）
+//! - [`types`] — 领域值类型（Dimension, ExpertOpinion, Constraint, Risk, Suggestion,
+//!   ExpertMeta, ConsultQuery, ConsultReport, TaskSpec, RoutingDecision,
+//!   GovernLevel, GovernVerdict, Severity, ModelTier...）
+//! - [`traits`] — 领域抽象 trait（ExpertRegistry, ExpertConsultant, AllianceOrchestrator）
+//! - [`domain`] — 治理领域抽象（GovernContext, GovernExpert trait + Minimal/Mock 实现）
 //! - [`error`] — 统一错误类型（基于 mox-error 的专家域错误码）
 //! - [`events`] — 领域事件协议
 //! - [`constants`] — SSOT 常量（维度优先级、门槛、权重等）
@@ -40,17 +42,18 @@ pub mod types;
 
 // ─── 重导出（方便下游使用） ────────────────────────────────────────────────
 
-// 核心类型
+// 核心领域类型
 pub use types::{
-    ConsultQuery, ConsultReport, Dimension, DimensionTag, DimensionedFlow, ExpertMeta,
-    RoutingDecision, TaskSpec,
+    ConsultQuery, ConsultReport, Constraint, Dimension, DimensionTag, ExpertId, ExpertMeta,
+    ExpertOpinion, GovernLevel, GovernVerdict, ModelTier, NodeEdge, PolicyId, Risk,
+    RoutingDecision, Severity, Suggestion, TaskSpec,
 };
 
 // trait 抽象
 pub use traits::{AllianceOrchestrator, ExpertConsultant, ExpertRegistry};
 
-// 治理抽象
-pub use domain::{GovernContext, GovernExpert, GovernLevel, GovernVerdict, MinimalGovernContext};
+// 治理抽象（trait + 最小/Mock 实现）
+pub use domain::{GovernContext, GovernExpert, MinimalGovernContext, MockGovernExpert};
 
 // 统一错误
 pub use error::{ExpertError, ExpertResult};
@@ -60,8 +63,8 @@ pub use events::ExpertDomainEvent;
 
 // SSOT 常量 & 便捷函数
 pub use constants::{
-    dim_priority, dim_threshold, CONFLICT_ESCALATE_PRIORITY_GAP, DIM_PRIORITY, DIM_THRESHOLD,
-    NORMALIZATION_WEIGHTS,
+    dim_priority, dim_threshold, dim_weight, CONFLICT_ESCALATE_PRIORITY_GAP, DIM_PRIORITY,
+    DIM_THRESHOLD, NORMALIZATION_WEIGHTS,
 };
 
 // ─── Crate 元数据 ──────────────────────────────────────────────────────────

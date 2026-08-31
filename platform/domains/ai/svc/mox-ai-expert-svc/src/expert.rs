@@ -7,6 +7,14 @@
 //!
 //! 每位专家无状态、只读分析，输出 `ExpertOpinion`，由裁决器归一合并。
 //! 专家之间互不调用，保证可并行派发。
+//!
+//! P2 架构解耦 · 阶段 1.5 说明：
+//! - `Dimension` / `ExpertId` / `PolicyId` 已从 `mox-ai-expert-proto` 导入（通过 ir 模块 re-export）。
+//! - `ExpertOpinion` / `Constraint` / `Risk` / `Suggestion` / `NodeEdge` 暂保留本地定义，
+//!   原因：当前使用 `mox_ai_flow_svc::model::Severity` 和 `mox_ai_flow_svc::schedule::ModelTier`，
+//!   与 proto 中独立定义的同名类型分属不同 crate，直接替换会破坏 100% 兼容承诺。
+//!   将在后续阶段（flow-svc 也迁移至 proto 类型后）统一迁移。
+//! - `Expert` trait 与 `dispatch` 函数保留本地（属引擎核心逻辑，不属领域协议范畴）。
 
 use crate::context::ExpertContext;
 use crate::ir::{Dimension, ExpertId, PolicyId};
