@@ -11,14 +11,16 @@
 //!
 //! 所有硬编码参数见 [`constants`]（HC-2/HC-5/HC-8/HC-9 锁死常量）。
 
+pub mod algorithm;
 pub mod constants;
 pub mod debate;
 pub mod gate;
 pub mod intent;
 pub mod kg_connector;
+pub mod orchestration;
 pub mod team;
 
-use self::constants::{PHASE_NAMES, QUALITY_FORMULA};
+use self::constants::PHASE_NAMES;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;

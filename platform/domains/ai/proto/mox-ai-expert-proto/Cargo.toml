@@ -1,0 +1,21 @@
+[package]
+name = "mox-ai-expert-proto"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "璇玑专家服务 · 协议层（领域类型 + trait 抽象 + 统一错误 + 统一事件）"
+
+[dependencies]
+mox-platform-foundation = { workspace = true }
+mox-error = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+uuid = { workspace = true, features = ["serde", "v4"] }
+chrono = { workspace = true, features = ["serde"] }
+
+[features]
+default = []
+# 启用完整审计事件类型（依赖 mox-audit）；关闭则用轻量投影
+full-audit = []

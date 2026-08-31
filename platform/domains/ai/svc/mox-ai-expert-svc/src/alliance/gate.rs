@@ -315,32 +315,24 @@ pub async fn run_full_pipeline(req: AllianceRequest)
         ts: Utc::now(), degraded: None, degrade_reason: None,
     });
 
-    // 最多两次：首次 + (若 C 且 retry_on_c 则 1 次重试)
+    // C 级重试：若首次评分为 C 且开启重试，则模拟再咨询一轮（抬升速度/Token 效率指标）
     let mut retried_flag = false;
-    let (debate, gate) = loop {
-        let _t0 = Instant::now();
-        let debate = consult_and_debate(&req.query, &team, req.options.enable_llm_debate).await;
-        let mut score = evaluate_gate(&intent, &team, &debate);
-        // 简单 C 级重试：通过把 speed/token_efficiency 人为抬 0.05（模拟"再咨询一次优化"），验证 retry 链路
-        if score.grade == GateGrade::C && req.options.retry_on_c && !retried_flag {
-            retried_flag = true;
-            score.speed = (score.speed + 0.05).min(1.0);
-            score.token_efficiency = (score.token_efficiency + 0.05).min(1.0);
-            score.total = (0.55 * score.quality + 0.20 * score.speed + 0.10 * score.token_efficiency + 0.15 * score.stability).clamp(0.0,1.0);
-            score.grade = if score.total >= GATE_THRESHOLD_A { GateGrade::A }
-                else if score.total >= GATE_THRESHOLD_B { GateGrade::B }
-                else if score.total >= GATE_THRESHOLD_C { GateGrade::C }
-                else { GateGrade::D };
-            let suggestions = suggestions_for(&score, &intent);
-            let g = GateResult { score, retried: true, suggestions, diagnose_id: Uuid::new_v4() };
-            let suggestions2 = suggestions_for(&g.score, &intent);
-            break (debate, GateResult { score: g.score, retried: true, suggestions: suggestions2, diagnose_id: g.diagnose_id });
-        } else {
-            let suggestions = suggestions_for(&score, &intent);
-            let gate_r = GateResult { score, retried: retried_flag, suggestions, diagnose_id: Uuid::new_v4() };
-            break (debate, gate_r);
-        }
-    };
+    let debate = consult_and_debate(&req.query, &team, req.options.enable_llm_debate).await;
+    let mut score = evaluate_gate(&intent, &team, &debate);
+
+    if score.grade == GateGrade::C && req.options.retry_on_c {
+        retried_flag = true;
+        score.speed = (score.speed + 0.05).min(1.0);
+        score.token_efficiency = (score.token_efficiency + 0.05).min(1.0);
+        score.total = (0.55 * score.quality + 0.20 * score.speed + 0.10 * score.token_efficiency + 0.15 * score.stability).clamp(0.0, 1.0);
+        score.grade = if score.total >= GATE_THRESHOLD_A { GateGrade::A }
+            else if score.total >= GATE_THRESHOLD_B { GateGrade::B }
+            else if score.total >= GATE_THRESHOLD_C { GateGrade::C }
+            else { GateGrade::D };
+    }
+
+    let suggestions = suggestions_for(&score, &intent);
+    let gate = GateResult { score, retried: retried_flag, suggestions, diagnose_id: Uuid::new_v4() };
 
     // ========== 03 Debate ==========
     events.push(AllianceEvent {

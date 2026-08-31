@@ -3,7 +3,7 @@
 //          二级功能通过页面内 Tabs 访问
 //          三级低频功能通过全局搜索 (Ctrl+K) 和 AI 对话访问
 
-// ===== 一级导航模块（3 大域 × 10 个模块）=====
+// ===== 一级导航模块（3 大域 × 11 个模块）=====
 export const NAV_MODULES = [
   // —— 项目域 ——
   { key: 'dashboard', label: '工作台', icon: 'Odometer', path: '/dashboard', color: '#4f46e5', bg: '#eef2ff' },
@@ -15,7 +15,10 @@ export const NAV_MODULES = [
   { key: 'graph', label: '知识图谱', icon: 'Share', path: '/graph', color: '#06b6d4', bg: '#ecfeff' },
   { key: 'operators', label: '算子引擎', icon: 'Cpu', path: '/operators', color: '#6366f1', bg: '#eef2ff' },
   { key: 'workflow', label: '工作流', icon: 'Operation', path: '/workflow', color: '#f59e0b', bg: '#fffbeb' },
-  { key: 'expert-center', label: '专家联盟', icon: 'User', path: '/expert-center', color: '#7c3aed', bg: '#ede9fe' },
+  // 专家联盟工作台（用户主入口）
+  { key: 'expert-workspace', label: '专家联盟', icon: 'User', path: '/expert-workspace', color: '#7c3aed', bg: '#ede9fe' },
+  // 专家联盟管理后台（管理入口）
+  { key: 'expert-center', label: '联盟管理', icon: 'Setting', path: '/expert-center', color: '#8b5cf6', bg: '#f5f3ff' },
 
   // —— 生态与管理 ——
   { key: 'market', label: '算子商城', icon: 'Shop', path: '/market', color: '#f43f5e', bg: '#ffe4e6' },
@@ -25,7 +28,7 @@ export const NAV_MODULES = [
 // ===== 侧边栏导航分组（3 大域）=====
 export const NAV_GROUPS = [
   { key: 'project',  label: '项目域',   order: 0, items: ['dashboard', 'tasks', 'resources'] },
-  { key: 'capability', label: '能力域', order: 1, items: ['ai', 'graph', 'operators', 'workflow', 'expert-center'] },
+  { key: 'capability', label: '能力域', order: 1, items: ['ai', 'graph', 'operators', 'workflow', 'expert-workspace', 'expert-center'] },
   { key: 'ecosystem',  label: '生态与管理', order: 2, items: ['market', 'admin'] }
 ]
 
@@ -69,10 +72,20 @@ export const SUB_MODULES = {
     { key: 'automation', label: '自动化', path: '/workflow/automation' },
     { key: 'browser', label: '浏览器自动化', path: '/browser' }
   ],
+  // 专家联盟工作台（用户主入口）的二级模块
+  'expert-workspace': [
+    { key: 'collaboration', label: '专家协作', path: '/expert-workspace' },
+    { key: 'exploration', label: '知识探索', path: '/expert-workspace?mode=exploration' },
+    { key: 'orchestration', label: '任务编排', path: '/expert-workspace?mode=orchestration' },
+    { key: 'analysis', label: '深度分析', path: '/expert-workspace?mode=analysis' },
+    { key: 'expert-center', label: '联盟管理', path: '/expert-center' }
+  ],
+  // 专家联盟管理后台的二级模块
   'expert-center': [
     { key: 'overview', label: '联盟总览', path: '/expert-center' },
     { key: 'enterprise', label: '企业管理', path: '/expert-center/enterprise' },
-    { key: 'orchestrator', label: '编排引擎', path: '/expert-center/orchestrator' }
+    { key: 'orchestrator', label: '编排引擎', path: '/expert-center/orchestrator' },
+    { key: 'workspace', label: '返回工作台', path: '/expert-workspace' }
   ],
 
   // —— 生态与管理 ——
@@ -116,6 +129,23 @@ export const QUICK_CREATE_COMMANDS = [
   { key: 'market',     label: '上传算子包',   icon: 'Shop',        tip: 'S4 注册算子',         action: 'route', route: '/market', query: { action: 'upload' } }
 ]
 
+// ===== 工作台快捷导航（ExpertWorkspace 专用）=====
+// 专家联盟工作台内的快捷入口卡片
+export const EXPERT_WORKSPACE_QUICK_NAV = [
+  { key: 'graph', label: '知识图谱', path: '/graph', icon: 'Share', desc: '图谱探索与分析', color: '#06b6d4' },
+  { key: 'knowledge', label: '知识库', path: '/resources/knowledge', icon: 'Coin', desc: '文档与知识管理', color: '#10b981' },
+  { key: 'expert-center', label: '联盟管理', path: '/expert-center', icon: 'Setting', desc: '专家管理配置', color: '#8b5cf6' },
+  { key: 'ai', label: 'AI 对话', path: '/ai', icon: 'ChatDotRound', desc: '通用 AI 助手', color: '#ec4899' }
+]
+
+// ===== 工作台快捷操作（ExpertWorkspace 专用）=====
+export const EXPERT_WORKSPACE_QUICK_ACTIONS = [
+  { key: 'register-expert', label: '注册专家', icon: 'Plus', desc: '添加新的领域专家', color: '#7c3aed' },
+  { key: 'new-debate', label: '发起辩论', icon: 'Aim', desc: '多专家观点碰撞', color: '#ef4444' },
+  { key: 'multi-consult', label: '多专家咨询', icon: 'User', desc: '协同解答复杂问题', color: '#06b6d4' },
+  { key: 'algo-analysis', label: '算法分析', icon: 'DataAnalysis', desc: '图谱与数据分析', color: '#f59e0b' }
+]
+
 // ===== 快捷键分组（Shift + ? 弹 Drawer 展示给用户）=====
 export const HOTKEY_GROUPS = [
   {
@@ -135,6 +165,15 @@ export const HOTKEY_GROUPS = [
       { keys: ['Enter'], desc: '提交聚焦中的表单 / 搜索（已在 10+ 页面启用）' },
       { keys: ['Ctrl', 'Enter'], desc: 'AI 场景下提交长文本（Chat / Automation 中）' },
       { keys: ['⌫ / Backspace'], desc: '在列表内清空筛选（需列表聚焦）' }
+    ]
+  },
+  {
+    group: '专家联盟工作台',
+    items: [
+      { keys: ['Ctrl', 'E'], desc: '打开专家联盟工作台' },
+      { keys: ['Ctrl', '⇧', 'D'], desc: '发起专家辩论' },
+      { keys: ['Ctrl', '⇧', 'M'], desc: '多专家协同咨询' },
+      { keys: ['Ctrl', '⇧', 'R'], desc: '智能路由匹配专家' }
     ]
   }
 ]

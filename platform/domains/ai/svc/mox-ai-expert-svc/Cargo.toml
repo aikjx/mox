@@ -30,6 +30,9 @@ tracing = { workspace = true }
 # S3 审计后端：真实 HTTP(S) 上传（SigV4 签名手写，见 audit/s3.rs）
 reqwest = { workspace = true, features = ["blocking"] }
 async-trait = { workspace = true }
+futures-util = { workspace = true }
+# KG 图谱 SDK（进程内连接器，用于开发/测试场景）
+mox-kg-sdk = { workspace = true }
 
 [features]
 default = ["rayon"]

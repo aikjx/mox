@@ -43,7 +43,14 @@ const routes = [
   {
     path: '/resources',
     component: () => import('@/views/project/ResourcesView.vue'),
-    meta: { title: '资源管理' },
+    meta: {
+      title: '资源管理',
+      // 知识库页面可一键跳回专家工作台
+      quickNav: [
+        { key: 'expert-workspace', label: '专家工作台', path: '/expert-workspace', icon: 'User' },
+        { key: 'graph', label: '知识图谱', path: '/graph', icon: 'Share' }
+      ]
+    },
     redirect: '/resources/overview',
     children: [
       { path: '', redirect: '/resources/overview' },
@@ -57,7 +64,11 @@ const routes = [
         path: 'knowledge',
         name: 'ResourcesKnowledge',
         component: () => import('@/views/project/panels/KnowledgeBasePanel.vue'),
-        meta: { title: '知识库' }
+        meta: {
+          title: '知识库',
+          // 知识库页面快捷返回工作台
+          backTo: { path: '/expert-workspace', label: '返回工作台' }
+        }
       }
     ]
   },
@@ -123,19 +134,33 @@ const routes = [
     path: '/graph',
     name: 'Graph',
     component: () => import('@/views/graph/GraphView.vue'),
-    meta: { title: '知识图谱' }
+    meta: {
+      title: '知识图谱',
+      // 图谱页面快捷导航：可一键跳回专家工作台
+      quickNav: [
+        { key: 'expert-workspace', label: '专家工作台', path: '/expert-workspace', icon: 'User' },
+        { key: 'knowledge', label: '知识库', path: '/resources/knowledge', icon: 'Coin' }
+      ],
+      backTo: { path: '/expert-workspace', label: '返回工作台' }
+    }
   },
   {
     path: '/mox-fusion',
     name: 'MoxFusion',
     component: () => import('@/views/graph/MoxFusionView.vue'),
-    meta: { title: '全维融合' }
+    meta: {
+      title: '全维融合',
+      backTo: { path: '/expert-workspace', label: '返回工作台' }
+    }
   },
   {
     path: '/flow-graph',
     name: 'FlowGraph',
     component: () => import('@/views/graph/FlowGraph.vue'),
-    meta: { title: '流程图' }
+    meta: {
+      title: '流程图',
+      backTo: { path: '/expert-workspace', label: '返回工作台' }
+    }
   },
 
   // ===== 工作流域（嵌套路由） =====
@@ -183,19 +208,45 @@ const routes = [
     meta: { title: '浏览器自动化' }
   },
 
-  // ===== 专家联盟统一工作台 =====
+  // ===== 专家联盟统一工作台（主入口）=====
   {
     path: '/expert-workspace',
     name: 'ExpertWorkspace',
     component: () => import('@/views/workspace/ExpertWorkspaceView.vue'),
-    meta: { title: '专家联盟工作台' }
+    meta: {
+      title: '专家联盟工作台',
+      isExpertAllianceMain: true,
+      // 工作台快捷导航配置：一键直达核心模块
+      quickNav: [
+        { key: 'graph', label: '知识图谱', path: '/graph', icon: 'Share', desc: '图谱探索与分析' },
+        { key: 'knowledge', label: '知识库', path: '/resources/knowledge', icon: 'Coin', desc: '文档与知识管理' },
+        { key: 'expert-center', label: '管理后台', path: '/expert-center', icon: 'Setting', desc: '联盟管理配置' },
+        { key: 'ai', label: 'AI 对话', path: '/ai', icon: 'ChatDotRound', desc: '通用 AI 助手' }
+      ],
+      // 工作台内快捷操作
+      quickActions: [
+        { key: 'register-expert', label: '注册专家', icon: 'Plus', event: 'mox:open-register-expert' },
+        { key: 'new-debate', label: '发起辩论', icon: 'Aim', action: 'debate' },
+        { key: 'multi-consult', label: '多专家咨询', icon: 'User', action: 'multi-consult' },
+        { key: 'algo-analysis', label: '算法分析', icon: 'DataAnalysis', action: 'algorithm-analysis' }
+      ]
+    }
   },
 
-  // ===== 专家联盟（嵌套路由） =====
+  // 兼容：/expert 重定向到工作台主入口
+  { path: '/expert', redirect: '/expert-workspace' },
+  { path: '/alliance', redirect: '/expert-workspace' },
+
+  // ===== 专家联盟管理后台（嵌套路由）=====
   {
     path: '/expert-center',
     component: () => import('@/views/expert/ExpertCenterView.vue'),
-    meta: { title: '专家联盟' },
+    meta: {
+      title: '专家联盟',
+      isExpertAdmin: true,
+      // 管理后台快捷返回工作台
+      backTo: { path: '/expert-workspace', label: '返回工作台' }
+    },
     redirect: '/expert-center/overview',
     children: [
       { path: '', redirect: '/expert-center/overview' },

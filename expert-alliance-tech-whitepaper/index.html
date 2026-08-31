@@ -750,7 +750,1964 @@
       </div>
     </section>
 
-    <!-- More chapters will be added in subsequent writes -->
+    <!-- Chapter 07 -->
+    <section id="ch07" class="chapter">
+      <div class="chapter-num">07</div>
+      <h2 class="chapter-title">执行层</h2>
+      <div class="chapter-lead">
+        alliance-executor：DAG 执行引擎，驱动多专家并行协作
+      </div>
+
+      <div class="prose">
+        <h3>7.1 核心职责</h3>
+        <p>
+          <strong>alliance-executor</strong> 负责 DAG 执行计划的具体实施，是任务执行的「发动机」。
+          它管理节点调度、状态追踪、进度推送和人工干预，确保任务按计划高效执行。
+          服务完全无状态化，所有状态持久化到数据库，支持水平扩展和故障恢复。
+        </p>
+
+        <div class="executor-components">
+          <div class="exec-item">
+            <div class="exec-icon">⚙️</div>
+            <h4>DAG 执行引擎</h4>
+            <p>解析执行计划，按依赖关系调度节点，支持并行/串行/条件分支</p>
+          </div>
+          <div class="exec-item">
+            <div class="exec-icon">📊</div>
+            <h4>状态管理器</h4>
+            <p>追踪每个节点和整体任务状态，持久化到数据库，支持断点续跑</p>
+          </div>
+          <div class="exec-item">
+            <div class="exec-icon">📡</div>
+            <h4>进度推送器</h4>
+            <p>通过 WebSocket/SSE 实时推送执行进度和中间结果给前端</p>
+          </div>
+          <div class="exec-item">
+            <div class="exec-icon">👋</div>
+            <h4>人工干预接口</h4>
+            <p>支持暂停、恢复、取消、人工审核、结果修正等人机协同操作</p>
+          </div>
+        </div>
+
+        <h3>7.2 ReAct 执行循环</h3>
+        <p>
+          每个专家节点采用 <strong>ReAct（Reasoning + Acting）</strong> 执行模式，
+          通过「思考 → 行动 → 观察」的循环迭代，逐步逼近最终答案。
+          这种模式让专家的推理过程完全透明，可追溯、可审计。
+        </p>
+
+        <div class="react-loop">
+          <div class="react-step">
+            <div class="react-num">1</div>
+            <div class="react-label">Thought</div>
+            <div class="react-desc">分析当前状态，决定下一步行动方向</div>
+          </div>
+          <div class="react-arrow">→</div>
+          <div class="react-step">
+            <div class="react-num">2</div>
+            <div class="react-label">Action</div>
+            <div class="react-desc">调用工具 / 查询记忆 / 请求人类输入</div>
+          </div>
+          <div class="react-arrow">→</div>
+          <div class="react-step">
+            <div class="react-num">3</div>
+            <div class="react-label">Observation</div>
+            <div class="react-desc">获取行动结果，观察环境变化</div>
+          </div>
+          <div class="react-arrow">→</div>
+          <div class="react-step final">
+            <div class="react-num">4</div>
+            <div class="react-label">Judge</div>
+            <div class="react-desc">判断是否完成？是→输出；否→继续循环</div>
+          </div>
+        </div>
+
+        <h3>7.3 工具调用机制</h3>
+        <p>
+          专家通过统一的工具接口调用底层微服务能力。工具系统支持自动参数校验、
+          超时重试、熔断降级和结果格式化，确保调用的可靠性和一致性。
+        </p>
+
+        <div class="tool-call-flow">
+          <div class="tool-call-step">
+            <span class="tcs-num">①</span>
+            <div>
+              <strong>工具选择</strong>
+              <p>AI 根据任务描述选择合适的工具</p>
+            </div>
+          </div>
+          <div class="tool-call-step">
+            <span class="tcs-num">②</span>
+            <div>
+              <strong>参数生成</strong>
+              <p>按工具 Schema 生成调用参数</p>
+            </div>
+          </div>
+          <div class="tool-call-step">
+            <span class="tcs-num">③</span>
+            <div>
+              <strong>参数校验</strong>
+              <p>自动类型检查和格式验证</p>
+            </div>
+          </div>
+          <div class="tool-call-step">
+            <span class="tcs-num">④</span>
+            <div>
+              <strong>服务调用</strong>
+              <p>gRPC 调用底层微服务</p>
+            </div>
+          </div>
+          <div class="tool-call-step">
+            <span class="tcs-num">⑤</span>
+            <div>
+              <strong>结果格式化</strong>
+              <p>统一结果结构，错误处理</p>
+            </div>
+          </div>
+          <div class="tool-call-step">
+            <span class="tcs-num">⑥</span>
+            <div>
+              <strong>观察反思</strong>
+              <p>AI 分析结果，决定下一步</p>
+            </div>
+          </div>
+        </div>
+
+        <h3>7.4 容错与重试</h3>
+        <p>
+          执行层内置完善的容错机制，确保任务在出现异常时能够自动恢复或优雅降级。
+        </p>
+        <div class="fault-tolerance">
+          <div class="ft-item">
+            <span class="ft-icon">🔄</span>
+            <div>
+              <strong>自动重试</strong>
+              <p>指数退避策略，最多重试 N 次，适配临时性故障</p>
+            </div>
+          </div>
+          <div class="ft-item">
+            <span class="ft-icon">⏱️</span>
+            <div>
+              <strong>超时控制</strong>
+              <p>单工具调用超时、单节点超时、整体任务超时三级保护</p>
+            </div>
+          </div>
+          <div class="ft-item">
+            <span class="ft-icon">🔌</span>
+            <div>
+              <strong>熔断降级</strong>
+              <p>连续失败触发熔断，自动切换备用方案或降级处理</p>
+            </div>
+          </div>
+          <div class="ft-item">
+            <span class="ft-icon">🔙</span>
+            <div>
+              <strong>断点续跑</strong>
+              <p>服务重启后从上次断点继续执行，不重复已完成工作</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chapter 08 -->
+    <section id="ch08" class="chapter">
+      <div class="chapter-num">08</div>
+      <h2 class="chapter-title">融合层</h2>
+      <div class="chapter-lead">
+        alliance-fusion：多专家结果融合，质量评估与迭代精炼
+      </div>
+
+      <div class="prose">
+        <h3>8.1 核心职责</h3>
+        <p>
+          <strong>alliance-fusion</strong> 负责将多个专家的执行结果融合为统一的最终输出。
+          它提供 6 种融合策略，适用于不同类型的任务，并通过质量评估和迭代精炼
+          确保输出结果的可靠性和一致性。
+        </p>
+
+        <h3>8.2 六大融合策略</h3>
+
+        <div class="fusion-strategies">
+          <div class="fusion-card">
+            <div class="fusion-header">
+              <span class="fusion-num">01</span>
+              <h4>加权投票</h4>
+              <span class="fusion-tag">分类/选择</span>
+            </div>
+            <p>
+              按专家评分加权计算投票结果，适用于分类、选择、判断类任务。
+              高权重专家的意见影响力更大，最终结果由多数票决定。
+            </p>
+            <div class="fusion-formula">
+              result = argmax( Σ wᵢ × voteᵢ )
+            </div>
+          </div>
+
+          <div class="fusion-card">
+            <div class="fusion-header">
+              <span class="fusion-num">02</span>
+              <h4>置信度加权</h4>
+              <span class="fusion-tag">通用</span>
+            </div>
+            <p>
+              按各专家输出的置信度进行加权平均，适用于数值型、生成型任务。
+              置信度高的输出在最终结果中占比更大。
+            </p>
+            <div class="fusion-formula">
+              result = Σ (confidenceᵢ × outputᵢ) / Σ confidenceᵢ
+            </div>
+          </div>
+
+          <div class="fusion-card">
+            <div class="fusion-header">
+              <span class="fusion-num">03</span>
+              <h4>Stacking 融合</h4>
+              <span class="fusion-tag">生成/回归</span>
+            </div>
+            <p>
+              使用元学习器融合多专家输出，适用于复杂生成任务。
+              以各专家输出作为特征，训练一个元模型来产生最终结果。
+            </p>
+            <div class="fusion-formula">
+              result = meta_learner(output₁, output₂, ..., outputₙ)
+            </div>
+          </div>
+
+          <div class="fusion-card">
+            <div class="fusion-header">
+              <span class="fusion-num">04</span>
+              <h4>辩论融合</h4>
+              <span class="fusion-tag">推理/决策</span>
+            </div>
+            <p>
+              专家之间互相辩论、质疑和反驳，通过多轮对话收敛到最优解。
+              适用于复杂推理、决策分析等高风险任务。
+            </p>
+            <div class="fusion-formula">
+              多轮辩论 → 观点迭代 → 最终收敛
+            </div>
+          </div>
+
+          <div class="fusion-card">
+            <div class="fusion-header">
+              <span class="fusion-num">05</span>
+              <h4>Map-Reduce</h4>
+              <span class="fusion-tag">大任务拆分</span>
+            </div>
+            <p>
+              将大任务拆分为子任务，各专家并行处理（Map），
+              然后将结果汇总整合（Reduce）。适用于文档处理、数据分析等。
+            </p>
+            <div class="fusion-formula">
+              Split → Map (并行) → Reduce → Result
+            </div>
+          </div>
+
+          <div class="fusion-card">
+            <div class="fusion-header">
+              <span class="fusion-num">06</span>
+              <h4>迭代精炼</h4>
+              <span class="fusion-tag">质量优化</span>
+            </div>
+            <p>
+              基于初版结果，由审核专家进行多轮 critique 和 refine，
+              逐步提升结果质量。适用于对质量要求极高的场景。
+            </p>
+            <div class="fusion-formula">
+              Draft → Critique → Revise → Repeat → Final
+            </div>
+          </div>
+        </div>
+
+        <h3>8.3 质量评估体系</h3>
+        <p>
+          融合层内置多维度质量评估，对每个专家的输出和最终融合结果进行打分，
+          确保交付结果的可靠性。
+        </p>
+
+        <div class="quality-metrics">
+          <div class="qm-item">
+            <div class="qm-score">92%</div>
+            <div class="qm-label">一致性</div>
+            <div class="qm-desc">多专家结果的一致程度</div>
+          </div>
+          <div class="qm-item">
+            <div class="qm-score">88%</div>
+            <div class="qm-label">置信度</div>
+            <div class="qm-desc">结果的置信水平</div>
+          </div>
+          <div class="qm-item">
+            <div class="qm-score">95%</div>
+            <div class="qm-label">完整性</div>
+            <div class="qm-desc">需求覆盖的完整度</div>
+          </div>
+          <div class="qm-item">
+            <div class="qm-score">90%</div>
+            <div class="qm-label">可追溯性</div>
+            <div class="qm-desc">结果的可溯源程度</div>
+          </div>
+        </div>
+
+        <h3>8.4 溯源与贡献度</h3>
+        <p>
+          融合结果完整标注每个专家的贡献度，支持追溯到每个专家的完整思考轨迹。
+          用户可以对比不同专家的结果差异，理解最终答案的形成过程。
+        </p>
+      </div>
+    </section>
+
+    <!-- Chapter 09 -->
+    <section id="ch09" class="chapter">
+      <div class="chapter-num">09</div>
+      <h2 class="chapter-title">记忆层</h2>
+      <div class="chapter-lead">
+        expert-memory：统一记忆抽象，三层记忆模型驱动持续学习
+      </div>
+
+      <div class="prose">
+        <h3>9.1 设计理念</h3>
+        <p>
+          <strong>expert-memory</strong> 是 v3 架构中新增的核心服务，它将原来分散在
+          alliance-svc、Redis 和知识图谱中的记忆数据统一抽象，提供一致的记忆接口。
+          这是解决 v2 中「记忆三层分散、一致性难保证」问题的关键优化。
+        </p>
+
+        <h3>9.2 三层记忆模型</h3>
+        <p>
+          借鉴人类记忆机制，系统采用三层记忆架构，各层有不同的存储介质、
+          访问速度和生命周期。
+        </p>
+
+        <div class="memory-arch">
+          <div class="ma-layer ma-short">
+            <div class="ma-header">
+              <h4>短期记忆</h4>
+              <span class="ma-type">Short-term</span>
+            </div>
+            <div class="ma-body">
+              <div class="ma-item">
+                <span class="ma-key">存储</span>
+                <span class="ma-val">Redis</span>
+              </div>
+              <div class="ma-item">
+                <span class="ma-key">生命周期</span>
+                <span class="ma-val">会话级（分钟-小时）</span>
+              </div>
+              <div class="ma-item">
+                <span class="ma-key">内容</span>
+                <span class="ma-val">对话上下文、当前状态</span>
+              </div>
+              <div class="ma-item">
+                <span class="ma-key">访问速度</span>
+                <span class="ma-val">极快（<1ms）</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ma-layer ma-work">
+            <div class="ma-header">
+              <h4>工作记忆</h4>
+              <span class="ma-type">Working</span>
+            </div>
+            <div class="ma-body">
+              <div class="ma-item">
+                <span class="ma-key">存储</span>
+                <span class="ma-val">PostgreSQL</span>
+              </div>
+              <div class="ma-item">
+                <span class="ma-key">生命周期</span>
+                <span class="ma-val">任务级（小时-天）</span>
+              </div>
+              <div class="ma-item">
+                <span class="ma-key">内容</span>
+                <span class="ma-val">中间结果、执行轨迹</span>
+              </div>
+              <div class="ma-item">
+                <span class="ma-key">访问速度</span>
+                <span class="ma-val">快（1-10ms）</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ma-layer ma-long">
+            <div class="ma-header">
+              <h4>长期记忆</h4>
+              <span class="ma-type">Long-term</span>
+            </div>
+            <div class="ma-body">
+              <div class="ma-item">
+                <span class="ma-key">存储</span>
+                <span class="ma-val">图数据库 + 向量索引</span>
+              </div>
+              <div class="ma-item">
+                <span class="ma-key">生命周期</span>
+                <span class="ma-val">永久（持续积累）</span>
+              </div>
+              <div class="ma-item">
+                <span class="ma-key">内容</span>
+                <span class="ma-val">案例库、知识、评分</span>
+              </div>
+              <div class="ma-item">
+                <span class="ma-key">访问速度</span>
+                <span class="ma-val">中（10-100ms）</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h3>9.3 案例库与持续学习</h3>
+        <p>
+          每次成功完成的任务都会自动沉淀为案例，存入长期记忆。
+          案例包含完整的任务描述、执行过程、专家组合和最终结果，
+          是系统持续进化的核心资产。
+        </p>
+
+        <div class="learning-loop">
+          <div class="ll-step">
+            <div class="ll-icon">📥</div>
+            <div>
+              <strong>任务执行</strong>
+              <p>接收并完成用户任务</p>
+            </div>
+          </div>
+          <div class="ll-arrow">→</div>
+          <div class="ll-step">
+            <div class="ll-icon">📝</div>
+            <div>
+              <strong>案例沉淀</strong>
+              <p>自动提取结构化案例</p>
+            </div>
+          </div>
+          <div class="ll-arrow">→</div>
+          <div class="ll-step">
+            <div class="ll-icon">🔢</div>
+            <div>
+              <strong>向量化索引</strong>
+              <p>生成 Embedding 存入向量库</p>
+            </div>
+          </div>
+          <div class="ll-arrow">→</div>
+          <div class="ll-step">
+            <div class="ll-icon">🕸️</div>
+            <div>
+              <strong>图谱学习</strong>
+              <p>更新专家关联边权重</p>
+            </div>
+          </div>
+          <div class="ll-arrow">→</div>
+          <div class="ll-step">
+            <div class="ll-icon">⭐</div>
+            <div>
+              <strong>评分更新</strong>
+              <p>ELO 等级分 + 指数移动平均</p>
+            </div>
+          </div>
+          <div class="ll-arrow">→</div>
+          <div class="ll-step">
+            <div class="ll-icon">🚀</div>
+            <div>
+              <strong>能力提升</strong>
+              <p>下次匹配更精准高效</p>
+            </div>
+          </div>
+        </div>
+
+        <h3>9.4 记忆检索策略</h3>
+        <p>
+          执行任务时，系统从多层记忆中检索相关信息，为专家提供上下文支持。
+          检索采用「向量相似度 + 图谱关联 + 时间衰减」的混合排序策略。
+        </p>
+      </div>
+    </section>
+
+    <!-- Chapter 10 -->
+    <section id="ch10" class="chapter">
+      <div class="chapter-num">10</div>
+      <h2 class="chapter-title">代理层</h2>
+      <div class="chapter-lead">
+        expert-agent + ai-inference Sidecar：无状态 Agent 运行时
+      </div>
+
+      <div class="prose">
+        <h3>10.1 expert-agent：Agent 运行时</h3>
+        <p>
+          <strong>expert-agent</strong> 是专家 Agent 的运行时环境，负责具体的 ReAct 循环执行、
+          工具调用和 AI 推理协调。v3 架构中 agent 完全无状态化，所有会话数据外部化到 Redis，
+          使得 Pod 可以随时重启、无缝迁移，支持水平弹性伸缩。
+        </p>
+
+        <div class="agent-features">
+          <div class="af-item">
+            <span class="af-icon">🔄</span>
+            <div>
+              <strong>无状态设计</strong>
+              <p>所有状态外部化，支持水平扩展和故障转移</p>
+            </div>
+          </div>
+          <div class="af-item">
+            <span class="af-icon">🛠️</span>
+            <div>
+              <strong>工具适配层</strong>
+              <p>统一工具接口，自动参数校验、超时、重试、熔断</p>
+            </div>
+          </div>
+          <div class="af-item">
+            <span class="af-icon">🔀</span>
+            <div>
+              <strong>协议转换</strong>
+              <p>HTTP/gRPC/WS 多协议支持，自动格式转换</p>
+            </div>
+          </div>
+          <div class="af-item">
+            <span class="af-icon">📡</span>
+            <div>
+              <strong>流式输出</strong>
+              <p>SSE 实时推送思考过程，支持中断和恢复</p>
+            </div>
+          </div>
+          <div class="af-item">
+            <span class="af-icon">👥</span>
+            <div>
+              <strong>实例池化</strong>
+              <p>Agent 实例复用，减少初始化开销</p>
+            </div>
+          </div>
+          <div class="af-item">
+            <span class="af-icon">🧩</span>
+            <div>
+              <strong>可扩展插件</strong>
+              <p>支持自定义 Agent 逻辑和工具插件</p>
+            </div>
+          </div>
+        </div>
+
+        <h3>10.2 ai-inference：推理 Sidecar</h3>
+        <p>
+          <strong>ai-inference</strong> 是一个 Python Sidecar，与 expert-agent 同 Pod 部署，
+          通过 Unix Domain Socket（UDS）通信。它负责实际的 AI 模型推理，
+          包括 vLLM 模型加载、GPU 推理、Embedding 计算等。
+        </p>
+
+        <div class="sidecar-arch">
+          <div class="sidecar-box">
+            <div class="sc-label">Pod</div>
+            <div class="sc-content">
+              <div class="sc-main">
+                <strong>expert-agent</strong>
+                <p>Rust · 业务逻辑 · 工具调用</p>
+              </div>
+              <div class="sc-uds">UDS ↔</div>
+              <div class="sc-sidecar">
+                <strong>ai-inference</strong>
+                <p>Python · vLLM · GPU 推理</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h4>Sidecar 模式的优势</h4>
+        <ul>
+          <li><strong>技术栈解耦</strong>：Rust 做业务逻辑，Python 做 AI 推理，各擅其长</li>
+          <li><strong>低延迟通信</strong>：Unix Domain Socket 比 TCP 少了网络栈开销</li>
+          <li><strong>独立扩缩</strong>：推理和业务逻辑可以按不同维度扩容</li>
+          <li><strong>故障隔离</strong>：推理进程崩溃不影响主业务进程</li>
+          <li><strong>GPU 亲和</strong>：Sidecar 独占 GPU 资源，便于资源管理</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Chapter 11 -->
+    <section id="ch11" class="chapter">
+      <div class="chapter-num">11</div>
+      <h2 class="chapter-title">注册中心</h2>
+      <div class="chapter-lead">
+        expert-registry：专家注册、能力管理与健康监控
+      </div>
+
+      <div class="prose">
+        <h3>11.1 核心职责</h3>
+        <p>
+          <strong>expert-registry</strong> 负责专家的全生命周期管理，包括注册、更新、
+          版本管理和健康检查。v3 架构中，匹配功能移到了 scheduler，
+          registry 更加精简和专注，只负责专家元数据的管理。
+        </p>
+
+        <h3>11.2 专家注册模型</h3>
+        <p>
+          专家注册采用「全配置化」设计，通过配置即可新增一个专家，无需代码改动。
+          注册内容涵盖基本信息、能力定义、模型配置、评分体系和协作规则五大维度。
+        </p>
+
+        <div class="registry-model">
+          <div class="rm-section">
+            <div class="rm-title">基本信息</div>
+            <div class="rm-items">
+              <span>名称</span><span>描述</span><span>头像</span>
+              <span>领域标签</span><span>角色定位</span><span>优先级</span>
+            </div>
+          </div>
+          <div class="rm-section">
+            <div class="rm-title">能力定义</div>
+            <div class="rm-items">
+              <span>输入 Schema</span><span>输出 Schema</span><span>工具列表</span>
+              <span>提示词模板</span><span>能力描述</span><span>约束条件</span>
+            </div>
+          </div>
+          <div class="rm-section">
+            <div class="rm-title">模型配置</div>
+            <div class="rm-items">
+              <span>模型名称</span><span>温度参数</span><span>最大 Token</span>
+              <span>API 端点</span><span>Embedding 模型</span><span>上下文窗口</span>
+            </div>
+          </div>
+          <div class="rm-section">
+            <div class="rm-title">评分体系</div>
+            <div class="rm-items">
+              <span>准确率</span><span>响应速度</span><span>成本</span>
+              <span>用户评分</span><span>ELO 等级分</span><span>历史成功率</span>
+            </div>
+          </div>
+          <div class="rm-section">
+            <div class="rm-title">协作规则</div>
+            <div class="rm-items">
+              <span>可协作专家</span><span>冲突策略</span><span>融合权重</span>
+              <span>版本管理</span><span>灰度发布</span><span>回滚机制</span>
+            </div>
+          </div>
+        </div>
+
+        <h3>11.3 评分更新机制</h3>
+        <p>
+          每次任务执行后，系统根据执行结果自动更新专家评分。
+          评分算法采用 <strong>ELO 等级分 + 指数移动平均</strong>，
+          确保评分能准确反映专家的真实能力水平，同时支持人工评分修正。
+        </p>
+
+        <h3>11.4 工具自动发现</h3>
+        <p>
+          注册中心支持通过 gRPC 反射自动发现底层微服务的工具接口，
+          自动创建工具节点并关联到对应专家。这大大降低了新工具接入的成本，
+          实现了「服务即注册，接口即工具」的零配置接入体验。
+        </p>
+
+        <h3>11.5 健康监控</h3>
+        <p>
+          注册中心持续监控每个专家的健康状态，包括响应时间、成功率、
+          错误率等指标。异常专家自动降级或下线，确保系统整体稳定性。
+        </p>
+      </div>
+    </section>
+
+    <!-- Chapter 12 -->
+    <section id="ch12" class="chapter">
+      <div class="chapter-num">12</div>
+      <h2 class="chapter-title">知识图谱引擎</h2>
+      <div class="chapter-lead">
+        六元关联图谱：专家、能力、领域、工具、数据、案例
+      </div>
+
+      <div class="prose">
+        <h3>12.1 设计理念</h3>
+        <p>
+          知识图谱是专家联盟的「认知底座」，它将所有核心实体和关系结构化存储，
+          支持复杂的关联推理和智能推荐。v3 架构中将图谱查询能力内嵌到 scheduler，
+          减少了一跳 RPC，匹配延迟降低 60%。
+        </p>
+
+        <h3>12.2 六元网络模型</h3>
+        <p>
+          图谱包含 <strong>6 种核心顶点</strong>和 <strong>12 种关联边</strong>，
+          构成一个完整的专家能力关联网络。
+        </p>
+
+        <div class="kg-vertices">
+          <div class="kg-v">
+            <span class="kg-v-icon">👤</span>
+            <strong>Expert</strong>
+            <p>专家实体</p>
+          </div>
+          <div class="kg-v">
+            <span class="kg-v-icon">⚡</span>
+            <strong>Capability</strong>
+            <p>能力节点</p>
+          </div>
+          <div class="kg-v">
+            <span class="kg-v-icon">🏷️</span>
+            <strong>Domain</strong>
+            <p>领域分类</p>
+          </div>
+          <div class="kg-v">
+            <span class="kg-v-icon">🔧</span>
+            <strong>Tool</strong>
+            <p>工具接口</p>
+          </div>
+          <div class="kg-v">
+            <span class="kg-v-icon">📊</span>
+            <strong>Data</strong>
+            <p>数据资源</p>
+          </div>
+          <div class="kg-v">
+            <span class="kg-v-icon">📁</span>
+            <strong>Case</strong>
+            <p>历史案例</p>
+          </div>
+        </div>
+
+        <h4>12 种关联边</h4>
+        <div class="kg-edges">
+          <span class="kg-edge">has_capability</span>
+          <span class="kg-edge">operates_in</span>
+          <span class="kg-edge">requires_tool</span>
+          <span class="kg-edge">uses_data</span>
+          <span class="kg-edge">related_to</span>
+          <span class="kg-edge">depends_on</span>
+          <span class="kg-edge">derived_from</span>
+          <span class="kg-edge">resolved_by</span>
+          <span class="kg-edge">collaborates_with</span>
+          <span class="kg-edge">similar_to</span>
+          <span class="kg-edge">part_of</span>
+          <span class="kg-edge">produced_by</span>
+        </div>
+
+        <h3>12.3 图谱推理能力</h3>
+        <p>
+          基于六元网络，图谱引擎支持多种推理能力，为专家匹配和协作推荐提供智能支持。
+        </p>
+
+        <div class="kg-reasoning">
+          <div class="kr-item">
+            <div class="kr-title">专家匹配</div>
+            <p>基于任务描述，通过图谱多跳推理找到最合适的专家组合</p>
+          </div>
+          <div class="kr-item">
+            <div class="kr-title">协作推荐</div>
+            <p>根据专家协作历史和能力互补性，推荐最佳协作团队</p>
+          </div>
+          <div class="kr-item">
+            <div class="kr-title">案例检索</div>
+            <p>从历史案例中找到最相似的参考案例，提供经验复用</p>
+          </div>
+          <div class="kr-item">
+            <div class="kr-title">路径发现</div>
+            <p>发现实体之间的隐藏关联路径，支持复杂关系推理</p>
+          </div>
+          <div class="kr-item">
+            <div class="kr-title">能力补全</div>
+            <p>根据任务需求自动发现缺失的能力，推荐补充专家</p>
+          </div>
+          <div class="kr-item">
+            <div class="kr-title">持续学习</div>
+            <p>任务完成后自动更新边权重，图谱越用越精准</p>
+          </div>
+        </div>
+
+        <h3>12.4 多租户隔离</h3>
+        <p>
+          图谱采用 <strong>VID 前缀方案</strong>实现多租户隔离。
+          系统级专家和知识共享，租户自定义的专家和数据按租户 ID 前缀隔离，
+          既保证了数据安全，又实现了基础能力的共享复用。
+        </p>
+      </div>
+    </section>
+
+    <!-- Chapter 13 -->
+    <section id="ch13" class="chapter">
+      <div class="chapter-num">13</div>
+      <h2 class="chapter-title">领域专家体系</h2>
+      <div class="chapter-lead">
+        10+ 内置领域专家，覆盖软件研发全链路
+      </div>
+
+      <div class="prose">
+        <h3>13.1 专家全景</h3>
+        <p>
+          系统内置 <strong>10 个领域专家</strong>，覆盖软件研发的全生命周期。
+          每个专家都有明确的能力边界、专属工具集和知识域，
+          在联盟协调专家的调度下高效协作。
+        </p>
+
+        <div class="experts-grid">
+          <div class="expert-card">
+            <div class="ec-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6)">🕸️</div>
+            <div class="ec-info">
+              <h4>图谱构建专家</h4>
+              <p class="ec-role">Graph Architect</p>
+              <p class="ec-desc">本体设计、实体关系抽取、图谱构建、质量评估</p>
+              <div class="ec-tools">graph-svc · ai-svc · etl-svc</div>
+            </div>
+          </div>
+
+          <div class="expert-card">
+            <div class="ec-icon" style="background: linear-gradient(135deg, #06b6d4, #0ea5e9)">📊</div>
+            <div class="ec-info">
+              <h4>数据分析专家</h4>
+              <p class="ec-role">Data Analyst</p>
+              <p class="ec-desc">数据探查、统计分析、趋势预测、异常检测、可视化</p>
+              <div class="ec-tools">dataplane-svc · ai-svc</div>
+            </div>
+          </div>
+
+          <div class="expert-card">
+            <div class="ec-icon" style="background: linear-gradient(135deg, #ec4899, #f43f5e)">🤖</div>
+            <div class="ec-info">
+              <h4>AI 推理专家</h4>
+              <p class="ec-role">AI Engineer</p>
+              <p class="ec-desc">内容生成、摘要翻译、分类标注、RAG 检索、多模态</p>
+              <div class="ec-tools">ai-svc · search-svc</div>
+            </div>
+          </div>
+
+          <div class="expert-card">
+            <div class="ec-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626)">🔐</div>
+            <div class="ec-info">
+              <h4>安全审计专家</h4>
+              <p class="ec-role">Security Auditor</p>
+              <p class="ec-desc">权限审计、数据脱敏、合规检查、漏洞扫描、风险评估</p>
+              <div class="ec-tools">compliance-svc · auth-svc</div>
+            </div>
+          </div>
+
+          <div class="expert-card">
+            <div class="ec-icon" style="background: linear-gradient(135deg, #f59e0b, #f97316)">🔄</div>
+            <div class="ec-info">
+              <h4>流程自动化专家</h4>
+              <p class="ec-role">Automation Engineer</p>
+              <p class="ec-desc">流程设计、工作流编排、自动化执行、优化建议</p>
+              <div class="ec-tools">flow-svc · operator-svc</div>
+            </div>
+          </div>
+
+          <div class="expert-card">
+            <div class="ec-icon" style="background: linear-gradient(135deg, #10b981, #059669)">🗂️</div>
+            <div class="ec-info">
+              <h4>数据治理专家</h4>
+              <p class="ec-role">Data Governance</p>
+              <p class="ec-desc">标准制定、质量评估、数据血缘、元数据管理、目录</p>
+              <div class="ec-tools">catalog-svc · dataplane-svc</div>
+            </div>
+          </div>
+
+          <div class="expert-card">
+            <div class="ec-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed)">🔗</div>
+            <div class="ec-info">
+              <h4>知识融合专家</h4>
+              <p class="ec-role">Knowledge Fusion</p>
+              <p class="ec-desc">实体对齐、属性融合、冲突解决、知识补全</p>
+              <div class="ec-tools">fusion-svc · graph-svc</div>
+            </div>
+          </div>
+
+          <div class="expert-card">
+            <div class="ec-icon" style="background: linear-gradient(135deg, #14b8a6, #0d9488)">🔍</div>
+            <div class="ec-info">
+              <h4>搜索推荐专家</h4>
+              <p class="ec-role">Search & Recommend</p>
+              <p class="ec-desc">语义搜索、图谱检索、智能推荐、排序优化</p>
+              <div class="ec-tools">search-svc · graph-svc</div>
+            </div>
+          </div>
+
+          <div class="expert-card">
+            <div class="ec-icon" style="background: linear-gradient(135deg, #64748b, #475569)">📈</div>
+            <div class="ec-info">
+              <h4>运维监控专家</h4>
+              <p class="ec-role">SRE / DevOps</p>
+              <p class="ec-desc">指标监控、告警分析、故障排查、容量规划、性能调优</p>
+              <div class="ec-tools">o11y · metrics · tracing</div>
+            </div>
+          </div>
+
+          <div class="expert-card">
+            <div class="ec-icon" style="background: linear-gradient(135deg, #6366f1, #ec4899)">🎯</div>
+            <div class="ec-info">
+              <h4>联盟协调专家</h4>
+              <p class="ec-role">Alliance Coordinator</p>
+              <p class="ec-desc">任务分解、多专家调度、冲突仲裁、质量评估</p>
+              <div class="ec-tools">alliance-svc（自引用）</div>
+            </div>
+          </div>
+        </div>
+
+        <h3>13.2 专家扩展机制</h3>
+        <p>
+          专家体系完全可扩展。企业可以根据自身业务需求，
+          通过配置化方式快速新增领域专家，无需修改系统代码。
+          新专家注册后自动纳入匹配和协作体系，即插即用。
+        </p>
+      </div>
+    </section>
+
+    <!-- Chapter 14 -->
+    <section id="ch14" class="chapter">
+      <div class="chapter-num">14</div>
+      <h2 class="chapter-title">AI 推理引擎</h2>
+      <div class="chapter-lead">
+        多模型支持、推理优化、Embedding 与向量检索
+      </div>
+
+      <div class="prose">
+        <h3>14.1 推理架构</h3>
+        <p>
+          AI 推理引擎采用 <strong>模型抽象层 + 多后端适配</strong> 的架构，
+          支持多种大模型的统一接入和调度。推理请求经过路由层智能分发到最优后端，
+          支持本地部署、API 调用和混合模式。
+        </p>
+
+        <div class="infra-stack">
+          <div class="infra-layer">
+            <div class="il-name">应用层</div>
+            <div class="il-items">
+              <span>专家 Agent</span><span>工具系统</span><span>记忆检索</span>
+            </div>
+          </div>
+          <div class="infra-layer">
+            <div class="il-name">推理抽象层</div>
+            <div class="il-items">
+              <span>统一 API</span><span>Prompt 模板</span><span>Token 管理</span><span>流式输出</span>
+            </div>
+          </div>
+          <div class="infra-layer">
+            <div class="il-name">模型路由层</div>
+            <div class="il-items">
+              <span>负载均衡</span><span>降级策略</span><span>成本优化</span><span>缓存命中</span>
+            </div>
+          </div>
+          <div class="infra-layer">
+            <div class="il-name">模型后端</div>
+            <div class="il-items">
+              <span>vLLM 本地</span><span>OpenAI API</span><span>Anthropic</span><span>通义千问</span><span>...</span>
+            </div>
+          </div>
+        </div>
+
+        <h3>14.2 核心能力</h3>
+
+        <div class="ai-capabilities">
+          <div class="aic-item">
+            <div class="aic-icon">💬</div>
+            <h4>对话生成</h4>
+            <p>多轮对话、内容生成、摘要翻译、风格改写</p>
+          </div>
+          <div class="aic-item">
+            <div class="aic-icon">🔍</div>
+            <h4>RAG 检索</h4>
+            <p>知识库检索、向量搜索、引用溯源、上下文增强</p>
+          </div>
+          <div class="aic-item">
+            <div class="aic-icon">🧮</div>
+            <h4>Embedding</h4>
+            <p>文本向量化、语义相似度、聚类分析、推荐排序</p>
+          </div>
+          <div class="aic-item">
+            <div class="aic-icon">🖼️</div>
+            <h4>多模态</h4>
+            <p>图片理解、图表解析、文档 OCR、多模态融合</p>
+          </div>
+          <div class="aic-item">
+            <div class="aic-icon">🛠️</div>
+            <h4>工具调用</h4>
+            <p>Function Calling、工具选择、参数生成、结果解析</p>
+          </div>
+          <div class="aic-item">
+            <div class="aic-icon">📊</div>
+            <h4>结构化输出</h4>
+            <p>JSON Schema 约束、数据抽取、表格生成、分类标注</p>
+          </div>
+        </div>
+
+        <h3>14.3 推理优化</h3>
+        <p>
+          系统采用多层次优化策略，在保证效果的同时最大化推理效率和成本效益。
+        </p>
+
+        <div class="optimization-list">
+          <div class="opt-item">
+            <strong>vLLM 推理加速</strong>
+            <span>PagedAttention 技术，吞吐量提升 2-4 倍</span>
+          </div>
+          <div class="opt-item">
+            <strong>KV 缓存</strong>
+            <span>Prefix Caching，重复上下文复用缓存</span>
+          </div>
+          <div class="opt-item">
+            <strong>请求批处理</strong>
+            <span>Continuous Batching，提升 GPU 利用率</span>
+          </div>
+          <div class="opt-item">
+            <strong>语义缓存</strong>
+            <span>相似问题直接返回缓存结果，降低 30% 调用量</span>
+          </div>
+          <div class="opt-item">
+            <strong>模型路由</strong>
+            <span>按任务难度智能选择模型，成本降低 50%+</span>
+          </div>
+          <div class="opt-item">
+            <strong>量化压缩</strong>
+            <span>支持 GPTQ/AWQ 4bit 量化，显存减半</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chapter 15 -->
+    <section id="ch15" class="chapter">
+      <div class="chapter-num">15</div>
+      <h2 class="chapter-title">协作协议</h2>
+      <div class="chapter-lead">
+        专家间通信规范、任务契约与冲突解决机制
+      </div>
+
+      <div class="prose">
+        <h3>15.1 协作通信模型</h3>
+        <p>
+          专家之间的协作基于 <strong>事件驱动 + 消息总线</strong> 的通信模型。
+          每个专家都是独立的 Actor，通过消息传递进行协作，
+          避免了直接耦合，支持动态扩展和故障隔离。
+        </p>
+
+        <h3>15.2 消息协议</h3>
+        <p>
+          所有协作消息遵循统一的协议格式，包含消息头（元数据）和消息体（业务数据）两部分。
+        </p>
+
+        <div class="protocol-card">
+          <div class="proto-header">消息协议格式</div>
+          <div class="proto-fields">
+            <div class="proto-field">
+              <span class="pf-key">message_id</span>
+              <span class="pf-type">string</span>
+              <span class="pf-desc">消息唯一标识</span>
+            </div>
+            <div class="proto-field">
+              <span class="pf-key">task_id</span>
+              <span class="pf-type">string</span>
+              <span class="pf-desc">关联任务 ID</span>
+            </div>
+            <div class="proto-field">
+              <span class="pf-key">from</span>
+              <span class="pf-type">expert_id</span>
+              <span class="pf-desc">发送方专家</span>
+            </div>
+            <div class="proto-field">
+              <span class="pf-key">to</span>
+              <span class="pf-type">expert_id[]</span>
+              <span class="pf-desc">接收方专家列表</span>
+            </div>
+            <div class="proto-field">
+              <span class="pf-key">type</span>
+              <span class="pf-type">enum</span>
+              <span class="pf-desc">消息类型（request/response/notify/error）</span>
+            </div>
+            <div class="proto-field">
+              <span class="pf-key">timestamp</span>
+              <span class="pf-type">int64</span>
+              <span class="pf-desc">发送时间戳</span>
+            </div>
+            <div class="proto-field">
+              <span class="pf-key">payload</span>
+              <span class="pf-type">object</span>
+              <span class="pf-desc">业务数据载荷</span>
+            </div>
+            <div class="proto-field">
+              <span class="pf-key">trace_id</span>
+              <span class="pf-type">string</span>
+              <span class="pf-desc">全链路追踪 ID</span>
+            </div>
+          </div>
+        </div>
+
+        <h3>15.3 协作模式</h3>
+
+        <div class="collab-modes">
+          <div class="cm-item">
+            <div class="cm-title">主从模式</div>
+            <p>协调专家主导，其他专家执行子任务并汇报结果</p>
+          </div>
+          <div class="cm-item">
+            <div class="cm-title">对等模式</div>
+            <p>多专家平等协作，各自负责不同部分，最后汇总</p>
+          </div>
+          <div class="cm-item">
+            <div class="cm-title">辩论模式</div>
+            <p>专家互相质疑反驳，通过辩论收敛到最优解</p>
+          </div>
+          <div class="cm-item">
+            <div class="cm-title">流水线模式</div>
+            <p>专家按顺序接力处理，前一个输出是后一个输入</p>
+          </div>
+        </div>
+
+        <h3>15.4 冲突解决机制</h3>
+        <p>
+          当多专家意见不一致时，系统通过多层仲裁机制解决冲突：
+        </p>
+        <ol class="conflict-steps">
+          <li><strong>加权投票</strong>：按专家评分和置信度加权，多数决</li>
+          <li><strong>协调专家仲裁</strong>：由联盟协调专家进行综合判断</li>
+          <li><strong>辩论迭代</strong>：专家互相辩论，多轮后重新投票</li>
+          <li><strong>人工介入</strong>：仍无法达成一致时，提交人类决策者</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Chapter 16 -->
+    <section id="ch16" class="chapter">
+      <div class="chapter-num">16</div>
+      <h2 class="chapter-title">数据架构</h2>
+      <div class="chapter-lead">
+        多模态存储：关系型、图数据库、缓存、向量、对象存储
+      </div>
+
+      <div class="prose">
+        <h3>16.1 多模存储架构</h3>
+        <p>
+          系统采用 <strong>多模存储</strong> 策略，不同类型的数据选择最合适的存储引擎，
+          通过统一的数据访问层屏蔽底层差异。
+        </p>
+
+        <div class="storage-grid">
+          <div class="storage-card">
+            <div class="sc-icon">🐘</div>
+            <h4>PostgreSQL</h4>
+            <p class="sc-type">关系型数据库</p>
+            <ul>
+              <li>任务元数据</li>
+              <li>专家配置</li>
+              <li>执行记录</li>
+              <li>用户/租户</li>
+              <li>审计日志</li>
+            </ul>
+            <p class="sc-feature">RLS 行级安全 · 事务支持</p>
+          </div>
+
+          <div class="storage-card">
+            <div class="sc-icon">🕸️</div>
+            <h4>自研图存储</h4>
+            <p class="sc-type">图数据库</p>
+            <ul>
+              <li>六元关联网络</li>
+              <li>实体与关系</li>
+              <li>图谱 Schema</li>
+              <li>案例索引</li>
+            </ul>
+            <p class="sc-feature">RocksDB + Raft · 多跳推理</p>
+          </div>
+
+          <div class="storage-card">
+            <div class="sc-icon">⚡</div>
+            <h4>Redis</h4>
+            <p class="sc-type">内存缓存</p>
+            <ul>
+              <li>短期记忆</li>
+              <li>会话状态</li>
+              <li>热点数据缓存</li>
+              <li>分布式锁</li>
+              <li>限流计数</li>
+            </ul>
+            <p class="sc-feature">极快访问 · 发布订阅</p>
+          </div>
+
+          <div class="storage-card">
+            <div class="sc-icon">🔢</div>
+            <h4>向量索引</h4>
+            <p class="sc-type">向量数据库</p>
+            <ul>
+              <li>专家能力向量</li>
+              <li>案例 Embedding</li>
+              <li>知识库向量</li>
+              <li>语义检索</li>
+            </ul>
+            <p class="sc-feature">HNSW 索引 · 相似度搜索</p>
+          </div>
+
+          <div class="storage-card">
+            <div class="sc-icon">📦</div>
+            <h4>MinIO / S3</h4>
+            <p class="sc-type">对象存储</p>
+            <ul>
+              <li>任务附件</li>
+              <li>结果文件</li>
+              <li>模型文件</li>
+              <li>日志归档</li>
+            </ul>
+            <p class="sc-feature">S3 兼容 · 生命周期管理</p>
+          </div>
+
+          <div class="storage-card">
+            <div class="sc-icon">📨</div>
+            <h4>NATS</h4>
+            <p class="sc-type">事件总线</p>
+            <ul>
+              <li>任务事件</li>
+              <li>进度推送</li>
+              <li>图谱变更</li>
+              <li>系统通知</li>
+            </ul>
+            <p class="sc-feature">发布订阅 · 至少一次投递</p>
+          </div>
+        </div>
+
+        <h3>16.2 核心数据表</h3>
+        <p>
+          关系型数据库包含以下核心表，支撑专家联盟的主要业务。
+        </p>
+
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>表名</th>
+                <th>说明</th>
+                <th>核心字段</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>ea_expert</code></td>
+                <td>专家注册表</td>
+                <td>expert_id, name, role, domains, capabilities, status, rating</td>
+              </tr>
+              <tr>
+                <td><code>ea_expert_embedding</code></td>
+                <td>专家向量表</td>
+                <td>expert_id, embedding_vector, updated_at</td>
+              </tr>
+              <tr>
+                <td><code>ea_alliance_task</code></td>
+                <td>联盟任务表</td>
+                <td>task_id, description, status, plan, priority, created_by</td>
+              </tr>
+              <tr>
+                <td><code>ea_task_node</code></td>
+                <td>任务节点表</td>
+                <td>node_id, task_id, expert_id, status, input, output, duration</td>
+              </tr>
+              <tr>
+                <td><code>ea_execution_trace</code></td>
+                <td>执行轨迹表</td>
+                <td>trace_id, node_id, step_type, content, timestamp</td>
+              </tr>
+              <tr>
+                <td><code>ea_fusion_result</code></td>
+                <td>融合结果表</td>
+                <td>result_id, task_id, strategy, result, confidence, contributions</td>
+              </tr>
+              <tr>
+                <td><code>ea_case</code></td>
+                <td>案例库表</td>
+                <td>case_id, task_desc, expert_combo, result, rating, embedding</td>
+              </tr>
+              <tr>
+                <td><code>ea_memory_session</code></td>
+                <td>会话记忆表</td>
+                <td>session_id, expert_id, context, expires_at</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>16.3 多租户数据隔离</h3>
+        <p>
+          系统采用 <strong>共享数据库 + 行级安全（RLS）</strong> 的多租户隔离方案，
+          配合 <code>tenant_id</code> 前缀的 VID 方案实现图谱隔离。
+          既保证了数据安全，又降低了运维成本。
+        </p>
+      </div>
+    </section>
+
+    <!-- Chapter 17 -->
+    <section id="ch17" class="chapter">
+      <div class="chapter-num">17</div>
+      <h2 class="chapter-title">业务全流程</h2>
+      <div class="chapter-lead">
+        从用户输入到结果交付，端到端的完整业务链路
+      </div>
+
+      <div class="prose">
+        <h3>17.1 任务全生命周期</h3>
+        <p>
+          一个典型的专家联盟任务从创建到完成，经历 6 个主要阶段、
+          十余个关键步骤。每个阶段都有明确的输入输出和质量门禁。
+        </p>
+
+        <div class="lifecycle-phases">
+          <div class="lp-phase">
+            <div class="lp-num">01</div>
+            <div class="lp-title">任务创建</div>
+            <ul>
+              <li>自然语言输入</li>
+              <li>需求结构化解析</li>
+              <li>约束条件提取</li>
+              <li>任务登记与 ID 分配</li>
+            </ul>
+          </div>
+          <div class="lp-phase">
+            <div class="lp-num">02</div>
+            <div class="lp-title">专家匹配</div>
+            <ul>
+              <li>任务向量化</li>
+              <li>相似度检索</li>
+              <li>规则过滤</li>
+              <li>加权排序 TOP-K</li>
+            </ul>
+          </div>
+          <div class="lp-phase">
+            <div class="lp-num">03</div>
+            <div class="lp-title">计划生成</div>
+            <ul>
+              <li>任务分解</li>
+              <li>DAG 编排</li>
+              <li>依赖分析</li>
+              <li>资源分配</li>
+            </ul>
+          </div>
+          <div class="lp-phase">
+            <div class="lp-num">04</div>
+            <div class="lp-title">并行执行</div>
+            <ul>
+              <li>节点调度</li>
+              <li>ReAct 循环</li>
+              <li>工具调用</li>
+              <li>进度推送</li>
+            </ul>
+          </div>
+          <div class="lp-phase">
+            <div class="lp-num">05</div>
+            <div class="lp-title">结果融合</div>
+            <ul>
+              <li>策略选择</li>
+              <li>多专家融合</li>
+              <li>质量评估</li>
+              <li>迭代精炼</li>
+            </ul>
+          </div>
+          <div class="lp-phase">
+            <div class="lp-num">06</div>
+            <div class="lp-title">记忆沉淀</div>
+            <ul>
+              <li>案例入库</li>
+              <li>图谱学习</li>
+              <li>评分更新</li>
+              <li>结果交付</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3>17.2 关键业务场景</h3>
+
+        <div class="scenario-cards">
+          <div class="sc-card">
+            <h4>📊 数据分析任务</h4>
+            <p>用户描述分析需求 → 数据分析专家 + 可视化专家 + AI 推理专家协作 → 分析报告 + 图表 + 洞察</p>
+          </div>
+          <div class="sc-card">
+            <h4>🕸️ 知识图谱构建</h4>
+            <p>提供原始数据 → 图谱构建专家 + AI推理专家 + 数据治理专家协作 → 高质量领域图谱</p>
+          </div>
+          <div class="sc-card">
+            <h4>🔐 安全审计</h4>
+            <p>指定审计范围 → 安全审计专家 + 合规专家 + 数据分析专家协作 → 审计报告 + 整改建议</p>
+          </div>
+          <div class="sc-card">
+            <h4>🔄 流程自动化</h4>
+            <p>描述业务流程 → 流程自动化专家 + AI推理专家 + 数据分析专家协作 → 可执行工作流</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chapter 18 -->
+    <section id="ch18" class="chapter">
+      <div class="chapter-num">18</div>
+      <h2 class="chapter-title">前端架构</h2>
+      <div class="chapter-lead">
+        三栏黄金比例布局：阶段导航 + AI 工作区 + 图谱追踪
+      </div>
+
+      <div class="prose">
+        <h3>18.1 设计理念</h3>
+        <p>
+          前端采用 <strong>「三栏黄金比例」</strong> 布局：左侧阶段导航、中间 AI 工作区、右侧图谱追踪。
+          设计目标是让用户能够同时看到「做什么、谁在做、做到哪了」，
+          实现全透明的协作过程可视化。
+        </p>
+
+        <h3>18.2 核心页面</h3>
+
+        <div class="frontend-pages">
+          <div class="fp-item">
+            <div class="fp-num">1</div>
+            <h4>联盟总览页</h4>
+            <p>全局数据概览 · 项目列表 · 快捷入口 · 统计图表</p>
+          </div>
+          <div class="fp-item">
+            <div class="fp-num">2</div>
+            <h4>AI 对话工作区</h4>
+            <p>自然语言交互 · 多专家协作过程展示 · 实时进度</p>
+          </div>
+          <div class="fp-item">
+            <div class="fp-num">3</div>
+            <h4>专家库</h4>
+            <p>专家列表 · 能力详情 · 评分体系 · 注册管理</p>
+          </div>
+          <div class="fp-item">
+            <div class="fp-num">4</div>
+            <h4>任务中心</h4>
+            <p>任务列表 · 执行轨迹 · 结果查看 · 人工干预</p>
+          </div>
+          <div class="fp-item">
+            <div class="fp-num">5</div>
+            <h4>图谱探索</h4>
+            <p>六元网络可视化 · 关联推理 · 路径发现</p>
+          </div>
+          <div class="fp-item">
+            <div class="fp-num">6</div>
+            <h4>案例库</h4>
+            <p>历史案例 · 相似检索 · 经验复用</p>
+          </div>
+        </div>
+
+        <h3>18.3 技术栈</h3>
+        <div class="tech-stack">
+          <div class="ts-group">
+            <span class="ts-label">框架</span>
+            <div class="ts-items">
+              <span>Vue 3</span><span>Pinia</span><span>Vue Router</span>
+            </div>
+          </div>
+          <div class="ts-group">
+            <span class="ts-label">UI</span>
+            <div class="ts-items">
+              <span>Element Plus</span><span>ECharts</span><span>Markdown</span>
+            </div>
+          </div>
+          <div class="ts-group">
+            <span class="ts-label">构建</span>
+            <div class="ts-items">
+              <span>Vite</span><span>TypeScript</span><span>ESM</span>
+            </div>
+          </div>
+          <div class="ts-group">
+            <span class="ts-label">通信</span>
+            <div class="ts-items">
+              <span>Axios</span><span>WebSocket</span><span>SSE</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chapter 19 -->
+    <section id="ch19" class="chapter">
+      <div class="chapter-num">19</div>
+      <h2 class="chapter-title">安全与合规</h2>
+      <div class="chapter-lead">
+        认证鉴权、数据安全、审计追溯与合规性
+      </div>
+
+      <div class="prose">
+        <h3>19.1 安全架构</h3>
+        <p>
+          系统采用<strong>纵深防御</strong>的安全架构，从接入层到数据层层层设防，
+          确保系统、数据和用户的全面安全。
+        </p>
+
+        <div class="security-layers">
+          <div class="sl-item">
+            <span class="sl-icon">🛡️</span>
+            <div>
+              <strong>接入安全</strong>
+              <p>WAF · 防 DDoS · 速率限制 · IP 白名单</p>
+            </div>
+          </div>
+          <div class="sl-item">
+            <span class="sl-icon">🔐</span>
+            <div>
+              <strong>认证鉴权</strong>
+              <p>JWT · API Key · OAuth 2.0 · RBAC + ABAC</p>
+            </div>
+          </div>
+          <div class="sl-item">
+            <span class="sl-icon">🔒</span>
+            <div>
+              <strong>数据安全</strong>
+              <p>传输加密 · 存储加密 · 敏感数据脱敏</p>
+            </div>
+          </div>
+          <div class="sl-item">
+            <span class="sl-icon">👁️</span>
+            <div>
+              <strong>审计追溯</strong>
+              <p>操作日志 · 全链路追踪 · 不可篡改</p>
+            </div>
+          </div>
+          <div class="sl-item">
+            <span class="sl-icon">🏢</span>
+            <div>
+              <strong>租户隔离</strong>
+              <p>RLS 行级安全 · 数据分片 · 资源隔离</p>
+            </div>
+          </div>
+          <div class="sl-item">
+            <span class="sl-icon">🧪</span>
+            <div>
+              <strong>安全测试</strong>
+              <p>渗透测试 · 漏洞扫描 · 安全审计</p>
+            </div>
+          </div>
+        </div>
+
+        <h3>19.2 权限模型</h3>
+        <p>
+          采用 <strong>RBAC + ABAC</strong> 混合权限模型。RBAC 负责粗粒度的角色权限，
+          ABAC 负责基于属性的细粒度控制（如数据所属部门、密级等）。
+        </p>
+
+        <h3>19.3 合规性</h3>
+        <p>
+          系统设计遵循等保 2.0、GDPR、ISO 27001 等安全合规标准要求，
+          支持数据可携权、被遗忘权、审计导出等合规需求。
+        </p>
+      </div>
+    </section>
+
+    <!-- Chapter 20 -->
+    <section id="ch20" class="chapter">
+      <div class="chapter-num">20</div>
+      <h2 class="chapter-title">可观测性</h2>
+      <div class="chapter-lead">
+        指标、日志、链路追踪三位一体的可观测体系
+      </div>
+
+      <div class="prose">
+        <h3>20.1 三大支柱</h3>
+        <p>
+          系统构建了完善的可观测性体系，覆盖 Metrics（指标）、Logging（日志）、
+          Tracing（链路追踪）三大支柱，实现对系统运行状态的全面洞察。
+        </p>
+
+        <div class="o11y-pillars">
+          <div class="op-item">
+            <div class="op-icon">📈</div>
+            <h4>Metrics 指标</h4>
+            <ul>
+              <li>任务成功率/失败率</li>
+              <li>平均响应时间</li>
+              <li>专家调用次数</li>
+              <li>API QPS / 错误率</li>
+              <li>资源使用率（CPU/内存/GPU）</li>
+            </ul>
+          </div>
+          <div class="op-item">
+            <div class="op-icon">📝</div>
+            <h4>Logging 日志</h4>
+            <ul>
+              <li>结构化 JSON 日志</li>
+              <li>统一 Trace ID 关联</li>
+              <li>分级输出（Debug/Info/Warn/Error）</li>
+              <li>审计日志独立通道</li>
+              <li>日志集中采集与检索</li>
+            </ul>
+          </div>
+          <div class="op-item">
+            <div class="op-icon">🔗</div>
+            <h4>Tracing 追踪</h4>
+            <ul>
+              <li>OpenTelemetry 标准</li>
+              <li>全链路 Trace ID 透传</li>
+              <li>跨服务分布式追踪</li>
+              <li>AI 推理链路追踪</li>
+              <li>火焰图可视化</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3>20.2 告警体系</h3>
+        <p>
+          多级告警策略，从信息到紧急分级处理，支持多种通知渠道。
+        </p>
+        <div class="alert-levels">
+          <div class="alert-item info">
+            <span class="al-level">INFO</span>
+            <span class="al-desc">系统状态变更 · 日常通知</span>
+          </div>
+          <div class="alert-item warn">
+            <span class="al-level">WARN</span>
+            <span class="al-desc">性能下降 · 资源告警 · 需关注</span>
+          </div>
+          <div class="alert-item error">
+            <span class="al-level">ERROR</span>
+            <span class="al-desc">服务异常 · 错误率上升 · 需处理</span>
+          </div>
+          <div class="alert-item critical">
+            <span class="al-level">CRITICAL</span>
+            <span class="al-desc">系统不可用 · 数据丢失 · 紧急响应</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chapter 21 -->
+    <section id="ch21" class="chapter">
+      <div class="chapter-num">21</div>
+      <h2 class="chapter-title">部署与运维</h2>
+      <div class="chapter-lead">
+        容器化部署、K8s 编排、灰度发布与灾备
+      </div>
+
+      <div class="prose">
+        <h3>21.1 部署架构</h3>
+        <p>
+          系统支持从单机 Docker Compose 到 Kubernetes 集群的多种部署模式，
+          满足不同规模和阶段的需求。
+        </p>
+
+        <div class="deploy-modes">
+          <div class="dm-card">
+            <h4>🐳 开发模式</h4>
+            <p>Docker Compose 一键启动</p>
+            <ul>
+              <li>单节点部署</li>
+              <li>内置数据库</li>
+              <li>开发调试友好</li>
+              <li>分钟级启动</li>
+            </ul>
+          </div>
+          <div class="dm-card">
+            <div class="dm-recommend">推荐生产</div>
+            <h4>☸️ 生产模式</h4>
+            <p>Kubernetes + Istio 服务网格</p>
+            <ul>
+              <li>高可用集群</li>
+              <li>弹性伸缩（HPA）</li>
+              <li>灰度发布</li>
+              <li>服务治理</li>
+            </ul>
+          </div>
+          <div class="dm-card">
+            <h4>🏢 企业模式</h4>
+            <p>多集群 + 混合云</p>
+            <ul>
+              <li>多可用区部署</li>
+              <li>容灾备份</li>
+              <li>专有云 + 公有云</li>
+              <li>统一管控</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3>21.2 灰度发布</h3>
+        <p>
+          支持基于流量比例和用户特征的灰度发布策略，
+          配合 Istio 服务网格实现精细的流量控制。
+        </p>
+
+        <h3>21.3 备份与灾备</h3>
+        <ul>
+          <li><strong>定时备份</strong>：数据库每日全量 + 实时增量备份</li>
+          <li><strong>多副本</strong>：关键数据三副本存储，Raft 共识</li>
+          <li><strong>跨区域容灾</strong>：支持跨可用区 / 跨地域灾备</li>
+          <li><strong>快速恢复</strong>：RPO < 1min，RTO < 30min</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Chapter 22 -->
+    <section id="ch22" class="chapter">
+      <div class="chapter-num">22</div>
+      <h2 class="chapter-title">技术栈选型</h2>
+      <div class="chapter-lead">
+        后端 Rust + 前端 Vue + AI Python 的混合技术栈
+      </div>
+
+      <div class="prose">
+        <h3>22.1 技术栈全景</h3>
+
+        <div class="tech-stack-full">
+          <div class="tsf-section">
+            <h4>后端服务</h4>
+            <div class="tsf-tags">
+              <span class="tsf-tag main">Rust</span>
+              <span class="tsf-tag">Axum</span>
+              <span class="tsf-tag">Tonic (gRPC)</span>
+              <span class="tsf-tag">SQLx</span>
+              <span class="tsf-tag">Tokio</span>
+              <span class="tsf-tag">Serde</span>
+            </div>
+          </div>
+          <div class="tsf-section">
+            <h4>AI 推理</h4>
+            <div class="tsf-tags">
+              <span class="tsf-tag main">Python</span>
+              <span class="tsf-tag">vLLM</span>
+              <span class="tsf-tag">Transformers</span>
+              <span class="tsf-tag">LangChain</span>
+              <span class="tsf-tag">FAISS</span>
+              <span class="tsf-tag">PyTorch</span>
+            </div>
+          </div>
+          <div class="tsf-section">
+            <h4>前端</h4>
+            <div class="tsf-tags">
+              <span class="tsf-tag main">Vue 3</span>
+              <span class="tsf-tag">TypeScript</span>
+              <span class="tsf-tag">Pinia</span>
+              <span class="tsf-tag">Element Plus</span>
+              <span class="tsf-tag">ECharts</span>
+              <span class="tsf-tag">Vite</span>
+            </div>
+          </div>
+          <div class="tsf-section">
+            <h4>数据存储</h4>
+            <div class="tsf-tags">
+              <span class="tsf-tag">PostgreSQL</span>
+              <span class="tsf-tag">Redis</span>
+              <span class="tsf-tag">RocksDB</span>
+              <span class="tsf-tag">MinIO</span>
+              <span class="tsf-tag">NATS</span>
+            </div>
+          </div>
+          <div class="tsf-section">
+            <h4>运维部署</h4>
+            <div class="tsf-tags">
+              <span class="tsf-tag">Docker</span>
+              <span class="tsf-tag">Kubernetes</span>
+              <span class="tsf-tag">Istio</span>
+              <span class="tsf-tag">Prometheus</span>
+              <span class="tsf-tag">Grafana</span>
+              <span class="tsf-tag">OpenTelemetry</span>
+            </div>
+          </div>
+        </div>
+
+        <h3>22.2 选型考量</h3>
+        <p>
+          技术选型基于<strong>「合适的才是最好的」</strong>原则，每个组件都有明确的选型依据：
+        </p>
+        <ul>
+          <li><strong>Rust 做后端</strong>：性能、安全、并发，适合高并发的调度和执行层</li>
+          <li><strong>Python 做 AI</strong>：生态最完善，与 vLLM、PyTorch 等无缝集成</li>
+          <li><strong>Vue 做前端</strong>：国内生态好，上手快，Element Plus 组件丰富</li>
+          <li><strong>自研图存储</strong>：深度定制，满足六元网络和多跳推理的特殊需求</li>
+          <li><strong>Sidecar 模式</strong>：技术栈解耦，独立扩缩，故障隔离</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Chapter 23 -->
+    <section id="ch23" class="chapter">
+      <div class="chapter-num">23</div>
+      <h2 class="chapter-title">性能与扩展</h2>
+      <div class="chapter-lead">
+        高性能设计、水平扩展与容量规划
+      </div>
+
+      <div class="prose">
+        <h3>23.1 性能指标</h3>
+        <p>
+          系统在标准配置下的预期性能指标：
+        </p>
+
+        <div class="perf-metrics">
+          <div class="pm-item">
+            <div class="pm-value">1000+</div>
+            <div class="pm-label">并发任务数</div>
+          </div>
+          <div class="pm-item">
+            <div class="pm-value">< 200ms</div>
+            <div class="pm-label">专家匹配延迟</div>
+          </div>
+          <div class="pm-item">
+            <div class="pm-value">99.9%</div>
+            <div class="pm-label">系统可用性</div>
+          </div>
+          <div class="pm-item">
+            <div class="pm-value">10x</div>
+            <div class="pm-label">水平扩展倍数</div>
+          </div>
+        </div>
+
+        <h3>23.2 水平扩展策略</h3>
+        <p>
+          所有核心服务均为无状态设计，支持水平扩展。不同服务按各自的瓶颈指标独立扩容：
+        </p>
+
+        <div class="scale-table">
+          <div class="st-row st-head">
+            <span>服务</span>
+            <span>扩容指标</span>
+            <span>单 Pod 容量</span>
+            <span>状态</span>
+          </div>
+          <div class="st-row">
+            <span>gateway-http</span>
+            <span>QPS</span>
+            <span>5000 QPS</span>
+            <span>无状态</span>
+          </div>
+          <div class="st-row">
+            <span>alliance-scheduler</span>
+            <span>任务创建速率</span>
+            <span>100 task/s</span>
+            <span>无状态</span>
+          </div>
+          <div class="st-row">
+            <span>alliance-executor</span>
+            <span>并发任务数</span>
+            <span>50 并发</span>
+            <span>无状态</span>
+          </div>
+          <div class="st-row">
+            <span>expert-agent</span>
+            <span>并发 Agent 数</span>
+            <span>20 并发</span>
+            <span>无状态</span>
+          </div>
+          <div class="st-row">
+            <span>alliance-fusion</span>
+            <span>融合任务数</span>
+            <span>30 并发</span>
+            <span>无状态</span>
+          </div>
+          <div class="st-row">
+            <span>ai-inference</span>
+            <span>GPU 利用率</span>
+            <span>按 GPU 型号</span>
+            <span>有状态 (GPU)</span>
+          </div>
+        </div>
+
+        <h3>23.3 性能优化手段</h3>
+        <ul>
+          <li><strong>连接池化</strong>：数据库连接、gRPC 连接池复用</li>
+          <li><strong>缓存分层</strong>：多级缓存（本地 → 分布式 → 数据库）</li>
+          <li><strong>异步化</strong>：非关键路径异步处理，降低主链路延迟</li>
+          <li><strong>批量处理</strong>：合并小请求，减少 IO 次数</li>
+          <li><strong>零拷贝</strong>：大文件传输采用零拷贝技术</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Chapter 24 -->
+    <section id="ch24" class="chapter">
+      <div class="chapter-num">24</div>
+      <h2 class="chapter-title">路线图</h2>
+      <div class="chapter-lead">
+        从 MVP 到企业级，四阶段演进路线
+      </div>
+
+      <div class="prose">
+        <div class="roadmap">
+          <div class="rm-phase">
+            <div class="rm-phase-head">
+              <span class="rm-tag current">Phase 1</span>
+              <h4>MVP 验证版</h4>
+              <span class="rm-time">第 1-2 月</span>
+            </div>
+            <ul>
+              <li>核心调度框架</li>
+              <li>3-5 个内置专家</li>
+              <li>基础 ReAct 循环</li>
+              <li>简单结果融合</li>
+              <li>单库存储</li>
+              <li>基础前端界面</li>
+            </ul>
+          </div>
+
+          <div class="rm-phase">
+            <div class="rm-phase-head">
+              <span class="rm-tag">Phase 2</span>
+              <h4>能力完善版</h4>
+              <span class="rm-time">第 3-4 月</span>
+            </div>
+            <ul>
+              <li>10+ 领域专家</li>
+              <li>6 种融合策略</li>
+              <li>知识图谱引擎</li>
+              <li>三层记忆模型</li>
+              <li>DAG 编排引擎</li>
+              <li>人机协同</li>
+            </ul>
+          </div>
+
+          <div class="rm-phase">
+            <div class="rm-phase-head">
+              <span class="rm-tag">Phase 3</span>
+              <h4>企业级版</h4>
+              <span class="rm-time">第 5-7 月</span>
+            </div>
+            <ul>
+              <li>多租户架构</li>
+              <li>高可用集群部署</li>
+              <li>完整可观测性</li>
+              <li>安全合规体系</li>
+              <li>灰度发布能力</li>
+              <li>SaaS 化运营</li>
+            </ul>
+          </div>
+
+          <div class="rm-phase">
+            <div class="rm-phase-head">
+              <span class="rm-tag">Phase 4</span>
+              <h4>智能进化版</h4>
+              <span class="rm-time">第 8-12 月</span>
+            </div>
+            <ul>
+              <li>Auto-Expert 自动生成专家</li>
+              <li>专家自我进化</li>
+              <li>多模态深度融合</li>
+              <li>Agent 市场 / 交易</li>
+              <li>联邦学习</li>
+              <li>行业解决方案包</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3>24.2 成功标准</h3>
+        <div class="success-criteria">
+          <div class="sc-item">
+            <span class="sc-icon">🎯</span>
+            <div>
+              <strong>任务完成率 > 90%</strong>
+              <p>接收的任务中 90% 以上能够自动完成</p>
+            </div>
+          </div>
+          <div class="sc-item">
+            <span class="sc-icon">⚡</span>
+            <div>
+              <strong>效率提升 5x+</strong>
+              <p>相比人工操作，效率提升 5 倍以上</p>
+            </div>
+          </div>
+          <div class="sc-item">
+            <span class="sc-icon">📈</span>
+            <div>
+              <strong>持续学习曲线</strong>
+              <p>使用量越大，匹配越准，质量越高</p>
+            </div>
+          </div>
+          <div class="sc-item">
+            <span class="sc-icon">🔧</span>
+            <div>
+              <strong>零代码扩展</strong>
+              <p>新增专家无需代码改动，配置化接入</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="vision-box">
+          <h3>🎯 终极愿景</h3>
+          <p>
+            让每一个组织都能拥有自己的「专家团队」——
+            不是由人组成的团队，而是由 AI 专家组成的、永不疲倦、持续进化、
+            召之即来、来之能战的智能团队。
+            他们精通各自的领域，默契协作，不断学习，
+            把人类从繁琐的脑力劳动中解放出来，去做更有创造力的事情。
+          </p>
+        </div>
+      </div>
+    </section>
 
   </div>
 </main>

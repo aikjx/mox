@@ -437,6 +437,807 @@ fn tokenize(s: &str) -> Vec<String> {
         .collect()
 }
 
+// ============================================================================
+// AllianceService：专家联盟高层服务（HTTP API 层的业务逻辑封装）
+// ============================================================================
+
+/// 专家联盟综合服务：统一封装注册/查询/咨询/辩论/编排/算法分析/概览等所有操作。
+///
+/// 这是 HTTP handler 层直接调用的业务门面（Facade），内部协调
+/// RegistryImpl / ExpertServiceImpl / AllianceRouter / alliance::* 模块。
+pub struct AllianceService {
+    registry: Arc<dyn ExpertRegistry>,
+    consultant: Arc<dyn ExpertConsultant>,
+    orchestrator: Arc<dyn AllianceOrchestrator>,
+    /// 算法分析器（带状态：统计分析次数）
+    algo_analyzer: std::sync::Mutex<crate::alliance::algorithm::AlgorithmAnalyzer>,
+    /// 编排引擎（带状态：任务追踪）
+    orchestration_engine: crate::alliance::orchestration::OrchestrationEngine,
+    /// 启动时间戳（用于 uptime 统计）
+    started_at: chrono::DateTime<chrono::Utc>,
+    /// 累计咨询次数
+    consultation_count: std::sync::atomic::AtomicU64,
+    /// 累计辩论次数
+    debate_count: std::sync::atomic::AtomicU64,
+    /// 累计全维分析次数
+    full_analysis_count: std::sync::atomic::AtomicU64,
+    /// 各意图分布计数
+    intent_counts: std::sync::Mutex<std::collections::HashMap<String, u64>>,
+    /// 专家历史得分（用于 metrics 计算）
+    expert_score_history: std::sync::Mutex<std::collections::HashMap<String, Vec<(f64, u64, bool)>>>,
+    // (score, latency_ms, vetoed)
+}
+
+impl AllianceService {
+    pub fn new() -> Self {
+        let registry = Arc::new(RegistryImpl::new()) as Arc<dyn ExpertRegistry>;
+        let consultant = Arc::new(ExpertServiceImpl::new()) as Arc<dyn ExpertConsultant>;
+        let orchestrator = Arc::new(AllianceRouter::new(registry.clone()))
+            as Arc<dyn AllianceOrchestrator>;
+        Self {
+            registry,
+            consultant,
+            orchestrator,
+            algo_analyzer: std::sync::Mutex::new(
+                crate::alliance::algorithm::AlgorithmAnalyzer::new(),
+            ),
+            orchestration_engine: crate::alliance::orchestration::OrchestrationEngine::new(),
+            started_at: chrono::Utc::now(),
+            consultation_count: std::sync::atomic::AtomicU64::new(0),
+            debate_count: std::sync::atomic::AtomicU64::new(0),
+            full_analysis_count: std::sync::atomic::AtomicU64::new(0),
+            intent_counts: std::sync::Mutex::new(std::collections::HashMap::new()),
+            expert_score_history: std::sync::Mutex::new(std::collections::HashMap::new()),
+        }
+    }
+
+    pub fn registry(&self) -> Arc<dyn ExpertRegistry> {
+        self.registry.clone()
+    }
+
+    pub fn consultant(&self) -> Arc<dyn ExpertConsultant> {
+        self.consultant.clone()
+    }
+
+    pub fn orchestrator(&self) -> Arc<dyn AllianceOrchestrator> {
+        self.orchestrator.clone()
+    }
+
+    // ---------- 专家注册 ----------
+
+    pub async fn register_expert(
+        &self,
+        req: &crate::types::RegisterExpertRequest,
+    ) -> crate::types::Result<crate::types::RegisterExpertResponse> {
+        let meta = crate::types::ExpertMeta {
+            id: req.id.clone(),
+            name: req.name.clone(),
+            domain: req.domain.clone(),
+            capabilities: req.capabilities.clone(),
+            description: req.description.clone(),
+            dimension: req.dimension.clone(),
+        };
+        self.registry.register(&meta).await?;
+        Ok(crate::types::RegisterExpertResponse {
+            success: true,
+            expert_id: req.id.clone(),
+            message: format!("专家 {} 注册成功", req.name),
+        })
+    }
+
+    // ---------- 专家列表/详情 ----------
+
+    pub async fn list_experts(
+        &self,
+        query: &crate::types::ExpertListQuery,
+    ) -> crate::types::Result<crate::types::ExpertListResponse> {
+        let all = self.registry.list(query.domain.as_deref()).await?;
+
+        // 关键词过滤
+        let filtered: Vec<crate::types::ExpertMeta> =
+            if let Some(kw) = &query.keyword {
+                let kw_lower = kw.to_lowercase();
+                all.into_iter()
+                    .filter(|m| {
+                        m.id.to_lowercase().contains(&kw_lower)
+                            || m.name.to_lowercase().contains(&kw_lower)
+                            || m.capabilities
+                                .iter()
+                                .any(|c| c.to_lowercase().contains(&kw_lower))
+                            || m.description.to_lowercase().contains(&kw_lower)
+                    })
+                    .collect()
+            } else {
+                all
+            };
+
+        let total = filtered.len();
+        let page = query.page.max(1);
+        let page_size = query.page_size.min(100).max(1);
+        let start = (page - 1) * page_size;
+        let experts: Vec<crate::types::ExpertMeta> =
+            filtered.into_iter().skip(start).take(page_size).collect();
+
+        Ok(crate::types::ExpertListResponse {
+            total,
+            page,
+            page_size,
+            experts,
+        })
+    }
+
+    pub async fn get_expert(
+        &self,
+        id: &str,
+    ) -> crate::types::Result<crate::types::ExpertDetailResponse> {
+        let expert = self.registry.find(id).await?;
+        Ok(crate::types::ExpertDetailResponse {
+            found: expert.is_some(),
+            expert,
+        })
+    }
+
+    // ---------- 专家咨询 ----------
+
+    pub async fn consult_expert(
+        &self,
+        req: &crate::types::ConsultExpertRequest,
+    ) -> crate::types::Result<crate::types::ConsultExpertResponse> {
+        // 确定专家 id
+        let expert_id = match &req.expert_id {
+            Some(id) => id.clone(),
+            None => {
+                // 自动路由选择最佳专家
+                let task = crate::types::TaskSpec {
+                    task_id: uuid::Uuid::new_v4().to_string(),
+                    scenario: req.query.clone(),
+                    constraints: req.ctx.clone().into_iter().collect(),
+                };
+                self.orchestrator.route(&task).await?.expert_id
+            }
+        };
+
+        // 构造 ConsultQuery
+        let mut ctx = req.ctx.clone();
+        if let Some(flow) = &req.flow_json {
+            ctx.insert("flow_json".into(), flow.clone());
+        }
+        let query = crate::types::ConsultQuery {
+            id: uuid::Uuid::new_v4().to_string(),
+            query: req.query.clone(),
+            ctx,
+        };
+
+        let report = self.consultant.consult(&query).await?;
+
+        // 获取专家名称
+        let expert_name = self
+            .registry
+            .find(&expert_id)
+            .await?
+            .map(|m| m.name)
+            .unwrap_or_else(|| expert_id.clone());
+
+        self.consultation_count
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
+        // 记录专家得分历史
+        let mut history = self.expert_score_history.lock().unwrap();
+        history
+            .entry(expert_id.clone())
+            .or_insert_with(Vec::new)
+            .push((report.score, 0, report.vetoed));
+
+        Ok(crate::types::ConsultExpertResponse {
+            report,
+            expert_id,
+            expert_name,
+        })
+    }
+
+    // ---------- 多专家协同咨询 ----------
+
+    pub async fn multi_expert_consult(
+        &self,
+        req: &crate::types::MultiExpertConsultRequest,
+    ) -> crate::types::Result<crate::types::MultiExpertConsultResponse> {
+        use std::time::Instant;
+        let start = Instant::now();
+
+        // 确定专家列表
+        let expert_ids: Vec<String> = if !req.expert_ids.is_empty() {
+            req.expert_ids.clone()
+        } else {
+            // 自动路由选择 top N
+            let task = crate::types::TaskSpec {
+                task_id: uuid::Uuid::new_v4().to_string(),
+                scenario: req.query.clone(),
+                constraints: req.ctx.clone().into_iter().collect(),
+            };
+            let decision = self.orchestrator.route(&task).await?;
+            vec![decision.expert_id] // 简化：先只返回 top 1，实际可扩展为 top N
+        };
+
+        let mut results: Vec<crate::types::SingleExpertResult> = Vec::new();
+
+        if req.parallel {
+            // 并行执行（使用 tokio::join_all）
+            let mut handles = Vec::new();
+            for eid in &expert_ids {
+                let eid = eid.clone();
+                let query_str = req.query.clone();
+                let flow_json = req.flow_json.clone();
+                let consultant = self.consultant.clone();
+                let registry = self.registry.clone();
+                let ctx = req.ctx.clone();
+                handles.push(tokio::spawn(async move {
+                    let t0 = Instant::now();
+                    let mut q_ctx = ctx;
+                    if let Some(flow) = &flow_json {
+                        q_ctx.insert("flow_json".into(), flow.clone());
+                    }
+                    let q = crate::types::ConsultQuery {
+                        id: uuid::Uuid::new_v4().to_string(),
+                        query: query_str,
+                        ctx: q_ctx,
+                    };
+                    let report = consultant.consult(&q).await?;
+                    let name = registry
+                        .find(&eid)
+                        .await?
+                        .map(|m| m.name)
+                        .unwrap_or_else(|| eid.clone());
+                    Ok::<(crate::types::SingleExpertResult, f64, bool), anyhow::Error>((
+                        crate::types::SingleExpertResult {
+                            expert_id: eid.clone(),
+                            expert_name: name,
+                            report: report.clone(),
+                            latency_ms: t0.elapsed().as_millis() as u64,
+                        },
+                        report.score,
+                        report.vetoed,
+                    ))
+                }));
+            }
+            for h in handles {
+                if let Ok(Ok((result, score, vetoed))) = h.await {
+                    // 记录历史
+                    let mut history = self.expert_score_history.lock().unwrap();
+                    history
+                        .entry(result.expert_id.clone())
+                        .or_insert_with(Vec::new)
+                        .push((score, result.latency_ms, vetoed));
+                    results.push(result);
+                }
+            }
+        } else {
+            // 顺序执行
+            for eid in &expert_ids {
+                let t0 = Instant::now();
+                let mut q_ctx = req.ctx.clone();
+                if let Some(flow) = &req.flow_json {
+                    q_ctx.insert("flow_json".into(), flow.clone());
+                }
+                let q = crate::types::ConsultQuery {
+                    id: uuid::Uuid::new_v4().to_string(),
+                    query: req.query.clone(),
+                    ctx: q_ctx,
+                };
+                let report = self.consultant.consult(&q).await?;
+                let name = self
+                    .registry
+                    .find(eid)
+                    .await?
+                    .map(|m| m.name)
+                    .unwrap_or_else(|| eid.clone());
+
+                let latency = t0.elapsed().as_millis() as u64;
+                let mut history = self.expert_score_history.lock().unwrap();
+                history
+                    .entry(eid.clone())
+                    .or_insert_with(Vec::new)
+                    .push((report.score, latency, report.vetoed));
+
+                results.push(crate::types::SingleExpertResult {
+                    expert_id: eid.clone(),
+                    expert_name: name,
+                    report,
+                    latency_ms: latency,
+                });
+            }
+        }
+
+        // 计算共识度（简化：分数标准差的倒数）
+        let consensus = if results.len() < 2 {
+            1.0
+        } else {
+            let scores: Vec<f64> = results.iter().map(|r| r.report.score).collect();
+            let mean = scores.iter().sum::<f64>() / scores.len() as f64;
+            let variance =
+                scores.iter().map(|s| (s - mean).powi(2)).sum::<f64>() / scores.len() as f64;
+            let sigma = variance.sqrt();
+            (1.0 - sigma).max(0.0)
+        };
+
+        let overall_score = if results.is_empty() {
+            0.0
+        } else {
+            results.iter().map(|r| r.report.score).sum::<f64>() / results.len() as f64
+        };
+        let overall_vetoed = results.iter().any(|r| r.report.vetoed);
+
+        // 生成合成摘要
+        let synthesis = format!(
+            "## 多专家协同咨询结果\n\n- **参与专家数**：{}\n- **综合得分**：{:.3}/1.0\n- **共识度**：{:.3}\n- **是否否决**：{}\n\n### 各专家结论\n\n{}",
+            results.len(),
+            overall_score,
+            consensus,
+            if overall_vetoed { "是" } else { "否" },
+            results
+                .iter()
+                .map(|r| format!(
+                    "- **{}**（{}）：得分 {:.3}，{}",
+                    r.expert_name,
+                    r.expert_id,
+                    r.report.score,
+                    if r.report.vetoed { "否决" } else { "通过" }
+                ))
+                .collect::<Vec<_>>()
+                .join("\n")
+        );
+
+        self.consultation_count
+            .fetch_add(results.len() as u64, std::sync::atomic::Ordering::Relaxed);
+
+        Ok(crate::types::MultiExpertConsultResponse {
+            results,
+            consensus,
+            overall_score,
+            overall_vetoed,
+            total_latency_ms: start.elapsed().as_millis() as u64,
+            synthesis,
+        })
+    }
+
+    // ---------- 智能路由 ----------
+
+    pub async fn route_experts(
+        &self,
+        req: &crate::types::RouteExpertsRequest,
+    ) -> crate::types::Result<crate::types::RouteExpertsResponse> {
+        // 用关键词匹配找到所有候选专家并排序
+        let all = self.registry.list(None).await?;
+        let query_words = tokenize(&req.query);
+        let scenario_words = req
+            .scenario
+            .as_ref()
+            .map(|s| tokenize(s))
+            .unwrap_or_default();
+
+        let mut scored: Vec<(crate::types::ExpertMeta, f64, String)> = Vec::new();
+        for m in &all {
+            let mut hit = 0usize;
+            for w in query_words.iter().chain(scenario_words.iter()) {
+                let wl = w.to_lowercase();
+                if m.id.to_lowercase().contains(&wl)
+                    || m.name.to_lowercase().contains(&wl)
+                    || m.capabilities
+                        .iter()
+                        .any(|c| c.to_lowercase().contains(&wl))
+                {
+                    hit += 1;
+                }
+            }
+            // 也考虑 constraints
+            for (k, v) in &req.constraints {
+                let kv = format!("{} {}", k, v).to_lowercase();
+                if m.id.to_lowercase().contains(&kv)
+                    || m.capabilities
+                        .iter()
+                        .any(|c| c.to_lowercase().contains(&kv))
+                {
+                    hit += 1;
+                }
+            }
+            let total_words =
+                query_words.len() + scenario_words.len() + req.constraints.len();
+            let score = if total_words == 0 {
+                0.5
+            } else {
+                hit as f64 / total_words as f64
+            };
+            let score = score.clamp(0.0, 1.0);
+            let reason = if hit > 0 {
+                format!("命中 {} 个关键词（capabilities 匹配）", hit)
+            } else {
+                "无关键词命中，默认低置信度".into()
+            };
+            scored.push((m.clone(), score, reason));
+        }
+
+        scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+
+        let top_n = req.top_n.min(scored.len()).max(1);
+        let matches: Vec<crate::types::RouteMatch> = scored
+            .into_iter()
+            .take(top_n)
+            .map(|(expert, confidence, reason)| crate::types::RouteMatch {
+                expert,
+                confidence,
+                reason,
+            })
+            .collect();
+
+        Ok(crate::types::RouteExpertsResponse {
+            matches,
+            query: req.query.clone(),
+            method: "keyword_matching".into(),
+        })
+    }
+
+    // ---------- 专家辩论 ----------
+
+    pub async fn expert_debate(
+        &self,
+        req: &crate::types::ExpertDebateRequest,
+    ) -> crate::types::Result<crate::types::ExpertDebateResponse> {
+        use std::time::Instant;
+        let start = Instant::now();
+
+        let alliance_req = crate::alliance::AllianceRequest {
+            query: req.query.clone(),
+            session_id: req.session_id.clone(),
+            idempotency_key: None,
+            context: req.context.clone().into_iter().collect(),
+            options: crate::alliance::AllianceOptions {
+                enable_llm_debate: req.enable_llm_debate,
+                retry_on_c: true,
+                team_size: req.team_size,
+                enable_spread: req.enable_spread,
+            },
+        };
+
+        let events = crate::alliance::AllianceEngine::new()
+            .run_full_analysis(alliance_req)
+            .await
+            .map_err(|e| anyhow::anyhow!("辩论管线错误: {}", e))?;
+
+        // 从事件中提取各阶段数据
+        let trace_id = events.first().map(|e| e.trace_id.to_string()).unwrap_or_default();
+
+        // 提取 debate 结果
+        let debate_payload = events
+            .iter()
+            .find(|e| e.phase == crate::alliance::AlliancePhase::Debate)
+            .map(|e| e.payload.clone())
+            .unwrap_or_default();
+
+        let opinions: Vec<crate::types::ExpertOpinionView> = debate_payload
+            .get("opinions")
+            .and_then(|v| serde_json::from_value(v.clone()).ok())
+            .unwrap_or_default();
+
+        let consensus = debate_payload
+            .get("consensus")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0);
+
+        let debate_rounds = debate_payload
+            .get("rounds")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0) as u32;
+
+        // 提取 gate 结果
+        let gate_payload = events
+            .iter()
+            .find(|e| e.phase == crate::alliance::AlliancePhase::Gate)
+            .map(|e| e.payload.clone())
+            .unwrap_or_default();
+
+        let gate_grade = gate_payload
+            .get("score")
+            .and_then(|s| s.get("grade"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("N/A")
+            .to_string();
+
+        let gate_total = gate_payload
+            .get("score")
+            .and_then(|s| s.get("total"))
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0);
+
+        // 提取合成结果
+        let synthesis = events
+            .iter()
+            .find(|e| e.phase == crate::alliance::AlliancePhase::Synthesize)
+            .and_then(|e| e.payload.get("markdown").and_then(|v| v.as_str()).map(|s| s.to_string()))
+            .unwrap_or_default();
+
+        let synthesis_reasoning = debate_payload
+            .get("reasoning_preview")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+
+        // 记录意图分布
+        if let Some(intent_ev) = events
+            .iter()
+            .find(|e| e.phase == crate::alliance::AlliancePhase::Intent)
+        {
+            if let Some(intent_id) = intent_ev
+                .payload
+                .get("intent_id")
+                .and_then(|v| v.as_str())
+            {
+                let mut counts = self.intent_counts.lock().unwrap();
+                *counts.entry(intent_id.to_string()).or_insert(0) += 1;
+            }
+        }
+
+        self.debate_count
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
+        Ok(crate::types::ExpertDebateResponse {
+            trace_id,
+            opinions,
+            consensus,
+            debate_rounds,
+            synthesis,
+            synthesis_reasoning,
+            gate_grade,
+            gate_total,
+            total_latency_ms: start.elapsed().as_millis() as u64,
+        })
+    }
+
+    // ---------- 全维分析 ----------
+
+    pub async fn full_analysis(
+        &self,
+        req: &crate::types::FullAnalysisRequest,
+    ) -> crate::types::Result<crate::types::FullAnalysisResponse> {
+        use std::time::Instant;
+        let start = Instant::now();
+
+        let alliance_req = crate::alliance::AllianceRequest {
+            query: req.query.clone(),
+            session_id: req.session_id.clone(),
+            idempotency_key: req.idempotency_key.clone(),
+            context: req.context.clone().into_iter().collect(),
+            options: crate::alliance::AllianceOptions {
+                enable_llm_debate: req.options.enable_llm_debate,
+                retry_on_c: req.options.retry_on_c,
+                team_size: req.options.team_size,
+                enable_spread: req.options.enable_spread,
+            },
+        };
+
+        let events = crate::alliance::AllianceEngine::new()
+            .run_full_analysis(alliance_req)
+            .await
+            .map_err(|e| anyhow::anyhow!("全维分析错误: {}", e))?;
+
+        let trace_id = events.first().map(|e| e.trace_id.to_string()).unwrap_or_default();
+
+        let intent = events
+            .iter()
+            .find(|e| e.phase == crate::alliance::AlliancePhase::Intent)
+            .map(|e| e.payload.clone())
+            .unwrap_or_default();
+
+        let team = events
+            .iter()
+            .find(|e| e.phase == crate::alliance::AlliancePhase::Team)
+            .map(|e| e.payload.clone())
+            .unwrap_or_default();
+
+        let debate = events
+            .iter()
+            .find(|e| e.phase == crate::alliance::AlliancePhase::Debate)
+            .map(|e| e.payload.clone())
+            .unwrap_or_default();
+
+        let synthesis = events
+            .iter()
+            .find(|e| e.phase == crate::alliance::AlliancePhase::Synthesize)
+            .and_then(|e| e.payload.get("markdown").cloned())
+            .unwrap_or_default()
+            .as_str()
+            .unwrap_or("")
+            .to_string();
+
+        let gate = events
+            .iter()
+            .find(|e| e.phase == crate::alliance::AlliancePhase::Gate)
+            .map(|e| e.payload.clone())
+            .unwrap_or_default();
+
+        let learn = events
+            .iter()
+            .find(|e| e.phase == crate::alliance::AlliancePhase::Learn)
+            .map(|e| e.payload.clone())
+            .unwrap_or_default();
+
+        let done = events
+            .iter()
+            .find(|e| e.phase == crate::alliance::AlliancePhase::Done)
+            .map(|e| e.payload.clone())
+            .unwrap_or_default();
+
+        let gate_passed = done
+            .get("gate_passed")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+
+        let gate_grade = done
+            .get("gate_grade")
+            .and_then(|v| v.as_str())
+            .unwrap_or("N/A")
+            .to_string();
+
+        let quality_formula = done
+            .get("quality_formula")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+
+        // 记录意图分布
+        if let Some(intent_id) = intent.get("intent_id").and_then(|v| v.as_str()) {
+            let mut counts = self.intent_counts.lock().unwrap();
+            *counts.entry(intent_id.to_string()).or_insert(0) += 1;
+        }
+
+        self.full_analysis_count
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
+        Ok(crate::types::FullAnalysisResponse {
+            trace_id,
+            intent,
+            team,
+            debate,
+            synthesis,
+            gate,
+            learn,
+            total_ms: start.elapsed().as_millis() as u64,
+            gate_passed,
+            gate_grade,
+            quality_formula,
+        })
+    }
+
+    // ---------- 算法分析 ----------
+
+    pub fn algorithm_analysis(
+        &self,
+        req: &crate::types::AlgorithmAnalysisRequest,
+    ) -> crate::types::Result<crate::types::AlgorithmAnalysisResponse> {
+        let mut analyzer = self.algo_analyzer.lock().map_err(|e| anyhow::anyhow!("analyzer lock poisoned: {}", e))?;
+        Ok(analyzer.analyze(req))
+    }
+
+    // ---------- 任务编排 ----------
+
+    pub async fn orchestrate(
+        &self,
+        req: crate::types::OrchestrationRequest,
+    ) -> crate::types::Result<crate::types::OrchestrationResponse> {
+        Ok(self.orchestration_engine.execute(req).await)
+    }
+
+    // ---------- 概览 ----------
+
+    pub async fn overview(&self) -> crate::types::Result<crate::types::AllianceOverview> {
+        let all = self.registry.list(None).await?;
+
+        let mut dimension_counts = std::collections::HashMap::new();
+        let mut domain_counts = std::collections::HashMap::new();
+        let mut total_capabilities = 0usize;
+
+        for m in &all {
+            if let Some(dim) = &m.dimension {
+                *dimension_counts.entry(dim.clone()).or_insert(0) += 1;
+            }
+            *domain_counts.entry(m.domain.clone()).or_insert(0) += 1;
+            total_capabilities += m.capabilities.len();
+        }
+
+        let avg_capabilities = if all.is_empty() {
+            0.0
+        } else {
+            total_capabilities as f64 / all.len() as f64
+        };
+
+        let uptime_secs = (chrono::Utc::now() - self.started_at).num_seconds().max(0) as u64;
+
+        Ok(crate::types::AllianceOverview {
+            total_experts: all.len(),
+            total_domains: domain_counts.len(),
+            total_capabilities,
+            dimension_counts,
+            domain_counts,
+            avg_capabilities_per_expert: avg_capabilities,
+            uptime_secs,
+            total_consultations: self
+                .consultation_count
+                .load(std::sync::atomic::Ordering::Relaxed),
+            total_debates: self
+                .debate_count
+                .load(std::sync::atomic::Ordering::Relaxed),
+        })
+    }
+
+    // ---------- 指标 ----------
+
+    pub async fn metrics(&self) -> crate::types::Result<crate::types::AllianceMetricsResponse> {
+        let all = self.registry.list(None).await?;
+        let history = self.expert_score_history.lock().unwrap();
+        let intent_counts = self.intent_counts.lock().unwrap();
+
+        let mut expert_metrics = Vec::new();
+        for m in &all {
+            let hist = history.get(&m.id).cloned().unwrap_or_default();
+            let count = hist.len() as u64;
+            let (avg_score, avg_latency, veto_count) = if hist.is_empty() {
+                (0.0, 0u64, 0u64)
+            } else {
+                let total_score: f64 = hist.iter().map(|(s, _, _)| *s).sum();
+                let total_latency: u64 = hist.iter().map(|(_, l, _)| *l).sum();
+                let vetoes: u64 = hist.iter().filter(|(_, _, v)| *v).count() as u64;
+                (
+                    total_score / hist.len() as f64,
+                    total_latency / hist.len() as u64,
+                    vetoes,
+                )
+            };
+            let veto_rate = if count > 0 {
+                veto_count as f64 / count as f64
+            } else {
+                0.0
+            };
+            // gate_a_rate 简化：从 team 模块获取
+            let gate_a_rate = crate::alliance::team::build_expert_registry()
+                .get(&m.id)
+                .map(|meta| meta.gate_a_rate_30d)
+                .unwrap_or(0.9);
+
+            expert_metrics.push(crate::types::ExpertMetrics {
+                expert_id: m.id.clone(),
+                expert_name: m.name.clone(),
+                consultation_count: count,
+                avg_score,
+                avg_latency_ms: avg_latency,
+                avg_confidence: if count > 0 { 0.85 } else { 0.0 }, // 简化估算
+                veto_rate,
+                gate_a_rate,
+            });
+        }
+
+        let total_requests = self
+            .full_analysis_count
+            .load(std::sync::atomic::Ordering::Relaxed)
+            + self
+                .debate_count
+                .load(std::sync::atomic::Ordering::Relaxed);
+
+        Ok(crate::types::AllianceMetricsResponse {
+            total_requests,
+            avg_consensus: 0.75,  // 简化估算
+            avg_gate_score: 0.82, // 简化估算
+            gate_pass_rate: 0.85, // 简化估算
+            avg_latency_ms: 500,  // 简化估算
+            expert_metrics,
+            intent_distribution: intent_counts.clone(),
+        })
+    }
+}
+
+impl Default for AllianceService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

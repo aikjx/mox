@@ -265,6 +265,7 @@ fn cmd_serve(args: &[String]) -> anyhow::Result<()> {
             topo: std::sync::Arc::new(tokio::sync::Mutex::new(Some(topo))),
             live: std::sync::Arc::new(tokio::sync::Mutex::new(None)),
             current_exec: std::sync::Arc::new(tokio::sync::Mutex::new(None)),
+            alliance: std::sync::Arc::new(mox_ai_expert_svc::services::AllianceService::new()),
         };
         let app =
             mox_ai_expert_svc::server::router(state).layer(tower_http::cors::CorsLayer::permissive());

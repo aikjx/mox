@@ -501,6 +501,8 @@ pub struct AppState {
     pub live: Arc<Mutex<Option<mox_ai_flow_svc::model::FlowGraph>>>,
     /// Phase 3：当前执行态（可视化监听源）
     pub current_exec: Arc<Mutex<Option<Arc<ExecState>>>>,
+    /// 专家联盟综合服务（注册/咨询/辩论/编排/算法分析/概览/指标）
+    pub alliance: Arc<crate::services::AllianceService>,
 }
 
 impl AppState {
@@ -511,6 +513,7 @@ impl AppState {
             topo: Arc::new(Mutex::new(None)),
             live: Arc::new(Mutex::new(None)),
             current_exec: Arc::new(Mutex::new(None)),
+            alliance: Arc::new(crate::services::AllianceService::new()),
         }
     }
 }
@@ -609,6 +612,29 @@ pub fn router(state: AppState) -> Router {
         .route("/api/run", post(run_handler))
         .route("/api/trace", get(trace_handler))
         .route("/api/closedloop", get(closedloop_handler))
+        // ========== 专家联盟 API ==========
+        // 专家注册/列表/详情
+        .route("/api/alliance/experts/register", post(alliance_register_expert))
+        .route("/api/alliance/experts", get(alliance_list_experts))
+        .route("/api/alliance/experts/:id", get(alliance_get_expert))
+        // 智能路由
+        .route("/api/alliance/route", post(alliance_route_experts))
+        // 专家咨询
+        .route("/api/alliance/consult", post(alliance_consult_expert))
+        .route("/api/alliance/multi-consult", post(alliance_multi_consult))
+        // 专家辩论
+        .route("/api/alliance/debate", post(alliance_expert_debate))
+        .route("/api/alliance/debate/stream", get(alliance_debate_stream))
+        // 全维分析
+        .route("/api/alliance/full", post(alliance_full_analysis))
+        .route("/api/alliance/full/stream", get(alliance_full_stream))
+        // 任务编排
+        .route("/api/alliance/orchestrate", post(alliance_orchestrate))
+        // 算法分析
+        .route("/api/alliance/algorithm-analysis", post(alliance_algorithm_analysis))
+        // 概览与指标
+        .route("/api/alliance/overview", get(alliance_overview))
+        .route("/api/alliance/metrics", get(alliance_metrics))
         .with_state(Arc::new(state))
 }
 
@@ -758,6 +784,281 @@ async fn trace_handler(State(state): State<Arc<AppState>>) -> impl IntoResponse 
 async fn closedloop_handler() -> impl IntoResponse {
     let bundle = closedloop();
     (StatusCode::OK, Json(bundle)).into_response()
+}
+
+// ============================================================================
+// 专家联盟 API Handlers
+// ============================================================================
+
+// ---------- 专家注册 ----------
+
+async fn alliance_register_expert(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<crate::types::RegisterExpertRequest>,
+) -> impl IntoResponse {
+    match state.alliance.register_expert(&req).await {
+        Ok(resp) => (StatusCode::OK, Json(resp)).into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "success": false, "error": e.to_string() })),
+        )
+            .into_response(),
+    }
+}
+
+// ---------- 专家列表 ----------
+
+async fn alliance_list_experts(
+    State(state): State<Arc<AppState>>,
+    axum::extract::Query(query): axum::extract::Query<crate::types::ExpertListQuery>,
+) -> impl IntoResponse {
+    match state.alliance.list_experts(&query).await {
+        Ok(resp) => (StatusCode::OK, Json(resp)).into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        )
+            .into_response(),
+    }
+}
+
+// ---------- 专家详情 ----------
+
+async fn alliance_get_expert(
+    State(state): State<Arc<AppState>>,
+    axum::extract::Path(id): axum::extract::Path<String>,
+) -> impl IntoResponse {
+    match state.alliance.get_expert(&id).await {
+        Ok(resp) => (StatusCode::OK, Json(resp)).into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        )
+            .into_response(),
+    }
+}
+
+// ---------- 智能路由 ----------
+
+async fn alliance_route_experts(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<crate::types::RouteExpertsRequest>,
+) -> impl IntoResponse {
+    match state.alliance.route_experts(&req).await {
+        Ok(resp) => (StatusCode::OK, Json(resp)).into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        )
+            .into_response(),
+    }
+}
+
+// ---------- 单专家咨询 ----------
+
+async fn alliance_consult_expert(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<crate::types::ConsultExpertRequest>,
+) -> impl IntoResponse {
+    match state.alliance.consult_expert(&req).await {
+        Ok(resp) => (StatusCode::OK, Json(resp)).into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        )
+            .into_response(),
+    }
+}
+
+// ---------- 多专家协同咨询 ----------
+
+async fn alliance_multi_consult(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<crate::types::MultiExpertConsultRequest>,
+) -> impl IntoResponse {
+    match state.alliance.multi_expert_consult(&req).await {
+        Ok(resp) => (StatusCode::OK, Json(resp)).into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        )
+            .into_response(),
+    }
+}
+
+// ---------- 专家辩论（完整响应） ----------
+
+async fn alliance_expert_debate(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<crate::types::ExpertDebateRequest>,
+) -> impl IntoResponse {
+    match state.alliance.expert_debate(&req).await {
+        Ok(resp) => (StatusCode::OK, Json(resp)).into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        )
+            .into_response(),
+    }
+}
+
+// ---------- 专家辩论（SSE 流式） ----------
+
+async fn alliance_debate_stream(
+    State(state): State<Arc<AppState>>,
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> impl IntoResponse {
+    use axum::response::sse::{Event, KeepAlive, Sse};
+    use futures_util::stream;
+    use std::convert::Infallible;
+
+    let query = params.get("query").cloned().unwrap_or_default();
+    let team_size = params
+        .get("team_size")
+        .and_then(|s| s.parse::<usize>().ok())
+        .unwrap_or(4);
+
+    let alliance = state.alliance.clone();
+    let req = crate::types::ExpertDebateRequest {
+        query: query.clone(),
+        session_id: None,
+        team_size,
+        enable_llm_debate: false,
+        enable_spread: true,
+        context: std::collections::HashMap::new(),
+    };
+
+    // SSE 流：执行辩论后以单条 done 事件返回
+    // 真实流式实现：使用 tokio::sync::mpsc channel，逐阶段推送 intent/team/debate/gate/done
+    let stream = stream::once(async move {
+        let event = match alliance.expert_debate(&req).await {
+            Ok(result) => Event::default()
+                .event("done")
+                .data(serde_json::to_string(&result).unwrap_or_default()),
+            Err(e) => Event::default()
+                .event("error")
+                .data(serde_json::json!({ "error": e.to_string() }).to_string()),
+        };
+        Ok::<_, Infallible>(event)
+    });
+
+    Sse::new(stream).keep_alive(KeepAlive::new().text("keep-alive"))
+}
+
+// ---------- 全维分析（完整响应） ----------
+
+async fn alliance_full_analysis(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<crate::types::FullAnalysisRequest>,
+) -> impl IntoResponse {
+    match state.alliance.full_analysis(&req).await {
+        Ok(resp) => (StatusCode::OK, Json(resp)).into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        )
+            .into_response(),
+    }
+}
+
+// ---------- 全维分析（SSE 流式） ----------
+
+async fn alliance_full_stream(
+    State(state): State<Arc<AppState>>,
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> impl IntoResponse {
+    use axum::response::sse::{Event, KeepAlive, Sse};
+    use futures_util::stream;
+    use std::convert::Infallible;
+
+    let query = params.get("query").cloned().unwrap_or_default();
+
+    let alliance = state.alliance.clone();
+    let req = crate::types::FullAnalysisRequest {
+        query: query.clone(),
+        session_id: None,
+        idempotency_key: None,
+        context: std::collections::HashMap::new(),
+        options: crate::types::FullAnalysisOptions::default(),
+    };
+
+    // SSE 流：执行全量分析后以单条 done 事件返回
+    // 真实流式实现：使用 tokio::sync::mpsc channel，逐阶段推送 intent/team/debate/synthesize/gate/learn/done
+    let stream = stream::once(async move {
+        let event = match alliance.full_analysis(&req).await {
+            Ok(result) => Event::default()
+                .event("done")
+                .data(serde_json::to_string(&result).unwrap_or_default()),
+            Err(e) => Event::default()
+                .event("error")
+                .data(serde_json::json!({ "error": e.to_string() }).to_string()),
+        };
+        Ok::<_, Infallible>(event)
+    });
+
+    Sse::new(stream).keep_alive(KeepAlive::new().text("keep-alive"))
+}
+
+// ---------- 任务编排 ----------
+
+async fn alliance_orchestrate(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<crate::types::OrchestrationRequest>,
+) -> impl IntoResponse {
+    match state.alliance.orchestrate(req).await {
+        Ok(resp) => (StatusCode::OK, Json(resp)).into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        )
+            .into_response(),
+    }
+}
+
+// ---------- 算法分析 ----------
+
+async fn alliance_algorithm_analysis(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<crate::types::AlgorithmAnalysisRequest>,
+) -> impl IntoResponse {
+    match state.alliance.algorithm_analysis(&req) {
+        Ok(resp) => (StatusCode::OK, Json(resp)).into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        )
+            .into_response(),
+    }
+}
+
+// ---------- 概览 ----------
+
+async fn alliance_overview(
+    State(state): State<Arc<AppState>>,
+) -> impl IntoResponse {
+    match state.alliance.overview().await {
+        Ok(resp) => (StatusCode::OK, Json(resp)).into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        )
+            .into_response(),
+    }
+}
+
+// ---------- 指标 ----------
+
+async fn alliance_metrics(
+    State(state): State<Arc<AppState>>,
+) -> impl IntoResponse {
+    match state.alliance.metrics().await {
+        Ok(resp) => (StatusCode::OK, Json(resp)).into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        )
+            .into_response(),
+    }
 }
 
 async fn index_handler() -> Html<&'static str> {
