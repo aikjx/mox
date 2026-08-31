@@ -4,6 +4,8 @@ import { ref, computed, watch } from 'vue'
 
 const THEME_KEY = 'mox-theme'
 const DEFAULT_THEME = 'light'
+const REVIEW_KEY = 'mox-market-review'
+const ADMIN_KEY = 'mox-is-admin'
 
 export const availableThemes = [
   { key: 'light',     label: '浅色深空', swatch: 'linear-gradient(135deg, #f6f8fc, #e0e7ff)' },
@@ -58,6 +60,8 @@ export const useAppStore = defineStore('app', () => {
   const theme = ref(DEFAULT_THEME)
   const health = ref({ status: 'pending', label: '连接中…' })
   const helpDrawerOpen = ref(false)
+  const marketReviewEnabled = ref(false)
+  const isAdmin = ref(false)
 
   // ===== Getters =====
   const isDark = computed(() => theme.value === 'dark')
@@ -130,12 +134,49 @@ export const useAppStore = defineStore('app', () => {
     helpDrawerOpen.value = false
   }
 
+  // ===== Market Review Actions =====
+  function loadMarketReview() {
+    if (typeof localStorage === 'undefined') return
+    const stored = localStorage.getItem(REVIEW_KEY)
+    if (stored !== null) {
+      marketReviewEnabled.value = stored === 'true'
+    }
+    const adminStored = localStorage.getItem(ADMIN_KEY)
+    if (adminStored !== null) {
+      isAdmin.value = adminStored === 'true'
+    }
+  }
+
+  function setMarketReviewEnabled(val) {
+    marketReviewEnabled.value = !!val
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(REVIEW_KEY, String(!!val))
+    }
+  }
+
+  function toggleMarketReview() {
+    setMarketReviewEnabled(!marketReviewEnabled.value)
+  }
+
+  function setIsAdmin(val) {
+    isAdmin.value = !!val
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(ADMIN_KEY, String(!!val))
+    }
+  }
+
+  function toggleAdmin() {
+    setIsAdmin(!isAdmin.value)
+  }
+
   return {
     // State
     sidebarCollapsed,
     theme,
     health,
     helpDrawerOpen,
+    marketReviewEnabled,
+    isAdmin,
     // Getters
     isDark,
     currentThemeInfo,
@@ -153,5 +194,11 @@ export const useAppStore = defineStore('app', () => {
     toggleHelpDrawer,
     openHelpDrawer,
     closeHelpDrawer,
+    // Market Review Actions
+    loadMarketReview,
+    setMarketReviewEnabled,
+    toggleMarketReview,
+    setIsAdmin,
+    toggleAdmin,
   }
 })

@@ -8,6 +8,7 @@ import App from './App.vue'
 import router from './router'
 import './styles/global.css'
 import './styles/themes/index.css'  // 三大主题：dark / sky / cyberpunk
+import { setupPermissionDirectives } from '@/directives/permission'
 
 const app = createApp(App)
 
@@ -34,6 +35,9 @@ pinia.use(({ store }) => {
 app.use(router)
 app.use(pinia)
 app.use(ElementPlus)
+
+// ===== 权限指令注册 =====
+setupPermissionDirectives(app)
 
 // ===== 全局错误处理 =====
 app.config.errorHandler = (err, instance, info) => {

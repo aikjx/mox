@@ -1,0 +1,17 @@
+[package]
+name = "mox-cloud-api"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+mox-platform-foundation = { path = "../../foundation/mox-platform-foundation" }
+mox-cloud-foundation = { path = "../../foundation/mox-cloud-foundation" }
+serde = { workspace = true }
+
+[dev-dependencies]
+
+
+

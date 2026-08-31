@@ -1,0 +1,19 @@
+[package]
+name = "mox-cloud-foundation"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+mox-platform-foundation = { path = "../mox-platform-foundation" }
+async-trait = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true }
+
+[dev-dependencies]
+
+
+

@@ -8,11 +8,13 @@
 //! - DAG 执行引擎运行
 //! - 节点执行调度
 //!
-//! Phase 1：基础 HTTP API + 内存执行引擎 + Mock 执行器
+//! 支持两种执行模式：
+//! - Mock 模式：使用 MockNodeExecutor，用于开发和测试
+//! - Expert 模式：使用 ExpertNodeExecutor，调用真实 AI 专家服务
 
 pub mod app_state;
 pub mod routes;
 pub mod server;
 
 pub use app_state::ExecutorAppState;
-pub use server::ExecutorServer;
+pub use server::{ExecutorMode, ExecutorServer};

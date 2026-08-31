@@ -1,6 +1,7 @@
 // HTTP 核心实例 - axios 配置、拦截器、项目ID注入、重试机制
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { getToken } from '@/utils/secureStorage'
 
 // ========== 配置常量 ==========
 const DEFAULT_RETRY_COUNT = 2       // 网络错误/5xx 默认重试次数
@@ -167,9 +168,9 @@ function injectProjectToConfig(config) {
 const isProd = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.PROD
 
 http.interceptors.request.use((config) => {
+  // 优先从安全存储读取（自动兼容旧版 localStorage key）
   const token =
-    (typeof localStorage !== 'undefined' &&
-      (localStorage.getItem('ous_api_token') || localStorage.getItem('ous_token') || localStorage.getItem('mox-token'))) ||
+    getToken() ||
     (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_TOKEN) ||
     (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_OUS_API_TOKEN) ||
     // 仅开发环境允许使用默认令牌，生产环境必须显式配置

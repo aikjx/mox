@@ -52,6 +52,8 @@ impl Router {
             Route { path_prefix: "/api/data".into(), domain: "data".into(), handler_type: HandlerType::Api },
             Route { path_prefix: "/api/ai".into(), domain: "ai".into(), handler_type: HandlerType::Api },
             Route { path_prefix: "/api/kg".into(), domain: "kg".into(), handler_type: HandlerType::Api },
+            Route { path_prefix: "/api/alliance".into(), domain: "alliance".into(), handler_type: HandlerType::Api },
+            Route { path_prefix: "/alliance/v1".into(), domain: "alliance".into(), handler_type: HandlerType::Api },
             Route { path_prefix: "/api/cloud".into(), domain: "cloud".into(), handler_type: HandlerType::Api },
             Route { path_prefix: "/api/voice".into(), domain: "voice".into(), handler_type: HandlerType::Api },
             Route { path_prefix: "/api/flow".into(), domain: "flow".into(), handler_type: HandlerType::Api },
@@ -111,7 +113,7 @@ pub async fn health_handler() -> Json<HealthResponse> {
         status: "ok".into(),
         version: env!("CARGO_PKG_VERSION").into(),
         uptime_secs: 0,
-        domains: vec!["data".into(), "ai".into(), "kg".into(), "cloud".into(), "voice".into(), "flow".into(), "market".into(), "platform".into()],
+        domains: vec!["data".into(), "ai".into(), "kg".into(), "alliance".into(), "cloud".into(), "voice".into(), "flow".into(), "market".into(), "platform".into()],
     })
 }
 

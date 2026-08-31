@@ -23,8 +23,10 @@ pub mod auth;
 pub mod rate_limit;
 pub mod o11y;
 pub mod routes;
+pub mod alliance;
 
 pub use mox_kg_service_svc::http_adapter;
+pub use alliance as alliance_adapter;
 pub use config::GatewayConfig;
 
 use axum::{Json, Router, extract::State, routing::get};
@@ -82,9 +84,13 @@ pub fn build_gateway_router(state: GatewayState) -> Router {
     // 真实 KG+AI 业务路由（来自 mox-kg-service-svc/src/http_adapter.rs）
     let kg_ai = http_adapter::build_kg_ai_router();
 
+    // 联盟域业务路由（Api 模式·进程内路由桩）
+    let alliance = alliance::build_alliance_router();
+
     // 受保护的路由：认证 + 限流
     let protected = Router::new()
         .merge(kg_ai)
+        .merge(alliance)
         .route_layer(axum::middleware::from_fn_with_state(
             state.auth.clone(),
             auth_middleware,
@@ -188,6 +194,9 @@ pub async fn serve_forever(bind_addr: &str, port: u16) -> Result<(), Box<dyn std
     eprintln!("             /kg/v1/centrality · /kg/v1/communities · /kg/v1/stats");
     eprintln!("  L3 AI：     /ai/engine/process · /ai/engine/analyze");
     eprintln!("             /ai/engine/capabilities · /ai/engine/metrics");
+    eprintln!("  L4 Alliance:/alliance/v1/tasks (POST/GET) · /alliance/v1/tasks/:id (GET/POST)");
+    eprintln!("             /alliance/v1/experts/search · /alliance/v1/tasks/:id/status");
+    eprintln!("             /alliance/v1/tasks/:id/nodes · /alliance/v1/tasks/:id/nodes/:node_id");
     eprintln!("  认证：      JWT Bearer + X-API-Key（可配置开关）");
     eprintln!("  限流：      令牌桶 100 req/min + 20 burst（可配置）");
     eprintln!("  停止：      Ctrl-C");

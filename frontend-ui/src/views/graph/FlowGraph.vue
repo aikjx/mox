@@ -45,8 +45,16 @@
         </div>
       </div>
 
-      <div v-if="!loading && !hasData" class="placeholder">
-        暂无图谱数据，请在左侧对话中触发“展示知识图谱”或询问算子。
+      <div v-if="!loading && hasError" class="placeholder error">
+        <el-icon class="err-icon"><Warning /></el-icon>
+        <div class="err-text">图谱加载失败</div>
+        <div class="err-detail">{{ errorMsg }}</div>
+        <el-button type="primary" size="small" @click="reload" style="margin-top: 12px">
+          <el-icon><Refresh /></el-icon> 重试
+        </el-button>
+      </div>
+      <div v-else-if="!loading && !hasData" class="placeholder">
+        暂无图谱数据，请在左侧对话中触发"展示知识图谱"或询问算子。
       </div>
     </div>
     </div>
@@ -56,13 +64,16 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import * as echarts from '@/echarts'
-import { Share, Refresh, Connection } from '@element-plus/icons-vue'
+import { Share, Refresh, Connection, Warning } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { getGraph } from '@/api'
 import { NODE_TYPE_COLORS } from '@/types'
 
 const chart = ref(null)
 const loading = ref(false)
 const hasData = ref(false)
+const hasError = ref(false)
+const errorMsg = ref('')
 const showRelation = ref(true)
 const trace = ref([])
 let inst = null
@@ -71,12 +82,17 @@ const legendTypes = NODE_TYPE_COLORS
 
 async function reload() {
   loading.value = true
+  hasError.value = false
+  errorMsg.value = ''
   try {
     const data = await getGraph()
     render(data)
     hasData.value = !!(data.nodes && data.nodes.length)
   } catch (e) {
-    // 静默：可能尚未触发图谱
+    hasData.value = false
+    hasError.value = true
+    errorMsg.value = e.message || '未知错误'
+    ElMessage.error('图谱加载失败：' + (e.message || '未知错误'))
   } finally {
     loading.value = false
   }
@@ -317,10 +333,33 @@ defineExpose({ reload, showTrace })
   position: absolute;
   inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   color: var(--text-dim);
   font-size: 13px;
   pointer-events: none;
+}
+.placeholder.error {
+  pointer-events: auto;
+  color: var(--text-dim);
+}
+.placeholder.error .err-icon {
+  font-size: 36px;
+  color: #f59e0b;
+  margin-bottom: 10px;
+}
+.placeholder.error .err-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary, #0f172a);
+  margin-bottom: 4px;
+}
+.placeholder.error .err-detail {
+  font-size: 12px;
+  color: var(--text-dim);
+  max-width: 320px;
+  text-align: center;
+  word-break: break-all;
 }
 </style>

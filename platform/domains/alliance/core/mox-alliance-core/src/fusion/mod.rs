@@ -3,13 +3,39 @@
 
 //! 结果融合算法
 //!
-//! 提供多种结果融合策略的纯算法实现：
+//! 提供多种结果融合策略的纯算法实现，覆盖六大核心融合策略：
+//!
+//! # 六大融合策略
+//! - **加权投票融合 (Weighted Voting)** — 按权重投票，适用于分类/决策任务
+//! - **置信度加权融合 (Confidence Weighting)** — 基于置信度的加权平均，适用于数值结果
+//! - **堆叠融合 (Stacking / Meta-Learner)** — 元学习器组合多模型输出，适用于复杂任务
+//! - **辩论融合 (Debate / Multi-Agent Debate)** — 多智能体辩论裁决，适用于争议性问题
+//! - **Map-Reduce 融合 (Map-Reduce Fusion)** — 分治式融合，适用于大规模数据
+//! - **迭代精炼融合 (Iterative Refinement)** — 多轮迭代优化，适用于需逐步求精的任务
+//!
+//! # 基础融合函数（保留向后兼容）
 //! - RRF (Reciprocal Rank Fusion) — 多路召回融合
 //! - 加权融合
 //! - 投票融合
 //! - 择优融合
+//! - 文本拼接融合
+//! - JSON 深度合并
 //!
 //! 所有函数都是纯函数，无 IO，可独立单测。
+
+pub mod error;
+pub mod traits;
+pub mod strategies;
+pub mod engine;
+
+// ─── 重导出（方便下游使用） ────────────────────────────────────────────────
+
+pub use error::{FusionError, FusionResult};
+pub use traits::FusionStrategy;
+pub use engine::FusionEngine;
+pub use strategies::*;
+
+// ─── 基础融合函数（保留向后兼容） ──────────────────────────────────────────
 
 use serde_json::{json, Value};
 
@@ -154,8 +180,10 @@ fn merge_json_into(base: &mut Value, overlay: &Value) {
     }
 }
 
+// ─── 单元测试（基础融合函数） ──────────────────────────────────────────────
+
 #[cfg(test)]
-mod tests {
+mod basic_tests {
     use super::*;
 
     #[test]

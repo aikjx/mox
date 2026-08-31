@@ -10,6 +10,7 @@ description = "专家联盟 · 执行器核心（DAG执行引擎 + 节点调度�
 mox-alliance-common-proto = { path = "../../proto/mox-alliance-common-proto" }
 mox-alliance-executor-proto = { path = "../../proto/mox-alliance-executor-proto" }
 mox-alliance-core = { path = "../mox-alliance-core" }
+mox-ai-expert-proto = { path = "../../../ai/proto/mox-ai-expert-proto" }
 mox-platform-foundation = { workspace = true }
 mox-error = { workspace = true }
 serde = { workspace = true }

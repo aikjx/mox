@@ -12,6 +12,8 @@ mox-alliance-executor-proto = { path = "../../proto/mox-alliance-executor-proto"
 mox-alliance-core = { path = "../../core/mox-alliance-core" }
 mox-alliance-executor-core = { path = "../../core/mox-alliance-executor-core" }
 mox-alliance-api = { path = "../../api" }
+mox-ai-expert-svc = { path = "../../../ai/svc/mox-ai-expert-svc" }
+mox-ai-expert-proto = { path = "../../../ai/proto/mox-ai-expert-proto" }
 mox-platform-foundation = { workspace = true }
 mox-error = { workspace = true }
 serde = { workspace = true }

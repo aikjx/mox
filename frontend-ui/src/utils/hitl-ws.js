@@ -5,6 +5,8 @@
 //   服务端 → 客户端：{type:'connected'|'subscribed'|'hitl_event'|'action_result'|'pending_list'|'error'}
 // 事件字段为 camelCase：{id, flowId, flowName, kind, description, payload, requester, ts}
 
+import { getToken } from './secureStorage'
+
 const HITL_WS_PATH = '/ws/hitl'
 
 export const HITL_ACTIONS = {
@@ -27,8 +29,7 @@ class HitlWebSocketClient {
   _buildUrl() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     // WebSocket 无法携带自定义头，鉴权令牌经查询参数 ?token= 传递（与网关 auth_middleware 约定）。
-    const token = (typeof localStorage !== 'undefined' &&
-      (localStorage.getItem('ous_api_token') || localStorage.getItem('ous_token'))) || ''
+    const token = getToken() || ''
     const qs = token ? `?token=${encodeURIComponent(token)}` : ''
     return `${protocol}//${window.location.host}${HITL_WS_PATH}${qs}`
   }

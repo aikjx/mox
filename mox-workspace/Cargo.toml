@@ -1,0 +1,110 @@
+[workspace]
+resolver = "2"
+members = [
+    # L0 Foundation Layer
+    "platform/foundation/mox-platform-foundation",
+    "platform/foundation/mox-cloud-foundation",
+
+    # L3 Core Layer
+    "platform/core/kg/mox-kg-algo-core",
+    "platform/core/kg/mox-kg-meta-core",
+    "platform/core/ai/mox-ai-core",
+    "platform/core/ai/mox-ai-intent-core",
+    "platform/core/flow/mox-flow-operator-core",
+    "platform/core/flow/mox-flow-optimizer-core",
+    "platform/core/data/mox-data-formula-core",
+    "platform/core/data/mox-data-norm-core",
+
+    # L1 API Layer
+    "platform/api/mox-kg-api",
+    "platform/api/mox-ai-api",
+    "platform/api/mox-flow-api",
+    "platform/api/mox-data-api",
+    "platform/api/mox-cloud-api",
+    "platform/api/mox-platform-api",
+
+    # L2 SvcAPI Layer
+    "platform/svcapi/mox-kg-svcapi",
+    "platform/svcapi/mox-ai-svcapi",
+    "platform/svcapi/mox-flow-svcapi",
+    "platform/svcapi/mox-platform-svcapi",
+
+    # L5 Service Layer - KG Domain
+    "platform/services/kg/mox-kg-storage-svc",
+    "platform/services/kg/mox-kg-service-svc",
+    "platform/services/kg/mox-kg-hub-svc",
+    "platform/services/kg/mox-kg-fusion-svc",
+
+    # L5 Service Layer - AI Domain
+    "platform/services/ai/mox-ai-expert-svc",
+    "platform/services/ai/mox-ai-agent-svc",
+
+    # L5 Service Layer - Flow Domain
+    "platform/services/flow/mox-flow-primiflow-svc",
+
+    # L5 Service Layer - Platform Domain
+    "platform/services/platform/mox-platform-system-svc",
+
+    # L6 Gateway / Runtime
+    "platform/gateway/mox-platform-gateway-runtime",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.80"
+license = "MIT OR Apache-2.0"
+authors = ["Mox Team"]
+repository = "https://github.com/mox-ai/infotopograph"
+
+[workspace.dependencies]
+# Async
+async-trait = "0.1"
+tokio = { version = "1", features = ["full"] }
+futures = "0.3"
+
+# Web / API
+axum = "0.7"
+tonic = "0.12"
+prost = "0.13"
+
+# Error / Result
+thiserror = "1"
+anyhow = "1"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Tracing / Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Database
+sqlx = { version = "0.7", features = ["runtime-tokio", "postgres", "macros"] }
+
+# Cache
+redis = { version = "0.26", features = ["tokio-comp"] }
+
+# UUID
+uuid = { version = "1", features = ["v4", "serde"] }
+
+# Chrono
+chrono = { version = "0.4", features = ["serde"] }
+
+# Validation
+validator = { version = "0.18", features = ["derive"] }
+
+# Config
+config = "0.14"
+dotenvy = "0.15"
+
+# Testing
+proptest = "1"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true
+panic = "abort"

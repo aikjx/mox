@@ -16,13 +16,14 @@
 //!   L1 IAM 域:    /iam/v1/*  /auth/v1/*  /tenant/v1/*  /rbac/v1/*
 //!   L2 KG 域:     /kg/v1/*  /graph/v1/*  /cypher/v1/*  /ngql/v1/*
 //!   L3 AI 域:     /ai/engine/*  /ai/v1/*  /expert/v1/*  /intent/v1/*
-//!   L4 Flow 域:   /flow/v1/*  /workflow/v1/*  /bpm/v1/*  /pipeline/v1/*
-//!   L5 Cloud 域:  /cloud/v1/*  /s3/*  /volume/v1/*  /fs/v1/*
-//!   L6 Data 域:   /data/v1/*  /etl/v1/*  /norm/v1/*  /standard/v1/*
-//!   L7 Voice 域:  /voice/v1/*  /midi/v1/*  /melody/v1/*  /tts/v1/*
-//!   L8 Market 域: /market/v1/*  /shop/v1/*  /order/v1/*  /billing/v1/*
-//!   L9 Streams 域:/streams/v1/*  /kafka/v1/*  /ws/v1/*  /event/v1/*
-//!   L10 Enterprise: /enterprise/v1/*  /platform/v1/*  /audit/v1/*
+//!   L4 Alliance 域:/alliance/v1/*  /alliance/scheduler/*  /alliance/executor/*
+//!   L5 Flow 域:   /flow/v1/*  /workflow/v1/*  /bpm/v1/*  /pipeline/v1/*
+//!   L6 Cloud 域:  /cloud/v1/*  /s3/*  /volume/v1/*  /fs/v1/*
+//!   L7 Data 域:   /data/v1/*  /etl/v1/*  /norm/v1/*  /standard/v1/*
+//!   L8 Voice 域:  /voice/v1/*  /midi/v1/*  /melody/v1/*  /tts/v1/*
+//!   L9 Market 域: /market/v1/*  /shop/v1/*  /order/v1/*  /billing/v1/*
+//!   L10 Streams 域:/streams/v1/*  /kafka/v1/*  /ws/v1/*  /event/v1/*
+//!   L11 Enterprise: /enterprise/v1/*  /platform/v1/*  /audit/v1/*
 //! ```
 
 mod axum_impl {
@@ -67,8 +68,10 @@ mod axum_impl {
         DomainDescriptor { prefix: "/ai/v1",         name: "AI-Core",     layer: "L3", description: "AI 推理/微调/上下文", status: "stub" },
         DomainDescriptor { prefix: "/expert/v1",     name: "Expert",      layer: "L3", description: "专家联盟·匹配/派单/结算", status: "stub" },
         DomainDescriptor { prefix: "/intent/v1",     name: "Intent",      layer: "L3", description: "A5 激活扩散意图识别", status: "stub" },
-        // L4 Flow
-        DomainDescriptor { prefix: "/flow/v1",       name: "Flow",        layer: "L4", description: "流程图谱·业务+算法统一承载", status: "stub" },
+        // L4 Alliance
+        DomainDescriptor { prefix: "/alliance/v1",   name: "Alliance",    layer: "L4", description: "专家联盟·调度+执行 8 接口", status: "ready" },
+        // L5 Flow
+        DomainDescriptor { prefix: "/flow/v1",       name: "Flow",        layer: "L5", description: "流程图谱·业务+算法统一承载", status: "stub" },
         DomainDescriptor { prefix: "/workflow/v1",   name: "Workflow",    layer: "L4", description: "BPMN+AI 工作流", status: "stub" },
         DomainDescriptor { prefix: "/bpm/v1",        name: "BPM",         layer: "L4", description: "审批流/人工任务", status: "stub" },
         DomainDescriptor { prefix: "/pipeline/v1",   name: "Pipeline",    layer: "L4", description: "P0-P12 自动开发流水线", status: "stub" },

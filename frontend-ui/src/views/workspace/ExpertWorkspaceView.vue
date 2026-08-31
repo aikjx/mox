@@ -8,39 +8,49 @@
 
 <template>
   <div class="expert-workspace">
-    <!-- ========== 顶部全局工具栏 ========== -->
-    <header class="ws-header">
+    <!-- ========== 顶部全局工具栏（玻璃拟态升级版） ========== -->
+    <header class="ws-header glass-header">
+      <!-- 渐变装饰条 -->
+      <div class="ws-header-gradient-bar"></div>
+
       <div class="ws-header-left">
         <div class="ws-logo">
-          <span class="ws-logo-icon">🕸️</span>
+          <div class="ws-logo-icon-wrap">
+            <span class="ws-logo-icon">🕸️</span>
+          </div>
           <span class="ws-logo-text">专家联盟工作台</span>
         </div>
         <el-divider direction="vertical" class="ws-header-divider" />
-        <el-select v-model="currentProject" size="small" class="ws-project-select" @change="onProjectChange">
-          <el-option label="璇玑知识工程" value="xuanji" />
-          <el-option label="MOX 平台架构" value="mox" />
-          <el-option label="AI 算法实验室" value="ailab" />
-        </el-select>
+        <div class="ws-project-selector">
+          <el-select v-model="currentProject" size="small" class="ws-project-select" @change="onProjectChange">
+            <el-option label="璇玑知识工程" value="xuanji" />
+            <el-option label="MOX 平台架构" value="mox" />
+            <el-option label="AI 算法实验室" value="ailab" />
+          </el-select>
+        </div>
       </div>
 
       <div class="ws-header-center">
-        <div class="ws-mode-tabs">
+        <div class="ws-mode-tabs glass-tabs">
           <button
-            v-for="mode in workModes"
+            v-for="(mode, idx) in workModes"
             :key="mode.key"
             class="ws-mode-tab"
-            :class="{ active: activeMode === mode.key }"
+            :class="{ active: activeMode === mode.key, 'mode-enter': modeTransitioning }"
             @click="switchWorkMode(mode.key)"
           >
-            <el-icon class="ws-mode-icon"><component :is="mode.iconComp" /></el-icon>
+            <div class="ws-mode-icon-wrap" :style="{ background: mode.gradient }">
+              <el-icon class="ws-mode-icon"><component :is="mode.iconComp" /></el-icon>
+            </div>
             <span class="ws-mode-label">{{ mode.label }}</span>
+            <span class="ws-mode-shortcut">Ctrl+{{ idx + 1 }}</span>
           </button>
         </div>
       </div>
 
       <div class="ws-header-right">
-        <div class="ws-global-search">
-          <el-icon><Search /></el-icon>
+        <div class="ws-global-search glass-search">
+          <el-icon class="search-icon"><Search /></el-icon>
           <el-input
             v-model="globalSearch"
             class="ws-search-input"
@@ -54,18 +64,44 @@
             </template>
           </el-input>
         </div>
-        <el-button type="primary" size="small" class="ws-ai-btn" @click="openAIAssistant">
+        <el-button size="small" class="ws-ai-btn gradient-btn" @click="openAIAssistant">
           <el-icon><MagicStick /></el-icon>
           <span>AI 协作</span>
         </el-button>
-        <el-badge :value="3" :hidden="!hasNotifications" class="ws-notif-badge">
+        <el-badge :value="notifCount" :hidden="!hasNotifications" class="ws-notif-badge">
           <el-button size="small" text class="ws-icon-btn" title="通知">
             <el-icon><Bell /></el-icon>
           </el-button>
         </el-badge>
-        <el-avatar :size="32" class="ws-avatar" style="background: linear-gradient(135deg, #6366f1, #06b6d4)">U</el-avatar>
+        <div class="ws-user-avatar-wrap">
+          <el-avatar :size="36" class="ws-avatar gradient-avatar">U</el-avatar>
+          <span class="ws-avatar-online-dot"></span>
+        </div>
       </div>
     </header>
+
+    <!-- KPI 指标卡 -->
+    <div class="ws-kpi-row">
+      <div
+        v-for="kpi in kpiCards"
+        :key="kpi.key"
+        class="ws-kpi-card glass-card"
+        @click="onKpiClick(kpi.key)"
+      >
+        <div class="ws-kpi-icon" :style="{ background: kpi.gradient }">
+          <span>{{ kpi.icon }}</span>
+        </div>
+        <div class="ws-kpi-info">
+          <div class="ws-kpi-value">{{ kpi.value }}</div>
+          <div class="ws-kpi-label">{{ kpi.label }}</div>
+        </div>
+        <div class="ws-kpi-trend" :class="kpi.trend > 0 ? 'up' : 'down'">
+          <el-icon><component :is="kpi.trend > 0 ? 'Top' : 'Bottom'" /></el-icon>
+          <span>{{ Math.abs(kpi.trend) }}%</span>
+        </div>
+        <div class="ws-kpi-gradient-bar" :style="{ background: kpi.gradient }"></div>
+      </div>
+    </div>
 
     <!-- ========== 主工作区 · 三栏布局 ========== -->
     <div class="ws-main">
@@ -103,33 +139,42 @@
           <div class="ws-expert-section">
             <div class="ws-section-label">
               <span>专家列表</span>
-              <span class="ws-section-count">{{ filteredExperts.length }} 位</span>
+              <div class="ws-section-actions">
+                <el-button size="small" text class="ws-smart-match-btn" @click="openSmartRouteDialog">
+                  <el-icon><Compass /></el-icon>
+                  智能匹配
+                </el-button>
+                <span class="ws-section-count">{{ filteredExperts.length }} 位</span>
+              </div>
             </div>
             <el-scrollbar class="ws-expert-scroll">
               <div
                 v-for="expert in filteredExperts"
                 :key="expert.id"
-                class="ws-expert-item"
+                class="ws-expert-item expert-card"
                 :class="{ active: activeExpert?.id === expert.id, selected: isExpertSelected(expert.id) }"
                 @click="handleExpertClick(expert)"
               >
-                <div class="ws-expert-avatar" :style="{ background: expertColor(expert.type) }">
+                <div class="ws-expert-avatar gradient-avatar" :style="{ background: expertGradient(expert.type) }">
                   {{ expertEmoji(expert.type) }}
+                  <span class="ws-expert-status-dot" :class="'dot-' + expert.status" :title="expertStatusText(expert.status)"></span>
                 </div>
                 <div class="ws-expert-info">
-                  <div class="ws-expert-name">
-                    {{ expert.name }}
-                    <span v-if="expert.status === 'active'" class="ws-online-dot" title="在线"></span>
+                  <div class="ws-expert-name-row">
+                    <span class="ws-expert-name">{{ expert.name }}</span>
+                    <span v-if="expert.metrics?.success_rate" class="ws-expert-rate" :style="{ color: expertColor(expert.type) }">
+                      {{ (expert.metrics.success_rate * 100).toFixed(0) }}%
+                    </span>
                   </div>
                   <div class="ws-expert-role">{{ EXPERT_TYPES[expert.type] || expert.type }}</div>
                   <div v-if="expert.capabilities?.length" class="ws-expert-tags">
-                    <span v-for="cap in expert.capabilities.slice(0, 2)" :key="cap" class="ws-cap-tag">{{ cap }}</span>
+                    <span v-for="cap in expert.capabilities.slice(0, 2)" :key="cap" class="ws-cap-tag" :style="{ borderColor: expertColor(expert.type) + '40', color: expertColor(expert.type) }">{{ cap }}</span>
                   </div>
                 </div>
                 <div v-if="isExpertSelected(expert.id)" class="ws-expert-check">
                   <el-icon><CircleCheckFilled /></el-icon>
                 </div>
-                <div v-else class="ws-expert-status" :class="expertStatusClass(expert.status)">
+                <div v-else class="ws-expert-status-badge" :class="'badge-' + expert.status">
                   {{ expertStatusText(expert.status) }}
                 </div>
               </div>
@@ -177,21 +222,41 @@
           <div class="ws-expert-section">
             <div class="ws-section-label">快捷工具</div>
             <div class="ws-tool-grid">
-              <button class="ws-tool-btn" :class="{ active: activeMode === 'debate' }" @click="triggerDebate">
-                <span class="ws-tool-icon">⚔️</span>
+              <button class="ws-tool-btn tool-card" :class="{ active: activeMode === 'debate' }" @click="openDebateDialog">
+                <div class="ws-tool-icon-wrap" style="background: linear-gradient(135deg, #ef4444, #f97316)">
+                  <span class="ws-tool-icon">⚔️</span>
+                </div>
                 <span>专家辩论</span>
               </button>
-              <button class="ws-tool-btn" :class="{ active: activeMode === 'orchestration' }" @click="triggerOrchestration">
-                <span class="ws-tool-icon">🎯</span>
+              <button class="ws-tool-btn tool-card" :class="{ active: activeMode === 'orchestration' }" @click="triggerOrchestration">
+                <div class="ws-tool-icon-wrap" style="background: linear-gradient(135deg, #7c3aed, #06b6d4)">
+                  <span class="ws-tool-icon">🎯</span>
+                </div>
                 <span>任务编排</span>
               </button>
-              <button class="ws-tool-btn" @click="triggerVoting">
-                <span class="ws-tool-icon">🗳️</span>
+              <button class="ws-tool-btn tool-card" @click="triggerVoting">
+                <div class="ws-tool-icon-wrap" style="background: linear-gradient(135deg, #10b981, #14b8a6)">
+                  <span class="ws-tool-icon">🗳️</span>
+                </div>
                 <span>融合投票</span>
               </button>
-              <button class="ws-tool-btn" :class="{ active: activeMode === 'collaboration' }" @click="triggerConsult">
-                <span class="ws-tool-icon">💬</span>
-                <span>多轮咨询</span>
+              <button class="ws-tool-btn tool-card" :class="{ active: activeMode === 'collaboration' }" @click="openMultiConsultDialog">
+                <div class="ws-tool-icon-wrap" style="background: linear-gradient(135deg, #8b5cf6, #ec4899)">
+                  <span class="ws-tool-icon">💬</span>
+                </div>
+                <span>多专家咨询</span>
+              </button>
+              <button class="ws-tool-btn tool-card" @click="showRegisterDialog = true">
+                <div class="ws-tool-icon-wrap" style="background: linear-gradient(135deg, #f59e0b, #ef4444)">
+                  <span class="ws-tool-icon">➕</span>
+                </div>
+                <span>注册专家</span>
+              </button>
+              <button class="ws-tool-btn tool-card" @click="openSmartRouteDialog">
+                <div class="ws-tool-icon-wrap" style="background: linear-gradient(135deg, #06b6d4, #3b82f6)">
+                  <span class="ws-tool-icon">🧭</span>
+                </div>
+                <span>智能匹配</span>
               </button>
             </div>
           </div>
@@ -377,105 +442,468 @@
           </div>
         </div>
 
-        <!-- 底部协作对话栏 -->
-        <div class="ws-collab-bar" :class="{ expanded: collabExpanded, 'is-running': allianceRunning }">
+        <!-- 底部协作对话栏（增强版） -->
+        <div class="ws-collab-bar glass-card" :class="{ expanded: collabExpanded, 'is-running': allianceRunning, 'mode-transition': modeTransitioning }">
+          <!-- 渐变装饰条 -->
+          <div class="ws-collab-gradient-bar"></div>
+
           <div class="ws-collab-header" @click="collabExpanded = !collabExpanded">
             <div class="ws-collab-title">
-              <el-icon v-if="allianceRunning" class="ws-pulse-icon"><Promotion /></el-icon>
-              <el-icon v-else><ChatLineSquare /></el-icon>
-              <span>协作讨论 · {{ activeSession?.title || '未开始' }}</span>
-              <el-tag v-if="allianceRunning" size="small" type="warning" effect="light" class="ws-running-tag">
+              <div class="ws-collab-title-icon">
+                <el-icon v-if="allianceRunning" class="ws-pulse-icon"><Promotion /></el-icon>
+                <el-icon v-else><ChatLineSquare /></el-icon>
+              </div>
+              <span class="ws-collab-title-text">协作讨论 · {{ activeSession?.title || '未开始' }}</span>
+              <el-tag v-if="allianceRunning" size="small" effect="light" class="ws-running-tag gradient-tag">
                 {{ currentPhaseLabel }}
               </el-tag>
               <span class="ws-collab-count">{{ collabMessages.length }} 条消息</span>
+              <!-- 正在输入提示 -->
+              <span v-if="typingExperts.length > 0" class="ws-typing-indicator">
+                <span class="typing-dots-mini"><i></i><i></i><i></i></span>
+                {{ typingExperts.map(e => e.name).join('、') }} 正在思考
+              </span>
             </div>
-            <div class="ws-collab-toggle">
-              <el-icon v-if="collabExpanded"><ArrowDown /></el-icon>
-              <el-icon v-else><ArrowUp /></el-icon>
+            <div class="ws-collab-header-actions" @click.stop>
+              <!-- 历史记录按钮 -->
+              <button class="ws-header-action-btn" :class="{ active: historyPanelOpen }" title="历史记录" @click="historyPanelOpen = !historyPanelOpen">
+                <el-icon><RefreshRight /></el-icon>
+              </button>
+              <div class="ws-collab-toggle">
+                <el-icon v-if="collabExpanded"><ArrowDown /></el-icon>
+                <el-icon v-else><ArrowUp /></el-icon>
+              </div>
             </div>
           </div>
+
           <div v-if="collabExpanded" class="ws-collab-body">
-            <!-- 阶段进度条 -->
-            <div v-if="allianceRunning && alliancePhases.length > 0" class="ws-alliance-phases">
+            <!-- 阶段进度可视化 -->
+            <div class="ws-phase-progress-bar">
               <div
-                v-for="(phase, idx) in alliancePhases"
+                v-for="(phase, idx) in projectPhases"
                 :key="phase.key"
-                class="ws-phase-step"
-                :class="{ active: currentPhaseIndex === idx, done: currentPhaseIndex > idx }"
+                class="ws-phase-item"
+                :class="{ active: currentProjectPhase === idx, done: currentProjectPhase > idx, 'clickable': true }"
+                @click="jumpToPhase(idx)"
               >
-                <div class="ws-phase-step-dot">{{ idx + 1 }}</div>
-                <span class="ws-phase-step-label">{{ phase.label }}</span>
+                <div class="ws-phase-dot-wrapper">
+                  <div class="ws-phase-dot">
+                    <el-icon v-if="currentProjectPhase > idx"><CircleCheckFilled /></el-icon>
+                    <span v-else>{{ idx + 1 }}</span>
+                  </div>
+                  <div v-if="idx < projectPhases.length - 1" class="ws-phase-connector" :class="{ filled: currentProjectPhase > idx }"></div>
+                </div>
+                <span class="ws-phase-label">{{ phase.label }}</span>
               </div>
             </div>
 
-            <el-scrollbar class="ws-collab-messages" ref="messagesScrollRef">
-              <div v-for="msg in collabMessages" :key="msg.id" class="ws-collab-msg" :class="[msg.role, msg.phase ? `phase-${msg.phase}` : '']">
-                <div class="ws-collab-msg-avatar" :style="{ background: msg.color || '#64748b' }">
-                  {{ msg.avatar || '?' }}
-                </div>
-                <div class="ws-collab-msg-content">
-                  <div class="ws-collab-msg-meta">
-                    <span class="ws-collab-msg-name">{{ msg.name }}</span>
-                    <span v-if="msg.phase" class="ws-collab-msg-phase">
-                      <el-tag size="small" effect="plain" :type="phaseTagType(msg.phase)">{{ phaseLabel(msg.phase) }}</el-tag>
-                    </span>
-                    <span class="ws-collab-msg-time">{{ msg.time }}</span>
+            <!-- 协作内容 Tab -->
+            <div class="ws-collab-tabs">
+              <button
+                v-for="tab in collabTabs"
+                :key="tab.key"
+                class="ws-collab-tab"
+                :class="{ active: activeCollabTab === tab.key }"
+                @click="activeCollabTab = tab.key"
+              >
+                <el-icon class="ws-collab-tab-icon"><component :is="tab.icon" /></el-icon>
+                <span>{{ tab.label }}</span>
+                <el-badge v-if="tab.badge" :value="tab.badge" class="ws-tab-badge" />
+              </button>
+              <div class="ws-collab-tabs-right">
+                <!-- 协作成员 -->
+                <div class="ws-collab-members">
+                  <div
+                    v-for="(member, idx) in collabMembers.slice(0, 4)"
+                    :key="member.id"
+                    class="ws-member-avatar"
+                    :style="{ background: member.color, zIndex: 10 - idx }"
+                    :title="member.name + ' - ' + memberStatusText(member.status)"
+                  >
+                    {{ member.avatar }}
+                    <span class="ws-member-status-dot" :class="'status-' + member.status"></span>
                   </div>
-                  <div class="ws-collab-msg-text" v-html="formatMessageText(msg.text)"></div>
+                  <div v-if="collabMembers.length > 4" class="ws-member-avatar more-avatar" :title="`还有 ${collabMembers.length - 4} 位成员`">
+                    +{{ collabMembers.length - 4 }}
+                  </div>
                 </div>
               </div>
-              <div v-if="allianceRunning" class="ws-collab-msg assistant ws-typing">
-                <div class="ws-collab-msg-avatar" style="background: linear-gradient(135deg, #6366f1, #06b6d4)">
-                  🤖
-                </div>
-                <div class="ws-collab-msg-content">
-                  <div class="ws-collab-msg-meta">
-                    <span class="ws-collab-msg-name">AI 协作中</span>
-                  </div>
-                  <div class="ws-typing-dots">
-                    <span></span><span></span><span></span>
-                  </div>
-                </div>
-              </div>
-            </el-scrollbar>
+            </div>
 
-            <div class="ws-collab-input-area">
-              <div class="ws-collab-input-tools">
-                <el-button size="small" text class="ws-tool-mini-btn" title="附件">
-                  <el-icon><Paperclip /></el-icon>
-                </el-button>
-                <el-button size="small" text class="ws-tool-mini-btn" title="引用图谱节点" @click="insertNodeRef">
-                  <el-icon><Share /></el-icon>
-                </el-button>
-                <el-select v-model="collabMode" size="small" class="ws-mode-select" @change="onCollabModeChange">
-                  <el-option label="智能路由" value="smart" />
-                  <el-option label="单专家咨询" value="single" />
-                  <el-option label="多专家协同" value="multi" />
-                  <el-option label="专家辩论" value="debate" />
-                  <el-option label="算法分析" value="algorithm" />
-                </el-select>
+            <!-- ===== 讨论 Tab ===== -->
+            <div v-show="activeCollabTab === 'discussion'" class="ws-tab-content ws-discussion-content">
+              <!-- 文件栏 -->
+              <div v-if="sharedFiles.length > 0" class="ws-files-bar">
+                <div class="ws-files-bar-header">
+                  <span class="ws-files-bar-title">
+                    <el-icon><FolderOpened /></el-icon>
+                    共享文件 ({{ sharedFiles.length }})
+                  </span>
+                  <el-button size="small" text class="ws-files-bar-toggle" @click="filesBarExpanded = !filesBarExpanded">
+                    {{ filesBarExpanded ? '收起' : '展开' }}
+                    <el-icon><component :is="filesBarExpanded ? 'ArrowUp' : 'ArrowDown'" /></el-icon>
+                  </el-button>
+                </div>
+                <div v-show="filesBarExpanded" class="ws-files-list">
+                  <div
+                    v-for="file in sharedFiles"
+                    :key="file.id"
+                    class="ws-file-card"
+                    @click="previewFile(file)"
+                  >
+                    <div class="ws-file-icon" :class="'file-' + file.type">
+                      {{ fileIconEmoji(file.type) }}
+                    </div>
+                    <div class="ws-file-info">
+                      <div class="ws-file-name">{{ file.name }}</div>
+                      <div class="ws-file-meta">{{ file.size }} · {{ file.uploader }} · {{ file.time }}</div>
+                    </div>
+                    <el-button size="small" text class="ws-file-download" @click.stop="downloadFile(file)" title="下载">
+                      <el-icon><Download /></el-icon>
+                    </el-button>
+                  </div>
+                </div>
               </div>
-              <div class="ws-collab-input-row">
-                <el-input
-                  v-model="collabInput"
-                  class="ws-collab-input-field"
-                  type="textarea"
-                  :rows="2"
-                  placeholder="输入问题或指令… (Enter 发送，Shift+Enter 换行)"
-                  resize="none"
-                  @keydown.enter.exact.prevent="sendCollabMsg"
-                />
-                <el-button type="primary" class="ws-send-btn" @click="sendCollabMsg" :loading="allianceRunning">
-                  <el-icon v-if="!allianceRunning"><Promotion /></el-icon>
-                  <span>{{ allianceRunning ? '运行中' : '发送' }}</span>
-                </el-button>
-                <el-button v-if="allianceRunning" type="danger" plain class="ws-stop-btn" @click="stopAlliance">
-                  <el-icon><Close /></el-icon>
-                  停止
+
+              <el-scrollbar class="ws-collab-messages" ref="messagesScrollRef">
+                <div v-for="msg in collabMessages" :key="msg.id" class="ws-collab-msg" :class="[msg.role, msg.phase ? `phase-${msg.phase}` : '']">
+                  <div class="ws-collab-msg-avatar gradient-avatar" :style="{ background: msg.color || 'linear-gradient(135deg, #6366f1, #06b6d4)' }">
+                    {{ msg.avatar || '?' }}
+                  </div>
+                  <div class="ws-collab-msg-content">
+                    <div class="ws-collab-msg-meta">
+                      <span class="ws-collab-msg-name">{{ msg.name }}</span>
+                      <!-- 消息状态 -->
+                      <span v-if="msg.status" class="ws-msg-status" :class="'status-' + msg.status" :title="msgStatusText(msg.status)">
+                        <el-icon v-if="msg.status === 'sent'"><CircleCheckFilled /></el-icon>
+                        <el-icon v-else-if="msg.status === 'thinking'" class="pulse-icon"><Loading /></el-icon>
+                        <el-icon v-else-if="msg.status === 'done'"><CircleCheckFilled /></el-icon>
+                        <el-icon v-else-if="msg.status === 'failed'"><Warning /></el-icon>
+                      </span>
+                      <span v-if="msg.phase" class="ws-collab-msg-phase">
+                        <el-tag size="small" effect="plain" :type="phaseTagType(msg.phase)">{{ phaseLabel(msg.phase) }}</el-tag>
+                      </span>
+                      <span class="ws-collab-msg-time">{{ msg.time }}</span>
+                    </div>
+                    <div class="ws-collab-msg-text" v-html="formatMessageText(msg.text)"></div>
+                    <!-- 消息附件 -->
+                    <div v-if="msg.files && msg.files.length > 0" class="ws-msg-files">
+                      <div
+                        v-for="file in msg.files"
+                        :key="file.id"
+                        class="ws-msg-file-chip"
+                        @click="previewFile(file)"
+                      >
+                        <span class="msg-file-icon">{{ fileIconEmoji(file.type) }}</span>
+                        <span class="msg-file-name">{{ file.name }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- 正在输入提示 -->
+                <div v-for="expert in typingExperts" :key="expert.id" class="ws-collab-msg assistant ws-typing">
+                  <div class="ws-collab-msg-avatar gradient-avatar" :style="{ background: expert.color }">
+                    {{ expert.avatar }}
+                  </div>
+                  <div class="ws-collab-msg-content">
+                    <div class="ws-collab-msg-meta">
+                      <span class="ws-collab-msg-name">{{ expert.name }}</span>
+                      <span class="ws-msg-status status-thinking" title="正在思考">
+                        <el-icon class="pulse-icon"><Loading /></el-icon>
+                      </span>
+                    </div>
+                    <div class="ws-typing-dots">
+                      <span></span><span></span><span></span>
+                    </div>
+                  </div>
+                </div>
+                <div v-if="allianceRunning && typingExperts.length === 0" class="ws-collab-msg assistant ws-typing">
+                  <div class="ws-collab-msg-avatar gradient-avatar" style="background: linear-gradient(135deg, #7c3aed, #06b6d4)">
+                    🤖
+                  </div>
+                  <div class="ws-collab-msg-content">
+                    <div class="ws-collab-msg-meta">
+                      <span class="ws-collab-msg-name">AI 协作中</span>
+                    </div>
+                    <div class="ws-typing-dots">
+                      <span></span><span></span><span></span>
+                    </div>
+                  </div>
+                </div>
+              </el-scrollbar>
+
+              <div class="ws-collab-input-area">
+                <!-- 文件上传拖拽区 -->
+                <div
+                  v-if="dragOver"
+                  class="ws-drop-zone"
+                  @dragover.prevent="dragOver = true"
+                  @dragleave="dragOver = false"
+                  @drop.prevent="handleFileDrop"
+                >
+                  <el-icon class="drop-zone-icon"><Upload /></el-icon>
+                  <div class="drop-zone-text">释放文件以上传</div>
+                </div>
+
+                <div class="ws-collab-input-tools">
+                  <el-upload
+                    :show-file-list="false"
+                    :before-upload="handleBeforeFileUpload"
+                    multiple
+                    class="ws-upload-trigger"
+                  >
+                    <el-button size="small" text class="ws-tool-mini-btn" title="上传文件">
+                      <el-icon><Paperclip /></el-icon>
+                    </el-button>
+                  </el-upload>
+                  <el-button size="small" text class="ws-tool-mini-btn" title="引用图谱节点" @click="insertNodeRef">
+                    <el-icon><Share /></el-icon>
+                  </el-button>
+                  <el-button size="small" text class="ws-tool-mini-btn" title="添加到白板" @click="sendToWhiteboard">
+                    <el-icon><CollectionTag /></el-icon>
+                  </el-button>
+                  <el-select v-model="collabMode" size="small" class="ws-mode-select" @change="onCollabModeChange">
+                    <el-option label="智能路由" value="smart" />
+                    <el-option label="单专家咨询" value="single" />
+                    <el-option label="多专家协同" value="multi" />
+                    <el-option label="专家辩论" value="debate" />
+                    <el-option label="算法分析" value="algorithm" />
+                  </el-select>
+                </div>
+                <div class="ws-collab-input-row">
+                  <el-input
+                    v-model="collabInput"
+                    class="ws-collab-input-field"
+                    type="textarea"
+                    :rows="2"
+                    placeholder="输入问题或指令… (Enter 发送，Shift+Enter 换行)"
+                    resize="none"
+                    @keydown.enter.exact.prevent="sendCollabMsg"
+                  />
+                  <el-button type="primary" class="ws-send-btn gradient-btn" @click="sendCollabMsg" :loading="allianceRunning">
+                    <el-icon v-if="!allianceRunning"><Promotion /></el-icon>
+                    <span>{{ allianceRunning ? '运行中' : '发送' }}</span>
+                  </el-button>
+                  <el-button v-if="allianceRunning" type="danger" plain class="ws-stop-btn" @click="stopAlliance">
+                    <el-icon><Close /></el-icon>
+                    停止
+                  </el-button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ===== 白板 Tab ===== -->
+            <div v-show="activeCollabTab === 'whiteboard'" class="ws-tab-content ws-whiteboard-content">
+              <div class="ws-whiteboard-toolbar">
+                <button
+                  v-for="tool in whiteboardTools"
+                  :key="tool.key"
+                  class="ws-wb-tool"
+                  :class="{ active: activeWbTool === tool.key }"
+                  :title="tool.label"
+                  @click="selectWbTool(tool.key)"
+                >
+                  <span class="ws-wb-tool-icon">{{ tool.icon }}</span>
+                  <span class="ws-wb-tool-label">{{ tool.label }}</span>
+                </button>
+                <div class="ws-wb-tool-divider"></div>
+                <div class="ws-wb-color-picker">
+                  <span class="wb-color-label">颜色</span>
+                  <button
+                    v-for="color in wbColors"
+                    :key="color"
+                    class="wb-color-dot"
+                    :class="{ active: activeWbColor === color }"
+                    :style="{ background: color }"
+                    @click="activeWbColor = color"
+                  ></button>
+                </div>
+                <div class="ws-wb-tool-divider"></div>
+                <button class="ws-wb-tool" title="清空画布" @click="clearWhiteboard">
+                  <el-icon><Delete /></el-icon>
+                  <span class="ws-wb-tool-label">清空</span>
+                </button>
+              </div>
+              <div
+                class="ws-whiteboard-canvas"
+                ref="whiteboardRef"
+                @mousedown="onWbMouseDown"
+                @mousemove="onWbMouseMove"
+                @mouseup="onWbMouseUp"
+                @mouseleave="onWbMouseUp"
+              >
+                <!-- 便签 -->
+                <div
+                  v-for="note in wbNotes"
+                  :key="note.id"
+                  class="wb-sticky-note"
+                  :style="{ left: note.x + 'px', top: note.y + 'px', background: note.color }"
+                  @mousedown.stop="startDragNote($event, note)"
+                >
+                  <div class="wb-note-header">
+                    <span class="wb-note-title">{{ note.title || '便签' }}</span>
+                    <button class="wb-note-delete" @click.stop="deleteWbNote(note.id)" title="删除">×</button>
+                  </div>
+                  <div class="wb-note-content" contenteditable="true" @blur="updateNoteContent($event, note)">{{ note.content }}</div>
+                </div>
+                <!-- 文本框 -->
+                <div
+                  v-for="text in wbTexts"
+                  :key="text.id"
+                  class="wb-text-box"
+                  :style="{ left: text.x + 'px', top: text.y + 'px', color: text.color }"
+                  @mousedown.stop="startDragText($event, text)"
+                >
+                  <div contenteditable="true" @blur="updateTextContent($event, text)">{{ text.content || '双击编辑文本' }}</div>
+                  <button class="wb-text-delete" @click.stop="deleteWbText(text.id)" title="删除">×</button>
+                </div>
+                <!-- SVG 连线和画笔 -->
+                <svg class="wb-draw-layer" :viewBox="wbViewBox">
+                  <!-- 连线 -->
+                  <line
+                    v-for="line in wbLines"
+                    :key="line.id"
+                    :x1="line.x1" :y1="line.y1"
+                    :x2="line.x2" :y2="line.y2"
+                    :stroke="line.color"
+                    stroke-width="2"
+                    stroke-dasharray="5,5"
+                  />
+                  <!-- 自由画笔路径 -->
+                  <path
+                    v-for="(path, idx) in wbDrawPaths"
+                    :key="'path-' + idx"
+                    :d="path.d"
+                    :stroke="path.color"
+                    stroke-width="2"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <!-- 当前绘制的线 -->
+                  <path
+                    v-if="wbCurrentPath"
+                    :d="wbCurrentPath"
+                    :stroke="activeWbColor"
+                    stroke-width="2"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    opacity="0.8"
+                  />
+                </svg>
+                <!-- 空状态提示 -->
+                <div v-if="wbNotes.length === 0 && wbTexts.length === 0 && wbDrawPaths.length === 0 && wbLines.length === 0" class="wb-empty-hint">
+                  <div class="wb-empty-icon">🎨</div>
+                  <div class="wb-empty-text">选择工具开始创作</div>
+                  <div class="wb-empty-tips">便签 · 连线 · 画笔 · 文本</div>
+                </div>
+              </div>
+              <div class="ws-whiteboard-footer">
+                <span class="wb-stats">便签: {{ wbNotes.length }} | 文本: {{ wbTexts.length }} | 连线: {{ wbLines.length }}</span>
+                <el-button size="small" type="primary" plain @click="saveWhiteboard">
+                  <el-icon><CollectionTag /></el-icon>
+                  保存白板
                 </el-button>
               </div>
+            </div>
+
+            <!-- ===== 文件 Tab ===== -->
+            <div v-show="activeCollabTab === 'files'" class="ws-tab-content ws-files-content">
+              <div class="ws-files-upload-area"
+                @dragover.prevent="fileDragOver = true"
+                @dragleave="fileDragOver = false"
+                @drop.prevent="handleFileDropToFiles"
+                :class="{ 'drag-over': fileDragOver }"
+              >
+                <el-icon class="upload-area-icon"><Upload /></el-icon>
+                <div class="upload-area-text">拖拽文件到此处上传</div>
+                <div class="upload-area-hint">或</div>
+                <el-upload
+                  :show-file-list="false"
+                  :before-upload="handleBeforeFileUpload"
+                  multiple
+                >
+                  <el-button type="primary" plain size="small">点击选择文件</el-button>
+                </el-upload>
+              </div>
+              <el-scrollbar class="ws-files-scroll">
+                <div v-if="sharedFiles.length === 0" class="ws-files-empty">
+                  <el-empty description="暂无共享文件" :image-size="60" />
+                </div>
+                <div v-else class="ws-files-grid">
+                  <div
+                    v-for="file in sharedFiles"
+                    :key="file.id"
+                    class="ws-file-card-large"
+                    @click="previewFile(file)"
+                  >
+                    <div class="ws-file-preview" :class="'preview-' + file.type">
+                      <span class="file-preview-icon">{{ fileIconEmoji(file.type) }}</span>
+                    </div>
+                    <div class="ws-file-card-body">
+                      <div class="ws-file-name-row">
+                        <span class="ws-file-name-large">{{ file.name }}</span>
+                      </div>
+                      <div class="ws-file-meta-row">
+                        <span>{{ file.size }}</span>
+                        <span>·</span>
+                        <span>{{ file.uploader }}</span>
+                      </div>
+                      <div class="ws-file-actions-row">
+                        <el-button size="small" text @click.stop="previewFile(file)">
+                          <el-icon><Document /></el-icon>
+                          预览
+                        </el-button>
+                        <el-button size="small" text @click.stop="downloadFile(file)">
+                          <el-icon><Download /></el-icon>
+                          下载
+                        </el-button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </el-scrollbar>
             </div>
           </div>
+
+          <!-- 历史记录侧边栏 -->
+          <transition name="slide-fade">
+            <div v-if="historyPanelOpen" class="ws-history-panel">
+              <div class="ws-history-header">
+                <span class="ws-history-title">
+                  <el-icon><RefreshRight /></el-icon>
+                  协作历史
+                </span>
+                <button class="ws-history-close" @click="historyPanelOpen = false">
+                  <el-icon><Close /></el-icon>
+                </button>
+              </div>
+              <el-scrollbar class="ws-history-scroll">
+                <div class="ws-history-timeline">
+                  <div
+                    v-for="(item, idx) in historyEvents"
+                    :key="item.id"
+                    class="ws-history-item"
+                    :class="'event-' + item.type"
+                    @click="jumpToHistory(item)"
+                  >
+                    <div class="ws-history-dot"></div>
+                    <div class="ws-history-content">
+                      <div class="ws-history-title-row">
+                        <span class="ws-history-icon">{{ historyIcon(item.type) }}</span>
+                        <span class="ws-history-event-title">{{ item.title }}</span>
+                      </div>
+                      <div class="ws-history-desc">{{ item.description }}</div>
+                      <div class="ws-history-time">{{ item.time }}</div>
+                    </div>
+                    <div v-if="idx < historyEvents.length - 1" class="ws-history-line"></div>
+                  </div>
+                  <el-empty v-if="historyEvents.length === 0" description="暂无历史记录" :image-size="40" />
+                </div>
+              </el-scrollbar>
+            </div>
+          </transition>
         </div>
       </main>
 
@@ -682,6 +1110,347 @@
       </div>
     </div>
 
+    <!-- ========== 注册专家对话框 ========== -->
+    <RegisterExpertDialog
+      v-model="showRegisterDialog"
+      @registered="onExpertRegistered"
+    />
+
+    <!-- ========== 发起辩论对话框 ========== -->
+    <el-dialog
+      v-model="showDebateDialog"
+      title="发起专家辩论"
+      width="520px"
+      :close-on-click-modal="!debateSubmitting"
+      class="debate-dialog"
+    >
+      <el-form label-width="88px" label-position="right">
+        <el-form-item label="辩题" required>
+          <el-input
+            v-model="debateConfig.topic"
+            type="textarea"
+            :rows="2"
+            placeholder="请输入辩论主题…"
+            maxlength="200"
+            show-word-limit
+            resize="none"
+          />
+        </el-form-item>
+
+        <el-form-item label="参与专家" required>
+          <div class="debate-expert-picker">
+            <div class="debate-expert-list">
+              <div
+                v-for="exp in experts.filter(e => e.status === 'active')"
+                :key="exp.id"
+                class="debate-expert-chip"
+                :class="{ selected: debateConfig.selectedExpertIds.includes(exp.id) }"
+                @click="toggleDebateExpert(exp.id)"
+              >
+                <span class="chip-avatar" :style="{ background: expertColor(exp.type) }">
+                  {{ expertEmoji(exp.type) }}
+                </span>
+                <span class="chip-name">{{ exp.name }}</span>
+                <el-icon v-if="debateConfig.selectedExpertIds.includes(exp.id)" class="chip-check"><CircleCheckFilled /></el-icon>
+              </div>
+            </div>
+            <div class="debate-expert-count">
+              已选 <b>{{ debateConfig.selectedExpertIds.length }}</b> 位专家（至少 2 位）
+            </div>
+          </div>
+        </el-form-item>
+
+        <el-form-item label="辩论模式">
+          <div class="debate-mode-picker">
+            <div
+              v-for="opt in debateModeOptions"
+              :key="opt.value"
+              class="debate-mode-card"
+              :class="{ active: debateConfig.mode === opt.value }"
+              @click="debateConfig.mode = opt.value"
+            >
+              <div class="mode-icon">{{ opt.icon }}</div>
+              <div class="mode-name">{{ opt.label }}</div>
+              <div class="mode-desc">{{ opt.desc }}</div>
+            </div>
+          </div>
+        </el-form-item>
+
+        <el-form-item v-if="debateConfig.mode === 'adversarial'" label="辩论轮次">
+          <el-input-number v-model="debateConfig.rounds" :min="1" :max="10" size="small" />
+          <span class="form-hint">轮</span>
+        </el-form-item>
+
+        <el-form-item label="辩论状态">
+          <el-tag :type="debateStatusTagType" effect="light" size="small">
+            {{ debateStatusLabel }}
+          </el-tag>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="showDebateDialog = false" :disabled="debateSubmitting">取消</el-button>
+          <el-button
+            type="primary"
+            :loading="debateSubmitting"
+            :disabled="!canStartDebate"
+            @click="startDebate"
+          >
+            <el-icon><Swords /></el-icon>
+            <span>开始辩论</span>
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- ========== 多专家咨询对话框 ========== -->
+    <el-dialog
+      v-model="showMultiConsultDialog"
+      title="多专家咨询"
+      width="560px"
+      :close-on-click-modal="!multiConsultSubmitting"
+      class="multi-consult-dialog"
+    >
+      <el-form label-width="88px" label-position="right">
+        <el-form-item label="咨询问题" required>
+          <el-input
+            v-model="multiConsultConfig.question"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入您想咨询的问题…"
+            maxlength="500"
+            show-word-limit
+            resize="none"
+          />
+        </el-form-item>
+
+        <el-form-item label="选择专家" required>
+          <div class="consult-expert-picker">
+            <div class="consult-expert-list">
+              <div
+                v-for="exp in experts.filter(e => e.status === 'active')"
+                :key="exp.id"
+                class="consult-expert-chip"
+                :class="{ selected: multiConsultConfig.selectedExpertIds.includes(exp.id) }"
+                @click="toggleMultiConsultExpert(exp.id)"
+              >
+                <span class="chip-avatar" :style="{ background: expertColor(exp.type) }">
+                  {{ expertEmoji(exp.type) }}
+                </span>
+                <span class="chip-name">{{ exp.name }}</span>
+                <el-icon v-if="multiConsultConfig.selectedExpertIds.includes(exp.id)" class="chip-check"><CircleCheckFilled /></el-icon>
+              </div>
+            </div>
+            <div class="consult-expert-count">
+              已选 <b>{{ multiConsultConfig.selectedExpertIds.length }}</b> 位专家
+            </div>
+          </div>
+        </el-form-item>
+
+        <el-form-item label="咨询模式">
+          <el-radio-group v-model="multiConsultConfig.mode" class="consult-mode-group">
+            <el-radio-button value="parallel">
+              <span class="mode-icon-inline">⚡</span>
+              并行模式
+              <span class="mode-hint">（同时回答）</span>
+            </el-radio-button>
+            <el-radio-button value="serial">
+              <span class="mode-icon-inline">🔄</span>
+              串行模式
+              <span class="mode-hint">（依次回答）</span>
+            </el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+
+        <el-form-item label="结果展示">
+          <el-switch
+            v-model="multiConsultCompareView"
+            active-text="对比视图"
+            inactive-text="列表视图"
+          />
+        </el-form-item>
+      </el-form>
+
+      <!-- 咨询结果展示 -->
+      <div v-if="multiConsultResults.length > 0" class="consult-results-section">
+        <div class="results-section-head">
+          <span class="results-section-title">
+            <el-icon><DocumentCopy /></el-icon>
+            咨询结果
+          </span>
+          <el-tag size="small" type="success" effect="light">
+            {{ multiConsultResults.length }} 位专家已回答
+          </el-tag>
+        </div>
+
+        <!-- 对比视图 -->
+        <div v-if="multiConsultCompareView" class="compare-view">
+          <div class="compare-grid">
+            <div
+              v-for="(result, idx) in multiConsultResults"
+              :key="idx"
+              class="compare-card"
+            >
+              <div class="compare-card-head" :style="{ borderTopColor: expertColor(result.expert?.type) }">
+                <div class="compare-expert">
+                  <span class="compare-avatar" :style="{ background: expertColor(result.expert?.type) }">
+                    {{ expertEmoji(result.expert?.type) }}
+                  </span>
+                  <span class="compare-name">{{ result.expert?.name || '专家' }}</span>
+                </div>
+                <el-tag size="small" type="primary" effect="light" v-if="result.confidence">
+                  置信度 {{ (result.confidence * 100).toFixed(0) }}%
+                </el-tag>
+              </div>
+              <div class="compare-card-body">
+                <div class="compare-content">{{ result.response }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 列表视图 -->
+        <div v-else class="list-view">
+          <div
+            v-for="(result, idx) in multiConsultResults"
+            :key="idx"
+            class="result-item-card"
+          >
+            <div class="result-item-head">
+              <span class="result-avatar" :style="{ background: expertColor(result.expert?.type) }">
+                {{ expertEmoji(result.expert?.type) }}
+              </span>
+              <span class="result-name">{{ result.expert?.name || '专家' }}</span>
+              <el-tag v-if="result.confidence" size="small" type="primary" effect="light">
+                置信度 {{ (result.confidence * 100).toFixed(0) }}%
+              </el-tag>
+              <span v-if="result.duration_ms" class="result-duration">{{ (result.duration_ms / 1000).toFixed(1) }}s</span>
+            </div>
+            <div class="result-item-body">{{ result.response }}</div>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="showMultiConsultDialog = false" :disabled="multiConsultSubmitting">关闭</el-button>
+          <el-button
+            type="primary"
+            :loading="multiConsultSubmitting"
+            :disabled="!canStartMultiConsult"
+            @click="startMultiConsult"
+          >
+            <el-icon><Connection /></el-icon>
+            <span>开始咨询</span>
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- ========== 智能匹配对话框 ========== -->
+    <el-dialog
+      v-model="showSmartRouteDialog"
+      title="智能匹配专家"
+      width="500px"
+      :close-on-click-modal="!smartRoutingLoading"
+      class="smart-route-dialog"
+    >
+      <div class="smart-route-intro">
+        <div class="intro-icon">🧠</div>
+        <div class="intro-text">
+          <div class="intro-title">AI 智能路由</div>
+          <div class="intro-desc">输入问题描述，系统将自动推荐最匹配的专家</div>
+        </div>
+      </div>
+
+      <el-form label-width="88px" label-position="right">
+        <el-form-item label="问题描述" required>
+          <el-input
+            v-model="smartRouteQuestion"
+            type="textarea"
+            :rows="3"
+            placeholder="请描述您的问题或需求…"
+            maxlength="300"
+            show-word-limit
+            resize="none"
+            @keyup.enter.ctrl="doSmartRoute"
+          />
+        </el-form-item>
+
+        <el-form-item label="推荐数量">
+          <el-input-number v-model="smartRouteMaxExperts" :min="1" :max="6" size="small" />
+          <span class="form-hint">位专家</span>
+        </el-form-item>
+      </el-form>
+
+      <div class="smart-route-action">
+        <el-button
+          type="primary"
+          :loading="smartRoutingLoading"
+          :disabled="!smartRouteQuestion.trim()"
+          @click="doSmartRoute"
+          class="smart-route-btn"
+        >
+          <el-icon><Compass /></el-icon>
+          <span>{{ smartRoutingLoading ? '匹配中…' : '开始智能匹配' }}</span>
+        </el-button>
+      </div>
+
+      <!-- 匹配结果 -->
+      <div v-if="smartRouteResult" class="smart-route-results">
+        <div class="route-result-head">
+          <span class="route-result-title">匹配结果</span>
+          <el-tag size="small" type="success" effect="light">
+            {{ smartRouteResult.selected?.length || 0 }} 位推荐
+          </el-tag>
+        </div>
+
+        <div class="route-expert-list">
+          <div
+            v-for="(item, idx) in smartRouteResult.selected || []"
+            :key="item.id || idx"
+            class="route-expert-item"
+          >
+            <div class="route-rank">{{ idx + 1 }}</div>
+            <div class="route-avatar" :style="{ background: expertColor(item.type || item.expert_type) }">
+              {{ expertEmoji(item.type || item.expert_type) }}
+            </div>
+            <div class="route-info">
+              <div class="route-name">{{ item.name || item.expert_name }}</div>
+              <div class="route-type">{{ EXPERT_TYPES[item.type || item.expert_type] || item.type || '专家' }}</div>
+              <div v-if="item.reason" class="route-reason">{{ item.reason }}</div>
+            </div>
+            <div class="route-score">
+              <div class="score-ring" :style="{ '--score': item.score || item.confidence || 0 }">
+                <span>{{ ((item.score || item.confidence || 0) * 100).toFixed(0) }}%</span>
+              </div>
+              <span class="score-label">匹配度</span>
+            </div>
+            <el-button
+              size="small"
+              type="primary"
+              plain
+              class="route-select-btn"
+              @click="selectRoutedExpert(item)"
+            >选择</el-button>
+          </div>
+        </div>
+
+        <div class="route-actions-footer">
+          <el-button size="small" @click="selectAllRoutedExperts">
+            <el-icon><CircleCheckFilled /></el-icon>
+            一键选择全部推荐
+          </el-button>
+        </div>
+      </div>
+
+      <div v-else-if="smartRoutingLoading" class="smart-route-loading">
+        <el-icon class="is-loading loading-spinner"><Loading /></el-icon>
+        <span>正在分析您的问题并匹配专家…</span>
+      </div>
+    </el-dialog>
+
     <!-- 全局通知 -->
     <el-notification v-for="notif in notifications" :key="notif.id"
       :title="notif.title"
@@ -694,7 +1463,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { ElMessage, ElNotification } from 'element-plus'
 import {
   Search, MagicStick, Bell, ArrowLeft, ArrowRight, Plus,
@@ -702,14 +1471,18 @@ import {
   Document, ChatDotRound, ChatLineSquare, ArrowDown, ArrowUp,
   Folder, FolderOpened, Upload, Edit, CircleCheckFilled,
   Share, Link, Paperclip, Promotion, Loading, RefreshRight,
-  UserFilled, SetUp, Pointer, Rank, Delete, CollectionTag
+  UserFilled, SetUp, Pointer, Rank, Delete, CollectionTag,
+  Swords, Connection, Compass, DocumentCopy, Warning, Download,
+  Top, Bottom
 } from '@element-plus/icons-vue'
 import { EXPERT_TYPES } from '@/constants/expert.constants'
 import { runAllianceFullSSE, getAllianceCapabilities } from '@/api/alliance'
 import {
   getExperts, getExpertGraph, listExpertSessions,
-  expertDebate, expertOrchestrate, multiExpertConsult
+  expertDebate, expertOrchestrate, multiExpertConsult,
+  routeExperts, registerExpert
 } from '@/api/experts.api.js'
+import RegisterExpertDialog from '@/components/expert/RegisterExpertDialog.vue'
 import {
   kbListDocuments, kbGetCategories, kbGetTags,
   kbSearch, kbGetVersions, kbGetStats
@@ -721,18 +1494,48 @@ const rightCollapsed = ref(false)
 const collabExpanded = ref(true)
 const aiAssistantOpen = ref(false)
 const hasNotifications = ref(true)
+const notifCount = ref(3)
+const historyPanelOpen = ref(false)
+
+// ========== KPI 指标卡 ==========
+const kpiCards = ref([
+  { key: 'experts', icon: '👥', value: 12, label: '在线专家', trend: 8, gradient: 'linear-gradient(135deg, #7c3aed, #06b6d4)' },
+  { key: 'sessions', icon: '💬', value: 28, label: '协作会话', trend: 15, gradient: 'linear-gradient(135deg, #ec4899, #8b5cf6)' },
+  { key: 'docs', icon: '📄', value: 156, label: '知识文档', trend: 5, gradient: 'linear-gradient(135deg, #10b981, #14b8a6)' },
+  { key: 'tasks', icon: '🎯', value: 7, label: '进行中任务', trend: -2, gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)' }
+])
+
+function onKpiClick(key) {
+  if (key === 'experts') {
+    leftCollapsed.value = false
+  } else if (key === 'docs') {
+    rightCollapsed.value = false
+    activeKbTab.value = 'docs'
+  } else if (key === 'sessions') {
+    collabExpanded.value = true
+    activeCollabTab.value = 'discussion'
+  } else if (key === 'tasks') {
+    activeMode.value = 'orchestration'
+  }
+}
 
 // ========== 工作模式 ==========
-const activeMode = ref('collaboration')
+const savedMode = localStorage.getItem('expert_workspace_mode')
+const activeMode = ref(savedMode || 'collaboration')
+const modeTransitioning = ref(false)
 const workModes = [
-  { key: 'exploration', label: '知识探索', iconComp: 'Search' },
-  { key: 'collaboration', label: '专家协作', iconComp: 'UserFilled' },
-  { key: 'orchestration', label: '任务编排', iconComp: 'SetUp' },
-  { key: 'analysis', label: '深度分析', iconComp: 'DataAnalysis' }
+  { key: 'exploration', label: '知识探索', iconComp: 'Search', gradient: 'linear-gradient(135deg, #06b6d4, #3b82f6)' },
+  { key: 'collaboration', label: '专家协作', iconComp: 'UserFilled', gradient: 'linear-gradient(135deg, #7c3aed, #06b6d4)' },
+  { key: 'orchestration', label: '任务编排', iconComp: 'SetUp', gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)' },
+  { key: 'analysis', label: '深度分析', iconComp: 'DataAnalysis', gradient: 'linear-gradient(135deg, #10b981, #14b8a6)' }
 ]
 
 function switchWorkMode(mode) {
+  if (activeMode.value === mode) return
+  modeTransitioning.value = true
   activeMode.value = mode
+  // 保存模式记忆
+  localStorage.setItem('expert_workspace_mode', mode)
   // 切换模式时调整面板状态
   if (mode === 'exploration') {
     leftCollapsed.value = true
@@ -747,6 +1550,10 @@ function switchWorkMode(mode) {
     leftCollapsed.value = true
     rightCollapsed.value = true
   }
+  setTimeout(() => {
+    modeTransitioning.value = false
+  }, 400)
+  addHistoryEvent('mode', `切换到${workModes.find(m => m.key === mode)?.label || ''}模式`, '工作模式已切换')
 }
 
 // ========== 项目 ==========
@@ -776,6 +1583,44 @@ const expertSearch = ref('')
 const activeExpert = ref(null)
 const selectedExpertIds = ref([])
 const notifications = ref([])
+
+// ========== 对话框状态 ==========
+const showRegisterDialog = ref(false)
+const showDebateDialog = ref(false)
+const showMultiConsultDialog = ref(false)
+const showSmartRouteDialog = ref(false)
+const debateSubmitting = ref(false)
+const multiConsultSubmitting = ref(false)
+const smartRoutingLoading = ref(false)
+
+// ========== 辩论配置 ==========
+const debateConfig = reactive({
+  topic: '',
+  selectedExpertIds: [],
+  mode: 'adversarial', // adversarial 对抗式 / roundtable 圆桌式
+  rounds: 3
+})
+const debateStatus = ref('preparing') // preparing / ongoing / summarized
+const debateMessages = ref([])
+const debateSummary = ref('')
+const debateModeOptions = [
+  { value: 'adversarial', label: '对抗式辩论', icon: '⚔️', desc: '专家分正反两方，针锋相对' },
+  { value: 'roundtable', label: '圆桌式讨论', icon: '圆桌', desc: '多位专家平等交流，各抒己见' }
+]
+
+// ========== 多专家咨询配置 ==========
+const multiConsultConfig = reactive({
+  question: '',
+  selectedExpertIds: [],
+  mode: 'parallel' // parallel 并行 / serial 串行
+})
+const multiConsultResults = ref([])
+const multiConsultCompareView = ref(false)
+
+// ========== 智能路由匹配 ==========
+const smartRouteQuestion = ref('')
+const smartRouteResult = ref(null)
+const smartRouteMaxExperts = ref(3)
 
 const onlineExpertCount = computed(() =>
   experts.value.filter(e => e.status === 'active').length
@@ -807,6 +1652,28 @@ function expertColor(type) {
     custom: '#64748b'
   }
   return colors[type] || '#6366f1'
+}
+
+function expertGradient(type) {
+  const gradients = {
+    algorithm: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+    architecture: 'linear-gradient(135deg, #6366f1, #06b6d4)',
+    data: 'linear-gradient(135deg, #10b981, #14b8a6)',
+    ai: 'linear-gradient(135deg, #ec4899, #8b5cf6)',
+    workflow: 'linear-gradient(135deg, #f59e0b, #ef4444)',
+    graph: 'linear-gradient(135deg, #06b6d4, #3b82f6)',
+    security: 'linear-gradient(135deg, #ef4444, #f97316)',
+    performance: 'linear-gradient(135deg, #f97316, #f59e0b)',
+    monitor: 'linear-gradient(135deg, #14b8a6, #10b981)',
+    market: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
+    mcp: 'linear-gradient(135deg, #0ea5e9, #06b6d4)',
+    automation: 'linear-gradient(135deg, #84cc16, #10b981)',
+    requirement: 'linear-gradient(135deg, #f43f5e, #ec4899)',
+    fusion: 'linear-gradient(135deg, #a855f7, #7c3aed)',
+    operator: 'linear-gradient(135deg, #64748b, #475569)',
+    custom: 'linear-gradient(135deg, #64748b, #475569)'
+  }
+  return gradients[type] || 'linear-gradient(135deg, #7c3aed, #06b6d4)'
 }
 
 function expertEmoji(type) {
@@ -973,6 +1840,750 @@ function sessionModeLabel(mode) {
 function sessionModeType(mode) {
   const map = { smart: 'info', single: 'primary', multi: 'success', debate: 'warning', algorithm: 'danger' }
   return map[mode] || 'info'
+}
+
+// ========== 协作 Tab 配置 ==========
+const activeCollabTab = ref('discussion')
+const collabTabs = computed(() => [
+  { key: 'discussion', label: '讨论', icon: 'ChatLineSquare', badge: collabMessages.value.length },
+  { key: 'whiteboard', label: '白板', icon: 'CollectionTag', badge: wbNotes.value.length + wbTexts.value.length || null },
+  { key: 'files', label: '文件', icon: 'FolderOpened', badge: sharedFiles.value.length || null }
+])
+
+// ========== 协作成员 ==========
+const collabMembers = ref([
+  { id: 'user-1', name: '我', avatar: 'U', color: 'linear-gradient(135deg, #7c3aed, #06b6d4)', status: 'active', role: 'host' },
+  { id: 'exp-002', name: '陈架构', avatar: '🏗️', color: 'linear-gradient(135deg, #6366f1, #06b6d4)', status: 'active', role: 'expert' },
+  { id: 'exp-004', name: '张AI', avatar: '🤖', color: 'linear-gradient(135deg, #ec4899, #8b5cf6)', status: 'active', role: 'expert' },
+  { id: 'exp-006', name: '赵图谱', avatar: '🕸️', color: 'linear-gradient(135deg, #06b6d4, #3b82f6)', status: 'busy', role: 'expert' },
+  { id: 'exp-001', name: '林算法', avatar: '🧮', color: 'linear-gradient(135deg, #6366f1, #8b5cf6)', status: 'active', role: 'expert' }
+])
+
+function memberStatusText(status) {
+  const map = { active: '在线', busy: '忙碌', offline: '离线', idle: '空闲' }
+  return map[status] || '在线'
+}
+
+// ========== 正在输入的专家 ==========
+const typingExperts = ref([])
+
+// ========== 消息状态 ==========
+function msgStatusText(status) {
+  const map = { sent: '已发送', thinking: '正在思考', done: '已完成', failed: '失败' }
+  return map[status] || ''
+}
+
+// ========== 项目阶段进度 ==========
+const projectPhases = ref([
+  { key: 'requirement', label: '需求分析' },
+  { key: 'architecture', label: '架构设计' },
+  { key: 'development', label: '开发实现' },
+  { key: 'testing', label: '测试验证' },
+  { key: 'release', label: '发布上线' }
+])
+const currentProjectPhase = ref(1)
+
+function jumpToPhase(idx) {
+  currentProjectPhase.value = idx
+  const phase = projectPhases.value[idx]
+  addHistoryEvent('phase', `进入「${phase.label}」阶段`, '项目阶段已切换')
+  ElMessage.info(`已切换到「${phase.label}」阶段`)
+}
+
+// ========== 共享文件 ==========
+const sharedFiles = ref([
+  { id: 'f-001', name: '架构设计文档.pdf', type: 'pdf', size: '2.4 MB', uploader: '陈架构', time: '10:30' },
+  { id: 'f-002', name: '需求规格说明书.docx', type: 'doc', size: '1.8 MB', uploader: '我', time: '09:15' },
+  { id: 'f-003', name: '系统架构图.png', type: 'image', size: '856 KB', uploader: '张AI', time: '昨天' },
+  { id: 'f-004', name: '接口定义.xlsx', type: 'excel', size: '342 KB', uploader: '赵图谱', time: '昨天' }
+])
+const filesBarExpanded = ref(true)
+const dragOver = ref(false)
+const fileDragOver = ref(false)
+
+function fileIconEmoji(type) {
+  const icons = { pdf: '📕', doc: '📘', image: '🖼️', excel: '📗', ppt: '📙', zip: '📦', code: '💻', other: '📄' }
+  return icons[type] || '📄'
+}
+
+function handleBeforeFileUpload(file) {
+  const type = getFileType(file.name)
+  const newFile = {
+    id: 'f-' + Date.now(),
+    name: file.name,
+    type: type,
+    size: formatFileSize(file.size),
+    uploader: '我',
+    time: '刚刚'
+  }
+  sharedFiles.value.unshift(newFile)
+  addHistoryEvent('file', `上传文件「${file.name}」`, '文件已共享到协作区')
+  ElMessage.success(`文件「${file.name}」上传成功`)
+  return false // 阻止自动上传，使用自定义逻辑
+}
+
+function handleFileDrop(e) {
+  dragOver.value = false
+  const files = e.dataTransfer?.files
+  if (files && files.length > 0) {
+    Array.from(files).forEach(file => {
+      handleBeforeFileUpload(file)
+    })
+  }
+}
+
+function handleFileDropToFiles(e) {
+  fileDragOver.value = false
+  const files = e.dataTransfer?.files
+  if (files && files.length > 0) {
+    Array.from(files).forEach(file => {
+      handleBeforeFileUpload(file)
+    })
+  }
+}
+
+function getFileType(filename) {
+  const ext = filename.split('.').pop()?.toLowerCase()
+  if (['pdf'].includes(ext)) return 'pdf'
+  if (['doc', 'docx', 'txt', 'md'].includes(ext)) return 'doc'
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)) return 'image'
+  if (['xls', 'xlsx', 'csv'].includes(ext)) return 'excel'
+  if (['ppt', 'pptx'].includes(ext)) return 'ppt'
+  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return 'zip'
+  if (['js', 'ts', 'py', 'java', 'go', 'cpp', 'html', 'css', 'vue', 'json'].includes(ext)) return 'code'
+  return 'other'
+}
+
+function previewFile(file) {
+  if (file.type === 'image') {
+    ElMessage.info(`正在预览图片：${file.name}`)
+  } else {
+    ElMessage.info(`正在打开文档：${file.name}`)
+  }
+}
+
+function downloadFile(file) {
+  ElMessage.success(`开始下载：${file.name}`)
+}
+
+function sendToWhiteboard() {
+  if (collabInput.value.trim()) {
+    addWbNote(collabInput.value.substring(0, 20), collabInput.value)
+    ElMessage.success('已添加到白板')
+  } else {
+    ElMessage.warning('请先输入内容')
+  }
+}
+
+// ========== 白板功能 ==========
+const whiteboardRef = ref(null)
+const activeWbTool = ref('select')
+const activeWbColor = ref('#7c3aed')
+const wbNotes = ref([])
+const wbTexts = ref([])
+const wbLines = ref([])
+const wbDrawPaths = ref([])
+const wbCurrentPath = ref('')
+const wbViewBox = ref('0 0 800 400')
+let wbDrawing = false
+let wbDragElement = null
+let wbDragOffset = { x: 0, y: 0 }
+let wbPathPoints = []
+
+const whiteboardTools = [
+  { key: 'select', label: '选择', icon: '👆' },
+  { key: 'note', label: '便签', icon: '📝' },
+  { key: 'line', label: '连线', icon: '➖' },
+  { key: 'pen', label: '画笔', icon: '🖌️' },
+  { key: 'text', label: '文本', icon: '🔤' },
+  { key: 'eraser', label: '橡皮擦', icon: '🧹' }
+]
+
+const wbColors = ['#7c3aed', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#64748b']
+
+function selectWbTool(tool) {
+  activeWbTool.value = tool
+}
+
+function onWbMouseDown(e) {
+  const rect = whiteboardRef.value?.getBoundingClientRect()
+  if (!rect) return
+  const x = e.clientX - rect.left
+  const y = e.clientY - rect.top
+
+  if (activeWbTool.value === 'note') {
+    addWbNote('新便签', '', x, y)
+    activeWbTool.value = 'select'
+  } else if (activeWbTool.value === 'text') {
+    addWbText('新文本', x, y)
+    activeWbTool.value = 'select'
+  } else if (activeWbTool.value === 'pen') {
+    wbDrawing = true
+    wbPathPoints = [{ x, y }]
+    wbCurrentPath.value = `M ${x} ${y}`
+  } else if (activeWbTool.value === 'line') {
+    wbDrawing = true
+    wbPathPoints = [{ x, y }]
+  }
+}
+
+function onWbMouseMove(e) {
+  const rect = whiteboardRef.value?.getBoundingClientRect()
+  if (!rect) return
+  const x = e.clientX - rect.left
+  const y = e.clientY - rect.top
+
+  if (wbDragElement) {
+    wbDragElement.x = x - wbDragOffset.x
+    wbDragElement.y = y - wbDragOffset.y
+  }
+
+  if (wbDrawing && activeWbTool.value === 'pen' && wbPathPoints.length > 0) {
+    wbPathPoints.push({ x, y })
+    wbCurrentPath.value = wbPathPoints.map((p, i) =>
+      i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`
+    ).join(' ')
+  }
+}
+
+function onWbMouseUp(e) {
+  if (wbDrawing && activeWbTool.value === 'pen' && wbPathPoints.length > 1) {
+    wbDrawPaths.value.push({
+      d: wbCurrentPath.value,
+      color: activeWbColor.value
+    })
+    addHistoryEvent('whiteboard', '添加画笔路径', '白板内容已更新')
+  }
+  wbDrawing = false
+  wbDragElement = null
+  wbCurrentPath.value = ''
+  wbPathPoints = []
+}
+
+function addWbNote(title, content = '', x = 100, y = 80) {
+  const note = {
+    id: 'note-' + Date.now(),
+    title: title,
+    content: content,
+    x: x,
+    y: y,
+    color: activeWbColor.value + '20'
+  }
+  wbNotes.value.push(note)
+  addHistoryEvent('whiteboard', `添加便签「${title}」`, '白板内容已更新')
+}
+
+function startDragNote(e, note) {
+  if (activeWbTool.value === 'eraser') {
+    deleteWbNote(note.id)
+    return
+  }
+  if (activeWbTool.value !== 'select') return
+  const rect = whiteboardRef.value?.getBoundingClientRect()
+  if (!rect) return
+  wbDragOffset.x = e.clientX - rect.left - note.x
+  wbDragOffset.y = e.clientY - rect.top - note.y
+  wbDragElement = note
+}
+
+function deleteWbNote(id) {
+  const idx = wbNotes.value.findIndex(n => n.id === id)
+  if (idx >= 0) {
+    wbNotes.value.splice(idx, 1)
+    addHistoryEvent('whiteboard', '删除便签', '白板内容已更新')
+  }
+}
+
+function updateNoteContent(e, note) {
+  note.content = e.target.innerText
+}
+
+function addWbText(content, x = 100, y = 100) {
+  const text = {
+    id: 'text-' + Date.now(),
+    content: content,
+    x: x,
+    y: y,
+    color: activeWbColor.value
+  }
+  wbTexts.value.push(text)
+  addHistoryEvent('whiteboard', `添加文本框`, '白板内容已更新')
+}
+
+function startDragText(e, text) {
+  if (activeWbTool.value === 'eraser') {
+    deleteWbText(text.id)
+    return
+  }
+  if (activeWbTool.value !== 'select') return
+  const rect = whiteboardRef.value?.getBoundingClientRect()
+  if (!rect) return
+  wbDragOffset.x = e.clientX - rect.left - text.x
+  wbDragOffset.y = e.clientY - rect.top - text.y
+  wbDragElement = text
+}
+
+function deleteWbText(id) {
+  const idx = wbTexts.value.findIndex(t => t.id === id)
+  if (idx >= 0) {
+    wbTexts.value.splice(idx, 1)
+    addHistoryEvent('whiteboard', '删除文本框', '白板内容已更新')
+  }
+}
+
+function updateTextContent(e, text) {
+  text.content = e.target.innerText
+}
+
+function clearWhiteboard() {
+  wbNotes.value = []
+  wbTexts.value = []
+  wbLines.value = []
+  wbDrawPaths.value = []
+  addHistoryEvent('whiteboard', '清空画布', '白板已清空')
+  ElMessage.success('白板已清空')
+}
+
+function saveWhiteboard() {
+  const data = {
+    notes: wbNotes.value,
+    texts: wbTexts.value,
+    lines: wbLines.value,
+    drawPaths: wbDrawPaths.value
+  }
+  if (activeSession.value) {
+    localStorage.setItem('wb_' + activeSession.value.id, JSON.stringify(data))
+  }
+  addHistoryEvent('whiteboard', '保存白板内容', '白板已保存')
+  ElMessage.success('白板内容已保存')
+}
+
+// ========== 历史记录 ==========
+const historyEvents = ref([
+  { id: 'h-001', type: 'message', title: '陈架构 发送了消息', description: '关于微服务架构的建议...', time: '10:45' },
+  { id: 'h-002', type: 'file', title: '上传文件', description: '架构设计文档.pdf', time: '10:30' },
+  { id: 'h-003', type: 'phase', title: '进入架构设计阶段', description: '项目阶段已切换', time: '10:00' },
+  { id: 'h-004', type: 'whiteboard', title: '添加便签', description: '核心架构思路', time: '09:45' },
+  { id: 'h-005', type: 'mode', title: '切换到专家协作模式', description: '工作模式已切换', time: '09:30' }
+])
+
+function addHistoryEvent(type, title, description) {
+  const now = new Date()
+  const time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0')
+  historyEvents.value.unshift({
+    id: 'h-' + Date.now(),
+    type: type,
+    title: title,
+    description: description,
+    time: time
+  })
+  // 最多保留 50 条
+  if (historyEvents.value.length > 50) {
+    historyEvents.value = historyEvents.value.slice(0, 50)
+  }
+}
+
+function historyIcon(type) {
+  const icons = {
+    message: '💬', file: '📎', phase: '📊',
+    whiteboard: '🎨', mode: '🔄', member: '👥', task: '🎯'
+  }
+  return icons[type] || '📌'
+}
+
+function jumpToHistory(item) {
+  if (item.type === 'phase') {
+    // 跳转到对应阶段
+  } else if (item.type === 'file') {
+    activeCollabTab.value = 'files'
+  } else if (item.type === 'whiteboard') {
+    activeCollabTab.value = 'whiteboard'
+  }
+  ElMessage.info(`跳转到：${item.title}`)
+}
+
+// ========== 快捷键 ==========
+function handleKeydown(e) {
+  // Ctrl+1~4 切换工作模式
+  if (e.ctrlKey && ['1', '2', '3', '4'].includes(e.key)) {
+    e.preventDefault()
+    const idx = parseInt(e.key) - 1
+    if (workModes[idx]) {
+      switchWorkMode(workModes[idx].key)
+    }
+  }
+  // Ctrl+K 全局搜索
+  if (e.ctrlKey && e.key === 'k') {
+    e.preventDefault()
+    doGlobalSearch()
+  }
+}
+
+// ========== 注册专家回调 ==========
+function onExpertRegistered(expertData) {
+  ElMessage.success(`专家「${expertData.name || '新专家'}」注册成功`)
+  // 添加到专家列表
+  if (expertData && !experts.value.find(e => e.id === expertData.id)) {
+    experts.value.unshift({
+      id: expertData.id,
+      name: expertData.name,
+      type: expertData.type,
+      status: 'active',
+      capabilities: expertData.capabilities || [],
+      metrics: expertData.metrics || { total_consults: 0, success_rate: 0.95 }
+    })
+  }
+  loadExperts()
+}
+
+// ========== 辩论相关 ==========
+const canStartDebate = computed(() =>
+  debateConfig.topic.trim() && debateConfig.selectedExpertIds.length >= 2
+)
+
+const debateStatusLabel = computed(() => {
+  const map = { preparing: '准备中', ongoing: '进行中', summarized: '已总结' }
+  return map[debateStatus.value] || '准备中'
+})
+
+const debateStatusTagType = computed(() => {
+  const map = { preparing: 'info', ongoing: 'warning', summarized: 'success' }
+  return map[debateStatus.value] || 'info'
+})
+
+function openDebateDialog() {
+  debateConfig.topic = ''
+  debateConfig.selectedExpertIds = [...selectedExpertIds.value]
+  debateConfig.mode = 'adversarial'
+  debateConfig.rounds = 3
+  debateStatus.value = 'preparing'
+  debateMessages.value = []
+  debateSummary.value = ''
+  showDebateDialog.value = true
+}
+
+function toggleDebateExpert(id) {
+  const idx = debateConfig.selectedExpertIds.indexOf(id)
+  if (idx >= 0) {
+    debateConfig.selectedExpertIds.splice(idx, 1)
+  } else {
+    debateConfig.selectedExpertIds.push(id)
+  }
+}
+
+async function startDebate() {
+  if (!canStartDebate.value) return
+
+  debateSubmitting.value = true
+  debateStatus.value = 'ongoing'
+  debateMessages.value = []
+  debateSummary.value = ''
+
+  try {
+    const result = await expertDebate({
+      question: debateConfig.topic,
+      expert_ids: debateConfig.selectedExpertIds,
+      rounds: debateConfig.rounds,
+      mode: debateConfig.mode
+    })
+
+    // 处理辩论结果
+    const history = result?.history || result?.data?.history || []
+    history.forEach((round, roundIdx) => {
+      const results = round.results || []
+      results.forEach(r => {
+        if (r.success) {
+          debateMessages.value.push({
+            id: Date.now() + roundIdx * 100 + Math.random(),
+            expert: r.expert,
+            response: r.response,
+            round: roundIdx + 1,
+            confidence: r.confidence
+          })
+        }
+      })
+    })
+    debateSummary.value = result?.final_synthesis || result?.data?.final_synthesis || ''
+    debateStatus.value = 'summarized'
+
+    // 同步到协作消息区
+    appendDebateToCollab()
+
+    ElMessage.success(`辩论完成，共 ${debateConfig.rounds} 轮`)
+  } catch (e) {
+    console.warn('[debate] 辩论 API 调用失败，使用模拟数据:', e)
+    await simulateDebate()
+  } finally {
+    debateSubmitting.value = false
+  }
+}
+
+async function simulateDebate() {
+  const selectedExperts = experts.value.filter(e => debateConfig.selectedExpertIds.includes(e.id))
+  if (selectedExperts.length < 2) {
+    ElMessage.error('请至少选择 2 位专家')
+    debateStatus.value = 'preparing'
+    return
+  }
+
+  debateMessages.value = []
+  for (let round = 1; round <= debateConfig.rounds; round++) {
+    for (const exp of selectedExperts) {
+      await new Promise(r => setTimeout(r, 300 + Math.random() * 400))
+      debateMessages.value.push({
+        id: Date.now() + Math.random(),
+        expert: { id: exp.id, name: exp.name, type: exp.type },
+        response: `【第${round}轮 · ${exp.name}】从${EXPERT_TYPES[exp.type] || '专业'}角度来看，「${debateConfig.topic.slice(0, 20)}」这个问题的核心在于${round === 1 ? '明确定义和边界' : round === 2 ? '深入分析技术方案的优劣' : '综合评估可行性和风险'}。我认为应该采用${['渐进式迭代', '模块化设计', '数据驱动决策'][round % 3]}的方法来解决。`,
+        round,
+        confidence: 0.85 + Math.random() * 0.12
+      })
+    }
+  }
+
+  debateSummary.value = `## 辩论总结\n\n经过 ${debateConfig.rounds} 轮激烈讨论，${selectedExperts.map(e => e.name).join('、')} 等专家从不同角度对「${debateConfig.topic}」进行了深入分析。\n\n### 核心共识\n- 问题具有多维度复杂性，需要跨领域协作\n- 建议采用分阶段实施策略，降低风险\n- 数据驱动决策是关键成功因素\n\n### 分歧点\n- 技术路线选择上各有侧重\n- 实施优先级排序存在差异\n\n### 建议方案\n综合各方观点，建议采用「${debateConfig.mode === 'adversarial' ? '混合架构' : '协同推进'}」策略，充分发挥各领域专家优势，分阶段落地实施。`
+
+  debateStatus.value = 'summarized'
+  appendDebateToCollab()
+  ElMessage.warning('辩论服务暂不可用，已生成模拟辩论结果')
+}
+
+function appendDebateToCollab() {
+  if (!activeSession.value) {
+    const newSess = {
+      id: 'sess-' + Date.now(),
+      title: debateConfig.topic.slice(0, 20) + '…',
+      expert_count: debateConfig.selectedExpertIds.length,
+      mode: 'debate',
+      created_at: Date.now(),
+      updated_at: Date.now()
+    }
+    sessions.value.unshift(newSess)
+    selectSession(newSess)
+  }
+
+  collabMessages.value.push({
+    id: Date.now(),
+    role: 'system',
+    name: '辩论系统',
+    avatar: '⚔️',
+    color: '#ef4444',
+    time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+    text: `【辩论开始】主题：${debateConfig.topic}`
+  })
+
+  debateMessages.value.forEach(msg => {
+    collabMessages.value.push({
+      id: Date.now() + Math.random(),
+      role: 'expert',
+      name: msg.expert?.name || '专家',
+      avatar: expertEmoji(msg.expert?.type),
+      color: expertColor(msg.expert?.type),
+      phase: 'debate',
+      time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+      text: msg.response
+    })
+  })
+
+  if (debateSummary.value) {
+    collabMessages.value.push({
+      id: Date.now() + 999,
+      role: 'assistant',
+      name: '辩论总结',
+      avatar: '📝',
+      color: '#10b981',
+      phase: 'synthesize',
+      time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+      text: debateSummary.value
+    })
+  }
+
+  scrollMessagesToBottom()
+}
+
+// ========== 多专家咨询 ==========
+const canStartMultiConsult = computed(() =>
+  multiConsultConfig.question.trim() && multiConsultConfig.selectedExpertIds.length >= 1
+)
+
+function openMultiConsultDialog() {
+  multiConsultConfig.question = ''
+  multiConsultConfig.selectedExpertIds = [...selectedExpertIds.value]
+  multiConsultConfig.mode = 'parallel'
+  multiConsultResults.value = []
+  multiConsultCompareView.value = false
+  showMultiConsultDialog.value = true
+}
+
+function toggleMultiConsultExpert(id) {
+  const idx = multiConsultConfig.selectedExpertIds.indexOf(id)
+  if (idx >= 0) {
+    multiConsultConfig.selectedExpertIds.splice(idx, 1)
+  } else {
+    multiConsultConfig.selectedExpertIds.push(id)
+  }
+}
+
+async function startMultiConsult() {
+  if (!canStartMultiConsult.value) return
+
+  multiConsultSubmitting.value = true
+  multiConsultResults.value = []
+
+  try {
+    const result = await multiExpertConsult({
+      question: multiConsultConfig.question,
+      expert_ids: multiConsultConfig.selectedExpertIds,
+      mode: multiConsultConfig.mode
+    })
+
+    const results = result?.results || result?.data?.results || []
+    multiConsultResults.value = results
+      .filter(r => r.success)
+      .map(r => ({
+        expert: r.expert,
+        response: r.response,
+        confidence: r.confidence,
+        duration_ms: r.duration_ms
+      }))
+
+    ElMessage.success(`咨询完成，共 ${multiConsultResults.value.length} 位专家参与`)
+  } catch (e) {
+    console.warn('[multiConsult] 多专家咨询 API 失败，使用模拟数据:', e)
+    await simulateMultiConsult()
+  } finally {
+    multiConsultSubmitting.value = false
+  }
+}
+
+async function simulateMultiConsult() {
+  const selectedExperts = experts.value.filter(e => multiConsultConfig.selectedExpertIds.includes(e.id))
+  multiConsultResults.value = []
+
+  if (multiConsultConfig.mode === 'parallel') {
+    // 并行：同时返回
+    await new Promise(r => setTimeout(r, 1000))
+    selectedExperts.forEach((exp, idx) => {
+      multiConsultResults.value.push({
+        expert: { id: exp.id, name: exp.name, type: exp.type },
+        response: `【${exp.name}的回答】关于「${multiConsultConfig.question.slice(0, 20)}」的问题，从${EXPERT_TYPES[exp.type] || '专业'}角度分析：\n\n1. 核心要点：问题涉及多个层面，需要系统思考\n2. 建议方案：采用${['分治法', '迭代法', '模块化'][idx % 3]}策略逐步解决\n3. 注意事项：需要关注边界条件和异常处理\n\n以上是我的初步分析，供参考。`,
+        confidence: 0.8 + Math.random() * 0.18,
+        duration_ms: 800 + Math.random() * 1200
+      })
+    })
+  } else {
+    // 串行：依次返回
+    for (const exp of selectedExperts) {
+      await new Promise(r => setTimeout(r, 600 + Math.random() * 600))
+      multiConsultResults.value.push({
+        expert: { id: exp.id, name: exp.name, type: exp.type },
+        response: `【${exp.name}的回答】针对「${multiConsultConfig.question.slice(0, 20)}」这个问题，我的分析如下：\n\n首先，明确问题的核心目标和约束条件。其次，基于${EXPERT_TYPES[exp.type] || '专业领域'}的知识，推荐以下方案：\n- 方案A：保守稳妥，风险低\n- 方案B：激进高效，收益高\n- 方案C：折中平衡，适用性广\n\n建议根据实际情况选择合适的方案。`,
+        confidence: 0.78 + Math.random() * 0.2,
+        duration_ms: 600 + Math.random() * 800
+      })
+    }
+  }
+
+  ElMessage.warning('咨询服务暂不可用，已生成模拟回答')
+}
+
+// ========== 智能路由匹配 ==========
+function openSmartRouteDialog() {
+  smartRouteQuestion.value = ''
+  smartRouteResult.value = null
+  smartRouteMaxExperts.value = 3
+  showSmartRouteDialog.value = true
+}
+
+async function doSmartRoute() {
+  if (!smartRouteQuestion.value.trim()) return
+
+  smartRoutingLoading.value = true
+  smartRouteResult.value = null
+
+  try {
+    const result = await routeExperts({
+      question: smartRouteQuestion.value,
+      maxExperts: smartRouteMaxExperts.value
+    })
+
+    smartRouteResult.value = result?.data || result
+    ElMessage.success('智能匹配完成')
+  } catch (e) {
+    console.warn('[routeExperts] 智能路由 API 失败，使用模拟数据:', e)
+    simulateSmartRoute()
+  } finally {
+    smartRoutingLoading.value = false
+  }
+}
+
+function simulateSmartRoute() {
+  const question = smartRouteQuestion.value.toLowerCase()
+  const scoredExperts = experts.value
+    .filter(e => e.status === 'active')
+    .map(e => {
+      let baseScore = 0.5 + Math.random() * 0.3
+      // 根据问题关键词简单匹配
+      const caps = (e.capabilities || []).join('').toLowerCase()
+      const typeMatch = question.includes(e.type) ? 0.15 : 0
+      const capMatch = e.capabilities?.some(c => question.includes(c.toLowerCase())) ? 0.1 : 0
+      return {
+        ...e,
+        score: Math.min(0.98, baseScore + typeMatch + capMatch),
+        reason: `基于「${EXPERT_TYPES[e.type]}」领域专长和${e.capabilities?.[0] || '相关'}技能匹配`
+      }
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, smartRouteMaxExperts.value)
+
+  smartRouteResult.value = {
+    selected: scoredExperts,
+    question: smartRouteQuestion.value,
+    mode: 'auto',
+    reasoning: `根据问题描述中的关键词和领域特征，从 ${experts.value.length} 位专家中筛选出最佳匹配`
+  }
+
+  ElMessage.warning('智能路由服务暂不可用，已生成模拟匹配结果')
+}
+
+function selectRoutedExpert(item) {
+  const id = item.id || item.expert_id
+  if (!id) return
+  if (!selectedExpertIds.value.includes(id)) {
+    selectedExpertIds.value.push(id)
+  }
+  ElMessage.success(`已选择专家「${item.name || item.expert_name}」`)
+}
+
+function selectAllRoutedExperts() {
+  const items = smartRouteResult.value?.selected || []
+  let added = 0
+  items.forEach(item => {
+    const id = item.id || item.expert_id
+    if (id && !selectedExpertIds.value.includes(id)) {
+      selectedExpertIds.value.push(id)
+      added++
+    }
+  })
+  if (added > 0) {
+    ElMessage.success(`已添加 ${added} 位推荐专家`)
+  } else {
+    ElMessage.info('推荐专家均已选中')
+  }
+  showSmartRouteDialog.value = false
+}
+
+// ========== 全局事件 ==========
+function handleOpenRegisterExpert() {
+  showRegisterDialog.value = true
+}
+function handleOpenExpertDebate() {
+  openDebateDialog()
+}
+function handleOpenMultiConsult() {
+  openMultiConsultDialog()
+}
+function handleSmartRouteExpert() {
+  openSmartRouteDialog()
 }
 
 // ========== 快捷工具 ==========
@@ -1880,6 +3491,26 @@ onMounted(() => {
   loadDocuments()
   loadTags()
   loadAllianceCapabilities()
+
+  // 注册全局事件监听
+  window.addEventListener('mox:open-register-expert', handleOpenRegisterExpert)
+  window.addEventListener('mox:open-expert-debate', handleOpenExpertDebate)
+  window.addEventListener('mox:open-multi-consult', handleOpenMultiConsult)
+  window.addEventListener('mox:smart-route-expert', handleSmartRouteExpert)
+
+  // 快捷键监听
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onBeforeUnmount(() => {
+  // 清理全局事件监听
+  window.removeEventListener('mox:open-register-expert', handleOpenRegisterExpert)
+  window.removeEventListener('mox:open-expert-debate', handleOpenExpertDebate)
+  window.removeEventListener('mox:open-multi-consult', handleOpenMultiConsult)
+  window.removeEventListener('mox:smart-route-expert', handleSmartRouteExpert)
+
+  // 清理快捷键监听
+  window.removeEventListener('keydown', handleKeydown)
 })
 
 // 监听选中专家变化，更新会话中的专家数
@@ -3283,6 +4914,1775 @@ watch(selectedExpertIds, () => {
   }
   .ws-mode-tab {
     padding: 6px 10px;
+  }
+}
+
+/* ========== 智能匹配按钮 ========== */
+.ws-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ws-smart-match-btn {
+  padding: 0 6px !important;
+  font-size: 11px !important;
+  color: #6366f1 !important;
+}
+.ws-smart-match-btn:hover {
+  color: #4338ca !important;
+}
+
+/* ========== 通用对话框样式 ========== */
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.form-hint {
+  margin-left: 8px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* ========== 辩论对话框 ========== */
+.debate-dialog :deep(.el-dialog__body) {
+  padding-top: 8px;
+}
+.debate-expert-picker {
+  width: 100%;
+}
+.debate-expert-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 140px;
+  overflow-y: auto;
+  padding: 4px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+.debate-expert-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px 5px 5px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+.debate-expert-chip:hover {
+  border-color: #c7d2fe;
+  background: #f5f3ff;
+}
+.debate-expert-chip.selected {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(14, 165, 233, 0.08));
+  border-color: #6366f1;
+}
+.chip-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+}
+.chip-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: #334155;
+}
+.chip-check {
+  color: #6366f1;
+  font-size: 14px;
+}
+.debate-expert-count {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #64748b;
+}
+.debate-expert-count b {
+  color: #6366f1;
+  font-weight: 700;
+}
+
+.debate-mode-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+}
+.debate-mode-card {
+  padding: 14px 12px;
+  border-radius: 10px;
+  border: 2px solid #e2e8f0;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.25s;
+  text-align: center;
+}
+.debate-mode-card:hover {
+  border-color: #c7d2fe;
+  background: #f5f3ff;
+}
+.debate-mode-card.active {
+  border-color: #6366f1;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(14, 165, 233, 0.05));
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+}
+.debate-mode-card .mode-icon {
+  font-size: 24px;
+  margin-bottom: 6px;
+}
+.debate-mode-card .mode-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+.debate-mode-card .mode-desc {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+/* ========== 多专家咨询对话框 ========== */
+.multi-consult-dialog :deep(.el-dialog__body) {
+  padding-top: 8px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.consult-expert-picker {
+  width: 100%;
+}
+.consult-expert-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 140px;
+  overflow-y: auto;
+  padding: 4px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+.consult-expert-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px 5px 5px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+.consult-expert-chip:hover {
+  border-color: #c7d2fe;
+  background: #f5f3ff;
+}
+.consult-expert-chip.selected {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(16, 185, 129, 0.08));
+  border-color: #10b981;
+}
+.consult-expert-count {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #64748b;
+}
+.consult-expert-count b {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.consult-mode-group :deep(.el-radio-button__inner) {
+  padding: 8px 16px;
+}
+.mode-icon-inline {
+  margin-right: 4px;
+}
+.mode-hint {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-left: 2px;
+}
+
+/* 咨询结果 */
+.consult-results-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+.results-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.results-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* 对比视图 */
+.compare-view .compare-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+.compare-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.compare-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-top: 3px solid #6366f1;
+}
+.compare-expert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.compare-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+}
+.compare-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+}
+.compare-card-body {
+  padding: 12px;
+  flex: 1;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.compare-content {
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: #334155;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 列表视图 */
+.list-view {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.result-item-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.result-item-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+.result-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+}
+.result-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+}
+.result-duration {
+  margin-left: auto;
+  font-size: 11px;
+  color: #94a3b8;
+}
+.result-item-body {
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.75;
+  color: #334155;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+/* ========== 智能匹配对话框 ========== */
+.smart-route-dialog :deep(.el-dialog__body) {
+  padding-top: 8px;
+}
+.smart-route-intro {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.06), rgba(16, 185, 129, 0.05));
+  border-radius: 10px;
+  margin-bottom: 16px;
+  border: 1px solid #e0e7ff;
+}
+.intro-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+.intro-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e1b4b;
+  margin-bottom: 2px;
+}
+.intro-desc {
+  font-size: 12px;
+  color: #6366f1;
+}
+
+.smart-route-action {
+  display: flex;
+  justify-content: center;
+  margin: 8px 0 16px;
+}
+.smart-route-btn {
+  width: 100%;
+  font-weight: 600;
+  padding: 12px;
+}
+
+/* 匹配结果 */
+.smart-route-results {
+  margin-top: 8px;
+}
+.route-result-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.route-result-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
+}
+.route-expert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.route-expert-item {
+  display: grid;
+  grid-template-columns: 24px 40px 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s;
+}
+.route-expert-item:hover {
+  border-color: #c7d2fe;
+  background: #f5f3ff;
+}
+.route-rank {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #6366f1, #0ea5e9);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+}
+.route-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+}
+.route-info {
+  min-width: 0;
+}
+.route-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 2px;
+}
+.route-type {
+  font-size: 11px;
+  color: #64748b;
+  margin-bottom: 2px;
+}
+.route-reason {
+  font-size: 11px;
+  color: #6366f1;
+  line-height: 1.4;
+}
+.route-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.score-ring {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: conic-gradient(
+    #10b981 calc(var(--score) * 360deg),
+    #e2e8f0 calc(var(--score) * 360deg)
+  );
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+.score-ring::before {
+  content: '';
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f8fafc;
+}
+.score-ring span {
+  position: relative;
+  z-index: 1;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #1e293b;
+}
+.score-label {
+  font-size: 10px;
+  color: #64748b;
+}
+.route-select-btn {
+  flex-shrink: 0;
+}
+
+.route-actions-footer {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed #e2e8f0;
+  display: flex;
+  justify-content: center;
+}
+
+.smart-route-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 30px 20px;
+  color: #64748b;
+  font-size: 13px;
+}
+.loading-spinner {
+  font-size: 28px;
+  color: #6366f1;
+}
+
+/* ========== 玻璃拟态基础样式 ========== */
+.glass-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+.gradient-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: white;
+  font-weight: 600;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.gradient-btn {
+  background: linear-gradient(135deg, #7c3aed, #06b6d4) !important;
+  border: none !important;
+  color: white !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3) !important;
+}
+.gradient-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4) !important;
+}
+.gradient-btn:active {
+  transform: translateY(0);
+}
+
+.gradient-tag {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(6, 182, 212, 0.1)) !important;
+  border: 1px solid rgba(124, 58, 237, 0.2) !important;
+  color: #7c3aed !important;
+}
+
+/* ========== 顶部 Header 玻璃拟态升级 ========== */
+.glass-header {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.ws-header-gradient-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #7c3aed, #06b6d4, #10b981, #f59e0b, #7c3aed);
+  background-size: 200% 100%;
+  animation: gradientMove 8s ease infinite;
+}
+
+@keyframes gradientMove {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.ws-logo-icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #7c3aed, #06b6d4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.ws-project-selector {
+  position: relative;
+}
+
+.glass-tabs {
+  background: rgba(241, 245, 249, 0.8) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.ws-mode-tab {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ws-mode-tab .ws-mode-icon-wrap {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+}
+.ws-mode-tab .ws-mode-icon {
+  color: white;
+  font-size: 13px;
+}
+.ws-mode-tab:hover {
+  transform: translateY(-2px);
+}
+.ws-mode-tab:hover .ws-mode-icon-wrap {
+  opacity: 1;
+  transform: scale(1.1);
+}
+.ws-mode-tab.active {
+  background: white !important;
+  color: #7c3aed !important;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15) !important;
+}
+.ws-mode-tab.active .ws-mode-icon-wrap {
+  opacity: 1;
+}
+.ws-mode-shortcut {
+  font-size: 10px;
+  color: #94a3b8;
+  padding: 1px 4px;
+  background: rgba(148, 163, 184, 0.1);
+  border-radius: 4px;
+  margin-left: 2px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.ws-mode-tab:hover .ws-mode-shortcut {
+  opacity: 1;
+}
+
+.glass-search {
+  background: rgba(241, 245, 249, 0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 10px;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  transition: all 0.3s ease;
+}
+.glass-search:focus-within {
+  background: white;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+  border-color: rgba(124, 58, 237, 0.3);
+}
+.search-icon {
+  color: #94a3b8;
+}
+
+.ws-user-avatar-wrap {
+  position: relative;
+}
+.ws-avatar-online-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  background: #10b981;
+  border: 2px solid white;
+  border-radius: 50%;
+}
+
+/* ========== KPI 指标卡 ========== */
+.ws-kpi-row {
+  display: flex;
+  gap: 16px;
+  padding: 12px 12px 0 12px;
+  flex-shrink: 0;
+}
+
+.ws-kpi-card {
+  flex: 1;
+  border-radius: 16px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+.ws-kpi-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+}
+.ws-kpi-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+.ws-kpi-info {
+  flex: 1;
+  min-width: 0;
+}
+.ws-kpi-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+}
+.ws-kpi-label {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 2px;
+}
+.ws-kpi-trend {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 20px;
+}
+.ws-kpi-trend.up {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+}
+.ws-kpi-trend.down {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+.ws-kpi-gradient-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  opacity: 0.8;
+}
+
+/* ========== 专家卡片样式升级 ========== */
+.expert-card {
+  border-radius: 12px !important;
+  padding: 12px !important;
+  margin: 0 8px 8px 8px !important;
+  background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(248,250,252,0.9)) !important;
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative;
+  overflow: hidden;
+}
+.expert-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(124, 58, 237, 0.3), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.expert-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  border-color: rgba(124, 58, 237, 0.2) !important;
+}
+.expert-card:hover::before {
+  opacity: 1;
+}
+.expert-card.active {
+  border-color: rgba(124, 58, 237, 0.4) !important;
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.15) !important;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.05), rgba(6, 182, 212, 0.05)) !important;
+}
+.expert-card.selected {
+  border-color: rgba(16, 185, 129, 0.4) !important;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(20, 184, 166, 0.05)) !important;
+}
+
+.ws-expert-avatar {
+  width: 44px !important;
+  height: 44px !important;
+  font-size: 20px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.ws-expert-status-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+.ws-expert-status-dot.dot-active { background: #10b981; box-shadow: 0 0 6px rgba(16, 185, 129, 0.5); }
+.ws-expert-status-dot.dot-busy { background: #f59e0b; }
+.ws-expert-status-dot.dot-offline { background: #94a3b8; }
+.ws-expert-status-dot.dot-idle { background: #06b6d4; }
+
+.ws-expert-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ws-expert-rate {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: rgba(124, 58, 237, 0.1);
+}
+
+.ws-expert-status-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+.badge-active { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.badge-busy { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+.badge-offline { background: rgba(148, 163, 184, 0.1); color: #64748b; }
+.badge-idle { background: rgba(6, 182, 212, 0.1); color: #06b6d4; }
+
+/* ========== 快捷工具卡片样式 ========== */
+.tool-card {
+  background: white !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  padding: 12px 8px !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.tool-card:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1) !important;
+  border-color: rgba(124, 58, 237, 0.3) !important;
+}
+.tool-card.active {
+  border-color: rgba(124, 58, 237, 0.5) !important;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.05), rgba(6, 182, 212, 0.05)) !important;
+}
+.ws-tool-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+.tool-card:hover .ws-tool-icon-wrap {
+  transform: scale(1.1) rotate(-5deg);
+}
+
+/* ========== 协作区增强样式 ========== */
+.ws-collab-bar {
+  position: relative;
+  overflow: hidden;
+}
+.ws-collab-gradient-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #7c3aed, #06b6d4, #10b981);
+  opacity: 0.8;
+}
+
+.ws-collab-title-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(6, 182, 212, 0.1));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7c3aed;
+}
+
+.ws-collab-title-text {
+  font-weight: 600;
+  background: linear-gradient(135deg, #7c3aed, #06b6d4);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.ws-typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #7c3aed;
+  padding: 2px 10px;
+  background: rgba(124, 58, 237, 0.08);
+  border-radius: 12px;
+  margin-left: 8px;
+}
+.typing-dots-mini {
+  display: inline-flex;
+  gap: 2px;
+}
+.typing-dots-mini i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #7c3aed;
+  animation: typingBounce 1.4s infinite ease-in-out both;
+}
+.typing-dots-mini i:nth-child(1) { animation-delay: -0.32s; }
+.typing-dots-mini i:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes typingBounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+.ws-header-action-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.ws-header-action-btn:hover {
+  background: rgba(124, 58, 237, 0.1);
+  color: #7c3aed;
+}
+.ws-header-action-btn.active {
+  background: rgba(124, 58, 237, 0.15);
+  color: #7c3aed;
+}
+
+.ws-collab-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ========== 阶段进度条 ========== */
+.ws-phase-progress-bar {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 20px 16px;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.03), rgba(6, 182, 212, 0.03));
+  border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+.ws-phase-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.ws-phase-item:hover {
+  transform: translateY(-2px);
+}
+.ws-phase-dot-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  justify-content: center;
+  position: relative;
+}
+.ws-phase-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  z-index: 2;
+}
+.ws-phase-item.active .ws-phase-dot {
+  background: linear-gradient(135deg, #7c3aed, #06b6d4);
+  color: white;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
+  transform: scale(1.1);
+}
+.ws-phase-item.done .ws-phase-dot {
+  background: linear-gradient(135deg, #10b981, #14b8a6);
+  color: white;
+}
+.ws-phase-connector {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(100% - 28px);
+  height: 3px;
+  background: #e2e8f0;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+.ws-phase-connector.filled {
+  background: linear-gradient(90deg, #10b981, #14b8a6);
+}
+.ws-phase-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+.ws-phase-item.active .ws-phase-label {
+  color: #7c3aed;
+  font-weight: 600;
+}
+.ws-phase-item.done .ws-phase-label {
+  color: #10b981;
+}
+
+/* ========== 协作 Tab ========== */
+.ws-collab-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid #f1f5f9;
+  background: rgba(248, 250, 252, 0.5);
+}
+.ws-collab-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 13px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+}
+.ws-collab-tab:hover {
+  color: #7c3aed;
+}
+.ws-collab-tab.active {
+  color: #7c3aed;
+  font-weight: 600;
+}
+.ws-collab-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 3px;
+  background: linear-gradient(90deg, #7c3aed, #06b6d4);
+  border-radius: 2px;
+}
+.ws-collab-tab-icon {
+  font-size: 14px;
+}
+.ws-tab-badge {
+  margin-left: 4px;
+}
+.ws-collab-tabs-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ========== 协作成员头像组 ========== */
+.ws-collab-members {
+  display: flex;
+  align-items: center;
+}
+.ws-member-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: white;
+  border: 2px solid white;
+  margin-left: -6px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  position: relative;
+}
+.ws-member-avatar:first-child {
+  margin-left: 0;
+}
+.ws-member-avatar:hover {
+  transform: translateY(-2px) scale(1.1);
+  z-index: 20 !important;
+}
+.more-avatar {
+  background: #e2e8f0 !important;
+  color: #64748b !important;
+  font-size: 10px;
+  font-weight: 600;
+}
+.ws-member-status-dot {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid white;
+}
+.ws-member-status-dot.status-active { background: #10b981; }
+.ws-member-status-dot.status-busy { background: #f59e0b; }
+.ws-member-status-dot.status-offline { background: #94a3b8; }
+
+/* ========== Tab 内容通用 ========== */
+.ws-tab-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ========== 文件栏 ========== */
+.ws-files-bar {
+  margin: 8px 16px 0;
+  background: rgba(124, 58, 237, 0.04);
+  border-radius: 10px;
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  overflow: hidden;
+}
+.ws-files-bar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.ws-files-bar-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #7c3aed;
+}
+.ws-files-bar-toggle {
+  font-size: 12px !important;
+  color: #7c3aed !important;
+}
+.ws-files-list {
+  padding: 0 8px 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ws-file-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 180px;
+}
+.ws-file-card:hover {
+  border-color: #7c3aed;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.1);
+}
+.ws-file-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  background: #f1f5f9;
+  flex-shrink: 0;
+}
+.file-pdf { background: rgba(239, 68, 68, 0.1); }
+.file-doc { background: rgba(59, 130, 246, 0.1); }
+.file-image { background: rgba(16, 185, 129, 0.1); }
+.file-excel { background: rgba(34, 197, 94, 0.1); }
+.ws-file-info {
+  flex: 1;
+  min-width: 0;
+}
+.ws-file-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ws-file-meta {
+  font-size: 10px;
+  color: #94a3b8;
+}
+.ws-file-download {
+  color: #64748b !important;
+}
+
+/* ========== 消息气泡优化 ========== */
+.ws-collab-msg-avatar {
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.ws-msg-status {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+}
+.ws-msg-status.status-sent { color: #10b981; }
+.ws-msg-status.status-thinking { color: #f59e0b; }
+.ws-msg-status.status-done { color: #10b981; }
+.ws-msg-status.status-failed { color: #ef4444; }
+.pulse-icon {
+  animation: pulseRotate 2s linear infinite;
+}
+@keyframes pulseRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.ws-msg-files {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ws-msg-file-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: rgba(124, 58, 237, 0.08);
+  border-radius: 12px;
+  font-size: 12px;
+  color: #7c3aed;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ws-msg-file-chip:hover {
+  background: rgba(124, 58, 237, 0.15);
+}
+.msg-file-icon { font-size: 14px; }
+.msg-file-name {
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 拖拽上传区 */
+.ws-drop-zone {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(124, 58, 237, 0.95);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  z-index: 10;
+  border-radius: 12px;
+}
+.drop-zone-icon {
+  font-size: 32px;
+  color: white;
+}
+.drop-zone-text {
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.ws-upload-trigger {
+  display: inline-flex;
+}
+
+/* ========== 白板样式 ========== */
+.ws-whiteboard-content {
+  position: relative;
+}
+.ws-whiteboard-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: rgba(248, 250, 252, 0.8);
+  border-bottom: 1px solid #f1f5f9;
+  flex-wrap: wrap;
+}
+.ws-wb-tool {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+.ws-wb-tool:hover {
+  background: rgba(124, 58, 237, 0.1);
+  color: #7c3aed;
+}
+.ws-wb-tool.active {
+  background: rgba(124, 58, 237, 0.15);
+  color: #7c3aed;
+  font-weight: 500;
+}
+.ws-wb-tool-icon {
+  font-size: 14px;
+}
+.ws-wb-tool-divider {
+  width: 1px;
+  height: 20px;
+  background: #e2e8f0;
+  margin: 0 4px;
+}
+.ws-wb-color-picker {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+}
+.wb-color-label {
+  font-size: 12px;
+  color: #64748b;
+  margin-right: 4px;
+}
+.wb-color-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.wb-color-dot:hover {
+  transform: scale(1.2);
+}
+.wb-color-dot.active {
+  border-color: white;
+  box-shadow: 0 0 0 2px #7c3aed;
+  transform: scale(1.15);
+}
+
+.ws-whiteboard-canvas {
+  flex: 1;
+  position: relative;
+  background: 
+    radial-gradient(circle, rgba(124, 58, 237, 0.05) 1px, transparent 1px),
+    linear-gradient(135deg, #fafafa, #f5f5f5);
+  background-size: 20px 20px, 100% 100%;
+  overflow: hidden;
+  cursor: default;
+}
+
+.wb-sticky-note {
+  position: absolute;
+  width: 160px;
+  min-height: 100px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  cursor: move;
+  transition: box-shadow 0.2s;
+  z-index: 5;
+}
+.wb-sticky-note:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+.wb-note-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.6);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+.wb-note-delete {
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  font-size: 14px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.wb-note-delete:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: rgba(0, 0, 0, 0.7);
+}
+.wb-note-content {
+  padding: 8px 10px;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.75);
+  outline: none;
+  min-height: 40px;
+  word-wrap: break-word;
+}
+
+.wb-text-box {
+  position: absolute;
+  padding: 6px 10px;
+  cursor: move;
+  z-index: 5;
+  min-width: 80px;
+}
+.wb-text-box > div {
+  outline: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+.wb-text-delete {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: #ef4444;
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+  border-radius: 50%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.wb-text-box:hover .wb-text-delete {
+  display: flex;
+}
+
+.wb-draw-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.wb-empty-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #94a3b8;
+  pointer-events: none;
+}
+.wb-empty-icon { font-size: 48px; margin-bottom: 8px; opacity: 0.5; }
+.wb-empty-text { font-size: 14px; font-weight: 500; }
+.wb-empty-tips { font-size: 12px; margin-top: 4px; opacity: 0.7; }
+
+.ws-whiteboard-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(248, 250, 252, 0.8);
+  border-top: 1px solid #f1f5f9;
+}
+.wb-stats {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* ========== 文件 Tab 样式 ========== */
+.ws-files-upload-area {
+  margin: 12px 16px;
+  padding: 24px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  text-align: center;
+  transition: all 0.3s;
+  background: rgba(248, 250, 252, 0.5);
+}
+.ws-files-upload-area.drag-over {
+  border-color: #7c3aed;
+  background: rgba(124, 58, 237, 0.05);
+}
+.upload-area-icon {
+  font-size: 32px;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+.upload-area-text {
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+.upload-area-hint {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 12px;
+}
+
+.ws-files-scroll {
+  flex: 1;
+  padding: 0 16px 16px;
+}
+.ws-files-empty {
+  padding: 40px 0;
+}
+.ws-files-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+.ws-file-card-large {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.ws-file-card-large:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  border-color: rgba(124, 58, 237, 0.3);
+}
+.ws-file-preview {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  font-size: 36px;
+}
+.preview-pdf { background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(249, 115, 22, 0.1)); }
+.preview-doc { background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(6, 182, 212, 0.1)); }
+.preview-image { background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(20, 184, 166, 0.1)); }
+.preview-excel { background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.1)); }
+.file-preview-icon { opacity: 0.8; }
+.ws-file-card-body {
+  padding: 10px 12px;
+}
+.ws-file-name-row {
+  margin-bottom: 4px;
+}
+.ws-file-name-large {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+.ws-file-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+.ws-file-actions-row {
+  display: flex;
+  gap: 4px;
+}
+.ws-file-actions-row .el-button {
+  flex: 1;
+  font-size: 11px !important;
+  padding: 4px 0 !important;
+  color: #64748b !important;
+}
+.ws-file-actions-row .el-button:hover {
+  color: #7c3aed !important;
+}
+
+/* ========== 历史记录侧边栏 ========== */
+.ws-history-panel {
+  position: absolute;
+  right: 0;
+  top: 44px;
+  bottom: 0;
+  width: 280px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-left: 1px solid #e2e8f0;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.08);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+}
+.ws-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.ws-history-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #0f172a;
+}
+.ws-history-close {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.ws-history-close:hover {
+  background: #f1f5f9;
+  color: #ef4444;
+}
+.ws-history-scroll {
+  flex: 1;
+  overflow: hidden;
+}
+.ws-history-timeline {
+  padding: 12px 16px;
+  position: relative;
+}
+.ws-history-item {
+  position: relative;
+  padding-left: 24px;
+  padding-bottom: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ws-history-item:hover {
+  transform: translateX(2px);
+}
+.ws-history-item:hover .ws-history-event-title {
+  color: #7c3aed;
+}
+.ws-history-dot {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  border: 2px solid white;
+  box-shadow: 0 0 0 2px #e2e8f0;
+  z-index: 2;
+}
+.ws-history-item.event-message .ws-history-dot { background: #7c3aed; box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.3); }
+.ws-history-item.event-file .ws-history-dot { background: #06b6d4; box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.3); }
+.ws-history-item.event-phase .ws-history-dot { background: #f59e0b; box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3); }
+.ws-history-item.event-whiteboard .ws-history-dot { background: #10b981; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3); }
+.ws-history-item.event-mode .ws-history-dot { background: #ec4899; box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.3); }
+
+.ws-history-line {
+  position: absolute;
+  left: 5px;
+  top: 16px;
+  bottom: 0;
+  width: 2px;
+  background: #e2e8f0;
+  z-index: 1;
+}
+.ws-history-content {
+  background: rgba(248, 250, 252, 0.8);
+  border-radius: 8px;
+  padding: 8px 10px;
+  transition: all 0.2s;
+}
+.ws-history-item:hover .ws-history-content {
+  background: rgba(124, 58, 237, 0.06);
+}
+.ws-history-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+.ws-history-icon { font-size: 14px; }
+.ws-history-event-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #0f172a;
+  transition: color 0.2s;
+}
+.ws-history-desc {
+  font-size: 11px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+.ws-history-time {
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+/* ========== 过渡动画 ========== */
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.3s ease;
+}
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  transform: translateX(20px);
+  opacity: 0;
+}
+
+.mode-transition .ws-mode-tab {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ========== 响应式优化 ========== */
+@media (max-width: 1200px) {
+  .ws-kpi-card {
+    padding: 12px 16px;
+  }
+  .ws-kpi-value {
+    font-size: 20px;
+  }
+  .ws-kpi-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
   }
 }
 </style>

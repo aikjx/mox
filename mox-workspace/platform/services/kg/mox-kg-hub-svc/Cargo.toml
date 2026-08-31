@@ -1,0 +1,21 @@
+[package]
+name = "mox-kg-hub-svc"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+mox-platform-foundation = { path = "../../../foundation/mox-platform-foundation" }
+mox-kg-api = { path = "../../../api/mox-kg-api" }
+mox-kg-service-svc = { path = "../mox-kg-service-svc" }
+async-trait = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+
+

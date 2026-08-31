@@ -17,6 +17,8 @@ export const NAV_MODULES = [
   { key: 'workflow', label: '工作流', icon: 'Operation', path: '/workflow', color: '#f59e0b', bg: '#fffbeb' },
   // 专家联盟工作台（用户主入口）
   { key: 'expert-workspace', label: '专家联盟', icon: 'User', path: '/expert-workspace', color: '#7c3aed', bg: '#ede9fe' },
+  // 专家广场（专家发现与预约）
+  { key: 'expert-plaza', label: '专家广场', icon: 'Shop', path: '/expert-plaza', color: '#a855f7', bg: '#faf5ff' },
   // 专家联盟管理后台（管理入口）
   { key: 'expert-center', label: '联盟管理', icon: 'Setting', path: '/expert-center', color: '#8b5cf6', bg: '#f5f3ff' },
 
@@ -28,7 +30,7 @@ export const NAV_MODULES = [
 // ===== 侧边栏导航分组（3 大域）=====
 export const NAV_GROUPS = [
   { key: 'project',  label: '项目域',   order: 0, items: ['dashboard', 'tasks', 'resources'] },
-  { key: 'capability', label: '能力域', order: 1, items: ['ai', 'graph', 'operators', 'workflow', 'expert-workspace', 'expert-center'] },
+  { key: 'capability', label: '能力域', order: 1, items: ['ai', 'graph', 'operators', 'workflow', 'expert-workspace', 'expert-plaza', 'expert-center'] },
   { key: 'ecosystem',  label: '生态与管理', order: 2, items: ['market', 'admin'] }
 ]
 
@@ -80,11 +82,19 @@ export const SUB_MODULES = {
     { key: 'analysis', label: '深度分析', path: '/expert-workspace?mode=analysis' },
     { key: 'expert-center', label: '联盟管理', path: '/expert-center' }
   ],
+  // 专家广场（专家发现与预约）的二级模块
+  'expert-plaza': [
+    { key: 'discover', label: '发现专家', path: '/expert-plaza' },
+    { key: 'ranking', label: '排行榜', path: '/expert-plaza?tab=ranking' },
+    { key: 'appointments', label: '我的预约', path: '/expert-plaza?tab=appointments' },
+    { key: 'workspace', label: '专家工作台', path: '/expert-workspace' }
+  ],
   // 专家联盟管理后台的二级模块
   'expert-center': [
     { key: 'overview', label: '联盟总览', path: '/expert-center' },
     { key: 'enterprise', label: '企业管理', path: '/expert-center/enterprise' },
     { key: 'orchestrator', label: '编排引擎', path: '/expert-center/orchestrator' },
+    { key: 'config', label: '专家配置', path: '/expert-config' },
     { key: 'workspace', label: '返回工作台', path: '/expert-workspace' }
   ],
 

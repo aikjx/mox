@@ -1,0 +1,18 @@
+[package]
+name = "mox-flow-svcapi"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+mox-platform-foundation = { path = "../../foundation/mox-platform-foundation" }
+mox-flow-api = { path = "../../api/mox-flow-api" }
+tonic = { workspace = true }
+prost = { workspace = true }
+
+[dev-dependencies]
+
+
+

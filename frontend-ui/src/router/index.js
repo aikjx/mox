@@ -1,5 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { getToken as getSecureToken } from '@/utils/secureStorage'
+import { usePermissionStore } from '@/stores/permission.store'
 
 const routes = [
   { path: '/', redirect: '/ai' },
@@ -271,9 +273,27 @@ const routes = [
       }
     ]
   },
+  // 专家配置引擎（全维可配置）
+  {
+    path: '/expert-config',
+    name: 'ExpertConfig',
+    component: () => import('@/views/expert/ExpertConfigView.vue'),
+    meta: {
+      title: '专家配置',
+      backTo: { path: '/expert-center', label: '返回联盟管理' }
+    }
+  },
   // 兼容旧路径
   { path: '/expert-enterprise', redirect: '/expert-center/enterprise' },
   { path: '/expert-orchestrator', redirect: '/expert-center/orchestrator' },
+
+  // ===== 专家联盟广场 =====
+  {
+    path: '/expert-plaza',
+    name: 'ExpertPlaza',
+    component: () => import('@/views/expert/ExpertPlazaView.vue'),
+    meta: { title: '专家广场' }
+  },
 
   // ===== 算子商城 =====
   {
@@ -324,6 +344,24 @@ const routes = [
         meta: { title: '审计日志' }
       },
       {
+        path: 'menu',
+        name: 'AdminMenu',
+        component: () => import('@/views/admin/panels/AdminMenu.vue'),
+        meta: { title: '菜单管理' }
+      },
+      {
+        path: 'dict',
+        name: 'AdminDict',
+        component: () => import('@/views/admin/panels/AdminDict.vue'),
+        meta: { title: '字典管理' }
+      },
+      {
+        path: 'config',
+        name: 'AdminConfig',
+        component: () => import('@/views/admin/panels/AdminConfig.vue'),
+        meta: { title: '参数配置' }
+      },
+      {
         path: 'storage',
         name: 'AdminStorage',
         component: () => import('@/views/admin/panels/AdminStorage.vue'),
@@ -361,6 +399,14 @@ const routes = [
   { path: '/llm-config', redirect: '/admin/llm' },
   { path: '/knowledge-base', redirect: '/resources/knowledge' },
 
+  // 403 无权限页面
+  {
+    path: '/403',
+    name: 'Forbidden',
+    component: () => import('@/views/misc/Forbidden.vue'),
+    meta: { title: '无访问权限' }
+  },
+
   // 404 兜底
   {
     path: '/:pathMatch(.*)*',
@@ -381,20 +427,18 @@ const router = createRouter({
 const DEFAULT_TITLE = '璇玑系统 · Mox Graph System'
 
 // 不需要登录即可访问的页面白名单
-const WHITE_LIST = ['/login', '/portal', '/hall', '/share', '/s/']
+const WHITE_LIST = ['/login', '/portal', '/hall', '/share', '/s/', '/403']
 
 function isInWhiteList(path) {
   return WHITE_LIST.some(p => path === p || path.startsWith(p))
 }
 
 function getToken() {
-  if (typeof localStorage === 'undefined') return ''
-  return localStorage.getItem('mox-token') ||
-         localStorage.getItem('ous_api_token') ||
-         localStorage.getItem('ous_token') || ''
+  // 使用安全存储读取 token（自动兼容旧版 localStorage key：mox-token / ous_api_token / ous_token）
+  return getSecureToken()
 }
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   // 动态设置页面标题
   const pageTitle = to.meta?.title
   document.title = pageTitle ? `${pageTitle} · 璇玑系统` : DEFAULT_TITLE
@@ -416,8 +460,57 @@ router.beforeEach((to, from, next) => {
     return
   }
 
-  // TODO: 可在此处添加权限校验（基于 roles/permissions）
-  // 例如：if (to.meta.requiresPermission && !hasPermission(to.meta.requiresPermission)) { ... }
+  // 登录后首次加载权限
+  const permissionStore = usePermissionStore()
+  if (!permissionStore.loaded) {
+    try {
+      await permissionStore.loadPermissions()
+    } catch (e) {
+      console.warn('[Router] 权限加载失败，继续访问:', e?.message)
+    }
+  }
+
+  // 路由权限校验（meta.requiresPermission）
+  const requiresPerm = to.meta?.requiresPermission
+  if (requiresPerm) {
+    let hasAccess = false
+    if (Array.isArray(requiresPerm)) {
+      // 数组：任一权限满足即可
+      hasAccess = permissionStore.hasAnyPermission(requiresPerm)
+    } else {
+      // 字符串：单个权限
+      hasAccess = permissionStore.hasPermission(requiresPerm)
+    }
+
+    if (!hasAccess) {
+      ElMessage.warning('抱歉，您没有访问该页面的权限')
+      next({
+        path: '/403',
+        query: { redirect: to.fullPath }
+      })
+      return
+    }
+  }
+
+  // 路由角色校验（meta.requiresRole）
+  const requiresRole = to.meta?.requiresRole
+  if (requiresRole) {
+    let hasAccess = false
+    if (Array.isArray(requiresRole)) {
+      hasAccess = permissionStore.hasAnyRole(requiresRole)
+    } else {
+      hasAccess = permissionStore.hasRole(requiresRole)
+    }
+
+    if (!hasAccess) {
+      ElMessage.warning('抱歉，您的角色无访问权限')
+      next({
+        path: '/403',
+        query: { redirect: to.fullPath }
+      })
+      return
+    }
+  }
 
   next()
 })

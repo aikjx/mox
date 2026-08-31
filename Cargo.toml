@@ -230,6 +230,17 @@ mox-pipeline-framework = { path = "platform/domains/foundation/mox-pipeline-fram
 mox-alliance-common-proto = { path = "platform/domains/alliance/proto/mox-alliance-common-proto" }
 mox-alliance-scheduler-proto = { path = "platform/domains/alliance/proto/mox-alliance-scheduler-proto" }
 mox-alliance-executor-proto = { path = "platform/domains/alliance/proto/mox-alliance-executor-proto" }
+# Alliance core
+mox-alliance-core = { path = "platform/domains/alliance/core/mox-alliance-core" }
+mox-alliance-executor-core = { path = "platform/domains/alliance/core/mox-alliance-executor-core" }
+mox-alliance-scheduler-core = { path = "platform/domains/alliance/core/mox-alliance-scheduler-core" }
+# Alliance api
+mox-alliance-api = { path = "platform/domains/alliance/api" }
+# Alliance svc
+mox-alliance-executor-svc = { path = "platform/domains/alliance/svc/mox-alliance-executor-svc" }
+mox-alliance-scheduler-svc = { path = "platform/domains/alliance/svc/mox-alliance-scheduler-svc" }
+# Alliance sdk
+mox-alliance-sdk = { path = "platform/domains/alliance/sdk/mox-alliance-sdk" }
 # Core 层
 mox-data-formula-core = { path = "platform/domains/data/core/mox-data-formula-core" }
 mox-data-norm-core = { path = "platform/domains/data/core/mox-data-norm-core" }

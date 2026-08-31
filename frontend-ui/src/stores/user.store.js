@@ -1,40 +1,45 @@
 // 用户 Store - 用户信息、认证状态、权限、偏好等
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import {
+  secureSetItem,
+  secureGetItem,
+  secureRemoveItem,
+  setToken,
+  getToken,
+  removeToken,
+} from '@/utils/secureStorage'
 
 const USER_KEY = 'mox-user'
 const TOKEN_KEY = 'mox-token'
 
 function getStoredUser() {
-  if (typeof localStorage === 'undefined') return null
+  const raw = secureGetItem(USER_KEY, { tryLegacy: true })
+  if (!raw) return null
   try {
-    const raw = localStorage.getItem(USER_KEY)
-    return raw ? JSON.parse(raw) : null
+    return typeof raw === 'string' ? JSON.parse(raw) : raw
   } catch {
     return null
   }
 }
 
 function setStoredUser(user) {
-  if (typeof localStorage === 'undefined') return
   if (user) {
-    localStorage.setItem(USER_KEY, JSON.stringify(user))
+    secureSetItem(USER_KEY, JSON.stringify(user))
   } else {
-    localStorage.removeItem(USER_KEY)
+    secureRemoveItem(USER_KEY)
   }
 }
 
 function getStoredToken() {
-  if (typeof localStorage === 'undefined') return ''
-  return localStorage.getItem(TOKEN_KEY) || ''
+  return getToken()
 }
 
 function setStoredToken(token) {
-  if (typeof localStorage === 'undefined') return
   if (token) {
-    localStorage.setItem(TOKEN_KEY, token)
+    setToken(token, 86400)
   } else {
-    localStorage.removeItem(TOKEN_KEY)
+    removeToken()
   }
 }
 

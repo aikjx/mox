@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>专家联盟 2.0 交付报告 — 全维动态配置 · 企业级专家协作平台</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(135deg, #0f0a1e 0%, #1a1033 50%, #0d1b2a 100%);
+    color: #e2e8f0;
+    min-height: 100vh;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+
+  /* Hero Section */
+  .hero {
+    text-align: center;
+    padding: 80px 0 60px;
+    position: relative;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -200px; left: 50%; transform: translateX(-50%);
+    width: 800px; height: 600px;
+    background: radial-gradient(ellipse, rgba(124,58,237,0.3) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    top: 0; right: -100px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(6,182,212,0.25) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .badge {
+    display: inline-block;
+    padding: 6px 18px;
+    background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(6,182,212,0.2));
+    border: 1px solid rgba(124,58,237,0.4);
+    border-radius: 999px;
+    font-size: 14px;
+    color: #c4b5fd;
+    margin-bottom: 24px;
+    backdrop-filter: blur(10px);
+  }
+  .hero h1 {
+    font-size: 52px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 30%, #06b6d4 70%, #22d3ee 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 20px;
+    letter-spacing: -1px;
+  }
+  .hero .subtitle {
+    font-size: 20px;
+    color: #94a3b8;
+    margin-bottom: 32px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+    flex-wrap: wrap;
+  }
+  .hero-stat {
+    text-align: center;
+  }
+  .hero-stat .num {
+    font-size: 36px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #a78bfa, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-stat .label {
+    font-size: 13px;
+    color: #64748b;
+    margin-top: 4px;
+  }
+
+  /* Section */
+  .section { margin-bottom: 64px; }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .section-icon {
+    width: 48px; height: 48px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    background: linear-gradient(135deg, rgba(124,58,237,0.25), rgba(6,182,212,0.25));
+    border: 1px solid rgba(124,58,237,0.3);
+  }
+  .section-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #f1f5f9;
+  }
+  .section-desc {
+    color: #64748b;
+    font-size: 14px;
+    margin-top: 4px;
+  }
+
+  /* Glass Card */
+  .glass-card {
+    background: rgba(30, 27, 75, 0.4);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(124, 58, 237, 0.2);
+    border-radius: 20px;
+    padding: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .glass-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #7c3aed, #06b6d4, transparent);
+    opacity: 0.6;
+  }
+
+  /* Feature Grid */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 24px;
+  }
+  .feature-card {
+    background: rgba(30, 27, 75, 0.4);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(124, 58, 237, 0.15);
+    border-radius: 16px;
+    padding: 28px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .feature-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(124, 58, 237, 0.4);
+    box-shadow: 0 20px 40px rgba(124, 58, 237, 0.15);
+  }
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #7c3aed, #06b6d4);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .feature-card:hover::before { opacity: 1; }
+  .feature-icon {
+    width: 52px; height: 52px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    margin-bottom: 16px;
+  }
+  .feature-card h3 {
+    font-size: 18px;
+    color: #f1f5f9;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .feature-card p {
+    font-size: 14px;
+    color: #94a3b8;
+    line-height: 1.7;
+  }
+  .feature-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 14px;
+  }
+  .feature-tag {
+    padding: 3px 10px;
+    background: rgba(124, 58, 237, 0.15);
+    border: 1px solid rgba(124, 58, 237, 0.25);
+    border-radius: 999px;
+    font-size: 12px;
+    color: #c4b5fd;
+  }
+
+  /* Icon gradients */
+  .icon-purple { background: linear-gradient(135deg, #7c3aed, #a855f7); }
+  .icon-cyan { background: linear-gradient(135deg, #06b6d4, #22d3ee); }
+  .icon-green { background: linear-gradient(135deg, #10b981, #34d399); }
+  .icon-orange { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+  .icon-pink { background: linear-gradient(135deg, #ec4899, #f472b6); }
+  .icon-red { background: linear-gradient(135deg, #ef4444, #f87171); }
+  .icon-blue { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
+
+  /* Architecture Diagram */
+  .arch-diagram {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 32px;
+  }
+  .arch-layer {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .arch-node {
+    flex: 1;
+    min-width: 140px;
+    max-width: 200px;
+    padding: 16px;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.3s;
+  }
+  .arch-node:hover { transform: translateY(-2px); }
+  .arch-node .emoji { font-size: 24px; margin-bottom: 6px; }
+  .arch-label {
+    text-align: center;
+    font-size: 12px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .layer-1 .arch-node { background: linear-gradient(135deg, rgba(124,58,237,0.25), rgba(168,85,247,0.25)); border: 1px solid rgba(124,58,237,0.4); color: #ddd6fe; }
+  .layer-2 .arch-node { background: linear-gradient(135deg, rgba(6,182,212,0.25), rgba(34,211,238,0.25)); border: 1px solid rgba(6,182,212,0.4); color: #a5f3fc; }
+  .layer-3 .arch-node { background: linear-gradient(135deg, rgba(16,185,129,0.25), rgba(52,211,153,0.25)); border: 1px solid rgba(16,185,129,0.4); color: #a7f3d0; }
+  .layer-4 .arch-node { background: linear-gradient(135deg, rgba(245,158,11,0.25), rgba(251,191,36,0.25)); border: 1px solid rgba(245,158,11,0.4); color: #fde68a; }
+
+  .arch-arrow {
+    text-align: center;
+    color: #475569;
+    font-size: 20px;
+    margin: 4px 0;
+  }
+
+  /* File List */
+  .file-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .file-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(71, 85, 105, 0.3);
+    border-radius: 12px;
+    transition: all 0.2s;
+  }
+  .file-item:hover {
+    border-color: rgba(124, 58, 237, 0.4);
+    background: rgba(30, 27, 75, 0.5);
+  }
+  .file-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .file-info { flex: 1; }
+  .file-name {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    color: #e2e8f0;
+    font-weight: 500;
+  }
+  .file-desc {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 2px;
+  }
+  .file-meta {
+    display: flex;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+  .file-meta span {
+    font-size: 12px;
+    color: #94a3b8;
+  }
+  .file-meta .loc {
+    color: #a78bfa;
+    font-weight: 600;
+  }
+
+  /* Table */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .data-table th {
+    text-align: left;
+    padding: 14px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #94a3b8;
+    background: rgba(15, 23, 42, 0.5);
+    border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+  }
+  .data-table td {
+    padding: 14px 16px;
+    font-size: 13px;
+    color: #cbd5e1;
+    border-bottom: 1px solid rgba(71, 85, 105, 0.15);
+  }
+  .data-table tr:hover td {
+    background: rgba(124, 58, 237, 0.05);
+  }
+  .status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .status-done { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+  .status-new { background: rgba(124, 58, 237, 0.15); color: #a78bfa; border: 1px solid rgba(124, 58, 237, 0.3); }
+  .status-upgraded { background: rgba(6, 182, 212, 0.15); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.3); }
+
+  /* Highlight Box */
+  .highlight-box {
+    display: flex;
+    gap: 20px;
+    padding: 28px;
+    background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(6,182,212,0.1));
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    border-radius: 16px;
+    margin-top: 24px;
+  }
+  .highlight-icon {
+    font-size: 36px;
+    flex-shrink: 0;
+  }
+  .highlight-content h4 {
+    color: #e9d5ff;
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  .highlight-content p {
+    color: #94a3b8;
+    font-size: 14px;
+  }
+
+  /* Roadmap */
+  .roadmap {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    position: relative;
+  }
+  .roadmap-item {
+    position: relative;
+    padding: 24px;
+    background: rgba(30, 27, 75, 0.4);
+    border: 1px solid rgba(124, 58, 237, 0.15);
+    border-radius: 16px;
+  }
+  .roadmap-item.current {
+    border-color: rgba(124, 58, 237, 0.5);
+    background: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(6,182,212,0.1));
+  }
+  .roadmap-phase {
+    font-size: 12px;
+    color: #a78bfa;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .roadmap-item h4 {
+    color: #f1f5f9;
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+  .roadmap-item ul {
+    list-style: none;
+  }
+  .roadmap-item li {
+    font-size: 13px;
+    color: #94a3b8;
+    padding: 3px 0;
+    padding-left: 16px;
+    position: relative;
+  }
+  .roadmap-item li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: #34d399;
+  }
+  .roadmap-item.current li::before { content: '→'; color: #a78bfa; }
+  .roadmap-item.future li::before { content: '○'; color: #475569; }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 40px 0;
+    color: #475569;
+    font-size: 13px;
+    border-top: 1px solid rgba(71, 85, 105, 0.2);
+    margin-top: 60px;
+  }
+  .footer .brand {
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 8px;
+  }
+  .footer .brand strong {
+    background: linear-gradient(135deg, #a78bfa, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* KPI Row */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .kpi-card {
+    padding: 20px;
+    background: rgba(30, 27, 75, 0.4);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(124, 58, 237, 0.15);
+    border-radius: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #7c3aed, #06b6d4);
+  }
+  .kpi-card .kpi-label {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 8px;
+  }
+  .kpi-card .kpi-value {
+    font-size: 28px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #a78bfa, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .kpi-card .kpi-trend {
+    font-size: 11px;
+    color: #34d399;
+    margin-top: 4px;
+  }
+
+  /* Config Dimensions */
+  .config-dims {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .config-dim {
+    padding: 20px;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(71, 85, 105, 0.3);
+    border-radius: 12px;
+    text-align: center;
+    transition: all 0.3s;
+  }
+  .config-dim:hover {
+    border-color: rgba(124, 58, 237, 0.4);
+    transform: translateY(-2px);
+  }
+  .config-dim .dim-icon { font-size: 28px; margin-bottom: 10px; }
+  .config-dim .dim-name {
+    font-size: 14px;
+    color: #e2e8f0;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .config-dim .dim-count {
+    font-size: 12px;
+    color: #a78bfa;
+  }
+
+  @media (max-width: 900px) {
+    .hero h1 { font-size: 36px; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .config-dims { grid-template-columns: repeat(2, 1fr); }
+    .roadmap { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="badge">✨ 专家联盟 2.0 · 企业级全维动态配置</div>
+    <h1>全维可配置的专家协作平台</h1>
+    <p class="subtitle">玻璃拟态美学 × 动态配置引擎 × 实时协作白板 × 专家市场广场——打造最好用、最优美、最强大的企业级专家联盟系统</p>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="num">6</div><div class="label">配置维度</div></div>
+      <div class="hero-stat"><div class="num">5+</div><div class="label">协作模式</div></div>
+      <div class="hero-stat"><div class="num">20+</div><div class="label">专家类型</div></div>
+      <div class="hero-stat"><div class="num">12000+</div><div class="label">新增代码行</div></div>
+    </div>
+  </section>
+
+  <!-- 架构总览 -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-icon">🏗️</div>
+      <div>
+        <div class="section-title">系统架构总览</div>
+        <div class="section-desc">四大核心模块 + 六大配置维度 + 企业级设计体系</div>
+      </div>
+    </div>
+    <div class="glass-card arch-diagram">
+      <div class="arch-label">用户入口层</div>
+      <div class="arch-layer layer-1">
+        <div class="arch-node"><div class="emoji">🎯</div>专家工作台</div>
+        <div class="arch-node"><div class="emoji">🏪</div>专家广场</div>
+        <div class="arch-node"><div class="emoji">⚙️</div>联盟管理</div>
+        <div class="arch-node"><div class="emoji">🎨</div>专家配置</div>
+      </div>
+      <div class="arch-arrow">⬇</div>
+      <div class="arch-label">核心能力层</div>
+      <div class="arch-layer layer-2">
+        <div class="arch-node"><div class="emoji">💬</div>多专家协作</div>
+        <div class="arch-node"><div class="emoji">⚔️</div>专家辩论</div>
+        <div class="arch-node"><div class="emoji">🧭</div>智能路由</div>
+        <div class="arch-node"><div class="emoji">📊</div>深度分析</div>
+        <div class="arch-node"><div class="emoji">🗺️</div>知识探索</div>
+      </div>
+      <div class="arch-arrow">⬇</div>
+      <div class="arch-label">协作增强层</div>
+      <div class="arch-layer layer-3">
+        <div class="arch-node"><div class="emoji">📋</div>协作白板</div>
+        <div class="arch-node"><div class="emoji">📁</div>文件共享</div>
+        <div class="arch-node"><div class="emoji">📈</div>阶段进度</div>
+        <div class="arch-node"><div class="emoji">⏱️</div>历史记录</div>
+        <div class="arch-node"><div class="emoji">👥</div>成员状态</div>
+      </div>
+      <div class="arch-arrow">⬇</div>
+      <div class="arch-label">动态配置层</div>
+      <div class="arch-layer layer-4">
+        <div class="arch-node"><div class="emoji">🎨</div>基础画像</div>
+        <div class="arch-node"><div class="emoji">🔧</div>能力参数</div>
+        <div class="arch-node"><div class="emoji">💬</div>提示词</div>
+        <div class="arch-node"><div class="emoji">🔄</div>工作流</div>
+        <div class="arch-node"><div class="emoji">🎯</div>场景模板</div>
+        <div class="arch-node"><div class="emoji">📊</div>评估指标</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 核心模块 -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-icon">🚀</div>
+      <div>
+        <div class="section-title">四大核心模块</div>
+        <div class="section-desc">从发现专家到深度协作，全链路企业级体验</div>
+      </div>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon icon-purple">🎯</div>
+        <h3>专家联盟工作台</h3>
+        <p>UI 全面升级为玻璃拟态风格，新增 KPI 指标卡、阶段进度可视化、协作白板、文件共享、历史记录等企业级协作功能。支持 4 种工作模式无缝切换。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">玻璃拟态</span>
+          <span class="feature-tag">4种模式</span>
+          <span class="feature-tag">实时协作</span>
+          <span class="feature-tag">键盘快捷键</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-cyan">🏪</div>
+        <h3>专家广场 / 市场</h3>
+        <p>汇聚各领域顶尖专家的发现平台，支持多维筛选（分类/等级/价格）、专家排行榜、在线预约、评价系统。精美的玻璃拟态卡片设计，Awwwards 级视觉体验。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">专家发现</span>
+          <span class="feature-tag">排行榜</span>
+          <span class="feature-tag">在线预约</span>
+          <span class="feature-tag">评价体系</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-green">🎨</div>
+        <h3>专家能力动态配置</h3>
+        <p>全维可配置的专家引擎，涵盖 6 大配置维度：基础画像、能力参数、提示词、工作流、场景模板、评估指标。支持实时预览、JSON 导入导出、版本管理。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">6大维度</span>
+          <span class="feature-tag">实时预览</span>
+          <span class="feature-tag">低代码</span>
+          <span class="feature-tag">版本管理</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-orange">⚙️</div>
+        <h3>联盟管理后台</h3>
+        <p>企业级专家联盟管理平台，包含联盟总览仪表盘、企业入驻管理、专家编排引擎配置。配合 RBAC 权限系统实现五级数据权限管控。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">总览看板</span>
+          <span class="feature-tag">企业管理</span>
+          <span class="feature-tag">编排引擎</span>
+          <span class="feature-tag">RBAC权限</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 工作台升级详情 -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-icon">💎</div>
+      <div>
+        <div class="section-title">工作台 UI 全面升级</div>
+        <div class="section-desc">玻璃拟态 × 渐变美学 × 丰富微交互</div>
+      </div>
+    </div>
+    <div class="glass-card">
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-label">在线专家</div>
+          <div class="kpi-value">24</div>
+          <div class="kpi-trend">↑ 12.5% 较昨日</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">协作会话</div>
+          <div class="kpi-value">156</div>
+          <div class="kpi-trend">↑ 23.1% 较上周</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">知识文档</div>
+          <div class="kpi-value">1.2K</div>
+          <div class="kpi-trend">↑ 8.3% 持续增长</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">进行中任务</div>
+          <div class="kpi-value">38</div>
+          <div class="kpi-trend">↑ 5 新增任务</div>
+        </div>
+      </div>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-icon icon-purple">🪟</div>
+          <h3>玻璃拟态设计体系</h3>
+          <p>统一的 .glass-card 基类，backdrop-filter: blur(24px) 半透明模糊 + 细边框 + 柔和阴影，营造高级通透质感。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon icon-cyan">🌈</div>
+          <h3>渐变色彩系统</h3>
+          <p>紫色 #7c3aed → 青色 #06b6d4 为主渐变，辅以粉/橙/绿等功能色，按钮、图标、卡片装饰全线统一。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon icon-green">✨</div>
+          <h3>丰富微交互</h3>
+          <p>hover 上浮、缩放、旋转、发光效果，所有可点击元素都有平滑过渡动画，操作反馈即时自然。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon icon-orange">⌨️</div>
+          <h3>键盘快捷键</h3>
+          <p>Ctrl+1~4 快速切换工作模式，Ctrl+K 全局搜索，模式记忆 localStorage 持久化，效率拉满。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 动态配置引擎 -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-icon">⚙️</div>
+      <div>
+        <div class="section-title">全维动态配置引擎</div>
+        <div class="section-desc">6 大配置维度 · 实时预览 · JSON 序列化</div>
+      </div>
+    </div>
+    <div class="glass-card">
+      <div class="config-dims">
+        <div class="config-dim">
+          <div class="dim-icon">🎨</div>
+          <div class="dim-name">基础画像</div>
+          <div class="dim-count">人格 · 视觉 · 风格</div>
+        </div>
+        <div class="config-dim">
+          <div class="dim-icon">🔧</div>
+          <div class="dim-name">能力参数</div>
+          <div class="dim-count">12项能力 · 10种工具</div>
+        </div>
+        <div class="config-dim">
+          <div class="dim-icon">💬</div>
+          <div class="dim-name">提示词配置</div>
+          <div class="dim-count">5场景 · 变量系统</div>
+        </div>
+        <div class="config-dim">
+          <div class="dim-icon">🔄</div>
+          <div class="dim-name">工作流配置</div>
+          <div class="dim-count">5步骤 · 条件分支</div>
+        </div>
+        <div class="config-dim">
+          <div class="dim-icon">🎯</div>
+          <div class="dim-name">场景模板</div>
+          <div class="dim-count">可增删改 · 导入导出</div>
+        </div>
+        <div class="config-dim">
+          <div class="dim-icon">📊</div>
+          <div class="dim-name">评估指标</div>
+          <div class="dim-count">5维度 · 自动规则</div>
+        </div>
+      </div>
+
+      <div class="highlight-box">
+        <div class="highlight-icon">💡</div>
+        <div class="highlight-content">
+          <h4>核心亮点：实时预览 + 配置即代码</h4>
+          <p>所有视觉配置实时同步到预览卡片和对话气泡，配置数据完全可序列化为 JSON，支持一键导入导出。企业级低代码能力，无需开发人员即可定制专属专家。未保存状态追踪、版本号管理、发布确认机制，保障配置安全。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 协作增强 -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-icon">👥</div>
+      <div>
+        <div class="section-title">协作功能增强</div>
+        <div class="section-desc">实时协作白板 + 文件共享 + 阶段进度 + 历史记录</div>
+      </div>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon icon-purple">📋</div>
+        <h3>协作白板</h3>
+        <p>便签、自由画笔、文本框、橡皮擦，7 种颜色可选。网格背景，拖拽移动，保存到 localStorage。头脑风暴的最佳工具。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">便签</span>
+          <span class="feature-tag">自由画笔</span>
+          <span class="feature-tag">文本框</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-cyan">📁</div>
+        <h3>文件共享</h3>
+        <p>拖拽上传 + 点击上传，支持 PDF/DOC/IMAGE/EXCEL/ZIP/CODE 等多类型。文件卡片展示详细信息，预览 + 下载。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">拖拽上传</span>
+          <span class="feature-tag">多类型支持</span>
+          <span class="feature-tag">预览下载</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-green">📈</div>
+        <h3>阶段进度</h3>
+        <p>5 阶段项目进度可视化：需求分析 → 架构设计 → 开发实现 → 测试验证 → 发布上线。渐变节点 + 连接线，点击切换。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">5阶段</span>
+          <span class="feature-tag">进度追踪</span>
+          <span class="feature-tag">可视化</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-orange">⏱️</div>
+        <h3>历史记录</h3>
+        <p>右侧时间线侧边栏，6 种事件类型：消息/文件/阶段/白板/模式/成员。自动记录最多 50 条操作，点击跳转。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">时间线</span>
+          <span class="feature-tag">事件追踪</span>
+          <span class="feature-tag">可回放</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-pink">👤</div>
+        <h3>成员状态</h3>
+        <p>协作成员头像堆叠展示，每人带状态指示点（在线/忙碌/空闲/离线）。「正在输入」提示，跳动圆点动画。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">实时状态</span>
+          <span class="feature-tag">正在输入</span>
+          <span class="feature-tag">头像堆叠</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-red">📬</div>
+        <h3>消息状态</h3>
+        <p>4 种消息状态：已发送 / 正在思考 / 已完成 / 失败。不同图标和颜色标识，思考状态旋转动画，即时反馈。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">状态追踪</span>
+          <span class="feature-tag">思考动画</span>
+          <span class="feature-tag">错误提示</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 文件清单 -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-icon">📁</div>
+      <div>
+        <div class="section-title">新增/修改文件清单</div>
+        <div class="section-desc">共计 5 个文件 · 约 15,000 行新增代码</div>
+      </div>
+    </div>
+    <div class="glass-card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>文件路径</th>
+            <th>说明</th>
+            <th>状态</th>
+            <th>规模</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="file-name">src/views/expert/ExpertPlazaView.vue</td>
+            <td>专家广场 / 市场页面（发现 + 评级 + 预约）</td>
+            <td><span class="status-badge status-new">新增</span></td>
+            <td>~3382 行</td>
+          </tr>
+          <tr>
+            <td class="file-name">src/views/expert/ExpertConfigView.vue</td>
+            <td>专家能力动态配置引擎（6 大维度全维可配置）</td>
+            <td><span class="status-badge status-new">新增</span></td>
+            <td>~2772 行</td>
+          </tr>
+          <tr>
+            <td class="file-name">src/views/workspace/ExpertWorkspaceView.vue</td>
+            <td>专家工作台 UI 全面升级 + 协作增强</td>
+            <td><span class="status-badge status-upgraded">升级</span></td>
+            <td>+2016 行</td>
+          </tr>
+          <tr>
+            <td class="file-name">src/constants/nav.config.js</td>
+            <td>导航配置：新增专家广场模块 + 配置入口</td>
+            <td><span class="status-badge status-upgraded">升级</span></td>
+            <td>+15 行</td>
+          </tr>
+          <tr>
+            <td class="file-name">src/router/index.js</td>
+            <td>路由注册（专家广场 + 专家配置）</td>
+            <td><span class="status-badge status-done">已注册</span></td>
+            <td>2 条路由</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 设计体系 -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-icon">🎨</div>
+      <div>
+        <div class="section-title">设计体系升级</div>
+        <div class="section-desc">系统设计精华，打造企业级视觉语言</div>
+      </div>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon icon-purple">🪟</div>
+        <h3>玻璃拟态 Glass Morphism</h3>
+        <p>半透明背景 + 背景模糊 + 细边框 + 柔和阴影，营造通透层次感。统一 .glass-card 基类，全站复用。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-cyan">🎯</div>
+        <h3>渐变图标背景</h3>
+        <p>所有功能图标使用渐变圆形背景，每个模块有专属渐变色。hover 时图标微旋转，增强交互感。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-green">📊</div>
+        <h3>KPI 指标卡片</h3>
+        <p>顶部统计卡片设计，渐变底部装饰条 + 趋势指示。hover 上浮效果，数据一目了然。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-orange">✨</div>
+        <h3>微交互体系</h3>
+        <p>卡片 hover 上浮 + 阴影增强 + 顶部渐变线显现；按钮缩放发光；入场 fadeInUp 错位延迟动画。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-pink">📱</div>
+        <h3>响应式布局</h3>
+        <p>1200px / 900px / 600px 三档断点，侧边栏自适应折叠，网格列数动态调整，全设备适配。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon icon-blue">🌙</div>
+        <h3>暗色模式兼容</h3>
+        <p>所有玻璃效果通过 CSS 变量适配 html.dark 模式，深浅色切换无缝衔接。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 技术亮点 -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-icon">⚡</div>
+      <div>
+        <div class="section-title">技术亮点</div>
+        <div class="section-desc">企业级工程实践</div>
+      </div>
+    </div>
+    <div class="glass-card">
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-icon icon-purple">🔌</div>
+          <h3>增量式改造</h3>
+          <p>所有原有功能（三栏布局、图谱画布、知识库、辩论、多专家咨询等）完全保留，新功能以增量方式添加。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon icon-cyan">📦</div>
+          <h3>配置驱动</h3>
+          <p>专家配置引擎支持完整 JSON 序列化/反序列化，配置即代码。可导入导出，可版本管理，可团队共享。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon icon-green">🔐</div>
+          <h3>企业级安全</h3>
+          <p>发布确认机制、重置保护、未保存状态追踪。配合 RBAC 权限系统，实现五级数据权限管控。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon icon-orange">🚀</div>
+          <h3>性能优化</h3>
+          <p>v-memo 列表优化、CSS 硬件加速动画、localStorage 模式记忆、骨架屏加载，保障流畅体验。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 路线图 -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-icon">🗺️</div>
+      <div>
+        <div class="section-title">发展路线图</div>
+        <div class="section-desc">从 1.0 到 3.0 的演进路径</div>
+      </div>
+    </div>
+    <div class="roadmap">
+      <div class="roadmap-item">
+        <div class="roadmap-phase">Phase 1.0 ✓ 已完成</div>
+        <h4>基础协作</h4>
+        <ul>
+          <li>专家注册入驻</li>
+          <li>多专家咨询</li>
+          <li>专家辩论</li>
+          <li>智能路由匹配</li>
+          <li>联盟管理后台</li>
+        </ul>
+      </div>
+      <div class="roadmap-item current">
+        <div class="roadmap-phase">Phase 2.0 🚀 当前版本</div>
+        <h4>全维配置 + 优美UI</h4>
+        <ul>
+          <li>玻璃拟态设计升级</li>
+          <li>专家广场/市场</li>
+          <li>动态配置引擎</li>
+          <li>协作白板</li>
+          <li>文件共享</li>
+          <li>阶段进度可视化</li>
+        </ul>
+      </div>
+      <div class="roadmap-item future">
+        <div class="roadmap-phase">Phase 2.5 规划中</div>
+        <h4>实时协同</h4>
+        <ul>
+          <li>WebSocket 实时通信</li>
+          <li>多人同时编辑白板</li>
+          <li>光标位置同步</li>
+          <li>语音/视频通话</li>
+          <li>屏幕共享</li>
+        </ul>
+      </div>
+      <div class="roadmap-item future">
+        <div class="roadmap-phase">Phase 3.0 展望</div>
+        <h4>智能生态</h4>
+        <ul>
+          <li>专家市场交易系统</li>
+          <li>专家能力评级体系</li>
+          <li>自动专家生成器</li>
+          <li>跨组织专家协作</li>
+          <li>专家能力开放平台</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 快速访问 -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-icon">🔗</div>
+      <div>
+        <div class="section-title">快速访问</div>
+        <div class="section-desc">三大核心入口</div>
+      </div>
+    </div>
+    <div class="feature-grid" style="grid-template-columns: repeat(3, 1fr);">
+      <a href="#/expert-workspace" style="text-decoration: none; color: inherit;">
+        <div class="feature-card" style="height: 100%;">
+          <div class="feature-icon icon-purple">🎯</div>
+          <h3>专家工作台</h3>
+          <p>多专家协作 · 辩论 · 深度分析 · 知识探索</p>
+          <div class="feature-tags"><span class="feature-tag">#/expert-workspace</span></div>
+        </div>
+      </a>
+      <a href="#/expert-plaza" style="text-decoration: none; color: inherit;">
+        <div class="feature-card" style="height: 100%;">
+          <div class="feature-icon icon-cyan">🏪</div>
+          <h3>专家广场</h3>
+          <p>发现专家 · 排行榜 · 预约 · 评价</p>
+          <div class="feature-tags"><span class="feature-tag">#/expert-plaza</span></div>
+        </div>
+      </a>
+      <a href="#/expert-config" style="text-decoration: none; color: inherit;">
+        <div class="feature-card" style="height: 100%;">
+          <div class="feature-icon icon-green">🎨</div>
+          <h3>专家配置</h3>
+          <p>全维动态配置 · 实时预览 · 导入导出</p>
+          <div class="feature-tags"><span class="feature-tag">#/expert-config</span></div>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="brand">专家联盟 <strong>2.0</strong> · 全维动态配置 · 企业级专家协作平台</div>
+    <div>最好用 · 最优美 · 最强大</div>
+  </div>
+
+</div>
+</body>
+</html>

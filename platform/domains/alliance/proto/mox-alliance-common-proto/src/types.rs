@@ -86,23 +86,72 @@ impl Default for AllianceMode {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FusionStrategy {
-    /// 投票融合（多数决）
+    /// 加权投票融合（按权重投票，适用于分类/决策任务）
     Voting,
-    /// 加权融合（按专家权重）
+    /// 加权融合（按专家权重的数值融合）
     Weighted,
+    /// 置信度加权融合（基于动态置信度的加权平均）
+    ConfidenceWeighted,
     /// 拼接融合（结果拼接）
     Concatenation,
     /// 择优融合（选最优结果）
     BestOf,
-    /// 辩论融合（对抗辩论）
+    /// 堆叠融合（元学习器组合多模型输出）
+    Stacking,
+    /// 辩论融合（多智能体辩论裁决）
     Debate,
-    /// 迭代精炼融合
+    /// Map-Reduce 融合（分治式融合，适用于大规模数据）
+    MapReduce,
+    /// 迭代精炼融合（多轮迭代优化）
     Iterative,
 }
 
 impl Default for FusionStrategy {
     fn default() -> Self {
         Self::Weighted
+    }
+}
+
+impl FusionStrategy {
+    /// 获取策略的中文描述名称
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            Self::Voting => "加权投票融合",
+            Self::Weighted => "加权融合",
+            Self::ConfidenceWeighted => "置信度加权融合",
+            Self::Concatenation => "拼接融合",
+            Self::BestOf => "择优融合",
+            Self::Stacking => "堆叠融合（元学习器）",
+            Self::Debate => "辩论融合",
+            Self::MapReduce => "Map-Reduce 融合",
+            Self::Iterative => "迭代精炼融合",
+        }
+    }
+
+    /// 判断该策略是否适用于标量（数值）融合
+    pub fn supports_scalar(&self) -> bool {
+        matches!(
+            self,
+            Self::Weighted
+                | Self::ConfidenceWeighted
+                | Self::Stacking
+                | Self::MapReduce
+                | Self::Iterative
+                | Self::BestOf
+        )
+    }
+
+    /// 判断该策略是否适用于分类（投票）融合
+    pub fn supports_classification(&self) -> bool {
+        matches!(
+            self,
+            Self::Voting
+                | Self::Weighted
+                | Self::ConfidenceWeighted
+                | Self::Debate
+                | Self::BestOf
+                | Self::Iterative
+        )
     }
 }
 

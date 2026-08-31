@@ -6,6 +6,7 @@ import {
   RadarChart,
   GraphChart,
   GaugeChart,
+  PieChart,
 } from 'echarts/charts'
 
 import {
@@ -14,6 +15,7 @@ import {
   GridComponent,
   TitleComponent,
   GraphicComponent,
+  DataZoomComponent,
 } from 'echarts/components'
 
 import { CanvasRenderer } from 'echarts/renderers'
@@ -25,11 +27,13 @@ echartsCore.use([
   RadarChart,
   GraphChart,
   GaugeChart,
+  PieChart,
   TooltipComponent,
   LegendComponent,
   GridComponent,
   TitleComponent,
   GraphicComponent,
+  DataZoomComponent,
   CanvasRenderer,
 ])
 

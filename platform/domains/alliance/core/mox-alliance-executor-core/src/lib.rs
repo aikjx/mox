@@ -13,7 +13,11 @@
 //! - 可测试：所有核心算法都有对应的单测
 
 pub mod dag_engine;
+pub mod expert_executor;
 pub mod mock_executor;
 
 pub use dag_engine::DagEngineImpl;
+pub use expert_executor::{
+    ExecutorStatsView, ExpertExecutorConfig, ExpertNodeExecutor,
+};
 pub use mock_executor::{MockExecutorConfig, MockNodeExecutor};

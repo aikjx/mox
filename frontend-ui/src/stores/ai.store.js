@@ -3,6 +3,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { aiChat, getChatHistory, aiExpertChat } from '@/api'
+import { getToken } from '@/utils/secureStorage'
 
 const STORAGE_PREFIX = 'mox.ai.v2'
 
@@ -416,8 +417,7 @@ export const useAIStore = defineStore('ai', () => {
         ? '/api/ai/expert-chat'
         : '/api/ai/chat'
 
-      const token = localStorage.getItem('ous_api_token')
-                || localStorage.getItem('ous_token')
+      const token = getToken()
                 || import.meta.env?.VITE_API_TOKEN
                 || 'dev-secret-token'
 

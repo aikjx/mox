@@ -1,0 +1,28 @@
+[package]
+name = "mox-platform-gateway-runtime"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+mox-platform-foundation = { path = "../../foundation/mox-platform-foundation" }
+mox-platform-system-svc = { path = "../../services/platform/mox-platform-system-svc" }
+mox-kg-service-svc = { path = "../../services/kg/mox-kg-service-svc" }
+mox-ai-agent-svc = { path = "../../services/ai/mox-ai-agent-svc" }
+axum = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+dotenvy = { workspace = true }
+config = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+anyhow = { workspace = true }
+
+[dev-dependencies]
+
+
+

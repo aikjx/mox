@@ -95,18 +95,7 @@
             <span class="lg lg-mean">种群均值</span>
           </div>
         </div>
-        <div v-if="convergenceData.length" class="chart-wrap">
-          <svg :viewBox="`0 0 ${CW} ${CH}`" class="conv-chart">
-            <line v-for="g in gridLines" :key="g" x1="40" :x2="CW - 10" :y1="g" :y2="g" class="grid" />
-            <text v-for="(g, i) in gridLabels" :key="'t' + i" x="34" :y="g + 4" class="tick">{{ gridLabelValues[i] }}</text>
-            <polyline :points="pointsBest" class="line-best" />
-            <polyline :points="pointsMean" class="line-mean" />
-            <circle v-for="(p, i) in dotsBest" :key="'d' + i" :cx="p.x" :cy="p.y" r="3.5" class="dot-best" />
-          </svg>
-          <div class="chart-x">
-            <span v-for="i in xAxisTicks" :key="i">第{{ i }}轮</span>
-          </div>
-        </div>
+        <div v-if="convergenceData.length" ref="convChartRef" class="chart-echarts"></div>
         <div v-else class="chart-empty">尚无收敛数据，启动寻优后实时绘制</div>
       </div>
 
@@ -115,16 +104,7 @@
           <h3 class="section-title">维度敏感度排序</h3>
           <span class="mini-hint">|Pearson 相关| 越大越关键</span>
         </div>
-        <div v-if="sensitivity.length" class="sens-list">
-          <div v-for="s in sensitivity" :key="s.key" class="sens-row">
-            <span class="sens-name">{{ s.dimension }}</span>
-            <div class="sens-bar-track">
-              <div class="sens-bar" :style="{ width: (Math.abs(s.correlation) * 100).toFixed(1) + '%' }" :class="s.correlation >= 0 ? 'pos' : 'neg'"></div>
-            </div>
-            <span class="sens-val">{{ s.correlation > 0 ? '+' : '' }}{{ s.correlation }}</span>
-            <span class="sens-mu">μ={{ s.mu }} σ={{ s.sigma }}</span>
-          </div>
-        </div>
+        <div v-if="sensitivity.length" ref="sensChartRef" class="chart-echarts sens-chart"></div>
         <div v-else class="chart-empty">完成至少一轮迭代后计算</div>
       </div>
     </div>
@@ -253,10 +233,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { VideoPlay, Check, DataAnalysis, Promotion } from '@element-plus/icons-vue'
+import * as echarts from '@/echarts'
 import * as api from '@/api'
 
 const router = useRouter()
@@ -277,6 +258,10 @@ const results = ref({ runs: [], best: null })
 const comparison = ref(null)
 const benchmarks = ref([])
 const pollTimer = ref(null)
+const convChartRef = ref(null)
+const sensChartRef = ref(null)
+let convChartInst = null
+let sensChartInst = null
 
 const isRunning = computed(() => status.value.status === 'running')
 const bestConfig = computed(() => {
@@ -311,36 +296,210 @@ const runHistory = computed(() => results.value.runs || [])
 const historyBest = computed(() => results.value.best || null)
 const comparisonRows = computed(() => (comparison.value && comparison.value.rows) || [])
 
-// ---- SVG 收敛曲线 ----
-const CW = 560
-const CH = 220
-const PAD = { t: 15, b: 15, l: 40, r: 10 }
-const pointsBest = computed(() => convergencePoints('best').join(' '))
-const pointsMean = computed(() => convergencePoints('mean').join(' '))
-const dotsBest = computed(() => {
-  const pts = convergencePoints('best')
-  return pts.map((p) => parsePoint(p))
-})
-const xAxisTicks = computed(() => convergenceData.value.map((c) => c.iteration))
-const gridLines = computed(() => [0, 1, 2, 3, 4].map((i) => PAD.t + ((CH - PAD.t - PAD.b) * i) / 4))
-const gridLabels = computed(() => gridLines.value)
-const gridLabelValues = computed(() => [1, 0.75, 0.5, 0.25, 0].map((v) => v.toFixed(2)))
+// ---- ECharts 收敛曲线 + 维度敏感度 ----
 
-function convergencePoints(field) {
-  const data = convergenceData.value
-  if (!data.length) return []
-  const iw = CW - PAD.l - PAD.r
-  const ih = CH - PAD.t - PAD.b
+/**
+ * 数据降采样：当数据点超过阈值时，使用 LTTB 算法降采样到目标点数
+ * 简化版：等间距采样 + 保留极值点
+ */
+function downsampleData(data, targetPoints = 200, threshold = 500) {
+  if (!data || data.length <= threshold || data.length <= targetPoints) {
+    return data
+  }
   const n = data.length
-  return data.map((c, i) => {
-    const x = PAD.l + (iw * i) / Math.max(n - 1, 1)
-    const y = PAD.t + ih * (1 - Math.max(0, Math.min(1, c[field] || 0)))
-    return `${x.toFixed(1)},${y.toFixed(1)}`
+  const result = []
+  const step = n / targetPoints
+  // 保留第一个点
+  result.push(data[0])
+  for (let i = 1; i < targetPoints - 1; i++) {
+    const start = Math.floor((i - 0.5) * step)
+    const end = Math.floor((i + 0.5) * step)
+    const s = Math.max(1, start)
+    const e = Math.min(n - 1, end)
+    // 在区间内找 best 值的极值点（更能保留曲线形状）
+    let bestIdx = s
+    let bestVal = data[s].best
+    for (let j = s + 1; j <= e; j++) {
+      if (data[j].best > bestVal) {
+        bestVal = data[j].best
+        bestIdx = j
+      }
+    }
+    result.push(data[bestIdx])
+  }
+  // 保留最后一个点
+  result.push(data[n - 1])
+  return result
+}
+
+function initConvChart() {
+  if (!convChartRef.value || convChartInst) return
+  convChartInst = echarts.init(convChartRef.value)
+  convChartInst.setOption({
+    grid: { left: 50, right: 20, top: 20, bottom: 40 },
+    tooltip: {
+      trigger: 'axis',
+      formatter: (params) => {
+        const p = params[0]
+        return `第 ${p.axisValue} 轮<br/>最优：${p.data[1]?.toFixed(3) ?? '—'}<br/>均值：${params[1]?.data[1]?.toFixed(3) ?? '—'}`
+      },
+    },
+    legend: {
+      data: ['最优', '种群均值'],
+      right: 10,
+      top: 0,
+      textStyle: { fontSize: 12, color: '#64748b' },
+    },
+    xAxis: {
+      type: 'category',
+      name: '迭代轮次',
+      nameLocation: 'middle',
+      nameGap: 25,
+      nameTextStyle: { fontSize: 11, color: '#94a3b8' },
+      axisLabel: { fontSize: 11, color: '#94a3b8' },
+      axisLine: { lineStyle: { color: '#e2e8f0' } },
+    },
+    yAxis: {
+      type: 'value',
+      min: 0,
+      max: 1,
+      axisLabel: { fontSize: 11, color: '#94a3b8', formatter: (v) => v.toFixed(2) },
+      splitLine: { lineStyle: { color: '#e2e8f0' } },
+    },
+    dataZoom: [
+      {
+        type: 'inside',
+        start: 0,
+        end: 100,
+        zoomLock: false,
+      },
+      {
+        type: 'slider',
+        start: 0,
+        end: 100,
+        height: 20,
+        bottom: 5,
+        borderColor: '#e2e8f0',
+        fillerColor: 'rgba(8, 145, 178, 0.12)',
+        handleStyle: { color: '#0891b2' },
+        textStyle: { fontSize: 10, color: '#94a3b8' },
+      },
+    ],
+    series: [
+      {
+        name: '最优',
+        type: 'line',
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 6,
+        lineStyle: { color: '#0891b2', width: 2.5 },
+        itemStyle: { color: '#0891b2' },
+        data: [],
+      },
+      {
+        name: '种群均值',
+        type: 'line',
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 4,
+        lineStyle: { color: '#a78bfa', width: 1.5, type: 'dashed' },
+        itemStyle: { color: '#a78bfa' },
+        data: [],
+      },
+    ],
   })
 }
-function parsePoint(s) {
-  const [x, y] = s.split(',').map(Number)
-  return { x, y }
+
+function renderConvChart() {
+  if (!convChartInst) return
+  const raw = convergenceData.value
+  if (!raw.length) return
+  const data = downsampleData(raw, 200, 500)
+  const xData = data.map((d) => d.iteration)
+  const bestData = data.map((d) => d.best)
+  const meanData = data.map((d) => d.mean)
+  convChartInst.setOption({
+    xAxis: { data: xData },
+    series: [
+      { name: '最优', data: bestData },
+      { name: '种群均值', data: meanData },
+    ],
+  })
+}
+
+function initSensChart() {
+  if (!sensChartRef.value || sensChartInst) return
+  sensChartInst = echarts.init(sensChartRef.value)
+  sensChartInst.setOption({
+    grid: { left: 110, right: 60, top: 10, bottom: 10 },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params) => {
+        const p = params[0]
+        const item = sensitivity.value.find((s) => s.dimension === p.name)
+        if (!item) return p.name
+        return `${item.dimension}<br/>相关系数：${item.correlation > 0 ? '+' : ''}${item.correlation}<br/>μ=${item.mu}  σ=${item.sigma}`
+      },
+    },
+    xAxis: {
+      type: 'value',
+      min: -1,
+      max: 1,
+      axisLabel: { fontSize: 11, color: '#94a3b8', formatter: (v) => v.toFixed(1) },
+      splitLine: { lineStyle: { color: '#e2e8f0' } },
+    },
+    yAxis: {
+      type: 'category',
+      inverse: true,
+      axisLabel: { fontSize: 12, color: '#334155', fontWeight: 600 },
+      axisLine: { show: false },
+      axisTick: { show: false },
+    },
+    series: [
+      {
+        type: 'bar',
+        barWidth: 14,
+        label: {
+          show: true,
+          position: 'right',
+          fontSize: 11,
+          fontWeight: 700,
+          color: '#0f172a',
+          formatter: (p) => {
+            const v = p.data
+            return v > 0 ? '+' + v.toFixed(2) : v.toFixed(2)
+          },
+        },
+        data: [],
+      },
+    ],
+  })
+}
+
+function renderSensChart() {
+  if (!sensChartInst) return
+  const data = sensitivity.value
+  if (!data.length) return
+  const yData = data.map((d) => d.dimension)
+  const barData = data.map((d) => ({
+    value: d.correlation,
+    itemStyle: {
+      color: d.correlation >= 0
+        ? { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: '#22d3ee' }, { offset: 1, color: '#0891b2' }] }
+        : { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: '#fb923c' }, { offset: 1, color: '#ea580c' }] },
+      borderRadius: [0, 4, 4, 0],
+    },
+  }))
+  sensChartInst.setOption({
+    yAxis: { data: yData },
+    series: [{ data: barData }],
+  })
+}
+
+function resizeCharts() {
+  convChartInst && convChartInst.resize()
+  sensChartInst && sensChartInst.resize()
 }
 function engineName(id) {
   const p = (status.value.providers || []).find((x) => x.id === id)
@@ -434,13 +593,48 @@ async function loadStatic() {
   } catch (e) { /* 静默 */ }
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadStatic()
   loadResults()
   pollStatus()
+  await nextTick()
+  if (convergenceData.value.length) {
+    initConvChart()
+    renderConvChart()
+  }
+  if (sensitivity.value.length) {
+    initSensChart()
+    renderSensChart()
+  }
+  window.addEventListener('resize', resizeCharts)
 })
 onUnmounted(() => {
   if (pollTimer.value) clearInterval(pollTimer.value)
+  window.removeEventListener('resize', resizeCharts)
+  if (convChartInst) {
+    convChartInst.dispose()
+    convChartInst = null
+  }
+  if (sensChartInst) {
+    sensChartInst.dispose()
+    sensChartInst = null
+  }
+})
+
+// 监听数据变化，更新图表
+watch(convergenceData, async (val) => {
+  if (val && val.length) {
+    await nextTick()
+    if (!convChartInst) initConvChart()
+    renderConvChart()
+  }
+})
+watch(sensitivity, async (val) => {
+  if (val && val.length) {
+    await nextTick()
+    if (!sensChartInst) initSensChart()
+    renderSensChart()
+  }
 })
 </script>
 
@@ -479,14 +673,8 @@ onUnmounted(() => {
   padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
 }
 .two-col { display: grid; grid-template-columns: 3fr 2fr; gap: 14px; }
-.chart-wrap { width: 100%; }
-.conv-chart { width: 100%; height: auto; display: block; }
-.grid { stroke: #e2e8f0; stroke-width: 1; }
-.tick { font-size: 9px; fill: #94a3b8; text-anchor: end; }
-.line-best { fill: none; stroke: #0891b2; stroke-width: 2.5; stroke-linejoin: round; }
-.line-mean { fill: none; stroke: #a78bfa; stroke-width: 1.5; stroke-dasharray: 5 4; }
-.dot-best { fill: #0891b2; }
-.chart-x { display: flex; justify-content: space-between; padding-left: 40px; font-size: 10.5px; color: #94a3b8; margin-top: 2px; }
+.chart-echarts { width: 100%; height: 260px; }
+.sens-chart { height: 300px; }
 .chart-empty {
   display: flex; align-items: center; justify-content: center; height: 180px;
   color: #94a3b8; font-size: 13px; background: #f8fafc; border-radius: 8px;
@@ -496,15 +684,6 @@ onUnmounted(() => {
 .lg::before { content: ''; width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
 .lg-best::before { background: #0891b2; }
 .lg-mean::before { background: #a78bfa; }
-.sens-list { display: flex; flex-direction: column; gap: 8px; }
-.sens-row { display: grid; grid-template-columns: 110px 1fr 52px 96px; gap: 8px; align-items: center; font-size: 12px; }
-.sens-name { color: #334155; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sens-bar-track { height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
-.sens-bar { height: 100%; border-radius: 4px; }
-.sens-bar.pos { background: linear-gradient(90deg, #22d3ee, #0891b2); }
-.sens-bar.neg { background: linear-gradient(90deg, #fb923c, #ea580c); }
-.sens-val { font-variant-numeric: tabular-nums; color: #0f172a; font-weight: 700; text-align: right; }
-.sens-mu { color: #94a3b8; font-size: 11px; text-align: right; font-variant-numeric: tabular-nums; }
 .best-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 16px; }
 .best-item {
   padding: 12px 14px; background: #ecfeff; border: 1px solid #a5f3fc; border-radius: 10px;
