@@ -1,8 +1,21 @@
 ﻿# 璇玑 · 璇玑融合 —— 企业级业务处理流程需求规格
 
+> **标题**：璇玑融合企业级业务处理流程需求规格
+> **版本**：V1.0
+> **权威等级**：🟡参考
+> **编号**：EA-DOC-055
+> **文档层级**：L3需求规格层
+> **最后更新日期**：2026-08-31
+> **主责联盟**：开发联盟 R
+> **单源声明**：本文档是mox-expert企业级业务流程需求的参考承载。冲突时以 `docs/standards/expert-alliance-normalization-mode.md` 为准。
+
+> 📐 **mox-expert三视图声明**：本文档为 mox-expert 系统的三视图之一：product.md=产品需求架构，business-requirements.md=企业级业务流程需求，normalization.md=归一化优化规范。三份文档互为补充，共同描述 mox-expert 系统。
+>
+> 💡 **术语说明**：璇玑/Mox，指同一系统，代码中统一使用 mox- 前缀。
+
 > 文档类型：业务处理流程需求规格（BRD + 领域规则 + 需求追踪矩阵）
 > 适用系统：`crates/mox-system`（协作治理域）、`crates/mox-expert`（璇玑融合引擎域）、`frontend/src/views/MoxFusionView.vue`（融合工作台）
-> 配套流程图：[`mox-expert-alliance-fusion-flows.md`](./mox-expert-alliance-fusion-flows.md)
+> 配套流程图：[`mox-expert-alliance-fusion-flows.md`](docs/modules/mox-expert-alliance-fusion-flows.md)
 > 编写原则：**每条需求必须可验证**——要么映射到真实代码位置，要么标记为 `GAP` 并给出验收断言。
 
 ---
@@ -231,7 +244,7 @@ stateDiagram-v2
 
 **业务目标**：把专家提交的业务流程交给璇玑引擎做归一化 + 七维会诊 + 治理裁决，产出优化算子。
 
-流程细节与真实端点映射见配套流程图文档 [`mox-expert-alliance-fusion-flows.md`](./mox-expert-alliance-fusion-flows.md)。核心链路：
+流程细节与真实端点映射见配套流程图文档 [`mox-expert-alliance-fusion-flows.md`](docs/modules/mox-expert-alliance-fusion-flows.md)。核心链路：
 
 ```
 MoxFusionView.vue

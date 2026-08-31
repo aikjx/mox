@@ -1,8 +1,17 @@
+---
+title: 03 - 全路径业务流程
+version: V2.0
+authority: 🟢权威
+doc_id: EA-DOC-013
+last_updated: 2026-08-31
+source_of_truth: V2.0目标架构业务流程（未落地）
+---
+
 # 03 - 全路径业务流程
 
 > 版本：v2.0 | 日期：2026-08-26 | 状态：企业级草案
 >
-> 前置：[00-需求分析](./00-requirements.md) | [01-架构设计](./01-architecture.md) | [02-领域模型](./02-domain-model.md)
+> 前置：[00-需求分析](docs/expert-alliance/v2/00-requirements.md) | [01-架构设计](docs/expert-alliance/v2/01-architecture.md) | [02-领域模型](docs/expert-alliance/v2/02-domain-model.md)
 
 ---
 
@@ -539,4 +548,4 @@ sequenceDiagram
 
 ---
 
-*下一篇：[04-归一化接口设计](./04-api-design.md)*
+*下一篇：[04-归一化接口设计](docs/expert-alliance/v2/04-api-design.md)*

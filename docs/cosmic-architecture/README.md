@@ -8,9 +8,9 @@
 
 | # | 文档 | 内容 |
 |---|------|------|
-| 00 | [COSMIC-META-ARCHITECTURE.md](./00-COSMIC-META-ARCHITECTURE.md) | 元架构总纲（设计哲学/数据库/权限/流程/专家联盟/行业融合/升级扩展） |
-| 01 | [DATABASE-DDL.sql](./01-DATABASE-DDL.sql) | 企业级数据库DDL（23张核心表+初始化数据，PostgreSQL/MySQL/SQLite） |
-| 02 | [EXPERT-ALLIANCE-ARCHITECTURE.md](./02-EXPERT-ALLIANCE-ARCHITECTURE.md) | 专家联盟架构（7服务+1Sidecar，匹配/执行/融合/记忆/注册） |
+| 00 | [COSMIC-META-ARCHITECTURE.md](docs/cosmic-architecture/00-COSMIC-META-ARCHITECTURE.md) | 元架构总纲（设计哲学/数据库/权限/流程/专家联盟/行业融合/升级扩展） |
+| 01 | [DATABASE-DDL.sql](docs/cosmic-architecture/01-DATABASE-DDL.sql) | 企业级数据库DDL（23张核心表+初始化数据，PostgreSQL/MySQL/SQLite） |
+| 02 | [EXPERT-ALLIANCE-ARCHITECTURE.md](docs/cosmic-architecture/02-EXPERT-ALLIANCE-ARCHITECTURE.md) | 专家联盟架构（7服务+1Sidecar，匹配/执行/融合/记忆/注册） |
 
 ---
 

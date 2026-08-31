@@ -1,8 +1,22 @@
+---
+title: 04 - 归一化接口设计
+version: V2.0
+authority: 🟢权威
+doc_id: EA-DOC-014
+last_updated: 2026-08-31
+source_of_truth: V2.0目标架构API设计（未落地）
+---
+
 # 04 - 归一化接口设计
 
 > 版本：v2.0 | 日期：2026-08-26 | 状态：企业级草案
 >
-> 前置：[00-需求分析](./00-requirements.md) | [01-架构设计](./01-architecture.md) | [02-领域模型](./02-domain-model.md) | [03-业务流程](./03-business-flow.md)
+> 前置：[00-需求分析](docs/expert-alliance/v2/00-requirements.md) | [01-架构设计](docs/expert-alliance/v2/01-architecture.md) | [02-领域模型](docs/expert-alliance/v2/02-domain-model.md) | [03-业务流程](docs/expert-alliance/v2/03-business-flow.md)
+
+
+> ⚠️ **文档状态声明**  
+> 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
+> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:8081 / executor-svc:8082），10个内置领域专家，任务仓库为内存+文件快照。
 
 ---
 
@@ -17,6 +31,11 @@
 | **统一错误** | 所有协议使用统一错误码（ErrorCode 枚举），按协议规范映射 |
 | **统一元数据** | 所有请求携带 RequestMeta（request_id/trace_id/tenant_id/user_id） |
 | **幂等性** | 写操作支持 idempotency_key，重复调用结果一致 |
+
+
+> ⚠️ **文档状态声明**  
+> 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
+> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:8081 / executor-svc:8082），10个内置领域专家，任务仓库为内存+文件快照。
 
 ---
 
@@ -417,6 +436,11 @@ enum ExpertStatus {
 }
 ```
 
+
+> ⚠️ **文档状态声明**  
+> 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
+> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:8081 / executor-svc:8082），10个内置领域专家，任务仓库为内存+文件快照。
+
 ---
 
 ## 三、多协议映射
@@ -560,6 +584,11 @@ MCP tools/call params.name = "graph.create_vertex"
 }
 ```
 
+
+> ⚠️ **文档状态声明**  
+> 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
+> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:8081 / executor-svc:8082），10个内置领域专家，任务仓库为内存+文件快照。
+
 ---
 
 ## 四、协议转码机制
@@ -650,6 +679,11 @@ JSON-RPC / REST 请求
 | DATA_LOSS | -32013 | 500 | true |
 | UNAUTHENTICATED | -32005 | 401 | true |
 
+
+> ⚠️ **文档状态声明**  
+> 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
+> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:8081 / executor-svc:8082），10个内置领域专家，任务仓库为内存+文件快照。
+
 ---
 
 ## 五、WebSocket 协议
@@ -699,6 +733,11 @@ JSON-RPC / REST 请求
 }
 ```
 
+
+> ⚠️ **文档状态声明**  
+> 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
+> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:8081 / executor-svc:8082），10个内置领域专家，任务仓库为内存+文件快照。
+
 ---
 
 ## 六、接口版本管理
@@ -720,4 +759,4 @@ JSON-RPC / REST 请求
 
 ---
 
-*下一篇：[05-数据架构](./05-data-architecture.md)*
+*下一篇：[05-数据架构](docs/expert-alliance/v2/05-data-architecture.md)*

@@ -1,5 +1,18 @@
 ﻿# 璇玑（Expert-Mox）产品需求 · 架构 · 业务流程设计书
 
+> **标题**：璇玑产品需求架构业务流程设计书
+> **版本**：V1.0
+> **权威等级**：🟡参考
+> **编号**：EA-DOC-056
+> **文档层级**：L3需求规格层
+> **最后更新日期**：2026-08-31
+> **主责联盟**：开发联盟 R
+> **单源声明**：本文档是mox-expert产品需求架构的参考承载。冲突时以 `docs/standards/expert-alliance-normalization-mode.md` 为准。
+
+> 📐 **mox-expert三视图声明**：本文档为 mox-expert 系统的三视图之一：product.md=产品需求架构，business-requirements.md=企业级业务流程需求，normalization.md=归一化优化规范。三份文档互为补充，共同描述 mox-expert 系统。
+>
+> 💡 **术语说明**：璇玑/Mox，指同一系统，代码中统一使用 mox- 前缀。
+
 > 版本：v1.0（生产级实现对齐）
 > 参考范式：[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) —— **"Everything is a Plugin"（一切皆插件）**
 > 代码落点：`crates/mox-expert`（含 `harness` 插件运行时、`govern` 治理、`rbac` 权限、`audit` 审计、`pipeline` 全维管线、`flow_loader` 流程外部化）

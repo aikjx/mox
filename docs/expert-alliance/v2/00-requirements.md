@@ -1,8 +1,22 @@
+---
+title: 00 - 全维需求分析
+version: V2.0
+authority: 🟢权威
+doc_id: EA-DOC-010
+last_updated: 2026-08-31
+source_of_truth: V2.0目标架构需求规格（未落地）
+---
+
 # 00 - 全维需求分析
 
 > 版本：v2.0 | 日期：2026-08-26 | 状态：企业级草案
 >
-> 文档导航：[README](./README.md) | [01-架构设计](./01-architecture.md) | [02-领域模型](./02-domain-model.md) | [03-业务流程](./03-business-flow.md) | [04-接口设计](./04-api-design.md) | [05-数据架构](./05-data-architecture.md) | [06-安全可观测](./06-security-observability.md) | [07-路线图](./07-roadmap.md)
+> 文档导航：[README](docs/expert-alliance/v2/README.md) | [01-架构设计](docs/expert-alliance/v2/01-architecture.md) | [02-领域模型](docs/expert-alliance/v2/02-domain-model.md) | [03-业务流程](docs/expert-alliance/v2/03-business-flow.md) | [04-接口设计](docs/expert-alliance/v2/04-api-design.md) | [05-数据架构](docs/expert-alliance/v2/05-data-architecture.md) | [06-安全可观测](docs/expert-alliance/v2/06-security-observability.md) | [07-路线图](docs/expert-alliance/v2/07-roadmap.md)
+
+
+> ⚠️ **文档状态声明**  
+> 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
+> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:8081 / executor-svc:8082），10个内置领域专家，任务仓库为内存+文件快照。
 
 ---
 
@@ -145,7 +159,7 @@ infotopograph 平台已具备知识图谱存储、AI 推理、数据治理、流
 **FR-REG-007**：支持按领域/能力/名称/状态搜索专家
 **FR-REG-008**：支持按任务描述自动匹配专家（图谱推理+评分排序）
 **FR-REG-009**：系统内置 10 个专家，租户可创建自定义专家
-**FR-REG-010**：专家注册事件发布（NATS），联盟调度器自动更新缓存
+**FR-REG-010**：专家注册事件发布（NATS），联盟调度器自动更新缓存（此处"调度器"指专家匹配与任务调度组件，对应 `TaskScheduler`）
 
 ### 4.2 协作任务管理
 
@@ -419,4 +433,4 @@ infotopograph 平台已具备知识图谱存储、AI 推理、数据治理、流
 
 ---
 
-*下一篇：[01-企业级架构设计](./01-architecture.md)*
+*下一篇：[01-企业级架构设计](docs/expert-alliance/v2/01-architecture.md)*

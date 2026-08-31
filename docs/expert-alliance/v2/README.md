@@ -1,3 +1,12 @@
+---
+title: Mox 专家联盟 — 智能自动化信息知识图谱关联关系系统
+version: V2.0
+authority: 🟡参考
+doc_id: EA-DOC-018
+last_updated: 2026-08-31
+source_of_truth: 参考（导航页）
+---
+
 # Mox 专家联盟 — 智能自动化信息知识图谱关联关系系统
 
 > **版本**：v2.0（企业级全维版）
@@ -30,14 +39,14 @@
 
 | # | 文档 | 核心内容 |
 |---|------|----------|
-| 00 | [全维需求分析](./00-requirements.md) | 业务场景/功能需求/非功能需求/用户故事/约束假设/验收标准 |
-| 01 | [企业级架构设计](./01-architecture.md) | 七层架构/5个新服务拆分/多协议网关/部署架构/与现有服务集成 |
-| 02 | [归一化领域模型](./02-domain-model.md) | 统一术语/9个核心实体/状态机/数据契约/领域事件 |
-| 03 | [全路径业务流程](./03-business-flow.md) | 端到端主流程/4个核心子流程/异常处理/MCP调用/时序图 |
-| 04 | [归一化接口设计](./04-api-design.md) | Proto契约/多协议映射/JSON-RPC规范/MCP规范/REST规范/转码机制/WebSocket |
-| 05 | [数据架构](./05-data-architecture.md) | 存储选型/PostgreSQL模型/知识图谱模型/Redis模型/数据一致性/迁移备份 |
-| 06 | [安全与可观测性](./06-security-observability.md) | 安全四件套/多租户/审计/加密/三大支柱/仪表盘/告警/弹性七件套/SLA |
-| 07 | [实施路线图](./07-roadmap.md) | 4阶段16周/里程碑/验收标准/团队配置/风险应对/持续演进 |
+| 00 | [全维需求分析](docs/expert-alliance/v2/00-requirements.md) | 业务场景/功能需求/非功能需求/用户故事/约束假设/验收标准 |
+| 01 | [企业级架构设计](docs/expert-alliance/v2/01-architecture.md) | 七层架构/5个新服务拆分/多协议网关/部署架构/与现有服务集成 |
+| 02 | [归一化领域模型](docs/expert-alliance/v2/02-domain-model.md) | 统一术语/9个核心实体/状态机/数据契约/领域事件 |
+| 03 | [全路径业务流程](docs/expert-alliance/v2/03-business-flow.md) | 端到端主流程/4个核心子流程/异常处理/MCP调用/时序图 |
+| 04 | [归一化接口设计](docs/expert-alliance/v2/04-api-design.md) | Proto契约/多协议映射/JSON-RPC规范/MCP规范/REST规范/转码机制/WebSocket |
+| 05 | [数据架构](docs/expert-alliance/v2/05-data-architecture.md) | 存储选型/PostgreSQL模型/知识图谱模型/Redis模型/数据一致性/迁移备份 |
+| 06 | [安全与可观测性](docs/expert-alliance/v2/06-security-observability.md) | 安全四件套/多租户/审计/加密/三大支柱/仪表盘/告警/弹性七件套/SLA |
+| 07 | [实施路线图](docs/expert-alliance/v2/07-roadmap.md) | 4阶段16周/里程碑/验收标准/团队配置/风险应对/持续演进 |
 
 ---
 
@@ -208,7 +217,7 @@ Expert ──collaborates_with──→ Expert
 
 **团队**：8-10人（架构师1 + Rust后端3-4 + AI工程师1 + 运维1 + 测试1 + 产品1）
 
-详见 [07-实施路线图](./07-roadmap.md)
+详见 [07-实施路线图](docs/expert-alliance/v2/07-roadmap.md)
 
 ---
 
@@ -283,4 +292,4 @@ ws://localhost:8080/ws/v1/expert/tasks/task-xxx/progress?token=<jwt>
 
 ---
 
-*文档导航：[00-需求分析](./00-requirements.md) | [01-架构设计](./01-architecture.md) | [02-领域模型](./02-domain-model.md) | [03-业务流程](./03-business-flow.md) | [04-接口设计](./04-api-design.md) | [05-数据架构](./05-data-architecture.md) | [06-安全可观测](./06-security-observability.md) | [07-路线图](./07-roadmap.md)*
+*文档导航：[00-需求分析](docs/expert-alliance/v2/00-requirements.md) | [01-架构设计](docs/expert-alliance/v2/01-architecture.md) | [02-领域模型](docs/expert-alliance/v2/02-domain-model.md) | [03-业务流程](docs/expert-alliance/v2/03-business-flow.md) | [04-接口设计](docs/expert-alliance/v2/04-api-design.md) | [05-数据架构](docs/expert-alliance/v2/05-data-architecture.md) | [06-安全可观测](docs/expert-alliance/v2/06-security-observability.md) | [07-路线图](docs/expert-alliance/v2/07-roadmap.md)*

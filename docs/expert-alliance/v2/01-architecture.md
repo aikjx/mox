@@ -1,8 +1,22 @@
+---
+title: 01 - 企业级架构设计
+version: V2.0
+authority: 🟢权威
+doc_id: EA-DOC-011
+last_updated: 2026-08-31
+source_of_truth: V2.0目标架构设计（未落地）
+---
+
 # 01 - 企业级架构设计
 
 > 版本：v2.0 | 日期：2026-08-26 | 状态：企业级草案
 >
-> 前置：[00-全维需求分析](./00-requirements.md)
+> 前置：[00-全维需求分析](docs/expert-alliance/v2/00-requirements.md)
+
+
+> ⚠️ **文档状态声明**  
+> 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
+> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:8081 / executor-svc:8082），10个内置领域专家，任务仓库为内存+文件快照。
 
 ---
 
@@ -20,6 +34,8 @@
 | **知识图谱驱动** | 专家匹配/协作编排/结果融合全部基于图谱关联关系 |
 | **多协议共存** | gRPC（内部）+ JSON-RPC/MCP（对外）+ REST（兼容）+ WebSocket（实时） |
 | **全维 Rust** | 后端核心用 Rust，AI 推理用 Python sidecar |
+
+> 术语注释：前文架构图中"联盟调度器"指专家匹配与任务调度组件，对应代码实体 `TaskScheduler` trait。
 
 ### 1.2 七层架构模型
 
@@ -70,6 +86,11 @@
 │  计算 / 存储 / 网络 / 负载均衡 / DNS / TLS / 监控 / 日志 / CI/CD      │
 └─────────────────────────────────────────────────────────────────────┘
 ```
+
+
+> ⚠️ **文档状态声明**  
+> 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
+> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:8081 / executor-svc:8082），10个内置领域专家，任务仓库为内存+文件快照。
 
 ---
 
@@ -232,6 +253,11 @@
               └─────────────────────────────────────┘
 ```
 
+
+> ⚠️ **文档状态声明**  
+> 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
+> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:8081 / executor-svc:8082），10个内置领域专家，任务仓库为内存+文件快照。
+
 ---
 
 ## 三、多协议网关架构
@@ -330,6 +356,11 @@ JSON-RPC / MCP 请求
 └─────────────────────────────────────┘
 ```
 
+
+> ⚠️ **文档状态声明**  
+> 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
+> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:8081 / executor-svc:8082），10个内置领域专家，任务仓库为内存+文件快照。
+
 ---
 
 ## 四、部署架构
@@ -380,6 +411,11 @@ NetworkPolicy：
   - 所有服务只能访问 PostgreSQL/Redis/NATS/MinIO（对应端口）
 ```
 
+
+> ⚠️ **文档状态声明**  
+> 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
+> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:8081 / executor-svc:8082），10个内置领域专家，任务仓库为内存+文件快照。
+
 ---
 
 ## 五、与现有架构的集成
@@ -415,6 +451,11 @@ NetworkPolicy：
 | **mox-expert-core** | 专家定义/Agent trait/工具调用/记忆接口 | 依赖 mox-rpc/mox-config |
 | **mox-mcp** | MCP 协议实现（标准方法/工具描述/转码） | 依赖 jsonrpsee/mox-rpc |
 | **mox-alliance-client** | 联盟 SDK（任务创建/进度订阅/结果获取） | 依赖 mox-rpc |
+
+
+> ⚠️ **文档状态声明**  
+> 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
+> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:8081 / executor-svc:8082），10个内置领域专家，任务仓库为内存+文件快照。
 
 ---
 
@@ -457,4 +498,4 @@ Phase 6（W25+）：持续优化
 
 ---
 
-*下一篇：[02-归一化领域模型](./02-domain-model.md)*
+*下一篇：[02-归一化领域模型](docs/expert-alliance/v2/02-domain-model.md)*

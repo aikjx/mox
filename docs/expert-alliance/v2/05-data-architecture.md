@@ -1,8 +1,22 @@
+---
+title: 05 - 数据架构
+version: V2.0
+authority: 🟢权威
+doc_id: EA-DOC-015
+last_updated: 2026-08-31
+source_of_truth: V2.0目标架构数据架构（未落地）
+---
+
 # 05 - 数据架构
 
 > 版本：v2.0 | 日期：2026-08-26 | 状态：企业级草案
 >
-> 前置：[00-需求分析](./00-requirements.md) | [01-架构设计](./01-architecture.md) | [02-领域模型](./02-domain-model.md)
+> 前置：[00-需求分析](docs/expert-alliance/v2/00-requirements.md) | [01-架构设计](docs/expert-alliance/v2/01-architecture.md) | [02-领域模型](docs/expert-alliance/v2/02-domain-model.md)
+
+
+> ⚠️ **文档状态声明**  
+> 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
+> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:8081 / executor-svc:8082），10个内置领域专家，任务仓库为内存+文件快照。
 
 ---
 
@@ -49,6 +63,11 @@
    │ (知识图谱)   │  │  (对象存储)  │  │ (通知/审计)  │
    └─────────────┘  └─────────────┘  └─────────────┘
 ```
+
+
+> ⚠️ **文档状态声明**  
+> 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
+> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:8081 / executor-svc:8082），10个内置领域专家，任务仓库为内存+文件快照。
 
 ---
 
@@ -294,6 +313,11 @@ CREATE INDEX idx_audit_action ON audit_logs(action, created_at DESC);
 -- 不可篡改：禁止UPDATE/DELETE（通过触发器或应用层保证）
 ```
 
+
+> ⚠️ **文档状态声明**  
+> 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
+> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:8081 / executor-svc:8082），10个内置领域专家，任务仓库为内存+文件快照。
+
 ---
 
 ## 三、知识图谱数据模型
@@ -360,6 +384,11 @@ CREATE INDEX idx_audit_action ON audit_logs(action, created_at DESC);
 
 **内置专家**：10个（图谱构建/数据分析/AI推理/安全审计/流程自动化/数据治理/知识融合/搜索推荐/运维监控/联盟协调）
 
+
+> ⚠️ **文档状态声明**  
+> 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
+> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:8081 / executor-svc:8082），10个内置领域专家，任务仓库为内存+文件快照。
+
 ---
 
 ## 四、Redis 数据模型
@@ -395,6 +424,11 @@ CREATE INDEX idx_audit_action ON audit_logs(action, created_at DESC);
 | `{t}:idempotency:{key}` | String | 24h | 幂等键（防重复） |
 | `{t}:progress:{task_id}` | Stream | 1h | 任务进度事件流（WebSocket推送） |
 
+
+> ⚠️ **文档状态声明**  
+> 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
+> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:8081 / executor-svc:8082），10个内置领域专家，任务仓库为内存+文件快照。
+
 ---
 
 ## 五、数据一致性
@@ -429,6 +463,11 @@ CREATE INDEX idx_audit_action ON audit_logs(action, created_at DESC);
 - 重复请求直接返回缓存结果
 - TTL 24小时
 
+
+> ⚠️ **文档状态声明**  
+> 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
+> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:8081 / executor-svc:8082），10个内置领域专家，任务仓库为内存+文件快照。
+
 ---
 
 ## 六、数据迁移与备份
@@ -460,4 +499,4 @@ migrations/
 
 ---
 
-*下一篇：[06-安全与可观测性](./06-security-observability.md)*
+*下一篇：[06-安全与可观测性](docs/expert-alliance/v2/06-security-observability.md)*

@@ -1,8 +1,20 @@
+---
+title: 02 - 架构需求矩阵
+version: V3.0
+authority: 🟢权威
+doc_id: EA-DOC-021
+last_updated: 2026-08-31
+source_of_truth: V3.0架构优化需求矩阵
+---
 # 02 - 架构需求矩阵
 
 > 版本：v3.0 | 日期：2026-08-26
 >
-> 前置：[01-架构优化分析](./01-architecture-optimization.md)
+> 前置：[01-架构优化分析](docs/expert-alliance/v3/01-architecture-optimization.md)
+
+
+> 📌 **文档状态声明**  
+> 本文档为 V3.0 **架构优化方向设计**，在V2.0目标架构基础上提出模块化/插件化优化思路。部分设计（如11个crate模块化）已在Rust实现中落地，具体以代码事实为准。
 
 ---
 
@@ -53,6 +65,10 @@
 | FR-041 | WebSocket(/ws，进度+流式输出) | P0 | gateway-http | 实时推送，断线重连，<1s延迟 | - |
 | FR-042 | JSON-RPC→gRPC自动转码 | P1 | gateway-http | 基于Proto反射，零手写代码 | prost-reflect |
 
+
+> 📌 **文档状态声明**  
+> 本文档为 V3.0 **架构优化方向设计**，在V2.0目标架构基础上提出模块化/插件化优化思路。部分设计（如11个crate模块化）已在Rust实现中落地，具体以代码事实为准。
+
 ---
 
 ## 二、非功能需求矩阵
@@ -100,6 +116,10 @@
 | NFR-039 | 回滚时间 | <1min | P2 | 回滚测试 |
 | NFR-040 | 代码覆盖率 | ≥80% | P2 | CI统计 |
 
+
+> 📌 **文档状态声明**  
+> 本文档为 V3.0 **架构优化方向设计**，在V2.0目标架构基础上提出模块化/插件化优化思路。部分设计（如11个crate模块化）已在Rust实现中落地，具体以代码事实为准。
+
 ---
 
 ## 三、服务-需求映射矩阵
@@ -114,6 +134,10 @@
 | expert-registry | 6 | 3 | 0 | 专家CRUD/验证/健康检查/工具发现 |
 | expert-agent | 4 | 2 | 0 | ReAct循环/工具调用/AI推理/知识检索 |
 | expert-memory | 3 | 3 | 0 | 工作/会话/长期记忆/案例/图谱学习 |
+
+
+> 📌 **文档状态声明**  
+> 本文档为 V3.0 **架构优化方向设计**，在V2.0目标架构基础上提出模块化/插件化优化思路。部分设计（如11个crate模块化）已在Rust实现中落地，具体以代码事实为准。
 
 ---
 
@@ -130,6 +154,10 @@
 | expert-agent | 所有底层gRPC服务/memory/gateway-grpc | executor/fusion | Redis(会话)/ai-inference-sidecar |
 | expert-memory | 图存储/PostgreSQL/Redis/gateway-grpc | scheduler/executor/fusion/agent | PostgreSQL(案例)/Redis(记忆)/图存储(图谱) |
 
+
+> 📌 **文档状态声明**  
+> 本文档为 V3.0 **架构优化方向设计**，在V2.0目标架构基础上提出模块化/插件化优化思路。部分设计（如11个crate模块化）已在Rust实现中落地，具体以代码事实为准。
+
 ---
 
 ## 五、里程碑-需求映射
@@ -145,4 +173,4 @@
 
 ---
 
-*下一篇：[03-全维业务流程图](./03-business-flow-diagrams.md)*
+*下一篇：[03-全维业务流程图](docs/expert-alliance/v3/03-business-flow-diagrams.md)*

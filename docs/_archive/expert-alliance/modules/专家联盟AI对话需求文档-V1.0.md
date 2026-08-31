@@ -1,3 +1,17 @@
+---
+archived: true
+archived_date: 2026-08-31
+archived_reason: 已被V2.0架构优化版替代
+superseded_by: docs/modules/专家联盟AI对话需求文档-V2.0-架构优化版.md
+authority: ⚪归档
+---
+
+> ⚪ **已归档**  
+> 本文档已于2026-08-31归档。原因为：已被V2.0架构优化版替代。  
+> 最新版本请参阅：[专家联盟AI对话需求文档-V2.0-架构优化版](docs/modules/专家联盟AI对话需求文档-V2.0-架构优化版.md)
+
+---
+
 # 专家联盟 AI 对话系统 - 需求文档 V1.0
 
 ## 文档信息

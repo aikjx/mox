@@ -1,6 +1,16 @@
 # 企业级业务处理流程（Business Process Flows）
 
-> 本文档描述算子统一系统（OUS）中**已落地**的企业级业务处理流程能力，以代码为准（`crates/ai-agent/src/workflow_engine.rs`、`crates/ai-agent/src/flow_engine.rs`、`crates/runtime/src/main.rs`、`frontend/`）。
+>
+> **标题**：企业级业务处理流程
+> **版本**：V1.0
+> **权威等级**：🟢权威（流程规范主文档）
+> **编号**：EA-DOC-058
+> **文档层级**：L4流程标准层
+> **最后更新日期**：2026-08-31
+> **主责联盟**：开发联盟 R
+> **单源声明**：本文档是企业级业务处理流程的唯一权威承载。冲突时以 `docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md` 为准。
+>
+本文档描述算子统一系统（OUS）中**已落地**的企业级业务处理流程能力，以代码为准（`crates/ai-agent/src/workflow_engine.rs`、`crates/ai-agent/src/flow_engine.rs`、`crates/runtime/src/main.rs`、`frontend/`）。
 >
 > 本文与 `docs/architecture.md` §9「13 条业务处理流程卡」（按端点划分的**设计规范**）互补：§9 是"系统对外提供哪些业务流程端点"，本文是"企业级业务流程如何被编排、执行与复用"。两者不冲突。
 

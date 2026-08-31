@@ -2,7 +2,7 @@
 
 > 版本：v1.0 | 日期：2026-08-26 | 状态：设计草案
 >
-> 基于：[微服务架构设计](../microservices/README.md)
+> 基于：[微服务架构设计](docs/microservices/README.md)
 
 ---
 
@@ -673,4 +673,4 @@ service ExpertAgentService {
 
 ---
 
-*相关文档：[微服务架构设计](../microservices/README.md) | [服务边界优化](../microservices/01-service-boundaries.md) | [通信架构优化](../microservices/02-communication.md)*
+*相关文档：[微服务架构设计](docs/microservices/README.md) | [服务边界优化](docs/microservices/01-service-boundaries.md) | [通信架构优化](docs/microservices/02-communication.md)*

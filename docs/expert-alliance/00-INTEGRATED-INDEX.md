@@ -1,258 +1,333 @@
-# 开发专家联盟 · 全维整合总览（企业级）
+# 开发专家联盟 · 权威集成索引（EA-DOC-001）
 
-> **文档性质**：唯一权威入口（Master Index）。把散落在 `docs/expert-alliance/`（系统设计 v1/v2/v3）、`docs/enterprise/26-*`（SaaS 化方案 V1.0/V1.1）、`proto/expert-alliance/v1`（契约）、`expert-alliance-cyber|design/`（可视化）的开发专家联盟内容，归一为一份可迭代、可追踪的分层全景。
-> **版本**：V1.0（整合稿）| 日期：2026-08-29 | 状态：权威
-
----
-
-## 0. 这是什么
-
-**开发专家联盟（Expert Alliance）** 是构建在 infotopograph / Mox 微服务架构之上的**智能编排层**：把底层 31 个微服务的能力升级为 10+ 领域专家 Agent 自动协作的"智能团队"。
-
-用户只需自然语言描述目标，系统自动完成 **专家识别 → 协作编排 → 多专家执行 → 结果融合 → 记忆沉淀**，端到端交付复杂任务成果。
-
-一句话：让系统从"工具集合"升级为"智能团队"。
+> **标题**：开发专家联盟·权威集成索引
+> **版本**：V2.0
+> **权威等级**：🟢权威
+> **编号**：EA-DOC-001
+> **文档层级**：L1权威规范层
+> **最后更新日期**：2026-08-31
+> **主责联盟**：开发联盟 R（架构·代码·文档治理）
+> **单源声明**：本文档是"开发专家联盟"主题文档的唯一权威入口与登记枢纽。所有专家联盟主题文档的目录、版本、权威等级、状态、代码对齐均以本索引为准。本索引冲突时以 `docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md`（TOP-MASTER）为准。
+> **索引声明 = 物理事实**：本索引中登记的每一份文档均已验证物理存在；物理目录中每一份专家联盟主题文档均已在本索引登记。
 
 ---
 
-## 1. 文档资产全景（本主题全部素材）
+## 1. 索引说明
 
-| 资产 | 路径 | 内容 | 状态 |
-|------|------|------|------|
-| 设计总览 v1 | `docs/expert-alliance/README.md` | 系统定位/架构/专家模型/知识图谱/协作引擎/API/场景/路线 | 设计草案 |
-| 设计 v2 | `docs/expert-alliance/v2/`（00~07 共 8 篇） | 全维需求/架构/领域模型/业务流程/接口/数据/安全/路线图 | 设计定稿 |
-| 设计 v3 | `docs/expert-alliance/v3/`（3 篇） | 架构优化/需求矩阵/业务流程图（16 张 Mermaid） | 优化定稿 |
-| 专项 | `docs/expert-alliance/expert-registry-and-protocol.md` | 专家注册中心 + 协作协议 | v1.0 |
-| 专项 | `docs/expert-alliance/knowledge-graph-schema.md` | 知识图谱关联关系设计（六元网络） | v1.0 |
-| SaaS 方案 V1.0 | `docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.0.md` | 源码取证诊断 + 四阶段路线图 | 首版 |
-| SaaS 方案 V1.1 | `docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.1-补充修订版.md` | 修正 5 大模块低估 + 执行矩阵/风险/ROI/30 天里程碑 | 修订版 |
-| 契约 | `proto/expert-alliance/v1/`（7 个 .proto） | 调度/执行/融合/注册/Agent/记忆/公共 | 对应 v3 |
-| 可视化 | `expert-alliance-cyber/` · `expert-alliance-design/` | CYBERPUNK 版 / Element Plus 全维度设计方案 HTML | 展示稿 |
+本索引是开发专家联盟（Expert Alliance）主题全部文档的**唯一权威登记入口**，承担以下职责：
 
-> 版本演进主线：**v1 草案 → v2 企业级全维 → v3 优化定稿 → SaaS 方案 V1.0 → V1.1 修订**。本索引统一口径。
+1. **文档全景登记**：登记所有专家联盟主题文档的路径、标题、版本、权威等级、状态。
+2. **权威链维护**：定义 L0→L1→L2→L3 权威链，明确文档间裁决优先级。
+3. **代码-文档对齐**：声明当前实际代码实现（11 crate / 2 svc / 10专家 / 6融合策略），作为所有架构描述的事实基准。
+4. **子系统与API映射**：建立子系统→专家数量→代码路径→权威文档映射，以及5套API路径映射表。
+5. **引用规则强制执行**：所有文档间引用统一使用仓根相对路径 `docs/<rel>`，禁止 `../`、裸文件名、`file:///`。
 
----
+**权威链定义（L0→L3）**：
 
-## 2. 分层架构全景（v3 定稿 · 七层）
-
-```
-L7 应用层    前端工作台（ExpertCenterView 黄金比例三栏：阶段导航+AI工作区+图谱追踪）
-L6 接入层    gateway-http(:8080 REST/JSON-RPC/MCP/WS) + gateway-grpc(:50051 内部)
-L5 联盟核心  7 服务 + 1 Sidecar（见 §3）
-L4 专家能力  10+ 领域专家 Agent（见 §4）
-L3 微服务底座 31 个底层服务（ai/graph/flow/search/storage/compliance/fusion/...）
-L2 数据层    PostgreSQL(RLS) · 知识图谱 · Redis(会话/缓存) · 事件总线
-L1 基础设施  Docker Compose → K8s+Istio · OpenTelemetry · 灰度流量切换
-```
+| 层级 | 名称 | 文档 | 职责 |
+|:----:|------|------|------|
+| L0 | 顶层设计 | `docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md` | 全项目最高权威，三联盟模式定义 |
+| L1 | 权威规范 | `docs/standards/expert-alliance-normalization-mode.md`（EA-NORM-001）、本索引 | 归一化规范、索引登记、引用规则 |
+| L2 | 架构设计 | `docs/expert-alliance/02-DUAL-PLATFORM-RELATIONSHIP.md`、`docs/expert-alliance/01-ENTERPRISE-OPTIMIZATION.md` | 双平台关系、架构总纲、企业级优化 |
+| L3 | 需求规格/流程标准 | v2/v3系列、EAF-STD-001、归一化手册 | 具体版本需求、业务流程、接口契约 |
 
 ---
 
-## 3. 服务拆分演进（5 → 7 服务 + 1 Sidecar）
+## 2. 文档全景统计表
 
-### 3.1 v2（5 服务）→ v3（7 服务 + 1 Sidecar）对照
+### 2.1 总文档数
 
-| v2 服务 | v3 服务 | 优化点 |
-|---------|---------|--------|
-| mox-gateway-svc（多协议混单端口） | **gateway-http**(:8080) + **gateway-grpc**(:50051) | 协议分流，消除 ALPN 兼容问题 |
-| mox-expert-alliance-svc（过重：调度/编排/执行/融合/记忆 5 大能力耦合） | **alliance-scheduler** + **alliance-executor** + **alliance-fusion** | 职责单一化，独立扩缩/故障隔离 |
-| mox-expert-registry-svc | **expert-registry**（精简，匹配移走） | 匹配合并进 scheduler，RPC 由 2 次→1 次，延迟降 60% |
-| mox-expert-agent-svc（有状态） | **expert-agent**（全无状态，会话外部化 Redis） | Pod 可随时重启，HPA 自由缩容 |
-| mox-expert-kg-svc | 图谱查询内嵌 scheduler | 减少跳数（P3 修复） |
-| — | **expert-memory**（统一记忆服务） | 记忆三层分散→统一抽象 |
-| — | **ai-inference**（Python Sidecar，UDS 通信） | AI 推理隔离，与 agent 同 Pod |
+| 统计项 | 数量 | 说明 |
+|--------|:----:|------|
+| **专家联盟主题文档总计** | **51** | 含归档3份、执行报告5份 |
+| 活跃文档（非归档） | 48 | 含执行报告5份 |
+| 归档文档 | 3 | 2份旧版 + 1份归档README |
+| 本次归一化新建 | 4 | EA-NORM-001规范、02双平台、03术语表、归档README |
+| 本次归一化修改 | 45 | A组21 + B组22 + 引用修复2 |
+| 删除文件 | 0 | 严格遵守"不删除任何文件"硬约束 |
 
-### 3.2 关键数据流（v3）
+### 2.2 按目录分布
 
-```
-gateway-http → alliance-scheduler（任务解析+专家匹配[内嵌图谱推理]+计划生成+案例检索）
-             → alliance-executor（DAG 执行/节点调度/进度推送/人工干预）
-             → expert-agent（ReAct 循环/工具调用/AI 推理）→ ai-inference(Sidecar)
-             → alliance-fusion（6 种融合策略/质量评估/迭代精炼）
-             → expert-memory（案例库/图谱学习/边权重更新）
-```
+| 目录 | 文档数 | 占比 | 说明 |
+|------|:------:|:----:|------|
+| `docs/expert-alliance/` | 23 | 45.1% | 根目录7 + v2/ 9 + v3/ 4 + architecture/ 3HTML |
+| `docs/modules/` | 11 | 21.6% | mox-expert系列4 + 专家联盟系列5 + business-process系列2 |
+| `docs/working-reports/` | 7 | 13.7% | 盘点1 + 代码对齐1 + 执行记录3 + 处理模式2 |
+| `docs/enterprise/` | 4 | 7.8% | 22号总控卡 + 26号×2 + 28号报告 |
+| `docs/standards/` | 2 | 3.9% | EA-NORM-001 + EAF-STD-001 |
+| `docs/cosmic-architecture/` | 2 | 3.9% | 02号 + 04号 |
+| `docs/`（根） | 3 | 5.9% | 修复报告HTML + 评审报告HTML + 知识库融合方案 |
+| `docs/specifications/` | 1 | 2.0% | alliance-fr13-fr5-integration |
+| `docs/_archive/expert-alliance/` | 3 | — | 归档区（不计入活跃） |
+
+### 2.3 按权威等级分布
+
+| 权威等级 | 数量 | 占比 | 说明 |
+|---------|:----:|:----:|------|
+| 🟢权威 | 18 | 35.3% | 索引、规范、架构总纲、v2/v3系列、EAF标准、归一化手册等 |
+| 🟡参考 | 27 | 52.9% | 协议规范、数据Schema、HTML可视化、mox-expert系列、分析报告等 |
+| 🟡过程稿 | 3 | 5.9% | 处理模式文档 |
+| ⚪归档 | 3 | 5.9% | 26-V1.0、AI对话需求V1.0、归档README |
+| **合计** | **51** | **100%** | |
+
+### 2.4 按状态分布
+
+| 状态 | 数量 | 说明 |
+|------|:----:|------|
+| ✅已落地（与代码一致） | 12 | 修复报告、评审报告、EA-NORM-001、归一化手册、EAF-STD、双平台关系、术语表等 |
+| 🎯目标设计（未落地） | 16 | v2全套8份 + v3全套4份 + 01-ENTERPRISE-OPTIMIZATION + AI对话需求V2.0 + 3份architecture HTML |
+| 📚参考资料 | 17 | 协议规范、数据Schema、mox-expert系列、分析报告、处理模式等 |
+| ⚪已归档 | 3 | 26-V1.0、AI对话需求V1.0、归档README |
+| 📋执行报告 | 3 | A组、B组、归档执行记录 |
 
 ---
 
-## 4. 专家模型（领域实体）
+## 3. 权威文档清单（🟢权威）
 
-### 4.1 专家定义（ExpertDefinition 核心字段）
+| # | doc_id | 文档路径 | 标题 | 版本 | 单源声明 |
+|---|--------|---------|------|------|---------|
+| 1 | EA-DOC-001 | `docs/expert-alliance/00-INTEGRATED-INDEX.md` | 权威集成索引 | V2.0 | 专家联盟文档唯一权威入口 |
+| 2 | EA-NORM-001 | `docs/standards/expert-alliance-normalization-mode.md` | 归一化处理模式规范 | V1.0 | 专家联盟归一化唯一权威规范 |
+| 3 | EA-DOC-002 | `docs/expert-alliance/02-DUAL-PLATFORM-RELATIONSHIP.md` | 双平台架构关系说明 | V1.0 | Node.js层与Rust alliance域关系唯一权威说明 |
+| 4 | EA-DOC-003 | `docs/expert-alliance/03-GLOSSARY.md` | 专家联盟术语表 | V1.0 | 专家联盟领域术语唯一事实源 |
+| 5 | EA-DOC-010 | `docs/expert-alliance/v2/00-requirements.md` | V2.0需求规格 | V2.0 | v2系列需求唯一权威（⚠️目标设计未落地） |
+| 6 | EA-DOC-011 | `docs/expert-alliance/v2/01-architecture.md` | V2.0架构设计 | V2.0 | v2架构唯一权威（⚠️目标设计未落地） |
+| 7 | EA-DOC-012 | `docs/expert-alliance/v2/02-domain-model.md` | V2.0领域模型 | V2.0 | v2领域模型唯一权威（⚠️目标设计未落地） |
+| 8 | EA-DOC-013 | `docs/expert-alliance/v2/03-business-flow.md` | V2.0业务流程 | V2.0 | v2业务流程唯一权威 |
+| 9 | EA-DOC-014 | `docs/expert-alliance/v2/04-api-design.md` | V2.0 API设计 | V2.0 | v2 API唯一权威（⚠️目标设计未落地） |
+| 10 | EA-DOC-015 | `docs/expert-alliance/v2/05-data-architecture.md` | V2.0数据架构 | V2.0 | v2数据架构唯一权威（⚠️目标设计未落地） |
+| 11 | EA-DOC-016 | `docs/expert-alliance/v2/06-security-observability.md` | V2.0安全与可观测性 | V2.0 | v2安全唯一权威（⚠️目标设计未落地） |
+| 12 | EA-DOC-017 | `docs/expert-alliance/v2/07-roadmap.md` | V2.0实施路线图 | V2.0 | v2路线图唯一权威 |
+| 13 | EA-DOC-020 | `docs/expert-alliance/v3/01-architecture-optimization.md` | V3.0架构优化 | V3.0 | v3架构优化唯一权威（⚠️架构优化方向） |
+| 14 | EA-DOC-021 | `docs/expert-alliance/v3/02-requirements-matrix.md` | V3.0需求矩阵 | V3.0 | v3需求矩阵唯一权威 |
+| 15 | EA-DOC-022 | `docs/expert-alliance/v3/03-business-flow-diagrams.md` | V3.0业务流程图 | V3.0 | v3业务流程图唯一权威 |
+| 16 | EA-DOC-061 | `docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.1-补充修订版.md` | 架构诊断与SaaS化最优方案V1.1 | V1.1 | 26号架构诊断唯一权威（V1.0已归档） |
+| 17 | EA-DOC-062 | `docs/enterprise/22-全文档归一化总控卡与权威链单源映射表-V1.0.md` | 全文档归一化总控卡 | V1.0 | 全域归一化治理枢纽 |
+| 18 | EA-DOC-063 | `docs/standards/expert-alliance-flow-standard.md` | EAF-STD-001业务处理流程行业标准 | V1.2 | 专家联盟业务处理流程行业级标准 |
+| 19 | EA-DOC-064 | `docs/alliance-architecture-fix-report-20260831.html` | 架构修复报告 | 2026-08-31 | alliance域修复验证唯一权威 |
+| 20 | EA-DOC-065 | `docs/alliance-architecture-review-20260831.html` | 架构评审报告 | 2026-08-31 | alliance域架构评审权威（⚠️修复前快照） |
+| 21 | EA-DOC-066 | `docs/modules/专家联盟-全维业务流程归一化手册-V1.0.md` | 全维业务流程归一化手册 | V1.0 | 专家联盟业务流程归一化唯一真相源 |
+| 22 | EA-DOC-058 | `docs/modules/business-process-flows.md` | 企业级业务处理流程 | — | 业务流程规范主文档 |
 
-```
-expert_id · name · description · role · domains · capabilities
-· tools(服务+方法绑定) · knowledge(图谱子图引用) · personality
-· memory(config) · priority(冲突仲裁) · status · metadata
-```
+---
 
-### 4.2 内置专家清单（10 个）
+## 4. 参考文档清单（🟡参考）
 
-| 专家 | 核心能力 | 调用服务 |
+### 4.1 docs/expert-alliance/ 根目录
+
+| doc_id | 路径 | 标题 | 说明 |
+|--------|------|------|------|
+| EA-DOC-002(旧) | `docs/expert-alliance/01-ENTERPRISE-OPTIMIZATION.md` | 企业级优化方案 | ⚠️目标设计未落地，含"7服务"描述 |
+| EA-DOC-003(旧) | `docs/expert-alliance/README.md` | 文档目录导航 | 设计草案状态，导航页 |
+| EA-DOC-004 | `docs/expert-alliance/expert-registry-and-protocol.md` | 专家注册与协议规范 | 定义ExpertDescriptor Schema |
+| EA-DOC-005 | `docs/expert-alliance/knowledge-graph-schema.md` | 知识图谱Schema | 8类实体、12类关系定义 |
+
+### 4.2 docs/expert-alliance/v2/
+
+| doc_id | 路径 | 标题 | 说明 |
+|--------|------|------|------|
+| EA-DOC-018 | `docs/expert-alliance/v2/README.md` | V2.0文档导航 | 导航页 |
+
+### 4.3 docs/expert-alliance/v3/
+
+| doc_id | 路径 | 标题 | 说明 |
+|--------|------|------|------|
+| EA-DOC-023 | `docs/expert-alliance/v3/README.md` | V3.0文档导航 | 导航页 |
+
+### 4.4 docs/expert-alliance/architecture/（HTML）
+
+| doc_id | 路径 | 标题 | 说明 |
+|--------|------|------|------|
+| EA-DOC-030 | `docs/expert-alliance/architecture/deployment-guide.html` | 部署指南 | ⚠️K8s/Helm目标部署架构 |
+| EA-DOC-031 | `docs/expert-alliance/architecture/ops-manual.html` | 运维手册 | 日常运维操作手册 |
+| EA-DOC-032 | `docs/expert-alliance/architecture/system-architecture-design.html` | 系统架构设计 | ⚠️微服务目标架构 |
+
+### 4.5 docs/modules/
+
+| doc_id | 路径 | 标题 | 说明 |
+|--------|------|------|------|
+| EA-DOC-050 | `docs/enterprise/26-前端开发专家主控提示词与流程透明化最佳实践清单-V1.0.md` | 前端开发专家主控提示词 | 前端最佳实践清单 |
+| EA-DOC-051 | `docs/modules/专家联盟AI对话需求文档-V2.0-架构优化版.md` | AI对话需求V2.0 | ⚠️目标设计，"15+专家"为扩展目标 |
+| EA-DOC-052 | `docs/modules/专家联盟-业务流程关联关系总览-V1.0.html` | 业务流程关联关系总览 | 可视化配套版，以Markdown手册为准 |
+| EA-DOC-053 | `docs/modules/专家联盟AI对话业务处理流程图.html` | AI对话业务处理流程图 | ⚠️16种专家为扩展设计 |
+| — | `docs/modules/专家联盟V2.0-集成对齐分析报告.md` | V2.0集成对齐分析报告 | Node.js代码对齐分析 |
+| EA-DOC-054 | `docs/modules/mox-expert-alliance-fusion-flows.md` | 璇玑融合业务流程图 | mox-expert融合流水线 |
+| EA-DOC-055 | `docs/modules/mox-expert-business-requirements.md` | 璇玑融合企业级业务需求 | mox-expert三视图之业务需求 |
+| EA-DOC-056 | `docs/modules/mox-expert-product.md` | 璇玑产品需求架构设计书 | mox-expert三视图之产品需求 |
+| — | `docs/modules/mox-expert-normalization.md` | 璇玑全维整理归一化优化规范 | mox-expert三视图之归一化规范 |
+| EA-DOC-057 | `docs/modules/business-process-flowcharts.md` | 企业级业务处理流程图 | 可视化配套版，以flows.md为准 |
+| — | `docs/modules/ai-flow-graph-design.md` | AI流程图谱化设计 | AI引擎流程图谱设计 |
+
+### 4.6 docs/cosmic-architecture/
+
+| doc_id | 路径 | 标题 | 说明 |
+|--------|------|------|------|
+| EA-DOC-040 | `docs/cosmic-architecture/02-EXPERT-ALLIANCE-ARCHITECTURE.md` | 专家联盟架构（宇宙架构系列） | 宇宙架构哲学视角，技术事实以expert-alliance/为准 |
+| EA-DOC-041 | `docs/cosmic-architecture/04-EXPERT-ALLIANCE-v3-MODULAR.md` | V3.0模块化架构（宇宙架构系列） | 同上 |
+
+### 4.7 其他参考文档
+
+| 路径 | 标题 | 说明 |
+|------|------|------|
+| `docs/enterprise/28-全维架构分析与文档归一化报告-V1.0.md` | 全维架构分析与文档归一化报告 | 全域架构分析 |
+| `docs/架构开发联盟知识库融合设计方案.md` | 架构开发联盟知识库融合设计方案 | CKB融合知识库架构 |
+| `docs/specifications/tasks/20260826-xiaobai-mox-full-arch/alliance-fr13-fr5-integration.md` | AIS专家联盟裁决流水线×FR-13/FR-5对接设计规范 | 对接设计规范 |
+| `docs/working-reports/mox-expert-alliance-processing-mode.md` | 璇玑开发专家联盟处理模式 | 5步法标准流程（过程稿） |
+| `docs/working-reports/mox-algorithm-alliance-flow.md` | 璇玑算法联盟最优处理流程 | 算法联盟6步法（过程稿） |
+| `docs/working-reports/expert-alliance-doc-inventory-20260831.md` | 全量文档盘点分析报告 | 归一化分析阶段产出 |
+| `docs/working-reports/expert-alliance-code-alignment-20260831.md` | 代码-文档对齐分析报告 | 归一化分析阶段产出 |
+
+---
+
+## 5. 归档文档清单（⚪归档）
+
+| # | 归档路径 | 原路径 | 归档原因 | 替代文档 | 归档日期 |
+|---|---------|--------|---------|---------|---------|
+| 1 | `docs/_archive/expert-alliance/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.0.md` | `docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.0.md` | 已被V1.1补充修订版替代（V1.0中"31微服务"等结论已修正） | `docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.1-补充修订版.md` | 2026-08-31 |
+| 2 | `docs/_archive/expert-alliance/modules/专家联盟AI对话需求文档-V1.0.md` | `docs/modules/专家联盟AI对话需求文档-V1.0.md` | 已被V2.0架构优化版替代 | `docs/modules/专家联盟AI对话需求文档-V2.0-架构优化版.md` | 2026-08-31 |
+| 3 | `docs/_archive/expert-alliance/README.md` | —（新建） | 归档区说明与清单 | — | 2026-08-31 |
+
+**归档规则**：归档文档只读，不得修改；不得被新增引用；已有引用必须在归档时更新为指向替代文档。
+
+---
+
+## 6. 新增文档登记
+
+| # | 路径 | doc_id | 权威等级 | 版本 | 核心内容 | 编制依据 |
+|---|------|--------|---------|------|---------|---------|
+| 1 | `docs/standards/expert-alliance-normalization-mode.md` | EA-NORM-001 | 🟢权威 | V1.0 | 10章完整规范：总则/目录/分层/引用/术语/代码对齐/5步法/反模式/验收/附录 | 7份基线文档 + alliance域11crate代码事实 |
+| 2 | `docs/expert-alliance/02-DUAL-PLATFORM-RELATIONSHIP.md` | EA-DOC-002 | 🟢权威 | V1.0 | 双平台定位对照、11项功能映射、API端点对照、5阶段迁移策略 | 盘点报告裁决C3、代码对齐报告 |
+| 3 | `docs/expert-alliance/03-GLOSSARY.md` | EA-DOC-003 | 🟢权威 | V1.0 | 专家匹配器8种称谓统一、六阶段5种命名对照、融合5种含义消歧、璇玑/Mox统一说明 | 盘点报告§3.6术语不一致、EA-NORM-001§5 |
+| 4 | `docs/_archive/expert-alliance/README.md` | — | ⚪归档 | V1.0 | 归档区说明、归档规则、归档清单表 | EA-NORM-001§2.4 |
+
+---
+
+## 7. 子系统映射表（裁决C1/C3）
+
+专家联盟主题涉及**三个并行子系统**，专家数量、技术栈、端口各不相同，不得混淆：
+
+| 子系统 | 技术栈 | 端口 | 专家数量 | 代码路径 | 权威文档 | 关系说明 |
+|--------|--------|:----:|:--------:|---------|---------|---------|
+| **Rust alliance域** | Rust (Axum) | :8081 / :8082 | **10个**内置领域专家 | `platform/domains/alliance/`（11 crate） | 修复报告、评审报告、EA-NORM-001§6 | 当前活跃开发的新架构，专家联盟核心实现 |
+| **Rust mox-expert域** | Rust | — | **7位**专家 | `platform/domains/mox-expert/`（或`platform/services/mox-expert/`） | mox-expert-product.md、mox-expert-normalization.md | 融合优化引擎，与alliance域并列，XOPT 8步管线 |
+| **Node.js平台层** | Node.js (Express) | :3010 | **15位**默认专家 | `platform/backend-node/`（23个业务域） | business-process-flowcharts.md第九章、集成对齐报告 | 较早实现，包含专家联盟、AI引擎、知识图谱等，与Rust层并存 |
+
+**裁决结论**：三个子系统的专家数量不同是因为它们是**不同子系统**，不是冲突。文档中描述专家数量时必须明确所属子系统。v2/v3文档中描述的"7服务/31微服务/15专家"均为**未落地的目标架构**，当前实际实现以Rust alliance域为准。
+
+---
+
+## 8. API路径映射表（裁决C4/P1-6）
+
+至少5套API路径并存，分属不同子系统：
+
+| # | API路径前缀 | 所属子系统 | 实现状态 | 代码位置 | 权威文档 |
+|---|------------|-----------|:--------:|---------|---------|
+| 1 | `/health`, `/tasks`, `/experts/search`, `/internal/executions` | Rust alliance域 | ✅已实现 | `platform/domains/alliance/svc/scheduler-svc/`, `executor-svc/` | 修复报告、EA-NORM-001§6.3 |
+| 2 | `/api/v2/tasks`, `/api/v2/experts` 等 | v2设计API | ❌未落地 | 无（设计文档） | `docs/expert-alliance/v2/04-api-design.md` |
+| 3 | `/ai/chat`, `/experts/:id/consult`, `/experts/debate` 等 | AI对话需求（Node层可能有部分） | ⚠️部分实现 | `platform/backend-node/src/`（需验证） | `docs/modules/专家联盟AI对话需求文档-V2.0-架构优化版.md` |
+| 4 | `/api/mox/optimize`, `/api/mox/publish` | mox-expert融合 | ✅已实现 | `gateway/runtime/src/main.rs:502-504` | `docs/modules/mox-expert-alliance-fusion-flows.md` |
+| 5 | `/ai/engine/alliance/full`(SSE), `/experts/alliance/traces`, `/atlas/flows`, `/atlas/verify` | EAF标准（Node层） | ⚠️Node层可能实现 | `platform/backend-node/src/routes/ai_engine.rs` | EAF-STD-001、归一化手册 |
+| 6 | `/ai/engine/process`, `/ai/engine/analyze`, `/ai/engine/capabilities`, `/ai/engine/metrics` | Node.js AI引擎 | ✅已实现 | `platform/backend-node/src/ai-engine-core.js`, `routes/ai-engine.js` | 25号AI引擎基准评测报告 |
+
+**裁决结论**：5套API分属不同子系统，不是直接冲突。v2 API设计（`/api/v2/*`）与Rust实际路由完全不同，必须标注为"未落地设计"。Rust alliance域的实际路由（`/tasks`, `/experts/search`等）为当前实现权威。
+
+---
+
+## 9. 代码-文档对齐声明
+
+**当前实际实现（代码是唯一事实源）**：
+
+| 维度 | 实际值 | 说明 |
+|------|--------|------|
+| **crate结构** | 11 crate（proto×3 / core×4 / svc×2 / sdk×1 / api×1） | `platform/domains/alliance/` |
+| **服务数量** | 2个svc（scheduler-svc / executor-svc） | 非"7服务"或"31微服务" |
+| **端口** | scheduler-svc **:8081** / executor-svc **:8082** | 非8701/8702（代码对齐报告中的错误值已修正） |
+| **内置专家** | **10个**（expert-01~10） | 非"15+"或"16种"（那些是目标设计/扩展设计） |
+| **融合策略** | **6种**（weighted-average / voting / rrf / consensus / cascade / debate-convergence） | 已贯通到DAG执行引擎 |
+| **数据存储** | 内存 + 文件快照（`data/alliance_tasks.json`） | 非PostgreSQL+Redis+Kafka+MinIO（那些是v2目标设计） |
+| **安全机制** | 租户头 `X-Tenant-Id` | 非OAuth2.0+JWT（v2目标设计） |
+| **部署方式** | 无容器化部署配置 | 非K8s+Helm+Istio（architecture/ HTML为目标部署架构） |
+
+**文档分类对齐声明**：
+
+| 文档类别 | 对齐状态 | 处理方式 |
+|---------|---------|---------|
+| 修复报告、评审报告、EA-NORM-001、归一化手册 | ✅与代码一致 | 权威事实源 |
+| v2全套8份 | ⚠️目标设计未落地 | 头部已添加"未落地目标架构"警告块 |
+| v3全套4份 | ⚠️架构优化方向 | 头部已添加"架构优化方向设计"声明 |
+| 01-ENTERPRISE-OPTIMIZATION | ⚠️目标设计 | 已标注🟡参考 |
+| AI对话需求V2.0 | ⚠️目标设计 | "15+专家"标注为扩展目标 |
+| architecture/ 3份HTML | ⚠️目标部署架构 | 已添加可见警告div |
+| mox-expert系列4份 | ✅与mox-expert代码一致 | 描述的是mox-expert域，非alliance域 |
+
+---
+
+## 10. 引用规则声明
+
+**所有专家联盟主题文档间的引用必须使用仓根相对路径 `docs/<rel>`**。
+
+### 10.1 强制规则
+
+| 规则 | 正确示例 | 禁止示例 |
 |------|---------|---------|
-| 图谱构建专家 | 本体设计/实体关系抽取/图谱构建/质量评估 | graph-svc, ai-svc, etl-svc |
-| 数据分析专家 | 探查/统计/趋势/异常/可视化 | dataplane-svc, ai-svc |
-| AI 推理专家 | 生成/摘要/翻译/分类/RAG/多模态 | ai-svc, search-svc |
-| 安全审计专家 | 权限审计/脱敏/合规/漏洞/风险 | compliance-svc, auth-svc |
-| 流程自动化专家 | 流程设计/编排/执行/优化 | flow-svc, operator-svc |
-| 数据治理专家 | 标准/质量/血缘/元数据/目录 | catalog-svc, dataplane-svc |
-| 知识融合专家 | 实体对齐/属性融合/冲突解决/补全 | fusion-svc, graph-svc |
-| 搜索推荐专家 | 语义搜索/图谱检索/推荐/排序 | search-svc, graph-svc |
-| 运维监控专家 | 指标/告警/故障/容量/调优 | o11y |
-| 联盟协调专家 | 任务分解/调度/仲裁/评估 | alliance-svc（自引用） |
+| 仓根相对路径 | `docs/expert-alliance/00-INTEGRATED-INDEX.md` | — |
+| 禁止`../`上溯 | — | `../enterprise/18-...md` |
+| 禁止裸文件名 | — | `EA-001-架构总纲.md` |
+| 禁止`./`同级简写 | — | `./01-architecture.md` |
+| 禁止绝对路径 | — | `D:\a10\...\docs\...` |
+| 禁止`file:///`URL | — | `file:///d:/a10/.../docs/...` |
+| 锚点引用 | `docs/expert-alliance/EA-001.md#sec-3-2` | 仅引用文档根路径不定位章节 |
+
+### 10.2 引用审计结果（2026-08-31）
+
+| 检查项 | 结果 |
+|--------|:----:|
+| `../`上溯引用 | ✅ 0处残留（已修复8处） |
+| `./`同级简写引用 | ✅ 0处残留（已修复85处） |
+| `file:///`绝对路径引用 | ✅ 0处残留（已修复14处） |
+| 归档文件旧路径引用 | ✅ 0处残留（已修复1处） |
+| 引用目标存在性 | ✅ 所有引用目标物理存在 |
 
 ---
 
-## 5. 知识图谱（六元关联网络）
+## 11. 版本冲突裁决结果汇总
 
-**"专家-能力-领域-工具-数据-案例"六元关联图谱**驱动全部协作决策：
-
-```
-Expert ─has_capability→ Capability ─produces→ Data
-  │                        │                      ▲
-  │ operates_in            │ requires_tool        │ contains_data
-  ▼                        ▼                      │
-Domain ←──────────────── Tool ─operates_on───────┘
-  ▲                                              ▲
-  │ solved_by                                    │ used_capability
-  └────────────── Case ←similar_to── Case ───────┘
-  + collaborates_with(Expert→Expert) · depends_on(Capability→Capability)
-```
-
-**关联关系驱动**：专家识别（图谱 6 步查询）→ 协作编排（DAG 依赖推理）→ 结果融合（案例模式对比）→ 协作记忆（每次任务写回图谱更新边权重）。
+| 裁决ID | 冲突主题 | 裁决结论 | 落地位置 |
+|--------|---------|---------|---------|
+| C1 | 专家数量10 vs 15 vs 16 vs 7 | 三个不同子系统，各有权威数量；alliance域10个为当前实现权威 | §7子系统映射表 |
+| C2 | 服务数量2 vs 7 vs 31 | 实际2svc；v2的7服务/31微服务为未落地目标架构 | §9代码-文档对齐声明 |
+| C3 | 技术栈Node.js vs Rust | 两套并存，非替代关系；已新建双平台关系说明文档 | `docs/expert-alliance/02-DUAL-PLATFORM-RELATIONSHIP.md` |
+| C4 | API路径5套并存 | 分属不同子系统，已建立映射表 | §8 API路径映射表 |
+| C5 | 归一化手册代码路径 | 原`mox-expert/src/alliance/`→`platform/domains/alliance/`，已修正9处 | 归一化手册§2/§8 |
 
 ---
 
-## 6. 协作引擎
+## 12. 最后验证
 
-### 6.1 六种协作模式
-
-| 模式 | 说明 | 适用 |
-|------|------|------|
-| 串行 Pipeline | A→B→C 数据流水线 | 抽取→清洗→融合→入库 |
-| 并行 Fan-out/Fan-in | 多专家同时处理再融合 | 多视角分析 |
-| 辩论 Debate | 多专家质询 | 风险评估/方案选择 |
-| 分层 Hierarchical | 协调专家分解，子专家执行 | 复杂任务 |
-| 迭代 Iterative | 生成→审核→不通过重做 | 高质量内容 |
-| 动态 Dynamic | 按中间结果动态调度 | 研究/排查 |
-
-### 6.2 结果融合策略
-
-多数投票 · 加权投票 · 拼接合并 · 择优选择 · 辩论仲裁 · 迭代精炼。
-
-### 6.3 执行引擎
-
-DAG 调度器（拓扑排序/依赖检查/并行调度）→ 节点执行器（调用专家/工具/超时重试）→ 状态管理器（pending/running/success/failed/skipped）→ 事件总线（实时进度推送）→ 协作记忆。
+- **索引最后验证日期**：2026-08-31
+- **验证人**：文档归一化最终阶段执行员
+- **验证范围**：全部51份专家联盟主题文档（含归档3份）
+- **验证结果**：
+  - ✅ 索引登记文档数 = 物理文件数（51份）
+  - ✅ 索引中每个登记路径物理存在
+  - ✅ 物理目录中每个专家联盟文档已在索引登记
+  - ✅ 索引权威等级与文档头部元信息一致
+  - ✅ 引用格式0违规（0处`../`、0处`./`、0处`file:///`）
+  - ✅ 归档文档无新增引用
+  - ✅ 代码-文档对齐声明与实际代码一致（11crate/2svc/:8081/:8082/10专家/6融合策略）
 
 ---
 
-## 7. 协议与契约（proto/expert-alliance/v1 · 7 文件）
+**维护规则**：新增/移动/归档/重命名专家联盟主题文档后，必须同步更新本索引；每次更新必须递增版本号并更新"最后验证日期"；索引更新后必须重跑引用审计。
 
-| proto | 服务 | 职责 |
-|-------|------|------|
-| `common.proto` | — | 公共类型（15.5KB，最大） |
-| `alliance_scheduler.proto` | ExpertAllianceSchedulerService | 任务调度/专家匹配/计划生成/案例检索 |
-| `alliance_executor.proto` | ExpertAllianceExecutorService | DAG 执行/节点调度/进度/人工干预 |
-| `alliance_fusion.proto` | ExpertAllianceFusionService | 6 种融合策略/质量评估 |
-| `expert_registry.proto` | ExpertRegistryService | 专家 CRUD/3 项验证/健康心跳 |
-| `expert_agent.proto` | ExpertAgentService | ReAct 5 步循环/工具调用（无状态，会话外部化） |
-| `expert_memory.proto` | ExpertMemoryService | 统一记忆/案例库/图谱学习 |
+**变更记录**
 
-> 多协议支持：gRPC（内部）+ JSON-RPC + MCP + REST + WebSocket（对外），经 gateway 转码。
+| 版本 | 日期 | 变更内容 | 签字 |
+|------|------|---------|------|
+| V1.0 | 2026-08-29 | 首发：整合v1/v2/v3/26号文档全景 | 开发联盟 R |
+| V2.0 | 2026-08-31 | 全面重写：元信息块补齐、文档全景统计（51份）、权威/参考/归档三清单、新增文档登记、子系统映射表（C1/C3）、API路径映射表（C4）、代码-文档对齐声明（11crate/2svc/10专家）、引用规则声明与审计结果、版本冲突裁决汇总、索引声明=物理事实验证 | 开发联盟 R |
 
 ---
 
-## 8. SaaS 化诊断与方案（docs/enterprise/26-*）
-
-### 8.1 已做对的 8 件事（架构红线，优化禁止破坏）
-
-1. 以项目为根的 5 阶段 φ 生命周期模型（S1→S5 流水线）
-2. 项目上下文单例 + 跨视图联动（projectContext.js）
-3. Rust Workspace 分层模型（42 crates，教科书级）
-4. 全维资源目录聚合（18 类资源）
-5. 专家联盟标准化实体定义（15 种专家 + 8 预设 + 11 项目形态）
-6. 快捷键与命令面板体系
-7. 服务管理器 + 健康检查体系
-8. 企业级文档体系（25+ 篇）
-
-### 8.2 问题分级（P0-P4）
-
-| 级别 | 问题 |
-|------|------|
-| 🔴 P0 | P0-1 零多租户隔离（无 tenant_id，admin123 硬编码）· P0-2 AI 零计量零成本归因 · P0-3 敏感信息暴露 |
-| 🟠 P1 | 根目录 47 垃圾文件 · 87MB graph.json 违规入仓 · 运行时数据边界模糊 · 三语构建无统一入口 |
-| 🟡 P2 | JSON Store→多租户 DB 迁移路径缺失 · AI 编排分层不透明 · 插件 Manifest 缺失 · 三目录命名可读性差 · P2-5 服务定义双源冲突 |
-| 🟢 P3 | 项目选择器未按租户过滤 · 无全链路 Trace 可视化 · 专家智能匹配算法未见实现 |
-| 🔵 P4 | 单文件图谱瓶颈 · Rust 42 crates 冷编译时间 |
-
-### 8.3 V1.1 重大修订（5 大已实现模块，工作量 -40%）
-
-| 模块 | V1.0 误判 | V1.1 真实状态 |
-|------|----------|--------------|
-| RBAC | 需从零写 | `rbac/policy.rs` 已完整（6 内置角色/通配符/继承链/自动审计） |
-| AI 编排 | 需独立重做 | `ai-engine-core.js` 4 统一入口 + 5 步流水线 100% 符合硬约束 |
-| 配额限流 | 需从零做 | `security.js` 4 档配额 + 双 TokenBucket 已完成 |
-| 激活扩散 | 需从零写 | JS 钩子 detectIntentBySpread 已留，Rust 侧补算法 + napi 绑定即可 |
-| 插件 | 需新造框架 | plugins.json 已有 3 内置插件，补 Manifest + 权限拦截即可 |
-
-> 总工期：V1.0 16 周 → **V1.1 9-10 周**，压缩 40%。
-
-### 8.4 四阶段路线图（总 48-49 人日）
-
-| 阶段 | 周期 | 目标 |
-|------|------|------|
-| 一 · 工程卫生 | 0.5-1 周（7 任务） | 垃圾清理 / git 历史瘦身 / 三目录重命名 / 三语构建统一脚本 / 双源修复 / sccache |
-| 二 · 多租户 DNA | 2-3 周（6 任务） | 四层身份模型（Tenant→Org→User→Project）/ 23 路由域 tenant_guard / 计量接入 / 激活扩散算法 |
-| 三 · SaaS 能力 | 3-4 周（6 任务） | PostgreSQL RLS 迁移 / RBAC 绑定租户 / 插件 Manifest / OpenTelemetry 三语 / 可观测性页面 |
-| 四 · 规模化 | 2-3 周（5 任务） | Docker Compose 8 服务 / SDK 三语 / Webhook / 计费 / 模板市场 MVP |
-
-### 8.5 风险矩阵（16 项，8 项高风险 ≥1.2 需前置）
-
-高风险：R2（git 历史改造冲突）/ R5（双写数据不一致）/ R6（重命名致 CI 红）/ R8（迁移写坏数据）/ R11（JWT secret）/ R12（计费定价）/ R13（模板生态冷启动）/ R16（健康检查假阳性）。
-
-### 8.6 ROI（¥41 万投入 · 3 档）
-
-| 档位 | 12 月 MRR 对应 | ROI | 回本 |
-|------|---------------|-----|------|
-| 保守 | 2,000 免费用户/3% 转化 | -14% | 第 15 个月 |
-| 中性 | 5,000/5% | **+544%** | 第 4 个月 |
-| 乐观 | 10,000/8% | +3195% | 第 2 个月 |
-
-> 不做 SaaS 的机会成本：私有化一年最多 ¥70 万收入，比中性 SaaS 化（¥266 万）少赚 3.8×。
-
-### 8.7 30 天快速里程碑（D1-D30）
-
-D1-D2 清垃圾 → D3 双源修复 → D4-D5 脚本+CI → D6-D7 目录重命名 → D8 凭据环境变量化 → D9-D13 身份模型+tenant_guard → D14-D15 ProjectPicker → D16 迁移 → D17-D21 计量+激活扩散 → D22 全覆盖 → D23-D24 Demo 准备 → **D25 M1 种子客户 Demo 日** → D26-D30 修复+PG 起步+代码冻结。
-
----
-
-## 9. 验收清单（四阶段 26 条 · 摘要）
-
-- **阶段一**：`git status` 无未跟踪文件 · `git ls-files` 无 graph.json · 三目录重命名无残留 · setup-dev/check-all 全绿
-- **阶段二**：A/B 租户数据隔离 · ProjectPicker 租户切换 · llm_usage.jsonl 10 条含 tenant_id · 无凭据环境变量禁止启动 · 23 路由域含"无 tenantId→401"用例
-- **阶段三**：PG 6 表 RLS · 插件权限弹窗+403 · Grafana 全链路 Trace · 激活扩散 30 轮收敛 σ̄<0.06
-- **阶段四**：docker compose 全流程 · SDK 5 行代码建项目 · 100 并发 P95<500ms · 灰度优雅切流
-
----
-
-## 10. 下一步行动（3 件事 · 待用户"开工"指令）
-
-| # | 动作 | 触发条件 | 产出 |
-|---|------|---------|------|
-| 1 | 执行阶段一 1-1+1-2（清垃圾 + graph.json 排查） | 用户回「开工」 | 干净 git status + 瘦身对比表 |
-| 2 | 拉 2 小时技术评审过 24 项执行矩阵 | 用户回「安排评审」 | 评审纪要（任务调整+签字） |
-| 3 | 在飞书/Notion 建 24 张任务卡 + 30 天里程碑看板 | 用户回「拆任务卡」 | 看板 URL |
-
-> ⚠️ 阶段门禁原则：当前处于"设计阶段"，只输出方案与执行矩阵，**不擅自进入代码修改**。
-
----
-
-## 11. 相关文档索引
-
-- 专家联盟系统设计：`docs/expert-alliance/README.md` + `v2/` + `v3/`
-- SaaS 化方案：`docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.0.md` / `-V1.1-补充修订版.md`
-- 契约：`proto/expert-alliance/v1/*.proto`
-- 可视化：`expert-alliance-cyber/` · `expert-alliance-design/`
-- 平台全景：`docs/architecture/14-REPOSITORY-FULL-MAP.md` · `13-PLATFORM-CODEBASE-GUIDE.md`
-
----
-
-**维护**：本索引随 v1/v2/v3/26 文档更新同步；新增专家联盟相关文档须在此登记。
-**归一化状态**: ✅ 已归一化
+**版权所有**：© 2026 璇玑 RelGraph · 算子统一系统（OUS）· 三联盟
+**文档版本**：V2.0 ｜ **发布日期**：2026-08-31

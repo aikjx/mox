@@ -1,4 +1,18 @@
-﻿# 璇玑·开发专家联盟 — 架构诊断与 SaaS AI 平台化最优方案 V1.0
+﻿---
+archived: true
+archived_date: 2026-08-31
+archived_reason: 已被V1.1补充修订版替代
+superseded_by: docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.1-补充修订版.md
+authority: ⚪归档
+---
+
+> ⚪ **已归档**  
+> 本文档已于2026-08-31归档。原因为：已被V1.1补充修订版替代。  
+> 最新版本请参阅：[26-开发专家联盟-架构诊断与SaaS化最优方案-V1.1-补充修订版](docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.1-补充修订版.md)
+
+---
+
+# 璇玑·开发专家联盟 — 架构诊断与 SaaS AI 平台化最优方案 V1.0
 
 > **文档定位**：基于真实源码（2026-08-26 现场取证）的架构评估 + 可落地优化路线图，区别于纯行业最佳实践。
 > **取证范围**：ExpertCenterView.vue / ProjectPicker.vue / projectContext.js / types.js / Cargo.toml / .gitignore / projects.js 路由 / platform_config.json / 根目录与数据目录审计。

@@ -1,5 +1,14 @@
 # AIS 专家联盟裁决流水线 × FR-13/FR-5 对接设计规范 V1.0
 
+> **标题**：AIS专家联盟裁决流水线×FR-13/FR-5对接设计规范
+> **版本**：V1.0
+> **权威等级**：🟡参考
+> **编号**：EA-DOC-059
+> **文档层级**：L3需求规格层
+> **最后更新日期**：2026-08-31
+> **主责联盟**：开发联盟 R
+> **单源声明**：本文档是专家联盟裁决流水线与FR-13/FR-5对接的参考设计。冲突时以 `docs/standards/expert-alliance-normalization-mode.md` 为准。
+
 > 文档版本：V1.0 （企业级规格，对齐 20260826-xiaobai-mox-full-arch 的 spec.md）
 > 对接范围：FR-13 voice_proxy 桥 + 8 大类 system-operator；FR-5 ASR 热词注入
 > 对应工期：最小交付路径 = FR-13（voice_proxy + 4 类核心算子）+ FR-5 = 7–9 人日

@@ -1,5 +1,9 @@
 ﻿# 璇玑（Expert-Mox）全维整理 · 归一化 · 优化规范标准书
 
+> 📐 **mox-expert三视图声明**：本文档为 mox-expert 系统的三视图之一：product.md=产品需求架构，business-requirements.md=企业级业务流程需求，normalization.md=归一化优化规范。三份文档互为补充，共同描述 mox-expert 系统。
+>
+> 💡 **术语说明**：璇玑/Mox，指同一系统，代码中统一使用 mox- 前缀。
+
 > 版本：v1.0（全维治理 / 企业级 / 与 `docs/modules/mox-expert-product.md` 姊妹篇）
 > 代码落点：`crates/mox-expert`（ir / expert / experts / reconcile / verify / govern / programming / context / harness / audit / rbac / flow_loader / bench / server）
 > 定位：在"产品需求已对齐"基础上，做**功能归一化、冲突诊断、I/O 规范、知识库规范、落地下一步**的企业级收口。

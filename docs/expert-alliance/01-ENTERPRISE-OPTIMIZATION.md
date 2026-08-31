@@ -1,3 +1,12 @@
+---
+title: 开发专家联盟 · 企业级优化方案（真实现状校准版 V2）
+version: V2.0
+authority: 🟡参考
+doc_id: EA-DOC-002
+last_updated: 2026-08-31
+source_of_truth: 参考
+---
+
 # 开发专家联盟 · 企业级优化方案（真实现状校准版 V2）
 
 > **文档编号**：`docs/expert-alliance/01-ENTERPRISE-OPTIMIZATION.md`

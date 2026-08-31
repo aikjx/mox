@@ -1,7 +1,7 @@
-﻿# AI 流程图谱化设计 — 业务流程与算法流程统一承载于图谱引擎
+# AI 流程图谱化设计 — 业务流程与算法流程统一承载于图谱引擎
 
 > 版本：v1.0（2026-08-22）
-> 上游文档：[ai-engine-master-analysis.md](./ai-engine-master-analysis.md)（统一编排核心设计）
+> 上游文档：[ai-engine-master-analysis.md](docs/modules/ai-engine-master-analysis.md)（统一编排核心设计）
 > 核心命题：**图谱即 AI 引擎的流程基础设施** —— 业务流程（五步流水线）与算法流程（意图激活扩散）不再散落在代码分支里，而是建模为图谱的节点与边，由图谱引擎统一承载、计算、可视化与验证。
 
 ## 1. 设计动机（为什么要把流程放在图谱上）

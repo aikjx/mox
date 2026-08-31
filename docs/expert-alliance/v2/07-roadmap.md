@@ -1,8 +1,17 @@
+---
+title: 07 - 实施路线图
+version: V2.0
+authority: 🟢权威
+doc_id: EA-DOC-017
+last_updated: 2026-08-31
+source_of_truth: V2.0目标架构实施路线图（未落地）
+---
+
 # 07 - 实施路线图
 
 > 版本：v2.0 | 日期：2026-08-26 | 状态：企业级草案
 >
-> 前置：[00-需求分析](./00-requirements.md) | [01-架构设计](./01-architecture.md)
+> 前置：[00-需求分析](docs/expert-alliance/v2/00-requirements.md) | [01-架构设计](docs/expert-alliance/v2/01-architecture.md)
 
 ---
 
@@ -238,4 +247,4 @@
 
 ---
 
-*文档导航：[README](./README.md) | [00-需求分析](./00-requirements.md) | [01-架构设计](./01-architecture.md) | [02-领域模型](./02-domain-model.md) | [03-业务流程](./03-business-flow.md) | [04-接口设计](./04-api-design.md) | [05-数据架构](./05-data-architecture.md) | [06-安全可观测](./06-security-observability.md) | [07-路线图](./07-roadmap.md)*
+*文档导航：[README](docs/expert-alliance/v2/README.md) | [00-需求分析](docs/expert-alliance/v2/00-requirements.md) | [01-架构设计](docs/expert-alliance/v2/01-architecture.md) | [02-领域模型](docs/expert-alliance/v2/02-domain-model.md) | [03-业务流程](docs/expert-alliance/v2/03-business-flow.md) | [04-接口设计](docs/expert-alliance/v2/04-api-design.md) | [05-数据架构](docs/expert-alliance/v2/05-data-architecture.md) | [06-安全可观测](docs/expert-alliance/v2/06-security-observability.md) | [07-路线图](docs/expert-alliance/v2/07-roadmap.md)*

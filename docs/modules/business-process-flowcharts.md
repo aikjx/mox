@@ -1,5 +1,16 @@
 # 企业级业务处理流程图（Business Process Flowcharts）
 
+> **标题**：企业级业务处理流程图
+> **版本**：V1.0
+> **权威等级**：🟡参考（可视化配套版）
+> **编号**：EA-DOC-057
+> **文档层级**：L4流程标准层
+> **最后更新日期**：2026-08-31
+> **主责联盟**：开发联盟 R
+> **单源声明**：本文档为 `business-process-flows.md` 的可视化配套版，规范内容以flows.md为准。
+
+> 📄 **主从关系声明**：本文档为 `business-process-flows.md` 的可视化配套版，规范内容以flows.md为准。
+
 > 配套文档：`docs/architecture.md`（§9 业务处理流程卡、§28 业务流程设计模块）、`docs/modules/business-process-flows.md`（企业级流程执行引擎）。
 > 本文用 **Mermaid 流程图/时序图** 把"企业级处理业务流程"可视化，便于评审、与代码对齐、以及对客演示。
 > 所有端点以 `crates/runtime/src/main.rs` 真实路由为准，所有流程以 `crates/ai-agent/src/workflow_engine.rs` / `flow_engine.rs` 真实实现为准。

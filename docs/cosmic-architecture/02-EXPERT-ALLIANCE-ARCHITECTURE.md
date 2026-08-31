@@ -1,5 +1,17 @@
+---
+title: 专家联盟架构设计 v2.0
+version: V2.0
+authority: 🟡参考
+doc_id: EA-DOC-040
+last_updated: 2026-08-31
+source_of_truth: 参考（宇宙架构视角）
+---
 # 专家联盟架构设计 v2.0
 ## ——多AI专家协作系统，匹配/执行/融合/记忆全链路
+
+
+> 📌 **视角声明**  
+> 本文档从"宇宙架构"哲学视角解读专家联盟架构。技术事实与精确数据以 `docs/expert-alliance/` 下文档及代码实现为准。
 
 ---
 
@@ -254,7 +266,7 @@ sequenceDiagram
 
 ## 四、数据库设计（专家联盟6张表）
 
-详见 [01-DATABASE-DDL.sql](./01-DATABASE-DDL.sql) 中第七组：
+详见 [01-DATABASE-DDL.sql](docs/cosmic-architecture/01-DATABASE-DDL.sql) 中第七组：
 
 | 表名 | 职责 |
 |------|------|

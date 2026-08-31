@@ -1,8 +1,20 @@
+﻿---
+title: 专家联盟架构 v3.0 — 全维模块化与归一化
+version: V3.0
+authority: 🟡参考
+doc_id: EA-DOC-041
+last_updated: 2026-08-31
+source_of_truth: 参考（宇宙架构视角）
+---
 # 专家联盟架构 v3.0 — 全维模块化与归一化
 
 > 从两个 God Module（mox-ai-expert-svc 60+文件/500KB+、mox-ai-agent-svc 23+文件/700KB+）
 > 拆解为 7 个独立微服务 + 3 个共享库 + 1 个推理 Sidecar。
 > 每个服务独立部署、独立扩展、独立升级，服务间通过 gRPC/JSON-RPC 通信，零代码修改联调。
+
+
+> 📌 **视角声明**  
+> 本文档从"宇宙架构"哲学视角解读专家联盟架构。技术事实与精确数据以 `docs/expert-alliance/` 下文档及代码实现为准。
 
 ---
 

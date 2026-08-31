@@ -1,5 +1,16 @@
 ﻿# 璇玑（璇玑）与璇玑融合 业务流程图
 
+> **标题**：璇玑与璇玑融合业务流程图
+> **版本**：V1.0
+> **权威等级**：🟡参考
+> **编号**：EA-DOC-054
+> **文档层级**：L4流程标准层
+> **最后更新日期**：2026-08-31
+> **主责联盟**：开发联盟 R
+> **单源声明**：本文档是mox-expert融合业务流程的可视化参考。冲突时以 `docs/standards/expert-alliance-normalization-mode.md` 为准。
+>
+> 💡 **术语说明**：璇玑/Mox，指同一系统，代码中统一使用 mox- 前缀。
+
 > 配套代码：`crates/mox-expert`（璇玑/璇玑引擎）、`crates/mox-system`（璇玑协作系统）、
 > `frontend/src/views/MoxFusionView.vue`（璇玑融合视图）、`crates/runtime/src/main.rs`（HTTP 入口）。
 > 本文全部流程以**真实函数与端点**为准，可用 Mermaid 直接渲染。

@@ -1,8 +1,22 @@
+---
+title: 06 - 安全与可观测性
+version: V2.0
+authority: 🟢权威
+doc_id: EA-DOC-016
+last_updated: 2026-08-31
+source_of_truth: V2.0目标架构安全与可观测性（未落地）
+---
+
 # 06 - 安全与可观测性
 
 > 版本：v2.0 | 日期：2026-08-26 | 状态：企业级草案
 >
-> 前置：[00-需求分析](./00-requirements.md) | [01-架构设计](./01-architecture.md)
+> 前置：[00-需求分析](docs/expert-alliance/v2/00-requirements.md) | [01-架构设计](docs/expert-alliance/v2/01-architecture.md)
+
+
+> ⚠️ **文档状态声明**  
+> 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
+> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:8081 / executor-svc:8082），10个内置领域专家，任务仓库为内存+文件快照。
 
 ---
 
@@ -125,6 +139,11 @@ SET app.tenant_id = 'tenant-456';
 | 密钥管理 | KMS（轮换/审计/备份） |
 
 **敏感字段自动脱敏**：手机号、身份证、邮箱、密码、Token、API Key
+
+
+> ⚠️ **文档状态声明**  
+> 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
+> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:8081 / executor-svc:8082），10个内置领域专家，任务仓库为内存+文件快照。
 
 ---
 
@@ -256,6 +275,11 @@ gateway.request
 | P2 | 单服务错误率>5% / 队列积压 / 磁盘>80% | 1h，飞书+邮件 |
 | P3 | 缓存命中率下降 / 慢查询增加 / 案例复用率低 | 4h，邮件 |
 
+
+> ⚠️ **文档状态声明**  
+> 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
+> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:8081 / executor-svc:8082），10个内置领域专家，任务仓库为内存+文件快照。
+
 ---
 
 ## 三、弹性容错
@@ -302,6 +326,11 @@ gateway.request
     └── 不可恢复错误（专家不存在/权限拒绝/参数错误）→ 立即失败
 ```
 
+
+> ⚠️ **文档状态声明**  
+> 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
+> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:8081 / executor-svc:8082），10个内置领域专家，任务仓库为内存+文件快照。
+
 ---
 
 ## 四、SLA 目标
@@ -321,4 +350,4 @@ gateway.request
 
 ---
 
-*下一篇：[07-实施路线图](./07-roadmap.md)*
+*下一篇：[07-实施路线图](docs/expert-alliance/v2/07-roadmap.md)*

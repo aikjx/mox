@@ -1,8 +1,17 @@
+---
+title: 专家注册中心与协作协议
+version: V1.0
+authority: 🟡参考
+doc_id: EA-DOC-004
+last_updated: 2026-08-31
+source_of_truth: 参考
+---
+
 # 专家注册中心与协作协议
 
 > 版本：v1.0 | 日期：2026-08-26
 >
-> 前置：[专家联盟总览](./README.md)
+> 前置：[专家联盟总览](docs/expert-alliance/README.md)
 
 ---
 
@@ -576,4 +585,4 @@ impl ToolExecutor {
 
 ---
 
-*下一篇：[知识图谱关联关系设计](./knowledge-graph-schema.md)*
+*下一篇：[知识图谱关联关系设计](docs/expert-alliance/knowledge-graph-schema.md)*
