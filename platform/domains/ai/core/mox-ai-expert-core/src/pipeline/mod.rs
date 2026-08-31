@@ -112,7 +112,7 @@ pub fn mox_optimize(raw: &FlowGraph, ctx: &GovernContext) -> GovernanceReport {
         mox_audit::AuditSeverity::Info,
         ctx.tenant.id.clone(),
     );
-    let _ = audit.append(&event);
+    let _ = audit.append(event);
 
     GovernanceReport {
         flow_id: raw.id.clone(),

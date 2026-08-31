@@ -10,7 +10,7 @@
 //! 完整的 8 闸门评估逻辑待后续迭代迁移。
 
 use crate::context::Tenant;
-use crate::ir::Dimension;
+use mox_ai_expert_proto::Dimension;
 use serde::{Deserialize, Serialize};
 
 /// 治理 8 闸门标识（GR-STD）

@@ -56,14 +56,17 @@ pub trait GovernContext: Send + Sync {
 /// trait 方法命名 `govern()` 与 concrete 函数同名，
 /// 但对外通过 trait 调用，避免下游反向依赖内部模块。
 ///
-/// 注意：这里用 `&dyn std::any::Any` 而不是具体 FlowGraph 类型，
+/// 注意：这里用 `&(dyn Any + Send + Sync)` 而不是具体 FlowGraph 类型，
 /// 实现 DIP：GovernExpert 不依赖具体流程图实现。
+///
+/// `Send + Sync` 约束是必需的：因为 `#[async_trait]` 默认要求 future 为 `Send`，
+/// 被捕获的 `&dyn Any` 必须满足 `Sync`（即 `&T: Send` 要求 `T: Sync`）。
 #[async_trait]
 pub trait GovernExpert: Send + Sync {
-    async fn govern(&self, graph: &dyn std::any::Any, ctx: &dyn GovernContext) -> GovernVerdict;
+    async fn govern(&self, graph: &(dyn std::any::Any + Send + Sync), ctx: &dyn GovernContext) -> GovernVerdict;
 
     /// 同步便捷：当前线程 block_on govern()。适合同步下游 / 测试。
-    fn govern_blocking(&self, graph: &dyn std::any::Any, ctx: &dyn GovernContext) -> GovernVerdict {
+    fn govern_blocking(&self, graph: &(dyn std::any::Any + Send + Sync), ctx: &dyn GovernContext) -> GovernVerdict {
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
@@ -137,7 +140,7 @@ impl Default for MockGovernExpert {
 
 #[async_trait]
 impl GovernExpert for MockGovernExpert {
-    async fn govern(&self, _graph: &dyn std::any::Any, _ctx: &dyn GovernContext) -> GovernVerdict {
+    async fn govern(&self, _graph: &(dyn std::any::Any + Send + Sync), _ctx: &dyn GovernContext) -> GovernVerdict {
         GovernVerdict {
             level: self.forced_level.clone(),
             score: self.fixed_score,
@@ -146,7 +149,7 @@ impl GovernExpert for MockGovernExpert {
         }
     }
 
-    fn govern_blocking(&self, _graph: &dyn std::any::Any, _ctx: &dyn GovernContext) -> GovernVerdict {
+    fn govern_blocking(&self, _graph: &(dyn std::any::Any + Send + Sync), _ctx: &dyn GovernContext) -> GovernVerdict {
         GovernVerdict {
             level: self.forced_level.clone(),
             score: self.fixed_score,

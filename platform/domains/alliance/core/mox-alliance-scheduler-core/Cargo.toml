@@ -1,0 +1,30 @@
+[package]
+name = "mox-alliance-scheduler-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "专家联盟 · 调度器核心（任务调度 + 专家匹配 + 计划生成）"
+
+[dependencies]
+mox-alliance-common-proto = { path = "../../proto/mox-alliance-common-proto" }
+mox-alliance-scheduler-proto = { path = "../../proto/mox-alliance-scheduler-proto" }
+mox-alliance-core = { path = "../mox-alliance-core" }
+mox-platform-foundation = { workspace = true }
+mox-error = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+uuid = { workspace = true, features = ["serde", "v4"] }
+chrono = { workspace = true, features = ["serde"] }
+tokio = { workspace = true }
+tracing = { workspace = true }
+async-trait = { workspace = true }
+parking_lot = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full"] }
+
+[features]
+default = []

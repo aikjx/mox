@@ -1,0 +1,26 @@
+[package]
+name = "mox-alliance-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "专家联盟 · 共享内核（DAG工具 + 通用算法 + 工具函数）"
+
+[dependencies]
+mox-alliance-common-proto = { path = "../../proto/mox-alliance-common-proto" }
+mox-platform-foundation = { workspace = true }
+mox-error = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+uuid = { workspace = true, features = ["serde", "v4"] }
+chrono = { workspace = true, features = ["serde"] }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full"] }
+
+[features]
+default = []

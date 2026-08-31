@@ -1,0 +1,54 @@
+[package]
+name = "mox-ai-alliance-engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "璇玑 · 专家联盟全维分析引擎（P2 架构解耦阶段 5）：意图分类 → 专家组队 → 并行辩论 → 归一合成 → 质量门禁 → 知识沉淀，6 阶段管线独立 crate"
+
+[dependencies]
+# L5 领域协议层（DIP：engine 依赖 proto，proto 不依赖 engine）
+mox-ai-expert-proto = { workspace = true }
+# 十四维专家核心引擎（专家注册表 / 裁决器等复用）
+mox-ai-expert-core = { workspace = true }
+# 平台级管线框架（阶段编排、上下文流转、钩子机制、插件系统）
+mox-pipeline-framework = { workspace = true, features = ["async", "audit"] }
+# 统一审计（SHA-256 哈希链 + 多 Sink）
+mox-audit = { workspace = true }
+
+# 序列化
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# 错误处理
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# 并行计算（专家并行咨询真并行）
+rayon = { workspace = true }
+
+# 异步 trait
+async-trait = { workspace = true }
+
+# 时间
+chrono = { workspace = true, features = ["serde"] }
+
+# UUID
+uuid = { workspace = true, features = ["serde", "v4"] }
+
+# tokio 运行时
+tokio = { workspace = true }
+
+# 流式 SSE 支持
+futures-util = { workspace = true }
+
+# 日志
+tracing = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full"] }
+
+[features]
+default = ["rayon"]
+# 并行咨询（真并行）：关闭则退化为顺序单线程，API 不变
+rayon = []

@@ -3484,6 +3484,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-ai-alliance-engine"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "futures-util",
+ "mox-ai-expert-core",
+ "mox-ai-expert-proto",
+ "mox-audit",
+ "mox-pipeline-framework",
+ "rayon",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "mox-ai-api"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -3504,6 +3525,27 @@ dependencies = [
  "futures-util",
  "parking_lot",
  "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "mox-ai-expert-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "mox-ai-expert-proto",
+ "mox-ai-flow-svc",
+ "mox-audit",
+ "mox-error",
+ "mox-platform-foundation",
+ "rayon",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -3605,6 +3647,213 @@ dependencies = [
  "tower-http 0.5.2",
  "tracing",
  "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
+name = "mox-alliance-api"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "mox-alliance-common-proto",
+ "mox-alliance-executor-proto",
+ "mox-alliance-scheduler-proto",
+ "mox-error",
+ "mox-platform-foundation",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "mox-alliance-common-proto"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "mox-error",
+ "mox-platform-foundation",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "mox-alliance-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "mox-alliance-common-proto",
+ "mox-error",
+ "mox-platform-foundation",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "mox-alliance-executor-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "mox-alliance-common-proto",
+ "mox-alliance-core",
+ "mox-alliance-executor-proto",
+ "mox-alliance-scheduler-core",
+ "mox-alliance-scheduler-proto",
+ "mox-error",
+ "mox-platform-foundation",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "mox-alliance-executor-proto"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "mox-alliance-common-proto",
+ "mox-error",
+ "mox-platform-foundation",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "mox-alliance-executor-svc"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "axum",
+ "chrono",
+ "http",
+ "mox-alliance-api",
+ "mox-alliance-common-proto",
+ "mox-alliance-core",
+ "mox-alliance-executor-core",
+ "mox-alliance-executor-proto",
+ "mox-error",
+ "mox-platform-foundation",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tower-http 0.5.2",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
+name = "mox-alliance-scheduler-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "mox-alliance-common-proto",
+ "mox-alliance-core",
+ "mox-alliance-scheduler-proto",
+ "mox-error",
+ "mox-platform-foundation",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "mox-alliance-scheduler-proto"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "mox-alliance-common-proto",
+ "mox-error",
+ "mox-platform-foundation",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "mox-alliance-scheduler-svc"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "axum",
+ "chrono",
+ "http",
+ "mox-alliance-api",
+ "mox-alliance-common-proto",
+ "mox-alliance-core",
+ "mox-alliance-executor-proto",
+ "mox-alliance-scheduler-core",
+ "mox-alliance-scheduler-proto",
+ "mox-error",
+ "mox-platform-foundation",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tower-http 0.5.2",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
+name = "mox-alliance-sdk"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "mox-alliance-api",
+ "mox-alliance-common-proto",
+ "mox-alliance-executor-proto",
+ "mox-alliance-scheduler-proto",
+ "mox-error",
+ "mox-platform-foundation",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
  "uuid",
 ]
 
@@ -4572,6 +4821,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-pipeline-framework"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "mox-audit",
+ "mox-error",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "mox-platform-api"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -4948,6 +5214,16 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
+]
+
+[[package]]
+name = "mox-rbac-engine"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "mox-audit",
+ "mox-error",
+ "serde",
+ "tracing",
 ]
 
 [[package]]

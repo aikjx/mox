@@ -35,6 +35,8 @@ members = [
     "platform/foundation/mox-platform-paths",
     "platform/foundation/mox-error",
     "platform/foundation/mox-audit",
+    "platform/domains/foundation/mox-rbac-engine",
+    "platform/domains/foundation/mox-pipeline-framework",
     "platform/domains/data/api",
     "platform/domains/ai/api",
     "platform/domains/kg/api",
@@ -67,6 +69,8 @@ members = [
     "platform/domains/platform/core/mox-platform-meta-core",
     "platform/domains/ai/core/mox-ai-core",
     "platform/domains/ai/proto/mox-ai-expert-proto",
+    "platform/domains/ai/core/mox-ai-expert-core",
+    "platform/domains/ai/core/mox-ai-alliance-engine",
     "platform/domains/kg/svc/mox-kg-storage-svc",
     "platform/domains/kg/svc/mox-kg-service-svc",
     "platform/domains/kg/svc/mox-kg-streams-svc",
@@ -121,6 +125,17 @@ members = [
     "platform/domains/voice/sdk/mox-voice-dsp-py",
     "platform/framework",
     "platform/shared/mox-unified-algo-core",
+    # === 专家联盟域 (alliance) ===
+    "platform/domains/alliance/api",
+    "platform/domains/alliance/proto/mox-alliance-common-proto",
+    "platform/domains/alliance/proto/mox-alliance-scheduler-proto",
+    "platform/domains/alliance/proto/mox-alliance-executor-proto",
+    "platform/domains/alliance/core/mox-alliance-core",
+    "platform/domains/alliance/core/mox-alliance-scheduler-core",
+    "platform/domains/alliance/core/mox-alliance-executor-core",
+    "platform/domains/alliance/svc/mox-alliance-scheduler-svc",
+    "platform/domains/alliance/svc/mox-alliance-executor-svc",
+    "platform/domains/alliance/sdk/mox-alliance-sdk",
 ]
 resolver = "2"
 
@@ -209,13 +224,21 @@ mox-platform-observability = { path = "platform/foundation/mox-platform-observab
 mox-platform-paths = { path = "platform/foundation/mox-platform-paths" }
 mox-error = { path = "platform/foundation/mox-error" }
 mox-audit = { path = "platform/foundation/mox-audit" }
-# Core 层灞?
+mox-rbac-engine = { path = "platform/domains/foundation/mox-rbac-engine" }
+mox-pipeline-framework = { path = "platform/domains/foundation/mox-pipeline-framework" }
+# Alliance proto
+mox-alliance-common-proto = { path = "platform/domains/alliance/proto/mox-alliance-common-proto" }
+mox-alliance-scheduler-proto = { path = "platform/domains/alliance/proto/mox-alliance-scheduler-proto" }
+mox-alliance-executor-proto = { path = "platform/domains/alliance/proto/mox-alliance-executor-proto" }
+# Core 层
 mox-data-formula-core = { path = "platform/domains/data/core/mox-data-formula-core" }
 mox-data-norm-core = { path = "platform/domains/data/core/mox-data-norm-core" }
 mox-data-standards-core = { path = "platform/domains/data/core/mox-data-standards-core" }
 mox-ai-intent-core = { path = "platform/domains/ai/core/mox-ai-intent-core" }
 mox-ai-core = { path = "platform/domains/ai/core/mox-ai-core" }
 mox-ai-expert-proto = { path = "platform/domains/ai/proto/mox-ai-expert-proto" }
+mox-ai-expert-core = { path = "platform/domains/ai/core/mox-ai-expert-core" }
+mox-ai-alliance-engine = { path = "platform/domains/ai/core/mox-ai-alliance-engine" }
 mox-voice-dsp-core = { path = "platform/domains/voice/core/mox-voice-dsp-core" }
 mox-flow-operator-core = { path = "platform/domains/flow/core/mox-flow-operator-core" }
 mox-flow-optimizer-core = { path = "platform/domains/flow/core/mox-flow-optimizer-core" }

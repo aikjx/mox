@@ -3,147 +3,177 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-//! 统一阶段定义与阶段处理器 trait
+//! 阶段标识与阶段处理器 trait
 //!
-//! 通用管线阶段枚举，涵盖常见的处理流水线模式。
-//! 业务方可以直接使用内置阶段，也可以通过 `Custom` 变体扩展自定义阶段。
+//! 管线框架的核心抽象：阶段（Phase）是管线中的一个执行单元。
+//! 通过 `PhaseId` trait，业务方可以定义自己的阶段枚举或类型，
+//! 框架不绑定任何特定领域的阶段名称。
 //!
-//! # 内置阶段分类
+//! # 设计原则
 //!
-//! ## 通用基础阶段
-//! - `Normalize` : 归一化/预处理
-//! - `Analyze`   : 分析阶段
-//! - `Reconcile` : 裁决/合成（多观点归一）
-//! - `Gate`      : 质量门禁（评分 + 分级 + 决策）
-//! - `Learn`     : 指标学习（可选阶段）
-//! - `Done`      : 完成阶段（收尾 + 审计）
+//! - **泛型阶段标识**：`PhaseId` trait，任何满足约束的类型都可作为阶段标识
+//! - **默认实现**：提供 `NamedPhase` 开箱即用的字符串阶段标识
+//! - **阶段处理器**：`PhaseHandler<P>` trait，定义阶段的执行逻辑
+//! - **同步/异步统一**：核心支持两种执行模式，默认桥接
 //!
-//! ## 扩展阶段（按需选用）
-//! - `Optimize`  : 优化求解阶段
-//! - `Verify`    : 验证阶段（最高权限否决）
-//! - `Team`      : 组队/资源分配阶段
-//! - `Synthesize`: 合成输出阶段
+//! # 快速开始
 //!
-//! ## 自定义扩展
-//! - `Custom(&'static str)` : 运行时动态扩展阶段
+//! ```ignore
+//! // 方式一：使用内置 NamedPhase
+//! let phase = NamedPhase::new("analyze");
+//!
+//! // 方式二：自定义阶段枚举（推荐用于领域特定管线）
+//! #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+//! enum MyPhase { Normalize, Analyze, Done }
+//!
+//! impl PhaseId for MyPhase {
+//!     fn name(&self) -> &str { ... }
+//!     fn is_terminal(&self) -> bool { ... }
+//!     fn is_blocking(&self) -> bool { ... }
+//! }
+//! ```
 
-use serde::{Deserialize, Serialize};
 use std::fmt;
 
 use crate::context::PipelineContext;
 use crate::result::PhaseResult;
 
-// ================== Phase 枚举 ==================
+// ================== PhaseId trait ==================
 
-/// 管线阶段枚举
+/// 阶段标识 trait：管线中阶段的唯一标识
 ///
-/// 设计为 `non_exhaustive`，允许未来新增阶段而不破坏匹配。
-/// 使用 `Custom(&'static str)` 支持运行时动态扩展阶段。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-#[non_exhaustive]
-pub enum Phase {
-    // ---- 通用基础阶段 ----
-    /// 归一化/预处理阶段
-    Normalize,
-
-    /// 分析阶段
-    Analyze,
-
-    /// 裁决/合成阶段（多观点归一、结果汇总）
-    Reconcile,
-
-    /// 质量门禁阶段（评分 + 分级 + 决策）
-    Gate,
-
-    /// 指标学习阶段（可选）
-    Learn,
-
-    /// 完成阶段（收尾 + 审计汇总）
-    Done,
-
-    // ---- 扩展阶段 ----
-    /// 优化求解阶段
-    Optimize,
-
-    /// 验证阶段（最高权限，不可被治理覆盖）
-    Verify,
-
-    /// 组队/资源分配阶段
-    Team,
-
-    /// 合成输出阶段（生成最终输出）
-    Synthesize,
-
-    // ---- 自定义扩展 ----
-    /// 自定义阶段，用于动态扩展
-    #[serde(skip)]
-    Custom(&'static str),
-}
-
-impl Phase {
+/// 业务方可以用枚举、字符串或任何满足约束的类型实现此 trait。
+/// 框架通过此 trait 与具体阶段类型解耦。
+///
+/// # 必需方法
+///
+/// - `name()`：阶段的稳定名称，用于日志、审计、事件名
+///
+/// # 可选方法（有默认实现）
+///
+/// - `is_terminal()`：是否为终端阶段（默认 false）
+/// - `is_blocking()`：是否为阻断性阶段（默认 false）
+/// - `order()`：阶段序号，用于排序（默认 0）
+pub trait PhaseId:
+    fmt::Debug + Clone + PartialEq + Eq + std::hash::Hash + Send + Sync + 'static
+{
     /// 阶段的稳定名称（用于日志、审计、SSE 事件名）
-    pub fn name(&self) -> &'static str {
-        match self {
-            Self::Normalize => "normalize",
-            Self::Analyze => "analyze",
-            Self::Reconcile => "reconcile",
-            Self::Gate => "gate",
-            Self::Learn => "learn",
-            Self::Done => "done",
-            Self::Optimize => "optimize",
-            Self::Verify => "verify",
-            Self::Team => "team",
-            Self::Synthesize => "synthesize",
-            Self::Custom(name) => name,
-        }
-    }
+    fn name(&self) -> &str;
 
     /// 是否为终端阶段（之后不应再有阶段）
-    pub fn is_terminal(&self) -> bool {
-        matches!(self, Self::Done)
+    ///
+    /// 默认返回 `false`。
+    fn is_terminal(&self) -> bool {
+        false
     }
 
     /// 是否为阻断性阶段（失败则终止管线）
-    pub fn is_blocking(&self) -> bool {
-        // Gate 阶段默认阻断；可通过选项配置
-        matches!(self, Self::Gate)
+    ///
+    /// 默认返回 `false`。
+    fn is_blocking(&self) -> bool {
+        false
     }
 
     /// 阶段序号（用于排序，越小越先执行）
-    pub fn order(&self) -> u8 {
-        match self {
-            Self::Normalize => 10,
-            Self::Team => 15,
-            Self::Analyze => 20,
-            Self::Reconcile => 30,
-            Self::Optimize => 40,
-            Self::Verify => 50,
-            Self::Synthesize => 55,
-            Self::Gate => 60,
-            Self::Learn => 70,
-            Self::Done => 99,
-            Self::Custom(_) => 50, // 自定义阶段默认中间位置
+    ///
+    /// 默认返回 0。
+    fn order(&self) -> u32 {
+        0
+    }
+}
+
+// ================== NamedPhase（默认实现） ==================
+
+/// 命名阶段：基于字符串的通用阶段标识
+///
+/// 适用于快速原型、动态阶段或不需要强类型阶段枚举的场景。
+/// 对于领域特定管线，推荐定义自己的枚举并实现 `PhaseId` trait。
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+pub struct NamedPhase {
+    name: String,
+    terminal: bool,
+    blocking: bool,
+    order: u32,
+}
+
+impl NamedPhase {
+    /// 创建一个普通阶段
+    pub fn new(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            terminal: false,
+            blocking: false,
+            order: 0,
         }
     }
-}
 
-impl fmt::Display for Phase {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.name())
+    /// 创建一个阻断性阶段（如质量门禁）
+    pub fn blocking(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            terminal: false,
+            blocking: true,
+            order: 0,
+        }
+    }
+
+    /// 创建一个终端阶段（如完成阶段）
+    pub fn terminal(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            terminal: true,
+            blocking: false,
+            order: u32::MAX,
+        }
+    }
+
+    /// 设置阶段序号（用于排序）
+    pub fn with_order(mut self, order: u32) -> Self {
+        self.order = order;
+        self
+    }
+
+    /// 设置是否为阻断性阶段
+    pub fn with_blocking(mut self, blocking: bool) -> Self {
+        self.blocking = blocking;
+        self
+    }
+
+    /// 设置是否为终端阶段
+    pub fn with_terminal(mut self, terminal: bool) -> Self {
+        self.terminal = terminal;
+        self
     }
 }
 
-impl PartialOrd for Phase {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.order().cmp(&other.order()))
+impl PhaseId for NamedPhase {
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn is_terminal(&self) -> bool {
+        self.terminal
+    }
+
+    fn is_blocking(&self) -> bool {
+        self.blocking
+    }
+
+    fn order(&self) -> u32 {
+        self.order
+    }
+}
+
+impl fmt::Display for NamedPhase {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.name)
     }
 }
 
 // ================== PhaseStatus ==================
 
 /// 阶段执行状态
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PhaseStatus {
     /// 待执行
@@ -198,9 +228,9 @@ impl fmt::Display for PhaseStatus {
 // ================== PhaseExecution ==================
 
 /// 阶段执行元信息（耗时、状态等）
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PhaseExecution {
-    pub phase: Phase,
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct PhaseExecution<P: PhaseId> {
+    pub phase: P,
     pub status: PhaseStatus,
     /// 阶段耗时（毫秒）
     pub latency_ms: u64,
@@ -215,8 +245,8 @@ pub struct PhaseExecution {
     pub error: Option<String>,
 }
 
-impl PhaseExecution {
-    pub fn new(phase: Phase) -> Self {
+impl<P: PhaseId> PhaseExecution<P> {
+    pub fn new(phase: P) -> Self {
         Self {
             phase,
             status: PhaseStatus::Pending,
@@ -227,7 +257,7 @@ impl PhaseExecution {
         }
     }
 
-    pub fn success(phase: Phase, latency_ms: u64) -> Self {
+    pub fn success(phase: P, latency_ms: u64) -> Self {
         Self {
             phase,
             status: PhaseStatus::Success,
@@ -238,7 +268,7 @@ impl PhaseExecution {
         }
     }
 
-    pub fn failed(phase: Phase, latency_ms: u64, error: impl Into<String>) -> Self {
+    pub fn failed(phase: P, latency_ms: u64, error: impl Into<String>) -> Self {
         Self {
             phase,
             status: PhaseStatus::Failed,
@@ -249,7 +279,7 @@ impl PhaseExecution {
         }
     }
 
-    pub fn blocked(phase: Phase, latency_ms: u64, reason: impl Into<String>) -> Self {
+    pub fn blocked(phase: P, latency_ms: u64, reason: impl Into<String>) -> Self {
         Self {
             phase,
             status: PhaseStatus::Blocked,
@@ -260,7 +290,7 @@ impl PhaseExecution {
         }
     }
 
-    pub fn skipped(phase: Phase) -> Self {
+    pub fn skipped(phase: P) -> Self {
         Self {
             phase,
             status: PhaseStatus::Skipped,
@@ -277,9 +307,9 @@ impl PhaseExecution {
 /// 阶段处理器：管线中的一个执行单元
 ///
 /// 每个阶段实现此 trait，负责：
-/// 1. 从 PipelineContext 读取输入
+/// 1. 从 `PipelineContext<P>` 读取输入
 /// 2. 执行阶段逻辑
-/// 3. 将结果写回 PipelineContext
+/// 3. 将结果写回 `PipelineContext<P>`
 ///
 /// # 同步 vs 异步
 ///
@@ -288,20 +318,20 @@ impl PhaseExecution {
 ///
 /// # 错误处理
 ///
-/// 返回 `Result<Box<dyn PhaseResult>, String>`：
+/// 返回 `Result<Box<dyn PhaseResult<P>>, String>`：
 /// - `Ok(result)` 表示阶段执行完成，结果写入上下文
 /// - `Err(msg)` 表示阶段执行失败，由管线决定是否继续
 ///
-/// 对于阻断性阶段（如 Gate），失败应返回 `PhaseStatus::Blocked` 的结果，
+/// 对于阻断性阶段（如质量门禁），失败应返回 `PhaseStatus::Blocked` 的结果，
 /// 而不是返回 `Err`，因为阻断是预期的业务结果，而非异常。
-pub trait PhaseHandler: Send + Sync {
+pub trait PhaseHandler<P: PhaseId>: Send + Sync {
     /// 返回此处理器对应的阶段
-    fn phase(&self) -> Phase;
+    fn phase(&self) -> P;
 
     /// 同步执行阶段逻辑
     ///
     /// 默认实现返回未实现错误，以便纯异步处理器不必实现此方法。
-    fn execute(&self, _ctx: &mut PipelineContext) -> Result<Box<dyn PhaseResult>, String> {
+    fn execute(&self, _ctx: &mut PipelineContext<P>) -> Result<Box<dyn PhaseResult<P>>, String> {
         Err(format!(
             "PhaseHandler for '{}' does not support synchronous execution",
             self.phase().name()
@@ -314,80 +344,127 @@ pub trait PhaseHandler: Send + Sync {
     /// 以便纯同步处理器不必实现此方法。
     fn execute_async<'a>(
         &'a self,
-        ctx: &'a mut PipelineContext,
+        ctx: &'a mut PipelineContext<P>,
     ) -> std::pin::Pin<
-        Box<dyn std::future::Future<Output = Result<Box<dyn PhaseResult>, String>> + Send + 'a>,
+        Box<dyn std::future::Future<Output = Result<Box<dyn PhaseResult<P>>, String>> + Send + 'a>,
     > {
         Box::pin(async move { self.execute(ctx) })
     }
 
     /// 阶段是否应被跳过
     ///
-    /// 默认不跳过。子类可根据上下文条件判断是否跳过（如 Learn 阶段在低级别跳过）。
-    fn should_skip(&self, _ctx: &PipelineContext) -> bool {
+    /// 默认不跳过。实现者可根据上下文条件判断是否跳过。
+    fn should_skip(&self, _ctx: &PipelineContext<P>) -> bool {
         false
     }
 }
 
-// ── 测试辅助：简单的阶段处理器实现 ──────────────────────────────
+// ── 测试 ────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    // -- NamedPhase 测试 --
+
     #[test]
-    fn phase_names_are_stable() {
-        assert_eq!(Phase::Normalize.name(), "normalize");
-        assert_eq!(Phase::Analyze.name(), "analyze");
-        assert_eq!(Phase::Reconcile.name(), "reconcile");
-        assert_eq!(Phase::Gate.name(), "gate");
-        assert_eq!(Phase::Learn.name(), "learn");
-        assert_eq!(Phase::Done.name(), "done");
-        assert_eq!(Phase::Optimize.name(), "optimize");
-        assert_eq!(Phase::Verify.name(), "verify");
-        assert_eq!(Phase::Team.name(), "team");
-        assert_eq!(Phase::Synthesize.name(), "synthesize");
+    fn named_phase_basic() {
+        let p = NamedPhase::new("analyze");
+        assert_eq!(p.name(), "analyze");
+        assert!(!p.is_terminal());
+        assert!(!p.is_blocking());
+        assert_eq!(p.order(), 0);
     }
 
     #[test]
-    fn custom_phase_has_custom_name() {
-        let p = Phase::Custom("my_custom_phase");
-        assert_eq!(p.name(), "my_custom_phase");
+    fn named_phase_blocking() {
+        let p = NamedPhase::blocking("gate");
+        assert_eq!(p.name(), "gate");
+        assert!(p.is_blocking());
+        assert!(!p.is_terminal());
     }
 
     #[test]
-    fn done_is_terminal() {
-        assert!(Phase::Done.is_terminal());
-        assert!(!Phase::Analyze.is_terminal());
-        assert!(!Phase::Gate.is_terminal());
+    fn named_phase_terminal() {
+        let p = NamedPhase::terminal("done");
+        assert_eq!(p.name(), "done");
+        assert!(p.is_terminal());
+        assert_eq!(p.order(), u32::MAX);
     }
 
     #[test]
-    fn gate_is_blocking() {
-        assert!(Phase::Gate.is_blocking());
-        assert!(!Phase::Analyze.is_blocking());
-        assert!(!Phase::Done.is_blocking());
+    fn named_phase_with_order() {
+        let p = NamedPhase::new("step1").with_order(10);
+        assert_eq!(p.order(), 10);
     }
 
     #[test]
-    fn phase_ordering() {
-        assert!(Phase::Normalize.order() < Phase::Analyze.order());
-        assert!(Phase::Analyze.order() < Phase::Reconcile.order());
-        assert!(Phase::Reconcile.order() < Phase::Gate.order());
-        assert!(Phase::Gate.order() < Phase::Done.order());
+    fn named_phase_display() {
+        let p = NamedPhase::new("my_phase");
+        assert_eq!(format!("{p}"), "my_phase");
     }
 
     #[test]
-    fn phase_display() {
-        assert_eq!(format!("{}", Phase::Analyze), "analyze");
-        assert_eq!(format!("{}", Phase::Gate), "gate");
+    fn named_phase_equality() {
+        let a = NamedPhase::new("phase_a");
+        let b = NamedPhase::new("phase_a");
+        let c = NamedPhase::new("phase_c");
+        assert_eq!(a, b);
+        assert_ne!(a, c);
     }
+
+    // -- 自定义 PhaseId 测试 --
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    enum TestPhase {
+        Start,
+        Process,
+        End,
+    }
+
+    impl PhaseId for TestPhase {
+        fn name(&self) -> &str {
+            match self {
+                Self::Start => "start",
+                Self::Process => "process",
+                Self::End => "end",
+            }
+        }
+
+        fn is_terminal(&self) -> bool {
+            matches!(self, Self::End)
+        }
+
+        fn is_blocking(&self) -> bool {
+            false
+        }
+
+        fn order(&self) -> u32 {
+            match self {
+                Self::Start => 10,
+                Self::Process => 20,
+                Self::End => 99,
+            }
+        }
+    }
+
+    #[test]
+    fn custom_phase_id_works() {
+        assert_eq!(TestPhase::Start.name(), "start");
+        assert!(!TestPhase::Start.is_terminal());
+        assert!(TestPhase::End.is_terminal());
+        assert!(!TestPhase::Process.is_blocking());
+        assert!(TestPhase::Start.order() < TestPhase::Process.order());
+    }
+
+    // -- PhaseStatus 测试 --
 
     #[test]
     fn phase_status_display() {
         assert_eq!(format!("{}", PhaseStatus::Success), "success");
         assert_eq!(format!("{}", PhaseStatus::Blocked), "blocked");
         assert_eq!(format!("{}", PhaseStatus::Skipped), "skipped");
+        assert_eq!(format!("{}", PhaseStatus::Running), "running");
     }
 
     #[test]
@@ -401,52 +478,69 @@ mod tests {
     }
 
     #[test]
+    fn phase_status_is_success() {
+        assert!(PhaseStatus::Success.is_success());
+        assert!(!PhaseStatus::Failed.is_success());
+    }
+
+    #[test]
+    fn phase_status_serde_roundtrip() {
+        let status = PhaseStatus::Success;
+        let json = serde_json::to_string(&status).unwrap();
+        assert_eq!(json, "\"success\"");
+        let parsed: PhaseStatus = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed, status);
+    }
+
+    // -- PhaseExecution 测试 --
+
+    #[test]
     fn phase_execution_constructors() {
-        let exec = PhaseExecution::success(Phase::Analyze, 100);
+        let phase = NamedPhase::new("test");
+
+        let exec = PhaseExecution::success(phase.clone(), 100);
         assert_eq!(exec.status, PhaseStatus::Success);
         assert_eq!(exec.latency_ms, 100);
 
-        let exec = PhaseExecution::failed(Phase::Gate, 50, "timeout");
+        let exec = PhaseExecution::failed(phase.clone(), 50, "timeout");
         assert_eq!(exec.status, PhaseStatus::Failed);
         assert_eq!(exec.error.as_deref(), Some("timeout"));
 
-        let exec = PhaseExecution::blocked(Phase::Gate, 50, "quality too low");
+        let exec = PhaseExecution::blocked(phase.clone(), 50, "quality too low");
         assert_eq!(exec.status, PhaseStatus::Blocked);
         assert!(exec.error.is_some());
 
-        let exec = PhaseExecution::skipped(Phase::Learn);
+        let exec = PhaseExecution::skipped(phase);
         assert_eq!(exec.status, PhaseStatus::Skipped);
         assert_eq!(exec.latency_ms, 0);
     }
 
-    #[test]
-    fn phase_serde_roundtrip() {
-        let phase = Phase::Analyze;
-        let json = serde_json::to_string(&phase).unwrap();
-        assert_eq!(json, "\"analyze\"");
-        let parsed: Phase = serde_json::from_str(&json).unwrap();
-        assert_eq!(parsed, phase);
+    // -- PhaseHandler 默认实现测试 --
+
+    struct TestHandler {
+        phase: NamedPhase,
     }
 
-    // 测试 PhaseHandler trait 的默认实现
-    struct TestHandler;
-
-    impl PhaseHandler for TestHandler {
-        fn phase(&self) -> Phase {
-            Phase::Analyze
+    impl PhaseHandler<NamedPhase> for TestHandler {
+        fn phase(&self) -> NamedPhase {
+            self.phase.clone()
         }
     }
 
     #[test]
     fn phase_handler_default_execute_returns_error() {
-        let handler = TestHandler;
+        use crate::context::{PipelineInput, PipelineOptions};
+
+        let handler = TestHandler {
+            phase: NamedPhase::new("test"),
+        };
         let mut ctx = PipelineContext::new(
-            crate::context::PipelineInput::Query {
+            PipelineInput::Query {
                 query: "test".into(),
                 session_id: None,
                 context: std::collections::HashMap::new(),
             },
-            crate::context::PipelineOptions::default(),
+            PipelineOptions::default(),
         );
         let result = handler.execute(&mut ctx);
         assert!(result.is_err());

@@ -1,0 +1,27 @@
+[package]
+name = "mox-alliance-sdk"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "专家联盟 · SDK（客户端调用 + 事件订阅 + 工具类）"
+
+[dependencies]
+mox-alliance-common-proto = { path = "../../proto/mox-alliance-common-proto" }
+mox-alliance-scheduler-proto = { path = "../../proto/mox-alliance-scheduler-proto" }
+mox-alliance-executor-proto = { path = "../../proto/mox-alliance-executor-proto" }
+mox-alliance-api = { path = "../../api" }
+mox-platform-foundation = { workspace = true }
+mox-error = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+uuid = { workspace = true, features = ["serde", "v4"] }
+chrono = { workspace = true, features = ["serde"] }
+tokio = { workspace = true }
+tracing = { workspace = true }
+async-trait = { workspace = true }
+
+[features]
+default = []

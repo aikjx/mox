@@ -1,0 +1,23 @@
+[package]
+name = "mox-alliance-common-proto"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "专家联盟 · 通用协议层（统一类型 + 错误 + 事件 + 常量）"
+
+[dependencies]
+mox-platform-foundation = { workspace = true }
+mox-error = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
+uuid = { workspace = true, features = ["serde", "v4"] }
+chrono = { workspace = true, features = ["serde"] }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+[features]
+default = []

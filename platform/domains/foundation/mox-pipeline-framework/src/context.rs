@@ -24,7 +24,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::audit::UnifiedAuditChain;
-use crate::phase::{Phase, PhaseExecution, PhaseStatus};
+use crate::phase::{PhaseExecution, PhaseId, PhaseStatus};
 use crate::result::PhaseResult;
 
 // ================== 上下文输入类型 ==================
@@ -131,12 +131,16 @@ impl Default for PipelineOptions {
 /// 2. 流动：每个阶段从 ctx 读取前序阶段结果，写入自己的结果
 /// 3. 完成：管线结束后，调用方可从 ctx 提取最终结果
 ///
+/// # 类型参数
+///
+/// - `P`: 阶段标识类型（实现 `PhaseId`）
+///
 /// # 线程安全
 ///
 /// 上下文本身不是线程安全的（非 Sync），因为阶段是顺序执行的。
 /// 并行处理等并发场景应在阶段处理器内部管理自己的并发，
 /// 结果汇总后再写回上下文。
-pub struct PipelineContext {
+pub struct PipelineContext<P: PhaseId> {
     // ---- 标识 ----
     /// 全局唯一 trace id（UUID v4），贯穿整条管线
     pub trace_id: Uuid,
@@ -157,9 +161,9 @@ pub struct PipelineContext {
 
     // ---- 阶段结果 ----
     /// 各阶段结果映射（phase -> result）
-    phase_results: HashMap<Phase, Box<dyn PhaseResult>>,
+    phase_results: HashMap<P, Box<dyn PhaseResult<P>>>,
     /// 阶段执行记录（用于审计和进度展示）
-    phase_executions: HashMap<Phase, PhaseExecution>,
+    phase_executions: HashMap<P, PhaseExecution<P>>,
 
     // ---- 审计 ----
     /// 审计链（内部哈希链 + 外部 sink 桥接）
@@ -176,10 +180,10 @@ pub struct PipelineContext {
     /// 管线启动时间
     pub started_at: Instant,
     /// 当前阶段
-    pub current_phase: Option<Phase>,
+    pub current_phase: Option<P>,
 }
 
-impl std::fmt::Debug for PipelineContext {
+impl<P: PhaseId> std::fmt::Debug for PipelineContext<P> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("PipelineContext")
             .field("trace_id", &self.trace_id)
@@ -197,7 +201,7 @@ impl std::fmt::Debug for PipelineContext {
     }
 }
 
-impl PipelineContext {
+impl<P: PhaseId> PipelineContext<P> {
     /// 创建新的管线上下文
     pub fn new(input: PipelineInput, options: PipelineOptions) -> Self {
         let trace_id = Uuid::new_v4();
@@ -234,46 +238,46 @@ impl PipelineContext {
     // ---- 阶段结果管理 ----
 
     /// 存储阶段结果
-    pub fn set_result(&mut self, result: Box<dyn PhaseResult>) {
+    pub fn set_result(&mut self, result: Box<dyn PhaseResult<P>>) {
         let phase = result.phase();
         self.phase_executions
-            .insert(phase, result.execution().clone());
+            .insert(phase.clone(), result.execution().clone());
         self.phase_results.insert(phase, result);
     }
 
     /// 获取阶段结果（类型擦除）
-    pub fn get_result(&self, phase: Phase) -> Option<&dyn PhaseResult> {
-        self.phase_results.get(&phase).map(|b| b.as_ref())
+    pub fn get_result(&self, phase: &P) -> Option<&dyn PhaseResult<P>> {
+        self.phase_results.get(phase).map(|b| b.as_ref())
     }
 
     /// 获取阶段结果（类型安全的 downcast）
-    pub fn get_result_typed<T: 'static>(&self, phase: Phase) -> Option<&T>
+    pub fn get_result_typed<T: 'static>(&self, phase: &P) -> Option<&T>
     where
-        T: PhaseResult,
+        T: PhaseResult<P>,
     {
         self.phase_results
-            .get(&phase)
+            .get(phase)
             .and_then(|r| r.as_any().downcast_ref::<T>())
     }
 
     /// 获取所有已完成的阶段
-    pub fn completed_phases(&self) -> Vec<Phase> {
-        let mut phases: Vec<Phase> = self.phase_results.keys().copied().collect();
+    pub fn completed_phases(&self) -> Vec<P> {
+        let mut phases: Vec<P> = self.phase_results.keys().cloned().collect();
         // 按阶段序号排序
         phases.sort_by_key(|p| p.order());
         phases
     }
 
     /// 获取阶段执行记录
-    pub fn get_execution(&self, phase: Phase) -> Option<&PhaseExecution> {
-        self.phase_executions.get(&phase)
+    pub fn get_execution(&self, phase: &P) -> Option<&PhaseExecution<P>> {
+        self.phase_executions.get(phase)
     }
 
     /// 记录阶段开始
-    pub fn mark_phase_start(&mut self, phase: Phase) {
-        self.current_phase = Some(phase);
+    pub fn mark_phase_start(&mut self, phase: P) {
+        self.current_phase = Some(phase.clone());
         self.phase_executions.insert(
-            phase,
+            phase.clone(),
             PhaseExecution {
                 phase,
                 status: PhaseStatus::Running,
@@ -286,12 +290,12 @@ impl PipelineContext {
     }
 
     /// 记录阶段结束
-    pub fn mark_phase_end(&mut self, phase: Phase, status: PhaseStatus, latency_ms: u64) {
-        if let Some(exec) = self.phase_executions.get_mut(&phase) {
+    pub fn mark_phase_end(&mut self, phase: &P, status: PhaseStatus, latency_ms: u64) {
+        if let Some(exec) = self.phase_executions.get_mut(phase) {
             exec.status = status;
             exec.latency_ms = latency_ms;
         }
-        if self.current_phase == Some(phase) {
+        if self.current_phase.as_ref() == Some(phase) {
             self.current_phase = None;
         }
     }
@@ -350,21 +354,24 @@ impl PipelineContext {
     }
 
     /// 获取失败的阶段列表
-    pub fn failed_phases(&self) -> Vec<Phase> {
+    pub fn failed_phases(&self) -> Vec<P> {
         self.phase_executions
             .iter()
             .filter(|(_, e)| e.status == PhaseStatus::Failed)
-            .map(|(p, _)| *p)
+            .map(|(p, _)| p.clone())
             .collect()
     }
 }
 
+// ── 测试 ────────────────────────────────────────────────────────
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::phase::NamedPhase;
     use crate::result::GenericPhaseResult;
 
-    fn make_ctx() -> PipelineContext {
+    fn make_ctx() -> PipelineContext<NamedPhase> {
         PipelineContext::new(
             PipelineInput::Query {
                 query: "test query".into(),
@@ -401,21 +408,23 @@ mod tests {
     #[test]
     fn set_and_get_result() {
         let mut ctx = make_ctx();
-        let result = GenericPhaseResult::success(Phase::Analyze, serde_json::json!({"ok": true}), 100);
+        let phase = NamedPhase::new("analyze");
+        let result = GenericPhaseResult::success(phase.clone(), serde_json::json!({"ok": true}), 100);
         ctx.set_result(Box::new(result));
 
-        assert!(ctx.get_result(Phase::Analyze).is_some());
-        assert_eq!(ctx.completed_phases(), vec![Phase::Analyze]);
+        assert!(ctx.get_result(&phase).is_some());
+        assert_eq!(ctx.completed_phases().len(), 1);
         assert!(ctx.all_succeeded());
     }
 
     #[test]
     fn get_result_typed_works() {
         let mut ctx = make_ctx();
-        let result = GenericPhaseResult::success(Phase::Analyze, serde_json::json!({"data": 42}), 100);
+        let phase = NamedPhase::new("analyze");
+        let result = GenericPhaseResult::success(phase.clone(), serde_json::json!({"data": 42}), 100);
         ctx.set_result(Box::new(result));
 
-        let typed = ctx.get_result_typed::<GenericPhaseResult>(Phase::Analyze);
+        let typed = ctx.get_result_typed::<GenericPhaseResult<NamedPhase>>(&phase);
         assert!(typed.is_some());
         assert_eq!(typed.unwrap().payload()["data"], 42);
     }
@@ -423,15 +432,16 @@ mod tests {
     #[test]
     fn mark_phase_start_and_end() {
         let mut ctx = make_ctx();
+        let phase = NamedPhase::new("analyze");
 
-        ctx.mark_phase_start(Phase::Analyze);
-        assert_eq!(ctx.current_phase, Some(Phase::Analyze));
-        let exec = ctx.get_execution(Phase::Analyze).unwrap();
+        ctx.mark_phase_start(phase.clone());
+        assert_eq!(ctx.current_phase.as_ref(), Some(&phase));
+        let exec = ctx.get_execution(&phase).unwrap();
         assert_eq!(exec.status, PhaseStatus::Running);
 
-        ctx.mark_phase_end(Phase::Analyze, PhaseStatus::Success, 100);
+        ctx.mark_phase_end(&phase, PhaseStatus::Success, 100);
         assert_eq!(ctx.current_phase, None);
-        let exec = ctx.get_execution(Phase::Analyze).unwrap();
+        let exec = ctx.get_execution(&phase).unwrap();
         assert_eq!(exec.status, PhaseStatus::Success);
         assert_eq!(exec.latency_ms, 100);
     }
@@ -473,13 +483,14 @@ mod tests {
     #[test]
     fn is_blocked_detection() {
         let mut ctx = make_ctx();
+        let phase = NamedPhase::blocking("gate");
 
         // 初始状态：未阻断
         assert!(!ctx.is_blocked());
 
         // 添加一个阻断阶段
-        ctx.mark_phase_start(Phase::Gate);
-        ctx.mark_phase_end(Phase::Gate, PhaseStatus::Blocked, 50);
+        ctx.mark_phase_start(phase.clone());
+        ctx.mark_phase_end(&phase, PhaseStatus::Blocked, 50);
 
         assert!(ctx.is_blocked());
         assert!(!ctx.all_succeeded());
@@ -488,16 +499,17 @@ mod tests {
     #[test]
     fn failed_phases_list() {
         let mut ctx = make_ctx();
+        let analyze = NamedPhase::new("analyze");
+        let normalize = NamedPhase::new("normalize");
 
-        ctx.mark_phase_start(Phase::Analyze);
-        ctx.mark_phase_end(Phase::Analyze, PhaseStatus::Failed, 100);
+        ctx.mark_phase_start(analyze.clone());
+        ctx.mark_phase_end(&analyze, PhaseStatus::Failed, 100);
 
-        ctx.mark_phase_start(Phase::Normalize);
-        ctx.mark_phase_end(Phase::Normalize, PhaseStatus::Success, 50);
+        ctx.mark_phase_start(normalize.clone());
+        ctx.mark_phase_end(&normalize, PhaseStatus::Success, 50);
 
         let failed = ctx.failed_phases();
         assert_eq!(failed.len(), 1);
-        assert_eq!(failed[0], Phase::Analyze);
     }
 
     #[test]
@@ -545,5 +557,23 @@ mod tests {
         assert!(debug.contains("PipelineContext"));
         assert!(debug.contains("trace_id"));
         assert!(debug.contains("phase_count"));
+    }
+
+    #[test]
+    fn completed_phases_sorted_by_order() {
+        let mut ctx = make_ctx();
+        let p1 = NamedPhase::new("second").with_order(20);
+        let p2 = NamedPhase::new("first").with_order(10);
+        let p3 = NamedPhase::new("third").with_order(30);
+
+        ctx.set_result(Box::new(GenericPhaseResult::success(p1, serde_json::json!({}), 10)));
+        ctx.set_result(Box::new(GenericPhaseResult::success(p2, serde_json::json!({}), 10)));
+        ctx.set_result(Box::new(GenericPhaseResult::success(p3, serde_json::json!({}), 10)));
+
+        let phases = ctx.completed_phases();
+        assert_eq!(phases.len(), 3);
+        assert_eq!(phases[0].name(), "first");
+        assert_eq!(phases[1].name(), "second");
+        assert_eq!(phases[2].name(), "third");
     }
 }

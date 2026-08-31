@@ -10,7 +10,8 @@
 //! - 审计上下文从内部 `AuditChain` 升级为 `mox-audit` 的 `AuditContext`（SHA-256）
 //! - `can()` 方法使用简化角色映射（完整 RBAC 引擎待后续阶段迁移）
 
-use crate::ir::{CodeIR, Dimension, PolicyId};
+use crate::ir::CodeIR;
+use mox_ai_expert_proto::{Dimension, PolicyId};
 use mox_ai_flow_svc::model::{FlowGraph, ResourcePool};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

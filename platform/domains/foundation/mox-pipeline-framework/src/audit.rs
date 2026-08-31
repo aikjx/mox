@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
-use crate::phase::{Phase, PhaseStatus};
+use crate::phase::{PhaseId, PhaseStatus};
 
 // ================== 统一审计事件 ==================
 
@@ -162,18 +162,18 @@ pub struct UnifiedAuditChain {
     genesis_hash: String,
 }
 
+impl Default for UnifiedAuditChain {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl std::fmt::Debug for UnifiedAuditChain {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("UnifiedAuditChain")
             .field("event_count", &self.events.len())
             .field("external_sinks", &self.external_sinks.len())
             .finish()
-    }
-}
-
-impl Default for UnifiedAuditChain {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -214,7 +214,7 @@ impl UnifiedAuditChain {
     }
 
     /// 记录阶段开始
-    pub fn record_phase_start(&mut self, phase: Phase, trace_id: Uuid) {
+    pub fn record_phase_start<P: PhaseId>(&mut self, phase: &P, trace_id: Uuid) {
         let event = UnifiedAuditEvent {
             event_id: Uuid::new_v4().to_string(),
             timestamp: Utc::now(),
@@ -239,9 +239,9 @@ impl UnifiedAuditChain {
     }
 
     /// 记录阶段结束
-    pub fn record_phase_end(
+    pub fn record_phase_end<P: PhaseId>(
         &mut self,
-        phase: Phase,
+        phase: &P,
         status: PhaseStatus,
         latency_ms: u64,
         trace_id: Uuid,
@@ -300,7 +300,7 @@ impl UnifiedAuditChain {
                 return false;
             }
             // 重新计算哈希以验证
-            let mut re = event.clone();
+            let re = event.clone();
             let expected = re.compute_hash();
             if event.content_hash != expected {
                 return false;
@@ -418,23 +418,27 @@ pub mod mox_audit_bridge {
     }
 }
 
+// ── 测试 ────────────────────────────────────────────────────────
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::phase::NamedPhase;
 
     #[test]
     fn audit_chain_tamper_detected() {
         let mut chain = UnifiedAuditChain::new();
         let trace_id = Uuid::new_v4();
+        let phase = NamedPhase::new("analyze");
 
-        chain.record_phase_start(Phase::Analyze, trace_id);
-        chain.record_phase_end(Phase::Analyze, PhaseStatus::Success, 100, trace_id);
+        chain.record_phase_start(&phase, trace_id);
+        chain.record_phase_end(&phase, PhaseStatus::Success, 100, trace_id);
 
         assert!(chain.verify(), "初始链应完整");
         assert_eq!(chain.len(), 2);
 
         // 篡改中间事件
-        let mut events = std::mem::take(&mut chain.events);
+        let mut events: Vec<UnifiedAuditEvent> = std::mem::take(&mut chain.events);
         if let Some(ev) = events.first_mut() {
             ev.action = "hacked".to_string();
         }
@@ -456,11 +460,12 @@ mod tests {
     fn record_phase_start_and_end() {
         let mut chain = UnifiedAuditChain::new();
         let trace_id = Uuid::new_v4();
+        let phase = NamedPhase::new("normalize");
 
-        chain.record_phase_start(Phase::Normalize, trace_id);
+        chain.record_phase_start(&phase, trace_id);
         assert_eq!(chain.len(), 1);
 
-        chain.record_phase_end(Phase::Normalize, PhaseStatus::Success, 50, trace_id);
+        chain.record_phase_end(&phase, PhaseStatus::Success, 50, trace_id);
         assert_eq!(chain.len(), 2);
 
         // 验证链完整性
@@ -531,7 +536,8 @@ mod tests {
         }));
 
         let trace_id = Uuid::new_v4();
-        chain.record_phase_start(Phase::Analyze, trace_id);
+        let phase = NamedPhase::new("analyze");
+        chain.record_phase_start(&phase, trace_id);
 
         let events = received.lock().unwrap();
         assert_eq!(events.len(), 1);
@@ -554,8 +560,9 @@ mod tests {
         chain.add_sink(Box::new(mox_audit_bridge::MoxAuditSink::new(mox_ctx.clone())));
 
         let trace_id = Uuid::new_v4();
-        chain.record_phase_start(Phase::Analyze, trace_id);
-        chain.record_phase_end(Phase::Analyze, PhaseStatus::Success, 100, trace_id);
+        let phase = NamedPhase::new("analyze");
+        chain.record_phase_start(&phase, trace_id);
+        chain.record_phase_end(&phase, PhaseStatus::Success, 100, trace_id);
 
         // 内部链有 2 个事件
         assert_eq!(chain.len(), 2);

@@ -14,7 +14,6 @@
 //! - `DimensionedFlow` / `CodeIR` / `auto_dimension()` 等 IR 扩展层在 core 中实现。
 
 use mox_ai_flow_svc::model::{FlowGraph, NodeKind, ToolKind};
-use mox_ai_expert_proto::{Dimension, DimensionTag};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
