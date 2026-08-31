@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>开发专家联盟（platform/domains/alliance）架构评审报告</title>
+<style>
+  :root { --ink:#1f2430; --sub:#5b6472; --line:#e3e7ee; --bg:#f7f8fa; --card:#fff;
+          --red:#c0392b; --amber:#b9770e; --blue:#2e6fb7; --green:#1e8449; --purple:#7d3c98; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif; color:var(--ink); background:var(--bg); line-height:1.65; }
+  .wrap { max-width:1080px; margin:0 auto; padding:32px 20px 80px; }
+  header.hero { background:linear-gradient(135deg,#1f2430 0%,#2e6fb7 100%); color:#fff; border-radius:14px; padding:34px 36px; margin-bottom:28px; }
+  header.hero h1 { margin:0 0 8px; font-size:26px; letter-spacing:.5px; }
+  header.hero p { margin:4px 0; opacity:.9; font-size:14px; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:12px; margin-right:6px; }
+  .b-red{background:#c0392b;color:#fff} .b-amber{background:#b9770e;color:#fff}
+  .b-green{background:#1e8449;color:#fff} .b-blue{background:#2e6fb7;color:#fff} .b-gray{background:#6b7280;color:#fff}
+  h2 { font-size:20px; margin:34px 0 12px; padding-left:10px; border-left:4px solid #2e6fb7; }
+  h3 { font-size:16px; margin:22px 0 8px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px 22px; margin-bottom:18px; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+  table { width:100%; border-collapse:collapse; font-size:13.5px; }
+  th,td { padding:9px 10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+  th { background:#f0f3f8; font-weight:600; white-space:nowrap; }
+  tr:hover td { background:#fafbfd; }
+  .code { font-family:Consolas,Menlo,monospace; font-size:12.5px; background:#f0f2f5; padding:1px 6px; border-radius:4px; }
+  pre { background:#1f2430; color:#e6e9ef; padding:14px 16px; border-radius:8px; overflow:auto; font-size:12.5px; line-height:1.5; }
+  pre .c { color:#8b95a5; }
+  ul,ol { margin:6px 0; padding-left:22px; }
+  li { margin:4px 0; }
+  .ok{color:var(--green);font-weight:600} .bad{color:var(--red);font-weight:600} .warn{color:var(--amber);font-weight:600}
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .kpi { text-align:center; padding:16px 10px; }
+  .kpi .num { font-size:34px; font-weight:700; }
+  .kpi .lbl { font-size:12.5px; color:var(--sub); margin-top:2px; }
+  .note { background:#fff8e6; border:1px solid #f0dcab; border-radius:8px; padding:10px 14px; font-size:13px; margin:10px 0; }
+  .tag { display:inline-block; padding:1px 8px; border-radius:4px; font-size:11.5px; font-weight:600; margin-right:4px; }
+  .t-p0{background:#fdecea;color:#c0392b} .t-p1{background:#fef3e0;color:#b9770e} .t-p2{background:#e8f1fb;color:#2e6fb7}
+  footer { margin-top:40px; color:var(--sub); font-size:12.5px; border-top:1px solid var(--line); padding-top:16px; }
+  @media(max-width:720px){ .grid2{grid-template-columns:1fr;} header.hero{padding:24px;} header.hero h1{font-size:21px;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>开发专家联盟 · 架构评审报告</h1>
+  <p>模块：<span class="code" style="color:#fff">platform/domains/alliance</span> ｜ 评审日期：2026-08-31</p>
+  <p>范围：api / proto / core / svc / sdk 共 11 个 crate ｜ 结论：<b>当前无法编译通过，且存在多处设计未闭环</b></p>
+  <p>
+    <span class="badge b-red">18 编译错误</span>
+    <span class="badge b-amber">4 潜在编译错误</span>
+    <span class="badge b-blue">8+ 逻辑/架构缺口</span>
+    <span class="badge b-green">基础协议层健康</span>
+  </p>
+</header>
+
+<!-- 摘要 -->
+<div class="card">
+  <h3 style="margin-top:0">一、结论摘要</h3>
+  <ol>
+    <li><b>阻断性：</b><span class="bad">mox-alliance-scheduler-core 编译失败（18 个错误）</span>，且上游 <span class="code">mox-alliance-scheduler-svc</span> 因此无法构建 —— 整个"调度→执行"链路目前跑不起来。</li>
+    <li><b>模块级脱节：</b>"模块化配置子系统"（<span class="code">mox-alliance-config-core</span> + <span class="code">ConfigSynchronizer</span> + <span class="code">ModularWeightMatcher</span>）是<b>孤儿/未接入</b>状态：config-core 不在工作区成员、无任何 crate 依赖；调度器实际用的是 <span class="code">RuleBasedExpertMatcher</span> 而非 ModularWeightMatcher。</li>
+    <li><b>重复且未接线：</b>存在<b>两套融合引擎</b>（scheduler-core 的占位 FusionEngine 与 mox-alliance-core 的完整策略版），但两套在运行时都没有被 DAG 执行引擎调用 —— 结果只被存储、从不融合。</li>
+    <li><b>工程健壮性缺口：</b>任务/执行状态纯内存（重启即失）、无节点超时与并发上限、默认执行器地址指向自身端口（8081↔8082）、SDK 为全 Stub、多租户未接线。</li>
+    <li><b>健康部分：</b>proto 三件套、api、mox-alliance-core、executor-core、executor-svc 均能编译；专家执行器（ExpertNodeExecutor）超时/重试/健康检查实现完整，是模块内质量最高的部分。</li>
+  </ol>
+</div>
+
+<!-- KPI -->
+<div class="grid2">
+  <div class="card kpi"><div class="num bad">18</div><div class="lbl">已确认编译错误（scheduler-core）</div></div>
+  <div class="card kpi"><div class="num warn">1</div><div class="lbl">孤儿 crate（config-core 未进工作区）</div></div>
+</div>
+
+<!-- 模块全景 -->
+<div class="card">
+  <h3 style="margin-top:0">二、模块全景与编译状态矩阵</h3>
+  <table>
+    <thead><tr><th>层级</th><th>crate</th><th>职责</th><th>lib 编译</th><th>关键问题</th></tr></thead>
+    <tbody>
+      <tr><td rowspan="3">proto</td><td>mox-alliance-common-proto</td><td>统一类型/错误/事件/常量</td><td class="ok">✅ 通过</td><td>—</td></tr>
+      <tr><td>mox-alliance-scheduler-proto</td><td>调度协议：匹配/计划/调度 trait</td><td class="ok">✅ 通过</td><td>—</td></tr>
+      <tr><td>mox-alliance-executor-proto</td><td>执行协议：节点执行/DAG trait</td><td class="ok">✅ 通过</td><td>—</td></tr>
+      <tr><td>api</td><td>mox-alliance-api</td><td>HTTP DTO</td><td class="ok">✅ 通过</td><td>—</td></tr>
+      <tr><td rowspan="4">core</td><td>mox-alliance-core</td><td>DAG 算法 + 完整融合策略库</td><td class="ok">✅ 通过</td><td>融合库未被运行时调用（死代码）</td></tr>
+      <tr><td>mox-alliance-scheduler-core</td><td>任务调度/匹配/计划/LLM路由/DAG/融合</td><td class="bad">❌ 18 错误</td><td>见第三节</td></tr>
+      <tr><td>mox-alliance-executor-core</td><td>DAG 执行引擎 + 专家执行器</td><td class="ok">✅ 通过</td><td>超时/并发上限配置未生效</td></tr>
+      <tr><td>mox-alliance-config-core</td><td>模块化配置引擎/校验/版本/回滚</td><td class="warn">⚠️ 未进工作区</td><td>孤儿 crate，含 1 处潜在编译错误</td></tr>
+      <tr><td rowspan="2">svc</td><td>mox-alliance-scheduler-svc</td><td>调度器 HTTP 服务（8081）</td><td class="bad">❌ 依赖阻断</td><td>默认执行器地址指向自身 8081</td></tr>
+      <tr><td>mox-alliance-executor-svc</td><td>执行器 HTTP 服务（8082）</td><td class="ok">✅ 通过</td><td>状态接口硬编码 Running</td></tr>
+      <tr><td>sdk</td><td>mox-alliance-sdk</td><td>联盟客户端</td><td class="ok">✅ 通过</td><td>全部方法为 Stub（Phase 1）</td></tr>
+    </tbody>
+  </table>
+  <div class="note">验证方式：对每个 crate 执行 <span class="code">cargo check -p &lt;crate&gt;</span>（rustc 1.98.0-nightly，2026-05-22）。"✅ 通过"表示 lib 目标 0 错误；svc 的 bin 目标一并检查。</div>
+</div>
+
+<!-- 编译错误 -->
+<div class="card">
+  <h3 style="margin-top:0">三、已确认编译错误（mox-alliance-scheduler-core，共 18 处）</h3>
+  <table>
+    <thead><tr><th>文件</th><th>错误类型</th><th>说明 / 修复方向</th></tr></thead>
+    <tbody>
+      <tr><td class="code">config_sync.rs:16</td><td class="bad">E0432 未解析依赖</td><td><span class="code">use mox_alliance_config_core::…</span>，但该 crate 不在工作区、scheduler-core 的 Cargo.toml 也未声明依赖。→ 修复：要么把 config-core 纳入工作区并声明 path 依赖，要么删除 config_sync 模块。</td></tr>
+      <tr><td class="code">modular_matcher.rs:244</td><td class="bad">E0046 trait 未实现完整</td><td>缺少 <span class="code">get_expert</span> / <span class="code">refresh_cache</span>。→ 补全或调整 trait 契约。</td></tr>
+      <tr><td class="code">dag_engine.rs:237</td><td class="bad">E0382 移动后借用</td><td><span class="code">plan</span> 已在 :226 移入 ExecutionState，:237 的 <span class="code">info!(… plan.nodes.len())</span> 再次借用。→ 在移动前先取出节点数。</td></tr>
+      <tr><td class="code">modular_matcher.rs:303-352</td><td class="bad">14 处字段/结构不匹配</td><td>代码按<b>另一套 proto API</b>编写：引用了不存在的 <span class="code">match_score / expert_id / expert_name / confidence / breakdown / recommended_role / query_id / matched_experts / total_matched / latency_ms / min_confidence</span>。当前 proto 只有 <span class="code">expert / score / match_reason / score_breakdown</span>。→ 与 proto 对齐或反方向升级 proto（需全局评估影响面）。</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 潜在编译错误 -->
+<div class="card">
+  <h3 style="margin-top:0">四、潜在编译错误（当前工具链未即时暴露，但均为确定无效代码）</h3>
+  <div class="note">已用最小化复现 + 相同 crate 内 probe 函数验证为 E0609/E0308；rustc 1.98-nightly 存在"impl 块中后续方法体错误被吞"的诊断缺陷，导致这些错误在<b>完整文件上下文</b>中未上报。修复上述 18 处后，这些错误会暴露，必须一并处理。</div>
+  <table>
+    <thead><tr><th>位置</th><th>无效表达式</th><th>正确写法</th></tr></thead>
+    <tbody>
+      <tr><td class="code">planner.rs:171/180/190</td><td><span class="code">matched_experts.expert</span>（对切片 <span class="code">&amp;[MatchedExpert]</span> 取字段）</td><td><span class="code">matched_experts[0].expert</span> / <span class="code">[1].expert</span> / <span class="code">[2].expert</span></td></tr>
+      <tr><td class="code">llm_router.rs:301-302</td><td><span class="code">let selected = available; selected.provider_id</span>（对 Vec 取字段）</td><td><span class="code">let selected = available[0];</span></td></tr>
+      <tr><td class="code">llm_router.rs:268</td><td><span class="code">let (selected, _) = available;</span>（把 Vec 当元组解构）</td><td><span class="code">let selected = available[0].0;</span></td></tr>
+      <tr><td class="code">config-core/engine.rs:123</td><td><span class="code">self.store.get_module_config(module)</span>（未定义变量 module）</td><td><span class="code">get_module_config(module_id)</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 逻辑缺陷 -->
+<div class="card">
+  <h3 style="margin-top:0">五、逻辑缺陷（能编译但不正确）</h3>
+  <table>
+    <thead><tr><th>位置</th><th>问题</th><th>影响</th></tr></thead>
+    <tbody>
+      <tr><td class="code">scheduler-core/fusion.rs（fuse_weighted / fuse_voting）</td><td>文档称 <span class="code">expert_weights</span> 按专家加权，但实现用 <span class="code">weights.get(&amp;result.node_id)</span> 按<b>节点ID</b>取值；<span class="code">NodeExecutionResult</span> 无 expert_id 字段。</td><td>按专家配置的权重永远匹配不上 → 加权融合实际失效（测试因用 node_id 伪装 expert_id 而未暴露）。</td></tr>
+      <tr><td class="code">llm_router.rs is_provider_available</td><td>仅检查 <span class="code">!api_key_source.is_inherit()</span>，EnvVar 变量未设置也被视为可用。</td><td>路由会选中"无可用密钥"的 provider（test_no_available_provider 预期返回 None 与实际行为矛盾）。</td></tr>
+      <tr><td class="code">planner.rs generate()</td><td><span class="code">plan.fusion_strategy</span> 恒为 <span class="code">FusionStrategy::Weighted</span>，与任务配置的 fusion_strategy 无关。</td><td>任务指定的融合策略从不生效。</td></tr>
+      <tr><td class="code">executor-svc/routes.rs:61</td><td><span class="code">get_execution_status</span> 恒返回 <span class="code">TaskStatus::Running</span>。</td><td>下游拿到的任务状态失真。</td></tr>
+      <tr><td class="code">scheduler-core/dag_engine.rs</td><td><span class="code">max_concurrent_tasks / max_retries</span> 配置未参与执行判定。</td><td>并发无上限、失败不重试（executor-core 侧重试在 ExpertNodeExecutor 内实现，但引擎层未应用 ExecutionOptions）。</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 架构缺口 -->
+<div class="card">
+  <h3 style="margin-top:0">六、架构缺口（设计未闭环 / 未接线）</h3>
+  <ul>
+    <li><b>模块化配置子系统整体悬空：</b><span class="code">ConfigEngine → ConfigSynchronizer → ModularWeightMatcher</span> 链路已实现但调度器运行时（TaskSchedulerImpl）实际使用 <span class="code">RuleBasedExpertMatcher</span>，配置热更新/版本/回滚能力无人消费；config-core 甚至不在工作区成员列表。</li>
+    <li><b>融合引擎双套且均未接线：</b>scheduler-core 的 <span class="code">FusionEngine</span> 与 mox-alliance-core 的 <span class="code">FusionEngine</span> 重复实现，但 DAG 执行结果只写入 <span class="code">state.results</span>，从未调用任何融合。融合是全链路关键一环，当前"执行完即止"。</li>
+    <li><b>无持久化：</b>任务表、执行状态全部内存态，进程重启全部丢失；无存储抽象/DAO 层。</li>
+    <li><b>无节点超时：</b>两套 DAG 引擎的 <span class="code">node_timeout_ms</span> 均未生效，节点挂死会让任务永久卡在 Running。</li>
+    <li><b>默认端口错配：</b>scheduler-svc 监听 8081，executor-svc 监听 8082，但 scheduler 的 HTTP 桥默认 <span class="code">base_url = http://localhost:8081</span> —— 默认配置下调度器把计划提交给了自己，链路必失败。</li>
+    <li><b>Embedded 模式为 Noop：</b>server.rs 的嵌入式桥接是占位实现，未提供真正可用的进程内路径。</li>
+    <li><b>SDK 全 Stub：</b>mox-alliance-sdk 三个方法均返回"not implemented"。</li>
+    <li><b>多租户未接线：</b>svc 层 tenant_id 统一为 <span class="code">Uuid::nil()</span>，领域层虽有 tenant 概念但未贯通。</li>
+    <li><b>接口占位：</b>scheduler-svc <span class="code">list_tasks</span> 恒返回空数组。</li>
+  </ul>
+</div>
+
+<!-- 修复路线 -->
+<div class="card">
+  <h3 style="margin-top:0">七、修复路线（按优先级）</h3>
+  <table>
+    <thead><tr><th>优先级</th><th>动作</th><th>理由</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag t-p0">P0</span></td><td>修复 scheduler-core 18 处编译错误；决定 config-core 去留（纳入工作区并补依赖，或裁剪 config_sync 模块）</td><td>消除构建阻断，恢复"调度→执行"链路可运行</td></tr>
+      <tr><td><span class="tag t-p0">P0</span></td><td>修 4 处潜在编译错误（planner debate 索引、llm_router 选择结果、config-core 未定义变量）</td><td>P0 修复后必然暴露，一并处理避免二次返工</td></tr>
+      <tr><td><span class="tag t-p1">P1</span></td><td>把融合接入执行链路：二选一保留一套 FusionEngine，在 DAG 完成后按 plan.fusion_strategy 调用；同时修 expert_weights 键语义（为 NodeExecutionResult 补 expert_id 或改键为 node_id）</td><td>融合是联盟核心价值，当前完全未生效</td></tr>
+      <tr><td><span class="tag t-p1">P1</span></td><td>统一模块化配置链路：让 TaskSchedulerImpl 使用 ModularWeightMatcher，接入 ConfigEngine 热更新；或明确废弃 config-core</td><td>消除"做了没接"的架构债务</td></tr>
+      <tr><td><span class="tag t-p1">P1</span></td><td>执行器地址默认值改为 8082 / 显式注入；节点超时、并发上限、重试生效</td><td>默认配置可跑通 + 防挂死</td></tr>
+      <tr><td><span class="tag t-p2">P2</span></td><td>任务/执行状态接入持久化（trait + 存储实现）；补存储后支持恢复与审计</td><td>进程重启数据不丢</td></tr>
+      <tr><td><span class="tag t-p2">P2</span></td><td>实现 SDK；实现 list_tasks；贯通租户；实现 Embedded 桥</td><td>补齐交付面</td></tr>
+      <tr><td><span class="tag t-p2">P2</span></td><td>LLM 路由密钥校验：is_provider_available 增加 resolve_api_key().is_some()</td><td>避免选中无密钥 provider</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 验证方法与局限 -->
+<div class="card">
+  <h3 style="margin-top:0">八、验证方法与局限</h3>
+  <ul>
+    <li><b>编译验证：</b>对 11 个 alliance crate 逐个 <span class="code">cargo check -p</span>；18 个编译错误经 rustc 完整诊断（含 JSON 格式）确认。</li>
+    <li><b>潜在编译错误验证：</b>用最小化复现 + 同 crate probe 函数确认 E0609/E0308；<span class="note" style="display:inline;padding:0 6px">注：rustc 1.98.0-nightly 存在"impl 块后续方法体错误被吞"的诊断缺陷（已在独立实验中复现），因此这些错误在完整文件里未被上报，但修复 P0 后必定暴露。</span></li>
+    <li><b>逻辑缺陷验证：</b>逐文件阅读 + 交叉引用 proto 定义确认。</li>
+    <li><b>局限：</b>未运行完整单测（scheduler-core 因编译失败无法测试）；未做运行时端到端验证（当前无法构建可执行文件）；mox-alliance-core 测试目标编译通过（0 错误）。</li>
+  </ul>
+</div>
+
+<footer>
+  生成：2026-08-31 ｜ 评审对象：MOX 全维低代码平台 · 开发专家联盟域（platform/domains/alliance）<br>
+  工具链：rustc 1.98.0-nightly（2026-05-22）｜ 依据：源码逐文件审查 + cargo check 实证 + 最小化复现实验
+</footer>
+
+</div>
+</body>
+</html>
