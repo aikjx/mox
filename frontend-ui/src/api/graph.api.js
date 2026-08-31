@@ -26,7 +26,9 @@ export const toggleAutoSync = (enabled) =>
 // 查询全自动同步状态
 export const getAutoSyncStatus = () => http.get('/graph/auto-sync/status')
 // 列出对话会话
-export const listDialogueSessions = () => http.get('/dialogue/sessions')
+export const getDialogueSessions = () => http.get('/dialogue/sessions')
+/** @deprecated 请使用 getDialogueSessions */
+export const listDialogueSessions = getDialogueSessions
 // 导出：对话 + 知识图谱 打包为单文件迁移包（返回 JSON 文本）
 export const graphExport = () => http.get('/graph/export')
 // 导入：从迁移包恢复对话 + 知识图谱（幂等合并）

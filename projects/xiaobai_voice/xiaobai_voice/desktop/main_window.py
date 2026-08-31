@@ -17,7 +17,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, *, loader, default_url: str, port: int):
         super().__init__()
         self.loader = loader
-        self.port = int(port or 3717)
+        self.port = int(port or 30010)
         self.default_url = default_url
         self.setWindowTitle("小白 xiaobai · 璇玑 AI 助手")
         self.resize(1200, 780)
@@ -54,7 +54,7 @@ class MainWindow(QtWidgets.QMainWindow):
         title = QtWidgets.QLabel("服务未启动 φ")
         title.setStyleSheet("font: 28px 'Microsoft YaHei'; color: #e6eaff; qproperty-alignment: AlignCenter;")
         title.setAlignment(QtCore.Qt.AlignCenter)
-        tip = QtWidgets.QLabel("桌面小白需要同时运行前端（http://localhost:3021/#/ai）和语音服务（3717）。\n请选择：")
+        tip = QtWidgets.QLabel("桌面小白需要同时运行前端（http://localhost:3020/#/ai）和语音服务（30010）。\n请选择：")
         tip.setStyleSheet("color: #9aa4cf; font: 14px 'Microsoft YaHei'; qproperty-alignment: AlignCenter;")
         tip.setAlignment(QtCore.Qt.AlignCenter)
         btn_row = QtWidgets.QHBoxLayout()
@@ -170,10 +170,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.chip_asr.setText(f"ASR引擎 · <span style='color:{color_asr}'>{asr_name}</span>")
             self.chip_tts.setText(f"TTS引擎 · <span style='color:{color_tts}'>{tts_name}</span>")
             self.chip_cmp.setText(f"合规 · <span style='color:{color_cmp}'>{tier}</span>")
-            # 同时检测前端 /#/ai 端口是否在（3021）
+            # 同时检测前端 /#/ai 端口是否在（3020）
             frontend_ok = True
             try:
-                httpx.get("http://127.0.0.1:3021/", timeout=1.0)
+                httpx.get("http://127.0.0.1:3020/", timeout=1.0)
             except Exception:  # noqa: BLE001
                 frontend_ok = False
             if asr_ok and frontend_ok and self.view is not None:

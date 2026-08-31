@@ -75,7 +75,7 @@ const endpoints = reactive([
   { method: 'GET', path: '/ai/browser/templates', group: '浏览器', desc: '浏览器模板', fn: () => api.getBrowserTemplates() },
   { method: 'GET', path: '/ai/browser/sessions', group: '浏览器', desc: '浏览器会话', fn: () => api.getBrowserSessions() },
   { method: 'GET', path: '/plugins', group: '系统', desc: '运行时插件', fn: () => api.getPlugins() },
-  { method: 'GET', path: '/dialogue/sessions', group: '对话', desc: '后端会话列表（跨设备恢复）', fn: () => api.listDialogueSessions() }
+  { method: 'GET', path: '/dialogue/sessions', group: '对话', desc: '后端会话列表（跨设备恢复）', fn: () => api.getDialogueSessions() }
 ])
 
 const filtered = computed(() => {

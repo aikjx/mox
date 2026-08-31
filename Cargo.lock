@@ -3674,6 +3674,8 @@ name = "mox-alliance-boot-config"
 version = "3.0.0-ai-powered"
 dependencies = [
  "anyhow",
+ "chrono",
+ "mox-alliance-common-proto",
  "serde",
  "serde_json",
  "serde_yaml",

@@ -569,7 +569,7 @@ async fn main() -> anyhow::Result<()> {
                 .with_agent(state.ai_agent.clone())
                 .with_sidecar(NodeSidecarClient::new(
                     std::env::var("BACKEND_NODE_INTERNAL_BASE")
-                        .unwrap_or_else(|_| "http://127.0.0.1:3010".to_string()),
+                        .unwrap_or_else(|_| "http://127.0.0.1:8080".to_string()) // backend-node 已删除(2026-09)，默认指向接管其职责的 Rust 网关 8080,
                 ));
             let r: Router =
                 crate::routes::ai_engine::ai_engine_routes(std::sync::Arc::new(ai_state));
@@ -619,8 +619,8 @@ async fn main() -> anyhow::Result<()> {
         app = app.nest(prefix, router);
     }
 
-    // ========== T7 FR-GW-04：Voice 代理 /voice/** → :3717 ==========
-    // 3717 不可达时自动回退到 browser_tts JSON（AC-22 标准），避免 502 炸前端。
+    // ========== T7 FR-GW-04：Voice 代理 /voice/** → :30010 ==========
+    // 30010 不可达时自动回退到 browser_tts JSON（AC-22 标准），避免 502 炸前端。
     //
     // ⚠️  路由挂载方式（最终稳定版，永久保留）：
     //   axum 不允许任何含前缀的 catch-all（/voice/{*tail} 会 panic），

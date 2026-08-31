@@ -26,8 +26,8 @@ pub mod browser;
 pub mod notify;
 pub mod helpers;
 
-#[cfg(feature = "server-3717")]
-pub mod server_3717;
+#[cfg(feature = "server-30010")]
+pub mod server_30010;
 
 #[cfg(feature = "voice-engine")]
 pub mod voice_engine;
@@ -51,8 +51,8 @@ pub use voice_engine::{Recorder, VoiceEngine};
 #[cfg(feature = "voice-engine")]
 pub use avatar::{Avatar, AvatarMeta, AvatarRegistry, PersonaConf, VisualConf, VoiceConf};
 
-#[cfg(feature = "server-3717")]
-pub use server_3717::{XiaobaiVoiceService, VoiceServiceConfig, serve, build_router, run_service_blocking};
+#[cfg(feature = "server-30010")]
+pub use server_30010::{XiaobaiVoiceService, VoiceServiceConfig, serve, build_router, run_service_blocking};
 
 use std::sync::Arc;
 use mox_voice_core_svc::engine::OperatorEngine;

@@ -4,7 +4,7 @@
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
 //! Sidecar 客户端模块：
-//!   - node_sidecar：Node 127.0.0.1:3010 内部 API 调用（含 fallback 与指标）
+//!   - node_sidecar：Node 内部 API 客户端（backend-node 已删除 2026-09，默认指向 Rust 网关 127.0.0.1:8080；不可达时本地 fallback 与指标）
 //!
 //! 导出规范（2026-08 企业级 lint 收敛）：
 //! - 仅对外导出当前 bin/其他 crate 真实使用的符号（允许死代码在 node_sidecar 内部通过 `#[allow(dead_code)]` 保留

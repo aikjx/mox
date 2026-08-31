@@ -1935,7 +1935,7 @@ import {
 import { EXPERT_TYPES } from '@/constants/expert.constants'
 import { runAllianceFullSSE, getAllianceCapabilities } from '@/api/alliance'
 import {
-  getExperts, getExpertGraph, listExpertSessions,
+  getExperts, getExpertGraph, getExpertSessions,
   expertDebate, expertOrchestrate, multiExpertConsult,
   routeExperts, registerExpert
 } from '@/api/experts.api.js'
@@ -2230,7 +2230,7 @@ const activeSession = ref(null)
 async function loadSessions() {
   sessionsLoading.value = true
   try {
-    const res = await listExpertSessions({ project_id: currentProject.value, limit: 20 })
+    const res = await getExpertSessions({ project_id: currentProject.value, limit: 20 })
     if (res && Array.isArray(res.data)) {
       sessions.value = res.data
     } else if (res && Array.isArray(res)) {

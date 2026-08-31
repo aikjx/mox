@@ -88,6 +88,7 @@ impl SimplePlanGenerator {
                     &me.expert,
                     vec![], // 无依赖
                     &format!("{} (并行)", me.expert.name),
+                    &request.task_description,
                 )
             })
             .collect()
@@ -112,6 +113,7 @@ impl SimplePlanGenerator {
                 &me.expert,
                 deps,
                 &format!("{} (第{}步)", me.expert.name, i + 1),
+                &request.task_description,
             ));
         }
         nodes
@@ -151,6 +153,7 @@ impl SimplePlanGenerator {
                     &me.expert,
                     deps,
                     &me.expert.name,
+                    &request.task_description,
                 ));
                 current_layer.push(node_id);
             }
@@ -181,6 +184,7 @@ impl SimplePlanGenerator {
             &matched_experts[0].expert,
             vec![],
             "正方观点",
+            &request.task_description,
         ));
 
         // 反方（第二个专家）
@@ -190,6 +194,7 @@ impl SimplePlanGenerator {
             &matched_experts[1].expert,
             vec![],
             "反方观点",
+            &request.task_description,
         ));
 
         // 裁判（第三个专家，如果有的话）
@@ -200,6 +205,7 @@ impl SimplePlanGenerator {
                 &matched_experts[2].expert,
                 vec!["node-pro".to_string(), "node-con".to_string()],
                 "裁判裁决",
+                &request.task_description,
             ));
         }
 
@@ -234,6 +240,7 @@ impl SimplePlanGenerator {
                     &me.expert,
                     deps,
                     &format!("第{}轮 - {}", i + 1, me.expert.name),
+                    &request.task_description,
                 ));
 
                 prev_node = Some(node_id);
@@ -244,6 +251,10 @@ impl SimplePlanGenerator {
     }
 
     /// 创建一个节点
+    ///
+    /// `description` 为节点角色说明（如「金融分析专家 (并行)」），
+    /// `task_description` 为任务级描述；后者非空时拼接进节点描述，
+    /// 使真实 LLM 专家在执行时能拿到完整任务内容（否则模型无法分析）。
     fn make_node(
         &self,
         task_id: Uuid,
@@ -251,14 +262,20 @@ impl SimplePlanGenerator {
         expert: &Expert,
         dependencies: Vec<String>,
         description: &str,
+        task_description: &str,
     ) -> Node {
+        let full_description = if task_description.trim().is_empty() {
+            description.to_string()
+        } else {
+            format!("{}。任务描述：{}", description, task_description.trim())
+        };
         Node {
             node_id: node_id.to_string(),
             task_id,
             expert_id: expert.expert_id.clone(),
             module_id: self.expert_to_module.as_ref().and_then(|m| m.get(&expert.expert_id).cloned()),
             name: expert.name.clone(),
-            description: Some(description.to_string()),
+            description: Some(full_description),
             status: NodeStatus::Pending,
             retry_count: 0,
             dependencies,
@@ -335,6 +352,32 @@ mod tests {
         assert!(plan.nodes[0].dependencies.is_empty());
         assert!(plan.nodes[1].dependencies.is_empty());
         assert!(plan.validate().is_ok());
+    }
+
+    #[test]
+    fn test_node_description_embeds_task_description() {
+        // 真实 LLM 专家需要拿到任务内容：节点 description 必须携带任务描述
+        let gen = SimplePlanGenerator::new();
+        let experts = vec![make_matched_expert("e1", "Expert 1", vec!["code"])];
+        let task_desc = "分析某代码仓库的安全风险";
+        let request = PlanGenerationRequest {
+            task_id: Uuid::new_v4(),
+            tenant_id: Uuid::new_v4(),
+            task_description: task_desc.to_string(),
+            preferred_mode: Some(AllianceMode::Parallel),
+            preferred_experts: vec![],
+            constraints: serde_json::json!({}),
+            fusion_strategy: FusionStrategy::Weighted,
+        };
+
+        let plan = gen.generate(&request, &experts).unwrap();
+        let desc = plan.nodes[0].description.clone().unwrap_or_default();
+        assert!(
+            desc.contains(task_desc),
+            "节点描述应包含任务描述，实际: {}",
+            desc
+        );
+        assert!(desc.contains("任务描述"));
     }
 
     #[test]

@@ -12,6 +12,8 @@ serde_yaml = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
+chrono = { workspace = true }
+mox-alliance-common-proto = { path = "../../proto/mox-alliance-common-proto" }
 
 [dev-dependencies]
 serde_json = { workspace = true }

@@ -3,7 +3,7 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-//! Voice 代理（T7）：/voice/** → http://localhost:3717/voice/**
+//! Voice 代理（T7）：/voice/** → http://localhost:30010/voice/**
 //!
 //! 核心实现注意（避免 404 / 405）：
 //! axum 的 `.nest(prefix, router)` 会把匹配到的 prefix 从「内部路径视角」剥离，
@@ -30,7 +30,7 @@ pub struct VoiceProxyState {
 impl Default for VoiceProxyState {
     fn default() -> Self {
         Self {
-            upstream_base: "http://127.0.0.1:3717".to_string(),
+            upstream_base: "http://127.0.0.1:30010".to_string(),
             client: reqwest::Client::builder()
                 .timeout(std::time::Duration::from_secs(30))
                 .build()
@@ -81,7 +81,7 @@ pub async fn voice_proxy_handler(
         }
         other => other.to_string(),
     };
-    // 上游（:3717）FastAPI voice 服务本身前缀匹配 /voice/**，直接透传。
+    // 上游（:30010）FastAPI voice 服务本身前缀匹配 /voice/**，直接透传。
     let upstream = format!("{}{}", state.upstream_base, path_and_query);
 
     let body_bytes = match to_bytes(body, 10 * 1024 * 1024).await {
@@ -156,7 +156,7 @@ fn voice_fallback(base: &str, _hint: String) -> (StatusCode, Json<VoiceFallback>
             ok: false,
             upstream_unreachable: true,
             upstream_base: base.to_string(),
-            error_hint: "xiaobai_voice 服务未启动（端口 3717）",
+            error_hint: "xiaobai_voice 服务未启动（端口 30010）",
             fallback_action: "自动切换：本地浏览器 TTS（Web Speech Synthesis）→ T14 朗读三层回退",
             tts: VoiceFallbackTTS {
                 active: "browser_tts",

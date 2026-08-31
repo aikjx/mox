@@ -23,6 +23,12 @@ use std::str::FromStr;
 
 use serde::Deserialize;
 
+pub mod experts;
+
+pub use experts::{
+    load_experts, ExpertModuleOverlay, ExpertsBootConfig, GlobalLlmOverlay,
+};
+
 /// 环境变量前缀（统一命名空间）
 const ENV_PREFIX: &str = "MOX_ALLIANCE_";
 
@@ -128,6 +134,9 @@ pub struct ExpertServiceSection {
     pub base_url: String,
     /// 专家服务请求超时（毫秒）
     pub timeout_ms: u64,
+    /// 是否启用 HTTP 专家桥接（生产专家服务）。默认关闭；
+    /// 启用后 scheduler 启动时从远程拉取专家并入匹配器，拉取失败优雅降级到内置（不崩溃）。
+    pub enabled: bool,
 }
 
 impl Default for ExpertServiceSection {
@@ -135,6 +144,7 @@ impl Default for ExpertServiceSection {
         Self {
             base_url: "http://localhost:3300".to_string(),
             timeout_ms: 5_000,
+            enabled: false,
         }
     }
 }
@@ -228,34 +238,33 @@ impl Default for ExecutorBootConfig {
 /// - 文件存在但解析失败 → 返回错误（配置错误必须显式暴露，禁止静默吞掉）
 /// - 环境变量 `MOX_ALLIANCE_*` 覆盖 yml 中对应字段
 pub fn load_scheduler(path: &str) -> anyhow::Result<SchedulerBootConfig> {
-    let mut cfg = load_from_file::<SchedulerBootConfig>(path);
+    let mut cfg = load_from_file::<SchedulerBootConfig>(path)?;
     apply_env_overrides_scheduler(&mut cfg);
     Ok(cfg)
 }
 
 /// 从 yml 文件 + 环境变量加载执行器引导配置
 pub fn load_executor(path: &str) -> anyhow::Result<ExecutorBootConfig> {
-    let mut cfg = load_from_file::<ExecutorBootConfig>(path);
+    let mut cfg = load_from_file::<ExecutorBootConfig>(path)?;
     apply_env_overrides_executor(&mut cfg);
     Ok(cfg)
 }
 
-/// 通用文件加载：不存在 → 默认 + 警告；解析失败 → 报错
-fn load_from_file<T: for<'de> Deserialize<'de> + Default>(path: &str) -> T {
+/// 通用文件加载：不存在 → 默认 + 警告；解析失败 → 显式报错（fail-fast）
+fn load_from_file<T: for<'de> Deserialize<'de> + Default>(path: &str) -> anyhow::Result<T> {
     match std::fs::read_to_string(path) {
         Ok(content) => match serde_yaml::from_str::<T>(&content) {
             Ok(cfg) => {
                 tracing::info!("加载配置文件: {path}");
-                cfg
+                Ok(cfg)
             }
-            Err(e) => {
-                tracing::warn!("配置文件 {path} 解析失败（{}），使用内置默认值。", e);
-                T::default()
-            }
+            Err(e) => Err(anyhow::anyhow!(
+                "配置文件 {path} 解析失败：{e}（配置错误必须显式暴露，禁止静默降级为默认值）"
+            )),
         },
         Err(_) => {
             tracing::warn!("配置文件 {path} 不存在，使用内置默认值。");
-            T::default()
+            Ok(T::default())
         }
     }
 }
@@ -279,6 +288,20 @@ fn over_num<T: FromStr + Copy>(base: &mut T, key: &str) {
         match v.parse::<T>() {
             Ok(n) => *base = n,
             Err(_) => tracing::warn!("环境变量 {ENV_PREFIX}{key}='{v}' 解析失败，保持原值。"),
+        }
+    }
+}
+
+/// 布尔环境变量覆盖：接受 true/false/1/0（大小写不敏感），解析失败告警保持原值
+fn over_bool(base: &mut bool, key: &str) {
+    if let Some(v) = env_value(key) {
+        let lowered = v.to_ascii_lowercase();
+        match lowered.as_str() {
+            "true" | "1" => *base = true,
+            "false" | "0" => *base = false,
+            _ => tracing::warn!(
+                "环境变量 {ENV_PREFIX}{key}='{v}' 不是布尔值（true/false/1/0），保持原值。"
+            ),
         }
     }
 }
@@ -307,6 +330,7 @@ fn apply_env_overrides_scheduler(cfg: &mut SchedulerBootConfig) {
     // expert_service
     over_str(&mut cfg.expert_service.base_url, "EXPERT_SERVICE_BASE_URL");
     over_num(&mut cfg.expert_service.timeout_ms, "EXPERT_SERVICE_TIMEOUT_MS");
+    over_bool(&mut cfg.expert_service.enabled, "EXPERT_SERVICE_ENABLED");
     // storage
     over_str(&mut cfg.storage.mode, "STORAGE_MODE");
     over_str(&mut cfg.storage.path, "STORAGE_PATH");
@@ -318,7 +342,20 @@ fn apply_env_overrides_executor(cfg: &mut ExecutorBootConfig) {
     over_str(&mut cfg.server.host, "SERVER_HOST");
     over_num(&mut cfg.server.port, "SERVER_PORT");
     // executor
-    over_str(&mut cfg.executor.mode, "EXECUTOR_MODE");
+    // 执行器模式归一化：优先 `MOX_ALLIANCE_EXECUTOR_MODE`（新）；旧 `EXECUTOR_MODE` 兼容（deprecated，命中即告警并生效）
+    match env_value("EXECUTOR_MODE") {
+        Some(v) if !v.is_empty() => cfg.executor.mode = v,
+        _ => {
+            if let Ok(old) = std::env::var("EXECUTOR_MODE") {
+                if !old.is_empty() {
+                    tracing::warn!(
+                        "环境变量 EXECUTOR_MODE 已废弃，请改用 MOX_ALLIANCE_EXECUTOR_MODE（旧值已生效兼容）"
+                    );
+                    cfg.executor.mode = old;
+                }
+            }
+        }
+    }
     over_num(
         &mut cfg.executor.max_concurrent_nodes,
         "EXECUTOR_MAX_CONCURRENT_NODES",
@@ -352,10 +389,47 @@ mod tests {
         assert_eq!(s.server.port, 3100, "scheduler 核心端口应为 3100");
         assert_eq!(s.executor_bridge.base_url, "http://localhost:3200");
         assert_eq!(s.expert_service.base_url, "http://localhost:3300");
+        assert!(
+            !s.expert_service.enabled,
+            "HTTP 专家桥接默认应关闭（expert_service.enabled=false）"
+        );
         let e = ExecutorBootConfig::default();
         assert_eq!(e.server.port, 3200, "executor 核心端口应为 3200");
         assert_eq!(e.executor.mode, "expert", "生产默认应为 expert 模式");
     }
+
+    /// expert_service.enabled 环境变量覆盖（布尔解析）
+    #[test]
+    fn expert_service_enabled_env_override() {
+        std::env::set_var("MOX_ALLIANCE_EXPERT_SERVICE_ENABLED", "true");
+        let mut cfg = SchedulerBootConfig::default();
+        apply_env_overrides_scheduler(&mut cfg);
+        assert!(cfg.expert_service.enabled, "env=true 应启用 HTTP 专家桥接");
+        std::env::set_var("MOX_ALLIANCE_EXPERT_SERVICE_ENABLED", "0");
+        let mut cfg = SchedulerBootConfig::default();
+        apply_env_overrides_scheduler(&mut cfg);
+        assert!(!cfg.expert_service.enabled, "env=0 应保持关闭");
+        std::env::remove_var("MOX_ALLIANCE_EXPERT_SERVICE_ENABLED");
+    }
+
+    /// 配置解析失败必须显式报错（fail-fast，禁止静默降级为默认值）
+    #[test]
+    fn invalid_yaml_fails_fast() {
+        let dir = std::env::temp_dir().join(format!("bootcfg_failfast_{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let p = dir.join("bad.yml");
+        std::fs::write(&p, "server: [unclosed\n  bad: {").unwrap();
+        let r = load_scheduler(p.to_str().unwrap());
+        assert!(
+            r.is_err(),
+            "配置文件存在但解析失败时应返回错误（fail-fast），不得静默降级"
+        );
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// 旧环境变量 EXECUTOR_MODE 兼容但标记 deprecated（新变量优先）
+    /// 注：该测试涉及全局 env 读写，与同文件内其他测试并行会竞态，
+    ///     故实现于 `tests/env_deprecated.rs`（独立进程隔离）。
 
     /// 环境变量覆盖生效
     #[test]

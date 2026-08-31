@@ -3,7 +3,8 @@ import http from './http'
 
 export const getLlmProviders = () => http.get('/llm/providers')
 export const getLlmProviderPresets = () => http.get('/llm/providers/presets')
-export const getLlmPresets = () => http.get('/llm/providers/presets')
+/** @deprecated 与 getLlmProviderPresets 同端点 */
+export const getLlmPresets = getLlmProviderPresets
 export const getLlmProvider = (id) => http.get(`/llm/providers/${encodeURIComponent(id)}`)
 export const setActiveProvider = (providerId) => http.post('/llm/providers/active', { provider_id: providerId })
 export const addLlmProvider = (payload) => http.post('/llm/providers', payload)

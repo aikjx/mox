@@ -1,0 +1,183 @@
+﻿==========================================================================================
+搜索端口: 3717
+==========================================================================================
+  platform_config.json:72 :: "description": "本地离线语音：Paraformer ASR / CosyVoice2 TTS（豆包级动听女声，Apache2）；端口 3717，供 Rust 网关 /voice/** 代理调用。AI 对话页面朗读第一层必命中；权重缺失时自动切浏览器拟人音兜底。",
+  platform_config.json:73 :: "port": 3717,
+  platform_config.json:368 :: "_probe3717.py",
+  docs/ARCHITECTURE_SAAS_PRIVATE.md:81 :: ├─► L1: GET /voice/tts/stream?(Vite proxy → :3001 voice_proxy → :3717)
+  docs/ARCHITECTURE_SAAS_PRIVATE.md:88 :: ### 2.2 TTS 子系统内部链路（xiaobai_voice :3717）
+  docs/ARCHITECTURE_SAAS_PRIVATE.md:133 :: | 语音服务 | xiaobai_voice 独立 Deployment（auto_start=true，port=3717） | 同上，单机监听 `127.0.0.1:3717` |
+  docs/architecture/14-REPOSITORY-FULL-MAP.md:137 :: | `xiaobai_voice/` | Python 语音应用 | **璇玑离线语音 & 桌面小白 AI 助手**。ASR=Paraformer-zh+sherpa-onnx（离线 CPU）；TTS=Fish-Speech-S2-Pro（默认）→CosyVoice2（信创回退）→浏览器 SpeechSynthesis
+  docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.1-补充修订版.md:131 :: | xiaobai_voice | 有（端口 3717，python -m xiaobai_voice serve，auto_start=true） | 完全缺失 |
+  docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.1-补充修订版.md:160 :: | 1.5 | **修复 P2-5 服务定义双源** | [service-manager.js](platform/backend-node/src/service-manager.js) + [platform_config.json](platform_config.json) | ① 删 `SERVICE_DE
+  docs/ports/PORT-REGISTRY.md:17 :: | **RUNTIME** | 由 `scripts/server-manage.py` 统一管理、`platform_config.json` 登记的**当前运行服务** | 8080 / 3020 / 3717 / 8012 / 8000 / 3999 |
+  docs/ports/PORT-REGISTRY.md:33 :: | **xiaobai_voice**（ASR+TTS） | **3717** | HTTP/WS | 127.0.0.1 | `http://localhost:3717/voice/health` | `projects/xiaobai_voice/xiaobai_voice/config/default_conf
+  docs/ports/PORT-REGISTRY.md:51 :: | 3717 | `xiaobai_voice` | 小白语音服务（ASR + TTS） | HTTP/WS | 127.0.0.1 | `/voice/health` | 🟢运行中 |
+  docs/ports/PORT-REGISTRY.md:56 :: > **依赖关系**：`frontend`(3020) `depends_on` `api`(8080)；`api` 的 `/voice/**` 路由代理到 `xiaobai_voice`(3717)。
+  docs/ports/PORT-REGISTRY.md:202 :: | `scripts/validation/verify_tts_rust_fullstack.py` | E-4 三层代理链 `:3021 -> :3001 -> :3717` | `:3020 -> :8080 -> :3717` |
+  docs/ports/PORT-REGISTRY.md:206 :: - **xiaobai_voice 3717 → 30010**：PORT-NORM-001 4.2 规划迁移（小服务归 30000+ 段），当前仍为 3717，迁移需同步全链路（`platform_config.json`、orchestrator voice 代理、前端代理、桌面端配置）。
+  docs/standards/expert-alliance-port-norm.md:104 :: | **30010** | 语音服务（xiaobai_voice，原 3717） | **规划迁移**（落段 30010） |
+  docs/standards/expert-alliance-port-norm.md:107 :: > 迁移说明：语音服务为辅助小服务，按本规范应落入 30000+ 段。当前物理端口仍为 3717（Node.js 平台 `platform_config.json` 配置），**纳入迁移计划**，迁移时同步更新本文档与 `docs/expert-alliance/00-INTEGRATED-INDEX.md`。
+  docs/standards/expert-alliance-port-norm.md:130 :: | 语音服务 xiaobai_voice | 3717 | 30010（规划） | 小服务归 30000+ 段 | `platform_config.json`（待迁移） |
+  frontend-ui/vite.config.js:94 :: // /voice/* → xiaobai_voice 服务代理（公开端点，3717 不可达时网关返回降级 JSON）
+  platform/domains/CODE_QUALITY_REVIEW.md:90 :: - 含 voice_proxy 3717 HTTP 服务（axum + WebSocket）
+  platform/domains/CODE_QUALITY_REVIEW.md:92 :: - feature-gate 设计合理（server-3717、voice-engine）
+  platform/domains/platform/svc/mox-platform-orchestrator-svc/src/main.rs:622 :: // ========== T7 FR-GW-04：Voice 代理 /voice/** → :3717 ==========
+  platform/domains/platform/svc/mox-platform-orchestrator-svc/src/main.rs:623 :: // 3717 不可达时自动回退到 browser_tts JSON（AC-22 标准），避免 502 炸前端。
+  platform/domains/platform/svc/mox-platform-orchestrator-svc/src/subservers.rs:167 :: url: "http://127.0.0.1:3717".into(),
+  platform/domains/platform/svc/mox-platform-orchestrator-svc/src/subservers.rs:205 :: fn at_least_two_subservers_and_voice_3717() {
+  platform/domains/platform/svc/mox-platform-orchestrator-svc/src/subservers.rs:213 :: voice.url.contains("3717"),
+  platform/domains/platform/svc/mox-platform-orchestrator-svc/src/subservers.rs:214 :: "voice URL 必须是 3717：{}",
+  platform/domains/platform/svc/mox-platform-orchestrator-svc/src/routes/voice_proxy.rs:6 :: //! Voice 代理（T7）：/voice/** → http://localhost:3717/voice/**
+  platform/domains/platform/svc/mox-platform-orchestrator-svc/src/routes/voice_proxy.rs:33 :: upstream_base: "http://127.0.0.1:3717".to_string(),
+  platform/domains/platform/svc/mox-platform-orchestrator-svc/src/routes/voice_proxy.rs:84 :: // 上游（:3717）FastAPI voice 服务本身前缀匹配 /voice/**，直接透传。
+  platform/domains/platform/svc/mox-platform-orchestrator-svc/src/routes/voice_proxy.rs:159 :: error_hint: "xiaobai_voice 服务未启动（端口 3717）",
+  platform/domains/voice/svc/mox-voice-desktop-app/Cargo.toml:7 :: description = "Xiaobai · 桌面小白助手 BallWidget（Slint 骨架 + 5 状态机）+ 启动 voice_proxy 3717 服务"
+  platform/domains/voice/svc/mox-voice-desktop-app/Cargo.toml:11 :: mox-voice-operator-svc = { workspace = true, features = ["server-3717", "voice-engine"] }
+  platform/domains/voice/svc/mox-voice-desktop-app/Cargo.toml:34 :: # 3717 voice_proxy HTTP 服务（与 mox-voice-operator-svc::server_3717 同用）
+  platform/domains/voice/svc/mox-voice-desktop-app/src/ball_widget.rs:123 :: /// DesktopApp 顶层对象：组合 StateController + 启动 :3717 服务（后台线程）
+  platform/domains/voice/svc/mox-voice-desktop-app/src/ball_widget.rs:127 :: /// voice_proxy 3717 后台线程句柄（Drop 时 join）
+  platform/domains/voice/svc/mox-voice-desktop-app/src/ball_widget.rs:140 :: /// 在后台线程启动 :3717 voice_proxy（返回 SocketAddr 方便前端连）
+  platform/domains/voice/svc/mox-voice-desktop-app/src/ball_widget.rs:142 :: use mox_voice_operator_svc::server_3717::{run_service_blocking, VoiceServiceConfig};
+  platform/domains/voice/svc/mox-voice-desktop-app/src/ball_widget.rs:146 :: .name("xiaobai-voice-3717".into())
+  platform/domains/voice/svc/mox-voice-desktop-app/src/ball_widget.rs:149 :: warn!(target: "xiaobai_widget", "voice 3717 服务异常退出：{e:#}");
+  platform/domains/voice/svc/mox-voice-desktop-app/src/ball_widget.rs:156 :: /// 快捷：本地文本端到端（等价 curl http://127.0.0.1:3717/voice/dispatch_text）
+  platform/domains/voice/svc/mox-voice-desktop-app/src/ball_widget.rs:159 :: use mox_voice_operator_svc::server_3717::{VoiceServiceConfig, XiaobaiVoiceService};
+  platform/domains/voice/svc/mox-voice-desktop-app/src/ball_widget.rs:220 :: use mox_voice_operator_svc::server_3717::{VoiceServiceConfig, XiaobaiVoiceService};
+  platform/domains/voice/svc/mox-voice-desktop-app/src/ball_widget.rs:258 :: use mox_voice_operator_svc::server_3717::{VoiceServiceConfig, XiaobaiVoiceService};
+  platform/domains/voice/svc/mox-voice-desktop-app/src/lib.rs:10 :: //! - `DesktopApp` 负责：spawn voice_proxy 3717 服务 → BallWidget 事件 loop → 回调 dispatch_text
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs:12 :: //!   - 后台启动 voice_proxy :3717，供 Rust 网关 /voice/** 代理
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs:72 :: about = "🚀 桌面小白助手 · Rust 全栈 3D 悬浮球 + voice_proxy 3717 + 8 大类算子 + 语音闭环（Paraformer ASR / Kokoro TTS）",
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs:102 :: /// 诊断：在独立线程内做一次 TTS 合成（模拟 3717 跨线程调用）
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs:105 :: /// 不 spawn :3717 HTTP 服务
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs:200 :: use mox_voice_operator_svc::server_3717::{VoiceServiceConfig, XiaobaiVoiceService};
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs:278 :: use mox_voice_operator_svc::server_3717::{VoiceServiceConfig, XiaobaiVoiceService};
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs:359 :: use mox_voice_operator_svc::server_3717::{VoiceServiceConfig, XiaobaiVoiceService};
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs:491 :: // ---- voice_proxy :3717 后台启动（供 Rust 网关 /voice/** 代理，注入语音引擎）----
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs:493 :: let cfg = mox_voice_operator_svc::server_3717::VoiceServiceConfig::default();
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs:496 :: let eng_for_3717 = engine.clone();
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs:498 :: .name("voice-3717".into())
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs:505 :: use mox_voice_operator_svc::server_3717::{build_router, VoiceServiceConfig, XiaobaiVoiceService};
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs:507 :: if let Some(ve) = &eng_for_3717 {
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs:509 :: tracing::info!(target: "xiaobai_voice", "3717 已挂载语音引擎（/v1/tts、/v1/asr 可用）");
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs:513 :: .expect("3717 bind 失败");
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs:514 :: tracing::info!(target: "xiaobai_cli", "voice_proxy :3717 后台启动 → {addr_cb}");
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs:521 :: eprintln!("voice 3717 服务异常退出: {e:#}");
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs:525 :: tracing::info!(target: "xiaobai_cli", "voice_proxy :3717 线程已派发 → {addr}");
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs:710 :: use mox_voice_operator_svc::server_3717::{VoiceServiceConfig, XiaobaiVoiceService};
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs:732 :: // 诊断：独立线程内 TTS 合成（模拟 3717 跨线程调用）
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs.bak_mojibake:12 :: //!   - 鍚庡彴鍚姩 voice_proxy :3717锛屼緵 Rust 缃戝叧 /voice/** 浠ｇ悊
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs.bak_mojibake:64 :: about = "馃殌 妗岄潰灏忕櫧鍔╂墜 路 Rust 鍏ㄦ爤 3D 鎮诞鐞?+ voice_proxy 3717 + 8 澶х被绠楀瓙锛團R-13锛?,
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs.bak_mojibake:91 :: /// 涓?spawn :3717 HTTP 鏈嶅姟
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs.bak_mojibake:148 :: use mox_voice_operator_svc::server_3717::{VoiceServiceConfig, XiaobaiVoiceService};
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs.bak_mojibake:218 :: use mox_voice_operator_svc::server_3717::{VoiceServiceConfig, XiaobaiVoiceService};
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs.bak_mojibake:273 :: use mox_voice_operator_svc::server_3717::{VoiceServiceConfig, XiaobaiVoiceService};
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs.bak_mojibake:530 :: use mox_voice_operator_svc::server_3717::{VoiceServiceConfig, XiaobaiVoiceService};
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs.bak_mojibake:586 :: // GUI 榛樿锛氬厛鐢ㄤ富 tokio runtime 鍚庡彴鍚姩 voice_proxy :3717锛堜緵 Rust 缃戝叧 /voice/** 浠ｇ悊锛?
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs.bak_mojibake:588 :: let cfg = mox_voice_operator_svc::server_3717::VoiceServiceConfig::default();
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs.bak_mojibake:591 :: if let Err(e) = mox_voice_operator_svc::server_3717::serve(cfg).await {
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs.bak_mojibake:592 :: eprintln!("voice 3717 鏈嶅姟寮傚父閫€鍑? {e:#}");
+  platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs.bak_mojibake:595 :: tracing::info!(target: "xiaobai_cli", "voice_proxy :3717 鍚庡彴鍚姩 鈫?{addr}");
+  platform/domains/voice/svc/mox-voice-operator-svc/Cargo.toml:35 :: # --- voice_proxy 3717 服务（feature gate，避免非服务端程序拉 axum/ws）
+  platform/domains/voice/svc/mox-voice-operator-svc/Cargo.toml:42 :: # 3717 服务依赖 xiaobai-intent（PPR 路由）和 xiaobai-asr（FR-5 热词注入）
+  platform/domains/voice/svc/mox-voice-operator-svc/Cargo.toml:53 :: server-3717 = [
+  platform/domains/voice/svc/mox-voice-operator-svc/README.md:12 :: - **3717 端口服务**（feature `server-3717`）：完整 HTTP 服务、路由构建与阻塞运行
+  platform/domains/voice/svc/mox-voice-operator-svc/README.md:41 :: - `server-3717` — 启用 3717 端口 HTTP 服务
+  platform/domains/voice/svc/mox-voice-operator-svc/README.md:66 :: 启动 HTTP 服务（需 feature `server-3717`）：
+  platform/domains/voice/svc/mox-voice-operator-svc/README.md:101 :: ### 3717 服务（feature = "server-3717"）
+  platform/domains/voice/svc/mox-voice-operator-svc/README.md:102 :: - `server_3717::XiaobaiVoiceService` — 小白语音服务
+  platform/domains/voice/svc/mox-voice-operator-svc/README.md:103 :: - `server_3717::VoiceServiceConfig` — 服务配置
+  platform/domains/voice/svc/mox-voice-operator-svc/README.md:104 :: - `server_3717::serve` — 启动服务（async）
+  platform/domains/voice/svc/mox-voice-operator-svc/README.md:105 :: - `server_3717::build_router` — 构建 Axum 路由
+  platform/domains/voice/svc/mox-voice-operator-svc/README.md:106 :: - `server_3717::run_service_blocking` — 阻塞式运行服务
+  platform/domains/voice/svc/mox-voice-operator-svc/src/lib.rs:29 :: #[cfg(feature = "server-3717")]
+  platform/domains/voice/svc/mox-voice-operator-svc/src/lib.rs:30 :: pub mod server_3717;
+  platform/domains/voice/svc/mox-voice-operator-svc/src/lib.rs:54 :: #[cfg(feature = "server-3717")]
+  platform/domains/voice/svc/mox-voice-operator-svc/src/lib.rs:55 :: pub use server_3717::{XiaobaiVoiceService, VoiceServiceConfig, serve, build_router, run_service_blocking};
+  platform/domains/voice/svc/mox-voice-operator-svc/src/network.rs:363 :: let sample = "  TCP    0.0.0.0:3717           0.0.0.0:0              LISTENING       8812\r\n  TCP    127.0.0.1:8307         127.0.0.1:63001        ESTABLISHED 
+  platform/domains/voice/svc/mox-voice-operator-svc/src/server_3717.rs:6 :: //! # voice_proxy Rust 版 3717 服务（Feature = server-3717）
+  platform/domains/voice/svc/mox-voice-operator-svc/src/server_3717.rs:8 :: //! 提供 Python `service/app.py FastAPI` 在 `:3717` 的等价 1:1 HTTP + WS 端点，
+  platform/domains/voice/svc/mox-voice-operator-svc/src/server_3717.rs:56 :: bind: "127.0.0.1:3717".parse().unwrap(),
+  platform/domains/voice/svc/mox-voice-operator-svc/src/server_3717.rs:57 :: default_identity: OperatorIdentity::new("voice_user_3717", RoleTag::Member, false),
+  platform/domains/voice/svc/mox-voice-operator-svc/src/server_3717.rs:507 :: /// 阻塞启动：等价 Python `uvicorn.run(app, host=..., port=3717)`
+  platform/domains/voice/svc/mox-voice-operator-svc/src/server_3717.rs:512 :: category: "server".into(), action: "serve_3717".into(), detail: format!("bind 失败：{e}"),
+  platform/domains/voice/svc/mox-voice-operator-svc/src/server_3717.rs:518 :: category: "server".into(), action: "serve_3717".into(), detail: format!("serve error：{e}"),
+  projects/xiaobai_voice/README.md:7 :: > 端口：语音服务默认 **3717**；前端 Vite dev server 走 `/voice` proxy
+  projects/xiaobai_voice/README.md:25 :: # 4. 启动语音服务（端口 3717）
+  projects/xiaobai_voice/xiaobai_voice/cli.py:260 :: "MOX_VOICE_PORT": "3717",
+  projects/xiaobai_voice/xiaobai_voice/cli.py:379 :: p.add_argument("--port", type=int, default=int(os.environ.get("MOX_VOICE_PORT") or 3717))
+  projects/xiaobai_voice/xiaobai_voice/cli.py:384 :: p.add_argument("--port", type=int, default=int(os.environ.get("MOX_VOICE_PORT") or 3717))
+  projects/xiaobai_voice/xiaobai_voice/__init__.py:10 :: service : FastAPI + WebSocket 语音服务，默认端口 3717
+  projects/xiaobai_voice/xiaobai_voice/config/default_config.yaml:4 :: port: 3717
+  projects/xiaobai_voice/xiaobai_voice/desktop/app.py:38 :: port = int(getattr(args, "port", 0) or int(loader.get("voice.port") or 3717))
+  projects/xiaobai_voice/xiaobai_voice/desktop/ball_widget.py:531 :: # POST /voice/asr/full（先 127.0.0.1:3717，不经过 vite proxy）
+  projects/xiaobai_voice/xiaobai_voice/desktop/ball_widget.py:538 :: port = ctx.port if ctx else 3717
+  projects/xiaobai_voice/xiaobai_voice/desktop/ball_widget.py:540 :: port = 3717
+  projects/xiaobai_voice/xiaobai_voice/desktop/main_window.py:20 :: self.port = int(port or 3717)
+  projects/xiaobai_voice/xiaobai_voice/desktop/main_window.py:57 :: tip = QtWidgets.QLabel("桌面小白需要同时运行前端（http://localhost:3020/#/ai）和语音服务（3717）。\n请选择：")
+  projects/xiaobai_voice/xiaobai_voice/proxy/voice_proxy.py:7 :: voice_service（本桥暴露）默认 HTTP/WS = 3717（与现有 FastAPI 语音服务端口一致，同端点多协议）
+  projects/xiaobai_voice/xiaobai_voice/service/main.py:1 :: """FastAPI 语音服务（端口 3717 默认）。路由矩阵：/voice/health /voice/models /voice/models/download /voice/models/download/stream(SSE) /voice/ws/asr/stream /voice/asr/full /voi
+  projects/xiaobai_voice/xiaobai_voice/service/main.py:593 :: def run_server(host: str = "127.0.0.1", port: int = 3717, log_level: str = "info") -> None:
+  scripts/README.md:38 :: ├── _probe3717.py
+  scripts/README.md:82 :: | xiaobai_voice | 小白语音服务（ASR + TTS） | 3717 | Python | ✅ |
+  scripts/server-manage.py:129 :: "description": "本地离线语音：Paraformer ASR / CosyVoice2 TTS；端口 3717",
+  scripts/server-manage.py:130 :: "port": 3717,
+  scripts/verify-ports.py:43 :: 3717: ("RUNTIME", "xiaobai_voice（ASR+TTS）"),
+  scripts/verify-ports.py:143 :: "api": 8080, "frontend": 3020, "xiaobai_voice": 3717,
+  scripts/validation/fix_pass2.py:8 :: pathlib.Path(r"d:\a10\aikjx\gitcode\infotopograph\platform\crates\xiaobai-operators\src\server_3717.rs"),
+  scripts/validation/verify_tts_rust_fullstack.py:5 :: E-3 直连 :3717 合成中文 → x-tts-engine=cosyvoice2 + WAV meta 22050Hz + _last_dsp_impl=Rust
+  scripts/validation/verify_tts_rust_fullstack.py:6 :: E-4 三层代理 :3020 -> :8080 -> :3717 /voice/tts/stream
+  scripts/validation/verify_tts_rust_fullstack.py:145 :: name = "E-2 健康检查(voice:3717)"
+  scripts/validation/verify_tts_rust_fullstack.py:256 :: base = "http://localhost:3717"
+  scripts/validation/verify_tts_rust_fullstack.py:259 :: name = "E-3 直连 :3717 合成"
+  scripts/validation/verify_tts_rust_fullstack.py:277 :: name = "E-4 三层代理 :3020 -> :8080 -> :3717"
+  scripts/validation/verify_tts_rust_fullstack.py:383 :: case_e2_health("http://localhost:3717", results)
+  共 131 处
+==========================================================================================
+搜索端口: 3010
+==========================================================================================
+  deploy/docs/FS-S3-full-lifecycle-ops-guide.md:251 :: curl -s http://localhost:3010/storage/status | jq .
+  deploy/docs/FS-S3-full-lifecycle-ops-guide.md:296 :: curl -s http://localhost:3010/storage/status | jq .features
+  deploy/docs/FS-S3-full-lifecycle-ops-guide.md:390 :: curl -s http://localhost:3010/storage/files/stats | jq .
+  deploy/docs/FS-S3-full-lifecycle-ops-guide.md:439 :: curl -s -X POST -F "file=@./test-12m.bin" http://localhost:3010/storage/files/upload \
+  deploy/docs/FS-S3-full-lifecycle-ops-guide.md:615 :: kubectl exec -n mox-system $POD -- curl -sS -X POST http://localhost:3010/storage/migrate \
+  deploy/docs/FS-S3-full-lifecycle-ops-guide.md:680 :: curl -sS -X POST http://localhost:3010/storage/files/backend/verify \
+  docs/mox-relgraph-product-handbook-v3.md:384 :: curl -X POST http://127.0.0.1:3010/internal/intent \
+  docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.1-补充修订版.md:128 :: | api 端口 | 3010 | 3010（一致） |
+  docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.1-补充修订版.md:160 :: | 1.5 | **修复 P2-5 服务定义双源** | [service-manager.js](platform/backend-node/src/service-manager.js) + [platform_config.json](platform_config.json) | ① 删 `SERVICE_DE
+  docs/expert-alliance/00-INTEGRATED-INDEX.md:214 :: | **Node.js平台层** | Node.js (Express) | :3010 | **15位**默认专家 | `platform/backend-node/`（23个业务域） | business-process-flowcharts.md第九章、集成对齐报告 | 较早实现，包含专家联盟、AI引擎、知识图谱
+  docs/expert-alliance/02-DUAL-PLATFORM-RELATIONSHIP.md:25 :: | 监听端口 | `:3010` | `:3100`（scheduler-svc）/ `:3200`（executor-svc） |
+  docs/expert-alliance/02-DUAL-PLATFORM-RELATIONSHIP.md:77 :: - Node.js 层（:3010）和 Rust alliance 域（:3100/:3200）各自独立启动、独立监听。
+  docs/expert-alliance/02-DUAL-PLATFORM-RELATIONSHIP.md:79 :: - `/ai/engine/*`、`/experts/*`、`/ai/chat` → Node.js 层（:3010）
+  docs/expert-alliance/02-DUAL-PLATFORM-RELATIONSHIP.md:100 :: (:3010)   (:3100)      (:3200)       (融合)
+  docs/expert-alliance/03-GLOSSARY.md:145 :: | **定义** | 专家联盟当前存在Node.js平台层（`platform/backend-node/`，端口3010）与Rust alliance域（`platform/domains/alliance/`，端口3100/3200）两套并行实现的架构状态。两层独立部署，通过网关路由协调，长期目标是逐步迁移至Rus
+  docs/modules/ai-flow-graph-design.md:257 :: 预览地址：`http://localhost:3010/ai/engine/auto-dev/preview/site-corp-site/index.html`
+  docs/modules/business-process-flowcharts.md:330 :: > 第 1~8 章描述 Rust 层（crates）业务流程引擎；本章统一整理 **Node 平台层**（`platform/backend-node`，端口 3010）的业务功能全景、流程图拆分/整合机制与前端可视化入口，消除"两层各说各话"的混乱。
+  docs/modules/business-process-flowcharts.md:337 :: | Node 平台层 | `platform/backend-node/src` | 3010 | AI 引擎统一编排 + 专家联盟协作 + 知识图谱 + 流程图谱（本章） |
+  docs/ports/PORT-REGISTRY.md:21 :: | **DEPRECATED** | 已退役/历史端口，**禁止新服务复用** | 3010 / 3021 |
+  docs/ports/PORT-REGISTRY.md:98 :: | 3010 | Node.js 平台 API / Node sidecar（`platform/backend-node`） | `backend-node` 已删除 | orchestrator 侧车 fallback 默认仍写 `127.0.0.1:3010`（休眠路径，见 §6.3） |
+  docs/ports/PORT-REGISTRY.md:191 :: | `start.sh` | `API_PORT=3010`（硬编码，与 api=8080 冲突） | 从 `platform_config.json` 读取（回退 8080） |
+  docs/ports/PORT-REGISTRY.md:192 :: | `scripts/deploy/start.ps1` | 提示 `api:3010 / localhost:3010/health` | 从 `platform_config.json` 读取 api/frontend 端口 |
+  docs/ports/PORT-REGISTRY.md:195 :: | `docs/standards/expert-alliance-port-norm.md` | Node api 记 `3010 已启用`（实为 Rust 网关 8080 例外） | 3010 标退役、新增 8080 例外登记（注 2.1a） |
+  docs/ports/PORT-REGISTRY.md:196 :: | `shared/constants/index.js` | `SERVICE_PORTS`：gateway:3000 / nodeBackend:3010 / frontendUI:3021（旧 Node 架构残留） | gateway:8080 / nodeBackend:0(退役) / frontendUI:3
+  docs/ports/PORT-REGISTRY.md:197 :: | `shared/schemas/config.js` | local-engine LLM 模板 endpoint `http://localhost:3010/api/local` | `http://localhost:8080/api/local` |
+  docs/ports/PORT-REGISTRY.md:207 :: - **orchestrator-svc 侧车 fallback `127.0.0.1:3010`**：`platform/domains/platform/svc/mox-platform-orchestrator-svc/src/main.rs` L572 默认值指向已删除的 Node sidecar（backen
+  docs/standards/engine-universe.md:221 :: curl http://localhost:3010/engine-universe/verify   # 113 项运行时检查
+  docs/standards/expert-alliance-port-norm.md:47 :: | **3010** | Node.js 平台 API（api） | 平台层（30xx） | Node.js 层统一入口（Express）；已由 Rust 网关 **:8080** 取代 | 已退役 |
+  docs/standards/expert-alliance-port-norm.md:96 :: | 30100–30199 | 领域插件（按 31-39 领域细分） | 金融插件、医学插件 |
+  docs/standards/expert-alliance-port-norm.md:129 :: | Node.js api / frontend | 3010 / 3020 | api 退役→Rust 网关 **8080**（例外）；frontend 3020 不变 | Node BFF 迁移至 Rust 网关（8080 例外见 2.1a） | `platform_config.json`、`vite.confi
+  frontend-ui/test-api.html:9 :: const res = await fetch("http://localhost:3010/ai/chat", {
+  platform/domains/platform/svc/mox-platform-orchestrator-svc/src/main.rs:572 :: .unwrap_or_else(|_| "http://127.0.0.1:3010".to_string()),
+  platform/domains/platform/svc/mox-platform-orchestrator-svc/src/handlers/ai_engine.rs:273 :: sidecar: Arc::new(NodeSidecarClient::new("http://127.0.0.1:3010")),
+  platform/domains/platform/svc/mox-platform-orchestrator-svc/src/sidecar/mod.rs:7 :: //!   - node_sidecar：Node 127.0.0.1:3010 内部 API 调用（含 fallback 与指标）
+  platform/domains/platform/svc/mox-platform-orchestrator-svc/src/sidecar/node_sidecar.rs:6 :: //! Node sidecar 客户端：本地 127.0.0.1:3010 的内部 endpoints（/internal/intent, /internal/graph-algo, /internal/graph/list, /internal/file/list ...）
+  projects/melody2score/results/classic_results.json:6 :: "mean_pitch_class_acc": 0.7630105052899171,
+  reports/markdown/质量联盟总报告-V1.0.md:144 :: - `/api` 代理 → `localhost:3010`；`/ws` HITL 审批 WS → Rust Gateway（3001）✅
+  scripts/verify-ports.py:67 :: 3010: ("DEPRECATED", "Node.js API / Node sidecar（backend-node 已删除）"),
+  scripts/verify-ports.py:125 :: # 3010 相关：orchestrator 内嵌 Node 侧车代码（backend-node 已删除，属休眠路径，见 PORT-REGISTRY-001 §6.3）
+  scripts/verify-ports.py:128 :: ("platform/domains/platform/svc/mox-platform-orchestrator-svc/src/main.rs", 3010): "orchestrator Node 侧车 fallback（休眠路径）",
+  scripts/verify-ports.py:129 :: ("platform/domains/platform/svc/mox-platform-orchestrator-svc/src/handlers/ai_engine.rs", 3010): "orchestrator Node 侧车 fallback（休眠路径）",
+  scripts/verify-ports.py:130 :: ("platform/domains/platform/svc/mox-platform-orchestrator-svc/src/sidecar/mod.rs", 3010): "orchestrator Node 侧车（休眠路径）",
+  scripts/verify-ports.py:131 :: ("platform/domains/platform/svc/mox-platform-orchestrator-svc/src/sidecar/node_sidecar.rs", 3010): "orchestrator Node 侧车（休眠路径）",
+  shared/constants/index.js:24 :: nodeBackend: 0,         // Node API / sidecar 已退役（3010 停用，backend-node 已删除）
+  共 44 处

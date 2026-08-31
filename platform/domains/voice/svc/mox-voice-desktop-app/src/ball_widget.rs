@@ -120,11 +120,11 @@ impl Default for StateController {
     fn default() -> Self { Self::new() }
 }
 
-/// DesktopApp 顶层对象：组合 StateController + 启动 :3717 服务（后台线程）
+/// DesktopApp 顶层对象：组合 StateController + 启动 :30010 服务（后台线程）
 pub struct DesktopApp {
     pub state: StateController,
     pub mode: WidgetMode,
-    /// voice_proxy 3717 后台线程句柄（Drop 时 join）
+    /// voice_proxy 30010 后台线程句柄（Drop 时 join）
     server_thread: Option<std::thread::JoinHandle<()>>,
 }
 
@@ -137,26 +137,26 @@ impl DesktopApp {
         }
     }
 
-    /// 在后台线程启动 :3717 voice_proxy（返回 SocketAddr 方便前端连）
+    /// 在后台线程启动 :30010 voice_proxy（返回 SocketAddr 方便前端连）
     pub fn spawn_voice_server_background(&mut self) -> Result<String, Box<dyn std::error::Error>> {
-        use mox_voice_operator_svc::server_3717::{run_service_blocking, VoiceServiceConfig};
+        use mox_voice_operator_svc::server_30010::{run_service_blocking, VoiceServiceConfig};
         let cfg = VoiceServiceConfig::default();
         let addr = cfg.bind.to_string();
         let jh = std::thread::Builder::new()
-            .name("xiaobai-voice-3717".into())
+            .name("xiaobai-voice-30010".into())
             .spawn(move || {
                 if let Err(e) = run_service_blocking(cfg) {
-                    warn!(target: "xiaobai_widget", "voice 3717 服务异常退出：{e:#}");
+                    warn!(target: "xiaobai_widget", "voice 30010 服务异常退出：{e:#}");
                 }
             })?;
         self.server_thread = Some(jh);
         Ok(addr)
     }
 
-    /// 快捷：本地文本端到端（等价 curl http://127.0.0.1:3717/voice/dispatch_text）
+    /// 快捷：本地文本端到端（等价 curl http://127.0.0.1:30010/voice/dispatch_text）
     /// 为避免依赖 HTTP 客户端，直接 new 一个 XiaobaiVoiceService 做 in-process dispatch
     pub async fn dispatch_local_text(&self, text: &str) -> Result<serde_json::Value, mox_voice_core_svc::errors::XiaobaiError> {
-        use mox_voice_operator_svc::server_3717::{VoiceServiceConfig, XiaobaiVoiceService};
+        use mox_voice_operator_svc::server_30010::{VoiceServiceConfig, XiaobaiVoiceService};
         let cfg = VoiceServiceConfig::default();
         let svc = XiaobaiVoiceService::new(cfg)?;
         self.state.transition(BallWidgetState::Think);
@@ -217,7 +217,7 @@ mod t {
 
     #[test]
     fn registered_actions_cover_8_categories_min_30_total() {
-        use mox_voice_operator_svc::server_3717::{VoiceServiceConfig, XiaobaiVoiceService};
+        use mox_voice_operator_svc::server_30010::{VoiceServiceConfig, XiaobaiVoiceService};
         use mox_voice_core_svc::operator::OperatorCategory;
 
         let svc = XiaobaiVoiceService::new(VoiceServiceConfig::default())
@@ -255,7 +255,7 @@ mod t {
         // 端到端 in-process：文本 → 热词 S3 → PPR 路由 → RBAC → Network::ping 算子
         // 设计为 CI 安全：若 ping 命令不可用（CI 沙箱）则仅打印警告不 panic；
         // 若执行成功则强断言 action/category 匹配。
-        use mox_voice_operator_svc::server_3717::{VoiceServiceConfig, XiaobaiVoiceService};
+        use mox_voice_operator_svc::server_30010::{VoiceServiceConfig, XiaobaiVoiceService};
 
         let svc = XiaobaiVoiceService::new(VoiceServiceConfig::default()).unwrap();
         let result = tokio::time::timeout(

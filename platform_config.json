@@ -69,8 +69,8 @@
     },
     "xiaobai_voice": {
       "name": "小白语音服务（ASR + TTS）",
-      "description": "本地离线语音：Paraformer ASR / CosyVoice2 TTS（豆包级动听女声，Apache2）；端口 3717，供 Rust 网关 /voice/** 代理调用。AI 对话页面朗读第一层必命中；权重缺失时自动切浏览器拟人音兜底。",
-      "port": 3717,
+      "description": "本地离线语音：Paraformer ASR / CosyVoice2 TTS（豆包级动听女声，Apache2）；端口 30010，供 Rust 网关 /voice/** 代理调用。AI 对话页面朗读第一层必命中；权重缺失时自动切浏览器拟人音兜底。",
+      "port": 30010,
       "health_check": "/voice/health",
       "cwd": "projects/xiaobai_voice",
       "command": "python -m xiaobai_voice serve --host 0.0.0.0",
@@ -365,7 +365,7 @@
       "files": [
         "_auto_dl_cosy2_weights.py",
         "_check_cosy_env.py",
-        "_probe3717.py",
+        "_probe30010.py",
         "_run_e2b.py",
         "_run_e4.py",
         "_tmp_t10_doc_check.js"

@@ -1,0 +1,51 @@
+# =============================================================
+# 开发专家联盟 · 专家配置外部化（config/alliance-experts.yml）
+# 覆盖式合并：yml 只写想改的字段，其余继承内置 10 大领域专家默认配置。
+# 配置文件路径可用环境变量 MOX_ALLIANCE_EXPERTS_FILE 覆盖。
+# =============================================================
+
+# 全局默认 LLM 配置（局部覆盖，字段级合并）
+# 可覆盖字段：primary_provider / primary_model / fallback_chain /
+#             routing_strategy / model_config（temperature/top_p/max_tokens/...）
+global_llm:
+  primary_model: gpt-4o-mini      # 示例：覆盖全局默认主模型
+  model_config:
+    temperature: 0.5              # 示例：降低全局采样温度
+
+# 领域专家模块覆盖（按 module_id 与内置合并；未列出的模块保持不变）
+# 可覆盖字段：expert_id / name / version / llm_config / graph_config /
+#             capability_weights / matching_weights / enabled / tags
+# 时间戳由系统生成，yml 无需填写。
+#
+# 完整 llm_config 覆盖示例（模块级 LLM 配置整体替换，需写全字段）：
+#   - module_id: expert-code
+#     llm_config:
+#       module_id: expert-code
+#       primary_provider: deepseek
+#       primary_model: deepseek-coder-v2
+#       fallback_chain: [openai-code, anthropic]
+#       routing_strategy: priority
+#       model_config:
+#         temperature: 0.2
+#         max_tokens: 8192
+#       provider_options:
+#         - provider_id: deepseek
+#           api_key_source:
+#             env_var: { env_name: DEEPSEEK_API_KEY }
+#           base_url: https://api.deepseek.com
+#           default_model: deepseek-coder-v2
+#           enabled: true
+
+modules:
+  - module_id: expert-code
+    name: 代码编程专家
+    enabled: true
+    matching_weights:              # 示例：调整匹配权重
+      domain: 0.40
+      capability: 0.30
+      rating: 0.15
+      performance: 0.10
+      health: 0.05
+
+  # - module_id: expert-vision     # 示例：禁用图像理解专家
+  #   enabled: false

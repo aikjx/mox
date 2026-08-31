@@ -4,7 +4,7 @@
 > TTS：**Fish-Speech-S2-Pro**（Research，默认启用 iff 本地权重完整且 license_tier != apache2）
 >        ↘ **CosyVoice2**（Apache2，信创/政务默认回退）
 >        ↘ **浏览器 SpeechSynthesis**（MessageBubble 旧实现，保留兜底）
-> 端口：语音服务默认 **3717**；前端 Vite dev server 走 `/voice` proxy
+> 端口：语音服务默认 **30010**；前端 Vite dev server 走 `/voice` proxy
 
 ## 一、快速启动（开发态）
 
@@ -22,7 +22,7 @@ pip install -e ".[asr,service,desktop,dev]"
 # 3. 下载默认模型（ASR Paraformer INT8 + CosyVoice2-0.5B）
 python -m xiaobai_voice download --defaults
 
-# 4. 启动语音服务（端口 3717）
+# 4. 启动语音服务（端口 30010）
 python -m xiaobai_voice serve
 
 # 5. 另一个终端：启动桌面小白（浮窗 + 快捷键 + 内嵌 /#/ai WebView）

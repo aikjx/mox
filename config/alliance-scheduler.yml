@@ -31,6 +31,7 @@ executor_bridge:
 expert_service:
   base_url: http://localhost:3300
   timeout_ms: 5000
+  enabled: false                  # true=启用 HTTP 专家桥接（启动拉取远程专家，失败优雅降级到内置）；false=仅内置
 
 # 任务仓库存储
 storage:

@@ -12,13 +12,14 @@ use mox_alliance_config_core::examples::domain_experts::{
 };
 use mox_alliance_config_core::{ConfigEngine, MemoryConfigStore};
 use mox_alliance_executor_proto::DagEngine;
+use mox_alliance_boot_config::{ExpertServiceSection, ExpertsBootConfig};
 use mox_alliance_scheduler_core::{
     ConfigSynchronizer, HttpExecutorBridge, HttpExecutorBridgeConfig, InProcessExecutorBridge,
     ModularWeightMatcher, TaskSchedulerImpl,
 };
 use mox_alliance_scheduler_proto::types::SchedulerConfig;
 use tokio::sync::mpsc;
-use tracing::info;
+use tracing::{info, warn};
 
 use crate::app_state::SchedulerAppState;
 use crate::routes::build_router;
@@ -43,6 +44,10 @@ pub struct SchedulerServer {
     embedded_engine: Option<Arc<dyn DagEngine>>,
     /// 任务仓库（持久化可插拔；默认按环境变量决定）
     task_repository: Option<Arc<dyn mox_alliance_scheduler_core::TaskRepository>>,
+    /// 专家配置外部化覆盖（来自 config/alliance-experts.yml，按 module_id 合并）
+    experts: Option<ExpertsBootConfig>,
+    /// HTTP 专家桥接配置（生产专家服务；enabled=true 时启动拉取远程专家）
+    expert_service: Option<ExpertServiceSection>,
 }
 
 impl SchedulerServer {
@@ -54,6 +59,8 @@ impl SchedulerServer {
             executor_url: None,
             embedded_engine: None,
             task_repository: None,
+            experts: None,
+            expert_service: None,
         }
     }
 
@@ -84,9 +91,22 @@ impl SchedulerServer {
         self
     }
 
-    /// 解析任务仓库：显式注入优先，否则按环境变量 ALLIANCE_TASK_STORE
+    /// 注入专家配置外部化覆盖（config/alliance-experts.yml 合并）
+    pub fn with_experts(mut self, experts: ExpertsBootConfig) -> Self {
+        self.experts = Some(experts);
+        self
+    }
+
+    /// 注入 HTTP 专家桥接配置（生产专家服务，enabled=true 时 build_app 会拉取远程专家）
+    pub fn with_expert_service(mut self, expert_service: ExpertServiceSection) -> Self {
+        self.expert_service = Some(expert_service);
+        self
+    }
+
+    /// 解析任务仓库：显式注入优先，否则按环境变量 MOX_ALLIANCE_STORAGE_MODE
     /// - "file"（或未设置时默认 "file"）：文件快照持久化到 ./data/alliance_tasks.json
     /// - "memory"：纯内存
+    /// 旧环境变量 `ALLIANCE_TASK_STORE` 保留兼容（deprecated，命中即告警）
     fn resolve_task_repository(
         &self,
     ) -> anyhow::Result<Arc<dyn mox_alliance_scheduler_core::TaskRepository>> {
@@ -94,7 +114,17 @@ impl SchedulerServer {
             return Ok(repo.clone());
         }
 
-        let mode = std::env::var("ALLIANCE_TASK_STORE").unwrap_or_else(|_| "file".to_string());
+        // 归一化：统一 `MOX_ALLIANCE_STORAGE_MODE`；旧 `ALLIANCE_TASK_STORE` 兼容
+        let mode = match std::env::var("MOX_ALLIANCE_STORAGE_MODE") {
+            Ok(v) if !v.is_empty() => v,
+            _ => match std::env::var("ALLIANCE_TASK_STORE") {
+                Ok(old) if !old.is_empty() => {
+                    warn!("环境变量 ALLIANCE_TASK_STORE 已废弃，请改用 MOX_ALLIANCE_STORAGE_MODE（旧值已生效兼容）");
+                    old
+                }
+                _ => "file".to_string(),
+            },
+        };
         match mode.as_str() {
             "memory" => {
                 info!("Using in-memory task repository");
@@ -192,14 +222,25 @@ impl SchedulerServer {
         let config_engine = Arc::new(ConfigEngine::new(Arc::new(MemoryConfigStore::new())));
 
         // 1.1) 引导全局 LLM 默认配置（模块未显式声明的 provider 继承自此）
-        let global_config = build_global_default_config();
+        //      支持 config/alliance-experts.yml 局部覆盖（global_llm 字段级覆盖）
+        let builtin_global = build_global_default_config();
+        let global_config = self
+            .experts
+            .as_ref()
+            .map(|e| e.effective_global(&builtin_global))
+            .unwrap_or(builtin_global);
         config_engine
             .set_global_llm_config(global_config, "system", "bootstrap global llm config")
             .await
             .map_err(|e| anyhow::anyhow!("Failed to set global llm config: {}", e))?;
 
-        // 2) 注册内置领域专家模块配置
-        for module in build_domain_experts() {
+        // 2) 注册领域专家模块配置（内置 10 大专家 + yml 按 module_id 覆盖/新增）
+        let builtin_modules = build_domain_experts();
+        let modules = match &self.experts {
+            Some(e) => e.merge_into(builtin_modules),
+            None => builtin_modules,
+        };
+        for module in modules {
             config_engine
                 .register_module(module.clone(), "system", "bootstrap builtin domain experts")
                 .await
@@ -221,6 +262,36 @@ impl SchedulerServer {
             "Registered {} builtin domain experts from module config",
             modules.len()
         );
+
+        // 3.1) HTTP 专家桥接（生产专家服务）：expert_service.enabled=true 时，
+        //      启动从远程 AI 专家服务拉取专家并入匹配器；拉取失败优雅降级到内置（不崩溃）。
+        if let Some(es) = &self.expert_service {
+            if es.enabled {
+                let http_bridge = mox_alliance_scheduler_core::HttpExpertRegistryBridge::new(
+                    mox_alliance_scheduler_core::HttpBridgeConfig {
+                        base_url: es.base_url.clone(),
+                        timeout_ms: es.timeout_ms,
+                        tenant_id: "system".to_string(),
+                    },
+                );
+                match http_bridge.fetch_experts().await {
+                    Ok(remote) => {
+                        matcher.register_experts(remote.clone());
+                        info!(
+                            "HTTP 专家桥接启用：从 {} 拉取 {} 位专家并入匹配器",
+                            es.base_url,
+                            remote.len()
+                        );
+                    }
+                    Err(e) => {
+                        warn!(
+                            "HTTP 专家桥接拉取失败（{}），使用内置领域专家继续。原因：{}",
+                            es.base_url, e
+                        );
+                    }
+                }
+            }
+        }
 
         // 4) 配置同步器：模块权重 → 匹配器（运行时可热更新）
         let synchronizer = Arc::new(ConfigSynchronizer::new(config_engine.clone(), matcher.clone()));

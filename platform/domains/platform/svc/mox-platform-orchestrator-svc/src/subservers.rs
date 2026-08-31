@@ -164,7 +164,7 @@ pub fn registered_subservers() -> Vec<Subserver> {
         Subserver {
             name: "xiaobai_voice",
             purpose: "ASR (Paraformer-zh + sherpa-onnx) / TTS (CosyVoice2 Apache-2.0 默认 / Fish-S2-Pro 需 Research License)",
-            url: "http://127.0.0.1:3717".into(),
+            url: "http://127.0.0.1:30010".into(),
             health: "/voice/health".into(),
             required: true,
             timeout_ms: 1500,
@@ -202,7 +202,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn at_least_two_subservers_and_voice_3717() {
+    fn at_least_two_subservers_and_voice_30010() {
         let list = registered_subservers();
         assert!(list.len() >= 2);
         let voice = list
@@ -210,8 +210,8 @@ mod tests {
             .find(|s| s.name == "xiaobai_voice")
             .expect("voice必须注册");
         assert!(
-            voice.url.contains("3717"),
-            "voice URL 必须是 3717：{}",
+            voice.url.contains("30010"),
+            "voice URL 必须是 30010：{}",
             voice.url
         );
         assert!(voice.health.starts_with("/voice/"));

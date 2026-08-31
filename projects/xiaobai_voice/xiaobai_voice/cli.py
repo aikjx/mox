@@ -257,7 +257,7 @@ def _inject_env() -> None:
     for k, v in {
         "FISH_SPEECH_CKPT_DIR": home_voice,
         "COSYVOICE_CKPT_DIR": home_voice,
-        "MOX_VOICE_PORT": "3717",
+        "MOX_VOICE_PORT": "30010",
     }.items():
         os.environ.setdefault(k, v)
 
@@ -376,12 +376,12 @@ def main(argv=None) -> int:
 
     p = s.add_parser("serve")
     p.add_argument("--host", default="127.0.0.1")
-    p.add_argument("--port", type=int, default=int(os.environ.get("MOX_VOICE_PORT") or 3717))
+    p.add_argument("--port", type=int, default=int(os.environ.get("MOX_VOICE_PORT") or 30010))
     p.add_argument("--log-level", default="info", choices=["trace", "debug", "info", "warning", "error"])
 
     p = s.add_parser("desktop")
     p.add_argument("--skip-serve", action="store_true")
-    p.add_argument("--port", type=int, default=int(os.environ.get("MOX_VOICE_PORT") or 3717))
+    p.add_argument("--port", type=int, default=int(os.environ.get("MOX_VOICE_PORT") or 30010))
 
     p = s.add_parser("download")
     p.add_argument("--model-id", default=None)

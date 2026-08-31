@@ -3,9 +3,9 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-//! # voice_proxy Rust 版 3717 服务（Feature = server-3717）
+//! # voice_proxy Rust 版 30010 服务（Feature = server-30010）
 //!
-//! 提供 Python `service/app.py FastAPI` 在 `:3717` 的等价 1:1 HTTP + WS 端点，
+//! 提供 Python `service/app.py FastAPI` 在 `:30010` 的等价 1:1 HTTP + WS 端点，
 //! 同时内部直接挂载：
 //! - xiaobai-intent 规则路由（PPR）
 //! - xiaobai-core RBAC + OperatorEngine
@@ -53,8 +53,8 @@ pub struct VoiceServiceConfig {
 impl Default for VoiceServiceConfig {
     fn default() -> Self {
         Self {
-            bind: "127.0.0.1:3717".parse().unwrap(),
-            default_identity: OperatorIdentity::new("voice_user_3717", RoleTag::Member, false),
+            bind: "127.0.0.1:30010".parse().unwrap(),
+            default_identity: OperatorIdentity::new("voice_user_30010", RoleTag::Member, false),
             default_mode: DispatchMode::LocalFirst,
             avatar_dir: None,
         }
@@ -504,18 +504,18 @@ pub fn build_router(svc: Arc<XiaobaiVoiceService>) -> Router {
         .with_state(svc)
 }
 
-/// 阻塞启动：等价 Python `uvicorn.run(app, host=..., port=3717)`
+/// 阻塞启动：等价 Python `uvicorn.run(app, host=..., port=30010)`
 pub async fn serve(config: VoiceServiceConfig) -> XiaobaiResult<()> {
     let svc = Arc::new(XiaobaiVoiceService::new(config.clone())?);
     let app = build_router(svc);
     let listener = tokio::net::TcpListener::bind(config.bind).await.map_err(|e| XiaobaiError::ExecutionError {
-        category: "server".into(), action: "serve_3717".into(), detail: format!("bind 失败：{e}"),
+        category: "server".into(), action: "serve_30010".into(), detail: format!("bind 失败：{e}"),
     })?;
     info!(target: "xiaobai_server", "xiaobai-voice-rs listening on {}", config.bind);
     axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
         .await
         .map_err(|e| XiaobaiError::ExecutionError {
-            category: "server".into(), action: "serve_3717".into(), detail: format!("serve error：{e}"),
+            category: "server".into(), action: "serve_30010".into(), detail: format!("serve error：{e}"),
         })?;
     Ok(())
 }

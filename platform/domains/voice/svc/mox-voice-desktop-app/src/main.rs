@@ -9,7 +9,7 @@
 //!   - 点击悬浮球 → 展开对话面板，快速文本对话（8 类算子本地执行）
 //!   - 按住拖动 → 移动悬浮球
 //!   - 全局热键：Alt+X 录音开关（Listen 状态）/ Alt+Q 隐藏显示
-//!   - 后台启动 voice_proxy :3717，供 Rust 网关 /voice/** 代理
+//!   - 后台启动 voice_proxy :30010，供 Rust 网关 /voice/** 代理
 //!
 //! P2 语音闭环（全离线）：
 //!   - Alt+X 真录音（cpal 16k）→ Paraformer ASR（sherpa-onnx）→ dispatch_text → Kokoro TTS 朗读
@@ -69,7 +69,7 @@ enum UserEvent {
 #[command(
     name = "xiaobai-desktop",
     version,
-    about = "🚀 桌面小白助手 · Rust 全栈 3D 悬浮球 + voice_proxy 3717 + 8 大类算子 + 语音闭环（Paraformer ASR / Kokoro TTS）",
+    about = "🚀 桌面小白助手 · Rust 全栈 3D 悬浮球 + voice_proxy 30010 + 8 大类算子 + 语音闭环（Paraformer ASR / Kokoro TTS）",
 )]
 struct Args {
     /// 默认用户 id（RBAC L0~L3）
@@ -99,10 +99,10 @@ struct Args {
     /// 输出 WAV 路径（--tts / --vtest 用）
     #[arg(long, default_value = "voice_out.wav")]
     out: String,
-    /// 诊断：在独立线程内做一次 TTS 合成（模拟 3717 跨线程调用）
+    /// 诊断：在独立线程内做一次 TTS 合成（模拟 30010 跨线程调用）
     #[arg(long)]
     tts_thread: Option<String>,
-    /// 不 spawn :3717 HTTP 服务
+    /// 不 spawn :30010 HTTP 服务
     #[arg(long)]
     no_server: bool,
 }
@@ -197,7 +197,7 @@ async fn run_tts_pipeline(
     let engine = mox_voice_desktop_app::VoiceEngine::new(&models)?;
     tracing::info!(target: "xiaobai_voice", "模型就绪：ASR+TTS，说话人数 {}", engine.speaker_count());
 
-    use mox_voice_operator_svc::server_3717::{VoiceServiceConfig, XiaobaiVoiceService};
+    use mox_voice_operator_svc::server_30010::{VoiceServiceConfig, XiaobaiVoiceService};
     let svc = XiaobaiVoiceService::new(VoiceServiceConfig::default())?;
     let answer = match svc.dispatch_text(&text, None, None).await {
         Ok(v) => extract_speak_text(&v),
@@ -275,7 +275,7 @@ fn run_dispatch(
         let json = match rt {
             Ok(rt) => {
                 let fut = async {
-                    use mox_voice_operator_svc::server_3717::{VoiceServiceConfig, XiaobaiVoiceService};
+                    use mox_voice_operator_svc::server_30010::{VoiceServiceConfig, XiaobaiVoiceService};
                     let svc = XiaobaiVoiceService::new(VoiceServiceConfig::default())?;
                     svc.dispatch_text(&text, None, None).await
                 };
@@ -356,7 +356,7 @@ fn run_voice_loop(
         let json = match rt {
             Ok(rt) => {
                 let fut = async {
-                    use mox_voice_operator_svc::server_3717::{VoiceServiceConfig, XiaobaiVoiceService};
+                    use mox_voice_operator_svc::server_30010::{VoiceServiceConfig, XiaobaiVoiceService};
                     let svc = XiaobaiVoiceService::new(VoiceServiceConfig::default())?;
                     svc.dispatch_text(&text, None, None).await
                 };
@@ -488,41 +488,41 @@ fn run_gui(args: Args) -> anyhow::Result<()> {
     let cur_visual = serde_json::to_string(&avatars.current().visual).unwrap_or_else(|_| "{}".into());
     let _ = webview.evaluate_script(&format!("window.__applyAvatar({cur_visual})"));
 
-    // ---- voice_proxy :3717 后台启动（供 Rust 网关 /voice/** 代理，注入语音引擎）----
+    // ---- voice_proxy :30010 后台启动（供 Rust 网关 /voice/** 代理，注入语音引擎）----
     if !args.no_server {
-        let cfg = mox_voice_operator_svc::server_3717::VoiceServiceConfig::default();
+        let cfg = mox_voice_operator_svc::server_30010::VoiceServiceConfig::default();
         let addr = cfg.bind.to_string();
         let addr_cb = addr.clone();
-        let eng_for_3717 = engine.clone();
+        let eng_for_30010 = engine.clone();
         std::thread::Builder::new()
-            .name("voice-3717".into())
+            .name("voice-30010".into())
             .spawn(move || {
                 let rt = tokio::runtime::Builder::new_current_thread()
                     .enable_all()
                     .build()
                     .expect("tokio runtime 创建失败");
                 rt.block_on(async move {
-                    use mox_voice_operator_svc::server_3717::{build_router, VoiceServiceConfig, XiaobaiVoiceService};
+                    use mox_voice_operator_svc::server_30010::{build_router, VoiceServiceConfig, XiaobaiVoiceService};
                     let svc = Arc::new(XiaobaiVoiceService::new(cfg.clone()).expect("XiaobaiVoiceService 初始化失败"));
-                    if let Some(ve) = &eng_for_3717 {
+                    if let Some(ve) = &eng_for_30010 {
                         svc.attach_voice(ve.clone());
-                        tracing::info!(target: "xiaobai_voice", "3717 已挂载语音引擎（/v1/tts、/v1/asr 可用）");
+                        tracing::info!(target: "xiaobai_voice", "30010 已挂载语音引擎（/v1/tts、/v1/asr 可用）");
                     }
                     let app = build_router(svc);
                     let listener = tokio::net::TcpListener::bind(cfg.bind).await
-                        .expect("3717 bind 失败");
-                    tracing::info!(target: "xiaobai_cli", "voice_proxy :3717 后台启动 → {addr_cb}");
+                        .expect("30010 bind 失败");
+                    tracing::info!(target: "xiaobai_cli", "voice_proxy :30010 后台启动 → {addr_cb}");
                     if let Err(e) = axum::serve(
                         listener,
                         app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
                     )
                     .await
                     {
-                        eprintln!("voice 3717 服务异常退出: {e:#}");
+                        eprintln!("voice 30010 服务异常退出: {e:#}");
                     }
                 });
             })?;
-        tracing::info!(target: "xiaobai_cli", "voice_proxy :3717 线程已派发 → {addr}");
+        tracing::info!(target: "xiaobai_cli", "voice_proxy :30010 线程已派发 → {addr}");
     }
 
     // ---- 事件循环 ----
@@ -707,7 +707,7 @@ fn parse_combo(
 
 // =============================== headless 调试 ===============================
 async fn run_once_debug(text: &str) -> Result<serde_json::Value, mox_voice_core_svc::errors::XiaobaiError> {
-    use mox_voice_operator_svc::server_3717::{VoiceServiceConfig, XiaobaiVoiceService};
+    use mox_voice_operator_svc::server_30010::{VoiceServiceConfig, XiaobaiVoiceService};
     let svc = XiaobaiVoiceService::new(VoiceServiceConfig::default())?;
     svc.dispatch_text(text, None, None).await
 }
@@ -729,7 +729,7 @@ async fn main() -> anyhow::Result<()> {
     if let Some(text) = args.tts {
         return run_tts_pipeline(text, &args.out).await;
     }
-    // 诊断：独立线程内 TTS 合成（模拟 3717 跨线程调用）
+    // 诊断：独立线程内 TTS 合成（模拟 30010 跨线程调用）
     if let Some(text) = args.tts_thread {
         let models = mox_voice_desktop_app::voice_engine::locate_models_dir()
             .ok_or_else(|| anyhow::anyhow!("未找到语音模型目录（models/voice）。"))?;

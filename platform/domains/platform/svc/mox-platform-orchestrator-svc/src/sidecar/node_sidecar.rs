@@ -3,7 +3,7 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-//! Node sidecar 客户端：本地 127.0.0.1:3010 的内部 endpoints（/internal/intent, /internal/graph-algo, /internal/graph/list, /internal/file/list ...）
+//! Node sidecar 客户端：本地 127.0.0.1:8080（Rust 网关，已接管 backend-node）的内部 endpoints（backend-node 已删除，不可达时走本地 fallback）（/internal/intent, /internal/graph-algo, /internal/graph/list, /internal/file/list ...）
 //!
 //! 特性：
 //!   - reqwest 10s 超时；失败返回 SidecarError（带诊断）

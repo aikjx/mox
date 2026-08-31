@@ -349,6 +349,9 @@ macro_rules! define_domain_errors {
     ) => {
         pub struct $struct_name;
 
+        // 错误码方法名采用大写常量式命名（如 `NODE_NOT_FOUND`）是错误码库的惯例，
+        // 显式 allow(non_snake_case) 表明这是有意的 API 设计，而非命名错误。
+        #[allow(non_snake_case)]
         impl $struct_name {
             $(
                 pub fn $name() -> $crate::MoxError {

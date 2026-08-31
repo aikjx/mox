@@ -438,8 +438,8 @@ platform/domains/alliance/
 │   ├── <core-crate-3>/
 │   └── <core-crate-4>/
 ├── svc/            # 2 crate：服务层
-│   ├── scheduler-svc/     # 调度服务（:8081）
-│   └── executor-svc/      # 执行服务（:8082）
+│   ├── scheduler-svc/     # 调度服务（:3100）
+│   └── executor-svc/      # 执行服务（:3200）
 ├── sdk/            # 1 crate：客户端库层
 │   └── <sdk-crate>/
 └── api/            # 1 crate：契约层
@@ -465,7 +465,7 @@ alliance 域内部遵循 DDD 依赖倒置原则：
 | 字段 | 要求 | 示例 |
 |------|------|------|
 | crate 名 | 服务所在的 crate 名称 | `scheduler-svc` |
-| 端口 | 服务监听的端口号 | `:8081` |
+| 端口 | 服务监听的端口号 | `:3100` |
 | 路由 | HTTP 路由路径 | `/api/v1/alliance/schedule` |
 | HTTP 方法 | GET / POST / PUT / DELETE / PATCH | `POST` |
 | 用途 | 端点的功能描述（一句话） | 提交专家联盟调度任务 |
@@ -474,12 +474,12 @@ alliance 域内部遵循 DDD 依赖倒置原则：
 
 | crate 名 | 端口 | 路由 | HTTP 方法 | 用途 |
 |---------|:----:|------|:---------:|------|
-| `scheduler-svc` | `:8081` | `/api/v1/alliance/schedule` | POST | 提交专家联盟调度任务 |
-| `scheduler-svc` | `:8081` | `/api/v1/alliance/tasks/{id}` | GET | 查询调度任务状态 |
-| `scheduler-svc` | `:8081` | `/api/v1/alliance/tasks/{id}/cancel` | POST | 取消调度任务 |
-| `executor-svc` | `:8082` | `/api/v1/alliance/execute` | POST | 执行专家任务 |
-| `executor-svc` | `:8082` | `/api/v1/alliance/results/{id}` | GET | 获取执行结果 |
-| `executor-svc` | `:8082` | `/api/v1/alliance/health` | GET | 健康检查 |
+| `scheduler-svc` | `:3100` | `/api/v1/alliance/schedule` | POST | 提交专家联盟调度任务 |
+| `scheduler-svc` | `:3100` | `/api/v1/alliance/tasks/{id}` | GET | 查询调度任务状态 |
+| `scheduler-svc` | `:3100` | `/api/v1/alliance/tasks/{id}/cancel` | POST | 取消调度任务 |
+| `executor-svc` | `:3200` | `/api/v1/alliance/execute` | POST | 执行专家任务 |
+| `executor-svc` | `:3200` | `/api/v1/alliance/results/{id}` | GET | 获取执行结果 |
+| `executor-svc` | `:3200` | `/api/v1/alliance/health` | GET | 健康检查 |
 
 **强制规则**：
 1. 文档中描述服务端点时，必须使用上表中的准确 crate 名、端口、路由、方法。
@@ -537,7 +537,7 @@ alliance 域支持 **6 种融合策略**，文档中描述融合策略时必须�
 |:----:|--------|---------|---------|
 | 1 | crate 数量一致 | 文档描述的 crate 数量与 `platform/domains/alliance/` 实际 crate 数对比 | 11 crate（proto×3/core×4/svc×2/sdk×1/api×1） |
 | 2 | svc 数量一致 | 文档描述的服务数量与实际 svc crate 对比 | 2 个 svc（scheduler-svc / executor-svc） |
-| 3 | 端口准确 | 文档描述的端口与实际服务监听端口对比 | scheduler-svc :8081 / executor-svc :8082 |
+| 3 | 端口准确 | 文档描述的端口与实际服务监听端口对比 | scheduler-svc :3100 / executor-svc :3200 |
 | 4 | 路由准确 | 文档描述的路由与实际代码路由定义对比 | 所有路由与代码一致 |
 | 5 | HTTP 方法准确 | 文档描述的 HTTP 方法与实际代码对比 | 所有方法与代码一致 |
 | 6 | 专家数量一致 | 文档描述的内置专家数量与实际注册表对比 | 10 个专家 |
@@ -819,7 +819,7 @@ alliance 域支持 **6 种融合策略**，文档中描述融合策略时必须�
 |------|------|
 | **表现** | 文档中描述已不存在的旧架构，如"7服务架构"、"31微服务"、"15 crate扁平模型"、`platform/domains/ai-agent` 等旧路径 |
 | **危害** | 新人按文档找不到代码；文档-代码全面分裂；违反"代码是唯一事实源"原则 |
-| **正确做法** | 文档中所有架构描述必须与 `platform/domains/alliance/` 真实代码一致（11 crate、2 svc、:8081/:8082）；发布前必须通过 §6.6 代码对齐校验清单；发现过时描述按 🔴架构级错误24h内修复 |
+| **正确做法** | 文档中所有架构描述必须与 `platform/domains/alliance/` 真实代码一致（11 crate、2 svc、:3100/:3200）；发布前必须通过 §6.6 代码对齐校验清单；发现过时描述按 🔴架构级错误24h内修复 |
 
 ### AP-04 使用 ../ 或裸名引用
 
@@ -924,7 +924,7 @@ alliance 域支持 **6 种融合策略**，文档中描述融合策略时必须�
 |:----:|--------|---------|:----:|
 | 1 | crate 数量 | 文档描述为 11 crate（proto×3/core×4/svc×2/sdk×1/api×1） | ☐ |
 | 2 | svc 数量 | 文档描述为 2 个 svc（scheduler-svc / executor-svc） | ☐ |
-| 3 | 端口准确 | scheduler-svc :8081 / executor-svc :8082 | ☐ |
+| 3 | 端口准确 | scheduler-svc :3100 / executor-svc :3200 | ☐ |
 | 4 | 路由准确 | 所有路由描述与代码一致 | ☐ |
 | 5 | HTTP 方法准确 | 所有 HTTP 方法描述与代码一致 | ☐ |
 | 6 | 专家数量 | 文档描述为 10 个内置专家 | ☐ |

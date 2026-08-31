@@ -726,6 +726,46 @@ pub struct ModuleLlmConfig {
 
 fn default_version() -> u32 { 1 }
 
+// ── 配置结构默认值（供 yml 外部化 / 缺省场景使用）────────────────────
+impl Default for GraphConnectionConfig {
+    fn default() -> Self {
+        Self { uri_env: String::new(), user_env: None, password_env: None, database: None }
+    }
+}
+
+impl Default for ModuleGraphConfig {
+    fn default() -> Self {
+        Self {
+            module_id: String::new(),
+            engine_type: GraphEngineType::default(),
+            connection: GraphConnectionConfig::default(),
+            query_config: GraphQueryConfig::default(),
+            schema: GraphSchemaConfig::default(),
+            custom_endpoint: None,
+            version: 1,
+            updated_at: chrono::Utc::now(),
+        }
+    }
+}
+
+impl Default for ModuleLlmConfig {
+    fn default() -> Self {
+        Self {
+            module_id: String::new(),
+            primary_provider: "inherit".to_string(),
+            primary_model: "inherit".to_string(),
+            fallback_chain: vec![],
+            routing_strategy: LlmRoutingStrategy::default(),
+            model_config: ModelConfig::default(),
+            provider_options: vec![],
+            system_prompt_template: None,
+            use_global_prompt_prefix: true,
+            version: 1,
+            updated_at: chrono::Utc::now(),
+        }
+    }
+}
+
 impl ModuleLlmConfig {
     /// 获取指定 Provider 的配置选项
     pub fn get_provider_option(&self, provider_id: &str) -> Option<&LlmProviderOption> {

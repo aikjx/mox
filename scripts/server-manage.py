@@ -126,8 +126,8 @@ DEFAULT_CONFIG = {
         },
         "xiaobai_voice": {
             "name": "小白语音服务（ASR + TTS）",
-            "description": "本地离线语音：Paraformer ASR / CosyVoice2 TTS；端口 3717",
-            "port": 3717,
+            "description": "本地离线语音：Paraformer ASR / CosyVoice2 TTS；端口 30010",
+            "port": 30010,
             "health_check": "/voice/health",
             "cwd": "projects/xiaobai_voice",
             "command": "python -m xiaobai_voice serve --host 0.0.0.0",

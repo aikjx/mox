@@ -26,7 +26,9 @@ export const applyBestConfig = (runId) => http.post('/ai/infinite-optimize/apply
 
 // ===== 本地制品引擎（文档/代码自动创建） =====
 export const getArtifactConfig = () => http.get('/ai/artifact/config')
-export const listArtifacts = () => http.get('/ai/artifact/list')
+export const getArtifacts = () => http.get('/ai/artifact/list')
+/** @deprecated 请使用 getArtifacts */
+export const listArtifacts = getArtifacts
 export const createArtifact = (payload) => http.post('/ai/artifact/create', payload)
 
 // ===== 全维智能分析引擎（真实 AI 驱动） =====

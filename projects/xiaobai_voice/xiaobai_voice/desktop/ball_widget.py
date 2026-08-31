@@ -357,7 +357,7 @@ class BallWidget(QtWidgets.QWidget):
         mw = self._find_main_window()
         if mw is None:
             # fallback: 用默认浏览器打开
-            url = "http://localhost:3021/#/ai"
+            url = "http://localhost:3020/#/ai"
             try:
                 QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
             except Exception as e:  # noqa: BLE001
@@ -451,7 +451,7 @@ class BallWidget(QtWidgets.QWidget):
                                               "音色、情绪、速率设置入口可在对话页“朗读”按钮下拉"
                                               "或桌面小白 T4/T9 配置面板修改。\n（此处占位）")
         elif chosen is act_mdl:
-            url = "http://localhost:3021/#/ai"
+            url = "http://localhost:3020/#/ai"
             QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
         elif chosen is act_cmp:
             QtWidgets.QMessageBox.information(self, "合规面板",
@@ -528,16 +528,16 @@ class _LocalRecorder:
             bio = io.BytesIO()
             sf.write(bio, audio, self._sr, format="WAV", subtype="PCM_16")
             wav_bytes = bio.getvalue()
-            # POST /voice/asr/full（先 127.0.0.1:3717，不经过 vite proxy）
+            # POST /voice/asr/full（先 127.0.0.1:30010，不经过 vite proxy）
             import httpx
             port = getattr(self.ball, "_override_port", None)
             if port is None:
                 try:
                     app = QtWidgets.QApplication.instance()
                     ctx = getattr(app, "_xiaobai_ctx", None)
-                    port = ctx.port if ctx else 3717
+                    port = ctx.port if ctx else 30010
                 except Exception:  # noqa: BLE001
-                    port = 3717
+                    port = 30010
             try:
                 r = httpx.post(f"http://127.0.0.1:{port}/voice/asr/full",
                                files={"file": ("rec.wav", wav_bytes, "audio/wav")}, timeout=30.0)

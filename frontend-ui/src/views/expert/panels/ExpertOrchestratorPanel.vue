@@ -259,7 +259,7 @@ import {
 import { ElMessage } from 'element-plus'
 import {
   expertOrchestrate, expertGeneratePlan,
-  getOrchestrationStats, listOrchestrationPlugins, getOrchestrationHistory
+  getOrchestrationStats, getOrchestrationPlugins, getOrchestrationHistory
 } from '@/api/index.js'
 
 const loading = ref(false)
@@ -313,7 +313,7 @@ async function loadStats() {
 
 async function loadPlugins() {
   try {
-    plugins.value = await listOrchestrationPlugins()
+    plugins.value = await getOrchestrationPlugins()
   } catch (e) {
     console.error('Load plugins error:', e)
   }

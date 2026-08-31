@@ -1,4 +1,4 @@
-"""FastAPI 语音服务（端口 3717 默认）。路由矩阵：/voice/health /voice/models /voice/models/download /voice/models/download/stream(SSE) /voice/ws/asr/stream /voice/asr/full /voice/tts/stream /voice/tts/clone /voice/hotwords(GET+POST) /voice/license_tier /voice/metrics。兼容别名：/voice/v1/*。"""
+"""FastAPI 语音服务（端口 30010 默认）。路由矩阵：/voice/health /voice/models /voice/models/download /voice/models/download/stream(SSE) /voice/ws/asr/stream /voice/asr/full /voice/tts/stream /voice/tts/clone /voice/hotwords(GET+POST) /voice/license_tier /voice/metrics。兼容别名：/voice/v1/*。"""
 from __future__ import annotations
 
 import asyncio
@@ -590,6 +590,6 @@ def _bind_routes(app: FastAPI, prefix: str) -> None:
     app.include_router(r)
 
 
-def run_server(host: str = "127.0.0.1", port: int = 3717, log_level: str = "info") -> None:
+def run_server(host: str = "127.0.0.1", port: int = 30010, log_level: str = "info") -> None:
     import uvicorn
     uvicorn.run(create_app(), host=host, port=port, log_level=log_level, ws_ping_interval=30, ws_ping_timeout=60)

@@ -1,4 +1,14 @@
-// 系统 API - 健康检查、状态、日志、插件、安全、存储、配置
+/**
+ * 系统管理 API（企业级系统管理域）
+ *
+ * 归一化约定（详见 src/api/README.md）：
+ * - 列表读取  get<Resource>List(params) → GET  /system/<resource>
+ * - 详情读取  get<Resource>Detail(id)   → GET  /system/<resource>/{id}
+ * - 树读取    get<Resource>Tree(params) → GET  /system/<resource>/tree
+ * - 写操作    create / update / delete<Resource>
+ * - 子资源    /system/<resource>/{id}/<sub>
+ * 统一经 http.js：鉴权头注入、自动重试、project_id 注入、响应信封解包与错误规范化。
+ */
 import http from './http'
 
 // ===== 系统 =====
@@ -22,16 +32,12 @@ export const getStorageProviders = () => http.get('/storage/providers')
 export const switchStorageProvider = (provider) => http.post('/storage/switch', { provider })
 export const getStorageStatus = () => http.get('/storage/status')
 export const getModules = () => http.get('/modules')
-// 系统配置（只读）
+// 系统配置（只读；区别于下方"参数配置" /system/config）
 export const getSystemConfig = () => http.get('/config')
 
 // ===== 权限管理 =====
 // 获取当前用户权限信息（权限列表、角色、菜单、数据权限）
 export const getPermissions = () => http.get('/system/permissions')
-// 获取菜单树
-export const getMenuTree = () => http.get('/system/menus')
-// 获取角色列表
-export const getRoles = (params) => http.get('/system/roles', { params })
 
 // ===== 企业级系统管理 =====
 // 部门管理
@@ -99,7 +105,7 @@ export const createDictData = (data) => http.post('/system/dict/data', data)
 export const updateDictData = (id, data) => http.put(`/system/dict/data/${id}`, data)
 export const deleteDictData = (id) => http.delete(`/system/dict/data/${id}`)
 
-// 参数配置
+// 参数配置（区别于上方"系统配置" /config）
 export const getConfigList = (params) => http.get('/system/config', { params })
 export const getConfigDetail = (id) => http.get(`/system/config/${id}`)
 export const getConfigByKey = (key) => http.get(`/system/config/key/${key}`)

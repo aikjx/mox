@@ -34,6 +34,20 @@ const STOPWORDS: &[&str] = &[
     "whom", "which", "what", "how", "why",
 ];
 
+/// 通用/低信息量中文 bigram：跨领域高频、对领域推断几乎无区分度，
+/// 在描述重叠证据中不计入命中，避免「分析/计算/实现」等通用词把无关
+/// 专家顶到高证据（例：图像专家文本中的「计算机」「场景分析」误命中
+/// 数学任务）。注意：不要放入领域强信号词（代码/财务/算法 等）。
+const GENERIC_CJK_BIGRAMS: &[&str] = &[
+    "分析", "计算", "实现", "时间", "输出", "要求", "描述", "结果", "过程", "数据", "信息",
+    "方法", "模型", "进行", "需要", "使用", "提供", "内容", "支持", "相关", "根据", "问题",
+    "知识", "能力", "专业", "领域", "专家", "任务", "包括", "能够", "以及", "处理", "通过",
+    "主要", "擅长", "准确", "丰富", "帮助", "用于", "管理", "技术", "应用", "服务", "平台",
+    "回答", "给出", "给定", "生成", "结合", "针对", "关于", "围绕", "面向", "涉及", "配合",
+    "要求", "说明", "解释", "提供", "涵盖", "用户", "希望", "期望", "评估", "总结", "梳理",
+    "介绍", "核心", "关键", "重要", "基础", "整体", "当前", "如下", "以上", "以下", "输入",
+];
+
 /// 领域词典：关键词 → 领域标签（用于短任务/英文任务的补充证据）
 const DOMAIN_KEYWORDS: &[(&str, &str)] = &[
     // 代码编程
@@ -47,8 +61,16 @@ const DOMAIN_KEYWORDS: &[(&str, &str)] = &[
     ("数学", "mathematics"), ("证明", "mathematics"), ("微积分", "mathematics"),
     ("线性代数", "mathematics"), ("概率", "mathematics"), ("统计", "mathematics"),
     ("数学建模", "mathematics"), ("方程", "mathematics"), ("几何", "mathematics"),
+    ("算法", "mathematics"), ("递归", "mathematics"), ("复杂度", "mathematics"),
+    ("时间复杂度", "mathematics"), ("空间复杂度", "mathematics"), ("数列", "mathematics"),
+    ("斐波那契", "mathematics"), ("动态规划", "mathematics"), ("导数", "mathematics"),
+    ("积分", "mathematics"), ("极限", "mathematics"), ("函数", "mathematics"),
+    ("不等式", "mathematics"), ("矩阵", "mathematics"), ("概率论", "mathematics"),
+    ("数论", "mathematics"), ("拓扑", "mathematics"), ("图论", "mathematics"),
+    ("逻辑推理", "mathematics"), ("数值计算", "mathematics"), ("统计分析", "mathematics"),
     ("mathematics", "mathematics"), ("math", "mathematics"), ("equation", "mathematics"),
     ("calculus", "mathematics"), ("algebra", "mathematics"), ("probability", "mathematics"),
+    ("recursion", "mathematics"), ("complexity", "mathematics"), ("algorithm", "mathematics"),
     // 医学咨询
     ("医学", "medical"), ("医疗", "medical"), ("疾病", "medical"), ("药物", "medical"),
     ("健康", "medical"), ("症状", "medical"), ("医院", "medical"), ("临床", "medical"),
@@ -255,6 +277,10 @@ pub fn description_overlap(expert: &Expert, query_tokens: &[String]) -> (f64, us
     let expert_tokens: Vec<String> = tokenize(&expert_text(expert));
     let mut hit = 0usize;
     for t in query_tokens {
+        // 通用低信息量词不计入重叠证据（避免误报）
+        if GENERIC_CJK_BIGRAMS.contains(&t.as_str()) {
+            continue;
+        }
         if expert_tokens.iter().any(|et| token_hit(t, et)) {
             hit += 1;
         }
@@ -264,23 +290,22 @@ pub fn description_overlap(expert: &Expert, query_tokens: &[String]) -> (f64, us
 
 /// 词典命中：返回关键词匹配到的领域列表
 ///
-/// 支持精确匹配与 ASCII 词干前缀匹配（如 "financial" 命中 "finance"、"investments" 命中 "investment"）。
-fn lexicon_match(token: &str) -> Vec<String> {
+/// 判定规则：**关键词自身的全部 token 均须命中查询 token 集**，才计一次领域证据。
+/// - 双字中文关键词（递归/财务）：其 token 就是该 bigram，查询中存在即命中；
+/// - 多字中文关键词（动态规划/时间复杂度/斐波那契）：拆分为 bigram 后
+///   全部存在于查询中才命中，天然抗误报（"动态规划" 不会因查询含单个"动态"命中）；
+/// - ASCII 关键词沿用词干前缀/共享词根匹配（investments→investment）。
+fn lexicon_match_all(query_tokens: &[String]) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     for (kw, domain) in DOMAIN_KEYWORDS {
-        let kw_lower = kw.to_lowercase();
-        let matched = if token == kw_lower {
-            true
-        } else if is_ascii_word(token) && is_ascii_word(&kw_lower) && token.len() >= 3 && kw_lower.len() >= 3
-        {
-            // 词干匹配：真前缀（investments→investment）或共享词根 >= 4（financial→finance）
-            token.starts_with(&kw_lower)
-                || kw_lower.starts_with(token)
-                || common_prefix_len(token, &kw_lower) >= 4
-        } else {
-            false
-        };
-        if matched && !out.contains(&domain.to_string()) {
+        let kw_tokens: Vec<String> = tokenize(kw);
+        if kw_tokens.is_empty() {
+            continue;
+        }
+        let all_hit = kw_tokens
+            .iter()
+            .all(|kt| query_tokens.iter().any(|qt| token_hit(qt, kt)));
+        if all_hit && !out.contains(&domain.to_string()) {
             out.push(domain.to_string());
         }
     }
@@ -320,12 +345,10 @@ pub fn infer_domains(description: &str, experts: &[Expert]) -> Vec<String> {
         }
     }
 
-    // 证据 2：领域词典
-    for t in &q_tokens {
-        for d in lexicon_match(t) {
-            let entry = evidence.entry(d).or_insert(0);
-            *entry += 1;
-        }
+    // 证据 2：领域词典（复合词子集匹配；词典命中为高精度强证据，权重 +2）
+    for d in lexicon_match_all(&q_tokens) {
+        let entry = evidence.entry(d).or_insert(0);
+        *entry += 2;
     }
 
     let mut ranked: Vec<(String, usize)> = evidence.into_iter().collect();
@@ -361,6 +384,40 @@ mod tests {
             })
             .collect();
         e
+    }
+
+    #[test]
+    fn infer_math_domain_algorithm_task() {
+        // 真实内置模块配置复刻 server.rs::expert_from_module 的专家文本；
+        // 回归用例：算法/复杂度任务不得被图像专家「计算机/场景分析」的通用词误判
+        use mox_alliance_config_core::examples::domain_experts::build_domain_experts;
+        let modules = build_domain_experts();
+        let experts: Vec<Expert> = modules
+            .iter()
+            .map(|m| {
+                let mut e = Expert::new_system(m.name.clone(), m.name.clone());
+                e.expert_id = m.expert_id.clone();
+                e.description = match &m.llm_config.system_prompt_template {
+                    Some(tpl) => format!("{}. {}", m.name, tpl),
+                    None => m.name.clone(),
+                };
+                e.domains = m.tags.clone();
+                e
+            })
+            .collect();
+        let desc = "计算斐波那契数列第20项的值，并分析朴素递归与动态规划两种实现的时间复杂度差异";
+        let domains = infer_domains(desc, &experts);
+        eprintln!("INFERRED={:?}", domains);
+        assert!(
+            domains.contains(&"mathematics".to_string()),
+            "算法/递归任务应推断数学领域: {:?}",
+            domains
+        );
+        assert!(
+            !domains.iter().any(|d| d == "image" || d == "vision"),
+            "数学任务被误判为图像领域: {:?}",
+            domains
+        );
     }
 
     #[test]

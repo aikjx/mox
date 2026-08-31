@@ -9,7 +9,7 @@ FR-13 8 大类系统算子 Rust 权威实现，与 Python `operator/` 下各模�
 - **一行注册全量算子**：`register_all_defaults(&engine)` 快速构建默认算子矩阵
 - **阻塞调用隔离**：所有 Win32/Shell 阻塞调用封装独立，配合 `spawn_blocking` 使用
 - **语音引擎集成**（feature `voice-engine`）：录音器、语音引擎、数字人 Avatar 系统
-- **3717 端口服务**（feature `server-3717`）：完整 HTTP 服务、路由构建与阻塞运行
+- **30010 端口服务**（feature `server-30010`）：完整 HTTP 服务、路由构建与阻塞运行
 
 ## 架构定位
 
@@ -38,7 +38,7 @@ mox-voice-operator-svc = { path = "../svc/mox-voice-operator-svc" }
 
 可选 features：
 - `voice-engine` — 启用语音引擎、录音器与 Avatar 系统
-- `server-3717` — 启用 3717 端口 HTTP 服务
+- `server-30010` — 启用 30010 端口 HTTP 服务
 
 ### 基本用法
 
@@ -63,7 +63,7 @@ let mut voice_engine = VoiceEngine::new();
 voice_engine.start_listening()?;
 ```
 
-启动 HTTP 服务（需 feature `server-3717`）：
+启动 HTTP 服务（需 feature `server-30010`）：
 
 ```rust
 use mox_voice_operator_svc::{serve, VoiceServiceConfig};
@@ -98,12 +98,12 @@ serve(config).await?;
 - `avatar::VisualConf` — 视觉配置
 - `avatar::VoiceConf` — 语音配置
 
-### 3717 服务（feature = "server-3717"）
-- `server_3717::XiaobaiVoiceService` — 小白语音服务
-- `server_3717::VoiceServiceConfig` — 服务配置
-- `server_3717::serve` — 启动服务（async）
-- `server_3717::build_router` — 构建 Axum 路由
-- `server_3717::run_service_blocking` — 阻塞式运行服务
+### 30010 服务（feature = "server-30010"）
+- `server_30010::XiaobaiVoiceService` — 小白语音服务
+- `server_30010::VoiceServiceConfig` — 服务配置
+- `server_30010::serve` — 启动服务（async）
+- `server_30010::build_router` — 构建 Axum 路由
+- `server_30010::run_service_blocking` — 阻塞式运行服务
 
 ### 注册函数
 - `register_all_defaults(engine: &OperatorEngine)` — 注册全部 8 大类默认算子

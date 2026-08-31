@@ -666,7 +666,7 @@ async function runDiagnostic() {
     diagnosticTime.value = now.toLocaleString('zh-CN')
     // 并行采集三组实时状态
     const [sessionRes, graphRes, dispRes] = await Promise.all([
-      api.listExpertSessions({}),
+      api.getExpertSessions({}),
       api.getExpertGraphStats(),
       api.getDispatcherStatus()
     ])
@@ -740,7 +740,7 @@ async function runDiagnostic() {
 
 async function loadSessions() {
   try {
-    const res = await api.listExpertSessions({
+    const res = await api.getExpertSessions({
       status: sessionFilterStatus.value || undefined,
       mode: sessionFilterMode.value || undefined
     })

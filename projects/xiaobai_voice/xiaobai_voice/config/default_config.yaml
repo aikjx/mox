@@ -1,7 +1,7 @@
 # xiaobai 默认配置（跨平台）。用户实际运行配置在 %APPDATA%/mox/xiaobai/config.yaml
 # 运行时会以本文件为基础，做 deep-merge 覆盖。
 voice:
-  port: 3717
+  port: 30010
   host: 127.0.0.1
   strategy: local_first          # local_first / cloud_only / cloud_fallback
   license_tier: auto             # auto / research / apache2
@@ -52,7 +52,7 @@ ui:
     toggle_record: Alt+X
     read_clipboard: Alt+S
     quit: Alt+Q
-  ai_dialog_url: "http://localhost:3021/#/ai"
+  ai_dialog_url: "http://localhost:3020/#/ai"
   use_qt_webview: true           # 双击用 QWebEngineView 打开；否则默认浏览器
 
 logging:

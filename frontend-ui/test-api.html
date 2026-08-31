@@ -6,7 +6,7 @@
 <div id="result"></div>
 <script>
 async function test() {
-  const res = await fetch("http://localhost:3010/ai/chat", {
+  const res = await fetch("http://localhost:8080/ai/chat", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({message: "生成一个企业官网的需求知识图谱"})

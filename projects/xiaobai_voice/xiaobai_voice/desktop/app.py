@@ -35,7 +35,7 @@ def run_desktop(args: Any) -> int | None:
 
     from ..config.loader import ConfigLoader
     loader = ConfigLoader(watch=False)
-    port = int(getattr(args, "port", 0) or int(loader.get("voice.port") or 3717))
+    port = int(getattr(args, "port", 0) or int(loader.get("voice.port") or 30010))
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv[:0] if False else sys.argv)
     app.setQuitOnLastWindowClosed(False)
     app.setApplicationName("Xiaobai")
@@ -52,7 +52,7 @@ def run_desktop(args: Any) -> int | None:
 
     # 主窗口
     from .main_window import MainWindow
-    ai_url = str(loader.get("ui.ai_dialog_url") or "http://localhost:3021/#/ai")
+    ai_url = str(loader.get("ui.ai_dialog_url") or "http://localhost:3020/#/ai")
     mw = MainWindow(loader=loader, default_url=ai_url, port=port)
 
     # 快捷键

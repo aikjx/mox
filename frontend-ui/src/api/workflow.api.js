@@ -31,7 +31,9 @@ export const mcpCall = (name, args) =>
   http.post('/mcp', { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name, arguments: args } })
 
 // ===== AI 自动化中枢 =====
-export const automationList = () => http.get('/automation')
+export const getAutomations = () => http.get('/automation')
+/** @deprecated 请使用 getAutomations */
+export const automationList = getAutomations
 export const automationChat = (payload) => http.post('/automation/chat', payload)
 export const automationRefine = (id, payload) => http.post(`/automation/${encodeURIComponent(id)}/refine`, payload)
 export const automationRun = (id, payload) => http.post(`/automation/${encodeURIComponent(id)}/run`, payload)

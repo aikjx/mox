@@ -4,7 +4,7 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use mox_alliance_boot_config::load_scheduler;
+use mox_alliance_boot_config::{load_experts, load_scheduler};
 use mox_alliance_common_proto::{AllianceMode, FusionStrategy, TaskPriority};
 use mox_alliance_scheduler_core::{FileTaskRepository, InMemoryTaskRepository};
 use mox_alliance_scheduler_proto::types::SchedulerConfig;
@@ -57,10 +57,18 @@ async fn main() -> anyhow::Result<()> {
             }
         };
 
+    // 专家配置外部化：config/alliance-experts.yml（全局 LLM 局部覆盖 + 模块按 module_id 合并）
+    let experts_file = std::env::var("MOX_ALLIANCE_EXPERTS_FILE").unwrap_or_else(|_| {
+        "config/alliance-experts.yml".to_string()
+    });
+    let experts = load_experts(&experts_file)?;
+
     // 构建服务器：Standalone 模式，桥接指向配置的执行器服务
     let server = SchedulerServer::new(config, addr)
         .with_executor_url(boot.executor_bridge.base_url.clone())
-        .with_task_repository(repository);
+        .with_task_repository(repository)
+        .with_experts(experts)
+        .with_expert_service(boot.expert_service.clone());
 
     tracing::info!(
         "Scheduler 启动配置完成：监听 {}:{}，executor_bridge={}，expert_service={}",

@@ -174,14 +174,14 @@ if [ "$rc" -ne 0 ]; then
   exit "$rc"
 fi
 
-# 打印访问地址
-API_PORT=3010
-FE_PORT=3020
+# 打印访问地址（端口一律以 platform_config.json 为单一事实源，禁止硬编码漂移）
+API_PORT=$("$PY_BIN" -c "import json; d=json.load(open('platform_config.json',encoding='utf-8')); print(d['services']['api']['port'])" 2>/dev/null || echo 8080)
+FE_PORT=$("$PY_BIN" -c "import json; d=json.load(open('platform_config.json',encoding='utf-8')); print(d['services']['frontend']['port'])" 2>/dev/null || echo 3020)
 DASH_PORT=$("$PY_BIN" -c "import json,sys; d=json.load(open('platform_config.json',encoding='utf-8')); print(d.get('dashboard_port',3999))" 2>/dev/null || echo 3999)
 echo
 echo "============================================================"
 echo "  $tick 完成（管理面板挂起 / 后台运行）"
-echo "   · Dashboard: ${C_BLU}http://localhost:${DASH_PORT}/${C_RST}   → 登录 admin / admin123 后点 ▶ 启动所有（api+frontend）"
+echo "   · Dashboard: ${C_BLU}http://localhost:${DASH_PORT}/${C_RST}   → 登录 admin（密码见 platform_config.json → admin.password）后点 ▶ 启动所有"
 echo "   · API      : ${C_BLU}http://localhost:${API_PORT}/health${C_RST}   （需先在管理面板启动 api）"
 echo "   · Frontend : ${C_BLU}http://localhost:${FE_PORT}/${C_RST}         （需先在管理面板启动 frontend）"
 echo "   · 停止所有 ：${C_CYN}$0 --stop  或  $PY_BIN scripts/manage.py stop all --force${C_RST}"

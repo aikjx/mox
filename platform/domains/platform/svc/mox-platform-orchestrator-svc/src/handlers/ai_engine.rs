@@ -270,7 +270,7 @@ impl Default for AiEngineState {
 
         Self {
             agent: None,
-            sidecar: Arc::new(NodeSidecarClient::new("http://127.0.0.1:3010")),
+            sidecar: Arc::new(NodeSidecarClient::new("http://127.0.0.1:8080") // backend-node 已删除(2026-09)，默认指向 Rust 网关 8080),
             capability_router: Arc::new(router),
             path_router: Arc::new(paths),
             stats: Arc::new(EngineStats::default()),

@@ -90,37 +90,64 @@ impl Default for LlmConfig {
 impl LlmConfig {
     /// 从环境变量加载真实 LLM 配置
     ///
-    /// - `MOX_LLM_BASE_URL`（缺省 https://api.openai.com/v1）
-    /// - `MOX_LLM_API_KEY`（缺省回退 `OPENAI_API_KEY`）
-    /// - `MOX_LLM_MODEL`（缺省 gpt-4o-mini）
-    /// - `MOX_LLM_TIMEOUT_MS`（缺省 60000）
+    /// 探测顺序（取第一个可用的 Key）：
+    /// 1. `MOX_LLM_API_KEY` + `MOX_LLM_BASE_URL` + `MOX_LLM_MODEL`
+    /// 2. `DEEPSEEK_API_KEY` → base `https://api.deepseek.com`、model `deepseek-chat`
+    /// 3. `OPENAI_API_KEY` → base `https://api.openai.com/v1`、model `gpt-4o-mini`
     ///
+    /// 其余可选：`MOX_LLM_TIMEOUT_MS`（缺省 60000）。
     /// 返回 `None` 表示未配置可用 Key（调用方应回退本地引擎）。
     pub fn from_env() -> Option<Self> {
-        let api_key = std::env::var("MOX_LLM_API_KEY")
+        // 1) 显式 MOX_LLM_* 优先
+        if let Some(api_key) = std::env::var("MOX_LLM_API_KEY")
             .ok()
             .filter(|s| !s.is_empty())
-            .or_else(|| std::env::var("OPENAI_API_KEY").ok().filter(|s| !s.is_empty()))?;
-        let base_url = std::env::var("MOX_LLM_BASE_URL")
+        {
+            let base_url = std::env::var("MOX_LLM_BASE_URL")
+                .ok()
+                .filter(|s| !s.is_empty())
+                .unwrap_or_else(|| "https://api.openai.com/v1".to_string());
+            let model = std::env::var("MOX_LLM_MODEL")
+                .ok()
+                .filter(|s| !s.is_empty())
+                .unwrap_or_else(|| "gpt-4o-mini".to_string());
+            return Some(Self::from_parts(api_key, base_url, model));
+        }
+        // 2) DeepSeek（OpenAI 兼容）
+        if let Some(api_key) = std::env::var("DEEPSEEK_API_KEY")
             .ok()
             .filter(|s| !s.is_empty())
-            .unwrap_or_else(|| "https://api.openai.com/v1".to_string());
-        let model = std::env::var("MOX_LLM_MODEL")
+        {
+            return Some(Self::from_parts(
+                api_key,
+                "https://api.deepseek.com".to_string(),
+                "deepseek-chat".to_string(),
+            ));
+        }
+        // 3) OpenAI
+        let api_key = std::env::var("OPENAI_API_KEY")
             .ok()
-            .filter(|s| !s.is_empty())
-            .unwrap_or_else(|| "gpt-4o-mini".to_string());
+            .filter(|s| !s.is_empty())?;
+        Some(Self::from_parts(
+            api_key,
+            "https://api.openai.com/v1".to_string(),
+            "gpt-4o-mini".to_string(),
+        ))
+    }
+
+    fn from_parts(api_key: String, base_url: String, model: String) -> Self {
         let timeout_ms = std::env::var("MOX_LLM_TIMEOUT_MS")
             .ok()
             .and_then(|s| s.parse::<u64>().ok())
             .unwrap_or(60_000);
-        Some(Self {
+        Self {
             base_url,
             api_key,
             model,
             temperature: 0.5,
             max_tokens: 2048,
             timeout_ms,
-        })
+        }
     }
 
     /// 是否具备可用的真实 Key
@@ -305,5 +332,29 @@ mod tests {
         assert_eq!(c.complete(&msgs).unwrap(), "world");
         assert_eq!(c.complete(&msgs).unwrap(), "world"); // 超长后重复末条
         assert_eq!(c.call_count(), 3);
+    }
+
+    /// 真实 LLM 连通性冒烟测试（默认忽略，需手动 `cargo test -- --ignored`）
+    ///
+    /// 需要环境变量 `DEEPSEEK_API_KEY` 或 `MOX_LLM_API_KEY`；
+    /// 未配置时自动跳过（不失败）。
+    #[test]
+    #[ignore = "live LLM connectivity smoke test, requires API key"]
+    fn live_llm_connectivity() {
+        let Some(config) = LlmConfig::from_env() else {
+            eprintln!("[skip] 未配置 LLM API Key，跳过实时连通性测试");
+            return;
+        };
+        let client = OpenAiChatClient::new(config);
+        let msgs = vec![
+            ChatMessage::system("你是一个测试助手，请用一句话回答。"),
+            ChatMessage::user("1+1 等于几？"),
+        ];
+        let out = client
+            .complete(&msgs)
+            .expect("真实 LLM 调用应成功（请检查 base_url/api_key/网络）");
+        eprintln!("[live] LLM 返回: {}", out);
+        assert!(!out.is_empty());
+        assert!(!out.contains("（模型未返回内容）"));
     }
 }

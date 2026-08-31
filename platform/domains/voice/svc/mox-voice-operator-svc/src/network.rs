@@ -360,7 +360,7 @@ mod tests {
 
     #[test]
     fn parse_netstat_windows_pid_extracts() {
-        let sample = "  TCP    0.0.0.0:3717           0.0.0.0:0              LISTENING       8812\r\n  TCP    127.0.0.1:8307         127.0.0.1:63001        ESTABLISHED     1";
+        let sample = "  TCP    0.0.0.0:30010          0.0.0.0:0              LISTENING       8812\r\n  TCP    127.0.0.1:8307         127.0.0.1:63001        ESTABLISHED     1";
         let rows = parse_netstat_rows(sample);
         assert!(rows.len() >= 2, "rows={:?}", rows);
         assert_eq!(rows[0].get("pid").unwrap(), "8812");

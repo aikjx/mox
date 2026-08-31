@@ -193,18 +193,20 @@ $($C.C)============================================================
         Show-LastLogs
         exit $rc
       }
-      # 访问小贴士
+      # 访问小贴士（端口一律以 platform_config.json 为单一事实源，禁止硬编码漂移）
       try {
         $cfg = Get-Content (Join-Path $RepoRoot 'platform_config.json') -Raw -Encoding UTF8 | ConvertFrom-Json
         $dashPort = [int]$cfg.dashboard_port
-      } catch { $dashPort = 3999 }
+        $apiPort = [int]$cfg.services.api.port
+        $fePort  = [int]$cfg.services.frontend.port
+      } catch { $dashPort = 3999; $apiPort = 8080; $fePort = 3020 }
       Write-Host @"
 
 $($C.G)============================================================$($C._)
   启动完成（管理面板挂起 / 后台运行）。常用操作：
-   · Dashboard: $($C.B)http://localhost:$dashPort/$($C._)   → 登录后点 ▶ 启动所有 （api:3010 / frontend:3020）
-   · API      : $($C.B)http://localhost:3010/health$($C._)   （需在管理面板启动 api 服务后可用）
-   · Frontend : $($C.B)http://localhost:3020/$($C._)         （需在管理面板启动 frontend 服务后可用）
+   · Dashboard: $($C.B)http://localhost:$dashPort/$($C._)   → 登录后点 ▶ 启动所有 （api:$apiPort / frontend:$fePort）
+   · API      : $($C.B)http://localhost:$apiPort/health$($C._)   （需在管理面板启动 api 服务后可用）
+   · Frontend : $($C.B)http://localhost:$fePort/$($C._)         （需在管理面板启动 frontend 服务后可用）
    · 停止所有 : $($C.C).\scripts\start.ps1 Stop$($C._)
    · 运维 CLI : $($C.C)& $($PY.Bin) scripts\manage.py list|status|logs|stop$($C._)
    · 旧行为启动（脚本同步启动所有服务）: $($C.C).\scripts\start.ps1 Start -WithServices$($C._)

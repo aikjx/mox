@@ -35,7 +35,7 @@ scripts/
 └── temp/                  # 临时/探测脚本（可随时清理）
     ├── _auto_dl_cosy2_weights.py
     ├── _check_cosy_env.py
-    ├── _probe3717.py
+    ├── _probe30010.py
     ├── _run_e2b.py
     ├── _run_e4.py
     └── _tmp_t10_doc_check.js
@@ -79,7 +79,7 @@ python scripts/manage.py bootstrap --with-dashboard
 
 | 服务 Key | 名称 | 端口 | 类型 | 自动启动 |
 |----------|------|------|------|----------|
-| xiaobai_voice | 小白语音服务（ASR + TTS） | 3717 | Python | ✅ |
+| xiaobai_voice | 小白语音服务（ASR + TTS） | 30010 | Python | ✅ |
 | api | API 后端服务（Rust mox-gateway） | 8080 | Rust | ❌ |
 | frontend | 用户前端界面（Vite + Vue3） | 3020 | Node | ❌ |
 | melody2score | 旋律转谱服务（WebUI） | 8012 | Python | ❌ |

@@ -2,8 +2,8 @@
 
 覆盖 E-2 ~ E-5 四项验收：
   E-2 健康检查（tts ready + cosyvoice2 + rust_dsp available）
-  E-3 直连 :3717 合成中文 → x-tts-engine=cosyvoice2 + WAV meta 22050Hz + _last_dsp_impl=Rust
-  E-4 三层代理 :3021 -> :3001 -> :3717 /voice/tts/stream
+  E-3 直连 :30010 合成中文 → x-tts-engine=cosyvoice2 + WAV meta 22050Hz + _last_dsp_impl=Rust
+  E-4 三层代理 :3020 -> :8080 -> :30010 /voice/tts/stream
   E-5 （可选）浏览器前端点击播放按钮验证——脚本只输出提示与 curl 对比
 
 用法：
@@ -142,7 +142,7 @@ def parse_wav_meta(raw: bytes) -> dict:
 # ======================================================================== cases
 def case_e2_health(base: str, results: list[CaseResult]) -> None:
     """E-2 健康检查"""
-    name = "E-2 健康检查(voice:3717)"
+    name = "E-2 健康检查(voice:30010)"
     try:
         status, hdrs, body, _dt = http_get(f"{base}/voice/health", timeout=10)
     except Exception as e:
@@ -253,10 +253,10 @@ def _check_engine_and_wav(name, results, resp_status, headers, body, dt_ms, text
 
 
 def case_e3_direct(results: list[CaseResult], out_dir: pathlib.Path) -> None:
-    base = "http://localhost:3717"
+    base = "http://localhost:30010"
     text = "今天阳光明媚，我和朋友一起去郊外散步，一路上聊了很多有趣的故事，心情特别好。"
     url = _build_url(base, text)
-    name = "E-3 直连 :3717 合成"
+    name = "E-3 直连 :30010 合成"
     try:
         status, hdrs, body, dt_ms = http_get(url, timeout=600)
     except Exception as e:
@@ -271,10 +271,10 @@ def case_e3_direct(results: list[CaseResult], out_dir: pathlib.Path) -> None:
 
 
 def case_e4_proxy(results: list[CaseResult], out_dir: pathlib.Path) -> None:
-    base = "http://localhost:3021"
+    base = "http://localhost:3020"
     text = "人工智能正在改变我们的生活，语音合成就是其中最直观的一环。清晰自然的语音，让机器更有温度。"
     url = _build_url(base, text)
-    name = "E-4 三层代理 :3021 -> :3001 -> :3717"
+    name = "E-4 三层代理 :3020 -> :8080 -> :30010"
     try:
         status, hdrs, body, dt_ms = http_get(url, timeout=600)
     except Exception as e:
@@ -380,7 +380,7 @@ def main(argv: list[str]) -> int:
         return _finish(results, out_dir, t0)
 
     if not args.skip_e2:
-        case_e2_health("http://localhost:3717", results)
+        case_e2_health("http://localhost:30010", results)
     if not args.skip_e3:
         case_e3_direct(results, audio_dir)
     if not args.skip_e4:

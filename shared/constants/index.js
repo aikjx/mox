@@ -17,10 +17,12 @@ export const API_PATHS = {
   audit: '/api/audit'
 }
 
+// 端口权威来源：docs/ports/PORT-REGISTRY.md（PORT-REGISTRY-001）
+// 注意：本文件当前无项目代码引用，仅作共享常量存档；若启用请以 PORT-REGISTRY-001 为准。
 export const SERVICE_PORTS = {
-  gateway: 3000,
-  nodeBackend: 3010,
-  frontendUI: 3021
+  gateway: 8080,          // Rust 平台网关（api，唯一对外 HTTP 入口）
+  nodeBackend: 0,         // Node API / sidecar 已退役（3010 停用，backend-node 已删除）
+  frontendUI: 3020        // 前端（Vite Vue3 dev server）
 }
 
 export const STORAGE_TYPES = {

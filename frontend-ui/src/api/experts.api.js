@@ -20,7 +20,9 @@ export const getSingleExpertMetrics = (id) => http.get(`/experts/${encodeURIComp
 
 // ===== 企业级会话持久化 =====
 export const createExpertSession = (payload) => http.post('/experts/sessions', payload)
-export const listExpertSessions = (params) => http.get('/experts/sessions', { params })
+export const getExpertSessions = (params) => http.get('/experts/sessions', { params })
+/** @deprecated 请使用 getExpertSessions */
+export const listExpertSessions = getExpertSessions
 export const getExpertSessionStats = () => http.get('/experts/sessions/stats')
 export const getExpertSession = (id) => http.get(`/experts/sessions/${encodeURIComponent(id)}`)
 export const updateExpertSession = (id, payload) => http.put(`/experts/sessions/${encodeURIComponent(id)}`, payload)
@@ -60,5 +62,7 @@ export const expertOrchestrate = (payload) => http.post('/experts/orchestrate', 
 export const expertGeneratePlan = (payload) => http.post('/experts/plan/generate', payload)
 export const expertExecutePlan = (payload) => http.post('/experts/plan/execute', payload)
 export const getOrchestrationStats = () => http.get('/experts/orchestration/stats')
-export const listOrchestrationPlugins = () => http.get('/experts/orchestration/plugins')
+export const getOrchestrationPlugins = () => http.get('/experts/orchestration/plugins')
+/** @deprecated 请使用 getOrchestrationPlugins */
+export const listOrchestrationPlugins = getOrchestrationPlugins
 export const getOrchestrationHistory = (params) => http.get('/experts/orchestration/history', { params })

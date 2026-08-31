@@ -162,17 +162,20 @@ pub fn parse_score(answer: &str) -> f64 {
 
 /// 从最终答案解析是否否决
 pub fn parse_veto(answer: &str) -> (bool, Option<String>) {
-    // 显式控制行
+    // 显式控制行（行首），例如「是否否决：否 / 是否否决: 是」
     for line in answer.lines() {
         let line = line.trim();
         if line.starts_with("是否否决") {
-            if line.contains('是') {
-                return (true, Some(snippet(answer)));
+            let rest = line
+                .trim_start_matches("是否否决")
+                .trim_start_matches(['：', ':', ' ', '\t']);
+            if rest.starts_with('否') || rest.starts_with('0') {
+                return (false, None);
             }
-            return (false, None);
+            return (true, Some(snippet(answer)));
         }
     }
-    // 语义兜底
+    // 语义兜底：仅正文中出现明确否决语义词
     if answer.contains("否决") || answer.contains("不可行") || answer.contains("无法处理") {
         (true, Some(snippet(answer)))
     } else {

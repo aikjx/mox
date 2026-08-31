@@ -1,0 +1,42 @@
+﻿======== A. Python xiaobai_voice: 3717 -> 30010 ========
+  [OK  ] projects/xiaobai_voice/README.md  (替换 2 处)  
+  [OK  ] projects/xiaobai_voice/xiaobai_voice/cli.py  (替换 3 处)  
+  [OK  ] projects/xiaobai_voice/xiaobai_voice/__init__.py  (替换 1 处)  
+  [OK  ] projects/xiaobai_voice/xiaobai_voice/config/default_config.yaml  (替换 1 处)  
+  [OK  ] projects/xiaobai_voice/xiaobai_voice/desktop/app.py  (替换 1 处)  
+  [OK  ] projects/xiaobai_voice/xiaobai_voice/desktop/ball_widget.py  (替换 3 处)  
+  [OK  ] projects/xiaobai_voice/xiaobai_voice/desktop/main_window.py  (替换 2 处)  
+  [OK  ] projects/xiaobai_voice/xiaobai_voice/proxy/voice_proxy.py  (替换 1 处)  
+  [OK  ] projects/xiaobai_voice/xiaobai_voice/service/main.py  (替换 2 处)  
+======== B. Rust orchestrator: voice 3717 -> 30010 ========
+  [OK  ] platform/domains/platform/svc/mox-platform-orchestrator-svc/src/subservers.rs  (替换 4 处)  
+  [OK  ] platform/domains/platform/svc/mox-platform-orchestrator-svc/src/routes/voice_proxy.rs  (替换 4 处)  
+  [OK  ] platform/domains/platform/svc/mox-platform-orchestrator-svc/src/main.rs  (替换 2 处)  (注释)
+======== C. Rust voice crate: server_3717 -> server_30010 + 3717 -> 30010 ========
+  [OK  ] platform/domains/voice/svc/mox-voice-operator-svc/Cargo.toml  (替换 3 处)  
+  [OK  ] platform/domains/voice/svc/mox-voice-operator-svc/src/lib.rs  (替换 4 处)  
+  [OK  ] platform/domains/voice/svc/mox-voice-operator-svc/src/server_3717.rs  (替换 8 处)  
+  [OK  ] platform/domains/voice/svc/mox-voice-operator-svc/README.md  (替换 12 处)  
+  [OK  ] platform/domains/voice/svc/mox-voice-desktop-app/Cargo.toml  (替换 4 处)  
+  [OK  ] platform/domains/voice/svc/mox-voice-desktop-app/src/lib.rs  (替换 1 处)  
+  [OK  ] platform/domains/voice/svc/mox-voice-desktop-app/src/ball_widget.rs  (替换 10 处)  
+  [OK  ] platform/domains/voice/svc/mox-voice-desktop-app/src/main.rs  (替换 20 处)  
+  [OK  ] scripts/temp/_main_orig.rs  (替换 11 处)  
+  [OK  ] scripts/validation/fix_pass2.py  (替换 1 处)  
+  [REN ] platform/domains/voice/svc/mox-voice-operator-svc/src/server_3717.rs -> server_30010.rs  (已改内容，随包引用同步)
+  [REN ] scripts/temp/_probe3717.py -> _probe30010.py  
+======== D. 配置 / 脚本 ========
+  [OK  ] platform_config.json  (替换 3 处)  
+  [OK  ] scripts/server-manage.py  (替换 2 处)  
+  [OK  ] scripts/validation/verify_tts_rust_fullstack.py  (替换 7 处)  
+  [OK  ] scripts/README.md  (替换 2 处)  
+  [OK  ] scripts/temp/_probe30010.py  (替换 4 处)  
+  [OK  ] frontend-ui/vite.config.js  (替换 1 处)  (注释)
+======== E. orchestrator 侧车 3010 清理 ========
+  [OK  ] platform/domains/platform/svc/mox-platform-orchestrator-svc/src/main.rs  (替换 1 处)  
+  [OK  ] platform/domains/platform/svc/mox-platform-orchestrator-svc/src/handlers/ai_engine.rs  (替换 1 处)  
+  [OK  ] platform/domains/platform/svc/mox-platform-orchestrator-svc/src/sidecar/mod.rs  (替换 1 处)  
+  [OK  ] platform/domains/platform/svc/mox-platform-orchestrator-svc/src/sidecar/node_sidecar.rs  (替换 1 处)  
+  [OK  ] frontend-ui/test-api.html  (替换 1 处)  (测试页指向现行 API 网关)
+
+全部完成。

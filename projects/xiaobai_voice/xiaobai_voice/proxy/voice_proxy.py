@@ -4,7 +4,7 @@
 --------------------
 传输：WebSocket（持久双向，主通道）+ HTTP（一次性命令，fallback）
 端口：
-    voice_service（本桥暴露）默认 HTTP/WS = 3717（与现有 FastAPI 语音服务端口一致，同端点多协议）
+    voice_service（本桥暴露）默认 HTTP/WS = 30010（与现有 FastAPI 语音服务端口一致，同端点多协议）
     mox-system 服务端默认 HTTP = 13130（对齐 mox 生态已有约定）
 策略（与 voice.strategy 对齐）：
     - local_first    ：本地 OperatorEngine 优先执行；成功/失败同时上报 mox 审计（不阻塞），

@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => {
   const isProd = mode === 'production'
 
   console.log('[vite-config] mode=', mode, '_TOKEN=', _TOKEN ? `set(${_TOKEN.length}chars)` : 'EMPTY')
-  console.log('[vite-config] GATEWAY_URL=', process.env.GATEWAY_URL || 'default :3001')
+  console.log('[vite-config] GATEWAY_URL=', process.env.GATEWAY_URL || 'default :8080')
 
   return {
     plugins: [vue()],
@@ -50,7 +50,7 @@ export default defineConfig(({ mode }) => {
         'Referrer-Policy': 'strict-origin-when-cross-origin'
       },
       proxy: (() => {
-        const GW = process.env.GATEWAY_URL || 'http://localhost:3001'
+        const GW = process.env.GATEWAY_URL || 'http://localhost:8080'
         const AUTH = _TOKEN ? `Bearer ${_TOKEN}` : ''
         // Vite 官方推荐：configure(proxy, options) —— 在 http-proxy 实例创建后注册事件，100% 触发。
         // 相比直接写 on 对象（部分 Vite 5.x 补丁版本里被内部 wrapper 覆盖），configure 永远生效。
@@ -85,26 +85,26 @@ export default defineConfig(({ mode }) => {
         }
         console.log('[vite-config] proxy target GW=', GW, 'AUTH_LEN=', AUTH.length)
         return {
-          // ========== Rust 专家联盟网关（:3001）==========
+          // ========== Rust 专家联盟网关（:8080）==========
           '/ai/engine': {
             target: GW,
             changeOrigin: true,
             configure: mkConfigure('ai-engine'),
           },
-          // /voice/* → xiaobai_voice 服务代理（公开端点，3717 不可达时网关返回降级 JSON）
+          // /voice/* → xiaobai_voice 服务代理（公开端点，30010 不可达时网关返回降级 JSON）
           '/voice': {
             target: GW,
             changeOrigin: true,
             configure: mkAuthOnlyConfigure('voice'),
           },
-          // HITL 人机协同审批 WebSocket：由 Rust 网关承载（默认 :3001，可用 GATEWAY_URL 覆盖）
+          // HITL 人机协同审批 WebSocket：由 Rust 网关承载（默认 :8080，可用 GATEWAY_URL 覆盖）
           '/ws': {
             target: GW,
             ws: true,
             changeOrigin: true,
             configure: mkAuthOnlyConfigure('ws'),
           },
-          // ========== Rust 后端网关（:8080）—— 原 Node :3010 已迁移 ==========
+          // ========== Rust 后端网关（:8080）—— 原 Node BFF 已迁移至此 ==========
           '/api': {
             target: 'http://localhost:8080',
             changeOrigin: true,

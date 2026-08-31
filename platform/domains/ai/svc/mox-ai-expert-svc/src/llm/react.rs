@@ -67,11 +67,7 @@ impl ReactResult {
         steps.push(format!("[ReAct] 真实 LLM({}) 专家推理", model));
         for (i, t) in self.trace.iter().enumerate() {
             let line = t.lines().next().unwrap_or("").trim();
-            let snippet = if line.len() > 80 {
-                format!("{}…", &line[..80])
-            } else {
-                line.to_string()
-            };
+            let snippet = truncate_chars(line, 80);
             steps.push(format!("[{}/{}] {}", i + 1, self.trace.len(), snippet));
         }
         if self.tool_calls > 0 {
@@ -99,6 +95,15 @@ fn parse_tool_call(text: &str) -> Option<ToolCall> {
     let name = v.get("name")?.as_str()?.to_string();
     let args = v.get("arguments").cloned().unwrap_or(Value::Null);
     Some(ToolCall { name, args })
+}
+
+/// 按字符数安全截断（避免字节切片切断多字节 UTF-8 字符）
+fn truncate_chars(s: &str, max_chars: usize) -> String {
+    let mut out: String = s.chars().take(max_chars).collect();
+    if s.chars().count() > max_chars {
+        out.push('…');
+    }
+    out
 }
 
 /// 运行 ReAct 循环（同步；调用方负责放入 spawn_blocking）
