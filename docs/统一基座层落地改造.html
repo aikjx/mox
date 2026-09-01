@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>统一基座层落地改造图</title>
+<style>
+  body{margin:0;padding:0;background:#F4F3EE;font-family:'Roboto','PingFang SC','Segoe UI',Arial,sans-serif;color:#1A1B1C;}
+  .wrap{max-width:920px;margin:0 auto;padding:16px;box-sizing:border-box;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div style="font-size:17px;font-weight:600;">统一基座层落地改造 —— 新增模块 + 各域对接</div>
+  <div style="font-size:12.5px;color:#6B7280;margin:6px 0 14px;line-height:1.6;">新增统一基座域 <b>platform/domains/base/</b>（7 个 mox-base-*-core），cloud / kg / data / ai / flow 各域以 Trait 实现方式收敛到其上；物理 blob 保留直达流式通道。点击下方各域卡片查看逐 crate 对接映射。</div>
+
+  <div id="domains" style="display:flex;flex-wrap:wrap;gap:10px;box-sizing:border-box;"></div>
+  <div style="text-align:center;color:#9EACEA;font-size:15px;margin:6px 0;">▼</div>
+
+  <div style="background:#FFFFFF;border:1px solid rgba(0,0,0,0.08);border-radius:12px;padding:10px 12px;box-sizing:border-box;">
+    <div style="font-size:12px;color:#6B7280;margin-bottom:6px;">L2 统一服务面（同一入口，一套鉴权 / 追踪）</div>
+    <div id="services2" style="display:flex;flex-wrap:wrap;gap:8px;box-sizing:border-box;"></div>
+  </div>
+  <div style="text-align:center;color:#9EACEA;font-size:15px;margin:6px 0;">▼</div>
+
+  <div style="border:1.5px solid #9EACEA;border-radius:12px;padding:10px 12px;background:rgba(158,172,234,0.06);box-sizing:border-box;">
+    <div style="font-size:12px;color:#6B7280;margin-bottom:6px;">L1 统一基座层（<b>新增</b>）platform/domains/base/</div>
+    <div id="base" style="display:flex;flex-wrap:wrap;gap:8px;box-sizing:border-box;"></div>
+    <div style="font-size:11.5px;color:#6B7280;margin-top:8px;line-height:1.6;">统一原语：GET(id) · FILTER(props) · TRAVERSE(edge,k) · RANGE(blob)；复用已存在的 <b>platform/shared/mox-unified-algo-core</b> 作为算法基座。</div>
+  </div>
+  <div style="text-align:center;color:#8BC8EA;font-size:15px;margin:6px 0;">▼</div>
+
+  <div style="background:rgba(139,200,234,0.10);border:1px solid rgba(0,0,0,0.08);border-radius:12px;padding:10px 12px;box-sizing:border-box;">
+    <div style="font-size:12px;color:#6B7280;margin-bottom:6px;">L0 物理层（已存在，作为基座后端物理口）</div>
+    <div id="phys" style="display:flex;flex-wrap:wrap;gap:8px;box-sizing:border-box;"></div>
+    <div style="font-size:11.5px;color:#6B7280;margin-top:8px;line-height:1.6;">S3 / Volume / Filer 实现统一 BlobStore trait；大对象保留 RANGE 直达流式通道，不因图谱化牺牲吞吐。</div>
+  </div>
+
+  <div style="margin-top:12px;background:#FFFFFF;border:1px solid rgba(0,0,0,0.08);border-radius:12px;padding:12px;box-sizing:border-box;">
+    <div style="font-size:12px;color:#6B7280;margin-bottom:8px;">对接拆解（点击上方域卡片切换）</div>
+    <div id="detail" style="font-size:13px;line-height:1.7;color:#1A1B1C;"></div>
+  </div>
+</div>
+<script>
+(function(){
+  try {
+    var dEl=document.getElementById('domains'), bEl=document.getElementById('base'),
+        pEl=document.getElementById('phys'), sEl=document.getElementById('services2'),
+        detEl=document.getElementById('detail');
+    if(!dEl||!bEl||!pEl||!sEl||!detEl) return;
+
+    var base=[['mox-base-model-core','统一模型 Node/Edge/Blob'],['mox-base-store-core','统一存储抽象(物理口trait)'],['mox-base-index-core','统一索引 元数据+全文+向量'],['mox-base-query-core','统一查询 GET/FILTER/TRAVERSE/RANGE'],['mox-base-graph-core','图遍历引擎(多跳/路径)'],['mox-base-perm-core','节点级权限(基于mox-rbac-engine)'],['mox-base-lifecycle-core','生命周期 版本/去重/GC']];
+    var phys=[['mox-cloud-s3-svc','对象存储'],['mox-cloud-volume-svc','卷管理'],['mox-cloud-master-svc','寻址/协调'],['mox-cloud-filer-svc','文件语义'],['mox-cloud-rebalance-svc','再平衡']];
+    var svcs=[['统一查询引擎','四原语融合DSL'],['统一索引','一次写入三路检索'],['统一权限','节点/字段级ACL'],['统一生命周期','版本/去重/GC/回收站'],['统一追踪','trace_id 全链']];
+
+    for(var i=0;i<base.length;i++){ (function(x){var c=document.createElement('div');c.style.cssText='padding:8px 10px;border-radius:8px;background:#FFFFFF;border:1px solid rgba(158,172,234,0.55);box-sizing:border-box;flex:1 1 200px;min-width:0;';c.innerHTML='<div style="font-size:12.5px;font-weight:600;color:#1A1B1C;">'+x[0]+'</div><div style="font-size:11px;color:#6B7280;margin-top:2px;">'+x[1]+'</div>';bEl.appendChild(c);})(base[i]); }
+    for(var j=0;j<phys.length;j++){ (function(x){var c=document.createElement('div');c.style.cssText='padding:8px 10px;border-radius:8px;background:#FFFFFF;border:1px solid rgba(0,0,0,0.10);box-sizing:border-box;flex:1 1 160px;min-width:0;';c.innerHTML='<div style="font-size:12.5px;font-weight:600;color:#1A1B1C;">'+x[0]+'</div><div style="font-size:11px;color:#6B7280;margin-top:2px;">'+x[1]+'</div>';pEl.appendChild(c);})(phys[j]); }
+    for(var k=0;k<svcs.length;k++){ (function(x){var c=document.createElement('div');c.style.cssText='padding:6px 10px;border-radius:8px;background:rgba(158,172,234,0.10);box-sizing:border-box;flex:1 1 150px;min-width:0;';c.innerHTML='<div style="font-size:12px;font-weight:600;color:#1A1B1C;">'+x[0]+'</div><div style="font-size:10.5px;color:#6B7280;">'+x[1]+'</div>';sEl.appendChild(c);})(svcs[k]); }
+
+    var domains=[
+      {key:'kg',name:'kg 域',sub:'知识图谱 · 语义层',color:'#C9A7E8',map:'· mox-kg-meta-core（实体/关系模型）→ 对齐/复用 mox-base-model-core 的 Node/Edge，不再自建存储模型。\n· mox-kg-algo-core（算法）→ 实现 mox-base-graph-core 的遍历/路径 trait，算法上移到基座。\n· mox-kg-storage-svc → 改走 mox-base-store-core（后端落 mox-cloud-s3/volume）。\n· mox-kg-hub/fusion/streams → 统一接入 mox-base-query-core，对外只暴露一个查询入口。'},
+      {key:'cloud',name:'cloud 域',sub:'云盘 · OSS · 物理层',color:'#8BC8EA',map:'· mox-cloud-s3/volume/filer-svc → 实现 mox-base-store-core 的 BlobStore/ObjectStore trait，成为基座物理口（含 RANGE 直达流式通道）。\n· mox-cloud-master-svc → 承担节点寻址与协调，对接 mox-base-model-core 的 ID 空间。\n· mox-cloud-rebalance-svc → 挂接 mox-base-lifecycle-core（去重/GC/再平衡）。\n· mox-cloud-sdk → 保留面向终端的原生接口，内部转调统一查询。'},
+      {key:'data',name:'data 域',sub:'目录 · 元数据 · 治理',color:'#94D8C3',map:'· mox-data-catalog-svc → 元数据写入 mox-base-index-core（元数据索引一份）。\n· mox-data-etl-svc → 产出统一 Node 写入 mox-base-model-core，供图谱/知识库复用。\n· mox-data-compliance-svc → 复用 mox-base-perm-core 的节点级 ACL 与脱敏策略。\n· mox-data-standards-core → 作为 props 的 schema 约束注入 mox-base-model-core。'},
+      {key:'ai',name:'ai 域',sub:'RAG · Agent · 生成',color:'#F4B393',map:'· mox-ai-core（RAG 检索）→ 调 mox-base-query-core 的 FILTER/向量检索，不再各自连存储。\n· mox-ai-agent/expert-svc → 通过统一查询 DSL 访问知识库+图谱+云盘三层。\n· 内容写入侧 → 经 mox-base-index-core 一次写入三路索引（全文/向量/元数据）。'},
+      {key:'flowp',name:'flow / platform 域',sub:'流程 · 平台核心',color:'#9BBBF4',map:'· mox-flow-unified-storage/meta/perm-core → 收敛为 mox-base-* 的视图或重定向（避免两套 unified 并存）。\n· mox-platform-datastore/meta/iam-core → 作为基座通用能力被复用（IAM 注入 mox-base-perm-core）。\n· mox-dsql-core → 与 mox-base-query-core 的 DSL 融合，SQL/图查询一体。\n· mox-platform-integration-core → 在 L5 统一组装时注入基座 Trait 实现。'}
+    ];
+
+    var cards=[];
+    for(var m=0;m<domains.length;m++){(function(v,idx){var c=document.createElement('div');c.setAttribute('role','button');c.setAttribute('tabindex','0');c.style.cssText='flex:1 1 150px;min-height:74px;box-sizing:border-box;cursor:pointer;border:1.5px solid '+v.color+';border-radius:12px;padding:10px 12px;background:#FFFFFF;';c.innerHTML='<div style="font-size:14px;font-weight:600;color:#1A1B1C;">'+v.name+'</div><div style="font-size:11px;color:#6B7280;margin-top:3px;">'+v.sub+'</div>';c.addEventListener('click',function(){sel(idx);});c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();sel(idx);}});dEl.appendChild(c);cards.push(c);})(domains[m],m);}
+
+    function sel(idx){
+      for(var q=0;q<cards.length;q++){cards[q].style.borderColor=(q===idx)?domains[q].color:'rgba(0,0,0,0.12)';cards[q].style.boxShadow=(q===idx)?'0 2px 8px rgba(0,0,0,0.10)':'none';cards[q].style.background=(q===idx)?'#FFFFFF':'rgba(255,255,255,0.6)';}
+      var v=domains[idx];
+      detEl.innerHTML='<div style="font-weight:600;font-size:14px;margin-bottom:4px;color:'+v.color+';"><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:'+v.color+';margin-right:6px;"></span>'+v.name+' —— '+v.sub+'</div><div style="white-space:pre-line;color:#1A1B1C;">'+v.map+'</div>';
+    }
+
+    detEl.innerHTML='<div style="font-weight:600;font-size:14px;margin-bottom:4px;color:#9EACEA;"><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#9EACEA;margin-right:6px;"></span>落地总览</div><div style="white-space:pre-line;">· 新增统一基座域 platform/domains/base/，7 个 mox-base-*-core 只定义模型与 Trait，不内置具体后端。\n· 各域以"实现 Trait + 注册 Factory + 加配置"接入（沿用 L5 集成层的零改动扩展机制）。\n· 依赖方向：域 → mox-base-*-core → mox-cloud-* 物理口，单向，无循环。\n· 点击上方任意域卡片查看该域的逐 crate 对接映射。</div>';
+  }catch(e){console.error(e);}
+})();
+</script>
+</body>
+</html>

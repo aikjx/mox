@@ -282,7 +282,13 @@
 | 认证 | username/password 需 nacos-sdk `auth-by-http` feature（当前 boot-config 仅 `config` 能力，无鉴权直连；接入时补 feature） |
 | 回归测试 | boot-config：config_store 6 项（命中/未命中/链降级/全 None）+ nacos 3 项（disabled 不发请求 / 空 dataId / 不可达显式报错）；nacos feature 下 **19 passed** |
 
-**诚实声明**：本地无 Nacos 服务端，未做真实服务端 e2e；`get_config`/`add_listener` 走官方 SDK 协议，真实链路需部署 rnacos 或 nacos-server 2.x 后验证。scheduler-svc/executor-svc 默认**不启用** nacos feature（保持轻量），部署配置中心时开启。
+**真实服务端 e2e（2026-09-01，rnacos 0.8.7 实测通过）**：
+本地运行 rnacos（`tools/rnacos/rnacos.exe`，127.0.0.1:8848/9848），发布 `mox-alliance-scheduler.yml` 后跑 `cargo test -p mox-alliance-boot-config --features nacos --test nacos_e2e -- --ignored`，两项全通过：
+- **e2e-1** get_config 真实拉取：SDK 走 gRPC 向 rnacos 取回 2275 字节远程配置，命中 `port: 3100` / `nacos` / `expert_service`；
+- **e2e-2** watch 热更新：HTTP 发布追加标记版本 → `add_listener` 回调更新缓存 + `changed()` 广播命中标记。
+- 过程中修复一个真实 bug：`CacheListener::notify` 由 nacos-sdk 客户端线程池回调（非 tokio runtime 上下文），原用 tokio `RwLock::blocking_write()` 会 panic「Cannot block the current thread」，已改用 **std::sync::Mutex**（任意线程可锁）。
+
+**说明**：scheduler-svc/executor-svc 默认**不启用** nacos feature（保持轻量，避免 SDK 重依赖）；部署配置中心时开启 `nacos` feature + yml `nacos.enabled: true`。真实 Nacos 服务端连通性已被上述 e2e 证明。
 
 ### 7.12 executor 生产专家模式：真实 LLM 调用链（2026-09-01）
 

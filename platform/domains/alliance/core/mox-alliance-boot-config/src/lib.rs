@@ -29,6 +29,9 @@ pub mod experts;
 #[cfg(feature = "nacos")]
 pub mod nacos_config;
 
+#[cfg(feature = "naming")]
+pub mod naming;
+
 pub use config_store::{
     ConfigStore, ConfigStoreChain, ConfigStoreError, FileConfigStore, MemoryConfigStore,
 };
@@ -36,6 +39,9 @@ pub use config_store::{
 pub use experts::{
     load_experts, ExpertModuleOverlay, ExpertsBootConfig, GlobalLlmOverlay,
 };
+
+#[cfg(feature = "naming")]
+pub use naming::{NamingRegistry, NamingSection};
 
 /// 环境变量前缀（统一命名空间）
 const ENV_PREFIX: &str = "MOX_ALLIANCE_";
@@ -167,6 +173,8 @@ pub struct SchedulerBootConfig {
     pub expert_service: ExpertServiceSection,
     pub storage: StorageSection,
     pub nacos: NacosSection,
+    #[cfg(feature = "naming")]
+    pub naming: NamingSection,
 }
 
 impl Default for SchedulerBootConfig {
@@ -181,6 +189,8 @@ impl Default for SchedulerBootConfig {
             expert_service: ExpertServiceSection::default(),
             storage: StorageSection::default(),
             nacos: NacosSection::default(),
+            #[cfg(feature = "naming")]
+            naming: NamingSection::default(),
         }
     }
 }
@@ -226,6 +236,8 @@ pub struct ExecutorBootConfig {
     pub executor: ExecutorSection,
     pub storage: StorageSection,
     pub nacos: NacosSection,
+    #[cfg(feature = "naming")]
+    pub naming: NamingSection,
 }
 
 impl Default for ExecutorBootConfig {
@@ -238,6 +250,8 @@ impl Default for ExecutorBootConfig {
             executor: ExecutorSection::default(),
             storage: StorageSection::default(),
             nacos: NacosSection::default(),
+            #[cfg(feature = "naming")]
+            naming: NamingSection::default(),
         }
     }
 }

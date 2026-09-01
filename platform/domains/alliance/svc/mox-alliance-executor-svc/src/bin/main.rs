@@ -3,7 +3,7 @@
 
 use std::net::SocketAddr;
 
-use mox_alliance_boot_config::load_executor;
+use mox_alliance_boot_config::{load_executor_with_nacos, NamingRegistry};
 use mox_alliance_executor_proto::types::ExecutorConfig;
 use mox_alliance_executor_svc::{ExecutorMode, ExecutorServer};
 use tracing_subscriber::EnvFilter;
@@ -24,11 +24,13 @@ async fn main() -> anyhow::Result<()> {
         )
         .init();
 
-    // 加载引导配置：内置默认 < config/alliance-executor.yml < MOX_ALLIANCE_* 环境变量
+    // 加载引导配置：内置默认 < config/alliance-executor.yml < Nacos(可选) < MOX_ALLIANCE_* 环境变量
+    // Nacos 配置中心（阶段二）：nacos.enabled=true 时从 Nacos 拉取远程完整配置整体覆盖本地 yml，
+    // 失败降级本地（不阻断启动）。
     let config_file = std::env::var("MOX_ALLIANCE_CONFIG_FILE").unwrap_or_else(|_| {
         DEFAULT_CONFIG_FILE.to_string()
     });
-    let boot = load_executor(&config_file)?;
+    let boot = load_executor_with_nacos(&config_file).await?;
 
     // 由引导配置构造执行器业务配置（ExecutorConfig）
     let config = ExecutorConfig {
@@ -68,7 +70,18 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
+    // Nacos 注册中心（阶段三）：nacos.enabled + naming.enabled → 注册自身实例（失败告警不阻断）
+    let naming = NamingRegistry::connect(&boot.nacos, &boot.naming).await?;
+    if let Some(reg) = &naming {
+        reg.register().await;
+    }
+
     server.run().await?;
+
+    // 服务退出：优雅注销注册中心实例（避免僵尸实例）
+    if let Some(reg) = &naming {
+        reg.deregister().await;
+    }
 
     Ok(())
 }

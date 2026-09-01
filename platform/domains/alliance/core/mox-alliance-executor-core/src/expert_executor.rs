@@ -78,6 +78,60 @@ impl ExpertExecutorConfig {
         let delay = self.initial_retry_delay_ms as f64 * self.backoff_factor.powi(retry_count as i32);
         delay.min(self.max_retry_delay_ms as f64) as u64
     }
+
+    /// 从环境变量构建配置
+    ///
+    /// 支持的环境变量：
+    /// - `MOX_EXECUTOR_NODE_TIMEOUT_MS`：节点超时（毫秒），默认 60_000（1 分钟）
+    /// - `MOX_EXECUTOR_MAX_RETRIES`：最大重试次数，默认 3
+    /// - `MOX_EXECUTOR_INITIAL_RETRY_DELAY_MS`：初始重试延迟（毫秒），默认 1_000
+    /// - `MOX_EXECUTOR_MAX_RETRY_DELAY_MS`：最大重试延迟（毫秒），默认 30_000
+    /// - `MOX_EXECUTOR_BACKOFF_FACTOR`：退避系数，默认 2.0
+    ///
+    /// 解析失败的环境变量将回退到默认值。
+    pub fn from_env() -> Self {
+        let timeout_ms = std::env::var("MOX_EXECUTOR_NODE_TIMEOUT_MS")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(60_000);
+
+        let max_retries = std::env::var("MOX_EXECUTOR_MAX_RETRIES")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(3);
+
+        let initial_retry_delay_ms = std::env::var("MOX_EXECUTOR_INITIAL_RETRY_DELAY_MS")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(1_000);
+
+        let max_retry_delay_ms = std::env::var("MOX_EXECUTOR_MAX_RETRY_DELAY_MS")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(30_000);
+
+        let backoff_factor = std::env::var("MOX_EXECUTOR_BACKOFF_FACTOR")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(2.0);
+
+        Self {
+            timeout_ms,
+            max_retries,
+            initial_retry_delay_ms,
+            max_retry_delay_ms,
+            backoff_factor,
+        }
+    }
+}
+
+/// 判断错误是否为 LLM Provider 熔断错误
+///
+/// 通过错误信息字符串匹配实现熔断感知（DIP 约束：不直接依赖 mox-ai-expert-svc）。
+/// 当 LLM Router 报告所有 Provider 不可用或熔断时，错误信息包含
+/// "circuit-broken" 或 "all LLM providers"。
+fn is_circuit_break_error(error: &str) -> bool {
+    error.contains("circuit-broken") || error.contains("all LLM providers")
 }
 
 /// 专家节点执行器统计信息
@@ -252,7 +306,7 @@ impl ExpertNodeExecutor {
             Ok(Ok(report)) => Ok(report),
             Ok(Err(e)) => Err(format!("Consult error: {}", e)),
             Err(_) => Err(format!(
-                "Consult timeout after {}ms",
+                "node timeout after {}ms",
                 self.config.timeout_ms
             )),
         }
@@ -296,6 +350,16 @@ impl ExpertNodeExecutor {
                         attempt, query.id, e
                     );
                     last_error = e;
+
+                    // 熔断感知：所有 LLM Provider 熔断时立即失败，不重试
+                    if is_circuit_break_error(&last_error) {
+                        warn!(
+                            "All LLM providers circuit-broken for query {}, skipping retries",
+                            query.id
+                        );
+                        last_is_timeout = false;
+                        break;
+                    }
 
                     if retry_count >= self.config.max_retries {
                         break;
@@ -508,6 +572,7 @@ mod tests {
         call_count: Arc<AtomicU64>,
         fail_count: u32, // 前 N 次调用失败
         delay_ms: u64,   // 模拟延迟
+        circuit_break_mode: bool, // 熔断模式：返回 "all LLM providers unavailable or circuit-broken"
     }
 
     impl MockConsultant {
@@ -520,6 +585,7 @@ mod tests {
                     call_count: counter.clone(),
                     fail_count: 0,
                     delay_ms: 0,
+                    circuit_break_mode: false,
                 },
                 counter,
             )
@@ -534,6 +600,7 @@ mod tests {
                     call_count: counter.clone(),
                     fail_count,
                     delay_ms: 0,
+                    circuit_break_mode: false,
                 },
                 counter,
             )
@@ -548,6 +615,23 @@ mod tests {
                     call_count: counter.clone(),
                     fail_count: 0,
                     delay_ms,
+                    circuit_break_mode: false,
+                },
+                counter,
+            )
+        }
+
+        /// 创建熔断模式的 Mock 咨询服务：每次调用都返回
+        /// "all LLM providers unavailable or circuit-broken" 错误
+        fn with_circuit_break() -> (Self, Arc<AtomicU64>) {
+            let counter = Arc::new(AtomicU64::new(0));
+            (
+                Self {
+                    responses: Mutex::new(Vec::new()),
+                    call_count: counter.clone(),
+                    fail_count: 0,
+                    delay_ms: 0,
+                    circuit_break_mode: true,
                 },
                 counter,
             )
@@ -567,6 +651,13 @@ mod tests {
             // 模拟延迟
             if self.delay_ms > 0 {
                 tokio::time::sleep(tokio::time::Duration::from_millis(self.delay_ms)).await;
+            }
+
+            // 熔断模式：模拟 LLM Router 报告所有 Provider 熔断
+            if self.circuit_break_mode {
+                return Err(anyhow::anyhow!(
+                    "all LLM providers unavailable or circuit-broken"
+                ));
             }
 
             // 前 N 次失败
@@ -1011,5 +1102,170 @@ mod tests {
         assert_eq!(output["vetoed"], serde_json::Value::Bool(false));
         assert!(output["steps"].is_array());
         assert_eq!(output["steps"].as_array().unwrap().len(), 2);
+    }
+
+    // ---- 环境变量配置测试 ----
+
+    /// 保护环境变量操作的互斥锁（避免并行测试竞争）
+    static ENV_MUTEX: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+    #[test]
+    fn test_config_from_env_defaults() {
+        let _guard = ENV_MUTEX.lock().unwrap();
+        // 清理可能存在的环境变量
+        std::env::remove_var("MOX_EXECUTOR_NODE_TIMEOUT_MS");
+        std::env::remove_var("MOX_EXECUTOR_MAX_RETRIES");
+        std::env::remove_var("MOX_EXECUTOR_INITIAL_RETRY_DELAY_MS");
+        std::env::remove_var("MOX_EXECUTOR_MAX_RETRY_DELAY_MS");
+        std::env::remove_var("MOX_EXECUTOR_BACKOFF_FACTOR");
+
+        let config = ExpertExecutorConfig::from_env();
+        assert_eq!(config.timeout_ms, 60_000);
+        assert_eq!(config.max_retries, 3);
+        assert_eq!(config.initial_retry_delay_ms, 1_000);
+        assert_eq!(config.max_retry_delay_ms, 30_000);
+        assert!((config.backoff_factor - 2.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn test_config_from_env_custom_values() {
+        let _guard = ENV_MUTEX.lock().unwrap();
+        // 设置自定义环境变量
+        std::env::set_var("MOX_EXECUTOR_NODE_TIMEOUT_MS", "120000");
+        std::env::set_var("MOX_EXECUTOR_MAX_RETRIES", "5");
+        std::env::set_var("MOX_EXECUTOR_INITIAL_RETRY_DELAY_MS", "500");
+        std::env::set_var("MOX_EXECUTOR_MAX_RETRY_DELAY_MS", "60000");
+        std::env::set_var("MOX_EXECUTOR_BACKOFF_FACTOR", "1.5");
+
+        let config = ExpertExecutorConfig::from_env();
+        assert_eq!(config.timeout_ms, 120_000);
+        assert_eq!(config.max_retries, 5);
+        assert_eq!(config.initial_retry_delay_ms, 500);
+        assert_eq!(config.max_retry_delay_ms, 60_000);
+        assert!((config.backoff_factor - 1.5).abs() < 1e-9);
+
+        // 清理环境变量
+        std::env::remove_var("MOX_EXECUTOR_NODE_TIMEOUT_MS");
+        std::env::remove_var("MOX_EXECUTOR_MAX_RETRIES");
+        std::env::remove_var("MOX_EXECUTOR_INITIAL_RETRY_DELAY_MS");
+        std::env::remove_var("MOX_EXECUTOR_MAX_RETRY_DELAY_MS");
+        std::env::remove_var("MOX_EXECUTOR_BACKOFF_FACTOR");
+    }
+
+    // ---- 熔断错误检测测试 ----
+
+    #[test]
+    fn test_circuit_break_error_detection() {
+        assert!(is_circuit_break_error(
+            "all LLM providers unavailable or circuit-broken"
+        ));
+        assert!(is_circuit_break_error("circuit-broken: deepseek"));
+        assert!(!is_circuit_break_error("normal API error"));
+        assert!(!is_circuit_break_error("node timeout after 60000ms"));
+    }
+
+    // ---- 熔断感知重试测试 ----
+
+    #[tokio::test]
+    async fn test_execute_node_skips_retries_on_circuit_break() {
+        let (mock, call_counter) = MockConsultant::with_circuit_break();
+        let consultant = Arc::new(mock) as Arc<dyn ExpertConsultant>;
+
+        let config = ExpertExecutorConfig {
+            max_retries: 3,
+            initial_retry_delay_ms: 1,
+            max_retry_delay_ms: 10,
+            ..ExpertExecutorConfig::default()
+        };
+
+        let executor = ExpertNodeExecutor::new(consultant, config);
+
+        use mox_alliance_common_proto::Node;
+        let task_id = uuid::Uuid::new_v4();
+        let request = NodeExecutionRequest {
+            task_id,
+            node: Node {
+                node_id: "node-circuit-break".to_string(),
+                task_id,
+                expert_id: "security".to_string(),
+                module_id: None,
+                name: "熔断测试".to_string(),
+                description: None,
+                status: mox_alliance_common_proto::NodeStatus::Pending,
+                retry_count: 0,
+                dependencies: vec![],
+                input_refs: vec![],
+                output_ref: None,
+                started_at: None,
+                completed_at: None,
+                duration_ms: None,
+                error_message: None,
+            },
+            input_data: None,
+            context: None,
+            tenant_id: "tenant-1".to_string(),
+        };
+
+        let result = executor.execute_node(request).await.unwrap();
+        assert!(!result.success, "熔断时应该失败");
+        assert_eq!(result.retry_count, 0, "熔断时不应该重试");
+        assert_eq!(call_counter.load(Ordering::SeqCst), 1, "只应该调用 1 次");
+        assert!(
+            result
+                .error_message
+                .as_ref()
+                .unwrap()
+                .contains("circuit-broken"),
+            "错误信息应该包含 circuit-broken"
+        );
+    }
+
+    // ---- 普通失败重试回归测试 ----
+
+    #[tokio::test]
+    async fn test_execute_node_retries_on_normal_failure() {
+        // 第 1 次失败，第 2 次成功
+        let (mock, call_counter) = MockConsultant::with_failures(1);
+        let consultant = Arc::new(mock) as Arc<dyn ExpertConsultant>;
+
+        let config = ExpertExecutorConfig {
+            max_retries: 3,
+            initial_retry_delay_ms: 1,
+            max_retry_delay_ms: 10,
+            ..ExpertExecutorConfig::default()
+        };
+
+        let executor = ExpertNodeExecutor::new(consultant, config);
+
+        use mox_alliance_common_proto::Node;
+        let task_id = uuid::Uuid::new_v4();
+        let request = NodeExecutionRequest {
+            task_id,
+            node: Node {
+                node_id: "node-normal-retry".to_string(),
+                task_id,
+                expert_id: "security".to_string(),
+                module_id: None,
+                name: "普通失败重试回归测试".to_string(),
+                description: None,
+                status: mox_alliance_common_proto::NodeStatus::Pending,
+                retry_count: 0,
+                dependencies: vec![],
+                input_refs: vec![],
+                output_ref: None,
+                started_at: None,
+                completed_at: None,
+                duration_ms: None,
+                error_message: None,
+            },
+            input_data: None,
+            context: None,
+            tenant_id: "tenant-1".to_string(),
+        };
+
+        let result = executor.execute_node(request).await.unwrap();
+        assert!(result.success, "普通失败重试后应该成功");
+        assert_eq!(result.retry_count, 1, "应该重试 1 次");
+        assert_eq!(call_counter.load(Ordering::SeqCst), 2, "应该调用 2 次");
     }
 }

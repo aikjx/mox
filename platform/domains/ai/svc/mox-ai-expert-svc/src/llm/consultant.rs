@@ -9,9 +9,8 @@
 //! 3. 把最终答案归一化为 `ConsultReport`（steps=推理轨迹、score=模型自评、vetoed=是否否决）；
 //! 4. 无 API Key 或 LLM 调用失败时回退本地 `ExpertServiceImpl`（保证离线可用、优雅降级）。
 
-use super::chat::{ChatClient, LlmConfig, OpenAiChatClient};
+use super::chat::{ChatClient, ChatMessage, LlmConfig, OpenAiChatClient};
 use super::react::{run_react, ReactConfig, ReactResult};
-use super::router::LlmRouter;
 use super::tools::{ExpertLookupTool, ToolRegistry};
 use crate::expert_traits::ExpertConsultant;
 use crate::services::ExpertServiceImpl;

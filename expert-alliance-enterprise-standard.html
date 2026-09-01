@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>架构专家联盟 · 企业级全维规范 V5.0</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:rgba(255,255,255,0.05); --bg3:rgba(255,255,255,0.03);
+    --ink:#e8ecf5; --muted:#8892b0; --rule:rgba(136,146,176,0.15);
+    --a:#64ffda; --b:#7c9cff; --c:#c792ea; --w:#ffcb6b; --d:#f07178; --s:#c3e88d;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--ink);line-height:1.75;font-size:15px;}
+  .container{max-width:1180px;margin:0 auto;padding:0 2rem 4rem;position:relative;z-index:1;}
+  header{padding:3.5rem 0 2.5rem;border-bottom:1px solid var(--rule);}
+  .badge{display:inline-block;padding:.35rem 1rem;background:rgba(100,255,218,.1);border:1px solid rgba(100,255,218,.3);border-radius:999px;color:var(--a);font-size:.75rem;font-weight:600;letter-spacing:.08em;margin-bottom:1.2rem;}
+  h1{font-size:2.3rem;font-weight:700;line-height:1.25;margin-bottom:.8rem;background:linear-gradient(135deg,var(--a),var(--b));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .subtitle{font-size:1.05rem;color:var(--muted);max-width:800px;}
+  .meta{display:flex;gap:2rem;margin-top:1.5rem;flex-wrap:wrap;}
+  .meta span{font-size:.85rem;color:var(--muted);}
+  .meta b{color:var(--ink);font-weight:600;}
+  section{padding:2.8rem 0;border-bottom:1px solid var(--rule);}
+  h2{font-size:1.55rem;font-weight:700;margin-bottom:.3rem;display:flex;align-items:center;gap:.75rem;}
+  h2 .no{font-size:.85rem;font-family:Consolas,monospace;color:var(--a);background:rgba(100,255,218,.1);padding:.2rem .6rem;border-radius:4px;}
+  .lead{color:var(--muted);margin-bottom:1.8rem;font-size:.95rem;}
+  h3{font-size:1.1rem;font-weight:600;margin:2rem 0 .9rem;color:var(--b);}
+  h4{font-size:.98rem;font-weight:600;margin:1.4rem 0 .6rem;color:var(--ink);}
+  p{margin-bottom:.8rem;}
+  ul,ol{margin:.6rem 0 1rem 1.4rem;}
+  li{margin-bottom:.35rem;}
+  li::marker{color:var(--a);}
+  table{width:100%;border-collapse:collapse;font-size:.87rem;margin:1.2rem 0;border:1px solid var(--rule);border-radius:8px;overflow:hidden;}
+  th{background:rgba(100,255,218,.08);color:var(--a);font-weight:600;text-align:left;padding:.75rem 1rem;border-bottom:1px solid var(--rule);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;}
+  td{padding:.7rem 1rem;border-bottom:1px solid var(--rule);vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:rgba(255,255,255,.02);}
+  code{font-family:Consolas,'JetBrains Mono',monospace;font-size:.82em;background:rgba(124,156,255,.1);color:var(--b);padding:.12rem .4rem;border-radius:4px;}
+  pre{background:var(--bg3);border:1px solid var(--rule);border-radius:8px;padding:1.1rem 1.2rem;overflow-x:auto;margin:1rem 0;font-family:Consolas,'JetBrains Mono',monospace;font-size:.8rem;line-height:1.65;color:var(--ink);}
+  .card{background:var(--bg2);border:1px solid var(--rule);border-radius:10px;padding:1.2rem 1.4rem;margin:1rem 0;}
+  .insight{background:rgba(100,255,218,.06);border-left:3px solid var(--a);padding:.9rem 1.2rem;margin:1.1rem 0;border-radius:0 8px 8px 0;font-size:.9rem;}
+  .insight.warn{background:rgba(255,203,107,.06);border-left-color:var(--w);}
+  .insight.danger{background:rgba(240,113,120,.06);border-left-color:var(--d);}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin:1.2rem 0;}
+  .grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin:1.2rem 0;}
+  .metric{background:var(--bg2);border:1px solid var(--rule);border-radius:10px;padding:1.1rem;text-align:center;}
+  .metric .v{font-size:1.5rem;font-weight:700;color:var(--a);}
+  .metric .l{font-size:.78rem;color:var(--muted);margin-top:.3rem;}
+  .tag{display:inline-block;padding:.15rem .6rem;border-radius:4px;font-size:.75rem;font-weight:600;margin-right:.3rem;}
+  .t-ok{background:rgba(195,232,141,.12);color:var(--s);}
+  .t-warn{background:rgba(255,203,107,.12);color:var(--w);}
+  .t-bad{background:rgba(240,113,120,.12);color:var(--d);}
+  .t-new{background:rgba(199,146,234,.14);color:var(--c);}
+  nav{position:sticky;top:0;background:rgba(11,16,32,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--rule);padding:.6rem 0;z-index:10;}
+  nav .inner{max-width:1180px;margin:0 auto;padding:0 2rem;display:flex;flex-wrap:wrap;gap:.5rem;}
+  nav a{color:var(--muted);text-decoration:none;font-size:.8rem;padding:.25rem .6rem;border-radius:4px;}
+  nav a:hover{color:var(--a);background:rgba(100,255,218,.08);}
+  .foot{border-top:1px solid var(--rule);margin-top:3rem;padding-top:1.5rem;color:var(--muted);font-size:.8rem;}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr;} .container{padding:0 1.2rem 3rem;} h1{font-size:1.7rem;} nav .inner{padding:0 1.2rem;}}
+</style>
+</head>
+<body>
+<nav><div class="inner">
+  <a href="#overview">总纲</a>
+  <a href="#analysis">全维分析</a>
+  <a href="#modular">全链路模块化</a>
+  <a href="#standards">企业级规范</a>
+  <a href="#quality">质量门禁</a>
+  <a href="#roadmap">路线图</a>
+  <a href="#appendix">附录</a>
+</div></nav>
+<div class="container">
+
+<header>
+  <div class="badge">ENTERPRISE STANDARD · V5.0</div>
+  <h1>架构专家联盟 · 企业级全维规范</h1>
+  <p class="subtitle">全维分析 × 全链路系统模块化 × 企业级规范标准 —— 将专家联盟从"功能完整"推向"企业级可交付"，作为后续一切开发、评审、验收的权威基线。</p>
+  <div class="meta">
+    <span>系统：<b>璇玑 RelGraph · MOX Platform</b></span>
+    <span>版本：<b>V5.0-enterprise</b></span>
+    <span>定稿：<b>2026-09-01</b></span>
+    <span>状态：<b>规范定稿 · 待代码整改</b></span>
+  </div>
+</header>
+
+<section id="overview">
+  <h2><span class="no">0</span>总纲与适用范围</h2>
+  <p class="lead">本规范是专家联盟体系的企业级基线文档，向上承接技术白皮书与最优架构分析，向下约束代码实现与质量门禁。</p>
+  <h3>0.1 定位</h3>
+  <p>专家联盟（Expert Alliance, EA）是 MOX 平台以"专业模型做专业事"为核心的分布式智能协作体系：多个 AI 专家（架构/算法/安全/性能/测试/数据…）通过统一协议注册、由调度器按 DAG 编排、经辩论与融合产出高质量结果。本规范将这一体系定义为可评审、可测试、可部署的企业级产品基线。</p>
+  <h3>0.2 三大约束</h3>
+  <ul>
+    <li><b>全维分析</b>：对 EA 系统进行 8 维现状诊断（§1），任何决策必须基于证据，禁止"应该/大概"。</li>
+    <li><b>全链路模块化</b>：从接入到执行的每一层必须有唯一归属 crate 与清晰边界（§2），杜绝 God Module。</li>
+    <li><b>企业级规范标准</b>：命名、接口、错误码、配置、安全、可观测、测试、部署八大规范强制遵循（§3），作为评审/验收唯一标准。</li>
+  </ul>
+  <h3>0.3 适用范围与读者</h3>
+  <table>
+    <tr><th>读者</th><th>关注章节</th></tr>
+    <tr><td>架构师 / 技术负责人</td><td>§1 全维分析、§2 全链路模块化、§3.1-3.4</td></tr>
+    <tr><td>EA 域开发工程师</td><td>§2 crate 归属、§3 全部规范、§4 质量门禁</td></tr>
+    <tr><td>QA / 测试工程师</td><td>§3.8 测试规范、§4 质量门禁与验收清单</td></tr>
+    <tr><td>运维 / SRE</td><td>§3.7 可观测、§3.9 部署规范、§5 路线图</td></tr>
+  </table>
+  <div class="insight"><strong>核心结论：</strong>专家联盟已达到"功能完整"，但未达"企业级可交付"。阻断项集中在测试编译（BTreeMap→HashMap 类型遗留）、前端构建（kbSearch 重复声明）、clippy 门禁配置三类问题（详见 §4），整改后即可通过全部质量门禁。</div>
+</section>
+
+<section id="analysis">
+  <h2><span class="no">1</span>全维分析</h2>
+  <p class="lead">8 个维度对专家联盟现状进行证据化诊断，输出问题清单与归一化方向。</p>
+
+  <div class="grid4">
+    <div class="metric"><div class="v">5 层</div><div class="l">模块化分层架构</div></div>
+    <div class="metric"><div class="v">6 阶段</div><div class="l">全链路处理管线</div></div>
+    <div class="metric"><div class="v">15+</div><div class="l">专业 AI 专家</div></div>
+    <div class="metric"><div class="v">3 类</div><div class="l">阻断性问题待整改</div></div>
+  </div>
+
+  <h3>1.1 业务与价值维度</h3>
+  <p>专家联盟的价值主张：<b>效率跃升、知识沉淀、质量保障、能力复用</b>。核心场景是"专家协作 + 知识支撑 + 图谱推理"三位一体。业务判定：专家联盟是平台级 AI 能力中枢，与 KG（知识图谱）、KB（知识库云盘）构成三大能力域，三者必须一体化协作（呼应最优架构分析中的"前端统一工作台 + 后端模块化"结论）。</p>
+
+  <h3>1.2 架构与技术维度</h3>
+  <p>当前为<b>五层模块化架构</b>（接入 Gateway → 调度 Scheduler → 执行 Executor Pool → 引擎 Engine → 基础 Foundation）+ 三大支撑体系（配置中心 / 注册中心 / 可观测）。全链路六阶段管线：<code>Intent → Team → Debate → Synthesize → Gate → Learn</code>。</p>
+  <div class="card"><b>现存架构问题（证据来自最优架构分析 + 验证报告）：</b>
+    <ul style="margin-top:.5rem">
+      <li><span class="tag t-bad">P0</span> 体验割裂：EA/KG/KB 分散在独立页面，跨模块上下文丢失。</li>
+      <li><span class="tag t-warn">P1</span> 代码重复：<code>alliance/kg_connector.rs</code> 与 kg 域重叠；两套流程引擎、两套管线实现。</li>
+      <li><span class="tag t-warn">P2</span> 耦合混乱：<code>expert-svc</code> 承担 10+ 职责（God Module 倾向）。</li>
+      <li><span class="tag t-bad">P0</span> 测试编译失败：<code>algorithm.rs:694</code>、<code>orchestration.rs:416-417</code> 中测试用 <code>BTreeMap::new()</code> 与结构体 <code>HashMap</code> 字段不匹配。</li>
+      <li><span class="tag t-bad">P0</span> 前端构建失败：<code>ExpertWorkspaceView.vue</code> 中 <code>kbSearch</code> 重复声明（导入函数 vs 本地 ref）。</li>
+      <li><span class="tag t-warn">P1</span> <code>clippy.toml</code> 使用无效字段 <code>allow/deny/warn</code>，质量门禁无法启用。</li>
+    </ul>
+  </div>
+
+  <h3>1.3 数据维度</h3>
+  <p>三大能力域的数据模型应归一为统一节点-边-对象底座（呼应统一基座层方案）：文件/文档/实体统一为 <code>Node{id,kind,props,blobRef,acl}</code> + <code>Edge{from,to,type,props}</code>，物理层落在单一 OSS 对象池。EA 域新增数据：专家元数据、任务/会话、DAG 计划、融合结果、学习沉淀。</p>
+  <div class="insight"><strong>归一化方向：</strong>专家、任务、图谱实体、云盘文件同属"节点"，统一 ID 空间与统一查询原语（GET/FILTER/TRAVERSE/RANGE）覆盖全部访问模式，避免三套存储三套索引。</div>
+
+  <h3>1.4 算法维度</h3>
+  <table>
+    <tr><th>算法类别</th><th>当前散落位置</th><th>归一化目标</th><th>复用域</th></tr>
+    <tr><td>图算法核心</td><td>kg-algo-core / agent-svc / expert-svc/alliance</td><td>mox-graph-algo-core</td><td>KG + AI + EA</td></tr>
+    <tr><td>向量检索</td><td>expert-memory / kb-search / intent-core</td><td>mox-vector-search-core</td><td>EA + KB + AI</td></tr>
+    <tr><td>融合策略</td><td>alliance/debate.rs + reconcile.rs</td><td>mox-fusion-algo-core</td><td>EA + KG + data</td></tr>
+    <tr><td>排序匹配</td><td>alliance/intent.rs + team.rs</td><td>mox-ranking-core</td><td>EA + 搜索 + 推荐</td></tr>
+    <tr><td>激活传播</td><td>kg-algo-core/activation.rs + ai-intent-core</td><td>mox-graph-algo-core(activation)</td><td>KG + AI + EA</td></tr>
+  </table>
+  <p>复用已有 <code>platform/shared/mox-unified-algo-core</code> 作为统一算法核心库载体，实现"一处实现，处处复用"。</p>
+
+  <h3>1.5 安全与合规维度</h3>
+  <ul>
+    <li><b>凭证安全</b>：所有 API Key / 密码通过环境变量引用，配置只存变量名，不存真实值；配置中心加密存储 + 权限管控。</li>
+    <li><b>权限体系</b>：RBAC 贯穿全链路；模块间数据隔离、租户级策略管控（复用 <code>mox-rbac-engine</code>）。</li>
+    <li><b>审计</b>：全链路审计日志（复用 <code>mox-audit</code>），专家调用、任务执行、配置变更可追溯。</li>
+  </ul>
+
+  <h3>1.6 性能与弹性维度</h3>
+  <p>资源特性差异显著：<b>图谱算法 = CPU 密集，文件上传 = IO 密集，AI 推理 = GPU 密集</b>，扩容策略必须分离。专家联盟服务按域独立扩缩；SSE 流式输出全链路执行状态；gRPC 调用开销约 0.1–0.5ms/次，对 30s+ 的 AI 协作任务可接受，换来独立部署/故障隔离/技术选型自由。</p>
+
+  <h3>1.7 可观测与运维维度</h3>
+  <p>可观测体系 = <b>Trace + Metrics + Logging</b> 三位一体（复用 <code>mox-platform-observability</code>）。每次任务携带 <code>trace_id</code> 贯穿六阶段；每阶段可追踪、可度量、可审计；SSE 输出每阶段执行详情，支持实时调试与事后分析。</p>
+
+  <h3>1.8 演进与治理维度</h3>
+  <p>演进方向：更多专家类型、自动 Prompt 优化、AutoML 调参。治理要求：新增专家 = 实现 Trait + 注册 Factory + 加配置，<b>核心代码零改动</b>；统一基座层（<code>mox-base-*</code>）承接 KG/KB/EA 三域的数据与算法收敛。</p>
+
+  <h3>1.9 全维结论矩阵</h3>
+  <table>
+    <tr><th>维度</th><th>成熟度</th><th>关键结论</th></tr>
+    <tr><td>业务价值</td><td><span class="tag t-ok">已确立</span></td><td>EA 是平台 AI 中枢，三域必须一体化</td></tr>
+    <tr><td>架构技术</td><td><span class="tag t-warn">待整改</span></td><td>五层架构已成型，但存在 God Module 与重复实现</td></tr>
+    <tr><td>数据</td><td><span class="tag t-warn">待归一</span></td><td>统一节点-边-对象底座 + 统一查询原语</td></tr>
+    <tr><td>算法</td><td><span class="tag t-warn">待收敛</span></td><td>统一算法核心库 mox-unified-algo-core</td></tr>
+    <tr><td>安全合规</td><td><span class="tag t-ok">基本达标</span></td><td>凭证/权限/审计规范已明确</td></tr>
+    <tr><td>性能弹性</td><td><span class="tag t-ok">架构正确</span></td><td>按资源特性分域独立扩缩</td></tr>
+    <tr><td>可观测</td><td><span class="tag t-ok">已覆盖</span></td><td>Trace/Metrics/Logging 三位一体</td></tr>
+    <tr><td>演进治理</td><td><span class="tag t-warn">需固化</span></td><td>零改动扩展机制 + 统一基座层落地</td></tr>
+  </table>
+</section>
+
+<section id="modular">
+  <h2><span class="no">2</span>全链路系统模块化</h2>
+  <p class="lead">明确每一层的唯一归属 crate、模块边界与通信协议，让"全链路"可落地、可追踪、可评审。</p>
+
+  <h3>2.1 模块化设计原则</h3>
+  <ul>
+    <li><b>模块独立配置</b>：每个 AI 模块独立 LLM 配置、Graph 配置、参数集，互不干扰。</li>
+    <li><b>即插即用</b>：专家模块统一协议注册，支持热插拔，新增专家零改动核心代码。</li>
+    <li><b>动态编排</b>：基于 DAG 的任务编排，按任务特征动态组队。</li>
+    <li><b>全维可观测</b>：每阶段可追踪、可度量、可审计。</li>
+    <li><b>隔离与安全</b>：模块间数据隔离，租户级策略，RBAC 贯穿。</li>
+    <li><b>弹性扩展</b>：无状态服务水平扩展，CPU/IO 密集模块独立扩容。</li>
+  </ul>
+
+  <h3>2.2 五层架构与唯一归属</h3>
+  <table>
+    <tr><th>层</th><th>职责</th><th>归属 crate（域）</th></tr>
+    <tr><td>接入层 Gateway</td><td>协议转换 REST/gRPC/SSE/WS、鉴权、限流、追踪、路由</td><td>mox-platform-gateway-svc + 各域 api</td></tr>
+    <tr><td>调度层 Scheduler</td><td>意图识别、专家匹配、DAG 编排、SLA 监控</td><td>mox-alliance-scheduler-core / -svc</td></tr>
+    <tr><td>执行层 Executor Pool</td><td>架构/算法/安全/性能/测试/数据专家</td><td>mox-alliance-executor-core / -svc</td></tr>
+    <tr><td>引擎层 Engine</td><td>LLM Provider 矩阵、Graph 引擎、向量检索、算法算子</td><td>mox-ai-core + mox-kg-algo-core + mox-unified-algo-core</td></tr>
+    <tr><td>基础层 Foundation</td><td>配置中心、注册中心、记忆服务、审计日志</td><td>mox-alliance-config-core / -boot-config + mox-rbac-engine + mox-audit</td></tr>
+  </table>
+
+  <h3>2.3 六阶段全链路管线（业务级）</h3>
+  <table>
+    <tr><th>阶段</th><th>职责</th><th>关键模块</th></tr>
+    <tr><td>1. Intent 意图识别</td><td>识别意图类别（7 大类）、复杂度、领域</td><td>intent.rs / mox-ai-intent-core</td></tr>
+    <tr><td>2. Team 专家组队</td><td>匹配器选出最优团队，分配主/辅助/评审角色，生成 DAG</td><td>matcher.rs / modular_matcher.rs / planner.rs</td></tr>
+    <tr><td>3. Debate 专家辩论</td><td>多专家多轮辩论（并行/串行/对抗）</td><td>fusion/strategies/debate.rs</td></tr>
+    <tr><td>4. Synthesize 结果融合</td><td>加权投票/Stacking/辩论融合/置信度校准</td><td>fusion/strategies/*.rs</td></tr>
+    <tr><td>5. Gate 质量门禁</td><td>完整性/一致性/准确性/合规性检查，不通过重试/升级</td><td>gate.rs</td></tr>
+    <tr><td>6. Learn 知识沉淀</td><td>处理过程/专家表现/结果入库，更新评分</td><td>storage.rs / mox-kg-storage-svc</td></tr>
+  </table>
+
+  <h3>2.4 统一基座层对接（衔接统一基座方案）</h3>
+  <p>在 <code>platform/domains/base/</code> 新增统一基座域，EA 域通过实现 Trait 方式接入，依赖方向单向：<code>域 → mox-base-* → mox-cloud-* 物理口</code>。</p>
+  <table>
+    <tr><th>统一基座 crate（新增）</th><th>EA 域对接方式</th></tr>
+    <tr><td>mox-base-model-core（统一模型 Node/Edge/Blob）</td><td>Expert/Task/DAG 实体对齐复用，不另建存储模型</td></tr>
+    <tr><td>mox-base-store-core（统一存储抽象）</td><td>记忆/学习沉淀改走统一存储，后端落 s3/volume</td></tr>
+    <tr><td>mox-base-index-core（统一索引）</td><td>专家能力检索、案例检索一次写入三路索引</td></tr>
+    <tr><td>mox-base-query-core（统一查询）</td><td>专家匹配查询 / 知识关联查询统一入口</td></tr>
+    <tr><td>mox-base-graph-core（图遍历）</td><td>专家能力图谱、协作关系可视化复用遍历算法</td></tr>
+    <tr><td>mox-base-perm-core（节点级权限）</td><td>专家/任务节点 ACL 复用 mox-rbac-engine</td></tr>
+    <tr><td>mox-base-lifecycle-core（生命周期）</td><td>任务/会话/版本/GC 统一管道</td></tr>
+  </table>
+
+  <h3>2.5 模块间通信协议</h3>
+  <ul>
+    <li><b>对外</b>：REST（管理面）+ SSE（任务流式执行）+ gRPC（服务间高性能调用）+ WebSocket（实时协作）。</li>
+    <li><b>对内</b>：同域内本地调用（Trait 抽象），跨域 gRPC；事件总线用于跨能力协调。</li>
+    <li><b>协议分流</b>：CPU 密集（图谱算法）与 IO 密集（文件上传）按域独立部署，本地调用优化。</li>
+  </ul>
+</section>
+
+<section id="standards">
+  <h2><span class="no">3</span>企业级规范标准</h2>
+  <p class="lead">八大规范为强制约束，作为代码评审、测试验收、部署发布的唯一标准。</p>
+
+  <h3>3.1 命名规范</h3>
+  <table>
+    <tr><th>类型</th><th>规则</th><th>示例</th></tr>
+    <tr><td>crate</td><td><code>mox-{域}-{能力}-core/svc/sdk</code></td><td>mox-alliance-scheduler-core</td></tr>
+    <tr><td>Trait</td><td><code>{能力}Provider / Factory / Handler</code></td><td>ExpertProvider, LlmProviderFactory</td></tr>
+    <tr><td>实现</td><td><code>{厂商}{能力}Provider</code></td><td>OpenAiProvider</td></tr>
+    <tr><td>注册表</td><td><code>{能力}Registry</code></td><td>ExpertRegistry</td></tr>
+    <tr><td>配置</td><td><code>{能力}Config</code></td><td>ModuleLlmConfig</td></tr>
+    <tr><td>DTO</td><td><code>{动作}Request / {动作}Response</code></td><td>AllianceRunRequest</td></tr>
+    <tr><td>错误</td><td><code>{能力}Error</code></td><td>AllianceError</td></tr>
+  </table>
+
+  <h3>3.2 目录结构规范</h3>
+  <pre>mox-alliance-{cap}-core/
+├── Cargo.toml          # 依赖用 workspace 引用
+├── src/
+│   ├── lib.rs          # 模块声明 + 统一重导出 + prelude
+│   ├── traits.rs       # 核心 Trait 定义
+│   ├── registry.rs     # 注册表
+│   ├── config.rs       # 配置结构体
+│   ├── error.rs        # 错误类型
+│   ├── dto.rs          # 数据传输对象
+│   └── {impl}/         # 具体实现目录
+└── tests/              # 集成测试</pre>
+
+  <h3>3.3 接口规范</h3>
+  <p><b>RESTful 管理面</b>（统一前缀 <code>/api/v1</code>）：</p>
+  <table>
+    <tr><th>方法</th><th>路径</th><th>说明</th></tr>
+    <tr><td>POST</td><td>/api/v1/modules</td><td>注册专家模块</td></tr>
+    <tr><td>POST</td><td>/api/v1/alliance/run</td><td>提交联盟任务（SSE 流式）</td></tr>
+    <tr><td>POST</td><td>/api/v1/alliance/route</td><td>智能路由匹配专家</td></tr>
+    <tr><td>GET</td><td>/api/v1/tasks/{id}</td><td>获取任务状态</td></tr>
+    <tr><td>GET</td><td>/api/v1/tasks/{id}/trace</td><td>获取任务执行追踪</td></tr>
+    <tr><td>POST</td><td>/api/v1/tasks/{id}/cancel</td><td>取消任务</td></tr>
+  </table>
+  <p><b>统一响应格式</b>：</p>
+  <pre>{ "code": 0, "message": "ok", "data": {...}, "trace_id": "..." }</pre>
+  <p><b>SSE 事件流</b>：<code>event: stage / data: {"stage":"debate","expert":"arch","status":"running"}</code>，每阶段可追踪。</p>
+
+  <h3>3.4 错误码规范（6 位数字）</h3>
+  <table>
+    <tr><th>前缀</th><th>分类</th><th>示例</th></tr>
+    <tr><td>10xxxx</td><td>系统错误</td><td>E100001 内部错误 / E100002 超时</td></tr>
+    <tr><td>20xxxx</td><td>AI 错误</td><td>E200001 Provider 不存在 / E200003 限流</td></tr>
+    <tr><td>30xxxx</td><td>插件错误</td><td>E300001 插件不存在 / E300003 权限拒绝</td></tr>
+    <tr><td>50xxxx</td><td>连接器错误</td><td>E500001 连接器不存在</td></tr>
+    <tr><td>90xxxx</td><td>集成错误</td><td>E900001 配置错误 / E900002 Factory 不存在</td></tr>
+  </table>
+  <p>新增 <b>70xxxx 专家联盟专用段</b>：E700001 专家不存在、E700002 匹配失败、E700003 DAG 编排失败、E700004 质量门禁未通过。</p>
+
+  <h3>3.5 配置规范</h3>
+  <ul>
+    <li>LLM 配置：<code>primary_provider/model</code>、<code>fallback_chain</code>、<code>routing_strategy</code>（priority/round_robin/latency/cost）、<code>model_config</code> 全项可动态更新。</li>
+    <li>Graph 配置：<code>engine_type</code>（neo4j/relgraph/custom/in_memory）、连接参数环境变量引用、查询超时/分页/缓存策略。</li>
+    <li><b>密钥铁律</b>：API Key/密码一律环境变量引用，配置中心只存变量名；支持加密存储与灰度发布/回滚。</li>
+  </ul>
+
+  <h3>3.6 安全规范</h3>
+  <ul>
+    <li>认证：网关统一鉴权（JWT/OAuth2），SSO 复用 <code>mox-enterprise-core</code>。</li>
+    <li>授权：RBAC + 字段级可见/可写 + 自动脱敏（复用 <code>mox-rbac-engine</code> / <code>DataMasker</code>）。</li>
+    <li>隔离：模块间数据隔离、租户级策略、跨域调用最小权限。</li>
+    <li>审计：全链路审计日志，专家调用/任务执行/配置变更可追溯。</li>
+  </ul>
+
+  <h3>3.7 可观测规范</h3>
+  <table>
+    <tr><th>支柱</th><th>要求</th></tr>
+    <tr><td>Trace</td><td>每任务生成 trace_id，贯穿 Intent→Learn 六阶段，跨服务经 X-Trace-Id 传播</td></tr>
+    <tr><td>Metrics</td><td>任务吞吐/延迟/成功率、专家评分变化、融合策略分布、SLA 达标率</td></tr>
+    <tr><td>Logging</td><td>结构化 JSON 日志，含 trace_id/模块/阶段/耗时/结果摘要</td></tr>
+  </table>
+
+  <h3>3.8 测试规范（五层测试金字塔）</h3>
+  <table>
+    <tr><th>层级</th><th>覆盖</th><th>目标</th></tr>
+    <tr><td>单元测试</td><td>匹配/融合/门禁等核心算法</td><td>行覆盖 ≥ 80%</td></tr>
+    <tr><td>集成测试</td><td>scheduler↔executor↔fusion</td><td>核心链路 100% 覆盖</td></tr>
+    <tr><td>契约测试</td><td>跨域 gRPC 契约</td><td>契约一致</td></tr>
+    <tr><td>端到端测试</td><td>全链路六阶段</td><td>关键场景冒烟通过</td></tr>
+    <tr><td>性能验收</td><td>并发任务/延迟/资源</td><td>满足 SLA 指标</td></tr>
+  </table>
+  <div class="insight warn"><strong>当前阻断：</strong>测试代码类型遗留（BTreeMap→HashMap）导致 <code>cargo test --lib</code> 编译失败，必须先修复（§4）才能跑通测试金字塔。</div>
+
+  <h3>3.9 部署规范</h3>
+  <ul>
+    <li>独立服务：scheduler-svc / executor-svc 独立部署，按资源特性独立扩容。</li>
+    <li>灰度发布：配置中心支持灰度/回滚；服务级灰度发布粒度细。</li>
+    <li>优雅启停：停止接收新请求 → 等待处理中请求完成 → 释放资源 → 注销 → 退出。</li>
+    <li>健康检查：L5 集成层 4 能力健康检查 + 汇总 + 历史趋势。</li>
+  </ul>
+
+  <h3>3.10 文档规范</h3>
+  <ul>
+    <li>所有公开 Trait/方法必须有文档注释；crate 有 lib.rs 文档注释。</li>
+    <li>新增专家必须随附能力模型、配置示例、测试用例。</li>
+    <li>架构变更必须同步更新本规范与白皮书，保持单一事实来源。</li>
+  </ul>
+</section>
+
+<section id="quality">
+  <h2><span class="no">4</span>质量门禁与验收</h2>
+  <p class="lead">任何合并/发布前必须通过以下门禁。列出已知阻断项与修复方案。</p>
+
+  <h3>4.1 质量门禁清单</h3>
+  <table>
+    <tr><th>#</th><th>门禁</th><th>命令</th><th>要求</th></tr>
+    <tr><td>G1</td><td>库编译</td><td>cargo check --lib</td><td>0 错误（当前 4 警告需清理）</td></tr>
+    <tr><td>G2</td><td>测试编译+执行</td><td>cargo test --lib</td><td><span class="tag t-bad">当前失败</span> 需修复类型遗留</td></tr>
+    <tr><td>G3</td><td>Clippy</td><td>cargo clippy -- -D warnings</td><td><span class="tag t-bad">配置错误</span> 修复 clippy.toml + never_loop</td></tr>
+    <tr><td>G4</td><td>前端构建</td><td>pnpm build (vite build)</td><td><span class="tag t-bad">当前失败</span> 修复 kbSearch 重复声明</td></tr>
+    <tr><td>G5</td><td>集成测试</td><td>cargo test --workspace</td><td>核心链路通过</td></tr>
+    <tr><td>G6</td><td>契约/审计</td><td>cargo deny / docs</td><td>无安全告警，文档同步</td></tr>
+  </table>
+
+  <h3>4.2 阻断问题修复方案</h3>
+  <h4>问题 1：测试编译失败（高优先级）</h4>
+  <pre>// src/alliance/algorithm.rs:694
+context: HashMap::new(),      // BTreeMap → HashMap
+// src/alliance/orchestration.rs:416-417
+constraints: HashMap::new(),
+context: HashMap::new(),</pre>
+  <h4>问题 2：前端构建失败（高优先级）</h4>
+  <pre>// ExpertWorkspaceView.vue:1578 —— 方案 A（推荐）
+const kbSearchKeyword = ref('')   // 重命名本地 ref，避免与导入函数重名
+// 同步更新模板 v-model="kbSearch" → v-model="kbSearchKeyword"</pre>
+  <h4>问题 3：clippy.toml 配置错误（中优先级）</h4>
+  <pre># 将 allow/deny/warn 移到 workspace Cargo.toml
+[workspace.lints.clippy]
+correctness = "deny"
+suspicious = "deny"
+new_without_default = "allow"
+too_many_arguments = "allow"
+type_complexity = "allow"</pre>
+  <h4>问题 4：gate.rs:320 never_loop（中优先级）</h4>
+  <pre>// 将"从不循环"的 loop 重构为普通代码块，或改为命名循环 'retry: 以表达重试意图</pre>
+
+  <h3>4.3 企业级验收 checklist</h3>
+  <ul>
+    <li><input type="checkbox"> 六大质量门禁全部通过（G1–G6）</li>
+    <li><input type="checkbox"> 命名/目录/接口/错误码/配置/安全/可观测/测试/部署/文档十大规范自检通过</li>
+    <li><input type="checkbox"> 统一基座层（mox-base-*）落地并完成 EA 域对接</li>
+    <li><input type="checkbox"> 算法归一化：EA 域算法收敛至 mox-unified-algo-core</li>
+    <li><input type="checkbox"> God Module 拆分：expert-svc 职责收敛至 scheduler/executor 各层</li>
+    <li><input type="checkbox"> 端到端冒烟：六阶段管线全链路可观测、可审计</li>
+  </ul>
+</section>
+
+<section id="roadmap">
+  <h2><span class="no">5</span>实施路线图</h2>
+  <p class="lead">先止血（阻断问题）→ 再规范（门禁固化）→ 后收敛（统一基座/算法归一化）。</p>
+  <table>
+    <tr><th>阶段</th><th>内容</th><th>交付物</th></tr>
+    <tr><td>Phase 0 · 止血（1-2d）</td><td>修复测试编译、前端构建、clippy 配置、never_loop</td><td>G1–G4 门禁全绿</td></tr>
+    <tr><td>Phase 1 · 规范固化（2-3d）</td><td>错误码 70xxxx 段、统一响应/SSE 契约、质量门禁脚本化</td><td>CI 门禁脚本 + 规范落地</td></tr>
+    <tr><td>Phase 2 · 收敛（4-6d）</td><td>mox-base-* 统一基座落地，EA 域接入；算法收敛至统一核心库</td><td>统一基座 + 算法归一化</td></tr>
+    <tr><td>Phase 3 · 治理（2-3d）</td><td>God Module 拆分、五层职责复查、可观测指标补全</td><td>架构评审通过</td></tr>
+    <tr><td>Phase 4 · 验收（1-2d）</td><td>端到端冒烟 + 性能验收 + 本规范自检</td><td>企业级可交付基线</td></tr>
+  </table>
+</section>
+
+<section id="appendix">
+  <h2><span class="no">6</span>附录</h2>
+  <h3>6.1 术语表</h3>
+  <table>
+    <tr><th>术语</th><th>定义</th></tr>
+    <tr><td>专家联盟 EA</td><td>多专业 AI 专家协作完成复杂任务的分布式智能体系</td></tr>
+    <tr><td>God Module</td><td>承担过多职责、边界模糊的巨型模块（反模式）</td></tr>
+    <tr><td>统一基座层</td><td>mox-base-*：统一模型/存储/索引/查询/图/权限/生命周期的平台基座</td></tr>
+    <tr><td>全维分析</td><td>对系统进行业务/架构/数据/算法/安全/性能/可观测/演进 8 维证据化诊断</td></tr>
+  </table>
+  <h3>6.2 参考文档</h3>
+  <ul>
+    <li>专家联盟全维模块化架构设计 v4.0（expert-alliance-modular-architecture）</li>
+    <li>专家联盟最优架构分析报告（expert-alliance-optimal-architecture）</li>
+    <li>专家联盟技术白皮书（expert-alliance-tech-whitepaper）</li>
+    <li>mox-ai-expert-svc 编译与测试验证报告（EXPERT_SVC_VERIFICATION_REPORT.md）</li>
+    <li>统一基座层落地改造图（docs/统一基座层落地改造.html）</li>
+  </ul>
+  <div class="foot">架构专家联盟 · 企业级全维规范 V5.0 · 璇玑 RelGraph · MOX Platform · 2026-09-01 定稿<br>本文档为架构基线，一切开发/评审/验收以此为准；变更须同步更新。</div>
+</section>
+
+</div>
+</body>
+</html>

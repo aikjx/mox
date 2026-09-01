@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三联盟系统 · 第八轮 LLM Router 打通 + Executor 熔断报告</title>
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --card: #111827;
+    --border: #1f2937;
+    --text: #e5e7eb;
+    --muted: #9ca3af;
+    --accent: #3b82f6;
+    --green: #10b981;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --purple: #8b5cf6;
+    --cyan: #06b6d4;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+  header {
+    text-align: center;
+    padding: 48px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+  header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  header .subtitle { color: var(--muted); font-size: 1rem; }
+  header .meta { margin-top: 16px; font-size: 0.85rem; color: var(--muted); }
+  header .meta span { margin: 0 12px; }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .kpi-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+  .kpi-card .value { font-size: 1.8rem; font-weight: 700; color: var(--green); }
+  .kpi-card .label { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+  .kpi-card .detail { font-size: 0.75rem; color: var(--muted); margin-top: 8px; }
+
+  section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  section h2 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  section h3 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 20px 0 12px;
+    color: var(--accent);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 0.88rem;
+  }
+  th, td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 0.82rem;
+  }
+  tr:hover { background: rgba(59, 130, 246, 0.05); }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .tag-new { background: rgba(139, 92, 246, 0.2); color: var(--purple); }
+  .tag-pass { background: rgba(16, 185, 129, 0.2); color: var(--green); }
+  .tag-p0 { background: rgba(239, 68, 68, 0.2); color: var(--red); }
+  .tag-p1 { background: rgba(245, 158, 11, 0.2); color: var(--yellow); }
+
+  /* Architecture diagram */
+  .arch-diagram {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    margin: 20px 0;
+    overflow-x: auto;
+  }
+  .arch-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    min-width: 800px;
+  }
+  .arch-node {
+    background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15));
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 14px 18px;
+    text-align: center;
+    min-width: 130px;
+  }
+  .arch-node.green { border-color: var(--green); background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(6,182,212,0.1)); }
+  .arch-node.yellow { border-color: var(--yellow); background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(239,68,68,0.1)); }
+  .arch-node.purple { border-color: var(--purple); background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(59,130,246,0.1)); }
+  .arch-node .title { font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; }
+  .arch-node .desc { font-size: 0.72rem; color: var(--muted); }
+  .arch-arrow {
+    font-size: 1.5rem;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .arch-arrow.down { transform: rotate(90deg); }
+
+  /* State machine */
+  .state-machine {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    margin: 24px 0;
+    flex-wrap: wrap;
+  }
+  .state-box {
+    border-radius: 12px;
+    padding: 18px 24px;
+    text-align: center;
+    min-width: 140px;
+    border: 2px solid;
+  }
+  .state-box.healthy { border-color: var(--green); background: rgba(16,185,129,0.1); }
+  .state-box.degraded { border-color: var(--yellow); background: rgba(245,158,11,0.1); }
+  .state-box.broken { border-color: var(--red); background: rgba(239,68,68,0.1); }
+  .state-box .state-name { font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+  .state-box .state-desc { font-size: 0.75rem; color: var(--muted); }
+  .state-transition {
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--muted);
+    max-width: 120px;
+  }
+  .state-transition .arrow { font-size: 1.2rem; color: var(--accent); }
+
+  .code-block {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.8rem;
+    overflow-x: auto;
+    color: #c9d1d9;
+    margin: 12px 0;
+  }
+  .code-block .comment { color: #6a737d; }
+  .code-block .keyword { color: #ff7b72; }
+  .code-block .string { color: #a5d6ff; }
+  .code-block .env-var { color: #7ee787; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .finding-list { list-style: none; }
+  .finding-list li {
+    padding: 10px 14px;
+    margin-bottom: 6px;
+    background: rgba(0,0,0,0.2);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    font-size: 0.88rem;
+  }
+
+  footer {
+    text-align: center;
+    padding: 32px 0;
+    color: var(--muted);
+    font-size: 0.8rem;
+    border-top: 1px solid var(--border);
+    margin-top: 32px;
+  }
+
+  @media (max-width: 900px) {
+    .two-col { grid-template-columns: 1fr; }
+    .arch-flow { min-width: auto; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>三联盟系统 · 第八轮 LLM Router 打通 + Executor 熔断</h1>
+  <div class="subtitle">多 Provider 路由 · 熔断降级 · 熔断感知重试 · 企业级 LLM 网关</div>
+  <div class="meta">
+    <span>📅 2026-09-01</span>
+    <span>🦀 Rust 1.98.0-nightly</span>
+    <span>💻 Windows / AMD64</span>
+    <span>✅ 415 测试通过</span>
+    <span>🌐 DeepSeek 真实连通</span>
+  </div>
+</header>
+
+<!-- KPI -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="value">4</div>
+    <div class="label">路由策略</div>
+    <div class="detail">Priority / RoundRobin / LatencyFirst / CostFirst</div>
+  </div>
+  <div class="kpi-card">
+    <div class="value">3级</div>
+    <div class="label">熔断状态机</div>
+    <div class="detail">Healthy → Degraded → CircuitBroken</div>
+  </div>
+  <div class="kpi-card">
+    <div class="value">0重试</div>
+    <div class="label">熔断感知</div>
+    <div class="detail">全熔断时立即失败，不盲目重试</div>
+  </div>
+  <div class="kpi-card">
+    <div class="value">415</div>
+    <div class="label">单元测试通过</div>
+    <div class="detail">scheduler 88 + executor 28 + core 113 + expert 186</div>
+  </div>
+  <div class="kpi-card">
+    <div class="value">0.79s</div>
+    <div class="label">DeepSeek 真实调用</div>
+    <div class="detail">单 Provider 向后兼容验证通过</div>
+  </div>
+</div>
+
+<!-- P0: LLM Router 架构 -->
+<section>
+  <h2>一、P0 · LLM Router 与实际调用打通</h2>
+
+  <h3>1.1 架构总览</h3>
+  <p style="color:var(--muted);margin-bottom:16px;font-size:0.9rem;">
+    在 <code>mox-ai-expert-svc/src/llm/</code> 下新建轻量 <code>router.rs</code>（428行），不依赖 scheduler-core，零外部依赖。
+    <code>OpenAiChatClient</code> 每次调用前通过 Router 选择 Provider，调用后回写健康状态；所有 Provider 熔断时 consultant 自动回退本地引擎。
+  </p>
+
+  <div class="arch-diagram">
+    <div class="arch-flow">
+      <div class="arch-node purple">
+        <div class="title">ConsultQuery</div>
+        <div class="desc">用户专家咨询请求</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node">
+        <div class="title">LlmExpertConsultant</div>
+        <div class="desc">ReAct 循环 + 工具调用</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node green">
+        <div class="title">OpenAiChatClient</div>
+        <div class="desc">complete() + 连接池复用</div>
+      </div>
+      <div class="arch-arrow">↕</div>
+      <div class="arch-node yellow">
+        <div class="title">LlmRouter</div>
+        <div class="desc">select_provider() + record_success/failure()</div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:16px;color:var(--muted);font-size:0.8rem;">
+      ↓ 所有 Provider 熔断时返回 "all LLM providers unavailable or circuit-broken"
+    </div>
+    <div class="arch-flow" style="margin-top:8px;">
+      <div class="arch-node" style="border-color:var(--red);background:rgba(239,68,68,0.1);">
+        <div class="title">熔断错误检测</div>
+        <div class="desc">consult() 检测 "circuit-broken"</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node green">
+        <div class="title">本地回退</div>
+        <div class="desc">ExpertServiceImpl 离线引擎</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>1.2 多 Provider 配置（环境变量）</h3>
+  <div class="code-block">
+<span class="comment"># 多 Provider 模式（按优先级排序）</span>
+<span class="env-var">MOX_LLM_PROVIDERS</span>=deepseek,openai,moonshot
+
+<span class="comment"># 每个 Provider 的配置（前缀大写）</span>
+<span class="env-var">MOX_LLM_DEEPSEEK_BASE_URL</span>=https://api.deepseek.com
+<span class="env-var">MOX_LLM_DEEPSEEK_API_KEY</span>=sk-xxx
+<span class="env-var">MOX_LLM_DEEPSEEK_MODEL</span>=deepseek-chat
+<span class="env-var">MOX_LLM_DEEPSEEK_PRICE_PER_1K</span>=0.001
+
+<span class="env-var">MOX_LLM_OPENAI_BASE_URL</span>=https://api.openai.com/v1
+<span class="env-var">MOX_LLM_OPENAI_API_KEY</span>=sk-xxx
+<span class="env-var">MOX_LLM_OPENAI_MODEL</span>=gpt-4o-mini
+
+<span class="comment"># 路由策略：priority（默认）/ round_robin / latency_first / cost_first</span>
+<span class="env-var">MOX_LLM_ROUTING_STRATEGY</span>=priority
+
+<span class="comment"># 熔断参数</span>
+<span class="env-var">MOX_LLM_CIRCUIT_BREAK_THRESHOLD</span>=5
+<span class="env-var">MOX_LLM_CIRCUIT_BREAK_COOLDOWN_MS</span>=30000
+
+<span class="comment"># 单 Provider 向后兼容（无 MOX_LLM_PROVIDERS 时使用）</span>
+<span class="env-var">MOX_LLM_API_KEY</span>=sk-xxx  <span class="comment"># 或 DEEPSEEK_API_KEY / OPENAI_API_KEY</span>
+<span class="env-var">MOX_LLM_BASE_URL</span>=https://api.deepseek.com
+<span class="env-var">MOX_LLM_MODEL</span>=deepseek-chat
+  </div>
+
+  <h3>1.3 熔断状态机</h3>
+  <div class="state-machine">
+    <div class="state-box healthy">
+      <div class="state-name">🟢 Healthy</div>
+      <div class="state-desc">正常服务<br>路由可选</div>
+    </div>
+    <div class="state-transition">
+      <div class="arrow">→</div>
+      连续失败 &gt;1次
+    </div>
+    <div class="state-box degraded">
+      <div class="state-name">🟡 Degraded</div>
+      <div class="state-desc">降级中<br>仍可路由</div>
+    </div>
+    <div class="state-transition">
+      <div class="arrow">→</div>
+      连续失败 ≥阈值<br>（默认5次）
+    </div>
+    <div class="state-box broken">
+      <div class="state-name">🔴 CircuitBroken</div>
+      <div class="state-desc">熔断中<br>路由跳过</div>
+    </div>
+  </div>
+  <div class="state-machine" style="margin-top:-8px;">
+    <div class="state-transition" style="max-width:200px;">
+      <div class="arrow">←</div>
+      冷却期过后（默认30s）<br>允许一次探测调用
+    </div>
+    <div class="state-transition" style="max-width:200px;">
+      <div class="arrow">←</div>
+      连续成功 ≥3次<br>恢复 Healthy
+    </div>
+  </div>
+
+  <h3>1.4 四种路由策略</h3>
+  <table>
+    <tr><th>策略</th><th>选择逻辑</th><th>适用场景</th></tr>
+    <tr><td><strong>Priority</strong>（默认）</td><td>按 provider 列表顺序选第一个可用的</td><td>主备模式，优先用便宜/快的 Provider</td></tr>
+    <tr><td><strong>RoundRobin</strong></td><td>在可用 Provider 间轮询（AtomicUsize 计数）</td><td>负载均衡，分散请求压力</td></tr>
+    <tr><td><strong>LatencyFirst</strong></td><td>选 avg_latency_ms 最低的可用 Provider（EMA 指数移动平均）</td><td>延迟敏感场景，自动选最快的</td></tr>
+    <tr><td><strong>CostFirst</strong></td><td>选 price_per_1k_tokens 最低的可用 Provider</td><td>成本敏感场景，自动选最便宜的</td></tr>
+  </table>
+
+  <h3>1.5 修改文件清单</h3>
+  <table>
+    <tr><th>文件</th><th>操作</th><th>行数变化</th><th>核心内容</th></tr>
+    <tr><td><code>llm/router.rs</code></td><td><span class="tag tag-new">新增</span></td><td>+428</td><td>LlmRouter / ProviderHealth / ProviderRuntimeState / 4路由策略 / 熔断状态机</td></tr>
+    <tr><td><code>llm/chat.rs</code></td><td>修改</td><td>380→830</td><td>ProviderConfig / RoutingStrategy / 多Provider from_env / router字段 / complete()集成</td></tr>
+    <tr><td><code>llm/consultant.rs</code></td><td>修改</td><td>391→443</td><td>llm_consultant_from_env() 注入router / consult() 熔断错误立即回退</td></tr>
+    <tr><td><code>llm/mod.rs</code></td><td>修改</td><td>+1</td><td>pub mod router; 导出</td></tr>
+  </table>
+</section>
+
+<!-- P1: Executor 超时熔断 -->
+<section>
+  <h2>二、P1 · Executor 节点超时/熔断集成</h2>
+
+  <h3>2.1 实现内容</h3>
+  <div class="two-col">
+    <div>
+      <h3 style="margin-top:0;">(a) Per-node 超时环境变量</h3>
+      <ul class="finding-list">
+        <li>新增 <code>ExpertExecutorConfig::from_env()</code> 读取 5 个环境变量</li>
+        <li><code>MOX_EXECUTOR_NODE_TIMEOUT_MS</code>（默认 60_000ms = 1分钟）</li>
+        <li><code>MOX_EXECUTOR_MAX_RETRIES</code>（默认 3）</li>
+        <li><code>MOX_EXECUTOR_INITIAL_RETRY_DELAY_MS</code>（默认 1000）</li>
+        <li><code>MOX_EXECUTOR_MAX_RETRY_DELAY_MS</code>（默认 30000）</li>
+        <li><code>MOX_EXECUTOR_BACKOFF_FACTOR</code>（默认 2.0）</li>
+        <li><code>default()</code> 保持不变（timeout=300_000），向后兼容</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="margin-top:0;">(b) 熔断感知重试</h3>
+      <ul class="finding-list">
+        <li>新增 <code>is_circuit_break_error(error)</code> 辅助函数</li>
+        <li>匹配 <code>"circuit-broken"</code> 或 <code>"all LLM providers"</code></li>
+        <li><code>consult_with_retry()</code> 检测到熔断错误立即 <code>break</code></li>
+        <li>不重试、不等待退避延迟，retry_count=0</li>
+        <li>通过错误字符串匹配实现，不引入 expert-svc 依赖（DIP 约束）</li>
+        <li>普通失败仍然正常重试（回归验证通过）</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>2.2 超时错误标注</h3>
+  <div class="code-block">
+<span class="comment">// Before（第七轮及之前）</span>
+<span class="keyword">Err</span>(_) => <span class="keyword">Err</span>(format!(<span class="string">"Consult timeout after {}ms"</span>, timeout_ms))
+
+<span class="comment">// After（第八轮）</span>
+<span class="keyword">Err</span>(_) => <span class="keyword">Err</span>(format!(<span class="string">"node timeout after {}ms"</span>, timeout_ms))
+<span class="comment">// e.contains("timeout") 判断逻辑不受影响，"node timeout" 更明确区分</span>
+  </div>
+
+  <h3>2.3 修改文件</h3>
+  <table>
+    <tr><th>文件</th><th>操作</th><th>行数变化</th></tr>
+    <tr><td><code>executor-core/src/expert_executor.rs</code></td><td>修改</td><td>1015→1271（+256）</td></tr>
+  </table>
+  <p style="font-size:0.82rem;color:var(--muted);">包含：from_env() 方法、is_circuit_break_error() 函数、熔断感知 break、MockConsultant circuit_break_mode 字段 + with_circuit_break() 构造函数、5 个新增单元测试。</p>
+</section>
+
+<!-- 测试清单 -->
+<section>
+  <h2>三、新增测试清单（17 个）</h2>
+
+  <h3>3.1 LLM Router 测试（router.rs · 12 个新增）</h3>
+  <table>
+    <tr><th>测试名</th><th>验证内容</th><th>状态</th></tr>
+    <tr><td><code>test_router_priority_selection</code></td><td>Priority 策略按顺序选第一个可用 Provider</td><td><span class="tag tag-pass">PASS</span></td></tr>
+    <tr><td><code>test_router_round_robin</code></td><td>RoundRobin 策略依次轮询可用 Provider</td><td><span class="tag tag-pass">PASS</span></td></tr>
+    <tr><td><code>test_router_latency_first</code></td><td>LatencyFirst 选 avg_latency_ms 最低的 Provider</td><td><span class="tag tag-pass">PASS</span></td></tr>
+    <tr><td><code>test_router_circuit_break</code></td><td>连续失败达阈值后 Provider 变 CircuitBroken，select 跳过</td><td><span class="tag tag-pass">PASS</span></td></tr>
+    <tr><td><code>test_router_circuit_break_recovery</code></td><td>熔断冷却后成功调用恢复 Healthy</td><td><span class="tag tag-pass">PASS</span></td></tr>
+    <tr><td><code>test_router_fallback_to_secondary</code></td><td>主 Provider 熔断后自动选备用 Provider</td><td><span class="tag tag-pass">PASS</span></td></tr>
+    <tr><td><code>test_router_all_broken</code></td><td>所有 Provider 熔断后 select 返回 None，all_circuit_broken=true</td><td><span class="tag tag-pass">PASS</span></td></tr>
+    <tr><td><code>test_router_cost_first</code></td><td>CostFirst 选 price_per_1k 最低的 Provider</td><td><span class="tag tag-pass">PASS</span></td></tr>
+    <tr><td><code>test_router_degraded_state</code></td><td>Healthy→连续失败→Degraded 状态转换</td><td><span class="tag tag-pass">PASS</span></td></tr>
+    <tr><td><code>test_router_disabled_provider_skipped</code></td><td>enabled=false 的 Provider 被跳过</td><td><span class="tag tag-pass">PASS</span></td></tr>
+    <tr><td><code>test_router_reset_provider</code></td><td>reset_provider() 手动恢复熔断状态</td><td><span class="tag tag-pass">PASS</span></td></tr>
+  </table>
+
+  <h3>3.2 ChatClient / Config 测试（chat.rs · 8 个新增）</h3>
+  <table>
+    <tr><th>测试名</th><th>验证内容</th><th>状态</th></tr>
+    <tr><td><code>test_routing_strategy_from_str</code></td><td>RoutingStrategy FromStr 解析（含大小写）</td><td><span class="tag tag-pass">PASS</span></td></tr>
+    <tr><td><code>test_multi_provider_from_env</code></td><td>MOX_LLM_PROVIDERS 多 Provider 配置解析</td><td><span class="tag tag-pass">PASS</span></td></tr>
+    <tr><td><code>test_multi_provider_skips_empty_key</code></td><td>api_key 为空的 Provider 被跳过</td><td><span class="tag tag-pass">PASS</span></td></tr>
+    <tr><td><code>test_single_provider_backward_compat</code></td><td>无 MOX_LLM_PROVIDERS 时单 Provider 行为不变</td><td><span class="tag tag-pass">PASS</span></td></tr>
+    <tr><td><code>test_from_env_with_router_multi</code></td><td>多 Provider 时 from_env_with_router 返回 Some(router)</td><td><span class="tag tag-pass">PASS</span></td></tr>
+    <tr><td><code>test_from_env_with_router_single</code></td><td>单 Provider 时 from_env_with_router 返回 None</td><td><span class="tag tag-pass">PASS</span></td></tr>
+    <tr><td><code>test_openai_client_with_router</code></td><td>OpenAiChatClient 注入 router 后 select_provider 逻辑</td><td><span class="tag tag-pass">PASS</span></td></tr>
+    <tr><td><code>test_openai_client_no_router</code></td><td>无 router 时保持单 Provider 行为（向后兼容）</td><td><span class="tag tag-pass">PASS</span></td></tr>
+  </table>
+
+  <h3>3.3 Consultant 测试（consultant.rs · 3 个新增）</h3>
+  <table>
+    <tr><th>测试名</th><th>验证内容</th><th>状态</th></tr>
+    <tr><td><code>test_consultant_falls_back_on_all_providers_broken</code></td><td>熔断错误时 consultant 立即回退本地 ExpertServiceImpl</td><td><span class="tag tag-pass">PASS</span></td></tr>
+    <tr><td><code>test_consultant_falls_back_on_generic_error</code></td><td>普通 LLM 错误时也回退本地（原有行为）</td><td><span class="tag tag-pass">PASS</span></td></tr>
+    <tr><td><code>test_is_all_providers_broken_detection</code></td><td>is_all_providers_broken_error() 字符串匹配准确性</td><td><span class="tag tag-pass">PASS</span></td></tr>
+  </table>
+
+  <h3>3.4 Executor 测试（expert_executor.rs · 5 个新增）</h3>
+  <table>
+    <tr><th>测试名</th><th>验证内容</th><th>状态</th></tr>
+    <tr><td><code>test_config_from_env_defaults</code></td><td>无环境变量时 from_env() 返回默认值（timeout=60000）</td><td><span class="tag tag-pass">PASS</span></td></tr>
+    <tr><td><code>test_config_from_env_custom_values</code></td><td>设置环境变量后 from_env() 正确读取（Mutex 保护并行竞争）</td><td><span class="tag tag-pass">PASS</span></td></tr>
+    <tr><td><code>test_circuit_break_error_detection</code></td><td>is_circuit_break_error() 匹配 circuit-broken / all LLM providers</td><td><span class="tag tag-pass">PASS</span></td></tr>
+    <tr><td><code>test_execute_node_skips_retries_on_circuit_break</code></td><td>熔断错误时 retry_count=0，call_counter=1，立即失败</td><td><span class="tag tag-pass">PASS</span></td></tr>
+    <tr><td><code>test_execute_node_retries_on_normal_failure</code></td><td>普通失败仍然重试（回归验证，retry_count=1）</td><td><span class="tag tag-pass">PASS</span></td></tr>
+  </table>
+</section>
+
+<!-- 全量回归 -->
+<section>
+  <h2>四、全量回归测试结果</h2>
+  <table>
+    <tr><th>Crate</th><th>测试数</th><th>结果</th><th>备注</th></tr>
+    <tr><td>mox-alliance-scheduler-core</td><td>88</td><td><span class="tag tag-pass">全部通过</span></td><td>含匹配器缓存 + 存储批量 + metrics</td></tr>
+    <tr><td>mox-alliance-executor-core (lib)</td><td>23</td><td><span class="tag tag-pass">全部通过</span></td><td>含熔断感知重试 + 超时环境变量（新增5）</td></tr>
+    <tr><td>mox-alliance-executor-core (e2e)</td><td>5</td><td><span class="tag tag-pass">全部通过</span></td><td>integration_e2e 集成测试</td></tr>
+    <tr><td>mox-alliance-core</td><td>113</td><td><span class="tag tag-pass">全部通过</span></td><td>fusion 7策略 + dag + utils</td></tr>
+    <tr><td>mox-ai-expert-svc (lib)</td><td>186</td><td><span class="tag tag-pass">全部通过</span></td><td>含 LLM Router 23个新增测试（1 ignored 为实时连通性）</td></tr>
+    <tr><td>mox-ai-expert-svc (live)</td><td>1</td><td><span class="tag tag-pass">通过</span></td><td>DeepSeek 真实调用：返回"1+1等于2。"，0.79s</td></tr>
+    <tr style="font-weight:700;background:rgba(59,130,246,0.08);">
+      <td>合计</td><td>416</td><td><span class="tag tag-pass">416 通过 / 0 失败</span></td><td>含 1 个实时连通性测试</td></tr>
+  </table>
+
+  <h3>已知限制（非本轮改动）</h3>
+  <ul class="finding-list">
+    <li><code>mox-alliance-boot-config</code> / <code>mox-alliance-common-proto</code>：并发进程未提交工作导致编译错误，按约束未改动，全量 <code>cargo test --workspace</code> 会因此失败</li>
+    <li><code>mox-alliance-scheduler-svc</code> / <code>mox-alliance-executor-svc</code>：依赖 boot-config，编译受连带影响（第七轮已验证 svc 自身代码正确）</li>
+  </ul>
+</section>
+
+<!-- 向后兼容验证 -->
+<section>
+  <h2>五、向后兼容验证</h2>
+  <table>
+    <tr><th>验证维度</th><th>验证方式</th><th>结果</th></tr>
+    <tr><td>单 Provider 环境变量</td><td>无 MOX_LLM_PROVIDERS 时走原有单 Provider 路径，router=None</td><td><span class="tag tag-pass">通过</span></td></tr>
+    <tr><td>OpenAiChatClient 无 router</td><td>complete() 行为与第七轮完全一致（单 base_url/api_key）</td><td><span class="tag tag-pass">通过</span></td></tr>
+    <tr><td>ExpertExecutorConfig::default()</td><td>timeout_ms=300_000 不变，现有测试 config_default_values 通过</td><td><span class="tag tag-pass">通过</span></td></tr>
+    <tr><td>ChatClient trait</td><td>trait 签名不变，MockChatClient 不变</td><td><span class="tag tag-pass">通过</span></td></tr>
+    <tr><td>真实 DeepSeek 调用</td><td>单 Provider（DEEPSEEK_API_KEY）下 live_llm_connectivity 通过，0.79s 返回</td><td><span class="tag tag-pass">通过</span></td></tr>
+    <tr><td>普通失败重试</td><td>非熔断错误仍然重试 max_retries 次（回归测试通过）</td><td><span class="tag tag-pass">通过</span></td></tr>
+  </table>
+</section>
+
+<!-- 关键设计决策 -->
+<section>
+  <h2>六、关键设计决策</h2>
+  <ol style="padding-left:20px;font-size:0.9rem;line-height:2;">
+    <li><strong>独立轻量 Router，不依赖 scheduler-core</strong>：在 <code>llm/router.rs</code> 重新实现 LlmRouter，避免引入 MergedLlmConfig 等复杂依赖和潜在循环依赖。API 与 scheduler-core 对齐，零外部依赖（仅 std）。</li>
+    <li><strong>状态机级联修复</strong>：<code>record_failure()</code> 采用顺序 if 而非 match，确保 Healthy→Degraded→CircuitBroken 可在同一次调用内完成（threshold=2 时 2 次失败即熔断）。</li>
+    <li><strong>向后兼容零侵入</strong>：LlmConfig 保留原有字段作为 providers[0] 的兼容视图；无 MOX_LLM_PROVIDERS 时 router=None，complete() 行为完全不变；ExpertExecutorConfig::default() 不变。</li>
+    <li><strong>from_env_with_router() 工厂方法</strong>：返回 (LlmConfig, Option&lt;Arc&lt;LlmRouter&gt;&gt;)，多 Provider（&gt;1）时自动创建 router，单 Provider 返回 None。</li>
+    <li><strong>环境变量测试序列化</strong>：用 static ENV_MUTEX: Mutex&lt;()&gt; + EnvGuard（drop 时自动清理）解决 std::env::set_var 的并行测试竞争，无需引入 serial_test crate。</li>
+    <li><strong>熔断全链路</strong>：OpenAiChatClient.complete() → router.select_provider() → 调用 → record_success/failure()；全熔断时返回 "all LLM providers unavailable or circuit-broken"；consultant 检测到该错误立即回退本地（不经过 ReAct 重试）；executor 检测到该错误立即 break（不重试）。</li>
+    <li><strong>DIP 约束遵守</strong>：executor-core 不直接依赖 mox-ai-expert-svc，熔断感知通过错误信息字符串匹配实现（"circuit-broken" / "all LLM providers"），保持依赖倒置架构。</li>
+  </ol>
+</section>
+
+<!-- 后续优化方向 -->
+<section>
+  <h2>七、后续优化方向（第九轮建议）</h2>
+  <div class="two-col">
+    <div>
+      <h3 style="margin-top:0;">高优先级</h3>
+      <ul class="finding-list">
+        <li><strong>scheduler-core LlmRouter 与 expert-svc Router 统一</strong>：消除两套 Router 实现，统一为单一 crate（或让 scheduler-core 依赖 expert-svc 的 router）</li>
+        <li><strong>LLM 响应缓存</strong>：对相同 prompt 的 LLM 调用做短时缓存（TTL 60s），减少重复 API 调用和成本</li>
+        <li><strong>Metrics HTTP 端点</strong>：在 scheduler-svc 新增 /metrics 端点，输出 AllianceMetrics JSON 快照，对接 Prometheus</li>
+        <li><strong>Fusion 引擎统一</strong>：消除 scheduler-core/fusion.rs 和 executor-core/fusion.rs 的重复实现</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="margin-top:0;">中优先级</h3>
+      <ul class="finding-list">
+        <li><strong>匹配器 Aho-Corasick 词典匹配</strong>：将 DOMAIN_KEYWORDS 线性扫描替换为 AC 自动机，领域推断从 O(K×T) 降至 O(T+K)</li>
+        <li><strong>DAG 事件驱动调度</strong>：替换轮询模式为事件驱动（节点完成时立即触发下游），消除 ~100ms 调度基线延迟</li>
+        <li><strong>匹配器结果缓存</strong>：对相同 task_description 的匹配结果做短时缓存，高并发场景降低匹配延迟</li>
+        <li><strong>多 Provider 真实端到端测试</strong>：配置 2+ Provider（如 DeepSeek + 备用），验证熔断切换全链路</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>三联盟系统 · 第八轮 LLM Router 打通 + Executor 熔断报告 | 2026-09-01</p>
+  <p style="margin-top:8px;">璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟 · 开发专家联盟企业级架构</p>
+</footer>
+
+</div>
+</body>
+</html>

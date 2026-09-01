@@ -53,3 +53,15 @@ nacos:
   group: "DEFAULT_GROUP"
   data_id: "mox-alliance-scheduler.yml"
 
+# Nacos 注册中心（阶段三：服务注册，需 nacos.enabled=true 才生效）
+naming:
+  enabled: false                    # true=启动时注册到 Nacos（失败告警不阻断）
+  service_name: mox-alliance-scheduler
+  group: "DEFAULT_GROUP"
+  ip: "127.0.0.1"                   # 生产按实际对外网卡 IP 配置
+  port: 3100                        # 本服务对外端口（PORT-NORM-001）
+  weight: 1.0
+  metadata:
+    - "protocol=http"
+    - "domain=alliance"
+

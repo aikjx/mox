@@ -13,7 +13,7 @@ mox-alliance-executor-proto = { path = "../../proto/mox-alliance-executor-proto"
 mox-alliance-core = { path = "../../core/mox-alliance-core" }
 mox-alliance-scheduler-core = { path = "../../core/mox-alliance-scheduler-core", features = ["http-bridge"] }
 mox-alliance-config-core = { path = "../../core/mox-alliance-config-core" }
-mox-alliance-boot-config = { path = "../../core/mox-alliance-boot-config" }
+mox-alliance-boot-config = { path = "../../core/mox-alliance-boot-config", features = ["nacos", "naming"] }
 mox-alliance-api = { path = "../../api" }
 mox-platform-foundation = { workspace = true }
 mox-error = { workspace = true }

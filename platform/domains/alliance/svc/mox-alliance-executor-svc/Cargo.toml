@@ -11,7 +11,7 @@ mox-alliance-common-proto = { path = "../../proto/mox-alliance-common-proto" }
 mox-alliance-executor-proto = { path = "../../proto/mox-alliance-executor-proto" }
 mox-alliance-core = { path = "../../core/mox-alliance-core" }
 mox-alliance-executor-core = { path = "../../core/mox-alliance-executor-core" }
-mox-alliance-boot-config = { path = "../../core/mox-alliance-boot-config" }
+mox-alliance-boot-config = { path = "../../core/mox-alliance-boot-config", features = ["nacos", "naming"] }
 mox-alliance-api = { path = "../../api" }
 mox-ai-expert-svc = { path = "../../../ai/svc/mox-ai-expert-svc" }
 mox-ai-expert-proto = { path = "../../../ai/proto/mox-ai-expert-proto" }

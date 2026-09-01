@@ -38,6 +38,18 @@ nacos:
   group: "DEFAULT_GROUP"
   data_id: "mox-alliance-executor.yml"
 
+# Nacos 注册中心（阶段三：服务注册，需 nacos.enabled=true 才生效）
+naming:
+  enabled: false
+  service_name: mox-alliance-executor
+  group: "DEFAULT_GROUP"
+  ip: "127.0.0.1"
+  port: 3200
+  weight: 1.0
+  metadata:
+    - "protocol=http"
+    - "domain=alliance"
+
 # ── 真实 LLM 调用链（executor expert 模式，生产专家节点执行时生效）──
 # 环境变量配置（mox-ai-expert-svc 读取），非 yml 字段：
 #   MOX_LLM_ENABLED=1            # 显式启用真实 LLM（不设默认按是否有 Key 决定）

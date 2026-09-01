@@ -131,7 +131,10 @@
                   重新执行
                 </el-button>
                 <el-button size="small" type="primary" @click="toggleStream" v-if="selectedTask.status === 'running'">
-                  <el-icon>{{ isStreaming ? <VideoPause /> : <VideoPlay /> }}</el-icon>
+                  <el-icon>
+                    <VideoPause v-if="isStreaming" />
+                    <VideoPlay v-else />
+                  </el-icon>
                   {{ isStreaming ? '暂停' : '继续' }}
                 </el-button>
                 <el-button size="small" type="success" v-if="selectedTask.status === 'completed'">

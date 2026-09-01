@@ -214,23 +214,21 @@ impl LlmRouter {
         } else {
             state.avg_latency_ms = state.avg_latency_ms * 0.7 + latency_ms * 0.3;
         }
-        // 状态机转换
-        match state.health {
-            ProviderHealth::Healthy => {
-                if state.consecutive_failures > 1 {
-                    state.health = ProviderHealth::Degraded;
-                }
-            }
-            ProviderHealth::Degraded => {
-                if state.consecutive_failures >= self.circuit_break_threshold {
-                    state.health = ProviderHealth::CircuitBroken;
-                    state.circuit_break_until = Some(now + self.circuit_break_cooldown);
-                }
-            }
-            ProviderHealth::CircuitBroken => {
-                // 探测调用也失败：重新设置冷却期
-                state.circuit_break_until = Some(now + self.circuit_break_cooldown);
-            }
+        // 状态机转换（顺序级联：Healthy → Degraded → CircuitBroken 可在同一次调用内完成）
+        // 1) Healthy → Degraded：连续失败 > 1
+        if state.health == ProviderHealth::Healthy && state.consecutive_failures > 1 {
+            state.health = ProviderHealth::Degraded;
+        }
+        // 2) Degraded → CircuitBroken：连续失败 >= threshold（含刚从 Healthy 降级的情况）
+        if state.health == ProviderHealth::Degraded
+            && state.consecutive_failures >= self.circuit_break_threshold
+        {
+            state.health = ProviderHealth::CircuitBroken;
+            state.circuit_break_until = Some(now + self.circuit_break_cooldown);
+        }
+        // 3) CircuitBroken：探测调用也失败 → 重置冷却期
+        if state.health == ProviderHealth::CircuitBroken {
+            state.circuit_break_until = Some(now + self.circuit_break_cooldown);
         }
     }
 

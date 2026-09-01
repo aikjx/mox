@@ -65,6 +65,16 @@ fn now_iso() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
 
+/// IAM 状态字符串 → 前端数字契约（1 启用 / 0 停用）。
+/// 后端 IAM 模型用 "active"/"disabled" 字符串；前端 admin 面板按 status===1 判断启用/停用。
+/// 归一化在网关映射层完成，前端无需感知 IAM 域语义。
+fn status_flag(s: &str) -> i64 {
+    match s.to_ascii_lowercase().as_str() {
+        "active" | "enabled" | "normal" | "1" => 1,
+        _ => 0,
+    }
+}
+
 /// 把扁平 `{id, parentId, ...}` 节点挂成树（parentId 缺失/自引用视为根）。
 /// 先全部挂载 children，再统一收集根节点，避免顺序依赖。
 fn build_tree(items: Vec<Map<String, Value>>) -> Vec<Value> {
@@ -267,7 +277,7 @@ async fn list_dept(
                 "code": d.dept_code,
                 "parentId": d.parent_id,
                 "sort": d.sort_order,
-                "status": d.status,
+                "status": status_flag(&d.status),
                 "leaderId": d.manager_user_id,
                 "createdAt": d.created_at,
             }))
@@ -296,7 +306,7 @@ async fn dept_tree(
                     m.insert("code".into(), json!(d.dept_code));
                     m.insert("parentId".into(), json!(d.parent_id));
                     m.insert("sort".into(), json!(d.sort_order));
-                    m.insert("status".into(), json!(d.status));
+                    m.insert("status".into(), json!(status_flag(&d.status)));
                     m
                 })
                 .collect();
@@ -325,7 +335,7 @@ async fn list_roles(
                 "type": r.role_type,
                 "dataScope": r.data_scope,
                 "sort": r.sort_order,
-                "status": r.status,
+                "status": status_flag(&r.status),
                 "remark": r.description,
                 "createdAt": r.created_at,
             }))
@@ -353,7 +363,7 @@ async fn get_role(
                 "type": r.role_type,
                 "dataScope": r.data_scope,
                 "sort": r.sort_order,
-                "status": r.status,
+                "status": status_flag(&r.status),
                 "remark": r.description,
                 "createdAt": r.created_at,
             })),
@@ -380,7 +390,7 @@ async fn get_user_roles(
                 "id": r.role_id,
                 "code": r.role_code,
                 "name": r.role_name,
-                "status": r.status,
+                "status": status_flag(&r.status),
             }))
             .collect::<Vec<_>>())),
         Err(e) => err(&format!("user roles: {e}")),
@@ -414,7 +424,7 @@ async fn menu_tree(
                     node.insert("visible".into(), json!(m.is_visible));
                     node.insert("isCache".into(), json!(m.is_cached));
                     node.insert("sort".into(), json!(m.sort_order));
-                    node.insert("status".into(), json!(m.status));
+                    node.insert("status".into(), json!(status_flag(&m.status)));
                     node
                 })
                 .collect();

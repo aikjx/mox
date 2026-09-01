@@ -112,6 +112,8 @@
 | 9101–9103 / 9201–9203 / 9301–9303 / 9401–9403 / 9501–9503 | kg-storage-svc 各分片/查询/基准测试 |
 | 9333 | mox-cloud-master-svc raft 测试 |
 | 9669 / 9779–9781 | kg-meta-core 存储宿主测试 |
+| 8999 | alliance executor expert 模式 e2e：mock OpenAI 兼容服务（tools/mock_openai.py，仅测试） |
+| 9848 / 10848 | rnacos（Nacos Rust 服务端）gRPC / 独立控制台端口（本地 e2e，tools/rnacos/；HTTP 8848 已登记 THIRD-PARTY） |
 | 9998 / 9999 | legacy backend-rust 网关 target 测试 |
 | 12345 | glacier-adapter 测试 endpoint |
 | 13130 | xiaobai_voice 语音代理 WS 测试 |
