@@ -1,0 +1,20 @@
+[package]
+name = "mox-base-index-core"
+description = "MOX 统一基座 · 统一索引层（元数据 + 全文 + 向量三路索引 trait），不内置后端"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true }

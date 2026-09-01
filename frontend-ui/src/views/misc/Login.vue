@@ -415,7 +415,7 @@ async function handleLogin() {
       ElMessage.success('登录成功')
 
       // 跳转
-      const redirect = route.query.redirect || '/workbench'
+      const redirect = route.query.redirect || '/dashboard'
       router.replace(redirect)
     } else {
       throw new Error('登录失败：未获取到有效 token')
@@ -464,7 +464,7 @@ function handleOAuth2Login() {
   try {
     // 保存当前状态（用于回调后恢复）
     secureSetItem('oauth2_state', {
-      redirect: route.query.redirect || '/workbench',
+      redirect: route.query.redirect || '/dashboard',
       timestamp: Date.now(),
     })
 

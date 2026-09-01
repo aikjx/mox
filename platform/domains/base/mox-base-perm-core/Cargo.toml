@@ -1,0 +1,21 @@
+[package]
+name = "mox-base-perm-core"
+description = "MOX 统一基座 · 节点级权限层（基于 mox-rbac-engine 的节点/字段级 ACL），不内置后端"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+mox-rbac-engine = { workspace = true }
+mox-base-model-core = { path = "../mox-base-model-core" }
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true }

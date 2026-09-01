@@ -181,6 +181,11 @@ export default defineConfig(({ mode }) => {
         '@element-plus/icons-vue',
         'echarts',
         'markdown-it',
+        // [修复] 3d-force-graph 依赖树中的 CJS 包显式预构建，避免「does not provide an export named 'default'」
+        'ngraph.forcelayout',
+        'ngraph.merge',
+        'ngraph.random',
+        'ngraph.events',
       ],
       exclude: [
         // 这些大依赖按需加载，不预构建

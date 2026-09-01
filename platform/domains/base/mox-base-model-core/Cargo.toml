@@ -1,0 +1,15 @@
+[package]
+name = "mox-base-model-core"
+description = "MOX 统一基座 · 统一模型层（Node/Edge/Blob 统一原语），只定义模型，不内置后端"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+
+[lints]
+workspace = true

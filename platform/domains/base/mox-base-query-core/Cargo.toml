@@ -1,0 +1,22 @@
+[package]
+name = "mox-base-query-core"
+description = "MOX 统一基座 · 统一查询层（GET/FILTER/TRAVERSE/RANGE 四原语 DSL），不内置后端"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+mox-base-model-core = { path = "../mox-base-model-core" }
+mox-base-index-core = { path = "../mox-base-index-core" }
+mox-base-graph-core = { path = "../mox-base-graph-core" }
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true }

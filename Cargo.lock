@@ -701,9 +701,9 @@ checksum = "f079e83a288787bcd14a6aea84cee5c87a67c5a3e660c30f557a3d24761b3527"
 
 [[package]]
 name = "chacha20"
-version = "0.10.1"
+version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d524456ba66e72eb8b115ff89e01e497f8e6d11d78b70b1aa13c0fbd97540a81"
+checksum = "65c35e4b699c7e15ccbe7ee35c005e4fc0a278d22238a2857e6ce2dadeda1b06"
 dependencies = [
  "cfg-if",
  "cpufeatures 0.3.0",
@@ -4037,6 +4037,92 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "mox-base-graph-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "mox-base-model-core",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
+name = "mox-base-index-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
+name = "mox-base-lifecycle-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "mox-base-store-core",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "mox-base-model-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "serde",
+ "serde_json",
+ "uuid",
+]
+
+[[package]]
+name = "mox-base-perm-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "mox-base-model-core",
+ "mox-rbac-engine",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+]
+
+[[package]]
+name = "mox-base-query-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "mox-base-graph-core",
+ "mox-base-index-core",
+ "mox-base-model-core",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+]
+
+[[package]]
+name = "mox-base-store-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "thiserror 1.0.69",
+ "tokio",
  "tracing",
  "uuid",
 ]

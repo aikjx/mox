@@ -4,7 +4,7 @@ import { getToken as getSecureToken } from '@/utils/secureStorage'
 import { usePermissionStore } from '@/stores/permission.store'
 
 const routes = [
-  { path: '/', redirect: '/ai' },
+  { path: '/', redirect: '/dashboard' },
   {
     path: '/login',
     name: 'Login',
@@ -416,7 +416,7 @@ const routes = [
   // 404 兜底
   {
     path: '/:pathMatch(.*)*',
-    redirect: '/ai'
+    redirect: '/dashboard'
   }
 ]
 

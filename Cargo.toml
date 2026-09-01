@@ -138,6 +138,14 @@ members = [
     "platform/domains/alliance/svc/mox-alliance-scheduler-svc",
     "platform/domains/alliance/svc/mox-alliance-executor-svc",
     "platform/domains/alliance/sdk/mox-alliance-sdk",
+    # === 统一基座域 (base) ===
+    "platform/domains/base/mox-base-model-core",
+    "platform/domains/base/mox-base-store-core",
+    "platform/domains/base/mox-base-index-core",
+    "platform/domains/base/mox-base-graph-core",
+    "platform/domains/base/mox-base-query-core",
+    "platform/domains/base/mox-base-perm-core",
+    "platform/domains/base/mox-base-lifecycle-core",
 ]
 resolver = "2"
 
@@ -269,6 +277,14 @@ mox-alliance-executor-svc = { path = "platform/domains/alliance/svc/mox-alliance
 mox-alliance-scheduler-svc = { path = "platform/domains/alliance/svc/mox-alliance-scheduler-svc" }
 # Alliance sdk
 mox-alliance-sdk = { path = "platform/domains/alliance/sdk/mox-alliance-sdk" }
+# Base 统一基座域
+mox-base-model-core = { path = "platform/domains/base/mox-base-model-core" }
+mox-base-store-core = { path = "platform/domains/base/mox-base-store-core" }
+mox-base-index-core = { path = "platform/domains/base/mox-base-index-core" }
+mox-base-graph-core = { path = "platform/domains/base/mox-base-graph-core" }
+mox-base-query-core = { path = "platform/domains/base/mox-base-query-core" }
+mox-base-perm-core = { path = "platform/domains/base/mox-base-perm-core" }
+mox-base-lifecycle-core = { path = "platform/domains/base/mox-base-lifecycle-core" }
 # Core 层
 mox-data-formula-core = { path = "platform/domains/data/core/mox-data-formula-core" }
 mox-data-norm-core = { path = "platform/domains/data/core/mox-data-norm-core" }

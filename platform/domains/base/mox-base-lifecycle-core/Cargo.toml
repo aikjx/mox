@@ -1,0 +1,21 @@
+[package]
+name = "mox-base-lifecycle-core"
+description = "MOX 统一基座 · 生命周期层（版本 / 去重 / GC / 回收站 trait），不内置后端"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+mox-base-store-core = { path = "../mox-base-store-core" }
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true }
