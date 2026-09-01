@@ -202,7 +202,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn at_least_two_subservers_and_voice_30010() {
+    fn at_least_two_subservers_and_voice() {
         let list = registered_subservers();
         assert!(list.len() >= 2);
         let voice = list

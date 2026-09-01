@@ -28,6 +28,7 @@ reqwest = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["full"] }
+mox-alliance-executor-core = { path = "../mox-alliance-executor-core" }
 
 [features]
 default = []

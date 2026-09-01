@@ -4,11 +4,11 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
-description = "Xiaobai · 桌面小白助手 BallWidget（Slint 骨架 + 5 状态机）+ 启动 voice_proxy 30010 服务"
+description = "Xiaobai · 桌面小白助手 BallWidget（Slint 骨架 + 5 状态机）+ 启动 voice_proxy 语音服务"
 
 [dependencies]
 mox-voice-core-svc = { workspace = true }
-mox-voice-operator-svc = { workspace = true, features = ["server-30010", "voice-engine"] }
+mox-voice-operator-svc = { workspace = true, features = ["voice-server", "voice-engine"] }
 mox-voice-asr-svc = { workspace = true }
 mox-voice-intent-svc = { workspace = true }
 mox-platform-foundation = { workspace = true }
@@ -31,7 +31,7 @@ global-hotkey = { workspace = true }
 # Desktop UI (wry/tao / WebView2 3D floating ball)
 wry = { workspace = true }
 tao = { workspace = true }
-# 30010 voice_proxy HTTP 服务（与 mox-voice-operator-svc::server_30010 同用）
+# voice_proxy HTTP 服务（与 mox-voice-operator-svc::voice_server 同用，默认绑定 30010）
 axum = { workspace = true }
 # ---- P2 语音闭环依赖已由 mox-voice-operator-svc::voice-engine feature 提供 ----
 # （cpal / rodio / sherpa-onnx 定义在 workspace 根 Cargo.toml）

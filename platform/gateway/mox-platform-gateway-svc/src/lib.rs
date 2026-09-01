@@ -16,7 +16,8 @@
 //! - L0 通用：/health · /api/v1/status · /api/v1/domains · /metrics
 //! - L2 KG：/kg/v1/{neighborhood,path,shortest-path,centrality,communities,stats}
 //! - L3 AI：/ai/engine/{process,analyze,capabilities,metrics}
-//! - 总计：4 通用 + 6 KG + 4 AI = 14 端点
+//! - L5 系统/安全：/api/system/* · /api/security/*（IAM SQLite 真实数据链路）
+//! - 总计：4 通用 + 6 KG + 4 AI + 系统/安全域 3X 端点（读接口真实现 + 写接口 stub）
 
 pub mod config;
 pub mod auth;
@@ -24,12 +25,19 @@ pub mod rate_limit;
 pub mod o11y;
 pub mod routes;
 pub mod alliance;
+pub mod system;
 
 pub use mox_kg_service_svc::http_adapter;
 pub use alliance as alliance_adapter;
 pub use config::GatewayConfig;
 
-use axum::{Json, Router, extract::State, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Request, State},
+    middleware::{Next, from_fn},
+    routing::get,
+};
+use mox_platform_iam_core::IamRepository;
 use serde_json::json;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -45,6 +53,8 @@ pub struct GatewayState {
     pub auth: Arc<AuthMiddleware>,
     pub rate_limiter: Arc<RateLimiter>,
     pub metrics: Arc<MetricsCollector>,
+    /// 平台 IAM 仓储（/system/* · /security/* 真实数据链路）
+    pub iam: Arc<IamRepository>,
 }
 
 impl GatewayState {
@@ -57,11 +67,22 @@ impl GatewayState {
             tracing_enabled: false,
             logging_enabled: true,
         }));
+
+        // IAM：SQLite 装配（启动期同步初始化，失败即快速失败）。
+        // 迁移期使用内存库 + 内置种子（system 平台租户 + T001 演示租户）；
+        // 生产持久化（文件库 + 迁移）作为后续演进项。
+        let conn = rusqlite::Connection::open_in_memory()
+            .expect("open sqlite :memory: for IAM");
+        let iam = Arc::new(IamRepository::new(Arc::new(parking_lot::Mutex::new(conn))));
+        iam.init_schema().expect("iam init_schema");
+        iam.seed().expect("iam seed");
+
         Self {
             config: Arc::new(config),
             auth,
             rate_limiter,
             metrics,
+            iam,
         }
     }
 }
@@ -81,30 +102,45 @@ pub fn build_gateway_router(state: GatewayState) -> Router {
         .route("/api/v1/domains", get(domains_handler))
         .route("/metrics", get(metrics_handler));
 
-    // 真实 KG+AI 业务路由（来自 mox-kg-service-svc/src/http_adapter.rs）
+    // 真实 KG+AI 业务路由（来自 mox-kg-service-svc/src/http_adapter.rs，自包含 Router<()>）
     let kg_ai = http_adapter::build_kg_ai_router();
 
-    // 联盟域业务路由（Api 模式·进程内路由桩）
+    // 联盟域业务路由（Api 模式·进程内路由桩，自包含 Router<()>）
     let alliance = alliance::build_alliance_router();
 
+    // 系统管理 + 安全域路由（/api/system/* · /api/security/*，IAM 仓储真实数据链路）
+    let system = system::build_system_router();
+    let security = system::build_security_router();
+
     // 受保护的路由：认证 + 限流
-    let protected = Router::new()
+    // 注：/api/system、/api/security 迁移期在 public_paths（见 config.rs），
+    // auth_middleware 按路径前缀放行；生产回收后自动纳入认证。
+    // axum 0.7 无 From<Router<()>> for Router<S>：自包含 Router<()> 用 with_state(()) 升级为
+    // Router<GatewayState> 后再与 system/security 统一并入（Router<()> 无 State 提取器，运行期安全）。
+    let kg_ai: Router<GatewayState> = kg_ai.with_state(());
+    let alliance: Router<GatewayState> = alliance.with_state(());
+    let auth_state = state.auth.clone();
+    let protected: Router<GatewayState> = Router::<GatewayState>::new()
         .merge(kg_ai)
         .merge(alliance)
-        .route_layer(axum::middleware::from_fn_with_state(
-            state.auth.clone(),
-            auth_middleware,
-        ));
+        .merge(system)
+        .merge(security)
+        .route_layer(from_fn(move |request: Request, next: Next| {
+            let auth = auth_state.clone();
+            async move { auth_middleware(auth, request, next).await }
+        }));
 
-    Router::new()
+    // 整体统一为 Router<GatewayState>，最后一次性注入 state
+    let limiter_state = state.rate_limiter.clone();
+    let app: Router<GatewayState> = Router::<GatewayState>::new()
         .merge(l0)
         .merge(protected)
-        .layer(axum::middleware::from_fn_with_state(
-            state.rate_limiter.clone(),
-            rate_limit_middleware,
-        ))
-        .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any))
-        .with_state(state)
+        .layer(from_fn(move |request: Request, next: Next| {
+            let limiter = limiter_state.clone();
+            async move { rate_limit_middleware(limiter, request, next).await }
+        }))
+        .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any));
+    app.with_state(state)
 }
 
 /// 健康检查端点
@@ -145,7 +181,8 @@ async fn status_handler(State(state): State<GatewayState>) -> Json<serde_json::V
         "endpoints_ready": 14,
         "auth_enabled": state.config.auth.enabled,
         "rate_limit_enabled": state.config.rate_limit.enabled,
-        "note": "12 业务域路由就绪，其余域 stub 占位，待逐模块迁移。",
+        "iam": "ready",
+        "note": "12 业务域路由就绪 + 系统/安全域（/api/system、/api/security）已挂接 IAM，其余域 stub 占位，待逐模块迁移。",
         "ts": chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
     }))
 }
@@ -197,6 +234,8 @@ pub async fn serve_forever(bind_addr: &str, port: u16) -> Result<(), Box<dyn std
     eprintln!("  L4 Alliance:/alliance/v1/tasks (POST/GET) · /alliance/v1/tasks/:id (GET/POST)");
     eprintln!("             /alliance/v1/experts/search · /alliance/v1/tasks/:id/status");
     eprintln!("             /alliance/v1/tasks/:id/nodes · /alliance/v1/tasks/:id/nodes/:node_id");
+    eprintln!("  L5 系统安全：/api/system/* · /api/security/*（IAM SQLite 真实数据链路）");
+    eprintln!("             部门/角色/菜单/用户/权限读接口真实现 · 写接口 stub · 迁移期公开");
     eprintln!("  认证：      JWT Bearer + X-API-Key（可配置开关）");
     eprintln!("  限流：      令牌桶 100 req/min + 20 burst（可配置）");
     eprintln!("  停止：      Ctrl-C");

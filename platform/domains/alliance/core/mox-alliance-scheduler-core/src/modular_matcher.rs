@@ -160,7 +160,7 @@ impl ModularWeightMatcher {
     /// 修复原 `split_whitespace()` 对中文整句永不命中的缺陷。
     fn calculate_description_score(expert: &Expert, query: &ExpertMatchQuery) -> f64 {
         let query_tokens = tokenize(&query.task_description);
-        description_overlap(expert, &query_tokens).0
+        description_overlap(expert, &query_tokens, None).0
     }
 
     /// 计算健康状态分 (0.0 - 1.0)
@@ -354,7 +354,7 @@ impl ExpertMatcher for ModularWeightMatcher {
 
     async fn infer_domains(&self, description: &str) -> Vec<String> {
         let experts: Vec<Expert> = self.experts.read().values().cloned().collect();
-        crate::matching::infer_domains(description, &experts)
+        crate::matching::infer_domains(description, &experts, None)
     }
 }
 

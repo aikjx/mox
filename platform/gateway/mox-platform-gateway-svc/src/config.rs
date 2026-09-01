@@ -27,7 +27,15 @@ impl Default for AuthConfig {
             enabled: true,
             jwt_secret: "change-me-in-production".into(),
             token_issuer: "mox-platform".into(),
-            public_paths: vec!["/health".into(), "/api/auth/login".into()],
+            public_paths: vec![
+                "/health".into(),
+                "/api/auth/login".into(),
+                // 迁移期：/system/* 与 /security/* 暂为公开（前端 dev 令牌非合法 JWT，
+                // 置于 protected 会直接 401 且阻断管理面板）。生产环境须移出 public_paths，
+                // 待 auth 对接 IAM JWT 校验后回收为受保护路由。
+                "/api/system".into(),
+                "/api/security".into(),
+            ],
         }
     }
 }

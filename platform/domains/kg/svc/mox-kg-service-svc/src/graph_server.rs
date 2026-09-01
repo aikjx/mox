@@ -411,6 +411,12 @@ fn ngql_result_for(node: &PlanNode) -> ResultSet {
             };
         }
         ParseError(_) => unreachable!(),
+        // 索引等新增变体：统一返回已执行结果集
+        _ => (
+            vec!["status".into()],
+            vec![PropValue::Str("ok".into())],
+            "EXECUTED",
+        ),
     };
     ResultSet {
         columns: col,

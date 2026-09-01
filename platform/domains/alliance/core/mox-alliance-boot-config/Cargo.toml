@@ -4,7 +4,12 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
-description = "专家联盟 · 服务引导配置加载器（yml 文件 + 环境变量覆盖）"
+description = "专家联盟 · 服务引导配置加载器（yml 文件 + 环境变量覆盖 + 可插拔配置源 ConfigStore）"
+
+[features]
+default = []
+# 启用 Nacos 配置中心（nacos-sdk-rust ConfigService：拉取 + watch 热更新）
+nacos = ["dep:nacos-sdk", "dep:tokio"]
 
 [dependencies]
 serde = { workspace = true }
@@ -13,7 +18,22 @@ thiserror = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
 chrono = { workspace = true }
+async-trait = { workspace = true }
 mox-alliance-common-proto = { path = "../../proto/mox-alliance-common-proto" }
+
+# Nacos 配置中心客户端（官方 nacos-group/nacos-sdk-rust，仅 config 能力，可选）
+nacos-sdk = { version = "0.8", default-features = false, features = ["config"], optional = true }
+tokio = { workspace = true, optional = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
+# 测试需要 tokio runtime（#[tokio::test]）；生产代码仅在 nacos feature 下用 tokio
+tokio = { workspace = true }
+# nacos_e2e 集成测试用 blocking client 调 rnacos HTTP 发布 API
+reqwest = { workspace = true }
+
+# Nacos 真实服务端 e2e（需本机运行 rnacos/nacos-server：127.0.0.1:8848/9848）
+# 未开启 nacos feature 时不编译该集成测试目标（--ignored 手动跑）
+[[test]]
+name = "nacos_e2e"
+required-features = ["nacos"]

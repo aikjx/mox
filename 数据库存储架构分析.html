@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>璇玑系统 · 数据库存储架构分析</title>
+<style>
+  :root{
+    --text:#1A1B1C; --sub:#6B7280; --bg:#F4F3EE; --card:#FFFFFF;
+    --border:#E4E3DD; --accent:#3F6AD8; --accent-bg:rgba(155,187,244,0.16);
+    --green:#2E9E4F; --green-bg:rgba(82,196,26,0.12);
+    --amber:#B97900; --amber-bg:rgba(250,173,20,0.14);
+    --blue:#2E6FB0; --blue-bg:rgba(139,200,234,0.18);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;padding:24px;background:var(--bg);color:var(--text);
+       font-family:'PingFang SC','Microsoft YaHei',Roboto,Arial,sans-serif;line-height:1.6;}
+  .wrap{max-width:920px;margin:0 auto;}
+  h1{font-size:24px;margin:0 0 4px;}
+  .meta{color:var(--sub);font-size:13px;margin-bottom:20px;}
+  h2{font-size:17px;margin:28px 0 12px;padding-left:10px;border-left:4px solid var(--accent);}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin:12px 0;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top;}
+  th{background:var(--accent-bg);font-weight:600;}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;}
+  .b-green{background:var(--green-bg);color:var(--green);}
+  .b-amber{background:var(--amber-bg);color:var(--amber);}
+  .b-blue{background:var(--blue-bg);color:var(--blue);}
+  .arch{display:flex;flex-wrap:wrap;gap:10px;}
+  .node{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;flex:1 1 140px;min-width:0;}
+  .node .t{font-size:13px;font-weight:600;}
+  .node .d{font-size:12px;color:var(--sub);margin-top:2px;}
+  .node.main{border-color:var(--accent);background:var(--accent-bg);}
+  .layer-label{font-size:12px;font-weight:600;color:var(--sub);margin:14px 0 6px;}
+  .arrow{text-align:center;color:var(--sub);font-size:16px;line-height:1;margin:6px 0;}
+  .crate{font-family:Consolas,'Courier New',monospace;font-size:12px;color:#333;
+         background:#F0F1F4;border:1px solid var(--border);border-radius:6px;
+         padding:3px 7px;display:inline-block;margin:2px;}
+  .note{font-size:12.5px;color:var(--sub);background:var(--amber-bg);
+        border-left:3px solid #FAAD14;padding:8px 12px;border-radius:6px;margin:10px 0;}
+  .tag-ok{color:var(--green);font-weight:600;}
+  .tag-warn{color:var(--amber);font-weight:600;}
+  code{font-family:Consolas,'Courier New',monospace;background:#F0F1F4;padding:1px 5px;border-radius:4px;font-size:12.5px;}
+  .concl{background:var(--accent-bg);border:1px solid var(--accent);border-radius:12px;padding:14px 16px;margin-top:20px;}
+  .concl b{color:var(--accent);}
+  @media (max-width:560px){
+    body{padding:16px;}
+    table{font-size:12px;}
+    th,td{padding:6px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>璇玑系统（infotopograph）· 数据库存储架构分析</h1>
+  <div class="meta">项目根：D:\a10\aikjx\gitcode\infotopograph · Rust workspace 3.0.0-ai-powered · 分析日期：2026-09-01</div>
+
+  <h2>一、结论速览</h2>
+  <div class="concl">
+    当前主存储为 <b>SQLite（嵌入式，rusqlite bundled）</b>，默认库文件 <code>mox.db</code>；
+    <b>知识图谱域</b>另用 <b>RocksDB（KV，可选 feature）</b>；
+    <b>Redis</b> 作为缓存独立部署（docker-compose）。
+    对 <b>PostgreSQL / MySQL</b>：已通过 <code>sqlx 0.8（postgres/mysql feature）</code> 与
+    <code>sea-query（backend-postgres/backend-mysql）</code> 完成接线，
+    用环境变量 <code>MOX_BACKEND=postgres|mysql</code> 在编译期/运行期切换。
+    即：<b>SQLite / PostgreSQL / MySQL 三种关系型后端均兼容</b>，SQLite 为默认。
+  </div>
+
+  <h2>二、当前存储架构</h2>
+  <div class="card">
+    <div class="layer-label">应用 / 领域层（直接使用 SQLite 的核心 crate）</div>
+    <div style="margin:6px 0 2px;">
+      <span class="crate">mox-dsql-core</span>
+      <span class="crate">mox-platform-datastore-core</span>
+      <span class="crate">mox-platform-system-core</span>
+      <span class="crate">mox-platform-iam-core</span>
+      <span class="crate">mox-platform-meta-core</span>
+      <span class="crate">mox-platform-orchestrator-core</span>
+      <span class="crate">mox-platform-enterprise-svc</span>
+      <span class="crate">mox-kg-core</span>
+      <span class="crate">mox-kg-storage-svc</span>
+      <span class="crate">mox-cloud-filer-svc</span>
+      <span class="crate">mox-flow-primiflow-svc</span>
+      <span class="crate">mox-ai-agent-svc</span>
+    </div>
+    <div class="arrow">▼</div>
+    <div class="layer-label">存储后端（按角色分层）</div>
+    <div class="arch">
+      <div class="node main">
+        <div class="t">SQLite（默认主库）</div>
+        <div class="d">rusqlite 0.31 bundled · mox.db · WAL<br>角色：关系型主存储</div>
+      </div>
+      <div class="node">
+        <div class="t">PostgreSQL（可选）</div>
+        <div class="d">sqlx 0.8 PgPool · sea-query backend-postgres<br>角色：可选关系后端</div>
+      </div>
+      <div class="node">
+        <div class="t">MySQL（可选）</div>
+        <div class="d">sqlx 0.8 MySqlPool · sea-query backend-mysql<br>角色：可选关系后端</div>
+      </div>
+      <div class="node">
+        <div class="t">RocksDB（KV）</div>
+        <div class="d">rocksdb 0.25（可选 feature）<br>角色：知识图谱快照/存储</div>
+      </div>
+      <div class="node">
+        <div class="t">Redis（缓存）</div>
+        <div class="d">docker-compose redis:7 · MOX_REDIS<br>角色：缓存/队列</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>三、SQLite / PostgreSQL / MySQL 兼容性矩阵</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>数据库</th><th>兼容状态</th><th>驱动 / 工具</th><th>当前角色</th><th>切换方式</th>
+      </tr>
+      <tr>
+        <td><b>SQLite</b></td>
+        <td><span class="badge b-green">默认 · 完全兼容</span></td>
+        <td><code>rusqlite 0.31</code>（bundled 嵌入式）</td>
+        <td>主存储（默认）<br><code>mox.db</code> + WAL</td>
+        <td>默认后端；<br><code>MOX_BACKEND</code> 不设或非 pg/mysql</td>
+      </tr>
+      <tr>
+        <td><b>PostgreSQL</b></td>
+        <td><span class="badge b-green">已接线 · 兼容</span></td>
+        <td><code>sqlx 0.8</code>（postgres）<br><code>sea-query</code> backend-postgres</td>
+        <td>可选关系后端<br>（system-core <code>repo/postgres.rs</code>；filer 支持 Postgres+Citus）</td>
+        <td><code>MOX_BACKEND=postgres</code><br><code>MOX_DB_URL=postgres://…</code></td>
+      </tr>
+      <tr>
+        <td><b>MySQL</b></td>
+        <td><span class="badge b-green">已接线 · 兼容</span></td>
+        <td><code>sqlx 0.8</code>（mysql）<br><code>sea-query</code> backend-mysql</td>
+        <td>可选关系后端<br>（system-core <code>repo/mysql.rs</code>；connector-core 含 mysql 连接器）</td>
+        <td><code>MOX_BACKEND=mysql</code><br><code>MOX_DB_URL=mysql://…</code></td>
+      </tr>
+      <tr>
+        <td><b>RocksDB</b></td>
+        <td><span class="badge b-blue">内置 · 可选 feature</span></td>
+        <td><code>rocksdb 0.25</code>（optional）</td>
+        <td>KG 图谱 KV 存储</td>
+        <td>feature <code>persist-rocksdb</code>（默认关闭）</td>
+      </tr>
+      <tr>
+        <td><b>Redis</b></td>
+        <td><span class="badge b-blue">独立部署</span></td>
+        <td>docker-compose <code>redis:7-alpine</code></td>
+        <td>缓存（非持久主库）</td>
+        <td><code>MOX_REDIS=redis://…</code></td>
+      </tr>
+    </table>
+
+    <div class="note">
+      ⚠️ 一个已知差异：统一存储层 <code>mox-platform-datastore-core</code> 的
+      Postgres/MySQL 分支目前为占位实现——<code>strict_persist=true</code> 时会返回
+      “PostgreSQL/MySQL requires sqlx feature (planned)”，其 <code>execute/query</code>
+      仅实现 SQLite 分支。真正可用的 PG/MySQL 接线位于
+      <code>mox-platform-system-core/src/repo/postgres.rs</code> 与
+      <code>repo/mysql.rs</code>（独立仓储，sqlx 连接池，启动自动建表）。
+    </div>
+  </div>
+
+  <h2>四、证据要点（代码定位）</h2>
+  <div class="card">
+    <table>
+      <tr><th>事实</th><th>定位</th></tr>
+      <tr><td>SQLite 为默认后端，默认 URL <code>sqlite:mox.db?mode=rwc</code></td>
+          <td><code>platform/domains/platform/core/mox-platform-datastore-core/src/lib.rs:90,98</code></td></tr>
+      <tr><td>后端由 <code>MOX_BACKEND</code> 选择：pg/postgres→Postgres，mysql→Mysql，其余→Sqlite</td>
+          <td><code>mox-platform-datastore-core/src/lib.rs:62-68</code>；<code>mox-platform-system-core/src/config.rs:51-56,120-121</code></td></tr>
+      <tr><td>PG/MySQL 驱动特性已开启：<code>sqlx runtime-tokio+postgres+mysql</code>、<code>sea-query backend-sqlite/postgres/mysql</code></td>
+          <td><code>mox-platform-system-core/Cargo.toml</code></td></tr>
+      <tr><td>PG 仓储实现（PgPool、自动建表）</td>
+          <td><code>mox-platform-system-core/src/repo/postgres.rs</code></td></tr>
+      <tr><td>MySQL 仓储实现（MySqlPool、自动建表）</td>
+          <td><code>mox-platform-system-core/src/repo/mysql.rs</code></td></tr>
+      <tr><td>KG 图谱 RocksDB（可选）</td>
+          <td><code>mox-kg-core / mox-kg-storage-svc / mox-kg-meta-core</code>（rocksdb optional, feature persist-rocksdb）</td></tr>
+      <tr><td>Redis 独立部署</td>
+          <td><code>docker-compose.yml</code>（redis:7-alpine，MOX_REDIS）</td></tr>
+    </table>
+  </div>
+
+</div>
+</body>
+</html>

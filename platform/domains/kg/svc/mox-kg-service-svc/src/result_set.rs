@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// PropValue：单元格枚举。对应 SPEC-V4 类型矩阵。
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum PropValue {
     Null,
     Bool(bool),
@@ -21,6 +21,54 @@ pub enum PropValue {
     Str(String),
     List(Vec<PropValue>),
     Map(Vec<(String, PropValue)>),
+}
+
+// ── 手写 Eq/Hash/PartialEq ─────────────────────────────────────────────
+// f64 无法 derive `Eq`/`Hash`，故手写并保持三者语义一致：
+//   · F64 按位级比较（`f64::to_bits`）——确保 `相等 ⇒ 同哈希` 契约成立，
+//     消除 HashMap 分组/连接键（-0.0/0.0、NaN）的歧义；
+//   · Map 按 key 排序后比较/哈希——Map 语义上无序，保证 `相等 ⇒ 同哈希`。
+impl PartialEq for PropValue {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (PropValue::Null, PropValue::Null) => true,
+            (PropValue::Bool(a), PropValue::Bool(b)) => a == b,
+            (PropValue::Int(a), PropValue::Int(b)) => a == b,
+            (PropValue::F64(a), PropValue::F64(b)) => a.to_bits() == b.to_bits(),
+            (PropValue::Str(a), PropValue::Str(b)) => a == b,
+            (PropValue::List(a), PropValue::List(b)) => a == b,
+            (PropValue::Map(a), PropValue::Map(b)) => {
+                let mut x = a.clone();
+                let mut y = b.clone();
+                x.sort_by(|p, q| p.0.cmp(&q.0));
+                y.sort_by(|p, q| p.0.cmp(&q.0));
+                x == y
+            }
+            _ => false,
+        }
+    }
+}
+
+impl Eq for PropValue {}
+
+impl std::hash::Hash for PropValue {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        use std::hash::Hash as _;
+        std::mem::discriminant(self).hash(state);
+        match self {
+            PropValue::Null => {}
+            PropValue::Bool(b) => b.hash(state),
+            PropValue::Int(i) => i.hash(state),
+            PropValue::F64(d) => d.to_bits().hash(state),
+            PropValue::Str(s) => s.hash(state),
+            PropValue::List(l) => l.hash(state),
+            PropValue::Map(m) => {
+                let mut pairs = m.clone();
+                pairs.sort_by(|a, b| a.0.cmp(&b.0));
+                pairs.hash(state);
+            }
+        }
+    }
 }
 
 impl fmt::Display for PropValue {

@@ -35,7 +35,7 @@ scripts/
 └── temp/                  # 临时/探测脚本（可随时清理）
     ├── _auto_dl_cosy2_weights.py
     ├── _check_cosy_env.py
-    ├── _probe30010.py
+    ├── _probe_voice.py
     ├── _run_e2b.py
     ├── _run_e4.py
     └── _tmp_t10_doc_check.js

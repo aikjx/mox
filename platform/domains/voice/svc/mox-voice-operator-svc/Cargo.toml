@@ -32,7 +32,7 @@ image = { version = "0.25", default-features = false, features = ["png"] }
 # 截屏 PNG → base64（复用 workspace 已有 base64 = 0.22）
 base64 = { workspace = true }
 
-# --- voice_proxy 30010 服务（feature gate，避免非服务端程序拉 axum/ws）
+# --- voice_proxy 语音服务（feature gate，避免非服务端程序拉 axum/ws）
 axum = { workspace = true, optional = true }
 futures-util = { workspace = true, optional = true }
 tokio-tungstenite = { workspace = true, optional = true }
@@ -50,7 +50,7 @@ sherpa-onnx = { workspace = true, optional = true }
 
 [features]
 default = []
-server-30010 = [
+voice-server = [
     "dep:axum",
     "dep:futures-util",
     "dep:tokio-tungstenite",

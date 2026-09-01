@@ -702,7 +702,8 @@ impl NgqlParser {
             return Ok(PlanNode::ConfigGet(key));
         }
         if up.starts_with("CONFIG SET ") {
-            let rest = extract_after_keyword(s, "SET").trim();
+            let raw = extract_after_keyword(s, "SET");
+            let rest = raw.trim();
             let (key, value) = parse_config_kv(rest);
             return Ok(PlanNode::ConfigSet(key, value));
         }

@@ -23,6 +23,8 @@ pub struct SchedulerAppState {
     pub executor_bridge: Arc<dyn ExecutorBridge>,
     /// 任务派发通道（保留，向后兼容）
     pub dispatch_tx: mpsc::UnboundedSender<Task>,
+    /// 执行器服务基础 URL（用于代理 /tasks/:id/nodes 和 /tasks/:id/result）
+    pub executor_base_url: String,
 }
 
 impl SchedulerAppState {
@@ -42,6 +44,7 @@ impl SchedulerAppState {
             matcher,
             executor_bridge,
             dispatch_tx,
+            executor_base_url: "http://127.0.0.1:3200".to_string(),
         }
     }
 
@@ -61,6 +64,13 @@ impl SchedulerAppState {
             matcher,
             executor_bridge,
             dispatch_tx,
+            executor_base_url: "http://127.0.0.1:3200".to_string(),
         }
+    }
+
+    /// 设置执行器服务基础 URL（用于代理端点）
+    pub fn with_executor_base_url(mut self, url: impl Into<String>) -> Self {
+        self.executor_base_url = url.into();
+        self
     }
 }

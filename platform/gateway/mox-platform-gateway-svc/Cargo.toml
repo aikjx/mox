@@ -37,6 +37,11 @@ mox-kg-service-svc = { workspace = true, features = ["http-adapter"] }
 mox-platform-foundation = { workspace = true }
 mox-platform-api = { workspace = true }
 
+# 平台 IAM 核心（/system/* · /security/* 真实数据链路）+ SQLite
+mox-platform-iam-core = { workspace = true }
+rusqlite = { workspace = true }
+base64 = { workspace = true }
+
 # 联盟域 API（DTO 类型契约，Api 模式·进程内路由桩）
 mox-alliance-api = { workspace = true }
 

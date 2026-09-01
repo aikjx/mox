@@ -21,6 +21,8 @@ pub fn build_router(state: SchedulerAppState) -> Router {
         .route("/health", get(health_check))
         .route("/tasks", post(create_task).get(list_tasks))
         .route("/tasks/:task_id", get(get_task).post(handle_task_action))
+        .route("/tasks/:task_id/nodes", get(proxy_task_nodes))
+        .route("/tasks/:task_id/result", get(proxy_task_result))
         .route("/experts/search", post(search_experts))
         .with_state(state)
 }
@@ -211,6 +213,94 @@ async fn search_experts(
                 .into_response()
         }
         Err(e) => error_response(e).into_response(),
+    }
+}
+
+// ─── 执行器代理端点 ────────────────────────────────────────────────────────
+
+/// 代理：获取任务节点列表（转发到 executor 服务）
+async fn proxy_task_nodes(
+    State(state): State<SchedulerAppState>,
+    headers: HeaderMap,
+    Path(task_id): Path<Uuid>,
+) -> impl IntoResponse {
+    proxy_to_executor(&state, &headers, &format!("/tasks/{}/nodes", task_id)).await
+}
+
+/// 代理：获取任务融合结果（转发到 executor 服务）
+async fn proxy_task_result(
+    State(state): State<SchedulerAppState>,
+    headers: HeaderMap,
+    Path(task_id): Path<Uuid>,
+) -> impl IntoResponse {
+    proxy_to_executor(&state, &headers, &format!("/tasks/{}/result", task_id)).await
+}
+
+/// 通用代理：将 GET 请求转发到 executor 服务，透传 X-Tenant-Id
+///
+/// - executor 不可达 → 503 Service Unavailable
+/// - executor 返回错误 → 透传状态码与 body
+async fn proxy_to_executor(
+    state: &SchedulerAppState,
+    headers: &HeaderMap,
+    path: &str,
+) -> impl IntoResponse {
+    let url = format!("{}{}", state.executor_base_url.trim_end_matches('/'), path);
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .expect("reqwest client build failed");
+
+    let mut req = client.get(&url);
+    if let Some(tenant) = headers.get("X-Tenant-Id") {
+        req = req.header("X-Tenant-Id", tenant);
+    }
+
+    match req.send().await {
+        Ok(resp) => {
+            let status = resp.status();
+            match resp.text().await {
+                Ok(body) => {
+                    // 尝试解析为 JSON 透传；解析失败则原样返回文本
+                    match serde_json::from_str::<serde_json::Value>(&body) {
+                        Ok(json) => (
+                            StatusCode::from_u16(status.as_u16()).unwrap_or(StatusCode::OK),
+                            Json(json),
+                        )
+                            .into_response(),
+                        Err(_) => (
+                            StatusCode::from_u16(status.as_u16()).unwrap_or(StatusCode::OK),
+                            body,
+                        )
+                            .into_response(),
+                    }
+                }
+                Err(_) => (
+                    StatusCode::BAD_GATEWAY,
+                    Json(serde_json::json!({
+                        "error": "Failed to read executor response body"
+                    })),
+                )
+                    .into_response(),
+            }
+        }
+        Err(e) => {
+            tracing::warn!(
+                "Executor proxy failed for {}: {} (executor_base_url={})",
+                path,
+                e,
+                state.executor_base_url
+            );
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(serde_json::json!({
+                    "error": "Executor service unavailable",
+                    "detail": e.to_string()
+                })),
+            )
+                .into_response()
+        }
     }
 }
 

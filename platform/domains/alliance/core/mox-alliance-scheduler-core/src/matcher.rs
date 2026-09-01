@@ -21,18 +21,21 @@ use std::sync::Arc;
 use parking_lot::RwLock;
 use tracing::debug;
 
-use crate::matching::{description_overlap, tokenize};
+use crate::matching::{description_overlap, tokenize, ExpertTokenCache};
 
 /// 基于规则的专家匹配器
 pub struct RuleBasedExpertMatcher {
     /// 专家注册表（内存版，Phase 1 用）
     experts: Arc<RwLock<HashMap<String, Expert>>>,
+    /// 专家文本分词缓存（避免匹配时重复 tokenize）
+    token_cache: ExpertTokenCache,
 }
 
 impl RuleBasedExpertMatcher {
     pub fn new() -> Self {
         Self {
             experts: Arc::new(RwLock::new(HashMap::new())),
+            token_cache: ExpertTokenCache::new(),
         }
     }
 
@@ -41,7 +44,10 @@ impl RuleBasedExpertMatcher {
     /// 用于与 `InMemoryExpertRegistry` 共享同一份专家数据，
     /// 这样同步器写入 registry 后，匹配器可以直接读到最新数据。
     pub fn with_shared_experts(experts: Arc<RwLock<HashMap<String, Expert>>>) -> Self {
-        Self { experts }
+        Self {
+            experts,
+            token_cache: ExpertTokenCache::new(),
+        }
     }
 
     /// 获取内部专家存储的 Arc 引用（供 bridge 共享使用）
@@ -51,12 +57,16 @@ impl RuleBasedExpertMatcher {
 
     /// 注册专家（用于测试和初始化）
     pub fn register_expert(&self, expert: Expert) {
+        self.token_cache.invalidate(&expert.expert_id);
         let mut experts = self.experts.write();
         experts.insert(expert.expert_id.clone(), expert);
     }
 
     /// 批量注册专家
     pub fn register_experts(&self, experts_list: Vec<Expert>) {
+        for expert in &experts_list {
+            self.token_cache.invalidate(&expert.expert_id);
+        }
         let mut experts = self.experts.write();
         for expert in experts_list {
             experts.insert(expert.expert_id.clone(), expert);
@@ -97,9 +107,11 @@ impl RuleBasedExpertMatcher {
     }
 
     /// 描述文本相似度（基于中英分词的 token 重叠，解决中文整句永不命中的问题）
-    fn calculate_description_score(expert: &Expert, query: &ExpertMatchQuery) -> f64 {
+    ///
+    /// 使用 [`ExpertTokenCache`] 避免对同一份专家文本重复分词。
+    fn calculate_description_score(&self, expert: &Expert, query: &ExpertMatchQuery) -> f64 {
         let query_tokens = tokenize(&query.task_description);
-        description_overlap(expert, &query_tokens).0
+        description_overlap(expert, &query_tokens, Some(&self.token_cache)).0
     }
 
     /// 综合评分
@@ -146,7 +158,7 @@ impl ExpertMatcher for RuleBasedExpertMatcher {
             // 计算各维度分数
             let domain_score = Self::calculate_domain_score(expert, &query);
             let capability_score = Self::calculate_capability_score(expert, &query);
-            let description_score = Self::calculate_description_score(expert, &query);
+            let description_score = self.calculate_description_score(expert, &query);
 
             // 描述得分并入能力分（简单加权）
             let capability_final = capability_score * 0.7 + description_score * 0.3;
@@ -229,7 +241,7 @@ impl ExpertMatcher for RuleBasedExpertMatcher {
 
     async fn infer_domains(&self, description: &str) -> Vec<String> {
         let experts: Vec<Expert> = self.experts.read().values().cloned().collect();
-        crate::matching::infer_domains(description, &experts)
+        crate::matching::infer_domains(description, &experts, Some(&self.token_cache))
     }
 }
 

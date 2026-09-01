@@ -1,7 +1,7 @@
 # 开发专家联盟·核心服务端口规划规范（PORT-NORM-001）
 
 > **标题**：开发专家联盟·核心服务端口规划规范
-> **版本**：V1.2
+> **版本**：V1.3
 > **权威等级**：🟢权威
 > **编号**：PORT-NORM-001
 > **最后更新日期**：2026-09-01
@@ -10,6 +10,7 @@
 > **编制依据**：`docs/expert-alliance/00-INTEGRATED-INDEX.md`、`docs/expert-alliance/02-DUAL-PLATFORM-RELATIONSHIP.md`、`docs/standards/expert-alliance-normalization-mode.md`（EA-NORM-001）
 > **V1.1 变更**：新增 §7.7 配置错误 fail-fast、§7.8 环境变量归一化（deprecated 兼容）、§7.9 命名约定
 > **V1.2 变更**：新增 §7.10 HTTP 专家桥接激活（expert_service.enabled）、env 映射表补 EXPERT_SERVICE_ENABLED
+> **V1.3 变更**：新增 §7.11 Nacos 阶段二（ConfigStore 抽象 + NacosConfigStore，boot-config `nacos` feature）、§7.12 executor 生产专家模式真实 LLM 调用链（blocking client 延迟创建修复）；registry.rs 双套专家集归一化（删除废弃 domain_experts，单一权威=config-core `build_domain_experts`）
 
 ---
 
@@ -105,7 +106,7 @@
 | **30010** | 语音服务（xiaobai_voice，原 3717） | **已启用**（2026-09-01 由 3717 迁入，落段 30010） |
 | 30001–30009 | 通用插件保留 | 预留 |
 
-> 迁移说明：语音服务为辅助小服务，按本规范落入 30000+ 段。已按 PORT-REGISTRY-001 于 2026-09-01 完成 **3717 → 30010** 全链路迁移（Python 服务、Rust `mox-voice-operator-svc::server_30010`、orchestrator `voice_proxy` 上游、`platform_config.json`、`server-manage.py`、桌面端、校验脚本），旧端口 3717 标记为 DEPRECATED。历史文档（ARCHITECTURE/enterprise 报告等）仍可能显示旧端口 3717，以本文档与本表为准。
+> 迁移说明：语音服务为辅助小服务，按本规范落入 30000+ 段。已按 PORT-REGISTRY-001 于 2026-09-01 完成 **3717 → 30010** 全链路迁移（Python 服务、Rust `mox-voice-operator-svc::voice_server`、orchestrator `voice_proxy` 上游、`platform_config.json`、`server-manage.py`、桌面端、校验脚本），旧端口 3717 标记为 DEPRECATED。历史文档（ARCHITECTURE/enterprise 报告等）仍可能显示旧端口 3717，以本文档与本表为准。
 
 ---
 
@@ -128,7 +129,7 @@
 | executor-svc | 8082 | **3200** | 核心服务强制 3xxx 段 | `svc/.../bin/main.rs`、`scheduler-core/executor_bridge.rs`、`server.rs` 默认桥接 |
 | AI 专家服务（桥接） | 8080 | **3300** | 核心服务强制 3xxx 段 | `scheduler-core/registry.rs` 默认基址 |
 | Node.js api / frontend | 3010 / 3020 | api 退役→Rust 网关 **8080**（例外）；frontend 3020 不变 | Node BFF 迁移至 Rust 网关（8080 例外见 2.1a） | `platform_config.json`、`vite.config.js` |
-| 语音服务 xiaobai_voice | 3717 | **30010**（已迁移） | 小服务归 30000+ 段 | `platform_config.json`、`cli.py`、Rust `server_30010`、orchestrator `voice_proxy`、桌面端、`verify_tts_rust_fullstack.py` 等全链路 |
+| 语音服务 xiaobai_voice | 3717 | **30010**（已迁移） | 小服务归 30000+ 段 | `platform_config.json`、`cli.py`、Rust `voice_server`、orchestrator `voice_proxy`、桌面端、`verify_tts_rust_fullstack.py` 等全链路 |
 
 > 迁移后同步更新：`docs/expert-alliance/00-INTEGRATED-INDEX.md`（6 处）、`02-DUAL-PLATFORM-RELATIONSHIP.md`（8 处）、`03-GLOSSARY.md`（2 处）、`v2/*`（56 处）——共 72 处文档端口引用，全部对齐新端口，引用审计零残留。
 
@@ -263,6 +264,40 @@
 | enabled=true + 无 3300 服务 | 优雅降级：`WARN HTTP 专家桥接拉取失败`，10 内置专家继续可用，不崩溃 |
 | enabled=true + mock 3300 | `INFO HTTP 专家桥接启用：拉取 2 位专家`，专家总数 **10→12**（远程专家A/B 已并入） |
 
+### 7.11 Nacos 阶段二：ConfigStore 抽象 + NacosConfigStore（2026-09-01）
+
+> 把「配置从哪里来」从「直接读 yml 文件」抽象为**可插拔配置源链**，Nacos 成为 yml 的托管方，本地 yml 降级为离线兜底。基于官方 `nacos-group/nacos-sdk-rust`（crates.io `nacos-sdk` 0.8，`config` feature）。
+
+**配置源链（优先级高 → 低）**：`内置默认 < 本地 yml(FileConfigStore) < Nacos(远程,可选) < env`
+
+| 项 | 说明 |
+|---|---|
+| ConfigStore trait | `load_raw(key) -> Result<Option<String>>`；`Ok(None)`=无此 key，`Err`=读取失败 |
+| FileConfigStore | 本地 `{base_dir}/{key}.yml`（离线兜底） |
+| MemoryConfigStore | 内置默认 / 测试桩 |
+| ConfigStoreChain | 按序逐源尝试，**容错降级**：上游 Err 告警后落到下一源（配置中心不可达 → 自动用本地 yml） |
+| NacosConfigStore | 绑定单个 dataId；启动 `get_config` 初拉 + `add_listener` watch 热更新（缓存 + 广播） |
+| 启用开关 | boot-config Cargo `nacos` feature（默认关闭，不引入 SDK）+ yml `nacos.enabled: true` |
+| Bootstrap | `load_scheduler_with_nacos(path)`：读本地（引导）→ 若启用则拉远程整体覆盖 → env 仍最高 |
+| 认证 | username/password 需 nacos-sdk `auth-by-http` feature（当前 boot-config 仅 `config` 能力，无鉴权直连；接入时补 feature） |
+| 回归测试 | boot-config：config_store 6 项（命中/未命中/链降级/全 None）+ nacos 3 项（disabled 不发请求 / 空 dataId / 不可达显式报错）；nacos feature 下 **19 passed** |
+
+**诚实声明**：本地无 Nacos 服务端，未做真实服务端 e2e；`get_config`/`add_listener` 走官方 SDK 协议，真实链路需部署 rnacos 或 nacos-server 2.x 后验证。scheduler-svc/executor-svc 默认**不启用** nacos feature（保持轻量），部署配置中心时开启。
+
+### 7.12 executor 生产专家模式：真实 LLM 调用链（2026-09-01）
+
+> 验证并修复 `executor-svc` Expert 模式（生产）下**真实 LLM 调用链**，即 DAG 节点 → `ExpertNodeExecutor` → `LlmExpertConsultant` → `OpenAiChatClient` → `POST {base_url}/chat/completions`。
+
+| 项 | 说明 |
+|---|---|
+| LLM 配置 | `MOX_LLM_ENABLED` / `MOX_LLM_API_KEY`（回退 `OPENAI_API_KEY`/`DEEPSEEK_API_KEY`）/ `MOX_LLM_BASE_URL` / `MOX_LLM_MODEL` / `MOX_LLM_TIMEOUT_MS`（见 alliance-executor.yml 注释） |
+| 无 Key | `llm_consultant_from_env()` 返回 None → 回退本地专家引擎（离线可用） |
+| 调用失败 | ReAct 循环异常 → 告警 + 回退本地引擎 |
+| **修复（真实 bug）** | `OpenAiChatClient` 原在 `new()` 直接构建 `reqwest::blocking::Client`；但 `llm_consultant()` 在 axum `build_app`（async 上下文）调用，blocking client 自带 tokio runtime，进程退出 drop 时 panic `Cannot drop a runtime in a context where blocking is not allowed` → **有 Key 的生产模式启动即崩**。改为 `OnceLock` 延迟到首次 `complete()`（`spawn_blocking` 的 blocking 线程）才构建，彻底避开 async 上下文 |
+| 端到端验证 | 真实执行（mock OpenAI 兼容 8999，响应固定）：任务 1/1 节点 completed；mock 收到 `POST /v1/chat/completions` + `Authorization: Bearer test-key-123` + `model=test-model` + 2 messages，解析评分/结论 → 节点 completed |
+
+**诚实声明**：LLM 响应来自本地 mock OpenAI 服务（无真实 API Key），但 **HTTP 请求构造、认证、消息格式、响应解析走真实生产代码路径**；接入真实 Key 后同一链路即接真实模型。
+
 ---
 
 ## 附录A 快速记忆口诀
@@ -272,4 +307,4 @@
 
 ---
 
-*PORT-NORM-001 V1.2 · 开发联盟 R · 2026-09-01*
+*PORT-NORM-001 V1.3 · 开发联盟 R · 2026-09-01*

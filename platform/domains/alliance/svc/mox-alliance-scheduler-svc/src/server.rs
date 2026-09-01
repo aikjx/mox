@@ -318,12 +318,17 @@ impl SchedulerServer {
         );
 
         // 构建应用状态
+        let executor_base_url = self
+            .executor_url
+            .clone()
+            .unwrap_or_else(|| "http://127.0.0.1:3200".to_string());
         let state = SchedulerAppState::new_with_bridge(
             self.config.clone(),
             scheduler,
             matcher,
             executor_bridge,
-        );
+        )
+        .with_executor_base_url(executor_base_url);
 
         // 构建路由
         Ok(build_router(state))

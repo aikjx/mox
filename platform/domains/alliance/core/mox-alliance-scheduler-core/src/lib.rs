@@ -44,6 +44,7 @@ pub mod registry;
 pub mod synchronizer;
 pub mod config_sync;
 pub mod storage;
+pub mod metrics;
 
 pub use matcher::RuleBasedExpertMatcher;
 pub use modular_matcher::ModularWeightMatcher;
@@ -60,9 +61,9 @@ pub use executor_bridge::{
 };
 
 // 专家注册桥接层重导出
-pub use registry::{
-    domain_experts, ExpertRegistryBridge, HttpBridgeConfig, InMemoryExpertRegistry, SyncStats,
-};
+// 注：领域专家权威来源为 config-core `examples::domain_experts::build_domain_experts`（10 大专家，
+//     `expert-<domain>` 命名，符合 PORT-NORM-001 §7.9）。registry 的旧 `domain_experts` 已废弃删除。
+pub use registry::{ExpertRegistryBridge, HttpBridgeConfig, InMemoryExpertRegistry, SyncStats};
 
 #[cfg(feature = "http-bridge")]
 pub use registry::HttpExpertRegistryBridge;
@@ -78,3 +79,6 @@ pub use config_sync::ConfigSynchronizer;
 
 // 存储抽象重导出
 pub use storage::{FileTaskRepository, InMemoryTaskRepository, TaskRepository, temp_file_repository};
+
+// 可观测性指标重导出
+pub use metrics::{AllianceMetrics, MetricsSnapshot};

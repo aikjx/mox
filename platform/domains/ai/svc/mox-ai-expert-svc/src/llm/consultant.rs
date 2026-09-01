@@ -11,6 +11,7 @@
 
 use super::chat::{ChatClient, LlmConfig, OpenAiChatClient};
 use super::react::{run_react, ReactConfig, ReactResult};
+use super::router::LlmRouter;
 use super::tools::{ExpertLookupTool, ToolRegistry};
 use crate::expert_traits::ExpertConsultant;
 use crate::services::ExpertServiceImpl;
@@ -246,7 +247,11 @@ impl ExpertConsultant for LlmExpertConsultant {
         match result {
             Ok(report) => Ok(report),
             Err(e) => {
-                log_warn(format!("真实 LLM 咨询失败，回退本地引擎: {}", e));
+                if is_all_providers_broken(&e) {
+                    log_warn(format!("所有 LLM Provider 不可用/熔断，立即回退本地引擎: {}", e));
+                } else {
+                    log_warn(format!("真实 LLM 咨询失败，回退本地引擎: {}", e));
+                }
                 self.local.consult_blocking(&q)
             }
         }
@@ -256,7 +261,11 @@ impl ExpertConsultant for LlmExpertConsultant {
         match self.consult_sync(query) {
             Ok(r) => Ok(r),
             Err(e) => {
-                log_warn(format!("真实 LLM 咨询失败，回退本地引擎: {}", e));
+                if is_all_providers_broken(&e) {
+                    log_warn(format!("所有 LLM Provider 不可用/熔断，立即回退本地引擎: {}", e));
+                } else {
+                    log_warn(format!("真实 LLM 咨询失败，回退本地引擎: {}", e));
+                }
                 self.local.consult_sync(query)
             }
         }
@@ -269,12 +278,21 @@ fn log_warn(msg: String) {
     }
 }
 
+/// 判断是否为「所有 Provider 不可用/熔断」错误（应立即回退本地，不重试）
+fn is_all_providers_broken(e: &anyhow::Error) -> bool {
+    let msg = e.to_string().to_lowercase();
+    msg.contains("all llm providers") || msg.contains("circuit-broken")
+}
+
 /// 从环境变量构造真实 LLM 咨询器；未配置 Key 时返回 None
 ///
 /// 环境变量：
 /// - `MOX_LLM_API_KEY`（缺省回退 `OPENAI_API_KEY`）；缺省则返回 None（走本地）
 /// - `MOX_LLM_BASE_URL` / `MOX_LLM_MODEL` / `MOX_LLM_MAX_ROUNDS` / `MOX_LLM_TIMEOUT_MS`
 /// - `MOX_LLM_ENABLED=false` 可显式禁用
+/// - 多 Provider 模式：`MOX_LLM_PROVIDERS=id1,id2` + 每个 provider 的
+///   `MOX_LLM_{ID}_BASE_URL` / `MOX_LLM_{ID}_API_KEY` / `MOX_LLM_{ID}_MODEL`，
+///   自动启用路由器（路由策略 + 熔断降级）
 pub fn llm_consultant_from_env() -> Option<Arc<dyn ExpertConsultant>> {
     if std::env::var("MOX_LLM_ENABLED")
         .ok()
@@ -283,8 +301,14 @@ pub fn llm_consultant_from_env() -> Option<Arc<dyn ExpertConsultant>> {
     {
         return None;
     }
-    let config = LlmConfig::from_env()?;
-    let client = Arc::new(OpenAiChatClient::new(config.clone())) as Arc<dyn ChatClient>;
+    let (config, router) = LlmConfig::from_env_with_router()?;
+    let client = if let Some(router) = router {
+        // 多 Provider 模式：注入路由器
+        Arc::new(OpenAiChatClient::new(config.clone()).with_router(router)) as Arc<dyn ChatClient>
+    } else {
+        // 单 Provider 模式：保持原有行为
+        Arc::new(OpenAiChatClient::new(config.clone())) as Arc<dyn ChatClient>
+    };
     let consultant = LlmExpertConsultant::new(client, config.model.clone())
         .with_expert_lookup(builtin_expert_lookup);
     Some(Arc::new(consultant) as Arc<dyn ExpertConsultant>)
@@ -320,6 +344,21 @@ mod tests {
     use super::*;
     use crate::llm::chat::MockChatClient;
     use std::collections::HashMap;
+
+    /// 测试用：始终返回错误的 Mock 客户端（用于验证回退逻辑）
+    struct ErrorMockClient {
+        error_msg: String,
+    }
+    impl ErrorMockClient {
+        fn new(msg: impl Into<String>) -> Self {
+            Self { error_msg: msg.into() }
+        }
+    }
+    impl ChatClient for ErrorMockClient {
+        fn complete(&self, _messages: &[ChatMessage]) -> anyhow::Result<String> {
+            Err(anyhow::anyhow!("{}", self.error_msg))
+        }
+    }
 
     fn query(id: &str, prefer: &str, input: &str) -> ConsultQuery {
         let mut ctx = HashMap::new();
@@ -387,5 +426,47 @@ mod tests {
         assert!(rep.vetoed);
         assert!(rep.reason.is_some());
         assert!((rep.score - 0.2).abs() < 1e-9);
+    }
+
+    #[test]
+    fn test_consultant_falls_back_on_all_providers_broken() {
+        // Mock 客户端返回 "all LLM providers circuit-broken" 错误
+        let client = Arc::new(ErrorMockClient::new(
+            "all LLM providers unavailable or circuit-broken",
+        )) as Arc<dyn ChatClient>;
+        let c = LlmExpertConsultant::new(client, "mock");
+        // 应回退本地引擎，不返回错误
+        let rep = c.consult_blocking(&query("q-fallback", "finance-expert-001", "")).unwrap();
+        assert_eq!(rep.report_id, "q-fallback");
+        // 本地引擎应产生非空 steps
+        assert!(!rep.steps.is_empty());
+    }
+
+    #[test]
+    fn test_consultant_falls_back_on_generic_error() {
+        // 普通错误也应回退本地引擎
+        let client = Arc::new(ErrorMockClient::new(
+            "LLM request failed: connection refused",
+        )) as Arc<dyn ChatClient>;
+        let c = LlmExpertConsultant::new(client, "mock");
+        let rep = c.consult_blocking(&query("q-generic", "", "")).unwrap();
+        assert_eq!(rep.report_id, "q-generic");
+        assert!(!rep.steps.is_empty());
+    }
+
+    #[test]
+    fn test_is_all_providers_broken_detection() {
+        assert!(is_all_providers_broken(&anyhow::anyhow!(
+            "all LLM providers unavailable or circuit-broken"
+        )));
+        assert!(is_all_providers_broken(&anyhow::anyhow!(
+            "circuit-broken: provider deepseek"
+        )));
+        assert!(!is_all_providers_broken(&anyhow::anyhow!(
+            "LLM request failed: timeout"
+        )));
+        assert!(!is_all_providers_broken(&anyhow::anyhow!(
+            "LLM API error (500): internal error"
+        )));
     }
 }

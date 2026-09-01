@@ -1414,6 +1414,8 @@ impl CboOptimizer {
                 )
             }
             ParseError(_) => CostEstimate::zero(),
+            // 索引等新增 PlanNode 变体：暂以零代价估算，待代价模型补充
+            _ => CostEstimate::zero(),
         }
     }
 
@@ -1422,6 +1424,12 @@ impl CboOptimizer {
         let (optimized, rules) = self.optimize(plan.clone());
         let cost = self.estimate_cost(&optimized);
         let original_cost = self.estimate_cost(&plan);
+        // 先计算削减率，避免 original_cost 在构造结构时被移动后再使用
+        let cost_reduction = if original_cost.total_cost > 0.0 {
+            (original_cost.total_cost - cost.total_cost) / original_cost.total_cost
+        } else {
+            0.0
+        };
 
         DetailedPlanOutput {
             original_plan: format!("{plan:?}"),
@@ -1429,11 +1437,7 @@ impl CboOptimizer {
             rules_applied: rules,
             original_cost,
             optimized_cost: cost.clone(),
-            cost_reduction: if original_cost.total_cost > 0.0 {
-                (original_cost.total_cost - cost.total_cost) / original_cost.total_cost
-            } else {
-                0.0
-            },
+            cost_reduction,
             estimated_rows: cost.output_rows,
         }
     }
@@ -1461,7 +1465,7 @@ impl DetailedPlanOutput {
             "Cost Reduction: {:.2}%\n",
             self.cost_reduction * 100.0
         ));
-        s.push_str('\n');
+        s.push_str("\n");
         s.push_str("--- Cost Breakdown ---\n");
         s.push_str(&format!(
             "  Original: IO={:.4} CPU={:.4} Network={:.4} Total={:.4}\n",
@@ -1477,7 +1481,7 @@ impl DetailedPlanOutput {
             self.optimized_cost.network_cost,
             self.optimized_cost.total_cost
         ));
-        s.push_str('\n');
+        s.push_str("\n");
         s.push_str("--- Rules Applied ---\n");
         if self.rules_applied.is_empty() {
             s.push_str("  (none)\n");
@@ -1492,7 +1496,7 @@ impl DetailedPlanOutput {
                 ));
             }
         }
-        s.push_str('\n');
+        s.push_str("\n");
         s.push_str("--- Optimized Plan ---\n");
         s.push_str(&format!("  {}\n", self.optimized_plan));
         s
@@ -1685,8 +1689,8 @@ impl PlanCache {
 
     /// 获取命中率
     pub fn hit_rate(&self) -> f64 {
-        let hits = *self.hits.lock().unwrap_or(&0);
-        let misses = *self.misses.lock().unwrap_or(&0);
+        let hits = self.hits.lock().map(|g| *g).unwrap_or(0);
+        let misses = self.misses.lock().map(|g| *g).unwrap_or(0);
         let total = hits + misses;
         if total == 0 {
             0.0
@@ -1697,12 +1701,12 @@ impl PlanCache {
 
     /// 获取命中次数
     pub fn hits(&self) -> u64 {
-        *self.hits.lock().unwrap_or(&0)
+        self.hits.lock().map(|g| *g).unwrap_or(0)
     }
 
     /// 获取未命中次数
     pub fn misses(&self) -> u64 {
-        *self.misses.lock().unwrap_or(&0)
+        self.misses.lock().map(|g| *g).unwrap_or(0)
     }
 
     /// 重置统计信息
@@ -1828,6 +1832,8 @@ impl Optimizer {
                 Self::estimate_rows(p).saturating_div(5).max(1)
             }
             ParseError(_) => 0,
+            // 索引等新增变体：默认按 DDL 级 1 行估算
+            _ => 1,
         }
     }
 

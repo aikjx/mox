@@ -13,7 +13,7 @@
 | `projects.api.js` | 项目 / 任务 / 资源 |
 | `graph.api.js` / `kb.api.js` | 知识图谱 / 知识库 |
 | `llm.api.js` / `melody.api.js` / `caomei.api.js` / `mox.api.js` / `operators.api.js` | LLM / 乐谱 / 草莓 / MOX / 算子 |
-| `alliance.ts` | 专家联盟（TypeScript 实现，见 §6 已知差异） |
+| `alliance.js` | 专家联盟 / 语音统一 API 层（FR-FE-01，独立 fetch 客户端） |
 | `http.js` | axios 实例与拦截器（鉴权 / 重试 / 项目注入 / 错误规范化） |
 | `index.js` | 统一再导出入口（向后兼容） |
 
@@ -38,7 +38,8 @@
 
 **硬规则**：
 - 同一资源只能有一个"列表"入口，禁止 `getRoles`（旧）与 `getRoleList`（规范）并存。
-- 动词后置不统一（`listArtifacts` / `automationList`）属历史遗留，新代码一律按上表命名；如需复用旧名请显式加别名并标注 `@deprecated`。
+- 历史动词前后置命名（`listArtifacts` / `automationList` / `listExpertSessions` / `listOrchestrationPlugins` / `listDialogueSessions`）已统一为 `get<Resource>`，旧名保留 `@deprecated` 别名（§5）。
+- `alliance.js` 内与 `experts.api.js` 重名的 11 个专家接口已加 `alliance*` 前缀（如 `allianceGetExperts`），避免 `export *` 静默歧义；**禁止**再导出裸名专家函数。
 
 ## 3. REST 路径规范
 
@@ -64,11 +65,13 @@
 - `index.js` 的 `export *` 要求所有导出名**全局唯一**（跨文件重名会静默歧义）。
 - 改名规范：保留旧名 1 个版本周期作为 `@deprecated` 别名，再删除。
 - 已删除的历史死代码：`getMenuTree`（重复声明，保留 `/system/menu/tree`）、`getRoles`（与 `getRoleList` 重复且路径冲突）。
+- 已统一的历史命名（旧名保留 `@deprecated` 别名，1 个版本周期后删除）：`listArtifacts → getArtifacts`、`automationList → getAutomations`、`listExpertSessions → getExpertSessions`、`listOrchestrationPlugins → getOrchestrationPlugins`、`listDialogueSessions → getDialogueSessions`。
+- 冗余收敛：`getLlmPresets` 与 `getLlmProviderPresets` 原为同一端点两处实现，现收敛为后者，前者作 `@deprecated` 别名。
 
 ## 6. 已知差异（暂不改造）
 
-- `alliance.ts` 为 TypeScript，其余为 JS：当前 Vite 可正常解析，建议后续统一。
-- 后端 Rust 网关（`:8080`）尚未挂接 `/system/*` 与 `/security/*` 等路由，管理面板请求会失败并回退 mock 数据；路径定义以本规范为准，待后端挂接。
+- **后端挂接进度**：Rust 网关（`:8080`）已挂接 `/api/system/*` 与 `/api/security/*`（IAM SQLite 真实数据链路）。读接口（部门/角色/用户角色/菜单树/权限）为仓储真实现；写接口与未落库域（岗位/字典/参数配置/日志/API Key 列表/审计）为 `{success,data}` 信封 stub，不再 404 触发 mock 兜底。迁移期 `/api/system`、`/api/security` 位于网关 public_paths（dev 令牌非合法 JWT），生产需回收为受保护路由；数据落库写实现待 IAM 仓储补齐。
+- `alliance.js` 为独立 fetch 客户端（`ALLIANCE_BASE` + `authHeaders`，读 `VITE_OUS_API_TOKEN`），不依赖 `http.js` 的 axios 拦截器；保持现状，不强行并入 `http.js`。
 
 ## 7. 检查命令
 

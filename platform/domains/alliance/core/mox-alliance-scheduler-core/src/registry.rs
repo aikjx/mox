@@ -411,210 +411,6 @@ fn expert_meta_to_expert(meta: ExpertMetaApi, tenant_id: &str) -> Expert {
 }
 
 // ============================================================================
-// 预置领域专家工厂
-// ============================================================================
-
-/// 十大领域专家定义
-///
-/// 支持的 10 位领域专家：
-/// 1. 图谱构建 (graph_construction)
-/// 2. 数据分析 (data_analysis)
-/// 3. AI推理 (ai_reasoning)
-/// 4. 安全审计 (security_audit)
-/// 5. 流程自动化 (process_automation)
-/// 6. 数据治理 (data_governance)
-/// 7. 知识融合 (knowledge_fusion)
-/// 8. 搜索推荐 (search_recommendation)
-/// 9. DevOps (devops)
-/// 10. 联盟协调 (alliance_coordination)
-pub mod domain_experts {
-    use super::*;
-
-    /// 创建所有 10 位预置领域专家
-    pub fn all_domain_experts() -> Vec<Expert> {
-        vec![
-            graph_construction_expert(),
-            data_analysis_expert(),
-            ai_reasoning_expert(),
-            security_audit_expert(),
-            process_automation_expert(),
-            data_governance_expert(),
-            knowledge_fusion_expert(),
-            search_recommendation_expert(),
-            devops_expert(),
-            alliance_coordination_expert(),
-        ]
-    }
-
-    /// 1. 图谱构建专家
-    pub fn graph_construction_expert() -> Expert {
-        build_domain_expert(
-            "graph_construction",
-            "图谱构建专家",
-            "kg",
-            "负责知识图谱的构建与维护，包括实体抽取、关系发现、schema 设计",
-            vec!["图谱构建", "实体抽取", "关系抽取", "schema设计", "知识建模"],
-            8,
-        )
-    }
-
-    /// 2. 数据分析专家
-    pub fn data_analysis_expert() -> Expert {
-        build_domain_expert(
-            "data_analysis",
-            "数据分析专家",
-            "data",
-            "负责数据探查、统计分析、趋势预测和洞察挖掘",
-            vec!["数据分析", "统计建模", "趋势分析", "数据探查", "洞察挖掘"],
-            7,
-        )
-    }
-
-    /// 3. AI推理专家
-    pub fn ai_reasoning_expert() -> Expert {
-        build_domain_expert(
-            "ai_reasoning",
-            "AI推理专家",
-            "ai",
-            "负责大模型推理、逻辑推理、问题求解和智能决策",
-            vec!["AI推理", "大模型", "逻辑推理", "问题求解", "智能决策"],
-            9,
-        )
-    }
-
-    /// 4. 安全审计专家
-    pub fn security_audit_expert() -> Expert {
-        build_domain_expert(
-            "security_audit",
-            "安全审计专家",
-            "security",
-            "负责安全风险评估、漏洞扫描、合规审计和安全策略制定",
-            vec!["安全审计", "漏洞扫描", "风险评估", "合规检查", "安全策略"],
-            9,
-        )
-    }
-
-    /// 5. 流程自动化专家
-    pub fn process_automation_expert() -> Expert {
-        build_domain_expert(
-            "process_automation",
-            "流程自动化专家",
-            "flow",
-            "负责业务流程建模、自动化编排、流程优化和效率提升",
-            vec!["流程自动化", "业务建模", "流程编排", "效率优化", "RPA"],
-            6,
-        )
-    }
-
-    /// 6. 数据治理专家
-    pub fn data_governance_expert() -> Expert {
-        build_domain_expert(
-            "data_governance",
-            "数据治理专家",
-            "data",
-            "负责数据质量管理、元数据管理、数据标准和数据资产治理",
-            vec!["数据治理", "数据质量", "元数据", "数据标准", "资产治理"],
-            8,
-        )
-    }
-
-    /// 7. 知识融合专家
-    pub fn knowledge_fusion_expert() -> Expert {
-        build_domain_expert(
-            "knowledge_fusion",
-            "知识融合专家",
-            "kg",
-            "负责多源知识融合、实体对齐、知识补全和质量评估",
-            vec!["知识融合", "实体对齐", "知识补全", "质量评估", "多源整合"],
-            7,
-        )
-    }
-
-    /// 8. 搜索推荐专家
-    pub fn search_recommendation_expert() -> Expert {
-        build_domain_expert(
-            "search_recommendation",
-            "搜索推荐专家",
-            "ai",
-            "负责搜索引擎优化、推荐系统设计、相关性排序和个性化推荐",
-            vec!["搜索推荐", "相关性排序", "个性化推荐", "召回策略", "排序模型"],
-            7,
-        )
-    }
-
-    /// 9. DevOps专家
-    pub fn devops_expert() -> Expert {
-        build_domain_expert(
-            "devops",
-            "DevOps专家",
-            "platform",
-            "负责持续集成、持续部署、基础设施管理和运维自动化",
-            vec!["DevOps", "CI/CD", "基础设施", "运维自动化", "容器化"],
-            6,
-        )
-    }
-
-    /// 10. 联盟协调专家
-    pub fn alliance_coordination_expert() -> Expert {
-        build_domain_expert(
-            "alliance_coordination",
-            "联盟协调专家",
-            "alliance",
-            "负责多专家协作编排、冲突调解、任务分发和结果融合",
-            vec!["联盟协调", "多专家协作", "冲突调解", "任务编排", "结果融合"],
-            10,
-        )
-    }
-
-    /// 构建领域专家的辅助函数
-    fn build_domain_expert(
-        id: &str,
-        name: &str,
-        domain: &str,
-        description: &str,
-        capability_names: Vec<&str>,
-        priority: u8,
-    ) -> Expert {
-        let now = chrono::Utc::now();
-        let capabilities: Vec<Capability> = capability_names
-            .iter()
-            .enumerate()
-            .map(|(i, cap)| Capability {
-                capability_id: format!("{}-cap-{}", id, i),
-                name: cap.to_string(),
-                description: format!("{} 能力", cap),
-                domain: domain.to_string(),
-                version: "1.0.0".to_string(),
-            })
-            .collect();
-
-        Expert {
-            expert_id: id.to_string(),
-            tenant_id: "system".to_string(),
-            name: name.to_string(),
-            version: "1.0.0".to_string(),
-            description: description.to_string(),
-            domains: vec![domain.to_string()],
-            capabilities,
-            tools: vec![ToolBinding {
-                tool_id: format!("{}-default-tool", id),
-                name: format!("{} 默认工具", name),
-                description: format!("{} 的默认调用工具", name),
-                protocol: "HTTP".to_string(),
-                endpoint: format!("/api/v1/experts/{}/invoke", id),
-                input_schema: None,
-                output_schema: None,
-            }],
-            status: ExpertStatus::Active,
-            health: ExpertHealth::default(),
-            priority,
-            created_at: now,
-            updated_at: now,
-        }
-    }
-}
-
-// ============================================================================
 // 测试
 // ============================================================================
 
@@ -737,36 +533,61 @@ mod tests {
         assert_eq!(stats.total, 2);
     }
 
-    #[test]
-    fn all_domain_experts_has_10_experts() {
-        let experts = domain_experts::all_domain_experts();
-        assert_eq!(experts.len(), 10);
+    // ─────────── HTTP 专家桥接（feature: http-bridge）───────────
 
-        // 验证每个专家的基本字段
-        for expert in &experts {
-            assert!(!expert.expert_id.is_empty());
-            assert!(!expert.name.is_empty());
-            assert!(!expert.domains.is_empty());
-            assert!(!expert.capabilities.is_empty());
-            assert_eq!(expert.status, ExpertStatus::Active);
-            assert_eq!(expert.tenant_id, "system");
-        }
+    /// 启动一个极简 mock HTTP 专家服务，返回固定专家列表 JSON
+    async fn spawn_mock_expert_service() -> String {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            if let Ok((mut sock, _)) = listener.accept().await {
+                let mut buf = vec![0u8; 2048];
+                let _ = sock.read(&mut buf).await; // 丢弃请求
+                let body = r#"{"total":2,"experts":[
+                    {"id":"remote-expert-001","name":"远程专家A","domain":"remote","capabilities":["code"],"description":"mock 远程专家"},
+                    {"id":"remote-expert-002","name":"远程专家B","domain":"remote","capabilities":["math"],"description":"mock 远程专家2"}
+                ]}"#;
+                let resp = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                    body.len(),
+                    body
+                );
+                let _ = sock.write_all(resp.as_bytes()).await;
+            }
+        });
+        format!("http://{}", addr)
     }
 
-    #[test]
-    fn domain_experts_have_expected_ids() {
-        let experts = domain_experts::all_domain_experts();
-        let ids: Vec<&str> = experts.iter().map(|e| e.expert_id.as_str()).collect();
+    #[cfg(feature = "http-bridge")]
+    #[tokio::test]
+    async fn http_bridge_fetch_experts_success() {
+        let base_url = spawn_mock_expert_service().await;
+        let bridge = HttpExpertRegistryBridge::new(HttpBridgeConfig {
+            base_url,
+            timeout_ms: 3000,
+            tenant_id: "system".to_string(),
+        });
+        let experts = bridge.fetch_experts().await.expect("拉取应成功");
+        assert_eq!(experts.len(), 2, "应解析出 2 位远程专家");
+        assert_eq!(experts[0].expert_id, "remote-expert-001");
+        assert_eq!(experts[1].name, "远程专家B");
+        // 远程专家应归入指定租户
+        assert_eq!(experts[0].tenant_id, "system");
+    }
 
-        assert!(ids.contains(&"graph_construction"));
-        assert!(ids.contains(&"data_analysis"));
-        assert!(ids.contains(&"ai_reasoning"));
-        assert!(ids.contains(&"security_audit"));
-        assert!(ids.contains(&"process_automation"));
-        assert!(ids.contains(&"data_governance"));
-        assert!(ids.contains(&"knowledge_fusion"));
-        assert!(ids.contains(&"search_recommendation"));
-        assert!(ids.contains(&"devops"));
-        assert!(ids.contains(&"alliance_coordination"));
+    #[cfg(feature = "http-bridge")]
+    #[tokio::test]
+    async fn http_bridge_fetch_failure_returns_err() {
+        // 指向不可用端口 → fetch_experts 必须返回 Err（而非 panic/静默）
+        let bridge = HttpExpertRegistryBridge::new(HttpBridgeConfig {
+            base_url: "http://127.0.0.1:1".to_string(),
+            timeout_ms: 500,
+            tenant_id: "system".to_string(),
+        });
+        assert!(
+            bridge.fetch_experts().await.is_err(),
+            "远程专家服务不可达时应返回错误"
+        );
     }
 }

@@ -29,13 +29,11 @@
 mod axum_impl {
     use axum::{
         Json, Router,
-        extract::{Query, State},
+        extract::Query,
         routing::{get, post},
     };
-    use mox_framework::FrameworkResult;
     use serde::{Deserialize, Serialize};
     use serde_json::json;
-    use std::sync::Arc;
 
     // ====================================================================
     // 域描述符（用于 /api/v1/domains 自描述）
@@ -137,105 +135,103 @@ mod axum_impl {
     }
     fn default_k() -> usize { 3 }
 
-    fn kg_domain_router() -> Router<Arc<GatewayState>> {
+    fn kg_domain_router() -> Router<()> {
         Router::new()
             // 1. 邻域子图 → Cytoscape 兼容
             .route("/kg/v1/neighborhood", get(|Query(q): Query<KgNeighborhoodQuery>| async move {
-                FrameworkResult::Ok(Json(json!({
+                Json(json!({
                     "ok": true,
                     "stub": true,
                     "note": "将由 kg-service-svc 挂接 KnowledgeGraph::neighborhood_subgraph 实现",
                     "params": {"center": q.center, "depth": q.depth, "limit": q.limit},
-                })))
+                }))
             }))
             // 2. K 条路径查找
             .route("/kg/v1/path", get(|Query(q): Query<KgPathQuery>| async move {
-                FrameworkResult::Ok(Json(json!({
+                Json(json!({
                     "ok": true,
                     "stub": true,
                     "note": "将由 KnowledgeGraph::find_paths 挂接",
                     "params": {"source": q.source, "target": q.target, "k": q.k},
-                })))
+                }))
             }))
             // 3. 最短路径
             .route("/kg/v1/shortest-path", get(|Query(q): Query<KgPathQuery>| async move {
-                FrameworkResult::Ok(Json(json!({
+                Json(json!({
                     "ok": true, "stub": true, "params": {"source": q.source, "target": q.target},
-                })))
+                }))
             }))
             // 4. 中心性分析（4 指标 + 公式文档）
             .route("/kg/v1/centrality", get(|| async {
-                FrameworkResult::Ok(Json(json!({
+                Json(json!({
                     "ok": true, "stub": true,
                     "metrics": ["degree", "betweenness_brandes", "closeness_harmonic", "pagerank"],
-                })))
+                }))
             }))
             // 5. 社区发现（CNM）
             .route("/kg/v1/communities", get(|| async {
-                FrameworkResult::Ok(Json(json!({
+                Json(json!({
                     "ok": true, "stub": true, "algo": "CNM 模块度贪心凝聚",
-                })))
+                }))
             }))
             // 6. 图谱统计（含密度解读 + 公式）
             .route("/kg/v1/stats", get(|| async {
-                FrameworkResult::Ok(Json(json!({
+                Json(json!({
                     "ok": true, "stub": true,
                     "includes": ["node_count", "edge_count", "density%", "density_interpretation", "centrality_formulas"],
-                })))
+                }))
             }))
     }
 
     // ====================================================================
     // AI 引擎域：4 核心接口路由桩（与归一化总纲 §AIS·AI 对齐）
     // ====================================================================
-    fn ai_engine_router() -> Router<Arc<GatewayState>> {
+    fn ai_engine_router() -> Router<()> {
         Router::new()
             // 1. POST /ai/engine/process → 自动意图识别→能力路由
             .route("/ai/engine/process", post(|Json(_body): Json<serde_json::Value>| async {
-                FrameworkResult::Ok(Json(json!({
+                Json(json!({
                     "ok": true, "stub": true,
                     "pipeline": "意图识别(A5 PPR) → 能力路由 → 专家联盟打分 → 执行 → 审计链",
-                })))
+                }))
             }))
             // 2. POST /ai/engine/analyze → 显式能力执行
             .route("/ai/engine/analyze", post(|Json(_body): Json<serde_json::Value>| async {
-                FrameworkResult::Ok(Json(json!({
+                Json(json!({
                     "ok": true, "stub": true,
                     "note": "capability 字段指定执行能力",
-                })))
+                }))
             }))
             // 3. GET /ai/engine/capabilities → 能力矩阵自描述
             .route("/ai/engine/capabilities", get(|| async {
-                FrameworkResult::Ok(Json(json!({
+                Json(json!({
                     "ok": true, "stub": true,
                     "count": 7,
                     "items": ["数学推理", "逻辑推理", "知识问答", "代码生成",
                               "中文理解", "时效性检索", "指令跟随"],
-                })))
+                }))
             }))
             // 4. GET /ai/engine/metrics → 成功率/降级率/延迟指标
             .route("/ai/engine/metrics", get(|| async {
-                FrameworkResult::Ok(Json(json!({
+                Json(json!({
                     "ok": true, "stub": true,
                     "gauges": ["success_rate", "degrade_rate", "latency_p50_ms", "latency_p99_ms"],
-                })))
+                }))
             }))
     }
 
     // ====================================================================
     // 域路由桩：所有未就绪域统一挂到 stub_handler
     // ====================================================================
-    async fn stub_handler(
-        State(_state): State<Arc<GatewayState>>,
-    ) -> FrameworkResult<Json<serde_json::Value>> {
-        Ok(Json(json!({
+    async fn stub_handler() -> Json<serde_json::Value> {
+        Json(json!({
             "ok": true,
             "stub": true,
             "message": "此域路由桩已注册，handler 待对应 service-svc 挂接实现",
-        })))
+        }))
     }
 
-    fn stub_domain(prefix: &'static str) -> Router<Arc<GatewayState>> {
+    fn stub_domain(prefix: &'static str) -> Router<()> {
         Router::new()
             .route(&format!("{prefix}"), get(stub_handler))
             .route(&format!("{prefix}/*path"), get(stub_handler).post(stub_handler))
@@ -245,7 +241,6 @@ mod axum_impl {
     // 路由装配入口：一次性构建 + 返回 axum Router
     // ====================================================================
     pub fn build_gateway_router() -> Router {
-        let state = Arc::new(GatewayState::default());
         let mut router = Router::new();
 
         // L0 通用（ready）
@@ -273,14 +268,13 @@ mod axum_impl {
         let real_kg_ai: Router = mox_kg_service_svc::http_adapter::build_kg_ai_router();
 
         // 最终：先合网关层路由(带 state)，再合真实域路由(各自内附 state)
-        router.with_state(state).merge(real_kg_ai)
+        router.merge(real_kg_ai)
     }
 
     // ====================================================================
     // 启动入口：axum 绑定 bind_addr:port，进入 serve 循环（Ctrl-C 优雅退出）
     // ====================================================================
     pub async fn serve_axum_gateway(bind_addr: &str, port: u16) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        use axum::Server;
         use std::net::SocketAddr;
         use tower_http::cors::{Any, CorsLayer};
         use tower::ServiceBuilder;
@@ -300,13 +294,16 @@ mod axum_impl {
         eprintln!("[mox-server::gateway] 🌐 Rust Gateway 全维接管 @ http://{addr}");
         eprintln!("[mox-server::gateway] ✅ /health · /api/v1/domains · /kg/v1/* · /ai/engine/* 已就绪");
 
-        Server::bind(&addr)
-            .serve(app.into_make_service_with_connect_info::<SocketAddr>())
-            .with_graceful_shutdown(async {
-                let _ = tokio::signal::ctrl_c().await;
-                eprintln!("\n[mox-server::gateway] 🛑 收到 Ctrl-C，优雅退出中…");
-            })
-            .await?;
+        let listener = tokio::net::TcpListener::bind(&addr).await?;
+        axum::serve(
+            listener,
+            app.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .with_graceful_shutdown(async {
+            let _ = tokio::signal::ctrl_c().await;
+            eprintln!("\n[mox-server::gateway] 🛑 收到 Ctrl-C，优雅退出中…");
+        })
+        .await?;
         Ok(())
     }
 }

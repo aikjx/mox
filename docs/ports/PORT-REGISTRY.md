@@ -202,8 +202,8 @@ python scripts/verify-ports.py --json     # 输出机器可读 JSON 报告
 | `projects/xiaobai_voice/.../desktop/main_window.py` | 提示语 + 前端探活 `:3021` | `:3020` |
 | `scripts/validation/verify_tts_rust_fullstack.py` | E-4 三层代理链 `:3021 -> :3001 -> :3717` | `:3020 -> :8080 -> :30010`（3717→30010 迁移后同步） |
 | `projects/xiaobai_voice/**`（config/cli/service/proxy/desktop/README） | 端口 `3717`（15 处） | **`30010`**（PORT-NORM-001 4.2 落段 30000+） |
-| `platform/domains/voice/svc/mox-voice-operator-svc` | module/feature `server_3717`/`server-3717`，绑定 `127.0.0.1:3717` | `server_30010`/`server-30010`，绑定 `127.0.0.1:30010`（文件同步改名 `server_30010.rs`） |
-| `platform/domains/voice/svc/mox-voice-desktop-app` | `server_3717` + `:3717`（30 处） | `server_30010` + `:30010` |
+| `platform/domains/voice/svc/mox-voice-operator-svc` | module/feature `server_3717`/`server-3717`，绑定 `127.0.0.1:3717` | `voice_server`/`voice-server`，绑定 `127.0.0.1:30010`（文件同步改名 `voice_server.rs`） |
+| `platform/domains/voice/svc/mox-voice-desktop-app` | `server_3717` + `:3717`（30 处） | `voice_server` + `:30010` |
 | `platform/domains/platform/svc/mox-platform-orchestrator-svc`（voice_proxy/subservers） | voice 上游 `127.0.0.1:3717` | `127.0.0.1:30010` |
 | `platform_config.json` / `scripts/server-manage.py` | xiaobai_voice `port: 3717` | `port: 30010` |
 | orchestrator 侧车（main.rs / ai_engine.rs / sidecar/*） | 默认 `http://127.0.0.1:3010`（指向已删除 backend-node） | 默认 `http://127.0.0.1:8080`（接管其职责的 Rust 网关，注释标注） |
@@ -212,7 +212,7 @@ python scripts/verify-ports.py --json     # 输出机器可读 JSON 报告
 
 - **alliance 3100/3200/3300 纳入 `server-manage.py`**：当前由 `config/alliance-*.yml` 独立管理，尚未登记进 `platform_config.json`；如需统一面板启停，按第5章流程补充登记。
 
-> 已完结（2026-09-01）：xiaobai_voice **3717 → 30010** 全链路迁移（Python 服务 / Rust `server_30010` / orchestrator voice 代理 / `platform_config.json` / 桌面端 / 校验脚本）已完成并通过 `verify-ports.py`；orchestrator Node 侧车默认 `127.0.0.1:3010` 已清理为 Rust 网关 8080。旧端口 3717 与 3010 现仅存于历史文档（.md/.html 报告），属 DEPRECATED 文档引用，予以保留。
+> 已完结（2026-09-01）：xiaobai_voice **3717 → 30010** 全链路迁移（Python 服务 / Rust `voice_server` / orchestrator voice 代理 / `platform_config.json` / 桌面端 / 校验脚本）已完成并通过 `verify-ports.py`；orchestrator Node 侧车默认 `127.0.0.1:3010` 已清理为 Rust 网关 8080。旧端口 3717 与 3010 现仅存于历史文档（.md/.html 报告），属 DEPRECATED 文档引用，予以保留。
 
 ---
 

@@ -7,7 +7,7 @@
 //!
 //! 提供：
 //! - `BallWidgetState` 5 状态：Idle（灰）/Listen（红声波）/Think（蓝脑波）/Speak（绿波形）/Executing（橙 executing 彩虹弧+齿轮）
-//! - `DesktopApp` 负责：spawn voice_proxy 30010 服务 → BallWidget 事件 loop → 回调 dispatch_text
+//! - `DesktopApp` 负责：spawn voice_proxy 语音服务 → BallWidget 事件 loop → 回调 dispatch_text
 //! - `Alt+X` 全局热键占位：global-hotkey crate 绑定 Alt+X → 切换录音（P2 后续接入真实录音 ASR）
 //! - Slint UI 代码在 `ui/ballwidget.slint`，Cargo 里开 feature = ["slint-ui"] 时用 slint-build 编译
 

@@ -27,3 +27,23 @@ executor:
 storage:
   mode: file                        # file（文件快照）| memory（纯内存）
   path: data/alliance_executor_tasks.json
+
+# Nacos 配置中心（阶段二，与 alliance-scheduler.yml 同规则；需 boot-config `nacos` feature）
+nacos:
+  enabled: false
+  server_addr: "127.0.0.1:8848"
+  namespace: ""
+  username: ""
+  password: ""
+  group: "DEFAULT_GROUP"
+  data_id: "mox-alliance-executor.yml"
+
+# ── 真实 LLM 调用链（executor expert 模式，生产专家节点执行时生效）──
+# 环境变量配置（mox-ai-expert-svc 读取），非 yml 字段：
+#   MOX_LLM_ENABLED=1            # 显式启用真实 LLM（不设默认按是否有 Key 决定）
+#   MOX_LLM_API_KEY=xxx          # 回退 OPENAI_API_KEY / DEEPSEEK_API_KEY
+#   MOX_LLM_BASE_URL=https://api.openai.com/v1   # OpenAI 兼容端点
+#   MOX_LLM_MODEL=gpt-4o
+#   MOX_LLM_TIMEOUT_MS=30000
+# 无 Key → 自动回退本地专家引擎（离线可用）；LLM 调用失败 → 回退本地引擎。
+

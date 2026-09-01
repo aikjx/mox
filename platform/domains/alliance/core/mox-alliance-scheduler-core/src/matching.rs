@@ -13,6 +13,7 @@
 
 use mox_alliance_common_proto::{Expert, ExpertStatus};
 use std::collections::HashMap;
+use parking_lot::RwLock;
 
 /// 常见停用词（中英）
 const STOPWORDS: &[&str] = &[
@@ -267,14 +268,69 @@ fn token_hit(query: &str, expert: &str) -> bool {
     false
 }
 
+/// 专家文本分词缓存
+///
+/// 缓存 expert_id → tokenized tokens，避免匹配器遍历所有专家时
+/// 对同一份专家文本重复执行 tokenize（O(N*M) 重复分词 → O(N) 一次分词）。
+///
+/// 假设专家注册后文本不变；若专家文本更新，调用 [`ExpertTokenCache::invalidate`]。
+pub struct ExpertTokenCache {
+    inner: RwLock<HashMap<String, Vec<String>>>,
+}
+
+impl ExpertTokenCache {
+    pub fn new() -> Self {
+        Self {
+            inner: RwLock::new(HashMap::new()),
+        }
+    }
+
+    /// 获取或计算专家文本的分词结果（命中则 clone 返回，未命中则 tokenize 后写入缓存）
+    pub fn get_or_compute(&self, expert: &Expert) -> Vec<String> {
+        // 先读缓存（读锁，无竞争时快速路径）
+        if let Some(tokens) = self.inner.read().get(&expert.expert_id) {
+            return tokens.clone();
+        }
+        // 未命中：计算并写入（写锁）
+        let tokens = tokenize(&expert_text(expert));
+        self.inner
+            .write()
+            .insert(expert.expert_id.clone(), tokens.clone());
+        tokens
+    }
+
+    /// 失效指定专家的缓存（专家文本更新时调用）
+    pub fn invalidate(&self, expert_id: &str) {
+        self.inner.write().remove(expert_id);
+    }
+
+    /// 清空全部缓存
+    pub fn clear(&self) {
+        self.inner.write().clear();
+    }
+}
+
+impl Default for ExpertTokenCache {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// 计算任务 token 在专家文本 token 中的命中情况
 ///
 /// 返回 `(命中比例 0.0-1.0, 命中 token 数)`。无任务 token 时返回 (0.3, 0)（中性分）。
-pub fn description_overlap(expert: &Expert, query_tokens: &[String]) -> (f64, usize) {
+pub fn description_overlap(
+    expert: &Expert,
+    query_tokens: &[String],
+    cache: Option<&ExpertTokenCache>,
+) -> (f64, usize) {
     if query_tokens.is_empty() {
         return (0.3, 0);
     }
-    let expert_tokens: Vec<String> = tokenize(&expert_text(expert));
+    let expert_tokens: Vec<String> = match cache {
+        Some(c) => c.get_or_compute(expert),
+        None => tokenize(&expert_text(expert)),
+    };
     let mut hit = 0usize;
     for t in query_tokens {
         // 通用低信息量词不计入重叠证据（避免误报）
@@ -320,7 +376,11 @@ fn lexicon_match_all(query_tokens: &[String]) -> Vec<String> {
 ///
 /// 仅当某领域的累计证据数 >= 2 时推断该领域（保守策略，避免误过滤）。
 /// 返回按证据强度降序、最多 3 个的领域标签。
-pub fn infer_domains(description: &str, experts: &[Expert]) -> Vec<String> {
+pub fn infer_domains(
+    description: &str,
+    experts: &[Expert],
+    cache: Option<&ExpertTokenCache>,
+) -> Vec<String> {
     let q_tokens = tokenize(description);
     if q_tokens.is_empty() {
         return vec![];
@@ -334,7 +394,7 @@ pub fn infer_domains(description: &str, experts: &[Expert]) -> Vec<String> {
         if e.status != ExpertStatus::Active {
             continue;
         }
-        let (_, hits) = description_overlap(e, &q_tokens);
+        let (_, hits) = description_overlap(e, &q_tokens, cache);
         if hits == 0 {
             continue;
         }
@@ -406,7 +466,7 @@ mod tests {
             })
             .collect();
         let desc = "计算斐波那契数列第20项的值，并分析朴素递归与动态规划两种实现的时间复杂度差异";
-        let domains = infer_domains(desc, &experts);
+        let domains = infer_domains(desc, &experts, None);
         eprintln!("INFERRED={:?}", domains);
         assert!(
             domains.contains(&"mathematics".to_string()),
@@ -456,7 +516,7 @@ mod tests {
             &["财务分析"],
         );
         let toks = tokenize("分析2026年第二季度财务报表并给出投资建议");
-        let (ratio, hits) = description_overlap(&expert, &toks);
+        let (ratio, hits) = description_overlap(&expert, &toks, None);
         assert!(hits >= 3, "hits={}", hits);
         assert!(ratio > 0.2, "ratio={}", ratio);
     }
@@ -479,7 +539,7 @@ mod tests {
                 &["代码生成"],
             ),
         ];
-        let domains = infer_domains("分析2026年第二季度财务报表并给出投资建议", &experts);
+        let domains = infer_domains("分析2026年第二季度财务报表并给出投资建议", &experts, None);
         assert!(domains.contains(&"finance".to_string()), "{:?}", domains);
         assert!(!domains.contains(&"code".to_string()), "{:?}", domains);
     }
@@ -503,7 +563,7 @@ mod tests {
             ),
         ];
         let domains =
-            infer_domains("financial statement analysis and investment recommendation", &experts);
+            infer_domains("financial statement analysis and investment recommendation", &experts, None);
         assert!(domains.contains(&"finance".to_string()), "{:?}", domains);
         assert!(!domains.contains(&"code".to_string()), "{:?}", domains);
     }
@@ -530,6 +590,7 @@ mod tests {
         let domains = infer_domains(
             "Analyze financial statements and recommend investments",
             &experts,
+            None,
         );
         assert!(domains.contains(&"finance".to_string()), "{:?}", domains);
         assert!(!domains.contains(&"code".to_string()), "{:?}", domains);
@@ -546,7 +607,7 @@ mod tests {
             &["财务分析"],
         );
         let toks = tokenize("Analyze financial statements and recommend investments");
-        let (ratio, hits) = description_overlap(&expert, &toks);
+        let (ratio, hits) = description_overlap(&expert, &toks, None);
         // financial→finance、investments→investment 命中
         assert!(hits >= 2, "hits={}", hits);
         assert!(ratio > 0.0, "ratio={}", ratio);
@@ -570,7 +631,7 @@ mod tests {
                 &["财务分析"],
             ),
         ];
-        let domains = infer_domains("用Rust写一个Web服务的登录接口", &experts);
+        let domains = infer_domains("用Rust写一个Web服务的登录接口", &experts, None);
         assert!(domains.contains(&"code".to_string()), "{:?}", domains);
         assert!(!domains.contains(&"finance".to_string()), "{:?}", domains);
     }
@@ -594,7 +655,7 @@ mod tests {
             ),
         ];
         // 症状词（头痛/失眠/医生）通过领域词典命中 medical
-        let domains = infer_domains("我最近经常头痛失眠，需要看医生吗", &experts);
+        let domains = infer_domains("我最近经常头痛失眠，需要看医生吗", &experts, None);
         assert!(domains.contains(&"medical".to_string()), "{:?}", domains);
         assert!(!domains.contains(&"code".to_string()), "{:?}", domains);
     }
@@ -606,7 +667,7 @@ mod tests {
             make_expert("e2", "代码编程专家", "擅长：代码生成。", &["code"], &["代码"]),
         ];
         // 弱信号：只有 1 个证据，不应推断（保守）
-        let domains = infer_domains("请帮我分析一下", &experts);
+        let domains = infer_domains("请帮我分析一下", &experts, None);
         assert!(domains.is_empty(), "{:?}", domains);
     }
 }

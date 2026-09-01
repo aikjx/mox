@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>开发专家联盟 · 第六轮 P0 专项：接入真实 LLM 全链路验收 验证报告</title>
+<style>
+:root{--ink:#1a1b2e;--sub:#5b5f7a;--line:#e4e6f0;--bg:#f6f7fb;--card:#ffffff;--brand:#3a5ccc;--good:#2e9e6b;--warn:#d97706;--bad:#c0392b;--purple:#7c3aed;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--ink);line-height:1.7;padding:32px 20px;}
+.wrap{max-width:1040px;margin:0 auto;}
+h1{font-size:26px;font-weight:700;margin-bottom:6px;}
+.meta{color:var(--sub);font-size:13px;margin-bottom:22px;}
+.hero{background:linear-gradient(135deg,#1e3a5f,#3a5ccc);color:#fff;border-radius:16px;padding:26px 30px;margin-bottom:24px;}
+.hero h2{font-size:20px;margin-bottom:10px;}
+.kpis{display:flex;gap:14px;flex-wrap:wrap;margin-top:16px;}
+.kpi{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:12px 18px;min-width:120px;}
+.kpi .n{font-size:26px;font-weight:800;}
+.kpi .l{font-size:12px;opacity:.9;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 26px;margin-bottom:20px;}
+.card h3{font-size:17px;margin-bottom:14px;border-left:4px solid var(--brand);padding-left:10px;}
+table{width:100%;border-collapse:collapse;font-size:13.5px;}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top;}
+th{background:#eef1fa;font-weight:600;white-space:nowrap;}
+tr:nth-child(even) td{background:#fafbfe;}
+.tag{display:inline-block;padding:1px 8px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap;}
+.good{background:#e6f6ee;color:var(--good);}
+.bad{background:#fdecea;color:var(--bad);}
+.warn{background:#fef3e2;color:var(--warn);}
+.brand{background:#e8edfb;color:var(--brand);}
+.purple{background:#f3e8ff;color:var(--purple);}
+pre{background:#1a1b2e;color:#e4e6f0;border-radius:10px;padding:14px 18px;font-size:12.5px;line-height:1.6;overflow-x:auto;margin:10px 0;}
+pre .hl{color:#7ee2a8;font-weight:600;}
+pre .warn{color:#fbbf24;background:none;}
+pre .bad{color:#f87171;background:none;}
+ul{padding-left:20px;margin:8px 0;}
+li{margin:4px 0;}
+.flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0;}
+.flow .step{background:#e8edfb;border:1px solid #c5d0f0;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--brand);}
+.flow .arrow{color:var(--sub);font-size:18px;}
+.flow .step.ok{background:#e6f6ee;border-color:#a7d9bd;color:var(--good);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>开发专家联盟 · 第六轮 P0 专项验证报告</h1>
+<div class="meta">专项：接入真实 LLM 全链路验收 ｜ 日期：2026-09-01 ｜ 范围：mox-alliance 全 crate + mox-ai-expert-svc LLM 模块</div>
+
+<div class="hero">
+  <h2>结论：接入真实 LLM 全链路已打通，端到端任务 completed</h2>
+  <p style="opacity:.92;font-size:14px;">用户拍板「接入真实 LLM」后，完成 LLM 咨询模块（chat/tools/react/consultant）、接入 executor Expert 模式、DeepSeek 真实调用连通。测试验证阶段发现并修复 <strong>3 个真实缺陷</strong>，最终数学任务端到端 <strong>completed（score=1.0, vetoed=false, fusion confidence=1.00）</strong>。</p>
+  <div class="kpis">
+    <div class="kpi"><div class="n">417</div><div class="l">单元测试通过</div></div>
+    <div class="kpi"><div class="n">3</div><div class="l">真实缺陷修复</div></div>
+    <div class="kpi"><div class="n">1</div><div class="l">端到端成功用例</div></div>
+    <div class="kpi"><div class="n">7.4s</div><div class="l">真实 LLM 延迟</div></div>
+    <div class="kpi"><div class="n">1.0</div><div class="l">融合置信度</div></div>
+  </div>
+</div>
+
+<!-- ==================== 缺陷修复 ==================== -->
+<div class="card">
+  <h3>一、测试验证发现并修复的 3 个真实缺陷</h3>
+  <table>
+    <thead><tr><th style="width:40px;">#</th><th style="width:160px;">缺陷</th><th>根因</th><th style="width:200px;">修复</th><th style="width:80px;">级别</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><strong>节点上下文丢失</strong><br>LLM 收到空查询而否决</td>
+        <td><code>planner.rs::make_node</code> 生成节点时 description 只有「金融分析专家 (并行)」占位，从不携带任务描述；<code>build_consult_query</code> 用 node.name+node.description 构建查询 → LLM 只看到「请给出最终专家结论」→ 正确否决</td>
+        <td><code>make_node</code> 增加 <code>task_description</code> 参数，5 种计划模式（并行/串行/分层/辩论/迭代）全部把任务描述拼入节点 description；新增单测 <code>test_node_description_embeds_task_description</code></td>
+        <td><span class="tag bad">P0</span></td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><strong>react.rs 中文截断 panic</strong><br>节点 4 次重试全 panic → 任务 failed</td>
+        <td>推理轨迹摘要用 <code>&amp;line[..80]</code> 按<strong>字节</strong>切片，切断多字节 UTF-8 中文字符 → <code>end byte index 80 is not a char boundary</code> panic；每个节点 panic 4 次重试全失败</td>
+        <td>改为字符安全的 <code>truncate_chars()</code>（按 char 计数截断），mox-ai-expert-svc 164 项单测全过</td>
+        <td><span class="tag bad">P0</span></td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><strong>匹配器误判</strong><br>数学任务选成图像专家</td>
+        <td>字符 bigram 下通用词「计算」（计算机视觉）+「分析」（场景分析）让 vision 专家 overlap_hits=2 → <code>infer_domains</code> 推断 <code>["image","vision"]</code> → required_domains 硬过滤只剩 vision 可选 → 错误专家被选中。用真实内置专家文本复现确认</td>
+        <td>①新增 <code>GENERIC_CJK_BIGRAMS</code>，<code>description_overlap</code> 不计入通用词命中；②<code>lexicon_match</code> → <code>lexicon_match_all</code>：关键词自身全部 token 命中才计证据，支持「动态规划/时间复杂度/斐波那契」复合词；③补全数学领域词典（算法/递归/复杂度/数列/导数/积分等 20+ 词）；④词典证据权重 +2。新增回归测试 <code>infer_math_domain_algorithm_task</code>（用真实专家文本断言推断 mathematics 且不含 image/vision）</td>
+        <td><span class="tag bad">P0</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== 全量回归 ==================== -->
+<div class="card">
+  <h3>二、全量回归测试结果（本轮改动后）</h3>
+  <table>
+    <thead><tr><th>Crate</th><th>测试数</th><th>结果</th><th>备注</th></tr></thead>
+    <tbody>
+      <tr><td>mox-alliance-core</td><td>120</td><td><span class="tag good">全部通过</span></td><td>core 113 + proto 7</td></tr>
+      <tr><td>mox-alliance-config-core</td><td>12</td><td><span class="tag good">全部通过</span></td><td></td></tr>
+      <tr><td>mox-alliance-sdk</td><td>10</td><td><span class="tag good">全部通过</span></td><td></td></tr>
+      <tr><td>mox-alliance-scheduler-core</td><td>76</td><td><span class="tag good">全部通过</span></td><td>原 74 + 新增 2（planner 任务描述嵌入 + 数学领域推断回归）</td></tr>
+      <tr><td>mox-alliance-executor-core</td><td>23</td><td><span class="tag good">全部通过</span></td><td>lib 18 + 集成 5</td></tr>
+      <tr><td>mox-alliance-executor-svc</td><td>5</td><td><span class="tag good">全部通过</span></td><td></td></tr>
+      <tr><td>mox-alliance-scheduler-svc</td><td>7</td><td><span class="tag good">全部通过</span></td><td></td></tr>
+      <tr><td>mox-ai-expert-svc（lib）</td><td>164</td><td><span class="tag good">全部通过</span></td><td>含 LLM 模块新增 ~15 项（Mock 逐轮推进、表达式求值、tool_call 解析、ReAct 工具轮/截断、parse_score/parse_veto、LLM 咨询归一化、veto 传播）</td></tr>
+      <tr style="background:#fff8f0;"><td><strong>合计</strong></td><td><strong>417</strong></td><td><span class="tag good">全部通过</span></td><td></td></tr>
+    </tbody>
+  </table>
+
+  <h4 style="margin-top:18px;margin-bottom:8px;">已知不通过项（非本轮改动）</h4>
+  <ul>
+    <li><strong>mox-ai-expert-svc 集成测试 t8（3 项失败）</strong>：<code>tr_08_01/02/04</code> 引用不存在的 <code>platform/services/hermes-flow-bridge</code>、<code>platform/services/business-catalog</code> 目录和旧 crate 名（<code>mox-expert</code>/<code>hermes-flow-bridge</code>/<code>business-catalog</code>），是预先存在的坏测试，与本轮改动无关。</li>
+    <li><strong>mox-alliance-boot-config + mox-alliance-common-proto（编译失败）</strong>：并发进程未提交的工作（<code>experts.rs</code> 新建、<code>types.rs</code> 修改）引入 <code>PropValue</code>/<code>PlanNode::CreateTagIndex</code>/<code>AggregateState</code> 等编译错误，非本任务改动，未触碰他人文件。</li>
+  </ul>
+</div>
+
+<!-- ==================== 端到端验证 ==================== -->
+<div class="card">
+  <h3>三、端到端验证：真实 LLM 数学任务 completed</h3>
+
+  <div class="flow">
+    <div class="step ok">提交任务</div><div class="arrow">→</div>
+    <div class="step ok">推断领域 mathematics</div><div class="arrow">→</div>
+    <div class="step ok">匹配 math-expert</div><div class="arrow">→</div>
+    <div class="step ok">节点带任务描述</div><div class="arrow">→</div>
+    <div class="step ok">DeepSeek 真实调用</div><div class="arrow">→</div>
+    <div class="step ok">score=1.0 不否决</div><div class="arrow">→</div>
+    <div class="step ok">FusionEngine 融合</div><div class="arrow">→</div>
+    <div class="step ok">completed</div>
+  </div>
+
+  <p><strong>任务</strong>：「计算斐波那契数列第20项的值，并分析朴素递归与动态规划两种实现的时间复杂度差异」（mode=parallel, fusion_strategy=weighted）</p>
+  <p><strong>task_id</strong>：<code>fc3e0e2b-4bb3-47cb-bb82-583fb7b6f2a8</code></p>
+
+  <h4 style="margin-top:16px;margin-bottom:6px;">scheduler 日志（匹配器修复验证）</h4>
+<pre>
+<span class="hl">Inferred domains for task fc3e0e2b...: ["mathematics"]</span>          ← 修复前为 ["image","vision"]
+Matched 1 experts (from 1 available) in 0ms, top score: 0.694
+Matched 1 experts for task fc3e0e2b...
+Generated plan for task fc3e0e2b...: 1 nodes, mode=Parallel
+Plan submitted to executor successfully: task_id=fc3e0e2b...
+</pre>
+
+  <h4 style="margin-top:16px;margin-bottom:6px;">executor 日志（真实 LLM + 融合验证）</h4>
+<pre>
+Expert node execution started: task=fc3e0e2b..., node=node-1, <span class="hl">expert=math-expert-001</span>
+Expert consult attempt 1/4 for query fc3e0e2b...-node-1
+<span class="hl">Expert node execution succeeded: task=fc3e0e2b..., node=node-1, expert=math-expert-001,
+  score=1.000, vetoed=false, duration=7356ms, retries=0</span>
+Node fc3e0e2b.../node-1 completed: status=Completed, duration=7356ms
+<span class="hl">Fusion completed for task fc3e0e2b... with strategy Weighted: 1 experts, confidence 1.00</span>
+<span class="hl">Task fc3e0e2b... completed successfully</span>
+</pre>
+
+  <table style="margin-top:14px;">
+    <thead><tr><th>验证项</th><th>结果</th><th>证据</th></tr></thead>
+    <tbody>
+      <tr><td>匹配器推断数学领域</td><td><span class="tag good">通过</span></td><td><code>["mathematics"]</code>（修复前 <code>["image","vision"]</code>）</td></tr>
+      <tr><td>选中数学专家</td><td><span class="tag good">通过</span></td><td><code>expert=math-expert-001</code>（修复前 vision-expert-001）</td></tr>
+      <tr><td>节点携带任务描述</td><td><span class="tag good">通过</span></td><td>LLM 未再以「未附具体问题」否决（修复前 vetoed=true）</td></tr>
+      <tr><td>真实 DeepSeek 调用</td><td><span class="tag good">通过</span></td><td>duration=7356ms（真实网络延迟，非本地模拟）</td></tr>
+      <tr><td>LLM 不否决 + 评分</td><td><span class="tag good">通过</span></td><td>score=1.000, vetoed=false, retries=0</td></tr>
+      <tr><td>FusionEngine 尾部融合</td><td><span class="tag good">通过</span></td><td>strategy=Weighted, confidence=1.00</td></tr>
+      <tr><td>任务最终状态</td><td><span class="tag good">completed</span></td><td>修复前 failed（veto 或 panic）</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== LLM 模块架构 ==================== -->
+<div class="card">
+  <h3>四、LLM 咨询模块架构（本轮新建）</h3>
+  <p>路径：<code>platform/domains/ai/svc/mox-ai-expert-svc/src/llm/</code></p>
+  <table>
+    <thead><tr><th style="width:120px;">文件</th><th>职责</th><th style="width:120px;">关键设计</th></tr></thead>
+    <tbody>
+      <tr><td><code>chat.rs</code></td><td>DIP 抽象 <code>ChatClient</code> trait；生产 <code>OpenAiChatClient</code> 走 OpenAI 兼容 /chat/completions（reqwest blocking）；测试 <code>MockChatClient</code> 按脚本逐轮推进+调用计数；<code>LlmConfig::from_env()</code> 探测 Key</td><td><span class="tag brand">DIP 可替换</span></td></tr>
+      <tr><td><code>tools.rs</code></td><td><code>Tool</code> trait + 注册表；内置 <code>calculate</code>（自研递归下降表达式求值器，支持 +-*/^ 括号一元负号，无 eval）、<code>now</code>、<code>expert_lookup</code>（回调注入，生产用静态 10 专家表）</td><td><span class="tag brand">安全求值</span></td></tr>
+      <tr><td><code>react.rs</code></td><td>ReAct 循环：解析 <code>&lt;tool_call&gt;{json}&lt;/tool_call&gt;</code> → 执行工具 → 观察结果回喂；max_rounds=3 默认、max_tool_calls=8；输出含 final_answer/rounds/tool_calls/trace/truncated</td><td><span class="tag brand">ReAct</span></td></tr>
+      <tr><td><code>consultant.rs</code></td><td><code>LlmExpertConsultant</code> 实现 <code>ExpertConsultant</code>：按 prefer_expert 映射专家角色构建系统提示，ReAct 结果归一化为 ConsultReport（steps=推理轨迹、score 解析「结论评分」缺省 0.75、vetoed 解析「是否否决」行）；LLM 调用失败或无 Key 回退本地 <code>ExpertServiceImpl</code></td><td><span class="tag brand">优雅降级</span></td></tr>
+    </tbody>
+  </table>
+
+  <h4 style="margin-top:16px;margin-bottom:6px;">环境变量配置</h4>
+  <ul>
+    <li><code>MOX_LLM_API_KEY</code> → <code>DEEPSEEK_API_KEY</code> → <code>OPENAI_API_KEY</code>（探测顺序）</li>
+    <li><code>MOX_LLM_BASE_URL</code>（DeepSeek 默认 https://api.deepseek.com）、<code>MOX_LLM_MODEL</code>（默认 deepseek-chat）</li>
+    <li><code>MOX_LLM_MAX_ROUNDS</code>（≤20，缺省 3）、<code>MOX_LLM_TIMEOUT_MS</code></li>
+    <li><code>MOX_LLM_ENABLED=false</code> 强制禁用；<code>default_consultant()</code> 保持本地向后兼容（flow-bridge/data-catalog 仍用它）</li>
+  </ul>
+</div>
+
+<!-- ==================== 改动文件清单 ==================== -->
+<div class="card">
+  <h3>五、本轮改动文件清单</h3>
+  <table>
+    <thead><tr><th style="width:60px;">操作</th><th>文件</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag purple">新建</span></td><td><code>llm/chat.rs</code></td><td>ChatClient trait + OpenAiChatClient + MockChatClient + LlmConfig</td></tr>
+      <tr><td><span class="tag purple">新建</span></td><td><code>llm/tools.rs</code></td><td>Tool trait + 注册表 + calculate/now/expert_lookup</td></tr>
+      <tr><td><span class="tag purple">新建</span></td><td><code>llm/react.rs</code></td><td>ReAct 循环 + parse_tool_call + truncate_chars（修复 panic）</td></tr>
+      <tr><td><span class="tag purple">新建</span></td><td><code>llm/consultant.rs</code></td><td>LlmExpertConsultant + react_to_report + parse_score/parse_veto</td></tr>
+      <tr><td><span class="tag purple">新建</span></td><td><code>llm/mod.rs</code></td><td>模块 re-export</td></tr>
+      <tr><td><span class="tag brand">修改</span></td><td><code>mox-ai-expert-svc/src/lib.rs</code></td><td>+<code>pub mod llm;</code></td></tr>
+      <tr><td><span class="tag brand">修改</span></td><td><code>mox-ai-expert-svc/src/expert_traits.rs</code></td><td>新增 <code>local_consultant()</code>/<code>llm_consultant()</code>，<code>default_consultant()</code> 保持本地向后兼容</td></tr>
+      <tr><td><span class="tag brand">修改</span></td><td><code>mox-alliance-executor-svc/src/server.rs</code></td><td>Expert 模式改调 <code>llm_consultant()</code></td></tr>
+      <tr><td><span class="tag brand">修改</span></td><td><code>mox-alliance-scheduler-core/src/planner.rs</code></td><td>节点 description 嵌入任务描述（5 种模式）+ 新单测</td></tr>
+      <tr><td><span class="tag brand">修改</span></td><td><code>mox-alliance-scheduler-core/src/matching.rs</code></td><td>通用词过滤 + 复合词词典匹配 + 数学词典扩充 + 新回归测试</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:10px;color:var(--sub);font-size:13px;">注：所有改动均未提交 git；未触碰并发进程的 boot-config/experts.rs、common-proto/types.rs 等他人未提交工作。</p>
+</div>
+
+<!-- ==================== 遗留事项 ==================== -->
+<div class="card">
+  <h3>六、遗留事项与建议</h3>
+  <table>
+    <thead><tr><th style="width:60px;">优先级</th><th>事项</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag warn">P1</span></td><td>本地璇玑 mox_optimize 治理闸门在 LLM 模式下被绕过</td><td>LLM 路径直接输出，仅 LLM 失败时回退本地含闸门。是否需要保留前置治理，待用户确认。</td></tr>
+      <tr><td><span class="tag warn">P1</span></td><td>多 Provider 路由</td><td>当前仅 DeepSeek（环境已有 Key）。可扩展 OpenAI/Anthropic 路由与 fallback chain。</td></tr>
+      <tr><td><span class="tag brand">P2</span></td><td>scheduler 端暴露 /tasks/:id/nodes 与 /result 代理</td><td>当前节点/融合结果在 executor 端（3200），scheduler（3100）无对应路由。建议 scheduler 增加代理端点或在 get_task 响应中嵌入节点与融合结果。</td></tr>
+      <tr><td><span class="tag brand">P2</span></td><td>t8 集成测试修复</td><td>3 项预先存在的坏测试引用不存在的目录/crate 名，需更新为当前项目布局或删除。</td></tr>
+      <tr><td><span class="tag brand">P2</span></td><td>并发进程 boot-config 编译错误</td><td>experts.rs/types.rs 未提交工作引入编译错误，需并发进程修复后全工作区才能 cargo test --workspace。</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="text-align:center;color:var(--sub);font-size:12px;margin-top:24px;padding:16px;">
+  开发专家联盟 · 第六轮 P0 专项验证报告 ｜ 2026-09-01 ｜ 接入真实 LLM 全链路验收通过
+</div>
+
+</div>
+</body>
+</html>

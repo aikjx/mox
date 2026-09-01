@@ -37,3 +37,19 @@ expert_service:
 storage:
   mode: file                        # file（文件快照）| memory（纯内存）
   path: data/alliance_tasks.json
+
+# Nacos 配置中心（阶段二：把 yml 升格为配置中心）
+# 说明：
+#   1. 需在 Cargo.toml 为 mox-alliance-boot-config 启用 `nacos` feature 才生效；
+#   2. enabled=true 时，启动从 Nacos 拉取 data_id 对应远程完整配置，整体覆盖本地 yml（远程优先）；
+#   3. Nacos 不可达 → 告警并自动降级到本地 yml（离线兜底）；
+#   4. 认证（username/password）需 nacos-sdk 的 auth-by-http feature（当前默认未启用）。
+nacos:
+  enabled: false
+  server_addr: "127.0.0.1:8848"
+  namespace: ""                     # 空 = public
+  username: ""
+  password: ""
+  group: "DEFAULT_GROUP"
+  data_id: "mox-alliance-scheduler.yml"
+
