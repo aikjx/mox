@@ -127,7 +127,9 @@ impl SyslogSink {
                             stream
                                 .write_all(frame.as_bytes())
                                 .map_err(|e| AuditError::WriteFailed(e.to_string()))?;
-                            stream.write_all(b"\n").ok();
+                            stream
+                                .write_all(b"\n")
+                                .map_err(|e| AuditError::WriteFailed(e.to_string()))?;
                             return Ok(());
                         }
                         Err(_e) if retry < 3 => {
@@ -294,6 +296,6 @@ mod tests {
             h.join().expect("审计线程应正常结束（无死锁）");
         }
         // 最终 flush 不应死锁
-        sink.flush().ok();
+        let _ = sink.flush();
     }
 }

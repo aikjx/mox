@@ -37,10 +37,11 @@ use mox_alliance_executor_proto::types::ExecutorConfig;
 use crate::fusion::{FusionEngine, FusionInput, FusionItem, FusionOutput};
 
 /// 任务执行状态（内部完整状态）
-struct TaskExecutionState {
+pub(crate) struct TaskExecutionState {
     task: Task,
     plan: CollaborationPlan,
     nodes: HashMap<String, Node>,
+    #[allow(dead_code)] // 预留：任务级执行选项，供后续控制逻辑扩展使用
     options: ExecutionOptions,
     /// 节点执行结果（node_id -> result，供融合与结果获取）
     outputs: HashMap<String, NodeExecutionResult>,
@@ -51,6 +52,7 @@ struct TaskExecutionState {
 /// DAG 执行引擎实现
 pub struct DagEngineImpl {
     config: ExecutorConfig,
+    #[allow(dead_code)] // DI 装配：引擎持有执行器引用，当前由调度循环参数传递，预留直接访问入口
     node_executor: Arc<dyn NodeExecutor>,
     /// 任务执行状态（task_id -> state）
     states: Arc<RwLock<HashMap<Uuid, TaskExecutionState>>>,
@@ -60,11 +62,11 @@ pub struct DagEngineImpl {
 
 /// 控制命令
 #[derive(Debug)]
-enum ControlCommand {
+pub(crate) enum ControlCommand {
     Start {
-        task: Task,
-        plan: CollaborationPlan,
-        options: ExecutionOptions,
+        task: Box<Task>,
+        plan: Box<CollaborationPlan>,
+        options: Box<ExecutionOptions>,
     },
     Pause {
         task_id: Uuid,
@@ -84,7 +86,7 @@ enum ControlCommand {
 }
 
 impl DagEngineImpl {
-    pub fn new(
+    pub(crate) fn new(
         config: ExecutorConfig,
         node_executor: Arc<dyn NodeExecutor>,
     ) -> (Self, mpsc::UnboundedReceiver<ControlCommand>) {
@@ -117,7 +119,7 @@ impl DagEngineImpl {
     }
 
     /// 调度循环（在独立任务中运行）
-    pub async fn run_scheduler_loop(
+    pub(crate) async fn run_scheduler_loop(
         states: Arc<RwLock<HashMap<Uuid, TaskExecutionState>>>,
         node_executor: Arc<dyn NodeExecutor>,
         mut control_rx: mpsc::UnboundedReceiver<ControlCommand>,
@@ -144,7 +146,11 @@ impl DagEngineImpl {
         cmd: ControlCommand,
     ) {
         match cmd {
-            ControlCommand::Start { mut task, plan, options } => {
+            ControlCommand::Start { task, plan, options } => {
+                let mut task = *task;
+                let plan = *plan;
+                let options = *options;
+
                 let mut nodes_map = HashMap::new();
                 for node in &plan.nodes {
                     nodes_map.insert(node.node_id.clone(), node.clone());
@@ -471,9 +477,9 @@ impl DagEngine for DagEngineImpl {
         // 发送启动命令
         self.control_tx
             .send(ControlCommand::Start {
-                task: task.clone(),
-                plan,
-                options,
+                task: Box::new(task.clone()),
+                plan: Box::new(plan),
+                options: Box::new(options),
             })
             .map_err(|e| {
                 AllianceError::internal(format!("Failed to send start command: {}", e))

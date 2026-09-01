@@ -247,60 +247,18 @@ const typeFormRules = {
   type: [{ required: true, message: '请输入字典类型', trigger: 'blur' }]
 }
 
-// Mock 数据
-const mockDictTypes = [
-  { id: 1, name: '系统开关', type: 'sys_normal_disable', status: 1, remark: '系统通用启用/停用状态' },
-  { id: 2, name: '用户性别', type: 'sys_user_sex', status: 1, remark: '用户性别选项' },
-  { id: 3, name: '操作类型', type: 'sys_oper_type', status: 1, remark: '审计日志操作类型' },
-  { id: 4, name: '登录状态', type: 'sys_login_status', status: 1, remark: '登录日志状态' },
-  { id: 5, name: '数据状态', type: 'sys_data_status', status: 0, remark: '已停用测试字典' }
-]
-
-const mockDictDataMap = {
-  sys_normal_disable: [
-    { id: 101, dictType: 'sys_normal_disable', label: '正常', value: '1', sort: 1, tagType: 'success', status: 1, remark: '' },
-    { id: 102, dictType: 'sys_normal_disable', label: '停用', value: '0', sort: 2, tagType: 'danger', status: 1, remark: '' }
-  ],
-  sys_user_sex: [
-    { id: 201, dictType: 'sys_user_sex', label: '男', value: '1', sort: 1, tagType: 'primary', status: 1, remark: '' },
-    { id: 202, dictType: 'sys_user_sex', label: '女', value: '2', sort: 2, tagType: 'danger', status: 1, remark: '' },
-    { id: 203, dictType: 'sys_user_sex', label: '未知', value: '0', sort: 3, tagType: 'info', status: 1, remark: '' }
-  ],
-  sys_oper_type: [
-    { id: 301, dictType: 'sys_oper_type', label: '新增', value: '1', sort: 1, tagType: 'success', status: 1, remark: '' },
-    { id: 302, dictType: 'sys_oper_type', label: '修改', value: '2', sort: 2, tagType: 'warning', status: 1, remark: '' },
-    { id: 303, dictType: 'sys_oper_type', label: '删除', value: '3', sort: 3, tagType: 'danger', status: 1, remark: '' },
-    { id: 304, dictType: 'sys_oper_type', label: '查询', value: '4', sort: 4, tagType: 'info', status: 1, remark: '' },
-    { id: 305, dictType: 'sys_oper_type', label: '导出', value: '5', sort: 5, tagType: 'primary', status: 1, remark: '' },
-    { id: 306, dictType: 'sys_oper_type', label: '导入', value: '6', sort: 6, tagType: 'primary', status: 1, remark: '' },
-    { id: 307, dictType: 'sys_oper_type', label: '其他', value: '99', sort: 99, tagType: 'info', status: 1, remark: '' }
-  ],
-  sys_login_status: [
-    { id: 401, dictType: 'sys_login_status', label: '成功', value: '1', sort: 1, tagType: 'success', status: 1, remark: '' },
-    { id: 402, dictType: 'sys_login_status', label: '失败', value: '0', sort: 2, tagType: 'danger', status: 1, remark: '' }
-  ],
-  sys_data_status: []
-}
-
 async function loadDictTypes() {
   typeLoading.value = true
   try {
     const data = await getDictTypeList({ keyword: typeSearch.value.trim() })
     dictTypes.value = Array.isArray(data) ? data : (Array.isArray(data?.list) ? data.list : [])
-    if (!dictTypes.value.length) {
-      dictTypes.value = mockDictTypes
-    }
     // 自动选中第一个
     if (dictTypes.value.length && !currentDictType.value) {
       currentDictType.value = dictTypes.value[0]
       loadDictData()
     }
   } catch (e) {
-    dictTypes.value = mockDictTypes
-    if (!currentDictType.value && dictTypes.value.length) {
-      currentDictType.value = dictTypes.value[0]
-      dictDataList.value = mockDictDataMap[currentDictType.value.type] || []
-    }
+    console.warn('[AdminDict] 字典类型加载失败:', e.message)
   } finally {
     typeLoading.value = false
   }
@@ -406,11 +364,8 @@ async function loadDictData() {
     const data = await getDictDataList({ dictType: currentDictType.value.type })
     const list = Array.isArray(data) ? data : (Array.isArray(data?.list) ? data.list : [])
     dictDataList.value = list.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
-    if (!dictDataList.value.length) {
-      dictDataList.value = mockDictDataMap[currentDictType.value.type] || []
-    }
   } catch (e) {
-    dictDataList.value = mockDictDataMap[currentDictType.value.type] || []
+    console.warn('[AdminDict] 字典数据加载失败:', e.message)
   } finally {
     dataLoading.value = false
   }
@@ -504,11 +459,7 @@ async function handleMove(row, direction) {
     ElMessage.success('排序已更新')
     await loadDictData()
   } catch (e) {
-    // Mock 模式下也更新界面
-    ;[list[idx], list[targetIdx]] = [list[targetIdx], list[idx]]
-    list[idx].sort = newSort
-    list[targetIdx].sort = oldSort
-    dictDataList.value = [...list.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))]
+    ElMessage.error('排序更新失败：' + e.message)
   }
 }
 

@@ -708,10 +708,7 @@
                     v-for="(task, index) in taskOrchestration.subtasks"
                     :key="task.id"
                     class="orch-task-assign-card"
-                    :class="{ 
-                      'drag-over': expertDragOverTaskId === task.id,
-                      'status-' + task.status
-                    }"
+                    :class="['status-' + task.status, { 'drag-over': expertDragOverTaskId === task.id }]"
                     @dragover.prevent="onExpertDragOverTask($event, task)"
                     @dragleave="onExpertDragLeaveTask"
                     @drop="onExpertDropOnTask($event, task)"
@@ -1654,7 +1651,7 @@
             :disabled="!canStartDebate"
             @click="startDebate"
           >
-            <el-icon><Swords /></el-icon>
+            <el-icon><Flag /></el-icon>
             <span>开始辩论</span>
           </el-button>
         </div>
@@ -1929,7 +1926,7 @@ import {
   Folder, FolderOpened, Upload, Edit, CircleCheckFilled,
   Share, Link, Paperclip, Promotion, Loading, RefreshRight,
   UserFilled, SetUp, Pointer, Rank, Delete, CollectionTag,
-  Swords, Connection, Compass, DocumentCopy, Warning, Download,
+  Connection, Compass, DocumentCopy, Warning, Download,
   Top, Bottom
 } from '@element-plus/icons-vue'
 import { EXPERT_TYPES } from '@/constants/expert.constants'

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -398,8 +398,8 @@ mod tests {
     fn test_team_security_replace() {
         let reg = build_expert_registry();
         // registry 含 security & permission 专家
-        assert!(reg.get("security").is_some(), "registry must have security expert");
-        assert!(reg.get("permission").is_some(), "registry must have permission expert");
+        assert!(reg.contains_key("security"), "registry must have security expert");
+        assert!(reg.contains_key("permission"), "registry must have permission expert");
 
         let intent = fake_intent("code");  // 代码类 + conf>0.6 → 强制检查
         let res = optimize_team(&intent, &reg, 3, true); // is_sensitive=true 肯定替换

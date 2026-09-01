@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -139,6 +139,7 @@ fn default_team_size_4() -> usize { 4 }
 #[derive(Debug, Default, Clone)]
 pub struct AllianceEngine {
     /// 引擎启动时间戳（用于 metrics / 健康）
+    #[allow(dead_code)] // reserved: metrics/health in Task 2~5
     started_at: DateTime<Utc>,
 }
 
@@ -231,8 +232,8 @@ mod tests {
     #[test]
     fn phase_next_and_names_match_constants() {
         let mut p = AlliancePhase::Intent;
-        for i in 0..6 {
-            assert_eq!(p.name(), PHASE_NAMES[i]);
+        for &name in PHASE_NAMES.iter().take(6) {
+            assert_eq!(p.name(), name);
             p = p.next();
         }
         // 循环安全：next(Done) = Done

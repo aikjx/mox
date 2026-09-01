@@ -137,17 +137,6 @@ impl TaskSchedulerImpl {
         Ok(())
     }
 
-    /// 更新任务进度（内部方法）
-    fn update_task_progress(&self, task_id: Uuid, progress: f32) -> AllianceResult<()> {
-        let mut task = self
-            .tasks
-            .get(task_id)?
-            .ok_or_else(|| AllianceError::new(AllianceErrorCode::TaskNotFound, format!("Task {} not found", task_id)))?;
-        task.progress = progress;
-        self.tasks.save(&task)?;
-        Ok(())
-    }
-
     /// 从执行器同步任务状态（内部方法）
     async fn sync_task_status_from_executor(
         &self,
@@ -168,22 +157,21 @@ impl TaskSchedulerImpl {
                 }
                 task.progress = exec_status.progress;
                 // 根据执行进度推断任务状态
-                if task.status == TaskStatus::Running {
-                    if exec_status.total_nodes > 0
-                        && exec_status.completed_nodes + exec_status.failed_nodes
-                            == exec_status.total_nodes
-                    {
-                        // 所有节点都完成了
-                        if exec_status.failed_nodes > 0 {
-                            task.status = TaskStatus::Failed;
-                        } else {
-                            task.status = TaskStatus::Completed;
-                        }
-                        task.completed_at = Some(chrono::Utc::now());
-                        if let Some(started) = task.started_at {
-                            let duration = chrono::Utc::now() - started;
-                            task.duration_ms = Some(duration.num_milliseconds());
-                        }
+                if task.status == TaskStatus::Running
+                    && exec_status.total_nodes > 0
+                    && exec_status.completed_nodes + exec_status.failed_nodes
+                        == exec_status.total_nodes
+                {
+                    // 所有节点都完成了
+                    if exec_status.failed_nodes > 0 {
+                        task.status = TaskStatus::Failed;
+                    } else {
+                        task.status = TaskStatus::Completed;
+                    }
+                    task.completed_at = Some(chrono::Utc::now());
+                    if let Some(started) = task.started_at {
+                        let duration = chrono::Utc::now() - started;
+                        task.duration_ms = Some(duration.num_milliseconds());
                     }
                 }
                 self.tasks.save(&task)?;
@@ -498,7 +486,7 @@ impl TaskScheduler for TaskSchedulerImpl {
             .filter(|t| t.tenant_id == tenant_id)
             .collect();
         // 新任务优先展示
-        result.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        result.sort_by_key(|t| std::cmp::Reverse(t.created_at));
         Ok(result)
     }
 
@@ -516,7 +504,7 @@ mod tests {
     use crate::executor_bridge::MockExecutorBridge;
     use crate::matcher::RuleBasedExpertMatcher;
     use mox_alliance_common_proto::{
-        AllianceMode, FusionStrategy, Node, NodeStatus, TaskPriority,
+        AllianceMode, FusionStrategy, TaskPriority,
     };
     use mox_alliance_executor_proto::ExecutionStatus;
 

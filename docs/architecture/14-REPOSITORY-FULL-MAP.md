@@ -106,7 +106,7 @@
 
 ### 2.7 `scripts/` — 统一运维脚本
 
-**主入口** `manage.py`（服务生命周期 + Web 面板 + 公理验证）。子目录：`ci/`（CI 脚本·git 打 tag）· `deploy/`（Windows 一键启动 start.ps1、smoke_test.sh、KG 存储部署、灰度预热）· `tests/`（T10/T11/T17/T19/T1 系列验收、企业级 7 闸门、8 大规范测试执行）· `validation/`（单节点校验等）。
+**主入口** `server-manage.py`（服务生命周期 + Web 面板 + 公理验证；`manage.py` 为兼容别名）。子目录：`ci/`（CI 脚本·git 打 tag）· `deploy/`（Windows 一键启动 start.ps1、smoke_test.sh、KG 存储部署、灰度预热）· `tests/`（T10/T11/T17/T19/T1 系列验收、企业级 7 闸门、8 大规范测试执行）· `validation/`（单节点校验等）。
 
 ### 2.8 `tools/` — 开发/运维工具脚本
 
@@ -289,7 +289,7 @@
 | 架构一致性 | `cargo metadata | jq '.packages | length'`（应为 73） |
 | 一键部署 | `docker-compose up -d --build` 或 `python tools/deploy.py local --start` |
 | 打包发布 | `python tools/package.py --version 1.0.0 --with-data` |
-| 运维面板 | `python scripts/manage.py` |
+| 运维面板 | `python scripts/server-manage.py` |
 | 文档导航 | `docs/README.md` → `docs/enterprise/00-INDEX.md` → `18 TOP-MASTER` |
 
 ---

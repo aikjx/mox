@@ -47,3 +47,6 @@ path = "examples/profile_deep_chain.rs"
 [[example]]
 name = "cem_probe"
 path = "examples/cem_probe.rs"
+
+[lints]
+workspace = true

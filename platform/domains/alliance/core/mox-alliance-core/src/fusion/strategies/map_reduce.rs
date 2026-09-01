@@ -233,7 +233,7 @@ impl MapReduceFusion {
             PartitionStrategy::Sequential => {
                 // 顺序切分
                 let mut partitions: Vec<Vec<(f64, f64)>> = vec![Vec::new(); k];
-                let chunk_size = (n + k - 1) / k; // 向上取整
+                let chunk_size = n.div_ceil(k); // 向上取整
 
                 for (i, &item) in values.iter().enumerate() {
                     let p = (i / chunk_size).min(k - 1);
@@ -279,10 +279,8 @@ impl MapReduceFusion {
                 for (idx, weight) in indexed {
                     // 分配到当前总权重最小的组
                     let mut min_p = 0;
-                    let mut min_w = partition_weights[0];
-                    for p in 1..k {
-                        if partition_weights[p] < min_w {
-                            min_w = partition_weights[p];
+                    for (p, &w) in partition_weights.iter().enumerate().skip(1) {
+                        if w < partition_weights[min_p] {
                             min_p = p;
                         }
                     }
@@ -334,7 +332,7 @@ mod tests {
         let result = fusion.fuse_scalar(&values).unwrap();
         assert!(result > 0.0);
         // 结果应该在输入值范围内
-        assert!(result >= 10.0 && result <= 40.0);
+        assert!((10.0..=40.0).contains(&result));
     }
 
     #[test]

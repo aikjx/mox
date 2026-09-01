@@ -298,7 +298,7 @@ mod tests {
         let merged = cfg.merge_into(builtin);
         assert_eq!(merged.len(), 1);
         assert_eq!(merged[0].name, "代码编程专家(覆盖)");
-        assert_eq!(merged[0].enabled, false);
+        assert!(!merged[0].enabled);
         // 未覆盖字段保留
         assert_eq!(merged[0].expert_id, "code-expert-001");
         assert_eq!(merged[0].tags, vec!["code".to_string()]);

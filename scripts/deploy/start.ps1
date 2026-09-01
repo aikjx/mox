@@ -5,7 +5,7 @@
 
 .DESCRIPTION
   · 自动检测 py/python 解释器
-  · 内部调用 scripts/manage.py bootstrap（预检 → 清理残留 → 可选启动服务 → 管理面板）
+  · 内部调用 scripts/server-manage.py bootstrap（预检 → 清理残留 → 可选启动服务 → 管理面板）
   · 默认：仅拉起 Web 管理面板，项目服务 (api / frontend) 需在页面上按需 ▶ 启动
   · 提供 start / stop / restart / verify / dashboard 常用动作
 
@@ -106,7 +106,7 @@ $($C.C)============================================================
   Write-Host "  解释器: $($C.B)$($PY.Bin) $($PY.ArgsPrefix -join ' ')$($C._)"
 
   function Invoke-Manage([string[]]$ManageArgs) {
-    $all = @($PY.ArgsPrefix) + @("$RepoRoot\scripts\manage.py") + @($ManageArgs)
+    $all = @($PY.ArgsPrefix) + @("$RepoRoot\scripts\server-manage.py") + @($ManageArgs)
     Write-Host "  $($C.C)→$($C._) & $($PY.Bin) $($all -join ' ')"
     & $PY.Bin @all
     return $LASTEXITCODE
@@ -208,7 +208,7 @@ $($C.G)============================================================$($C._)
    · API      : $($C.B)http://localhost:$apiPort/health$($C._)   （需在管理面板启动 api 服务后可用）
    · Frontend : $($C.B)http://localhost:$fePort/$($C._)         （需在管理面板启动 frontend 服务后可用）
    · 停止所有 : $($C.C).\scripts\start.ps1 Stop$($C._)
-   · 运维 CLI : $($C.C)& $($PY.Bin) scripts\manage.py list|status|logs|stop$($C._)
+   · 运维 CLI : $($C.C)& $($PY.Bin) scripts\server-manage.py list|status|logs|stop$($C._)
    · 旧行为启动（脚本同步启动所有服务）: $($C.C).\scripts\start.ps1 Start -WithServices$($C._)
 $($C.G)============================================================$($C._)
 "@

@@ -141,6 +141,30 @@ members = [
 ]
 resolver = "2"
 
+# ================================================================
+# Workspace-level Clippy gate (enterprise code quality baseline)
+# Migrated from platform/clippy.toml: clippy.toml only supports
+# threshold configs; lint levels (allow/deny/warn) must be declared
+# in the [workspace.lints.clippy] table (below).
+# Run: cargo clippy --workspace --all-targets -- -D warnings
+# ================================================================
+[workspace.lints.clippy]
+# allow: known-acceptable (intentional design / historical style)
+new_without_default = "allow"
+too_many_arguments = "allow"
+type_complexity = "allow"
+module_inception = "allow"
+# zero_prefixed_literal: error codes use two-segment format (01-001); leading zeros are semantic
+zero_prefixed_literal = "allow"
+# derivable_impls: hand-written impl is intentional (mox-error ErrorDomain)
+derivable_impls = "allow"
+# deny: must fix (correctness/safety)
+# NOTE: lint groups correctness/suspicious are enforced via gate command:
+#   cargo clippy --workspace --all-targets -- -D warnings -D clippy::correctness -D clippy::suspicious
+out_of_bounds_indexing = "deny"
+unused_result_ok = "deny"
+duplicate_mod = "deny"
+
 [workspace.package]
 version = "3.0.0-ai-powered"
 edition = "2021"

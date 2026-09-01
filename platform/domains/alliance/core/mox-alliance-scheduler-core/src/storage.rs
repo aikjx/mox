@@ -345,7 +345,7 @@ pub fn temp_file_repository(dir: impl AsRef<Path>) -> AllianceResult<Arc<dyn Tas
 mod tests {
     use super::*;
 
-    fn make_task(id: Uuid) -> Task {
+    fn make_task(_id: Uuid) -> Task {
         Task::new(Uuid::new_v4(), Uuid::new_v4(), "t".to_string(), "d".to_string())
     }
 

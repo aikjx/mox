@@ -288,7 +288,13 @@
 - **e2e-2** watch 热更新：HTTP 发布追加标记版本 → `add_listener` 回调更新缓存 + `changed()` 广播命中标记。
 - 过程中修复一个真实 bug：`CacheListener::notify` 由 nacos-sdk 客户端线程池回调（非 tokio runtime 上下文），原用 tokio `RwLock::blocking_write()` 会 panic「Cannot block the current thread」，已改用 **std::sync::Mutex**（任意线程可锁）。
 
-**说明**：scheduler-svc/executor-svc 默认**不启用** nacos feature（保持轻量，避免 SDK 重依赖）；部署配置中心时开启 `nacos` feature + yml `nacos.enabled: true`。真实 Nacos 服务端连通性已被上述 e2e 证明。
+**说明（V1.4 更新）**：scheduler-svc / executor-svc **已真正接入配置中心启动**——两 svc `Cargo.toml` 已启用 `mox-alliance-boot-config` 的 `nacos` feature，`main.rs` 调用 `load_scheduler_with_nacos` / `load_executor_with_nacos`（本地 yml 引导 → Nacos 远程整体覆盖 → env 最高）。默认 `yml nacos.enabled: false` 离线可用；部署时置 true 即走配置中心。
+
+**真实服务端 e2e（2026-09-01，rnacos 0.8.7 实测通过，`tools/alliance_nacos_e2e.py`）**：
+发布 `mox-alliance-scheduler-e2e.yml`（远程 `server.port=3155`），本地引导 yml 声明 `3199` 并 `nacos.enabled=true`，启动 scheduler-svc：
+- 服务日志 `已从 Nacos 拉取远程配置，整体覆盖本地 yml`，**实际监听 3155**（本地 3199 未被监听）→ 配置中心覆盖生效；
+- 注册中心实例列表含 `mox-alliance-scheduler 127.0.0.1:3155`（metadata `protocol=http`/`domain=alliance`）；
+- 停止后实例自动移除（deregister 生效）。
 
 ### 7.12 executor 生产专家模式：真实 LLM 调用链（2026-09-01）
 
@@ -304,7 +310,36 @@
 
 **诚实声明**：LLM 响应来自本地 mock OpenAI 服务（无真实 API Key），但 **HTTP 请求构造、认证、消息格式、响应解析走真实生产代码路径**；接入真实 Key 后同一链路即接真实模型。
 
+### 7.13 Nacos 阶段三：NamingService 注册中心（V1.4 新增，2026-09-01）
+
+> 服务启动把自己注册到 Nacos，供网关/其他服务按服务名发现。基于官方 nacos-sdk-rust 0.8 的 naming 能力（boot-config naming feature，隐含 nacos）。
+
+| 项 | 说明 |
+|---|---|
+| 模块 | boot-config/src/naming.rs（feature=naming）：NamingSection（始终可解析，默认 enabled=false）+ NamingRegistry |
+| NamingSection | enabled / service_name / group / ip / port / weight / metadata[]（key=value） |
+| 连接 | NamingRegistry::connect(&nacos, &naming)：nacos.enabled=false 或 naming.enabled=false 或空 service_name -> Ok(None)；连接失败 -> Ok(None) 告警降级（注册中心不可用不阻断服务启动） |
+| 注册 | register()：register_instance(service_name, group, ServiceInstance)；失败仅告警 |
+| 注销 | deregister()：服务退出优雅注销（避免僵尸实例） |
+| 接线 | scheduler-svc / executor-svc main.rs：connect -> register() -> server.run() -> deregister() |
+| yml | config/alliance-scheduler.yml / alliance-executor.yml 新增 naming: 段（enabled=false 默认） |
+| 注意 | nacos-sdk 0.8 的 NamingService 是具体 struct（非 trait），builder build().await 直接返回；ServiceInstance 含 ip/port:i32/weight/healthy/enabled/ephemeral/cluster_name/service_name/metadata |
+
+**真实服务端 e2e（rnacos 0.8.7，tests/naming_e2e.rs --ignored 全通过）**：
+- e2e-1 register 真实注册 -> HTTP 实例列表查到 127.0.0.1:3100，metadata protocol=http/domain=alliance 命中；
+- e2e-2 deregister 真实注销 -> 实例从列表移除。
+- 并已并入 tools/alliance_nacos_e2e.py 完整链路（配置中心 + 注册中心一次验证）。
+
+### 7.14 语音 3717->30010 迁移核验（V1.4 更新，2026-09-01）
+
+> 如实结论：语音端口迁移实际早已完成（非本轮新做）。核验证据：
+> - docs/ports/PORT-REGISTRY.md 第 215 行声明「已完结（2026-09-01）…已完成并通过 verify-ports.py」；
+> - 全库扫描：活动代码 3717 仅剩 5 个模型二进制词表文件（非端口）；30010 遍布 17 个活动文件（mox-voice-desktop-app/src/main.rs 11 处、voice_server.rs 4 处绑定 127.0.0.1:30010、verify_tts_rust_fullstack.py 7 处等）；
+> - verify-ports.py 实测：ERROR=0，30010 登记 RUNTIME（引用 14 处）。
+> - 3 个 WARN（8999 / 9848 / 10848）为本轮 e2e 新增端口，已登记 PORT-REGISTRY 3.6 TEST-ONLY，复跑清零。
+
 ---
+
 
 ## 附录A 快速记忆口诀
 
@@ -313,4 +348,4 @@
 
 ---
 
-*PORT-NORM-001 V1.3 · 开发联盟 R · 2026-09-01*
+*PORT-NORM-001 V1.4 · 开发联盟 R · 2026-09-01*

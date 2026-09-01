@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -326,7 +326,7 @@ impl GraphClient {
         for _ in 0..count {
             let id = s.next_node_id;
             s.next_node_id += 1;
-            let community = (id % 7) as i64;
+            let community = id % 7;
             let labels = ["User", "Product", "Order", "Account"];
             let typs = ["Person", "Item", "Event", "Org"];
             let n = Self::make_node(

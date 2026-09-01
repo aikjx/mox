@@ -853,9 +853,10 @@ mod tests {
 
     #[tokio::test]
     async fn execution_failure_cascades() {
-        let mut executor = MockNodeExecutor::default();
-        executor.should_fail = true;
-        executor.delay_ms = 5;
+        let executor = MockNodeExecutor {
+            should_fail: true,
+            delay_ms: 5,
+        };
         let executor = Arc::new(executor);
         let engine = DagExecutionEngine::new(executor).with_default_max_retries(0);
 
@@ -877,9 +878,10 @@ mod tests {
 
     #[tokio::test]
     async fn retry_on_failure() {
-        let mut executor = MockNodeExecutor::default();
-        executor.should_fail = true;
-        executor.delay_ms = 5;
+        let executor = MockNodeExecutor {
+            should_fail: true,
+            delay_ms: 5,
+        };
         let executor = Arc::new(executor);
         let engine = DagExecutionEngine::new(executor).with_default_max_retries(2);
 
@@ -900,8 +902,10 @@ mod tests {
 
     #[tokio::test]
     async fn cancel_execution() {
-        let mut executor = MockNodeExecutor::default();
-        executor.delay_ms = 500; // 长延迟，确保有时间取消
+        let executor = MockNodeExecutor {
+            delay_ms: 500, // 长延迟，确保有时间取消
+            ..Default::default()
+        };
         let executor = Arc::new(executor);
         let engine = DagExecutionEngine::new(executor);
 

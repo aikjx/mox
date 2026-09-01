@@ -42,7 +42,7 @@
 
 ## 第3章 端口分配细则
 
-### 3.1 RUNTIME —— 统一运维服务（`platform_config.json` 登记，`manage.py` 管理）
+### 3.1 RUNTIME —— 统一运维服务（`platform_config.json` 登记，`server-manage.py` 管理）
 
 | 端口 | 服务 key | 名称 | 协议 | 绑定 | 健康检查 | 状态 |
 |---|---|---|---|---|---|---|

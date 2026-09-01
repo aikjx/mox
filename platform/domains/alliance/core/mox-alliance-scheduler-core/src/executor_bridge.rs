@@ -528,7 +528,7 @@ pub use tests::MockExecutorBridge;
 pub mod tests {
     use super::*;
     use mox_alliance_common_proto::{
-        AllianceMode, FusionStrategy, Node, NodeStatus, TaskPriority,
+        AllianceMode, FusionStrategy, Node, NodeStatus,
     };
 
     // ─── Mock 实现 ────────────────────────────────────────────────────────

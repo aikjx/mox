@@ -21,3 +21,6 @@ http = { workspace = true, optional = true }
 [features]
 default = ["axum-integration"]
 axum-integration = ["dep:axum", "dep:http"]
+
+[lints]
+workspace = true

@@ -46,7 +46,9 @@ impl ConfigChangeListener for CacheListener {
 /// Nacos 配置中心存储：绑定单个 dataId，支持 watch 热更新。
 pub struct NacosConfigStore {
     name: &'static str,
+    #[allow(dead_code)] // 配置溯源：记录绑定的 dataId/group，供诊断与扩展使用
     data_id: String,
+    #[allow(dead_code)]
     group: String,
     cache: Arc<std::sync::Mutex<Option<String>>>,
     changed: watch::Receiver<Option<String>>,

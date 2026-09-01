@@ -373,9 +373,11 @@ mod tests {
     // -- 类型别名验证 --
 
     #[test]
+    #[allow(clippy::unwrap_used, clippy::unnecessary_literal_unwrap)] // test: literal Ok unwrap is the assertion
     fn expert_result_type_alias() {
         let r: ExpertResult<i32> = Ok(42);
-        assert_eq!(r.unwrap(), 42);
+        let v = r.expect("should be Ok");
+        assert_eq!(v, 42);
 
         let err: ExpertResult<i32> = Err(expert::ExpertErrors::NOT_FOUND());
         assert!(err.is_err());
@@ -446,7 +448,7 @@ mod tests {
         let e5 = intent::IntentErrors::EMPTY_INPUT();
         let e6 = algo_analysis::AlgoAnalysisErrors::EMPTY_INPUT();
 
-        let prefixes = vec![
+        let prefixes = [
             &e1.code[..4],   // AI10
             &e2.code[..4],   // AI11
             &e3.code[..4],   // AI12

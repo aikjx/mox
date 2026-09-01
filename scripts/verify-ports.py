@@ -89,6 +89,9 @@ CANONICAL: dict[int, tuple[str, str]] = {
     9781: ("TEST", "kg-meta-core 存储宿主测试"),
     9998: ("TEST", "legacy backend-rust 网关 target 测试"),
     9999: ("TEST", "legacy backend-rust 网关 target 测试"),
+    8999: ("TEST", "alliance executor expert e2e：mock OpenAI 兼容服务（tools/mock_openai.py）"),
+    3155: ("TEST", "alliance Nacos 配置中心 e2e 远程端口（tools/alliance_nacos_e2e.py 专用）"),
+    3199: ("TEST", "alliance Nacos 配置中心 e2e 本地引导端口（tools/alliance_nacos_e2e.py 专用）"),
     12345: ("TEST", "glacier-adapter 测试 endpoint"),
     13130: ("TEST", "xiaobai_voice 语音代理 WS 测试"),
     19601: ("TEST", "kg-meta-core 集群测试"), 19602: ("TEST", "kg-meta-core 集群测试"),
@@ -117,6 +120,8 @@ CANONICAL: dict[int, tuple[str, str]] = {
     5432: ("THIRD", "PostgreSQL"), 54321: ("THIRD", "KingbaseES"),
     7480: ("THIRD", "Ceph RGW"), 7687: ("THIRD", "Neo4j Bolt"),
     8200: ("THIRD", "raft（mox-dr）"), 8848: ("THIRD", "Nacos"),
+    9848: ("THIRD", "rnacos（Nacos Rust 服务端）gRPC 端口"),
+    10848: ("THIRD", "rnacos 独立控制台端口"),
     9090: ("THIRD", "Prometheus"), 9093: ("THIRD", "Alertmanager"),
     6006: ("THIRD", "Storybook（dev）"), 8888: ("THIRD", "前端 Web 搜索服务占位"),
     7688: ("THIRD", "mox-dr 部署映射 7688:7687（Neo4j Bolt 备用映射）"),
@@ -133,7 +138,8 @@ ALLOWED_LEGACY_REFS = {
 NOISE_CTX = re.compile(
     r"setTimeout|timeout\?|sampleRate|uptime_ms|USER\s+\d+:\d+|ISO/IEC|returncode|"
     r"ESTABLISHED|LISTENING\s+\(|time\.time\(\)|trace_id|app_key|GRPCPort|ms_uptime|"
-    r"status:|\bstatus=\"|\[\s*:\d{2,5}\s*\]", re.I
+    r"status:|\bstatus=\"|\[\s*:\d{2,5}\s*\]|"
+    r"[A-Za-z][\w.-]*\.(vue|rs|ts|tsx|js|jsx|py|java|go|c|h|cpp|hpp|rb|php|kt|swift):\d{3,5}", re.I
 )
 
 # platform_config.json 中 RUNTIME 服务的期望端口（单一事实源校验）
@@ -152,7 +158,8 @@ SCAN_ROOTS = ["platform", "projects", "frontend-ui", "scripts", "config", "deplo
               "Cargo.toml", "deny.toml", "platform_config.json"]
 PRUNE_DIRS = {"node_modules", "dist", "build", "target", "__pycache__", ".venv",
               "venv", "third_party", "playwright-report", "test-results", ".storybook",
-              "release-pkg", "temp", "snap", ".cache", "models", "downloads"}
+              "release-pkg", "temp", "snap", ".cache", "models", "downloads",
+              "nacos_db"}
 # 跳过噪声文件（日志/构建输出/压缩库/二进制/历史快照）
 SKIP_EXT = {".log", ".err", ".out", ".jsonl", ".min.js", ".min.css", ".map", ".bak",
             ".bak_mojibake", ".pyc", ".exe", ".dll", ".pdb", ".woff", ".woff2", ".ttf",

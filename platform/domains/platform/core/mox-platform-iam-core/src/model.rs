@@ -263,3 +263,115 @@ pub struct ScopeRule {
     pub expression: Option<String>,
     pub dp_codes: Vec<String>,
 }
+
+// ============================================================
+// 系统管理扩展模型（sys_* 表 16-22）
+// ============================================================
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SysPost {
+    pub post_id: String,
+    pub tenant_id: String,
+    pub post_code: String,
+    pub post_name: String,
+    pub dept_id: Option<String>,
+    pub sort_order: Option<i64>,
+    pub status: String,
+    pub remark: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SysDictType {
+    pub dict_id: String,
+    pub tenant_id: String,
+    pub dict_name: String,
+    pub dict_type: String,
+    pub status: String,
+    pub remark: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SysDictData {
+    pub dict_code: String,
+    pub tenant_id: String,
+    pub dict_sort: Option<i64>,
+    pub dict_label: String,
+    pub dict_value: String,
+    pub dict_type: String,
+    pub css_class: Option<String>,
+    pub list_class: Option<String>,
+    pub is_default: Option<String>,
+    pub status: String,
+    pub remark: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SysConfig {
+    pub config_id: String,
+    pub tenant_id: String,
+    pub config_name: String,
+    pub config_key: String,
+    pub config_value: Option<String>,
+    pub config_type: Option<String>,
+    pub status: String,
+    pub remark: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SysOperLog {
+    pub oper_id: String,
+    pub tenant_id: String,
+    pub title: Option<String>,
+    pub business_type: Option<i64>,
+    pub method: Option<String>,
+    pub request_method: Option<String>,
+    pub operator_type: Option<i64>,
+    pub oper_name: Option<String>,
+    pub dept_name: Option<String>,
+    pub oper_url: Option<String>,
+    pub oper_ip: Option<String>,
+    pub oper_location: Option<String>,
+    pub oper_param: Option<String>,
+    pub json_result: Option<String>,
+    pub status: Option<i64>,
+    pub error_msg: Option<String>,
+    pub oper_time: String,
+    pub cost_time: Option<i64>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SysLoginLog {
+    pub info_id: String,
+    pub tenant_id: String,
+    pub user_name: Option<String>,
+    pub ipaddr: Option<String>,
+    pub login_location: Option<String>,
+    pub browser: Option<String>,
+    pub os: Option<String>,
+    pub status: Option<String>,
+    pub msg: Option<String>,
+    pub login_time: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SysApiKey {
+    pub key_id: String,
+    pub tenant_id: String,
+    pub name: String,
+    pub api_key: String,
+    pub user_id: Option<String>,
+    pub scopes: Option<String>,
+    pub status: String,
+    pub expires_at: Option<String>,
+    pub last_used_at: Option<String>,
+    pub created_at: String,
+    pub revoked_at: Option<String>,
+}

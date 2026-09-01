@@ -227,7 +227,6 @@ pub fn has_path(nodes: &[Node], from: &str, to: &str) -> AllianceResult<bool> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::Utc;
 
     fn make_node(id: &str, deps: Vec<&str>) -> Node {
         Node {

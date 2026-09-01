@@ -758,6 +758,30 @@ fn parse_host_port(url: &str) -> Result<(String, u16), String> {
     Ok((host, port))
 }
 
+/// 将全局配置中模块未显式声明的 provider 继承到模块配置（回退到全局默认语义）。
+///
+/// 模块的 primary_provider 与 allback_chain 可引用全局默认 provider（如 anthropic/qwen），
+/// 此时从全局 provider_options 补齐到模块级，使模块配置自洽且可独立校验。
+fn inherit_global_providers(llm: &mut ModuleLlmConfig, global: &GlobalLlmConfig) {
+    let mut needed: Vec<String> = Vec::new();
+    if !llm.primary_provider.is_empty() {
+        needed.push(llm.primary_provider.clone());
+    }
+    for f in &llm.fallback_chain {
+        needed.push(f.clone());
+    }
+    for pid in needed {
+        if llm.provider_options.iter().any(|p| p.provider_id == pid) {
+            continue;
+        }
+        if let Some(gp) = global.provider_options.iter().find(|p| p.provider_id == pid) {
+            llm.provider_options.push(gp.clone());
+        }
+    }
+}
+
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -906,29 +930,5 @@ mod tests {
         let msg = result.unwrap_or_else(|e| panic!("Graph 连通性应通过，实际失败：{e}"));
         assert!(msg.contains("可达"), "消息应含可达，实际：{msg}");
     }
-
-
-
 }
 
-/// 将全局配置中模块未显式声明的 provider 继承到模块配置（回退到全局默认语义）。
-///
-/// 模块的 primary_provider 与 allback_chain 可引用全局默认 provider（如 anthropic/qwen），
-/// 此时从全局 provider_options 补齐到模块级，使模块配置自洽且可独立校验。
-fn inherit_global_providers(llm: &mut ModuleLlmConfig, global: &GlobalLlmConfig) {
-    let mut needed: Vec<String> = Vec::new();
-    if !llm.primary_provider.is_empty() {
-        needed.push(llm.primary_provider.clone());
-    }
-    for f in &llm.fallback_chain {
-        needed.push(f.clone());
-    }
-    for pid in needed {
-        if llm.provider_options.iter().any(|p| p.provider_id == pid) {
-            continue;
-        }
-        if let Some(gp) = global.provider_options.iter().find(|p| p.provider_id == pid) {
-            llm.provider_options.push(gp.clone());
-        }
-    }
-}

@@ -72,7 +72,7 @@
               从模板复制
             </el-button>
             <el-button size="small" plain @click="compareWithDefault">
-              <el-icon><Comparison /></el-icon>
+              <el-icon><DataAnalysis /></el-icon>
               对比默认配置
             </el-button>
           </div>
@@ -517,7 +517,7 @@
                       class="variable-item"
                       @click="copyVariable(v.name)"
                     >
-                      <code class="var-code">{{ '{{' + v.name + '}}' }}</code>
+                      <code class="var-code">{{ renderVar(v.name) }}</code>
                       <span class="var-desc">{{ v.description }}</span>
                       <el-tag size="small" :type="v.type === 'system' ? 'info' : 'success'" effect="plain">
                         {{ v.type === 'system' ? '系统' : '自定义' }}
@@ -1730,7 +1730,7 @@
                           class="variable-item"
                         >
                           <el-tag size="small" :type="v.type === 'system' ? 'info' : 'success'" effect="plain">{{ v.type === 'system' ? '系统' : '自定义' }}</el-tag>
-                          <span class="var-name">{{ '{{' + v.name + '}}' }}</span>
+                          <span class="var-name">{{ renderVar(v.name) }}</span>
                           <span class="var-desc">{{ v.description }}</span>
                           <el-button size="small" text type="danger" @click="removePromptVariable(idx)">
                             <el-icon><Delete /></el-icon>
@@ -2074,7 +2074,7 @@
 import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Setting, User, Plus, MagicStick, DocumentCopy, Comparison, Upload,
+  Setting, User, Plus, MagicStick, DocumentCopy, DataAnalysis, Upload,
   Delete, Edit, VideoPlay, RefreshRight, Top, Bottom, ArrowDown,
   RefreshLeft, Download, View, Check, Promotion, CircleCheck,
   Folder, Connection, Loading, CircleClose, Close, Clock, Star
@@ -3058,6 +3058,11 @@ function copyVariable(name) {
   }).catch(() => {
     ElMessage.info(`变量: ${text}`)
   })
+}
+
+// 模板中展示变量占位符（{{xxx}}），避免在插值表达式里直接书写嵌套大括号
+function renderVar(name) {
+  return '{{' + name + '}}'
 }
 
 function formatPrompt(type) {

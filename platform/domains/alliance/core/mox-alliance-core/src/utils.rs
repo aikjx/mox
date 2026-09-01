@@ -70,7 +70,8 @@ mod tests {
 
     #[test]
     fn test_safe_parse_f64() {
-        assert_eq!(safe_parse_f64("3.14"), Some(3.14));
+        let parsed = safe_parse_f64("1.23");
+        assert_eq!(parsed, Some(1.23));
         assert_eq!(safe_parse_f64("  42  "), Some(42.0));
         assert_eq!(safe_parse_f64("abc"), None);
         assert_eq!(safe_parse_f64("NaN"), None);

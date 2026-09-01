@@ -165,7 +165,7 @@
     }
   },
   "project_registry": {
-    "_comment": "全量项目目录清单，供 manage.py list-projects / dashboard 展示；type: service(可启动服务)|library(库/SDK)|artifact(测试产物)|task(一次性任务)",
+    "_comment": "全量项目目录清单，供 server-manage.py list-projects / dashboard 展示；type: service(可启动服务)|library(库/SDK)|artifact(测试产物)|task(一次性任务)",
     "core_platform": {
       "type": "service",
       "path": "platform/backend-rust",
@@ -308,9 +308,9 @@
     }
   },
   "script_catalog": {
-    "_comment": "scripts/ 目录分类索引，供 manage.py scripts 子命令展示",
+    "_comment": "scripts/ 目录分类索引，供 server-manage.py scripts 子命令展示",
     "core": {
-      "path": "scripts/manage.py",
+      "path": "scripts/server-manage.py",
       "description": "统一运维入口（服务生命周期 + Web 面板 + 公理验证）"
     },
     "ci": {

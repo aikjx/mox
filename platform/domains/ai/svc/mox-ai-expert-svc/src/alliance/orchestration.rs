@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -40,6 +40,8 @@ pub enum OrchestrationStrategy {
 }
 
 impl OrchestrationStrategy {
+    // 淇濈暀鍥烘湁 from_str锛堝唴閮ㄨ涔夛紝闈?FromStr trait锛夛紝鏄惧紡璞佸厤 should_implement_trait
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "sequential" | "seq" => Self::Sequential,

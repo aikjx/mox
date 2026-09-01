@@ -9,7 +9,9 @@
 //! 3. 把最终答案归一化为 `ConsultReport`（steps=推理轨迹、score=模型自评、vetoed=是否否决）；
 //! 4. 无 API Key 或 LLM 调用失败时回退本地 `ExpertServiceImpl`（保证离线可用、优雅降级）。
 
-use super::chat::{ChatClient, ChatMessage, LlmConfig, OpenAiChatClient};
+use super::chat::{ChatClient, LlmConfig, OpenAiChatClient};
+#[cfg(test)]
+use super::chat::ChatMessage;
 use super::react::{run_react, ReactConfig, ReactResult};
 use super::tools::{ExpertLookupTool, ToolRegistry};
 use crate::expert_traits::ExpertConsultant;
@@ -121,9 +123,7 @@ pub fn react_to_report(id: &str, r: &ReactResult, model: &str) -> ConsultReport 
     let answer_line = r
         .final_answer
         .lines()
-        .map(|l| l.trim())
-        .filter(|l| !l.is_empty() && !l.starts_with("结论评分") && !l.starts_with("是否否决"))
-        .next()
+        .map(|l| l.trim()).find(|l| !l.is_empty() && !l.starts_with("结论评分") && !l.starts_with("是否否决"))
         .unwrap_or("")
         .to_string();
     if !answer_line.is_empty() && !steps.contains(&answer_line) {
@@ -385,10 +385,10 @@ mod tests {
 
     #[test]
     fn parse_veto_variants() {
-        assert_eq!(parse_veto("结论评分：0.5\n是否否决：是\n原因…").0, true);
-        assert_eq!(parse_veto("结论评分：0.5\n是否否决：否").0, false);
-        assert_eq!(parse_veto("该方案不可行，无法落地").0, true);
-        assert_eq!(parse_veto("结论正常。").0, false);
+        assert!(parse_veto("结论评分：0.5\n是否否决：是\n原因…").0);
+        assert!(!parse_veto("结论评分：0.5\n是否否决：否").0);
+        assert!(parse_veto("该方案不可行，无法落地").0);
+        assert!(!parse_veto("结论正常。").0);
     }
 
     #[test]

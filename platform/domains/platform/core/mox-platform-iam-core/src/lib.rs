@@ -12,7 +12,8 @@ pub mod repo;
 pub use model::{
     AuditLog, IamDataPermission, IamDepartment, IamMenu, IamPermission, IamResource, IamRole,
     IamRoleInherit, IamRoleMenu, IamRolePermission, IamTenant, IamTenantSetting, IamUser,
-    IamUserMenu, IamUserRole, ScopeRule,
+    IamUserMenu, IamUserRole, ScopeRule, SysApiKey, SysConfig, SysDictData, SysDictType,
+    SysLoginLog, SysOperLog, SysPost,
 };
 pub use repo::{IamRepoError, IamRepository};
 

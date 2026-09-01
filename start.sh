@@ -94,7 +94,7 @@ ensure_py
 if [ "$DO_VERIFY" -eq 1 ]; then
   echo
   echo "[1/5] 🧮 verify：六大公理数学自洽性验证"
-  if "$PY_BIN" scripts/manage.py verify; then
+  if "$PY_BIN" scripts/server-manage.py verify; then
     echo " $tick 公理验证通过"
   else
     echo " $warn 公理验证存在警告（不影响服务启动）"
@@ -119,7 +119,7 @@ fi
 if [ "$DO_STOP" -eq 1 ]; then
   echo
   echo "[STOP] 按拓扑停止全部服务..."
-  "$PY_BIN" scripts/manage.py stop all --force
+  "$PY_BIN" scripts/server-manage.py stop all --force
   exit $?
 fi
 
@@ -127,11 +127,11 @@ fi
 if [ "$DO_RESTART" -eq 1 ]; then
   echo
   echo "[RESTART] 严格模式重启 auto_start 服务..."
-  "$PY_BIN" scripts/manage.py restart all --strict
+  "$PY_BIN" scripts/server-manage.py restart all --strict
   rc=$?
   if [ "$rc" -ne 0 ]; then echo "${cross} 重启失败（code=$rc）" >&2; exit "$rc"; fi
   echo " $tick 重启完成"
-  "$PY_BIN" scripts/manage.py list
+  "$PY_BIN" scripts/server-manage.py list
   exit 0
 fi
 
@@ -149,7 +149,7 @@ fi
 
 # --- 主流程：调用 manage.py bootstrap ---
 echo
-echo "[MAIN] 调用 scripts/manage.py bootstrap（默认：仅面板 → 页面上按需启动服务）"
+echo "[MAIN] 调用 scripts/server-manage.py bootstrap（默认：仅面板 → 页面上按需启动服务）"
 
 BOOT_ARGS=(bootstrap --with-dashboard --no-browser)
 [ "$DRY_RUN" -eq 1 ] && BOOT_ARGS+=(--dry-run)
@@ -161,14 +161,14 @@ if [ "$WITH_DASH" -eq 1 ]; then
   :
 fi
 
-echo "   → $ $PY_BIN scripts/manage.py ${BOOT_ARGS[*]}"
-"$PY_BIN" scripts/manage.py "${BOOT_ARGS[@]}"
+echo "   → $ $PY_BIN scripts/server-manage.py ${BOOT_ARGS[*]}"
+"$PY_BIN" scripts/server-manage.py "${BOOT_ARGS[@]}"
 rc=$?
 
 if [ "$rc" -ne 0 ]; then
   echo "${cross} bootstrap 失败 exit=$rc" >&2
   if [ "$DRY_RUN" -eq 0 ]; then
-    "$PY_BIN" scripts/manage.py status
+    "$PY_BIN" scripts/server-manage.py status
     dump_logs
   fi
   exit "$rc"
@@ -184,8 +184,8 @@ echo "  $tick 完成（管理面板挂起 / 后台运行）"
 echo "   · Dashboard: ${C_BLU}http://localhost:${DASH_PORT}/${C_RST}   → 登录 admin（密码见 platform_config.json → admin.password）后点 ▶ 启动所有"
 echo "   · API      : ${C_BLU}http://localhost:${API_PORT}/health${C_RST}   （需先在管理面板启动 api）"
 echo "   · Frontend : ${C_BLU}http://localhost:${FE_PORT}/${C_RST}         （需先在管理面板启动 frontend）"
-echo "   · 停止所有 ：${C_CYN}$0 --stop  或  $PY_BIN scripts/manage.py stop all --force${C_RST}"
-echo "   · 运维 CLI ：${C_CYN}$PY_BIN scripts/manage.py list|status|logs|stop${C_RST}"
+echo "   · 停止所有 ：${C_CYN}$0 --stop  或  $PY_BIN scripts/server-manage.py stop all --force${C_RST}"
+echo "   · 运维 CLI ：${C_CYN}$PY_BIN scripts/server-manage.py list|status|logs|stop${C_RST}"
 echo "   · 旧行为启动（脚本同步启动服务）：${C_CYN}$0 --with-services${C_RST}"
 echo "   · 仍在后台运行以下服务（如需停止：$0 --stop）"
 echo "============================================================"

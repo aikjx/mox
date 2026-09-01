@@ -1,74 +1,22 @@
 # =============================================================================
-# MOX 平台 - Clippy 代码检查配置
-# 企业级代码质量门禁，所有 warn 级别以上的 lints 必须通过
+# MOX Platform - Clippy configuration
+# Enterprise code-quality gate. All warn-level+ lints must pass.
 # =============================================================================
-# 执行命令：
+# Execution:
 #   cargo clippy --workspace --all-targets -- -D warnings
 # =============================================================================
-
-# —— 通用配置 ——
-# 允许的 lints（已知无问题）
-allow = [
-    "clippy::new_without_default",    # 允许 new 函数不返回 Default
-    "clippy::too_many_arguments",     # 允许较多参数（后续重构）
-    "clippy::type_complexity",        # 允许复杂类型（后续重构）
-    "clippy::module_inception",       # 允许模块名和文件名相同
-]
-
-# —— 升级为错误的 lint（必须修复） ——
-deny = [
-    # 正确性
-    "clippy::correctness",
-    # 明显的错误
-    "clippy::suspicious",
-    # 空数组索引
-    "clippy::out_of_bounds_indexing",
-    # 未使用的 Result
-    "clippy::unused_result_ok",
-    # 重复 key
-    "clippy::duplicate_key",
-]
-
-# —— 警告级别的 lint（建议修复） ——
-warn = [
-    # 性能
-    "clippy::perf",
-    # 代码复杂度
-    "clippy::complexity",
-    # 代码风格
-    "clippy::style",
-    # 可维护性
-    "clippy::pedantic",
-    # 未使用的变量
-    "clippy::unused_self",
-    # 不必要的 clone
-    "clippy::redundant_clone",
-    # 不必要的 borrow
-    "clippy::borrow_deref_ref",
-    # 可以使用 if-let
-    "clippy::option_match",
-    # 可以使用 matches!
-    "clippy::match_like_matches_macro",
-    # 显式迭代器
-    "clippy::explicit_iter_loop",
-    # 过滤后直接 map
-    "clippy::filter_map",
-    # flat_map 优化
-    "clippy::flat_map_option",
-    # 字符串追加
-    "clippy::string_add",
-    # format! 用法
-    "clippy::format_push_string",
-    # 不必要的分配
-    "clippy::box_default",
-    # 不必要的 vec
-    "clippy::vec_init_then_push",
-    # cargo 特性
-    "clippy::cargo_common_metadata",
-    # 文档缺失（公共项）
-    "clippy::missing_errors_doc",
-    "clippy::missing_panics_doc",
-    # 安全
-    "clippy::unwrap_used",
-    "clippy::expect_used",
-]
+#
+# NOTE (migration 2026-09-01):
+#   lint LEVELS (allow / deny / warn) are declared in the root Cargo.toml
+#   under [workspace.lints.clippy]. This file only supports THRESHOLD-style
+#   configuration; the previous top-level `allow`/`deny`/`warn` arrays were
+#   invalid fields and have been removed.
+#
+# Reference of migrated lint levels (see root Cargo.toml):
+#   allow : new_without_default, too_many_arguments, type_complexity, module_inception
+#   deny  : correctness, suspicious, out_of_bounds_indexing, unused_result_ok, duplicate_key
+#
+# Optional threshold tuning (examples, uncomment to apply):
+#   too-many-arguments-threshold = 8
+#   type-complexity-threshold = 300
+#   cognitive-complexity-threshold = 25

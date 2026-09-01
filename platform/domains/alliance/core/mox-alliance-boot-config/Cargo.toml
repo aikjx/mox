@@ -44,3 +44,6 @@ required-features = ["nacos"]
 [[test]]
 name = "naming_e2e"
 required-features = ["naming"]
+
+[lints]
+workspace = true

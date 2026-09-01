@@ -345,13 +345,15 @@ impl ExpertSynchronizer {
 
     /// 停止同步器
     pub async fn stop(&self) -> AllianceResult<()> {
-        // 发送停止信号
-        if let Some(tx) = self.stop_tx.lock().take() {
+        // 发送停止信号（先取出 Sender，释放锁后再 await，避免持有 MutexGuard 跨 await）
+        let stop_tx = self.stop_tx.lock().take();
+        if let Some(tx) = stop_tx {
             let _ = tx.send(()).await;
         }
 
         // 等待任务结束
-        if let Some(handle) = self.task_handle.lock().take() {
+        let handle = self.task_handle.lock().take();
+        if let Some(handle) = handle {
             let _ = tokio::time::timeout(Duration::from_secs(5), handle).await;
         }
 
@@ -809,9 +811,11 @@ mod tests {
             }
         }
 
-        let mut health = ExpertHealth::default();
-        health.is_healthy = false;
-        health.success_rate = 0.5;
+        let health = ExpertHealth {
+            is_healthy: false,
+            success_rate: 0.5,
+            ..Default::default()
+        };
 
         let data_source = Arc::new(HealthDataSource {
             health_data: parking_lot::RwLock::new(vec![("e1".to_string(), health)]),

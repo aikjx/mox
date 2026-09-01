@@ -286,7 +286,7 @@
                       {{ expert.typeLabel }}
                     </span>
                     <span v-if="expert.recommended" class="recommend-tag">
-                      <el-icon><Fire /></el-icon>
+                      <el-icon><Star /></el-icon>
                       推荐
                     </span>
                   </div>
@@ -826,7 +826,7 @@ import { ref, computed, onMounted, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   Search, Filter, Grid, Medal, Wallet, Sort, Trophy, ArrowRight,
-  Calendar, User, ChatDotRound, Star, Timer, Fire, InfoFilled,
+  Calendar, User, ChatDotRound, Star, Timer, InfoFilled,
   DataAnalysis, MagicStick, Document, ChatLineSquare, UserFilled,
   TrendCharts
 } from '@element-plus/icons-vue'

@@ -106,7 +106,7 @@ impl SchedulerServer {
     /// 解析任务仓库：显式注入优先，否则按环境变量 MOX_ALLIANCE_STORAGE_MODE
     /// - "file"（或未设置时默认 "file"）：文件快照持久化到 ./data/alliance_tasks.json
     /// - "memory"：纯内存
-    /// 旧环境变量 `ALLIANCE_TASK_STORE` 保留兼容（deprecated，命中即告警）
+    /// - 旧环境变量 `ALLIANCE_TASK_STORE` 保留兼容（deprecated，命中即告警）
     fn resolve_task_repository(
         &self,
     ) -> anyhow::Result<Arc<dyn mox_alliance_scheduler_core::TaskRepository>> {

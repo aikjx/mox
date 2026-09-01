@@ -11,10 +11,10 @@ async fn main() {
     let g = Client::new();
     let nodes: Vec<Node> = (0..1000).map(|i| Node {
         id: i, label: "Bulk".into(), typ: "Item".into(),
-        community: (i % 5) as i64, attrs: HashMap::new(),
+        community: (i % 5), attrs: HashMap::new(),
     }).collect();
     let edges: Vec<Edge> = (0..3000).map(|i| Edge {
-        id: i, src: (i % 1000) as i64, dst: ((i * 3 + 7) % 1000) as i64,
+        id: i, src: (i % 1000), dst: ((i * 3 + 7) % 1000),
         label: "LINKS".into(), weight: 1.0,
     }).collect();
     let (n, e) = g.spark_writer_bulk(nodes, edges).await.unwrap();

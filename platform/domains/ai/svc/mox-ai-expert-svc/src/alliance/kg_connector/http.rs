@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -29,6 +29,7 @@ use super::types::{ApiResp, GraphSearchHit};
 pub struct HttpKgHubConnector {
     base_url: String,
     client: reqwest::blocking::Client,
+    #[allow(dead_code)] // 棰勭暀锛氳繛鎺ュ櫒瓒呮椂鎺у埗锛堝悗缁惎鐢級
     timeout_ms: u64,
 }
 

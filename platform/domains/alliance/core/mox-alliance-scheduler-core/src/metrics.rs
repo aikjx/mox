@@ -185,11 +185,7 @@ pub struct MetricsSnapshot {
 
 /// 安全求平均：除数为 0 时返回 0
 fn avg(sum: u64, count: u64) -> u64 {
-    if count == 0 {
-        0
-    } else {
-        sum / count
-    }
+    sum.checked_div(count).unwrap_or(0)
 }
 
 #[cfg(test)]

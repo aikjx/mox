@@ -542,7 +542,7 @@ impl ChatClient for OpenAiChatClient {
 fn truncate(s: &str, n: usize) -> String {
     let mut out: String = s.chars().take(n).collect();
     if s.chars().count() > n {
-        out.push_str("…");
+        out.push('…');
     }
     out
 }
@@ -825,8 +825,7 @@ mod tests {
         assert_eq!(selected.provider_id, "p2");
 
         // 构造 client（不调用 complete，只验证 builder 工作）
-        let mut cfg = LlmConfig::default();
-        cfg.providers = providers;
+        let cfg = LlmConfig { providers, ..Default::default() };
         let client = OpenAiChatClient::new(cfg).with_router(router);
         assert!(client.config().providers.len() == 2);
     }

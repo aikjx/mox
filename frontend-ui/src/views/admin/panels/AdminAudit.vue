@@ -308,21 +308,6 @@ const operPagination = reactive({
 const operDetailVisible = ref(false)
 const currentOperLog = ref(null)
 
-const mockOperLogs = [
-  { id: 1001, title: '用户管理', businessType: 1, description: '新增用户 admin', operName: 'admin', deptName: '技术部', method: 'POST', url: '/api/system/user', ip: '192.168.1.100', location: '内网', browser: 'Chrome 120', os: 'Windows 10', status: 1, msg: '操作成功', operTime: '2024-01-15 09:30:00', cost: 45, operParam: '{"username":"admin","nickname":"管理员"}', jsonResult: '{"code":200,"msg":"成功","data":{"id":1}}', errorMsg: '' },
-  { id: 1002, title: '用户管理', businessType: 2, description: '修改用户信息', operName: 'admin', deptName: '技术部', method: 'PUT', url: '/api/system/user/1', ip: '192.168.1.100', location: '内网', browser: 'Chrome 120', os: 'Windows 10', status: 1, msg: '操作成功', operTime: '2024-01-15 09:35:12', cost: 32, operParam: '{"nickname":"超级管理员"}', jsonResult: '{"code":200,"msg":"成功"}', errorMsg: '' },
-  { id: 1003, title: '菜单管理', businessType: 1, description: '新增菜单', operName: 'admin', deptName: '技术部', method: 'POST', url: '/api/system/menu', ip: '192.168.1.100', location: '内网', browser: 'Chrome 120', os: 'Windows 10', status: 1, msg: '操作成功', operTime: '2024-01-15 10:00:00', cost: 28, operParam: '{"name":"测试菜单","path":"test"}', jsonResult: '{"code":200,"msg":"成功","data":{"id":100}}', errorMsg: '' },
-  { id: 1004, title: '字典管理', businessType: 3, description: '删除字典类型', operName: 'operator', deptName: '运维部', method: 'DELETE', url: '/api/system/dict/type/5', ip: '10.0.0.55', location: '北京市 联通', browser: 'Firefox 119', os: 'macOS 14', status: 1, msg: '操作成功', operTime: '2024-01-15 11:20:30', cost: 56, operParam: '{}', jsonResult: '{"code":200,"msg":"成功"}', errorMsg: '' },
-  { id: 1005, title: '参数配置', businessType: 4, description: '查询参数列表', operName: 'operator', deptName: '运维部', method: 'GET', url: '/api/system/config', ip: '10.0.0.55', location: '北京市 联通', browser: 'Firefox 119', os: 'macOS 14', status: 1, msg: '操作成功', operTime: '2024-01-15 11:25:00', cost: 12, operParam: '{"pageNum":1,"pageSize":10}', jsonResult: '{"code":200,"rows":[...]}', errorMsg: '' },
-  { id: 1006, title: '数据导出', businessType: 5, description: '导出用户数据', operName: 'admin', deptName: '技术部', method: 'GET', url: '/api/system/user/export', ip: '192.168.1.100', location: '内网', browser: 'Chrome 120', os: 'Windows 10', status: 1, msg: '操作成功', operTime: '2024-01-15 14:00:00', cost: 1250, operParam: '{}', jsonResult: '二进制文件', errorMsg: '' },
-  { id: 1007, title: '数据导入', businessType: 6, description: '导入部门数据', operName: 'admin', deptName: '技术部', method: 'POST', url: '/api/system/dept/import', ip: '192.168.1.100', location: '内网', browser: 'Chrome 120', os: 'Windows 10', status: 0, msg: '文件格式错误', operTime: '2024-01-15 14:30:00', cost: 89, operParam: 'multipart/form-data', jsonResult: '{"code":500,"msg":"文件格式错误"}', errorMsg: 'org.apache.poi.openxml4j.exceptions.InvalidFormatException: 文件不是有效的 Excel 格式\n\tat org.apache.poi.openxml4j.opc.ZipPackage.open(ZipPackage.java:210)\n\t...' },
-  { id: 1008, title: '角色管理', businessType: 2, description: '修改角色权限', operName: 'admin', deptName: '技术部', method: 'PUT', url: '/api/system/role/1', ip: '192.168.1.100', location: '内网', browser: 'Chrome 120', os: 'Windows 10', status: 1, msg: '操作成功', operTime: '2024-01-15 15:10:00', cost: 67, operParam: '{"menuIds":[1,2,3]}', jsonResult: '{"code":200,"msg":"成功"}', errorMsg: '' },
-  { id: 1009, title: '岗位管理', businessType: 99, description: '刷新岗位缓存', operName: 'operator', deptName: '运维部', method: 'DELETE', url: '/api/system/post/refreshCache', ip: '10.0.0.55', location: '北京市 联通', browser: 'Firefox 119', os: 'macOS 14', status: 1, msg: '操作成功', operTime: '2024-01-15 16:00:00', cost: 15, operParam: '{}', jsonResult: '{"code":200,"msg":"成功"}', errorMsg: '' },
-  { id: 1010, title: '通知公告', businessType: 1, description: '发布公告', operName: 'admin', deptName: '技术部', method: 'POST', url: '/api/system/notice', ip: '192.168.1.100', location: '内网', browser: 'Chrome 120', os: 'Windows 10', status: 1, msg: '操作成功', operTime: '2024-01-15 17:00:00', cost: 38, operParam: '{"title":"系统维护通知","content":"今晚22点维护"}', jsonResult: '{"code":200,"msg":"成功","data":{"id":10}}', errorMsg: '' },
-  { id: 1011, title: '操作日志', businessType: 3, description: '删除操作日志', operName: 'admin', deptName: '技术部', method: 'DELETE', url: '/api/system/operlog/1001', ip: '192.168.1.100', location: '内网', browser: 'Chrome 120', os: 'Windows 10', status: 1, msg: '操作成功', operTime: '2024-01-16 09:00:00', cost: 22, operParam: '{}', jsonResult: '{"code":200,"msg":"成功"}', errorMsg: '' },
-  { id: 1012, title: '登录日志', businessType: 4, description: '查询登录日志', operName: 'operator', deptName: '运维部', method: 'GET', url: '/api/system/logininfor', ip: '10.0.0.55', location: '北京市 联通', browser: 'Firefox 119', os: 'macOS 14', status: 1, msg: '操作成功', operTime: '2024-01-16 09:30:00', cost: 18, operParam: '{"pageNum":1,"pageSize":10}', jsonResult: '{"code":200,"rows":[...]}', errorMsg: '' }
-]
-
 function businessTypeLabel(type) {
   const map = { 1: '新增', 2: '修改', 3: '删除', 4: '查询', 5: '导出', 6: '导入', 99: '其他' }
   return map[type] || '未知'
@@ -363,35 +348,11 @@ async function loadOperLog() {
     } else {
       throw new Error('数据格式错误')
     }
-    if (!operLogList.value.length) {
-      applyMockOperData()
-    }
   } catch (e) {
-    applyMockOperData()
+    console.warn('[AdminAudit] 操作日志加载失败:', e.message)
   } finally {
     operLoading.value = false
   }
-}
-
-function applyMockOperData() {
-  let filtered = [...mockOperLogs]
-  if (operFilters.title) {
-    const kw = operFilters.title.toLowerCase()
-    filtered = filtered.filter(l => l.title.toLowerCase().includes(kw))
-  }
-  if (operFilters.businessType != null) {
-    filtered = filtered.filter(l => l.businessType === operFilters.businessType)
-  }
-  if (operFilters.operName) {
-    const kw = operFilters.operName.toLowerCase()
-    filtered = filtered.filter(l => l.operName.toLowerCase().includes(kw))
-  }
-  if (operFilters.status != null) {
-    filtered = filtered.filter(l => l.status === operFilters.status)
-  }
-  operPagination.total = filtered.length
-  const start = (operPagination.pageNum - 1) * operPagination.pageSize
-  operLogList.value = filtered.slice(start, start + operPagination.pageSize)
 }
 
 function resetOperFilters() {
@@ -433,7 +394,7 @@ async function handleExportOper() {
     window.URL.revokeObjectURL(url)
     ElMessage.success('导出成功')
   } catch (e) {
-    ElMessage.success('导出成功（模拟）')
+    ElMessage.error('导出失败：' + e.message)
   } finally {
     exportingOper.value = false
   }
@@ -451,9 +412,7 @@ async function handleCleanOper() {
       await cleanOperLog()
       ElMessage.success('清空成功')
     } catch (e) {
-      ElMessage.success('清空成功（模拟）')
-      operLogList.value = []
-      operPagination.total = 0
+      ElMessage.error('清空失败：' + e.message)
     }
     await loadOperLog()
   } catch (e) {
@@ -481,21 +440,6 @@ const loginPagination = reactive({
   pageSize: 10,
   total: 0
 })
-
-const mockLoginLogs = [
-  { id: 2001, userName: 'admin', loginType: 'account', ipaddr: '192.168.1.100', loginLocation: '内网', browser: 'Chrome 120', os: 'Windows 10', status: 1, msg: '登录成功', loginTime: '2024-01-15 08:55:00' },
-  { id: 2002, userName: 'admin', loginType: 'account', ipaddr: '192.168.1.100', loginLocation: '内网', browser: 'Chrome 120', os: 'Windows 10', status: 1, msg: '登录成功', loginTime: '2024-01-15 09:00:00' },
-  { id: 2003, userName: 'operator', loginType: 'account', ipaddr: '10.0.0.55', loginLocation: '北京市 联通', browser: 'Firefox 119', os: 'macOS 14', status: 1, msg: '登录成功', loginTime: '2024-01-15 09:10:00' },
-  { id: 2004, userName: 'test01', loginType: 'account', ipaddr: '10.0.0.88', loginLocation: '上海市 电信', browser: 'Safari 17', os: 'macOS 13', status: 0, msg: '用户不存在/密码错误', loginTime: '2024-01-15 10:20:00' },
-  { id: 2005, userName: 'admin', loginType: 'sms', ipaddr: '192.168.1.100', loginLocation: '内网', browser: 'Chrome 120', os: 'Windows 10', status: 1, msg: '短信登录成功', loginTime: '2024-01-15 11:00:00' },
-  { id: 2006, userName: '13800138000', loginType: 'sms', ipaddr: '10.0.0.99', loginLocation: '广州市 移动', browser: 'Chrome Mobile', os: 'Android 13', status: 1, msg: '短信登录成功', loginTime: '2024-01-15 12:30:00' },
-  { id: 2007, userName: '13900139000', loginType: 'sms', ipaddr: '10.0.0.77', loginLocation: '深圳市 移动', browser: 'Safari Mobile', os: 'iOS 17', status: 0, msg: '验证码错误', loginTime: '2024-01-15 13:15:00' },
-  { id: 2008, userName: 'github_user', loginType: 'thirdparty', ipaddr: '203.0.113.45', loginLocation: '美国 GitHub', browser: 'Chrome 120', os: 'Linux', status: 1, msg: '第三方登录成功', loginTime: '2024-01-15 14:00:00' },
-  { id: 2009, userName: 'operator', loginType: 'account', ipaddr: '10.0.0.55', loginLocation: '北京市 联通', browser: 'Firefox 119', os: 'macOS 14', status: 1, msg: '登录成功', loginTime: '2024-01-16 08:50:00' },
-  { id: 2010, userName: 'admin', loginType: 'account', ipaddr: '192.168.1.100', loginLocation: '内网', browser: 'Chrome 120', os: 'Windows 10', status: 1, msg: '登录成功', loginTime: '2024-01-16 09:00:00' },
-  { id: 2011, userName: 'hacker', loginType: 'account', ipaddr: '198.51.100.23', loginLocation: '未知 IP', browser: 'Unknown', os: 'Unknown', status: 0, msg: '用户不存在/密码错误', loginTime: '2024-01-16 09:05:00' },
-  { id: 2012, userName: 'hacker', loginType: 'account', ipaddr: '198.51.100.23', loginLocation: '未知 IP', browser: 'Unknown', os: 'Unknown', status: 0, msg: '用户不存在/密码错误', loginTime: '2024-01-16 09:05:05' }
-]
 
 function loginTypeLabel(type) {
   const map = { account: '账号登录', sms: '短信登录', thirdparty: '第三方登录' }
@@ -531,32 +475,11 @@ async function loadLoginLog() {
     } else {
       throw new Error('数据格式错误')
     }
-    if (!loginLogList.value.length) {
-      applyMockLoginData()
-    }
   } catch (e) {
-    applyMockLoginData()
+    console.warn('[AdminAudit] 登录日志加载失败:', e.message)
   } finally {
     loginLoading.value = false
   }
-}
-
-function applyMockLoginData() {
-  let filtered = [...mockLoginLogs]
-  if (loginFilters.userName) {
-    const kw = loginFilters.userName.toLowerCase()
-    filtered = filtered.filter(l => l.userName.toLowerCase().includes(kw))
-  }
-  if (loginFilters.ipaddr) {
-    const kw = loginFilters.ipaddr.toLowerCase()
-    filtered = filtered.filter(l => l.ipaddr.toLowerCase().includes(kw))
-  }
-  if (loginFilters.status != null) {
-    filtered = filtered.filter(l => l.status === loginFilters.status)
-  }
-  loginPagination.total = filtered.length
-  const start = (loginPagination.pageNum - 1) * loginPagination.pageSize
-  loginLogList.value = filtered.slice(start, start + loginPagination.pageSize)
 }
 
 function resetLoginFilters() {
@@ -591,7 +514,7 @@ async function handleExportLogin() {
     window.URL.revokeObjectURL(url)
     ElMessage.success('导出成功')
   } catch (e) {
-    ElMessage.success('导出成功（模拟）')
+    ElMessage.error('导出失败：' + e.message)
   } finally {
     exportingLogin.value = false
   }
@@ -609,9 +532,7 @@ async function handleCleanLogin() {
       await cleanLoginLog()
       ElMessage.success('清空成功')
     } catch (e) {
-      ElMessage.success('清空成功（模拟）')
-      loginLogList.value = []
-      loginPagination.total = 0
+      ElMessage.error('清空失败：' + e.message)
     }
     await loadLoginLog()
   } catch (e) {

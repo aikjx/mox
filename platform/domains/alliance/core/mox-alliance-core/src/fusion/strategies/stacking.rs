@@ -292,9 +292,7 @@ fn solve_linear_weights(
     for i in 0..n_samples {
         // xi 包含偏置项（最后一个元素=1）
         let mut xi = vec![0.0; n_vars];
-        for j in 0..n_features {
-            xi[j] = x[i][j];
-        }
+        xi[..n_features].copy_from_slice(&x[i]);
         xi[n_features] = 1.0; // 偏置项
 
         // 累加 X^T X
@@ -312,9 +310,9 @@ fn solve_linear_weights(
         // 选主元
         let mut max_row = col;
         let mut max_val = a[col][col].abs();
-        for row in col + 1..n_vars {
-            if a[row][col].abs() > max_val {
-                max_val = a[row][col].abs();
+        for (row, a_row) in a.iter().enumerate().skip(col + 1) {
+            if a_row[col].abs() > max_val {
+                max_val = a_row[col].abs();
                 max_row = row;
             }
         }
@@ -335,6 +333,8 @@ fn solve_linear_weights(
         for row in 0..n_vars {
             if row != col && a[row][col].abs() > 1e-15 {
                 let factor = a[row][col] / a[col][col];
+                // 双重索引（a[row] 可变 + a[col] 只读）无法用迭代器拆分借用，保留索引循环
+                #[allow(clippy::needless_range_loop)]
                 for k in col..=n_vars {
                     a[row][k] -= factor * a[col][k];
                 }

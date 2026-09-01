@@ -353,18 +353,6 @@ const searchForm = reactive({
   dateRange: []
 })
 
-// Mock 数据
-const MOCK_USERS = [
-  { id: 1, username: 'admin', nickname: '系统管理员', avatar: '', deptId: 1, deptName: '璇玑科技', postId: 1, postName: '技术总监', phone: '13800000000', email: 'admin@xuanji.com', status: 1, userType: 'admin', createdAt: '2024-01-01 00:00:00', lastLoginAt: '2024-08-31 10:30:00', remark: '系统超级管理员' },
-  { id: 2, username: 'zhangsan', nickname: '张三', avatar: '', deptId: 2, deptName: '技术部', postId: 2, postName: '高级工程师', phone: '13800000001', email: 'zhangsan@xuanji.com', status: 1, userType: 'normal', createdAt: '2024-01-02 09:00:00', lastLoginAt: '2024-08-30 18:00:00', remark: '' },
-  { id: 3, username: 'lisi', nickname: '李四', avatar: '', deptId: 2, deptName: '技术部', postId: 3, postName: '中级工程师', phone: '13800000002', email: 'lisi@xuanji.com', status: 1, userType: 'normal', createdAt: '2024-01-03 09:00:00', lastLoginAt: '2024-08-31 09:00:00', remark: '' },
-  { id: 4, username: 'wangwu', nickname: '王五', avatar: '', deptId: 5, deptName: '前端组', postId: 4, postName: '前端工程师', phone: '13800000003', email: 'wangwu@xuanji.com', status: 1, userType: 'normal', createdAt: '2024-02-01 09:00:00', lastLoginAt: '2024-08-31 08:30:00', remark: '' },
-  { id: 5, username: 'zhaoliu', nickname: '赵六', avatar: '', deptId: 6, deptName: '后端组', postId: 3, postName: '中级工程师', phone: '13800000004', email: 'zhaoliu@xuanji.com', status: 1, userType: 'normal', createdAt: '2024-02-15 09:00:00', lastLoginAt: '2024-08-29 17:00:00', remark: '' },
-  { id: 6, username: 'sunqi', nickname: '孙七', avatar: '', deptId: 7, deptName: '算法组', postId: 2, postName: '高级工程师', phone: '13800000005', email: 'sunqi@xuanji.com', status: 1, userType: 'normal', createdAt: '2024-03-01 09:00:00', lastLoginAt: '2024-08-31 11:00:00', remark: '' },
-  { id: 7, username: 'zhouba', nickname: '周八', avatar: '', deptId: 3, deptName: '产品部', postId: 5, postName: '产品经理', phone: '13800000006', email: 'zhouba@xuanji.com', status: 1, userType: 'normal', createdAt: '2024-01-10 09:00:00', lastLoginAt: '2024-08-30 16:00:00', remark: '' },
-  { id: 8, username: 'wujiu', nickname: '吴九', avatar: '', deptId: 4, deptName: '运营部', postId: 6, postName: '运营专员', phone: '13800000007', email: 'wujiu@xuanji.com', status: 0, userType: 'normal', createdAt: '2024-04-01 09:00:00', lastLoginAt: '2024-07-15 10:00:00', remark: '已离职' }
-]
-
 async function loadList() {
   loading.value = true
   try {
@@ -383,27 +371,7 @@ async function loadList() {
     tableData.value = data?.list || data?.records || (Array.isArray(data) ? data : [])
     total.value = data?.total ?? tableData.value.length
   } catch (e) {
-    console.warn('[AdminUser] 加载用户列表失败，使用 Mock 数据:', e.message)
-    // Mock 过滤
-    let list = [...MOCK_USERS]
-    if (searchForm.keyword) {
-      const kw = searchForm.keyword.toLowerCase()
-      list = list.filter(u =>
-        u.username.toLowerCase().includes(kw) ||
-        u.nickname?.toLowerCase().includes(kw) ||
-        u.phone?.includes(kw) ||
-        u.email?.toLowerCase().includes(kw)
-      )
-    }
-    if (searchForm.deptId) {
-      list = list.filter(u => u.deptId === searchForm.deptId)
-    }
-    if (searchForm.status !== null && searchForm.status !== undefined) {
-      list = list.filter(u => u.status === searchForm.status)
-    }
-    total.value = list.length
-    const start = (page.value - 1) * pageSize.value
-    tableData.value = list.slice(start, start + pageSize.value)
+    console.warn('[AdminUser] 加载用户列表失败:', e.message)
   } finally {
     loading.value = false
   }
@@ -432,45 +400,24 @@ function handleSortChange({ prop, order }) {
 // ===== 部门树 =====
 const deptTree = ref([])
 
-const MOCK_DEPT_TREE = [
-  { id: 1, name: '璇玑科技', children: [
-    { id: 2, name: '技术部', children: [
-      { id: 5, name: '前端组', children: [] },
-      { id: 6, name: '后端组', children: [] },
-      { id: 7, name: '算法组', children: [] }
-    ]},
-    { id: 3, name: '产品部', children: [] },
-    { id: 4, name: '运营部', children: [] }
-  ]}
-]
-
 async function loadDeptTree() {
   try {
     const data = await getDeptTree()
     deptTree.value = Array.isArray(data) ? data : []
   } catch (e) {
-    deptTree.value = MOCK_DEPT_TREE
+    console.warn('[AdminUser] 部门树加载失败:', e.message)
   }
 }
 
 // ===== 岗位选项 =====
 const postOptions = ref([])
 
-const MOCK_POSTS = [
-  { id: 1, name: '技术总监' },
-  { id: 2, name: '高级工程师' },
-  { id: 3, name: '中级工程师' },
-  { id: 4, name: '前端工程师' },
-  { id: 5, name: '产品经理' },
-  { id: 6, name: '运营专员' }
-]
-
 async function loadPosts() {
   try {
     const data = await getPostList({ pageSize: 100 })
     postOptions.value = data?.list || data?.records || (Array.isArray(data) ? data : [])
   } catch (e) {
-    postOptions.value = MOCK_POSTS
+    console.warn('[AdminUser] 岗位加载失败:', e.message)
   }
 }
 
@@ -707,15 +654,6 @@ const dataScope = ref('dept')
 const customDeptIds = ref([])
 const customDeptTreeRef = ref(null)
 
-const MOCK_ROLES = [
-  { id: 1, name: '超级管理员', code: 'super_admin', builtin: true, type: 'system' },
-  { id: 2, name: '系统管理员', code: 'admin', builtin: true, type: 'system' },
-  { id: 3, name: '普通用户', code: 'user', builtin: true, type: 'system' },
-  { id: 4, name: '部门经理', code: 'dept_manager', builtin: false, type: 'custom' },
-  { id: 5, name: '项目负责人', code: 'project_lead', builtin: false, type: 'custom' },
-  { id: 6, name: '访客', code: 'guest', builtin: false, type: 'custom' }
-]
-
 const filteredRoles = computed(() => {
   if (!roleSearchKeyword.value) return roleList.value
   const kw = roleSearchKeyword.value.toLowerCase()
@@ -740,10 +678,7 @@ async function openRoleDialog(row) {
     dataScope.value = userRoles?.dataScope || 'dept'
     customDeptIds.value = userRoles?.deptIds || []
   } catch (e) {
-    console.warn('[AdminUser] 加载角色失败，使用 Mock 数据:', e.message)
-    roleList.value = MOCK_ROLES
-    selectedRoleIds.value = [3]
-    dataScope.value = 'dept'
+    console.warn('[AdminUser] 加载角色失败:', e.message)
   } finally {
     roleLoading.value = false
   }

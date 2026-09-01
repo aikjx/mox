@@ -179,7 +179,7 @@ impl ModularWeightMatcher {
             } else {
                 0.0
             };
-        health_score.max(0.0).min(1.0)
+        health_score.clamp(0.0, 1.0)
     }
 
     /// 计算优先级分 (0.0 - 1.0)
@@ -192,9 +192,7 @@ impl ModularWeightMatcher {
     fn calculate_performance_score(expert: &Expert) -> f64 {
         // 基于成功率和延迟的综合性能分
         let success_component = expert.health.success_rate;
-        let latency_component = if expert.health.avg_latency_ms == 0.0 {
-            1.0
-        } else if expert.health.avg_latency_ms < 500.0 {
+        let latency_component = if expert.health.avg_latency_ms < 500.0 {
             1.0
         } else if expert.health.avg_latency_ms < 2000.0 {
             0.8
@@ -203,9 +201,7 @@ impl ModularWeightMatcher {
         } else {
             0.2
         };
-        (success_component * 0.6 + latency_component * 0.4)
-            .max(0.0)
-            .min(1.0)
+        (success_component * 0.6 + latency_component * 0.4).clamp(0.0, 1.0)
     }
 
     /// 使用指定权重计算综合评分
@@ -445,7 +441,7 @@ mod tests {
     }
 
     fn make_query(
-        id: &str,
+        _id: &str,
         description: &str,
         domains: Vec<&str>,
         caps: Vec<&str>,

@@ -178,7 +178,7 @@
         <div class="toolbar-right">
           <el-button size="small" :icon="ArrowDown" @click="expandAllMenu">展开全部</el-button>
           <el-button size="small" :icon="ArrowUp" @click="collapseAllMenu">折叠全部</el-button>
-          <el-button size="small" :icon="SelectAll" @click="selectAllMenu">全选</el-button>
+          <el-button size="small" :icon="Select" @click="selectAllMenu">全选</el-button>
           <el-button size="small" :icon="Close" @click="clearAllMenu">清空</el-button>
         </div>
       </div>
@@ -383,7 +383,7 @@ import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Search, Plus, Refresh, Delete, Edit, ArrowDown, ArrowUp,
-  User, CopyDocument, SelectAll, Close, Menu
+  User, CopyDocument, Select, Close, Menu
 } from '@element-plus/icons-vue'
 import {
   getRoleList, getRoleDetail, createRole, updateRole, deleteRole,
@@ -423,15 +423,6 @@ const searchForm = reactive({
   status: null
 })
 
-const MOCK_ROLES = [
-  { id: 1, name: '超级管理员', code: 'super_admin', builtin: true, type: 'system', dataScope: 'all', sort: 1, status: 1, createdAt: '2024-01-01 00:00:00', remark: '拥有所有权限' },
-  { id: 2, name: '系统管理员', code: 'admin', builtin: true, type: 'system', dataScope: 'all', sort: 2, status: 1, createdAt: '2024-01-01 00:00:00', remark: '系统管理权限' },
-  { id: 3, name: '普通用户', code: 'user', builtin: true, type: 'system', dataScope: 'self', sort: 3, status: 1, createdAt: '2024-01-01 00:00:00', remark: '基础用户权限' },
-  { id: 4, name: '部门经理', code: 'dept_manager', builtin: false, type: 'custom', dataScope: 'deptAndChild', sort: 4, status: 1, createdAt: '2024-01-15 10:00:00', remark: '部门管理权限' },
-  { id: 5, name: '项目负责人', code: 'project_lead', builtin: false, type: 'custom', dataScope: 'custom', sort: 5, status: 1, createdAt: '2024-02-01 09:00:00', remark: '项目管理权限' },
-  { id: 6, name: '访客角色', code: 'guest', builtin: false, type: 'custom', dataScope: 'self', sort: 10, status: 0, createdAt: '2024-03-01 14:00:00', remark: '仅查看权限' }
-]
-
 async function loadList() {
   loading.value = true
   try {
@@ -444,20 +435,7 @@ async function loadList() {
     tableData.value = data?.list || data?.records || (Array.isArray(data) ? data : [])
     total.value = data?.total ?? tableData.value.length
   } catch (e) {
-    console.warn('[AdminRole] 加载角色列表失败，使用 Mock 数据:', e.message)
-    let list = [...MOCK_ROLES]
-    if (searchForm.keyword) {
-      const kw = searchForm.keyword.toLowerCase()
-      list = list.filter(r =>
-        r.name.toLowerCase().includes(kw) || r.code.toLowerCase().includes(kw)
-      )
-    }
-    if (searchForm.status !== null && searchForm.status !== undefined) {
-      list = list.filter(r => r.status === searchForm.status)
-    }
-    total.value = list.length
-    const start = (page.value - 1) * pageSize.value
-    tableData.value = list.slice(start, start + pageSize.value)
+    console.warn('[AdminRole] 加载角色列表失败:', e.message)
   } finally {
     loading.value = false
   }
@@ -583,11 +561,6 @@ const roleUserPage = ref(1)
 const roleUserPageSize = ref(10)
 const currentRoleForUsers = ref(null)
 
-const MOCK_ROLE_USERS = [
-  { id: 1, username: 'admin', nickname: '系统管理员', avatar: '', deptName: '璇玑科技', phone: '13800000000', status: 1 },
-  { id: 2, username: 'zhangsan', nickname: '张三', avatar: '', deptName: '技术部', phone: '13800000001', status: 1 }
-]
-
 async function openUserListDialog(row) {
   currentRoleForUsers.value = row
   roleUserPage.value = 1
@@ -606,8 +579,7 @@ async function loadRoleUsers() {
     roleUserList.value = data?.list || data?.records || (Array.isArray(data) ? data : [])
     roleUserTotal.value = data?.total ?? roleUserList.value.length
   } catch (e) {
-    roleUserList.value = MOCK_ROLE_USERS
-    roleUserTotal.value = MOCK_ROLE_USERS.length
+    console.warn('[AdminRole] 加载角色用户失败:', e.message)
   } finally {
     roleUserLoading.value = false
   }
@@ -645,10 +617,7 @@ async function submitCopyRole() {
     copyVisible.value = false
     await loadList()
   } catch (e) {
-    // Mock 成功
-    ElMessage.success('角色复制成功')
-    copyVisible.value = false
-    await loadList()
+    ElMessage.error('角色复制失败：' + e.message)
   } finally {
     copySubmitting.value = false
   }
@@ -668,62 +637,6 @@ const defaultExpandedMenuKeys = ref([])
 const selectedButtonPerms = ref([])
 const selectedApiPerms = ref([])
 
-const MOCK_MENU_TREE = [
-  {
-    id: 1, name: '系统管理', icon: 'Setting', type: 'M', path: '/admin',
-    children: [
-      {
-        id: 11, name: '用户管理', icon: 'User', type: 'C', path: '/admin/user',
-        children: [
-          { id: 111, name: '用户查询', code: 'system:user:query', type: 'F', method: 'GET', apiPath: '/api/system/user' },
-          { id: 112, name: '用户新增', code: 'system:user:add', type: 'F', method: 'POST', apiPath: '/api/system/user' },
-          { id: 113, name: '用户修改', code: 'system:user:edit', type: 'F', method: 'PUT', apiPath: '/api/system/user/:id' },
-          { id: 114, name: '用户删除', code: 'system:user:delete', type: 'F', method: 'DELETE', apiPath: '/api/system/user/:id' },
-          { id: 115, name: '重置密码', code: 'system:user:resetPwd', type: 'F', method: 'PUT', apiPath: '/api/system/user/:id/resetPwd' },
-          { id: 116, name: '分配角色', code: 'system:user:assignRole', type: 'F', method: 'PUT', apiPath: '/api/system/user/:id/roles' }
-        ]
-      },
-      {
-        id: 12, name: '角色管理', icon: 'UserFilled', type: 'C', path: '/admin/role',
-        children: [
-          { id: 121, name: '角色查询', code: 'system:role:query', type: 'F', method: 'GET', apiPath: '/api/system/role' },
-          { id: 122, name: '角色新增', code: 'system:role:add', type: 'F', method: 'POST', apiPath: '/api/system/role' },
-          { id: 123, name: '角色修改', code: 'system:role:edit', type: 'F', method: 'PUT', apiPath: '/api/system/role/:id' },
-          { id: 124, name: '角色删除', code: 'system:role:delete', type: 'F', method: 'DELETE', apiPath: '/api/system/role/:id' },
-          { id: 125, name: '菜单权限', code: 'system:role:menuPerms', type: 'F', method: 'PUT', apiPath: '/api/system/role/:id/menuPerms' },
-          { id: 126, name: '数据权限', code: 'system:role:dataPerms', type: 'F', method: 'PUT', apiPath: '/api/system/role/:id/dataPerms' }
-        ]
-      },
-      {
-        id: 13, name: '部门管理', icon: 'OfficeBuilding', type: 'C', path: '/admin/dept',
-        children: [
-          { id: 131, name: '部门查询', code: 'system:dept:query', type: 'F', method: 'GET', apiPath: '/api/system/dept' },
-          { id: 132, name: '部门新增', code: 'system:dept:add', type: 'F', method: 'POST', apiPath: '/api/system/dept' },
-          { id: 133, name: '部门修改', code: 'system:dept:edit', type: 'F', method: 'PUT', apiPath: '/api/system/dept/:id' },
-          { id: 134, name: '部门删除', code: 'system:dept:delete', type: 'F', method: 'DELETE', apiPath: '/api/system/dept/:id' }
-        ]
-      },
-      {
-        id: 14, name: '菜单管理', icon: 'Menu', type: 'C', path: '/admin/menu',
-        children: [
-          { id: 141, name: '菜单查询', code: 'system:menu:query', type: 'F', method: 'GET', apiPath: '/api/system/menu' },
-          { id: 142, name: '菜单新增', code: 'system:menu:add', type: 'F', method: 'POST', apiPath: '/api/system/menu' },
-          { id: 143, name: '菜单修改', code: 'system:menu:edit', type: 'F', method: 'PUT', apiPath: '/api/system/menu/:id' },
-          { id: 144, name: '菜单删除', code: 'system:menu:delete', type: 'F', method: 'DELETE', apiPath: '/api/system/menu/:id' }
-        ]
-      }
-    ]
-  },
-  {
-    id: 2, name: '系统监控', icon: 'DataAnalysis', type: 'M', path: '/monitor',
-    children: [
-      { id: 21, name: '在线用户', icon: 'User', type: 'C', path: '/monitor/online', children: [] },
-      { id: 22, name: '服务监控', icon: 'Cpu', type: 'C', path: '/monitor/server', children: [] },
-      { id: 23, name: '操作日志', icon: 'Document', type: 'C', path: '/monitor/operlog', children: [] }
-    ]
-  }
-]
-
 async function openMenuPermDialog(row) {
   menuPermRole.value = row
   menuPermVisible.value = true
@@ -736,7 +649,7 @@ async function openMenuPermDialog(row) {
     const data = await getMenuTree()
     menuTree.value = Array.isArray(data) ? data : (Array.isArray(data?.list) ? data.list : [])
   } catch (e) {
-    menuTree.value = MOCK_MENU_TREE
+    console.warn('[AdminRole] 菜单树加载失败:', e.message)
   }
 
   // 默认展开第一级
@@ -747,8 +660,7 @@ async function openMenuPermDialog(row) {
     const perms = await getRoleMenuPerms(row.id)
     defaultMenuKeys.value = perms?.menuIds || perms?.checkedKeys || []
   } catch (e) {
-    // Mock: 部分选中
-    defaultMenuKeys.value = [1, 11, 111, 112, 12, 121, 122, 13, 131]
+    console.warn('[AdminRole] 菜单权限加载失败:', e.message)
   }
 }
 
@@ -869,24 +781,12 @@ const deptDefaultExpanded = ref([])
 
 const deptTree = ref([])
 
-const MOCK_DEPT_TREE = [
-  { id: 1, name: '璇玑科技', children: [
-    { id: 2, name: '技术部', children: [
-      { id: 5, name: '前端组', children: [] },
-      { id: 6, name: '后端组', children: [] },
-      { id: 7, name: '算法组', children: [] }
-    ]},
-    { id: 3, name: '产品部', children: [] },
-    { id: 4, name: '运营部', children: [] }
-  ]}
-]
-
 async function loadDeptTree() {
   try {
     const data = await getDeptTree()
     deptTree.value = Array.isArray(data) ? data : []
   } catch (e) {
-    deptTree.value = MOCK_DEPT_TREE
+    console.warn('[AdminRole] 部门树加载失败:', e.message)
   }
   deptDefaultExpanded.value = deptTree.value.map(d => d.id)
 }
@@ -901,9 +801,7 @@ async function openDataPermDialog(row) {
     dataScopeForm.value = perms?.dataScope || row.dataScope || 'dept'
     customDeptCheckedKeys.value = perms?.deptIds || []
   } catch (e) {
-    if (row.dataScope === 'custom') {
-      customDeptCheckedKeys.value = [2, 5, 6]
-    }
+    console.warn('[AdminRole] 数据权限加载失败:', e.message)
   }
 
   dataPermVisible.value = true

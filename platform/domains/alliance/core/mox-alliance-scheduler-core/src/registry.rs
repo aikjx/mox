@@ -13,9 +13,10 @@
 
 use async_trait::async_trait;
 use mox_alliance_common_proto::{
-    AllianceError, AllianceResult, Capability, Expert, ExpertHealth,
-    ExpertStatus, ToolBinding,
+    AllianceError, AllianceResult, Expert, ExpertHealth,
 };
+#[cfg(feature = "http-bridge")]
+use mox_alliance_common_proto::{Capability, ExpertStatus};
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -243,13 +244,16 @@ impl Default for HttpBridgeConfig {
 
 /// HTTP 专家列表 API 响应
 #[derive(Debug, Clone, serde::Deserialize)]
+#[cfg(feature = "http-bridge")]
 struct ExpertListApiResponse {
+    #[allow(dead_code)] // API 响应字段，保留用于总量统计/诊断
     pub total: usize,
     pub experts: Vec<ExpertMetaApi>,
 }
 
 /// API 返回的专家元数据（对齐 AI 专家服务的 ExpertMeta）
 #[derive(Debug, Clone, serde::Deserialize)]
+#[cfg(feature = "http-bridge")]
 struct ExpertMetaApi {
     pub id: String,
     pub name: String,
@@ -259,6 +263,7 @@ struct ExpertMetaApi {
     #[serde(default)]
     pub description: String,
     #[serde(default)]
+    #[allow(dead_code)] // API 元数据字段，保留用于维度诊断
     pub dimension: Option<String>,
 }
 
@@ -378,6 +383,7 @@ impl ExpertRegistryBridge for HttpExpertRegistryBridge {
 /// 将 AI 专家服务的 ExpertMeta 转换为联盟调度器的 Expert
 ///
 /// 由于 ExpertMeta 是轻量元数据，转换时会为缺失字段填充合理默认值。
+#[cfg(feature = "http-bridge")]
 fn expert_meta_to_expert(meta: ExpertMetaApi, tenant_id: &str) -> Expert {
     let now = chrono::Utc::now();
     let capabilities: Vec<Capability> = meta
@@ -477,10 +483,12 @@ mod tests {
         expert.expert_id = "health-1".into();
         reg.register_expert(expert).await.unwrap();
 
-        let mut health = ExpertHealth::default();
-        health.is_healthy = false;
-        health.success_rate = 0.5;
-        health.error_count = 10;
+        let health = ExpertHealth {
+            is_healthy: false,
+            success_rate: 0.5,
+            error_count: 10,
+            ..Default::default()
+        };
 
         reg.update_expert_health("health-1", health.clone()).await.unwrap();
 
@@ -536,6 +544,7 @@ mod tests {
     // ─────────── HTTP 专家桥接（feature: http-bridge）───────────
 
     /// 启动一个极简 mock HTTP 专家服务，返回固定专家列表 JSON
+    #[cfg(feature = "http-bridge")]
     async fn spawn_mock_expert_service() -> String {
         use tokio::io::{AsyncReadExt, AsyncWriteExt};
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();

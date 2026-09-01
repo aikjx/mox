@@ -189,22 +189,6 @@ const formRules = {
   value: [{ required: true, message: '请输入参数键值', trigger: 'blur' }]
 }
 
-// Mock 数据
-const mockConfigs = [
-  { id: 1, name: '用户初始密码', key: 'sys.user.initPassword', value: '123456', isBuiltin: true, status: 1, remark: '新建用户时的默认密码', createdAt: '2024-01-01 00:00:00' },
-  { id: 2, name: '账号锁定次数', key: 'sys.user.lockCount', value: '5', isBuiltin: true, status: 1, remark: '连续登录失败次数超过此值将锁定账号', createdAt: '2024-01-01 00:00:00' },
-  { id: 3, name: '账号锁定时间', key: 'sys.user.lockTime', value: '30', isBuiltin: true, status: 1, remark: '账号锁定时长（分钟）', createdAt: '2024-01-01 00:00:00' },
-  { id: 4, name: 'Token 有效期', key: 'sys.token.expireTime', value: '720', isBuiltin: true, status: 1, remark: '登录 Token 有效期（分钟）', createdAt: '2024-01-01 00:00:00' },
-  { id: 5, name: '系统名称', key: 'sys.site.name', value: '璇玑系统', isBuiltin: true, status: 1, remark: '系统显示名称', createdAt: '2024-01-01 00:00:00' },
-  { id: 6, name: '上传文件大小', key: 'sys.upload.maxSize', value: '50', isBuiltin: true, status: 1, remark: '单文件上传最大限制（MB）', createdAt: '2024-01-02 00:00:00' },
-  { id: 7, name: '短信验证码有效期', key: 'sys.sms.expireTime', value: '5', isBuiltin: false, status: 1, remark: '短信验证码有效期（分钟）', createdAt: '2024-01-03 00:00:00' },
-  { id: 8, name: '邮件发送开关', key: 'sys.email.enabled', value: 'true', isBuiltin: false, status: 1, remark: '是否启用邮件发送功能', createdAt: '2024-01-03 00:00:00' },
-  { id: 9, name: '默认分页大小', key: 'sys.page.defaultSize', value: '10', isBuiltin: false, status: 1, remark: '列表默认每页显示条数', createdAt: '2024-01-04 00:00:00' },
-  { id: 10, name: '验证码开关', key: 'sys.captcha.enabled', value: 'true', isBuiltin: true, status: 1, remark: '登录是否需要验证码', createdAt: '2024-01-04 00:00:00' },
-  { id: 11, name: '测试停用参数', key: 'sys.test.disabled', value: 'test', isBuiltin: false, status: 0, remark: '测试停用状态参数', createdAt: '2024-01-05 00:00:00' },
-  { id: 12, name: 'AI 对话上限', key: 'sys.ai.dailyLimit', value: '100', isBuiltin: false, status: 1, remark: '用户每日 AI 对话次数上限', createdAt: '2024-01-06 00:00:00' }
-]
-
 function fmtTime(t) {
   if (!t) return '-'
   try { return new Date(t).toLocaleString() } catch { return String(t) }
@@ -229,27 +213,11 @@ async function loadConfigs() {
     } else {
       throw new Error('数据格式错误')
     }
-    if (!configList.value.length) {
-      applyMockData()
-    }
   } catch (e) {
-    applyMockData()
+    console.warn('[AdminConfig] 参数配置加载失败:', e.message)
   } finally {
     loading.value = false
   }
-}
-
-function applyMockData() {
-  const kw = searchForm.name.trim().toLowerCase()
-  const kk = searchForm.key.trim().toLowerCase()
-  let filtered = mockConfigs.filter(c => {
-    if (kw && !c.name.toLowerCase().includes(kw)) return false
-    if (kk && !c.key.toLowerCase().includes(kk)) return false
-    return true
-  })
-  pagination.total = filtered.length
-  const start = (pagination.pageNum - 1) * pagination.pageSize
-  configList.value = filtered.slice(start, start + pagination.pageSize)
 }
 
 function handleSearch() {
@@ -341,9 +309,7 @@ async function handleRefreshCache() {
     ElMessage.success('缓存刷新成功')
     await loadConfigs()
   } catch (e) {
-    ElMessage.success('缓存刷新成功')
-    // Mock 模式下也重新加载
-    await loadConfigs()
+    ElMessage.error('缓存刷新失败：' + e.message)
   } finally {
     refreshing.value = false
   }

@@ -34,3 +34,6 @@ mox-alliance-executor-core = { path = "../mox-alliance-executor-core" }
 default = []
 # 启用 HTTP 专家注册桥接（保留向后兼容）
 http-bridge = []
+
+[lints]
+workspace = true

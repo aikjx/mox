@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -13,7 +13,9 @@
 
 use super::constants::{INTENT_CLASSES, RRF_K, SPREAD_DAMPING, SPREAD_METHOD, SPREAD_ROUNDS, SPREAD_WEIGHT};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
+#[cfg(test)]
+use std::collections::BTreeSet;
 use uuid::Uuid;
 
 // 可扩展：意图分类 id（String 形式，便于 JSON）
@@ -79,7 +81,7 @@ pub struct IntentResult {
 ///
 /// - `query`: 非空用户输入
 /// - `graph_spread_fn`: 可选的图谱激活扩散函数：
-///     FnOnce(seeds: &[String], d: f64, rounds: u32) -> Result<BTreeMap<String, f64>, String>
+///   FnOnce(seeds: &[String], d: f64, rounds: u32) -> Result<BTreeMap<String, f64>, String>
 ///   输入 seeds = query 切词 + 关键词命中的类标签；d=0.85；rounds=30。
 ///   返回 {intent_label: score} 映射。若 graph 不可用，传 None → 直接走关键词（degraded）。
 pub fn classify_intent<F>(query: &str, graph_spread_fn: Option<F>) -> IntentResult
@@ -384,7 +386,7 @@ mod tests {
         let r = rrf_scores(&m, 60.0);
         assert!(r["a"] > r["b"]);
         assert_eq!(r["c"], 0.0);
-        for (_, v) in &r {
+        for v in r.values() {
             assert!(*v >= 0.0 && *v <= 1.0);
         }
     }

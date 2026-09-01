@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -553,7 +553,7 @@ impl AllianceService {
 
         let total = filtered.len();
         let page = query.page.max(1);
-        let page_size = query.page_size.min(100).max(1);
+        let page_size = query.page_size.clamp(1, 100);
         let start = (page - 1) * page_size;
         let experts: Vec<crate::types::ExpertMeta> =
             filtered.into_iter().skip(start).take(page_size).collect();
@@ -625,7 +625,7 @@ impl AllianceService {
         let mut history = self.expert_score_history.lock().unwrap();
         history
             .entry(expert_id.clone())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push((report.score, 0, report.vetoed));
 
         Ok(crate::types::ConsultExpertResponse {
@@ -705,7 +705,7 @@ impl AllianceService {
                     let mut history = self.expert_score_history.lock().unwrap();
                     history
                         .entry(result.expert_id.clone())
-                        .or_insert_with(Vec::new)
+                        .or_default()
                         .push((score, result.latency_ms, vetoed));
                     results.push(result);
                 }
@@ -735,7 +735,7 @@ impl AllianceService {
                 let mut history = self.expert_score_history.lock().unwrap();
                 history
                     .entry(eid.clone())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push((report.score, latency, report.vetoed));
 
                 results.push(crate::types::SingleExpertResult {

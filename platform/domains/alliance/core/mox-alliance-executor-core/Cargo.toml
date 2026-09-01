@@ -31,3 +31,6 @@ mox-alliance-scheduler-core = { path = "../mox-alliance-scheduler-core" }
 
 [features]
 default = []
+
+[lints]
+workspace = true

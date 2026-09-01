@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 """
-manage.py — 璇玑系统统一运维脚本（单文件整合版，stdlib-only）
+server-manage.py — 璇玑系统统一运维脚本（单文件整合版，stdlib-only） · 版本 3.0
 
 整合自仓库根目录原先分散的四个脚本：
   1. service_manager.py   命令行服务管理器（start/stop/restart/status/logs）
@@ -22,23 +22,23 @@ manage.py — 璇玑系统统一运维脚本（单文件整合版，stdlib-only�
     缺失时给出明确提示而非崩溃。
   · 跨进程可感知：运行状态以 .runtime/<key>.pid + 端口探测持久化判定，
     CLI 启动的服务、Web 面板另起的进程均可互相感知。
-  · 路径约定：仓库根为 <repo>/，本文件位于 <repo>/scripts/manage.py，
+  · 路径约定：仓库根为 <repo>/，本文件位于 <repo>/scripts/server-manage.py，
     所有相对路径（cwd、pid、log、config）均相对仓库根解析。
 
 用法:
-  python scripts/manage.py                    # 默认：一键启动全部服务 + 拉起 Web 管理面板（= bootstrap --with-dashboard）
-  python scripts/manage.py list
-  python scripts/manage.py list-projects      # 展示全量项目目录清单（project_registry）
-  python scripts/manage.py scripts            # 展示 scripts/ 目录分类索引
-  python scripts/manage.py start   [service_key|all]  [--strict]
-  python scripts/manage.py stop    [service_key|all]   [--force]
-  python scripts/manage.py restart [service_key|all]   [--strict]
-  python scripts/manage.py status
-  python scripts/manage.py logs    [service_key]       [--lines N]
-  python scripts/manage.py dashboard  [--host 0.0.0.0] [--port 3999] [--no-browser]
-  python scripts/manage.py verify            # 六大公理数学自洽性验证
-  python scripts/manage.py init               # 创建 .runtime / .logs 目录
-  python scripts/manage.py bootstrap [--strict] [--with-dashboard] [--no-browser] [--dry-run]
+  python scripts/server-manage.py                    # 默认：一键启动全部服务 + 拉起 Web 管理面板（= bootstrap --with-dashboard）
+  python scripts/server-manage.py list
+  python scripts/server-manage.py list-projects      # 展示全量项目目录清单（project_registry）
+  python scripts/server-manage.py scripts            # 展示 scripts/ 目录分类索引
+  python scripts/server-manage.py start   [service_key|all]  [--strict]
+  python scripts/server-manage.py stop    [service_key|all]   [--force]
+  python scripts/server-manage.py restart [service_key|all]   [--strict]
+  python scripts/server-manage.py status
+  python scripts/server-manage.py logs    [service_key]       [--lines N]
+  python scripts/server-manage.py dashboard  [--host 0.0.0.0] [--port 3999] [--no-browser]
+  python scripts/server-manage.py verify            # 六大公理数学自洽性验证
+  python scripts/server-manage.py init               # 创建 .runtime / .logs 目录
+  python scripts/server-manage.py bootstrap [--strict] [--with-dashboard] [--no-browser] [--dry-run]
                                             # 一键启动：预检 → 清残留 → 按拓扑启动 → 可选面板
 """
 
@@ -443,9 +443,10 @@ def _project_owned_pid(pid: int) -> bool:
 
     信息不足时默认 True（允许进程级 pid 文件中记录的 pid 必然属于本项目）。
 
-    Windows 增强：相对路径启动（如 `python scripts/manage.py dashboard`）不会在 cmdline 中出现
-    PROJECT_ROOT，因此额外识别：命令行末尾/参数位置出现 scripts/manage.py、manage.py dashboard
-    这类签名时，视为本项目归属（避免明明是自己的 dashboard server 却被判成「第三方」而不敢杀）。
+    Windows 增强：相对路径启动（如 `python scripts/server-manage.py dashboard`）不会在 cmdline 中出现
+    PROJECT_ROOT，因此额外识别：命令行末尾/参数位置出现 scripts/server-manage.py、scripts/manage.py、
+    server-manage.py dashboard、manage.py dashboard 这类签名时，视为本项目归属（避免明明是自己的
+    dashboard server 却被判成「第三方」而不敢杀）。
     """
     try:
         if os.name == "nt":
@@ -475,8 +476,11 @@ def _project_owned_pid(pid: int) -> bool:
                 return True
             # 启发式：识别本项目运维脚本的相对路径调用
             for sig in (
+                "scripts/server-manage.py",
                 "scripts/manage.py",
+                "server-manage.py dashboard",
                 "manage.py dashboard",
+                "server-manage.py bootstrap",
                 "manage.py bootstrap",
             ):
                 if sig in text_norm:
@@ -501,7 +505,14 @@ def _project_owned_pid(pid: int) -> bool:
             if str(PROJECT_ROOT) in blob:
                 return True
             blob_norm = blob.lower().replace("\\", "/")
-            for sig in ("scripts/manage.py", "manage.py dashboard", "manage.py bootstrap"):
+            for sig in (
+                "scripts/server-manage.py",
+                "scripts/manage.py",
+                "server-manage.py dashboard",
+                "manage.py dashboard",
+                "server-manage.py bootstrap",
+                "manage.py bootstrap",
+            ):
                 if sig in blob_norm:
                     return True
             return False
@@ -835,12 +846,10 @@ class ServiceManager:
         else:
             state = "STOPPED"
 
+        # url 统一拼接 health_check（health_check="/" 时等效裸端口；api=/health、voice=/voice/health 等自动带上）
         url = None
         if port:
-            if key == "api":
-                url = f"http://localhost:{port}{svc.get('health_check','')}"
-            else:
-                url = f"http://localhost:{port}"
+            url = f"http://localhost:{port}{svc.get('health_check', '')}"
 
         return {
             "key": key,
@@ -1003,12 +1012,18 @@ class ServiceManager:
 
     # --- 操作 -------------------------------------------------------------- #
     def _spawn_command(self, svc: dict, cwd: Path, log_file_path: Path):
-        """优先 args 列表形式 shell=False；回退 command 字符串 shell=True。"""
+        """优先 args 列表形式 shell=False；回退 command 字符串 shell=True。
+
+        日志句柄规范：显式持有文件句柄，Popen 成功后立即在父进程侧关闭
+        （子进程已继承句柄继续写日志），避免父进程句柄依赖 GC 延迟释放造成
+        日志文件被锁 / 轮转失败。
+        """
         args = svc.get("args")
         cmd = svc.get("command", "")
+        log_handle = open(log_file_path, "a", encoding="utf-8")
         kwargs = dict(
             cwd=str(cwd),
-            stdout=open(log_file_path, "a", encoding="utf-8"),
+            stdout=log_handle,
             stderr=subprocess.STDOUT,
         )
         if os.name == "nt":
@@ -1016,18 +1031,35 @@ class ServiceManager:
             # CREATE_NEW_PROCESS_GROUP(0x200): CTRL+C 隔离
             # 注意：不能加 CREATE_BREAKAWAY_FROM_JOB，受限环境下会报"拒绝访问"
             kwargs["creationflags"] = 0x08000000 | 0x00000200
-        if isinstance(args, list) and args:
-            # Windows: shell=False 时相对路径需转为绝对路径，否则 WinError 2
-            if os.name == "nt" and args and not Path(args[0]).is_absolute():
-                args = [str((cwd / args[0]).resolve())] + args[1:]
+        try:
+            if isinstance(args, list) and args:
+                # Windows: shell=False 时相对路径需转为绝对路径，否则 WinError 2。
+                # 注意：只对「可执行文件」args[0] 判断/转换，绝不能对整个 list 调 Path()
+                # （Path(list) 会把元素当路径段拼接成错误路径，导致每次都回退 command 分支）。
+                # 且仅当 cwd 下确实存在该相对可执行文件时才转绝对（如 target/release/x.exe）；
+                # 若不存在则视为 PATH 命令（python/npm 等），保持原样由系统解析，避免无谓回退。
+                if os.name == "nt" and args and not Path(args[0]).is_absolute():
+                    cand = cwd / args[0]
+                    if cand.exists():
+                        args = [str(cand.resolve())] + args[1:]
+                try:
+                    proc = subprocess.Popen(args, shell=False, **kwargs)
+                    log_handle.close()  # 父进程侧释放，子进程继续写
+                    return proc
+                except FileNotFoundError as e:
+                    log(f"[WARN] args 形式启动失败（{e}），回退 command 字符串形式")
+            if not cmd:
+                raise ValueError(f"服务 '{svc.get('name')}' 未设置 command 或 args")
+            kwargs["shell"] = True
+            proc = subprocess.Popen(cmd, **kwargs)
+            log_handle.close()  # 父进程侧释放，子进程继续写
+            return proc
+        except BaseException:
             try:
-                return subprocess.Popen(args, shell=False, **kwargs)
-            except FileNotFoundError as e:
-                log(f"[WARN] args 形式启动失败（{e}），回退 command 字符串形式")
-        if not cmd:
-            raise ValueError(f"服务 '{svc.get('name')}' 未设置 command 或 args")
-        kwargs["shell"] = True
-        return subprocess.Popen(cmd, **kwargs)
+                log_handle.close()
+            except Exception:
+                pass
+            raise
 
     def start(self, key: str, strict: bool = False) -> bool:
         if key not in self.config.services:
@@ -1079,11 +1111,7 @@ class ServiceManager:
                 )
             self._start_ts[key] = time.time()
             proc = self._spawn_command(svc, cwd, log_path)
-            # 确保日志文件句柄关闭（_spawn_command 内部 open 了）
-            try:
-                proc.stdout.close()
-            except Exception:
-                pass
+            # 日志句柄已在 _spawn_command 内于父进程侧关闭（子进程继承写日志）
             write_pid(key, proc.pid)
             log(f"[INFO] 已启动，pid={proc.pid}")
 
@@ -1625,7 +1653,7 @@ def run_dashboard(config: ConfigManager, manager: ServiceManager, host: str, por
             fallback = _find_free_port(port, span=60)
             if fallback == 0:
                 log(f"[ERROR] dashboard 原始端口 {port} 仍被第三方占用，且 {port}~{port+60} 区间全部占满，无法启动。")
-                log(f"[HINT]  请手工 `scripts/manage.py dashboard --port <其他端口>` 指定空闲端口。")
+                log(f"[HINT]  请手工 `scripts/server-manage.py dashboard --port <其他端口>` 指定空闲端口。")
                 return None
             log(f"[INFO] 原始端口 {port} 仍被第三方占用；dashboard 自动回落到端口 {fallback}")
             final_port = fallback
@@ -2146,7 +2174,8 @@ def cmd_logs(manager: ServiceManager, key: str, lines: int):
 def cmd_start(manager: ServiceManager, key: str, strict: bool):
     ensure_dirs()
     if (not key) or key == "all":
-        ok = manager.start_all_sorted(auto_only=True, strict=strict)
+        # 显式 `start all`：启动全部已配置服务（与 Web 面板「启动所有」一致）
+        ok = manager.start_all_configured(strict=strict)
     else:
         ok = manager.start(key, strict=strict)
     if strict and not ok:
@@ -2166,7 +2195,8 @@ def cmd_stop(manager: ServiceManager, key: str, force: bool):
 def cmd_restart(manager: ServiceManager, key: str, strict: bool):
     ensure_dirs()
     if (not key) or key == "all":
-        manager.restart_all(strict=strict)
+        # 显式 `restart all`：重启全部已配置服务（与 Web 面板「重启所有」一致）
+        manager.restart_all_configured(strict=strict)
     else:
         manager.restart(key, strict=strict)
     if strict:
@@ -2246,7 +2276,7 @@ def cmd_bootstrap(
         port = dashboard_port or manager.config.dashboard_port
         run_dashboard(manager.config, manager, host, port, not no_browser)
     else:
-        log("[BOOTSTRAP] 阶段 4/4: 跳过管理面板（可稍后运行 `python scripts/manage.py dashboard`）")
+        log("[BOOTSTRAP] 阶段 4/4: 跳过管理面板（可稍后运行 `python scripts/server-manage.py dashboard`）")
         # 保持"前台日志尾"体验：打印已启动服务状态 + 结束
         log("[BOOTSTRAP] ✔ 一键启动流程完成。未启动项目服务 → 请在管理面板 ▶ 启动 / `status/logs/stop` 管理。Ctrl+C 不会停服务；需显式 `stop all`。")
     return 0
@@ -2293,7 +2323,7 @@ def cmd_scripts(manager: ServiceManager):
         log("[WARN] 配置中无 script_catalog 字段")
         return
     print(f"\n=== {manager.config.project_name} 脚本目录索引 ===")
-    print(f"  主入口: scripts/manage.py（本脚本）")
+    print(f"  主入口: scripts/server-manage.py（本脚本；scripts/manage.py 为兼容别名）")
     print()
     for key, info in catalog.items():
         if key.startswith("_") or key == "core":

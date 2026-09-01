@@ -1001,7 +1001,7 @@ async function loadAll() {
       logs = results[1]
       plg = results[2]
     } catch (e) {
-      console.warn('API请求失败，使用模拟数据', e)
+      console.warn('监控接口加载失败，使用空数据:', e)
     }
     
     if (st && st.success !== undefined && st.data !== undefined) {

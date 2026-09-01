@@ -43,3 +43,6 @@ http-body-util = { workspace = true }
 
 [features]
 default = []
+
+[lints]
+workspace = true

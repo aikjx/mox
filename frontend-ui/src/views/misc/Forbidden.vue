@@ -76,7 +76,7 @@
             <div class="perm-count">
               共 {{ permissionStore.permissions.length }} 项权限
               <span v-if="permissionStore.isAdmin" class="admin-badge">
-                <el-icon><Crown /></el-icon>
+                <el-icon><Trophy /></el-icon>
                 超级管理员拥有全部权限
               </span>
             </div>
@@ -154,7 +154,7 @@ import {
   Back,
   InfoFilled,
   UserFilled,
-  Crown,
+  Trophy,
   Search,
   Check,
 } from '@element-plus/icons-vue'

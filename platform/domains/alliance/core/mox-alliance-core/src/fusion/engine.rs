@@ -424,7 +424,7 @@ mod tests {
         ];
         let result = engine.fuse_scalar(&values).unwrap();
         assert!(result > 0.0);
-        assert!(result >= 10.0 && result <= 40.0);
+        assert!((10.0..=40.0).contains(&result));
     }
 
     #[test]

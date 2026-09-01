@@ -437,25 +437,6 @@ async fn fetch_remote_config<T>(
     }
 }
 
-/// 通用文件加载：不存在 → 默认 + 警告；解析失败 → 显式报错（fail-fast）
-fn load_from_file<T: for<'de> Deserialize<'de> + Default>(path: &str) -> anyhow::Result<T> {
-    match std::fs::read_to_string(path) {
-        Ok(content) => match serde_yaml::from_str::<T>(&content) {
-            Ok(cfg) => {
-                tracing::info!("加载配置文件: {path}");
-                Ok(cfg)
-            }
-            Err(e) => Err(anyhow::anyhow!(
-                "配置文件 {path} 解析失败：{e}（配置错误必须显式暴露，禁止静默降级为默认值）"
-            )),
-        },
-        Err(_) => {
-            tracing::warn!("配置文件 {path} 不存在，使用内置默认值。");
-            Ok(T::default())
-        }
-    }
-}
-
 /// 读取文件原文（不存在 → Err 由调用方处理；存在读取失败 → 显式报错）
 fn load_from_file_raw(path: &str) -> anyhow::Result<String> {
     match std::fs::read_to_string(path) {
@@ -639,12 +620,12 @@ mod tests {
             r.is_err(),
             "配置文件存在但解析失败时应返回错误（fail-fast），不得静默降级"
         );
-        std::fs::remove_dir_all(&dir).ok();
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
-    /// 旧环境变量 EXECUTOR_MODE 兼容但标记 deprecated（新变量优先）
-    /// 注：该测试涉及全局 env 读写，与同文件内其他测试并行会竞态，
-    ///     故实现于 `tests/env_deprecated.rs`（独立进程隔离）。
+    // 旧环境变量 EXECUTOR_MODE 兼容但标记 deprecated（新变量优先）
+    // 注：该测试涉及全局 env 读写，与同文件内其他测试并行会竞态，
+    //     故实现于 `tests/env_deprecated.rs`（独立进程隔离）。
 
     /// 环境变量覆盖生效
     #[test]

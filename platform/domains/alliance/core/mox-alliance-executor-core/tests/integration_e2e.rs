@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use mox_alliance_common_proto::{
-    AllianceMode, AllianceResult, Expert, ExpertStatus, FusionStrategy, NodeStatus, TaskPriority,
+    AllianceMode, AllianceResult, Expert, FusionStrategy, NodeStatus, TaskPriority,
     TaskStatus,
 };
 use mox_alliance_executor_core::{DagEngineImpl, MockNodeExecutor, MockExecutorConfig};

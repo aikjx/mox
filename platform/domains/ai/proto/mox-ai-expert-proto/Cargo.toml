@@ -21,3 +21,6 @@ tokio = { workspace = true }
 default = []
 # 启用完整审计事件类型（依赖 mox-audit）；关闭则用轻量投影
 full-audit = []
+
+[lints]
+workspace = true

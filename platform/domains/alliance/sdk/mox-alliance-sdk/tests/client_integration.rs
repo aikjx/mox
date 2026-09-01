@@ -37,10 +37,7 @@ async fn spawn_mock(handler: Handler) -> String {
             let h = handler.clone();
             tokio::spawn(async move {
                 let mut buf = vec![0u8; 8192];
-                let n = match sock.read(&mut buf).await {
-                    Ok(n) => n,
-                    Err(_) => 0,
-                };
+                let n = sock.read(&mut buf).await.unwrap_or_default();
                 let req = String::from_utf8_lossy(&buf[..n]).to_string();
                 let request_line = req.lines().next().unwrap_or("");
                 let mut parts = request_line.split_whitespace();

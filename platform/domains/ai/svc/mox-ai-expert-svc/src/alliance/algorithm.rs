@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -40,6 +40,8 @@ pub enum AnalysisDimension {
 }
 
 impl AnalysisDimension {
+    // 淇濈暀鍥烘湁 from_str锛堝唴閮ㄨ涔夛紝闈?FromStr trait锛夛紝鏄惧紡璞佸厤 should_implement_trait
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "complexity" | "complex" => Self::Complexity,
@@ -539,7 +541,7 @@ fn check_injection_risk(code: &str, query: &str) -> (String, bool) {
     if found.is_empty() {
         ("未检测到明显的 SQL 注入模式".into(), true)
     } else {
-        (format!("检测到潜在 SQL 注入风险：使用字符串拼接构建 SQL 语句。请改用参数化查询"), false)
+        ("检测到潜在 SQL 注入风险：使用字符串拼接构建 SQL 语句。请改用参数化查询".to_string(), false)
     }
 }
 

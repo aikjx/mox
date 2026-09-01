@@ -68,11 +68,17 @@ impl GatewayState {
             logging_enabled: true,
         }));
 
-        // IAM：SQLite 装配（启动期同步初始化，失败即快速失败）。
-        // 迁移期使用内存库 + 内置种子（system 平台租户 + T001 演示租户）；
-        // 生产持久化（文件库 + 迁移）作为后续演进项。
-        let conn = rusqlite::Connection::open_in_memory()
-            .expect("open sqlite :memory: for IAM");
+        // IAM：文件 SQLite 持久化（启动期同步初始化，失败即快速失败）。
+        // 数据库路径：<cwd>/data/mox.db，启动时确保 data 目录存在；
+        // init_schema 幂等建表（22 张表）+ seed 内置种子（system 平台租户 + T001 演示租户）。
+        let db_path = std::env::current_dir()
+            .expect("current_dir")
+            .join("data/mox.db");
+        if let Some(parent) = db_path.parent() {
+            std::fs::create_dir_all(parent).expect("create data dir");
+        }
+        let conn = rusqlite::Connection::open(&db_path)
+            .expect("open file sqlite for IAM");
         let iam = Arc::new(IamRepository::new(Arc::new(parking_lot::Mutex::new(conn))));
         iam.init_schema().expect("iam init_schema");
         iam.seed().expect("iam seed");

@@ -287,81 +287,13 @@ function fmtTime(t) {
   try { return new Date(t).toLocaleString() } catch { return String(t) }
 }
 
-// Mock 数据兜底
-const mockMenuTree = [
-  {
-    id: 1, parentId: null, name: '系统管理', icon: 'Setting', sort: 1,
-    permission: '', path: '/admin', component: 'admin/AdminView', type: 'M',
-    visible: 1, status: 1, isFrame: 0, isCache: 0, createdAt: '2024-01-01 00:00:00',
-    children: [
-      {
-        id: 11, parentId: 1, name: '用户管理', icon: 'User', sort: 1,
-        permission: 'system:user:list', path: 'user', component: 'admin/panels/AdminUser', type: 'C',
-        visible: 1, status: 1, isFrame: 0, isCache: 1, createdAt: '2024-01-01 00:00:00',
-        children: [
-          { id: 111, parentId: 11, name: '用户查询', icon: '', sort: 1, permission: 'system:user:query', type: 'F', status: 1, createdAt: '2024-01-01 00:00:00' },
-          { id: 112, parentId: 11, name: '用户新增', icon: '', sort: 2, permission: 'system:user:add', type: 'F', status: 1, createdAt: '2024-01-01 00:00:00' },
-          { id: 113, parentId: 11, name: '用户修改', icon: '', sort: 3, permission: 'system:user:edit', type: 'F', status: 1, createdAt: '2024-01-01 00:00:00' },
-          { id: 114, parentId: 11, name: '用户删除', icon: '', sort: 4, permission: 'system:user:delete', type: 'F', status: 1, createdAt: '2024-01-01 00:00:00' }
-        ]
-      },
-      {
-        id: 12, parentId: 1, name: '菜单管理', icon: 'Menu', sort: 2,
-        permission: 'system:menu:list', path: 'menu', component: 'admin/panels/AdminMenu', type: 'C',
-        visible: 1, status: 1, isFrame: 0, isCache: 1, createdAt: '2024-01-01 00:00:00',
-        children: []
-      },
-      {
-        id: 13, parentId: 1, name: '字典管理', icon: 'Collection', sort: 3,
-        permission: 'system:dict:list', path: 'dict', component: 'admin/panels/AdminDict', type: 'C',
-        visible: 1, status: 1, isFrame: 0, isCache: 1, createdAt: '2024-01-01 00:00:00',
-        children: []
-      },
-      {
-        id: 14, parentId: 1, name: '参数配置', icon: 'Tools', sort: 4,
-        permission: 'system:config:list', path: 'config', component: 'admin/panels/AdminConfig', type: 'C',
-        visible: 1, status: 1, isFrame: 0, isCache: 1, createdAt: '2024-01-01 00:00:00',
-        children: []
-      },
-      {
-        id: 15, parentId: 1, name: '审计日志', icon: 'Document', sort: 5,
-        permission: 'system:operlog:list', path: 'audit', component: 'admin/panels/AdminAudit', type: 'C',
-        visible: 1, status: 1, isFrame: 0, isCache: 0, createdAt: '2024-01-01 00:00:00',
-        children: []
-      }
-    ]
-  },
-  {
-    id: 2, parentId: null, name: '系统监控', icon: 'DataAnalysis', sort: 2,
-    permission: '', path: '/monitor', component: 'monitor/MonitorView', type: 'M',
-    visible: 1, status: 1, isFrame: 0, isCache: 0, createdAt: '2024-01-02 00:00:00',
-    children: [
-      {
-        id: 21, parentId: 2, name: '在线用户', icon: 'User', sort: 1,
-        permission: 'monitor:online:list', path: 'online', component: 'monitor/OnlineUser', type: 'C',
-        visible: 1, status: 1, isFrame: 0, isCache: 0, createdAt: '2024-01-02 00:00:00',
-        children: []
-      },
-      {
-        id: 22, parentId: 2, name: '服务监控', icon: 'Cpu', sort: 2,
-        permission: 'monitor:server:list', path: 'server', component: 'monitor/ServerMonitor', type: 'C',
-        visible: 1, status: 1, isFrame: 0, isCache: 0, createdAt: '2024-01-02 00:00:00',
-        children: []
-      }
-    ]
-  }
-]
-
 async function loadMenuTree() {
   loading.value = true
   try {
     const data = await getMenuTree()
     menuTree.value = Array.isArray(data) ? data : (Array.isArray(data?.list) ? data.list : [])
-    if (!menuTree.value.length) {
-      menuTree.value = mockMenuTree
-    }
   } catch (e) {
-    menuTree.value = mockMenuTree
+    console.warn('[AdminMenu] 菜单树加载失败:', e.message)
   } finally {
     loading.value = false
   }

@@ -341,6 +341,9 @@ pub type MoxResult<T> = Result<T, MoxError>;
 ///     DUPLICATE_NODE: (1, 2, "节点已存在", 409, Warning),
 /// );
 /// ```
+// 错误码采用"域(module) + 序号(seq)"两段式设计（如 01-001），
+// 前导零是故意的格式（非八进制），此处统一豁免 zero_prefixed_literal。
+#[allow(clippy::zero_prefixed_literal)]
 #[macro_export]
 macro_rules! define_domain_errors {
     ($struct_name:ident, $domain:ident,
@@ -375,7 +378,6 @@ macro_rules! define_domain_errors {
 
 /// KG 域错误码
 pub mod kg {
-    use super::*;
 
     define_domain_errors!(KgErrors, Kg,
         // 存储模块 (01)
@@ -402,7 +404,6 @@ pub mod kg {
 
 /// AI 域错误码
 pub mod ai {
-    use super::*;
 
     define_domain_errors!(AiErrors, Ai,
         // 对话模块 (01)
@@ -429,7 +430,6 @@ pub mod ai {
 
 /// 用户权限域错误码
 pub mod user {
-    use super::*;
 
     define_domain_errors!(UserErrors, User,
         // 认证模块 (01)
@@ -450,7 +450,6 @@ pub mod user {
 
 /// 平台域错误码
 pub mod platform {
-    use super::*;
 
     define_domain_errors!(PlatformErrors, Platform,
         // 通用模块 (00)

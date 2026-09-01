@@ -108,12 +108,10 @@ pub fn voting_fusion<T: Eq + std::hash::Hash + Clone>(votes: &[T]) -> Option<(T,
         *counts.entry(vote).or_insert(0) += 1;
     }
 
-    let winner = counts
+    counts
         .into_iter()
         .max_by_key(|(_, count)| *count)
-        .map(|(item, count)| (item.clone(), count, votes.len()));
-
-    winner
+        .map(|(item, count)| (item.clone(), count, votes.len()))
 }
 
 /// 择优融合

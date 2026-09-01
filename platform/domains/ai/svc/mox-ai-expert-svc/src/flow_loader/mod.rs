@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -335,9 +335,9 @@ mod tests {
     #[test]
     fn list_empty_dir() {
         let l = FlowLoader::new("/tmp/flow-test-empty");
-        std::fs::create_dir_all("/tmp/flow-test-empty").ok();
+        let _ = std::fs::create_dir_all("/tmp/flow-test-empty");
         let names = l.list().unwrap();
-        std::fs::remove_dir("/tmp/flow-test-empty").ok();
+        let _ = std::fs::remove_dir("/tmp/flow-test-empty");
         assert!(names.is_empty());
     }
 }
