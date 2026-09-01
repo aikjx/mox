@@ -145,7 +145,7 @@
             <div v-show="expandedSections.has('analysis')" class="sp-section-body">
               <div class="qa-list">
                 <div class="qa-item" @click="runQuickAnalysis('centrality')">
-                  <div class="qa-icon" style="background:#eef2ff;color:#4f46e5">🎯</div>
+                  <div class="qa-icon" style="background:var(--accent-dim);color:var(--accent-light)">🎯</div>
                   <div class="qa-info">
                     <div class="qa-title">中心性分析</div>
                     <div class="qa-desc">识别关键节点</div>
@@ -1531,7 +1531,7 @@ onBeforeUnmount(() => {
   width: 280px;
   border-color: var(--brand);
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
-  background: #fff;
+  background: var(--bg-input-focus);
 }
 .gt-search .el-icon { color: var(--text-3); font-size: 16px; flex-shrink: 0; }
 .gt-search-input {

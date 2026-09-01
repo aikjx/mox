@@ -1,4 +1,4 @@
-<!--
+﻿<!--
   专家联盟 · 总览页
   φ 黄金比例三栏布局：左 382px : 中自适应 : 右 420px
   左栏：阶段导航 + 专家库
@@ -418,7 +418,7 @@ function drawGraph() {
   const scale = Math.min(w, h) / 250
 
   // 画边
-  ctx.strokeStyle = '#cbd5e1'
+  ctx.strokeStyle = '#3a3f5a'
   ctx.lineWidth = 1.5
   edges.forEach(e => {
     const s = nodes.find(n => n.id === e.s)
@@ -519,9 +519,9 @@ watch(currentPhase, () => {
 }
 
 .card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -529,7 +529,7 @@ watch(currentPhase, () => {
 
 .card-header {
   padding: 12px 14px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-ghost);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -542,7 +542,7 @@ watch(currentPhase, () => {
 .card-title {
   font-size: 13px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .card-sub {
@@ -551,7 +551,7 @@ watch(currentPhase, () => {
 }
 
 .count-badge {
-  background: #eef2ff;
+  background: var(--accent-dim);
   color: #6366f1;
   padding: 2px 8px;
   border-radius: 10px;
@@ -583,11 +583,11 @@ watch(currentPhase, () => {
 }
 
 .phase-item:hover {
-  background: #f8fafc;
+  background: var(--bg-tertiary);
 }
 
 .phase-item.active {
-  background: #eef2ff;
+  background: var(--accent-dim);
 }
 
 .phase-index {
@@ -610,7 +610,7 @@ watch(currentPhase, () => {
 .phase-name {
   font-size: 13px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   line-height: 1.3;
 }
 
@@ -636,7 +636,7 @@ watch(currentPhase, () => {
   padding: 10px 12px;
   display: flex;
   gap: 8px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-ghost);
 }
 
 .expert-scroll {
@@ -651,17 +651,17 @@ watch(currentPhase, () => {
   gap: 10px;
   padding: 10px 12px;
   cursor: pointer;
-  border-bottom: 1px solid #f8fafc;
+  border-bottom: 1px solid var(--border-ghost);
   transition: all 0.12s;
   position: relative;
 }
 
 .expert-item:hover {
-  background: #f8fafc;
+  background: var(--bg-tertiary);
 }
 
 .expert-item.selected {
-  background: #f0fdf4;
+  background: var(--success-dim);
   border-left: 3px solid #10b981;
   padding-left: 9px;
 }
@@ -684,7 +684,7 @@ watch(currentPhase, () => {
 .expert-name {
   font-size: 13px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   line-height: 1.3;
 }
 
@@ -704,8 +704,8 @@ watch(currentPhase, () => {
 .cap-tag {
   font-size: 10px;
   padding: 1px 6px;
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
   border-radius: 4px;
 }
 
@@ -716,13 +716,13 @@ watch(currentPhase, () => {
 
 .selected-summary {
   padding: 8px 12px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--border-ghost);
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-size: 12px;
   color: #64748b;
-  background: #f8fafc;
+  background: var(--bg-tertiary);
 }
 
 /* ===== 中栏对话区 ===== */
@@ -735,7 +735,7 @@ watch(currentPhase, () => {
 
 .mode-switcher {
   padding: 10px 14px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-ghost);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -745,7 +745,7 @@ watch(currentPhase, () => {
 .mode-tabs {
   display: flex;
   gap: 2px;
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   padding: 3px;
   border-radius: 8px;
 }
@@ -761,11 +761,11 @@ watch(currentPhase, () => {
 }
 
 .mode-tab:hover {
-  color: #334155;
+  color: var(--text-secondary);
 }
 
 .mode-tab.active {
-  background: #fff;
+  background: var(--bg-card);
   color: #4f46e5;
   font-weight: 600;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -818,7 +818,7 @@ watch(currentPhase, () => {
   display: block;
   font-size: 16px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
   line-height: 1.2;
 }
 
@@ -878,7 +878,7 @@ watch(currentPhase, () => {
 .ring-num {
   font-size: 22px;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--text-primary);
   line-height: 1.2;
 }
 
@@ -911,7 +911,7 @@ watch(currentPhase, () => {
 .pp-bar {
   flex: 1;
   height: 6px;
-  background: #e2e8f0;
+  background: var(--bg-tertiary);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -925,7 +925,7 @@ watch(currentPhase, () => {
 .pp-val {
   width: 32px;
   text-align: right;
-  color: #475569;
+  color: var(--text-secondary);
   font-weight: 600;
   flex-shrink: 0;
 }
@@ -954,7 +954,7 @@ watch(currentPhase, () => {
 }
 
 .ranking-item:hover {
-  background: #f8fafc;
+  background: var(--bg-tertiary);
 }
 
 .rank-idx {
@@ -965,7 +965,7 @@ watch(currentPhase, () => {
   place-items: center;
   font-size: 11px;
   font-weight: 700;
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   color: #64748b;
   flex-shrink: 0;
 }
@@ -992,7 +992,7 @@ watch(currentPhase, () => {
 .rank-name {
   font-size: 12px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   line-height: 1.3;
 }
 

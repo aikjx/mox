@@ -60,7 +60,7 @@ function closeTab(path) {
 
 <style scoped>
 .tabs {
-  height: 42px; flex-shrink: 0; background: #fff; border-bottom: 1px solid var(--border);
+  height: 42px; flex-shrink: 0; background: var(--bg-card); border-bottom: 1px solid var(--border);
   display: flex; align-items: center; gap: 6px; padding: 0 16px; overflow-x: auto;
 }
 .tab {
@@ -71,7 +71,7 @@ function closeTab(path) {
 .tab:hover { background: var(--bg-page); }
 .tab.active { background: var(--brand-soft); color: var(--brand-dark); font-weight: 600; }
 .tab-close { font-size: 12px; border-radius: 50%; }
-.tab-close:hover { background: #cbd5e1; color: #fff; }
+.tab-close:hover { background: var(--bg-tertiary); color: #fff; }
 
 @media (max-width: 768px) {
   .tabs { display: none; }

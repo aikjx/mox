@@ -338,7 +338,7 @@ async function saveCode() {
   height: calc(100% - 60px);
 }
 .auto-left {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 16px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
@@ -382,7 +382,7 @@ async function saveCode() {
   font-size: 12px;
 }
 .auto-right {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 16px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);

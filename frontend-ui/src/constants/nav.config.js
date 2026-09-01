@@ -187,3 +187,88 @@ export const HOTKEY_GROUPS = [
     ]
   }
 ]
+
+// ===== 图标侧栏导航（64px 栏，emoji 图标，3 组）=====
+export const ICON_NAV_GROUPS = [
+  { key: 'project', label: '项目', items: [
+    { key: 'dashboard', label: '工作台', icon: '📊', path: '/dashboard' },
+    { key: 'projects', label: '项目中心', icon: '📁', path: '/projects', badge: 12 },
+    { key: 'tasks', label: '任务中心', icon: '✅', path: '/tasks' },
+  ]},
+  { key: 'capability', label: '能力', items: [
+    { key: 'ai', label: 'AI助手', icon: '🤖', path: '/ai' },
+    { key: 'graph', label: '知识图谱', icon: '🕸️', path: '/graph' },
+    { key: 'operators', label: '算子引擎', icon: '⚙️', path: '/operators' },
+    { key: 'workflow', label: '工作流', icon: '🔄', path: '/workflow' },
+    { key: 'expert', label: '专家联盟', icon: '👥', path: '/expert-workspace' },
+  ]},
+  { key: 'ecosystem', label: '生态', items: [
+    { key: 'market', label: '算子商城', icon: '🛒', path: '/market' },
+    { key: 'admin', label: '系统设置', icon: '⚡', path: '/admin', bottom: true },
+  ]},
+]
+
+// ===== 模块侧栏配置（按路由模块动态渲染）=====
+export const MODULE_SIDEBAR_CONFIG = {
+  dashboard: {
+    title: '工作台', subtitle: '项目概览与快捷入口',
+    sections: [
+      { title: '快捷', items: [
+        { key: 'overview', label: '总览', icon: '📊' },
+        { key: 'recent', label: '最近项目', icon: '🕐' },
+        { key: 'starred', label: '收藏', icon: '⭐' },
+      ]},
+    ]
+  },
+  projects: {
+    title: '项目中心', subtitle: '项目管理与协作',
+    sections: [
+      { title: '项目', items: [
+        { key: 'all', label: '全部项目', icon: '📋', count: 24 },
+        { key: 'active', label: '进行中', icon: '🔄', count: 12 },
+        { key: 'paused', label: '已暂停', icon: '⏸️', count: 2 },
+        { key: 'done', label: '已完成', icon: '✅', count: 8 },
+      ]},
+      { title: '我的', items: [
+        { key: 'starred', label: '收藏的项目', icon: '⭐', count: 5 },
+        { key: 'mine', label: '我负责的', icon: '👤', count: 3 },
+        { key: 'recent', label: '最近访问', icon: '🕐', count: 6 },
+      ]}
+    ]
+  },
+  tasks: {
+    title: '任务中心', subtitle: '任务与待办管理',
+    sections: [
+      { title: '任务', items: [
+        { key: 'all', label: '全部任务', icon: '📋', count: 28 },
+        { key: 'today', label: '今日待办', icon: '☀️', count: 5 },
+        { key: 'week', label: '本周任务', icon: '📅', count: 12 },
+        { key: 'done', label: '已完成', icon: '✅', count: 16 },
+      ]},
+      { title: '优先级', items: [
+        { key: 'high', label: '高优先级', icon: '🔴', count: 4 },
+        { key: 'mid', label: '中优先级', icon: '🟡', count: 10 },
+        { key: 'low', label: '低优先级', icon: '🟢', count: 14 },
+      ]}
+    ]
+  },
+  expert: {
+    title: '专家联盟', subtitle: '专家协作与管理',
+    sections: [
+      { title: '专家', items: [
+        { key: 'all', label: '全部专家', icon: '👥', count: 156 },
+        { key: 'ai', label: 'AI 算法', icon: '🤖', count: 32 },
+        { key: 'arch', label: '架构设计', icon: '🏗️', count: 28 },
+        { key: 'frontend', label: '前端开发', icon: '🎨', count: 24 },
+        { key: 'backend', label: '后端开发', icon: '⚙️', count: 35 },
+        { key: 'data', label: '数据工程', icon: '📊', count: 20 },
+      ]},
+    ]
+  },
+  ai: { title: 'AI助手', subtitle: '智能对话', sections: [] },
+  graph: { title: '知识图谱', subtitle: '可视化探索', sections: [] },
+  operators: { title: '算子引擎', subtitle: '算子中心', sections: [] },
+  workflow: { title: '工作流', subtitle: '流程编排', sections: [] },
+  market: { title: '算子商城', subtitle: '发现与分享', sections: [] },
+  admin: { title: '系统设置', subtitle: '配置与管理', sections: [] },
+}

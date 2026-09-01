@@ -801,12 +801,12 @@ onMounted(() => {
   font-size: 13px;
 }
 .security-banner.low {
-  background: #ecfdf5;
+  background: var(--success-50);
   color: #065f46;
   border: 1px solid #a7f3d0;
 }
 .security-banner.medium {
-  background: #fffbeb;
+  background: var(--warning-50);
   color: #92400e;
   border: 1px solid #fde68a;
 }
@@ -875,14 +875,14 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: #fffbeb;
+  background: var(--warning-50);
   border-radius: 6px;
   margin-bottom: 6px;
   font-size: 13px;
   color: #92400e;
 }
 .risk-task {
-  background: #f8fafc;
+  background: var(--bg-tertiary);
   padding: 12px;
   border-radius: 8px;
 }

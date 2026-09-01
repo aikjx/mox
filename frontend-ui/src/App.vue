@@ -1,10 +1,13 @@
 <template>
   <el-config-provider :locale="zhCn">
-    <div class="app-shell" :class="{ 'sidebar-collapsed': collapsed, 'ai-fullscreen': isAIFullscreen }">
-      <!-- 侧边栏 -->
+    <div class="app-shell" :class="{ 'ai-fullscreen': isAIFullscreen }">
+      <!-- 图标侧栏（64px） -->
+      <IconSidebar ref="iconSidebarRef" />
+
+      <!-- 模块侧栏（240px，可折叠） -->
       <TheSidebar
         ref="sidebarRef"
-        :collapsed="collapsed"
+        :collapsed="moduleSidebarCollapsed"
         :is-a-i-fullscreen="isAIFullscreen"
         @toggle-collapse="appStore.toggleSidebar()"
       />
@@ -14,7 +17,7 @@
         <!-- 顶栏 -->
         <TheTopbar
           ref="topbarRef"
-          :collapsed="collapsed"
+          :collapsed="moduleSidebarCollapsed"
           :is-a-i-fullscreen="isAIFullscreen"
           @toggle-collapse="appStore.toggleSidebar()"
           @toggle-help="appStore.openHelpDrawer()"
@@ -75,12 +78,12 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
-import { QUICK_CREATE_COMMANDS, HOTKEY_GROUPS, NAV_MODULES } from '@/constants'
-import { getHealth } from '@/api'
+import { QUICK_CREATE_COMMANDS, HOTKEY_GROUPS, NAV_MODULES, MODULE_SIDEBAR_CONFIG, ICON_NAV_GROUPS } from '@/constants'
 import { useGlobalShortcuts } from '@/globalShortcuts'
 import { provideProjectContext, useProject } from '@/composables/projectContext.js'
 import { useAppStore } from '@/stores/app.store'
 import { useUiStore } from '@/stores/ui.store'
+import IconSidebar from '@/components/layout/IconSidebar.vue'
 import TheSidebar from '@/components/layout/TheSidebar.vue'
 import TheTopbar from '@/components/layout/TheTopbar.vue'
 import OnboardingGuide from '@/components/OnboardingGuide.vue'
@@ -95,31 +98,83 @@ const uiStore = useUiStore()
 const route = useRoute()
 const router = useRouter()
 
+const iconSidebarRef = ref(null)
 const sidebarRef = ref(null)
 const topbarRef = ref(null)
 const onboardingVisible = ref(false)
 let disposeShortcuts = null
 
-// 从 store 获取响应式状态
-const collapsed = computed(() => appStore.sidebarCollapsed)
+// 模块侧栏折叠状态（复用 appStore.sidebarCollapsed）
+const moduleSidebarCollapsed = computed(() => appStore.sidebarCollapsed)
+
 const helpDrawerOpen = computed({
   get: () => appStore.helpDrawerOpen,
   set: (v) => { appStore.helpDrawerOpen = v }
 })
 const isAIFullscreen = computed(() => uiStore.aiFullscreen)
 
+// 当前模块 key
+const currentModuleKey = computed(() => {
+  const p = route.path
+  if (p.startsWith('/dashboard')) return 'dashboard'
+  if (p.startsWith('/projects')) return 'projects'
+  if (p.startsWith('/tasks')) return 'tasks'
+  if (p.startsWith('/expert-workspace') || p.startsWith('/expert-center') || p.startsWith('/expert-plaza')) return 'expert'
+  if (p.startsWith('/ai')) return 'ai'
+  if (p.startsWith('/graph')) return 'graph'
+  if (p.startsWith('/operators')) return 'operators'
+  if (p.startsWith('/workflow')) return 'workflow'
+  if (p.startsWith('/market')) return 'market'
+  if (p.startsWith('/admin')) return 'admin'
+  return 'dashboard'
+})
+
+// 当前模块是否有侧栏 sections
+const hasSidebarSections = computed(() => {
+  const cfg = MODULE_SIDEBAR_CONFIG[currentModuleKey.value]
+  return cfg && cfg.sections && cfg.sections.length > 0
+})
+
+// 追踪是否是自动折叠
+let autoCollapsed = false
+
+// 路由变化时自动折叠/展开模块侧栏
+watch(currentModuleKey, (key) => {
+  const cfg = MODULE_SIDEBAR_CONFIG[key]
+  const hasSections = cfg && cfg.sections && cfg.sections.length > 0
+  if (!hasSections) {
+    // 无 sections 的模块自动折叠
+    if (!appStore.sidebarCollapsed) {
+      autoCollapsed = true
+      appStore.setSidebarCollapsed(true)
+    }
+  } else {
+    // 有 sections 的模块，如果之前是自动折叠的则恢复
+    if (autoCollapsed && appStore.sidebarCollapsed) {
+      appStore.setSidebarCollapsed(false)
+      autoCollapsed = false
+    }
+  }
+})
+
 // 健康检查
 function refreshHealth() {
+  iconSidebarRef.value?.refreshHealth?.()
   sidebarRef.value?.refreshHealth?.()
 }
 
 // 全局快捷键
 onMounted(() => {
   appStore.initTheme()
+  // 展平 ICON_NAV 用于快捷键导航（前9个）
+  const flatNav = []
+  ICON_NAV_GROUPS.forEach(g => g.items.forEach(it => {
+    if (!it.bottom) flatNav.push(it)
+  }))
   disposeShortcuts = useGlobalShortcuts({
     focusSearch: () => topbarRef.value?.focusSearch?.(),
     toggleHelpDrawer: () => { helpDrawerOpen.value = !helpDrawerOpen.value },
-    navModules: NAV_MODULES.slice(0, 9),
+    navModules: flatNav.slice(0, 9),
     pushRoute: (p) => router.push(p)
   })
 
@@ -151,14 +206,14 @@ onBeforeUnmount(() => {
 /* ===== CSS 变量 · 设计令牌 ===== */
 :root {
   --sidebar-width: 240px;
-  --header-h: 56px;
+  --header-h: 52px;
   --content-pad: 20px;
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.06);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
   --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 </style>
@@ -168,7 +223,7 @@ onBeforeUnmount(() => {
   display: flex;
   height: 100vh;
   overflow: hidden;
-  background: var(--bg-page, #f8fafc);
+  background: var(--bg-primary, #0f1117);
 }
 
 /* ===== Main Area ===== */
@@ -187,7 +242,8 @@ onBeforeUnmount(() => {
   padding: var(--content-pad, 20px);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
-  scrollbar-color: var(--border, #e2e8f0) transparent;
+  scrollbar-color: var(--border, #2d3148) transparent;
+  background: var(--bg-primary, #0f1117);
 }
 
 .app-content::-webkit-scrollbar {
@@ -199,12 +255,12 @@ onBeforeUnmount(() => {
 }
 
 .app-content::-webkit-scrollbar-thumb {
-  background: var(--border, #e2e8f0);
+  background: var(--border, #2d3148);
   border-radius: 3px;
 }
 
 .app-content::-webkit-scrollbar-thumb:hover {
-  background: var(--text-3, #94a3b8);
+  background: var(--border-light, #3a3f5a);
 }
 
 /* AI 全屏模式 */
@@ -250,7 +306,7 @@ onBeforeUnmount(() => {
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--text-3, #94a3b8);
+  color: var(--text-muted, #6b7280);
   margin: 0 0 8px;
   font-weight: 600;
 }
@@ -270,7 +326,7 @@ onBeforeUnmount(() => {
   gap: 12px;
   padding: 8px 10px;
   border-radius: 8px;
-  background: var(--bg-page, #f8fafc);
+  background: var(--bg-card, #242838);
 }
 
 .help-keys {
@@ -281,19 +337,19 @@ onBeforeUnmount(() => {
 }
 
 .help-desc {
-  color: var(--text-1, #0f172a);
+  color: var(--text-primary, #e8eaed);
   font-size: 13px;
   flex: 1;
 }
 
 .help-desc-sub {
-  color: var(--text-3, #94a3b8);
+  color: var(--text-muted, #6b7280);
   font-size: 12px;
   margin-left: 6px;
 }
 
 .qc-icon-help {
-  color: var(--brand-dark, #4338ca);
+  color: var(--accent-light, #818cf8);
   font-size: 14px;
 }
 
@@ -301,8 +357,8 @@ onBeforeUnmount(() => {
   margin-top: 20px;
   padding: 12px 14px;
   border-radius: 10px;
-  background: var(--brand-soft, #eef2ff);
-  color: var(--brand-dark, #4338ca);
+  background: var(--accent-dim, rgba(99,102,241,.15));
+  color: var(--accent-light, #818cf8);
   font-size: 12px;
   line-height: 1.7;
 }
@@ -311,19 +367,14 @@ onBeforeUnmount(() => {
   display: inline-block;
   padding: 2px 8px;
   font-size: 11px;
-  background: #fff;
-  color: var(--text-2, #64748b);
-  border: 1px solid var(--border, #e2e8f0);
+  background: var(--bg-tertiary, #1e2130);
+  color: var(--text-secondary, #9aa0b4);
+  border: 1px solid var(--border, #2d3148);
   border-bottom-width: 2px;
   border-radius: 5px;
   line-height: 1.4;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-weight: 500;
-}
-
-/* ===== 侧边栏折叠时的主区域 ===== */
-.sidebar-collapsed .app-main {
-  /* 侧边栏宽度由组件自身控制，这里不需要额外调整 */
 }
 
 /* ===== 响应式 ===== */
@@ -336,10 +387,6 @@ onBeforeUnmount(() => {
 @media (max-width: 768px) {
   :root {
     --content-pad: 12px;
-  }
-
-  .app-shell {
-    flex-direction: column;
   }
 }
 </style>

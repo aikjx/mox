@@ -4508,18 +4508,18 @@ function resetAllTasks() {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f1f5f9;
+  background: var(--bg-primary);
   font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  color: #0f172a;
+  color: var(--text-primary);
   overflow: hidden;
 }
 
 /* ========== 顶部 Header ========== */
 .ws-header {
   height: 56px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--bg-secondary);
   backdrop-filter: blur(16px);
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -4539,7 +4539,7 @@ function resetAllTasks() {
 }
 .ws-header-divider {
   margin: 0 4px;
-  border-color: #e2e8f0;
+  border-color: var(--border);
 }
 
 .ws-logo {
@@ -4560,7 +4560,7 @@ function resetAllTasks() {
 /* 工作模式 Tabs */
 .ws-mode-tabs {
   display: flex;
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   border-radius: 10px;
   padding: 4px;
   gap: 2px;
@@ -4580,7 +4580,7 @@ function resetAllTasks() {
 }
 .ws-mode-tab:hover { color: #6366f1; }
 .ws-mode-tab.active {
-  background: white;
+  background: var(--bg-card);
   color: #6366f1;
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0,0,0,0.08);
@@ -4613,7 +4613,7 @@ function resetAllTasks() {
   justify-content: center;
   color: #64748b;
 }
-.ws-icon-btn:hover { background: #f1f5f9; color: #6366f1; }
+.ws-icon-btn:hover { background: var(--bg-tertiary); color: #6366f1; }
 .ws-notif-badge { margin-right: 4px; }
 .ws-avatar { cursor: pointer; }
 
@@ -4630,9 +4630,9 @@ function resetAllTasks() {
 
 /* ========== 侧边面板通用 ========== */
 .ws-panel {
-  background: white;
+  background: var(--bg-card);
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -4650,7 +4650,7 @@ function resetAllTasks() {
   align-items: center;
   justify-content: space-between;
   padding: 0 12px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-ghost);
   flex-shrink: 0;
 }
 .ws-panel-left .ws-panel-header { flex-direction: row; }
@@ -4661,7 +4661,7 @@ function resetAllTasks() {
   gap: 6px;
   font-size: 13px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 .ws-panel-icon { font-size: 15px; }
 .ws-online-tag {
@@ -4683,7 +4683,7 @@ function resetAllTasks() {
   transition: all 0.2s;
 }
 .ws-panel-toggle:hover {
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   color: #6366f1;
 }
 
@@ -4707,7 +4707,7 @@ function resetAllTasks() {
 .ws-collapsed-divider {
   margin: 8px 0;
   width: 28px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border);
 }
 .ws-collapsed-avatar,
 .ws-collapsed-icon-btn {
@@ -4726,7 +4726,7 @@ function resetAllTasks() {
 }
 .ws-collapsed-avatar:hover,
 .ws-collapsed-icon-btn:hover {
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   transform: scale(1.05);
 }
 .ws-collapsed-avatar-inner {
@@ -4744,7 +4744,7 @@ function resetAllTasks() {
   padding: 10px 12px;
   display: flex;
   gap: 8px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-ghost);
   flex-shrink: 0;
 }
 .ws-filter-select { width: 80px; flex-shrink: 0; }
@@ -4754,7 +4754,7 @@ function resetAllTasks() {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-ghost);
 }
 .ws-expert-section:last-child {
   border-bottom: none;
@@ -4805,16 +4805,16 @@ function resetAllTasks() {
   cursor: pointer;
   transition: all 0.15s;
   position: relative;
-  border-bottom: 1px solid #f8fafc;
+  border-bottom: 1px solid var(--border-ghost);
 }
 .ws-expert-item:hover {
-  background: #f8fafc;
+  background: var(--bg-hover);
 }
 .ws-expert-item.active {
-  background: #eef2ff;
+  background: var(--accent-dim);
 }
 .ws-expert-item.selected {
-  background: #f0fdf4;
+  background: var(--success-dim);
   border-left: 3px solid #10b981;
   padding-left: 9px;
 }
@@ -4832,7 +4832,7 @@ function resetAllTasks() {
 .ws-expert-name {
   font-size: 13px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -4860,8 +4860,8 @@ function resetAllTasks() {
 .ws-cap-tag {
   font-size: 10px;
   padding: 1px 6px;
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
   border-radius: 4px;
   line-height: 1.4;
 }
@@ -4882,7 +4882,7 @@ function resetAllTasks() {
   color: #f59e0b;
 }
 .ws-expert-status.status-offline {
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   color: #94a3b8;
 }
 .ws-expert-status.status-idle {
@@ -4895,18 +4895,18 @@ function resetAllTasks() {
   padding: 8px 12px;
   cursor: pointer;
   transition: all 0.15s;
-  border-bottom: 1px solid #f8fafc;
+  border-bottom: 1px solid var(--border-ghost);
 }
-.ws-session-item:hover { background: #f8fafc; }
+.ws-session-item:hover { background: var(--bg-hover); }
 .ws-session-item.active {
-  background: #eef2ff;
+  background: var(--accent-dim);
   border-left: 3px solid #6366f1;
   padding-left: 9px;
 }
 .ws-session-title {
   font-size: 13px;
   font-weight: 500;
-  color: #1e293b;
+  color: var(--text-primary);
   margin-bottom: 4px;
   white-space: nowrap;
   overflow: hidden;
@@ -4940,8 +4940,8 @@ function resetAllTasks() {
   align-items: center;
   gap: 6px;
   padding: 12px 8px;
-  border: 1px solid #e2e8f0;
-  background: #fff;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
   border-radius: 10px;
   cursor: pointer;
   font-size: 12px;
@@ -4957,7 +4957,7 @@ function resetAllTasks() {
 }
 .ws-tool-btn.active {
   border-color: #6366f1;
-  background: #eef2ff;
+  background: var(--accent-dim);
   color: #6366f1;
 }
 .ws-tool-icon { font-size: 20px; }
@@ -4969,17 +4969,17 @@ function resetAllTasks() {
   flex-direction: column;
   min-width: 0;
   position: relative;
-  background: white;
+  background: var(--bg-card);
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   overflow: hidden;
 }
 
 /* 画布工具栏 */
 .ws-canvas-toolbar {
   height: 44px;
-  background: #fff;
-  border-bottom: 1px solid #f1f5f9;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-ghost);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -5006,23 +5006,23 @@ function resetAllTasks() {
   transition: all 0.2s;
 }
 .ws-canvas-tool:hover {
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   color: #6366f1;
 }
 .ws-canvas-tool.active {
-  background: #eef2ff;
+  background: var(--accent-dim);
   color: #6366f1;
 }
 .ws-tool-divider {
   width: 1px;
   height: 20px;
-  background: #e2e8f0;
+  background: var(--bg-tertiary);
   margin: 0 4px;
 }
 
 .ws-layout-switcher {
   display: flex;
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   border-radius: 8px;
   padding: 3px;
   gap: 2px;
@@ -5042,7 +5042,7 @@ function resetAllTasks() {
 }
 .ws-layout-btn:hover { color: #6366f1; }
 .ws-layout-btn.active {
-  background: white;
+  background: var(--bg-card);
   color: #6366f1;
   font-weight: 600;
   box-shadow: 0 1px 2px rgba(0,0,0,0.06);
@@ -5057,7 +5057,7 @@ function resetAllTasks() {
   margin-right: 12px;
 }
 .ws-stat-item strong {
-  color: #0f172a;
+  color: var(--text-primary);
   font-weight: 700;
 }
 .ws-stat-divider { color: #cbd5e1; }
@@ -5105,7 +5105,7 @@ function resetAllTasks() {
   width: 260px;
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(12px);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
   z-index: 10;
@@ -5121,7 +5121,7 @@ function resetAllTasks() {
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-ghost);
   position: relative;
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.04), rgba(6, 182, 212, 0.04));
 }
@@ -5144,7 +5144,7 @@ function resetAllTasks() {
 .ws-node-info-title {
   font-size: 14px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
   line-height: 1.3;
 }
 .ws-node-info-type {
@@ -5182,13 +5182,13 @@ function resetAllTasks() {
   font-size: 12px;
 }
 .ws-node-info-label { color: #64748b; }
-.ws-node-info-value { font-weight: 600; color: #0f172a; }
+.ws-node-info-value { font-weight: 600; color: var(--text-primary); }
 .ws-node-info-desc {
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--border-ghost);
   font-size: 12px;
-  color: #475569;
+  color: var(--text-secondary);
   line-height: 1.5;
 }
 .ws-node-info-actions {
@@ -5219,8 +5219,8 @@ function resetAllTasks() {
 
 /* 底部协作栏 */
 .ws-collab-bar {
-  border-top: 1px solid #e2e8f0;
-  background: #fff;
+  border-top: 1px solid var(--border);
+  background: var(--bg-card);
   flex-shrink: 0;
   transition: all 0.3s ease;
   display: flex;
@@ -5239,14 +5239,14 @@ function resetAllTasks() {
   transition: background 0.2s;
   flex-shrink: 0;
 }
-.ws-collab-header:hover { background: #f8fafc; }
+.ws-collab-header:hover { background: var(--bg-hover); }
 .ws-collab-title {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 .ws-pulse-icon {
   color: #f59e0b;
@@ -5264,7 +5264,7 @@ function resetAllTasks() {
   font-size: 11px;
   color: #64748b;
   font-weight: 400;
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   padding: 2px 8px;
   border-radius: 10px;
   margin-left: 4px;
@@ -5289,8 +5289,8 @@ function resetAllTasks() {
   justify-content: center;
   padding: 10px 16px;
   gap: 4px;
-  border-bottom: 1px solid #f1f5f9;
-  background: #fafbfc;
+  border-bottom: 1px solid var(--border-ghost);
+  background: var(--bg-tertiary);
   overflow-x: auto;
 }
 .ws-phase-step {
@@ -5309,14 +5309,14 @@ function resetAllTasks() {
 }
 .ws-phase-step.active {
   color: #6366f1;
-  background: #eef2ff;
+  background: var(--accent-dim);
   font-weight: 600;
 }
 .ws-phase-step-dot {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #e2e8f0;
+  background: var(--bg-tertiary);
   color: white;
   font-size: 10px;
   font-weight: 700;
@@ -5388,16 +5388,16 @@ function resetAllTasks() {
   flex-wrap: wrap;
 }
 .ws-collab-msg.user .ws-collab-msg-meta { justify-content: flex-end; }
-.ws-collab-msg-name { font-weight: 600; color: #475569; }
+.ws-collab-msg-name { font-weight: 600; color: var(--text-secondary); }
 .ws-collab-msg-phase { line-height: 1; }
 .ws-collab-msg-time { font-size: 10px; }
 .ws-collab-msg-text {
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   padding: 8px 12px;
   border-radius: 10px;
   font-size: 13px;
   line-height: 1.6;
-  color: #1e293b;
+  color: var(--text-primary);
   word-break: break-word;
 }
 .ws-collab-msg.user .ws-collab-msg-text {
@@ -5405,7 +5405,7 @@ function resetAllTasks() {
   color: white;
 }
 .ws-collab-msg.system .ws-collab-msg-text {
-  background: #f8fafc;
+  background: var(--bg-hover);
   color: #64748b;
   font-size: 12px;
   display: inline-block;
@@ -5416,7 +5416,7 @@ function resetAllTasks() {
   display: flex;
   gap: 4px;
   padding: 10px 12px;
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   border-radius: 10px;
   width: fit-content;
 }
@@ -5437,7 +5437,7 @@ function resetAllTasks() {
 
 /* 输入区 */
 .ws-collab-input-area {
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--border-ghost);
   padding: 8px 16px 12px;
   flex-shrink: 0;
 }
@@ -5455,7 +5455,7 @@ function resetAllTasks() {
 }
 .ws-tool-mini-btn:hover {
   color: #6366f1 !important;
-  background: #f1f5f9 !important;
+  background: var(--bg-tertiary) !important;
 }
 .ws-mode-select {
   margin-left: auto;
@@ -5491,7 +5491,7 @@ function resetAllTasks() {
 
 .ws-kb-tabs {
   display: flex;
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   border-radius: 8px;
   padding: 3px;
   margin: 12px;
@@ -5515,7 +5515,7 @@ function resetAllTasks() {
 }
 .ws-kb-tab:hover { color: #6366f1; }
 .ws-kb-tab.active {
-  background: white;
+  background: var(--bg-card);
   color: #6366f1;
   font-weight: 600;
   box-shadow: 0 1px 2px rgba(0,0,0,0.06);
@@ -5550,14 +5550,14 @@ function resetAllTasks() {
   border-radius: 6px;
   cursor: pointer;
   font-size: 12px;
-  color: #475569;
+  color: var(--text-secondary);
   transition: all 0.15s;
 }
 .ws-doc-category-header:hover {
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
 }
 .ws-doc-category.active .ws-doc-category-header {
-  background: #eef2ff;
+  background: var(--accent-dim);
   color: #6366f1;
   font-weight: 600;
 }
@@ -5570,7 +5570,7 @@ function resetAllTasks() {
 .ws-cat-count {
   font-size: 11px;
   color: #94a3b8;
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   padding: 1px 6px;
   border-radius: 10px;
 }
@@ -5581,7 +5581,7 @@ function resetAllTasks() {
 
 .ws-kb-divider {
   margin: 8px 12px;
-  border-color: #f1f5f9;
+  border-color: var(--border-ghost);
 }
 
 /* 文档列表 */
@@ -5600,9 +5600,9 @@ function resetAllTasks() {
   transition: all 0.15s;
   margin-bottom: 2px;
 }
-.ws-doc-item:hover { background: #f8fafc; }
+.ws-doc-item:hover { background: var(--bg-hover); }
 .ws-doc-item.active {
-  background: #eef2ff;
+  background: var(--accent-dim);
   border: 1px solid #c7d2fe;
 }
 .ws-doc-item.linked {
@@ -5613,7 +5613,7 @@ function resetAllTasks() {
 .ws-doc-name {
   font-size: 13px;
   font-weight: 500;
-  color: #1e293b;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -5655,8 +5655,8 @@ function resetAllTasks() {
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
   border-radius: 20px;
   cursor: pointer;
   transition: all 0.2s;
@@ -5687,11 +5687,11 @@ function resetAllTasks() {
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  background: #f8fafc;
+  background: var(--bg-hover);
   font-size: 12px;
   font-weight: 600;
-  color: #475569;
-  border-bottom: 1px solid #f1f5f9;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-ghost);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -5703,8 +5703,8 @@ function resetAllTasks() {
 }
 .ws-version-item {
   padding: 10px 12px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 8px;
   border-left: 3px solid #94a3b8;
   margin-bottom: 8px;
@@ -5715,7 +5715,7 @@ function resetAllTasks() {
 }
 .ws-version-item.latest {
   border-left-color: #10b981;
-  background: #f0fdf4;
+  background: var(--success-dim);
 }
 .ws-version-header {
   display: flex;
@@ -5728,7 +5728,7 @@ function resetAllTasks() {
   font-weight: 600;
   padding: 2px 6px;
   border-radius: 4px;
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   color: #64748b;
 }
 .ws-version-item.latest .ws-version-badge {
@@ -5739,7 +5739,7 @@ function resetAllTasks() {
 .ws-version-label {
   font-size: 13px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 .ws-version-author { font-size: 11px; color: #64748b; }
@@ -5749,7 +5749,7 @@ function resetAllTasks() {
   display: flex;
   gap: 8px;
   padding: 12px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--border-ghost);
   flex-shrink: 0;
 }
 .ws-kb-action-btn { flex: 1; gap: 4px; }
@@ -5764,7 +5764,7 @@ function resetAllTasks() {
   width: 300px;
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(12px);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   border-radius: 16px;
   box-shadow: 0 12px 40px rgba(15, 23, 42, 0.15);
   z-index: 50;
@@ -5781,14 +5781,14 @@ function resetAllTasks() {
   gap: 10px;
   padding: 14px 16px;
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(6, 182, 212, 0.08));
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-ghost);
 }
 .ws-ai-icon { font-size: 22px; }
 .ws-ai-title {
   flex: 1;
   font-weight: 700;
   font-size: 14px;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 .ws-ai-close {
   width: 28px;
@@ -5824,11 +5824,11 @@ function resetAllTasks() {
   align-items: center;
   gap: 6px;
   padding: 10px 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 12px;
-  color: #0f172a;
+  color: var(--text-primary);
   cursor: pointer;
   transition: all 0.2s;
   text-align: left;
@@ -5851,7 +5851,7 @@ function resetAllTasks() {
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: #475569;
+  color: var(--text-secondary);
 }
 .ws-cap-item .el-icon {
   color: #10b981;
@@ -5939,9 +5939,9 @@ function resetAllTasks() {
   max-height: 140px;
   overflow-y: auto;
   padding: 4px;
-  background: #f8fafc;
+  background: var(--bg-hover);
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
 }
 .debate-expert-chip {
   display: flex;
@@ -5949,8 +5949,8 @@ function resetAllTasks() {
   gap: 6px;
   padding: 5px 10px 5px 5px;
   border-radius: 999px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   cursor: pointer;
   transition: all 0.2s;
   user-select: none;
@@ -5974,7 +5974,7 @@ function resetAllTasks() {
 .chip-name {
   font-size: 12px;
   font-weight: 500;
-  color: #334155;
+  color: var(--text-secondary);
 }
 .chip-check {
   color: #6366f1;
@@ -5999,8 +5999,8 @@ function resetAllTasks() {
 .debate-mode-card {
   padding: 14px 12px;
   border-radius: 10px;
-  border: 2px solid #e2e8f0;
-  background: #f8fafc;
+  border: 2px solid var(--border);
+  background: var(--bg-hover);
   cursor: pointer;
   transition: all 0.25s;
   text-align: center;
@@ -6021,7 +6021,7 @@ function resetAllTasks() {
 .debate-mode-card .mode-name {
   font-size: 13px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 .debate-mode-card .mode-desc {
@@ -6046,9 +6046,9 @@ function resetAllTasks() {
   max-height: 140px;
   overflow-y: auto;
   padding: 4px;
-  background: #f8fafc;
+  background: var(--bg-hover);
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
 }
 .consult-expert-chip {
   display: flex;
@@ -6056,8 +6056,8 @@ function resetAllTasks() {
   gap: 6px;
   padding: 5px 10px 5px 5px;
   border-radius: 999px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   cursor: pointer;
   transition: all 0.2s;
   user-select: none;
@@ -6096,7 +6096,7 @@ function resetAllTasks() {
 .consult-results-section {
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border);
 }
 .results-section-head {
   display: flex;
@@ -6110,7 +6110,7 @@ function resetAllTasks() {
   gap: 6px;
   font-size: 14px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 /* 对比视图 */
@@ -6120,8 +6120,8 @@ function resetAllTasks() {
   gap: 10px;
 }
 .compare-card {
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 10px;
   overflow: hidden;
   display: flex;
@@ -6132,7 +6132,7 @@ function resetAllTasks() {
   align-items: center;
   justify-content: space-between;
   padding: 10px 12px;
-  background: #f8fafc;
+  background: var(--bg-hover);
   border-top: 3px solid #6366f1;
 }
 .compare-expert {
@@ -6151,7 +6151,7 @@ function resetAllTasks() {
 .compare-name {
   font-size: 13px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 .compare-card-body {
   padding: 12px;
@@ -6162,7 +6162,7 @@ function resetAllTasks() {
 .compare-content {
   font-size: 12.5px;
   line-height: 1.7;
-  color: #334155;
+  color: var(--text-secondary);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -6174,8 +6174,8 @@ function resetAllTasks() {
   gap: 10px;
 }
 .result-item-card {
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -6184,8 +6184,8 @@ function resetAllTasks() {
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--bg-hover);
+  border-bottom: 1px solid var(--border);
 }
 .result-avatar {
   width: 26px;
@@ -6198,7 +6198,7 @@ function resetAllTasks() {
 .result-name {
   font-size: 13px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 .result-duration {
   margin-left: auto;
@@ -6209,7 +6209,7 @@ function resetAllTasks() {
   padding: 12px;
   font-size: 13px;
   line-height: 1.75;
-  color: #334155;
+  color: var(--text-secondary);
   white-space: pre-wrap;
   word-break: break-word;
   max-height: 180px;
@@ -6266,12 +6266,12 @@ function resetAllTasks() {
   justify-content: space-between;
   margin-bottom: 10px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border);
 }
 .route-result-title {
   font-size: 13.5px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 .route-expert-list {
   display: flex;
@@ -6286,9 +6286,9 @@ function resetAllTasks() {
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: #f8fafc;
+  background: var(--bg-hover);
   border-radius: 10px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   transition: all 0.2s;
 }
 .route-expert-item:hover {
@@ -6320,7 +6320,7 @@ function resetAllTasks() {
 .route-name {
   font-size: 13px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
   margin-bottom: 2px;
 }
 .route-type {
@@ -6357,14 +6357,14 @@ function resetAllTasks() {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #f8fafc;
+  background: var(--bg-hover);
 }
 .score-ring span {
   position: relative;
   z-index: 1;
   font-size: 10.5px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 .score-label {
   font-size: 10px;
@@ -6377,7 +6377,7 @@ function resetAllTasks() {
 .route-actions-footer {
   margin-top: 12px;
   padding-top: 10px;
-  border-top: 1px dashed #e2e8f0;
+  border-top: 1px dashed var(--border);
   display: flex;
   justify-content: center;
 }
@@ -6511,7 +6511,7 @@ function resetAllTasks() {
   transform: scale(1.1);
 }
 .ws-mode-tab.active {
-  background: white !important;
+  background: var(--bg-card) !important;
   color: #7c3aed !important;
   box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15) !important;
 }
@@ -6541,7 +6541,7 @@ function resetAllTasks() {
   transition: all 0.3s ease;
 }
 .glass-search:focus-within {
-  background: white;
+  background: var(--bg-card);
   box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
   border-color: rgba(124, 58, 237, 0.3);
 }
@@ -6559,7 +6559,7 @@ function resetAllTasks() {
   width: 10px;
   height: 10px;
   background: #10b981;
-  border: 2px solid white;
+  border: 2px solid var(--bg-card);
   border-radius: 50%;
 }
 
@@ -6605,7 +6605,7 @@ function resetAllTasks() {
 .ws-kpi-value {
   font-size: 24px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
   line-height: 1.2;
 }
 .ws-kpi-label {
@@ -6693,7 +6693,7 @@ function resetAllTasks() {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  border: 2px solid white;
+  border: 2px solid var(--bg-card);
 }
 .ws-expert-status-dot.dot-active { background: #10b981; box-shadow: 0 0 6px rgba(16, 185, 129, 0.5); }
 .ws-expert-status-dot.dot-busy { background: #f59e0b; }
@@ -6726,8 +6726,8 @@ function resetAllTasks() {
 
 /* ========== 快捷工具卡片样式 ========== */
 .tool-card {
-  background: white !important;
-  border: 1px solid #e2e8f0 !important;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 12px !important;
   padding: 12px 8px !important;
   flex-direction: column !important;
@@ -6883,7 +6883,7 @@ function resetAllTasks() {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: #e2e8f0;
+  background: var(--bg-tertiary);
   color: #64748b;
   display: flex;
   align-items: center;
@@ -6909,7 +6909,7 @@ function resetAllTasks() {
   left: 50%;
   width: calc(100% - 28px);
   height: 3px;
-  background: #e2e8f0;
+  background: var(--bg-tertiary);
   transform: translateY(-50%);
   z-index: 1;
 }
@@ -6936,7 +6936,7 @@ function resetAllTasks() {
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-ghost);
   background: rgba(248, 250, 252, 0.5);
 }
 .ws-collab-tab {
@@ -6996,7 +6996,7 @@ function resetAllTasks() {
   justify-content: center;
   font-size: 12px;
   color: white;
-  border: 2px solid white;
+  border: 2px solid var(--bg-card);
   margin-left: -6px;
   cursor: pointer;
   transition: transform 0.2s;
@@ -7010,7 +7010,7 @@ function resetAllTasks() {
   z-index: 20 !important;
 }
 .more-avatar {
-  background: #e2e8f0 !important;
+  background: var(--bg-tertiary) !important;
   color: #64748b !important;
   font-size: 10px;
   font-weight: 600;
@@ -7074,9 +7074,9 @@ function resetAllTasks() {
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
-  background: white;
+  background: var(--bg-card);
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   cursor: pointer;
   transition: all 0.2s;
   min-width: 180px;
@@ -7093,7 +7093,7 @@ function resetAllTasks() {
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   flex-shrink: 0;
 }
 .file-pdf { background: rgba(239, 68, 68, 0.1); }
@@ -7107,7 +7107,7 @@ function resetAllTasks() {
 .ws-file-name {
   font-size: 12px;
   font-weight: 500;
-  color: #0f172a;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -7215,7 +7215,7 @@ function resetAllTasks() {
   gap: 4px;
   padding: 8px 12px;
   background: rgba(248, 250, 252, 0.8);
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-ghost);
   flex-wrap: wrap;
 }
 .ws-wb-tool {
@@ -7246,7 +7246,7 @@ function resetAllTasks() {
 .ws-wb-tool-divider {
   width: 1px;
   height: 20px;
-  background: #e2e8f0;
+  background: var(--bg-tertiary);
   margin: 0 4px;
 }
 .ws-wb-color-picker {
@@ -7398,7 +7398,7 @@ function resetAllTasks() {
   justify-content: space-between;
   padding: 8px 12px;
   background: rgba(248, 250, 252, 0.8);
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--border-ghost);
 }
 .wb-stats {
   font-size: 12px;
@@ -7448,9 +7448,9 @@ function resetAllTasks() {
   gap: 12px;
 }
 .ws-file-card-large {
-  background: white;
+  background: var(--bg-card);
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   overflow: hidden;
   cursor: pointer;
   transition: all 0.3s;
@@ -7465,7 +7465,7 @@ function resetAllTasks() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8fafc;
+  background: var(--bg-hover);
   font-size: 36px;
 }
 .preview-pdf { background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(249, 115, 22, 0.1)); }
@@ -7482,7 +7482,7 @@ function resetAllTasks() {
 .ws-file-name-large {
   font-size: 13px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -7519,7 +7519,7 @@ function resetAllTasks() {
   width: 280px;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
-  border-left: 1px solid #e2e8f0;
+  border-left: 1px solid var(--border);
   box-shadow: -4px 0 20px rgba(0, 0, 0, 0.08);
   z-index: 20;
   display: flex;
@@ -7530,7 +7530,7 @@ function resetAllTasks() {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-ghost);
 }
 .ws-history-title {
   display: flex;
@@ -7538,7 +7538,7 @@ function resetAllTasks() {
   gap: 6px;
   font-weight: 600;
   font-size: 14px;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 .ws-history-close {
   width: 28px;
@@ -7554,7 +7554,7 @@ function resetAllTasks() {
   transition: all 0.2s;
 }
 .ws-history-close:hover {
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   color: #ef4444;
 }
 .ws-history-scroll {
@@ -7585,9 +7585,9 @@ function resetAllTasks() {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #e2e8f0;
-  border: 2px solid white;
-  box-shadow: 0 0 0 2px #e2e8f0;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--bg-card);
+  box-shadow: 0 0 0 2px var(--border);
   z-index: 2;
 }
 .ws-history-item.event-message .ws-history-dot { background: #7c3aed; box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.3); }
@@ -7602,7 +7602,7 @@ function resetAllTasks() {
   top: 16px;
   bottom: 0;
   width: 2px;
-  background: #e2e8f0;
+  background: var(--bg-tertiary);
   z-index: 1;
 }
 .ws-history-content {
@@ -7624,7 +7624,7 @@ function resetAllTasks() {
 .ws-history-event-title {
   font-size: 12px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-primary);
   transition: color 0.2s;
 }
 .ws-history-desc {
@@ -7700,7 +7700,7 @@ function resetAllTasks() {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 .orch-title-icon {
   font-size: 18px;
@@ -7760,14 +7760,14 @@ function resetAllTasks() {
 }
 .orch-btn-secondary {
   background: rgba(248, 250, 252, 0.8);
-  border: 1px solid #e2e8f0;
-  color: #475569;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
   transition: all 0.2s;
 }
 .orch-btn-secondary:hover {
-  background: white;
-  border-color: #cbd5e1;
-  color: #0f172a;
+  background: var(--bg-card);
+  border-color: var(--border);
+  color: var(--text-primary);
 }
 .orch-btn-primary {
   min-width: 100px;
@@ -7819,7 +7819,7 @@ function resetAllTasks() {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 .orch-panel-icon {
   font-size: 16px;
@@ -7848,7 +7848,7 @@ function resetAllTasks() {
 }
 .orch-task-input :deep(.el-textarea__inner) {
   border-radius: 10px;
-  border-color: #e2e8f0;
+  border-color: var(--border);
   font-size: 13px;
   transition: all 0.2s;
 }
@@ -7865,8 +7865,8 @@ function resetAllTasks() {
   flex: 1;
 }
 .orch-add-manual-btn {
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
 }
 
 .orch-subtask-list {
@@ -7884,7 +7884,7 @@ function resetAllTasks() {
 .orch-list-title {
   font-size: 13px;
   font-weight: 600;
-  color: #475569;
+  color: var(--text-secondary);
 }
 .orch-list-actions {
   display: flex;
@@ -7897,8 +7897,8 @@ function resetAllTasks() {
 }
 
 .orch-subtask-card {
-  background: white;
-  border: 1.5px solid #e2e8f0;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
   border-radius: 12px;
   padding: 12px;
   margin-bottom: 10px;
@@ -7950,7 +7950,7 @@ function resetAllTasks() {
 .subtask-title {
   font-weight: 600;
   font-size: 13px;
-  color: #0f172a;
+  color: var(--text-primary);
   display: block;
   margin-bottom: 4px;
 }
@@ -8065,8 +8065,8 @@ function resetAllTasks() {
   transition: all 0.2s;
 }
 .subtask-action-btn:hover {
-  background: #e2e8f0;
-  color: #0f172a;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 .subtask-action-btn.delete:hover {
   background: rgba(239, 68, 68, 0.1);
@@ -8076,7 +8076,7 @@ function resetAllTasks() {
 .subtask-expanded-detail {
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px dashed #e2e8f0;
+  border-top: 1px dashed var(--border);
   padding-left: 36px;
 }
 .detail-section {
@@ -8106,7 +8106,7 @@ function resetAllTasks() {
   font-size: 12px;
   color: white;
   font-weight: 600;
-  border: 2px solid white;
+  border: 2px solid var(--bg-card);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 .add-expert-btn {
@@ -8130,7 +8130,7 @@ function resetAllTasks() {
 }
 .task-result-text {
   font-size: 12px;
-  color: #475569;
+  color: var(--text-secondary);
   line-height: 1.6;
   padding: 8px 10px;
   background: rgba(16, 185, 129, 0.05);
@@ -8168,7 +8168,7 @@ function resetAllTasks() {
 .orch-pool-title {
   font-size: 12px;
   font-weight: 600;
-  color: #475569;
+  color: var(--text-secondary);
 }
 .orch-pool-count {
   font-size: 11px;
@@ -8184,8 +8184,8 @@ function resetAllTasks() {
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
-  background: white;
-  border: 1.5px solid #e2e8f0;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
   border-radius: 10px;
   cursor: grab;
   transition: all 0.2s;
@@ -8220,12 +8220,12 @@ function resetAllTasks() {
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  border: 2px solid white;
+  border: 2px solid var(--bg-card);
 }
 .chip-status-dot.dot-active { background: #10b981; }
 .chip-status-dot.dot-busy { background: #f59e0b; }
 .chip-status-dot.dot-idle { background: #94a3b8; }
-.chip-status-dot.dot-offline { background: #cbd5e1; }
+.chip-status-dot.dot-offline { background: var(--bg-tertiary); }
 
 .chip-info {
   flex: 1;
@@ -8234,7 +8234,7 @@ function resetAllTasks() {
 .chip-name {
   font-size: 12px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-primary);
   display: block;
   white-space: nowrap;
   overflow: hidden;
@@ -8277,7 +8277,7 @@ function resetAllTasks() {
 .orch-board-title {
   font-size: 12px;
   font-weight: 600;
-  color: #475569;
+  color: var(--text-secondary);
 }
 .orch-board-hint {
   font-size: 10px;
@@ -8293,8 +8293,8 @@ function resetAllTasks() {
   align-items: stretch;
   gap: 10px;
   padding: 12px;
-  background: white;
-  border: 1.5px solid #e2e8f0;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
   border-radius: 12px;
   margin-bottom: 10px;
   cursor: pointer;
@@ -8348,7 +8348,7 @@ function resetAllTasks() {
 .assign-task-title {
   font-weight: 600;
   font-size: 13px;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 .assign-task-desc {
   font-size: 12px;
@@ -8374,9 +8374,9 @@ function resetAllTasks() {
   align-items: center;
   gap: 4px;
   padding: 2px 4px 2px 2px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: #f8fafc;
+  background: var(--bg-hover);
 }
 .chip-avatar-sm {
   width: 20px;
@@ -8390,7 +8390,7 @@ function resetAllTasks() {
 .chip-name-sm {
   font-size: 11px;
   font-weight: 500;
-  color: #475569;
+  color: var(--text-secondary);
 }
 .chip-remove {
   width: 16px;
@@ -8510,7 +8510,7 @@ function resetAllTasks() {
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: #475569;
+  color: var(--text-secondary);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -8632,7 +8632,7 @@ function resetAllTasks() {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: #e2e8f0;
+  background: var(--bg-tertiary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -8674,7 +8674,7 @@ function resetAllTasks() {
 .timeline-task-title {
   font-weight: 600;
   font-size: 13px;
-  color: #0f172a;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 .timeline-task-meta {
@@ -8717,7 +8717,7 @@ function resetAllTasks() {
   justify-content: center;
   font-size: 10px;
   color: white;
-  border: 2px solid white;
+  border: 2px solid var(--bg-card);
   margin-left: -4px;
 }
 .timeline-expert-avatar:first-child {
@@ -8763,7 +8763,7 @@ function resetAllTasks() {
   align-items: center;
   justify-content: space-between;
   padding: 6px 10px;
-  background: white;
+  background: var(--bg-card);
   border: 1px solid rgba(249, 115, 22, 0.2);
   border-radius: 8px;
   cursor: pointer;
@@ -8775,7 +8775,7 @@ function resetAllTasks() {
 }
 .risk-task-name {
   font-size: 12px;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 /* ========== 响应式优化 ========== */

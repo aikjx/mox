@@ -65,7 +65,7 @@ const statusLabel = computed(() => {
   padding: 8px 12px 8px 10px;
   border-radius: 10px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   box-shadow: 0 1px 2px -1px rgba(15,23,42,0.05);
   margin-bottom: 12px;
   cursor: pointer;
@@ -94,14 +94,14 @@ const statusLabel = computed(() => {
   width: 28px; height: 28px;
   display: flex; align-items: center; justify-content: center;
   border-radius: 8px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   flex: 0 0 auto;
 }
 .pc-body { flex: 1 1 auto; min-width: 0; }
 .pc-label { font-size: 11px; color: #94a3b8; letter-spacing: 0.4px; line-height: 1; margin-bottom: 3px; }
 .pc-name {
-  font-size: 13px; color: #0f172a; font-weight: 600;
+  font-size: 13px; color: var(--text-primary); font-weight: 600;
   line-height: 1.25;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
@@ -110,10 +110,10 @@ const statusLabel = computed(() => {
   font-size: 11px;
   padding: 3px 8px;
   border-radius: 999px;
-  background: #e2e8f0; color: #334155;
+  background: var(--bg-tertiary); color: var(--text-secondary);
   flex: 0 0 auto;
 }
-.pc-status.active { background: #eef2ff; color: #4338ca; }
-.pc-status.done   { background: #ecfdf5; color: #047857; }
+.pc-status.active { background: var(--accent-dim); color: #4338ca; }
+.pc-status.done   { background: var(--success-50); color: #047857; }
 .pc-status.warn   { background: #fff7ed; color: #c2410c; }
 </style>

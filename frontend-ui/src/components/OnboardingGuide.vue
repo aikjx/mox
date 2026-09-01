@@ -157,7 +157,7 @@ onMounted(() => {
   width: 28px;
   height: 5px;
   border-radius: 3px;
-  background: #e2e8f0;
+  background: var(--bg-tertiary);
   cursor: pointer;
   transition: all 0.3s;
 }
@@ -206,7 +206,7 @@ onMounted(() => {
   gap: 8px;
   margin-top: 20px;
   padding: 8px 14px;
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   border-radius: 8px;
 }
 .sc-label {
@@ -219,9 +219,9 @@ onMounted(() => {
   padding: 2px 8px;
   font-size: 12px;
   font-weight: 600;
-  background: #fff;
+  background: var(--bg-card);
   color: var(--text-1);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   border-radius: 5px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
@@ -232,7 +232,7 @@ onMounted(() => {
   justify-content: space-between;
   margin-top: 32px;
   padding-top: 20px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--border-ghost);
 }
 .nav-btns {
   display: flex;

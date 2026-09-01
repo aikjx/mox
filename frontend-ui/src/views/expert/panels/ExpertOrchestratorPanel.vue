@@ -423,7 +423,7 @@ onMounted(() => {
 }
 .card-pad {
   padding: 20px;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
@@ -483,7 +483,7 @@ onMounted(() => {
   margin-bottom: 12px;
 }
 .step-card {
-  background: #fff;
+  background: var(--bg-card);
   padding: 10px 12px;
   border-radius: 6px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
@@ -533,7 +533,7 @@ onMounted(() => {
   color: #909399;
 }
 .result-json {
-  background: #fff;
+  background: var(--bg-card);
   padding: 12px;
   border-radius: 6px;
   overflow-x: auto;
@@ -559,7 +559,7 @@ onMounted(() => {
   align-items: center;
   gap: 16px;
   padding: 16px;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   transition: transform 0.2s, box-shadow 0.2s;
@@ -607,7 +607,7 @@ onMounted(() => {
   align-items: center;
   gap: 16px;
   padding: 20px;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }

@@ -1,37 +1,19 @@
 <template>
   <header class="topbar" v-if="!isAIFullscreen">
-    <!-- 左侧：折叠 + 项目 + 面包屑 -->
+    <!-- 左侧：折叠 + 面包屑 -->
     <div class="topbar-left">
-      <button class="topbar-icon-btn" @click="$emit('toggle-collapse')" :title="collapsed ? '展开侧边栏' : '收起侧边栏'">
+      <button class="topbar-icon-btn" @click="$emit('toggle-collapse')" :title="collapsed ? '展开侧栏' : '收起侧栏'">
         <el-icon>
           <component :is="collapsed ? 'Expand' : 'Fold'" />
         </el-icon>
       </button>
 
-      <!-- 面包屑 -->
-      <el-breadcrumb separator="/" class="crumb-nav">
-        <el-breadcrumb-item :to="{ path: '/dashboard' }">
-          工作台
-        </el-breadcrumb-item>
-        <el-breadcrumb-item v-for="b in crumbs" :key="b.path">
-          <el-dropdown trigger="click" @command="(p) => $router.push(p)" class="crumb-dropdown">
-            <span class="crumb-clickable">{{ b.label }}<el-icon style="margin-left:2px"><ArrowDown /></el-icon></span>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item
-                  v-for="sib in siblingModules(b.key)"
-                  :key="sib.path"
-                  :command="sib.path"
-                  :class="{ 'is-active': sib.path === b.path }"
-                >
-                  {{ sib.label }}
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </el-breadcrumb-item>
-        <el-breadcrumb-item v-if="crumbsExtra" class="crumb-extra">{{ crumbsExtra }}</el-breadcrumb-item>
-      </el-breadcrumb>
+      <!-- 自定义面包屑 -->
+      <div class="crumb-custom">
+        <span class="crumb-module" @click="goDashboard">{{ moduleLabel }}</span>
+        <span class="crumb-sep">/</span>
+        <span class="crumb-current">{{ currentLabel }}</span>
+      </div>
     </div>
 
     <!-- 右侧：搜索 + 新建 + 通知 + 主题 + 用户 -->
@@ -158,7 +140,7 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   Fold, Expand, Plus, Search, ArrowDown, QuestionFilled, Setting, SwitchButton
 } from '@element-plus/icons-vue'
-import { NAV_MODULES, NAV_GROUPS, QUICK_CREATE_COMMANDS, SUB_MODULES, HIDDEN_MODULES } from '@/constants'
+import { NAV_MODULES, NAV_GROUPS, QUICK_CREATE_COMMANDS, SUB_MODULES, HIDDEN_MODULES, MODULE_SIDEBAR_CONFIG } from '@/constants'
 import NotificationCenter from '@/components/NotificationCenter.vue'
 import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
 
@@ -194,12 +176,38 @@ const ALL_MODULES = computed(() => {
   return list
 })
 
-const crumbsExtra = computed(() => route.meta?.subLabel || null)
-
-const crumbs = computed(() => {
-  const m = ALL_MODULES.value.find((x) => route.path.startsWith(x.path) && x.path !== '/')
-  return m ? [{ path: m.path, label: m.label, key: m.key, icon: m.icon }] : []
+// 当前模块 key
+const currentModuleKey = computed(() => {
+  const p = route.path
+  if (p.startsWith('/dashboard')) return 'dashboard'
+  if (p.startsWith('/projects')) return 'projects'
+  if (p.startsWith('/tasks')) return 'tasks'
+  if (p.startsWith('/expert-workspace') || p.startsWith('/expert-center') || p.startsWith('/expert-plaza')) return 'expert'
+  if (p.startsWith('/ai')) return 'ai'
+  if (p.startsWith('/graph')) return 'graph'
+  if (p.startsWith('/operators')) return 'operators'
+  if (p.startsWith('/workflow')) return 'workflow'
+  if (p.startsWith('/market')) return 'market'
+  if (p.startsWith('/admin')) return 'admin'
+  return 'dashboard'
 })
+
+const moduleLabel = computed(() => {
+  const cfg = MODULE_SIDEBAR_CONFIG[currentModuleKey.value]
+  return cfg ? cfg.title : '工作台'
+})
+
+const currentLabel = computed(() => {
+  // 从 route.meta 或 SUB_MODULES 匹配当前页
+  if (route.meta?.title) return route.meta.title
+  if (route.meta?.subLabel) return route.meta.subLabel
+  const m = ALL_MODULES.value.find((x) => route.path.startsWith(x.path) && x.path !== '/')
+  return m ? m.label : '概览'
+})
+
+function goDashboard() {
+  router.push('/dashboard')
+}
 
 function modulesByGroup(gKey) {
   const g = NAV_GROUPS.find((x) => x.key === gKey)
@@ -208,20 +216,13 @@ function modulesByGroup(gKey) {
   return NAV_MODULES.filter((m) => set.has(m.key))
 }
 
-function siblingModules(modKey) {
-  for (const g of NAV_GROUPS) {
-    if (g.items.includes(modKey)) return modulesByGroup(g.key)
-  }
-  return NAV_MODULES
-}
-
 // 快速操作
 const quickCommands = computed(() => [
-  { key: 'new-project', label: '新建项目', desc: '创建一个新项目', icon: 'FolderAdd', color: '#4f46e5', bg: '#eef2ff', action: 'event', event: 'mox:open-create-project' },
-  { key: 'new-chat', label: '新建对话', desc: '打开 AI 助手新对话', icon: 'ChatDotRound', color: '#ec4899', bg: '#fce7f3', action: 'route', route: '/ai' },
-  { key: 'new-flow', label: '新建工作流', desc: '创建新的工作流编排', icon: 'Operation', color: '#f59e0b', bg: '#fffbeb', action: 'event', event: 'open-create-flow' },
-  { key: 'projects', label: '项目列表', desc: '查看所有项目', icon: 'List', color: '#0ea5e9', bg: '#e0f2fe', action: 'route', route: '/projects' },
-  { key: 'settings', label: '系统设置', desc: '打开系统设置', icon: 'Setting', color: '#475569', bg: '#f1f5f9', action: 'route', route: '/admin' }
+  { key: 'new-project', label: '新建项目', desc: '创建一个新项目', icon: 'FolderAdd', color: '#818cf8', bg: 'rgba(99,102,241,.15)', action: 'event', event: 'mox:open-create-project' },
+  { key: 'new-chat', label: '新建对话', desc: '打开 AI 助手新对话', icon: 'ChatDotRound', color: '#ec4899', bg: 'rgba(236,72,153,.15)', action: 'route', route: '/ai' },
+  { key: 'new-flow', label: '新建工作流', desc: '创建新的工作流编排', icon: 'Operation', color: '#f59e0b', bg: 'rgba(245,158,11,.15)', action: 'event', event: 'open-create-flow' },
+  { key: 'projects', label: '项目列表', desc: '查看所有项目', icon: 'List', color: '#06b6d4', bg: 'rgba(6,182,212,.15)', action: 'route', route: '/projects' },
+  { key: 'settings', label: '系统设置', desc: '打开系统设置', icon: 'Setting', color: '#9aa0b4', bg: 'rgba(148,163,184,.15)', action: 'route', route: '/admin' }
 ])
 
 const filteredModules = computed(() => {
@@ -321,12 +322,10 @@ defineExpose({ focusSearch })
 
 <style scoped>
 .topbar {
-  height: var(--header-h, 56px);
+  height: 52px;
   flex-shrink: 0;
-  background: var(--topbar-bg, rgba(255, 255, 255, 0.8));
-  backdrop-filter: saturate(180%) blur(12px);
-  -webkit-backdrop-filter: saturate(180%) blur(12px);
-  border-bottom: 1px solid var(--border, #e2e8f0);
+  background: var(--bg-secondary, #161821);
+  border-bottom: 1px solid var(--border, #2d3148);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -344,90 +343,53 @@ defineExpose({ focusSearch })
 }
 
 .topbar-icon-btn {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border: none;
-  border-radius: 9px;
+  border-radius: 8px;
   background: transparent;
-  color: var(--text-2, #64748b);
+  color: var(--text-secondary, #9aa0b4);
   cursor: pointer;
   display: grid;
   place-items: center;
-  font-size: 18px;
+  font-size: 16px;
   transition: all 0.15s;
   flex-shrink: 0;
 }
 
 .topbar-icon-btn:hover {
-  background: var(--bg-page, #f8fafc);
-  color: var(--brand, #6366f1);
+  background: var(--bg-hover, #2a2f45);
+  color: var(--text-primary, #e8eaed);
 }
 
-.topbar-divider {
-  width: 1px;
-  height: 20px;
-  background: var(--border, #e2e8f0);
-  flex-shrink: 0;
-}
-
-/* 项目选择器 */
-.topbar-project-picker {
-  flex-shrink: 0;
-}
-
-:deep(.topbar-project-picker .pp-select) {
-  width: 240px;
-  height: 34px;
-}
-
-:deep(.topbar-project-picker .pp-select .el-select__wrapper) {
-  background: var(--brand-soft, #eef2ff);
-  border-color: transparent;
-  height: 34px;
-  min-height: 34px;
-  border-radius: 8px;
-  font-weight: 600;
-  color: var(--brand-dark, #4338ca);
-}
-
-:deep(.topbar-project-picker .pp-select:hover .el-select__wrapper) {
-  background: #fff;
-  border-color: var(--brand, #6366f1);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-}
-
-/* 面包屑 */
-.crumb-nav {
-  flex-shrink: 0;
+/* 自定义面包屑 */
+.crumb-custom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 300px;
 }
 
-.crumb-extra {
-  color: var(--brand-dark);
-  font-weight: 600;
-}
-
-.crumb-clickable {
+.crumb-module {
+  color: var(--text-secondary, #9aa0b4);
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 6px;
-  border-radius: 6px;
-  transition: all 0.15s;
+  transition: color 0.15s;
+}
+.crumb-module:hover {
+  color: var(--accent-light, #818cf8);
 }
 
-.crumb-clickable:hover {
-  background: var(--brand-soft);
-  color: var(--brand-dark);
+.crumb-sep {
+  color: var(--text-muted, #6b7280);
+  font-size: 12px;
 }
 
-.crumb-dropdown :deep(.el-dropdown-menu__item.is-active) {
-  color: var(--brand);
-  font-weight: 600;
-  background: var(--brand-soft);
+.crumb-current {
+  color: var(--text-primary, #e8eaed);
+  font-weight: 500;
 }
 
 /* ===== Right ===== */
@@ -447,8 +409,8 @@ defineExpose({ focusSearch })
   padding: 0 10px;
   border-radius: 8px;
   width: 200px;
-  background: var(--bg-page, #f8fafc);
-  border: 1px solid transparent;
+  background: var(--bg-card, #242838);
+  border: 1px solid var(--border, #2d3148);
   transition: all 0.2s ease;
   cursor: text;
   position: relative;
@@ -457,13 +419,12 @@ defineExpose({ focusSearch })
 .global-search.focused,
 .global-search:hover {
   width: 320px;
-  border-color: var(--brand, #6366f1);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-  background: #fff;
+  border-color: var(--accent, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99,102,241,.1);
 }
 
 .search-icon {
-  color: var(--text-3, #94a3b8);
+  color: var(--text-muted, #6b7280);
   font-size: 15px;
 }
 
@@ -473,18 +434,19 @@ defineExpose({ focusSearch })
   border: 0;
   background: transparent;
   font-size: 13px;
-  color: var(--text-1, #0f172a);
+  color: var(--text-primary, #e8eaed);
 }
 
 .search-input::placeholder {
-  color: var(--text-3, #94a3b8);
+  color: var(--text-muted, #6b7280);
 }
 
 .kbd {
   font-size: 10px;
   padding: 2px 6px;
-  background: rgba(148, 163, 184, 0.15);
-  color: var(--text-2, #64748b);
+  background: var(--bg-tertiary, #1e2130);
+  color: var(--text-muted, #6b7280);
+  border: 1px solid var(--border, #2d3148);
   border-radius: 4px;
   flex-shrink: 0;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -496,10 +458,10 @@ defineExpose({ focusSearch })
   top: calc(100% + 6px);
   left: 0;
   right: 0;
-  background: #fff;
-  border: 1px solid var(--border, #e2e8f0);
+  background: var(--bg-secondary, #161821);
+  border: 1px solid var(--border, #2d3148);
   border-radius: 10px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-lg, 0 10px 40px rgba(0,0,0,.4));
   max-height: 380px;
   overflow-y: auto;
   z-index: 1000;
@@ -512,7 +474,7 @@ defineExpose({ focusSearch })
 .cmd-section-title {
   font-size: 10px;
   font-weight: 600;
-  color: var(--text-3, #94a3b8);
+  color: var(--text-muted, #6b7280);
   padding: 8px 10px 4px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -530,7 +492,7 @@ defineExpose({ focusSearch })
 
 .cmd-item:hover,
 .cmd-item.active {
-  background: var(--brand-soft, #eef2ff);
+  background: var(--accent-dim, rgba(99,102,241,.15));
 }
 
 .cmd-icon {
@@ -544,28 +506,34 @@ defineExpose({ focusSearch })
 }
 
 .cmd-body { flex: 1; min-width: 0; }
-.cmd-title { font-weight: 600; font-size: 13px; color: var(--text-1, #0f172a); }
-.cmd-desc { font-size: 11px; color: var(--text-3, #94a3b8); margin-top: 1px; }
-.cmd-action { font-size: 11px; color: var(--brand, #6366f1); font-weight: 600; flex-shrink: 0; }
+.cmd-title { font-weight: 600; font-size: 13px; color: var(--text-primary, #e8eaed); }
+.cmd-desc { font-size: 11px; color: var(--text-muted, #6b7280); margin-top: 1px; }
+.cmd-action { font-size: 11px; color: var(--accent-light, #818cf8); font-weight: 600; flex-shrink: 0; }
 
 .cmd-empty {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 12px 10px;
-  color: var(--text-3, #94a3b8);
+  color: var(--text-muted, #6b7280);
   font-size: 12px;
 }
 
-.cmd-empty .el-icon { color: var(--brand, #6366f1); }
+.cmd-empty .el-icon { color: var(--accent, #6366f1); }
 
 /* 快捷新建按钮 */
 .quick-create-btn {
   height: 34px;
   border-radius: 8px;
   padding: 0 14px;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 13px;
+  background: var(--accent, #6366f1) !important;
+  border-color: var(--accent, #6366f1) !important;
+}
+.quick-create-btn:hover {
+  background: #5558e3 !important;
+  border-color: #5558e3 !important;
 }
 
 .qc-item {
@@ -575,9 +543,9 @@ defineExpose({ focusSearch })
   min-width: 200px;
 }
 
-.qc-item .el-icon { color: var(--brand-dark, #4338ca); }
-.qc-label { flex: 1; font-weight: 500; font-size: 13px; }
-.qc-tip { font-size: 11px; color: var(--text-3, #94a3b8); }
+.qc-item .el-icon { color: var(--accent-light, #818cf8); }
+.qc-label { flex: 1; font-weight: 500; font-size: 13px; color: var(--text-primary, #e8eaed); }
+.qc-tip { font-size: 11px; color: var(--text-muted, #6b7280); }
 
 /* 用户菜单 */
 .user-menu {
@@ -590,30 +558,30 @@ defineExpose({ focusSearch })
 }
 
 .user-menu:hover {
-  background: var(--bg-page, #f8fafc);
+  background: var(--bg-hover, #2a2f45);
 }
 
 .user-avatar {
-  background: linear-gradient(135deg, #6366f1, #06b6d4) !important;
+  background: linear-gradient(135deg, #6366f1, #ec4899) !important;
   font-weight: 700;
   font-size: 13px;
 }
 
 .user-dropdown-header {
   padding: 10px 14px;
-  border-bottom: 1px solid var(--border, #e2e8f0);
+  border-bottom: 1px solid var(--border, #2d3148);
   margin-bottom: 4px;
 }
 
 .ud-name {
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-1, #0f172a);
+  color: var(--text-primary, #e8eaed);
 }
 
 .ud-role {
   font-size: 12px;
-  color: var(--text-3, #94a3b8);
+  color: var(--text-muted, #6b7280);
   margin-top: 2px;
 }
 
@@ -621,17 +589,13 @@ defineExpose({ focusSearch })
 @media (max-width: 1024px) {
   .global-search { width: 160px; }
   .global-search.focused, .global-search:hover { width: 240px; }
-  :deep(.topbar-project-picker .pp-select) { width: 180px; }
-  .crumb-nav { max-width: 200px; }
 }
 
 @media (max-width: 768px) {
   .topbar { padding: 0 12px; }
   .topbar-left { gap: 8px; }
-  .crumb-nav { display: none; }
+  .crumb-custom { display: none; }
   .global-search { display: none; }
   .quick-create-btn { padding: 0 10px; font-size: 12px; }
-  :deep(.topbar-project-picker .pp-select) { width: 140px; height: 32px; }
-  :deep(.topbar-project-picker .pp-select .el-select__wrapper) { height: 32px; min-height: 32px; border-radius: 8px; }
 }
 </style>

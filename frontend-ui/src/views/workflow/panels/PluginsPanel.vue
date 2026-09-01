@@ -314,7 +314,7 @@ onMounted(() => { load(); loadTopology() })
 }
 .msg.in {
   align-self: flex-start;
-  background: #fff;
+  background: var(--bg-card);
   border: 1px solid var(--border);
 }
 .msg-meta {

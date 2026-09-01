@@ -205,15 +205,15 @@ onMounted(() => {
   display: flex;
   height: 100%;
   width: 100%;
-  background: #f8fafc;
+  background: var(--bg-tertiary);
 }
 
 /* 侧栏 */
 .ai-sidebar {
   width: 240px;
   flex-shrink: 0;
-  background: #fff;
-  border-right: 1px solid #e2e8f0;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   transition: width 0.25s ease;
@@ -228,7 +228,7 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 14px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-ghost);
   height: 52px;
 }
 
@@ -252,7 +252,7 @@ onMounted(() => {
 .brand-text {
   font-size: 13px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .toggle-btn {
@@ -300,11 +300,11 @@ onMounted(() => {
 }
 
 .session-item:hover {
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
 }
 
 .session-item.active {
-  background: #eef2ff;
+  background: var(--accent-dim);
 }
 
 .session-icon {
@@ -327,7 +327,7 @@ onMounted(() => {
 
 .session-title {
   font-size: 12px;
-  color: #334155;
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -346,7 +346,7 @@ onMounted(() => {
 
 .sidebar-footer {
   padding: 10px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--border-ghost);
 }
 
 .assistant-switcher {
@@ -360,7 +360,7 @@ onMounted(() => {
 }
 
 .assistant-switcher:hover {
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
 }
 
 .switcher-avatar {
@@ -381,7 +381,7 @@ onMounted(() => {
 .switcher-name {
   font-size: 12px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   line-height: 1.3;
 }
 
@@ -418,11 +418,11 @@ onMounted(() => {
 }
 
 .assistant-item:hover {
-  background: #f8fafc;
+  background: var(--bg-tertiary);
 }
 
 .assistant-item.active {
-  background: #eef2ff;
+  background: var(--accent-dim);
   border-color: #c7d2fe;
 }
 
@@ -444,7 +444,7 @@ onMounted(() => {
 .ai-name {
   font-size: 13px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   margin-bottom: 2px;
 }
 

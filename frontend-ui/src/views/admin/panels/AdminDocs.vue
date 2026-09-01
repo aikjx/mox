@@ -123,11 +123,11 @@ async function tryIt(a) {
   letter-spacing: 0.5px;
 }
 .method.get {
-  background: #ecfdf5;
+  background: var(--success-50);
   color: #047857;
 }
 .method.post {
-  background: #eef2ff;
+  background: var(--accent-dim);
   color: #4338ca;
 }
 .method.delete {

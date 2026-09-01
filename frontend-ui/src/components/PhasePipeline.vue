@@ -113,7 +113,7 @@ function onStepClick(idx) {
   border-radius: 12px;
   padding: 12px 16px;
   background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   box-shadow: 0 1px 3px -1px rgba(15, 23, 42, 0.06);
 }
 .pipeline-inner {
@@ -139,7 +139,7 @@ function onStepClick(idx) {
   border-radius: 9px;
   display: grid;
   place-items: center;
-  background: #fff;
+  background: var(--bg-card);
   color: #94a3b8;
   border: 1.5px solid #cbd5e1;
   font-weight: 700;
@@ -156,13 +156,13 @@ function onStepClick(idx) {
   transform: translateY(-1px);
 }
 .pp-step.done .pp-orb {
-  background: #ecfdf5;
+  background: var(--success-50);
   color: #059669;
   border-color: #10b981;
 }
 .pp-orb-num { line-height: 1; }
 .pp-meta { display: flex; flex-direction: column; min-width: 0; padding-top: 3px; flex: 1; }
-.pp-name { font-size: 13.5px; font-weight: 600; color: #334155; line-height: 1.2; white-space: nowrap; }
+.pp-name { font-size: 13.5px; font-weight: 600; color: var(--text-secondary); line-height: 1.2; white-space: nowrap; }
 .pp-step.active .pp-name { color: #4f46e5; }
 .pp-step.done .pp-name { color: #047857; }
 .pp-desc { margin-top: 3px; font-size: 11.5px; color: #94a3b8; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px; }
@@ -176,7 +176,7 @@ function onStepClick(idx) {
   margin-left: -14px;
   height: 3px;
   border-radius: 3px;
-  background: #e2e8f0;
+  background: var(--bg-tertiary);
   overflow: hidden;
   z-index: 1;
 }
@@ -202,14 +202,14 @@ function onStepClick(idx) {
   justify-content: space-between;
   padding-bottom: 8px;
   margin-bottom: 8px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border);
 }
 .ph-left {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 12.5px;
-  color: #475569;
+  color: var(--text-secondary);
 }
 .ph-dot {
   width: 6px;
@@ -219,7 +219,7 @@ function onStepClick(idx) {
 }
 .ph-title {
   font-weight: 600;
-  color: #334155;
+  color: var(--text-secondary);
   font-size: 12.5px;
 }
 .ph-current {
@@ -241,7 +241,7 @@ function onStepClick(idx) {
 .ph-progress-bar {
   width: 60px;
   height: 4px;
-  background: #e2e8f0;
+  background: var(--bg-tertiary);
   border-radius: 4px;
   overflow: hidden;
 }

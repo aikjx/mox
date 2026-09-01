@@ -382,7 +382,7 @@ watch(() => route.params.id, load, { immediate: true })
 .edges { position: absolute; left: 0; top: 0; pointer-events: none; }
 .node {
   position: absolute; width: 140px; min-height: 52px; padding: 8px 10px 10px;
-  border-radius: 10px; background: #fff; border: 2px solid var(--brand-light);
+  border-radius: 10px; background: var(--bg-card); border: 2px solid var(--brand-light);
   box-shadow: 0 4px 12px rgba(15,23,42,0.08); cursor: grab; display: flex; flex-direction: column; gap: 4px;
 }
 .node:active { cursor: grabbing; }
@@ -391,10 +391,10 @@ watch(() => route.params.id, load, { immediate: true })
 .node-label { font-size: 13px; font-weight: 600; color: var(--text-1); }
 .node-edit { position: absolute; right: 6px; top: 6px; color: var(--text-3); cursor: pointer; }
 .node-edit:hover { color: var(--brand); }
-.node.start { border-color: #10b981; background: #ecfdf5; }
+.node.start { border-color: #10b981; background: var(--success-50); }
 .node.end { border-color: #ef4444; background: #fef2f2; }
-.node.decision { border-color: #f59e0b; background: #fffbeb; border-radius: 4px; }
-.node.io { border-color: #06b6d4; background: #ecfeff; }
+.node.decision { border-color: #f59e0b; background: var(--warning-50); border-radius: 4px; }
+.node.io { border-color: #06b6d4; background: var(--accent-50); }
 .node.operator { border-color: #8b5cf6; background: #f3e8ff; }
 .flow-tip { margin-top: 10px; font-size: 12px; color: var(--brand-dark); background: var(--brand-soft); padding: 6px 10px; border-radius: 8px; }
 </style>

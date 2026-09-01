@@ -1,436 +1,206 @@
 <template>
   <div class="expert-plaza">
-    <!-- ===== Hero 区 ===== -->
-    <section class="hero-section">
-      <div class="hero-bg">
-        <div class="hero-blob blob-1"></div>
-        <div class="hero-blob blob-2"></div>
-        <div class="hero-blob blob-3"></div>
-        <div class="hero-grid-overlay"></div>
+    <!-- ===== 页头 ===== -->
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">专家广场</h1>
+        <p class="page-subtitle">汇聚各领域顶尖专家，智能匹配 · 实时咨询 · 精准预约</p>
+      </div>
+      <div class="header-actions">
+        <el-button size="small" @click="showRanking = true">
+          <el-icon><Trophy /></el-icon> 排行榜
+        </el-button>
+      </div>
+    </div>
+
+    <!-- ===== Tab 切换 ===== -->
+    <div class="view-tabs">
+      <div
+        class="view-tab"
+        :class="{ active: activeTab === 'experts' }"
+        @click="activeTab = 'experts'"
+      >
+        <el-icon><User /></el-icon>
+        专家发现
+        <span class="tab-count">{{ filteredExperts.length }}</span>
+      </div>
+      <div
+        class="view-tab"
+        :class="{ active: activeTab === 'bookings' }"
+        @click="activeTab = 'bookings'"
+      >
+        <el-icon><Calendar /></el-icon>
+        我的预约
+        <span class="tab-count" v-if="myBookings.length">{{ myBookings.length }}</span>
+      </div>
+    </div>
+
+    <!-- ===== 专家列表 ===== -->
+    <div v-show="activeTab === 'experts'" class="experts-view">
+      <!-- 搜索行 -->
+      <div class="search-row">
+        <el-input
+          v-model="searchKeyword"
+          placeholder="搜索专家名称 / 技能 / 领域…"
+          clearable
+          style="max-width: 400px"
+          @input="handleSearch"
+        >
+          <template #prefix><el-icon><Search /></el-icon></template>
+        </el-input>
       </div>
 
-      <div class="hero-content">
-        <div class="hero-text">
-          <div class="hero-badge">
-            <span class="hero-badge-dot"></span>
-            专家联盟 · 智慧中枢
-          </div>
-          <h1 class="hero-title">
-            <span class="gradient-text">专家联盟广场</span>
-          </h1>
-          <p class="hero-subtitle">
-            汇聚各领域顶尖专家，为您的项目保驾护航 · 智能匹配 · 实时咨询 · 精准预约
-          </p>
-        </div>
+      <!-- 筛选 chips -->
+      <div class="expert-filters">
+        <span
+          v-for="cat in categories"
+          :key="cat.key"
+          class="filter-chip"
+          :class="{ active: selectedCategory === cat.key }"
+          @click="selectedCategory = cat.key"
+        >
+          {{ cat.label }}
+        </span>
+      </div>
 
-        <!-- 搜索框 -->
-        <div class="hero-search">
-          <div class="search-box glass-card">
-            <el-icon class="search-icon"><Search /></el-icon>
-            <input
-              v-model="searchKeyword"
-              type="text"
-              class="search-input"
-              placeholder="搜索专家名称 / 技能 / 领域…"
-              @keyup.enter="handleSearch"
-            />
+      <!-- 加载 / 空 / 网格 -->
+      <div v-if="loading" class="state-box">
+        <div class="loading-spinner"></div>
+        <p>正在加载专家列表…</p>
+      </div>
+
+      <div v-else-if="filteredExperts.length === 0" class="state-box">
+        <div class="state-icon">🔍</div>
+        <h4>未找到匹配的专家</h4>
+        <p>试试调整筛选条件或搜索关键词</p>
+        <el-button type="primary" size="small" @click="resetFilters">重置筛选</el-button>
+      </div>
+
+      <div v-else class="expert-grid">
+        <div
+          v-for="expert in filteredExperts"
+          :key="expert.id"
+          class="expert-card"
+          @click="openExpertDetail(expert)"
+        >
+          <div class="expert-header">
+            <div class="expert-avatar" :style="{ background: expert.avatarGradient }">
+              {{ expert.name.charAt(0) }}
+            </div>
+            <div class="expert-header-info">
+              <div class="expert-name">{{ expert.name }}</div>
+              <div class="expert-title">{{ expert.typeLabel }} · {{ expert.department }}</div>
+              <div class="expert-rating">
+                ⭐ {{ expert.avgRating }}
+                <span class="rating-count">({{ expert.consultCount }} 次咨询)</span>
+              </div>
+            </div>
+          </div>
+          <div class="expert-skills">
+            <span
+              v-for="skill in expert.skills.slice(0, 4)"
+              :key="skill"
+              class="expert-skill"
+              @click.stop="searchKeyword = skill; handleSearch()"
+            >
+              {{ skill }}
+            </span>
+            <span v-if="expert.skills.length > 4" class="skill-more">+{{ expert.skills.length - 4 }}</span>
+          </div>
+          <div class="expert-stats">
+            <div class="expert-stat">
+              <div class="num">{{ expert.consultCount }}</div>
+              <div class="label">参与项目</div>
+            </div>
+            <div class="expert-stat">
+              <div class="num">{{ expert.avgRating }}</div>
+              <div class="label">用户评分</div>
+            </div>
+            <div class="expert-stat">
+              <div class="num">{{ expert.goodRate }}%</div>
+              <div class="label">好评率</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 加载更多 -->
+      <div v-if="filteredExperts.length > 0 && !allLoaded" class="load-more">
+        <el-button plain size="small" :loading="loadingMore" @click="loadMore">加载更多</el-button>
+      </div>
+    </div>
+
+    <!-- ===== 我的预约 ===== -->
+    <div v-show="activeTab === 'bookings'" class="bookings-view">
+      <div v-if="myBookings.length === 0" class="state-box">
+        <div class="state-icon">📅</div>
+        <h4>暂无预约记录</h4>
+        <p>快去专家广场预约您心仪的专家吧</p>
+        <el-button type="primary" size="small" @click="activeTab = 'experts'">浏览专家</el-button>
+      </div>
+
+      <div v-else class="bookings-list">
+        <div
+          v-for="booking in myBookings"
+          :key="booking.id"
+          class="booking-card"
+        >
+          <div class="booking-header">
+            <div class="booking-expert">
+              <div class="booking-avatar" :style="{ background: booking.expertGradient }">
+                {{ booking.expertEmoji }}
+              </div>
+              <div>
+                <div class="booking-expert-name">{{ booking.expertName }}</div>
+                <div class="booking-expert-type">{{ booking.expertType }}</div>
+              </div>
+            </div>
+            <el-tag
+              :type="bookingStatusType(booking.status)"
+              effect="dark"
+              size="small"
+              round
+            >
+              {{ bookingStatusLabel(booking.status) }}
+            </el-tag>
+          </div>
+          <div class="booking-body">
+            <div class="booking-topic">
+              <span class="booking-label">咨询主题：</span>{{ booking.topic }}
+            </div>
+            <div class="booking-time">
+              <el-icon><Calendar /></el-icon>
+              {{ booking.date }} {{ booking.timeSlot }}
+            </div>
+            <div class="booking-desc" v-if="booking.description">{{ booking.description }}</div>
+          </div>
+          <div class="booking-footer">
+            <el-button
+              size="small"
+              @click="cancelBooking(booking.id)"
+              v-if="booking.status === 'pending'"
+            >
+              取消预约
+            </el-button>
             <el-button
               type="primary"
-              class="search-btn"
-              :loading="searchLoading"
-              @click="handleSearch"
+              size="small"
+              @click="startConsult(booking)"
+              v-if="booking.status === 'confirmed'"
             >
-              搜索
+              进入咨询
+            </el-button>
+            <el-button
+              size="small"
+              @click="rebook(booking)"
+              v-if="booking.status === 'completed' || booking.status === 'cancelled'"
+            >
+              再次预约
             </el-button>
           </div>
         </div>
-
-        <!-- 快捷筛选标签 -->
-        <div class="quick-filters">
-          <span
-            v-for="tab in quickTabs"
-            :key="tab.key"
-            class="quick-tab"
-            :class="{ active: activeQuickTab === tab.key }"
-            @click="activeQuickTab = tab.key"
-          >
-            <span class="quick-tab-icon">{{ tab.icon }}</span>
-            {{ tab.label }}
-          </span>
-        </div>
-
-        <!-- 统计数字卡片 -->
-        <div class="stats-grid">
-          <div
-            v-for="(stat, idx) in heroStats"
-            :key="stat.key"
-            class="stat-card glass-card"
-            :style="{ '--delay': idx * 0.1 + 's' }"
-          >
-            <div class="stat-icon" :style="{ background: stat.gradient }">
-              <el-icon><component :is="stat.icon" /></el-icon>
-            </div>
-            <div class="stat-info">
-              <div class="stat-value">{{ stat.value }}</div>
-              <div class="stat-label">{{ stat.label }}</div>
-            </div>
-            <div class="stat-trend up" v-if="stat.trend">
-              <el-icon><TrendCharts /></el-icon>
-              {{ stat.trend }}
-            </div>
-          </div>
-        </div>
       </div>
-    </section>
-
-    <!-- ===== 主内容区 ===== -->
-    <section class="main-section">
-      <div class="plaza-layout">
-        <!-- 左侧筛选边栏 -->
-        <aside class="filter-sidebar glass-card">
-          <div class="sidebar-header">
-            <h3 class="sidebar-title">
-              <el-icon><Filter /></el-icon>
-              筛选条件
-            </h3>
-            <el-button link type="primary" size="small" @click="resetFilters">
-              重置
-            </el-button>
-          </div>
-
-          <!-- 专家分类 -->
-          <div class="filter-group">
-            <div class="filter-group-title">
-              <el-icon><Grid /></el-icon>
-              专家分类
-            </div>
-            <div class="filter-tags">
-              <span
-                v-for="cat in categories"
-                :key="cat.key"
-                class="filter-tag"
-                :class="{ active: selectedCategory === cat.key }"
-                @click="selectedCategory = cat.key"
-              >
-                <span class="tag-dot" :style="{ background: cat.color }"></span>
-                {{ cat.label }}
-              </span>
-            </div>
-          </div>
-
-          <!-- 经验等级 -->
-          <div class="filter-group">
-            <div class="filter-group-title">
-              <el-icon><Medal /></el-icon>
-              经验等级
-            </div>
-            <div class="filter-tags">
-              <span
-                v-for="level in levels"
-                :key="level.key"
-                class="filter-tag level-tag"
-                :class="{ active: selectedLevel === level.key, [`level-${level.key}`]: true }"
-                @click="selectedLevel = level.key"
-              >
-                {{ level.label }}
-              </span>
-            </div>
-          </div>
-
-          <!-- 价格区间 -->
-          <div class="filter-group">
-            <div class="filter-group-title">
-              <el-icon><Wallet /></el-icon>
-              价格区间
-            </div>
-            <div class="price-options">
-              <span
-                v-for="price in priceRanges"
-                :key="price.key"
-                class="price-option"
-                :class="{ active: selectedPrice === price.key }"
-                @click="selectedPrice = price.key"
-              >
-                {{ price.label }}
-              </span>
-            </div>
-          </div>
-
-          <!-- 排序方式 -->
-          <div class="filter-group">
-            <div class="filter-group-title">
-              <el-icon><Sort /></el-icon>
-              排序方式
-            </div>
-            <el-radio-group v-model="sortBy" class="sort-radio">
-              <el-radio-button
-                v-for="s in sortOptions"
-                :key="s.key"
-                :value="s.key"
-              >
-                {{ s.label }}
-              </el-radio-button>
-            </el-radio-group>
-          </div>
-
-          <!-- 排行榜入口 -->
-          <div class="ranking-entry" @click="showRanking = true">
-            <div class="ranking-entry-icon">
-              <el-icon><Trophy /></el-icon>
-            </div>
-            <div class="ranking-entry-text">
-              <div class="ranking-entry-title">专家排行榜</div>
-              <div class="ranking-entry-desc">月度咨询榜 · 好评榜 · 新星榜</div>
-            </div>
-            <el-icon class="ranking-entry-arrow"><ArrowRight /></el-icon>
-          </div>
-
-          <!-- 我的预约入口 -->
-          <div class="booking-entry" @click="activeTab = 'bookings'">
-            <div class="booking-entry-icon">
-              <el-icon><Calendar /></el-icon>
-            </div>
-            <div class="booking-entry-text">
-              <div class="booking-entry-title">我的预约</div>
-              <div class="booking-entry-desc">{{ myBookings.length }} 条预约记录</div>
-            </div>
-            <el-icon class="booking-entry-arrow"><ArrowRight /></el-icon>
-          </div>
-        </aside>
-
-        <!-- 主内容：专家卡片列表 / 我的预约 -->
-        <main class="content-area">
-          <!-- Tab 切换 -->
-          <div class="content-tabs">
-            <div
-              class="content-tab"
-              :class="{ active: activeTab === 'experts' }"
-              @click="activeTab = 'experts'"
-            >
-              <el-icon><User /></el-icon>
-              专家发现
-              <span class="tab-count">{{ filteredExperts.length }}</span>
-            </div>
-            <div
-              class="content-tab"
-              :class="{ active: activeTab === 'bookings' }"
-              @click="activeTab = 'bookings'"
-            >
-              <el-icon><Calendar /></el-icon>
-              我的预约
-              <span class="tab-count" v-if="myBookings.length">{{ myBookings.length }}</span>
-            </div>
-          </div>
-
-          <!-- 专家列表 -->
-          <div v-show="activeTab === 'experts'" class="experts-container">
-            <div v-if="loading" class="loading-state">
-              <div class="loading-spinner"></div>
-              <p>正在加载专家列表…</p>
-            </div>
-
-            <div v-else-if="filteredExperts.length === 0" class="empty-state">
-              <div class="empty-icon">🔍</div>
-              <h4>未找到匹配的专家</h4>
-              <p>试试调整筛选条件或搜索关键词</p>
-              <el-button type="primary" @click="resetFilters">重置筛选</el-button>
-            </div>
-
-            <div v-else class="experts-grid">
-              <div
-                v-for="(expert, idx) in filteredExperts"
-                :key="expert.id"
-                class="expert-card glass-card"
-                :style="{ '--delay': (idx % 8) * 0.05 + 's' }"
-                @click="openExpertDetail(expert)"
-              >
-                <!-- 卡片顶部 -->
-                <div class="card-top">
-                  <div class="expert-avatar-lg" :style="{ background: expert.avatarGradient }">
-                    <span class="avatar-emoji">{{ expert.avatarEmoji }}</span>
-                    <span
-                      v-if="expert.online"
-                      class="online-dot"
-                      :title="expert.online ? '在线' : '离线'"
-                    ></span>
-                  </div>
-                  <button
-                    class="favorite-btn"
-                    :class="{ favorited: expert.favorited }"
-                    @click.stop="toggleFavorite(expert)"
-                  >
-                    <el-icon :size="18">
-                      <Star v-if="expert.favorited" :fill="'#f59e0b'" />
-                      <Star v-else />
-                    </el-icon>
-                  </button>
-                </div>
-
-                <!-- 专家信息 -->
-                <div class="expert-body">
-                  <div class="expert-name-row">
-                    <h3 class="expert-name">{{ expert.name }}</h3>
-                    <span
-                      class="level-badge"
-                      :class="`level-${expert.level}`"
-                    >
-                      {{ getLevelLabel(expert.level) }}
-                    </span>
-                  </div>
-
-                  <div class="expert-type-row">
-                    <span
-                      class="type-tag"
-                      :style="{ background: expert.typeColor + '20', color: expert.typeColor }"
-                    >
-                      {{ expert.typeLabel }}
-                    </span>
-                    <span v-if="expert.recommended" class="recommend-tag">
-                      <el-icon><Star /></el-icon>
-                      推荐
-                    </span>
-                  </div>
-
-                  <p class="expert-desc">{{ expert.description }}</p>
-
-                  <!-- 技能标签 -->
-                  <div class="skill-tags">
-                    <span
-                      v-for="skill in expert.skills.slice(0, 4)"
-                      :key="skill"
-                      class="skill-tag"
-                      @click.stop="searchKeyword = skill; handleSearch()"
-                    >
-                      {{ skill }}
-                    </span>
-                    <span v-if="expert.skills.length > 4" class="skill-more">
-                      +{{ expert.skills.length - 4 }}
-                    </span>
-                  </div>
-                </div>
-
-                <!-- 底部统计栏 -->
-                <div class="card-stats">
-                  <div class="card-stat">
-                    <el-icon><ChatDotRound /></el-icon>
-                    <span>{{ expert.consultCount }}</span>
-                  </div>
-                  <div class="card-stat">
-                    <el-icon><Star /></el-icon>
-                    <span>{{ expert.goodRate }}%</span>
-                  </div>
-                  <div class="card-stat">
-                    <el-icon><Timer /></el-icon>
-                    <span>{{ expert.responseTime }}</span>
-                  </div>
-                </div>
-
-                <!-- 底部操作 -->
-                <div class="card-footer">
-                  <div class="price-info">
-                    <span class="price-value">
-                      <span v-if="expert.price === 0">免费</span>
-                      <span v-else>¥{{ expert.price }}<span class="price-unit">/次</span></span>
-                    </span>
-                  </div>
-                  <el-button
-                    type="primary"
-                    size="small"
-                    class="consult-btn"
-                    @click.stop="openBooking(expert)"
-                  >
-                    立即咨询
-                  </el-button>
-                </div>
-              </div>
-            </div>
-
-            <!-- 加载更多 -->
-            <div v-if="filteredExperts.length > 0 && !allLoaded" class="load-more">
-              <el-button plain :loading="loadingMore" @click="loadMore">
-                加载更多
-              </el-button>
-            </div>
-          </div>
-
-          <!-- 我的预约列表 -->
-          <div v-show="activeTab === 'bookings'" class="bookings-container">
-            <div v-if="myBookings.length === 0" class="empty-state">
-              <div class="empty-icon">📅</div>
-              <h4>暂无预约记录</h4>
-              <p>快去专家广场预约您心仪的专家吧</p>
-              <el-button type="primary" @click="activeTab = 'experts'">浏览专家</el-button>
-            </div>
-
-            <div v-else class="bookings-list">
-              <div
-                v-for="booking in myBookings"
-                :key="booking.id"
-                class="booking-card glass-card"
-              >
-                <div class="booking-header">
-                  <div class="booking-expert">
-                    <div
-                      class="booking-avatar"
-                      :style="{ background: booking.expertGradient }"
-                    >
-                      {{ booking.expertEmoji }}
-                    </div>
-                    <div>
-                      <div class="booking-expert-name">{{ booking.expertName }}</div>
-                      <div class="booking-expert-type">{{ booking.expertType }}</div>
-                    </div>
-                  </div>
-                  <el-tag
-                    :type="bookingStatusType(booking.status)"
-                    effect="light"
-                    size="small"
-                    round
-                  >
-                    {{ bookingStatusLabel(booking.status) }}
-                  </el-tag>
-                </div>
-
-                <div class="booking-body">
-                  <div class="booking-topic">
-                    <span class="booking-label">咨询主题：</span>
-                    {{ booking.topic }}
-                  </div>
-                  <div class="booking-time">
-                    <el-icon><Calendar /></el-icon>
-                    {{ booking.date }} {{ booking.timeSlot }}
-                  </div>
-                  <div class="booking-desc" v-if="booking.description">
-                    {{ booking.description }}
-                  </div>
-                </div>
-
-                <div class="booking-footer">
-                  <el-button size="small" @click="cancelBooking(booking.id)" v-if="booking.status === 'pending'">
-                    取消预约
-                  </el-button>
-                  <el-button
-                    type="primary"
-                    size="small"
-                    @click="startConsult(booking)"
-                    v-if="booking.status === 'confirmed'"
-                  >
-                    进入咨询
-                  </el-button>
-                  <el-button
-                    size="small"
-                    @click="rebook(booking)"
-                    v-if="booking.status === 'completed' || booking.status === 'cancelled'"
-                  >
-                    再次预约
-                  </el-button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
-    </section>
+    </div>
 
     <!-- ===== 专家详情弹窗 ===== -->
     <el-dialog
@@ -443,10 +213,7 @@
       <template #header>
         <div class="detail-header">
           <div class="detail-avatar-wrap">
-            <div
-              class="detail-avatar"
-              :style="{ background: currentExpert?.avatarGradient }"
-            >
+            <div class="detail-avatar" :style="{ background: currentExpert?.avatarGradient }">
               <span class="detail-avatar-emoji">{{ currentExpert?.avatarEmoji }}</span>
               <span v-if="currentExpert?.online" class="detail-online-dot"></span>
             </div>
@@ -459,7 +226,7 @@
               </span>
               <span
                 class="type-tag"
-                :style="{ background: currentExpert?.typeColor + '20', color: currentExpert?.typeColor }"
+                :style="{ background: currentExpert?.typeColor + '30', color: currentExpert?.typeColor }"
               >
                 {{ currentExpert?.typeLabel }}
               </span>
@@ -483,14 +250,11 @@
       </template>
 
       <div class="detail-body" v-if="currentExpert">
-        <!-- 基本信息 + 数据统计 -->
         <div class="detail-grid">
-          <!-- 左侧：基本信息 -->
           <div class="detail-info-col">
             <div class="info-section">
               <h4 class="info-section-title">
-                <el-icon><InfoFilled /></el-icon>
-                基本信息
+                <el-icon><InfoFilled /></el-icon> 基本信息
               </h4>
               <div class="info-list">
                 <div class="info-item">
@@ -511,12 +275,9 @@
                 </div>
               </div>
             </div>
-
-            <!-- 数据统计 -->
             <div class="info-section">
               <h4 class="info-section-title">
-                <el-icon><DataAnalysis /></el-icon>
-                数据统计
+                <el-icon><DataAnalysis /></el-icon> 数据统计
               </h4>
               <div class="stats-mini-grid">
                 <div class="stat-mini">
@@ -538,13 +299,10 @@
               </div>
             </div>
           </div>
-
-          <!-- 右侧：专业技能 -->
           <div class="detail-skills-col">
             <div class="info-section">
               <h4 class="info-section-title">
-                <el-icon><MagicStick /></el-icon>
-                专业技能
+                <el-icon><MagicStick /></el-icon> 专业技能
               </h4>
               <div class="skill-cloud">
                 <span
@@ -560,23 +318,19 @@
           </div>
         </div>
 
-        <!-- 专家介绍 -->
         <div class="info-section">
           <h4 class="info-section-title">
-            <el-icon><Document /></el-icon>
-            专家介绍
+            <el-icon><Document /></el-icon> 专家介绍
           </h4>
           <div class="expert-bio">
             <p v-for="(para, i) in currentExpert.bioParagraphs" :key="i">{{ para }}</p>
           </div>
         </div>
 
-        <!-- 用户评价 -->
         <div class="info-section">
           <div class="section-head-row">
             <h4 class="info-section-title">
-              <el-icon><ChatLineSquare /></el-icon>
-              用户评价
+              <el-icon><ChatLineSquare /></el-icon> 用户评价
               <span class="review-count">({{ currentExpert.reviews.length }})</span>
             </h4>
             <el-radio-group v-model="reviewFilter" size="small">
@@ -597,20 +351,14 @@
                 <div class="review-meta">
                   <div class="review-name">{{ review.userName }}</div>
                   <div class="review-rating">
-                    <el-rate
-                      :model-value="review.rating"
-                      disabled
-                      size="small"
-                    />
+                    <el-rate :model-value="review.rating" disabled size="small" />
                     <span class="review-date">{{ review.date }}</span>
                   </div>
                 </div>
               </div>
               <div class="review-content">{{ review.content }}</div>
               <div class="review-tags" v-if="review.tags?.length">
-                <span v-for="tag in review.tags" :key="tag" class="review-tag">
-                  {{ tag }}
-                </span>
+                <span v-for="tag in review.tags" :key="tag" class="review-tag">{{ tag }}</span>
               </div>
             </div>
           </div>
@@ -628,20 +376,17 @@
           </div>
           <div class="footer-btns">
             <el-button @click="addToTeam">
-              <el-icon><UserFilled /></el-icon>
-              加入团队
+              <el-icon><UserFilled /></el-icon> 加入团队
             </el-button>
             <el-button type="primary" @click="openBooking(currentExpert)">
-              <el-icon><Calendar /></el-icon>
-              预约专家
+              <el-icon><Calendar /></el-icon> 预约专家
             </el-button>
             <el-button
               type="success"
               @click="startConsultNow(currentExpert)"
               v-if="currentExpert?.online"
             >
-              <el-icon><ChatDotRound /></el-icon>
-              发起咨询
+              <el-icon><ChatDotRound /></el-icon> 发起咨询
             </el-button>
           </div>
         </div>
@@ -657,11 +402,8 @@
       destroy-on-close
     >
       <div v-if="bookingExpert" class="booking-form">
-        <div class="booking-expert-info glass-card">
-          <div
-            class="be-avatar"
-            :style="{ background: bookingExpert.avatarGradient }"
-          >
+        <div class="booking-expert-info">
+          <div class="be-avatar" :style="{ background: bookingExpert.avatarGradient }">
             {{ bookingExpert.avatarEmoji }}
           </div>
           <div class="be-info">
@@ -684,7 +426,6 @@
               style="width: 100%"
             />
           </el-form-item>
-
           <el-form-item label="选择时间段">
             <div class="time-slots">
               <span
@@ -701,7 +442,6 @@
               </span>
             </div>
           </el-form-item>
-
           <el-form-item label="咨询主题">
             <el-input
               v-model="bookingForm.topic"
@@ -710,7 +450,6 @@
               show-word-limit
             />
           </el-form-item>
-
           <el-form-item label="问题描述">
             <el-input
               v-model="bookingForm.description"
@@ -768,7 +507,6 @@
             </div>
           </div>
         </el-tab-pane>
-
         <el-tab-pane label="好评榜" name="rating">
           <div class="ranking-list">
             <div
@@ -792,7 +530,6 @@
             </div>
           </div>
         </el-tab-pane>
-
         <el-tab-pane label="新星榜" name="newstar">
           <div class="ranking-list">
             <div
@@ -898,22 +635,22 @@ const sortOptions = [
 ]
 
 const categories = [
-  { key: 'all', label: '全部', color: '#64748b' },
-  { key: 'algorithm', label: '算法', color: '#6366f1' },
-  { key: 'architecture', label: '架构', color: '#0891b2' },
-  { key: 'ai', label: 'AI', color: '#ec4899' },
-  { key: 'data', label: '数据', color: '#10b981' },
+  { key: 'all', label: '全部领域', color: '#64748b' },
+  { key: 'algorithm', label: 'AI算法', color: '#6366f1' },
+  { key: 'architecture', label: '架构设计', color: '#0891b2' },
+  { key: 'ai', label: 'AI应用', color: '#ec4899' },
+  { key: 'data', label: '数据工程', color: '#10b981' },
   { key: 'workflow', label: '工作流', color: '#f59e0b' },
-  { key: 'graph', label: '图谱', color: '#06b6d4' },
-  { key: 'security', label: '安全', color: '#ef4444' },
-  { key: 'performance', label: '性能', color: '#14b8a6' },
-  { key: 'monitor', label: '监控', color: '#f97316' },
-  { key: 'market', label: '市场', color: '#f43f5e' },
-  { key: 'mcp', label: 'MCP', color: '#a855f7' },
+  { key: 'graph', label: '知识图谱', color: '#06b6d4' },
+  { key: 'security', label: '安全合规', color: '#ef4444' },
+  { key: 'performance', label: '性能优化', color: '#14b8a6' },
+  { key: 'monitor', label: '运维SRE', color: '#f97316' },
+  { key: 'market', label: '商业智能', color: '#f43f5e' },
+  { key: 'mcp', label: 'MCP协议', color: '#a855f7' },
   { key: 'automation', label: '自动化', color: '#0ea5e9' },
-  { key: 'requirement', label: '需求', color: '#16a34a' },
-  { key: 'fusion', label: '融合', color: '#7c3aed' },
-  { key: 'operator', label: '算子', color: '#8b5cf6' }
+  { key: 'requirement', label: '需求工程', color: '#16a34a' },
+  { key: 'fusion', label: '全维融合', color: '#7c3aed' },
+  { key: 'operator', label: '算子系统', color: '#8b5cf6' }
 ]
 
 const quickTabs = [
@@ -1638,1568 +1375,738 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* ===== 全局变量 ===== */
 .expert-plaza {
-  --violet: #7c3aed;
-  --cyan: #06b6d4;
-  --gradient-primary: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%);
-  --glass-bg: rgba(255, 255, 255, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.8);
-  --glass-shadow: 0 8px 32px rgba(124, 58, 237, 0.1);
-  min-height: 100vh;
-  background: var(--bg-deep-sky);
-}
-
-html.dark .expert-plaza {
-  --glass-bg: rgba(30, 41, 59, 0.6);
-  --glass-border: rgba(148, 163, 184, 0.15);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-}
-
-/* ===== 玻璃拟态基础类 ===== */
-.glass-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--glass-shadow);
-}
-
-/* ===== Hero 区 ===== */
-.hero-section {
-  position: relative;
-  overflow: hidden;
-  padding: 60px 40px 50px;
-  background: linear-gradient(180deg,
-    rgba(124, 58, 237, 0.08) 0%,
-    rgba(6, 182, 212, 0.04) 50%,
-    transparent 100%);
-}
-
-.hero-bg {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.hero-blob {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.4;
-  animation: float 20s ease-in-out infinite;
-}
-
-.blob-1 {
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, rgba(124, 58, 237, 0.3), transparent 70%);
-  top: -100px;
-  left: -100px;
-}
-
-.blob-2 {
-  width: 300px;
-  height: 300px;
-  background: radial-gradient(circle, rgba(6, 182, 212, 0.3), transparent 70%);
-  top: 50px;
-  right: 10%;
-  animation-delay: -7s;
-}
-
-.blob-3 {
-  width: 350px;
-  height: 350px;
-  background: radial-gradient(circle, rgba(236, 72, 153, 0.2), transparent 70%);
-  bottom: -100px;
-  left: 30%;
-  animation-delay: -14s;
-}
-
-@keyframes float {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(30px, -30px) scale(1.05); }
-  66% { transform: translate(-20px, 20px) scale(0.95); }
-}
-
-.hero-grid-overlay {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(124, 58, 237, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(124, 58, 237, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-  mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
-}
-
-.hero-content {
-  position: relative;
-  z-index: 1;
-  max-width: 1400px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 32px;
-}
-
-.hero-text {
-  text-align: center;
-}
-
-.hero-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 16px;
-  background: rgba(124, 58, 237, 0.1);
-  border: 1px solid rgba(124, 58, 237, 0.2);
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--violet);
-  margin-bottom: 16px;
-}
-
-.hero-badge-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--violet);
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-
-.hero-title {
-  font-size: 48px;
-  font-weight: 800;
-  margin: 0 0 12px;
-  line-height: 1.2;
-}
-
-.gradient-text {
-  background: linear-gradient(135deg, var(--violet) 0%, var(--cyan) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.hero-subtitle {
-  font-size: 16px;
-  color: var(--text-tertiary);
-  margin: 0;
-  max-width: 600px;
-}
-
-/* 搜索框 */
-.hero-search {
-  width: 100%;
-  max-width: 700px;
-}
-
-.search-box {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 8px 8px 20px;
-  transition: all 0.3s var(--ease);
-}
-
-.search-box:hover {
-  box-shadow: 0 12px 40px rgba(124, 58, 237, 0.15);
-  transform: translateY(-1px);
-}
-
-.search-icon {
-  font-size: 20px;
-  color: var(--text-quaternary);
-  flex-shrink: 0;
-}
-
-.search-input {
   flex: 1;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: 15px;
-  color: var(--text-primary);
-  padding: 12px 0;
-}
-
-.search-input::placeholder {
-  color: var(--text-quaternary);
-}
-
-.search-btn {
-  height: 44px;
-  padding: 0 28px;
-  border-radius: var(--radius-lg) !important;
-  background: var(--gradient-primary) !important;
-  border: none !important;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-/* 快捷筛选 */
-.quick-filters {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.quick-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 18px;
-  background: var(--glass-bg);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--glass-border);
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.25s var(--ease);
-}
-
-.quick-tab:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.12);
-}
-
-.quick-tab.active {
-  background: var(--gradient-primary);
-  color: white;
-  border-color: transparent;
-  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.3);
-}
-
-.quick-tab-icon {
-  font-size: 14px;
-}
-
-/* 统计卡片 */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-  width: 100%;
-  max-width: 1000px;
-}
-
-.stat-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px 24px;
-  transition: all 0.3s var(--ease);
-  animation: fadeInUp 0.6s var(--ease) backwards;
-  animation-delay: var(--delay);
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 16px 48px rgba(124, 58, 237, 0.15);
-}
-
-.stat-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-  display: grid;
-  place-items: center;
-  color: white;
-  font-size: 24px;
-  flex-shrink: 0;
-}
-
-.stat-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.stat-value {
-  font-size: 24px;
-  font-weight: 800;
-  color: var(--text-primary);
-  line-height: 1.2;
-}
-
-.stat-label {
-  font-size: 13px;
-  color: var(--text-tertiary);
-  margin-top: 2px;
-}
-
-.stat-trend {
-  font-size: 12px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-}
-
-.stat-trend.up {
-  color: var(--success);
-}
-
-/* ===== 主内容区 ===== */
-.main-section {
-  padding: 0 40px 60px;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.plaza-layout {
-  display: grid;
-  grid-template-columns: 260px 1fr;
-  gap: 24px;
-  align-items: start;
-}
-
-/* 左侧筛选边栏 */
-.filter-sidebar {
-  position: sticky;
-  top: 20px;
+  min-height: 0;
+  overflow-y: auto;
   padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
+  background: var(--bg-primary);
 }
 
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.sidebar-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.sidebar-title .el-icon {
-  color: var(--violet);
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.filter-group-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.filter-group-title .el-icon {
-  color: var(--cyan);
-  font-size: 14px;
-}
-
-.filter-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.filter-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 12px;
-  background: var(--bg-surface-2);
-  border: 1px solid transparent;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-tertiary);
-  cursor: pointer;
-  transition: all 0.2s var(--ease);
-}
-
-.filter-tag:hover {
-  background: var(--bg-input-focus);
-  color: var(--text-secondary);
-}
-
-.filter-tag.active {
-  background: rgba(124, 58, 237, 0.1);
-  border-color: rgba(124, 58, 237, 0.3);
-  color: var(--violet);
-  font-weight: 600;
-}
-
-.tag-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-}
-
-.level-tag.level-bronze.active {
-  background: rgba(205, 127, 50, 0.1);
-  border-color: rgba(205, 127, 50, 0.3);
-  color: #cd7f32;
-}
-
-.level-tag.level-silver.active {
-  background: rgba(192, 192, 192, 0.15);
-  border-color: rgba(150, 150, 150, 0.3);
-  color: #808080;
-}
-
-.level-tag.level-gold.active {
-  background: rgba(255, 215, 0, 0.15);
-  border-color: rgba(255, 215, 0, 0.4);
-  color: #b8860b;
-}
-
-.level-tag.level-diamond.active {
-  background: rgba(6, 182, 212, 0.1);
-  border-color: rgba(6, 182, 212, 0.3);
-  color: var(--cyan);
-}
-
-.level-tag.level-master.active {
-  background: rgba(124, 58, 237, 0.1);
-  border-color: rgba(124, 58, 237, 0.3);
-  color: var(--violet);
-}
-
-.price-options {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.price-option {
-  padding: 8px 12px;
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.2s var(--ease);
-}
-
-.price-option:hover {
-  background: var(--bg-surface-2);
-}
-
-.price-option.active {
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(6, 182, 212, 0.08));
-  color: var(--violet);
-  font-weight: 600;
-}
-
-.sort-radio {
-  width: 100%;
-}
-
-:deep(.sort-radio .el-radio-button__inner) {
-  width: 100%;
-  font-size: 12px;
-  padding: 8px 10px;
-}
-
-/* 排行榜 & 预约入口 */
-.ranking-entry,
-.booking-entry {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px;
-  border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(239, 68, 68, 0.06));
-  border: 1px solid rgba(245, 158, 11, 0.15);
-  cursor: pointer;
-  transition: all 0.3s var(--ease);
-}
-
-.booking-entry {
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.08), rgba(6, 182, 212, 0.06));
-  border: 1px solid rgba(124, 58, 237, 0.15);
-}
-
-.ranking-entry:hover,
-.booking-entry:hover {
-  transform: translateX(4px);
-  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.12);
-}
-
-.ranking-entry-icon,
-.booking-entry-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  font-size: 20px;
-  flex-shrink: 0;
-}
-
-.ranking-entry-icon {
-  background: linear-gradient(135deg, #f59e0b, #ef4444);
-  color: white;
-}
-
-.booking-entry-icon {
-  background: linear-gradient(135deg, var(--violet), var(--cyan));
-  color: white;
-}
-
-.ranking-entry-text,
-.booking-entry-text {
-  flex: 1;
-  min-width: 0;
-}
-
-.ranking-entry-title,
-.booking-entry-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.ranking-entry-desc,
-.booking-entry-desc {
-  font-size: 11px;
-  color: var(--text-tertiary);
-  margin-top: 2px;
-}
-
-.ranking-entry-arrow,
-.booking-entry-arrow {
-  color: var(--text-quaternary);
-  flex-shrink: 0;
-  transition: transform 0.2s var(--ease);
-}
-
-.ranking-entry:hover .ranking-entry-arrow,
-.booking-entry:hover .booking-entry-arrow {
-  transform: translateX(4px);
-  color: var(--violet);
-}
-
-/* ===== 内容区 ===== */
-.content-area {
-  min-width: 0;
-}
-
-.content-tabs {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 20px;
-  background: var(--glass-bg);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-xl);
-  padding: 6px;
-  width: fit-content;
-}
-
-.content-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 20px;
-  border-radius: var(--radius-lg);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-tertiary);
-  cursor: pointer;
-  transition: all 0.25s var(--ease);
-}
-
-.content-tab:hover {
-  color: var(--text-secondary);
-}
-
-.content-tab.active {
-  background: var(--gradient-primary);
-  color: white;
-  font-weight: 600;
-  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.3);
-}
-
-.tab-count {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-/* 专家网格 */
-.experts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-}
-
-.expert-card {
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  cursor: pointer;
-  transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-  animation: fadeInUp 0.5s var(--ease) backwards;
-  animation-delay: var(--delay);
-  position: relative;
-  overflow: hidden;
-}
-
-.expert-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--gradient-primary);
-  opacity: 0;
-  transition: opacity 0.3s var(--ease);
-}
-
-.expert-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 20px 60px rgba(124, 58, 237, 0.18);
-}
-
-.expert-card:hover::before {
-  opacity: 1;
-}
-
-.card-top {
+/* ===== 页头 ===== */
+.page-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 14px;
+  gap: 16px;
+  margin-bottom: 4px;
 }
-
-.expert-avatar-lg {
-  width: 60px;
-  height: 60px;
-  border-radius: 18px;
-  display: grid;
-  place-items: center;
-  position: relative;
-  transition: transform 0.3s var(--ease);
-}
-
-.expert-card:hover .expert-avatar-lg {
-  transform: scale(1.05) rotate(-3deg);
-}
-
-.avatar-emoji {
-  font-size: 28px;
-}
-
-.online-dot {
-  position: absolute;
-  bottom: 2px;
-  right: 2px;
-  width: 12px;
-  height: 12px;
-  background: #10b981;
-  border: 2px solid white;
-  border-radius: 50%;
-  animation: pulse-green 2s ease-in-out infinite;
-}
-
-html.dark .online-dot {
-  border-color: var(--bg-surface);
-}
-
-@keyframes pulse-green {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-  50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-}
-
-.favorite-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  color: var(--text-quaternary);
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  transition: all 0.25s var(--ease);
-}
-
-html.dark .favorite-btn {
-  background: rgba(30, 41, 59, 0.8);
-}
-
-.favorite-btn:hover {
-  color: #f59e0b;
-  transform: scale(1.1);
-}
-
-.favorite-btn.favorited {
-  color: #f59e0b;
-}
-
-/* 专家信息 */
-.expert-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.expert-name-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.expert-name {
-  font-size: 17px;
-  font-weight: 700;
+.page-title {
+  font-size: 22px;
+  font-weight: 600;
   color: var(--text-primary);
+  margin: 0 0 4px;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
   margin: 0;
 }
-
-.level-badge {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 6px;
+.header-actions {
+  display: flex;
+  gap: 8px;
   flex-shrink: 0;
 }
 
-.level-badge.level-bronze {
-  background: linear-gradient(135deg, #d4a574, #cd7f32);
-  color: white;
-}
-
-.level-badge.level-silver {
-  background: linear-gradient(135deg, #d1d5db, #9ca3af);
-  color: white;
-}
-
-.level-badge.level-gold {
-  background: linear-gradient(135deg, #fcd34d, #f59e0b);
-  color: white;
-}
-
-.level-badge.level-diamond {
-  background: linear-gradient(135deg, #22d3ee, #06b6d4);
-  color: white;
-}
-
-.level-badge.level-master {
-  background: linear-gradient(135deg, #a855f7, #7c3aed);
-  color: white;
-}
-
-.expert-type-row {
+/* ===== View Tabs ===== */
+.view-tabs {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  gap: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  width: fit-content;
 }
-
-.type-tag {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 999px;
-}
-
-.recommend-tag {
+.view-tab {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 6px;
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  color: #92400e;
-  border-radius: 6px;
-}
-
-.expert-desc {
+  gap: 6px;
+  padding: 6px 16px;
   font-size: 13px;
-  color: var(--text-tertiary);
-  line-height: 1.6;
-  margin: 4px 0 6px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  color: var(--text-secondary);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.view-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+.view-tab.active {
+  background: var(--accent-dim);
+  color: var(--accent-light);
+  font-weight: 600;
+}
+.tab-count {
+  font-size: 11px;
+  background: var(--bg-tertiary);
+  padding: 1px 6px;
+  border-radius: 10px;
+  color: var(--text-muted);
+}
+.view-tab.active .tab-count {
+  background: var(--accent);
+  color: #fff;
 }
 
-.skill-tags {
+/* ===== 搜索行 ===== */
+.search-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* ===== 筛选 chips ===== */
+.expert-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.filter-chip {
+  padding: 4px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+.filter-chip:hover {
+  border-color: var(--border-light);
+  color: var(--text-primary);
+}
+.filter-chip.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent-light);
+  font-weight: 600;
+}
+
+/* ===== 专家网格 ===== */
+.expert-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+.expert-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.expert-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.15);
+}
+.expert-header {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 14px;
+  align-items: flex-start;
+}
+.expert-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+}
+.expert-header-info {
+  flex: 1;
+  min-width: 0;
+}
+.expert-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+.expert-title {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.expert-rating {
+  font-size: 12px;
+  color: var(--warning);
+}
+.rating-count {
+  color: var(--text-muted);
+  font-size: 11px;
+  margin-left: 4px;
+}
+.expert-skills {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  margin-bottom: 12px;
 }
-
-.skill-tag {
+.expert-skill {
   font-size: 11px;
-  padding: 3px 10px;
-  background: var(--bg-surface-2);
-  color: var(--text-secondary);
-  border-radius: 6px;
+  padding: 3px 8px;
+  background: var(--accent-dim);
+  color: var(--accent-light);
+  border-radius: 4px;
   cursor: pointer;
-  transition: all 0.2s var(--ease);
+  transition: opacity 0.2s;
 }
-
-.skill-tag:hover {
-  background: rgba(124, 58, 237, 0.1);
-  color: var(--violet);
+.expert-skill:hover {
+  opacity: 0.8;
 }
-
 .skill-more {
   font-size: 11px;
   padding: 3px 8px;
-  color: var(--text-quaternary);
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  border-radius: 4px;
 }
-
-/* 卡片底部 */
-.card-stats {
+.expert-stats {
   display: flex;
-  justify-content: space-around;
-  padding: 12px 0;
-  margin: 12px 0;
-  border-top: 1px solid var(--border-ghost);
-  border-bottom: 1px solid var(--border-ghost);
-}
-
-.card-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--text-tertiary);
-}
-
-.card-stat .el-icon {
-  font-size: 14px;
-  color: var(--violet);
-}
-
-.card-stat span {
-  font-weight: 600;
-  color: var(--text-secondary);
-  font-size: 12px;
-}
-
-.card-footer {
-  display: flex;
-  align-items: center;
   justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
 }
-
-.price-info {
-  display: flex;
-  align-items: baseline;
-  gap: 2px;
-}
-
-.price-value {
-  font-size: 18px;
-  font-weight: 800;
-  background: var(--gradient-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.price-unit {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-quaternary);
-  -webkit-text-fill-color: var(--text-quaternary);
-}
-
-.consult-btn {
-  border-radius: var(--radius-lg) !important;
-  padding: 8px 20px !important;
-  font-weight: 600 !important;
-  background: var(--gradient-primary) !important;
-  border: none !important;
-  transition: all 0.3s var(--ease) !important;
-}
-
-.consult-btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.35) !important;
-}
-
-/* 加载更多 */
-.load-more {
+.expert-stat {
   text-align: center;
-  margin-top: 32px;
+  flex: 1;
+}
+.expert-stat .num {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.expert-stat .label {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
 }
 
-/* 加载状态 */
-.loading-state,
-.empty-state {
-  grid-column: 1 / -1;
+/* ===== 状态框 ===== */
+.state-box {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 60px 20px;
   text-align: center;
+  gap: 12px;
 }
-
+.state-box .state-icon {
+  font-size: 48px;
+}
+.state-box h4 {
+  font-size: 16px;
+  color: var(--text-primary);
+  margin: 0;
+}
+.state-box p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
 .loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--border-soft);
-  border-top-color: var(--violet);
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
-  margin-bottom: 16px;
 }
-
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-.empty-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-}
-
-.empty-state h4 {
-  font-size: 16px;
-  color: var(--text-primary);
-  margin: 0 0 8px;
-}
-
-.empty-state p {
-  font-size: 13px;
-  color: var(--text-tertiary);
-  margin: 0 0 20px;
+.load-more {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0;
 }
 
 /* ===== 预约列表 ===== */
-.bookings-list {
+.bookings-view {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
-
+.bookings-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 12px;
+}
 .booking-card {
-  padding: 20px;
-  transition: all 0.3s var(--ease);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
-
-.booking-card:hover {
-  transform: translateX(4px);
-  box-shadow: 0 12px 40px rgba(124, 58, 237, 0.12);
-}
-
 .booking-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
 }
-
 .booking-expert {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
-
 .booking-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   display: grid;
   place-items: center;
-  font-size: 22px;
+  font-size: 18px;
 }
-
 .booking-expert-name {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--text-primary);
 }
-
 .booking-expert-type {
-  font-size: 12px;
-  color: var(--text-tertiary);
-  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-muted);
 }
-
 .booking-body {
-  padding: 14px 0;
-  border-top: 1px solid var(--border-ghost);
-  border-bottom: 1px solid var(--border-ghost);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
-
 .booking-topic {
-  font-size: 14px;
-  color: var(--text-primary);
-  font-weight: 500;
-}
-
-.booking-label {
-  color: var(--text-tertiary);
-  font-weight: 400;
-}
-
-.booking-time {
   font-size: 13px;
+  color: var(--text-primary);
+}
+.booking-label {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.booking-time {
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.booking-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.booking-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+/* ===== 详情弹窗 ===== */
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.detail-avatar-wrap {
+  flex-shrink: 0;
+}
+.detail-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+.detail-avatar-emoji {
+  font-size: 28px;
+}
+.detail-online-dot {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  background: var(--success);
+  border: 2px solid var(--bg-card);
+  border-radius: 50%;
+}
+.detail-title-area {
+  flex: 1;
+  min-width: 0;
+}
+.detail-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.detail-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+.level-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.level-bronze { background: rgba(205, 127, 50, 0.2); color: #cd7f32; }
+.level-silver { background: rgba(192, 192, 192, 0.2); color: #c0c0c0; }
+.level-gold { background: rgba(255, 215, 0, 0.2); color: #ffd700; }
+.level-diamond { background: rgba(6, 182, 212, 0.2); color: #06b6d4; }
+.level-master { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+.type-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.detail-status {
+  font-size: 12px;
   color: var(--text-secondary);
   display: flex;
   align-items: center;
   gap: 6px;
 }
-
-.booking-time .el-icon {
-  color: var(--violet);
-}
-
-.booking-desc {
-  font-size: 12px;
-  color: var(--text-tertiary);
-  line-height: 1.6;
-}
-
-.booking-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 14px;
-}
-
-/* ===== 详情弹窗 ===== */
-.detail-dialog :deep(.el-dialog) {
-  border-radius: 24px !important;
-  overflow: hidden;
-  background: var(--glass-bg) !important;
-  backdrop-filter: blur(30px);
-}
-
-.detail-header {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.detail-avatar-wrap {
-  flex-shrink: 0;
-}
-
-.detail-avatar {
-  width: 80px;
-  height: 80px;
-  border-radius: 24px;
-  display: grid;
-  place-items: center;
-  position: relative;
-}
-
-.detail-avatar-emoji {
-  font-size: 40px;
-}
-
-.detail-online-dot {
-  position: absolute;
-  bottom: 4px;
-  right: 4px;
-  width: 16px;
-  height: 16px;
-  background: #10b981;
-  border: 3px solid white;
-  border-radius: 50%;
-}
-
-html.dark .detail-online-dot {
-  border-color: var(--bg-surface);
-}
-
-.detail-title-area {
-  flex: 1;
-  min-width: 0;
-}
-
-.detail-name-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 6px;
-}
-
-.detail-name {
-  font-size: 24px;
-  font-weight: 800;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.detail-status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--text-tertiary);
-}
-
 .status-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #94a3b8;
+  background: var(--text-muted);
 }
-
 .status-dot.online {
-  background: #10b981;
+  background: var(--success);
 }
-
 .status-sep {
-  color: var(--border-soft);
+  color: var(--text-muted);
 }
-
 .detail-actions-head {
-  display: flex;
-  gap: 8px;
+  flex-shrink: 0;
 }
-
 .icon-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  border: 1px solid var(--border-soft);
-  background: var(--bg-surface);
-  color: var(--text-tertiary);
-  cursor: pointer;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
-  transition: all 0.2s var(--ease);
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s;
 }
-
 .icon-btn:hover {
-  color: #f59e0b;
-  border-color: #f59e0b;
+  border-color: var(--accent);
+  color: var(--accent-light);
 }
 
-/* 详情内容 */
 .detail-body {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
   max-height: 60vh;
   overflow-y: auto;
   padding-right: 8px;
 }
-
 .detail-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 16px;
 }
-
 .info-section {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-
 .info-section-title {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-primary);
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
-
-.info-section-title .el-icon {
-  color: var(--violet);
-}
-
-.review-count {
-  font-size: 12px;
-  color: var(--text-tertiary);
-  font-weight: 400;
-}
-
 .info-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
-
 .info-item {
   display: flex;
   justify-content: space-between;
-  padding: 8px 12px;
-  background: var(--bg-surface-2);
-  border-radius: var(--radius-md);
   font-size: 13px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
 }
-
 .info-label {
-  color: var(--text-tertiary);
+  color: var(--text-muted);
 }
-
 .info-value {
   color: var(--text-primary);
-  font-weight: 500;
 }
-
 .stats-mini-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
 }
-
 .stat-mini {
-  padding: 14px;
-  background: var(--bg-surface-2);
-  border-radius: var(--radius-lg);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: 12px;
   text-align: center;
 }
-
 .stat-mini-value {
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text-primary);
 }
-
-.stat-mini-value.accent {
-  color: var(--success);
-}
-
-.stat-mini-value.violet {
-  color: var(--violet);
-}
-
+.stat-mini-value.accent { color: var(--accent-light); }
+.stat-mini-value.violet { color: var(--purple); }
 .stat-mini-label {
   font-size: 11px;
-  color: var(--text-tertiary);
-  margin-top: 4px;
+  color: var(--text-muted);
+  margin-top: 2px;
 }
-
-/* 技能云 */
 .skill-cloud {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 16px;
-  background: var(--bg-surface-2);
-  border-radius: var(--radius-lg);
 }
-
 .cloud-tag {
-  font-size: var(--size, 13px);
-  padding: 6px 14px;
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(6, 182, 212, 0.08));
-  color: var(--violet);
-  border-radius: 999px;
-  font-weight: 500;
-  transition: all 0.25s var(--ease);
-  cursor: default;
+  font-size: var(--size, 0.9rem);
+  padding: 4px 12px;
+  background: var(--accent-dim);
+  color: var(--accent-light);
+  border-radius: 16px;
 }
-
-.cloud-tag:hover {
-  transform: scale(1.05);
-  background: linear-gradient(135deg, var(--violet), var(--cyan));
-  color: white;
-}
-
-/* 专家介绍 */
 .expert-bio {
-  padding: 16px 20px;
-  background: var(--bg-surface-2);
-  border-radius: var(--radius-lg);
-  line-height: 1.8;
   font-size: 13px;
   color: var(--text-secondary);
+  line-height: 1.8;
 }
-
 .expert-bio p {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
 }
-
-.expert-bio p:last-child {
-  margin-bottom: 0;
-}
-
 .section-head-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
-
-/* 评价列表 */
+.review-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
 .reviews-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-
 .review-item {
-  padding: 16px;
-  background: var(--bg-surface-2);
-  border-radius: var(--radius-lg);
-  transition: all 0.2s var(--ease);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: 12px;
 }
-
-.review-item:hover {
-  background: var(--bg-input-focus);
-}
-
 .review-head {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
+  gap: 10px;
+  margin-bottom: 8px;
 }
-
 .review-avatar {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--gradient-primary);
-  color: white;
+  background: var(--accent);
+  color: #fff;
   display: grid;
   place-items: center;
   font-size: 14px;
   font-weight: 600;
   flex-shrink: 0;
 }
-
 .review-meta {
   flex: 1;
-  min-width: 0;
 }
-
 .review-name {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
 }
-
 .review-rating {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-top: 2px;
 }
-
 .review-date {
   font-size: 11px;
-  color: var(--text-quaternary);
+  color: var(--text-muted);
 }
-
 .review-content {
   font-size: 13px;
   color: var(--text-secondary);
-  line-height: 1.7;
+  line-height: 1.6;
 }
-
 .review-tags {
   display: flex;
   gap: 6px;
-  margin-top: 10px;
+  margin-top: 8px;
   flex-wrap: wrap;
 }
-
 .review-tag {
   font-size: 11px;
   padding: 2px 8px;
-  background: rgba(16, 185, 129, 0.1);
-  color: var(--success);
+  background: var(--bg-card);
+  color: var(--text-muted);
   border-radius: 4px;
 }
 
-/* 详情底部 */
 .detail-footer-actions {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
+  gap: 16px;
 }
-
 .footer-price {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-
 .price-label {
-  font-size: 12px;
-  color: var(--text-tertiary);
+  font-size: 11px;
+  color: var(--text-muted);
 }
-
 .price-amount {
-  font-size: 24px;
-  font-weight: 800;
-  background: var(--gradient-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent-light);
 }
-
+.price-unit {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
 .footer-btns {
   display: flex;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-/* ===== 预约对话框 ===== */
-.booking-dialog :deep(.el-dialog) {
-  border-radius: 20px !important;
+/* ===== 预约弹窗 ===== */
+.booking-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
-
 .booking-expert-info {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 16px;
-  margin-bottom: 20px;
+  gap: 12px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: 12px;
 }
-
 .be-avatar {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
-  font-size: 26px;
+  font-size: 22px;
   flex-shrink: 0;
 }
-
 .be-info {
   flex: 1;
-  min-width: 0;
 }
-
 .be-name {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 600;
   color: var(--text-primary);
 }
-
 .be-type {
   font-size: 12px;
-  color: var(--text-tertiary);
-  margin-top: 2px;
+  color: var(--text-muted);
 }
-
 .be-price {
-  font-size: 20px;
-  font-weight: 800;
-  background: var(--gradient-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  flex-shrink: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent-light);
 }
-
 .time-slots {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
 }
-
 .time-slot {
-  padding: 10px 8px;
+  padding: 8px;
   text-align: center;
-  background: var(--bg-surface-2);
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
   font-size: 12px;
-  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
   cursor: pointer;
-  transition: all 0.2s var(--ease);
+  color: var(--text-secondary);
+  transition: all 0.2s;
 }
-
 .time-slot:hover {
-  border-color: var(--violet);
-  color: var(--violet);
+  border-color: var(--accent);
+  color: var(--text-primary);
 }
-
 .time-slot.active {
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(6, 182, 212, 0.08));
-  border-color: var(--violet);
-  color: var(--violet);
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent-light);
   font-weight: 600;
 }
-
 .time-slot.disabled {
   opacity: 0.4;
   cursor: not-allowed;
-  text-decoration: line-through;
 }
 
 /* ===== 排行榜弹窗 ===== */
-.ranking-dialog :deep(.el-dialog) {
-  border-radius: 20px !important;
-}
-
-.ranking-tabs :deep(.el-tabs__header) {
-  margin-bottom: 16px;
-}
-
 .ranking-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 500px;
-  overflow-y: auto;
 }
-
 .ranking-item {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
-  border-radius: var(--radius-lg);
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.25s var(--ease);
+  transition: all 0.2s;
 }
-
 .ranking-item:hover {
-  background: var(--bg-surface-2);
-  transform: translateX(4px);
+  border-color: var(--accent);
+  background: var(--bg-hover);
 }
-
 .rank-num {
   width: 28px;
   height: 28px;
@@ -3207,176 +2114,83 @@ html.dark .detail-online-dot {
   display: grid;
   place-items: center;
   font-size: 13px;
-  font-weight: 800;
-  background: var(--bg-surface-2);
-  color: var(--text-tertiary);
+  font-weight: 700;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
-
-.rank-num.rank-1 {
-  background: linear-gradient(135deg, #fcd34d, #f59e0b);
-  color: white;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-}
-
-.rank-num.rank-2 {
-  background: linear-gradient(135deg, #d1d5db, #9ca3af);
-  color: white;
-}
-
-.rank-num.rank-3 {
-  background: linear-gradient(135deg, #d4a574, #cd7f32);
-  color: white;
-}
-
+.rank-1 { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #1a1a2e; }
+.rank-2 { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); color: #1a1a2e; }
+.rank-3 { background: linear-gradient(135deg, #cd7f32, #b87333); color: #1a1a2e; }
 .rank-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   display: grid;
   place-items: center;
-  font-size: 22px;
+  font-size: 16px;
   flex-shrink: 0;
 }
-
 .rank-info {
   flex: 1;
   min-width: 0;
 }
-
 .rank-name {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
 }
-
 .rank-type {
-  font-size: 12px;
-  color: var(--text-tertiary);
-  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-muted);
 }
-
 .rank-stat {
   text-align: right;
   flex-shrink: 0;
 }
-
 .rank-stat-value {
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text-primary);
 }
-
-.rank-stat-value.good {
-  color: var(--success);
-}
-
-.rank-stat-value.violet {
-  color: var(--violet);
-}
-
+.rank-stat-value.good { color: var(--success); }
+.rank-stat-value.violet { color: var(--purple); }
 .rank-stat-label {
-  font-size: 11px;
-  color: var(--text-tertiary);
-  margin-top: 2px;
+  font-size: 10px;
+  color: var(--text-muted);
 }
 
-/* ===== 响应式 ===== */
-@media (max-width: 1200px) {
-  .plaza-layout {
-    grid-template-columns: 220px 1fr;
-    gap: 16px;
-  }
-
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .hero-title {
-    font-size: 36px;
-  }
+/* Element Plus 弹窗深色适配 */
+:deep(.el-dialog) {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
 }
-
-@media (max-width: 900px) {
-  .hero-section {
-    padding: 40px 20px 30px;
-  }
-
-  .main-section {
-    padding: 0 20px 40px;
-  }
-
-  .plaza-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .filter-sidebar {
-    position: static;
-  }
-
-  .detail-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .time-slots {
-    grid-template-columns: repeat(3, 1fr);
-  }
+:deep(.el-dialog__title) {
+  color: var(--text-primary);
 }
-
-@media (max-width: 600px) {
-  .hero-title {
-    font-size: 28px;
-  }
-
-  .hero-subtitle {
-    font-size: 14px;
-  }
-
-  .stats-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-
-  .stat-card {
-    padding: 14px 16px;
-  }
-
-  .stat-icon {
-    width: 40px;
-    height: 40px;
-    font-size: 18px;
-  }
-
-  .stat-value {
-    font-size: 18px;
-  }
-
-  .experts-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .search-box {
-    padding: 6px 6px 6px 14px;
-  }
-
-  .search-btn {
-    padding: 0 18px;
-    height: 38px;
-  }
-
-  .detail-footer-actions {
-    flex-direction: column;
-    gap: 12px;
-    align-items: stretch;
-  }
-
-  .footer-btns {
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .time-slots {
-    grid-template-columns: repeat(2, 1fr);
-  }
+:deep(.el-dialog__headerbtn .el-dialog__close) {
+  color: var(--text-secondary);
+}
+:deep(.el-dialog__body) {
+  color: var(--text-secondary);
+}
+:deep(.el-form-item__label) {
+  color: var(--text-secondary);
+}
+:deep(.el-tabs__item) {
+  color: var(--text-secondary);
+}
+:deep(.el-tabs__item.is-active) {
+  color: var(--accent-light);
+}
+:deep(.el-radio-button__inner) {
+  background: var(--bg-card);
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+:deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 </style>

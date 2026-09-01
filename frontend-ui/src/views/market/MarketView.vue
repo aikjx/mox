@@ -784,7 +784,7 @@ onMounted(load)
   display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;
 }
 .card {
-  background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px;
   cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; gap: 10px;
 }
 .card:hover { box-shadow: 0 12px 30px rgba(15, 23, 42, 0.1); transform: translateY(-2px); border-color: var(--brand-light); }

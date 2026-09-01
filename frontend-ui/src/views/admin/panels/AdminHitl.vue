@@ -339,9 +339,9 @@ onBeforeUnmount(() => {
   background: var(--brand-soft);
   color: var(--brand);
 }
-.kpi-icon.ok { background: #ecfdf5; color: var(--success); }
-.kpi-icon.warn { background: #fffbeb; color: var(--warning); }
-.kpi-icon.info { background: #ecfeff; color: #0e7490; }
+.kpi-icon.ok { background: var(--success-50); color: var(--success); }
+.kpi-icon.warn { background: var(--warning-50); color: var(--warning); }
+.kpi-icon.info { background: var(--accent-50); color: #0e7490; }
 .kpi-icon.bad { background: #fef2f2; color: var(--danger); }
 .kpi-value { font-size: 20px; font-weight: 700; color: var(--text-1); line-height: 1.2; }
 .kpi-label { font-size: 12px; color: var(--text-3); margin-top: 3px; }

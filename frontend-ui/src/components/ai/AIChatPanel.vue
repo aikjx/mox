@@ -241,7 +241,7 @@ watch(
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #fff;
+  background: var(--bg-card);
   min-height: 0;
 }
 
@@ -251,7 +251,7 @@ watch(
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-ghost);
   flex-shrink: 0;
 }
 
@@ -278,7 +278,7 @@ watch(
 .assistant-name {
   font-size: 14px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   line-height: 1.3;
 }
 
@@ -327,7 +327,7 @@ watch(
 .empty-title {
   font-size: 18px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
   margin: 0 0 6px;
 }
 
@@ -348,16 +348,16 @@ watch(
 
 .suggestion-chip {
   padding: 6px 14px;
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   border-radius: 16px;
   font-size: 12px;
-  color: #334155;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .suggestion-chip:hover {
-  background: #eef2ff;
+  background: var(--accent-dim);
   color: #6366f1;
 }
 
@@ -398,8 +398,8 @@ watch(
 }
 
 .msg-avatar.user {
-  background: #e2e8f0;
-  color: #475569;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
 }
 
 .avatar-emoji {
@@ -440,9 +440,9 @@ watch(
 }
 
 .ai-bubble {
-  background: #f8fafc;
-  color: #1e293b;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
   border-bottom-left-radius: 3px;
 }
 
@@ -452,7 +452,7 @@ watch(
 .ai-msg-body :deep(h4) {
   margin: 12px 0 6px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .ai-msg-body :deep(h1) { font-size: 16px; }
@@ -475,7 +475,7 @@ watch(
 }
 
 .ai-msg-body :deep(code) {
-  background: #e2e8f0;
+  background: var(--bg-tertiary);
   padding: 1px 5px;
   border-radius: 3px;
   font-size: 12px;
@@ -523,14 +523,14 @@ watch(
 
 .ai-msg-body :deep(th),
 .ai-msg-body :deep(td) {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   padding: 6px 10px;
   text-align: left;
   font-size: 12px;
 }
 
 .ai-msg-body :deep(th) {
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   font-weight: 600;
 }
 
@@ -577,7 +577,7 @@ watch(
 /* 输入区 */
 .chat-input-area {
   padding: 10px 12px 12px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--border-ghost);
   flex-shrink: 0;
 }
 
@@ -585,8 +585,8 @@ watch(
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 6px 6px 6px 12px;
   transition: all 0.15s;
@@ -594,7 +594,7 @@ watch(
 
 .input-wrap:focus-within {
   border-color: #6366f1;
-  background: #fff;
+  background: var(--bg-card);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 

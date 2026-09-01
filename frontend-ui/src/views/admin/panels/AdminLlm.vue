@@ -860,7 +860,7 @@ onMounted(() => {
 .page-title {
   font-size: 20px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
   margin: 0 0 4px 0;
 }
 
@@ -884,7 +884,7 @@ onMounted(() => {
 }
 
 .panel {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
@@ -913,7 +913,7 @@ onMounted(() => {
 .section-title {
   font-size: 16px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -925,10 +925,10 @@ onMounted(() => {
 
 .provider-card {
   padding: 16px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   border-radius: 10px;
   transition: all 0.2s;
-  background: #fff;
+  background: var(--bg-card);
 }
 
 .provider-card:hover {
@@ -972,7 +972,7 @@ onMounted(() => {
 .provider-name {
   font-size: 15px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   margin-bottom: 4px;
   display: flex;
   align-items: center;
@@ -1010,7 +1010,7 @@ onMounted(() => {
   gap: 8px;
   flex-wrap: wrap;
   padding-top: 12px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--border-ghost);
 }
 
 .routing-config {
@@ -1025,7 +1025,7 @@ onMounted(() => {
 
 .routing-provider {
   padding: 6px 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   border-radius: 20px;
   font-size: 13px;
   cursor: pointer;
@@ -1038,7 +1038,7 @@ onMounted(() => {
 
 .routing-provider.active {
   border-color: #6366f1;
-  background: #eef2ff;
+  background: var(--accent-dim);
   color: #4f46e5;
 }
 
@@ -1078,11 +1078,11 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   padding: 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s;
-  background: #fff;
+  background: var(--bg-card);
 }
 
 .preset-card:hover {
@@ -1112,7 +1112,7 @@ onMounted(() => {
 .preset-name {
   font-size: 14px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   margin-bottom: 2px;
 }
 
@@ -1194,7 +1194,7 @@ onMounted(() => {
 
 .detail-item .value {
   font-size: 14px;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .model-list {
@@ -1240,14 +1240,14 @@ onMounted(() => {
 .stat-item {
   text-align: center;
   padding: 12px 8px;
-  background: #f8fafc;
+  background: var(--bg-tertiary);
   border-radius: 10px;
 }
 
 .stat-value {
   font-size: 24px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
   line-height: 1.2;
 }
 
@@ -1265,7 +1265,7 @@ onMounted(() => {
 
 .usage-item {
   padding: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   border-radius: 8px;
 }
 
@@ -1278,7 +1278,7 @@ onMounted(() => {
 .usage-name {
   font-size: 13px;
   font-weight: 500;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .usage-tokens {
@@ -1300,7 +1300,7 @@ onMounted(() => {
   gap: 10px;
   padding: 10px;
   border-radius: 8px;
-  background: #f8fafc;
+  background: var(--bg-tertiary);
   transition: all 0.2s;
 }
 
@@ -1342,7 +1342,7 @@ onMounted(() => {
 .log-provider {
   font-size: 13px;
   font-weight: 500;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .log-latency {

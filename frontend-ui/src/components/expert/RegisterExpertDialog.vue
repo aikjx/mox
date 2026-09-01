@@ -511,7 +511,7 @@ watch(() => props.modelValue, (val) => {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #e2e8f0;
+  background: var(--bg-tertiary);
   color: #64748b;
   display: grid;
   place-items: center;
@@ -541,7 +541,7 @@ watch(() => props.modelValue, (val) => {
 .step-line {
   flex: 1;
   height: 2px;
-  background: #e2e8f0;
+  background: var(--bg-tertiary);
   margin: 0 12px;
   min-width: 30px;
 }
@@ -588,17 +588,17 @@ watch(() => props.modelValue, (val) => {
   display: grid;
   place-items: center;
   border-radius: 8px;
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   cursor: pointer;
   font-size: 18px;
   transition: all 0.2s;
 }
 .emoji-preset:hover {
-  background: #e2e8f0;
+  background: var(--bg-tertiary);
   transform: scale(1.1);
 }
 .emoji-preset.active {
-  background: #eef2ff;
+  background: var(--accent-dim);
   box-shadow: inset 0 0 0 2px #6366f1;
 }
 
@@ -611,8 +611,8 @@ watch(() => props.modelValue, (val) => {
 .domain-tag {
   padding: 6px 14px;
   border-radius: 999px;
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
   font-size: 12.5px;
   cursor: pointer;
   transition: all 0.2s;
@@ -620,7 +620,7 @@ watch(() => props.modelValue, (val) => {
   user-select: none;
 }
 .domain-tag:hover {
-  background: #e2e8f0;
+  background: var(--bg-tertiary);
 }
 .domain-tag.active {
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(14, 165, 233, 0.08));
@@ -662,7 +662,7 @@ watch(() => props.modelValue, (val) => {
   transition: all 0.2s;
 }
 .preset-tag:hover {
-  background: #eef2ff;
+  background: var(--accent-dim);
 }
 
 /* 经验等级 */
@@ -700,11 +700,11 @@ watch(() => props.modelValue, (val) => {
 .confirm-name {
   font-size: 18px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .confirm-info-grid {
-  background: #f8fafc;
+  background: var(--bg-tertiary);
   border-radius: 10px;
   padding: 12px 14px;
   display: flex;
@@ -722,7 +722,7 @@ watch(() => props.modelValue, (val) => {
   font-weight: 500;
 }
 .info-value {
-  color: #1e293b;
+  color: var(--text-primary);
   word-break: break-word;
 }
 .desc-value {

@@ -520,7 +520,7 @@ onBeforeUnmount(() => {
   width: 18px;
   height: 18px;
   border-radius: 5px;
-  border: 2px solid #cbd5e1;
+  border: 2px solid var(--border-light);
   display: grid;
   place-items: center;
   flex-shrink: 0;

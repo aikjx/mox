@@ -2447,7 +2447,7 @@ watch(detailVisible, (v) => {
   gap: 12px;
   align-items: center;
   padding: 8px 12px;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 8px;
   font-size: 13px;
 }
@@ -2769,7 +2769,7 @@ watch(detailVisible, (v) => {
 }
 
 .kb-view ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--bg-tertiary);
   border-radius: 3px;
 }
 

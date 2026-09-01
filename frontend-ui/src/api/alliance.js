@@ -527,5 +527,6 @@ export {
   pauseAllianceTask,
   resumeAllianceTask,
   retryAllianceTask,
-  runAllianceFullSSE
+  runAllianceFullSSE,
+  runAllianceFullSSE as runAllianceTask
 };

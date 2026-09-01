@@ -266,10 +266,10 @@ function sendAIMsg() {
 }
 
 const stats = ref([
-  { label: '算子总数', value: '—', unit: '', icon: 'Cpu', color: '#4f46e5', bg: '#eef2ff', up: true, trend: '8.2%' },
-  { label: '知识节点', value: '—', unit: '', icon: 'Share', color: '#06b6d4', bg: '#ecfeff', up: true, trend: '3.1%' },
-  { label: '执行次数', value: '—', unit: '', icon: 'VideoPlay', color: '#10b981', bg: '#ecfdf5', up: true, trend: '12.5%' },
-  { label: '成功率', value: '—', unit: '%', icon: 'TrendCharts', color: '#f59e0b', bg: '#fffbeb', up: true, trend: '0.6%' }
+  { label: '算子总数', value: '—', unit: '', icon: 'Cpu', color: '#4f46e5', bg: 'rgba(99,102,241,.15)', up: true, trend: '8.2%' },
+  { label: '知识节点', value: '—', unit: '', icon: 'Share', color: '#06b6d4', bg: 'rgba(6,182,212,.15)', up: true, trend: '3.1%' },
+  { label: '执行次数', value: '—', unit: '', icon: 'VideoPlay', color: '#10b981', bg: 'rgba(16,185,129,.15)', up: true, trend: '12.5%' },
+  { label: '成功率', value: '—', unit: '%', icon: 'TrendCharts', color: '#f59e0b', bg: 'rgba(245,158,11,.15)', up: true, trend: '0.6%' }
 ])
 const logs = ref([])
 const sparkEls = ref([])
@@ -371,11 +371,11 @@ function renderCharts() {
   }
   trendChart.setOption({
     tooltip: { trigger: 'axis' },
-    legend: { data: ['执行量', '成功率'], right: 10, top: 0, textStyle: { color: '#64748b' } },
+    legend: { data: ['执行量', '成功率'], right: 10, top: 0, textStyle: { color: '#9aa0b4' } },
     grid: { left: 36, right: 16, top: 36, bottom: 28 },
-    xAxis: { type: 'category', data: times, axisLine: { lineStyle: { color: '#e2e8f0' } }, axisLabel: { color: '#94a3b8' } },
+    xAxis: { type: 'category', data: times, axisLine: { lineStyle: { color: '#3a3f5a' } }, axisLabel: { color: '#94a3b8' } },
     yAxis: [
-      { type: 'value', splitLine: { lineStyle: { color: '#f1f5f9' } }, axisLabel: { color: '#94a3b8' } },
+      { type: 'value', splitLine: { lineStyle: { color: '#2d3148' } }, axisLabel: { color: '#94a3b8' } },
       { type: 'value', max: 100, splitLine: { show: false }, axisLabel: { color: '#94a3b8', formatter: '{value}%' } }
     ],
     series: [
@@ -408,9 +408,9 @@ function renderCharts() {
         { name: '自定义', max: 100 }, { name: '社区', max: 100 }, { name: '能力', max: 100 }
       ],
       radius: '66%',
-      axisName: { color: '#64748b', fontSize: 11 },
-      splitLine: { lineStyle: { color: '#e2e8f0' } },
-      splitArea: { areaStyle: { color: ['#fafbff', '#f1f5f9'] } }
+      axisName: { color: '#9aa0b4', fontSize: 11 },
+      splitLine: { lineStyle: { color: '#3a3f5a' } },
+      splitArea: { areaStyle: { color: ['#1e2130', '#242838'] } }
     },
     series: [{
       type: 'radar',
@@ -750,7 +750,7 @@ onBeforeUnmount(() => {
   width: 2px;
   flex: 1;
   min-height: 20px;
-  background: #e2e8f0;
+  background: var(--border);
   margin-top: 4px;
 }
 .phase-line.done {
@@ -779,7 +779,7 @@ onBeforeUnmount(() => {
 .phase-bar-bg {
   flex: 1;
   height: 6px;
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -824,7 +824,7 @@ onBeforeUnmount(() => {
 .mod:hover {
   transform: translateY(-3px);
   box-shadow: var(--shadow);
-  background: #fff;
+  background: var(--bg-hover);
 }
 .mod-icon {
   width: 42px;
