@@ -34,6 +34,9 @@ import { useRoute, useRouter } from 'vue-router'
 
 const TABS = [
   { key: 'overview', label: '管理总览', icon: 'Odometer' },
+  { key: 'user', label: '用户管理', icon: 'User' },
+  { key: 'role', label: '角色管理', icon: 'UserFilled' },
+  { key: 'department', label: '部门管理', icon: 'OfficeBuilding' },
   { key: 'menu', label: '菜单管理', icon: 'Menu' },
   { key: 'dict', label: '字典管理', icon: 'Collection' },
   { key: 'config', label: '参数配置', icon: 'Tools' },

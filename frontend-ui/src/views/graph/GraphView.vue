@@ -284,7 +284,7 @@ import { ElMessage } from 'element-plus'
 import { NODE_TYPE_COLORS } from '@/types'
 import { useProject } from '@/composables/projectContext.js'
 import {
-  getGraph,
+  getAggregatedGraph,
   getGraphStats,
   getShortestPath,
   getNeighbors,
@@ -337,7 +337,14 @@ const typeLabels = {
   loss: '损失函数',
   regularization: '正则化',
   normalization: '归一化',
-  custom: '自定义'
+  custom: '自定义',
+  project: '项目',
+  expert: '专家',
+  operator: '算子',
+  workflow: '工作流',
+  task: '任务',
+  doc: '文档',
+  data: '数据'
 }
 
 const nodeTypeLegend = computed(() => {
@@ -998,8 +1005,19 @@ async function reload() {
     //   task B = 动态 import 3D 重库 chunk（1.3MB，network-bound）
     //   两条并行跑，最差情况 = 串行（两者共用带宽），最优情况节省 min(Ta, Tb) ≈ 60% 首屏等待
     const fetchTask = (async () => {
-      const [g, st] = await Promise.all([getGraph(), getGraphStats()])
-      stats.value = st
+      const [g, st] = await Promise.all([getAggregatedGraph(), getGraphStats()])
+      // 全维聚合：统计以聚合图谱为准（节点/关系/类型数），保留后端密度等指标
+      const aggNodes = (g.nodes || []).length
+      const aggEdges = (g.edges || []).length
+      const aggTypes = new Set((g.nodes || []).map((n) => n.node_type || 'default')).size
+      stats.value = {
+        ...st,
+        nodes: aggNodes,
+        edges: aggEdges,
+        node_count: aggNodes,
+        edge_count: aggEdges,
+        type_count: aggTypes
+      }
       nodeIds.value = g.nodes.map((n) => n.id)
       // 保存当前图谱数据供布局切换使用
       currentGraphData.value = { nodes: g.nodes, edges: g.edges }

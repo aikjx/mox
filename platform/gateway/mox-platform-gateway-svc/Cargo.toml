@@ -45,6 +45,9 @@ base64 = { workspace = true }
 # 联盟域 API（DTO 类型契约，Api 模式·进程内路由桩）
 mox-alliance-api = { workspace = true }
 
+# 业务域反向代理（网关→编排器适配层，L6 归一化收敛）
+reqwest = { workspace = true }
+
 [features]
 default = []
 # SIMD AVX2 / NEON 向量化 GF(2^8) 乘法（EC Volume 扩展，留接口）

@@ -1,4 +1,4 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
+﻿import { createRouter, createWebHashHistory } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getToken as getSecureToken } from '@/utils/secureStorage'
 import { usePermissionStore } from '@/stores/permission.store'
@@ -29,19 +29,19 @@ const routes = [
     path: '/dashboard',
     name: 'Dashboard',
     component: () => import('@/views/project/Dashboard.vue'),
-    meta: { title: '工作台' }
+    meta: { title: '工作台', requiresAuth: true }
   },
   {
     path: '/projects',
     name: 'Projects',
     component: () => import('@/views/project/ProjectsView.vue'),
-    meta: { title: '项目中心' }
+    meta: { title: '项目中心', requiresAuth: true }
   },
   {
     path: '/tasks',
     name: 'Tasks',
     component: () => import('@/views/project/TaskView.vue'),
-    meta: { title: '任务管理' }
+    meta: { title: '任务管理', requiresAuth: true }
   },
   {
     path: '/resources',
@@ -61,7 +61,7 @@ const routes = [
         path: 'overview',
         name: 'ResourcesOverview',
         component: () => import('@/views/project/panels/ResourcesOverviewPanel.vue'),
-        meta: { title: '资源概览' }
+        meta: { title: '资源概览', requiresAuth: true }
       },
       {
         path: 'knowledge',
@@ -69,6 +69,7 @@ const routes = [
         component: () => import('@/views/project/panels/KnowledgeBasePanel.vue'),
         meta: {
           title: '知识库',
+          requiresAuth: true,
           // 知识库页面快捷返回工作台
           backTo: { path: '/expert-workspace', label: '返回工作台' }
         }
@@ -79,7 +80,7 @@ const routes = [
     path: '/workbench',
     name: 'Workbench',
     component: () => import('@/views/project/Workbench.vue'),
-    meta: { title: '工作台执行' }
+    meta: { title: '工作台执行', requiresAuth: true }
   },
 
   // ===== AI 域 =====
@@ -87,7 +88,7 @@ const routes = [
     path: '/ai',
     name: 'AI',
     component: () => import('@/views/ai/ChatView.vue'),
-    meta: { title: 'AI 助手' }
+    meta: { title: 'AI 助手', requiresAuth: true }
   },
   // 分享快照：#/share/<base64-snapshot> → 用 ChatView 渲染（解析 token 并恢复对话）
   {
@@ -105,31 +106,31 @@ const routes = [
     path: '/caomei',
     name: 'Caomei',
     component: () => import('@/views/ai/CaomeiView.vue'),
-    meta: { title: '需求编译' }
+    meta: { title: '需求编译', requiresAuth: true }
   },
   {
     path: '/algolab',
     name: 'AlgoLab',
     component: () => import('@/views/ai/AlgoLabView.vue'),
-    meta: { title: '算法实验室' }
+    meta: { title: '算法实验室', requiresAuth: true }
   },
   {
     path: '/infinite-optimizer',
     name: 'InfiniteOptimizer',
     component: () => import('@/views/ai/InfiniteOptimizerView.vue'),
-    meta: { title: '无穷维度优化' }
+    meta: { title: '无穷维度优化', requiresAuth: true }
   },
   {
     path: '/botCenter',
     name: 'BotCenter',
     component: () => import('@/views/ai/BotCenterView.vue'),
-    meta: { title: '机器人中心' }
+    meta: { title: '机器人中心', requiresAuth: true }
   },
   {
     path: '/melody2score',
     name: 'Melody2Score',
     component: () => import('@/views/ai/Melody2ScoreView.vue'),
-    meta: { title: '旋律转谱' }
+    meta: { title: '旋律转谱', requiresAuth: true }
   },
 
   // ===== 图谱域 =====
@@ -139,6 +140,7 @@ const routes = [
     component: () => import('@/views/graph/GraphView.vue'),
     meta: {
       title: '知识图谱',
+      requiresAuth: true,
       // 图谱页面快捷导航：可一键跳回专家工作台
       quickNav: [
         { key: 'expert-workspace', label: '专家工作台', path: '/expert-workspace', icon: 'User' },
@@ -153,6 +155,7 @@ const routes = [
     component: () => import('@/views/graph/MoxFusionView.vue'),
     meta: {
       title: '全维融合',
+      requiresAuth: true,
       backTo: { path: '/expert-workspace', label: '返回工作台' }
     }
   },
@@ -162,6 +165,7 @@ const routes = [
     component: () => import('@/views/graph/FlowGraph.vue'),
     meta: {
       title: '流程图',
+      requiresAuth: true,
       backTo: { path: '/expert-workspace', label: '返回工作台' }
     }
   },
@@ -170,7 +174,7 @@ const routes = [
   {
     path: '/workflow',
     component: () => import('@/views/workflow/WorkflowView.vue'),
-    meta: { title: '工作流编排' },
+    meta: { title: '工作流编排', requiresAuth: true },
     redirect: '/workflow/flows',
     children: [
       { path: '', redirect: '/workflow/flows' },
@@ -178,25 +182,25 @@ const routes = [
         path: 'flows',
         name: 'WorkflowFlows',
         component: () => import('@/views/workflow/panels/WorkflowFlowsPanel.vue'),
-        meta: { title: '流程编排' }
+        meta: { title: '流程编排', requiresAuth: true }
       },
       {
         path: 'plugins',
         name: 'WorkflowPlugins',
         component: () => import('@/views/workflow/panels/PluginsPanel.vue'),
-        meta: { title: '插件中心' }
+        meta: { title: '插件中心', requiresAuth: true }
       },
       {
         path: 'mcp',
         name: 'WorkflowMcp',
         component: () => import('@/views/workflow/panels/McpPanel.vue'),
-        meta: { title: 'MCP 兼容' }
+        meta: { title: 'MCP 兼容', requiresAuth: true }
       },
       {
         path: 'automation',
         name: 'WorkflowAutomation',
         component: () => import('@/views/workflow/panels/AutomationPanel.vue'),
-        meta: { title: '自动化' }
+        meta: { title: '自动化', requiresAuth: true }
       }
     ]
   },
@@ -208,7 +212,7 @@ const routes = [
     path: '/browser',
     name: 'Browser',
     component: () => import('@/views/workflow/BrowserView.vue'),
-    meta: { title: '浏览器自动化' }
+    meta: { title: '浏览器自动化', requiresAuth: true }
   },
 
   // ===== 专家联盟统一工作台（主入口）=====
@@ -218,6 +222,7 @@ const routes = [
     component: () => import('@/views/workspace/ExpertWorkspaceView.vue'),
     meta: {
       title: '专家联盟工作台',
+      requiresAuth: true,
       isExpertAllianceMain: true,
       // 工作台快捷导航配置：一键直达核心模块
       quickNav: [
@@ -246,6 +251,7 @@ const routes = [
     component: () => import('@/views/expert/ExpertCenterView.vue'),
     meta: {
       title: '专家联盟',
+      requiresAuth: true,
       isExpertAdmin: true,
       // 管理后台快捷返回工作台
       backTo: { path: '/expert-workspace', label: '返回工作台' }
@@ -257,25 +263,25 @@ const routes = [
         path: 'overview',
         name: 'ExpertOverview',
         component: () => import('@/views/expert/panels/ExpertOverviewPanel.vue'),
-        meta: { title: '联盟总览' }
+        meta: { title: '联盟总览', requiresAuth: true }
       },
       {
         path: 'enterprise',
         name: 'ExpertEnterprise',
         component: () => import('@/views/expert/panels/ExpertEnterprisePanel.vue'),
-        meta: { title: '企业管理' }
+        meta: { title: '企业管理', requiresAuth: true }
       },
       {
         path: 'orchestrator',
         name: 'ExpertOrchestrator',
         component: () => import('@/views/expert/panels/ExpertOrchestratorPanel.vue'),
-        meta: { title: '编排引擎' }
+        meta: { title: '编排引擎', requiresAuth: true }
       },
       {
         path: 'tasks',
         name: 'ExpertAllianceTasks',
         component: () => import('@/views/expert/AllianceTaskView.vue'),
-        meta: { title: '联盟任务' }
+        meta: { title: '联盟任务', requiresAuth: true }
       }
     ]
   },
@@ -286,6 +292,7 @@ const routes = [
     component: () => import('@/views/expert/ExpertConfigView.vue'),
     meta: {
       title: '专家配置',
+      requiresAuth: true,
       backTo: { path: '/expert-center', label: '返回联盟管理' }
     }
   },
@@ -298,7 +305,7 @@ const routes = [
     path: '/expert-plaza',
     name: 'ExpertPlaza',
     component: () => import('@/views/expert/ExpertPlazaView.vue'),
-    meta: { title: '专家广场' }
+    meta: { title: '专家广场', requiresAuth: true }
   },
 
   // ===== 算子商城 =====
@@ -306,13 +313,13 @@ const routes = [
     path: '/market',
     name: 'Market',
     component: () => import('@/views/market/MarketView.vue'),
-    meta: { title: '算子商城' }
+    meta: { title: '算子商城', requiresAuth: true }
   },
   {
     path: '/market/:id',
     name: 'MarketDetail',
     component: () => import('@/views/market/MarketDetailView.vue'),
-    meta: { title: '算子详情' }
+    meta: { title: '算子详情', requiresAuth: true }
   },
 
   // ===== 算子中心 =====
@@ -320,14 +327,14 @@ const routes = [
     path: '/operators',
     name: 'Operators',
     component: () => import('@/views/operators/OperatorsView.vue'),
-    meta: { title: '算子中心' }
+    meta: { title: '算子中心', requiresAuth: true }
   },
 
   // ===== 系统管理（嵌套路由） =====
   {
     path: '/admin',
     component: () => import('@/views/admin/AdminView.vue'),
-    meta: { title: '系统管理' },
+    meta: { title: '系统管理', requiresAuth: true, requiresRole: ['admin'] },
     redirect: '/admin/overview',
     children: [
       { path: '', redirect: '/admin/overview' },
@@ -335,67 +342,85 @@ const routes = [
         path: 'overview',
         name: 'AdminOverview',
         component: () => import('@/views/admin/panels/AdminOverview.vue'),
-        meta: { title: '管理总览' }
+        meta: { title: '管理总览', requiresAuth: true, requiresRole: ['admin'] }
+      },
+      {
+        path: 'user',
+        name: 'AdminUser',
+        component: () => import('@/views/admin/panels/AdminUser.vue'),
+        meta: { title: '用户管理', requiresAuth: true, requiresRole: ['admin'] }
+      },
+      {
+        path: 'role',
+        name: 'AdminRole',
+        component: () => import('@/views/admin/panels/AdminRole.vue'),
+        meta: { title: '角色管理', requiresAuth: true, requiresRole: ['admin'] }
+      },
+      {
+        path: 'department',
+        name: 'AdminDepartment',
+        component: () => import('@/views/admin/panels/AdminDepartment.vue'),
+        meta: { title: '部门管理', requiresAuth: true, requiresRole: ['admin'] }
       },
       {
         path: 'access',
         name: 'AdminAccess',
         component: () => import('@/views/admin/panels/AdminAccess.vue'),
-        meta: { title: '访问凭证' }
+        meta: { title: '访问凭证', requiresAuth: true, requiresRole: ['admin'] }
       },
       {
         path: 'audit',
         name: 'AdminAudit',
         component: () => import('@/views/admin/panels/AdminAudit.vue'),
-        meta: { title: '审计日志' }
+        meta: { title: '审计日志', requiresAuth: true, requiresRole: ['admin'] }
       },
       {
         path: 'menu',
         name: 'AdminMenu',
         component: () => import('@/views/admin/panels/AdminMenu.vue'),
-        meta: { title: '菜单管理' }
+        meta: { title: '菜单管理', requiresAuth: true, requiresRole: ['admin'] }
       },
       {
         path: 'dict',
         name: 'AdminDict',
         component: () => import('@/views/admin/panels/AdminDict.vue'),
-        meta: { title: '字典管理' }
+        meta: { title: '字典管理', requiresAuth: true, requiresRole: ['admin'] }
       },
       {
         path: 'config',
         name: 'AdminConfig',
         component: () => import('@/views/admin/panels/AdminConfig.vue'),
-        meta: { title: '参数配置' }
+        meta: { title: '参数配置', requiresAuth: true, requiresRole: ['admin'] }
       },
       {
         path: 'storage',
         name: 'AdminStorage',
         component: () => import('@/views/admin/panels/AdminStorage.vue'),
-        meta: { title: '存储与模块' }
+        meta: { title: '存储与模块', requiresAuth: true, requiresRole: ['admin'] }
       },
       {
         path: 'hitl',
         name: 'AdminHitl',
         component: () => import('@/views/admin/panels/AdminHitl.vue'),
-        meta: { title: 'HITL 审批' }
+        meta: { title: 'HITL 审批', requiresAuth: true, requiresRole: ['admin'] }
       },
       {
         path: 'monitor',
         name: 'AdminMonitor',
         component: () => import('@/views/admin/panels/AdminMonitor.vue'),
-        meta: { title: '系统监控' }
+        meta: { title: '系统监控', requiresAuth: true, requiresRole: ['admin'] }
       },
       {
         path: 'llm',
         name: 'AdminLlm',
         component: () => import('@/views/admin/panels/AdminLlm.vue'),
-        meta: { title: '大模型配置' }
+        meta: { title: '大模型配置', requiresAuth: true, requiresRole: ['admin'] }
       },
       {
         path: 'docs',
         name: 'AdminDocs',
         component: () => import('@/views/admin/panels/AdminDocs.vue'),
-        meta: { title: 'API 文档' }
+        meta: { title: 'API 文档', requiresAuth: true, requiresRole: ['admin'] }
       }
     ]
   },

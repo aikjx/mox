@@ -13,7 +13,7 @@
             size="small"
             style="width: 180px"
           />
-          <el-button :icon="Plus" type="primary" size="small" @click="handleAddRoot">新增</el-button>
+          <el-button :icon="Plus" type="primary" size="small" @click="handleAddRoot" v-role="'admin'">新增</el-button>
         </div>
       </div>
       <div class="tree-toolbar">
@@ -48,7 +48,7 @@
                     <el-dropdown-menu>
                       <el-dropdown-item command="add"><el-icon><Plus /></el-icon>新增子部门</el-dropdown-item>
                       <el-dropdown-item command="edit"><el-icon><Edit /></el-icon>编辑</el-dropdown-item>
-                      <el-dropdown-item command="delete" divided><el-icon><Delete /></el-icon>删除</el-dropdown-item>
+                      <el-dropdown-item command="delete" divided v-role="'admin'"><el-icon><Delete /></el-icon>删除</el-dropdown-item>
                     </el-dropdown-menu>
                   </template>
                 </el-dropdown>
@@ -188,7 +188,7 @@
         </el-tab-pane>
       </el-tabs>
 
-      <div v-else class="panel card-pad empty-detail">
+      <div v-if="!currentDept" class="panel card-pad empty-detail">
         <el-empty description="请选择左侧部门查看详情" :image-size="100">
           <template #image>
             <el-icon :size="64" color="var(--text-quaternary)"><OfficeBuilding /></el-icon>

@@ -38,5 +38,13 @@ export const NODE_TYPE_COLORS = {
   loss: '#f97316',
   regularization: '#a855f7',
   normalization: '#14b8a6',
-  custom: '#64748b'
+  custom: '#64748b',
+  // ===== 业务实体类型配色（聚合图谱） =====
+  project: '#f59e0b',      // 项目 - 琥珀
+  expert: '#ec4899',       // 专家 - 粉
+  operator: '#10b981',     // 算子 - 绿
+  workflow: '#8b5cf6',     // 工作流 - 紫
+  task: '#06b6d4',         // 任务 - 青
+  doc: '#84cc16',          // 文档 - 黄绿
+  data: '#a855f7'          // 数据 - 浅紫
 }

@@ -58,7 +58,7 @@
         </div>
         <div class="toolbar-right">
           <el-button :icon="Refresh" :loading="loading" @click="loadList">刷新</el-button>
-          <el-button type="primary" :icon="Plus" @click="openUserForm()">新增用户</el-button>
+          <el-button type="primary" :icon="Plus" @click="openUserForm()" v-role="'admin'">新增用户</el-button>
         </div>
       </div>
 
@@ -106,7 +106,7 @@
                     <el-icon><component :is="row.status === 1 ? 'SwitchButton' : 'CircleCheck'" /></el-icon>
                     {{ row.status === 1 ? '停用' : '启用' }}
                   </el-dropdown-item>
-                  <el-dropdown-item command="delete" divided><el-icon><Delete /></el-icon>删除</el-dropdown-item>
+                  <el-dropdown-item command="delete" divided v-role="'admin'"><el-icon><Delete /></el-icon>删除</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>

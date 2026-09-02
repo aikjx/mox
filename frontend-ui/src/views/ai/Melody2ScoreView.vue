@@ -228,7 +228,10 @@
 import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
-import axios from 'axios'
+import {
+  melodyHealth, melodySamples, melodyRecognize,
+  melodyRecognizeSample, melodyExportSheet, melodySaveReport
+} from '@/api/melody.api.js'
 
 // VexFlow 动态加载
 let VF = null
@@ -287,8 +290,8 @@ export default {
     // 健康检查
     const checkHealth = async () => {
       try {
-        const res = await axios.get('/api/melody2score/health', { timeout: 5000 })
-        if (res.data?.status === 'ok') {
+        const res = await melodyHealth()
+        if (res?.status === 'ok' || res?.success) {
           pyStatus.value = 'online'
           ElMessage.success('旋律转谱引擎在线')
         }
@@ -301,8 +304,8 @@ export default {
     // 刷新样例
     const refreshSamples = async () => {
       try {
-        const res = await axios.get('/api/melody2score/samples', { timeout: 10000 })
-        samples.value = res.data?.data || res.data || []
+        const res = await melodySamples()
+        samples.value = Array.isArray(res) ? res : (res?.data || res?.list || [])
       } catch (e) {
         console.warn('获取样例列表失败:', e)
       }
@@ -435,11 +438,8 @@ export default {
           formData.append('file', uploadFile.value)
           progressText.value = '上传音频...'
           progress.value = 20
-          const res = await axios.post('/api/melody2score/recognize', formData, {
-            timeout: 120000,
-            headers: { 'Content-Type': 'multipart/form-data' }
-          })
-          result.value = res.data?.data || res.data
+          const res = await melodyRecognize(formData)
+          result.value = res?.data || res
         } else if (inputMode.value === 'sample' && selectedSample.value !== null) {
           const sample = samples.value.find(g => g.melody_index === selectedSample.value)
           const timbre = sample?.timbres?.find(t => t.timbre === selectedTimbre.value)
@@ -447,10 +447,7 @@ export default {
           formData.append('name', timbre.file)
           progressText.value = `识别样例: ${sample?.title_zh || ''}...`
           progress.value = 30
-          const res = await axios.post('/api/melody2score/recognize-sample', formData, {
-            timeout: 120000,
-            headers: { 'Content-Type': 'multipart/form-data' }
-          })
+          const res = await melodyRecognizeSample(formData)
           result.value = res.data?.data || res.data
         }
 
@@ -463,7 +460,7 @@ export default {
         progressText.value = '识别完成'
         ElMessage.success('识别成功')
       } catch (e) {
-        ElMessage.error('识别失败: ' + (e.response?.data?.error || e.message))
+        ElMessage.error('识别失败: ' + (e?.message || '未知错误'))
         progressText.value = '识别失败'
       } finally {
         loading.value = false
@@ -604,19 +601,15 @@ export default {
     const exportSheet = async (format) => {
       if (!result.value) return
       try {
-        const res = await axios.post('/api/melody2score/export-sheet', {
-          result: result.value,
-          title: result.value.source || '未命名旋律',
-          format
-        }, { timeout: 60000 })
-        const data = res.data?.data || res.data
+        const res = await melodyExportSheet({ result: result.value, title: result.value.source || '未命名旋律', format })
+        const data = res?.data || res
         if (data?.file) {
           const url = `/api/melody2score/download/${encodeURIComponent(data.file)}`
           window.open(url, '_blank')
           ElMessage.success(`歌谱已导出 (${format})`)
         }
       } catch (e) {
-        ElMessage.error('导出失败: ' + (e.response?.data?.error || e.message))
+        ElMessage.error('导出失败: ' + (e?.message || '未知错误'))
       }
     }
 
@@ -624,17 +617,13 @@ export default {
     const saveReport = async () => {
       if (!result.value) return
       try {
-        const res = await axios.post('/api/melody2score/save-report', {
-          result: result.value,
-          title: result.value.source || '未命名旋律',
-          source: result.value.source || '用户上传'
-        }, { timeout: 30000 })
+        const res = await melodySaveReport({ result: result.value, title: result.value.source || '未命名旋律', source: result.value.source || '用户上传' })
         const data = res.data?.data || res.data
         if (data?.file) {
           ElMessage.success(`报告已保存: ${data.file}`)
         }
       } catch (e) {
-        ElMessage.error('保存报告失败: ' + (e.response?.data?.error || e.message))
+        ElMessage.error('保存报告失败: ' + (e?.message || '未知错误'))
       }
     }
 

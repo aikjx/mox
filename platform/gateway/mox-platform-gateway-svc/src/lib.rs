@@ -26,6 +26,7 @@ pub mod o11y;
 pub mod routes;
 pub mod alliance;
 pub mod system;
+pub mod proxy;
 
 pub use mox_kg_service_svc::http_adapter;
 pub use alliance as alliance_adapter;
@@ -118,6 +119,12 @@ pub fn build_gateway_router(state: GatewayState) -> Router {
     let system = system::build_system_router();
     let security = system::build_security_router();
 
+    // 业务域反向代理适配层（L6 归一化收敛）：
+    // 未被网关原生路由匹配的 /api/* 请求透明转发到编排器（默认 :3001）。
+    // axum 按具体度匹配：/api/system/* · /api/security/* · /api/v1/* 优先命中网关原生路由，
+    // 其余 /api/{*path} 落入本代理 wildcard 路由，实现「归一化入口 + 模块化后端」。
+    let business_proxy = proxy::build_proxy_router();
+
     // 受保护的路由：认证 + 限流
     // 注：/api/system、/api/security 迁移期在 public_paths（见 config.rs），
     // auth_middleware 按路径前缀放行；生产回收后自动纳入认证。
@@ -125,12 +132,14 @@ pub fn build_gateway_router(state: GatewayState) -> Router {
     // Router<GatewayState> 后再与 system/security 统一并入（Router<()> 无 State 提取器，运行期安全）。
     let kg_ai: Router<GatewayState> = kg_ai.with_state(());
     let alliance: Router<GatewayState> = alliance.with_state(());
+    let business_proxy: Router<GatewayState> = business_proxy.with_state(());
     let auth_state = state.auth.clone();
     let protected: Router<GatewayState> = Router::<GatewayState>::new()
         .merge(kg_ai)
         .merge(alliance)
         .merge(system)
         .merge(security)
+        .merge(business_proxy)
         .route_layer(from_fn(move |request: Request, next: Next| {
             let auth = auth_state.clone();
             async move { auth_middleware(auth, request, next).await }

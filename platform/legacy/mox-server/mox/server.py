@@ -430,13 +430,18 @@ async def website_message(req: Request):
     b = await req.json()
     if not b.get("name") or not b.get("content"):
         return _err("name/content 必填")
-    META.execute(
+    # [FIX 2026-09-02] messages表属业务库mox_business.db(BUSINESS_SCHEMA定义)，
+    # 原误用META.execute()写入元库mox_meta.db，导致读写分裂：
+    #   写入->mox_meta.db.messages(孤儿表,7行历史数据)
+    #   读取->mox_business.db.messages(DSQL message_list/stats_dashboard/api_stats)
+    # 修复:统一写入BUSINESS_STORE(mox_business.db)，与读取端一致。
+    result = BUSINESS_STORE.execute(
         "INSERT INTO messages(name,phone,email,company,content,status,created_at) "
         "VALUES(?,?,?,?,?,?,?)",
         [b.get("name"), b.get("phone", ""), b.get("email", ""), b.get("company", ""),
          b.get("content"), "待处理", int(time.time())])
     _audit(b.get("name"), "website.message", b, _trace())
-    return _ok({"id": 0}, message="留言提交成功")
+    return _ok({"id": result.get("last_insert_id", 0)}, message="留言提交成功")
 
 
 @app.post("/api/website/resume")

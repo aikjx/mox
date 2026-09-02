@@ -33,7 +33,7 @@
         </div>
         <div class="toolbar-right">
           <el-button :icon="Refresh" :loading="loading" @click="loadList">刷新</el-button>
-          <el-button type="primary" :icon="Plus" @click="openRoleForm()">新增角色</el-button>
+          <el-button type="primary" :icon="Plus" @click="openRoleForm()" v-role="'admin'">新增角色</el-button>
         </div>
       </div>
 
@@ -83,7 +83,7 @@
                 <el-dropdown-menu>
                   <el-dropdown-item command="users"><el-icon><User /></el-icon>查看用户</el-dropdown-item>
                   <el-dropdown-item command="copy"><el-icon><CopyDocument /></el-icon>复制角色</el-dropdown-item>
-                  <el-dropdown-item command="delete" divided :disabled="row.builtin">
+                  <el-dropdown-item command="delete" divided :disabled="row.builtin" v-role="'admin'">
                     <el-icon><Delete /></el-icon>
                     {{ row.builtin ? '内置角色不可删' : '删除' }}
                   </el-dropdown-item>

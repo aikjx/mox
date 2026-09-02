@@ -34,18 +34,23 @@
         </section>
 
         <!-- 专家库 -->
-        <section class="card experts-card">
+        <section class="card experts-card" v-loading="expertsLoading">
           <div class="card-header between">
             <div>
               <span class="card-title">专家联盟</span>
               <span class="count-badge">{{ filteredExperts.length }} 位</span>
             </div>
-            <el-switch
-              v-model="smartMatch"
-              size="small"
-              active-text="智能"
-              inactive-text="手动"
-            />
+            <div style="display:flex;align-items:center;gap:8px">
+              <el-button text size="small" @click="loadExperts" title="刷新">
+                <el-icon><Refresh /></el-icon>
+              </el-button>
+              <el-switch
+                v-model="smartMatch"
+                size="small"
+                active-text="智能"
+                inactive-text="手动"
+              />
+            </div>
           </div>
 
           <div class="filter-row">
@@ -58,28 +63,37 @@
           </div>
 
           <el-scrollbar class="expert-scroll">
-            <div
-              v-for="exp in filteredExperts"
-              :key="exp.id"
-              class="expert-item"
-              :class="{ selected: isSelected(exp.id) }"
-              @click="toggleExpert(exp)"
-            >
-              <div class="expert-avatar" :style="{ background: expertColor(exp.type) }">
-                {{ expertEmoji(exp.type) }}
+            <template v-if="expertsError">
+              <div class="error-state">
+                <el-empty :description="expertsError" :image-size="50">
+                  <el-button size="small" type="primary" @click="loadExperts">重试</el-button>
+                </el-empty>
               </div>
-              <div class="expert-info">
-                <div class="expert-name">{{ exp.name }}</div>
-                <div class="expert-type">{{ typeLabel(exp.type) }}</div>
-                <div class="expert-tags">
-                  <span v-for="cap in (exp.capabilities || []).slice(0,2)" :key="cap" class="cap-tag">{{ cap }}</span>
+            </template>
+            <template v-else>
+              <div
+                v-for="exp in filteredExperts"
+                :key="exp.id"
+                class="expert-item"
+                :class="{ selected: isSelected(exp.id) }"
+                @click="toggleExpert(exp)"
+              >
+                <div class="expert-avatar" :style="{ background: expertColor(exp.type) }">
+                  {{ expertEmoji(exp.type) }}
+                </div>
+                <div class="expert-info">
+                  <div class="expert-name">{{ exp.name }}</div>
+                  <div class="expert-type">{{ typeLabel(exp.type) }}</div>
+                  <div class="expert-tags">
+                    <span v-for="cap in (exp.capabilities || []).slice(0,2)" :key="cap" class="cap-tag">{{ cap }}</span>
+                  </div>
+                </div>
+                <div v-if="isSelected(exp.id)" class="expert-check">
+                  <el-icon><CircleCheckFilled /></el-icon>
                 </div>
               </div>
-              <div v-if="isSelected(exp.id)" class="expert-check">
-                <el-icon><CircleCheckFilled /></el-icon>
-              </div>
-            </div>
-            <el-empty v-if="filteredExperts.length === 0" description="暂无匹配专家" :image-size="40" />
+              <el-empty v-if="!expertsLoading && filteredExperts.length === 0" description="暂无匹配专家" :image-size="40" />
+            </template>
           </el-scrollbar>
 
           <div v-if="selectedExperts.length > 0" class="selected-summary">
@@ -221,12 +235,14 @@
 <script setup>
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import {
-  Search, CircleCheckFilled, ArrowRight
+  Search, CircleCheckFilled, ArrowRight, Refresh
 } from '@element-plus/icons-vue'
 import { useAIStore, CONSULT_MODES } from '@/stores/ai.store'
 import AIChatPanel from '@/components/ai/AIChatPanel.vue'
 import { EXPERT_TYPES } from '@/constants/expert.constants'
+import { getExperts, getExpertGraph, getExpertOverview } from '@/api/experts.api.js'
 
 const router = useRouter()
 const aiStore = useAIStore()
@@ -256,38 +272,41 @@ const currentPlaceholder = computed(() => {
   return placeholders[mode] || '输入你的问题…'
 })
 
-// ===== 专家数据 =====
+// ===== 专家数据（API 驱动） =====
 const expertTypes = Object.keys(EXPERT_TYPES)
 const keyword = ref('')
 const filterType = ref('')
 const smartMatch = ref(true)
+const expertsLoading = ref(false)
+const expertsError = ref('')
 
-const experts = ref([
-  { id: 'exp-001', name: '林算法', type: 'algorithm', status: 'active',
-    capabilities: ['动态规划', '图算法', '复杂度分析'],
-    metrics: { total_consults: 1286, success_rate: 0.97, avg_duration: 1200 } },
-  { id: 'exp-002', name: '陈架构', type: 'architecture', status: 'active',
-    capabilities: ['微服务', 'DDD', '高可用设计'],
-    metrics: { total_consults: 2103, success_rate: 0.95, avg_duration: 1800 } },
-  { id: 'exp-003', name: '王数据', type: 'data', status: 'active',
-    capabilities: ['数据建模', 'ETL', '数据治理'],
-    metrics: { total_consults: 856, success_rate: 0.98, avg_duration: 950 } },
-  { id: 'exp-004', name: '张AI', type: 'ai', status: 'active',
-    capabilities: ['LLM', 'RAG', 'Prompt工程'],
-    metrics: { total_consults: 3241, success_rate: 0.94, avg_duration: 2100 } },
-  { id: 'exp-005', name: '李工作流', type: 'workflow', status: 'active',
-    capabilities: ['流程编排', 'BPM', '自动化'],
-    metrics: { total_consults: 678, success_rate: 0.96, avg_duration: 1500 } },
-  { id: 'exp-006', name: '赵图谱', type: 'graph', status: 'active',
-    capabilities: ['图数据库', 'Cypher', '图计算'],
-    metrics: { total_consults: 945, success_rate: 0.93, avg_duration: 1600 } },
-  { id: 'exp-007', name: '孙安全', type: 'security', status: 'active',
-    capabilities: ['渗透测试', '安全审计', '合规'],
-    metrics: { total_consults: 523, success_rate: 0.99, avg_duration: 2200 } },
-  { id: 'exp-008', name: '周性能', type: 'performance', status: 'active',
-    capabilities: ['性能调优', '压测', '缓存策略'],
-    metrics: { total_consults: 712, success_rate: 0.92, avg_duration: 1400 } }
-])
+const experts = ref([])
+
+async function loadExperts() {
+  expertsLoading.value = true
+  expertsError.value = ''
+  try {
+    const data = await getExperts({ page: 1, page_size: 100 })
+    // 兼容多种返回结构：数组 / { list } / { data }
+    if (Array.isArray(data)) {
+      experts.value = data
+    } else if (Array.isArray(data?.list)) {
+      experts.value = data.list
+    } else if (Array.isArray(data?.data)) {
+      experts.value = data.data
+    } else if (Array.isArray(data?.experts)) {
+      experts.value = data.experts
+    } else {
+      experts.value = []
+    }
+  } catch (e) {
+    expertsError.value = e?.message || '专家列表加载失败'
+    experts.value = []
+    ElMessage.error('专家列表加载失败：' + (e?.message || '未知错误'))
+  } finally {
+    expertsLoading.value = false
+  }
+}
 
 const filteredExperts = computed(() => {
   let list = experts.value
@@ -367,37 +386,61 @@ function clearSelection() {
   aiStore.selectedExpertIds = []
 }
 
-// ===== 项目进度 =====
+// ===== 项目进度（API 驱动，从 overview 数据派生） =====
 const phaseProgress = ref({
-  requirement: 75,
-  architecture: 60,
-  develop: 35,
-  release: 15
+  requirement: 0,
+  architecture: 0,
+  develop: 0,
+  release: 0
 })
 
 const projectProgress = computed(() => {
   const vals = Object.values(phaseProgress.value)
+  if (!vals.length) return 0
   return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)
 })
 
-// ===== 知识图谱 =====
+// ===== 知识图谱（API 驱动） =====
 const canvasRef = ref(null)
-const graphData = ref({
-  nodes: [
-    { id: 'n1', label: '用户', type: 'actor', x: 100, y: 80 },
-    { id: 'n2', label: '项目', type: 'goal', x: 200, y: 50 },
-    { id: 'n3', label: '需求', type: 'usecase', x: 300, y: 90 },
-    { id: 'n4', label: '数据', type: 'data', x: 150, y: 160 },
-    { id: 'n5', label: '技术', type: 'tech', x: 250, y: 180 },
-    { id: 'n6', label: '架构', type: 'usecase', x: 350, y: 160 },
-    { id: 'n7', label: '交付', type: 'end', x: 200, y: 230 }
-  ],
-  edges: [
-    { s: 'n1', t: 'n2' }, { s: 'n2', t: 'n3' }, { s: 'n3', t: 'n4' },
-    { s: 'n4', t: 'n5' }, { s: 'n5', t: 'n6' }, { s: 'n6', t: 'n7' },
-    { s: 'n2', t: 'n5' }, { s: 'n3', t: 'n6' }
-  ]
-})
+const graphData = ref({ nodes: [], edges: [] })
+const graphLoading = ref(false)
+
+async function loadGraph() {
+  graphLoading.value = true
+  try {
+    const data = await getExpertGraph()
+    if (data && Array.isArray(data.nodes) && Array.isArray(data.edges)) {
+      graphData.value = data
+    } else if (data?.data && Array.isArray(data.data.nodes)) {
+      graphData.value = data.data
+    }
+  } catch (e) {
+    console.warn('[ExpertOverview] 图谱加载失败:', e?.message)
+    // 保留空图谱，不阻断页面
+  } finally {
+    graphLoading.value = false
+  }
+}
+
+async function loadOverview() {
+  try {
+    const data = await getExpertOverview()
+    if (data && typeof data === 'object') {
+      // 尝试从 overview 数据中提取阶段进度
+      if (data.phase_progress && typeof data.phase_progress === 'object') {
+        phaseProgress.value = { ...phaseProgress.value, ...data.phase_progress }
+      } else if (data.phases && Array.isArray(data.phases)) {
+        const map = {}
+        data.phases.forEach(p => {
+          if (p.key && p.progress != null) map[p.key] = p.progress
+        })
+        if (Object.keys(map).length) phaseProgress.value = { ...phaseProgress.value, ...map }
+      }
+    }
+  } catch (e) {
+    console.warn('[ExpertOverview] 概览数据加载失败:', e?.message)
+  }
+}
 
 function drawGraph() {
   const canvas = canvasRef.value
@@ -468,9 +511,11 @@ function goToGraph() {
 }
 
 // ===== 生命周期 =====
-onMounted(() => {
+onMounted(async () => {
   aiStore.setScope('project', 'current-project')
   aiStore.ensureSession()
+  // 并行加载专家列表、图谱、概览数据
+  await Promise.all([loadExperts(), loadGraph(), loadOverview()])
   nextTick(() => {
     drawGraph()
     window.addEventListener('resize', drawGraph)
@@ -723,6 +768,10 @@ watch(currentPhase, () => {
   font-size: 12px;
   color: #64748b;
   background: var(--bg-tertiary);
+}
+
+.error-state {
+  padding: 20px 10px;
 }
 
 /* ===== 中栏对话区 ===== */

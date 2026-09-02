@@ -3,7 +3,7 @@
     <!-- ===== 双栏视图（list + detail 共用） ===== -->
     <div v-if="viewMode !== 'deep'" class="dual-col">
       <!-- 左侧：项目列表 -->
-      <div class="left-panel">
+      <div class="left-panel" v-loading="listLoading">
         <div class="panel-header">
           <div class="panel-title-row">
             <span class="panel-title">项目列表</span>
@@ -29,35 +29,44 @@
           </div>
         </div>
         <div class="panel-list">
-          <div
-            v-for="p in filteredProjects"
-            :key="p.id"
-            class="list-item"
-            :class="{ active: p.id === current?.id }"
-            @click="selectProject(p.id)"
-          >
-            <div class="list-item-header">
-              <span class="status-dot" :class="p.status"></span>
-              <span class="list-item-title">{{ p.name || '未命名项目' }}</span>
+          <template v-if="listError">
+            <div style="padding:20px 10px">
+              <el-empty :description="listError" :image-size="50">
+                <el-button size="small" type="primary" @click="loadAll">重试</el-button>
+              </el-empty>
             </div>
-            <div class="list-item-desc">{{ p.description || '暂无描述' }}</div>
-            <div class="list-item-meta">
-              <div class="progress-bar">
-                <div class="progress-fill" :class="p.status" :style="{ width: projectProgress(p) + '%' }"></div>
+          </template>
+          <template v-else>
+            <div
+              v-for="p in filteredProjects"
+              :key="p.id"
+              class="list-item"
+              :class="{ active: p.id === current?.id }"
+              @click="selectProject(p.id)"
+            >
+              <div class="list-item-header">
+                <span class="status-dot" :class="p.status"></span>
+                <span class="list-item-title">{{ p.name || '未命名项目' }}</span>
               </div>
-              <span class="progress-text">{{ projectProgress(p) }}%</span>
+              <div class="list-item-desc">{{ p.description || '暂无描述' }}</div>
+              <div class="list-item-meta">
+                <div class="progress-bar">
+                  <div class="progress-fill" :class="p.status" :style="{ width: projectProgress(p) + '%' }"></div>
+                </div>
+                <span class="progress-text">{{ projectProgress(p) }}%</span>
+              </div>
+              <div class="member-avatars">
+                <div
+                  v-for="(m, i) in projectMembers(p).slice(0, 4)"
+                  :key="i"
+                  class="mini-avatar"
+                  :style="{ background: avatarColor(i) }"
+                >{{ m }}</div>
+                <div v-if="projectMembers(p).length > 4" class="mini-avatar" style="background:var(--bg-tertiary)">+{{ projectMembers(p).length - 4 }}</div>
+              </div>
             </div>
-            <div class="member-avatars">
-              <div
-                v-for="(m, i) in projectMembers(p).slice(0, 4)"
-                :key="i"
-                class="mini-avatar"
-                :style="{ background: avatarColor(i) }"
-              >{{ m }}</div>
-              <div v-if="projectMembers(p).length > 4" class="mini-avatar" style="background:var(--bg-tertiary)">+{{ projectMembers(p).length - 4 }}</div>
-            </div>
-          </div>
-          <el-empty v-if="!filteredProjects.length" description="暂无项目，点击上方新建" :image-size="60" />
+            <el-empty v-if="!listLoading && !filteredProjects.length" description="暂无项目，点击上方新建" :image-size="60" />
+          </template>
         </div>
       </div>
 
@@ -313,100 +322,21 @@
       </div>
     </div>
 
-    <!-- ===== 深视图（deep view） ===== -->
-    <div v-else class="project-deep-view">
-      <!-- 左侧：文件树 + 协作专家 -->
-      <div class="deep-left">
-        <div class="deep-back-row">
-          <button class="back-btn" @click="backToList">← 返回列表</button>
-        </div>
-        <div class="deep-section">
-          <div class="deep-section-title">项目文件</div>
-          <div class="file-tree">
-            <div class="file-folder">📁 backend</div>
-            <div class="file-item active">📄 nlp_service.py</div>
-            <div class="file-item">📄 chat_handler.py</div>
-            <div class="file-item">📄 knowledge_base.py</div>
-            <div class="file-folder" style="margin-top:8px">📁 frontend</div>
-            <div class="file-item">📄 App.vue</div>
-            <div class="file-item">📄 ChatPanel.vue</div>
-            <div class="file-folder" style="margin-top:8px">📁 docs</div>
-            <div class="file-item">📄 README.md</div>
-            <div class="file-item">📄 API.md</div>
-          </div>
-        </div>
-        <div class="deep-section">
-          <div class="deep-section-title">协作专家</div>
-          <div class="deep-nav-item active"><span class="icon">🟢</span> 张工 (在线)</div>
-          <div class="deep-nav-item"><span class="icon">🟢</span> 李工 (在线)</div>
-          <div class="deep-nav-item"><span class="icon">⚫</span> 王工 (离线)</div>
-          <div class="deep-nav-item"><span class="icon">🟡</span> 赵工 (忙碌)</div>
-        </div>
-      </div>
-
-      <!-- 中间：代码编辑器 -->
-      <div class="deep-center">
-        <div class="editor-tabs">
-          <div class="editor-tab active">
-            📄 nlp_service.py
-            <span class="tab-close">✕</span>
-          </div>
-          <div class="editor-tab">📄 README.md</div>
-          <div class="editor-tab tab-add">+</div>
-        </div>
-        <div class="deep-editor">
-          <div v-for="line in codeLines" :key="line.num" class="code-line">
-            <span class="line-num">{{ line.num }}</span>
-            <span v-html="line.html || '&nbsp;'"></span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 右侧：今日任务 + AI建议 + 实时预览 -->
-      <div class="deep-right">
-        <div class="deep-panel">
-          <div class="deep-panel-title">
-            <span>今日任务</span>
-            <span class="more">+ 新建</span>
-          </div>
-          <div class="deep-tasks">
-            <div
-              v-for="t in mockTasks.slice(0, 4)"
-              :key="t.id"
-              class="deep-task"
-              :class="{ done: t.status === 'done' }"
-            >
-              <div class="deep-task-check" :class="{ checked: t.status === 'done' }" @click.stop="toggleTask(t.id)"></div>
-              <div class="deep-task-text">{{ t.title }}</div>
+    <!-- ===== 深视图（开发中占位） ===== -->
+    <div v-else class="project-deep-placeholder">
+      <div class="placeholder-content">
+        <el-empty description="项目开发工作台 · 功能开发中" :image-size="120">
+          <template #description>
+            <div style="text-align:center">
+              <p style="font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:8px">项目开发工作台</p>
+              <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">代码编辑器、实时预览、AI 建议等深度功能正在开发中</p>
+              <p style="font-size:12px;color:var(--text-muted)">当前项目：{{ current?.name || '未命名项目' }}</p>
             </div>
-          </div>
-        </div>
-        <div class="deep-panel">
-          <div class="deep-panel-title">
-            <span>💡 AI 建议</span>
-          </div>
-          <div class="ai-suggestion">
-            建议在 <code>analyze()</code> 方法中增加缓存层，可减少 30% 的重复计算，显著提升响应速度。
-            <div class="ai-suggestion-actions">
-              <button class="top-btn primary" style="font-size:11px;padding:4px 10px" @click="applySuggestion">应用建议</button>
-              <button class="top-btn" style="font-size:11px;padding:4px 10px" @click="ignoreSuggestion">忽略</button>
-            </div>
-          </div>
-        </div>
-        <div class="deep-panel deep-panel-flex">
-          <div class="deep-panel-title">
-            <span>实时预览</span>
-          </div>
-          <div class="live-preview">
-            <div class="live-status">● 服务运行中</div>
-            <div class="live-metrics">
-              端口: 8080<br>
-              内存: 128MB<br>
-              CPU: 5%<br>
-              请求/秒: 24
-            </div>
-          </div>
-        </div>
+          </template>
+          <el-button type="primary" @click="backToList">
+            <el-icon><ArrowLeft /></el-icon> 返回项目列表
+          </el-button>
+        </el-empty>
       </div>
     </div>
 
@@ -508,14 +438,14 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Plus, Search, Edit, Delete, Promotion, ChatDotRound, List, Share,
-  MagicStick, Connection, User, Folder, CircleCheckFilled
+  MagicStick, Connection, User, Folder, CircleCheckFilled, ArrowLeft
 } from '@element-plus/icons-vue'
 import { useProject } from '@/composables/projectContext.js'
 import {
   getProjects, getProjectTypes, getProjectCatalog, getProjectStats,
   getProject, createProject, updateProject, deleteProject,
   bindProjectResources, unbindProjectResource, updateProjectResourceNote,
-  aiGenerateProjectGraph
+  getTasks, aiGenerateProjectGraph
 } from '@/api'
 
 const router = useRouter()
@@ -555,17 +485,35 @@ const dlg = ref({ visible: false, isEdit: false, saving: false, form: { name: ''
 const binder = ref({ visible: false, keyword: '', picked: new Map(), openGroups: [], binding: false })
 const noteDlg = ref({ visible: false, rid: '', note: '' })
 const generatingGraph = ref(false)
+const listLoading = ref(false)
+const listError = ref('')
+const tasksLoading = ref(false)
 
-// ===== Mock 数据（任务/动态/文档） =====
-const mockTasks = ref([
-  { id: 1, title: '完成 NLP 模块单元测试', priority: 'high', status: 'done', assignee: '张工', due: '今天' },
-  { id: 2, title: 'Review 李工的 PR #234', priority: 'mid', status: 'done', assignee: '王工', due: '今天' },
-  { id: 3, title: '优化对话响应速度至 500ms 内', priority: 'high', status: 'active', assignee: '张工', due: '本周三' },
-  { id: 4, title: '知识库接入联调测试', priority: 'mid', status: 'active', assignee: '李工', due: '本周五' },
-  { id: 5, title: '编写 API 接口文档', priority: 'low', status: 'active', assignee: '王工', due: '下周' },
-  { id: 6, title: '性能压测报告输出', priority: 'mid', status: 'pending', assignee: '赵工', due: '下周三' },
-  { id: 7, title: '用户验收测试准备', priority: 'high', status: 'pending', assignee: '全员', due: '下周五' }
-])
+// ===== 任务数据（API 驱动） =====
+const mockTasks = ref([])
+
+async function loadTasks() {
+  tasksLoading.value = true
+  try {
+    const data = await getTasks()
+    if (Array.isArray(data)) {
+      mockTasks.value = data
+    } else if (Array.isArray(data?.list)) {
+      mockTasks.value = data.list
+    } else if (Array.isArray(data?.data)) {
+      mockTasks.value = data.data
+    } else if (Array.isArray(data?.tasks)) {
+      mockTasks.value = data.tasks
+    } else {
+      mockTasks.value = []
+    }
+  } catch (e) {
+    console.warn('[ProjectsView] 任务列表加载失败:', e?.message)
+    mockTasks.value = []
+  } finally {
+    tasksLoading.value = false
+  }
+}
 
 const mockActivities = [
   { icon: '💬', text: '张工 在 NLP 模块提交了新代码', time: '5 分钟前' },
@@ -592,40 +540,6 @@ const memberSkillSets = [
   ['后端', 'Node.js', '数据库'],
   ['测试', '自动化', '性能'],
   ['产品设计', '用户研究', 'AI产品']
-]
-
-// ===== 代码编辑器 30 行 =====
-const codeLines = [
-  { num: 1, html: '<span class="code-keyword">import</span> torch' },
-  { num: 2, html: '<span class="code-keyword">from</span> transformers <span class="code-keyword">import</span> AutoTokenizer, AutoModel' },
-  { num: 3, html: '' },
-  { num: 4, html: '<span class="code-keyword">class</span> <span class="code-function">NLPService</span>:' },
-  { num: 5, html: '    <span class="code-string">"""NLP 语义分析服务"""</span>' },
-  { num: 6, html: '' },
-  { num: 7, html: '    <span class="code-keyword">def</span> <span class="code-function">__init__</span>(self, model_name: str = <span class="code-string">"bert-base-chinese"</span>):' },
-  { num: 8, html: '        self.tokenizer = AutoTokenizer.from_pretrained(model_name)' },
-  { num: 9, html: '        self.model = AutoModel.from_pretrained(model_name)' },
-  { num: 10, html: '        self.device = torch.device(<span class="code-string">"cuda"</span> <span class="code-keyword">if</span> torch.cuda.is_available() <span class="code-keyword">else</span> <span class="code-string">"cpu"</span>)' },
-  { num: 11, html: '        self.model.to(self.device)' },
-  { num: 12, html: '' },
-  { num: 13, html: '    <span class="code-keyword">def</span> <span class="code-function">analyze</span>(self, text: str) -> dict:' },
-  { num: 14, html: '        <span class="code-string">"""对输入文本进行语义分析"""</span>' },
-  { num: 15, html: '        inputs = self.tokenizer(' },
-  { num: 16, html: '            text,' },
-  { num: 17, html: '            return_tensors=<span class="code-string">"pt"</span>,' },
-  { num: 18, html: '            max_length=<span class="code-number">512</span>,' },
-  { num: 19, html: '            truncation=<span class="code-keyword">True</span>' },
-  { num: 20, html: '        ).to(self.device)' },
-  { num: 21, html: '' },
-  { num: 22, html: '        <span class="code-keyword">with</span> torch.no_grad():' },
-  { num: 23, html: '            outputs = self.model(**inputs)' },
-  { num: 24, html: '            embeddings = outputs.last_hidden_state.mean(dim=<span class="code-number">1</span>)' },
-  { num: 25, html: '' },
-  { num: 26, html: '        <span class="code-keyword">return</span> {' },
-  { num: 27, html: '            <span class="code-string">"embedding"</span>: embeddings.squeeze().tolist(),' },
-  { num: 28, html: '            <span class="code-string">"tokens_count"</span>: inputs[<span class="code-string">"input_ids"</span>].shape[<span class="code-number">1</span>],' },
-  { num: 29, html: '            <span class="code-string">"language"</span>: <span class="code-string">"zh"</span>' },
-  { num: 30, html: '        }' }
 ]
 
 // ===== 计算属性 =====
@@ -739,22 +653,28 @@ function shareProject() {
 function downloadDoc(d) {
   ElMessage.info(`${d.name} 开始下载`)
 }
-function applySuggestion() {
-  ElMessage.success('AI 建议已应用到代码中')
-}
-function ignoreSuggestion() {
-  ElMessage.info('已忽略该建议')
-}
 
 // ===== 加载 =====
 async function loadAll() {
-  const [ps, ts, cat, st] = await Promise.all([getProjects(), getProjectTypes(), getProjectCatalog(), getProjectStats()])
-  projects.value = ps || []
-  categories.value = (ts && ts.categories) || []
-  resourceTypes.value = (ts && ts.resource_types) || []
-  catalogGroups.value = (cat && cat.groups) || []
-  stats.value = st || {}
-  binder.value.openGroups = (catalogGroups.value).slice(0, 3).map((g) => g.type)
+  listLoading.value = true
+  listError.value = ''
+  try {
+    const [ps, ts, cat, st] = await Promise.all([getProjects(), getProjectTypes(), getProjectCatalog(), getProjectStats()])
+    projects.value = ps || []
+    categories.value = (ts && ts.categories) || []
+    resourceTypes.value = (ts && ts.resource_types) || []
+    catalogGroups.value = (cat && cat.groups) || []
+    stats.value = st || {}
+    binder.value.openGroups = (catalogGroups.value).slice(0, 3).map((g) => g.type)
+    // 并行加载任务列表
+    loadTasks()
+  } catch (e) {
+    listError.value = e?.message || '项目列表加载失败'
+    projects.value = []
+    ElMessage.error('项目列表加载失败：' + (e?.message || '未知错误'))
+  } finally {
+    listLoading.value = false
+  }
 }
 
 // 快速跳转到相关模块
@@ -1780,6 +1700,21 @@ async function saveNote() {
 .pick-mark {
   color: var(--success);
   font-size: 18px;
+}
+
+/* ===== 深视图占位 ===== */
+.project-deep-placeholder {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  background: var(--bg-secondary);
+}
+
+.placeholder-content {
+  text-align: center;
+  max-width: 480px;
 }
 
 /* ===== 深视图 ===== */

@@ -26,10 +26,8 @@
 
         <!-- 页面内容 -->
         <main class="app-content">
-          <router-view v-slot="{ Component }">
-            <transition name="page-fade" mode="out-in">
-              <component :is="Component" />
-            </transition>
+          <router-view v-slot="{ Component, route }">
+            <component :is="Component" :key="route.path" />
           </router-view>
         </main>
       </div>
