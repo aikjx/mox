@@ -411,6 +411,18 @@ const routes = [
         meta: { title: '系统监控', requiresAuth: true, requiresRole: ['admin'] }
       },
       {
+        path: 'api',
+        name: 'AdminApi',
+        component: () => import('@/views/admin/panels/AdminApi.vue'),
+        meta: { title: '接口管理', requiresAuth: true, requiresRole: ['admin'] }
+      },
+      {
+        path: 'logs',
+        name: 'AdminLogs',
+        component: () => import('@/views/admin/panels/AdminLogs.vue'),
+        meta: { title: '在线日志', requiresAuth: true, requiresRole: ['admin'] }
+      },
+      {
         path: 'llm',
         name: 'AdminLlm',
         component: () => import('@/views/admin/panels/AdminLlm.vue'),

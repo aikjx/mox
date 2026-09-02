@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -35,6 +35,10 @@ impl Default for AuthConfig {
                 // 待 auth 对接 IAM JWT 校验后回收为受保护路由。
                 "/api/system".into(),
                 "/api/security".into(),
+                // 迁移期：/kg/v1/* 与 /ai/engine/* 暂为公开（知识图谱端点刚桥接真实算法，
+                // 前端 dev 与 E2E 测试需直接访问；生产环境待 auth 对接 IAM JWT 后回收）。
+                "/kg/v1".into(),
+                "/ai/engine".into(),
             ],
         }
     }

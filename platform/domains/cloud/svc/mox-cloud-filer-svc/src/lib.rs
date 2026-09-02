@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -38,7 +38,7 @@ pub mod quota_manager;
 pub mod snapshot_filer;
 
 pub use dir_entry_cache::{CacheStats, DirEntryCache, SharedDirEntryCache};
-pub use error::FilerError;
+pub use error::{FilerError, FilerResult};
 pub use file_lock::{
     DeadlockResult, FileLockManager, LockRange, LockRecord, LockStats, LockType,
     SharedFileLockManager, DEFAULT_LOCK_TIMEOUT_MS,
@@ -50,7 +50,7 @@ pub use meta_redis::RedisMeta;
 pub use meta_sqlite::SqliteMeta;
 pub use meta_trait::{
     Attr, AttrPatch, BatchCreateResult, BatchDeleteResult, BatchReadAttrResult, DirEntry,
-    DirListPage, MetaBackend, MetaStorageProvider, TxStatus, META_BACKENDS, PJD_CASES_TOTAL,
+    DirListPage, MetaBackend, MetaStorageProvider, S_IFDIR, S_IFLNK, S_IFREG, TxStatus, META_BACKENDS, PJD_CASES_TOTAL,
     PJD_PASS_THRESHOLD,
 };
 pub use posix_api::Filer;

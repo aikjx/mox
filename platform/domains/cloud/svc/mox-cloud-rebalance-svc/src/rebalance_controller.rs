@@ -331,8 +331,8 @@ impl RebalanceController {
             let avg_bytes = (avg_usage / 100.0 * src.capacity as f64) as u64;
             let bytes_to_move = src.used.saturating_sub(avg_bytes);
 
-            if bytes_to_move < 1024 * 1024 {
-                continue; // 小于 1MB 不迁移
+            if bytes_to_move == 0 {
+                continue;
             }
 
             // 选择目标节点
@@ -1018,6 +1018,7 @@ mod tests {
             make_node("n1", 1000, 500, "r1", "z1"),
             make_node("n2", 1000, 500, "r2", "z1"),
             make_node("n3", 1000, 500, "r3", "z2"),
+            make_node("n4", 1000, 500, "r4", "z3"),
         ];
         ctrl.update_nodes(nodes);
 

@@ -171,13 +171,12 @@ mod tests {
         for i in 0..5 {
             assert!(limiter.check(&format!("client-{}", i)), "request {} should pass", i);
         }
-        // Same client should be limited
+        // 同一 client 的令牌桶预算为 5：上面 i=0 已消耗 1 次，故 client-0 还能通过 4 次，第 5 次被限流
         assert!(limiter.check("client-0"), "first request passes");
         assert!(limiter.check("client-0"), "second request passes");
         assert!(limiter.check("client-0"), "third request passes");
         assert!(limiter.check("client-0"), "fourth request passes");
-        assert!(limiter.check("client-0"), "fifth request passes");
-        assert!(!limiter.check("client-0"), "sixth request should be limited");
+        assert!(!limiter.check("client-0"), "fifth request should be limited");
     }
 
     #[test]

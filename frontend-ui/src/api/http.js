@@ -18,6 +18,47 @@ const http = axios.create({
 // ========== 工具函数 ==========
 
 /**
+ * 错误消息归一化（约定）：
+ * - 优先取响应体中的 error / message / detail / title（后端信封字段）
+ * - 响应体无可用信息时，按 HTTP 状态码兜底为统一中文提示，
+ *   避免把 axios 原始英文（"Request failed with status code 500"）直接透出给用户。
+ */
+const STATUS_HINTS = {
+  400: '请求参数有误（400）',
+  401: '鉴权失败：请检查 API 令牌（OUS_API_TOKEN）是否已配置',
+  403: '没有访问权限（403）',
+  404: '接口不存在或未实现（404）',
+  405: '请求方法不允许（405）',
+  409: '资源冲突或状态不一致（409）',
+  422: '参数校验失败（422）',
+  429: '请求过于频繁，请稍后重试（429）',
+  500: '服务端内部错误，请稍后重试（500）',
+  502: '网关错误：后端服务不可达（502）',
+  503: '服务暂不可用：后端未启动或正在重启（503）',
+  504: '网关超时：后端处理超时，请稍后重试（504）',
+}
+
+/**
+ * 从错误中提取归一化后的中文消息
+ * @param {Error} err axios 错误对象
+ * @returns {string}
+ */
+function normalizeErrorMessage(err) {
+  const status = err.response && err.response.status
+  const data = err.response && err.response.data
+  const extractMsg = (d) => {
+    if (!d) return ''
+    if (typeof d === 'string') return d
+    return d.error || d.message || d.detail || d.title || (typeof d.data === 'string' ? d.data : '')
+  }
+  const bodyMsg = extractMsg(data)
+  if (bodyMsg) return bodyMsg
+  if (err.code === 'ECONNABORTED') return '请求超时：后端处理较慢，请稍后重试'
+  if (status && STATUS_HINTS[status]) return STATUS_HINTS[status]
+  return err.message || '网络请求失败'
+}
+
+/**
  * 判断错误是否可重试
  * @param {Error} err axios 错误对象
  * @returns {boolean}
@@ -46,8 +87,7 @@ function exponentialBackoff(attempt, baseDelay = DEFAULT_RETRY_DELAY) {
 // ========== 响应拦截器 ==========
 
 // 统一响应处理：剥离 axios 包裹，自动解包 {success, data} 格式
-http.interceptors.response.use(
-  (resp) => {
+const responseOkInterceptor = (resp) => {
     const body = resp.data
     if (body && typeof body === 'object' && 'success' in body) {
       // {success:false}: 失败路径统一带 code 前缀，便于诊断
@@ -61,8 +101,10 @@ http.interceptors.response.use(
       return body
     }
     return body
-  },
-  async (err) => {
+  }
+
+// 错误处理拦截器工厂：闭包捕获实例，供自动重试时重新发起请求
+const makeResponseErrorInterceptor = (instance) => async (err) => {
     const config = err.config || {}
 
     // ===== 自动重试机制 =====
@@ -81,28 +123,29 @@ http.interceptors.response.use(
         await exponentialBackoff(currentAttempt)
         // 清除可能存在的取消令牌，重新创建
         delete config.cancelToken
-        return http.request(config)
+        return instance.request(config)
       }
     }
 
-    // ===== 错误消息处理 =====
+    // ===== 错误消息处理（归一化）=====
     const status = err.response && err.response.status
     const data = err.response && err.response.data
-    const extractMsg = (d) => {
-      if (!d) return ''
-      if (typeof d === 'string') return d
-      return d.error || d.message || d.detail || d.title || (typeof d.data === 'string' ? d.data : '')
-    }
-    let msg = extractMsg(data) || err.message || '网络请求失败'
+
+    // 归一化：优先响应体字段（error/message/detail/title），缺失时按状态码兜底为统一中文提示，
+    // 不再把 axios 原始英文（"Request failed with status code 500"）透出给用户
+    let msg = normalizeErrorMessage(err)
     const codePrefix =
       data && typeof data === 'object' && data.code ? `[${data.code}] ` : ''
     if (codePrefix && msg.indexOf(codePrefix) !== 0) msg = codePrefix + msg
 
+    // 401 鉴权失败：始终提示并广播全局登出事件（不因 silent 而静默）
     if (status === 401) {
       msg = '鉴权失败：请检查 API 令牌（OUS_API_TOKEN）是否已配置'
       ElMessage.error(msg)
-      // 触发全局登出事件，由应用层处理
       window.dispatchEvent(new CustomEvent('mox:auth-failed', { detail: { reason: '401' } }))
+    } else if (config.silent) {
+      // 可选/降级请求（如聚合图谱的辅助接口、权限兜底）：调用方已用 allSettled / catch 自行处理，
+      // 此处不弹全局提示，仅保留归一化后的错误对象供调用方使用
     } else if (status === 503) {
       msg = '服务暂不可用：后端未启动或正在重启，请稍后重试'
       ElMessage.error(msg)
@@ -124,8 +167,10 @@ http.interceptors.response.use(
     error.code = data?.code
     error.original = err
     return Promise.reject(error)
-  }
-)
+}
+
+// 挂载共享响应拦截器到主实例（baseURL=/api）
+http.interceptors.response.use(responseOkInterceptor, makeResponseErrorInterceptor(http))
 
 // ========== 全局项目注入 ==========
 // 璇玑：所有请求自动带上当前 project_id，后端忽略未知参数即安全
@@ -167,7 +212,7 @@ function injectProjectToConfig(config) {
 // 安全策略：生产环境禁用默认令牌，仅开发环境允许配置回退
 const isProd = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.PROD
 
-http.interceptors.request.use((config) => {
+const requestInterceptor = (config) => {
   // 优先从安全存储读取（自动兼容旧版 localStorage key）
   const token =
     getToken() ||
@@ -192,7 +237,9 @@ http.interceptors.request.use((config) => {
   injectProjectToConfig(config)
 
   return config
-})
+}
+
+http.interceptors.request.use(requestInterceptor)
 
 // ========== 便捷方法扩展 ==========
 
@@ -238,3 +285,20 @@ export async function batchRequest(tasks, concurrency = 3) {
 }
 
 export default http
+
+// ========== 多实例工厂（企业级模块化）==========
+// 不同服务域使用独立 axios 实例，共享同一套拦截器（鉴权注入 / 重试 / 信封解包 / 错误归一化）。
+// 管理面（Actuator）与业务面（/api）分离，互不影响各自的 baseURL 与超时。
+export function createHttpInstance(baseURL) {
+  const inst = axios.create({
+    baseURL,
+    timeout: 30000,
+    headers: { 'Content-Type': 'application/json' }
+  })
+  inst.interceptors.response.use(responseOkInterceptor, makeResponseErrorInterceptor(inst))
+  inst.interceptors.request.use(requestInterceptor)
+  return inst
+}
+
+// 网关管理面实例：Spring Boot Actuator 风格端点（/actuator/*）
+export const actuatorHttp = createHttpInstance('/actuator')

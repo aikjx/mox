@@ -856,23 +856,29 @@ async fn is05_02_get_lifecycle_configuration() {
 /// 测试：生命周期 - 冷热迁移
 #[tokio::test]
 async fn is05_03_lifecycle_tier_transition() {
-    use mox_cloud_s3_svc::{HotWarmColdLifecycle, LifecycleObjectMeta, StorageClass, TransitionPlan};
+    use mox_cloud_s3_svc::{HotWarmColdLifecycle, LifecycleObjectMeta, StorageClass, TransitionAction};
 
     let lifecycle = HotWarmColdLifecycle::default();
+    let t0 = 1_700_000_000_000u64;
 
     let meta = LifecycleObjectMeta {
         key: "data/report.pdf".to_string(),
+        bucket: "test-bucket".to_string(),
         size_bytes: 1024 * 1024,
-        last_modified_ms: 1_700_000_000_000,
-        current_class: StorageClass::Standard,
-        access_count_30d: 2,
+        class: StorageClass::Hot,
+        created_at_ms: t0,
+        last_accessed_at_ms: t0,
+        last_transition_ms: t0,
     };
 
-    // 计算过渡计划
-    let plan = lifecycle.evaluate_transition(&meta, 1_700_000_000_000 + 90 * 86400 * 1000);
-    assert!(plan.is_some());
-    let plan = plan.unwrap();
-    assert!(matches!(plan.action, mox_cloud_s3_svc::TransitionAction::TransitionTo(_)));
+    lifecycle.upsert_object(meta);
+
+    // 90 天后扫描：HOT → WARM (30d 阈值)
+    let t90 = t0 + 90 * 86400 * 1000;
+    let plans = lifecycle.transition_scan(t90, true);
+    assert!(!plans.is_empty(), "expect at least 1 transition plan");
+    assert!(matches!(plans[0].action, TransitionAction::HotToWarm));
+    assert_eq!(lifecycle.class_of("test-bucket", "data/report.pdf"), Some(StorageClass::Warm));
 }
 
 /// 测试：生命周期 - 过期删除
@@ -881,18 +887,26 @@ async fn is05_04_lifecycle_expiration() {
     use mox_cloud_s3_svc::{HotWarmColdLifecycle, LifecycleObjectMeta, StorageClass};
 
     let lifecycle = HotWarmColdLifecycle::default();
+    let t0 = 1_700_000_000_000u64;
 
     let meta = LifecycleObjectMeta {
         key: "temp/cache.tmp".to_string(),
+        bucket: "test-bucket".to_string(),
         size_bytes: 4096,
-        last_modified_ms: 1_700_000_000_000,
-        current_class: StorageClass::Standard,
-        access_count_30d: 0,
+        class: StorageClass::Hot,
+        created_at_ms: t0,
+        last_accessed_at_ms: t0,
+        last_transition_ms: t0,
     };
 
-    // 很久以后应该过期
-    let plan = lifecycle.evaluate_transition(&meta, 1_700_000_000_000 + 400 * 86400 * 1000);
-    assert!(plan.is_some() || plan.is_none()); // 取决于默认配置
+    lifecycle.upsert_object(meta);
+
+    // 400 天后扫描：应触发 HOT → WARM 迁移
+    let t400 = t0 + 400 * 86400 * 1000;
+    let plans = lifecycle.transition_scan(t400, true);
+    // 至少应有一条迁移计划（HOT → WARM）
+    assert!(!plans.is_empty());
+    assert_eq!(lifecycle.class_of("test-bucket", "temp/cache.tmp"), Some(StorageClass::Warm));
 }
 
 // =========================================================================
@@ -943,26 +957,34 @@ async fn is06_01_batch_delete_objects() {
 #[test]
 fn is06_02_batch_operation_manager() {
     use mox_cloud_s3_svc::{
-        BatchJob, BatchJobStatus, BatchOperationManager, BatchOperationType,
+        BatchCopyRequest, BatchJobStatus, BatchOperationManager, BatchOperationType, StorageClass,
     };
 
     let manager = BatchOperationManager::new();
 
-    // 创建批量删除任务
-    let job = BatchJob {
-        job_id: "batch-001".to_string(),
-        operation: BatchOperationType::Delete,
-        status: BatchJobStatus::Pending,
-        total_objects: 100,
-        succeeded: 0,
-        failed: 0,
-        created_at_ms: 1000,
-        completed_at_ms: None,
-        error: None,
+    // 创建批量复制任务（使用实际 API：create_copy_job）
+    let copy_fn = |_sb: &str, _sk: &str, _db: &str, _dk: &str, _c: StorageClass| -> mox_cloud_s3_svc::S3Result<()> {
+        Ok(())
     };
 
-    manager.submit_job(job);
-    assert!(manager.get_job("batch-001").is_some());
+    let request = BatchCopyRequest {
+        source_bucket: "src-bucket".to_string(),
+        destination_bucket: "dst-bucket".to_string(),
+        source_keys: vec!["a.txt".to_string(), "b.txt".to_string()],
+        destination_prefix: None,
+        source_prefix: None,
+        storage_class: StorageClass::Hot,
+    };
+
+    let job_id = manager.create_copy_job(request, None, copy_fn).unwrap();
+    assert!(!job_id.is_empty());
+
+    // 查询任务状态
+    let job = manager.get_job(&job_id).unwrap();
+    assert_eq!(job.operation, BatchOperationType::Copy);
+    assert_eq!(job.status, BatchJobStatus::Completed);
+    assert_eq!(job.report.total_objects, 2);
+    assert_eq!(job.report.succeeded_count, 2);
 }
 
 /// 测试：批量解冻
@@ -982,19 +1004,22 @@ fn is06_03_batch_restore() {
 /// 测试：批量复制
 #[test]
 fn is06_04_batch_copy() {
-    use mox_cloud_s3_svc::{BatchCopyRequest, BatchOperationManager, BatchOperationType};
+    use mox_cloud_s3_svc::{BatchCopyRequest, BatchOperationManager, StorageClass};
 
     let manager = BatchOperationManager::new();
 
     let req = BatchCopyRequest {
         source_bucket: "src-bucket".to_string(),
-        dest_bucket: "dst-bucket".to_string(),
-        keys: vec!["a.txt".to_string(), "b.txt".to_string()],
+        destination_bucket: "dst-bucket".to_string(),
+        source_keys: vec!["a.txt".to_string(), "b.txt".to_string()],
+        destination_prefix: None,
+        source_prefix: None,
+        storage_class: StorageClass::Hot,
     };
 
     assert_eq!(req.source_bucket, "src-bucket");
-    assert_eq!(req.dest_bucket, "dst-bucket");
-    assert_eq!(req.keys.len(), 2);
+    assert_eq!(req.destination_bucket, "dst-bucket");
+    assert_eq!(req.source_keys.len(), 2);
 
     let _ = manager;
 }
@@ -1007,36 +1032,45 @@ fn is06_04_batch_copy() {
 #[test]
 fn is07_01_replication_configuration() {
     use mox_cloud_s3_svc::{
-        ReplicationConfiguration, ReplicationDestination, ReplicationRule, ReplicationStatus,
+        ReplicationConfiguration, ReplicationDestination, ReplicationFilter, ReplicationRule,
         ReplicationType,
     };
 
     let config = ReplicationConfiguration {
-        role: "arn:aws:iam::123456789012:role/replication-role".to_string(),
+        role: Some("arn:aws:iam::123456789012:role/replication-role".to_string()),
         rules: vec![ReplicationRule {
             id: "rule-1".to_string(),
-            status: ReplicationStatus::Enabled,
             priority: 1,
-            filter_prefix: "data/".to_string(),
-            destination: ReplicationDestination {
-                bucket: "arn:aws:s3:::dest-bucket".to_string(),
-                storage_class: None,
+            enabled: true,
+            filter: ReplicationFilter {
+                prefix: Some("data/".to_string()),
+                tags: Default::default(),
             },
-            replication_type: ReplicationType::CrossRegion,
+            destination: ReplicationDestination {
+                bucket: "dest-bucket".to_string(),
+                storage_class: None,
+                region: Some("us-west-2".to_string()),
+                account_id: None,
+            },
+            delete_marker_replication: false,
+            replication_type: ReplicationType::CRR,
         }],
     };
 
     assert_eq!(config.rules.len(), 1);
-    assert_eq!(config.rules[0].status, ReplicationStatus::Enabled);
+    assert!(config.rules[0].enabled);
+    assert_eq!(config.rules[0].replication_type, ReplicationType::CRR);
 }
 
 /// 测试：复制管理器
 #[test]
 fn is07_02_replication_manager() {
     use mox_cloud_s3_svc::{ReplicationManager, SharedReplication};
+    use std::sync::Arc;
 
-    let manager: SharedReplication = ReplicationManager::new_shared();
-    assert!(manager.is_ok());
+    let manager: SharedReplication = Arc::new(ReplicationManager::new());
+    // 验证管理器可正常创建和使用
+    assert!(manager.get_configuration("nonexistent-bucket").is_none());
 }
 
 /// 测试：复制指标
@@ -1045,14 +1079,20 @@ fn is07_03_replication_metrics() {
     use mox_cloud_s3_svc::ReplicationMetrics;
 
     let metrics = ReplicationMetrics {
-        objects_replicated: 1000,
-        bytes_replicated: 1024 * 1024 * 1024,
-        failed_replications: 5,
-        pending_replications: 50,
+        total_tasks: 1055,
+        succeeded: 1000,
+        failed: 5,
+        pending: 50,
+        dlq_size: 0,
+        avg_latency_ms: 12.5,
+        last_success_ms: 1_700_000_000_000,
+        last_failure_ms: 0,
     };
 
-    assert_eq!(metrics.objects_replicated, 1000);
-    assert_eq!(metrics.failed_replications, 5);
+    assert_eq!(metrics.succeeded, 1000);
+    assert_eq!(metrics.failed, 5);
+    assert_eq!(metrics.pending, 50);
+    assert_eq!(metrics.total_tasks, 1055);
 }
 
 // =========================================================================
@@ -1063,35 +1103,41 @@ fn is07_03_replication_metrics() {
 #[test]
 fn is08_01_inventory_configuration() {
     use mox_cloud_s3_svc::{
-        InventoryConfiguration, InventoryDestination, InventoryFormat, InventoryFrequency,
+        InventoryConfiguration, InventoryDestination, InventoryFilter, InventoryFormat,
+        InventoryFrequency,
     };
 
     let config = InventoryConfiguration {
         id: "daily-inventory".to_string(),
-        is_enabled: true,
+        enabled: true,
         destination: InventoryDestination {
-            bucket: "arn:aws:s3:::inventory-bucket".to_string(),
-            format: InventoryFormat::Csv,
+            bucket: "inventory-bucket".to_string(),
             prefix: "inventory/".to_string(),
+            format: InventoryFormat::CSV,
+            encryption: None,
         },
         frequency: InventoryFrequency::Daily,
-        included_object_versions: mox_cloud_s3_svc::InventoryIncludedVersions::Current,
-        optional_fields: vec!["Size".to_string(), "LastModifiedDate".to_string()],
+        filter: InventoryFilter::default(),
+        included_fields: vec!["Size".to_string(), "LastModifiedDate".to_string()],
+        include_all_versions: false,
+        include_object_tags: false,
     };
 
     assert_eq!(config.id, "daily-inventory");
-    assert!(config.is_enabled);
+    assert!(config.enabled);
     assert_eq!(config.frequency, InventoryFrequency::Daily);
-    assert_eq!(config.destination.format, InventoryFormat::Csv);
+    assert_eq!(config.destination.format, InventoryFormat::CSV);
 }
 
 /// 测试：清单管理器
 #[test]
 fn is08_02_inventory_manager() {
     use mox_cloud_s3_svc::{InventoryManager, SharedInventory};
+    use std::sync::Arc;
 
-    let manager: SharedInventory = InventoryManager::new_shared();
-    assert!(manager.is_ok());
+    let manager: SharedInventory = Arc::new(InventoryManager::new());
+    // 验证管理器可正常创建和使用
+    assert!(manager.get_configuration("nonexistent-bucket", "nonexistent-config").is_none());
 }
 
 /// 测试：清单记录
@@ -1102,14 +1148,19 @@ fn is08_03_inventory_record() {
     let record = InventoryRecord {
         bucket: "my-bucket".to_string(),
         key: "data/file.txt".to_string(),
+        version_id: Some("v1".to_string()),
+        is_latest: true,
+        is_delete_marker: false,
         size: 4096,
-        last_modified: "2026-01-01T00:00:00Z".to_string(),
-        storage_class: "STANDARD".to_string(),
+        last_modified_date: "2026-01-01T00:00:00Z".to_string(),
         etag: "abc123".to_string(),
+        storage_class: "HOT".to_string(),
+        tags: None,
     };
 
     assert_eq!(record.bucket, "my-bucket");
     assert_eq!(record.size, 4096);
+    assert_eq!(record.last_modified_date, "2026-01-01T00:00:00Z");
 }
 
 /// 测试：清单任务状态
@@ -1119,7 +1170,7 @@ fn is08_04_inventory_job_status() {
 
     let statuses = [
         InventoryJobStatus::Pending,
-        InventoryJobStatus::Running,
+        InventoryJobStatus::InProgress,
         InventoryJobStatus::Completed,
         InventoryJobStatus::Failed,
     ];
@@ -1203,7 +1254,7 @@ async fn is09_03_overwrite_object() {
 
     http(&a, "PUT", "/overwrite-bucket/file.txt", SKIP, b"version-2-longer").await;
     let (_, _, body2) = http(&a, "GET", "/overwrite-bucket/file.txt", SKIP, &[]).await;
-    assert_eq!(&body2[..15], b"version-2-longer");
+    assert_eq!(&body2[..16], b"version-2-longer");
 }
 
 /// 测试：CORS 配置

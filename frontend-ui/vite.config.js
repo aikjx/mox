@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from 'vite'
+﻿import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
 
@@ -108,6 +108,31 @@ export default defineConfig(({ mode }) => {
           '/api': {
             target: 'http://localhost:8080',
             changeOrigin: true,
+          },
+          // ========== Rust 网关管理面（/actuator/*，Spring Boot 风格）==========
+          // 独立代理：管理面挂在网关根路径，不走 /api 业务前缀；
+          // SSE 实时日志流由 mkConfigure 透传（Accept-Encoding: identity + keep-alive）
+          '/actuator': {
+            target: GW,
+            changeOrigin: true,
+            configure: mkConfigure('actuator'),
+          },
+          // ========== 知识图谱 KG 域（/kg/v1/*，网关 :8080）==========
+          // Rust 网关 routes.rs 注册 /kg/v1/stats · /kg/v1/neighborhood · /kg/v1/path 等 6 接口；
+          // dev 下若缺此代理，浏览器请求 /kg/v1/stats 会命中 Vite SPA 回退返回 index.html，图谱视图拿不到真实数据。
+          '/kg': {
+            target: GW,
+            changeOrigin: true,
+            configure: mkConfigure('kg'),
+          },
+          // ========== 专家联盟 Alliance 域（/alliance/*，网关 :8080）==========
+          // 网关 routing.rs 注册 /alliance/v1 前缀；前端 api/alliance.js 调用 /alliance/tasks · /alliance/stats ·
+          // /alliance/tasks/{id}/logs/stream（SSE）等。统一代理到网关 mox-server（:8080），
+          // 由 mkConfigure 透传 SSE（Accept-Encoding: identity + keep-alive）与 Bearer 注入。
+          '/alliance': {
+            target: GW,
+            changeOrigin: true,
+            configure: mkConfigure('alliance'),
           },
         }
       })()

@@ -27,6 +27,7 @@ pub mod routes;
 pub mod alliance;
 pub mod system;
 pub mod proxy;
+pub mod actuator;
 
 pub use mox_kg_service_svc::http_adapter;
 pub use alliance as alliance_adapter;
@@ -35,7 +36,7 @@ pub use config::GatewayConfig;
 use axum::{
     Json, Router,
     extract::{Request, State},
-    middleware::{Next, from_fn},
+    middleware::{Next, from_fn, from_fn_with_state},
     routing::get,
 };
 use mox_platform_iam_core::IamRepository;
@@ -46,6 +47,7 @@ use tower_http::cors::{Any, CorsLayer};
 use auth::{AuthMiddleware, auth_middleware};
 use rate_limit::{RateLimiter, rate_limit_middleware};
 use o11y::MetricsCollector;
+use actuator::{LogStore, RuntimeMetrics};
 
 /// 网关共享状态
 #[derive(Clone)]
@@ -56,6 +58,10 @@ pub struct GatewayState {
     pub metrics: Arc<MetricsCollector>,
     /// 平台 IAM 仓储（/system/* · /security/* 真实数据链路）
     pub iam: Arc<IamRepository>,
+    /// 在线日志缓冲（Actuator /actuator/logs*）
+    pub logs: Arc<LogStore>,
+    /// 运行时指标（Actuator /actuator/metrics）
+    pub runtime: Arc<RuntimeMetrics>,
 }
 
 impl GatewayState {
@@ -68,6 +74,9 @@ impl GatewayState {
             tracing_enabled: false,
             logging_enabled: true,
         }));
+        // 在线日志环形缓冲（默认 4096 条）+ 运行时指标
+        let logs = LogStore::new(4096);
+        let runtime = Arc::new(RuntimeMetrics::new());
 
         // IAM：文件 SQLite 持久化（启动期同步初始化，失败即快速失败）。
         // 数据库路径：<cwd>/data/mox.db，启动时确保 data 目录存在；
@@ -90,6 +99,8 @@ impl GatewayState {
             rate_limiter,
             metrics,
             iam,
+            logs,
+            runtime,
         }
     }
 }
@@ -102,7 +113,8 @@ impl GatewayState {
 /// 3. 认证（JWT + API Key）
 /// 4. 业务路由
 pub fn build_gateway_router(state: GatewayState) -> Router {
-    // L0 通用端点（无需认证）
+    // L0 通用端点（无需认证）+ Spring Boot 风格 Actuator 管理面（/actuator/*）
+    let actuator = actuator::build_actuator_router();
     let l0 = Router::new()
         .route("/health", get(health_handler))
         .route("/api/v1/status", get(status_handler))
@@ -145,16 +157,23 @@ pub fn build_gateway_router(state: GatewayState) -> Router {
             async move { auth_middleware(auth, request, next).await }
         }));
 
-    // 整体统一为 Router<GatewayState>，最后一次性注入 state
+    // 整体统一为 Router<GatewayState>，最后一次性注入 state。
+    // 中间件分层（由内到外）：CORS → 限流 → 请求可观测（日志+指标+API 启停拦截）。
     let limiter_state = state.rate_limiter.clone();
+    let observability_state = state.clone();
     let app: Router<GatewayState> = Router::<GatewayState>::new()
+        .merge(actuator)
         .merge(l0)
         .merge(protected)
         .layer(from_fn(move |request: Request, next: Next| {
             let limiter = limiter_state.clone();
             async move { rate_limit_middleware(limiter, request, next).await }
         }))
-        .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any));
+        .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any))
+        .layer(from_fn_with_state(
+            observability_state,
+            actuator::observability_middleware,
+        ));
     app.with_state(state)
 }
 
@@ -233,15 +252,36 @@ async fn metrics_handler(State(state): State<GatewayState>) -> String {
 pub async fn serve_forever(bind_addr: &str, port: u16) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let config = GatewayConfig::default();
     let state = GatewayState::from_config(config);
-    let app = build_gateway_router(state);
+
+    // 接入在线日志管线：tracing 事件写入 LogStore（可经 /actuator/logs* 在线查看）
+    actuator::init_logging(&state.logs);
+    state.logs.push(
+        "INFO",
+        "gateway",
+        format!("gateway starting: {}:{port} (actuator management enabled)", bind_addr),
+    );
+
+    let app = build_gateway_router(state.clone());
     let addr: SocketAddr = format!("{bind_addr}:{port}").parse()?;
 
     eprintln!("====================================================================");
     eprintln!("  🚀 MOX Rust Gateway 企业版 @ http://{addr}");
     eprintln!("====================================================================");
     eprintln!("  替换端口：3000 (Node 静态+代理) / 3001 / 3002");
-    eprintln!("  中间件分层：CORS → 限流 → 认证 → 业务路由");
+    eprintln!("  中间件分层：CORS → 限流 → 请求可观测(日志+指标+API启停拦截)");
     eprintln!("  L0 通用：   /health · /api/v1/status · /api/v1/domains · /metrics");
+    eprintln!("  ⚙️  Actuator 管理面（Spring Boot 风格）:");
+    eprintln!("    GET  /actuator              管理端点索引");
+    eprintln!("    GET  /actuator/health       健康检查");
+    eprintln!("    GET  /actuator/info         构建信息");
+    eprintln!("    GET  /actuator/mappings     全部 API 注册表");
+    eprintln!("    GET  /actuator/metrics      运行时指标");
+    eprintln!("    GET  /actuator/env          网关配置(脱敏)");
+    eprintln!("    GET/POST /actuator/loggers  日志级别查看/调整");
+    eprintln!("    GET  /actuator/logs         在线查询日志 (?level=&search=&limit=&offset=)");
+    eprintln!("    GET  /actuator/logs/tail    SSE 实时日志流 (curl -N)");
+    eprintln!("    DELETE /actuator/logs       清空日志缓冲");
+    eprintln!("    GET/POST /actuator/api/:id[/enable|/disable]  按 API 启停管理");
     eprintln!("  L2 KG：     /kg/v1/neighborhood · /kg/v1/path · /kg/v1/shortest-path");
     eprintln!("             /kg/v1/centrality · /kg/v1/communities · /kg/v1/stats");
     eprintln!("  L3 AI：     /ai/engine/process · /ai/engine/analyze");
@@ -255,6 +295,8 @@ pub async fn serve_forever(bind_addr: &str, port: u16) -> Result<(), Box<dyn std
     eprintln!("  限流：      令牌桶 100 req/min + 20 burst（可配置）");
     eprintln!("  停止：      Ctrl-C");
     eprintln!("====================================================================");
+
+    state.logs.push("INFO", "gateway", format!("gateway listening on {addr}"));
 
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     axum::serve(listener, app)

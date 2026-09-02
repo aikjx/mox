@@ -921,12 +921,14 @@ impl IndexManager {
             }
         }
 
-        // 添加到重建队列
+        // 添加到重建队列（若已有待处理的重建任务则幂等，避免与 create_index 重复入队）
         {
             let mut queue = self.rebuild_queue.lock().map_err(|_| {
                 GraphError::Internal("rebuild_queue lock poisoned".into())
             })?;
-            queue.push_back(name.to_string());
+            if !queue.iter().any(|n| n == name) {
+                queue.push_back(name.to_string());
+            }
         }
 
         Ok(())

@@ -350,7 +350,9 @@ export const usePermissionStore = defineStore('permission', () => {
     try {
       let data
       try {
-        data = await http.get('/system/permissions')
+        // silent：该接口为可选权限契约（当前网关可能未实现），失败时按设计走 mock 兜底，
+        // 不触发全局 [not_found] / 服务端异常 toast
+        data = await http.get('/system/permissions', { silent: true })
       } catch (e) {
         // API 调用失败，使用 mock 数据兜底
         console.warn('[permissionStore] 加载权限失败，使用 mock 数据:', e?.message)

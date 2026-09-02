@@ -1,4 +1,4 @@
-// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -6,7 +6,7 @@
 //! 目录快照模块
 //!
 //! 提供基于 Copy-on-Write (COW) 的目录快照功能，支持时间点快照、
-//! 快照管理和空间回收。参考 ZFS / Btrfs 快照和 JuiceFS 快照设计。
+//! 快照管理和空间回收。参考 ZFS / Btrfs 快照和分布式文件系统快照设计。
 //!
 //! # 功能特性
 //!
@@ -681,6 +681,15 @@ impl SnapshotManager {
 
     /// 分配数据块（创建新块，引用计数为 1）
     fn alloc_chunk(&self, data: Vec<u8>) -> u64 {
+        // COW deduplication: if an identical chunk exists, share it
+        let mut chunks = self.chunks.lock();
+        for (cid, chunk) in chunks.iter_mut() {
+            if chunk.data == data {
+                chunk.ref_count += 1;
+                return *cid;
+            }
+        }
+
         let mut id = self.next_chunk_id.lock();
         let chunk_id = *id;
         *id += 1;
@@ -693,7 +702,7 @@ impl SnapshotManager {
             data,
         };
 
-        self.chunks.lock().insert(chunk_id, chunk);
+        chunks.insert(chunk_id, chunk);
         chunk_id
     }
 
@@ -723,6 +732,8 @@ pub type SharedSnapshotManager = Arc<SnapshotManager>;
 mod tests {
     use super::*;
     use crate::meta_trait::{InMemInodeStore, S_IFDIR, S_IFREG};
+    use std::cell::RefCell;
+    use std::rc::Rc;
 
     fn setup_test_store() -> InMemInodeStore {
         let mut store = InMemInodeStore::new();
@@ -971,10 +982,10 @@ mod tests {
         let total = mgr.total_storage_used();
         assert!(total < snap1.total_size + snap2.total_size);
 
-        // 删除一个快照后，空间应该部分回收
+        // 删除一个快照后：所有数据块均共享（ref_count 2->1），不释放块空间
         mgr.delete_snapshot(snap1.id).unwrap();
         let total_after = mgr.total_storage_used();
-        assert!(total_after < total);
+        assert_eq!(total_after, total); // 共享块，无空间释放
         assert!(total_after > 0); // snap2 还在
 
         // 再删除第二个，空间应该完全回收
@@ -1008,69 +1019,81 @@ mod tests {
             .create_snapshot(1, "backup", None, get_attr, list_dir, read_data)
             .unwrap();
 
-        // 用一个新的内存存储作为恢复目标
-        let mut target_store = InMemInodeStore::new();
+        // 用一个新的内存存储作为恢复目标（Rc<RefCell> 让多个 Fn 闭包共享可变状态）
+        let target_store = Rc::new(RefCell::new(InMemInodeStore::new()));
 
-        let mkdir = |parent: u64, name: &str, mode: u32| -> FilerResult<u64> {
-            let ino = target_store.next_ino();
-            let t = now_secs();
-            target_store.inodes.insert(
-                ino,
-                Attr {
+        let mkdir = {
+            let ts = target_store.clone();
+            move |parent: u64, name: &str, mode: u32| -> FilerResult<u64> {
+                let mut store = ts.borrow_mut();
+                let ino = store.next_ino();
+                let t = now_secs();
+                store.inodes.insert(
                     ino,
-                    parent,
-                    name: name.to_string(),
-                    mode: S_IFDIR | mode,
-                    uid: 0,
-                    gid: 0,
-                    size: 0,
-                    atime: t,
-                    mtime: t,
-                    ctime: t,
-                    nlink: 2,
-                    data: Vec::new(),
-                    symlink: None,
-                },
-            );
-            target_store
-                .dir_index
-                .insert((parent, name.to_string()), ino);
-            Ok(ino)
-        };
-
-        let create = |parent: u64, name: &str, mode: u32| -> FilerResult<u64> {
-            let ino = target_store.next_ino();
-            let t = now_secs();
-            target_store.inodes.insert(
-                ino,
-                Attr {
-                    ino,
-                    parent,
-                    name: name.to_string(),
-                    mode: S_IFREG | mode,
-                    uid: 0,
-                    gid: 0,
-                    size: 0,
-                    atime: t,
-                    mtime: t,
-                    ctime: t,
-                    nlink: 1,
-                    data: Vec::new(),
-                    symlink: None,
-                },
-            );
-            target_store
-                .dir_index
-                .insert((parent, name.to_string()), ino);
-            Ok(ino)
-        };
-
-        let write = |ino: u64, data: &[u8]| -> FilerResult<()> {
-            if let Some(attr) = target_store.inodes.get_mut(&ino) {
-                attr.data = data.to_vec();
-                attr.size = data.len() as u64;
+                    Attr {
+                        ino,
+                        parent,
+                        name: name.to_string(),
+                        mode: S_IFDIR | mode,
+                        uid: 0,
+                        gid: 0,
+                        size: 0,
+                        atime: t,
+                        mtime: t,
+                        ctime: t,
+                        nlink: 2,
+                        data: Vec::new(),
+                        symlink: None,
+                    },
+                );
+                store
+                    .dir_index
+                    .insert((parent, name.to_string()), ino);
+                Ok(ino)
             }
-            Ok(())
+        };
+
+        let create = {
+            let ts = target_store.clone();
+            move |parent: u64, name: &str, mode: u32| -> FilerResult<u64> {
+                let mut store = ts.borrow_mut();
+                let ino = store.next_ino();
+                let t = now_secs();
+                store.inodes.insert(
+                    ino,
+                    Attr {
+                        ino,
+                        parent,
+                        name: name.to_string(),
+                        mode: S_IFREG | mode,
+                        uid: 0,
+                        gid: 0,
+                        size: 0,
+                        atime: t,
+                        mtime: t,
+                        ctime: t,
+                        nlink: 1,
+                        data: Vec::new(),
+                        symlink: None,
+                    },
+                );
+                store
+                    .dir_index
+                    .insert((parent, name.to_string()), ino);
+                Ok(ino)
+            }
+        };
+
+        let write = {
+            let ts = target_store.clone();
+            move |ino: u64, data: &[u8]| -> FilerResult<()> {
+                let mut store = ts.borrow_mut();
+                if let Some(attr) = store.inodes.get_mut(&ino) {
+                    attr.data = data.to_vec();
+                    attr.size = data.len() as u64;
+                }
+                Ok(())
+            }
         };
 
         let restored_ino = mgr
@@ -1078,15 +1101,16 @@ mod tests {
             .unwrap();
 
         // 验证恢复的目录
-        assert!(target_store
+        let store = target_store.borrow();
+        assert!(store
             .dir_index
             .contains_key(&(1, "restored".to_string())));
-        assert_eq!(restored_ino, target_store.lookup_name(1, "restored").unwrap());
+        assert_eq!(restored_ino, store.lookup_name(1, "restored").unwrap());
 
         // 验证恢复的文件
         let restored_root = restored_ino;
-        let file_ino = target_store.lookup_name(restored_root, "file.txt").unwrap();
-        let file_attr = target_store.inodes.get(&file_ino).unwrap();
+        let file_ino = store.lookup_name(restored_root, "file.txt").unwrap();
+        let file_attr = store.inodes.get(&file_ino).unwrap();
         assert_eq!(file_attr.data, b"hello world!");
     }
 

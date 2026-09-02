@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
 import { useTheme } from './useTheme'
 
 // 清理 localStorage 和 DOM 状态
@@ -20,8 +21,9 @@ function resetThemeState() {
 describe('useTheme 主题管理', () => {
   beforeEach(() => {
     resetThemeState()
-    // 清除模块缓存以便每次测试获得干净状态
-    vi.resetModules()
+    // useTheme 是 app.store 的兼容层；每个测试使用独立 Pinia，避免
+    // 在无 Vue app 挂载的单元测试中触发 getActivePinia() 错误。
+    setActivePinia(createPinia())
   })
 
   afterEach(() => {

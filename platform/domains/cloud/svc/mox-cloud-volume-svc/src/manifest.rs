@@ -17,6 +17,10 @@ use serde::{Deserialize, Serialize};
 pub enum StorageTier {
     /// Hot – low-latency path (default).
     Hot,
+    /// Warm – medium-latency, high-capacity tier.
+    Warm,
+    /// Cold – high-latency, low-cost tier.
+    Cold,
     /// Cold / archival – moved after `lifecycle_cold()`.
     Archive,
 }
@@ -31,6 +35,8 @@ impl std::fmt::Display for StorageTier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             StorageTier::Hot => f.write_str("hot"),
+            StorageTier::Warm => f.write_str("warm"),
+            StorageTier::Cold => f.write_str("cold"),
             StorageTier::Archive => f.write_str("archive"),
         }
     }

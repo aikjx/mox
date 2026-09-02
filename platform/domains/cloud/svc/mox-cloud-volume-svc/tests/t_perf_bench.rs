@@ -875,7 +875,7 @@ fn perf06_01_concurrent_write_4_threads() {
         handles.push(std::thread::spawn(move || {
             for i in 0..per_thread {
                 let cid = format!("conc-w4-t{}-{}", t, i);
-                vs.write_chunk(&cid, data.clone()).unwrap();
+                vs.write_chunk(&cid, (*data).clone()).unwrap();
             }
             per_thread
         }));
@@ -913,7 +913,7 @@ fn perf06_02_concurrent_write_8_threads() {
         handles.push(std::thread::spawn(move || {
             for i in 0..per_thread {
                 let cid = format!("conc-w8-t{}-{}", t, i);
-                vs.write_chunk(&cid, data.clone()).unwrap();
+                vs.write_chunk(&cid, (*data).clone()).unwrap();
             }
             per_thread
         }));

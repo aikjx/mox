@@ -629,7 +629,7 @@ fn im04_04_rack_aware_placement() {
         .iter()
         .map(|n| {
             scheduler
-                .topology
+                .topology()
                 .read()
                 .get(&n.id)
                 .map(|t| t.rack.clone())
@@ -740,7 +740,7 @@ fn im04_09_topology_registration() {
         network_latency_level: 3,
     });
 
-    let topo = scheduler.topology.read();
+    let topo = scheduler.topology().read();
     let t = topo.get("topo-1").unwrap();
     assert_eq!(t.data_center, "dc-east");
     assert_eq!(t.zone, "east-1");
@@ -1010,7 +1010,7 @@ fn im06_05_list_snapshots() {
         sm.take_snapshot("vol-1", manifest).unwrap();
     }
 
-    let list = sm.list_snapshots("vol-1").unwrap();
+    let list = sm.list_snapshots("vol-1");
     assert_eq!(list.len(), 5);
 }
 
@@ -1062,13 +1062,13 @@ fn im07_01_generate_rebalance_plan() {
         .map(|i| VolumeInfo {
             id: format!("rb-{}", i),
             addr: format!("127.0.0.1:{}", 6000 + i),
-            capacity: 10_000,
-            used: if i < 3 { 9000 } else { 1000 }, // 前 3 个满载，后 3 个空闲
+            capacity: 100 * 1024 * 1024,
+            used: if i < 3 { 90 * 1024 * 1024 } else { 10 * 1024 * 1024 }, // 前 3 个满载，后 3 个空闲
             is_alive: true,
         })
         .collect();
 
-    let plan = scheduler.generate_rebalance_plan(&volumes);
+    let plan = scheduler.generate_rebalance_plan(&volumes, 10);
     assert!(plan.migrations.len() > 0, "should generate some migrations");
     assert!(plan.total_bytes > 0);
     assert!(plan.estimated_improvement > 0);
@@ -1090,7 +1090,7 @@ fn im07_02_balanced_cluster_no_migration() {
         })
         .collect();
 
-    let plan = scheduler.generate_rebalance_plan(&volumes);
+    let plan = scheduler.generate_rebalance_plan(&volumes, 10);
     // 已均衡的集群应该没有迁移或迁移量很小
     assert!(plan.estimated_improvement < 50, "balanced cluster should have low improvement");
 }
@@ -1184,7 +1184,7 @@ fn im07_06_rebalance_plan_counter() {
 
     let before = scheduler.stats().snapshot();
     for _ in 0..3 {
-        let _ = scheduler.generate_rebalance_plan(&volumes);
+        let _ = scheduler.generate_rebalance_plan(&volumes, 10);
     }
     let after = scheduler.stats().snapshot();
 

@@ -45,6 +45,8 @@ const TABS = [
   { key: 'storage', label: '存储与模块', icon: 'Coin' },
   { key: 'hitl', label: 'HITL 审批', icon: 'Clock' },
   { key: 'monitor', label: '系统监控', icon: 'DataAnalysis' },
+  { key: 'api', label: '接口管理', icon: 'Connection' },
+  { key: 'logs', label: '在线日志', icon: 'Tickets' },
   { key: 'llm', label: '大模型配置', icon: 'Cpu' },
   { key: 'docs', label: 'API 文档', icon: 'Document' }
 ]

@@ -46,5 +46,6 @@ export const NODE_TYPE_COLORS = {
   workflow: '#8b5cf6',     // 工作流 - 紫
   task: '#06b6d4',         // 任务 - 青
   doc: '#84cc16',          // 文档 - 黄绿
-  data: '#a855f7'          // 数据 - 浅紫
+  data: '#a855f7',         // 数据 - 浅紫
+  requirement: '#16a34a'   // 需求 - 深绿（源于云盘知识库）
 }

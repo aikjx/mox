@@ -1,4 +1,4 @@
-// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -28,6 +28,44 @@ use std::time::Instant;
 
 fn sqlite_filer() -> Filer {
     Filer::new(Arc::new(SqliteMeta::new()))
+}
+
+
+fn mock_snapshot_callbacks() -> (
+    impl Fn(u64) -> mox_cloud_filer_svc::FilerResult<mox_cloud_filer_svc::Attr>,
+    impl Fn(u64) -> mox_cloud_filer_svc::FilerResult<Vec<mox_cloud_filer_svc::DirEntry>>,
+    impl Fn(u64) -> mox_cloud_filer_svc::FilerResult<Vec<u8>>,
+) {
+    use mox_cloud_filer_svc::{Attr, DirEntry, FilerError, FilerResult, S_IFDIR};
+    let get_attr = move |ino: u64| -> FilerResult<Attr> {
+        if ino == 1 {
+            Ok(Attr {
+                ino: 1,
+                parent: 1,
+                name: "/".to_string(),
+                mode: S_IFDIR | 0o755,
+                uid: 0,
+                gid: 0,
+                size: 0,
+                atime: 0,
+                mtime: 0,
+                ctime: 0,
+                nlink: 2,
+                data: Vec::new(),
+                symlink: None,
+            })
+        } else {
+            Err(FilerError::NotFound)
+        }
+    };
+    let list_dir = move |_ino: u64| -> FilerResult<Vec<DirEntry>> { Ok(Vec::new()) };
+    let read_data = move |_ino: u64| -> FilerResult<Vec<u8>> { Ok(Vec::new()) };
+    (get_attr, list_dir, read_data)
+}
+
+fn create_snapshot_simple(mgr: &SnapshotManager, source_ino: u64, name: &str, desc: Option<String>) -> SnapshotInfo {
+    let (get_attr, list_dir, read_data) = mock_snapshot_callbacks();
+    mgr.create_snapshot(source_ino, name, desc, get_attr, list_dir, read_data).unwrap()
 }
 
 // =========================================================================
@@ -280,7 +318,7 @@ async fn if02_10_open_close() {
     f.write("/oc.txt", 0, b"open close test").await.unwrap();
 
     let attr = f.open_close("/oc.txt").await.unwrap();
-    assert_eq!(attr.size, 14);
+    assert_eq!(attr.size, 15);
 }
 
 // =========================================================================
@@ -650,7 +688,7 @@ fn if05_06_directory_quota() {
     // 获取配额
     let limit = mgr.get_quota("dir-100", QuotaType::Directory);
     assert!(limit.is_some());
-    assert_eq!(limit.unwrap().hard_bytes, 1024 * 1024);
+    assert_eq!(limit.unwrap().0.hard_bytes, 1024 * 1024);
 }
 
 /// 测试：文件数配额
@@ -714,9 +752,8 @@ fn if05_09_shared_quota_manager() {
 #[test]
 fn if06_01_create_snapshot() {
     let mgr = SnapshotManager::new();
-    let sid = mgr
-        .create_snapshot(1, "snap-1", Some("first snapshot".to_string()))
-        .unwrap();
+    let info = create_snapshot_simple(&mgr, 1, "snap-1", Some("first snapshot".to_string()));
+    let sid = info.id;
 
     assert!(sid > 0);
 
@@ -732,10 +769,10 @@ fn if06_02_list_snapshots() {
     let mgr = SnapshotManager::new();
 
     for i in 0..5 {
-        mgr.create_snapshot(1, &format!("snap-{}", i), None).unwrap();
+        create_snapshot_simple(&mgr, 1, &format!("snap-{}", i), None);
     }
 
-    let list = mgr.list_snapshots(1).unwrap();
+    let list = mgr.list_snapshots(1);
     assert_eq!(list.len(), 5);
 }
 
@@ -743,21 +780,23 @@ fn if06_02_list_snapshots() {
 #[test]
 fn if06_03_delete_snapshot() {
     let mgr = SnapshotManager::new();
-    let sid = mgr.create_snapshot(1, "to-delete", None).unwrap();
+    let info = create_snapshot_simple(&mgr, 1, "to-delete", None);
+    let sid = info.id;
 
     assert!(mgr.get_snapshot(sid).is_some());
 
     mgr.delete_snapshot(sid).unwrap();
 
-    let info = mgr.get_snapshot(sid).unwrap();
-    assert_eq!(info.status, SnapshotStatus::Deleting);
+    // 删除后快照已从表中移除
+    assert!(mgr.get_snapshot(sid).is_none());
 }
 
 /// 测试：快照状态
 #[test]
 fn if06_04_snapshot_status() {
     let mgr = SnapshotManager::new();
-    let sid = mgr.create_snapshot(1, "status-test", None).unwrap();
+    let info = create_snapshot_simple(&mgr, 1, "status-test", None);
+    let sid = info.id;
 
     let info = mgr.get_snapshot(sid).unwrap();
     // 创建后状态应该是 Available 或 Creating
@@ -770,7 +809,8 @@ fn if06_04_snapshot_status() {
 #[test]
 fn if06_05_snapshot_space_stats() {
     let mgr = SnapshotManager::new();
-    let sid = mgr.create_snapshot(1, "space-test", None).unwrap();
+    let info = create_snapshot_simple(&mgr, 1, "space-test", None);
+    let sid = info.id;
 
     let info = mgr.get_snapshot(sid).unwrap();
     // 初始快照应该有基本的大小统计
@@ -782,7 +822,8 @@ fn if06_05_snapshot_space_stats() {
 #[test]
 fn if06_06_shared_snapshot_manager() {
     let mgr: SharedSnapshotManager = Arc::new(SnapshotManager::new());
-    let sid = mgr.create_snapshot(1, "shared-snap", None).unwrap();
+    let info = create_snapshot_simple(&mgr, 1, "shared-snap", None);
+    let sid = info.id;
 
     assert!(mgr.get_snapshot(sid).is_some());
 }
@@ -910,7 +951,7 @@ async fn if07_05_three_backends_rename_consistency() {
 /// 测试：目录缓存基本操作
 #[test]
 fn if08_01_dir_cache_basic() {
-    let cache = DirEntryCache::new(1000, 300);
+    let cache = DirEntryCache::new().with_capacity(1000).with_ttl(300);
 
     // 初始统计
     let stats = cache.stats();
@@ -921,20 +962,22 @@ fn if08_01_dir_cache_basic() {
 /// 测试：缓存命中率计算
 #[test]
 fn if08_02_cache_hit_rate() {
-    let cache = DirEntryCache::new(1000, 300);
+    let cache = DirEntryCache::new().with_capacity(1000).with_ttl(300);
 
     // 插入一些缓存条目
     let entries = vec![
         mox_cloud_filer_svc::DirEntry {
             name: "file1.txt".to_string(),
             ino: 100,
+            typ: 2,
         },
         mox_cloud_filer_svc::DirEntry {
             name: "file2.txt".to_string(),
             ino: 101,
+            typ: 2,
         },
     ];
-    cache.insert_dir_list(1, entries.clone());
+    cache.put_dir_list(1, entries.clone());
 
     // 第一次查询（命中）
     let result = cache.get_dir_list(1);
@@ -944,19 +987,20 @@ fn if08_02_cache_hit_rate() {
     let stats = cache.stats();
     assert!(stats.hits >= 1);
     assert!(stats.total_lookups >= 1);
-    assert!(stats.hit_rate() >= 0.0 && stats.hit_rate() <= 1.0);
+    assert!(stats.hit_rate >= 0.0 && stats.hit_rate <= 1.0);
 }
 
 /// 测试：缓存失效
 #[test]
 fn if08_03_cache_invalidation() {
-    let cache = DirEntryCache::new(1000, 300);
+    let cache = DirEntryCache::new().with_capacity(1000).with_ttl(300);
 
     let entries = vec![mox_cloud_filer_svc::DirEntry {
         name: "temp.txt".to_string(),
         ino: 200,
+        typ: 2,
     }];
-    cache.insert_dir_list(1, entries);
+    cache.put_dir_list(1, entries);
 
     // 失效前能查到
     assert!(cache.get_dir_list(1).is_some());
@@ -974,13 +1018,13 @@ fn if08_03_cache_invalidation() {
 /// 测试：负缓存
 #[test]
 fn if08_04_negative_cache() {
-    let cache = DirEntryCache::new(1000, 300);
+    let cache = DirEntryCache::new().with_capacity(1000).with_ttl(300);
 
     // 插入负缓存（不存在的条目）
-    cache.insert_negative(1, "nonexistent.txt");
+    cache.put_lookup_negative(1, "nonexistent.txt");
 
     // 查询负缓存应该命中
-    let result = cache.lookup(1, "nonexistent.txt");
+    let result = cache.get_lookup(1, "nonexistent.txt");
     assert!(result.is_some()); // 负缓存也返回 Some，表示缓存中有记录
 
     let stats = cache.stats();
@@ -990,14 +1034,15 @@ fn if08_04_negative_cache() {
 /// 测试：缓存容量限制
 #[test]
 fn if08_05_cache_capacity_limit() {
-    let cache = DirEntryCache::new(10, 300); // 小容量
+    let cache = DirEntryCache::new().with_capacity(10).with_ttl(300); // 小容量
 
     for i in 0..20 {
         let entries = vec![mox_cloud_filer_svc::DirEntry {
             name: format!("file-{}.txt", i),
             ino: i as u64,
+            typ: 2,
         }];
-        cache.insert_dir_list(i as u64, entries);
+        cache.put_dir_list(i as u64, entries);
     }
 
     let stats = cache.stats();
@@ -1009,13 +1054,14 @@ fn if08_05_cache_capacity_limit() {
 /// 测试：共享目录缓存
 #[test]
 fn if08_06_shared_dir_cache() {
-    let cache: SharedDirEntryCache = Arc::new(DirEntryCache::new(1000, 300));
+    let cache: SharedDirEntryCache = Arc::new(DirEntryCache::new().with_capacity(1000).with_ttl(300));
 
     let entries = vec![mox_cloud_filer_svc::DirEntry {
         name: "shared.txt".to_string(),
         ino: 42,
+        typ: 2,
     }];
-    cache.insert_dir_list(1, entries);
+    cache.put_dir_list(1, entries);
 
     assert!(cache.get_dir_list(1).is_some());
 }
@@ -1072,6 +1118,7 @@ async fn if09_02_quota_enforced_operations() {
 #[tokio::test]
 async fn if09_03_concurrent_operations() {
     let f = Arc::new(sqlite_filer());
+    f.mkdir("/concurrent", 0o755).await.unwrap();
     let mut handles = vec![];
 
     for i in 0..10 {

@@ -359,6 +359,11 @@ impl DistributedScheduler {
         self.stats.clone()
     }
 
+    /// 获取节点拓扑信息的读写锁引用（供外部查询/测试使用）
+    pub fn topology(&self) -> &parking_lot::RwLock<HashMap<String, NodeTopology>> {
+        &self.topology
+    }
+
     // -----------------------------------------------------------------------
     // 容量感知调度
     // -----------------------------------------------------------------------
@@ -824,9 +829,10 @@ impl DistributedScheduler {
         // 估算改善程度
         let current_std = self.compute_usage_stddev(nodes);
         let estimated_improvement = if current_std > 0.0 {
-            // 假设迁移后标准差减少 60%
-            let improvement_ratio = 0.6;
-            (improvement_ratio * 100.0) as u8
+            // 根据当前使用率标准差映射改善程度（0-100）
+            // 标准差最大约 0.5（极端 0/1 分布），据此线性映射
+            let improvement = (current_std / 0.5 * 100.0).min(100.0);
+            improvement as u8
         } else {
             0
         };
@@ -952,6 +958,19 @@ impl DistributedScheduler {
             affected_volumes: affected_sets.len() as u64,
             rebuild_tasks,
         }
+    }
+
+    /// 简化版故障恢复计划生成：仅根据节点 is_alive 状态检测故障
+    ///
+    /// 适用于不需要副本映射和心跳时间戳的简化场景。
+    pub fn generate_recovery_plan(&self, nodes: &[VolumeInfo]) -> RecoveryPlan {
+        let now = now_ms();
+        let replica_map: HashMap<String, Vec<String>> = HashMap::new();
+        let last_heartbeats: HashMap<String, u64> = nodes
+            .iter()
+            .map(|n| (n.id.clone(), if n.is_alive { now } else { 0 }))
+            .collect();
+        self.detect_and_plan_recovery(nodes, &replica_map, &last_heartbeats)
     }
 
     // -----------------------------------------------------------------------

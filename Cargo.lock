@@ -3692,6 +3692,7 @@ dependencies = [
  "mox-platform-foundation",
  "rayon",
  "reqwest",
+ "rusqlite",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -4247,6 +4248,33 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "tokio",
+]
+
+[[package]]
+name = "mox-cloud-store-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "base64 0.22.1",
+ "bytes",
+ "chrono",
+ "crc32c",
+ "futures",
+ "hex",
+ "hmac",
+ "mox-base-store-core",
+ "mox-cloud-foundation",
+ "mox-cloud-volume-svc",
+ "parking_lot",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -5157,6 +5185,7 @@ dependencies = [
  "base64 0.22.1",
  "chrono",
  "clap",
+ "futures",
  "hex",
  "mox-alliance-api",
  "mox-framework",
@@ -5178,6 +5207,8 @@ dependencies = [
  "tokio",
  "tower 0.4.13",
  "tower-http 0.5.2",
+ "tracing",
+ "tracing-subscriber",
  "uuid",
 ]
 

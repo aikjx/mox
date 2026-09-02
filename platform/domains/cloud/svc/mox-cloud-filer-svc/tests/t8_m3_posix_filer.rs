@@ -558,9 +558,9 @@ async fn tr8_7_posix_compat_rubric_score() {
 fn tr8_9_atlas_verify_m3() {
     // Inline 三注册表：crate / services / platforms —— 以字符串存在性确认。
     let crate_id = env!("CARGO_PKG_NAME");
-    assert_eq!(crate_id, "mox-cloud-drive-filer");
+    assert_eq!(crate_id, "mox-cloud-filer-svc");
     let three_registries = [
-        "crate:mox-cloud-drive-filer",
+        "crate:mox-cloud-filer-svc",
         "service:m3_posix_filer",
         "platform:mox_cloud",
     ];
@@ -569,6 +569,6 @@ fn tr8_9_atlas_verify_m3() {
     }
     let pjd = 10usize;
     let meta_backends_3 = META_BACKENDS.len() == 3;
-    let ok = crate_id == "mox-cloud-drive-filer" && pjd == PJD_CASES_TOTAL && meta_backends_3;
+    let ok = crate_id == "mox-cloud-filer-svc" && pjd == PJD_CASES_TOTAL && meta_backends_3;
     assert!(ok, "/atlas/verify m3_completion ok=false");
 }

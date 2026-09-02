@@ -1,4 +1,4 @@
-// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -6,7 +6,7 @@
 //! 文件锁机制模块
 //!
 //! 实现 POSIX fcntl 风格的建议锁（advisory locks），支持读锁/写锁和范围锁。
-//! 参考 Linux POSIX 文件锁和 JuiceFS 锁管理设计。
+//! 参考 Linux POSIX 文件锁和分布式文件系统锁管理设计。
 //!
 //! # 功能特性
 //!
@@ -951,8 +951,9 @@ mod tests {
         // 查询读锁请求，应返回冲突的写锁
         let blocking = mgr.get_lock(100, 1, LockType::Read, range);
         assert!(blocking.is_some());
-        assert_eq!(blocking.unwrap().lock_type, LockType::Write);
-        assert_eq!(blocking.unwrap().owner_id, 2);
+        let b = blocking.unwrap();
+        assert_eq!(b.lock_type, LockType::Write);
+        assert_eq!(b.owner_id, 2);
     }
 
     #[test]

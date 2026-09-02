@@ -1,0 +1,1920 @@
+{
+  "metadata": {
+    "generated_at": "2026-09-02",
+    "source": "code+reports inventory",
+    "inventory_scope": "MOX/璇玑 全域低代码平台 - 前端API + 视图 + 路由 + 后端端点 + 审计报告",
+    "total_frontend_api_functions": 348,
+    "total_frontend_views": 53,
+    "total_backend_endpoints_orchestrator": 78,
+    "total_backend_endpoints_gateway": 70,
+    "total_backend_endpoints_legacy_rust": 200,
+    "total_routes": 44,
+    "api_integration_rate": "~85%",
+    "architecture": "三服务架构：网关(mox-server:8080) + 编排器(operator-server:3001) + PrimiFlow(Python:8000) + 前端Vite(:3020)",
+    "gateway_proxy_rules": "/api/system/*,/api/security/* → 网关原生IAM; /api/projects/* → PrimiFlow:8000; 其余 /api/* → 编排器:3001",
+    "i18n_status": "not_built",
+    "accessibility_status": "not_built"
+  },
+  "domains": [
+    {
+      "id": "ai",
+      "name": "AI智能",
+      "modules": [
+        {
+          "id": "ai_chat",
+          "name": "AI对话",
+          "features": [
+            {
+              "id": "feat_ai_chat",
+              "name": "AI智能对话",
+              "status": "implemented",
+              "priority": "P0",
+              "description": "自然语言交互、会话历史、意图识别",
+              "frontend_pages": ["views/ai/ChatView.vue"],
+              "frontend_api_functions": ["aiChat", "getChatHistory"],
+              "backend_endpoints": [
+                {"method": "POST", "path": "/api/ai/chat", "handler": "ai_chat"},
+                {"method": "GET", "path": "/api/ai/chat/history/:session", "handler": "get_chat_history"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        },
+        {
+          "id": "ai_algorithm",
+          "name": "算法分析归一化",
+          "features": [
+            {
+              "id": "feat_ai_algorithm_analysis",
+              "name": "算法分析与类型列表",
+              "status": "implemented",
+              "priority": "P1",
+              "description": "代码算法分析、算法类型枚举、螺旋分析",
+              "frontend_pages": ["views/ai/AlgoLabView.vue"],
+              "frontend_api_functions": ["analyzeAlgorithm", "getAlgorithmTypes", "analyzeSpiral"],
+              "backend_endpoints": [
+                {"method": "POST", "path": "/api/ai/analyze-algorithm", "handler": "analyze_algorithm"},
+                {"method": "GET", "path": "/api/ai/algorithm-types", "handler": "list_algorithm_types"},
+                {"method": "POST", "path": "/api/analyze/spiral", "handler": "analyze_spiral_handler"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        },
+        {
+          "id": "ai_web_search",
+          "name": "联网搜索",
+          "features": [
+            {
+              "id": "feat_ai_web_search",
+              "name": "AI联网搜索配置与执行",
+              "status": "frontend_only",
+              "priority": "P1",
+              "description": "联网搜索配置、测试、执行搜索",
+              "frontend_pages": ["views/ai/ChatView.vue"],
+              "frontend_api_functions": ["getWebSearchConfig", "updateWebSearchConfig", "testWebSearch", "webSearch"],
+              "backend_endpoints": [],
+              "blocked_by": ["gap_web_search_api"],
+              "missing_backend": true,
+              "note": "仅legacy backend-rust存在，无/api前缀；编排器未注册"
+            }
+          ]
+        },
+        {
+          "id": "ai_infinite_optimize",
+          "name": "无穷维度优化引擎",
+          "features": [
+            {
+              "id": "feat_ai_infinite_optimize",
+              "name": "无穷维度LLM优化与基准测试",
+              "status": "frontend_only",
+              "priority": "P1",
+              "description": "基准测试、启动/停止优化、状态查询、结果获取、提供商对比、最优配置应用",
+              "frontend_pages": ["views/ai/InfiniteOptimizerView.vue"],
+              "frontend_api_functions": ["getInfiniteBenchmarks", "startInfiniteOptimize", "stopInfiniteOptimize", "getInfiniteOptimizeStatus", "getInfiniteOptimizeResults", "runProviderComparison", "getProviderComparison", "applyBestConfig"],
+              "backend_endpoints": [],
+              "blocked_by": ["gap_infinite_optimize_api"],
+              "missing_backend": true
+            }
+          ]
+        },
+        {
+          "id": "ai_artifact",
+          "name": "本地制品引擎",
+          "features": [
+            {
+              "id": "feat_ai_artifact",
+              "name": "文档/代码自动创建制品",
+              "status": "frontend_only",
+              "priority": "P2",
+              "description": "制品配置、制品列表、创建制品",
+              "frontend_pages": [],
+              "frontend_api_functions": ["getArtifactConfig", "getArtifacts", "listArtifacts", "createArtifact"],
+              "backend_endpoints": [],
+              "blocked_by": ["gap_artifact_api"],
+              "missing_backend": true
+            }
+          ]
+        },
+        {
+          "id": "ai_full_analysis",
+          "name": "全维智能分析引擎",
+          "features": [
+            {
+              "id": "feat_ai_full_analysis",
+              "name": "全维分析、文档生成、流程图生成、开发测试修复",
+              "status": "frontend_only",
+              "priority": "P0",
+              "description": "全维智能分析、文档生成、流程图生成、开发-测试-修复闭环、全维完成、文档优化",
+              "frontend_pages": ["views/ai/ChatView.vue"],
+              "frontend_api_functions": ["aiFullAnalysis", "aiGenerateDoc", "aiGenerateFlowDiagram", "aiDevTestFix", "aiFullComplete", "aiOptimizeDoc"],
+              "backend_endpoints": [],
+              "blocked_by": ["gap_full_analysis_api"],
+              "missing_backend": true
+            }
+          ]
+        },
+        {
+          "id": "ai_project_integration",
+          "name": "项目需求一体化",
+          "features": [
+            {
+              "id": "feat_ai_project_integration",
+              "name": "对话→项目→需求→知识库全链路",
+              "status": "frontend_only",
+              "priority": "P1",
+              "description": "对话创建项目、项目图谱生成、需求数据库关联、企业联盟流水线、制品发布知识库、ER图生成",
+              "frontend_pages": ["views/project/ProjectsView.vue"],
+              "frontend_api_functions": ["aiProjectFromChat", "aiGenerateProjectGraph", "aiLinkReqToDb", "allianceEnterprisePipeline", "aiPublishArtifactsToKb", "aiGenerateErd"],
+              "backend_endpoints": [],
+              "blocked_by": ["gap_project_integration_api"],
+              "missing_backend": true
+            }
+          ]
+        },
+        {
+          "id": "ai_expert_chat",
+          "name": "AI专家对话与引擎图谱",
+          "features": [
+            {
+              "id": "feat_ai_expert_chat",
+              "name": "AI专家对话与引擎流程图谱",
+              "status": "frontend_only",
+              "priority": "P2",
+              "description": "AI专家对话、引擎流程图谱查询",
+              "frontend_pages": [],
+              "frontend_api_functions": ["aiExpertChat", "getEngineFlowGraph"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": true
+            }
+          ]
+        },
+        {
+          "id": "ai_16module_enhance",
+          "name": "16模块AI增强端点",
+          "features": [
+            {
+              "id": "feat_ai_16module_enhance",
+              "name": "跨域AI增强（算子推荐/资源分析/工作流生成/商城搜索等）",
+              "status": "frontend_only",
+              "priority": "P2",
+              "description": "16个业务模块的AI增强端点：算子推荐、资源分析、工作流生成、商城搜索、MCP映射、草莓解析、算法实验室、融合治理、监控诊断、文档解释、插件路由、浏览器指令、自动化执行、工作台AI概览",
+              "frontend_pages": [],
+              "frontend_api_functions": ["aiRecommendOperators", "aiResourceAnalysis", "aiGenerateWorkflow", "aiMarketSearch", "aiMcpMap", "aiCaomeiParse", "aiAlgoLabAnalyze", "aiFusionGovern", "aiMonitorDiagnose", "aiDocsExplain", "aiPluginRoute", "aiBrowserInstruct", "aiAutomationExecute", "getWorkbenchAiOverview"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": true,
+              "note": "仅legacy backend-rust存在部分端点，编排器未注册"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "expert",
+      "name": "专家联盟",
+      "modules": [
+        {
+          "id": "expert_crud",
+          "name": "专家CRUD与咨询",
+          "features": [
+            {
+              "id": "feat_expert_crud_consult",
+              "name": "专家注册/查询/更新/删除/咨询/辩论",
+              "status": "frontend_only",
+              "priority": "P0",
+              "description": "专家全生命周期管理、单专家咨询、多专家咨询、专家辩论、能力查询、智能路由",
+              "frontend_pages": ["views/expert/ExpertPlazaView.vue", "views/expert/ExpertCenterView.vue", "views/workspace/ExpertWorkspaceView.vue"],
+              "frontend_api_functions": ["getExperts", "getExpert", "registerExpert", "updateExpert", "removeExpert", "consultExpert", "multiExpertConsult", "expertDebate", "getExpertCapabilities", "routeExperts"],
+              "backend_endpoints": [],
+              "blocked_by": ["gap_experts_api"],
+              "missing_backend": true,
+              "note": "编排器无/api/experts域；legacy backend-rust有但无/api前缀；ai-expert-svc有/api/alliance/experts前缀不同"
+            }
+          ]
+        },
+        {
+          "id": "expert_intelligent",
+          "name": "智能咨询与算法分析",
+          "features": [
+            {
+              "id": "feat_expert_intelligent",
+              "name": "智能咨询、算法分析、专家指标概览",
+              "status": "frontend_only",
+              "priority": "P1",
+              "description": "智能咨询、算法分析、专家指标、联盟概览、单专家指标",
+              "frontend_pages": ["views/expert/panels/ExpertOverviewPanel.vue"],
+              "frontend_api_functions": ["intelligentConsult", "algorithmAnalysis", "getExpertMetrics", "getExpertOverview", "getSingleExpertMetrics"],
+              "backend_endpoints": [],
+              "blocked_by": ["gap_experts_api"],
+              "missing_backend": true
+            }
+          ]
+        },
+        {
+          "id": "expert_sessions",
+          "name": "企业级会话持久化",
+          "features": [
+            {
+              "id": "feat_expert_sessions",
+              "name": "专家会话CRUD、消息追加、语义搜索、导出归档",
+              "status": "frontend_only",
+              "priority": "P1",
+              "description": "会话创建/列表/详情/更新/删除、消息追加、相似搜索、语义搜索、导出、归档、会话统计",
+              "frontend_pages": ["views/workspace/ExpertWorkspaceView.vue"],
+              "frontend_api_functions": ["createExpertSession", "getExpertSessions", "listExpertSessions", "getExpertSessionStats", "getExpertSession", "updateExpertSession", "deleteExpertSession", "appendSessionMessage", "sessionSimilarSearch", "expertSemanticSearch", "exportExpertSession", "archiveExpertSession"],
+              "backend_endpoints": [],
+              "blocked_by": ["gap_experts_api"],
+              "missing_backend": true
+            }
+          ]
+        },
+        {
+          "id": "expert_dispatcher",
+          "name": "企业级调度策略引擎",
+          "features": [
+            {
+              "id": "feat_expert_dispatcher",
+              "name": "调度器配置/状态/分发/咨询/多咨询/重置",
+              "status": "frontend_only",
+              "priority": "P2",
+              "description": "调度器配置读写、状态查询、任务分发、咨询、多专家咨询、单专家重置、全部重置",
+              "frontend_pages": [],
+              "frontend_api_functions": ["getDispatcherConfig", "updateDispatcherConfig", "getDispatcherStatus", "dispatcherDispatch", "dispatcherConsult", "dispatcherMultiConsult", "resetDispatcherExpert", "resetDispatcherAll"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": true
+            }
+          ]
+        },
+        {
+          "id": "expert_graph",
+          "name": "专家能力图谱与协作网络",
+          "features": [
+            {
+              "id": "feat_expert_graph",
+              "name": "专家图谱查询/统计/邻居/协作/路径/社区/最优团队/重建",
+              "status": "frontend_only",
+              "priority": "P1",
+              "description": "专家能力图谱、图谱统计、邻居查询、协作者查询、路径查询、社区发现、最优团队推荐、图谱重建",
+              "frontend_pages": ["views/expert/panels/ExpertOverviewPanel.vue"],
+              "frontend_api_functions": ["getExpertGraph", "getExpertGraphStats", "getExpertGraphNeighbors", "getExpertGraphCollaborators", "getExpertGraphPath", "getExpertGraphCommunities", "findOptimalTeam", "rebuildExpertGraph"],
+              "backend_endpoints": [],
+              "blocked_by": ["gap_expert_graph_api"],
+              "missing_backend": true
+            }
+          ]
+        },
+        {
+          "id": "expert_enterprise",
+          "name": "企业级协作",
+          "features": [
+            {
+              "id": "feat_expert_enterprise",
+              "name": "企业级咨询与分析",
+              "status": "frontend_only",
+              "priority": "P2",
+              "description": "企业级咨询、企业级分析",
+              "frontend_pages": ["views/expert/panels/ExpertEnterprisePanel.vue"],
+              "frontend_api_functions": ["enterpriseConsult", "enterpriseAnalyze"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": true
+            }
+          ]
+        },
+        {
+          "id": "expert_orchestration",
+          "name": "V2编排引擎",
+          "features": [
+            {
+              "id": "feat_expert_orchestration",
+              "name": "专家编排、计划生成/执行、编排统计/插件/历史",
+              "status": "frontend_only",
+              "priority": "P1",
+              "description": "专家编排执行、计划生成、计划执行、编排统计、编排插件列表、编排历史",
+              "frontend_pages": ["views/expert/panels/ExpertOrchestratorPanel.vue"],
+              "frontend_api_functions": ["expertOrchestrate", "expertGeneratePlan", "expertExecutePlan", "getOrchestrationStats", "getOrchestrationPlugins", "listOrchestrationPlugins", "getOrchestrationHistory"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "graph",
+      "name": "知识图谱",
+      "modules": [
+        {
+          "id": "graph_core",
+          "name": "图谱核心引擎",
+          "features": [
+            {
+              "id": "feat_graph_core",
+              "name": "图谱查询/统计/中心性/社区/PageRank/邻居/路径/推荐/节点边管理/激活传播",
+              "status": "implemented",
+              "priority": "P0",
+              "description": "知识图谱核心查询与分析：全图获取、统计、中心性、社区发现、PageRank、邻居查询、最短路径、节点推荐、节点/边添加、激活传播",
+              "frontend_pages": ["views/graph/GraphView.vue"],
+              "frontend_api_functions": ["getGraph", "getGraphStats", "getCentrality", "getCommunities", "getPagerank", "getNeighbors", "getShortestPath", "recommendNodes", "addGraphNode", "addGraphEdge", "propagateActivation"],
+              "backend_endpoints": [
+                {"method": "GET", "path": "/api/graph", "handler": "get_graph"},
+                {"method": "GET", "path": "/api/graph/stats", "handler": "get_graph_stats"},
+                {"method": "GET", "path": "/api/graph/centrality", "handler": "get_centrality"},
+                {"method": "GET", "path": "/api/graph/communities", "handler": "get_communities"},
+                {"method": "GET", "path": "/api/graph/pagerank", "handler": "get_pagerank"},
+                {"method": "GET", "path": "/api/graph/neighbors/:id", "handler": "get_neighbors"},
+                {"method": "GET", "path": "/api/graph/path", "handler": "get_shortest_path"},
+                {"method": "POST", "path": "/api/graph/recommend", "handler": "recommend_nodes"},
+                {"method": "POST", "path": "/api/graph/node", "handler": "add_node"},
+                {"method": "POST", "path": "/api/graph/edge", "handler": "add_edge"},
+                {"method": "POST", "path": "/api/graph/activate", "handler": "propagate_activation"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        },
+        {
+          "id": "graph_dialogue_sync",
+          "name": "对话自动→知识图谱同步",
+          "features": [
+            {
+              "id": "feat_graph_dialogue_sync",
+              "name": "图谱搜索、自动同步开关、对话会话列表",
+              "status": "implemented",
+              "priority": "P1",
+              "description": "统一搜索（对话+图谱节点）、自动同步开关、自动同步状态查询、对话会话列表",
+              "frontend_pages": ["views/graph/GraphView.vue"],
+              "frontend_api_functions": ["graphSearch", "toggleAutoSync", "getAutoSyncStatus", "getDialogueSessions", "listDialogueSessions"],
+              "backend_endpoints": [
+                {"method": "GET", "path": "/api/graph/search", "handler": "graph_search"},
+                {"method": "POST", "path": "/api/graph/auto-sync/toggle", "handler": "toggle_auto_sync"},
+                {"method": "GET", "path": "/api/graph/auto-sync/status", "handler": "auto_sync_status"},
+                {"method": "GET", "path": "/api/dialogue/sessions", "handler": "list_dialogue_sessions"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        },
+        {
+          "id": "graph_import_export",
+          "name": "图谱导入导出",
+          "features": [
+            {
+              "id": "feat_graph_import_export",
+              "name": "对话+图谱打包导出与导入",
+              "status": "implemented",
+              "priority": "P2",
+              "description": "导出对话+知识图谱为单文件迁移包、从迁移包恢复（幂等合并）",
+              "frontend_pages": [],
+              "frontend_api_functions": ["graphExport", "graphImport"],
+              "backend_endpoints": [
+                {"method": "GET", "path": "/api/graph/export", "handler": "graph_export"},
+                {"method": "POST", "path": "/api/graph/import", "handler": "graph_import"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        },
+        {
+          "id": "graph_ai_insights",
+          "name": "AI图谱增强",
+          "features": [
+            {
+              "id": "feat_graph_ai_insights",
+              "name": "AI图谱洞察分析",
+              "status": "frontend_only",
+              "priority": "P2",
+              "description": "基于AI的图谱洞察生成",
+              "frontend_pages": [],
+              "frontend_api_functions": ["aiGraphInsights"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": true
+            }
+          ]
+        },
+        {
+          "id": "graph_aggregated",
+          "name": "聚合业务图谱",
+          "features": [
+            {
+              "id": "feat_graph_aggregated",
+              "name": "系统架构+业务实体聚合图谱（前端聚合）",
+              "status": "partial",
+              "priority": "P2",
+              "description": "前端并行调用项目/专家/算子/任务/文档/工作流API，映射为图谱节点并创建关联边，与基础系统架构图谱合并",
+              "frontend_pages": ["views/graph/GraphView.vue"],
+              "frontend_api_functions": ["getAggregatedGraph"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": false,
+              "note": "纯前端聚合函数，依赖多个后端API的可用性"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "project",
+      "name": "项目管理",
+      "modules": [
+        {
+          "id": "project_center",
+          "name": "项目中心",
+          "features": [
+            {
+              "id": "feat_project_center",
+              "name": "项目CRUD、类型/目录/统计、资源绑定、按资源查询",
+              "status": "partial",
+              "priority": "P0",
+              "description": "项目列表/详情/创建/更新/删除、项目类型、项目目录、项目统计、资源绑定/解绑/备注、按资源查询项目",
+              "frontend_pages": ["views/project/ProjectsView.vue", "views/project/Dashboard.vue"],
+              "frontend_api_functions": ["getProjects", "getProjectTypes", "getProjectCatalog", "getProjectStats", "getProject", "createProject", "updateProject", "deleteProject", "bindProjectResources", "unbindProjectResource", "updateProjectResourceNote", "getProjectsByResource"],
+              "backend_endpoints": [],
+              "blocked_by": ["gap_projects_api"],
+              "missing_backend": true,
+              "note": "网关反向代理/api/projects→PrimiFlow:8000，但PrimiFlow实际端点契约未确认，直接访问可能404"
+            }
+          ]
+        },
+        {
+          "id": "project_tasks",
+          "name": "任务管理",
+          "features": [
+            {
+              "id": "feat_project_tasks",
+              "name": "任务CRUD、对话↔任务转换、任务执行、自动创建",
+              "status": "frontend_only",
+              "priority": "P0",
+              "description": "任务列表/详情/创建/更新/删除、对话转任务、任务转对话、任务执行、自动创建任务",
+              "frontend_pages": ["views/project/TaskView.vue", "views/project/ProjectsView.vue"],
+              "frontend_api_functions": ["getTasks", "getTask", "createTask", "updateTask", "deleteTask", "convertChatToTask", "convertTaskToChat", "executeTask", "autoCreateTask"],
+              "backend_endpoints": [],
+              "blocked_by": ["gap_tasks_api"],
+              "missing_backend": true,
+              "note": "编排器无/api/tasks域；mox-system子服务有/mox-system/tasks但路径前缀不同"
+            }
+          ]
+        },
+        {
+          "id": "project_resources",
+          "name": "资源管理",
+          "features": [
+            {
+              "id": "feat_project_resources",
+              "name": "全资源管理与健康检查",
+              "status": "implemented",
+              "priority": "P1",
+              "description": "CPU/内存/插件/算子/工作流统一资源全景、资源健康报告",
+              "frontend_pages": ["views/project/ResourcesView.vue", "views/project/panels/ResourcesOverviewPanel.vue"],
+              "frontend_api_functions": ["getResources", "getResourceHealth"],
+              "backend_endpoints": [
+                {"method": "GET", "path": "/api/ai/resources", "handler": "get_resources"},
+                {"method": "GET", "path": "/api/ai/resources/health", "handler": "resource_health"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "workflow",
+      "name": "工作流编排",
+      "modules": [
+        {
+          "id": "workflow_core",
+          "name": "工作流引擎",
+          "features": [
+            {
+              "id": "feat_workflow_core",
+              "name": "工作流模板/列表/保存/执行/实例",
+              "status": "implemented",
+              "priority": "P0",
+              "description": "工作流模板列表、工作流列表、保存工作流、执行工作流、工作流实例列表",
+              "frontend_pages": ["views/workflow/WorkflowView.vue"],
+              "frontend_api_functions": ["getWorkflowTemplates", "getWorkflows", "saveWorkflow", "executeWorkflowDef", "getWorkflowInstances"],
+              "backend_endpoints": [
+                {"method": "GET", "path": "/api/ai/workflows/templates", "handler": "list_workflow_templates"},
+                {"method": "GET", "path": "/api/ai/workflows", "handler": "list_workflows"},
+                {"method": "POST", "path": "/api/ai/workflows/save", "handler": "save_workflow"},
+                {"method": "POST", "path": "/api/ai/workflows/execute", "handler": "execute_business_workflow"},
+                {"method": "GET", "path": "/api/ai/workflows/instances", "handler": "list_workflow_instances"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        },
+        {
+          "id": "workflow_flows",
+          "name": "流程图FlowGraph",
+          "features": [
+            {
+              "id": "feat_workflow_flows",
+              "name": "流程图CRUD、校验、执行、节点类型",
+              "status": "implemented",
+              "priority": "P0",
+              "description": "流程图列表/创建/详情/更新/删除、流程图校验、流程图执行、节点类型枚举",
+              "frontend_pages": ["views/graph/FlowGraph.vue", "views/workflow/panels/WorkflowFlowsPanel.vue"],
+              "frontend_api_functions": ["getFlows", "createFlow", "getFlow", "deleteFlow", "validateFlow", "executeFlow", "getFlowNodeTypes"],
+              "backend_endpoints": [
+                {"method": "GET", "path": "/api/ai/flows", "handler": "list_flows"},
+                {"method": "POST", "path": "/api/ai/flows", "handler": "create_flow"},
+                {"method": "GET", "path": "/api/ai/flows/:id", "handler": "get_flow"},
+                {"method": "PUT", "path": "/api/ai/flows/:id", "handler": "update_flow"},
+                {"method": "DELETE", "path": "/api/ai/flows/:id", "handler": "delete_flow"},
+                {"method": "POST", "path": "/api/ai/flows/validate", "handler": "validate_flow"},
+                {"method": "POST", "path": "/api/ai/flows/execute", "handler": "execute_flow"},
+                {"method": "GET", "path": "/api/ai/flows/node-types", "handler": "list_flow_node_types"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false,
+              "note": "前端workflow.api.js未定义updateFlow函数，但后端有PUT端点"
+            }
+          ]
+        },
+        {
+          "id": "workflow_plugins",
+          "name": "AI插件总线",
+          "features": [
+            {
+              "id": "feat_workflow_plugins",
+              "name": "插件列表/注册/拓扑/消息发送",
+              "status": "implemented",
+              "priority": "P1",
+              "description": "AI插件列表、插件注册、插件拓扑、插件消息发送（发布订阅/点对点/请求响应）",
+              "frontend_pages": ["views/workflow/panels/PluginsPanel.vue"],
+              "frontend_api_functions": ["getAiPlugins", "registerAiPlugin", "sendPluginMessage", "getPluginTopology"],
+              "backend_endpoints": [
+                {"method": "GET", "path": "/api/ai/plugins", "handler": "list_ai_plugins"},
+                {"method": "POST", "path": "/api/ai/plugins/register", "handler": "register_ai_plugin"},
+                {"method": "GET", "path": "/api/ai/plugins/topology", "handler": "plugin_topology"},
+                {"method": "POST", "path": "/api/ai/plugins/send-message", "handler": "send_plugin_message"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        },
+        {
+          "id": "workflow_mcp",
+          "name": "MCP兼容层",
+          "features": [
+            {
+              "id": "feat_workflow_mcp",
+              "name": "MCP工具列表与调用（JSON-RPC）",
+              "status": "implemented",
+              "priority": "P1",
+              "description": "Model Context Protocol兼容层：工具列表、工具调用，将内置算子与AI插件统一暴露为标准MCP tools",
+              "frontend_pages": ["views/workflow/panels/McpPanel.vue"],
+              "frontend_api_functions": ["mcpListTools", "mcpCall"],
+              "backend_endpoints": [
+                {"method": "POST", "path": "/api/mcp", "handler": "handle_mcp_rpc"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        },
+        {
+          "id": "workflow_automation",
+          "name": "AI自动化中枢",
+          "features": [
+            {
+              "id": "feat_workflow_automation",
+              "name": "自动化列表/对话/优化/执行/权限/更新",
+              "status": "partial",
+              "priority": "P1",
+              "description": "需求驱动的端到端闭环：自动化列表、自动化对话、自动化优化、自动化执行、权限查询、自动化更新",
+              "frontend_pages": ["views/workflow/panels/AutomationPanel.vue"],
+              "frontend_api_functions": ["getAutomations", "automationList", "automationChat", "automationRefine", "automationRun", "automationPermissions", "automationUpdate"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": false,
+              "note": "编排器通过nest('/api/automation', automation::router())挂载，端点存在于automation模块"
+            }
+          ]
+        },
+        {
+          "id": "workflow_browser",
+          "name": "浏览器自动化",
+          "features": [
+            {
+              "id": "feat_workflow_browser",
+              "name": "浏览器模板/会话/任务/步骤/动作/自然语言",
+              "status": "implemented",
+              "priority": "P2",
+              "description": "浏览器自动化模板、会话管理、任务执行、步骤执行、动作执行、自然语言指令",
+              "frontend_pages": ["views/workflow/BrowserView.vue"],
+              "frontend_api_functions": ["getBrowserTemplates", "getBrowserSessions", "getBrowserSession", "closeBrowserSession", "executeBrowserTask", "executeBrowserSteps", "executeBrowserAction", "browserNatural"],
+              "backend_endpoints": [
+                {"method": "GET", "path": "/api/ai/browser/templates", "handler": "list_browser_templates"},
+                {"method": "GET", "path": "/api/ai/browser/sessions", "handler": "list_browser_sessions"},
+                {"method": "GET", "path": "/api/ai/browser/sessions/:id", "handler": "get_browser_session"},
+                {"method": "DELETE", "path": "/api/ai/browser/sessions/:id", "handler": "close_browser_session"},
+                {"method": "POST", "path": "/api/ai/browser/execute-task", "handler": "execute_browser_task"},
+                {"method": "POST", "path": "/api/ai/browser/execute-steps", "handler": "execute_browser_steps"},
+                {"method": "POST", "path": "/api/ai/browser/execute-action", "handler": "execute_browser_action"},
+                {"method": "POST", "path": "/api/ai/browser/natural", "handler": "browser_natural"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kb",
+      "name": "云盘知识库",
+      "modules": [
+        {
+          "id": "kb_documents",
+          "name": "文档管理",
+          "features": [
+            {
+              "id": "feat_kb_documents",
+              "name": "文档CRUD、分析、批量分析",
+              "status": "frontend_only",
+              "priority": "P0",
+              "description": "文档列表/详情/创建/更新/删除、文档分析、批量分析",
+              "frontend_pages": ["views/project/panels/KnowledgeBasePanel.vue", "views/project/ResourcesView.vue"],
+              "frontend_api_functions": ["kbListDocuments", "kbGetDocument", "kbCreateDocument", "kbUpdateDocument", "kbDeleteDocument", "kbAnalyzeDocument", "kbBatchAnalyze"],
+              "backend_endpoints": [],
+              "blocked_by": ["gap_kb_api"],
+              "missing_backend": true
+            }
+          ]
+        },
+        {
+          "id": "kb_categories",
+          "name": "分类标签与搜索",
+          "features": [
+            {
+              "id": "feat_kb_categories_search",
+              "name": "分类列表、标签列表、知识库搜索",
+              "status": "frontend_only",
+              "priority": "P1",
+              "description": "文档分类、标签、全文搜索",
+              "frontend_pages": ["views/project/panels/KnowledgeBasePanel.vue"],
+              "frontend_api_functions": ["kbGetCategories", "kbGetTags", "kbSearch"],
+              "backend_endpoints": [],
+              "blocked_by": ["gap_kb_api"],
+              "missing_backend": true
+            }
+          ]
+        },
+        {
+          "id": "kb_versions",
+          "name": "版本管理",
+          "features": [
+            {
+              "id": "feat_kb_versions",
+              "name": "版本列表/详情/创建/对比/回滚",
+              "status": "frontend_only",
+              "priority": "P2",
+              "description": "文档版本管理：版本列表、版本详情、创建版本、版本对比、版本回滚",
+              "frontend_pages": [],
+              "frontend_api_functions": ["kbGetVersions", "kbGetVersion", "kbCreateVersion", "kbCompareVersions", "kbRevertVersion"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": true
+            }
+          ]
+        },
+        {
+          "id": "kb_entities",
+          "name": "实体与图谱链接",
+          "features": [
+            {
+              "id": "feat_kb_entities",
+              "name": "文档实体提取、文档-图谱链接",
+              "status": "frontend_only",
+              "priority": "P2",
+              "description": "从文档中提取实体、将文档链接到知识图谱",
+              "frontend_pages": [],
+              "frontend_api_functions": ["kbGetEntities", "kbGraphLink"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": true
+            }
+          ]
+        },
+        {
+          "id": "kb_stats_history",
+          "name": "统计与历史",
+          "features": [
+            {
+              "id": "feat_kb_stats_history",
+              "name": "知识库统计、文档历史、全局历史",
+              "status": "frontend_only",
+              "priority": "P2",
+              "description": "知识库统计信息、单文档历史、全局操作历史",
+              "frontend_pages": [],
+              "frontend_api_functions": ["kbGetStats", "kbGetDocHistory", "kbGetHistory"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "llm",
+      "name": "LLM网关",
+      "modules": [
+        {
+          "id": "llm_providers",
+          "name": "提供商管理",
+          "features": [
+            {
+              "id": "feat_llm_providers",
+              "name": "LLM提供商CRUD、启用/禁用、测试、模型发现、激活设置",
+              "status": "frontend_only",
+              "priority": "P0",
+              "description": "LLM提供商列表/详情/创建/更新/删除、启用/禁用、连接测试、模型发现、设置激活提供商、提供商预设",
+              "frontend_pages": ["views/admin/panels/AdminLlm.vue"],
+              "frontend_api_functions": ["getLlmProviders", "getLlmProviderPresets", "getLlmPresets", "getLlmProvider", "setActiveProvider", "addLlmProvider", "updateLlmProvider", "removeLlmProvider", "enableLlmProvider", "disableLlmProvider", "testLlmProvider", "discoverLlmModels"],
+              "backend_endpoints": [],
+              "blocked_by": ["gap_llm_api"],
+              "missing_backend": true,
+              "note": "编排器仅有旧接口/api/ai/llm/config，新/api/llm/*网关未注册"
+            }
+          ]
+        },
+        {
+          "id": "llm_health_routing",
+          "name": "健康与路由",
+          "features": [
+            {
+              "id": "feat_llm_health_routing",
+              "name": "LLM健康检查、路由配置读写",
+              "status": "frontend_only",
+              "priority": "P1",
+              "description": "LLM网关健康检查、路由规则查询、路由规则更新",
+              "frontend_pages": [],
+              "frontend_api_functions": ["getLlmHealth", "getLlmRouting", "updateLlmRouting"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": true
+            }
+          ]
+        },
+        {
+          "id": "llm_usage_logs",
+          "name": "用量与日志",
+          "features": [
+            {
+              "id": "feat_llm_usage_logs",
+              "name": "LLM用量统计、调用日志、网关统计",
+              "status": "frontend_only",
+              "priority": "P2",
+              "description": "LLM用量统计、调用日志查询、网关统计信息",
+              "frontend_pages": [],
+              "frontend_api_functions": ["getLlmUsage", "getLlmLogs", "getLlmStats"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": true
+            }
+          ]
+        },
+        {
+          "id": "llm_legacy_config",
+          "name": "旧接口兼容",
+          "features": [
+            {
+              "id": "feat_llm_legacy_config",
+              "name": "LLM配置读写、连接测试（旧接口）",
+              "status": "implemented",
+              "priority": "P1",
+              "description": "旧版LLM配置接口：配置查询、配置更新、连接测试",
+              "frontend_pages": [],
+              "frontend_api_functions": ["getLlmConfig", "updateLlmConfig", "testLlm"],
+              "backend_endpoints": [
+                {"method": "GET", "path": "/api/ai/llm/config", "handler": "get_llm_config"},
+                {"method": "POST", "path": "/api/ai/llm/config", "handler": "update_llm_config"},
+                {"method": "POST", "path": "/api/ai/llm/test", "handler": "test_llm_connection"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "melody",
+      "name": "旋律转谱",
+      "modules": [
+        {
+          "id": "melody_core",
+          "name": "Melody2Score旋律转谱",
+          "features": [
+            {
+              "id": "feat_melody_core",
+              "name": "旋律识别、样本识别、录音识别、乐谱导出、报告保存、健康/状态/样本",
+              "status": "frontend_only",
+              "priority": "P1",
+              "description": "音频旋律转谱：健康检查、状态查询、样本列表、文件上传识别、样本识别、录音识别、乐谱导出、识别报告保存",
+              "frontend_pages": ["views/ai/Melody2ScoreView.vue"],
+              "frontend_api_functions": ["melodyHealth", "melodyStatus", "melodySamples", "melodyRecognize", "melodyRecognizeSample", "melodyRecognizeRecord", "melodyExportSheet", "melodySaveReport"],
+              "backend_endpoints": [],
+              "blocked_by": ["gap_melody2score_api"],
+              "missing_backend": true,
+              "note": "编排器无/api/melody2score域；有独立FastAPI服务运行在:8012但网关未代理"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caomei",
+      "name": "草莓需求编译",
+      "modules": [
+        {
+          "id": "caomei_core",
+          "name": "Caomei需求编译",
+          "features": [
+            {
+              "id": "feat_caomei_core",
+              "name": "需求编译、需求精炼、模板列表",
+              "status": "implemented",
+              "priority": "P1",
+              "description": "草莓多平台对话驱动全栈生成：需求编译、需求精炼、需求模板列表",
+              "frontend_pages": ["views/ai/CaomeiView.vue"],
+              "frontend_api_functions": ["caomeiCompile", "caomeiRefine", "caomeiTemplates"],
+              "backend_endpoints": [
+                {"method": "POST", "path": "/api/caomei/compile", "handler": "caomei_compile"},
+                {"method": "POST", "path": "/api/caomei/refine", "handler": "caomei_refine"},
+                {"method": "GET", "path": "/api/caomei/templates", "handler": "caomei_templates"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mox",
+      "name": "璇玑全维治理",
+      "modules": [
+        {
+          "id": "mox_core",
+          "name": "璇玑治理与融合",
+          "features": [
+            {
+              "id": "feat_mox_core",
+              "name": "璇玑健康度、全维治理优化、全维融合发布",
+              "status": "implemented",
+              "priority": "P0",
+              "description": "双璇玑十四维治理：健康度查询（14维度+双联盟）、全维治理优化（返回GovernanceReport）、全维融合发布（双验收联动门禁）",
+              "frontend_pages": ["views/graph/MoxFusionView.vue"],
+              "frontend_api_functions": ["moxHealth", "moxOptimize", "moxPublish"],
+              "backend_endpoints": [
+                {"method": "GET", "path": "/api/mox/health", "handler": "mox_health"},
+                {"method": "POST", "path": "/api/mox/optimize", "handler": "mox_optimize_handler"},
+                {"method": "POST", "path": "/api/mox/publish", "handler": "mox_publish_handler"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        },
+        {
+          "id": "mox_governance_dashboard",
+          "name": "治理台Dashboard",
+          "features": [
+            {
+              "id": "feat_mox_governance_dashboard",
+              "name": "OUS前端治理台（Dashboard/专家状态/否决事件/审计/RBAC/WS推送）",
+              "status": "implemented",
+              "priority": "P1",
+              "description": "全维治理台：Dashboard、专家状态、否决事件、审计日志、RBAC配置、专家配置、WebSocket实时推送、治理评估",
+              "frontend_pages": [],
+              "frontend_api_functions": [],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": false,
+              "note": "编排器通过nest('/api/governance', governance_routes())挂载，端点存在于handlers/governance.rs"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "operators",
+      "name": "算子与商城",
+      "modules": [
+        {
+          "id": "operators_core",
+          "name": "算子引擎",
+          "features": [
+            {
+              "id": "feat_operators_core",
+              "name": "算子列表、算子注册、工作流执行",
+              "status": "implemented",
+              "priority": "P0",
+              "description": "算子列表查询、自定义算子注册、工作流执行（含DAG调度预检+资源约束）",
+              "frontend_pages": ["views/operators/OperatorsView.vue"],
+              "frontend_api_functions": ["getOperators", "registerOperator", "executeWorkflow"],
+              "backend_endpoints": [
+                {"method": "GET", "path": "/api/operators", "handler": "list_operators"},
+                {"method": "POST", "path": "/api/operators/register", "handler": "register_operator"},
+                {"method": "POST", "path": "/api/execute", "handler": "execute_workflow"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        },
+        {
+          "id": "operators_market",
+          "name": "算子商城",
+          "features": [
+            {
+              "id": "feat_operators_market",
+              "name": "商城列表/随机/详情/上传/更新/删除/克隆/导出",
+              "status": "partial",
+              "priority": "P1",
+              "description": "算子包商城：列表、随机推荐、详情、上传、更新、删除、克隆、DSL导出",
+              "frontend_pages": ["views/market/MarketView.vue", "views/market/MarketDetailView.vue"],
+              "frontend_api_functions": ["marketList", "marketRandom", "marketGet", "marketUpload", "marketUpdate", "marketDelete", "marketClone", "marketExport"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": false,
+              "note": "编排器通过nest('/api/market', market_routes())挂载，但前端调用/api/market/packages可能404（路径差异）"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "system",
+      "name": "系统管理",
+      "modules": [
+        {
+          "id": "system_core",
+          "name": "系统基础",
+          "features": [
+            {
+              "id": "feat_system_core",
+              "name": "健康检查、状态、全状态、日志、插件、系统配置",
+              "status": "partial",
+              "priority": "P1",
+              "description": "系统健康检查、状态查询、全状态查询、执行日志、插件列表、系统配置（只读）",
+              "frontend_pages": ["views/admin/panels/AdminMonitor.vue"],
+              "frontend_api_functions": ["getHealth", "getStatus", "getFullStatus", "getLogs", "getPlugins", "getSystemConfig"],
+              "backend_endpoints": [
+                {"method": "GET", "path": "/api/health", "handler": "health"},
+                {"method": "GET", "path": "/api/status", "handler": "get_status"},
+                {"method": "GET", "path": "/api/status/full", "handler": "get_full_status"},
+                {"method": "GET", "path": "/api/logs", "handler": "get_logs"},
+                {"method": "GET", "path": "/api/plugins", "handler": "list_plugins"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false,
+              "note": "getHealth通过网关原生/health实现；status/logs/plugins通过编排器代理实现；getSystemConfig(/config)仅legacy存在"
+            }
+          ]
+        },
+        {
+          "id": "system_permissions",
+          "name": "权限管理",
+          "features": [
+            {
+              "id": "feat_system_permissions",
+              "name": "当前用户权限信息（权限列表/角色/菜单/数据权限）",
+              "status": "implemented",
+              "priority": "P0",
+              "description": "获取当前登录用户的权限列表、角色、菜单、数据权限",
+              "frontend_pages": [],
+              "frontend_api_functions": ["getPermissions"],
+              "backend_endpoints": [
+                {"method": "GET", "path": "/api/system/permissions", "handler": "IAM原生"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        },
+        {
+          "id": "system_dept",
+          "name": "部门管理",
+          "features": [
+            {
+              "id": "feat_system_dept",
+              "name": "部门CRUD、部门树、部门用户列表",
+              "status": "implemented",
+              "priority": "P1",
+              "description": "部门列表/树/详情/创建/更新/删除、部门下用户列表",
+              "frontend_pages": ["views/admin/panels/AdminDepartment.vue"],
+              "frontend_api_functions": ["getDeptList", "getDeptTree", "getDeptDetail", "createDept", "updateDept", "deleteDept", "getDeptUserList"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": false,
+              "note": "网关原生IAM实现，/api/system/dept/*"
+            }
+          ]
+        },
+        {
+          "id": "system_post",
+          "name": "岗位管理",
+          "features": [
+            {
+              "id": "feat_system_post",
+              "name": "岗位CRUD、按部门查询岗位",
+              "status": "implemented",
+              "priority": "P2",
+              "description": "岗位列表/详情/创建/更新/删除、按部门查询岗位",
+              "frontend_pages": ["views/admin/panels/AdminDepartment.vue"],
+              "frontend_api_functions": ["getPostList", "getPostByDept", "getPostDetail", "createPost", "updatePost", "deletePost"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        },
+        {
+          "id": "system_user",
+          "name": "用户管理",
+          "features": [
+            {
+              "id": "feat_system_user",
+              "name": "用户CRUD、重置密码、状态变更、角色分配",
+              "status": "implemented",
+              "priority": "P0",
+              "description": "用户列表/详情/创建/更新/删除、重置密码、用户状态变更、用户角色查询/分配",
+              "frontend_pages": ["views/admin/panels/AdminUser.vue"],
+              "frontend_api_functions": ["getUserList", "getUserDetail", "createUser", "updateUser", "deleteUser", "resetUserPwd", "changeUserStatus", "getUserRoles", "assignUserRoles"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        },
+        {
+          "id": "system_role",
+          "name": "角色管理",
+          "features": [
+            {
+              "id": "feat_system_role",
+              "name": "角色CRUD、菜单权限/数据权限分配、角色用户、复制角色",
+              "status": "implemented",
+              "priority": "P0",
+              "description": "角色列表/详情/创建/更新/删除、菜单权限查询/分配、数据权限查询/分配、角色下用户列表、复制角色",
+              "frontend_pages": ["views/admin/panels/AdminRole.vue"],
+              "frontend_api_functions": ["getRoleList", "getRoleDetail", "createRole", "updateRole", "deleteRole", "getRoleMenuPerms", "assignRoleMenuPerms", "getRoleDataPerms", "assignRoleDataPerms", "getRoleUsers", "copyRole"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        },
+        {
+          "id": "system_menu",
+          "name": "菜单管理",
+          "features": [
+            {
+              "id": "feat_system_menu",
+              "name": "菜单树/列表/详情/CRUD",
+              "status": "implemented",
+              "priority": "P1",
+              "description": "菜单树、菜单列表、菜单详情、菜单创建/更新/删除",
+              "frontend_pages": ["views/admin/panels/AdminMenu.vue"],
+              "frontend_api_functions": ["getMenuTree", "getMenuList", "getMenuDetail", "createMenu", "updateMenu", "deleteMenu"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        },
+        {
+          "id": "system_dict",
+          "name": "字典管理",
+          "features": [
+            {
+              "id": "feat_system_dict",
+              "name": "字典类型CRUD、字典数据CRUD、按类型查询字典数据",
+              "status": "implemented",
+              "priority": "P2",
+              "description": "字典类型列表/全部/详情/创建/更新/删除、字典数据列表/按类型/详情/创建/更新/删除",
+              "frontend_pages": ["views/admin/panels/AdminDict.vue"],
+              "frontend_api_functions": ["getDictTypeList", "getDictTypeAll", "getDictTypeDetail", "createDictType", "updateDictType", "deleteDictType", "getDictDataList", "getDictDataByType", "getDictDataDetail", "createDictData", "updateDictData", "deleteDictData"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        },
+        {
+          "id": "system_config",
+          "name": "参数配置",
+          "features": [
+            {
+              "id": "feat_system_config",
+              "name": "参数配置CRUD、按key查询、刷新缓存",
+              "status": "implemented",
+              "priority": "P2",
+              "description": "参数配置列表/详情/创建/更新/删除、按key查询配置、刷新配置缓存",
+              "frontend_pages": ["views/admin/panels/AdminConfig.vue"],
+              "frontend_api_functions": ["getConfigList", "getConfigDetail", "getConfigByKey", "createConfig", "updateConfig", "deleteConfig", "refreshConfigCache"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": false,
+              "note": "refreshConfigCache为stub实现"
+            }
+          ]
+        },
+        {
+          "id": "system_operlog",
+          "name": "操作日志",
+          "features": [
+            {
+              "id": "feat_system_operlog",
+              "name": "操作日志列表/详情/删除/清空/导出",
+              "status": "implemented",
+              "priority": "P2",
+              "description": "操作日志列表/详情/删除/清空/导出",
+              "frontend_pages": ["views/admin/panels/AdminAudit.vue"],
+              "frontend_api_functions": ["getOperLogList", "getOperLogDetail", "deleteOperLog", "cleanOperLog", "exportOperLog"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": false,
+              "note": "exportOperLog返回stub(exported:false)"
+            }
+          ]
+        },
+        {
+          "id": "system_logininfor",
+          "name": "登录日志",
+          "features": [
+            {
+              "id": "feat_system_logininfor",
+              "name": "登录日志列表/删除/清空/导出",
+              "status": "implemented",
+              "priority": "P2",
+              "description": "登录日志列表/删除/清空/导出",
+              "frontend_pages": [],
+              "frontend_api_functions": ["getLoginLogList", "deleteLoginLog", "cleanLoginLog", "exportLoginLog"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": false,
+              "note": "exportLoginLog返回stub(exported:false)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "security",
+      "name": "安全与RBAC",
+      "modules": [
+        {
+          "id": "security_core",
+          "name": "安全凭证与审计",
+          "features": [
+            {
+              "id": "feat_security_core",
+              "name": "安全状态、API密钥CRUD、密钥验证、审计日志",
+              "status": "implemented",
+              "priority": "P0",
+              "description": "安全状态查询、API密钥列表/创建/吊销、密钥验证、审计日志查询（支持action/actor/since/limit过滤）",
+              "frontend_pages": ["views/admin/panels/AdminAccess.vue", "views/admin/panels/AdminAudit.vue"],
+              "frontend_api_functions": ["getSecurityStatus", "getApiKeys", "createApiKey", "revokeApiKey", "validateApiKey", "getAuditLogs"],
+              "backend_endpoints": [
+                {"method": "GET", "path": "/api/security/status", "handler": "IAM原生"},
+                {"method": "GET", "path": "/api/security/api-keys", "handler": "IAM原生"},
+                {"method": "POST", "path": "/api/security/api-keys", "handler": "IAM原生"},
+                {"method": "DELETE", "path": "/api/security/api-keys/:id", "handler": "IAM原生"},
+                {"method": "POST", "path": "/api/security/validate", "handler": "IAM原生"},
+                {"method": "GET", "path": "/api/security/audit-log", "handler": "IAM原生"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        },
+        {
+          "id": "security_rbac_middleware",
+          "name": "RBAC中间件",
+          "features": [
+            {
+              "id": "feat_security_rbac",
+              "name": "令牌注册表、角色授权、双向审计（签名留痕）",
+              "status": "implemented",
+              "priority": "P0",
+              "description": "OUS_API_TOKEN恒为Admin；OUS_RBAC_TOKENS格式令牌:角色[:租户]多组逗号分隔；严格模式下仅注册表内令牌可认证；6种角色(admin/editor/viewer/operator/safety_approver/auditor)；放行/拒绝双向审计签名留痕",
+              "frontend_pages": [],
+              "frontend_api_functions": [],
+              "backend_endpoints": [
+                {"method": "GET", "path": "/api/audit", "handler": "get_access_audit"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        },
+        {
+          "id": "security_hitl",
+          "name": "HITL人机协同审批",
+          "features": [
+            {
+              "id": "feat_security_hitl",
+              "name": "HITL待审批队列、WebSocket实时推送、审批操作",
+              "status": "implemented",
+              "priority": "P1",
+              "description": "人机协同审批：待审批队列、WebSocket实时推送通道、审批通过/拒绝操作",
+              "frontend_pages": ["views/admin/panels/AdminHitl.vue"],
+              "frontend_api_functions": [],
+              "backend_endpoints": [
+                {"method": "GET", "path": "/ws/hitl", "handler": "hitl_ws_handler"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "storage",
+      "name": "存储与模块",
+      "modules": [
+        {
+          "id": "storage_core",
+          "name": "存储提供商与模块",
+          "features": [
+            {
+              "id": "feat_storage_core",
+              "name": "存储提供商列表/切换/状态、模块列表",
+              "status": "frontend_only",
+              "priority": "P2",
+              "description": "存储提供商列表、切换存储提供商、存储状态、已安装模块列表",
+              "frontend_pages": ["views/admin/panels/AdminStorage.vue"],
+              "frontend_api_functions": ["getStorageProviders", "switchStorageProvider", "getStorageStatus", "getModules"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": true,
+              "note": "仅legacy backend-rust存在，编排器和网关均未注册"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "alliance",
+      "name": "联盟独立客户端",
+      "modules": [
+        {
+          "id": "alliance_engine",
+          "name": "联盟引擎",
+          "features": [
+            {
+              "id": "feat_alliance_engine",
+              "name": "联盟能力查询、全维分析SSE流式",
+              "status": "frontend_only",
+              "priority": "P1",
+              "description": "联盟6阶段全维分析引擎：能力矩阵查询、全维分析SSE流式执行",
+              "frontend_pages": ["views/expert/AllianceTaskView.vue"],
+              "frontend_api_functions": ["getAllianceCapabilities", "runAllianceFullSSE", "runAllianceTask"],
+              "backend_endpoints": [],
+              "blocked_by": ["gap_alliance_engine"],
+              "missing_backend": true,
+              "note": "alliance.js直接fetch不带/api前缀；网关有/ai/engine/process但无/alliance子路径；Vite代理了/ai/engine但路径不匹配"
+            }
+          ]
+        },
+        {
+          "id": "alliance_voice",
+          "name": "语音健康",
+          "features": [
+            {
+              "id": "feat_alliance_voice",
+              "name": "语音服务健康检查（含浏览器TTS兜底）",
+              "status": "partial",
+              "priority": "P2",
+              "description": "语音服务健康检查，失败时自动回退到browser Web Speech Synthesis（AC-22三层回退）",
+              "frontend_pages": [],
+              "frontend_api_functions": ["getVoiceHealth"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": false,
+              "note": "网关voice_proxy_short_circuit中间件代理/voice/**→:30010，不可达时返回兜底JSON"
+            }
+          ]
+        },
+        {
+          "id": "alliance_experts",
+          "name": "联盟专家（独立fetch）",
+          "features": [
+            {
+              "id": "feat_alliance_experts",
+              "name": "专家注册/列表/咨询/多咨询/辩论/路由/智能咨询/算法分析/概览/指标",
+              "status": "frontend_only",
+              "priority": "P0",
+              "description": "通过alliance.js独立fetch客户端调用的专家联盟功能，与experts.api.js功能重叠但路径不带/api前缀",
+              "frontend_pages": ["views/workspace/ExpertWorkspaceView.vue", "views/expert/ExpertPlazaView.vue"],
+              "frontend_api_functions": ["allianceRegisterExpert", "allianceGetExperts", "allianceConsultExpert", "allianceMultiExpertConsult", "allianceExpertDebate", "allianceRouteExperts", "allianceIntelligentConsult", "allianceAlgorithmAnalysis", "allianceGetExpertOverview", "allianceGetExpertMetrics", "allianceGetSingleExpertMetrics"],
+              "backend_endpoints": [],
+              "blocked_by": ["gap_alliance_experts_proxy"],
+              "missing_backend": true,
+              "note": "Vite代理未配置/experts前缀，浏览器直接请求dev server→404"
+            }
+          ]
+        },
+        {
+          "id": "alliance_tasks",
+          "name": "联盟任务",
+          "features": [
+            {
+              "id": "feat_alliance_tasks",
+              "name": "联盟任务CRUD、协作计划、执行日志SSE、融合结果、暂停/恢复/取消/重试",
+              "status": "frontend_only",
+              "priority": "P1",
+              "description": "联盟任务全生命周期：创建/列表/详情、协作计划查询、执行日志SSE流式、融合结果查询、任务暂停/恢复/取消/重试",
+              "frontend_pages": ["views/expert/AllianceTaskView.vue"],
+              "frontend_api_functions": ["createAllianceTask", "getAllianceTasks", "getAllianceTask", "getCollaborationPlan", "getExecutionLogsSSE", "getFusionResults", "pauseAllianceTask", "resumeAllianceTask", "cancelAllianceTask", "retryAllianceTask"],
+              "backend_endpoints": [],
+              "blocked_by": ["gap_alliance_tasks_proxy"],
+              "missing_backend": true,
+              "note": "网关有/alliance/v1/tasks(stub)但前端调/alliance/tasks(无v1)；Vite未配置/alliance代理"
+            }
+          ]
+        },
+        {
+          "id": "alliance_stats",
+          "name": "联盟统计",
+          "features": [
+            {
+              "id": "feat_alliance_stats",
+              "name": "联盟统计信息",
+              "status": "frontend_only",
+              "priority": "P2",
+              "description": "联盟整体统计数据查询",
+              "frontend_pages": [],
+              "frontend_api_functions": ["getAllianceStats"],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "voice",
+      "name": "语音",
+      "modules": [
+        {
+          "id": "voice_core",
+          "name": "语音算子服务",
+          "features": [
+            {
+              "id": "feat_voice_core",
+              "name": "ASR/TTS语音服务（网关代理→:30010）",
+              "status": "partial",
+              "priority": "P2",
+              "description": "语音服务：ASR(Paraformer-zh+sherpa-onnx)、TTS(CosyVoice2 Apache-2.0默认/Fish-S2-Pro需Research License)；网关通过voice_proxy_short_circuit中间件代理/voice/**→:30010",
+              "frontend_pages": [],
+              "frontend_api_functions": [],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": false,
+              "note": "独立服务mox-voice-operator-svc运行在:30010，网关代理；30010不可达时自动回退browser_tts"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "platform",
+      "name": "平台与网关",
+      "modules": [
+        {
+          "id": "platform_gateway",
+          "name": "主网关",
+          "features": [
+            {
+              "id": "feat_platform_gateway",
+              "name": "统一入口网关（IAM原生+反向代理适配层）",
+              "status": "implemented",
+              "priority": "P0",
+              "description": "Rust网关mox-server运行在:8080：/api/system/*和/api/security/*→网关原生IAM(data/mox.db)；/api/projects/*→PrimiFlow:8000反向代理；其余/api/*→编排器:3001反向代理；含请求头过滤、响应头复制、502/504降级、超时控制",
+              "frontend_pages": [],
+              "frontend_api_functions": [],
+              "backend_endpoints": [
+                {"method": "GET", "path": "/health", "handler": "gateway_health"},
+                {"method": "GET", "path": "/api/v1/status", "handler": "gateway_status"},
+                {"method": "GET", "path": "/api/v1/domains", "handler": "gateway_domains"},
+                {"method": "GET", "path": "/metrics", "handler": "prometheus_metrics"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        },
+        {
+          "id": "platform_subservers",
+          "name": "子服务聚合",
+          "features": [
+            {
+              "id": "feat_platform_subservers",
+              "name": "四套子服务库方式聚合（mox-system/mox-viz/primiflow/fusion）",
+              "status": "implemented",
+              "priority": "P1",
+              "description": "Phase 1收敛：mox-system(/mox-system/*,成员/任务/RBAC/审计/WS,自带鉴权透传)、mox-viz(/mox-viz/*,治理可视化)、primiflow(/primiflow/*,六维溯源拓扑)、fusion(/fusion/*,融合合成/注册/落库/闸门)；各服务可通过环境变量独立关闭",
+              "frontend_pages": [],
+              "frontend_api_functions": [],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": false,
+              "note": "编排器通过subservers::build()聚合，逐个nest到主路由"
+            }
+          ]
+        },
+        {
+          "id": "platform_kg_v1",
+          "name": "KG v1域（网关原生）",
+          "features": [
+            {
+              "id": "feat_platform_kg_v1",
+              "name": "知识图谱v1 API（网关原生，6端点）",
+              "status": "implemented",
+              "priority": "P2",
+              "description": "网关原生KG域：邻域子图、路径查询、最短路径、中心性(4指标)、社区发现(CNM)、统计",
+              "frontend_pages": [],
+              "frontend_api_functions": [],
+              "backend_endpoints": [
+                {"method": "GET", "path": "/kg/v1/neighborhood", "handler": "kg_neighborhood"},
+                {"method": "GET", "path": "/kg/v1/path", "handler": "kg_path"},
+                {"method": "GET", "path": "/kg/v1/shortest-path", "handler": "kg_shortest_path"},
+                {"method": "GET", "path": "/kg/v1/centrality", "handler": "kg_centrality"},
+                {"method": "GET", "path": "/kg/v1/communities", "handler": "kg_communities"},
+                {"method": "GET", "path": "/kg/v1/stats", "handler": "kg_stats"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false,
+              "note": "前端使用/api/graph而非/kg/v1，两套图谱API并存"
+            }
+          ]
+        },
+        {
+          "id": "platform_ai_engine",
+          "name": "AI Engine域（网关原生）",
+          "features": [
+            {
+              "id": "feat_platform_ai_engine",
+              "name": "统一AI查询引擎（4端点）",
+              "status": "implemented",
+              "priority": "P1",
+              "description": "统一AI语义网关：POST process(意图识别→能力路由)、POST analyze、GET capabilities(7能力矩阵)、GET metrics",
+              "frontend_pages": [],
+              "frontend_api_functions": [],
+              "backend_endpoints": [
+                {"method": "POST", "path": "/ai/engine/process", "handler": "ai_engine_process"},
+                {"method": "POST", "path": "/ai/engine/analyze", "handler": "ai_engine_analyze"},
+                {"method": "GET", "path": "/ai/engine/capabilities", "handler": "ai_engine_capabilities"},
+                {"method": "GET", "path": "/ai/engine/metrics", "handler": "ai_engine_metrics"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        },
+        {
+          "id": "platform_agent",
+          "name": "AI Agent引擎",
+          "features": [
+            {
+              "id": "feat_platform_agent",
+              "name": "AI Agent任务执行端点",
+              "status": "partial",
+              "priority": "P2",
+              "description": "AI Agent引擎任务执行端点，共享ai_agent状态",
+              "frontend_pages": [],
+              "frontend_api_functions": [],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": false,
+              "note": "编排器通过nest('/api/agent', agent_routes())挂载，前端调用/api/agent/tasks可能404（路径差异）"
+            }
+          ]
+        },
+        {
+          "id": "platform_openapi",
+          "name": "OpenAPI文档",
+          "features": [
+            {
+              "id": "feat_platform_openapi",
+              "name": "OpenAPI 3.1规范与Swagger UI",
+              "status": "implemented",
+              "priority": "P2",
+              "description": "标准接口契约：OpenAPI 3.1规范YAML、Swagger UI交互文档",
+              "frontend_pages": ["views/admin/panels/AdminDocs.vue"],
+              "frontend_api_functions": [],
+              "backend_endpoints": [
+                {"method": "GET", "path": "/api/openapi.yaml", "handler": "serve_openapi_yaml"},
+                {"method": "GET", "path": "/api/docs", "handler": "serve_swagger_ui"}
+              ],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "admin",
+      "name": "管理后台",
+      "modules": [
+        {
+          "id": "admin_panels",
+          "name": "管理面板集合",
+          "features": [
+            {
+              "id": "feat_admin_panels",
+              "name": "15个管理面板（总览/用户/角色/部门/凭证/审计/菜单/字典/配置/存储/HITL/监控/LLM/文档）",
+              "status": "implemented",
+              "priority": "P1",
+              "description": "系统管理后台：AdminView tab壳+15个面板，覆盖总览、用户、角色、部门、访问凭证、审计日志、菜单、字典、参数配置、存储与模块、HITL审批、系统监控、LLM配置、API文档",
+              "frontend_pages": [
+                "views/admin/AdminView.vue",
+                "views/admin/panels/AdminOverview.vue",
+                "views/admin/panels/AdminUser.vue",
+                "views/admin/panels/AdminRole.vue",
+                "views/admin/panels/AdminDepartment.vue",
+                "views/admin/panels/AdminAccess.vue",
+                "views/admin/panels/AdminAudit.vue",
+                "views/admin/panels/AdminMenu.vue",
+                "views/admin/panels/AdminDict.vue",
+                "views/admin/panels/AdminConfig.vue",
+                "views/admin/panels/AdminStorage.vue",
+                "views/admin/panels/AdminHitl.vue",
+                "views/admin/panels/AdminMonitor.vue",
+                "views/admin/panels/AdminLlm.vue",
+                "views/admin/panels/AdminDocs.vue"
+              ],
+              "frontend_api_functions": [],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": false,
+              "note": "生产化收口已修复3个孤儿面板(User/Role/Department)的tab挂载和路由"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "misc",
+      "name": "杂项与门户",
+      "modules": [
+        {
+          "id": "misc_core",
+          "name": "登录/门户/业务大厅/403",
+          "features": [
+            {
+              "id": "feat_misc_core",
+              "name": "登录页、门户首页、业务大厅、无权限页",
+              "status": "implemented",
+              "priority": "P1",
+              "description": "登录认证页、门户首页、业务大厅、403无权限页面",
+              "frontend_pages": [
+                "views/misc/Login.vue",
+                "views/misc/PortalHome.vue",
+                "views/misc/BusinessHall.vue",
+                "views/misc/Forbidden.vue"
+              ],
+              "frontend_api_functions": [],
+              "backend_endpoints": [],
+              "blocked_by": [],
+              "missing_backend": false
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "gaps": [
+    {
+      "id": "gap_experts_api",
+      "domain": "expert",
+      "description": "后端缺失 /api/experts/* 端点族，前端experts.api.js约50个函数无编排器后端支撑；legacy backend-rust有但无/api前缀，ai-expert-svc有/api/alliance/experts前缀不同",
+      "severity": "P0",
+      "affected_frontend_functions": ["getExperts", "getExpert", "registerExpert", "updateExpert", "removeExpert", "consultExpert", "multiExpertConsult", "expertDebate", "getExpertCapabilities", "routeExperts", "intelligentConsult", "algorithmAnalysis", "getExpertMetrics", "getExpertOverview", "getSingleExpertMetrics", "createExpertSession", "getExpertSessions", "getExpertSessionStats", "getExpertSession", "updateExpertSession", "deleteExpertSession", "appendSessionMessage", "sessionSimilarSearch", "expertSemanticSearch", "exportExpertSession", "archiveExpertSession", "getDispatcherConfig", "updateDispatcherConfig", "getDispatcherStatus", "dispatcherDispatch", "dispatcherConsult", "dispatcherMultiConsult", "resetDispatcherExpert", "resetDispatcherAll", "enterpriseConsult", "enterpriseAnalyze", "expertOrchestrate", "expertGeneratePlan", "expertExecutePlan", "getOrchestrationStats", "getOrchestrationPlugins", "getOrchestrationHistory"],
+      "affected_pages": ["views/expert/ExpertPlazaView.vue", "views/expert/ExpertCenterView.vue", "views/expert/panels/ExpertOverviewPanel.vue", "views/expert/panels/ExpertOrchestratorPanel.vue", "views/expert/panels/ExpertEnterprisePanel.vue", "views/workspace/ExpertWorkspaceView.vue"],
+      "status": "open"
+    },
+    {
+      "id": "gap_expert_graph_api",
+      "domain": "expert",
+      "description": "后端缺失 /api/expert-graph/* 端点族，前端8个专家图谱函数无后端支撑",
+      "severity": "P1",
+      "affected_frontend_functions": ["getExpertGraph", "getExpertGraphStats", "getExpertGraphNeighbors", "getExpertGraphCollaborators", "getExpertGraphPath", "getExpertGraphCommunities", "findOptimalTeam", "rebuildExpertGraph"],
+      "status": "open"
+    },
+    {
+      "id": "gap_tasks_api",
+      "domain": "project",
+      "description": "后端缺失 /api/tasks/* 端点族，前端9个任务管理函数无编排器后端支撑；mox-system子服务有/mox-system/tasks但路径前缀不同",
+      "severity": "P0",
+      "affected_frontend_functions": ["getTasks", "getTask", "createTask", "updateTask", "deleteTask", "convertChatToTask", "convertTaskToChat", "executeTask", "autoCreateTask"],
+      "affected_pages": ["views/project/TaskView.vue", "views/project/ProjectsView.vue"],
+      "status": "open"
+    },
+    {
+      "id": "gap_kb_api",
+      "domain": "kb",
+      "description": "后端缺失 /api/kb/* 端点族，前端21个知识库函数无后端支撑",
+      "severity": "P0",
+      "affected_frontend_functions": ["kbListDocuments", "kbGetDocument", "kbCreateDocument", "kbUpdateDocument", "kbDeleteDocument", "kbAnalyzeDocument", "kbBatchAnalyze", "kbGetCategories", "kbGetTags", "kbSearch", "kbGetVersions", "kbGetVersion", "kbCreateVersion", "kbCompareVersions", "kbRevertVersion", "kbGetEntities", "kbGraphLink", "kbGetStats", "kbGetDocHistory", "kbGetHistory"],
+      "affected_pages": ["views/project/panels/KnowledgeBasePanel.vue", "views/project/ResourcesView.vue"],
+      "status": "open"
+    },
+    {
+      "id": "gap_llm_api",
+      "domain": "llm",
+      "description": "后端缺失新 /api/llm/* 网关端点族（17个函数），仅有旧接口/api/ai/llm/config(3个函数)在编排器中实现",
+      "severity": "P0",
+      "affected_frontend_functions": ["getLlmProviders", "getLlmProviderPresets", "getLlmProvider", "setActiveProvider", "addLlmProvider", "updateLlmProvider", "removeLlmProvider", "enableLlmProvider", "disableLlmProvider", "testLlmProvider", "discoverLlmModels", "getLlmHealth", "getLlmRouting", "updateLlmRouting", "getLlmUsage", "getLlmLogs", "getLlmStats"],
+      "affected_pages": ["views/admin/panels/AdminLlm.vue"],
+      "status": "open"
+    },
+    {
+      "id": "gap_melody2score_api",
+      "domain": "melody",
+      "description": "后端缺失 /api/melody2score/* 端点族，前端8个旋律转谱函数无编排器后端支撑；有独立FastAPI服务运行在:8012但网关未代理",
+      "severity": "P1",
+      "affected_frontend_functions": ["melodyHealth", "melodyStatus", "melodySamples", "melodyRecognize", "melodyRecognizeSample", "melodyRecognizeRecord", "melodyExportSheet", "melodySaveReport"],
+      "affected_pages": ["views/ai/Melody2ScoreView.vue"],
+      "status": "open"
+    },
+    {
+      "id": "gap_web_search_api",
+      "domain": "ai",
+      "description": "后端缺失 /api/web-search/* 端点族，前端4个联网搜索函数无编排器后端支撑",
+      "severity": "P1",
+      "affected_frontend_functions": ["getWebSearchConfig", "updateWebSearchConfig", "testWebSearch", "webSearch"],
+      "status": "open"
+    },
+    {
+      "id": "gap_infinite_optimize_api",
+      "domain": "ai",
+      "description": "后端缺失 /api/ai/infinite-optimize/* 端点族，前端8个无穷维度优化函数无编排器后端支撑",
+      "severity": "P1",
+      "affected_frontend_functions": ["getInfiniteBenchmarks", "startInfiniteOptimize", "stopInfiniteOptimize", "getInfiniteOptimizeStatus", "getInfiniteOptimizeResults", "runProviderComparison", "getProviderComparison", "applyBestConfig"],
+      "affected_pages": ["views/ai/InfiniteOptimizerView.vue"],
+      "status": "open"
+    },
+    {
+      "id": "gap_full_analysis_api",
+      "domain": "ai",
+      "description": "后端缺失 /api/ai/full-analysis等全维分析端点，前端6个全维智能分析函数无编排器后端支撑",
+      "severity": "P0",
+      "affected_frontend_functions": ["aiFullAnalysis", "aiGenerateDoc", "aiGenerateFlowDiagram", "aiDevTestFix", "aiFullComplete", "aiOptimizeDoc"],
+      "status": "open"
+    },
+    {
+      "id": "gap_project_integration_api",
+      "domain": "ai",
+      "description": "后端缺失 /api/ai/project-from-chat等项目需求一体化端点，前端6个函数无编排器后端支撑",
+      "severity": "P1",
+      "affected_frontend_functions": ["aiProjectFromChat", "aiGenerateProjectGraph", "aiLinkReqToDb", "allianceEnterprisePipeline", "aiPublishArtifactsToKb", "aiGenerateErd"],
+      "status": "open"
+    },
+    {
+      "id": "gap_artifact_api",
+      "domain": "ai",
+      "description": "后端缺失 /api/ai/artifact/* 端点族，前端3个制品引擎函数无编排器后端支撑",
+      "severity": "P2",
+      "affected_frontend_functions": ["getArtifactConfig", "getArtifacts", "createArtifact"],
+      "status": "open"
+    },
+    {
+      "id": "gap_projects_api",
+      "domain": "project",
+      "description": "/api/projects/* 通过网关反向代理到PrimiFlow:8000，但PrimiFlow实际端点契约未确认，直接访问可能404",
+      "severity": "P1",
+      "affected_frontend_functions": ["getProjects", "getProjectTypes", "getProjectCatalog", "getProjectStats", "getProject", "createProject", "updateProject", "deleteProject", "bindProjectResources", "unbindProjectResource", "updateProjectResourceNote", "getProjectsByResource"],
+      "affected_pages": ["views/project/ProjectsView.vue", "views/project/Dashboard.vue"],
+      "status": "open"
+    },
+    {
+      "id": "gap_alliance_engine",
+      "domain": "alliance",
+      "description": "alliance.js调用/ai/engine/alliance/capabilities和/ai/engine/alliance/full，网关仅有/ai/engine/process等4个端点，无/alliance子路径；Vite代理了/ai/engine但路径不匹配",
+      "severity": "P1",
+      "affected_frontend_functions": ["getAllianceCapabilities", "runAllianceFullSSE", "runAllianceTask"],
+      "status": "open"
+    },
+    {
+      "id": "gap_alliance_experts_proxy",
+      "domain": "alliance",
+      "description": "alliance.js直接fetch /experts/*（不带/api前缀），Vite代理未配置/experts前缀，浏览器直接请求dev server→404",
+      "severity": "P0",
+      "affected_frontend_functions": ["allianceRegisterExpert", "allianceGetExperts", "allianceConsultExpert", "allianceMultiExpertConsult", "allianceExpertDebate", "allianceRouteExperts", "allianceIntelligentConsult", "allianceAlgorithmAnalysis", "allianceGetExpertOverview", "allianceGetExpertMetrics", "allianceGetSingleExpertMetrics"],
+      "status": "open"
+    },
+    {
+      "id": "gap_alliance_tasks_proxy",
+      "domain": "alliance",
+      "description": "alliance.js调用/alliance/tasks/*，网关有/alliance/v1/tasks(stub)但前端调/alliance/tasks(无v1前缀)；Vite未配置/alliance代理",
+      "severity": "P1",
+      "affected_frontend_functions": ["createAllianceTask", "getAllianceTasks", "getAllianceTask", "getCollaborationPlan", "getExecutionLogsSSE", "getFusionResults", "pauseAllianceTask", "resumeAllianceTask", "cancelAllianceTask", "retryAllianceTask", "getAllianceStats"],
+      "status": "open"
+    },
+    {
+      "id": "gap_storage_api",
+      "domain": "storage",
+      "description": "后端缺失 /api/storage/* 和 /api/modules 端点，前端4个存储与模块函数仅在legacy backend-rust存在",
+      "severity": "P2",
+      "affected_frontend_functions": ["getStorageProviders", "switchStorageProvider", "getStorageStatus", "getModules"],
+      "status": "open"
+    },
+    {
+      "id": "gap_frontend_mock_data",
+      "domain": "expert",
+      "description": "前端多个页面存在硬编码mock数据：ExpertOverviewPanel(8位假专家+假进度+假图谱)、ProjectsView(假任务/动态/文档/虚构IDE)、Dashboard(KPI兜底假值+mock执行日志)、ExpertWorkspaceView(假专家/会话/KPI/文件/成员)",
+      "severity": "P0",
+      "affected_pages": ["views/expert/panels/ExpertOverviewPanel.vue", "views/project/ProjectsView.vue", "views/project/Dashboard.vue", "views/workspace/ExpertWorkspaceView.vue"],
+      "status": "partial",
+      "note": "生产化收口已修复ExpertOverviewPanel和ProjectsView的mock→API改造，但Dashboard和ExpertWorkspaceView仍有残留"
+    },
+    {
+      "id": "gap_i18n",
+      "domain": "platform",
+      "description": "完全无国际化框架，所有文案硬编码中文；Grep i18n|useI18n|$t( 在src下0文件命中",
+      "severity": "P2",
+      "status": "open"
+    },
+    {
+      "id": "gap_accessibility",
+      "domain": "platform",
+      "description": "无障碍基础几乎为零：仅4个文件零星出现aria/role；无aria-label、无role语义、无键盘导航规划、无focus管理；企业级合规(WCAG)不达标",
+      "severity": "P1",
+      "status": "open"
+    },
+    {
+      "id": "gap_permission_directive",
+      "domain": "security",
+      "description": "v-permission指令定义了但零使用——没有任何视图/组件用v-permission控制按钮/菜单显隐；路由权限校验框架存在但全路由meta未声明requiresPermission/requiresRole，实际未启用",
+      "severity": "P1",
+      "status": "open"
+    }
+  ],
+  "pending_decisions": [
+    {
+      "id": "decision_python_legacy_migration",
+      "title": "Python legacy 数据全量迁移到主库",
+      "description": "是否将Python legacy数据(mox_meta.db 17表 + mox_business.db 6表)全量迁移到Rust主库data/mox.db。选项A全量迁移(单一数据源，消除一致性风险，但工作量大需新建业务表)；选项B仅迁移关键数据(messages/用户/角色，保留业务演示库)；选项C不迁移维持现状(零风险，长期技术债)",
+      "domain": "data",
+      "status": "pending",
+      "source": "database-normalization-plan.md 第八章8.1 + production-hardening-delivery-report.md 第四章3.1"
+    },
+    {
+      "id": "decision_orphan_messages_table",
+      "title": "mox_meta.db.messages 孤儿表迁移后是否 DROP",
+      "description": "mox_meta.db.messages中现有7行历史留言数据（因双写分裂产生的孤儿数据），迁移到mox_business.db.messages后，是否DROP孤儿表。选项A DROP TABLE(清理)；选项B保留为空表(防止旧代码意外写入时报错)；选项C创建为VIEW指向mox_business.db.messages(SQLite不支持跨库VIEW除非ATTACH)",
+      "domain": "data",
+      "status": "pending",
+      "source": "database-normalization-plan.md 第八章8.2 + production-hardening-delivery-report.md 第四章3.2"
+    },
+    {
+      "id": "decision_legacy_user_iam_integration",
+      "title": "Python legacy 用户体系是否对接 Rust IAM",
+      "description": "Python的admin/ops/visitor(3用户，扁平角色)与Rust的admin用户(完整RBAC 19字段)无同步机制。选项A Python服务调用Rust IAM API做认证授权；选项B定期同步用户数据(批处理)；选项C Python legacy下线，统一用Rust网关",
+      "domain": "security",
+      "status": "pending",
+      "source": "database-normalization-plan.md 第八章8.3 + production-hardening-delivery-report.md 第四章3.3"
+    },
+    {
+      "id": "decision_business_tables_schema",
+      "title": "业务表(products/news/cases)是否纳入主库统一 schema",
+      "description": "当前products/news/cases/team/banners/messages仅在Python legacy业务库(mox_business.db)。若主库需要承载官网业务，需新建对应业务表(UUID主键+ISO8601时间+tenant_id)。取决于产品规划：Rust网关是否要接管官网内容管理",
+      "domain": "data",
+      "status": "pending",
+      "source": "database-normalization-plan.md 第八章8.4 + production-hardening-delivery-report.md 第四章3.4"
+    },
+    {
+      "id": "decision_static_sites_merge",
+      "title": "mox-website/mox-console/mox-store 三个静态 HTML 站是否合并进主 SPA",
+      "description": "三个独立HTML站功能与主SPA重叠。建议合并进主SPA，chip-website保留为独立营销页，xuanji-ux-redesign归档为设计文档",
+      "domain": "frontend",
+      "status": "pending",
+      "source": "production-hardening-delivery-report.md 第四章3.5"
+    },
+    {
+      "id": "decision_legacy_backend_rust_archive",
+      "title": "legacy backend-rust(~200端点，无前缀)是否移植进编排器后归档",
+      "description": "platform/legacy/backend-rust有全量~200端点但路径无/api前缀(如/ai/chat而非/api/ai/chat)，与前端不匹配。需决策是否将这些端点移植进编排器(mox-platform-orchestrator-svc)后归档legacy代码",
+      "domain": "backend",
+      "status": "pending",
+      "source": "production-hardening-delivery-report.md 第四章3.6"
+    }
+  ],
+  "frontend_views_inventory": [
+    {"path": "views/admin/AdminView.vue", "name": "系统管理壳", "domain": "admin", "route": "/admin"},
+    {"path": "views/admin/panels/AdminOverview.vue", "name": "管理总览", "domain": "admin", "route": "/admin/overview"},
+    {"path": "views/admin/panels/AdminUser.vue", "name": "用户管理", "domain": "admin", "route": "/admin/user"},
+    {"path": "views/admin/panels/AdminRole.vue", "name": "角色管理", "domain": "admin", "route": "/admin/role"},
+    {"path": "views/admin/panels/AdminDepartment.vue", "name": "部门管理", "domain": "admin", "route": "/admin/department"},
+    {"path": "views/admin/panels/AdminAccess.vue", "name": "访问凭证", "domain": "admin", "route": "/admin/access"},
+    {"path": "views/admin/panels/AdminAudit.vue", "name": "审计日志", "domain": "admin", "route": "/admin/audit"},
+    {"path": "views/admin/panels/AdminMenu.vue", "name": "菜单管理", "domain": "admin", "route": "/admin/menu"},
+    {"path": "views/admin/panels/AdminDict.vue", "name": "字典管理", "domain": "admin", "route": "/admin/dict"},
+    {"path": "views/admin/panels/AdminConfig.vue", "name": "参数配置", "domain": "admin", "route": "/admin/config"},
+    {"path": "views/admin/panels/AdminStorage.vue", "name": "存储与模块", "domain": "admin", "route": "/admin/storage"},
+    {"path": "views/admin/panels/AdminHitl.vue", "name": "HITL审批", "domain": "admin", "route": "/admin/hitl"},
+    {"path": "views/admin/panels/AdminMonitor.vue", "name": "系统监控", "domain": "admin", "route": "/admin/monitor"},
+    {"path": "views/admin/panels/AdminLlm.vue", "name": "大模型配置", "domain": "admin", "route": "/admin/llm"},
+    {"path": "views/admin/panels/AdminDocs.vue", "name": "API文档", "domain": "admin", "route": "/admin/docs"},
+    {"path": "views/ai/ChatView.vue", "name": "AI助手", "domain": "ai", "route": "/ai"},
+    {"path": "views/ai/CaomeiView.vue", "name": "需求编译", "domain": "ai", "route": "/caomei"},
+    {"path": "views/ai/AlgoLabView.vue", "name": "算法实验室", "domain": "ai", "route": "/algolab"},
+    {"path": "views/ai/InfiniteOptimizerView.vue", "name": "无穷维度优化", "domain": "ai", "route": "/infinite-optimizer"},
+    {"path": "views/ai/BotCenterView.vue", "name": "机器人中心", "domain": "ai", "route": "/botCenter"},
+    {"path": "views/ai/Melody2ScoreView.vue", "name": "旋律转谱", "domain": "ai", "route": "/melody2score"},
+    {"path": "views/expert/ExpertCenterView.vue", "name": "专家联盟管理壳", "domain": "expert", "route": "/expert-center"},
+    {"path": "views/expert/panels/ExpertOverviewPanel.vue", "name": "联盟总览", "domain": "expert", "route": "/expert-center/overview"},
+    {"path": "views/expert/panels/ExpertEnterprisePanel.vue", "name": "企业管理", "domain": "expert", "route": "/expert-center/enterprise"},
+    {"path": "views/expert/panels/ExpertOrchestratorPanel.vue", "name": "编排引擎", "domain": "expert", "route": "/expert-center/orchestrator"},
+    {"path": "views/expert/AllianceTaskView.vue", "name": "联盟任务", "domain": "expert", "route": "/expert-center/tasks"},
+    {"path": "views/expert/ExpertConfigView.vue", "name": "专家配置", "domain": "expert", "route": "/expert-config"},
+    {"path": "views/expert/ExpertPlazaView.vue", "name": "专家广场", "domain": "expert", "route": "/expert-plaza"},
+    {"path": "views/graph/GraphView.vue", "name": "知识图谱", "domain": "graph", "route": "/graph"},
+    {"path": "views/graph/MoxFusionView.vue", "name": "全维融合", "domain": "graph", "route": "/mox-fusion"},
+    {"path": "views/graph/FlowGraph.vue", "name": "流程图", "domain": "graph", "route": "/flow-graph"},
+    {"path": "views/market/MarketView.vue", "name": "算子商城", "domain": "market", "route": "/market"},
+    {"path": "views/market/MarketDetailView.vue", "name": "算子详情", "domain": "market", "route": "/market/:id"},
+    {"path": "views/misc/Login.vue", "name": "登录", "domain": "misc", "route": "/login"},
+    {"path": "views/misc/PortalHome.vue", "name": "门户", "domain": "misc", "route": "/portal"},
+    {"path": "views/misc/BusinessHall.vue", "name": "业务大厅", "domain": "misc", "route": "/hall"},
+    {"path": "views/misc/Forbidden.vue", "name": "无权限", "domain": "misc", "route": "/403"},
+    {"path": "views/operators/OperatorsView.vue", "name": "算子中心", "domain": "operators", "route": "/operators"},
+    {"path": "views/project/Dashboard.vue", "name": "工作台仪表盘", "domain": "project", "route": "/dashboard"},
+    {"path": "views/project/ProjectsView.vue", "name": "项目中心", "domain": "project", "route": "/projects"},
+    {"path": "views/project/TaskView.vue", "name": "任务管理", "domain": "project", "route": "/tasks"},
+    {"path": "views/project/ResourcesView.vue", "name": "资源管理壳", "domain": "project", "route": "/resources"},
+    {"path": "views/project/panels/ResourcesOverviewPanel.vue", "name": "资源概览", "domain": "project", "route": "/resources/overview"},
+    {"path": "views/project/panels/KnowledgeBasePanel.vue", "name": "知识库", "domain": "project", "route": "/resources/knowledge"},
+    {"path": "views/project/Workbench.vue", "name": "工作台执行", "domain": "project", "route": "/workbench"},
+    {"path": "views/workflow/WorkflowView.vue", "name": "工作流编排壳", "domain": "workflow", "route": "/workflow"},
+    {"path": "views/workflow/panels/WorkflowFlowsPanel.vue", "name": "流程编排", "domain": "workflow", "route": "/workflow/flows"},
+    {"path": "views/workflow/panels/PluginsPanel.vue", "name": "插件中心", "domain": "workflow", "route": "/workflow/plugins"},
+    {"path": "views/workflow/panels/McpPanel.vue", "name": "MCP兼容", "domain": "workflow", "route": "/workflow/mcp"},
+    {"path": "views/workflow/panels/AutomationPanel.vue", "name": "自动化", "domain": "workflow", "route": "/workflow/automation"},
+    {"path": "views/workflow/BrowserView.vue", "name": "浏览器自动化", "domain": "workflow", "route": "/browser"},
+    {"path": "views/workspace/ExpertWorkspaceView.vue", "name": "专家联盟工作台", "domain": "workspace", "route": "/expert-workspace"}
+  ],
+  "api_integration_rate": "~85%",
+  "i18n_status": "not_built",
+  "accessibility_status": "not_built",
+  "architecture_summary": {
+    "gateway": {"name": "mox-server (Rust)", "port": 8080, "role": "统一入口+IAM原生+反向代理适配层"},
+    "orchestrator": {"name": "operator-server (Rust)", "port": 3001, "role": "AI/图谱/算子/治理/商城等全业务域，~60-80端点"},
+    "primiflow": {"name": "PrimiFlow (Python)", "port": 8000, "role": "项目/拓扑/资产业务"},
+    "frontend": {"name": "Vue3 SPA (Vite)", "port": 3020, "role": "前端单页应用"},
+    "voice": {"name": "xiaobai_voice", "port": 30010, "role": "ASR/TTS语音服务（网关代理/voice/**）"},
+    "proxy_rules": [
+      "/api/system/* → 网关原生IAM (data/mox.db)",
+      "/api/security/* → 网关原生IAM",
+      "/api/projects/* → PrimiFlow :8000 (反向代理)",
+      "/api/* (其余) → 编排器 :3001 (反向代理)",
+      "/voice/** → :30010 (voice_proxy_short_circuit中间件)",
+      "/mox-system/* → 子服务透传(自带鉴权)",
+      "/mox-viz/*, /primiflow/*, /fusion/* → 子服务(网关令牌保护)"
+    ]
+  }
+}

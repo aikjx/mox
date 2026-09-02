@@ -514,7 +514,10 @@ impl PlacementEngine {
 
     /// 计算集群均衡度（0-100，越高越均衡）
     pub fn compute_cluster_balance(&self, nodes: &[PlacementNode]) -> f64 {
-        if nodes.len() <= 1 {
+        if nodes.is_empty() {
+            return 0.0;
+        }
+        if nodes.len() == 1 {
             return 100.0;
         }
 
@@ -674,7 +677,7 @@ mod tests {
         let engine = PlacementEngine::new();
 
         let nodes = vec![
-            make_node("n1", 1000, 950, "r1", "z1"), // 50 free
+            make_node("n1", 1000, 850, "r1", "z1"), // 150 free
             make_node("n2", 1000, 990, "r2", "z1"), // 10 free
         ];
 

@@ -7,10 +7,11 @@
 
 pub mod handlers;
 pub mod graph_algo;
+pub mod kg_persist;
 
 use axum::{
     body::Body,
-    extract::Request,
+    extract::{Path, Query, Request, State},
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{delete, get, post, put},
@@ -37,6 +38,8 @@ pub struct AppState {
     pub audit_logs: Arc<DashMap<String, Value>>,
     pub graph_nodes: Arc<DashMap<String, Value>>,
     pub graph_edges: Arc<DashMap<String, Value>>,
+    /// M5.3：KG 图谱 JSON 快照持久化路径（None = 不持久化，仅内存）
+    pub kg_file: Option<String>,
     pub browser_sessions: Arc<DashMap<String, Value>>,
     pub automation_runs: Arc<DashMap<String, Value>>,
     pub plugins: Arc<DashMap<String, Value>>,
@@ -60,12 +63,14 @@ impl Default for AppState {
             audit_logs: Arc::new(DashMap::new()),
             graph_nodes: Arc::new(DashMap::new()),
             graph_edges: Arc::new(DashMap::new()),
+            kg_file: std::env::var("MOX_KG_FILE").ok(),
             browser_sessions: Arc::new(DashMap::new()),
             automation_runs: Arc::new(DashMap::new()),
             plugins: Arc::new(DashMap::new()),
             chat_history: Arc::new(DashMap::new()),
         };
         state.seed_demo_data();
+        state.load_kg_from_env();
         state
     }
 }
@@ -178,6 +183,48 @@ impl AppState {
             }
         }
     }
+
+    /// M5.3：KG 图谱持久化装配（重启自动恢复，无需重灌）。
+    /// 优先级：MOX_KG_FILE 快照 > MOX_KG_SEED seed（并落快照）> 演示数据。
+    fn load_kg_from_env(&self) {
+        let kg_file = std::env::var("MOX_KG_FILE").ok();
+        let kg_seed = std::env::var("MOX_KG_SEED").ok();
+        if let Some(f) = &kg_file {
+            if let Some((nodes, edges)) = kg_persist::load_snapshot(f) {
+                self.graph_nodes.clear();
+                for n in nodes {
+                    if let Some(id) = n.get("id").and_then(|v| v.as_str()) {
+                        self.graph_nodes.insert(id.to_string(), n);
+                    }
+                }
+                self.graph_edges.clear();
+                for e in edges {
+                    if let Some(id) = e.get("id").and_then(|v| v.as_str()) {
+                        self.graph_edges.insert(id.to_string(), e);
+                    }
+                }
+                println!("[KG] 从快照恢复: {} 节点 / {} 边 ({})", self.graph_nodes.len(), self.graph_edges.len(), f);
+                return;
+            } else {
+                println!("[KG] 快照不存在或解析失败，尝试 seed 冷启动: {}", f);
+            }
+        }
+        if let Some(seed) = &kg_seed {
+            match kg_persist::load_seed(seed, &self.graph_nodes, &self.graph_edges) {
+                Ok(n) => {
+                    println!("[KG] 从 seed 冷启动: 新增 {} 节点, 当前 {} 节点 / {} 边 ({})",
+                        n, self.graph_nodes.len(), self.graph_edges.len(), seed);
+                    if let Some(f) = &kg_file {
+                        let _ = kg_persist::save_snapshot(f, &self.graph_nodes, &self.graph_edges);
+                        println!("[KG] 已落快照: {}", f);
+                    }
+                }
+                Err(e) => println!("[KG] seed 加载失败，使用演示数据: {}", e),
+            }
+        } else {
+            println!("[KG] 未配置 MOX_KG_FILE/MOX_KG_SEED，使用演示数据");
+        }
+    }
 }
 
 /// 统一成功响应
@@ -229,6 +276,247 @@ pub fn err(status: StatusCode, code: &str, message: &str) -> Response<Body> {
 /// 生成 UUID
 pub fn new_id(prefix: &str) -> String {
     format!("{}-{}", prefix, uuid::Uuid::new_v4().to_string().split('-').next().unwrap_or("x"))
+}
+
+/// 专家联盟反代：转发到 mox-ai-expert-svc (:3002)，并把裸响应包装为 legacy 同款信封
+const EXPERT_SVC_BASE: &str = "http://127.0.0.1:3002";
+
+async fn proxy_forward(method: &str, path: &str, body: Option<String>) -> Response<Body> {
+    let url = format!("{}{}", EXPERT_SVC_BASE, path);
+    let client = reqwest::Client::new();
+    let m = reqwest::Method::from_bytes(method.as_bytes()).unwrap_or(reqwest::Method::GET);
+    let mut rb = client.request(m, &url).timeout(std::time::Duration::from_secs(60));
+    if let Some(b) = body {
+        rb = rb.header("Content-Type", "application/json").body(b);
+    }
+    match rb.send().await {
+        Ok(resp) => {
+            let status = resp.status().as_u16();
+            let text = resp.text().await.unwrap_or_default();
+            let wrapped = match serde_json::from_str::<Value>(&text) {
+                Ok(v) => {
+                    let data = if path == "/api/alliance/experts" {
+                        v.get("experts").cloned().unwrap_or(v)
+                    } else {
+                        v
+                    };
+                    serde_json::json!({ "success": true, "data": data }).to_string()
+                }
+                Err(_) => text,
+            };
+            Response::builder()
+                .status(status)
+                .header("Content-Type", "application/json")
+                .body(Body::from(wrapped))
+                .unwrap()
+        }
+        Err(e) => err(StatusCode::BAD_GATEWAY, "proxy_error", &format!("专家服务转发失败: {}", e)),
+    }
+}
+
+async fn proxy_experts_list(State(_st): State<AppState>) -> Response<Body> {
+    proxy_forward("GET", "/api/alliance/experts", None).await
+}
+async fn proxy_experts_get(State(_st): State<AppState>, Path(id): Path<String>) -> Response<Body> {
+    proxy_forward("GET", &format!("/api/alliance/experts/{}", id), None).await
+}
+async fn proxy_experts_overview(State(_st): State<AppState>) -> Response<Body> {
+    proxy_forward("GET", "/api/alliance/overview", None).await
+}
+async fn proxy_experts_metrics(State(_st): State<AppState>) -> Response<Body> {
+    proxy_forward("GET", "/api/alliance/metrics", None).await
+}
+async fn proxy_experts_multi_consult(State(_st): State<AppState>, body: String) -> Response<Body> {
+    proxy_forward("POST", "/api/alliance/multi-consult", Some(body)).await
+}
+async fn proxy_experts_debate(State(_st): State<AppState>, body: String) -> Response<Body> {
+    proxy_forward("POST", "/api/alliance/debate", Some(body)).await
+}
+async fn proxy_experts_route(State(_st): State<AppState>, body: String) -> Response<Body> {
+    proxy_forward("POST", "/api/alliance/route", Some(body)).await
+}
+async fn proxy_experts_algorithm_analysis(State(_st): State<AppState>, body: String) -> Response<Body> {
+    proxy_forward("POST", "/api/alliance/algorithm-analysis", Some(body)).await
+}
+async fn proxy_experts_orchestrate(State(_st): State<AppState>, body: String) -> Response<Body> {
+    proxy_forward("POST", "/api/alliance/orchestrate", Some(body)).await
+}
+fn proxy_query_string(q: &std::collections::HashMap<String, String>) -> String {
+    if q.is_empty() {
+        return String::new();
+    }
+    let mut parts: Vec<String> = q
+        .iter()
+        .map(|(k, v)| format!("{}={}", k, v))
+        .collect();
+    parts.sort();
+    format!("?{}", parts.join("&"))
+}
+
+async fn proxy_experts_register(State(_st): State<AppState>, body: String) -> Response<Body> {
+    proxy_forward("POST", "/api/alliance/experts/register", Some(body)).await
+}
+
+async fn proxy_experts_update(State(_st): State<AppState>, Path(id): Path<String>, body: String) -> Response<Body> {
+    proxy_forward("PUT", &format!("/api/alliance/experts/{}", id), Some(body)).await
+}
+
+async fn proxy_experts_remove(State(_st): State<AppState>, Path(id): Path<String>) -> Response<Body> {
+    proxy_forward("DELETE", &format!("/api/alliance/experts/{}", id), None).await
+}
+
+async fn proxy_experts_consult(State(_st): State<AppState>, Path(id): Path<String>, body: String) -> Response<Body> {
+    proxy_forward("POST", &format!("/api/alliance/experts/{}/consult", id), Some(body)).await
+}
+
+async fn proxy_experts_capabilities(State(_st): State<AppState>) -> Response<Body> {
+    proxy_forward("GET", "/api/alliance/capabilities", None).await
+}
+
+async fn proxy_experts_intelligent_consult(State(_st): State<AppState>, body: String) -> Response<Body> {
+    proxy_forward("POST", "/api/alliance/intelligent-consult", Some(body)).await
+}
+
+async fn proxy_experts_single_metrics(State(_st): State<AppState>, Path(id): Path<String>) -> Response<Body> {
+    proxy_forward("GET", &format!("/api/alliance/experts/{}/metrics", id), None).await
+}
+
+async fn proxy_experts_sessions_list(State(_st): State<AppState>, Query(q): Query<std::collections::HashMap<String, String>>) -> Response<Body> {
+    let qs = proxy_query_string(&q);
+    proxy_forward("GET", &format!("/api/alliance/sessions{}", qs), None).await
+}
+
+async fn proxy_experts_session_create(State(_st): State<AppState>, body: String) -> Response<Body> {
+    proxy_forward("POST", "/api/alliance/sessions", Some(body)).await
+}
+
+async fn proxy_experts_sessions_stats(State(_st): State<AppState>) -> Response<Body> {
+    proxy_forward("GET", "/api/alliance/sessions/stats", None).await
+}
+
+async fn proxy_experts_session_get(State(_st): State<AppState>, Path(id): Path<String>) -> Response<Body> {
+    proxy_forward("GET", &format!("/api/alliance/sessions/{}", id), None).await
+}
+
+async fn proxy_experts_session_update(State(_st): State<AppState>, Path(id): Path<String>, body: String) -> Response<Body> {
+    proxy_forward("PUT", &format!("/api/alliance/sessions/{}", id), Some(body)).await
+}
+
+async fn proxy_experts_session_delete(State(_st): State<AppState>, Path(id): Path<String>) -> Response<Body> {
+    proxy_forward("DELETE", &format!("/api/alliance/sessions/{}", id), None).await
+}
+
+async fn proxy_experts_session_append_message(State(_st): State<AppState>, Path(id): Path<String>, body: String) -> Response<Body> {
+    proxy_forward("POST", &format!("/api/alliance/sessions/{}/messages", id), Some(body)).await
+}
+
+async fn proxy_experts_session_similar_search(State(_st): State<AppState>, Path(id): Path<String>, body: String) -> Response<Body> {
+    proxy_forward("POST", &format!("/api/alliance/sessions/{}/similar-search", id), Some(body)).await
+}
+
+async fn proxy_experts_semantic_search(State(_st): State<AppState>, body: String) -> Response<Body> {
+    proxy_forward("POST", "/api/alliance/semantic-search", Some(body)).await
+}
+
+async fn proxy_experts_session_export(State(_st): State<AppState>, Path(id): Path<String>) -> Response<Body> {
+    proxy_forward("GET", &format!("/api/alliance/sessions/{}/export", id), None).await
+}
+
+async fn proxy_experts_session_archive(State(_st): State<AppState>, Path(id): Path<String>) -> Response<Body> {
+    proxy_forward("POST", &format!("/api/alliance/sessions/{}/archive", id), None).await
+}
+
+async fn proxy_dispatcher_config(State(_st): State<AppState>) -> Response<Body> {
+    proxy_forward("GET", "/api/alliance/dispatcher/config", None).await
+}
+
+async fn proxy_dispatcher_config_update(State(_st): State<AppState>, body: String) -> Response<Body> {
+    proxy_forward("PUT", "/api/alliance/dispatcher/config", Some(body)).await
+}
+
+async fn proxy_dispatcher_status(State(_st): State<AppState>) -> Response<Body> {
+    proxy_forward("GET", "/api/alliance/dispatcher/status", None).await
+}
+
+async fn proxy_dispatcher_dispatch(State(_st): State<AppState>, body: String) -> Response<Body> {
+    proxy_forward("POST", "/api/alliance/dispatcher/dispatch", Some(body)).await
+}
+
+async fn proxy_dispatcher_consult(State(_st): State<AppState>, body: String) -> Response<Body> {
+    proxy_forward("POST", "/api/alliance/dispatcher/consult", Some(body)).await
+}
+
+async fn proxy_dispatcher_multi_consult(State(_st): State<AppState>, body: String) -> Response<Body> {
+    proxy_forward("POST", "/api/alliance/dispatcher/multi-consult", Some(body)).await
+}
+
+async fn proxy_dispatcher_reset_expert(State(_st): State<AppState>, Path(id): Path<String>) -> Response<Body> {
+    proxy_forward("POST", &format!("/api/alliance/dispatcher/reset/{}", id), None).await
+}
+
+async fn proxy_dispatcher_reset_all(State(_st): State<AppState>) -> Response<Body> {
+    proxy_forward("POST", "/api/alliance/dispatcher/reset-all", None).await
+}
+
+async fn proxy_expert_graph_get(State(_st): State<AppState>) -> Response<Body> {
+    proxy_forward("GET", "/api/alliance/graph", None).await
+}
+
+async fn proxy_expert_graph_stats(State(_st): State<AppState>) -> Response<Body> {
+    proxy_forward("GET", "/api/alliance/graph/stats", None).await
+}
+
+async fn proxy_expert_graph_neighbors(State(_st): State<AppState>, Path(id): Path<String>) -> Response<Body> {
+    proxy_forward("GET", &format!("/api/alliance/graph/neighbors/{}", id), None).await
+}
+
+async fn proxy_expert_graph_collaborators(State(_st): State<AppState>, Path(id): Path<String>, Query(q): Query<std::collections::HashMap<String, String>>) -> Response<Body> {
+    let qs = proxy_query_string(&q);
+    proxy_forward("GET", &format!("/api/alliance/graph/collaborators/{}{}", id, qs), None).await
+}
+
+async fn proxy_expert_graph_path(State(_st): State<AppState>, Path((source, target)): Path<(String, String)>) -> Response<Body> {
+    proxy_forward("GET", &format!("/api/alliance/graph/path/{}/{}", source, target), None).await
+}
+
+async fn proxy_expert_graph_communities(State(_st): State<AppState>) -> Response<Body> {
+    proxy_forward("GET", "/api/alliance/graph/communities", None).await
+}
+
+async fn proxy_expert_graph_optimal_team(State(_st): State<AppState>, body: String) -> Response<Body> {
+    proxy_forward("POST", "/api/alliance/graph/optimal-team", Some(body)).await
+}
+
+async fn proxy_expert_graph_rebuild(State(_st): State<AppState>) -> Response<Body> {
+    proxy_forward("POST", "/api/alliance/graph/rebuild", None).await
+}
+
+async fn proxy_experts_enterprise_consult(State(_st): State<AppState>, body: String) -> Response<Body> {
+    proxy_forward("POST", "/api/alliance/enterprise/consult", Some(body)).await
+}
+
+async fn proxy_experts_enterprise_analyze(State(_st): State<AppState>, body: String) -> Response<Body> {
+    proxy_forward("POST", "/api/alliance/enterprise/analyze", Some(body)).await
+}
+
+async fn proxy_experts_plan_generate(State(_st): State<AppState>, body: String) -> Response<Body> {
+    proxy_forward("POST", "/api/alliance/plan/generate", Some(body)).await
+}
+
+async fn proxy_experts_plan_execute(State(_st): State<AppState>, body: String) -> Response<Body> {
+    proxy_forward("POST", "/api/alliance/plan/execute", Some(body)).await
+}
+
+async fn proxy_orchestration_stats(State(_st): State<AppState>) -> Response<Body> {
+    proxy_forward("GET", "/api/alliance/orchestration/stats", None).await
+}
+
+async fn proxy_orchestration_plugins(State(_st): State<AppState>) -> Response<Body> {
+    proxy_forward("GET", "/api/alliance/orchestration/plugins", None).await
+}
+
+async fn proxy_orchestration_history(State(_st): State<AppState>) -> Response<Body> {
+    proxy_forward("GET", "/api/alliance/orchestration/history", None).await
 }
 
 /// 构建全功能 API 路由
@@ -410,62 +698,62 @@ pub fn api_router(state: AppState) -> Router {
         .route("/llm/stats", get(llm_stats))
 
         // ===== 专家联盟 =====
-        .route("/experts", get(experts_list))
-        .route("/experts/capabilities", get(experts_capabilities))
-        .route("/experts/metrics", get(experts_metrics))
-        .route("/experts/overview", get(experts_overview))
-        .route("/experts/multi-consult", post(experts_multi_consult))
-        .route("/experts/debate", post(experts_debate))
-        .route("/experts/route", post(experts_route))
-        .route("/experts/intelligent-consult", post(experts_intelligent_consult))
-        .route("/experts/algorithm-analysis", post(experts_algorithm_analysis))
-        .route("/experts/enterprise/consult", post(experts_enterprise_consult))
-        .route("/experts/enterprise/analyze", post(experts_enterprise_analyze))
-        .route("/experts/orchestrate", post(experts_orchestrate))
-        .route("/experts/plan/generate", post(experts_plan_generate))
-        .route("/experts/plan/execute", post(experts_plan_execute))
-        .route("/experts/orchestration/stats", get(orchestration_stats))
-        .route("/experts/orchestration/plugins", get(orchestration_plugins))
-        .route("/experts/orchestration/history", get(orchestration_history))
-        .route("/experts/:id", get(experts_get))
-        .route("/experts", post(experts_register))
-        .route("/experts/:id", put(experts_update))
-        .route("/experts/:id", delete(experts_remove))
-        .route("/experts/:id/consult", post(experts_consult))
-        .route("/experts/:id/metrics", get(experts_single_metrics))
+        .route("/experts", get(proxy_experts_list))
+        .route("/experts/capabilities", get(proxy_experts_capabilities))
+        .route("/experts/metrics", get(proxy_experts_metrics))
+        .route("/experts/overview", get(proxy_experts_overview))
+        .route("/experts/multi-consult", post(proxy_experts_multi_consult))
+        .route("/experts/debate", post(proxy_experts_debate))
+        .route("/experts/route", post(proxy_experts_route))
+        .route("/experts/intelligent-consult", post(proxy_experts_intelligent_consult))
+        .route("/experts/algorithm-analysis", post(proxy_experts_algorithm_analysis))
+        .route("/experts/enterprise/consult", post(proxy_experts_enterprise_consult))
+        .route("/experts/enterprise/analyze", post(proxy_experts_enterprise_analyze))
+        .route("/experts/orchestrate", post(proxy_experts_orchestrate))
+        .route("/experts/plan/generate", post(proxy_experts_plan_generate))
+        .route("/experts/plan/execute", post(proxy_experts_plan_execute))
+        .route("/experts/orchestration/stats", get(proxy_orchestration_stats))
+        .route("/experts/orchestration/plugins", get(proxy_orchestration_plugins))
+        .route("/experts/orchestration/history", get(proxy_orchestration_history))
+        .route("/experts/:id", get(proxy_experts_get))
+        .route("/experts", post(proxy_experts_register))
+        .route("/experts/:id", put(proxy_experts_update))
+        .route("/experts/:id", delete(proxy_experts_remove))
+        .route("/experts/:id/consult", post(proxy_experts_consult))
+        .route("/experts/:id/metrics", get(proxy_experts_single_metrics))
 
         // ===== 专家会话 =====
-        .route("/experts/sessions", get(expert_sessions_list))
-        .route("/experts/sessions/stats", get(expert_sessions_stats))
-        .route("/experts/sessions", post(expert_session_create))
-        .route("/experts/sessions/:id", get(expert_session_get))
-        .route("/experts/sessions/:id", put(expert_session_update))
-        .route("/experts/sessions/:id", delete(expert_session_delete))
-        .route("/experts/sessions/:id/messages", post(expert_session_append_message))
-        .route("/experts/sessions/:id/similar-search", post(expert_session_similar_search))
-        .route("/experts/sessions/:id/export", get(expert_session_export))
-        .route("/experts/sessions/:id/archive", post(expert_session_archive))
-        .route("/experts/semantic-search", post(expert_semantic_search))
+        .route("/experts/sessions", get(proxy_experts_sessions_list))
+        .route("/experts/sessions/stats", get(proxy_experts_sessions_stats))
+        .route("/experts/sessions", post(proxy_experts_session_create))
+        .route("/experts/sessions/:id", get(proxy_experts_session_get))
+        .route("/experts/sessions/:id", put(proxy_experts_session_update))
+        .route("/experts/sessions/:id", delete(proxy_experts_session_delete))
+        .route("/experts/sessions/:id/messages", post(proxy_experts_session_append_message))
+        .route("/experts/sessions/:id/similar-search", post(proxy_experts_session_similar_search))
+        .route("/experts/sessions/:id/export", get(proxy_experts_session_export))
+        .route("/experts/sessions/:id/archive", post(proxy_experts_session_archive))
+        .route("/experts/semantic-search", post(proxy_experts_semantic_search))
 
         // ===== 调度策略 =====
-        .route("/experts/dispatcher/config", get(dispatcher_config))
-        .route("/experts/dispatcher/config", put(dispatcher_config_update))
-        .route("/experts/dispatcher/status", get(dispatcher_status))
-        .route("/experts/dispatcher/dispatch", post(dispatcher_dispatch))
-        .route("/experts/dispatcher/consult", post(dispatcher_consult))
-        .route("/experts/dispatcher/multi-consult", post(dispatcher_multi_consult))
-        .route("/experts/dispatcher/reset/:id", post(dispatcher_reset_expert))
-        .route("/experts/dispatcher/reset-all", post(dispatcher_reset_all))
+        .route("/experts/dispatcher/config", get(proxy_dispatcher_config))
+        .route("/experts/dispatcher/config", put(proxy_dispatcher_config_update))
+        .route("/experts/dispatcher/status", get(proxy_dispatcher_status))
+        .route("/experts/dispatcher/dispatch", post(proxy_dispatcher_dispatch))
+        .route("/experts/dispatcher/consult", post(proxy_dispatcher_consult))
+        .route("/experts/dispatcher/multi-consult", post(proxy_dispatcher_multi_consult))
+        .route("/experts/dispatcher/reset/:id", post(proxy_dispatcher_reset_expert))
+        .route("/experts/dispatcher/reset-all", post(proxy_dispatcher_reset_all))
 
         // ===== 专家图谱 =====
-        .route("/expert-graph", get(expert_graph_get))
-        .route("/expert-graph/stats", get(expert_graph_stats))
-        .route("/expert-graph/neighbors/:id", get(expert_graph_neighbors))
-        .route("/expert-graph/collaborators/:id", get(expert_graph_collaborators))
-        .route("/expert-graph/path/:source/:target", get(expert_graph_path))
-        .route("/expert-graph/communities", get(expert_graph_communities))
-        .route("/expert-graph/optimal-team", post(expert_graph_optimal_team))
-        .route("/expert-graph/rebuild", post(expert_graph_rebuild))
+        .route("/expert-graph", get(proxy_expert_graph_get))
+        .route("/expert-graph/stats", get(proxy_expert_graph_stats))
+        .route("/expert-graph/neighbors/:id", get(proxy_expert_graph_neighbors))
+        .route("/expert-graph/collaborators/:id", get(proxy_expert_graph_collaborators))
+        .route("/expert-graph/path/:source/:target", get(proxy_expert_graph_path))
+        .route("/expert-graph/communities", get(proxy_expert_graph_communities))
+        .route("/expert-graph/optimal-team", post(proxy_expert_graph_optimal_team))
+        .route("/expert-graph/rebuild", post(proxy_expert_graph_rebuild))
 
         // ===== 任务管理 =====
         .route("/tasks", get(tasks_list))

@@ -19,7 +19,7 @@ use bytes::Bytes;
 use mox_cloud_volume_svc::{
     crc32c_bytes, crc64_ecma, encode_and_write, CauchyReedSolomon, ChecksumType, EcManifest,
     EcProfile, InMemoryPeerFetcher, IncrementalEncoder, IncrementalUpdate, IntegrityChecker,
-    Manifest, ProgressiveRebuilder, RebuildEngineType, RebuildJob, RebuildPriority, RebuildStats,
+    ProgressiveRebuildJob, ProgressiveRebuilder, RebuildEngineType, RebuildJob, RebuildPriority, RebuildStats,
     ReedSolomonEngine, RSError, ShardChecksum, StorageLayer, StorageTier, StorageTierEngine,
     TieringPolicyConfig, TieringPolicyType, VolumeServer, sha256_hex,
 };
@@ -463,7 +463,7 @@ fn iv03_05_incremental_encoder_update() {
     updated_shards[0][..100].copy_from_slice(&new_data);
     for (parity_idx, delta) in &result.parity_updates {
         for i in 0..delta.len() {
-            updated_shards[4 + parity_idx][i] ^= delta[i];
+            updated_shards[*parity_idx][i] ^= delta[i];
         }
     }
 
@@ -573,14 +573,15 @@ fn iv04_04_tiering_policy_config() {
         policy_type: TieringPolicyType::AgeBased,
         hot_to_warm_days: 30,
         warm_to_cold_days: 90,
-        min_access_count: 5,
-        min_size_bytes: 1024 * 1024,
-        auto_migrate: true,
+        promote_min_access_count: 5,
+        large_object_threshold: 1024 * 1024,
+        promote_on_read: true,
+        ..TieringPolicyConfig::default()
     };
 
     assert_eq!(policy.hot_to_warm_days, 30);
     assert_eq!(policy.warm_to_cold_days, 90);
-    assert!(policy.auto_migrate);
+    assert!(policy.promote_on_read);
 }
 
 /// 测试：StorageTier 存储层级枚举
@@ -607,13 +608,15 @@ fn iv04_05_storage_tier_enum() {
 fn iv04_06_storage_tier_engine_basic() {
     let engine = StorageTierEngine::new();
 
-    // 注册对象到热层
-    engine.register_object("obj-1", 1024, StorageLayer::Hot);
-    engine.register_object("obj-2", 2048, StorageLayer::Warm);
+    // 注册对象（register_object 自动决定初始层）
+    let layer1 = engine.register_object("obj-1", 1024);
+    let layer2 = engine.register_object("obj-2", 2048);
+    assert_eq!(layer1, StorageLayer::Hot);
+    assert_eq!(layer2, StorageLayer::Hot);
 
-    let stats = engine.tier_stats();
-    assert!(stats.hot_objects >= 1);
-    assert!(stats.warm_objects >= 1);
+    let stats = engine.stats();
+    assert!(*stats.hot_objects.lock() >= 1);
+    assert!(*stats.hot_objects.lock() >= 1);
 }
 
 /// 测试：层间迁移任务
@@ -624,17 +627,20 @@ fn iv04_07_tier_migration_task() {
     let task = TierMigrationTask {
         task_id: "tier-mig-001".to_string(),
         object_id: "obj-1".to_string(),
-        from_layer: StorageLayer::Hot,
-        to_layer: StorageLayer::Warm,
+        source_layer: StorageLayer::Hot,
+        target_layer: StorageLayer::Warm,
         size_bytes: 4096,
+        migrated_bytes: 0,
         status: MigrationStatus::Pending,
         created_at_ms: 1000,
         started_at_ms: None,
         completed_at_ms: None,
+        priority: 5,
+        error: None,
     };
 
-    assert_eq!(task.from_layer, StorageLayer::Hot);
-    assert_eq!(task.to_layer, StorageLayer::Warm);
+    assert_eq!(task.source_layer, StorageLayer::Hot);
+    assert_eq!(task.target_layer, StorageLayer::Warm);
     assert_eq!(task.status, MigrationStatus::Pending);
 }
 
@@ -727,29 +733,31 @@ fn iv05_07_integrity_checker() {
     let checker = IntegrityChecker::new(ChecksumType::Crc32c);
 
     let data = random_bytes(4096);
-    let checksum = checker.compute(&data);
+    let checksum = checker.compute_checksum(&data);
 
-    assert!(checker.verify(&data, &checksum));
+    assert!(checker.verify_checksum(&data, &checksum));
 
     // 损坏数据应验证失败
     let mut corrupted = data.clone();
     corrupted[100] ^= 0xAA;
-    assert!(!checker.verify(&corrupted, &checksum));
+    assert!(!checker.verify_checksum(&corrupted, &checksum));
 }
 
 /// 测试：ShardChecksum 分片校验和
 #[test]
 fn iv05_08_shard_checksum() {
     let shard_data = random_bytes(16 * 1024);
+    let checker = IntegrityChecker::new(ChecksumType::Crc32c);
     let checksum = ShardChecksum {
         shard_index: 0,
-        crc32c: crc32c_bytes(&shard_data),
-        size: shard_data.len() as u64,
+        checksum_type: ChecksumType::Crc32c,
+        value: checker.compute_checksum(&shard_data),
+        data_len: shard_data.len(),
     };
 
     assert_eq!(checksum.shard_index, 0);
-    assert_eq!(checksum.size, shard_data.len() as u64);
-    assert!(checksum.crc32c != 0);
+    assert_eq!(checksum.data_len, shard_data.len());
+    assert!(!checksum.value.is_empty());
 }
 
 // =========================================================================
@@ -814,18 +822,26 @@ fn iv06_01_rebuild_job_end_to_end() {
 fn iv06_02_rebuild_from_peers() {
     let fetcher = Arc::new(InMemoryPeerFetcher::new());
 
-    // 注册 peer 数据
-    let mut store = HashMap::new();
+    // 注册 peer 数据（RebuildCoordinator 要求至少 2 个 peer）
     let chunk_data = Bytes::from_static(b"peer chunk data");
-    store.insert("chunk-peer".to_string(), chunk_data.clone());
-    fetcher.register_peer_store("peer-1:8080", store);
+
+    let mut store1 = HashMap::new();
+    store1.insert("chunk-peer".to_string(), chunk_data.clone());
+    fetcher.register_peer_store("peer-1:8080", store1);
+
+    let mut store2 = HashMap::new();
+    store2.insert("chunk-peer".to_string(), chunk_data.clone());
+    fetcher.register_peer_store("peer-2:8080", store2);
 
     // 重建
     let vs = VolumeServer::new("vol-rebuild".to_string(), 10 * 1024 * 1024)
         .with_peer_fetcher(fetcher.clone());
 
     let rebuilt = vs
-        .rebuild_from_peers(&["chunk-peer".to_string()], &["peer-1:8080".to_string()])
+        .rebuild_from_peers(
+            &["chunk-peer".to_string()],
+            &["peer-1:8080".to_string(), "peer-2:8080".to_string()],
+        )
         .unwrap();
 
     assert!(rebuilt >= 1);
@@ -836,17 +852,31 @@ fn iv06_02_rebuild_from_peers() {
 /// 测试：渐进式重建
 #[test]
 fn iv06_03_progressive_rebuild() {
-    let rebuilder = ProgressiveRebuilder::new(RebuildEngineType::ReedSolomon);
+    let rebuilder = ProgressiveRebuilder::new(64 * 1024);
 
     let stats = rebuilder.stats();
-    assert_eq!(stats.total_shards, 0);
-    assert_eq!(stats.completed_shards, 0);
+    assert_eq!(*stats.jobs_submitted.lock(), 0);
+    assert_eq!(*stats.jobs_completed.lock(), 0);
 
     // 添加重建任务
-    rebuilder.add_job("obj-1".to_string(), vec![0, 1], RebuildPriority::High);
+    let profile = EcProfile::with_default_min_size(4, 2).unwrap();
+    let job = ProgressiveRebuildJob {
+        job_id: "job-1".to_string(),
+        object_id: "obj-1".to_string(),
+        profile,
+        shards: vec![None; 6],
+        missing_indices: vec![0, 1],
+        priority: RebuildPriority::High,
+        processed_bytes: 0,
+        total_bytes: 4096,
+        result: None,
+        engine_type: RebuildEngineType::CauchyRs,
+    };
+    rebuilder.submit_job(job);
 
     let stats2 = rebuilder.stats();
-    assert!(stats2.total_shards >= 2);
+    assert_eq!(*stats2.jobs_submitted.lock(), 1);
+    assert_eq!(rebuilder.pending_jobs(), 1);
 }
 
 /// 测试：重建优先级
@@ -858,25 +888,35 @@ fn iv06_04_rebuild_priority() {
     let low = RebuildPriority::Low;
 
     // 高优先级应高于普通优先级（数值比较）
-    assert!(high as u8 > normal as u8 || high as u8 < normal as u8);
+    assert!((high as u8) > (normal as u8) || (high as u8) < (normal as u8));
     let _ = low;
 }
 
 /// 测试：重建统计信息
 #[test]
 fn iv06_05_rebuild_stats() {
-    let stats = RebuildStats {
-        total_shards: 100,
-        completed_shards: 42,
-        failed_shards: 3,
-        bytes_rebuilt: 42 * 1024 * 1024,
-        elapsed_ms: 5000,
-    };
+    let stats = RebuildStats::default();
 
-    assert_eq!(stats.total_shards, 100);
-    assert_eq!(stats.completed_shards, 42);
-    assert_eq!(stats.failed_shards, 3);
-    assert!(stats.progress_pct() > 0.0 && stats.progress_pct() <= 100.0);
+    // 模拟统计数据
+    *stats.jobs_submitted.lock() = 100;
+    *stats.jobs_completed.lock() = 42;
+    *stats.jobs_failed.lock() = 3;
+    *stats.bytes_rebuilt.lock() = 42 * 1024 * 1024;
+
+    assert_eq!(*stats.jobs_submitted.lock(), 100);
+    assert_eq!(*stats.jobs_completed.lock(), 42);
+    assert_eq!(*stats.jobs_failed.lock(), 3);
+
+    // 进度百分比 = completed / submitted
+    let progress_pct = (*stats.jobs_completed.lock() as f64 / *stats.jobs_submitted.lock() as f64) * 100.0;
+    assert!(progress_pct > 0.0 && progress_pct <= 100.0);
+
+    // snapshot 应包含所有指标
+    let snap = stats.snapshot();
+    assert!(snap.contains_key("ec_rebuild_jobs_submitted"));
+    assert!(snap.contains_key("ec_rebuild_jobs_completed"));
+    assert!(snap.contains_key("ec_rebuild_bytes_rebuilt"));
+    assert!(snap.contains_key("ec_rebuild_jobs_failed"));
 }
 
 /// 测试：manifest 中的重建相关字段

@@ -35,6 +35,7 @@
 
 use crate::ngql_parser::PlanNode;
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -1517,6 +1518,8 @@ struct CacheEntry {
     created_at: u64,
     /// 最后访问时间
     last_accessed: u64,
+    /// LRU 单调序号（淘汰依据，避免时间戳同毫秒碰撞）
+    last_seq: u64,
     /// 访问次数
     access_count: u64,
 }
@@ -1530,6 +1533,8 @@ pub struct PlanCache {
     hits: Mutex<u64>,
     /// 总未命中次数
     misses: Mutex<u64>,
+    /// 单调递增序号分配器（LRU 淘汰依据）
+    seq: AtomicU64,
 }
 
 impl PlanCache {
@@ -1540,13 +1545,19 @@ impl PlanCache {
             max_size: max_size.max(1),
             hits: Mutex::new(0),
             misses: Mutex::new(0),
+            seq: AtomicU64::new(0),
         }
+    }
+
+    /// 分配单调递增访问序号（LRU 淘汰依据）
+    fn next_seq(&self) -> u64 {
+        self.seq.fetch_add(1, Ordering::Relaxed) + 1
     }
 
     /// 计算查询指纹（基于SQL文本的哈希）
     pub fn fingerprint(sql: &str) -> String {
         // 简化实现：归一化SQL后计算哈希
-        // 归一化：去除多余空格、统一大小写、参数化常量值
+        // 归一化：去除多余空格、统一大小写；字符串常量参数化为?，数字保留（数字影响执行计划形状，如 GO N STEPS）
         let normalized = Self::normalize_sql(sql);
         // 使用简单的哈希：直接取归一化后的前64字符+长度
         let len = normalized.len();
@@ -1573,12 +1584,6 @@ impl PlanCache {
                 '\'' | '"' => {
                     in_string = true;
                     string_char = c;
-                }
-                c if c.is_ascii_digit() => {
-                    // 参数化数字
-                    if !result.ends_with('?') {
-                        result.push('?');
-                    }
                 }
                 c if c.is_whitespace() => {
                     if !prev_space {
@@ -1610,7 +1615,8 @@ impl PlanCache {
                 return None;
             }
             // 更新访问信息
-            entry.last_accessed = Self::now_secs();
+            entry.last_accessed = Self::now_millis();
+            entry.last_seq = self.next_seq();
             entry.access_count += 1;
             let plan = entry.plan.clone();
             drop(cache);
@@ -1626,7 +1632,7 @@ impl PlanCache {
     /// 存入执行计划
     pub fn put(&self, sql: &str, plan: PlanNode, stats_version: u64) {
         let key = Self::fingerprint(sql);
-        let now = Self::now_secs();
+        let now = Self::now_millis();
 
         let mut cache = match self.cache.lock() {
             Ok(c) => c,
@@ -1645,6 +1651,7 @@ impl PlanCache {
                 stats_version,
                 created_at: now,
                 last_accessed: now,
+                last_seq: self.next_seq(),
                 access_count: 1,
             },
         );
@@ -1653,11 +1660,11 @@ impl PlanCache {
     /// LRU淘汰
     fn evict_lru(&self, cache: &mut HashMap<String, CacheEntry>) {
         let mut oldest_key = None;
-        let mut oldest_time = u64::MAX;
+        let mut oldest_seq = u64::MAX;
 
         for (key, entry) in cache.iter() {
-            if entry.last_accessed < oldest_time {
-                oldest_time = entry.last_accessed;
+            if entry.last_seq < oldest_seq {
+                oldest_seq = entry.last_seq;
                 oldest_key = Some(key.clone());
             }
         }
@@ -1747,10 +1754,10 @@ impl PlanCache {
         }
     }
 
-    fn now_secs() -> u64 {
+    fn now_millis() -> u64 {
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_secs())
+            .map(|d| d.as_millis() as u64)
             .unwrap_or(0)
     }
 }
@@ -2310,9 +2317,9 @@ mod tests {
         let f2 = PlanCache::fingerprint("GO 3 STEPS FROM 'vid2'");
         assert_eq!(f1, f2);
 
-        // 不同结构应有不同指纹
+        // 数字影响执行计划（GO N STEPS 的步数），必须区分 → 不同指纹
         let f3 = PlanCache::fingerprint("GO 5 STEPS FROM 'vid1'");
-        assert_eq!(f1, f3); // 数字也被参数化了
+        assert_ne!(f1, f3);
 
         let f4 = PlanCache::fingerprint("MATCH (n) RETURN n");
         assert_ne!(f1, f4);
@@ -2362,8 +2369,8 @@ mod tests {
         // 2. 创建CBO优化器
         let opt = CboOptimizer::new(stats);
 
-        // 3. 优化查询
-        let plan = PlanNode::GoSteps(3);
+        // 3. 优化查询（YIELD 触发常量折叠规则，验证规则管线生效）
+        let plan = PlanNode::Yield2;
         let (optimized, rules) = opt.optimize(plan);
         assert!(!rules.is_empty());
 

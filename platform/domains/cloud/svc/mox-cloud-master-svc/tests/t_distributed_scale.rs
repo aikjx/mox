@@ -22,6 +22,8 @@ use mox_cloud_master_svc::{
     RaftConfig, RaftLogType, RaftMaster, RaftRole, RebalancePlan, SchedulerWeights,
     VolumeAllocation, VolumeInfo, VolumeLoadReport, VolumeStatusState,
 };
+use bytes::Bytes;
+use rand::Rng;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -963,7 +965,7 @@ fn ds06_01_rebalance_light_imbalance() {
         .collect();
 
     let start = Instant::now();
-    let plan = scheduler.generate_rebalance_plan(&volumes);
+    let plan = scheduler.generate_rebalance_plan(&volumes, 10);
     let elapsed = start.elapsed();
 
     eprintln!(
@@ -998,7 +1000,7 @@ fn ds06_02_rebalance_medium_imbalance() {
         .collect();
 
     let start = Instant::now();
-    let plan = scheduler.generate_rebalance_plan(&volumes);
+    let plan = scheduler.generate_rebalance_plan(&volumes, 10);
     let elapsed = start.elapsed();
 
     eprintln!(
@@ -1034,7 +1036,7 @@ fn ds06_03_rebalance_heavy_imbalance() {
         .collect();
 
     let start = Instant::now();
-    let plan = scheduler.generate_rebalance_plan(&volumes);
+    let plan = scheduler.generate_rebalance_plan(&volumes, 10);
     let elapsed = start.elapsed();
 
     eprintln!(
@@ -1070,7 +1072,7 @@ fn ds06_04_rebalance_100_nodes_scale() {
         .collect();
 
     let start = Instant::now();
-    let plan = scheduler.generate_rebalance_plan(&volumes);
+    let plan = scheduler.generate_rebalance_plan(&volumes, 10);
     let elapsed = start.elapsed();
 
     eprintln!(
@@ -1104,7 +1106,7 @@ fn ds06_05_rebalance_performance_comparison() {
         let iterations = if node_count <= 50 { 100 } else { 20 };
         let start = Instant::now();
         for _ in 0..iterations {
-            let _ = scheduler.generate_rebalance_plan(&volumes);
+            let _ = scheduler.generate_rebalance_plan(&volumes, 10);
         }
         let elapsed = start.elapsed();
 

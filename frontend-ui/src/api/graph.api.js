@@ -1,10 +1,5 @@
 // 知识图谱 API
 import http from './http'
-import { getProjects, getTasks } from './projects.api'
-import { getExperts } from './experts.api'
-import { getOperators } from './operators.api'
-import { kbListDocuments } from './kb.api'
-import { getWorkflows, getAutomations } from './workflow.api'
 
 export const getGraph = () => http.get('/graph')
 export const getGraphStats = () => http.get('/graph/stats')
@@ -84,14 +79,16 @@ export const getAggregatedGraph = async () => {
   })
 
   // 3. 并行调用所有业务 API（单个失败不影响整体）
+  //    标记 silent：这些是图谱的可选增强数据，失败时仅降级（不渲染对应节点），
+  //    不触发全局报错 toast——由 Promise.allSettled 统一吞掉
   const results = await Promise.allSettled([
-    getProjects(),
-    getExperts(),
-    getOperators(),
-    getTasks(),
-    kbListDocuments(),
-    getWorkflows(),
-    getAutomations()
+    http.get('/projects', { silent: true }),
+    http.get('/experts', { silent: true }),
+    http.get('/operators', { silent: true }),
+    http.get('/tasks', { silent: true }),
+    http.get('/kb/documents', { silent: true }),
+    http.get('/ai/workflows', { silent: true }),
+    http.get('/automation', { silent: true })
   ])
 
   const unwrap = (r) => (r.status === 'fulfilled' ? r.value : [])
@@ -138,13 +135,19 @@ export const getAggregatedGraph = async () => {
     status: t.status
   }))
 
-  const docNodes = (documents || []).map((d) => ({
-    id: 'doc-' + d.id,
-    name: d.title || d.name || ('文档' + String(d.id).slice(-6)),
-    node_type: 'doc',
-    category: d.category || 'knowledge',
-    project_id: d.project_id
-  }))
+  // 需求文档（doc_type=requirement）→ 需求节点；其他文档 → 文档节点（需求数据源=云盘知识库 kb-store）
+  const requirementNodes = []
+  const docNodes = []
+  ;(documents || []).forEach((d) => {
+    const isReq = d.doc_type === 'requirement' || String(d.category || '').includes('requirement')
+    const base = {
+      name: d.title || d.name || ((isReq ? '需求' : '文档') + String(d.id).slice(-6)),
+      category: d.category || 'knowledge',
+      project_id: d.project_id
+    }
+    if (isReq) requirementNodes.push({ id: 'req-' + d.id, ...base, node_type: 'requirement' })
+    else docNodes.push({ id: 'doc-' + d.id, ...base, node_type: 'doc' })
+  })
 
   const workflowNodes = (workflows || []).map((w) => ({
     id: 'wf-' + w.id,
@@ -159,6 +162,7 @@ export const getAggregatedGraph = async () => {
   expertNodes.forEach(addNode)
   operatorNodes.forEach(addNode)
   taskNodes.forEach(addNode)
+  requirementNodes.forEach(addNode)
   docNodes.forEach(addNode)
   workflowNodes.forEach(addNode)
 
@@ -180,6 +184,15 @@ export const getAggregatedGraph = async () => {
 
   docNodes.forEach((d) => {
     addEdge(d.id, 'kb-store', 'stored_in', 0.7)
+  })
+
+  // 需求节点：源于云盘知识库 → kb-store，并关联所属项目（has_requirement）
+  requirementNodes.forEach((r) => {
+    addEdge(r.id, 'kb-store', 'stored_in', 0.7)
+    const pid = r.project_id
+    if (pid && nodeMap.has('proj-' + pid)) {
+      addEdge('proj-' + pid, r.id, 'has_requirement', 0.8)
+    }
   })
 
   workflowNodes.forEach((w) => {

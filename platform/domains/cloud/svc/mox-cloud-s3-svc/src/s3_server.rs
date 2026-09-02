@@ -75,7 +75,7 @@ struct BucketMeta {
     #[allow(dead_code)] // name：预留（响应/审计），当前未读取
     name: String,
     created_ms: u64,
-    _acl: CannedAcl,
+    acl: CannedAcl,
     policy: Option<BucketPolicy>,
     tags: BTreeMap<String, String>,
     cors: Option<CorsConfiguration>,
@@ -392,6 +392,9 @@ async fn handle_s3_operation(
                 if query_has(q, "cors") {
                     return op_get_bucket_cors(&storage, &bucket);
                 }
+                if query_has(q, "acl") {
+                    return op_get_bucket_acl(&storage, &bucket);
+                }
                 if query_has(q, "lifecycle") {
                     return op_get_bucket_lifecycle(&storage, &bucket);
                 }
@@ -418,6 +421,9 @@ async fn handle_s3_operation(
                 }
                 if query_has(q, "cors") {
                     return op_put_bucket_cors(&storage, &bucket, &body);
+                }
+                if query_has(q, "acl") {
+                    return op_put_bucket_acl(&storage, &bucket, headers, &body);
                 }
                 if query_has(q, "lifecycle") {
                     return op_put_bucket_lifecycle(&storage, &bucket, &body);
@@ -589,7 +595,7 @@ fn op_create_bucket(
         BucketMeta {
             name: bucket.to_string(),
             created_ms: now_ms(),
-            _acl: acl,
+            acl: acl,
             policy: None,
             tags: BTreeMap::new(),
             cors: None,
@@ -835,6 +841,47 @@ fn op_put_object_acl(
     if let Some(last) = versions.last_mut() {
         last.acl = acl;
     }
+    S3Server::ok_empty_headers(vec![])
+}
+
+// --- 8b. GetBucketAcl ---
+fn op_get_bucket_acl(storage: &InMemoryStorage, bucket: &str) -> Response<Body> {
+    let buckets = storage.buckets.lock();
+    let meta = match buckets.get(bucket) {
+        Some(m) => m,
+        None => return S3Server::error_response(S3Error::NoSuchBucket),
+    };
+    let xml = meta.acl.to_acl_xml("mox-owner-id", "mox");
+    S3Server::xml_response(StatusCode::OK, xml)
+}
+
+// --- 8c. PutBucketAcl ---
+fn op_put_bucket_acl(
+    storage: &InMemoryStorage,
+    bucket: &str,
+    headers: &BTreeMap<String, String>,
+    body: &Bytes,
+) -> Response<Body> {
+    let acl = if let Some(h) = headers.get("x-amz-acl") {
+        CannedAcl::from_header(h).unwrap_or(CannedAcl::Private)
+    } else {
+        let s = String::from_utf8_lossy(body);
+        if s.contains("<Permission>READ</Permission>") && s.contains("AllUsers") {
+            if s.contains("<Permission>WRITE</Permission>") {
+                CannedAcl::PublicReadWrite
+            } else {
+                CannedAcl::PublicRead
+            }
+        } else {
+            CannedAcl::Private
+        }
+    };
+    let mut buckets = storage.buckets.lock();
+    let meta = match buckets.get_mut(bucket) {
+        Some(m) => m,
+        None => return S3Server::error_response(S3Error::NoSuchBucket),
+    };
+    meta.acl = acl;
     S3Server::ok_empty_headers(vec![])
 }
 

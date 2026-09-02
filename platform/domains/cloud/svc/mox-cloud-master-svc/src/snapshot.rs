@@ -125,6 +125,11 @@ impl SnapshotManager {
         Err(MasterError::SnapshotInvalid(snapshot_id.to_string()))
     }
 
+    /// 删除快照（软删除，标记 deleted_at 时间戳）
+    pub fn delete_snapshot(&self, volume_id: &str, snapshot_id: &str) -> MasterResult<()> {
+        self.soft_delete_snapshot(volume_id, snapshot_id)
+    }
+
     pub fn snapshots_taken_count(&self) -> u64 {
         *self.snapshots_taken.lock()
     }

@@ -17,6 +17,9 @@ import { useAppStore, availableThemes } from '@/stores/app.store'
 
 // 监听者集合（兼容旧 API）
 const _listeners = new Set()
+// 同一 Pinia store 复用同一个兼容层实例；测试或多应用场景使用不同
+// Pinia 时分别缓存，避免跨应用共享陈旧状态。
+const _instances = new WeakMap()
 
 /**
  * 主题管理 Composable（兼容层）
@@ -29,6 +32,9 @@ export function useTheme() {
   if (typeof window !== 'undefined' && appStore.theme === 'light') {
     appStore.initTheme()
   }
+
+  const cached = _instances.get(appStore)
+  if (cached) return cached
 
   // 兼容旧的 ref 风格访问
   const theme = computed(() => appStore.theme)
@@ -54,13 +60,15 @@ export function useTheme() {
     return () => _listeners.delete(fn)
   }
 
-  return {
+  const instance = {
     theme,
     setTheme,
     toggleTheme,
     availableThemes,
     onThemeChange,
   }
+  _instances.set(appStore, instance)
+  return instance
 }
 
 export default useTheme

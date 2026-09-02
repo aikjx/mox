@@ -61,6 +61,8 @@ pub mod domain;
 pub mod expert_traits;
 /// 对外 trait 的 concrete 实现：`RegistryImpl` / `ExpertServiceImpl` / `AllianceRouter`
 /// （下游不直接 use 这些名字，除非构建阶段装配依赖注入）。
+pub mod alliance_ext;
+pub mod persistence;
 pub mod services;
 /// 共享数据类型：三个 trait 的入参/出参统一使用本模块。
 pub mod types;

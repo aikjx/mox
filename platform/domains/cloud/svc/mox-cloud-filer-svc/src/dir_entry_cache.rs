@@ -1,4 +1,4 @@
-// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -6,7 +6,7 @@
 //! 目录项缓存优化模块
 //!
 //! 提供 LRU 目录项缓存，减少元数据后端压力，提升目录遍历性能。
-//! 参考 JuiceFS 元数据缓存设计。
+//! 参考分布式文件系统元数据缓存设计。
 //!
 //! # 功能特性
 //!
@@ -198,11 +198,13 @@ impl DirEntryCache {
                 stats.hits += 1;
                 stats.hit_rate = stats.hits as f64 / stats.total_lookups as f64;
 
+                let entries = entry.data.entries.clone();
+
                 // 更新 LRU
                 drop(cache);
                 self.touch_dir_list(dir_ino);
 
-                return Some(entry.data.entries.clone());
+                return Some(entries);
             }
         }
 
@@ -281,23 +283,21 @@ impl DirEntryCache {
         let cache = self.lookup_cache.lock();
         if let Some(entry) = cache.get(&key) {
             if entry.expire_at_sec > now_secs() {
-                match &entry.data {
+                let result = match &entry.data {
                     LookupValue::Positive(ino) => {
                         stats.hits += 1;
-                        stats.hit_rate = stats.hits as f64 / stats.total_lookups as f64;
-                        drop(cache);
-                        self.touch_lookup(parent, name);
-                        return Some(Ok(*ino));
+                        Ok(*ino)
                     }
                     LookupValue::Negative => {
                         stats.negative_hits += 1;
                         stats.hits += 1; // 负缓存也算命中
-                        stats.hit_rate = stats.hits as f64 / stats.total_lookups as f64;
-                        drop(cache);
-                        self.touch_lookup(parent, name);
-                        return Some(Err(crate::error::FilerError::NotFound));
+                        Err(crate::error::FilerError::NotFound)
                     }
-                }
+                };
+                stats.hit_rate = stats.hits as f64 / stats.total_lookups as f64;
+                drop(cache);
+                self.touch_lookup(parent, name);
+                return Some(result);
             }
         }
 

@@ -6,6 +6,7 @@
 export { default as http, registerProjectIdGetter } from './http'
 
 export * from './system.api'
+export * from './actuator.api'
 export * from './graph.api'
 export * from './ai.api'
 export * from './operators.api'

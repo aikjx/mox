@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -217,28 +217,28 @@ pub trait MetaStorageProvider: Send + Sync {
     /// 支持事务的后端（如 Citus/Postgres）应重写此方法。
     async fn begin_tx(&self) -> FilerResult<u64> {
         Err(crate::error::FilerError::Unsupported(
-            "transactions not supported by this backend",
+            "transactions not supported by this backend".to_string(),
         ))
     }
 
     /// 提交事务。
     async fn commit_tx(&self, _tx_id: u64) -> FilerResult<()> {
         Err(crate::error::FilerError::Unsupported(
-            "transactions not supported by this backend",
+            "transactions not supported by this backend".to_string(),
         ))
     }
 
     /// 回滚事务。
     async fn rollback_tx(&self, _tx_id: u64) -> FilerResult<()> {
         Err(crate::error::FilerError::Unsupported(
-            "transactions not supported by this backend",
+            "transactions not supported by this backend".to_string(),
         ))
     }
 
     /// 获取事务状态。
     async fn tx_status(&self, _tx_id: u64) -> FilerResult<TxStatus> {
         Err(crate::error::FilerError::Unsupported(
-            "transactions not supported by this backend",
+            "transactions not supported by this backend".to_string(),
         ))
     }
 
@@ -411,6 +411,7 @@ fn libc_sifmt() -> u32 {
 mod trait_enhanced_tests {
     use super::*;
     use async_trait::async_trait;
+    use crate::error::FilerError;
 
     /// 测试用 mock 后端，基于 InMemInodeStore
     struct MockMeta {

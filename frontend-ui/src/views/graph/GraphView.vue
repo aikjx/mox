@@ -47,6 +47,69 @@
     <div class="graph-main">
       <!-- 左侧工具面板（分层展开） -->
       <aside class="side-panel" :class="{ collapsed: sidePanelCollapsed }">
+        <!-- 需求图谱过滤 -->
+        <div class="sp-section">
+          <div class="sp-section-header" @click="toggleSection('filter')">
+            <span class="sp-section-icon">🔍</span>
+            <span class="sp-section-title">需求图谱过滤</span>
+            <el-icon class="sp-section-arrow">
+              <component :is="expandedSections.has('filter') ? 'ArrowUp' : 'ArrowDown'" />
+            </el-icon>
+          </div>
+          <transition name="sp-expand">
+            <div v-show="expandedSections.has('filter')" class="sp-section-body">
+              <!-- 视图模式切换 -->
+              <div class="filter-row">
+                <label class="filter-label">视图模式</label>
+                <div class="filter-mode-btns">
+                  <el-button size="small" :type="viewMode === 'all' ? 'primary' : ''" @click="setViewMode('all')">全部</el-button>
+                  <el-button size="small" :type="viewMode === 'feature' ? 'primary' : ''" @click="setViewMode('feature')">仅功能需求</el-button>
+                  <el-button size="small" :type="viewMode === 'system' ? 'primary' : ''" @click="setViewMode('system')">系统架构</el-button>
+                </div>
+              </div>
+              <!-- 业务域过滤 -->
+              <div class="filter-row">
+                <label class="filter-label">业务域</label>
+                <el-select
+                  v-model="selectedDomain"
+                  placeholder="全部域"
+                  size="small"
+                  clearable
+                  @change="onFilterChange"
+                  style="width: 100%"
+                >
+                  <el-option label="全部域" value="" />
+                  <el-option v-for="d in DOMAIN_LIST" :key="d" :label="d" :value="d" />
+                </el-select>
+              </div>
+              <!-- 快捷过滤按钮 -->
+              <div class="filter-row">
+                <label class="filter-label">快捷过滤</label>
+                <div class="filter-quick-btns">
+                  <el-button size="small" :type="quickFilter === 'gap' ? 'danger' : ''" @click="setQuickFilter('gap')">只看缺口</el-button>
+                  <el-button size="small" :type="quickFilter === 'pending' ? 'warning' : ''" @click="setQuickFilter('pending')">只看待决策</el-button>
+                  <el-button size="small" :type="quickFilter === 'unimplemented' ? 'primary' : ''" @click="setQuickFilter('unimplemented')">只看未实现</el-button>
+                  <el-button size="small" @click="resetFilter">重置</el-button>
+                </div>
+              </div>
+              <!-- M5 需求状态过滤（开发/待开发/计划/已弃用 多选） -->
+              <div class="filter-row">
+                <label class="filter-label">需求状态</label>
+                <div class="filter-quick-btns">
+                  <el-button size="small" :type="statusFilter.has('developing') ? 'success' : ''" @click="toggleStatus('developing')">开发</el-button>
+                  <el-button size="small" :type="statusFilter.has('todo') ? 'warning' : ''" @click="toggleStatus('todo')">待开发</el-button>
+                  <el-button size="small" :type="statusFilter.has('planned') ? 'primary' : ''" @click="toggleStatus('planned')">计划</el-button>
+                  <el-button size="small" :type="statusFilter.has('deprecated') ? 'danger' : ''" @click="toggleStatus('deprecated')">已弃用</el-button>
+                </div>
+              </div>
+              <!-- 过滤统计 -->
+              <div class="filter-stats">
+                当前显示：<span class="fs-num">{{ filteredGraphData.nodes.length }}</span> 节点 / <span class="fs-num">{{ filteredGraphData.edges.length }}</span> 边
+              </div>
+            </div>
+          </transition>
+        </div>
+
         <!-- 布局模式 -->
         <div class="sp-section">
           <div class="sp-section-header" @click="toggleSection('layout')">
@@ -201,6 +264,13 @@
                   <span class="legend-label">{{ typeLabels[type] || type }}</span>
                 </div>
               </div>
+              <!-- M5 需求状态图例 -->
+              <div class="legend-list" style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.08);padding-top:8px;">
+                <div class="legend-item" v-for="(label, st) in STATUS_LABELS" :key="st">
+                  <span class="legend-dot" :style="{ background: STATUS_COLORS[st] }"></span>
+                  <span class="legend-label">状态·{{ label }}</span>
+                </div>
+              </div>
             </div>
           </transition>
         </div>
@@ -311,10 +381,176 @@ const layoutMode = ref('force')
 const showLayoutPanel = ref(false)
 const currentGraphData = ref({ nodes: [], edges: [] })
 
+/* ===== 需求图谱过滤 ===== */
+// 功能需求节点类型集合（与系统架构节点区分）
+const FEATURE_NODE_TYPES = new Set([
+  'domain', 'module', 'feature', 'frontend_page',
+  'api_function', 'backend_endpoint', 'gap', 'pending_decision'
+])
+// 19 个业务域
+const DOMAIN_LIST = [
+  'ai', 'expert', 'graph', 'project', 'workflow', 'kb', 'llm',
+  'melody', 'caomei', 'mox', 'operators', 'system', 'security',
+  'storage', 'alliance', 'voice', 'platform', 'admin', 'misc'
+]
+// 扩展节点类型配色（在 NODE_TYPE_COLORS 基础上叠加功能需求类型）
+const typeColors = {
+  ...NODE_TYPE_COLORS,
+  domain: '#6366f1',
+  module: '#8b5cf6',
+  feature: '#10b981',
+  frontend_page: '#06b6d4',
+  api_function: '#f59e0b',
+  backend_endpoint: '#3b82f6',
+  gap: '#ef4444',
+  pending_decision: '#f97316'
+}
+
+const viewMode = ref('all')           // all | feature | system
+const selectedDomain = ref('')         // '' 表示全部域
+const quickFilter = ref('')            // '' | gap | pending | unimplemented
+
+// M5：需求功能状态枚举（开发/待开发/计划/已弃用）
+const STATUS_LABELS = { developing: '开发', todo: '待开发', planned: '计划', deprecated: '已弃用' }
+const STATUS_COLORS = { developing: '#10b981', todo: '#f59e0b', planned: '#fbbf24', deprecated: '#94a3b8' }
+const statusFilter = ref(new Set())    // 需求状态多选：developing/todo/planned/deprecated
+function toggleStatus(st) {
+  const s = new Set(statusFilter.value)
+  if (s.has(st)) s.delete(st); else s.add(st)
+  statusFilter.value = s
+  applyFilterToGraph()
+}
+
+function setViewMode(mode) {
+  viewMode.value = mode
+  applyFilterToGraph()
+}
+function setQuickFilter(type) {
+  quickFilter.value = quickFilter.value === type ? '' : type
+  applyFilterToGraph()
+}
+function resetFilter() {
+  viewMode.value = 'all'
+  selectedDomain.value = ''
+  quickFilter.value = ''
+  statusFilter.value = new Set()
+  applyFilterToGraph()
+}
+function onFilterChange() {
+  applyFilterToGraph()
+}
+
+// 读取节点 properties（兼容字符串 JSON 和对象两种存储形式）
+function getNodeProps(n) {
+  if (!n) return {}
+  if (n.properties && typeof n.properties === 'object') return n.properties
+  if (typeof n.properties === 'string') {
+    try { return JSON.parse(n.properties) } catch (_) { return {} }
+  }
+  return {}
+}
+
+// 过滤后的图谱数据（computed，随 currentGraphData 和过滤条件自动更新）
+const filteredGraphData = computed(() => {
+  const allNodes = currentGraphData.value.nodes || []
+  const allEdges = currentGraphData.value.edges || []
+
+  let nodes = allNodes
+
+  // 1. 视图模式过滤
+  if (viewMode.value === 'feature') {
+    nodes = nodes.filter(n => FEATURE_NODE_TYPES.has(n.node_type))
+  } else if (viewMode.value === 'system') {
+    nodes = nodes.filter(n => !FEATURE_NODE_TYPES.has(n.node_type))
+  }
+
+  // 2. 业务域过滤（properties.domain）
+  if (selectedDomain.value) {
+    nodes = nodes.filter(n => {
+      const props = getNodeProps(n)
+      return (props.domain || n.domain || '') === selectedDomain.value
+    })
+  }
+
+  // 3. 快捷过滤
+  if (quickFilter.value === 'gap') {
+    // 只看缺口：gap 节点 + 与之相连的 feature 节点
+    const gapIds = new Set(nodes.filter(n => n.node_type === 'gap').map(n => n.id))
+    const relatedFeatureIds = new Set()
+    allEdges.forEach(e => {
+      if (gapIds.has(e.source) || gapIds.has(e.target)) {
+        const otherId = gapIds.has(e.source) ? e.target : e.source
+        const otherNode = allNodes.find(n => n.id === otherId)
+        if (otherNode && otherNode.node_type === 'feature') relatedFeatureIds.add(otherId)
+      }
+    })
+    const keepIds = new Set([...gapIds, ...relatedFeatureIds])
+    nodes = nodes.filter(n => keepIds.has(n.id))
+  } else if (quickFilter.value === 'pending') {
+    // 只看待决策：pending_decision 节点 + 所有与之相连的节点
+    const pendingIds = new Set(nodes.filter(n => n.node_type === 'pending_decision').map(n => n.id))
+    const relatedIds = new Set()
+    allEdges.forEach(e => {
+      if (pendingIds.has(e.source)) relatedIds.add(e.target)
+      if (pendingIds.has(e.target)) relatedIds.add(e.source)
+    })
+    const keepIds = new Set([...pendingIds, ...relatedIds])
+    nodes = nodes.filter(n => keepIds.has(n.id))
+  } else if (quickFilter.value === 'unimplemented') {
+    // M5：只看未实现（待开发/计划）的 feature 节点
+    const unimplementedStatus = new Set(['todo', 'planned'])
+    nodes = nodes.filter(n => {
+      if (n.node_type !== 'feature') return false
+      const props = getNodeProps(n)
+      return unimplementedStatus.has(props.status || n.status || '')
+    })
+  }
+
+  // 3.5 需求状态过滤（带状态的需求节点：feature/gap/pending_decision）
+  if (statusFilter.value.size > 0) {
+    nodes = nodes.filter(n => {
+      const props = getNodeProps(n)
+      const st = props.status || n.status || ''
+      return st ? statusFilter.value.has(st) : true
+    })
+  }
+
+  // 4. 边过滤：只保留 source 和 target 都在过滤后节点集合中的边
+  const nodeIdSet = new Set(nodes.map(n => n.id))
+  const edges = allEdges.filter(e => nodeIdSet.has(e.source) && nodeIdSet.has(e.target))
+
+  return { nodes, edges }
+})
+
+// 将过滤后的数据应用到 3D 力导向图
+function applyFilterToGraph() {
+  if (!fg) return
+  const { nodes, edges } = filteredGraphData.value
+  // 深拷贝节点避免过滤操作修改原始数据对象
+  const dataNodes = nodes.map(n => {
+    const copy = { ...n }
+    // M5：需求功能节点按状态着色（nodeColor 优先取 n.color）
+    if (copy.node_type === 'feature') {
+      const props = getNodeProps(copy)
+      const st = props.status || copy.status || ''
+      if (STATUS_COLORS[st]) copy.color = STATUS_COLORS[st]
+    }
+    return copy
+  })
+  fg.graphData({ nodes: dataNodes, links: edges })
+  updateVisualConfig()
+  // 重新加热力导向引擎
+  if (layoutMode.value === 'force' || layoutMode.value === 'fruchterman') {
+    if (typeof fg.d3ReheatSimulation === 'function') {
+      try { fg.d3ReheatSimulation() } catch (_) { /* ignore */ }
+    }
+  }
+}
+
 /* ===== 侧边面板（分层展开） ===== */
 const sidePanelCollapsed = ref(false)
-// 默认展开布局和样式，折叠分析和图例（用户按需展开）
-const expandedSections = ref(new Set(['layout', 'style']))
+// 默认展开过滤、布局和样式，折叠分析和图例（用户按需展开）
+const expandedSections = ref(new Set(['filter', 'layout', 'style']))
 
 const layoutOptions = [
   { key: 'force', name: '力导向', icon: '🧲' },
@@ -344,11 +580,21 @@ const typeLabels = {
   workflow: '工作流',
   task: '任务',
   doc: '文档',
-  data: '数据'
+  data: '数据',
+  requirement: '需求',
+  // ===== 功能需求节点类型 =====
+  domain: '业务域',
+  module: '模块',
+  feature: '功能点',
+  frontend_page: '前端页面',
+  api_function: 'API 函数',
+  backend_endpoint: '后端端点',
+  gap: '缺口',
+  pending_decision: '待决策项'
 }
 
 const nodeTypeLegend = computed(() => {
-  const colors = NODE_TYPE_COLORS
+  const colors = typeColors
   // 只显示有数据的类型
   const types = new Set()
   currentGraphData.value.nodes.forEach(n => {
@@ -438,8 +684,8 @@ const stageLabel = computed(() => ({
 }[loadStage.value] || ''))
 const showSkeleton = computed(() => ['skeleton', 'fetch', 'module'].includes(loadStage.value))
 
-// 骨架 12 节点（按 NODE_TYPE_COLORS 调色，纯视觉占位）
-const _ntColors = Object.values(NODE_TYPE_COLORS)
+// 骨架 12 节点（按 typeColors 调色，纯视觉占位）
+const _ntColors = Object.values(typeColors)
 const skelNodes = Array.from({ length: 12 }, (_, i) => ({
   r: 6 + ((i * 7) % 10),
   c: _ntColors[i % _ntColors.length] || '#60a5fa',
@@ -715,8 +961,8 @@ function applyLayout(mode) {
   if (!fg || !currentGraphData.value.nodes.length) return
 
   const data = {
-    nodes: JSON.parse(JSON.stringify(currentGraphData.value.nodes)),
-    edges: currentGraphData.value.edges
+    nodes: JSON.parse(JSON.stringify(filteredGraphData.value.nodes)),
+    edges: filteredGraphData.value.edges
   }
 
   let layouted
@@ -1005,7 +1251,11 @@ async function reload() {
     //   task B = 动态 import 3D 重库 chunk（1.3MB，network-bound）
     //   两条并行跑，最差情况 = 串行（两者共用带宽），最优情况节省 min(Ta, Tb) ≈ 60% 首屏等待
     const fetchTask = (async () => {
-      const [g, st] = await Promise.all([getAggregatedGraph(), getGraphStats()])
+      // 容错归一化：核心图谱失败才中止；stats 失败仅降级统计（以聚合图谱实算），不阻塞图谱渲染
+      const [gRes, stRes] = await Promise.allSettled([getAggregatedGraph(), getGraphStats()])
+      if (gRes.status === 'rejected') throw gRes.reason
+      const g = gRes.value
+      const st = stRes.status === 'fulfilled' ? stRes.value : {}
       // 全维聚合：统计以聚合图谱为准（节点/关系/类型数），保留后端密度等指标
       const aggNodes = (g.nodes || []).length
       const aggEdges = (g.edges || []).length
@@ -1027,12 +1277,13 @@ async function reload() {
     // 允许取数先返回 → 立刻把 stats 卡片点亮（用户"先看到数据再等 3D canvas"）
     const [{ g }, ForceGraph3D] = await Promise.all([fetchTask, load3dTask])
     if (!graphEl.value) await nextTick()
+    const filtered = filteredGraphData.value
     if (fg) {
       applyStaticCircularLayout(g)
-      fg.graphData({ nodes: g.nodes, links: g.edges })
+      fg.graphData({ nodes: filtered.nodes, links: filtered.edges })
     } else {
       applyStaticCircularLayout(g)
-      initGraph(ForceGraph3D, g)
+      initGraph(ForceGraph3D, { nodes: filtered.nodes, edges: filtered.edges })
     }
     // 应用初始可视化配置
     updateVisualConfig()
@@ -1060,7 +1311,11 @@ async function reload() {
     }, 260)
   } catch (e) {
     setStage('skeleton')
-    ElMessage.error('图谱加载失败：' + e.message)
+    // HTTP 错误已由 http.js 拦截器做归一化全局提示（服务端异常/警告），此处不重复弹窗；
+    // 仅对非 HTTP 错误（前端脚本异常、业务信封失败等）补充提示，避免"双弹窗"
+    if (!e?.original) {
+      ElMessage.error('图谱加载失败：' + (e?.message || '未知错误'))
+    }
   }
 }
 
@@ -1069,7 +1324,7 @@ function initGraph(ForceGraph3D, g) {
     .backgroundColor('#0b1020')
     .graphData({ nodes: g.nodes, links: g.edges })
     .nodeLabel((n) => `${n.label} (${n.node_type})`)
-    .nodeColor((n) => n.color)
+    .nodeColor((n) => n.color || typeColors[n.node_type] || '#64748b')
     .nodeVal((n) => n.size)
     .linkColor(() => 'rgba(148,163,184,0.35)')
     .linkWidth(0.5)
@@ -1782,6 +2037,52 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 .legend-label { flex: 1; }
+
+/* 需求图谱过滤 */
+.filter-row {
+  margin-bottom: 12px;
+}
+.filter-row:last-child { margin-bottom: 0; }
+.filter-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  margin-bottom: 6px;
+}
+.filter-mode-btns {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.filter-mode-btns .el-button {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 4px;
+  font-size: 11px;
+}
+.filter-quick-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.filter-quick-btns .el-button {
+  font-size: 11px;
+  padding: 6px 4px;
+}
+.filter-stats {
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: var(--bg-page);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--text-2);
+  text-align: center;
+}
+.filter-stats .fs-num {
+  font-weight: 700;
+  color: var(--brand);
+}
 
 /* 中央画布区 */
 .graph-canvas-wrap {

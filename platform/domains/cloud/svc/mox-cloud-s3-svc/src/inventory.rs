@@ -493,13 +493,15 @@ impl InventoryManager {
                 let _ = write_fn(&config.destination.bucket, &manifest_key, manifest_content.as_bytes());
 
                 // 更新任务状态
-                let mut jobs = self.jobs.lock();
-                if let Some(job) = jobs.get_mut(&job_id) {
-                    job.status = InventoryJobStatus::Completed;
-                    job.completed_at_ms = Some(now_ms());
-                    job.total_objects = total_objects;
-                    job.inventory_size = content.len() as u64;
-                    job.output_path = Some(output_key);
+                {
+                    let mut jobs = self.jobs.lock();
+                    if let Some(job) = jobs.get_mut(&job_id) {
+                        job.status = InventoryJobStatus::Completed;
+                        job.completed_at_ms = Some(now_ms());
+                        job.total_objects = total_objects;
+                        job.inventory_size = content.len() as u64;
+                        job.output_path = Some(output_key);
+                    }
                 }
 
                 self.cleanup_old_jobs();

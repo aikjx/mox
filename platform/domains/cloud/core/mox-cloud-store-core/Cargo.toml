@@ -1,0 +1,47 @@
+[package]
+name = "mox-cloud-store-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Mox Cloud Drive L2 Store Engine - real FS/S3 backends, dedup, refcount GC, versioning, EC decorator, bitrot, heal, cache"
+
+[dependencies]
+mox-base-store-core = { workspace = true }
+mox-cloud-foundation = { workspace = true }
+# 阶段3：RS 纠删码引擎（复用 volume-svc，不重写）
+mox-cloud-volume-svc = { workspace = true, optional = true }
+async-trait = { workspace = true }
+bytes = "1"
+tokio = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+parking_lot = { workspace = true }
+futures = { workspace = true }
+# 阶段2：S3 客户端（自研 SigV4，不引 aws-sdk-s3）
+reqwest = { workspace = true, optional = true }
+base64 = { workspace = true, optional = true }
+hmac = { workspace = true, optional = true }
+# 阶段3：bitrot 分片 checksum
+crc32c = { version = "0.6", default-features = false, optional = true }
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
+
+[features]
+default = []
+# 阶段2：S3 协议层（S3/MinIO/COS/OSS 客户端 + 目标空读回源）
+s3 = ["dep:reqwest", "dep:base64", "dep:hmac"]
+# 阶段3：完整 RS 纠删码（复用 mox-cloud-volume-svc 引擎）。
+# 默认持久化 = 内容寻址 + 引用计数 GC；EC 作为 ObjectStore 装饰器按配置开启。
+erasure = ["dep:mox-cloud-volume-svc", "dep:crc32c"]
+
+[lints]
+workspace = true

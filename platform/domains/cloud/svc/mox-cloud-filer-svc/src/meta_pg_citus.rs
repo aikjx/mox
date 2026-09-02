@@ -30,7 +30,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::error::FilerResult;
 use crate::meta_trait::{
-    Attr, AttrPatch, DirEntry, InMemInodeStore, MetaBackend, MetaStorageProvider,
+    Attr, AttrPatch, BatchCreateResult, BatchDeleteResult, BatchReadAttrResult, DirEntry,
+    InMemInodeStore, MetaBackend, MetaStorageProvider,
 };
 
 #[derive(Debug, Default)]
@@ -247,8 +248,8 @@ pub(crate) fn meta_create(
     name: &str,
     mode: u32,
 ) -> FilerResult<u64> {
-    if let Some(&ino) = store.dir_index.get(&(parent, name.to_string())) {
-        return Ok(ino);
+    if store.dir_index.contains_key(&(parent, name.to_string())) {
+        return Err(crate::error::FilerError::Metadata("exists".into()));
     }
     let p = store
         .inodes
@@ -593,35 +594,6 @@ impl TxManager {
     }
 }
 
-// ========================= 增强：批量操作 =========================
-
-/// 批量创建文件结果
-#[derive(Debug, Clone, Default)]
-pub struct BatchCreateResult {
-    /// 成功创建的 inode 列表
-    pub created: Vec<(String, u64)>,
-    /// 失败的条目
-    pub failed: Vec<(String, String)>, // (name, error)
-}
-
-/// 批量读取属性结果
-#[derive(Debug, Clone, Default)]
-pub struct BatchReadAttrResult {
-    /// 成功读取的属性
-    pub found: Vec<(u64, Attr)>,
-    /// 未找到的 inode
-    pub not_found: Vec<u64>,
-}
-
-/// 批量删除结果
-#[derive(Debug, Clone, Default)]
-pub struct BatchDeleteResult {
-    /// 成功删除的 inode
-    pub deleted: Vec<u64>,
-    /// 删除失败的 inode 和错误
-    pub failed: Vec<(u64, String)>,
-}
-
 // ========================= 增强：连接池与健康检查 =========================
 
 /// 连接状态
@@ -817,7 +789,7 @@ impl ConnectionPoolManager {
         let mut recovered = 0;
 
         for (node_id, h) in health.iter_mut() {
-            if now.saturating_sub(h.last_check_ms) >= self.config.health_check_interval_ms {
+            if now.saturating_sub(h.last_check_ms) >= self.config.health_check_interval_ms || !h.healthy {
                 h.last_check_ms = now;
                 // 模拟：延迟 0-5ms 随机
                 h.latency_ms = (now % 5) as u64;
@@ -969,7 +941,7 @@ impl PgCitusMeta {
         for &ino in inodes {
             match store.store.inodes.get(&ino) {
                 Some(attr) => {
-                    result.found.push((ino, attr.clone()));
+                    result.found.push(attr.clone());
                 }
                 None => {
                     result.not_found.push(ino);

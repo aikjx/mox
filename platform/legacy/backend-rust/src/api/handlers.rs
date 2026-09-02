@@ -242,8 +242,27 @@ pub async fn graph_recommend(
 }
 
 pub async fn graph_add_node(State(state): State<AppState>, Json(payload): Json<Value>) -> Response {
+    // M5.3：需求状态枚举服务端校验（前端软约束 -> 服务端强约束）
+    const VALID_STATUS: [&str; 4] = ["developing", "todo", "planned", "deprecated"];
+    if let Some(st) = payload
+        .get("properties")
+        .and_then(|p| p.get("status"))
+        .and_then(|v| v.as_str())
+    {
+        if !VALID_STATUS.contains(&st) {
+            return err(
+                StatusCode::BAD_REQUEST,
+                "invalid_status",
+                &format!("非法需求状态 `{}`，合法枚举: developing(开发) / todo(待开发) / planned(计划) / deprecated(已弃用)", st),
+            );
+        }
+    }
     let id = payload.get("id").and_then(|v| v.as_str()).map(|s| s.to_string()).unwrap_or_else(|| new_id("node"));
     state.graph_nodes.insert(id.clone(), payload);
+    // M5.3：KG 持久化——变更写快照
+    if let Some(f) = &state.kg_file {
+        let _ = super::kg_persist::save_snapshot(f, &state.graph_nodes, &state.graph_edges);
+    }
     ok(serde_json::json!({ "id": id, "status": "added" }))
 }
 
@@ -252,6 +271,10 @@ pub async fn graph_add_edge(State(state): State<AppState>, Json(payload): Json<V
     let mut edge = payload.clone();
     if let Value::Object(map) = &mut edge { map.insert("id".into(), Value::String(id.clone())); }
     state.graph_edges.insert(id.clone(), edge);
+    // M5.3：KG 持久化——变更写快照
+    if let Some(f) = &state.kg_file {
+        let _ = super::kg_persist::save_snapshot(f, &state.graph_nodes, &state.graph_edges);
+    }
     ok(serde_json::json!({ "id": id, "status": "added" }))
 }
 
@@ -1566,4 +1589,26 @@ pub async fn storage_status() -> Response { ok(serde_json::json!({ "provider": "
 
 pub async fn analyze_spiral(Json(_p): Json<Value>) -> Response {
     ok(serde_json::json!({ "status": "completed", "iterations": 3, "result": {}, "converged": true }))
+}
+
+// ============================================================================
+// 系统权限（system 域）—— 前端 permission store 契约
+// ============================================================================
+pub async fn system_permissions() -> Response {
+    ok(serde_json::json!({
+        "roles": ["admin", "developer", "viewer"],
+        "permissions": ["*"],
+        "deptId": null,
+        "dataScope": "all",
+        "customDeptIds": [],
+        "menus": [],
+    }))
+}
+
+pub async fn system_dept_tree() -> Response {
+    ok(serde_json::json!([]))
+}
+
+pub async fn system_menu_tree() -> Response {
+    ok(serde_json::json!([]))
 }

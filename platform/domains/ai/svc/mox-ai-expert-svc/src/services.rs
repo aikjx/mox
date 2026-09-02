@@ -31,6 +31,8 @@ use std::sync::{Arc, RwLock};
 /// 具体专家注册表实现：内存 HashMap + 读写锁。启动时从 `all_experts()` 填默认 14 位专家。
 pub struct RegistryImpl {
     inner: RwLock<HashMap<String, ExpertMeta>>,
+    /// M3：SQLite 持久化句柄（None = 纯内存，测试/无持久化场景）
+    db: Option<Arc<crate::persistence::PersistenceDb>>,
 }
 
 impl Default for RegistryImpl {
@@ -40,9 +42,30 @@ impl Default for RegistryImpl {
 }
 
 impl RegistryImpl {
+    /// M5.4：企业级——从内存注册表移除专家并写通 SQLite（含升级：真实删除）。
+    pub(crate) fn remove(&self, id: &str) -> bool {
+        let removed = match self.inner.write() {
+            Ok(mut g) => g.remove(id).is_some(),
+            Err(_) => false,
+        };
+        if removed {
+            if let Some(ref d) = self.db {
+                let _ = d.delete_expert(id);
+            }
+        }
+        removed
+    }
+
     pub fn new() -> Self {
+        Self::new_with_db(None)
+    }
+
+    /// M3：带持久化构造。首次（未 seed）把内置专家幂等写入 SQLite；
+    /// 之后以 SQLite 为准加载（用户注册/更新的专家、被删除的内置专家重启后保持一致）。
+    pub fn new_with_db(db: Option<Arc<crate::persistence::PersistenceDb>>) -> Self {
         let s = Self {
             inner: RwLock::new(HashMap::new()),
+            db: db.clone(),
         };
         // 预填内置专家：把 crate::experts::all_experts() 中的 trait 对象映射为 ExpertMeta。
         let experts = all_experts();
@@ -59,6 +82,25 @@ impl RegistryImpl {
             };
             let _ = s.inner.write().unwrap().insert(meta.id.clone(), meta);
         }
+        // M3 幂等 seed + 库加载（库为空时保持内置；库非空则以库为准）
+        if let Some(ref d) = db {
+            if !d.kv_exists("mox_experts_seeded") {
+                let metas: Vec<ExpertMeta> =
+                    s.inner.read().unwrap().values().cloned().collect();
+                for m in &metas {
+                    let _ = d.upsert_expert(m);
+                }
+                let _ = d.save_kv("mox_experts_seeded", &serde_json::json!(true));
+            }
+            let persisted = d.load_experts();
+            if !persisted.is_empty() {
+                let mut guard = s.inner.write().unwrap();
+                guard.clear();
+                for m in persisted {
+                    guard.insert(m.id.clone(), m);
+                }
+            }
+        }
         s
     }
 }
@@ -70,6 +112,10 @@ impl ExpertRegistry for RegistryImpl {
             .write()
             .map_err(|e| anyhow::anyhow!("Registry lock poisoned: {}", e))?
             .insert(expert.id.clone(), expert.clone());
+        // M3：写通 SQLite（注册/更新专家持久化，重启保留）
+        if let Some(ref d) = self.db {
+            let _ = d.upsert_expert(expert);
+        }
         Ok(())
     }
 
@@ -447,6 +493,8 @@ fn tokenize(s: &str) -> Vec<String> {
 /// RegistryImpl / ExpertServiceImpl / AllianceRouter / alliance::* 模块。
 pub struct AllianceService {
     registry: Arc<dyn ExpertRegistry>,
+    /// M5.4：具体注册表引用（真实删除内存项）
+    registry_impl: Option<Arc<RegistryImpl>>,
     consultant: Arc<dyn ExpertConsultant>,
     orchestrator: Arc<dyn AllianceOrchestrator>,
     /// 算法分析器（带状态：统计分析次数）
@@ -470,12 +518,30 @@ pub struct AllianceService {
 
 impl AllianceService {
     pub fn new() -> Self {
-        let registry = Arc::new(RegistryImpl::new()) as Arc<dyn ExpertRegistry>;
-        let consultant = Arc::new(ExpertServiceImpl::new()) as Arc<dyn ExpertConsultant>;
+        Self::new_with_db(None)
+    }
+
+    /// M3：带 SQLite 持久化构造（专家注册表重启保留 + 幂等 seed）。
+    pub fn new_with_db(db: Option<Arc<crate::persistence::PersistenceDb>>) -> Self {
+        let registry_impl = Arc::new(RegistryImpl::new_with_db(db));
+        let registry = registry_impl.clone() as Arc<dyn ExpertRegistry>;
+        // M5.3：真实 LLM 路由接入（配置驱动）——配置了 MOX_LLM_* 凭据则启用真实 LLM 咨询器
+        // （OpenAI 兼容/多 Provider 路由 + 失败自动回退本地规则引擎），否则使用本地规则引擎。
+        let consultant: Arc<dyn ExpertConsultant> = match crate::llm::llm_consultant_from_env() {
+            Some(c) => {
+                println!("[M5] 专家联盟: 已启用真实 LLM 咨询器（MOX_LLM_* 配置驱动，失败自动回退本地引擎）");
+                c
+            }
+            None => {
+                println!("[M5] 专家联盟: 未配置 LLM 凭据 (MOX_LLM_*)，使用本地规则引擎");
+                Arc::new(ExpertServiceImpl::new()) as Arc<dyn ExpertConsultant>
+            }
+        };
         let orchestrator = Arc::new(AllianceRouter::new(registry.clone()))
             as Arc<dyn AllianceOrchestrator>;
         Self {
             registry,
+            registry_impl: Some(registry_impl),
             consultant,
             orchestrator,
             algo_analyzer: std::sync::Mutex::new(
@@ -493,6 +559,14 @@ impl AllianceService {
 
     pub fn registry(&self) -> Arc<dyn ExpertRegistry> {
         self.registry.clone()
+    }
+
+    /// M5.4：企业级——真实删除专家（内存 + SQLite），返回是否存在。
+    pub async fn remove_expert(&self, id: &str) -> bool {
+        match &self.registry_impl {
+            Some(r) => r.remove(id),
+            None => false,
+        }
     }
 
     pub fn consultant(&self) -> Arc<dyn ExpertConsultant> {

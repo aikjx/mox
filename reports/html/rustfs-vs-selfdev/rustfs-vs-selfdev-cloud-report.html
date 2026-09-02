@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RustFS vs 自研云盘知识库 · 对比验证报告</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif; background: #F4F3EE; color: #1A1B1C; line-height: 1.65; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 20px 64px; }
+  .hero { background: linear-gradient(135deg, #2f3542, #4a5a8a); color: #fff; border-radius: 16px; padding: 28px 30px; margin-bottom: 28px; }
+  .hero h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+  .hero .sub { font-size: 14px; color: rgba(255,255,255,0.85); }
+  .hero .badges { margin-top: 14px; }
+  .badge { display: inline-block; background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.28); color: #fff; border-radius: 999px; padding: 3px 12px; font-size: 12px; margin-right: 8px; }
+  .card { background: #fff; border: 1px solid #E4E3DD; border-radius: 14px; padding: 22px 24px; margin-bottom: 22px; }
+  .card h2 { font-size: 17px; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .no { background: #4a5a8a; color: #fff; width: 24px; height: 24px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; flex: 0 0 24px; }
+  .verdict { background: linear-gradient(135deg, rgba(74,90,138,0.10), rgba(139,200,234,0.16)); border: 1px solid rgba(74,90,138,0.25); border-radius: 12px; padding: 16px 18px; margin-bottom: 16px; }
+  .verdict strong { color: #2f3542; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+  th, td { border: 1px solid #E4E3DD; padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #f0f2f7; font-weight: 600; white-space: nowrap; }
+  td.hi { background: rgba(82,196,26,0.10); }
+  td.lo { background: rgba(234,102,104,0.10); }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .tag.g { background: rgba(82,196,26,0.14); color: #389e0d; }
+  .tag.r { background: rgba(234,102,104,0.14); color: #cf1322; }
+  .tag.y { background: rgba(250,173,20,0.16); color: #ad6800; }
+  .note { font-size: 12px; color: #6B7280; margin-top: 8px; }
+  ul { margin: 6px 0 0 18px; font-size: 13px; }
+  li { margin-bottom: 4px; }
+  .chart { width: 100%; height: 420px; }
+  .matrix-grid { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px; }
+  .mx { flex: 1 1 300px; min-width: 280px; border: 1px solid #E4E3DD; border-radius: 12px; padding: 14px; }
+  .mx h3 { font-size: 14px; margin-bottom: 10px; }
+  .mx-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 12.5px; border-bottom: 1px dashed #eee; }
+  .mx-row .name { flex: 1 1 120px; }
+  .mx-row .dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 8px; }
+  .mx-row .st { flex: 0 0 96px; text-align: right; }
+  .pillars { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
+  .pillar { flex: 1 1 240px; min-width: 220px; background: #fafafa; border: 1px solid #E4E3DD; border-radius: 10px; padding: 12px 14px; }
+  .pillar h4 { font-size: 13px; margin-bottom: 6px; }
+  .pillar p { font-size: 12px; color: #444; }
+  .win { border-left: 4px solid #4a5a8a; }
+  .conclusion { font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <h1>RustFS（开源） vs 自研云盘知识库 · 对比验证报告</h1>
+    <div class="sub">对象：ais/RustFS（第三方开源对象存储） · platform/domains/cloud/mox-cloud-*（自研 Master-Volume 云盘知识库）</div>
+    <div class="badges">
+      <span class="badge">证据类型：代码实测 + 文档核验</span>
+      <span class="badge">验证日期：2026-09-02</span>
+      <span class="badge">评分口径：证据评估分（0-10），非官方基准</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="no">0</span>核心结论</h2>
+    <div class="verdict">
+      <strong>结论一（现状）</strong>：若以“当前可用、开箱即用、S3 标准兼容、验证充分”为唯一标准，<strong>RustFS 明显更好</strong>——99 万行成熟代码 + 26 条 CI 流水线 + 452 个 S3 兼容测试全绿；而自研云盘知识库<strong>当前无法通过完整验证</strong>（filer 连库都无法编译、volume/s3 测试编译不过、rebalance 有 8 个测试失败）。
+    </div>
+    <div class="verdict">
+      <strong>结论二（定位）</strong>：若以“完全自主可控、深度集成 MOX 图谱中枢、信创合规、无外部依赖”为目标，<strong>自研方向正确</strong>，但<strong>当前工程状态不合格</strong>——需先修复到可编译、可测试的绿色基线，才有资格谈“更好”。
+    </div>
+    <div class="verdict">
+      <strong>结论三（建议）</strong>：最佳路线是<strong>混合架构</strong>——保留自研控制面（Master / Filer / S3 门面 / 图谱集成），把数据面（ecstore/纠删码落盘）对接 RustFS 或 MinIO 作为 L7 基础设施，既拿到开源引擎的成熟度与生态，又守住自主可控与平台集成。这与项目自研计划文档“45% 基线复用 + 55% 核心缺失补齐”的思路一致。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="no">1</span>多维能力对比（雷达图）</h2>
+    <div id="radar" class="chart"></div>
+    <p class="note">口径：7 个维度为基于两侧代码库、文档与实际运行结果的证据评估分（0-10），非官方基准测试。RustFS 维度依据上游 README/ARCHITECTURE/S3 兼容矩阵与 CI 配置；自研维度依据 platform/domains/cloud 实测（见第 3 节）。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="no">2</span>事实基线：双方规模与功能</h2>
+    <table>
+      <tr><th style="width:22%">维度</th><th>RustFS（开源）</th><th>自研 mox-cloud-drive</th></tr>
+      <tr><td>定位</td><td>通用分布式对象存储（S3 兼容），面向数据湖 / AI / 大数据</td><td>平台内嵌云盘知识库，Master-Volume 控制面+数据面，完全自研</td></tr>
+      <tr><td>代码规模</td><td>46 crates · 约 99.2 万行 Rust · 194 个测试文件</td><td>cloud 域 6 crates · 约 1.1 万行 · 50 个测试用例（文档口径）</td></tr>
+      <tr><td>协议 / 许可</td><td>Apache 2.0（宽松、商业友好、无 AGPL 传染）</td><td>MIT OR Apache-2.0（双许可）</td></tr>
+      <tr><td>核心功能</td><td class="hi">S3 全量（452 兼容测试）、纠删码 ecstore、IAM/STS、版本、复制、生命周期、事件通知、SSE 加密、控制台、K8s Helm、FTP/WebDAV、S3 Select、Bitrot</td><td>S3 兼容 38+ API、RS 2+1 + GF(2⁸) 通用 EC 引擎、Master 卷管理 + 自研 Raft HA、Filer POSIX（SQLite/PG-Citus/Redis 三后端）、快照/配额/文件锁/LRU 缓存、Rebalance、热冷分层、IAM/STS、审计 hash_chain</td></tr>
+      <tr><td>工程验证体系</td><td class="hi">26 条 CI workflow（CI/构建/E2E S3/模糊测试/覆盖率/MinIO 互操作/性能基准/容器），上游 CI 全绿</td><td>lib 编译 4/5 通过；测试仅 2/5 可编译；详见第 3 节实测</td></tr>
+      <tr><td>架构参考</td><td>Server → App → Storage → ecstore → rio → io-core 分层</td><td>参照 SeaweedFS（Master/Volume）+ JuiceFS（Meta/Object 抽象）+ Ceph 设计</td></tr>
+    </table>
+    <p class="note">来源：ais/RustFS/README_ZH.md、ARCHITECTURE.md、s3-compatibility-matrix.md；platform/domains/cloud 各 svc README 与 domains-code-review.md。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="no">3</span>实际验证结果：自研云盘当前状态（关键证据）</h2>
+    <p style="font-size:13px;margin-bottom:10px;">在项目根目录对自研 cloud 域各 crate 执行 <code>cargo build / cargo test</code> 的实测结果（2026-09-02）：</p>
+    <table>
+      <tr><th>Crate</th><th>lib 编译</th><th>测试编译</th><th>测试运行</th><th>实测说明</th></tr>
+      <tr><td>mox-cloud-master-svc</td><td><span class="tag g">通过</span></td><td><span class="tag y">部分</span></td><td><span class="tag g">lib 41/41 通过</span></td><td>lib 单元测试 41 个全部通过；但集成测试 t_integration_master 编译失败（8 错误）</td></tr>
+      <tr><td>mox-cloud-volume-svc</td><td><span class="tag g">通过</span></td><td><span class="tag r">失败</span></td><td><span class="tag r">无法运行</span></td><td>测试编译错误：TieringPolicyConfig 字段不匹配、StorageTier::Warm/Cold 不存在等，接口与测试不同步</td></tr>
+      <tr><td>mox-cloud-s3-svc</td><td><span class="tag g">通过</span></td><td><span class="tag r">失败</span></td><td><span class="tag r">无法运行</span></td><td>测试编译错误：touch_object/scan_transition 方法不存在、StorageClass::Standard 不存在等</td></tr>
+      <tr><td>mox-cloud-rebalance-svc</td><td><span class="tag g">通过</span></td><td><span class="tag g">通过</span></td><td><span class="tag r">8/62 失败</span></td><td>62 个测试可运行，但 8 个失败（断言失败：plan.is_some()、tasks 非空、rebalance_rounds_total≥1 等）</td></tr>
+      <tr><td>mox-cloud-filer-svc</td><td><span class="tag r">失败</span></td><td><span class="tag r">失败</span></td><td><span class="tag r">无法运行</span></td><td>lib 本身 9 个编译错误（cannot find FilerError 等），连库都无法编译</td></tr>
+    </table>
+    <div class="matrix-grid">
+      <div class="mx">
+        <h3>RustFS 验证体系（上游）</h3>
+        <div class="mx-row"><span class="name">代码规模</span><span class="dot" style="background:#52C41A"></span><span class="st">99.2 万行</span></div>
+        <div class="mx-row"><span class="name">CI workflow</span><span class="dot" style="background:#52C41A"></span><span class="st">26 条全绿</span></div>
+        <div class="mx-row"><span class="name">S3 兼容测试</span><span class="dot" style="background:#52C41A"></span><span class="st">452 实现</span></div>
+        <div class="mx-row"><span class="name">模糊测试/覆盖率</span><span class="dot" style="background:#52C41A"></span><span class="st">fuzz+coverage</span></div>
+        <div class="mx-row"><span class="name">互操作测试</span><span class="dot" style="background:#52C41A"></span><span class="st">MinIO interop</span></div>
+        <div class="mx-row"><span class="name">本地构建</span><span class="dot" style="background:#FAAD14"></span><span class="st">依赖已缓存，主二进制未完成</span></div>
+      </div>
+      <div class="mx">
+        <h3>自研 cloud 域验证状态（实测）</h3>
+        <div class="mx-row"><span class="name">lib 编译</span><span class="dot" style="background:#FAAD14"></span><span class="st">4/5 通过</span></div>
+        <div class="mx-row"><span class="name">测试编译</span><span class="dot" style="background:#EA6668"></span><span class="st">2/5 通过</span></div>
+        <div class="mx-row"><span class="name">测试运行</span><span class="dot" style="background:#EA6668"></span><span class="st">master 全过 / rebalance 8 失败</span></div>
+        <div class="mx-row"><span class="name">filer 库</span><span class="dot" style="background:#EA6668"></span><span class="st">编译失败（9 错误）</span></div>
+        <div class="mx-row"><span class="name">文档宣称</span><span class="dot" style="background:#FAAD14"></span><span class="st">“50 测试全绿”与实际不符</span></div>
+      </div>
+    </div>
+    <p class="note">关键发现：文档（domains-code-review.md 宣称 cloud 域 50 测试、distributed-architecture-report 宣称 266 单元测试全部通过）与实际可编译/可运行状态严重不符。测试文件体量很大（如 t6_m2_s3_service.rs 146KB、t_distributed_scale.rs 43KB），说明测试曾大量编写，但代码持续演进后接口未同步，导致当前不可验证。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="no">4</span>分维度选型矩阵</h2>
+    <table>
+      <tr><th>决策维度</th><th>RustFS</th><th>自研</th><th>谁更优（当前）</th></tr>
+      <tr><td>S3 标准兼容性</td><td class="hi">452 测试、生态互操作验证充分</td><td>38+ API 声称，但测试无法编译验证</td><td>RustFS</td></tr>
+      <tr><td>生产可用 / 成熟度</td><td class="hi">上游 CI 全绿、社区规模大</td><td>filer 编译失败、rebalance 有失败用例</td><td>RustFS</td></tr>
+      <tr><td>分布式 / 纠删码</td><td class="hi">ecstore 生产级纠删码 + 复制 + heal</td><td>RS 2+1 与 GF(2⁸) 引擎已实现但未验证</td><td>RustFS（现阶段）</td></tr>
+      <tr><td>平台深度集成</td><td>通用组件，需适配层</td><td class="hi">与图谱中枢、网关、SDK、Node 双栈一体</td><td>自研</td></tr>
+      <tr><td>自主可控</td><td>上游主导演进与节奏</td><td class="hi">100% 自研、可改可扩展、双许可</td><td>自研</td></tr>
+      <tr><td>合规 / 信创</td><td>Apache 2.0 无传染</td><td class="hi">全自研免协议污染、审计链、信创友好</td><td>自研（略有优势）</td></tr>
+      <tr><td>运维 / 部署生态</td><td class="hi">Docker/Helm/K8s/控制台/监控齐全</td><td>部署生态薄弱，未到 GA</td><td>RustFS</td></tr>
+      <tr><td>开发 / 维护成本</td><td class="hi">社区维护，零自研成本</td><td>对标 GA 需约 24 人·月（项目自估）</td><td>RustFS</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2><span class="no">5</span>三条可选路线与建议</h2>
+    <div class="pillars">
+      <div class="pillar win">
+        <h4>路线 A · 混合架构（推荐）</h4>
+        <p>保留自研 Master/Filer/S3 门面与图谱集成；数据面（ecstore/纠删码落盘）对接 RustFS/MinIO 作为 L7 基础设施。自主可控 + 平台集成 + 开源成熟度三者兼得，投入最低。</p>
+      </div>
+      <div class="pillar">
+        <h4>路线 B · 继续纯自研</h4>
+        <p>方向正确，但必须先修复：filer 编译错误、volume/s3 测试接口同步、rebalance 失败用例，恢复“可编译 + 测试全绿”基线后才有资格评估“更好”。预计投入高、周期长。</p>
+      </div>
+      <div class="pillar">
+        <h4>路线 C · 直接用 RustFS</h4>
+        <p>仅当云盘作为独立通用对象存储、不要求与 MOX 图谱深度绑定时可选。放弃自主可控与定制能力，换来开箱即用的成熟稳定。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card conclusion">
+    <h2><span class="no">6</span>一句话回答</h2>
+    <div class="verdict">
+      <strong>“验证哪个更好”：当前代码状态下，RustFS 在功能成熟度、可验证性、运维生态上完胜；自研云盘知识库在平台集成与自主可控上方向正确，但尚处于“开发中且未通过验证”状态，谈不上更好。建议走混合架构：自研控制面 + RustFS 数据面。</strong>
+    </div>
+    <p class="note">本报告所有结论基于：① 根目录 cargo build/test 实测；② ais/RustFS 源码与上游 CI 配置；③ docs/domains-code-review.md、working-reports 等仓库文档。评分维度为证据评估，非官方基准。</p>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  try {
+    var el = document.getElementById('radar');
+    if (!el || typeof echarts === 'undefined') { return; }
+    var chart = echarts.init(el);
+    chart.setOption({
+      backgroundColor: 'transparent',
+      title: {
+        text: 'RustFS vs 自研云盘知识库 · 多维能力对比',
+        left: 'center', top: 0,
+        textStyle: { color: '#1A1B1C', fontSize: 15, fontWeight: 600 }
+      },
+      tooltip: {
+        trigger: 'item',
+        triggerOn: 'click',
+        renderMode: 'richText',
+        confine: true,
+        textStyle: { fontSize: 11, lineHeight: 16 },
+        padding: [6, 8]
+      },
+      legend: { bottom: 0, itemWidth: 14, itemHeight: 8, textStyle: { color: '#6B7280', fontSize: 12 } },
+      radar: {
+        indicator: [
+          { name: 'S3 功能覆盖', max: 10 },
+          { name: '分布式/纠删码', max: 10 },
+          { name: '工程验证/可测试', max: 10 },
+          { name: '当前可用/成熟度', max: 10 },
+          { name: '平台深度集成', max: 10 },
+          { name: '自主可控/合规', max: 10 },
+          { name: '运维部署生态', max: 10 }
+        ],
+        center: ['50%', '52%'],
+        radius: '62%',
+        axisName: { color: '#555', fontSize: 11 },
+        splitArea: { areaStyle: { color: ['rgba(139,200,234,0.04)','rgba(139,200,234,0.08)'] } }
+      },
+      series: [{
+        type: 'radar',
+        data: [
+          {
+            name: 'RustFS（开源）',
+            value: [9, 9, 9, 9, 2, 3, 9],
+            itemStyle: { color: '#4a5a8a' },
+            areaStyle: { color: 'rgba(74,90,138,0.22)' },
+            lineStyle: { color: '#4a5a8a', width: 2 }
+          },
+          {
+            name: '自研 mox-cloud-drive',
+            value: [6, 7, 3, 3, 9, 9, 3],
+            itemStyle: { color: '#EAA7B2' },
+            areaStyle: { color: 'rgba(234,167,178,0.20)' },
+            lineStyle: { color: '#EAA7B2', width: 2 }
+          }
+        ]
+      }]
+    });
+    window.addEventListener('resize', function(){ chart.resize(); });
+  } catch (e) { console.error(e); }
+})();
+</script>
+</body>
+</html>

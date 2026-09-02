@@ -261,11 +261,18 @@ fn cmd_serve(args: &[String]) -> anyhow::Result<()> {
     let rt = tokio::runtime::Runtime::new()?;
     rt.block_on(async move {
         let topo = demo_topology();
+        let db = mox_ai_expert_svc::server::AppState::open_db();
+        let alliance = std::sync::Arc::new(
+            mox_ai_expert_svc::services::AllianceService::new_with_db(Some(db.clone())),
+        );
         let state = mox_ai_expert_svc::server::AppState {
             topo: std::sync::Arc::new(tokio::sync::Mutex::new(Some(topo))),
             live: std::sync::Arc::new(tokio::sync::Mutex::new(None)),
             current_exec: std::sync::Arc::new(tokio::sync::Mutex::new(None)),
-            alliance: std::sync::Arc::new(mox_ai_expert_svc::services::AllianceService::new()),
+            alliance: alliance.clone(),
+            ext: std::sync::Arc::new(
+                mox_ai_expert_svc::alliance_ext::AllianceExtState::new(alliance, db),
+            ),
         };
         let app =
             mox_ai_expert_svc::server::router(state).layer(tower_http::cors::CorsLayer::permissive());

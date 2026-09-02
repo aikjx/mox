@@ -12,10 +12,10 @@ use crate::context::{GovernContext, Principal, Tenant};
 use crate::executor::{self, ExecState};
 use crate::pipeline::{mox_optimize, GovernanceReport};
 use crate::programming::programming_pipeline;
-use axum::extract::State;
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::{Html, IntoResponse, Json};
-use axum::routing::{get, post};
+use axum::routing::{get, post, put};
 use axum::Router;
 use mox_ai_flow_svc::model::{Access, FlowEdge, FlowGraph, FlowNode, NodeKind, ToolKind};
 use mox_ai_flow_svc::topology::{Entity, EntityKind, Relation, RelationKind, TopologyGraph};
@@ -503,17 +503,37 @@ pub struct AppState {
     pub current_exec: Arc<Mutex<Option<Arc<ExecState>>>>,
     /// 专家联盟综合服务（注册/咨询/辩论/编排/算法分析/概览/指标）
     pub alliance: Arc<crate::services::AllianceService>,
+    /// 专家联盟扩展（会话/调度/图谱/计划/企业级，M2）
+    pub ext: Arc<crate::alliance_ext::AllianceExtState>,
 }
 
 impl AppState {
     /// 空状态构造：供宿主进程（operator-server 聚合）以库方式挂载，
     /// 各 handler 按需惰性初始化闭环节点。
+    /// M3：打开 SQLite（env `MOX_EXPERT_DB` 覆盖，默认 `data/mox-expert-svc.db`；失败回退内存）。
+    pub fn open_db() -> std::sync::Arc<crate::persistence::PersistenceDb> {
+        let path = std::env::var("MOX_EXPERT_DB")
+            .unwrap_or_else(|_| "data/mox-expert-svc.db".to_string());
+        match crate::persistence::PersistenceDb::open(&path) {
+            Ok(d) => std::sync::Arc::new(d),
+            Err(e) => {
+                tracing::warn!("SQLite 打开失败({}), 回退内存模式", e);
+                std::sync::Arc::new(
+                    crate::persistence::PersistenceDb::open(":memory:").expect("in-memory db"),
+                )
+            }
+        }
+    }
+
     pub fn new_state() -> Self {
+        let db = Self::open_db();
+        let alliance = Arc::new(crate::services::AllianceService::new_with_db(Some(db.clone())));
         Self {
             topo: Arc::new(Mutex::new(None)),
             live: Arc::new(Mutex::new(None)),
             current_exec: Arc::new(Mutex::new(None)),
-            alliance: Arc::new(crate::services::AllianceService::new()),
+            alliance: alliance.clone(),
+            ext: Arc::new(crate::alliance_ext::AllianceExtState::new(alliance, db)),
         }
     }
 }
@@ -635,6 +655,43 @@ pub fn router(state: AppState) -> Router {
         // 概览与指标
         .route("/api/alliance/overview", get(alliance_overview))
         .route("/api/alliance/metrics", get(alliance_metrics))
+        // ===== 专家联盟扩展（M2）：会话 / 调度 / 图谱 / 企业 / 计划 =====
+        .route("/api/alliance/sessions", get(ext_list_sessions).post(ext_create_session))
+        .route("/api/alliance/sessions/stats", get(ext_session_stats))
+        .route("/api/alliance/sessions/:id", get(ext_get_session).put(ext_update_session).delete(ext_delete_session))
+        .route("/api/alliance/sessions/:id/messages", post(ext_append_message))
+        .route("/api/alliance/sessions/:id/similar-search", post(ext_session_similar_search))
+        .route("/api/alliance/semantic-search", post(ext_semantic_search))
+        .route("/api/alliance/sessions/:id/export", get(ext_export_session))
+        .route("/api/alliance/sessions/:id/archive", post(ext_archive_session))
+        .route("/api/alliance/dispatcher/config", get(ext_dispatcher_config).put(ext_dispatcher_config_update))
+        .route("/api/alliance/dispatcher/status", get(ext_dispatcher_status))
+        .route("/api/alliance/dispatcher/dispatch", post(ext_dispatcher_dispatch))
+        .route("/api/alliance/dispatcher/consult", post(ext_dispatcher_consult))
+        .route("/api/alliance/dispatcher/multi-consult", post(ext_dispatcher_multi_consult))
+        .route("/api/alliance/dispatcher/reset/:id", post(ext_dispatcher_reset_expert))
+        .route("/api/alliance/dispatcher/reset-all", post(ext_dispatcher_reset_all))
+        .route("/api/alliance/graph", get(ext_graph_get))
+        .route("/api/alliance/graph/stats", get(ext_graph_stats))
+        .route("/api/alliance/graph/neighbors/:id", get(ext_graph_neighbors))
+        .route("/api/alliance/graph/collaborators/:id", get(ext_graph_collaborators))
+        .route("/api/alliance/graph/path/:source/:target", get(ext_graph_path))
+        .route("/api/alliance/graph/communities", get(ext_graph_communities))
+        .route("/api/alliance/graph/optimal-team", post(ext_optimal_team))
+        .route("/api/alliance/graph/rebuild", post(ext_rebuild_graph))
+        .route("/api/alliance/enterprise/consult", post(ext_enterprise_consult))
+        .route("/api/alliance/enterprise/analyze", post(ext_enterprise_analyze))
+        .route("/api/alliance/capabilities", get(ext_capabilities))
+        .route("/api/alliance/intelligent-consult", post(ext_intelligent_consult))
+        .route("/api/alliance/experts/:id/metrics", get(ext_expert_metrics))
+        .route("/api/alliance/experts/:id", put(ext_update_expert).delete(ext_delete_expert))
+        .route("/api/alliance/experts/:id/consult", post(ext_consult_expert_by_id))
+        .route("/api/alliance/plan/generate", post(ext_plan_generate))
+        .route("/api/alliance/plan/execute", post(ext_plan_execute))
+        .route("/api/alliance/orchestration/stats", get(ext_orchestration_stats))
+        .route("/api/alliance/orchestration/plugins", get(ext_orchestration_plugins))
+        .route("/api/alliance/orchestration/history", get(ext_orchestration_history))
+
         .with_state(Arc::new(state))
 }
 
@@ -829,7 +886,12 @@ async fn alliance_get_expert(
     axum::extract::Path(id): axum::extract::Path<String>,
 ) -> impl IntoResponse {
     match state.alliance.get_expert(&id).await {
-        Ok(resp) => (StatusCode::OK, Json(resp)).into_response(),
+        Ok(resp) if resp.found => (StatusCode::OK, Json(resp)).into_response(),
+        Ok(_) => (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({ "error": format!("专家不存在: {id}"), "code": "expert_not_found", "expert_id": id })),
+        )
+            .into_response(),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
@@ -1060,6 +1122,187 @@ async fn alliance_metrics(
             .into_response(),
     }
 }
+
+async fn ext_session_stats(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.session_stats().await)).into_response()
+}
+
+async fn ext_dispatcher_config(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.get_dispatcher_config().await)).into_response()
+}
+
+async fn ext_dispatcher_status(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.get_dispatcher_status().await)).into_response()
+}
+
+async fn ext_dispatcher_reset_all(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.dispatcher_reset_all().await)).into_response()
+}
+
+async fn ext_graph_get(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.get_graph().await)).into_response()
+}
+
+async fn ext_graph_stats(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.graph_stats().await)).into_response()
+}
+
+async fn ext_graph_communities(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.graph_communities().await)).into_response()
+}
+
+async fn ext_rebuild_graph(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.rebuild_graph().await)).into_response()
+}
+
+async fn ext_capabilities(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.capabilities().await)).into_response()
+}
+
+async fn ext_orchestration_stats(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.orchestration_stats().await)).into_response()
+}
+
+async fn ext_orchestration_plugins(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.orchestration_plugins().await)).into_response()
+}
+
+async fn ext_orchestration_history(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.orchestration_history().await)).into_response()
+}
+
+async fn ext_create_session(State(st): State<Arc<AppState>>, Json(b): Json<serde_json::Value>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.create_session(b).await)).into_response()
+}
+
+async fn ext_semantic_search(State(st): State<Arc<AppState>>, Json(b): Json<serde_json::Value>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.semantic_search(b).await)).into_response()
+}
+
+async fn ext_dispatcher_config_update(State(st): State<Arc<AppState>>, Json(b): Json<serde_json::Value>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.update_dispatcher_config(b).await)).into_response()
+}
+
+async fn ext_dispatcher_dispatch(State(st): State<Arc<AppState>>, Json(b): Json<serde_json::Value>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.dispatcher_dispatch(b).await)).into_response()
+}
+
+async fn ext_dispatcher_consult(State(st): State<Arc<AppState>>, Json(b): Json<serde_json::Value>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.dispatcher_consult(b).await)).into_response()
+}
+
+async fn ext_dispatcher_multi_consult(State(st): State<Arc<AppState>>, Json(b): Json<serde_json::Value>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.dispatcher_multi_consult(b).await)).into_response()
+}
+
+async fn ext_optimal_team(State(st): State<Arc<AppState>>, Json(b): Json<serde_json::Value>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.optimal_team(b).await)).into_response()
+}
+
+async fn ext_enterprise_consult(State(st): State<Arc<AppState>>, Json(b): Json<serde_json::Value>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.enterprise_consult(b).await)).into_response()
+}
+
+async fn ext_enterprise_analyze(State(st): State<Arc<AppState>>, Json(b): Json<serde_json::Value>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.enterprise_analyze(b).await)).into_response()
+}
+
+async fn ext_intelligent_consult(State(st): State<Arc<AppState>>, Json(b): Json<serde_json::Value>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.intelligent_consult(b).await)).into_response()
+}
+
+async fn ext_plan_generate(State(st): State<Arc<AppState>>, Json(b): Json<serde_json::Value>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.plan_generate(b).await)).into_response()
+}
+
+async fn ext_plan_execute(State(st): State<Arc<AppState>>, Json(b): Json<serde_json::Value>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.plan_execute(b).await)).into_response()
+}
+
+async fn ext_get_session(State(st): State<Arc<AppState>>, Path(id): Path<String>) -> impl IntoResponse {
+    let v = st.ext.get_session(&id).await;
+    if v.get("found").and_then(|x| x.as_bool()).unwrap_or(false) {
+        (StatusCode::OK, Json(v)).into_response()
+    } else {
+        (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({ "error": format!("会话不存在: {id}"), "code": "session_not_found", "session_id": id })),
+        )
+            .into_response()
+    }
+}
+
+async fn ext_delete_session(State(st): State<Arc<AppState>>, Path(id): Path<String>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.delete_session(&id).await)).into_response()
+}
+
+async fn ext_export_session(State(st): State<Arc<AppState>>, Path(id): Path<String>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.export_session(&id).await)).into_response()
+}
+
+async fn ext_archive_session(State(st): State<Arc<AppState>>, Path(id): Path<String>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.archive_session(&id).await)).into_response()
+}
+
+async fn ext_dispatcher_reset_expert(State(st): State<Arc<AppState>>, Path(id): Path<String>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.dispatcher_reset_expert(&id).await)).into_response()
+}
+
+async fn ext_graph_neighbors(State(st): State<Arc<AppState>>, Path(id): Path<String>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.graph_neighbors(&id).await)).into_response()
+}
+
+async fn ext_expert_metrics(State(st): State<Arc<AppState>>, Path(id): Path<String>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.expert_metrics(&id).await)).into_response()
+}
+
+async fn ext_delete_expert(State(st): State<Arc<AppState>>, Path(id): Path<String>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.delete_expert(&id).await)).into_response()
+}
+
+async fn ext_update_session(State(st): State<Arc<AppState>>, Path(id): Path<String>, Json(b): Json<serde_json::Value>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.update_session(&id, b).await)).into_response()
+}
+
+async fn ext_append_message(State(st): State<Arc<AppState>>, Path(id): Path<String>, Json(b): Json<serde_json::Value>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.append_message(&id, b).await)).into_response()
+}
+
+async fn ext_session_similar_search(State(st): State<Arc<AppState>>, Path(id): Path<String>, Json(b): Json<serde_json::Value>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.session_similar_search(&id, b).await)).into_response()
+}
+
+async fn ext_update_expert(State(st): State<Arc<AppState>>, Path(id): Path<String>, Json(b): Json<serde_json::Value>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.update_expert(&id, b).await)).into_response()
+}
+
+async fn ext_consult_expert_by_id(State(st): State<Arc<AppState>>, Path(id): Path<String>, Json(b): Json<serde_json::Value>) -> impl IntoResponse {
+    let v = st.ext.consult_expert_by_id(&id, b).await;
+    if v.get("found").and_then(|x| x.as_bool()).unwrap_or(true) {
+        (StatusCode::OK, Json(v)).into_response()
+    } else {
+        (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({ "error": format!("专家不存在: {id}"), "code": "expert_not_found", "expert_id": id })),
+        )
+            .into_response()
+    }
+}
+
+async fn ext_list_sessions(State(st): State<Arc<AppState>>, Query(params): Query<std::collections::HashMap<String, String>>) -> impl IntoResponse {
+    let v = serde_json::to_value(&params).unwrap_or(serde_json::json!({}));
+    (StatusCode::OK, Json(st.ext.list_sessions(v).await)).into_response()
+}
+
+async fn ext_graph_collaborators(State(st): State<Arc<AppState>>, Path(id): Path<String>, Query(params): Query<std::collections::HashMap<String, String>>) -> impl IntoResponse {
+    let limit = params.get("limit").and_then(|v| v.parse::<usize>().ok()).unwrap_or(10);
+    (StatusCode::OK, Json(st.ext.graph_collaborators(&id, limit).await)).into_response()
+}
+
+async fn ext_graph_path(State(st): State<Arc<AppState>>, Path((source, target)): Path<(String, String)>) -> impl IntoResponse {
+    (StatusCode::OK, Json(st.ext.graph_path(&source, &target).await)).into_response()
+}
+
 
 async fn index_handler() -> Html<&'static str> {
     Html(INDEX_HTML)

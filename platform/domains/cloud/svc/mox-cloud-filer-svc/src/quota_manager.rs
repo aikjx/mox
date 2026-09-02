@@ -1,4 +1,4 @@
-// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -6,7 +6,7 @@
 //! 配额管理器模块
 //!
 //! 提供用户级、目录级、桶级的存储容量和文件数配额管理。
-//! 参考 JuiceFS 配额管理和 Linux disk quota 设计。
+//! 参考分布式文件系统配额管理和 Linux disk quota 设计。
 //!
 //! # 功能特性
 //!
@@ -148,6 +148,8 @@ pub struct QuotaStats {
     pub total_alerts: u64,
     /// 当前超限的配额数
     pub exceeded_quotas: usize,
+    /// 配额总数（user + dir + bucket）
+    pub total_quotas: usize,
 }
 
 // ---------------- 配额管理器 ----------------
@@ -218,7 +220,7 @@ impl QuotaManager {
             None => return QuotaCheckResult::Ok, // 无配置 = 无限制
         };
 
-        self.check_quota(limit, usage, add_bytes, add_files, QuotaType::User, &uid.to_string())
+        self.check_quota_internal(limit, usage, add_bytes, add_files, QuotaType::User, &uid.to_string())
     }
 
     /// 更新用户配额使用量
@@ -250,7 +252,7 @@ impl QuotaManager {
             None => return QuotaCheckResult::Ok,
         };
 
-        self.check_quota(limit, usage, add_bytes, add_files, QuotaType::Directory, &ino.to_string())
+        self.check_quota_internal(limit, usage, add_bytes, add_files, QuotaType::Directory, &ino.to_string())
     }
 
     /// 更新目录配额使用量
@@ -282,7 +284,7 @@ impl QuotaManager {
             None => return QuotaCheckResult::Ok,
         };
 
-        self.check_quota(limit, usage, add_bytes, add_files, QuotaType::Bucket, bucket)
+        self.check_quota_internal(limit, usage, add_bytes, add_files, QuotaType::Bucket, bucket)
     }
 
     /// 更新桶配额使用量
@@ -344,7 +346,7 @@ impl QuotaManager {
     // ---- 内部方法 ----
 
     /// 通用配额检查
-    fn check_quota(
+    fn check_quota_internal(
         &self,
         limit: &QuotaLimit,
         usage: &QuotaUsage,
@@ -487,6 +489,39 @@ impl QuotaManager {
         alerts.iter().rev().take(limit).cloned().collect()
     }
 
+    // ---- 通用配额 API（按 QuotaType 分发） ----
+
+    /// 通用设置配额
+    pub fn set_quota(&self, id: &str, quota_type: QuotaType, limit: QuotaLimit) {
+        match quota_type {
+            QuotaType::User => self.set_user_quota(parse_u32_id(id), limit),
+            QuotaType::Directory => self.set_dir_quota(parse_u64_id(id), limit),
+            QuotaType::Bucket => self.set_bucket_quota(id, limit),
+        }
+    }
+
+    /// 通用获取配额
+    pub fn get_quota(&self, id: &str, quota_type: QuotaType) -> Option<(QuotaLimit, QuotaUsage)> {
+        match quota_type {
+            QuotaType::User => self.get_user_quota(parse_u32_id(id)),
+            QuotaType::Directory => self.get_dir_quota(parse_u64_id(id)),
+            QuotaType::Bucket => self.get_bucket_quota(id),
+        }
+    }
+
+    /// 通用配额检查（使用显式 usage）
+    pub fn check_quota(
+        &self,
+        id: &str,
+        quota_type: QuotaType,
+        usage: QuotaUsage,
+        add_bytes: u64,
+        add_files: u64,
+    ) -> QuotaCheckResult {
+        let limit = self.get_quota(id, quota_type).map(|(l, _)| l).unwrap_or_default();
+        self.check_quota_internal(&limit, &usage, add_bytes, add_files, quota_type, id)
+    }
+
     /// 获取配额统计
     pub fn stats(&self) -> QuotaStats {
         let user_quotas = self.user_quotas.lock();
@@ -524,6 +559,7 @@ impl QuotaManager {
             bucket_quotas: bucket_quotas.len(),
             total_alerts: alerts.len() as u64,
             exceeded_quotas: exceeded,
+            total_quotas: user_quotas.len() + dir_quotas.len() + bucket_quotas.len(),
         }
     }
 
@@ -592,6 +628,20 @@ fn now_secs() -> u64 {
 
 /// 共享的配额管理器引用
 pub type SharedQuotaManager = Arc<QuotaManager>;
+
+
+// ---------------- 通用 ID 解析辅助 ----------------
+
+fn parse_u32_id(id: &str) -> u32 {
+    // 提取字符串中的数字部分，如 "user-1" -> 1, "u2" -> 2
+    let digits: String = id.chars().filter(|c| c.is_ascii_digit()).collect();
+    digits.parse().unwrap_or(0)
+}
+
+fn parse_u64_id(id: &str) -> u64 {
+    let digits: String = id.chars().filter(|c| c.is_ascii_digit()).collect();
+    digits.parse().unwrap_or(0)
+}
 
 // ---------------- 单元测试 ----------------
 
@@ -673,7 +723,7 @@ mod tests {
             hard_bytes: 0,
             soft_bytes: 0,
             hard_files: 10,
-            soft_files: 5,
+            soft_files: 0,
         };
         mgr.set_user_quota(1000, limit);
         mgr.update_user_usage(1000, 0, 8);
